@@ -99,6 +99,7 @@ enum HOOK_TYPES {
 };
 
 #define NUMBER_OF_LISTS ZZZZ_THIS_ALWAYS_COMES_LAST_ZZZZ
+#define INVALID_HOOKNUM -1001
 
 	BUILT_IN_COMMAND(oncmd);
 	BUILT_IN_COMMAND(shookcmd);
@@ -107,5 +108,6 @@ enum HOOK_TYPES {
 	void	unload_on_hooks		(char *);
 	void	save_hooks 		(FILE *, int);
 	void	do_stack_on		(int, char *);
+	int	hook_find_free_serial	(int, int, int);
 
 #endif /* __hook_h_ */

@@ -1,4 +1,4 @@
-/* $EPIC: hook.c,v 1.12 2002/07/17 22:52:52 jnelson Exp $ */
+/* $EPIC: hook.c,v 1.13 2002/11/20 03:54:08 wd Exp $ */
 /*
  * hook.c: Does those naughty hook functions. 
  *
@@ -245,8 +245,6 @@ static char *	fill_it_out (char *str, int params)
 	return m_strdup(buffer);
 }
 
-
-#define INVALID_HOOKNUM -1001
 
 /*
  * find_hook: returns the numerical value for a specified hook name
@@ -1017,7 +1015,7 @@ BUILT_IN_COMMAND(oncmd)
 {
 	char	*func,
 		*nick,
-		*serial;
+		*serial		= NULL;
 	Noise	noisy		= NORMAL;
 	int	not		= 0,
 		sernum		= 0,
@@ -1115,6 +1113,17 @@ BUILT_IN_COMMAND(oncmd)
 			}
 
 			return;
+		}
+
+		/*
+		 * If sernum is 0 and serial is "+" or "-" get a serial
+		 * number for the event type in question
+		 */
+		if (sernum == 0 && serial != NULL) {
+		    if (!strcmp(serial, "+"))
+			sernum = hook_find_free_serial(1, 0, which);
+		    else if (!strcmp(serial, "-"))
+			sernum = hook_find_free_serial(-1, 0, which);
 		}
 
 		/*
@@ -1601,3 +1610,64 @@ static NumericList *remove_numeric_list (int numeric)
 
 	return tmp;
 }
+
+/* this function traverses all the hooks for all the events in the system
+ * trying to find a free serial number (one that is unused by any hook on
+ * any event) in the direction given (either -1 or +1 for - and +) starting
+ * at the given point. */
+int hook_find_free_serial(int dir, int from, int which) {
+    int ser;
+    Hook	*hp;
+    NumericList *nlp;
+    int	wc;
+
+    if (from == 0)
+	from = dir;
+
+    /* We iterate through the specified (or all) lists looking for a serial
+     * number that isn't in use.  If we make it through all of our loops
+     * without breaking out of them, we have found an unused number */
+    for (ser = from; (dir > 0 ? ser <= 32767 : ser >= -32767); ser += dir) {
+	if (which != INVALID_HOOKNUM) {
+	    /* a list was specified */
+	    if (which < 0) {
+		if ((nlp = find_numeric_list(-which)) != NULL)
+		    hp = nlp->list;
+		else /* the numeric list doesn't exist.  this must be unique */
+		    return ser;
+	    } else
+		hp = hook_functions[which].list;
+	    
+	    while (hp != NULL) {
+		if (hp->sernum == ser)
+		    break;
+		hp = hp->next;
+	    }
+	    if (hp == NULL)
+		break;
+	} else {
+	    /* no list was specified.  start digging */
+	    hp = NULL;
+	    for (wc = 0; wc < NUMBER_OF_LISTS; wc++) {
+		for (hp = hook_functions[wc].list; hp != NULL; hp = hp->next)
+		    if (hp->sernum == ser)
+			break;
+		if (hp != NULL)
+		    break;
+	    }
+	    if (hp != NULL)
+		continue; /* found a used one.. */
+	    hp = NULL;
+	    for (nlp = numeric_list; nlp != NULL; nlp = nlp->next) {
+		for (hp = nlp->list; hp != NULL; hp = hp->next)
+		    if (hp->sernum == ser)
+			continue;
+	    }
+	    if (hp == NULL)
+		break; /* found an unused one */
+	}
+    }
+
+    return ser;
+}
+

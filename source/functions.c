@@ -1,4 +1,4 @@
-/* $EPIC: functions.c,v 1.89 2002/11/08 23:36:12 jnelson Exp $ */
+/* $EPIC: functions.c,v 1.90 2002/11/20 03:54:08 wd Exp $ */
 /*
  * functions.c -- Built-in functions for ircII
  *
@@ -239,6 +239,7 @@ static	char
 	*function_getlogin	(char *),
 	*function_getopt	(char *),
 	*function_getpgrp	(char *),
+	*function_getserial	(char *),
 	*function_getset	(char *),
 	*function_getsets	(char *),
 	*function_getuid	(char *),
@@ -492,6 +493,7 @@ static BuiltInFunctions	built_in_functions[] =
 	{ "GETOPT",		function_getopt		},
 	{ "GETPGRP",		function_getpgrp	},
 	{ "GETRMATCHES",        function_getrmatches 	},
+	{ "GETSERIAL",		function_getserial	},
 	{ "GETSET",		function_getset		},
 	{ "GETSETS",		function_getsets	},
 	{ "GETTMATCH",		function_gettmatch	},
@@ -6461,3 +6463,37 @@ BUILT_IN_FUNCTION(function_joinstr, input)
 
 	return retval;
 }
+
+/*
+ * getserial function:
+ * arguments: <type> [...]
+ * currently only 'HOOK' is available as a type, the arguments to the hook
+ * type are a direction (+ or -) and a starting place  New types may be made
+ * available later.
+ */
+#include "hook.h"
+
+BUILT_IN_FUNCTION(function_getserial, input) {
+    char *type, *sdir;
+    int dir, from, serial;
+
+    GET_STR_ARG(type, input);
+    if (type == NULL || *type == '\0')
+	RETURN_EMPTY;
+    if (!strcasecmp(type, "HOOK")) {
+	GET_STR_ARG(sdir, input);
+	if (!strcmp(sdir, "+"))
+	    dir = 1;
+	else if (!strcmp(sdir, "-"))
+	    dir = -1;
+	else
+	    RETURN_EMPTY;
+
+	GET_INT_ARG(from, input);
+	serial = hook_find_free_serial(dir, from, INVALID_HOOKNUM);
+	RETURN_INT(serial);
+    }
+
+    RETURN_EMPTY;
+}
+
