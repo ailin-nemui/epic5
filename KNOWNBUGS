@@ -9,4 +9,5 @@ KNOWN ERRATA (eg, bugs, or unresolved requests):
 
 THE CHANGELOG SINCE THE LAST RELEASE:
 -------------------------------------
-* The "can't join channels" numeric /on's were not being thrown (adm)
+* Two timers could end up using the same refnum (|Rain|)
+* Channels could become confused after being klined (HSOC)
