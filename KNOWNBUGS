@@ -412,3 +412,5 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * The server_established hook is now thrown in the context of that server.
 * Fixed a missing comma bug in remove_from_comma_list().
 * Fix ALL/ALL_OFF thing from epic4.
+* Fix $logctl() from epic4.
+* Fix bug with % followed by \ in wildcard patterns from epic4.
