@@ -8,7 +8,7 @@
  */
 
 #if 0
-static	char	rcsid[] = "@(#)$Id: ircaux.c,v 1.42 2002/06/03 04:35:14 jnelson Exp $";
+static	char	rcsid[] = "@(#)$Id: ircaux.c,v 1.43 2002/06/05 04:42:33 jnelson Exp $";
 #endif
 
 #include "irc.h"
@@ -2890,8 +2890,8 @@ static 	char 	*mystuff = NULL;
 				*user = star;
 				*host = star;
 			}
-			}
 		}
+	}
 
 	return 0;
 }

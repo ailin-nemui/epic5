@@ -18,12 +18,10 @@
 typedef struct sockaddr_un USA;
 #endif
 
-static int	get_low_portnum (void);
-static int	get_high_portnum (void);
 static int	set_non_blocking (int fd);
 static int	set_blocking (int fd);
 static int	inet_remotesockaddr (int family, const char *host, const char *port, SS *storage, socklen_t *len);
-static int	inet_vhostsockaddr (int family, SS *storage, socklen_t *len);
+static int	inet_vhostsockaddr (int family, int port, SS *storage, socklen_t *len);
 static int	Connect (int fd, SA *addr);
 static int	Getaddrinfo (const char *nodename, const char *servname, const AI *hints, AI **res);
 static void	Freeaddrinfo (AI *ai);
@@ -66,7 +64,7 @@ static socklen_t	socklen (SA *sockaddr);
 int	connectory (int family, const char *host, const char *port)
 {
 	AI	hints, *results, *ai;
-	int	error;
+	int	err;
 	int	fd;
 	SS	  localaddr;
 	socklen_t locallen;
@@ -74,22 +72,22 @@ int	connectory (int family, const char *host, const char *port)
 	memset(&hints, 0, sizeof(hints));
 	hints.ai_family = family;
 	hints.ai_socktype = SOCK_STREAM;
-	if ((error = Getaddrinfo(host, port, &hints, &results)))
+	if ((err = Getaddrinfo(host, port, &hints, &results)))
 		return -5;
 
 	fd = -1;
 	for (ai = results; ai; ai = ai->ai_next) 
 	{
 	    /* First, look up the virtual host we use for this protocol. */
-	    error = inet_vhostsockaddr(ai->ai_family, &localaddr, &locallen);
-	    if (error < 0)
+	    err = inet_vhostsockaddr(ai->ai_family, -1, &localaddr, &locallen);
+	    if (err < 0)
 		continue;
 
 	    /* Now try to do the connection. */
 	    fd = client_connect((SA *)&localaddr, locallen, ai->ai_addr, ai->ai_addrlen);
 	    if (fd < 0)
 	    {
-		error = fd;
+		err = fd;
 		fd = -1;
 		continue;
 	    }
@@ -99,7 +97,7 @@ int	connectory (int family, const char *host, const char *port)
 
 	Freeaddrinfo(results);
 	if (fd < 0)
-		return error;
+		return err;
 	return fd;
 }
 
@@ -235,75 +233,16 @@ int	client_connect (SA *l, socklen_t ll, SA *r, socklen_t rl)
  */
 int	ip_bindery (int family, unsigned short port, SS *storage)
 {
-	if (family == AF_INET)
-	{
-		ISA *	name = (ISA *)storage;
-		int	i;
-		int	fd;
-		socklen_t len;
-		int	err;
+	int	err;
+	socklen_t len;
 
-		if ((err = inet_vhostsockaddr(family, storage, &len)) < 0)
-			return err;
+	if ((err = inet_vhostsockaddr(family, port, storage, &len)))
+		return err;
 
-		if (len == 0) 
-		{
-			name->sin_family = AF_INET;
-			name->sin_addr.s_addr = htonl(INADDR_ANY);
-		}
+	if (!len)
+		return -2;
 
-		/*
-		 * Make five stabs at trying to set up a passive socket.
-		 */
-		for (i = 0; i < 5; i++)
-		{
-			/*
-			 * Fill in the port number...
-			 * If the user wants a specific port, use it.
-			 * If they don't care, then if they want us to
-			 * give them a random port, grab a port at 
-			 * random in the port range being used (system
-			 * dependant, natch).  If the user doesn't care
-			 * and doesn't want a random port, just ask the
-			 * OS to assign us a port.  Some systems (OpenBSD)
-			 * hand out ports at random, which is a good thing.
-			 */
-			if (port == 0)
-			{
-			    if (get_int_var(RANDOM_LOCAL_PORTS_VAR))
-			    {
-				int	lowport, highport;
-
-				lowport = get_low_portnum();
-				highport = get_high_portnum();
-				name->sin_port = htons(random_number(0) % 
-						(highport - lowport) + lowport);
-			    }
-			    else
-				name->sin_port = htons(0);
-			}
-			else
-			    name->sin_port = htons(port);
-
-			/*
-			 * Try to establish the local side of our passive
-			 * socket with our sockaddr.  If it fails because
-			 * the port is in use or not available, try again.
-			 * If it fails five tims, bummer for the user.
-			 */
-			fd = client_bind((SA *)name, sizeof(*name));
-			if (fd < 0)
-			{
-			    if (fd == -10 && port == 0 && i < 5)
-				continue;
-			    return fd;
-			}
-			return fd;
-		}
-		return -10;
-	}
-
-	return -2;
+	return client_bind((SA *)storage, len);
 }
 
 /*
@@ -383,39 +322,37 @@ int	client_bind (SA *local, socklen_t local_len)
  *             the given family.
  * NOTES: If "len" is set to 0, do not attempt to bind() 'storage'!
  */
-static int	inet_vhostsockaddr (int family, SS *storage, socklen_t *len)
+static int	inet_vhostsockaddr (int family, int port, SS *storage, socklen_t *len)
 {
-	if (family == AF_INET)
-	{
-		if (LocalIPv4Addr)
-		{
-			*(ISA *)storage = *LocalIPv4Addr;
-			((ISA *)storage)->sin_port = htonl(0);
-			*len = sizeof(ISA);
-			return 0;
-		}
-		*len = 0;
-		return 0;
-	}
-	else if (family == AF_INET6)
-	{
-		if (LocalIPv6Addr)
-		{
-			*(ISA6 *)storage = *LocalIPv6Addr;
-			((ISA6 *)storage)->sin6_port = htonl(0);
-			*len = sizeof(ISA6);
-			return 0;
-		}
-		*len = 0;
-		return 0;
-	}
-	else if (family == AF_UNIX)
+	char	p_port[12];
+	char	*p = NULL;
+	AI	hints, *res;
+	int	err;
+
+	if (family == AF_UNIX || !LocalHostName)
 	{
 		*len = 0;
 		return 0;		/* No vhost needed */
 	}
 
-	return -2;
+	/*
+	 * Can it really be this simple?
+	 */
+	memset(&hints, 0, sizeof(hints));
+	hints.ai_family = family;
+	hints.ai_socktype = SOCK_STREAM;
+	if (port != -1) 
+	{
+		hints.ai_flags = AI_PASSIVE;
+		snprintf(p_port, 12, "%hu", port);
+		p = p_port;
+	}
+
+	if ((err = Getaddrinfo(LocalHostName, p, &hints, &res)))
+		return -10;
+	memcpy(storage, res->ai_addr, res->ai_addrlen);
+	*len = socklen((SA *)storage);
+	return 0;
 }
 
 /*
@@ -654,120 +591,6 @@ static int	set_blocking (int fd)
 		return -1;
 #endif
 	return 0;
-}
-
-/****************************************************************************/
-#define FALLBACK_LOWPORT 1024
-#define FALLBACK_HIGHPORT 65535
-
-static int	get_low_portnum (void)
-{
-	if (file_exists("/proc/sys/net/ipv4/ip_local_port_range"))
-	{
-		char	buffer[80];
-		int	fd;
-		int	first, second;
-
-		fd = open("/proc/sys/net/ipv4/ip_local_port_range", O_RDONLY);
-		if (fd < 0)
-			return FALLBACK_LOWPORT;
-		read(fd, buffer, 80);
-		close(fd);
-		sscanf(buffer, "%d %d", &first, &second);
-		return first;
-	}
-
-#ifdef IP_PORTRANGE
-	if (getenv("EPIC_USE_HIGHPORTS"))
-	{
-#ifdef HAVE_SYSCTLBYNAME
-		char	buffer[1024];
-		size_t	bufferlen = 1024;
-
-		if (sysctlbyname("net.inet.ip.portrange.hifirst", buffer, 
-				&bufferlen, NULL, 0))
-			return *(int *)buffer;
-		else if (sysctlbyname("net.inet.ip.porthifirst", buffer, 
-				&bufferlen, NULL, 0))
-			return *(int *)buffer;
-		else
-#endif
-			return FALLBACK_LOWPORT;
-	}
-	else
-	{
-#ifdef HAVE_SYSCTLBYNAME
-		char	buffer[1024];
-		size_t	bufferlen = 1024;
-
-		if (sysctlbyname("net.inet.ip.portrange.first", buffer, 
-					&bufferlen, NULL, 0))
-			return *(int *)buffer;
-		else if (sysctlbyname("net.inet.ip.portfirst", buffer, 
-					&bufferlen, NULL, 0))
-			return *(int *)buffer;
-		else
-#endif
-			return FALLBACK_LOWPORT;
-	}
-#else
-	return FALLBACK_LOWPORT;
-#endif
-}
-
-static int	get_high_portnum (void)
-{
-	if (file_exists("/proc/sys/net/ipv4/ip_local_port_range"))
-	{
-		char	buffer[80];
-		int	fd;
-		int	first, second;
-
-		fd = open("/proc/sys/net/ipv4/ip_local_port_range", O_RDONLY);
-		if (fd < 0)
-			return FALLBACK_HIGHPORT;
-		read(fd, buffer, 80);
-		close(fd);
-		sscanf(buffer, "%d %d", &first, &second);
-		return second;
-	}
-
-#ifdef IP_PORTRANGE
-	if (getenv("EPIC_USE_HIGHPORTS"))
-	{
-#ifdef HAVE_SYSCTLBYNAME
-		char	buffer[1024];
-		size_t	bufferlen = 1024;
-
-		if (sysctlbyname("net.inet.ip.portrange.hilast", buffer, 
-				&bufferlen, NULL, 0))
-			return *(int *)buffer;
-		else if (sysctlbyname("net.inet.ip.porthilast", buffer, 
-				&bufferlen, NULL, 0))
-			return *(int *)buffer;
-		else
-#endif
-			return FALLBACK_HIGHPORT;
-	}
-	else
-	{
-#ifdef HAVE_SYSCTLBYNAME
-		char	buffer[1024];
-		size_t	bufferlen = 1024;
-
-		if (sysctlbyname("net.inet.ip.portrange.last", buffer, 
-					&bufferlen, NULL, 0))
-			return *(int *)buffer;
-		else if (sysctlbyname("net.inet.ip.portlast", buffer, 
-					&bufferlen, NULL, 0))
-			return *(int *)buffer;
-		else
-#endif
-			return FALLBACK_HIGHPORT;
-	}
-#else
-	return FALLBACK_HIGHPORT;
-#endif
 }
 
 /****************************************************************************/
