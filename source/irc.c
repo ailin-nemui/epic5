@@ -1,4 +1,4 @@
-/* $EPIC: irc.c,v 1.358 2002/09/06 21:35:05 jnelson Exp $ */
+/* $EPIC: irc.c,v 1.359 2002/09/06 21:40:30 crazyed Exp $ */
 /*
  * ircII: a new irc client.  I like it.  I hope you will too!
  *
@@ -887,6 +887,9 @@ static	struct	timeval	clock_timeout,
 	if ((hold_over = unhold_windows()))
 		timeptr = &right_away;
 	if ((dccs = dcc_dead()))		/* XXX HACK! XXX */
+		timeptr = &right_away;
+
+	if (time_diff(right_away, *timeptr) < 0)
 		timeptr = &right_away;
 
 	/* GO AHEAD AND WAIT FOR SOME DATA TO COME IN */
