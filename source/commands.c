@@ -733,7 +733,7 @@ BUILT_IN_COMMAND(e_privmsg)
 {
 	char	*nick;
 
-	if ((nick = new_next_arg(args, &args)) != NULL)
+	if ((nick = next_arg(args, &args)) != NULL)
 	{
 		if (!strcmp(nick, "."))
 		{
