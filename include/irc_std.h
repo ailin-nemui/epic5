@@ -170,6 +170,13 @@ extern	char	*sys_errlist[];
 #endif
 
 /*
+ * Deal with brokenness with realpath.
+ */
+#ifdef HAVE_BROKEN_REALPATH
+# define realpath my_realpath
+#endif
+
+/*
  * Dont trust anyone else's NULLs.
  */
 #ifdef NULL

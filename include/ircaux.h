@@ -7,7 +7,7 @@
  *
  * See the COPYRIGHT file, or do a HELP IRCII COPYRIGHT 
  *
- * @(#)$Id: ircaux.h,v 1.31 2002/10/18 21:10:22 jnelson Exp $
+ * @(#)$Id: ircaux.h,v 1.32 2002/10/22 23:18:44 jnelson Exp $
  */
 
 #ifndef _IRCAUX_H_
@@ -270,5 +270,6 @@ int	setsid (void);
 #ifndef STPCPY_DECLARED
 char *	stpcpy (char *, const char *);
 #endif
+char *	my_realpath (const char *pathname, char resolved_path[]);
 
 #endif /* _IRCAUX_H_ */

@@ -1,5 +1,5 @@
 /*
- * @(#)$Id: acconfig.h,v 1.17 2002/10/18 21:45:19 jnelson Exp $
+ * @(#)$Id: acconfig.h,v 1.18 2002/10/22 23:18:44 jnelson Exp $
  */
 
 /*
@@ -292,3 +292,7 @@
 
 /* Define this if you have sys_siglist declared */
 #undef SYS_SIGLIST_DECLARED
+
+/* Define this if you have a broken realpath */
+#undef HAVE_BROKEN_REALPATH
+

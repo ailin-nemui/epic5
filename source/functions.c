@@ -1,4 +1,4 @@
-/* $EPIC: functions.c,v 1.85 2002/10/18 22:13:16 jnelson Exp $ */
+/* $EPIC: functions.c,v 1.86 2002/10/22 23:18:44 jnelson Exp $ */
 /*
  * functions.c -- Built-in functions for ircII
  *
@@ -5869,16 +5869,11 @@ BUILT_IN_FUNCTION(function_indextoword, input)
 BUILT_IN_FUNCTION(function_realpath, input)
 {
 	char	resolvedname[MAXPATHLEN];
-	char	*retval;
 
-#ifdef HAVE_REALPATH
-	if ((retval = realpath(input, resolvedname)))
+	if (!normalize_filename(input, resolvedname))
 		RETURN_STR(resolvedname);
-	else
-		RETURN_EMPTY;
-#else
-	RETURN_STR(input);
-#endif
+
+	RETURN_EMPTY;
 }
 
 BUILT_IN_FUNCTION(function_ttyname, input)

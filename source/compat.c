@@ -1,4 +1,4 @@
-/* $EPIC: compat.c,v 1.12 2002/07/26 17:48:26 jnelson Exp $ */
+/* $EPIC: compat.c,v 1.13 2002/10/22 23:18:44 jnelson Exp $ */
 /*
  * Everything that im not directly responsible for I put in here.  Almost
  * all of this stuff is either borrowed from somewhere else (for you poor
@@ -981,6 +981,139 @@ size_t strlcat(char *dst, const char *src, size_t siz)
 }
 #endif
 
+/* --------------------------- start of arc4 stuff -------------------- */
+/*
+ * Arc4 random number generator for OpenBSD.
+ * Copyright 1996 David Mazieres <dm@lcs.mit.edu>.
+ *
+ * Modification and redistribution in source and binary forms is
+ * permitted provided that due credit is given to the author and the
+ * OpenBSD project (for instance by leaving this copyright notice
+ * intact).
+ */
+
+/*
+ * This code is derived from section 17.1 of Applied Cryptography,
+ * second edition, which describes a stream cipher allegedly
+ * compatible with RSA Labs "RC4" cipher (the actual description of
+ * which is a trade secret).  The same algorithm is used as a stream
+ * cipher called "arcfour" in Tatu Ylonen's ssh package.
+ *
+ * Here the stream cipher has been modified always to include the time
+ * when initializing the state.  That makes it impossible to
+ * regenerate the same random sequence twice, so this can't be used
+ * for encryption, but will generate good random numbers.
+ *
+ * RC4 is a registered trademark of RSA Laboratories.
+ */
+struct bsd_arc4_stream {
+	u_char	i;
+	u_char	j;
+	u_char	s[256];
+};
+typedef struct bsd_arc4_stream 	ARC4;
+
+static int	rs_initialized = 0;
+static ARC4	rs;
+
+__inline__
+static void	bsd_arc4_init (ARC4 *as)
+{
+	int     n;
+
+	for (n = 0; n < 256; n++)
+		as->s[n] = n;
+	as->i = 0;
+	as->j = 0;
+}
+
+__inline__
+static void	bsd_arc4_addrandom (ARC4 *as, u_char *dat, int datlen)
+{
+	int     n;
+	u_char	si;
+
+	as->i--;
+	for (n = 0; n < 256; n++) {
+		as->i = (as->i + 1);
+		si = as->s[as->i];
+		as->j = (as->j + si + dat[n % datlen]);
+		as->s[as->i] = as->s[as->j];
+		as->s[as->j] = si;
+	}
+}
+
+static void	bsd_arc4_stir (ARC4 *as)
+{
+	int     fd;
+	struct {
+		struct timeval tv;
+		pid_t 	pid;
+		u_char	rnd[128 - sizeof(struct timeval) - sizeof(pid_t)];
+	}       rdat;
+
+	gettimeofday(&rdat.tv, NULL);
+	rdat.pid = getpid();
+	if ((fd = open("/dev/urandom", O_RDONLY, 0)) >= 0) {
+		read(fd, rdat.rnd, sizeof(rdat.rnd));
+		close(fd);
+	}
+	/* 
+	 * fd < 0?  Ah, what the heck. We'll just take whatever was on the
+	 * stack... 
+	 */
+	bsd_arc4_addrandom(as, (void *) &rdat, sizeof(rdat));
+}
+
+__inline__
+static u_char		bsd_arc4_getbyte (ARC4 *as)
+{
+	u_char si, sj;
+
+	as->i = (as->i + 1);
+	si = as->s[as->i];
+	as->j = (as->j + si);
+	sj = as->s[as->j];
+	as->s[as->i] = sj;
+	as->s[as->j] = si;
+	return (as->s[(si + sj) & 0xff]);
+}
+
+__inline__
+static u_32int_t	bsd_arc4_getword (ARC4 *as)
+{
+	u_32int_t val;
+
+	val = bsd_arc4_getbyte(as) << 24;
+	val |= bsd_arc4_getbyte(as) << 16;
+	val |= bsd_arc4_getbyte(as) << 8;
+	val |= bsd_arc4_getbyte(as);
+	return val;
+}
+
+void	bsd_arc4random_stir (void)
+{
+	if (!rs_initialized) {
+		bsd_arc4_init(&rs);
+		rs_initialized = 1;
+	}
+	bsd_arc4_stir(&rs);
+}
+
+void	bsd_arc4random_addrandom (u_char *dat, int datlen)
+{
+	if (!rs_initialized)
+		bsd_arc4random_stir();
+	bsd_arc4_addrandom(&rs, dat, datlen);
+}
+
+u_32int_t	bsd_arc4random (void)
+{
+	if (!rs_initialized)
+		bsd_arc4random_stir();
+	return bsd_arc4_getword(&rs);
+}
+
 /* --------------------------- start of misc stuff -------------------- */
 /* This is all written by Jeremy Nelson and is public domain */
 #ifndef HAVE_VSNPRINTF
@@ -1052,6 +1185,35 @@ int	unsetenv (const char *name)
 {
 	yell("Warning: Your system does not have unsetenv(3) and so it is not possible to unset the [%s] environment variable.", name);
 	return -1;
+}
+#endif
+
+#ifdef HAVE_BROKEN_REALPATH
+# if defined(realpath)
+#  undef realpath
+# endif
+char *	my_realpath (const char *pathname, char resolved_path[MAXPATHLEN])
+{
+	char *mypath;
+	char *rest;
+	struct stat unused;
+
+	/* If the file exists, just run realpath on it. */
+	if (stat(pathname, &unused) == 0)
+		return realpath(pathname, resolved_path);
+
+	/* Otherwise, run realpath() on the dirname only */
+	mypath = strcpy(alloca(strlen(pathname) + 1), pathname);
+	if ((rest = strrchr(mypath, '/')))
+		*rest++ = 0;
+
+	if (realpath(mypath, resolved_path) == NULL)
+		return NULL;
+
+	/* And put the basename back on the result. */
+	strlcat(resolved_path, "/", MAXPATHLEN);
+	strlcat(resolved_path, rest, MAXPATHLEN);
+	return resolved_path;
 }
 #endif
 

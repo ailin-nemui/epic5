@@ -1,4 +1,4 @@
-/* $EPIC: server.c,v 1.70 2002/10/18 21:10:23 jnelson Exp $ */
+/* $EPIC: server.c,v 1.71 2002/10/22 23:18:44 jnelson Exp $ */
 /*
  * server.c:  Things dealing with that wacky program we call ircd.
  *
@@ -2787,6 +2787,9 @@ char 	*serverctl 	(char *input)
 
 			GET_INT_ARG(port, input);
 			set_server_port(refnum, port);
+			RETURN_INT(1);
+		} else if (!my_strnicmp(listc, "PRIMARY", 2)) {
+			primary_server = refnum;
 			RETURN_INT(1);
 		} else if (!my_strnicmp(listc, "QUIT_MESSAGE", 1)) {
 			set_server_quit_message(refnum, input);

@@ -18,6 +18,8 @@ KNOWN ERRATA (eg, bugs, or unresolved requests):
   honor key bindings because it calls input_add_character().
 * /DEFER needs to be server-specific.
 * The key timeout thing goes off every second -- should only when necessary.
+* The check for "sun_len" in <sys/un.h> is bogus and unnecessary since we
+  can just use #ifdef HAVE_SA_LEN for that.
 ---
 
 [See http://www.epicsol.org/PROJECTS for things to come in the future]
@@ -128,3 +130,12 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Remove unused variable in window_scroll().
 * #include <unistd.h> for configure check for sys_siglist[] for netbsd.
 * Experimental fix for $indextoword(), worked out with fudd.
+* Fixed a problem in which dccs failed when dcc_store_path was set (ce)
+* Fix brain-o that broke /load and a few other non-op changes.
+* Fix /dcc send breakage (ce)
+* Move calc of window scrollback buffer before add to screen (didn't fix)
+* Unify code for /DCC GET and /DCC RESUME (still #ifdef'd and /set off) (ce)
+* Add checks/workaround for linux's broken realpath(). Bleh.
+* Add arc4random stuff to compat.c -- will be used later!
+* Fix $realpath() to use normalize_filename() so it gets realpath() fix.
+* Add $serverctl(SET <refnum> PRIMARY) to set primary server.  User beware! 
