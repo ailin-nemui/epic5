@@ -535,3 +535,4 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Permit doing /window name to change case of window's name.
 * Fix more compiler warnings.
 * Fix accept() with pthreads.
+* When accept()ing with pthreads, can the new conn really be nonblocking?

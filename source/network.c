@@ -1,4 +1,4 @@
-/* $EPIC: network.c,v 1.61 2005/03/03 02:10:39 jnelson Exp $ */
+/* $EPIC: network.c,v 1.62 2005/03/03 02:50:08 jnelson Exp $ */
 /*
  * network.c -- handles stuff dealing with connecting and name resolving
  *
@@ -625,14 +625,14 @@ static int	set_blocking (int fd)
 	}
 	if (fcntl(fd, F_SETFL, rval & ~flag) == -1)
 	{
-		syserr("set_non_blocking: fcntl(%d, F_SETFL) failed: %s",
+		syserr("set_blocking: fcntl(%d, F_SETFL) failed: %s",
 				fd, strerror(errno));
 		return -1;
 	}
 #else
 	if (ioctl(fd, FIONBIO, &flag) < 0)
 	{
-		syserr("set_non_blocking: ioctl(%d, FIONBIO) failed: %s",
+		syserr("set_blocking: ioctl(%d, FIONBIO) failed: %s",
 				fd, strerror(errno));
 		return -1;
 	}
@@ -656,6 +656,7 @@ int	Accept (int s, SA *addr, int *addrlen)
 	if ((retval = accept(s, addr, addrlen)) < 0)
 		syserr("Accept: accept(%d) failed: %s", s, strerror(errno));
 	set_blocking(s);
+	set_blocking(retval);		/* Just in case */
 	return retval;
 }
 
