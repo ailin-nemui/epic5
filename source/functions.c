@@ -149,6 +149,7 @@ static	char
 	*function_strftime	(char *),
 
 /* the countless "extended" functions */
+	*function_abs		(char *),
 	*function_acos		(char *),
 	*function_asin		(char *),
 	*function_atan		(char *),
@@ -162,6 +163,7 @@ static	char
 	*function_before 	(char *),
 	*function_beforew 	(char *),
 	*function_builtin	(char *),
+	*function_ceil		(char *),
 	*function_center 	(char *),
 	*function_cexist	(char *),
 	*function_channel	(char *),
@@ -191,6 +193,7 @@ static	char
 	*function_fexist 	(char *),
 	*function_filter 	(char *),
 	*function_findw		(char *),
+	*function_floor		(char *),
 	*function_fromw 	(char *),
 	*function_fsize	 	(char *),
 	*function_ftime		(char *),
@@ -367,6 +370,7 @@ typedef struct
  */
 static BuiltInFunctions	built_in_functions[] =
 {
+	{ "ABS",		function_abs		},
 	{ "ACOS",		function_acos		},
 	{ "ACOSH",		function_acosh		},
 	{ "AFTER",              function_after 		},
@@ -380,6 +384,7 @@ static BuiltInFunctions	built_in_functions[] =
 	{ "BEFORE",             function_before 	},
 	{ "BEFOREW",            function_beforew 	},
 	{ "BUILTIN_EXPANDO",	function_builtin	},
+	{ "CEIL",		function_ceil	 	},
 	{ "CENTER",		function_center 	},
 	{ "CEXIST",		function_cexist		},
 	{ "CHANMODE",		function_channelmode	},
@@ -417,6 +422,7 @@ static BuiltInFunctions	built_in_functions[] =
 	{ "FILTER",             function_filter 	},
 	{ "FINDITEM",           function_finditem 	},
 	{ "FINDW",		function_findw		},
+	{ "FLOOR",		function_floor		},
 	{ "FNEXIST",		function_fnexist	},
 	{ "FREWIND",		function_rewind		},
 	{ "FROMW",              function_fromw 		},
@@ -855,7 +861,7 @@ static	char	*alias_server_version  (void)
 #define RETURN_MSTR(x) return ((x) ? (x) : EMPTY_STRING);
 #define RETURN_STR(x) return m_strdup((x) ? (x) : EMPTY)
 #define RETURN_INT(x) return m_strdup(ltoa((x)))
-#define RETURN_FLOAT(x) return m_sprintf("%.999g", (double) (x))
+#define RETURN_FLOAT(x) return m_sprintf("%.50g", (double) (x))
 
 /*
  * XXXX REALLY REALLY REALLY REALLY REALLY REALLY REALLY IMPORTANT! XXXX
@@ -3040,7 +3046,7 @@ BUILT_IN_FUNCTION(function_truncate, words)
 			end--;
 		buffer[end+1] = 0;
 	}
-	else if (num > 0)
+	else if (num >= 0)
 	{
 		sprintf(format, "%%10.%dlf", num);
 		sprintf(buffer, format, value);
@@ -6060,6 +6066,10 @@ BUILT_IN_FUNCTION(function_longtoip, word)
 		MATH_RETVAL(num)				\
 	}
 
+
+MATH_FUNCTION(function_abs, fabs);
+MATH_FUNCTION(function_ceil, ceil);
+MATH_FUNCTION(function_floor, floor);
 
 MATH_FUNCTION(function_exp, exp);
 MATH_FUNCTION(function_log, log);

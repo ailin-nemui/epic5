@@ -8,7 +8,7 @@
  */
 
 #if 0
-static	char	rcsid[] = "@(#)$Id: ircaux.c,v 1.17 2001/11/20 16:33:34 crazyed Exp $";
+static	char	rcsid[] = "@(#)$Id: ircaux.c,v 1.18 2001/11/26 01:21:39 crazyed Exp $";
 #endif
 
 #include "irc.h"
@@ -1485,7 +1485,22 @@ int 	end_strcmp (const char *one, const char *two, int bytes)
 		return -1;
 }
 
-
+/*
+ * exec a program, given its arguments and input, return its entire output.
+ * on call, *len is the length of input, and on return, it is set to the
+ * length of the data returned.
+ *
+ * Reading is done more agressively than writing to keep the buffers
+ * clean, and the data flowing.
+ *
+ * Potential Bugs:
+ *   - If the program in question locks up for any reason, so will epic.
+ *     This can be fixed with an appropriate timeout in the select call.
+ *   - Although input and the return values are char*'s, they are only
+ *     treated as blocks of data, the size of *len.
+ *
+ * Special Note: stdin and stdout are not expected to be textual.
+ */
 char*	exec_pipe (char *executable, char *input, size_t *len, char**args)
 {
 	int	file_pointer;
@@ -1493,11 +1508,14 @@ char*	exec_pipe (char *executable, char *input, size_t *len, char**args)
 	int 	pipe1[2] = {-1, -1};
 	pid_t	pid;
 	char *	ret = NULL;
-	size_t	retlen = 0, retlen1 = 0;
+	size_t	retlen = 0, rdpos = 0, wrpos = 0;
+	fd_set	rdfds, wrfds;
+	int	fdmax;
 
 	if (pipe(pipe0) || pipe(pipe1))
 	{
-		yell("Cannot start %s: %s\n", executable, strerror(errno));
+		yell("Cannot open pipes for %s: %s",
+				executable, strerror(errno));
 		close(pipe0[0]);
 		close(pipe0[1]);
 		close(pipe1[0]);
@@ -1507,55 +1525,71 @@ char*	exec_pipe (char *executable, char *input, size_t *len, char**args)
 
 	switch (pid = fork())
 	{
-		case -1:
-		{
-			yell("Cannot start %s: %s\n", 
-					executable, strerror(errno));
-			return ret;
-		}
-		case 0:
-		{
-			dup2(pipe0[0], 0);
-			dup2(pipe1[1], 1);
-			close(pipe0[1]);
-			close(pipe1[0]);
-			close(2);	/* we dont want to see errors yet */
-			setuid(getuid());
-			setgid(getgid());
-			execvp(executable, args);
-			_exit(0);
-		}
-		default :
-		{
+	case -1:
+		yell("Cannot fork for %s: %s", 
+				executable, strerror(errno));
+		return ret;
+	case 0:
+		dup2(pipe0[0], 0);
+		dup2(pipe1[1], 1);
+		close(pipe0[1]);
+		close(pipe1[0]);
+		close(2);	/* we dont want to see errors yet */
+		setuid(getuid());
+		setgid(getgid());
+		execvp(executable, args);
+		yell("Cannot exec %s: %s", 
+			executable, strerror(errno));
+		_exit(0);
+	default :
+		close(pipe0[0]);
+		close(pipe1[1]);
+		FD_ZERO(&rdfds);
+		FD_ZERO(&wrfds);
+		FD_SET(pipe1[0], &rdfds);
+		FD_SET(pipe0[1], &wrfds);
+		fdmax = 1 + MAX(pipe1[0], pipe0[1]);
+		for (;;) {
+			fd_set RDFDS = rdfds;
+			fd_set WRFDS = wrfds;
 			int foo;
-			close(pipe0[0]);
-			close(pipe1[1]);
-			if (input && *input)
-			{
-				write(pipe0[1], input, *len);
+			foo = select(fdmax, &RDFDS, &WRFDS, NULL, NULL);
+			if (-1 == foo) {
+				yell("Broken select call: %s", strerror(errno));
+				if (EINTR == errno)
+					continue;
+				break;
+			} else if (0 == foo) {
+				break;
 			}
-			close(pipe0[1]);
-			*len = 0;
-			for (;;) {
-				retlen += 4096;
-				if (0 <= retlen-retlen1)
-					new_realloc((void**)&ret, retlen);
-				foo = read(pipe1[0], ret+retlen1, retlen-retlen1);
+			if (FD_ISSET(pipe1[0], &RDFDS)) {
+				retlen = rdpos + 4096;
+				new_realloc((void**)&ret, retlen);
+				foo = read(pipe1[0], ret+rdpos, retlen-rdpos);
 				if (0 == foo)
 					break;
-				if (-1 == foo) {
-					yell("Cannot start %s: %s\n", 
-						executable, strerror(errno));
-					break;
+				else if (0 < foo)
+					rdpos += foo;
+			} else if (FD_ISSET(pipe0[1], &WRFDS)) {
+				if (input && wrpos < *len)
+					foo = write(pipe0[1], input+wrpos, MIN(512, *len-wrpos));
+				else {
+					FD_CLR(pipe0[1], &wrfds);
+					close(pipe0[1]);
 				}
-				*len += foo;
-				retlen1 = retlen;
+				if (0 < foo)
+					wrpos += foo;
 			}
-			close(pipe1[0]);
-			waitpid(pid, NULL, WNOHANG);
-			break;
 		}
+		close(pipe0[1]);
+		close(pipe1[0]);
+		waitpid(pid, NULL, WNOHANG);
+		new_realloc((void**)&ret, 1+rdpos);
+		ret[rdpos] = 0; /* Not strictly necessary, but just in case. */
+		new_realloc((void**)&ret, rdpos);
+		break;
 	}
+	*len = rdpos;
 	return ret;
 }
 
@@ -2086,7 +2120,7 @@ char *	ftoa (double foo)
 {
 	static char buffer [BIG_BUFFER_SIZE + 1];
 
-	sprintf(buffer, "%.999g", foo);
+	sprintf(buffer, "%.50g", foo);
 	return buffer;
 }
 
