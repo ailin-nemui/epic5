@@ -384,4 +384,6 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Fix memory leak with /timer
 * Fix $server*() functions, when passed no arguments.
 * Add /msg -<server>/<target> thingee, i really need to document this.
-* Add /window topline -- VERY ROUGH PROOF OF CONCEPT --
+* Add /window toplines <N>, reserve N lines as nonscrollable on top of window
+* Add /window topline <N> "<str>" change the Nth topline to <str>
+* You can have 1 to 9 toplines.

@@ -1,4 +1,4 @@
-/* $EPIC: window.c,v 1.123 2004/08/28 05:26:14 jnelson Exp $ */
+/* $EPIC: window.c,v 1.124 2004/08/29 02:39:11 jnelson Exp $ */
 /*
  * window.c: Handles the organzation of the logical viewports (``windows'')
  * for irc.  This includes keeping track of what windows are open, where they
@@ -256,7 +256,8 @@ Window	*new_window (Screen *screen)
 	new_w->screen = screen;
 	new_w->next = new_w->prev = NULL;
 
-	new_w->topline = NULL;
+	for (i = 0; i < 10; i++)
+		new_w->topline[i] = NULL;
 	new_w->deceased = 0;
 
 	/* Initialize the scrollback */
@@ -906,7 +907,8 @@ static void 	swap_window (Window *v_window, Window *window)
 	window->top = v_window->top - v_window->saved + window->saved;
 	window->display_size = v_window->display_size + 
 			       v_window->status.double_status - 
-				window->status.double_status;
+				window->status.double_status +
+			       v_window->saved - window->saved;
 	window->bottom = window->top + window->display_size;
 	window->screen = v_window->screen;
 
@@ -4622,18 +4624,54 @@ static Window *window_swappable (Window *window, char **args)
  */
 static Window *window_topline (Window *window, char **args)
 {
-	int 	saved = window->saved;
+	int	line;
+	const char *linestr;
 	const char *topline;
 
+	if (!(linestr = new_next_arg(*args, args)))
+		return window;
+	if (!is_number(linestr))
+	{
+		say("Usage: /WINDOW TOPLINE <number> \"<string>\"");
+		return window;
+	}
+	line = my_atol(linestr);
+	if (line <= 0 || line >= 10)
+	{
+		say("/WINDOW TOPLINE number must be 1 to 9.");
+		return window;
+	}
+
 	if (!(topline = new_next_arg(*args, args)))
-		malloc_strcpy(&window->topline, empty_string);
+		malloc_strcpy(&window->topline[line - 1], empty_string);
 	else if (!strcmp(topline, "-"))
-		new_free(&window->topline);
+		new_free(&window->topline[line - 1]);
 	else
-		malloc_strcpy(&window->topline, topline);
+		malloc_strcpy(&window->topline[line - 1], topline);
 
-	window->saved = window->topline ? 1 : 0;
+	window_body_needs_redraw(window);
+	return window;
+}
 
+static Window *window_toplines (Window *window, char **args)
+{
+	char *	ptr = *args;
+	int	number;
+	int	saved = window->saved;
+
+	number = parse_number(args);
+	if (ptr == *args) 
+	{
+		say("Window saved lines is %d", window->saved);
+		return window;
+	}
+	if (number >= 10)
+	{
+		say("Window saved lines must be < 10 for now.");
+		return window;
+	}
+
+	window->saved = number;
 	window->display_size += saved - window->saved;
 	window->top += window->saved - saved;
 
@@ -4740,6 +4778,7 @@ static const window_ops options [] = {
 	{ "SWAP",		window_swap 		},
 	{ "SWAPPABLE",		window_swappable	},
 	{ "TOPLINE",		window_topline		},
+	{ "TOPLINES",		window_toplines		},
 	{ NULL,			NULL 			}
 };
 

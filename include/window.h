@@ -145,7 +145,7 @@ struct lastlog_stru *lastlog_oldest;	/* pointer to bottom of lastlog list */
 	char	*logfile;		/* window's logfile name */
 	FILE	*log_fp;		/* file pointer for the log file */
 
-	char *	topline;
+	char *	topline[10];
 
 	/* List stuff */
 struct	ScreenStru	*screen;	/* The screen we belong to */
