@@ -40,12 +40,15 @@ static XS (XS_eval) {
 }
 
 static XS (XS_expr) {
-	unsigned foo;
+	unsigned foo, food = 0;
 	char* retval=NULL;
+	char* arg=NULL;
 	dXSARGS;
 	for (foo=0; foo<items; foo++) {
-		retval=(char*)parse_inline(LOCAL_COPY((char*)SvPV_nolen(ST(foo))), "", 0);
+		arg = m_strdup((char*)SvPV_nolen(ST(foo)));
+		retval = (char*)parse_inline(arg, "", &food);
 		XST_mPV(foo, retval);
+		new_free(&arg);
 		new_free(&retval);
 	}
 	XSRETURN(items);
