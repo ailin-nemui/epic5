@@ -68,11 +68,12 @@ alias tabkey {
 		wait for @ :matches = tabkey.default($word)
 	}
 	@ :prefix = prefix($matches)
+	@ :prefix = 2 > #prefix ? prefix : ["$prefix"]
 	if (1 < numwords($matches) && word == prefix) {
 		echo Completions for \"$word\": $matches
 	} elsif (#matches && strlen($word) <= strlen($prefix)) {
 		repeat ${curpos()-wordind} parsekey backspace
-		xtype -l $prefix${1<#matches?:[ ]}
+		xtype -l $prefix${1<#matches?[]:[ ]}
 	}
 }
 
@@ -93,7 +94,9 @@ alias tabkey.cmd {
 	while (args) {
 		@ :matches = aliasctl(alias pmatch tabkey.cmd.$args*)
 		@ :matches = prefix($matches)
-		if (aliasctl(alias exists $matches) && matches == [tabkey.cmd.$args]) {
+		if (curword == count(. $args)) {
+		} elsif (matches != [tabkey.cmd.$args]) {
+		} elsif (aliasctl(alias exists $matches)) {
 			@ args = matches
 			break
 		}
@@ -110,13 +113,18 @@ alias tabkey.cmd {
 
 # Context sensitive completion goes here.
 
-alias tabkey.cmd.dcc {return $pattern("$0*" CHAT CLOSE CLOSEALL GET LIST RAW RENAME RESUME SEND)}
+alias tabkey.cmd.dcc (args) {
+	bless
+	switch ($curword) {
+		(1) {return $pattern("$shift(args)*" CHAT CLOSE CLOSEALL GET LIST RAW RENAME RESUME SEND)}
+	}
+}
 alias tabkey.cmd.dcc.resume tabkey.cmd.dcc.send
 alias tabkey.cmd.dcc.send {
 	bless
 	switch ($curword) {
-		(0) {echo This should never happen.;call}
-		(1) {echo This should never happen.;call}
+		(0) {echo This should never happen.;call;local}
+		(1) {echo This should never happen.;call;local}
 		(2) {return $tabkey.method.nick($*)}
 		(*) {return $tabkey.method.filei($*)}
 	}
@@ -139,12 +147,12 @@ alias tabkey.method.commands {
 	return $ret
 }
 
-alias tabkey.method.chan { return $pattern("$0*" $mychannels()); }
-alias tabkey.method.notify { return $pattern("$0*" $notify(on)); }
+alias tabkey.method.chan (args) { return $pattern("$shift(args)*" $mychannels()); }
+alias tabkey.method.notify (args) { return $pattern("$shift(args)*" $notify(on)); }
 
 alias alias.foo alias $*;alias $sar(g/globi/glob/$sar(g/filei/file/$*))
-alias.foo tabkey.method.filei {
-	@ :f0 = :f1 = globi("$0*")
+alias.foo tabkey.method.filei (args) {
+	@ :f0 = :f1 = globi("$shift(args)*")
 	while (numwords($f0) == 1 && f0 =~ [*/]) {
 		@ f0 = globi($f0*)
 	}
@@ -152,15 +160,16 @@ alias.foo tabkey.method.filei {
 }
 alias -alias.foo
 
-alias tabkey.method.nick {
-	if (pattern($0* $chanusers())) {
-		return $pattern($0* $chanusers());
+alias tabkey.method.nick (args) {
+	@ :args = shift(args)
+	if (match("$args*" $chanusers())) {
+		return $pattern("$args*" $chanusers());
 	} else {
 		@ :chanusers = []
 		fe ($mychannels()) chan {
 			@ push(chanusers $chanusers($chan))
 		}
-		return $pattern($0* $sort($uniq($chanusers)));
+		return $pattern("$args*" $sort($uniq($chanusers)));
 	}
 }
 
