@@ -83,7 +83,7 @@ alias tabkey.main {
 	} elsif (#matches && strlen($word) <= strlen($prefix)) {
 		@ :prefix = 0 > index("$chr($jot(32 1))" $prefix) ? prefix : ["$prefix"]
 		@ :line = mid(0 $wordind $L)
-		parsekey erase_line
+		parsekey erase_to_beg_of_line
 		xtype -l $line$prefix${1<#matches?[]:[ ]}
 	}
 	xdebug $oxd

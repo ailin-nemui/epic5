@@ -195,3 +195,4 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Changed the default FLOOD_IGNORE setting to off.
 * Fixed a bug in the commandqueues script.
 * Altered 324 processing so that the hook is called when joining a channel.
+* tabkey.ce alteratered to make input line modification smoother.
