@@ -935,9 +935,9 @@ void	send_to_server (const char *format, ...)
 /* send_to_server: sends the given info the the server */
 static void 	vsend_to_server (const char *format, va_list args)
 {
-	char	buffer[BIG_BUFFER_SIZE * 3 + 1]; /* make this buffer *much*
+	char	buffer[BIG_BUFFER_SIZE * 11 + 1]; /* make this buffer *much*
 						  * bigger than needed */
-	size_t	size = BIG_BUFFER_SIZE * 3;
+	size_t	size = BIG_BUFFER_SIZE * 11;
 	int	len,
 		des;
 	int	server;

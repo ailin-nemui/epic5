@@ -5420,7 +5420,7 @@ BUILT_IN_FUNCTION(function_stripcrap, input)
 	GET_STR_ARG(how, input);
 	mangle = parse_mangle(how, 0, NULL);
 
-	size = strlen(input) * 3 + 1;
+	size = strlen(input) * 11 + 1;
 	output = new_malloc(size);
 	/* Obviously this is safe. */
 	strcpy(output, input);

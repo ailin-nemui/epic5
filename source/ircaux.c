@@ -8,7 +8,7 @@
  */
 
 #if 0
-static	char	rcsid[] = "@(#)$Id: ircaux.c,v 1.41 2002/06/02 06:25:10 jnelson Exp $";
+static	char	rcsid[] = "@(#)$Id: ircaux.c,v 1.42 2002/06/03 04:35:14 jnelson Exp $";
 #endif
 
 #include "irc.h"
@@ -3168,8 +3168,8 @@ u_char *strcpy_nocolorcodes (u_char *dest, const u_char *source)
 /*
  * This mangles up 'incoming' corresponding to the current values of
  * /set mangle_inbound or /set mangle_outbound.
- * 'incoming' needs to be at _least_ thrice as big as neccesary
- * (ie, sizeof(incoming) >= strlen(incoming) * 3 + 1)
+ * 'incoming' needs to be at least _ELEVEN_ as big as neccesary
+ * (ie, sizeof(incoming) >= strlen(incoming) * 11 + 1)
  */
 size_t	mangle_line	(char *incoming, int how, size_t how_much)
 {

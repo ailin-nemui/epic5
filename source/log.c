@@ -143,7 +143,7 @@ void 	add_to_log (FILE *fp, unsigned winref, const unsigned char *line)
 		 * 'mangle_line' can expand the input string, so it is 
 		 * neccesary to allocate more than we need.
 		 */
-		size = strlen(line) * 3;
+		size = strlen(line) * 11;
 		local_line = alloca(size + 1);
 		strcpy(local_line, line);
 

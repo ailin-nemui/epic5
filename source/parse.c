@@ -1190,7 +1190,7 @@ void 	parse_server (char *orig_line)
 
 	if (inbound_line_mangler)
 	{
-		size = strlen(orig_line) * 3;
+		size = strlen(orig_line) * 11;
 		line = alloca(size + 1);
 		strcpy(line, orig_line);
 		if (mangle_line(line, inbound_line_mangler, size) > size)
