@@ -1,4 +1,4 @@
-/* $EPIC: vars.c,v 1.31 2003/06/30 04:14:02 jnelson Exp $ */
+/* $EPIC: vars.c,v 1.32 2003/07/07 22:10:57 jnelson Exp $ */
 /*
  * vars.c: All the dealing of the irc variables are handled here. 
  *
@@ -189,6 +189,7 @@ static	IrcVariable irc_variable[] =
 	{ "MANGLE_LOGFILES",		STR_TYPE_VAR,	0, NULL, set_mangle_logfiles, 0, 0 },
 	{ "MANGLE_OUTBOUND",		STR_TYPE_VAR,	0, NULL, set_mangle_outbound, 0, 0 },
 	{ "MAX_RECONNECTS",		INT_TYPE_VAR,	DEFAULT_MAX_RECONNECTS, NULL, NULL, 0, 0 },
+	{ "METRIC_TIME",		BOOL_TYPE_VAR,	DEFAULT_METRIC_TIME, NULL, reset_clock, 0, 0 },
 	{ "MIRC_BROKEN_DCC_RESUME",	BOOL_TYPE_VAR,	0, NULL, NULL, 0, 0 },
         { "MODE_STRIPPER",              BOOL_TYPE_VAR,  DEFAULT_MODE_STRIPPER, NULL, NULL, 0, 0 },
 	{ "ND_SPACE_MAX",		INT_TYPE_VAR,	DEFAULT_ND_SPACE_MAX, NULL, NULL, 0, 0 },

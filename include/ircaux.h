@@ -7,11 +7,16 @@
  *
  * See the COPYRIGHT file, or do a HELP IRCII COPYRIGHT 
  *
- * @(#)$Id: ircaux.h,v 1.48 2003/06/30 04:14:01 jnelson Exp $
+ * @(#)$Id: ircaux.h,v 1.49 2003/07/07 22:10:56 jnelson Exp $
  */
 
 #ifndef _IRCAUX_H_
 #define _IRCAUX_H_
+
+struct metric_time {
+	long mt_days;
+	double mt_mdays;
+};
 
 #define SAFE(x) (((x) && *(x)) ? (x) : empty_string)
 
@@ -101,6 +106,8 @@ int	count_ansi		(char *, int);
 int	fw_strcmp 		(comp_len_func *, char *, char *);
 int	lw_strcmp 		(comp_func *, char *, char *);
 int	open_to 		(char *, int, int);
+struct metric_time get_metric_time	(double *);
+struct metric_time timeval_to_metric	(struct timeval *);
 struct timeval get_time 	(struct timeval *);
 double 	time_diff 		(struct timeval, struct timeval);
 struct timeval time_add		(struct timeval, struct timeval);

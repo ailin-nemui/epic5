@@ -1,4 +1,4 @@
-/* $EPIC: irc.c,v 1.533 2003/07/07 04:12:28 jnelson Exp $ */
+/* $EPIC: irc.c,v 1.534 2003/07/07 22:10:57 jnelson Exp $ */
 /*
  * ircII: a new irc client.  I like it.  I hope you will too!
  *
@@ -52,7 +52,7 @@ const char internal_version[] = "20030613";
 /*
  * In theory, this number is incremented for every commit.
  */
-const unsigned long	commit_id = 538;
+const unsigned long	commit_id = 531;
 
 /*
  * As a way to poke fun at the current rage of naming releases after
@@ -1162,8 +1162,20 @@ static	const char	*strftime_24hour = "%R";
 static	const char	*strftime_12hour = "%I:%M%p";
 	int		broken_clock = 0;
 
-/* update_clock: figures out the current time and returns it in a nice format */
-char *	update_clock (int flag)
+static char *	update_broken_clock (int flag)
+{
+static		char	time_str[61];
+
+	snprintf(time_str, 60, "%c12%c:%c00AM%c",
+		BLINK_TOG, BLINK_TOG, BLINK_TOG, BLINK_TOG);
+
+	if (flag == GET_TIME)
+		return time_str;
+	else
+		return NULL;
+}
+
+static char *	update_standard_clock (int flag)
 {
 static		char	time_str[61];
 static		int	min = -1;
@@ -1174,17 +1186,6 @@ static 	struct 	tm	time_val;
 static		time_t	last_minute = -1;
 		time_t	hideous;
 		int	new_minute = 0;
-
-	if (x_debug & DEBUG_BROKEN_CLOCK)
-	{
-		snprintf(time_str, 60, "%c12%c:%c00AM%c",
-			BLINK_TOG, BLINK_TOG, BLINK_TOG, BLINK_TOG);
-
-		if (flag == GET_TIME)
-			return(time_str);
-		else
-			return NULL;
-	}
 
 	/*
 	 * This is cheating because we only call localtime() once per minute.
@@ -1217,7 +1218,6 @@ static		time_t	last_minute = -1;
 		{
 			int	old_server = from_server;
 
-			new_minute = 1;
 			hour = time_val.tm_hour;
 			min = time_val.tm_min;
 
@@ -1226,8 +1226,46 @@ static		time_t	last_minute = -1;
 			do_hook(IDLE_LIST, "%ld", (tv.tv_sec - idle_time.tv_sec) / 60);
 			from_server = old_server;
 		}
+	}
 
-		if (flag != RESET_TIME || new_minute)
+	if (flag == GET_TIME)
+		return time_str;
+	else
+		return NULL;
+
+}
+
+static char *	update_metric_clock (int flag)
+{
+static	char	time_str[61];
+static	long	last_milliday;
+	double	metric_time;
+	long	current_milliday;
+	int	reset = 0;
+
+	get_metric_time(&metric_time);
+	current_milliday = (long)metric_time;
+
+	if (flag == RESET_TIME || current_milliday != last_milliday)
+	{
+		snprintf(time_str, 60, "%ld", (long)metric_time);
+
+		if (current_milliday != last_milliday)
+		{
+			int	old_server = from_server;
+			int	idle_milliday;
+
+			idle_milliday = (int)(timeval_to_metric(&idle_time).mt_mdays);
+			from_server = primary_server;
+			do_hook(TIMER_LIST, "%03d", current_milliday);
+			do_hook(IDLE_LIST, "%ld", 
+				(long)(idle_milliday - current_milliday));
+			from_server = old_server;
+			current_milliday = last_milliday;
+			flag = GET_TIME;
+		}
+
+		if (flag != RESET_TIME)
 			return time_str;
 		else
 			return NULL;
@@ -1237,6 +1275,17 @@ static		time_t	last_minute = -1;
 		return time_str;
 	else
 		return NULL;
+}
+
+/* update_clock: figures out the current time and returns it in a nice format */
+char *	update_clock (int flag)
+{
+	if (x_debug & DEBUG_BROKEN_CLOCK)
+		return update_broken_clock(flag);
+	else if (get_int_var(METRIC_TIME_VAR))
+		return update_metric_clock(flag);
+	else
+		return update_standard_clock(flag);
 }
 
 void	reset_clock (char *unused)

@@ -1,4 +1,4 @@
-/* $EPIC: functions.c,v 1.121 2003/07/07 04:12:28 jnelson Exp $ */
+/* $EPIC: functions.c,v 1.122 2003/07/07 22:10:56 jnelson Exp $ */
 /*
  * functions.c -- Built-in functions for ircII
  *
@@ -294,6 +294,7 @@ static	char
 	*function_longtoip	(char *),
 	*function_mask		(char *),
 	*function_maxlen	(char *),
+	*function_metric_time	(char *),
 	*function_midw 		(char *),
 	*function_mkdir		(char *),
 	*function_msar		(char *),
@@ -586,6 +587,7 @@ static BuiltInFunctions	built_in_functions[] =
 	{ "MATCH",		function_match 		},
 	{ "MATCHITEM",          function_matchitem 	},
 	{ "MAXLEN",		function_maxlen		},
+	{ "METRIC_TIME",	function_metric_time	},
 	{ "MID",		function_mid 		},
 	{ "MIDW",               function_midw 		},
 	{ "MKDIR",		function_mkdir		},
@@ -5227,7 +5229,7 @@ BUILT_IN_FUNCTION(function_winlevel, input)
 
 BUILT_IN_FUNCTION(function_igtype, input)
 {
-	char *retval;
+	const char *retval;
 	retval = get_ignore_types_by_pattern(input);
 	RETURN_STR(retval);
 }
@@ -6770,5 +6772,13 @@ BUILT_IN_FUNCTION(function_serverwin, input)
 BUILT_IN_FUNCTION(function_ignorectl, input)
 {
         return ignorectl(input);
+}
+
+BUILT_IN_FUNCTION(function_metric_time, input)
+{
+	struct metric_time right_now;
+
+	right_now = get_metric_time(NULL);
+	return m_sprintf("%ld %9.6f", right_now.mt_days, right_now.mt_mdays);
 }
 

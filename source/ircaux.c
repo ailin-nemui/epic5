@@ -1,4 +1,4 @@
-/* $EPIC: ircaux.c,v 1.79 2003/07/01 19:10:05 jnelson Exp $ */
+/* $EPIC: ircaux.c,v 1.80 2003/07/07 22:10:57 jnelson Exp $ */
 /*
  * ircaux.c: some extra routines... not specific to irc... that I needed 
  *
@@ -2286,6 +2286,33 @@ int	isdir (const char *filename)
 		return 1;
 	}
 	return 0;
+}
+
+struct metric_time	timeval_to_metric (Timeval *tv)
+{
+	struct metric_time retval;
+	double	my_timer;
+	long	sec;
+
+	retval.mt_days = tv->tv_sec / 86400;
+	sec = tv->tv_sec % 86400;		/* Seconds after midnight */
+	sec = sec * 1000;			/* Convert to ms */
+	sec += (tv->tv_usec / 1000);		/* Add ms fraction */
+	my_timer = (double)sec / 86400.0;	/* Convert to millidays */
+	retval.mt_mdays = my_timer;
+	return retval;
+}
+
+struct metric_time	get_metric_time (double *timer)
+{
+	Timeval	tv;
+	struct metric_time mt;
+
+	get_time(&tv);
+	mt = timeval_to_metric(&tv);
+	if (timer)
+		*timer = mt.mt_mdays;
+	return mt;
 }
 
 /* Gets the time in second/usecond if you can,  second/0 if you cant. */
