@@ -406,3 +406,4 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Support efnet's +e and +I numeric replies.
 * Add a bunch of stuff to debug the who_queue to find and fix adm's bug.
 * Remove a debugging line i forgot about.
+* Fix memory leak with remove_from_comma_list().
