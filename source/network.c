@@ -563,7 +563,7 @@ char *	inet_ptohn (int family, const char *ip, char *retval, int size)
 /* NOTES: This function is protocol independant but lacks IPv6 support. */
 char *	inet_ntohn (SA *name, char *retval, int size)
 {
-	if (FAMILY(name) == AF_INET)
+	if (FAMILY(*name) == AF_INET)
 	{
 		Hostent *hep;
 
