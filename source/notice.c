@@ -1,4 +1,4 @@
-/* $EPIC: notice.c,v 1.26 2003/09/25 21:24:33 jnelson Exp $ */
+/* $EPIC: notice.c,v 1.27 2003/12/04 04:12:22 jnelson Exp $ */
 /*
  * notice.c: special stuff for parsing NOTICEs
  *
@@ -191,8 +191,8 @@ static 	void 	parse_local_server_notice (const char *from, const char *to, const
 		return;
 	}
 
-	message_from(from, LOG_SNOTE);
 	lastlog_level = set_lastlog_msg_level(LOG_SNOTE);
+	message_from(to, LOG_SNOTE);
 
 	/* Check to see if the notice already has its own header... */
 	if (do_hook(GENERAL_NOTICE_LIST, "%s %s %s", f, to, line))
@@ -208,10 +208,7 @@ static 	void 	parse_local_server_notice (const char *from, const char *to, const
 	}
 
 	if (lastlog_level)
-	{
-		set_lastlog_msg_level(lastlog_level);
 		message_from(NULL, lastlog_level);
-	}
 }
 
 /*

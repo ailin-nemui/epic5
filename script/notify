@@ -19,7 +19,7 @@
 # note: this script uses the serial number 100 for its serial hooks
 #
 
-package notify.irc
+package notify
 
 
 # global config vars
@@ -80,14 +80,13 @@ alias change_notify_status (refnum, newstatus, nicklist) {
 alias clear_notify_list {
 	@notify_list = []
 
-	fe ($myservers()) serv {
-		@online_list[$servernum($serv)] = []
+	fe ($myservers(*)) refnum {
+		@online_list[$refnum] = []
 	}
 }
 
 alias clear_notify_records {
-	fe ($myservers()) serv {
-		@:refnum = servernum($serv)
+	fe ($myservers(*)) refnum {
 		@np_in_progress[$refnum] = []
 		@ison_hist[$refnum] = []
 	}
@@ -104,9 +103,7 @@ alias detect_signons {
 		return
 	}
 
-	fe ($myservers()) serv {
-		@:refnum = servernum($serv)
-
+	fe ($myservers(*)) refnum {
 		if (np_in_progress[$refnum] == 1) {
 			continue
 		}
@@ -309,8 +306,7 @@ alias process_ison_reply (refnum, ison_list) {
 alias remove_notify_entry (nickname) {
 	@notify_list = remw($nickname $notify_list)
 
-	fe ($myservers()) serv {
-		@:refnum = servernum($serv)
+	fe ($myservers(*)) refnum {
 		@online_list[$refnum] = remw($nickname $online_list[$refnum])
 	}
 }

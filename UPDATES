@@ -1,5 +1,34 @@
 EPIC4-1.2.0
 
+*** News -- 12/03/2003 -- New command line arguments, -o and -O
+	POSIX termios allowed systems to define "extended characters" (IEXTEN)
+	which are interpreted by the kernel and are not passed onto the
+	application.  In 4.4BSD in particular, these "extended characters"
+	are ^V and ^O.  This means that by default, you cannot use these
+	two characters in a binding.  By using the -o option, you ask 
+	EPIC to specifically turn these extended characters on, and by 
+	using the -O option, you ask epic to specifically turn these 
+	extended characters OFF.  If you do not specify either option,
+	epic does not change the current default value.
+
+*** News -- 12/03/2003 -- New /WINDOW verb, /WINDOW SWAPPABLE [ON|OFF]
+	You may now control whether your windows are "swappable".  The
+	default (backwards-compatable) value is ON.  If you set this to 
+	OFF on a visible window, then that visible window cannot be made
+	hidden, via /WINDOW HIDE or /WINDOW SWAP.  If you set this to OFF
+	on a hidden window, then that hidden window cannot be made visible,
+	via /WINDOW SHOW, /WINDOW SWAP, /WINDOW BACK or /WINDOW NEXT.  You
+	must reset this value back to ON before you try to swap the window
+	back in or out.
+
+*** News -- 12/03/2003 -- New /SET, /SET STATUS_NOSWAP
+	Whenever a window has /WINDOW SWAPPABLE OFF, the %{1}W status expando
+	will expand to the value of this /SET
+
+*** News -- 12/03/2003 -- SWAPPABLE accessable via $windowctl()
+	You can now $windowctl(GET <refnum> SWAPPABLE) to get the window
+	<refnum>'s current swappable status.
+
 *** News -- 12/01/2003 -- Double quoted filenames via dcc from other clients
 	is now supported.  Please note that I object to this, but I am not 
 	oblivious to necessity.

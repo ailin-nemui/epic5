@@ -5,7 +5,7 @@
 # note: this script uses the serial number 105 for its serial hooks
 #
 
-package sping.irc
+package sping
 
 
 # *** config variables **
@@ -122,8 +122,7 @@ alias clear_pings {
 	@sping_list = []
 	@ping_number = 0
 
-	fe ($myservers()) server_name {
-		@:refnum = servernum($server_name)
+	fe ($myservers(*)) refnum {
 		@vpings[$refnum] = []
 	}
 }
@@ -322,9 +321,8 @@ on #^server_lost 105 "*" {
 on #^402 105 "*" {
 	@sping_list = remove_ping_list_entry(4 $1 5 $sping_list)
 
-	fe ($myservers()) server_name {
-		@:refnum = servernum($server_name)
-		vpings[$refnum] = remove_ping_list_entry(3 $1 4 $vpings[$refnum])
+	fe ($myservers(*)) refnum {
+		@vpings[$refnum] = remove_ping_list_entry(3 $1 4 $vpings[$refnum])
 	}
 }
 
