@@ -23,4 +23,6 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Passworded servers now are handled correctly. Huzzah!
 * FD_CLR filedesc's after FD_ISSET in input handlers, to avoid bogons.
 * Fix /disconnect to call close_server() and update_status().
-* Release epic4-0.10.0
+* Fix who queue damage caused by touching ArgList after display_msg. doh!
+* Move the "can't join channel" numerics into section #1, suppress them if you
+  are actually on the channel already!

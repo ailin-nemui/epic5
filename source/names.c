@@ -1754,6 +1754,19 @@ void 	save_channels (int servref)
 		tmpc->inactive = 1;
 }
 
+/* I don't know if this belongs here. */
+void	cant_join_channel (const char *channel, int server)
+{
+	Window *w = NULL;
+	while (traverse_all_windows(&w))
+	{
+		if (w->server != server)
+			continue;
+		if (!my_stricmp(w->waiting_channel, channel))
+			new_free(&w->waiting_channel);
+	}
+	update_all_windows();
+}
 
 /**************************************************************************/
 /* 

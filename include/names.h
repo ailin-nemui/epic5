@@ -62,5 +62,6 @@ struct WindowStru *get_channel_window	(Char *, int);
 	int	channel_is_syncing	(const char *, int);
 	void	channel_not_waiting	(const char *, int); 
 	void	channel_check_windows	(void);
+	void	cant_join_channel	(const char *, int);
 
 #endif /* _NAMES_H_ */

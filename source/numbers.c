@@ -10,7 +10,7 @@
  */
 
 #if 0
-static	char	rcsid[] = "$Id: numbers.c,v 1.11 2001/03/23 17:08:04 jnelson Exp $";
+static	char	rcsid[] = "$Id: numbers.c,v 1.12 2001/03/23 18:35:43 jnelson Exp $";
 #endif
 
 #include "irc.h"
@@ -589,7 +589,6 @@ void 	numbered_command (char *from, int comm, char **ArgList)
 	case 403:		/* #define ERR_NOSUCHCHANNEL    403 */
 	{
 		const char	*s;
-		int		blech = 0;
 
 		PasteArgs(ArgList, 1);
 
@@ -877,6 +876,48 @@ void 	numbered_command (char *from, int comm, char **ArgList)
 		break;
 	}
 
+	case 471:		/* #define ERR_CHANNELISFULL    471 */
+	case 473:		/* #define ERR_INVITEONLYCHAN   473 */
+	case 474:		/* #define ERR_BANNEDFROMCHAN   474 */
+	case 475: 		/* #define ERR_BADCHANNELKEY    475 */
+	case 476:		/* #define ERR_BADCHANMASK      476 */
+	case 477:		/* #define ERR_NEEDREGGEDNICK	477 */
+	{
+		char *reason;
+
+		if (ArgList[0])
+			cant_join_channel(ArgList[0], from_server);
+
+		PasteArgs(ArgList, 0);
+		switch(comm)
+		{
+		    case 471:
+			reason = "Channel is full";
+			break;
+		    case 473:
+			reason = "You must be invited";
+			break;
+		    case 474:
+			reason = "You are banned";
+			break;
+		    case 475:
+			reason = "You must give the correct key";
+			break;
+		    case 476:
+			reason = "Bad channel mask";
+			break;
+		    case 477:
+			reason = "You must use a registered nickname";
+			break;
+		    default:
+			reason = "Because the server said so";
+			break;
+		}	
+		put_it("%s %s (%s)", numeric_banner(), ArgList[0], reason);
+		break;
+	}
+
+
 	/*
 	 * The following accumulates the remaining arguments
 	 * in ArgSpace for hook detection. We can't use
@@ -1008,44 +1049,6 @@ void 	numbered_command (char *from, int comm, char **ArgList)
 		{
 			PasteArgs(ArgList, 0);
 			put_it("%s %s %s", numeric_banner(), ArgList[0], user);
-			break;
-		}
-
-		case 471:		/* #define ERR_CHANNELISFULL    471 */
-		case 473:		/* #define ERR_INVITEONLYCHAN   473 */
-		case 474:		/* #define ERR_BANNEDFROMCHAN   474 */
-		case 475: 		/* #define ERR_BADCHANNELKEY    475 */
-		case 476:		/* #define ERR_BADCHANMASK      476 */
-		case 477:		/* #define ERR_NEEDREGGEDNICK	477 */
-		{
-			char buffer[BIG_BUFFER_SIZE + 1];
-
-			if (ArgList[0])
-				remove_channel(ArgList[0], from_server);
-			PasteArgs(ArgList, 0);
-			strmcpy(buffer, ArgList[0], BIG_BUFFER_SIZE);
-			switch(comm)
-			{
-				case 471:
-					strmcat(buffer, " (Channel is full)", BIG_BUFFER_SIZE);
-					break;
-				case 473:
-					strmcat(buffer, " (You must be invited)", BIG_BUFFER_SIZE);
-					break;
-				case 474:
-					strmcat(buffer, " (You are banned)", BIG_BUFFER_SIZE);
-					break;
-				case 475:
-					strmcat(buffer, " (You must give the correct key)", BIG_BUFFER_SIZE);
-					break;
-				case 476:
-					strmcat(buffer, " (Bad channel mask)", BIG_BUFFER_SIZE);
-					break;
-				case 477:
-					strmcat(buffer, " (You must use a registered nickname)", BIG_BUFFER_SIZE);
-					break;
-			}
-			put_it("%s %s", numeric_banner(), buffer);
 			break;
 		}
 
