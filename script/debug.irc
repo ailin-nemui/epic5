@@ -65,29 +65,25 @@ alias call.trace {
 # Trace a given command.
 #
 # Debug_levels is a comma seperated list of values to apply to /xdebug.
-# See "/help 4 xdebug" for information about debug_levels, but do not use
-# +/- notation, and seperate the values with commas instead of spaces.
-#
-# Note:  Since it is not possible to read the current xdebug setting, all
-#        listed levels will be unset when this alias returns.
+# See "/help 4 xdebug" for information about debug_levels, but seperate
+# the values with commas instead of spaces.
 #
 # Usage:
 #  call.xtrace [debug_levels [command]]
 #
 alias call.xtrace {
 	@ :hooks = [set output_rewrite on window on yell]
-	@ :oxd = xdebug()
-	@ :debugon = :debugoff = split(, $0)
-	repeat $#debugoff {
-		@unshift(debugon +$pop(debugon))
-		@unshift(debugoff -$pop(debugoff))
+	@ :debugon = split(, $0)
+	@ :oxd = strip(+- $debugon)
+	fe oxd foo {
+		@ foo = xdebug(*$foo*)
 	}
 	fe ($hooks) foo bar {
 		stack push $foo $bar
 	}
 	xdebug $debugon
 	$1-
-	xdebug $debugoff $oxd
+	xdebug $oxd
 	fe ($hooks) foo bar {
 		stack pop $foo $bar
 	}

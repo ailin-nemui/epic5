@@ -45,9 +45,8 @@
 #   prefix followed by the name of the command that they are used to
 #   complete.  This is where tabkey.cmd will look for them.
 # * Generally, completion "methods" should be placed under tabkey.method
-#   and shouldn't rely on the exported variables being available, as user
-#   supplied functions may forget to re-export them.  Context sensitive
-#   functions should be as simple as possible.
+#   Context sensitive functions should be as simple as possible and the bulk
+#   of the work should be done by the methods.
 #
 
 package tabkey.ce

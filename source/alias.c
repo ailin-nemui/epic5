@@ -1,4 +1,4 @@
-/* $EPIC: alias.c,v 1.12 2002/12/11 19:20:23 crazyed Exp $ */
+/* $EPIC: alias.c,v 1.13 2003/01/09 01:10:56 crazyed Exp $ */
 /*
  * alias.c -- Handles the whole kit and caboodle for aliases.
  *
@@ -166,11 +166,18 @@ static unsigned long 	cmd_cache_misses = 0;
 static unsigned long 	cmd_cache_missed_by = 0;
 static unsigned long 	cmd_cache_passes = 0;
 
+enum ARG_TYPES {
+	WORD,
+	UWORD,
+	DWORD
+};
+
 /* Ugh. XXX Bag on the side */
 struct ArgListT {
 	char *	vars[32];
 	char *	defaults[32];
 	int	words[32];
+	enum	ARG_TYPES types[32];
 	int	void_flag;
 	int	dot_flag;
 };
@@ -715,6 +722,7 @@ ArgList	*parse_arglist (char *arglist)
 		next_in_comma_list(this_term, &next_term);
 		if (!(varname = next_arg(this_term, &this_term)))
 			continue;
+		args->types[arg_count] = WORD;
 		if (!my_stricmp(varname, "void")) {
 			args->void_flag = 1;
 			break;
@@ -736,7 +744,22 @@ ArgList	*parse_arglist (char *arglist)
 				}
 				else if (!my_stricmp(modifier, "words"))
 				{
+					args->types[arg_count] = WORD;
 					args->words[arg_count] = atol(value);
+				}
+				else if (!my_stricmp(modifier, "uwords"))
+				{
+					args->types[arg_count] = UWORD;
+					args->words[arg_count] = atol(value);
+				}
+				else if (!my_stricmp(modifier, "dwords"))
+				{
+					args->types[arg_count] = DWORD;
+					args->words[arg_count] = atol(value);
+				}
+				else
+				{
+					yell("Bad modifier %s", modifier);
 				}
 			}
 		}
@@ -762,6 +785,8 @@ void	destroy_arglist (ArgList *arglist)
 	new_free((char **)&arglist);
 }
 
+#define ew_next_arg(a,b,c,d) ((d) ? new_next_arg_count((a),(b),(c)) : next_arg_count((a),(b),(c)))
+
 void	prepare_alias_call (void *al, char **stuff)
 {
 	ArgList *args = (ArgList *)al;
@@ -776,20 +801,32 @@ void	prepare_alias_call (void *al, char **stuff)
 	{
 		char	*next_val;
 		char	*expanded = NULL;
-		int	af;
+		int	af, type = 0;
+
+		switch (args->types[i])
+		{
+			case WORD:
+				type = (x_debug & DEBUG_EXTRACTW);
+				break;
+			case UWORD:
+				type = 0;
+				break;
+			case DWORD:
+				type = 1;
+				break;
+		}
 
 		/* Last argument on the list and no ... argument? */
 		if (!args->vars[i + 1] && !args->dot_flag && !args->void_flag)
 		{
-			free = next_val = extractw(*stuff, arg, EOS);
+			next_val = *stuff;
 			*stuff = empty_string;
 		}
 
 		/* Yank the next word from the arglist */
 		else
 		{
-			free = next_val = extractw(*stuff, arg, arg + args->words[i] - 1);
-			arg += args->words[i];
+			next_val = ew_next_arg(*stuff, stuff, args->words[i], type);
 		}
 
 		if (!next_val || !*next_val)
@@ -804,18 +841,14 @@ void	prepare_alias_call (void *al, char **stuff)
 		add_local_alias(args->vars[i], next_val, 0);
 		if (expanded)
 			new_free(&expanded);
-		if (free)
-			new_free(&free);
 	}
 
 	/* Throw away rest of args if wanted */
 	if (args->void_flag)
 		*stuff = empty_string;
-	else if (args->dot_flag)
-		strcpy(*stuff, (free = extractw(*stuff, arg, EOS)));
-	if (free)
-		new_free(&free);
 }
+
+#undef ew_next_arg
 
 /**************************** INTERMEDIATE INTERFACE *********************/
 /* We define Alias here to keep it encapsulated */

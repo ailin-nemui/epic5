@@ -7,7 +7,7 @@
  *
  * See the COPYRIGHT file, or do a HELP IRCII COPYRIGHT 
  *
- * @(#)$Id: ircaux.h,v 1.37 2002/12/30 13:23:46 crazyed Exp $
+ * @(#)$Id: ircaux.h,v 1.38 2003/01/09 01:10:56 crazyed Exp $
  */
 
 #ifndef _IRCAUX_H_
@@ -48,8 +48,10 @@ void *	really_new_realloc 	(void **, size_t, char *, int);
 void	malloc_dump		(char *);
 
 char *	check_nickname 		(char *, int);
-char *	next_arg 		(char *, char **);
-char *	new_next_arg 		(char *, char **);
+#define next_arg(a,b) next_arg_count((a),(b),1)
+char *	next_arg_count 		(char *, char **, int);
+char *	new_next_arg		(char *, char **);
+char *	new_next_arg_count 	(char *, char **, int);
 char *	new_new_next_arg 	(char *, char **, char *);
 char *	s_next_arg		(char **);
 char *	last_arg 		(char **, size_t *cluep);
@@ -123,7 +125,7 @@ char *	strext	 		(const char *, const char *);
 char *	strextend 		(char *, char, int);
 char *	pullstr 		(char *, char *);
 int 	empty 			(const char *);
-char *	safe_new_next_arg 	(char *, char **);
+char *	safe_new_next_arg	(char *, char **);
 char *	MatchingBracket 	(char *, char, char);
 int	word_count 		(const char *);
 int	parse_number 		(char **);

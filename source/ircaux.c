@@ -1,4 +1,4 @@
-/* $EPIC: ircaux.c,v 1.59 2002/12/30 13:23:47 crazyed Exp $ */
+/* $EPIC: ircaux.c,v 1.60 2003/01/09 01:10:56 crazyed Exp $ */
 /*
  * ircaux.c: some extra routines... not specific to irc... that I needed 
  *
@@ -638,7 +638,7 @@ char *	rstristr (const char *source, const char *search)
 }
 
 
-char *	next_arg (char *str, char **new_ptr)
+char *	next_arg_count (char *str, char **new_ptr, int count)
 {
 	char	*ptr;
 
@@ -649,9 +649,13 @@ char *	next_arg (char *str, char **new_ptr)
 	while (isspace(*str))
 		str++;
 
-	ptr = str;
-	while (*ptr && !isspace(*ptr))
-		ptr++;
+	for (ptr = str; count > 0 && *ptr; count--)
+	{
+		while (isspace(*ptr))
+			ptr++;
+		while (*ptr && !isspace(*ptr))
+			ptr++;
+	}
 
 	if (!*ptr)
 		ptr = empty_string;		/* XXX sigh */
@@ -782,6 +786,41 @@ char *	new_next_arg (char *str, char **new_ptr)
 	return ptr;
 }
 
+/*
+ * Return multiple arguments using new_next_arg().
+ *
+ * This is just a little bit of a crock.  The basic problem here is the
+ * dequoting which will dispose of the distinction between the words,
+ * but presumably that's what we want.  Also, note that stpcpy isn't
+ * supposed to be used with overlapping blocks, but since new_next_arg
+ * always returns an equal or shorter string, it should work.  (since
+ * str1 <= str).
+ */
+char *	new_next_arg_count (char *str, char **new_ptr, int count)
+{
+	char *ret = str;
+	char *str1 = str;
+	*new_ptr = str;
+
+	while (count-- > 0 && *new_ptr && **new_ptr)
+	{
+		str = new_next_arg(*new_ptr, new_ptr);
+		if (str)
+		{
+			str = LOCAL_COPY(str);
+			if (str1 != ret)
+				str1 = stpcpy(str1, space);
+			str1 = stpcpy(str1, str);
+		}
+	}
+
+	return ret;
+}
+
+char * next_quoted_args (char *str, char **new_ptr, int count)
+{
+
+}
 
 /*
  * This function is "safe" because it doesnt ever return NULL.

@@ -1,4 +1,4 @@
-/* $EPIC: flood.c,v 1.6 2002/12/19 03:22:58 jnelson Exp $ */
+/* $EPIC: flood.c,v 1.7 2003/01/09 01:10:56 crazyed Exp $ */
 /*
  * flood.c: handle channel flooding.
  *
@@ -244,7 +244,7 @@ static	int	 pos = 0;
 
 		tmp->server = server;
 		tmp->type = type;
-		tmp->cnt = 1;
+		tmp->cnt = 0;
 		tmp->start = right_now;
 
 		pos = (0 < old_pos ? old_pos : users) - 1;
@@ -270,14 +270,14 @@ static	int	 pos = 0;
 			tmp->floods++;
 			if (get_int_var(FLOOD_WARNING_VAR))
 				say("FLOOD: %ld %s detected from %s in %f seconds",
-					tmp->cnt, ignore_types[type], nick, diff);
+					tmp->cnt+1, ignore_types[type], nick, diff);
 		}
 		else
 		{
 			/*
 			 * Not really flooding -- reset back to normal.
 			 */
-			tmp->cnt = 1;
+			tmp->cnt = 0;
 			tmp->start = right_now;
 		}
 	}
@@ -290,6 +290,10 @@ int	check_flooding (char *nick, char *nuh, FloodType type, char *line)
 	return new_check_flooding(nick, nuh, NULL, line, type);
 }
 
+/*
+ * Note:  This will break whatever uses it when any of the arguments
+ *        contain a double quote.
+ */
 char *	function_floodinfo (char *args)
 {
 	char	*arg, *ret = NULL;
@@ -299,7 +303,9 @@ char *	function_floodinfo (char *args)
 
 	get_time(&right_now);
 
-	while ((arg = normalize_nuh(new_next_arg(args, &args)))) {
+	while ((arg = new_next_arg(args, &args))) {
+		if (!strspn(arg, "*?"))
+			arg = normalize_nuh(arg);
 		for (i = 0; i < users; i++) {
 			if (flood[i].nuh && wild_match(arg, flood[i].nuh)) {
 				m_sc3cat_s(&ret, space, "\"", &clue);

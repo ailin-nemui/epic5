@@ -25,12 +25,24 @@ alias whatchan
 
 alias is_on 
 {
+	^local blahblah
 	stack push on 303
 	^on ^303 * {
-		stack pop on 303
-		return $0
+		bless
+		push blahblah $*
 	}
-	wait for ison $0
+	wait for ison $*
+	stack pop on 303
+	return $blahblah
+}
+
+alias is_off
+{
+	^local blahblah $*
+	fe ($is_on($*)) foo {
+		@ blahblah = remw($foo $blahblah)
+	}
+	return $blahblah
 }
 
 alias uh 
