@@ -10,7 +10,6 @@ KNOWN ERRATA (eg, bugs, or unresolved requests):
   "bleed" to subsequent lines (ie, ^C34<40 a's> <40a's>^C35<100 a's>
 * check_window_servers() should not change window_mask on connect, really.
 * Implement $symbolctl(), to supercede $aliasctl().
-* Allow /msg -<server desc>, including the group.
 * Need some way to fetch your hook info
 
 [See http://www.epicsol.org/PROJECTS for things to come in the future]
@@ -384,3 +383,4 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Fix memory leak with /on set
 * Fix memory leak with /timer
 * Fix $server*() functions, when passed no arguments.
+* Add /msg -<server>/<target> thingee, i really need to document this.

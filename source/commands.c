@@ -1,4 +1,4 @@
-/* $EPIC: commands.c,v 1.105 2004/08/25 23:03:36 jnelson Exp $ */
+/* $EPIC: commands.c,v 1.106 2004/08/25 23:50:59 jnelson Exp $ */
 /*
  * commands.c -- Stuff needed to execute commands in ircII.
  *		 Includes the bulk of the built in commands for ircII.
@@ -625,7 +625,7 @@ BUILT_IN_COMMAND(send_to_target)
 	const char	*tmp;
 
 	tmp = get_target_by_refnum(0);
-	send_text(tmp, args, NULL, 1);
+	send_text(from_server, tmp, args, NULL, 1);
 }
 
 BUILT_IN_COMMAND(send_to_channel)
@@ -633,7 +633,7 @@ BUILT_IN_COMMAND(send_to_channel)
 	const char	*tmp;
 
 	tmp = get_echannel_by_refnum(0);
-	send_text(tmp, args, NULL, 1);
+	send_text(from_server, tmp, args, NULL, 1);
 }
 
 /*
@@ -763,7 +763,7 @@ BUILT_IN_COMMAND(e_privmsg)
 		}
 		else if (!strcmp(nick, "*") && (!(nick = get_echannel_by_refnum(0))))
 			nick = zero;
-		send_text(nick, args, command, window_display);
+		send_text(from_server, nick, args, command, window_display);
 		set_server_sent_body(from_server, args);
 	}
 	else 
@@ -2849,7 +2849,7 @@ static	int 	recursion = 0;
 	 * Dont hook /ON REDIRECT if we're being called recursively
 	 */
 	if (allow)
-		send_text(nick_list, text, command, hook);
+		send_text(from_server, nick_list, text, command, hook);
 
 	recursion--;
 	from_server = old_from_server;
@@ -2893,7 +2893,7 @@ struct target_type
  * recursing -- so whoever is hacking on this code, its also up to you to 
  * make sure that YOU dont send anything to the screen without checking first!
  */
-void 	send_text (const char *nick_list, const char *text, const char *command, int hook)
+void 	send_text (int server, const char *nick_list, const char *text, const char *command, int hook)
 {
 	int 	i, 
 		old_server;
@@ -2902,6 +2902,7 @@ void 	send_text (const char *nick_list, const char *text, const char *command, i
 		*line;
 	Crypt	*key;
 	int	old_window_display = window_display;
+	int	old_from_server;
 static	int	recursion = 0;
 
 	/*
@@ -2918,14 +2919,22 @@ struct target_type target[4] =
 	if (!nick_list || !text)
 		return;
 
+	old_from_server = from_server;
+	from_server = server;
+
 	/*
 	 * If we are called recursively, it is because the user has 
 	 * /redirect'ed the output, or the user is sending something from
 	 * their /on send_*.  In both of these cases, an infinite loop
 	 * could occur.  To defeat the /redirect, we do not output to the
 	 * screen.  To defeat the /on send_*, we do not offer /on events.
+	 *
+	 * XXX - The 'hook == -1' hack is there until I write something 
+	 * more decent than recursion to handle /msg -<server>/<target>.
 	 */
-	if (recursion)
+	if (hook == -1)
+		hook = 1;
+	else if (recursion)
 		hook = 0;
 
 	window_display = hook;
@@ -3011,6 +3020,26 @@ struct target_type target[4] =
 		set_server_sent_nick(from_server, current_nick);
 		new_free(&line);
 	    }
+	    else if (*current_nick == '-' && strchr(current_nick + 1, '/'))
+	    {
+		int	servref;
+		char *	server;
+		char *	target;
+
+		server = current_nick + 1;
+		target = strchr(server, '/');
+		*target++ = 0;
+
+		if ((servref = str_to_servref(server)) == NOSERV)
+		{
+			yell("Unknown server [%s] in target", server);
+			continue;
+		}
+
+		/* XXX -- Recursion is a hack. (but it works) */
+		send_text(servref, target, text, command, hook ? -1 : 0);
+		continue;
+	    }
 	    else
 	    {
 		char *	copy = NULL;
@@ -3092,6 +3121,7 @@ struct target_type target[4] =
 		runcmds("AWAY", empty_string);
 
 	window_display = old_window_display;
+	from_server = old_from_server;
 	recursion--;
 }
 
@@ -3286,7 +3316,7 @@ void	parse_line (const char *name, const char *org_line, const char *args, int h
 	 * line to their current target.  This is useful for pastes.
 	 */
 	if (!*org_line)
-		send_text(get_target_by_refnum(0), empty_string, NULL, 1);
+		send_text(from_server, get_target_by_refnum(0), empty_string, NULL, 1);
 
 	/*
 	 * Otherwise, if the command has arguments, then:
@@ -3565,14 +3595,14 @@ static	unsigned 	level = 0;
 	 */
 	if (hist_flag && !cmdchar_used && !get_int_var(COMMAND_MODE_VAR))
 	{
-		send_text(get_target_by_refnum(0), line, NULL, 1);
+		send_text(from_server, get_target_by_refnum(0), line, NULL, 1);
 		if (hist_flag && add_to_hist)
 			add_to_history(this_cmd);
 		/* Special handling for ' and : */
 	}
 	else if (*com == '\'' && get_int_var(COMMAND_MODE_VAR))
 	{
-		send_text(get_target_by_refnum(0), line + 1, NULL, 1);
+		send_text(from_server, get_target_by_refnum(0), line + 1, NULL, 1);
 		if (hist_flag && add_to_hist)
 			add_to_history(this_cmd);
 	}
