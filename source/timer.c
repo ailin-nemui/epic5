@@ -1,4 +1,4 @@
-/* $EPIC: timer.c,v 1.44 2004/07/23 00:49:46 jnelson Exp $ */
+/* $EPIC: timer.c,v 1.45 2004/08/08 04:20:27 jnelson Exp $ */
 /*
  * timer.c -- handles timers in ircII
  *
@@ -230,7 +230,7 @@ BUILT_IN_COMMAND(timercmd)
 #define REFNUM_MAX 10
 typedef struct  timerlist_stru
 {
-	char	ref[REFNUM_MAX + 1];
+	char	*ref;
         Timeval time;
 	int	(*callback) (void *);
 	void *	callback_data;
@@ -255,7 +255,7 @@ static Timer * new_timer (void)
 	Timer *	ntimer;
 
 	ntimer = (Timer *) new_malloc(sizeof(Timer));
-	ntimer->ref[0] = 0;
+	ntimer->ref = NULL;
 	ntimer->time.tv_sec = 0;
 	ntimer->time.tv_usec = 0;
 	ntimer->callback = NULL;
@@ -280,7 +280,7 @@ static Timer *clone_timer (Timer *otimer)
 {
 	Timer *ntimer = new_timer();
 
-	strlcpy(ntimer->ref, otimer->ref, sizeof ntimer->ref);
+	malloc_strcpy(&ntimer->ref, otimer->ref);
 	ntimer->time = otimer->time;
 	if ((ntimer->callback = otimer->callback))
 		ntimer->callback_data = otimer->callback_data;
@@ -452,7 +452,7 @@ static	void	list_timers (const char *command)
 		time_left = time_diff(current, tmp->time);
 		if (time_left < 0)
 			time_left = 0;
-		say("%-10s %-8.2f %-7ld %s", tmp->ref, time_left, 
+		say("%-10s %-10.2f %-7ld %s", tmp->ref, time_left, 
 					tmp->events, tmp->command);
 	}
 
@@ -470,16 +470,13 @@ static	void	list_timers (const char *command)
  *
  * "refnum_gets" must be REFNUM_MAX + 1 bytes by definition of API.
  */
-static	int	create_timer_ref (const char *refnum_wanted, char *refnum_gets)
+static	int	create_timer_ref (const char *refnum_wanted, char **refnum_gets)
 {
 	Timer	*tmp;
 	int 	refnum = 0;
 	char	*refnum_want;
 
-	/* Max of 10 characters. */
 	refnum_want = LOCAL_COPY(refnum_wanted);
-	if (strlen(refnum_want) > REFNUM_MAX)
-		refnum_want[REFNUM_MAX] = 0;
 
 	/* If the user doesnt care */
 	if (*refnum_want == 0)
@@ -490,7 +487,7 @@ static	int	create_timer_ref (const char *refnum_wanted, char *refnum_gets)
 			if (refnum < my_atol(tmp->ref))
 				refnum = my_atol(tmp->ref);
 		}
-		strlcpy(refnum_gets, ltoa(refnum+1), REFNUM_MAX + 1);
+		malloc_sprintf(refnum_gets, "%ld", refnum + 1);
 	}
 	else
 	{
@@ -498,7 +495,7 @@ static	int	create_timer_ref (const char *refnum_wanted, char *refnum_gets)
 		if (get_timer(refnum_want))
 			return -1;		/* Already in use */
 
-		strlcpy(refnum_gets, refnum_want, REFNUM_MAX + 1);
+		malloc_strcpy(refnum_gets, refnum_want);
 	}
 
 	return 0;
@@ -583,7 +580,7 @@ static	void	remove_window_timers (int winref)
 char *add_timer (int update, const char *refnum_want, double interval, long events, int (callback) (void *), void *commands, const char *subargs, int winref)
 {
 	Timer	*ntimer, *otimer = NULL;
-	char	refnum_got[REFNUM_MAX + 1];
+	char *	refnum_got = NULL;
 	Timeval right_now;
 	char *	retval;
 
@@ -643,14 +640,14 @@ char *add_timer (int update, const char *refnum_want, double interval, long even
 	}
 	else
 	{
-		if (create_timer_ref(refnum_want, refnum_got) == -1)
+		if (create_timer_ref(refnum_want, &refnum_got) == -1)
 		{
 			say("TIMER: Refnum '%s' already exists", refnum_want);
 			return NULL;
 		}
 
 		ntimer = new_timer();
-		strlcpy(ntimer->ref, refnum_got, sizeof ntimer->ref);
+		ntimer->ref = refnum_got;
 		ntimer->interval = double_to_timeval(interval);
 		ntimer->time = time_add(right_now, ntimer->interval);
 		ntimer->events = events;

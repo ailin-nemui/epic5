@@ -356,3 +356,4 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Add support for ircnet's "unique id" nicknames from epic4
 * Fix $winline() from epic4.
 * Fix /who -d[iagnose] from epic4.
+* Remove limits on timer refnames.
