@@ -1,4 +1,4 @@
-/* $EPIC: tcl.c,v 1.1 2002/12/26 18:48:04 crazyed Exp $ */
+/* $EPIC: tcl.c,v 1.2 2002/12/26 19:01:09 crazyed Exp $ */
 /*
  * tcl.c -- The tcl interfacing routines.
  *
@@ -39,7 +39,9 @@
 #include "functions.h"
 #include "output.h"
 #include <tcl.h>
-//#include <tk.h>
+#ifdef TK
+#include <tk.h>
+#endif
 
 Tcl_Interp *my_tcl;
 int	istclrunning = 0;
