@@ -1,5 +1,11 @@
 EPIC4pre2
 
+*** News -- March 14, 2001 -- New flag to /xecho, /xecho -v
+	This will output the line to a visible window.  No guarantees
+	are made to which visible window it will be output, only that
+	the window *will* be visible.  In practice, it's usually the 
+	topmost window on your main screen.  That's not a promise, however.
+
 *** News -- Mar 7, 2001 -- New form of the /FOR command, "FOR NEXT"
 	The for command now supports a FOR .. NEXT type loop.
 	Syntax:

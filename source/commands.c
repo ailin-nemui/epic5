@@ -929,6 +929,20 @@ BUILT_IN_COMMAND(echocmd)
 			break;
 		    }
 
+		    case 'V':	/* VISUAL (output to a visible window) */
+		    {
+			/* There is always at least one visible window! */
+			Window *win = NULL;
+			while ((traverse_all_windows(&win)))
+			{
+				if (win->visible)
+				{
+					to_window = win;
+					break;
+				}
+			}
+		    }
+
 		    case 'W':	/* WINDOW (output to specified window) */
 		    {
 			flag_arg = next_arg(args, &args);

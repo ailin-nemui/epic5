@@ -49,6 +49,7 @@
 #else
 # include <glob.h>
 #endif
+#include <math.h>
 
 
 static	char	
@@ -168,6 +169,7 @@ static	char
 	*function_common 	(char *),
 	*function_convert 	(char *),
 	*function_copattern 	(char *),
+	*function_cos		(char *),
 	*function_count		(char *),
 	*function_cparse	(char *),
 	*function_crypt 	(char *),
@@ -273,6 +275,7 @@ static	char
 	*function_servernick	(char *),
 	*function_servernum	(char *),
 	*function_servports	(char *),
+	*function_sin		(char *),
 	*function_sort		(char *),
 	*function_split 	(char *),
 	*function_splice 	(char *),
@@ -285,6 +288,8 @@ static	char
 	*function_stripcrap	(char *),
 	*function_strlen	(char *),
 	*function_substr	(char *),
+	*function_sin		(char *),
+	*function_tan		(char *),
 	*function_tow 		(char *),
 	*function_translate 	(char *),
 	*function_truncate 	(char *),
@@ -360,6 +365,7 @@ static BuiltInFunctions	built_in_functions[] =
 	{ "CONNECT",		function_connect 	},
 	{ "CONVERT",		function_convert 	},
 	{ "COPATTERN",          function_copattern 	},
+	{ "COS",		function_cos		},
 	{ "COUNT",		function_count		},
 	{ "CPARSE",		function_cparse		},
 	{ "CRYPT",		function_crypt		},
@@ -507,6 +513,7 @@ static BuiltInFunctions	built_in_functions[] =
 	{ "SERVPORTS",		function_servports	},
 	{ "SETITEM",            function_setitem 	},
 	{ "SHIFT",		function_shift 		},
+	{ "SIN",		function_sin		},
 	{ "SORT",		function_sort		},
 	{ "SPLICE",		function_splice 	},
 	{ "SPLIT",		function_split 		},
@@ -523,6 +530,7 @@ static BuiltInFunctions	built_in_functions[] =
 	{ "STRIPCRAP",		function_stripcrap	},
 	{ "STRLEN",		function_strlen		},
 	{ "SUBSTR",		function_substr		},
+	{ "TAN",		function_tan		},
 	{ "TDIFF",		function_tdiff 		},
 	{ "TDIFF2",		function_tdiff2 	},
 	{ "TIME",		function_time 		},
@@ -5834,5 +5842,29 @@ BUILT_IN_FUNCTION(function_longtoip, word)
 	GET_STR_ARG(ip32, word);
 	addr.s_addr = (unsigned long)ntohl(strtoul(ip32, NULL, 10));
 	RETURN_STR(inet_ntoa(addr));
+}
+
+BUILT_IN_FUNCTION(function_cos, word)
+{
+	double	num;
+
+	GET_FLOAT_ARG(num, word);
+	return m_sprintf("%f", (double)cos(num));
+}
+
+BUILT_IN_FUNCTION(function_sin, word)
+{
+	double	num;
+
+	GET_FLOAT_ARG(num, word);
+	return m_sprintf("%f", (double)sin(num));
+}
+
+BUILT_IN_FUNCTION(function_tan, word)
+{
+	double	num;
+
+	GET_FLOAT_ARG(num, word);
+	return m_sprintf("%f", (double)tan(num));
 }
 
