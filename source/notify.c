@@ -1,4 +1,4 @@
-/* $EPIC: notify.c,v 1.24 2003/10/31 08:19:24 crazyed Exp $ */
+/* $EPIC: notify.c,v 1.25 2003/11/20 23:38:13 jnelson Exp $ */
 /*
  * notify.c: a few handy routines to notify you when people enter and leave irc 
  *
@@ -564,7 +564,7 @@ void 	make_notify_list (int refnum)
 	s->notify_list.ison = NULL;
 
 	for (i = 0; i < number_of_servers; i++)
-		if ((sp = get_server(i)) && NOTIFY_MAX(s))
+		if ((sp = get_server(i)) && NOTIFY_MAX(sp))
 			break;
 	if (!sp)
 		return;			/* No notify list to copy. */
