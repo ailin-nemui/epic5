@@ -272,6 +272,7 @@ static	char
 	*function_printlen	(char *),
 	*function_querywin	(char *),
 	*function_randread	(char *),
+	*function_rcopattern 	(char *),
 	*function_read 		(char *),
 	*function_realpath	(char *),
 	*function_regcomp	(char *),
@@ -538,6 +539,7 @@ static BuiltInFunctions	built_in_functions[] =
 	{ "QUERYWIN",		function_querywin	},
 	{ "RAND",		function_rand 		},
 	{ "RANDREAD",		function_randread	},
+	{ "RCOPATTERN",		function_rcopattern 	},
 	{ "READ",		function_read 		},
 	{ "REALPATH",		function_realpath	},
 	{ "REGCOMP",		function_regcomp	},
@@ -2050,6 +2052,41 @@ BUILT_IN_FUNCTION(function_copattern, word)
 			break;
 
 		if (wild_match(pattern, firstel))
+			m_sc3cat(&booya, space, secondel, &rvclue);
+	}
+	new_free(&sfirstl);
+	new_free(&ssecondl);
+	RETURN_MSTR(booya);
+}
+
+/* $rcopattern(pattern var_1 var_2)
+ *
+ * As per $copattern(), except that the strings in var_1 are wildcard patterns.
+ */
+BUILT_IN_FUNCTION(function_rcopattern, word)
+{
+	char	*booya = (char *) 0,
+		*pattern = (char *) 0,
+		*firstl = (char *) 0, *firstlist = (char *) 0, *firstel = (char *) 0,
+		*secondl = (char *) 0, *secondlist = (char *) 0, *secondel = (char *) 0;
+	char 	*sfirstl, *ssecondl;
+	size_t	rvclue=0;
+
+	GET_STR_ARG(pattern, word);
+	GET_STR_ARG(firstlist, word);
+	GET_STR_ARG(secondlist, word);
+
+	firstl = get_variable(firstlist);
+	secondl = get_variable(secondlist);
+	sfirstl = firstl;
+	ssecondl = secondl;
+
+	while ((firstel = new_next_arg(firstl, &firstl)))
+	{
+		if (!(secondel = new_next_arg(secondl, &secondl)))
+			break;
+
+		if (wild_match(firstel, pattern))
 			m_sc3cat(&booya, space, secondel, &rvclue);
 	}
 	new_free(&sfirstl);

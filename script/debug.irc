@@ -19,3 +19,74 @@ alias debug_endsection {
 }
 
 #dracus'99
+
+# Time the execution of a given command.
+#
+# Usage:
+#  call.time [command]
+#
+alias call.time {
+	@ :utime = utime()
+	$*
+	@ :utime2 = utime()
+	stack push set floating_point_math
+	^set floating_point_math on
+	@ :time = trunc(6 ${shift(utime2) - shift(utime) + (shift(utime2) - shift(utime)) / 1000000})
+	stack pop set floating_point_math
+	if (functioncall()) {
+		return $time
+	} {
+		echo $tdiff($time): $*
+	}
+}
+
+# Trace a given command.
+#
+# This works by setting the value of debug to debug_level.
+# See "/help 4 set debug" for information about this setting.
+#
+# Usage:
+#  call.trace [debug_level [command]]
+#
+alias call.trace {
+	@ :hooks = [set debug set output_rewrite on window on yell]
+	fe ($hooks) foo bar {
+		stack push $foo $bar
+		$foo -$bar
+	}
+	^set debug $0
+	$1-
+	fe ($hooks) foo bar {
+		stack pop $foo $bar
+	}
+}
+
+# Trace a given command.
+#
+# Debug_levels is a comma seperated list of values to apply to /xdebug.
+# See "/help 4 xdebug" for information about debug_levels, but do not use
+# +/- notation, and seperate the values with commas instead of spaces.
+#
+# Note:  Since it is not possible to read the current xdebug setting, all
+#        listed levels will be unset when this alias returns.
+#
+# Usage:
+#  call.xtrace [debug_levels [command]]
+#
+alias call.xtrace {
+	@ :hooks = [set output_rewrite on window on yell]
+	@ :debugon = :debugoff = split(, $0)
+	repeat $#debugoff {
+		@unshift(debugon +$pop(debugon))
+		@unshift(debugoff -$pop(debugoff))
+	}
+	fe ($hooks) foo bar {
+		stack push $foo $bar
+	}
+	xdebug $debugon
+	$1-
+	xdebug $debugoff
+	fe ($hooks) foo bar {
+		stack pop $foo $bar
+	}
+}
