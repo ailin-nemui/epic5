@@ -1212,7 +1212,10 @@ int	reconnect (int oldserv)
 	}
 
 	if (newserv < 0)
+	{
+		window_check_servers();
 		return -1;		/* User wants to disconnect */
+	}
 
 	/* Try all of the other servers, stop when one of them works. */
 	for (i = 0; i < number_of_servers; i++)
@@ -1253,6 +1256,7 @@ int	reconnect (int oldserv)
 		say("A new server connection could not be established.");
 		say("Your previous server connection will be resumed.");
 		from_server = oldserv;
+		window_check_servers();
 		return -1;
 	}
 
@@ -1270,6 +1274,8 @@ int	reconnect (int oldserv)
 	if (do_hook(DISCONNECT_LIST, "Unable to connect to a server"))
 		say("Sorry, cannot connect.  Use /SERVER to connect "
 						"to a server");
+
+	window_check_servers();
 	return -1;
 }
 

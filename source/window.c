@@ -100,6 +100,7 @@ static 	Window *window_next 			(Window *, char **);
 static 	Window *window_previous 		(Window *, char **);
 static	void 	set_screens_current_window 	(Screen *, Window *);
 static	void 	remove_window_from_screen (Window *window, int hide);
+static Window *window_discon (Window *window, char **args);
 
 
 /* * * * * * * * * * * CONSTRUCTOR AND DESTRUCTOR * * * * * * * * * * * */
@@ -1977,11 +1978,17 @@ void	change_window_server (int old_server, int new_server)
 				continue;
 
 			tmp->server = new_server;
+
+#if 0
 			/* 
-			 * Deleting tmp->current_channel and
-			 * tmp->waiting_channel is the responsibility
-			 * of the caller, not us.
+			 * Unless we are disconnecting, deleting 
+			 * current_channel and waiting_channel is not
+			 * our responsibility.  But if we are disconnecting
+			 * then if we don't do it, nobody can.
 			 */
+			if (new_server == -1)
+				window_discon(tmp, NULL);	/* XXXh */
+#endif
 		}
 	}
 
@@ -3062,7 +3069,13 @@ else
  */
 static Window *window_discon (Window *window, char **args)
 {
-	window->server = -1;
+	reassign_window_channels(window);
+	new_free(&window->current_channel);
+	new_free(&window->bind_channel);
+	new_free(&window->waiting_channel);
+	window->last_server = window->server;
+	window->server = -1;		/* XXX This shouldn't be set here. */
+	window_check_servers();
 	return window;
 }
 
@@ -3587,8 +3600,7 @@ static Window *window_next (Window *window, char **args)
 
 static	Window *window_noserv (Window *window, char **args)
 {
-	window->server = -1;
-	return window;
+	return window_discon(window, args);
 }
 
 static Window *window_notify (Window *window, char **args)
