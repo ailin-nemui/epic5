@@ -1,4 +1,4 @@
-/* $EPIC: functions.c,v 1.101 2003/02/10 21:41:15 jnelson Exp $ */
+/* $EPIC: functions.c,v 1.102 2003/02/11 04:32:45 jnelson Exp $ */
 /*
  * functions.c -- Built-in functions for ircII
  *
@@ -1421,7 +1421,13 @@ BUILT_IN_FUNCTION(function_word, word)
 BUILT_IN_FUNCTION(function_winnum, input)
 {
 	Window *win = NULL;
-	if (!(win = *input ? get_window_by_desc(input) : current_window))
+
+	if (input && *input)
+		win = get_window_by_desc(input);
+	else
+		win = get_window_by_refnum(0);
+
+	if (!win)
 		RETURN_INT(-1);
 	RETURN_INT(win->refnum);
 }
@@ -1429,7 +1435,13 @@ BUILT_IN_FUNCTION(function_winnum, input)
 BUILT_IN_FUNCTION(function_winnam, input)
 {
 	Window *win = NULL;
-	if (!(win = *input ? get_window_by_desc(input) : current_window))
+
+	if (input && *input)
+		win = get_window_by_desc(input);
+	else
+		win = get_window_by_refnum(0);
+
+	if (!win)
 		RETURN_EMPTY;
 	RETURN_STR(win->name);
 }
@@ -6104,12 +6116,16 @@ BUILT_IN_FUNCTION(function_wordtoindex, input)
  */
 BUILT_IN_FUNCTION(function_winsbsize, input)
 {
-	Window *winp;
+	Window *win;
 
-	if (!(winp = *input ? get_window_by_desc(input) : current_window))
+	if (input && *input)
+		win = get_window_by_desc(input);
+	else
+		win = get_window_by_refnum(0);
+
+	if (!win)
 		RETURN_INT(-1);
-
-	RETURN_INT(winp->display_buffer_size - 1);
+	RETURN_INT(win->display_buffer_size - 1);
 }
 
 /*
@@ -6126,11 +6142,16 @@ BUILT_IN_FUNCTION(function_winsbsize, input)
  */
 BUILT_IN_FUNCTION(function_winstatsize, input)
 {
-	Window *winp;
+	Window *win;
 
-	if (!(winp = *input ? get_window_by_desc(input) : current_window))
+	if (input && *input)
+		win = get_window_by_desc(input);
+	else
+		win = get_window_by_refnum(0);
+
+	if (!win)
 		RETURN_INT(-1);
-	RETURN_INT(winp->status.double_status ? 2 : 1);
+	RETURN_INT(win->status.double_status ? 2 : 1);
 }
 
 /*
@@ -6147,24 +6168,35 @@ BUILT_IN_FUNCTION(function_winstatsize, input)
  */
 BUILT_IN_FUNCTION(function_wincurline, input)
 {
-	Window *winp;
+	Window *win;
 
-	if (!(winp = *input ? get_window_by_desc(input) : current_window))
+	if (input && *input)
+		win = get_window_by_desc(input);
+	else
+		win = get_window_by_refnum(0);
+
+	if (!win)
 		RETURN_INT(-1);
-	RETURN_INT(winp->cursor);
+	RETURN_INT(win->cursor);
 }
 
 BUILT_IN_FUNCTION(function_winline, input)
 {
-	Window	*Win;
+	Window	*win;
 	Display	*Line;
 	int	line;
 
 	GET_INT_ARG(line, input);
-	if (!(Win = *input ? get_window_by_desc(input) : current_window))
+
+	if (input && *input)
+		win = get_window_by_desc(input);
+	else
+		win = get_window_by_refnum(0);
+
+	if (!win)
 		RETURN_INT(-1);
 
-	Line = Win->top_of_display;
+	Line = win->top_of_display;
 	for (; line > 0 && Line; line--)
 		Line = Line->next;
 
