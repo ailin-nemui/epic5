@@ -1,4 +1,4 @@
-/* $EPIC: ssl.c,v 1.14 2005/03/04 05:09:01 jnelson Exp $ */
+/* $EPIC: ssl.c,v 1.15 2005/03/04 05:30:59 jnelson Exp $ */
 /*
  * ssl.c: SSL connection functions
  *
@@ -303,6 +303,12 @@ int	is_ssl_enabled (int vfd)
 		return 0;
 }
 
+int	client_ssl_enabled (void)
+{
+	return 1;
+}
+
+
 # ifdef USE_PTHREAD
 #include <pthread.h>
 pthread_mutex_t *ssl_mutexes = NULL;
@@ -356,6 +362,11 @@ int	write_ssl (int vfd, const void *data, size_t len)
 		vfd, data, len);
 }
 
+int	ssl_read (int vfd)
+{
+	panic("ssl_read(%d) called on non-ssl client", vfd);
+}
+
 int	ssl_reader (int vfd, char **buf, size_t *len, size_t *start)
 {
 	panic("ssl_reader(%d) called on non-ssl client", vfd);
@@ -367,6 +378,11 @@ const char *get_ssl_cipher (int vfd)
 }
 
 int	is_ssl_enabled (int vfd)
+{
+	return 0;
+}
+
+int	client_ssl_enabled (void)
 {
 	return 0;
 }

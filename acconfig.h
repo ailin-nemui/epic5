@@ -1,5 +1,5 @@
 /*
- * @(#)$Id: acconfig.h,v 1.26 2005/03/04 00:57:43 jnelson Exp $
+ * @(#)$Id: acconfig.h,v 1.27 2005/03/04 05:30:59 jnelson Exp $
  */
 
 /*
@@ -327,7 +327,7 @@
 #undef USE_POLL
 
 /* Define this to use kqueue() */
-#undef USE_KQUEUE
+#undef USE_FREEBSD_KQUEUE
 
 /* Define this to use pthreads */
 #undef USE_PTHREAD

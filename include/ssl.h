@@ -17,5 +17,6 @@
 	int	ssl_read (int nfd);
 	const char *get_ssl_cipher (int nfd);
 	int	is_ssl_enabled (int nfd);
+	int	client_ssl_enabled (void);
 
 #endif

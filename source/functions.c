@@ -1,4 +1,4 @@
-/* $EPIC: functions.c,v 1.193 2005/03/04 00:57:44 jnelson Exp $ */
+/* $EPIC: functions.c,v 1.194 2005/03/04 05:30:59 jnelson Exp $ */
 /*
  * functions.c -- Built-in functions for ircII
  *
@@ -6371,11 +6371,7 @@ BUILT_IN_FUNCTION(function_isencrypted, input)
 
 BUILT_IN_FUNCTION(function_ssl, words)
 {
-#ifdef HAVE_SSL
-	RETURN_INT(1);
-#else
-	RETURN_INT(0);
-#endif
+	RETURN_INT(client_ssl_enabled());
 }
 
 BUILT_IN_FUNCTION(function_cipher, input)

@@ -1,6 +1,6 @@
 #! /bin/sh
 
-# From configure.in Revision: 1.40 # Guess values for system-dependent variables and create Makefiles.
+# From configure.in Revision: 1.41 # Guess values for system-dependent variables and create Makefiles.
 # Generated automatically using autoconf version 2.13 
 # Copyright (C) 1992, 93, 94, 95, 96 Free Software Foundation, Inc.
 #
@@ -12,7 +12,7 @@ ac_help=
 ac_default_prefix=/usr/local
 # Any additions from configure.in:
 ac_help="$ac_help
-  --with-multiplex[=TYPE]   Multiplexer type (TYPE=select,poll,kqueue,pthread)
+  --with-multiplex[=TYPE]   Multiplexer type (TYPE=select,poll,freebsd-kqueue,pthread)
 "
 ac_help="$ac_help
   --with-ssl[=PATH]         Include SSL support (DIR is OpenSSL's install dir)."
@@ -950,7 +950,7 @@ if test "${with_multiplex+set}" = set; then
 		with_multiplex="select"
 	elif test "x$withval" = "xpoll"; then
 		with_multiplex="poll"
-	elif test "x$withval" = "xkqueue"; then
+	elif test "x$withval" = "xfreebsd-kqueue"; then
 		with_multiplex="kqueue"
 	elif test "x$withval" = "xpthread"; then
 		with_multiplex="pthread_create"
@@ -1024,7 +1024,7 @@ EOF
 		threading=0
 	elif test "x$with_multiplex" = "xkqueue" ; then
 		cat >> confdefs.h <<\EOF
-#define USE_KQUEUE 1
+#define USE_FREEBSD_KQUEUE 1
 EOF
 
 		threading=0

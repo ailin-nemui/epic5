@@ -4,9 +4,9 @@ dnl except those bits attributed otherwise.
 dnl thanks to the screen 3.3 configure.in for giving me examples to
 dnl work from and steal ;)
 dnl
-dnl @(#)$Id: configure.in,v 1.41 2005/03/04 00:57:43 jnelson Exp $
+dnl @(#)$Id: configure.in,v 1.42 2005/03/04 05:30:59 jnelson Exp $
 
-AC_REVISION($Revision: 1.41 $)dnl
+AC_REVISION($Revision: 1.42 $)dnl
 AC_INIT(source/irc.c)
 AC_CONFIG_HEADER(include/defs.h)
 
@@ -80,7 +80,7 @@ dnl ----------------------------------------------------------
 dnl   Where does this belong?
 AC_MSG_CHECKING(which multiplexer function to use)
 AC_ARG_WITH(multiplex,
-[  --with-multiplex[=TYPE]   Multiplexer type (TYPE=select,poll,kqueue,pthread)
+[  --with-multiplex[=TYPE]   Multiplexer type (TYPE=select,poll,freebsd-kqueue,pthread)
 ],[
 	if test "x$withval" = "x"; then
 		with_multiplex="select"
@@ -88,7 +88,7 @@ AC_ARG_WITH(multiplex,
 		with_multiplex="select"
 	elif test "x$withval" = "xpoll"; then
 		with_multiplex="poll"
-	elif test "x$withval" = "xkqueue"; then
+	elif test "x$withval" = "xfreebsd-kqueue"; then
 		with_multiplex="kqueue"
 	elif test "x$withval" = "xpthread"; then
 		with_multiplex="pthread_create"
@@ -108,7 +108,7 @@ AC_CHECK_FUNC($with_multiplex, [
 		AC_DEFINE(USE_POLL)
 		threading=0
 	elif test "x$with_multiplex" = "xkqueue" ; then
-		AC_DEFINE(USE_KQUEUE)
+		AC_DEFINE(USE_FREEBSD_KQUEUE)
 		threading=0
 	elif test "x$with_multiplex" = "xpthread_create" ; then
 		AC_DEFINE(USE_PTHREAD)

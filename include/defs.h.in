@@ -280,7 +280,7 @@
 #undef USE_POLL
 
 /* Define this to use kqueue() */
-#undef USE_KQUEUE
+#undef USE_FREEBSD_KQUEUE
 
 /* Define this to use pthreads */
 #undef USE_PTHREAD

@@ -1,4 +1,4 @@
-/* $EPIC: server.c,v 1.158 2005/03/04 05:09:01 jnelson Exp $ */
+/* $EPIC: server.c,v 1.159 2005/03/04 05:30:59 jnelson Exp $ */
 /*
  * server.c:  Things dealing with that wacky program we call ircd.
  *
@@ -2432,11 +2432,12 @@ void	set_server_try_ssl (int refnum, int flag)
 	if (!(s = get_server(refnum)))
 		return;
 
-#ifndef HAVE_SSL
-	if (flag == TRUE)
+	if (client_ssl_enabled() == 0)
+	{
+	    if (flag == TRUE)
 		say("This client was not built with SSL support.");
-	flag = FALSE;
-#endif
+	    flag = FALSE;
+	}
 	s->try_ssl = flag;
 }
 GET_IATTRIBUTE(try_ssl)
@@ -2448,12 +2449,14 @@ void	set_server_ssl_enabled (int refnum, int flag)
 	if (!(s = get_server(refnum)))
 		return;
 
-#ifndef HAVE_SSL
-	if (flag == TRUE)
+	if (client_ssl_enabled() == 0)
+	{
+	    if (flag == TRUE)
 		say("This client was not built with SSL support.");
-	flag = FALSE;
-	s->try_ssl = flag;
-#endif
+	    flag = FALSE;
+	    s->try_ssl = flag;
+	}
+
 	s->ssl_enabled = flag;
 }
 GET_IATTRIBUTE(ssl_enabled)
