@@ -1,4 +1,4 @@
-/* $EPIC: commands.c,v 1.38 2002/10/21 15:21:43 jnelson Exp $ */
+/* $EPIC: commands.c,v 1.39 2002/10/30 16:37:59 jnelson Exp $ */
 /*
  * commands.c -- Stuff needed to execute commands in ircII.
  *		 Includes the bulk of the built in commands for ircII.
@@ -387,7 +387,7 @@ static	IrcCommand irc_command[] =
  * Full scale abort.  Does a "save" into the filename in line, and
  * then does a coredump
  */
-static void 	really_save (char *, int, int, int);
+static void 	really_save (const char *, int, int, int);
 BUILT_IN_COMMAND(abortcmd)
 {
 	char	*filename = next_arg(args, &args);
@@ -2253,7 +2253,7 @@ BUILT_IN_COMMAND(redirect)
 }
 
 /* This generates a file of your ircII setup */
-static void really_save (char *file, int flags, int save_all, int append)
+static void really_save (const char *file, int flags, int save_all, int append)
 {
 	FILE	*fp;
 static	char *	mode[] = {"w", "a"};
@@ -2294,7 +2294,6 @@ static	char *	mode[] = {"w", "a"};
 BUILT_IN_COMMAND(save_settings)
 {
 	char *	arg;
-	char *	fn;
 	int	save_flags;
 	int	save_global;
 	int	save_append;
@@ -2344,8 +2343,7 @@ BUILT_IN_COMMAND(save_settings)
 		return;
 	}
 
-	really_save(fn, save_flags, save_global, save_append);
-	new_free(&fn);
+	really_save(arg, save_flags, save_global, save_append);
 }
 
 BUILT_IN_COMMAND(send_2comm)
