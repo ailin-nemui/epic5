@@ -6001,7 +6001,14 @@ BUILT_IN_FUNCTION(function_cosh, word)
 	double	num;
 
 	GET_FLOAT_ARG(num, word);
-	return m_sprintf("%f", (double)cosh(num));
+	errno=0;
+	num = (double)cosh(num);
+	if (!errno)
+		return m_sprintf("%f", num);
+	if (errno == EDOM)
+		return m_strdup("DOM");
+	if (errno == ERANGE)
+		return m_strdup("RANGE");
 }
 
 BUILT_IN_FUNCTION(function_sinh, word)
