@@ -1,4 +1,4 @@
-/* $EPIC: status.c,v 1.55 2005/03/28 23:50:07 jnelson Exp $ */
+/* $EPIC: status.c,v 1.56 2005/03/29 00:39:01 jnelson Exp $ */
 /*
  * status.c: handles the status line updating, etc for IRCII 
  *
@@ -581,17 +581,19 @@ int	make_status (Window *window, int must_redraw)
 				 window->status.line[line].key[i]);
 		}
 
-#if 0
 		/*
 		 * If the REVERSE_STATUS_LINE var is on, then put a reverse
 		 * character in the first position (itll get translated to
 		 * the tcap code in the output code.
 		 */
+#if 0
 		if (get_int_var(REVERSE_STATUS_LINE_VAR))
-			*buffer = REV_TOG , str = buffer + 1;
-		else
 #endif
+			*buffer = REV_TOG , str = buffer + 1;
+#if 0
+		else
 			str = buffer;
+#endif
 
 		/*
 		 * Now press the status line into "buffer".  The magic about
