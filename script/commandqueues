@@ -56,7 +56,7 @@ alias scmd xeval -s $0 {$1-}
 #
 alias 1cmd {
 	@ :foo = encode($tolower($1-))
-	@ :eserv = encode($tolower($servername()))
+	@ :eserv = servernum()
 	if (time() - 1cmd[$eserv][$foo] >= [$0]) {
 		@ 1cmd[$eserv][$foo] = time()
 		$1-

@@ -1,4 +1,4 @@
-/* $EPIC: alias.c,v 1.8 2002/07/30 16:12:59 crazyed Exp $ */
+/* $EPIC: alias.c,v 1.9 2002/08/26 17:20:14 crazyed Exp $ */
 /*
  * alias.c -- Handles the whole kit and caboodle for aliases.
  *
@@ -1387,28 +1387,50 @@ static Alias *	find_local_alias (char *name, AliasSet **list)
 
 		if (call_stack[c].alias.list)
 		{
-			int x;
+			int x, cnt, loc;
+
+			/* We can always hope that the variable exists */
+			find_array_item((array*)&call_stack[c].alias, name, &cnt, &loc);
+			if (cnt < 0)
+				alias = call_stack[c].alias.list[loc];
 
 			/* XXXX - This is bletcherous */
-			for (x = 0; x < call_stack[c].alias.max; x++)
+			/*
+			 * I agree, however, there doesn't seem to be any other
+			 * reasonable way to do it.  I guess launching multiple
+			 * binary searches on relevant portions of name would
+			 * do it, but the overhead could(?) do damage.
+			 *
+			 * Actualy, thinking about it again, seperating the
+			 * implicit variables from the normal ones would
+			 * probably work.
+			 */
+			else if (strchr(name, '.'))
+				for (x = 0; x < loc; x++)
 			{
 				size_t len = strlen(call_stack[c].alias.list[x]->name);
 
 				if (streq(call_stack[c].alias.list[x]->name, name) == len)
 				{
-					if (call_stack[c].alias.list[x]->name[len-1] == '.')
+					if (call_stack[c].alias.list[x]->name[len-1] == '.') {
 						implicit = c;
+						break;
+					}
+#if 0
 					else if (strlen(name) == len)
 					{
 						alias = call_stack[c].alias.list[x];
 						break;
 					}
+#endif
 				}
+#if 0
 				else
 				{
 					if (my_stricmp(call_stack[c].alias.list[x]->name, name) > 0)
 						continue;
 				}
+#endif
 			}
 
 			if (!alias && implicit >= 0)

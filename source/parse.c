@@ -1,4 +1,4 @@
-/* $EPIC: parse.c,v 1.23 2002/08/06 15:21:13 wd Exp $ */
+/* $EPIC: parse.c,v 1.24 2002/08/26 17:20:14 crazyed Exp $ */
 /*
  * parse.c: handles messages from the server.   Believe it or not.  I
  * certainly wouldn't if I were you. 
@@ -100,7 +100,7 @@ int 	is_channel(const char *to)
 const	char	*chantypes;
 
 	if (!to || !*to)
-	    return 0;
+		return 0;
 
 	if ((chantypes = get_server_005(from_server, "CHANTYPES")))
 		return (!!strchr(chantypes, *to));

@@ -1,4 +1,4 @@
-/* $EPIC: exec.c,v 1.8 2002/07/17 22:52:52 jnelson Exp $ */
+/* $EPIC: exec.c,v 1.9 2002/08/26 17:20:14 crazyed Exp $ */
 /*
  * exec.c: handles exec'd process for IRCII 
  *
@@ -1086,6 +1086,10 @@ static void 	cleanup_dead_processes (void)
 		new_free(&dead->logical);
 		new_free(&dead->who);
 		new_free(&dead->redirect);
+		new_free(&dead->stdoutc);
+		new_free(&dead->stdoutpc);
+		new_free(&dead->stderrc);
+		new_free(&dead->stderrpc);
 		new_free((char **)&dead);
 	}
 

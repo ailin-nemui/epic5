@@ -1,4 +1,4 @@
-/* $EPIC: functions.c,v 1.79 2002/08/12 16:41:10 wd Exp $ */
+/* $EPIC: functions.c,v 1.80 2002/08/26 17:20:14 crazyed Exp $ */
 /*
  * functions.c -- Built-in functions for ircII
  *
@@ -454,7 +454,8 @@ static BuiltInFunctions	built_in_functions[] =
 	{ "CURRCHANS",		function_currchans	},
 	{ "DECODE",	  (bf *)function_decode 	},
 	{ "DELARRAY",           function_delarray 	},
-	{ "DELITEM",            function_delitem 	},
+	{ "DELITEM",            function_delitem	},
+	{ "DELITEMS",           function_delitems	},
 	{ "DEUHC",		function_deuhc		},
 	{ "DIFF",               function_diff 		},
 	{ "ENCODE",	  (bf *)function_encode 	},
@@ -497,8 +498,8 @@ static BuiltInFunctions	built_in_functions[] =
 	{ "GLOBI",		function_globi		},
 	{ "HASH_32BIT",		function_hash_32bit	},
 	{ "IDLE",		function_idle		},
-	{ "IFINDFIRST",         function_ifindfirst 	},
-	{ "IFINDITEM",          function_ifinditem 	},
+	{ "IFINDFIRST",		function_ifindfirst 	},
+	{ "IFINDITEM",		function_ifinditem	},
 	{ "IGETITEM",           function_igetitem 	},
 	{ "IGETMATCHES",	function_igetmatches	},
 	{ "IGETRMATCHES",	function_igetrmatches	},
@@ -661,6 +662,7 @@ static BuiltInFunctions	built_in_functions[] =
 	{ "URLENCODE",		function_urlencode	},
 	{ "USERHOST",		function_userhost 	},
 	{ "USERMODE",		function_umode		},
+	{ "USETITEM",           function_usetitem 	},
 	{ "UTIME",		function_utime	 	},
 	{ "VERSION",		function_server_version },
 	{ "WHICH",		function_which 		},
@@ -1409,7 +1411,7 @@ BUILT_IN_FUNCTION(function_word, word)
 		RETURN_EMPTY;
 
 	while (cvalue-- > 0)
-		GET_STR_ARG(w_word, word);
+		w_word = new_next_arg(word, &word);
 
 	GET_STR_ARG(w_word, word);
 	RETURN_STR(w_word);

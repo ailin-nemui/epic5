@@ -1,4 +1,4 @@
-/* $EPIC: names.c,v 1.29 2002/08/26 16:08:36 crazyed Exp $ */
+/* $EPIC: names.c,v 1.30 2002/08/26 17:20:14 crazyed Exp $ */
 /*
  * names.c: This here is used to maintain a list of all the people currently
  * on your channel.  Seems to work 
@@ -951,6 +951,12 @@ static char *	get_cmode (Channel *chan)
  * Type 0 is an invalid mode.
  *
  * If these variables aren't present, we chose hopefuly sane defaults.
+ * Be careful not to put too many extras in those defaults, and be careful
+ * not to put duplicate characters, because one will overwrite the other,
+ * and of course there is bound to be at least one server that will give you
+ * either PREFIX or CHANMODES but not both.  The way we escape such damage
+ * now is to assume that no servers are changing the types of the rfc modes,
+ * because that would be really dumb.
  *
  * There is lots of room for improvement here.  Ideally it should deal with
  * UTF8 characters and the scripters need to $serverctl(set x 005 CHANMODE)
@@ -967,7 +973,11 @@ static	char	modemap[256];
 	prefix = get_server_005(from_server, "PREFIX");
 	chanmodes = get_server_005(from_server, "CHANMODES");
 
-	/* This whole paragraph can be blown away if necessary. */
+	/*
+	 * This whole paragraph can be blown away if necessary as it is
+	 * only here to prevent us having to continue on with what is
+	 * presumably the more complicated, slower stuff.
+	 */
 	if (!initialised)
 		initialised++;
 	else if (!prefix != !oprefix || !chanmodes != !ochanmodes);

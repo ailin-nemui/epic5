@@ -1,0 +1,41 @@
+coredump
+on yell -
+set lastlog 100000
+
+alias test (array, rest) {
+	@:foo=jot(0 ${numitems($array)-1})
+	if (foo!=itemtoindex($array $indextoitem($array $foo))) {
+		echo $array $numitems($array) failed itemof(indexof()) test: $array $rest
+	} elsif (foo!=indextoitem($array $itemtoindex($array $foo))) {
+		echo $array $numitems($array) failed indexof(itemof()) test: $array $rest
+	} elsif (sort($getitem($array $foo))!=sort($igetitem($array $foo))) {
+		echo $array $numitems($array) failed index consistancy test: $array $rest
+	} else {echo OK: $array $rest}
+}
+
+fe (baz bar foo) qwer {
+	@delarray($qwer)
+	fe (4 49 499 4999) zxcv {
+		fe (2 0 2) fnord {
+			@ :asdf = numitems($qwer) / 2
+			@ igetitem($qwer 0)
+			for foo from $asdf to $zxcv {@setitem($qwer $foo $rand($fnord))}
+			repeat $asdf {@delitems($qwer $rand($numitems($qwer)))}
+			test $qwer A: $asdf $zxcv $fnord
+			for foo from $asdf to $zxcv {@usetitem($qwer $foo $rand($fnord))}
+			repeat $asdf {@delitems($qwer $rand($numitems($qwer)))}
+			test $qwer B: $asdf $zxcv $fnord
+		}
+	}
+}
+
+if (getarrays()!=sort($uniq($getarrays()))) {
+	echo Array list destroyed: $getarrays()
+} elsif (3>numwords($getarrays())) {
+	echo Too few arrays: $getarrays()
+} elsif (3<numwords($getarrays())) {
+	echo Too many arrays: $getarrays()
+	echo Maybe some were already set?
+} else {
+	echo Array list OK.
+}

@@ -1,4 +1,4 @@
-/* $EPIC: numbers.c,v 1.26 2002/07/17 22:52:52 jnelson Exp $ */
+/* $EPIC: numbers.c,v 1.27 2002/08/26 17:20:14 crazyed Exp $ */
 /*
  * numbers.c: handles all those strange numeric response dished out by that
  * wacky, nutty program we call ircd 
@@ -289,6 +289,9 @@ void 	numbered_command (char *from, int comm, char **ArgList)
                 break;
 	}
 
+	case 307:		/* #define RPL_USERIP           307 */
+		if (!get_server_005(from_server, "USERIP"))
+			break;
 	case 302:		/* #define RPL_USERHOST         302 */
 		userhost_returned(from, ArgList);
 		break;

@@ -701,6 +701,25 @@ assert word(2  one two three four five) == [three]
 
 # testing $write() -- cant be tested right now.
 
+# Testing Karll Arrays.
+#XXX Incomplete.
+clear
+assert delarray(testarray) <= 0
+assert setitem(testarray 0 3) == 1
+assert setitem(testarray 1 2) == 2
+assert setitem(testarray 2 1) == 2
+assert setitem(testarray 3 0) == 2
+assert numitems(testarray) == 4
+assert getitem(testarray 0 1 2 3) == [3 2 1 0]
+assert igetitem(testarray 0 1 2 3) == [0 1 2 3]
+assert itemtoindex(testarray 0 1 2 3) == [3 2 1 0]
+assert indextoitem(testarray 0 1 2 3) == [3 2 1 0]
+assert delitem(testarray 3) == 0
+assert delitem(testarray 3) == -2
+assert delitem(testarray 1) == 0
+assert delarray(testarray) == 0
+assert delarray(testarray) == -1
+
 echo
 echo
 echo

@@ -1,4 +1,4 @@
-/* $EPIC: perl.c,v 1.8 2002/07/17 22:52:52 jnelson Exp $ */
+/* $EPIC: perl.c,v 1.9 2002/08/26 17:20:14 crazyed Exp $ */
 /*
  * perl.c -- The perl interfacing routines.
  *
@@ -138,8 +138,6 @@ char* perlcall (const char* sub, char* in, char* out, long item, char* input) {
 	char *retval=NULL;
 	int count, foo;
 	an_array *array;
-	extern an_array* get_array (char *);
-	extern int set_item(char*, long, char*);
 	dSP ;
 	if (!isperlrunning){RETURN_MSTR(retval);}
 	++perlcalldepth;
@@ -168,7 +166,7 @@ char* perlcall (const char* sub, char* in, char* out, long item, char* input) {
 		SP -= count ;
 		ax = (SP - PL_stack_base) + 1 ;
 		for (foo=0; foo<count; foo++) {
-			set_item(out, item+foo, (char*)SvPV_nolen(ST(foo)));
+			set_item(out, item+foo, (char*)SvPV_nolen(ST(foo)), 1);
 		}
 		retval=(void*)new_realloc((void**)(&retval),32);
 		snprintf(retval,31,"%u",count);

@@ -1,4 +1,4 @@
-/* $EPIC: if.c,v 1.13 2002/07/30 16:12:59 crazyed Exp $ */
+/* $EPIC: if.c,v 1.14 2002/08/26 17:20:14 crazyed Exp $ */
 /*
  * if.c: the IF, WHILE, FOREACH, DO, FE, FEC, and FOR commands for IRCII 
  *
@@ -577,7 +577,7 @@ void	for_next_cmd (int argc, char **argv, const char *subargs)
 		cmds++;
 	will_catch_break_exceptions++;
 	will_catch_continue_exceptions++;
-	for (i = start; i <= end; i += step)
+	for (i = start; step > 0 ? i <= end : i >= end; i += step)
 	{
 		snprintf(istr, 255, "%d", i);
 		add_local_alias(var, istr, 0);
