@@ -1,4 +1,4 @@
-/* $EPIC: ctcp.c,v 1.28 2003/07/10 23:56:01 jnelson Exp $ */
+/* $EPIC: ctcp.c,v 1.29 2003/09/24 21:54:48 jnelson Exp $ */
 /*
  * ctcp.c:handles the client-to-client protocol(ctcp). 
  *
@@ -902,18 +902,16 @@ char *	do_notice_ctcp (const char *from, const char *to, char *str)
 			}
 		}
 
+		/* Set up the window level/logging */
+		lastlog_level = set_lastlog_msg_level(LOG_CTCP);
+		message_from(NULL, LOG_CTCP);
+
 		/* Toss it at the user.  */
 		if (do_hook(CTCP_REPLY_LIST, "%s %s %s %s", from, to, ctcp_command, ctcp_argument))
-		{
-			/* Set up the window level/logging */
-			lastlog_level = set_lastlog_msg_level(LOG_CTCP);
-			message_from(NULL, LOG_CTCP);
-
 			say("CTCP %s reply from %s: %s", ctcp_command, from, ctcp_argument);
 
-			/* Reset the window level/logging */
-			set_lastlog_msg_level(lastlog_level);
-		}
+		/* Reset the window level/logging */
+		set_lastlog_msg_level(lastlog_level);
 
 		if (!(ctcp_cmd[i].flag & CTCP_NOLIMIT))
 			allow_ctcp_reply = 0;
