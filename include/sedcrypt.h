@@ -25,6 +25,7 @@ typedef struct	CryptStru
 	BUILT_IN_COMMAND(encrypt_cmd);
 	char	*crypt_msg 	(char *, Crypt *);
 	char	*decrypt_msg 	(char *, Crypt *);
+	char	*do_crypt	(char *, Crypt *, int);
 	Crypt	*is_crypted 	(const char *);
 	void	my_decrypt 	(char *, int, char *);
 	void	my_encrypt	(char *, int, char *);

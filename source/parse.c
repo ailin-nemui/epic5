@@ -1,4 +1,4 @@
-/* $EPIC: parse.c,v 1.48 2003/10/19 22:49:29 jnelson Exp $ */
+/* $EPIC: parse.c,v 1.49 2003/10/31 08:19:24 crazyed Exp $ */
 /*
  * parse.c: handles messages from the server.   Believe it or not.  I
  * certainly wouldn't if I were you. 
@@ -317,7 +317,6 @@ static void	p_privmsg (const char *from, const char *comm, const char **ArgList)
 		set_server_doing_privmsg(from_server, 0);
 		return;
 	}
-
 	/* ooops. cant just do is_channel(to) because of # walls... */
 	if (is_channel(target) && im_on_channel(target, from_server))
 	{
@@ -357,9 +356,10 @@ static void	p_privmsg (const char *from, const char *comm, const char **ArgList)
 
 		hook_type = MSG_LIST;
 		hook_format = NULL;	/* See below */
-		target = from;		/* Target is actually sender here */
 	}
 
+	if (!target || !*target)
+		target = from;		/* Target is actually sender here */
 
 	switch (check_ignore_channel(from, FromUserHost, target, ignore_type))
 	{

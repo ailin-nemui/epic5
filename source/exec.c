@@ -1,4 +1,4 @@
-/* $EPIC: exec.c,v 1.22 2003/09/23 21:49:47 jnelson Exp $ */
+/* $EPIC: exec.c,v 1.23 2003/10/31 08:19:24 crazyed Exp $ */
 /*
  * exec.c: handles exec'd process for IRCII 
  *
@@ -756,10 +756,10 @@ static void 	handle_filedesc (Process *proc, int *fd, int hook_nonl, int hook_nl
 				goto this_sucks;
 			}
 
-			     if (hook_nl == EXEC_LIST && proc->stdoutpc)
+			     if (hook_nl == EXEC_LIST && proc->stdoutpc && *proc->stdoutpc)
 				parse_line("EXEC", proc->stdoutpc, 
 						exec_buffer, 0, 0);
-			else if (hook_nl == EXEC_ERRORS_LIST && proc->stderrpc)
+			else if (hook_nl == EXEC_ERRORS_LIST && proc->stderrpc && *proc->stderrpc)
 				parse_line("EXEC", proc->stderrpc, 
 						exec_buffer, 0, 0);
 			else if (proc->logical)
@@ -793,10 +793,10 @@ this_sucks:
 				redirect_text(proc->server, proc->who, 
 					exec_buffer, proc->redirect, 1);
 
-			     if (hook_nl == EXEC_LIST && proc->stdoutc)
+			if (hook_nl == EXEC_LIST && proc->stdoutc && *proc->stdoutc)
 				parse_line("EXEC", proc->stdoutc, 
 						exec_buffer, 0, 0);
-			else if (hook_nl == EXEC_ERRORS_LIST && proc->stderrc)
+			else if (hook_nl == EXEC_ERRORS_LIST && proc->stderrc && *proc->stderrc)
 				parse_line("EXEC", proc->stderrc, 
 						exec_buffer, 0, 0);
 			else if (proc->logical)

@@ -61,14 +61,15 @@ alias tabkey.default tabkey.method.nickchan
 alias tabkey.main {
 	@ :oxd = xdebug(extractw)
 	xdebug extractw
-	@ :curword = indextoword($curpos() $L )
+	@ :curpos = curpos()
+	@ :curword = indextoword($curpos $L )
 	@ :wordind = wordtoindex($curword $L)
 	@ :cmdind = 0
-	if (32 >= (127 & ascii($mid(${curpos()-1} 1 $L )))) {
+	if (32 >= (127 & ascii($mid(${curpos-1} 1 $L )))) {
 		@ curword++
-		@ wordind = curpos()
+		@ wordind = curpos
 	}
-	@ :word = mid($wordind ${curpos()-wordind} $L)
+	@ :word = mid($wordind ${curpos-wordind} $L)
 	if (word=~["*"]) {
 		@ :word = shift(word)
 	} elsif (word=~["*]) {
@@ -99,7 +100,7 @@ alias tabkey.cmd {
 	@ :pass#= chr($jot($ascii(az)))
 	@ :pass#= chr($jot($ascii(09)))
 	@ :args = wordtoindex($cmdind $L)
-	@ :args = mid($args $curpos() $L)
+	@ :args = mid($args $curpos $L)
 	@ :args = unsplit(. $args)
 	@ :args = pass(._$pass $args)
 	if (!curword) {
@@ -132,11 +133,15 @@ alias tabkey.cmd {
 # This is not well cpu optimised.  See examples below.
 alias tabkey.recurse (depth,...) {
 	bless
+	@ :curpos += wordtoindex($cmdind $L )
+	@ :curpos -= wordtoindex(${cmdind+depth} $L )
 	@ :cmdind += depth
 	@ :curword -= depth
 	@ function_return = 0 > curword ? [] : tabkey.cmd($*)
 	@ :curword += depth
 	@ :cmdind -= depth
+	@ :curpos += wordtoindex(${cmdind+depth} $L )
+	@ :curpos -= wordtoindex($cmdind $L )
 }
 
 # Context sensitive completion goes here.
@@ -163,9 +168,10 @@ alias tabkey.cmd.dcc.send {
 alias tabkey.cmd.help {
 	bless
 	@ :matches = []
-	@ :path = restw(1 $left($curpos() $L))
-	if (wordind == curpos()) {@ push(path *)}
-	@ matches = globi($unsplit(/ $getset(HELP_PATH) $path*))
+	@ :path = restw(1 $left($curpos $L))
+	if (wordind == curpos) {@ push(path *)}
+	repeat $#path @ push(path $shift(path)*)
+	@ matches = globi($unsplit(/ $getset(HELP_PATH) $path))
 	repeat $#matches @ push(matches $rightw(1 $remws(/ $split(/ $shift(matches)))))
 	return $matches
 }
@@ -180,6 +186,7 @@ alias tabkey.method.commands {
 alias tabkey.method.chan (args) { return $pattern("$args*" $mychannels()); }
 alias tabkey.method.notify (args) { return $pattern("$args*" $notify(on)); }
 
+stack push alias alias.foo
 alias alias.foo alias $*;alias $sar(g/globi/glob/$sar(g/filei/file/$*))
 alias.foo tabkey.method.filei (f0) {
 	@ :f0 = sar(gr/\\/\\\\/f0)
@@ -193,16 +200,14 @@ alias.foo tabkey.method.filei (f0) {
 	}
 	return ${f0 ? f0 : f1}
 }
-alias -alias.foo
+stack pop alias alias.foo
 
 alias tabkey.method.nick (args) {
 	if (match("$args*" $chanusers())) {
 		return $pattern("$args*" $chanusers());
 	} else {
-		@ :chanusers = []
-		fe ($mychannels()) chan {
-			@ push(chanusers $chanusers($chan))
-		}
+		@ :chanusers = mychannels()
+		repeat $#chanusers @ push(chanusers $chanusers($shift(chanusers)))
 		return $pattern("$args*" $sort($uniq($chanusers)));
 	}
 }

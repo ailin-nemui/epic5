@@ -26,3 +26,12 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Nix the never valid network error code -15 (duplicate of -6)
 * Sanity check the family in a dcc handshake against the bind before sending it.
 * Add /who -operspy for hybrid opers.
+* Cleaned data_array and data_struct code and structure up a bit.
+* Added more hook protection to the debug.irc script.
+* Fixed a bug in tabkey.ce where recursion wouldn't work in the middle of a line.
+* Also made it possible to tab complete /help without having to tab complete
+  any of the previous words.  This _may_ not work on all operating systems.
+* Added the INTFUNC define alongside INTTYPE in expr2.c.
+* Made setting notify_interval and mail_interval update the system timer.  I
+  needed the first one, and did the second one for completeness.
+* Fixed "/exec -line {} %pid" so that the exec hooks are called again.

@@ -26,7 +26,7 @@ alias getnrolitems (a1,a2,it) @:dt=:it=itemnorm($a1 $it);fe it it {setnextitem $
 #
 #   getmaskitem[s]: return one/all array elements matching $1-.
 #   getandmitem[s]: Get an' Del item[s] matching Mask ($1-) from array $0.
-#   getandmitem[s]: Get an' Rol item[s] matching Mask ($2-) from array $0 to $1.
+#   getanrmitem[s]: Get an' Rol item[s] matching Mask ($2-) from array $0 to $1.
 #
 alias getmaskitem  (ar,mask) @:it=getmatches($ar $mask);return ${getitem($ar $word($rand($#it) $it))}
 alias getmaskitems (ar,mask) return $getitem($ar $getmatches($ar $mask))
@@ -78,6 +78,19 @@ alias array.read (args) {
 		@ close($fd)
 	}
 }
+#
+# Load files $* into arrays of the same name.
+#
+alias array.nread (args) {
+	fe ($glob($args)) fn {
+		@ :it = numitems($fn)
+		@ :fd = open($fn r)
+		while ((:dt = read($fd)) || !eof($fd)) {
+			@ usetitem($fn ${it++} $dt)
+		}
+		@ close($fd)
+	}
+}
 
 #
 # Give a brief summary of all matching arrays, or all arrays.
@@ -94,12 +107,13 @@ alias array.stat {
 #   .dump/.grep displays matching contents of matching arrays (in different ways).
 #   .codump/.cogrep as above but sews together multiple arrays for displaying.
 #   .idump/.igrep/.coidump/.coigrep sorted versions of above.
-#   .write/.iwrite inverse of .read, differing in the order in which lines are written.
-#   .flush/.iflush write and delete the arrays.
+#   .write/.iwrite/.nwrite/.niwrite inverse of .read, differing in the order in which lines are written.
+#   .flush/.iflush/.nflush/.niflush write and delete the arrays.
 #
-fe (dump " -banner" "\$array [\$[-4]item \$[-2]#content \$[-3]@content] " grep " -nobanner" "") cmd banner fnord {
+stack push alias alias
+fe (dump " -banner" "[\$[-4]item \$[-2]#content \$[-3]@content] " grep " -nobanner" "") cmd banner fnord {
 	fe (i$cmd igetitem igetmatches $cmd getitem getmatches) foo bar baz {
-		alias array.$foo (arrays default *, mask default *) fe ($getarrays($arrays)) array \{fe \(\$${baz}($array $mask)\) item \{@:content=${bar}($array $item)\;echo $fnord\$content\}\;array.stat \$array\}
+		alias array.$foo (arrays default *, mask default *) fe ($getarrays($arrays)) array \{echo \$numitems($array)/\$#listarray($array)/\$@listarray($array) \$array\;fe \(\$${baz}($array $mask)\) item \{@:content=${bar}($array $item)\;echo $fnord\$content\}\}\;echo $chr(2)\$#getarrays($arrays)$chr(2) arrays listed
 	}
 }
 fe (dump "\$array [\$[-4]item \$[-2]#content \$[-3]@content] " grep "") cmd fnord {
@@ -107,9 +121,31 @@ fe (dump "\$array [\$[-4]item \$[-2]#content \$[-3]@content] " grep "") cmd fnor
 		alias array.$foo @:array=[\$0]\;@:mk=[\$1]\;@:ar=beforew($mk $2-)\;fe \(\$${bar}($array $afterw($mk $2-))$baz\) item \{@:content=\;fe ($ar) foo {@push(content $getitem($foo $item))}\;echo $fnord\$content\}
 	}
 }
-fe (write getmatches getitem iwrite igetmatches igetitem) foo bar baz {
-	alias array.${foo} @:fd=open($0 w)\;fe ($getarrays($1)) foo \{fe \(\$${bar}\(\$foo \$\{3>[\$#]?[*]:[\$2-]\}\)\) bar \{@write\(\$fd \$${baz}($foo $bar)\)\}\}\;@close($fd)
+alias alias (args) {
+	//alias $args
+	fe (write flush getmatches getitem) foo {
+		@ sar(gr/i$foo/$foo/args)
+	}
+	//alias $args
 }
-fe (flush write iflush iwrite) cmd sub {
-	alias array.$cmd array.$sub \$*\;array.purge \$1-
+alias array.iwrite (args) {
+	@ :fd = open($shift(args) w)
+	fe ($getarrays($shift(args))) foo {
+		fe ($igetmatches($foo ${args?args:[*]})) bar {
+			@ write($fd $igetitem($foo $bar))
+		}
+	}
+	@ close($fd)
 }
+alias array.niwrite (args) {
+	fe ($getarrays($shift(args))) foo {
+		@ :fd = open($foo w)
+		fe ($igetmatches($foo ${args?args:[*]})) bar {
+			@ write($fd $igetitem($foo $bar))
+		}
+		@ close($fd)
+	}
+}
+alias array.iflush array.iwrite $*;array.purge $1-
+alias array.niflush array.niwrite $*;array.purge $*
+stack pop alias alias

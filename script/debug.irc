@@ -50,7 +50,7 @@ alias call.time {
 #  call.trace [debug_level [command]]
 #
 alias call.trace {
-	@ :hooks = [set debug set output_rewrite on window on yell]
+	@ :hooks = [set debug set output_rewrite on window on yell on status_update]
 	fe ($hooks) foo bar {
 		stack push $foo $bar
 		$foo -$bar
@@ -72,7 +72,7 @@ alias call.trace {
 #  call.xtrace [debug_levels [command]]
 #
 alias call.xtrace {
-	@ :hooks = [set output_rewrite on window on yell]
+	@ :hooks = [set output_rewrite on window on yell on status_update]
 	@ :debugon = split(, $0)
 	@ :oxd = strip(+- $debugon)
 	fe oxd foo {

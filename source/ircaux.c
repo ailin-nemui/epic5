@@ -1,4 +1,4 @@
-/* $EPIC: ircaux.c,v 1.96 2003/10/28 05:53:57 jnelson Exp $ */
+/* $EPIC: ircaux.c,v 1.97 2003/10/31 08:19:24 crazyed Exp $ */
 /*
  * ircaux.c: some extra routines... not specific to irc... that I needed 
  *
@@ -3258,7 +3258,7 @@ char *	urlencode (const char *s)
 
 	for (p1 = s, p2 = retval; *p1; p1++)
 	{
-		if (strchr(unsafe, *p1))
+		if (unsafe <= 0x20 || strchr(unsafe, *p1))
 		{
 			unsigned c = (unsigned) *p1;
 

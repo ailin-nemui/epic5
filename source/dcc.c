@@ -1,4 +1,4 @@
-/* $EPIC: dcc.c,v 1.78 2003/10/29 06:12:01 jnelson Exp $ */
+/* $EPIC: dcc.c,v 1.79 2003/10/31 08:19:24 crazyed Exp $ */
 /*
  * dcc.c: Things dealing client to client connections. 
  *
@@ -51,7 +51,14 @@
 #include "term.h"
 #include "notice.h"
 
+#if 0
+/* This is an accident waiting to happen. */
 #define DCC_BLOCK_SIZE	BIG_BUFFER_SIZE
+#else
+#define DCC_BLOCK_SIZE (1<<11)
+#endif
+/* This should probably be configurable. */
+#define DCC_RCV_BLOCK_SIZE (1<<16)
 
 /* These are the settings for ``flags'' */
 #define DCC_CHAT	((unsigned) 0x0001)
@@ -66,6 +73,7 @@
 #define DCC_DELETE	((unsigned) 0x0080)
 #define DCC_TWOCLIENTS	((unsigned) 0x0100)
 #define DCC_REJECTED	((unsigned) 0x0200)
+#define DCC_QUOTED	((unsigned) 0x0400)
 #define DCC_STATES	((unsigned) 0xfff0)
 
 typedef	struct	DCC_struct
@@ -113,7 +121,7 @@ static	char		DCC_current_transfer_buffer[256];
 	time_t		dcc_timeout = 600;		/* Backed by a /set */
 static	int		dcc_global_lock = 0;
 static	int		dccs_rejected = 0;
-static	int		dcc_refnum = 1;
+static	int		dcc_refnum = 0;
 
 static	void		dcc_chat 		(char *);
 static	void 		dcc_close 		(char *);
@@ -133,7 +141,7 @@ static	void		process_incoming_listen (DCC_list *);
 static	void		process_incoming_raw 	(DCC_list *);
 static	void		process_dcc_send 	(DCC_list *);
 static	void		process_incoming_file 	(DCC_list *);
-static	void		DCC_close_filesend 	(DCC_list *, const char *);
+static	void		DCC_close_filesend 	(DCC_list *, const char *, const char *);
 static	void		update_transfer_buffer 	(long refnum, const char *format, ...);
 static 	void		dcc_send_booster_ctcp 	(DCC_list *dcc);
 static	char *		dcc_urlencode		(const char *);
@@ -780,11 +788,22 @@ static	int	dcc_open (DCC_list *dcc)
 		if ((dcc->socket = client_connect(NULL, 0, (SA *)&dcc->offer, 
 						  sizeof(dcc->offer))) < 0)
 		{
-			dcc->flags |= DCC_DELETE;
-			say("Unable to create connection: (%d) [%d] %s", 
-				dcc->socket, errno, 
-				my_strerror(dcc->socket, errno));
+			char *encoded_description = dcc_urlencode(dcc->description);
 
+			/* XXX Error message may need to be tuned here. */
+			if (do_hook(DCC_LOST_LIST,"%s %s %s %s",
+					dcc->user,
+					dcc_types[dcc->flags&DCC_TYPES],
+					encoded_description ? encoded_description : "<any>",
+					my_strerror(dcc->socket, errno)))
+				say("Unable to create connection: (%d) [%d] %s", 
+					dcc->socket, errno, 
+					my_strerror(dcc->socket, errno));
+
+			if (encoded_description)
+				new_free(&encoded_description);
+
+			dcc->flags |= DCC_DELETE;
 			unlock_dcc(dcc);
 			retval = -1;
 			break;
@@ -1036,6 +1055,7 @@ const	char 		*text_display, 	/* What to tell the user we sent */
 	char		thing = '\0';
 	int		list = 0;
 	int		old_from_server = from_server;
+	int		writeval;
 
 	tmp[0] = 0;
 
@@ -1066,7 +1086,8 @@ const	char 		*text_display, 	/* What to tell the user we sent */
 	 * Check for CTCPs... whee.
 	 * Dont tag outbound ACTIONs, which break mirc.  Blah.
 	 */
-	if (*text == CTCP_DELIM_CHAR && strncmp(text + 1, "ACTION", 6))
+	if (type == DCC_CHAT && *text == CTCP_DELIM_CHAR
+			&& strncmp(text + 1, "ACTION", 6))
 	{
 		if (!cmd || !strcmp(cmd, "PRIVMSG"))
 			strlcpy(tmp, "CTCP_MESSAGE ", sizeof tmp);
@@ -1074,13 +1095,25 @@ const	char 		*text_display, 	/* What to tell the user we sent */
 			strlcpy(tmp, "CTCP_REPLY ", sizeof tmp);
 	}
 
-	strlcat(tmp, text, sizeof tmp);
-	strlcat(tmp, "\n", sizeof tmp);
-
 	if (x_debug & DEBUG_OUTBOUND) 
-		yell("-> [%s] [%s]", desc, tmp);
+		yell("-> [%s] [%s]", desc, text);
 
-	if (write(dcc->socket, tmp, strlen(tmp)) == -1)
+	if (dcc->flags & DCC_QUOTED)
+	{
+		int	len = strlen(text);
+		text = dequote_it(text, &len);
+		writeval = write(dcc->socket, text, len);
+		new_free(&text);
+	}
+	else
+	{
+		strlcat(tmp, text, sizeof tmp);
+		strlcat(tmp, "\n", sizeof tmp);
+		writeval = write(dcc->socket, tmp, strlen(tmp));
+	}
+
+
+	if (writeval == -1)
 	{
 		dcc->flags |= DCC_DELETE;
 		say("Outbound write() failed: %s", 
@@ -1091,7 +1124,7 @@ const	char 		*text_display, 	/* What to tell the user we sent */
 		return;
 	}
 
-	dcc->bytes_sent += strlen(tmp);
+	dcc->bytes_sent += writeval;
 
 	if (noisy)
 	{
@@ -1307,8 +1340,6 @@ static	void 	dcc_close (char *args)
 		unsigned	my_type = dcc->flags & DCC_TYPES;
 
 		count++;
-		dcc->flags |= DCC_DELETE;
-
 		lock_dcc(dcc);
 		
 		if (dcc->description) {
@@ -1331,6 +1362,7 @@ static	void 	dcc_close (char *args)
 		if (encoded_description)
 			new_free(&encoded_description);
 			
+		dcc->flags |= DCC_DELETE;
 		unlock_dcc(dcc);
 	}
 
@@ -2538,12 +2570,12 @@ static	void	process_dcc_chat_error (DCC_list *Client)
 			"Remote End Closed Connection" : 
 			strerror(dgets_errno));
 
-	Client->flags |= DCC_DELETE;
 	lock_dcc(Client);
 	if (do_hook(DCC_LOST_LIST, "%s CHAT %s", 
 			Client->user, err_str))
 		say("DCC CHAT connection to %s lost [%s]", 
 			Client->user, err_str);
+	Client->flags |= DCC_DELETE;
 	unlock_dcc(Client);
 	return;
 }
@@ -2707,6 +2739,7 @@ static	void		process_incoming_listen (DCC_list *Client)
 				l_port, sizeof(l_port), 0);
 
 	NewClient->flags |= DCC_ACTIVE;
+	NewClient->flags |= DCC_QUOTED & Client->flags;
 	NewClient->bytes_read = NewClient->bytes_sent = 0;
 	get_time(&NewClient->starttime);
 	new_open(NewClient->socket);
@@ -2730,40 +2763,54 @@ static	void		process_incoming_raw (DCC_list *Client)
 {
 	char	tmp[IO_BUFFER_SIZE + 1];
 	char 	*bufptr;
+	char	*freeme = NULL;
 	ssize_t	bytesread;
 
         bufptr = tmp;
-	switch ((bytesread = dgets(Client->socket, bufptr, IO_BUFFER_SIZE, 0, NULL)))
+	if (Client->flags & DCC_QUOTED)
+		bytesread = read(Client->socket, bufptr, IO_BUFFER_SIZE);
+	else
+		bytesread = dgets(Client->socket, bufptr, IO_BUFFER_SIZE, 0, NULL);
+	switch (bytesread)
 	{
+	    CLOSE:
 	    case -1:
 	    {
 		lock_dcc(Client);
-		Client->flags |= DCC_DELETE;
 		if (do_hook(DCC_RAW_LIST, "%s %s C",
 				Client->user, Client->description))
        		if (do_hook(DCC_LOST_LIST,"%s RAW %s", 
 				Client->user, Client->description))
 			say("DCC RAW connection to %s on %s lost",
 				Client->user, Client->description);
+		Client->flags |= DCC_DELETE;
 		unlock_dcc(Client);
 		break;
 	    }
 	    case 0:
+	    {
+		if (Client->flags & DCC_QUOTED)
+			goto CLOSE;
+		/* FALL THRU */
+	    }
 	    default:
 	    {
 		from_server = primary_server;	/* Colten asked for it */
-		if (bytesread > 0 && tmp[strlen(tmp) - 1] == '\n')
+		if (Client->flags & DCC_QUOTED)
+			freeme = bufptr = enquote_it(bufptr, bytesread);
+		else if (bytesread > 0 && tmp[strlen(tmp) - 1] == '\n')
 			tmp[strlen(tmp) - 1] = '\0';
 		Client->bytes_read += bytesread;
 
 		lock_dcc(Client);
 		if (do_hook(DCC_RAW_LIST, "%s %s D %s",
-				Client->user, Client->description, tmp))
+				Client->user, Client->description, bufptr))
 			say("Raw data on %s from %s: %s",
-				Client->user, Client->description, tmp);
+				Client->user, Client->description, bufptr);
 		unlock_dcc(Client);
 	    }
 	}
+	new_free(&freeme);
 	return;
 }
 
@@ -2872,7 +2919,6 @@ static void	process_dcc_send_handle_ack (DCC_list *dcc)
 	if (read(dcc->socket, (char *)&bytesrecvd, 
 			sizeof(u_32int_t)) < (int) sizeof(u_32int_t))
 	{
-		dcc->flags |= DCC_DELETE;
 
 		lock_dcc(dcc);
 		encoded_description = dcc_urlencode(dcc->description);
@@ -2881,6 +2927,7 @@ static void	process_dcc_send_handle_ack (DCC_list *dcc)
 		    say("DCC SEND:%s connection to %s lost",
 			dcc->description, dcc->user);
 		new_free(&encoded_description);
+		dcc->flags |= DCC_DELETE;
 		unlock_dcc(dcc);
 		return;
 	}
@@ -2931,7 +2978,7 @@ yell("###    dcc->packets_outstanding [%s]",
 		 * the connection.
 		 */
 		if (bytesrecvd >= dcc->filesize)
-			DCC_close_filesend(dcc, "SEND");
+			DCC_close_filesend(dcc, "SEND", "TRANSFER COMPLETE");
 
 		/*
 		 * Either way there's nothing more to do.
@@ -3044,19 +3091,29 @@ static	void	process_dcc_send (DCC_list *dcc)
 /*
  * When youre recieving a DCC GET file, this is called when the sender
  * sends you a portion of the file. 
+ *
+ * There's no need to stick to the packet size here.  If we have more than
+ * one in the buffer, there's no benefit in sending out acks for all.
+ * It's probably more polite to hold back on clobbering the sender with
+ * redundant useless acks too.
  */
 static	void		process_incoming_file (DCC_list *dcc)
 {
-	char		tmp[DCC_BLOCK_SIZE+1];
+	char		tmp[DCC_RCV_BLOCK_SIZE+1];
 	u_32int_t	bytestemp;
 	ssize_t		bytesread;
 
-	if ((bytesread = read(dcc->socket, tmp, DCC_BLOCK_SIZE)) <= 0)
+	if ((bytesread = read(dcc->socket, tmp, DCC_RCV_BLOCK_SIZE)) <= 0)
 	{
 		if (dcc->bytes_read < dcc->filesize)
+		{
 		    say("DCC GET to %s lost -- Remote peer closed connection", 
 			dcc->user);
-		DCC_close_filesend(dcc, "GET");
+			DCC_close_filesend(dcc, "GET",
+					"REMOTE PEER CLOSED CONNECTION");
+		} else {
+			DCC_close_filesend(dcc, "GET", "TRANSFER COMPLETE");
+		}
 		return;
 	}
 
@@ -3065,6 +3122,7 @@ static	void		process_incoming_file (DCC_list *dcc)
 		dcc->flags |= DCC_DELETE;
 		say("Write to local file [%d] failed, giving up: [%s]", 
 			dcc->file, strerror(errno));
+		/* DCC_close_filesend(dcc, "GET", "LOCAL WRITE FAILED"); */
 		return;
 	}
 
@@ -3174,13 +3232,13 @@ void 	dcc_reject (const char *from, char *type, char *args)
 					description, -1)))
 	{
 		lock_dcc(Client);
-		Client->flags |= DCC_REJECTED;
-		Client->flags |= DCC_DELETE; 
 
                 if (do_hook(DCC_LOST_LIST,"%s %s %s REJECTED", from, type,
                         description ? description : "<any>"))
 		    say("DCC %s:%s rejected by %s: closing", type,
 			description ? description : "<any>", from);
+		Client->flags |= DCC_REJECTED;
+		Client->flags |= DCC_DELETE; 
 		unlock_dcc(Client);
 	}
 
@@ -3189,7 +3247,8 @@ void 	dcc_reject (const char *from, char *type, char *args)
 }
 
 
-static void	DCC_close_filesend (DCC_list *Client, const char *info)
+static void	DCC_close_filesend (DCC_list *Client, const char *info,
+		const char *errormsg)
 {
 	char	lame_ultrix[10];	/* should be plenty */
 	char	lame_ultrix2[10];
@@ -3216,7 +3275,6 @@ static void	DCC_close_filesend (DCC_list *Client, const char *info)
 	snprintf(lame_ultrix3, sizeof(lame_ultrix3), "%2.6g", xtime);
 
 	lock_dcc(Client);
-	Client->flags |= DCC_DELETE;
 	
 	if ((Client->flags & DCC_TYPES) == DCC_FILEOFFER)
 		encoded_description = dcc_urlencode(Client->description);
@@ -3224,13 +3282,15 @@ static void	DCC_close_filesend (DCC_list *Client, const char *info)
 		/* assume the other end encoded the filename */
 		encoded_description = malloc_strdup(Client->description);
 
-	if (do_hook(DCC_LOST_LIST,"%s %s %s %s TRANSFER COMPLETE",
-		Client->user, info, encoded_description, lame_ultrix))
+	if (do_hook(DCC_LOST_LIST,"%s %s %s %s %s",
+		Client->user, info, encoded_description, lame_ultrix,
+		errormsg))
 	     say("DCC %s:%s [%skb] with %s completed in %s sec (%s kb/sec)",
 		info, Client->description, lame_ultrix2, Client->user, 
 		lame_ultrix3, lame_ultrix);
 
 	new_free(&encoded_description);
+	Client->flags |= DCC_DELETE;
 	unlock_dcc(Client);
 }
 
@@ -3435,6 +3495,11 @@ char *	dccctl (char *input)
 	if (!my_strnicmp(listc, "REFNUMS", len)) {
 		for (client = ClientList; client; client = client->next)
 			malloc_strcat_word_c(&retval, space, ltoa(client->refnum), &clue);
+	} else if (!my_strnicmp(listc, "REFBASE", len)) {
+		int oldref = dcc_refnum;
+		if (input && *input)
+			GET_INT_ARG(dcc_refnum, input);
+		RETURN_INT(oldref);
 	} else if (!my_strnicmp(listc, "GET", len)) {
 		GET_INT_ARG(ref, input);
 
@@ -3475,6 +3540,8 @@ char *	dccctl (char *input)
 			RETURN_INT(client->held);
 		} else if (!my_strnicmp(listc, "HELDTIME", len)) {
 			RETURN_FLOAT(client->heldtime);
+		} else if (!my_strnicmp(listc, "QUOTED", len)) {
+			RETURN_INT(client->flags & DCC_QUOTED && 1);
 		} else if (!my_strnicmp(listc, "FLAGS", len)) {
 			/* This is pretty much a crock. */
 			RETURN_INT(client->flags);
@@ -3497,8 +3564,7 @@ char *	dccctl (char *input)
 			malloc_strcat_word_c(&retval, space, port, &clue);
 		} else if (!my_strnicmp(listc, "REMADDR", len)) {
 			char	host[1025], port[25];
-			if (!(client->flags & DCC_ACTIVE) ||
-				inet_ntostr((SA *)&client->peer_sockaddr,
+			if (inet_ntostr((SA *)&client->peer_sockaddr,
 					host, sizeof(host),
 					port, sizeof(port), NI_NUMERICHOST))
 				RETURN_EMPTY;
@@ -3506,8 +3572,7 @@ char *	dccctl (char *input)
 			malloc_strcat_word_c(&retval, space, port, &clue);
 		} else if (!my_strnicmp(listc, "LOCADDR", len)) {
 			char	host[1025], port[25];
-			if (!(client->flags & DCC_ACTIVE) ||
-				inet_ntostr((SA *)&client->local_sockaddr,
+			if (inet_ntostr((SA *)&client->local_sockaddr,
 					host, sizeof(host),
 					port, sizeof(port), NI_NUMERICHOST))
 				RETURN_EMPTY;
@@ -3551,6 +3616,14 @@ char *	dccctl (char *input)
 				held = dcc_unhold(client);
 
 			RETURN_INT(held);
+		} else if (!my_strnicmp(listc, "QUOTED", len)) {
+			long	quoted;
+
+			GET_INT_ARG(quoted, input);
+			if (quoted)
+				client->flags |= DCC_QUOTED;
+			else
+				client->flags &= ~DCC_QUOTED;
 		} else if (!my_strnicmp(listc, "OFFERADDR", len)) {
 			char *host, *port;
 			SS a;

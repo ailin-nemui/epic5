@@ -11,7 +11,7 @@
 #define __files_h__
 
 	int	open_file_for_read 	(char *);
-	int	open_file_for_write 	(char *);
+	int	open_file_for_write 	(char *, char *);
 	int *	open_exec_for_in_out_err(char *, char **);
 	int	target_file_write	(const char *, const char *);
 	int	file_write 		(int, int, const char *);
@@ -24,6 +24,7 @@
 	int	file_rewind		(int);
 	int	file_error		(int);
 	int	file_seek		(int, long, const char *);
+	int	file_tell		(int);
 	int	file_skip		(int, int);
 
 #endif

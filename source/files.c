@@ -1,4 +1,4 @@
-/* $EPIC: files.c,v 1.20 2003/07/09 21:10:25 jnelson Exp $ */
+/* $EPIC: files.c,v 1.21 2003/10/31 08:19:24 crazyed Exp $ */
 /*
  * files.c -- allows you to read/write files. Wow.
  *
@@ -122,7 +122,7 @@ int open_file_for_read (char *filename)
 		return -1;
 }
 
-int open_file_for_write (char *filename)
+int open_file_for_write (char *filename, char *mode)
 {
 	Filename expand;
 	FILE *file;
@@ -130,7 +130,7 @@ int open_file_for_write (char *filename)
 	if (normalize_filename(filename, expand))
 		strlcpy(expand, filename, sizeof(expand));
 
-	if ((file = fopen(expand, "a")))
+	if ((file = fopen(expand, mode)))
 	{
 		File *nfs = new_file();
 		nfs->file = file;
@@ -344,6 +344,15 @@ int	file_seek (int fd, long offset, const char *whence)
 		return fseek(ptr->file, offset, SEEK_END);
 	else
 		return -1;
+}
+
+int	file_tell (int fd)
+{
+	File *ptr = lookup_file (fd);
+	if (!ptr)
+		return -1;
+	else
+		return ftell(ptr->file);
 }
 
 int	file_skip (int fd, int lines)

@@ -1,4 +1,4 @@
-/* $EPIC: expr2.c,v 1.14 2003/10/28 05:53:57 jnelson Exp $ */
+/* $EPIC: expr2.c,v 1.15 2003/10/31 08:19:24 crazyed Exp $ */
 /*
  * Zsh: math.c,v 3.1.2.1 1997/06/01 06:13:15 hzoli Exp 
  * math.c - mathematical expression evaluation
@@ -136,7 +136,17 @@ typedef 	int		BooL;
 #define USED_FLOAT		1 << 4
 #define USED_BOOLEAN		1 << 5
 
+/*
+ * Theoretically, INTTYPE and INTFUNC are independant because the return value
+ * of INTFUNC is typecasted back to INTTYPE.
+ */
+#if 0
+typedef long long INTTYPE;
+#define INTFUNC(x) ((INTTYPE)atoll(x))
+#else
 typedef long INTTYPE;
+#define INTFUNC(x) ((INTTYPE)atol(x))
+#endif
 
 /*
  * This is a symbol table entry.
@@ -777,7 +787,7 @@ __inline static	const char *	get_token_expanded (expr_info *c, TOKEN v)
 __inline static	INTTYPE	get_token_integer (expr_info *c, TOKEN v)
 {
 	if (v == MAGIC_TOKEN)	/* Magic token */
-		return atol(c->args);		/* XXX Probably wrong */
+		return INTFUNC(c->args);		/* XXX Probably wrong */
 
 	if (v < 0 || v >= c->token)
 	{
@@ -790,7 +800,7 @@ __inline static	INTTYPE	get_token_integer (expr_info *c, TOKEN v)
 		const char *	myval = get_token_expanded(c, v);
 
 		TOK(c, v).used |= USED_INTEGER;
-		TOK(c, v).integer_value = atol(myval);
+		TOK(c, v).integer_value = INTFUNC(myval);
 	}
 	return TOK(c, v).integer_value;
 }

@@ -1,4 +1,4 @@
-/* $EPIC: alias.c,v 1.34 2003/10/28 05:53:57 jnelson Exp $ */
+/* $EPIC: alias.c,v 1.35 2003/10/31 08:19:24 crazyed Exp $ */
 /*
  * alias.c -- Handles the whole kit and caboodle for aliases.
  *
@@ -245,10 +245,10 @@ static	void	list_local_alias   (const char *name);
 static	void 	destroy_aliases    (int type);
 
 extern	char *  get_variable       (const char *name);
-extern	char ** glob_cmd_alias          (const char *name, int *howmany);
-extern	char ** glob_assign_alias	(const char *name, int *howmany);
-extern	char ** pmatch_cmd_alias        (const char *name, int *howmany);
-extern	char ** pmatch_assign_alias	(const char *name, int *howmany);
+extern	char ** glob_cmd_alias          (const char *name, int *howmany, int maxret, int start, int rev);
+extern	char ** glob_assign_alias	(const char *name, int *howmany, int maxret, int start, int rev);
+extern	char ** pmatch_cmd_alias        (const char *name, int *howmany, int maxret, int start, int rev);
+extern	char ** pmatch_assign_alias	(const char *name, int *howmany, int maxret, int start, int rev);
 extern	char *  get_cmd_alias           (const char *name, int *howmany, 
 					 char **complete_name, void **args);
 extern	char ** get_subarray_elements   (const char *root, int *howmany, int type);
@@ -825,14 +825,19 @@ void	prepare_alias_call (void *al, char **stuff)
 		switch (args->types[i])
 		{
 			case WORD:
-				if (x_debug & DEBUG_EXTRACTW)
+				if (!(x_debug & DEBUG_EXTRACTW))
+				{
+					type = DWORD_NEVER;
+					do_dequote_it = 0;
+				}
+				else if (args->words[i] <= 1)
 				{
 					type = DWORD_YES;
 					do_dequote_it = 1;
 				}
 				else
 				{
-					type = DWORD_NEVER;
+					type = DWORD_ALWAYS;
 					do_dequote_it = 0;
 				}
 				break;
@@ -1907,7 +1912,7 @@ char *	get_cmd_alias (const char *name, int *howmany, char **complete_name, void
  *
  * Updated as per get_subarray_elements.
  */
-char **	glob_cmd_alias (const char *name, int *howmany)
+char **	glob_cmd_alias (const char *name, int *howmany, int maxret, int start, int rev)
 {
 	int	pos, max;
 	int    	cnt;
@@ -1952,7 +1957,7 @@ char **	glob_cmd_alias (const char *name, int *howmany)
  *
  * Updated as per get_subarray_elements.
  */
-char **	glob_assign_alias (const char *name, int *howmany)
+char **	glob_assign_alias (const char *name, int *howmany, int maxret, int start, int rev)
 {
 	int	pos, max;
 	int    	cnt;
@@ -1995,9 +2000,9 @@ char **	glob_assign_alias (const char *name, int *howmany)
 /*
  * This function is strictly O(N).  This should probably be addressed.
  */
-char **	pmatch_cmd_alias (const char *name, int *howmany)
+char **	pmatch_cmd_alias (const char *name, int *howmany, int maxret, int start, int rev)
 {
-	int	cnt;
+	int	cnt, cnt1;
 	int 	len;
 	char 	**matches = NULL;
 	int 	matches_size = 5;
@@ -2006,10 +2011,15 @@ char **	pmatch_cmd_alias (const char *name, int *howmany)
 	*howmany = 0;
 	matches = RESIZE(matches, char *, matches_size);
 
-	for (cnt = 0; cnt < cmd_alias.max; cnt++)
+	for (cnt1 = 0; cnt1 < cmd_alias.max; cnt1++)
 	{
+		cnt = rev ? cmd_alias.max - cnt1 - 1 : cnt1;
 		if (wild_match(name, cmd_alias.list[cnt]->name))
 		{
+			if (start--)
+				continue;
+			else
+				start++;
 			matches[*howmany] = malloc_strdup(cmd_alias.list[cnt]->name);
 			*howmany += 1;
 			if (*howmany == matches_size)
@@ -2017,6 +2027,8 @@ char **	pmatch_cmd_alias (const char *name, int *howmany)
 				matches_size += 5;
 				RESIZE(matches, char *, matches_size);
 			}
+			if (maxret && --maxret <= 0)
+				break;
 		}
 	}
 
@@ -2031,9 +2043,9 @@ char **	pmatch_cmd_alias (const char *name, int *howmany)
 /*
  * This function is strictly O(N).  This should probably be addressed.
  */
-char **	pmatch_assign_alias (const char *name, int *howmany)
+char **	pmatch_assign_alias (const char *name, int *howmany, int maxret, int start, int rev)
 {
-	int    	cnt;
+	int    	cnt, cnt1;
 	int     len;
 	char    **matches = NULL;
 	int     matches_size = 5;
@@ -2042,10 +2054,15 @@ char **	pmatch_assign_alias (const char *name, int *howmany)
 	*howmany = 0;
 	matches = RESIZE(matches, char *, matches_size);
 
-	for (cnt = 0; cnt < var_alias.max; cnt++)
+	for (cnt1 = 0; cnt1 < var_alias.max; cnt1++)
 	{
+		cnt = rev ? var_alias.max - cnt1 - 1 : cnt1;
 		if (wild_match(name, var_alias.list[cnt]->name))
 		{
+			if (start--)
+				continue;
+			else
+				start++;
 			matches[*howmany] = malloc_strdup(var_alias.list[cnt]->name);
 			*howmany += 1;
 			if (*howmany == matches_size)
@@ -2053,6 +2070,8 @@ char **	pmatch_assign_alias (const char *name, int *howmany)
 				matches_size += 5;
 				RESIZE(matches, char *, matches_size);
 			}
+			if (maxret && --maxret <= 0)
+				break;
 		}
 	}
 
@@ -2459,7 +2478,10 @@ char 	*aliasctl 	(char *input)
 {
 	int list = -1;
 	char *listc;
-	enum { EXISTS, GET, SET, NMATCH, PMATCH, GETPACKAGE, SETPACKAGE } op;
+	enum { EXISTS, GET, SET, NMATCH, PMATCH, GETPACKAGE, SETPACKAGE, MAXRET } op;
+static	int maxret = 0;
+	int start = 0;
+	int reverse = 0;
 
 	GET_STR_ARG(listc, input);
 	if (!my_strnicmp(listc, "AS", 2))
@@ -2468,10 +2490,19 @@ char 	*aliasctl 	(char *input)
 		list = COMMAND_ALIAS;
 	else if (!my_strnicmp(listc, "LO", 2))
 		list = VAR_ALIAS_LOCAL;
+	else if (!my_strnicmp(listc, "MAXR", 4))
+	{
+		int old_maxret = maxret;
+		if (input && *input)
+			GET_INT_ARG(maxret, input);
+		RETURN_INT(old_maxret);
+	}
 	else
 		RETURN_EMPTY;
 
 	GET_STR_ARG(listc, input);
+	if ((start = my_atol(listc)))
+		GET_STR_ARG(listc, input);
 	if (!my_strnicmp(listc, "GETP", 4))
 		op = GETPACKAGE;
 	else if (!my_strnicmp(listc, "G", 1))
@@ -2482,8 +2513,12 @@ char 	*aliasctl 	(char *input)
 		op = SET;
 	else if (!my_strnicmp(listc, "M", 1))
 		op = NMATCH;
+	else if (!my_strnicmp(listc, "RM", 2))
+		op = NMATCH, reverse = 1;
 	else if (!my_strnicmp(listc, "P", 1))
 		op = PMATCH;
+	else if (!my_strnicmp(listc, "RP", 2))
+		op = PMATCH, reverse = 1;
 	else if (!my_strnicmp(listc, "E", 1))
 		op = EXISTS;
 	else
@@ -2556,9 +2591,9 @@ char 	*aliasctl 	(char *input)
 			upper(listc);
 
 			if (list == COMMAND_ALIAS)
-				mlist = glob_cmd_alias(listc, &num);
+				mlist = glob_cmd_alias(listc, &num, maxret, start, reverse);
 			else if (list == VAR_ALIAS)
-				mlist = glob_assign_alias(listc, &num);
+				mlist = glob_assign_alias(listc, &num, maxret, start, reverse);
 			else
 				RETURN_EMPTY;
 
@@ -2581,9 +2616,9 @@ char 	*aliasctl 	(char *input)
 				ctr;
 
 			if (list == COMMAND_ALIAS)
-				mlist = pmatch_cmd_alias(listc, &num);
+				mlist = pmatch_cmd_alias(listc, &num, maxret, start, reverse);
 			else if (list == VAR_ALIAS)
-				mlist = pmatch_assign_alias(listc, &num);
+				mlist = pmatch_assign_alias(listc, &num, maxret, start, reverse);
 			else
 				RETURN_EMPTY;
 

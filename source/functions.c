@@ -1,4 +1,4 @@
-/* $EPIC: functions.c,v 1.140 2003/10/28 05:53:57 jnelson Exp $ */
+/* $EPIC: functions.c,v 1.141 2003/10/31 08:19:24 crazyed Exp $ */
 /*
  * functions.c -- Built-in functions for ircII
  *
@@ -241,6 +241,7 @@ static	char
 	*function_fromw 	(char *),
 	*function_fsize	 	(char *),
 	*function_ftime		(char *),
+	*function_ftruncate 	(char *),
 	*function_functioncall	(char *),
 	*function_geom		(char *),
 	*function_getcap	(char *),
@@ -348,6 +349,7 @@ static	char
 	*function_rpattern 	(char *),
 	*function_rsubstr	(char *),
 	*function_sar 		(char *),
+	*function_sedcrypt 	(char *),
 	*function_seek		(char *),
 	*function_server_version (char *),
 	*function_serverctl	(char *),
@@ -376,6 +378,7 @@ static	char
 	*function_substr	(char *),
 	*function_tan		(char *),
 	*function_tanh		(char *),
+	*function_tell		(char *),
 	*function_timerctl	(char *),
 #ifdef TCL
 	*function_tcl		(char *),
@@ -508,7 +511,9 @@ static BuiltInFunctions	built_in_functions[] =
 	{ "FSEEK",		function_seek		},
 	{ "FSIZE",		function_fsize		},
 	{ "FSKIP",		function_skip		},
+	{ "FTELL",		function_tell		},
 	{ "FTIME",		function_ftime		},
+	{ "FTRUNCATE",		function_ftruncate 	},
 	{ "FUNCTIONCALL",	function_functioncall	},
 	{ "GEOM",		function_geom		},
 	{ "GETARRAYS",          function_getarrays 	},
@@ -654,6 +659,7 @@ static BuiltInFunctions	built_in_functions[] =
 	{ "RPATTERN",           function_rpattern 	},
 	{ "RSUBSTR",		function_rsubstr	},
 	{ "SAR",		function_sar 		},
+	{ "SEDCRYPT",		function_sedcrypt	},
 	{ "SERVERCTL",		function_serverctl	},
 	{ "SERVERGROUP",	function_servergroup	},
 	{ "SERVERNAME",		function_servername	},
@@ -1033,14 +1039,14 @@ static	unsigned long	rn = 0;
 
 	GET_INT_ARG(tempin, word);
 	if (tempin == 0)
-		RETURN_INT(random_number(0));
+		ret = random_number(0);
 	else {
 		if (rn < tempin)
 			rn ^= random_number(0);
 		ret = rn % tempin;
 		rn /= tempin;
-		RETURN_INT(ret);
 	}
+	RETURN_INT(ret);
 }
 
 /*
@@ -1423,7 +1429,7 @@ BUILT_IN_FUNCTION(function_word, word)
 	if (cvalue < 0)
 		RETURN_EMPTY;
 
-	while (cvalue-- > 0)
+	while (cvalue-- > 0 && word && *word)
 		w_word = new_next_arg(word, &word);
 
 	GET_STR_ARG(w_word, word);
@@ -2978,13 +2984,16 @@ BUILT_IN_FUNCTION(function_open, words)
 {
 	char *filename;
 	GET_STR_ARG(filename, words);
+	GET_STR_ARG(words, words); /* clobbers remaining args */
 
-	if (words && *words && toupper(*words) == 'R')
-		RETURN_INT(open_file_for_read(filename));
-	else if (words && *words && toupper(*words) == 'W')
-		RETURN_INT(open_file_for_write(filename));
-	else
+	if (!words || !*words)
 		RETURN_EMPTY;
+	else if (!my_stricmp(words, "R"))
+		RETURN_INT(open_file_for_read(filename));
+	else if (!my_stricmp(words, "W"))
+		RETURN_INT(open_file_for_write(filename, "a"));
+	else
+		RETURN_INT(open_file_for_write(filename, words));
 }
 
 BUILT_IN_FUNCTION(function_close, words)
@@ -3061,6 +3070,12 @@ BUILT_IN_FUNCTION(function_skip, words)
 	RETURN_INT(file_skip(arg1, arg2));
 }
 
+BUILT_IN_FUNCTION(function_tell, words)
+{
+	RETURN_IF_EMPTY(words);
+	RETURN_INT(file_tell(my_atol(new_next_arg(words, &words))));
+}
+
 BUILT_IN_FUNCTION(function_isfilevalid, words)
 {
 	RETURN_IF_EMPTY(words);
@@ -3071,6 +3086,17 @@ BUILT_IN_FUNCTION(function_rewind, words)
 {
 	RETURN_IF_EMPTY(words);
 	RETURN_INT(file_rewind(my_atol(new_next_arg(words, &words))));
+}
+
+BUILT_IN_FUNCTION(function_ftruncate, words)
+{
+	off_t	length;
+	char	*ret = NULL;
+
+	GET_INT_ARG(length, words);
+	if (truncate(words, length))
+		ret = strerror(errno);
+	RETURN_STR(ret);
 }
 
 BUILT_IN_FUNCTION(function_iptoname, words)
@@ -3195,7 +3221,10 @@ BUILT_IN_FUNCTION(function_unlink, words)
 
 	while (words && *words)
 	{
-		if (normalize_filename(new_next_arg(words, &words), expanded))
+		char *fn = new_next_arg(words, &words);
+		if (!fn || !*fn)
+			fn = words, words = NULL;
+		if (normalize_filename(fn, expanded))
 			failure++;
 		else if (unlink(expanded))
 			failure++;
@@ -3227,7 +3256,10 @@ BUILT_IN_FUNCTION(function_rmdir, words)
 
 	while (words && *words)
 	{
-		if (normalize_filename(new_next_arg(words, &words), expanded))
+		char *fn = new_next_arg(words, &words);
+		if (!fn || !*fn)
+			fn = words, words = NULL;
+		if (normalize_filename(fn, expanded))
 			failure++;
 		else if (rmdir(expanded))
 			failure++;
@@ -3910,7 +3942,10 @@ BUILT_IN_FUNCTION(function_mkdir, words)
 
 	while (words && *words)
 	{
-		normalize_filename(new_next_arg(words, &words), expanded);
+		char *fn = new_next_arg(words, &words);
+		if (!fn || !*fn)
+			fn = words, words = NULL;
+		normalize_filename(fn, expanded);
 		if (mkdir(expanded, 0777))
 			failure++;
 	}
@@ -4254,6 +4289,9 @@ BUILT_IN_FUNCTION(function_ftime, words)
 	Stat 	s;
 
 	GET_STR_ARG(filename, words);
+
+	if (!filename || !*filename)
+		filename = words, words = NULL;
 
 	if (normalize_filename(filename, fullname))
 		RETURN_EMPTY;
@@ -6027,8 +6065,10 @@ BUILT_IN_FUNCTION(function_hash_32bit, input)
 	int		h_val;
 	int		len;
 
-	GET_STR_ARG(word, input)
-	len = my_atol(input);
+	word = new_next_arg(input, &input);
+	len = my_atol(safe_new_next_arg(input, &input));
+	if (!*word)
+		word = input;
 
 	if (len <= 0 || len > 64)
 		len = 20;
@@ -6630,6 +6670,22 @@ BUILT_IN_FUNCTION(function_encryptparm, input)
 	}
 
 	RETURN_MSTR(ret);
+}
+
+BUILT_IN_FUNCTION(function_sedcrypt, input)
+{
+	Crypt	*key;
+	int	flag;
+	char	*from;
+       	char	*ret = NULL;
+
+	GET_INT_ARG(flag, input);
+	GET_STR_ARG(from, input);
+
+	if ((key = is_crypted(from)))
+		ret = do_crypt(input, key, flag);
+
+	RETURN_STR(ret);
 }
 
 BUILT_IN_FUNCTION(function_serverctl, input)

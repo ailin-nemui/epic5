@@ -7,11 +7,16 @@
 # they do all the work in one call, they can be faster than the recursive
 # struct functions.
 #
+# For each assign.* alias, a corresponding alias.*, but some of them have
+# implicit bugs from the fact that arg lists can't yet be retrieved for stored
+# aliases.
+#
 
 #
 # Assign functions.
 #
-# Make two aliases for every alias.  One for assign handling, one for alias handling.
+# Make two aliases for every alias.  One for assign handling, one for alias
+# handling, then make two more for forward and reverse modes.
 #
 stack push alias alias.ttt
 stack push alias alias.tt
@@ -32,7 +37,8 @@ alias alias.tt (args) {
 # Check the consistency of the internal structures.  The only
 # reason to use these is if an epic bug is suspected.
 #
-alias.tt assign.check {
+alias.ttt assign.check {
+	@ :omr = aliasctl(maxret 0)
 	@ :last = []
 	@ :list = aliasctl(assign pmatch "\\[$*\\]")
 	fe ($list) foo {
@@ -41,14 +47,17 @@ alias.tt assign.check {
 			@ last = foo
 		}
 	}
+	@ aliasctl(maxret $omr)
 	echo Checked $#list assigns matching $*
 }
 #
 # Faster version.  Tells you whether there's an error, not where it is.
 #
-alias.tt assign.qcheck {
+alias.ttt assign.qcheck {
+	@ :omr = aliasctl(maxret 0)
 	@ :list = aliasctl(assign pmatch "\\[$*\\]")
 	@ :status = uniq($list) == sort($list) ? [passed] : [failed]
+	@ aliasctl(maxret $omr)
 	echo Checked $#list assigns matching $*: $status
 }
 
@@ -88,7 +97,8 @@ alias.tt assign.grep (args) {
 }
 
 #
-# Delete and reassign all matching vars.  Theoretically, this is a no-op.
+# Delete and reassign all matching vars.  Theoretically, this is a no-op,
+# however, alias.pack will destroy the arg lists of the alias.
 #
 alias.tt assign.pack {
 	@ :baz = []
@@ -111,42 +121,46 @@ alias.tt assign.pack {
 #
 alias.tt assign.purge {
 	if (functioncall()) {
-		@ :matches = 0
 		@ :list = aliasctl(assign pmatch "\\[$*\\]")
 		@ :list = revw($list)
 		fe ($list) bar {^assign -$bar}
-		@ matches += #list
-		return $matches
+		return $#list
 	} else {
-		@ :list = assign.purge($*)
-		if (isdisplaying()) {
-			echo Purged $list matching $*
-		}
+		do {
+			@ :list = assign.purge($*)
+			if (isdisplaying()) {
+				echo Purged $list matching $*
+			}
+		} while (list && list == aliasctl(maxret))
 	}
 }
 
 #
-# Write matching assigns to a file which can then be /load'ed.
+# Write matching assigns to a file which can then be /load'ed.  Any arg lists
+# in the original definition won't be saved by alias.save.
 #
 alias.tt assign.save {
 	@ :pkg = rand(0)
-	@ :fh = open($0 W T)
-	@ :matches = 0
-	@ :list = aliasctl(assign pmatch "\\[$1-\\]")
-	fe list foo {
-		if (pkg != aliasctl(assign getpackage $foo)) {
-			@ write($fh PACKAGE ${pkg=aliasctl(assign getpackage $foo)})
+	@ :fh = open($0 W)
+	@ :start = []
+	do {
+		@ :list = aliasctl(assign $start pmatch "\\[$1-\\]")
+		fe list foo {
+			if (pkg != aliasctl(assign getpackage $foo)) {
+				@ write($fh PACKAGE ${pkg=aliasctl(assign getpackage $foo)})
+			}
+			@ write($fh assign $foo $sar(g/\{/\\\{/$sar(g/\}/\\\}/$aliasctl(assign get $foo))))
+			@ foo = 0
 		}
-		@ write($fh assign $foo $sar(g/\{/\\\{/$sar(g/\}/\\\}/$aliasctl(assign get $foo))))
-		@ foo = 0
-	}
-	@ matches += #list
+		if (functioncall()) {
+			break
+		} elsif (isdisplaying()) {
+			echo Wrote $#list matching $1-
+		}
+		@ :start += aliasctl(maxret)
+	} while (#list && start)
 	@ close($fh)
-	if (functioncall()) {
-		return $matches
-	} elsif (isdisplaying()) {
-		echo Wrote $matches matching $1-
-	}
+	return $#list
 }
 #
 # As for .save, but write a $decode() encoded file which won't be
@@ -154,23 +168,26 @@ alias.tt assign.save {
 #
 alias.tt assign.esave {
 	@ :pkg = rand(0)
-	@ :fh = open($0 W T)
-	@ :matches = 0
-	@ :list = aliasctl(assign pmatch "\\[$1-\\]")
-	fe list foo {
-		if (pkg != aliasctl(assign getpackage $foo)) {
-			@ write($fh PACKAGE ${pkg=aliasctl(assign getpackage $foo)})
+	@ :fh = open($0 W)
+	@ :start = []
+	do {
+		@ :list = aliasctl(assign $start pmatch "\\[$1-\\]")
+		fe list foo {
+			if (pkg != aliasctl(assign getpackage $foo)) {
+				@ write($fh PACKAGE ${pkg=aliasctl(assign getpackage $foo)})
+			}
+			@ write($fh @aliasctl\(assign set $foo \$decode\($encode($aliasctl(assign get $foo))\)\))
+			@ foo = 0
 		}
-		@ write($fh @aliasctl\(assign set $foo \$decode\($encode($aliasctl(assign get $foo))\)\))
-		@ foo = 0
-	}
-	@ matches += #list
+		if (functioncall()) {
+			break
+		} elsif (isdisplaying()) {
+			echo Wrote $#list matching $1-
+		}
+		@ :start += aliasctl(maxret)
+	} while (#list && start)
 	@ close($fh)
-	if (functioncall()) {
-		return $matches
-	} elsif (isdisplaying()) {
-		echo Wrote $matches matching $1-
-	}
+	return $#list
 }
 
 #
@@ -180,9 +197,9 @@ alias.tt assign.esave {
 #
 alias.tt assign.flush {
 	do {
-		assign.save $*
-		assign.purge $1-
-		@ :bar = numwords($aliasctl(assign pmatch "\\[$1-\\]"))
+		@ :bar = assign.save($*)
+		@ :bar = assign.purge($1-)
+		echo Flushed $bar matching $1-
 	} while (foo != (:foo = bar) || (foo && foo == aliasctl(maxret)))
 }
 #
@@ -190,9 +207,9 @@ alias.tt assign.flush {
 #
 alias.tt assign.eflush {
 	do {
-		assign.esave $*
-		assign.purge $1-
-		@ :bar = numwords($aliasctl(assign pmatch "\\[$1-\\]"))
+		@ :bar = assign.esave($*)
+		@ :bar = assign.purge($1-)
+		echo Flushed $bar matching $1-
 	} while (foo != (:foo = bar) || (foo && foo == aliasctl(maxret)))
 }
 

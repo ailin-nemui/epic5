@@ -76,7 +76,7 @@ alias 1cmd {
 		@ onecmd[$eserv][$foo] = time()
 		$1-
 	}
-	if ((!rand(10)) && time() != onecmd[$eserv]) {
+	if (time() != onecmd[$eserv] && (!rand(100))) {
 		@ onecmd[$eserv] = time()
 		foreach onecmd[$eserv] bar {
 			if (onecmd[$eserv][$bar] < time()) {
@@ -134,6 +134,7 @@ fe (q push fq unshift) cmd op {
 			if (1 == #) {
 				@ foo = [$0]
 			} elsif (islagged()) {
+				@ :bar = [ ]
 				# Do nothing if we're lagged.
 				# This is meant to be a link to a
 				# fictitious lag measurement script.

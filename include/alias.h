@@ -35,7 +35,7 @@
 	void 	add_cmd_stub_alias 	(const char *name, const char *stuff);
 
 	char *	get_variable		(const char *name);
-	char **	glob_cmd_alias		(const char *name, int *howmany);
+	char **	glob_cmd_alias		(const char *name, int *howmany, int maxret, int start, int rev);
 	char *	get_cmd_alias   	(const char *name, int *howmany, 
 					 char **complete_name, void **args);
 	char **	get_subarray_elements 	(const char *root, int *howmany, int type);

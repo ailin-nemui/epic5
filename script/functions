@@ -272,9 +272,10 @@ stack pop alias alias
 
 # A version of $indextoword() that ignores double quoting.
 alias indextowword return $indextoword($tr(/"/_/$*))
+alias wwordtoindex return $wordtoindex($tr(/"/_/$*))
 
 # Character jot.
-# $jot(afWZ) returns abcdefWXYZ.
+# $jotc(afWZ) returns abcdefWXYZ.
 alias jotc return $chr($jotm($ascii($*)))
 alias jotm (ret) {
 	fe ret foo bar {
