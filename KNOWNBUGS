@@ -25,6 +25,15 @@ KNOWN ERRATA (eg, bugs, or unresolved requests):
 * Handle all filesizes in dcc uniformly as 64 bit off_t's.
 * Built in functions need to call 'parse_server_index'!
 * Study update_input() and update_all_windows() and determine if used properly
+* Change AC_ARG_WITH(ipv6, to AC_ARG_USING(ipv6,
+<larne> AC_ARG_ENABLE(protocols, 
+<larne> [  --enable-protocols=protocol[[,protocol...]] Select which protocols
++to support [[default: all]].], 
+<larne> [ protocols=$enableval ], 
+<larne> [ protocols=$defaultprots ]) 
+* DCC send yourself a file and then DCC get it leads to wackiness
+* New function, you give it a window level, it gives you the window refnum
+
 ---
 
 [See http://www.epicsol.org/PROJECTS for things to come in the future]
@@ -64,3 +73,16 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Fix $timerctl() so it actually works (REFNUM/DELETE/GET/SET were broken)
 * Fix /TIMER -UPDATE so it doesn't reset events to -1 automatically.
 * Fix panic when you /server over from and to a connected server with chans
+* Const correctness improvements.
+* Invert the meaning of 'new_check_flooding' to return TRUE if flooding.
+* Revamp funny.c, /list, /names, /mode reply handling.
+* Remove unused joined_nick, public_nick
+* Change got_initial_version_28() arguments singly and not an array
+* Change signature of protocol handling to take "command" as an argument
+* The above change cascades to a lot of other changes.
+* Allow the /msg'ing of @W<refnum> to msg a window's refnum.
+* First round of larnification (Protection against unexpected server data)
+* This involved substantial rewrites of parse.c, and numbers.c
+* Now "fake" stuff goes through /on odd_server_stuff.
+* Fix /on invite so it takes 3 arguments, not 2.
+

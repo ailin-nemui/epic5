@@ -8,8 +8,8 @@
 #ifndef __notice_h__
 #define __notice_h__
 
-	void 	parse_notice 		(char *, char **);
-	void 	got_initial_version_28 	(char **);
+	void 	parse_notice 		(const char *, const char *, char **);
+	void 	got_initial_version_28 	(const char *, const char *, const char *);
 	void	load_ircrc		(void);
 
 #endif

@@ -1,4 +1,4 @@
-/* $EPIC: who.c,v 1.14 2002/12/26 16:40:31 jnelson Exp $ */
+/* $EPIC: who.c,v 1.15 2003/01/26 03:25:38 jnelson Exp $ */
 /*
  * who.c -- The WHO queue.  The ISON queue.  The USERHOST queue.
  *
@@ -241,7 +241,7 @@ BUILT_IN_COMMAND(whocmd)
 /*
  * whobase: What does all the work.
  */
-void 	whobase (int refnum, char *args, void (*line) (int, char *, char **), void (*end) (int, char *, char **))
+void 	whobase (int refnum, char *args, void (*line) (int, const char *, const char *, char **), void (*end) (int, const char *, const char *, char **))
 {
 	char	*arg,
 		*channel = NULL;
@@ -471,7 +471,7 @@ void 	whobase (int refnum, char *args, void (*line) (int, char *, char **), void
 
 static int who_whine = 0;
 
-void	whoreply (int refnum, char *from, char **ArgList)
+void	whoreply (int refnum, const char *from, const char *comm, char **ArgList)
 {
 static	char	format[40];
 static	int	last_width = -1;
@@ -516,7 +516,7 @@ do
 	 */
 	if (new_w->line)
 	{
-		new_w->line(refnum, from, ArgList);
+		new_w->line(refnum, from, comm, ArgList);
 		continue;
 	}
 
@@ -610,7 +610,7 @@ while (new_w->piggyback && (new_w = new_w->next));
 }
 
 /* Undernet's 354 numeric reply. */
-void	xwhoreply (int refnum, char *from, char **ArgList)
+void	xwhoreply (int refnum, const char *from, const char *comm, char **ArgList)
 {
 	WhoEntry *new_w = who_queue_top(refnum);
 
@@ -634,10 +634,12 @@ void	xwhoreply (int refnum, char *from, char **ArgList)
 }
 
 
-void	who_end (int refnum, char *from, char **ArgList)
+void	who_end (int refnum, const char *from, const char *comm, char **ArgList)
 {
 	WhoEntry 	*new_w = who_queue_top(refnum);
 	char 		buffer[1025];
+
+	PasteArgs(ArgList, 0);
 
 	if (who_whine)
 		who_whine = 0;
@@ -648,7 +650,7 @@ void	who_end (int refnum, char *from, char **ArgList)
 	{
 		/* Defer to another function, if neccesary.  */
 		if (new_w->end)
-			new_w->end(refnum, from, ArgList);
+			new_w->end(refnum, from, comm, ArgList);
 		else
 		{
 			snprintf(buffer, 1024, "%s %s", from, ArgList[0]);
@@ -678,7 +680,7 @@ void	who_end (int refnum, char *from, char **ArgList)
  * to correctly match up error codes to requests.  Gee whiz, you wouldn't
  * think it would be that hard to get this right.
  */
-int	fake_who_end (int refnum, char *from, char *who_target)
+int	fake_who_end (int refnum, const char *from, const char *comm, const char *who_target)
 {
 	WhoEntry 	*new_w = who_queue_top(refnum);
 
@@ -693,15 +695,20 @@ int	fake_who_end (int refnum, char *from, char *who_target)
 
 	if (who_target != NULL)
 	{
-		while (last_char(who_target) == ' ')
-			chop(who_target, 1);
+		char *target;
+
+		target = LOCAL_COPY(who_target);
+		while (last_char(target) == ' ')
+			chop(target, 1);
 
 		/*
 		 * So 'who_target' isn't NULL here.  Make sure it's a 
 		 * legitimate match to our current top of who request.
 		 */
-		if (strncmp(new_w->who_target, who_target, strlen(who_target)))
+		if (strncmp(new_w->who_target, target, strlen(target)))
 			return 0;
+
+		who_target = target;
 	}
 
 	do
@@ -715,7 +722,7 @@ int	fake_who_end (int refnum, char *from, char *who_target)
 			fake_ArgList[0] = new_w->who_target;
 			fake_ArgList[1] = "fake_who_end";
 			fake_ArgList[2] = NULL;
-			new_w->end(refnum, from, fake_ArgList);
+			new_w->end(refnum, from, comm, fake_ArgList);
 		}
 		else if (new_w->who_end)
 		{
@@ -877,7 +884,7 @@ void isonbase (int refnum, char *args, void (*line) (int, char *, char *))
  * Although we will check first that the top element expected is
  * actually an ISON.
  */
-void	ison_returned (int refnum, char *from, char **ArgList)
+void	ison_returned (int refnum, const char *from, const char *comm, char **ArgList)
 {
 	IsonEntry *new_i = ison_queue_top(refnum);
 
@@ -988,7 +995,7 @@ BUILT_IN_COMMAND(usripcmd)
 	userhostbase(from_server, args, NULL, 2);
 }
 
-void userhostbase (int refnum, char *args, void (*line) (int, UserhostItem *, char *, char *), int userhost)
+void userhostbase (int refnum, char *args, void (*line) (int, UserhostItem *, const char *, const char *), int userhost)
 {
 	int	total = 0,
 		userhost_cmd = 0;
@@ -1123,7 +1130,7 @@ void userhostbase (int refnum, char *args, void (*line) (int, UserhostItem *, ch
  * through this queue will cause it to be corrupted and the client will
  * go higgledy-piggledy.
  */
-void	userhost_returned (int refnum, char *from, char **ArgList)
+void	userhost_returned (int refnum, const char *from, const char *comm, char **ArgList)
 {
 	UserhostEntry *top = userhost_queue_top(refnum);
 	char *ptr;
@@ -1253,7 +1260,7 @@ void	userhost_returned (int refnum, char *from, char **ArgList)
 	userhost_queue_pop(refnum);
 }
 
-void	userhost_cmd_returned (int refnum, UserhostItem *stuff, char *nick, char *text)
+void	userhost_cmd_returned (int refnum, UserhostItem *stuff, const char *nick, const char *text)
 {
 	char	args[BIG_BUFFER_SIZE + 1];
 

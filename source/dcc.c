@@ -1,4 +1,4 @@
-/* $EPIC: dcc.c,v 1.43 2002/12/23 15:11:26 jnelson Exp $ */
+/* $EPIC: dcc.c,v 1.44 2003/01/26 03:25:38 jnelson Exp $ */
 /*
  * dcc.c: Things dealing client to client connections. 
  *
@@ -135,8 +135,8 @@ static	char *		dcc_urldecode		(const char *);
 
 #ifdef MIRC_BROKEN_DCC_RESUME
 static	void		dcc_getfile_resume 	    (char *);
-static 	void 		dcc_getfile_resume_demanded (char *, char *, char *, char *);
-static	void		dcc_getfile_resume_start    (char *, char *, char *, char *);
+static 	void 		dcc_getfile_resume_demanded (const char *, char *, char *, char *);
+static	void		dcc_getfile_resume_start    (const char *, char *, char *, char *);
 #endif
 
 
@@ -1783,7 +1783,7 @@ char	*dcc_raw_connect (const char *host, const char *port, int family)
  *
  * XXX This function is not really family independant (but it's close)
  */
-void	register_dcc_offer (char *user, char *type, char *description, char *address, char *port, char *size, char *extra, char *rest)
+void	register_dcc_offer (const char *user, char *type, char *description, char *address, char *port, char *size, char *extra, char *rest)
 {
 	DCC_list *	Client;
 	int		CType, jvs_blah;
@@ -1957,9 +1957,12 @@ void	register_dcc_offer (char *user, char *type, char *description, char *addres
 
   	if (do_auto)
   	{
+		char *copy;
+
                 if (do_hook(DCC_CONNECT_LIST,"%s CHAT", user))
 			say("DCC CHAT already requested by %s, connecting...", user);
-  		dcc_chat(user);
+		copy = LOCAL_COPY(user);
+  		dcc_chat(copy);
 		return;
 	}
 
@@ -2754,7 +2757,7 @@ static	void 	output_reject_ctcp (int refnum, char *original, char *received)
 /*
  * This is called when someone sends you a CTCP DCC REJECT.
  */
-void 	dcc_reject (char *from, char *type, char *args)
+void 	dcc_reject (const char *from, char *type, char *args)
 {
 	DCC_list *	Client;
 	char *		description;
@@ -2987,7 +2990,7 @@ static	void	dcc_getfile_resume (char *args)
  * When the peer demands DCC RESUME
  * We send out a DCC ACCEPT
  */
-static void dcc_getfile_resume_demanded (char *user, char *filename, char *port, char *offset)
+static void dcc_getfile_resume_demanded (const char *user, char *filename, char *port, char *offset)
 {
 	DCC_list	*Client;
 	int		proto;
@@ -3030,7 +3033,7 @@ static void dcc_getfile_resume_demanded (char *user, char *filename, char *port,
  * When we get the DCC ACCEPT
  * We start the connection
  */
-static	void	dcc_getfile_resume_start (char *nick, char *filename, char *port, char *offset)
+static	void	dcc_getfile_resume_start (const char *nick, char *filename, char *port, char *offset)
 {
 	DCC_list	*Client;
 	Filename	fullname, pathname;

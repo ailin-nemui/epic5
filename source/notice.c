@@ -1,4 +1,4 @@
-/* $EPIC: notice.c,v 1.15 2002/12/19 03:22:59 jnelson Exp $ */
+/* $EPIC: notice.c,v 1.16 2003/01/26 03:25:38 jnelson Exp $ */
 /*
  * notice.c: special stuff for parsing NOTICEs
  *
@@ -90,7 +90,7 @@ static void 	parse_note (char *from, char *line)
 			high = empty_string;
 	}
 
-	if (!check_flooding(from, FromUserHost, NOTE_FLOOD, line))
+	if (check_flooding(from, FromUserHost, NOTE_FLOOD, line))
 		return;
 
 /* 
@@ -143,7 +143,7 @@ static time_t	convert_note_time_to_real_time(char *stuff)
  * This parses NOTICEs that are sent from that wacky ircd we are connected
  * to, and 'to' is guaranteed not to be a channel.
  */
-static 	void 	parse_local_server_notice (char *from, char *to, char *line)
+static 	void 	parse_local_server_notice (const char *from, char *to, char *line)
 {
 	int	lastlog_level;
 	const char *	f;
@@ -215,7 +215,7 @@ static 	void 	parse_local_server_notice (char *from, char *to, char *line)
 /*
  * The main handler for those wacky NOTICE commands...
  */
-void 	parse_notice (char *from, char **Args)
+void 	parse_notice (const char *from, const char *orig, char **Args)
 {
 	int	level,
 		type;
@@ -315,7 +315,7 @@ void 	parse_notice (char *from, char **Args)
 	}
 
 	/* Do not parse the notice if we are being flooded */
-	if (!no_flooding)
+	if (no_flooding)
 		goto the_end;
 
 	/* Offer the notice to the user and do output */
@@ -350,19 +350,11 @@ the_end:
  *
  * Hacked as neccesary by jfn, May 1995
  */
-void 	got_initial_version_28 (char **ArgList)
+void 	got_initial_version_28 (const char *server, const char *version, const char *umodes)
 {
-	char *server, *version, *umodes;
-
-	server = ArgList[0];
-	version = ArgList[1];
-	umodes = ArgList[2];
-
+	/* Worthless 004 reply.  Hope for the best! */
 	if (!server || !version || !umodes)
 	{
-		yell("Bummer.  This server returned a worthless 004 numeric.");
-		yell("I'll have to guess at all the values");
-
 		set_server_version(from_server, Server2_8);
 		set_server_version_string(from_server, "<none provided>");
 		set_server_itsname(from_server, get_server_name(from_server));

@@ -29,18 +29,19 @@ typedef struct WhoEntryT
 	char *who_stuff;
 	char *who_end;
         struct WhoEntryT *next;
-	void (*line) (int, char *, char **);
-	void (*end) (int, char *, char **);
+	void (*line) (int, const char *, const char *, char **);
+	void (*end) (int, const char *, const char *, char **);
 
 } WhoEntry;
 
 	BUILT_IN_COMMAND(whocmd);
-	void 	whobase (int, char *, void (*)(int, char *, char **), 
-				void (*)(int, char *, char **));
-	void 	whoreply (int, char *, char **);
-	void 	xwhoreply (int, char *, char **);
-	void 	who_end (int, char *, char **);
-	int 	fake_who_end (int, char *, char *);
+	void 	whobase (int, char *, 
+			   void (*)(int, const char *, const char *, char **), 
+			   void (*)(int, const char *, const char *, char **));
+	void 	whoreply (int, const char *, const char *, char **);
+	void 	xwhoreply (int, const char *, const char *, char **);
+	void 	who_end (int, const char *, const char *, char **);
+	int 	fake_who_end (int, const char *, const char *, const char *);
 
 
 
@@ -56,7 +57,7 @@ typedef struct IsonEntryT
 
 	BUILT_IN_COMMAND(isoncmd);
 	void 	isonbase 	(int refnum, char *args, void (*line) (int, char *, char *));
-	void 	ison_returned 	(int, char *, char **);
+	void 	ison_returned 	(int, const char *, const char *, char **);
 
 
 
@@ -77,7 +78,7 @@ typedef struct UserhostEntryT
 	char *		userhost_asked;
 	char *		text;
 	struct UserhostEntryT *	next;
-	void 		(*func) (int, UserhostItem *, char *, char *);
+	void 		(*func) (int, UserhostItem *, const char *, const char *);
 } UserhostEntry;
 
 	BUILT_IN_COMMAND(userhostcmd);
@@ -85,8 +86,8 @@ typedef struct UserhostEntryT
 	BUILT_IN_COMMAND(usripcmd);
 	void 	userhostbase 		(int refnum, char *arg, 
 					void (*line) (int, UserhostItem *, 
-							char *, char *), int);
-	void 	userhost_returned 	(int, char *, char **);
-	void 	userhost_cmd_returned 	(int, UserhostItem *, char *, char *);
+						const char *, const char *), int);
+	void 	userhost_returned 	(int, const char *, const char *, char **);
+	void 	userhost_cmd_returned 	(int, UserhostItem *, const char *, const char *);
 
 #endif 

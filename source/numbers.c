@@ -1,4 +1,4 @@
-/* $EPIC: numbers.c,v 1.33 2002/12/19 03:22:59 jnelson Exp $ */
+/* $EPIC: numbers.c,v 1.34 2003/01/26 03:25:38 jnelson Exp $ */
 /*
  * numbers.c: handles all those strange numeric response dished out by that
  * wacky, nutty program we call ircd 
@@ -95,7 +95,7 @@ char	*numeric_banner (void)
  * Simplified by Jeremy Nelson (esl) some time in 1996.
  * -- called by more than one place.
  */
-void 	display_msg (char *from, char **ArgList)
+void 	display_msg (const char *from, char **ArgList)
 {
 	char	*ptr = NULL;
 	char	*rest;
@@ -168,30 +168,45 @@ void 	display_msg (char *from, char **ArgList)
  *	ArgN		->	ArgList[N-1]
  *	NULL		->	ArgList[N]
  */
-void 	numbered_command (char *from, int comm, char **ArgList)
+void 	numbered_command (const char *from, const char *orig_comm, char **ArgList)
 {
-	char	*user;
-	char	none_of_these = 0;
-	int	flag,
-		lastlog_level;
+	const char	*target;
+	char	*copy;
+	int	i;
+	int	lastlog_level;
 	int	old_current_numeric = current_numeric;
+	int	comm;
 
-	/* There are no valid numerics that do not have arguments */
-	if (!ArgList[0] || !ArgList[1])
-		return;
-
-	user = (*ArgList[0]) ? ArgList[0] : NULL;
+	/* All numerics must have a target (our nickname) */
+	if (!orig_comm || !*orig_comm)
+		{ rfc1459_odd(from, orig_comm, ArgList); return; }
+	if (!(target = ArgList[0]))
+		{ rfc1459_odd(from, orig_comm, ArgList); return; }
 	ArgList++;
 
 	lastlog_level = set_lastlog_msg_level(LOG_CRAP);
-	message_from(NULL, LOG_CRAP);
+	if (ArgList[0] && is_channel(ArgList[0]))
+		message_from(ArgList[0], LOG_CRAP);
+	else
+		message_from(NULL, LOG_CRAP);
 
+	comm = atol(orig_comm);
 	current_numeric = -comm;	/* must be negative of numeric! */
 
 	/*
-	 * This first switch statement is only for those numerics which
-	 * require special handling by the client.  Numerics which require
-	 * no more than displaying a message are handled below and not here.
+	 * This first switch statement is only used for those numerics
+	 * which either need to perform some action before the numeric
+	 * is offered to the user, or by those actions which need to offer
+	 * the numeric to the user in some special manner.  
+	 *
+	 * Those numerics which require only special display if the user
+	 * does not hook them, are handled below.
+	 *
+	 * Those numerics which require special action after the numeric
+	 * is offered to the user, are also handled below.
+	 *
+	 * Each of these numerics must either "break" (go to step 2)
+	 * or must "goto END" (goto step 3).
 	 */
 	switch (comm)
 	{
@@ -204,13 +219,9 @@ void 	numbered_command (char *from, int comm, char **ArgList)
 	 */
 	case 001:	/* #define RPL_WELCOME          001 */
 	{
-		accept_server_nickname(from_server, user);
+		accept_server_nickname(from_server, target);
 		server_is_registered(from_server, 1);
-
 		userhostbase(from_server, NULL, got_my_userhost, 1);
-		PasteArgs(ArgList, 0);
-		if (do_hook(current_numeric, "%s %s", from, *ArgList)) 
-			display_msg(from, ArgList);
 		break;
 	}
 
@@ -218,13 +229,26 @@ void 	numbered_command (char *from, int comm, char **ArgList)
 	 * Now instead of the terribly horrible hack using numeric 002
 	 * to get the server name/server version info, we use the 004
 	 * numeric which is what is the most logical choice for it.
+	 *
+	 * If any of the arguments are missing, we don't abort, because
+	 * the client needs 004 to sync.  Instead, we just pass in the
+	 * NULL values and hope for the best...
 	 */
 	case 004:	/* #define RPL_MYINFO           004 */
 	{
-		got_initial_version_28(ArgList);
-		PasteArgs(ArgList, 0);
-		if (do_hook(current_numeric, "%s %s", from, *ArgList))
-			display_msg(from, ArgList);
+		const char 	*server = NULL, 
+				*version = NULL, 
+				*umodes = NULL;
+
+		PasteArgs(ArgList, 3);
+		if (!(server = ArgList[0]))
+			{ rfc1459_odd(from, orig_comm, ArgList); }
+		else if (!(version = ArgList[1]))
+			{ rfc1459_odd(from, orig_comm, ArgList); }
+		else if (!(umodes = ArgList[2]))
+			{ rfc1459_odd(from, orig_comm, ArgList); }
+
+		got_initial_version_28(server, version, umodes);
 		break;
 	}
 
@@ -240,373 +264,130 @@ void 	numbered_command (char *from, int comm, char **ArgList)
 			set_server_005(from_server, set, value?value:space);
 			new_free(&set);
 		}
-		PasteArgs(ArgList, 0);
-		if (do_hook(current_numeric, "%s %s", from, *ArgList))
-			display_msg(from, ArgList);
 		break;
 	}
 
 	case 10:		/* EFNext "Use another server"	010 */
 	{
-		char *	new_server;
-		int	new_port;
-		int	old_server = from_server;
+		const char *	new_server;
+		const char *	new_port_s;
+		const char *	message;
+		int		new_port;
+		int		old_server;
 
-		if (!ArgList[0] || !ArgList[1] || !ArgList[2])
-			break;		/* Not what i'm expecting */
-
-		new_server = ArgList[0];
-		new_port = atoi(ArgList[1]);
 		PasteArgs(ArgList, 2);
+		if (!(new_server = ArgList[0]))
+			{ rfc1459_odd(from, orig_comm, ArgList); goto END; }
+		if (!(new_port_s = ArgList[1]))
+			{ rfc1459_odd(from, orig_comm, ArgList); goto END; }
+		if (!(message = ArgList[2]))
+			{ rfc1459_odd(from, orig_comm, ArgList); goto END; }
+		new_port = atol(ArgList[1]);
 
 		/* Must do these things before calling "display_msg" */
+		old_server = from_server;
 		add_to_server_list(new_server, new_port, NULL, NULL,
 				get_server_group(from_server), NULL, 0);
 		server_reconnects_to(old_server, from_server);
 		from_server = old_server;
 
-		if (do_hook(current_numeric, "%s %s %d %s", from, 
-				new_server, new_port, ArgList[2]))
-			display_msg(from, ArgList);
 		break;
 	}
 
 	case 14:		/* Erf/TS4 "cookie" numeric	014 */
 		use_server_cookie(from_server);
 		set_server_cookie(from_server, ArgList[0]);
-		break;
+		goto END;
 
-	/* XXX Doesn't belong here */
-	case 301:		/* #define RPL_AWAY             301 */
+        case 301:               /* #define RPL_AWAY             301 */
         {
-		if (!ArgList[0] || !ArgList[1])
-			break;		/* Not what i'm expecting */
-
                 PasteArgs(ArgList, 1);
                 if (do_hook(current_numeric, "%s %s", ArgList[0], ArgList[1]))
-                        put_it("%s %s is away: %s", numeric_banner(),
-                                ArgList[0], ArgList[1]);
-                break;
-	}
+			break;
+		goto END;
+        }
 
 	case 307:		/* #define RPL_USERIP           307 */
 		if (!get_server_005(from_server, "USERIP"))
-			goto DEFAULT;
+			break;
+		/* FALLTHROUGH */
 	case 302:		/* #define RPL_USERHOST         302 */
-		userhost_returned(from_server, from, ArgList);
-		break;
+		userhost_returned(from_server, from, orig_comm, ArgList);
+		goto END;
 
 	case 303:		/* #define RPL_ISON             303 */
-		ison_returned(from_server, from, ArgList);
-		break;
-
-	/* XXX Doesn't belong here */
-	case 311:		/* #define RPL_WHOISUSER        311 */
-        {
-		if (!ArgList[0] || !ArgList[1] || !ArgList[2] || !ArgList[3] || !ArgList[4])
-			return;		/* Larneproofing */
-
-                PasteArgs(ArgList, 4);
-                message_from(NULL, LOG_CRAP);
-                if (do_hook(current_numeric, "%s %s %s %s %s %s",
-                                from, ArgList[0], ArgList[1], ArgList[2],
-                                ArgList[3], ArgList[4]))
-                        put_it("%s %s is %s@%s (%s)", numeric_banner(),
-                                ArgList[0], ArgList[1], ArgList[2], ArgList[4]);
-                break;
-        }
-
-	/* XXX Doesn't belong here */
-	case 312:		/* #define RPL_WHOISSERVER      312 */
-	{
-		if (!ArgList[0] || !ArgList[1] || !ArgList[2])
-			return;		/* Larneproofing */
-
-		if (do_hook(current_numeric, "%s %s %s %s", from, ArgList[0], ArgList[1], ArgList[2]))
-			put_it("%s on irc via server %s (%s)", numeric_banner(),
-				ArgList[1], ArgList[2]);
-		break;
-	}
-
-	/* XXX Doesn't belong here */
-	case 313:		/* #define RPL_WHOISOPERATOR    313 */
-	{
-		if (!ArgList[0] || !ArgList[1])
-			break;		/* Larne-proof epic */
-
-		PasteArgs(ArgList, 1);
-		if (do_hook(current_numeric, "%s %s %s", from, ArgList[0], ArgList[1]))
-			put_it("%s %s %s", numeric_banner(), ArgList[0], ArgList[1]);
-		break;
-	}
-
-	/* XXX Doesn't belong here */
-	case 314:		/* #define RPL_WHOWASUSER       314 */
-	{
-		if (!ArgList[0] || !ArgList[1] || !ArgList[2] || !ArgList[3] || !ArgList[4])
-			return;		/* Larneproofing */
-
-		PasteArgs(ArgList, 4);
-		message_from(NULL, LOG_CRAP);
-		if (do_hook(current_numeric, "%s %s %s %s %s %s",
-				from, ArgList[0], ArgList[1], ArgList[2],
-				ArgList[3], ArgList[4]))
-			put_it("%s %s was %s@%s (%s)", numeric_banner(),
-				ArgList[0], ArgList[1], ArgList[2], ArgList[4]);
-		break;
-	}
+		ison_returned(from_server, from, orig_comm, ArgList);
+		goto END;
 
 	case 315:		/* #define RPL_ENDOFWHO         315 */
-	{
-		PasteArgs(ArgList, 0);
-		who_end(from_server, from, ArgList);
-		break;
-	}
-
-#if 0
-	/* 
-	 * At the specific request of Kev, don't just eat this, but
-	 * treat it as Just Another Numeric.
-	 */
-	case 316:		/* supported, but deprecated */
-		break;
-#endif
-
-	/* XXX Doesn't belong here */
-	case 317:		/* #define RPL_WHOISIDLE        317 */
-	{
-		char	flag, *nick, *idle_str, *startup_str;
-		int	idle;
-		time_t	startup;
-
-		if (!ArgList[0] || !ArgList[1] || !ArgList[2])
-			return;		/* Larneproofing */
-
-		nick = ArgList[0];
-		idle_str = ArgList[1];
-		startup_str = ArgList[2];
-
-		if (ArgList[3])	/* undernet */
-		{
-			PasteArgs(ArgList, 3);
-			if (nick && idle_str && do_hook(current_numeric, "%s %s %s %s %s",
-						from, nick, idle_str, startup_str, ArgList[3]))
-			{
-				if ((idle = atoi(idle_str)) > 59)
-				{
-					idle /= 60;
-					flag = 1;
-				}
-				else
-					flag = 0;
-
-				if ((startup = atol(startup_str)) != 0)
-					put_it ("%s %s has been idle %d %ss, signed on at %s",
-						numeric_banner(), nick, idle, 
-						flag?"minute":"second",my_ctime(startup));
-				else
-					put_it("%s %s has been idle %d %ss", 
-						numeric_banner(), nick, idle, 
-						flag? "minute": "second");
-			}
-		}
-		else	/* efnet */
-		{
-			PasteArgs(ArgList, 1);
-			if (nick && idle_str && 
-			    do_hook(current_numeric, "%s %s %s", from, nick, idle_str))
-			{
-				if ((idle = atoi(idle_str)) > 59)
-				{
-					idle /= 60;
-					flag = 1;
-				}
-				else
-					flag = 0;
-
-				put_it ("%s %s has been idle %d %ss",
-					numeric_banner(), nick, idle, 
-					flag?"minute":"second");
-			}
-		}
-
-		break;
-	}
-
-	/* XXX Doesn't belong here */
-	case 318:		/* #define RPL_ENDOFWHOIS       318 */
-        {
-                PasteArgs(ArgList, 0);
-                if (do_hook(current_numeric, "%s %s", from, ArgList[0]))
-                        if (get_int_var(SHOW_END_OF_MSGS_VAR))
-                                display_msg(from, ArgList);
-                break;
-        }
-
-	/* XXX Doesn't belong here */
-	case 319:		/* #define RPL_WHOISCHANNELS    319 */
-	{
-		if (!ArgList[0] || !ArgList[1])
-			return;		/* Larneproofing */
-
-		PasteArgs(ArgList, 1);
-		if (do_hook(current_numeric, "%s %s %s", from, ArgList[0], ArgList[1]))
-			put_it("%s on channels: %s", numeric_banner(), ArgList[1]);
-		break;
-	}
+		who_end(from_server, from, orig_comm, ArgList);
+		goto END;
 
 	case 321:		/* #define RPL_LISTSTART        321 */
 	{
-		ArgList[0] = "Channel\0Users\0Topic";
-		ArgList[1] = ArgList[0] + 8;
-		ArgList[2] = ArgList[1] + 6;
-		ArgList[3] = (char *) 0;
-		funny_list(from, ArgList);
-		break;
+		ArgList[0] = "Channel";
+		ArgList[1] = "Users";
+		ArgList[2] = "Topic";
+		ArgList[3] = NULL;
+		list_reply(from, orig_comm, ArgList);
+		goto END;
 	}
 
 	case 322:		/* #define RPL_LIST             322 */
-		funny_list(from, ArgList);
-		break;
+		list_reply(from, orig_comm, ArgList);
+		goto END;
 
 	case 324:		/* #define RPL_CHANNELMODEIS    324 */
-		funny_mode(from, ArgList);
-		break;
-
-#if 0
-	/* 
-	 * At the specific request of Kev, I am suspending support 
-	 * for this aircd feature, as it has been re-used by one of the
-	 * big four.  XXX - It didn't belong here anyways.
-	 */
-	case 340:		/* #define RPL_INVITING_OTHER	340 */
-	{
-		if (!ArgList[0] || !ArgList[1] || !ArgList[2])
-			return;		/* Larneproofing */
-
-		if (ArgList[2])
-		{
-			message_from(ArgList[0], LOG_CRAP);
-			if (do_hook(current_numeric, "%s %s %s %s", from, ArgList[0], ArgList[1], ArgList[2]))
-				put_it("%s %s has invited %s to channel %s", numeric_banner(), ArgList[0], ArgList[1], ArgList[2]);
-		}
-		break;
-	}
-#endif
-
-	/* XXX Doesn't belong here */
-	case 341:		/* #define RPL_INVITING         341 */
-	{
-		if (!ArgList[0] || !ArgList[1])
-			return;		/* Larneproofing */
-
-		if (ArgList[1])
-		{
-			message_from(ArgList[1], LOG_CRAP);
-			if (do_hook(current_numeric, "%s %s %s", from, ArgList[0], ArgList[1]))
-				put_it("%s Inviting %s to channel %s", numeric_banner(), ArgList[0], ArgList[1]);
-		}
-		break;
-	}
-
+		mode_reply(from, orig_comm, ArgList);
+		goto END;
 
 	case 352:		/* #define RPL_WHOREPLY         352 */
-		whoreply(from_server, NULL, ArgList);
-		break;
+		whoreply(from_server, NULL, orig_comm, ArgList);
+		goto END;
 
 	case 353:		/* #define RPL_NAMREPLY         353 */
-		funny_namreply(from, ArgList);
-		break;
+		names_reply(from, orig_comm, ArgList);
+		goto END;
 
 	case 354:		/* #define RPL_XWHOREPLY	354 */
-		xwhoreply(from_server, NULL, ArgList);
-		break;
-
-	/* XXX Doesn't belong here */
-	case 366:		/* #define RPL_ENDOFNAMES       366 */
-	{
-		int	flag = 1;
-
-		PasteArgs(ArgList, 1);
-		message_from(ArgList[0], LOG_CRAP);
-		if (get_int_var(SHOW_END_OF_MSGS_VAR))
-			flag = do_hook(current_numeric, "%s %s %s", from, ArgList[0], ArgList[1]);
-		message_from(NULL, LOG_CURRENT);
-	
-		if (!channel_is_syncing(ArgList[0], from_server))
-		{
-			PasteArgs(ArgList, 0);
-			if (get_int_var(SHOW_END_OF_MSGS_VAR) && flag)
-				display_msg(from, ArgList);
-		}
-
-		break;
-	}
+		xwhoreply(from_server, NULL, orig_comm, ArgList);
+		goto END;
 
 	case 367:		/* #define RPL_BANLIST */
-	{
-		if (!ArgList[0] || !ArgList[1])
-			return;		/* Larneproofing */
-
 		number_of_bans++;
-		if (ArgList[2] && ArgList[3])
-		{
-			time_t tme = (time_t) strtoul(ArgList[3], NULL, 10);
-			if (do_hook(current_numeric, "%s %s %s %s %s", 
-				from, ArgList[0], ArgList[1], ArgList[2], ArgList[3]))
-			put_it("%s %s %-25s set by %-10s %lu sec ago", 
-				numeric_banner(), ArgList[0],
-				ArgList[1], ArgList[2], 
-				(unsigned long)(time(NULL) - tme));
-		}
-		else
-			if (do_hook(current_numeric, "%s %s %s", from, ArgList[0], ArgList[1]))
-				put_it("%s %s %s",numeric_banner(), ArgList[0], ArgList[1]);
 		break;
-	}
+
 	case 368:		/* #define END_OF_BANLIST */
 	{
 		if (get_int_var(SHOW_END_OF_MSGS_VAR))
-		{
+			goto END;
+
 #ifdef IRCII_LIKE_BAN_SUMMARY
-			if (do_hook(current_numeric, "%s %s %d", 
-				from, *ArgList, number_of_bans))
+		if (do_hook(current_numeric, "%s %s %d", 
+			from, *ArgList, number_of_bans))
 #else
-			if (do_hook(current_numeric, "%s %d %s", 
-				from, number_of_bans, *ArgList))
+		if (do_hook(current_numeric, "%s %d %s", 
+			from, number_of_bans, *ArgList))
 #endif
-			{
-				put_it("%s Total number of bans on %s - %d",
-					numeric_banner(), ArgList[0], 
-					number_of_bans);
-			}
+		{
+			put_it("%s Total number of bans on %s - %d",
+				numeric_banner(), ArgList[0], 
+				number_of_bans);
 		}
-		number_of_bans = 0;
-		break;
+
+		goto END;
 	}
 
 	/* XXX Shouldn't this set "You're operator" flag for hybrid? */
 	case 381: 		/* #define RPL_YOUREOPER        381 */
-		PasteArgs(ArgList, 0);
 		if (!is_server_registered(from_server))
-			say("Odd server stuff from %s: %s", from, ArgList[0]);
-		else if (do_hook(current_numeric, "%s %s", from, ArgList[0]))
-			display_msg(from, ArgList);
+			{ rfc1459_odd(from, orig_comm, ArgList); goto END; }
 		break;
 
         /* ":%s 401 %s %s :No such nick/channel" */
 	case 401:		/* #define ERR_NOSUCHNICK       401 */
 	{
-		if (!ArgList[0] || !ArgList[1])
-			return;		/* Larneproofing */
-
-		PasteArgs(ArgList, 1);
-		if (do_hook(current_numeric, "%s %s %s", from, 
-						ArgList[0], ArgList[1]))
-			put_it("%s %s: %s", numeric_banner(), 
-						ArgList[0], ArgList[1]);
 		notify_mark(from_server, ArgList[0], 0, 0);
-
 		if (get_int_var(AUTO_WHOWAS_VAR))
 		{
 			int foo = get_int_var(NUM_OF_WHOWAS_VAR);
@@ -616,28 +397,15 @@ void 	numbered_command (char *from, int comm, char **ArgList)
 			else
 				send_to_server("WHOWAS %s", ArgList[0]);
 		}
+
 		break;
 	}
 
 	/* Bizarre dalnet extended who replies. */
         /* ":%s 402 %s %s :No such server" */
 	case 402:
-	{
-		if (!ArgList[0] || !ArgList[1])
-			return;		/* Larneproofing */
-
-		PasteArgs(ArgList, 1);
-		/* 
-		 * Some servers BBC by sending this instead of
-		 * a 315 numeric when a who request has been completed.
-		 */
-		fake_who_end(from_server, from, ArgList[0]);
-
-		if (do_hook(current_numeric, "%s %s %s", from, 
-					ArgList[0], ArgList[1]))
-			display_msg(from, ArgList);
+		fake_who_end(from_server, from, orig_comm, ArgList[0]);
 		break;
-	}
 
 	/* Yet more bizarre dalnet extended who replies. */
 	/* ":%s 522 %s :/WHO Syntax incorrect, use /who ? for help" */
@@ -645,47 +413,39 @@ void 	numbered_command (char *from, int comm, char **ArgList)
 	case 522:
 	case 523:
 	{
-		PasteArgs(ArgList, 0);
 		/* 
 		 * This dalnet error message doesn't even give us the
 		 * courtesy of telling us which who request was in error,
 		 * so we have to guess.  Whee.
 		 */
-		fake_who_end(from_server, from, NULL);
-
-		if (do_hook(current_numeric, "%s %s", from, ArgList[0]))
-			display_msg(from, ArgList);
+		fake_who_end(from_server, from, orig_comm, NULL);
 		break;
 	}
 
 	case 403:		/* #define ERR_NOSUCHCHANNEL    403 */
 	{
-		const char	*s;
-
-		if (!ArgList[0] || !ArgList[1])
-			return;		/* Larneproofing */
+		const char *	s;
+		const char *	channel;
+		const char *	message;
 
 		PasteArgs(ArgList, 1);
+
+		/* Some servers BBC and send back an empty reply. */
+		if (!(channel = ArgList[0]))
+			{ rfc1459_odd(from, orig_comm, ArgList); goto END; }
+		if (!(message = ArgList[1]))
+			{ rfc1459_odd(from, orig_comm, ArgList); goto END; }
 
 		/* Do not accept 403's from remote servers. */
 		s = get_server_itsname(from_server);
 		if (my_strnicmp(s, from, strlen(s)))
-			break;
-
-		/* Some servers BBC and send back an empty reply. */
-		if (!ArgList[0])
-		{
-			if (do_hook(current_numeric, "%s *", from))
-				put_it("%s You did not specify a channel", 
-					numeric_banner());
-			break;
-		}
+			{ rfc1459_odd(from, orig_comm, ArgList); goto END; }
 
 		/* 
 		 * Some servers BBC and send this instead of a
 		 * 315 numeric when a who request has been completed.
 		 */
-		if (fake_who_end(from_server, from, ArgList[0]))
+		if (fake_who_end(from_server, from, orig_comm, channel))
 			;
 
 		/*
@@ -697,12 +457,8 @@ void 	numbered_command (char *from, int comm, char **ArgList)
 		 * this server claims does not exist; we blow the channel away
 		 * for good measure.
 		 */
-		else if (strcmp(ArgList[0], "*"))
-			remove_channel(ArgList[0], from_server);
-
-		if (do_hook(current_numeric, "%s %s %s", from, 
-					ArgList[0], ArgList[1]))
-			display_msg(from, ArgList);
+		else if (strcmp(channel, "*"))
+			remove_channel(channel, from_server);
 
 		break;
 	}
@@ -710,27 +466,20 @@ void 	numbered_command (char *from, int comm, char **ArgList)
 	case 421:		/* #define ERR_UNKNOWNCOMMAND   421 */
 	{
 		if (check_server_redirect(from_server, ArgList[0]))
-			break;
+			goto END;
 		if (check_server_wait(from_server, ArgList[0]))
-			break;
+			goto END;
 
-		PasteArgs(ArgList, 0);
-		if (do_hook(current_numeric, "%s %s", from, ArgList[0]))
-			display_msg(from, ArgList);
 		break;
 	}
 	case 432:		/* #define ERR_ERRONEUSNICKNAME 432 */
 	{
-		if (!my_stricmp(user, ArgList[0]))
+		if (!my_stricmp(target, ArgList[0]))
 			yell("WARNING:  Strange invalid nick message received.  You are probably lagged.");
 		else if (get_int_var(AUTO_NEW_NICK_VAR))
 			fudge_nickname(from_server);
 		else
 			reset_nickname(from_server);
-
-		PasteArgs(ArgList, 0);
-		if (do_hook(current_numeric, "%s %s", from, *ArgList))
-			display_msg(from, ArgList);
 
 		break;
 	}
@@ -780,9 +529,7 @@ void 	numbered_command (char *from, int comm, char **ArgList)
 		 */
 		if (ArgList[0] && ArgList[1] == NULL)
 		{
-			accept_server_nickname(from_server, user);
-			if (do_hook(current_numeric, "%s %s", from, ArgList[0]))
-				display_msg(from, ArgList);
+			accept_server_nickname(from_server, target);
 			break;
 		}
 
@@ -794,13 +541,11 @@ void 	numbered_command (char *from, int comm, char **ArgList)
 		 */
 		if (is_channel(ArgList[0]))
 		{
-		    /* XXX Is this really neccesary? */
-		    if (!im_on_channel(ArgList[0], from_server))
-			remove_channel(ArgList[0], from_server);
+			/* XXX Is this really neccesary? */
+			if (!im_on_channel(ArgList[0], from_server))
+				remove_channel(ArgList[0], from_server);
 
-		    if (do_hook(current_numeric, "%s %s", from, ArgList[0]))
-			display_msg(from, ArgList);
-		    break;
+			break;
 		}
 
 		/*
@@ -810,9 +555,7 @@ void 	numbered_command (char *from, int comm, char **ArgList)
 		 */
 		if (is_server_registered(from_server))
 		{
-			accept_server_nickname(from_server, user);
-			if (do_hook(current_numeric, "%s %s", from, ArgList[0]))
-				display_msg(from, ArgList);
+			accept_server_nickname(from_server, target);
 			break;
 		}
 
@@ -827,7 +570,7 @@ void 	numbered_command (char *from, int comm, char **ArgList)
 	case 438:		/* EFnet/TS4 "nick collision" numeric 438 */
 	case 453:		/* EFnet/TS4 "nickname lost" numeric 453 */
 	{
-		if (!my_stricmp(user, ArgList[0]))
+		if (!my_stricmp(target, ArgList[0]))
 			/* This should stop the "rolling nicks" in their tracks. */
 			yell("WARNING:  Strange invalid nick message received.  You are probably lagged.");
 		else if (get_int_var(AUTO_NEW_NICK_VAR))
@@ -835,41 +578,41 @@ void 	numbered_command (char *from, int comm, char **ArgList)
 		else
 			reset_nickname(from_server);
 
-		PasteArgs(ArgList, 0);
-		if (from && do_hook(current_numeric, "-1 %s", *ArgList))
-				display_msg(from, ArgList);
-		else if (!from && do_hook(current_numeric, "%s %s", 
-							from, *ArgList))
-				display_msg(from, ArgList);
+		if (!from)
+			from = "-1";
 
 		break;
 	}
 
 	case 439:		/* Comstud's "Can't change nickname" */
 	{
-		accept_server_nickname(from_server, user);
-		if (do_hook(current_numeric, "%s %s", from, ArgList[0]))
-			display_msg(from, ArgList);
+		accept_server_nickname(from_server, target);
 		break;
 	}
 
 	case 442:		/* #define ERR_NOTONCHANNEL	442 */
 	{
 		const char *	s;
-		if (!ArgList[0])
-			break;
+		const char *	channel;
+		const char *	message;
 
-		PasteArgs(ArgList, 0);
+		PasteArgs(ArgList, 1);
+
+		/* Some servers BBC and send back an empty reply. */
+		if (!(channel = ArgList[0]))
+			{ rfc1459_odd(from, orig_comm, ArgList); goto END; }
+		if (!(message = ArgList[1]))
+			{ rfc1459_odd(from, orig_comm, ArgList); goto END; }
+
+		/* Do not accept this numeric from remote servers */
 		s = get_server_itsname(from_server);
-		if (!my_strnicmp(s, from, strlen(s)))
-		{
-			if (strcmp(ArgList[0], "*"))
-			    remove_channel(ArgList[0], from_server);
-		}
+		if (my_strnicmp(s, from, strlen(s)))
+			{ rfc1459_odd(from, orig_comm, ArgList); goto END; }
 
-		/* Why wasn't this offered before? */
-		if (do_hook(current_numeric, "%s %s", from, *ArgList))
-			display_msg(from, ArgList);
+		/* Do not ever delete the "*" channel */
+		if (strcmp(ArgList[0], "*"))
+		    remove_channel(ArgList[0], from_server);
+
 		break;
 	}
 
@@ -879,67 +622,319 @@ void 	numbered_command (char *from, int comm, char **ArgList)
 	 * here we send a simplified version again  -lynx 
 	 */
 		register_server(from_server, NULL);
-
-		PasteArgs(ArgList, 0);
-		if (do_hook(current_numeric, "%s %s", from, *ArgList))
-			display_msg(from, ArgList);
 		break;
-
 
 	case 462:		/* #define ERR_ALREADYREGISTRED 462 */
-	{
 		change_server_nickname(from_server, NULL);
-
-		PasteArgs(ArgList, 0);
-		if (do_hook(current_numeric, "%s %s", from, *ArgList))
-			display_msg(from, ArgList);
 		break;
-	}
-
-	case 464:		/* #define ERR_PASSWDMISMATCH   464 */
-	{
-		PasteArgs(ArgList, 0);
-		flag = do_hook(current_numeric, "%s %s", from, ArgList[0]);
-
-		if (oper_command)
-		{
-			if (flag)
-				display_msg(from, ArgList);
-			oper_command = 0;
-		}
-		else
-		{
-			char	server_num[8];
-
-			server_reconnects_to(from_server, NOSERV);
-			say("Password required for connection to server %s",
-				get_server_name(from_server));
-			if (!dumb_mode)
-			{
-				strlcpy(server_num, ltoa(from_server), 8);
-				add_wait_prompt("Server Password:", 
-					password_sendline,
-				       server_num, WAIT_PROMPT_LINE, 0);
-			}
-		}
-		break;
-	}
 
 	case 465:		/* #define ERR_YOUREBANNEDCREEP 465 */
 	{
-		PasteArgs(ArgList, 0);
 		/* 
 		 * There used to be a say() here, but if we arent 
 		 * connected to a server, then doing say() is not
 		 * a good idea.  So now it just doesnt do anything.
 		 */
 		server_reconnects_to(from_server, NOSERV);
-		if (do_hook(current_numeric, "%s %s", from, ArgList[0]))
+		break;
+	}
+
+	case 477:		/* #define ERR_NEEDREGGEDNICK	477 */
+		/* IRCnet has a different 477 numeric. */
+		if (ArgList[0] && *ArgList[0] == '+')
+			break;
+		/* FALLTHROUGH */
+	case 471:		/* #define ERR_CHANNELISFULL    471 */
+	case 473:		/* #define ERR_INVITEONLYCHAN   473 */
+	case 474:		/* #define ERR_BANNEDFROMCHAN   474 */
+	case 475: 		/* #define ERR_BADCHANNELKEY    475 */
+	case 476:		/* #define ERR_BADCHANMASK      476 */
+	{
+		if (ArgList[0])
+			cant_join_channel(ArgList[0], from_server);
+		break;
+	}
+	}
+
+/* DEFAULT OFFER */
+	/*
+	 * This is the "default hook" case, where we offer to the user all of
+	 * the numerics that were not offered above.  We simply catenate
+	 * all of the arguments into a string and offer to the user.
+	 * If the user bites, then we skip the "default display" section.
+	 */
+	copy = alloca(IRCD_BUFFER_SIZE + 1);
+	*copy = 0;
+
+	for (i = 0; ArgList[i]; i++)
+	{
+		if (i)
+			strlcat(copy, " ", IRCD_BUFFER_SIZE);
+		strlcat(copy, ArgList[i], IRCD_BUFFER_SIZE);
+	}
+
+	if (!do_hook(current_numeric, "%s %s", from, copy))
+		goto END;
+
+/* DEFAULT DISPLAY */
+	/*
+	 * This is the "default display" case, where if the user does not 
+	 * hook the numeric, we output the message in some special way.
+	 * If a numeric does not require special outputting, then we will
+	 * just display it with ``display_msg''
+	 */
+	switch (comm)
+	{
+	case 221: 		/* #define RPL_UMODEIS          221 */
+	{
+		put_it("%s Your user mode is \"%s\"", numeric_banner(),
+			ArgList[0]);
+		break;
+	}
+
+	case 271:		/* #define SILENCE_LIST		271 */
+	{
+		put_it ("%s %s is ignoring %s", numeric_banner(), ArgList[0], ArgList[1]);
+		break;
+	}
+
+	case 301:		/* #define RPL_AWAY             301 */
+	{
+		if (!ArgList[0] || !ArgList[1])
+			break;		/* Not what i'm expecting */
+
+		PasteArgs(ArgList, 1);
+		put_it("%s %s is away: %s", numeric_banner(),
+			ArgList[0], ArgList[1]);
+		break;
+	}
+
+	case 311:		/* #define RPL_WHOISUSER        311 */
+	{
+		if (!ArgList[0] || !ArgList[1] || !ArgList[2] || !ArgList[3] || !ArgList[4])
+			return;		/* Larneproofing */
+
+		PasteArgs(ArgList, 4);
+		put_it("%s %s is %s@%s (%s)", numeric_banner(),
+			ArgList[0], ArgList[1], ArgList[2], ArgList[4]);
+		break;
+	}
+
+	case 312:		/* #define RPL_WHOISSERVER      312 */
+	{
+		if (!ArgList[0] || !ArgList[1] || !ArgList[2])
+			return;		/* Larneproofing */
+
+		put_it("%s on irc via server %s (%s)", numeric_banner(),
+			ArgList[1], ArgList[2]);
+		break;
+	}
+
+	case 313:		/* #define RPL_WHOISOPERATOR    313 */
+	{
+		if (!ArgList[0] || !ArgList[1])
+			break;		/* Larne-proof epic */
+
+		PasteArgs(ArgList, 1);
+		put_it("%s %s %s", numeric_banner(), ArgList[0], ArgList[1]);
+		break;
+	}
+
+	case 314:		/* #define RPL_WHOWASUSER       314 */
+	{
+		if (!ArgList[0] || !ArgList[1] || !ArgList[2] || !ArgList[3] || !ArgList[4])
+			return;		/* Larneproofing */
+
+		PasteArgs(ArgList, 4);
+		put_it("%s %s was %s@%s (%s)", numeric_banner(),
+			ArgList[0], ArgList[1], ArgList[2], ArgList[4]);
+		break;
+	}
+
+	case 317:		/* #define RPL_WHOISIDLE        317 */
+	{
+		char	flag, *nick, *idle_str, *startup_str;
+		int	idle;
+		time_t	startup;
+
+		if (!ArgList[0] || !ArgList[1] || !ArgList[2])
+			return;		/* Larneproofing */
+
+		nick = ArgList[0];
+		idle_str = ArgList[1];
+		startup_str = ArgList[2];
+
+		if (ArgList[3])	/* undernet */
+		{
+			PasteArgs(ArgList, 3);
+			if ((idle = atoi(idle_str)) > 59)
+			{
+				idle /= 60;
+				flag = 1;
+			}
+			else
+				flag = 0;
+
+			if ((startup = atol(startup_str)) != 0)
+				put_it ("%s %s has been idle %d %ss, signed on at %s",
+					numeric_banner(), nick, idle, 
+					flag?"minute":"second",my_ctime(startup));
+			else
+				put_it("%s %s has been idle %d %ss", 
+					numeric_banner(), nick, idle, 
+					flag? "minute": "second");
+		}
+		else	/* efnet */
+		{
+			PasteArgs(ArgList, 1);
+			if ((idle = atoi(idle_str)) > 59)
+			{
+				idle /= 60;
+				flag = 1;
+			}
+			else
+				flag = 0;
+
+			put_it ("%s %s has been idle %d %ss",
+				numeric_banner(), nick, idle, 
+				flag?"minute":"second");
+		}
+
+		break;
+	}
+
+	case 318:		/* #define RPL_ENDOFWHOIS       318 */
+	{
+		PasteArgs(ArgList, 0);
+		if (get_int_var(SHOW_END_OF_MSGS_VAR))
 			display_msg(from, ArgList);
 		break;
 	}
 
-	/* XXX These do not belong here */
+	case 319:		/* #define RPL_WHOISCHANNELS    319 */
+	{
+		if (!ArgList[0] || !ArgList[1])
+			return;		/* Larneproofing */
+
+		PasteArgs(ArgList, 1);
+		put_it("%s on channels: %s", numeric_banner(), ArgList[1]);
+		break;
+	}
+
+
+	case 329:		/* #define CREATION_TIME	329 */
+	{
+		/* Erf/TS4 support */
+		if (ArgList[1] && ArgList[2] && ArgList[3])
+		{
+			time_t tme1 = (time_t)my_atol(ArgList[1]);
+			time_t tme2 = (time_t)my_atol(ArgList[2]);
+			time_t tme3 = (time_t)my_atol(ArgList[3]);
+
+			put_it("%s Channel %s was created at %ld, +c was last set at %ld, and has been opless since %ld", numeric_banner(), ArgList[0], tme1, tme2, tme3);
+		}
+		else if (ArgList[1])
+		{
+			time_t tme = (time_t)my_atol(ArgList[1]);
+
+			put_it("%s Channel %s was created at %s",
+					numeric_banner(),
+				ArgList[0], my_ctime(tme));
+		}
+		break;
+	}
+	case 332:		/* #define RPL_TOPIC            332 */
+	{
+		put_it("%s Topic for %s: %s", numeric_banner(), ArgList[0], ArgList[1]);
+		break;
+	}
+
+	case 333:		/* #define RPL_TOPICWHOTIME	333 */
+	{
+		/* Bug in aircd makes this check neccesary.  */
+		if (ArgList[2])
+		{
+			time_t tme = (unsigned long)my_atol(ArgList[2]);
+			put_it("%s The topic was set by %s %lu sec ago",numeric_banner(), 
+				ArgList[1], (unsigned long)(time(NULL)-tme));
+		}
+		break;
+	}
+
+	case 341:		/* #define RPL_INVITING         341 */
+	{
+		if (!ArgList[0] || !ArgList[1])
+			return;		/* Larneproofing */
+
+		message_from(ArgList[1], LOG_CRAP);
+		put_it("%s Inviting %s to channel %s", numeric_banner(), ArgList[0], ArgList[1]);
+		break;
+	}
+
+	case 351:		/* #define RPL_VERSION          351 */
+	{
+		PasteArgs(ArgList, 2);
+		put_it("%s Server %s: %s %s", numeric_banner(), ArgList[1],
+			ArgList[0], ArgList[2]);
+		break;
+	}
+
+	case 364:		/* #define RPL_LINKS            364 */
+	{
+		if (ArgList[2])
+		{
+			PasteArgs(ArgList, 2);
+			put_it("%s %-20s %-20s %s", numeric_banner(),
+				ArgList[0], ArgList[1], ArgList[2]);
+		}
+		else
+		{
+			PasteArgs(ArgList, 1);
+			put_it("%s %-20s %s", numeric_banner(),
+				ArgList[0], ArgList[1]);
+		}
+		break;
+	}
+
+	case 366:		/* #define RPL_ENDOFNAMES       366 */
+	{
+		if (get_int_var(SHOW_END_OF_MSGS_VAR))
+		{
+			if (!channel_is_syncing(ArgList[0], from_server))
+				display_msg(from, ArgList);
+		}
+		break;
+	}
+
+	case 367:
+	{
+		if (!ArgList[0] || !ArgList[1])
+			return;		/* Larneproofing */
+
+		if (ArgList[2] && ArgList[3])
+		{
+			time_t tme = (time_t) strtoul(ArgList[3], NULL, 10);
+			put_it("%s %s %-25s set by %-10s %lu sec ago", 
+				numeric_banner(), ArgList[0],
+				ArgList[1], ArgList[2], 
+				(unsigned long)(time(NULL) - tme));
+		}
+		else
+			put_it("%s %s %s",numeric_banner(), ArgList[0], ArgList[1]);
+		break;
+	}
+
+	case 401:		/* #define ERR_NOSUCHNICK       401 */
+	{
+		if (!ArgList[0] || !ArgList[1])
+			return;		/* Larneproofing */
+
+		PasteArgs(ArgList, 1);
+		put_it("%s %s: %s", numeric_banner(), ArgList[0], ArgList[1]);
+
+		break;
+	}
+
 	case 219:		/* #define RPL_ENDOFSTATS       219 */
 	case 232:		/* #define RPL_ENDOFSERVICES    232 */
 	case 365:		/* #define RPL_ENDOFLINKS       365 */
@@ -947,38 +942,30 @@ void 	numbered_command (char *from, int comm, char **ArgList)
 	case 374:		/* #define RPL_ENDOFINFO        374 */
 	case 394:		/* #define RPL_ENDOFUSERS       394 */
 	{
-		int hook;
-
 		PasteArgs(ArgList, 0);
-		hook = do_hook(current_numeric, "%s %s", from, *ArgList);
-		if (hook && get_int_var(SHOW_END_OF_MSGS_VAR))
+		if (get_int_var(SHOW_END_OF_MSGS_VAR))
 			display_msg(from, ArgList);
 		break;
 	}
 
+	case 477:		/* #define ERR_NEEDREGGEDNICK	477 */
+		/* IRCnet has a different 477 numeric. */
+		if (ArgList[0] && *ArgList[0] == '+')
+		{
+			display_msg(from, ArgList);
+			break;
+		}
+		/* FALLTHROUGH */
 	case 471:		/* #define ERR_CHANNELISFULL    471 */
 	case 473:		/* #define ERR_INVITEONLYCHAN   473 */
 	case 474:		/* #define ERR_BANNEDFROMCHAN   474 */
 	case 475: 		/* #define ERR_BADCHANNELKEY    475 */
 	case 476:		/* #define ERR_BADCHANMASK      476 */
-	case 477:		/* #define ERR_NEEDREGGEDNICK	477 */
 	{
 		char *reason;
 
-		/* ircnet has a different 477 numeric. */
-		if (comm == 477 && ArgList[0] && *ArgList[0] == '+')
-		{
-			PasteArgs(ArgList, 0);
-			if (do_hook(current_numeric, "%s %s", from, ArgList[0]))
-				display_msg(from, ArgList);
-			break;
-		}
-
-		if (ArgList[0])
-			cant_join_channel(ArgList[0], from_server);
-
 		PasteArgs(ArgList, 0);
-		switch(comm)
+		switch (comm)
 		{
 		    case 471:
 			reason = "Channel is full";
@@ -1003,159 +990,50 @@ void 	numbered_command (char *from, int comm, char **ArgList)
 			break;
 		}	
 
-		if (do_hook(current_numeric, "%s %s", from, ArgList[0]))
-			put_it("%s %s (%s)", numeric_banner(), ArgList[0], reason);
+		put_it("%s %s (%s)", numeric_banner(), ArgList[0], reason);
 		break;
 	}
 
-
-	/*
-	 * The following accumulates the remaining arguments
-	 * in ArgSpace for hook detection. We can't use
-	 * PasteArgs here because we still need the arguments
-	 * separated for use elsewhere.
-	 */
-	DEFAULT:
 	default:
+		display_msg(from, ArgList);
+	}
+
+END:
+	/*
+	 * This is where we clean up after our numeric.  Numeric-specific
+	 * cleanups can occur here, and then below we reset the display
+	 * settings.
+	 */
+	switch (comm)
 	{
-		char	*ArgSpace = (char *) 0;
-		int	i, len, do_message_from = 0;
-
-		for (i = len = 0; ArgList[i]; len += strlen(ArgList[i++]))
-			;
-		len += (i - 1);
-		ArgSpace = new_malloc(len + 1);
-		ArgSpace[0] = '\0';
-		/* this is cheating */
-		if (ArgList[0] && is_channel(ArgList[0]))
-		       do_message_from = 1;
-		for (i = 0; ArgList[i]; i++)
-		{
-			if (i)
-				strcat(ArgSpace, " ");
-			strcat(ArgSpace, ArgList[i]);
-		}
-		if (do_message_from)
-			message_from (ArgList[0], LOG_CRAP);
-		if (!do_hook(current_numeric, "%s %s", from, ArgSpace))
-		{
-			new_free(&ArgSpace);
-			if (do_message_from)
-				set_lastlog_msg_level(lastlog_level);
-			break;
-		}
-		if (do_message_from)
-			message_from((char *) 0, lastlog_level);
-		new_free(&ArgSpace);
-		none_of_these = 1;
-	} /* end of default case */
-	} /* end of switch */
-
-	/* the following do not hurt the ircII if intercepted by a hook */
-	if (none_of_these)
+	case 368:
+		number_of_bans = 0;
+		break;
+	case 464:		/* #define ERR_PASSWDMISMATCH   464 */
 	{
-		switch (comm)
-		{
-		case 221: 		/* #define RPL_UMODEIS          221 */
-		{
-			put_it("%s Your user mode is \"%s\"", numeric_banner(),
-				ArgList[0]);
-			break;
-		}
+		char	server_num[8];
 
-		case 271:		/* #define SILENCE_LIST		271 */
+		if (oper_command)
+			oper_command = 0;
+		else
 		{
-			put_it ("%s %s is ignoring %s", numeric_banner(), ArgList[0], ArgList[1]);
-			break;
-		}
-
-		case 329:		/* #define CREATION_TIME	329 */
-		{
-			/* Erf/TS4 support */
-			if (ArgList[1] && ArgList[2] && ArgList[3])
+			server_reconnects_to(from_server, NOSERV);
+			say("Password required for connection to server %s",
+				get_server_name(from_server));
+			if (!dumb_mode)
 			{
-				time_t tme1 = (time_t)my_atol(ArgList[1]);
-				time_t tme2 = (time_t)my_atol(ArgList[2]);
-				time_t tme3 = (time_t)my_atol(ArgList[3]);
-
-				message_from(ArgList[0], LOG_CRAP);
-				put_it("%s Channel %s was created at %ld, +c was last set at %ld, and has been opless since %ld", numeric_banner(), ArgList[0], tme1, tme2, tme3);
-				message_from((char *) 0, LOG_CURRENT);
+				strlcpy(server_num, ltoa(from_server), 8);
+				add_wait_prompt("Server Password:", 
+					password_sendline,
+				       server_num, WAIT_PROMPT_LINE, 0);
 			}
-			else if (ArgList[1])
-			{
-				time_t tme = (time_t)my_atol(ArgList[1]);
-
-				message_from(ArgList[0], LOG_CRAP);
-				put_it("%s Channel %s was created at %s",
-						numeric_banner(),
-					ArgList[0], my_ctime(tme));
-				message_from((char *) 0, LOG_CURRENT);
-			}
-			break;
 		}
-		case 332:		/* #define RPL_TOPIC            332 */
-		{
-			message_from(ArgList[0], LOG_CRAP);
-			put_it("%s Topic for %s: %s", numeric_banner(), ArgList[0], ArgList[1]);
-			break;
-		}
-
-		case 333:		/* #define RPL_TOPICWHOTIME	333 */
-		{
-			/* Bug in aircd makes this check neccesary.  */
-			if (ArgList[2])
-			{
-				time_t tme = (unsigned long)my_atol(ArgList[2]);
-				put_it("%s The topic was set by %s %lu sec ago",numeric_banner(), 
-					ArgList[1], (unsigned long)(time(NULL)-tme));
-			}
-			break;
-		}
-		case 351:		/* #define RPL_VERSION          351 */
-		{
-			PasteArgs(ArgList, 2);
-			put_it("%s Server %s: %s %s", numeric_banner(), ArgList[1],
-				ArgList[0], ArgList[2]);
-			break;
-		}
-
-		case 364:		/* #define RPL_LINKS            364 */
-		{
-			if (ArgList[2])
-			{
-				PasteArgs(ArgList, 2);
-				put_it("%s %-20s %-20s %s", numeric_banner(),
-					ArgList[0], ArgList[1], ArgList[2]);
-			}
-			else
-			{
-				PasteArgs(ArgList, 1);
-				put_it("%s %-20s %s", numeric_banner(),
-					ArgList[0], ArgList[1]);
-			}
-			break;
-		}
-
-		case 384:		/* #define RPL_MYPORTIS         384 */
-		{
-			PasteArgs(ArgList, 0);
-			put_it("%s %s %s", numeric_banner(), ArgList[0], user);
-			break;
-		}
-
-#define RPL_CLOSEEND         363
-		case 323:               /* #define RPL_LISTEND          323 */
-			funny_print_widelist();
-			/* FALLTHROUGH */
-
-		default:
-			display_msg(from, ArgList);
-		}
+	}
 	}
 
 	current_numeric = old_current_numeric;
 	set_lastlog_msg_level(lastlog_level);
+	message_from(NULL, LOG_CURRENT);
 }
 
 

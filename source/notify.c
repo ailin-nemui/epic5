@@ -1,4 +1,4 @@
-/* $EPIC: notify.c,v 1.13 2002/12/26 16:40:31 jnelson Exp $ */
+/* $EPIC: notify.c,v 1.14 2003/01/26 03:25:38 jnelson Exp $ */
 /*
  * notify.c: a few handy routines to notify you when people enter and leave irc 
  *
@@ -53,10 +53,10 @@
 #include "vars.h"
 #include "who.h"
 
-void 	batch_notify_userhost		(char *nick);
+void 	batch_notify_userhost		(const char *nick);
 void 	dispatch_notify_userhosts	(int);
-void 	notify_userhost_dispatch	(int, UserhostItem *f, char *, char *);
-void 	notify_userhost_reply		(int, char *nick, char *userhost);
+void 	notify_userhost_dispatch	(int, UserhostItem *f, const char *, const char *);
+void 	notify_userhost_reply		(int, const char *nick, const char *userhost);
 
 /* NotifyList: the structure for the notify stuff */
 typedef	struct	notify_stru
@@ -414,7 +414,7 @@ static	time_t		last_notify = 0;
  * be doing an extra server request -- which we're already doing anyhow! --
  * so in the worst case this cant be any worse than it is already.
  */
-void 	notify_mark (int refnum, char *nick, int flag, int doit)
+void 	notify_mark (int refnum, const char *nick, int flag, int doit)
 {
 	Server		*s;
 	NotifyItem 	*tmp;
@@ -463,7 +463,7 @@ void 	notify_mark (int refnum, char *nick, int flag, int doit)
 static char *	batched_notify_userhosts = NULL;
 static int 	batched_notifies = 0;
 
-void 	batch_notify_userhost (char *nick)
+void 	batch_notify_userhost (const char *nick)
 {
 	m_s3cat(&batched_notify_userhosts, space, nick);
 	batched_notifies++;
@@ -481,7 +481,7 @@ void 	dispatch_notify_userhosts (int refnum)
 	}
 }
 
-void 	notify_userhost_dispatch (int refnum, UserhostItem *stuff, char *nick, char *text)
+void 	notify_userhost_dispatch (int refnum, UserhostItem *stuff, const char *nick, const char *text)
 {
 	char userhost[BIG_BUFFER_SIZE + 1];
 
@@ -489,7 +489,7 @@ void 	notify_userhost_dispatch (int refnum, UserhostItem *stuff, char *nick, cha
 	notify_userhost_reply(refnum, stuff->nick, userhost);
 }
 
-void 	notify_userhost_reply (int refnum, char *nick, char *userhost)
+void 	notify_userhost_reply (int refnum, const char *nick, const char *userhost)
 {
 	Server *s;
 	NotifyItem *tmp;

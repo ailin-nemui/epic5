@@ -1,4 +1,4 @@
-/* $EPIC: ctcp.c,v 1.18 2002/12/19 03:22:58 jnelson Exp $ */
+/* $EPIC: ctcp.c,v 1.19 2003/01/26 03:25:38 jnelson Exp $ */
 /*
  * ctcp.c:handles the client-to-client protocol(ctcp). 
  *
@@ -80,7 +80,7 @@ static	int 	split_CTCP (char *, char *, char *);
  */
 
 struct _CtcpEntry;
-typedef char *(*CTCP_Handler) (struct _CtcpEntry *, char *, char *, char *);
+typedef char *(*CTCP_Handler) (struct _CtcpEntry *, const char *, const char *, char *);
 typedef	struct _CtcpEntry
 {
 	char		*name;  /* name of ctcp datatag */
@@ -92,19 +92,19 @@ typedef	struct _CtcpEntry
 }	CtcpEntry;
 
 /* forward declarations for the built in CTCP functions */
-static	char	*do_sed 	(CtcpEntry *, char *, char *, char *);
-static	char	*do_version 	(CtcpEntry *, char *, char *, char *);
-static	char	*do_clientinfo 	(CtcpEntry *, char *, char *, char *);
-static	char	*do_ping 	(CtcpEntry *, char *, char *, char *);
-static	char	*do_echo 	(CtcpEntry *, char *, char *, char *);
-static	char	*do_userinfo 	(CtcpEntry *, char *, char *, char *);
-static	char	*do_finger 	(CtcpEntry *, char *, char *, char *);
-static	char	*do_time 	(CtcpEntry *, char *, char *, char *);
-static	char	*do_atmosphere 	(CtcpEntry *, char *, char *, char *);
-static	char	*do_dcc 	(CtcpEntry *, char *, char *, char *);
-static	char	*do_utc 	(CtcpEntry *, char *, char *, char *);
-static	char	*do_dcc_reply 	(CtcpEntry *, char *, char *, char *);
-static	char	*do_ping_reply 	(CtcpEntry *, char *, char *, char *);
+static	char	*do_sed 	(CtcpEntry *, const char *, const char *, char *);
+static	char	*do_version 	(CtcpEntry *, const char *, const char *, char *);
+static	char	*do_clientinfo 	(CtcpEntry *, const char *, const char *, char *);
+static	char	*do_ping 	(CtcpEntry *, const char *, const char *, char *);
+static	char	*do_echo 	(CtcpEntry *, const char *, const char *, char *);
+static	char	*do_userinfo 	(CtcpEntry *, const char *, const char *, char *);
+static	char	*do_finger 	(CtcpEntry *, const char *, const char *, char *);
+static	char	*do_time 	(CtcpEntry *, const char *, const char *, char *);
+static	char	*do_atmosphere 	(CtcpEntry *, const char *, const char *, char *);
+static	char	*do_dcc 	(CtcpEntry *, const char *, const char *, char *);
+static	char	*do_utc 	(CtcpEntry *, const char *, const char *, char *);
+static	char	*do_dcc_reply 	(CtcpEntry *, const char *, const char *, char *);
+static	char	*do_ping_reply 	(CtcpEntry *, const char *, const char *, char *);
 
 
 static CtcpEntry ctcp_cmd[] =
@@ -167,7 +167,7 @@ int     sed = 0;
 int	in_ctcp_flag = 0;
 
 #define CTCP_HANDLER(x) \
-	static char * x (CtcpEntry *ctcp, char *from, char *to, char *cmd)
+	static char * x (CtcpEntry *ctcp, const char *from, const char *to, char *cmd)
 
 
 
@@ -182,8 +182,8 @@ int	in_ctcp_flag = 0;
 CTCP_HANDLER(do_sed)
 {
 	Crypt	*key = NULL;
-	char	*crypt_who,
-		*tofrom;
+	const char	*crypt_who;
+	char 	*tofrom;
 	char	*ret = NULL, *ret2 = NULL;
 
 	if (*from == '=')		/* DCC CHAT message */
@@ -562,7 +562,7 @@ CTCP_HANDLER(do_ping_reply)
  * doesnt have to do a write unless the character is present.  So it is 
  * definitely worth the cost to save CPU time for 99% of the PRIVMSGs.
  */
-char *	do_ctcp (char *from, char *to, char *str)
+char *	do_ctcp (const char *from, const char *to, char *str)
 {
 	int 	flag;
 	int	fflag;
@@ -625,7 +625,7 @@ static	time_t	last_ctcp_parsed = 0;
 		 * Check to see if the user is ignoring person.
 		 * Or if we're suppressing a flood.
 		 */
-		if (flag == IGNORED || fflag == 0)
+		if (flag == IGNORED || fflag == 1)
 		{
 			if (x_debug & DEBUG_CTCPS)
 				yell("CTCP from [%s] ignored", from);
@@ -794,7 +794,7 @@ static	time_t	last_ctcp_parsed = 0;
  * do_notice_ctcp: a re-entrant form of a CTCP reply parser.
  * See the implementation notes in do_ctcp().
  */
-char *	do_notice_ctcp (char *from, char *to, char *str)
+char *	do_notice_ctcp (const char *from, const char *to, char *str)
 {
 	int 	flag;
 	int	lastlog_level;
@@ -928,7 +928,7 @@ int	in_ctcp (void) { return (in_ctcp_flag); }
  * transparantly.  This greatly reduces the logic, complexity, and
  * possibility for error in this function.
  */
-void	send_ctcp (int type, char *to, int datatag, char *format, ...)
+void	send_ctcp (int type, const char *to, int datatag, char *format, ...)
 {
 	char 	putbuf [BIG_BUFFER_SIZE + 1],
 		*putbuf2;

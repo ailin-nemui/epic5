@@ -1,4 +1,4 @@
-/* $EPIC: flood.c,v 1.7 2003/01/09 01:10:56 crazyed Exp $ */
+/* $EPIC: flood.c,v 1.8 2003/01/26 03:25:38 jnelson Exp $ */
 /*
  * flood.c: handle channel flooding.
  *
@@ -87,7 +87,7 @@ int	users = 0;
  * only if it begins with an alphanum, and use the @host
  * otherwise.
  */
-char *	normalize_nuh (char *nuh)
+const char *	normalize_nuh (const char *nuh)
 {
 	int maskuser = get_int_var(FLOOD_MASKUSER_VAR);
 
@@ -109,13 +109,13 @@ char *	normalize_nuh (char *nuh)
  * person.  It will return 1 if flooding is being check for someone and an ON
  * FLOOD is activated.
  */
-int	new_check_flooding (char *nick, char *nuh, char *chan, char *line, FloodType type)
+int	new_check_flooding (const char *nick, const char *nuh, const char *chan, const char *line, FloodType type)
 {
 static	int	 pos = 0;
 	int	 i,
 		 numusers,
 		 server,
-		 retval = 1;
+		 retval = 0;
 	Timeval	 right_now;
 	double	 diff;
 	Flooding *tmp;
@@ -161,13 +161,13 @@ static	int	 pos = 0;
 		if (flood)
 			new_free((char **)&flood);
 		users = 0;
-		return 1;
+		return 0;
 	}
 
 	if (nuh && *nuh)
 		nuh = normalize_nuh(nuh);
 	else
-		return 1;
+		return 0;
 
 	/*
 	 * What server are we using?
@@ -248,7 +248,7 @@ static	int	 pos = 0;
 		tmp->start = right_now;
 
 		pos = (0 < old_pos ? old_pos : users) - 1;
-		return 1;
+		return 0;
 	}
 	else
 		tmp = flood + i;
@@ -263,7 +263,7 @@ static	int	 pos = 0;
 		diff = time_diff(tmp->start, right_now);
 
 		if ((diff == 0.0 || tmp->cnt / diff >= rate) &&
-				(retval = do_hook(FLOOD_LIST, "%s %s %s %s",
+				(retval = !do_hook(FLOOD_LIST, "%s %s %s %s",
 				nick, ignore_types[type],
 				chan ? chan : "*", line)))
 		{
@@ -285,7 +285,7 @@ static	int	 pos = 0;
 	return retval;
 }
 
-int	check_flooding (char *nick, char *nuh, FloodType type, char *line)
+int	check_flooding (const char *nick, const char *nuh, FloodType type, const char *line)
 {
 	return new_check_flooding(nick, nuh, NULL, line, type);
 }
@@ -296,7 +296,8 @@ int	check_flooding (char *nick, char *nuh, FloodType type, char *line)
  */
 char *	function_floodinfo (char *args)
 {
-	char	*arg, *ret = NULL;
+	const char	*arg;
+	char *ret = NULL;
 	size_t	clue = 0;
 	Timeval right_now;
 	int	i;

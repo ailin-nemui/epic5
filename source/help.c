@@ -1,4 +1,4 @@
-/* $EPIC: help.c,v 1.5 2003/01/21 20:51:59 crazyed Exp $ */
+/* $EPIC: help.c,v 1.6 2003/01/26 03:25:38 jnelson Exp $ */
 /*
  * help.c: handles the help stuff for irc 
  *
@@ -48,7 +48,7 @@
  */
 
 #if 0
-static char rcsid[] = "@(#)$Id: help.c,v 1.5 2003/01/21 20:51:59 crazyed Exp $";
+static char rcsid[] = "@(#)$Id: help.c,v 1.6 2003/01/26 03:25:38 jnelson Exp $";
 #endif
 
 #include "irc.h"
@@ -300,7 +300,7 @@ static	void	help_show_paused_topic (char *name, char *line)
 	if (get_int_var(HELP_PAGER_VAR))
 		rows = help_window->display_size;
 	else
-		rows = help_paused_lines; 
+		rows = help_paused_lines;	/* Suitably big enough */
 
 	if (i < help_paused_lines)
 	{

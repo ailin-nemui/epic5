@@ -1,4 +1,4 @@
-/* $EPIC: commands.c,v 1.52 2003/01/13 17:42:00 crazyed Exp $ */
+/* $EPIC: commands.c,v 1.53 2003/01/26 03:25:38 jnelson Exp $ */
 /*
  * commands.c -- Stuff needed to execute commands in ircII.
  *		 Includes the bulk of the built in commands for ircII.
@@ -1208,8 +1208,6 @@ BUILT_IN_COMMAND(funny_stuff)
 			}
 			else if (my_strnicmp(arg+1, "T", 1) == 0)	/* TOPIC */
 				flags |= FUNNY_TOPIC;
-			else if (my_strnicmp(arg+1, "W", 1) == 0)	/* WIDE */
-				flags |= FUNNY_WIDE;
 			else if (my_strnicmp(arg+1, "U", 1) == 0)	/* USERS */
 				flags |= FUNNY_USERS;
 			else if (my_strnicmp(arg+1, "N", 1) == 0)	/* NAME */
@@ -1220,7 +1218,6 @@ BUILT_IN_COMMAND(funny_stuff)
 		else stuff = arg;
 	}
 
-	set_funny_flags(min, max, flags);
 	if (strcmp(stuff, "*") == 0)
 		if (!(stuff = get_channel_by_refnum(0)))
 			stuff = empty_string;
@@ -1228,7 +1225,8 @@ BUILT_IN_COMMAND(funny_stuff)
 	/* Channel names can contain stars! */
 	if (strchr(stuff, '*') && !im_on_channel(stuff, from_server))
 	{
-		funny_match(stuff);
+		set_funny_flags(min, max, flags, stuff);
+
 		if (min && ircu)
 		{
 			if (max)
@@ -1243,7 +1241,8 @@ BUILT_IN_COMMAND(funny_stuff)
 	}
 	else
 	{
-		funny_match(NULL);
+		set_funny_flags(min, max, flags, NULL);
+
 		if (min && ircu)
 		{
 			if (max)
@@ -2852,6 +2851,9 @@ struct target_type target[4] =
 	     * we haven't supported that for 5 years.
 	     */
 	    else if (*current_nick == '@' && is_number(current_nick + 1))
+		target_file_write(current_nick + 1, text);
+	    else if (*current_nick == '@' && toupper(current_nick[1]) == 'W' 
+			&& is_number(current_nick + 1))
 		target_file_write(current_nick + 1, text);
 
 	    else if (*current_nick == '"')

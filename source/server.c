@@ -1,4 +1,4 @@
-/* $EPIC: server.c,v 1.84 2003/01/13 04:44:35 jnelson Exp $ */
+/* $EPIC: server.c,v 1.85 2003/01/26 03:25:38 jnelson Exp $ */
 /*
  * server.c:  Things dealing with that wacky program we call ircd.
  *
@@ -1711,6 +1711,57 @@ void 	clear_user_modes (int refnum)
 	do_umode(refnum);
 }
 
+void	update_user_mode (const char *modes)
+{
+	int		onoff = 1;
+	const char *	p_umodes = get_possible_umodes(from_server);
+
+	if (x_debug & DEBUG_SERVER_CONNECT)
+		yell("Possible user modes for server [%d]: [%s]", from_server, p_umodes);
+
+	for (; *modes; modes++)
+	{
+		if (*modes == '-')
+			onoff = 0;
+		else if (*modes == '+')
+			onoff = 1;
+
+		else if   ((*modes >= 'a' && *modes <= 'z')
+			|| (*modes >= 'A' && *modes <= 'Z'))
+		{
+			size_t 	idx;
+			int 	c = *modes;
+
+			idx = ccspan(p_umodes, c);
+			if (p_umodes && p_umodes[idx] == 0)
+				yell("WARNING: Invalid user mode %c referenced on server %d",
+						*modes, last_server);
+			else
+				set_server_flag(from_server, idx, onoff);
+
+			if (c == 'O' || c == 'o')
+				set_server_operator(from_server, onoff);
+		}
+	}
+	update_all_status();
+}
+
+void	reinstate_user_modes (void)
+{
+	const char *modes = get_umode(from_server);
+
+	if (!modes && !*modes)
+		modes = send_umode;
+
+	if (modes && *modes)
+	{
+		if (x_debug & DEBUG_OUTBOUND)
+			yell("Reinstating your user modes on server [%d] to [%s]", from_server, modes);
+		send_to_server("MODE %s +%s", get_server_nickname(from_server), modes);
+		clear_user_modes(from_server);
+	}
+}
+
 void	set_server_flag (int refnum, int flag, int value)
 {
 	Server *s;
@@ -1958,7 +2009,9 @@ void 	server_is_registered (int refnum, int value)
 		 * then we must turn it off, rather than the other way
 		 * around.
 		 */
+#if 0
 		set_server_save_channels(refnum, 0);
+#endif
 		s->reconnect_to = refnum;
 		s->eof = 0;
 		clear_reconnect_counts();
@@ -3009,7 +3062,7 @@ char 	*serverctl 	(char *input)
  * got_my_userhost -- callback function, XXXX doesnt belong here
  * XXX Really does not belong here. 
  */
-void 	got_my_userhost (int refnum, UserhostItem *item, char *nick, char *stuff)
+void 	got_my_userhost (int refnum, UserhostItem *item, const char *nick, const char *stuff)
 {
 	char *freeme;
 

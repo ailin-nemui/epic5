@@ -1,4 +1,4 @@
-/* $EPIC: parse.c,v 1.30 2002/12/19 03:22:59 jnelson Exp $ */
+/* $EPIC: parse.c,v 1.31 2003/01/26 03:25:38 jnelson Exp $ */
 /*
  * parse.c: handles messages from the server.   Believe it or not.  I
  * certainly wouldn't if I were you. 
@@ -66,35 +66,19 @@
 #define space 		' '	/* Taken from rfc 1459 */
 #define	MAXPARA		15	/* Taken from rfc 1459 */
 
-static  void    strip_modes (char *, char *, char *);
-
-/*
- * joined_nick: the nickname of the last person who joined the current
- * channel 
- */
-	char	*joined_nick = (char *) 0;
-
-/* public_nick: nick of the last person to send a message to your channel */
-	char	*public_nick = (char *) 0;
+static	void	strip_modes (const char *, const char *, const char *);
 
 /* User and host information from server 2.7 */
-	char	*FromUserHost = empty_string;
-
-/* fake: alerts the user. */
-void 	fake (void)
-{
-	yell("-- Fake Message receieved -- ");
-	return;
-}
+const char	*FromUserHost = empty_string;
 
 /*
  * is_channel: determines if the argument is a channel.  If it's a number,
  * begins with MULTI_CHANNEL and has no '*', or STRING_CHANNEL, then its a
  * channel 
  */
-int 	is_channel(const char *to)
+int 	is_channel (const char *to)
 {
-const	char	*chantypes;
+	const	char	*chantypes;
 
 	if (!to || !*to)
 		return 0;
@@ -208,18 +192,17 @@ void 	BreakArgs (char *Input, char **Sender, char **OutPut)
 }
 
 /* in response to a TOPIC message from the server */
-static void p_topic (char *from, char **ArgList)
+static void	p_topic (const char *from, const char *comm, char **ArgList)
 {
-	char	*high;
+	const char 	*high, *channel, *new_topic;
 
-	if (!ArgList[1]) 
-	{
-		fake();
-		return;
-	}
+	if (!(channel = ArgList[0])) 
+		{ rfc1459_odd(from, comm, ArgList); return; }
+	if (!(new_topic = ArgList[1])) 
+		{ rfc1459_odd(from, comm, ArgList); return; }
 
 	switch (check_ignore_channel(from, FromUserHost, 
-					ArgList[0], IGNORE_TOPICS))
+					channel, IGNORE_TOPICS))
 	{
 		case IGNORED:
 			return;
@@ -231,83 +214,82 @@ static void p_topic (char *from, char **ArgList)
 			break;
 	}
 
-	if (!new_check_flooding(from, FromUserHost, ArgList[0], ArgList[1], TOPIC_FLOOD))
+	if (new_check_flooding(from, FromUserHost, channel, new_topic, TOPIC_FLOOD))
 		return;
 
-	message_from(ArgList[0], LOG_CRAP);
-	if (do_hook(TOPIC_LIST, "%s %s %s", from, ArgList[0], ArgList[1]))
+	message_from(channel, LOG_CRAP);
+	if (do_hook(TOPIC_LIST, "%s %s %s", from, channel, new_topic))
 		say("%s has changed the topic on channel %s to %s",
-			from, check_channel_type(ArgList[0]), ArgList[1]);
-	message_from((char *) 0, LOG_CURRENT);
+			from, check_channel_type(channel), new_topic);
+	message_from(NULL, LOG_CURRENT);
 }
 
-static void p_wallops (char *from, char **ArgList)
+static void	p_wallops (const char *from, const char *comm, char **ArgList)
 {
-	int 	server_wallop = strchr(from, '.') ? 1 : 0;
+	const char 	*message;
+	int 	server_wallop;
+	int	level;
+	char	*high;
 
-	if (!ArgList[0])
+	if (!(message = ArgList[0]))
+		{ rfc1459_odd(from, comm, ArgList); return; }
+
+	server_wallop = strchr(from, '.') ? 1 : 0;
+
+	/* Check for ignores... */
+	switch (check_ignore(from, FromUserHost, IGNORE_WALLOPS))
 	{
-		fake();
+		case (IGNORED):
+			return;
+		case (HIGHLIGHTED):
+			high = highlight_char;
+			break;
+		default:
+			high = empty_string;
+			break;
+	}
+
+	/* Check for floods... servers are exempted from flood checks */
+	if (!server_wallop && check_flooding(from, FromUserHost, 
+						WALLOP_FLOOD, message))
 		return;
-	}
 
-	/* wallops from a server */
-	if (server_wallop || check_flooding(from, FromUserHost, WALLOP_FLOOD, ArgList[0]))
-	{
-		int	level;
-		char	*high;
 
-		switch (check_ignore(from, FromUserHost, IGNORE_WALLOPS))
-		{
-			case (IGNORED):
-				return;
-			case (HIGHLIGHTED):
-				high = highlight_char;
-				break;
-			default:
-				high = empty_string;
-				break;
-		}
-		message_from(from, LOG_WALLOP);
-		level = set_lastlog_msg_level(LOG_WALLOP);
-		if (do_hook(WALLOP_LIST, "%s %c %s", 
-					from, 
-					server_wallop ? 'S' : '*', 
-					ArgList[0]))
-			put_it("%s!%s%s!%s %s", 
-					high, from, 
-					server_wallop ? empty_string : star, 
-					high, ArgList[0]);
+	message_from(from, LOG_WALLOP);
+	level = set_lastlog_msg_level(LOG_WALLOP);
 
-		if (beep_on_level & LOG_WALLOP)
-			beep_em(1);
-		set_lastlog_msg_level(level);
-		message_from((char *) 0, LOG_CRAP);
-	}
+	if (do_hook(WALLOP_LIST, "%s %c %s", 
+				from, 
+				server_wallop ? 'S' : '*', 
+				message))
+		put_it("%s!%s%s!%s %s", 
+				high, from, 
+				server_wallop ? empty_string : star, 
+				high, message);
+
+	if (beep_on_level & LOG_WALLOP)
+		beep_em(1);
+
+	set_lastlog_msg_level(level);
+	message_from(NULL, LOG_CURRENT);
 }
 
-static void p_privmsg (char *from, char **Args)
+static void	p_privmsg (const char *from, const char *comm, char **ArgList)
 {
+	const char	*target, *message;
 	int		level,
-			list_type,
+			hook_type,
 			flood_type,
 			log_type;
-	char		*flood_channel = NULL;
+	char 		*hook_format;
+	const char	*flood_channel = NULL;
 	unsigned char	ignore_type;
-	char		*ptr,
-			*to;
 	char		*high;
-	int		flood;
-	int		hook_normal = 1;
 
-	PasteArgs(Args, 1);
-	to = Args[0];
-	ptr = Args[1];
-	if (!to || !ptr)
-	{
-		fake();
-		return;
-	}
+	if (!(target = ArgList[0]))
+		{ rfc1459_odd(from, comm, ArgList); return; }
+	if (!(message = ArgList[1]))
+		{ rfc1459_odd(from, comm, ArgList); return; }
 
 	set_server_doing_privmsg(from_server, 1);
 	sed = 0;
@@ -318,61 +300,59 @@ static void p_privmsg (char *from, char **Args)
 	 * until we know there's other stuff besides the ctcp in the
 	 * message, which keeps things going to the wrong window.
 	 */
-	ptr = do_ctcp(from, to, ptr);
-	if (!*ptr)
-	{
+	message = do_ctcp(from, target, (char *)message);
+	if (!*message) {
 		set_server_doing_privmsg(from_server, 0);
 		return;
 	}
 
 	/* ooops. cant just do is_channel(to) because of # walls... */
-	if (is_channel(to) && im_on_channel(to, from_server))
+	if (is_channel(target) && im_on_channel(target, from_server))
 	{
-		message_from(to, LOG_PUBLIC);	/* Duh! */
-		malloc_strcpy(&public_nick, from);
-		set_server_public_nick(from_server, from);
-		flood_channel = to;
-		flood_type = PUBLIC_FLOOD;
 		log_type = LOG_PUBLIC;
+		flood_channel = target;
+		flood_type = PUBLIC_FLOOD;
 		ignore_type = IGNORE_PUBLIC;
 
-		if (!is_channel_nomsgs(to, from_server) && 
-		    !is_on_channel(to, from))
-			list_type = PUBLIC_MSG_LIST;
-		else
-		{
-			if (is_current_channel(to, 0))
-				list_type = PUBLIC_LIST;
-			else
-				list_type = PUBLIC_OTHER_LIST;
+		if (!is_channel_nomsgs(target, from_server) && 
+				!is_on_channel(target, from)) {
+			hook_type = PUBLIC_MSG_LIST;
+			hook_format = "%s(%s/%s)%s %s";
+		} else if (is_current_channel(target, 0)) {
+			hook_type = PUBLIC_LIST;
+			hook_format = "%s<%s%.0s>%s %s";
+		} else {
+			hook_type = PUBLIC_OTHER_LIST;
+			hook_format = "%s<%s:%s>%s %s";
 		}
+	}
+	else if (!is_me(from_server, target))
+	{
+		log_type = LOG_WALL;
+		flood_channel = NULL;
+		flood_type = WALL_FLOOD;
+		ignore_type = IGNORE_WALLS;
+
+		hook_type = MSG_GROUP_LIST;
+		hook_format = "%s<-%s:%s->%s %s";
 	}
 	else
 	{
-		message_from(from, LOG_MSG);
-		if (!is_me(-1, to))
-		{
-			log_type = LOG_WALL;
-			ignore_type = IGNORE_WALLS;
-			list_type = MSG_GROUP_LIST;
-			flood_type = WALL_FLOOD;
-		}
-		else
-		{
-			log_type = LOG_MSG;
-			ignore_type = IGNORE_MSGS;
-			list_type = MSG_LIST;
-			flood_type = MSG_FLOOD;
-		}
+		log_type = LOG_MSG;
+		flood_channel = NULL;
+		flood_type = MSG_FLOOD;
+		ignore_type = IGNORE_MSGS;
+
+		hook_type = MSG_LIST;
+		hook_format = NULL;	/* See below */
 	}
 
-	switch (check_ignore_channel(from, FromUserHost, to, ignore_type))
+
+	switch (check_ignore_channel(from, FromUserHost, target, ignore_type))
 	{
 		case IGNORED:
-		{
 			set_server_doing_privmsg(from_server, 0);
 			return;
-		}
 		case HIGHLIGHTED:
 			high = highlight_char;
 			break;
@@ -380,205 +360,247 @@ static void p_privmsg (char *from, char **Args)
 			high = empty_string;
 			break;
 	}
-	flood = new_check_flooding(from, FromUserHost, flood_channel, ptr, flood_type);
 
 	/* Encrypted privmsgs are specifically exempted from flood control */
-	level = set_lastlog_msg_level(log_type);
-	if (sed != 0)
+	if (sed)
 	{
-		if (!do_hook(ENCRYPTED_PRIVMSG_LIST, "%s %s %s", from, to,
-				sed == 1 ? ptr : empty_string))
-			hook_normal = 0;
+		int	do_return = 1;
+
 		sed = 0;
+
+		level = set_lastlog_msg_level(log_type);
+		message_from(target, log_type);
+
+		if (do_hook(ENCRYPTED_PRIVMSG_LIST, "%s %s %s", from, target,
+				sed == 1 ? message : empty_string))
+			do_return = 0;
+
+		set_lastlog_msg_level(level);
+		message_from(NULL, LOG_CURRENT);
+
+		if (do_return) {
+			set_server_doing_privmsg(from_server, 0);
+			return;
+		}
 	}
 
-	if (flood && hook_normal)
-	{ 
-	  if (do_hook(GENERAL_PRIVMSG_LIST, "%s %s %s", from, to, ptr))
-	  {
-	    switch (list_type)
-	    {
-		case PUBLIC_MSG_LIST:
-		{
-			if (do_hook(list_type, "%s %s %s", from, to, ptr))
-			    put_it("%s(%s/%s)%s %s", 
-				high, from, check_channel_type(to), 
-				high, ptr);
-			break;
-		}
-		case MSG_GROUP_LIST:
-		{
-			if (do_hook(list_type, "%s %s %s", from, to, ptr))
-			    put_it("%s<-%s:%s->%s %s", 
-				high, from, check_channel_type(to), 
-				high, ptr);
-			break;
-		}
-		case MSG_LIST:
-		{
-			set_server_recv_nick(from_server, from);
-			if (get_server_away(NOSERV))
-				beep_em(get_int_var(BEEP_WHEN_AWAY_VAR));
+	if (new_check_flooding(from, FromUserHost, flood_channel, 
+				message, flood_type)) {
+		set_server_doing_privmsg(from_server, 0);
+		return;
+	}
 
-			if (do_hook(list_type, "%s %s", from, ptr))
-			{
-			    if (get_server_away(NOSERV))
-			    {
-				time_t blah = time(NULL);
-				put_it("%s*%s*%s %s <%.16s>", 
-					high, from, high, ptr, ctime(&blah));
-			    }
-			    else
-				put_it("%s*%s*%s %s", high, from, high, ptr);
-			}
-			break;
-		}
-		case PUBLIC_LIST:
+	/* Control the "last public/private nickname" variables */
+	if (hook_type == PUBLIC_LIST || 
+	    hook_type == PUBLIC_MSG_LIST || 
+	    hook_type == PUBLIC_OTHER_LIST)
+		set_server_public_nick(from_server, from);
+	else if (hook_type == MSG_LIST)
+		set_server_recv_nick(from_server, from);
+
+	/* Beep the user if they asked us to */
+	if (beep_on_level & log_type)
+	    beep_em(1);
+
+	/* Go ahead and throw it to the user */
+	level = set_lastlog_msg_level(log_type);
+	message_from(target, log_type);
+
+	if (do_hook(GENERAL_PRIVMSG_LIST, "%s %s %s", from, target, message))
+	{
+	    if (hook_type == MSG_LIST)
+	    {
+		const char *away = get_server_away(NOSERV);
+
+		if (away)
+			beep_em(get_int_var(BEEP_WHEN_AWAY_VAR));
+
+		if (do_hook(hook_type, "%s %s", from, message))
 		{
-			if (do_hook(list_type, "%s %s %s", from, to, ptr))
-				put_it("%s<%s>%s %s", high, from, high, ptr);
-			break;
-		}
-		case PUBLIC_OTHER_LIST:
-		{
-			if (do_hook(list_type, "%s %s %s", from, to, ptr))
-				put_it("%s<%s:%s>%s %s", 
-					high, from, check_channel_type(to), 
-					high, ptr);
-			break;
+		    if (away)
+		    {
+			time_t blah = time(NULL);
+			put_it("%s*%s*%s %s <%.16s>", 
+				high, from, high, message, 
+				ctime(&blah));
+		    }
+		    else
+			put_it("%s*%s*%s %s", high, from, high,message);
 		}
 	    }
-	  }
-	  if (beep_on_level & log_type)
-	    beep_em(1);
+
+	    else if (do_hook(hook_type, "%s %s %s", from, target, message))
+		put_it(hook_format, high, from, check_channel_type(target), 
+				high, message);
 	}
 
-	sed = 0;
+	/* Clean up and go home. */
 	set_lastlog_msg_level(level);
 	message_from(NULL, LOG_CURRENT);
+
 	set_server_doing_privmsg(from_server, 0);
 }
 
-static void p_quit (char *from, char **ArgList)
+static void	p_quit (const char *from, const char *comm, char **ArgList)
 {
+	const char *	quit_message;
 	int		one_prints = 1;
 	const char *	chan;
-	char *		Reason;
 
-	if (check_ignore(from, FromUserHost, IGNORE_CRAP) != IGNORED)
+	if (!(quit_message = ArgList[0]))
+		{ rfc1459_odd(from, comm, ArgList); return; }
+
+    do
+    {
+	/*
+	 * Normally, we do not throw the user a hook until after we
+	 * have taken care of administrative details.  But in this case,
+	 * someone has QUIT but the user may want their user@host info
+	 * so we cannot remove them from the channel until after we have
+	 * thrown the hook.  That is the only reason this is out of order.
+	 */
+	if (check_ignore(from, FromUserHost, IGNORE_CRAP) == IGNORED)
+		break;
+
+	for (chan = walk_channels(1, from); chan; 
+		 chan = walk_channels(0, from))
 	{
-		PasteArgs(ArgList, 0);
-		Reason = ArgList[0] ? ArgList[0] : "?";
-		for (chan = walk_channels(1, from); chan; chan = walk_channels(0, from))
+		if (check_ignore_channel(from, FromUserHost, chan,
+						IGNORE_CRAP) == IGNORED)
 		{
-			if (check_ignore_channel(from, FromUserHost, chan,
-							IGNORE_CRAP) == IGNORED)
-			{
-				one_prints = 0;
-				continue;
-			}
+			one_prints = 0;
+			continue;
+		}
 
-			message_from(chan, LOG_CRAP);
-			if (!do_hook(CHANNEL_SIGNOFF_LIST, "%s %s %s", chan, from, Reason))
-				one_prints = 0;
-			message_from((char *) 0, LOG_CURRENT);
-		}
-		if (one_prints)
-		{
-			message_from(what_channel(from), LOG_CRAP);
-			if (do_hook(SIGNOFF_LIST, "%s %s", from, Reason))
-				say("Signoff: %s (%s)", from, Reason);
-			message_from((char *) 0, LOG_CURRENT);
-		}
+		message_from(chan, LOG_CRAP);
+		if (!do_hook(CHANNEL_SIGNOFF_LIST, "%s %s %s", chan, from, 
+								quit_message))
+			one_prints = 0;
+		message_from(NULL, LOG_CURRENT);
 	}
-	notify_mark(from_server, from, 0, 0);
-	remove_from_channel((char *) 0, from, from_server);
-	message_from((char *) 0, LOG_CURRENT);
 
+	if (one_prints)
+	{
+		message_from(what_channel(from), LOG_CRAP);
+		if (do_hook(SIGNOFF_LIST, "%s %s", from, quit_message))
+			say("Signoff: %s (%s)", from, quit_message);
+		message_from(NULL, LOG_CURRENT);
+	}
 
 	/*
-	 * If we ever see our own quit, something is amiss.
-	 * Apparantly, this can happen when you change servers,
-	 * and you change nicks because your old nick is lagged
-	 * behind.  If the client somehow doesnt get wind of your
-	 * new nick change before the old nick gets knocked off,
-	 * the client could possibly see your old nick quit before
-	 * it knows about your new nick.  (I personally dont believe
-	 * this, but thats the story ive been getting.)
+	 * This is purely ergonomic.  If the user is ignoring this person
+	 * then if we tell the user that this person is offline as soon as
+	 * we get the QUIT, this will leak to the user that the person was
+	 * on the channel, thus defeating the ignore.  Best to just wait 
+	 * until the top of the next minute.
 	 */
-	if (is_me(-1, from))
-	{
-		yell("Internal inconsistency: Quit message for myself:");
-		yell("Pertinent information: (%s[%s]) (%s!%s (%s))",get_server_nickname(from_server), get_server_name(from_server), from, FromUserHost, ArgList[0]);
-	}
+	notify_mark(from_server, from, 0, 0);
+    }
+    while (0);
+
+	/* Send all data about this unperson to the memory hole. */
+	remove_from_channel(NULL, from, from_server);
 }
 
-static void p_pong (char *from, char **ArgList)
+static void	p_pong (const char *from, const char *comm, char **ArgList)
 {
-	PasteArgs(ArgList, 1);
+	const char *	pong_server, *pong_message;
+	int	server_pong = 0;
 
+	PasteArgs(ArgList, 1);
+	if (!(pong_server = ArgList[0]))
+		{ rfc1459_odd(from, comm, ArgList); return; }
+	if (!(pong_message = ArgList[1]))
+		{ rfc1459_odd(from, comm, ArgList); return; }
+
+	if (strchr(pong_server, '.'))
+		server_pong = 1;
+
+	/*
+	 * In theory, we could try to use PING/PONG messages to 
+	 * do /redirect and /wait, but we don't.  When the day comes
+	 * that we do, this code will do that for us.
+	 */
 	if (!my_stricmp(from, get_server_itsname(from_server)))
 	{
-		if (check_server_redirect(from_server, ArgList[1]))
+		if (check_server_redirect(from_server, pong_message))
 			return;
-		if (check_server_wait(from_server, ArgList[1]))
+		if (check_server_wait(from_server, pong_message))
 			return;
 	}
 
-	if (check_ignore(from, FromUserHost, IGNORE_CRAP) != IGNORED)
-	{
-		if (do_hook(PONG_LIST, "%s %s %s", from, ArgList[0], ArgList[1])
-			&& ArgList[0] && strchr(ArgList[0], '.'))
-		    say("%s: PONG received from %s (%s)", 
-				ArgList[0], from, ArgList[1]);
-	}
+	if (check_ignore(from, FromUserHost, IGNORE_CRAP) == IGNORED)
+		return;
+
+	if (do_hook(PONG_LIST, "%s %s %s", from, pong_server, pong_message))
+	    if (server_pong)
+		say("%s: PONG received from %s (%s)", pong_server, 
+							from, pong_message);
 }
 
-static void p_error (char *from, char **ArgList)
+static void	p_error (const char *from, const char *comm, char **ArgList)
 {
+	const char *	error;
+
 	PasteArgs(ArgList, 0);
-	if (!ArgList[0])
-		{fake();return;}
-	if (do_hook(ERROR_LIST, "%s %s", from, ArgList[0]))
-		say("%s %s", from, ArgList[0]);
+	if (!(error = ArgList[0]))
+		{ rfc1459_odd(from, comm, ArgList); return; }
+
+	if (do_hook(ERROR_LIST, "%s %s", from, error))
+		say("%s %s", from, error);
 }
 
-void	add_user_who (int refnum, char *from, char **ArgList)
+static void	add_user_who (int refnum, const char *from, const char *comm, char **ArgList)
 {
-	char *userhost;
+	const char 	*channel, *user, *host, *server, *nick;
+	char 	*userhost;
+
+	if (!(channel = ArgList[0]))
+		{ rfc1459_odd(from, "*", ArgList); return; }
+	if (!(user = ArgList[1]))
+		{ rfc1459_odd(from, "*", ArgList); return; }
+	if (!(host = ArgList[2]))
+		{ rfc1459_odd(from, "*", ArgList); return; }
+	if (!(server = ArgList[3]))
+		{ rfc1459_odd(from, "*", ArgList); return; }
+	if (!(nick = ArgList[4]))
+		{ rfc1459_odd(from, "*", ArgList); return; }
 
 	/* Obviously this is safe. */
-	userhost = alloca(strlen(ArgList[1]) + strlen(ArgList[2]) + 2);
-	sprintf(userhost, "%s@%s", ArgList[1], ArgList[2]);
-	add_userhost_to_channel(ArgList[0], ArgList[4], refnum, userhost);
+	userhost = alloca(strlen(user) + strlen(host) + 2);
+	sprintf(userhost, "%s@%s", user, host);
+	add_userhost_to_channel(channel, nick, refnum, userhost);
 }
 
-void	add_user_end (int refnum, char *from, char **ArgList)
+static void	add_user_end (int refnum, const char *from, const char *comm, char **ArgList)
 {
-	char *		copy;
-	const char *	channel;
+	char *	copy;
+	char *	channel;
+
+	if (!ArgList[0])
+		{ rfc1459_odd(from, "*", ArgList); return; }
 
 	copy = LOCAL_COPY(ArgList[0]);
 	channel = next_arg(copy, &copy);
 	channel_not_waiting(channel, refnum);
 }
 
-static void	p_channel (char *from, char **ArgList)
+static void	p_channel (const char *from, const char *comm, char **ArgList)
 {
-	char	*c, *channel = NULL;
+	const char	*channel;
+	char 	*c;
 	int 	op = 0, vo = 0, ha = 0;
 	char 	extra[20];
 	char	*high;
 
-	if (!strcmp(ArgList[0], zero))
-		{fake();return;}
-
-	channel = ArgList[0];
-	malloc_strcpy(&joined_nick, from);
-	set_server_joined_nick(from_server, from);
+	/* We cannot join channel 0 */
+	if (!(channel = ArgList[0]))
+		{ rfc1459_odd(from, comm, ArgList); return; }
+	if (!strcmp(channel, zero))
+		{ rfc1459_odd(from, comm, ArgList); return; }
 
 	/*
-	 * Workaround for extremely gratuitous protocol change in ef2.9
+	 * Workaround for extremely gratuitous protocol change in av2.9
 	 */
 	if ((c = strchr(channel, '\007')))
 	{
@@ -591,9 +613,11 @@ static void	p_channel (char *from, char **ArgList)
 
 	if (is_me(from_server, from))
 	{
+		char *copy = LOCAL_COPY(channel);
+
 		add_channel(channel, from_server);
 		send_to_server("MODE %s", channel);
-		whobase(from_server, channel, add_user_who, add_user_end);
+		whobase(from_server, copy, add_user_who, add_user_end);
 	}
 	else
 	{
@@ -613,8 +637,10 @@ static void	p_channel (char *from, char **ArgList)
 			break;
 	}
 
-	if (!new_check_flooding(from, FromUserHost, channel, star, JOIN_FLOOD))
+	if (new_check_flooding(from, FromUserHost, channel, star, JOIN_FLOOD))
 		return;
+
+	set_server_joined_nick(from_server, from);
 
 	*extra = 0;
 	if (op)
@@ -628,20 +654,34 @@ static void	p_channel (char *from, char **ArgList)
 		say("%s%s%s (%s) has joined channel %s%s%s%s", 
 			high, from, high, FromUserHost, 
 			high, check_channel_type(channel), high, extra);
-	message_from((char *) 0, LOG_CURRENT);
+	message_from(NULL, LOG_CURRENT);
 
 	/*
-	 * This should be done last to ensure that the userhost has been
-	 * properly handled...
+	 * The placement of this is purely ergonomic.  The user might
+	 * be alarmed if epic thrown an /on notify_signon before it
+	 * throws the /on join that triggers it.  Plus, if the user is
+	 * ignoring this person (nothing says you can't ignore someone
+	 * who is on your notify list), then it would also not be the
+	 * best idea to throw /on notify_signon as a result of an
+	 * /on join since that would leak to the user that the person
+	 * has joined the channel -- best to just leave the notify stuff
+	 * alone until the top of the next minute.
 	 */
 	notify_mark(from_server, from, 1, 0);
 }
 
-static void 	p_invite (char *from, char **ArgList)
+static void 	p_invite (const char *from, const char *comm, char **ArgList)
 {
+	const char	*invitee, *invited_to;
 	char	*high;
 
-	switch (check_ignore_channel(from, FromUserHost, ArgList[1], IGNORE_INVITES))
+	if (!(invitee = ArgList[0]))
+		{ rfc1459_odd(from, comm, ArgList); return; }
+	if (!(invited_to = ArgList[1]))
+		{ rfc1459_odd(from, comm, ArgList); return; }
+
+	switch (check_ignore_channel(from, FromUserHost, 
+					invited_to, IGNORE_INVITES))
 	{
 		case IGNORED:
 			return;
@@ -653,18 +693,17 @@ static void 	p_invite (char *from, char **ArgList)
 			break;
 	}
 
-	if (!check_flooding(from, FromUserHost, INVITE_FLOOD, ArgList[1]))
+	if (check_flooding(from, FromUserHost, INVITE_FLOOD, invited_to))
 		return;
 
-	if (ArgList[0] && ArgList[1])
-	{
-		message_from(from, LOG_CRAP);
-		if (do_hook(INVITE_LIST, "%s %s %s", from, ArgList[1],FromUserHost))
-			say("%s%s (%s)%s invites you to channel %s", high,
-				from, FromUserHost, high, ArgList[1]);
-		set_server_invite_channel(from_server, ArgList[1]);
-		set_server_recv_nick(from_server, from);
-	}
+	set_server_invite_channel(from_server, invited_to);
+	set_server_recv_nick(from_server, from);
+
+	message_from(from, LOG_CRAP);
+	if (do_hook(INVITE_LIST, "%s %s %s", from, invited_to, FromUserHost))
+		say("%s%s (%s)%s invites you to channel %s", high,
+			from, FromUserHost, high, invited_to);
+	message_from(NULL, LOG_CURRENT);
 }
 
 /* 
@@ -683,8 +722,15 @@ static void 	p_invite (char *from, char **ArgList)
  * NOTE: If you want to change it, you *will* have to do it yourself.
  * Im quite serious.  Im not going to change this.
  */
-static void	p_kill (char *from, char **ArgList)
+static void	p_kill (const char *from, const char *comm, char **ArgList)
 {
+	const char 	*victim, *reason;
+	int 	hooked;
+
+	if (!(victim = ArgList[0]))
+		{ rfc1459_odd(from, comm, ArgList); return; }
+	if (!(reason = ArgList[1])) { }
+
 	/* 
 	 * Bogorific Microsoft Exchange ``IRC'' server sends out a KILL
 	 * protocol message instead of a QUIT protocol message when
@@ -693,10 +739,25 @@ static void	p_kill (char *from, char **ArgList)
 	 * p_quit, where it should have been sent in the first place.
 	 * Die Microsoft, Die.
 	 */
-	if (!is_me(-1, ArgList[0]))
+	if (!is_me(from_server, victim))
 	{
 		/* I don't care if this doesn't work.  */
-		p_quit(from, ArgList);	/* Die Microsoft, Die */
+		p_quit(from, comm, ArgList);	/* Die Microsoft, Die */
+		return;
+	}
+
+
+	/*
+	 * If we've been killed by our server, we need take no action
+	 * because when we are dropped by the server, we will take this as
+	 * any other case where we recieve abnormal termination from the
+	 * server and we will reconnect and rejoin.
+	 */
+	if (strchr(from, '.'))
+        {
+		if (!reason) { reason = "Probably due to a nick collision"; }
+
+		say("Server [%s] has rejected you. (%s)", from, reason);
 		return;
 	}
 
@@ -707,59 +768,63 @@ static void	p_kill (char *from, char **ArgList)
 	 * we do any output, in case we want the output to go anywhere
 	 * meaningful.
 	 */
-	if (strchr(from, '.'))
-        {
-		say("Server [%s] has rejected you. (%s)",
-			from, ArgList[1] ? ArgList[1] : 
-			"probably due to a nick collision");
-	}
-	else
+	if (!reason) { reason = "No Reason Given"; }
+
+	if ((hooked = do_hook(DISCONNECT_LIST, "Killed by %s (%s)",
+						from, reason)))
 	{
-		int 	hooked;
-
-		if ((hooked = do_hook(DISCONNECT_LIST,"Killed by %s (%s)",
-			from, ArgList[1] ? ArgList[1] : "(No Reason Given)")))
-		{
-		   say("You have been killed by that fascist [%s] %s", 
-			from, ArgList[1] ? ArgList[1] : "(No Reason Given)");
-		}
-
-/* If we are a background, and /on disconnect didnt hook, then we arent
-   going anywhere.  We might as well quit. */ 
-#ifndef QUIT_ON_OPERATOR_KILL
-		if (background && !hooked)
-#endif
-		{
-			say("Too bad, you lose.");
-			irc_exit(1, NULL);
-		}
-
-		if (!background && get_int_var(AUTO_RECONNECT_VAR))
-		{
-			char *	sc = new_malloc(16);
-
-			snprintf(sc, 15, "%d", from_server);
-			add_timer(0, empty_string, 
-				  get_int_var(AUTO_RECONNECT_DELAY_VAR), 1,
-				  auto_reconnect_callback,
-				  sc, NULL, current_window->refnum);
-		}
-
-		server_reconnects_to(from_server, NOSERV);
+		say("You have been killed by that fascist [%s] %s", 
+						from, reason);
 	}
+
+	/* 
+	 * If we are a bot, and /on disconnect didnt hook, 
+	 * then we arent going anywhere.  We might as well quit.
+	 * Also quit if #define QUIT_ON_OPERATOR_KILL
+	 */
+#ifndef QUIT_ON_OPERATOR_KILL
+	if (background && !hooked)
+#endif
+	{
+		say("Too bad, you lose.");
+		irc_exit(1, NULL);
+	}
+
+	if (!background && get_int_var(AUTO_RECONNECT_VAR))
+	{
+		char *	sc = new_malloc(16);
+
+		snprintf(sc, 15, "%d", from_server);
+		add_timer(0, empty_string, 
+			  get_int_var(AUTO_RECONNECT_DELAY_VAR), 1,
+			  auto_reconnect_callback,
+			  sc, NULL, current_window->refnum);
+	}
+
+	/* Suppress auto-reconnect (to wait for above timer) */
+	server_reconnects_to(from_server, NOSERV);
 }
 
-static void p_ping (char *from, char **ArgList)
+static void	p_ping (const char *from, const char *comm, char **ArgList)
 {
+	const char *	message;
+
         PasteArgs(ArgList, 0);
-	send_to_server("PONG %s", ArgList[0]);
+	if (!(message = ArgList[0]))
+		{ rfc1459_odd(from, comm, ArgList); return; }
+
+	send_to_server("PONG %s", message);
 }
 
-static void p_silence (char *from, char **ArgList)
+static void	p_silence (const char *from, const char *comm, char **ArgList)
 {
-	char *target = ArgList[0];
-	char mag = *target++;
+	const char *target;
+	char mag;
 
+	if (!(target = ArgList[0]))
+		{ rfc1459_odd(from, comm, ArgList); return; }
+
+	mag = *target++;
 	if (do_hook(SILENCE_LIST, "%c %s", mag, target))
 	{
 		if (mag == '+')
@@ -771,25 +836,25 @@ static void p_silence (char *from, char **ArgList)
 	}
 }
 
-
-static void p_nick (char *from, char **ArgList)
+static void	p_nick (const char *from, const char *comm, char **ArgList)
 {
+	const char	*new_nick;
 	int		been_hooked = 0,
 			its_me = 0;
 	const char	*chan;
-	char		*line;
 	char		*high;
 	int		ignored = 0;
 
-	line = ArgList[0];
+	if (!(new_nick = ArgList[0]))
+		{ rfc1459_odd(from, comm, ArgList); return; }
 
 	/*
 	 * Is this me changing nick?
 	 */
-	if (is_me(-1, from))
+	if (is_me(from_server, from))
 	{
-		accept_server_nickname(from_server, line);
 		its_me = 1;
+		accept_server_nickname(from_server, new_nick);
 		set_server_nickname_pending(from_server, 0);
 	}
 
@@ -805,7 +870,7 @@ static void p_nick (char *from, char **ArgList)
 			break;
 	}
 
-	if (!check_flooding(from, FromUserHost, NICK_FLOOD, line))
+	if (check_flooding(from, FromUserHost, NICK_FLOOD, new_nick))
 		goto do_rename;
 
 	for (chan = walk_channels(1, from); chan; chan = walk_channels(0, from))
@@ -818,77 +883,71 @@ static void p_nick (char *from, char **ArgList)
 		}
 
 		message_from(chan, LOG_CRAP);
-		if (!do_hook(CHANNEL_NICK_LIST, "%s %s %s", chan, from, line))
+		if (!do_hook(CHANNEL_NICK_LIST, "%s %s %s", chan, from, new_nick))
 			been_hooked = 1;
 	}
 
 	if (!been_hooked && !ignored)
 	{
 		if (its_me)
-			message_from((char *) 0, LOG_CRAP);
+			message_from(NULL, LOG_CRAP);
 		else
 			message_from(what_channel(from), LOG_CRAP);
 
-		if (do_hook(NICKNAME_LIST, "%s %s", from, line))
-			say("%s is now known as %s", from, line);
+		if (do_hook(NICKNAME_LIST, "%s %s", from, new_nick))
+			say("%s is now known as %s", from, new_nick);
 	}
 
 do_rename:
 	notify_mark(from_server, from, 0, 0);
-	rename_nick(from, line, from_server);
-	notify_mark(from_server, line, 1, 0);
+	rename_nick(from, new_nick, from_server);
+	notify_mark(from_server, new_nick, 1, 0);
 }
 
-static void p_mode (char *from, char **ArgList)
+static void	p_mode (const char *from, const char *comm, char **ArgList)
 {
-	char	*channel;
-	char	*line;
-	int	flag;
+	const char	*target, *changes;
+	const char	*m_target;
+	const char	*type;
 
 	PasteArgs(ArgList, 1);
-	channel = ArgList[0];
-	line = ArgList[1];
+	if (!(target = ArgList[0]))
+		{ rfc1459_odd(from, comm, ArgList); return; }
+	if (!(changes = ArgList[1])) { return; } /* Ignore UnrealIRCD */
+	if (!*changes) { return; }		 /* Ignore UnrealIRCD */
 
-	/* 
-	 * Stupid lame broken pathetic UnrealIRCD server sends a bloody
-	 * VOID MODE CHANGE when you connect.  How totaly useless and
-	 * pointless a change.  What possesses people to make these kinds
-	 * of blithering idiot modifications in the first place?
-	 */
-	if (!line || !*line)
+	if (get_int_var(MODE_STRIPPER_VAR))
+		strip_modes(from, target, changes);
+
+	if (is_channel(target))
 	{
-		say("Server sent an empty MODE change; ignoring it.");
-		return;
+		m_target = target;
+		target = check_channel_type(target);
+		type = "on channel";
+	}
+	else
+	{
+		m_target = NULL;
+		type = "for user";
 	}
 
-	flag = check_ignore_channel(from, FromUserHost, channel, IGNORE_CRAP);
-	message_from(channel, LOG_CRAP);
-	if (channel && line)
+	if (check_ignore_channel(from, FromUserHost, target, IGNORE_CRAP) 
+					!= IGNORED)
 	{
-                if (get_int_var(MODE_STRIPPER_VAR))
-                        strip_modes(from, channel, line);
-		if (is_channel(channel))
-		{
-			if (flag != IGNORED && do_hook(MODE_LIST, "%s %s %s",
-				     from, check_channel_type(channel), line))
-				say("Mode change \"%s\" on channel %s by %s",
-				     line, check_channel_type(channel), from);
-			update_channel_mode(channel, line);
-		}
-		else
-		{
-			if (flag != IGNORED && do_hook(MODE_LIST, "%s %s %s",
-				     from, channel, line))
-				say("Mode change \"%s\" for user %s by %s",
-						line, channel, from);
-			update_user_mode(line);
-		}
-		update_all_status();
+		message_from(m_target, LOG_CRAP);
+		if (do_hook(MODE_LIST, "%s %s %s", from, target, changes))
+		    say("Mode change \"%s\" %s %s by %s",
+					changes, type, target, from);
+		message_from(NULL, LOG_CURRENT);
 	}
-	message_from(NULL, LOG_CURRENT);
+
+	if (is_channel(target))
+		update_channel_mode(target, changes);
+	else
+		update_user_mode(changes);
 }
 
-static void strip_modes (char *from, char *channel, char *line)
+static void strip_modes (const char *from, const char *channel, const char *line)
 {
 	char	*mode;
 	char 	*pointer;
@@ -897,18 +956,18 @@ static void strip_modes (char *from, char *channel, char *line)
 	char	*free_copy;
 
 	free_copy = LOCAL_COPY(line);
-
 	copy = free_copy;
 	mode = next_arg(copy, &copy);
 
 	if (is_channel(channel))
 	{
+	    message_from(channel, LOG_CRAP);
+
 	    for (pointer = mode; *pointer; pointer++)
 	    {
 		char	c = *pointer;
 		char	*arg = NULL;
 
-#if 1
 		switch (chanmodetype(c))
 		{
 			case 1:
@@ -923,7 +982,7 @@ static void strip_modes (char *from, char *channel, char *line)
 				if ((arg = safe_new_next_arg(copy, &copy)))
 					break;
 			default:
-				/* We already get a yell from this in decifer_mode() */
+				/* We already get a yell from decifer_mode() */
 				break;
 		}
 		if (arg)
@@ -935,60 +994,15 @@ static void strip_modes (char *from, char *channel, char *line)
 			do_hook(MODE_STRIPPED_LIST,
 				"%s %s %c%c",
 				from,channel,mag,c);
-#else
-		/* 
-		 * Conversion from "next_arg" to "safe_new_next_arg"
-		 * done on Aug 30, 2001 because of lame-o servers that
-		 * don't send arguments with +l, +b, +k, +o, +v, +e, +I
-		 * and the like.  You all know who you are.  Don't do that.
-		 */
-		switch (c) 
-		{
-			case '+' :
-			case '-' : 
-				mag = c; 
-				break;
-
-			case 'l' : 
-			{
-				if (mag == '+')
-					do_hook(MODE_STRIPPED_LIST,
-						"%s %s %c%c %s",
-						from, channel, mag,
-						c,safe_new_next_arg(copy,&copy));
-				else
-					do_hook(MODE_STRIPPED_LIST,
-						"%s %s %c%c",
-						from,channel,mag,c);
-				break;
-			}
-
-			case 'a' : case 'i' : case 'm' : case 'n' :
-			case 'p' : case 's' : case 't' : case 'z' : 
-			case 'c' : case 'r' : case 'R' : case 'O' :
-			case 'M' :
-			{
-				do_hook(MODE_STRIPPED_LIST,
-					"%s %s %c%c",
-					from, channel, mag, c);
-				break;
-			}
-
-			case 'b' : case 'k' : case 'o' : case 'v' : 
-			case 'e' : case 'I' :
-			{
-				do_hook(MODE_STRIPPED_LIST,
-					"%s %s %c%c %s", 
-					from, channel, mag, c,
-					safe_new_next_arg(copy,&copy));
-				break;
-			}
-		}
-#endif
 	    }
+
+	    message_from(NULL, LOG_CURRENT);
 	}
+
 	else /* User mode */
 	{
+	    message_from(NULL, LOG_CRAP);
+
 	    for (pointer = mode; *pointer; pointer++)
 	    {
 		char	c = *pointer;
@@ -1018,98 +1032,129 @@ static void strip_modes (char *from, char *channel, char *line)
 				break;
 		}
 	    }
+
+	    message_from(NULL, LOG_CURRENT);
 	}
+
 }
 
-static void p_kick (char *from, char **ArgList)
+static void	p_kick (const char *from, const char *comm, char **ArgList)
 {
-	char	*channel,
-		*who,
-		*comment;
+	const char	*channel, *victim, *comment;
 
-	channel = ArgList[0];
-	who = ArgList[1];
-	comment = ArgList[2] ? ArgList[2] : "(no comment)" ;
+	if (!(channel = ArgList[0]))
+		{ rfc1459_odd(from, comm, ArgList); return; }
+	if (!(victim = ArgList[1]))
+		{ rfc1459_odd(from, comm, ArgList); return; }
+	if (!(comment = ArgList[2])) { comment = "(no comment)"; }
 
-	message_from(channel, LOG_CRAP);
-	if (channel && who)
+
+	/*
+	 * All this to handle being kicked...
+	 */
+	if (is_me(-1, victim))
 	{
-		if (is_me(-1, who))
+		Window *win, *old_tw, *old_cw;
+
+		/*
+		 * Uh-oh.  If win is null we have a problem.
+		 */
+		if (!(win = get_channel_window(channel, from_server)))
+		{
+		    /*
+		     * Check to see if we got a KICK for a 
+		     * channel we dont think we're on.
+		     */
+		    if (im_on_channel(channel, from_server))
+			panic("Window is NULL for channel [%s]", channel);
+
+		    yell("You were KICKed by [%s] on channel [%s] "
+			 "(reason [%s]), which you are not on!  "
+			 "Will not try to auto-rejoin", 
+				from, channel, comment);
+
+		    return;
+		}
+
+		if (get_int_var(AUTO_REJOIN_VAR))
 		{
 			const char *key = get_channel_key(channel, from_server);
-			Window *win = get_channel_window(channel, from_server);
-			Window *old_tw = to_window;
-			Window *old_cw = current_window;
-
 			if (!key)
 				key = empty_string;
 
-			/*
-			 * Uh-oh.  If win is null we have a problem.
-			 */
-			if (!win)
-			{
-				/*
-				 * Check to see if we got a KICK for a 
-				 * channel we dont think we're on.
-				 */
-				if (!im_on_channel(channel, from_server))
-					yell("You were KICKed by [%s] on channel [%s] (reason [%s]), which you are not on!  Will not try to auto-rejoin", who, channel, comment);
-				else
-					panic("Window is NULL for channel [%s]", channel);
-
-				return;
-			}
-
-			if (get_int_var(AUTO_REJOIN_VAR))
-			{
-				add_timer(0, empty_string, 
-					  get_int_var(AUTO_REJOIN_DELAY_VAR), 1,
-					  auto_rejoin_callback, 
-					  m_sprintf("%s %d %d %s", channel, 
-							from_server, 
-							win->refnum,
-							key),
-					  NULL, win->refnum);
-			}
-			remove_channel(channel, from_server);
-			update_all_status();
-
-			current_window = win;
-			to_window = win;
-			if (do_hook(KICK_LIST, "%s %s %s %s", who, from, check_channel_type(channel), comment))
-				say("You have been kicked off channel %s by %s (%s)", check_channel_type(channel), from, comment);
-			to_window = old_tw;
-			current_window = old_cw;
+			add_timer(0, empty_string, 
+				  get_int_var(AUTO_REJOIN_DELAY_VAR), 1,
+				  auto_rejoin_callback, 
+				  m_sprintf("%s %d %d %s", channel, 
+						from_server, 
+						win->refnum,
+						key),
+				  NULL, win->refnum);
 		}
-		else
-		{
-			if ((check_ignore_channel(from, FromUserHost, channel, IGNORE_CRAP) != IGNORED) && 
-			     do_hook(KICK_LIST, "%s %s %s %s", who, from, channel, comment))
-				say("%s has been kicked off channel %s by %s (%s)", who, check_channel_type(channel), from, comment);
-			remove_from_channel(channel, who, from_server);
-		}
+		remove_channel(channel, from_server);
+		update_all_status();
+
+		old_tw = to_window;
+		old_cw = current_window;
+		current_window = win;
+		to_window = win;
+		message_from(channel, LOG_CRAP);
+
+		if (do_hook(KICK_LIST, "%s %s %s %s", victim, from, 
+					check_channel_type(channel), comment))
+			say("You have been kicked off channel %s by %s (%s)", 
+					check_channel_type(channel), from, 
+					comment);
+
+		message_from(NULL, LOG_CURRENT);
+		to_window = old_tw;
+		current_window = old_cw;
+		return;
 	}
-	message_from(NULL, LOG_CURRENT);
-}
 
-static void p_part (char *from, char **ArgList)
-{
-	char	*channel;
-
-	channel = ArgList[0];
-
-	if ((check_ignore_channel(from, FromUserHost, channel, IGNORE_PARTS) != IGNORED))
+	if (check_ignore_channel(from, FromUserHost, 
+				 channel, IGNORE_CRAP) != IGNORED)
 	{
 		message_from(channel, LOG_CRAP);
-		if (ArgList[1])		/* Dalnet part messages */
+		if (do_hook(KICK_LIST, "%s %s %s %s", 
+				victim, from, channel, comment))
+			say("%s has been kicked off channel %s by %s (%s)", 
+				victim, check_channel_type(channel), 
+				from, comment);
+		message_from(NULL, LOG_CURRENT);
+	}
+
+	/*
+	 * The placement of this is purely ergonomic.  When someone is
+	 * kicked, the user may want to know what their userhost was so 
+	 * they can take whatever appropriate action is called for.  This
+	 * requires that the user still be considered "on channel" in the
+	 * /on kick, even though the user has departed.
+	 *
+	 * Send all data for this unperson to the memory hole.
+	 */
+	remove_from_channel(channel, victim, from_server);
+}
+
+static void	p_part (const char *from, const char *comm, char **ArgList)
+{
+	const char	*channel, *reason;
+
+	PasteArgs(ArgList, 1);
+	if (!(channel = ArgList[0]))
+		{ rfc1459_odd(from, comm, ArgList); return; }
+	if (!(reason = ArgList[1])) { }
+
+	if ((check_ignore_channel(from, FromUserHost, 
+					channel, IGNORE_PARTS) != IGNORED))
+	{
+		message_from(channel, LOG_CRAP);
+		if (reason)		/* Dalnet part messages */
 		{
-			PasteArgs(ArgList, 1);
 			if (do_hook(LEAVE_LIST, "%s %s %s %s", 
-				from, channel, FromUserHost, ArgList[1]))
+				from, channel, FromUserHost, reason))
 			    say("%s has left channel %s because (%s)", 
-				from, check_channel_type(channel), 
-				ArgList[1]);
+				from, check_channel_type(channel), reason);
 		}
 		else
 		{
@@ -1121,7 +1166,7 @@ static void p_part (char *from, char **ArgList)
 		message_from(NULL, LOG_CURRENT);
 	}
 
-	if (is_me(-1, from))
+	if (is_me(from_server, from))
 		remove_channel(channel, from_server);
 	else
 		remove_from_channel(channel, from, from_server);
@@ -1130,45 +1175,50 @@ static void p_part (char *from, char **ArgList)
 /*
  * Egads. i hope this is right.
  */
-static void p_rpong (char *from, char **ArgList)
+static void	p_rpong (const char *from, const char *comm, char **ArgList)
 {
-	if (!ArgList[3])
-	{
-		/* 
-		 * We should always get an ArgList[3].  Punt if we dont.
-		 */
-		PasteArgs(ArgList, 0);
-		say("RPONG %s (from %s)", ArgList[0], from);
-	}
-	else
-	{
-		/*
-		 * :server RPONG yournick remoteserv ms :yourargs
-		 *
-		 * ArgList[0] -- our nickname (presumably)
-		 * ArgList[1] -- The server we RPING'd
-		 * ArgList[2] -- The number of ms it took to return
-		 * ArgList[3] -- The arguments we passed (presumably)
-		 */
-		time_t delay = time(NULL) - atol(ArgList[3]);
+	const char *	nick, *target_server, *millisecs, *orig_time;
+	time_t delay;
 
-		say("Pingtime %s - %s : %s ms (total delay: %ld s)",
-			from, ArgList[1], ArgList[2], delay);
-	}
+	if (!(nick = ArgList[0]))
+		{ rfc1459_odd(from, comm, ArgList); return; }
+	if (!(target_server = ArgList[1]))
+		{ rfc1459_odd(from, comm, ArgList); return; }
+	if (!(millisecs = ArgList[2]))
+		{ rfc1459_odd(from, comm, ArgList); return; }
+	if (!(orig_time = ArgList[3]))
+		{ rfc1459_odd(from, comm, ArgList); return; }
+
+	/*
+	 * :server RPONG yournick remoteserv ms :yourargs
+	 *
+	 * ArgList[0] -- our nickname (presumably)
+	 * ArgList[1] -- The server we RPING'd
+	 * ArgList[2] -- The number of ms it took to return
+	 * ArgList[3] -- The arguments we passed (presumably)
+	 */
+
+	delay = time(NULL) - atol(orig_time);
+	say("Pingtime %s - %s : %s ms (total delay: %ld s)",
+		from, target_server, millisecs, delay);
 }
 
 
-static void rfc1459_odd (char *from, char *comm, char **ArgList)
+void	rfc1459_odd (const char *from, const char *comm, char **ArgList)
 {
+	const char *	stuff;
+
 	PasteArgs(ArgList, 0);
-	if (do_hook(ODD_SERVER_STUFF_LIST, "%s %s %s", 
-		from && *from ? from : "*", comm, ArgList[0]))
-	{
-		if (from)
-			say("Odd server stuff: \"%s %s\" (%s)", comm, ArgList[0], from);
-		else
-			say("Odd server stuff: \"%s %s\"", comm, ArgList[0]);
-	}
+	if (!(stuff = ArgList[0]))
+		stuff = empty_string;
+
+	if (!from || !*from)
+		from = "*";
+	if (!comm || !*comm)
+		comm = "*";
+
+	if (do_hook(ODD_SERVER_STUFF_LIST, "%s %s %s", from, comm, stuff))
+		say("Odd server stuff: \"%s %s\" (%s)", comm, stuff, from);
 }
 
 protocol_command rfc1459[] = {
@@ -1224,11 +1274,10 @@ int 	num_protocol_cmds = -1;
  * parse_server: parses messages from the server, doing what should be done
  * with them 
  */
-void 	parse_server (char *orig_line)
+void 	parse_server (const char *orig_line)
 {
 	char	*from,
 		*comm;
-	int	numeric;
 	char	**ArgList;
 	char	*TrueArgs[MAXPARA + 1];
 	protocol_command *retval;
@@ -1260,14 +1309,16 @@ void 	parse_server (char *orig_line)
 			yell("mangle_line truncated its result.  Ack.");
 	}
 	else
-		line = orig_line;
+		line = LOCAL_COPY(orig_line);
 
 	ArgList = TrueArgs;
 	BreakArgs(line, &from, ArgList);
 
-	/* XXXX - i dont think 'from' can be null here.  */
 	if ((!(comm = *ArgList++)) || !from || !*ArgList)
+	{ 
+		rfc1459_odd(from, comm, ArgList);
 		return;		/* Serious protocol violation -- ByeBye */
+	}
 
 	/* 
 	 * I reformatted these in may '96 by using the output of /stats m
@@ -1276,8 +1327,8 @@ void 	parse_server (char *orig_line)
 	 * of compares.)  I will be doing more testing in the future on
 	 * a live client to see if this is a reasonable order.
 	 */
-	if ((numeric = atoi(comm)))
-		numbered_command(from, numeric, ArgList);
+	if (is_number(comm))
+		numbered_command(from, comm, ArgList);
 	else
 	{
 		retval = (protocol_command *)find_fixed_array_item(
@@ -1285,7 +1336,7 @@ void 	parse_server (char *orig_line)
 			num_protocol_cmds + 1, comm, &cnt, &loc);
 
 		if (cnt < 0 && rfc1459[loc].inbound_handler)
-			rfc1459[loc].inbound_handler(from, ArgList);
+			rfc1459[loc].inbound_handler(from, comm, ArgList);
 		else
 			rfc1459_odd(from, comm, ArgList);
 	}

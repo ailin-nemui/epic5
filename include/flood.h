@@ -25,7 +25,7 @@ typedef enum {
 	NUMBER_OF_FLOODS
 } FloodType;
 
-	int	check_flooding 		(char *, char *, FloodType, char *);
-	int	new_check_flooding 	(char *, char *, char *, char *, FloodType);
+	int	check_flooding 		(const char *, const char *, FloodType, const char *);
+	int	new_check_flooding 	(const char *, const char *, const char *, const char *, FloodType);
 
 #endif /* _FLOOD_H_ */

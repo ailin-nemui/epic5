@@ -204,6 +204,8 @@ const	char *	get_possible_umodes		(int);
 	void	set_possible_umodes		(int, const char *);
 const	char *	get_umode			(int);
 	void	clear_user_modes		(int);
+	void    reinstate_user_modes    	(void);
+	void    update_user_mode        	(const char *);
 	void	set_server_flag			(int, int, int);
 	int	get_server_flag			(int, int);
 
@@ -237,8 +239,8 @@ const	char *	get_server_cipher		(int);
 	SS	get_server_uh_addr		(int);
 
 const	char *	get_server_userhost		(int);
-	void 	got_my_userhost 		(int, UserhostItem *, char *, 
-						 char *);
+	void 	got_my_userhost 		(int, UserhostItem *, 
+						 const char *, const char *);
 
 	int	get_server_operator		(int);
 	void	set_server_operator		(int, int);

@@ -11,7 +11,7 @@
 
 typedef struct {
 	const char	*command;
-	void 		(*inbound_handler) (char *, char **);
+	void 		(*inbound_handler) (const char *, const char *, char **);
 	void		(*outbound_handler) (char *);
 	int		flags;
 } protocol_command;
@@ -22,11 +22,12 @@ extern	int		 num_protocol_cmds;
 #define PROTO_DEPREC	1 << 1
 
 
+	void    rfc1459_odd 	(const char *, const char *, char **);
 	char	*PasteArgs 	(char **, int);
-	void	parse_server 	(char *);
+	void	parse_server 	(const char *);
 	int	is_channel	(const char *);
 
-extern	char	*FromUserHost;
+extern	const char	*FromUserHost;
 #if 0
 extern	int	doing_privmsg;
 #endif
