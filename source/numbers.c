@@ -10,7 +10,7 @@
  */
 
 #if 0
-static	char	rcsid[] = "$Id: numbers.c,v 1.1 2000/12/05 00:11:57 jnelson Exp $";
+static	char	rcsid[] = "$Id: numbers.c,v 1.2 2000/12/06 03:25:52 jnelson Exp $";
 #endif
 
 #include "irc.h"
@@ -569,7 +569,7 @@ void 	numbered_command (char *from, int comm, char **ArgList)
 		PasteArgs(ArgList, 1);
 
 		/* Do not accept 403's from remote servers. */
-		s = get_server_name(from_server);
+		s = get_server_itsname(from_server);
 		if (my_strnicmp(s, from, strlen(s)))
 			break;
 
@@ -757,7 +757,7 @@ void 	numbered_command (char *from, int comm, char **ArgList)
 			break;
 
 		PasteArgs(ArgList, 0);
-		s = get_server_name(from_server);
+		s = get_server_itsname(from_server);
 		if (!my_strnicmp(s, from, strlen(s)))
 		{
 			if (strcmp(ArgList[0], "*"))
