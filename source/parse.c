@@ -279,6 +279,7 @@ static void p_privmsg (char *from, char **Args)
 	}
 
 	doing_privmsg = 1;
+	sed = 0;
 
 	/*
 	 * Do ctcp's first, and if there's nothing left, then dont

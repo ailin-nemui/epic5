@@ -9,7 +9,7 @@
  */
 
 #if 0
-static	char	rcsid[] = "@(#)$Id: notice.c,v 1.6 2001/11/19 17:57:10 jnelson Exp $";
+static	char	rcsid[] = "@(#)$Id: notice.c,v 1.7 2001/12/03 01:48:47 crazyed Exp $";
 #endif
 
 #include "irc.h"
@@ -227,6 +227,7 @@ void 	parse_notice (char *from, char **Args)
 	 * global variable is reset.
 	 */
 	doing_notice = 1;
+	sed = 0;
 
 	/*
 	 * Note that NOTICEs from servers are not "server notices" unless
