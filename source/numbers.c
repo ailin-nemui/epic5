@@ -1,4 +1,4 @@
-/* $EPIC: numbers.c,v 1.40 2003/02/04 01:24:45 jnelson Exp $ */
+/* $EPIC: numbers.c,v 1.41 2003/02/04 03:50:23 jnelson Exp $ */
 /*
  * numbers.c: handles all those strange numeric response dished out by that
  * wacky, nutty program we call ircd 
@@ -519,9 +519,6 @@ void 	numbered_command (const char *from, const char *comm, char const **ArgList
 
 		    if (funny_match && wild_match(funny_match, channel) == 0)
 			goto END;
-
-                    if (!do_hook(NAMES_LIST, "%s %s", channel, line))
-                        goto END;
 		}
 
 		/* Everything is OK. */
