@@ -1,4 +1,4 @@
-/* $EPIC: logfiles.c,v 1.22 2003/10/28 05:53:57 jnelson Exp $ */
+/* $EPIC: logfiles.c,v 1.23 2003/12/16 23:25:45 jnelson Exp $ */
 /*
  * logfiles.c - General purpose log files
  *
@@ -61,7 +61,7 @@ struct Logfile {
 	int	type;
 	WNickList *targets;
 	int	refnums[MAX_TARGETS];
-	int	level;
+	Mask	mask;
 
 	char *	rewrite;
 	int	mangler;
@@ -91,7 +91,7 @@ static Logfile *	new_logfile (void)
 	log->targets = NULL;
 	for (i = 0; i < MAX_TARGETS; i++)
 		log->refnums[i] = -1;
-	log->level = LOG_ALL;
+	log->mask.mask = _X(ALL);
 	log->rewrite = NULL;
 	log->mangler = 0;
 	log->mangle_desc = NULL;
@@ -315,7 +315,7 @@ static Logfile *	logfile_describe (Logfile *log, char **args)
 	say("\t         Type: %s", logtype[log->type]);
 	say("\t       Server: %d", log->servref);
 	say("\tTarget/Refnum: %s", targets ? targets : "<NONE>");
-	say("\t        Level: %s", bits_to_lastlog_level(log->level));
+	say("\t        Level: %s", mask_to_str(log->mask));
 	say("\t Rewrite Rule: %s", log->rewrite ? log->rewrite : "<NONE>");
 	say("\t Mangle rules: %s", log->mangle_desc ? log->mangle_desc : "<NONE>");
 
@@ -374,7 +374,7 @@ static Logfile *	logfile_level (Logfile *log, char **args)
 		return NULL;
 	}
 
-	log->level = parse_lastlog_level(arg);
+	log->mask = str_to_mask(arg);
 	return log;
 }
 
@@ -693,7 +693,7 @@ void	add_to_logs (int winref, int servref, const char *target, int level, const 
 	    {
 		for (i = 0; i < MAX_TARGETS; i++) {
 		    if (log->refnums[i] == winref) {
-			if (log->level && (log->level & level) == 0)
+			if (log->mask.mask && (log->mask.mask & _Y(level)) == 0)
 				continue;
 			time(&log->activity);
 			add_to_log(log->log, winref, orig_str, log->mangler, log->rewrite);
@@ -705,7 +705,7 @@ void	add_to_logs (int winref, int servref, const char *target, int level, const 
 	    {
 		for (i = 0; i < MAX_TARGETS; i++) {
 		    if (log->refnums[i] == servref) {
-			if (log->level && (log->level & level) == 0)
+			if (log->mask.mask && (log->mask.mask & _Y(level)) == 0)
 				continue;
 			time(&log->activity);
 			add_to_log(log->log, winref, orig_str, log->mangler, log->rewrite);
@@ -718,7 +718,7 @@ void	add_to_logs (int winref, int servref, const char *target, int level, const 
 		if (log->servref != NOSERV && (log->servref != servref))
 			continue;
 
-		if (log->level && (log->level & level) == 0)
+		if (log->mask.mask && (log->mask.mask & _Y(level)) == 0)
 			continue;
 
 		if (log->targets && !target)
@@ -822,7 +822,7 @@ char *logctl	(char *input)
 			char *ret = logfile_get_targets(log);
 			RETURN_MSTR(ret);
                 } else if (!my_strnicmp(listc, "LEVEL", 3)) {
-			char *ret = bits_to_lastlog_level(log->level);
+			char *ret = mask_to_str(log->mask);
 			RETURN_STR(ret);
                 } else if (!my_strnicmp(listc, "REWRITE", 3)) {
 			RETURN_STR(log->rewrite);

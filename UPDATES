@@ -1,247 +1,52 @@
 EPIC4-1.2.0
 
-*** News -- 12/13/2003 -- Default of AUTO_REJOIN is now OFF
-	Per the poll taken on the epic mailing list, the preponderance of
-	opinion being in favor of changing the default value of AUTO_REJOIN
-	to OFF, as of commit 672, the default value is changed.  You will
-	want to put /SET AUTO_REJOIN ON in your ~/.epicrc to get the old
-	value.
+*** News -- 12/16/2003 -- New levels, KICK, QUIT, and MODE
+	So just for a canonical list, here are all of the levels supported
+	by flood, ignore, lastlog, and windows:
+		CRAP	PUBLIC	MSG	NOTICE	WALL	WALLOP
+		NOTE	OPNOTE	SNOTE	ACTION	DCC	CTCP
+		INVITE	JOIN	NICK	TOPIC	PART	QUIT
+		KICK	MODE	USER1	USER2	USER3	USER4
+		ALL (special)	NONE (special)	HELP (special)
 
-*** News -- 12/11/2003 -- Command parser ignores spaces after semicolons
-	Since the dawn of the modern ircII syntax, the following syntax
-	has caused consternation with scripters:
-		/eval {two; three}
-	because it runs the /two alias, and then outputs the text "three"
-	to the current target (channel-or-query).  This is because the
-	command parser does not ignore spaces after semicolons; a leading
-	space results in ircII assuming you are wanting to run the empty
-	command (yes, there is actually an empty command), which just 
-	happens to be the /say command.  Well, enough is enough.  I'm 
-	putting a stop to this.  If you depend on this horrifically broken
-	behavior, then the time has come to switch to using /SAY.  The
-	rest of us will enjoy not having to freak out about spaces after
-	semicolons.
+*** News -- 12/16/2003 -- Unification of ignore, flood, and lastlog levels
+	Previously, the ignore, flood, and lastlog levels used the same
+	names, but they had different meanings in each subsystem (ie, CRAP 
+	in flood was different from CRAP in ignore, and CRAP in lastlog).
+	Now all three subsystems use the same levels, all named the same,
+	and (more or less) all defined the same.  There are some holes in
+	this conversion cause I didn't check every possible combination.
+	Report any odd behavior to me so I can fix it.
 
-*** News -- 12/11/2003 -- New /WINDOW verb, /WINDOW SCROLLADJ [ON|OFF]
-	When the default value of ON is used, when you "GROW" a window,
-	or otherwise cause the size of a window to be increased, the top
-	of the scrollable view is moved back so you can see more of the
-	lines that have recently scrolled off the screen.  If you change
-	this to OFF, the behavior is more like ircII, where when something
-	scrolls off the window, nothing will bring it back unless you go
-	into scrollback mode.
+*** News -- 12/16/2003 -- New noise type for /ON, /ON %TYPE
+	The /ON %TYPE modifier acts just like /ON ^TYPE, because it
+	suppresses the default action, but it is unlike /ON ^TYPE
+	because it does not turn off the display (what /ON ^TYPE
+	does is it prefixes all the commands in the ON body with 
+	the ^ modifier, which turns off output for that command.)
+	This new modifer does not prefix each command with ^, so any
+	commands not so prefixed will generate their normal output.	
+	The idea is you can use this for /on set's
+		/ON %SET "HOLD_MODE *" {WINDOW HOLD_MODE $*}
 
-*** News -- 12/11/2003 -- New /ON, /ON WINDOW_BEFOREKILL 
-	The value of $* is the window refnum (number) of the window that
-	is about to be killed.  You cannot stop the kill from happening,
-	but you do get this opportunity to save any information about the
-	window that you might want.  *DANGER*DANGER*DANGER*  EPIC does not
-	try to stop you from doing something really dumb in this /ON, and
-	if you try to change the window being killed, or you affect the
-	visibility or invisibility of any window, you run the definite chance
-	of confusing EPIC and causing a panic.  This is not a bug, this is 
-	just your peril if you ignore this warning.  Use /DEFER to run 
-	commands safely from within /ONs.
+*** News -- 12/16/2003 -- Removed /SET BEEP_WHEN_AWAY
+	This feature can be re-implemented in one line of script:
+		/ON #MSG 617 * {IF (A) {BEEP}}
 
-*** News -- 12/05/2003 -- New built in function $numlines() (fudd)
-	The first argument to $numlines() is the width of a line (which you
-	can get from $geom() if you want to use that), and the rest of the
-	text is some text.  The return value is the number of screen lines
-	that will be taken up if you were to /echo the text to a window of
-	the given number of columns.
+*** News -- 12/16/2003 -- Removed /SET BEEP_ON_MSG
+	The /SET BEEP_ON_MSG feature has been removed because it was only
+	half-implemented, and even that half didn't work right.  Keep an
+	eye out for a scripted re-implementation of this in the future.
 
-*** News -- 12/03/2003 -- New command line arguments, -o and -O
-	POSIX termios allowed systems to define "extended characters" (IEXTEN)
-	which are interpreted by the kernel and are not passed onto the
-	application.  In 4.4BSD in particular, these "extended characters"
-	are ^V and ^O.  This means that by default, you cannot use these
-	two characters in a binding.  By using the -o option, you ask 
-	EPIC to specifically turn these extended characters on, and by 
-	using the -O option, you ask epic to specifically turn these 
-	extended characters OFF.  If you do not specify either option,
-	epic does not change the current default value.
-
-*** News -- 12/03/2003 -- New /WINDOW verb, /WINDOW SWAPPABLE [ON|OFF]
-	You may now control whether your windows are "swappable".  The
-	default (backwards-compatable) value is ON.  If you set this to 
-	OFF on a visible window, then that visible window cannot be made
-	hidden, via /WINDOW HIDE or /WINDOW SWAP.  If you set this to OFF
-	on a hidden window, then that hidden window cannot be made visible,
-	via /WINDOW SHOW, /WINDOW SWAP, /WINDOW BACK or /WINDOW NEXT.  You
-	must reset this value back to ON before you try to swap the window
-	back in or out.
-
-*** News -- 12/03/2003 -- New /SET, /SET STATUS_NOSWAP
-	Whenever a window has /WINDOW SWAPPABLE OFF, the %{1}W status expando
-	will expand to the value of this /SET
-
-*** News -- 12/03/2003 -- SWAPPABLE accessable via $windowctl()
-	You can now $windowctl(GET <refnum> SWAPPABLE) to get the window
-	<refnum>'s current swappable status.
-
-*** News -- 12/01/2003 -- Double quoted filenames via dcc from other clients
-	is now supported.  Please note that I object to this, but I am not 
-	oblivious to necessity.
-
-*** News -- 12/01/2003 -- New $windowctl() value, "DOUBLE"
-	You can now $windowctl(GET <refnum> DOUBLE) to get the value
-	of the window's double status bar.  It's 0 if the double 
-	status bar is off, and 1 if it is on.
-
-*** News -- 11/30/2003 -- /XECHO -L now overrides "target window"
-	I had a request from a couple of people who pointed out that
-	in epic4-1.1.*, numeric replies were now being sent to the
-	target's window (ie, a channel's window) if the numeric was
-	for the target/channel.  They were perplexed that /XECHO -L CRAP
-	couldn't override this.  This is because /XECHO -L does not
-	reset the "target" and the "target" has higher priority than
-	the lastlog level.  This means that it's impossible to send 
-	output from an /ON for a channel to a window other than that
-	channel's window using /XECHO -L.  It seems more sensible that
-	/XECHO -L would override the channel's window, because if you
-	weren't expecting it to do that, you wouldn't have used /XECHO -L
-	in the first place, right?
-
-*** News -- 11/30/2003 -- "Fixed" and "skipped" windows now special
-	If a window is marked as both "fixed" (cannot change size) and
-	"skipped" (cannot be made the input window indirectly), then it
-	is now "frozen" -- it does not count towards the number of windows
-	on a screen for the purposes of /WINDOW KILL and /WINDOW HIDE.
-	To be more plain: you cannot kill or hide the last "non-frozen"
-	window on a screen.
-
-	It is probably not a good idea to "freeze" all of the windows on
-	the screen.  Leave one of them "not frozen".  I didn't test this
-	extensively, so if you try to break this, you probably will!
-
-*** News -- 11/30/2003 -- New /ON , /ON WINDOW_COMMAND
-	This /ON is hooked after each time a successful window command
-	is executed.  The value of $0 is the refnum of the current window
-	before the command was executed (ie, the window the command started
-	with or operated upon), and $1 is the refnum of the current window
-	after the command was executed.  If $0 and $1 are the same, then 
-	the command executed upon that window.  If $0 and $1 are different
-	then some command was run that changed the current window (ala,
-	/WINDOW SWAP or HIDE or REFNUM)  This /ON is hooked even if the 
-	command does not change any state of the window.  When a command
-	fails, the value of $1 is the number -1.
-
-	Example:
-		/on ^window_command * {echo Window $* command!}
-		/window 2 size 5 hide
-	might output
-		Window 2 2 command!
-		Window 2 1 command!
-
-			 *DANGER*DANGER*DANGER*  
-	EPIC does not try to stop you from doing something really dumb in 
-	this /ON, and if you try to change the window being killed, or you 
-	affect the visibility or invisibility of any window, you run the 
-	definite chance of confusing EPIC and causing a panic.  This is not 
-	a bug, this is just your peril if you ignore this warning.  Use 
-	/DEFER to run commands safely from within /ONs.
-			 *DANGER*DANGER*DANGER*  
-
-*** News -- 11/24/2003 -- New built in function, $windowct()
-	You can now fetch much of the low-level information about your
-	windows using this function.  You cannot set them (yet), nor is
-	this expected for the upcoming production release.  You can still
-	always use the /window command to change things around.
-
-	$windowctl(REFNUMS)
-	- Return all window refnums currently in use.
-
-	$windowctl(REFNUM [number|name])
-	- Given a window refnum or a window name, return the window's
-	  refnum, suitable for use with $windowctl(GET ...)
-
-	$windowctl(GET <refnum> [item])
-	- Where [ITEM] is one of:
-
-	REFNUM 		The value of /WINDOW NUMBER
-	NAME		The value of /WINDOW NAME
-	SERVER		The server refnum this window is connected to.
-	LAST_SERVER 	When SERVER is -1 (disconnected), this is the refnum
-			of the last server this window was connected to.
-	PRIORITY 	Each time you change the current input window, this
-			value is incremented.  The window with the highest
-			priority value on a server is the server's 
-			"current window"
-	VISIBLE		1 if the window is visible, 0 if it is hidden
-	TOP		The line on the screen where the window starts, 
-			if it is visible
-	BOTTOM		The line on the screen where the window ends, if
-			it is visible
-	CURSOR		How many lines from the top of the window the cursor
-			should be put for the next line of output.
-	NOSCROLLCURSOR	This is always -1.
-	FIXED		The integer value of /WINDOW FIXED
-	SCROLL		The integer value of /WINDOW SCROLL (always 1)
-	CHANGE_LINE	The next line to be changed by changed by /xecho -l
-	OLD_SIZE	The size of the window the last time that we checked;
-			usually the same as DISPLAY_SIZE
-	UPDATE		Some non-zero value if the window needs to be updated,
-			either by redrawing it's body or its status bar
-	MISCFLAGS	1 if /WINDOW NOTIFY is on, 3 if a /WINDOW NOTIFY 
-			window has had output since the last time it was 
-			visible (ie, included in %F)
-	BEEP_ALWAYS	Integer value of /WINDOW BEEP_ALWAYS
-	NOTIFY_LEVEL	The value of /WINDOW NOTIFY_LEVEL
-	WINDOW_LEVEL	The value of /WINDOW LEVEL
-	SKIP		Integer value of /WINDOW SKIP
-	COLUMNS		How many vertical columns wide the window is
-	PROMPT		The current input prompt for this window.
-	STATUS_FORMAT	The value of /WINDOW STATUS_FORMAT
-	STATUS_FORMAT1	The value of /WINDOW STATUS_FORMAT1
-	STATUS_FORMAT2	The value of /WINDOW STATUS_FORMAT2
-	STATUS_LINE	The actual status bar when /window double off
-	STATUS_LINE1	The actual 1st status bar when /window double on
-	STATUS_LINE2	The actual 2nd status bar when /window double on
-	DISPLAY_BUFFER_SIZE
-			How many items are in the scrollback (display) buffer
-	DISPLAY_BUFFER_MAX
-			The value of /WINDOW SCROLLBACK or /SET SCROLLBACK
-	SCROLLING_DISTANCE
-			How far away the top of the standard view is from
-			the bottom of the scrollback buffer.
-	HOLDING_DISTANCE
-			How far away the top of the hold view is from the
-			bottom of the scrollback buffer.
-	SCROLBACK_DISTANCE
-			How far away the top of the scrollback view is from
-			the bottom of the scrollback buffer
-	DISPLAY_COUNTER	The serial number to be used by the next item put
-			into the scrollback buffer.
-	HOLD_SLIDER	How much the hold view "slides" up every time you
-			hit <enter>.  Value of /SET HOLD_SLIDER
-	HOLD_INTERVAL	The value of /SET HOLD_INTERVAL
-	LAST_LINES_HELD	How many lines are beind held, as seen in %H.
-	WAITING_CHANNEL	The last channel you /JOINed in this window.  You
-			can only have one waiting channel per window.
-	BIND_CHANNEL	The value of /WINDOW BIND
-	QUERY_NICK	The value of /WINDOW QUERY
-	NICKLIST	The nicks you added with /WINDOW ADD
-	LASTLOG_LEVEL	The levels of output that the window should put into
-			its lastlog, value of /WINDOW LASTLOG_LEVEL
-	LASTLOG_SIZE	How many items are in the window's lastlog.
-	LASTLOG_MAX	How big the window's lastlog can be; value of
-			/WINDOW LASTLOG or /SET LASTLOG
-	LOGGING		The integer value of /WINDOW LOG
-	LOGFILE		The current filename used by the window's log.
-	DECEASED	Should always be 0, but may be 1 if the window is
-			"dying" but this would be quite exceptional.
-
-*** News -- 11/21/2003 -- /SERVER <host> now honors server groups
-	Whenever EPIC tries to connect to a new server, particularly
-	when you do /SERVER <host> it will honor the server group of
-	the new server; if you cannot connect to <host> it will only
-	try to connect to other servers in the same group as <host>.
-
-*** News -- 11/21/2003 -- New math parser can now use 64 bit integers
-	The new experimental math parser (which you can turn on via 
-	/xdebug new_math) can now support 64 bit integers.  This is 
-	auto-detected when you run 'configure' and $info(o) will include
-	the letter 'l' for you scripters who want to be able to tell when
-	the host client can do big math and when it can't.
+*** News -- 12/16/2003 -- Runtime auto-append-of-$* removed
+	Historically, the ircII language has allowed you to auto-append
+	$* onto the end of an alias at runtime by creating an alias that
+	does not refer to any of the command line arguments.  For example,
+		/alias m msg
+	behaves at runtime as
+		/alias m msg $*
+	but with a performance penalty.  This behavior has now been removed
+	and if you wish to have $* appended to your aliases, you need to 
+	change them.  This change would be backwards compatable with epic4.
 
 # End of file

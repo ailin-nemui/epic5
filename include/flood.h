@@ -9,24 +9,10 @@
 #ifndef __flood_h__
 #define __flood_h__
 
-typedef enum {
-	CRAP_FLOOD	= 0,
-	CTCP_FLOOD,
-	INVITE_FLOOD,
-	JOIN_FLOOD,
-	MSG_FLOOD,
-	NICK_FLOOD,
-	NOTE_FLOOD,
-	NOTICE_FLOOD,
-	PUBLIC_FLOOD,
-	TOPIC_FLOOD,
-	WALLOP_FLOOD,
-	WALL_FLOOD,
-	NUMBER_OF_FLOODS
-} FloodType;
+#include "levels.h"
 
-	int	check_flooding 		(const char *, const char *, FloodType, const char *);
-	int	new_check_flooding 	(const char *, const char *, const char *, const char *, FloodType);
+	int	check_flooding 		(const char *, const char *, int, const char *);
+	int	new_check_flooding 	(const char *, const char *, const char *, const char *, int);
 	char *	function_floodinfo	(char *);
 
 #endif /* _FLOOD_H_ */

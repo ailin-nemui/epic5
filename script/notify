@@ -41,11 +41,9 @@ alias change_notify_status (refnum, newstatus, nicklist) {
 
 		if (notify_userhost_automatic == [on]) {
 			xeval -server $refnum {
-				wait for {
-					fe ($nicklist) n1 n2 n3 n4 n5 {
-						userhost $n1 $n2 $n3 $n4 $n5 -cmd {
-							shook notify_signon $0 $3@$4
-						}
+				fe ($nicklist) n1 n2 n3 n4 n5 {
+					userhost $n1 $n2 $n3 $n4 $n5 -cmd {
+						shook notify_signon $0 $3@$4
 					}
 				}
 			}
@@ -221,6 +219,26 @@ alias ison (nicklist) {
 	//ison $nicklist
 }
 
+alias lookup_server (server) {
+	if (findw($server $myservers()) == -1) {
+		if (isnumber($server)) {
+			if (index($server $myservers(*)) == -1) {
+				xecho -b -c -- $server is an invalid reference number
+
+				return -1
+			} else {
+				return $server
+			}
+		} else {
+			xecho -b -c -- $server is an invalid server name
+
+			return -1
+		}
+	} else {
+		return $servernum($server)
+	}
+}
+
 alias nlist {
 	xecho -b -- global notify list: $notify_list
 
@@ -266,12 +284,11 @@ alias notify (nicklist) {
 			@:nickname = rest($nickname)
 
 			if (separators == 1) {
-				@:refnum = after(: $nickname)
+				@:serv = after(: $nickname)
+				@:refnum = lookup_server($serv)
 				@:nickname = before(: $nickname)
 
-				if (index($refnum $myservers(*)) == -1) {
-					xecho -b -c -- $refnum is not a valid server reference number
-
+				if (refnum == -1) {
 					continue
 				}
 
@@ -293,7 +310,7 @@ alias notify (nicklist) {
 
 				@remove_notify_entry($nickname $refnum)
 
-				xecho -b -c -- $nickname has been removed from the local notify list for server $refnum
+				xecho -b -c -- $nickname has been removed from the local notify list for server $serv
 			} elsif (separators == 2) {
 				@:groupname = after(-1 : $nickname)
 				@:nickname = before(: $nickname)
@@ -343,21 +360,20 @@ alias notify (nicklist) {
 			}
 
 			if (separators == 1) {
-				@:refnum = after(: $nickname)
+				@:serv = after(: $nickname)
+				@:refnum = lookup_server($serv)
 				@:nickname = before(: $nickname)
 
 				if (nickname == []) {
 					continue
 				}
 
-				if (index($refnum $myservers(*)) == -1) {
-					xecho -b -c -- $refnum is not a valid server reference number
-
+				if (refnum == -1) {
 					continue
 				}
 
 				if (findw($nickname $notify_list[$refnum]) != -1) {
-					xecho -b -c -- $nickname is already in the local notify list for server ${refnum}!
+					xecho -b -c -- $nickname is already in the local notify list for server ${serv}!
 
 					continue
 				}
@@ -370,7 +386,7 @@ alias notify (nicklist) {
 
 				push notify_list[$refnum] $nickname
 
-				xecho -b -c -- $nickname has been added to the local notify list for server $refnum
+				xecho -b -c -- $nickname has been added to the local notify list for server $serv
 			} elsif (separators == 2) {
 				@:groupname = after(-1 : $nickname)
 				@:nickname = before(: $nickname)
@@ -522,7 +538,7 @@ on ^set "NOTIFY *" {
 
 		@clear_notify_records()
 		@establish_notify_hooks()
-		^eval timer -refnum notcheck -rep -1 $notify_interval @detect_signons()
+		^timer -refnum notcheck -rep -1 $notify_interval @detect_signons()
 
 		xecho -b Value of NOTIFY set to ON
 	} else {
@@ -541,7 +557,7 @@ on ^set "NOTIFY_INTERVAL *" {
 		@notify_interval = [$1]
 
 		^timer -del notcheck
-		^eval timer -refnum notcheck -rep -1 $notify_interval @detect_signons()
+		^timer -refnum notcheck -rep -1 $notify_interval @detect_signons()
 
 		xecho -b Value of NOTIFY_INTERVAL set to $notify_interval
 	}

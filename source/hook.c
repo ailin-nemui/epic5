@@ -1,4 +1,4 @@
-/* $EPIC: hook.c,v 1.28 2003/12/15 23:23:02 jnelson Exp $ */
+/* $EPIC: hook.c,v 1.29 2003/12/16 23:25:45 jnelson Exp $ */
 /*
  * hook.c: Does those naughty hook functions. 
  *
@@ -862,8 +862,6 @@ int 	do_hook (int which, const char *format, ...)
 	 */
 	for (i = 0; i < hook_num; i++)
 	{
-		const char *	saved_who_from;
-		int 		saved_who_level;
 		char *		name_copy;
 		char *		stuff_copy;
 		char *		result = NULL;

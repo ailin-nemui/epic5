@@ -1,4 +1,4 @@
-/* $EPIC: irc.c,v 1.670 2003/12/15 23:23:02 jnelson Exp $ */
+/* $EPIC: irc.c,v 1.671 2003/12/16 23:25:45 jnelson Exp $ */
 /*
  * ircII: a new irc client.  I like it.  I hope you will too!
  *
@@ -40,19 +40,19 @@
 /*
  * irc_version is what $J returns, its the common-name for the version.
  */
-const char irc_version[] = "EPIC5-0.0.0";
-const char useful_info[] = "epic5 0 0 0";
+const char irc_version[] = "EPIC5-0.0.1";
+const char useful_info[] = "epic5 0 0 1";
 
 /*
  * internal_version is what $V returns, its the integer-id for the
  * version, and corresponds to the date of release, YYYYMMDD.
  */ 
-const char internal_version[] = "20031215";
+const char internal_version[] = "20031217";
 
 /*
  * In theory, this number is incremented for every commit.
  */
-const unsigned long	commit_id = 1003;
+const unsigned long	commit_id = 1004;
 
 /*
  * As a way to poke fun at the current rage of naming releases after
@@ -60,7 +60,7 @@ const unsigned long	commit_id = 1003;
  * reality, I have decided to start doing that with EPIC.  These names
  * are intentionally and maliciously silly.  Complaints will be ignored.
  */
-const char ridiculous_version_name[] = "Disestablishment";
+const char ridiculous_version_name[] = "Ineffectual";
 
 #define __need_putchar_x__
 #include "status.h"
@@ -1150,7 +1150,7 @@ int 	main (int argc, char *argv[])
 	my_signal(SIGALRM, nothing);
 	my_signal(SIGUSR1, sig_user1);
 
-	message_from(NULL, LOG_CRAP);
+	message_from(NULL, LEVEL_CRAP);
 
 	if ((dumb_mode == 0) && (init_screen() == 0))
 	{

@@ -1,4 +1,4 @@
-/* $EPIC: vars.c,v 1.45 2003/12/15 23:23:02 jnelson Exp $ */
+/* $EPIC: vars.c,v 1.46 2003/12/16 23:25:45 jnelson Exp $ */
 /*
  * vars.c: All the dealing of the irc variables are handled here. 
  *
@@ -143,7 +143,7 @@ static	IrcVariable irc_variable[] =
 	{ "CONTINUED_LINE",		STR_TYPE_VAR,	0, 0, NULL, set_continued_line, 0, 0 },
 	{ "CPU_SAVER_AFTER",		INT_TYPE_VAR,	DEFAULT_CPU_SAVER_AFTER, 0, NULL, set_cpu_saver_after, 0, 0 },
 	{ "CPU_SAVER_EVERY",		INT_TYPE_VAR,	DEFAULT_CPU_SAVER_EVERY, 0, NULL, set_cpu_saver_every, 0, 0 },
-	{ "CURRENT_WINDOW_LEVEL",	STR_TYPE_VAR,	0, 0, NULL, set_current_window_level, 0, 0 },
+	{ "CURRENT_WINDOW_LEVEL",	STR_TYPE_VAR,	0, 0, NULL, set_current_window_mask, 0, 0 },
 	{ "DCC_AUTO_SEND_REJECTS",	BOOL_TYPE_VAR,	DEFAULT_DCC_AUTO_SEND_REJECTS, 0, NULL, NULL, 0, 0 },
 	{ "DCC_LONG_PATHNAMES",		BOOL_TYPE_VAR,	DEFAULT_DCC_LONG_PATHNAMES, 0, NULL, NULL, 0, 0 },
 	{ "DCC_SLIDING_WINDOW",		INT_TYPE_VAR,	DEFAULT_DCC_SLIDING_WINDOW, 0, NULL, NULL, 0, 0 },
@@ -184,7 +184,7 @@ static	IrcVariable irc_variable[] =
 	{ "INVERSE_VIDEO",		BOOL_TYPE_VAR,	DEFAULT_INVERSE_VIDEO, 0, NULL, NULL, 0, 0 },
 	{ "KEY_INTERVAL",		INT_TYPE_VAR,	DEFAULT_KEY_INTERVAL, 0, NULL, set_key_interval, 0, 0 },
 	{ "LASTLOG",			INT_TYPE_VAR,	DEFAULT_LASTLOG, 0, NULL, set_lastlog_size, 0, 0 },
-	{ "LASTLOG_LEVEL",		STR_TYPE_VAR,	0, 0, NULL, set_lastlog_level, 0, 0 },
+	{ "LASTLOG_LEVEL",		STR_TYPE_VAR,	0, 0, NULL, set_lastlog_mask, 0, 0 },
 	{ "LOAD_PATH",			STR_TYPE_VAR,	0, 0, NULL, NULL, 0, 0 },
 	{ "LOG",			BOOL_TYPE_VAR,	DEFAULT_LOG, 0, NULL, logger, 0, 0 },
 	{ "LOGFILE",			STR_TYPE_VAR,	0, 0, NULL, NULL, 0, 0 },
@@ -199,10 +199,10 @@ static	IrcVariable irc_variable[] =
 	{ "MIRC_BROKEN_DCC_RESUME",	BOOL_TYPE_VAR,	0, 0, NULL, NULL, 0, 0 },
         { "MODE_STRIPPER",              BOOL_TYPE_VAR,  DEFAULT_MODE_STRIPPER, 0, NULL, NULL, 0, 0 },
 	{ "ND_SPACE_MAX",		INT_TYPE_VAR,	DEFAULT_ND_SPACE_MAX, 0, NULL, NULL, 0, 0 },
-	{ "NEW_SERVER_LASTLOG_LEVEL",	STR_TYPE_VAR,	0, 0, NULL, set_new_server_lastlog_level, 0, 0 },
+	{ "NEW_SERVER_LASTLOG_LEVEL",	STR_TYPE_VAR,	0, 0, NULL, set_new_server_lastlog_mask, 0, 0 },
 	{ "NOTIFY",			BOOL_TYPE_VAR,	DEFAULT_NOTIFY, 0, NULL, set_notify, 0, 0 },
 	{ "NOTIFY_INTERVAL",		INT_TYPE_VAR,	DEFAULT_NOTIFY_INTERVAL, 0, NULL, set_notify_interval, 0, 0 },
-	{ "NOTIFY_LEVEL",		STR_TYPE_VAR,	0, 0, NULL, set_notify_level, 0, 0 },
+	{ "NOTIFY_LEVEL",		STR_TYPE_VAR,	0, 0, NULL, set_notify_mask, 0, 0 },
 	{ "NOTIFY_ON_TERMINATION",	BOOL_TYPE_VAR,	DEFAULT_NOTIFY_ON_TERMINATION, 0, NULL, NULL, 0, 0 },
 	{ "NOTIFY_USERHOST_AUTOMATIC",	BOOL_TYPE_VAR,	DEFAULT_NOTIFY_USERHOST_AUTOMATIC, 0, NULL, NULL, 0, 0 },
 	{ "NO_CONTROL_LOG",		BOOL_TYPE_VAR,	DEFAULT_NO_CONTROL_LOG, 0, NULL, NULL, 0, 0 },

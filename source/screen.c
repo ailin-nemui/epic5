@@ -1,4 +1,4 @@
-/* $EPIC: screen.c,v 1.67 2003/12/15 05:41:02 jnelson Exp $ */
+/* $EPIC: screen.c,v 1.68 2003/12/16 23:25:45 jnelson Exp $ */
 /*
  * screen.c
  *
@@ -2117,14 +2117,14 @@ void 	add_to_screen (const unsigned char *buffer)
 	}
 
 	/*
-	 * The next priority is "LOG_CURRENT" which is the "default"
+	 * The next priority is "LEVEL_CURRENT" which is the "default"
 	 * level for all non-routed output.  That is meant to ensure that
 	 * any extraneous error messages goes to a window where the user
 	 * will see it.  All specific output (e.g. incoming server stuff) 
-	 * is routed through one of the LOG_* levels, which is handled
+	 * is routed through one of the LEVEL_* levels, which is handled
 	 * below.
 	 */
-	else if (who_level == LOG_CURRENT && 
+	else if ((who_level == LEVEL_CURRENT) && 
 	        ((winref = get_winref_by_servref(from_server)) > -1) && 
                 (tmp = get_window_by_refnum(winref)))
 	{
@@ -2160,17 +2160,17 @@ void 	add_to_screen (const unsigned char *buffer)
 			 * Check for /WINDOW QUERYs that apply.
 			 */
 			if (tmp->query_nick &&
-			   ( ((who_level == LOG_MSG || who_level == LOG_NOTICE
-			    || who_level == LOG_DCC || who_level == LOG_CTCP
-			    || who_level == LOG_ACTION)
+			   ( ((who_level == LEVEL_MSG || who_level == LEVEL_NOTICE
+			    || who_level == LEVEL_DCC || who_level == LEVEL_CTCP
+			    || who_level == LEVEL_ACTION)
 				&& !my_stricmp(who_from, tmp->query_nick)
 				&& from_server == tmp->server)
-			  || ((who_level == LOG_DCC || who_level == LOG_CTCP
-			    || who_level == LOG_ACTION)
+			  || ((who_level == LEVEL_DCC || who_level == LEVEL_CTCP
+			    || who_level == LEVEL_ACTION)
 				&& *tmp->query_nick == '='
 				&& !my_stricmp(who_from, tmp->query_nick + 1))
-			  || ((who_level == LOG_DCC || who_level == LOG_CTCP
-			    || who_level == LOG_ACTION)
+			  || ((who_level == LEVEL_DCC || who_level == LEVEL_CTCP
+			    || who_level == LEVEL_ACTION)
 				&& *tmp->query_nick == '='
 				&& !my_stricmp(who_from, tmp->query_nick))))
 			{
@@ -2213,7 +2213,7 @@ void 	add_to_screen (const unsigned char *buffer)
 	/*
 	 * Check to see if this level should go to current window
 	 */
-	if ((current_window_level & who_level) &&
+	if ((current_window_mask.mask & _Y(who_level)) &&
 	    ((winref = get_winref_by_servref(from_server)) > -1) && 
             (tmp = get_window_by_refnum(winref)))
 	{
@@ -2230,13 +2230,13 @@ void 	add_to_screen (const unsigned char *buffer)
 		/*
 		 * Check for /WINDOW LEVELs that apply
 		 */
-		if (who_level == LOG_DCC && tmp->window_level & who_level)
+		if (who_level == LEVEL_DCC && tmp->window_mask.mask & _Y(who_level))
 		{
 			add_to_window(tmp, buffer);
 			return;
 		}
 		if (((from_server == tmp->server) || (from_server == NOSERV)) &&
-		    (who_level & tmp->window_level))
+		    (_Y(who_level) & tmp->window_mask.mask))
 		{
 			add_to_window(tmp, buffer);
 			return;
@@ -2362,7 +2362,7 @@ static void 	add_to_window (Window *window, const unsigned char *str)
 		 * if the user wants us to.
 		 */
 		if (!(window->miscflags & WINDOW_NOTIFIED) &&
-			who_level & window->notify_level)
+			_Y(who_level) & window->notify_mask.mask)
 		{
 			window->miscflags |= WINDOW_NOTIFIED;
 			if (window->miscflags & WINDOW_NOTIFY)

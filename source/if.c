@@ -1,4 +1,4 @@
-/* $EPIC: if.c,v 1.26 2003/12/15 05:41:02 jnelson Exp $ */
+/* $EPIC: if.c,v 1.27 2003/12/16 23:25:45 jnelson Exp $ */
 /*
  * if.c: the IF, WHILE, FOREACH, DO, FE, FEC, and FOR commands for IRCII 
  *
@@ -881,7 +881,7 @@ BUILT_IN_COMMAND(switchcmd)
 			break;
 		}
 
-		if (*body == ';')
+		while (*body && (*body == ';' || isspace(*body)))
 			body++;		/* grumble */
 	}
 

@@ -70,8 +70,8 @@ typedef	struct	WindowStru
 	int	update;			/* True if window display is dirty */
 	unsigned miscflags;		/* Miscellaneous flags. */
 	int	beep_always;		/* True if a beep to win always beeps */
-	int	notify_level;		/* the notify level.. */
-	int	window_level;		/* Lastlog level for the window */
+	Mask	notify_mask;		/* the notify mask.. */
+	Mask	window_mask;		/* Lastlog level for the window */
 	int	skip;			/* Whether window should be skipped */
 	int	columns;		/* How wide we are when hidden */
 	int	swappable;		/* Can it be swapped in or out? */
@@ -148,7 +148,7 @@ typedef	struct	WindowStru
 	/* /LASTLOG stuff */
 	Lastlog	*lastlog_newest;	/* pointer to top of lastlog list */
 	Lastlog	*lastlog_oldest;	/* pointer to bottom of lastlog list */
-	int	lastlog_level;		/* The LASTLOG_LEVEL, determines what
+	Mask	lastlog_mask;		/* The LASTLOG_LEVEL, determines what
 					 * messages go to lastlog */
 	int	lastlog_size;		/* number of messages in lastlog. */
 	int	lastlog_max;		/* Max number of messages in lastlog */

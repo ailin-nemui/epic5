@@ -1,4 +1,4 @@
-/* $EPIC: who.c,v 1.28 2003/12/15 05:41:02 jnelson Exp $ */
+/* $EPIC: who.c,v 1.29 2003/12/16 23:25:45 jnelson Exp $ */
 /*
  * who.c -- The WHO queue.  The ISON queue.  The USERHOST queue.
  *
@@ -509,7 +509,7 @@ static	int	last_width = -1;
 			"didn't get one back. ###");
 
 	/* Who replies always go to the current window. */
-	l = message_from(new_w->who_target, LOG_CRAP);
+	l = message_from(new_w->who_target, LEVEL_CRAP);
 
 do
 {
@@ -652,7 +652,7 @@ void	xwhoreply (int refnum, const char *from, const char *comm, const char **Arg
 			"even though you didn't ask for one. ###");
 
 	/* Who replies always go to the current window */
-	l = message_from(new_w->who_target, LOG_CRAP);
+	l = message_from(new_w->who_target, LEVEL_CRAP);
 	PasteArgs(ArgList, 0);
 	if (do_hook(current_numeric, "%s", ArgList[0]))
 		put_it("%s %s", banner(), ArgList[0]);
@@ -673,7 +673,7 @@ void	who_end (int refnum, const char *from, const char *comm, const char **ArgLi
 	if (!new_w)
 		return;	
 
-	l = message_from(new_w->who_target, LOG_CRAP);
+	l = message_from(new_w->who_target, LEVEL_CRAP);
 	do
 	{
 		/* Defer to another function, if neccesary.  */
@@ -741,7 +741,7 @@ int	fake_who_end (int refnum, const char *from, const char *comm, const char *wh
 		who_target = target;
 	}
 
-	l = message_from(new_w->who_target, LOG_CRAP);
+	l = message_from(new_w->who_target, LEVEL_CRAP);
 	do
 	{
 		/* Defer to another function, if neccesary.  */

@@ -1,4 +1,4 @@
-/* $EPIC: parse.c,v 1.53 2003/12/15 23:23:02 jnelson Exp $ */
+/* $EPIC: parse.c,v 1.54 2003/12/16 23:25:45 jnelson Exp $ */
 /*
  * parse.c: handles messages from the server.   Believe it or not.  I
  * certainly wouldn't if I were you. 
@@ -210,7 +210,7 @@ static void	p_topic (const char *from, const char *comm, const char **ArgList)
 		{ rfc1459_odd(from, comm, ArgList); return; }
 
 	switch (check_ignore_channel(from, FromUserHost, 
-					channel, IGNORE_TOPICS))
+					channel, LEVEL_TOPIC))
 	{
 		case IGNORED:
 			return;
@@ -222,10 +222,10 @@ static void	p_topic (const char *from, const char *comm, const char **ArgList)
 			break;
 	}
 
-	if (new_check_flooding(from, FromUserHost, channel, new_topic, TOPIC_FLOOD))
+	if (new_check_flooding(from, FromUserHost, channel, new_topic, LEVEL_TOPIC))
 		return;
 
-	l = message_from(channel, LOG_CRAP);
+	l = message_from(channel, LEVEL_TOPIC);
 	if (do_hook(TOPIC_LIST, "%s %s %s", from, channel, new_topic))
 		say("%s has changed the topic on channel %s to %s",
 			from, check_channel_type(channel), new_topic);
@@ -245,7 +245,7 @@ static void	p_wallops (const char *from, const char *comm, const char **ArgList)
 	server_wallop = strchr(from, '.') ? 1 : 0;
 
 	/* Check for ignores... */
-	switch (check_ignore(from, FromUserHost, IGNORE_WALLOPS))
+	switch (check_ignore(from, FromUserHost, LEVEL_WALLOP))
 	{
 		case (IGNORED):
 			return;
@@ -259,11 +259,11 @@ static void	p_wallops (const char *from, const char *comm, const char **ArgList)
 
 	/* Check for floods... servers are exempted from flood checks */
 	if (!server_wallop && check_flooding(from, FromUserHost, 
-						WALLOP_FLOOD, message))
+						LEVEL_WALLOP, message))
 		return;
 
 
-	l = message_from(from, LOG_WALLOP);
+	l = message_from(from, LEVEL_WALLOP);
 
 	if (do_hook(WALLOP_LIST, "%s %c %s", 
 				from, 
@@ -316,10 +316,10 @@ static void	p_privmsg (const char *from, const char *comm, const char **ArgList)
 	/* ooops. cant just do is_channel(to) because of # walls... */
 	if (is_channel(target) && im_on_channel(target, from_server))
 	{
-		log_type = LOG_PUBLIC;
+		log_type = LEVEL_PUBLIC;
 		flood_channel = target;
-		flood_type = PUBLIC_FLOOD;
-		ignore_type = IGNORE_PUBLIC;
+		flood_type = LEVEL_PUBLIC;
+		ignore_type = LEVEL_PUBLIC;
 
 		if (!is_channel_nomsgs(target, from_server) && 
 				!is_on_channel(target, from)) {
@@ -335,20 +335,20 @@ static void	p_privmsg (const char *from, const char *comm, const char **ArgList)
 	}
 	else if (!is_me(from_server, target))
 	{
-		log_type = LOG_WALL;
+		log_type = LEVEL_WALL;
 		flood_channel = NULL;
-		flood_type = WALL_FLOOD;
-		ignore_type = IGNORE_WALLS;
+		flood_type = LEVEL_WALL;
+		ignore_type = LEVEL_WALL;
 
 		hook_type = MSG_GROUP_LIST;
 		hook_format = "%s<-%s:%s->%s %s";
 	}
 	else
 	{
-		log_type = LOG_MSG;
+		log_type = LEVEL_MSG;
 		flood_channel = NULL;
-		flood_type = MSG_FLOOD;
-		ignore_type = IGNORE_MSGS;
+		flood_type = LEVEL_MSG;
+		ignore_type = LEVEL_MSG;
 
 		hook_type = MSG_LIST;
 		hook_format = NULL;	/* See below */
@@ -458,20 +458,20 @@ static void	p_quit (const char *from, const char *comm, const char **ArgList)
 	 * so we cannot remove them from the channel until after we have
 	 * thrown the hook.  That is the only reason this is out of order.
 	 */
-	if (check_ignore(from, FromUserHost, IGNORE_CRAP) == IGNORED)
+	if (check_ignore(from, FromUserHost, LEVEL_QUIT) == IGNORED)
 		break;
 
 	for (chan = walk_channels(1, from); chan; 
 		 chan = walk_channels(0, from))
 	{
 		if (check_ignore_channel(from, FromUserHost, chan,
-						IGNORE_CRAP) == IGNORED)
+						LEVEL_QUIT) == IGNORED)
 		{
 			one_prints = 0;
 			continue;
 		}
 
-		l = message_from(chan, LOG_CRAP);
+		l = message_from(chan, LEVEL_QUIT);
 		if (!do_hook(CHANNEL_SIGNOFF_LIST, "%s %s %s", chan, from, 
 								quit_message))
 			one_prints = 0;
@@ -480,7 +480,7 @@ static void	p_quit (const char *from, const char *comm, const char **ArgList)
 
 	if (one_prints)
 	{
-		l = message_from(what_channel(from), LOG_CRAP);
+		l = message_from(what_channel(from), LEVEL_QUIT);
 		if (do_hook(SIGNOFF_LIST, "%s %s", from, quit_message))
 			say("Signoff: %s (%s)", from, quit_message);
 		pop_message_from(l);
@@ -528,7 +528,7 @@ static void	p_pong (const char *from, const char *comm, const char **ArgList)
 			return;
 	}
 
-	if (check_ignore(from, FromUserHost, IGNORE_CRAP) == IGNORED)
+	if (check_ignore(from, FromUserHost, LEVEL_CRAP) == IGNORED)
 		return;
 
 	if (do_hook(PONG_LIST, "%s %s %s", from, pong_server, pong_message))
@@ -636,7 +636,7 @@ static void	p_channel (const char *from, const char *comm, const char **ArgList)
 		add_userhost_to_channel(channel, from, from_server, FromUserHost);
 	}
 
-	switch (check_ignore_channel(from, FromUserHost, channel, IGNORE_JOINS))
+	switch (check_ignore_channel(from, FromUserHost, channel, LEVEL_JOIN))
 	{
 		case IGNORED:
 			return;
@@ -648,7 +648,7 @@ static void	p_channel (const char *from, const char *comm, const char **ArgList)
 			break;
 	}
 
-	if (new_check_flooding(from, FromUserHost, channel, star, JOIN_FLOOD))
+	if (new_check_flooding(from, FromUserHost, channel, star, LEVEL_JOIN))
 		return;
 
 	set_server_joined_nick(from_server, from);
@@ -659,7 +659,7 @@ static void	p_channel (const char *from, const char *comm, const char **ArgList)
 	if (vo)
 		strlcat(extra, " (+v)", sizeof extra);
 
-	l = message_from(channel, LOG_CRAP);
+	l = message_from(channel, LEVEL_JOIN);
 	if (do_hook(JOIN_LIST, "%s %s %s %s", 
 			from, channel, FromUserHost, extra))
 		say("%s%s%s (%s) has joined channel %s%s%s%s", 
@@ -693,7 +693,7 @@ static void 	p_invite (const char *from, const char *comm, const char **ArgList)
 		{ rfc1459_odd(from, comm, ArgList); return; }
 
 	switch (check_ignore_channel(from, FromUserHost, 
-					invited_to, IGNORE_INVITES))
+					invited_to, LEVEL_INVITE))
 	{
 		case IGNORED:
 			return;
@@ -705,13 +705,13 @@ static void 	p_invite (const char *from, const char *comm, const char **ArgList)
 			break;
 	}
 
-	if (check_flooding(from, FromUserHost, INVITE_FLOOD, invited_to))
+	if (check_flooding(from, FromUserHost, LEVEL_INVITE, invited_to))
 		return;
 
 	set_server_invite_channel(from_server, invited_to);
 	set_server_recv_nick(from_server, from);
 
-	l = message_from(from, LOG_CRAP);
+	l = message_from(from, LEVEL_INVITE);
 	if (do_hook(INVITE_LIST, "%s %s %s", from, invited_to, FromUserHost))
 		say("%s%s (%s)%s invites you to channel %s", high,
 			from, FromUserHost, high, invited_to);
@@ -871,7 +871,7 @@ static void	p_nick (const char *from, const char *comm, const char **ArgList)
 		set_server_nickname_pending(from_server, 0);
 	}
 
-	switch (check_ignore(from, FromUserHost, IGNORE_NICKS))
+	switch (check_ignore(from, FromUserHost, LEVEL_NICK))
 	{
 		case IGNORED:
 			goto do_rename;
@@ -883,19 +883,19 @@ static void	p_nick (const char *from, const char *comm, const char **ArgList)
 			break;
 	}
 
-	if (check_flooding(from, FromUserHost, NICK_FLOOD, new_nick))
+	if (check_flooding(from, FromUserHost, LEVEL_NICK, new_nick))
 		goto do_rename;
 
 	for (chan = walk_channels(1, from); chan; chan = walk_channels(0, from))
 	{
 		if (check_ignore_channel(from, FromUserHost, chan, 
-						IGNORE_NICKS) == IGNORED)
+						LEVEL_NICK) == IGNORED)
 		{
 			ignored = 1;
 			continue;
 		}
 
-		l = message_from(chan, LOG_CRAP);
+		l = message_from(chan, LEVEL_NICK);
 		if (!do_hook(CHANNEL_NICK_LIST, "%s %s %s", chan, from, new_nick))
 			been_hooked = 1;
 		pop_message_from(l);
@@ -904,9 +904,9 @@ static void	p_nick (const char *from, const char *comm, const char **ArgList)
 	if (!been_hooked && !ignored)
 	{
 		if (its_me)
-			l = message_from(NULL, LOG_CRAP);
+			l = message_from(NULL, LEVEL_NICK);
 		else
-			l = message_from(what_channel(from), LOG_CRAP);
+			l = message_from(what_channel(from), LEVEL_NICK);
 
 		if (do_hook(NICKNAME_LIST, "%s %s", from, new_nick))
 			say("%s is now known as %s", from, new_nick);
@@ -948,10 +948,10 @@ static void	p_mode (const char *from, const char *comm, const char **ArgList)
 		type = "for user";
 	}
 
-	if (check_ignore_channel(from, FromUserHost, target, IGNORE_CRAP) 
+	if (check_ignore_channel(from, FromUserHost, target, LEVEL_MODE) 
 					!= IGNORED)
 	{
-		l = message_from(m_target, LOG_CRAP);
+		l = message_from(m_target, LEVEL_MODE);
 		if (do_hook(MODE_LIST, "%s %s %s", from, target, changes))
 		    say("Mode change \"%s\" %s %s by %s",
 					changes, type, target, from);
@@ -979,7 +979,7 @@ static void strip_modes (const char *from, const char *channel, const char *line
 
 	if (is_channel(channel))
 	{
-	    l = message_from(channel, LOG_CRAP);
+	    l = message_from(channel, LEVEL_MODE);
 
 	    for (pointer = mode; *pointer; pointer++)
 	    {
@@ -1019,7 +1019,7 @@ static void strip_modes (const char *from, const char *channel, const char *line
 
 	else /* User mode */
 	{
-	    l = message_from(NULL, LOG_CRAP);
+	    l = message_from(NULL, LEVEL_MODE);
 
 	    for (pointer = mode; *pointer; pointer++)
 	    {
@@ -1118,7 +1118,7 @@ static void	p_kick (const char *from, const char *comm, const char **ArgList)
 		old_cw = current_window;
 		current_window = win;
 		to_window = win;
-		l = message_from(channel, LOG_CRAP);
+		l = message_from(channel, LEVEL_KICK);
 
 		if (do_hook(KICK_LIST, "%s %s %s %s", victim, from, 
 					check_channel_type(channel), comment))
@@ -1133,11 +1133,11 @@ static void	p_kick (const char *from, const char *comm, const char **ArgList)
 	}
 
 	if (check_ignore_channel(from, FromUserHost, 
-				 channel, IGNORE_CRAP) != IGNORED)
+				 channel, LEVEL_KICK) != IGNORED)
 	{
-	    if (check_ignore_channel(victim, fetch_userhost(from_server, victim), channel, IGNORE_CRAP) != IGNORED)
+	    if (check_ignore_channel(victim, fetch_userhost(from_server, victim), channel, LEVEL_KICK) != IGNORED)
 	    {
-		l = message_from(channel, LOG_CRAP);
+		l = message_from(channel, LEVEL_KICK);
 		if (do_hook(KICK_LIST, "%s %s %s %s", 
 				victim, from, channel, comment))
 			say("%s has been kicked off channel %s by %s (%s)", 
@@ -1170,9 +1170,9 @@ static void	p_part (const char *from, const char *comm, const char **ArgList)
 	if (!(reason = ArgList[1])) { }
 
 	if ((check_ignore_channel(from, FromUserHost, 
-					channel, IGNORE_PARTS) != IGNORED))
+					channel, LEVEL_PART) != IGNORED))
 	{
-		l = message_from(channel, LOG_CRAP);
+		l = message_from(channel, LEVEL_PART);
 		if (reason)		/* Dalnet part messages */
 		{
 			if (do_hook(LEAVE_LIST, "%s %s %s %s", 

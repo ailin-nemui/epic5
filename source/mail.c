@@ -1,4 +1,4 @@
-/* $EPIC: mail.c,v 1.15 2003/12/15 05:41:02 jnelson Exp $ */
+/* $EPIC: mail.c,v 1.16 2003/12/16 23:25:45 jnelson Exp $ */
 /*
  * mail.c -- a gross simplification of mail checking.
  * Only unix maildrops (``mbox'') are supported.
@@ -194,7 +194,7 @@ static void	update_mail_level1_mbox (void)
 			mail_latch++;
 			if (do_hook(MAIL_LIST, "You have new email"))
 			{
-				int l = message_from(NULL, LOG_CRAP);
+				int l = message_from(NULL, LEVEL_CRAP);
 				say("You have new email.");
 				pop_message_from(l);
 			}
@@ -258,7 +258,7 @@ static void	update_mail_level2_mbox (void)
 			if (do_hook(MAIL_LIST, "%d %d", 
 					count - mail_last_count, count))
 			{
-			    int l = message_from(NULL, LOG_CRAP);
+			    int l = message_from(NULL, LEVEL_CRAP);
 			    say("You have new email.");
 			    pop_message_from(l);
 			}

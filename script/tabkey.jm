@@ -653,14 +653,8 @@ alias tclear {
 
 # *** hooks ***
 
-if (info(i) >= 225) {
-	^on #^general_notice 110 "% *" {
-		@add_target(notice $1)
-	}
-} else {
-	^on #^raw_irc 110 "% NOTICE *" {
-		@add_target(notice $2)
-	}
+on #^action 110 "*" {
+	@add_target(msg $0)
 }
 
 on #^dcc_chat 110 "*" {
@@ -669,6 +663,10 @@ on #^dcc_chat 110 "*" {
 
 on #^dcc_connect 110 "% CHAT *" {
 	@add_target(msg =$0)
+}
+
+on #^general_notice 110 "% *" {
+	@add_target(notice $1)
 }
 
 on #^msg 110 "*" {

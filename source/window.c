@@ -1,4 +1,4 @@
-/* $EPIC: window.c,v 1.94 2003/12/15 23:23:02 jnelson Exp $ */
+/* $EPIC: window.c,v 1.95 2003/12/16 23:25:45 jnelson Exp $ */
 /*
  * window.c: Handles the organzation of the logical viewports (``windows'')
  * for irc.  This includes keeping track of what windows are open, where they
@@ -99,7 +99,7 @@ const	char	*who_from = (char *) 0;
  * This is the lastlog level that any output should be sent out at.  This
  * determines what window output ultimately ends up in.
  */
-	int	who_level = LOG_CRAP;
+	int	who_level;
 
 /*
  * This is set to 1 if output is to be dispatched normally.  This is set to
@@ -120,7 +120,7 @@ static 	void 	remove_from_invisible_list 	(Window *);
 static 	void 	swap_window 			(Window *, Window *);
 static	Window	*get_next_window  		(Window *);
 static	Window	*get_previous_window 		(Window *);
-static 	void 	revamp_window_levels 		(Window *);
+static 	void 	revamp_window_masks 		(Window *);
 static	void 	clear_window 			(Window *);
 static	void	resize_window_display 		(Window *);
 static 	Window *window_next 			(Window *, char **);
@@ -194,11 +194,11 @@ Window	*new_window (Screen *screen)
 	new_w->skip = 0;
 	new_w->swappable = 1;
 	new_w->scrolladj = 1;
-	new_w->notify_level = real_notify_level();
+	new_w->notify_mask = real_notify_mask();
 	if (!current_window)		/* First window ever */
-		new_w->window_level = LOG_ALL;
+		new_w->window_mask.mask = _X(ALL);
 	else
-		new_w->window_level = LOG_NONE;
+		new_w->window_mask.mask = _X(NONE);
 
 	new_w->prompt = NULL;		/* Filled in later */
 	for (i = 0; i < 3; i++)
@@ -236,7 +236,7 @@ Window	*new_window (Screen *screen)
 
 	new_w->lastlog_oldest = NULL;
 	new_w->lastlog_newest = NULL;
-	new_w->lastlog_level = real_lastlog_level();
+	new_w->lastlog_mask = real_lastlog_mask();
 	new_w->lastlog_size = 0;
 	new_w->lastlog_max = get_int_var(LASTLOG_VAR);
 
@@ -2203,45 +2203,45 @@ void 	window_check_channels (void)
 
 /* * * * * * * * * * LEVELS * * * * * * * * * */
 /*
- * set_level_by_refnum: This sets the window level given a refnum.  It
- * revamps the windows levels as well using revamp_window_levels() 
+ * set_mask_by_refnum: This sets the window mask given a refnum.  It
+ * revamps the windows masks as well using revamp_window_masks() 
  */
-void 	set_level_by_refnum (unsigned refnum, int level)
+void 	set_mask_by_refnum (unsigned refnum, Mask mask)
 {
 	Window	*tmp;
 
 	if (!(tmp = get_window_by_refnum(refnum)))
 		tmp = current_window;
-	tmp->window_level = level;
-	revamp_window_levels(tmp);
+	tmp->window_mask = mask;
+	revamp_window_masks(tmp);
 }
 
 /*
- * revamp_window_levels: Given a level setting for the current window, this
+ * revamp_window_masks: Given a level setting for the current window, this
  * makes sure that that level setting is unused by any other window. Thus
  * only one window in the system can be set to a given level.  This only
  * revamps levels for windows with servers matching the given window 
  * it also makes sure that only one window has the level `DCC', as this is
  * not dependant on a server.
  */
-static void 	revamp_window_levels (Window *window)
+static void 	revamp_window_masks (Window *window)
 {
 	Window	*tmp = NULL;
 	int	got_dcc;
 
-	got_dcc = (LOG_DCC & window->window_level) ? 1 : 0;
+	got_dcc = (window->window_mask.mask & _X(DCC)) ? 1 : 0;
 	while (traverse_all_windows(&tmp))
 	{
 		if (tmp == window)
 			continue;
-		if (LOG_DCC & tmp->window_level)
+		if (tmp->window_mask.mask & _X(DCC))
 		{
 			if (got_dcc)
-				tmp->window_level &= ~LOG_DCC;
+				tmp->window_mask.mask &= ~(_X(DCC));
 			got_dcc = 1;
 		}
 		if (window->server == tmp->server)
-			tmp->window_level ^= (tmp->window_level & window->window_level);
+			tmp->window_mask.mask ^= (tmp->window_mask.mask & window->window_mask.mask);
 	}
 }
 
@@ -2297,7 +2297,6 @@ int	real_message_from (const char *who, int level, const char *file, int line)
 
 	who_from = who;
 	who_level = level;
-	set_lastlog_msg_level(level);
 	return context_counter++;
 }
 
@@ -2578,7 +2577,7 @@ static void 	list_a_window (Window *window, int len)
 		      cnw, cnw, chan ? chan : "<None>",
 		                window->query_nick ? window->query_nick : "<None>",
 		                get_server_itsname(window->server),
-		                bits_to_lastlog_level(window->window_level),
+		                mask_to_str(window->window_mask),
 		                window->screen ? empty_string : " Hidden");
 }
 
@@ -2978,7 +2977,7 @@ static Window *window_channel (Window *window, char **args)
 						w->refnum, window->refnum);
 		}
 
-		l = message_from(arg, LOG_CRAP);
+		l = message_from(arg, LEVEL_CRAP);
 		if (im_on_channel(arg, window->server))
 		{
 			move_channel_to_window(arg, window->server, 
@@ -3120,12 +3119,12 @@ else
 				onoff[window->miscflags & WINDOW_NOTIFY]);
 	say("\tHold mode is %s", 
 				onoff[window->holding_top_of_display ? 1 : 0]);
-	say("\tWindow level is %s", 
-				bits_to_lastlog_level(window->window_level));
+	say("\tWindow Level is %s", 
+				mask_to_str(window->window_mask));
 	say("\tLastlog level is %s", 
-				bits_to_lastlog_level(window->lastlog_level));
+				mask_to_str(window->lastlog_mask));
 	say("\tNotify level is %s", 
-				bits_to_lastlog_level(window->notify_level));
+				mask_to_str(window->notify_mask));
 
 	if (window->nicks)
 	{
@@ -3496,13 +3495,13 @@ static Window *window_lastlog (Window *window, char **args)
  * in the window.  This setting allows you to control which lines are
  * "thrown away" by the window.
  */
-static Window *window_lastlog_level (Window *window, char **args)
+static Window *window_lastlog_mask (Window *window, char **args)
 {
 	char *arg = next_arg(*args, args);;
 
 	if (arg)
-		window->lastlog_level = parse_lastlog_level(arg);
-	say("Lastlog level is %s", bits_to_lastlog_level(window->lastlog_level));
+		window->lastlog_mask = str_to_mask(arg);
+	say("Lastlog level is %s", mask_to_str(window->lastlog_mask));
 	return window;
 }
 
@@ -3515,12 +3514,13 @@ static Window *window_lastlog_level (Window *window, char **args)
  * exception to this is the "DCC" level, which may only be set to one window
  * for the entire client.
  */
-static Window *window_level (Window *window, char **args)
+static Window *window_mask (Window *window, char **args)
 {
 	char 	*arg;
 	int	add = 0;
-	int	newlevel = 0;
+	Mask	mask;
 
+	mask.mask = _X(NONE);
 	if ((arg = next_arg(*args, args)))
 	{
 		if (*arg == '+')
@@ -3528,17 +3528,17 @@ static Window *window_level (Window *window, char **args)
 		else if (*arg == '-')
 			add = -1, arg++;
 
-		newlevel = parse_lastlog_level(arg);
+		mask = str_to_mask(arg);
 		if (add == 1)
-			window->window_level |= newlevel;
+			window->window_mask.mask |= mask.mask;
 		else if (add == 0)
-			window->window_level = newlevel;
+			window->window_mask.mask = mask.mask;
 		else if (add == -1)
-			window->window_level &= ~newlevel;
+			window->window_mask.mask &= ~mask.mask;
 
-		revamp_window_levels(window);
+		revamp_window_masks(window);
 	}
-	say("Window level is %s", bits_to_lastlog_level(window->window_level));
+	say("Window level is %s", mask_to_str(window->window_mask));
 	return window;
 }
 
@@ -3765,13 +3765,13 @@ static Window *window_notify_list (Window *window, char **args)
 	return window;
 }
 
-static Window *window_notify_level (Window *window, char **args)
+static Window *window_notify_mask (Window *window, char **args)
 {
 	char *arg;
 
 	if ((arg = next_arg(*args, args)))
-		window->notify_level = parse_lastlog_level(arg);
-	say("Window notify level is %s", bits_to_lastlog_level(window->notify_level));
+		window->notify_mask = str_to_mask(arg);
+	say("Window notify level is %s", mask_to_str(window->notify_mask));
 	return window;
 }
 
@@ -4508,11 +4508,11 @@ Window *window_server (Window *window, char **args)
 			window->last_server = NOSERV;
 
 			/*
-			 * Set the window's lastlog level that is
+			 * Set the window's lastlog mask that is
 			 * in /set new_server_lastlog_level
 			 */
-			set_level_by_refnum(window->refnum, 
-						new_server_lastlog_level);
+			set_mask_by_refnum(window->refnum, 
+						new_server_lastlog_mask);
 
 			/*
 			 * And blow away any old channel information 
@@ -4743,8 +4743,8 @@ static const window_ops options [] = {
 	{ "KILLSWAP",		window_killswap 	},
 	{ "LAST", 		window_last 		},
 	{ "LASTLOG",		window_lastlog 		},
-	{ "LASTLOG_LEVEL",	window_lastlog_level 	},
-	{ "LEVEL",		window_level 		},
+	{ "LASTLOG_LEVEL",	window_lastlog_mask 	},
+	{ "LEVEL",		window_mask		},
 	{ "LIST",		window_list 		},
 	{ "LOG",		window_log 		},
 	{ "LOGFILE",		window_logfile 		},
@@ -4757,7 +4757,7 @@ static const window_ops options [] = {
 	{ "NOSERV",		window_noserv		},
 	{ "NOTIFIED",		window_notify_list 	},
 	{ "NOTIFY",		window_notify 		},
-	{ "NOTIFY_LEVEL",	window_notify_level 	},
+	{ "NOTIFY_LEVEL",	window_notify_mask 	},
 	{ "NUMBER",		window_number 		},
 	{ "POP",		window_pop 		},
 	{ "PREVIOUS",		window_previous 	},
@@ -4807,7 +4807,7 @@ BUILT_IN_COMMAND(windowcmd)
 	int	l;
 
 	old_status_update = permit_status_update(0);
-	l = message_from(NULL, LOG_CURRENT);
+	l = message_from(NULL, LEVEL_CURRENT);
 	window = current_window;
 
 	while ((arg = next_arg(args, &args)))
@@ -5766,9 +5766,9 @@ char 	*windowctl 	(char *input)
 	    } else if (!my_strnicmp(listc, "BEEP_ALWAYS", len)) {
 		RETURN_INT(w->beep_always);
 	    } else if (!my_strnicmp(listc, "NOTIFY_LEVEL", len)) {
-		RETURN_STR(bits_to_lastlog_level(w->notify_level));
+		RETURN_STR(mask_to_str(w->notify_mask));
 	    } else if (!my_strnicmp(listc, "WINDOW_LEVEL", len)) {
-		RETURN_STR(bits_to_lastlog_level(w->window_level));
+		RETURN_STR(mask_to_str(w->window_mask));
 	    } else if (!my_strnicmp(listc, "SKIP", len)) {
 		RETURN_INT(w->skip);
 	    } else if (!my_strnicmp(listc, "COLUMNS", len)) {
@@ -5816,7 +5816,7 @@ char 	*windowctl 	(char *input)
 	    } else if (!my_strnicmp(listc, "NICKLIST", len)) {
 		RETURN_MSTR(get_nicklist_by_window(w));
 	    } else if (!my_strnicmp(listc, "LASTLOG_LEVEL", len)) {
-		RETURN_STR(bits_to_lastlog_level(w->lastlog_level));
+		RETURN_STR(mask_to_str(w->lastlog_mask));
 	    } else if (!my_strnicmp(listc, "LASTLOG_SIZE", len)) {
 		RETURN_INT(w->lastlog_size);
 	    } else if (!my_strnicmp(listc, "LASTLOG_MAX", len)) {

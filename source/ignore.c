@@ -1,4 +1,4 @@
-/* $EPIC: ignore.c,v 1.14 2003/10/28 05:53:57 jnelson Exp $ */
+/* $EPIC: ignore.c,v 1.15 2003/12/16 23:25:45 jnelson Exp $ */
 /*
  * ignore.c: handles the ingore command for irc 
  *
@@ -119,9 +119,9 @@ typedef struct	IgnoreStru
 	struct	IgnoreStru *next;
 	char	*nick;			/* What is being ignored */
 	int	refnum;			/* The refnum for internal use */
-	int	type;			/* Suppressive ignores */
-	int	dont;			/* Exceptional ignores */
-	int	high;			/* Highlight ignores */
+	Mask	type;			/* Suppressive ignores */
+	Mask	dont;			/* Exceptional ignores */
+	Mask	high;			/* Highlight ignores */
 	int	counter;		/* How many times it has triggered */
 	Timeval	creation;		/* When it was created */
 	Timeval	last_used;		/* When it was last ``triggered'' */
@@ -135,8 +135,7 @@ static	int	global_ignore_refnum = 0;
 
 static void	expire_ignores			(void);
 static const char *	get_ignore_types 		(Ignore *item, int);
-static int	change_ignore_mask_by_desc 	(const char *, int *, int *, 
-						 int *, char **, Timeval *);
+static int	change_ignore_mask_by_desc (const char *type, Mask *do_mask, Mask *dont_mask, Mask *high_mask, char **reason, Timeval *expire);
 static int	ignore_change			(Ignore *, int, void *);
 static int	ignore_list			(Ignore *, int, void *);
 static int	foreach_ignore			(const char *, int, 
@@ -154,9 +153,9 @@ static Ignore *new_ignore (const char *new_nick)
 	upper(item->nick);
 	item->reason = NULL;
 	item->refnum = ++global_ignore_refnum;
-	item->type = 0;
-	item->dont = 0;
-	item->high = 0;
+	item->type.mask = _X(NONE);
+	item->dont.mask = _X(NONE);
+	item->high.mask = _X(NONE);
 	item->counter = 0;
 	get_time(&item->creation);
 	item->last_used.tv_sec = 0;
@@ -343,21 +342,21 @@ static int 	remove_ignore (const char *nick)
  *  must make a copy of it.  You must not try to write to the string.
  */
 #define HANDLE_TYPE(x,y)						\
-	if ((item->dont & IGNORE_ ## x) == IGNORE_ ## x)		\
+	if ((item->dont.mask & _X(x)) == _X(x))				\
 	{								\
 	    if ((y) == 1)						\
 		strlcat_c(buffer, " DONT-" #x, sizeof buffer, &clue);	\
 	    else if ((y) == 2)						\
 		strlcat_c(buffer, " ^" #x, sizeof buffer, &clue);	\
 	}								\
-	else if ((item->type & IGNORE_ ## x) == IGNORE_ ## x)		\
+	else if ((item->type.mask & _X(x)) == _X(x))			\
 	{								\
 	    if ((y) == 1)						\
 		strlcat_c(buffer, " " #x, sizeof buffer, &clue);	\
 	    else if ((y) == 2)						\
 		strlcat_c(buffer, " /" #x, sizeof buffer, &clue);	\
 	}								\
-	else if ((item->high & IGNORE_ ## x) == IGNORE_ ## x)		\
+	else if ((item->high.mask & _X(x)) == _X(x))			\
 	{								\
 	    if ((y) == 1)						\
 		strlopencat_c(buffer, sizeof buffer, &clue, space, 	\
@@ -378,18 +377,25 @@ static	char 	buffer[BIG_BUFFER_SIZE + 1];
 	HANDLE_TYPE(ALL, output_type)
 	else
 	{
-		HANDLE_TYPE(MSGS, output_type)
 		HANDLE_TYPE(PUBLIC, output_type)
-		HANDLE_TYPE(WALLS, output_type)
-		HANDLE_TYPE(WALLOPS, output_type)
-		HANDLE_TYPE(INVITES, output_type)
-		HANDLE_TYPE(NOTICES, output_type)
-		HANDLE_TYPE(NOTES, output_type)
-		HANDLE_TYPE(CTCPS, output_type)
-		HANDLE_TYPE(TOPICS, output_type)
-		HANDLE_TYPE(NICKS, output_type)
-		HANDLE_TYPE(JOINS, output_type)
-		HANDLE_TYPE(PARTS, output_type)
+		HANDLE_TYPE(MSG, output_type)
+		HANDLE_TYPE(NOTICE, output_type)
+		HANDLE_TYPE(WALL, output_type)
+		HANDLE_TYPE(WALLOP, output_type)
+		HANDLE_TYPE(NOTE, output_type)
+		HANDLE_TYPE(OPNOTE, output_type)
+		HANDLE_TYPE(SNOTE, output_type)
+		HANDLE_TYPE(ACTION, output_type)
+		HANDLE_TYPE(DCC, output_type)
+		HANDLE_TYPE(CTCP, output_type)
+		HANDLE_TYPE(INVITE, output_type)
+		HANDLE_TYPE(JOIN, output_type)
+		HANDLE_TYPE(NICK, output_type)
+		HANDLE_TYPE(TOPIC, output_type)
+		HANDLE_TYPE(PART, output_type)
+		HANDLE_TYPE(QUIT, output_type)
+		HANDLE_TYPE(KICK, output_type)
+		HANDLE_TYPE(MODE, output_type)
 		HANDLE_TYPE(CRAP, output_type)
 	}
 
@@ -432,13 +438,14 @@ static	char 	buffer[BIG_BUFFER_SIZE + 1];
  *  The supported <TYPE>s are defined at the top of this file in the 
  *	"IGNORE THEORY" documentation.
  */
-static int	change_ignore_mask_by_desc (const char *type, int *do_mask, int *dont_mask, int *high_mask, char **reason, Timeval *expire)
+static int	change_ignore_mask_by_desc (const char *type, Mask *do_mask, Mask *dont_mask, Mask *high_mask, char **reason, Timeval *expire)
 {
 	char	*l1, *l2;
 	int	len;
-	int	*mask = NULL, *del1, *del2, *del3;
+	Mask	*mask = NULL, *del1, *del2, *del3;
 	char *	copy;
 	int	bit;
+	int	i;
 
 	copy = LOCAL_COPY(type);
         while ((l1 = new_next_arg(copy, &copy)))
@@ -481,43 +488,7 @@ static int	change_ignore_mask_by_desc (const char *type, int *do_mask, int *dont
 		if (!(len = strlen(l2)))
 			continue;
 
-		if (!my_strnicmp(l2, "NONE", len))
-		{
-			mask = NULL;
-			del1 = do_mask;
-			del2 = dont_mask;
-			del3 = high_mask;
-			bit = IGNORE_ALL;
-		}
-		else if (!my_strnicmp(l2, "ALL", len))
-			bit = IGNORE_ALL;
-		else if (!my_strnicmp(l2, "MSGS", len))
-			bit = IGNORE_MSGS;
-		else if (!my_strnicmp(l2, "PUBLIC", len))
-			bit = IGNORE_PUBLIC;
-		else if (!my_strnicmp(l2, "WALLS", len))
-			bit = IGNORE_WALLS;
-		else if (!my_strnicmp(l2, "WALLOPS", len))
-			bit = IGNORE_WALLOPS;
-		else if (!my_strnicmp(l2, "INVITES", len))
-			bit = IGNORE_INVITES;
-		else if (!my_strnicmp(l2, "NOTICES", len))
-			bit = IGNORE_NOTICES;
-		else if (!my_strnicmp(l2, "NOTES", len))
-			bit = IGNORE_NOTES;
-		else if (!my_strnicmp(l2, "CTCPS", len))
-			bit = IGNORE_CTCPS;
-		else if (!my_strnicmp(l2, "TOPICS", len))
-			bit = IGNORE_TOPICS;
-		else if (!my_strnicmp(l2, "NICKS", len))
-			bit = IGNORE_NICKS;
-		else if (!my_strnicmp(l2, "JOINS", len))
-			bit = IGNORE_JOINS;
-		else if (!my_strnicmp(l2, "PARTS", len))
-			bit = IGNORE_PARTS;
-		else if (!my_strnicmp(l2, "CRAP", len))
-			bit = IGNORE_CRAP;
-		else if (!my_strnicmp(l2, "REASON", len))
+		if (!my_strnicmp(l2, "REASON", len))
 		{
 			char *the_reason;
 
@@ -563,23 +534,48 @@ static int	change_ignore_mask_by_desc (const char *type, int *do_mask, int *dont
 
 			continue;
 		}
+
+		/* It's a level of some sort */
+		if (!my_strnicmp(l2, "NONE", len))
+		{
+			mask = NULL;
+			del1 = do_mask;
+			del2 = dont_mask;
+			del3 = high_mask;
+			bit = LEVEL_ALL;
+		}
+		else if (!my_strnicmp(l2, "ALL", len))
+			bit = LEVEL_ALL;
 		else
 		{
+		    for (i = 0; i < NUMBER_OF_LEVELS; i++)
+		    {
+			if (!my_strnicmp(l2, level_types[i], len))
+			{
+			    bit = i;
+			    break;
+			}
+		    }
+
+		    if (i == NUMBER_OF_LEVELS)
+		    {
 			say("You must specify one of the following:");
-			say("\tALL MSGS PUBLIC WALLS WALLOPS INVITES "
-				"NOTICES NOTES CTCPS TOPICS NICKS JOINS "
-				"PARTS CRAP NONE REASON \"<reason>\"");
+			say("\tALL CRAP PUBLIC MSG NOTICE WALL WALLOP NOTE "
+				"OPNOTE SNOTE ACTION DCC CTCP INVITE JOIN "
+				"NICK TOPIC PART QUIT KICK MODE NONE "
+				"REASON \"<reason>\" TIMEOUT <seconds>");
 			continue;
+		    }
 		}
 
 		if (mask)
-			*mask |= bit;
+			mask->mask |= _Y(bit);
 		if (del1)
-			*del1 &= ~bit;
+			del1->mask &= ~(_Y(bit));
 		if (del2)
-			*del2 &= ~bit;
+			del2->mask &= ~(_Y(bit));
 		if (del3)
-			*del3 &= ~bit;
+			del3->mask &= ~(_Y(bit));
 	    }
 	}
 
@@ -617,9 +613,9 @@ static int	ignore_change (Ignore *item, int type, void *data)
 	 * Garbage collect this ignore if it is clear.
 	 * remove_ignore() does the output for us here.
 	 */
-	if ((item->type & IGNORE_ALL) == IGNORE_NONE && 
-	    (item->high & IGNORE_ALL) == IGNORE_NONE &&
-	    (item->dont & IGNORE_ALL) == IGNORE_NONE)
+	if ((item->type.mask == _X(NONE)) && 
+	    (item->high.mask == _X(NONE)) &&
+	    (item->dont.mask == _X(NONE)))
 	{
 		remove_ignore(item->nick);
 		return 0;
@@ -956,9 +952,11 @@ const char	*get_ignore_types_by_pattern (char *pattern)
 char	*get_ignore_patterns_by_type (char *ctype)
 {
 	Ignore	*tmp;
-	int	do_mask = 0, dont_mask = 0, high_mask = 0;
+	Mask	do_mask, dont_mask, high_mask;
 	char	*result = NULL;
 	size_t	clue = 0;
+
+	do_mask.mask = dont_mask.mask = high_mask.mask = _X(NONE);
 
 	/*
 	 * Convert the user's input into something we can use.
@@ -966,7 +964,7 @@ char	*get_ignore_patterns_by_type (char *ctype)
 	 * just punt right here.
 	 */
 	change_ignore_mask_by_desc(ctype, &do_mask, &dont_mask, &high_mask, NULL, NULL);
-	if (do_mask == 0 && dont_mask == 0 && high_mask == 0)
+	if (do_mask.mask == _X(NONE) && dont_mask.mask == _X(NONE) && high_mask.mask == _X(NONE))
 		return malloc_strdup(empty_string);
 
 	for (tmp = ignored_nicks; tmp; tmp = tmp->next)
@@ -981,11 +979,11 @@ char	*get_ignore_patterns_by_type (char *ctype)
 		 * levels than what the user asked for, but it can't have 
 		 * levels with different dispositions.
 		 */
-		if ((tmp->dont & dont_mask) != dont_mask)
+		if ((tmp->dont.mask & dont_mask.mask) != dont_mask.mask)
 			continue;
-		if ((tmp->type & do_mask) != do_mask)
+		if ((tmp->type.mask & do_mask.mask) != do_mask.mask)
 			continue;
-		if ((tmp->high & high_mask) != high_mask)
+		if ((tmp->high.mask & high_mask.mask) != high_mask.mask)
 			continue;
 
 		/* Add it to the fray */
@@ -1093,11 +1091,11 @@ char *	ignorectl (char *input)
 		} else if (!my_strnicmp(listc, "LEVELS", len)) {
 			RETURN_STR(get_ignore_types(i, 2));
 		} else if (!my_strnicmp(listc, "SUPPRESS", len)) {
-			RETURN_INT(i->type);
+			RETURN_INT(i->type.mask);
 		} else if (!my_strnicmp(listc, "EXCEPT", len)) {
-			RETURN_INT(i->dont);
+			RETURN_INT(i->dont.mask);
 		} else if (!my_strnicmp(listc, "HIGHLIGHT", len)) {
-			RETURN_INT(i->high);
+			RETURN_INT(i->high.mask);
 		} else if (!my_strnicmp(listc, "EXPIRATION", len)) {
 			char *ptr = NULL;
 			return malloc_sprintf(&ptr, "%ld %ld", 
@@ -1134,17 +1132,17 @@ char *	ignorectl (char *input)
 			malloc_strcpy(&i->nick, input);
 			RETURN_INT(i->refnum);
 		} else if (!my_strnicmp(listc, "LEVELS", len)) {
-			i->type = i->dont = i->high = 0;
+			i->type.mask = i->dont.mask = i->high.mask = _X(NONE);
 			ignore_change(i, 1, input);
 			RETURN_INT(i->refnum);
 		} else if (!my_strnicmp(listc, "SUPPRESS", len)) {
-			GET_INT_ARG(i->type, input);
+			GET_INT_ARG(i->type.mask, input);
 			RETURN_INT(i->refnum);
 		} else if (!my_strnicmp(listc, "EXCEPT", len)) {
-			GET_INT_ARG(i->dont, input);
+			GET_INT_ARG(i->dont.mask, input);
 			RETURN_INT(i->refnum);
 		} else if (!my_strnicmp(listc, "HIGHLIGHT", len)) {
-			GET_INT_ARG(i->high, input);
+			GET_INT_ARG(i->high.mask, input);
 			RETURN_INT(i->refnum);
 		} else if (!my_strnicmp(listc, "EXPIRATION", len)) {
 			Timeval to;
@@ -1264,19 +1262,19 @@ int	check_ignore_channel (const char *nick, const char *uh, const char *channel,
 	if (i_match)
 	{
 		tmp = i_match;
-		if (tmp->dont & type)
+		if (tmp->dont.mask & _Y(type))
 		{
 			tmp->counter++;
 			get_time(&tmp->last_used);
 			return NOT_IGNORED;
 		}
-		if (tmp->type & type)
+		if (tmp->type.mask & _Y(type))
 		{
 			tmp->counter++;
 			get_time(&tmp->last_used);
 			return IGNORED;
 		}
-		if (tmp->high & type)
+		if (tmp->high.mask & _Y(type))
 		{
 			tmp->counter++;
 			get_time(&tmp->last_used);
@@ -1291,19 +1289,19 @@ int	check_ignore_channel (const char *nick, const char *uh, const char *channel,
 	else if (c_match)
 	{
 		tmp = c_match;
-		if (tmp->dont & type)
+		if (tmp->dont.mask & _Y(type))
 		{
 			tmp->counter++;
 			get_time(&tmp->last_used);
 			return NOT_IGNORED;
 		}
-		if (tmp->type & type)
+		if (tmp->type.mask & _Y(type))
 		{
 			tmp->counter++;
 			get_time(&tmp->last_used);
 			return IGNORED;
 		}
-		if (tmp->high & type)
+		if (tmp->high.mask & _Y(type))
 		{
 			tmp->counter++;
 			get_time(&tmp->last_used);

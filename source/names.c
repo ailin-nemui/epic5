@@ -1,4 +1,4 @@
-/* $EPIC: names.c,v 1.47 2003/12/15 05:41:02 jnelson Exp $ */
+/* $EPIC: names.c,v 1.48 2003/12/16 23:25:45 jnelson Exp $ */
 /*
  * names.c: This here is used to maintain a list of all the people currently
  * on your channel.  Seems to work 
@@ -1087,7 +1087,7 @@ void	channel_not_waiting (const char *channel, int server)
 	if (tmp)
 	{
 		tmp->waiting = 0;
-		l = message_from(channel, LOG_CRAP);
+		l = message_from(channel, LEVEL_CRAP);
 		do_hook(CHANNEL_SYNC_LIST, "%s %f %d",
 			tmp->channel, 
 			time_diff(tmp->join_time, get_time(NULL)),

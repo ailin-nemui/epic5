@@ -1,4 +1,4 @@
-/* $EPIC: notice.c,v 1.29 2003/12/15 23:23:02 jnelson Exp $ */
+/* $EPIC: notice.c,v 1.30 2003/12/16 23:25:45 jnelson Exp $ */
 /*
  * notice.c: special stuff for parsing NOTICEs
  *
@@ -78,7 +78,7 @@ static void 	parse_note (char *from, char *line)
 	time_t	when;
 	int	l;
 
-	switch (check_ignore(from, FromUserHost, IGNORE_NOTES))
+	switch (check_ignore(from, FromUserHost, LEVEL_NOTE))
 	{
 		case IGNORED:
 			return;
@@ -89,7 +89,7 @@ static void 	parse_note (char *from, char *line)
 			high = empty_string;
 	}
 
-	if (check_flooding(from, FromUserHost, NOTE_FLOOD, line))
+	if (check_flooding(from, FromUserHost, LEVEL_NOTE, line))
 		return;
 
 /* 
@@ -101,7 +101,7 @@ static void 	parse_note (char *from, char *line)
 
 	when = convert_note_time_to_real_time(date);
 
-	l = message_from(from, LOG_NOTES);
+	l = message_from(from, LEVEL_NOTE);
 	if (do_hook(NOTE_LIST, "%s %lu %s", from, when, line))
 	{
 		if (time(NULL) - when > 60)	/* not just sent */
@@ -158,7 +158,7 @@ static 	void 	parse_local_server_notice (const char *from, const char *to, const
 			if (kill_message(f, line + 40))
 				return;
 
-		l = message_from(to, LOG_OPNOTE);
+		l = message_from(to, LEVEL_OPNOTE);
 		retval = do_hook(OPER_NOTICE_LIST, "%s %s", f, line + 14);
 		pop_message_from(l);
 		if (!retval)
@@ -191,7 +191,7 @@ static 	void 	parse_local_server_notice (const char *from, const char *to, const
 		return;
 	}
 
-	l = message_from(to, LOG_SNOTE);
+	l = message_from(to, LEVEL_SNOTE);
 
 	/* Check to see if the notice already has its own header... */
 	if (do_hook(GENERAL_NOTICE_LIST, "%s %s %s", f, to, line))
@@ -277,7 +277,7 @@ void 	p_notice (const char *from, const char *comm, const char **ArgList)
 	}
 
 	/* Check for /ignore's */
-	switch (check_ignore_channel(from, FromUserHost, target, IGNORE_NOTICES))
+	switch (check_ignore_channel(from, FromUserHost, target, LEVEL_NOTICE))
 	{
 		case IGNORED:
 			set_server_doing_notice(from_server, 0);
@@ -296,7 +296,7 @@ void 	p_notice (const char *from, const char *comm, const char **ArgList)
 		int	do_return = 1;
 
 		sed = 0;
-		l = message_from(target, LOG_NOTICE);
+		l = message_from(target, LEVEL_NOTICE);
 
 		if (do_hook(ENCRYPTED_NOTICE_LIST, "%s %s %s", 
 				from, target, message))
@@ -311,14 +311,14 @@ void 	p_notice (const char *from, const char *comm, const char **ArgList)
 	}
 
 	if (new_check_flooding(from, FromUserHost, flood_channel, 
-					message, NOTICE_FLOOD)) {
+					message, LEVEL_NOTICE)) {
 		set_server_doing_notice(from_server, 0);
 		return;
 	}
 
 
 	/* Go ahead and throw it to the user */
-	l = message_from(target, LOG_NOTICE);
+	l = message_from(target, LEVEL_NOTICE);
 
 	if (do_hook(GENERAL_NOTICE_LIST, "%s %s %s", from, target, message))
 	{

@@ -1,4 +1,4 @@
-/* $EPIC: lastlog.c,v 1.30 2003/12/15 23:23:02 jnelson Exp $ */
+/* $EPIC: lastlog.c,v 1.31 2003/12/16 23:25:45 jnelson Exp $ */
 /*
  * lastlog.c: handles the lastlog features of irc. 
  *
@@ -51,27 +51,10 @@ static int	show_lastlog (Lastlog **l, int *skip, int *number, int, char *match, 
  * lastlog_level: current bitmap setting of which things should be stored in
  * the lastlog.  The LOG_MSG, LOG_NOTICE, etc., defines tell more about this 
  */
-static	int	lastlog_level;
-static	int	notify_level;
-	int	new_server_lastlog_level;
-	int 	current_window_level = 0;
-
-/*
- * msg_level: the mask for the current message level.  What?  Did he really
- * say that?  This is set in the set_lastlog_msg_level() routine as it
- * compared to the lastlog_level variable to see if what ever is being added
- * should actually be added 
- */
-static	int	msg_level = LOG_CRAP;
-
-#define NUMBER_OF_LEVELS 16
-static	const char	*levels[] =
-{
-	"CRAP",		"PUBLIC",	"MSGS",		"NOTICES",
-	"WALLS",	"WALLOPS",	"NOTES",	"OPNOTES",
-	"SNOTES",	"ACTIONS",	"DCC",		"CTCP",
-	"USERLOG1",	"USERLOG2",	"USERLOG3",	"USERLOG4"
-};
+static	Mask	lastlog_mask;
+static	Mask	notify_mask;
+	Mask	new_server_lastlog_mask;
+	Mask 	current_window_mask = { 0 };
 
 /*
  * warn_lastlog_level: tells the user what levels are available.
@@ -84,130 +67,143 @@ static void	warn_lastlog_levels (void)
 	strlcpy(buffer, "Valid levels: ", sizeof buffer);
 	for (i = 0; i < NUMBER_OF_LEVELS; i++)
 	{
-		strlcat(buffer, levels[i], sizeof buffer);
+		strlcat(buffer, level_types[i], sizeof buffer);
 		strlcat(buffer, " ", sizeof buffer);
 	}
 	say("%s", buffer);
 }
 
 /*
- * bits_to_lastlog_level: converts the bitmap of lastlog levels into a nice
+ * mask_to_str: converts the bitmask of levels into a nice
  * string format.  Note that this uses the global buffer, so watch out 
  */
-char	*bits_to_lastlog_level (int level)
+char	*mask_to_str (Mask mask)
 {
 	static	char	buffer[256]; /* this *should* be enough for this */
-	int	i,
-		p;
+	int	i;
 
-	if (level == LOG_ALL)
+	if (mask.mask == _X(ALL))
 		strlcpy(buffer, "ALL", sizeof buffer);
-	else if (level == 0)
+	else if (mask.mask == _X(NONE))
 		strlcpy(buffer, "NONE", sizeof buffer);
 	else
 	{
-		*buffer = '\0';
-		for (i = 0, p = 1; i < NUMBER_OF_LEVELS; i++, p *= 2)
+		*buffer = 0;
+		for (i = 0; i < NUMBER_OF_LEVELS; i++)
 		{
-			if (level & p)
-			{
-				if (*buffer)
-					strlcat(buffer, " ", sizeof buffer);
-				strlcat(buffer, levels[i], sizeof buffer);
-			}
+		    if (mask.mask & _Y(i))
+		    {
+			if (*buffer)
+				strlcat(buffer, " ", sizeof buffer);
+			strlcat(buffer, level_types[i], sizeof buffer);
+		    }
 		}
 	}
 	return (buffer);
 }
 
-int	parse_lastlog_level (const char *orig)
+Mask	str_to_mask (const char *orig)
 {
 	char	*ptr,
 		*rest;
 	int	len,
 		i,
-		p,
-		level,
 		neg;
 	int	warn = 0;
 	char *	str;
+	Mask	level;
 
 	if (!orig)
-		return 0;		/* Whatever */
+	{
+		level.mask = _X(NONE);
+		return level;		/* Whatever */
+	}
 
 	str = LOCAL_COPY(orig);
-	level = 0;
+	level.mask = _X(NONE);
 	while ((str = next_arg(str, &rest)) != NULL)
 	{
 	    while (str)
 	    {
 		if ((ptr = strchr(str, ',')) != NULL)
-			*ptr++ = '\0';
+			*ptr++ = 0;
 		if ((len = strlen(str)) != 0)
 		{
 			if (my_strnicmp(str, "ALL", len) == 0)
-				level = LOG_ALL;
+				level.mask = _X(ALL);
 			else if (my_strnicmp(str, "NONE", len) == 0)
-				level = 0;
+				level.mask = _X(NONE);
 			else
 			{
-				if (*str == '-')
-				{
-					str++, len--;
-					neg = 1;
-				}
-				else
-					neg = 0;
+			    if (*str == '-')
+			    {
+				str++, len--;
+				neg = 1;
+			    }
+			    else
+				neg = 0;
 
-				for (i = 0, p = 1; i < NUMBER_OF_LEVELS;
-						i++, p *= 2)
+			    for (i = 0; i < NUMBER_OF_LEVELS; i++)
+			    {
+				if (!my_strnicmp(str, level_types[i], len))
 				{
-					if (!my_strnicmp(str, levels[i], len))
-					{
-						if (neg)
-							level &= (LOG_ALL ^ p);
-						else
-							level |= p;
-						break;
-					}
+					if (neg)
+						level.mask &= ~(_Y(i));
+					else
+						level.mask |= _Y(i);
+					break;
 				}
-				if (i == NUMBER_OF_LEVELS)
+			    }
+			    if (i == NUMBER_OF_LEVELS)
+			    {
+				say("Unknown level: %s", str);
+				if (!warn)
 				{
-					say("Unknown level: %s", str);
-					if (!warn)
-					{
-						warn_lastlog_levels();
-						warn = 1;
-					}
+					warn_lastlog_levels();
+					warn = 1;
 				}
+			    }
 			}
 		}
 		str = ptr;
 	    }
 	    str = rest;
 	}
-	return (level);
+
+	return level;
+}
+
+int	str_to_level (const char *orig)
+{
+	int	i, len;
+
+	len = strlen(orig);
+	for (i = 0; i < NUMBER_OF_LEVELS; i++)
+		if (!my_strnicmp(orig, level_types[i], len))
+			return i;
+
+	return -1;
 }
 
 /*
- * set_lastlog_level: called whenever a "SET LASTLOG_LEVEL" is done.  It
- * parses the settings and sets the lastlog_level variable appropriately.  It
+ * set_lastlog_mask: called whenever a "SET LASTLOG_LEVEL" is done.  It
+ * parses the settings and sets the lastlog_mask variable appropriately.  It
  * also rewrites the LASTLOG_LEVEL variable to make it look nice 
  */
-void	set_lastlog_level (const void *stuff)
+void	set_lastlog_mask (const void *stuff)
 {
 	const char *str = (const char *)stuff;
-	lastlog_level = parse_lastlog_level(str);
-	set_string_var(LASTLOG_LEVEL_VAR, bits_to_lastlog_level(lastlog_level));
-	current_window->lastlog_level = lastlog_level;
+	lastlog_mask = str_to_mask(str);
+	set_string_var(LASTLOG_LEVEL_VAR, mask_to_str(lastlog_mask));
+	current_window->lastlog_mask = lastlog_mask;
 }
 
-void	set_new_server_lastlog_level (const void *stuff)
+void	set_new_server_lastlog_mask (const void *stuff)
 {
 	const char *str = (const char *)stuff;
-	new_server_lastlog_level = parse_lastlog_level(str);
+	new_server_lastlog_mask = str_to_mask(str);
 	set_string_var(NEW_SERVER_LASTLOG_LEVEL_VAR, 
-			bits_to_lastlog_level(new_server_lastlog_level));
+			mask_to_str(new_server_lastlog_mask));
 }
 
 
@@ -257,17 +253,6 @@ void	set_lastlog_size (const void *stuff)
 		window->lastlog_max = size;
 	}
 }
-
-/* set_lastlog_msg_level: sets the message level for recording in the lastlog */
-int 	set_lastlog_msg_level (int level)
-{
-	int	old;
-
-	old = msg_level;
-	msg_level = level;
-	return (old);
-}
-
 
 /*
  * The /LASTLOG command:
@@ -346,7 +331,7 @@ BUILT_IN_COMMAND(lastlog)
 	int		cnt;
 	char *		arg;
 	int		header = 1;
-	int		save_level;
+	Mask		save_mask;
 	int		before = -1;
 	int		after = 0;
 	int		counter = 0;
@@ -357,8 +342,8 @@ BUILT_IN_COMMAND(lastlog)
 
 	message_to(0);
 	cnt = current_window->lastlog_size;
-	save_level = current_window->lastlog_level;
-	current_window->lastlog_level = 0;
+	save_mask = current_window->lastlog_mask;
+	current_window->lastlog_mask.mask = _X(NONE);
 
 	while ((arg = new_next_arg(args, &args)) != NULL)
 	{
@@ -474,17 +459,17 @@ BUILT_IN_COMMAND(lastlog)
 	    else if (!my_strnicmp(arg, "-REVERSE", len))
 		reverse = 1;
 	    else if (!my_strnicmp(arg, "-ALL", len))
-		level_mask = LOG_ALL;
+		level_mask = _X(ALL);
 	    else if (!my_strnicmp(arg, "--ALL", len))
-		level_mask = 0;
+		level_mask = _X(NONE);
 	    else if (!my_strnicmp(arg, "--", 2))
 	    {
 		int	i;
 		for (i = 0; i < NUMBER_OF_LEVELS; i++)
 		{
-		    if (!my_strnicmp(levels[i], arg+2, len-2))
+		    if (!my_strnicmp(level_types[i], arg+2, len-2))
 		    {
-			level_mask &= ~(1 << i);
+			level_mask &= ~(_Y(i));
 			break;
 		    }
 		}
@@ -499,9 +484,9 @@ BUILT_IN_COMMAND(lastlog)
 		int	i;
 		for (i = 0; i < NUMBER_OF_LEVELS; i++)
 		{
-		    if (!my_strnicmp(levels[i], arg+1, len-1))
+		    if (!my_strnicmp(level_types[i], arg+1, len-1))
 		    {
-			level_mask |= (1 << i);
+			level_mask |= _Y(i);
 			break;
 		    }
 		}
@@ -631,7 +616,7 @@ BUILT_IN_COMMAND(lastlog)
 	    start = end;
 	    for (i = 0; start != current_window->lastlog_oldest; )
 	    {
-		if (!level_mask || (level_mask & start->level))
+		if (!level_mask || (level_mask & _Y(start->level)))
 			i++;
 		if (i == number)
 			break;
@@ -697,7 +682,7 @@ BUILT_IN_COMMAND(lastlog)
 	    end = start;
 	    for (i = 0; end != current_window->lastlog_oldest; )
 	    {
-		if (!level_mask || (level_mask & start->level))
+		if (!level_mask || (level_mask & _Y(start->level)))
 			i++;
 		if (i == number)
 			break;
@@ -760,8 +745,7 @@ bail:
 		fclose(outfp);
 	if (reg)
 		regfree(reg);
-	current_window->lastlog_level = save_level;
-	set_lastlog_msg_level(msg_level);
+	current_window->lastlog_mask = save_mask;
 	message_to(-1);
 	return;
 }
@@ -791,11 +775,11 @@ static int	show_lastlog (Lastlog **l, int *skip, int *number, int level_mask, ch
 		(*number)--;	/* Have not yet iterated over max records */
 #endif
 
-	if (level_mask && (((*l)->level & level_mask) == 0))
+	if (level_mask && ((_Y((*l)->level) & level_mask) == 0))
 	{
 		if (x_debug & DEBUG_LASTLOG)
 			yell("Level_mask != level ([%d] [%d])",
-				level_mask, (*l)->level);
+				level_mask, _Y((*l)->level));
 		return 0;			/* Not of proper level */
 	}
 	if (match && !wild_match(match, (*l)->msg))
@@ -843,12 +827,12 @@ void 	add_to_lastlog (Window *window, const char *line)
 	if (!window)
 		window = current_window;
 
-	if (window->lastlog_level & msg_level)
+	if (window->lastlog_mask.mask & _Y(who_level))
 	{
 		new_l = (Lastlog *)new_malloc(sizeof(Lastlog));
 		new_l->older = window->lastlog_newest;
 		new_l->newer = NULL;
-		new_l->level = msg_level;
+		new_l->level = who_level;
 		new_l->msg = malloc_strdup(line);
 		if (who_from)
 			new_l->target = malloc_strdup(who_from);
@@ -867,30 +851,30 @@ void 	add_to_lastlog (Window *window, const char *line)
 	}
 }
 
-int	real_notify_level (void)
+Mask	real_notify_mask (void)
 {
-	return (notify_level);
+	return (notify_mask);
 }
 
-int	real_lastlog_level (void)
+Mask	real_lastlog_mask (void)
 {
-	return (lastlog_level);
+	return (lastlog_mask);
 }
 
-void	set_notify_level (const void *stuff)
+void	set_notify_mask (const void *stuff)
 {
 	const char *str = (const char *)stuff;
-	notify_level = parse_lastlog_level(str);
-	set_string_var(NOTIFY_LEVEL_VAR, bits_to_lastlog_level(notify_level));
-	current_window->notify_level = notify_level;
+	notify_mask = str_to_mask(str);
+	set_string_var(NOTIFY_LEVEL_VAR, mask_to_str(notify_mask));
+	current_window->notify_mask = notify_mask;
 }
 
-void	set_current_window_level (const void *stuff)
+void	set_current_window_mask (const void *stuff)
 {
 	const char *str = (const char *)stuff;
-	current_window_level = parse_lastlog_level(str);
+	current_window_mask = str_to_mask(str);
 	set_string_var(CURRENT_WINDOW_LEVEL_VAR, 
-			bits_to_lastlog_level(current_window_level));
+			mask_to_str(current_window_mask));
 }
 
 #if 0
@@ -952,7 +936,7 @@ char 	*function_line (char *word)
 
 	if (do_level)
 		return malloc_sprintf(NULL, "%s %s", start_pos->msg, 
-					levels[start_pos->level]);
+					level_types[start_pos->level]);
 	else
 		RETURN_STR(start_pos->msg);
 }
@@ -971,13 +955,13 @@ char *function_lastlog (char *word)
 	char *	retval = NULL;
 	Lastlog	*iter;
 	Window *win;
-	int	lastlog_levels;
+	Mask	lastlog_levels;
 	int	line = 1;
 	size_t	rvclue = 0;
 
 	GET_STR_ARG(windesc, word);
 	GET_STR_ARG(pattern, word);
-	lastlog_levels = parse_lastlog_level(word);
+	lastlog_levels = str_to_mask(word);
 
 	/* Get the current window, default to current window */
 	if (!(win = get_window_by_desc(windesc)))
@@ -985,7 +969,7 @@ char *function_lastlog (char *word)
 
 	for (iter = win->lastlog_newest; iter; iter = iter->older, line++)
 	{
-		if (iter->level & lastlog_levels)
+		if (_Y(iter->level) & lastlog_levels.mask)
 			if (wild_match(pattern, iter->msg))
 				malloc_strcat_word_c(&retval, space, ltoa(line), &rvclue);
 	}

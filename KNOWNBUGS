@@ -9,9 +9,30 @@ KNOWN ERRATA (eg, bugs, or unresolved requests):
 
 THE CHANGELOG SINCE THE LAST RELEASE:
 -------------------------------------
-* Nix auto-append-of-$* feature (args_flag to expand_alias/parse_inline)
+* Nix auto-append-of-$* feature (args_flag to expand_alias/parse_inline) HUZZAH!
 * Fix provided scripts to add $* when necessary.
 * Fix up Makefile, configure, et al, to use epic5/ directories.
 * Remove /set beep_on_msg, a half-broken feature which can be scripted.
 * Nix /set beep_when_away, a 1-line scriptable feature.
 * Add new noise level %, (/ON %TYPE); like ^ but doesn't turn off display
+* Use message_from() for setting all target/levels
+* Nix set_lastlog_message_level(), have lastlog use who_level/who_from now
+* Make message_from() use a queue to store old values
+* Make everybody pop off their message_from() under pain of panic
+* This ensures every output context can be safely interrupted!  HUZZAH!
+* Unify the flood, ignore, and lastlog levels.
+* *_FLOOD -> LEVEL_*, LOG_* -> LEVEL_*, IGNORE_* -> LEVEL_*
+* Add KICK, QUIT, and MODE levels
+* Nix #define DEFAULT_BEEP_ON_MSG and #define DEFAULT_BEEP_WHEN_AWAY
+* Differentiate between a "mask" (bitmask) and a "level" (integer)
+* Don't call them "lastlog levels" any more, they're just "levels"
+* Create levels.h, which contain the definitions for all of the level stuff
+* Create macro, _X(x) which converts a level name to a mask
+* Create macro, _Y(x) which converts a level integer to a mask
+* Nix beep_on_level global variable
+* Create "Mask" struct which contains an integer to hide a "mask" behind.
+* This prevents me from comparing a "mask" to a "level" by mistake.
+* Convert many functions and variables to the "Mask" type
+* Rename a bunch of functions and variables that use "mask" and not "level"
+* Make KICKs, PARTs, QUITs, MODEs, et al use their new special levels!
+* All levels now mean everything in every context!  HUZZAH! 

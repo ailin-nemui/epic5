@@ -1,4 +1,4 @@
-/* $EPIC: functions.c,v 1.150 2003/12/14 20:04:09 jnelson Exp $ */
+/* $EPIC: functions.c,v 1.151 2003/12/16 23:25:45 jnelson Exp $ */
 /*
  * functions.c -- Built-in functions for ircII
  *
@@ -5326,7 +5326,7 @@ BUILT_IN_FUNCTION(function_winlevel, input)
 	if (!win)
 		RETURN_EMPTY;
 
-	retval = bits_to_lastlog_level(win->window_level);
+	retval = mask_to_str(win->window_mask);
 	RETURN_STR(retval);
 }
 
@@ -6856,25 +6856,25 @@ BUILT_IN_FUNCTION(function_dccctl, input)
 BUILT_IN_FUNCTION(function_outputinfo, input)
 {
 	if (who_from)
-		return malloc_sprintf(NULL, "%s %s", bits_to_lastlog_level(who_level), 
+		return malloc_sprintf(NULL, "%s %s", level_types[who_level], 
 						who_from);
 	else
-		return malloc_strdup(bits_to_lastlog_level(who_level));
+		return malloc_strdup(level_types[who_level]);
 }
 
 BUILT_IN_FUNCTION(function_levelwindow, input)
 {
-	int	levels;
+	Mask	mask;
 	Window	*w = NULL;
 	int	server;
 
 	GET_INT_ARG(server, input);
-	levels = parse_lastlog_level(input);
+	mask = str_to_mask(input);
 	while (traverse_all_windows(&w))
 	{
-		if ((w->window_level & LOG_DCC) && (levels & LOG_DCC))
+		if ((w->window_mask.mask & _X(DCC)) && (mask.mask & _X(DCC)))
 			RETURN_INT(w->refnum);
-		if ((w->server == from_server) && (w->window_level & levels))
+		if ((w->server == from_server) && (w->window_mask.mask & mask.mask))
 			RETURN_INT(w->refnum);
 	}
 	RETURN_INT(-1);

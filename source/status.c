@@ -1,4 +1,4 @@
-/* $EPIC: status.c,v 1.36 2003/12/14 20:04:10 jnelson Exp $ */
+/* $EPIC: status.c,v 1.37 2003/12/16 23:25:45 jnelson Exp $ */
 /*
  * status.c: handles the status line updating, etc for IRCII 
  *
@@ -1416,8 +1416,8 @@ STATUS_FUNCTION(status_null_function)
  */
 STATUS_FUNCTION(status_dcc)
 {
-	if ((current_window_level & LOG_DCC && IS_CURRENT_WINDOW) ||
-			(window->window_level & LOG_DCC))
+	if ((current_window_mask.mask & _X(DCC) && IS_CURRENT_WINDOW) ||
+			(window->window_mask.mask & _X(DCC)))
 		return DCC_get_current_transfer();
 
 	return empty_string;
