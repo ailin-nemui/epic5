@@ -1,4 +1,4 @@
-/* $EPIC: numbers.c,v 1.50 2003/07/04 17:27:55 jnelson Exp $ */
+/* $EPIC: numbers.c,v 1.51 2003/09/23 21:49:47 jnelson Exp $ */
 /*
  * numbers.c: handles all those strange numeric response dished out by that
  * wacky, nutty program we call ircd 
@@ -1520,7 +1520,7 @@ END:
 
 	current_numeric = old_current_numeric;
 	set_lastlog_msg_level(lastlog_level);
-	message_from(NULL, LOG_CURRENT);
+	message_from(NULL, LOG_CRAP);
 }
 
 

@@ -1,4 +1,4 @@
-/* $EPIC: screen.c,v 1.54 2003/07/22 19:04:36 jnelson Exp $ */
+/* $EPIC: screen.c,v 1.55 2003/09/23 21:49:47 jnelson Exp $ */
 /*
  * screen.c
  *
@@ -2082,6 +2082,7 @@ int 	output_with_count (const unsigned char *str1, int clreol, int output)
 void 	add_to_screen (const unsigned char *buffer)
 {
 	Window *tmp = NULL;
+	int	winref;
 
 	/*
 	 * Just paranoia.
@@ -2122,10 +2123,11 @@ void 	add_to_screen (const unsigned char *buffer)
 	 * is routed through one of the LOG_* levels, which is handled
 	 * below.
 	 */
-	else 
-	if (who_level == LOG_CURRENT && current_window->server == from_server)
+	else if (who_level == LOG_CURRENT && 
+	        ((winref = get_winref_by_servref(from_server)) > -1) && 
+                (tmp = get_window_by_refnum(winref)))
 	{
-		add_to_window(current_window, buffer);
+		add_to_window(tmp, buffer);
 		return;
 	}
 
@@ -2210,10 +2212,11 @@ void 	add_to_screen (const unsigned char *buffer)
 	/*
 	 * Check to see if this level should go to current window
 	 */
-	if ((current_window_level & who_level) && 
-		current_window->server == from_server)
+	if ((current_window_level & who_level) &&
+	    ((winref = get_winref_by_servref(from_server)) > -1) && 
+            (tmp = get_window_by_refnum(winref)))
 	{
-		add_to_window(current_window, buffer);
+		add_to_window(tmp, buffer);
 		return;
 	}
 

@@ -186,3 +186,13 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Return empty string if you do $aliasctl(pmatch <bogus> <whatever>)
 * Update some copyright notices.
 * Fix panic from $push(:foo )
+* Revert all uses of LOG_CURRENT to LOG_CRAP
+* Change all uses of message_to(0) to message_to(-1)
+* Fix show_help() to not change to_window, it doesn't need to care about that.
+* Fix help_put_it() to not change message_from, doesn't need to care about it.
+* Fix /lastlog to use message_to(0) to send all output to current window.
+* Don't make output of /log go to current window -- no point to that.
+* Teach add_to_screen() to honor from_server's current window for LOG_CURRENT
+* And for /set current_window_level as well
+* Fix message_from() not to save/restore lastlog level, doesn't need to care.
+* All of this pretty much nukes LOG_CURRENT except for /window, HUZZAH!

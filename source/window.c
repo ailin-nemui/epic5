@@ -1,4 +1,4 @@
-/* $EPIC: window.c,v 1.69 2003/08/11 22:09:20 jnelson Exp $ */
+/* $EPIC: window.c,v 1.70 2003/09/23 21:49:47 jnelson Exp $ */
 /*
  * window.c: Handles the organzation of the logical viewports (``windows'')
  * for irc.  This includes keeping track of what windows are open, where they
@@ -2138,7 +2138,7 @@ static void 	revamp_window_levels (Window *window)
  */
 void 	message_to (unsigned refnum)
 {
-	to_window = (refnum) ? get_window_by_refnum(refnum) : NULL;
+	to_window = (refnum != -1) ? get_window_by_refnum(refnum) : NULL;
 }
 
 /*
@@ -2169,24 +2169,12 @@ void 	restore_message_from (const char *saved_who_from, int saved_who_level)
  */
 void 	message_from (const char *who, int level)
 {
-	static	int	saved_lastlog_level;
-
 #ifdef NO_CHEATING
 	malloc_strcpy(&who_from, who);
 #else
 	who_from = who;
 #endif
-
-	/*
-	 * Implicitly set the lastlog level, as well.
-	 * This uncomplicates a lot of stuff.  Why do i know this
-	 * is going to backfire on me?
-	 */
-	if (level == LOG_CURRENT)
-		set_lastlog_msg_level(saved_lastlog_level);
-	else
-		saved_lastlog_level = set_lastlog_msg_level(level);
-
+	set_lastlog_msg_level(level);
 	who_level = level;
 }
 
@@ -4612,7 +4600,7 @@ BUILT_IN_COMMAND(windowcmd)
 		window_describe(current_window, NULL);
 
 	permit_status_update(old_status_update);
-	message_from((char *) 0, LOG_CRAP);
+	message_from(NULL, LOG_CRAP);
 	window_check_channels();
 	update_all_windows();
 }

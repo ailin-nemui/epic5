@@ -1,4 +1,4 @@
-/* $EPIC: dcc.c,v 1.72 2003/09/12 01:42:47 jnelson Exp $ */
+/* $EPIC: dcc.c,v 1.73 2003/09/23 21:49:47 jnelson Exp $ */
 /*
  * dcc.c: Things dealing client to client connections. 
  *
@@ -375,7 +375,7 @@ void 	close_all_dcc (void)
 		message_from(NULL, LOG_DCC);
 		say("Waiting for DCC REJECTs to be sent");
 		sleep(1);
-		message_from(NULL, LOG_CURRENT);
+		message_from(NULL, LOG_CRAP);
 	}
 }
 
@@ -648,7 +648,7 @@ int	dcc_chat_active (const char *user)
 
 	message_from(NULL, LOG_DCC);
 	retval = dcc_searchlist(DCC_CHAT, user, NULL, NULL, 1) ? 1 : 0;
-	message_from(NULL, LOG_CURRENT);
+	message_from(NULL, LOG_CRAP);
 	return retval;
 }
 
@@ -1102,7 +1102,7 @@ void	dcc_chat_transmit (char *user, char *text, const char *orig, const char *ty
     while (0);
 
 	dcc_garbage_collect();
-	message_from(NULL, LOG_CURRENT);
+	message_from(NULL, LOG_CRAP);
 }
 
 
@@ -1136,7 +1136,7 @@ BUILT_IN_COMMAND(dcc_cmd)
 			lock_dcc(NULL);
 			dcc_commands[i].function(args);
 			unlock_dcc(NULL);
-			message_from(NULL, LOG_CURRENT);
+			message_from(NULL, LOG_CRAP);
 
 			dcc_garbage_collect();
 			return;
@@ -1145,7 +1145,7 @@ BUILT_IN_COMMAND(dcc_cmd)
 
 	message_from(NULL, LOG_DCC);
 	say("Unknown DCC command: %s", cmd);
-	message_from(NULL, LOG_CURRENT);
+	message_from(NULL, LOG_CRAP);
 }
 
 
@@ -1885,7 +1885,7 @@ char	*dcc_raw_listen (int family, unsigned short port)
 
 	unlock_dcc(NULL);
 	dcc_garbage_collect();
-	message_from(NULL, LOG_CURRENT);
+	message_from(NULL, LOG_CRAP);
 	return malloc_strdup(PortName);
 }
 
@@ -1944,7 +1944,7 @@ char	*dcc_raw_connect (const char *host, const char *port, int family)
     while (0);
 
 	unlock_dcc(NULL);
-	message_from(NULL, LOG_CURRENT);
+	message_from(NULL, LOG_CRAP);
 	dcc_garbage_collect();
 	return malloc_strdup(retval);
 }
@@ -2326,7 +2326,7 @@ display_it:
 
 	unlock_dcc(NULL);
 	dcc_garbage_collect();
-	message_from(NULL, LOG_CURRENT);
+	message_from(NULL, LOG_CRAP);
 	return;
 }
 
@@ -2432,7 +2432,7 @@ void	dcc_check (fd_set *Readables, fd_set *Writables)
 		break;
 	}
 
-	message_from(NULL, LOG_CURRENT);
+	message_from(NULL, LOG_CRAP);
 	unlock_dcc(NULL);
 	dcc_garbage_collect();
 }
@@ -3128,7 +3128,7 @@ void 	dcc_reject (const char *from, char *type, char *args)
 	}
 
 	dcc_garbage_collect();
-	message_from(NULL, LOG_CURRENT);
+	message_from(NULL, LOG_CRAP);
 }
 
 

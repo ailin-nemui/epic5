@@ -1,4 +1,4 @@
-/* $EPIC: notice.c,v 1.24 2003/09/12 18:58:34 crazyed Exp $ */
+/* $EPIC: notice.c,v 1.25 2003/09/23 21:49:47 jnelson Exp $ */
 /*
  * notice.c: special stuff for parsing NOTICEs
  *
@@ -305,7 +305,7 @@ void 	p_notice (const char *from, const char *comm, const char **ArgList)
 			do_return = 0;
 
 		set_lastlog_msg_level(level);
-		message_from(NULL, LOG_CURRENT);
+		message_from(NULL, LOG_CRAP);
 
 		if (do_return) {
 			set_server_doing_notice(from_server, 0);
@@ -345,7 +345,7 @@ void 	p_notice (const char *from, const char *comm, const char **ArgList)
 
 	/* Clean up and go home. */
 	set_lastlog_msg_level(level);
-	message_from(NULL, LOG_CURRENT);
+	message_from(NULL, LOG_CRAP);
 	set_server_doing_notice(from_server, 0);
 
 	/* Alas, this is not protected by protocol enforcement. :( */

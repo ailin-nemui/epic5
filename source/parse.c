@@ -1,4 +1,4 @@
-/* $EPIC: parse.c,v 1.44 2003/09/12 18:58:34 crazyed Exp $ */
+/* $EPIC: parse.c,v 1.45 2003/09/23 21:49:47 jnelson Exp $ */
 /*
  * parse.c: handles messages from the server.   Believe it or not.  I
  * certainly wouldn't if I were you. 
@@ -224,7 +224,7 @@ static void	p_topic (const char *from, const char *comm, const char **ArgList)
 	if (do_hook(TOPIC_LIST, "%s %s %s", from, channel, new_topic))
 		say("%s has changed the topic on channel %s to %s",
 			from, check_channel_type(channel), new_topic);
-	message_from(NULL, LOG_CURRENT);
+	message_from(NULL, LOG_CRAP);
 }
 
 static void	p_wallops (const char *from, const char *comm, const char **ArgList)
@@ -274,7 +274,7 @@ static void	p_wallops (const char *from, const char *comm, const char **ArgList)
 		beep_em(1);
 
 	set_lastlog_msg_level(level);
-	message_from(NULL, LOG_CURRENT);
+	message_from(NULL, LOG_CRAP);
 }
 
 static void	p_privmsg (const char *from, const char *comm, const char **ArgList)
@@ -381,7 +381,7 @@ static void	p_privmsg (const char *from, const char *comm, const char **ArgList)
 			do_return = 0;
 
 		set_lastlog_msg_level(level);
-		message_from(NULL, LOG_CURRENT);
+		message_from(NULL, LOG_CRAP);
 
 		if (do_return) {
 			set_server_doing_privmsg(from_server, 0);
@@ -441,7 +441,7 @@ static void	p_privmsg (const char *from, const char *comm, const char **ArgList)
 
 	/* Clean up and go home. */
 	set_lastlog_msg_level(level);
-	message_from(NULL, LOG_CURRENT);
+	message_from(NULL, LOG_CRAP);
 	set_server_doing_privmsg(from_server, 0);
 
 	/* Alas, this is not protected by protocol enforcement. :( */
@@ -483,7 +483,7 @@ static void	p_quit (const char *from, const char *comm, const char **ArgList)
 		if (!do_hook(CHANNEL_SIGNOFF_LIST, "%s %s %s", chan, from, 
 								quit_message))
 			one_prints = 0;
-		message_from(NULL, LOG_CURRENT);
+		message_from(NULL, LOG_CRAP);
 	}
 
 	if (one_prints)
@@ -491,7 +491,7 @@ static void	p_quit (const char *from, const char *comm, const char **ArgList)
 		message_from(what_channel(from), LOG_CRAP);
 		if (do_hook(SIGNOFF_LIST, "%s %s", from, quit_message))
 			say("Signoff: %s (%s)", from, quit_message);
-		message_from(NULL, LOG_CURRENT);
+		message_from(NULL, LOG_CRAP);
 	}
 
 	/*
@@ -672,7 +672,7 @@ static void	p_channel (const char *from, const char *comm, const char **ArgList)
 		say("%s%s%s (%s) has joined channel %s%s%s%s", 
 			high, from, high, FromUserHost, 
 			high, check_channel_type(channel), high, extra);
-	message_from(NULL, LOG_CURRENT);
+	message_from(NULL, LOG_CRAP);
 
 	/*
 	 * The placement of this is purely ergonomic.  The user might
@@ -721,7 +721,7 @@ static void 	p_invite (const char *from, const char *comm, const char **ArgList)
 	if (do_hook(INVITE_LIST, "%s %s %s", from, invited_to, FromUserHost))
 		say("%s%s (%s)%s invites you to channel %s", high,
 			from, FromUserHost, high, invited_to);
-	message_from(NULL, LOG_CURRENT);
+	message_from(NULL, LOG_CRAP);
 }
 
 /* 
@@ -956,7 +956,7 @@ static void	p_mode (const char *from, const char *comm, const char **ArgList)
 		if (do_hook(MODE_LIST, "%s %s %s", from, target, changes))
 		    say("Mode change \"%s\" %s %s by %s",
 					changes, type, target, from);
-		message_from(NULL, LOG_CURRENT);
+		message_from(NULL, LOG_CRAP);
 	}
 
 	if (is_channel(target))
@@ -1014,7 +1014,7 @@ static void strip_modes (const char *from, const char *channel, const char *line
 				from,channel,mag,c);
 	    }
 
-	    message_from(NULL, LOG_CURRENT);
+	    message_from(NULL, LOG_CRAP);
 	}
 
 	else /* User mode */
@@ -1051,7 +1051,7 @@ static void strip_modes (const char *from, const char *channel, const char *line
 		}
 	    }
 
-	    message_from(NULL, LOG_CURRENT);
+	    message_from(NULL, LOG_CRAP);
 	}
 
 }
@@ -1125,7 +1125,7 @@ static void	p_kick (const char *from, const char *comm, const char **ArgList)
 					check_channel_type(channel), from, 
 					comment);
 
-		message_from(NULL, LOG_CURRENT);
+		message_from(NULL, LOG_CRAP);
 		to_window = old_tw;
 		current_window = old_cw;
 		return;
@@ -1142,7 +1142,7 @@ static void	p_kick (const char *from, const char *comm, const char **ArgList)
 			say("%s has been kicked off channel %s by %s (%s)", 
 				victim, check_channel_type(channel), 
 				from, comment);
-		message_from(NULL, LOG_CURRENT);
+		message_from(NULL, LOG_CRAP);
 	    }
 	}
 
@@ -1185,7 +1185,7 @@ static void	p_part (const char *from, const char *comm, const char **ArgList)
 			    say("%s has left channel %s", 
 				from, check_channel_type(channel));
 		}
-		message_from(NULL, LOG_CURRENT);
+		message_from(NULL, LOG_CRAP);
 	}
 
 	if (is_me(from_server, from))

@@ -1,4 +1,4 @@
-/* $EPIC: help.c,v 1.9 2003/07/09 05:45:22 jnelson Exp $ */
+/* $EPIC: help.c,v 1.10 2003/09/23 21:49:47 jnelson Exp $ */
 /*
  * help.c: handles the help stuff for irc 
  *
@@ -94,21 +94,25 @@ static	int	use_help_window = 0;
  * thing, depending on the value of HELP_PAGER_VAR.  If it gets to the end,
  * (in either case it will eventally), it closes the file, and returns 0
  * to indicate this.
+ *
+ * -- This doesn't need to fiddle with 'to_window' -- help_put_it does
+ *    all that for us. (hop, 09/23/2003)
  */ 
 static	int	show_help (Window *window, char *name)
 {
-	Window	*old_to_window;
 	int	rows = -1;
 	char	line[256];
 
 	if (!help_fp)
 		return 0;
 
-	old_to_window = to_window;
-	to_window = window ? window : current_window;
-
 	if (get_int_var(HELP_PAGER_VAR))
-		rows = to_window->display_size;
+	{
+	    if (help_window)
+		rows = help_window->display_size;
+	    else
+		rows = current_window->display_size;
+	}
 
 	while (rows)
 	{
@@ -116,7 +120,6 @@ static	int	show_help (Window *window, char *name)
 		{
 			fclose(help_fp);
 			help_fp = NULL;
-			to_window = old_to_window;
 			return 0;
 		}
 
@@ -133,7 +136,6 @@ static	int	show_help (Window *window, char *name)
 		rows--;
 	}
 
-	to_window = old_to_window;
 	return (1);
 }
 
@@ -426,7 +428,6 @@ static	void	help_me (char *topics, char *args)
 	while (this_arg)
 	{
 		entries = 0;
-		message_from((char *) 0, LOG_CURRENT);
 
 		if (!*this_arg)
 			help_topic(path, NULL);
@@ -536,6 +537,7 @@ switch (entries)
 			new_free(&help_paused_path);
 			new_free(&help_paused_name);
 		}
+		message_from(NULL, LOG_CRAP);
 		return;
 	}
 	case 0:
@@ -660,6 +662,8 @@ switch (entries)
 	 */
 	if (!*help_topic_list && finished_help_paging)
 		set_help_screen((Screen *) 0);
+
+	message_from(NULL, LOG_CRAP);
 }
 
 /*
@@ -769,20 +773,19 @@ static	void	help_put_it	(const char *topic, const char *format, ...)
 
 		if (do_hook(HELP_LIST, "%s %s", topic, putbuf))
 		{
-			int old_level = who_level;
 			Window *old_to_window = to_window;
 
 			/*
-			 * LOG_HELP is a completely bogus mode.  We use
-			 * it only to make sure that the current level is
-			 * not LOG_CURRENT, so that the to_window will stick.
+			 * 'to_window' is of higher priority than who_level
+			 * so we don't have to mangle who_level to send the
+			 * output to the help window.
 			 */
-			who_level = LOG_HELP;
 			if (help_window)
 				to_window = help_window;
+			else
+				to_window = current_window;
 			add_to_screen(putbuf);
 			to_window = old_to_window;
-			who_level = old_level;
 		}
 	}
 }

@@ -1,4 +1,4 @@
-/* $EPIC: exec.c,v 1.21 2003/07/09 21:10:25 jnelson Exp $ */
+/* $EPIC: exec.c,v 1.22 2003/09/23 21:49:47 jnelson Exp $ */
 /*
  * exec.c: handles exec'd process for IRCII 
  *
@@ -453,7 +453,7 @@ say("Output from process %d (%s) now going to you", i, proc->name);
 		if (stderrpc)
 			malloc_strcpy(&proc->stderrpc, stderrpc);
 
-		message_to(0);
+		message_to(-1);
 	}
 
 	/*
@@ -814,7 +814,7 @@ this_sucks:
 						put_it("%s", exec_buffer);
 			}
 
-			message_to(0);
+			message_to(-1);
 			from_server = ofs;
 		}
 	}
@@ -944,7 +944,7 @@ int 		text_to_process (int proc_index, const char *text, int show)
 	message_to(proc->refnum);
 	if (show)
 		put_it("%s%s", get_prompt_by_refnum(proc->refnum), text);
-	message_to(0);
+	message_to(-1);
 
 	size = strlen(text) + 2;
 	my_buffer = alloca(size);

@@ -1,4 +1,4 @@
-/* $EPIC: logfiles.c,v 1.20 2003/07/10 13:08:57 jnelson Exp $ */
+/* $EPIC: logfiles.c,v 1.21 2003/09/23 21:49:47 jnelson Exp $ */
 /*
  * logfiles.c - General purpose log files
  *
@@ -645,8 +645,6 @@ BUILT_IN_COMMAND(logcmd)
         char    *arg;
         int     nargs = 0;
         Logfile	*log = NULL;
-
-        message_from(NULL, LOG_CURRENT);
 
         while ((arg = next_arg(args, &args)))
         {
