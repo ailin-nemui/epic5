@@ -1,4 +1,4 @@
-/* $EPIC: window.c,v 1.106 2004/03/17 03:51:53 jnelson Exp $ */
+/* $EPIC: window.c,v 1.107 2004/03/17 15:28:34 jnelson Exp $ */
 /*
  * window.c: Handles the organzation of the logical viewports (``windows'')
  * for irc.  This includes keeping track of what windows are open, where they
@@ -2956,7 +2956,9 @@ else
 				window->scrolling_distance_from_display_ip,
 				window->holding_distance_from_display_ip,
 				window->scrollback_distance_from_display_ip);
-	say("\tCO, LI are [%d %d]", current_term->TI_cols, current_term->TI_lines);
+	say("\tCO, LI are [%d %d]", 
+				current_term->TI_cols, current_term->TI_lines);
+
 	chan = get_echannel_by_refnum(window->refnum);
 	say("\tCurrent channel: %s", chan ? chan : "<None>");
 
@@ -2968,34 +2970,9 @@ else
 			say("\t  %s", tmp->nick);
 	}
 
-
 	say("\tQuery User: %s", 
 				window->query_nick ? 
 				window->query_nick : "<None>");
-	say("\tPrompt: %s", 
-				window->prompt ? 
-				window->prompt : "<None>");
-	say("\tSecond status line is %s", 
-				onoff[window->status.double_status]);
-	say("\tLogging is %s", 
-				onoff[window->log]);
-
-if (window->logfile)
-	say("\tLogfile is %s", window->logfile);
-else
-	say("\tNo logfile given");
-
-	say("\tNotification is %s", 
-				onoff[window->miscflags & WINDOW_NOTIFY]);
-	say("\tHold mode is %s", 
-				onoff[window->holding_top_of_display ? 1 : 0]);
-	say("\tWindow Level is %s", 
-				mask_to_str(&window->window_mask));
-	say("\tLastlog level is %s", 
-				mask_to_str(&window->lastlog_mask));
-	say("\tNotify level is %s", 
-				mask_to_str(&window->notify_mask));
-
 	if (window->nicks)
 	{
 		WNickList *tmp;
@@ -3003,6 +2980,51 @@ else
 		for (tmp = window->nicks; tmp; tmp = tmp->next)
 			say("\t  %s", tmp->nick);
 	}
+
+	say("\tPrompt: %s", 
+				window->prompt ? 
+				window->prompt : "<None>");
+	say("\tSecond status line is %s", 
+				onoff[window->status.double_status]);
+
+	say("\tLogging is %s", 
+				onoff[window->log]);
+if (window->logfile)
+	say("\tLogfile is %s", window->logfile);
+else
+	say("\tNo logfile given");
+
+	say("\tNotification is %s", 
+				onoff[window->miscflags & WINDOW_NOTIFY]);
+	say("\tNotify level is %s", 
+				mask_to_str(&window->notify_mask));
+
+	say("\tWindow Level is %s", 
+				mask_to_str(&window->window_mask));
+	say("\tLastlog level is %s", 
+				mask_to_str(&window->lastlog_mask));
+	say("\tLastlog current size is %d", 
+				window->lastlog_size);
+	say("\tLastlog maximum size is %d", 
+				window->lastlog_max);
+
+	say("\tHold mode is %s", 
+				onoff[window->holding_top_of_display ? 1 : 0]);
+	say("\tHold Slider perecentage is %d",
+				window->hold_slider);
+	say("\tUpdate %H on status bar every %d lines",
+				window->hold_interval);
+
+	say("\tFixed mode is %s", 
+				onoff[window->absolute_size ? 1 : 0]);
+	say("\tSkipped mode is %s", 
+				onoff[window->skip ? 1 : 0]);
+	say("\tSwappable mode is %s", 
+				onoff[window->swappable ? 1 : 0]);
+	say("\tBeep always mode is %s",
+				onoff[window->beep_always ? 1 : 0]);
+	say("\tAdjust Scrollback on Resize mode is %s",
+				onoff[window->scrolladj ? 1 : 0]);
 
 	return window;
 }
