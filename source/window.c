@@ -1,4 +1,4 @@
-/* $EPIC: window.c,v 1.127 2004/09/09 22:11:08 jnelson Exp $ */
+/* $EPIC: window.c,v 1.128 2004/10/13 23:25:55 jnelson Exp $ */
 /*
  * window.c: Handles the organzation of the logical viewports (``windows'')
  * for irc.  This includes keeping track of what windows are open, where they
@@ -1909,7 +1909,8 @@ const char *	get_equery_by_refnum (int refnum)
 	WNickList *nick;
 	Window *win;
 
-	win = get_window_by_refnum(refnum);
+	if ((win = get_window_by_refnum(refnum)) == NULL)
+		return NULL;
 	for (nick = win->nicks; nick; nick = nick->next)
 	{
 		if (nick->counter == win->query_counter)

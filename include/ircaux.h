@@ -7,7 +7,7 @@
  *
  * See the COPYRIGHT file, or do a HELP IRCII COPYRIGHT 
  *
- * @(#)$Id: ircaux.h,v 1.70 2004/10/04 23:56:20 jnelson Exp $
+ * @(#)$Id: ircaux.h,v 1.71 2004/10/13 23:25:54 jnelson Exp $
  */
 
 #ifndef _IRCAUX_H_
@@ -193,6 +193,9 @@ extern	unsigned char isspace_table[256];
 #define my_isspace(x) isspace_table[(unsigned)(unsigned char)(x)]
 #define my_isdigit(x) \
 	(isdigit(*x) || ((*x == '-' || *x == '+') && isdigit(x[1])))
+
+
+int vmy_strnicmp(int, char *, ...);
 
 /* Used for the inbound mangling stuff */
 #define MANGLE_ESCAPES		1 << 0

@@ -1,4 +1,4 @@
-/* $EPIC: hook.c,v 1.43 2004/08/24 23:27:24 jnelson Exp $ */
+/* $EPIC: hook.c,v 1.44 2004/10/13 23:25:55 jnelson Exp $ */
 /*
  * hook.c: Does those naughty hook functions. 
  *
@@ -44,6 +44,7 @@
 #include "if.h"
 #include "stack.h"
 #include "reg.h"
+#include "functions.h"
 
 /*
  * The various ON levels: SILENT means the DISPLAY will be OFF and it will
@@ -60,40 +61,39 @@ struct NoiseInfo {
 	int	suppress;	/*  0 = don't suppress default action
 				 *  1 = suppress default action
 				 * -1 = Let on hook decide */
+
+	int value;
+	char identifier;
+	int custom;
 };
 
-#define UNKNOWN 0
-#define SILENT 	1
-#define QUIET 	2
-#define NORMAL 	3
-#define NOISY 	4
-#define SYSTEM  5
-#define NOISE_LEVELS 6
-
-struct NoiseInfo noise_info[NOISE_LEVELS] = {
-	{ "UNKNOWN", 0, 0, -1 },
-	{ "SILENT",  0, 0,  1 },
-	{ "QUIET",   0, 0,  0 },
-	{ "NORMAL",  0, 1,  0 },
-	{ "NOISY",   1, 1,  0 },
-	{ "SYSTEM",  1, 0,  1 },
+struct NoiseInfo noise_info_templates[] = {
+	{ "UNKNOWN", 0, 0, -1, 0, '?', 0 },
+	{ "SILENT",  0, 0,  1, 1, '^', 0 },
+	{ "QUIET",   0, 0,  0, 2, '-', 0 },
+	{ "NORMAL",  0, 1,  0, 3, 0,   0 },
+	{ "NOISY",   1, 1,  0, 4, '+', 0 },
+	{ "SYSTEM",  1, 0,  1, 5, '%', 0 },
+	{ NULL, 	 0, 0,  0, 0,   0, 0 }
 };
-
-
 
 #define HF_NORECURSE	0x0001
 
 /* Hook: The structure of the entries of the hook functions lists */
 typedef struct	hook_stru
 {
-struct	hook_stru *next;
+	struct	hook_stru *next;
 
 	char	*nick;			/* /on type NICK stuff */
 	char	*stuff;			/* /on type nick STUFF */
+	int 	type;			/* what kind of hook this is */
+	
+	int userial;		/* Unique serial for this hook */
 
 	int	not;			/* /on type ^nick stuff */
 	int	noisy;			/* /on [^-+]type nick stuff */
 
+	int skip;			/* hook will be skipped, like it doesn't exist */
 	int	sernum;			/* /on #type NUM nick stuff */
 					/* Default sernum is 0. */
 
@@ -103,6 +103,31 @@ struct	hook_stru *next;
 	char	*filename;		/* Where it was loaded */
 }	Hook;
 
+/* 
+ * Current executing hook, yay! 
+ * Silly name, but that can be fixed, can't it? :P
+ */
+struct Current_hook
+{
+	/* Which hook we're "under", if we are under a hook */
+	struct Current_hook *under;
+	
+	/* Hook's userial */
+	int userial;
+
+	/* If set to 1, the chain for the current hook should halt */
+	int halt;
+
+	/* The hook's retval */
+	int retval;
+
+	/* The buffer (i.e. the arguments) of the hook */
+	char *buffer;
+
+	/* Set to 1 if buffer has been changed */
+	int buffer_changed;
+
+};
 
 /* A list of all the hook functions available */
 typedef struct Hookables
@@ -209,6 +234,20 @@ Hookables hook_function_templates[] =
 static Hookables *hook_functions = NULL;
 static int	 hook_functions_initialized = 0;
 
+static Hook **hooklist = NULL;
+static int hooklist_size = 0;
+static int	last_created_hook = -1;
+static struct Current_hook *current_hook = NULL;
+/*
+ * If deny_all_hooks is set to 1, no action is taken for any hook.
+ */
+int deny_all_hooks = 0;
+
+static struct NoiseInfo **noise_info = NULL;
+static int noise_level_num = 0;
+static int default_noise;
+
+
 static void 	    add_to_list 	(Hook **list, Hook *item);
 static Hook *	    remove_from_list 	(Hook **list, char *item, int sernum);
 
@@ -240,6 +279,34 @@ static void	initialize_hook_functions (void)
 		hook_functions[i].flags = hook_function_templates[b].flags;
 	}
 
+	if (hooklist == NULL)
+	{
+		hooklist = new_malloc(sizeof(Hook *));
+		hooklist[0] = NULL;
+	}
+
+	if (noise_info == NULL)
+	{
+		for (b = 0; noise_info_templates[b].name != NULL; b++)
+		{
+			noise_level_num++;
+			if (noise_level_num == 1)
+				noise_info = new_malloc(sizeof(struct NoiseInfo *));
+			else
+				RESIZE(noise_info, struct NoiseInfo *, noise_level_num);
+			
+			noise_info[b] = new_malloc(sizeof(struct NoiseInfo));
+			noise_info[b]->name = noise_info_templates[b].name;
+			noise_info[b]->display = noise_info_templates[b].display;
+			noise_info[b]->alert = noise_info_templates[b].alert;
+			noise_info[b]->suppress = noise_info_templates[b].suppress;
+			noise_info[b]->value = noise_info_templates[b].value;
+			noise_info[b]->identifier = noise_info_templates[b].identifier;
+			noise_info[b]->custom = 0;
+			if (!strcmp(noise_info[b]->name, "NORMAL"))
+				default_noise = b;
+		}
+	}
 	hook_functions_initialized = 1;
 }
 
@@ -280,11 +347,67 @@ static char *	fill_it_out (char *str, int params)
 	return malloc_strdup(buffer);
 }
 
+/*
+ * 	Add a hook to the hooklist
+ *	Returns -1 on error, or size of list if successful.
+ */
+int inc_hooklist(int size)
+{
+	int newsize, n;
+	if (size < 1)
+		return -1;
+	newsize = hooklist_size + size;
+	if (hooklist_size == 0)
+		hooklist = new_malloc(sizeof(Hook) * newsize);
+	else
+		RESIZE(hooklist, Hook, newsize);
+	for (n = hooklist_size; n < newsize; n++)
+		hooklist[n] = NULL;
+	hooklist_size = newsize;
+	return hooklist_size;
+}
+
+/*
+ * Removes n NULL-pointers from the end of hooklist.
+ * Returns -1 on error, and size of list if successful
+ */
+
+int dec_hooklist(int n)
+{
+	int size, newsize;
+	if (n < 1)
+	{
+		size = hooklist_size -1;
+		while (hooklist[size] == NULL)
+			size--;
+		n = hooklist_size - size - 1;
+	}
+	size = hooklist_size;
+	newsize = size - n;
+	for (n = newsize; n < hooklist_size; n++)
+		if (hooklist[n] != NULL)
+			return -1;
+	RESIZE(hooklist, Hook, newsize);
+	hooklist_size = newsize;
+	return hooklist_size;
+}
+
+/*
+ * Will return the next empty slot in the hooklist
+ */
+int next_empty_hookslot()
+{
+	int n;
+	for (n = 0; n < hooklist_size; n++)
+		if (hooklist[n] == NULL)
+			break;
+	return n;
+}
 
 /*
  * find_hook: returns the numerical value for a specified hook name
  */
-static int 	find_hook (char *name, int *first)
+static int 	find_hook (char *name, int *first, int quiet)
 {
 	int 	which = INVALID_HOOKNUM, i, cnt;
 	size_t	len;
@@ -294,7 +417,8 @@ static int 	find_hook (char *name, int *first)
 
 	if (!name || !(len = strlen(name)))
 	{
-		say("You must specify an event type!");
+		if (!quiet)
+			say("You must specify an event type!");
 		return INVALID_HOOKNUM;
 	}
 
@@ -331,19 +455,22 @@ static int 	find_hook (char *name, int *first)
 
 			if ((which < 0) || (which >= FIRST_NAMED_HOOK))
 			{
-				say("Numerics must be between 001 and %3d", FIRST_NAMED_HOOK - 1);
+				if (!quiet)
+					say("Numerics must be between 001 and %3d", FIRST_NAMED_HOOK - 1);
 				return INVALID_HOOKNUM;
 			}
 		}
 		else
 		{
-			say("No such ON function: %s", name);
+			if (!quiet)
+				say("No such ON function: %s", name);
 			return INVALID_HOOKNUM;
 		}
 	}
 	else if (cnt > 1)
 	{
-		say("Ambiguous ON function: %s", name);
+		if (!quiet)
+			say("Ambiguous ON function: %s", name);
 		return INVALID_HOOKNUM;
 	}
 
@@ -359,18 +486,22 @@ static int 	find_hook (char *name, int *first)
  * entry to the list as specified by the rest of the parameters.  The new
  * entry is added in alphabetical order (by nick). 
  */
-static void add_hook (int which, char *nick, char *stuff, int noisy, int not, int sernum, int flexible)
+int add_hook (int which, char *nick, char *stuff, int noisy, int not, int sernum, int flexible)
 {
 	Hook	*new_h;
-
+	
 	if (!(new_h = remove_from_list(&hook_functions[which].list, nick, sernum)))
 	{
 		new_h = (Hook *)new_malloc(sizeof(Hook));
 		new_h->nick = NULL;
 		new_h->stuff = NULL;
 		new_h->filename = NULL;
+	
+		if ((new_h->userial = next_empty_hookslot()) == hooklist_size)
+			inc_hooklist(3);
 	}
 
+	new_h->type = which;
 	malloc_strcpy(&new_h->nick, nick);
 	malloc_strcpy(&new_h->stuff, stuff);
 	new_h->noisy = noisy;
@@ -378,11 +509,18 @@ static void add_hook (int which, char *nick, char *stuff, int noisy, int not, in
 	new_h->sernum = sernum;
 	new_h->flexible = flexible;
 	new_h->global = loading_global;
+	new_h->skip = 0;
 	malloc_strcpy(&new_h->filename, current_package());
 	new_h->next = NULL;
 
 	upper(new_h->nick);
+
+	hooklist[new_h->userial] = new_h;
 	add_to_list(&hook_functions[which].list, new_h);
+
+	last_created_hook = new_h->userial;
+
+	return new_h->userial;
 }
 
 
@@ -409,6 +547,12 @@ static void remove_hook (int which, char *nick, int sernum, int quiet)
 			new_free(&(tmp->nick));
 			new_free(&(tmp->stuff));
 			new_free(&(tmp->filename));
+		
+			hooklist[tmp->userial] = NULL;
+			if (tmp->userial == hooklist_size -1)
+			{
+				dec_hooklist(0);
+			}
 			tmp->next = NULL;
 			new_free((char **)&tmp); /* XXX why? */
 		}
@@ -442,6 +586,7 @@ static void remove_hook (int which, char *nick, int sernum, int quiet)
 		new_free(&(tmp->stuff));
 		new_free(&(tmp->filename));
 		tmp->next = NULL;
+		
 		new_free((char **)&tmp);
 	}
 	hook_functions[which].list = top;
@@ -498,7 +643,7 @@ static void 	show_hook (Hook *list, const char *name)
 	    (list->flexible ? '\'' : '"'), list->nick, 
 	    (list->flexible ? '\'' : '"'), 
 	    (list->not ? "nothing" : list->stuff),
-	    noise_info[list->noisy].name,
+	    noise_info[list->noisy]->name,
 	    list->sernum);
 }
 
@@ -549,17 +694,22 @@ static int show_all_numerics (int numeric)
 int 	do_hook (int which, const char *format, ...)
 {
 	Hook		*tmp;
-	char		buffer		[BIG_BUFFER_SIZE * 10 + 1];
 	const char	*name 		= (char *) 0;
-	int		retval 		= DONT_SUPPRESS_DEFAULT;
+	int		retval;
+	char 	buffer 			[BIG_BUFFER_SIZE * 10 +1];
 	unsigned	display		= window_display;
 	char *		stuff_copy;
 	int		noise, old;
 	char		quote;
 	int		serial_number;
+	struct Current_hook *hook;
 
 	if (!hook_functions_initialized)
 		initialize_hook_functions();
+
+	/* If deny_all_hooks is set, no hooks are permitted executed. */
+	if (deny_all_hooks)
+		return NO_ACTION_TAKEN;
 
 	if (!hook_functions[which].list)
 		return NO_ACTION_TAKEN;
@@ -590,6 +740,18 @@ int 	do_hook (int which, const char *format, ...)
 		panic("do_hook: format is NULL");
 
 	/*
+	 * Set current_hook
+	 */
+	hook = new_malloc(sizeof(struct Current_hook));
+	hook->userial = -1;
+	hook->halt = 0;
+	hook->under = current_hook;
+	hook->retval = DONT_SUPPRESS_DEFAULT;
+	hook->buffer = buffer;
+	hook->buffer_changed = 0;
+	current_hook = hook;
+
+	/*
 	 * Mark the event as being executed.  This is used to suppress
  	 * unwanted recursion in some /on's.
 	 */
@@ -597,9 +759,11 @@ int 	do_hook (int which, const char *format, ...)
 		hook_functions[which].mark++;
 
         serial_number = INT_MIN;
-        for (;;serial_number++)
+        for (;!hook->halt;serial_number++)
 	{
-	    for (tmp = hook_functions[which].list; tmp; tmp = tmp->next)
+	    for (tmp = hook_functions[which].list; 
+			!hook->halt && tmp;
+			tmp = tmp->next)
             {
 		Hook *besthook = NULL;
 		int bestmatch = 0;
@@ -611,18 +775,20 @@ int 	do_hook (int which, const char *format, ...)
 		if (tmp->sernum > serial_number)
 		    serial_number = tmp->sernum;
 
-		for (; tmp && tmp->sernum == serial_number; tmp = tmp->next)
+		for (; 
+			!hook->halt && tmp && tmp->sernum == serial_number && !tmp->skip;
+			tmp = tmp->next)
 		{
 		    if (tmp->flexible)
 		    {
 			/* XXX What about context? */
 			char *tmpnick;
 			tmpnick = expand_alias(tmp->nick, empty_string, NULL);
-		        currmatch = wild_match(tmpnick, buffer);
+		        currmatch = wild_match(tmpnick, hook->buffer);
 			new_free(&tmpnick);
 		    }
 		    else
-		        currmatch = wild_match(tmp->nick, buffer);
+		        currmatch = wild_match(tmp->nick, hook->buffer);
 
 		    if (currmatch > bestmatch)
 		    {
@@ -652,6 +818,8 @@ int 	do_hook (int which, const char *format, ...)
 		stuff_copy = LOCAL_COPY(tmp->stuff);
 		quote = tmp->flexible ? '\'' : '"';
 
+		hook->userial = tmp->userial;
+
 		/*
 		 * YOU CAN'T TOUCH ``tmp'' AFTER THIS POINT!!!
 		 */
@@ -660,40 +828,40 @@ int 	do_hook (int which, const char *format, ...)
 		 * Check to see if this hook is supposed to supress the
 		 * default action for the event.
 		 */
-		if (noise_info[noise].suppress == 1 && serial_number == 0)
-			retval = SUPPRESS_DEFAULT;
-		else if (noise_info[noise].suppress == -1 && serial_number == 0)
-			retval = RESULT_PENDING;
+		if (noise_info[noise]->suppress == 1 && serial_number == 0)
+			hook->retval = SUPPRESS_DEFAULT;
+		else if (noise_info[noise]->suppress == -1 && serial_number == 0)
+			hook->retval = RESULT_PENDING;
 
 		/*
 		 * If this is a NORMAL or NOISY hook, then we tell the user
 		 * that we're going to execute the hook.
 		 */
-		if (noise_info[noise].alert)
+		if (noise_info[noise]->alert)
 			say("%s activated by %c%s%c", 
-				name, quote, buffer, quote);
+				name, quote, hook->buffer, quote);
 
 		/*
 		 * Save some information that may be reset in the 
 		 * execution, turn off the display if the user specified.
 		 */
-		if (noise_info[noise].display == 0)
+		if (noise_info[noise]->display == 0)
 			window_display = 0;
 		else
 			window_display = 1;
 		old = system_exception;
 
-		if (retval == RESULT_PENDING)
+		if (hook->retval == RESULT_PENDING)
 		{
 			char *result;
 
 			result = call_lambda_function(name, stuff_copy,
-							buffer);
+							hook->buffer);
 
 			if (result && atol(result))
-				retval = SUPPRESS_DEFAULT;
+				hook->retval = SUPPRESS_DEFAULT;
 			else
-				retval = DONT_SUPPRESS_DEFAULT;
+				hook->retval = DONT_SUPPRESS_DEFAULT;
 
 			new_free(&result);
 		}
@@ -705,7 +873,7 @@ int 	do_hook (int which, const char *format, ...)
 			 * so it is absolutely forbidden to reference "tmp" 
 			 * after this point.
 			 */
-			call_lambda_command(name, stuff_copy, buffer);
+			call_lambda_command(name, stuff_copy, hook->buffer);
 		}
 
 		/*
@@ -731,6 +899,15 @@ int 	do_hook (int which, const char *format, ...)
 		hook_functions[which].mark--;
 
 	/*
+	 * Reset current_hook to it's previous value.
+	 */
+	retval = hook->retval;
+	if (hook->buffer_changed)
+		new_free(&hook->buffer);
+	current_hook = hook->under;
+	new_free(&hook);
+
+	/*
 	 * And return the user-specified suppression level
 	 */
 	return retval;
@@ -746,7 +923,7 @@ BUILT_IN_COMMAND(shookcmd)
 	int which;
 	char *arg = next_arg(args, &args);
 
-	if ((which = find_hook(arg, NULL)) == INVALID_HOOKNUM)
+	if ((which = find_hook(arg, NULL, 0)) == INVALID_HOOKNUM)
 		return;
 	else
 		do_hook(which, "%s", args);
@@ -815,7 +992,7 @@ BUILT_IN_COMMAND(oncmd)
 	char	*func,
 		*nick,
 		*serial		= NULL;
-	int	noisy		= NORMAL;
+	int	noisy		= default_noise;
 	int	not		= 0,
 		sernum		= 0,
 		rem		= 0,
@@ -833,6 +1010,7 @@ BUILT_IN_COMMAND(oncmd)
 	 */
 	if ((func = next_arg(args, &args)) != NULL)
 	{
+		int v;
 		/*
 		 * Check to see if this has a serial number.
 		 */
@@ -850,38 +1028,24 @@ BUILT_IN_COMMAND(oncmd)
 		/*
 		 * Get the verbosity level, if any.
 		 */
-		switch (*func)
+		noisy = default_noise;
+
+		for (v = 0; v < noise_level_num; v++)
 		{
-			case '?':
-				noisy = UNKNOWN;
-				func++;
-				break;
-			case '-':
-				noisy = QUIET;
-				func++;
-				break;
-			case '^':
-				noisy = SILENT;
-				func++;
-				break;
-			case '+':
-				noisy = NOISY;
-				func++;
-				break;
-			case '%':
-				noisy = SYSTEM;
-				func++;
-				break;
-			default:
-				noisy = NORMAL;
+			if (noise_info[v]->identifier != 0 &&
+				noise_info[v]->identifier == *func)
 				break;
 		}
-
+		if (v != noise_level_num)
+		{
+			noisy = noise_info[v]->value;
+			func++;
+		}
 		
 		/*
 		 * Check to see if the event type is valid
 		 */
-		if ((which = find_hook(func, &first)) == INVALID_HOOKNUM)
+		if ((which = find_hook(func, &first, 0)) == INVALID_HOOKNUM)
 		{
 			/*
 			 * Ok.  So either the user specified an invalid type
@@ -1038,13 +1202,13 @@ BUILT_IN_COMMAND(oncmd)
 				say("On %3.3u from %c%s%c do %s [%s] <%d>",
 				    -which, type, nick, type, 
 				    (not ? "nothing" : exp),
-				    noise_info[noisy].name, sernum);
+				    noise_info[noisy]->name, sernum);
 			else
 				say("On %s from %c%s%c do %s [%s] <%d>",
 					hook_functions[which].name, 
 					type, nick, type,
 					(not ? "nothing" : exp),
-					noise_info[noisy].name, sernum);
+					noise_info[noisy]->name, sernum);
 
 			/*
 			 * Clean up after the nick
@@ -1140,7 +1304,7 @@ void	do_stack_on (int type, char *args)
 		return;
 	}
 
-	if ((which = find_hook(args, NULL)) == INVALID_HOOKNUM)
+	if ((which = find_hook(args, NULL, 0)) == INVALID_HOOKNUM)
 		return;		/* Error message already outputted */
 
 	list = hook_functions[which].list;
@@ -1304,3 +1468,1039 @@ int hook_find_free_serial(int dir, int from, int which) {
     return ser;
 }
 
+/* get_noise_id() returns identifer for noise chr */
+int get_noise_id (char *chr)
+{
+	int n;
+	n = atol(chr);
+	if (n == 0 && chr[0] != '0') 
+		for (n = 0; n < noise_level_num; n++)
+			if (!my_stricmp(chr, noise_info[n]->name))
+				break;
+	return n;
+}
+
+enum
+{
+	HOOKCTL_GET_HOOK_NOARG,
+	
+	HOOKCTL_GET_HOOK,
+	
+	HOOKCTL_GET_LIST,
+	HOOKCTL_GET_NOISE,
+	HOOKCTL_GET_NOISY,
+};
+enum
+{
+	HOOKCTL_ADD = 1,
+	HOOKCTL_COUNT,
+	HOOKCTL_DEFAULT_NOISE_LEVEL,
+	HOOKCTL_DENY_ALL_HOOKS,
+	HOOKCTL_EMPTY_SLOTS,
+	HOOKCTL_EXECUTING_HOOKS,
+	HOOKCTL_FIRST_NAMED_HOOK,
+	HOOKCTL_GET,
+	HOOKCTL_HALTCHAIN,
+	HOOKCTL_HOOKLIST_SIZE,
+	HOOKCTL_LAST_CREATED_HOOK,
+	HOOKCTL_LIST,
+	HOOKCTL_LOOKUP,
+	HOOKCTL_MATCH,
+	HOOKCTL_MATCHES,
+	HOOKCTL_NOISE_LEVELS,
+	HOOKCTL_NOISE_LEVEL_NUM,
+	HOOKCTL_NUMBER_OF_LISTS,
+	HOOKCTL_PACKAGE,
+	HOOKCTL_POPULATED_LISTS,
+	HOOKCTL_REMOVE,
+	HOOKCTL_RETVAL,
+	HOOKCTL_SERIAL,
+	HOOKCTL_SET
+};
+
+enum
+{
+	HOOKCTL_GET_HOOK_FLEXIBLE = 1,
+	HOOKCTL_GET_HOOK_NICK,
+	HOOKCTL_GET_HOOK_NOT,
+	HOOKCTL_GET_HOOK_NOISE,
+	HOOKCTL_GET_HOOK_NOISY,
+	HOOKCTL_GET_HOOK_PACKAGE,
+	HOOKCTL_GET_HOOK_SERIAL,
+	HOOKCTL_GET_HOOK_SKIP,
+	HOOKCTL_GET_HOOK_STUFF,
+	HOOKCTL_GET_HOOK_TYPE
+};
+
+/*
+ * $hookctl() arguments:
+ *   ADD <#!'[NOISETYPE]><list> [[#]<serial>] <nick> <stuff>
+ *       - Creates a new hook. Returns hook id.
+ *   COUNT
+ *       - See COUNT/LIST
+ *   HALTCHAIN <recursive number>
+ *       - Will set the haltflag for eventchain. May halt the current chain,
+ *         or any chain currently being executed.
+ *         Returns 1 on success, 0 otherwise.
+ *   DEFAULT_NOISE_LEVEL
+ *       - returns the 'default noise level'. It is not currently possible
+ *         to change the current noise level, and probably never will be.
+ *   DENY_ALL_HOOKS <arguments>
+ *       - this sets the deny_all_hooks flag, or gets it's value. If set,
+ *         to anything non negative, all hooks will be "ignored", and the
+ *         default action of any event will be taken. Similar to a /DUMP ON
+ *         but doens't actually remove any hooks.
+ *   EMPTY_SLOTS
+ *       - will return a list of empty slots in the hook-list.
+ *   EXECUTING_HOOKS
+ *       - will return a list of the current executing hooks. This is a
+ *         'recursive' list, listing the current hook first.
+ *   FIRST_NAMED_HOOK
+ *       - returns FIRST_NAMED_HOOK
+ *   HOOKLIST_SIZE
+ *       - will returns HOOKLIST_SIZE
+ *   LAST_CREATED_HOOK
+ *       - returns the value of LAST_CREATED_HOOK
+ *   LIST
+ *   	 - See COUNT/LIST
+ *   NOISE_LEVELS <pattern>
+ *       - Returns a list of 'noise-types'. If <pattern> is specified only
+ *         noise levels matching pattern will be returns.
+ *   NOISE_LEVEL_NUM
+ *       - Returns NOISE_LEVEL_NUM
+ *   NUMBER_OF_LISTS
+ *       - Returns NUBER_OF_LISTS
+ *   PACKAGE <package> [<list>]
+ *       - Returns a list of hooks of the given package. If <list> is
+ *         specified, it will return only hooks in list <list>
+ *   RETVAL <recursive number> [<new value>]
+ *       - If recursve number isn't specified, 0 (the current) is specified.
+ *         Will either return the value of retval for the given hook, or
+ *         set it.
+ *   SERIAL <serial> [<list>]
+ *       - Works exactly like PACKAGE.
+ *
+ *   GET <type> <arg>
+ *       - See GET/SET
+ *   LOOKUP <list> <nick> [<serial>]
+ *       - Returns hook matching given parametres.
+ *   MATCH <list> <pattern>
+ *       - Returns a list of matching hooks.
+ *   REMOVE <hook id>
+ *       - Removes the hook with the given hook ID. Returns 1 on success,
+ *         0 otherwise.
+ *   SET <type> <arg>
+ *       - See GET/SET
+ *
+ *   * GET/SET usage
+ *   GET gettype <arguments>
+ *       - will return 'gettype'
+ *   SET gettype <arguments>
+ *       - will set 'gettype' or similar, and return 1 on success. Not all
+ *         'gettypes' may be set, and not all gettypes will silently ignore
+ *         being set.
+ *
+ *   It is very important to remember that GET won't ever SET anything(!!!)
+ *   Won't, and shouldn't.
+ *
+ *   * GET/SET types:
+ *   HOOK <argument>
+ *       - More info on this under GET/SET HOOK
+ *   LIST <arguments>
+ *       - More info on this under GET/SET LIST
+ *   NOISE <argument>
+ *   NOISY <argument>
+ *       - More info on this under GET/SET NOISE/NOISY
+ *   MATCHES <argument>
+ *       - More info on this under GET/SET MATCHES
+ *
+ *   * GET/SET HOOK usage:
+ *       GET HOOK <hook id> <prop> <arg>
+ *       SET HOOK <hook id> <prop> <arg>
+ *
+ *       <prop> may be one of the following:
+ *       FLEXIBLE
+ *           - Returns or sets the value of flexible
+ *       NICK
+ *           - Sets or gets the hook's nick. The position of the hook will
+ *             be changed if needed, and it is not possible to change this
+ *             to a "crashing nick"
+ *       NOT
+ *           - Sets or gets the value of NOT.
+ *       NOISE
+ *           - See noisy
+ *       NOISY
+ *           - Sets or returns the value of noisy.
+ *       PACKAGE
+ *           - Returns or sets the hook's packagename
+ *       SERIAL
+ *           - Returns or sets the serial for the hook. The hook's position
+ *             in the list will be changed if necesarry, and it is not
+ *             possible to set the serial to a crashing serial.
+ *       SKIP
+ *           - Returns or sets the value of skip.
+ *       STUFF
+ *           - Returns or sets the value of stuff.
+ *       TYPE
+ *           - Returns or sets the type.
+ * 
+ *   * GET/SET LIST usage:
+ *       GET LIST <listname> <prop>
+ *       SET LIST <listname> <prop> - not functional
+ *
+ *       <prop> may be one of the following:
+ *       COUNT
+ *           - Returns count of hooks
+ *       FLAGS
+ *           - Returns flags
+ *       MARK
+ *           - Returns mark
+ *       NAME
+ *           - Returns name
+ *       PARAMETERS
+ *       PARAMS
+ *           - Returns value of params
+ *
+ *
+ * 
+ *   * GET/SET NOISE/NOISY usage:
+ *       GET NOISE <noisename> <prop>
+ *       SET NOISE <noisename> <prop> - not functional
+ *
+ *       <prop> may be one of the following:
+ *           ALERT
+ *               - returns value of alert.
+ *           CUSTOM
+ *               - returns value of custom.
+ *           DISPLAY
+ *               - returns value of display.
+ *           IDENTIFIER
+ *               - returns value of identifier.
+ *           NAME
+ *               - returns name.
+ *           SUPPRESS
+ *               - returns value of suppress.
+ *           VALUE
+ *               - returns value of value. d'oh!
+ *
+ *   * GET/SET MATCHES:
+ *       - This function is not ready yet, and will currently RETURN_NULL.
+ *
+ *   * COUNT/LIST usage:
+ *   	COUNT / LIST work doing the same, the only difference is that
+ *   	COUNT will return the count of lists/hooks, while list will return
+ *   	a list
+ *
+ * 	    The following options are permitted:
+ * 	    
+ *	 		LISTS <pattern>
+ *          - Will either return all lists available, or only the 
+ *            matching ones.
+ *	 		POPULATED_LISTS <pattern>
+ *	 	    - Works _just_ like LISTS, but will only return "populated"
+ *	 	      lists
+ *   		HOOKS <pattern>
+ *   	 	- Will either return all the hooks on the system, or all
+ *   	 	  the hooks in the matching lists
+ 
+ */
+
+char *hookctl (char *input)
+{
+	/* ALL the variables are due for a clean up */
+	int go = 0;
+	int hooknum = INVALID_HOOKNUM;
+	int action;
+	int prop;
+	int userial;
+	int tmp_int, tmp_int2;
+	int set;
+	int ser;
+	int listsize;
+	int is_serial = 0;
+	int set_noisy = default_noise;
+	int set_serial = 0;
+	int set_not = 0;
+	int serial = 0;
+	int set_flex = 0;
+	int bestmatch = 0;
+	int currmatch;
+	int sernum;
+	int halt = 0;
+	int id;
+	int retlen;
+	char *nam;
+	char *str;
+	char *hookname;
+	char *name;
+	char *ret = NULL;
+	char *tmp;
+	char *nick;
+	char *buffer;
+
+	const char **list;
+	struct Current_hook *curhook;
+	
+	Hookables *hooks = NULL;
+	Hook *hook = NULL;
+	Hook *tmp_hook;
+
+	if (!hook_functions_initialized)
+		initialize_hook_functions();
+
+	if (!input || !*input)
+		RETURN_EMPTY;
+	
+	GET_STR_ARG(str, input);
+	go = vmy_strnicmp (strlen(str), str, 
+		"ADD",
+		"COUNT",
+		"DEFAULT_NOISE_LEVEL", 
+		"DENY_ALL_HOOKS",
+		"EMPTY_SLOTS",
+		"EXECUTING_HOOKS", 
+		"FIRST_NAMED_HOOK",
+		"GET",
+		"HALTCHAIN",
+		"HOOKLIST_SIZE",
+		"LAST_CREATED_HOOK",
+		"LIST",
+		"LOOKUP",
+		"MATCH",
+		"MATCHES",
+		"NOISE_LEVELS",
+		"NOISE_LEVEL_NUM",
+		"NUMBER_OF_LISTS",
+		"PACKAGE",
+		"REMOVE",
+		"RETVAL",
+		"SERIAL",
+		"SET",
+		NULL);
+	
+	switch (go)
+	{
+	
+	/* go-switch */
+	case 0:
+		RETURN_EMPTY;
+		break;
+
+	/* go-switch */
+	case HOOKCTL_LOOKUP:
+		ser = 0;
+		if (!input || !*input)
+			RETURN_EMPTY;
+		GET_STR_ARG(hookname, input);
+		if ((hooknum = find_hook(hookname, NULL, 1)) == INVALID_HOOKNUM)
+			RETURN_EMPTY;
+		if (!input || !*input)
+			RETURN_EMPTY;
+		GET_STR_ARG(nick, input);
+		if (input && *input)
+			GET_INT_ARG(ser, input);
+		for (
+			hook = hook_functions[hooknum].list;
+			hook != NULL;
+			hook = hook->next)
+		{
+			if (hook->sernum != ser || my_stricmp(nick, hook->nick))
+				continue;
+			RETURN_INT(hook->userial);
+		}
+		RETURN_INT(-1);
+		break;
+	
+	/* go-switch */
+	case HOOKCTL_DEFAULT_NOISE_LEVEL:
+		RETURN_STR(noise_info[default_noise]->name);
+		break;
+		
+	/* go-switch */	
+	case HOOKCTL_FIRST_NAMED_HOOK:
+		RETURN_INT(FIRST_NAMED_HOOK);
+		break;
+		
+	/* go-switch */
+	case HOOKCTL_HOOKLIST_SIZE:
+		RETURN_INT(hooklist_size);
+		break;
+	
+	/* go-switch */
+	case HOOKCTL_LAST_CREATED_HOOK:
+		RETURN_INT(last_created_hook);
+		break;
+	
+	/* go-switch */
+	case HOOKCTL_NOISE_LEVEL_NUM:
+		RETURN_INT(noise_level_num);
+		break;
+		
+	/* go-switch */
+	case HOOKCTL_NUMBER_OF_LISTS:
+		RETURN_INT(NUMBER_OF_LISTS);
+		break;
+		
+	/* go-switch */
+	case HOOKCTL_RETVAL:
+		if (!current_hook)
+			RETURN_EMPTY;
+		if (!set)
+		{
+			if (!input || !*input)
+				RETURN_INT(current_hook->retval);
+			else
+			{
+				switch (current_hook->retval)
+				{
+					case -1:	RETURN_STR("NO_ACTION_TAKEN");
+					case 0:		RETURN_STR("SUPPRESS_DEFAULT");
+					case 1:		RETURN_STR("DONT_SUPPRESS_DEFAULT");
+					case 2:		RETURN_STR("RESULT_PENDING");
+					default:	RETURN_STR("UNKNOWN");
+				}
+			}
+		}
+		else
+		{
+			if (!input || !*input)
+				RETURN_INT(0);
+			GET_STR_ARG(str, input);
+			if (!isdigit(str[0]) && str[0] != '-')
+				tmp_int = -2 + vmy_strnicmp(strlen(str), str, 
+					"NO_ACTION_TAKEN",	"SUPPRESS_DEFAULT",
+					"DONT_SUPPRESS_DEFAULT", "RESULT_PENDING",
+					NULL
+				);
+			else
+				GET_INT_ARG(tmp_int, str);
+			
+			if (tmp_int < -1 || tmp_int > 2)
+				RETURN_INT(0);
+			current_hook->retval = tmp_int;
+			RETURN_INT(1);
+		}
+		break;
+	
+	/* go-switch */
+	case HOOKCTL_DENY_ALL_HOOKS:
+		if (!set)
+			RETURN_INT(deny_all_hooks);
+		else
+		{
+			if (!input || !*input)
+				RETURN_INT(-1);
+			GET_INT_ARG(tmp_int, input);
+			deny_all_hooks = tmp_int ? 1 : 0;
+			RETURN_INT(deny_all_hooks);
+		}
+		break;	
+
+	/* go-switch */
+	case HOOKCTL_EMPTY_SLOTS:
+		for (tmp_int = 0; tmp_int < hooklist_size; tmp_int++)
+			if (hooklist[tmp_int] == NULL)
+			{
+				ADD_STR_TO_LIST(ret, space, ltoa(tmp_int), retlen);
+			}
+		RETURN_MSTR(ret);
+		break;
+	
+	/* go-switch */
+	case HOOKCTL_COUNT:
+	case HOOKCTL_LIST:
+		/* Shamelessly using prop here as well. Save the variables! */
+		if (!input || !*input)
+			prop = 1;
+		else
+		{
+			GET_STR_ARG(str,input);
+			prop = vmy_strnicmp(strlen(str), str, "LISTS", "POPULATED_LISTS",
+				"HOOKS");
+		}
+		if (input && *input)
+		{
+			GET_STR_ARG(str, input);
+		}
+		else
+		{
+			str = NULL;
+		}
+		if (prop == 0)
+			RETURN_EMPTY;
+		tmp_int2 = 0;	
+		/* Walk through the entire list, starting with the named hooks */
+		for (tmp_int = 0; tmp_int < NUMBER_OF_LISTS; tmp_int++)
+		{
+			if ((prop != 1 && hook_functions[tmp_int].list == NULL
+				|| (str && !wild_match(str, hook_functions[tmp_int].name))
+			)
+			)
+				continue;
+			if (prop != 3)
+			{
+				if (go == HOOKCTL_COUNT)
+					tmp_int2++;
+				else
+				{
+					ADD_STR_TO_LIST(ret, space, hook_functions[tmp_int].name,
+						retlen);
+				}
+				continue;
+			}
+			for (tmp_hook = hook_functions[tmp_int].list;
+				tmp_hook != NULL;
+				tmp_hook = tmp_hook->next)
+			{
+				if (go == HOOKCTL_COUNT)
+					tmp_int2++;
+				else
+				{
+					ADD_STR_TO_LIST(ret, space, ltoa(tmp_hook->userial),
+						retlen);
+				}
+			}
+		}
+		if (go == HOOKCTL_COUNT)
+			RETURN_INT(tmp_int2);
+		else
+			RETURN_MSTR(ret);
+		break;
+
+	/* go-switch */
+	case HOOKCTL_SERIAL:
+	case HOOKCTL_PACKAGE:
+		if (action == HOOKCTL_SERIAL)
+			is_serial = 1;
+		if (!input || !*input)
+			RETURN_EMPTY;
+		if (is_serial)
+		{
+			GET_INT_ARG(serial, input);
+		}
+		else
+		{
+			GET_STR_ARG(str, input);
+		}
+		if (input && *input)
+		{
+			GET_STR_ARG(hookname, input);
+			if ((hooknum = find_hook (hookname, NULL, 1)) == INVALID_HOOKNUM)
+				RETURN_EMPTY;
+		}
+		if (hooknum == INVALID_HOOKNUM)
+		{
+			for (tmp_int = 0; tmp_int < hooklist_size; tmp_int++)
+			{
+				if (hooklist[tmp_int] == NULL)
+					continue;
+				if ((is_serial && hooklist[tmp_int]->sernum == serial) ||
+					(!is_serial && !my_stricmp(hooklist[tmp_int]->filename,
+					str)))
+				{
+					ADD_STR_TO_LIST(ret, space, ltoa(tmp_int), retlen);	
+				}
+			}
+		}
+		else
+		{
+			if (hook_functions[hooknum].list == NULL)
+				RETURN_EMPTY;
+			for (
+				hook = hook_functions[hooknum].list; 
+				hook != NULL; 
+				hook = hook->next)
+				if ((is_serial && hook->sernum == serial) || 
+					(!is_serial && !my_stricmp(hook->filename, 
+					str))
+				)
+				{
+					ADD_STR_TO_LIST(ret, space, ltoa(hook->userial), retlen);
+				}
+		}
+		RETURN_MSTR(ret);
+		break;
+
+	/* go-switch */
+	case HOOKCTL_NOISE_LEVELS:
+		if (!input || !*input)
+			nam = NULL;
+		else
+		{
+			GET_STR_ARG(nam, input);
+		}
+		for (tmp_int = 0; tmp_int < noise_level_num; tmp_int++)
+		{
+			if (!nam || wild_match(nam, noise_info[tmp_int]->name))
+			{
+				ADD_STR_TO_LIST(ret, space, noise_info[tmp_int]->name, retlen);
+			}
+		}
+		RETURN_MSTR(ret);
+		break;
+	
+	/* go-switch */
+	case HOOKCTL_EXECUTING_HOOKS:
+		if (current_hook == NULL)
+			RETURN_EMPTY;
+		for (
+			curhook = current_hook; 
+			curhook != NULL; curhook = curhook->under)
+			ADD_STR_TO_LIST(ret, space, ltoa(curhook->userial), retlen);
+		RETURN_MSTR(ret);
+		break;
+
+	/* go-switch */
+	case HOOKCTL_MATCHES:
+		/*
+		 * serial, package, stuff, nick, list
+		 */
+		if (!*input || !input)
+			RETURN_EMPTY;
+		else
+		{
+			RETURN_EMPTY;
+		}
+
+	/* go-switch */
+	case HOOKCTL_GET:
+	case HOOKCTL_SET:
+		set = (go == 8) ? 1 : 0;
+		
+		if (!input || !*input)
+			RETURN_EMPTY;
+		if (atoi(input) == 0 && input[0] != '0')
+		{
+			GET_STR_ARG(str, input);
+			action = vmy_strnicmp(strlen(str), str,
+				"HOOK",
+				"LIST",
+				"NOISE",
+				"NOISY",
+				NULL
+			);
+				
+			if (action == 0)
+				RETURN_EMPTY;
+	
+		}
+		else	
+			action = HOOKCTL_GET_HOOK_NOARG;
+		switch (action)
+		{
+		
+
+		/* action-switch */
+		case HOOKCTL_GET_HOOK:
+		case HOOKCTL_GET_HOOK_NOARG:
+			GET_INT_ARG(userial, input);
+			if (userial == -1 && current_hook)
+				userial = current_hook->userial;
+			if (userial < 0 
+				|| hooklist_size <= userial 
+				|| hooklist[userial] == NULL)
+				RETURN_EMPTY;
+			hook = hooklist[userial];
+			if (!set && (!input || !*input))
+				RETURN_STR(hook->stuff);
+			GET_STR_ARG(str, input);
+
+			prop = vmy_strnicmp(strlen(str), str,
+				"FLEXIBLE", 	"NICK", 	"NOT",		"NOISE", 
+				"NOISY", 		"PACKAGE",	"SERIAL", 	"SKIP",
+				"STUFF",		"TYPE", 	NULL);
+			if (prop == 0)
+				RETURN_EMPTY;
+
+			if (!input || !*input)
+				str = "";
+			else
+				str = input;
+		
+			switch (prop)
+			{
+			/* prop-switch */
+			case HOOKCTL_GET_HOOK_NICK:
+				if (!set)
+					RETURN_STR(hook->nick);
+				str = fill_it_out(
+					upper(str), 
+					hook_functions[hook->type].params
+				);
+				for (
+					tmp_hook = hook_functions[hook->type].list;
+					tmp_hook != NULL;
+					tmp_hook = tmp_hook->next
+				)
+				{
+					if (!strcmp(tmp_hook->nick, str)
+						&& tmp_hook->sernum == tmp_hook->sernum)
+					{
+						new_free (&str);
+						RETURN_INT(0);
+					}
+				}
+				remove_from_list(
+					&hook_functions[hook->type].list,
+					hook->nick,
+					hook->sernum
+				);
+				new_free(&hook->nick);
+				hook->nick = str;
+				add_to_list(
+					&hook_functions[hook->type].list,
+					hook
+				);
+				RETURN_INT(1);
+				break;
+				
+			/* prop-switch */
+			case HOOKCTL_GET_HOOK_STUFF:
+				if (!set)
+					RETURN_STR(hook->stuff);
+				new_free ((char *) & (hook->stuff));
+				hook->stuff = malloc_strdup(str);
+				RETURN_INT(1);
+				break;
+			
+			/* prop-switch */
+			case HOOKCTL_GET_HOOK_NOT:
+				if (!set)
+					RETURN_INT(hook->not);
+				hook->not = atol(str) ? 1 : 0;
+				RETURN_INT(1);
+				break;
+			
+			case HOOKCTL_GET_HOOK_SKIP:
+				if (!set)
+					RETURN_INT(hook->skip);
+				hook->skip = atol(str) ? 1 : 0;
+				RETURN_INT(1);
+				break;
+				
+			/* prop-switch */
+			case HOOKCTL_GET_HOOK_NOISE:
+			case HOOKCTL_GET_HOOK_NOISY:
+				if (!set)
+					RETURN_STR(noise_info[hook->noisy]->name);
+				if ((tmp_int = get_noise_id(input)) >= noise_level_num
+					|| tmp_int < 0
+				)
+					RETURN_INT(0);
+				hook->noisy = tmp_int;
+				RETURN_INT(1);
+				break;
+			
+			/* prop-switch */
+			case HOOKCTL_GET_HOOK_SERIAL:
+				if (!set)
+					RETURN_INT(hook->sernum);
+				tmp_int = atol(str);
+				for (
+					tmp_hook = hook_functions[hook->type].list;
+					tmp_hook != NULL;
+					tmp_hook = tmp_hook->next
+				)
+				{
+					if (!strcmp(tmp_hook->nick, tmp_hook->nick)
+						&& tmp_hook->sernum == tmp_int
+					)
+						RETURN_INT(0);
+				}
+				remove_from_list(
+					&hook_functions[hook->type].list,
+					hook->nick,
+					hook->sernum
+				);
+				
+				hook->sernum = tmp_int;
+				add_to_list(
+					&hook_functions[hook->type].list,
+					hook
+				);
+				RETURN_INT(1);
+				break;	
+	
+			/* prop-switch */
+			case HOOKCTL_GET_HOOK_FLEXIBLE:
+				if (!set)
+					RETURN_INT(hook->flexible);
+				hook->flexible = atol(str) ? 1 : 0;
+				RETURN_INT(1);
+				break;
+
+			/* prop-switch */
+			case HOOKCTL_GET_HOOK_PACKAGE:
+				if (!set)
+					RETURN_STR(hook->filename);
+				new_free ((char *) & (hook->filename));
+				hook->filename = malloc_strdup(str);
+				RETURN_INT(1);
+				break;
+
+			/* prop-switch */
+			case HOOKCTL_GET_HOOK_TYPE:
+				if (!set)
+					RETURN_STR(hook_functions[hook->type].name);
+				break;
+		/* end prop-switch */
+		}
+		RETURN_EMPTY;
+		break;
+	
+		/* action switch */
+		case HOOKCTL_GET_NOISE:
+		case HOOKCTL_GET_NOISY:
+			if (!input || !*input)
+				RETURN_EMPTY;
+			if (isdigit(input[0]))
+			{
+				GET_INT_ARG(id, input);
+				if (noise_level_num <= id)
+					RETURN_EMPTY;
+				name = (char *) noise_info[id]->name;
+			}
+			else
+			{
+				GET_STR_ARG(name, input);
+				for (tmp_int = 0; tmp_int < noise_level_num; tmp_int++)
+				{
+					if (!my_stricmp(name, noise_info[tmp_int]->name))
+						break;
+				}
+				if (noise_level_num == tmp_int)
+					RETURN_EMPTY;
+				name = (char *) noise_info[tmp_int]->name;
+				id = tmp_int;
+			}
+		
+			if (!input || !*input)
+				RETURN_EMPTY;
+			
+			GET_STR_ARG(str, input);
+			switch (vmy_strnicmp(strlen(str), str,
+				"ALERT", 	"CUSTOM", 	"DISPLAY", 	"IDENTIFIER",
+				"NAME", 	"SUPPRESS", "VALUE", 	NULL)
+			)
+			{
+				case 1: 	RETURN_INT(noise_info[id]->alert ? 1 : 0);
+				case 2: 	RETURN_INT(noise_info[id]->custom ? 1 : 0);
+				case 3: 	RETURN_INT(noise_info[id]->display ? 1 : 0);
+				case 4: 	RETURN_INT(noise_info[id]->identifier);
+				case 5: 	RETURN_STR(noise_info[id]->name);
+				case 6:		RETURN_INT(noise_info[id]->suppress ? 1 : 0);
+				case 7:		RETURN_INT(noise_info[id]->value);
+				default: 	RETURN_EMPTY;
+			}
+			break;
+
+		/* action-switch */
+		case HOOKCTL_GET_LIST:
+		
+			GET_STR_ARG(hookname, input);
+			if (atoi(hookname) == -1)
+			{
+				if (current_hook == NULL)
+					RETURN_EMPTY;
+				hooknum = hooklist[current_hook->userial]->type;
+			}
+			else
+			{
+				if ((hooknum = find_hook (hookname, NULL, 1)) == INVALID_HOOKNUM)
+				{
+					RETURN_EMPTY;
+				}
+			}
+			hooks = &hook_functions[hooknum];
+			if (!input || !*input)
+				prop = 2;
+			else
+			{
+				GET_STR_ARG(str, input);
+				prop = vmy_strnicmp(strlen(str), str,
+					"FLAGS",		"MARK", 		"NAME",
+					"PARAMETRES", 	"PARAMETERS",	"PARAMS",
+					NULL);
+			}
+			switch (prop)
+			{
+				case 1:		RETURN_INT(hooks->flags);
+				case 2:		RETURN_INT(hooks->mark);
+				case 3:		RETURN_STR(hooks->name);
+				case 4:
+				case 5:
+				case 6:		RETURN_INT(hooks->params);
+			}
+			RETURN_EMPTY;
+			break;
+		
+		/* end action-switch */
+		}
+		RETURN_EMPTY;
+		break;
+
+	/* go-switch */
+	case HOOKCTL_ADD:
+		if (!input || !*input)
+			RETURN_INT(-1);
+		GET_STR_ARG(hookname, input);
+		while (*hookname != '\0')
+		{
+			switch (*hookname)
+			{
+			case '#':
+				set_serial = 1;
+				hookname++;
+				continue;
+			
+			case '!':
+				set_not = 1;
+				hookname++;
+				continue;
+			
+			case '\'':
+				set_flex = 1;
+				hookname++;
+				continue;
+		
+			default:
+				for (tmp_int = 0; tmp_int < noise_level_num; tmp_int++)
+				{
+					if (noise_info[tmp_int]->identifier != 0 &&
+						noise_info[tmp_int]->identifier == *hookname)
+						break;
+				}
+				if (tmp_int == noise_level_num)
+					break;
+				set_noisy = noise_info[tmp_int]->value;
+				hookname++;
+				continue;
+			}
+			break;
+		}
+		if ((hooknum = find_hook (hookname, NULL, 1)) == INVALID_HOOKNUM)
+			RETURN_EMPTY;
+		if (set_serial)
+		{
+			if (!input || !*input)
+				RETURN_INT(-1);
+			if (input[0] == '#')
+				input++;
+			GET_STR_ARG(tmp, input);
+			if (!strcmp(tmp, "-"))
+			{
+				serial = hook_find_free_serial(-1, 0, hooknum);
+			}
+			else if (!strcmp(tmp, "+"))
+			{
+				serial = hook_find_free_serial(1, 0, hooknum);
+			}
+			else
+			{
+				serial = atoi (tmp);
+			}
+		}
+		if (!input || !*input)
+			RETURN_INT(-1);
+		GET_STR_ARG(nick, input);
+		nick = fill_it_out(nick, hook_functions[hooknum].params);
+		tmp_int = add_hook (hooknum, nick, input, set_noisy, set_not, serial, set_flex);
+		new_free ((char *) & nick);
+		RETURN_INT(tmp_int);
+		break;
+
+	/* go-switch */
+	case HOOKCTL_REMOVE:
+		if (!input || !*input)
+			RETURN_INT(-1);
+		GET_INT_ARG(id, input);
+		if (id == -1 && current_hook != NULL)
+			id = current_hook -> userial;
+		if (hooklist_size <= id || id < 0 || hooklist[id] == NULL)
+			RETURN_INT(-1);
+		hook = hooklist[id];
+		remove_hook(hook->type, hook->nick, hook->sernum, 1);
+		RETURN_INT(1);
+		break;
+
+	/* go-switch */
+	case HOOKCTL_HALTCHAIN:
+		if (input && *input)
+		{
+			GET_INT_ARG(halt, input);
+		}
+		curhook = current_hook;
+		for (tmp_int = 0; curhook && tmp_int < halt; tmp_int++)
+			curhook = curhook->under;
+		if (!curhook)
+			RETURN_INT(0);
+		curhook->halt = 1;
+		RETURN_INT(1);
+		break;
+		
+	/* go-switch */
+	case HOOKCTL_MATCH:
+		if (!input || !*input)
+			RETURN_EMPTY;
+		GET_STR_ARG(hookname, input);
+		if ((hooknum = find_hook (hookname, NULL, 1)) == INVALID_HOOKNUM)
+			RETURN_EMPTY;
+		if (!hook_functions[hooknum].list
+			|| (hook_functions[hooknum].mark
+				&& hook_functions[hooknum].flags & HF_NORECURSE))
+			RETURN_EMPTY;
+		buffer = malloc_strdup(!input || !*input ? "" : input);
+		for (sernum = INT_MIN;sernum < INT_MAX;sernum++)
+		{
+			for (hook = hook_functions[hooknum].list; hook; hook = hook->next)
+			{
+				Hook *besthook = NULL;
+				if (hook->sernum < sernum)
+					continue;
+				
+				if (hook->sernum > sernum)
+					sernum = hook->sernum;
+				
+				for (; hook && hook->sernum == sernum; hook = hook->next)
+				{
+					if (hook->flexible)
+					{
+						char *tmpnick;
+						tmpnick = expand_alias(hook->nick, empty_string, 
+							NULL);
+						currmatch = wild_match(tmpnick, buffer);
+						new_free(&tmpnick);
+					}
+					else
+						currmatch = wild_match(hook->nick, buffer);
+		
+					if (currmatch > bestmatch)
+					{
+						besthook = hook;
+						bestmatch = currmatch;
+					}
+				}
+				
+				if (!besthook || besthook->not)
+					break;
+				
+				ADD_STR_TO_LIST(ret, space, ltoa(besthook->userial), retlen);
+				break;
+			}
+			if (!hook)
+				break;
+		}
+		RETURN_MSTR(ret);
+		new_free (&buffer);
+		break;
+
+	/* go-switch */
+	default:
+		yell ("In function hookctl: unknown go: %d", go);
+		RETURN_EMPTY;
+	/* The function should never come to this point */
+	
+	/* end go-switch */
+	}
+	RETURN_EMPTY;
+}

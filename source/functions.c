@@ -1,4 +1,4 @@
-/* $EPIC: functions.c,v 1.181 2004/08/25 23:03:36 jnelson Exp $ */
+/* $EPIC: functions.c,v 1.182 2004/10/13 23:25:55 jnelson Exp $ */
 /*
  * functions.c -- Built-in functions for ircII
  *
@@ -262,6 +262,7 @@ static	char
 	*function_glob		(char *),
 	*function_globi		(char *),
 	*function_hash_32bit	(char *),
+	*function_hookctl		(char *),
 	*function_idle		(char *),
 	*function_igmask	(char *),
 	*function_ignorectl	(char *),
@@ -414,6 +415,7 @@ static	char
 	*function_winlevel	(char *),
 	*function_winline	(char *),
 	*function_winnames	(char *),
+	*function_winquery	(char *),
 	*function_winrefs	(char *),
 	*function_winsbsize	(char *),
 	*function_winscreen	(char *),
@@ -548,6 +550,7 @@ static BuiltInFunctions	built_in_functions[] =
 	{ "GLOB",		function_glob		},
 	{ "GLOBI",		function_globi		},
 	{ "HASH_32BIT",		function_hash_32bit	},
+	{ "HOOKCTL",	function_hookctl	},
 	{ "IDLE",		function_idle		},
 	{ "IFINDFIRST",		function_ifindfirst 	},
 	{ "IFINDITEM",		function_ifinditem	},
@@ -747,6 +750,7 @@ static BuiltInFunctions	built_in_functions[] =
 	{ "WINNAM",		function_winnam 	},
 	{ "WINNICKLIST",	function_winnames	},
 	{ "WINNUM",		function_winnum 	},
+	{ "WINQUERY",		function_winquery 	},
 	{ "WINREFS",		function_winrefs	},
 	{ "WINSCREEN",		function_winscreen	},
 	{ "WINSCROLLBACKSIZE",	function_winsbsize	},
@@ -5090,6 +5094,19 @@ BUILT_IN_FUNCTION(function_querywin, args)
 	RETURN_INT(-1);
 }
 
+BUILT_IN_FUNCTION(function_winquery, args)
+{
+	int refnum;
+	const char *nick;
+	if (!args || !*args)
+		refnum = 0;
+	else
+		GET_INT_ARG(refnum, args);
+	if ((nick = get_equery_by_refnum(refnum)) == NULL)
+		RETURN_EMPTY;
+	RETURN_STR(nick);
+}
+
 BUILT_IN_FUNCTION(function_winrefs, args)
 {
 	Window *w = NULL;
@@ -7044,4 +7061,9 @@ BUILT_IN_FUNCTION(function_mktime, input)
 	
 	retval = mktime(&tmtime);
 	RETURN_INT(retval);	
+}
+
+BUILT_IN_FUNCTION(function_hookctl, input)
+{
+        return hookctl(input);
 }

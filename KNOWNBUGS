@@ -13,7 +13,6 @@ KNOWN ERRATA (eg, bugs, or unresolved requests):
 * /query targets with nicks crossing with dcc nicks don't match.
 * $serverctl(get <ref> port) errors because the address we use is bogus.
 * A $serverctl() value to tell you what address family the socket is using.
-* $winquery() to return the window's current query.
 
 [See http://www.epicsol.org/PROJECTS for things to come in the future]
 [See http://www.epicsol.org/CHANGELOG5 for things that changed in the past]
@@ -405,3 +404,5 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Add a bunch of stuff to debug the who_queue to find and fix adm's bug.
 * Remove a debugging line i forgot about.
 * Fix memory leak with remove_from_comma_list().
+* Add $winquery(), written by howl
+* Add $hookctl(), written by howl, who needs to write an UPDATES entry.
