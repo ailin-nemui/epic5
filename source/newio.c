@@ -1,4 +1,4 @@
-/* $EPIC: newio.c,v 1.30 2005/02/09 02:23:25 jnelson Exp $ */
+/* $EPIC: newio.c,v 1.31 2005/02/09 03:26:58 jnelson Exp $ */
 /*
  * newio.c: This is some handy stuff to deal with file descriptors in a way
  * much like stdio's FILE pointers 
@@ -158,6 +158,7 @@ static int	unix_read (int fd, char **buffer, size_t *buffer_size, size_t *start)
 	int	c;
 
 	c = read(fd, (*buffer) + (*start), (*buffer_size) - (*start) - 1);
+	*((*buffer) + (*start) + c) = 0;		/* XXX */
 	return c;
 }
 
