@@ -3967,7 +3967,7 @@ Window *window_rejoin (Window *window, char **args)
 				 */
 				other = get_channel_window(chan, from_server);
 				move_channel_to_window(chan, other, window);
-				set_channel_by_refnum(from_server, chan);
+				set_channel_by_refnum(window->refnum, chan);
 				say("You are now talking to channel %s", 
 					check_channel_type(chan));
 			}
