@@ -87,6 +87,13 @@ EPIC4-1.2.0
 	/SERVER or /WINDOW SERVER command or in the server file list.
 
 *** News 02/01/2002 -- New built in function, $regmatches()
+	This is a (slightly) more useful copy of the $regexec() function.
+	It takes an extra argument between complied-pattern and string
+	indicating the number of matches to return.  Returned matches are
+	_not_ expressed as strings, but pairs of numbers which can be
+	applied to $mid() to extract the matched substring.  Please note
+	that substrings do not refer to multiple occurences of strings.
+	At least, not in the glibc implementation I'm using.
 
 *** News 02/01/2002 -- New built in function, $corpattern()
 	Whereas $copattern(<pattern> <var1> <var2>) treats $<var1> as a
@@ -132,13 +139,15 @@ EPIC4-1.2.0
 		Execute <command>, but only if <command> has not been executed
 		already by /1cmd in the previous <time> seconds.
 
-	/qcmd <time> <queue> <command>	
+	/qcmd <queue> <command>	
 		Add <command> to the end of queue <queue>, which will be 
-		executed in <time> seconds.
+		executed sequentially in 5 second intervals.  Queues with a
+		lower alphanumerical value will be drawn from first, and hence
+		have a higher priority.
 
-	/fqcmd <time> <queue> <command>	
+	/fqcmd <queue> <command>	
 		Add <command> to the beginning of queue <queue>, which will 
-		be executed in <time> seconds.
+		be executed sequentially in 5 second intervals.
 
 	/q1cmd <time> <queue> <command> 
 		Equivalent to: /1cmd <time> qcmd <queue> <command>
@@ -151,12 +160,28 @@ EPIC4-1.2.0
 	Commands are executed in "literal" form (not subject to "quoting hell")
 
 *** News 02/01/2002 -- $uhc(), $mask(), and /ignore handle userhosts different
+	It is a bug for these to behave any differently from before except in
+	the case of a hostname with no dot in it, in which case they behave
+	more appropriately by not inserting eroneous dots and stars into said
+	hostname, as before.
 
 *** News 02/01/2002 -- SSL support merged from the EPIC4-SSL project
+	$isencrypted(), $cipher(), $ssl().
+	ssl_server_cert hook.
 
 *** News 02/01/2002 -- /QUEUE doesn't double-eval your code any longer.
 
 *** News 02/01/2002 -- Improved CRYPT support 
+	The /encrypt command can take an additional <program> argument after
+	nick and key, which will cause epic to use the named program to encrypt
+	and decrypt your messages.  Two usable example scripts have been supplied
+	which use GNU Privacy Guard in symetric encryption mode.  The nick
+	argument for /encrypt has also been expanded to allow for wildcard
+	patterns which will be applied against #dest,source!user@host for
+	received messages.  In addition to these, the function $encryptparm() has
+	been added, which takes a nick argument, and returns all the arguments
+	that were supplied to the original /encrypt command.  This is likely to
+	be useful for public key crypto scripts.
 
 *** News 02/01/2002 -- Change to $trunc(0 <num>) : it now returns an integer
 	$trunc(0 <num>) returns the integer <retval> with the largest absolute 

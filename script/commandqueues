@@ -101,7 +101,8 @@ fe (q push fq unshift) cmd op {
 					@ foo = [$0]
 				} elsif (0 == #) {
 					foreach qcmd[$servernum()] bar {
-						@ foo = foo ? foo : bar
+						@ foo = bar
+						break
 					}
 				}
 				if (@foo) {
