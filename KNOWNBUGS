@@ -12,3 +12,4 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Add $ssl() built in function for lateral compatability with epic-ssl
 * Add /for <var> in (<list>) {<commands>} command
 * Add /for <var> from <min> to <max> {<commands>} command
+* Add 477 numeric from dalnet, from adm.
