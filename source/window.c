@@ -1,4 +1,4 @@
-/* $EPIC: window.c,v 1.42 2002/10/24 22:28:07 jnelson Exp $ */
+/* $EPIC: window.c,v 1.43 2002/10/25 17:10:04 jnelson Exp $ */
 /*
  * window.c: Handles the organzation of the logical viewports (``windows'')
  * for irc.  This includes keeping track of what windows are open, where they
@@ -5147,7 +5147,9 @@ void	check_window_cursor (Window *window)
 		    window->distance_from_display_ip > window->display_size)
 	{
 		window_scrollback_end(current_window);
+#if 0
 		yell("Unheld this window for you -- let #epic on efnet know!");
+#endif
 	}
 }
 
