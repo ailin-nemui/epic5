@@ -1,4 +1,4 @@
-/* $EPIC: who.c,v 1.43 2005/03/01 00:54:55 jnelson Exp $ */
+/* $EPIC: who.c,v 1.44 2005/03/20 03:20:51 jnelson Exp $ */
 /*
  * who.c -- The WHO queue.  The ISON queue.  The USERHOST queue.
  *
@@ -1290,7 +1290,7 @@ void	ison_returned (int refnum, const char *from, const char *comm, const char *
 {
 	IsonEntry *new_i = ison_queue_top(refnum);
 	char	*do_off = NULL, *this1, *all1, *this2, *all2;
-	int	clue = 0;
+	size_t	clue = 0;
 
 	if (!new_i)
 	{

@@ -575,3 +575,4 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Change a few other warnings to not be so alarming.
 * Change new_realloc() to not move ptr if it is big enough to hold new size.
 * Fix all the status_* sub-formats to not have any hardcoded size limits.
+* Fixes from darwin that they "forgot" to submit upstream.
