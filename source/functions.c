@@ -5314,7 +5314,6 @@ BUILT_IN_FUNCTION(function_rest, input)
 BUILT_IN_FUNCTION((thisfn), input)                       \
 {                                                        \
 	char 	*s = NULL;                               \
-	char 	*s2= NULL;                               \
 	char	*ret = NULL;                             \
 	size_t	clue = 0;                                \
                                                          \

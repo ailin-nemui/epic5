@@ -25,7 +25,7 @@ const char internal_version[] = "20020317";
 /*
  * In theory, this number is incremented for every commit.
  */
-const unsigned long	commit_id = 233;
+const unsigned long	commit_id = 234;
 
 /*
  * As a way to poke fun at the current rage of naming releases after
@@ -1202,7 +1202,7 @@ int 	main (int argc, char *argv[])
 	init_keys();
 
 	fprintf(stderr, "EPIC Version 4 -- %s\n", ridiculous_version_name);
-	fprintf(stderr, "EPIC Software Labs (2000)\n");
+	fprintf(stderr, "EPIC Software Labs (2002)\n");
 	fprintf(stderr, "Version (%s), Commit Id (%lu) -- Date (%s)\n", irc_version, commit_id, internal_version);
 	fprintf(stderr, "%s\n", compile_info);
 	fprintf(stderr, "Process [%d]", getpid());
