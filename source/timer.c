@@ -1,4 +1,4 @@
-/* $EPIC: timer.c,v 1.25 2003/03/24 09:20:29 jnelson Exp $ */
+/* $EPIC: timer.c,v 1.26 2003/04/08 22:27:30 jnelson Exp $ */
 /*
  * timer.c -- handles timers in ircII
  *
@@ -82,16 +82,7 @@ BUILT_IN_COMMAND(timercmd)
 		flag = next_arg(args, &args);
 		len = strlen(flag + 1);
 
-		if (!my_strnicmp(flag + 1, "DELETE_FOR_WINDOW", len))
-		{
-			int	winref;
-
-			if (!(ptr = next_arg(args, &args)) || !is_number(ptr))
-			    say("%s: Need a window number for -DELETE_FOR_WINDOW", command);
-			winref = atol(ptr);
-			remove_window_timers(winref);
-		}
-		else if (!my_strnicmp(flag + 1, "DELETE", len))
+		if (!my_strnicmp(flag + 1, "DELETE", len))
 		{
 			if (!(ptr = next_arg(args, &args)))
 			    say("%s: Need a timer reference number for -DELETE",
@@ -119,6 +110,16 @@ BUILT_IN_COMMAND(timercmd)
 			else
 				panic("how did timercmd get here?");
 
+			return;
+		}
+		else if (!my_strnicmp(flag + 1, "DELETE_FOR_WINDOW", len))
+		{
+			int	winref;
+
+			if (!(ptr = next_arg(args, &args)) || !is_number(ptr))
+			    say("%s: Need a window number for -DELETE_FOR_WINDOW", command);
+			winref = atol(ptr);
+			remove_window_timers(winref);
 			return;
 		}
 		else if (!my_strnicmp(flag+1, "REF", 3))	/* REFNUM */
