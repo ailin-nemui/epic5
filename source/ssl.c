@@ -4,7 +4,7 @@
 #ifdef HAVE_SSL
 #include "ssl.h"
 
-// struct	cipher_info	cipher_info;
+/* struct	cipher_info	cipher_info; */
 char	err_buf[256];
 
 SSL_CTX	*SSL_CTX_init (int server)

@@ -136,4 +136,21 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Change $channel() indicator for +h users to use '%' insteazd of 'h'
 * Do repo-direct work: Move the README.SSL file to doc/
 * Start fixing up some of the documentation for the 1.1.3 release!
+* Fix race condition in handling signals by blocking them during processing.
+* Fix 'make installscript' again
+* Fix /lastlog to use an "real expanded" banner and not just /set banner.
 * Support double-quoted words in server specifications. (rb wd)
+* Fix a bug with a naked /window channel.  I might do something with this. (ce)
+* Fix a bug with the new /queue implementation. (ce)
+* Add /set status_halfop (ce)
+* Add new function, $getcommands(), like $getsets(). (ce)
+* Fix compiler warnings under OS X (ce)
+* Change /ignore #channel crap to ignore quit message (ce)
+* Fix a bogon when you try to do /window channel 0.
+* Add a new field to the end of the server-spec for "protocol".
+  -- This can be "irc" or "irc-ssl"
+* Remove the -ssl flag to /server and /window server.
+* New built in function, $servertype(), which returns the "protocol"
+* Add $serverctl(), a general purpose low-level server list manip function.
+* Fix support for the /dcc * -p option (local port to use)
+
