@@ -202,9 +202,7 @@ void	file_put_it (FILE *fp, const char *format, ...)
 			fputs("\n", fp);
 		}
 		else if (window_display)
-		{
 			put_echo(putbuf);
-		}
 	}
 }
 

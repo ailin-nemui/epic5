@@ -147,7 +147,6 @@ installwserv: wserv4 installdirs test
 #
 scriptdir = $(epicdir)/script
 installscript: installdirs test
-	-chmod -x @srcdir@/script/*
 	-@(								\
 		if ./my_test -f $(IP)$(scriptdir)/local; then		\
 			if ./my_test -f script/local; then 		\
@@ -158,20 +157,25 @@ installscript: installdirs test
 	)
 	for i in @srcdir@/script/*; \
 	do \
-		target=$(IP)$(scriptdir)/`basename $$i`; \
-		if ./my_test -f $$target; then \
-			if ./my_test $$i -nt $$target; then \
-				$(INSTALL_DATA) $$i $$target; \
+		if ./my_test -f $$i; then \
+			if ./my_test -x $$i; then \
+				chmod a-x $$i; \
 			fi; \
-		elif ./my_test -f $$target.gz; then \
-			if ./my_test $$i -nt $$target.gz; then \
+			target=$(IP)$(scriptdir)/`basename $$i`; \
+			if ./my_test -f $$target; then \
+				if ./my_test $$i -nt $$target; then \
+					$(INSTALL_DATA) $$i $$target; \
+				fi; \
+			elif ./my_test -f $$target.gz; then \
+				if ./my_test $$i -nt $$target.gz; then \
+					$(INSTALL_DATA) $$i $$target; \
+					gzip -f $$target; \
+				fi; \
+			else \
 				$(INSTALL_DATA) $$i $$target; \
-				gzip -f $$target; \
-			fi; \
-		else \
-			$(INSTALL_DATA) $$i $$target; \
-			if ./my_test -f $(IP)$(scriptdir)/gzip-scripts; then \
-				gzip -f $$target; \
+				if ./my_test -f $(IP)$(scriptdir)/gzip-scripts; then \
+					gzip -f $$target; \
+				fi; \
 			fi; \
 		fi; \
 	done
