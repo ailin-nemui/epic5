@@ -148,3 +148,4 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Add ssl_reader(), a dgets-like reader for SSL connections
 * Add server_ssl_reader(), a dgets reader for servers using SSL.
 * I probably broke SSL servers by doing this -- report bugs please!
+* Import epic4 commits 674 through 692, inclusive.

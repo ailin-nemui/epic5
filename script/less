@@ -4,9 +4,13 @@
 # My apologies in advance to archon.
 # Modified on Jan 25, 1999 as an example of how to use arglists.
 #
-# Modified by howl on Des 8, 2003, to honour numlines(), and close file
+# Modified by howl on Des(1) 8, 2003, to honour numlines(), and close file
 # on 'q'
 #
+# Modified by howl on Jan 14, 2004, to turn indent, and continue line off
+# when paging a file. 
+#
+# (1: Des (Desember) is Dec (December) in Norwegian)
 
 alias less (file default "-help")
 {
@@ -26,6 +30,11 @@ alias less_file (file, count, winnum default 0, void)
 	^local line 0
 	^local ugh
 	^local width ${word(0 $geom())-1}
+	
+	stack push set indent
+	stack push set continue_line
+	^set indent off
+	^set -continue_line
 	while (!eof($file) && (line < count))
 	{
 		@ ugh = read($file)
@@ -34,7 +43,8 @@ alias less_file (file, count, winnum default 0, void)
 			xecho -w $winnum $ugh
 		}
 	}
-
+	stack pop set indent
+	stack pop set continue_line
 	if (!eof($file))
 	{
 		@ less.fd = file

@@ -7,7 +7,7 @@
 # What this script does is convert these requests to a form
 # that epic normally can handle.
 #
-on #^ctcp_request 0 "% % DCC \\[SEND ACCEPT\\] *\"* *\"*" {
+on #^ctcp_request 0 "% % DCC \[SEND ACCEPT\] *\"* *\"*" {
         @ :ll = before(\\" $2-)
         @ :mm = after(\\" $2-)
         @ :mm = before(-1 \\" $mm)
@@ -15,3 +15,9 @@ on #^ctcp_request 0 "% % DCC \\[SEND ACCEPT\\] *\"* *\"*" {
         @ :rr = after(-1 \\" $2-)
         pretend :$0!$userhost() PRIVMSG $1 :$chr(1)$ll$mm$rr$chr(1)
 }
+
+#
+# This is a new feature in epic which conflicts with this script.  You may want
+# to not load this script and leave this feature on instead.
+#
+set dcc_dequote_filenames off

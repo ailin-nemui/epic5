@@ -1,4 +1,4 @@
-/* $EPIC: reg.c,v 1.10 2004/01/06 05:43:23 jnelson Exp $ */
+/* $EPIC: reg.c,v 1.11 2004/01/29 06:59:55 jnelson Exp $ */
 /*
  * reg.c - "glob"-like wildcard pattern matching (not regexes)
  *
@@ -163,15 +163,28 @@ static int new_match (const unsigned char *pattern, const unsigned char *string)
 				return 0;
 			}
 
-			/*
-			 * XXXX Skip over any backslashes...
-			 */
 			if (*pattern == '\\')
 			{
-				pattern++;
-				/* XXX This test looks totaly pointless. */
-				if (tolower(*string) != tolower(*pattern))
-					continue;
+                          if (x_debug & DEBUG_REGEX_DEBUG)
+                             yell("Trying to match [%d] after the backslash "
+                                   "against [%d]", (int)*(pattern + 1), 
+                                                  (int)*string);
+
+                          if (tolower(*string) == tolower(*(pattern+1)))
+                          {
+                               if (x_debug & DEBUG_REGEX_DEBUG)
+                                  yell("It matches!  Releasing the backslash");
+
+                               pattern++;
+                               asterisk = 0;
+                               last_asterisk_point = string;
+                               last_asterisk_count = count;
+
+                               pattern++;
+                               string++;
+                          }
+                          else
+                               string++;               /* Not this char */
 			}
 
 			/*
@@ -239,9 +252,34 @@ static int new_match (const unsigned char *pattern, const unsigned char *string)
 			 */
 			if (*pattern == '\\')
 			{
-				pattern++;
-				if (tolower(*string) != tolower(*pattern))
-					continue;
+                          if (x_debug & DEBUG_REGEX_DEBUG)
+                             yell("Trying to match [%d] after the backslash "
+                                   "against [%d]", (int)*(pattern + 1), 
+                                                  (int)*string);
+
+                          if (tolower(*string) == tolower(*(pattern+1)))
+                          {
+                               if (x_debug & DEBUG_REGEX_DEBUG)
+                                  yell("It matches!  Releasing the backslash");
+
+                               pattern++;
+                               asterisk = 0;
+                               last_asterisk_point = string;
+                               last_asterisk_count = count;
+
+                               pattern++;
+                               string++;
+                          }
+                          else if (*string == ' ')
+                          {
+                               if (x_debug & DEBUG_REGEX_DEBUG)
+                               {
+                                  yell("Found a space trying to match the [%d] after a %%\\, so this doesn't match.", (int)*(pattern + 1));
+                                  return 0;
+                               }
+                          }
+                          else
+                               string++;               /* Not this char */
 			}
 
 			/*

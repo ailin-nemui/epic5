@@ -1,4 +1,4 @@
-/* $EPIC: numbers.c,v 1.65 2004/01/15 22:28:04 jnelson Exp $ */
+/* $EPIC: numbers.c,v 1.66 2004/01/29 06:59:55 jnelson Exp $ */
 /*
  * numbers.c: handles all those strange numeric response dished out by that
  * wacky, nutty program we call ircd 
@@ -254,10 +254,20 @@ void 	numbered_command (const char *from, const char *comm, char const **ArgList
 			value = strchr(set, '=');
 			if (value && *value) 
 				*value++ = 0;
-			else
-				value = LOCAL_COPY(space);
 
-			set_server_005(from_server, set, value);
+			if (*set == '+')	/* Parameter append */
+			{
+				const char *ov = get_server_005(from_server, ++set);
+				value = malloc_strdup2(ov, value);
+				set_server_005(from_server, set, value);
+				new_free(&value);
+			}
+			if (*set == '-')	/* Parameter removal */
+				set_server_005(from_server, ++set, NULL);
+			else if (value && *value)
+				set_server_005(from_server, set, value);
+			else
+				set_server_005(from_server, set, space);
 		}
 		break;
 	}
@@ -476,6 +486,9 @@ void 	numbered_command (const char *from, const char *comm, char const **ArgList
 
 		    while ((nick = next_arg(line_copy, &line_copy)) != NULL)
 		    {
+			/* XXX Hack to work around space at end of 353 */
+			forcibly_remove_trailing_spaces(nick, NULL);
+
 			/*
 			 * 1999 Oct 29 -- This is a hack to compensate for
 			 * a bug in older ircd implementations that can result

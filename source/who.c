@@ -1,4 +1,4 @@
-/* $EPIC: who.c,v 1.29 2003/12/16 23:25:45 jnelson Exp $ */
+/* $EPIC: who.c,v 1.30 2004/01/29 06:59:55 jnelson Exp $ */
 /*
  * who.c -- The WHO queue.  The ISON queue.  The USERHOST queue.
  *
@@ -272,16 +272,24 @@ void 	whobase (int refnum, char *args, void (*line) (int, const char *, const ch
 			return;
 		}
 
-		if (!strncmp(arg, "line", 4))		/* LINE */
+		else if (!strncmp(arg, "away", MAX(len, 1)))
+			new_w->who_mask |= WHO_AWAY;
+		else if (!strncmp(arg, "chops", MAX(len, 2)))
+			new_w->who_mask |= WHO_CHOPS;
+		else if (!strncmp(arg, "delete", MAX(len, 1)))
 		{
-			char *stuff;
-
-			if ((stuff = next_expr(&args, '{')))
-				malloc_strcpy(&new_w->who_stuff, stuff);
-			else
-				say("Need {...} argument for -LINE argument.");
+			who_queue_list(refnum);
+			delete_who_item(new_w);
+			return;
 		}
-		else if (!strncmp(arg, "end", 3))	/* END */
+		else if (!strncmp(arg, "dx", MAX(len, 2)))
+		{
+			new_w->dalnet_extended = 1;
+			new_w->dalnet_extended_args = new_next_arg(args, &args);
+			channel = args;		/* Grab the rest of args */
+			args = NULL;
+		}
+		else if (!strncmp(arg, "end", MAX(len, 3)))
 		{
 			char *stuff;
 
@@ -290,19 +298,15 @@ void 	whobase (int refnum, char *args, void (*line) (int, const char *, const ch
 			else
 				say("Need {...} argument for -END argument.");
 		}
-		else if (!strncmp(arg, "operspy", 5))	/* OPERSPY */
-			new_w->who_mask |= WHO_OPERSPY;
-		else if (!strncmp(arg, "o", 1))		/* OPS */
-			new_w->who_mask |= WHO_OPS;
-		else if (!strncmp(arg, "lu", 2))	/* LUSERS */
-			new_w->who_mask |= WHO_LUSERS;
-		else if (!strncmp(arg, "ch", 2))	/* CHOPS */
-			new_w->who_mask |= WHO_CHOPS;
-		else if (!strncmp(arg, "no", 2))	/* NOCHOPS */
-			new_w->who_mask |= WHO_NOCHOPS;
-		else if (!strncmp(arg, "u-i", 3))	/* INVIS */
-			new_w->who_mask |= WHO_INVISIBLE;
-		else if (!strncmp(arg, "ho", 2))	/* HOSTS */
+		else if (!strncmp(arg, "flush", MAX(len, 1)))
+		{
+			who_queue_flush(refnum);
+			delete_who_item(new_w);
+			return;
+		}
+	 	else if (!strncmp(arg, "here", MAX(len, 2)))
+			new_w->who_mask |= WHO_HERE;
+		else if (!strncmp(arg, "hosts", MAX(len, 2)))
 		{
 			if ((arg = next_arg(args, &args)) == NULL)
 			{
@@ -314,23 +318,32 @@ void 	whobase (int refnum, char *args, void (*line) (int, const char *, const ch
 			malloc_strcpy(&new_w->who_host, arg);
 			channel = new_w->who_host;
 		}
-	 	else if (!strncmp(arg, "he", 2))	/* here */
-			new_w->who_mask |= WHO_HERE;
-		else if (!strncmp(arg, "a", 1))		/* away */
-			new_w->who_mask |= WHO_AWAY;
-		else if (!strncmp(arg, "s", 1)) 	/* servers */
-		{
-			if ((arg = next_arg(args, &args)) == NULL)
-			{
-				say("WHO -SERVER: missing arguement");
-				return;
-			}
 
-			new_w->who_mask |= WHO_SERVER;
-			malloc_strcpy(&new_w->who_server, arg);
-			channel = new_w->who_server;
+		else if (!strncmp(arg, "line", MAX(len, 4)))
+		{
+			char *stuff;
+
+			if ((stuff = next_expr(&args, '{')))
+				malloc_strcpy(&new_w->who_stuff, stuff);
+			else
+				say("Need {...} argument for -LINE argument.");
 		}
-		else if (!strncmp(arg, "na", 2))
+		else if (!strncmp(arg, "literal", MAX(len, 3)))
+		{
+			/* Hope for the best */
+			new_w->who_mask = 0;	/* For safety reasons */
+			new_w->dalnet_extended = 0;
+			new_w->undernet_extended = 0;
+			new_free(&new_w->who_stuff);
+			new_free(&new_w->who_end);
+			who_queue_add(refnum, new_w);
+
+			send_to_aserver(refnum, "WHO %s", args);
+			return;
+		}
+		else if (!strncmp(arg, "lusers", MAX(len, 2)))
+			new_w->who_mask |= WHO_LUSERS;
+		else if (!strncmp(arg, "name", MAX(len, 2)))
 		{
 			if ((arg = next_arg(args, &args)) == NULL)
 			{
@@ -342,19 +355,7 @@ void 	whobase (int refnum, char *args, void (*line) (int, const char *, const ch
 			malloc_strcpy(&new_w->who_name, arg);
 			channel = new_w->who_name;
 		}
-		else if (!strncmp(arg, "r", 1))
-		{
-			if ((arg = next_arg(args, &args)) == NULL)
-			{
-				say("WHO -REALNAME: missing arguement");
-				return;
-			}
-
-			new_w->who_mask |= WHO_REAL;
-			malloc_strcpy(&new_w->who_real, arg);
-			channel = new_w->who_real;
-		}
-		else if (!strncmp(arg, "ni", 2))
+		else if (!strncmp(arg, "nick", MAX(len, 2)))
 		{
 			if ((arg = next_arg(args, &args)) == NULL)
 			{
@@ -366,42 +367,43 @@ void 	whobase (int refnum, char *args, void (*line) (int, const char *, const ch
 			malloc_strcpy(&new_w->who_nick, arg);
 			channel = new_w->who_nick;
 		}
-		else if (!strncmp(arg, "f", 1))
+		else if (!strncmp(arg, "nochops", MAX(len, 2)))
+			new_w->who_mask |= WHO_NOCHOPS;
+		else if (!strncmp(arg, "oper", MAX(len, 1)))
+			new_w->who_mask |= WHO_OPS;
+		else if (!strncmp(arg, "operspy", MAX(len, 5)))
+			new_w->who_mask |= WHO_OPERSPY;
+		else if (!strncmp(arg, "realname", MAX(len, 1)))
 		{
-			who_queue_flush(refnum);
-			delete_who_item(new_w);
-			return;
+			if ((arg = next_arg(args, &args)) == NULL)
+			{
+				say("WHO -REALNAME: missing arguement");
+				return;
+			}
+
+			new_w->who_mask |= WHO_REAL;
+			malloc_strcpy(&new_w->who_real, arg);
+			channel = new_w->who_real;
 		}
-		else if (!strncmp(arg, "ux", 2))
+		else if (!strncmp(arg, "servers", MAX(len, 1)))
+		{
+			if ((arg = next_arg(args, &args)) == NULL)
+			{
+				say("WHO -SERVER: missing arguement");
+				return;
+			}
+
+			new_w->who_mask |= WHO_SERVER;
+			malloc_strcpy(&new_w->who_server, arg);
+			channel = new_w->who_server;
+		}
+		else if (!strncmp(arg, "u-i", MAX(len, 3)))
+			new_w->who_mask |= WHO_INVISIBLE;
+		else if (!strncmp(arg, "ux", MAX(len, 2)))
 		{
 			new_w->undernet_extended = 1;
 			new_w->undernet_extended_args = args;
 			args = NULL;
-		}
-		else if (!strncmp(arg, "dx", 2))
-		{
-			new_w->dalnet_extended = 1;
-			new_w->dalnet_extended_args = new_next_arg(args, &args);
-			channel = args;		/* Grab the rest of args */
-			args = NULL;
-		}
-		else if (!strncmp(arg, "d", 1))
-		{
-			who_queue_list(refnum);
-			delete_who_item(new_w);
-			return;
-		}
-		else if (!strncmp(arg, "lit", 3))	/* Hope for the best */
-		{
-			new_w->who_mask = 0;	/* For safety reasons */
-			new_w->dalnet_extended = 0;
-			new_w->undernet_extended = 0;
-			new_free(&new_w->who_stuff);
-			new_free(&new_w->who_end);
-			who_queue_add(refnum, new_w);
-
-			send_to_aserver(refnum, "WHO %s", args);
-			return;
 		}
 		else
 		{

@@ -101,19 +101,20 @@ alias.tt assign.grep (args) {
 # however, alias.pack will destroy the arg lists of the alias.
 #
 alias.tt assign.pack {
-	@ :baz = []
-	@ :list = aliasctl(assign pmatch "\\[$*\\]")
-	fe ($list) foo {
-		@ baz = aliasctl(assign getpackage $foo)
-		@ aliasctl(assign set $foo $aliasctl(assign get $foo))
-		@ aliasctl(assign setpackage $foo $baz)
-	}
-	@ list = #list
-	if (functioncall()) {
-		return $list
-	} elsif (isdisplaying()) {
-		echo Packed $list matching $*
-	}
+	do {
+		@ :list = aliasctl(assign $start pmatch "\\[$*\\]")
+		fe ($list) foo {
+			@ :baz = aliasctl(assign getpackage $foo)
+			@ aliasctl(assign set $foo $aliasctl(assign get $foo))
+			@ aliasctl(assign setpackage $foo $baz)
+		}
+		@ list = #list
+		if (functioncall()) {
+			return $list
+		} elsif (isdisplaying()) {
+			echo Packed $list matching $*
+		}
+	} while (list && (:start += aliasctl(maxret)))
 }
 
 #

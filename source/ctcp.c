@@ -1,4 +1,4 @@
-/* $EPIC: ctcp.c,v 1.34 2004/01/07 16:05:02 jnelson Exp $ */
+/* $EPIC: ctcp.c,v 1.35 2004/01/29 06:59:55 jnelson Exp $ */
 /*
  * ctcp.c:handles the client-to-client protocol(ctcp). 
  *
@@ -285,7 +285,9 @@ CTCP_HANDLER(do_dcc)
 		return NULL;
 
 	if     (!(type = next_arg(cmd, &cmd)) ||
-		!(description = new_next_arg(cmd, &cmd)) ||
+		!(description = (get_int_var(DCC_DEQUOTE_FILENAMES_VAR)
+				? new_next_arg(cmd, &cmd)
+				: next_arg(cmd, &cmd))) ||
 		!(inetaddr = next_arg(cmd, &cmd)) ||
 		!(port = next_arg(cmd, &cmd)))
 			return NULL;

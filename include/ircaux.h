@@ -7,7 +7,7 @@
  *
  * See the COPYRIGHT file, or do a HELP IRCII COPYRIGHT 
  *
- * @(#)$Id: ircaux.h,v 1.64 2004/01/14 03:04:31 jnelson Exp $
+ * @(#)$Id: ircaux.h,v 1.65 2004/01/29 06:59:54 jnelson Exp $
  */
 
 #ifndef _IRCAUX_H_
@@ -89,6 +89,7 @@ Timeval double_to_timeval 	(double);
 const char *	plural 		(int);
 double	time_to_next_minute 	(void);
 char *	remove_trailing_spaces 	(char *, size_t *cluep);
+char *	forcibly_remove_trailing_spaces (char *, size_t *);
 char *	ltoa 			(long);
 char *	ftoa			(double);
 char *	strformat 		(char *, const char *, ssize_t, int);

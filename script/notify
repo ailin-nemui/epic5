@@ -49,7 +49,7 @@ alias change_notify_status (refnum, newstatus, nicklist) {
 			}
 		} else {
 			fe ($nicklist) nickname {
-				shook notify_signon $nickname
+				shook notify_signon $nickname <EMPTY>
 			}
 		}
 	} elsif (newstatus == [offline]) {
@@ -119,11 +119,11 @@ alias establish_notify_hooks {
 		@:online_list = online_list[$refnum]
 		@:offline_list = remws($online_list / $notify_list $notify_list[$refnum])
 
-		if (findw($1 $online_list) != -1) {
+		if (findw($1 $online_list) > -1) {
 			@change_notify_status($refnum offline $1)
 		}
 
-		if (findw($2 $offline_list) != -1) {
+		if (findw($2 $offline_list) > -1) {
 			@change_notify_status($refnum online $2)
 		}
 	}
@@ -131,7 +131,7 @@ alias establish_notify_hooks {
 	^on #^channel_signoff 100 "*" {
 		@:refnum = servernum()
 
-		if (findw($1 $online_list[$refnum]) != -1) {
+		if (findw($1 $online_list[$refnum]) > -1) {
 			@change_notify_status($refnum offline $1)
 		}
 	}
@@ -140,7 +140,7 @@ alias establish_notify_hooks {
 		@:refnum = servernum()
 		@:offline_list = remws($online_list[$refnum] / $notify_list $notify_list[$refnum])
 
-		if (findw($0 $offline_list) != -1) {
+		if (findw($0 $offline_list) > -1) {
 			@change_notify_status($refnum online $0)
 		}
 	}
@@ -149,7 +149,7 @@ alias establish_notify_hooks {
 		@:refnum = servernum()
 		@:offline_list = remws($online_list[$refnum] / $notify_list $notify_list[$refnum])
 
-		if (findw($0 $offline_list) != -1) {
+		if (findw($0 $offline_list) > -1) {
 			@change_notify_status($refnum online $0)
 		}
 	}
@@ -158,7 +158,7 @@ alias establish_notify_hooks {
 		@:refnum = servernum()
 		@:offline_list = remws($online_list[$refnum] / $notify_list $notify_list[$refnum])
 
-		if (findw($0 $offline_list) != -1) {
+		if (findw($0 $offline_list) > -1) {
 			@change_notify_status($refnum online $0)
 		}
 	}
@@ -195,10 +195,19 @@ alias establish_notify_hooks {
 		}
 	}
 
+	^on #^311 100 "*" {
+		@:refnum = servernum()
+		@:offline_list = remws($online_list[$refnum] / $notify_list $notify_list[$refnum])
+
+		if (findw($1 $offline_list) > -1) {
+			@change_notify_status($refnum online $1)
+		}
+	}
+
 	^on #^401 100 "*" {
 		@:refnum = servernum()
 
-		if (findw($1 $online_list[$refnum]) != -1) {
+		if (findw($1 $online_list[$refnum]) > -1) {
 			@change_notify_status($refnum offline $1)
 		}
 	}
@@ -206,7 +215,7 @@ alias establish_notify_hooks {
 
 alias find_local_notify_entry (nickname) {
 	fe ($myservers(*)) refnum {
-		if (findw($nickname $notify_list[$refnum]) != -1) {
+		if (findw($nickname $notify_list[$refnum]) > -1) {
 			return $refnum
 		}
 	}
@@ -317,7 +326,7 @@ alias notify (nicklist) {
 				@:grouprefs = serverctl(GMATCH $groupname)
 
 				if (grouprefs == []) {
-					xecho -b -c -- $groupname is not a valid server group name
+					xecho -b -c -- $groupname is an invalid server group name
 
 					continue
 				}
@@ -372,13 +381,13 @@ alias notify (nicklist) {
 					continue
 				}
 
-				if (findw($nickname $notify_list[$refnum]) != -1) {
+				if (findw($nickname $notify_list[$refnum]) > -1) {
 					xecho -b -c -- $nickname is already in the local notify list for server ${serv}!
 
 					continue
 				}
 
-				if (findw($nickname $notify_list) != -1) {
+				if (findw($nickname $notify_list) > -1) {
 					xecho -b -c -- $nickname is already in the global notify list!
 
 					continue
@@ -397,7 +406,7 @@ alias notify (nicklist) {
 				}
 
 				if (grouprefs == []) {
-					xecho -b -c -- $groupname is not a valid server group name
+					xecho -b -c -- $groupname is an invalid server group name
 
 					continue
 				}
@@ -408,19 +417,19 @@ alias notify (nicklist) {
 
 				xecho -b -c -- $nickname has been added to the local notify lists for servers in group $groupname
 			} else {
-				@:refmatch = find_local_notify_entry($nickname)
+				@:refnum = find_local_notify_entry($nickname)
 
 				if (nickname == []) {
 					continue
 				}
 
-				if (refmatch > -1) {
-					xecho -b -c -- $nickname is already in the local notify list for server ${refmatch}!
+				if (refnum > -1) {
+					xecho -b -c -- $nickname is already in the local notify list for server ${refnum}!
 
 					continue
 				}
 
-				if (findw($nickname $notify_list) != -1) {
+				if (findw($nickname $notify_list) > -1) {
 					xecho -b -c -- $nickname is already in the global notify list!
 
 					continue
@@ -447,7 +456,7 @@ alias process_ison_reply (refnum, ison_list) {
 	push ison_list $ob_signons[$refnum]
 
 	fe ($offline_list) nickname {
-		if (findw($nickname $ison_list) != -1) {
+		if (findw($nickname $ison_list) > -1) {
 			push new_online_nicks $nickname
 		}
 	}
@@ -490,6 +499,7 @@ alias remove_notify_hooks {
 	^on #^server_lost 100 -"*"
 	^on #^003 100 -"*"
 	^on ^303 -"*"
+	^on #^311 100 -"*"
 	^on #^401 100 -"*"
 }
 
@@ -518,6 +528,8 @@ on ^notify_signoff "*" {
 on ^notify_signon "*" {
 	if ([$1] == [<UNKNOWN>@<UNKNOWN>]) {
 		xecho -b -w $serv_win() -- Signon by $0 \(\) detected
+	} elsif ([$1] == [<EMPTY>]) {
+		xecho -b -w $serv_win() -- Signon by $0 detected
 	} else {
 		xecho -b -w $serv_win() -- Signon by $0 \($1\) detected
 	}

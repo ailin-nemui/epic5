@@ -1,4 +1,4 @@
-/* $EPIC: vars.c,v 1.47 2003/12/17 09:25:31 jnelson Exp $ */
+/* $EPIC: vars.c,v 1.48 2004/01/29 06:59:55 jnelson Exp $ */
 /*
  * vars.c: All the dealing of the irc variables are handled here. 
  *
@@ -145,6 +145,7 @@ static	IrcVariable irc_variable[] =
 	{ "CPU_SAVER_EVERY",		INT_TYPE_VAR,	DEFAULT_CPU_SAVER_EVERY, 0, NULL, set_cpu_saver_every, 0, 0 },
 	{ "CURRENT_WINDOW_LEVEL",	STR_TYPE_VAR,	0, 0, NULL, set_current_window_mask, 0, 0 },
 	{ "DCC_AUTO_SEND_REJECTS",	BOOL_TYPE_VAR,	DEFAULT_DCC_AUTO_SEND_REJECTS, 0, NULL, NULL, 0, 0 },
+	{ "DCC_DEQUOTE_FILENAMES",	BOOL_TYPE_VAR,	DEFAULT_DCC_DEQUOTE_FILENAMES, 0, NULL, NULL, 0, 0 },
 	{ "DCC_LONG_PATHNAMES",		BOOL_TYPE_VAR,	DEFAULT_DCC_LONG_PATHNAMES, 0, NULL, NULL, 0, 0 },
 	{ "DCC_SLIDING_WINDOW",		INT_TYPE_VAR,	DEFAULT_DCC_SLIDING_WINDOW, 0, NULL, NULL, 0, 0 },
 	{ "DCC_STORE_PATH",		STR_TYPE_VAR,	0, 0, NULL, NULL, 0, 0 },

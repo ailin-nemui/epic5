@@ -1,4 +1,4 @@
-/* $EPIC: functions.c,v 1.154 2003/12/28 05:59:15 jnelson Exp $ */
+/* $EPIC: functions.c,v 1.155 2004/01/29 06:59:55 jnelson Exp $ */
 /*
  * functions.c -- Built-in functions for ircII
  *
@@ -213,6 +213,8 @@ static	char
 	*function_chrq 		(char *),
 	*function_cipher	(char *),
 	*function_close 	(char *),
+	*function_cofilter	(char *),
+	*function_corfilter	(char *),
 	*function_common 	(char *),
 	*function_convert 	(char *),
 	*function_copattern 	(char *),
@@ -471,10 +473,12 @@ static BuiltInFunctions	built_in_functions[] =
 	{ "CHRQ",		function_chrq 		},
 	{ "CIPHER",		function_cipher		},
 	{ "CLOSE",		function_close 		},
+	{ "CORFILTER",		function_corfilter	},
 	{ "COMMON",             function_common 	},
 	{ "CONNECT",		function_connect 	},
 	{ "CONVERT",		function_convert 	},
 	{ "COPATTERN",          function_copattern 	},
+	{ "CORFILTER",		function_corfilter	},
 	{ "CORPATTERN",		function_corpattern 	},
 	{ "COS",		function_cos		},
 	{ "COSH",		function_cosh		},
@@ -1391,7 +1395,12 @@ static char	*function_decode (unsigned char *input)
  */
 BUILT_IN_FUNCTION(function_ischannel, input)
 {
-	RETURN_INT(is_channel(input));
+	char *	channel;
+	int	ret;
+
+	channel = new_next_arg(input, &input);
+	ret = is_channel(channel);
+	RETURN_INT(ret);
 }
 
 /*
@@ -1412,10 +1421,13 @@ BUILT_IN_FUNCTION(function_ischannel, input)
  */
 BUILT_IN_FUNCTION(function_ischanop, input)
 {
-	char	*nick;
+	char 	*nick, *chan;
+	int	ret;
 
-	GET_STR_ARG(nick, input);
-	RETURN_INT(is_chanop(input, nick));
+	nick = new_next_arg(input, &input);
+	chan = new_next_arg(input, &input);
+	ret = is_chanop(chan, nick);
+	RETURN_INT(ret);
 }
 
 
@@ -2137,71 +2149,43 @@ BUILT_IN_FUNCTION(function_rfilter, word)
  *     $copattern(*@iastate.edu userh nicks) 
  *	returns "hop IRSMan"
  */
-BUILT_IN_FUNCTION(function_copattern, word)
-{
-	char	*booya = (char *) 0,
-		*pattern = (char *) 0,
-		*firstl = (char *) 0, *firstlist = (char *) 0, *firstel = (char *) 0,
-		*secondl = (char *) 0, *secondlist = (char *) 0, *secondel = (char *) 0;
-	char 	*sfirstl, *ssecondl;
-	size_t	rvclue=0;
-
-	GET_STR_ARG(pattern, word);
-	GET_STR_ARG(firstlist, word);
-	GET_STR_ARG(secondlist, word);
-
-	firstl = get_variable(firstlist);
-	secondl = get_variable(secondlist);
-	sfirstl = firstl;
-	ssecondl = secondl;
-
-	while ((firstel = new_next_arg(firstl, &firstl)))
-	{
-		if (!(secondel = new_next_arg(secondl, &secondl)))
-			break;
-
-		if (wild_match(pattern, firstel))
-			malloc_strcat_word_c(&booya, space, secondel, &rvclue);
-	}
-	new_free(&sfirstl);
-	new_free(&ssecondl);
-	RETURN_MSTR(booya);
+#define COPATFUNC(fn, pat, arg, sense)                                 \
+BUILT_IN_FUNCTION((fn), word)                                          \
+{                                                                      \
+       char    *booya = (char *) 0,                                    \
+	       *pattern = (char *) 0,                                  \
+               *firstl = (char *) 0, *firstlist = (char *) 0, *firstel = (char *) 0,       \
+               *secondl = (char *) 0, *secondlist = (char *) 0, *secondel = (char *) 0;    \
+       char    *sfirstl, *ssecondl;                                          \
+       size_t  rvclue=0;                                                     \
+                                                                             \
+       GET_STR_ARG(pattern, word);                                           \
+       GET_STR_ARG(firstlist, word);                                         \
+       GET_STR_ARG(secondlist, word);                                        \
+                                                                             \
+       firstl = get_variable(firstlist);                                     \
+       secondl = get_variable(secondlist);                                   \
+       sfirstl = firstl;                                                     \
+       ssecondl = secondl;                                                   \
+                                                                             \
+       while ((firstel = new_next_arg(firstl, &firstl)))                     \
+       {                                                                     \
+               if (!(secondel = new_next_arg(secondl, &secondl)))            \
+                       break;                                                \
+                                                                             \
+               if ((sense) == !wild_match((pat), (arg)))                     \
+                       malloc_strcat_word_c(&booya, space, secondel, &rvclue); \
+       }                                                                     \
+       new_free(&sfirstl);                                                   \
+       new_free(&ssecondl);                                                  \
+       RETURN_MSTR(booya);                                                   \
 }
+COPATFUNC(function_copattern, pattern, firstel, 0)
+COPATFUNC(function_corpattern, firstel, pattern, 0)
+COPATFUNC(function_cofilter, pattern, firstel, 1)
+COPATFUNC(function_corfilter, firstel, pattern, 1)
+#undef COPATFUNC
 
-/* $corpattern(pattern var_1 var_2)
- *
- * As per $copattern(), except that the strings in var_1 are wildcard patterns.
- */
-BUILT_IN_FUNCTION(function_corpattern, word)
-{
-	char	*booya = (char *) 0,
-		*pattern = (char *) 0,
-		*firstl = (char *) 0, *firstlist = (char *) 0, *firstel = (char *) 0,
-		*secondl = (char *) 0, *secondlist = (char *) 0, *secondel = (char *) 0;
-	char 	*sfirstl, *ssecondl;
-	size_t	rvclue=0;
-
-	GET_STR_ARG(pattern, word);
-	GET_STR_ARG(firstlist, word);
-	GET_STR_ARG(secondlist, word);
-
-	firstl = get_variable(firstlist);
-	secondl = get_variable(secondlist);
-	sfirstl = firstl;
-	ssecondl = secondl;
-
-	while ((firstel = new_next_arg(firstl, &firstl)))
-	{
-		if (!(secondel = new_next_arg(secondl, &secondl)))
-			break;
-
-		if (wild_match(firstel, pattern))
-			malloc_strcat_word_c(&booya, space, secondel, &rvclue);
-	}
-	new_free(&sfirstl);
-	new_free(&ssecondl);
-	RETURN_MSTR(booya);
-}
 
 /* $beforew(pattern string of words)
  * returns the portion of "string of words" that occurs before the 
@@ -5570,6 +5554,7 @@ BUILT_IN_FUNCTION(function_rest, input)
 {
 	int	start = 1;
 	char *	test_input;
+	int	len;
 
 	/*
 	 * XXX - This is a total hack.  I know it.
@@ -5579,13 +5564,16 @@ BUILT_IN_FUNCTION(function_rest, input)
 	if (test_input > input && my_isspace(*test_input))
 		GET_INT_ARG(start, input);
 
-	if (start <= 0)
-		RETURN_STR(input);
+	len = (int)strlen(input);
 
-	if (start >= (int)strlen(input))
+	if (start >= len || -start >= len)
 		RETURN_EMPTY;
+	else if (start >= 0)
+		RETURN_STR(input + start);
+	else
+		input[len + start] = 0;
 
-	RETURN_STR(input + start);
+	RETURN_STR(input);
 }
 
 
@@ -6764,30 +6752,47 @@ BUILT_IN_FUNCTION(function_logctl, input)
  */
 BUILT_IN_FUNCTION(function_joinstr, input)
 {
-	char	*sep;
-	char	*var1, *val1, *word1;
-	char	*var2, *val2, *word2;
-	char	*retval = NULL;
-	size_t  clue=0;
+	char	*sep, *word;
+	char	*retval = NULL, *sub = NULL;
+	char	**freeit = NULL, **vals = NULL;
+	size_t	valc = 0;
+	size_t	retclue = 0;
+	size_t	foo;
 
 	GET_STR_ARG(sep, input)
-	GET_STR_ARG(var1, input)
-	GET_STR_ARG(var2, input)
+	for (valc = 0; input && *input; valc++) {
+		char *var;
 
-	word1 = get_variable(var1);
-	word2 = get_variable(var2);
-	val1 = LOCAL_COPY(word1);
-	val2 = LOCAL_COPY(word2);
-	new_free(&word1);
-	new_free(&word2);
+		RESIZE(vals, vals, valc + 1);
+		RESIZE(freeit, freeit, valc + 1);
 
-	while (*val1 || *val2)
-	{
-		word1 = safe_new_next_arg(val1, &val1);
-		word2 = safe_new_next_arg(val2, &val2);
-		malloc_strcat2_c(&retval, word1, sep, &clue);
-		malloc_strcat2_c(&retval, word2, space, &clue);
+		GET_STR_ARG(var, input)
+		freeit[valc] = vals[valc] = get_variable(var);
 	}
+
+	for (;;) {
+		size_t clue = 0;
+		char   more = 0;
+
+		for (foo = 0; foo < valc; foo++) {
+			more |= *vals[foo];
+			word = safe_new_next_arg(vals[foo], &vals[foo]);
+			malloc_strcat2_c(&sub, foo?sep:"", word, &clue);
+		}
+
+		if (!more)
+			break;
+
+		malloc_strcat_word_c(&retval, space, sub, &retclue);
+		*sub = 0;	/* Improve malloc performance */
+	}
+
+	for (foo = 0; foo < valc; foo++)
+		new_free(&freeit[foo]);
+
+	new_free(&freeit);
+	new_free(&vals);
+	new_free(&sub);
 
 	RETURN_MSTR(retval);
 }

@@ -3,8 +3,8 @@
 #
 
 package help
-alias h help.help $*
-alias help help.help $*
+alias h help.help
+alias help help.help
 
 # help.isdir is stolen more or less from nsx's tabkey script. Thanks nsx!
 alias help.isdir (dir) {
@@ -211,9 +211,9 @@ alias help.help {
 		}
 		@ size = (size == [] ? winsize($win) : size)
 		@ width = (width == [] ? word(0 $geom($win)) -1 : width)
-
+		
 		if (file == [] && dir != [] && fexist($dir/$last) == 1 && match == [*]) {
-			@ file = [$dir$last]
+			@ file = [$dir/$last]
 		}
 		if (dp == [] && file != [] && fexist($file) == 1 && !help.isdir($file)) {
 			if (fp == []) {
@@ -226,10 +226,13 @@ alias help.help {
 				while (!eof($fp) && (pager == 0 || line < size)) {
 					@ tmp = read($fp)
 					if (tmp =~ [#*] || tmp =~ [!*]) continue
+					^stack push set indent
+					^set indent off
 					@ line += numlines($width $tmp)
 					if (!eof($fp)) {
 						xecho -w $win -- $tmp
 					}
+					^stack pop set indent
 				}
 				if (eof($fp)) {
 					@ close($fp)

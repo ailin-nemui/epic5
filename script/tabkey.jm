@@ -385,7 +385,7 @@ alias do_tabkey (cycle_direction) {
 	}
 
 	if (index("$chr(32)" $fragment) == -1) {
-		if (index("$chr(32)" $match_prefix) != -1) {
+		if (index("$chr(32)" $match_prefix) > -1) {
 			repeat $fraglen parsekey backspace
 
 			if (mid($curpos() 1 $L) == ["] && mid(${curpos() - 1} 1 $L) == ["]) {
@@ -654,7 +654,9 @@ alias tclear {
 # *** hooks ***
 
 on #^action 110 "*" {
-	@add_target(msg $0)
+	if (!rmatch($1 #* &* +*) ) {
+		@add_target(msg $0)
+	}
 }
 
 on #^dcc_chat 110 "*" {
@@ -671,10 +673,6 @@ on #^general_notice 110 "% *" {
 
 on #^msg 110 "*" {
 	@add_target(msg $0)
-}
-
-on #^notice 110 "*" {
-	@add_target(notice $0)
 }
 
 on #^send_action 110 "*" {

@@ -306,7 +306,7 @@ const	char *	get_server_redirect		(int);
 	void	make_005			(int);
 	void	destroy_005			(int);
 const	char*	get_server_005			(int, const char *);
-	void	set_server_005			(int, char*, char*);
+	void	set_server_005			(int, char*, const char*);
 
         void    server_hard_wait 		(int);
         void    server_passive_wait 		(int, const char *);

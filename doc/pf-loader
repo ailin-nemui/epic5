@@ -9,7 +9,7 @@ Rule 0: Put a sanity wrapper at the top of your script
 Always put the following line at the top of every pf script to allow it to
 be transparantly /load'ed by the user
 
-    if (word(2 $loadinfo()) != [pf]) { load -pf $word(1 $loadinfo());return }
+    if (word(2 $loadinfo()) != [pf]) { load -pf $word(1 $loadinfo());return };
 
 This checks to see what loader you're using [$word(2 $loadinfo())], and if 
 it is not the "pf" loader, then reload this script [$word(1 $loadinfo())]

@@ -316,20 +316,26 @@ alias replace (args) {
 # The c in shufflec stands for "char".
 # The slow version is actually faster than the fast for smaller arg lists.
 alias shufflec return $chr($shufflef($ascii($*)))
-alias shufflef {
-	if (500>#) {
-		return $shuffles($*)
+alias shufflef (args) {
+	@ :foo = randn($#args 2)
+	if (#args < 1000) {
+		return $shuffles($copattern(0 foo args)) $shuffles($copattern(1 foo args))
 	} else {
-		@ :args = [$*]
-		@ :foo = randn($# 2)
 		return $shufflef($copattern(0 foo args)) $shufflef($copattern(1 foo args))
 	}
 }
 alias shuffles {
 	@ :w = 0
 	@ :ret = []
-	fe ($*) foo {
-		@ splice(ret $rand(${++w}) 0 $foo)
+	if (xdebug(extractw) =~ [-*]) {
+		fe ($*) foo {
+			@ splice(ret $rand(${++w}) 0 $foo)
+		}
+	} else {
+		@ :space = chr($jot(1 32))
+		fe ($*) foo {
+			@ splice(ret $rand(${++w}) 0 ${0>index("$space" $foo)?foo:["$foo"]})
+		}
 	}
 	return $ret
 }
@@ -372,6 +378,14 @@ alias cut (num,sep,args) {
 			return $before(1 $sep ${num ? after($num $sep $args) : args}$sep)
 		}
 	}
+}
+
+# Splice characters.  The bless is so it can be called on local vars.
+alias splicec (var,start,count,replace) {
+	bless
+	^assign $var $ascii($($var))
+	@ function_return = chr($splice($var $start $count $ascii($replace)))
+	^assign $var $chr($($var))
 }
 
 # Bit of a hack here.  Return all args with spacing removed.

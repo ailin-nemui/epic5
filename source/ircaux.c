@@ -1,4 +1,4 @@
-/* $EPIC: ircaux.c,v 1.108 2004/01/05 16:24:40 jnelson Exp $ */
+/* $EPIC: ircaux.c,v 1.109 2004/01/29 06:59:55 jnelson Exp $ */
 /*
  * ircaux.c: some extra routines... not specific to irc... that I needed 
  *
@@ -438,6 +438,23 @@ char *	remove_trailing_spaces (char *foo, size_t *cluep)
 		end++;
 	end[1] = 0;
 	if (cluep) 
+		*cluep = end - foo;
+	return foo;
+}
+
+char *	forcibly_remove_trailing_spaces (char *foo, size_t *cluep)
+{
+	char *end;
+	size_t clue = cluep?*cluep:0;
+	if (!*foo)
+		return foo;
+
+	end = clue + foo + strlen(clue + foo) - 1;
+	while (end > foo && my_isspace(*end))
+		end--;
+	/* Do not save spaces after \ at end of words! */
+	end[1] = 0;
+	if (cluep)
 		*cluep = end - foo;
 	return foo;
 }
@@ -4102,7 +4119,7 @@ char *	malloc_strcat_wordlist_c (char **ptr, const char *word_delim, const char 
 char *	malloc_strcat_word_c (char **ptr, const char *word_delim, const char *word, size_t *clue)
 {
 	/* You MUST turn on extractw to get double quoted words */
-	if (!x_debug & DEBUG_EXTRACTW)
+	if (!(x_debug & DEBUG_EXTRACTW))
 		return malloc_strcat_wordlist_c(ptr, word_delim, word, clue);
 
 	if (word && *word)
