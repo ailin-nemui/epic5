@@ -23,6 +23,11 @@ const char useful_info[] = "epic4 0 9 13";
 const char internal_version[] = "20001205";
 
 /*
+ * In theory, this number is incremented for every commit.
+ */
+const unsigned long	commit_id = 7;
+
+/*
  * As a way to poke fun at the current rage of naming releases after
  * english words, which often have little or no correlation with outside
  * reality, I have decided to start doing that with EPIC.  These names
