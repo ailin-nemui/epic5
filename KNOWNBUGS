@@ -41,3 +41,15 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Push AF_UNIX support in inet_remotesockaddr() off to Getaddrinfo().
 * Convert inet_anyton() to use Getaddrinfo(), which adds IPv6 support.
 * Add some comments to help me in the future.
+* Change inet_hntop() to inet_anytop(), inet_ptohn() to inet_anytohn().
+* Change inet_ntohn() to take a socklen_t, a port buffer/size, and flag arg.
+* Change inet_ntohn() to use getnameinfo().
+* Create socklen() which takes an (SA *) and returns the sockaddr's size.
+* Change dcc inbound connection handler to use extended inet_ntohn() args.
+* Change $nametoip()/$iptoname() to use inet_anyto(hn|p).  Some breakage here.
+* Nuke lookup_host/lookup_addr, last vestiges of gethostby(name|addr).  HUZZAH!
+* Add AF_UNSPEC support to inet_anyton().
+* So that means inet_anytop()/inet_anytohn() support ipv6.
+* Change/break one_to_another() [$convert()]-- fix this later.
+* Simplify Connect() now that we have socklen().
+

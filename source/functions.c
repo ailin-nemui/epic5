@@ -2890,7 +2890,7 @@ BUILT_IN_FUNCTION(function_iptoname, words)
 	char	ret[256];
 
 	*ret = 0;
-	inet_ptohn(AF_INET, words, ret, sizeof(ret));
+	inet_anytohn(AF_INET, words, ret, sizeof(ret));
 	RETURN_STR(ret);		/* Dont put function call in macro! */
 }
 
@@ -2899,7 +2899,7 @@ BUILT_IN_FUNCTION(function_nametoip, words)
 	char	ret[256];
 
 	*ret = 0;
-	inet_hntop(AF_INET, words, ret, sizeof(ret));
+	inet_anytop(AF_INET, words, ret, sizeof(ret));
 	RETURN_STR(ret);		/* Dont put function call in macro! */
 }
 

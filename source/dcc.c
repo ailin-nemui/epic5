@@ -9,7 +9,7 @@
  */
 
 #if 0
-static	char	rcsid[] = "@(#)$Id: dcc.c,v 1.23 2002/05/27 02:43:35 jnelson Exp $";
+static	char	rcsid[] = "@(#)$Id: dcc.c,v 1.24 2002/05/27 04:03:20 jnelson Exp $";
 #endif
 
 #include "irc.h"
@@ -2281,7 +2281,7 @@ static	void		process_incoming_listen (DCC_list *Client)
 	char		fdstr[10];
 	DCC_list	*NewClient;
 	int		new_socket;
-	char		host[256];
+	char		host[1025];
 	int		len;
 	char		p_port[24];
 
@@ -2294,7 +2294,7 @@ static	void		process_incoming_listen (DCC_list *Client)
 	}
 
 	*host = 0;
-	inet_ntohn((SA *)&remaddr, host, sizeof(host));
+	inet_ntohn((SA *)&remaddr, socklen((SA *)&remaddr), host, sizeof(host), p_port, sizeof(p_port), 0);
 
 	strlcpy(fdstr, ltoa(new_socket), 10);
 	NewClient = dcc_searchlist(host, fdstr, DCC_RAW, 1, NULL, 0);
@@ -2310,9 +2310,6 @@ static	void		process_incoming_listen (DCC_list *Client)
 	NewClient->bytes_read = NewClient->bytes_sent = 0L;
 	get_time(&NewClient->starttime);
 	new_open(NewClient->socket);
-
-	if (FAMILY(NewClient->local_sockaddr) == AF_INET)
-		snprintf(p_port, 24, "%hu", ntohs(V4PORT(NewClient->local_sockaddr)));
 
 	Client->locked++;
 	if (do_hook(DCC_RAW_LIST, "%s %s N %s", 

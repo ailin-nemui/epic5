@@ -18,8 +18,6 @@
 typedef struct sockaddr_un USA;
 #endif
 
-static Hostent *lookup_host (int, const char *);
-static Hostent *lookup_addr (int family, const char *ip);
 static int	get_low_portnum (void);
 static int	get_high_portnum (void);
 static int	set_non_blocking (int fd);
@@ -419,19 +417,14 @@ static int	inet_remotesockaddr (int family, const char *host, const char *port, 
 	if ((err = inet_anyton(host, port, (SA *)storage)))
 		return err;
 
-	if (family == AF_INET)
-		*len = sizeof(ISA);
-	else if (family == AF_INET6)
-		*len = sizeof(ISA6);
-	else if (family == AF_UNIX)
-		*len = strlen(((USA *)storage)->sun_path) + 2;
-	else
+	if ((*len = socklen((SA *)storage)) == 0)
 		return -2;
 
 	return 0;
 }
 
 
+/************************************************************************/
 /*
  * NAME: inet_anyton
  * USAGE: Convert "any" kind of address represented by a string into
@@ -445,16 +438,13 @@ static int	inet_remotesockaddr (int family, const char *host, const char *port, 
  *		"family" argument filled in (AF_INET or AF_INET6).  
  *		If "hostname" is a p-addr, then the form of the p-addr
  *		must agree with the family in 'storage'.
- *
- * NOTES: In the future, AF_UNIX will be a supported family.
- * NOTES: In the future, AF_UNSPEC will be a supported family.
  */
 int	inet_anyton (const char *host, const char *port, SA *storage)
 {
 	int family = storage->sa_family;
 
         /* First check for legacy 32 bit integer DCC addresses */
-	if (family == AF_INET && is_number(host))
+	if ((family == AF_INET || family == AF_UNSPEC) && is_number(host))
 	{
 		((ISA *)storage)->sin_addr.s_addr = htonl(strtoul(host, NULL, 10));
 		return 0;
@@ -486,40 +476,8 @@ int	inet_anyton (const char *host, const char *port, SA *storage)
 	return -2;
 }
 
-static Hostent *lookup_host (int family, const char *host)
-{
-	Hostent *hep = NULL;
-
-	alarm(1);
-#ifdef HAVE_GETHOSTBYNAME2
-	hep = gethostbyname2(host, family);
-#else
-	if (family == AF_INET)
-		hep = gethostbyname(host);
-#endif
-	alarm(0);
-	return hep;
-}
-
-/* NOTES: This function is protocol independant but lacks IPv6 support. */
-static Hostent *lookup_addr (int family, const char *ip)
-{
-	char	addr[256];
-	Hostent *hep = NULL;
-
-	if (inet_pton(family, ip, addr) <= 0)
-		return NULL;
-
-	alarm(1);
-	if (family == AF_INET)
-		hep = gethostbyaddr(addr, 4, family);
-	alarm(0);
-
-	return hep;
-}
-
 /*
- * NAME: inet_hntop
+ * NAME: inet_anytop
  * USAGE: Convert a Hostname into a "presentation address" (p-addr)
  * PLAIN ENGLISH: Convert "A.B.C.D" into "foo.bar.com"
  * ARGS: family - The family whose presesentation address format to use
@@ -531,21 +489,24 @@ static Hostent *lookup_addr (int family, const char *ip)
  *
  * NOTES: In the future, this function will use getaddrinfo().
  */
-char *	inet_hntop (int family, const char *host, char *retval, int size)
+char *	inet_anytop (int family, const char *host, char *retval, int size)
 {
-	Hostent *hep;
+	int	err;
+	SS	buffer;
 
-	if (!(hep = lookup_host(family, host)))
+	((SA *)&buffer)->sa_family = family;
+	if ((err = inet_anyton(host, NULL, (SA *)&buffer)))
 		return empty_string;
 
-	if (!inet_ntop(family, hep->h_addr, retval, size))
+	if (!(inet_ntohn((SA *)&buffer, socklen((SA *)&buffer), 
+				retval, size, NULL, 0, NI_NUMERICHOST)))
 		return empty_string;
 
 	return retval;
 }
 
 /*
- * NAME: inet_ptohn
+ * NAME: inet_anytohn
  * USAGE: Convert a "presentation address" (p-addr) into a Hostname
  * PLAIN ENGLISH: Convert "foo.bar.com" into "A.B.C.D"
  * ARGS: family - The family whose presesentation address format to use
@@ -554,17 +515,20 @@ char *	inet_hntop (int family, const char *host, char *retval, int size)
  *       size - The length of 'retval' in bytes
  * RETURN VALUE: "retval" is returned upon success
  *		 "empty_string" is returned for any error.
- *
- * NOTES: In the future, this function will use getaddrinfo().
  */
-char *	inet_ptohn (int family, const char *ip, char *retval, int size)
+char *	inet_anytohn (int family, const char *ip, char *retval, int size)
 {
-	Hostent *hep;
+	int	err;
+	SS	buffer;
 
-	if (!(hep = lookup_addr(family, ip)))
+	((SA *)&buffer)->sa_family = family;
+	if ((err = inet_anyton(ip, NULL, (SA *)&buffer)))
 		return empty_string;
 
-	strlcpy(retval, hep->h_name, size);
+	if (!(inet_ntohn((SA *)&buffer, socklen((SA *)&buffer), 
+				retval, size, NULL, 0, NI_NAMEREQD)))
+		return empty_string;
+
 	return retval;
 }
 
@@ -578,25 +542,15 @@ char *	inet_ptohn (int family, const char *ip, char *retval, int size)
  * RETURN VALUE: "retval" is returned upon success
  *		 "empty_string" is returned for any error.
  *
- * NOTES: If the remote host does not have a reverse hostname lookup, then
- *        the sockaddr's p-addr will be returned.
- * NOTES: In the future, this function will use getaddrinfo().
+ * NOTES: 'flags' should be set to NI_NAMEREQD if you don't want the remote
+ *        host's p-addr if it does not have a DNS hostname.
  */
-char *	inet_ntohn (SA *name, char *retval, int size)
+char *	inet_ntohn (SA *name, socklen_t len, char *host, int hsize, char *port, int psize, int flags)
 {
-	if (FAMILY(*name) == AF_INET)
-	{
-		Hostent *hep;
+	if (getnameinfo(name, len, host, hsize, port, psize, flags))
+		return NULL;
 
-		if ((hep = gethostbyaddr((char *)&V4ADDR(*name), 4, AF_INET)))
-			strlcpy(retval, hep->h_name, size);
-		else
-			inet_ntop(AF_INET, &V4ADDR(*name), retval, size);
-
-		return retval;
-	}
-
-	return NULL;
+	return host;
 }
 
 /*
@@ -617,8 +571,8 @@ char *	inet_ntohn (SA *name, char *retval, int size)
  */
 char *	one_to_another (int family, const char *what, char *retval, int size)
 {
-	if (inet_ptohn(family, what, retval, size) == empty_string)
-		inet_hntop(family, what, retval, size);
+	if (inet_anytohn(family, what, retval, size) == empty_string)
+		inet_anytop(family, what, retval, size);
 	return retval;
 }
 
@@ -809,13 +763,7 @@ static int	get_high_portnum (void)
 
 static int Connect (int fd, SA *addr)
 {
-	if (addr->sa_family == AF_INET)
-		return connect(fd, addr, sizeof(ISA));
-	else if (addr->sa_family == AF_UNIX)
-		return connect(fd, addr, strlen(((USA *)addr)->sun_path) + 2);
-
-	errno = EAFNOSUPPORT;
-	return -1;
+	return connect(fd, addr, socklen(addr));
 }
 
 int	Getaddrinfo (const char *nodename, const char *servname, const AI *hints, AI **res)
@@ -876,5 +824,17 @@ void	Freeaddrinfo (AI *ai)
 #endif
 
 	freeaddrinfo(ai);
+}
+
+socklen_t	socklen (SA *sockaddr)
+{
+	if (sockaddr->sa_family == AF_INET)
+		return sizeof(ISA);
+	else if (sockaddr->sa_family == AF_INET6)
+		return sizeof(ISA6);
+	else if (sockaddr->sa_family == AF_UNIX)
+		return strlen(((USA *)sockaddr)->sun_path) + 2;
+	else
+		return 0;
 }
 
