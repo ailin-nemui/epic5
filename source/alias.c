@@ -1,4 +1,4 @@
-/* $EPIC: alias.c,v 1.49 2004/06/29 04:24:10 jnelson Exp $ */
+/* $EPIC: alias.c,v 1.50 2004/07/02 22:29:21 jnelson Exp $ */
 /*
  * alias.c -- Handles the whole kit and caboodle for aliases.
  *
@@ -97,23 +97,29 @@ typedef	struct	SymbolStru
 	u_32int_t hash;			/* Hash of the name */
 
 	char *	user_variable;
-	char *	user_variable_stub;
-	char *	user_variable_filename;
-	int	user_variable_line;
-	int	user_variable_global;
+	int	user_variable_stub;
+	char *	user_variable_package;
 
 	char *	user_command;
-	char *	user_command_stub;
-	char *	user_command_filename;
-	int	user_command_line;
-	int	user_command_global;
+	int	user_command_stub;
+	char *	user_command_package;
 	ArgList *arglist;		/* List of arguments to alias */
 
         void    (*builtin_command) (const char *, char *, const char *);
 	char *	(*builtin_function) (char *);
 	char *	(*builtin_expando) (void);
 	void	(*builtin_variable) (const void *);
+
+struct SymbolStru *	saved;		/* For stacks */
+	int	saved_hint;
 }	Symbol;
+
+#define SAVED_VAR		 1
+#define SAVED_CMD		 2
+#define SAVED_BUILTIN_CMD	 4
+#define SAVED_BUILTIN_FUNCTION	 8
+#define SAVED_BUILTIN_EXPANDO	16
+#define SAVED_BUILTIN_VAR	32
 
 /*
  * This is the description for a list of aliases
@@ -751,6 +757,37 @@ void	destroy_arglist (ArgList **arglist)
 	new_free((char **)arglist);
 }
 
+static ArgList *clone_arglist (ArgList *orig)
+{
+	ArgList *args;
+	int	i = 0;
+
+	if (!orig)
+		return NULL;
+
+	args = new_malloc(sizeof(ArgList));
+	for (i = 0; i < 32; i++)
+	{
+		args->vars[i] = NULL;
+		args->defaults[i] = NULL;
+		args->words[i] = 0;
+		args->types[i] = WORD;
+	}
+	for (i = 0; ; i++)
+	{
+		if (!orig->vars[i])
+			break;
+		malloc_strcpy(&args->vars[i], orig->vars[i]);
+		malloc_strcpy(&args->defaults[i], orig->defaults[i]);
+		args->words[i] = orig->words[i];
+		args->types[i] = orig->types[i];
+	}
+	args->void_flag = orig->void_flag;
+	args->dot_flag = orig->dot_flag;
+
+	return args;
+}
+
 void	prepare_alias_call (void *al, char **stuff)
 {
 	ArgList *args = (ArgList *)al;
@@ -850,15 +887,13 @@ static Symbol *make_new_Symbol (const char *name)
 	Symbol *tmp = (Symbol *) new_malloc(sizeof(Symbol));
 	tmp->name = malloc_strdup(name);
 
-	tmp->user_variable = tmp->user_variable_stub = NULL;
-	tmp->user_variable_filename = NULL;
-	tmp->user_variable_line = 0;
-	tmp->user_variable_global = 0;
+	tmp->user_variable = NULL;
+	tmp->user_variable_stub = 0;
+	tmp->user_variable_package = NULL;
 
-	tmp->user_command = tmp->user_command_stub = NULL;
-	tmp->user_command_filename = NULL;
-	tmp->user_command_line = 0;
-	tmp->user_command_global = 0;
+	tmp->user_command = NULL;
+	tmp->user_command_stub = 0;
+	tmp->user_command_package = NULL;
 	tmp->arglist = NULL;
 
 	tmp->builtin_command = NULL;
@@ -866,14 +901,16 @@ static Symbol *make_new_Symbol (const char *name)
 	tmp->builtin_expando = NULL;
 	tmp->builtin_variable = NULL;
 
+	tmp->saved = NULL;
+	tmp->saved_hint = 0;
 	return tmp;
 }
 
 static int	GC_symbol (Symbol *item, array *list, int loc)
 {
-	if (item->user_variable || item->user_variable_stub)
+	if (item->user_variable)
 		return 0;
-	if (item->user_command || item->user_command_stub)
+	if (item->user_command)
 		return 0;
 	if (item->builtin_command)
 		return 0;
@@ -883,15 +920,14 @@ static int	GC_symbol (Symbol *item, array *list, int loc)
 		return 0;
 	if (item->builtin_variable)
 		return 0;
+	if (item->saved)
+		return 0;
 
-	array_pop(list, loc);
+	if (list && loc >= 0)
+		array_pop(list, loc);
 
-	new_free(&item->user_variable);
-	new_free(&item->user_variable_stub);
-	new_free(&item->user_variable_filename);
-	new_free(&item->user_command);
-	new_free(&item->user_command_stub);
-	new_free(&item->user_command_filename);
+	new_free(&item->user_variable_package);
+	new_free(&item->user_command_package);
 	destroy_arglist(&item->arglist);
 	new_free(&(item->name));
 	new_free((char **)&item);
@@ -960,17 +996,13 @@ void	add_var_alias	(const char *orig_name, const char *stuff, int noisy)
 			tmp = make_new_Symbol(name);
 			add_to_array ((array *)&globals, (array_item *)tmp);
 		}
-		if (!tmp->user_variable_filename)
-		{
-			tmp->user_variable_line = current_line();
-			tmp->user_variable_filename = malloc_strdup(current_package());
-		}
-		else if (tmp->user_variable_filename)
-		    if (strcmp(tmp->user_variable_filename, current_package()))
-			malloc_strcpy(&(tmp->user_variable_filename), current_package());
+		if (!tmp->user_variable_package)
+			tmp->user_variable_package = malloc_strdup(current_package());
+		else if (strcmp(tmp->user_variable_package, current_package()))
+			malloc_strcpy(&(tmp->user_variable_package), current_package());
 
 		malloc_strcpy(&(tmp->user_variable), stuff);
-		new_free(&tmp->user_variable_stub);
+		tmp->user_variable_stub = 0;
 
 
 		/*
@@ -1012,19 +1044,15 @@ void	add_var_stub_alias  (const char *orig_name, const char *stuff)
 	if (!(tmp = lookup_symbol(name)))
 	{
 		tmp = make_new_Symbol(name);
-		tmp->user_variable_line = current_line();
-		tmp->user_variable_filename = malloc_strdup(current_package());
+		tmp->user_variable_package = malloc_strdup(current_package());
 		add_to_array ((array *)&globals, (array_item *)tmp);
 	}
-	else if (tmp->user_variable_filename)
-	    if (strcmp(tmp->user_variable_filename, current_package()))
-	    {
-		tmp->user_variable_line = current_line();
-		malloc_strcpy(&tmp->user_variable_filename, current_package());
-	    }
+	else if (tmp->user_variable_package)
+	    if (strcmp(tmp->user_variable_package, current_package()))
+		malloc_strcpy(&tmp->user_variable_package, current_package());
 
-	malloc_strcpy(&(tmp->user_variable_stub), stuff);
-	new_free(&tmp->user_variable);
+	malloc_strcpy(&(tmp->user_variable), stuff);
+	tmp->user_variable_stub = 1;
 
 	say("Assign %s stubbed to file %s", name, stuff);
 	new_free(&name);
@@ -1088,19 +1116,15 @@ void	add_cmd_alias	(const char *orig_name, ArgList *arglist, const char *stuff)
 	if (!(tmp = lookup_symbol(name)))
 	{
 		tmp = make_new_Symbol(name);
-		tmp->user_command_line = current_line();
-		tmp->user_command_filename = malloc_strdup(current_package());
+		tmp->user_command_package = malloc_strdup(current_package());
 		add_to_array ((array *)&globals, (array_item *)tmp);
 	}
-	else if (tmp->user_command_filename)
-	    if (strcmp(tmp->user_command_filename, current_package()))
-	    {
-		tmp->user_command_line = current_line();
-		malloc_strcpy(&(tmp->user_command_filename), current_package());
-	    }
+	else if (tmp->user_command_package)
+	    if (strcmp(tmp->user_command_package, current_package()))
+		malloc_strcpy(&(tmp->user_command_package), current_package());
 
 	malloc_strcpy(&(tmp->user_command), stuff);
-	new_free(&tmp->user_command_stub);
+	tmp->user_command_stub = 0;
 	destroy_arglist(&tmp->arglist);
 	tmp->arglist = arglist;
 
@@ -1120,16 +1144,15 @@ void	add_cmd_stub_alias  (const char *orig_name, const char *stuff)
 	if (!(tmp = lookup_symbol(name)))
 	{
 		tmp = make_new_Symbol(name);
-		tmp->user_command_line = current_line();
-		tmp->user_command_filename = malloc_strdup(current_package());
+		tmp->user_command_package = malloc_strdup(current_package());
 		add_to_array ((array *)&globals, (array_item *)tmp);
 	}
-	else if (tmp->user_command_filename)
-	    if (strcmp(tmp->user_command_filename, current_package()))
-		malloc_strcpy(&(tmp->user_command_filename), current_package());
+	else if (tmp->user_command_package)
+	    if (strcmp(tmp->user_command_package, current_package()))
+		malloc_strcpy(&(tmp->user_command_package), current_package());
 
-	malloc_strcpy(&(tmp->user_command_stub), stuff);
-	new_free(&tmp->user_command);
+	malloc_strcpy(&(tmp->user_command), stuff);
+	tmp->user_command_stub = 1;
 
 	say("Alias %s stubbed to file %s", name, stuff);
 
@@ -1202,7 +1225,7 @@ Symbol *unstub_variable (Symbol *item)
 	name = LOCAL_COPY(item->name);
 	if (item->user_variable_stub)
 	{
-		file = LOCAL_COPY(item->user_variable_stub);
+		file = LOCAL_COPY(item->user_variable);
 		delete_var_alias(item->name, 0);
 
 		if (!unstub_in_progress)
@@ -1229,7 +1252,7 @@ Symbol *unstub_command (Symbol *item)
 	name = LOCAL_COPY(item->name);
 	if (item->user_command_stub)
 	{
-		file = LOCAL_COPY(item->user_command_stub);
+		file = LOCAL_COPY(item->user_command);
 		delete_cmd_alias(item->name, 0);
 
 		if (!unstub_in_progress)
@@ -1408,8 +1431,8 @@ static void	delete_var_alias (const char *orig_name, int noisy)
 	if (item && cnt < 0)
 	{
 		new_free(&item->user_variable);
-		new_free(&(item->user_variable_stub));
-		new_free(&(item->user_variable_filename));
+		item->user_variable_stub = 0;
+		new_free(&(item->user_variable_package));
 		GC_symbol(item, (array *)&globals, loc);
 		if (noisy)
 			say("Assign %s removed", name);
@@ -1431,8 +1454,8 @@ static void	delete_cmd_alias (const char *orig_name, int noisy)
 	if (item && cnt < 0)
 	{
 		new_free(&item->user_command);
-		new_free(&(item->user_command_stub));
-		new_free(&(item->user_command_filename));
+		item->user_command_stub = 0;
+		new_free(&(item->user_command_package));
 		destroy_arglist(&item->arglist);
 		GC_symbol(item, (array *)&globals, loc);
 		if (noisy)
@@ -1570,13 +1593,13 @@ static void	list_var_alias (const char *orig_name)
 	    if (item == NULL)
 			continue;
 
-	    if (!item->user_variable && !item->user_variable_stub)
+	    if (!item->user_variable)
 		continue;
 
 	    if (!name || !strncmp(item->name, name, len))
 	    {
-		script = empty(item->user_variable_filename) ? "*" :
-				  item->user_variable_filename;
+		script = empty(item->user_variable_package) ? "*" :
+				  item->user_variable_package;
 
 		if ((s = strchr(item->name + len, '.')))
 		{
@@ -1594,7 +1617,7 @@ static void	list_var_alias (const char *orig_name)
 		{
 			if (item->user_variable_stub)
 				say("[%s]\t%s STUBBED TO %s", script, 
-					item->name, item->user_variable_stub);
+					item->name, item->user_variable);
 			else
 				say("[%s]\t%s\t%s", script,
 					item->name, item->user_variable);
@@ -1632,13 +1655,13 @@ static void	list_cmd_alias (const char *orig_name)
 	    if (item == NULL)
 		continue;
 
-	    if (!item->user_command && !item->user_command_stub)
+	    if (!item->user_command)
 		continue;
 
 	    if (!name || !strncmp(item->name, name, len))
 	    {
-		script = empty(item->user_command_filename) ? "*" :
-				  item->user_command_filename;
+		script = empty(item->user_command_package) ? "*" :
+				  item->user_command_package;
 
 		if ((s = strchr(item->name + len, '.')))
 		{
@@ -1656,7 +1679,7 @@ static void	list_cmd_alias (const char *orig_name)
 		{
 			if (item->user_command_stub)
 				say("[%s]\t%s STUBBED TO %s", script, 
-					item->name, item->user_command_stub);
+					item->name, item->user_command);
 			else
 				say("[%s]\t%s\t%s", script, 
 					item->name, item->user_command);
@@ -1683,29 +1706,41 @@ static void	list_builtin_variables (const char *orig_name)
 }
 
 /************************* UNLOADING SCRIPTS ************************/
-static void	unload_cmd_alias (const char *filename)
+static void	unload_cmd_alias (const char *package)
 {
 	int 	cnt;
+	Symbol *item;
 
-	for (cnt = 0; cnt < globals.max; )
+	for (cnt = 0; cnt < globals.max; cnt++)
 	{
-		if (!strcmp(globals.list[cnt]->user_command_filename, filename))
-			delete_cmd_alias(globals.list[cnt]->name, 0);
-		else
-			cnt++;
+	    item = globals.list[cnt];
+
+	    if (!item->user_command_package)
+		continue;
+	    else if (!strcmp(item->user_command_package, package)) {
+		delete_cmd_alias(item->name, 0);
+		cnt = -1;
+		continue;
+	    }
 	}
 }
 
-static void	unload_var_alias (const char *filename)
+static void	unload_var_alias (const char *package)
 {
 	int 	cnt;
+	Symbol	*item;
 
 	for (cnt = 0; cnt < globals.max;)
 	{
-		if (!strcmp(globals.list[cnt]->user_variable_filename, filename))
-			delete_cmd_alias(globals.list[cnt]->name, 0);
-		else
-			cnt++;
+	    item = globals.list[cnt];
+
+	    if (!item->user_variable_package)
+		continue;
+	    else if (!strcmp(item->user_variable_package, package)) {
+		delete_var_alias(item->name, 0);
+		cnt = -1;
+		continue;
+	    }
 	}
 }
 
@@ -2012,13 +2047,13 @@ void 	save_assigns	(FILE *fp, int do_all)
 
 	for (cnt = 0; cnt < globals.max; cnt++)
 	{
-		Symbol *item = globals.list[cnt];
+	    Symbol *item = globals.list[cnt];
+	    if (item->user_variable)
+	    {
 		if (item->user_variable_stub)
-		    fprintf(fp, "STUB ASSIGN %s %s\n",
-				item->name, item->user_variable_filename);
-		else if (item->user_variable)
-		    fprintf(fp, "ASSIGN %s %s\n",
-				item->name, item->user_variable);
+		    fprintf(fp, "STUB ");
+		fprintf(fp, "ASSIGN %s %s\n", item->name, item->user_variable);
+	    }
 	}
 }
 
@@ -2028,13 +2063,13 @@ void 	save_aliases (FILE *fp, int do_all)
 
 	for (cnt = 0; cnt < globals.max; cnt++)
 	{
-		Symbol *item = globals.list[cnt];
+	    Symbol *item = globals.list[cnt];
+	    if (item->user_variable)
+	    {
 		if (item->user_command_stub)
-		    fprintf(fp, "STUB ALIAS %s %s\n",
-				item->name, item->user_command_filename);
-		else if (item->user_command)
-		    fprintf(fp, "ALIAS %s {%s}\n",
-				item->name, item->user_command);
+		    fprintf(fp, "STUB ");
+		fprintf(fp, "ALIAS %s {%s}\n", item->name, item->user_command);
+	    }
 	}	
 }
 
@@ -2047,7 +2082,7 @@ static	void	destroy_cmd_aliases (SymbolSet *my_array)
 	{
 		item = my_array->list[cnt];
 		new_free((void **)&item->user_command);
-		new_free((void **)&item->user_command_stub);
+		item->user_command_stub = 0;
 		destroy_arglist(&item->arglist);
 		if (!GC_symbol(item, (array *)my_array, cnt))
 			cnt++;
@@ -2063,7 +2098,7 @@ static	void	destroy_var_aliases (SymbolSet *my_array)
 	{
 		item = my_array->list[cnt];
 		new_free((void **)&item->user_variable);
-		new_free((void **)&item->user_variable_stub);
+		item->user_variable_stub = 0;
 		if (!GC_symbol(item, (array *)my_array, cnt))
 			cnt++;
 	}
@@ -2487,16 +2522,16 @@ static	int maxret = 0;
 				else if (op == GETPACKAGE)
 				{
 				    if (list == VAR_ALIAS_LOCAL || list == VAR_ALIAS)
-					RETURN_STR(alias->user_variable_filename);
+					RETURN_STR(alias->user_variable_package);
 				    else
-					RETURN_STR(alias->user_command_filename);
+					RETURN_STR(alias->user_command_package);
 				}
 				else /* op == SETPACKAGE */
 				{
 				    if (list == VAR_ALIAS_LOCAL || list == VAR_ALIAS)
-					malloc_strcpy(&alias->user_variable_filename, input);
+					malloc_strcpy(&alias->user_variable_package, input);
 				    else
-					malloc_strcpy(&alias->user_command_filename, input);
+					malloc_strcpy(&alias->user_command_package, input);
 				    RETURN_INT(1);
 				}
 			}
@@ -2581,124 +2616,467 @@ static	int maxret = 0;
 	RETURN_EMPTY;
 }
 
+
+
 /*************************** stacks **************************************/
-typedef	struct	aliasstacklist
+/* * * */
+int	stack_push_var_alias (const char *name)
 {
-	int	which;
-	char	*name;
-	Symbol	*list;
-	struct aliasstacklist *next;
-}	AliasStack;
+	Symbol *item, *sym;
+	int	cnt = 0, loc = 0;
 
-static  AliasStack *	alias_stack = NULL;
-static	AliasStack *	assign_stack = NULL;
+	item = (Symbol *)find_array_item((array *)&globals, name, &cnt, &loc);
+	if (!item || cnt >= 0)
+	{
+	    item = make_new_Symbol(name);
+	    add_to_array((array *)&globals, (array_item *)item);
+	}
 
-void	do_stack_alias (int type, char *args, int which)
+	sym = make_new_Symbol(name);
+	malloc_strcpy(&sym->user_variable, item->user_variable);
+	sym->user_variable_stub = item->user_variable_stub;
+	malloc_strcpy(&sym->user_variable_package, item->user_variable_package);
+	sym->saved = item->saved;
+	sym->saved_hint = SAVED_VAR;
+	item->saved = sym;
+	return 0;
+}
+
+int	stack_pop_var_alias (const char *name)
 {
-	const char	*name;
-	AliasStack	*aptr, **aptrptr;
-	Symbol		*alptr;
-	
-	if (args)
-		upper(args);
+	Symbol *item, *sym, *s, *ss;
+	int	cnt = 0, loc = 0;
 
-	if (which == STACK_DO_ALIAS)
-	{
-		name = "ALIAS";
-		aptrptr = &alias_stack;
-	}
-	else
-	{
-		name = "ASSIGN";
-		aptrptr = &assign_stack;
-	}
+	item = (Symbol *)find_array_item((array *)&globals, name, &cnt, &loc);
+	if (!item || cnt >= 0)
+		return -1;
 
-	if (!*aptrptr && (type == STACK_POP || type == STACK_LIST))
-	{
-		say("%s stack is empty!", name);
-		return;
-	}
+	for (sym = item; sym; sym = sym->saved)
+		if (sym->saved && sym->saved->saved_hint == SAVED_VAR)
+			break;
+	if (!sym)
+		return -1;
 
-	if (type == STACK_PUSH)
+	s = sym->saved;
+	ss = sym->saved->saved;
+	malloc_strcpy(&item->user_variable, s->user_variable);
+	item->user_variable_stub = s->user_variable_stub;
+	malloc_strcpy(&item->user_variable_package, s->user_variable_package);
+	new_free(&s->user_variable);
+	new_free(&s->user_variable_package);
+
+	if (GC_symbol(s, NULL, -1))
+		sym->saved = ss;
+	GC_symbol(item, (array *)&globals, loc);
+	return 0;
+}
+
+int	stack_list_var_alias (const char *name)
+{
+	Symbol *item, *sym;
+	int	counter = 0;
+
+	if (!(item = lookup_symbol(name)))
+		return -1;
+
+	for (sym = item->saved; sym; sym = sym->saved)
 	{
-		if (which == STACK_DO_ALIAS)
-		{
-			/* Um. Can't delete what we want to keep! :P */
-			if ((alptr = lookup_symbol(args)))
-				remove_from_array((array *)&globals, 
-					alptr->name);
-		}
+	    if (sym->saved_hint == SAVED_VAR)
+	    {
+		if (sym->user_variable == NULL)
+		    say("\t%s\t<Placeholder>", sym->name);
+		else if (sym->user_variable_stub)
+		    say("\t%s STUBBED TO %s", sym->name, sym->user_variable);
 		else
-		{
-			if ((alptr = lookup_symbol(args)))
-				remove_from_array((array *)&globals, 
-					alptr->name);
-		}
-
-		aptr = (AliasStack *)new_malloc(sizeof(AliasStack));
-		aptr->list = alptr;
-		aptr->name = malloc_strdup(args);
-		aptr->next = aptrptr ? *aptrptr : NULL;
-		*aptrptr = aptr;
-		return;
+		    say("\t%s\t%s", sym->name, sym->user_variable);
+		counter++;
+	    }
 	}
 
-	if (type == STACK_POP)
+	if (counter)
+		return 0;
+	return -1;
+}
+
+/* * * */
+int	stack_push_cmd_alias (char *name)
+{
+	Symbol *item, *sym;
+	int	cnt = 0, loc = 0;
+
+	item = (Symbol *)find_array_item((array *)&globals, name, &cnt, &loc);
+	if (!item || cnt >= 0)
 	{
-		AliasStack *prev = NULL;
-
-		for (aptr = *aptrptr; aptr; prev = aptr, aptr = aptr->next)
-		{
-			/* have we found it on the stack? */
-			if (!my_stricmp(args, aptr->name))
-			{
-				/* remove it from the list */
-				if (prev == NULL)
-					*aptrptr = aptr->next;
-				else
-					prev->next = aptr->next;
-
-				/* throw away anything we already have */
-				if (which == STACK_DO_ALIAS)
-					delete_cmd_alias(args, 0);
-				else
-					delete_var_alias(args, 0);
-
-				/* put the new one in. */
-				if (aptr->list)
-				{
-					add_to_array((array *)&globals, (array_item *)(aptr->list));
-				}
-
-				/* free it */
-				new_free((char **)&aptr->name);
-				new_free((char **)&aptr);
-				return;
-			}
-		}
-		say("%s is not on the %s stack!", args, name);
-		return;
+	    item = make_new_Symbol(name);
+	    add_to_array((array *)&globals, (array_item *)item);
 	}
-#if 0
-	if (type == STACK_LIST)
+
+	sym = make_new_Symbol(name);
+	malloc_strcpy(&sym->user_command, item->user_command);
+	sym->user_command_stub = item->user_command_stub;
+	malloc_strcpy(&sym->user_command_package, item->user_command_package);
+	sym->arglist = clone_arglist(item->arglist);
+	sym->saved = item->saved;
+	sym->saved_hint = SAVED_CMD;
+	item->saved = sym;
+	return 0;
+}
+
+int	stack_pop_cmd_alias (const char *name)
+{
+	Symbol *item, *sym, *s, *ss;
+	int	cnt = 0, loc = 0;
+
+	item = (Symbol *)find_array_item((array *)&globals, name, &cnt, &loc);
+	if (!item || cnt >= 0)
+		return -1;
+
+	for (sym = item; sym; sym = sym->saved)
 	{
-		AliasStack	*tmp;
-
-		say("%s STACK LIST", name);
-		for (tmp = *aptrptr; tmp; tmp = tmp->next)
-		{
-			if (!tmp->list)
-				say("\t%s\t<Placeholder>", tmp->name);
-
-			else if (tmp->list->stub)
-				say("\t%s STUBBED TO %s", tmp->name, tmp->list->stub);
-
-			else
-				say("\t%s\t%s", tmp->name, tmp->list->stuff);
-		}
-		return;
+		if (sym->saved && sym->saved->saved_hint == SAVED_CMD)
+			break;
 	}
-#endif
-	say("Unknown STACK type ??");
+	if (!sym)
+		return -1;
+
+	s = sym->saved;
+	ss = sym->saved->saved;
+	malloc_strcpy(&item->user_command, s->user_command);
+	item->user_command_stub = s->user_command_stub;
+	malloc_strcpy(&item->user_command_package, s->user_command_package);
+	new_free(&s->user_command);
+	new_free(&s->user_command_package);
+
+	if (GC_symbol(s, NULL, -1))
+		sym->saved = ss;
+	GC_symbol(item, (array *)&globals, loc);
+	return 0;
+}
+
+int	stack_list_cmd_alias (const char *name)
+{
+	Symbol *item, *sym;
+	int	counter = 0;
+
+	if (!(item = lookup_symbol(name)))
+		return -1;
+
+	for (sym = item->saved; sym; sym = sym->saved)
+	{
+	    if (sym->saved_hint == SAVED_CMD)
+	    {
+		if (sym->user_command == NULL)
+		    say("\t%s\t<Placeholder>", sym->name);
+		else if (sym->user_command_stub)
+		    say("\t%s STUBBED TO %s", sym->name, sym->user_command);
+		else
+		    say("\t%s\t%s", sym->name, sym->user_command);
+		counter++;
+	    }
+	}
+
+	if (counter)
+		return 0;
+	return -1;
+}
+
+
+
+/* * * */
+int	stack_push_builtin_cmd_alias (const char *name)
+{
+	Symbol *item, *sym;
+	int	cnt = 0, loc = 0;
+
+	item = (Symbol *)find_array_item((array *)&globals, name, &cnt, &loc);
+	if (!item || cnt >= 0)
+	{
+	    item = make_new_Symbol(name);
+	    add_to_array((array *)&globals, (array_item *)item);
+	}
+
+	sym = make_new_Symbol(name);
+	sym->builtin_command = item->builtin_command;
+	sym->saved = item->saved;
+	sym->saved_hint = SAVED_BUILTIN_CMD;
+	item->saved = sym;
+	return 0;
+}
+
+int	stack_pop_builtin_cmd_alias (const char *name)
+{
+	Symbol *item, *sym, *s, *n;
+	int	cnt = 0, loc = 0;
+
+	item = (Symbol *)find_array_item((array *)&globals, name, &cnt, &loc);
+	if (!item || cnt >= 0)
+		return -1;
+
+	for (sym = item; sym; sym = sym->saved)
+	{
+		if (sym->saved && sym->saved->saved_hint == SAVED_BUILTIN_CMD)
+			break;
+	}
+	if (!sym)
+		return -1;
+
+	s = sym->saved;
+	n = sym->saved->saved;
+	item->builtin_command = s->builtin_command;
+	s->builtin_command = NULL;
+
+	if (GC_symbol(s, NULL, -1))
+		sym->saved = n;
+	GC_symbol(item, (array *)&globals, loc);
+	return 0;
+}
+
+int	stack_list_builtin_cmd_alias (const char *name)
+{
+	Symbol *item, *sym;
+	int	counter = 0;
+
+	if (!(item = lookup_symbol(name)))
+		return -1;
+
+	for (sym = item->saved; sym; sym = sym->saved)
+	{
+	    if (sym->saved_hint == SAVED_BUILTIN_CMD)
+	    {
+		if (sym->builtin_command == NULL)
+		    say("\t%s\t<Placeholder>", sym->name);
+		else 
+		    say("\t%s\t%#p", sym->name, sym->builtin_command);
+		counter++;
+	    }
+	}
+
+	if (counter)
+		return 0;
+	return -1;
+}
+
+
+/* * * */
+int	stack_push_builtin_func_alias (const char *name)
+{
+	Symbol *item, *sym;
+	int	cnt = 0, loc = 0;
+
+	item = (Symbol *)find_array_item((array *)&globals, name, &cnt, &loc);
+	if (!item || cnt >= 0)
+	{
+	    item = make_new_Symbol(name);
+	    add_to_array((array *)&globals, (array_item *)item);
+	}
+
+	sym = make_new_Symbol(name);
+	sym->builtin_function = item->builtin_function;
+	sym->saved = item->saved;
+	sym->saved_hint = SAVED_BUILTIN_FUNCTION;
+	item->saved = sym;
+	return 0;
+}
+
+int	stack_pop_builtin_function_alias (const char *name)
+{
+	Symbol *item, *sym, *s, *n;
+	int	cnt = 0, loc = 0;
+
+	item = (Symbol *)find_array_item((array *)&globals, name, &cnt, &loc);
+	if (!item || cnt >= 0)
+		return -1;
+
+	for (sym = item; sym; sym = sym->saved)
+	{
+		if (sym->saved && sym->saved->saved_hint == SAVED_BUILTIN_FUNCTION)
+			break;
+	}
+	if (!sym)
+		return -1;
+
+	s = sym->saved;
+	n = sym->saved->saved;
+	item->builtin_function = s->builtin_function;
+	s->builtin_function = NULL;
+
+	if (GC_symbol(s, NULL, -1))
+		sym->saved = n;
+	GC_symbol(item, (array *)&globals, loc);
+	return 0;
+}
+
+int	stack_list_builtin_function_alias (const char *name)
+{
+	Symbol *item, *sym;
+	int	counter = 0;
+
+	if (!(item = lookup_symbol(name)))
+		return -1;
+
+	for (sym = item->saved; sym; sym = sym->saved)
+	{
+	    if (sym->saved_hint == SAVED_BUILTIN_FUNCTION)
+	    {
+		if (sym->builtin_function == NULL)
+		    say("\t%s\t<Placeholder>", sym->name);
+		else 
+		    say("\t%s\t%#p", sym->name, sym->builtin_function);
+		counter++;
+	    }
+	}
+
+	if (counter)
+		return 0;
+	return -1;
+}
+
+/* * * */
+int	stack_push_builtin_expando_alias (const char *name)
+{
+	Symbol *item, *sym;
+	int	cnt = 0, loc = 0;
+
+	item = (Symbol *)find_array_item((array *)&globals, name, &cnt, &loc);
+	if (!item || cnt >= 0)
+	{
+	    item = make_new_Symbol(name);
+	    add_to_array((array *)&globals, (array_item *)item);
+	}
+
+	sym = make_new_Symbol(name);
+	sym->builtin_expando = item->builtin_expando;
+	sym->saved = item->saved;
+	sym->saved_hint = SAVED_BUILTIN_EXPANDO;
+	item->saved = sym;
+	return 0;
+}
+
+int	stack_pop_builtin_expando_alias (const char *name)
+{
+	Symbol *item, *sym, *s, *n;
+	int	cnt = 0, loc = 0;
+
+	item = (Symbol *)find_array_item((array *)&globals, name, &cnt, &loc);
+	if (!item || cnt >= 0)
+		return -1;
+
+	for (sym = item; sym; sym = sym->saved)
+	{
+		if (sym->saved && sym->saved->saved_hint == SAVED_BUILTIN_EXPANDO)
+			break;
+	}
+	if (!sym)
+		return -1;
+
+	s = sym->saved;
+	n = sym->saved->saved;
+	item->builtin_expando = s->builtin_expando;
+	s->builtin_expando = NULL;
+
+	if (GC_symbol(s, NULL, -1))
+		sym->saved = n;
+	GC_symbol(item, (array *)&globals, loc);
+	return 0;
+}
+
+int	stack_list_builtin_expando_alias (const char *name)
+{
+	Symbol *item, *sym;
+	int	counter = 0;
+
+	if (!(item = lookup_symbol(name)))
+		return -1;
+
+	for (sym = item->saved; sym; sym = sym->saved)
+	{
+	    if (sym->saved_hint == SAVED_BUILTIN_EXPANDO)
+	    {
+		if (sym->builtin_expando == NULL)
+		    say("\t%s\t<Placeholder>", sym->name);
+		else 
+		    say("\t%s\t%#p", sym->name, sym->builtin_expando);
+		counter++;
+	    }
+	}
+
+	if (counter)
+		return 0;
+	return -1;
+}
+
+
+/* * * */
+int	stack_push_builtin_var_alias (const char *name)
+{
+	Symbol *item, *sym;
+	int	cnt = 0, loc = 0;
+
+	item = (Symbol *)find_array_item((array *)&globals, name, &cnt, &loc);
+	if (!item || cnt >= 0)
+	{
+	    item = make_new_Symbol(name);
+	    add_to_array((array *)&globals, (array_item *)item);
+	}
+
+	sym = make_new_Symbol(name);
+	sym->builtin_variable = item->builtin_variable;
+	sym->saved = item->saved;
+	sym->saved_hint = SAVED_BUILTIN_VAR;
+	item->saved = sym;
+	return 0;
+}
+
+int	stack_pop_builtin_var_alias (const char *name)
+{
+	Symbol *item, *sym, *s, *n;
+	int	cnt = 0, loc = 0;
+
+	item = (Symbol *)find_array_item((array *)&globals, name, &cnt, &loc);
+	if (!item || cnt >= 0)
+		return -1;
+
+	for (sym = item; sym; sym = sym->saved)
+	{
+		if (sym->saved && sym->saved->saved_hint == SAVED_BUILTIN_VAR)
+			break;
+	}
+	if (!sym)
+		return -1;
+
+	s = sym->saved;
+	n = sym->saved->saved;
+	item->builtin_variable = s->builtin_variable;
+	s->builtin_variable = NULL;
+
+	if (GC_symbol(s, NULL, -1))
+		sym->saved = n;
+	GC_symbol(item, (array *)&globals, loc);
+	return 0;
+}
+
+int	stack_list_builtin_variable_alias (const char *name)
+{
+	Symbol *item, *sym;
+	int	counter = 0;
+
+	if (!(item = lookup_symbol(name)))
+		return -1;
+
+	for (sym = item->saved; sym; sym = sym->saved)
+	{
+	    if (sym->saved_hint == SAVED_BUILTIN_VAR)
+	    {
+		if (sym->builtin_variable == NULL)
+		    say("\t%s\t<Placeholder>", sym->name);
+		else 
+		    say("\t%s\t%#p", sym->name, sym->builtin_variable);
+		counter++;
+	    }
+	}
+
+	if (counter)
+		return 0;
+	return -1;
 }
 

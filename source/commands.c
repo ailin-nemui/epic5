@@ -1,4 +1,4 @@
-/* $EPIC: commands.c,v 1.99 2004/07/01 00:14:54 crazyed Exp $ */
+/* $EPIC: commands.c,v 1.100 2004/07/02 22:29:21 jnelson Exp $ */
 /*
  * commands.c -- Stuff needed to execute commands in ircII.
  *		 Includes the bulk of the built in commands for ircII.
@@ -2695,13 +2695,51 @@ BUILT_IN_COMMAND(stackcmd)
 	}
 	if ((arg = next_arg(args, &args)) != NULL)
 	{
+		char *n;
+
 		len = strlen(arg);
 		if (!my_strnicmp(arg, "ON", len))
 			do_stack_on(type, args);
 		else if (!my_strnicmp(arg, "ALIAS", len))
-			do_stack_alias(type, args, STACK_DO_ALIAS);
+		{
+		    n = remove_brackets(args, subargs);
+		    if (type == STACK_PUSH)
+		    {
+			if (stack_push_cmd_alias(n))
+			    say("Can't push ALIAS %s", n);
+		    }
+		    else if (type == STACK_POP)
+		    {
+			if (stack_pop_cmd_alias(n))
+			    say("Can't pop ALIAS %s", n);
+		    }
+		    else
+		    {
+			if (stack_list_cmd_alias(n))
+			    say("Can't list ALIAS %s", n);
+		    }
+		    new_free(&n);
+		}
 		else if (!my_strnicmp(arg, "ASSIGN", len))
-			do_stack_alias(type, args, STACK_DO_ASSIGN);
+		{
+		    n = remove_brackets(args, subargs);
+		    if (type == STACK_PUSH)
+		    {
+			if (stack_push_var_alias(n))
+			    say("Can't push ASSIGN %s", n);
+		    }
+		    else if (type == STACK_POP)
+		    {
+			if (stack_pop_var_alias(n))
+			    say("Can't pop ASSIGN %s", n);
+		    }
+		    else
+		    {
+			if (stack_list_var_alias(n))
+			    say("Can't list ASSIGN %s", n);
+		    }
+		    new_free(&n);
+		}
 		else if (!my_strnicmp(arg, "SET", len))
 			do_stack_set(type, args);
 		else if (!my_strnicmp(arg, "BIND", len))

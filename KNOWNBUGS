@@ -270,3 +270,11 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Fix bug with $unshift() that popped up.
 * Move after_expando() to ircaux.c.  I think it belongs there more.
 * Fix double-free of command alias arglists. rb adm.
+* Add a "saved" list item off of the Symbol type to store /stack'ed stuff.
+* Implement stack push|pop|list for all 6 symbol types.
+* Nix the "line/global" tracking for symbols
+* Rename "filename" tracking for symbols to "package"
+* Create clone_arglist() to clone an arglist, duh.
+* Change "user_variable_stub" symbol field to be an integer
+* Stash the stubbed filename in "user_variable" if stub is set.
+

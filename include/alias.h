@@ -174,7 +174,22 @@
 /*
  * This is the alias interface to the /STACK command.
  */
-	void	do_stack_alias 		(int, char *, int);
+	int	stack_push_var_alias (const char *name);
+	int     stack_pop_var_alias (const char *name);
+	int     stack_list_var_alias (const char *name);
+	int	stack_push_cmd_alias (char *name);
+	int     stack_pop_cmd_alias (const char *name);
+	int     stack_list_cmd_alias (const char *name);
+	int	stack_push_builtin_cmd_alias (const char *name);
+	int     stack_pop_builtin_cmd_alias (const char *name);
+	int     stack_list_builtin_cmd_alias (const char *name);
+	int	stack_push_builtin_func_alias (const char *name);
+	int     stack_pop_builtin_function_alias (const char *name);
+	int     stack_list_builtin_function_alias (const char *name);
+	int	stack_push_builtin_expando_alias (const char *name);
+	int     stack_pop_builtin_expando_alias (const char *name);
+	int     stack_list_builtin_expando_alias (const char *name);
+
 
 /*
  * Truly bogus. =)
