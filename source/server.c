@@ -1,4 +1,4 @@
-/* $EPIC: server.c,v 1.117 2004/01/15 05:54:55 jnelson Exp $ */
+/* $EPIC: server.c,v 1.118 2004/01/15 22:28:04 jnelson Exp $ */
 /*
  * server.c:  Things dealing with that wacky program we call ircd.
  *
@@ -720,28 +720,86 @@ int 	server_list_size (void)
 	return (number_of_servers);
 }
 
+/* 
+ * Look for another server in the same group as 'oldserv'
+ * Direction is 1 to go forward, -1 to go backward. 
+ * Other values will lose.
+ */
+int	next_server_in_group (int oldserv, int direction)
+{
+	int	newserv;
+	int	counter;
+
+	for (counter = 1; counter <= number_of_servers; counter++)
+	{
+		/* Starting with 'oldserv', move in the given direction */
+		newserv = oldserv + (counter * direction);
+
+		/* Make sure the new server is always a valid servref */
+		while (newserv < 0)
+			newserv += number_of_servers;
+
+		/* Make sure the new server is valid. */
+		if (newserv > number_of_servers)
+			newserv %= number_of_servers;
+
+		/* If there is no server at this refnum, skip it. */
+		if (!get_server(newserv))
+			continue;
+
+		if (!my_stricmp(get_server_group(oldserv),
+			        get_server_group(newserv)))
+			return newserv;
+	}
+	return oldserv;		/* Couldn't find one. */
+}
 
 
 /*************************** SERVER STUFF *************************/
 /*
  * server: the /SERVER command. Read the SERVER help page about 
+ *
+ * /SERVER
+ *	Show the server list.
+ * /SERVER -DELETE <refnum|desc>
+ *	Remove server <refnum> (or <desc>) from server list.
+ *	Fails if you do not give it a refnum or desc.
+ *	Fails if server does not exist.
+ * 	Fails if server is open.
+ * /SERVER -ADD <desc>
+ *	Add server <desc> to server list.
+ *	Fails if you do not give it a <desc>
+ * /SERVER +<refnum|desc>
+ *	Allow server to reconnect if windows are pointed to it.
+ *	Note: server reconnection is asynchronous
+ * /SERVER -<refnum|desc>
+ *	Unconditionally close a server connection
+ *	Note: server disconnection is synchronous!
+ * /SERVER +
+ *	Switch windows from current server to next server in same group
+ * /SERVER -
+ *	Switch windows from current server to previous server in same group
+ * /SERVER <refnum|desc>
+ *	Switch windows from current server to another server.
  */
 BUILT_IN_COMMAND(servercmd)
 {
 	char	*server = NULL;
 	int	i;
+	int	olds, news;
+	size_t	slen;
 
 	if ((server = next_arg(args, &args)) == NULL)
 	{
 		display_server_list();
 		return;
 	}
+	slen = strlen(server);
 
 	/*
-	 * Delete an existing server
+	 * /SERVER -DELETE <refnum>		Delete a server from list
 	 */
-	if (strlen(server) > 1 && 
-		!my_strnicmp(server, "-DELETE", strlen(server)))
+	if (slen > 1 && !my_strnicmp(server, "-DELETE", slen))
 	{
 		if ((server = next_arg(args, &args)) == NULL)
 		{
@@ -763,13 +821,13 @@ BUILT_IN_COMMAND(servercmd)
 		}
 
 		remove_from_server_list(i, 0);
+		return;
 	}
 
 	/*
-	 * Add a server, but dont connect
+	 * SERVER -ADD <host>			Add a server to list
 	 */
-	else if (strlen(server) > 1 && 
-			!my_strnicmp(server, "-ADD", strlen(server)))
+	if (slen > 1 && !my_strnicmp(server, "-ADD", slen))
 	{
 		if (!(server = new_next_arg(args, &args)))
 		{
@@ -778,94 +836,62 @@ BUILT_IN_COMMAND(servercmd)
 		}
 
 		find_server_refnum(server, &args);
+		return;
 	}
 
 	/*
-	 * The difference between /server +foo.bar.com  and
-	 * /window server foo.bar.com is now moot.
+	 * /server +host.com			Allow server to reconnect
 	 */
-	else if (*server == '+')
+	if (slen > 1 && *server == '+')
 	{
-		/* /SERVER +foo.bar.com restarts the connection for server */
-		if (*++server)
-		{
-			i = find_server_refnum(server, &args);
-			if (get_server_status(i) == SERVER_CLOSED)
-				set_server_status(i, SERVER_RECONNECT);
-		}
-
-		/* /SERVER + means go to the next server */
-		else
-		{
-			int	new_server;
-
-			set_server_quit_message(from_server, "Changing servers");
-			if (from_server + 1 == number_of_servers)
-				new_server = 0;
-			else
-				new_server = from_server + 1;
-			change_window_server(from_server, new_server);
-
-			/* Allow this server to auto-reconnect */
-			if (get_server_status(new_server) == SERVER_CLOSED)
-				set_server_status(new_server, SERVER_RECONNECT);
-		}
-	}
-
-	/*
-	 * You can only detach a server using its refnum here.
-	 */
-	else if (*server == '-')
-	{
-		if (*++server)
-		{
-			i = find_server_refnum(server, &args);
-			if (i == primary_server)
-			{
-			    say("You can't close your primary server!");
-			    return;
-			}
-
-			set_server_quit_message(from_server, 
-					"Disconnected at user request");
-			close_server(i, NULL);
-		}
-		else
-		{
-			int	new_server;
-
-			set_server_quit_message(from_server, "Changing servers");
-			if (from_server == 0)
-				new_server = number_of_servers - 1;
-			else
-				new_server = from_server - 1;
-			change_window_server(from_server, new_server);
-		}
-
-	}
-
-	/*
-	 * Just a naked /server with no flags
-	 */
-	else
-	{
-		int	j = from_server;
-
 		i = find_server_refnum(server, &args);
-		if (i != j)
-		{
-			if (my_stricmp(get_server_type(i), "IRC-SSL") == 0)
-				set_server_ssl_enabled(i, TRUE);
-			change_window_server(j, i);
-
-			/* Allow this server to auto-reconnect */
-			if (get_server_status(i) == SERVER_CLOSED)
-				set_server_status(i, SERVER_RECONNECT);
-		}
-		else
-			say("Connected to port %d of server %s",
-				get_server_port(j), get_server_name(j));
+		if (get_server_status(i) == SERVER_CLOSED)
+			set_server_status(i, SERVER_RECONNECT);
+		return;
 	}
+
+	/*
+	 * /server -host.com			Force server to disconnect
+	 */
+	if (slen > 1 && *server == '-')
+	{
+		i = find_server_refnum(server, &args);
+		set_server_quit_message(from_server, 
+				"Disconnected at user request");
+		close_server(i, NULL);
+		return;
+	}
+
+	/* * * * The rest of these actually move windows around * * * */
+	olds = from_server;
+
+	if (*server == '+')
+		news = next_server_in_group(olds, 1);
+	else if (*server == '-')
+		news = next_server_in_group(olds, -1);
+	else
+		news = find_server_refnum(server, &args);
+
+	/* If the user is not actually changing server, just reassure them */
+	if (olds == news)
+	{
+		say("Connected to port %d of server %s",
+			get_server_port(olds), get_server_name(olds));
+		return;
+	}
+
+	/* Do the switch! */
+	set_server_quit_message(olds, "Changing servers");
+
+	/* XXX - Should i really be doing this here? */
+	if (my_stricmp(get_server_type(news), "IRC-SSL") == 0)
+		set_server_ssl_enabled(news, TRUE);
+
+	change_window_server(olds, news);
+
+	/* Allow this server to auto-reconnect */
+	if (get_server_status(news) == SERVER_CLOSED)
+		set_server_status(news, SERVER_RECONNECT);
 }
 
 

@@ -1,4 +1,4 @@
-/* $EPIC: numbers.c,v 1.64 2004/01/07 16:05:02 jnelson Exp $ */
+/* $EPIC: numbers.c,v 1.65 2004/01/15 22:28:04 jnelson Exp $ */
 /*
  * numbers.c: handles all those strange numeric response dished out by that
  * wacky, nutty program we call ircd 
@@ -847,17 +847,6 @@ void 	numbered_command (const char *from, const char *comm, char const **ArgList
 	case 462:		/* #define ERR_ALREADYREGISTRED 462 */
 		change_server_nickname(from_server, NULL);
 		break;
-
-	case 465:		/* #define ERR_YOUREBANNEDCREEP 465 */
-	{
-		/* 
-		 * There used to be a say() here, but if we arent 
-		 * connected to a server, then doing say() is not
-		 * a good idea.  So now it just doesnt do anything.
-		 */
-		change_window_server(from_server, NOSERV);
-		break;
-	}
 
 	case 477:		/* #define ERR_NEEDREGGEDNICK	477 */
 		/* IRCnet has a different 477 numeric. */
