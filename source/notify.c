@@ -296,7 +296,7 @@ void 	do_notify (void)
 {
 	int 		old_from_server = from_server;
 	int		servnum;
-static	time_t		next_notify = 0;
+static	time_t		last_notify = 0;
 	int		interval = get_int_var(NOTIFY_INTERVAL_VAR);
 
 	if (!number_of_servers)
@@ -305,19 +305,18 @@ static	time_t		next_notify = 0;
 	if (x_debug & DEBUG_NOTIFY)
 		yell("do_notify() was called...");
 
-	if (!next_notify)
-		next_notify = time(NULL);
-	else if (time(NULL) < next_notify)
+	if (time(NULL) < last_notify)
+		last_notify = time(NULL);
+	else if (interval > (time(NULL) - last_notify))
 	{
 		if (x_debug & DEBUG_NOTIFY)
 			yell("Not time for notify yet [%ld] [%ld]",
-				time(NULL), next_notify);
+				time(NULL), last_notify+interval);
 
 		return;		/* Not yet */
 	}
 
-	/* We want to do it *on average* every 'interval' seconds */
-	next_notify += interval;
+	last_notify = time(NULL);
 	for (servnum = 0; servnum < number_of_servers; servnum++)
 	{
 		if (is_server_connected(servnum))
