@@ -1,4 +1,4 @@
-/* $EPIC: alias.c,v 1.47 2004/06/28 23:48:15 jnelson Exp $ */
+/* $EPIC: alias.c,v 1.48 2004/06/29 04:07:47 jnelson Exp $ */
 /*
  * alias.c -- Handles the whole kit and caboodle for aliases.
  *
@@ -84,7 +84,7 @@ struct ArgListT {
 };
 typedef struct ArgListT ArgList;
 ArgList	*parse_arglist (char *arglist);
-void	destroy_arglist (ArgList *);
+void	destroy_arglist (ArgList **);
 
 
 /*
@@ -734,21 +734,21 @@ ArgList	*parse_arglist (char *arglist)
 	return args;
 }
 
-void	destroy_arglist (ArgList *arglist)
+void	destroy_arglist (ArgList **arglist)
 {
 	int	i = 0;
 
-	if (!arglist)
+	if (!arglist || !*arglist)
 		return;
 
 	for (i = 0; ; i++)
 	{
-		if (!arglist->vars[i])
+		if (!(*arglist)->vars[i])
 			break;
-		new_free(&arglist->vars[i]);
-		new_free(&arglist->defaults[i]);
+		new_free(&(*arglist)->vars[i]);
+		new_free(&(*arglist)->defaults[i]);
 	}
-	new_free((char **)&arglist);
+	new_free((char **)arglist);
 }
 
 void	prepare_alias_call (void *al, char **stuff)
@@ -892,7 +892,7 @@ static int	GC_symbol (Symbol *item, array *list, int loc)
 	new_free(&item->user_command);
 	new_free(&item->user_command_stub);
 	new_free(&item->user_command_filename);
-	destroy_arglist(item->arglist);
+	destroy_arglist(&item->arglist);
 	new_free(&(item->name));
 	new_free((char **)&item);
 	return 1;
@@ -1101,7 +1101,7 @@ void	add_cmd_alias	(const char *orig_name, ArgList *arglist, const char *stuff)
 
 	malloc_strcpy(&(tmp->user_command), stuff);
 	new_free(&tmp->user_command_stub);
-	destroy_arglist(tmp->arglist);
+	destroy_arglist(&tmp->arglist);
 	tmp->arglist = arglist;
 
 	say("Alias	%s added [%s]", name, stuff);
@@ -1432,7 +1432,7 @@ static void	delete_cmd_alias (const char *orig_name, int noisy)
 		new_free(&item->user_command);
 		new_free(&(item->user_command_stub));
 		new_free(&(item->user_command_filename));
-		destroy_arglist(item->arglist);
+		destroy_arglist(&item->arglist);
 		GC_symbol(item, (array *)&globals, loc);
 		if (noisy)
 			say("Alias %s removed", name);
@@ -2047,7 +2047,7 @@ static	void	destroy_cmd_aliases (SymbolSet *my_array)
 		item = my_array->list[cnt];
 		new_free((void **)&item->user_command);
 		new_free((void **)&item->user_command_stub);
-		destroy_arglist(item->arglist);
+		destroy_arglist(&item->arglist);
 		if (!GC_symbol(item, (array *)my_array, cnt))
 			cnt++;
 	}
