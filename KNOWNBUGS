@@ -94,3 +94,4 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Don't call window_check_servers() other than io() for sanity reasons.
 * Make /window server just change server, let w_c_s() bootstrap connection
 * Remove many window->channel->server sanity checks.
+* Backslash a bunch of regular pattern chars that are metachars in regexes
