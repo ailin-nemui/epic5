@@ -1,5 +1,20 @@
 EPIC5-0.0.4
 
+*** News 03/20/2005 -- History recall moved into a script
+		*** IMPORTANT *** IMPORTANT *** IMPORTANT ***
+	History recall (BACKWARD_HISTORY and FORWARD_HISTORY) are now
+	scripted features, implemented by 
+			/load history
+	instead of hardcoded into the client.  If you want to be able to
+	use cursor up and down to recall input history you need to add
+			/load history
+	to your ~/.epicrc or ~/.ircrc file.  Remember, if you do not put 
+			/load history
+	in your startup file, then you will find that input history recall
+	will no longer be available.  So just put 
+			/load history
+	in your startup file, and everything will be cool!
+
 *** News 03/14/2005 -- New option to $line(), $line(<num> -TIME)
 	You can now provide the "-TIME" option to the $line() function
 	which returns the timestamp when that line was added to the lastlog.

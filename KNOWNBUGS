@@ -577,3 +577,4 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Fix all the status_* sub-formats to not have any hardcoded size limits.
 * Fixes from darwin that they "forgot" to submit upstream.
 * Fix file descriptor leak, alerted by ce.
+* Add Blackjac's 'history' script.  Into the Abyss!

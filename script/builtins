@@ -1,13 +1,29 @@
+if (word(2 $loadinfo()) != [pf]) {
+	load -pf $word(1 $loadinfo());
+	return;
+};
+
 #
 # Here's the plan
 # In epic5-0.0.3, I removed a bunch of built in commands that were actually
 # hardcoded aliases.  I have put them here, as user aliases.
 #
-alias bye {//quit $*}
-alias date {//time $*}
-alias exit {//quit $*}
-alias host {//userhost $*}
-alias irchost {//hostname $*}
-alias leave {//part $*}
-alias signoff {//quit $*}
+
+alias addset (name, type, args) {
+	if (@name && type) {
+		@ symbolctl(create $name);
+		@ symbolctl(set $name 1 builtin_variable type $type);
+		if (args) {
+			@ symbolctl(set $name 1 builtin_variable script $args);
+		};
+	};
+};
+
+alias bye {//quit $*};
+alias date {//time $*};
+alias exit {//quit $*};
+alias host {//userhost $*};
+alias irchost {//hostname $*};
+alias leave {//part $*};
+alias signoff {//quit $*};
 
