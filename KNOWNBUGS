@@ -2,7 +2,7 @@ EPIC5 Projects, Bugs, and other Errata:
 
 KNOWN ERRATA (eg, bugs, or unresolved requests):
 ------------------------------------------------
-* Keep timestamps with lastlog stuff
+<none>
 
 [See http://www.epicsol.org/PROJECTS for things to come in the future]
 [See http://www.epicsol.org/CHANGELOG5 for things that changed in the past]
@@ -561,3 +561,7 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * If you do turn it on, it shows up as 'h' in $info(o)
 * Sort logfiles by refnum, so new refnums always go at the end of the list.
 * Fix up 338 again, oops!
+* Keep timestamps along with lastlog entries.
+* Add $line(<num> -TIME), return the timestamp when <num> was added to lastlog.
+* Remove some #define's from config.h that are not referenced any longer.
+* Remove #define QUIT_ON_OPERATOR_KILL because 1 line of script defeats it.

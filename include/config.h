@@ -57,68 +57,6 @@
 #define MAX_STACK_FRAMES 20000
 
 /*
- * The left and right brace characters ('{', '}') are special characters in
- * the IRC character set, becuase they represent scandanavian characters and
- * are not expected to be treated any differently than any other alphanumeric
- * character.  When this is #define'd, the client makes a best guess attempt
- * to determine if a { is being used as a brace, or as an alphanumeric char.
- *
- * The way it determines is simple:
- *	An lbrace ('{') is a normal character UNLESS ONE OF THE FOLLOWING:
- *		* It is the first character on a line
- *		* It is preceeded by whitespace
- *		* It is preceeded by a right paren (')')
- *		* It is preceeded by a right brace ('}')
- * Similarly,
- *	An rbrace ('}') is a normal character UNLESS ONE OF THE FOLLOWING:
- *		* It is the last character on a line
- *		* It is followed by whitespace
- *		* It is followed by a left paren ('(')
- *		* It is followed by a left brace ('{')
- *
- * If the following is #define'd, the above rules are in effect.  If the
- * following is #undef'd, then the normal, traditional rules apply and every
- * { and } is counted for bracing purposes.
- *
- * Some day, if this works out, this will become the default behavior -- 
- * but not today.
- */
-#undef BRACE_LOAD_HACK
-
-/*
- * A recent change was to make the %S status line expando always display
- * the server information, even if you were connected to only one server.
- * However, a few people expressly dislike this change and want the old 
- * behavior.  If this is #define'd, you get the old behavior.  If this is
- * #undef'd, you get the new behavior.
- */
-#define OLD_STATUS_S_EXPANDO_BEHAVIOR
-
-/*
- * Oooops!  This was supposed to be here, but it never did make it.  Which
- * explains a lot.  Anyhow, #define this if you want to have the option of
- * doing floating point math in EPIC.  #undef this if you always want integer
- * operations to always be done.  The client can still do integer operations 
- * if this is defined, just /set floating_point_math OFF.
- *
- * Note that if this is defined, the client actually will do all of your
- * operations in floating point and then the *result* will be truncated.
- * This is different from when this is #undef when *each term* will be 
- * truncated.  For example:
- *
- * 	#undef'd  4.2 - 2.6 	-> (4 - 2) -> 2
- *	#define'd 4.2 - 2.6     -> 1.6 -> 1
- */
-#define FLOATING_POINT_SUPPORT
-
-/*
- * Undef this if your FIONREAD is not useful.  At this time, it makes very
- * little difference because we dont use FIONREAD for anything useful.  But
- * nevertheless, if youre allergic to mild bsd-isms, then you can #undef this.
- */
-#define HAVE_USEFUL_FIONREAD
-
-/*
  * This sets how you want to see the 368 numeric to be hooked.  The default
  * (#undef) is the traditional EPIC behavior.
  *		EPIC		ircII
@@ -288,13 +226,6 @@
  */
 #define SERVERS_FILE "ircII.servers"
 
-
-/*
- * define this if you want your irc client to exit after an 
- * operator kill.  I have no idea why you would, though.
- */
-#undef QUIT_ON_OPERATOR_KILL
-
 /*
  * The compile sequence records the user/host/time of the compile,
  * which can be useful for tampering and newbie reasons.  If you want
@@ -366,7 +297,6 @@
 #define DEFAULT_DISPLAY_PC_CHARACTERS 4
 #define DEFAULT_DO_NOTIFY_IMMEDIATELY 1
 #define DEFAULT_EIGHT_BIT_CHARACTERS 1
-#define DEFAULT_EXEC_PROTECTION 0
 #define DEFAULT_FLOATING_POINT_MATH 0
 #define DEFAULT_FLOATING_POINT_PRECISION 16
 #define DEFAULT_FLOOD_AFTER 3
@@ -391,7 +321,6 @@
 #define DEFAULT_INDENT 0
 #define DEFAULT_INPUT_ALIASES 0
 #define DEFAULT_INPUT_PROMPT "> "
-#define DEFAULT_INPUT_PROTECTION 1
 #define DEFAULT_INSERT_MODE 1
 #define DEFAULT_INVERSE_VIDEO 1
 #define DEFAULT_KEY_INTERVAL 1000
@@ -418,7 +347,6 @@
 #define DEFAULT_OLD_SERVER_LASTLOG_LEVEL "NONE"
 #define DEFAULT_PAD_CHAR ' '
 #define DEFAULT_QUIT_MESSAGE "ircII %s -- Are we there yet?"
-#define DEFAULT_RANDOM_LOCAL_PORTS 0
 #define DEFAULT_RANDOM_SOURCE 0
 #define DEFAULT_REVERSE_STATUS_LINE 1
 #define DEFAULT_SCROLLBACK 256
@@ -503,7 +431,6 @@
 #define DEFAULT_STATUS_VOICE "+"
 #define DEFAULT_STATUS_WINDOW "^^^^^^^^"
 #define DEFAULT_SUPPRESS_FROM_REMOTE_SERVER 0
-#define DEFAULT_SUPPRESS_SERVER_MOTD 0
 #define DEFAULT_SWITCH_CHANNEL_ON_PART 1
 #define DEFAULT_SWITCH_CHANNELS_BETWEEN_WINDOWS 1
 #define DEFAULT_TAB 1
@@ -536,8 +463,6 @@
  * you do =)  Dont change any of these unless you know what it will do.
  */
 #undef EMACS_KEYBINDINGS	/* meta-key keybindings. */
-#undef EPIC_DEBUG		/* force coredump on panic */
-#define EXEC_COMMAND		/* allow /exec comamnd */
 #undef HACKED_DCC_WARNING	/* warn if handshake != sender */
 #undef HARD_UNFLASH		/* do a hard reset instead of soft on refresh */
 #undef NO_BOTS			/* no bots allowed */

@@ -1,6 +1,6 @@
-/* $EPIC: glob.c,v 1.10 2003/07/22 21:12:54 jnelson Exp $ */
+/* $EPIC: glob.c,v 1.11 2005/03/15 05:36:20 jnelson Exp $ */
 #include "config.h"
-#if defined(NEED_GLOB)
+#ifdef NEED_GLOB
 
 /*
  * Copyright (c) 1989, 1993

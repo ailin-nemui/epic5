@@ -1,4 +1,4 @@
-/* $EPIC: parse.c,v 1.64 2005/01/12 00:12:21 jnelson Exp $ */
+/* $EPIC: parse.c,v 1.65 2005/03/15 05:36:20 jnelson Exp $ */
 /*
  * parse.c: handles messages from the server.   Believe it or not.  I
  * certainly wouldn't if I were you. 
@@ -750,15 +750,9 @@ static void	p_kill (const char *from, const char *comm, const char **ArgList)
 	/* 
 	 * If we are a bot, and /on disconnect didnt hook, 
 	 * then we arent going anywhere.  We might as well quit.
-	 * Also quit if #define QUIT_ON_OPERATOR_KILL
 	 */
-#ifndef QUIT_ON_OPERATOR_KILL
 	if (background && !hooked)
-#endif
-	{
-		say("Too bad, you lose.");
 		irc_exit(1, NULL);
-	}
 }
 
 static void	p_ping (const char *from, const char *comm, const char **ArgList)

@@ -1,22 +1,36 @@
 EPIC5-0.1
 
+*** News 03/14/2005 -- New option to $line(), $line(<num> -TIME)
+	You can now provide the "-TIME" option to the $line() function
+	which returns the timestamp when that line was added to the lastlog.
+	You can use -TIME together with -LEVEL, and if you do, the level is
+	always the second-to-last word, and the timestamp is the last word.
+	You can pass the timestamp to $strftime() for conversion.
+
+	Example:
+		$line(<num> -LEVEL -TIME)
+	might return
+		"Some line goes here CRAP 1110000000"
+
 *** News 03/11/2005 -- New $hookctl(SET LIST <type> IMPLIED <string>)
+		*** EXPERIMENTAL -- WILL BE REMOVED ***
 	A lot of people create a large number of on hooks that look like:
 		ON ^TYPE * { echo $cparse($format[type]) }
 	for each TYPE.  Since all of these ONs are otherwise identical,
 	they clutter up the /on list, and managing all of the variables
 	is a hassle.  So there is now a feature to allow you to set an
 	"implied" on hook that does nothing more than the above.
-
+		*** EXPERIMENTAL -- WILL BE REMOVED ***
 	You can now set a format with 
 		$hookctl(SET LIST <type> IMPLIED <string>)
 	and if you don't have an /ON <type> *, then epic will do
 		echo $cparse(<string>)
 	and suppress the normal output.
-
+		*** EXPERIMENTAL -- WILL BE REMOVED ***
 	You may surround <string> with {}s if you wish, to avoid quoting
 	hell.  Match sure to keep your {}s matched up if you do so.
 	See the "loadformats" info above for how to practically use this.
+		*** EXPERIMENTAL -- WILL BE REMOVED ***
 
 *** News 03/03/2005 -- New status bar expandos, %{2}+ and %{3}+
 	These two status exapndos act like %+ and %{1}+ respectively,
@@ -148,8 +162,9 @@ EPIC5-0.1
 	/window server), the server will automatically be given its first
 	"altname" (see "Alternate server names" below).  
 
-	If the server name is an IP address, the whole name, Otherwise, the 
-	first dot-seperated section that does start with "irc".
+	Each server's first altname is constructed as:
+	* If the server name is an IP address, the whole name, 
+        * Otherwise, the first segment that does not start with "irc".
 
 	This is the value you have historically seen at %S on your status
 	bar.  This value is now automatically created as your server's

@@ -1,4 +1,4 @@
-/* $EPIC: functions.c,v 1.194 2005/03/04 05:30:59 jnelson Exp $ */
+/* $EPIC: functions.c,v 1.195 2005/03/15 05:36:20 jnelson Exp $ */
 /*
  * functions.c -- Built-in functions for ircII
  *
@@ -76,16 +76,17 @@
 #include "words.h"
 #include "reg.h"
 
+#ifdef NEED_GLOB
+# include "glob.h"
+#else
+# include <glob.h>
+#endif
+
 #ifdef HAVE_REGEX_H
 # include <regex.h>
 #endif
 #ifdef HAVE_UNAME
 # include <sys/utsname.h>
-#endif
-#ifdef NEED_GLOB
-# include "glob.h"
-#else
-# include <glob.h>
 #endif
 #include <math.h>
 
@@ -264,7 +265,7 @@ static	char
 	*function_glob		(char *),
 	*function_globi		(char *),
 	*function_hash_32bit	(char *),
-	*function_hookctl		(char *),
+	*function_hookctl	(char *),
 	*function_idle		(char *),
 	*function_igmask	(char *),
 	*function_ignorectl	(char *),
@@ -554,7 +555,7 @@ static BuiltInFunctions	built_in_functions[] =
 	{ "GLOB",		function_glob		},
 	{ "GLOBI",		function_globi		},
 	{ "HASH_32BIT",		function_hash_32bit	},
-	{ "HOOKCTL",	function_hookctl	},
+	{ "HOOKCTL",		function_hookctl	},
 	{ "IDLE",		function_idle		},
 	{ "IFINDFIRST",		function_ifindfirst 	},
 	{ "IFINDITEM",		function_ifinditem	},
@@ -3727,6 +3728,9 @@ BUILT_IN_FUNCTION(function_notify, words)
 #ifdef NEED_GLOB
 #define glob bsd_glob
 #define globfree bsd_globfree
+#endif
+#ifndef GLOB_INSENSITIVE
+#define GLOB_INSENSITIVE 0
 #endif
 
 BUILT_IN_FUNCTION(function_glob, word)

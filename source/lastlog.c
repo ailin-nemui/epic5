@@ -1,4 +1,4 @@
-/* $EPIC: lastlog.c,v 1.44 2004/08/11 23:58:39 jnelson Exp $ */
+/* $EPIC: lastlog.c,v 1.45 2005/03/15 05:36:20 jnelson Exp $ */
 /*
  * lastlog.c: handles the lastlog features of irc. 
  *
@@ -53,6 +53,7 @@ typedef struct	lastlog_stru
 	char	*msg;
 	struct	lastlog_stru	*older;
 	struct	lastlog_stru	*newer;
+	time_t	when;
 }	Lastlog;
 
 static int	show_lastlog (Lastlog **l, int *skip, int *number, Mask *level_mask, char *match, regex_t *reg, int *max, const char *target);
@@ -878,6 +879,7 @@ void 	add_to_lastlog (Window *window, const char *line)
 			new_l->target = malloc_strdup(who_from);
 		else
 			new_l->target = NULL;
+		time(&new_l->when);
 
 		if (window->lastlog_newest)
 			window->lastlog_newest->newer = new_l;
@@ -954,6 +956,9 @@ char 	*function_line (char *word)
 	Window	*win;
 	char	*extra;
 	int	do_level = 0;
+	int	do_timestamp = 0;
+	char *	retval = NULL;
+	size_t	clue = 0;
 
 	GET_INT_ARG(line, word);
 
@@ -963,6 +968,8 @@ char 	*function_line (char *word)
 
 		if (!my_stricmp(extra, "-LEVEL"))
 			do_level = 1;
+		else if (!my_stricmp(extra, "-TIME"))
+			do_timestamp = 1;
 		else
 			windesc = extra;
 	}
@@ -984,11 +991,17 @@ char 	*function_line (char *word)
 	else
 		start_pos = start_pos->newer;
 
+	malloc_strcat_c(&retval, start_pos->msg, &clue);
+
 	if (do_level)
-		return malloc_sprintf(NULL, "%s %s", start_pos->msg, 
-					level_to_str(start_pos->level));
-	else
-		RETURN_STR(start_pos->msg);
+		malloc_strcat_wordlist_c(&retval, space, 
+					level_to_str(start_pos->level), &clue);
+	if (do_timestamp)
+		malloc_strcat_wordlist_c(&retval, space, 
+					ltoa((long)start_pos->when), &clue);
+
+
+	RETURN_MSTR(retval);
 }
 
 /*
