@@ -1,4 +1,4 @@
-/* $EPIC: notice.c,v 1.19 2003/02/12 05:34:33 jnelson Exp $ */
+/* $EPIC: notice.c,v 1.20 2003/02/19 03:26:45 crazyed Exp $ */
 /*
  * notice.c: special stuff for parsing NOTICEs
  *
@@ -314,7 +314,7 @@ void 	p_notice (const char *from, const char *comm, const char **ArgList)
 
 	if (new_check_flooding(from, FromUserHost, flood_channel, 
 					message, NOTICE_FLOOD)) {
-		set_server_doing_privmsg(from_server, 0);
+		set_server_doing_notice(from_server, 0);
 		return;
 	}
 
