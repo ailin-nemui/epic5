@@ -1,4 +1,4 @@
-/* $EPIC: status.c,v 1.47 2004/08/11 23:58:39 jnelson Exp $ */
+/* $EPIC: status.c,v 1.48 2004/08/14 18:40:06 jnelson Exp $ */
 /*
  * status.c: handles the status line updating, etc for IRCII 
  *
@@ -831,7 +831,7 @@ STATUS_FUNCTION(status_nickname)
 {
 static	char	my_buffer[64];
 
-	snprintf(my_buffer, 63, nick_format, 
+	snprintf(my_buffer, sizeof my_buffer, nick_format, 
 			get_server_nickname(window->server));
 	return my_buffer;
 }
@@ -873,7 +873,7 @@ static	char	my_buffer[64];
 	n = get_server_name(window->server);
 	if (map == 2)
 	{
-		snprintf(my_buffer, 63, server_format, n);
+		snprintf(my_buffer, sizeof my_buffer, server_format, n);
 		return my_buffer;
 	}
 
@@ -885,7 +885,7 @@ static	char	my_buffer[64];
 	 */
 	if (strtoul(name, &next, 10) && *next == '.')
 	{
-		snprintf(my_buffer, 63, server_format, name);
+		snprintf(my_buffer, sizeof my_buffer, server_format, name);
 		return my_buffer;
 	}
 
@@ -894,7 +894,7 @@ static	char	my_buffer[64];
 	 */
 	if (!(rest = strchr(name, '.')))
 	{
-		snprintf(my_buffer, 63, server_format, name);
+		snprintf(my_buffer, sizeof my_buffer, server_format, name);
 		return my_buffer;
 	}
 
@@ -919,7 +919,7 @@ static	char	my_buffer[64];
 	 * Plop the server into the server_format and return it.
 	 */
 	name[len] = 0;
-	snprintf(my_buffer, 63, server_format, name);
+	snprintf(my_buffer, sizeof my_buffer, server_format, name);
 	return my_buffer;
 }
 
@@ -935,7 +935,7 @@ STATUS_FUNCTION(status_query_nick)
 	q = get_equery_by_refnum(window->refnum);
 	if (q && query_format)
 	{
-		snprintf(my_buffer, BIG_BUFFER_SIZE, query_format, q);
+		snprintf(my_buffer, sizeof my_buffer, query_format, q);
 		return my_buffer;
 	}
 
@@ -963,8 +963,8 @@ STATUS_FUNCTION(status_right_justify)
 STATUS_FUNCTION(status_notify_windows)
 {
 	int	doneone = 0;
-	char	buf2[81];
-static	char	my_buffer[81];
+	char	buf2[BIG_BUFFER_SIZE];
+static	char	my_buffer[BIG_BUFFER_SIZE];
 
 	/*
 	 * This only goes to a current-type window.
@@ -1015,7 +1015,7 @@ STATUS_FUNCTION(status_clock)
 	static	char	my_buffer[81];
 
 	if (get_int_var(CLOCK_VAR) && clock_format && DISPLAY_ON_WINDOW)
-		snprintf(my_buffer, 80, clock_format, get_clock());
+		snprintf(my_buffer, sizeof my_buffer, clock_format, get_clock());
 	else
 		*my_buffer = 0;
 
@@ -1063,7 +1063,7 @@ static  char    	my_buffer[81];
 	}
 
 	/* Press the mode into the status format. */
-	snprintf(my_buffer, 80, mode_format, mode);
+	snprintf(my_buffer, sizeof my_buffer, mode_format, mode);
 	return my_buffer;
 }
 
@@ -1093,7 +1093,7 @@ static	char	my_buffer[81];
 	if (!*localbuf)
 		return empty_string;
 
-	snprintf(my_buffer, 80, umode_format, localbuf);
+	snprintf(my_buffer, sizeof my_buffer, umode_format, localbuf);
 	return my_buffer;
 }
 
@@ -1161,7 +1161,7 @@ static	char	my_buffer[81];
 
 	if ((num = (lines_held / interval) * interval))
 	{
-		snprintf(my_buffer, 80, hold_lines_format, ltoa(num));
+		snprintf(my_buffer, sizeof my_buffer, hold_lines_format, ltoa(num));
 		return my_buffer;
 	}
 
@@ -1194,7 +1194,7 @@ static	char	my_buffer[IRCD_BUFFER_SIZE + 1];
 	if (num > 0 && (int)strlen(channel) > num)
 		channel[num] = 0;
 
-	snprintf(my_buffer, IRCD_BUFFER_SIZE, 
+	snprintf(my_buffer, sizeof my_buffer,
 			channel_format, check_channel_type(channel));
 	return my_buffer;
 }
@@ -1238,7 +1238,7 @@ static	char	my_buffer[81];
 	if (get_int_var(MAIL_VAR) && mail_format && 
 	    DISPLAY_ON_WINDOW && (number = check_mail()))
 	{
-		snprintf(my_buffer, 80, mail_format, number);
+		snprintf(my_buffer, sizeof my_buffer, mail_format, number);
 		return my_buffer;
 	}
 
@@ -1452,7 +1452,7 @@ STATUS_FUNCTION(status_cpu_saver_mode)
 
 	if (cpu_saver && cpu_saver_format)
 	{
-		snprintf(my_buffer, 80, cpu_saver_format, "CPU");
+		snprintf(my_buffer, sizeof my_buffer, cpu_saver_format, "CPU");
 		return my_buffer;
 	}
 
@@ -1468,7 +1468,7 @@ STATUS_FUNCTION(status_position)
 {
 	static char my_buffer[81];
 
-	snprintf(my_buffer, 80, "(%d/%d/%d-%d-%d)", 
+	snprintf(my_buffer, sizeof my_buffer, "(%d/%d/%d-%d-%d)", 
 			window->scrolling_distance_from_display_ip,
 			window->holding_distance_from_display_ip,
 			window->scrollback_distance_from_display_ip,
@@ -1497,7 +1497,7 @@ STATUS_FUNCTION(status_scroll_info)
 
 	if (window->scrollback_top_of_display)
 	{
-		snprintf(my_buffer, 80, " (Scroll: %d of %d)", 
+		snprintf(my_buffer, sizeof my_buffer, " (Scroll: %d of %d)", 
 				window->scrollback_distance_from_display_ip,
 				window->display_buffer_size - 1);
 	}
@@ -1510,14 +1510,10 @@ STATUS_FUNCTION(status_scroll_info)
 
 STATUS_FUNCTION(status_windowspec)
 {
-	static char my_buffer[81];
-
 	if (window->status.special)
-		strlcpy(my_buffer, window->status.special, sizeof my_buffer);
+		return window->status.special;
 	else
-		*my_buffer = 0;
-
-	return my_buffer;
+		return empty_string;
 }
 
 STATUS_FUNCTION(status_percent)
