@@ -20,6 +20,7 @@ KNOWN ERRATA (eg, bugs, or unresolved requests):
 * The check for "sun_len" in <sys/un.h> is bogus and unnecessary since we
   can just use #ifdef HAVE_SA_LEN for that.
 * Input cursor wigs out if 2ndary window is < 32 columns wide...
+* /Lastlog -context to work more like grep -<num>
 ---
 
 [See http://www.epicsol.org/PROJECTS for things to come in the future]
@@ -180,3 +181,5 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Fix bug when you did /flush on a /clear window.
 * Uncripple CPU_SAVER mode.  Works fine now!  Huzzah!
 * Fix /timer -window -1 crash.
+* Fix /wait (server_hard_wait()) so it tracks/resets from_server (fb CE)
+* Fix /timer so it tracks from_server properly (fb CE)

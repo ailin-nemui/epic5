@@ -1,4 +1,4 @@
-/* $EPIC: server.c,v 1.74 2002/11/26 23:03:14 jnelson Exp $ */
+/* $EPIC: server.c,v 1.75 2002/12/02 01:01:59 jnelson Exp $ */
 /*
  * server.c:  Things dealing with that wacky program we call ircd.
  *
@@ -2724,16 +2724,20 @@ const char *	get_server_sent_body (void)
  */
 void 	server_hard_wait (int i)
 {
+	int	old_from_server;
+
 	CHECK_SERVER(i)
 
 	if (!is_server_connected(i))
 		return;
 
+	old_from_server = from_server;
 	SERVER(i)->waiting_out++;
 	lock_stack_frame();
 	send_to_aserver(i, "%s", lame_wait_nick);
 	while (SERVER(i) && (SERVER(i)->waiting_in < SERVER(i)->waiting_out))
 		io("oh_my_wait");
+	from_server = old_from_server;
 }
 
 void	server_passive_wait (int i, const char *stuff)
