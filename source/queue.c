@@ -30,11 +30,11 @@ typedef struct  CmdListT {
         char     *what;
 } CmdList;
 
-static	Queue   *lookup_queue 			(Queue *, char *);
-static	int     add_commands_to_queue 		(Queue *, char *, const char *);
+static	Queue   *lookup_queue 			(Queue *, const char *);
+static	int     add_commands_to_queue 		(Queue *, const char *, const char *);
 static	void    display_all_queues 		(Queue *);
 static	CmdList *walk_commands			(Queue *);
-static	Queue   *make_new_queue 		(Queue *, char *);
+static	Queue   *make_new_queue 		(Queue *, const char *);
 static	int     delete_commands_from_queue 	(Queue *, int);
 static	void    flush_queue 			(Queue *);
 static	void    print_queue 			(Queue *);
@@ -54,13 +54,12 @@ BUILT_IN_COMMAND(queuecmd)
 		flush 		= 0, 		remove_by_number 	= 0,
 		commands 	= 1,            number                  = 0;
         static  Queue   *Queuelist;
-	char 	this_sucks[] = "Top";
 	
 	/* 
 	 * If the queue list is empty, make an entry
 	 */
 	if (!Queuelist)
-		Queuelist = make_new_queue(NULL, this_sucks);
+		Queuelist = make_new_queue(NULL, "Top");
 
         if (!(startcmds = strchr(args, '{')))
                 commands = 0;
@@ -149,15 +148,13 @@ BUILT_IN_COMMAND(queuecmd)
  * returns the queue BEFORE the queue we are looking for
  * returns the last queue if no match
  */
-static Queue *	lookup_queue (Queue *queue, char *what)
+static Queue *	lookup_queue (Queue *queue, const char *what)
 {
 	Queue	*tmp = queue;
 
-        upper(what);
-
 	while (tmp->next)
 	{
-		if (!strcmp(tmp->next->name, what))
+		if (!my_stricmp(tmp->next->name, what))
 			return tmp;
 		else
                         if (tmp->next)
@@ -184,22 +181,19 @@ static CmdList *walk_commands (Queue *queue)
 
 /*----------------------------------------------------------------*/
 /* Make a new queue, link it in, and return it. */
-static Queue *make_new_queue (Queue *afterqueue, char *name)
+static Queue *make_new_queue (Queue *afterqueue, const char *arg_name)
 {
         Queue *tmp = (Queue *)new_malloc(sizeof(Queue));
 
-        upper(name);
-
         tmp->next = afterqueue;
         tmp->first = (CmdList *) 0;
-        tmp->name = (char *) 0;
-        malloc_strcpy(&tmp->name, name);
+	tmp->name = m_strdup(arg_name);
         return tmp;
 }
         
 /* add a command to a queue, at the end of the list */
 /* expands the whole thing once and stores it */
-static int	add_commands_to_queue (Queue *queue, char *what, const char *subargs)
+static int	add_commands_to_queue (Queue *queue, const char *what, const char *subargs)
 {
 	CmdList *	ctmp = walk_commands(queue);
 	char *		list = NULL;
