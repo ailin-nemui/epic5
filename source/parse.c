@@ -1,4 +1,4 @@
-/* $EPIC: parse.c,v 1.52 2003/12/15 05:41:02 jnelson Exp $ */
+/* $EPIC: parse.c,v 1.53 2003/12/15 23:23:02 jnelson Exp $ */
 /*
  * parse.c: handles messages from the server.   Believe it or not.  I
  * certainly wouldn't if I were you. 
@@ -274,9 +274,6 @@ static void	p_wallops (const char *from, const char *comm, const char **ArgList)
 				server_wallop ? empty_string : star, 
 				high, message);
 
-	if (beep_on_level & LOG_WALLOP)
-		beep_em(1);
-
 	pop_message_from(l);
 }
 
@@ -406,10 +403,6 @@ static void	p_privmsg (const char *from, const char *comm, const char **ArgList)
 	else if (hook_type == MSG_LIST)
 		set_server_recv_nick(from_server, from);
 
-	/* Beep the user if they asked us to */
-	if (beep_on_level & log_type)
-	    beep_em(1);
-
 	/* Go ahead and throw it to the user */
 	l = message_from(target, log_type);
 
@@ -418,9 +411,6 @@ static void	p_privmsg (const char *from, const char *comm, const char **ArgList)
 	    if (hook_type == MSG_LIST)
 	    {
 		const char *away = get_server_away(NOSERV);
-
-		if (away)
-			beep_em(get_int_var(BEEP_WHEN_AWAY_VAR));
 
 		if (do_hook(hook_type, "%s %s", from, message))
 		{

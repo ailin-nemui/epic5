@@ -1,4 +1,4 @@
-/* $EPIC: vars.c,v 1.44 2003/12/03 22:17:40 jnelson Exp $ */
+/* $EPIC: vars.c,v 1.45 2003/12/15 23:23:02 jnelson Exp $ */
 /*
  * vars.c: All the dealing of the irc variables are handled here. 
  *
@@ -127,8 +127,6 @@ static	IrcVariable irc_variable[] =
 	{ "BANNER_EXPAND",		BOOL_TYPE_VAR,	0, 0, NULL, NULL, 0, 0 },
 	{ "BEEP",			BOOL_TYPE_VAR,	DEFAULT_BEEP, 0, NULL, NULL, 0, 0 },
 	{ "BEEP_MAX",			INT_TYPE_VAR,	DEFAULT_BEEP_MAX, 0, NULL, NULL, 0, 0 },
-	{ "BEEP_ON_MSG",		STR_TYPE_VAR,	0, 0, NULL, set_beep_on_msg, 0, 0 },
-	{ "BEEP_WHEN_AWAY",		INT_TYPE_VAR,	DEFAULT_BEEP_WHEN_AWAY, 0, NULL, NULL, 0, 0 },
 	{ "BLINK_VIDEO",		BOOL_TYPE_VAR,	DEFAULT_BLINK_VIDEO, 0, NULL, NULL, 0, 0 },
 	{ "BOLD_VIDEO",			BOOL_TYPE_VAR,	DEFAULT_BOLD_VIDEO, 0, NULL, NULL, 0, 0 },
 	{ "CHANNEL_NAME_WIDTH",		INT_TYPE_VAR,	DEFAULT_CHANNEL_NAME_WIDTH, 0, NULL, update_all_status_wrapper, 0, 0 },
@@ -337,7 +335,6 @@ void 	init_variables (void)
 			panic("Variable [%d] (%s) is out of order.", i, irc_variable[i].name);
 
 	set_string_var(BANNER_VAR, DEFAULT_BANNER);
-	set_string_var(BEEP_ON_MSG_VAR, DEFAULT_BEEP_ON_MSG);
 	set_string_var(CMDCHARS_VAR, DEFAULT_CMDCHARS);
 	set_string_var(CURRENT_WINDOW_LEVEL_VAR, DEFAULT_CURRENT_WINDOW_LEVEL);
 	set_string_var(LOGFILE_VAR, DEFAULT_LOGFILE);

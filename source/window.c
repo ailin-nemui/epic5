@@ -1,4 +1,4 @@
-/* $EPIC: window.c,v 1.93 2003/12/15 05:41:02 jnelson Exp $ */
+/* $EPIC: window.c,v 1.94 2003/12/15 23:23:02 jnelson Exp $ */
 /*
  * window.c: Handles the organzation of the logical viewports (``windows'')
  * for irc.  This includes keeping track of what windows are open, where they
@@ -126,20 +126,20 @@ static	void	resize_window_display 		(Window *);
 static 	Window *window_next 			(Window *, char **);
 static 	Window *window_previous 		(Window *, char **);
 static	void 	set_screens_current_window 	(Screen *, Window *);
-static	void 	remove_window_from_screen (Window *window, int hide);
-static 	Window *window_discon (Window *window, char **args);
-static 	void	window_scrollback_start (Window *window);
-static 	void	window_scrollback_end (Window *window);
-static void	window_scrollback_backward (Window *window);
-static void	window_scrollback_forward (Window *window);
+static	void 	remove_window_from_screen 	(Window *window, int hide);
+static 	Window *window_discon 			(Window *window, char **args);
+static 	void	window_scrollback_start 	(Window *window);
+static 	void	window_scrollback_end 		(Window *window);
+static void	window_scrollback_backward 	(Window *window);
+static void	window_scrollback_forward 	(Window *window);
 static void	window_scrollback_backwards_lines (Window *window, int);
 static void	window_scrollback_forwards_lines (Window *window, int);
-static 	void 	window_scrollback_to_string (Window *window, regex_t *str);
-static 	void 	window_scrollforward_to_string (Window *window, regex_t *str);
-	int	change_line (Window *window, const unsigned char *str);
-	int	add_to_display (Window *window, const unsigned char *str);
-static	Display *new_display_line (Display *prev, Window *w);
-static int	count_fixed_windows (Screen *s);
+static 	void 	window_scrollback_to_string 	(Window *window, regex_t *str);
+static 	void 	window_scrollforward_to_string 	(Window *window, regex_t *str);
+static	int	change_line 			(Window *, const unsigned char *);
+static	int	add_to_display 			(Window *, const unsigned char *);
+static	Display *new_display_line 		(Display *prev, Window *w);
+static int	count_fixed_windows 		(Screen *s);
 
 
 /* * * * * * * * * * * CONSTRUCTOR AND DESTRUCTOR * * * * * * * * * * * */
@@ -4877,9 +4877,12 @@ void 	delete_display_line (Display *stuff)
 		new_free((char **)&recycle);
 	}
 	recycle = stuff;
-#if 0
-	new_free(&stuff->line);
-#endif
+
+	/* 
+	 * Don't de-allocate the string; our consumer will call
+	 * malloc_strcpy() and they will appreciate being able to
+	 * cheaply re-use this string.
+	 */
 	*(stuff->line) = 0;
 }
 
@@ -4906,9 +4909,13 @@ static Display *new_display_line (Display *prev, Window *w)
 		stuff->line = NULL;
 	}
 
-#if 0
-	stuff->line = NULL;
-#endif
+	/*
+	 * Note that we don't destroy 'line' because it's either been 
+	 * set to NULL for a new line (above) or it's been zeroed out by
+	 * delete_display_line() and can be malloc_strcpy()d over thus
+	 * saving a free/new cycle.
+	 */
+
 	stuff->count = w->display_counter++;
 	stuff->prev = prev;
 	stuff->next = NULL;
@@ -4932,25 +4939,51 @@ int 	add_to_scrollback (Window *window, const unsigned char *str)
 	return add_to_display(window, str);
 }
 
-int	add_to_display (Window *window, const unsigned char *str)
+/*
+ * add_to_display -- add a line to the scrollback buffer, and adjust all
+ * three views accordingly.
+ *
+ * This is a sub-function of add_to_scrollback that was created when epic
+ * grew scratch windows.  It is used to add a new line of output to the
+ * bottom of the scrollback buffer.  'str' is a "normalized" string that 
+ * should have been returned by prepare_display() and in any circumstance 
+ * must not be wider than the window.
+ * 
+ * The return value of this function has historically been used to determine
+ * whether the output is "display-worthy".  With the advent of the three-view
+ * system, this functionality has been superceded by ok_to_output() and this 
+ * function should always return 1.
+ *
+ * This function may be called many times between calls to trim_scrollback().
+ */
+static int	add_to_display (Window *window, const unsigned char *str)
 {
 	int	scroll;
 	int	i;
 
-	/* Add to the display list */
+	/* 
+	 * Add to the bottom of the scrollback buffer, and move the 
+	 * bottom of scrollback (display_ip) after it. 
+	 */
 	window->display_ip->next = new_display_line(window->display_ip, window);
 	malloc_strcpy(&window->display_ip->line, str);
 	window->display_ip = window->display_ip->next;
 	window->display_buffer_size++;
 
-	/* Adjust the top of screen values */
+	/*
+	 * Mark that the scrollable view, the scrollback view, and the hold
+	 * view have grown by one line.
+	 */
 	window->scrolling_distance_from_display_ip++;
 	if (window->scrollback_top_of_display)
 		window->scrollback_distance_from_display_ip++;
 	if (window->holding_top_of_display)
 		window->holding_distance_from_display_ip++;
 
-	/* Check to see what happens in hold mode */
+	/* 
+ 	 * Handle overflow in the held view -- If the held view has
+	 * overflowed update the status bar in case %H changes.
+	 */
 	if (window->holding_top_of_display)
 	{
 	    size_t lines_held;
@@ -4959,7 +4992,10 @@ int	add_to_display (Window *window, const unsigned char *str)
 		window_statusbar_needs_update(window);
 	}
 
-	/* Check to see what happens in scrollback mode */
+	/*
+	 * Handle overflow in the scrollback view -- If the scrollback view
+	 * has overflowed, update the status bar in case %K changes.
+	 */
 	if (window->scrollback_top_of_display)
 	{
 	    size_t lines_held;
@@ -4968,8 +5004,11 @@ int	add_to_display (Window *window, const unsigned char *str)
 		window_statusbar_needs_update(window);
 	}
 
-
-	/* Logically scroll the normal top of display pointer */
+	/*
+	 * Handle overflow in the scrollable view -- If the scrollable view
+	 * has overflowed, logically scroll down the scrollable view by 
+	 * /SET SCROLL_LINES lines.
+	 */
 	while (window->scrolling_distance_from_display_ip > 
 				window->display_size)
 	{
@@ -4987,6 +5026,22 @@ int	add_to_display (Window *window, const unsigned char *str)
 	return 1;
 }
 
+/*
+ * trim_scrollback - Remove excess entries from window's scrollback buffer
+ * 
+ * When the window is using the scrollable view (scrollback is not on, and
+ * hold mode is not holding anything), whenever any new line is added to the
+ * window's scrollback, we must check to see if the scrollback is larger than
+ * the user requested size; and garbage collect any excess lines.
+ * 
+ * We never trim the scrollback when the user is holding or scrolling back,
+ * because the visible part of the window is drawn directly out of the scroll-
+ * back buffer, and deleting what is visible would crash epic.  This is also
+ * what allows the hold mode user to hold forever without risk of losing any-
+ * thing.
+ *
+ * This is always called after add_to_scrollback().
+ */
 int	trim_scrollback (Window *window)
 {
 	/* Do not trim the scrollback if we are in scrollback mode */
@@ -5016,11 +5071,35 @@ int	trim_scrollback (Window *window)
 	return 1;
 }
 
+/*
+ * flush_scrollback_after - Delete everything in the "never seen" segment
+ * of the scrollback (below the current hold view).  
+ * 		This is the /WINDOW FLUSH command.
+ *
+ * If a user holds for a very long time, they could have many hundreds or
+ * thousands of lines that they have never seen.  Perhaps the user chooses
+ * not to see those lines at all, and uses /WINDOW FLUSH to throw them away.
+ * We figure out what things the user has never seen (below the bottom of
+ * the window in the current hold view), and throw them away.  This is done
+ * by resetting the end of the scrollback (display_ip) to the line below what
+ * is at the bottom of the window, and GCing everything below that.
+ *
+ * The scrollable view is unconditionally reset to the hold view by this 
+ * operation to avoid a crash.  The hold counter is not, so no new lines
+ * will be seen until you hit <enter>.  
+ * 
+ * Note: If you run /WINDOW FLUSH from the input line, then you have hit
+ * <enter> and epic will unhold another window of output.  If you run the 
+ * /WINDOW FLUSH from within a keybinding, then <enter> will NOT be forth-
+ * coming and epic will keep holding new output.  This is not really a bug,
+ * it's just the way things work.
+ */
 int	flush_scrollback_after (Window *window)
 {
 	Display *curr_line, *next_line;
 	int	count;
 
+	/* Determine what is currently visible in the hold view */
 	curr_line = window->holding_top_of_display;
 	for (count = 1; count < window->display_size; count++)
 	{
@@ -5029,9 +5108,18 @@ int	flush_scrollback_after (Window *window)
 		curr_line = curr_line->next;
 	}
 
+	/* 
+	 * Reset the bottom of the scrollback (display_ip) to just below
+	 * the bottom of the hold view window.
+	 */
 	next_line = curr_line->next;
 	curr_line->next = window->display_ip;
 	window->display_ip->prev = curr_line;
+
+	/*
+	 * Now GC all of the lines below the hold view until we get to the
+	 * end of the scrollback (display_ip).
+	 */
 	curr_line = next_line;
 	while (curr_line != window->display_ip)
 	{
@@ -5041,14 +5129,20 @@ int	flush_scrollback_after (Window *window)
 		curr_line = next_line;
 	}
 
+	/* And reset the scrollable view so it points to the hold view. */
 	window->scrolling_top_of_display = window->holding_top_of_display;
+
+	/* 
+	 * Since we moved the end of scrollback, we have to recalculate the
+	 * distances to the end of scrollback for everything.
+	 */
 	recalculate_window_cursor_and_display_ip(window);
 	return 1;
 }
 
 
 
-/* * * * * * * * * * * Scrollback functionality * * * * * * * * * * */
+/********************** Scrollback functionality ***************************/
 static void	window_scrollback_start (Window *window)
 {
 	if (window->display_buffer_size <= window->display_size)
@@ -5487,7 +5581,7 @@ void 	make_window_current (Window *window)
  * This puts the given string into a scratch window.  It ALWAYS suppresses
  * any further action (by returning a FAIL, so rite() is not called).
  */
-int	change_line (Window *window, const unsigned char *str)
+static int	change_line (Window *window, const unsigned char *str)
 {
 	Display *my_line;
 	int 	cnt;

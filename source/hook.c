@@ -1,4 +1,4 @@
-/* $EPIC: hook.c,v 1.27 2003/12/15 05:41:02 jnelson Exp $ */
+/* $EPIC: hook.c,v 1.28 2003/12/15 23:23:02 jnelson Exp $ */
 /*
  * hook.c: Does those naughty hook functions. 
  *
@@ -52,15 +52,33 @@
  * NOISY means you are notified when an action occur plus you see the action
  * in the display and the default actions still occurs 
  */
-typedef enum NoiseEnum {
-	UNKNOWN = 0,
-	SILENT,
-	QUIET,
-	NORMAL,
-	NOISY
-} Noise;
+struct NoiseInfo {
+	const char *name;
+	int	display;	/*  0 = suppress display, 1 = don't */
+	int	alert;		/*  1 = "ON MSG hooked", 0 = shut up */
+	int	suppress;	/*  0 = don't suppress default action
+				 *  1 = suppress default action
+				 * -1 = Let on hook decide */
+};
 
-static	const char	*noise_level[] = { "UNKNOWN", "SILENT", "QUIET", "NORMAL", "NOISY" };
+#define UNKNOWN 0
+#define SILENT 	1
+#define QUIET 	2
+#define NORMAL 	3
+#define NOISY 	4
+#define SYSTEM  5
+#define NOISE_LEVELS 6
+
+struct NoiseInfo noise_info[NOISE_LEVELS] = {
+	{ "UNKNOWN", 0, 0, -1 },
+	{ "SILENT",  0, 0,  1 },
+	{ "QUIET",   0, 0,  0 },
+	{ "NORMAL",  0, 1,  0 },
+	{ "NOISY",   1, 1,  0 },
+	{ "SYSTEM",  1, 0,  1 },
+};
+
+
 
 #define HF_NORECURSE	0x0001
 
@@ -73,7 +91,7 @@ struct	hook_stru *next;
 	char	*stuff;			/* /on type nick STUFF */
 
 	int	not;			/* /on type ^nick stuff */
-	Noise	noisy;			/* /on [^-+]type nick stuff */
+	int	noisy;			/* /on [^-+]type nick stuff */
 
 	int	sernum;			/* /on #type NUM nick stuff */
 					/* Default sernum is 0. */
@@ -602,7 +620,7 @@ static void 	show_hook (Hook *list, const char *name)
 	    (list->flexible?'\'':'"'), list->nick, 
 	    (list->flexible?'\'':'"'), 
 	    (list->not ? "nothing" : list->stuff),
-	    noise_level[list->noisy],
+	    noise_info[list->noisy].name,
 	    list->sernum);
 }
 
@@ -861,9 +879,9 @@ int 	do_hook (int which, const char *format, ...)
 		 * Check to see if this hook is supposed to supress the
 		 * default action for the event.
 		 */
-		if (tmp->noisy == SILENT && tmp->sernum == 0)
+		if (noise_info[tmp->noisy].suppress == 1 && tmp->sernum == 0)
 			retval = SUPPRESS_DEFAULT;
-		else if (tmp->noisy == UNKNOWN && tmp->sernum == 0)
+		else if (noise_info[tmp->noisy].suppress == -1 && tmp->sernum == 0)
 			retval = RESULT_PENDING;
 
 		/*
@@ -881,7 +899,7 @@ int 	do_hook (int which, const char *format, ...)
 		 * If this is a NORMAL or NOISY hook, then we tell the user
 		 * that we're going to execute the hook.
 		 */
-		if (tmp->noisy > QUIET)
+		if (noise_info[tmp->noisy].alert)
 			say("%s activated by %c%s%c", 
 				name, tmp->flexible ? '\'' : '"',
 				buffer, tmp->flexible ? '\'' : '"');
@@ -894,8 +912,10 @@ int 	do_hook (int which, const char *format, ...)
 		 * Save some information that may be reset in the 
 		 * execution, turn off the display if the user specified.
 		 */
-		if (noise < NOISY)
+		if (noise_info[noise].display == 0)
 			window_display = 0;
+		else
+			window_display = 1;
 		old = system_exception;
 
 		if (retval == RESULT_PENDING)
@@ -1023,7 +1043,7 @@ BUILT_IN_COMMAND(oncmd)
 	char	*func,
 		*nick,
 		*serial		= NULL;
-	Noise	noisy		= NORMAL;
+	int	noisy		= NORMAL;
 	int	not		= 0,
 		sernum		= 0,
 		rem		= 0,
@@ -1070,6 +1090,10 @@ BUILT_IN_COMMAND(oncmd)
 				break;
 			case '+':
 				noisy = NOISY;
+				func++;
+				break;
+			case '%':
+				noisy = SYSTEM;
 				func++;
 				break;
 			default:
@@ -1234,13 +1258,13 @@ BUILT_IN_COMMAND(oncmd)
 				say("On %3.3u from %c%s%c do %s [%s] <%d>",
 				    -which, type, nick, type, 
 				    (not ? "nothing" : exp),
-				    noise_level[noisy], sernum);
+				    noise_info[noisy].name, sernum);
 			else
 				say("On %s from %c%s%c do %s [%s] <%d>",
 					hook_functions[which].name, 
 					type, nick, type,
 					(not ? "nothing" : exp),
-					noise_level[noisy], sernum);
+					noise_info[noisy].name, sernum);
 
 			/*
 			 * Clean up after the nick
@@ -1339,6 +1363,9 @@ static	void	write_hook (FILE *fp, Hook *hook, const char *name)
 			break;
 		case UNKNOWN:
 			stuff = "?";
+			break;
+		case SYSTEM:
+			stuff = "%";
 			break;
 	}
 

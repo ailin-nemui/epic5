@@ -12,3 +12,6 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Nix auto-append-of-$* feature (args_flag to expand_alias/parse_inline)
 * Fix provided scripts to add $* when necessary.
 * Fix up Makefile, configure, et al, to use epic5/ directories.
+* Remove /set beep_on_msg, a half-broken feature which can be scripted.
+* Nix /set beep_when_away, a 1-line scriptable feature.
+* Add new noise level %, (/ON %TYPE); like ^ but doesn't turn off display

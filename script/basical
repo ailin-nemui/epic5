@@ -73,8 +73,8 @@ on ^send_notice * :
 ## the /on's are there for epic backwards compatability and the user can 
 ## do the /load to get ircII backwards compatability.
 ## Comment out these...
-on ^set "hold_mode *" window $*
-on ^set "hold_mode_interval *" window $*
+on %set "hold_mode *" window $*
+on %set "hold_mode_interval *" window $*
 ## ... or comment out this.
 #load hold_mode
 

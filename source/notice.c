@@ -1,4 +1,4 @@
-/* $EPIC: notice.c,v 1.28 2003/12/15 05:41:02 jnelson Exp $ */
+/* $EPIC: notice.c,v 1.29 2003/12/15 23:23:02 jnelson Exp $ */
 /*
  * notice.c: special stuff for parsing NOTICEs
  *
@@ -111,8 +111,6 @@ static void 	parse_note (char *from, char *line)
 			put_it("%s[%s]%s %s", high, from, high, line);
 	}
 
-	if (beep_on_level & LOG_NOTES)
-		beep_em(1);
 	pop_message_from(l);
 }
 
@@ -318,10 +316,6 @@ void 	p_notice (const char *from, const char *comm, const char **ArgList)
 		return;
 	}
 
-
-	/* Beep the user if they asked us to */
-	if (beep_on_level & LOG_NOTICE)
-		beep_em(1);
 
 	/* Go ahead and throw it to the user */
 	l = message_from(target, LOG_NOTICE);

@@ -139,6 +139,6 @@ on ^367 * xecho -b $[$CHANNEL_NAME_WIDTH]1 $2-
 alias evalserver xeval -server $*
 
 # Compatibility with EPIC4pre1.013 through EPIC4pre1.047
-on ^set "CONTROL_C_COLOR ON" set color on
-on ^set "CONTROL_C_COLOR OFF" set color off
+on %set "CONTROL_C_COLOR ON" set color on
+on %set "CONTROL_C_COLOR OFF" set color off
 

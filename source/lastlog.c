@@ -1,4 +1,4 @@
-/* $EPIC: lastlog.c,v 1.29 2003/11/24 23:32:24 jnelson Exp $ */
+/* $EPIC: lastlog.c,v 1.30 2003/12/15 23:23:02 jnelson Exp $ */
 /*
  * lastlog.c: handles the lastlog features of irc. 
  *
@@ -54,7 +54,6 @@ static int	show_lastlog (Lastlog **l, int *skip, int *number, int, char *match, 
 static	int	lastlog_level;
 static	int	notify_level;
 	int	new_server_lastlog_level;
-	int	beep_on_level;
 	int 	current_window_level = 0;
 
 /*
@@ -884,13 +883,6 @@ void	set_notify_level (const void *stuff)
 	notify_level = parse_lastlog_level(str);
 	set_string_var(NOTIFY_LEVEL_VAR, bits_to_lastlog_level(notify_level));
 	current_window->notify_level = notify_level;
-}
-
-void 	set_beep_on_msg (const void *stuff)
-{
-	const char *str = (const char *)stuff;
-	beep_on_level = parse_lastlog_level(str);
-	set_string_var(BEEP_ON_MSG_VAR, bits_to_lastlog_level(beep_on_level));
 }
 
 void	set_current_window_level (const void *stuff)

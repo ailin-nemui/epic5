@@ -13,19 +13,19 @@
 @ mail.format1 = [ (Mail)]
 @ mail.format2 = [ (Mail: %M)]
 
-on -set "mail 1" {
+on %set "mail 1" {
 	^set status_mail $mail.format1
 }
 
-on -set "mail 2" {
+on %set "mail 2" {
 	^set status_mail $mail.format2
 }
 
-on -set "mail_format1 *" {
+on %set "mail_format1 *" {
 	@ mail.format1 = [$1-]
 }
 
-on -set "mail_format2 *" {
+on %set "mail_format2 *" {
 	@ mail.format2 = [$1-]
 }
 
