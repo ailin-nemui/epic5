@@ -1,4 +1,4 @@
-/* $EPIC: hook.c,v 1.38 2004/05/05 16:43:27 jnelson Exp $ */
+/* $EPIC: hook.c,v 1.39 2004/05/05 17:05:56 jnelson Exp $ */
 /*
  * hook.c: Does those naughty hook functions. 
  *
@@ -602,6 +602,8 @@ int 	do_hook (int which, const char *format, ...)
 	    for (tmp = hook_functions[which].list; tmp; tmp = tmp->next)
             {
 		Hook *besthook = NULL;
+		int bestmatch = 0;
+		int currmatch;
 
 		if (tmp->sernum < serial_number)
 		    continue;
@@ -611,9 +613,6 @@ int 	do_hook (int which, const char *format, ...)
 
 		for (; tmp && tmp->sernum == serial_number; tmp = tmp->next)
 		{
-		    int bestmatch = 0;
-		    int currmatch;
-
 		    if (tmp->flexible)
 		    {
 			/* XXX What about context? */
