@@ -1,4 +1,4 @@
-/* $EPIC: numbers.c,v 1.52 2003/10/22 15:47:57 jnelson Exp $ */
+/* $EPIC: numbers.c,v 1.53 2003/10/22 15:50:23 jnelson Exp $ */
 /*
  * numbers.c: handles all those strange numeric response dished out by that
  * wacky, nutty program we call ircd 
@@ -253,7 +253,7 @@ void 	numbered_command (const char *from, const char *comm, char const **ArgList
 		if (!my_stricmp(umodes, "(brown"))
 		 if (ArgList[3] && !my_stricmp(ArgList[3], "paper"))
 		  if (ArgList[4] && !my_stricmp(ArgList[4], "bag"))
-		   if (ArgList[5] && !my_stricmp(ArgList[5], "release)"))
+		   if (ArgList[5] && !my_stricmp(ArgList[5], "release)(20030924_0)"))
 		   {
 			if (!(umodes = ArgList[6]))
 				{ rfc1459_odd(from, comm, ArgList); }
