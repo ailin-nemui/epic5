@@ -9,7 +9,7 @@
  */
 
 #if 0
-static	char	rcsid[] = "@(#)$Id: dcc.c,v 1.8 2002/01/10 02:26:30 crazyed Exp $";
+static	char	rcsid[] = "@(#)$Id: dcc.c,v 1.9 2002/03/11 18:39:14 jnelson Exp $";
 #endif
 
 #include "irc.h"
@@ -664,7 +664,7 @@ static	int		dcc_open (DCC_list *dcc)
 	 */
 	else
 	{
-		unsigned short	port = 0;
+		unsigned short	port = dcc->local_port;
 
 		/*
 		 * Mark that we're waiting for the remote peer to answer,
