@@ -1,4 +1,4 @@
-/* $EPIC: commands.c,v 1.57 2003/03/23 22:47:50 jnelson Exp $ */
+/* $EPIC: commands.c,v 1.58 2003/03/23 23:30:53 jnelson Exp $ */
 /*
  * commands.c -- Stuff needed to execute commands in ircII.
  *		 Includes the bulk of the built in commands for ircII.
@@ -1451,7 +1451,7 @@ struct load_info
 
 int 	load_depth = -1;
 
-void dump_load_stack (int onelevel)
+void	dump_load_stack (int onelevel)
 {
 	int i = load_depth;
 
@@ -1631,12 +1631,14 @@ BUILT_IN_COMMAND(load)
 	load_depth--;
 }
 
+/* The "WHICH" loader */
 static void	loader_which (FILE *fp, const char *filename, char *subargs, struct load_info *loadinfo)
 {
+	loadinfo->loader = "which";
 	yell("%s", filename);
-	return;
 }
 
+/* The "Standard" (legacy) loader */
 static void	loader_std (FILE *fp, const char *filename, char *subargs, struct load_info *loadinfo)
 {
 	int	in_comment, comment_line, no_semicolon;
@@ -1645,6 +1647,8 @@ static void	loader_std (FILE *fp, const char *filename, char *subargs, struct lo
 #define MAX_LINE_SIZE BIG_BUFFER_SIZE * 5
 	char	buffer[MAX_LINE_SIZE * 2 + 1];
 	char	*defargs;
+
+	loadinfo->loader = "std";
 
 	in_comment = 0;
 	comment_line = -1;
@@ -1991,8 +1995,66 @@ static void	loader_std (FILE *fp, const char *filename, char *subargs, struct lo
 	}
 }
 
-static void	loader_pf (FILE *fp, const char *filename, char *args, struct load_info *loadinfo)
+static void	loader_pf (FILE *fp, const char *filename, char *subargs, struct load_info *loadinfo)
 {
+	char *	buffer;
+	int	bufsize, pos;
+	int	this_char, newline, comment;
+
+	loadinfo->loader = "pf";
+
+	bufsize = 8192;
+	buffer = new_malloc(bufsize);
+	pos = 0;
+	newline = 0;
+	comment = 0;
+
+	this_char = fgetc(fp);
+	while (!feof(fp))
+	{
+	    do
+	    {
+		/* At a newline, turn on eol handling, turn off comment. */
+		if (this_char == '\n') {
+		    newline = 1;
+		    comment = 0;
+		    break;
+		}
+
+		/* If we are in a comment, ignore this character. */
+		if (comment)
+		    break;
+
+		/* If we last saw an eol, ignore any following spaces */
+		if (newline && isspace(this_char))
+		    break;
+
+		/* If we last saw an eol, a # starts a one-line comment. */
+		if (newline && this_char == '#') {
+		    comment = 1;
+		    break;
+		}
+
+		/* We are no longer at a newline */
+		newline = 0;
+
+		/* Append this character to the buffer */
+		buffer[pos++] = this_char;
+
+	    } while (0);
+
+	    if (pos >= bufsize - 20) {
+		bufsize *= 2;
+		new_realloc((void **)&buffer, bufsize);
+	    }
+
+	    this_char = fgetc(fp);
+	}
+
+	buffer[pos] = 0;
+	if (subargs == NULL)
+	    subargs = empty_string;
+	parse_line(NULL, buffer, subargs, 0, 0);
 }
 
 /*

@@ -239,4 +239,5 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Add an empty next-generation loader called "loader_pf"
 * Add "loader" info to "load_level" data; It's $2 in $loadinfo().
 * /LOAD now takes -std and -pf arguments to specify which loader you want.
-
+* Implement the "PF" (preformatted) loader.  /LOAD -PF <filename>
+* Set the "loader type" within each /LOADer

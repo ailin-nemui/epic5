@@ -1,5 +1,38 @@
 EPIC4-1.2.0
 
+*** News 03/23/2002 -- $loadinfo() extended
+	The $loadinfo() function now returns the current loader as $2.
+	You could use this to make sure that your script is being handled
+	by the correct loader.  At the top of every PF script, put the 
+	following line:
+	   if (word(2 $loadinfo()) != [pf]) {LOAD -pf $word(1 $loadinfo())}
+	This will resubmit your script to the PF loader if it is loaded with
+	some other (incompatable) loader.
+
+*** News 03/23/2002 -- New /LOADer, the Pre-Formatted Loader
+	The new PF Loader can load pre-formatted scripts.  You can load a
+	preformatted script with:
+		/LOAD -PF filename
+
+	The PF Loader is a high-performance, low-overhead loader that does
+	not do any tasks for you.  It does not support C-like comments, it
+	does not add semicolons for you at the ends of lines between commands,
+	and it does not try to match up {'s and }'s to warn you of syntax
+	errors.  Files that are preformatted and loaded with the PF loader
+	should load significantly faster.
+
+	See the doc/pf-loader file for a tutorial on how to convert your
+	standard scripts to PF scripts.
+
+*** News 03/23/2003 -- Changes to /LOAD
+	On this date, the /LOAD command was reorganized.  The new LOADer
+	is generalized and can use different loaders.  The following new
+	arguments to /LOAD are supported:
+		-STD  (default)		Load using the Standard EPIC loader
+		-PF 			Load using the Pre-Formatted Loader
+					(see above for more info)
+	More loaders will be added in the future. 
+
 *** News 03/18/2003 -- $dccctl() changes.
 	Added $dccctl(xxx), where xxx is one of HELD, UNHELD, USERHOSTMATCH.
 	Added $dccctl(get [ref] xxx) where xxx is one of USERHOST, SIZE.
