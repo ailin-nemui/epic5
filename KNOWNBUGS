@@ -3,8 +3,6 @@ EPIC5 Projects, Bugs, and other Errata:
 KNOWN ERRATA (eg, bugs, or unresolved requests):
 ------------------------------------------------
 * Some way to hook incomplete lines via dcc raw
-* Deleting an /on from a lower numbered serial number is a bad idea.
-* Add /window kill_all_hidden for rain.
 * Allow %W to fill up with spaces if it's in the middle of status bar?
 * Some way to set ipv4 and ipv6 vhosts separately?
 * More intelligent "level-collision" handling on /window server.
@@ -12,8 +10,6 @@ KNOWN ERRATA (eg, bugs, or unresolved requests):
 * Make it easier to script your own altnick stuff.
 * Changing attribute in the middle of a word that totaly wraps does not
   "bleed" to subsequent lines (ie, ^C34<40 a's> <40a's>^C35<100 a's>
-* do_hook crashes when you remove all of the /on's for a numeric within it.
-* /on <hook> "pattern" {} acts like /on <hook> ^"pattern"
 
 [See http://www.epicsol.org/PROJECTS for things to come in the future]
 [See http://www.epicsol.org/CHANGELOG5 for things that changed in the past]
@@ -239,3 +235,4 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * This makes it 100% safe to edit/delete /on's from within /on's, HUZZAH!
 * Revert /on type ^"pattern" to epic4 behavior (suppressive action)
 * Add /on type !"pattern" to act like ircII's /on type ^"pattern" (exceptive)
+* Add /window kill_all_others for rain.

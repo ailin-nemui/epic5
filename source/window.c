@@ -1,4 +1,4 @@
-/* $EPIC: window.c,v 1.113 2004/04/13 00:19:49 jnelson Exp $ */
+/* $EPIC: window.c,v 1.114 2004/05/04 00:44:01 jnelson Exp $ */
 /*
  * window.c: Handles the organzation of the logical viewports (``windows'')
  * for irc.  This includes keeping track of what windows are open, where they
@@ -3372,6 +3372,31 @@ static Window *window_kill (Window *window, char **args)
 }
 
 /*
+ * /WINDOW KILL_ALL_HIDDEN
+ * This kills all of the hidden windows.  If the current window is hidden,
+ * then the current window will probably change to another window.
+ */
+static Window *window_kill_all_hidden (Window *window, char **args)
+{
+	Window *tmp, *next;
+
+	tmp = invisible_list;
+	while (tmp)
+	{
+		next = tmp->next;
+		if (tmp == window)
+			window = NULL;
+		delete_window(tmp);
+		tmp = next;
+	}
+
+	if (!window)
+		window = current_window;
+	return window;
+}
+
+
+/*
  * /WINDOW KILL_OTHERS
  * This arranges for all windows on the current screen, other than the 
  * current window to be destroyed.  Obviously, the current window will be
@@ -4563,6 +4588,7 @@ static const window_ops options [] = {
 	{ "HOLD_MODE",		window_hold_mode 	},
 	{ "HOLD_SLIDER",	window_hold_slider	},
 	{ "KILL",		window_kill 		},
+	{ "KILL_ALL_HIDDEN",	window_kill_all_hidden	},
 	{ "KILL_OTHERS",	window_kill_others 	},
 	{ "KILLSWAP",		window_killswap 	},
 	{ "LAST", 		window_last 		},
