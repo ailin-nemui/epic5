@@ -257,40 +257,38 @@ static Hostent *lookup_addr (int family, const char *ip)
 }
 
 /* NOTES: This function is protocol independant */
-char *	inet_hntop (int family, const char *host)
+char *	inet_hntop (int family, const char *host, char *retval, int size)
 {
 	Hostent *hep;
-	static char ip[256];
 
 	if (!(hep = lookup_host(family, host)))
 		return empty_string;
 
-	if (!inet_ntop(family, hep->h_addr, ip, sizeof(ip)))
+	if (!inet_ntop(family, hep->h_addr, retval, size))
 		return empty_string;
 
-	return ip;
+	return retval;
 }
 
 /* NOTES: This function is protocol independant */
-char *	inet_ptohn (int family, const char *ip)
+char *	inet_ptohn (int family, const char *ip, char *retval, int size)
 {
 	Hostent *hep;
-	static char host[256];		/* maximum hostname size. */
 
 	if (!(hep = lookup_addr(family, ip)))
 		return empty_string;
 
-	strlcpy(host, hep->h_name, sizeof(host));
-	return host;
+	strlcpy(retval, hep->h_name, size);
+	return retval;
 }
 
 /* NOTES: This function is protocol independant */
-char *	one_to_another (int family, const char *what)
+char *	one_to_another (int family, const char *what, char *retval, int size)
 {
 	char *retval;
 
-	if ((retval = inet_ptohn(family, what)) == empty_string)
-		retval = inet_hntop(family, what);
+	if ((retval = inet_ptohn(family, what, retval, size)) == empty_string)
+		retval = inet_hntop(family, what, retval, size);
 	return retval;
 }
 

@@ -7,7 +7,7 @@
  *
  * See the COPYRIGHT file, or do a HELP IRCII COPYRIGHT 
  *
- * @(#)$Id: ircaux.h,v 1.17 2002/05/07 00:05:45 jnelson Exp $
+ * @(#)$Id: ircaux.h,v 1.18 2002/05/07 06:12:06 jnelson Exp $
  */
 
 #ifndef _IRCAUX_H_
@@ -187,9 +187,9 @@ char *		real_extract2 		(const char *, int, int, int);
 
 /* Used from network.c */
 int 	connect_by_number 	(char *, unsigned short *, int, int);
-char 	*inet_hntop 		(int, const char *);
-char 	*inet_ptohn 		(int, const char *);
-char 	*one_to_another 	(int, const char *);
+char 	*inet_hntop 		(int, const char *, char *, int);
+char 	*inet_ptohn 		(int, const char *, char *, int);
+char 	*one_to_another 	(int, const char *, char *, int);
 int	my_accept		(int, SA *, int *);
 int	inet_anyton		(const char *, SA *);
 const char *switch_hostname	(const char *);

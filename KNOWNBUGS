@@ -46,3 +46,7 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Add stuff to configure to check for gethostbyname2, inet_pton, inet_ntop
 * Add ISC's inet_ntop() and inet_pton() to compat.c, just in case.
 * I did a checkin somewhere around here.
+* Fix a few casting bugs found by first wave of testers.
+* Add a default typedef for socklen_t for those who haven't got one.
+* Revert ISC's inet_ntop/inet_pton, put in wrappers to inet_(a|n)to(n|a).
+* Fix API of inet_hntop/inet_ptohn to not use local static vars! yea!

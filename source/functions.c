@@ -2885,19 +2885,28 @@ BUILT_IN_FUNCTION(function_rewind, words)
 
 BUILT_IN_FUNCTION(function_iptoname, words)
 {
-	char	*ret = inet_ptohn(AF_INET, words);
+	char	ret[256];
+
+	*ret = 0;
+	inet_ptohn(AF_INET, words, ret, sizeof(ret));
 	RETURN_STR(ret);		/* Dont put function call in macro! */
 }
 
 BUILT_IN_FUNCTION(function_nametoip, words)
 {
-	char	*ret = inet_hntop(AF_INET, words);
+	char	ret[256];
+
+	*ret = 0;
+	inet_hntop(AF_INET, words, ret, sizeof(ret));
 	RETURN_STR(ret);		/* Dont put function call in macro! */
 }
 
 BUILT_IN_FUNCTION(function_convert, words)
 {
-	char	*ret = one_to_another(AF_INET, words);
+	char	ret[256];
+
+	*ret = 0;
+	one_to_another(AF_INET, words, ret, sizeof(ret));
 	RETURN_STR(ret);		/* Dont put function call in macro! */
 }
 
