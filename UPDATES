@@ -1,5 +1,29 @@
 EPIC4-1.2.0
 
+*** News 02/02/2002 -- New special /MSG target, target 0
+	If you send a message to target 0 (/msg 0) then EPIC will just
+	silently drop the message with no output.  This was done, because
+	/REDIRECT 0 is already a "sink"; but now you can use target 0 as
+	a "sink" anywhere you might want to go through the motions of
+	sending a message but don't actually want messages to be sent.
+	For example, /query 0 would accept and discard all "target text"
+	Target 0 was chosen because it is an illegal irc target, and because
+	/REDIRECT 0 already has these semantics.  Hopefully this should not 
+	break anybody.
+
+*** News 02/02/2002 -- New special /MSG targets, @<fileref> and @w<winref>
+	Files that you have opened with $open() may now be /msg'd using the
+	special syntax /MSG @<fileref> where <fileref> is the return value
+	of $open.  You can of course /query @<fileref> or /redirect to it;
+	anything that sends a message can use @<fileref> to send to an 
+	$open() file.
+
+	Since <fileref> infers by inclusion the ability to write to a
+	window or global logfile (see below), you can also /MSG, /QUERY,
+	/REDIRECT, or in any other way send a "message" to a window's
+	logfile or to the global logfile, with /MSG @w<winref> where 
+	<winref> is the window's refnum, or -1 for the global logfile.
+
 *** News 02/01/2002 -- New /WINDOW verb, /WINDOW NOTIFIED
 	This window action manually toggles a window's "notified" state.
 	A window that is "notified" shows up in the %F status line expando.
@@ -29,13 +53,22 @@ EPIC4-1.2.0
 	will output all lines in your lastlog matching "booya" to the
 	file "myfile"
 
-	Note that in general, you do not have to ask for a -file argument
-	to a command to send that command's output to a file.  This will
-	work just fine:
-
+	This is similar in principle to:
 		@fd = open(myfile W)
-		redirect 
+		redirect @$fd lastlog booya
+		@close($fd)
+
 *** News 02/01/2002 -- /IF command supports "elif" and "else if" clauses
+	In addition to the following supported forms:
+               if (expr) ......
+               if (expr) {......}
+               if (expr) {......} {......}
+               if (expr) {......} else {......}
+               if (expr) {......} elsif (expr2) {......}
+
+	the following two forms are now supported:
+               if (expr) {......} elif (expr2) {......}
+               if (expr) {......} else if (expr2) {......}
 
 *** News 02/01/2002 -- New built in functions, $serverourname()
 
@@ -46,6 +79,17 @@ EPIC4-1.2.0
 *** News 02/01/2002 -- New built in function, $corpattern()
 
 *** News 02/01/2002 -- /ON CTCP_REPLY HAS CHANGED! VERY IMPORTANT!
+	Prior to this release, /ON CTCP_REPLY looked like this:
+		$0  - Nick who sent the CTCP reply
+		$1  - The CTCP command
+		$2- - The arguments to the CTCP
+
+	THIS HAS CHANGED AND YOU WILL NEED TO CHANGE YOUR /ON CTCP_REPLY's!
+	Now /ON CTCP_REPLY looks like this:
+		$0  - Nick who sent the CTCP REPLY
+		$1  - Target (nick or channel) to whom the CTCP was sent
+		$2  - The CTCP command
+		$3- - The arguments to the CTCP
 
 *** News 02/01/2002 -- New flag to /XQUOTE, /XQUOTE -U
 
