@@ -9,7 +9,7 @@
  */
 
 #if 0
-static	char	rcsid[] = "$Id: vars.c,v 1.12 2002/04/02 21:02:13 crazyed Exp $";
+static	char	rcsid[] = "$Id: vars.c,v 1.13 2002/05/13 21:53:15 jnelson Exp $";
 #endif
 
 #include "irc.h"
@@ -1051,7 +1051,7 @@ void do_stack_set(int type, char *args)
 			aptr->next = aptrptr ? *aptrptr : NULL;
 			*aptrptr = aptr;
 			aptr->set = (IrcVariable *) new_malloc(sizeof(IrcVariable));
-			memcpy(aptr->set, &irc_variable[var_index], sizeof(IrcVariable));
+			*aptr->set = irc_variable[var_index];
 			aptr->name = m_strdup(irc_variable[var_index].name);
 			aptr->set->string = (irc_variable[var_index].string) ? m_strdup(irc_variable[var_index].string) : NULL;
 			aptr->var_index = var_index;
@@ -1077,7 +1077,8 @@ void do_stack_set(int type, char *args)
 					prev->next = aptr->next;
 
 				new_free(&(irc_variable[aptr->var_index].string));
-				memcpy(&irc_variable[aptr->var_index], aptr->set, sizeof(IrcVariable));
+				irc_variable[aptr->var_index] = *aptr->set;
+
 				/* free it */
 				new_free((char **)&aptr->name);
 				new_free((char **)&aptr->set);
