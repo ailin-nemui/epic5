@@ -1,4 +1,4 @@
-/* $EPIC: window.c,v 1.124 2004/08/29 02:39:11 jnelson Exp $ */
+/* $EPIC: window.c,v 1.125 2004/08/29 02:41:04 jnelson Exp $ */
 /*
  * window.c: Handles the organzation of the logical viewports (``windows'')
  * for irc.  This includes keeping track of what windows are open, where they
@@ -4665,7 +4665,7 @@ static Window *window_toplines (Window *window, char **args)
 		say("Window saved lines is %d", window->saved);
 		return window;
 	}
-	if (number >= 10)
+	if (number < 0 || number >= 10)
 	{
 		say("Window saved lines must be < 10 for now.");
 		return window;
