@@ -1,4 +1,4 @@
-/* $EPIC: window.c,v 1.56 2003/02/20 06:46:36 jnelson Exp $ */
+/* $EPIC: window.c,v 1.57 2003/03/24 03:40:37 jnelson Exp $ */
 /*
  * window.c: Handles the organzation of the logical viewports (``windows'')
  * for irc.  This includes keeping track of what windows are open, where they
@@ -120,7 +120,12 @@ static 	Window *window_previous 		(Window *, char **);
 static	void 	set_screens_current_window 	(Screen *, Window *);
 static	void 	remove_window_from_screen (Window *window, int hide);
 static 	Window *window_discon (Window *window, char **args);
+static 	void	window_scrollback_start (Window *window);
 static 	void	window_scrollback_end (Window *window);
+static void	window_scrollback_backward (Window *window);
+static void	window_scrollback_forward (Window *window);
+static void	window_scrollback_backwards_lines (Window *window, int);
+static void	window_scrollback_forwards_lines (Window *window, int);
 static 	void 	window_scrollback_to_string (Window *window, regex_t *str);
 static 	void 	window_scrollforward_to_string (Window *window, regex_t *str);
 	int	change_line (Window *window, const unsigned char *str);
@@ -4122,6 +4127,56 @@ static	Window *window_scrollback (Window *window, char **args)
 	return window;
 }
 
+static	Window *window_scroll_backward (Window *window, char **args)
+{
+	int	val;
+
+	if (args && *args && **args)
+	{
+		val = get_number("SCROLL_BACKWARD", args);
+
+		if (val == 0)
+			window_scrollback_backward(window);
+		else
+			window_scrollback_backwards_lines(window, val);
+	}
+	else
+		window_scrollback_backward(window);
+
+	return window;
+}
+
+static	Window *window_scroll_end (Window *window, char **args)
+{
+	window_scrollback_end(window);
+	return window;
+}
+
+static	Window *window_scroll_forward (Window *window, char **args)
+{
+	int	val;
+
+	if (args && *args && **args)
+	{
+		val = get_number("SCROLL_FORWARD", args);
+
+		if (val == 0)
+			window_scrollback_forward(window);
+		else
+			window_scrollback_forwards_lines(window, val);
+	}
+	else
+		window_scrollback_forward(window);
+
+	return window;
+}
+
+static	Window *window_scroll_start (Window *window, char **args)
+{
+	window_scrollback_start(window);
+	return window;
+}
+
 regex_t *last_regex = NULL;
 
 static int	new_search_term (const char *arg)
@@ -4482,6 +4537,10 @@ static const window_ops options [] = {
 	{ "SCRATCH",		window_scratch		},
 	{ "SCROLL",		window_scroll		},
 	{ "SCROLLBACK",		window_scrollback	}, /* * */
+	{ "SCROLL_BACKWARD",	window_scroll_backward	},
+	{ "SCROLL_END",		window_scroll_end	},
+	{ "SCROLL_FORWARD",	window_scroll_forward	},
+	{ "SCROLL_START",	window_scroll_start	},
 	{ "SEARCH_BACK",	window_search_back	},
 	{ "SEARCH_FORWARD",	window_search_forward	},
 	{ "SERVER",		window_server 		},

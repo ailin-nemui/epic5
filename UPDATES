@@ -1,5 +1,29 @@
 EPIC4-1.2.0
 
+*** News 03/23/2002 -- New window verbs to control scrollback
+	Now you can scroll around in windows without needing to use the
+	key bindings.
+
+	/WINDOW SCROLL_BACKWARD
+	/WINDOW SCROLL_BACKWARD <lines>
+		If <lines> is 0 or is not provided, scroll back the default
+		number of lines, otherwise scroll back the given number of
+		lines.  Similar to SCROLL_BACKWARD keybinding.
+
+	/WINDOW SCROLL_FORWARD
+	/WINDOW SCROLL_FORWARD <lines>
+		If <lines> is 0 or is not provided, scroll forward the default
+		number of lines, otherwise scroll back the given number of
+		lines.  Similar to SCROLL_FORWARD keybinding.
+
+	/WINDOW SCROLL_START
+		Go to the start (oldest line) of the scrollback buffer.
+		Similar to SCROLL_START keybinding
+
+	/WINDOW SCROLL_END
+		Go to the end (newest line) of the scrollback buffer.
+		Similar to SCROLL_END keybinding
+
 *** News 03/23/2002 -- $loadinfo() extended
 	The $loadinfo() function now returns the current loader as $2.
 	You could use this to make sure that your script is being handled
