@@ -557,7 +557,7 @@
 #endif
 /* end of section not to change */
 
-#define ALLOC_DEBUG
+#undef ALLOC_DEBUG
 
 #endif /* _CONFIG_H_ */
 

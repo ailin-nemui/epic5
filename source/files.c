@@ -165,7 +165,7 @@ char *file_read (int fd)
 		return m_strdup(empty_string);
 	else
 	{
-#if 0
+#if 1
 		char	*ret = NULL;
 		size_t	len = 0, newlen = 4096;
 
@@ -179,7 +179,7 @@ char *file_read (int fd)
 			newlen += 4096;
 		}
 
-		chomp(ret+len);
+		chop(ret+len,1);
 		new_realloc((void **)&ret, len+strlen(ret+len));
 
 		return ret ? ret : m_strdup(empty_string);
