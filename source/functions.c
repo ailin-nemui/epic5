@@ -1,4 +1,4 @@
-/* $EPIC: functions.c,v 1.105 2003/02/17 23:48:48 crazyed Exp $ */
+/* $EPIC: functions.c,v 1.106 2003/02/18 16:33:32 crazyed Exp $ */
 /*
  * functions.c -- Built-in functions for ircII
  *
@@ -3742,7 +3742,7 @@ BUILT_IN_FUNCTION(function_glob, word)
 
 		for (i = 0; i < globbers.gl_pathc; i++)
 		{
-			if (strspn(globbers.gl_pathv[i], " \""))
+			if (sindex(globbers.gl_pathv[i], " \""))
 			{
 				char *b = alloca(strlen(globbers.gl_pathv[i]) + 4);
 				sprintf(b, "\"%s\"", globbers.gl_pathv[i]);
@@ -3789,7 +3789,7 @@ BUILT_IN_FUNCTION(function_globi, word)
 
 		for (i = 0; i < globbers.gl_pathc; i++)
 		{
-			if (strspn(globbers.gl_pathv[i], " \""))
+			if (sindex(globbers.gl_pathv[i], " \""))
 			{
 				char *b = alloca(strlen(globbers.gl_pathv[i]) + 4);
 				sprintf(b, "\"%s\"", globbers.gl_pathv[i]);
