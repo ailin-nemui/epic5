@@ -1,76 +1,64 @@
 EPIC4pre2
 
-*** News -- Feb 5, 2001 -- New /ON, /ON ERROR
-	When the server sends you an ERROR (or ERROR:) protocol message,
-	this /on is hooked with the arguments:
-		$0	The server that sent you the ERROR
-		$1-	The error message itself
+*** News -- Mar 7, 2001 -- New form of the /FOR command, "FOR NEXT"
+	The for command now supports a FOR .. NEXT type loop.
+	Syntax:
+	    /FOR <var> FROM <min> TO <max> [STEP <step>] { <commands> }
 
-*** News -- Feb 5, 2001 -- Formal removal of old, long-broken feature
-	A feature many of you probably never knew existed was carried over
-	from ircII.  When output occurs to a window, the cursor is supposed
-	to "hang" in that window for a second and then return to the input
-	buffer, or when you press a key, whichever happens first.  About
-	six years ago I mangled that feature so that it did not work
-	correctly, and quite a few people expressed happiness with the 
-	removal of the feature.  Well, it never was really removed, it
-	was just bludgeoned into non-operation.  I have now removed the
-	remnants of the code that still existed.  Don't ask me to put this
-	feature back.  Most people hate it. ;-)
+	Semantics:
+	    Consider a list of integers:
+		(<min>, <min> + <step>, <min> + <step> + <step>, ..., <max>)
+	    For each member of that list, assign that integer value to 
+	    $<var> and execute the { <commands> } set.
 
-*** News -- Feb 5, 2001 -- New built in command, /DEFER
-	There are some circumstances in which it is dangerous to execute a
-	command.  In these vulnerable circumstances, epic may break, or 
-	even crash if you execute certain commands.  The /DEFER command is 
-	a general purpose way to ask epic to execute some number of commands
-	later one when it is "safe" to do so.  The mechanism by which this
-	works is intentionally unspecified because I expect it will change.
-	But you can be assured epic will not execute your command until it
-	knows that it will not crash doing so.
+	Example:
+	    /FOR i FROM 1 TO 5 { echo $i }
+	will output:
+	    1
+	    2
+	    3
+	    4
+	    5
 
-	A list of circumstances under which you will need to use the /DEFER
-	command will be compiled and put up at http://www.epicsol.org/DEFER
-	and new entries will be added as discovered.  In general, if you find
-	that executing a certain command in an /on causes epic to crash, 
-	you should FIRST TRY TO /DEFER IT.  Then if it continues to make 
-	epic crash, then it is probably a bug.
+	Example:
+	    /FOR i FROM 1 TO 5 STEP 2 { echo $i }
+	will output:
+	    1
+	    3
+	    5
 
-*** News -- Feb 5, 2001 -- EPIC handles disconnections differently now
-	Up until this time, ircII (and epic) have sometimes closed your 
-	server connection earlier than is truly neccesary, as in when you
-	get a 437 numeric, or a KILL message.  EPIC has been changed so
-	it will never close the server's connection on you unless you tell
-	it to explicitly.  Instead, EPIC will wait for the server to close 
-	the connection and will then reconnect at that time.  This permits 
-	you to see important information, such as the K-line reason after
-	a 437 numeric on dalnet, for example.  Reconnections in general are
-	much more reasonably handled, which is a nice side effect!
+	Special note:  This is much cheaper than a traditional /for loop
+	 that does the same thing, or a /fe loop over the return value of
+	 the $jot() function that does the same thing.
 
-*** News -- January, 2001 -- DCC Checksum feature has been recalled
-	The DCC Checksum feature, which it seems everybody loathes and hates
-	has been recalled ahead of schedule.  It was originally scheduled to
-	disappear silently in EPIC5, but because DCC Checksum tripped over
-	several bugs in the FreeBSD libc, I decided just to throw the whole
-	thing overboard and be done with it once and for all.  I apologize 
-	to anyone who actually was mistaken into thinking this was a useful
-	feature.
+	Special note:  The /CONTINUE and /BREAK commands are honored in
+	 the command body.  The /CONTINUE command will behave as a "next"
+	 operation, and the /BREAK command will abort the command entirely.
 
-*** News -- December, 2000 -- EPIC sanity checks your windows/channels/servers
-	Very frequently, epic will sanity check the referential integrity
-	of your channels, windows, and servers.  What this means to you, the
-	user, is that if epic ever detects that windows and channels do not
-	properly refer to each other, or if windows and servers do not 
-	properly refer to each other, or if channels and servers do not
-	properly refer to each other, epic will immediately panic and abort,
-	telling you exactly what went wrong.  You should submit a bug report
-	in the normal way whenever you get one of these messages.
+*** News -- Mar 7, 2001 -- New form of the /FOR command, "FOR IN"
+	The for command now supports a FOR .. IN LIST type loop.
+	Syntax:
+	    /FOR <var> IN (<word list>) { <commands> }
 
-	The benefit of this is that if you see any behavior that looks like
-	epic has gotten confused regarding how your windows/channels/servers
-	are interacting, that is either the correct behavior, or it is a bug.
-	But there are many circumstances in which epic can determine that 
-	things are messed up and automatically fix them.  This will result in
-	fewer window/channel/server mixups in the future.
+	Semantics:
+	   Consider the list of ``extended words'':
+		(<word list>)
+	   For each member of that list, assign that string value to
+	   $<var> and execute the { <commands> } set.
+
+	Example:
+	   /FOR i IN (one two three) {echo $i}
+	will output:
+	   one
+	   two
+	   three
+
+	Special note:  This acts as a cheap version of the /fe command
+	 for those cases where you need to iterate over each word at a time.
+
+	Special note:  The /CONTINUE and /BREAK commands are honored in
+	 the command body.  The /CONTINUE command will behave as a "next"
+	 operation, and the /BREAK command will abort the command entirely.
 
 [Note -- this file only contains changes since the last release.
  For some releases, this means this file will be empty.  The entire

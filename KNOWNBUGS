@@ -2,7 +2,7 @@ EPIC4 Projects, Bugs, and other Errata:
 
 KNOWN ERRATA (eg, bugs, or unresolved requests):
 ------------------------------------------------
-<none>
+* Several -- i need to update this list.
  
 [See http://www.epicsol.org/PROJECTS for things to come in the future]
 [See http://www.epicsol.org/CHANGELOG for things that changed in the past]
@@ -10,3 +10,5 @@ KNOWN ERRATA (eg, bugs, or unresolved requests):
 THE CHANGELOG SINCE THE LAST RELEASE:
 -------------------------------------
 * Add $ssl() built in function for lateral compatability with epic-ssl
+* Add /for <var> in (<list>) {<commands>} command
+* Add /for <var> from <min> to <max> {<commands>} command

@@ -8,7 +8,7 @@
  */
 
 #if 0
-static	char	rcsid[] = "@(#)$Id: ircaux.c,v 1.4 2001/01/23 19:00:27 jnelson Exp $";
+static	char	rcsid[] = "@(#)$Id: ircaux.c,v 1.5 2001/03/07 18:03:23 jnelson Exp $";
 #endif
 
 #include "irc.h"
@@ -20,6 +20,7 @@ static	char	rcsid[] = "@(#)$Id: ircaux.c,v 1.4 2001/01/23 19:00:27 jnelson Exp $
 #include "term.h"
 #include "vars.h"
 #include "alias.h"
+#include "if.h"
 
 /*
  * This is the basic overhead for every malloc allocation (8 bytes).
@@ -2021,6 +2022,38 @@ char *	chop_word (char *str)
 		*end = 0;
 
 	return str;
+}
+
+char *	skip_spaces (char *str)
+{
+	while (str && *str && isspace(*str))
+		str++;
+	return str;
+}
+
+int	split_args (char *str, char **to, size_t maxargs)
+{
+	int	counter;
+	char *	ptr;
+
+	ptr = str;
+	for (counter = 0; counter < maxargs; counter++)
+	{
+		if (!ptr || !*ptr)
+			break;
+
+		ptr = skip_spaces(ptr);
+		if (*ptr == '{' || *ptr == '(')
+		{
+			if (counter > 0)
+				ptr[-1] = 0;
+			to[counter] = next_expr_failok(&ptr, *ptr);
+		}
+		else
+			to[counter] = new_next_arg(ptr, &ptr);
+	}
+	to[counter] = NULL;
+	return counter;
 }
 
 int 	splitw (char *str, char ***to)

@@ -363,8 +363,7 @@ BUILT_IN_COMMAND(foreach)
 
 /*
  * FE:  Written by Jeremy Nelson (jnelson@acronet.net)
- *
- * FE: replaces recursion
+ * When you need to iteratively loop rather than recursively loop.
  */
 BUILT_IN_COMMAND(fe)
 {
@@ -376,7 +375,6 @@ BUILT_IN_COMMAND(fe)
 		*word = (char *) 0,
 		*todo = (char *) 0,
 		fec_buffer[2];
-	const char * sa;
 	int     ind, x, y, blah,args_flag;
 	int     old_display;
 	int	doing_fe = !strcmp(command, "FE");
@@ -384,33 +382,27 @@ BUILT_IN_COMMAND(fe)
 	for (x = 0; x <= 254; var[x++] = (char *) 0)
 		;
 
-	list = next_expr(&args, '(');
-
-	if (!list)
-	{
+	if (!(list = next_expr(&args, '('))) {
 		error("%s: Missing List for /%s", command, command);
 		return;
 	}
 
-	sa = subargs ? subargs : " ";
+	if (!subargs)
+		subargs = empty_string;
+	templist = expand_alias(list, subargs, &args_flag, NULL);
 
-	templist = expand_alias(list, sa, &args_flag, NULL);
-
-	if (!templist || !*templist)
-	{
+	if (!templist || !*templist) {
 		new_free(&templist);
 		return;
 	}
 
 	vars = args;
-	if (!(args = strchr(args, '{')))	
-	{
+	if (!(args = strchr(args, '{'))) {
 		error("%s: Missing commands", command);
 		new_free(&templist);
 		return;
 	}
-	if (vars == args)
-	{
+	if (vars == args) {
 		error("%s: You did not specify any variables", command);
 		new_free(&templist);
 		return;
@@ -490,9 +482,117 @@ BUILT_IN_COMMAND(fe)
 	new_free(&placeholder);
 }
 
+
+void	for_next_cmd (int argc, char **argv, const char *subargs)
+{
+	char 	*var, *cmds;
+	char	istr[256];
+	int	start, end, step = 1, i;
+
+	if ((my_stricmp(argv[1], "from") && my_stricmp(argv[1], "=")) ||
+		(argc != 6 && argc != 8))
+	{
+		error("Usage: /FOR var FROM start TO end {commands}");
+		return;
+	}
+
+	var = argv[0];
+	start = atoi(argv[2]);
+	end = atoi(argv[4]);
+	if (argc == 8)
+	{
+		step = atoi(argv[6]);
+		cmds = argv[7];
+	}
+	else
+	{
+		step = 1;
+		cmds = argv[5];
+	}
+
+	will_catch_break_exceptions++;
+	will_catch_continue_exceptions++;
+	for (i = start; i <= end; i += step)
+	{
+		snprintf(istr, 255, "%d", i);
+		add_local_alias(var, istr, 0);
+		parse_line(NULL, cmds, subargs, 0, 0);
+
+		if (break_exception)
+		{
+			break_exception = 0;
+			break;
+		}
+		if (continue_exception)
+			continue_exception = 0;	/* Dont continue here! */
+		if (return_exception)
+			break;
+	}
+	will_catch_break_exceptions--;
+	will_catch_continue_exceptions--;
+}
+
+void	for_fe_cmd (int argc, char **argv, const char *subargs)
+{
+	char 	*var, *list, *cmds;
+	char	*next, *real_list, *x;
+	int	args_flag = 0;
+
+	if ((my_stricmp(argv[1], "in")) || (argc != 4)) {
+		error("Usage: /FOR var IN (list) {commands}");
+		return;
+	}
+
+	var = argv[0];
+	list = argv[2];
+	cmds = argv[3];
+
+	x = real_list = expand_alias(list, subargs, &args_flag, NULL);
+	will_catch_break_exceptions++;
+	will_catch_continue_exceptions++;
+	while (real_list && *real_list)
+	{
+		next = new_next_arg(real_list, &real_list);
+		add_local_alias(var, next, 0);
+		parse_line(NULL, cmds, subargs, 0, 0);
+
+		if (break_exception) {
+			break_exception = 0;
+			break;
+		}
+		if (continue_exception)
+			continue_exception = 0;	/* Dont continue here! */
+		if (return_exception)
+			break;
+	}
+	will_catch_break_exceptions--;
+	will_catch_continue_exceptions--;
+	new_free(&x);
+}
+
+BUILT_IN_COMMAND(loopcmd)
+{
+	int	argc;
+	char	*argv[9];
+
+	if (!subargs)
+		subargs = empty_string;
+
+	argc = split_args(args, argv, 9);
+
+	if (argc < 2)
+		error("%s: syntax error", command);
+	else if (!my_stricmp(argv[1], "from") || !my_stricmp(argv[1], "="))
+		for_next_cmd(argc, argv, subargs);
+	else if (!my_stricmp(argv[1], "in"))
+		for_fe_cmd(argc, argv, subargs);
+	else
+		error("%s: syntax error", command);
+}
+
 /* 
  * FOR command..... prototype: 
- *  for (commence,evaluation,iteration)
+ *  for (commence,evaluation,iteration) {commands}
  * in the same style of C's for, the for loop is just a specific
  * type of WHILE loop.
  *
@@ -515,11 +615,12 @@ BUILT_IN_COMMAND(forcmd)
 	char        *commands       = (char *) 0;
 
 	/* Get the whole () thing */
-	if ((working = next_expr(&args, '(')) == (char *) 0)	/* ) */
+	if ((working = next_expr_failok(&args, '(')) == NULL)	/* ) */
 	{
-		error("FOR: missing closing parenthesis");
+		loopcmd(command, args, subargs);
 		return;
 	}
+
 	commence = LOCAL_COPY(working);
 
 	/* Find the beginning of the second expression */
