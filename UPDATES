@@ -1,72 +1,35 @@
 EPIC4pre2
 
-*** News -- March 14, 2001 -- New flag to /xecho, /xecho -v
-	This will output the line to a visible window.  No guarantees
-	are made to which visible window it will be output, only that
-	the window *will* be visible.  In practice, it's usually the 
-	topmost window on your main screen.  That's not a promise, however.
+*** News -- Oct 9, 2001 -- $querywin() now takes an optional server argument
 
-*** News -- Mar 7, 2001 -- New form of the /FOR command, "FOR NEXT"
-	The for command now supports a FOR .. NEXT type loop.
-	Syntax:
-	    /FOR <var> FROM <min> TO <max> [STEP <step>] { <commands> }
+*** News -- Oct 9, 2001 -- General speed improvements
 
-	Semantics:
-	    Consider a list of integers:
-		(<min>, <min> + <step>, <min> + <step> + <step>, ..., <max>)
-	    For each member of that list, assign that integer value to 
-	    $<var> and execute the { <commands> } set.
+*** News -- Oct 9, 2001 -- New standard script, 'autoget'
 
-	Example:
-	    /FOR i FROM 1 TO 5 { echo $i }
-	will output:
-	    1
-	    2
-	    3
-	    4
-	    5
+*** News -- Oct 9, 2001 -- New standard script, 'altchan'
 
-	Example:
-	    /FOR i FROM 1 TO 5 STEP 2 { echo $i }
-	will output:
-	    1
-	    3
-	    5
+*** News -- Oct 9, 2001 -- /JOIN command uses /WINDOW REJOIN now
+	The /JOIN built in command now uses /WINDOW REJOIN as its internal
+	implementation, instead of /WINDOW CHANNEL.  You should now refer
+	to /WINDOW REJOIN for details of how the /JOIN command works.  This
+	is an improvement, for the record. ;-)
 
-	Special note:  This is much cheaper than a traditional /for loop
-	 that does the same thing, or a /fe loop over the return value of
-	 the $jot() function that does the same thing.
+*** News -- Oct 9, 2001 -- New /WINDOW command, /WINDOW REJOIN
 
-	Special note:  The /CONTINUE and /BREAK commands are honored in
-	 the command body.  The /CONTINUE command will behave as a "next"
-	 operation, and the /BREAK command will abort the command entirely.
+*** News -- Oct 9, 2001 -- New /WINDOW command, /WINDOW REBIND
 
-*** News -- Mar 7, 2001 -- New form of the /FOR command, "FOR IN"
-	The for command now supports a FOR .. IN LIST type loop.
-	Syntax:
-	    /FOR <var> IN (<word list>) { <commands> }
+*** News -- Oct 9, 2001 -- Server group support
 
-	Semantics:
-	   Consider the list of ``extended words'':
-		(<word list>)
-	   For each member of that list, assign that string value to
-	   $<var> and execute the { <commands> } set.
+*** News -- Oct 9, 2001 -- New built in function, $ishalfop()
 
-	Example:
-	   /FOR i IN (one two three) {echo $i}
-	will output:
-	   one
-	   two
-	   three
+*** News -- Oct 9, 2001 -- New built in function, $igetrmatches()
 
-	Special note:  This acts as a cheap version of the /fe command
-	 for those cases where you need to iterate over each word at a time.
+*** News -- Oct 9, 2001 -- New flags to the /LASTLOG command
 
-	Special note:  The /CONTINUE and /BREAK commands are honored in
-	 the command body.  The /CONTINUE command will behave as a "next"
-	 operation, and the /BREAK command will abort the command entirely.
+*** News -- Oct 9, 2001 -- Random local port usage support improved.
 
-[Note -- this file only contains changes since the last release.
- For some releases, this means this file will be empty.  The entire
- file can be found at http://www.epicsol.org/UPDATES]
+*** News -- Oct 9, 2001 -- Perl support; new built in functions
+	configure --with-perl
 
+*** News -- Oct 9, 2001 -- Bunch of new updates
+	Everything for EPIC4-1.1.1 was documented here...
