@@ -536,7 +536,7 @@ char *	create_server_list (void)
 			else
 				yell("Warning: I don't have server #%d's real"
 					"name yet -- using the hostname you "
-					"gave me instead", i)
+					"gave me instead", i);
 		}
 	}
 
