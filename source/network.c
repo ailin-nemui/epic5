@@ -285,8 +285,6 @@ char *	inet_ptohn (int family, const char *ip, char *retval, int size)
 /* NOTES: This function is protocol independant */
 char *	one_to_another (int family, const char *what, char *retval, int size)
 {
-	char *retval;
-
 	if ((retval = inet_ptohn(family, what, retval, size)) == empty_string)
 		retval = inet_hntop(family, what, retval, size);
 	return retval;
