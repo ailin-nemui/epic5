@@ -10,7 +10,6 @@
 #define __numbers_h__
 
 const	char *	banner 			(void);
-	void	display_msg 		(const char *, const char **);
 	void	numbered_command 	(const char *, const char *, const char **);
 	void	nickname_sendline 	(char *, char *);
 
