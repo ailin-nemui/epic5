@@ -29,3 +29,4 @@ KNOWN ERRATA (eg, bugs, or unresolved requests):
 THE CHANGELOG SINCE THE LAST RELEASE:
 -------------------------------------
 * Allow $serverctl(SET <refnum> UMODES) to work around ratbox-1.2-3.
+* Work around "(brown paper bag release)" version in 004 in ratbox-1.2-3

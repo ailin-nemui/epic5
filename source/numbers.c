@@ -1,4 +1,4 @@
-/* $EPIC: numbers.c,v 1.51 2003/09/23 21:49:47 jnelson Exp $ */
+/* $EPIC: numbers.c,v 1.52 2003/10/22 15:47:57 jnelson Exp $ */
 /*
  * numbers.c: handles all those strange numeric response dished out by that
  * wacky, nutty program we call ircd 
@@ -248,6 +248,16 @@ void 	numbered_command (const char *from, const char *comm, char const **ArgList
 			{ rfc1459_odd(from, comm, ArgList); }
 		else if (!(umodes = ArgList[2]))
 			{ rfc1459_odd(from, comm, ArgList); }
+
+		/* Work around ratbox-1.2-3. */
+		if (!my_stricmp(umodes, "(brown"))
+		 if (ArgList[3] && !my_stricmp(ArgList[3], "paper"))
+		  if (ArgList[4] && !my_stricmp(ArgList[4], "bag"))
+		   if (ArgList[5] && !my_stricmp(ArgList[5], "release)"))
+		   {
+			if (!(umodes = ArgList[6]))
+				{ rfc1459_odd(from, comm, ArgList); }
+		   }
 
 		got_initial_version_28(server, version, umodes);
 		break;
