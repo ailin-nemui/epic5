@@ -8,7 +8,7 @@
  */
 
 #if 0
-static	char	rcsid[] = "@(#)$Id: ircaux.c,v 1.7 2001/09/24 16:49:08 crazyed Exp $";
+static	char	rcsid[] = "@(#)$Id: ircaux.c,v 1.8 2001/09/25 17:28:05 jnelson Exp $";
 #endif
 
 #include "irc.h"
@@ -196,16 +196,20 @@ void *	really_new_free(void **ptr, char *fn, int line)
 /* really_new_malloc in disguise */
 void *	really_new_realloc (void **ptr, size_t size, char *fn, int line)
 {
-	if (!size) {
-		*ptr=really_new_free(ptr, fn, line);
-	} else if (!*ptr) {
-		*ptr=really_new_malloc(size, fn, line);
-	} else {
-		*ptr -= sizeof(MO);
-		if (!(*ptr = (char *)realloc(*ptr, size + sizeof(MO))))
+	if (!size) 
+		*ptr = really_new_free(ptr, fn, line);
+	else if (!*ptr)
+		*ptr = really_new_malloc(size, fn, line);
+	else 
+	{
+		/* Make sure this is safe for realloc. */
+		fatal_malloc_check(*ptr, NULL, fn, line);
+
+		/* Copy everything, including the MO buffer */
+		if (!(*ptr = (char *)realloc(mo_ptr(*ptr), size + sizeof(MO))))
 			panic("realloc() failed, giving up!");
 
-		/* Store the size of the allocation in the buffer. */
+		/* Re-initalize the MO buffer; magic(*ptr) is already set. */
 		*ptr += sizeof(MO);
 		alloc_size(*ptr) = size;
 	}
@@ -428,10 +432,11 @@ char *	m_c3cat(char **one, const char *two, const char *three, size_t *clue)
 		RESIZE(*one, char, msize + 1);
 
 	if (two)
-		strcat(csize+*one, two);
+		strcat(csize + *one, two);
 	if (three)
-		strcat(csize+*one, three);
-	if (clue) *clue=msize;
+		strcat(csize + *one, three);
+	if (clue) 
+		*clue = msize;
 
 	return *one;
 }
@@ -595,17 +600,24 @@ char *	remove_trailing_spaces (char *foo)
 char *	last_arg (char **src, size_t *cluep)
 {
 	char *ptr;
-	size_t clue=cluep?*cluep:0;
+	size_t clue = cluep ? *cluep : 0;
 
 	if (!src || !*src)
 		return NULL;
 
-	ptr = clue + *src + strlen(clue+*src);
-	while (ptr > *src && *--ptr == ' ') *ptr = 0;
+#if 0
+	ptr = *src + clue;
+	remove_trailing_spaces(ptr);
+	ptr += strlen(ptr);
+#else
+	ptr = clue + *src + strlen(clue + *src);
+	while (ptr > *src && *--ptr == ' ') 
+		*ptr = 0;
+#endif
 
 	if (*ptr == '"')
 	{
-		for (ptr--;;ptr--)
+		for (ptr--; ; ptr--)
 		{
 			if (*ptr == '"')
 			{
@@ -623,7 +635,7 @@ char *	last_arg (char **src, size_t *cluep)
 	}
 	else
 	{
-		for (;;ptr--)
+		for (; ; ptr--)
 		{
 			if (*ptr == ' ')
 				break;
@@ -632,15 +644,14 @@ char *	last_arg (char **src, size_t *cluep)
 		}
 	}
 
-	if (cluep) *cluep=ptr-*src;
+	if (cluep) 
+		*cluep = ptr - *src;
+
 	if (ptr == *src)
-	{
 		*src = empty_string;
-	}
 	else
-	{
 		*ptr++ = 0;
-	}
+
 	return ptr;
 }
 
