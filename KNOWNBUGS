@@ -16,9 +16,7 @@ KNOWN ERRATA (eg, bugs, or unresolved requests):
 * New math parser can't handle  @ foo[bar].baz = 0
 * Some way to get the client's global default nickname?
 * /eval echo ${1?{echo a}:{echo b}} at the input prompt infinite loops
-* It's possible to delete all the servers from the server list.
 * /window flush should NOT turn hold mode off!
-* Make sure that CTCP SED hooks /on encrypted_* properly
 * Make some provision for systems without intptr_t.
 * Something for %D to make it customizable?
 * [7] <- [:aussie.sydney.oz.org 330 complexnes Veneficus Veneficus
@@ -211,3 +209,4 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Fix my_strnicmp() because irc servers consider ^ and ~ the same character.
 * Nominally support /dcc rename <nick> <file> <absolute path>
 * Fix /set mail 3 so it doesn't panic, fix /set mail 4 so it doesn't panic.
+* Don't allow the user to /server -delete the last server entry.

@@ -1,4 +1,4 @@
-/* $EPIC: server.c,v 1.104 2003/08/31 01:33:48 jnelson Exp $ */
+/* $EPIC: server.c,v 1.105 2003/09/25 03:33:11 jnelson Exp $ */
 /*
  * server.c:  Things dealing with that wacky program we call ircd.
  *
@@ -238,11 +238,17 @@ void 	add_to_server_list (const char *server, int port, const char *password, co
 static 	void 	remove_from_server_list (int i)
 {
 	Server  *s;
+	int	count, j;
 
 	if (!(s = get_server(i)))
 		return;
 
-	if (number_of_servers == 1)
+	/* Count up how many servers are left. */
+	for (count = 0, j = 0; j < number_of_servers; j++)
+		if (get_server(j))
+			count++;
+
+	if (count == 1)
 	{
 		say("You can't delete the last server!");
 		return;
