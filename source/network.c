@@ -62,21 +62,18 @@ int	connectory (int family, const char *host, const char *port)
 	socklen_t remlen;
 	int	  err;
 
-	if (family == AF_UNSPEC)
-	{
-		if (host && *host == '/')
-			family = AF_UNIX;
-		else if (host && strchr(host, ':'))
-			family = AF_INET6;
-		else
-			family = AF_INET;
-	}
-
-	if ((err = inet_vhostsockaddr(family, (SS *)&localaddr, &locallen)))
+	/* 
+	 * First, cheat by using getaddrinfo() to grok the 
+	 * family of "host" for us.
+	 */
+	if ((err = inet_remotesockaddr(family, host, port, &remaddr, &remlen)))
 		return err;
 
-	if ((err = inet_remotesockaddr(family, host, port, 
-					(SS *)&remaddr, &remlen)))
+	/*
+	 * Now get the Virtual Host info (if any) for that family
+	 */
+	family = ((SA *)&remaddr)->sa_family;
+	if ((err = inet_vhostsockaddr(family, (SS *)&localaddr, &locallen)))
 		return err;
 
 	return client_connect((SA *)&localaddr, locallen, 

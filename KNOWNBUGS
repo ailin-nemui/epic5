@@ -60,4 +60,5 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Add an extra argument to inet_strton(), passed to getaddrinfo().
 * Remember that inet_ntostr() takes one too, passed to getnameinfo().
 * Change stuff in dcc.c/functions.c/server.c to accomodate naming changes.
+* Invert the logic in connectory() to use inet_remotesockaddr() to get family.
 
