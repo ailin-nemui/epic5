@@ -1,4 +1,4 @@
-/* $EPIC: vars.c,v 1.42 2003/10/10 06:09:01 jnelson Exp $ */
+/* $EPIC: vars.c,v 1.43 2003/10/28 05:53:57 jnelson Exp $ */
 /*
  * vars.c: All the dealing of the irc variables are handled here. 
  *
@@ -102,6 +102,7 @@ static	void	set_mangle_logfiles 	(const void *);
 static	void	set_scroll 		(const void *);
 static	void	update_all_status_wrapper (const void *);
 static	void	set_highlight_char	(const void *);
+static	void	set_wserv_type		(const void *);
 
 /*
  * irc_variable: all the irc variables used.  Note that the integer and
@@ -315,6 +316,7 @@ static	IrcVariable irc_variable[] =
 	{ "VERBOSE_CTCP",		BOOL_TYPE_VAR,	DEFAULT_VERBOSE_CTCP, 0, NULL, NULL, 0, 0 },
 	{ "WORD_BREAK",			STR_TYPE_VAR,	0, 0, NULL, NULL, 0, 0 },
 	{ "WSERV_PATH",			STR_TYPE_VAR,	0, 0, NULL, NULL, 0, 0 },
+	{ "WSERV_TYPE",			STR_TYPE_VAR,	0, 0, NULL, set_wserv_type, 0, 0 },
 	{ "XTERM",			STR_TYPE_VAR,	0, 0, NULL, NULL, 0, 0 },
 	{ "XTERM_OPTIONS", 		STR_TYPE_VAR,	0, 0, NULL, NULL, 0, 0 },
 	{ (char *) 0, 0, 0, 0, 0, 0, 0, 0 }
@@ -430,6 +432,7 @@ void 	init_variables (void)
 	set_string_var(CLIENTINFO_VAR, IRCII_COMMENT);
 	set_string_var(WORD_BREAK_VAR, DEFAULT_WORD_BREAK);
 	set_string_var(WSERV_PATH_VAR, WSERV_PATH);
+	set_string_var(WSERV_TYPE_VAR, DEFAULT_WSERV_TYPE);
 
 	/*
 	 * Construct the default help path
@@ -1151,6 +1154,21 @@ static void    set_highlight_char (const void *stuff)
                 malloc_strcpy(&highlight_char, UND_TOG_STR);
         else
                 malloc_strcpy(&highlight_char, s);
+}
+
+static void    set_wserv_type (const void *stuff)
+{
+	const char *s = (const char *)stuff;
+
+        if (!s)
+		return;		/* It's ok */
+	if (!my_stricmp(s, "SCREEN"))
+		return;		/* It's ok */
+	if (!my_stricmp(s, "XTERM"))
+		return;		/* It's ok */
+
+	say("SET WSERV_TYPE must be either SCREEN or XTERM");
+	set_string_var(WSERV_TYPE_VAR, NULL);
 }
 
 

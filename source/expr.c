@@ -1,4 +1,4 @@
-/* $EPIC: expr.c,v 1.21 2003/10/10 06:22:39 jnelson Exp $ */
+/* $EPIC: expr.c,v 1.22 2003/10/28 05:53:57 jnelson Exp $ */
 /*
  * expr.c -- The expression mode parser and the textual mode parser
  * #included by alias.c -- DO NOT DELETE
@@ -1274,12 +1274,12 @@ static	char	*next_unit (char *str, const char *args, int *arg_flag, int stage)
 		return malloc_strdup(empty_string);
 
 	/*
-	 * See if we have to take strlen or word_count on the variable.
+	 * See if we have to take strlen or count_words on the variable.
 	 */
 	if (op)
 	{
 		if (op == '#')
-			value1 = word_count(result1);
+			value1 = count_words(result1, DWORD_YES, "\"");
 		else if (op == '@')
 			value1 = strlen(result1);
 		new_free(&result1);
@@ -1730,7 +1730,7 @@ static	char	*alias_special_char (char **buffer, char *ptr, const char *args, cha
 			}
 
 			if (c == '#')
-			    val = malloc_strdup(ltoa(word_count(sub_buffer)));
+			    val = malloc_strdup(ltoa(count_words(sub_buffer, DWORD_YES, "\"")));
 			else
 			    val = malloc_strdup(ltoa(strlen(sub_buffer)));
 

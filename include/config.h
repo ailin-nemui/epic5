@@ -499,6 +499,7 @@
 #define DEFAULT_USERINFO "EPIC4 -- Get your laundry brighter, not just whiter!"
 #define DEFAULT_VERBOSE_CTCP 1
 #define DEFAULT_WORD_BREAK ".,; \t"
+#define DEFAULT_WSERV_TYPE "screen"
 #define DEFAULT_XTERM "xterm"
 #define DEFAULT_XTERM_OPTIONS NULL
 

@@ -2,9 +2,6 @@ EPIC4 Projects, Bugs, and other Errata:
 
 KNOWN ERRATA (eg, bugs, or unresolved requests):
 ------------------------------------------------
-* A missing 'else' in create_additional_screen causes gnu screen to be
-  prefered over X windows.  Should this be fixed, or at least made an option?
-  Maybe try X, fall back to gnu screen on failure?
 * Something for %D to make it customizable?
 * /dcc chat hop from an ipv6 server connection will default to ipv4 bind(),
   but send out an ipv6 address in the handshake. (send_booster_ctcp doesn't
@@ -25,3 +22,7 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Any further problems with $indextoword() should add regress tests!
 * Make epic behave like ircII when doing /window create with screen and X.
 * Make move_to_next_word() stop when it hits a trailing nul, duh!
+* Add /set wserv_type, either "xterm" or "screen".
+* Add malloc_strcat_word_c, add a single word to word list, with "" support
+* Convert a bunch of stuff to use malloc_strcat_word_c to honor ""s right.
+* GC a bunch of unused code.

@@ -7,7 +7,7 @@
  *
  * See the COPYRIGHT file, or do a HELP IRCII COPYRIGHT 
  *
- * @(#)$Id: ircaux.h,v 1.57 2003/07/18 01:36:34 jnelson Exp $
+ * @(#)$Id: ircaux.h,v 1.58 2003/10/28 05:53:57 jnelson Exp $
  */
 
 #ifndef _IRCAUX_H_
@@ -188,12 +188,14 @@ char *	malloc_strdup2 		(const char *, const char *);
 char *	malloc_strdup3 		(const char *, const char *, const char *);
 char *	malloc_strcat2_c	(char **, const char *, const char *, size_t *);
 char *	malloc_strcat_wordlist_c (char **, const char *, const char *,size_t *);
+char *	malloc_strcat_word_c    (char **, const char *, const char *,size_t *);
 char *	malloc_sprintf 		(char **, const char *, ...) __A(2);
 
 #define malloc_strcpy(x,y) malloc_strcpy_c((x),(y),NULL)
 #define malloc_strcat(x,y) malloc_strcat_c((x),(y),NULL)
 #define malloc_strcat2(x,y,z) malloc_strcat2_c((x),(y),(z),NULL)
 #define malloc_strcat_wordlist(x,y,z) malloc_strcat_wordlist_c((x),(y),(z),NULL)
+#define malloc_strcat_word(x,y,z) malloc_strcat_word_c((x),(y),(z),NULL)
 
 char *  universal_next_arg_count (char *, char **, int, int, int, const char *);
 #define next_arg(a,b)           universal_next_arg_count((a),(b),1,DWORD_NEVER,0,"\"")

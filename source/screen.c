@@ -1,4 +1,4 @@
-/* $EPIC: screen.c,v 1.58 2003/10/23 09:09:53 jnelson Exp $ */
+/* $EPIC: screen.c,v 1.59 2003/10/28 05:53:57 jnelson Exp $ */
 /*
  * screen.c
  *
@@ -2724,9 +2724,19 @@ Window	*create_additional_screen (void)
 	 * it will open a new screen process, and run the wserv in its first
 	 * window, not what we want...  -phone
 	 */
-	if (getenv("STY"))
+	if (getenv("STY") && getenv("DISPLAY"))
+	{
+		char *p = get_string_var(WSERV_TYPE_VAR);
+		if (p && !my_stricmp(p, "SCREEN"))
+			screen_type = ST_SCREEN;
+		else if (p && !my_stricmp(p, "XTERM"))
+			screen_type = ST_XTERM;
+		else
+			screen_type = ST_SCREEN;	/* Sucks to be you */
+	}
+	else if (getenv("STY"))
 		screen_type = ST_SCREEN;
-	else if ((displayvar = getenv("DISPLAY")) && (termvar = getenv("TERM")))
+	else if (getenv("DISPLAY") && getenv("TERM"))
 		screen_type = ST_XTERM;
 	else
 	{
@@ -2734,10 +2744,16 @@ Window	*create_additional_screen (void)
 		return NULL;
 	}
 
-        say("Opening new %s...",
-                screen_type == ST_XTERM ?  "window" :
-                screen_type == ST_SCREEN ? "screen" :
-                                           "wound" );
+	if (screen_type == ST_SCREEN)
+		say("Opening new screen...");
+	else if (screen_type == ST_XTERM)
+	{
+		displayvar = getenv("DISPLAY");
+		termvar = getenv("TERM");
+		say("Opening new window...");
+	}
+	else
+		panic("Opening new wound");
 
 	local_sockaddr.sin_family = AF_INET;
 #ifndef INADDR_LOOPBACK

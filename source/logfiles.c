@@ -1,4 +1,4 @@
-/* $EPIC: logfiles.c,v 1.21 2003/09/23 21:49:47 jnelson Exp $ */
+/* $EPIC: logfiles.c,v 1.22 2003/10/28 05:53:57 jnelson Exp $ */
 /*
  * logfiles.c - General purpose log files
  *
@@ -784,7 +784,7 @@ char *logctl	(char *input)
 		{
 			if (active != -1 && active != log->active)
 				continue;
-			malloc_strcat_wordlist(&retval, space, ltoa(log->refnum));
+			malloc_strcat_word(&retval, space, ltoa(log->refnum));
 		}
 		RETURN_MSTR(retval);
         } else if (!my_strnicmp(listc, "REFNUM", 6)) {

@@ -1,4 +1,4 @@
-/* $EPIC: lastlog.c,v 1.26 2003/09/23 21:49:47 jnelson Exp $ */
+/* $EPIC: lastlog.c,v 1.27 2003/10/28 05:53:57 jnelson Exp $ */
 /*
  * lastlog.c: handles the lastlog features of irc. 
  *
@@ -991,7 +991,7 @@ char *function_lastlog (char *word)
 	{
 		if (iter->level & lastlog_levels)
 			if (wild_match(pattern, iter->msg))
-				malloc_strcat_wordlist_c(&retval, space, ltoa(line), &rvclue);
+				malloc_strcat_word_c(&retval, space, ltoa(line), &rvclue);
 	}
 
 	if (retval)

@@ -1,0 +1,52 @@
+Does not double quote words with spaces
+=======================================
+* $xdebug()/$ascii()/$asciiq()/$myservers()/NOTIFY
+  $logctl(GET * TARGETS)/$windowctl(GET * NICKLIST)
+  Anything to do with joining of channels
+	These things do not generate words with spaces.
+* $floodinfo()/$glob()/$globi()/$currchans()
+	These things do their own double quote handling
+* $notw()/$insertw()/$chngw()/$splice()
+	These functions split a word list into two parts, and paste them 
+	back together, so they never remove the original double quotes
+* $unshift()/$push()
+	These functions paste two strings together, so they never remove	
+	the original double quotes
+* $unsplit()
+	This is the one function that can be used to canonicalize 
+	double quotes via $unsplit(" " $*)
+* $bindctl(SEQUENCE)
+* $tcl()
+
+Double quotes words with spaces
+===============================
+* $aliasctl(* [N|P]MATCH *)
+* $getmatches()/$getrmatches()/$igetmatches()/$igetrmatches()
+* $getitem()/$igetitem()/$getarrays()
+* $indextoitem()/$itemtoindex()/$listarray()
+* $dccctl()
+* $userhost()
+* $myservers()
+* $common()/$diff()/$pattern()/$filter()/$rpattern()/$rfilter()/$uniq()
+* $sort()/$numsort()
+* $revw()/$jot()
+* $findws()/$remws()
+* $copattern()/$corpattern()
+* $key()/$chanmode()
+* $regmatches()
+* $winrefs()
+* $getsets()/$getcommands()/$getfunctions()
+* $notifywindows()
+* $encryptparm()
+* $exec()
+* /FE's variable-rewriting
+* $igmask()/$rigmask()/$igpattern()/$rigpattern()/$igtype()/$ignorectl()
+* EPIC's internal "unsplitw()" function
+* $bindctl(FUNCTION [P]MATCH)
+* $lastlog()
+* $onchannel()
+* $chops()
+* $nochops()
+* $channel()
+* $mychannels()
+* $timerctl()

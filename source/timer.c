@@ -1,4 +1,4 @@
-/* $EPIC: timer.c,v 1.38 2003/07/22 21:12:54 jnelson Exp $ */
+/* $EPIC: timer.c,v 1.39 2003/10/28 05:53:57 jnelson Exp $ */
 /*
  * timer.c -- handles timers in ircII
  *
@@ -760,7 +760,7 @@ char *	timerctl (char *input)
 		size_t	clue = 0;
 
 		for (t = PendingTimers; t; t = t->next)
-			malloc_strcat_wordlist_c(&retval, space, t->ref, &clue);
+			malloc_strcat_word_c(&retval, space, t->ref, &clue);
 		RETURN_MSTR(retval);
 	} else if (!my_strnicmp(listc, "ADD", len)) {
 		RETURN_EMPTY;		/* XXX - Not implemented yet. */

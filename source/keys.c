@@ -1,4 +1,4 @@
-/* $EPIC: keys.c,v 1.29 2003/08/11 03:57:04 wd Exp $ */
+/* $EPIC: keys.c,v 1.30 2003/10/28 05:53:57 jnelson Exp $ */
 /*
  * keys.c:  Keeps track of what happens whe you press a key.
  *
@@ -1287,14 +1287,14 @@ char *bindctl (char *input)
 	    len = strlen(func);
 	    for (bp = binding_list;bp;bp = bp->next) {
 		if (!my_strnicmp(bp->name, func, len))
-		    malloc_strcat_wordlist(&retval, space, bp->name);
+		    malloc_strcat_word(&retval, space, bp->name);
 	    }
 
 	    RETURN_STR(retval);
 	} else if (!my_strnicmp(listc, "PMATCH", 1)) {
 	    for (bp = binding_list;bp;bp = bp->next) {
 		if (wild_match(func, bp->name))
-		    malloc_strcat_wordlist(&retval, space, bp->name);
+		    malloc_strcat_word(&retval, space, bp->name);
 	    }
 
 	    RETURN_STR(retval);

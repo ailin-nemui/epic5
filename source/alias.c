@@ -1,4 +1,4 @@
-/* $EPIC: alias.c,v 1.33 2003/09/25 21:24:33 jnelson Exp $ */
+/* $EPIC: alias.c,v 1.34 2003/10/28 05:53:57 jnelson Exp $ */
 /*
  * alias.c -- Handles the whole kit and caboodle for aliases.
  *
@@ -2564,7 +2564,7 @@ char 	*aliasctl 	(char *input)
 
 			for (ctr = 0; ctr < num; ctr++)
 			{
-				malloc_strcat_wordlist_c(&mylist, space, mlist[ctr], &mylistclue);
+				malloc_strcat_word_c(&mylist, space, mlist[ctr], &mylistclue);
 				new_free((char **)&mlist[ctr]);
 			}
 			new_free((char **)&mlist);
@@ -2589,7 +2589,7 @@ char 	*aliasctl 	(char *input)
 
 			for (ctr = 0; ctr < num; ctr++)
 			{
-				malloc_strcat_wordlist_c(&mylist, space, mlist[ctr], &mylistclue);
+				malloc_strcat_word_c(&mylist, space, mlist[ctr], &mylistclue);
 				new_free((char **)&mlist[ctr]);
 			}
 			new_free((char **)&mlist);

@@ -1,4 +1,4 @@
-/* $EPIC: ircaux.c,v 1.95 2003/10/10 06:22:39 jnelson Exp $ */
+/* $EPIC: ircaux.c,v 1.96 2003/10/28 05:53:57 jnelson Exp $ */
 /*
  * ircaux.c: some extra routines... not specific to irc... that I needed 
  *
@@ -345,120 +345,6 @@ void malloc_dump (const char *file) {
 #endif
 }
 
-#if 0
-char *	malloc_str2cpy(char **ptr, const char *src1, const char *src2)
-{
-	size_t	size;
-
-	if (!src1 && !src2)
-		return new_free(ptr);
-
-	if (*ptr)
-	{
-		size = alloc_size(*ptr);
-
-		if (size == (size_t) FREED_VAL)
-			panic("free()d pointer passed to malloc_str2cpy");
-
-		if (size > strlen(src1) + strlen(src2))
-		{
-			**ptr = 0;
-			strlopencat(*ptr, size, src1, src2, NULL);
-			return *ptr;
-		}
-
-		new_free(ptr);
-	}
-
-	size = strlen(src1) + strlen(src2) + 1;
-	*ptr = new_malloc(size);
-	**ptr = 0;
-	strlopencat(*ptr, size, src1, src2, NULL);
-	return *ptr;
-			/* * */
-}
-
-
-char *	m_2dup (const char *str1, const char *str2)
-{
-	size_t msize = strlen(str1) + strlen(str2) + 1;
-	char * buffer = (char *)new_malloc(msize);
-
-	*buffer = 0;
-	strlopencat(buffer, msize, str1, str2, NULL);
-	return buffer;
-}
-
-char *	m_3dup (const char *str1, const char *str2, const char *str3)
-{
-	size_t msize = strlen(str1) + strlen(str2) + strlen(str3) + 1;
-	char *buffer = (char *)new_malloc(msize);
-
-	*buffer = 0;
-	strlopencat(buffer, msize, str1, str2, str3, NULL);
-	return buffer;
-}
-
-char *	m_ec3cat (char **val1, const char *yes1, const char *yes2, size_t *clue)
-{
-	if (*val1 && **val1)
-		return m_c3cat(val1, yes1, yes2, clue);
-
-	return (*val1 = m_2dup(yes1, yes2));
-}
-
-
-char *	m_sc3cat (char **val1, const char *maybe, const char *definitely, size_t *clue)
-{
-	if (*val1 && **val1)
-		return m_c3cat(val1, maybe, definitely, clue);
-
-	return malloc_strcpy(val1, definitely);
-}
-
-char *	m_sc3cat_s (char **val1, const char *maybe, const char *ifthere, size_t *clue)
-{
-	if (ifthere && *ifthere)
-		return m_sc3cat(val1, maybe, ifthere, clue);
-
-	return *val1;
-}
-
-char *	m_c3cat(char **val1, const char *two, const char *three, size_t *clue)
-{
-	size_t	csize = clue ? *clue : 0;
-	int 	msize = csize;
-
-	if (*val1)
-	{
-		if (alloc_size(*val1) == FREED_VAL)
-			panic("free()d pointer passed to m_3cat");
-		msize += strlen(csize+*val1);
-	}
-	if (two)
-		msize += strlen(two);
-	if (three)
-		msize += strlen(three);
-
-	if (!*val1)
-	{
-		*val1 = new_malloc(msize + 1);
-		**val1 = 0;
-	}
-	else
-		RESIZE(*val1, char, msize + 1);
-
-	if (two)
-		strlcat(csize + *val1, two, msize + 1 - csize);
-	if (three)
-		strlcat(csize + *val1, three, msize + 1 - csize);
-	if (clue) 
-		*clue = msize;
-
-	return *val1;
-}
-#endif
-
 char *	upper (char *str)
 {
 	char	*ptr = (char *) 0;
@@ -536,64 +422,6 @@ ssize_t	rstristr (const char *start, const char *srch)
 	return -1;
 }
 
-#if 0
-/* 
- * "Dequote" a double quoted string by removing double quotes that surround
- * double quoted words.  Capiche?
- */
-char *	dequote (char *str)
-{
-	size_t	size;
-	char *	copy;
-	char *	word;
-	int	first_time = 1;
-
-	size = strlen(str) + 1;
-	copy = LOCAL_COPY(str);
-	*str = 0;
-
-	while ((word = new_next_arg(copy, &copy)))
-	{
-		if (first_time == 0)
-			strlcat(str, space, size);
-		strlcat(str, word, size);
-		first_time = 0;
-	}
-
-	return str;
-}
-
-
-char *	next_arg_count (char *str, char **new_ptr, int count)
-{
-	char	*ptr;
-
-	/* added by Sheik (kilau@prairie.nodak.edu) -- sanity */
-	if (!str || !*str)
-		return NULL;
-
-	while (isspace(*str))
-		str++;
-
-	for (ptr = str; count > 0 && *ptr; count--)
-	{
-		while (isspace(*ptr))
-			ptr++;
-		while (*ptr && !isspace(*ptr))
-			ptr++;
-	}
-
-	if (!*ptr)
-		ptr = empty_string;		/* XXX sigh */
-	else
-		*ptr++ = 0;
-
-	if (new_ptr)
-		*new_ptr = ptr;
-
-	return str;
-}
-#endif
 
 char *	remove_trailing_spaces (char *foo, size_t *cluep)
 {
@@ -613,215 +441,6 @@ char *	remove_trailing_spaces (char *foo, size_t *cluep)
 		*cluep = end - foo;
 	return foo;
 }
-
-#if 0
-/*
- * yanks off the last word from 'src'
- * kinda the opposite of next_arg
- */
-char *	last_arg (char **src, size_t *cluep)
-{
-	char *ptr;
-
-	if (!src || !*src)
-		return NULL;
-
-	remove_trailing_spaces(*src, cluep);
-	ptr = *src + (cluep ? *cluep : 0);
-	ptr += strlen(ptr);
-	ptr -= 1;
-
-	if (*ptr == '"')
-	{
-		for (ptr--; ; ptr--)
-		{
-			if (*ptr == '"')
-			{
-				if (ptr == *src)
-					break;
-				if (ptr[-1] == ' ')
-				{
-					ptr--;
-					break;
-				}
-			}
-			if (ptr == *src)
-				break;
-		}
-	}
-	else
-	{
-		for (; ; ptr--)
-		{
-			if (*ptr == ' ')
-				break;
-			if (ptr == *src)
-				break;
-		}
-	}
-
-	if (cluep) 
-		*cluep = ptr - *src;
-
-	if (ptr == *src)
-		*src = empty_string;
-	else
-		*ptr++ = 0;
-
-	return ptr;
-}
-
-
-/*
- * We seriously need to merge the complexity in this function with
- * that of word_count().
- */
-char *	new_next_arg (char *str, char **new_ptr)
-{
-	char	*ptr;
-
-	if (!str || !*str)
-		return NULL;
-
-	ptr = str;
-	while (*ptr && risspace(*ptr))
-		ptr++;
-
-	if (*ptr == '"')
-	{
-		for (str = ++ptr; *str; str++)
-		{
-			if (*str == '\\' && str[1])
-				str++;
-			else if (str[1] && !risspace(str[1]))
-			{}
-			else if (*str == '"')
-			{
-				*str++ = 0;
-				if (risspace(*str))
-					str++;
-				break;
-			}
-
-#if 0
-			if (!str[1])
-			{
-				ptr--;
-				goto noquotedword;
-			}
-#endif
-		}
-	}
-	else
-	{
-#if 0
-noquotedword:
-#endif
-		str = ptr;
-		while (*str && !risspace(*str))
-			str++;
-		if (*str)
-			*str++ = 0;
-	}
-
-	if (!*str)
-		str = empty_string;
-
-	if (new_ptr)
-		*new_ptr = str;
-
-	return ptr;
-}
-
-/*
- * Return multiple arguments using new_next_arg().
- *
- * This is just a little bit of a crock.  The basic problem here is the
- * dequoting which will dispose of the distinction between the words,
- * but presumably that's what we want.  I rewrote this to not use stpcpy.
- * though I am not sure i didn't break it.
- */
-char *	new_next_arg_count (char *str, char **new_ptr, int count)
-{
-	real_move_to_abs_word(str, (const char **)new_ptr, count, 2, "\"");
-	if ((*new_ptr)[0] && *new_ptr > str)
-		(*new_ptr)[-1] = 0;
-	return str;
-}
-
-/*
- * Note that the old version is now out of sync with epics word philosophy.
- */
-char *	safe_new_next_arg (char *str, char **new_ptr)
-{
-	char * ret = new_next_arg(str, new_ptr);
-
-	return ret ? ret : empty_string;
-}
-
-char *	new_new_next_arg (char *str, char **new_ptr, char *type)
-{
-	char	*ptr,
-		*start;
-
-	if (!str || !*str)
-		return NULL;
-
-	if ((ptr = sindex(str, "^ \t")) != NULL)
-	{
-		if ((*ptr == '"') || (*ptr == '\''))
-		{
-			char blah[3];
-			blah[0] = *ptr;
-			blah[1] = '\\';
-			blah[2] = '\0';
-
-			*type = *ptr;
-			start = ++ptr;
-			while ((str = sindex(ptr, blah)) != NULL)
-			{
-				switch (*str)
-				{
-				case '\'':
-				case '"':
-					*str++ = '\0';
-					if (*str == ' ')
-						str++;
-					if (new_ptr)
-						*new_ptr = str;
-					return (start);
-				case '\\':
-					if (str[1] == *type)
-						ov_strcpy(str, str + 1);
-					ptr = str + 1;
-				}
-			}
-			str = empty_string;
-		}
-		else
-		{
-			*type = '\"';
-			if ((str = sindex(ptr, " \t")) != NULL)
-				*str++ = '\0';
-			else
-				str = empty_string;
-		}
-	}
-	else
-		str = empty_string;
-	if (new_ptr)
-		*new_ptr = str;
-	return ptr;
-}
-
-char *	s_next_arg (char **from)
-{
-	char *next = strchr(*from, ' ');
-	char *keep = *from;
-	*from = next;
-	return keep;
-}
-#endif
 
 char *	next_in_comma_list (char *str, char **after)
 {
@@ -1130,54 +749,6 @@ char *	malloc_strcat_ues_c (char **dest, const char *src, const char *special, s
 	 */
 	malloc_strcat_c(dest, workbuf, cluep);
 	return *dest;
-
-#if 0
-	int 		total_length;
-	const char *	ptr;
-	char *		ptr2;
-	int		z;
-	size_t		clue = cluep ? *cluep : 0;
-
-	if (!unescape)
-	{
-		malloc_strcat_c(dest, src, cluep);
-		return *dest;
-	}
-
-	z = total_length = (*dest) ? clue + strlen(clue + *dest) : 0;
-	total_length += strlen(src);
-
-	RESIZE(*dest, char, total_length + 1);
-	if (z == 0)
-		**dest = 0;
-
-	ptr2 = *dest + z;
-	for (ptr = src; ; ptr++)
-	{
-		if (*ptr == '\\')
-		{
-			switch (*++ptr)
-			{
-				case 'n': case 'p': case 'r': case '0':
-					*ptr2++ = '\020';
-					break;
-				case (char) 0:
-					*ptr2++ = '\\';
-					*ptr2 = 0;	/* Ahem */
-					break;
-				default:
-					*ptr2++ = *ptr;
-			}
-		}
-		else
-			*ptr2++ = *ptr;
-
-		if (!*ptr)
-			break;
-	}
-	if (cluep) *cluep = ptr2 - *dest - 1;
-	return *dest;
-#endif
 }
 
 /*
@@ -2553,7 +2124,7 @@ int	split_args (char *str, char **to, size_t maxargs)
 
 int 	splitw (char *str, char ***to)
 {
-	int numwords = word_count(str);
+	int numwords = count_words(str, DWORD_YES, "\"");
 	int counter;
 
 	if (numwords)
@@ -2580,7 +2151,7 @@ char *	unsplitw (char ***container, int howmany)
 	while (howmany)
 	{
 		if (*str && **str)
-			malloc_strcat_wordlist_c(&retval, space, *str, &clue);
+			malloc_strcat_word_c(&retval, space, *str, &clue);
 		str++, howmany--;
 	}
 
@@ -3888,49 +3459,6 @@ unsigned char isspace_table [256] =
 	0,	0,	0,	0,	0,	0,	0,	0,
 };
 
-#if 0
-/* 
- * word_count:  Efficient way to find out how many words are in
- * a given string.  Relies on my_isspace() not being broken.
- */
-int     word_count (const char *str)
-{
-	const char *	p;
-	int		count = 0;
-
-        if (!str || !*str)
-                return 0;
-
-	if (*str == '"')
-	{
-		while (*str && *++str != '"')
-			str++;
-		if (!*str)
-			return 1;
-		str++;
-	}
-	else while (my_isspace(*str))
-		str++;
-
-	for (count = 1, p = str; *p; p++)
-        {
-		if ((my_isspace(*p) && p[1] == '"'))
-		{
-			if (*p != '"')
-				p++;
-			while (p[1] && *++p != '"')
-				;
-			count++;
-			continue;
-		}
-
-		if (my_isspace(*p) && !isspace(p[1]))
-			count++;
-	}
-
-	return count;
-}
-#else
 
 /* 
  * XXX XXX XXX -- This is expensive, and ugly, but it counts words
@@ -3989,128 +3517,6 @@ int	word_count (const char *ptr)
 
 	return count;
 }
-#endif
-
-#if 0
-/*
- * A "forward quote" is the first double quote we find that has a space
- * or the end of string after it; or the end of the string.
- */
-const char *	find_forward_quote (const char *input, const char *start)
-{
-	/*
-	 * An "extended word" is defined as:
-	 *	<SPACE> <QUOTE> <ANY>* <QUOTE> <SPACE>
-	 * <SPACE> := <WORD START> | <WORD END> | <" "> | <"\t"> | <"\n">
-	 * <QUOTE> :- <'"'>
-	 * <ANY>   := ANY ASCII CHAR 0 .. 256
-	 */
-	/* Make sure we are actually looking at a double-quote */
-	if (*input != '"')
-		return NULL;
-
-	/* 
-	 * Make sure that the character before is the start of the
-	 * string or that it is a space.
-	 */
-	if (input > start && !risspace(input[-1]))
-		return NULL;
-
-	/*
-	 * Walk the string looking for a double quote.  Yes, we do 
-	 * really have to check for \'s, still, because the following
-	 * still is one word:
-	 *			"one\" two"
-	 * Once we find a double quote, then it must be followed by 
-	 * either the end of string (chr 0) or a space.  If we find 
-	 * that, return the position of the double-quote.
-	 */
-	for (input++; *input; input++)
-	{
-		if (input[0] == '\\' && input[1])
-			input++;
-		else if (input[0] == '"')
-		{
-			if (input[1] == 0)
-				return input;
-			else if (risspace(input[1]))
-				return input;
-		}
-	}
-
-	/*
-	 * If we get all the way to the end of the string w/o finding 
-	 * a matching double-quote, return the position of the (chr 0), 
-	 * which is a special meaning to the caller. 
-	 */
-	return input;		/* Bumped the end of string. doh! */
-}
-
-/*
- * A "backward quote" is the first double quote we find, going backward,
- * that has a space or the start of string after it; or the start of 
- * the string.
- */
-const char *	find_backward_quote (const char *input, const char *start)
-{
-	const char *	saved_input = input;
-
-	/*
-	 * An "extended word" is defined as:
-	 *	<SPACE> <QUOTE> <ANY>* <QUOTE> <SPACE>
-	 * <SPACE> := <WORD START> | <WORD END> | <" "> | <"\t"> | <"\n">
-	 * <QUOTE> :- <'"'>
-	 * <ANY>   := ANY ASCII CHAR 0 .. 256
-	 */
-	/* Make sure we are actually looking at a double-quote */
-	if (input[0] != '"')
-		return NULL;
-
-	/* 
-	 * Make sure that the character after is either the end of the
-	 * string, or that it is a space.
-	 */
-	if (input[1] && !risspace(input[1]))
-		return NULL;
-
-	/*
-	 * Walk the string looking for a double quote.  Yes, we do 
-	 * really have to check for \'s, still, because the following
-	 * still is one word:
-	 *			"one\" two"
-	 * Once we find a double quote, then it must be followed by 
-	 * either the end of string (chr 0) or a space.  If we find 
-	 * that, return the position of the double-quote.
-	 */
-	for (input--; input > start; input--)
-	{
-		if (input[0] == '\\' && input[1])
-			input++;
-		else if (input[0] == '"')
-		{
-			if (input[1] == 0)
-				return input;
-			else if (risspace(input[1]))
-				return input;
-		}
-	}
-
-	/*
-	 * If we get all the way to the start of the string w/o finding 
-	 * a matching double-quote, then THIS IS NOT AN EXTENDED WORD!
-	 * We need to re-do this word entirely by starting over and looking
-	 * for a normal word.
-	 */
-	input = saved_input;
-	while (input > start && !risspace(input[0]))
-		input--;
-
-	if (risspace(input[0]))
-		input++;		/* Just in case we've gone too far */
-
-	return input;		/* Wherever we are is fine. */
-}
-#endif
 
 const char *	my_strerror (int err1, int err2)
 {
@@ -4690,6 +4096,36 @@ char *	malloc_strcat_wordlist_c (char **ptr, const char *word_delim, const char 
 	    return *ptr;
 }
 
+char *	malloc_strcat_word_c (char **ptr, const char *word_delim, const char *word, size_t *clue)
+{
+	if (word && *word)
+	{
+		int quote_word = strpbrk(word, word_delim) ? 1 : 0;
+#if 0
+		if (!*ptr || !**ptr)
+			malloc_strcpy_c(ptr, empty_string, clue);
+#endif
+
+		if (quote_word)
+		{
+		    if (*ptr && **ptr)
+			malloc_strcat2_c(ptr, word_delim, "\"", clue);
+		    else
+			malloc_strcpy_c(ptr, word, clue);
+		}
+
+		if (*ptr && **ptr)
+		    malloc_strcat2_c(ptr, word_delim, word, clue);
+		else
+		    malloc_strcpy_c(ptr, word, clue);
+
+		/* I know 'ptr' has something in it here. */
+		if (quote_word)
+			malloc_strcat2_c(ptr, word_delim, "\"", clue);
+	}
+
+	return *ptr;
+}
 
 /*
  * malloc_sprintf: write a formatted string to heap memory
