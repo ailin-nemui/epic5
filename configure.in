@@ -4,9 +4,9 @@ dnl except those bits attributed otherwise.
 dnl thanks to the screen 3.3 configure.in for giving me examples to
 dnl work from and steal ;)
 dnl
-dnl @(#)$Id: configure.in,v 1.12 2002/05/07 00:21:13 jnelson Exp $
+dnl @(#)$Id: configure.in,v 1.13 2002/05/17 18:10:25 crazyed Exp $
 
-AC_REVISION($Revision: 1.12 $)dnl
+AC_REVISION($Revision: 1.13 $)dnl
 AC_INIT(source/irc.c)
 AC_CONFIG_HEADER(include/defs.h)
 
@@ -92,51 +92,49 @@ AC_MSG_CHECKING(whether to include SSL support)
 AC_ARG_WITH(ssl,
 [  --with-ssl[=PATH]         Include SSL support (DIR is OpenSSL's install dir).],
 [
-  case "$withval" in
-    no)
-      AC_MSG_RESULT(no) ;;
-    yes)
-      AC_MSG_RESULT(yes)
-      AC_CHECK_LIB(ssl,SSL_accept,[AC_DEFINE(HAVE_SSL)
-      LIBS="$LIBS -lssl -lcrypto"],[AC_MSG_ERROR([You requested SSL support, but OpenSSL was not found. Please supply a pathname to OpenSSL])],-lcrypto)
-      ;;
-    *)
-dnl A whole whack of possible places where this might be
-      test -f $withval/include/ssl.h && SSL_INCLUDE="$withval/include"
-      test -f $withval/ssl/ssl.h && SSL_INCLUDE="$withval/ssl"
-      test -f $withval/openssl/ssl.h && SSL_INCLUDE="$withval/openssl"
-      test -f $withval/include/ssl/ssl.h && SSL_INCLUDE="$withval/include/ssl"
-      test -f $withval/include/openssl/ssl.h && SSL_INCLUDE="$withval/include/openssl"
-      test -f $withval/ssl.h && SSL_INCLUDE="$withval"
-
-      test -f $withval/lib/libssl.a && SSL_LIB="$withval/lib"
-      test -f $withval/lib/ssl/libssl.a && SSL_LIB="$withval/lib/ssl"
-      test -f $withval/lib/openssl/libssl.a && SSL_LIB="$withval/lib/openssl/ssl"
-      test -f $withval/libssl.a && SSL_LIB="$withval"
-      test -f $withval/ssl/libssl.a && SSL_LIB="$withval/ssl"
-      test -f $withval/openssl/libssl.a && SSL_LIB="$withval/openssl"
-
-      test -f $withval/lib/libcrypto.a && CRYPTO_LIB="$withval/lib"
-      test -f $withval/lib/ssl/libcrypto.a && CRYPTO_LIB="$withval/lib/ssl"
-      test -f $withval/lib/openssl/libcrypto.a && CRYPTO_LIB="$withval/lib/openssl/ssl"
-      test -f $withval/libcrypto.a && CRYPTO_LIB="$withval"
-      test -f $withval/ssl/libcrypto.a && CRYPTO_LIB="$withval/ssl"
-      test -f $withval/openssl/libcrypto.a && CRYPTO_LIB="$withval/openssl"
-
-      if test -n "$SSL_INCLUDE" && test -n "$SSL_LIB" && test -n "$CRYPTO_LIB"; then
-        INCLUDE="$INCLUDE $SSL_INCLUDE";
-        LIBS="$LIBS -lssl -lcrypto -L$SSL_LIB -L$CRYPTO_LIB";
-        AC_DEFINE(HAVE_SSL)
-        AC_MSG_RESULT(yes)
-      else
-        AC_MSG_RESULT(no)
-        AC_MSG_ERROR([You requested SSL support, but OpenSSL was not found. Please supply a pathname to OpenSSL])
-      fi ;;
-  esac
+	if test "x$withval" = "xno"; then
+		AC_MSG_RESULT(no)
+	fi
 ],[
-       AC_MSG_RESULT(will try to find)
-        AC_CHECK_LIB(ssl,SSL_accept,[AC_DEFINE(HAVE_SSL)
-      LIBS="$LIBS -lssl -lcrypto"],,-lcrypto)
+	saved_LIBS="$LIBS"
+	saved_CFLAGS="$CFLAGS"
+	for ssldir in "$withval" /usr/local/ssl /usr/local/openssl; do
+
+		if test -n "$have_ssl"; then
+			break;
+		fi
+
+		if test -z "$ssldir"; then
+			continue;
+		fi
+
+		if test -f "$ssldir/include/openssl/ssl.h" &&
+			test -f "$ssldir/lib/libssl.a"; then
+			CFLAGS="$saved_CFLAGS -I$ssldir/include"
+			LIBS="$saved_LIBS -L$ssldir/lib -lssl -lcrypto"
+			AC_TRY_LINK([#include <openssl/ssl.h>],
+				[SSL_accept(NULL);], have_ssl="yes")
+		fi
+	done
+
+	if test -z "$have_ssl"; then
+		LIBS="$saved_LIBS -lssl -lcrypto"
+		CFLAGS="$saved_CFLAGS"
+		AC_TRY_LINK([#include <openssl/ssl.h>],
+			[SSL_accept(NULL);], have_ssl="yes")
+	fi
+
+	if test -n "$have_ssl"; then
+		AC_DEFINE(HAVE_SSL)
+		AC_MSG_RESULT(yes)
+	else
+		LIBS="$saved_LIBS"
+		CFLAGS="$saved_CFLAGS"
+		AC_MSG_RESULT(no)
+		if test "x$withval" == "xyes"; then
+			AC_MSG_ERROR([You requested SSL support, but OpenSSL was not found. Please supply a pathname to OpenSSL])
+		fi
+	fi
 ])
 
 dnl this is for isc.  need the nsl_s library as well.

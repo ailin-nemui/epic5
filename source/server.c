@@ -2066,7 +2066,7 @@ int	get_server_port (int gsp_index)
 	if (FAMILY(server_list[gsp_index].remote_sockname) == AF_INET)
 		return ntohs(V4PORT(server_list[gsp_index].remote_sockname));
 
-	return 0;
+	return server_list[gsp_index].port;
 }
 
 int	get_server_local_port (int gsp_index)

@@ -397,18 +397,23 @@ BUILT_IN_COMMAND(fe)
 	int     ind, x, y, blah,args_flag;
 	int     old_display;
 	int	doing_fe = !strcmp(command, "FE");
+	char	*mapvar = (char *) 0;
+	char	*mapsep = doing_fe ? space : empty_string;
+	char	*map = (char *) 0;
+	size_t	mapclue = 0;
 
 	for (x = 0; x <= 254; var[x++] = (char *) 0)
 		;
 
-	if (!(list = next_expr(&args, '('))) {
-		error("%s: Missing List for /%s", command, command);
-		return;
-	}
-
 	if (!subargs)
 		subargs = empty_string;
-	templist = expand_alias(list, subargs, &args_flag, NULL);
+
+	if (*args == '(' && (list = next_expr(&args, '('))) {
+		templist = expand_alias(list, subargs, &args_flag, NULL);
+	} else {
+		mapvar = next_arg(args, &args);
+		templist = get_variable(mapvar);
+	}
 
 	if (!templist || !*templist) {
 		new_free(&templist);
@@ -480,6 +485,13 @@ BUILT_IN_COMMAND(fe)
 		parse_line((char *) 0, todo, 
 		    subargs?subargs:empty_string, 0, 0);
 
+		if (mapvar)
+			for ( y = 0 ; y < ind ; y++ ) {
+				char *foo = get_variable(var[y]);
+				m_sc3cat(&map, mapsep, foo, &mapclue);
+				new_free(&foo);
+			}
+
 		if (continue_exception)
 		{
 			continue_exception = 0;
@@ -495,6 +507,9 @@ BUILT_IN_COMMAND(fe)
 	}
 	will_catch_break_exceptions--;
 	will_catch_continue_exceptions--;
+
+	add_var_alias(mapvar, map, 0);
+	new_free(&map);
 
 	window_display = 0;
 	window_display = old_display;
