@@ -1,4 +1,4 @@
-/* $EPIC: dcc.c,v 1.63 2003/05/30 19:58:10 jnelson Exp $ */
+/* $EPIC: dcc.c,v 1.64 2003/06/12 17:57:11 jnelson Exp $ */
 /*
  * dcc.c: Things dealing client to client connections. 
  *
@@ -2947,15 +2947,15 @@ static void	process_dcc_send_data (DCC_list *dcc)
 		{
 		    update_transfer_buffer("(to %10s: %d of %d: %d%%)",
 			dcc->user, 
-			dcc->packets_transfer, 
-			dcc->packets_total, 
-			(dcc->bytes_sent * 100 / dcc->filesize));
+			(int)dcc->packets_transfer, 
+			(int)dcc->packets_total, 
+			(int)(dcc->bytes_sent * 100.0 / dcc->filesize));
 		}
 		else
 		{
-		    update_transfer_buffer("(to %10s: %d kbytes     )",
+		    update_transfer_buffer("(to %10s: %ld kbytes     )",
 			dcc->user, 
-			dcc->bytes_sent / 1024);
+			(long)(dcc->bytes_sent / 1024));
 		}
 		update_all_status();
 	}
@@ -3025,13 +3025,13 @@ static	void		process_incoming_file (DCC_list *dcc)
 	{
 		if (dcc->filesize)
 			update_transfer_buffer("(%10s: %d of %d: %d%%)", 
-				dcc->user, dcc->packets_transfer,
-				dcc->packets_total, 
-				dcc->bytes_read * 100 / dcc->filesize);
+				dcc->user, (int)dcc->packets_transfer,
+				(int)dcc->packets_total, 
+				(int)(dcc->bytes_read * 100.0 / dcc->filesize));
 		else
-			update_transfer_buffer("(%10s %d packets: %dK)", 
-				dcc->user, dcc->packets_transfer, 
-				dcc->bytes_read / 1024);
+			update_transfer_buffer("(%10s %d packets: %ldK)", 
+				dcc->user, (int)dcc->packets_transfer, 
+				(long)(dcc->bytes_read / 1024));
 		update_all_status();
 	}
 }

@@ -130,3 +130,6 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Change 'expand_alias' so 'unescape' is (char *) and not (int)
 * Add extra sanity checks in mangle_line against buffer overruns
 * Fix window_channel() to use new malloc_strcat_ues() arguments.
+* Fix some casts to update_transfer_buffer() to avoid bad data.
+* Fix really lame bug I introduced with /eval echo }{.  Don't ask.
+* Add a kludge to update_all_windows() to thwart infinite recursion.

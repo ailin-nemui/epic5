@@ -1,4 +1,4 @@
-/* $EPIC: window.c,v 1.62 2003/05/30 19:58:10 jnelson Exp $ */
+/* $EPIC: window.c,v 1.63 2003/06/12 17:57:11 jnelson Exp $ */
 /*
  * window.c: Handles the organzation of the logical viewports (``windows'')
  * for irc.  This includes keeping track of what windows are open, where they
@@ -1206,10 +1206,26 @@ void 	update_all_status (void)
 void 	update_all_windows (void)
 {
 	Window	*tmp = NULL;
-	int	do_input_too = 0;
+static	int	recursion = 0;
+static	int	do_input_too = 0;
+static	int	restart;
 
+	if (recursion)
+	{
+		restart = 1;
+		return;
+	}
+
+	recursion++;
 	while (traverse_all_windows(&tmp))
 	{
+		if (restart)
+		{
+			restart = 0;
+			tmp = NULL;
+			continue;
+		}
+
 		/* Never try to update/redraw an invisible window */
 		if (!tmp->screen)
 			continue;
@@ -1238,7 +1254,12 @@ void 	update_all_windows (void)
 	}
 
 	if (do_input_too)
+	{
+		do_input_too = 0;
 		update_input(UPDATE_JUST_CURSOR);
+	}
+
+	recursion--;
 }
 
 /****************************************************************************/
