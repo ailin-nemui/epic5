@@ -1,4 +1,4 @@
-/* $EPIC: status.c,v 1.57 2005/03/29 00:41:22 jnelson Exp $ */
+/* $EPIC: status.c,v 1.58 2005/03/29 13:25:48 jnelson Exp $ */
 /*
  * status.c: handles the status line updating, etc for IRCII 
  *
@@ -746,8 +746,9 @@ int	make_status (Window *window, int must_redraw)
 		/*
 		 * No rhs?  If the user wants us to pad it out, do so.
 		 */
+		else 
 #if 0
-		else if (get_int_var(FULL_STATUS_LINE_VAR))
+			if (get_int_var(FULL_STATUS_LINE_VAR))
 #endif
 		{
 			int chars = window->screen->co - pr_lhs - 1;
