@@ -1,4 +1,4 @@
-/* $EPIC: window.c,v 1.133 2005/01/28 05:16:30 jnelson Exp $ */
+/* $EPIC: window.c,v 1.134 2005/01/31 05:08:12 jnelson Exp $ */
 /*
  * window.c: Handles the organzation of the logical viewports (``windows'')
  * for irc.  This includes keeping track of what windows are open, where they
@@ -5107,7 +5107,12 @@ int	flush_scrollback_after (Window *window)
 	int	count;
 
 	/* Determine what is currently visible in the hold view */
-	curr_line = window->holding_top_of_display;
+	if (!(curr_line = window->holding_top_of_display))
+	{
+		say("/WINDOW FLUSH doesn't do anything unless you're in hold mode");
+		return 0;
+	}
+
 	for (count = 1; count < window->display_size; count++)
 	{
 		if (curr_line == window->display_ip)

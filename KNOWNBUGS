@@ -441,3 +441,5 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Fix auto-completion bogosity with $symbolctl().
 * Release epic5-0.0.3
 * Add %{3}S, showing the server's group instead of its name.
+* Fix compile bugs for non-ipv6 users with the dual-vhost stuff.
+* Fix null deref with /window flush when not in hold mode.
