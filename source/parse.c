@@ -1,4 +1,4 @@
-/* $EPIC: parse.c,v 1.31 2003/01/26 03:25:38 jnelson Exp $ */
+/* $EPIC: parse.c,v 1.32 2003/01/27 06:56:13 jnelson Exp $ */
 /*
  * parse.c: handles messages from the server.   Believe it or not.  I
  * certainly wouldn't if I were you. 
@@ -345,6 +345,7 @@ static void	p_privmsg (const char *from, const char *comm, char **ArgList)
 
 		hook_type = MSG_LIST;
 		hook_format = NULL;	/* See below */
+		target = from;		/* Target is actually sender here */
 	}
 
 

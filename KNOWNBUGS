@@ -85,4 +85,5 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * This involved substantial rewrites of parse.c, and numbers.c
 * Now "fake" stuff goes through /on odd_server_stuff.
 * Fix /on invite so it takes 3 arguments, not 2.
-
+* Fix targets not being assigned correctly for privmsgs to user.
+* Send output of who replies to LOG_CRAP as per previous behavior.

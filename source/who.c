@@ -1,4 +1,4 @@
-/* $EPIC: who.c,v 1.15 2003/01/26 03:25:38 jnelson Exp $ */
+/* $EPIC: who.c,v 1.16 2003/01/27 06:56:13 jnelson Exp $ */
 /*
  * who.c -- The WHO queue.  The ISON queue.  The USERHOST queue.
  *
@@ -501,6 +501,9 @@ static	int	last_width = -1;
 		yell("### You asked for an extended undernet request but "
 			"didn't get one back. ###");
 
+	/* Who replies always go to the current window. */
+	message_from(NULL, LOG_CRAP);
+
 do
 {
 	/*
@@ -548,9 +551,9 @@ do
 
 		if (new_w->who_stuff)
 			;			/* munch it */
-
 		else if (do_hook(WHO_LIST, "%s", buffer))
 			put_it(format, channel, nick, stat, user, host, name);
+
 		return;
 	}
 
@@ -628,6 +631,9 @@ void	xwhoreply (int refnum, const char *from, const char *comm, char **ArgList)
 		yell("### You got an extended undernet request back "
 			"even though you didn't ask for one. ###");
 
+	/* Who replies always go to the current window */
+	message_from(NULL, LOG_CRAP);
+
 	PasteArgs(ArgList, 0);
 	if (do_hook(current_numeric, "%s", ArgList[0]))
 		put_it("%s %s", numeric_banner(), ArgList[0]);
@@ -646,6 +652,7 @@ void	who_end (int refnum, const char *from, const char *comm, char **ArgList)
 	if (!new_w)
 		return;	
 
+	message_from(NULL, LOG_CRAP);
 	do
 	{
 		/* Defer to another function, if neccesary.  */
@@ -711,6 +718,7 @@ int	fake_who_end (int refnum, const char *from, const char *comm, const char *wh
 		who_target = target;
 	}
 
+	message_from(NULL, LOG_CRAP);
 	do
 	{
 		/* Defer to another function, if neccesary.  */
