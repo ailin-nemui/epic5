@@ -204,15 +204,17 @@ static	char
 	*function_info		(char *),
 	*function_insert 	(char *),
 	*function_insertw 	(char *),
+	*function_iptolong	(char *),
+	*function_iptoname 	(char *),
 	*function_isaway	(char *),
 	*function_isconnected	(char *),
 	*function_iscurchan	(char *),
 	*function_isdisplaying	(char *),
-	*function_iptoname 	(char *),
 	*function_irclib	(char *),
 	*function_isalpha 	(char *),
 	*function_ischanvoice	(char *),
 	*function_isdigit 	(char *),
+	*function_isencrypted	(char *),
 	*function_isnumber	(char *),
 	*function_jot 		(char *),
 	*function_key 		(char *),
@@ -220,6 +222,7 @@ static	char
 	*function_leftpc	(char *),
 	*function_leftw 	(char *),
 	*function_loadinfo	(char *),
+	*function_longtoip	(char *),
 	*function_mask		(char *),
 	*function_maxlen	(char *),
 	*function_midw 		(char *),
@@ -409,6 +412,7 @@ static BuiltInFunctions	built_in_functions[] =
 	{ "INFO",		function_info		},
 	{ "INSERT",		function_insert 	},
 	{ "INSERTW",            function_insertw 	},
+	{ "IPTOLONG",		function_iptolong	},
 	{ "IPTONAME",		function_iptoname 	},
 	{ "IRCLIB",		function_irclib		},
 	{ "ISALPHA",		function_isalpha 	},
@@ -420,6 +424,7 @@ static BuiltInFunctions	built_in_functions[] =
 	{ "ISCURCHAN",		function_iscurchan	},
 	{ "ISDIGIT",		function_isdigit 	},
 	{ "ISDISPLAYING",	function_isdisplaying	},
+	{ "ISENCRYPTED",	function_isencrypted	},
 	{ "ISNUMBER",		function_isnumber	},
 	{ "ITEMTOINDEX",        function_itemtoindex 	},
 	{ "JOT",                function_jot 		},
@@ -433,6 +438,7 @@ static BuiltInFunctions	built_in_functions[] =
 	{ "LISTARRAY",		function_listarray	},
 	{ "LISTEN",		function_listen 	},
 	{ "LOADINFO",		function_loadinfo	},
+	{ "LONGTOIP",		function_longtoip	},
 	{ "MASK",		function_mask		},
 	{ "MATCH",		function_match 		},
 	{ "MATCHITEM",          function_matchitem 	},
@@ -5788,5 +5794,37 @@ BUILT_IN_FUNCTION(function_wincurline, input)
 	if (!(winp = *input ? get_window_by_desc(input) : current_window))
 		RETURN_INT(-1);
 	RETURN_INT(winp->cursor);
+}
+
+/*
+ * These three functions contributed by 
+ * B. Thomas Frazier (tfrazier@mjolnir.gisystems.net)
+ * On December 12, 2000.
+ */
+BUILT_IN_FUNCTION(function_isencrypted, input)
+{
+	/* For now, all connections are not encrypted */
+	RETURN_INT(0);
+}
+
+BUILT_IN_FUNCTION(function_iptolong, word)
+{
+	char *	dotted_quad;
+	struct in_addr	addr;
+
+	GET_STR_ARG(dotted_quad, word);
+	if (inet_aton(dotted_quad, &addr))
+		return m_sprintf("%lu", (unsigned long)ntohl(addr.s_addr));
+	RETURN_EMPTY;
+}
+
+BUILT_IN_FUNCTION(function_longtoip, word)
+{
+	char *	ip32;
+	struct in_addr	addr;
+
+	GET_STR_ARG(ip32, word);
+	addr.s_addr = (unsigned long)ntohl(strtoul(ip32, NULL, 10));
+	RETURN_STR(inet_ntoa(addr));
 }
 
