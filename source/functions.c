@@ -1,4 +1,4 @@
-/* $EPIC: functions.c,v 1.103 2003/02/12 03:44:19 jnelson Exp $ */
+/* $EPIC: functions.c,v 1.104 2003/02/14 05:26:25 jnelson Exp $ */
 /*
  * functions.c -- Built-in functions for ircII
  *
@@ -4100,6 +4100,9 @@ BUILT_IN_FUNCTION(function_winbound, input)
 		win = get_window_by_desc(input);
 	else
 		win = get_window_by_refnum(0);
+
+	if (!win)
+		RETURN_EMPTY;
 
 	retval = get_bound_channel(win);
 	RETURN_STR(retval);
