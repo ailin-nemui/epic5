@@ -46,6 +46,8 @@ struct	ScreenStru *next;		/* Previous screen in list */
 	int	fdin;			/* The input FD (eg, 0) */
 	FILE	*fpout;			/* The output FILE (eg, stdout) */
 	int	fdout;			/* The output FD (eg, 1) */
+	int	control;		/* The control FD (to wserv) */
+	int	wserv_version;		/* The version of wserv talking to */
 
 	/* Input line and prompt stuff */
 	char	input_buffer[INPUT_BUFFER_SIZE+1];

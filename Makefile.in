@@ -7,8 +7,8 @@
 # more difficult than anything else to install.
 #
 # Most useful targets:
-#	make		- Compiles ircII and wserv
-#	make install	- Installs ircII and wserv and the standard script
+#	make		- Compiles ircII and wserv4
+#	make install	- Installs ircII and wserv4 and the standard script
 #			  library to the normal places
 #	make clean	- Remove everything created by compiling
 #	make distclean	- make clean + remove autoconf generated stuff
@@ -73,7 +73,7 @@ mandir	    = @mandir@
 
 epic        = @epic@
 epic_exe    = $(bindir)/$(epic)
-wserv_exe   = $(libexecdir)/wserv
+wserv_exe   = $(libexecdir)/wserv4
 epicdir     = $(sharedir)/$(epic)
 
 ############ You ought not change anything below this line ###################
@@ -98,7 +98,7 @@ MFLAGS ='CC=$(CC)'					\
 	'LIBS=$(LIBS)'					\
 	'RM=$(RM)'
 
-all everything: epic wserv
+all everything: epic wserv4
 install installeverything: all installbin installscript installman
 installbin: installepic installwserv
 
@@ -131,14 +131,14 @@ installepic installirc: epic installdirs test
 #
 # wserv
 #
-wserv: source/wserv.c source/term.c source/Makefile
-	@cd source; $(MAKE2) wserv
+wserv4: source/wserv.c source/Makefile
+	@cd source; $(MAKE2) wserv4
 
 WSERV	 = $(wserv_exe)
-installwserv: wserv installdirs test
+installwserv: wserv4 installdirs test
 	if ./my_test \( \! -f $(IP)$(WSERV) \) -o \
-			source/wserv -nt $(IP)$(WSERV); then	\
-		$(INSTALL_PROGRAM) source/wserv $(IP)$(WSERV);	\
+			source/wserv4 -nt $(IP)$(WSERV); then	\
+		$(INSTALL_PROGRAM) source/wserv4 $(IP)$(WSERV);	\
 	fi
 
 

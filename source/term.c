@@ -1,11 +1,40 @@
+/* $EPIC: term.c,v 1.2 2001/11/13 22:12:26 jnelson Exp $ */
 /*
  * term.c -- termios and (termcap || terminfo) handlers
  *
- * Copyright 1990 Michael Sandrof
- * Copyright 1995 Matthew Green
- * Coypright 1996 EPIC Software Labs
- * Copyright 1998 J. Kean Johnston, used with permission
- * See the COPYRIGHT file, or do a HELP IRCII COPYRIGHT 
+ * Copyright (c) 1990 Michael Sandroff.
+ * Copyright (c) 1991, 1992 Troy Rollo.
+ * Copyright (c) 1992-1996 Matthew Green.
+ * Copyright © 1993, 1997 Jeremy Nelson.
+ * Copyright © 1998 J. Kean Johnston, used with permission.
+ * Copyright © 1999 Ben Winslow and others ("EPIC Software Labs").
+ * Copyright © 1995-2000 Jeremy Nelson and others ("EPIC Software Labs").
+ * All rights reserved.
+ * 
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions
+ * are met:
+ * 1. Redistributions of source code must retain the above copyright
+ *    notice, this list of conditions and the following disclaimer.
+ * 2. Redistributions in binary form must reproduce the above copyright
+ *    notices, the above paragraph (the one permitting redistribution),
+ *    this list of conditions and the following disclaimer in the 
+ *    documentation and/or other materials provided with the distribution.
+ * 3. The names of the author(s) may not be used to endorse or promote 
+ *    products derived from this software without specific prior written
+ *    permission.
+ * 
+ * THIS SOFTWARE IS PROVIDED BY THE AUTHORS ``AS IS'' AND ANY EXPRESS OR 
+ * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES 
+ * OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
+ * IN NO EVENT SHALL THE AUTHORS BE LIABLE FOR ANY DIRECT, INDIRECT, 
+ * INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, 
+ * BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
+ * LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED 
+ * AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, 
+ * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY 
+ * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF 
+ * SUCH DAMAGE.
  */
 
 #define __need_putchar_x__
@@ -39,8 +68,6 @@ static	int		tty_des;		/* descriptor for the tty */
 static	struct	termios	oldb, newb;
 	char		my_PC, *BC, *UP;
 	int		BClen, UPlen;
-
-#ifndef WTERM_C
 
 /* Systems cant seem to agree where to put these... */
 #ifdef HAVE_TERMINFO
@@ -669,13 +696,13 @@ void	term_putchar (unsigned char c)
  * term_reset: sets terminal attributed back to what they were before the
  * program started 
  */
-void term_reset (void)
+void	term_reset (void)
 {
 	tcsetattr(tty_des, TCSADRAIN, &oldb);
 
 	if (current_term->TI_csr)
-		tputs_x(tparm(current_term->TI_csr, 0, current_term->TI_lines - 1));
-	term_gotoxy(0, current_term->TI_lines - 1);
+		tputs_x(tparm(current_term->TI_csr, 0, main_screen->li - 1));
+	term_gotoxy(0, main_screen->li - 1);
 #if use_alt_screen
 	if (current_term->TI_rmcup)
 		tputs_x(current_term->TI_rmcup);
@@ -717,7 +744,6 @@ void 	term_pause (char unused, char *not_used)
 	term_reset();
 	kill(getpid(), SIGSTOP);
 }
-#endif /* NOT IN WTERM_C */
 
 
 
@@ -732,7 +758,6 @@ int	termfeatures = 0;
 
 int 	term_init (void)
 {
-#ifndef WTERM_C
 	int	i,
 		desired;
 	char	*term;
@@ -751,7 +776,6 @@ int 	term_init (void)
 		fprintf(stdout, "Using terminal type [%s]\n", term);
 
 #ifdef HAVE_TERMINFO
-	tptr = termcap, tptr = termcap2;	/* Shut up gcc */
 	setupterm(NULL, 1, &i);
 	if (i != 1)
 	{
@@ -824,23 +848,24 @@ int 	term_init (void)
 
 	current_term->TI_normal[0] = 0;
 	if (current_term->TI_sgr0)
-	{
 		strcat(current_term->TI_normal, current_term->TI_sgr0);
-	}
 	if (current_term->TI_rmso)
 	{
-		if (current_term->TI_sgr0 && strcmp(current_term->TI_rmso, current_term->TI_sgr0))
+		if (current_term->TI_sgr0 && 
+		    strcmp(current_term->TI_rmso, current_term->TI_sgr0))
 			strcat(current_term->TI_normal, current_term->TI_rmso);
 	}
 	if (current_term->TI_rmul)
 	{
-		if (current_term->TI_sgr0 && strcmp(current_term->TI_rmul, current_term->TI_sgr0))
+		if (current_term->TI_sgr0 && 
+		    strcmp(current_term->TI_rmul, current_term->TI_sgr0))
 			strcat (current_term->TI_normal, current_term->TI_rmul);
 	}
 
 
 	/*
-	 * Finally set up the current_term->TI_sgrstrs array.  Clean it out first...
+	 * Finally set up the current_term->TI_sgrstrs array.  
+	 * Clean it out first...
 	 */
 	for (i = 0; i < TERM_SGR_MAXVAL; i++)
 		current_term->TI_sgrstrs[i] = "";
@@ -848,7 +873,7 @@ int 	term_init (void)
 	/*
 	 * Default to no colors. (ick)
 	 */
-	for (i = 0; i < 16; i++)
+	for (i = 0; i < 8; i++)
 		current_term->TI_forecolors[i] = current_term->TI_backcolors[i] = "";
 
 	if (current_term->TI_bold)
@@ -969,51 +994,31 @@ int 	term_init (void)
 	 * Set up colors.
 	 * Absolute fallbacks are for ansi-type colors
 	 */
-	for (i = 0; i < 16; i++)
+	for (i = 0; i < 8; i++)
 	{
 		char cbuf[128];
 
-		cbuf[0] = '\0';
-		if (i >= 8)
-			strcpy(cbuf, current_term->TI_sgrstrs[TERM_SGR_BOLD_ON-1]);
-#if 0
-		else
-			strcpy(cbuf, current_term->TI_sgrstrs[TERM_SGR_BOLD_OFF-1]);
-#endif
-
+		*cbuf = 0;
 		if (current_term->TI_setaf) 
-			strcat(cbuf, tparm(current_term->TI_setaf, i & 0x07, 0));
+		    strcat(cbuf, tparm(current_term->TI_setaf, i & 0x07, 0));
 		else if (current_term->TI_setf)
-			strcat(cbuf, tparm(current_term->TI_setf, i & 0x07, 0));
-		else if (i >= 8)
-			sprintf(cbuf, "\033[1;%dm", (i & 0x07) + 30);
+		    strcat(cbuf, tparm(current_term->TI_setf, i & 0x07, 0));
 		else
-			sprintf(cbuf, "\033[%dm", (i & 0x07) + 30);
+		    sprintf(cbuf, "\033[%dm", (i & 0x07) + 30);
 
 		current_term->TI_forecolors[i] = m_strdup(cbuf);
-	}
-            
-	for (i = 0; i < 16; i++)
-	{
-		char cbuf[128];
 
-		cbuf[0] = '\0';
-		if (i >= 8)
-			strcpy(cbuf, current_term->TI_sgrstrs[TERM_SGR_BLINK_ON - 1]);
-
+		*cbuf = 0;
 		if (current_term->TI_setab)
-			strcat (cbuf, tparm(current_term->TI_setab, i & 0x07, 0));
+		    strcat (cbuf, tparm(current_term->TI_setab, i & 0x07, 0));
 		else if (current_term->TI_setb)
-			strcat (cbuf, tparm(current_term->TI_setb, i & 0x07, 0));
-		else if (i >= 8)
-			sprintf(cbuf, "\033[1;%dm", (i & 0x07) + 40);
+		    strcat (cbuf, tparm(current_term->TI_setb, i & 0x07, 0));
 		else
 			sprintf(cbuf, "\033[%dm", (i & 0x07) + 40);
 
 		current_term->TI_backcolors[i] = m_strdup(cbuf);
 	}
-#endif /* NOT IN WTERM_C */
-
+            
 /* Set up the terminal discipline */
 	tty_des = 0;			/* Has to be. */
 	tcgetattr(tty_des, &oldb);
@@ -1039,7 +1044,6 @@ int 	term_init (void)
 		newb.c_cc[VSUSP] = _POSIX_VDISABLE;
 #	endif
 
-#ifndef WTERM_C
 	if (!use_flow_control)
 		newb.c_iflag &= ~IXON;	/* No XON/XOFF */
 
@@ -1052,21 +1056,19 @@ int 	term_init (void)
 	if (current_term->TI_rmam)
 		tputs_x(current_term->TI_rmam);
 #endif
-#endif
 
 	tcsetattr(tty_des, TCSADRAIN, &newb);
 	return 0;
 }
 
 
-#ifndef WTERM_C
 /*
  * term_resize: gets the terminal height and width.  Trys to get the info
  * from the tty driver about size, if it can't... uses the termcap values. If
  * the terminal size has changed since last time term_resize() has been
  * called, 1 is returned.  If it is unchanged, 0 is returned. 
  */
-int term_resize (void)
+int	term_resize (void)
 {
 	static	int	old_li = -1,
 			old_co = -1;
@@ -1097,9 +1099,7 @@ int term_resize (void)
 
 #if use_automargins
 	if (!current_term->TI_am || !current_term->TI_rmam)
-	{
 		current_term->TI_cols--;
-	}
 #else
 	current_term->TI_cols--;
 #endif
@@ -1112,9 +1112,9 @@ int term_resize (void)
 			main_screen->li = current_term->TI_lines;
 		if (main_screen)
 			main_screen->co = current_term->TI_cols;
-		return (1);
+		return 1;
 	}
-	return (0);
+	return 0;
 }
 
 
@@ -1246,7 +1246,9 @@ void	term_clrscr (void)
  */
 void	term_left (int num)
 {
-	if (current_term->TI_cub)
+	if (num == 1 && current_term->TI_cub1)
+		tputs_x(current_term->TI_cub1);
+	else if (current_term->TI_cub)
 		tputs_x (tparm(current_term->TI_cub, num));
 	else if (current_term->TI_mrcup)
 		tputs_x (tparm(current_term->TI_mrcup, -num, 0));
@@ -1263,7 +1265,9 @@ void	term_left (int num)
  */
 void	term_right (int num)
 {
-	if (current_term->TI_cuf)
+	if (num == 1 && current_term->TI_cuf1)
+		tputs_x(current_term->TI_cuf1);
+	else if (current_term->TI_cuf)
 		tputs_x (tparm(current_term->TI_cuf, num));
 	else if (current_term->TI_mrcup)
 		tputs_x (tparm(current_term->TI_mrcup, num, 0));
@@ -1608,12 +1612,12 @@ static	char		retval[128];
 					return NULL;
 				strcpy(retval, ltoa(* (int *)(t->ptr)));
 				return retval;
-		        case CAP_TYPE_STR:
+			case CAP_TYPE_STR:
 				if (!(char **)t->ptr || !*(char **)t->ptr)
 					return NULL;
 				strcpy(retval, mangle ? 
 					control_mangle(*(char **)t->ptr) :
-					(*(char **)t->ptr));
+						      (*(char **)t->ptr));
 				return retval;
 		    }
 		}
@@ -1621,4 +1625,3 @@ static	char		retval[128];
 	return NULL;	
 }
 
-#endif /* NOT IN WTERM_C */

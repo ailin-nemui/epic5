@@ -48,7 +48,7 @@ SIGNAL_HANDLER(sig_refresh_screen)
 {
 	need_redraw = 1;
 #if 0
-	refresh_screen(0, NULL);
+	refresh_a_screen(main_screen);
 #endif
 }
 
@@ -58,10 +58,15 @@ SIGNAL_HANDLER(sig_refresh_screen)
  */
 void refresh_screen (char dumb, char *dumber)
 {
+	refresh_a_screen(current_window->screen);
+}
+
+void	refresh_a_screen (Screen *screen)
+{
 	unflash();
 	term_clear_screen();
 
-	if (term_resize())
+	if (screen != main_screen || term_resize())
 		recalculate_windows(current_window->screen);
 	else
 		redraw_all_windows();

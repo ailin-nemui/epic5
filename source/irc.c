@@ -25,7 +25,7 @@ const char internal_version[] = "20011112";
 /*
  * In theory, this number is incremented for every commit.
  */
-const unsigned long	commit_id = 131;
+const unsigned long	commit_id = 132;
 
 /*
  * As a way to poke fun at the current rage of naming releases after
@@ -916,7 +916,7 @@ static	struct	timeval	clock_timeout,
 
 	/* (set in term.c) -- we need to redraw the screen */
 	if (need_redraw)
-		refresh_screen('\0', NULL);
+		refresh_a_screen(main_screen);
 
 	window_check_channels();
 	alloca(0);

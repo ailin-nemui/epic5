@@ -9,7 +9,7 @@
  */
 
 #if 0
-static	char	rcsid[] = "$Id: vars.c,v 1.6 2001/10/24 16:18:13 jnelson Exp $";
+static	char	rcsid[] = "$Id: vars.c,v 1.7 2001/11/13 22:12:26 jnelson Exp $";
 #endif
 
 #include "irc.h"
@@ -274,6 +274,7 @@ static	IrcVariable irc_variable[] =
 	{ "USER_INFORMATION", 		STR_TYPE_VAR,	0, NULL, NULL, 0, 0 },
 	{ "VERBOSE_CTCP",		BOOL_TYPE_VAR,	DEFAULT_VERBOSE_CTCP, NULL, NULL, 0, 0 },
 	{ "WORD_BREAK",			STR_TYPE_VAR,	0, NULL, NULL, 0, 0 },
+	{ "WSERV_PATH",			STR_TYPE_VAR,	0, NULL, NULL, 0, 0 },
 	{ "XTERM",			STR_TYPE_VAR,	0, NULL, NULL, 0, 0 },
 	{ "XTERM_OPTIONS", 		STR_TYPE_VAR,	0, NULL, NULL, 0, 0 },
 	{ (char *) 0, 0, 0, 0, 0, 0, 0 }
@@ -382,6 +383,7 @@ void 	init_variables (void)
 	set_string_var(STATUS_NOTIFY_VAR, DEFAULT_STATUS_NOTIFY);
 	set_string_var(CLIENTINFO_VAR, IRCII_COMMENT);
 	set_string_var(WORD_BREAK_VAR, DEFAULT_WORD_BREAK);
+	set_string_var(WSERV_PATH_VAR, WSERV_PATH);
 
 	/*
 	 * Construct the default help path

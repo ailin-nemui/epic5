@@ -1271,9 +1271,9 @@ void 	recalculate_windows (Screen *screen)
 	if (!screen->current_window)
 	{
 		screen->window_list->top = 0;
-		screen->window_list->display_size = current_term->TI_lines - 2;
-		screen->window_list->bottom = current_term->TI_lines - 2;
-		old_li = current_term->TI_lines;
+		screen->window_list->display_size = screen->li - 2;
+		screen->window_list->bottom = screen->li - 2;
+		old_li = screen->li;
 		return;
 	}
 
@@ -1291,7 +1291,7 @@ void 	recalculate_windows (Screen *screen)
 		window_count++;
 	}
 
-	excess_li = current_term->TI_lines - old_li;
+	excess_li = screen->li - old_li;
 
 	for (tmp = screen->window_list; tmp; tmp = tmp->next)
 	{

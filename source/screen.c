@@ -34,6 +34,8 @@
 #include "parse.h"
 #include "newio.h"
 
+#define CURRENT_WSERV_VERSION	4
+
 /*
  * When some code wants to override the default lastlog level, and needs
  * to have some output go into some explicit window (such as for /xecho -w),
@@ -1802,6 +1804,8 @@ Screen *create_new_screen (void)
 	if (use_input)
 		new_open(0);
 	new_s->fpin = stdin;
+	new_s->control = -1;
+	new_s->wserv_version = 0;
 	new_s->alive = 1;
 	new_s->promptlist = NULL;
 	new_s->redirect_name = NULL;
@@ -1842,19 +1846,23 @@ Window	*create_additional_screen (void)
         char    	*displayvar,
                 	*termvar;
         int     	screen_type = ST_NOTHING;
-        struct  sockaddr_in NewSock;
-        int     	NsZ;
-        int     	s;
+        struct  sockaddr_in new_socket;
+	int		new_cmd;
 	fd_set		fd_read;
 	struct	timeval	timeout;
 	pid_t		child;
 	unsigned short 	port;
-	char		buffer[IO_BUFFER_SIZE + 1];
-
+	int		new_sock_size;
+	char *		wserv_path;
 
 	if (!use_input)
 		return NULL;
 
+	if (!(wserv_path = get_string_var(WSERV_PATH_VAR)))
+	{
+		say("You need to /SET WSERV_PATH before using /WINDOW CREATE");
+		return NULL;
+	}
 
 	/* Check for X first. */
 	if ((displayvar = getenv("DISPLAY")))
@@ -1888,16 +1896,17 @@ Window	*create_additional_screen (void)
                                            "wound" );
 
 	port = 0;
-	s = connect_by_number(NULL, &port, SERVICE_SERVER, PROTOCOL_TCP);
-	if (s < 0)
+	new_cmd = connect_by_number(NULL, &port, SERVICE_SERVER, PROTOCOL_TCP);
+	if (new_cmd < 0)
 	{
 		yell("Couldnt establish server side -- error [%d] [%s]", 
-				s, my_strerror(errno));
+				new_cmd, my_strerror(errno));
 		return NULL;
 	}
 
 	oldscreen = current_window->screen;
 	new_s = create_new_screen();
+
 	/*
 	 * At this point, doing a say() or yell() or anything else that would
 	 * output to the screen will cause a refresh of the status bar and
@@ -1957,8 +1966,8 @@ Window	*create_additional_screen (void)
 			else if (screen_type == ST_XTERM)
 			{
 			    snprintf(geom, 31, "%dx%d", 
-				current_term->TI_cols + 1, 
-				current_term->TI_lines);
+				oldscreen->co + 1, 
+				oldscreen->li);
 
 			    opts = m_strdup(get_string_var(XTERM_OPTIONS_VAR));
 			    if (!(xterm = getenv("XTERM")))
@@ -1973,20 +1982,20 @@ Window	*create_additional_screen (void)
 			    *args_ptr++ = "-e";
 			}
 
-			*args_ptr++ = WSERV_PATH;
+			*args_ptr++ = wserv_path;
 			*args_ptr++ = "localhost";
 			*args_ptr++ = m_strdup(ltoa((long)port));
 			*args_ptr++ = NULL;
 
-			s = execvp(args[0], args);
+			execvp(args[0], args);
 			_exit(0);
 		}
 	}
 
 	/* All the rest of this is the parent.... */
-	NsZ = sizeof(NewSock);
+	new_sock_size = sizeof(new_socket);
 	FD_ZERO(&fd_read);
-	FD_SET(s, &fd_read);
+	FD_SET(new_cmd, &fd_read);
 	timeout.tv_sec = (time_t) 10;
 	timeout.tv_usec = 0;
 
@@ -2000,7 +2009,7 @@ Window	*create_additional_screen (void)
 	 * You need to kill_screen(new_s) before you do say() or yell()
 	 * if you know what is good for you...
 	 */
-	switch (select(NFDBITS , &fd_read, NULL, NULL, &timeout))
+	switch (select(new_cmd + 1, &fd_read, NULL, NULL, &timeout))
 	{
 	    case -1:
 	    {
@@ -2013,9 +2022,15 @@ Window	*create_additional_screen (void)
 		int 	old_errno = errno;
 		int 	errnod = get_child_exit(child);
 
-		close(s);
+		close(new_cmd);
 		kill_screen(new_s);
 		kill(child, SIGKILL);
+		if (new_s->fdin != 0)
+		{
+			say("The wserv only connected once -- it's probably "
+			    "an old, incompatable version.");
+		}
+
                 yell("child %s with %d", (errnod < 1) ? "signaled" : "exited",
                                          (errnod < 1) ? -errnod : errnod);
 		yell("Errno is %d", old_errno);
@@ -2023,42 +2038,43 @@ Window	*create_additional_screen (void)
 	    }
 	    default:
 	    {
-		new_s->fdin = new_s->fdout = 
-				accept(s, (struct sockaddr *) &NewSock, &NsZ);
-		if (new_s->fdin < 0)
+		if (new_s->fdin == 0) 
 		{
-			kill_screen(new_s);
-			yell("Couldn't accept the new connection!");
-			return (Window *) 0;
-		}
-		new_open(new_s->fdin);
-		new_s->fpin = new_s->fpout = fdopen(new_s->fdin, "r+");
-		close(s);
-
-		/*
-		 * Wait for the client to send us the data....
-		 */
-		FD_ZERO(&fd_read);
-		FD_SET(new_s->fdin, &fd_read);
-		select(NFDBITS, &fd_read, NULL, NULL, &timeout);
-
-		if ((s = dgets(buffer, new_s->fdin, 0)) < 1)
-		{
-			kill_screen(new_s);
-			yell("Read [%s] from wserv, but dgets() returned [%d]",
-				buffer, s);
-			new_s->fdin = new_close(new_s->fdin);
-			kill(child, SIGKILL);
-			return NULL;
+			new_s->fdin = accept(new_cmd, 
+					(struct sockaddr *)&new_socket,
+					&new_sock_size);
+			if ((new_s->fdout = new_s->fdin) < 0)
+			{
+				close(new_cmd);
+				kill_screen(new_s);
+				yell("Couldn't establish data connection "
+					"to new screen");
+				return NULL;
+			}
+			new_open(new_s->fdin);
+			new_s->fpin = new_s->fpout = fdopen(new_s->fdin, "r+");
+			continue;
 		}
 		else
-			malloc_strcpy(&new_s->tty_name, buffer);
+		{
+			new_s->control = accept(new_cmd,
+					(struct sockaddr *)&new_socket,
+					&new_sock_size);
+			close(new_cmd);
+			if (new_s->control < 0)
+			{
+                                kill_screen(new_s);
+                                yell("Couldn't establish control connection "
+                                        "to new screen");
+                                return NULL;
+                        }
 
-		if (!(win = new_window(new_s)))
-			panic("WINDOW is NULL and it shouldnt be!");
+			new_open(new_s->control);
 
-		refresh_screen(0, NULL);
-		return win;
+                        if (!(win = new_window(new_s)))
+                                panic("WINDOW is NULL and it shouldnt be!");
+                        return win;
+		}
 	    }
 	}
 	return NULL;
@@ -2129,9 +2145,55 @@ void 	do_screens (fd_set *rd)
 		if (!screen->alive)
 			continue;
 
+		if (screen->control != -1 && 
+		    FD_ISSET(screen->control, rd))	/* Wserv control */
+		{
+			FD_CLR(screen->control, rd);
+
+			if (dgets(buffer, screen->control, 1) < 0)
+			{
+				kill_screen(screen);
+				yell("Error from remote screen [%d].", dgets_errno);
+				continue;
+			}
+
+			if (!strncmp(buffer, "tty=", 4))
+				malloc_strcpy(&screen->tty_name, buffer + 4);
+			else if (!strncmp(buffer, "geom=", 5))
+			{
+				char *ptr;
+				if ((ptr = strchr(buffer, ' ')))
+					*ptr++ = 0;
+				screen->li = atoi(buffer + 5);
+				screen->co = atoi(ptr);
+				refresh_a_screen(screen);
+			}
+			else if (!strncmp(buffer, "version=", 8))
+			{
+				int     version;
+				version = atoi(buffer + 8);
+				if (version != CURRENT_WSERV_VERSION)
+				{   
+				    yell("WSERV version %d is incompatable with this binary",
+						version);
+				    kill_screen(screen);
+				}
+				screen->wserv_version = version;
+			}
+		}
+
 		if (FD_ISSET(screen->fdin, rd))
 		{
+			int	server;
+
 			FD_CLR(screen->fdin, rd);	/* No more! */
+
+			if (screen != main_screen && screen->wserv_version == 0)
+			{
+				kill_screen(screen);
+				yell("The WSERV used to create this new screen is too old.");
+				return;
+			}
 
 			/*
 			 * This section of code handles all in put from 
@@ -2145,6 +2207,12 @@ void 	do_screens (fd_set *rd)
 				cpu_saver = 0;
 				update_all_status();
 			}
+
+			server = from_server;
+			last_input_screen = screen;
+			output_screen = screen;
+			make_window_current(screen->current_window);
+			from_server = current_window->server;
 
 			if (dumb_mode)
 			{
@@ -2163,16 +2231,8 @@ void 	do_screens (fd_set *rd)
 			}
 			else
 			{
-				int 	server;
 				char	loc_buffer[BIG_BUFFER_SIZE + 1];
 				int	n, i;
-
-				server = from_server;
-
-				last_input_screen = screen;
-				output_screen = screen;
-				make_window_current(screen->current_window);
-				from_server = current_window->server;
 
 				/*
 				 * Read in from stdin.
@@ -2184,32 +2244,32 @@ void 	do_screens (fd_set *rd)
 				}
 
 #ifdef WINDOW_CREATE
-		/*
-		 * if the current screen isn't the main screen,
-		 * then the socket to the current screen must have
-		 * closed, so we call kill_screen() to handle 
-		 * this - phone, jan 1993.
-	 	 * but not when we arent running windows - Fizzy, may 1993
-		 * if it is the main screen we got an EOF on, we exit..
-		 * closed tty -> chew cpu -> bad .. -phone, july 1993.
-		 */
+				/*
+				 * if the current screen isn't the main screen,
+				 * then the socket to the current screen must have
+				 * closed, so we call kill_screen() to handle 
+				 * this - phone, jan 1993.
+				 * but not when we arent running windows - Fizzy, may 1993
+				 * if it is the main screen we got an EOF on, we exit..
+				 * closed tty -> chew cpu -> bad .. -phone, july 1993.
+				 */
 				else if (screen != main_screen)
 					kill_screen(screen);
 #endif
 
-		/*
-		 * If n == 0 or n == -1 at this point, then the read totally
-		 * died on us.  This is almost without exception caused by
-		 * the ctty being revoke(2)d on us.  4.4BSD guarantees that a
-		 * revoke()d ctty will read an EOF, while i believe linux 
-		 * fails with EBADF.  In either case, a read failure on the
-		 * main screen is totaly fatal.
-		 */
+				/*
+				 * If n == 0 or n == -1 at this point, then the read totally
+				 * died on us.  This is almost without exception caused by
+				 * the ctty being revoke(2)d on us.  4.4BSD guarantees that a
+				 * revoke()d ctty will read an EOF, while i believe linux 
+				 * fails with EBADF.  In either case, a read failure on the
+				 * main screen is totaly fatal.
+				 */
 				else
 					irc_exit(1, "Hey!  Where'd my controlling terminal go?");
 
-				from_server = server;
 			} 
+			from_server = server;
 		}
 	} 
 } 

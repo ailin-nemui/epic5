@@ -44,14 +44,10 @@ clean::
 	$(RM) epic $(OBJECTS)
 
 # wserv
-wterm.c: @srcdir@/term.c
-	cp @srcdir@/term.c wterm.c
-wterm.o: wterm.c
-	$(CC) $(CFLAGS) $(ANSIFLAGS) $(INCLUDES) -DWTERM_C -c wterm.c
-wserv: wserv.o wterm.o ircsig.o network.o compat.o
-	$(CC) $(CFLAGS) $(LDFLAGS) -o wserv wserv.o wterm.o ircsig.o network.o $(LIBS)
+wserv4: wserv.o ircsig.o network.o
+	$(CC) $(CFLAGS) $(LDFLAGS) -o wserv4 wserv.o ircsig.o network.o $(LIBS)
 clean::
-	$(RM) wserv wserv.o wterm.o wterm.c
+	$(RM) wserv wserv.o wterm.c
 
 
 
@@ -70,8 +66,8 @@ irc.o: Makefile ../Makefile
 	$(CC) $(CFLAGS) $(ANSIFLAGS) $(INCLUDES) -c @srcdir@/irc.c      \
 	-DIRCLIB=\"$(IRCLIB)/\"
 
-screen.o: Makefile ../Makefile
-	$(CC) $(CFLAGS) $(ANSIFLAGS) $(INCLUDES) -c @srcdir@/screen.c   \
+vars.o: Makefile ../Makefile
+	$(CC) $(CFLAGS) $(ANSIFLAGS) $(INCLUDES) -c @srcdir@/vars.c   \
 	-DWSERV_PATH=\"$(INSTALL_WSERV)\"
 
 perl.o: perl.c Makefile ../Makefile
