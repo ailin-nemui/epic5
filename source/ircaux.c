@@ -8,7 +8,7 @@
  */
 
 #if 0
-static	char	rcsid[] = "@(#)$Id: ircaux.c,v 1.30 2002/01/31 23:38:40 crazyed Exp $";
+static	char	rcsid[] = "@(#)$Id: ircaux.c,v 1.31 2002/02/13 23:02:49 jnelson Exp $";
 #endif
 
 #include "irc.h"
@@ -1124,28 +1124,6 @@ char *	m_strcat_ues (char **dest, char *src, int unescape)
 			break;
 	}
 	return *dest;
-}
-
-
-/*
- * scanstr: looks for an occurrence of str in source.  If not found, returns
- * 0.  If it is found, returns the position in source (1 being the first
- * position).  Not the best way to handle this, but what the hell 
- */
-int	scanstr (char *str, char *source)
-{
-	int	i,
-		max,
-		len;
-
-	len = strlen(str);
-	max = strlen(source) - len;
-	for (i = 0; i <= max; i++, source++)
-	{
-		if (!my_strnicmp(source, str, len))
-			return (i + 1);
-	}
-	return (0);
 }
 
 /* expand_twiddle: expands ~ in pathnames. */

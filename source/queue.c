@@ -3,7 +3,9 @@
  *
  *  Queues allow for future batch processing
  *
- *  Syntax:  /QUEUE -DO -SHOW -LIST -NO_FLUSH -DELETE -FLUSH <name> {commands}
+ *  Syntax:  /QUEUE -SHOW
+ *  Syntax:  /QUEUE -DO -LIST -NO_FLUSH -DELETE -FLUSH <name>
+ *  Syntax:  /QUEUE <name> <commands>
  *
  *  Written by Jeremy Nelson
  *  Copyright 1993 Jeremy Nelson
@@ -18,336 +20,356 @@
 #include "queue.h"
 #include "output.h"
 
-struct CmdListT;
+typedef struct  CmdListT {
+        struct CmdListT *next;
+        char     *what;
+	char	 *subargs;
+} CmdList;
+
 typedef struct  QueueT {
         struct QueueT   *next;
         struct CmdListT *first;
         char     *name;
 } Queue;
 
-typedef struct  CmdListT {
-        struct CmdListT *next;
-        char     *what;
-} CmdList;
+static  Queue   *queue_list = NULL;
 
-static	Queue   *lookup_queue 			(Queue *, const char *);
-static	int     add_commands_to_queue 		(Queue *, const char *, const char *);
-static	void    display_all_queues 		(Queue *);
-static	CmdList *walk_commands			(Queue *);
-static	Queue   *make_new_queue 		(Queue *, const char *);
-static	int     delete_commands_from_queue 	(Queue *, int);
-static	void    flush_queue 			(Queue *);
-static	void    print_queue 			(Queue *);
-static	int     num_entries 			(Queue *);
-static	Queue   *remove_a_queue 		(Queue *);
-static	Queue   *do_queue 			(Queue *, int);
+
+static void 	display_all_queues (Queue **);
+static int	queue_exists (Queue **, const char *);
+static void	add_queue (Queue **, const char *);
+static void	delete_queue (Queue **, const char *);
+static void	list_queue (Queue **, const char *);
+static void	list_all_queues (Queue **);
+static void	run_queue (Queue **, const char *);
+static int	add_to_queue (Queue **, const char *, const char *, const char *);
+static void	delete_from_queue (Queue **, const char *, int);
 
 BUILT_IN_COMMAND(queuecmd)
 {
-        Queue   *tmp;
-	char	*arg 		= (char *) 0,
-		*name 		= (char *) 0,
-        	*startcmds 	= (char *) 0,
-                *cmds           = (char *) 0;
-	int	noflush 	= 0, 		runit 			= 0, 
+	char	*arg 		= NULL,
+		*name 		= NULL,
+                *body           = NULL,
+		*orig;
+	int	no_flush 	= 0,
+		run 		= 0,
 		list 		= 0,
-		flush 		= 0, 		remove_by_number 	= 0,
-		commands 	= 1,            number                  = 0;
-        static  Queue   *Queuelist;
-	
-	/* 
-	 * If the queue list is empty, make an entry
-	 */
-	if (!Queuelist)
-		Queuelist = make_new_queue(NULL, "Top");
+		flush 		= 0,
+		delete		= 0,
+		number          = -1;
 
-        if (!(startcmds = strchr(args, '{')))
-                commands = 0;
-        else
-                startcmds[-1] = 0;
-
-	while ((arg = upper(next_arg(args, &args))))
-        {
-		if (*arg == '-' || *arg == '/')
-		{
-			*arg++ = '\0';
-			if (!strcmp(arg, "NO_FLUSH"))
-				noflush = 1;
-			else if (!strcmp(arg, "SHOW")) 
-                        {
-				display_all_queues(Queuelist);
-                                return;
-                        }
-			else if (!strcmp(arg, "LIST"))
-				list = 1;
-			else if (!strcmp(arg, "DO"))
-				runit = 1;
-			else if (!strcmp(arg, "DELETE"))
-				remove_by_number = 1;
-			else if (!strcmp(arg, "FLUSH"))
-				flush = 1;
-		}
-		else
-		{
-			if (name)
-				number = atoi(arg);
-			else
-				name = arg;
-		}
+	if (!*args) {
+		list_all_queues(&queue_list);
+		return;
 	}
 
-	if (!name)
-                return;
-
-	/* 
-	 * Find the queue based upon the previous queue 
-	 */
-        tmp = lookup_queue(Queuelist, name);
-
-	/* 
-	 * if the next queue is empty, then we need to see if 
-	 * we should make it or output an error 
-	 */
-	if (!tmp->next)
-        {
-                if (commands)
-                	tmp->next = make_new_queue(NULL, name);
-		else 
-                {
-                	say("QUEUE: (%s) no such queue",name);
-                	return;
-		}
-        }
-
-	if (remove_by_number == 1) 
-		if (delete_commands_from_queue(tmp->next,number))
-                        tmp->next = remove_a_queue(tmp->next);
-
-	if (list == 1) 
-		print_queue(tmp->next);
-	if (runit == 1) 
-		tmp->next = do_queue(tmp->next, noflush);
-	if (flush == 1) 
-		tmp->next = remove_a_queue(tmp->next);
-
-	if (startcmds) 
-        {
-		int booya;
-
-		if (!(cmds = next_expr(&startcmds, '{')))
-                {
-			say("QUEUE: missing closing brace");
+	orig = LOCAL_COPY(args);
+	while (args && *args && *args != '{') 
+	{
+	    arg = next_arg(args, &args);
+	    if (*arg == '-' || *arg == '/')
+	    {
+		if (!my_strnicmp(arg + 1, "NO_FLUSH", 1))
+		    no_flush = 1;
+		else if (!my_strnicmp(arg + 1, "SHOW", 1)) {
+		    display_all_queues(&queue_list);
+		    return;
+		} else if (!my_strnicmp(arg + 1, "LIST", 1))
+		    list = 1;
+		else if (!my_strnicmp(arg + 1, "DO", 2))
+		    run = 1;
+		else if (!my_strnicmp(arg + 1, "DELETE", 2))
+		    delete = 1;
+		else if (!my_strnicmp(arg + 1, "FLUSH", 1))
+		    flush = 1;
+		else if (!my_strnicmp(arg + 1, "HELP", 1)) {
+			say("Usage: /QUEUE -SHOW");
+			say("       /QUEUE -DO [-NO_FLUSH] <name>");
+			say("       /QUEUE [-LIST] <name>");
+			say("       /QUEUE [-FLUSH] <name>");
+			say("       /QUEUE [-DELETE] <name> <number>");
+			say("       /QUEUE <name> { <commands> }");
 			return;
 		}
-		booya = add_commands_to_queue (tmp->next, cmds, subargs);
-		say("QUEUED: %s now has %d entries",name, booya);
+		else {
+		    yell("In '/QUEUE %s', I don't recognize '%s'. Use /QUEUE -HELP for syntax info.", orig, arg);
+		    return;
+		}
+	    }
+	    else if (name == NULL)
+		name = arg;
+	    else if (is_number(arg))
+		number = atoi(arg);
+	    else
+		yell("In /QUEUE %s, I was expecting '%s' to be a number.", orig, arg);
+
+	    if (number != -1)
+		break;		/* Stop right here! */
 	}
-}
 
-/*
- * returns the queue BEFORE the queue we are looking for
- * returns the last queue if no match
- */
-static Queue *	lookup_queue (Queue *queue, const char *what)
-{
-	Queue	*tmp = queue;
+	if (name == NULL) {
+	    yell("In /QUEUE %s, I couldn't find the queue name.", orig);
+	    return;
+	}
 
-	while (tmp->next)
-	{
-		if (!my_stricmp(tmp->next->name, what))
-			return tmp;
+	body = args;
+	if (body && *body)
+        {
+		const char *cmds;
+		int	cnt;
+
+		/*
+		 * Find the queue based upon the previous queue
+		 * Create a new queue if necessary.
+		 */
+		if (!queue_exists(&queue_list, name))
+			add_queue(&queue_list, name);
+
+		if (*body == '{') 
+		{
+			if (!(cmds = next_expr(&body, '{')))
+			{
+				say("QUEUE: I could not find a } to tell me where the commands end.");
+				return;
+			}
+		} 
 		else
-                        if (tmp->next)
-			        tmp = tmp->next;
-                        else
-                                break;
+		{
+			say("QUEUE: The command body needs to be surrounded by curly braces");
+			return;
+		}
+
+		if ((cnt = add_to_queue(&queue_list, name, cmds, subargs)))
+			say("QUEUED: The queue '%s' now has %d entries", name, cnt);
 	}
-        return tmp;
+
+	if (run && no_flush == 0)
+		flush = 1;
+
+	if (run)
+		run_queue(&queue_list, name);
+	if (delete)
+		delete_from_queue(&queue_list, name, number);
+	if (list)
+		list_queue(&queue_list, name);
+	if (flush)
+		delete_queue(&queue_list, name);
 }
 
-/* returns the last CmdList in a queue, useful for appending commands */
-static CmdList *walk_commands (Queue *queue)
+/*****************************************************************************/
+static Queue *	lookup_queue (Queue **list, const char *name)
 {
-	CmdList *ctmp = queue->first;
-	
-        if (ctmp) 
-        {
-	        while (ctmp->next)
-	                ctmp = ctmp->next;
-	        return ctmp;
-        }
-        return (CmdList *) 0;
-}
+	Queue *q;
 
-/*----------------------------------------------------------------*/
-/* Make a new queue, link it in, and return it. */
-static Queue *make_new_queue (Queue *afterqueue, const char *arg_name)
-{
-        Queue *tmp = (Queue *)new_malloc(sizeof(Queue));
-
-        tmp->next = afterqueue;
-        tmp->first = (CmdList *) 0;
-	tmp->name = m_strdup(arg_name);
-        return tmp;
-}
-        
-/* add a command to a queue, at the end of the list */
-/* expands the whole thing once and stores it (not any more!) */
-static int	add_commands_to_queue (Queue *queue, const char *what, const char *subargs)
-{
-	CmdList *	ctmp = walk_commands(queue);
-	char *		list = NULL;
-#if 0
-	const char *	sa;
-	int 		args_flag = 0;
-	
-        sa = subargs ? subargs : " ";
-	list = expand_alias(what, sa, &args_flag, (char **) 0);
-#else
-	list = m_strdup(what);
-#endif
-
-        if (!ctmp) 
-        {
-                queue->first = (CmdList *)new_malloc(sizeof(CmdList));
-		ctmp = queue->first;
-	}
-        else 
-        {
-	        ctmp->next = (CmdList *)new_malloc(sizeof(CmdList));
-		ctmp = ctmp->next;
-	}
-	ctmp->what = list;
-	ctmp->next = (CmdList *) 0;
-	return num_entries(queue);
-}
-
-
-/* remove the Xth command from the queue */
-static int	delete_commands_from_queue (Queue *queue, int which)
-{
-        CmdList *ctmp = queue->first;
-        CmdList *blah;
-        int x;
-
-        if (which == 1)
-                queue->first = ctmp->next;
-        else 
-        {
-                for (x=1;x<which-1;x++) 
-                {
-                        if (ctmp->next) 
-                                ctmp = ctmp->next;
-                        else 
-                                return 0;
-                }
-                blah = ctmp->next;
-                ctmp->next = ctmp->next->next;
-                ctmp = blah;
-        }
-        new_free(&ctmp->what);
-        new_free((char **)&ctmp);
-        if (queue->first == (CmdList *) 0)
-                return 1;
-        else
-                return 0;
-}
-
-/*-------------------------------------------------------------------*/
-/* flush a queue, deallocate the memory, and return the next in line */
-static Queue	*remove_a_queue (Queue *queue)
-{
-	Queue *tmp;
-        tmp = queue->next;
-	flush_queue(queue);
-	new_free((char **)&queue);
-	return tmp;
-}
-
-/* walk through a queue, deallocating the entries */
-static void	flush_queue (Queue *queue)
-{
-	CmdList *tmp, *tmp2;
-	tmp = queue->first;
-
-	while (tmp != (CmdList *) 0)
+	for (q = *list; q; q = q->next)
 	{
-		tmp2 = tmp;
-		tmp = tmp2->next;
-                if (tmp2->what != (char *) 0)
-		        new_free(&tmp2->what);
-                if (tmp2)
-	        	new_free((char **)&tmp2);
+		if (!my_stricmp(q->name, name))
+			return q;
 	}
+        return q;
 }
 
-/*------------------------------------------------------------------------*/
-/* run the queue, and if noflush, then return the queue, else return the
-   next queue */
-static Queue  	*do_queue (Queue *queue, int noflush)
+static int	queue_exists (Queue **list, const char *name)
 {
-	CmdList	*tmp;
-	
-        tmp = queue->first;
-        
-        do
-	{
-		if (tmp->what != (char *) 0)
-			parse_line("QUEUE", tmp->what, empty_string, 0, 0);
-		tmp = tmp->next;
-	}
-        while (tmp != (CmdList *) 0);
-
-	if (!noflush) 
-		return remove_a_queue(queue);
+	if (lookup_queue(list, name))
+		return 1;
 	else
-                return queue;
+		return 0;
 }
 
-/* ---------------------------------------------------------------------- */
-/* output the contents of all the queues to the screen */
-static void    display_all_queues (Queue *queue)
+static int	queue_size (Queue *q)
 {
-        Queue *tmp = queue->next;
-        while (tmp) 
-        {
-                print_queue(tmp);
-                if (tmp->next == (Queue *) 0)
-                        return;
-                else
-                        tmp = tmp->next;
-        }
-        say("QUEUE: No more queues");
-}
+	CmdList *c;
+	int x = 0;
 
-/* output the contents of a queue to the screen */
-static void	print_queue (Queue *queue)
-{
-	CmdList *tmp;
-	int 	x = 0;
-	
-        tmp = queue->first;
-	while (tmp != (CmdList *) 0) 
-        {
-		if (tmp->what)
-			say("<%s:%2d> %s",queue->name,++x,tmp->what);
-		tmp = tmp->next;
-	}
-        say("<%s> End of queue",queue->name);
-}
-
-/* return the number of entries in a queue */
-static int	num_entries (Queue *queue)
-{
-	int x = 1;
-	CmdList *tmp;
-
-        if ((tmp = queue->first) == (CmdList *) 0) 
-                return 0;
-	while (tmp->next) 
-        {
-                x++;
-		tmp = tmp->next;
-	}
+	for (c = q->first; c; c = c->next)
+		x++;
 	return x;
 }
+
+static void	list_one_queue (Queue *q)
+{
+	CmdList *c;
+	int 	x = 0;
+	
+	for (c = q->first; c; c = c->next)
+	{
+	    if (c->what)
+		say("<%s:%2d> %s", q->name, ++x, c->what);
+	}
+
+	say("<%s> End of queue", q->name);
+}
+
+static void    display_all_queues (Queue **list)
+{
+	Queue *	q;
+
+	if (!*list) 
+	{
+		say("QUEUE: The are no queues pending.");
+		return;
+	}
+
+	for (q = *list; q; q = q->next)
+		list_one_queue(q);
+}
+
+static void	list_queue (Queue **list, const char *name)
+{
+	Queue *q;
+
+	if (!(q = lookup_queue(list, name)))
+	{
+		say("QUEUE: The queue '%s' is not in use.", name);
+		return;
+	}
+
+	list_one_queue(q);
+}
+
+static void	list_all_queues (Queue **list)
+{
+	Queue *q;
+	int	size;
+
+	if (!*list) 
+	{
+		say("QUEUE: There are no queues pending.");
+		return;
+	}
+
+	for (q = *list; q; q = q->next)
+	{
+	    if ((size = queue_size(q)) == 1)
+		say("Queue '%s' has '%d' entry", q->name, size);
+	    else
+		say("Queue '%s' has '%d' entries", q->name, size);
+	}
+}
+
+static void	add_queue (Queue **list, const char *name)
+{
+	Queue *q, *newq;
+
+	newq = (Queue *)new_malloc(sizeof(Queue));
+	newq->next = NULL;
+	newq->first = NULL;
+	newq->name = m_strdup(name);
+
+	for (q = *list; q && q->next; q = q->next)
+		;
+
+	if (q)
+		q->next = newq;
+	else
+		*list = newq;
+}
+
+static void	delete_queue (Queue **list, const char *name)
+{
+	Queue *q, *p;
+	CmdList *c, *n;
+
+	/* Don't complain if it doesn't exist.  Why bother the user? */
+	if (!(q = lookup_queue(list, name)))
+		return;
+
+	for (c = q->first; c; c = n)
+	{
+		n = c->next;
+		new_free(&c->subargs);
+		new_free(&c->what);
+		new_free((char **)&c);
+	}
+
+	if (*list == q)
+		*list = (*list)->next;
+	else
+	{
+		for (p = *list; p->next != q; p = p->next)
+			p->next = q->next;
+	}
+
+	new_free((char **)&q);
+	return;
+}
+
+static void	run_queue (Queue **list, const char *name)
+{
+	Queue *q;
+	CmdList	*c;
+
+	if (!(q = lookup_queue(list, name)))
+	{
+		say("QUEUE: The queue '%s' is not in use.", name);
+		return;
+	}
+
+	for (c = q->first; c; c = c->next)
+	{
+	    if (c->what)
+		parse_line("QUEUE", c->what, c->subargs, 0, 0);
+	}
+}
+
+static int	add_to_queue (Queue **list, const char *name, const char *what, const char *subargs)
+{
+	Queue *q;
+	CmdList *c, *p;
+
+	if (!(q = lookup_queue(list, name))) 
+	{
+		say("QUEUE: The queue '%s' is not in use.", name);
+		return 0;
+	}
+
+	c = (CmdList *)new_malloc(sizeof(CmdList));
+	c->what = m_strdup(what);
+	c->subargs = m_strdup(subargs);
+	c->next = NULL;
+
+	if (!q->first)
+		q->first = c;
+	else
+	{
+		for (p = q->first; p->next;)
+			p = p->next;
+		p->next = c;
+	}
+
+	return queue_size(q);
+}
+
+static void	delete_from_queue (Queue **list, const char *name, int which)
+{
+	Queue *q;
+	CmdList *c, *p;
+	int	x;
+
+	if (!(q = lookup_queue(list, name))) 
+	{
+		say("QUEUE: The queue '%s' is not in use.", name);
+		return;
+	}
+
+	if (which == 0 || !q->first) {
+		return;
+	} else if (which == 1) {
+		c = q->first;
+		q->first = c->next;
+	} else {
+		p = q->first;
+		for (x = 2; p && x < which; x++)
+			p = p->next;
+		if (!p)
+			return;
+		c = p->next;
+		p->next = c->next;
+        }
+
+	new_free(&c->subargs);
+	new_free(&c->what);
+	new_free((char **)&c);
+}
+
