@@ -39,5 +39,6 @@ extern	char *	function_xdebug (char *);
 #define DEBUG_SSL		1 << 24
 #define DEBUG_LASTLOG		1 << 25
 #define DEBUG_EXTRACTW_DEBUG	1 << 26
+#define DEBUG_MESSAGE_FROM	1 << 27
 
 #endif

@@ -1,4 +1,4 @@
-/* $EPIC: window.c,v 1.92 2003/12/13 17:25:58 jnelson Exp $ */
+/* $EPIC: window.c,v 1.93 2003/12/15 05:41:02 jnelson Exp $ */
 /*
  * window.c: Handles the organzation of the logical viewports (``windows'')
  * for irc.  This includes keeping track of what windows are open, where they
@@ -1554,7 +1554,6 @@ void 	swap_last_window (char dumb, char *dumber)
 		return;
 
 	swap_window(current_window, invisible_list);
-	message_from((char *) 0, LOG_CRAP);
 	update_all_windows();
 }
 
@@ -2255,55 +2254,72 @@ void 	message_to (int refnum)
 	to_window = (refnum != -1) ? get_window_by_refnum((unsigned)refnum) : NULL;
 }
 
-/*
- * save_message_from: this is used to save (for later restoration) the
- * who_from variable.  This is needed when a function (do_hook) is about 
- * to call another function (parse_line) it knows will change who_from.
- * The values are saved on the stack so it will be recursive-safe.
- *
- * NO CHEATING when you call this function to get the value of who_from! ;-)
- */
-void 	save_message_from (const char **saved_who_from, int *saved_who_level)
-{
-	*saved_who_from = who_from;
-	*saved_who_level = who_level;
-}
-
-/* restore_message_from: restores a previously saved who_from variable */
-void 	restore_message_from (const char *saved_who_from, int saved_who_level)
-{
-	who_from = saved_who_from;
-	who_level = saved_who_level;
-}
+struct output_context {
+	const char *	who_from;
+	int	who_level;
+	const char *	who_file;
+	int	who_line;
+};
+struct output_context *	contexts = NULL;
+int			context_max = -1;
+int 			context_counter = -1;
 
 /*
  * message_from: With this you can set the who_from variable and the 
  * who_level variable, used by the display routines to decide which 
  * window messages should go to.
  */
-void 	message_from (const char *who, int level)
+int	real_message_from (const char *who, int level, const char *file, int line)
 {
+	if (context_max < 0)
+	{
+		context_max = 32;
+		context_counter = 0;
+		RESIZE(contexts, struct output_context, context_max);
+	}
+	else if (context_counter >= context_max - 20)
+	{
+		context_max *= 2;
+		RESIZE(contexts, struct output_context, context_max);
+	}
+
+	if (x_debug & DEBUG_MESSAGE_FROM)
+		yell("Setting context %d [%s:%d] {%s:%d}", context_counter, who?who:"NULL", level, file, line);
+
 #ifdef NO_CHEATING
-	malloc_strcpy(&who_from, who);
+	malloc_strcpy(&contexts[context_counter].who_from, who);
 #else
-	who_from = who;
+	contexts[context_counter].who_from = who;
 #endif
-	set_lastlog_msg_level(level);
+	contexts[context_counter].who_level = level;
+	contexts[context_counter].who_file = file;
+	contexts[context_counter].who_line = line;
+
+	who_from = who;
 	who_level = level;
+	set_lastlog_msg_level(level);
+	return context_counter++;
 }
 
-/*
- * message_from_level: Like set_lastlog_msg_level, except for message_from.
- * this is needed by XECHO, because we could want to output things in more
- * than one level.
- */
-int 	message_from_level (int level)
+void	pop_message_from (int context)
 {
-	int	temp;
+	if (x_debug & DEBUG_MESSAGE_FROM)
+		yell("popping message context %d", context);
 
-	temp = who_level;
-	who_level = level;
-	return temp;
+	if (context != context_counter - 1)
+		panic("Output context from %s:%d was not released", 
+			contexts[context_counter-1].who_file,
+			contexts[context_counter-1].who_line);
+
+	context_counter--;
+#ifdef NO_CHEATING
+	new_free(&contexts[context_counter].who_from);
+#endif
+	contexts[context_counter].who_level = -1;
+	contexts[context_counter].who_file = NULL;
+	contexts[context_counter].who_line = -1;
+	who_from = contexts[context_counter - 1].who_from;
+	who_level = contexts[context_counter - 1].who_level;
 }
 
 /* * * * * * * * * * * CLEARING WINDOWS * * * * * * * * * * */
@@ -2734,10 +2750,7 @@ static Window *window_back (Window *window, char **args)
 	if (tmp->screen)
 		set_screens_current_window(tmp->screen, tmp);
 	else
-	{
 		swap_window(window, tmp);
-		message_from((char *) 0, LOG_CRAP);
-	}
 
 	return window;
 }
@@ -2901,6 +2914,7 @@ static Window *window_channel (Window *window, char **args)
 	Window 	*w = NULL;
 	const char *carg;
 	const char *chan;
+	int	l;
 
 	/* Fix by Jason Brand, Nov 6, 2000 */
 	if (window->server == NOSERV)
@@ -2964,7 +2978,7 @@ static Window *window_channel (Window *window, char **args)
 						w->refnum, window->refnum);
 		}
 
-		message_from(arg, LOG_CRAP);
+		l = message_from(arg, LOG_CRAP);
 		if (im_on_channel(arg, window->server))
 		{
 			move_channel_to_window(arg, window->server, 
@@ -2991,9 +3005,9 @@ static Window *window_channel (Window *window, char **args)
 
 		new_free(&arg2);
 		new_free(&arg3);
+		pop_message_from(l);
 	}
 
-	message_from(NULL, LOG_CRAP);
 	return window;
 }
 
@@ -3720,7 +3734,6 @@ static Window *window_next (Window *window, char **args)
 	}
 
 	swap_window(window, next);
-	message_from((char *) 0, LOG_CRAP);
 	return current_window;
 }
 
@@ -3854,7 +3867,6 @@ static Window *window_previous (Window *window, char **args)
 	}
 
 	swap_window(window, previous);
-	message_from((char *) 0, LOG_CRAP);
 	return current_window;
 }
 
@@ -4203,7 +4215,6 @@ Window *window_rejoin (Window *window, char **args)
 		new_free(&newchan);
 	}
 
-	message_from(NULL, LOG_CRAP);
 	return window;
 }
 
@@ -4793,9 +4804,10 @@ BUILT_IN_COMMAND(windowcmd)
 	Window 	*window;
 	int	old_status_update;
 	int	winref;
+	int	l;
 
 	old_status_update = permit_status_update(0);
-	message_from(NULL, LOG_CURRENT);
+	l = message_from(NULL, LOG_CURRENT);
 	window = current_window;
 
 	while ((arg = next_arg(args, &args)))
@@ -4836,7 +4848,7 @@ BUILT_IN_COMMAND(windowcmd)
 		window_describe(current_window, NULL);
 
 	permit_status_update(old_status_update);
-	message_from(NULL, LOG_CRAP);
+	pop_message_from(l);
 	window_check_channels();
 	update_all_windows();
 }

@@ -1,4 +1,4 @@
-/* $EPIC: screen.c,v 1.66 2003/12/14 20:04:10 jnelson Exp $ */
+/* $EPIC: screen.c,v 1.67 2003/12/15 05:41:02 jnelson Exp $ */
 /*
  * screen.c
  *
@@ -2368,15 +2368,12 @@ static void 	add_to_window (Window *window, const unsigned char *str)
 			if (window->miscflags & WINDOW_NOTIFY)
 			{
 				Window	*old_to_window;
-				int	lastlog_level;
 
-				lastlog_level = set_lastlog_msg_level(LOG_CRAP);
+				/* XXX - Should i set who_from here? */
 				old_to_window = to_window;
 				to_window = current_window;
-				say("Activity in window %d", 
-					window->refnum);
+				say("Activity in window %d", window->refnum);
 				to_window = old_to_window;
-				set_lastlog_msg_level(lastlog_level);
 			}
 			update_all_status();
 		}

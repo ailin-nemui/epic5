@@ -1,4 +1,4 @@
-/* $EPIC: hook.c,v 1.26 2003/12/14 20:04:09 jnelson Exp $ */
+/* $EPIC: hook.c,v 1.27 2003/12/15 05:41:02 jnelson Exp $ */
 /*
  * hook.c: Does those naughty hook functions. 
  *
@@ -765,7 +765,6 @@ int 	do_hook (int which, const char *format, ...)
 		for (tmp = *list; tmp; tmp = tmp->next)
 		{
 			char *	tmpnick = (char *) 0;
-			int 	sa;
 
 			/*
 			 * save the current serial number
@@ -895,7 +894,6 @@ int 	do_hook (int which, const char *format, ...)
 		 * Save some information that may be reset in the 
 		 * execution, turn off the display if the user specified.
 		 */
-		save_message_from(&saved_who_from, &saved_who_level);
 		if (noise < NOISY)
 			window_display = 0;
 		old = system_exception;
@@ -932,7 +930,6 @@ int 	do_hook (int which, const char *format, ...)
 		 */
 		system_exception = old;
 		window_display = display;
-		restore_message_from(saved_who_from, saved_who_level);
 	}
 
 	/*

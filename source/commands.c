@@ -1,4 +1,4 @@
-/* $EPIC: commands.c,v 1.79 2003/12/14 20:04:09 jnelson Exp $ */
+/* $EPIC: commands.c,v 1.80 2003/12/15 05:41:02 jnelson Exp $ */
 /*
  * commands.c -- Stuff needed to execute commands in ircII.
  *		 Includes the bulk of the built in commands for ircII.
@@ -629,6 +629,7 @@ BUILT_IN_COMMAND(describe)
 	if (target && args && *args)
 	{
 		char	*message;
+		int	l;
 
 		if (!strcmp(target, "*"))
 			if ((target = get_echannel_by_refnum(0)) == NULL)
@@ -636,11 +637,11 @@ BUILT_IN_COMMAND(describe)
 
 		message = args;
 
-		message_from(target, LOG_ACTION);
+		l = message_from(target, LOG_ACTION);
 		send_ctcp(CTCP_PRIVMSG, target, CTCP_ACTION, "%s", message);
 		if (do_hook(SEND_ACTION_LIST, "%s %s", target, message))
 			put_it("* -> %s: %s %s", target, get_server_nickname(from_server), message);
-		message_from(NULL, LOG_CRAP);
+		pop_message_from(l);
 	}
 	else
 		say("Usage: /DESCRIBE <[=]nick|channel|*> <action description>");
@@ -664,12 +665,14 @@ BUILT_IN_COMMAND(do_send_text)
  */
 BUILT_IN_COMMAND(e_channel)
 {
+	int	l;
+
+	l = message_from(NULL, LOG_CRAP);
 	if (args && *args)
 		window_rejoin(current_window, &args);
 	else
 		list_channels();
-
-	message_from(NULL, LOG_CRAP);
+	pop_message_from(l);
 }
 
 /*
@@ -850,9 +853,11 @@ BUILT_IN_COMMAND(e_topic)
 /* e_wallop: used for WALLOPS (undernet only command) */
 BUILT_IN_COMMAND(e_wallop)
 {
-	message_from(NULL, LOG_WALLOP);
+	int l;
+
+	l = message_from(NULL, LOG_WALLOP);
 	send_to_server("%s :%s", command, args);
-	message_from(NULL, LOG_CRAP);
+	pop_message_from(l);
 }
 
 /* Super simple, fast /ECHO */
@@ -871,8 +876,6 @@ BUILT_IN_COMMAND(echocmd)
 BUILT_IN_COMMAND(xechocmd)
 {
 	unsigned display;
-	int	lastlog_level = 0;
-	int	from_level = 0;
 	char	*flag_arg;
 	int	temp = 0;
 	Window *old_to_window;
@@ -886,6 +889,7 @@ BUILT_IN_COMMAND(xechocmd)
 	int	xtended = 0;
 	const char *	old_mf = NULL;
 	int	old_ml = 0;
+	int	l = -1;
 
 	old_to_window = to_window;
 
@@ -934,10 +938,7 @@ BUILT_IN_COMMAND(xechocmd)
 				if (!(flag_arg = next_arg(args, &args)))
 					break;
 				if ((temp = parse_lastlog_level(flag_arg)))
-				{
-					save_message_from(&old_mf, &old_ml);
-					message_from(NULL, temp);
-				}
+					l = message_from(NULL, temp);
 			}
 			break;
 		}
@@ -1116,8 +1117,8 @@ BUILT_IN_COMMAND(xechocmd)
 		set_int_var(DISPLAY_ANSI_VAR, old_ansi);
 	}
 
-	if (temp)
-		restore_message_from(old_mf, old_ml);
+	if (l > -1)
+		pop_message_from(l);
 
 	if (nolog)
 		inhibit_logging = 0;
@@ -2104,20 +2105,17 @@ BUILT_IN_COMMAND(mecmd)
 	if (args && *args)
 	{
 		const char	*target;
+		int	l;
 
 		if ((target = get_target_by_refnum(0)) != NULL)
 		{
-			int 	old;
-
 			send_ctcp(CTCP_PRIVMSG, target, CTCP_ACTION, 
 					"%s", args);
 
-			message_from(target, LOG_ACTION);
-			old = set_lastlog_msg_level(LOG_ACTION);
+			l = message_from(target, LOG_ACTION);
 			if (do_hook(SEND_ACTION_LIST, "%s %s", target, args))
 				put_it("* %s %s", get_server_nickname(from_server), args);
-			set_lastlog_msg_level(old);
-			message_from(NULL, LOG_CRAP);
+			pop_message_from(l);
 		}
 		else
 			say("No target, neither channel nor query");
@@ -2981,8 +2979,7 @@ struct target_type
 void 	send_text (const char *nick_list, const char *text, const char *command, int hook)
 {
 	int 	i, 
-		old_server,
-		lastlog_level;
+		old_server;
 	char 	*current_nick,
 		*next_nick,
 		*line;
@@ -3110,9 +3107,10 @@ struct target_type target[4] =
 
 		if ((key = is_crypted(current_nick)))
 		{
+			int	l;
+
 			copy = LOCAL_COPY(text);
-			lastlog_level = set_lastlog_msg_level(target[i].level);
-			message_from(current_nick, target[i].level);
+			l = message_from(current_nick, target[i].level);
 
 			if (hook && do_hook(target[i].hook_type, "%s %s", 
 						current_nick, copy))
@@ -3124,7 +3122,7 @@ struct target_type target[4] =
 			set_server_sent_nick(from_server, current_nick);
 
 			new_free(&line);
-			set_lastlog_msg_level(lastlog_level);
+			pop_message_from(l);
 		}
 
 		else
@@ -3142,15 +3140,12 @@ struct target_type target[4] =
 
 	for (i = 0; i < 4; i++)
 	{
-		const char	*old_mf;
-		int		old_ml;
+		int	l;
 
 		if (!target[i].message)
 			continue;
 
-		save_message_from(&old_mf, &old_ml);
-
-		message_from(target[i].nick_list, target[i].level);
+		l = message_from(target[i].nick_list, target[i].level);
 		if (hook && do_hook(target[i].hook_type, "%s %s", 
 				    target[i].nick_list, target[i].message))
 		    put_it(target[i].format, target[i].nick_list, 
@@ -3164,7 +3159,7 @@ struct target_type target[4] =
 		new_free(&target[i].nick_list);
 		target[i].message = NULL;
 
-		restore_message_from(old_mf, old_ml);
+		pop_message_from(l);
 	}
 
 	/*

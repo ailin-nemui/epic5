@@ -1,4 +1,4 @@
-/* $EPIC: server.c,v 1.108 2003/11/21 05:57:38 jnelson Exp $ */
+/* $EPIC: server.c,v 1.109 2003/12/15 05:41:02 jnelson Exp $ */
 /*
  * server.c:  Things dealing with that wacky program we call ircd.
  *
@@ -950,6 +950,7 @@ void	do_server (fd_set *rd, fd_set *wd)
 			default:	/* New inbound data */
 			{
 				char *end;
+				int	l;
 
 				end = strlen(buffer) + buffer;
 				if (*--end == '\n')
@@ -957,6 +958,7 @@ void	do_server (fd_set *rd, fd_set *wd)
 				if (*end == '\r')
 					*end-- = '\0';
 
+				l = message_from(NULL, LOG_CRAP);
 				if (x_debug & DEBUG_INBOUND)
 					yell("[%d] <- [%s]", 
 						s->des, buffer);
@@ -966,7 +968,7 @@ void	do_server (fd_set *rd, fd_set *wd)
 				parsing_server_index = i;
 				parse_server(buffer, sizeof buffer);
 				parsing_server_index = NOSERV;
-				message_from(NULL, LOG_CRAP);
+				pop_message_from(l);
 				break;
 			}
 		}
@@ -1207,7 +1209,6 @@ static int 	connect_to_server (int new_server)
 	/*
 	 * Reset everything and go on our way.
 	 */
-	message_from(NULL, LOG_CRAP);
 	update_all_status();
 	server_reconnects_to(new_server, new_server + 1);
 	return 0;			/* New connection established */

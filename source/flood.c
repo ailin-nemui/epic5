@@ -1,4 +1,4 @@
-/* $EPIC: flood.c,v 1.15 2003/09/23 21:49:47 jnelson Exp $ */
+/* $EPIC: flood.c,v 1.16 2003/12/15 05:41:02 jnelson Exp $ */
 /*
  * flood.c: handle channel flooding.
  *
@@ -121,6 +121,7 @@ static	int	 pos = 0;
 	Timeval	 right_now;
 	double	 diff;
 	Flooding *tmp;
+	int	l;
 
 
 	/*
@@ -270,11 +271,11 @@ static	int	 pos = 0;
 				chan ? chan : "*", line)))
 		{
 			tmp->floods++;
-			message_from(chan, LOG_CRAP);
+			l = message_from(chan, LOG_CRAP);
 			if (get_int_var(FLOOD_WARNING_VAR))
 				say("FLOOD: %ld %s detected from %s in %f seconds",
 					tmp->cnt+1, ignore_types[type], nick, diff);
-			message_from(NULL, LOG_CRAP);
+			pop_message_from(l);
 		}
 		else
 		{

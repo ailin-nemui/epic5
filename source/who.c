@@ -1,4 +1,4 @@
-/* $EPIC: who.c,v 1.27 2003/10/29 20:15:10 jnelson Exp $ */
+/* $EPIC: who.c,v 1.28 2003/12/15 05:41:02 jnelson Exp $ */
 /*
  * who.c -- The WHO queue.  The ISON queue.  The USERHOST queue.
  *
@@ -493,6 +493,7 @@ static	int	last_width = -1;
 			*ircname;
 	char 	*name;
 	WhoEntry *new_w = who_queue_top(refnum);
+	int	l;
 
 	if (!new_w)
 	{
@@ -508,7 +509,7 @@ static	int	last_width = -1;
 			"didn't get one back. ###");
 
 	/* Who replies always go to the current window. */
-	message_from(new_w->who_target, LOG_CRAP);
+	l = message_from(new_w->who_target, LOG_CRAP);
 
 do
 {
@@ -626,12 +627,15 @@ do
 	}
 }
 while (new_w->piggyback && (new_w = new_w->next));
+
+	pop_message_from(l);
 }
 
 /* Undernet's 354 numeric reply. */
 void	xwhoreply (int refnum, const char *from, const char *comm, const char **ArgList)
 {
 	WhoEntry *new_w = who_queue_top(refnum);
+	int	l;
 
 	if (!new_w)
 	{
@@ -648,11 +652,11 @@ void	xwhoreply (int refnum, const char *from, const char *comm, const char **Arg
 			"even though you didn't ask for one. ###");
 
 	/* Who replies always go to the current window */
-	message_from(new_w->who_target, LOG_CRAP);
-
+	l = message_from(new_w->who_target, LOG_CRAP);
 	PasteArgs(ArgList, 0);
 	if (do_hook(current_numeric, "%s", ArgList[0]))
 		put_it("%s %s", banner(), ArgList[0]);
+	pop_message_from(l);
 }
 
 
@@ -660,6 +664,7 @@ void	who_end (int refnum, const char *from, const char *comm, const char **ArgLi
 {
 	WhoEntry 	*new_w = who_queue_top(refnum);
 	char 		buffer[1025];
+	int		l;
 
 	PasteArgs(ArgList, 0);
 
@@ -668,7 +673,7 @@ void	who_end (int refnum, const char *from, const char *comm, const char **ArgLi
 	if (!new_w)
 		return;	
 
-	message_from(new_w->who_target, LOG_CRAP);
+	l = message_from(new_w->who_target, LOG_CRAP);
 	do
 	{
 		/* Defer to another function, if neccesary.  */
@@ -686,6 +691,7 @@ void	who_end (int refnum, const char *from, const char *comm, const char **ArgLi
 		}
 	} 
 	while (new_w->piggyback && (new_w = new_w->next));
+	pop_message_from(l);
 
 	who_queue_pop(refnum);
 }
@@ -706,6 +712,7 @@ void	who_end (int refnum, const char *from, const char *comm, const char **ArgLi
 int	fake_who_end (int refnum, const char *from, const char *comm, const char *who_target)
 {
 	WhoEntry 	*new_w = who_queue_top(refnum);
+	int		l;
 
 	if (who_whine)
 		who_whine = 0;
@@ -734,7 +741,7 @@ int	fake_who_end (int refnum, const char *from, const char *comm, const char *wh
 		who_target = target;
 	}
 
-	message_from(new_w->who_target, LOG_CRAP);
+	l = message_from(new_w->who_target, LOG_CRAP);
 	do
 	{
 		/* Defer to another function, if neccesary.  */
@@ -758,6 +765,7 @@ int	fake_who_end (int refnum, const char *from, const char *comm, const char *wh
 		}
 	} 
 	while (new_w->piggyback && (new_w = new_w->next));
+	pop_message_from(l);
 
 	who_queue_pop(refnum);
 	return 1;

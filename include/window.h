@@ -253,8 +253,10 @@ const	char	*get_echannel_by_refnum		(unsigned);
 	void	message_to			(int);
 	void	save_message_from		(const char **, int *);
 	void	restore_message_from		(const char *, int);
-	void	message_from			(const char *, int);
-	int	message_from_level		(int);
+#define message_from(x, y) real_message_from(x, y, __FILE__, __LINE__)
+	int	real_message_from		(const char *, int, const char *, int);
+	void	pop_message_from		(int);
+
 	void	clear_all_windows		(int, int, int);
 	void	clear_window_by_refnum		(unsigned, int);
 	void	unclear_all_windows		(int, int, int);

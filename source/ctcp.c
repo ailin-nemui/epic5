@@ -1,4 +1,4 @@
-/* $EPIC: ctcp.c,v 1.30 2003/12/01 15:30:57 jnelson Exp $ */
+/* $EPIC: ctcp.c,v 1.31 2003/12/15 05:41:02 jnelson Exp $ */
 /*
  * ctcp.c:handles the client-to-client protocol(ctcp). 
  *
@@ -242,16 +242,14 @@ CTCP_HANDLER(do_utc)
  */
 CTCP_HANDLER(do_atmosphere)
 {
-	const char	*old_message_from;
-	int	old_message_level;
+	int	l;
 
 	if (!cmd || !*cmd)
 		return NULL;
 
-	save_message_from(&old_message_from, &old_message_level);
 	if (is_channel(to))
 	{
-		message_from(to, LOG_ACTION);
+		l = message_from(to, LOG_ACTION);
 		if (do_hook(ACTION_LIST, "%s %s %s", from, to, cmd))
 		{
 			if (is_current_channel(to, from_server))
@@ -262,12 +260,12 @@ CTCP_HANDLER(do_atmosphere)
 	}
 	else
 	{
-		message_from(from, LOG_ACTION);
+		l = message_from(from, LOG_ACTION);
 		if (do_hook(ACTION_LIST, "%s %s %s", from, to, cmd))
 			put_it("*> %s %s", from, cmd);
 	}
 
-	restore_message_from(old_message_from, old_message_level);
+	pop_message_from(l);
 	return NULL;
 }
 
@@ -585,7 +583,6 @@ char *	do_ctcp (const char *from, const char *to, char *str)
 {
 	int 	flag;
 	int	fflag;
-	int	lastlog_level;
 	char 	local_ctcp_buffer [BIG_BUFFER_SIZE + 1],
 		the_ctcp          [IRCD_BUFFER_SIZE + 1],
 		last              [IRCD_BUFFER_SIZE + 1];
@@ -595,6 +592,7 @@ char *	do_ctcp (const char *from, const char *to, char *str)
 	char	*ptr = NULL;
 	int	allow_ctcp_reply = 1;
 static	time_t	last_ctcp_parsed = 0;
+	int	l;
 
 	int delim_char = charcount(str, CTCP_DELIM_CHAR);
 
@@ -610,7 +608,6 @@ static	time_t	last_ctcp_parsed = 0;
 	in_ctcp_flag++;
 	strlcpy(local_ctcp_buffer, str, sizeof(local_ctcp_buffer) - 2);
 
-	lastlog_level = set_lastlog_msg_level(LOG_CTCP);
 	for (;;strlcat(local_ctcp_buffer, last, sizeof(local_ctcp_buffer) - 2))
 	{
 		if (split_CTCP(local_ctcp_buffer, the_ctcp, last))
@@ -694,9 +691,9 @@ static	time_t	last_ctcp_parsed = 0;
 
 		/* Set up the window level/logging */
 		if (im_on_channel(to, from_server))
-			message_from(to, LOG_CTCP);
+			l = message_from(to, LOG_CTCP);
 		else
-			message_from(from, LOG_CTCP);
+			l = message_from(from, LOG_CTCP);
 
 		/*
 		 * Then we look for the correct CTCP.
@@ -725,6 +722,7 @@ static	time_t	last_ctcp_parsed = 0;
 			}
 			time(&last_ctcp_parsed);
 			allow_ctcp_reply = 0;
+			pop_message_from(l);
 			continue;
 		}
 
@@ -791,11 +789,8 @@ static	time_t	last_ctcp_parsed = 0;
 		}
 		if (ptr != empty_string)
 			new_free(&ptr);
+		pop_message_from(l);
 	}
-
-	/* Reset the window level/logging */
-	set_lastlog_msg_level(lastlog_level);
-	message_from(NULL, LOG_CRAP);
 
 	in_ctcp_flag--;
 
@@ -815,7 +810,6 @@ static	time_t	last_ctcp_parsed = 0;
 char *	do_notice_ctcp (const char *from, const char *to, char *str)
 {
 	int 	flag;
-	int	lastlog_level;
 	char 	local_ctcp_buffer [BIG_BUFFER_SIZE + 1],
 		the_ctcp          [IRCD_BUFFER_SIZE + 1],
 		last              [IRCD_BUFFER_SIZE + 1];
@@ -824,6 +818,7 @@ char *	do_notice_ctcp (const char *from, const char *to, char *str)
 	int	i;
 	char	*ptr;
 	int	allow_ctcp_reply = 1;
+	int	l;
 
 	int delim_char = charcount(str, CTCP_DELIM_CHAR);
 
@@ -903,18 +898,19 @@ char *	do_notice_ctcp (const char *from, const char *to, char *str)
 		}
 
 		/* Set up the window level/logging */
-		lastlog_level = set_lastlog_msg_level(LOG_CTCP);
-		message_from(NULL, LOG_CTCP);
+		if (is_channel(to))
+			l = message_from(to, LOG_CTCP);
+		else
+			l = message_from(from, LOG_CTCP);
 
 		/* Toss it at the user.  */
 		if (do_hook(CTCP_REPLY_LIST, "%s %s %s %s", from, to, ctcp_command, ctcp_argument))
 			say("CTCP %s reply from %s: %s", ctcp_command, from, ctcp_argument);
 
-		/* Reset the window level/logging */
-		set_lastlog_msg_level(lastlog_level);
-
 		if (!(ctcp_cmd[i].flag & CTCP_NOLIMIT))
 			allow_ctcp_reply = 0;
+
+		pop_message_from(l);
 	}
 
 	if (in_ctcp_flag == -1)

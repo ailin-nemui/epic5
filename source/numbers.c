@@ -1,4 +1,4 @@
-/* $EPIC: numbers.c,v 1.58 2003/12/14 20:04:10 jnelson Exp $ */
+/* $EPIC: numbers.c,v 1.59 2003/12/15 05:41:02 jnelson Exp $ */
 /*
  * numbers.c: handles all those strange numeric response dished out by that
  * wacky, nutty program we call ircd 
@@ -173,9 +173,9 @@ void 	numbered_command (const char *from, const char *comm, char const **ArgList
 	const char	*target;
 	char	*copy;
 	int	i;
-	int	lastlog_level;
 	int	old_current_numeric = current_numeric;
 	int	numeric;
+	int	l;
 
 	/* All numerics must have a target (our nickname) */
 	if (!comm || !*comm)
@@ -184,11 +184,10 @@ void 	numbered_command (const char *from, const char *comm, char const **ArgList
 		{ rfc1459_odd(from, comm, ArgList); return; }
 	ArgList++;
 
-	lastlog_level = set_lastlog_msg_level(LOG_CRAP);
 	if (ArgList[0] && is_channel(ArgList[0]))
-		message_from(ArgList[0], LOG_CRAP);
+		l = message_from(ArgList[0], LOG_CRAP);
 	else
-		message_from(NULL, LOG_CRAP);
+		l = message_from(NULL, LOG_CRAP);
 
 	numeric = atol(comm);
 	current_numeric = -numeric;	/* must be negative of numeric! */
@@ -509,7 +508,6 @@ void 	numbered_command (const char *from, const char *comm, char const **ArgList
 								0, 0, 0, 0);
 		    }
 
-		    message_from(channel, LOG_CRAP);
 		    break;
 		}
 		else
@@ -1243,7 +1241,8 @@ DISPLAY:
 		if (!(channel = ArgList[1]))
 			{ rfc1459_odd(from, comm, ArgList); goto END; }
 
-		message_from(channel, LOG_CRAP);
+		pop_message_from(l);
+		l = message_from(channel, LOG_CRAP);
 		put_it("%s Inviting %s to channel %s", banner(), nick, channel);
 		break;
 	}
@@ -1282,7 +1281,8 @@ DISPLAY:
 		if (channel_is_syncing(channel, from_server))
 		{
 			/* If the user bites on /ON NAMES, then skip the rest */
-			message_from(channel, LOG_CRAP);
+			pop_message_from(l);
+			l = message_from(channel, LOG_CRAP);
 			if (do_hook(NAMES_LIST, "%s %s", channel, line))
 			    if (get_int_var(SHOW_CHANNEL_NAMES_VAR))
 				say("Users on %s: %s",
@@ -1307,7 +1307,8 @@ DISPLAY:
 		else
 			strlcpy(format, "%s: %s\t%s", sizeof format);
 
-		message_from(channel, LOG_CRAP);
+		pop_message_from(l);
+		l = message_from(channel, LOG_CRAP);
 		if (*type == '=') 
 		{
 		    if (last_width && ((int)strlen(channel) > last_width))
@@ -1529,8 +1530,7 @@ END:
 	}
 
 	current_numeric = old_current_numeric;
-	set_lastlog_msg_level(lastlog_level);
-	message_from(NULL, LOG_CRAP);
+	pop_message_from(l);
 }
 
 

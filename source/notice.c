@@ -1,4 +1,4 @@
-/* $EPIC: notice.c,v 1.27 2003/12/04 04:12:22 jnelson Exp $ */
+/* $EPIC: notice.c,v 1.28 2003/12/15 05:41:02 jnelson Exp $ */
 /*
  * notice.c: special stuff for parsing NOTICEs
  *
@@ -76,7 +76,7 @@ static void 	parse_note (char *from, char *line)
 		*flags,
 		*high;
 	time_t	when;
-	int 	level;
+	int	l;
 
 	switch (check_ignore(from, FromUserHost, IGNORE_NOTES))
 	{
@@ -100,8 +100,8 @@ static void 	parse_note (char *from, char *line)
 	flags = next_arg(line, &line);
 
 	when = convert_note_time_to_real_time(date);
-	level = set_lastlog_msg_level(LOG_NOTES);
 
+	l = message_from(from, LOG_NOTES);
 	if (do_hook(NOTE_LIST, "%s %lu %s", from, when, line))
 	{
 		if (time(NULL) - when > 60)	/* not just sent */
@@ -113,7 +113,7 @@ static void 	parse_note (char *from, char *line)
 
 	if (beep_on_level & LOG_NOTES)
 		beep_em(1);
-	set_lastlog_msg_level(level);
+	pop_message_from(l);
 }
 
 static time_t	convert_note_time_to_real_time(char *stuff)
@@ -144,8 +144,9 @@ static time_t	convert_note_time_to_real_time(char *stuff)
  */
 static 	void 	parse_local_server_notice (const char *from, const char *to, const char *line)
 {
-	int	lastlog_level;
 	const char *	f;
+	int	l;
+	int	retval;
 
 	f = from;
 	if (!f || !*f)
@@ -159,9 +160,10 @@ static 	void 	parse_local_server_notice (const char *from, const char *to, const
 			if (kill_message(f, line + 40))
 				return;
 
-		message_from(to, LOG_OPNOTE);
-		lastlog_level = set_lastlog_msg_level(LOG_OPNOTE);
-		if (!do_hook(OPER_NOTICE_LIST, "%s %s", f, line + 14))
+		l = message_from(to, LOG_OPNOTE);
+		retval = do_hook(OPER_NOTICE_LIST, "%s %s", f, line + 14);
+		pop_message_from(l);
+		if (!retval)
 			return;
 	}
 
@@ -191,8 +193,7 @@ static 	void 	parse_local_server_notice (const char *from, const char *to, const
 		return;
 	}
 
-	lastlog_level = set_lastlog_msg_level(LOG_SNOTE);
-	message_from(to, LOG_SNOTE);
+	l = message_from(to, LOG_SNOTE);
 
 	/* Check to see if the notice already has its own header... */
 	if (do_hook(GENERAL_NOTICE_LIST, "%s %s %s", f, to, line))
@@ -207,8 +208,7 @@ static 	void 	parse_local_server_notice (const char *from, const char *to, const
 			say("%s", line);
 	}
 
-	if (lastlog_level)
-		message_from(NULL, lastlog_level);
+	pop_message_from(l);
 }
 
 /*
@@ -218,10 +218,10 @@ static 	void 	parse_local_server_notice (const char *from, const char *to, const
 void 	p_notice (const char *from, const char *comm, const char **ArgList)
 {
 	const char 	*target, *message;
-	int		level,
-			hook_type;
+	int		hook_type;
 	const char *	flood_channel = NULL;
 	char *		high;
+	int		l;
 
 	PasteArgs(ArgList, 1);
 	if (!(target = ArgList[0]))
@@ -298,15 +298,13 @@ void 	p_notice (const char *from, const char *comm, const char **ArgList)
 		int	do_return = 1;
 
 		sed = 0;
-		level = set_lastlog_msg_level(LOG_NOTICE);
-		message_from(target, LOG_NOTICE);
+		l = message_from(target, LOG_NOTICE);
 
 		if (do_hook(ENCRYPTED_NOTICE_LIST, "%s %s %s", 
 				from, target, message))
 			do_return = 0;
 
-		set_lastlog_msg_level(level);
-		message_from(NULL, LOG_CRAP);
+		pop_message_from(l);
 
 		if (do_return) {
 			set_server_doing_notice(from_server, 0);
@@ -326,8 +324,7 @@ void 	p_notice (const char *from, const char *comm, const char **ArgList)
 		beep_em(1);
 
 	/* Go ahead and throw it to the user */
-	level = set_lastlog_msg_level(LOG_NOTICE);
-	message_from(target, LOG_NOTICE);
+	l = message_from(target, LOG_NOTICE);
 
 	if (do_hook(GENERAL_NOTICE_LIST, "%s %s %s", from, target, message))
 	{
@@ -345,8 +342,7 @@ void 	p_notice (const char *from, const char *comm, const char **ArgList)
 	}
 
 	/* Clean up and go home. */
-	set_lastlog_msg_level(level);
-	message_from(NULL, LOG_CRAP);
+	pop_message_from(l);
 	set_server_doing_notice(from_server, 0);
 
 	/* Alas, this is not protected by protocol enforcement. :( */
@@ -399,7 +395,6 @@ void 	got_initial_version_28 (const char *server, const char *version, const cha
 
 	reconnect_all_channels();
 	server_did_rejoin_channels(from_server);
-	message_from(NULL, LOG_CRAP);
 	reinstate_user_modes();
 
 	if (never_connected)

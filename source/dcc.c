@@ -1,4 +1,4 @@
-/* $EPIC: dcc.c,v 1.84 2003/12/13 17:25:58 jnelson Exp $ */
+/* $EPIC: dcc.c,v 1.85 2003/12/15 05:41:02 jnelson Exp $ */
 /*
  * dcc.c: Things dealing client to client connections. 
  *
@@ -375,6 +375,7 @@ static 	void		dcc_erase (DCC_list *erased)
 void 	close_all_dcc (void)
 {
 	DCC_list *dcc;
+	int	l;
 
 	dccs_rejected = 0;
 
@@ -383,10 +384,10 @@ void 	close_all_dcc (void)
 
 	if (dccs_rejected)
 	{
-		message_from(NULL, LOG_DCC);
+		l = message_from(NULL, LOG_DCC);
 		say("Waiting for DCC REJECTs to be sent");
 		sleep(1);
-		message_from(NULL, LOG_CRAP);
+		pop_message_from(l);
 	}
 }
 
@@ -656,10 +657,11 @@ static	DCC_list *dcc_searchlist (
 int	dcc_chat_active (const char *user)
 {
 	int	retval;
+	int	l;
 
-	message_from(user, LOG_DCC);
+	l = message_from(user, LOG_DCC);
 	retval = dcc_searchlist(DCC_CHAT, user, NULL, NULL, 1) ? 1 : 0;
-	message_from(NULL, LOG_CRAP);
+	pop_message_from(l);
 	return retval;
 }
 
@@ -1155,6 +1157,7 @@ const	char 		*text_display, 	/* What to tell the user we sent */
 void	dcc_chat_transmit (char *user, char *text, const char *orig, const char *type, int noisy)
 {
 	int	fd;
+	int	l = -1;
 
     do
     {
@@ -1166,21 +1169,20 @@ void	dcc_chat_transmit (char *user, char *text, const char *orig, const char *ty
 	if ((fd = atol(user)))
 	{
 		DCC_list *	dcc;
-
 		if (!(dcc = get_dcc_by_filedesc(fd)))
 		{
-			message_from(NULL, LOG_DCC);
+			l = message_from(NULL, LOG_DCC);
 			put_it("Descriptor %d is not an open DCC RAW", fd);
 			break;
 		}
 
-		message_from(dcc->user, LOG_DCC);
+		l = message_from(dcc->user, LOG_DCC);
 		dcc_message_transmit(DCC_RAW, dcc->user, dcc->description, 
 					text, orig, noisy, type);
 	}
 	else
 	{
-		message_from(user, LOG_DCC);
+		l = message_from(user, LOG_DCC);
 		dcc_message_transmit(DCC_CHAT, user, NULL,
 					text, orig, noisy, type);
 	}
@@ -1188,7 +1190,7 @@ void	dcc_chat_transmit (char *user, char *text, const char *orig, const char *ty
     while (0);
 
 	dcc_garbage_collect();
-	message_from(NULL, LOG_CRAP);
+	pop_message_from(l);
 }
 
 
@@ -1209,7 +1211,7 @@ void	dcc_chat_transmit (char *user, char *text, const char *orig, const char *ty
 BUILT_IN_COMMAND(dcc_cmd)
 {
 	const char	*cmd;
-	int	i;
+	int	i, l;
 
 	if (!(cmd = next_arg(args, &args)))
 		cmd = "LIST";
@@ -1218,20 +1220,20 @@ BUILT_IN_COMMAND(dcc_cmd)
 	{
 		if (!my_stricmp(dcc_commands[i].name, cmd))
 		{
-			message_from(NULL, LOG_DCC);
+			l = message_from(NULL, LOG_DCC);
 			lock_dcc(NULL);
 			dcc_commands[i].function(args);
 			unlock_dcc(NULL);
-			message_from(NULL, LOG_CRAP);
+			pop_message_from(l);
 
 			dcc_garbage_collect();
 			return;
 		}
 	}
 
-	message_from(NULL, LOG_DCC);
+	l = message_from(NULL, LOG_DCC);
 	say("Unknown DCC command: %s", cmd);
-	message_from(NULL, LOG_CRAP);
+	pop_message_from(l);
 }
 
 
@@ -1735,6 +1737,7 @@ static	void	dcc_send_raw (char *args)
 {
 	char	*name;
 	char	*host;
+	int	l;
 
 	if (!(name = next_arg(args, &args)))
 	{
@@ -1747,8 +1750,9 @@ static	void	dcc_send_raw (char *args)
 		return;
 	}
 
-	message_from(name, LOG_DCC);
+	l = message_from(name, LOG_DCC);
 	dcc_message_transmit(DCC_RAW, name, host, args, args, 1, NULL);
+	pop_message_from(l);
 }
 
 /*
@@ -1939,9 +1943,10 @@ char	*dcc_raw_listen (int family, unsigned short port)
 {
 	DCC_list *Client;
 	char *	  PortName = empty_string;
+	int	l;
 
 	lock_dcc(NULL);
-	message_from(NULL, LOG_DCC);
+	l = message_from(NULL, LOG_DCC);
 
     do
     {
@@ -1980,7 +1985,7 @@ char	*dcc_raw_listen (int family, unsigned short port)
 
 	unlock_dcc(NULL);
 	dcc_garbage_collect();
-	message_from(NULL, LOG_CRAP);
+	pop_message_from(l);
 	return malloc_strdup(PortName);
 }
 
@@ -1993,9 +1998,10 @@ char	*dcc_raw_connect (const char *host, const char *port, int family)
 	DCC_list *	Client = NULL;
 	SS		my_sockaddr;
 	char *		retval = empty_string;
+	int		l;
 
 	lock_dcc(NULL);
-	message_from(NULL, LOG_DCC);
+	l = message_from(NULL, LOG_DCC);
 
     do
     {
@@ -2039,7 +2045,7 @@ char	*dcc_raw_connect (const char *host, const char *port, int family)
     while (0);
 
 	unlock_dcc(NULL);
-	message_from(NULL, LOG_CRAP);
+	pop_message_from(l);
 	dcc_garbage_collect();
 	return malloc_strdup(retval);
 }
@@ -2070,12 +2076,13 @@ void	register_dcc_offer (const char *user, char *type, char *description, char *
 	int		err;
 	SS		offer;
 	off_t		filesize;
+	int		l;
 
 	/* 
 	 * Ensure that nobody will mess around with us while we're working.
 	 */
 	lock_dcc(NULL);
-	message_from(NULL, LOG_DCC);
+	l = message_from(NULL, LOG_DCC);
 
     do
     {
@@ -2421,7 +2428,7 @@ display_it:
 
 	unlock_dcc(NULL);
 	dcc_garbage_collect();
-	message_from(NULL, LOG_CRAP);
+	pop_message_from(l);
 	return;
 }
 
@@ -2434,14 +2441,14 @@ void	dcc_check (fd_set *Readables, fd_set *Writables)
 	DCC_list	*Client;
 	int		previous_server;
 	char		*encoded_description = NULL;
-	
+	int		l;
+
 	/* Sanity */
 	if (!Readables)
 		return;
 
 	/* Whats with all this double-pointer chicanery anyhow? */
 	lock_dcc(NULL);
-	message_from(NULL, LOG_DCC);
 
 	for (Client = ClientList; Client; Client = Client->next)
 	{
@@ -2458,6 +2465,7 @@ void	dcc_check (fd_set *Readables, fd_set *Writables)
 		previous_server = from_server;
 		from_server = FROMSERV;
 
+	        l = message_from(NULL, LOG_DCC);
 		switch (Client->flags & DCC_TYPES)
 		{
 		    case DCC_CHAT:
@@ -2476,6 +2484,7 @@ void	dcc_check (fd_set *Readables, fd_set *Writables)
 			process_incoming_file(Client);
 			break;
 		}
+		pop_message_from(l);
 
 		from_server = previous_server;
 	    }
@@ -2491,6 +2500,7 @@ void	dcc_check (fd_set *Readables, fd_set *Writables)
 		 time_diff(Client->lasttime, now) > dcc_timeout)
 	    {
 		lock_dcc(Client);
+	        l = message_from(NULL, LOG_DCC);
 
 		if (Client->description) {
 			if ((Client->flags & DCC_TYPES) == DCC_FILEOFFER)
@@ -2519,6 +2529,7 @@ void	dcc_check (fd_set *Readables, fd_set *Writables)
 		if (encoded_description)
 			new_free(&encoded_description);
 
+		pop_message_from(l);
 		unlock_dcc(Client);
 	    }
 
@@ -2531,7 +2542,6 @@ void	dcc_check (fd_set *Readables, fd_set *Writables)
 		break;
 	}
 
-	message_from(NULL, LOG_CRAP);
 	unlock_dcc(NULL);
 	dcc_garbage_collect();
 }
@@ -2598,6 +2608,7 @@ static	char *	process_dcc_chat_ctcps (DCC_list *Client, char *tmp)
 {
 	char 	equal_nickname[80];
 	int	ctcp_request = 0, ctcp_reply = 0;
+	int	l;
 
 #define CTCP_MESSAGE "CTCP_MESSAGE "
 #define CTCP_REPLY "CTCP_REPLY "
@@ -2626,12 +2637,12 @@ static	char *	process_dcc_chat_ctcps (DCC_list *Client, char *tmp)
 		snprintf(equal_nickname, sizeof equal_nickname, 
 				"=%s", Client->user);
 
-		message_from(Client->user, LOG_CTCP);
+		l = message_from(Client->user, LOG_CTCP);
 		if (ctcp_request == 1)
 			tmp = do_ctcp(equal_nickname, nickname, tmp);
 		else
 			tmp = do_notice_ctcp(equal_nickname, nickname, tmp);
-		message_from(NULL, LOG_DCC);
+		pop_message_from(l);
 
 		FromUserHost = OFUH;
 	}
@@ -2646,6 +2657,7 @@ static	void	process_dcc_chat_data (DCC_list *Client)
 {
 	char	tmp[IO_BUFFER_SIZE + 1];
 	ssize_t	bytesread;
+	int	l;
 
 	/* Get a new line via dgets. */
 	bytesread = dgets(Client->socket, tmp, IO_BUFFER_SIZE, 1, NULL);
@@ -2684,7 +2696,7 @@ static	void	process_dcc_chat_data (DCC_list *Client)
 		return;
 
 	/* Otherwise throw the message to the user. */
-	message_from(Client->user, LOG_DCC);
+	l = message_from(Client->user, LOG_DCC);
 	lock_dcc(Client);
 	if (do_hook(DCC_CHAT_LIST, "%s %s", Client->user, tmp))
 	{
@@ -2697,7 +2709,7 @@ static	void	process_dcc_chat_data (DCC_list *Client)
 		put_it("=%s= %s", Client->user, tmp);
 	}
 	unlock_dcc(Client);
-	message_from(NULL, LOG_DCC);
+	pop_message_from(l);
 }
 
 static	void	process_dcc_chat (DCC_list *Client)
@@ -3231,6 +3243,7 @@ void 	dcc_reject (const char *from, char *type, char *args)
 	DCC_list *	Client;
 	char *		description;
 	int		CType;
+	int		l;
 
 	for (CType = 0; dcc_types[CType] != NULL; CType++)
 		if (!my_stricmp(type, dcc_types[CType]))
@@ -3239,7 +3252,7 @@ void 	dcc_reject (const char *from, char *type, char *args)
 	if (!dcc_types[CType])
 		return;
 
-	message_from(from, LOG_DCC);
+	l = message_from(from, LOG_DCC);
 	description = next_arg(args, &args);
 
 	if ((Client = dcc_searchlist(CType, from, description,
@@ -3257,7 +3270,7 @@ void 	dcc_reject (const char *from, char *type, char *args)
 	}
 
 	dcc_garbage_collect();
-	message_from(NULL, LOG_CRAP);
+	pop_message_from(l);
 }
 
 

@@ -1,4 +1,4 @@
-/* $EPIC: if.c,v 1.25 2003/12/14 20:04:09 jnelson Exp $ */
+/* $EPIC: if.c,v 1.26 2003/12/15 05:41:02 jnelson Exp $ */
 /*
  * if.c: the IF, WHILE, FOREACH, DO, FE, FEC, and FOR commands for IRCII 
  *
@@ -136,7 +136,6 @@ BUILT_IN_COMMAND(ifcmd)
 	char *current_expr_val;
 	int result;
 	char *stuff = NULL;
-	int flag = 0;
 
 	unless_cmd = (*command == 'U');
 	if (!subargs)
@@ -215,7 +214,6 @@ BUILT_IN_COMMAND(docmd)
 {
 	char *body, *expr, *cmd, *ptr;
 	char *newexp = NULL;
-	int args_used = 0;
 	int result;
 
 	if (!subargs)
@@ -281,8 +279,6 @@ BUILT_IN_COMMAND(whilecmd)
 		*ptr,
 		*body = NULL,
 		*newexp = NULL;
-	int	args_used;	/* this isn't used here, but is passed
-				 * to expand_alias() */
 	int 	whileval = !strcmp(command, "WHILE");
 
 	if (!subargs)
@@ -701,7 +697,6 @@ BUILT_IN_COMMAND(forcmd)
 	char        *evaluation     = NULL;
 	char        *lameeval       = NULL;
 	char        *iteration      = NULL;
-	int         argsused        = 0;
 	char        *blah           = NULL;
 	char        *commands       = NULL;
 
@@ -908,7 +903,6 @@ BUILT_IN_COMMAND(repeatcmd)
 	if (*args == '(')
 	{
 		char *		dumb_copy;
-		int 		argsused;
 
 		num_expr = next_expr(&args, '(');
 		dumb_copy = LOCAL_COPY(num_expr);
