@@ -1,4 +1,4 @@
-/* $EPIC: window.c,v 1.67 2003/07/18 01:36:35 jnelson Exp $ */
+/* $EPIC: window.c,v 1.68 2003/07/22 21:12:54 jnelson Exp $ */
 /*
  * window.c: Handles the organzation of the logical viewports (``windows'')
  * for irc.  This includes keeping track of what windows are open, where they
@@ -2307,8 +2307,9 @@ void	unclear_window_by_refnum (unsigned refnum, int unhold)
  * set_scroll_lines: called by /SET SCROLL_LINES to check the scroll lines
  * value 
  */
-void 	set_scroll_lines (int size)
+void 	set_scroll_lines (const void *stuff)
 {
+	int size = *(const int *)stuff;
 	if (size == 0)
 	{
 		say("You cannot turn SCROLL off.  Gripe at me.");
@@ -2333,10 +2334,16 @@ void 	set_scroll_lines (int size)
  * set_continued_line: checks the value of CONTINUED_LINE for validity,
  * altering it if its no good 
  */
-void 	set_continued_line (char *value)
+void 	set_continued_line (const void *stuff)
 {
+	const char *value = (const char *)stuff;
+
 	if (value && (strlen(value) > (size_t)(current_term->TI_cols / 2)))
-		value[current_term->TI_cols / 2] = '\0';
+	{
+		char *chg = LOCAL_COPY(value);
+		chg[current_term->TI_cols / 2] = 0;
+		set_string_var(CONTINUED_LINE_VAR, chg);
+	}
 }
 
 
@@ -2356,8 +2363,9 @@ int 	number_of_windows_on_screen (Window *w)
  * has gotten larger than it was before, all previous lastlog entry remain.
  * If it get smaller, some are deleted from the end. 
  */
-void    set_scrollback_size (int size)
+void    set_scrollback_size (const void *stuff)
 {
+	int size = *(const int *)stuff;
         Window  *window = NULL;
 
         while (traverse_all_windows(&window))

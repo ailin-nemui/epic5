@@ -168,4 +168,4 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Teach set_variable() about FLOAT_TYPE_VAR sets.
 * Teach save_variables() about FLOAT_TYPE_VAR sets.
 * Teach get_string_variable() about FLOAT_TYPE_VAR sets.
-
+* Change all /SET callback functions to take (const void *).

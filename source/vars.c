@@ -1,4 +1,4 @@
-/* $EPIC: vars.c,v 1.40 2003/07/22 19:04:36 jnelson Exp $ */
+/* $EPIC: vars.c,v 1.41 2003/07/22 21:12:54 jnelson Exp $ */
 /*
  * vars.c: All the dealing of the irc variables are handled here. 
  *
@@ -65,7 +65,7 @@ typedef struct
 	int		integer;	/* int value of variable */
 	double		number;		/* decimal value of variable */
 	char *		string;		/* string value of variable */
-	void		(*func) ();	/* func called when var is set */
+	void		(*func) (const void *); /* func called when var is set */
 	char		int_flags;	/* internal flags to the variable */
 	unsigned short	flags;		/* flags for this variable */
 }	IrcVariable;
@@ -92,15 +92,16 @@ const char	*var_settings[] =
 	"OFF", "ON", "TOGGLE"
 };
 
-static	void	eight_bit_characters 	(int);
-static	void	set_realname 		(char *);
-static 	void 	set_display_pc_characters (int value);
-static 	void	set_dcc_timeout 	(int value);
-static	void	set_mangle_inbound 	(char *value);
-static	void	set_mangle_outbound 	(char *value);
-static	void	set_mangle_logfiles 	(char *value);
-static	void	set_scroll 		(int value);
-static	void	update_all_status_wrapper (char *ignored);
+static	void	eight_bit_characters 	(const void *);
+static	void	set_realname 		(const void *);
+static 	void 	set_display_pc_characters (const void *);
+static 	void	set_dcc_timeout 	(const void *);
+static	void	set_mangle_inbound 	(const void *);
+static	void	set_mangle_outbound 	(const void *);
+static	void	set_mangle_logfiles 	(const void *);
+static	void	set_scroll 		(const void *);
+static	void	update_all_status_wrapper (const void *);
+static	void	set_highlight_char	(const void *);
 
 /*
  * irc_variable: all the irc variables used.  Note that the integer and
@@ -457,10 +458,10 @@ void 	init_variables (void)
 				case (BOOL_TYPE_VAR):
 				case (INT_TYPE_VAR):
 				case (CHAR_TYPE_VAR):
-					var->func(var->integer);
+					var->func(&var->integer);
 					break;
 				case (FLOAT_TYPE_VAR):
-					var->func(var->number);
+					var->func(&var->number);
 					break;
 				case (STR_TYPE_VAR):
 					var->func(var->string);
@@ -546,7 +547,7 @@ void 	set_var_value (int svv_index, char *value)
 			if (loading_global)
 				var->int_flags |= VIF_GLOBAL;
 			if (var->func)
-				(var->func) (var->integer);
+				(var->func) (&var->integer);
 			say("Value of %s set to %s", var->name,
 				var->integer ? var_settings[ON]
 					     : var_settings[OFF]);
@@ -570,7 +571,7 @@ void 	set_var_value (int svv_index, char *value)
 				var->int_flags |= VIF_GLOBAL;
 			var->integer = ' ';
 			if (var->func)
-				(var->func) (var->integer);
+				(var->func) (&var->integer);
 			say("Value of %s set to '%c'", var->name, var->integer);
 		}
 
@@ -591,7 +592,7 @@ void 	set_var_value (int svv_index, char *value)
 					var->int_flags |= VIF_GLOBAL;
 				var->integer = *value;
 				if (var->func)
-					(var->func) (var->integer);
+					(var->func) (&var->integer);
 				say("Value of %s set to '%c'", var->name,
 					var->integer);
 			}
@@ -626,7 +627,7 @@ void 	set_var_value (int svv_index, char *value)
 				var->int_flags |= VIF_GLOBAL;
 			var->integer = val;
 			if (var->func)
-				(var->func) (var->integer);
+				(var->func) (&var->integer);
 			say("Value of %s set to %d", var->name, var->integer);
 		}
 		else
@@ -654,7 +655,7 @@ void 	set_var_value (int svv_index, char *value)
 				var->int_flags |= VIF_GLOBAL;
 			var->number = val;
 			if (var->func)
-				(var->func) (var->number);
+				(var->func) (&var->number);
 			say("Value of %s set to %f", var->name, var->number);
 		}
 		else
@@ -818,7 +819,7 @@ int 	get_int_var (enum VAR_TYPES var)
  * get_int_var: returns the value of the integer string given as an index
  * into the variable table.  Does no checking of variable types, etc 
  */
-int 	get_float_var (enum VAR_TYPES var)
+double 	get_float_var (enum VAR_TYPES var)
 {
 	return (irc_variable[var].number);
 }
@@ -936,15 +937,19 @@ int 	charset_size (void)
 	return get_int_var(EIGHT_BIT_CHARACTERS_VAR) ? 256 : 128;
 }
 
-static void 	eight_bit_characters (int value)
+static void 	eight_bit_characters (const void *stuff)
 {
+	int	value = *(const int *)stuff;
+
 	if (value == ON && !term_eight_bit())
 		say("Warning!  Your terminal says it does not support eight bit characters");
 	set_term_eight_bit(value);
 }
 
-static void 	set_realname (char *value)
+static void 	set_realname (const void *stuff)
 {
+	const char *value = (const char *)stuff;
+
 	if (!value)
 	{
 		say("Unsetting your realname will do you no good.  So there.");
@@ -953,8 +958,10 @@ static void 	set_realname (char *value)
 	strlcpy(realname, value, sizeof realname);
 }
 
-static void 	set_display_pc_characters (int value)
+static void 	set_display_pc_characters (const void *stuff)
 {
+	int	value = *(const int *)stuff;
+
 	if (value < 0 || value > 5)
 	{
 		say("The value of DISPLAY_PC_CHARACTERS must be between 0 and 5 inclusive");
@@ -962,15 +969,17 @@ static void 	set_display_pc_characters (int value)
 	}
 }
 
-static void	set_dcc_timeout (int value)
+static void	set_dcc_timeout (const void *stuff)
 {
+	int	value = *(const int *)stuff;
+
 	if (value == 0)
 		dcc_timeout = (time_t) -1;
 	else
 		dcc_timeout = value;
 }
 
-int	parse_mangle (char *value, int nvalue, char **rv)
+int	parse_mangle (const char *value, int nvalue, char **rv)
 {
 	char	*str1, *str2;
 	char	*copy;
@@ -1072,33 +1081,37 @@ int	parse_mangle (char *value, int nvalue, char **rv)
 	return nvalue;
 }
 
-static	void	set_mangle_inbound (char *value)
+static	void	set_mangle_inbound (const void *stuff)
 {
+	const char *value = (const char *)stuff;
 	char *nv = NULL;
 	inbound_line_mangler = parse_mangle(value, inbound_line_mangler, &nv);
 	set_string_var(MANGLE_INBOUND_VAR, nv);
 	new_free(&nv);
 }
 
-static	void	set_mangle_outbound (char *value)
+static	void	set_mangle_outbound (const void *stuff)
 {
+	const char *value = (const char *)stuff;
 	char *nv = NULL;
 	outbound_line_mangler = parse_mangle(value, outbound_line_mangler, &nv);
 	set_string_var(MANGLE_OUTBOUND_VAR, nv);
 	new_free(&nv);
 }
 
-static	void	set_mangle_logfiles (char *value)
+static	void	set_mangle_logfiles (const void *stuff)
 {
+	const char *value = (const char *)stuff;
 	char *nv = NULL;
 	logfile_line_mangler = parse_mangle(value, logfile_line_mangler, &nv);
 	set_string_var(MANGLE_LOGFILES_VAR, nv);
 	new_free(&nv);
 }
 
-static	void	set_scroll (int value)
+static	void	set_scroll (const void *stuff)
 {
-	char *whatever;
+	int	value = *(const int *)stuff;
+	char *	whatever;
 	int	owd = window_display;
 
 	window_display = 0;
@@ -1115,13 +1128,14 @@ static	void	set_scroll (int value)
 	window_display = owd;
 }
 
-static void	update_all_status_wrapper (char *ignored)
+static void	update_all_status_wrapper (const void *stuff)
 {
 	update_all_status();
 }
 
-void    set_highlight_char (char *s)
+static void    set_highlight_char (const void *stuff)
 {
+	const char *s = (const char *)stuff;
         int     len;
 
         if (!s)

@@ -33,14 +33,8 @@ extern	Status	main_status;
 
 	char *	convert_sub_format (const char *, char);
 	int	make_status 	(struct WindowStru *, int);	/* Don't call */
-	void	build_status 	(char *);
+	void	build_status 	(const void *);
 	int	permit_status_update	(int);
 	void	rebuild_a_status (struct WindowStru *);		/* Don't call */
-
-const	char *	get_clock 	(void);			/* irc.c */
-	void	reset_clock 	(char *);		/* irc.c */
-
-#define GET_TIME 	1
-#define RESET_TIME 	2
 
 #endif /* _STATUS_H_ */

@@ -238,9 +238,9 @@ const	char	*get_echannel_by_refnum		(unsigned);
 	void	clear_window_by_refnum		(unsigned, int);
 	void	unclear_all_windows		(int, int, int);
 	void	unclear_window_by_refnum	(unsigned, int);
-	void	set_scrollback_size		(int);
-	void	set_scroll_lines		(int);
-	void	set_continued_line		(char *);
+	void	set_scrollback_size		(const void *);
+	void	set_scroll_lines		(const void *);
+	void	set_continued_line		(const void *);
 	unsigned current_refnum			(void);
 	int	number_of_windows_on_screen	(Window *);
 	void	delete_display_line		(Display *);
@@ -278,5 +278,7 @@ const	char	*get_echannel_by_refnum		(unsigned);
 	void   move_waiting_channel (unsigned oldref, unsigned newref);
 	int    get_winref_by_bound_channel (const char *channel, int server);
 	const char *   get_bound_channel_by_refnum (unsigned refnum);
+
+	char *	windowctl			(char *);
 
 #endif /* __window_h__ */

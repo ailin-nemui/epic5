@@ -1,4 +1,4 @@
-/* $EPIC: functions.c,v 1.131 2003/07/18 01:36:34 jnelson Exp $ */
+/* $EPIC: functions.c,v 1.132 2003/07/22 21:12:54 jnelson Exp $ */
 /*
  * functions.c -- Built-in functions for ircII
  *
@@ -46,6 +46,7 @@
 #include "alias.h"
 #include "alist.h"
 #include "array.h"
+#include "clock.h"
 #include "dcc.h"
 #include "debug.h"
 #include "commands.h"
@@ -3660,7 +3661,7 @@ BUILT_IN_FUNCTION(function_umode, words)
 
 static int sort_it (const void *val1, const void *val2)
 {
-	return my_stricmp(*(char * const *)val1, *(char * const *)val2);
+	return my_stricmp(*(const char * const *)val1, *(const char * const *)val2);
 }
 
 BUILT_IN_FUNCTION(function_sort, words)
@@ -3679,8 +3680,8 @@ BUILT_IN_FUNCTION(function_sort, words)
 
 static int num_sort_it (const void *val1, const void *val2)
 {
-	const char *oneptr = *(char * const *)val1;
-	const char *twoptr = *(char * const *)val2;
+	const char *oneptr = *(const char * const *)val1;
+	const char *twoptr = *(const char * const *)val2;
 	char *oneptr_result;
 	char *twoptr_result;
 	long v1, v2;
@@ -3927,7 +3928,7 @@ BUILT_IN_FUNCTION(function_twiddle, words)
 static int unsort_it (const void *v1, const void *v2)
 {
 	/* This just makes me itch. ;-) */
-	return (int)(*(char * const *)v1 - *(char * const *)v2);
+	return (int)(*(const char * const *)v1 - *(const char * const *)v2);
 }
 /* 
  * Date: Sun, 29 Sep 1996 19:17:25 -0700

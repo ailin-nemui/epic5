@@ -12,7 +12,7 @@
 
 	void	ExecuteTimers 	(void);
 	char *	add_timer	(int, const char *, double, long, 
-				 int (*) (void *), const void *, 
+				 int (*) (void *), void *, 
 				 const char *, int);
 	int	timer_exists	(const char *ref);
 	int     remove_timer	(const char *ref);

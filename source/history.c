@@ -1,4 +1,4 @@
-/* $EPIC: history.c,v 1.10 2003/07/10 13:08:57 jnelson Exp $ */
+/* $EPIC: history.c,v 1.11 2003/07/22 21:12:54 jnelson Exp $ */
 /*
  * history.c: stuff to handle command line history 
  *
@@ -73,8 +73,9 @@ static	int	last_dir = -1;
  * nulled.  If it exists, it is resized to the new size with a realloc.  Any
  * new entries are nulled. 
  */
-void	set_history_size (int size)
+void	set_history_size (const void *stuff)
 {
+	int	size = *(const int *)stuff;
 	int	i,
 		cnt;
 	History *ptr;

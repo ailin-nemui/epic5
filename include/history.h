@@ -10,10 +10,10 @@
 #define __history_h__
 
 	BUILT_IN_COMMAND(history);
-	void	set_history_size 	(int);
+	void	set_history_size 	(const void *);
 	void	add_to_history 		(char *);
 	void	get_history 		(int);
-	char	*do_history 		(char *, char *);
+	char *	do_history 		(char *, char *);
 	void	shove_to_history 	(char, char *);
 	void    abort_history_browsing	(int);
 

@@ -3,13 +3,13 @@
  *
  * Tomten, tomten@solace.hsh.se / tomten@lysator.liu.se
  *
- * @(#)$Id: translat.h,v 1.2 2001/10/22 01:30:49 jnelson Exp $
+ * @(#)$Id: translat.h,v 1.3 2003/07/22 21:12:53 jnelson Exp $
  */
 
 #ifndef __translat_h_
 # define __translat_h_
 
-extern	void	set_translation (char *);
+extern	void	set_translation (const void *);
 extern	int	translation;
 extern	void	translate_from_server (unsigned char *);
 extern	void	translate_to_server (unsigned char *);

@@ -1,4 +1,4 @@
-/* $EPIC: translat.c,v 1.3 2002/07/17 22:52:53 jnelson Exp $ */
+/* $EPIC: translat.c,v 1.4 2003/07/22 21:12:54 jnelson Exp $ */
 /*
  * translat.c:  Stuff for handling character translation tables
  * and a digraph entry facility.  Support an international IRC!
@@ -39,8 +39,9 @@ int	translation = 0;	/* 0 for transparent (no) translation. */
  * set_translation:  Called when the TRANSLATION variable is SET.
  * Attempts to load a new translation table.
  */
-void	set_translation (char *tablename)
+void	set_translation (const void *stuff)
 {
+	const char *orig = (const char *)stuff;
 	FILE	*table;
 	unsigned char	temp_table[512];
 	char	*filename = (char *) 0;
@@ -48,13 +49,15 @@ void	set_translation (char *tablename)
 	int	j,
 		c = 0;
 	char	buffer[81];
+	char 	*tablename;
 
-	if (!tablename)
+	if (!orig)
 	{
 		translation = 0;
 		return;
 	}
-	tablename = upper(tablename);
+	tablename = LOCAL_COPY(orig);
+	upper(tablename);
 
 	/* Check for transparent mode; ISO-8859/1, Latin-1 */
 	if (!strcmp("LATIN_1", tablename))

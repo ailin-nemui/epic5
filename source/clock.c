@@ -139,7 +139,7 @@ static	long	last_milliday;
 	}
 }
 
-void	reset_clock (char *unused)
+void	reset_clock (const void *stuff)
 {
 	if (x_debug & DEBUG_BROKEN_CLOCK)
 		reset_broken_clock();
@@ -164,18 +164,19 @@ void	clock_systimer (void)
 	reset_clock(NULL);
 }
 
-void    set_clock_interval (int value)
+void    set_clock_interval (const void *stuff)
 {
 	update_system_timer(clock_timeref);	/* XXX Oh heck, why not? */
 }
 
-void     set_clock_format (char *value)
+void     set_clock_format (const void *stuff)
 {
+	const char *value = (const char *)stuff;
         malloc_strcpy(&time_format, value);
         reset_clock(NULL);
 }
 
-void	set_clock (int value)
+void	set_clock (const void *stuff)
 {
 	update_system_timer(clock_timeref);
 	update_all_status();
@@ -223,8 +224,10 @@ int	cpu_saver_timer (void *schedule_only)
 	return 0;
 }
 
-void    set_cpu_saver_after (int value)
+void    set_cpu_saver_after (const void *stuff)
 {
+	int value = *(const int *)stuff;
+
         if (value == 0)
 	{
 		/* Remove the watchdog timer only if it is running. */
@@ -235,8 +238,10 @@ void    set_cpu_saver_after (int value)
                 cpu_saver_timer(NULL);
 }
 
-void	set_cpu_saver_every (int value)
+void	set_cpu_saver_every (const void *stuff)
 {
+	int value = *(const int *)stuff;
+
 	if (value < 60)
 	{
 		say("/SET CPU_SAVER_EVERY must be set to at least 60");
@@ -271,7 +276,7 @@ struct system_timer system_timers[] = {
 	  NULL 			}
 };
 
-int	system_timer (void *entry)
+static int	system_timer (void *entry)
 {
 	double	timeout = 0;
 	int	nominal_timeout;

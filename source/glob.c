@@ -1,4 +1,4 @@
-/* $EPIC: glob.c,v 1.9 2003/07/10 13:08:57 jnelson Exp $ */
+/* $EPIC: glob.c,v 1.10 2003/07/22 21:12:54 jnelson Exp $ */
 #include "config.h"
 #if defined(NEED_GLOB)
 
@@ -497,7 +497,7 @@ static int glob0		(	const Char *pattern,
 static int compare		(	const void *p,
 					const void *q		)
 {
-	return (strcmp(*(char * const *)p, *(char * const *)q));
+	return (strcmp(*(const char * const *)p, *(const char * const *)q));
 }
 
 static int glob1		(	Char *pattern,

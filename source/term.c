@@ -1,4 +1,4 @@
-/* $EPIC: term.c,v 1.10 2003/07/09 21:10:25 jnelson Exp $ */
+/* $EPIC: term.c,v 1.11 2003/07/22 21:12:54 jnelson Exp $ */
 /*
  * term.c -- termios and (termcap || terminfo) handlers
  *
@@ -818,9 +818,9 @@ int 	term_init (void)
 		{
 			cval = Tgetstr(tcaps[i], tptr);
 			if (cval == (char *) -1)
-				*(char **)tcaps[i].ptr = NULL;
+				*(char * *)tcaps[i].ptr = NULL;
 			else
-				*(char **)tcaps[i].ptr = cval;
+				*(char * *)tcaps[i].ptr = cval;
 		}
 	}
 
@@ -1178,8 +1178,10 @@ void	set_term_eight_bit (int value)
 	tcsetattr(tty_des, TCSADRAIN, &newb);
 }
 
-void	set_meta_8bit (int value)
+void	set_meta_8bit (const void *stuff)
 {
+	int	value = *(const int *)stuff;
+
 	if (dumb_mode)
 		return;
 

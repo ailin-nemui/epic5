@@ -233,17 +233,18 @@ enum VAR_TYPES {
 
 	int	do_boolean 		(char *, int *);
 	int	get_int_var 		(enum VAR_TYPES);
-	char	*get_string_var 	(enum VAR_TYPES);
+	char *	get_string_var 		(enum VAR_TYPES);
+	double	get_float_var		(enum VAR_TYPES);
 	void	set_int_var		(enum VAR_TYPES, int);
+	void	set_float_var		(enum VAR_TYPES, double);
 	void	set_string_var		(enum VAR_TYPES, const char *);
 	void	init_variables 		(void);
 	char	*make_string_var 	(const char *);
-	void	set_highlight_char	(char *);
 	int	charset_size 		(void);
 	void	save_variables 		(FILE *, int);
 	void	set_var_value 		(int, char *);
 	void	do_stack_set		(int, char *);
-	int	parse_mangle		(char *, int, char **);
+	int	parse_mangle		(const char *, int, char **);
 	char	*get_set		(const char *);
 
 #endif /* _VARS_H_ */

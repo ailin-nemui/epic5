@@ -1,4 +1,4 @@
-/* $EPIC: log.c,v 1.11 2003/05/09 04:29:52 jnelson Exp $ */
+/* $EPIC: log.c,v 1.12 2003/07/22 21:12:54 jnelson Exp $ */
 /*
  * log.c: handles the irc session logging functions 
  *
@@ -123,8 +123,9 @@ FILE *do_log (int flag, const char *logfile, FILE **fp)
 }
 
 /* logger: if flag is 0, logging is turned off, else it's turned on */
-void	logger (int flag)
+void	logger (const void *stuff)
 {
+	int	flag = *(const int *)stuff;
 	char	*logfile;
 
 	if ((logfile = get_string_var(LOGFILE_VAR)) == (char *) 0)
@@ -143,8 +144,9 @@ void	logger (int flag)
  * closes the last log file and reopens it with the new name.  This is called
  * automatically when you SET LOGFILE. 
  */
-void	set_log_file (const char *filename)
+void	set_log_file (const void *stuff)
 {
+	const char *filename = (const char *)stuff;
 	Filename expand;
 
 	if (!filename)
@@ -159,8 +161,12 @@ void	set_log_file (const char *filename)
 	set_string_var(LOGFILE_VAR, expand);
 	if (irclog_fp)
 	{
-		logger(0);
-		logger(1);
+		int	value;
+
+		value = 0;
+		logger(&value);
+		value = 1;
+		logger(&value);
 	}
 }
 

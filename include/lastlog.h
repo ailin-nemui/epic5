@@ -56,20 +56,20 @@ extern	int	new_server_lastlog_level;
 
 	BUILT_IN_COMMAND(lastlog);
 
-	void	set_lastlog_level 		(char *);
+	void	set_lastlog_level 		(const void *);
 	int	set_lastlog_msg_level 		(int);
-	void	set_lastlog_size 		(int);
-	void	set_notify_level 		(char *);
+	void	set_lastlog_size 		(const void *);
+	void	set_notify_level 		(const void *);
 	void	add_to_lastlog 		(struct WindowStru *, const char *);
 	char	*bits_to_lastlog_level 		(int);
 	int	real_lastlog_level 		(void);
 	int	real_notify_level 		(void);
-	int	parse_lastlog_level 		(char *);
-	void	set_beep_on_msg			(char *);
+	int	parse_lastlog_level 		(const char *);
+	void	set_beep_on_msg			(const void *);
 	void	remove_from_lastlog		(struct WindowStru *);
-	void	set_current_window_level 	(char *);
+	void	set_current_window_level 	(const void *);
 	char	*function_line			(char *);
 	char	*function_lastlog		(char *);
-	void	set_new_server_lastlog_level	(char *);
+	void	set_new_server_lastlog_level	(const void *);
 
 #endif /* __lastlog_h_ */

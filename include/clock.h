@@ -41,18 +41,18 @@
 extern char *	time_format;
 extern char	clock_timeref[];
 
-	void	reset_clock		(char *);
+	void	reset_clock		(const void *);
 	const char *	get_clock	(void);
 	void	clock_systimer		(void);
-	void	set_clock_interval	(int);
-	void	set_clock_format	(char *);
-	void	set_clock		(int);
+	void	set_clock_interval	(const void *);
+	void	set_clock_format	(const void *);
+	void	set_clock		(const void *);
 
 extern int	cpu_saver;
 
 	int	cpu_saver_timer		(void *);
-	void	set_cpu_saver_after	(int);
-	void	set_cpu_saver_every	(int);
+	void	set_cpu_saver_after	(const void *);
+	void	set_cpu_saver_every	(const void *);
 	BUILT_IN_BINDING(cpu_saver_on);
 
 	int	update_system_timer	(const char *);

@@ -1,4 +1,4 @@
-/* $EPIC: lastlog.c,v 1.23 2003/07/19 21:47:55 jnelson Exp $ */
+/* $EPIC: lastlog.c,v 1.24 2003/07/22 21:12:54 jnelson Exp $ */
 /*
  * lastlog.c: handles the lastlog features of irc. 
  *
@@ -121,7 +121,7 @@ char	*bits_to_lastlog_level (int level)
 	return (buffer);
 }
 
-int	parse_lastlog_level (char *str)
+int	parse_lastlog_level (const char *orig)
 {
 	char	*ptr,
 		*rest;
@@ -131,6 +131,9 @@ int	parse_lastlog_level (char *str)
 		level,
 		neg;
 	int	warn = 0;
+	char *	str;
+
+	str = LOCAL_COPY(orig);
 
 	level = 0;
 	while ((str = next_arg(str, &rest)) != NULL)
@@ -190,15 +193,17 @@ int	parse_lastlog_level (char *str)
  * parses the settings and sets the lastlog_level variable appropriately.  It
  * also rewrites the LASTLOG_LEVEL variable to make it look nice 
  */
-void	set_lastlog_level (char *str)
+void	set_lastlog_level (const void *stuff)
 {
+	const char *str = (const char *)stuff;
 	lastlog_level = parse_lastlog_level(str);
 	set_string_var(LASTLOG_LEVEL_VAR, bits_to_lastlog_level(lastlog_level));
 	current_window->lastlog_level = lastlog_level;
 }
 
-void	set_new_server_lastlog_level (char *str)
+void	set_new_server_lastlog_level (const void *stuff)
 {
+	const char *str = (const char *)stuff;
 	new_server_lastlog_level = parse_lastlog_level(str);
 	set_string_var(NEW_SERVER_LASTLOG_LEVEL_VAR, 
 			bits_to_lastlog_level(new_server_lastlog_level));
@@ -233,8 +238,9 @@ void 	remove_from_lastlog (Window *window)
  * has gotten larger than it was before, all newer lastlog entries remain.
  * If it get smaller, some are deleted from the end. 
  */
-void	set_lastlog_size (int size)
+void	set_lastlog_size (const void *stuff)
 {
+	int	size = *(const int *)stuff;
 	int	i,
 		diff;
 	Window	*window = NULL;
@@ -866,21 +872,24 @@ int	real_lastlog_level (void)
 	return (lastlog_level);
 }
 
-void	set_notify_level (char *str)
+void	set_notify_level (const void *stuff)
 {
+	const char *str = (const char *)stuff;
 	notify_level = parse_lastlog_level(str);
 	set_string_var(NOTIFY_LEVEL_VAR, bits_to_lastlog_level(notify_level));
 	current_window->notify_level = notify_level;
 }
 
-void 	set_beep_on_msg (char *str)
+void 	set_beep_on_msg (const void *stuff)
 {
+	const char *str = (const char *)stuff;
 	beep_on_level = parse_lastlog_level(str);
 	set_string_var(BEEP_ON_MSG_VAR, bits_to_lastlog_level(beep_on_level));
 }
 
-void	set_current_window_level (char *str)
+void	set_current_window_level (const void *stuff)
 {
+	const char *str = (const char *)stuff;
 	current_window_level = parse_lastlog_level(str);
 	set_string_var(CURRENT_WINDOW_LEVEL_VAR, 
 			bits_to_lastlog_level(current_window_level));

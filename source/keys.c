@@ -1,4 +1,4 @@
-/* $EPIC: keys.c,v 1.27 2003/07/22 19:04:36 jnelson Exp $ */
+/* $EPIC: keys.c,v 1.28 2003/07/22 21:12:54 jnelson Exp $ */
 /*
  * keys.c:  Keeps track of what happens whe you press a key.
  *
@@ -872,7 +872,9 @@ void unload_bindings_recurse (const char *pkg, struct Key *map) {
 /* set_key_interval:  this is used to construct a new Timeval when the
  * 'KEY_INTERVAL' /set is changed.  We modify an external variable which
  * defines how long the client will wait to timeout, at most. */
-void set_key_interval (int msec) {
+void set_key_interval (const void *stuff) {
+    int msec = *(const int *)stuff;
+
     if (msec < 10) {
 	say("Setting KEY_INTERVAL below 10ms is not recommended.");
 	msec = 10;
