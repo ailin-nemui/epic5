@@ -63,9 +63,9 @@ typedef	struct
 	IsonEntry *	ison_queue;	/* Ison queue */
 	UserhostEntry *	userhost_queue;	/* Userhost queue */
 
-	ISA	local_sockname; 	/* sockname of this connection */
-	ISA	remote_sockname; 	/* sockname of this connection */
-	ISA	uh_addr;		/* ip address the server sees */
+	SS	local_sockname; 	/* sockname of this connection */
+	SS	remote_sockname; 	/* sockname of this connection */
+	SS	uh_addr;		/* ip address the server sees */
 	NotifyList	notify_list;	/* Notify list for this server */
 	int	reconnects;		/* Number of reconnects done */
 	char 	*cookie;		/* Erf/TS4 "cookie" value */

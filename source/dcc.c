@@ -9,7 +9,7 @@
  */
 
 #if 0
-static	char	rcsid[] = "@(#)$Id: dcc.c,v 1.18 2002/05/09 05:35:13 jnelson Exp $";
+static	char	rcsid[] = "@(#)$Id: dcc.c,v 1.19 2002/05/09 05:50:07 jnelson Exp $";
 #endif
 
 #include "irc.h"
@@ -46,14 +46,6 @@ static	char	rcsid[] = "@(#)$Id: dcc.c,v 1.18 2002/05/09 05:35:13 jnelson Exp $";
 #define DCC_TWOCLIENTS	((unsigned) 0x0100)
 #define DCC_REJECTED	((unsigned) 0x0200)
 #define DCC_STATES	((unsigned) 0xfff0)
-
-#define V0(x) ((SA *)&(x))
-#define FAMILY(x) (V0(x)->sa_family)
-
-#define V4(x) ((ISA *)&(x))
-#define V4FAM(x) (V4(x)->sin_family)
-#define V4ADDR(x) (V4(x)->sin_addr)
-#define V4PORT(x) (V4(x)->sin_port)
 
 typedef	struct	DCC_struct
 {

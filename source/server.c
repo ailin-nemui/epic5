@@ -106,7 +106,9 @@ void 	add_to_server_list (const char *server, int port, const char *password, co
 		s->who_queue = NULL;
 		s->ison_queue = NULL;
 		s->userhost_queue = NULL;
-		s->uh_addr.sin_addr.s_addr = 0;
+		memset(&s->uh_addr, 0, sizeof(s->uh_addr));
+		memset(&s->local_sockname, 0, sizeof(s->local_sockname));
+		memset(&s->remote_sockname, 0, sizeof(s->remote_sockname));
 		s->umodes = NULL;
 		s->redirect = NULL;
 		s->cookie = NULL;
@@ -2061,7 +2063,10 @@ int	get_server_port (int gsp_index)
 	else if (gsp_index >= number_of_servers)
 		return 0;
 
-	return (server_list[gsp_index].port);
+	if (FAMILY(server_list[gsp_index].remote_sockname) == AF_INET)
+		return ntohs(V4PORT(server_list[gsp_index].remote_sockname));
+
+	return 0;
 }
 
 int	get_server_local_port (int gsp_index)
@@ -2071,17 +2076,20 @@ int	get_server_local_port (int gsp_index)
 	else if (gsp_index >= number_of_servers)
 		return 0;
 
-	return ntohs(server_list[gsp_index].local_sockname.sin_port);
+	if (FAMILY(server_list[gsp_index].local_sockname) == AF_INET)
+		return ntohs(V4PORT(server_list[gsp_index].local_sockname));
+
+	return 0;
 }
 
 IA	get_server_local_addr (int servnum)
 {
-	return server_list[servnum].local_sockname.sin_addr;
+	return V4ADDR(server_list[servnum].local_sockname);
 }
 
 IA	get_server_uh_addr (int servnum)
 {
-	return server_list[servnum].uh_addr.sin_addr;
+	return V4ADDR(server_list[servnum].uh_addr);
 }
 
 /* USERHOST */
@@ -2099,7 +2107,7 @@ void	set_server_userhost (int refnum, const char *userhost)
 	malloc_strcpy(&server_list[from_server].userhost, userhost);
 
 	/* Ack! */
-	server_list[from_server].uh_addr.sin_family = AF_INET;
+	FAMILY(server_list[from_server].uh_addr) = AF_INET;
 	if (inet_anyton(host + 1, (SA *)&server_list[from_server].uh_addr))
 		yell("Ack.  The server says your userhost is [%s] and "
 		     "I can't figure out the IP address of that host! "

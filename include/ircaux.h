@@ -7,7 +7,7 @@
  *
  * See the COPYRIGHT file, or do a HELP IRCII COPYRIGHT 
  *
- * @(#)$Id: ircaux.h,v 1.18 2002/05/07 06:12:06 jnelson Exp $
+ * @(#)$Id: ircaux.h,v 1.19 2002/05/09 05:50:07 jnelson Exp $
  */
 
 #ifndef _IRCAUX_H_
@@ -186,6 +186,14 @@ char *		real_extract2 		(const char *, int, int, int);
 #define SERVICE_CLIENT 	1
 
 /* Used from network.c */
+#define V0(x) ((SA *)&(x))
+#define FAMILY(x) (V0(x)->sa_family)
+
+#define V4(x) ((ISA *)&(x))
+#define V4FAM(x) (V4(x)->sin_family)
+#define V4ADDR(x) (V4(x)->sin_addr)
+#define V4PORT(x) (V4(x)->sin_port)
+
 int 	connect_by_number 	(char *, unsigned short *, int, int);
 char 	*inet_hntop 		(int, const char *, char *, int);
 char 	*inet_ptohn 		(int, const char *, char *, int);
