@@ -6132,6 +6132,7 @@ BUILT_IN_FUNCTION(function_ssl, words)
 
 BUILT_IN_FUNCTION(function_cipher, input)
 {
+#ifdef HAVE_SSL
 	int     sval = from_server;
 
 	if (*input)
@@ -6141,6 +6142,9 @@ BUILT_IN_FUNCTION(function_cipher, input)
 		RETURN_STR(NULL);
 
 	RETURN_STR(get_server_cipher(sval));
+#else
+	RETURN_EMPTY;
+#endif
 }
 
 #define MATH_RETVAL(x)						\

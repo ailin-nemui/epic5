@@ -12,7 +12,6 @@
 #include "screen.h"
 #include "window.h"
 #include "vars.h"
-#define NEED_SERVER_LIST
 #include "server.h"
 #include "list.h"
 #include "term.h"
