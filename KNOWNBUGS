@@ -72,3 +72,4 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Fix $getopt() to save 'input_size' so we can use it with strl*().
 * Convert all uses of stpcpy() to strlcat() and strlopencat().
 * Nix checks for stpcpy() in configure -- regen configure.
+* Include strlcpy() in wserv.c for use by gailib.c.
