@@ -1,4 +1,4 @@
-/* $EPIC: names.c,v 1.39 2003/03/29 08:10:22 jnelson Exp $ */
+/* $EPIC: names.c,v 1.40 2003/04/04 17:52:59 jnelson Exp $ */
 /*
  * names.c: This here is used to maintain a list of all the people currently
  * on your channel.  Seems to work 
@@ -1392,7 +1392,7 @@ int     is_current_channel (const char *channel, int server)
         int  window;
         const char *  name;
  
-        if ((window = channel_window(channel, server)))
+        if ((window = channel_window(channel, server)) > 0)
                 if ((name = window_current_channel(window, server)))
                         if (!my_stricmp(name, channel)) 
                                 return 1;
@@ -1706,6 +1706,9 @@ void   move_channel_to_window (const char *chan, int server, int old_w, int new_
 
 void	channel_hold_election (int winref)
 {
+	if (winref <= 0)
+		return;			/* Whatever.  Probably should panic */
+
 	window_statusbar_needs_update(get_window_by_refnum(winref));
 	update_all_windows();
 }

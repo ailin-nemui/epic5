@@ -41,3 +41,5 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Implement /ON SWITCH_WINDOWS again.
 * Fix typo in names.h
 * Don't use isinf(), it's a bsd-ism, use !finite() instead.
+* Don't hold elections for illegal window refnums.
+* Channel can't be current if it's not in a window.
