@@ -1,4 +1,4 @@
-/* $EPIC: timer.c,v 1.14 2002/12/02 01:01:59 jnelson Exp $ */
+/* $EPIC: timer.c,v 1.15 2002/12/09 16:41:26 jnelson Exp $ */
 /*
  * timer.c -- handles timers in ircII
  *
@@ -650,7 +650,9 @@ void 	ExecuteTimers (void)
 			(*current->callback)(current->command);
 		else
 			parse_line("TIMER", (char *)current->command, 
-						current->subargs, 0,0);
+						current->subargs ? 
+						  current->subargs : 
+						  empty_string, 0,0);
 
 		from_server = old_from_server;
 		make_window_current_by_refnum(old_refnum);
