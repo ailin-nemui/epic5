@@ -1,4 +1,4 @@
-/* $EPIC: irc.c,v 1.368 2002/10/18 22:13:16 jnelson Exp $ */
+/* $EPIC: irc.c,v 1.369 2002/10/20 19:28:08 crazyed Exp $ */
 /*
  * ircII: a new irc client.  I like it.  I hope you will too!
  *
@@ -52,7 +52,7 @@ const char internal_version[] = "20020819";
 /*
  * In theory, this number is incremented for every commit.
  */
-const unsigned long	commit_id = 373;
+const unsigned long	commit_id = 374;
 
 /*
  * As a way to poke fun at the current rage of naming releases after
@@ -273,6 +273,9 @@ void	irc_exit (int really_quit, char *format, ...)
 #ifdef PERL
 	extern void perlstartstop(int);
 #endif
+#ifdef TCL
+	extern void tclstartstop(int);
+#endif
 
 	/*
 	 * If we get called recursively, something is hosed.
@@ -313,6 +316,9 @@ void	irc_exit (int really_quit, char *format, ...)
 
 	/* Do some clean up */
 	do_hook(EXIT_LIST, "%s", buffer);
+#ifdef TCL
+	tclstartstop(0);
+#endif
 #ifdef PERL
 	perlstartstop(0);  /* In case there's perl code in the exit hook. */
 #endif

@@ -1,4 +1,4 @@
-/* $EPIC: dcc.c,v 1.36 2002/10/18 21:10:22 jnelson Exp $ */
+/* $EPIC: dcc.c,v 1.37 2002/10/20 19:28:08 crazyed Exp $ */
 /*
  * dcc.c: Things dealing client to client connections. 
  *
@@ -1224,18 +1224,20 @@ static	void	dcc_getfile (char *args)
 		{
 			strlcpy(pathname, get_string_var(DCC_STORE_PATH_VAR), 
 						sizeof(pathname));
-			strlcat(pathname, "/", sizeof(pathname));
 		}
-
-		realname = dcc_urldecode(dcc->description);
-		strlcat(pathname, realname, sizeof(pathname));
-		new_free(&realname);
 
 		if (normalize_filename(pathname, fullname))
 		{
 			say("%s is not a valid directory", fullname);
 			continue;
 		}
+
+		if (fullname && *fullname)
+			strlcat(fullname, "/", sizeof(fullname));
+
+		realname = dcc_urldecode(dcc->description);
+		strlcat(fullname, realname, sizeof(pathname));
+		new_free(&realname);
 
 		dcc->filename = m_strdup(fullname);
 		if ((dcc->file = open(fullname, 
