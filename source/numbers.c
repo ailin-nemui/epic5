@@ -1,4 +1,4 @@
-/* $EPIC: numbers.c,v 1.72 2004/07/23 00:49:46 jnelson Exp $ */
+/* $EPIC: numbers.c,v 1.73 2004/08/08 03:52:50 jnelson Exp $ */
 /*
  * numbers.c: handles all those strange numeric response dished out by that
  * wacky, nutty program we call ircd 
@@ -308,6 +308,20 @@ void 	numbered_command (const char *from, const char *comm, char const **ArgList
 		use_server_cookie(from_server);
 		set_server_cookie(from_server, cookie);
 		goto END;
+	}
+
+	case 42:		/* IRCNet's "unique id" numeric 042 */
+	{
+		const char *unique_id, *message;
+
+		PasteArgs(ArgList, 1);
+		if (!(unique_id = ArgList[0]))
+			{ rfc1459_odd(from, comm, ArgList); goto END; }
+		if (!(message = ArgList[1]))
+			{ rfc1459_odd(from, comm, ArgList); goto END; }
+
+		set_server_unique_id(from_server, unique_id);
+		break;
 	}
 
         case 301:               /* #define RPL_AWAY             301 */

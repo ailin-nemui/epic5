@@ -1,4 +1,4 @@
-/* $EPIC: server.c,v 1.135 2004/07/28 01:02:39 jnelson Exp $ */
+/* $EPIC: server.c,v 1.136 2004/08/08 03:52:50 jnelson Exp $ */
 /*
  * server.c:  Things dealing with that wacky program we call ircd.
  *
@@ -129,6 +129,7 @@ void 	add_to_server_list (const char *server, int port, const char *password, co
 		s->nickname = (char *) 0;
 		s->s_nickname = (char *) 0;
 		s->d_nickname = (char *) 0;
+		s->unique_id = (char *) 0;
 		s->userhost = (char *) 0;
 		s->port = port;
 		s->line_length = IRCD_BUFFER_SIZE;
@@ -260,6 +261,7 @@ static 	void 	remove_from_server_list (int i, int override)
 	new_free(&s->nickname);
 	new_free(&s->s_nickname);
 	new_free(&s->d_nickname);
+	new_free(&s->unique_id);
 	new_free(&s->userhost);
 	new_free(&s->cookie);
 	new_free(&s->ison_queue);		/* XXX Aren't these free? */
@@ -2457,6 +2459,7 @@ SACCESSOR(group, group, "<default>")
 SACCESSOR(message, quit_message, get_string_var(QUIT_MESSAGE_VAR))
 SACCESSOR(cookie, cookie, NULL)
 SACCESSOR(ver, version_string, NULL)
+SACCESSOR(id, unique_id, NULL)
 
 GET_IATTRIBUTE(status)
 void	set_server_status (int refnum, int new_status)
@@ -2866,6 +2869,9 @@ char 	*serverctl 	(char *input)
 		} else if (!my_strnicmp(listc, "UMODE", len)) {
 			ret = get_umode(refnum);
 			RETURN_STR(ret);
+		} else if (!my_strnicmp(listc, "UNIQUE_ID", len)) {
+			ret = get_server_unique_id(refnum);
+			RETURN_STR(ret);
 		} else if (!my_strnicmp(listc, "USERHOST", len)) {
 			ret = get_server_userhost(refnum);
 			RETURN_STR(ret);
@@ -2947,6 +2953,8 @@ char 	*serverctl 	(char *input)
 			RETURN_INT(1);
 		} else if (!my_strnicmp(listc, "UMODE", len)) {
 			RETURN_EMPTY;		/* Read only for now */
+		} else if (!my_strnicmp(listc, "UNIQUE_ID", len)) {
+			set_server_unique_id(refnum, input);
 		} else if (!my_strnicmp(listc, "USERHOST", len)) {
 			set_server_userhost(refnum, input);
 		} else if (!my_strnicmp(listc, "VERSION", len)) {

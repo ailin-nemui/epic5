@@ -353,3 +353,6 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Fix /set notify_level, which is supposed to cascade to /window notify_level
 * Fix /set lastlog_level, same thing.
 * Implement /window notify_name for %{1}F, for howl (irssi-like status notify)
+* Add support for ircnet's "unique id" nicknames from epic4
+* Fix $winline() from epic4.
+* Fix /who -d[iagnose] from epic4.

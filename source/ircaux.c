@@ -1,4 +1,4 @@
-/* $EPIC: ircaux.c,v 1.114 2004/07/28 01:02:39 jnelson Exp $ */
+/* $EPIC: ircaux.c,v 1.115 2004/08/08 03:52:50 jnelson Exp $ */
 /*
  * ircaux.c: some extra routines... not specific to irc... that I needed 
  *
@@ -887,13 +887,14 @@ char *	check_nickname (char *nick, int unused)
 {
 	char	*s;
 
-	if (!nick || *nick == '-' || isdigit(*nick))
+	/* IRCNet nicknames can start with numbers now. (*gulp*) */
+	if (!nick || *nick == '-')
 		return NULL;
 
 	for (s = nick; *s && (s - nick) < NICKNAME_LEN; s++)
 		if (!islegal(*s) || my_isspace(*s))
 			break;
-	*s = '\0';
+	*s = 0;
 
 	return *nick ? nick : NULL;
 }
