@@ -1,4 +1,4 @@
-/* $EPIC: server.c,v 1.67 2002/08/30 16:51:25 crazyed Exp $ */
+/* $EPIC: server.c,v 1.68 2002/09/01 18:27:52 jnelson Exp $ */
 /*
  * server.c:  Things dealing with that wacky program we call ircd.
  *
@@ -2170,8 +2170,8 @@ void	set_server_userhost (int refnum, const char *userhost)
 
 	if (!(host = strchr(userhost, '@')))
 	{
-		yell("Cannot set your userhost to [%s] because it does not
-		      contain a @ character!", userhost);
+		yell("Cannot set your userhost to [%s] because it does not"
+		      "contain a @ character!", userhost);
 		return;
 	}
 

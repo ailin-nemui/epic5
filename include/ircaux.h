@@ -7,7 +7,7 @@
  *
  * See the COPYRIGHT file, or do a HELP IRCII COPYRIGHT 
  *
- * @(#)$Id: ircaux.h,v 1.29 2002/06/21 23:37:31 crazyed Exp $
+ * @(#)$Id: ircaux.h,v 1.30 2002/09/01 18:27:52 jnelson Exp $
  */
 
 #ifndef _IRCAUX_H_
@@ -53,7 +53,7 @@ char *	new_next_arg 		(char *, char **);
 char *	new_new_next_arg 	(char *, char **, char *);
 char *	s_next_arg		(char **);
 char *	last_arg 		(char **, size_t *cluep);
-char *	expand_twiddle 		(char *);
+char *	expand_twiddle 		(const char *);
 char *	upper 			(char *);
 char *	lower 			(char *);
 char *	sindex			(char *, char *);

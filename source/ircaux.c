@@ -1,4 +1,4 @@
-/* $EPIC: ircaux.c,v 1.48 2002/07/30 16:12:59 crazyed Exp $ */
+/* $EPIC: ircaux.c,v 1.49 2002/09/01 18:27:52 jnelson Exp $ */
 /*
  * ircaux.c: some extra routines... not specific to irc... that I needed 
  *
@@ -1173,7 +1173,7 @@ char *	m_strcat_ues_c (char **dest, char *src, int unescape, size_t *cluep)
 }
 
 /* expand_twiddle: expands ~ in pathnames. */
-char *	expand_twiddle (char *str)
+char *	expand_twiddle (const char *str)
 {
 	char	buffer[BIG_BUFFER_SIZE + 1];
 	*buffer = 0;

@@ -1,4 +1,4 @@
-/* $EPIC: log.c,v 1.4 2002/07/17 22:52:52 jnelson Exp $ */
+/* $EPIC: log.c,v 1.5 2002/09/01 18:27:52 jnelson Exp $ */
 /*
  * log.c: handles the irc session logging functions 
  *
@@ -45,7 +45,52 @@
 	FILE	*irclog_fp;
 	int	logfile_line_mangler;
 
-FILE *do_log (int flag, char *logfile, FILE **fp)
+
+static FILE *open_log (const char *logfile, FILE **fp)
+{
+	time_t	t;
+	char	my_buffer[256];
+	struct	tm	*ugh;
+
+	time(&t);
+	ugh = localtime(&t);		/* Not gmtime, m'kay? */
+	/* Ugh.  Solaris. */
+	strftime(my_buffer, 255, "%a %b %d %H:%M:%S %Y", ugh);
+
+	if (*fp) 
+	{
+		say("Logging is already on");
+		return *fp;
+	}
+
+	if (!logfile)
+		return NULL;
+			
+	if (!(logfile = expand_twiddle(logfile)))
+	{
+		say("SET LOGFILE: No such user");
+		return NULL;
+	}
+
+	if ((*fp = fopen(logfile, "a")) != NULL)
+	{
+		chmod(logfile, S_IREAD | S_IWRITE);
+		say("Starting logfile %s", logfile);
+
+		fprintf(*fp, "IRC log started %s\n", my_buffer);
+		fflush(*fp);
+	}
+	else
+	{
+		say("Couldn't open logfile %s: %s", logfile, strerror(errno));
+		*fp = NULL;
+	}
+
+	new_free(&logfile);
+	return (*fp);
+}
+
+static FILE *close_log (FILE **fp)
 {
 	time_t	t;
 	char	my_buffer[256];
@@ -56,50 +101,24 @@ struct	tm	*ugh;
 	/* Ugh.  Solaris. */
 	strftime(my_buffer, 255, "%a %b %d %H:%M:%S %Y", ugh);
 
-	if (flag)
+	if (*fp)
 	{
-		if (*fp)
-			say("Logging is already on");
-		else
-		{
-			if (!logfile)
-				return NULL;
-				
-			if (!(logfile = expand_twiddle(logfile)))
-			{
-				say("SET LOGFILE: No such user");
-				return NULL;
-			}
-
-			if ((*fp = fopen(logfile, "a")) != NULL)
-			{
-				chmod(logfile, S_IREAD | S_IWRITE);
-				say("Starting logfile %s", logfile);
-
-				fprintf(*fp, "IRC log started %s\n", my_buffer);
-				fflush(*fp);
-			}
-			else
-			{
-				say("Couldn't open logfile %s: %s", logfile, strerror(errno));
-				*fp = (FILE *) 0;
-			}
-			new_free(&logfile);
-		}
-	}
-	else
-	{
-		if (*fp)
-		{
-			fprintf(*fp, "IRC log ended %s\n", my_buffer);
-			fflush(*fp);
-			fclose(*fp);
-			*fp = (FILE *) 0;
-			say("Logfile ended");
-		}
+		fprintf(*fp, "IRC log ended %s\n", my_buffer);
+		fflush(*fp);
+		fclose(*fp);
+		*fp = (FILE *) 0;
+		say("Logfile ended");
 	}
 
 	return (*fp);
+}
+
+FILE *do_log (int flag, const char *logfile, FILE **fp)
+{
+	if (flag)
+		return open_log(logfile, fp);
+	else
+		return close_log(fp);
 }
 
 /* logger: if flag is 0, logging is turned off, else it's turned on */
@@ -123,7 +142,7 @@ void	logger (int flag)
  * closes the last log file and reopens it with the new name.  This is called
  * automatically when you SET LOGFILE. 
  */
-void set_log_file (char *filename)
+void	set_log_file (const char *filename)
 {
 	char	*expand;
 

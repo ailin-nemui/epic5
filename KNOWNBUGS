@@ -24,4 +24,8 @@ KNOWN ERRATA (eg, bugs, or unresolved requests):
 
 THE CHANGELOG SINCE THE LAST RELEASE:
 -------------------------------------
-* Rewrote keys.c, completely overhauled the keybinding system. (wd)
+* Fix expand_twiddle to take a (const char *)
+* Fix do_log and set_log_file to take a (const char *)
+* Remove a couple of no-ops in keys.c
+* Revamp do_log into two parts; open_log and close_log; do_log now a wrapper.
+* Fix a string that had a newline in it. spotted by Szabolcs Rumi.

@@ -9,9 +9,9 @@
 #ifndef __log_h__
 #define __log_h__
 
-	FILE	*do_log 	(int, char *, FILE **);
+	FILE	*do_log 	(int, const char *, FILE **);
 	void	logger 		(int);
-	void	set_log_file 	(char *);
+	void	set_log_file 	(const char *);
 	void	add_to_log 	(FILE *, unsigned, const unsigned char *);
 
 #endif /* _LOG_H_ */
