@@ -1,4 +1,4 @@
-/* $EPIC: server.c,v 1.105 2003/09/25 03:33:11 jnelson Exp $ */
+/* $EPIC: server.c,v 1.106 2003/10/19 21:38:59 jnelson Exp $ */
 /*
  * server.c:  Things dealing with that wacky program we call ircd.
  *
@@ -3081,7 +3081,7 @@ char 	*serverctl 	(char *input)
 		} else if (!my_strnicmp(listc, "UMODE", len)) {
 			RETURN_EMPTY;		/* Read only for now */
 		} else if (!my_strnicmp(listc, "UMODES", len)) {
-			RETURN_EMPTY;		/* Read only for now */
+			set_possible_umodes (refnum, input);
 		} else if (!my_strnicmp(listc, "USERHOST", len)) {
 			set_server_userhost(refnum, input);
 		} else if (!my_strnicmp(listc, "VERSION", len)) {
