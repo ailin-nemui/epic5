@@ -1235,7 +1235,7 @@ char	*scan_channel (char *cname)
 		if (nicks->list[i]->chanop)
 			buffer[0] = '@';
 		else if (nicks->list[i]->half_assed)
-			buffer[0] = 'h';
+			buffer[0] = '%';
 		else
 			buffer[0] = '.';
 
