@@ -1130,7 +1130,7 @@ int	reconnect (int refnum)
 {
 	int	new_server;
 
-	if (server_list[refnum].reconnect_to != -1)
+	if (refnum >= 0 && server_list[refnum].reconnect_to != -1)
 		save_server_channels(refnum);
 	if (refnum >= 0 && refnum < number_of_servers)
 	{
