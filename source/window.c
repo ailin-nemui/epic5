@@ -1,4 +1,4 @@
-/* $EPIC: window.c,v 1.49 2002/12/19 03:22:59 jnelson Exp $ */
+/* $EPIC: window.c,v 1.50 2002/12/20 04:52:21 jnelson Exp $ */
 /*
  * window.c: Handles the organzation of the logical viewports (``windows'')
  * for irc.  This includes keeping track of what windows are open, where they
@@ -210,6 +210,7 @@ Window	*new_window (Screen *screen)
 
 	new_w->top_of_scrollback = NULL;	/* Filled in later */
 	new_w->top_of_display = NULL;		/* Filled in later */
+	new_w->scrollback_point = NULL;		/* Filled in later */
 #if 0
 	new_w->ceiling_of_display = NULL;	/* Filled in later */
 #endif
@@ -4751,8 +4752,12 @@ static void	window_scrollback_start (Window *window)
 		return;
 	}
 
+	if (window->scrollback_point == NULL)
+		window->scrollback_point = window->top_of_display;
+
 	window->autohold = 1;
 	window->top_of_display = window->top_of_scrollback;
+	recalculate_window_cursor_and_display_ip(window);
 	window_body_needs_redraw(window);
 	window_statusbar_needs_update(window);
 }
@@ -4760,6 +4765,15 @@ static void	window_scrollback_start (Window *window)
 static void	window_scrollback_end (Window *window)
 {
 	window->autohold = 0;
+	if (window->scrollback_point)
+	{
+		window->top_of_display = window->scrollback_point;
+		window->scrollback_point = NULL;
+		recalculate_window_cursor_and_display_ip(window);
+		window_body_needs_redraw(window);
+		window_statusbar_needs_update(window);
+	}
+
 	if (window->distance_from_display_ip >= window->display_size)
 		unclear_window(window);
 }
@@ -4774,6 +4788,9 @@ static void 	window_scrollback_backwards_lines (Window *window, int lines)
 		term_beep();
 		return;
 	}
+
+	if (window->scrollback_point == NULL)
+		window->scrollback_point = window->top_of_display;
 
 	for (new_lines = 0; new_lines < lines; new_lines++)
 	{
@@ -4803,6 +4820,15 @@ static void 	window_scrollback_forwards_lines (Window *window, int lines)
 
 	for (new_lines = 0; new_lines < lines; new_lines++)
 	{
+		if (new_top == window->scrollback_point)
+		{
+			window->scrollback_point = NULL;
+			window->top_of_display = new_top;
+			recalculate_window_cursor_and_display_ip(window);
+			if (window->distance_from_display_ip <= window->display_size)
+				break;
+			/* Otherwise, just keep going */
+		}
 		if (new_top == window->display_ip)
 			break;
 		new_top = new_top->next;
@@ -4813,10 +4839,13 @@ static void 	window_scrollback_forwards_lines (Window *window, int lines)
 	window_body_needs_redraw(window);
 	window_statusbar_needs_update(window);
 
-	if (window->distance_from_display_ip <= window->display_size)
+	if (window->scrollback_point == NULL && window->distance_from_display_ip <= window->display_size)
 	{
 		window->autohold = 0;
-		unclear_window(window);		/* Historical reasons */
+#if 0
+		if (window->top_of_display == window->display_ip)
+			unclear_window(window);		/* Historical reasons */
+#endif
 	}
 }
 
@@ -4831,8 +4860,9 @@ static void 	window_scrollback_to_string (Window *window, regex_t *preg)
 
 		if (regexec(preg, new_top->line, 0, NULL, 0) == 0)
 		{
+			if (window->scrollback_point == NULL)
+				window->scrollback_point = window->top_of_display;
 			window->top_of_display = new_top;
-
 			window->autohold = 1;
 			recalculate_window_cursor_and_display_ip(window);
 			window_body_needs_redraw(window);

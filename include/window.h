@@ -101,7 +101,8 @@ typedef	struct	WindowStru
 	Display *top_of_scrollback,	/* Start of the scrollback buffer */
 		*top_of_display,	/* Where the viewport starts */
 		*ceiling_of_display,	/* The farthest back top_of_display */
-		*display_ip;		/* Where next line goes in rite() */
+		*display_ip,		/* Where next line goes in rite() */
+		*scrollback_point;	/* Where we went into scrollback */
 	int	display_buffer_size;	/* How big the scrollback buffer is */
 	int	display_buffer_max;	/* How big its supposed to be */
 	int	display_size;		/* How big the window is - status */
