@@ -1,4 +1,4 @@
-/* $EPIC: lastlog.c,v 1.13 2002/07/17 22:52:52 jnelson Exp $ */
+/* $EPIC: lastlog.c,v 1.14 2002/12/04 03:28:05 jnelson Exp $ */
 /*
  * lastlog.c: handles the lastlog features of irc. 
  *
@@ -330,6 +330,7 @@ BUILT_IN_COMMAND(lastlog)
 	Lastlog *	start;
 	Lastlog *	end;
 	Lastlog *	l;
+	Lastlog *	lastshown;
 	regex_t 	realreg;
 	regex_t *	reg = NULL;
 	int		cnt;
@@ -612,35 +613,50 @@ BUILT_IN_COMMAND(lastlog)
 		start = start->older;
 	    }
 
+	    lastshown = NULL;
 	    for (l = start; l; (void)(l && (l = l->newer)))
 	    {
 		if (show_lastlog(&l, &skip, &number, level_mask, 
 				match, reg, &max))
 		{
-		    if (show_separator)
-		    {
-			file_put_it(outfp, "%s", separator);
-			show_separator = 0;
-		    }
-
 		    if (counter == 0 && before > 0)
 		    {
 			int i;
 
+			counter = 1;
 			for (i = 0; i < before; i++)
-			     if (l && l->older)
-				l = l->older;
-			counter = before + 1;
+			{
+			    if (l && l == lastshown)
+			    {
+				if (l->newer)
+				    l = l->newer;
+				show_separator = 0;
+				break;
+			    }
 
+			    if (l && l->older)
+			    {
+				l = l->older;
+				counter++;
+			    }
+			}
 		    }
 		    else if (after != -1)
 			counter = after + 1;
 		    else
 			counter = 1;
+
+		    if (show_separator)
+		    {
+			file_put_it(outfp, "%s", separator);
+			show_separator = 0;
+		    }
 		}
+
 		if (counter)
 		{
 			file_put_it(outfp, "%s", l->msg);
+			lastshown = l;
 			counter--;
 			if (counter == 0 && before != -1 && separator)
 				show_separator = 1;
@@ -663,33 +679,49 @@ BUILT_IN_COMMAND(lastlog)
 		end = end->older;
 	    }
 
+	    lastshown = NULL;
 	    for (l = start; l; (void)(l && (l = l->older)))
 	    {
 		if (show_lastlog(&l, &skip, &number, level_mask, 
 				match, reg, &max))
 		{
-		    if (show_separator)
-		    {
-			file_put_it(outfp, "%s", separator);
-			show_separator = 0;
-		    }
-
 		    if (counter == 0 && before > 0)
 		    {
 			int i;
+
+			counter = 1;
 			for (i = 0; i < before; i++)
-			     if (l && l->newer)
+			{
+			    if (l && l == lastshown)
+			    {
+				if (l->older)
+				    l = l->older;
+				show_separator = 0;
+				break;
+			    }
+
+			    if (l && l->newer)
+			    {
 				l = l->newer;
-			counter = before + 1;
+				counter++;
+			    }
+			}
 		    }
 		    else if (after != -1)
 			counter = after + 1;
 		    else
 			counter = 1;
+
+		    if (show_separator)
+		    {
+			file_put_it(outfp, "%s", separator);
+			show_separator = 0;
+		    }
 		}
 		if (counter)
 		{
 			file_put_it(outfp, "%s", l->msg);
+			lastshown = l;
 			counter--;
 			if (counter == 0 && before != -1 && separator)
 				show_separator = 1;
