@@ -1,4 +1,4 @@
-/* $EPIC: words.c,v 1.5 2003/05/02 20:22:26 jnelson Exp $ */
+/* $EPIC: words.c,v 1.6 2003/05/09 04:29:52 jnelson Exp $ */
 /*
  * words.c -- right now it just holds the stuff i wrote to replace
  * that beastie arg_number().  Eventually, i may move all of the
@@ -120,14 +120,17 @@ const char *	real_move_to_abs_word (const char *start, const char **mark, int wo
 /* 
  * Move a relative number of words from the present mark 
  */
-static const char *	move_word_rel (const char *start, const char **mark, int word, int extended)
+static ssize_t	move_word_rel (const char *start, const char **mark, int word, int extended)
+/*
+static char *	move_word_rel (const char *start, const char **mark, int word, int extended)
+*/
 {
 	int 		counter = word;
 	const char *	pointer = *mark;
 	const char *	end = start + strlen(start);
 
 	if (end == start) 	/* null string, return it */
-		return start;
+		return 0;
 
 	CHECK_EXTENDED_SUPPORT
 	if (counter > 0)
@@ -181,7 +184,8 @@ static const char *	move_word_rel (const char *start, const char **mark, int wor
 
 	if (mark)
 		*mark = pointer;
-	return pointer;
+
+	return pointer - start;
 }
 
 /*
@@ -212,7 +216,7 @@ char *	real_extract2 (const char *start, int firstword, int lastword, int extend
 	if (firstword == EOS)
 	{
 		mark = start + strlen(start);
-		mark = move_word_rel(start, &mark, -1, extended);
+		move_word_rel(start, &mark, -1, extended);
 #ifndef NO_CHEATING
 		/* 
 		 * Really. the only case where firstword == EOS is
@@ -327,8 +331,8 @@ char *	real_extract (char *start, int firstword, int lastword, int extended)
 	 * that taking word set (-1,3) is valid and contains the
 	 * words 0, 1, 2, 3.  But word set (-1, -1) is an empty_string.
 	 */
-	char *	mark;
-	char *	mark2;
+	const char *	mark;
+	const char *	mark2;
 	char *	booya = NULL;
 
 	CHECK_EXTENDED_SUPPORT
@@ -349,7 +353,7 @@ char *	real_extract (char *start, int firstword, int lastword, int extended)
 	if (firstword == EOS)
 	{
 		mark = start + strlen(start);
-		mark = (char *)move_word_rel(start, (const char **)&mark, -1, extended);
+		move_word_rel(start, (const char **)&mark, -1, extended);
 	}
 
 	/* If the firstword is positive, move to that word */

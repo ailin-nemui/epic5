@@ -10,6 +10,7 @@
 
 extern 	unsigned long 	x_debug;
 	BUILT_IN_COMMAND(xdebugcmd);
+extern	char *	function_xdebug (char *);
 
 #define DEBUG_LOCAL_VARS	1 << 0
 #define DEBUG_ALIAS		1 << 1

@@ -1,4 +1,4 @@
-/* $EPIC: input.c,v 1.13 2003/04/24 21:49:25 jnelson Exp $ */
+/* $EPIC: input.c,v 1.14 2003/05/09 04:29:52 jnelson Exp $ */
 /*
  * input.c: does the actual input line stuff... keeps the appropriate stuff
  * on the input line, handles insert/delete of characters/words... the whole
@@ -191,7 +191,7 @@ void	update_input (int update)
 		free_it = 0,
 		max;
 	char	*prompt;
-	int	echo = 1;
+	int	do_echo = 1;
 	Screen	*os = last_input_screen;
 	Screen	*ns;
 	Window	*saved_current_window = current_window;
@@ -410,7 +410,7 @@ void	update_input (int update)
 			/*
 			 * Forcibly turn on echo.
 			 */
-			int	echo = term_echo(1);
+			do_echo = term_echo(1);
 
 			/*
 			 * Crop back the input prompt so it does not extend
@@ -428,15 +428,15 @@ void	update_input (int update)
 			 * Turn the echo back to what it was before,
 			 * and output the rest of the input buffer.
 			 */
-			term_echo(echo);
-			safe_puts(INPUT_BUFFER, last_input_screen->co - INPUT_PROMPT_LEN, echo);
+			term_echo(do_echo);
+			safe_puts(INPUT_BUFFER, last_input_screen->co - INPUT_PROMPT_LEN, do_echo);
 		}
 
 		/*
 		 * Otherwise we just output whatever we have.
 		 */
-		else if (echo)
-			safe_puts(&(INPUT_VISIBLE), last_input_screen->co, echo);
+		else if (do_echo)
+			safe_puts(&(INPUT_VISIBLE), last_input_screen->co, do_echo);
 
 		/*
 		 * Clear the rest of the input line and reset the cursor
@@ -465,7 +465,7 @@ void	update_input (int update)
 
 		if ((len = strlen(&(THIS_CHAR))) > max)
 			len = max;
-		safe_puts(&(THIS_CHAR), len, echo);
+		safe_puts(&(THIS_CHAR), len, do_echo);
 		term_clear_to_eol();
 		term_move_cursor(INPUT_CURSOR, INPUT_LINE);
 		cursor_not_in_display(last_input_screen);
@@ -681,7 +681,7 @@ static void	input_delete_char_from_screen (void)
 		else
 			pos = INPUT_ONSCREEN + last_input_screen->co - 1;
 
-		if (pos < strlen(INPUT_BUFFER))
+		if (pos < (int)strlen(INPUT_BUFFER))
 		{
 			term_move_cursor(last_input_screen->co - 1, INPUT_LINE);
 			term_putchar(INPUT_BUFFER[pos]);
@@ -766,7 +766,7 @@ BUILT_IN_BINDING(input_end_of_line)
  * position from the input line, and puts it into the cut buffer.  It does
  * the requisite redraw as well.
  */
-void	cut_input (int anchor)
+static void	cut_input (int anchor)
 {
 	char *	buffer;
 	size_t	size;
@@ -1019,7 +1019,7 @@ BUILT_IN_BINDING(input_transpose_characters)
 		 * then swap the two characters before the cursor
 		 * XXX This strlen() is probably unnecesary.
 		 */
-		else if (strlen(INPUT_BUFFER) > MIN_POS + 2)
+		else if ((int) strlen(INPUT_BUFFER) > MIN_POS + 2)
 		{
 			pos = THIS_POS - 1;
 			end_of_line = 1;
@@ -1119,7 +1119,9 @@ BUILT_IN_BINDING(forward_history)
 
 BUILT_IN_BINDING(toggle_insert_mode)
 {
-	set_var_value(INSERT_MODE_VAR, "TOGGLE");
+	char *whatever;
+	whatever = LOCAL_COPY("TOGGLE");
+	set_var_value(INSERT_MODE_VAR, whatever);
 }
 
 BUILT_IN_BINDING(send_line)

@@ -1,4 +1,4 @@
-/* $EPIC: irc.c,v 1.509 2003/05/06 03:35:49 crazyed Exp $ */
+/* $EPIC: irc.c,v 1.510 2003/05/09 04:29:52 jnelson Exp $ */
 /*
  * ircII: a new irc client.  I like it.  I hope you will too!
  *
@@ -52,7 +52,7 @@ const char internal_version[] = "20030326";
 /*
  * In theory, this number is incremented for every commit.
  */
-const unsigned long	commit_id = 513;
+const unsigned long	commit_id = 514;
 
 /*
  * As a way to poke fun at the current rage of naming releases after
@@ -258,13 +258,13 @@ static		char	switch_help[] =
 
 
 
-SIGNAL_HANDLER(sig_irc_exit)
+static SIGNAL_HANDLER(sig_irc_exit)
 {
 	irc_exit (1, NULL);
 }
 
 /* irc_exit: cleans up and leaves */
-void	irc_exit (int really_quit, char *format, ...)
+void	irc_exit (int really_quit, const char *format, ...)
 {
 	char 	buffer[BIG_BUFFER_SIZE];
 	char *	sub_format;
@@ -364,7 +364,7 @@ volatile int	dead_children_processes;
  * This is needed so that the fork()s we do to read compressed files dont
  * sit out there as zombies and chew up our fd's while we read more.
  */
-SIGNAL_HANDLER(child_reap)
+static SIGNAL_HANDLER(child_reap)
 {
 	dead_children_processes = 1;
 }
@@ -372,7 +372,7 @@ SIGNAL_HANDLER(child_reap)
 volatile int	segv_recurse = 0;
 
 /* sigsegv: something to handle segfaults in a nice way */
-SIGNAL_HANDLER(coredump)
+static SIGNAL_HANDLER(coredump)
 {
 	if (segv_recurse++)
 		exit(1);
@@ -448,7 +448,7 @@ void irc_quit (char unused, char *not_used)
  * the program *is* frozen -- if it doesnt die when you do this, then the
  * program is functioning correctly (ie, something else is wrong)
  */
-SIGNAL_HANDLER(cntl_c)
+static SIGNAL_HANDLER(cntl_c)
 {
 	/* after 5 hits, we stop whatever were doing */
 	if (cntl_c_hit++ >= 4)
@@ -457,12 +457,12 @@ SIGNAL_HANDLER(cntl_c)
 		kill(getpid(), SIGALRM);
 }
 
-SIGNAL_HANDLER(nothing)
+static SIGNAL_HANDLER(nothing)
 {
 	/* nothing to do! */
 }
 
-SIGNAL_HANDLER(sig_user1)
+static SIGNAL_HANDLER(sig_user1)
 {
 	say("Got SIGUSR1, closing DCC connections and EXECed processes");
 	close_all_dcc();
@@ -499,7 +499,7 @@ static	void	parse_args (int argc, char **argv)
 	struct passwd *entry;
 	char *ptr = (char *) 0;
 	char *tmp_hostname = NULL;
-	char *irc_path = NULL;
+	char *the_path = NULL;
 	char *translation_path = NULL;
 
 	extern char *optarg;
@@ -611,12 +611,12 @@ static	void	parse_args (int argc, char **argv)
 		send_umode = m_strdup(ptr);
 
 	if ((ptr = getenv("IRCPATH")))
-		irc_path = m_strdup(ptr);
+		the_path = m_strdup(ptr);
 	else
-		irc_path = m_sprintf(DEFAULT_IRCPATH, irc_lib);
+		the_path = m_sprintf(DEFAULT_IRCPATH, irc_lib);
 
-	set_string_var(LOAD_PATH_VAR, irc_path);
-	new_free(&irc_path);
+	set_string_var(LOAD_PATH_VAR, the_path);
+	new_free(&the_path);
 
 	if ((ptr = getenv("IRCHOST")) && *ptr)
 		tmp_hostname = ptr;
@@ -1082,7 +1082,7 @@ static void check_invalid_host (void)
 /*
  * I moved this here, because it didnt really belong in status.c
  */
-int	do_every_minute (void *ignored)
+static int	do_every_minute (void *ignored)
 {
 	/* Schedule the next instance */
 	if (!cpu_saver && get_int_var(CPU_SAVER_AFTER_VAR))
@@ -1113,7 +1113,7 @@ int	do_every_minute (void *ignored)
 	return 0;
 }
 
-int	do_notify_stuff (void *ignored)
+static int	do_notify_stuff (void *ignored)
 {
 	/*
 	 * If CPU saver has been turned on, then ratchet down NOTIFY as well.
@@ -1154,10 +1154,10 @@ void	cpu_saver_off (void)
  * calls to get_string_var, which is truly bogus, but neccesary for any
  * semblance of efficiency.
  */
-	char	*time_format = (char *) 0;	/* XXX Bogus XXX */
-static	char	*strftime_24hour = "%R";
-static	char	*strftime_12hour = "%I:%M%p";
-	int	broken_clock = 0;
+	char		*time_format = (char *) 0;	/* XXX Bogus XXX */
+static	const char	*strftime_24hour = "%R";
+static	const char	*strftime_12hour = "%I:%M%p";
+	int		broken_clock = 0;
 
 /* update_clock: figures out the current time and returns it in a nice format */
 char *	update_clock (int flag)

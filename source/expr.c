@@ -1,4 +1,4 @@
-/* $EPIC: expr.c,v 1.11 2003/04/24 21:49:25 jnelson Exp $ */
+/* $EPIC: expr.c,v 1.12 2003/05/09 04:29:52 jnelson Exp $ */
 /*
  * expr.c -- The expression mode parser and the textual mode parser
  * #included by alias.c -- DO NOT DELETE
@@ -339,6 +339,7 @@ static	char	*next_unit (char *str, const char *args, int *arg_flag, int stage)
 		case '(':
 		{
 			int	savec = 0;
+		        ssize_t	span;
 
 			/*
 			 * If we're not in NU_UNIT, then we have a paren-set
@@ -348,15 +349,15 @@ static	char	*next_unit (char *str, const char *args, int *arg_flag, int stage)
 			 */
 			if (stage != NU_UNIT || ptr == str)
 			{
-				/* 
-				 * If there is no matching ), gobble up the
-				 * entire expression.
-				 */
-				if (!(ptr2 = MatchingBracket(ptr+1, '(', ')')))
-					ptr = ptr + strlen(ptr) - 1;
-				else
-					ptr = ptr2;
-				break;
+			    /* 
+			     * If there is no matching ), gobble up the
+			     * entire expression.
+			     */
+			    if ((span = MatchingBracket(ptr + 1, '(', ')')) < 0)
+				ptr += strlen(ptr) - 1;
+			    else
+				ptr += 1 + span;
+			    break;
 			}
 
 			/*
@@ -364,16 +365,18 @@ static	char	*next_unit (char *str, const char *args, int *arg_flag, int stage)
 			 * function call.  We gobble up the arguments and
 			 * ship it all off to call_function.
 			 */
-			if ((ptr2 = MatchingBracket(ptr + 1, '(', ')')))
+			if ((span = MatchingBracket(ptr + 1, '(', ')')) >= 0)
 			{
-				ptr2++;
+				ptr2 = ptr + 1 + span + 1;
 				savec = *ptr2;
 				*ptr2 = 0;
 			}
+			else
+				ptr2 = NULL;
 
 			result1 = call_function(str, args, arg_flag);
 
-			if (savec)
+			if (ptr2 && savec)
 				*ptr2 = savec;
 
 			/*
@@ -413,11 +416,14 @@ static	char	*next_unit (char *str, const char *args, int *arg_flag, int stage)
 		 */
 		case '{':
 		{
+			ssize_t span;
+
 			display = window_display;
 
-			ptr2 = MatchingBracket(ptr + 1, LEFT_BRACE, RIGHT_BRACE);
-			if (!ptr2)
-				ptr2 = ptr + strlen(ptr) - 1;
+			if ((span = MatchingBracket(ptr + 1, '{', '}')) >= 0)
+				ptr2 = ptr + 1 + span;
+			else
+				ptr2 = ptr + strlen(ptr);
 
 			if (stage != NU_UNIT)
 			{
@@ -460,13 +466,15 @@ static	char	*next_unit (char *str, const char *args, int *arg_flag, int stage)
 		 */
 		case '[':
 		{
+			ssize_t	span;
+
 			if (stage != NU_UNIT)
 			{
-				if (!(ptr2 = MatchingBracket(ptr+1, LEFT_BRACKET, RIGHT_BRACKET)))
-					ptr = ptr+strlen(ptr)-1;
-				else
-					ptr = ptr2;
-				break;
+			    if ((span = MatchingBracket(ptr + 1, '[', ']')) < 0)
+				ptr += strlen(ptr) - 1;
+			    else
+				ptr += span;
+			    break;
 			}
 
 			/* ptr points right after the [] set */
@@ -477,9 +485,11 @@ static	char	*next_unit (char *str, const char *args, int *arg_flag, int stage)
 			 * At this point, we check to see if it really is a
 			 * '[', and if it is, we skip over it.
 			 */
-			if ((ptr = MatchingBracket(right, 
-					LEFT_BRACKET, RIGHT_BRACKET)))
-				*ptr++ = '\0';
+			if ((span = MatchingBracket(right, '[', ']')) >= 0)
+			{
+				ptr = right + span;
+				*ptr++ = 0;
+			}
 
 #ifndef NO_CHEATING
 			/*
@@ -951,35 +961,40 @@ static	char	*next_unit (char *str, const char *args, int *arg_flag, int stage)
 		 */
 		case '?':
 		{
-			if (stage == NU_TERT)
-			{
-				*ptr++ = '\0';
-				result1 = next_unit(str, args, arg_flag, stage);
-				ptr2 = MatchingBracket(ptr, '?', ':');
+		    if (stage == NU_TERT)
+		    {
+			ssize_t span;
 
-				/* Unbalanced :, or possibly missing */
-				if (!ptr2)  /* ? but no :, ignore */
-				{
-					ptr = lastop(ptr);
-					break;
-				}
-				*ptr2++ = '\0';
-				if ( check_val(result1) )
-					result2 = next_unit(ptr, args, arg_flag, stage);
-				else
-					result2 = next_unit(ptr2, args, arg_flag, stage);
+			*ptr++ = 0;
+			result1 = next_unit(str, args, arg_flag, stage);
+			span = MatchingBracket(ptr, '?', ':');
 
-				/* XXXX - needed? */
-				ptr2[-1] = ':';
-				new_free(&result1);
-				return result2;
-			}
-
-			else
+			/* Unbalanced :, or possibly missing */
+			if (span < 0)	/* ? but no :, ignore */
 			{
 				ptr = lastop(ptr);
 				break;
 			}
+
+			ptr2 = ptr + span;
+			*ptr2++ = 0;
+
+			if ( check_val(result1) )
+				result2 = next_unit(ptr, args, arg_flag, stage);
+			else
+				result2 = next_unit(ptr2, args, arg_flag, stage);
+
+			/* XXXX - needed? */
+			ptr2[-1] = ':';
+			new_free(&result1);
+			return result2;
+		    }
+
+		    else
+		    {
+			ptr = lastop(ptr);
+			break;
+		    }
 		}
 
 		/*
@@ -1305,7 +1320,7 @@ char	*parse_inline (char *str, const char *args, int *args_flag)
  *		portion is written back into more_text.
  *	Backslash escapes are unescaped.
  */
-char	*expand_alias	(const char *string, const char *args, int *args_flag, char **more_text)
+char	*expand_alias	(const char *string, const char *args, int *args_flag, ssize_t *more_text)
 {
 	char	*buffer = NULL,
 		*ptr,
@@ -1333,7 +1348,7 @@ char	*expand_alias	(const char *string, const char *args, int *args_flag, char *
 
 	ptr = stuff;
 	if (more_text)
-		*more_text = NULL;
+		*more_text = -1;
 
 	while (ptr && *ptr)
 	{
@@ -1392,32 +1407,35 @@ char	*expand_alias	(const char *string, const char *args, int *args_flag, char *
 				ptr++;
 				break;
 			}
-			*more_text = (char *)(string + (ptr - free_stuff) + 1);
-			*ptr = '\0'; /* To terminate the loop */
+			*more_text = (ptr - free_stuff) + 1;
+			*ptr = 0; /* To terminate the loop */
 			break;
 		    }
 
 		    case LEFT_PAREN:
 		    case LEFT_BRACE:
 		    {
+			ssize_t	span;
+
 			ch = *ptr;
-			*ptr = '\0';
+			*ptr = 0;
 			m_strcat_ues_c(&buffer, stuff, unescape, &buffclue);
 			stuff = ptr;
+
 			*args_flag = 1;
-			if (!(ptr = MatchingBracket(stuff + 1, ch,
+			if ((span = MatchingBracket(stuff + 1, ch, 
 					(ch == LEFT_PAREN) ?
-					RIGHT_PAREN : RIGHT_BRACE)))
+					RIGHT_PAREN : RIGHT_BRACE)) < 0)
 			{
 				put_it("Unmatched %c", ch);
-				ptr = stuff + strlen(stuff+1)+1;
+				ptr = stuff + strlen(stuff);
 			}
 			else
-				ptr++;
+				ptr = stuff + 1 + span + 1;
 
 			*stuff = ch;
 			ch = *ptr;
-			*ptr = '\0';
+			*ptr = 0;
 			malloc_strcat_c(&buffer, stuff, &buffclue);
 			stuff = ptr;
 			*ptr = ch;
@@ -1462,18 +1480,19 @@ char	*expand_alias	(const char *string, const char *args, int *args_flag, char *
 static	char	*alias_special_char(char **buffer, char *ptr, const char *args, char *quote_em, int *args_flag)
 {
 	char	*tmp,
-		*tmp2,
 		c;
-	int	upper,
-		lower,
+	int	my_upper,
+		my_lower,
 		length;
+	ssize_t	span;
 
 	length = 0;
 	if ((c = *ptr) == LEFT_BRACKET)
 	{
 		ptr++;
-		if ((tmp = MatchingBracket(ptr, '[', ']')))
+		if ((span = MatchingBracket(ptr, '[', ']')) >= 0)
 		{
+			tmp = ptr + span;
 			*tmp++ = 0;
 			if (*ptr == '$')
 			{
@@ -1539,8 +1558,12 @@ static	char	*alias_special_char(char **buffer, char *ptr, const char *args, char
 				*tmpsav = NULL,
 				*ph = ptr + 1;
 
-			if ((ptr = MatchingBracket(ph, '(', ')')) || 
-	/* ( */		    (ptr = strchr(ph, ')')))
+			if ((span = MatchingBracket(ph, '(', ')')) >= 0)
+				ptr = ph + span;
+			else
+				ptr = strchr(ph, ')');
+
+			if (ptr)
 				*ptr++ = 0;
 			else
 				yell("Unmatched ( (continuing anyways)");
@@ -1605,8 +1628,12 @@ static	char	*alias_special_char(char **buffer, char *ptr, const char *args, char
 			 * BLAH. This didnt allow for nesting before.
 			 * How lame.
 			 */
-			if ((ptr = MatchingBracket(ph, '{', '}')) ||
-			    (ptr = strchr(ph, '}')))
+			if ((span = MatchingBracket(ph, '{', '}')) >= 0)
+				ptr = ph + span;
+			else
+				ptr = strchr(ph, '}');
+
+			if (ptr)
 				*ptr++ = 0;
 			else
 				yell("Unmatched { (continuing anyways)");
@@ -1680,9 +1707,9 @@ static	char	*alias_special_char(char **buffer, char *ptr, const char *args, char
 			char 	c2 = 0;
 			char 	*sub_buffer = NULL;
 			char 	*rest, *val;
-			int	dummy;
+			int	my_dummy;
 
-			rest = after_expando(ptr + 1, 0, &dummy);
+			rest = (char *)after_expando(ptr + 1, 0, &my_dummy);
 			if (rest == ptr + 1)
 			{
 			    sub_buffer = m_strdup(args);
@@ -1736,6 +1763,8 @@ static	char	*alias_special_char(char **buffer, char *ptr, const char *args, char
 			 */
 			if (isdigit(c) || (c == '-') || c == '~')
 			{
+			    char *tmp2;
+
 			    *args_flag = 1;
 
 			    /*
@@ -1744,7 +1773,7 @@ static	char	*alias_special_char(char **buffer, char *ptr, const char *args, char
 			     */
 			    if (c == '~')
 			    {
-				lower = upper = EOS;
+				my_lower = my_upper = EOS;
 				ptr++;
 			    }
 
@@ -1761,10 +1790,10 @@ static	char	*alias_special_char(char **buffer, char *ptr, const char *args, char
 			     */
 			    else if (c == '-')
 			    {
-				lower = SOS;
+				my_lower = SOS;
 				ptr++;
-				upper = parse_number(&ptr);
-				if (upper == -1)
+				my_upper = parse_number(&ptr);
+				if (my_upper == -1)
 				    return empty_string; /* error */
 			    }
 
@@ -1774,16 +1803,16 @@ static	char	*alias_special_char(char **buffer, char *ptr, const char *args, char
 			     */
 			    else
 			    {
-				lower = parse_number(&ptr);
+				my_lower = parse_number(&ptr);
 				if (*ptr == '-')
 				{
 				    ptr++;
-				    upper = parse_number(&ptr);
-				    if (upper == -1)
-					upper = EOS;
+				    my_upper = parse_number(&ptr);
+				    if (my_upper == -1)
+					my_upper = EOS;
 				}
 				else
-				    upper = lower;
+				    my_upper = my_lower;
 			    }
 
 			    /*
@@ -1798,7 +1827,7 @@ static	char	*alias_special_char(char **buffer, char *ptr, const char *args, char
 			    if (!args)
 				tmp2 = m_strdup(empty_string);
 			    else
-				tmp2 = extractw2(args, lower, upper);
+				tmp2 = extractw2(args, my_lower, my_upper);
 
 			    TruncateAndQuote(buffer, tmp2, length, quote_em);
 			    new_free(&tmp2);
@@ -1814,7 +1843,7 @@ static	char	*alias_special_char(char **buffer, char *ptr, const char *args, char
 			    char  *rest, d = 0;
 			    int	  function_call = 0;
 
-			    rest = after_expando(ptr, 0, &function_call);
+			    rest = (char *)after_expando(ptr, 0, &function_call);
 			    if (*rest)
 			    {
 				d = *rest;

@@ -1,4 +1,4 @@
-/* $EPIC: keys.c,v 1.22 2003/04/24 21:49:25 jnelson Exp $ */
+/* $EPIC: keys.c,v 1.23 2003/05/09 04:29:52 jnelson Exp $ */
 /*
  * keys.c:  Keeps track of what happens whe you press a key.
  *
@@ -70,7 +70,7 @@ struct Binding *binding_list;
  * but never both.  If no binding with this name exists, we create a new one
  * and fill in the details, then add it to the list of available bindings in
  * the client.  Otherwise, we yell and go home. */
-struct Binding *add_binding (char *name, BindFunction func, char *alias) {
+struct Binding *add_binding (const char *name, BindFunction func, char *alias) {
     struct Binding *bp;
     if (func && alias) {
 	yell("add_binding(): func and alias both defined!");
@@ -120,7 +120,7 @@ void remove_binding (char *name) {
     return;
 }
 
-struct Binding *find_binding (char *name) {
+struct Binding *find_binding (const char *name) {
     if (!name)
 	return NULL;
 
@@ -193,13 +193,13 @@ void init_binds (void) {
 
 struct Key	*construct_keymap	(struct Key *);
 int		clean_keymap		(struct Key *);
-unsigned char	*bind_string_compress	(unsigned char *, int *);
-unsigned char	*bind_string_decompress	(unsigned char *, unsigned char *, int);
-int		bind_string		(unsigned char *, char *, char *);
-struct Key	*find_sequence		(unsigned char *, int);
-void		show_all_bindings	(struct Key *, unsigned char *, int);
-void		show_all_rbindings	(struct Key *, unsigned char *, int, struct Binding *);
-void		show_key		(struct Key *, unsigned char *, int, int);
+unsigned char	*bind_string_compress	(const unsigned char *, int *);
+unsigned char	*bind_string_decompress	(unsigned char *, const unsigned char *, int);
+static int	bind_string		(const u_char *, const char *, char *);
+struct Key	*find_sequence		(const unsigned char *, int);
+void		show_all_bindings	(struct Key *, const unsigned char *, int);
+void		show_all_rbindings	(struct Key *, const unsigned char *, int, struct Binding *);
+void		show_key		(struct Key *, const unsigned char *, int, int);
 
 /* this is set when we're post-init to keep track of changed keybindings. */
 unsigned char bind_post_init = 0;
@@ -213,7 +213,7 @@ struct Key *head_keymap;
  * 'key_exec_bt' function to walk backwards along the line and execute the
  * keys as if they were individually pressed. */
 void key_exec_bt (struct Key *);
-void key_exec (struct Key *key) {
+static void key_exec (struct Key *key) {
 
     if (key == NULL) {
 	yell("key_exec(): called with NULL key!");
@@ -342,7 +342,7 @@ struct Key *handle_keypress (struct Key *last, Timeval pressed, unsigned char ke
 struct Key *timeout_keypress (struct Key *last, Timeval pressed) {
     int mpress = 0; /* ms count since last pressing */
     Timeval tv;
-    Timeval now;
+    Timeval right_now;
 
     if (last == NULL)
 	return NULL; /* fresh state, we need not worry about timeouts */
@@ -350,8 +350,8 @@ struct Key *timeout_keypress (struct Key *last, Timeval pressed) {
     if (last->bound == NULL)
 	return last; /* wait unconditionally if this key is unbound. */
 
-    get_time(&now);
-    tv = time_subtract(pressed, now);
+    get_time(&right_now);
+    tv = time_subtract(pressed, right_now);
     mpress = tv.tv_sec * 1000;
     mpress += tv.tv_usec / 1000;
 
@@ -426,8 +426,9 @@ int clean_keymap (struct Key *map) {
  * \^: escape the caret (hat, whatever.. :)
  * \\: the \ character. ;)
  */
-unsigned char *bind_string_compress (unsigned char *str, int *len) {
-    unsigned char *new, *s, *oldstr;
+unsigned char *bind_string_compress (const unsigned char *str, int *len) {
+    unsigned char *new, *s;
+    const unsigned char *oldstr;
     unsigned char c;
 
 #define isoctaln(x) ((x) > 47 && (x) < 56)
@@ -508,7 +509,7 @@ unsigned char *bind_string_compress (unsigned char *str, int *len) {
 
 /* this decompresses a compressed bind string into human-readable form.  it
  * assumes sufficient memory has already been allocated for it. */
-unsigned char *bind_string_decompress (unsigned char *dst, unsigned char
+unsigned char *bind_string_decompress (unsigned char *dst, const unsigned char
 	*src, int srclen) {
     unsigned char *ret = dst;
 
@@ -533,7 +534,7 @@ unsigned char *bind_string_decompress (unsigned char *dst, unsigned char
  * to, and optionally arguments to that function, and does all the work
  * necessary to bind it.  it will create new keymaps as it goes, if
  * necessary, etc. */
-int bind_string (unsigned char *sequence, char *bind, char *args) {
+static int bind_string (const unsigned char *sequence, const char *bindstr, char *args) {
     unsigned char *cs; /* the compressed keysequence */
     unsigned char *s;
     int slen;
@@ -541,15 +542,15 @@ int bind_string (unsigned char *sequence, char *bind, char *args) {
     struct Key *map = head_keymap;
     struct Binding *bp = NULL;
 
-    if (!sequence || !bind) {
+    if (!sequence || !bindstr) {
 	yell("bind_string(): called without sequence or bind function!");
 	return 0;
     }
 
     /* nothing (the binding) is special, it's okay if they request
      * 'NOTHING', we just do some other work. */
-    if (my_stricmp(bind, "NOTHING") && (bp = find_binding(bind)) == NULL) {
-	say("No such function %s", bind);
+    if (my_stricmp(bindstr, "NOTHING") && (bp = find_binding(bindstr)) == NULL) {
+	say("No such function %s", bindstr);
 	return 0;
     }
 
@@ -597,9 +598,9 @@ int bind_string (unsigned char *sequence, char *bind, char *args) {
  * if we can find the key bound to this sequence, return it, otherwise
  * return NULL.  If slen is 0, assume this is an uncompressed sequence.  If
  * it is not, assume it was compressed for us. */
-struct Key *find_sequence (unsigned char *seq, int slen) {
+struct Key *find_sequence (const unsigned char *seq, int slen) {
     unsigned char *cs = NULL;
-    unsigned char *s;
+    const unsigned char *s;
     struct Key *map = head_keymap;
     struct Key *key = NULL;
 
@@ -746,7 +747,7 @@ void init_keys (void) {
 void init_termkeys (void) {
 
 #define TBIND(x, y) {                                                     \
-    char *l = get_term_capability(#x, 0, 1);                              \
+    const char *l = get_term_capability(#x, 0, 1);                        \
     if (l)                                                                \
 	bind_string(l, #y, NULL);                                         \
 }
@@ -769,12 +770,12 @@ void init_termkeys (void) {
 /* save_bindings is called by the /save command to..well.. save bindings.
  * we call the save_bindings_recurse() function which acts a lot like
  * (surprise surprise) show_all_bindings/show_key in tandem. */
-void save_bindings_recurse (FILE *, struct Key *, unsigned char *, int);
+void save_bindings_recurse (FILE *, struct Key *, const unsigned char *, int);
 void save_bindings (FILE *fp, int do_all) {
     save_bindings_recurse(fp, head_keymap, "", 0);
 }
 
-void save_bindings_recurse (FILE *fp, struct Key *map, unsigned char *str, int len) {
+void save_bindings_recurse (FILE *fp, struct Key *map, const unsigned char *str, int len) {
     unsigned char c;
     unsigned char *newstr;
     unsigned char *ds; /* decompressed sequence */
@@ -930,13 +931,13 @@ void do_stack_bind (int type, char *arg) {
 	bind_stack = bsp;
 	return;
     } else if (type == STACK_POP) {
-	unsigned char *cs = bind_string_compress(arg, &slen);
+	unsigned char *compstr = bind_string_compress(arg, &slen);
 
-	if (cs == NULL)
+	if (compstr == NULL)
 	    return; /* yikes! */
 
 	for (bsp = bind_stack;bsp;bsptmp = bsp, bsp = bsp->next) {
-	    if (slen == bsp->slen && !memcmp(bsp->sequence, cs, slen)) {
+	    if (slen == bsp->slen && !memcmp(bsp->sequence, compstr, slen)) {
 		/* a winner! */
 		if (bsp == bind_stack)
 		    bind_stack = bsp->next;
@@ -951,14 +952,14 @@ void do_stack_bind (int type, char *arg) {
 	 * nothing.  we handle it below. */
 	if (bsp == NULL) {
 	    say("no bindings for %s are on the stack", arg);
-	    new_free(&cs);
+	    new_free(&compstr);
 	    return;
 	}
 
 	/* okay, we need to push this key back in to place.  we have to
 	 * replicate bind_string since bind_string has some undesirable
 	 * effects.  */
-	s = cs;
+	s = compstr;
 	map = head_keymap;
 	while (slen) {
 	    key = &map[*s++];
@@ -983,7 +984,7 @@ void do_stack_bind (int type, char *arg) {
 	    }
 	}
 
-	new_free(&cs);
+	new_free(&compstr);
 	new_free(&bsp->sequence);
 	new_free(&bsp);
 	return;
@@ -1018,7 +1019,7 @@ void do_stack_bind (int type, char *arg) {
  * The special binding command "NOTHING" actually unbinds the key.
  */
 BUILT_IN_COMMAND(bindcmd) {
-    unsigned char *seq;
+    const unsigned char *seq;
     char *function;
     int recurse = 0;
 
@@ -1053,13 +1054,13 @@ BUILT_IN_COMMAND(bindcmd) {
     }
 
     if ((function = new_next_arg(args, &args)) == NULL) {
-	unsigned char *cs;
+	unsigned char *compstr;
 	int slen;
-	cs = bind_string_compress(seq, &slen);
-	if (cs == NULL)
+	compstr = bind_string_compress(seq, &slen);
+	if (compstr == NULL)
 	    return; /* umm.. */
 
-	show_key(NULL, cs, slen, recurse);
+	show_key(NULL, compstr, slen, recurse);
 	return;
     }
 
@@ -1080,7 +1081,7 @@ doc/keys distributed with the EPIC source."
 /* support function for /bind:  this function shows, recursively, all the
  * keybindings.  given a map and a string to work from.  if the string is
  * NULL, the function recurses through the entire map. */
-void show_all_bindings (struct Key *map, unsigned char *str, int len) {
+void show_all_bindings (struct Key *map, const unsigned char *str, int len) {
     unsigned char c;
     unsigned char *newstr;
     struct Binding *self_insert;
@@ -1100,7 +1101,7 @@ void show_all_bindings (struct Key *map, unsigned char *str, int len) {
     }
 }
 
-void show_key (struct Key *key, unsigned char *str, int slen, int recurse) {
+void show_key (struct Key *key, const unsigned char *str, int slen, int recurse) {
     struct Binding *bp;
     unsigned char *clean = alloca(((strlen(str) + 1) * 2) + 1);
 
@@ -1149,7 +1150,7 @@ BUILT_IN_COMMAND(rbindcmd) {
     show_all_rbindings(head_keymap, "", 0, bp);
 }
 
-void show_all_rbindings (struct Key *map, unsigned char *str, int len, struct Binding *bind) {
+void show_all_rbindings (struct Key *map, const unsigned char *str, int len, struct Binding *binding) {
     unsigned char c;
     unsigned char *newstr;
     size_t size;
@@ -1163,10 +1164,10 @@ void show_all_rbindings (struct Key *map, unsigned char *str, int len, struct Bi
     newstr[len + 1] = '\0';
     for (c = 0; c < KEYMAP_SIZE - 1;c++) {
 	newstr[len] = c;
-	if (map[c].bound == bind)
+	if (map[c].bound == binding)
 	    show_key(&map[c], newstr, len + 1, 0);
 	if (map[c].map)
-	    show_all_rbindings(map[c].map, newstr, len + 1, bind);
+	    show_all_rbindings(map[c].map, newstr, len + 1, binding);
     }
 }
 
@@ -1228,7 +1229,7 @@ BUILT_IN_COMMAND(parsekeycmd) {
  * key sequence and [PACKAGE] is any free form package string.
  */
 
-void bindctl_getmap (struct Key *, unsigned char *, int, char **);
+void bindctl_getmap (struct Key *, const unsigned char *, int, char **);
 char *bindctl (char *input)
 {
     char *listc;
@@ -1370,7 +1371,7 @@ char *bindctl (char *input)
     RETURN_EMPTY;
 }
 
-void bindctl_getmap (struct Key *map, unsigned char *str, int len, char **ret) {
+void bindctl_getmap (struct Key *map, const unsigned char *str, int len, char **ret) {
     unsigned char c;
     unsigned char *newstr;
     unsigned char *decomp;

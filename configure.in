@@ -4,9 +4,9 @@ dnl except those bits attributed otherwise.
 dnl thanks to the screen 3.3 configure.in for giving me examples to
 dnl work from and steal ;)
 dnl
-dnl @(#)$Id: configure.in,v 1.31 2003/04/24 21:49:24 jnelson Exp $
+dnl @(#)$Id: configure.in,v 1.32 2003/05/09 04:29:52 jnelson Exp $
 
-AC_REVISION($Revision: 1.31 $)dnl
+AC_REVISION($Revision: 1.32 $)dnl
 AC_INIT(source/irc.c)
 AC_CONFIG_HEADER(include/defs.h)
 
@@ -672,6 +672,24 @@ AC_ARG_WITH(bc,
    AC_MSG_RESULT(no)
 )
 
+AC_MSG_CHECKING(whether to turn on FreeBSD WARNS-like compiler warnings)
+AC_ARG_WITH(warns,
+[  --with-warns          You wish to use FreeBSD WARNS-like compiler warnings.],
+[   case "$withval" in
+   no)
+        AC_MSG_RESULT(no);
+        ;;
+   *)
+        if test "x$withval" != "xyes" ; then
+                CFLAGS="$CFLAGS $withval"
+        fi
+
+        CFLAGS="$CFLAGS -W -Wall -Wstrict-prototypes -Wmissing-prototypes -Wuninitialized -Wpointer-arith -Wreturn-type -Wcast-qual -Wwrite-strings -Wswitch -Wshadow -Wformat-extra-args -Wno-unused -ansi -fno-builtin"
+        AC_MSG_RESULT(yes)
+        ;;
+   esac ],
+   AC_MSG_RESULT(no)
+)
 
 AC_SUBST(CFLAGS)
 AC_SUBST(LDFLAGS)

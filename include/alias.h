@@ -26,19 +26,19 @@
 	BUILT_IN_COMMAND(dumpcmd);
 	BUILT_IN_COMMAND(unloadcmd);
 
-	void 	add_var_alias      	(char *name, char *stuff, int noisy);
-	void 	add_local_alias    	(char *name, char *stuff, int noisy);
+	void 	add_var_alias      	(const char *name, const char *stuff, int noisy);
+	void 	add_local_alias    	(const char *name, const char *stuff, int noisy);
 #if 0	/* Internal now */
 	void 	add_cmd_alias 	   	(void);
 #endif
-	void 	add_var_stub_alias 	(char *name, char *stuff);
-	void 	add_cmd_stub_alias 	(char *name, char *stuff);
+	void 	add_var_stub_alias 	(const char *name, const char *stuff);
+	void 	add_cmd_stub_alias 	(const char *name, const char *stuff);
 
-	char *	get_variable		(char *name);
-	char **	glob_cmd_alias		(char *name, int *howmany);
-	char *	get_cmd_alias   	(char *name, int *howmany, 
+	char *	get_variable		(const char *name);
+	char **	glob_cmd_alias		(const char *name, int *howmany);
+	char *	get_cmd_alias   	(const char *name, int *howmany, 
 					 char **complete_name, void **args);
-	char **	get_subarray_elements 	(char *root, int *howmany, int type);
+	char **	get_subarray_elements 	(const char *root, int *howmany, int type);
 
 
 /* These are in expr.c */
@@ -52,7 +52,7 @@
  *   of the commands (after the first semicolon, or the null).  If NULL,
  *   then the entire text will be expanded.
  */
-	char *	expand_alias 		(const char *, const char *, int *, char **);
+	char *	expand_alias 		(const char *, const char *, int *, ssize_t *);
 
 /*
  * This is the interface to the "expression parser"
@@ -66,8 +66,8 @@
  * This function is used to call a user-defined function.
  * Noone should be calling this directly except for call_function.
  */
-	char *	call_user_function 	(char *, char *);
-	void	call_user_alias		(char *, char *, char *, void *);
+	char *	call_user_function 	(const char *, char *);
+	void	call_user_alias		(const char *, char *, char *, void *);
 
 
 /*
@@ -131,7 +131,8 @@
 /*
  * Truly bogus. =)
  */
-	char	*parse_line_with_return (char *, char *, char *, int, int);
+	char	*parse_line_with_return (const char *, const char *, char *, int, int);
 	char 	*canon_number (char *input);
 
+	char	*aliasctl (char *);
 #endif /* _ALIAS_H_ */

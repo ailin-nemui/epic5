@@ -1,4 +1,4 @@
-/* $EPIC: log.c,v 1.10 2003/04/24 21:49:25 jnelson Exp $ */
+/* $EPIC: log.c,v 1.11 2003/05/09 04:29:52 jnelson Exp $ */
 /*
  * log.c: handles the irc session logging functions 
  *
@@ -194,7 +194,7 @@ void 	add_to_log (FILE *fp, unsigned winref, const unsigned char *line, int mang
 		mangler = logfile_line_mangler;
 	if (mangler)
 	   if (mangle_line(local_line, mangler, size) > size)
-		; /* Whimper -- what to do, what to do? */
+		(void)0; /* Whimper -- what to do, what to do? */
 
 	if (get_int_var(NO_CONTROL_LOG_VAR))
 	{

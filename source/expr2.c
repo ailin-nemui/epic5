@@ -1,4 +1,4 @@
-/* $EPIC: expr2.c,v 1.6 2003/04/24 21:49:25 jnelson Exp $ */
+/* $EPIC: expr2.c,v 1.7 2003/05/09 04:29:52 jnelson Exp $ */
 /*
  * Zsh: math.c,v 3.1.2.1 1997/06/01 06:13:15 hzoli Exp 
  * math.c - mathematical expression evaluation
@@ -219,7 +219,7 @@ typedef struct
 
 	TOKEN	last_token;
 
-	char	*args;
+	const char	*args;
 	int	*args_flag;
 } expr_info;
 
@@ -242,7 +242,7 @@ __inline static	TOKEN	tokenize_raw (expr_info *c, char *t);
  * Clean the expression context pointed to by 'c'.
  * This function must be called before you call mathparse().
  */
-void	setup_expr_info (expr_info *c)
+static void	setup_expr_info (expr_info *c)
 {
 	int	i;
 
@@ -273,7 +273,7 @@ void	setup_expr_info (expr_info *c)
  * Clean up the expression context pointed to by 'c'.
  * This function must be called after you call mathparse().
  */
-void 	destroy_expr_info (expr_info *c)
+static void 	destroy_expr_info (expr_info *c)
 {
 	int	i;
 
@@ -450,7 +450,7 @@ static 	int 	assoc[TOKCOUNT] =
 
 /* ********************* CREATE NEW SYMBOLS AND TOKENS ********************/
 /* Lvalues are stored via this routine */
-__inline static	TOKEN		tokenize_lval (expr_info *c, char *t)
+__inline static	TOKEN		tokenize_lval (expr_info *c, const char *t)
 {
 	if (c->token >= TOKENCOUNT)
 	{
@@ -581,7 +581,7 @@ __inline static	TOKEN		tokenize_bool (expr_info *c, BooL t)
  * the most information, starting with expanded string, to the boolean
  * value. 
  */ 
-__inline static	char *	get_token_raw (expr_info *c, TOKEN v)
+__inline static	const char *	get_token_raw (expr_info *c, TOKEN v)
 {
 	if (v == MAGIC_TOKEN)	/* Magic token */
 		return c->args;			/* XXX Probably wrong */
@@ -647,7 +647,7 @@ __inline static	char *	get_token_raw (expr_info *c, TOKEN v)
  * and only if (TOK(c, v).used & USED_LVAL)!  Otherwise, this returns
  * NULL and emits an error.
  */
-__inline static char *	get_token_lval (expr_info *c, TOKEN v)
+__inline static const char *	get_token_lval (expr_info *c, TOKEN v)
 {
 	if (v == MAGIC_TOKEN)	/* Magic token */
 		return c->args;			/* XXX Probably wrong */
@@ -684,7 +684,7 @@ __inline static char *	get_token_lval (expr_info *c, TOKEN v)
  * call expand_alias() to get the value.  Of course, there is always a
  * "raw" value, as get_token_raw() can convert from anything.
  */
-__inline static	char *	get_token_expanded (expr_info *c, TOKEN v)
+__inline static	const char *	get_token_expanded (expr_info *c, TOKEN v)
 {
 	if (v == MAGIC_TOKEN)	/* Magic token */
 		return c->args;
@@ -785,7 +785,7 @@ __inline static	long	get_token_integer (expr_info *c, TOKEN v)
 	
 	if ((TOK(c, v).used & USED_INTEGER) == 0)
 	{
-		char *	myval = get_token_expanded(c, v);
+		const char *	myval = get_token_expanded(c, v);
 
 		TOK(c, v).used |= USED_INTEGER;
 		TOK(c, v).integer_value = atol(myval);
@@ -809,7 +809,7 @@ __inline static	double	get_token_float (expr_info *c, TOKEN v)
 	
 	if ((TOK(c, v).used & USED_FLOAT) == 0)
 	{
-		char *	myval = get_token_expanded(c, v);
+		const char *	myval = get_token_expanded(c, v);
 
 		TOK(c, v).used |= USED_FLOAT;
 		TOK(c, v).float_value = atof(myval);
@@ -833,7 +833,7 @@ __inline static	BooL	get_token_boolean (expr_info *c, TOKEN v)
 	
 	if ((TOK(c, v).used & USED_BOOLEAN) == 0)
 	{
-		char *	myval = get_token_expanded(c, v);
+		const char *	myval = get_token_expanded(c, v);
 
 		TOK(c, v).used |= USED_BOOLEAN;
 		TOK(c, v).boolean_value = check_val(myval);
@@ -886,7 +886,7 @@ __inline static TOKEN	push_boolean (expr_info *c, BooL val)
 	return push_token(c, tokenize_bool(c, val));
 }
 
-__inline static TOKEN	push_lval (expr_info *c, char *val)
+__inline static TOKEN	push_lval (expr_info *c, const char *val)
 {
 	return push_token(c, tokenize_lval(c, val));
 }
@@ -930,7 +930,7 @@ __inline static	double		pop_float (expr_info *c)
 	return get_token_float(c, pop_token(c));
 }
 
-__inline static	char *	pop_expanded (expr_info *c)
+__inline static	const char *	pop_expanded (expr_info *c)
 {
 	return get_token_expanded(c, pop_token(c));
 }
@@ -958,7 +958,7 @@ __inline static	void	pop_2_integers (expr_info *c, long *a, long *b)
 	*a = pop_integer(c);
 }
 
-__inline static void	pop_2_strings (expr_info *c, char **s, char **t)
+__inline static void	pop_2_strings (expr_info *c, const char **s, const char **t)
 {
 	*t = pop_expanded(c);
 	*s = pop_expanded(c);
@@ -993,7 +993,7 @@ static void	reduce (expr_info *cx, int what)
 	double	a, b;
 	BooL	c, d;
 	long	i, j;
-	char *s, *t;
+	const char *s, *t;
 	TOKEN	v, w;
 
 	if (x_debug & DEBUG_NEW_MATH_DEBUG)
@@ -1457,7 +1457,7 @@ static void	reduce (expr_info *cx, int what)
 		}
 		case SWAP:
 		{
-			char *sval, *tval;
+			const char *sval, *tval;
 
 			pop_2_tokens(cx, &v, &w);
 			CHECK_NOEVAL
@@ -1581,7 +1581,7 @@ static void	reduce (expr_info *cx, int what)
 /**************************** EXPRESSION LEXER ******************************/
 static	int	dummy = 1;
 
-int	lexerr (expr_info *c, char *format, ...)
+static int	lexerr (expr_info *c, const char *format, ...)
 {
 	char 	buffer[BIG_BUFFER_SIZE + 1];
 	va_list	a;
@@ -1602,7 +1602,7 @@ int	lexerr (expr_info *c, char *format, ...)
  * case 'operand' is set to 1.  When an operand is lexed, then the next token
  * is expected to be a binary operator, so 'operand' is set to 0. 
  */
-__inline int	check_implied_arg (expr_info *c)
+static __inline int	check_implied_arg (expr_info *c)
 {
 	if (c->operand == 2)
 	{
@@ -1615,7 +1615,7 @@ __inline int	check_implied_arg (expr_info *c)
 	return c->operand;
 }
 
-__inline TOKEN 	operator (expr_info *c, char *x, int y, TOKEN z)
+static __inline TOKEN 	operator (expr_info *c, const char *x, int y, TOKEN z)
 {
 	check_implied_arg(c);
 	if (c->operand)
@@ -1626,7 +1626,7 @@ __inline TOKEN 	operator (expr_info *c, char *x, int y, TOKEN z)
 	return z;
 }
 
-__inline TOKEN 	unary (expr_info *c, char *x, int y, TOKEN z)
+static __inline TOKEN 	unary (expr_info *c, const char *x, int y, TOKEN z)
 {
 	if (!c->operand)
 		return lexerr(c, "A unary operator (%s) was found where "
@@ -1916,12 +1916,14 @@ static int	zzlex (expr_info *c)
 		{
 			char *p = c->ptr;
 			char oc = 0;
+			ssize_t	span;
 
 			if (!c->operand)
 				return lexerr(c, "Misplaced { token");
 
-			if ((c->ptr = MatchingBracket(p, '{', '}')))
+			if ((span = MatchingBracket(p, '{', '}')) >= 0)
 			{
+				c->ptr = p + span;
 				oc = *c->ptr;
 				*c->ptr = 0;
 			}
@@ -1932,9 +1934,11 @@ static int	zzlex (expr_info *c)
 			if (!c->noeval)
 			{
 				char *result;
+				char *argcopy;
 
+				argcopy = LOCAL_COPY(c->args);
 				result = parse_line_with_return(NULL, p, 
-							(char *)c->args, 0, 0);
+							argcopy, 0, 0);
 				c->last_token = tokenize_expanded(c, result);
 				new_free(&result);
 			}
@@ -1959,12 +1963,14 @@ static int	zzlex (expr_info *c)
 		{
 			char *p = c->ptr;
 			char oc = 0;
+			ssize_t	span;
 
 			if (!c->operand)
 				return lexerr(c, "Misplaced [ token");
 
-			if ((c->ptr = MatchingBracket(p, '[', ']')))
+			if ((span = MatchingBracket(p, '[', ']')) >= 0)
 			{
+				c->ptr = p + span;
 				oc = *c->ptr;
 				*c->ptr = 0;
 			}
@@ -2276,7 +2282,7 @@ static void	mathparse (expr_info *c, int pc)
  * of state information stored in global variables.  Therefore, this math
  * parser is re-entrant safe.
  */
-char *	matheval (char *s, const char *args, int *args_flag)
+static char *	matheval (char *s, const char *args, int *args_flag)
 {
 	expr_info	context;
 	char *		ret = NULL;
@@ -2288,7 +2294,7 @@ char *	matheval (char *s, const char *args, int *args_flag)
 	/* Create new state */
 	setup_expr_info(&context);
 	context.ptr = s;
-	context.args = (char *)args;
+	context.args = args;
 	context.args_flag = args_flag;
 
 	/* Actually do the parsing */

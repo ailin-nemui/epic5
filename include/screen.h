@@ -22,7 +22,7 @@ typedef struct PromptStru
 	char	*data;
 	int	type;
 	int	echo;
-	void	(*func)();
+	void	(*func) (char *, char *);
 	struct	PromptStru	*next;
 }	WaitPrompt;
 
@@ -140,7 +140,7 @@ struct	ScreenStru *next;		/* Previous screen in list */
 #define ST_XTERM        1
 
 
-	void	add_wait_prompt 	(char *, void (*)(), char *, int, int);
+	void	add_wait_prompt 	(const char *, void (*)(char *, char *), char *, int, int);
 	void	set_current_screen 	(Screen *);
 	void	window_redirect		(char *, int);
 	int	check_screen_redirect	(char *);
@@ -158,13 +158,13 @@ unsigned char**	split_up_line		(const unsigned char *, int);
 	void	close_all_screen	(void);
 	void	do_screens		(fd_set *, fd_set *);
 
-const	char *	all_off			(void);
+const	u_char *all_off			(void);
 extern	int	normalize_never_xlate;
 extern	int	normalize_permit_all_attributes;
 	u_char *normalize_string	(const u_char *, int);
 	u_char *denormalize_string	(const u_char *);
 	char   *normalize_color		(int, int, int, int);
-const	u_char *skip_ctl_c_seq		(const u_char *, int *, int *);
+	ssize_t	skip_ctl_c_seq		(const u_char *, int *, int *);
 	u_char **prepare_display	(const u_char *, int, int *, int);
 	int	output_with_count	(const unsigned char *, int, int);
 

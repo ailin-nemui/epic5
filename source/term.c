@@ -1,4 +1,4 @@
-/* $EPIC: term.c,v 1.8 2003/04/24 21:49:25 jnelson Exp $ */
+/* $EPIC: term.c,v 1.9 2003/05/09 04:29:52 jnelson Exp $ */
 /*
  * term.c -- termios and (termcap || terminfo) handlers
  *
@@ -70,7 +70,12 @@ static	struct	termios	oldb, newb;
 	char		my_PC, *BC, *UP;
 	int		BClen, UPlen;
 
-/* Systems cant seem to agree where to put these... */
+/*
+ * Systems can't seem to agree where to put these.
+ * System's can't seem to agree if (char *) is spelled (unsigned char *)
+ * or (const char *) or (const unsigned char *), so don't prototype these
+ * either.  You have been warned!
+ */
 #ifdef HAVE_TERMINFO
 extern	int		setupterm();
 extern	char		*tigetstr();
@@ -819,8 +824,8 @@ int 	term_init (void)
 		}
 	}
 
-	BC = current_term->TI_cub1;
-	UP = current_term->TI_cuu1;
+	BC = m_strdup(current_term->TI_cub1);
+	UP = m_strdup(current_term->TI_cuu1);
 	if (current_term->TI_pad)
 		my_PC = current_term->TI_pad[0];
 	else
@@ -1141,7 +1146,7 @@ void	term_beep (void)
 	}
 }
 
-int	orig_term_eight_bit (void)
+static int	orig_term_eight_bit (void)
 {
 	if (dumb_mode)
 		return 1;
@@ -1527,9 +1532,9 @@ void	term_scroll (int top, int bot, int n)
  * 14   - bright cyan (foreground only)
  * 15   - bright white (foreground only)
  */
-char *	term_getsgr (int opt, int fore, int back)
+const char *	term_getsgr (int opt, int fore, int back)
 {
-	char *ret = empty_string;
+	const char *ret = empty_string;
 
 	switch (opt)
 	{
@@ -1562,7 +1567,7 @@ char *	term_getsgr (int opt, int fore, int back)
 	return (ret);
 }
 
-char *	control_mangle (unsigned char *text)
+static char *	control_mangle (unsigned char *text)
 {
 static 	u_char	retval[256];
 	int 	pos = 0;
@@ -1591,7 +1596,7 @@ static 	u_char	retval[256];
 	return retval;
 }
 
-char *	get_term_capability (char *name, int querytype, int mangle)
+const char *	get_term_capability (const char *name, int querytype, int mangle)
 {
 static	char		retval[128];
 	const char *	compare = empty_string;

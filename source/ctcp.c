@@ -1,4 +1,4 @@
-/* $EPIC: ctcp.c,v 1.21 2003/04/24 21:49:25 jnelson Exp $ */
+/* $EPIC: ctcp.c,v 1.22 2003/05/09 04:29:52 jnelson Exp $ */
 /*
  * ctcp.c:handles the client-to-client protocol(ctcp). 
  *
@@ -83,10 +83,10 @@ struct _CtcpEntry;
 typedef char *(*CTCP_Handler) (struct _CtcpEntry *, const char *, const char *, char *);
 typedef	struct _CtcpEntry
 {
-	char		*name;  /* name of ctcp datatag */
+	const char	*name;  /* name of ctcp datatag */
 	int		id;	/* index of this ctcp command */
 	int		flag;	/* Action modifiers */
-	char		*desc;  /* description returned by ctcp clientinfo */
+	const char	*desc;  /* description returned by ctcp clientinfo */
 	CTCP_Handler 	func;	/* function that does the dirty deed */
 	CTCP_Handler 	repl;	/* Function that is called for reply */
 }	CtcpEntry;
@@ -150,7 +150,7 @@ static CtcpEntry ctcp_cmd[] =
 		NULL, NULL }
 };
 
-static char	*ctcp_type[] =
+static const char	*ctcp_type[] =
 {
 	"PRIVMSG",
 	"NOTICE"
@@ -360,8 +360,8 @@ CTCP_HANDLER(do_version)
 	 */
 #if defined(HAVE_UNAME) && !defined(UNAME_HACK)
 	struct utsname un;
-	char	*the_unix,
-		*the_version;
+	const char	*the_unix,
+			*the_version;
 
 	if (uname(&un) < 0)
 	{
@@ -460,9 +460,10 @@ CTCP_HANDLER(do_finger)
 	else
 #endif
 	{
-		if (!pwd->pw_name)
-			pwd->pw_name = "epic-user";
-		strlcpy(userbuff, pwd->pw_name, sizeof userbuff);
+		if (pwd->pw_name)
+			strlcpy(userbuff, pwd->pw_name, sizeof userbuff);
+		else
+			strlcpy(userbuff, "epic-user", sizeof userbuff);
 	}
 
 #if !defined(I_DONT_TRUST_MY_USERS)
@@ -470,13 +471,12 @@ CTCP_HANDLER(do_finger)
 		strlcpy(gecosbuff, ctcpfinger, sizeof gecosbuff);
 	else
 #endif
-	{
-		if (!pwd->pw_gecos)
-			pwd->pw_gecos = "Esteemed EPIC User";
+	      if (pwd->pw_gecos)
 		strlcpy(gecosbuff, pwd->pw_gecos, sizeof gecosbuff);
-		if ((tmp = strchr(gecosbuff, GECOS_DELIMITER)) != NULL)
-			*tmp = 0;
-	}
+	else
+		strlcpy(gecosbuff, "Esteemed EPIC User", sizeof gecosbuff);
+	if ((tmp = strchr(gecosbuff, GECOS_DELIMITER)) != NULL)
+		*tmp = 0;
 
 	send_ctcp(CTCP_NOTICE, from, CTCP_FINGER, 
 		"%s (%s@%s) Idle %ld second%s", 
@@ -946,7 +946,7 @@ int	in_ctcp (void) { return (in_ctcp_flag); }
  * transparantly.  This greatly reduces the logic, complexity, and
  * possibility for error in this function.
  */
-void	send_ctcp (int type, const char *to, int datatag, char *format, ...)
+void	send_ctcp (int type, const char *to, int datatag, const char *format, ...)
 {
 	char 	putbuf [BIG_BUFFER_SIZE + 1],
 		*putbuf2;

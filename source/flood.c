@@ -1,4 +1,4 @@
-/* $EPIC: flood.c,v 1.11 2003/03/21 07:46:58 jnelson Exp $ */
+/* $EPIC: flood.c,v 1.12 2003/05/09 04:29:52 jnelson Exp $ */
 /*
  * flood.c: handle channel flooding.
  *
@@ -51,7 +51,7 @@
 #include "lastlog.h"
 #include "window.h"
 
-static	char	*ignore_types[NUMBER_OF_FLOODS] =
+static	const char *ignore_types[NUMBER_OF_FLOODS] =
 {
 	"CRAP",
 	"CTCPS",
@@ -89,7 +89,7 @@ int	users = 0;
  * only if it begins with an alphanum, and use the @host
  * otherwise.
  */
-const char *	normalize_nuh (const char *nuh)
+static const char *	normalize_nuh (const char *nuh)
 {
 	int maskuser = get_int_var(FLOOD_MASKUSER_VAR);
 

@@ -1,4 +1,4 @@
-/* $EPIC: numbers.c,v 1.48 2003/04/24 21:49:25 jnelson Exp $ */
+/* $EPIC: numbers.c,v 1.49 2003/05/09 04:29:52 jnelson Exp $ */
 /*
  * numbers.c: handles all those strange numeric response dished out by that
  * wacky, nutty program we call ircd 
@@ -63,10 +63,6 @@ static 	int	number_of_bans = 0;
  * banner: This returns in a static string of either "xxx" where
  * xxx is the current numeric, or "***" if SHOW_NUMBERS is OFF 
  */
-#ifdef NB
-#undef NB
-#endif
-#define NB banner
 const char *	banner (void)
 {
 	static	char	thing[80];
@@ -439,9 +435,9 @@ void 	numbered_command (const char *from, const char *comm, char const **ArgList
 		/* If we're waiting for MODE reply. */
 		if (channel_is_syncing(channel, from_server))
 		{
-		    char *	copy = LOCAL_COPY(channel);
 		    int	numonchannel, maxnum;
 
+		    copy = LOCAL_COPY(channel);
 		    update_channel_mode(channel, mode);
 		    update_all_status();
 
@@ -1301,7 +1297,7 @@ DISPLAY:
 		message_from(channel, LOG_CRAP);
 		if (*type == '=') 
 		{
-		    if (last_width && (strlen(channel) > last_width))
+		    if (last_width && ((int)strlen(channel) > last_width))
 		    {
 			char *channel_copy = LOCAL_COPY(channel);
 			channel_copy[last_width-1] = '>';
@@ -1529,7 +1525,7 @@ static void	add_user_who (int refnum, const char *from, const char *comm, const 
 {
 	const char 	*channel, *user, *host, *server, *nick;
 	size_t	size;
-	char 	*userhost;
+	char 	*uh;
 
 	if (!(channel = ArgList[0]))
 		{ rfc1459_odd(from, "*", ArgList); return; }
@@ -1543,9 +1539,9 @@ static void	add_user_who (int refnum, const char *from, const char *comm, const 
 		{ rfc1459_odd(from, "*", ArgList); return; }
 
 	size = strlen(user) + strlen(host) + 2;
-	userhost = alloca(size);
-	snprintf(userhost, size, "%s@%s", user, host);
-	add_userhost_to_channel(channel, nick, refnum, userhost);
+	uh = alloca(size);
+	snprintf(uh, size, "%s@%s", user, host);
+	add_userhost_to_channel(channel, nick, refnum, uh);
 }
 
 static void	add_user_end (int refnum, const char *from, const char *comm, const char **ArgList)

@@ -1,4 +1,4 @@
-/* $EPIC: status.c,v 1.26 2003/05/05 02:30:46 jnelson Exp $ */
+/* $EPIC: status.c,v 1.27 2003/05/09 04:29:52 jnelson Exp $ */
 /*
  * status.c: handles the status line updating, etc for IRCII 
  *
@@ -62,7 +62,7 @@
  * Maximum number of "%" expressions in a status line format.  If you change
  * this number, you must manually change the snprintf() in make_status 
  */
-#define STATUS_FUNCTION(x) static Char * x (Window *window, int map, int key)
+#define STATUS_FUNCTION(x) Char * x (Window *window, int map, int key)
 #define MAX_FUNCTIONS 40
 #define MAX_STATUS_USER 39
 
@@ -288,7 +288,7 @@ static void	build_status_format (Status *s, int k)
 	int	cp;
 	int	map;
 	char	key;
-	int	i;
+	unsigned	i;
 	Char	*raw = s->line[k].raw;
 	char	*format = buffer;
 
@@ -1172,7 +1172,7 @@ static	char	my_buffer[IRCD_BUFFER_SIZE + 1];
 		strlcpy(channel, chan, sizeof channel);
 
 	num = get_int_var(CHANNEL_NAME_WIDTH_VAR);
-	if (num > 0 && strlen(channel) > num)
+	if (num > 0 && (int)strlen(channel) > num)
 		channel[num] = 0;
 
 	snprintf(my_buffer, IRCD_BUFFER_SIZE, 
@@ -1386,7 +1386,7 @@ STATUS_FUNCTION(status_refnum_real)
 STATUS_FUNCTION(status_version)
 {
 	if (DISPLAY_ON_WINDOW)
-		return (char *)irc_version; /* XXXX */
+		return irc_version; /* XXXX */
 
 	return empty_string;
 }

@@ -1,4 +1,4 @@
-/* $EPIC: parse.c,v 1.38 2003/04/24 21:49:25 jnelson Exp $ */
+/* $EPIC: parse.c,v 1.39 2003/05/09 04:29:52 jnelson Exp $ */
 /*
  * parse.c: handles messages from the server.   Believe it or not.  I
  * certainly wouldn't if I were you. 
@@ -120,7 +120,7 @@ const char *	PasteArgs (const char **arg_list, int paste_point)
  *
  * This doesnt strip out extraneous spaces any more.
  */
-void 	BreakArgs (char *Input, char **Sender, const char **OutPut)
+static void 	BreakArgs (char *Input, char **Sender, const char **OutPut)
 {
 	int	ArgCount;
 	char	*fuh;
@@ -284,7 +284,7 @@ static void	p_privmsg (const char *from, const char *comm, const char **ArgList)
 			hook_type,
 			flood_type,
 			log_type;
-	char 		*hook_format;
+	const char	*hook_format;
 	const char	*flood_channel = NULL;
 	unsigned char	ignore_type;
 	char		*high;
@@ -547,17 +547,17 @@ static void	p_pong (const char *from, const char *comm, const char **ArgList)
 
 static void	p_error (const char *from, const char *comm, const char **ArgList)
 {
-	const char *	error;
+	const char *	the_error;
 
 	PasteArgs(ArgList, 0);
-	if (!(error = ArgList[0]))
+	if (!(the_error = ArgList[0]))
 		{ rfc1459_odd(from, comm, ArgList); return; }
 
 	if (!from || !isgraph(*from))
 		from = star;
 
-	if (do_hook(ERROR_LIST, "%s %s", from, error))
-		say("%s %s", from, error);
+	if (do_hook(ERROR_LIST, "%s %s", from, the_error))
+		say("%s %s", from, the_error);
 }
 
 #if 0

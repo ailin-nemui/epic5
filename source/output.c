@@ -1,4 +1,4 @@
-/* $EPIC: output.c,v 1.8 2003/04/24 21:49:25 jnelson Exp $ */
+/* $EPIC: output.c,v 1.9 2003/05/09 04:29:52 jnelson Exp $ */
 /*
  * output.c: handles a variety of tasks dealing with the output from the irc
  * program 
@@ -59,7 +59,7 @@ static	char	putbuf[OBNOXIOUS_BUFFER_SIZE + 1];
  * sent this command. >;-)
  * Now that you can send ansi sequences, this is much less inportant.. 
  */
-void unflash (void)
+static void	unflash (void)
 {
 #ifdef HARD_UNFLASH
 	fwrite("\033c", 2, 1, stdout);		/* hard reset */
@@ -235,7 +235,7 @@ void	file_put_it (FILE *fp, const char *format, ...)
  * This is an alternative form of put_it which writes three asterisks
  * before actually putting things out.
  */
-void 	vsay (const char *format, va_list args)
+static void 	vsay (const char *format, va_list args)
 {
 	if (window_display && format)
 	{

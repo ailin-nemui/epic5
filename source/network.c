@@ -1,4 +1,4 @@
-/* $EPIC: network.c,v 1.46 2003/04/24 21:49:25 jnelson Exp $ */
+/* $EPIC: network.c,v 1.47 2003/05/09 04:29:52 jnelson Exp $ */
 /*
  * network.c -- handles stuff dealing with connecting and name resolving
  *
@@ -732,7 +732,7 @@ static int	Getnameinfo(const SA *sa, socklen_t salen, char *host, size_t hostlen
 {
 	if ((flags & GNI_INTEGER) && sa->sa_family == AF_INET) {
 		snprintf(host, hostlen, "%lu", 
-			(unsigned long)ntohl(((ISA *)sa)->sin_addr.s_addr));
+			(unsigned long)ntohl(((const ISA *)sa)->sin_addr.s_addr));
 		host = NULL;
 		hostlen = 0;
 	}

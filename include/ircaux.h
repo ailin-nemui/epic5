@@ -7,7 +7,7 @@
  *
  * See the COPYRIGHT file, or do a HELP IRCII COPYRIGHT 
  *
- * @(#)$Id: ircaux.h,v 1.44 2003/05/02 20:22:25 jnelson Exp $
+ * @(#)$Id: ircaux.h,v 1.45 2003/05/09 04:29:52 jnelson Exp $
  */
 
 #ifndef _IRCAUX_H_
@@ -40,12 +40,11 @@ typedef int 	comp_func 		(char *, char *);
 #define m_strcat_ues(x,y,z) m_strcat_ues_c((x),(y),(z),NULL)
 
 extern	int	need_delayed_free;
-void	fatal_malloc_check	(void *, const char *, char *, int);
-void *	really_new_malloc 	(size_t, char *, int);
-void *	really_new_free 	(void **, char *, int);
-int	debug_new_free		(void **, char *, int);
-void *	really_new_realloc 	(void **, size_t, char *, int);
-void	malloc_dump		(char *);
+void	fatal_malloc_check	(void *, const char *, const char *, int);
+void *	really_new_malloc 	(size_t, const char *, int);
+void *	really_new_free 	(void **, const char *, int);
+void *	really_new_realloc 	(void **, size_t, const char *, int);
+void	malloc_dump		(const char *);
 
 char *	check_nickname 		(char *, int);
 char *	dequote			(char *);
@@ -60,7 +59,7 @@ int	normalize_filename	(const char *, Filename);
 int	expand_twiddle 		(const char *, Filename);
 char *	upper 			(char *);
 char *	lower 			(char *);
-char *	sindex			(char *, char *);
+char *	sindex			(char *, const char *);
 char *	rsindex 		(char *, char *, char *, int);
 int	path_search 		(const char *, const char *, Filename);
 char *	double_quote 		(const char *, const char *, char *);
@@ -89,14 +88,14 @@ void	really_free 		(int);
 char *	chop 			(char *, size_t);
 char *	m_strcat_ues_c 		(char **, const char *, int, size_t *);
 char *	strlopencat		(char *, size_t, ...);
-char *	stristr 		(const char *, const char *);
-char *	rstristr 		(const char *, const char *);
+ssize_t	stristr 		(const char *, const char *);
+ssize_t	rstristr 		(const char *, const char *);
 char *	findchar		(char *, int);
 FILE *	uzfopen 		(char **, const char *, int);
-int	end_strcmp 		(const char *, const char *, int);
-char*   exec_pipe		(char *, char *, size_t *, char**);
+int	end_strcmp 		(const char *, const char *, size_t);
+char*   exec_pipe		(char *, char *, size_t *, char **);
 FILE **	open_exec		(char *executable, char **args);
-void	panic 			(char *, ...) __A(1) __N;
+void	panic 			(const char *, ...) __A(1) __N;
 int	vt100_decode 		(char);
 int	count_ansi		(char *, int);
 int	fw_strcmp 		(comp_len_func *, char *, char *);
@@ -107,7 +106,7 @@ double 	time_diff 		(struct timeval, struct timeval);
 struct timeval time_add		(struct timeval, struct timeval);
 struct timeval time_subtract	(struct timeval, struct timeval);
 struct timeval double_to_timeval (double);
-char *	plural 			(int);
+const char *	plural 		(int);
 double	time_to_next_minute 	(void);
 char *	remove_trailing_spaces 	(char *, size_t *cluep);
 char *	ltoa 			(long);
@@ -118,13 +117,13 @@ char *	skip_spaces		(char *);
 int	split_args		(char *, char **to, size_t);
 int	splitw 			(char *, char ***);
 char *	unsplitw 		(char ***, int);
-int	check_val 		(char *);
+int	check_val 		(const char *);
 char *	strext	 		(const char *, const char *);
 char *	strextend 		(char *, char, int);
 char *	pullstr 		(char *, char *);
 int 	empty 			(const char *);
 char *	safe_new_next_arg	(char *, char **);
-char *	MatchingBracket 	(char *, char, char);
+ssize_t	MatchingBracket 	(const char *, char, char);
 int	word_count 		(const char *);
 int	parse_number 		(char **);
 char *	remove_brackets 	(const char *, const char *, int *);
@@ -173,7 +172,8 @@ char *	enquote_it		(char *str, size_t len);
 char *	dequote_it		(char *str, size_t *len);
 const char *	find_forward_quote	(const char *, const char *);
 const char *	find_backward_quote	(const char *, const char *);
-const char *	my_strerror		(int, int);
+const char *	my_strerror	(int, int);
+int	slurp_file		(char **buffer, char *filename);
 
 /* From words.c */
 #define SOS 		-32767
@@ -258,7 +258,7 @@ int	bsd_setenv (const char *, const char *, int);
 void	bsd_unsetenv (const char *);
 
 void		bsd_arc4random_stir (void);
-void		bas_arc4random_addrandom (u_char, int);
+void		bsd_arc4random_addrandom (u_char *, int);
 u_32int_t	bsd_arc4random (void);
 
 #ifndef HAVE_STRLCPY

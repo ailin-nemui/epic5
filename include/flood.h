@@ -27,5 +27,6 @@ typedef enum {
 
 	int	check_flooding 		(const char *, const char *, FloodType, const char *);
 	int	new_check_flooding 	(const char *, const char *, const char *, const char *, FloodType);
+	char *	function_floodinfo	(char *);
 
 #endif /* _FLOOD_H_ */

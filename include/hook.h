@@ -103,7 +103,7 @@ enum HOOK_TYPES {
 
 	BUILT_IN_COMMAND(oncmd);
 	BUILT_IN_COMMAND(shookcmd);
-	int	do_hook 		(int, char *, ...) __A(2);
+	int	do_hook 		(int, const char *, ...) __A(2);
 	void	flush_on_hooks 		(void);
 	void	unload_on_hooks		(char *);
 	void	save_hooks 		(FILE *, int);

@@ -1,4 +1,4 @@
-/* $EPIC: mail.c,v 1.5 2003/04/24 21:49:25 jnelson Exp $ */
+/* $EPIC: mail.c,v 1.6 2003/05/09 04:29:52 jnelson Exp $ */
 /*
  * mail.c -- a gross simplification of mail checking.
  * Only unix maildrops are supported.
@@ -70,7 +70,7 @@ static	time_t	old_stat = 0;
 
 	if (!mail_path)
 	{
-		char *mail_path_list = "/var/spool/mail:/usr/spool/mail:/var/mail:/usr/mail";
+		const char *mail_path_list = "/var/spool/mail:/usr/spool/mail:/var/mail:/usr/mail";
 		Filename tmp_mail_path;
 
 		if (getenv("MAIL"))

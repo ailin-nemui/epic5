@@ -1,4 +1,4 @@
-/* $EPIC: who.c,v 1.21 2003/04/24 21:49:25 jnelson Exp $ */
+/* $EPIC: who.c,v 1.22 2003/05/09 04:29:52 jnelson Exp $ */
 /*
  * who.c -- The WHO queue.  The ISON queue.  The USERHOST queue.
  *
@@ -243,11 +243,11 @@ BUILT_IN_COMMAND(whocmd)
  */
 void 	whobase (int refnum, char *args, void (*line) (int, const char *, const char *, const char **), void (*end) (int, const char *, const char *, const char **))
 {
-	char	*arg;
-	const char	*channel = NULL;
-	int	no_args = 1,
-		len;
-	WhoEntry *new_w, *old;
+	char *		arg;
+	const char *	channel = NULL;
+	int		no_args = 1,
+			len;
+	WhoEntry *	new_w, *old;
 
 	/* Maybe should output a warning? */
 	if (!is_server_registered(refnum))
@@ -273,19 +273,19 @@ void 	whobase (int refnum, char *args, void (*line) (int, const char *, const ch
 
 		if (!strncmp(arg, "line", 4))		/* LINE */
 		{
-			char *line;
+			char *stuff;
 
-			if ((line = next_expr(&args, '{')))
-				malloc_strcpy(&new_w->who_stuff, line);
+			if ((stuff = next_expr(&args, '{')))
+				malloc_strcpy(&new_w->who_stuff, stuff);
 			else
 				say("Need {...} argument for -LINE argument.");
 		}
 		else if (!strncmp(arg, "end", 3))	/* END */
 		{
-			char *line;
+			char *stuff;
 
-			if ((line = next_expr(&args, '{')))
-				malloc_strcpy(&new_w->who_end, line);
+			if ((stuff = next_expr(&args, '{')))
+				malloc_strcpy(&new_w->who_end, stuff);
 			else
 				say("Need {...} argument for -END argument.");
 		}
@@ -481,7 +481,7 @@ static	int	last_width = -1;
 			*host,
 			*server,
 			*nick,
-			*stat;
+			*status;
 	char 	*name;
 	WhoEntry *new_w = who_queue_top(refnum);
 
@@ -538,22 +538,22 @@ do
 	host    = ArgList[2];
 	server  = ArgList[3];
 	nick    = ArgList[4];
-	stat    = ArgList[5];
+	status  = ArgList[5];
 	PasteArgs(ArgList, 6);
 	name    = LOCAL_COPY(ArgList[6]);
 
-	if (*stat == 'S')	/* this only true for the header WHOREPLY */
+	if (*status == 'S')	/* this only true for the header WHOREPLY */
 	{
 		char buffer[1024];
 
 		channel = "Channel";
 		snprintf(buffer, 1024, "%s %s %s %s %s %s %s", channel,
-				nick, stat, user, host, server, name);
+				nick, status, user, host, server, name);
 
 		if (new_w->who_stuff)
 			;			/* munch it */
 		else if (do_hook(WHO_LIST, "%s", buffer))
-			put_it(format, channel, nick, stat, user, host, name);
+			put_it(format, channel, nick, status, user, host, name);
 
 		return;
 	}
@@ -561,21 +561,21 @@ do
 	if (new_w && new_w->who_mask)
 	{
 		if (new_w->who_mask & WHO_HERE)
-			ok = ok && (*stat == 'H');
+			ok = ok && (*status == 'H');
 		if (new_w->who_mask & WHO_AWAY)
-			ok = ok && (*stat == 'G');
+			ok = ok && (*status == 'G');
 		if (new_w->who_mask & WHO_OPS)
-			ok = ok && (*(stat + 1) == '*');
+			ok = ok && (*(status + 1) == '*');
 		if (new_w->who_mask & WHO_LUSERS)
-			ok = ok && (*(stat + 1) != '*');
+			ok = ok && (*(status + 1) != '*');
 		if (new_w->who_mask & WHO_CHOPS)
-			ok = ok && ((*(stat + 1) == '@') ||
-				    (*(stat + 2) == '@') ||
-				    (*(stat + 3) == '@'));
+			ok = ok && ((*(status + 1) == '@') ||
+				    (*(status + 2) == '@') ||
+				    (*(status + 3) == '@'));
 		if (new_w->who_mask & WHO_NOCHOPS)
-			ok = ok && ((*(stat + 1) != '@') &&
-				    (*(stat + 2) != '@') &&
-				    (*(stat + 3) != '@'));
+			ok = ok && ((*(status + 1) != '@') &&
+				    (*(status + 2) != '@') &&
+				    (*(status + 3) != '@'));
 		if (new_w->who_mask & WHO_NAME)
 			ok = ok && wild_match(new_w->who_name, user);
 		if (new_w->who_mask & WHO_NICK)
@@ -593,7 +593,7 @@ do
 		char buffer[1024];
 
 		snprintf(buffer, 1023, "%s %s %s %s %s %s %s", channel,
-				nick, stat, user, host, server, name);
+				nick, status, user, host, server, name);
 
 		if (new_w->who_stuff)
 			parse_line(NULL, new_w->who_stuff, buffer, 0, 0);
@@ -605,7 +605,7 @@ do
 				if (!get_int_var(SHOW_WHO_HOPCOUNT_VAR))
 					next_arg(name, &name);
 
-				put_it(format, channel, nick, stat, user, host, name);
+				put_it(format, channel, nick, status, user, host, name);
 			}
 		}
 	}
@@ -906,8 +906,8 @@ void	ison_returned (int refnum, const char *from, const char *comm, const char *
 	PasteArgs(ArgList, 0);
 	if (new_i->line) 
 	{
-		char *ison_returned = LOCAL_COPY(ArgList[0]);
-		new_i->line(refnum, new_i->ison_asked, ison_returned);
+		char *ison_ret = LOCAL_COPY(ArgList[0]);
+		new_i->line(refnum, new_i->ison_asked, ison_ret);
 	}
 	else
 	{
@@ -1007,7 +1007,7 @@ BUILT_IN_COMMAND(usripcmd)
 	userhostbase(from_server, args, NULL, 2);
 }
 
-void userhostbase (int refnum, char *args, void (*line) (int, UserhostItem *, const char *, const char *), int userhost)
+void userhostbase (int refnum, char *args, void (*line) (int, UserhostItem *, const char *, const char *), int do_userhost)
 {
 	int	total = 0,
 		userhost_cmd = 0;
@@ -1040,9 +1040,9 @@ void userhostbase (int refnum, char *args, void (*line) (int, UserhostItem *, co
 		{
 			if (!total)
 			{
-				if (userhost == 1)
+				if (do_userhost == 1)
 					say("USERHOST -cmd with no nicks specified");
-				else if (userhost == 0)
+				else if (do_userhost == 0)
 					say("USERIP -cmd with no nicks specified");
 				else
 					say("USRIP -cmd with no nicks specified");
@@ -1084,9 +1084,9 @@ void userhostbase (int refnum, char *args, void (*line) (int, UserhostItem *, co
 				next_ptr[-1] = 0;
 
 			new_u->userhost_asked = m_strdup(ptr);
-			if (userhost == 1)
+			if (do_userhost == 1)
 				send_to_aserver(refnum, "USERHOST %s", new_u->userhost_asked);
-			else if (userhost == 0)
+			else if (do_userhost == 0)
 				send_to_aserver(refnum, "USERIP %s", new_u->userhost_asked);
 			else
 				send_to_aserver(refnum, "USRIP %s", new_u->userhost_asked);
@@ -1108,27 +1108,28 @@ void userhostbase (int refnum, char *args, void (*line) (int, UserhostItem *, co
 	{
 		while (ptr && *ptr)
 		{
-			char *nick = next_arg(ptr, &ptr);
-			const char *ouh = fetch_userhost(refnum, nick);
-			char *uh;
+			char *my_nick = next_arg(ptr, &ptr);
+			const char *ouh = fetch_userhost(refnum, my_nick);
+			char *uh, *host;
 			UserhostItem item = {NULL, 0, 0, 0, NULL, NULL};
 
 			uh = LOCAL_COPY(ouh);
-			item.nick = nick;
+			item.nick = my_nick;
 			item.oper = 0;
 			item.connected = 1;
 			item.away = 0;
 			item.user = uh;
-			item.host = strchr(uh, '@');
-			if (item.host)
-				*item.host++ = 0;
-			else
+			host = strchr(uh, '@');
+			if (host) {
+				*host++ = 0;
+				item.host = host;
+			} else
 				item.host = "<UNKNOWN>";
 
 			if (line)
-				line(refnum, &item, nick, body);
+				line(refnum, &item, my_nick, body);
 			else if (userhost_cmd)
-				userhost_cmd_returned(refnum, &item, nick, body);
+				userhost_cmd_returned(refnum, &item, my_nick, body);
 			else
 				yell("Yowza!  I dont know what to do here!");
 		}
@@ -1179,44 +1180,48 @@ void	userhost_returned (int refnum, const char *from, const char *comm, const ch
 	            && (results[len] == '*' || results[len] == '=')))
 		{
 			UserhostItem item;
+			char *nick, *user, *host;
 
 			/* Extract all the interesting info */
 			item.connected = 1;
-			item.nick = next_arg(results, &results);
-			item.user = strchr(item.nick, '=');
-			if (!item.user)
+			nick = next_arg(results, &results);
+			user = strchr(nick, '=');
+			if (!user)
 			{
 				yell("Can't parse useless USERHOST reply [%s]", 
 						ArgList[0]);
 				userhost_queue_pop(refnum);
 			}
 
-			if (item.user[-1] == '*')
+			if (user[-1] == '*')
 			{
-				item.user[-1] = 0;
+				user[-1] = 0;
 				item.oper = 1;
 			}
 			else
 				item.oper = 0;
 
-			if (item.user[1] == '+')
+			if (user[1] == '+')
 				item.away = 0;
 			else
 				item.away = 1;
 
-			*item.user++ = 0;
-			item.user++;
+			*user++ = 0;
+			user++;
 
-			item.host = strchr(item.user, '@');
-			if (!item.host)
+			host = strchr(user, '@');
+			if (!host)
 			{
 				yell("Can't parse useless USERHOST reply [%s]", 
 						ArgList[0]);
 				userhost_queue_pop(refnum);
 				return;
 			}
-			*item.host++ = 0;
+			*host++ = 0;
 
+			item.nick = nick;
+			item.user = user;
+			item.host = host;
 
 			/*
 			 * If the user wanted a callback, then

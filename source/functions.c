@@ -1,4 +1,4 @@
-/* $EPIC: functions.c,v 1.116 2003/05/05 03:55:01 jnelson Exp $ */
+/* $EPIC: functions.c,v 1.117 2003/05/09 04:29:52 jnelson Exp $ */
 /*
  * functions.c -- Built-in functions for ircII
  *
@@ -47,11 +47,15 @@
 #include "alist.h"
 #include "array.h"
 #include "dcc.h"
+#include "debug.h"
 #include "commands.h"
 #include "files.h"
+#include "flood.h"
 #include "ignore.h"
 #include "input.h"
 #include "ircaux.h"
+#include "keys.h"
+#include "log.h"
 #include "names.h"
 #include "output.h"
 #include "parse.h"
@@ -277,7 +281,6 @@ static	char
 	*function_joinstr	(char *),
 	*function_jot 		(char *),
 	*function_key 		(char *),
-	*function_logctl	(char *),
 	*function_killpid	(char *),
 	*function_lastserver	(char *),
 	*function_leftpc	(char *),
@@ -286,6 +289,7 @@ static	char
 	*function_loadinfo	(char *),
 	*function_log		(char *),
 	*function_log10		(char *),
+	*function_logctl	(char *),
 	*function_longtoip	(char *),
 	*function_mask		(char *),
 	*function_maxlen	(char *),
@@ -408,9 +412,7 @@ extern char
 	*function_push		(char *),
 	*function_pop		(char *),
 	*function_shift		(char *),
-	*function_unshift	(char *),
-	*function_floodinfo	(char *),
-	*function_xdebug	(char *);
+	*function_unshift	(char *);
 
 typedef char *(bf) (char *);
 typedef struct
@@ -575,7 +577,7 @@ static BuiltInFunctions	built_in_functions[] =
 	{ "LOADINFO",		function_loadinfo	},
 	{ "LOG",		function_log		},
 	{ "LOG10",		function_log10		},
-	{ "LOGCTL",		function_logctl		},
+	{ "LOGCTL",		function_logctl		}, /* logfiles.h */
 	{ "LONGTOIP",		function_longtoip	},
 	{ "MASK",		function_mask		},
 	{ "MATCH",		function_match 		},
@@ -764,7 +766,7 @@ char	*call_function (char *name, const char *args, int *args_flag)
 	char	*result = (char *) 0;
 	char	*debug_copy = (char *) 0;
 	int	cnt, pos;
-	char	*lparen, *rparen;
+	char	*lparen;
 	int	debugging;
 	size_t	size;
 	char *	buf;
@@ -773,8 +775,10 @@ char	*call_function (char *name, const char *args, int *args_flag)
 
 	if ((lparen = strchr(name, '(')))
 	{
-		if ((rparen = MatchingBracket(lparen + 1, '(', ')')))
-			*rparen++ = 0;
+		ssize_t	span;
+
+		if ((span = MatchingBracket(lparen + 1, '(', ')')) >= 0)
+			lparen[1 + span] = 0;
 		else
 			yell("Unmatched lparen in function call [%s]", name);
 
@@ -883,7 +887,8 @@ static	char	*alias_target 		(void)
 
 static	char	*alias_cmdchar 		(void)
 {
-	char	*cmdchars, tmp[2];
+	const char *cmdchars;
+	char tmp[2];
 
 	if ((cmdchars = get_string_var(CMDCHARS_VAR)) == (char *) 0)
 		cmdchars = DEFAULT_CMDCHARS;
@@ -950,7 +955,7 @@ BUILT_IN_FUNCTION(function_left, word)
 	if (count < 0)
 		RETURN_EMPTY;
 
-	if (strlen(word) > count)
+	if (strlen(word) > (size_t)count)
 		word[count] = 0;
 
 	RETURN_STR(word);
@@ -971,7 +976,7 @@ BUILT_IN_FUNCTION(function_right, word)
 	if (count < 0)
 		RETURN_EMPTY;
 
-	if (strlen(word) > count)
+	if (strlen(word) > (size_t)count)
 		word += strlen(word) - count;
 
 	RETURN_STR(word);
@@ -992,13 +997,13 @@ BUILT_IN_FUNCTION(function_mid, word)
 	GET_INT_ARG(length, word);
 	RETURN_IF_EMPTY(word);
 
-	if (start < strlen(word))
+	if (start < (int)strlen(word))
 	{
 		word += start;
 		if (length < 0)
 			RETURN_EMPTY;
 
-		if (length < strlen(word))
+		if ((size_t)length < strlen(word))
 			word[length] = 0;
 	}
 	else
@@ -1022,7 +1027,8 @@ static	unsigned long	rn = 0;
 	if (tempin == 0)
 		RETURN_INT(random_number(0));
 	else {
-		if (rn < tempin) rn ^= random_number(0);
+		if (rn < tempin)
+			rn ^= random_number(0);
 		ret = rn % tempin;
 		rn /= tempin;
 		RETURN_INT(ret);
@@ -1271,13 +1277,13 @@ BUILT_IN_FUNCTION(function_userhost, input)
 		char *retval = NULL;
 		size_t rvclue=0;
 		char *nick;
-		const char *userhost;
+		const char *uh;
 
 		while (input && *input)
 		{
 			GET_STR_ARG(nick, input);
-			if ((userhost = fetch_userhost(from_server, nick)))
-				m_sc3cat(&retval, space, userhost, &rvclue);
+			if ((uh = fetch_userhost(from_server, nick)))
+				m_sc3cat(&retval, space, uh, &rvclue);
 			else
 				m_sc3cat(&retval, space, unknown_userhost, &rvclue);
 		}
@@ -1816,14 +1822,17 @@ BUILT_IN_FUNCTION(function_remw, word)
 {
 	char 	*word_to_remove;
 	int	len;
+	ssize_t	span;
 	char	*str;
 
 	GET_STR_ARG(word_to_remove, word);
 	len = strlen(word_to_remove);
 
-	str = stristr(word, word_to_remove);
-	for (; str && *str; str = stristr(str + 1, word_to_remove))
+	if ((span = stristr(word, word_to_remove)) >= 0)
 	{
+	    str = word + span;
+	    while (str && *str)
+	    {
 		if (str == word || isspace(str[-1]))
 		{
 			if (!str[len] || isspace(str[len]))
@@ -1841,6 +1850,10 @@ BUILT_IN_FUNCTION(function_remw, word)
 				break;
 			}
 		}
+		if ((span = stristr(str + 1, word_to_remove)) < 0)
+			break; 
+		str += span;
+	    }
 	}
 
 	RETURN_STR(word);
@@ -2626,7 +2639,7 @@ BUILT_IN_FUNCTION(function_sar, word)
 	char *	keep_text;
 	char *	pointer;
 	char *	retval = NULL;
-	char *	(*func) (const char *, const char *) = strstr;
+	int	case_sensitive = 1;
 	int	variable = 0, global = 0;
 	size_t	rvclue=0;
 	
@@ -2642,7 +2655,7 @@ BUILT_IN_FUNCTION(function_sar, word)
 		else if (*word == 'g')
 			global = 1;
 		else if (*word == 'i')
-			func = stristr;
+			case_sensitive = 0;
 		else if (!*word)
 			RETURN_EMPTY;
 		else
@@ -2704,7 +2717,16 @@ BUILT_IN_FUNCTION(function_sar, word)
 	do
 	{
 		/* Look for the string in the text */
-		pointer = func(keep_text, replacing);
+		if (case_sensitive)
+			pointer = strstr(keep_text, replacing);
+		else
+		{
+			ssize_t span;
+			if ((span = stristr(keep_text, replacing)) < 0)
+				pointer = NULL;
+			else
+				pointer = keep_text + span;
+		}
 
 		/* 
 		 * If the pattern doesnt exist, or we're at the
@@ -2860,20 +2882,18 @@ BUILT_IN_FUNCTION(function_ascii, word)
 
 BUILT_IN_FUNCTION(function_asciiq, word)
 {
-	char	*aboo = NULL, *free;
+	char	*aboo = NULL, *free_it;
 	size_t	rvclue=0;
 	size_t	len = strlen(word);
 
 	if (!word || !*word)
 		RETURN_EMPTY;
 
-	free = word = dequote_it(word, &len);
-
+	free_it = word = dequote_it(word, &len);
 	for (; 0 < len--; word++)
 		m_sc3cat_s(&aboo, space, ltoa((long)(unsigned char)*word), &rvclue);
 
-	new_free(&free);
-
+	new_free(&free_it);
 	return aboo;
 }
 
@@ -3483,6 +3503,7 @@ BUILT_IN_FUNCTION(function_fsize, words)
  * Credits: Thanks to Strongbow for showing me how crypt() works.
  * Written by: CrowMan
  */
+/* Some systems use (char *) and some use (const char *) as arguments. */
 char *crypt(); 
 BUILT_IN_FUNCTION(function_crypt, words)
 {
@@ -3620,9 +3641,9 @@ BUILT_IN_FUNCTION(function_umode, words)
 	RETURN_STR(ret);		/* Dont pass function call to macro! */
 }
 
-static int sort_it (const void *one, const void *two)
+static int sort_it (const void *val1, const void *val2)
 {
-	return my_stricmp(*(const char **)one, *(const char **)two);
+	return my_stricmp(*(const char **)val1, *(const char **)val2);
 }
 
 BUILT_IN_FUNCTION(function_sort, words)
@@ -3639,30 +3660,35 @@ BUILT_IN_FUNCTION(function_sort, words)
 	RETURN_MSTR(retval);
 }
 
-static int num_sort_it (const void *one, const void *two)
+static int num_sort_it (const void *val1, const void *val2)
 {
-	char *oneptr = *(char **)one;
-	char *twoptr = *(char **)two;
-	long val1, val2;
+	const char *oneptr = *(const char **)val1;
+	const char *twoptr = *(const char **)val2;
+	char *oneptr_result;
+	char *twoptr_result;
+	long v1, v2;
 
 	while (*oneptr && *twoptr)
 	{
 		while (*oneptr && *twoptr && !(my_isdigit(oneptr)) && !(my_isdigit(twoptr)))
 		{
-			char one = tolower(*oneptr);
-			char two = tolower(*twoptr);
-			if (one != two)
-				return (one - two);
+			char cone = tolower(*oneptr);
+			char ctwo = tolower(*twoptr);
+			if (cone != ctwo)
+				return (cone - ctwo);
 			oneptr++, twoptr++;
 		}
 
 		if (!*oneptr || !*twoptr)
 			break;
 
-		val1 = strtol(oneptr, (char **)&oneptr, 0);
-		val2 = strtol(twoptr, (char **)&twoptr, 0);
-		if (val1 != val2)
-			return val1 - val2;
+		/* These casts discard 'const', but do i care? */
+		v1 = strtol(oneptr, &oneptr_result, 0);
+		v2 = strtol(twoptr, &twoptr_result, 0);
+		if (v1 != v2)
+			return v1 - v2;
+		oneptr = oneptr_result;
+		twoptr = twoptr_result;
 	}
 	return (*oneptr - *twoptr);
 }
@@ -3881,10 +3907,10 @@ BUILT_IN_FUNCTION(function_twiddle, words)
 }
 
 
-static int unsort_it (const void *one, const void *two)
+static int unsort_it (const void *v1, const void *v2)
 {
 	/* This just makes me itch. ;-) */
-	return (int)(*(const char **)one - *(const char **)two);
+	return (int)(*(const char **)v1 - *(const char **)v2);
 }
 /* 
  * Date: Sun, 29 Sep 1996 19:17:25 -0700
@@ -4186,26 +4212,26 @@ BUILT_IN_FUNCTION(function_irclib, input)
 
 BUILT_IN_FUNCTION(function_substr, input)
 {
-	char *search;
-	char *ptr;
+	char *srch;
+	ssize_t span;
 
-	GET_STR_ARG(search, input);
+	GET_STR_ARG(srch, input);
 
-	if ((ptr = stristr(input, search)))
-		RETURN_INT((unsigned long)(ptr - input));
+	if ((span = stristr(input, srch)) >= 0)
+		RETURN_INT((unsigned long) span);
 	else
 		RETURN_INT(-1);
 }
 
 BUILT_IN_FUNCTION(function_rsubstr, input)
 {
-	char *search;
-	char *ptr;
+	char *srch;
+	ssize_t	span;
 
-	GET_STR_ARG(search, input);
+	GET_STR_ARG(srch, input);
 
-	if ((ptr = rstristr(input, search)))
-		RETURN_INT((unsigned long)(ptr - input));
+	if ((span = rstristr(input, srch)) >= 0)
+		RETURN_INT((unsigned long) span);
 	else
 		RETURN_INT(-1);
 }
@@ -4471,18 +4497,21 @@ BUILT_IN_FUNCTION(function_getenv, input)
 
 BUILT_IN_FUNCTION(function_count, input)
 {
-	char 	*str, *str2;
+	char 	*str;
+	const char *str2;
 	int 	count = 0;
+	ssize_t	span;
 
 	GET_STR_ARG(str, input);
 	str2 = input;
 
 	for (;;)
 	{
-		if ((str2 = stristr(str2, str)))
-			count++, str2++;
-		else
+		if ((span = stristr(str2, str)) < 0)
 			break;
+
+		count++;
+		str2 += span + 1;
 	}
 
 	RETURN_INT(count);
@@ -4571,7 +4600,7 @@ BUILT_IN_FUNCTION(function_msar, word)
 {
 	char    delimiter;
 	char    *pointer        = NULL;
-	char    *search         = NULL;
+	char    *srch           = NULL;
 	char    *replace        = NULL;
 	char    *data           = NULL;
 	char    *value          = NULL;
@@ -4580,18 +4609,18 @@ BUILT_IN_FUNCTION(function_msar, word)
 	int     variable 	= 0,
 		global 		= 0,
 		searchlen;
-	char 	*(*func) (const char *, const char *) = strstr;
+	int	case_sensitive	= 1;
 	char    *svalue;
 
         while (((*word == 'r') && (variable = 1)) || ((*word == 'g') && (global
-= 1)) || ((*word == 'i') && (func = stristr)))
+= 1)) || ((*word == 'i') && (case_sensitive = 0)))
                 word++;
 
         RETURN_IF_EMPTY(word);
 
         delimiter = *word;
-        search = word + 1;
-        if (!(replace = strchr(search, delimiter)))
+        srch = word + 1;
+        if (!(replace = strchr(srch, delimiter)))
                 RETURN_EMPTY;
 
         *replace++ = 0;
@@ -4618,35 +4647,65 @@ BUILT_IN_FUNCTION(function_msar, word)
 
         do 
         {
-                searchlen = strlen(search) - 1;
+                searchlen = strlen(srch) - 1;
                 if (searchlen < 0)
                         searchlen = 0;
                 if (global)
                 {
-                        while ((pointer = func(pointer,search)))
-                        {
-                                pointer[0] = pointer[searchlen] = 0;
-                                pointer += searchlen + 1;
-                                m_e3cat(&booya, value, replace);
-                                value = pointer;
-                                if (!*pointer)
-                                        break;
-                        }
+		    for (;;)
+		    {
+			/* Look for the string in the text */
+			if (case_sensitive)
+				pointer = strstr(pointer, srch);
+			else
+			{
+				ssize_t span;
+				if ((span = stristr(pointer, srch)) < 0)
+					pointer = NULL;
+				else
+					pointer = pointer + span;
+			}
+
+			if (pointer == NULL)
+				break;
+
+			pointer[0] = pointer[searchlen] = 0;
+			pointer += searchlen + 1;
+			m_e3cat(&booya, value, replace);
+			value = pointer;
+			if (!*pointer)
+				break;
+		    }
                 } 
                 else
                 {
-                        if ((pointer = func(pointer,search)))
-                        {
-                                pointer[0] = pointer[searchlen] = 0;
-                                pointer += searchlen + 1;
-                                m_e3cat(&booya, value, replace);
-                                value = pointer;
-                        }
+		    for (;;)
+		    {
+			/* Look for the string in the text */
+			if (case_sensitive)
+				pointer = strstr(pointer, srch);
+			else
+			{
+				ssize_t span;
+				if ((span = stristr(pointer, srch)) < 0)
+					pointer = NULL;
+				else
+					pointer = pointer + span;
+			}
+
+			if (pointer == NULL)
+				break;
+
+			pointer[0] = pointer[searchlen] = 0;
+			pointer += searchlen + 1;
+			m_e3cat(&booya, value, replace);
+			value = pointer;
+		    }
                 }
                 malloc_strcat(&booya, value);
                 if (data && *data)
                 {
-                        search = data;
+                        srch = data;
                         if ((replace = strchr(data, delimiter)))
                         {
                                 *replace++ = 0;
@@ -4654,23 +4713,16 @@ BUILT_IN_FUNCTION(function_msar, word)
                                         *data++ = 0;
                         }
                         new_free(&svalue);
-#if 0
-			/* This is the old stuff */
-                        pointer = svalue = value = booya;
-                        booya = NULL;
-                        if (!replace || !search)
-                                break;
-#else
+
 			/* This was recommended by RoboHak */
 			/* And he fixed it again, from Colten */
-			if (!replace || !search)
+			if (!replace || !srch)
 			{
 				pointer = value = svalue;
 				break;
 			}
 			pointer = value = svalue = booya;
 			booya = NULL;
-#endif
                 } else 
                         break;
         } while (1);
@@ -4904,11 +4956,11 @@ BUILT_IN_FUNCTION(function_uname, input)
 		RETURN_STR("unknown");
 
 	if (!*input)
-		input = "%s %r";
+		input = LOCAL_COPY("%s %r");
 
 	for (i = 0, len = strlen(input); i < len; i++)
 	{
-		if (ptr - tmp >= size)
+		if (ptr - tmp >= (int)size)
 			break;
 
 		if (input[i] == '%') 
@@ -5414,7 +5466,7 @@ BUILT_IN_FUNCTION(function_rest, input)
 	if (start <= 0)
 		RETURN_STR(input);
 
-	if (start >= strlen(input))
+	if (start >= (int)strlen(input))
 		RETURN_EMPTY;
 
 	RETURN_STR(input + start);
@@ -5445,7 +5497,7 @@ BUILT_IN_FUNCTION((thisfn), input)                       \
 
 GET_FIXED_ARRAY_FUNCTION(function_getsets, get_set)
 GET_FIXED_ARRAY_FUNCTION(function_getcommands, get_command)
-GET_FIXED_ARRAY_NAMES_FUNCTION(get_function, built_in_functions)
+static GET_FIXED_ARRAY_NAMES_FUNCTION(get_function, built_in_functions)
 GET_FIXED_ARRAY_FUNCTION(function_getfunctions, get_function)
 
 /* Written by nutbar */
@@ -5509,7 +5561,7 @@ BUILT_IN_FUNCTION(function_stripcrap, input)
 	output = new_malloc(size);
 	strlcpy(output, input, size);
 	if (mangle_line(output, mangle, size) > size)
-		;		/* Result has been truncated. ick. */
+		(void) 0;		/* Result has been truncated. ick. */
 	return output;			/* DONT MALLOC THIS */
 }
 
@@ -5952,14 +6004,14 @@ BUILT_IN_FUNCTION(function_hash_32bit, input)
  */
 BUILT_IN_FUNCTION(function_indextoword, input)
 {
-	ssize_t	pos;
+	int	pos;
 	size_t	len;
 
 	GET_INT_ARG(pos, input);
 	if (pos < 0)
 		RETURN_EMPTY;
 	len = strlen(input);
-	if (pos < 0 || pos > len)
+	if (pos < 0 || pos > (int)len)
 		RETURN_EMPTY;
 
 	/* 
@@ -5969,7 +6021,7 @@ BUILT_IN_FUNCTION(function_indextoword, input)
 	 * to bicker with me about it?
 	 */
 	/* Truncate the string if neccesary */
-	if (pos + 1 < len) {
+	if (pos + 1 < (int)len) {
 		input[pos] = 'x';
 		input[pos + 1] = 0;
 	}
@@ -6083,7 +6135,7 @@ BUILT_IN_FUNCTION(function_getcap, input)
 	GET_STR_ARG(type, input);
 	if (!my_stricmp(type, "TERM"))
 	{
-		char *	retval;
+		const char *	retval;
 		char *	term = NULL;
 		int	querytype = 0;
 		int	mangle = 1;
@@ -6509,7 +6561,6 @@ BUILT_IN_FUNCTION(function_encryptparm, input)
 
 BUILT_IN_FUNCTION(function_serverctl, input)
 {
-	extern char *serverctl (char *);
 	return serverctl(input);
 }
 
@@ -6560,13 +6611,11 @@ do_kill:
 
 BUILT_IN_FUNCTION(function_bindctl, input)
 {
-	extern char *bindctl(char *);
 	return bindctl(input);
 }
 
 BUILT_IN_FUNCTION(function_logctl, input)
 {
-	extern char *logctl(char *);
 	return logctl(input);
 }
 

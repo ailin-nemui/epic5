@@ -1,4 +1,4 @@
-/* $EPIC: alias.c,v 1.20 2003/05/02 20:22:25 jnelson Exp $ */
+/* $EPIC: alias.c,v 1.21 2003/05/09 04:29:52 jnelson Exp $ */
 /*
  * alias.c -- Handles the whole kit and caboodle for aliases.
  *
@@ -71,7 +71,7 @@
  * result in a syntactically valid expando.  All you need to do is tell it
  * if the expando is an rvalue or an lvalue (it *does* make a difference)
  */
-static 	char *lval[] = { "rvalue", "lvalue" };
+static 	const char *lval[] = { "rvalue", "lvalue" };
 static  char *after_expando (char *start, int lvalue, int *call)
 {
 	char	*rest;
@@ -101,7 +101,9 @@ static  char *after_expando (char *start, int lvalue, int *call)
 	 */
 	while (*str == '[')
 	{
-		if (!(rest = MatchingBracket(str + 1, '[', ']')))
+		ssize_t span;
+
+		if ((span = MatchingBracket(str + 1, '[', ']')) < 0)
 		{
 			if (!(rest = strchr(str, ']')))
 			{
@@ -110,6 +112,9 @@ static  char *after_expando (char *start, int lvalue, int *call)
 				return empty_string;
 			}
 		}
+		else
+			rest = str + 1 + span;
+
 		str = rest + 1;
 	}
 
@@ -118,7 +123,9 @@ static  char *after_expando (char *start, int lvalue, int *call)
 	 */
 	if (!lvalue && *str == '(')
 	{
-		if (!(rest = MatchingBracket(str + 1, '(', ')')))
+		ssize_t span;
+
+		if ((span = MatchingBracket(str + 1, '(', ')')) < 0)
 		{
 			if (!(rest = strchr(str, ')')))
 			{
@@ -127,6 +134,9 @@ static  char *after_expando (char *start, int lvalue, int *call)
 				return empty_string;
 			}
 		}
+		else
+			rest = str + 1 + span;
+
 		*call = 1;
 		str = rest + 1;
 	}
@@ -215,32 +225,33 @@ void	destroy_arglist (ArgList *);
  * Specifically, if you create a global variable and then want to delete it,
  * try using a local variable so it is reaped automatically.
  */
-extern	void    add_var_alias      (char *name, char *stuff, int noisy);
-extern  void    add_local_alias    (char *name, char *stuff, int noisy);
-extern  void    add_cmd_alias      (char *name, ArgList *arglist, char *stuff);
-extern  void    add_var_stub_alias (char *name, char *stuff);
-extern  void    add_cmd_stub_alias (char *name, char *stuff);
-static	void	delete_var_alias   (char *name, int noisy);
-static	void	delete_cmd_alias   (char *name, int noisy);
-/*	void	delete_local_alias (char *name); 		*/
-static	void	unload_cmd_alias   (char *fn);
-static	void	unload_var_alias   (char *fn);
-static	void	list_cmd_alias     (char *name);
-static	void	list_var_alias     (char *name);
-static	void	list_local_alias   (char *name);
+extern	void    add_var_alias      (const char *name, const char *stuff, int noisy);
+extern  void    add_local_alias    (const char *name, const char *stuff, int noisy);
+extern  void    add_cmd_alias      (const char *name, ArgList *arglist, const char *stuff);
+extern  void    add_var_stub_alias (const char *name, const char *stuff);
+extern  void    add_cmd_stub_alias (const char *name, const char *stuff);
+static	void	delete_var_alias   (const char *name, int noisy);
+static	void	delete_cmd_alias   (const char *name, int noisy);
+/*	void	delete_local_alias (const char *name); 		*/
+static	void	unload_cmd_alias   (const char *fn);
+static	void	unload_var_alias   (const char *fn);
+static	void	list_cmd_alias     (const char *name);
+static	void	list_var_alias     (const char *name);
+static	void	list_local_alias   (const char *name);
 static	void 	destroy_aliases    (int type);
 
-extern	char *  get_variable            (char *name);
-extern	char ** glob_cmd_alias          (char *name, int *howmany);
-extern	char ** glob_assign_alias	(char *name, int *howmany);
-extern	char ** pmatch_cmd_alias        (char *name, int *howmany);
-extern	char ** pmatch_assign_alias	(char *name, int *howmany);
-extern	char *  get_cmd_alias           (char *name, int *howmany, 
+extern	char *  get_variable       (const char *name);
+extern	char ** glob_cmd_alias          (const char *name, int *howmany);
+extern	char ** glob_assign_alias	(const char *name, int *howmany);
+extern	char ** pmatch_cmd_alias        (const char *name, int *howmany);
+extern	char ** pmatch_assign_alias	(const char *name, int *howmany);
+extern	char *  get_cmd_alias           (const char *name, int *howmany, 
 					 char **complete_name, void **args);
-extern	char ** get_subarray_elements   (char *root, int *howmany, int type);
+extern	char ** get_subarray_elements   (const char *root, int *howmany, int type);
 
 
 static	char *	get_variable_with_args (const char *str, const char *args, int *args_flag);
+static	void show_alias_caches(void);
 
 /************************** HIGH LEVEL INTERFACE ***********************/
 
@@ -255,7 +266,6 @@ BUILT_IN_COMMAND(aliascmd)
 	char *name;
 	char *real_name;
 	char *ptr;
-	void show_alias_caches(void);
 
 	/*
 	 * If no name present, list all aliases
@@ -351,25 +361,27 @@ extern u_32int_t       char_searches;
 		 */
 		if (*args == LEFT_PAREN)
 		{
-			ptr = MatchingBracket(++args, LEFT_PAREN, RIGHT_PAREN);
-			if (!ptr)
-				say("Unmatched lparen in %s %s", 
+		    ssize_t	span;
+
+		    args++;
+		    if ((span = MatchingBracket(args, '(', ')')) < 0)
+			say("Unmatched lparen in %s %s", command, real_name);
+		    else
+		    {
+			ptr = args + span;
+			*ptr++ = 0;
+			while (*ptr && my_isspace(*ptr))
+				ptr++;
+			if (!*ptr)
+				say("Missing alias body in %s %s", 
 					command, real_name);
-			else
-			{
-				*ptr++ = 0;
-				while (*ptr && my_isspace(*ptr))
-					ptr++;
-				if (!*ptr)
-					say("Missing alias body in %s %s", 
-						command, real_name);
 
-				while (*args && my_isspace(*args))
-					args++;
+			while (*args && my_isspace(*args))
+				args++;
 
-				arglist = parse_arglist(args);
-				args = ptr;
-			}
+			arglist = parse_arglist(args);
+			args = ptr;
+		    }
 		}
 
 		/*
@@ -378,24 +390,25 @@ extern u_32int_t       char_searches;
 		 */
 		if (*args == LEFT_BRACE)
 		{
-			ptr = MatchingBracket(++args, LEFT_BRACE, RIGHT_BRACE);
+		    ssize_t	span;
 
-			if (!ptr)
-				say("Unmatched brace in %s %s", 
-						command, real_name);
-			else 
-			{
-				*ptr++ = 0;
-				while (*ptr && my_isspace(*ptr))
-					ptr++;
+		    args++;
+		    if ((span = MatchingBracket(args, '{', '}')) < 0)
+			say("Unmatched brace in %s %s", command, real_name);
+		    else
+		    {
+			ptr = args + span;
+			*ptr++ = 0;
+			while (*ptr && my_isspace(*ptr))
+				ptr++;
 
-				if (*ptr)
-					say("Junk [%s] after closing brace in %s %s", ptr, command, real_name);
+			if (*ptr)
+				say("Junk [%s] after closing brace in %s %s", 
+					ptr, command, real_name);
 
-				while (*args && my_isspace(*args))
-					args++;
-
-			}
+			while (*args && my_isspace(*args))
+				args++;
+		    }
 		}
 
 		/*
@@ -906,9 +919,9 @@ static AliasSet var_alias = 	{ NULL, 0, 0, strncmp,
 static AliasSet cmd_alias = 	{ NULL, 0, 0, strncmp, 
 					HASH_INSENSITIVE, NULL, 0, 0 };
 
-static	Alias *	find_var_alias     (char *name);
-static	Alias *	find_cmd_alias     (char *name, int *cnt);
-static	Alias *	find_local_alias   (char *name, AliasSet **list);
+static	Alias *	find_var_alias     (const char *name);
+static	Alias *	find_cmd_alias     (const char *name, int *cnt);
+static	Alias *	find_local_alias   (const char *name, AliasSet **list);
 
 /*
  * This is the ``stack frame''.  Each frame has a ``name'' which is
@@ -935,7 +948,7 @@ static 	RuntimeStack *call_stack = NULL;
 	int 	wind_index = -1;
 
 
-void show_alias_caches(void)
+static void	show_alias_caches (void)
 {
 	int i;
 	for (i = 0; i < var_alias.cache_size; i++)
@@ -958,7 +971,7 @@ void show_alias_caches(void)
 
 
 
-Alias *make_new_Alias (char *name)
+static Alias *make_new_Alias (const char *name)
 {
 	Alias *tmp = (Alias *) new_malloc(sizeof(Alias));
 	tmp->name = m_strdup(name);
@@ -985,15 +998,15 @@ Alias *make_new_Alias (char *name)
  * If ``name'' refers to an already created local variable, that
  * local variable is used (invisibly)
  */
-void	add_var_alias	(char *name, char *stuff, int noisy)
+void	add_var_alias	(const char *orig_name, const char *stuff, int noisy)
 {
-	char 	*ptr;
+	const char 	*ptr;
 	Alias 	*tmp = NULL;
 	int 	af;
 	int	local = 0;
-	char	*save;
+	char	*save, *name;
 
-	save = name = remove_brackets(name, NULL, &af);
+	save = name = remove_brackets(orig_name, NULL, &af);
 	if (*name == ':')
 	{
 		name++, local = 1;
@@ -1061,14 +1074,15 @@ void	add_var_alias	(char *name, char *stuff, int noisy)
 	return;
 }
 
-void	add_local_alias	(char *name, char *stuff, int noisy)
+void	add_local_alias	(const char *orig_name, const char *stuff, int noisy)
 {
-	char 	*ptr;
+	const char 	*ptr;
 	Alias 	*tmp = NULL;
 	AliasSet *list = NULL;
 	int 	af;
+	char *	name;
 
-	name = remove_brackets(name, NULL, &af);
+	name = remove_brackets(orig_name, NULL, &af);
 
 	/*
 	 * Weed out invalid variable names
@@ -1112,12 +1126,13 @@ void	add_local_alias	(char *name, char *stuff, int noisy)
 	return;
 }
 
-void	add_cmd_alias	(char *name, ArgList *arglist, char *stuff)
+void	add_cmd_alias	(const char *orig_name, ArgList *arglist, const char *stuff)
 {
 	Alias *tmp = NULL;
 	int cnt, af, loc;
+	char *name;
 
-	name = remove_brackets(name, NULL, &af);
+	name = remove_brackets(orig_name, NULL, &af);
 
 	tmp = (Alias *) find_array_item ((array *)&cmd_alias, name, &cnt, &loc);
 	if (!tmp || cnt >= 0)
@@ -1142,13 +1157,14 @@ void	add_cmd_alias	(char *name, ArgList *arglist, char *stuff)
 	return;
 }
 
-void	add_var_stub_alias  (char *name, char *stuff)
+void	add_var_stub_alias  (const char *orig_name, const char *stuff)
 {
 	Alias *tmp = NULL;
-	char *ptr;
+	const char *ptr;
 	int af;
+	char *name;
 
-	name = remove_brackets(name, NULL, &af);
+	name = remove_brackets(orig_name, NULL, &af);
 
 	ptr = after_expando(name, 1, NULL);
 	if (*ptr)
@@ -1184,13 +1200,14 @@ void	add_var_stub_alias  (char *name, char *stuff)
 }
 
 
-void	add_cmd_stub_alias  (char *name, char *stuff)
+void	add_cmd_stub_alias  (const char *orig_name, const char *stuff)
 {
 	Alias *tmp = NULL;
 	int cnt, af;
+	char *name;
 
-	name = remove_brackets(name, NULL, &af);
-	if (!(tmp = find_cmd_alias (name, &cnt)) || cnt >= 0)
+	name = remove_brackets(orig_name, NULL, &af);
+	if (!(tmp = find_cmd_alias(name, &cnt)) || cnt >= 0)
 	{
 		tmp = make_new_Alias(name);
 		add_to_array ((array *)&cmd_alias, (array_item *)tmp);
@@ -1234,7 +1251,7 @@ static	int	unstub_in_progress = 0;
 /*
  * 'name' is expected to already be in canonical form (uppercase, dot notation)
  */
-static Alias *	find_var_alias (char *name)
+static Alias *	find_var_alias (const char *name)
 {
 	Alias *	item = NULL;
 	int 	cache;
@@ -1317,7 +1334,7 @@ static Alias *	find_var_alias (char *name)
 	return NULL;
 }
 
-static Alias *	find_cmd_alias (char *name, int *cnt)
+static Alias *	find_cmd_alias (const char *name, int *cnt)
 {
 	Alias *		item = NULL;
 	int 		loc;
@@ -1414,17 +1431,22 @@ static Alias *	find_cmd_alias (char *name, int *cnt)
  * is an exact leading subset of ``name'' and that variable ends in a
  * period (a dot).
  */
-static Alias *	find_local_alias (char *name, AliasSet **list)
+static Alias *	find_local_alias (const char *orig_name, AliasSet **list)
 {
 	Alias 	*alias = NULL;
 	int 	c = wind_index;
 	char 	*ptr;
 	int 	implicit = -1;
 	int	function_return = 0;
+	int	af;
+	char *	name;
 
 	/* No name is an error */
-	if (!name)
+	if (!orig_name)
 		return NULL;
+
+	name = remove_brackets(orig_name, NULL, &af);
+	upper(name);
 
 	ptr = after_expando(name, 1, NULL);
 	if (*ptr)
@@ -1539,11 +1561,13 @@ static Alias *	find_local_alias (char *name, AliasSet **list)
 
 
 static
-void	delete_var_alias (char *name, int noisy)
+void	delete_var_alias (const char *orig_name, int noisy)
 {
 	Alias *item;
-	int i;
+	int i, af;
+	char *	name;
 
+	name = remove_brackets(orig_name, NULL, &af);
 	upper(name);
 	if ((item = (Alias *)remove_from_array ((array *)&var_alias, name)))
 	{
@@ -1563,14 +1587,17 @@ void	delete_var_alias (char *name, int noisy)
 	}
 	else if (noisy)
 		say("No such assign: %s", name);
+	new_free(&name);
 }
 
 static
-void	delete_cmd_alias (char *name, int noisy)
+void	delete_cmd_alias (const char *orig_name, int noisy)
 {
 	Alias *item;
-	int i;
+	int i, af;
+	char *name;
 
+	name = remove_brackets(orig_name, NULL, &af);
 	upper(name);
 	if ((item = (Alias *)remove_from_array ((array *)&cmd_alias, name)))
 	{
@@ -1591,23 +1618,28 @@ void	delete_cmd_alias (char *name, int noisy)
 	}
 	else if (noisy)
 		say("No such alias: %s", name);
+	new_free(&name);
 }
 
 
 
 
 
-static void	list_local_alias (char *name)
+static void	list_local_alias (const char *orig_name)
 {
 	size_t len = 0;
-	int cnt;
+	int cnt, af;
 	int DotLoc, LastDotLoc = 0;
 	char *LastStructName = NULL;
 	char *s;
+	char *name = NULL;
 
 	say("Visible Local Assigns:");
-	if (name)
+	if (orig_name)
+	{
+		name = remove_brackets(orig_name, NULL, &af);
 		len = strlen(upper(name));
+	}
 
 	for (cnt = wind_index; cnt >= 0; cnt = call_stack[cnt].parent)
 	{
@@ -1639,24 +1671,24 @@ static void	list_local_alias (char *name)
  * This function is strictly O(N).  Its possible to address this.
  */
 static
-void	list_var_alias (char *name)
+void	list_var_alias (const char *orig_name)
 {
-	size_t	len;
+	size_t	len = 0;
 	int	DotLoc,
 		LastDotLoc = 0;
 	char	*LastStructName = NULL;
-	int	cnt;
-	char	*s, *script;
+	int	cnt, af;
+	char	*s;
+	const char *script;
+	char *name = NULL;
 
 	say("Assigns:");
 
-	if (name)
+	if (orig_name)
 	{
-		upper(name);
-		len = strlen(name);
+		name = remove_brackets(orig_name, NULL, &af);
+		len = strlen(upper(name));
 	}
-	else
-		len = 0;
 
 	for (cnt = 0; cnt < var_alias.max; cnt++)
 	{
@@ -1691,24 +1723,24 @@ void	list_var_alias (char *name)
  * This function is strictly O(N).  Its possible to address this.
  */
 static
-void	list_cmd_alias (char *name)
+void	list_cmd_alias (const char *orig_name)
 {
-	size_t	len;
+	size_t	len = 0;
 	int	DotLoc,
 		LastDotLoc = 0;
 	char	*LastStructName = NULL;
-	int	cnt;
-	char	*s, *script;
+	int	cnt, af;
+	char	*s;
+	const char *script;
+	char *name = NULL;
 
 	say("Aliases:");
 
-	if (name)
+	if (orig_name)
 	{
-		upper(name);
-		len = strlen(name);
+		name = remove_brackets(orig_name, NULL, &af);
+		len = strlen(upper(name));
 	}
-	else
-		len = 0;
 
 	for (cnt = 0; cnt < cmd_alias.max; cnt++)
 	{
@@ -1739,7 +1771,7 @@ void	list_cmd_alias (char *name)
 }
 
 /************************* UNLOADING SCRIPTS ************************/
-static void	unload_cmd_alias (char *filename)
+static void	unload_cmd_alias (const char *filename)
 {
 	int 	cnt;
 
@@ -1752,7 +1784,7 @@ static void	unload_cmd_alias (char *filename)
 	}
 }
 
-static void	unload_var_alias (char *filename)
+static void	unload_var_alias (const char *filename)
 {
 	int 	cnt;
 
@@ -1774,7 +1806,7 @@ static void	unload_var_alias (char *filename)
  * its and environment variable and returns it if so.  If not, it returns
  * null.  It mallocs the returned string 
  */
-char 	*get_variable 	(char *str)
+char 	*get_variable 	(const char *str)
 {
 	int af;
 	return get_variable_with_args(str, NULL, &af);
@@ -1830,7 +1862,7 @@ char	*get_variable_with_args (const char *str, const char *args, int *args_flag)
 	return (copy ? m_strdup(ret) : ret);
 }
 
-char *	get_cmd_alias (char *name, int *howmany, char **complete_name, void **args)
+char *	get_cmd_alias (const char *name, int *howmany, char **complete_name, void **args)
 {
 	Alias *item;
 
@@ -1850,7 +1882,7 @@ char *	get_cmd_alias (char *name, int *howmany, char **complete_name, void **arg
  *
  * Updated as per get_subarray_elements.
  */
-char **	glob_cmd_alias (char *name, int *howmany)
+char **	glob_cmd_alias (const char *name, int *howmany)
 {
 	int	pos, max;
 	int    	cnt;
@@ -1895,7 +1927,7 @@ char **	glob_cmd_alias (char *name, int *howmany)
  *
  * Updated as per get_subarray_elements.
  */
-char **	glob_assign_alias (char *name, int *howmany)
+char **	glob_assign_alias (const char *name, int *howmany)
 {
 	int	pos, max;
 	int    	cnt;
@@ -1938,7 +1970,7 @@ char **	glob_assign_alias (char *name, int *howmany)
 /*
  * This function is strictly O(N).  This should probably be addressed.
  */
-char **	pmatch_cmd_alias (char *name, int *howmany)
+char **	pmatch_cmd_alias (const char *name, int *howmany)
 {
 	int	cnt;
 	int 	len;
@@ -1974,7 +2006,7 @@ char **	pmatch_cmd_alias (char *name, int *howmany)
 /*
  * This function is strictly O(N).  This should probably be addressed.
  */
-char **	pmatch_assign_alias (char *name, int *howmany)
+char **	pmatch_assign_alias (const char *name, int *howmany)
 {
 	int    	cnt;
 	int     len;
@@ -2020,7 +2052,7 @@ char **	pmatch_assign_alias (char *name, int *howmany)
  * of a single flat subarray, the new algorithm would perform no worse
  * than the old.
  */
-char **	get_subarray_elements (char *root, int *howmany, int type)
+char **	get_subarray_elements (const char *orig_root, int *howmany, int type)
 {
 	AliasSet *as;		/* XXXX */
 	int pos, cnt, max;
@@ -2029,15 +2061,17 @@ char **	get_subarray_elements (char *root, int *howmany, int type)
 	int matches_size = 0;
 	size_t end;
 	char *last = NULL;
+	char *root = NULL;
 
 	if (type == COMMAND_ALIAS)
 		as = &cmd_alias;
 	else
 		as = &var_alias;
-	root = m_2dup(root, ".");
+	root = m_2dup(orig_root, ".");
 	find_array_item((array*)as, root, &max, &pos);
 
-	if (0 > max) max = -max;
+	if (0 > max) 
+		max = -max;
 	*howmany = 0;
 	cmp = strlen(root);
 	new_free(&root);
@@ -2067,7 +2101,7 @@ char **	get_subarray_elements (char *root, int *howmany, int type)
 
 
 /* XXX What is this doing here? */
-static char *	parse_line_alias_special (char *name, char *what, char *args, int d1, int d2, void *arglist, int function)
+static char *	parse_line_alias_special (const char *name, const char *what, char *args, int d1, int d2, void *arglist, int function)
 {
 	int	old_window_display = window_display;
 	int	old_last_function_call_level = last_function_call_level;
@@ -2097,7 +2131,7 @@ static char *	parse_line_alias_special (char *name, char *what, char *args, int 
 	return result;
 }
 
-char *	parse_line_with_return (char *name, char *what, char *args, int d1, int d2)
+char *	parse_line_with_return (const char *name, const char *what, char *args, int d1, int d2)
 {
 	return parse_line_alias_special(name, what, args, d1, d2, NULL, 1);
 }
@@ -2110,7 +2144,7 @@ char *	parse_line_with_return (char *name, char *what, char *args, int d1, int d
  * depends on command completion with functions, so we can save a lot of
  * CPU time by just calling execute_alias() directly.
  */
-char 	*call_user_function	(char *alias_name, char *args)
+char 	*call_user_function	(const char *alias_name, char *args)
 {
 	char 	*result = NULL;
 	char 	*sub_buffer;
@@ -2131,7 +2165,7 @@ char 	*call_user_function	(char *alias_name, char *args)
 }
 
 /* XXX Ugh. */
-void	call_user_alias	(char *alias_name, char *alias_stuff, char *args, void *arglist)
+void	call_user_alias	(const char *alias_name, char *alias_stuff, char *args, void *arglist)
 {
 	parse_line_alias_special(alias_name, alias_stuff, args, 
 					0, 1, arglist, 0);
@@ -2249,7 +2283,7 @@ void 	make_local_stack 	(const char *name)
 	call_stack[wind_index].locked = 0;
 }
 
-int	find_locked_stack_frame	(void)
+static int	find_locked_stack_frame	(void)
 {
 	int i;
 	for (i = 0; i < wind_index; i++)
@@ -2367,7 +2401,7 @@ char 	*aliasctl 	(char *input)
 {
 	int list = -1;
 	char *listc;
-	enum { EXISTS, GET, SET, MATCH, PMATCH, GETPACKAGE, SETPACKAGE } op;
+	enum { EXISTS, GET, SET, NMATCH, PMATCH, GETPACKAGE, SETPACKAGE } op;
 
 	GET_STR_ARG(listc, input);
 	if (!my_strnicmp(listc, "AS", 2))
@@ -2389,7 +2423,7 @@ char 	*aliasctl 	(char *input)
 	else if (!my_strnicmp(listc, "S", 1))
 		op = SET;
 	else if (!my_strnicmp(listc, "M", 1))
-		op = MATCH;
+		op = NMATCH;
 	else if (!my_strnicmp(listc, "P", 1))
 		op = PMATCH;
 	else if (!my_strnicmp(listc, "E", 1))
@@ -2407,7 +2441,7 @@ char 	*aliasctl 	(char *input)
 		{
 			Alias *alias = NULL;
 			AliasSet *a_list;
-			int dummy;
+			int my_dummy;
 
 			upper(listc);
 			if (list == VAR_ALIAS_LOCAL)
@@ -2415,7 +2449,7 @@ char 	*aliasctl 	(char *input)
 			else if (list == VAR_ALIAS)
 				alias = find_var_alias(listc);
 			else
-				alias = find_cmd_alias(listc, &dummy);
+				alias = find_cmd_alias(listc, &my_dummy);
 
 			if (alias)
 			{
@@ -2451,7 +2485,7 @@ char 	*aliasctl 	(char *input)
 
 			RETURN_INT(1);
 		}
-		case (MATCH) :
+		case (NMATCH) :
 		{
 			char **mlist = NULL;
 			char *mylist = NULL;
@@ -2522,7 +2556,7 @@ static	AliasStack *	assign_stack = NULL;
 
 void	do_stack_alias (int type, char *args, int which)
 {
-	char		*name;
+	const char	*name;
 	AliasStack	*aptr, **aptrptr;
 	Alias		*alptr;
 	int		cnt;

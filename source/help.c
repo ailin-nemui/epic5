@@ -1,4 +1,4 @@
-/* $EPIC: help.c,v 1.7 2003/04/24 21:49:25 jnelson Exp $ */
+/* $EPIC: help.c,v 1.8 2003/05/09 04:29:52 jnelson Exp $ */
 /*
  * help.c: handles the help stuff for irc 
  *
@@ -85,7 +85,7 @@ static	char	help_topic_list[BIG_BUFFER_SIZE + 1];
 static	Window *help_window = (Window *) 0;
 static	char	no_help[] = "NOHELP";
 static	char	paused_topic[128];
-static	char *	this_arg;
+static	const char *	this_arg;
 static	int	use_help_window = 0;
 
 
@@ -262,7 +262,7 @@ static	void	help_topic (char *path, char *name)
  * not show them, until we've seen the whole file, so we called
  * help_show_paused_topic() when we've seen the file, if it is needed.
  */
-static 	void 	help_pause_add_line (char *format, ...)
+static 	void 	help_pause_add_line (const char *format, ...)
 {
 	char	buf[BIG_BUFFER_SIZE];
 	va_list args;
@@ -477,10 +477,10 @@ static	void	help_me (char *topics, char *args)
 
 		for (i = 0; i < g.gl_matchc; i++)
 		{
-			char	*tmp = g.gl_pathv[i];
-			int 	len = strlen(tmp);
+			char	*tmp2 = g.gl_pathv[i];
+			int 	len = strlen(tmp2);
 
-			if (!end_strcmp(tmp, ".gz", 3))
+			if (!end_strcmp(tmp2, ".gz", 3))
 				len -= 3;
 			entry_size = (len > entry_size) ? len : entry_size;
 		}
@@ -495,7 +495,7 @@ static	void	help_me (char *topics, char *args)
 		if (g.gl_matchc > 1)
 		{
 			char *str1 = g.gl_pathv[0];
-			char *str2 = this_arg;
+			const char *str2 = this_arg;
 			int len1 = strlen(str1);
 			int len2 = strlen(str2);
 
@@ -669,6 +669,7 @@ switch (entries)
 BUILT_IN_COMMAND(help)
 {
 	char	*help_path;
+	char	default_topic[10];
 
 	finished_help_paging = 0;
 	help_show_directory = 0;
@@ -705,7 +706,8 @@ BUILT_IN_COMMAND(help)
 
 	help_screen = current_window->screen;
 	help_window = (Window *) 0;
-	help_me(empty_string, (args && *args) ? args : "?");
+	strlcpy(default_topic, "?", sizeof default_topic);
+	help_me(empty_string, (args && *args) ? args : default_topic);
 }
 
 

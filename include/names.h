@@ -61,5 +61,6 @@
 	void	channel_check_windows	(void);
 	void	cant_join_channel	(Char *, int);
 	Char *	window_current_channel	(int, int);
+	int	channel_window		(const char * channel, int server);
 
 #endif /* _NAMES_H_ */

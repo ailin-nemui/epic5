@@ -1,4 +1,4 @@
-/* $EPIC: vars.c,v 1.28 2003/04/24 21:49:25 jnelson Exp $ */
+/* $EPIC: vars.c,v 1.29 2003/05/09 04:29:52 jnelson Exp $ */
 /*
  * vars.c: All the dealing of the irc variables are handled here. 
  *
@@ -57,13 +57,13 @@
 /* IrcVariable: structure for each variable in the variable table */
 typedef struct
 {
-	char	*name;		/* what the user types */
-	int	type;		/* variable types, see below */
-	int	integer;	/* int value of variable */
-	char	*string;	/* string value of variable */
-	void	(*func)();	/* function to do every time variable is set */
-	char	int_flags;	/* internal flags to the variable */
-	unsigned short	flags;	/* flags for this variable */
+	const char *	name;		/* what the user types */
+	int		type;		/* variable types, see below */
+	int		integer;	/* int value of variable */
+	char *		string;		/* string value of variable */
+	void		(*func) ();	/* func called when var is set */
+	char		int_flags;	/* internal flags to the variable */
+	unsigned short	flags;		/* flags for this variable */
 }	IrcVariable;
 
 /*
@@ -82,7 +82,7 @@ typedef struct
 #define INT_TYPE_VAR 2
 #define STR_TYPE_VAR 3
 
-char	*var_settings[] =
+const char	*var_settings[] =
 {
 	"OFF", "ON", "TOGGLE"
 };
@@ -97,6 +97,7 @@ static	void	set_mangle_outbound 	(char *value);
 static	void	set_mangle_logfiles 	(char *value);
 static	void	set_scroll 		(int value);
 static	void	set_notify_interval 	(int value);
+static	void	update_all_status_wrapper (char *ignored);
 
 /*
  * irc_variable: all the irc variables used.  Note that the integer and
@@ -125,9 +126,9 @@ static	IrcVariable irc_variable[] =
 	{ "BEEP_WHEN_AWAY",		INT_TYPE_VAR,	DEFAULT_BEEP_WHEN_AWAY, NULL, NULL, 0, 0 },
 	{ "BLINK_VIDEO",		BOOL_TYPE_VAR,	DEFAULT_BLINK_VIDEO, NULL, NULL, 0, 0 },
 	{ "BOLD_VIDEO",			BOOL_TYPE_VAR,	DEFAULT_BOLD_VIDEO, NULL, NULL, 0, 0 },
-	{ "CHANNEL_NAME_WIDTH",		INT_TYPE_VAR,	DEFAULT_CHANNEL_NAME_WIDTH, NULL, update_all_status, 0, 0 },
+	{ "CHANNEL_NAME_WIDTH",		INT_TYPE_VAR,	DEFAULT_CHANNEL_NAME_WIDTH, NULL, update_all_status_wrapper, 0, 0 },
 	{ "CLIENT_INFORMATION",		STR_TYPE_VAR,	0, NULL, NULL, 0, 0 },
-	{ "CLOCK",			BOOL_TYPE_VAR,	DEFAULT_CLOCK, NULL, update_all_status, 0, 0 },
+	{ "CLOCK",			BOOL_TYPE_VAR,	DEFAULT_CLOCK, NULL, update_all_status_wrapper, 0, 0 },
 	{ "CLOCK_24HOUR",		BOOL_TYPE_VAR,	DEFAULT_CLOCK_24HOUR, NULL, reset_clock, 0, 0 },
 	{ "CLOCK_FORMAT",		STR_TYPE_VAR,	0, NULL, set_clock_format, 0, 0 },
 	{ "CMDCHARS",			STR_TYPE_VAR,	0, NULL, NULL, 0, 0 },
@@ -161,12 +162,12 @@ static	IrcVariable irc_variable[] =
 	{ "FLOOD_RATE_PER",		INT_TYPE_VAR,	DEFAULT_FLOOD_RATE_PER, NULL, NULL, 0, 0 },
 	{ "FLOOD_USERS",		INT_TYPE_VAR,	DEFAULT_FLOOD_USERS, NULL, NULL, 0, 0 },
 	{ "FLOOD_WARNING",		BOOL_TYPE_VAR,	DEFAULT_FLOOD_WARNING, NULL, NULL, 0, 0 },
-	{ "FULL_STATUS_LINE",		BOOL_TYPE_VAR,	DEFAULT_FULL_STATUS_LINE, NULL, update_all_status, 0, 0 },
+	{ "FULL_STATUS_LINE",		BOOL_TYPE_VAR,	DEFAULT_FULL_STATUS_LINE, NULL, update_all_status_wrapper, 0, 0 },
 	{ "HELP_PAGER",			BOOL_TYPE_VAR,	DEFAULT_HELP_PAGER, NULL, NULL, 0, 0 },
 	{ "HELP_PATH",			STR_TYPE_VAR,	0, NULL, NULL, 0, 0 },
 	{ "HELP_PROMPT",		BOOL_TYPE_VAR,	DEFAULT_HELP_PROMPT, NULL, NULL, 0, 0 },
 	{ "HELP_WINDOW",		BOOL_TYPE_VAR,	DEFAULT_HELP_WINDOW, NULL, NULL, 0, 0 },
-	{ "HIDE_PRIVATE_CHANNELS",	BOOL_TYPE_VAR,	DEFAULT_HIDE_PRIVATE_CHANNELS, NULL, update_all_status, 0, 0 },
+	{ "HIDE_PRIVATE_CHANNELS",	BOOL_TYPE_VAR,	DEFAULT_HIDE_PRIVATE_CHANNELS, NULL, update_all_status_wrapper, 0, 0 },
 	{ "HIGHLIGHT_CHAR",		STR_TYPE_VAR,	0, NULL, set_highlight_char, 0, 0 },
 	{ "HIGH_BIT_ESCAPE",		INT_TYPE_VAR,	DEFAULT_HIGH_BIT_ESCAPE, NULL, set_meta_8bit, 0, 0 },
 	{ "HISTORY",			INT_TYPE_VAR,	DEFAULT_HISTORY, NULL, set_history_size, 0, 0 },
@@ -174,7 +175,7 @@ static	IrcVariable irc_variable[] =
 	{ "INDENT",			BOOL_TYPE_VAR,	DEFAULT_INDENT, NULL, NULL, 0, 0 },
 	{ "INPUT_ALIASES",		BOOL_TYPE_VAR,	DEFAULT_INPUT_ALIASES, NULL, NULL, 0, 0 },
 	{ "INPUT_PROMPT",		STR_TYPE_VAR,	0, NULL, set_input_prompt, 0, 0 },
-	{ "INSERT_MODE",		BOOL_TYPE_VAR,	DEFAULT_INSERT_MODE, NULL, update_all_status, 0, 0 },
+	{ "INSERT_MODE",		BOOL_TYPE_VAR,	DEFAULT_INSERT_MODE, NULL, update_all_status_wrapper, 0, 0 },
 	{ "INVERSE_VIDEO",		BOOL_TYPE_VAR,	DEFAULT_INVERSE_VIDEO, NULL, NULL, 0, 0 },
 	{ "KEY_INTERVAL",		INT_TYPE_VAR, DEFAULT_KEY_INTERVAL, NULL, set_key_interval, 0, 0 },
 	{ "LASTLOG",			INT_TYPE_VAR,	DEFAULT_LASTLOG, NULL, set_lastlog_size, 0, 0 },
@@ -183,7 +184,7 @@ static	IrcVariable irc_variable[] =
 	{ "LOG",			BOOL_TYPE_VAR,	DEFAULT_LOG, NULL, logger, 0, 0 },
 	{ "LOGFILE",			STR_TYPE_VAR,	0, NULL, NULL, 0, 0 },
 	{ "LOG_REWRITE",		STR_TYPE_VAR,	0, NULL, NULL, 0, 0 },
-	{ "MAIL",			INT_TYPE_VAR,	DEFAULT_MAIL, NULL, update_all_status, 0, 0 },
+	{ "MAIL",			INT_TYPE_VAR,	DEFAULT_MAIL, NULL, update_all_status_wrapper, 0, 0 },
 	{ "MANGLE_INBOUND",		STR_TYPE_VAR,	0, NULL, set_mangle_inbound, 0, 0 },
 	{ "MANGLE_LOGFILES",		STR_TYPE_VAR,	0, NULL, set_mangle_logfiles, 0, 0 },
 	{ "MANGLE_OUTBOUND",		STR_TYPE_VAR,	0, NULL, set_mangle_outbound, 0, 0 },
@@ -205,7 +206,7 @@ static	IrcVariable irc_variable[] =
 	{ "QUIT_MESSAGE",		STR_TYPE_VAR,   0, NULL, NULL, 0, 0 },
 	{ "RANDOM_SOURCE",		INT_TYPE_VAR,	DEFAULT_RANDOM_SOURCE, NULL, NULL, 0, 0 },
 	{ "REALNAME",			STR_TYPE_VAR,	0, NULL, set_realname, 0, 0 },
-	{ "REVERSE_STATUS_LINE",	BOOL_TYPE_VAR,	DEFAULT_REVERSE_STATUS_LINE, NULL, update_all_status, 0, 0 },
+	{ "REVERSE_STATUS_LINE",	BOOL_TYPE_VAR,	DEFAULT_REVERSE_STATUS_LINE, NULL, update_all_status_wrapper, 0, 0 },
 	{ "SCREEN_OPTIONS",             STR_TYPE_VAR,   0, NULL, NULL, 0, 0 },
 	{ "SCROLL",			BOOL_TYPE_VAR,	1, NULL, set_scroll, 0, 0 },
 	{ "SCROLLBACK",			INT_TYPE_VAR,	DEFAULT_SCROLLBACK, NULL, set_scrollback_size, 0, 0 },
@@ -218,7 +219,7 @@ static	IrcVariable irc_variable[] =
 	{ "SHOW_CHANNEL_NAMES",		BOOL_TYPE_VAR,	DEFAULT_SHOW_CHANNEL_NAMES, NULL, NULL, 0, 0 },
 	{ "SHOW_END_OF_MSGS",		BOOL_TYPE_VAR,	DEFAULT_SHOW_END_OF_MSGS, NULL, NULL, 0, 0 },
 	{ "SHOW_NUMERICS",		BOOL_TYPE_VAR,	DEFAULT_SHOW_NUMERICS, NULL, NULL, 0, 0 },
-	{ "SHOW_STATUS_ALL",		BOOL_TYPE_VAR,	DEFAULT_SHOW_STATUS_ALL, NULL, update_all_status, 0, 0 },
+	{ "SHOW_STATUS_ALL",		BOOL_TYPE_VAR,	DEFAULT_SHOW_STATUS_ALL, NULL, update_all_status_wrapper, 0, 0 },
 	{ "SHOW_WHO_HOPCOUNT", 		BOOL_TYPE_VAR,	DEFAULT_SHOW_WHO_HOPCOUNT, NULL, NULL, 0, 0 },
 	{ "SSL_CERTFILE",		STR_TYPE_VAR,	0, NULL, NULL, 0, 0 },
 	{ "SSL_KEYFILE",		STR_TYPE_VAR,	0, NULL, NULL, 0, 0 },
@@ -440,7 +441,7 @@ void 	init_variables (void)
 		{
 			if (var->func == build_status)
 				continue;
-			if (var->func == update_all_status)
+			if (var->func == update_all_status_wrapper)
 				continue;
 
 			var->flags |= VIF_PENDING;
@@ -487,7 +488,7 @@ int 	do_boolean (char *str, int *value)
  * get_variable_index: converts a string into an offset into the set table.
  * Returns NUMBER_OF_VARIABLES if varname doesn't exist.
  */
-enum VAR_TYPES get_variable_index (const char *varname)
+static enum VAR_TYPES get_variable_index (const char *varname)
 {
 	enum VAR_TYPES	retval;
 	int	cnt;
@@ -730,7 +731,7 @@ enum VAR_TYPES	sv_index;
 				if (do_hook(SET_LIST, "set-error %s is ambiguous", var))
 				{
 					say("%s is ambiguous", var);
-					for (cnt += sv_index; sv_index < cnt; sv_index = (enum VAR_TYPES)(sv_index + 1))
+					for (cnt += sv_index; (int)sv_index < cnt; sv_index = (enum VAR_TYPES)(sv_index + 1))
 						set_var_value(sv_index, empty_string);
 				}
 			}
@@ -1034,15 +1035,20 @@ static	void	set_mangle_logfiles (char *value)
 
 static	void	set_scroll (int value)
 {
-	char 	*my_zero = "OFF";
-	char	*my_one = "ON";
+	char *whatever;
 	int	owd = window_display;
 
 	window_display = 0;
 	if (value)
-		window_scroll(current_window, &my_one);
+	{
+		whatever = LOCAL_COPY("ONE");
+		window_scroll(current_window, &whatever);
+	}
 	else
-		window_scroll(current_window, &my_zero);
+	{
+		whatever = LOCAL_COPY("ZERO");
+		window_scroll(current_window, &whatever);
+	}
 	window_display = owd;
 }
 
@@ -1054,6 +1060,11 @@ static	void	set_notify_interval (int value)
 			MINIMUM_NOTIFY_INTERVAL);
 		set_int_var(NOTIFY_INTERVAL_VAR, MINIMUM_NOTIFY_INTERVAL);
 	}
+}
+
+static void	update_all_status_wrapper (char *ignored)
+{
+	update_all_status();
 }
 
 /*******/

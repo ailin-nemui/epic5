@@ -1,4 +1,4 @@
-/* $EPIC: dcc.c,v 1.59 2003/05/06 03:35:49 crazyed Exp $ */
+/* $EPIC: dcc.c,v 1.60 2003/05/09 04:29:52 jnelson Exp $ */
 /*
  * dcc.c: Things dealing client to client connections. 
  *
@@ -133,8 +133,8 @@ static	void		process_incoming_listen (DCC_list *);
 static	void		process_incoming_raw 	(DCC_list *);
 static	void		process_dcc_send 	(DCC_list *);
 static	void		process_incoming_file 	(DCC_list *);
-static	void		DCC_close_filesend 	(DCC_list *, char *);
-static	void		update_transfer_buffer 	(char *format, ...);
+static	void		DCC_close_filesend 	(DCC_list *, const char *);
+static	void		update_transfer_buffer 	(const char *format, ...);
 static 	void		dcc_send_booster_ctcp 	(DCC_list *dcc);
 static	char *		dcc_urlencode		(const char *);
 static	char *		dcc_urldecode		(const char *);
@@ -153,7 +153,7 @@ static	void		dcc_getfile_resume_start    (const char *, char *, char *, char *);
 typedef void (*dcc_function) (char *);
 struct
 {
-	char	*	name;
+	const char *	name;
 	dcc_function 	function;
 }	dcc_commands[] =
 {
@@ -175,7 +175,7 @@ struct
 /*
  * These are the possible types of DCCs that can be open.
  */
-static char	*dcc_types[] =
+static const char	*dcc_types[] =
 {
 	"<none>",
 	"CHAT",		/* DCC_CHAT */
@@ -301,13 +301,13 @@ static 	void		dcc_erase (DCC_list *erased)
 		char	*dummy_ptr = NULL;
 		char 	*nopath;
 		static time_t	last_reject = 0;
-		time_t	now;
+		time_t	right_now;
 
-		time(&now);
-		if (now - last_reject < 2)
+		time(&right_now);
+		if (right_now - last_reject < 2)
 			break;		/* Throttle flood attempts */
 
-		last_reject = now;
+		last_reject = right_now;
 
 		if (erased->description && 
 				(nopath = strrchr(erased->description, '/')))
@@ -401,14 +401,14 @@ static int	dcc_hold (DCC_list *dcc)
  */
 static int	dcc_unhold (DCC_list *dcc)
 {
-	Timeval now;
+	Timeval right_now;
 
 	new_unhold_fd(dcc->socket);
 	if (!dcc->held)
 		return 1;
 	else {
-		get_time(&now);
-		dcc->heldtime += time_diff(dcc->holdtime, now);
+		get_time(&right_now);
+		dcc->heldtime += time_diff(dcc->holdtime, right_now);
 		get_time(&dcc->holdtime);
 		dcc->held = 0;
 		return 0;
@@ -547,8 +547,10 @@ static	DCC_list *dcc_searchlist (
 
 		/*
 		 * Ok. first of all, it has to be the right type.
+		 * XXX - Doing (unsigned) -1 is a hack.
 		 */
-		if (type != -1 && ((client->flags & DCC_TYPES) != type))
+		if (type != (unsigned)-1 && 
+				((client->flags & DCC_TYPES) != type))
 			continue;
 
 		/*
@@ -613,7 +615,7 @@ static	DCC_list *dcc_searchlist (
 		 * Active == -1 -> Only NON DELETED entries, please.
 		 */
 		else if (active == -1)
-			;
+			(void) 0;
 
 		if (x_debug & DEBUG_DCC_SEARCH)
 			yell("We have a winner!");
@@ -650,7 +652,7 @@ static int	dcc_connected (int fd, int result)
 {
 	DCC_list *	dcc;
 	socklen_t	len;
-	char *		type;
+	const char *	type;
 	int		jvs_blah;
 
 	if (!(dcc = get_dcc_by_filedesc(fd)))
@@ -845,7 +847,7 @@ static void	dcc_send_booster_ctcp (DCC_list *dcc)
 	char	p_host[128];
 	char	p_port[24];
 	char *	nopath;
-	char *	type = dcc_types[dcc->flags & DCC_TYPES];
+	const char *	type = dcc_types[dcc->flags & DCC_TYPES];
 	int	family;
 	int	server = from_server < 0 ? primary_server : from_server;
 
@@ -1100,17 +1102,17 @@ void	dcc_chat_transmit (char *user, char *text, const char *orig, const char *ty
 /*
  * The /DCC command.  Delegates the work to other functions.
  */
-BUILT_IN_COMMAND(dcc)
+BUILT_IN_COMMAND(dcc_cmd)
 {
-	char	*command;
+	const char	*cmd;
 	int	i;
 
-	if (!(command = next_arg(args, &args)))
-		command = "LIST";
+	if (!(cmd = next_arg(args, &args)))
+		cmd = "LIST";
 
 	for (i = 0; dcc_commands[i].name != NULL; i++)
 	{
-		if (!my_stricmp(dcc_commands[i].name, command))
+		if (!my_stricmp(dcc_commands[i].name, cmd))
 		{
 			message_from(NULL, LOG_DCC);
 			lock_dcc(NULL);
@@ -1124,7 +1126,7 @@ BUILT_IN_COMMAND(dcc)
 	}
 
 	message_from(NULL, LOG_DCC);
-	say("Unknown DCC command: %s", command);
+	say("Unknown DCC command: %s", cmd);
 	message_from(NULL, LOG_CURRENT);
 }
 
@@ -1268,7 +1270,7 @@ static	void 	dcc_close (char *args)
  */
 static void	dcc_closeall (char *args)
 {
-	char	*my_local_args = "-all -all";
+	const char	*my_local_args = "-all -all";
 	char	*breakage = LOCAL_COPY(my_local_args);
 	dcc_close(breakage);	/* XXX Bleh */
 }
@@ -1285,7 +1287,7 @@ static	void	dcc_getfile (char *args, int resume)
 	Filename	fullname = "";
 	Filename	pathname = "";
 	int		file;
-	char 		*realname = NULL;
+	char 		*realfilename = NULL;
 	int		get_all = 0;
 	int		count = 0;
 	Stat		sb;
@@ -1333,9 +1335,9 @@ static	void	dcc_getfile (char *args, int resume)
 		if (fullname && *fullname)
 			strlcat(fullname, "/", sizeof(fullname));
 
-		realname = dcc_urldecode(dcc->description);
-		strlcat(fullname, realname, sizeof(pathname));
-		new_free(&realname);
+		realfilename = dcc_urldecode(dcc->description);
+		strlcat(fullname, realfilename, sizeof(pathname));
+		new_free(&realfilename);
 
 #ifdef MIRC_BROKEN_DCC_RESUME
 		if (resume && get_int_var(MIRC_BROKEN_DCC_RESUME_VAR) && stat(fullname, &sb) != -1) {
@@ -1448,7 +1450,7 @@ static void	dcc_list (char *args)
 {
 	DCC_list	*dcc;
 	DCC_list	*next;
-static	char		*format =
+static	const char	*format =
 		"%-7.7s%-3.3s %-9.9s %-9.9s %-20.20s %-6.6s %-5.5s %-6.6s %s";
 
 	if (do_hook(DCC_LIST_LIST, "Start * * * * * * *"))
@@ -1610,9 +1612,9 @@ static	void	dcc_send_raw (char *args)
 static	void	dcc_rename (char *args)
 {
 	DCC_list	*dcc;
-	char	*user;
-	char	*oldf;
-	char	*newf;
+	const char	*user;
+	const char	*oldf;
+	const char	*newf;
 	char	*temp;
 	int	type = DCC_FILEREAD;
 	
@@ -1920,7 +1922,7 @@ void	register_dcc_offer (const char *user, char *type, char *description, char *
 	char 		p_addr[256];
 	int		err;
 	SS		offer;
-	off_t		file_size;
+	off_t		filesize;
 
 	/* 
 	 * Ensure that nobody will mess around with us while we're working.
@@ -1945,7 +1947,9 @@ void	register_dcc_offer (const char *user, char *type, char *description, char *
 
 	/* If they give us a file size, set the global variable */
 	if (size && *size)
-		file_size = my_atol(size);
+		filesize = my_atol(size);
+	else
+		filesize = 0;
 
 	/*
 	 * Figure out if it's a type of offer we support.
@@ -2114,7 +2118,7 @@ void	register_dcc_offer (const char *user, char *type, char *description, char *
 		    char *copy;
 
 		    say("DCC CHAT already requested by %s, connecting.", user);
-		    dcc_create(dtype, user, "chat", NULL, FAMILY(offer), file_size);
+		    dcc_create(dtype, user, "chat", NULL, FAMILY(offer), filesize);
 		    copy = LOCAL_COPY(user);
 		    dcc_chat(copy);
 		    break;
@@ -2149,7 +2153,7 @@ void	register_dcc_offer (const char *user, char *type, char *description, char *
 	}
 	else
 		dcc = dcc_create(dtype, user, description, NULL, 
-					FAMILY(offer), file_size);
+					FAMILY(offer), filesize);
 
 	/*
 	 * Otherwise, we're good to go!  Mark this dcc as being something
@@ -2194,36 +2198,36 @@ display_it:
 	if ((dcc->flags & DCC_TYPES) == DCC_FILEREAD)
 	{
 	    Stat 	statit;
-	    char *	realpath;
+	    char *	realfilename;
 
 	    if (get_string_var(DCC_STORE_PATH_VAR))
-		realpath = m_sprintf("%s/%s", 
+		realfilename = m_sprintf("%s/%s", 
 					get_string_var(DCC_STORE_PATH_VAR), 
 					dcc->description);
 	    else
-		realpath = m_strdup(dcc->description);
+		realfilename = m_strdup(dcc->description);
 
 
-	    if (stat(realpath, &statit) == 0)
+	    if (stat(realfilename, &statit) == 0)
 	    {
-		int xclose = 0, resume = 0, rename = 0, get = 0;
+		int xclose = 0, resume = 0, ren = 0, get = 0;
 
 		if (statit.st_size < dcc->filesize)
 		{
 		    say("WARNING: File [%s] exists but is smaller than "
-			"the file offered.", realpath);
-		    xclose = resume = rename = get = 1;
+			"the file offered.", realfilename);
+		    xclose = resume = ren = get = 1;
 		}
 		else if (statit.st_size == dcc->filesize)
 		{
 		    say("WARNING: File [%s] exists, and its the same size.",
-			realpath);
-		    xclose = rename = get = 1;
+			realfilename);
+		    xclose = ren = get = 1;
 		}
 		else
 		{
-		    say("WARNING: File [%s] already exists.", realpath);
-		    xclose = rename = get = 1;
+		    say("WARNING: File [%s] already exists.", realfilename);
+		    xclose = ren = get = 1;
 		}
 
 		if (xclose)
@@ -2239,12 +2243,12 @@ display_it:
 		    say("Use /DCC GET %s %s              to overwrite the "
 			"existing file.", 
 				user, dcc->description);
-		if (rename)
+		if (ren)
 		    say("Use /DCC RENAME %s %s newname   to save it to a "
 			"different filename.", 
 				user, dcc->description);
 	    }
-	    new_free(&realpath);
+	    new_free(&realfilename);
 	}
 
 	/* Thanks, Tychy! (lherron@imageek.york.cuny.edu) */
@@ -2405,7 +2409,7 @@ static	void	process_dcc_chat_connection (DCC_list *Client)
 
 static	void	process_dcc_chat_error (DCC_list *Client)
 {
-	char	*err_str;
+	const char	*err_str;
 
 	err_str = ((dgets_errno == -1) ? 
 			"Remote End Closed Connection" : 
@@ -2472,7 +2476,7 @@ static	char *	process_dcc_chat_ctcps (DCC_list *Client, char *tmp)
 static	void	process_dcc_chat_data (DCC_list *Client)
 {
 	char	tmp[IO_BUFFER_SIZE + 1];
-	long	bytesread;
+	ssize_t	bytesread;
 
 	/* Get a new line via dgets. */
 	bytesread = dgets(Client->socket, tmp, IO_BUFFER_SIZE, 1, NULL);
@@ -2603,10 +2607,10 @@ static	void		process_incoming_raw (DCC_list *Client)
 {
 	char	tmp[IO_BUFFER_SIZE + 1];
 	char 	*bufptr;
-	long	bytesread;
+	ssize_t	bytesread;
 
         bufptr = tmp;
-	switch ((int)(bytesread = dgets(Client->socket, bufptr, IO_BUFFER_SIZE, 0, NULL)))
+	switch ((bytesread = dgets(Client->socket, bufptr, IO_BUFFER_SIZE, 0, NULL)))
 	{
 	    case -1:
 	    {
@@ -2812,7 +2816,7 @@ static void	process_dcc_send_data (DCC_list *dcc)
 	fd_set	fd;
 	int	maxpackets;
 	Timeval	to;
-	int	bytesread;
+	ssize_t	bytesread;
 	char	tmp[DCC_BLOCK_SIZE+1];
 	int	old_from_server = from_server;
 
@@ -2828,7 +2832,7 @@ static void	process_dcc_send_data (DCC_list *dcc)
 	if (maxpackets < 1)
 		maxpackets = 1;		/* Sanity */
 
-	while (dcc->packets_outstanding < maxpackets)
+	while (dcc->packets_outstanding < (unsigned) maxpackets)
 	{
 		/*
 		 * Check to make sure the write won't block.
@@ -2913,7 +2917,7 @@ static	void		process_incoming_file (DCC_list *dcc)
 {
 	char		tmp[DCC_BLOCK_SIZE+1];
 	u_32int_t	bytestemp;
-	int		bytesread;
+	ssize_t		bytesread;
 
 	if ((bytesread = read(dcc->socket, tmp, DCC_BLOCK_SIZE)) <= 0)
 	{
@@ -3051,7 +3055,7 @@ void 	dcc_reject (const char *from, char *type, char *args)
 }
 
 
-static void	DCC_close_filesend (DCC_list *Client, char *info)
+static void	DCC_close_filesend (DCC_list *Client, const char *info)
 {
 	char	lame_ultrix[10];	/* should be plenty */
 	char	lame_ultrix2[10];
@@ -3098,7 +3102,7 @@ char *	DCC_get_current_transfer (void)
 }
 
 
-static void 	update_transfer_buffer (char *format, ...)
+static void 	update_transfer_buffer (const char *format, ...)
 {
 	if (format)
 	{
@@ -3215,7 +3219,7 @@ static	void	dcc_getfile_resume_start (const char *nick, char *filename, char *po
 {
 	DCC_list	*Client;
 	Filename	fullname, pathname;
-	char		*realname = NULL;
+	char		*realfilename = NULL;
 
 	if (!get_int_var(MIRC_BROKEN_DCC_RESUME_VAR))
 		return;
@@ -3250,9 +3254,9 @@ static	void	dcc_getfile_resume_start (const char *nick, char *filename, char *po
 	if (fullname && *fullname)
 		strlcat(fullname, "/", sizeof(fullname));
 
-	realname = dcc_urldecode(Client->description);
-	strlcat(fullname, realname, sizeof(pathname));
-	new_free(&realname);
+	realfilename = dcc_urldecode(Client->description);
+	strlcat(fullname, realfilename, sizeof(pathname));
+	new_free(&realfilename);
 
 	if (!(Client->file = open(fullname, O_WRONLY | O_APPEND, 0644)))
 	{

@@ -1,4 +1,4 @@
-/* $EPIC: exec.c,v 1.19 2003/05/01 12:04:23 crazyed Exp $ */
+/* $EPIC: exec.c,v 1.20 2003/05/09 04:29:52 jnelson Exp $ */
 /*
  * exec.c: handles exec'd process for IRCII 
  *
@@ -92,8 +92,8 @@ static	int	process_list_size = 0;
 
 static 	void 	handle_filedesc 	(Process *, int *, int, int);
 static 	void 	cleanup_dead_processes 	(void);
-static 	void 	ignore_process 		(int index);
-static 	void 	close_in		(int index);
+static 	void 	ignore_process 		(int);
+static 	void 	close_in		(int);
 static 	void 	kill_process 		(int, int);
 static 	void 	kill_all_processes 	(int signo);
 static 	int 	valid_process_index 	(int proccess);
@@ -119,11 +119,11 @@ BUILT_IN_COMMAND(execcmd)
 {
 	const char	*who = NULL;
 	char		*logical = NULL,
-			*redirect = NULL,
 			*flag;
+	const char 	*redirect = NULL;
 	unsigned 	refnum = 0;
+	size_t		len;
 	int		sig,
-			len,
 			i,
 			refnum_flag = 0,
 			logical_flag = 0;
@@ -140,8 +140,6 @@ BUILT_IN_COMMAND(execcmd)
 	 */
 	if (!*args)
 	{
-		int	i;
-
 		if (!process_list)
 		{
 			say("No processes are running");
@@ -151,8 +149,6 @@ BUILT_IN_COMMAND(execcmd)
 		say("Process List:");
 		for (i = 0; i < process_list_size; i++)
 		{
-			Process	*proc;
-
 			if (((proc = process_list[i])) == NULL)
 				continue;
 
@@ -398,8 +394,6 @@ BUILT_IN_COMMAND(execcmd)
 	 */
 	if (*args == '%')
 	{
-		int i;
-
 		/*
 		 * Make sure the process is actually running
 		 */
@@ -470,7 +464,6 @@ say("Output from process %d (%s) now going to you", i, proc->name);
 		int	p0[2], p1[2], p2[2],
 			pid, cnt;
 		char	*shell,
-			*flag,
 			*arg;
 		char	*name = args;
 
@@ -509,8 +502,6 @@ say("Output from process %d (%s) now going to you", i, proc->name);
 		 */
 		case 0:
 		{
-			int i;
-
 			/*
 			 * Fire up a new job control session,
 			 * Sever all ties we had with the parent ircII process
@@ -545,24 +536,24 @@ say("Output from process %d (%s) now going to you", i, proc->name);
 			 */
 			if (direct || !shell)
 			{
-				char	**args;
 				int	max;
+				char **my_args;
 
 				cnt = 0;
 				max = 5;
-				args = new_malloc(sizeof(char *) * max);
+				my_args = new_malloc(sizeof(char *) * max);
 				while ((arg = new_next_arg(name, &name)))
 				{
 					if (cnt == max)
 					{
 						max += 5;
-						RESIZE(args, char *, max);
+						RESIZE(my_args, char *, max);
 					}
 
-					args[cnt++] = arg;
+					my_args[cnt++] = arg;
 				}
-				args[cnt] = NULL;
-				execvp(args[0], args);
+				my_args[cnt] = NULL;
+				execvp(my_args[0], my_args);
 			}
 
 			/*
@@ -590,9 +581,7 @@ say("Output from process %d (%s) now going to you", i, proc->name);
 		 */
 		default:
 		{
-			int	i;
-			Process	*proc = new_malloc(sizeof(Process));
-
+			proc = new_malloc(sizeof(Process));
 			new_close(p0[0]);
 			new_close(p1[1]);
 			new_close(p2[1]);
@@ -742,7 +731,7 @@ void 		do_processes (fd_set *rd, fd_set *wd)
 static void 	handle_filedesc (Process *proc, int *fd, int hook_nonl, int hook_nl)
 {
 	char 	exec_buffer[IO_BUFFER_SIZE + 1];
-	int	len;
+	ssize_t	len;
 
 	switch ((len = dgets(*fd, exec_buffer, IO_BUFFER_SIZE, 0, NULL))) /* No buffering! */
 	{
@@ -1025,7 +1014,7 @@ static void 	cleanup_dead_processes (void)
 	int	i;
 	List	*cmd,
 		*next;
-	Process *dead, *proc;
+	Process *deadproc, *proc;
 	char	*exit_info;
 
 	if (!process_list)
@@ -1044,34 +1033,34 @@ static void 	cleanup_dead_processes (void)
 		if ((!proc->exited || !proc->dumb) && !proc->disowned)
 			continue;		/* Not really dead yet */
 
-		dead = process_list[i];
+		deadproc = process_list[i];
 		process_list[i] = NULL;
 
 		/*
 		 * First thing to do is fill out the exit information
 		 */
-		if (dead->logical)
+		if (deadproc->logical)
 		{
-			size_t	len = strlen(dead->logical) + 25;
+			size_t	len = strlen(deadproc->logical) + 25;
 
 			exit_info = alloca(len);
 			snprintf(exit_info, len, "%s %d %d", 
-					dead->logical, dead->termsig,
-					dead->retcode);
+					deadproc->logical, deadproc->termsig,
+					deadproc->retcode);
 		}
 		else
 		{
 			exit_info = alloca(40);
 			snprintf(exit_info, 32, "%d %d %d",
-				dead->index, dead->termsig, dead->retcode);
+				deadproc->index, deadproc->termsig, deadproc->retcode);
 		}
 
 
 		/*
 		 * First thing we do is run any /wait %proc -cmd commands
 		 */
-		next = dead->waitcmds;
-		dead->waitcmds = NULL;
+		next = deadproc->waitcmds;
+		deadproc->waitcmds = NULL;
 		while ((cmd = next))
 		{
 			next = cmd->next;
@@ -1087,30 +1076,30 @@ static void 	cleanup_dead_processes (void)
 		{
 			if (get_int_var(NOTIFY_ON_TERMINATION_VAR))
 			{
-				if (dead->termsig > 0 && dead->termsig < NSIG)
+				if (deadproc->termsig > 0 && deadproc->termsig < NSIG)
 	say("Process %d (%s) terminated with signal %s (%d)", 
-	   dead->index, dead->name, sys_siglist[dead->termsig], dead->termsig);
-				else if (dead->disowned)
-	say("Process %d (%s) disowned", dead->index, dead->name);
+	   deadproc->index, deadproc->name, sys_siglist[deadproc->termsig], deadproc->termsig);
+				else if (deadproc->disowned)
+	say("Process %d (%s) disowned", deadproc->index, deadproc->name);
 				else
 	say("Process %d (%s) terminated with return code %d", 
-		dead->index, dead->name, dead->retcode);
+		deadproc->index, deadproc->name, deadproc->retcode);
 			}
 		}
 
-		if (dead->p_stdin != -1)
-			new_close(dead->p_stdin);
-		new_close(dead->p_stdout);
-		new_close(dead->p_stderr);
-		new_free(&dead->name);
-		new_free(&dead->logical);
-		new_free(&dead->who);
-		new_free(&dead->redirect);
-		new_free(&dead->stdoutc);
-		new_free(&dead->stdoutpc);
-		new_free(&dead->stderrc);
-		new_free(&dead->stderrpc);
-		new_free((char **)&dead);
+		if (deadproc->p_stdin != -1)
+			new_close(deadproc->p_stdin);
+		new_close(deadproc->p_stdout);
+		new_close(deadproc->p_stderr);
+		new_free(&deadproc->name);
+		new_free(&deadproc->logical);
+		new_free(&deadproc->who);
+		new_free(&deadproc->redirect);
+		new_free(&deadproc->stdoutc);
+		new_free(&deadproc->stdoutpc);
+		new_free(&deadproc->stderrc);
+		new_free(&deadproc->stderrpc);
+		new_free((char **)&deadproc);
 	}
 
 	/*
@@ -1138,14 +1127,14 @@ static void 	cleanup_dead_processes (void)
  * condition on its output fd, so it will probably either take the hint, or
  * its output will go the bit bucket (which we want to happen)
  */
-static void 	ignore_process (int index)
+static void 	ignore_process (int idx)
 {
 	Process *proc;
 
-	if (valid_process_index(index) == 0)
+	if (valid_process_index(idx) == 0)
 		return;
 
-	proc = process_list[index];
+	proc = process_list[idx];
 	if (proc->p_stdin != -1)
 		proc->p_stdin = new_close(proc->p_stdin);
 	if (proc->p_stdout != -1)
@@ -1161,14 +1150,14 @@ static void 	ignore_process (int index)
  * rest of its output, we close its input, and hopefully it will get the
  * message and close up shop.
  */
-static void 	close_in (int index)
+static void 	close_in (int idx)
 {
 	Process *proc;
 
-	if (valid_process_index(index) == 0)
+	if (valid_process_index(idx) == 0)
 		return;
 
-	proc = process_list[index];
+	proc = process_list[idx];
 	if (proc->p_stdin != -1)
 		proc->p_stdin = new_close(proc->p_stdin);
 }

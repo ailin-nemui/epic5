@@ -1,4 +1,4 @@
-/* $EPIC: reg.c,v 1.5 2003/04/24 21:49:25 jnelson Exp $ */
+/* $EPIC: reg.c,v 1.6 2003/05/09 04:29:52 jnelson Exp $ */
 /*
  * reg.c - "glob"-like wildcard pattern matching (not regexes)
  *
@@ -64,7 +64,7 @@ static	int	total_explicit;
  */
 #define	mkupper(c)	(((c) >= 'a' && (c) <= 'z') ? ((c) - 'a' + 'A') : c)
 
-int old_match(const char *pattern, const char *string)
+static int	old_match(const char *pattern, const char *string)
 {
 	char	type = 0;
 
@@ -111,7 +111,7 @@ int old_match(const char *pattern, const char *string)
 	return 0;
 }
 
-int new_match (const unsigned char *pattern, const unsigned char *string)
+static int new_match (const unsigned char *pattern, const unsigned char *string)
 {
 	int		count = 1;
 	int 		asterisk = 0;

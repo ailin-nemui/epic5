@@ -46,7 +46,7 @@ typedef	struct
 	char	*nickname;		/* Authoritative nickname for us */
 	char	*s_nickname;		/* last NICK command sent */
 	char	*d_nickname;		/* Default nickname to use */
-	int	fudge_factor;		/* How much s_nickname's fudged */
+	size_t	fudge_factor;		/* How much s_nickname's fudged */
 	int	nickname_pending;	/* Is a NICK command pending? */
 	int	resetting_nickname;	/* Is a nickname reset in progress? */
 	int	registration_pending;	/* Is a registration going on ? */
@@ -227,9 +227,11 @@ const	char *	get_umode			(int);
 	void	set_server_version		(int, int);
 	int	get_server_version		(int);
 
+	void	set_server_name			(int, const char *);
 const	char *	get_server_name			(int);
 	void	set_server_itsname		(int, const char *);
 const	char *	get_server_itsname		(int);
+	void	set_server_group		(int, const char *);
 const	char *	get_server_group		(int);
 const	char *	get_server_type			(int);
 	void	set_server_version_string	(int, const char *);
@@ -286,7 +288,7 @@ const	char *	get_server_redirect		(int);
 
 	void	make_005			(int);
 	void	destroy_005			(int);
-const	char*	get_server_005			(int, char*);
+const	char*	get_server_005			(int, const char *);
 	void	set_server_005			(int, char*, char*);
 
         void    server_hard_wait 		(int);
@@ -334,6 +336,9 @@ const char *    get_server_sent_body            (int);
 const char *    get_server_quit_message		(int);
 	void	set_server_cookie		(int, const char *);
 const char *	get_server_cookie         	(int);
+	void	set_server_last_notify_nick	(int, const char *);
+const char *	get_server_last_notify_nick    	(int);
+
 	void	set_server_funny_min         	(int, int);
 	int	get_server_funny_min         	(int);
 	void	set_server_funny_max         	(int, int);
@@ -347,4 +352,5 @@ const char *	get_server_funny_match         	(int);
         void    set_server_window_count         (int, int);
         int     get_server_window_count         (int);
 
+	char *	serverctl			(char *);
 #endif /* _SERVER_H_ */

@@ -10,7 +10,7 @@ KNOWN ERRATA (eg, bugs, or unresolved requests):
   honor key bindings because it calls input_add_character().
 * Study update_input() and update_all_windows() and determine if used properly
 * Shall remove_trailing_spaces honor a \ before a space trailing?
-* Some way to color the input prompt?
+* Some way to color the input prompt?  (Probably not)
 
 [See http://www.epicsol.org/PROJECTS for things to come in the future]
 [See http://www.epicsol.org/CHANGELOG for things that changed in the past]
@@ -99,3 +99,22 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Fix infinite recursion bug when a channel key contains unmatched (
 * Add $outputinfo() which outputs "level" and "target".
 * Add $levelwindow() which returns window refnum for a given level.
+* Rename 'dcc()' to 'dcc_cmd()' so we can use dcc as variable
+* Garbage collect unused 'irc_path' global variable.
+* Add --with-warns to configure to do FreeBSD "WARNS" like compiler checks
+* Many hundreds of changes to improve the "quality of code" in epic, including:
+* - Treat all literal strings as (const char *) and fix const correctness.
+* - Mopping up all remaining const-correctness issues
+* - Do not "launder" a (const char *) to a (char *) in string searches, (ala
+    strchr) but rather return a ssize_t offset value.
+* - Particular, MatchingBracket() returns (ssize_t) and not (char *).
+* - Eliminate all "shadow" variable names by changing them to something else.
+* - Eliminate most function decls that do not include a prototype list.
+* - Add prototypes for all extern functions that are missing them.
+* - Ensure most function pointers include a prototype list.
+* - In term.c, most of those (char *)'s are really (const char *)'s.
+* - Explicitly specify 'static' functions as 'static'
+* - Ensure every function is either 'static' or has a prototype.
+* - Eliminate (unsigned) < (signed) type comparisons.
+* Hopefully you should not notice any changes!
+

@@ -1,4 +1,4 @@
-/* $EPIC: ircaux.c,v 1.73 2003/05/02 20:22:26 jnelson Exp $ */
+/* $EPIC: ircaux.c,v 1.74 2003/05/09 04:29:52 jnelson Exp $ */
 /*
  * ircaux.c: some extra routines... not specific to irc... that I needed 
  *
@@ -102,7 +102,7 @@ static int	malloc_check (void *ptr)
 	return NO_ERROR;
 }
 
-void	fatal_malloc_check (void *ptr, const char *special, char *fn, int line)
+void	fatal_malloc_check (void *ptr, const char *special, const char *fn, int line)
 {
 	switch (malloc_check(ptr))
 	{
@@ -147,7 +147,7 @@ void	fatal_malloc_check (void *ptr, const char *special, char *fn, int line)
  * It is only called by way of the ``new_malloc'' #define.
  * It wont ever return NULL.
  */
-void *	really_new_malloc (size_t size, char *fn, int line)
+void *	really_new_malloc (size_t size, const char *fn, int line)
 {
 	char	*ptr;
 
@@ -225,7 +225,7 @@ static void	delay_free (void *ptr)
  * You must always use new_free to free anything youve allocated
  * with new_malloc, or all heck will break loose.
  */
-void *	really_new_free(void **ptr, char *fn, int line)
+void *	really_new_free (void **ptr, const char *fn, int line)
 {
 	if (*ptr)
 	{
@@ -248,7 +248,7 @@ void *	really_new_free(void **ptr, char *fn, int line)
 #if 1
 
 /* really_new_malloc in disguise */
-void *	really_new_realloc (void **ptr, size_t size, char *fn, int line)
+void *	really_new_realloc (void **ptr, size_t size, const char *fn, int line)
 {
 	void *newptr = NULL;
 
@@ -313,7 +313,7 @@ void *	new_realloc (void **ptr, size_t size)
 
 #endif
 
-void malloc_dump (char* file) {
+void malloc_dump (const char *file) {
 #ifdef ALLOC_DEBUG
 	int	foo, bar;
 	FILE	*fd;
@@ -348,7 +348,7 @@ char *	malloc_strcpy (char **ptr, const char *src)
 	if (*ptr)
 	{
 		size = alloc_size(*ptr);
-		if (size == FREED_VAL)
+		if (size == (size_t) FREED_VAL)
 			panic("free()d pointer passed to malloc_strcpy");
 
 		/* No copy neccesary! */
@@ -411,7 +411,7 @@ char *	malloc_str2cpy(char **ptr, const char *src1, const char *src2)
 	{
 		size = alloc_size(*ptr);
 
-		if (size == FREED_VAL)
+		if (size == (size_t) FREED_VAL)
 			panic("free()d pointer passed to malloc_str2cpy");
 
 		if (size > strlen(src1) + strlen(src2))
@@ -467,63 +467,63 @@ char *	m_strdup (const char *str)
 	return ptr;
 }
 
-char *	m_ec3cat (char **one, const char *yes1, const char *yes2, size_t *clue)
+char *	m_ec3cat (char **val1, const char *yes1, const char *yes2, size_t *clue)
 {
-	if (*one && **one)
-		return m_c3cat(one, yes1, yes2, clue);
+	if (*val1 && **val1)
+		return m_c3cat(val1, yes1, yes2, clue);
 
-	return (*one = m_2dup(yes1, yes2));
+	return (*val1 = m_2dup(yes1, yes2));
 }
 
 
-char *	m_sc3cat (char **one, const char *maybe, const char *definitely, size_t *clue)
+char *	m_sc3cat (char **val1, const char *maybe, const char *definitely, size_t *clue)
 {
-	if (*one && **one)
-		return m_c3cat(one, maybe, definitely, clue);
+	if (*val1 && **val1)
+		return m_c3cat(val1, maybe, definitely, clue);
 
-	return malloc_strcpy(one, definitely);
+	return malloc_strcpy(val1, definitely);
 }
 
-char *	m_sc3cat_s (char **one, const char *maybe, const char *ifthere, size_t *clue)
+char *	m_sc3cat_s (char **val1, const char *maybe, const char *ifthere, size_t *clue)
 {
 	if (ifthere && *ifthere)
-		return m_sc3cat(one, maybe, ifthere, clue);
+		return m_sc3cat(val1, maybe, ifthere, clue);
 
-	return *one;
+	return *val1;
 }
 
-char *	m_c3cat(char **one, const char *two, const char *three, size_t *clue)
+char *	m_c3cat(char **val1, const char *two, const char *three, size_t *clue)
 {
 	size_t	csize = clue ? *clue : 0;
 	int 	msize = csize;
 
-	if (*one)
+	if (*val1)
 	{
-		if (alloc_size(*one) == FREED_VAL)
+		if (alloc_size(*val1) == FREED_VAL)
 			panic("free()d pointer passed to m_3cat");
-		msize += strlen(csize+*one);
+		msize += strlen(csize+*val1);
 	}
 	if (two)
 		msize += strlen(two);
 	if (three)
 		msize += strlen(three);
 
-	if (!*one)
+	if (!*val1)
 	{
-		*one = new_malloc(msize + 1);
-		**one = 0;
+		*val1 = new_malloc(msize + 1);
+		**val1 = 0;
 	}
 	else
-		RESIZE(*one, char, msize + 1);
+		RESIZE(*val1, char, msize + 1);
 
 	if (two)
-		strlcat(csize + *one, two, msize + 1 - csize);
+		strlcat(csize + *val1, two, msize + 1 - csize);
 	if (three)
-		strlcat(csize + *one, three, msize + 1 - csize);
+		strlcat(csize + *val1, three, msize + 1 - csize);
 	if (clue) 
 		*clue = msize;
 
-	return *one;
+	return *val1;
 }
 
 char *	upper (char *str)
@@ -595,47 +595,48 @@ char *	m_sprintf (const char *pattern, ...)
 
 
 /* case insensitive string searching */
-char *	stristr (const char *source, const char *search)
+ssize_t	stristr (const char *start, const char *srch)
 {
         int     x = 0;
+	const char *source = start;
 
-        if (!source || !*source || !search || !*search || strlen(source) < strlen(search))
-		return NULL;
+        if (!source || !*source || !srch || !*srch || strlen(source) < strlen(srch))
+		return -1;
 
         while (*source)
         {
-                if (source[x] && toupper(source[x]) == toupper(search[x]))
+                if (source[x] && toupper(source[x]) == toupper(srch[x]))
 			x++;
-                else if (search[x])
+                else if (srch[x])
 			source++, x = 0;
 		else
-			return (char *)source;
+			return source - start;
         }
-	return NULL;
+	return -1;
 }
 
 /* case insensitive string searching from the end */
-char *	rstristr (const char *source, const char *search)
+ssize_t	rstristr (const char *start, const char *srch)
 {
 	const char *ptr;
 	int x = 0;
 
-        if (!source || !*source || !search || !*search || strlen(source) < strlen(search))
-		return NULL;
+        if (!start || !*start || !srch || !*srch || strlen(start) < strlen(srch))
+		return -1;
 
-	ptr = source + strlen(source) - strlen(search);
+	ptr = start + strlen(start) - strlen(srch);
 
-	while (ptr >= source)
+	while (ptr >= start)
         {
-		if (!search[x])
-			return (char *)ptr;
+		if (!srch[x])
+			return ptr - start;
 
-		if (toupper(ptr[x]) == toupper(search[x]))
+		if (toupper(ptr[x]) == toupper(srch[x]))
 			x++;
 		else
 			ptr--, x = 0;
 	}
-	return NULL;
+	return -1;
 }
 
 /* 
@@ -847,96 +848,7 @@ char *	new_next_arg_count (char *str, char **new_ptr, int count)
 	if ((*new_ptr)[0] && *new_ptr > str)
 		(*new_ptr)[-1] = 0;
 	return str;
-
-#if 0
-	char *copy;
-
-	char *orig = str;
-	char *str1 = str;
-	char *copy;
-	char *endp;
-
-	*new_ptr = str;
-	endp = str + strlen(str);		/* end of the string */
-	while (count-- > 0 && *new_ptr && **new_ptr)
-	{
-		if ((str = new_next_arg(*new_ptr, new_ptr)))
-		{
-			copy = LOCAL_COPY(str);
-			if (str1 != orig)
-				*str1++ = ' ';
-			strlcpy(str1, copy, endp - str1);
-			str1 += strlen(str1);
-		}
-	}
-
-	return orig;
-#endif
 }
-
-char * next_quoted_args (char *str, char **new_ptr, int count)
-{
-	return NULL;
-}
-
-#if 0
-/*
- * This function is "safe" because it doesnt ever return NULL.
- * XXX - this is an ugly kludge that needs to go away
- */
-char *	safe_new_next_arg (char *str, char **new_ptr)
-{
-	char	*ptr,
-		*start;
-
-	if (!str || !*str)
-		return empty_string;
-
-	if ((ptr = sindex(str, "^ \t")) != NULL)
-	{
-		if (*ptr == '"')
-		{
-			start = ++ptr;
-			while ((str = sindex(ptr, "\"\\")) != NULL)
-			{
-				switch (*str)
-				{
-					case '"':
-						*str++ = '\0';
-						if (*str == ' ')
-							str++;
-						if (new_ptr)
-							*new_ptr = str;
-						return (start);
-					case '\\':
-						if (str[1] == '"')
-							ov_strcpy(str, str + 1);
-						ptr = str + 1;
-				}
-			}
-			str = empty_string;
-		}
-		else
-		{
-			if ((str = sindex(ptr, " \t")) != NULL)
-				*str++ = '\0';
-			else
-				str = empty_string;
-		}
-	}
-	else
-		str = empty_string;
-
-	if (new_ptr)
-		*new_ptr = str;
-
-	if (!ptr)
-		return empty_string;
-
-	return ptr;
-}
-
-#else
 
 /*
  * Note that the old version is now out of sync with epics word philosophy.
@@ -947,8 +859,6 @@ char *	safe_new_next_arg (char *str, char **new_ptr)
 
 	return ret ? ret : empty_string;
 }
-
-#endif
 
 char *	new_new_next_arg (char *str, char **new_ptr, char *type)
 {
@@ -1018,14 +928,14 @@ char *	next_in_comma_list (char *str, char **after)
 	return next_in_div_list(str, after, ',');
 }
 
-char *	next_in_div_list (char *str, char **after, char div)
+char *	next_in_div_list (char *str, char **after, char delim)
 {
 	*after = str;
 
-	while (*after && **after && **after != div)
+	while (*after && **after && **after != delim)
 		(*after)++;
 
-	if (*after && **after == div)
+	if (*after && **after == delim)
 	{
 		**after = 0;
 		(*after)++;
@@ -1147,7 +1057,7 @@ char *	strlopencat (char *dest, size_t maxlen, ...)
 	va_list	args;
 	int 	size;
 	char *	this_arg = NULL;
-	int 	this_len;
+	size_t 	this_len;
 	char *	endp;
 	char *	p;
 	size_t	worklen;
@@ -1354,7 +1264,7 @@ int	expand_twiddle (const char *str, Filename result)
  * rewritten, with help from do_nick_name() from the server code (2.8.5),
  * phone, april 1993.
  */
-char *	check_nickname (char *nick, int truncate)
+char *	check_nickname (char *nick, int unused)
 {
 	char	*s;
 
@@ -1376,9 +1286,9 @@ char *	check_nickname (char *nick, int truncate)
  *
  * XXXX - sindex is a lot like strpbrk(), which is standard
  */
-char *	sindex (char *string, char *group)
+char *	sindex (char *string, const char *group)
 {
-	char	*ptr;
+	const char	*ptr;
 
 	if (!string || !group)
 		return (char *) NULL;
@@ -1476,7 +1386,7 @@ int	is_number (const char *str)
 /* is_number: returns 1 if the given string is a real number, 0 otherwise */
 int	is_real_number (const char *str)
 {
-	int	dot = 0;
+	int	period = 0;
 
 	if (!str || !*str)
 		return 0;
@@ -1495,9 +1405,9 @@ int	is_real_number (const char *str)
 		if (isdigit((*str)))
 			continue;
 
-		if (*str == '.' && dot == 0)
+		if (*str == '.' && period == 0)
 		{
-			dot = 1;
+			period = 1;
 			continue;
 		}
 
@@ -1603,7 +1513,7 @@ char *	double_quote (const char *str, const char *stuff, char *buffer)
 	return buffer;
 }
 
-void	panic (char *format, ...)
+void	panic (const char *format, ...)
 {
 	char buffer[BIG_BUFFER_SIZE * 10 + 1];
 static	int recursion = 0;		/* Recursion is bad */
@@ -1643,10 +1553,10 @@ void	beep_em (int beeps)
 }
 
 /* Not really complicated, but a handy function to have */
-int 	end_strcmp (const char *one, const char *two, int bytes)
+int 	end_strcmp (const char *val1, const char *val2, size_t bytes)
 {
-	if (bytes < strlen(one))
-		return (strcmp(one + strlen (one) - (size_t) bytes, two));
+	if (bytes < strlen(val1))
+		return (strcmp(val1 + strlen(val1) - (size_t) bytes, val2));
 	else
 		return -1;
 }
@@ -1669,7 +1579,7 @@ int 	end_strcmp (const char *one, const char *two, int bytes)
  *
  * Special Note: stdin and stdout are not expected to be textual.
  */
-char*	exec_pipe (char *executable, char *input, size_t *len, char**args)
+char*	exec_pipe (char *executable, char *input, size_t *len, char **args)
 {
 	int 	pipe0[2] = {-1, -1};
 	int 	pipe1[2] = {-1, -1};
@@ -2116,7 +2026,7 @@ int	slurp_file (char **buffer, char *filename)
 	char *	local_buffer;
 	size_t	offset;
 	off_t	local_buffer_size;
-	off_t	file_size;
+	off_t	filesize;
 	Stat	s;
 	FILE *	file;
 	size_t	count;
@@ -2129,16 +2039,16 @@ int	slurp_file (char **buffer, char *filename)
 		return -1;		/* Whatever. */
 	}
 
-	file_size = s.st_size;
+	filesize = s.st_size;
 	if (!end_strcmp(filename, ".gz", 3))
-		file_size *= 7;
+		filesize *= 7;
 	else if (!end_strcmp(filename, ".bz2", 4))
-		file_size *= 10;
+		filesize *= 10;
 	else if (!end_strcmp(filename, ".Z", 2))
-		file_size *= 5;
+		filesize *= 5;
 
-	local_buffer = new_malloc(file_size);
-	local_buffer_size = file_size;
+	local_buffer = new_malloc(filesize);
+	local_buffer_size = filesize;
 	offset = 0;
 
 	do
@@ -2149,7 +2059,7 @@ int	slurp_file (char **buffer, char *filename)
 
 		if (!feof(file))
 		{
-			local_buffer_size += (file_size * 3);
+			local_buffer_size += (filesize * 3);
 			new_realloc((void **)&local_buffer, local_buffer_size);
 			continue;
 		}
@@ -2162,7 +2072,7 @@ int	slurp_file (char **buffer, char *filename)
 
 
 
-int 	fw_strcmp(comp_len_func *compar, char *one, char *two)
+int 	fw_strcmp (comp_len_func *compar, char *v1, char *v2)
 {
 	int len = 0;
 	char *pos = one;
@@ -2170,7 +2080,7 @@ int 	fw_strcmp(comp_len_func *compar, char *one, char *two)
 	while (!my_isspace(*pos))
 		pos++, len++;
 
-	return compar(one, two, len);
+	return compar(v1, v2, len);
 }
 
 
@@ -2179,20 +2089,20 @@ int 	fw_strcmp(comp_len_func *compar, char *one, char *two)
  * Compares the last word in 'one' to the string 'two'.  You must provide
  * the compar function.  my_stricmp is a good default.
  */
-int 	lw_strcmp(comp_func *compar, char *one, char *two)
+int 	lw_strcmp(comp_func *compar, char *val1, char *val2)
 {
-	char *pos = one + strlen(one) - 1;
+	char *pos = val1 + strlen(val1) - 1;
 
-	if (pos > one)			/* cant do pos[-1] if pos == one */
-		while (!my_isspace(pos[-1]) && (pos > one))
+	if (pos > val1)			/* cant do pos[-1] if pos == val1 */
+		while (!my_isspace(pos[-1]) && (pos > val1))
 			pos--;
 	else
-		pos = one;
+		pos = val1;
 
 	if (compar)
-		return compar(pos, two);
+		return compar(pos, val2);
 	else
-		return my_stricmp(pos, two);
+		return my_stricmp(pos, val2);
 }
 
 /* 
@@ -2269,16 +2179,16 @@ Timeval get_time (Timeval *timer)
 }
 
 /* 
- * calculates the time elapsed between 'one' and 'two' where they were
- * gotten probably with a call to get_time.  'one' should be the older
- * timer and 'two' should be the most recent timer.
+ * calculates the time elapsed between 't1' and 't2' where they were
+ * gotten probably with a call to get_time.  't1' should be the older
+ * timer and 't2' should be the most recent timer.
  */
-double 	time_diff (Timeval one, Timeval two)
+double 	time_diff (Timeval t1, Timeval t2)
 {
 	Timeval td;
 
-	td.tv_sec = two.tv_sec - one.tv_sec;
-	td.tv_usec = two.tv_usec - one.tv_usec;
+	td.tv_sec = t2.tv_sec - t1.tv_sec;
+	td.tv_usec = t2.tv_usec - t1.tv_usec;
 
 	return (double)td.tv_sec + ((double)td.tv_usec / 1000000.0);
 }
@@ -2302,12 +2212,12 @@ Timeval double_to_timeval (double x)
  * gotten probably with a call to get_time.  'one' should be the older
  * timer and 'two' should be the most recent timer.
  */
-Timeval time_subtract (Timeval one, Timeval two)
+Timeval time_subtract (Timeval t1, Timeval t2)
 {
 	Timeval td;
 
-	td.tv_sec = two.tv_sec - one.tv_sec;
-	td.tv_usec = two.tv_usec - one.tv_usec;
+	td.tv_sec = t2.tv_sec - t1.tv_sec;
+	td.tv_usec = t2.tv_usec - t1.tv_usec;
 	if (td.tv_usec < 0)
 	{
 		td.tv_usec += 1000000;
@@ -2319,12 +2229,12 @@ Timeval time_subtract (Timeval one, Timeval two)
 /* 
  * Adds the interval "two" to the base time "one" and returns it.
  */
-Timeval time_add (Timeval one, Timeval two)
+Timeval time_add (Timeval t1, Timeval t2)
 {
 	Timeval td;
 
-	td.tv_usec = one.tv_usec + two.tv_usec;
-	td.tv_sec = one.tv_sec + two.tv_sec;
+	td.tv_usec = t1.tv_usec + t2.tv_usec;
+	td.tv_sec = t1.tv_sec + t2.tv_sec;
 	if (td.tv_usec >= 1000000)
 	{
 		td.tv_usec -= 1000000;
@@ -2334,7 +2244,7 @@ Timeval time_add (Timeval one, Timeval two)
 }
 
 
-char *	plural (int number)
+const char *	plural (int number)
 {
 	return (number != 1) ? "s" : empty_string;
 }
@@ -2418,7 +2328,7 @@ char *	strformat (char *dest, const char *src, int length, int pad)
 		length = -length;
 		ptr1 = dest;
 		ptr2 = src;
-		if (strlen(src) < length)
+		if ((int)strlen(src) < length)
 			ptr1 += length - strlen(src);
 		while ((length-- > 0) && *ptr2)
 			*ptr1++ = *ptr2++;
@@ -2435,70 +2345,71 @@ char *	strformat (char *dest, const char *src, int length, int pad)
  * really help the cpu usage.  I hope.  Everything else just falls through
  * and uses the old tried and true method.
  */
-char *	MatchingBracket (char *string, char left, char right)
+ssize_t	MatchingBracket (const char *start, char left, char right)
 {
 	int	bracket_count = 1;
+	const char *string = start;
 
 	if (left == '(')
 	{
-		for (; *string; string++)
+	    for (; *string; string++)
+	    {
+		switch (*string)
 		{
-			switch (*string)
-			{
-				case '(':
-					bracket_count++;
-					break;
-				case ')':
-					bracket_count--;
-					if (bracket_count == 0)
-						return string;
-					break;
-				case '\\':
-					if (string[1])
-						string++;
-					break;
-			}
+		    case '(':
+			bracket_count++;
+			break;
+		    case ')':
+			bracket_count--;
+			if (bracket_count == 0)
+				return string - start;
+			break;
+		    case '\\':
+			if (string[1])
+				string++;
+			break;
 		}
+	    }
 	}
 	else if (left == '[')
 	{
-		for (; *string; string++)
-		{
-			switch (*string)
-	    		{
-				case '[':
-					bracket_count++;
-					break;
-				case ']':
-					bracket_count--;
-					if (bracket_count == 0)
-						return string;
-					break;
-				case '\\':
-					if (string[1])
-						string++;
-					break;
-			}
+	    for (; *string; string++)
+	    {
+		switch (*string)
+	    	{
+		    case '[':
+			bracket_count++;
+			break;
+		    case ']':
+			bracket_count--;
+			if (bracket_count == 0)
+				return string - start;
+			break;
+		    case '\\':
+			if (string[1])
+				string++;
+			break;
 		}
+	    }
 	}
 	else		/* Fallback for everyone else */
 	{
-		while (*string && bracket_count)
-		{
-			if (*string == '\\' && string[1])
-				string++;
-			else if (*string == left)
-				bracket_count++;
-			else if (*string == right)
-			{
-				if (--bracket_count == 0)
-					return string;
-			}
+	    while (*string && bracket_count)
+	    {
+		if (*string == '\\' && string[1])
 			string++;
+		else if (*string == left)
+			bracket_count++;
+		else if (*string == right)
+		{
+			if (--bracket_count == 0)
+				return string - start;
 		}
+		string++;
+	    }
 	}
 
-	return NULL;
+	return -1;
 }
 
 /*
@@ -2547,7 +2458,7 @@ char *	skip_spaces (char *str)
 
 int	split_args (char *str, char **to, size_t maxargs)
 {
-	int	counter;
+	size_t	counter;
 	char *	ptr;
 
 	ptr = str;
@@ -2611,7 +2522,7 @@ char *	unsplitw (char ***container, int howmany)
 }
 
 double strtod();	/* sunos must die. */
-int 	check_val (char *sub)
+int 	check_val (const char *sub)
 {
 	double sval;
 	char *endptr;
@@ -2676,6 +2587,7 @@ char *	remove_brackets (const char *name, const char *args, int *arg_flag)
 		*result1, 
 		*rptr, 
 		*retval = NULL;
+	ssize_t	span;
 
 	/* XXXX - ugh. */
 	rptr = m_strdup(name);
@@ -2684,8 +2596,13 @@ char *	remove_brackets (const char *name, const char *args, int *arg_flag)
 	{
 		*ptr++ = 0;
 		right = ptr;
-		if ((ptr = MatchingBracket(right, '[', ']')))
+		if ((span = MatchingBracket(right, '[', ']')) >= 0)
+		{
+			ptr = right + span;
 			*ptr++ = 0;
+		}
+		else
+			ptr = NULL;
 
 		if (args)
 			result1 = expand_alias(right, args, arg_flag, NULL);
@@ -2759,12 +2676,12 @@ int 	is_root (const char *root, const char *var, int descend)
 
 
 /* Returns the number of characters they are equal at. */
-size_t 	streq (const char *one, const char *two)
+size_t 	streq (const char *str1, const char *str2)
 {
 	size_t cnt = 0;
 
-	while (*one && *two && *one == *two)
-		cnt++, one++, two++;
+	while (*str1 && *str2 && *str1 == *str2)
+		cnt++, str1++, str2++;
 
 	return cnt;
 }
@@ -2776,26 +2693,9 @@ char *	m_strndup (const char *str, size_t len)
 	return retval;
 }
 
-char *	spanstr (const char *str, const char *tar)
-{
-	int cnt = 1;
-	const char *p;
-
-	for ( ; *str; str++, cnt++)
-	{
-		for (p = tar; *p; p++)
-		{
-			if (*p == *str)
-				return (char *)p;
-		}
-	}
-
-	return 0;
-}
-
 char *	prntdump(const char *ptr, size_t size)
 {
-	int i;
+	size_t i;
 static char dump[65];
 
 	strlcat(dump, ptr, sizeof dump);
@@ -2825,9 +2725,9 @@ char *	get_userhost (void)
 double	time_to_next_minute (void)
 {
 static	int 	which = 0;
-	Timeval	now, then;
+	Timeval	right_now, then;
 
-	get_time(&now);
+	get_time(&right_now);
 
 	/* 
 	 * The first time called, try to determine if the system clock
@@ -2837,23 +2737,23 @@ static	int 	which = 0;
 	 */
 	if (which == 0)
 	{
-		struct tm *now_tm = gmtime(&now.tv_sec);
+		struct tm *now_tm = gmtime(&right_now.tv_sec);
 
 		if (!which)
 		{
-			if (now_tm->tm_sec == now.tv_sec % 60)
+			if (now_tm->tm_sec == right_now.tv_sec % 60)
 				which = 1;
 			else
 				which = 2;
 		}
 	}
 
-	then.tv_usec = 1000000 - now.tv_usec;
+	then.tv_usec = 1000000 - right_now.tv_usec;
 	if (which == 1)
-		then.tv_sec = 60 - (now.tv_sec + 1) % 60;
+		then.tv_sec = 60 - (right_now.tv_sec + 1) % 60;
 	else 	/* which == 2 */
 	{
-		struct tm *now_tm = gmtime(&now.tv_sec);
+		struct tm *now_tm = gmtime(&right_now.tv_sec);
 		then.tv_sec = 60 - (now_tm->tm_sec + 1) % 60;
 	}
 
@@ -2864,15 +2764,15 @@ static	int 	which = 0;
  * An strcpy that is guaranteed to be safe for overlaps.
  * Warning: This may _only_ be called when one and two overlap!
  */
-char *	ov_strcpy (char *one, const char *two)
+char *	ov_strcpy (char *str1, const char *str2)
 {
-	if (two > one)
+	if (str2 > str1)
 	{
-		while (two && *two)
-			*one++ = *two++;
-		*one = 0;
+		while (str2 && *str2)
+			*str1++ = *str2++;
+		*str1 = 0;
 	}
-	return one;
+	return str1;
 }
 
 
@@ -2938,12 +2838,12 @@ const char *	strfill (char c, int num)
 }
 
 
-char *	encode(const char *str, size_t len)
+char *	encode (const char *str, size_t len)
 {
 	char *retval;
 	char *ptr;
 
-	if (len == -1)
+	if ((int)len < 0)
 		len = strlen(str);
 
 	ptr = retval = new_malloc(len * 2 + 1);
@@ -2958,7 +2858,7 @@ char *	encode(const char *str, size_t len)
 	return retval;
 }
 
-char *	decode(const char *str)
+char *	decode (const char *str)
 {
 	char *retval;
 	char *ptr;
@@ -3000,7 +2900,7 @@ int	figure_out_address (char *nuh, char **nick, char **user, char **host)
 static 	char 	*mystuff = NULL;
 	char 	*bang, 
 		*at, 
-		*dot = NULL;
+		*adot = NULL;
 
 	/* Dont bother with channels, theyre ok. */
 	if (*nuh == '#' || *nuh == '&')
@@ -3021,16 +2921,16 @@ static 	char 	*mystuff = NULL;
 		if ((at = strchr(bang + 1, '@')))
 		{
 			*at = 0;
-			dot = strchr(at + 1, '.');
+			adot = strchr(at + 1, '.');
 		}
 	}
 	else if ((at = strchr(mystuff, '@')))
 	{
 		*at = 0;
-		dot = strchr(at + 1, '.');
+		adot = strchr(at + 1, '.');
 	}
 	else 
-		dot = strchr(mystuff, '.');
+		adot = strchr(mystuff, '.');
 
 	/*
 	 * Hrm.  How many cases are there?  There are three context clues
@@ -3068,7 +2968,7 @@ static 	char 	*mystuff = NULL;
 		}
 		else
 		{
-			if (dot)		/* nick!host.domain */
+			if (adot)		/* nick!host.domain */
 			{
 				*nick = mystuff;
 				*user = star;
@@ -3093,7 +2993,7 @@ static 	char 	*mystuff = NULL;
 		}
 		else
 		{
-			if (dot)		/* host.domain */
+			if (adot)		/* host.domain */
 			{
 				*nick = star;
 				*user = star;
@@ -3119,14 +3019,14 @@ int	figure_out_domain (char *fqdn, char **host, char **domain, int *ip)
 		*thirdback, 
 		*fourthback;
 	char	*endstring;
-	char	*dot;
+	char	*adot;
 	int	number;
 
 	/* determine if we have an IP, use dot to hold this */
 	/* is_number is better than my_atol since floating point
 	 * base 36 numbers are pretty much invalid as IPs.
 	 */
-	if ((dot = strrchr(fqdn, '.')) && is_number(dot + 1))
+	if ((adot = strrchr(fqdn, '.')) && is_number(adot + 1))
 		*ip = 1;
 	else
 		*ip = 0;
@@ -3354,11 +3254,15 @@ char *	strlpcat (char *source, size_t size, const char *format, ...)
 u_char *strcpy_nocolorcodes (u_char *dest, const u_char *source)
 {
 	u_char	*save = dest;
+	ssize_t	span;
 
 	do
 	{
 		while (*source == 3)
-			source = skip_ctl_c_seq(source, NULL, NULL);
+		{
+			span = skip_ctl_c_seq(source, NULL, NULL);
+			source += span;
+		}
 		*dest++ = *source;
 	}
 	while (*source++);
@@ -3442,11 +3346,13 @@ size_t	mangle_line	(char *incoming, int how, size_t how_much)
 		{
 			case 003:		/* color codes */
 			{
-				int 		lhs = 0, 
-						rhs = 0;
-				char 		*end;
+				int 	lhs = 0, 
+					rhs = 0;
+				char *	end;
+				ssize_t	span;
 
-				end = (char *)skip_ctl_c_seq(s, &lhs, &rhs);
+				span = skip_ctl_c_seq(s, &lhs, &rhs);
+				end = s + span;
 				if (!(stuff & STRIP_COLOR))
 				{
 					while (s < end)
@@ -3751,7 +3657,7 @@ char	*enquote_it (char *str, size_t len)
 {
 	char	*buffer = new_malloc(len + 5);
 	char	*ptr = buffer;
-	int	i;
+	size_t	i;
 	int	size = len;
 
 	for (i = 0; i < len; i++)
@@ -3801,8 +3707,7 @@ char	*dequote_it (char *str, size_t *len)
 	char	*buffer;
 	char	*ptr;
 	char	c;
-	int	i,
-		new_size = 0;
+	size_t	i, new_size = 0;
 
 	buffer = (char *) new_malloc(sizeof(char) * *len + 1);
 	ptr = buffer;

@@ -1,4 +1,4 @@
-/* $EPIC: lastlog.c,v 1.18 2003/04/24 21:49:25 jnelson Exp $ */
+/* $EPIC: lastlog.c,v 1.19 2003/05/09 04:29:52 jnelson Exp $ */
 /*
  * lastlog.c: handles the lastlog features of irc. 
  *
@@ -66,7 +66,7 @@ static	int	notify_level;
 static	int	msg_level = LOG_CRAP;
 
 #define NUMBER_OF_LEVELS 16
-static	char	*levels[] =
+static	const char	*levels[] =
 {
 	"CRAP",		"PUBLIC",	"MSGS",		"NOTICES",
 	"WALLS",	"WALLOPS",	"NOTES",	"OPNOTES",
@@ -342,7 +342,7 @@ BUILT_IN_COMMAND(lastlog)
 	int		after = 0;
 	int		counter = 0;
 	int		show_separator = 0;
-	char *		separator = "----";
+	const char *	separator = "----";
 	char *		outfile = NULL;
 	FILE *		outfp = NULL;
 
@@ -626,8 +626,6 @@ BUILT_IN_COMMAND(lastlog)
 		{
 		    if (counter == 0 && before > 0)
 		    {
-			int i;
-
 			counter = 1;
 			for (i = 0; i < before; i++)
 			{
@@ -692,8 +690,6 @@ BUILT_IN_COMMAND(lastlog)
 		{
 		    if (counter == 0 && before > 0)
 		    {
-			int i;
-
 			counter = 1;
 			for (i = 0; i < before; i++)
 			{
@@ -946,13 +942,13 @@ char *function_lastlog (char *word)
 	char *	retval = NULL;
 	Lastlog	*iter;
 	Window *win;
-	int	levels;
+	int	lastlog_levels;
 	int	line = 1;
 	size_t	rvclue = 0;
 
 	GET_STR_ARG(windesc, word);
 	GET_STR_ARG(pattern, word);
-	levels = parse_lastlog_level(word);
+	lastlog_levels = parse_lastlog_level(word);
 
 	/* Get the current window, default to current window */
 	if (!(win = get_window_by_desc(windesc)))
@@ -960,7 +956,7 @@ char *function_lastlog (char *word)
 
 	for (iter = win->lastlog_newest; iter; iter = iter->older, line++)
 	{
-		if (iter->level & levels)
+		if (iter->level & lastlog_levels)
 			if (wild_match(pattern, iter->msg))
 				m_sc3cat(&retval, space, ltoa(line), &rvclue);
 	}

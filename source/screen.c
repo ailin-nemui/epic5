@@ -1,4 +1,4 @@
-/* $EPIC: screen.c,v 1.49 2003/04/24 21:49:25 jnelson Exp $ */
+/* $EPIC: screen.c,v 1.50 2003/05/09 04:29:52 jnelson Exp $ */
 /*
  * screen.c
  *
@@ -224,11 +224,11 @@ struct 	attributes {
 };
 typedef struct attributes Attribute;
 
-const char *all_off (void)
+const unsigned char *all_off (void)
 {
 #ifdef NO_CHEATING
 	Attribute 	a;
-	static	char	retval[6];
+	static	unsigned char	retval[6];
 
 	a->reverse = a->bold = a->blink = a->underline = a->altchar = 0;
 	a->color_fg = a->fg_color = a->color_bg = a->bg_color = 0;
@@ -368,7 +368,7 @@ static void	term_attribute (Attribute *a)
  * Se we have to actually slurp up only those digits that comprise a legal
  * ^C code.
  */
-const u_char *read_color_seq (const u_char *start, void *d, int blinkbold)
+static const u_char *read_color_seq (const u_char *start, void *d, int blinkbold)
 {
 	/* 
 	 * The proper "attribute" color mapping is for each ^C lvalue.
@@ -1484,7 +1484,7 @@ u_char *	denormalize_string (const u_char *str)
 	size_t		maxpos;
 	Attribute 	a;
 	size_t		span;
-	int		pos;
+	size_t		pos;
 
         /* Reset all attributes to zero */
         a.bold = a.underline = a.reverse = a.blink = a.altchar = 0;
@@ -1569,8 +1569,8 @@ const 	u_char	*ptr;
 		*cont_ptr,
 		*cont = empty_string,
 		c,
-		*words,
 		*pos_copy;
+	const char *words;
 	Attribute	a;
 	Attribute	saved_a;
 	u_char	*cont_free = NULL;
@@ -1801,7 +1801,7 @@ const 	u_char	*ptr;
 				int	continued_count = 0;
 
 				if (do_indent && (indent < (max_cols / 3)) &&
-						(strlen(cont_ptr) < indent))
+					((int)strlen(cont_ptr) < indent))
 				{
 					size_t size = indent + 10;;
 
@@ -1979,6 +1979,11 @@ static int 	rite (Window *window, const unsigned char *str)
  * output is performed, but the counting still takes place.  If 'clreol'
  * is 0, then the rest of the line is not cleared after 'str' has been
  * completely output.  If 'output' is 0, then clreol is ignored.
+ *
+ * In some cases, you may want to output in multiple calls, and "all_off"
+ * should be set to 1 when you're all done with the end of the 
+ * If 'output' is 1 and 'all_off' is 1, do a term_all_off() when the output
+ * is done.  If 'all_off' is 0, then don't do an all_off, because
  */
 int 	output_with_count (const unsigned char *str1, int clreol, int output)
 {
@@ -2277,9 +2282,9 @@ void 	add_to_screen (const unsigned char *buffer)
  */
 static void 	add_to_window (Window *window, const unsigned char *str)
 {
-	int	must_free = 0;
 	char *	pend;
 	char *	strval;
+	char *	free_me = NULL;
 
 	if (get_server_redirect(window->server))
 		if (redirect_text(window->server, 
@@ -2305,7 +2310,7 @@ static void 	add_to_window (Window *window, const unsigned char *str)
 					   &args_flag, NULL);
 
 		str = prepend_exp;
-		must_free = 1;
+		free_me = prepend_exp;
 	}
 
 	/* Normalize the line of output */
@@ -2363,8 +2368,8 @@ static void 	add_to_window (Window *window, const unsigned char *str)
 			update_all_status();
 		}
 	}
-	if (must_free)
-		new_free(&str);
+	if (free_me)
+		new_free(&free_me);
 
 	cursor_in_display(window);
 }
@@ -2791,8 +2796,9 @@ Window	*create_additional_screen (void)
 		case 0:
 		{
 			char *opts;
-			char *xterm;
-			char *args[64], **args_ptr = args;
+			const char *xterm;
+			char *args[64];
+			char **args_ptr = args;
 			char geom[32];
 			int i;
 
@@ -2821,9 +2827,9 @@ Window	*create_additional_screen (void)
 			if (screen_type == ST_SCREEN)
 			{
 			    opts = m_strdup(get_string_var(SCREEN_OPTIONS_VAR));
-			    *args_ptr++ = "screen";
+			    *args_ptr++ = m_strdup("screen");
 			    while (opts && *opts)
-				*args_ptr++ = new_next_arg(opts, &opts);
+				*args_ptr++ = m_strdup(new_next_arg(opts, &opts));
 			}
 			else if (screen_type == ST_XTERM)
 			{
@@ -2836,16 +2842,16 @@ Window	*create_additional_screen (void)
 				if (!(xterm = get_string_var(XTERM_VAR)))
 				    xterm = "xterm";
 
-			    *args_ptr++ = xterm;
-			    *args_ptr++ = "-geometry";
-			    *args_ptr++ = geom;
+			    *args_ptr++ = m_strdup(xterm);
+			    *args_ptr++ = m_strdup("-geometry");
+			    *args_ptr++ = m_strdup(geom);
 			    while (opts && *opts)
-				*args_ptr++ = new_next_arg(opts, &opts);
-			    *args_ptr++ = "-e";
+				*args_ptr++ = m_strdup(new_next_arg(opts, &opts));
+			    *args_ptr++ = m_strdup("-e");
 			}
 
-			*args_ptr++ = wserv_path;
-			*args_ptr++ = "localhost";
+			*args_ptr++ = m_strdup(wserv_path);
+			*args_ptr++ = m_strdup("localhost");
 			*args_ptr++ = m_strdup(ltoa((long)port));
 			*args_ptr++ = NULL;
 
@@ -3148,7 +3154,7 @@ void 	do_screens (fd_set *rd, fd_set *wd)
  *
  * XXXX - maybe this belongs in input.c? =)
  */
-void 	add_wait_prompt (char *prompt, void (*func)(), char *data, int type, int echo)
+void 	add_wait_prompt (const char *prompt, void (*func)(char *, char *), char *data, int type, int echo)
 {
 	WaitPrompt **AddLoc,
 		   *New;
@@ -3177,9 +3183,9 @@ void 	add_wait_prompt (char *prompt, void (*func)(), char *data, int type, int e
  * Se we have to actually slurp up only those digits that comprise a legal
  * ^C code.
  */
-const u_char *skip_ctl_c_seq (const u_char *start, int *lhs, int *rhs)
+ssize_t	skip_ctl_c_seq (const u_char *start, int *lhs, int *rhs)
 {
-const 	u_char 	*after = start;
+	const u_char *after = start;
 	u_char	c1, c2;
 	int *	val;
 	int	lv1, rv1;
@@ -3199,7 +3205,7 @@ const 	u_char 	*after = start;
 	 * If we're passed a non ^C code, dont do anything.
 	 */
 	if (*after != '\003')
-		return after;
+		return 0;
 
 	/*
 	 * This is a one-or-two-time-through loop.  We find the  maximum 
@@ -3215,7 +3221,7 @@ const 	u_char 	*after = start;
 		 */
 		after++;
 		if (*after == 0)
-			return after;
+			return (after - start);
 
 		/*
 		 * Check for the very special case of a definite terminator.
@@ -3223,13 +3229,13 @@ const 	u_char 	*after = start;
 		 * this ends the code without starting a new one
 		 */
 		if (after[0] == '-' && after[1] == '1')
-			return after + 2;
+			return (after + 2 - start);
 
 		/*
 		 * Further checks against a lonely old naked ^C.
 		 */
 		if (!isdigit(after[0]) && after[0] != ',')
-			return after;
+			return (after - start);
 
 
 		/*
@@ -3324,6 +3330,6 @@ const 	u_char 	*after = start;
 		break;
 	}
 
-	return after;
+	return (after - start);
 }
 

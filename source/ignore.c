@@ -1,4 +1,4 @@
-/* $EPIC: ignore.c,v 1.6 2003/04/24 21:49:25 jnelson Exp $ */
+/* $EPIC: ignore.c,v 1.7 2003/05/09 04:29:52 jnelson Exp $ */
 /*
  * ignore.c: handles the ingore command for irc 
  *
@@ -78,7 +78,7 @@ static void 	ignore_nickname (const char *nicklist, int type, int flag)
 {
 	Ignore	*new_i;
 	char *	nick;
-	char *	msg;
+	const char *	msg;
 	char *	ptr;
 	char	new_nick[IRCD_BUFFER_SIZE + 1];
 	char	buffer[BIG_BUFFER_SIZE+1];
@@ -267,7 +267,7 @@ static int 	remove_ignore (char *nick)
 	else if ((tmp->high & x) == x)					\
 		strlopencat(buffer, sizeof buffer, space, high, y, high, NULL);
 
-char	*get_ignore_types (Ignore *tmp)
+static char	*get_ignore_types (Ignore *tmp)
 {
 static	char 	buffer[BBS + 1];
 	char	*high = highlight_char;
@@ -295,7 +295,7 @@ static	char 	buffer[BBS + 1];
 
 
 /* ignore_list: shows the entired ignorance list */
-void	ignore_list (char *nick)
+static void	ignore_list (char *nick)
 {
 	Ignore	*tmp;
 	int	len = 0;
@@ -466,9 +466,9 @@ void	set_highlight_char (char *s)
  *        ignore instead of the old nick and userhost patterns.
  * (jfn may 1995)
  */
-int	check_ignore (const char *nick, const char *userhost, int type)
+int	check_ignore (const char *nick, const char *uh, int type)
 {
-	return check_ignore_channel(nick, userhost, NULL, type);
+	return check_ignore_channel(nick, uh, NULL, type);
 }
 
 /*
@@ -476,7 +476,7 @@ int	check_ignore (const char *nick, const char *userhost, int type)
  * i was not inspired with a better name.  This function is simply the
  * old 'check_ignore', only it has an additional check for a channel target.
  */
-int	check_ignore_channel (const char *nick, const char *userhost, const char *channel, int type)
+int	check_ignore_channel (const char *nick, const char *uh, const char *channel, int type)
 {
 	char 	nuh[IRCD_BUFFER_SIZE];
 	Ignore	*tmp;
@@ -490,7 +490,7 @@ int	check_ignore_channel (const char *nick, const char *userhost, const char *ch
 		return DONT_IGNORE;
 
 	snprintf(nuh, IRCD_BUFFER_SIZE - 1, "%s!%s", nick ? nick : star,
-						userhost ? userhost : star);
+						uh ? uh : star);
 
 	for (tmp = ignored_nicks; tmp; tmp = tmp->next)
 	{
@@ -591,7 +591,7 @@ char 	*get_ignores_by_pattern (char *patterns, int covered)
 	return retval ? retval : m_strdup(empty_string);
 }
 
-int	get_type_by_desc (char *type, int *do_mask, int *dont_mask)
+static int	get_type_by_desc (char *type, int *do_mask, int *dont_mask)
 {
 	char	*l1, *l2;
 	int	len;

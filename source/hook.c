@@ -1,4 +1,4 @@
-/* $EPIC: hook.c,v 1.16 2003/04/24 21:49:25 jnelson Exp $ */
+/* $EPIC: hook.c,v 1.17 2003/05/09 04:29:52 jnelson Exp $ */
 /*
  * hook.c: Does those naughty hook functions. 
  *
@@ -60,7 +60,7 @@ typedef enum NoiseEnum {
 	NOISY
 } Noise;
 
-static	char	*noise_level[] = { "UNKNOWN", "SILENT", "QUIET", "NORMAL", "NOISY" };
+static	const char	*noise_level[] = { "UNKNOWN", "SILENT", "QUIET", "NORMAL", "NOISY" };
 
 #define HF_NORECURSE	0x0001
 
@@ -106,7 +106,7 @@ NumericList *numeric_list 	= NULL;
 /* A list of all the hook functions available */
 struct
 {
-	char	*name;			/* The name of the hook type */
+	const char *name;		/* The name of the hook type */
 	Hook	*list;			/* The list of events for type */
 	int	params;			/* Number of parameters expected */
 	int	mark;			/* Hook type is currently active */
@@ -591,7 +591,7 @@ void	unload_on_hooks (char *filename)
 
 /* * * * * * SHOWING A HOOK * * * * * * */
 /* show_hook shows a single hook */
-static void 	show_hook (Hook *list, char *name)
+static void 	show_hook (Hook *list, const char *name)
 {
 	say("[%s] On %s from %c%s%c do %s [%s] <%d>",
 	    list->filename[0] ? list->filename : "*",
@@ -669,12 +669,12 @@ static int show_list (int which)
  * the value of the noisy field of the found entry, or -1 if not found. 
  */
 /* huh-huh.. this sucks.. im going to re-write it so that it works */
-int 	do_hook (int which, char *format, ...)
+int 	do_hook (int which, const char *format, ...)
 {
 	Hook		*tmp, 
 			**list;
-	char		buffer		[BIG_BUFFER_SIZE * 10 + 1],
-			*name 		= (char *) 0;
+	char		buffer		[BIG_BUFFER_SIZE * 10 + 1];
+	const char	*name 		= (char *) 0;
 	int		retval 		= DONT_SUPPRESS_DEFAULT;
 	unsigned	display		= window_display;
 	int		i;
@@ -1019,7 +1019,7 @@ BUILT_IN_COMMAND(oncmd)
 	Noise	noisy		= NORMAL;
 	int	not		= 0,
 		sernum		= 0,
-		remove		= 0,
+		rem		= 0,
 		which		= INVALID_HOOKNUM;
 	int	flex		= 0;
 	char	type;
@@ -1133,7 +1133,7 @@ BUILT_IN_COMMAND(oncmd)
 		switch (*args)
 		{
 			case '-':
-				remove = 1;
+				rem = 1;
 				args++;
 				break;
 			case '^':
@@ -1170,7 +1170,7 @@ BUILT_IN_COMMAND(oncmd)
 			/*
 			 * If we're doing a removal, do the deed.
 			 */
-			if (remove)
+			if (rem)
 			{
 				remove_hook(which, nick, sernum, 0);
 				new_free(&nick);
@@ -1251,7 +1251,7 @@ BUILT_IN_COMMAND(oncmd)
 			/*
 			 * if its a removal, do the deed
 			 */
-			if (remove)
+			if (rem)
 			{
 				remove_hook(which, (char *) 0, sernum, 0);
 				return;
@@ -1308,9 +1308,9 @@ BUILT_IN_COMMAND(oncmd)
 
 
 /* * * * * * * * * * SAVING A HOOK * * * * * * * * * * */
-static	void	write_hook (FILE *fp, Hook *hook, char *name)
+static	void	write_hook (FILE *fp, Hook *hook, const char *name)
 {
-	char	*stuff = (char *) 0;
+	const char	*stuff = (char *) 0;
 	char	flexi = '"';
 
 	if (hook->flexible)

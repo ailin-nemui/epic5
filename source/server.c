@@ -1,4 +1,4 @@
-/* $EPIC: server.c,v 1.99 2003/05/01 12:04:23 crazyed Exp $ */
+/* $EPIC: server.c,v 1.100 2003/05/09 04:29:52 jnelson Exp $ */
 /*
  * server.c:  Things dealing with that wacky program we call ircd.
  *
@@ -72,7 +72,7 @@
  * This is mirrored in the "operator" member, for historical reasons.  This is
  * a kludge and should be changed.
  */
-const 	char *	umodes = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
+const 	char *	default_umodes = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
 static	char *	do_umode (int du_index);
 	void 	reset_nickname (int);
 	void	clear_reconnect_counts (void);
@@ -201,7 +201,7 @@ void 	add_to_server_list (const char *server, int port, const char *password, co
 		    else
 			set_server_try_ssl(from_server, FALSE);
 		}
-		malloc_strcpy(&s->umodes, umodes);
+		malloc_strcpy(&s->umodes, default_umodes);
 
 		make_notify_list(from_server);
 		do_umode(from_server);
@@ -462,6 +462,7 @@ void	parse_server_info (char **host, char **port, char **password, char **nick, 
 {
 	char *ptr;
 	char *name = *host;
+	ssize_t span;
 
 	*host = *port = *password = *nick = *server_type = NULL;
 
@@ -473,8 +474,11 @@ void	parse_server_info (char **host, char **port, char **password, char **nick, 
 		else if (*ptr == '[')
 		{
 		    *host = ptr + 1;
-		    if ((ptr = MatchingBracket(ptr + 1, '[', ']')))
+		    if ((span = MatchingBracket(ptr + 1, '[', ']')) >= 0)
+		    {
+			ptr = ptr + 1 + span;
 			*ptr++ = 0;
+		    }
 		    else
 			break;
 		}
@@ -877,7 +881,7 @@ void	do_server (fd_set *rd, fd_set *wd)
 
 	for (i = 0; i < number_of_servers; i++)
 	{
-		int	junk;
+		ssize_t	junk;
 		char 	*bufptr = buffer;
 
 		if (!(s = get_server(i)))
@@ -1841,7 +1845,7 @@ const char	*get_server_cipher (int refnum)
 
 
 /* CONNECTION/REGISTRATION STATUS */
-void	register_server (int refnum, const char *nickname)
+void	register_server (int refnum, const char *nick)
 {
 	Server *	s;
 
@@ -1918,7 +1922,7 @@ void	register_server (int refnum, const char *nickname)
 			(send_umode && *send_umode) ? send_umode : 
 			(LocalHostName ? LocalHostName : hostname), 
 			username, (*realname ? realname : space));
-	change_server_nickname(refnum, nickname);
+	change_server_nickname(refnum, nick);
 }
 
 /*
@@ -1940,7 +1944,7 @@ void 	password_sendline (char *data, char *line)
 	reconnect(new_server, 1);
 }
 
-char *	get_server_password (int refnum)
+static const char *	get_server_password (int refnum)
 {
 	Server *s;
 
@@ -2057,7 +2061,7 @@ int	did_server_rejoin_channels (int refnum)
 BUILT_IN_COMMAND(disconnectcmd)
 {
 	char	*server;
-	char	*message;
+	const char *message;
 	int	i;
 
 	if (!(server = next_arg(args, &args)))
@@ -2127,7 +2131,7 @@ int	server_reconnects_to (int oldref, int newref)
 }
 
 /* PORTS */
-void    set_server_port (int refnum, int port)
+static void    set_server_port (int refnum, int port)
 {
 	Server *s;
 
@@ -2187,7 +2191,7 @@ SS	get_server_uh_addr (int refnum)
 }
 
 /* USERHOST */
-void	set_server_userhost (int refnum, const char *userhost)
+static void	set_server_userhost (int refnum, const char *uh)
 {
 	Server *s;
 	char *host;
@@ -2195,14 +2199,14 @@ void	set_server_userhost (int refnum, const char *userhost)
 	if (!(s = get_server(refnum)))
 		return;
 
-	if (!(host = strchr(userhost, '@')))
+	if (!(host = strchr(uh, '@')))
 	{
 		yell("Cannot set your userhost to [%s] because it does not"
-		      "contain a @ character!", userhost);
+		      "contain a @ character!", uh);
 		return;
 	}
 
-	malloc_strcpy(&s->userhost, userhost);
+	malloc_strcpy(&s->userhost, uh);
 
 	/* Ack!  Oh well, it's for DCC. */
 	FAMILY(s->uh_addr) = AF_INET;
@@ -2402,7 +2406,7 @@ const	char	*nicklen_005;
 	nicklen = nicklen_005 ? atol(nicklen_005) : 9;
 	nicklen = nicklen >= 0 ? nicklen : 9;
 
-	if (strlen(l_nickname) < nicklen)
+	if (strlen(l_nickname) < (size_t)nicklen)
 		strlcat(l_nickname, "_", sizeof l_nickname);
 
 	/* 
@@ -2420,7 +2424,7 @@ const	char	*nicklen_005;
 	/*
 	 * This is the degenerate case
 	 */
-	if (strspn(l_nickname, "_") >= nicklen)
+	if (strspn(l_nickname, "_") >= (size_t)nicklen)
 	{
 		reset_nickname(refnum);
 		return;
@@ -2833,7 +2837,7 @@ void make_005 (int refnum)
 	s->a005.hash = HASH_SENSITIVE; /* One way to deal with rfc2812 */
 }
 
-void destroy_a_005 (A005_item *item)
+static void destroy_a_005 (A005_item *item)
 {
 	if (item) {
 		new_free(&((*item).name));
@@ -2857,9 +2861,9 @@ void destroy_005 (int refnum)
 	new_free(&s->a005.list);
 }
 
-GET_ARRAY_NAMES_FUNCTION(get_server_005s, (__FROMSERV->a005))
+static GET_ARRAY_NAMES_FUNCTION(get_server_005s, (__FROMSERV->a005))
 
-const char* get_server_005 (int refnum, char *setting)
+const char* get_server_005 (int refnum, const char *setting)
 {
 	Server *s;
 	A005_item *item;
@@ -2941,7 +2945,6 @@ char 	*serverctl 	(char *input)
 
 		GET_STR_ARG(server, input);
 		if (is_number(server)) {
-			int refnum;
 			refnum = parse_server_index(server, 1);
 			if (refnum != NOSERV)
 				RETURN_STR(server);
@@ -3009,11 +3012,12 @@ char 	*serverctl 	(char *input)
 			RETURN_STR(ret);
 		} else if (!my_strnicmp(listc, "005s", len)) {
 			int ofs = from_server;
-			char *ret;
+			char *	retval;
+
 			from_server = refnum;
-			ret = get_server_005s(input);
+			retval = get_server_005s(input);
 			from_server = ofs;
-			RETURN_MSTR(ret);
+			RETURN_MSTR(retval);
 		}
 	} else if (!my_strnicmp(listc, "SET", len)) {
 		GET_INT_ARG(refnum, input);

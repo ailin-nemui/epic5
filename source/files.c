@@ -1,4 +1,4 @@
-/* $EPIC: files.c,v 1.18 2003/04/24 21:49:25 jnelson Exp $ */
+/* $EPIC: files.c,v 1.19 2003/05/09 04:29:52 jnelson Exp $ */
 /*
  * files.c -- allows you to read/write files. Wow.
  *
@@ -68,20 +68,20 @@ typedef struct FILE___ File;
 
 static File *FtopEntry = (File *) 0;
 
-File *new_file (void)
+static File *new_file (void)
 {
 	File *tmp = FtopEntry;
-	File *tmpfile = (File *)new_malloc(sizeof(File));
+	File *tmp_file = (File *)new_malloc(sizeof(File));
 
 	if (FtopEntry == (File *) 0)
-		FtopEntry = tmpfile;
+		FtopEntry = tmp_file;
 	else
 	{
 		while (tmp->next)
 			tmp = tmp->next;
-		tmp->next = tmpfile;
+		tmp->next = tmp_file;
 	}
-	return tmpfile;
+	return tmp_file;
 }
 
 static void remove_file (File *file)

@@ -25,9 +25,9 @@ struct Binding {
 };
 extern struct Binding *binding_list; /* list head for keybindings */
 
-struct Binding	*add_binding	(char *, BindFunction, char *);
+struct Binding	*add_binding	(const char *, BindFunction, char *);
 void		remove_binding	(char *);
-struct Binding *find_binding	(char *);
+struct Binding *find_binding	(const char *);
 void		init_binds	(void);
 
 #define KEYMAP_SIZE 256
@@ -58,4 +58,6 @@ void		save_bindings 	(FILE *, int);
 void		remove_bindings	(void);
 void		unload_bindings	(const char *);
 void		do_stack_bind	(int, char *);
+char *		bindctl		(char *);
+
 #endif /* __keys_h_ */

@@ -33,7 +33,7 @@ extern	int	in_ctcp_flag;
 	char *	do_ctcp 	(const char *, const char *, char *);
 	char *	do_notice_ctcp 	(const char *, const char *, char *);
 	int	in_ctcp 	(void);
-	void	send_ctcp 	(int, const char *, int, char *, ...) /*__A(4)*/;
+	void	send_ctcp 	(int, const char *, int, const char *, ...) /*__A(4)*/;
 	int	get_ctcp_val 	(char *);
 
 #endif /* _CTCP_H_ */

@@ -1,4 +1,4 @@
-/* $EPIC: logfiles.c,v 1.16 2003/03/23 19:44:17 jnelson Exp $ */
+/* $EPIC: logfiles.c,v 1.17 2003/05/09 04:29:52 jnelson Exp $ */
 /*
  * logfiles.c - General purpose log files
  *
@@ -47,8 +47,8 @@
 #define LOG_WINDOWS 1
 #define LOG_SERVERS 2
 
-static char *onoff[] = { "OFF", "ON" };
-static char *logtype[] = { "TARGETS", "WINDOWS", "SERVERS" };
+static const char *onoff[] = { "OFF", "ON" };
+static const char *logtype[] = { "TARGETS", "WINDOWS", "SERVERS" };
 
 struct Logfile {
 	struct Logfile *next;
@@ -75,7 +75,7 @@ typedef struct Logfile Logfile;
 Logfile *logfiles = NULL;
 int	logref = 0;
 
-Logfile *	new_logfile (void)
+static Logfile *	new_logfile (void)
 {
 	Logfile *log;
 	int	i;
@@ -102,7 +102,7 @@ Logfile *	new_logfile (void)
 	return log;
 }
 
-void	delete_logfile (Logfile *log)
+static void	delete_logfile (Logfile *log)
 {
 	Logfile *prev;
 	WNickList *next;
@@ -134,7 +134,7 @@ void	delete_logfile (Logfile *log)
 	new_free(&log->mangle_desc);
 }
 
-Logfile *	get_log_by_desc (const char *desc)
+static Logfile *	get_log_by_desc (const char *desc)
 {
 	Logfile *log;
 
@@ -156,7 +156,7 @@ Logfile *	get_log_by_desc (const char *desc)
 	return NULL;
 }
 
-int	is_logfile_name_unique (const char *desc)
+static int	is_logfile_name_unique (const char *desc)
 {
 	Logfile *log;
 
@@ -166,7 +166,7 @@ int	is_logfile_name_unique (const char *desc)
 	return 1;
 }
 
-void	clean_log_targets (Logfile *log)
+static void	clean_log_targets (Logfile *log)
 {
 	int	i;
 	WNickList *next;
@@ -183,7 +183,7 @@ void	clean_log_targets (Logfile *log)
 	}
 }
 
-char *logfile_get_targets (Logfile *log)
+static char *logfile_get_targets (Logfile *log)
 {
 	WNickList *tmp;
 	char *nicks = NULL;
@@ -615,7 +615,7 @@ static Logfile *	logfile_type (Logfile *log, char **args)
 }
 
 typedef struct logfile_ops_T {
-	char *		command;
+	const char *	command;
 	logfile_func	func;
 } logfile_ops;
 

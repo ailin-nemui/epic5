@@ -1,4 +1,4 @@
-/* $EPIC: list.c,v 1.3 2002/07/17 22:52:52 jnelson Exp $ */
+/* $EPIC: list.c,v 1.4 2003/05/09 04:29:52 jnelson Exp $ */
 /*
  * list.c: some generic linked list managing stuff 
  *
@@ -37,17 +37,17 @@
 #include "list.h"
 #include "ircaux.h"
 
-__inline__ int	add_list_strcmp (List *item1, List *item2)
+static __inline__ int	add_list_strcmp (List *item1, List *item2)
 {
 	return my_stricmp(item1->name, item2->name);
 }
 
-__inline__ int	list_strcmp (List *item1, const char *str)
+static __inline__ int	list_strcmp (List *item1, const char *str)
 {
 	return my_stricmp(item1->name, str);
 }
 
-__inline__ int	list_match (List *item1, const char *str)
+static __inline__ int	list_match (List *item1, const char *str)
 {
 	return wild_match(item1->name, str);
 }
@@ -151,11 +151,11 @@ List	*remove_from_list (List **list, const char *name)
  * find_in_list.  I did this cause it fit better with some alread existing
  * code 
  */
-List 	*list_lookup (List **list, const char *name, int wild, int remove)
+List 	*list_lookup (List **list, const char *name, int wild, int rem)
 {
 	List	*tmp;
 
-	if (remove)
+	if (rem)
 		tmp = remove_from_list(list, name);
 	else
 		tmp = find_in_list(list, name, wild);

@@ -1,4 +1,4 @@
-/* $EPIC: names.c,v 1.41 2003/04/24 21:49:25 jnelson Exp $ */
+/* $EPIC: names.c,v 1.42 2003/05/09 04:29:52 jnelson Exp $ */
 /*
  * names.c: This here is used to maintain a list of all the people currently
  * on your channel.  Seems to work 
@@ -97,10 +97,10 @@ struct	channel_stru *	prev;		/* pointer to previous channel */
 
 
 /*
- * The variable "mode_str" must correspond in order to the modes defined
- * here, or all heck will break loose.  You have been warned.
+ * The variable "defined_mode_str" must correspond in order to the modes 
+ * defined here, or all heck will break loose.  You have been warned.
  */
-static	char	mode_str[] = "aciklmnprstzDMOR";
+static	char	defined_mode_str[] = "aciklmnprstzDMOR";
 
 const int	MODE_ANONYMOUS	= 1 << 0;	/* av2.9 */
 const int	MODE_C		= 1 << 1;	/* erf/TS4 */
@@ -803,10 +803,10 @@ static char *	get_cmode (Channel *chan)
 	chan->i_mode = chan->mode;
 
 	local_buffer[0] = 0;
-	while (chan->mode >= (1 << mode_pos))
+	while (chan->mode >= (1UL << mode_pos))
 	{
-		if (chan->mode & (1 << mode_pos))
-			local_buffer[str_pos++] = mode_str[mode_pos];
+		if (chan->mode & (1UL << mode_pos))
+			local_buffer[str_pos++] = defined_mode_str[mode_pos];
 		mode_pos++;
 	}
 	local_buffer[str_pos] = 0;
@@ -1760,7 +1760,8 @@ void	reassign_window_channels (int window)
 		tmp->winref = -1;
 		while (traverse_all_windows(&w))
 		{
-			if (w->server == tmp->server && w->refnum != window)
+			if (w->server == tmp->server && 
+			    (int)w->refnum != window)
 			{
 				tmp->winref = w->refnum;
 				break;

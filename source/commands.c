@@ -1,4 +1,4 @@
-/* $EPIC: commands.c,v 1.62 2003/05/02 20:22:25 jnelson Exp $ */
+/* $EPIC: commands.c,v 1.63 2003/05/09 04:29:52 jnelson Exp $ */
 /*
  * commands.c -- Stuff needed to execute commands in ircII.
  *		 Includes the bulk of the built in commands for ircII.
@@ -115,7 +115,7 @@ static	void	away 		(const char *, char *, const char *);
 static	void	beepcmd 	(const char *, char *, const char *);
 static	void	blesscmd	(const char *, char *, const char *);
 static	void	breakcmd	(const char *, char *, const char *);
-static	void	comment 	(const char *, char *, const char *);
+static	void	commentcmd 	(const char *, char *, const char *);
 static	void	continuecmd	(const char *, char *, const char *);
 static	void	ctcp 		(const char *, char *, const char *);
 static	void	deop 		(const char *, char *, const char *);
@@ -187,8 +187,8 @@ typedef void (*CmdFunc) (const char *, char *, const char *);
 /* IrcCommand: structure for each command in the command table */
 typedef	struct
 {
-	char *		name;		/* what the user types */
-	char *		server_func;	/* what gets sent to the server */
+	const char *	name;		/* what the user types */
+	const char *	server_func;	/* what gets sent to the server */
 	CmdFunc 	func;		/* function that is the command */
 	unsigned	flags;
 }	IrcCommand;
@@ -202,8 +202,8 @@ typedef	struct
 static	IrcCommand irc_command[] =
 {
 	{ "",		empty_string,	do_send_text,		0 },
-	{ "#",		NULL,		comment, 		0 },
-	{ ":",		NULL,		comment, 		0 },
+	{ "#",		NULL,		commentcmd, 		0 },
+	{ ":",		NULL,		commentcmd, 		0 },
         { "ABORT",      NULL,           abortcmd,               0 },
 	{ "ADMIN",	"ADMIN",	send_comm, 		0 },
 	{ "ALIAS",	zero,		aliascmd,		0 }, /* alias.c */
@@ -219,12 +219,12 @@ static	IrcCommand irc_command[] =
 	{ "CD",		NULL,		cd,			0 },
 	{ "CHANNEL",	"JOIN",		e_channel,		0 },
 	{ "CLEAR",	"CLEAR",	e_clear,		0 },
-	{ "COMMENT",	NULL,		comment,		0 },
+	{ "COMMENT",	NULL,		commentcmd,		0 },
 	{ "CONNECT",	"CONNECT",	send_comm,		0 },
 	{ "CONTINUE",	NULL,		continuecmd,		0 },
 	{ "CTCP",	NULL,		ctcp,			0 },
 	{ "DATE",	"TIME",		send_comm,		0 },
-	{ "DCC",	NULL,		dcc,			0 }, /* dcc.c */
+	{ "DCC",	NULL,		dcc_cmd,		0 }, /* dcc.c */
 	{ "DEFER",	NULL,		defercmd,		0 },
 	{ "DEOP",	NULL,		deop,			0 },
 	{ "DESCRIBE",	NULL,		describe,		0 },
@@ -357,7 +357,7 @@ static	IrcCommand irc_command[] =
 	{ "XEVAL",	"XEVAL",	xevalcmd,		0 },
 	{ "XQUOTE",	"XQUOTE",	quotecmd,		0 },
 	{ "XTYPE",	NULL,		xtypecmd,		0 },
-	{ NULL,		NULL,		comment,		0 }
+	{ NULL,		NULL,		commentcmd,		0 }
 };
 
 /* number of entries in irc_command array */
@@ -370,7 +370,7 @@ static	IrcCommand irc_command[] =
 static void 	really_save (const char *, int, int, int);
 BUILT_IN_COMMAND(abortcmd)
 {
-	char	*filename = next_arg(args, &args);
+	const char *filename = next_arg(args, &args);
 	int	flags = SFLAG_ALL;
 
         filename = filename ? filename : "irc.aborted";
@@ -504,7 +504,7 @@ BUILT_IN_COMMAND(e_clear)
 }
 
 /* comment: does the /COMMENT command, useful in .ircrc */
-BUILT_IN_COMMAND(comment)
+BUILT_IN_COMMAND(commentcmd)
 {
 	/* nothing to do... */
 }
@@ -737,7 +737,7 @@ BUILT_IN_COMMAND(e_pause)
 	 * I use comment here simply becuase its not going to mess
 	 * with the arguments.
 	 */
-	add_timer(0, "", seconds, 1, (int (*)(void *))comment, NULL, NULL, current_window->refnum);
+	add_timer(0, "", seconds, 1, (int (*)(void *))commentcmd, NULL, NULL, current_window->refnum);
 	while (time_diff(get_time(NULL), start) > 0)
 		io("e_pause");
 }
@@ -786,7 +786,7 @@ BUILT_IN_COMMAND(e_privmsg)
 BUILT_IN_COMMAND(e_quit)
 {
 	char *	sub_format;
-	char *	reason;
+	const char *	reason;
 
 	if (args && *args)
 		reason = args;
@@ -1277,7 +1277,7 @@ BUILT_IN_COMMAND(e_hostname)
 {
 	if (args && *args)
 	{
-		const char *s;
+		char *s;
 
 		if (!strcmp(args, "-"))
 			args = NULL;
@@ -1449,7 +1449,7 @@ struct load_info
 {
 	char 	*filename;
 	char	*package;
-	char	*loader;
+	const char	*loader;
 	int	package_set_here;
 	int	line;
 	int	start_line;
@@ -1536,7 +1536,7 @@ BUILT_IN_COMMAND(load)
 {
 	char *	filename;
 	char *	sargs;
-	char *	irc_path;
+	char *	use_path;
 	char *	expanded;
 	FILE *	fp;
 	int	display;
@@ -1599,7 +1599,7 @@ BUILT_IN_COMMAND(load)
 		sargs = NULL;
 
 	    /* Locate the file */
-	    if (!(irc_path = get_string_var(LOAD_PATH_VAR)))
+	    if (!(use_path = get_string_var(LOAD_PATH_VAR)))
 	    {
 		say("LOAD_PATH has not been set");
 		continue;
@@ -1610,7 +1610,7 @@ BUILT_IN_COMMAND(load)
 	     * uzfopen() also frees 'expanded' for us on error.
 	     */
 	    expanded = m_strdup(filename);
-	    if (!(fp = uzfopen(&expanded, irc_path, 1)))
+	    if (!(fp = uzfopen(&expanded, use_path, 1)))
 		continue;
 
 	    load_level[load_depth].filename = expanded;
@@ -2278,7 +2278,7 @@ BUILT_IN_COMMAND(reconnect_cmd)
 		return;
 	}
 	if (!args || !*args)
-		args = "Reconnecting";
+		args = LOCAL_COPY("Reconnecting");
 
         say("Reconnecting to server %d", from_server);
 	set_server_quit_message(from_server, args);
@@ -2347,7 +2347,7 @@ BUILT_IN_COMMAND(redirect)
 static void really_save (const char *file, int flags, int save_all, int append)
 {
 	FILE	*fp;
-static	char *	mode[] = {"w", "a"};
+static	const char *	mode[] = {"w", "a"};
 	Filename realfile;
 
 	if (normalize_filename(file, realfile))
@@ -2596,16 +2596,16 @@ BUILT_IN_COMMAND(shift_cmd)
 BUILT_IN_COMMAND(sleepcmd)
 {
 	char	*arg;
-	Timeval	pause;
+	Timeval	interval;
 	float	nms;
 	time_t	sec;
 
 	if ((arg = next_arg(args, &args)) != NULL)
 	{
 		nms = atof(arg);
-		pause.tv_sec = sec = (int)nms;
-		pause.tv_usec = (nms-sec) * 1000000;
-		select(0, NULL, NULL, NULL, &pause);
+		interval.tv_sec = sec = (int)nms;
+		interval.tv_usec = (nms-sec) * 1000000;
+		select(0, NULL, NULL, NULL, &interval);
 	}
 	else
 		say("Usage: SLEEP <seconds>");
@@ -2675,15 +2675,15 @@ BUILT_IN_COMMAND(unshift_cmd)
 BUILT_IN_COMMAND(usleepcmd)
 {
 	char *	arg;
-	Timeval	pause;
+	Timeval	interval;
 	time_t	nms;
 
 	if ((arg = next_arg(args, &args)))
 	{
 		nms = (time_t)my_atol(arg);
-		pause.tv_sec = nms / 1000000;
-		pause.tv_usec = nms % 1000000;
-		select(0, NULL, NULL, NULL, &pause);
+		interval.tv_sec = nms / 1000000;
+		interval.tv_usec = nms % 1000000;
+		select(0, NULL, NULL, NULL, &interval);
 	}
 	else
 		say("Usage: USLEEP <usec>");
@@ -2896,8 +2896,8 @@ struct target_type
 	char *nick_list;
 	const char *message;
 	int  hook_type;
-	char *command;
-	char *format;
+	const char *command;
+	const char *format;
 	int  level;
 };
 
@@ -3161,11 +3161,11 @@ void 	command_completion (char unused, char *not_used)
 	char		**aliases = NULL;
 	char		*line = NULL,
 			*com,
-			*cmdchars,
 			*rest,
 			firstcmdchar[2] = "/";
 	IrcCommand	*command;
 	char		buffer[BIG_BUFFER_SIZE + 1];
+	const char	*cmdchars;
 
 	malloc_strcpy(&line, get_input());
 	if (((com = next_arg(line, &rest)) != NULL) && *com)
@@ -3311,12 +3311,13 @@ BUILT_IN_COMMAND(e_call)
  */
 void	parse_line (const char *name, const char *org_line, const char *args, int hist_flag, int append_flag)
 {
-	char	*line = NULL,
-		*stuff,
+	char	*line = NULL;
+	char 	*stuff,
 		*s,
 		*t;
 	int	args_flag = 0;
 	int	die = 0;
+	ssize_t	span;
 
 	/*
 	 * If this is an atomic scope, then we create a new local variable
@@ -3435,9 +3436,14 @@ void	parse_line (const char *name, const char *org_line, const char *args, int h
 		 *	/alias m msg
 		 * to work as expected.
 		 */
-		stuff = expand_alias(line, args, &args_flag, &line);
-		if (!line && append_flag && !args_flag && args && *args)
+		stuff = expand_alias(line, args, &args_flag, &span);
+		if (span < 0 && append_flag && !args_flag && args && *args)
 			m_3cat(&stuff, " ", args);
+
+		if (span < 0)
+			line = NULL;
+		else
+			line += span;
 
 		/*
 		 * Now we run the command.
@@ -3547,7 +3553,7 @@ int	parse_command (const char *line, int hist_flag, const char *sub_args)
 static	unsigned 	level = 0;
 	unsigned 	display;
 	int		old_display_var;
-	char *		cmdchars;
+	const char *	cmdchars;
 	const char *	com;
 	int		args_flag,
 			add_to_hist,
@@ -3622,7 +3628,6 @@ static	unsigned 	level = 0;
 		/* This kludge fixes a memory leak */
 		char *		tmp;
 		char *		my_line = LOCAL_COPY(line);
-		char *		l_ptr;
 
 		/*
 		 * This new "feature" masks a weakness in the underlying
@@ -3635,8 +3640,10 @@ static	unsigned 	level = 0;
 		 */
 		if (*com == '(')
 		{
-			if ((l_ptr = MatchingBracket(my_line + 1, '(', ')')))
-				*l_ptr++ = 0;
+		    ssize_t	span;
+
+		    if ((span = MatchingBracket(my_line + 1, '(', ')')) >= 0)
+			my_line[1 + span] = 0;
 		}
 
 		if ((tmp = parse_inline(my_line + 1, sub_args, &args_flag)))

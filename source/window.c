@@ -1,4 +1,4 @@
-/* $EPIC: window.c,v 1.60 2003/04/24 21:49:25 jnelson Exp $ */
+/* $EPIC: window.c,v 1.61 2003/05/09 04:29:52 jnelson Exp $ */
 /*
  * window.c: Handles the organzation of the logical viewports (``windows'')
  * for irc.  This includes keeping track of what windows are open, where they
@@ -57,7 +57,7 @@
 #include "commands.h"
 #include "exec.h"
 
-static char *onoff[] = { "OFF", "ON" };
+static const char *onoff[] = { "OFF", "ON" };
 
 /* Resize relatively or absolutely? */
 #define RESIZE_REL 1
@@ -1950,7 +1950,7 @@ void	change_window_server (int old_server, int new_server)
  * windows_connected_to_server: This returns the number of windows that
  * are actively connected to a server.  This is used by /window server
  */
-int	windows_connected_to_server (int server)
+static int	windows_connected_to_server (int server)
 {
 	Window	*tmp = NULL;
 	int	count = 0;
@@ -2313,7 +2313,7 @@ void 	set_scroll_lines (int size)
  */
 void 	set_continued_line (char *value)
 {
-	if (value && (strlen(value) > (current_term->TI_cols / 2)))
+	if (value && (strlen(value) > (size_t)(current_term->TI_cols / 2)))
 		value[current_term->TI_cols / 2] = '\0';
 }
 
@@ -2421,7 +2421,7 @@ int     get_geom_by_winref (const char *desc, int *co, int *li)
  * get_window: this parses out any window (visible or not) and returns a
  * pointer to it 
  */
-static Window *get_window (char *name, char **args)
+static Window *get_window (const char *name, char **args)
 {
 	char	*arg;
 	Window	*win;
@@ -2444,7 +2444,7 @@ static Window *get_window (char *name, char **args)
  * indicating the top of the invisible window list (and thus the last window
  * made invisible) 
  */
-static Window *get_invisible_window (char *name, char **args)
+static Window *get_invisible_window (const char *name, char **args)
 {
 	char	*arg;
 	Window	*tmp;
@@ -2479,7 +2479,7 @@ static Window *get_invisible_window (char *name, char **args)
 
 
 /* get_number: parses out an integer number and returns it */
-static int 	get_number (char *name, char **args)
+static int 	get_number (const char *name, char **args)
 {
 	char	*arg;
 
@@ -2495,7 +2495,7 @@ static int 	get_number (char *name, char **args)
  * accordingly.  Returns 0 if all went well, -1 if a bogus or missing value
  * was specified 
  */
-static int 	get_boolean (char *name, char **args, int *var)
+static int 	get_boolean (const char *name, char **args, int *var)
 {
 	char	*arg;
 	int	newval;
@@ -2725,7 +2725,7 @@ static Window *window_bind (Window *window, char **args)
  * connection to whatever channel it is in.  You can only join a channel if
  * that channel is not bound to a different window.
  */
-Window *window_channel (Window *window, char **args)
+static Window *window_channel (Window *window, char **args)
 {
 	char 	*sarg, 
 		*arg,
@@ -3313,7 +3313,7 @@ static Window *window_list (Window *window, char **args)
 	tmp = NULL;
 	while (traverse_all_windows(&tmp))
 	{
-		if (tmp->name && (strlen(tmp->name) > len))
+		if (tmp->name && (strlen(tmp->name) > (size_t)len))
 			len = strlen(tmp->name);
 	}
 
@@ -4442,7 +4442,7 @@ static Window *window_unbind (Window *window, char **args)
 typedef Window *(*window_func) (Window *, char **args);
 
 typedef struct window_ops_T {
-	char 		*command;
+	const char 	*command;
 	window_func 	func;
 } window_ops;
 
@@ -5063,13 +5063,13 @@ static void 	set_screens_current_window (Screen *screen, Window *window)
 
 void	make_window_current_by_refnum (int refnum)
 {
-	Window	*new_window;
+	Window	*new_win;
 
 	if (refnum == -1)
 		return;
 
-	if ((new_window = get_window_by_refnum(refnum)))
-		make_window_current(new_window);
+	if ((new_win = get_window_by_refnum(refnum)))
+		make_window_current(new_win);
 	else
 		say("Window [%d] doesnt exist any more.  Punting.", refnum);
 }
@@ -5084,7 +5084,7 @@ void 	make_window_current (Window *window)
 {
 	Window *old_current_window = current_window;
 	int	old_screen, old_window;
-	int	new_screen, new_window;
+	int	new_screen, new_winref;
 
 	if (!window)
 		current_window = last_input_screen->current_window;
@@ -5105,7 +5105,7 @@ void 	make_window_current (Window *window)
 		old_screen = old_current_window->screen->screennum,
 		old_window = old_current_window->refnum;
 
-	new_window = current_window->refnum;
+	new_winref = current_window->refnum;
 	if (!current_window->screen)
 		new_screen = -1;
 	else
@@ -5113,7 +5113,7 @@ void 	make_window_current (Window *window)
 
 	do_hook(SWITCH_WINDOWS_LIST, "%d %d %d %d",
 		old_screen, old_window,
-		new_screen, new_window);
+		new_screen, new_winref);
 }
 
 /**************************************************************************/
@@ -5125,13 +5125,13 @@ int	change_line (Window *window, const unsigned char *str)
 {
 	Display *my_line;
 	int 	cnt;
-	int	change_line;
+	int	chg_line;
 
-	change_line = window->change_line;
+	chg_line = window->change_line;
 	window->change_line = -1;
 
 	/* Must have been asked to change a line */
-	if (change_line == -1)
+	if (chg_line == -1)
 		panic("This is not a scratch window.");
 
 	/* Outputting to a 0 size window is a no-op. */
@@ -5139,24 +5139,24 @@ int	change_line (Window *window, const unsigned char *str)
 		return 0;
 
 	/* Must be within the bounds of the size of the window */
-	if (change_line >= window->display_size)
+	if (chg_line >= window->display_size)
 		panic("change_line is too big.");
 
 	/* Make sure that the line exists that we want to change */
-	while (window->distance_from_display_ip <= change_line)
+	while (window->distance_from_display_ip <= chg_line)
 		add_to_display(window, empty_string);
 
 	/* Now find the line we want to change */
 	my_line = window->top_of_display;
 	if (my_line == window->display_ip)
 		panic("Can't change line [%d] -- doesn't exist", 
-			change_line);
-	for (cnt = 0; cnt < change_line; cnt++)
+			chg_line);
+	for (cnt = 0; cnt < chg_line; cnt++)
 	{
 		my_line = my_line->next;
 		if (my_line == window->display_ip)
 			panic("Can't change line [%d] -- doesn't exist", 
-				change_line);
+				chg_line);
 	}
 
 	/*
@@ -5164,7 +5164,7 @@ int	change_line (Window *window, const unsigned char *str)
 	 * the caller (window_disp) output the new line.
 	 */
 	malloc_strcpy(&my_line->line, str);
-	window->cursor = change_line;
+	window->cursor = chg_line;
 	return 1;		/* Express a success */
 }
 

@@ -1,4 +1,4 @@
-/* $EPIC: timer.c,v 1.28 2003/04/24 21:49:25 jnelson Exp $ */
+/* $EPIC: timer.c,v 1.29 2003/05/09 04:29:52 jnelson Exp $ */
 /*
  * timer.c -- handles timers in ircII
  *
@@ -114,8 +114,6 @@ BUILT_IN_COMMAND(timercmd)
 		}
 		else if (!my_strnicmp(flag + 1, "DELETE_FOR_WINDOW", len))
 		{
-			int	winref;
-
 			if (!(ptr = next_arg(args, &args)) || !is_number(ptr))
 			{
 			    say("%s: Need a window number for -DELETE_FOR_WINDOW", command);
@@ -540,10 +538,10 @@ char *add_timer (int update, const char *refnum_want, double interval, long even
 {
 	Timer	*ntimer, *otimer = NULL;
 	char	refnum_got[REFNUM_MAX + 1];
-	Timeval now;
+	Timeval right_now;
 	char *	retval;
 
-	now = get_time(NULL);
+	right_now = get_time(NULL);
 
 	if (update)
 	{
@@ -560,7 +558,7 @@ char *add_timer (int update, const char *refnum_want, double interval, long even
 		if (interval != -1)
 		{
 			ntimer->interval = double_to_timeval(interval);
-			ntimer->time = time_add(now, ntimer->interval);
+			ntimer->time = time_add(right_now, ntimer->interval);
 		}
 		if (events != -2)
 			ntimer->events = events;
@@ -597,7 +595,7 @@ char *add_timer (int update, const char *refnum_want, double interval, long even
 		ntimer = new_timer();
 		strlcpy(ntimer->ref, refnum_got, sizeof ntimer->ref);
 		ntimer->interval = double_to_timeval(interval);
-		ntimer->time = time_add(now, ntimer->interval);
+		ntimer->time = time_add(right_now, ntimer->interval);
 		ntimer->events = events;
 		ntimer->callback = callback;
 		malloc_strcpy((char **)&ntimer->command, commands);
@@ -645,12 +643,12 @@ Timeval	TimerTimeout (void)
  */
 void 	ExecuteTimers (void)
 {
-	Timeval	now;
+	Timeval	right_now;
 	Timer *	current, *next;
 	int	old_from_server = from_server;
 
-	get_time(&now);
-	while (PendingTimers && time_diff(now, PendingTimers->time) < 0)
+	get_time(&right_now);
+	while (PendingTimers && time_diff(right_now, PendingTimers->time) < 0)
 	{
 		int	old_refnum;
 
@@ -686,7 +684,7 @@ void 	ExecuteTimers (void)
 		 * we use it.  If no callback function was registered,
 		 * then we use ''parse_line''.
 		 */
-		get_time(&now);
+		get_time(&right_now);
 		if (current->callback)
 			(*current->callback)(current->command);
 		else

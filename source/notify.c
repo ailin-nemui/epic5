@@ -1,4 +1,4 @@
-/* $EPIC: notify.c,v 1.15 2003/04/24 21:49:25 jnelson Exp $ */
+/* $EPIC: notify.c,v 1.16 2003/05/09 04:29:52 jnelson Exp $ */
 /*
  * notify.c: a few handy routines to notify you when people enter and leave irc 
  *
@@ -56,7 +56,7 @@
 void 	batch_notify_userhost		(const char *nick);
 void 	dispatch_notify_userhosts	(int);
 void 	notify_userhost_dispatch	(int, UserhostItem *f, const char *, const char *);
-void 	notify_userhost_reply		(int, const char *nick, const char *userhost);
+void 	notify_userhost_reply		(int, const char *nick, const char *uh);
 
 /* NotifyList: the structure for the notify stuff */
 typedef	struct	notify_stru
@@ -483,29 +483,29 @@ void 	dispatch_notify_userhosts (int refnum)
 
 void 	notify_userhost_dispatch (int refnum, UserhostItem *stuff, const char *nick, const char *text)
 {
-	char userhost[BIG_BUFFER_SIZE + 1];
+	char uh[BIG_BUFFER_SIZE + 1];
 
-	snprintf(userhost, BIG_BUFFER_SIZE, "%s@%s", stuff->user, stuff->host);
-	notify_userhost_reply(refnum, stuff->nick, userhost);
+	snprintf(uh, sizeof uh, "%s@%s", stuff->user, stuff->host);
+	notify_userhost_reply(refnum, stuff->nick, uh);
 }
 
-void 	notify_userhost_reply (int refnum, const char *nick, const char *userhost)
+void 	notify_userhost_reply (int refnum, const char *nick, const char *uh)
 {
 	Server *s;
 	NotifyItem *tmp;
 
-	if (!userhost)
-		userhost = empty_string;
+	if (!uh)
+		uh = empty_string;
 
 	if (!(s = get_server(refnum)))
 		return;
 
 	if ((tmp = (NotifyItem *)array_lookup((array *)NOTIFY_LIST(s), nick, 0, 0)))
 	{
-		if (do_hook(NOTIFY_SIGNON_LIST, "%s %s", nick, userhost))
+		if (do_hook(NOTIFY_SIGNON_LIST, "%s %s", nick, uh))
 		{
-			if (!*userhost)
-				say("Signon by %s!%s detected", nick, userhost);
+			if (!*uh)
+				say("Signon by %s!%s detected", nick, uh);
 			else
 				say("Signon by %s detected", nick);
 		}

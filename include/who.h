@@ -69,8 +69,8 @@ typedef struct UserhostItemT
 	int   	oper;
 	int	connected;
 	int   	away;
-	char *	user;
-	char *	host;
+	const char *	user;
+	const char *	host;
 } UserhostItem;
 
 typedef struct UserhostEntryT

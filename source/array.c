@@ -1,4 +1,4 @@
-/* $EPIC: array.c,v 1.12 2003/04/24 21:49:25 jnelson Exp $ */
+/* $EPIC: array.c,v 1.13 2003/05/09 04:29:52 jnelson Exp $ */
 /*
  * array.c -- Karll's Array Suite
  *
@@ -223,7 +223,7 @@ static an_array array_info = {
 static an_array *array_array = (an_array *) 0;
 an_array *qsort_array;
 
-int compare_indices (const void *a1, const void *a2)
+static int compare_indices (const void *a1, const void *a2)
 {
 	int result;
 
@@ -237,7 +237,7 @@ int compare_indices (const void *a1, const void *a2)
 		return *(const int*)a1 - *(const int*)a2;
 }
 
-void sort_indices (an_array *array)
+static void sort_indices (an_array *array)
 {
 	qsort_array = array;
 	qsort(array->index, array->size, sizeof(long*), compare_indices);
@@ -263,7 +263,7 @@ void sort_indices (an_array *array)
  * indices to be sorted by name then item.
  */
 #define FINDIT(fn, test, pre)                                            \
-long		(fn) (an_array *array, char *find, long item)            \
+static long	(fn) (an_array *array, char *find, long item)            \
 {                                                                        \
 	long top, bottom, key, cmp;                                      \
 	int len = (pre);                                                 \
@@ -297,21 +297,21 @@ FINDIT(find_items, strncmp(find, array->item[array->index[key]], len), strlen(fi
  * insert_index() takes a valid index (newIndex) and inserts it into the array
  * **index, then increments the *size of the index array.
  */
-void		insert_index (long **index, long *size, long newIndex)
+static void	insert_index (long **idx, long *size, long newIndex)
 {
 	long cnt;
 
 	if (*size)
-		RESIZE(*index, long, *size + 1);
+		RESIZE(*idx, long, *size + 1);
 	else
 	{
-		*index = (long *)new_malloc(sizeof(long));
+		*idx = (long *)new_malloc(sizeof(long));
 		newIndex = 0;
 	}
 	
 	for (cnt = *size; cnt > newIndex; cnt--)
-		(*index)[cnt] = (*index)[cnt - 1];
-	(*index)[newIndex] = *size;
+		(*idx)[cnt] = (*idx)[cnt - 1];
+	(*idx)[newIndex] = *size;
 	(*size)++;
 }
 
@@ -319,7 +319,7 @@ void		insert_index (long **index, long *size, long newIndex)
  * move_index() moves the array.index[] up or down to make room for new entries
  * or to clean up so an entry can be deleted.
  */
-void		move_index (an_array *array, long oldindex, long newindex)
+static void		move_index (an_array *array, long oldindex, long newindex)
 {
 	long temp;
 
@@ -348,24 +348,24 @@ void		move_index (an_array *array, long oldindex, long newindex)
  * value ARRAY_THRESHOLD ought to be.  I figured someone smarter than I am
  * could figure it out and tell me or tell me to abandon the entire idea.
  */
-long		find_index (an_array *array, long item)
+static long		find_index (an_array *array, long item)
 {
-	long search = 0;
+	long srch = 0;
 
 	if (array->size >= ARRAY_THRESHOLD)
 	{
-		search = find_item(array, array->item[item], item);
+		srch = find_item(array, array->item[item], item);
 		qsort_array = array;
-		while (search >= 0 && !compare_indices(&array->index[search], &item))
-			search--;
-		search++;
+		while (srch >= 0 && !compare_indices(&array->index[srch], &item))
+			srch--;
+		srch++;
 	}
-	while(array->index[search] != item && search < array->size)
-		search++;
+	while(array->index[srch] != item && srch < array->size)
+		srch++;
 
-	if (search < 0 || search >= array->size)
-		say("ERROR in find_index(): ! 0 <= %ld < %ld", search, array->size);	
-	return search;
+	if (srch < 0 || srch >= array->size)
+		say("ERROR in find_index(): ! 0 <= %ld < %ld", srch, array->size);	
+	return srch;
 }
 
 /*
@@ -374,13 +374,13 @@ long		find_index (an_array *array, long item)
  */
 an_array *	get_array (char *name)
 {
-	long index;
+	long idx;
 
 	if (array_info.size && *name)
         {
                 upper(name);
-                if ((index = find_item(&array_info, name, -1)) >= 0)
-                        return &array_array[array_info.index[index]];
+                if ((idx = find_item(&array_info, name, -1)) >= 0)
+                        return &array_array[array_info.index[idx]];
 	}
 	return (an_array*) 0;
 }
@@ -390,16 +390,16 @@ an_array *	get_array (char *name)
  * find_item(array_info, name) will succeed and return a valid zero or positive
  * value.
  */
-void		delete_array (char *name)
+static void		delete_array (char *name)
 {
         char **ptr;
         long cnt;
-        long index;
+        long idx;
         long item;
         an_array *array;
 
-        index = find_item(&array_info, name, -1);
-        item = array_info.index[index];
+        idx = find_item(&array_info, name, -1);
+        item = array_info.index[idx];
         array = &array_array[item];
         for (ptr=array->item, cnt=0; cnt < array->size; cnt++, ptr++)
                 new_free((char **)ptr);
@@ -413,7 +413,7 @@ void		delete_array (char *name)
                         if (array_info.index[cnt] > item)
                                 (array_info.index[cnt])--;
 
-                move_index(&array_info, index, array_info.size);
+                move_index(&array_info, idx, array_info.size);
                 array_info.size--;
                 for(ptr=&array_info.item[item], cnt=item; cnt < array_info.size; cnt++, ptr++, array++)
                 {
@@ -439,13 +439,13 @@ void		delete_array (char *name)
  */
 int set_item (char* name, long item, char* input, int unsorted)
 {
-	long index = 0;
+	long idx = 0;
 	long oldindex;
 	an_array *array;
 	int result = -1;
-	if (array_info.size && ((index = find_item(&array_info, name, -1)) >= 0))
+	if (array_info.size && ((idx = find_item(&array_info, name, -1)) >= 0))
 	{
-		array =  &array_array[array_info.index[index]];
+		array =  &array_array[array_info.index[idx]];
 		result = -2;
 		if (item < array->size)
 		{
@@ -453,9 +453,9 @@ int set_item (char* name, long item, char* input, int unsorted)
 				array->unsorted = 1;
 			} else {
 				oldindex = find_index(array, item);
-				index = find_item(array, input, item);
-				index = (index >= 0) ? index : (-index) - 1;
-				move_index(array, oldindex, index);
+				idx = find_item(array, input, item);
+				idx = (idx >= 0) ? idx : (-idx) - 1;
+				move_index(array, oldindex, idx);
 			}
 			malloc_strcpy(&array->item[item], input);
 			result = 0;
@@ -467,12 +467,12 @@ int set_item (char* name, long item, char* input, int unsorted)
 			malloc_strcpy(&array->item[item], input);
 			if (unsorted || array->unsorted) {
 				array->unsorted = 1;
-				index = item;
+				idx = item;
 			} else {
-				index = find_item(array, input, item);
-				index = (index >= 0) ? index : (-index) - 1;
+				idx = find_item(array, input, item);
+				idx = (idx >= 0) ? idx : (-idx) - 1;
 			}
-			insert_index(&array->index, &array->size, index);
+			insert_index(&array->index, &array->size, idx);
 			result = 2;
 		}
 	}
@@ -492,7 +492,7 @@ int set_item (char* name, long item, char* input, int unsorted)
 			RESIZE(array_info.item, char *, array_info.size + 1);
 			array_info.item[array_info.size] = (char *) 0;
 			malloc_strcpy(&array_info.item[array_info.size], name);
-			insert_index(&array_info.index, &array_info.size, (-index) - 1);
+			insert_index(&array_info.index, &array_info.size, (-idx) - 1);
 			result = 1;
 		}
 	}
@@ -512,7 +512,7 @@ int set_item (char* name, long item, char* input, int unsorted)
 BUILT_IN_FUNCTION((fn), input)                                                \
 {                                                                             \
 	char	*name;                                                        \
-	long	index;                                                        \
+	long	idx;                                                        \
 	an_array *array;                                                      \
 	long	current_match;                                                \
 	long	best_match = 0;                                               \
@@ -521,11 +521,11 @@ BUILT_IN_FUNCTION((fn), input)                                                \
 	if ((name = next_arg(input, &input)) && (array = get_array(name)))    \
 	{                                                                     \
 		match = -2;                                                   \
-		for (index = 0; index < array->size; index++)                 \
+		for (idx = 0; idx < array->size; idx++)                 \
 		{                                                             \
 			if ((current_match = wild_match((wm1), (wm2))) > best_match) \
 			{                                                     \
-				match = index;                                \
+				match = idx;                                \
 				best_match = current_match;                   \
 			}                                                     \
 		}                                                             \
@@ -534,9 +534,9 @@ BUILT_IN_FUNCTION((fn), input)                                                \
                                                                               \
 	RETURN_INT(match);                                                    \
 }
-MATCHITEM(function_matchitem, input, array->item[index], {})
-MATCHITEM(function_rmatchitem, array->item[index], input, {})
-MATCHITEM(function_gettmatch, input, array->item[index], {if (match >= 0) RETURN_STR(array->item[match]);})
+MATCHITEM(function_matchitem, input, array->item[idx], {})
+MATCHITEM(function_rmatchitem, array->item[idx], input, {})
+MATCHITEM(function_gettmatch, input, array->item[idx], {if (match >= 0) RETURN_STR(array->item[match]);})
 #undef MATCHITEM
 
 /*
@@ -551,24 +551,24 @@ BUILT_IN_FUNCTION((fn), input)                                               \
 	char    *result = (char *) 0;                                        \
 	size_t	resclue = 0;                                                 \
 	char    *name = (char *) 0;                                          \
-	long    index;                                                       \
+	long    idx;                                                       \
 	an_array *array;                                                     \
                                                                              \
 	if ((name = next_arg(input, &input)) &&                              \
 	    (array = get_array(name)) && input)                              \
 	{                                                                    \
 	    do pre while (0);                                                \
-	    for (index = 0; index < array->size; index++)                    \
+	    for (idx = 0; idx < array->size; idx++)                    \
 		if (wild_match((wm1), (wm2)) > 0)                            \
-		    m_sc3cat_s(&result, space, ltoa(index), &resclue);       \
+		    m_sc3cat_s(&result, space, ltoa(idx), &resclue);       \
 	}                                                                    \
                                                                              \
 	RETURN_MSTR(result);                                                 \
 }
-GET_MATCHES(function_getmatches, input, array->item[index], {})
-GET_MATCHES(function_getrmatches, array->item[index], input, {})
-GET_MATCHES(function_igetmatches, input, array->item[array->index[index]], SORT_INDICES(array))
-GET_MATCHES(function_igetrmatches, array->item[array->index[index]], input, SORT_INDICES(array))
+GET_MATCHES(function_getmatches, input, array->item[idx], {})
+GET_MATCHES(function_getrmatches, array->item[idx], input, {})
+GET_MATCHES(function_igetmatches, input, array->item[array->index[idx]], SORT_INDICES(array))
+GET_MATCHES(function_igetrmatches, array->item[array->index[idx]], input, SORT_INDICES(array))
 #undef GET_MATCHES
 
 
@@ -662,13 +662,13 @@ FUNCTION_SETITEM(function_usetitem, 1)
  */
 BUILT_IN_FUNCTION(function_getarrays, input)
 {
-	long index;
+	long idx;
 	char *result = NULL;
 	size_t	resclue = 0;
 
-	for (index = 0; index < array_info.size; index++)
-		if (!input || !*input || wild_match(input, array_info.item[array_info.index[index]]))
-			m_sc3cat_s(&result, space, array_info.item[array_info.index[index]], &resclue);
+	for (idx = 0; idx < array_info.size; idx++)
+		if (!input || !*input || wild_match(input, array_info.item[array_info.index[idx]]))
+			m_sc3cat_s(&result, space, array_info.item[array_info.index[idx]], &resclue);
 
 	if (!result)
 		RETURN_EMPTY;
@@ -738,11 +738,11 @@ BUILT_IN_FUNCTION((fn), input)                                             \
 		found = -2;                                                \
 		while ((itemstr = next_arg(input, &input)))                \
 		{                                                          \
-			long index = -2;                                   \
+			long idx = -2;                                   \
 			item = my_atol(itemstr);                           \
 			if (item >= 0 && item < array->size)               \
-				index = (op);                              \
-			m_sc3cat_s(&ret, space, ltoa(index), &clue);       \
+				idx = (op);                              \
+			m_sc3cat_s(&ret, space, ltoa(idx), &clue);       \
 		}                                                          \
 	}                                                                  \
 	if (ret)                                                           \
@@ -917,14 +917,14 @@ BUILT_IN_FUNCTION(function_listarray, input)
 {
 	char	*name;
 	an_array *array;
-	long	index;
+	long	idx;
 	char	*result = NULL;
 	size_t	resclue = 0;
 
 	if ((name = next_arg(input, &input)) && (array = get_array(name)))
 	{
-		for (index = 0; index < array->size; index++)
-			m_sc3cat_s(&result, space, array->item[index], &resclue);
+		for (idx = 0; idx < array->size; idx++)
+			m_sc3cat_s(&result, space, array->item[idx], &resclue);
 	}
 	return result ? result : m_strdup(empty_string);
 }
@@ -945,14 +945,14 @@ BUILT_IN_FUNCTION(function_gettmatch, input)
         {
 		if (*input)
           	{
-			int index, current_match;
+			int idx, current_match;
 			int best_match = 0;
 			int match = -1;
-                        for (index = 0; index < array->size; index++)
+                        for (idx = 0; idx < array->size; idx++)
                         {
-                                if ((current_match = wild_match(input, array->item[index])) > best_match)
+                                if ((current_match = wild_match(input, array->item[idx])) > best_match)
                                 {
-                                        match = index;
+                                        match = idx;
                                         best_match = current_match;
                                 }
                         }

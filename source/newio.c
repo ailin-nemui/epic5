@@ -1,4 +1,4 @@
-/* $EPIC: newio.c,v 1.15 2003/04/24 21:49:25 jnelson Exp $ */
+/* $EPIC: newio.c,v 1.16 2003/05/09 04:29:52 jnelson Exp $ */
 /*
  * newio.c: This is some handy stuff to deal with file descriptors in a way
  * much like stdio's FILE pointers 
@@ -155,14 +155,21 @@ static	void	init_io (void)
  *	>0 -- If a full, newline terminated line was available, the length
  *	      of the line is returned.
  */
-int	dgets (int des, char *buf, size_t buflen, int buffer, void *ssl_aux)
+ssize_t	dgets (int des, char *buf, size_t buflen, int buffer, void *ssl_aux)
 {
-	int	cnt = 0, 
-		c = 0;		/* gcc can die. */
+	ssize_t	cnt = 0;
+	int	c = 0;		/* gcc can die. */
 	MyIO	*ioe;
 
 	if (!io_rec)
 		init_io();
+
+	if (buflen == 0)
+	{
+		yell("***XXX*** Buffer for des [%d] is zero-length! ***XXX***", des);
+		dgets_errno = ENOMEM; /* Cough */
+		return -1;
+	}
 
 	ioe = io_rec[des];
 
@@ -270,7 +277,7 @@ int	dgets (int des, char *buf, size_t buflen, int buffer, void *ssl_aux)
 	 * better to truncate excessively long lines than to let them
 	 * overflow buffers!
 	 */
-	if (cnt > buflen - 1)
+	if (cnt > (ssize_t)(buflen - 1))
 	{
 		if (x_debug & DEBUG_INBOUND) 
 			yell("FD [%d], Too long (did [%d], max [%d])", des, cnt, buflen);

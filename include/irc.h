@@ -117,7 +117,6 @@ extern		char *	ircrc_file;
 extern		char *	epicrc_file;
 extern		char *	startup_file;
 extern		char *	irc_lib;
-extern		char *	irc_path;
 extern const 	char 	irc_version[];
 extern		char *	last_notify_nick;
 extern		char *	LocalHostName;
@@ -153,7 +152,7 @@ extern struct timeval	input_timeout;
 	void	get_line_return 	(char, char *);
 	void	get_line 		(char *, int, void (*) (char, char *));
 	void	io 			(const char *);
-	void	irc_exit 		(int, char *, ...) /*__A(2)*/ __N;
+	void	irc_exit 		(int, const char *, ...) /*__A(2)*/ __N;
 	void	irc_quit 		(char, char *);
 	void	cpu_saver_off		(void);
 #include "reg.h"

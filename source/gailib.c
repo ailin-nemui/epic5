@@ -71,7 +71,7 @@ static int get_name (const char *, struct afd *, AI **, char *, AI *, int);
 static int get_addr (const char *, int, AI **, AI *, int);
 static int str_isnumber (const char *);
 	
-static char *ai_errlist[] = {
+static const char *ai_errlist[] = {
 	"success.",
 	"address family for hostname not supported.",	/* EAI_ADDRFAMILY */
 	"temporary failure in name resolution.",	/* EAI_AGAIN      */
@@ -139,7 +139,7 @@ static int inet_pton__compat (int af, const char *hostname, void *pton)
 
 static const char * inet_ntop__compat (int af, const void *addr, char *numaddr, size_t numaddr_len)
 {
-	unsigned long x = ntohl(*(unsigned long*)addr);
+	unsigned long x = ntohl(*(const unsigned long*)addr);
 	snprintf(numaddr, numaddr_len, "%d.%d.%d.%d",
 		 (int) (x>>24) & 0xff, (int) (x>>16) & 0xff,
 		 (int) (x>> 8) & 0xff, (int) (x>> 0) & 0xff);
@@ -169,9 +169,9 @@ void freeaddrinfo__compat (AI *ai)
 
 static int str_isnumber (const char *p)
 {
-	char *q = (char *)p;
+	const char *q = p;
 	while (*q) {
-		if (! isdigit(*q))
+		if (! isdigit((int)*q))
 			return NO;
 		q++;
 	}
@@ -275,7 +275,7 @@ int getaddrinfo__compat (const char *hostname, const char *servname, const AI *h
 			port = htons((unsigned short)atoi(servname));
 		} else {
 			struct servent *sp;
-			char *proto;
+			const char *proto;
 
 			proto = NULL;
 			switch (pai->ai_socktype) {
@@ -523,7 +523,8 @@ int getnameinfo__compat (const struct sockaddr *sa, size_t salen, char *host, si
 	struct hostent *hp;
 	unsigned short port;
 	int family, len, i;
-	char *addr, *p;
+	const char *addr;
+	char *p;
 	unsigned long v4a;
 	int h_error;
 	char numserv[512];
@@ -533,7 +534,7 @@ int getnameinfo__compat (const struct sockaddr *sa, size_t salen, char *host, si
 		return ENI_NOSOCKET;
 
 	len = SA_LEN(sa);
-	if (len != salen) return ENI_SALEN;
+	if ((size_t) len != salen) return ENI_SALEN;
 	
 	family = sa->sa_family;
 	for (i = 0; afdl[i].a_af; i++)
@@ -546,8 +547,8 @@ int getnameinfo__compat (const struct sockaddr *sa, size_t salen, char *host, si
  found:
 	if (len != afd->a_socklen) return ENI_SALEN;
 	
-	port = ((struct sockinet *)sa)->si_port; /* network byte order */
-	addr = (char *)sa + afd->a_off;
+	port = ((const struct sockinet *)sa)->si_port; /* network byte order */
+	addr = (const char *)sa + afd->a_off;
 
 	if (serv == NULL || servlen == 0) {
 		/* what we should do? */
@@ -572,7 +573,7 @@ int getnameinfo__compat (const struct sockaddr *sa, size_t salen, char *host, si
 
 	switch (sa->sa_family) {
 	case AF_INET:
-		v4a = ((struct sockaddr_in *)sa)->sin_addr.s_addr;
+		v4a = ((const struct sockaddr_in *)sa)->sin_addr.s_addr;
 		if (IN_MULTICAST(v4a) || IN_EXPERIMENTAL(v4a))
 			flags |= NI_NUMERICHOST;
 		v4a >>= IN_CLASSA_NSHIFT;

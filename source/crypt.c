@@ -1,4 +1,4 @@
-/* $EPIC: crypt.c,v 1.11 2003/04/24 21:49:25 jnelson Exp $ */
+/* $EPIC: crypt.c,v 1.12 2003/05/09 04:29:52 jnelson Exp $ */
 /*
  * crypt.c: handles some encryption of messages stuff. 
  *
@@ -205,11 +205,15 @@ void 	my_decrypt (char *str, int len, char *key)
 	str[i] = (char) 0;
 }
 
-char* 	prog_crypt (char *str, size_t *len, Crypt *key, int flag)
+static char * 	prog_crypt (char *str, size_t *len, Crypt *key, int flag)
 {
 	char	*ret = NULL, *input;
-	char	*args[] = { key->prog, flag ? "encrypt" : "decrypt" , NULL };
+	char *	args[3];
 	int	iplen;
+
+	args[0] = m_strdup(key->prog);
+	args[1] = m_strdup(flag ? "encrypt" : "decrypt");
+	args[2] = NULL;
 
 	input = m_2dup(key->key, "\n");
 	iplen = strlen(input);
@@ -217,6 +221,8 @@ char* 	prog_crypt (char *str, size_t *len, Crypt *key, int flag)
 	memmove(input + iplen, str, *len);
 	*len += iplen;
 	ret = exec_pipe(key->prog, input, len, args);
+	new_free(&args[0]);
+	new_free(&args[1]);
 	new_free((char**)&input);
 	new_realloc((void**)&ret, 1+*len);
 	ret[*len] = 0;
@@ -226,13 +232,13 @@ char* 	prog_crypt (char *str, size_t *len, Crypt *key, int flag)
 static 	char *do_crypt (char *str, Crypt *key, int flag)
 {
 	size_t	c;
-	char	*free = NULL;
+	char	*free_it = NULL;
 
 	c = strlen(str);
 	if (flag)
 	{
 		if (key->prog)
-			free = str = (char*)prog_crypt(str, &c, key, flag);
+			free_it = str = (char*)prog_crypt(str, &c, key, flag);
 		else
 			my_encrypt(str, c, key->key);
 		str = enquote_it(str, c);
@@ -241,11 +247,11 @@ static 	char *do_crypt (char *str, Crypt *key, int flag)
 	{
 		str = dequote_it(str, &c);
 		if (key->prog)
-			str = (char*)prog_crypt(free = str, &c, key, flag);
+			str = (char*)prog_crypt(free_it = str, &c, key, flag);
 		else
 			my_decrypt(str, c, key->key);
 	}
-	new_free(&free);
+	new_free(&free_it);
 	return (str);
 }
 

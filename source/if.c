@@ -1,4 +1,4 @@
-/* $EPIC: if.c,v 1.18 2003/04/24 21:49:25 jnelson Exp $ */
+/* $EPIC: if.c,v 1.19 2003/05/09 04:29:52 jnelson Exp $ */
 /*
  * if.c: the IF, WHILE, FOREACH, DO, FE, FEC, and FOR commands for IRCII 
  *
@@ -53,6 +53,7 @@ char *	my_next_expr (char **args, char type, int whine, int wantchar)
 {
 	char	*expr_start,
 		*expr_end;
+	ssize_t	span;
 
 	if (!*args || !**args || **args != type)
 	{
@@ -63,12 +64,15 @@ char *	my_next_expr (char **args, char type, int whine, int wantchar)
 
 	/* Find the end of the expression and terminate it. */
 	expr_start = *args;
-	if (!(expr_end = MatchingBracket(expr_start + 1, type, 
-					(type == '(') ? ')' : '}')))
+	if ((span = MatchingBracket(expr_start + 1, type, 
+					(type == '(') ? ')' : '}')) < 0)
 	{
 		say("Unmatched '%c'", type);
 		return NULL;
 	}
+	else
+		expr_end = expr_start + 1 + span;
+
 	*expr_end = 0;
 
 	/* 
@@ -131,7 +135,7 @@ BUILT_IN_COMMAND(ifcmd)
 	char *current_expr;
 	char *current_expr_val;
 	int result;
-	char *current_line = NULL;
+	char *stuff = NULL;
 	int flag = 0;
 
 	unless_cmd = (*command == 'U');
@@ -159,9 +163,9 @@ BUILT_IN_COMMAND(ifcmd)
 		new_free(&current_expr_val);
 
 		if (*args == '{')
-			current_line = next_expr(&args, '{');
+			stuff = next_expr(&args, '{');
 		else
-			current_line = args, args = NULL;
+			stuff = args, args = NULL;
 
 		/* If the expression was FALSE for IF, and TRUE for UNLESS */
 		if (unless_cmd == result)
@@ -190,17 +194,17 @@ BUILT_IN_COMMAND(ifcmd)
 					args++;
 
 				if (*args == '{')
-					current_line = next_expr(&args, '{');
+					stuff = next_expr(&args, '{');
 				else
-					current_line = args, args = NULL;
+					stuff = args, args = NULL;
 
 			}
 			else
-				current_line = NULL;
+				stuff = NULL;
 		}
 
-		if (current_line)
-			parse_line(NULL, current_line, subargs, 0, 0);
+		if (stuff)
+			parse_line(NULL, stuff, subargs, 0, 0);
 
 		break;
 	}
@@ -418,7 +422,8 @@ BUILT_IN_COMMAND(fe)
 		*word = (char *) 0,
 		*todo = (char *) 0,
 		fec_buffer[2];
-	int     ind, x, y, args_flag;
+	unsigned	ind, x, y;
+	int     args_flag;
 	int     old_display;
 	int	doing_fe = !strcmp(command, "FE");
 	char	*mapvar = (char *) 0;
@@ -542,7 +547,7 @@ BUILT_IN_COMMAND(fe)
 }
 
 
-void	for_next_cmd (int argc, char **argv, const char *subargs)
+static void	for_next_cmd (int argc, char **argv, const char *subargs)
 {
 	char 	*var, *cmds;
 	char	istr[256];
@@ -593,7 +598,7 @@ void	for_next_cmd (int argc, char **argv, const char *subargs)
 	will_catch_continue_exceptions--;
 }
 
-void	for_fe_cmd (int argc, char **argv, const char *subargs)
+static void	for_fe_cmd (int argc, char **argv, const char *subargs)
 {
 	char 	*var, *list, *cmds;
 	char	*next, *real_list, *x;
@@ -635,12 +640,12 @@ void	for_fe_cmd (int argc, char **argv, const char *subargs)
 	new_free(&x);
 }
 
-void	for_pattern_cmd (int argc, char **argv, const char *subargs)
+static void	for_pattern_cmd (int argc, char **argv, const char *subargs)
 {
 	error("/FOR var IN <pattern> {commands} reserved for future use");
 }
 
-BUILT_IN_COMMAND(loopcmd)
+static BUILT_IN_COMMAND(loopcmd)
 {
 	int	argc;
 	char	*argv[10];

@@ -14,7 +14,7 @@
 	void	dcc_chat_transmit 	(char *, char *, const char *, 
 						const char *, int);
 	void	dcc_check 		(fd_set *, fd_set *);
-	BUILT_IN_COMMAND(dcc);
+	BUILT_IN_COMMAND(dcc_cmd);
 	char *	dcc_raw_connect 	(const char *, const char *, int);
 	char *	dcc_raw_listen 		(int, unsigned short);
 	void	dcc_reject 		(const char *, char *, char *);

@@ -1,4 +1,4 @@
-/* $EPIC: alist.c,v 1.9 2002/07/17 22:52:52 jnelson Exp $ */
+/* $EPIC: alist.c,v 1.10 2003/05/09 04:29:52 jnelson Exp $ */
 /*
  * alist.c -- resizeable arrays.
  *
@@ -62,100 +62,99 @@ void move_array_items (array *list, int start, int end, int dir);
 /*
  * Returns an entry that has been displaced, if any.
  */
-array_item *add_to_array (array *array, array_item *item)
+array_item *add_to_array (array *a, array_item *item)
 {
 	int 		count;
 	int 		location = 0;
 	array_item *	ret = NULL;
 	u_32int_t	mask; 	/* Dummy var */
 
-	if (array->hash == HASH_INSENSITIVE)
+	if (a->hash == HASH_INSENSITIVE)
 		item->hash = ci_alist_hash(item->name, &mask);
 	else
 		item->hash = cs_alist_hash(item->name, &mask);
 
-	check_array_size(array);
-	if (array->max)
+	check_array_size(a);
+	if (a->max)
 	{
-		find_array_item(array, item->name, &count, &location);
+		find_array_item(a, item->name, &count, &location);
 		if (count < 0)
 		{
-			ret = ARRAY_ITEM(array, location);
-			array->max--;
+			ret = ARRAY_ITEM(a, location);
+			a->max--;
 		}
 		else
-			move_array_items(array, location, array->max, 1);
+			move_array_items(a, location, a->max, 1);
 	}
 
-	array->list[location] = item;
-	array->max++;
+	a->list[location] = item;
+	a->max++;
 	return ret;
 }
 
 /*
  * Returns the entry that has been removed, if any.
  */
-array_item *remove_from_array (array *array, const char *name)
+array_item *remove_from_array (array *a, const char *name)
 {
 	int 	count, 
 		location = 0;
 
-	if (array->max)
+	if (a->max)
 	{
-		find_array_item(array, name, &count, &location);
+		find_array_item(a, name, &count, &location);
 		if (count >= 0)
 			return NULL;
 
-		return array_pop(array, location);
+		return array_pop(a, location);
 	}
 	return NULL;	/* Cant delete whats not there */
 }
 
 /* Remove the 'which'th item from the given array */
-array_item *array_pop (array *array, int which)
+array_item *array_pop (array *a, int which)
 {
 	array_item *ret = NULL;
 
-	if (which < 0 || which >= array->max)
+	if (which < 0 || which >= a->max)
 		return NULL;
 
-	ret = ARRAY_ITEM(array, which);
-	move_array_items(array, which + 1, array->max, -1);
-	array->max--;
-	check_array_size(array);
+	ret = ARRAY_ITEM(a, which);
+	move_array_items(a, which + 1, a->max, -1);
+	a->max--;
+	check_array_size(a);
 	return ret;
 }
 
-array_item *array_lookup (array *array, const char *name, int wild, int remove)
+array_item *array_lookup (array *a, const char *name, int wild, int rem)
 {
 	int 	count, 
 		location;
 
-	if (remove)
-		return remove_from_array(array, name);
+	if (rem)
+		return remove_from_array(a, name);
 	else
-		return find_array_item(array, name, &count, &location);
+		return find_array_item(a, name, &count, &location);
 }
 
-static
-void check_array_size (array *array)
+static void check_array_size (array *a)
 {
-	if (array->total_max && (array->total_max < array->max))
+	if (a->total_max && (a->total_max < a->max))
 		panic("array->max < array->total_max");
 
-	if (array->total_max == 0)
+	if (a->total_max == 0)
 	{
-		new_free(&array->list);		/* Immortality isn't necessarily a good thing. */
-		array->total_max = 6;		/* Good size to start with */
+		new_free(&a->list);		/* Immortality isn't necessarily a good thing. */
+		a->total_max = 6;		/* Good size to start with */
 	}
-	else if (array->max == array->total_max - 1) /* Colten suggested this */
-		array->total_max *= 2;
-	else if ((array->total_max > 6) && (array->max * 3 < array->total_max))
-		array->total_max /= 2;
+	else if (a->max == a->total_max - 1) /* Colten suggested this */
+		a->total_max *= 2;
+	else if ((a->total_max > 6) && (a->max * 3 < a->total_max))
+		a->total_max /= 2;
 	else
 		return;
 
-	RESIZE(array->list, array_item *, array->total_max);
+	RESIZE(a->list, array_item *, a->total_max);
 }
 
 /*
@@ -163,23 +162,23 @@ void check_array_size (array *array)
  * in the array.  If ``dir'' is negative, move them down in the array.
  * Fill in the vacated spots with NULLs.
  */
-void move_array_items (array *array, int start, int end, int dir)
+void move_array_items (array *a, int start, int end, int dir)
 {
 	int 	i;
 
 	if (dir > 0)
 	{
 		for (i = end; i >= start; i--)
-			LARRAY_ITEM(array, i + dir) = ARRAY_ITEM(array, i);
+			LARRAY_ITEM(a, i + dir) = ARRAY_ITEM(a, i);
 		for (i = dir; i > 0; i--)
-			LARRAY_ITEM(array, start + i - 1) = NULL;
+			LARRAY_ITEM(a, start + i - 1) = NULL;
 	}
 	else if (dir < 0)
 	{
 		for (i = start; i <= end; i++)
-			LARRAY_ITEM(array, i + dir) = ARRAY_ITEM(array, i);
+			LARRAY_ITEM(a, i + dir) = ARRAY_ITEM(a, i);
 		for (i = end - dir + 1; i <= end; i++)
-			LARRAY_ITEM(array, i) = NULL;
+			LARRAY_ITEM(a, i) = NULL;
 	}
 }
 

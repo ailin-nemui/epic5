@@ -1,4 +1,4 @@
-/* $EPIC: glob.c,v 1.6 2003/04/24 21:49:25 jnelson Exp $ */
+/* $EPIC: glob.c,v 1.7 2003/05/09 04:29:52 jnelson Exp $ */
 #include "config.h"
 #if defined(NEED_GLOB)
 
@@ -125,7 +125,7 @@ static int	 	compare (const void *, const void *);
 static void	 	g_Ctoc (const Char *, char *);
 static int	 	g_lstat (Char *, Stat *, glob_t *);
 static DIR	*	g_opendir (Char *, glob_t *);
-static Char	*	g_strchr (Char *, int);
+static ssize_t		g_strchr (const Char *, int);
 static int	 	g_stat (Char *, Stat *, glob_t *);
 static int	 	glob0 (const Char *, glob_t *);
 static int	 	glob1 (Char *, glob_t *);
@@ -146,7 +146,7 @@ int bsd_glob		(	const char *pattern,
 	int c;
 	Char *bufnext, *bufend, patbuf[MAXPATHLEN+1];
 
-	patnext = (u_char *) pattern;
+	patnext = (const u_char *) pattern;
 	if (!(flags & GLOB_APPEND)) 
 	{
 		pglob->gl_pathc = 0;
@@ -200,14 +200,18 @@ static int globexp1	(	const Char *pattern,
 {
 	const Char* ptr = pattern;
 	int rv;
+	ssize_t	span;
 
 	/* Protect a single {}, for find(1), like csh */
 	if (pattern[0] == LBRACE && pattern[1] == RBRACE && pattern[2] == EOS)
 		return glob0(pattern, pglob);
 
-	while ((ptr = (const Char *) g_strchr((Char *) ptr, LBRACE)) != NULL)
+	while ((span = g_strchr(ptr, LBRACE)) >= 0)
+	{
+		ptr += span;
 		if (!globexp2(ptr, pattern, pglob, &rv))
 			return rv;
+	}
 
 	return glob0(pattern, pglob);
 }
@@ -417,7 +421,7 @@ static int glob0		(	const Char *pattern,
 			if (c == NOT)
 				++qpatnext;
 			if (*qpatnext == EOS || 
-			    g_strchr((Char *) qpatnext+1, RBRACKET) == NULL) 
+			    g_strchr(qpatnext+1, RBRACKET) < 0)
 			{
 				*bufnext++ = LBRACKET;
 				if (c == NOT)
@@ -490,7 +494,7 @@ static int glob0		(	const Char *pattern,
 static int compare		(	const void *p,
 					const void *q		)
 {
-	return (strcmp(*(char **)p, *(char **)q));
+	return (strcmp(*(const char **)p, *(const char **)q));
 }
 
 static int glob1		(	Char *pattern,
@@ -585,7 +589,7 @@ static int glob3		(	Char *pathbuf,
 	 * and dirent.h as taking pointers to differently typed opaque
 	 * structures.
 	 */
-	struct dirent *(*readdirfunc)();
+	struct dirent *(*readdirfunc)(DIR *);
 
 	*pathend = EOS;
 	errno = 0;
@@ -607,7 +611,7 @@ static int glob3		(	Char *pathbuf,
 
 	/* Search directory for matching names. */
 	if (pglob->gl_flags & GLOB_ALTDIRFUNC)
-		readdirfunc = pglob->gl_readdir;
+		readdirfunc = (struct dirent *(*)(DIR *))pglob->gl_readdir;
 	else
 		readdirfunc = readdir;
 
@@ -825,14 +829,15 @@ static int g_stat		(	register Char *fn,
 	return(stat(buf, sb));
 }
 
-static Char *g_strchr		(	Char *str, 
+static ssize_t	g_strchr	(	const Char *str, 
 					int ch				)
 {
+	const Char *start = str;
 	do {
 		if (*str == ch)
-			return (str);
+			return str - start;
 	} while (*str++);
-	return (NULL);
+	return -1;
 }
 
 static void g_Ctoc		(	register const Char *str,
