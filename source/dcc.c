@@ -9,7 +9,7 @@
  */
 
 #if 0
-static	char	rcsid[] = "@(#)$Id: dcc.c,v 1.13 2002/04/28 14:54:58 jnelson Exp $";
+static	char	rcsid[] = "@(#)$Id: dcc.c,v 1.14 2002/04/29 01:15:59 jnelson Exp $";
 #endif
 
 #include "irc.h"
@@ -54,8 +54,7 @@ typedef	struct	DCC_struct
 {
 		unsigned	flags;
 		int		locked;		/* XXX - Sigh */
-		int		read;
-		int		write;
+		int		socket;
 		int		file;
 		unsigned long	filesize;
 		char *		description;
@@ -69,7 +68,6 @@ typedef	struct	DCC_struct
 		IA		remote;
 		u_short		remport;		/* NOW IN HOST ORDER! */
 		ISA		local_sockaddr;
-		IA		local_addr;
 		u_short		local_port;		/* HOST ORDER */
 
 		off_t		bytes_read;
@@ -311,8 +309,7 @@ static 	void		dcc_erase (DCC_list *erased)
 	/*
 	 * In any event, blow it away.
 	 */
-	erased->write = new_close(erased->write);
-	erased->read = new_close(erased->read);
+	erased->socket = new_close(erased->socket);
 	erased->file = new_close(erased->file);
 	new_free(&erased->description);	/* Magic check failure here */
 	new_free(&erased->filename);
@@ -492,8 +489,7 @@ static	DCC_list *dcc_searchlist (
 	new_client 			= new_malloc(sizeof(DCC_list));
 	new_client->flags 		= type;
 	new_client->locked		= 0;
-	new_client->read 		= -1;
-	new_client->write 		= -1;
+	new_client->socket 		= -1;
 	new_client->file 		= -1;
 	new_client->filesize 		= filesize;
 	new_client->filename 		= NULL;
@@ -564,7 +560,7 @@ static	int		dcc_open (DCC_list *dcc)
 		 * XXXX -- hack -- XXXX
 		 * Connect to them.
 		 */
-		if ((dcc->write = connect_by_number(inet_ntoa(dcc->remote), &dcc->remport, SERVICE_CLIENT, PROTOCOL_TCP)) < 0)
+		if ((dcc->socket = connect_by_number(inet_ntoa(dcc->remote), &dcc->remport, SERVICE_CLIENT, PROTOCOL_TCP)) < 0)
 		{
 			dcc->flags |= DCC_DELETE;
 
@@ -578,17 +574,16 @@ static	int		dcc_open (DCC_list *dcc)
 		}
 
 		len = sizeof(dcc->local_sockaddr);
-		getsockname(dcc->write, (SA *)&dcc->local_sockaddr, &len);
+		getsockname(dcc->socket, (SA *)&dcc->local_sockaddr, &len);
 
 		len = sizeof(dcc->peer_sockaddr);
-		getpeername(dcc->write, (SA *)&dcc->peer_sockaddr, &len);
+		getpeername(dcc->socket, (SA *)&dcc->peer_sockaddr, &len);
 		dcc->remport = ntohs(dcc->peer_sockaddr.sin_port);
 
 		/*
 		 * Set up the connection to be useful
 		 */
-		dcc->read = dcc->write;
-		new_open(dcc->read);
+		new_open(dcc->socket);
 		dcc->flags &= ~DCC_THEIR_OFFER;
 		dcc->flags |= DCC_ACTIVE;
 
@@ -596,7 +591,7 @@ static	int		dcc_open (DCC_list *dcc)
 		 * Who is on the other end?
 		 * XXX Probably could stand to be sanity checked...
 		 */
-		getpeername(dcc->read, (SA *) &remaddr, &rl);
+		getpeername(dcc->socket, (SA *) &remaddr, &rl);
 
 		/*
 		 * If this was a two-peer connection, then tell the user
@@ -681,7 +676,7 @@ static	int		dcc_open (DCC_list *dcc)
 		 * for a port if our random port isnt available.
 		 */
 		dcc->flags |= DCC_MY_OFFER;
-		if ((dcc->read = connect_by_number(NULL, &dcc->local_port,
+		if ((dcc->socket = connect_by_number(NULL, &dcc->local_port,
 				SERVICE_SERVER, PROTOCOL_TCP)) < 0)
 		{
 			dcc->flags |= DCC_DELETE;
@@ -694,7 +689,7 @@ static	int		dcc_open (DCC_list *dcc)
 		}
 
 		len = sizeof(dcc->local_sockaddr);
-		getsockname(dcc->write, (SA *)&dcc->local_sockaddr, &len);
+		getsockname(dcc->socket, (SA *)&dcc->local_sockaddr, &len);
 		dcc->local_port = ntohs(dcc->local_sockaddr.sin_port);
 
 #ifdef MIRC_BROKEN_DCC_RESUME
@@ -706,7 +701,7 @@ static	int		dcc_open (DCC_list *dcc)
 		 */
 		malloc_strcpy(&dcc->othername, ltoa(dcc->local_port));
 #endif
-		new_open(dcc->read);
+		new_open(dcc->socket);
 
 		/*
 		 * If this is to be a 2-peer connection, then we need to
@@ -769,7 +764,7 @@ static void	dcc_send_booster_ctcp (DCC_list *dcc)
 		 * Dont bother with the checksum.
 		 */
 		send_ctcp(CTCP_PRIVMSG, dcc->user, CTCP_DCC,
-			 "%s %s %lu %u %ld", 
+			 "%s %s %lu %hu %ld",
 			 type, url_name,
 			 (u_long) ntohl(myip.s_addr),
 			 (u_short) dcc->local_port,
@@ -893,7 +888,7 @@ const	char 		*text_display, 	/* What to tell the user we sent */
 	if (x_debug & DEBUG_OUTBOUND) 
 		yell("-> [%s] [%s]", desc, tmp);
 
-	if (write(dcc->write, tmp, strlen(tmp)) == -1)
+	if (write(dcc->socket, tmp, strlen(tmp)) == -1)
 	{
 		dcc->flags |= DCC_DELETE;
 		say("Outbound write() failed: %s", 
@@ -938,7 +933,7 @@ void	dcc_chat_transmit (char *user, char *text, const char *orig, const char *ty
 		DCC_list *	dcc;
 
 		for (dcc = ClientList; dcc; dcc = dcc->next)
-			if (dcc->write == fd)
+			if (dcc->socket == fd)
 				break;
 
 		if (!dcc)
@@ -1309,7 +1304,7 @@ static	char		*format =
 			filename++;
 
 		if (!filename)
-			filename = LOCAL_COPY(ltoa(get_pending_bytes(Client->read)));
+			filename = LOCAL_COPY(ltoa(get_pending_bytes(Client->socket)));
 
 		/*
 		 * Figure out how many bytes we have sent for *this*
@@ -1489,10 +1484,10 @@ static	void	dcc_filesend (char *args)
 			*fullname,
 			*this_arg,
 			FileBuf[BIG_BUFFER_SIZE+1];
-	unsigned short	portnum = 0;
+	u_short		portnum = 0;
 	int		filenames_parsed = 0;
 	DCC_list	*Client;
-	struct	stat	stat_buf;
+	Stat		stat_buf;
 
 	/*
 	 * For sure, at least one argument is needed, the target
@@ -1639,16 +1634,16 @@ char	*dcc_raw_listen (unsigned short port)
 		return m_strdup(empty_string);
 	}
 
-	if ((Client->read = connect_by_number(NULL, &port, SERVICE_SERVER, PROTOCOL_TCP)) < 0)
+	if ((Client->socket = connect_by_number(NULL, &port, SERVICE_SERVER, PROTOCOL_TCP)) < 0)
 	{
 		Client->flags |= DCC_DELETE; 
 		say("Couldnt establish listening socket: [%d] %s", 
-			Client->read, my_strerror(errno));
+			Client->socket, my_strerror(errno));
 		message_from(NULL, LOG_CURRENT);
 		return m_strdup(empty_string);
 	}
 
-	new_open(Client->read);
+	new_open(Client->socket);
 	get_time(&Client->starttime);
 	Client->local_port = port;
 	Client->flags |= DCC_ACTIVE;
@@ -1666,19 +1661,14 @@ char	*dcc_raw_connect(char *host, u_short port)
 {
 	DCC_list *	Client;
 	char *		bogus;
-	struct	in_addr	address;
-	struct	hostent	*hp;
+	IA		address;
 
 	message_from(NULL, LOG_DCC);
-	if ((address.s_addr = inet_addr(host)) == (unsigned) -1)
+	if (inet_anyton(host, &address))
 	{
-		if (!(hp = gethostbyname(host)))
-		{
-			say("Unknown host: %s", host);
-			message_from(NULL, LOG_CURRENT);
-			return m_strdup(empty_string);
-		}
-		memmove(&address, hp->h_addr, sizeof(address));
+		say("Unknown host: %s", host);
+		message_from(NULL, LOG_CURRENT);
+		return m_strdup(empty_string);
 	}
 
 	bogus = LOCAL_COPY(ltoa(port));
@@ -1691,7 +1681,7 @@ char	*dcc_raw_connect(char *host, u_short port)
 	}
 
 	Client->remport = port;
-	memmove((char *)&Client->remote, (char *)&address, sizeof(address));
+	Client->remote = address;
 	Client->flags = DCC_THEIR_OFFER | DCC_RAW;
 	if (!dcc_open(Client))
 	{
@@ -1699,7 +1689,7 @@ char	*dcc_raw_connect(char *host, u_short port)
 		return m_strdup(empty_string);
 	}
 
-	Client->user = m_strdup(ltoa(Client->read));
+	Client->user = m_strdup(ltoa(Client->socket));
 	Client->locked++;
 	if (do_hook(DCC_RAW_LIST, "%s %s E %d", Client->user, host, port))
             if (do_hook(DCC_CONNECT_LIST,"%s RAW %s %d", 
@@ -1787,7 +1777,7 @@ void	register_dcc_offer (char *user, char *type, char *description, char *addres
 
 		if (DCC_CHAT == CType)
 		{
-			Client = dcc_searchlist(description, user, CType, 1, (char *) 0, -1);
+			Client = dcc_searchlist(description, user, CType, 1, NULL, -1);
 			do_auto = 1;
 		}
 		else
@@ -1806,12 +1796,7 @@ void	register_dcc_offer (char *user, char *type, char *description, char *addres
 	}
 	Client->flags |= DCC_THEIR_OFFER;
 
-	if (!strchr(address, '.'))
-	{
-		TempLong = strtoul(address, NULL, 10);
-		Client->remote.s_addr = htonl(TempLong);
-	}
-	else
+	if (strchr(address, '.'))
 	{
 		if (inet_aton(address, &Client->remote) == 0)
 		{
@@ -1821,8 +1806,18 @@ void	register_dcc_offer (char *user, char *type, char *description, char *addres
 			return;
 		}
 	}
+	else if (strchr(address, ':'))
+	{
+		say("DCC IPv6 handshake recieved -- not supported!");
+		return;
+	}
+	else
+	{
+		TempLong = strtoul(address, NULL, 10);
+		Client->remote.s_addr = htonl(TempLong);
+	}
 
-	Client->remport = (unsigned short)strtoul(port, NULL, 10);
+	Client->remport = (u_short)strtoul(port, NULL, 10);
 	if (Client->remport < 1024)
 	{
 		Client->flags |= DCC_DELETE;
@@ -1840,35 +1835,26 @@ void	register_dcc_offer (char *user, char *type, char *description, char *addres
 	 * user instead to be cautious.
 	 */
 	{
-		char 		tmpbuf[128];
 		char 		*fromhost;
-		unsigned long 	compare, 
-				compare2;
-		struct hostent 	*hostent_fromhost;
+		IA		irc_addr;
 
-		strlcpy(tmpbuf, FromUserHost, 128);
-		fromhost = strchr(tmpbuf, '@') + 1;
-		alarm(1);	/* dont block too long... */
-		hostent_fromhost = gethostbyname(fromhost);
-		alarm(0);
+		if (!(fromhost = strchr(FromUserHost, '@')))
+		{
+			yell("### Incoming handshake from a non-user peer!");
+			return;
+		}
 
-		if (!hostent_fromhost)
+		fromhost++;
+		if (inet_anyton(fromhost, &irc_addr))
 		{
 			yell("### Incoming handshake has an address [%s] that could not be figured out!", fromhost);
 			yell("### Please use caution in deciding whether to accept it or not");
 		}
-		else
+		else if (irc_addr.s_addr != Client->remote.s_addr)
 		{
-			compare = *((unsigned long *)hostent_fromhost->h_addr_list[0]);
-			compare2 = inet_addr(fromhost);
-
-			if ((compare != Client->remote.s_addr) &&
-			    (compare2 != Client->remote.s_addr))
-			{
-				say("WARNING: Fake dcc handshake detected! [%x]",Client->remote.s_addr);
-				say("Unless you know where this dcc request is coming from");
-				say("It is recommended you ignore it!");
-			}
+			say("WARNING: Fake dcc handshake detected! [%x]", Client->remote.s_addr);
+			say("Unless you know where this dcc request is coming from");
+			say("It is recommended you ignore it!");
 		}
 	}
 #endif
@@ -2003,9 +1989,9 @@ void	dcc_check (fd_set *Readables)
 			continue;
 		}
 
-		if (Readables && Client->read != -1 && FD_ISSET(Client->read, Readables))
+		if (Readables && Client->socket != -1 && FD_ISSET(Client->socket, Readables))
 		{
-			FD_CLR(Client->read, Readables);	/* No more! */
+			FD_CLR(Client->socket, Readables);	/* No more! */
 			previous_server = from_server;
 			from_server = -1;
 			message_from(NULL, LOG_DCC);
@@ -2078,20 +2064,21 @@ void	dcc_check (fd_set *Readables)
  */
 static	void	process_incoming_chat (DCC_list *Client)
 {
-	struct	sockaddr_in	remaddr;
+	ISA	remaddr;
 	int	sra;
 	char	tmp[IO_BUFFER_SIZE + 1];
 	char	tmp2[IO_BUFFER_SIZE + 1];
 	char	*bufptr;
 	long	bytesread;
+	int	fd;
 
 	if (Client->flags & DCC_MY_OFFER)
 	{
 		sra = sizeof(struct sockaddr_in);
-		Client->write = my_accept(Client->read, (struct sockaddr *) &remaddr, &sra);
-		Client->read = new_close(Client->read);
-		if ((Client->read = Client->write) > 0)
-			new_open(Client->read);
+		fd = my_accept(Client->socket, (SA *) &remaddr, &sra);
+		Client->socket = new_close(Client->socket);
+		if ((Client->socket = fd) > 0)
+			new_open(Client->socket);
 		else
 		{
 			Client->flags |= DCC_DELETE;
@@ -2113,7 +2100,7 @@ static	void	process_incoming_chat (DCC_list *Client)
 	}
 
         bufptr = tmp;
-	bytesread = dgets(bufptr, Client->read, 1);
+	bytesread = dgets(bufptr, Client->socket, 1);
 
 	switch ((int)bytesread)
 	{
@@ -2238,7 +2225,7 @@ struct	hostent		*hp;
 	int		len;
 
 	sra = sizeof(remaddr);
-	new_socket = my_accept(Client->read, (SA *) &remaddr, &sra);
+	new_socket = my_accept(Client->socket, (SA *) &remaddr, &sra);
 	if (new_socket < 0)
 	{
 		yell("### DCC Error: accept() failed.  Punting.");
@@ -2253,7 +2240,7 @@ struct	hostent		*hp;
 
 	strlcpy(FdName, ltoa(new_socket), 10);
 	NewClient = dcc_searchlist(Name, FdName, DCC_RAW, 1, NULL, 0);
-	NewClient->read = NewClient->write = new_socket;
+	NewClient->socket = new_socket;
 
 	len = sizeof(NewClient->peer_sockaddr);
 	NewClient->peer_sockaddr = remaddr;
@@ -2263,7 +2250,7 @@ struct	hostent		*hp;
 	NewClient->flags |= DCC_ACTIVE;
 	NewClient->bytes_read = NewClient->bytes_sent = 0L;
 	get_time(&NewClient->starttime);
-	new_open(NewClient->read);
+	new_open(NewClient->socket);
 
 	Client->locked++;
 	if (do_hook(DCC_RAW_LIST, "%s %s N %d", NewClient->user,
@@ -2292,7 +2279,7 @@ static	void		process_incoming_raw (DCC_list *Client)
 	long	bytesread;
 
         bufptr = tmp;
-	switch ((int)(bytesread = dgets(bufptr, Client->read, 0)))
+	switch ((int)(bytesread = dgets(bufptr, Client->socket, 0)))
 	{
 	    case -1:
 	    {
@@ -2332,16 +2319,17 @@ static	void		process_incoming_raw (DCC_list *Client)
  */
 static void		process_outgoing_file (DCC_list *Client)
 {
-	struct	sockaddr_in	remaddr;
-	int			sra;
-	char			tmp[DCC_BLOCK_SIZE+1];
-	u_32int_t		bytesrecvd;
-	int			bytesread;
-	int			old_from_server = from_server;
-	int			maxpackets;
-	fd_set			fd;
-	int			size;
-	struct timeval		to;
+	ISA		remaddr;
+	int		sra;
+	char		tmp[DCC_BLOCK_SIZE+1];
+	u_32int_t	bytesrecvd;
+	int		bytesread;
+	int		old_from_server = from_server;
+	int		maxpackets;
+	fd_set		fd;
+	int		size;
+	Timeval		to;
+	int		new_fd;
 
 	/*
 	 * The remote user has accepted the file offer
@@ -2351,16 +2339,16 @@ static void		process_outgoing_file (DCC_list *Client)
 		/*
 		 * Open up the network connection
 		 */
-		sra = sizeof(struct sockaddr_in);
-		Client->write = my_accept(Client->read, (SA *) &remaddr, &sra);
-		Client->read = new_close(Client->read);
-		if ((Client->read = Client->write) < 0)
+		sra = sizeof(remaddr);
+		new_fd = my_accept(Client->socket, (SA *) &remaddr, &sra);
+		Client->socket = new_close(Client->socket);
+		if ((Client->socket = new_fd) < 0)
 		{
 			Client->flags |= DCC_DELETE;
 			yell("### DCC Error: accept() failed.  Punting.");
 			return;
 		}
-		new_open(Client->read);
+		new_open(Client->socket);
 		Client->flags &= ~DCC_MY_OFFER;
 		Client->flags |= DCC_ACTIVE;
 		get_time(&Client->starttime);
@@ -2371,7 +2359,7 @@ static void		process_outgoing_file (DCC_list *Client)
 		 * for each write()
 		 */
 		size = DCC_BLOCK_SIZE;
-		if (setsockopt(Client->write, SOL_SOCKET, SO_SNDLOWAT, 
+		if (setsockopt(Client->socket, SOL_SOCKET, SO_SNDLOWAT, 
 					&size, sizeof(size)) < 0)
 			say("setsockopt failed: %s", strerror(errno));
 #endif
@@ -2427,7 +2415,7 @@ static void		process_outgoing_file (DCC_list *Client)
 		 * It is important to note here that the ACK must always
 		 * be exactly four bytes.  Never more, never less.
 		 */
-		if (read(Client->read, (char *)&bytesrecvd, sizeof(u_32int_t)) < (int) sizeof(u_32int_t))
+		if (read(Client->socket, (char *)&bytesrecvd, sizeof(u_32int_t)) < (int) sizeof(u_32int_t))
 		{
 			Client->flags |= DCC_DELETE;
 
@@ -2439,11 +2427,12 @@ static void		process_outgoing_file (DCC_list *Client)
 			Client->locked--;
 			return;
 		}
+		bytesrecvd = ntohl(bytesrecvd);
 
 		/*
 		 * Check to see if we need to move the sliding window up
 		 */
-		if (ntohl(bytesrecvd) >= (Client->packets_ack + 1) * DCC_BLOCK_SIZE)
+		if (bytesrecvd >= (Client->packets_ack + 1) * DCC_BLOCK_SIZE)
 		{
 			if (x_debug & DEBUG_DCC_XMIT)
 				yell("Packet #%ld ACKed", Client->packets_ack);
@@ -2451,7 +2440,7 @@ static void		process_outgoing_file (DCC_list *Client)
 			Client->packets_outstanding--;
 		}
 
-		if (ntohl(bytesrecvd) > Client->bytes_sent)
+		if (bytesrecvd > Client->bytes_sent)
 		{
 yell("### WARNING!  The other peer claims to have recieved more bytes than");
 yell("### I have actually sent so far.  Please report this to ");
@@ -2468,7 +2457,7 @@ yell("###    Client->packets_outstanding [%ld]",
 				Client->packets_outstanding);
 
 			/* And just cope with it to avoid whining */
-			Client->bytes_sent = ntohl(bytesrecvd);
+			Client->bytes_sent = bytesrecvd;
 		}
 	
 		/*
@@ -2480,7 +2469,7 @@ yell("###    Client->packets_outstanding [%ld]",
 			 * If theyve ACKed the last packet, we close 
 			 * the connection.
 			 */
-			if (ntohl(bytesrecvd) >= Client->filesize)
+			if (bytesrecvd >= Client->filesize)
 				DCC_close_filesend(Client, "SEND");
 
 			/*
@@ -2506,12 +2495,12 @@ yell("###    Client->packets_outstanding [%ld]",
 	while (Client->packets_outstanding < maxpackets)
 	{
 		/*
-		 * Check to make ure the write wont block.
+		 * Check to make sure the write won't block.
 		 */
-		FD_SET(Client->write, &fd);
+		FD_SET(Client->socket, &fd);
 		to.tv_sec = 0;
 		to.tv_usec = 0;
-		if (select(Client->write + 1, NULL, &fd, NULL, &to) <= 0)
+		if (select(Client->socket + 1, NULL, &fd, NULL, &to) <= 0)
 			break;
 
 		/*
@@ -2534,7 +2523,7 @@ yell("###    Client->packets_outstanding [%ld]",
 		/*
 		 * Attempt to write the file.  If it chokes, whine.
 		 */
-		if (write(Client->write, tmp, bytesread) < bytesread)
+		if (write(Client->socket, tmp, bytesread) < bytesread)
 		{
 			Client->flags |= DCC_DELETE;
 			say("Outbound write() failed: %s", 
@@ -2581,52 +2570,50 @@ static	void		process_incoming_file (DCC_list *Client)
 	u_32int_t	bytestemp;
 	int		bytesread;
 
-	if ((bytesread = read(Client->read, tmp, DCC_BLOCK_SIZE)) <= 0)
+	if ((bytesread = read(Client->socket, tmp, DCC_BLOCK_SIZE)) <= 0)
 	{
 		if (Client->bytes_read < Client->filesize)
 			say("DCC GET to %s lost -- Remote peer closed connection", Client->user);
 		DCC_close_filesend(Client, "GET");
+		return;
 	}
-	else
+
+	my_decrypt(tmp, bytesread, Client->encrypt);
+	if ((write(Client->file, tmp, bytesread)) == -1)
 	{
-		my_decrypt(tmp, bytesread, Client->encrypt);
-		if ((write(Client->file, tmp, bytesread)) == -1)
-		{
-			Client->flags |= DCC_DELETE;
-			say("Write to local file failed.  Giving up.");
-			return;
-		}
+		Client->flags |= DCC_DELETE;
+		say("Write to local file failed.  Giving up.");
+		return;
+	}
 
+	Client->bytes_read += bytesread;
+	bytestemp = htonl(Client->bytes_read);
+	if (write(Client->socket, (char *)&bytestemp, sizeof(u_32int_t)) == -1)
+	{
+		Client->flags |= DCC_DELETE;
+		yell("### Write to remote peer failed.  Giving up.");
+		return;
+	}
 
-		Client->bytes_read += bytesread;
-		bytestemp = htonl(Client->bytes_read);
-		if (write(Client->write, (char *)&bytestemp, sizeof(u_32int_t)) == -1)
-		{
-			Client->flags |= DCC_DELETE;
-			yell("### Write to remote peer failed.  Giving up.");
-			return;
-		}
-
-		Client->packets_transfer = Client->bytes_read / DCC_BLOCK_SIZE;
+	Client->packets_transfer = Client->bytes_read / DCC_BLOCK_SIZE;
 
 /* TAKE THIS OUT IF IT CAUSES PROBLEMS */
-		if ((Client->filesize) && (Client->bytes_read > Client->filesize))
-		{
-			Client->flags |= DCC_DELETE;
-			yell("### DCC GET WARNING: incoming file is larger then the handshake said");
-			yell("### DCC GET: Closing connection");
-			return;
-		}
+	if ((Client->filesize) && (Client->bytes_read > Client->filesize))
+	{
+		Client->flags |= DCC_DELETE;
+		yell("### DCC GET WARNING: incoming file is larger then the handshake said");
+		yell("### DCC GET: Closing connection");
+		return;
+	}
 
-		if (((Client->flags & DCC_TYPES) == DCC_FILEOFFER) || 
-		     ((Client->flags & DCC_TYPES) == DCC_FILEREAD))
-		{
-			if (Client->filesize)
-				update_transfer_buffer("(%10s: %d of %d: %d%%)", Client->user, Client->packets_transfer, Client->packets_total, Client->bytes_read * 100 / Client->filesize);
-			else
-				update_transfer_buffer("(%10s %d packets: %dK)", Client->user, Client->packets_transfer, Client->bytes_read / 1024);
-			update_all_status();
-		}
+	if (((Client->flags & DCC_TYPES) == DCC_FILEOFFER) || 
+	     ((Client->flags & DCC_TYPES) == DCC_FILEREAD))
+	{
+		if (Client->filesize)
+			update_transfer_buffer("(%10s: %d of %d: %d%%)", Client->user, Client->packets_transfer, Client->packets_total, Client->bytes_read * 100 / Client->filesize);
+		else
+			update_transfer_buffer("(%10s %d packets: %dK)", Client->user, Client->packets_transfer, Client->bytes_read / 1024);
+		update_all_status();
 	}
 }
 
@@ -2669,8 +2656,8 @@ static	void 	output_reject_ctcp (char *original, char *received)
  */
 void 	dcc_reject (char *from, char *type, char *args)
 {
-	DCC_list	*Client;
-	char		*description;
+	DCC_list *	Client;
+	char *		description;
 	int		CType;
 
 	for (CType = 0; dcc_types[CType] != NULL; CType++)

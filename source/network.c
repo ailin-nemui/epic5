@@ -284,8 +284,9 @@ int	inet_anyton (const char *hostname, IA *addr)
 
 	if (isdigit(last_char(hostname)))
 	{
-		inet_aton(hostname, addr);
-		return 0;
+		if (inet_aton(hostname, addr) == 1)
+			return 0;
+		return -1;
 	}
 
 	if (!(hp = resolv(hostname)))
