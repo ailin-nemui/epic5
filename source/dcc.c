@@ -1,4 +1,4 @@
-/* $EPIC: dcc.c,v 1.86 2003/12/16 23:25:45 jnelson Exp $ */
+/* $EPIC: dcc.c,v 1.87 2003/12/17 09:25:30 jnelson Exp $ */
 /*
  * dcc.c: Things dealing client to client connections. 
  *
@@ -1629,7 +1629,7 @@ static	const char	*format =
 		char	size[9];
 		char	speed[9];
 		char	buf[23];
-		char *	time_f;
+		const char *	time_f;
 		u_32int_t	tot_size;
 		u_32int_t	act_sent;
 
@@ -1942,7 +1942,7 @@ static	void	dcc_filesend (char *args)
 char	*dcc_raw_listen (int family, unsigned short port)
 {
 	DCC_list *Client;
-	char *	  PortName = empty_string;
+	const char *	  PortName = empty_string;
 	int	l;
 
 	lock_dcc(NULL);
@@ -1997,7 +1997,7 @@ char	*dcc_raw_connect (const char *host, const char *port, int family)
 {
 	DCC_list *	Client = NULL;
 	SS		my_sockaddr;
-	char *		retval = empty_string;
+	const char *	retval = empty_string;
 	int		l;
 
 	lock_dcc(NULL);

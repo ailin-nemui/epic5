@@ -51,8 +51,8 @@
 
 int     inet_strton             (const char *, const char *, SA *, int);
 int     inet_ntostr             (SA *, char *, int, char *, int, int);
-char    *inet_hntop             (int, const char *, char *, int);
-char    *inet_ptohn             (int, const char *, char *, int);
+const char *inet_hntop             (int, const char *, char *, int);
+const char *inet_ptohn             (int, const char *, char *, int);
 char    *one_to_another         (int, const char *, char *, int);
 int     Accept                  (int, SA *, int *);
 char    *switch_hostname        (const char *);

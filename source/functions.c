@@ -1,4 +1,4 @@
-/* $EPIC: functions.c,v 1.151 2003/12/16 23:25:45 jnelson Exp $ */
+/* $EPIC: functions.c,v 1.152 2003/12/17 09:25:30 jnelson Exp $ */
 /*
  * functions.c -- Built-in functions for ircII
  *
@@ -803,7 +803,7 @@ char	*call_function (char *name, const char *args)
 		*lparen++ = 0;
 	}
 	else
-		lparen = empty_string;
+		lparen = endstr(name);
 
 	tmp = expand_alias(lparen, args, NULL);
 	debug_copy = LOCAL_COPY(tmp);
@@ -1025,7 +1025,7 @@ BUILT_IN_FUNCTION(function_mid, word)
 			word[length] = 0;
 	}
 	else
-		word = EMPTY;
+		word = endstr(word);
 
 	RETURN_STR(word);
 }
@@ -2435,7 +2435,7 @@ BUILT_IN_FUNCTION(function_channelmode, word)
 {
 	char	*channel;
 	char    *booya = (char *) 0;
-	char	*mode;
+	const char	*mode;
 	size_t	rvclue=0;
 
 	do
@@ -3158,12 +3158,12 @@ BUILT_IN_FUNCTION(function_translate, words)
 
 	if (!text)
 		RETURN_EMPTY;
-	*text++ = '\0';
+	*text++ = 0;
 
 	if (newc == text)
 	{
-		*newc = '\0';
-		newc = empty_string;
+		*newc = 0;
+		newc = endstr(newc);
 	}
 	else
 		newc[-1] = 0;
@@ -5208,8 +5208,8 @@ BUILT_IN_FUNCTION(function_mask, args)
 		user[8] = 0;
 	}
 
-	if (!host) host = empty_string;
-	if (!domain) domain = empty_string;
+	if (!host) host = LOCAL_COPY(empty_string);
+	if (!domain) domain = LOCAL_COPY(empty_string);
 
 	/* DOT gives you a "." if the host and domain are both non-empty */
 #define USER (user == star ? empty_string : user)

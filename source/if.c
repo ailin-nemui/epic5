@@ -1,4 +1,4 @@
-/* $EPIC: if.c,v 1.27 2003/12/16 23:25:45 jnelson Exp $ */
+/* $EPIC: if.c,v 1.28 2003/12/17 09:25:30 jnelson Exp $ */
 /*
  * if.c: the IF, WHILE, FOREACH, DO, FE, FEC, and FOR commands for IRCII 
  *
@@ -429,7 +429,7 @@ BUILT_IN_COMMAND(fe)
 	int     old_display;
 	int	doing_fe = !strcmp(command, "FE");
 	char	*mapvar = NULL;
-	char	*mapsep = doing_fe ? space : empty_string;
+	const char	*mapsep = doing_fe ? space : empty_string;
 	char	*map = NULL;
 	size_t	mapclue = 0;
 
@@ -509,7 +509,7 @@ BUILT_IN_COMMAND(fe)
 
 			/* Something is really hosed if this happens */
 			if (!word)
-				word = empty_string;
+				word = endstr(templist);
 
 			add_local_alias(var[y], word, 0);
 		}

@@ -1,4 +1,4 @@
-/* $EPIC: keys.c,v 1.30 2003/10/28 05:53:57 jnelson Exp $ */
+/* $EPIC: keys.c,v 1.31 2003/12/17 09:25:30 jnelson Exp $ */
 /*
  * keys.c:  Keeps track of what happens whe you press a key.
  *
@@ -248,7 +248,8 @@ static void key_exec (struct Key *key) {
  * into a string, and then parses the string looking for the longest
  * possible input combinations and executing them as it goes. */
 void key_exec_bt (struct Key *key) {
-    unsigned char *kstr = empty_string, *nstr;
+    unsigned char *kstr = (char *)empty_string;
+    unsigned char *nstr;
     int len = 1, kslen;
     struct Key *kp;
 
@@ -1200,7 +1201,7 @@ BUILT_IN_COMMAND(parsekeycmd) {
 	    fake.stuff = malloc_strdup(args);
 	else
 	    fake.stuff = NULL;
-	fake.filename = empty_string;
+	fake.filename = LOCAL_COPY("");
 
 	key_exec(&fake);
 

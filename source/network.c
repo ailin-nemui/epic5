@@ -1,4 +1,4 @@
-/* $EPIC: network.c,v 1.51 2003/12/13 17:25:58 jnelson Exp $ */
+/* $EPIC: network.c,v 1.52 2003/12/17 09:25:30 jnelson Exp $ */
 /*
  * network.c -- handles stuff dealing with connecting and name resolving
  *
@@ -515,7 +515,7 @@ int	inet_ntostr (SA *name, char *host, int hsize, char *port, int psize, int fla
  * RETURN VALUE: "retval" is returned upon success
  *		 "empty_string" is returned for any error.
  */
-char *	inet_hntop (int family, const char *host, char *retval, int size)
+const char *	inet_hntop (int family, const char *host, char *retval, int size)
 {
 	int	err;
 	SS	buffer;
@@ -541,7 +541,7 @@ char *	inet_hntop (int family, const char *host, char *retval, int size)
  * RETURN VALUE: "retval" is returned upon success
  *		 "empty_string" is returned for any error.
  */
-char *	inet_ptohn (int family, const char *ip, char *retval, int size)
+const char *	inet_ptohn (int family, const char *ip, char *retval, int size)
 {
 	int	err;
 	SS	buffer;

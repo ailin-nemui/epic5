@@ -1,4 +1,4 @@
-/* $EPIC: ircaux.c,v 1.105 2003/12/14 20:04:10 jnelson Exp $ */
+/* $EPIC: ircaux.c,v 1.106 2003/12/17 09:25:30 jnelson Exp $ */
 /*
  * ircaux.c: some extra routines... not specific to irc... that I needed 
  *
@@ -2769,7 +2769,7 @@ int	figure_out_domain (char *fqdn, char **host, char **domain, int *ip)
 			!strncmp(thirdback, ".k12.", 5) &&
 			!strncmp(firstback, ".us", 3))
 	{
-		*host = empty_string;
+		*host = endstr(fqdn);
 		*domain = fqdn;
 	}
 	/*
@@ -2793,7 +2793,7 @@ int	figure_out_domain (char *fqdn, char **host, char **domain, int *ip)
 			(endstring - firstback == 3) &&
 		 	(firstback - secondback == 4))
 	{
-		*host = empty_string;
+		*host = endstr(fqdn);
 		*domain = fqdn;
 	}
 	/*
@@ -2817,7 +2817,7 @@ int	figure_out_domain (char *fqdn, char **host, char **domain, int *ip)
 			(endstring - firstback == 3) &&
 			(firstback - secondback == 3))
 	{
-		*host = empty_string;
+		*host = endstr(fqdn);
 		*domain = fqdn;
 	}
 	/*
@@ -2836,7 +2836,7 @@ int	figure_out_domain (char *fqdn, char **host, char **domain, int *ip)
 	 */
 	else
 	{
-		*host = empty_string;
+		*host = endstr(fqdn);
 		*domain = fqdn;
 	}
 
@@ -4427,7 +4427,7 @@ char *	safe_new_next_arg (char *str, char **new_ptr)
 	char * ret;
 
 	if (!(ret = new_next_arg(str, new_ptr)))
-		ret = empty_string;
+		ret = endstr(str);
 
 	return ret;
 }
@@ -4453,5 +4453,14 @@ char *	last_arg (char **src, size_t *cluep)
 		*src = NULL;		/* We're done, natch! */
 
 	return mark;
+}
+
+char *	endstr (char *src)
+{
+	if (!src)
+		return NULL;
+	while (*src)
+		src++;
+	return src;
 }
 

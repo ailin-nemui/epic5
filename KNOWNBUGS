@@ -12,6 +12,10 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Nix auto-append-of-$* feature (args_flag to expand_alias/parse_inline) HUZZAH!
 * Fix provided scripts to add $* when necessary.
 * Fix up Makefile, configure, et al, to use epic5/ directories.
+* Make message_from() work from a queue; call pop_message_from() to GC
+* Removed unused variables
+* Add /xdebug message_from to watch the message_from queue at work.
+* Nix save_message_from(), restore_message_from(), unneeded now.
 * Remove /set beep_on_msg, a half-broken feature which can be scripted.
 * Nix /set beep_when_away, a 1-line scriptable feature.
 * Add new noise level %, (/ON %TYPE); like ^ but doesn't turn off display
@@ -36,3 +40,4 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Rename a bunch of functions and variables that use "mask" and not "level"
 * Make KICKs, PARTs, QUITs, MODEs, et al use their new special levels!
 * All levels now mean everything in every context!  HUZZAH! 
+* Make empty_string const.  Now we're cooking with gas! 

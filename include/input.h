@@ -19,7 +19,7 @@
 	void	init_input 			(void);
 	void	input_move_cursor 		(int);
 	char	input_pause 			(char *);
-	void	set_input 			(char *);
+	void	set_input 			(const char *);
 	void	set_input_prompt 		(const void *);
 	void	update_input 			(int);
 

@@ -13,7 +13,7 @@
 	void	set_history_size 	(const void *);
 	void	add_to_history 		(char *);
 	void	get_history 		(int);
-	char *	do_history 		(char *, char *);
+	char *	do_history 		(const char *, const char *);
 	void	shove_to_history 	(char, char *);
 	void    abort_history_browsing	(int);
 

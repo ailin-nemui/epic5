@@ -1,4 +1,4 @@
-/* $EPIC: ctcp.c,v 1.32 2003/12/16 23:25:45 jnelson Exp $ */
+/* $EPIC: ctcp.c,v 1.33 2003/12/17 09:25:30 jnelson Exp $ */
 /*
  * ctcp.c:handles the client-to-client protocol(ctcp). 
  *
@@ -687,7 +687,7 @@ static	time_t	last_ctcp_parsed = 0;
 		if (ctcp_argument)
 			*ctcp_argument++ = 0;
 		else
-			ctcp_argument = empty_string;
+			ctcp_argument = endstr(the_ctcp);
 
 		/* Set up the window level/logging */
 		if (im_on_channel(to, from_server))
@@ -729,7 +729,7 @@ static	time_t	last_ctcp_parsed = 0;
 		/* 
 		 * We did find it.  Acknowledge it.
 		 */
-		ptr = empty_string;
+		ptr = NULL;
 		if (do_hook(CTCP_REQUEST_LIST, "%s %s %s %s",
 				from, to, ctcp_command, ctcp_argument))
 		{
@@ -760,7 +760,7 @@ static	time_t	last_ctcp_parsed = 0;
 		 * If its an ``INLINE'' CTCP, we paste it back in.
 		 */
 		if (ctcp_cmd[i].flag & CTCP_INLINE)
-			strlcat(local_ctcp_buffer, ptr, sizeof local_ctcp_buffer);
+			strlcat(local_ctcp_buffer, ptr ? ptr : empty_string, sizeof local_ctcp_buffer);
 
 		/* 
 		 * If its ``INTERESTING'', tell the user.
@@ -787,8 +787,7 @@ static	time_t	last_ctcp_parsed = 0;
 			}
 		    }
 		}
-		if (ptr != empty_string)
-			new_free(&ptr);
+		new_free(&ptr);
 		pop_message_from(l);
 	}
 
@@ -872,7 +871,7 @@ char *	do_notice_ctcp (const char *from, const char *to, char *str)
 		if (ctcp_argument)
 			*ctcp_argument++ = 0;
 		else
-			ctcp_argument = empty_string;
+			ctcp_argument = endstr(the_ctcp);
 
 
 		/* 

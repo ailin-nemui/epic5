@@ -227,8 +227,8 @@ extern	unsigned current_window_priority;
 	void	update_window_statusbar		(Window *);
 #endif
 	void	update_all_status		(void);
-	void	set_prompt_by_refnum		(unsigned, char *);
-	char 	*get_prompt_by_refnum		(unsigned);
+	void	set_prompt_by_refnum		(unsigned, const char *);
+const	char 	*get_prompt_by_refnum		(unsigned);
 const	char	*get_target_by_refnum		(unsigned);
 const char	*query_nick			(void);
 	void	set_query_nick			(char *);

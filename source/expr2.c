@@ -1,4 +1,4 @@
-/* $EPIC: expr2.c,v 1.19 2003/12/14 20:04:09 jnelson Exp $ */
+/* $EPIC: expr2.c,v 1.20 2003/12/17 09:25:30 jnelson Exp $ */
 /*
  * Zsh: math.c,v 3.1.2.1 1997/06/01 06:13:15 hzoli Exp 
  * math.c - mathematical expression evaluation
@@ -246,7 +246,7 @@ typedef struct
 #define TOK(c, v) 	c->tokens[v]
 
 /* Forward function references */
-__inline static	TOKEN	tokenize_raw (expr_info *c, char *t);
+__inline static	TOKEN	tokenize_raw (expr_info *c, const char *t);
 	static	char *	after_expando_special (expr_info *c);
 	static	char *	alias_special_char (char **buffer, char *ptr, 
 					const char *args, char *quote_em);
@@ -486,7 +486,7 @@ __inline static	TOKEN		tokenize_lval (expr_info *c, const char *t)
  * result of operators) directly create "expanded" tokens.
  */
 /* THIS FUNCTION MAKES A NEW COPY OF 'T'.  YOU MUST DISPOSE OF 'T' YOURSELF */
-__inline static	TOKEN		tokenize_raw (expr_info *c, char *t)
+__inline static	TOKEN		tokenize_raw (expr_info *c, const char *t)
 {
 	if (c->token >= TOKENCOUNT)
 	{
@@ -1948,7 +1948,7 @@ static int	zzlex (expr_info *c)
 				*c->ptr = 0;
 			}
 			else
-				c->ptr = empty_string;
+				c->ptr = endstr(c->ptr);
 
 			c->last_token = 0;
 			if (!c->noeval)
@@ -1992,7 +1992,7 @@ static int	zzlex (expr_info *c)
 				*c->ptr = 0;
 			}
 			else
-				c->ptr = empty_string;
+				c->ptr = endstr(c->ptr);
 
 			if (c->noeval)
 				c->last_token = 0;
@@ -2101,7 +2101,7 @@ handle_expando:
 			else
 			{
 				c->last_token = 0; /* Empty token */
-				c->ptr = empty_string;
+				c->ptr = endstr(c->ptr);
 			}
 
 			if (x_debug & DEBUG_NEW_MATH_DEBUG)

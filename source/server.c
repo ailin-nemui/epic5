@@ -1,4 +1,4 @@
-/* $EPIC: server.c,v 1.110 2003/12/16 23:25:45 jnelson Exp $ */
+/* $EPIC: server.c,v 1.111 2003/12/17 09:25:30 jnelson Exp $ */
 /*
  * server.c:  Things dealing with that wacky program we call ircd.
  *
@@ -73,7 +73,7 @@
  * a kludge and should be changed.
  */
 const 	char *	default_umodes = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
-static	char *	do_umode (int du_index);
+static	void	do_umode (int du_index);
 static 	void 	remove_from_server_list (int i, int override);
 	void 	reset_nickname (int);
 	void	clear_reconnect_counts (void);
@@ -1667,15 +1667,14 @@ const char *	get_server_away (int refnum)
 
 
 /* USER MODES */
-static char *do_umode (int refnum)
+static void	do_umode (int refnum)
 {
 	Server *s;
 	char *c;
 	long flags, flags2, i;
-	char *retval;
 
 	if (!(s = get_server(refnum)))
-		return empty_string;
+		return;
 
 	c = s->umode;
 	flags = s->flags;
@@ -1697,8 +1696,7 @@ static char *do_umode (int refnum)
 
 	*c = 0;
 
-	retval = s->umode;
-	return retval;		/* eliminates a specious warning from gcc */
+	return;		/* eliminates a specious warning from gcc */
 }
 
 const char *	get_possible_umodes (int refnum)

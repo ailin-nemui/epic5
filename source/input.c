@@ -1,4 +1,4 @@
-/* $EPIC: input.c,v 1.19 2003/12/14 20:04:09 jnelson Exp $ */
+/* $EPIC: input.c,v 1.20 2003/12/17 09:25:30 jnelson Exp $ */
 /*
  * input.c: does the actual input line stuff... keeps the appropriate stuff
  * on the input line, handles insert/delete of characters/words... the whole
@@ -243,7 +243,10 @@ void	update_input (int update)
 		 * Note that it is not malloced.
 		 */
 		if (is_valid_process(get_target_by_refnum(0)) != -1)
-			ptr = get_prompt_by_refnum(0);
+		{
+			const char *p = get_prompt_by_refnum(0);
+			ptr = LOCAL_COPY(p);
+		}
 
 		/*
 		 * Otherwise, we just expand the prompt as normal.
@@ -547,7 +550,7 @@ void	input_move_cursor (int dir)
  * set_input: sets the input buffer to the given string, discarding whatever
  * was in the input buffer before 
  */
-void	set_input (char *str)
+void	set_input (const char *str)
 {
 	strlcpy(INPUT_BUFFER + MIN_POS, str, INPUT_BUFFER_SIZE - MIN_POS);
 	THIS_POS = strlen(INPUT_BUFFER);
@@ -1234,7 +1237,7 @@ BUILT_IN_BINDING(insert_altcharset)
 BUILT_IN_BINDING(type_text)
 {
 	for (; *string; string++)
-		input_add_character(*string, empty_string);
+		input_add_character(*string, NULL);
 }
 
 /*
@@ -1333,7 +1336,7 @@ void	edit_char (u_char key)
 	if (last_input_screen->quote_hit)
 	{
 		last_input_screen->quote_hit = 0;
-		input_add_character(extended_key, empty_string);
+		input_add_character(extended_key, NULL);
 	}
 
 	/* Otherwise, let the keybinding system take care of the work. */

@@ -1,4 +1,4 @@
-/* $EPIC: vars.c,v 1.46 2003/12/16 23:25:45 jnelson Exp $ */
+/* $EPIC: vars.c,v 1.47 2003/12/17 09:25:31 jnelson Exp $ */
 /*
  * vars.c: All the dealing of the irc variables are handled here. 
  *
@@ -787,7 +787,11 @@ enum VAR_TYPES	sv_index;
 				{
 					say("%s is ambiguous", var);
 					for (cnt += sv_index; (int)sv_index < cnt; sv_index = (enum VAR_TYPES)(sv_index + 1))
-						set_var_value(sv_index, empty_string);
+					{
+						char es[1];
+						es[0] = 0;
+						set_var_value(sv_index, es);
+					}
 				}
 			}
 		}
@@ -796,7 +800,11 @@ enum VAR_TYPES	sv_index;
         {
 		int var_index;
 		for (var_index = 0; var_index < NUMBER_OF_VARIABLES; var_index++)
-			set_var_value(var_index, empty_string);
+		{
+			char es[1];
+			es[0] = 0;
+			set_var_value(var_index, es);
+		}
         }
 }
 

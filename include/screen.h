@@ -140,7 +140,7 @@ struct	ScreenStru *next;		/* Previous screen in list */
 #define ST_XTERM        1
 
 
-	void	add_wait_prompt 	(const char *, void (*)(char *, char *), char *, int, int);
+	void	add_wait_prompt 	(const char *, void (*)(char *, char *), const char *, int, int);
 	void	set_current_screen 	(Screen *);
 	void	window_redirect		(char *, int);
 	int	check_screen_redirect	(char *);

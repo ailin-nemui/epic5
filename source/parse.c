@@ -1,4 +1,4 @@
-/* $EPIC: parse.c,v 1.54 2003/12/16 23:25:45 jnelson Exp $ */
+/* $EPIC: parse.c,v 1.55 2003/12/17 09:25:30 jnelson Exp $ */
 /*
  * parse.c: handles messages from the server.   Believe it or not.  I
  * certainly wouldn't if I were you. 
@@ -124,10 +124,9 @@ const char *	PasteArgs (const char **arg_list, int paste_point)
  *
  * This doesnt strip out extraneous spaces any more.
  */
-static void 	BreakArgs (char *Input, char **Sender, const char **OutPut)
+static void 	BreakArgs (char *Input, const char **Sender, const char **OutPut)
 {
 	int	ArgCount;
-	char	*fuh;
 
 	/*
 	 * Paranoia.  Clean out any bogus ptrs still left on OutPut...
@@ -146,7 +145,9 @@ static void 	BreakArgs (char *Input, char **Sender, const char **OutPut)
 	 */
 	if (*Input == ':')
 	{
-		*Sender = ++Input;
+		char	*fuh;
+
+		fuh = ++Input;
 		while (*Input && *Input != space)
 			Input++;
 		if (*Input == space)
@@ -155,19 +156,18 @@ static void 	BreakArgs (char *Input, char **Sender, const char **OutPut)
 		/*
 		 * Look to see if the optional !user@host is present.
 		 */
-		fuh = *Sender;
+		*Sender = fuh;
 		while (*fuh && *fuh != '!')
 			fuh++;
 		if (*fuh == '!')
 			*fuh++ = 0;
+		FromUserHost = fuh;
 	}
 	/*
 	 * No sender present.
 	 */
 	else
-		*Sender = fuh = empty_string;
-
-	FromUserHost = fuh;
+		*Sender = FromUserHost = empty_string;
 
 	/*
 	 * Now we go through the argument list...
@@ -236,7 +236,7 @@ static void	p_wallops (const char *from, const char *comm, const char **ArgList)
 {
 	const char 	*message;
 	int 	server_wallop;
-	char	*high;
+	const char	*high;
 	int	l;
 
 	if (!(message = ArgList[0]))
@@ -264,7 +264,6 @@ static void	p_wallops (const char *from, const char *comm, const char **ArgList)
 
 
 	l = message_from(from, LEVEL_WALLOP);
-
 	if (do_hook(WALLOP_LIST, "%s %c %s", 
 				from, 
 				server_wallop ? 'S' : '*', 
@@ -273,7 +272,6 @@ static void	p_wallops (const char *from, const char *comm, const char **ArgList)
 				high, from, 
 				server_wallop ? empty_string : star, 
 				high, message);
-
 	pop_message_from(l);
 }
 
@@ -281,12 +279,10 @@ static void	p_privmsg (const char *from, const char *comm, const char **ArgList)
 {
 	const char	*target, *message;
 	int		hook_type,
-			flood_type,
-			log_type;
+			level;
 	const char	*hook_format;
 	const char	*flood_channel = NULL;
-	unsigned char	ignore_type;
-	char		*high;
+	const char	*high;
 	int	l;
 
 	PasteArgs(ArgList, 1);
@@ -316,10 +312,8 @@ static void	p_privmsg (const char *from, const char *comm, const char **ArgList)
 	/* ooops. cant just do is_channel(to) because of # walls... */
 	if (is_channel(target) && im_on_channel(target, from_server))
 	{
-		log_type = LEVEL_PUBLIC;
+		level = LEVEL_PUBLIC;
 		flood_channel = target;
-		flood_type = LEVEL_PUBLIC;
-		ignore_type = LEVEL_PUBLIC;
 
 		if (!is_channel_nomsgs(target, from_server) && 
 				!is_on_channel(target, from)) {
@@ -335,20 +329,16 @@ static void	p_privmsg (const char *from, const char *comm, const char **ArgList)
 	}
 	else if (!is_me(from_server, target))
 	{
-		log_type = LEVEL_WALL;
+		level = LEVEL_WALL;
 		flood_channel = NULL;
-		flood_type = LEVEL_WALL;
-		ignore_type = LEVEL_WALL;
 
 		hook_type = MSG_GROUP_LIST;
 		hook_format = "%s<-%s:%s->%s %s";
 	}
 	else
 	{
-		log_type = LEVEL_MSG;
+		level = LEVEL_MSG;
 		flood_channel = NULL;
-		flood_type = LEVEL_MSG;
-		ignore_type = LEVEL_MSG;
 
 		hook_type = MSG_LIST;
 		hook_format = NULL;	/* See below */
@@ -358,7 +348,7 @@ static void	p_privmsg (const char *from, const char *comm, const char **ArgList)
 	if (!target || !*target)
 		target = from;		/* Target is actually sender here */
 
-	switch (check_ignore_channel(from, FromUserHost, target, ignore_type))
+	switch (check_ignore_channel(from, FromUserHost, target, level))
 	{
 		case IGNORED:
 			set_server_doing_privmsg(from_server, 0);
@@ -377,7 +367,7 @@ static void	p_privmsg (const char *from, const char *comm, const char **ArgList)
 		int	do_return = 1;
 
 		sed = 0;
-		l = message_from(target, log_type);
+		l = message_from(target, level);
 		if (do_hook(ENCRYPTED_PRIVMSG_LIST, "%s %s %s", from, target,
 				message))
 			do_return = 0;
@@ -390,7 +380,7 @@ static void	p_privmsg (const char *from, const char *comm, const char **ArgList)
 	}
 
 	if (new_check_flooding(from, FromUserHost, flood_channel, 
-				message, flood_type)) {
+				message, level)) {
 		set_server_doing_privmsg(from_server, 0);
 		return;
 	}
@@ -404,7 +394,7 @@ static void	p_privmsg (const char *from, const char *comm, const char **ArgList)
 		set_server_recv_nick(from_server, from);
 
 	/* Go ahead and throw it to the user */
-	l = message_from(target, log_type);
+	l = message_from(target, level);
 
 	if (do_hook(GENERAL_PRIVMSG_LIST, "%s %s %s", from, target, message))
 	{
@@ -445,12 +435,11 @@ static void	p_quit (const char *from, const char *comm, const char **ArgList)
 	int		one_prints = 1;
 	const char *	chan;
 	int		l;
+	const char *	high;
 
 	if (!(quit_message = ArgList[0]))
 		{ rfc1459_odd(from, comm, ArgList); return; }
 
-    do
-    {
 	/*
 	 * Normally, we do not throw the user a hook until after we
 	 * have taken care of administrative details.  But in this case,
@@ -458,31 +447,49 @@ static void	p_quit (const char *from, const char *comm, const char **ArgList)
 	 * so we cannot remove them from the channel until after we have
 	 * thrown the hook.  That is the only reason this is out of order.
 	 */
-	if (check_ignore(from, FromUserHost, LEVEL_QUIT) == IGNORED)
-		break;
-
-	for (chan = walk_channels(1, from); chan; 
-		 chan = walk_channels(0, from))
+	switch (check_ignore(from, FromUserHost, LEVEL_QUIT))
 	{
-		if (check_ignore_channel(from, FromUserHost, chan,
-						LEVEL_QUIT) == IGNORED)
-		{
+		case IGNORED:
+			goto remove_quitter;
+		case HIGHLIGHTED:
+			high = highlight_char;
+			break;
+		default:
+			high = empty_string;
+			break;
+	}
+
+	if (check_flooding(from, FromUserHost, LEVEL_QUIT, quit_message))
+		goto remove_quitter;
+
+	for (chan = walk_channels(1, from); chan; chan = walk_channels(0, from))
+	{
+	    switch (check_ignore_channel(from, FromUserHost, chan, LEVEL_QUIT))
+	    {
+		case IGNORED:
 			one_prints = 0;
 			continue;
-		}
+		case HIGHLIGHTED:
+			high = highlight_char;
+			break;
+		default:
+			high = empty_string;
+			break;
+	    }
 
-		l = message_from(chan, LEVEL_QUIT);
-		if (!do_hook(CHANNEL_SIGNOFF_LIST, "%s %s %s", chan, from, 
-								quit_message))
-			one_prints = 0;
-		pop_message_from(l);
+	    l = message_from(chan, LEVEL_QUIT);
+	    if (!do_hook(CHANNEL_SIGNOFF_LIST, "%s %s %s", chan, from, 
+							quit_message))
+		one_prints = 0;
+	    pop_message_from(l);
 	}
 
 	if (one_prints)
 	{
 		l = message_from(what_channel(from), LEVEL_QUIT);
 		if (do_hook(SIGNOFF_LIST, "%s %s", from, quit_message))
-			say("Signoff: %s (%s)", from, quit_message);
+			say("Signoff: %s%s%s (%s)", 
+				high, from, high, quit_message);
 		pop_message_from(l);
 	}
 
@@ -494,9 +501,8 @@ static void	p_quit (const char *from, const char *comm, const char **ArgList)
 	 * until the top of the next minute.
 	 */
 	notify_mark(from_server, from, 0, 0);
-    }
-    while (0);
 
+remove_quitter:
 	/* Send all data about this unperson to the memory hole. */
 	remove_from_channel(NULL, from, from_server);
 }
@@ -597,7 +603,7 @@ static void	p_channel (const char *from, const char *comm, const char **ArgList)
 	char 	*c;
 	int 	op = 0, vo = 0, ha = 0;
 	char 	extra[20];
-	char	*high;
+	const char	*high;
 	int	l;
 
 	/* We cannot join channel 0 */
@@ -684,7 +690,7 @@ static void	p_channel (const char *from, const char *comm, const char **ArgList)
 static void 	p_invite (const char *from, const char *comm, const char **ArgList)
 {
 	const char	*invitee, *invited_to;
-	char	*high;
+	const char	*high;
 	int	l;
 
 	if (!(invitee = ArgList[0]))
@@ -854,7 +860,7 @@ static void	p_nick (const char *from, const char *comm, const char **ArgList)
 	int		been_hooked = 0,
 			its_me = 0;
 	const char	*chan;
-	char		*high;
+	const char	*high;
 	int		ignored = 0;
 	int		l;
 
@@ -909,7 +915,9 @@ static void	p_nick (const char *from, const char *comm, const char **ArgList)
 			l = message_from(what_channel(from), LEVEL_NICK);
 
 		if (do_hook(NICKNAME_LIST, "%s %s", from, new_nick))
-			say("%s is now known as %s", from, new_nick);
+			say("%s%s%s is now known as %s%s%s", 
+				high, from, high, 
+				high, new_nick, high);
 
 		pop_message_from(l);
 	}
@@ -925,6 +933,7 @@ static void	p_mode (const char *from, const char *comm, const char **ArgList)
 	const char	*target, *changes;
 	const char	*m_target;
 	const char	*type;
+	const char	*high;
 	int		l;
 
 	PasteArgs(ArgList, 1);
@@ -948,16 +957,30 @@ static void	p_mode (const char *from, const char *comm, const char **ArgList)
 		type = "for user";
 	}
 
-	if (check_ignore_channel(from, FromUserHost, target, LEVEL_MODE) 
-					!= IGNORED)
+	switch (check_ignore_channel(from, FromUserHost, target, LEVEL_MODE))
 	{
-		l = message_from(m_target, LEVEL_MODE);
-		if (do_hook(MODE_LIST, "%s %s %s", from, target, changes))
-		    say("Mode change \"%s\" %s %s by %s",
-					changes, type, target, from);
-		pop_message_from(l);
+		case IGNORED:
+			goto do_update_mode;
+		case HIGHLIGHTED:
+			high = highlight_char;
+			break;
+		default:
+			high = empty_string;
+			break;
 	}
 
+	if (check_flooding(from, FromUserHost, LEVEL_MODE, changes))
+		goto do_update_mode;
+
+	l = message_from(m_target, LEVEL_MODE);
+	if (do_hook(MODE_LIST, "%s %s %s", from, target, changes))
+	    say("Mode change \"%s\" %s %s%s%s by %s%s%s",
+					changes, type, 
+					high, target, high,
+					high, from, high);
+	pop_message_from(l);
+
+do_update_mode:
 	if (is_channel(target))
 		update_channel_mode(target, changes);
 	else
@@ -1059,6 +1082,7 @@ static void strip_modes (const char *from, const char *channel, const char *line
 static void	p_kick (const char *from, const char *comm, const char **ArgList)
 {
 	const char	*channel, *victim, *comment;
+	const char *	high;
 	int	l;
 
 	if (!(channel = ArgList[0]))
@@ -1132,21 +1156,44 @@ static void	p_kick (const char *from, const char *comm, const char **ArgList)
 		return;
 	}
 
-	if (check_ignore_channel(from, FromUserHost, 
-				 channel, LEVEL_KICK) != IGNORED)
+	switch (check_ignore_channel(from, FromUserHost, channel, LEVEL_KICK))
 	{
-	    if (check_ignore_channel(victim, fetch_userhost(from_server, victim), channel, LEVEL_KICK) != IGNORED)
-	    {
-		l = message_from(channel, LEVEL_KICK);
-		if (do_hook(KICK_LIST, "%s %s %s %s", 
-				victim, from, channel, comment))
-			say("%s has been kicked off channel %s by %s (%s)", 
-				victim, check_channel_type(channel), 
-				from, comment);
-		pop_message_from(l);
-	    }
+		case IGNORED:
+			goto do_remove_nick;
+		case HIGHLIGHTED:
+			high = highlight_char;
+			break;
+		default:
+			high = empty_string;
+			break;
 	}
 
+	switch (check_ignore_channel(victim, fetch_userhost(from_server, victim), channel, LEVEL_KICK))
+	{
+		case IGNORED:
+			goto do_remove_nick;
+		case HIGHLIGHTED:
+			high = highlight_char;
+			break;
+		default:
+			high = empty_string;
+			break;
+	}
+
+
+	if (check_flooding(from, FromUserHost, LEVEL_KICK, victim))
+		goto do_remove_nick;
+
+	l = message_from(channel, LEVEL_KICK);
+	if (do_hook(KICK_LIST, "%s %s %s %s", 
+			victim, from, channel, comment))
+		say("%s%s%s has been kicked off channel %s by %s (%s)", 
+			high, victim, high,
+			check_channel_type(channel), 
+			high, from, high, comment);
+	pop_message_from(l);
+
+do_remove_nick:
 	/*
 	 * The placement of this is purely ergonomic.  When someone is
 	 * kicked, the user may want to know what their userhost was so 
@@ -1300,7 +1347,7 @@ int 	num_protocol_cmds = -1;
  */
 void 	parse_server (const char *orig_line, size_t orig_line_size)
 {
-	char	*from;
+	const char	*from;
 	const char	*comm;
 	const char	**ArgList;
 	const char	*TrueArgs[MAXPARA + 2];	/* Include space for command */

@@ -1,4 +1,4 @@
-/* $EPIC: commands.c,v 1.81 2003/12/16 23:25:45 jnelson Exp $ */
+/* $EPIC: commands.c,v 1.82 2003/12/17 09:25:30 jnelson Exp $ */
 /*
  * commands.c -- Stuff needed to execute commands in ircII.
  *		 Includes the bulk of the built in commands for ircII.
@@ -395,11 +395,10 @@ BUILT_IN_COMMAND(away)
 	{
 		if ((*args == '-') || (*args == '/'))
 		{
-			arg = strchr(args, ' ');
-			if (arg)
-				*arg++ = '\0';
+			if ((arg = strchr(args, ' ')))
+				*arg++ = 0;
 			else
-				arg = empty_string;
+				arg = endstr(args);
 
 			if (0 == my_strnicmp(args+1, "A", 1))	/* all */
 			{
@@ -1068,7 +1067,7 @@ BUILT_IN_COMMAND(xechocmd)
 	    }
 
 	    if (!args)
-		args = empty_string;
+		args = LOCAL_COPY(empty_string);
 	}
 
 	display = window_display;
@@ -1517,7 +1516,7 @@ int	current_line (void)
 		return load_level[load_depth].line;
 }
 
-char *current_package (void)
+const char *current_package (void)
 {
 	if (load_depth == -1)
 		return empty_string;
@@ -1535,9 +1534,9 @@ BUILT_IN_COMMAND(packagecmd)
 		malloc_strcpy(&load_level[load_depth].package, args);
 }
 
-static void	loader_which (FILE *fp, const char *filename, char *args, struct load_info *);
-static void	loader_std (FILE *fp, const char *filename, char *args, struct load_info *);
-static void	loader_pf  (FILE *fp, const char *filename, char *args, struct load_info *);
+static void	loader_which (FILE *fp, const char *filename, const char *args, struct load_info *);
+static void	loader_std (FILE *fp, const char *filename, const char *args, struct load_info *);
+static void	loader_pf  (FILE *fp, const char *filename, const char *args, struct load_info *);
 /*
  * load: the /LOAD command.  Reads the named file, parsing each line as
  * though it were typed in (passes each line to parse_line). 
@@ -1552,7 +1551,7 @@ BUILT_IN_COMMAND(load)
 	FILE *	fp;
 	int	display;
 	int	do_one_more = 0;
-	void	(*loader) (FILE *, const char *, char *, struct load_info *);
+	void	(*loader) (FILE *, const char *, const char *, struct load_info *);
 
 	if (++load_depth == MAX_LOAD_DEPTH)
 	{
@@ -1652,21 +1651,21 @@ BUILT_IN_COMMAND(load)
 }
 
 /* The "WHICH" loader */
-static void	loader_which (FILE *fp, const char *filename, char *subargs, struct load_info *loadinfo)
+static void	loader_which (FILE *fp, const char *filename, const char *subargs, struct load_info *loadinfo)
 {
 	loadinfo->loader = "which";
 	yell("%s", filename);
 }
 
 /* The "Standard" (legacy) loader */
-static void	loader_std (FILE *fp, const char *filename, char *subargs, struct load_info *loadinfo)
+static void	loader_std (FILE *fp, const char *filename, const char *subargs, struct load_info *loadinfo)
 {
 	int	in_comment, comment_line, no_semicolon;
 	int	paste_level, paste_line;
 	char 	*start, *real_start, *current_row;
 #define MAX_LINE_SIZE BIG_BUFFER_SIZE * 5
 	char	buffer[MAX_LINE_SIZE * 2 + 1];
-	char	*defargs;
+const	char	*defargs;
 
 	loadinfo->loader = "std";
 
@@ -2027,7 +2026,7 @@ static void	loader_std (FILE *fp, const char *filename, char *subargs, struct lo
 	}
 }
 
-static void	loader_pf (FILE *fp, const char *filename, char *subargs, struct load_info *loadinfo)
+static void	loader_pf (FILE *fp, const char *filename, const char *subargs, struct load_info *loadinfo)
 {
 	char *	buffer;
 	int	bufsize, pos;
@@ -2486,22 +2485,20 @@ BUILT_IN_COMMAND(squitcmd)
 
 BUILT_IN_COMMAND(send_2comm)
 {
-	char	*reason = NULL;
 	const char *target;
+	char *reason = NULL;
 
-	if (!(args = next_arg(args, &reason)))
-		args = empty_string;
+	if (!(target = next_arg(args, &reason)))
+		target = empty_string;
 	if (!reason || !*reason)
-		reason = empty_string;
+		reason = LOCAL_COPY(empty_string);
 
-	if (!args || !*args || !strcmp(args, "*"))
+	if (!target || !*target || !strcmp(target, "*"))
 	{
 		target = get_echannel_by_refnum(0);
 		if (!target || !*target)
 			target = "*";	/* what-EVER */
 	}
-	else
-		target = args;
 
 	if (reason && *reason)
 		send_to_server("%s %s :%s", command, target, reason);
@@ -2527,8 +2524,8 @@ BUILT_IN_COMMAND(send_comm)
  */
 BUILT_IN_COMMAND(send_kick)
 {
-	char	*kickee,
-		*comment;
+	char	*kickee;
+	const char	*comment;
 	const char	*channel;
 
 	char usage[] = "Usage: %s <channel|*> <nickname> [comment]";
@@ -2829,6 +2826,7 @@ BUILT_IN_COMMAND(whois)
 BUILT_IN_COMMAND(xtypecmd)
 {
 	char	*arg;
+	char	es[1];
 
 	if (*args == '-' || *args == '/')
 	{
@@ -2839,13 +2837,17 @@ BUILT_IN_COMMAND(xtypecmd)
 			if (!my_strnicmp(arg, "L", 1))
 			{
 				for (; *args; args++)
-					input_add_character(*args, empty_string);
+				{
+					es[0] = 0;
+					input_add_character(*args, es);
+				}
 			}
 			else
 				say("Unknown flag -%s to XTYPE", arg);
 			return;
 		}
-		input_add_character(saved, empty_string);
+		es[0] = 0;
+		input_add_character(saved, es);
 	}
 	else
 		typecmd(command, args, empty_string);
@@ -3730,7 +3732,7 @@ static	unsigned 	level = 0;
 		else
 		{
 			cline = LOCAL_COPY(line);
-			rest = empty_string;
+			rest = LOCAL_COPY(empty_string);
 		}
 
 		upper(cline);

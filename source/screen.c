@@ -1,4 +1,4 @@
-/* $EPIC: screen.c,v 1.68 2003/12/16 23:25:45 jnelson Exp $ */
+/* $EPIC: screen.c,v 1.69 2003/12/17 09:25:30 jnelson Exp $ */
 /*
  * screen.c
  *
@@ -1566,10 +1566,10 @@ static 	int 	recursion = 0,
 static	u_char 	**output = (unsigned char **)0;
 const 	u_char	*ptr;
 	u_char 	buffer[BIG_BUFFER_SIZE + 1],
-		*cont_ptr,
-		*cont = empty_string,
 		c,
 		*pos_copy;
+const	u_char	*cont_ptr;
+	u_char	*cont = NULL;
 	const char *words;
 	Attribute	a;
 	Attribute	saved_a;
@@ -1742,7 +1742,7 @@ const 	u_char	*ptr;
 			 * losing a char but this really is just a hack when 
 			 * it all comes down to it.  Good thing its cheap. ;-)
 			 */
-			if (!*cont && (firstwb == word_break) && do_indent) 
+			if (!cont && (firstwb == word_break) && do_indent) 
 				word_break = pos;
 
 			/*
@@ -1795,7 +1795,7 @@ const 	u_char	*ptr;
 			 * /set continued line value out to the appropriate
 			 * width.
 			 */
-			if (!*cont)
+			if (!cont)
 			{
 				int	lhs_count = 0;
 				int	continued_count = 0;
@@ -1815,7 +1815,7 @@ const 	u_char	*ptr;
 				 * whatever it is.
 				 */
 				else if (!*cont && *cont_ptr)
-					cont = cont_ptr;
+					cont = LOCAL_COPY(cont_ptr);
 
 				cont_free = cont = normalize_string(cont, 0);
 
@@ -3165,7 +3165,7 @@ void 	do_screens (fd_set *rd, fd_set *wd)
  *
  * XXXX - maybe this belongs in input.c? =)
  */
-void 	add_wait_prompt (const char *prompt, void (*func)(char *, char *), char *data, int type, int echo)
+void 	add_wait_prompt (const char *prompt, void (*func)(char *, char *), const char *data, int type, int echo)
 {
 	WaitPrompt **AddLoc,
 		   *New;

@@ -30,7 +30,7 @@
 	char *	create_nochops_list	(Char *, int);
 	void	update_channel_mode	(Char *, Char *);
 	Char *	get_channel_key		(Char *, int);
-	char *	get_channel_mode	(Char *, int);
+	Char *	get_channel_mode	(Char *, int);
 	int	is_channel_private	(Char *, int);
 	int	is_channel_nomsgs	(Char *, int);
 	void	list_channels		(void);

@@ -1,4 +1,4 @@
-/* $EPIC: exec.c,v 1.24 2003/12/04 22:59:03 crazyed Exp $ */
+/* $EPIC: exec.c,v 1.25 2003/12/17 09:25:30 jnelson Exp $ */
 /*
  * exec.c: handles exec'd process for IRCII 
  *
@@ -118,8 +118,8 @@ static	int 	logical_to_index 	(const char *logical);
 BUILT_IN_COMMAND(execcmd)
 {
 	const char	*who = NULL;
-	char		*logical = NULL,
-			*flag;
+	char		*logical = NULL;
+	const char	*flag;
 	const char 	*redirect = NULL;
 	unsigned 	refnum = 0;
 	size_t		len;

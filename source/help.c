@@ -1,4 +1,4 @@
-/* $EPIC: help.c,v 1.13 2003/12/16 23:25:45 jnelson Exp $ */
+/* $EPIC: help.c,v 1.14 2003/12/17 09:25:30 jnelson Exp $ */
 /*
  * help.c: handles the help stuff for irc 
  *
@@ -155,7 +155,7 @@ static	void	help_prompt (char *name, char *line)
 	if (finished_help_paging)
 	{
 		if (*paused_topic)
-			help_show_paused_topic(paused_topic, empty_string);
+			help_show_paused_topic(paused_topic, NULL);
 		return;
 	}
 
@@ -186,7 +186,7 @@ static	void	help_prompt (char *name, char *line)
 			if (get_int_var(HELP_PAGER_VAR))
 			{
 			    if (dumb_mode)
-				help_show_paused_topic(name, empty_string);
+				help_show_paused_topic(name, NULL);
 			    else
 				add_wait_prompt("*** Hit any key to end ***", 
 					help_show_paused_topic, paused_topic,
@@ -194,7 +194,7 @@ static	void	help_prompt (char *name, char *line)
 			}
 			else
 			{
-			    help_show_paused_topic(paused_topic, empty_string);
+			    help_show_paused_topic(paused_topic, NULL);
 			    set_help_screen((Screen *) 0);
 			}
 			help_show_directory = 0;
@@ -217,7 +217,7 @@ static	void	help_prompt (char *name, char *line)
 		else
 		{
 			if (*paused_topic)
-				help_show_paused_topic(paused_topic, empty_string);
+				help_show_paused_topic(paused_topic, NULL);
 #if 0
 			set_help_screen((Screen *) 0);
 #endif
@@ -291,7 +291,7 @@ static	void	help_show_paused_topic (char *name, char *line)
 	if (!help_paused_lines)
 		return;
 
-	if (toupper(*line) == 'Q')
+	if (line && toupper(*line) == 'Q')
 		i = help_paused_lines + 1;	/* just big enough */
 
 	if (get_int_var(HELP_PAGER_VAR))
@@ -366,10 +366,10 @@ static	void	help_me (char *topics, char *args)
 	char	buffer[BIG_BUFFER_SIZE+1];
 	char *	pattern = NULL;
 
-	strlcpy(help_topic_list, topics, sizeof help_topic_list);
+	strlcpy(help_topic_list, topics ? topics : empty_string, sizeof help_topic_list);
 	ptr = get_string_var(HELP_PATH_VAR);
 
-	snprintf(path, sizeof path, "%s/%s", ptr, topics);
+	snprintf(path, sizeof path, "%s/%s", ptr, topics ? topics : empty_string);
 	for (ptr = path; (ptr = strchr(ptr, ' '));)
 		*ptr = '/';
 
@@ -380,7 +380,7 @@ static	void	help_me (char *topics, char *args)
 	 */
 	if (help_show_directory)
 	{
-		help_show_paused_topic(paused_topic, empty_string);
+		help_show_paused_topic(paused_topic, NULL);
 		help_show_directory = 0;
 	}
 		
@@ -641,7 +641,7 @@ switch (entries)
 		}
 		if (dont_pause_topic == 1)
 		{
-			help_show_paused_topic(paused_topic, empty_string);
+			help_show_paused_topic(paused_topic, NULL);
 			help_show_directory = 0;
 		}
 		break;
@@ -708,7 +708,7 @@ BUILT_IN_COMMAND(help)
 	help_screen = current_window->screen;
 	help_window = (Window *) 0;
 	strlcpy(default_topic, "?", sizeof default_topic);
-	help_me(empty_string, (args && *args) ? args : default_topic);
+	help_me(NULL, (args && *args) ? args : default_topic);
 }
 
 

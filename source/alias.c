@@ -1,4 +1,4 @@
-/* $EPIC: alias.c,v 1.39 2003/12/14 20:04:09 jnelson Exp $ */
+/* $EPIC: alias.c,v 1.40 2003/12/17 09:25:30 jnelson Exp $ */
 /*
  * alias.c -- Handles the whole kit and caboodle for aliases.
  *
@@ -110,7 +110,7 @@ char *	after_expando (char *start, int lvalue, int *call)
 			{
 				yell("Unmatched bracket in %s (%s)", 
 						lval[lvalue], start);
-				return empty_string;
+				return endstr(str);
 			}
 		}
 		else
@@ -132,7 +132,7 @@ char *	after_expando (char *start, int lvalue, int *call)
 			{
 				yell("Unmatched paren in %s (%s)", 
 						lval[lvalue], start);
-				return empty_string;
+				return endstr(str);
 			}
 		}
 		else
@@ -590,7 +590,7 @@ BUILT_IN_COMMAND(localcmd)
 		args++;
 
 	if (!args)
-		args = empty_string;
+		args = LOCAL_COPY(empty_string);
 
 	if (!my_strnicmp(name, "-dump", 2))	/* Illegal name anyways */
 	{
@@ -615,7 +615,7 @@ BUILT_IN_COMMAND(localcmd)
 
 BUILT_IN_COMMAND(dumpcmd)
 {
-	char 	*blah = empty_string;
+	const char 	*blah = empty_string;
 	int 	all = 0;
 	int 	dumped = 0;
 
@@ -865,7 +865,7 @@ void	prepare_alias_call (void *al, char **stuff)
 		if (!args->vars[i + 1] && !args->dot_flag && !args->void_flag)
 		{
 			next_val = *stuff;
-			*stuff = empty_string;
+			*stuff = endstr(*stuff);
 		}
 
 		/* Yank the next word from the arglist */
@@ -879,7 +879,7 @@ void	prepare_alias_call (void *al, char **stuff)
 			if ((next_val = args->defaults[i]))
 				next_val = expanded = expand_alias(next_val, *stuff, NULL);
 			else
-				next_val = empty_string;
+				next_val = LOCAL_COPY(empty_string);
 		}
 
 		/* Do dequoting last so it's useful for ``defaults'' */
@@ -898,7 +898,7 @@ void	prepare_alias_call (void *al, char **stuff)
 
 	/* Throw away rest of args if wanted */
 	if (args->void_flag)
-		*stuff = empty_string;
+		*stuff = endstr(*stuff);
 }
 
 #undef ew_next_arg
@@ -1458,7 +1458,7 @@ static Alias *	find_local_alias (const char *orig_name, AliasSet **list)
 {
 	Alias 	*alias = NULL;
 	int 	c = wind_index;
-	char 	*ptr;
+	const char 	*ptr;
 	int 	implicit = -1;
 	int	function_return = 0;
 	char *	name;
@@ -2598,7 +2598,7 @@ static	int maxret = 0;
 			int num = 0, ctr;
 
 			if (!my_stricmp(listc, "*"))
-				listc = empty_string;
+				listc = LOCAL_COPY(empty_string);
 
 			upper(listc);
 

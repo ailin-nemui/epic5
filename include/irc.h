@@ -108,7 +108,7 @@ extern		char *	cannot_open;
 extern const	char *	compile_info;
 extern		char *	cut_buffer;
 extern		char *	default_channel;
-extern		char	empty_string[];
+extern	const	char	empty_string[];
 extern		char	space[];
 extern		char	star[];
 extern		char	dot[];
@@ -162,5 +162,5 @@ extern struct timeval	input_timeout;
 const	char *	current_filename	(void);  /* XXX command.c */
 const	char *	current_loader		(void);	 /* XXX command.c */
 	int	current_line		(void);	 /* XXX command.c */
-	char *	current_package		(void);  /* XXX command.c */
+const	char *	current_package		(void);  /* XXX command.c */
 #endif /* __irc_h */

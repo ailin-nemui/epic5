@@ -1,4 +1,4 @@
-/* $EPIC: expr.c,v 1.23 2003/12/14 20:04:09 jnelson Exp $ */
+/* $EPIC: expr.c,v 1.24 2003/12/17 09:25:30 jnelson Exp $ */
 /*
  * expr.c -- The expression mode parser and the textual mode parser
  * #included by alias.c -- DO NOT DELETE
@@ -1322,16 +1322,14 @@ char	*expand_alias	(const char *string, const char *args, ssize_t *more_text)
 	char	quote_temp[2];
 	char	ch;
 	int	is_quote = 0;
-	char *	unescape = empty_string;
+	const char *	unescape = empty_string;
 	size_t	buffclue = 0;
 
 	if (!string || !*string)
 		return malloc_strdup(empty_string);
 
 	if (*string == '@' && more_text)
-	{
 		unescape = NULL;
-	}
 	quote_temp[1] = 0;
 
 	stuff = LOCAL_COPY(string);
@@ -1780,7 +1778,7 @@ static	char	*alias_special_char (char **buffer, char *ptr, const char *args, cha
 				ptr++;
 				my_upper = parse_number(&ptr);
 				if (my_upper == -1)
-				    return empty_string; /* error */
+				    return endstr(ptr); /* error */
 			    }
 
 			    /*
@@ -1817,7 +1815,9 @@ static	char	*alias_special_char (char **buffer, char *ptr, const char *args, cha
 
 			    TruncateAndQuote(buffer, tmp2, length, quote_em);
 			    new_free(&tmp2);
-			    return (ptr ? ptr : empty_string);
+			    if (!ptr)
+				panic("ptr is NULL after parsing numeric expando");
+			    return ptr;
 			}
 
 			/*

@@ -1,4 +1,4 @@
-/* $EPIC: window.c,v 1.95 2003/12/16 23:25:45 jnelson Exp $ */
+/* $EPIC: window.c,v 1.96 2003/12/17 09:25:31 jnelson Exp $ */
 /*
  * window.c: Handles the organzation of the logical viewports (``windows'')
  * for irc.  This includes keeping track of what windows are open, where they
@@ -140,6 +140,7 @@ static	int	change_line 			(Window *, const unsigned char *);
 static	int	add_to_display 			(Window *, const unsigned char *);
 static	Display *new_display_line 		(Display *prev, Window *w);
 static int	count_fixed_windows 		(Screen *s);
+static	void 	set_mask_by_refnum (unsigned refnum, Mask mask);
 
 
 /* * * * * * * * * * * CONSTRUCTOR AND DESTRUCTOR * * * * * * * * * * * */
@@ -1844,7 +1845,7 @@ char *	get_status_by_refnum (unsigned refnum, int line)
  * prompt will be used as the target in place of the query user or current
  * channel if it is set 
  */
-void 	set_prompt_by_refnum (unsigned refnum, char *prompt)
+void 	set_prompt_by_refnum (unsigned refnum, const char *prompt)
 {
 	Window	*tmp;
 
@@ -1855,7 +1856,7 @@ void 	set_prompt_by_refnum (unsigned refnum, char *prompt)
 }
 
 /* get_prompt_by_refnum: returns the prompt for the given window refnum */
-char 	*get_prompt_by_refnum (unsigned refnum)
+const char 	*get_prompt_by_refnum (unsigned refnum)
 {
 	Window	*tmp;
 
@@ -3588,7 +3589,7 @@ static Window *window_list (Window *window, char **args)
  */
 static Window *window_log (Window *window, char **args)
 {
-	char *logfile;
+	const char *logfile;
 	int add_ext = 1;
 	char buffer[BIG_BUFFER_SIZE + 1];
 

@@ -1,4 +1,4 @@
-/* $EPIC: notice.c,v 1.30 2003/12/16 23:25:45 jnelson Exp $ */
+/* $EPIC: notice.c,v 1.31 2003/12/17 09:25:30 jnelson Exp $ */
 /*
  * notice.c: special stuff for parsing NOTICEs
  *
@@ -73,8 +73,8 @@ static	int	never_connected = 1;
 static void 	parse_note (char *from, char *line)
 {
 	char	*date,
-		*flags,
-		*high;
+		*flags;
+const	char	*high;
 	time_t	when;
 	int	l;
 
@@ -218,7 +218,7 @@ void 	p_notice (const char *from, const char *comm, const char **ArgList)
 	const char 	*target, *message;
 	int		hook_type;
 	const char *	flood_channel = NULL;
-	char *		high;
+	const char *	high;
 	int		l;
 
 	PasteArgs(ArgList, 1);

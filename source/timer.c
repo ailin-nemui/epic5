@@ -1,4 +1,4 @@
-/* $EPIC: timer.c,v 1.39 2003/10/28 05:53:57 jnelson Exp $ */
+/* $EPIC: timer.c,v 1.40 2003/12/17 09:25:31 jnelson Exp $ */
 /*
  * timer.c -- handles timers in ircII
  *
@@ -67,7 +67,7 @@ BUILT_IN_COMMAND(timercmd)
 {
 	char	*waittime,
 		*flag;
-	char	*want = empty_string;
+	const char	*want = empty_string;
 	char	*ptr;
 	double	interval;
 	long	events = -2;
