@@ -296,7 +296,7 @@ static void p_privmsg (char *from, char **Args)
 	/* ooops. cant just do is_channel(to) because of # walls... */
 	if (is_channel(to) && im_on_channel(to, from_server))
 	{
-		message_from(to, LOG_MSG);
+		message_from(to, LOG_PUBLIC);	/* Duh! */
 		malloc_strcpy(&public_nick, from);
 		flood_channel = to;
 		flood_type = PUBLIC_FLOOD;

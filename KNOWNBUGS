@@ -2,7 +2,6 @@ EPIC4 Projects, Bugs, and other Errata:
 
 KNOWN ERRATA (eg, bugs, or unresolved requests):
 ------------------------------------------------
-* Q says that the 010 numeric doesn't work properly on ircnet just yet.
 * Figure out what to do with wd's patch for package stuff in epic4.
  
 [See http://www.epicsol.org/PROJECTS for things to come in the future]
@@ -11,3 +10,6 @@ KNOWN ERRATA (eg, bugs, or unresolved requests):
 THE CHANGELOG SINCE THE LAST RELEASE:
 -------------------------------------
 * When the server terminates a connection, save channels for reconnect.
+* Always specify what we want to be done with channels before calling
+	close_server() -- failure to do so results in a panic.
+* Fix the 010 numeric handler -- don't use ArgList after display_msg, duh!
