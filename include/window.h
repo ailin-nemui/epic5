@@ -192,7 +192,6 @@ extern	unsigned window_display;
 	int	traverse_all_windows		(Window **);
 	void	add_to_invisible_list		(Window *);
 	Window	*add_to_window_list		(struct ScreenStru *, Window *);
-	void	remove_window_from_screen	(Window *);
 	void	recalculate_window_positions	(struct ScreenStru *);
 	void	redraw_all_windows		(void);
 	void	recalculate_windows		(struct ScreenStru *);

@@ -9,20 +9,5 @@ KNOWN ERRATA (eg, bugs, or unresolved requests):
 
 THE CHANGELOG SINCE THE LAST RELEASE:
 -------------------------------------
-* Defer "deleting channels" warning in move_window_channels until needed.
-* Fix null deref when beep happens on some hidden windows.
-* Fix null deref when waiting channel != channel being parted.
-* In 'get_connected()', be more aggressive throwing away closed channels.
-* Fix header of /window list if /set channel_name_width is 0
-* Revamp /on 403 support -- check this over for problems!
-* Nominal support for 402 and 522 numerics for bogus dalnet who requests.
-* Fix after_expando_special to whine if no lval is present where it ought be.
---
-* Import into cvs.  No cracks.
-* Fix 'make install' so it works again.
-* Work on the man page a bit.
-* Remove the #define DCC_CHECKSUM feature everybody hates.
-* Start including a "commit number" in irc.c
-* In numeric handling, use 'get_server_itsname()' to get server's name
-* Cope with stupid servers that send void mode changes
-* Better, working support for dalnet's extended who error replies.
+* Fix null deref when reciving some of dalnet's error end-of-who replies.
+* Fix panic caused by /on switch_windows during /window hide.

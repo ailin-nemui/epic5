@@ -99,6 +99,7 @@ static	void	resize_window_display 		(Window *);
 static 	Window *window_next 			(Window *, char **);
 static 	Window *window_previous 		(Window *, char **);
 static	void 	set_screens_current_window 	(Screen *, Window *);
+static	void 	remove_window_from_screen (Window *window, int hide);
 
 
 /* * * * * * * * * * * CONSTRUCTOR AND DESTRUCTOR * * * * * * * * * * * */
@@ -332,7 +333,7 @@ void 	delete_window (Window *window)
 	if (invisible)
 		remove_from_invisible_list(window);
 	else if (window->screen->visible_windows > 1)
-		remove_window_from_screen(window);
+		remove_window_from_screen(window, 0);
 	else if (window->screen->visible_windows == 1)
 		swap_window(window, invisible_list);
 	else
@@ -666,10 +667,18 @@ Window *add_to_window_list (Screen *screen, Window *new_w)
  * remove_window_from_screen: this removes the given window from the list of
  * visible windows.  It closes up the hole created by the windows abnsense in
  * a nice way.  The window passed to this function *must* be visible.
+ *
+ * If 'hide' is 1, then the window is added to the invisible list before
+ * the current window is reset -- this avoids a possible panic in the
+ * /on switch_windows thrown there.  If 'hide' is 0, then the window is
+ * just unlinked and we assume the caller will gc it.
  */
-void 	remove_window_from_screen (Window *window)
+static void 	remove_window_from_screen (Window *window, int hide)
 {
-	if (!window->visible || !window->screen)
+	int	was_current = 0;
+	Screen *s;
+
+	if (!window->visible || !((s = window->screen)))
 		panic("This window is not on a screen");
 
 	/*
@@ -681,30 +690,31 @@ void 	remove_window_from_screen (Window *window)
 	if (window->prev)
 		window->prev->next = window->next;
 	else
-		window->screen->window_list = window->next;
+		s->window_list = window->next;
 
 	if (window->next)
 		window->next->prev = window->prev;
 	else
-		window->screen->window_list_end = window->prev;
+		s->window_list_end = window->prev;
 
-	if (!--window->screen->visible_windows)
+	if (!--s->visible_windows)
 		return;
 
-	if (window->screen->current_window == window)
-		set_screens_current_window(window->screen, NULL);
+	if (hide)
+		add_to_invisible_list(window);
 
-	if (window->refnum == window->screen->last_window_refnum)
-		window->screen->last_window_refnum = window->screen->current_window->refnum;
+	if (s->current_window == window)
+		set_screens_current_window(s, NULL);
 
-	if (window == window->screen->current_window)
+	if (s->last_window_refnum == window->refnum)
+		s->last_window_refnum = s->current_window->refnum;
+
+	if (s->current_window == window)
 		make_window_current(last_input_screen->window_list);
 	else
 		make_window_current(NULL);
-#if 0
-	make_window_current(window->screen->current_window);
-#endif
-	recalculate_windows(window->screen);
+
+	recalculate_windows(s);
 }
 
 
@@ -1388,10 +1398,7 @@ void 	hide_window (Window *window)
 		return;
 	}
 	if (window->screen)
-	{
-		remove_window_from_screen(window);
-		add_to_invisible_list(window);
-	}
+		remove_window_from_screen(window, 1);
 }
 
 /*

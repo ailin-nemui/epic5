@@ -26,6 +26,9 @@ Site			Directory				Maintainer
 epicsol.org	 [1]	/pub/ircii				hop
 ftp.epicsol.org  [1]	/pub/ircii				hop
 ftp.magenet.com		/pub/epic				bruns
+ftp.freenet.de		/pub/ftp.epicsol.org/pub		Michael Haardt
+
+	--- Older mirrors, may not exist any more ---
 broken.com		/pub/epic				da5id
 mud.pl			/pub/epic				Marcin
 ftp.linuxberg.com	???					Rob
@@ -33,8 +36,6 @@ ftp.mirror.uk.uu.net	/pub/epic				Ben Hutchinson
 ftp.chillin.org		/pub/epic				mdmbkr
 http://www.snafu.de/~kl/epic/					Kasi
 ftp.sanyusan.se		/pub/epic				synker
-
-	--- Older mirrors, may not exist any more ---
 ftp.bitchx.com		/pub/epic				Mhacker
 ftp.burken.nu		/pub/irc/clients/epic			_S_
 totem.fix.no 		/pub/mirrors/epic			nickerne
