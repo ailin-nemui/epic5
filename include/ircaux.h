@@ -7,7 +7,7 @@
  *
  * See the COPYRIGHT file, or do a HELP IRCII COPYRIGHT 
  *
- * @(#)$Id: ircaux.h,v 1.54 2003/07/10 13:08:56 jnelson Exp $
+ * @(#)$Id: ircaux.h,v 1.55 2003/07/10 23:56:01 jnelson Exp $
  */
 
 #ifndef _IRCAUX_H_
@@ -15,6 +15,7 @@
 
 #include "compat.h"
 #include "network.h"
+#include "words.h"
 
 struct metric_time {
 	long mt_days;
@@ -49,14 +50,17 @@ void *	really_new_realloc 	(void **, size_t, const char *, int);
 void	malloc_dump		(const char *);
 
 char *	check_nickname 		(char *, int);
+#if 0
 char *	dequote			(char *);
 #define next_arg(a,b) next_arg_count((a),(b),1)
 char *	next_arg_count 		(char *, char **, int);
 char *	new_next_arg		(char *, char **);
 char *	new_next_arg_count 	(char *, char **, int);
-char *	new_new_next_arg 	(char *, char **, char *);
+#endif
+char *	new_new_next_arg_count 	(char *, char **, char *, int);
 char *	s_next_arg		(char **);
 char *	last_arg 		(char **, size_t *cluep);
+
 int	normalize_filename	(const char *, Filename);
 int	expand_twiddle 		(const char *, Filename);
 char *	upper 			(char *);
@@ -65,10 +69,10 @@ char *	sindex			(char *, const char *);
 char *	rsindex 		(char *, char *, char *, int);
 int	path_search 		(const char *, const char *, Filename);
 char *	double_quote 		(const char *, const char *, char *);
-char *	malloc_strcpy 		(char **, const char *);
 char *	malloc_strcat_c		(char **, const char *, size_t *);
-char *	malloc_str2cpy		(char **, const char *, const char *);
 #if 0
+char *	malloc_str2cpy		(char **, const char *, const char *);
+char *	malloc_strcpy 		(char **, const char *);
 char *	m_sc3cat_s 		(char **, const char *, const char *, size_t *clue);
 char *	m_sc3cat 		(char **, const char *, const char *, size_t *clue);
 char *	m_c3cat			(char **, const char *, const char *, size_t *clue);
@@ -189,6 +193,13 @@ char *	malloc_sprintf 		(char **, const char *, ...) __A(2);
 #define malloc_strcat(x,y) malloc_strcat_c((x),(y),NULL)
 #define malloc_strcat2(x,y,z) malloc_strcat2_c((x),(y),(z),NULL)
 #define malloc_strcat_wordlist(x,y,z) malloc_strcat_wordlist_c((x),(y),(z),NULL)
+
+char *  universal_next_arg_count (char *, char **, int, int, int, const char *);
+#define next_arg(a,b)           universal_next_arg_count((a),(b),1,DWORD_NEVER,0,"\"")
+#define next_arg_count(a,b,c)   universal_next_arg_count((a),(b),(c),DWORD_NEVER, 0,"\"")
+#define new_next_arg(a,b)       universal_next_arg_count((a),(b),1,DWORD_ALWAYS,1,"\"")
+#define new_next_arg_count(a,b) universal_next_arg_count((a),(b),(c),DWORD_ALWAYS,1,"\"")
+void    dequoter                (char **, size_t *, int, int, const char *);
 
 extern	unsigned char isspace_table[256];
 #define my_isspace(x) isspace_table[(unsigned)(unsigned char)(x)]

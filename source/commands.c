@@ -1,4 +1,4 @@
-/* $EPIC: commands.c,v 1.66 2003/07/10 13:08:56 jnelson Exp $ */
+/* $EPIC: commands.c,v 1.67 2003/07/10 23:56:01 jnelson Exp $ */
 /*
  * commands.c -- Stuff needed to execute commands in ircII.
  *		 Includes the bulk of the built in commands for ircII.
@@ -77,6 +77,7 @@
 #include "window.h"
 #include "who.h"
 #include "newio.h"
+#include "words.h"
 
 /* 
  * defined to 1 if we are parsing something interactive from the user,

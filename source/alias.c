@@ -1,4 +1,4 @@
-/* $EPIC: alias.c,v 1.27 2003/07/10 13:08:56 jnelson Exp $ */
+/* $EPIC: alias.c,v 1.28 2003/07/10 23:56:01 jnelson Exp $ */
 /*
  * alias.c -- Handles the whole kit and caboodle for aliases.
  *
@@ -805,8 +805,6 @@ void	destroy_arglist (ArgList *arglist)
 	new_free((char **)&arglist);
 }
 
-#define ew_next_arg(a,b,c,d) ((d) ? new_next_arg_count((a),(b),(c)) : next_arg_count((a),(b),(c)))
-
 void	prepare_alias_call (void *al, char **stuff)
 {
 	ArgList *args = (ArgList *)al;
@@ -819,27 +817,38 @@ void	prepare_alias_call (void *al, char **stuff)
 	{
 		char	*next_val;
 		char	*expanded = NULL;
-		int	af, type = 0;
+		int	af, type = 0, do_dequote_it;
 
 		switch (args->types[i])
 		{
 			case WORD:
 				if (x_debug & DEBUG_EXTRACTW)
-					type = 1;
+				{
+					type = DWORD_YES;
+					do_dequote_it = 1;
+				}
 				else
-					type = 0;
+				{
+					type = DWORD_NEVER;
+					do_dequote_it = 0;
+				}
 				break;
 			case UWORD:
-				type = 0;
+				type = DWORD_NEVER;
+				do_dequote_it = 0;
 				break;
 			case DWORD:
-				type = 1;
+				type = DWORD_ALWAYS;
+				do_dequote_it = 1;
 				break;
 			case QWORD:
-				type = 2;
+				type = DWORD_ALWAYS;
+				do_dequote_it = 0;
 				break;
 			default:
 				panic("Alias list argument [%d] has unsupported typed [%d]", i, args->types[i]);
+				/* NOTREACHED */
+				return;
 		}
 
 		/* Last argument on the list and no ... argument? */
@@ -852,7 +861,7 @@ void	prepare_alias_call (void *al, char **stuff)
 		/* Yank the next word from the arglist */
 		else
 		{
-			next_val = ew_next_arg(*stuff, stuff, args->words[i], type);
+			next_val = universal_next_arg_count(*stuff, stuff, args->words[i], type, 0, "\"");
 		}
 
 		if (!next_val || !*next_val)
@@ -864,8 +873,12 @@ void	prepare_alias_call (void *al, char **stuff)
 		}
 
 		/* Do dequoting last so it's useful for ``defaults'' */
-		if (type == 1)
-			dequote(next_val);
+		if (next_val && *next_val && do_dequote_it == 1)
+		{
+			size_t clue;
+			clue = strlen(next_val);
+			dequoter(&next_val, &clue, 1, type, "\"");
+		}
 
 		/* Add the local variable */
 		add_local_alias(args->vars[i], next_val, 0);

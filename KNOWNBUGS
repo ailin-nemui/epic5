@@ -81,3 +81,11 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Nix the original malloc_strcpy (supplanted by malloc_strcpy_c)
 * Comment out all the deprecated functions
 * Nix include/crypt.h and do another make depend.
+* Roll in the new universal_next_arg_count() and attendant macros.
+* Comment out some deprecated function decls in ircaux.h
+* Do another round of make depends.
+* Modify alias arglist code to use the new universal_next_arg_count() stuff
+* Convert dequote() to dequoter().
+* Convert new_new_next_arg() into new_new_next_arg_count().
+* Comment out deprecated functions in ircaux.c -- will be deleted later.
+

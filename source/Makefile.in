@@ -107,7 +107,7 @@ array.o: array.c ../include/irc.h ../include/defs.h \
  ../include/config.h ../include/irc_std.h ../include/debug.h \
  ../include/reg.h ../include/array.h ../include/ircaux.h \
  ../include/compat.h ../include/network.h ../include/output.h \
- ../include/functions.h
+ ../include/functions.h ../include/words.h
 commands.o: commands.c ../include/irc.h ../include/defs.h \
  ../include/config.h ../include/irc_std.h ../include/debug.h \
  ../include/reg.h ../include/alias.h ../include/alist.h \
@@ -392,9 +392,7 @@ server.o: server.c ../include/irc.h ../include/defs.h \
  ../include/names.h ../include/hook.h ../include/screen.h \
  ../include/vars.h ../include/newio.h ../include/translat.h
 ssl.o: ssl.c ../include/irc.h ../include/defs.h ../include/config.h \
- ../include/irc_std.h ../include/debug.h ../include/reg.h \
- ../include/ircaux.h ../include/compat.h ../include/network.h \
- ../include/ssl.h
+ ../include/irc_std.h ../include/debug.h ../include/reg.h
 status.o: status.c ../include/irc.h ../include/defs.h \
  ../include/config.h ../include/irc_std.h ../include/debug.h \
  ../include/reg.h ../include/dcc.h ../include/term.h \

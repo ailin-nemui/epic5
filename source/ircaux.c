@@ -1,4 +1,4 @@
-/* $EPIC: ircaux.c,v 1.87 2003/07/10 13:08:57 jnelson Exp $ */
+/* $EPIC: ircaux.c,v 1.88 2003/07/10 23:56:01 jnelson Exp $ */
 /*
  * ircaux.c: some extra routines... not specific to irc... that I needed 
  *
@@ -48,6 +48,8 @@
 #include "if.h"
 #include "words.h"
 #include "ctcp.h"
+
+#define risspace(c) (c == ' ')
 
 /*
  * This is the basic overhead for every malloc allocation (8 bytes).
@@ -333,6 +335,7 @@ void malloc_dump (const char *file) {
 #endif
 }
 
+#if 0
 char *	malloc_str2cpy(char **ptr, const char *src1, const char *src2)
 {
 	size_t	size;
@@ -366,7 +369,6 @@ char *	malloc_str2cpy(char **ptr, const char *src1, const char *src2)
 }
 
 
-#if 0
 char *	m_2dup (const char *str1, const char *str2)
 {
 	size_t msize = strlen(str1) + strlen(str2) + 1;
@@ -524,6 +526,7 @@ ssize_t	rstristr (const char *start, const char *srch)
 	return -1;
 }
 
+#if 0
 /* 
  * "Dequote" a double quoted string by removing double quotes that surround
  * double quoted words.  Capiche?
@@ -580,6 +583,7 @@ char *	next_arg_count (char *str, char **new_ptr, int count)
 
 	return str;
 }
+#endif
 
 char *	remove_trailing_spaces (char *foo, size_t *cluep)
 {
@@ -600,6 +604,7 @@ char *	remove_trailing_spaces (char *foo, size_t *cluep)
 	return foo;
 }
 
+#if 0
 /*
  * yanks off the last word from 'src'
  * kinda the opposite of next_arg
@@ -656,7 +661,6 @@ char *	last_arg (char **src, size_t *cluep)
 	return ptr;
 }
 
-#define risspace(c) (c == ' ')
 
 /*
  * We seriously need to merge the complexity in this function with
@@ -807,6 +811,7 @@ char *	s_next_arg (char **from)
 	*from = next;
 	return keep;
 }
+#endif
 
 char *	next_in_comma_list (char *str, char **after)
 {
@@ -3332,7 +3337,7 @@ size_t	mangle_line	(char *incoming, int how, size_t how_much)
 {
 	int	stuff;
 	char	*buffer;
-	int	i;
+	size_t	i;
 	char	*s;
 
 	stuff = how;
@@ -3952,6 +3957,7 @@ int	word_count (const char *ptr)
 }
 #endif
 
+#if 0
 /*
  * A "forward quote" is the first double quote we find that has a space
  * or the end of string after it; or the end of the string.
@@ -4070,6 +4076,7 @@ const char *	find_backward_quote (const char *input, const char *start)
 
 	return input;		/* Wherever we are is fine. */
 }
+#endif
 
 const char *	my_strerror (int err1, int err2)
 {
@@ -4702,4 +4709,279 @@ char *	malloc_sprintf (char **ptr, const char *format, ...)
 		return malloc_strdup(booya);
 }
 
+/*
+ * universal_next_arg_count:  Remove the first "count" words from "str", 
+ *	where ``word'' is defined by all this scary text below here...
+ *
+ * Arguments:
+ *  'str' - A standard word list (words are separated by spaces only)
+ *		This string will be modified!
+ *  'new_ptr' - A pointer to a variable pointer into which shall be placed
+ *		the new start of 'str' after the words have been removed.
+ *		It's customary to pass a pointer to "str" for this param.
+ *  'count' - The number of words to remove.  If you want to remove one
+ *		word, use the next_arg() macro.
+ *  'extended' - One of the three "DWORD" macros:
+ *		DWORD_NEVER  - Do not honor double-quoted words in 'str'
+ *		DWORD_YES    - Honor them if /xdebug extractw is on.
+ *		DWORD_ALWAYS - Always honor double-quoted words in 'str'.
+ *  'dequote' - The double quotes that surround double-quoted words
+ *		should be stripped from the return value.
+ *
+ * Definition:
+ *  A "word" is either a "standard word" or a "double quoted word".
+ *  A "standard word" is one or more characters that are not spaces, as 
+ *      defined by your locale's "isspace(3)" rules.  A "standard word" 
+ *      is separated from other "standard words" by spaces, as defined 
+ *      by "isspace(3)".  "Standard words" do not contain any spaces.
+ *  A "double quoted word" is one or more characters that are surrounded
+ *	by double quotes (").  A word is considered "double quoted" if it
+ *	begins with a double quote that occurs at the start of the string,
+ *	or immediately after one or more spaces as defined by isspace(3);
+ *	and if it ends with a double quote that occurs at the end of the
+ *	string or immediately before one or more spaces.  Every word that
+ *	is not a "double quoted word" as defined here is a Standard Word.
+ *
+ *  If "extended" is DWORD_NEVER, or DWORD_YES and /xdebug extractw is off,
+ *	then all words shall be treated as Standard Words, even if they 
+ *	are surrounded in double quotes.
+ *
+ *  If "dequote" is 0, then any Double Quoted Words shall be modified to
+ *	remove the double quotes that surround them.  Dequoting multiple
+ *	words is expensive.
+ *
+ * Return value:
+ *  The first position of the first word in 'str'; the start of a string
+ *	that includes the first 'count' words in 'str', perhaps modified
+ *	by the above rules.  Spaces between words are retained, but words
+ *	before the first word and after the last word will be trimmed.
+ *  Furthermore, because the whitespace character after the last word in
+ *	the return value shall be filled in with a NUL character, the 
+ *	'*new_ptr' value will be set to the position after this NUL.
+ *  Subject to the following conditions:
+ *	If "str" is NULL or a zero-length string, NULL is returned.
+ *	If "str" contains only spaces the return value shall be a
+ *		zero-length string.
+ *	If "str" does not contain more words than requested, The return
+ *		value shall be as normal, but '*new_ptr' shall be set to
+ *		a zero-length string.
+ *
+ * Notes:
+ *  "Contain more words than requested" means if you request 1 word
+ *	and there is only one word in 'str', then the return value 
+ *	will point to that word, but '*new_ptr' will be set to a zero
+ *	length string.
+ *  You can loop over a string, pulling each word off doing something
+ *	like the following:
+ *		while ((ptr = universal_next_arg_count(str, &str, 1, 1, 0))) {
+ *			... operate on ptr ...
+ *		}
+ *  'str' will be modified, so if you need to remove words from a
+ *	(const char *), make a LOCAL_COPY() of it first.
+ *
+ * There are some shorthand macros available:
+ *	next_arg(char *str, char **new_ptr);
+ *	next_arg_count(char *str, char **new_ptr, int count);
+ *	new_next_arg(char *str, char **new_ptr);
+ *	new_next_arg_count(char *str, char **new_ptr, int count);
+ */
+char *	universal_next_arg_count (char *str, char **new_ptr, int count, int extended, int dequote, const char *delims)
+{
+	size_t clue;
+
+	if (!str || !*str)
+		return NULL;
+
+	while (str && *str && my_isspace(*str))
+		str++;
+
+	if (x_debug & DEBUG_EXTRACTW_DEBUG)
+		yell(">>>> universal_next_arg_count: Start: [%s], count [%d], extended [%d], dequote [%d], delims [%s]", str, count, extended, dequote, delims);
+
+	real_move_to_abs_word(str, (const char **)new_ptr, count, extended, delims);
+	if ((*new_ptr)[0] && *new_ptr > str)
+		(*new_ptr)[-1] = 0;
+
+	clue = (*new_ptr) - str - 1;
+	remove_trailing_spaces(str, &clue);
+	if (dequote)
+		dequoter(&str, &clue, count == 1 ? 0 : 1, extended, delims);
+
+	if (x_debug & DEBUG_EXTRACTW_DEBUG)
+		yell("<<<< universal_next_arg_count: End:   [%s] [%s]", 
+						str, *new_ptr);
+	if (!str || !*str)
+		return NULL;
+	return str;
+}
+
+/*
+ * dequoter: Remove double quotes around Double Quoted Words
+ *
+ * Arguments:
+ *  'str' - A pointer to a string that contains Double Quoted Words.
+ *		Double quotes around Double Quoted Words in (*str) will be
+ *		removed.
+ *  'clue' - A pointer to an integer holding the size of '*str'.  You must
+ *		provide this correct value.  If '*str' is shortened, this
+ *		value will be changed to reflect the new length of '*str'.
+ *  'full' - Assume '*str' contains more than one word and an exhaustive
+ *		dequoting is neccessary.  THIS IS VERY EXPENSIVE.  If '*str'
+ *		contains one word, this should be 0.
+ *  'extended' - The extended word policy for this string.  This should 
+ *		usually be DWORD_ALWAYS unless you're doing something fancy.
+ *
+ * Return value:
+ *	There is no return value, but '*str' and '*clue' may be modified as
+ *	described in the above notes.
+ *
+ * Notes:
+ *	None.
+ */
+void	dequoter (char **str, size_t *clue, int full, int extended, const char *delims)
+{
+	int	simple;
+	char	what;
+	size_t	orig_size;
+	orig_size = *clue + 1;
+
+	/*
+	 * Solve the problem of a string with one word...
+	 */
+	if (full == 0)
+	{
+	    if (delims && delims[0] && delims[1] == 0)
+	    {
+		simple = 1;
+		what = delims[0];
+		if (x_debug & DEBUG_EXTRACTW_DEBUG)
+			yell("#### dequoter: Dequoting [%s] simply with delim [%c]", *str, what);
+	    }
+	    else
+	    {
+		simple = 0;
+		what = 255;
+		if (x_debug & DEBUG_EXTRACTW_DEBUG)
+			yell("#### dequoter: Dequoting [%s] fully with delims", *str, delims);
+	    }
+
+	    if (str && *str && ((simple == 1 && **str == what) || 
+				(simple == 0 && strchr(delims, **str))))
+	    {
+		if (x_debug & DEBUG_EXTRACTW_DEBUG)
+			yell("#### dequoter: simple string starts with delim...");
+
+		if (*clue > 0 && ((simple == 1 && (*str)[*clue] == what) ||
+				  (simple == 0 && strchr(delims, (*str)[*clue]))))
+		{
+			if (x_debug & DEBUG_EXTRACTW_DEBUG)
+				yell("#### dequoter: simple string ends with delim...");
+
+			/* Kill the closing quote. */
+			(*str)[*clue] = 0;
+			(*clue)--;
+
+			/* Kill the opening quote. */
+			(*str)++;
+			(*clue)--;
+		}
+	    }
+	    return;
+	}
+
+	/*
+	 * I'm going to perdition for writing this, aren't I...
+	 */
+	else
+	{
+		char *orig_str;		/* Where to start the dest string */
+		char *retval;		/* our temp working buffer */
+		size_t rclue;		/* A working clue for 'retval' */
+		char *this_word;	/* The start of each word */
+		size_t this_len;	/* How long the word is */
+
+		orig_str = *str;	/* Keep this for later use */
+		retval = alloca(orig_size);	/* Reserve space for a full copy */
+		*retval = 0;		/* Prep retval for use... */
+		rclue = 0;
+
+		/*
+		 * Solve the problem of dequoting N words iteratively by 
+		 * solving the problem for the first word and repeating
+		 * until we've worked through the entire list.  Then copy
+		 * the results back to the original string.
+		 */
+		while ((this_word = universal_next_arg_count(*str, str, 1, extended, 0, delims)))
+		{
+			this_len = strlen(this_word) - 1;
+			dequoter(&this_word, &this_len, 0, extended, delims);
+			if (rclue > 0)
+				strlcat_c(retval, space, orig_size, &rclue);
+			strlcat_c(retval, this_word, orig_size, &rclue);
+		}
+
+		*orig_str = 0;
+		*clue = 0;
+		strlcpy_c(orig_str, retval, orig_size, clue);
+		*str = orig_str;
+	}
+}
+
+
+char *	new_new_next_arg_count (char *str, char **new_ptr, char *type, int count)
+{
+	char kludge[2];
+
+	/* Skip leading spaces, blah blah blah */
+        while (str && *str && my_isspace(*str))
+                str++;
+
+	if (!str || !*str)
+		return NULL;
+
+	if (*str == '\'')
+		*type = '\'';
+	else
+		*type = '"';
+
+	kludge[0] = *type;
+	kludge[1] = 0;
+	return universal_next_arg_count(str, new_ptr, 1, DWORD_ALWAYS, 1, kludge);
+}
+
+/*
+ * Note that the old version is now out of sync with epics word philosophy.
+ */
+char *	safe_new_next_arg (char *str, char **new_ptr)
+{
+	char * ret;
+
+	if (!(ret = new_next_arg(str, new_ptr)))
+		ret = empty_string;
+
+	return ret;
+}
+
+/*
+ * yanks off the last word from 'src'
+ * kinda the opposite of next_arg
+ */
+char *	last_arg (char **src, size_t *cluep)
+{
+	char *mark, *start, *end;
+
+	start = *src;
+	end = start + *cluep;
+	mark = end + strlen(end) - 1;
+	/* Always support double-quoted words. */
+	move_word_rel(start, (const char **)&mark, -1, DWORD_ALWAYS, "\"");
+	*cluep = (mark - *src);
+
+	if (mark > start)
+		*mark++ = 0;
+	else
+		*src = NULL;		/* We're done, natch! */
+
+	return mark;
+}
 

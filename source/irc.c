@@ -1,4 +1,4 @@
-/* $EPIC: irc.c,v 1.545 2003/07/10 13:17:12 jnelson Exp $ */
+/* $EPIC: irc.c,v 1.546 2003/07/10 23:56:01 jnelson Exp $ */
 /*
  * ircII: a new irc client.  I like it.  I hope you will too!
  *
@@ -52,7 +52,7 @@ const char internal_version[] = "20030613";
 /*
  * In theory, this number is incremented for every commit.
  */
-const unsigned long	commit_id = 550;
+const unsigned long	commit_id = 551;
 
 /*
  * As a way to poke fun at the current rage of naming releases after
@@ -1255,7 +1255,7 @@ static	long	last_milliday;
 
 			idle_milliday = (int)(timeval_to_metric(&idle_time).mt_mdays);
 			from_server = primary_server;
-			do_hook(TIMER_LIST, "%03d", current_milliday);
+			do_hook(TIMER_LIST, "%03ld", current_milliday);
 			do_hook(IDLE_LIST, "%ld", 
 				(long)(idle_milliday - current_milliday));
 			from_server = old_server;

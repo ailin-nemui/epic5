@@ -1,4 +1,4 @@
-/* $EPIC: words.c,v 1.8 2003/07/09 21:10:25 jnelson Exp $ */
+/* $EPIC: words.c,v 1.9 2003/07/10 23:56:01 jnelson Exp $ */
 /*
  * words.c -- right now it just holds the stuff i wrote to replace
  * that beastie arg_number().  Eventually, i may move all of the
@@ -232,7 +232,6 @@ static const char *	find_backward_quote (const char *input, const char *start, c
 
 	return input;		/* Wherever we are is fine. */
 }
-
 
 static int	move_to_prev_word (const char **str, const char *start, int extended, const char *delims)
 {

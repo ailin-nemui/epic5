@@ -1,4 +1,4 @@
-/* $EPIC: hook.c,v 1.20 2003/07/10 10:30:45 jnelson Exp $ */
+/* $EPIC: hook.c,v 1.21 2003/07/10 23:56:01 jnelson Exp $ */
 /*
  * hook.c: Does those naughty hook functions. 
  *
@@ -1102,7 +1102,7 @@ BUILT_IN_COMMAND(oncmd)
 			 * trying to register the hook, then they've already
 			 * gotten the error message, just return;
 			 */
-			if (new_new_next_arg(args, &args, &type))
+			if (new_new_next_arg_count(args, &args, &type, 1))
 				return;
 
 			/*
@@ -1150,7 +1150,7 @@ BUILT_IN_COMMAND(oncmd)
 		/*
 		 * Grab the "nick"
 		 */
-		if ((nick = new_new_next_arg(args, &args, &type)))
+		if ((nick = new_new_next_arg_count(args, &args, &type, 1)))
 		{
 			char *exp;
 
