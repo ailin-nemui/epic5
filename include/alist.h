@@ -115,7 +115,7 @@ char *(fn)(const char *str)                                                     
 	for (i = 0; (test); ++i)                                                     \
 		if (!str || !*str || wild_match(str, (array)))                       \
 			m_sc3cat(&ret, space, (array), &rclue);                      \
-	return ret ? ret : m_strdup(empty_string);                                   \
+	return ret ? ret : malloc_strdup(empty_string);                              \
 }
 #define GET_FIXED_ARRAY_NAMES_FUNCTION(fn, array) GET_SOME_ARRAY_NAMES_FUNCTION((fn), ((array)[i].name), ((array)[i].name))
 #define GET_ARRAY_NAMES_FUNCTION(fn, array) GET_SOME_ARRAY_NAMES_FUNCTION((fn), ((array.list)[i]->name), (i < (array).max))

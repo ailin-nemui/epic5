@@ -1,4 +1,4 @@
-/* $EPIC: network.c,v 1.47 2003/05/09 04:29:52 jnelson Exp $ */
+/* $EPIC: network.c,v 1.48 2003/07/09 21:10:25 jnelson Exp $ */
 /*
  * network.c -- handles stuff dealing with connecting and name resolving
  *
@@ -693,7 +693,7 @@ static int	Getaddrinfo (const char *nodename, const char *servname, const AI *hi
 		(*res)->ai_socktype = SOCK_STREAM;
 		(*res)->ai_protocol = 0;
 		(*res)->ai_addrlen = len;
-		(*res)->ai_canonname = m_strdup(nodename);
+		(*res)->ai_canonname = malloc_strdup(nodename);
 		(*res)->ai_addr = new_malloc(sizeof(storage));
 		*(USA *)((*res)->ai_addr) = storage;
 		(*res)->ai_next = 0;

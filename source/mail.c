@@ -1,4 +1,4 @@
-/* $EPIC: mail.c,v 1.6 2003/05/09 04:29:52 jnelson Exp $ */
+/* $EPIC: mail.c,v 1.7 2003/07/09 21:10:25 jnelson Exp $ */
 /*
  * mail.c -- a gross simplification of mail checking.
  * Only unix maildrops are supported.
@@ -74,11 +74,11 @@ static	time_t	old_stat = 0;
 		Filename tmp_mail_path;
 
 		if (getenv("MAIL"))
-			mail_path = m_strdup(getenv("MAIL"));
+			mail_path = malloc_strdup(getenv("MAIL"));
 		else if (path_search(username, mail_path_list, tmp_mail_path))
-			mail_path = m_strdup(tmp_mail_path);
+			mail_path = malloc_strdup(tmp_mail_path);
 		else
-			mail_path = m_strdup("<unknown>");
+			mail_path = malloc_strdup("<unknown>");
 	}
 
 	/* If there is no mailbox, there is no mail! */

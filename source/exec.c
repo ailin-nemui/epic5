@@ -1,4 +1,4 @@
-/* $EPIC: exec.c,v 1.20 2003/05/09 04:29:52 jnelson Exp $ */
+/* $EPIC: exec.c,v 1.21 2003/07/09 21:10:25 jnelson Exp $ */
 /*
  * exec.c: handles exec'd process for IRCII 
  *
@@ -621,9 +621,9 @@ say("Output from process %d (%s) now going to you", i, proc->name);
 			/*
 			 * Fill in the new proc entry
 			 */
-			proc->name = m_strdup(name);
+			proc->name = malloc_strdup(name);
 			if (logical)
-				proc->logical = m_strdup(logical);
+				proc->logical = malloc_strdup(logical);
 			else
 				proc->logical = NULL;
 			proc->index = i;
@@ -634,7 +634,7 @@ say("Output from process %d (%s) now going to you", i, proc->name);
 			proc->refnum = refnum;
 			proc->redirect = NULL;
 			if (redirect)
-				proc->redirect = m_strdup(redirect);
+				proc->redirect = malloc_strdup(redirect);
 			proc->server = from_server;
 			proc->counter = 0;
 			proc->exited = 0;
@@ -644,26 +644,26 @@ say("Output from process %d (%s) now going to you", i, proc->name);
 			proc->who = NULL;
 			proc->disowned = 0;
 			if (who)
-				proc->who = m_strdup(who);
+				proc->who = malloc_strdup(who);
 			proc->dumb = 0;
 
 			if (stdoutc)
-				proc->stdoutc = m_strdup(stdoutc);
+				proc->stdoutc = malloc_strdup(stdoutc);
 			else
 				proc->stdoutc = NULL;
 
 			if (stdoutpc)
-				proc->stdoutpc = m_strdup(stdoutpc);
+				proc->stdoutpc = malloc_strdup(stdoutpc);
 			else
 				proc->stdoutpc = NULL;
 
 			if (stderrc)
-				proc->stderrc = m_strdup(stderrc);
+				proc->stderrc = malloc_strdup(stderrc);
 			else
 				proc->stderrc = NULL;
 
 			if (stderrpc)
-				proc->stderrpc = m_strdup(stderrpc);
+				proc->stderrpc = malloc_strdup(stderrpc);
 			else
 				proc->stderrpc = NULL;
 
@@ -965,7 +965,7 @@ void 		add_process_wait (int proc_index, const char *cmd)
 
 	new_ewl = new_malloc(sizeof(List));
 	new_ewl->next = NULL;
-	new_ewl->name = m_strdup(cmd);
+	new_ewl->name = malloc_strdup(cmd);
 
 	if ((posn = proc->waitcmds))
 	{

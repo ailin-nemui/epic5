@@ -1,4 +1,4 @@
-/* $EPIC: expr2.c,v 1.8 2003/07/09 05:45:22 jnelson Exp $ */
+/* $EPIC: expr2.c,v 1.9 2003/07/09 21:10:25 jnelson Exp $ */
 /*
  * Zsh: math.c,v 3.1.2.1 1997/06/01 06:13:15 hzoli Exp 
  * math.c - mathematical expression evaluation
@@ -730,7 +730,7 @@ __inline static	const char *	get_token_expanded (expr_info *c, TOKEN v)
 			alias_special_char(&buffer, myval, c->args, 
 					NULL, c->args_flag);
 			if (!buffer)
-				buffer = m_strdup(empty_string);
+				buffer = malloc_strdup(empty_string);
 			TOK(c, v).expanded_value = buffer;
 
 			if (x_debug & DEBUG_NEW_MATH_DEBUG)
@@ -1410,7 +1410,7 @@ static void	reduce (expr_info *cx, int what)
 
 			GET_LVAL_RVAL
 			CHECK_NOEVAL
-			myval = m_strdup(get_token_expanded(cx, v));
+			myval = malloc_strdup(get_token_expanded(cx, v));
 			t = get_token_expanded(cx, w);
 
 			if (x_debug & DEBUG_NEW_MATH_DEBUG) 
@@ -1429,7 +1429,7 @@ static void	reduce (expr_info *cx, int what)
 
 			GET_LVAL_RVAL
 			CHECK_NOEVAL
-			myval = m_strdup(get_token_expanded(cx, w));
+			myval = malloc_strdup(get_token_expanded(cx, w));
 			t = get_token_expanded(cx, v);
 
 			if (x_debug & DEBUG_NEW_MATH_DEBUG) 
@@ -2289,7 +2289,7 @@ static char *	matheval (char *s, const char *args, int *args_flag)
 
 	/* Sanity check */
 	if (!s || !*s)
-		return m_strdup(empty_string);
+		return malloc_strdup(empty_string);
 
 	/* Create new state */
 	setup_expr_info(&context);
@@ -2303,7 +2303,7 @@ static char *	matheval (char *s, const char *args, int *args_flag)
 	/* Check for error */
 	if (context.errflag)
 	{
-		ret = m_strdup(empty_string);
+		ret = malloc_strdup(empty_string);
 		goto cleanup;
 	}
 
@@ -2321,7 +2321,7 @@ static char *	matheval (char *s, const char *args, int *args_flag)
 	}
 
 	/* Get the return value, if requested */
-	ret = m_strdup(get_token_expanded(&context, pop_token(&context)));
+	ret = malloc_strdup(get_token_expanded(&context, pop_token(&context)));
 
 cleanup:
 	/* Clean up and restore order */

@@ -1,4 +1,4 @@
-/* $EPIC: names.c,v 1.42 2003/05/09 04:29:52 jnelson Exp $ */
+/* $EPIC: names.c,v 1.43 2003/07/09 21:10:25 jnelson Exp $ */
 /*
  * names.c: This here is used to maintain a list of all the people currently
  * on your channel.  Seems to work 
@@ -190,7 +190,7 @@ static Channel *create_channel (const char *name, int server)
 	Channel *new_c = (Channel *)new_malloc(sizeof(Channel));
 
 	new_c->prev = new_c->next = NULL;
-	new_c->channel = m_strdup(name);
+	new_c->channel = malloc_strdup(name);
 	new_c->server = server;
 	new_c->waiting = 0;
 	new_c->inactive = 0;
@@ -535,7 +535,7 @@ const	char	*prefix;
 	}
 
 	new_n = (Nick *)new_malloc(sizeof(Nick));
-	new_n->nick = m_strdup(nick);
+	new_n->nick = malloc_strdup(nick);
 	new_n->userhost = NULL;
 	new_n->suspicious = suspicious;
 	new_n->chanop = ischop;
@@ -750,14 +750,14 @@ char	*create_chops_list (const char *name, int server)
 	size_t	clue = 0;
 
 	if (!channel)
-		return m_strdup(empty_string);
+		return malloc_strdup(empty_string);
 
 	for (i = 0; i < channel->nicks.max; i++)
 	    if (channel->nicks.list[i]->chanop)
 		m_sc3cat(&str, space, channel->nicks.list[i]->nick, &clue);
 
 	if (!str)
-		return m_strdup(empty_string);
+		return malloc_strdup(empty_string);
 	return str;
 }
 
@@ -769,14 +769,14 @@ char	*create_nochops_list (const char *name, int server)
 	size_t	clue = 0;
 
 	if (!channel)
-		return m_strdup(empty_string);
+		return malloc_strdup(empty_string);
 
 	for (i = 0; i < channel->nicks.max; i++)
 	    if (!channel->nicks.list[i]->chanop)
 		m_sc3cat(&str, space, channel->nicks.list[i]->nick, &clue);
 
 	if (!str)
-		return m_strdup(empty_string);
+		return malloc_strdup(empty_string);
 	return str;
 }
 
@@ -1209,7 +1209,7 @@ char	*scan_channel (char *cname)
 	size_t	clue = 0;
 
 	if (!wc)
-		return m_strdup(empty_string);
+		return malloc_strdup(empty_string);
 
 	nicks = &wc->nicks;
 	for (i = 0; i < nicks->max; i++)
@@ -1233,7 +1233,7 @@ char	*scan_channel (char *cname)
 	}
 
 	if (retval == NULL)
-		return m_strdup(empty_string);		/* Don't return NULL */
+		return malloc_strdup(empty_string);		/* Don't return NULL */
 
 	return retval;
 }
@@ -1782,7 +1782,7 @@ char *	create_channel_list (int server)
 			m_sc3cat(&retval, space, tmp->channel, &clue);
 	}
 
-	return retval ? retval : m_strdup(empty_string);
+	return retval ? retval : malloc_strdup(empty_string);
 }
 
 /*
@@ -1810,7 +1810,7 @@ void 	save_channels (int servref)
 			continue;		/* Yea yea yea */
 
 		if ((chan = get_echannel_by_refnum(tmp->refnum)))
-			tmp->waiting_channel = m_strdup(chan);
+			tmp->waiting_channel = malloc_strdup(chan);
 	}
 
 	/*

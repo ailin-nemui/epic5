@@ -1,4 +1,4 @@
-/* $EPIC: ignore.c,v 1.11 2003/07/04 17:11:53 jnelson Exp $ */
+/* $EPIC: ignore.c,v 1.12 2003/07/09 21:10:25 jnelson Exp $ */
 /*
  * ignore.c: handles the ingore command for irc 
  *
@@ -150,7 +150,7 @@ static Ignore *new_ignore (const char *new_nick)
 	Ignore *item;
 
 	item = (Ignore *) new_malloc(sizeof(Ignore));
-	item->nick = m_strdup(new_nick);
+	item->nick = malloc_strdup(new_nick);
 	upper(item->nick);
 	item->reason = NULL;
 	item->refnum = ++global_ignore_refnum;
@@ -908,7 +908,7 @@ char 	*get_ignores_by_pattern (char *patterns, int covered)
 		}
 	}
 
-	return retval ? retval : m_strdup(empty_string);
+	return retval ? retval : malloc_strdup(empty_string);
 }
 
 
@@ -967,7 +967,7 @@ char	*get_ignore_patterns_by_type (char *ctype)
 	 */
 	change_ignore_mask_by_desc(ctype, &do_mask, &dont_mask, &high_mask, NULL, NULL);
 	if (do_mask == 0 && dont_mask == 0 && high_mask == 0)
-		return m_strdup(empty_string);
+		return malloc_strdup(empty_string);
 
 	for (tmp = ignored_nicks; tmp; tmp = tmp->next)
 	{

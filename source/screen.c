@@ -1,4 +1,4 @@
-/* $EPIC: screen.c,v 1.50 2003/05/09 04:29:52 jnelson Exp $ */
+/* $EPIC: screen.c,v 1.51 2003/07/09 21:10:25 jnelson Exp $ */
 /*
  * screen.c
  *
@@ -2826,10 +2826,10 @@ Window	*create_additional_screen (void)
 
 			if (screen_type == ST_SCREEN)
 			{
-			    opts = m_strdup(get_string_var(SCREEN_OPTIONS_VAR));
-			    *args_ptr++ = m_strdup("screen");
+			    opts = malloc_strdup(get_string_var(SCREEN_OPTIONS_VAR));
+			    *args_ptr++ = malloc_strdup("screen");
 			    while (opts && *opts)
-				*args_ptr++ = m_strdup(new_next_arg(opts, &opts));
+				*args_ptr++ = malloc_strdup(new_next_arg(opts, &opts));
 			}
 			else if (screen_type == ST_XTERM)
 			{
@@ -2837,22 +2837,22 @@ Window	*create_additional_screen (void)
 				oldscreen->co + 1, 
 				oldscreen->li);
 
-			    opts = m_strdup(get_string_var(XTERM_OPTIONS_VAR));
+			    opts = malloc_strdup(get_string_var(XTERM_OPTIONS_VAR));
 			    if (!(xterm = getenv("XTERM")))
 				if (!(xterm = get_string_var(XTERM_VAR)))
 				    xterm = "xterm";
 
-			    *args_ptr++ = m_strdup(xterm);
-			    *args_ptr++ = m_strdup("-geometry");
-			    *args_ptr++ = m_strdup(geom);
+			    *args_ptr++ = malloc_strdup(xterm);
+			    *args_ptr++ = malloc_strdup("-geometry");
+			    *args_ptr++ = malloc_strdup(geom);
 			    while (opts && *opts)
-				*args_ptr++ = m_strdup(new_next_arg(opts, &opts));
-			    *args_ptr++ = m_strdup("-e");
+				*args_ptr++ = malloc_strdup(new_next_arg(opts, &opts));
+			    *args_ptr++ = malloc_strdup("-e");
 			}
 
-			*args_ptr++ = m_strdup(wserv_path);
-			*args_ptr++ = m_strdup("localhost");
-			*args_ptr++ = m_strdup(ltoa((long)port));
+			*args_ptr++ = malloc_strdup(wserv_path);
+			*args_ptr++ = malloc_strdup("localhost");
+			*args_ptr++ = malloc_strdup(ltoa((long)port));
 			*args_ptr++ = NULL;
 
 			execvp(args[0], args);
@@ -3160,8 +3160,8 @@ void 	add_wait_prompt (const char *prompt, void (*func)(char *, char *), char *d
 		   *New;
 
 	New = (WaitPrompt *) new_malloc(sizeof(WaitPrompt));
-	New->prompt = m_strdup(prompt);
-	New->data = m_strdup(data);
+	New->prompt = malloc_strdup(prompt);
+	New->data = malloc_strdup(data);
 	New->type = type;
 	New->echo = echo;
 	New->func = func;

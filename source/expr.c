@@ -1,4 +1,4 @@
-/* $EPIC: expr.c,v 1.17 2003/07/09 05:45:22 jnelson Exp $ */
+/* $EPIC: expr.c,v 1.18 2003/07/09 21:10:25 jnelson Exp $ */
 /*
  * expr.c -- The expression mode parser and the textual mode parser
  * #included by alias.c -- DO NOT DELETE
@@ -271,7 +271,7 @@ static	char	*next_unit (char *str, const char *args, int *arg_flag, int stage)
 
 	/* If there's nothing there, return it */
 	if (!*str)
-		return m_strdup(empty_string);
+		return malloc_strdup(empty_string);
 
 
 	/* find the end of the rest of the expression */
@@ -449,7 +449,7 @@ static	char	*next_unit (char *str, const char *args, int *arg_flag, int stage)
 			result1 = get_variable("FUNCTION_RETURN");
 			destroy_local_stack();
 			if (!result1)
-				result1 = m_strdup(empty_string);
+				result1 = malloc_strdup(empty_string);
 
 			return result1;
 		}
@@ -516,7 +516,7 @@ static	char	*next_unit (char *str, const char *args, int *arg_flag, int stage)
 			{
 			    if (right[1] == '*' && right[2] == 0)
 			    {
-				result1 = m_strdup(args);
+				result1 = malloc_strdup(args);
 				*arg_flag = 1;
 			    }
 			    else
@@ -553,7 +553,7 @@ static	char	*next_unit (char *str, const char *args, int *arg_flag, int stage)
 			    }
 			}
 			else if (!strchr(right, '$') && !strchr(right, '\\'))
-				result1 = m_strdup(right);
+				result1 = malloc_strdup(right);
 			else
 #endif
 				result1 = expand_alias(right, args, arg_flag, NULL);
@@ -682,7 +682,7 @@ static	char	*next_unit (char *str, const char *args, int *arg_flag, int stage)
 
 				new_free(&result1);
 				new_free(&varname);
-				return m_strdup(ltoa(r));
+				return malloc_strdup(ltoa(r));
 			}
 
 			/* Unary op is ignored */
@@ -702,7 +702,7 @@ static	char	*next_unit (char *str, const char *args, int *arg_flag, int stage)
 			tmp = malloc_sprintf(NULL, "%.50g", dvalue3);
 			canon_number(tmp);
 #else
-			tmp = m_strdup(ftoa(dvalue3));
+			tmp = malloc_strdup(ftoa(dvalue3));
 #endif
 #else
 			SETUP_INTEGER_OPERATION(NU_ADD)
@@ -712,7 +712,7 @@ static	char	*next_unit (char *str, const char *args, int *arg_flag, int stage)
 			else
 				value3 = value1 + value2;
 
-			tmp = m_strdup(ltoa(value3));
+			tmp = malloc_strdup(ltoa(value3));
 #endif
 			CLEANUP_IMPLIED()
 			return tmp;
@@ -746,7 +746,7 @@ static	char	*next_unit (char *str, const char *args, int *arg_flag, int stage)
 #if 0
 				return malloc_sprintf(NULL, "%.50g", pow(dvalue1, dvalue2));
 #else
-				return m_strdup(ftoa(pow(dvalue1, dvalue2)));
+				return malloc_strdup(ftoa(pow(dvalue1, dvalue2)));
 #endif
 			}
 
@@ -769,7 +769,7 @@ static	char	*next_unit (char *str, const char *args, int *arg_flag, int stage)
 			tmp = malloc_sprintf(NULL, "%.50g", dvalue3);
 			canon_number(tmp);
 #else
-			tmp = m_strdup(ftoa(dvalue3));
+			tmp = malloc_strdup(ftoa(dvalue3));
 #endif
 			CLEANUP_IMPLIED()
 			return tmp;
@@ -799,7 +799,7 @@ static	char	*next_unit (char *str, const char *args, int *arg_flag, int stage)
 			{
 				char *sval1, *sval2;
 
-				SETUP_IMPLIED(sval1, sval2, m_strdup)
+				SETUP_IMPLIED(sval1, sval2, malloc_strdup)
 				malloc_strcat(&sval1, sval2);
 				new_free(&sval2);
 				tmp = sval1;
@@ -812,7 +812,7 @@ static	char	*next_unit (char *str, const char *args, int *arg_flag, int stage)
 				char *sval1, *sval2;
 
 				ptr[1] = '=';	/* XXXX */
-				SETUP_IMPLIED(sval1, sval2, m_strdup)
+				SETUP_IMPLIED(sval1, sval2, malloc_strdup)
 				malloc_strcat(&sval2, sval1);
 				new_free(&sval1);
 				tmp = sval2;
@@ -855,7 +855,7 @@ static	char	*next_unit (char *str, const char *args, int *arg_flag, int stage)
 
 				new_free(&result1);
 				new_free(&result2);
-				return m_strdup(value3 ? one : zero);
+				return malloc_strdup(value3 ? one : zero);
 			}
 
 			/* &= is implied binary bitwise and */
@@ -863,7 +863,7 @@ static	char	*next_unit (char *str, const char *args, int *arg_flag, int stage)
 			{
 				SETUP_IMPLIED(value1, value2, my_atol)
 				value1 &= value2;
-				tmp = m_strdup(ltoa(value1));
+				tmp = malloc_strdup(ltoa(value1));
 				CLEANUP_IMPLIED();
 				return tmp;
 			}
@@ -872,7 +872,7 @@ static	char	*next_unit (char *str, const char *args, int *arg_flag, int stage)
 			else if (ptr[1] != ptr[0] && ptr[1] != '=' && stage == NU_BITW)
 			{
 				SETUP_BINARY(value1, value2, my_atol)
-				return m_strdup(ltoa(value1 & value2));
+				return malloc_strdup(ltoa(value1 & value2));
 			}
 
 			else
@@ -902,7 +902,7 @@ static	char	*next_unit (char *str, const char *args, int *arg_flag, int stage)
 
 				new_free(&result1);
 				new_free(&result2);
-				return m_strdup(value3 ? one : zero);
+				return malloc_strdup(value3 ? one : zero);
 			}
 
 			/* |= is implied binary bitwise or */
@@ -910,7 +910,7 @@ static	char	*next_unit (char *str, const char *args, int *arg_flag, int stage)
 			{
 				SETUP_IMPLIED(value1, value2, my_atol)
 				value1 |= value2;
-				tmp = m_strdup(ltoa(value1));
+				tmp = malloc_strdup(ltoa(value1));
 				CLEANUP_IMPLIED();
 				return tmp;
 			}
@@ -919,7 +919,7 @@ static	char	*next_unit (char *str, const char *args, int *arg_flag, int stage)
 			else if (ptr[1] != ptr[0] && ptr[1] != '=' && stage != NU_BITW)
 			{
 				SETUP_BINARY(value1, value2, my_atol)
-				return m_strdup(ltoa(value1 | value2));
+				return malloc_strdup(ltoa(value1 | value2));
 			}
 
 			else
@@ -942,7 +942,7 @@ static	char	*next_unit (char *str, const char *args, int *arg_flag, int stage)
 				new_free(&result1);
 				new_free(&result2);
 
-				return m_strdup(value1 ^ value2 ? one : zero);
+				return malloc_strdup(value1 ^ value2 ? one : zero);
 			}
 
 			/* ^= is implied binary bitwise xor */
@@ -951,7 +951,7 @@ static	char	*next_unit (char *str, const char *args, int *arg_flag, int stage)
 
 				SETUP_IMPLIED(value1, value2, my_atol)
 				value1 ^= value2;
-				tmp = m_strdup(ltoa(value1));
+				tmp = malloc_strdup(ltoa(value1));
 				CLEANUP_IMPLIED();
 				return tmp;
 			}
@@ -960,7 +960,7 @@ static	char	*next_unit (char *str, const char *args, int *arg_flag, int stage)
 			else if (ptr[1] != ptr[0] && ptr[1] != '=' && stage == NU_BITW)
 			{
 				SETUP_BINARY(value1, value2, my_atol)
-				return m_strdup(ltoa(value1 ^ value2));
+				return malloc_strdup(ltoa(value1 ^ value2));
 			}
 
 			else
@@ -1101,7 +1101,7 @@ static	char	*next_unit (char *str, const char *args, int *arg_flag, int stage)
 
 				new_free(&result1);
 				new_free(&result2);
-				return m_strdup(ltoa(value3));
+				return malloc_strdup(ltoa(value3));
 			}
 
 			else if (ptr[1] != ptr[0] && stage == NU_COMP)
@@ -1136,7 +1136,7 @@ static	char	*next_unit (char *str, const char *args, int *arg_flag, int stage)
 
 				new_free(&result1);
 				new_free(&result2);
-				return m_strdup(ltoa(value2));
+				return malloc_strdup(ltoa(value2));
 			}
 
 			else
@@ -1159,7 +1159,7 @@ static	char	*next_unit (char *str, const char *args, int *arg_flag, int stage)
 				else
 					value1 = 0;
 
-				return m_strdup(ltoa(value1));
+				return malloc_strdup(ltoa(value1));
 			}
 
 			else
@@ -1188,7 +1188,7 @@ static	char	*next_unit (char *str, const char *args, int *arg_flag, int stage)
 					value2 = ((*result1)?0:1);
 
 				new_free(&result1);
-				return m_strdup(ltoa(value2));
+				return malloc_strdup(ltoa(value2));
 			}
 
 			else if (ptr != str && ptr[1] == '~' && stage == NU_COMP)
@@ -1267,7 +1267,7 @@ static	char	*next_unit (char *str, const char *args, int *arg_flag, int stage)
 	 * If the result is a number, return it.
 	 */
 	if (my_isdigit(str))
-		return m_strdup(str);
+		return malloc_strdup(str);
 
 
 	/*
@@ -1282,9 +1282,9 @@ static	char	*next_unit (char *str, const char *args, int *arg_flag, int stage)
 	 * Its not a number, so its a variable, look it up.
 	 */
 	if (!*str)
-		result1 = m_strdup(args);
+		result1 = malloc_strdup(args);
 	else if (!(result1 = get_variable(str)))
-		return m_strdup(empty_string);
+		return malloc_strdup(empty_string);
 
 	/*
 	 * See if we have to take strlen or word_count on the variable.
@@ -1296,7 +1296,7 @@ static	char	*next_unit (char *str, const char *args, int *arg_flag, int stage)
 		else if (op == '@')
 			value1 = strlen(result1);
 		new_free(&result1);
-		return m_strdup(ltoa(value1));
+		return malloc_strdup(ltoa(value1));
 	}
 
 	/*
@@ -1348,7 +1348,7 @@ char	*expand_alias	(const char *string, const char *args, int *args_flag, ssize_
 	size_t	buffclue = 0;
 
 	if (!string || !*string)
-		return m_strdup(empty_string);
+		return malloc_strdup(empty_string);
 
 	if (*string == '@' && more_text)
 	{
@@ -1545,7 +1545,7 @@ static	char	*alias_special_char (char **buffer, char *ptr, const char *args, cha
 		 */
 		case 0:
 		{
-			tmp = m_strdup(empty_string);
+			tmp = malloc_strdup(empty_string);
 			TruncateAndQuote(buffer, tmp, length, quote_em);
 			new_free(&tmp);
 			return ptr;
@@ -1603,7 +1603,7 @@ static	char	*alias_special_char (char **buffer, char *ptr, const char *args, cha
 
 			/* Some kind of bogus expando */
 			if (sub_buffer == NULL)
-				sub_buffer = m_strdup(empty_string);
+				sub_buffer = malloc_strdup(empty_string);
 
 			if (!(x_debug & DEBUG_SLASH_HACK))
 				TruncateAndQuote(buffer, sub_buffer, 
@@ -1730,7 +1730,7 @@ static	char	*alias_special_char (char **buffer, char *ptr, const char *args, cha
 			rest = (char *)after_expando(ptr + 1, 0, &my_dummy);
 			if (rest == ptr + 1)
 			{
-			    sub_buffer = m_strdup(args);
+			    sub_buffer = malloc_strdup(args);
 			    *args_flag = 1;
 			}
 			else
@@ -1743,9 +1743,9 @@ static	char	*alias_special_char (char **buffer, char *ptr, const char *args, cha
 			}
 
 			if (c == '#')
-			    val = m_strdup(ltoa(word_count(sub_buffer)));
+			    val = malloc_strdup(ltoa(word_count(sub_buffer)));
 			else
-			    val = m_strdup(ltoa(strlen(sub_buffer)));
+			    val = malloc_strdup(ltoa(strlen(sub_buffer)));
 
 #if 0	/* Don't need to do this here */
 			if (!(x_debug & DEBUG_SLASH_HACK))
@@ -1843,7 +1843,7 @@ static	char	*alias_special_char (char **buffer, char *ptr, const char *args, cha
 			     * chewing the expando.
 			     */
 			    if (!args)
-				tmp2 = m_strdup(empty_string);
+				tmp2 = malloc_strdup(empty_string);
 			    else
 				tmp2 = extractw2(args, my_lower, my_upper);
 
@@ -1874,7 +1874,7 @@ static	char	*alias_special_char (char **buffer, char *ptr, const char *args, cha
 				tmp = get_variable_with_args(ptr, args, args_flag);
 
 			    if (!tmp)
-				tmp = m_strdup(empty_string);
+				tmp = malloc_strdup(empty_string);
 
 			    TruncateAndQuote(buffer, tmp, length, quote_em);
 

@@ -1,4 +1,4 @@
-/* $EPIC: dcc.c,v 1.67 2003/07/09 05:45:22 jnelson Exp $ */
+/* $EPIC: dcc.c,v 1.68 2003/07/09 21:10:24 jnelson Exp $ */
 /*
  * dcc.c: Things dealing client to client connections. 
  *
@@ -470,12 +470,12 @@ static	DCC_list *dcc_create (
 	new_client->packets_outstanding = 0;
 	new_client->packets_ack 	= 0;
 	new_client->next 		= ClientList;
-	new_client->user 		= m_strdup(user);
+	new_client->user 		= malloc_strdup(user);
 	new_client->userhost 		= (FromUserHost && *FromUserHost)
-					? m_strdup(FromUserHost)
-					: m_strdup(unknown_userhost);
-	new_client->description 	= m_strdup(description);
-	new_client->othername 		= m_strdup(othername);
+					? malloc_strdup(FromUserHost)
+					: malloc_strdup(unknown_userhost);
+	new_client->description 	= malloc_strdup(description);
+	new_client->othername 		= malloc_strdup(othername);
 	new_client->bytes_read 		= 0;
 	new_client->bytes_sent 		= 0;
 	new_client->starttime.tv_sec 	= 0;
@@ -1265,7 +1265,7 @@ static	void 	dcc_close (char *args)
 				encoded_description = dcc_urlencode(dcc->description);
 			else
 				/* assume the other end encoded the filename */
-				encoded_description = m_strdup(dcc->description);
+				encoded_description = malloc_strdup(dcc->description);
 		}
 		
                 if (do_hook(DCC_LOST_LIST,"%s %s %s USER ABORTED CONNECTION",
@@ -1408,7 +1408,7 @@ static	void	dcc_getfile (char *args, int resume)
 			return;
 		}
 
-		dcc->filename = m_strdup(fullname);
+		dcc->filename = malloc_strdup(fullname);
 		dcc->file = file;
 		dcc->flags |= DCC_TWOCLIENTS;
 		dcc->open_callback = NULL;
@@ -1504,7 +1504,7 @@ static	const char	*format =
 		encoded_description = dcc_urlencode(dcc->description);
 	    else
 		/* assume the other end encoded the filename */
-		encoded_description = m_strdup(dcc->description);
+		encoded_description = malloc_strdup(dcc->description);
 
 	    if (do_hook(DCC_LIST_LIST, "%s %s %s %s %ld %ld %ld %s",
 				dcc_types[flags & DCC_TYPES],
@@ -1868,7 +1868,7 @@ char	*dcc_raw_listen (int family, unsigned short port)
 
 	get_time(&Client->starttime);
 	Client->flags |= DCC_ACTIVE;
-	Client->user = m_strdup(ltoa(Client->want_port));
+	Client->user = malloc_strdup(ltoa(Client->want_port));
 	unlock_dcc(Client);
     }
     while (0);
@@ -1876,7 +1876,7 @@ char	*dcc_raw_listen (int family, unsigned short port)
 	unlock_dcc(NULL);
 	dcc_garbage_collect();
 	message_from(NULL, LOG_CURRENT);
-	return m_strdup(PortName);
+	return malloc_strdup(PortName);
 }
 
 
@@ -1922,7 +1922,7 @@ char	*dcc_raw_connect (const char *host, const char *port, int family)
 		break;
 	}
 
-	Client->user = m_strdup(ltoa(Client->socket));
+	Client->user = malloc_strdup(ltoa(Client->socket));
 	if (do_hook(DCC_RAW_LIST, "%s %s E %s", Client->user, host, port))
             if (do_hook(DCC_CONNECT_LIST,"%s RAW %s %s", 
 				Client->user, host, port))
@@ -1936,7 +1936,7 @@ char	*dcc_raw_connect (const char *host, const char *port, int family)
 	unlock_dcc(NULL);
 	message_from(NULL, LOG_CURRENT);
 	dcc_garbage_collect();
-	return m_strdup(retval);
+	return malloc_strdup(retval);
 }
 
 
@@ -2247,7 +2247,7 @@ display_it:
 					get_string_var(DCC_STORE_PATH_VAR), 
 					dcc->description);
 	    else
-		realfilename = m_strdup(dcc->description);
+		realfilename = malloc_strdup(dcc->description);
 
 
 	    if (stat(realfilename, &statit) == 0)
@@ -2384,7 +2384,7 @@ void	dcc_check (fd_set *Readables, fd_set *Writables)
 				encoded_description = dcc_urlencode(Client->description);
 			else
 				/* assume the other end encoded the filename */
-				encoded_description = m_strdup(Client->description);
+				encoded_description = malloc_strdup(Client->description);
 		}
 
 		if (do_hook(DCC_LOST_LIST,"%s %s %s IDLE TIME EXCEEDED",
@@ -3151,7 +3151,7 @@ static void	DCC_close_filesend (DCC_list *Client, const char *info)
 		encoded_description = dcc_urlencode(Client->description);
 	else
 		/* assume the other end encoded the filename */
-		encoded_description = m_strdup(Client->description);
+		encoded_description = malloc_strdup(Client->description);
 
 	if (do_hook(DCC_LOST_LIST,"%s %s %s %s TRANSFER COMPLETE",
 		Client->user, info, encoded_description, lame_ultrix))
@@ -3197,7 +3197,7 @@ static	char *	dcc_urlencode (const char *s)
 	const char *p1;
 	char *str, *p2, *ret;
 
-	str = m_strdup(s);
+	str = malloc_strdup(s);
 
 	for (p1 = s, p2 = str; *p1; p1++)
 	{
@@ -3216,7 +3216,7 @@ static	char *	dcc_urldecode (const char *s)
 {
 	char *str, *p1;
 
-	str = m_strdup(s);
+	str = malloc_strdup(s);
 	urldecode(str, NULL);
 
 	for (p1 = str; *p1; p1++)

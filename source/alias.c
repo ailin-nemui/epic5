@@ -1,4 +1,4 @@
-/* $EPIC: alias.c,v 1.23 2003/07/08 22:36:51 jnelson Exp $ */
+/* $EPIC: alias.c,v 1.24 2003/07/09 21:10:24 jnelson Exp $ */
 /*
  * alias.c -- Handles the whole kit and caboodle for aliases.
  *
@@ -745,7 +745,7 @@ ArgList	*parse_arglist (char *arglist)
 			args->dot_flag = 1;
 			break;
 		} else {
-			args->vars[arg_count] = m_strdup(varname);
+			args->vars[arg_count] = malloc_strdup(varname);
 			args->defaults[arg_count] = NULL;
 			args->words[arg_count] = 1;
 
@@ -755,7 +755,7 @@ ArgList	*parse_arglist (char *arglist)
 						break;
 				if (!my_stricmp(modifier, "default"))
 				{
-					args->defaults[arg_count] = m_strdup(value);
+					args->defaults[arg_count] = malloc_strdup(value);
 				}
 				else if (!my_stricmp(modifier, "words"))
 				{
@@ -975,11 +975,11 @@ static void	show_alias_caches (void)
 static Alias *make_new_Alias (const char *name)
 {
 	Alias *tmp = (Alias *) new_malloc(sizeof(Alias));
-	tmp->name = m_strdup(name);
+	tmp->name = malloc_strdup(name);
 	tmp->stuff = tmp->stub = NULL;
 	tmp->line = current_line();
 	tmp->cache_revoked = 0;
-	tmp->filename = m_strdup(current_package());
+	tmp->filename = malloc_strdup(current_package());
 	tmp->arglist = NULL;
 	alias_total_bytes_allocated += sizeof(Alias) + strlen(name) +
 				strlen(tmp->filename);
@@ -1865,7 +1865,7 @@ char	*get_variable_with_args (const char *str, const char *args, int *args_flag)
 		yell("Variable lookup to non-existant assign [%s]", name);
 
 	new_free(&freep);
-	return (copy ? m_strdup(ret) : ret);
+	return (copy ? malloc_strdup(ret) : ret);
 }
 
 char *	get_cmd_alias (const char *name, int *howmany, char **complete_name, void **args)
@@ -1916,7 +1916,7 @@ char **	glob_cmd_alias (const char *name, int *howmany)
 			matches_size += 5;
 			RESIZE(matches, char *, matches_size + 1);
 		}
-		matches[*howmany] = m_strdup(cmd_alias.list[pos]->name);
+		matches[*howmany] = malloc_strdup(cmd_alias.list[pos]->name);
 		*howmany += 1;
 	}
 
@@ -1961,7 +1961,7 @@ char **	glob_assign_alias (const char *name, int *howmany)
 			matches_size += 5;
 			RESIZE(matches, char *, matches_size + 1);
 		}
-		matches[*howmany] = m_strdup(var_alias.list[pos]->name);
+		matches[*howmany] = malloc_strdup(var_alias.list[pos]->name);
 		*howmany += 1;
 	}
 
@@ -1991,7 +1991,7 @@ char **	pmatch_cmd_alias (const char *name, int *howmany)
 	{
 		if (wild_match(name, cmd_alias.list[cnt]->name))
 		{
-			matches[*howmany] = m_strdup(cmd_alias.list[cnt]->name);
+			matches[*howmany] = malloc_strdup(cmd_alias.list[cnt]->name);
 			*howmany += 1;
 			if (*howmany == matches_size)
 			{
@@ -2027,7 +2027,7 @@ char **	pmatch_assign_alias (const char *name, int *howmany)
 	{
 		if (wild_match(name, var_alias.list[cnt]->name))
 		{
-			matches[*howmany] = m_strdup(var_alias.list[cnt]->name);
+			matches[*howmany] = malloc_strdup(var_alias.list[cnt]->name);
 			*howmany += 1;
 			if (*howmany == matches_size)
 			{
@@ -2165,7 +2165,7 @@ char 	*call_user_function	(const char *alias_name, char *args)
 		yell("Function call to non-existant alias [%s]", alias_name);
 
 	if (!result)
-		result = m_strdup(empty_string);
+		result = malloc_strdup(empty_string);
 
 	return result;
 }
@@ -2392,13 +2392,13 @@ void 	destroy_call_stack 	(void)
 /****************************** ALIASCTL ************************************/
 #if 0
 #define EMPTY empty_string
-#define RETURN_EMPTY return m_strdup(EMPTY)
+#define RETURN_EMPTY return malloc_strdup(EMPTY)
 #define RETURN_IF_EMPTY(x) if (empty( x )) RETURN_EMPTY
 #define GET_INT_ARG(x, y) {RETURN_IF_EMPTY(y); x = my_atol(safe_new_next_arg(y, &y));}
 #define GET_FLOAT_ARG(x, y) {RETURN_IF_EMPTY(y); x = atof(safe_new_next_arg(y, &y));}
 #define GET_STR_ARG(x, y) {RETURN_IF_EMPTY(y); x = new_next_arg(y, &y);RETURN_IF_EMPTY(x);}
-#define RETURN_STR(x) return m_strdup((x) ? (x) : EMPTY)
-#define RETURN_INT(x) return m_strdup(ltoa((x)))
+#define RETURN_STR(x) return malloc_strdup((x) ? (x) : EMPTY)
+#define RETURN_INT(x) return malloc_strdup(ltoa((x)))
 #endif
 
 /* Used by function_aliasctl */
@@ -2623,7 +2623,7 @@ void	do_stack_alias (int type, char *args, int which)
 
 		aptr = (AliasStack *)new_malloc(sizeof(AliasStack));
 		aptr->list = alptr;
-		aptr->name = m_strdup(args);
+		aptr->name = malloc_strdup(args);
 		aptr->next = aptrptr ? *aptrptr : NULL;
 		*aptrptr = aptr;
 		return;

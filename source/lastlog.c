@@ -1,4 +1,4 @@
-/* $EPIC: lastlog.c,v 1.20 2003/07/09 05:45:22 jnelson Exp $ */
+/* $EPIC: lastlog.c,v 1.21 2003/07/09 21:10:25 jnelson Exp $ */
 /*
  * lastlog.c: handles the lastlog features of irc. 
  *
@@ -820,7 +820,7 @@ void 	add_to_lastlog (Window *window, const char *line)
 		new_l->older = window->lastlog_newest;
 		new_l->newer = NULL;
 		new_l->level = msg_level;
-		new_l->msg = m_strdup(line);
+		new_l->msg = malloc_strdup(line);
 
 		if (window->lastlog_newest)
 			window->lastlog_newest->newer = new_l;
@@ -866,11 +866,11 @@ void	set_current_window_level (char *str)
 
 #if 0
 #define EMPTY empty_string
-#define RETURN_EMPTY return m_strdup(EMPTY)
+#define RETURN_EMPTY return malloc_strdup(EMPTY)
 #define RETURN_IF_EMPTY(x) if (empty( x )) RETURN_EMPTY
 #define GET_INT_ARG(x, y) {RETURN_IF_EMPTY(y); x = my_atol(safe_new_next_arg(y, &y));}
 #define GET_STR_ARG(x, y) {RETURN_IF_EMPTY((y)); x = new_next_arg((y), &(y));RETURN_IF_EMPTY((x));}
-#define RETURN_STR(x) return m_strdup(x ? x : EMPTY);
+#define RETURN_STR(x) return malloc_strdup(x ? x : EMPTY);
 #endif
 
 /*

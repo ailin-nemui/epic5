@@ -1,4 +1,4 @@
-/* $EPIC: keys.c,v 1.24 2003/06/28 18:40:38 jnelson Exp $ */
+/* $EPIC: keys.c,v 1.25 2003/07/09 21:10:25 jnelson Exp $ */
 /*
  * keys.c:  Keeps track of what happens whe you press a key.
  *
@@ -86,15 +86,15 @@ struct Binding *add_binding (const char *name, BindFunction func, char *alias) {
     }
 
     bp = new_malloc(sizeof(struct Binding));
-    bp->name = m_strdup(name);
+    bp->name = malloc_strdup(name);
     if (alias) {
-	bp->alias = m_strdup(alias);
+	bp->alias = malloc_strdup(alias);
 	bp->func = NULL;
     } else {
 	bp->func = func;
 	bp->alias = NULL;
     }
-    bp->filename = m_strdup(current_package());
+    bp->filename = malloc_strdup(current_package());
 
     add_to_list((List **)&binding_list, (List *)bp);
 
@@ -233,7 +233,7 @@ static void key_exec (struct Key *key) {
     /* check alias first, then function */
     if (key->bound->alias != NULL) {
 	/* I don't know if this is right ... */
-	char *exec = m_strdup(key->bound->alias);
+	char *exec = malloc_strdup(key->bound->alias);
 	if (key->stuff)
 	    m_s3cat(&exec, " ", key->stuff);
 	parse_line(NULL, exec, empty_string, 0, 0);
@@ -581,8 +581,8 @@ static int bind_string (const unsigned char *sequence, const char *bindstr, char
 	    kp->changed = bind_post_init;
 	    if (bp != NULL) {
 		if (args)
-		    kp->stuff = m_strdup(args);
-		kp->filename = m_strdup(current_package());
+		    kp->stuff = malloc_strdup(args);
+		kp->filename = malloc_strdup(current_package());
 	    }
 	}
     }
@@ -924,9 +924,9 @@ void do_stack_bind (int type, char *arg) {
 	bsp->slen = slen;
 	bsp->key.changed = key ? key->changed : 0;
 	bsp->key.bound = key ? key->bound : NULL;
-	bsp->key.stuff = key ? (key->stuff ? m_strdup(key->stuff) : NULL) :
+	bsp->key.stuff = key ? (key->stuff ? malloc_strdup(key->stuff) : NULL) :
 	    NULL;
-	bsp->key.filename = key ? m_strdup(key->filename) : NULL;
+	bsp->key.filename = key ? malloc_strdup(key->filename) : NULL;
 
 	bind_stack = bsp;
 	return;
@@ -1194,7 +1194,7 @@ BUILT_IN_COMMAND(parsekeycmd) {
 	fake.bound = bp;
 	fake.map = NULL;
 	if (*args)
-	    fake.stuff = m_strdup(args);
+	    fake.stuff = malloc_strdup(args);
 	else
 	    fake.stuff = NULL;
 	fake.filename = empty_string;
@@ -1317,7 +1317,7 @@ char *bindctl (char *input)
 	    if (key == NULL || key->bound == NULL)
 		RETURN_EMPTY;
 
-	    retval = m_strdup(key->bound->name);
+	    retval = malloc_strdup(key->bound->name);
 	    if (key->stuff)
 		m_s3cat(&retval, " ", key->stuff);
 	    RETURN_STR(retval);
@@ -1335,7 +1335,7 @@ char *bindctl (char *input)
 		RETURN_INT(0);
 
 	    new_free(&key->filename);
-	    key->filename = m_strdup(input);
+	    key->filename = malloc_strdup(input);
 	}
     } else if (!my_strnicmp(listc, "MAP", 1)) {
 	unsigned char *seq;

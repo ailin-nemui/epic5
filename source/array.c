@@ -1,4 +1,4 @@
-/* $EPIC: array.c,v 1.13 2003/05/09 04:29:52 jnelson Exp $ */
+/* $EPIC: array.c,v 1.14 2003/07/09 21:10:24 jnelson Exp $ */
 /*
  * array.c -- Karll's Array Suite
  *
@@ -926,7 +926,7 @@ BUILT_IN_FUNCTION(function_listarray, input)
 		for (idx = 0; idx < array->size; idx++)
 			m_sc3cat_s(&result, space, array->item[idx], &resclue);
 	}
-	return result ? result : m_strdup(empty_string);
+	return result ? result : malloc_strdup(empty_string);
 }
 
 

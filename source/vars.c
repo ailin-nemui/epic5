@@ -1,4 +1,4 @@
-/* $EPIC: vars.c,v 1.32 2003/07/07 22:10:57 jnelson Exp $ */
+/* $EPIC: vars.c,v 1.33 2003/07/09 21:10:25 jnelson Exp $ */
 /*
  * vars.c: All the dealing of the irc variables are handled here. 
  *
@@ -426,7 +426,7 @@ void 	init_variables (void)
 	/*
 	 * Construct the default help path
 	 */
-	s = m_strdup(irc_lib);
+	s = malloc_strdup(irc_lib);
 	malloc_strcat(&s, "/help");
 	set_string_var(HELP_PATH_VAR, s);
 	new_free(&s);
@@ -842,13 +842,13 @@ char 	*make_string_var (const char *var_name)
 	{
 		case STR_TYPE_VAR:
             if (irc_variable[msv_index].string)
-			    ret = m_strdup(irc_variable[msv_index].string);
+			    ret = malloc_strdup(irc_variable[msv_index].string);
 			break;
 		case INT_TYPE_VAR:
-			ret = m_strdup(ltoa(irc_variable[msv_index].integer));
+			ret = malloc_strdup(ltoa(irc_variable[msv_index].integer));
 			break;
 		case BOOL_TYPE_VAR:
-			ret = m_strdup(var_settings[irc_variable[msv_index].integer]);
+			ret = malloc_strdup(var_settings[irc_variable[msv_index].integer]);
 			break;
 		case CHAR_TYPE_VAR:
 			ret = m_dupchar(irc_variable[msv_index].integer);
@@ -1119,7 +1119,7 @@ void	do_stack_set (int type, char *args)
 		upper(varname);
 
 		item = (VarStack *)new_malloc(sizeof(VarStack));
-		item->varname = m_strdup(varname);
+		item->varname = malloc_strdup(varname);
 		item->value = make_string_var(varname);
 
 		item->next = set_stack;

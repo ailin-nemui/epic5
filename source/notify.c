@@ -1,4 +1,4 @@
-/* $EPIC: notify.c,v 1.16 2003/05/09 04:29:52 jnelson Exp $ */
+/* $EPIC: notify.c,v 1.17 2003/07/09 21:10:25 jnelson Exp $ */
 /*
  * notify.c: a few handy routines to notify you when people enter and leave irc 
  *
@@ -253,7 +253,7 @@ BUILT_IN_COMMAND(notify)
 			}
 
 			new_n = (NotifyItem *)new_malloc(sizeof(NotifyItem));
-			new_n->nick = m_strdup(nick);
+			new_n->nick = malloc_strdup(nick);
 			new_n->flag = 0;
 			add_to_array((array *)NOTIFY_LIST(s), 
 					(array_item *)new_n);
@@ -564,7 +564,7 @@ void 	make_notify_list (int refnum)
 	for (i = 0; i < NOTIFY_MAX(sp); i++)
 	{
 		tmp = (NotifyItem *)new_malloc(sizeof(NotifyItem));
-		tmp->nick = m_strdup(NOTIFY_ITEM(sp, i)->nick);
+		tmp->nick = malloc_strdup(NOTIFY_ITEM(sp, i)->nick);
 		tmp->flag = 0;
 
 		add_to_array ((array *)NOTIFY_LIST(s), (array_item *)tmp);
@@ -605,7 +605,7 @@ char *	get_notify_nicks (int refnum, int showon)
 	size_t rvclue=0;
 
 	if (!(s = get_server(refnum)))
-		return m_strdup(empty_string);
+		return malloc_strdup(empty_string);
 
 	for (i = 0; i < NOTIFY_MAX(s); i++)
 	{
@@ -613,6 +613,6 @@ char *	get_notify_nicks (int refnum, int showon)
 			m_sc3cat(&list, space, NOTIFY_ITEM(s, i)->nick, &rvclue);
 	}
 
-	return (list ? list : m_strdup(empty_string));
+	return (list ? list : malloc_strdup(empty_string));
 }
 

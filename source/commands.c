@@ -1,4 +1,4 @@
-/* $EPIC: commands.c,v 1.64 2003/05/17 18:30:21 crazyed Exp $ */
+/* $EPIC: commands.c,v 1.65 2003/07/09 21:10:24 jnelson Exp $ */
 /*
  * commands.c -- Stuff needed to execute commands in ircII.
  *		 Includes the bulk of the built in commands for ircII.
@@ -596,8 +596,8 @@ BUILT_IN_COMMAND(defercmd)
 
 	defer_list_size++;
 	RESIZE(defer_list, Defer, defer_list_size);
-	defer_list[defer_list_size - 2].cmds = m_strdup(args);
-	defer_list[defer_list_size - 2].subargs = m_strdup(subargs);
+	defer_list[defer_list_size - 2].cmds = malloc_strdup(args);
+	defer_list[defer_list_size - 2].subargs = malloc_strdup(subargs);
 	defer_list[defer_list_size - 2].servref = from_server;
 
 	defer_list[defer_list_size - 1].cmds = NULL;
@@ -1609,7 +1609,7 @@ BUILT_IN_COMMAND(load)
 	     * uzfopen emits an error if the file is not found, so we dont.
 	     * uzfopen() also frees 'expanded' for us on error.
 	     */
-	    expanded = m_strdup(filename);
+	    expanded = malloc_strdup(filename);
 	    if (!(fp = uzfopen(&expanded, use_path, 1)))
 		continue;
 
@@ -3034,7 +3034,7 @@ struct target_type target[4] =
 			line = crypt_msg(breakage, key);
 		}
 		else
-			line = m_strdup(text);
+			line = malloc_strdup(text);
 
 		old_server = from_server;
 		from_server = NOSERV;

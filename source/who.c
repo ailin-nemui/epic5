@@ -1,4 +1,4 @@
-/* $EPIC: who.c,v 1.24 2003/07/08 22:36:52 jnelson Exp $ */
+/* $EPIC: who.c,v 1.25 2003/07/09 21:10:25 jnelson Exp $ */
 /*
  * who.c -- The WHO queue.  The ISON queue.  The USERHOST queue.
  *
@@ -431,7 +431,7 @@ void 	whobase (int refnum, char *args, void (*line) (int, const char *, const ch
 
 	if (!channel && (new_w->who_mask & WHO_OPS))
 		channel = "*.*";
-	new_w->who_target = m_strdup(channel);
+	new_w->who_target = malloc_strdup(channel);
 
 	who_queue_add(refnum, new_w);
 
@@ -491,7 +491,7 @@ static	int	last_width = -1;
                 new_w = get_new_who_entry();
                 new_w->line = NULL;
                 new_w->end = NULL;
-                new_w->who_target = m_strdup(star);
+                new_w->who_target = malloc_strdup(star);
                 who_queue_add(refnum, new_w);
 	}
 
@@ -630,7 +630,7 @@ void	xwhoreply (int refnum, const char *from, const char *comm, const char **Arg
 		new_w = get_new_who_entry();
 		new_w->line = NULL;
 		new_w->end = NULL;
-		new_w->who_target = m_strdup(star);
+		new_w->who_target = malloc_strdup(star);
 		new_w->undernet_extended = 1;
 		who_queue_add(refnum, new_w);
 	}
@@ -1090,7 +1090,7 @@ void userhostbase (int refnum, char *args, void (*line) (int, UserhostItem *, co
 			if (next_ptr && *next_ptr && next_ptr > ptr)
 				next_ptr[-1] = 0;
 
-			new_u->userhost_asked = m_strdup(ptr);
+			new_u->userhost_asked = malloc_strdup(ptr);
 			if (do_userhost == 1)
 				send_to_aserver(refnum, "USERHOST %s", new_u->userhost_asked);
 			else if (do_userhost == 0)
@@ -1099,7 +1099,7 @@ void userhostbase (int refnum, char *args, void (*line) (int, UserhostItem *, co
 				send_to_aserver(refnum, "USRIP %s", new_u->userhost_asked);
 
 			if (userhost_cmd)
-				new_u->text = m_strdup(body);
+				new_u->text = malloc_strdup(body);
 
 			if (line)
 				new_u->func = line;

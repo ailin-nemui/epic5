@@ -1,4 +1,4 @@
-/* $EPIC: tcl.c,v 1.2 2002/12/26 19:01:09 crazyed Exp $ */
+/* $EPIC: tcl.c,v 1.3 2003/07/09 21:10:25 jnelson Exp $ */
 /*
  * tcl.c -- The tcl interfacing routines.
  *
@@ -84,14 +84,14 @@ int Tcl_epicCmd (clientData, interp, objc, objv)
 			parse_line(NULL, objv[i], "", 0, 0);
 	} else if (!strcmp(objv[1], "expr")) {
 		for (i = 2; i < objc; i++) {
-			retval = (char*)parse_inline((arg = m_strdup(objv[i])), "", &food);
+			retval = (char*)parse_inline((arg = malloc_strdup(objv[i])), "", &food);
 			Tcl_AppendElement(interp, retval);
 			new_free(&retval);
 			new_free(&arg);
 		}
 	} else if (!strcmp(objv[1], "call")) {
 		for (i = 2; i < objc; i++) {
-			retval = (char*)call_function((arg = m_strdup(objv[i])), "", &food);
+			retval = (char*)call_function((arg = malloc_strdup(objv[i])), "", &food);
 			Tcl_AppendElement(interp, retval);
 			new_free(&retval);
 			new_free(&arg);
@@ -136,7 +136,7 @@ char* tcleval (char* input) {
 	if (input && *input) {
 		tclstartstop(1);
 		Tcl_Eval(my_tcl, input);
-		retval = m_strdup(Tcl_GetStringResult(my_tcl));
+		retval = malloc_strdup(Tcl_GetStringResult(my_tcl));
 	};
 	RETURN_MSTR(retval);
 }

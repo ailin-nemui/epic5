@@ -19,7 +19,7 @@
  * year debugging these functions and the fact i wont have to again. ;-)
  */
 #define EMPTY empty_string
-#define EMPTY_STRING m_strdup(EMPTY)
+#define EMPTY_STRING malloc_strdup(EMPTY)
 #define RETURN_EMPTY return EMPTY_STRING
 #define RETURN_IF_EMPTY(x) if (empty( (x) )) RETURN_EMPTY
 #define GET_INT_ARG(x, y) {RETURN_IF_EMPTY((y)); x = my_atol(safe_new_next_arg((y), &(y)));}
@@ -27,8 +27,8 @@
 #define GET_STR_ARG(x, y) {RETURN_IF_EMPTY((y)); x = new_next_arg((y), &(y));}
 #define GET_A_STR_ARG(x, y) {GET_STR_ARG((x), (y));RETURN_IF_EMPTY((x));}
 #define RETURN_MSTR(x) return ((x) ? (x) : EMPTY_STRING)
-#define RETURN_STR(x) return m_strdup((x) ? (x) : EMPTY)
-#define RETURN_INT(x) return m_strdup(ltoa((x)))
+#define RETURN_STR(x) return malloc_strdup((x) ? (x) : EMPTY)
+#define RETURN_INT(x) return malloc_strdup(ltoa((x)))
 #define RETURN_FLOAT(x) return malloc_sprintf(NULL, "%.50g", (double) (x))
 #define RETURN_FLOAT2(x) return malloc_sprintf(NULL, "%.2f", (double) (x))
 

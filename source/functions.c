@@ -1,4 +1,4 @@
-/* $EPIC: functions.c,v 1.126 2003/07/09 14:43:50 jnelson Exp $ */
+/* $EPIC: functions.c,v 1.127 2003/07/09 21:10:25 jnelson Exp $ */
 /*
  * functions.c -- Built-in functions for ircII
  *
@@ -836,28 +836,28 @@ static int	func_exist (char *name)
 
 
 /* built in expando functions */
-static	char	*alias_line 		(void) { return m_strdup(get_input()); }
-static	char	*alias_buffer 		(void) { return m_strdup(cut_buffer); }
-static	char	*alias_time 		(void) { return m_strdup(update_clock(GET_TIME)); }
-static	char	*alias_dollar 		(void) { return m_strdup("$"); }
-static	char	*alias_detected 	(void) { return m_strdup(last_notify_nick); }
-static	char	*alias_nick 		(void) { return m_strdup((current_window->server != NOSERV) ? get_server_nickname(current_window->server) : empty_string); }
-static	char	*alias_away 		(void) { return m_strdup(get_server_away(from_server)); }
-static  char    *alias_sent_nick        (void) { return m_strdup((get_server_sent_nick(from_server)) ? get_server_sent_nick(from_server) : empty_string); }
-static  char    *alias_recv_nick        (void) { return m_strdup((get_server_recv_nick(from_server)) ? get_server_recv_nick(from_server) : empty_string); }
-static  char    *alias_msg_body         (void) { return m_strdup((get_server_sent_body(from_server)) ? get_server_sent_body(from_server) : empty_string); }
-static  char    *alias_joined_nick      (void) { return m_strdup((get_server_joined_nick(from_server)) ? get_server_joined_nick(from_server) : empty_string); }
-static  char    *alias_public_nick      (void) { return m_strdup((get_server_public_nick(from_server)) ? get_server_public_nick(from_server) : empty_string); }
-static  char    *alias_show_realname 	(void) { return m_strdup(realname); }
-static	char	*alias_version_str 	(void) { return m_strdup(irc_version); }
-static  char    *alias_invite           (void) { return m_strdup((get_server_invite_channel(from_server)) ? get_server_invite_channel(from_server) : empty_string); }
-static	char	*alias_oper 		(void) { return m_strdup((from_server != -1) ? get_server_operator(from_server) ?  get_string_var(STATUS_OPER_VAR) : empty_string : empty_string); }
-static	char	*alias_version 		(void) { return m_strdup(internal_version); }
-static  char    *alias_show_userhost 	(void) { return m_strdup(get_server_userhost(from_server)); }
+static	char	*alias_line 		(void) { return malloc_strdup(get_input()); }
+static	char	*alias_buffer 		(void) { return malloc_strdup(cut_buffer); }
+static	char	*alias_time 		(void) { return malloc_strdup(update_clock(GET_TIME)); }
+static	char	*alias_dollar 		(void) { return malloc_strdup("$"); }
+static	char	*alias_detected 	(void) { return malloc_strdup(last_notify_nick); }
+static	char	*alias_nick 		(void) { return malloc_strdup((current_window->server != NOSERV) ? get_server_nickname(current_window->server) : empty_string); }
+static	char	*alias_away 		(void) { return malloc_strdup(get_server_away(from_server)); }
+static  char    *alias_sent_nick        (void) { return malloc_strdup((get_server_sent_nick(from_server)) ? get_server_sent_nick(from_server) : empty_string); }
+static  char    *alias_recv_nick        (void) { return malloc_strdup((get_server_recv_nick(from_server)) ? get_server_recv_nick(from_server) : empty_string); }
+static  char    *alias_msg_body         (void) { return malloc_strdup((get_server_sent_body(from_server)) ? get_server_sent_body(from_server) : empty_string); }
+static  char    *alias_joined_nick      (void) { return malloc_strdup((get_server_joined_nick(from_server)) ? get_server_joined_nick(from_server) : empty_string); }
+static  char    *alias_public_nick      (void) { return malloc_strdup((get_server_public_nick(from_server)) ? get_server_public_nick(from_server) : empty_string); }
+static  char    *alias_show_realname 	(void) { return malloc_strdup(realname); }
+static	char	*alias_version_str 	(void) { return malloc_strdup(irc_version); }
+static  char    *alias_invite           (void) { return malloc_strdup((get_server_invite_channel(from_server)) ? get_server_invite_channel(from_server) : empty_string); }
+static	char	*alias_oper 		(void) { return malloc_strdup((from_server != -1) ? get_server_operator(from_server) ?  get_string_var(STATUS_OPER_VAR) : empty_string : empty_string); }
+static	char	*alias_version 		(void) { return malloc_strdup(internal_version); }
+static  char    *alias_show_userhost 	(void) { return malloc_strdup(get_server_userhost(from_server)); }
 static  char    *alias_online 		(void) { return malloc_sprintf(NULL, "%ld",(long)start_time.tv_sec); }
 static  char    *alias_idle 		(void) { return malloc_sprintf(NULL, "%ld",time(NULL)-idle_time.tv_sec); }
 static	char	*alias_current_numeric	(void) { return malloc_sprintf(NULL, "%03d", -current_numeric); }
-static	char	*alias_banner		(void) { return m_strdup(banner()); }
+static	char	*alias_banner		(void) { return malloc_strdup(banner()); }
 
 static	char	*alias_currdir  	(void)
 {
@@ -868,12 +868,12 @@ static	char	*alias_currdir  	(void)
 static	char	*alias_channel 		(void) 
 { 
 	const char	*tmp; 
-	return m_strdup((tmp = get_echannel_by_refnum(0)) ? tmp : zero);
+	return malloc_strdup((tmp = get_echannel_by_refnum(0)) ? tmp : zero);
 }
 
 static	char	*alias_server 		(void)
 {
-	return m_strdup((parsing_server_index != NOSERV) ?
+	return malloc_strdup((parsing_server_index != NOSERV) ?
 		         get_server_itsname(parsing_server_index) :
 		         (get_window_server(0) != NOSERV) ?
 			        get_server_itsname(get_window_server(0)) : 
@@ -883,13 +883,13 @@ static	char	*alias_server 		(void)
 static	char	*alias_query_nick 	(void)
 {
 	const char	*tmp;
-	return m_strdup((tmp = query_nick()) ? tmp : empty_string);
+	return malloc_strdup((tmp = query_nick()) ? tmp : empty_string);
 }
 
 static	char	*alias_target 		(void)
 {
 	const char	*tmp;
-	return m_strdup((tmp = get_target_by_refnum(0)) ? tmp : empty_string);
+	return malloc_strdup((tmp = get_target_by_refnum(0)) ? tmp : empty_string);
 }
 
 static	char	*alias_cmdchar 		(void)
@@ -901,20 +901,20 @@ static	char	*alias_cmdchar 		(void)
 		cmdchars = DEFAULT_CMDCHARS;
 	tmp[0] = cmdchars[0];
 	tmp[1] = 0;
-	return m_strdup(tmp);
+	return malloc_strdup(tmp);
 }
 
 static	char	*alias_chanop 		(void)
 {
 	const char	*tmp;
-	return m_strdup(((tmp = get_echannel_by_refnum(0)) && get_channel_oper(tmp, get_window_server(0))) ?
+	return malloc_strdup(((tmp = get_echannel_by_refnum(0)) && get_channel_oper(tmp, get_window_server(0))) ?
 		"@" : empty_string);
 }
 
 static	char	*alias_modes 		(void)
 {
 	const char	*tmp;
-	return m_strdup((tmp = get_echannel_by_refnum(0)) ?
+	return malloc_strdup((tmp = get_echannel_by_refnum(0)) ?
 		get_channel_mode(tmp, get_window_server(0)) : empty_string);
 }
 
@@ -927,10 +927,10 @@ static	char	*alias_server_version  (void)
 		if (primary_server != NOSERV)
 			s = primary_server;
 		else
-			return m_strdup(empty_string);
+			return malloc_strdup(empty_string);
 	}
 
-	return m_strdup(get_server_version_string(s));
+	return malloc_strdup(get_server_version_string(s));
 }
 
 
@@ -1533,12 +1533,12 @@ BUILT_IN_FUNCTION(function_listen, input)
 
 BUILT_IN_FUNCTION(function_toupper, input)
 {
-	return (upper(m_strdup(input)));
+	return (upper(malloc_strdup(input)));
 }
 
 BUILT_IN_FUNCTION(function_tolower, input)
 {
-	return (lower(m_strdup(input)));
+	return (lower(malloc_strdup(input)));
 }
 
 BUILT_IN_FUNCTION(function_curpos, input)
@@ -1630,15 +1630,15 @@ BUILT_IN_FUNCTION(function_strftime, input)
 		++input; 
 
 	if (!*input)
-		return m_strdup(empty_string);
+		return malloc_strdup(empty_string);
 
 
 	tm = localtime(&ltime);
 
 	if (!strftime(result, 128, input, tm))
-		return m_strdup(empty_string);
+		return malloc_strdup(empty_string);
 
-	return m_strdup(result);
+	return malloc_strdup(result);
 }
 
 BUILT_IN_FUNCTION(function_idle, input)
@@ -1791,7 +1791,7 @@ BUILT_IN_FUNCTION(function_notw, word)
 		char *part1, *part2;
 		part1 = extractw(word, 0, (where - 1));
 		part2 = extractw(word, (where + 1), EOS);
-		booya = m_strdup(part1);
+		booya = malloc_strdup(part1);
 		/* if part2 is there, append it. */
 		m_s3cat_s(&booya, space, part2);
 		new_free(&part1);
@@ -1885,7 +1885,7 @@ BUILT_IN_FUNCTION(function_insertw, word)
 	/* If the word goes at the front of the string, then it
 	   already is: return it. ;-) */
 	if (where < 1)
-		booya = m_strdup(word);
+		booya = malloc_strdup(word);
 	else
 	{
 		GET_STR_ARG(what, word);
@@ -2241,7 +2241,7 @@ BUILT_IN_FUNCTION(function_afterw, word)
 	char	*lame = (char *) 0;
 	char	*placeholder;
 
-	lame = m_strdup(word);
+	lame = malloc_strdup(word);
 	placeholder = function_findw(word);
 	where = my_atol(placeholder) + 1;
 
@@ -2264,7 +2264,7 @@ BUILT_IN_FUNCTION(function_fromw, word)
 	char 	*lame = (char *) 0;
 	char	*placeholder;
 
-	lame = m_strdup(word);
+	lame = malloc_strdup(word);
 	placeholder = function_findw(word);
 	where = my_atol(placeholder) + 1;
 
@@ -2311,16 +2311,16 @@ BUILT_IN_FUNCTION(function_splice, word)
 
 	if (start >= num_words)
 	{
-		left_part = m_strdup(old_value);
-		middle_part = m_strdup(empty_string);
-		right_part = m_strdup(empty_string);
+		left_part = malloc_strdup(old_value);
+		middle_part = malloc_strdup(empty_string);
+		right_part = malloc_strdup(empty_string);
 	}
 
 	else if (start + length >= num_words)
 	{
 		left_part = extractw(old_value, 0, start - 1);
 		middle_part = extractw(old_value, start, EOS);
-		right_part = m_strdup(empty_string);
+		right_part = malloc_strdup(empty_string);
 	}
 
 	else
@@ -2415,7 +2415,7 @@ BUILT_IN_FUNCTION(function_key, word)
 	}
 	while (word && *word);
 
-	return (booya ? booya : m_strdup(empty_string));
+	return (booya ? booya : malloc_strdup(empty_string));
 }
 
 /*
@@ -2440,7 +2440,7 @@ BUILT_IN_FUNCTION(function_channelmode, word)
 	}
 	while (word && *word);
 
-	return (booya ? booya : m_strdup(empty_string));
+	return (booya ? booya : malloc_strdup(empty_string));
 }
 
 
@@ -2539,7 +2539,7 @@ char *function_shift (char *word)
 	value = get_variable(var);
 
 	placeholder = value;
-	booya = m_strdup(new_next_arg(value, &value));
+	booya = malloc_strdup(new_next_arg(value, &value));
 	if (var)
 		add_var_alias(var, value, 0);
 	new_free(&placeholder);
@@ -2559,7 +2559,7 @@ char *function_unshift (char *word)
 	if (!word || !*word)
 		return value;
 
-	booya = m_strdup(word);
+	booya = malloc_strdup(word);
 	m_s3cat_s(&booya, space, value);
 
 	add_var_alias(var, booya, 0);
@@ -2616,7 +2616,7 @@ char *function_pop (char *word)
 	 * because pointer points to value, we *must* make a copy of it
 	 * *before* we free value! (And we cant forget to free value, either)
 	 */
-	blech = m_strdup(pointer);
+	blech = malloc_strdup(pointer);
 	new_free(&value);
 	return blech;
 }
@@ -2705,7 +2705,7 @@ BUILT_IN_FUNCTION(function_sar, word)
 	if (variable)
 		text = get_variable(word);
 	else
-		text = m_strdup(word);
+		text = malloc_strdup(word);
 
 	/* If there is no operative text, then return nothing. */
 	if (!text)
@@ -3103,7 +3103,7 @@ BUILT_IN_FUNCTION(function_translate, words)
 		newc[-1] = 0;
 
 	/* this is cheating, but oh well, >;-) */
-	text = m_strdup(text);
+	text = malloc_strdup(text);
 
 	size_new = strlen(newc);
 	size_old = strlen(oldc);
@@ -3988,7 +3988,7 @@ BUILT_IN_FUNCTION(function_uniq, word)
 	 */
 
 	/* The first word is always obviously included. */
-	booya = m_strdup(list[0]);
+	booya = malloc_strdup(list[0]);
         for (listi = 1; listi < listc; listi++)
         {
 		size = strlen(list[listi]) + strlen(booya) + 2;
@@ -4637,11 +4637,11 @@ BUILT_IN_FUNCTION(function_msar, word)
         *data++ = 0;
 
         if (!(p = strrchr(data, delimiter)))
-                value = (variable == 1) ? get_variable(data) : m_strdup(data);
+                value = (variable == 1) ? get_variable(data) : malloc_strdup(data);
         else
         {
                 *p++ = 0;
-                value = (variable == 1) ? get_variable(p) : m_strdup(p);
+                value = (variable == 1) ? get_variable(p) : malloc_strdup(p);
         }
 
         if (!value || !*value)
@@ -5206,7 +5206,7 @@ BUILT_IN_FUNCTION(function_chop, input)
 	if (my_atol(input))
 		GET_INT_ARG(howmany, input);
 
-	buffer = m_strdup(input);
+	buffer = malloc_strdup(input);
 	chop(buffer, howmany);
 	return buffer;
 }
@@ -5909,7 +5909,7 @@ BUILT_IN_FUNCTION(function_prefix, input)
 	    }
 	}
 
-	retval = m_strdup(words[0]);
+	retval = malloc_strdup(words[0]);
 	new_free((char **)&words);
 	return retval;
 }
@@ -6068,7 +6068,7 @@ BUILT_IN_FUNCTION(function_insert, word)
 	GET_STR_ARG(inserted, word);
 
 	if (where <= 0)
-		result = m_strdup(empty_string);
+		result = malloc_strdup(empty_string);
 	else
 		result = strext(word, word + where);
 
@@ -6734,7 +6734,7 @@ BUILT_IN_FUNCTION(function_outputinfo, input)
 		return malloc_sprintf(NULL, "%s %s", bits_to_lastlog_level(who_level), 
 						who_from);
 	else
-		return m_strdup(bits_to_lastlog_level(who_level));
+		return malloc_strdup(bits_to_lastlog_level(who_level));
 }
 
 BUILT_IN_FUNCTION(function_levelwindow, input)

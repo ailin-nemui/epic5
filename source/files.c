@@ -1,4 +1,4 @@
-/* $EPIC: files.c,v 1.19 2003/05/09 04:29:52 jnelson Exp $ */
+/* $EPIC: files.c,v 1.20 2003/07/09 21:10:25 jnelson Exp $ */
 /*
  * files.c -- allows you to read/write files. Wow.
  *
@@ -251,7 +251,7 @@ char *file_read (int fd)
 {
 	File *ptr = lookup_file(fd);
 	if (!ptr)
-		return m_strdup(empty_string);
+		return malloc_strdup(empty_string);
 	else
 	{
 		char	*ret = NULL;
@@ -287,7 +287,7 @@ char *file_readb (int fd, int numb)
 {
 	File *ptr = lookup_file(fd);
 	if (!ptr)
-		return m_strdup(empty_string);
+		return malloc_strdup(empty_string);
 	else
 	{
 		char *blah = (char *)new_malloc(numb+1);

@@ -1,4 +1,4 @@
-/* $EPIC: irc.c,v 1.540 2003/07/09 14:43:50 jnelson Exp $ */
+/* $EPIC: irc.c,v 1.541 2003/07/09 21:10:25 jnelson Exp $ */
 /*
  * ircII: a new irc client.  I like it.  I hope you will too!
  *
@@ -52,7 +52,7 @@ const char internal_version[] = "20030613";
 /*
  * In theory, this number is incremented for every commit.
  */
-const unsigned long	commit_id = 545;
+const unsigned long	commit_id = 546;
 
 /*
  * As a way to poke fun at the current rage of naming releases after
@@ -596,25 +596,25 @@ static	void	parse_args (int argc, char **argv)
 		irc_port = my_atol(ptr);
 
 	if ((ptr = getenv("EPICRC")))
-		epicrc_file = m_strdup(ptr);
+		epicrc_file = malloc_strdup(ptr);
 	else
 		epicrc_file = m_2dup(my_path, EPICRC_NAME);
 
 	if ((ptr = getenv("IRCRC")))
-		ircrc_file = m_strdup(ptr);
+		ircrc_file = malloc_strdup(ptr);
 	else
 		ircrc_file = m_2dup(my_path, IRCRC_NAME);
 
 	if ((ptr = getenv("IRCLIB")))
 		irc_lib = m_2dup(ptr, "/");
 	else
-		irc_lib = m_strdup(IRCLIB);
+		irc_lib = malloc_strdup(IRCLIB);
 
 	if ((ptr = getenv("IRCUMODE")))
-		send_umode = m_strdup(ptr);
+		send_umode = malloc_strdup(ptr);
 
 	if ((ptr = getenv("IRCPATH")))
-		the_path = m_strdup(ptr);
+		the_path = malloc_strdup(ptr);
 	else
 		the_path = malloc_sprintf(NULL, DEFAULT_IRCPATH, irc_lib);
 
@@ -625,7 +625,7 @@ static	void	parse_args (int argc, char **argv)
 		tmp_hostname = ptr;
 
 	if ((ptr = getenv("IRCTRANSLATIONPATH")))
-		translation_path = m_strdup(ptr);
+		translation_path = malloc_strdup(ptr);
 	else
 		translation_path = m_2dup(IRCLIB, "/translation/");
 
@@ -757,7 +757,7 @@ static	void	parse_args (int argc, char **argv)
 		read_server_file();
 		if (!server_list_size())
 		{
-			ptr = m_strdup(DEFAULT_SERVER);
+			ptr = malloc_strdup(DEFAULT_SERVER);
 			build_server_list(ptr, NULL);
 			new_free(&ptr);
 		}

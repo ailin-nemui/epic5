@@ -1,4 +1,4 @@
-/* $EPIC: perl.c,v 1.10 2002/12/11 19:20:23 crazyed Exp $ */
+/* $EPIC: perl.c,v 1.11 2003/07/09 21:10:25 jnelson Exp $ */
 /*
  * perl.c -- The perl interfacing routines.
  *
@@ -48,7 +48,7 @@ PerlInterpreter	*my_perl;
 EXTERN_C void xs_init _((void));
 EXTERN_C void boot_DynaLoader _((CV* cv));
 
-#define SV2STR(x,y) (y)=(void*)m_strdup((char*)SvPV_nolen(x))
+#define SV2STR(x,y) (y)=(void*)malloc_strdup((char*)SvPV_nolen(x))
 #ifndef SvPV_nolen
 STRLEN	trash;
 #define SvPV_nolen(x) SvPV((x),trash)
@@ -78,7 +78,7 @@ static XS (XS_expr) {
 	char* arg=NULL;
 	dXSARGS;
 	for (foo=0; foo<items; foo++) {
-		arg = m_strdup((char*)SvPV_nolen(ST(foo)));
+		arg = malloc_strdup((char*)SvPV_nolen(ST(foo)));
 		retval = (char*)parse_inline(arg, "", &food);
 		XST_mPV(foo, retval);
 		new_free(&arg);
@@ -93,7 +93,7 @@ static XS (XS_call) {
 	char* arg=NULL;
 	dXSARGS;
 	for (foo=0; foo<items; foo++) {
-		arg = m_strdup((char*)SvPV_nolen(ST(foo)));
+		arg = malloc_strdup((char*)SvPV_nolen(ST(foo)));
 		retval = (char*)call_function(arg, "", &food);
 		XST_mPV(foo, retval);
 		new_free(&arg);

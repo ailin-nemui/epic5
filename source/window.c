@@ -1,4 +1,4 @@
-/* $EPIC: window.c,v 1.63 2003/06/12 17:57:11 jnelson Exp $ */
+/* $EPIC: window.c,v 1.64 2003/07/09 21:10:25 jnelson Exp $ */
 /*
  * window.c: Handles the organzation of the logical viewports (``windows'')
  * for irc.  This includes keeping track of what windows are open, where they
@@ -2398,7 +2398,7 @@ char	*get_nicklist_by_window (Window *win)
 		m_sc3cat(&stuff, space, nick->nick, &stuffclue);
 
 	if (!stuff)
-		return m_strdup(empty_string);
+		return malloc_strdup(empty_string);
 	else
 		return stuff;
 }
@@ -2557,7 +2557,7 @@ static Window *window_add (Window *window, char **args)
 		{
 			say("Added %s to window name list", arg);
 			new_w = (WNickList *)new_malloc(sizeof(WNickList));
-			new_w->nick = m_strdup(arg);
+			new_w->nick = malloc_strdup(arg);
 			add_to_list((List **)&(window->nicks), (List *)new_w);
 		}
 		else
@@ -3734,7 +3734,7 @@ Window *window_query (Window *window, char **args)
 		{
 			nick = next_in_comma_list(a, &a);
 			tmp = (WNickList *)new_malloc(sizeof(WNickList));
-			tmp->nick = m_strdup(nick);
+			tmp->nick = malloc_strdup(nick);
 			add_to_list((List **)&window->nicks, (List *)tmp);
 		}
 	}

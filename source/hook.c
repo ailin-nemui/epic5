@@ -1,4 +1,4 @@
-/* $EPIC: hook.c,v 1.17 2003/05/09 04:29:52 jnelson Exp $ */
+/* $EPIC: hook.c,v 1.18 2003/07/09 21:10:25 jnelson Exp $ */
 /*
  * hook.c: Does those naughty hook functions. 
  *
@@ -242,7 +242,7 @@ static char *	fill_it_out (char *str, int params)
 		strlcat(buffer, " ", sizeof buffer);
 		strlcat(buffer, ptr, sizeof buffer);
 	}
-	return m_strdup(buffer);
+	return malloc_strdup(buffer);
 }
 
 

@@ -1,4 +1,4 @@
-/* $EPIC: words.c,v 1.7 2003/07/08 22:36:52 jnelson Exp $ */
+/* $EPIC: words.c,v 1.8 2003/07/09 21:10:25 jnelson Exp $ */
 /*
  * words.c -- right now it just holds the stuff i wrote to replace
  * that beastie arg_number().  Eventually, i may move all of the
@@ -475,7 +475,7 @@ char *	real_extract2 (const char *start, int firstword, int lastword, int extend
 		 * user would want to start from the EOS (when?)
 		 * we couldnt make this assumption.
 		 */
-		return m_strdup(mark);
+		return malloc_strdup(mark);
 #endif
 	}
 
@@ -493,7 +493,7 @@ char *	real_extract2 (const char *start, int firstword, int lastword, int extend
 	{
 		real_move_to_abs_word(start, &mark, firstword, extended, "\"");
 		if (!*mark)
-			return m_strdup(empty_string);
+			return malloc_strdup(empty_string);
 	}
 
 	/* Otherwise, move to the firstwords from the end */
@@ -550,14 +550,14 @@ char *	real_extract2 (const char *start, int firstword, int lastword, int extend
 	 * to extract (this is perfectly legal, btw)
          */
 	if (mark2 < mark)
-		booya = m_strdup(empty_string);
+		booya = malloc_strdup(empty_string);
 
 	else
 	{
 		/*
 		 * This is kind of tricky, because the string we are
 		 * copying out of is const.  So we cant just null off
-		 * the trailing character and m_strdup it.
+		 * the trailing character and malloc_strdup it.
 		 */
 		booya = strext(mark, mark2);
 	}
@@ -628,7 +628,7 @@ char *	real_extract (char *start, int firstword, int lastword, int extended)
 			real_move_to_abs_word(start, (const char **)&mark2, lastword+1, extended, "\"");
 		else
 			/* its negative -- thats not valid */
-			return m_strdup(empty_string);
+			return malloc_strdup(empty_string);
 
 		while (mark2 > start && my_isspace(mark2[-1]))
 			mark2--;
@@ -641,14 +641,14 @@ char *	real_extract (char *start, int firstword, int lastword, int extended)
 	if (firstword < 0)
 		firstword = 0;
 	if (firstword > lastword)	/* this works even if fw was < 0 */
-		return m_strdup(empty_string);
+		return malloc_strdup(empty_string);
 
 	/* 
 	 * If the end is before the string, then there is nothing
 	 * to extract (this is perfectly legal, btw)
          */
 	if (mark2 < mark)
-		return m_strdup(empty_string);
+		return malloc_strdup(empty_string);
 
 	booya = strext(mark, mark2);
 	return booya;

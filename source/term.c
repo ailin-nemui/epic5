@@ -1,4 +1,4 @@
-/* $EPIC: term.c,v 1.9 2003/05/09 04:29:52 jnelson Exp $ */
+/* $EPIC: term.c,v 1.10 2003/07/09 21:10:25 jnelson Exp $ */
 /*
  * term.c -- termios and (termcap || terminfo) handlers
  *
@@ -824,8 +824,8 @@ int 	term_init (void)
 		}
 	}
 
-	BC = m_strdup(current_term->TI_cub1);
-	UP = m_strdup(current_term->TI_cuu1);
+	BC = malloc_strdup(current_term->TI_cub1);
+	UP = malloc_strdup(current_term->TI_cuu1);
 	if (current_term->TI_pad)
 		my_PC = current_term->TI_pad[0];
 	else
@@ -1017,7 +1017,7 @@ int 	term_init (void)
 		else
 		    snprintf(cbuf, sizeof cbuf, "\033[%dm", (i & 0x07) + 30);
 
-		current_term->TI_forecolors[i] = m_strdup(cbuf);
+		current_term->TI_forecolors[i] = malloc_strdup(cbuf);
 
 		*cbuf = 0;
 		if (current_term->TI_setab)
@@ -1027,7 +1027,7 @@ int 	term_init (void)
 		else
 		    snprintf(cbuf, sizeof cbuf, "\033[%dm", (i & 0x07) + 40);
 
-		current_term->TI_backcolors[i] = m_strdup(cbuf);
+		current_term->TI_backcolors[i] = malloc_strdup(cbuf);
 	}
 
 /* Set up the terminal discipline */

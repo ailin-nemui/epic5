@@ -1,4 +1,4 @@
-/* $EPIC: queue.c,v 1.9 2002/10/18 21:10:23 jnelson Exp $ */
+/* $EPIC: queue.c,v 1.10 2003/07/09 21:10:25 jnelson Exp $ */
 /*
  *  queue.c - The queue command
  *
@@ -293,7 +293,7 @@ static void	add_queue (Queue **list, const char *name)
 	newq = (Queue *)new_malloc(sizeof(Queue));
 	newq->next = NULL;
 	newq->first = NULL;
-	newq->name = m_strdup(name);
+	newq->name = malloc_strdup(name);
 
 	for (q = *list; q && q->next; q = q->next)
 		;
@@ -364,8 +364,8 @@ static int	add_to_queue (Queue **list, const char *name, const char *what, const
 	}
 
 	c = (CmdList *)new_malloc(sizeof(CmdList));
-	c->what = m_strdup(what);
-	c->subargs = m_strdup(subargs);
+	c->what = malloc_strdup(what);
+	c->subargs = malloc_strdup(subargs);
 	c->next = NULL;
 
 	if (!q->first)

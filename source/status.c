@@ -1,4 +1,4 @@
-/* $EPIC: status.c,v 1.27 2003/05/09 04:29:52 jnelson Exp $ */
+/* $EPIC: status.c,v 1.28 2003/07/09 21:10:25 jnelson Exp $ */
 /*
  * status.c: handles the status line updating, etc for IRCII 
  *
@@ -271,7 +271,7 @@ char	*convert_sub_format (const char *format, char c)
 	}
 
 	buffer[pos] = 0;
-	return m_strdup(buffer);
+	return malloc_strdup(buffer);
 }
 
 
@@ -399,7 +399,7 @@ void	rebuild_a_status (Window *w)
 		 */
 		else if (w)
 		{
-			s->line[k].format = m_strdup(main_status.line[k].format);
+			s->line[k].format = malloc_strdup(main_status.line[k].format);
 			for (i = 0; i < MAX_FUNCTIONS; i++)
 			{
 			    s->line[k].func[i] = main_status.line[k].func[i];

@@ -1,4 +1,4 @@
-/* $EPIC: server.c,v 1.101 2003/06/30 22:42:19 jnelson Exp $ */
+/* $EPIC: server.c,v 1.102 2003/07/09 21:10:25 jnelson Exp $ */
 /*
  * server.c:  Things dealing with that wacky program we call ircd.
  *
@@ -124,7 +124,7 @@ void 	add_to_server_list (const char *server, int port, const char *password, co
 			from_server = i;
 
 		s = server_list[from_server] = new_malloc(sizeof(Server));
-		s->name = m_strdup(server);
+		s->name = malloc_strdup(server);
 		s->itsname = (char *) 0;
 		s->password = (char *) 0;
 		s->group = NULL;
@@ -710,7 +710,7 @@ char *	create_server_list (void)
 		    m_sc3cat(&buffer, space, get_server_itsname(i), &bufclue);
 	}
 
-	return buffer ? buffer : m_strdup(empty_string);
+	return buffer ? buffer : malloc_strdup(empty_string);
 }
 
 /* server_list_size: returns the number of servers in the server list */
@@ -2753,7 +2753,7 @@ void	server_passive_wait (int i, const char *stuff)
 		return;
 
 	new_wait = (WaitCmd *)new_malloc(sizeof(WaitCmd));
-	new_wait->stuff = m_strdup(stuff);
+	new_wait->stuff = malloc_strdup(stuff);
 	new_wait->next = NULL;
 
 	if (s->end_wait_list)
@@ -2897,8 +2897,8 @@ void set_server_005 (int refnum, char *setting, char *value)
 		malloc_strcpy(&((*new_005).value), value);
 	} else {
 		new_005 = (A005_item *)new_malloc(sizeof(A005_item));
-		(*new_005).name = m_strdup(setting);
-		(*new_005).value = m_strdup(value);
+		(*new_005).name = malloc_strdup(setting);
+		(*new_005).value = malloc_strdup(value);
 		add_to_array((array*)(&s->a005), (array_item*)new_005);
 	}
 }

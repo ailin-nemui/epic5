@@ -1,4 +1,4 @@
-/* $EPIC: history.c,v 1.8 2003/04/24 21:49:25 jnelson Exp $ */
+/* $EPIC: history.c,v 1.9 2003/07/09 21:10:25 jnelson Exp $ */
 /*
  * history.c: stuff to handle command line history 
  *
@@ -149,7 +149,7 @@ void	add_to_history (char *line)
 		hist_size++;
 
 	new_h = (History *) new_malloc(sizeof(History));
-	new_h->stuff = m_strdup(line);
+	new_h->stuff = malloc_strdup(line);
 	new_h->number = hist_count;
 	new_h->next = command_history_head;
 	new_h->prev = NULL;
@@ -218,7 +218,7 @@ static	char	*last_com = NULL;
 		char	*cmdc = get_string_var(CMDCHARS_VAR);
 
 		if (!end_strcmp(com, "*", 1))
-			match_str = m_strdup(com);
+			match_str = malloc_strdup(com);
 		else
 			match_str = m_2dup(com, "*");
 

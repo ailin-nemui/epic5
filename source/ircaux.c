@@ -1,4 +1,4 @@
-/* $EPIC: ircaux.c,v 1.85 2003/07/09 14:43:50 jnelson Exp $ */
+/* $EPIC: ircaux.c,v 1.86 2003/07/09 21:10:25 jnelson Exp $ */
 /*
  * ircaux.c: some extra routines... not specific to irc... that I needed 
  *
@@ -423,20 +423,6 @@ char *	m_3dup (const char *str1, const char *str2, const char *str3)
 	*buffer = 0;
 	strlopencat(buffer, msize, str1, str2, str3, NULL);
 	return buffer;
-}
-
-char *	m_strdup (const char *str)
-{
-	char *ptr;
-	size_t size;
-
-	if (!str)
-		str = empty_string;
-
-	size = strlen(str) + 1;
-	ptr = (char *)new_malloc(size);
-	strlcpy(ptr, str, size);
-	return ptr;
 }
 
 char *	m_ec3cat (char **val1, const char *yes1, const char *yes2, size_t *clue)
@@ -2692,7 +2678,7 @@ char *	remove_brackets (const char *name, const char *args, int *arg_flag)
 	ssize_t	span;
 
 	/* XXXX - ugh. */
-	rptr = m_strdup(name);
+	rptr = malloc_strdup(name);
 
 	while ((ptr = strchr(rptr, '[')))
 	{
@@ -4457,7 +4443,7 @@ char *	malloc_strcat_c (char **ptr, const char *src, size_t *cluep)
 		return (*ptr);
 	}
 
-	return (*ptr = m_strdup(src));
+	return (*ptr = malloc_strdup(src));
 }
 
 /*
@@ -4749,7 +4735,7 @@ char *	malloc_sprintf (char **ptr, const char *format, ...)
 		return *ptr;
 	}
 	else
-		return m_strdup(booya);
+		return malloc_strdup(booya);
 }
 
 
