@@ -1,5 +1,14 @@
 EPIC4-1.2.0
 
+*** News -- 12/01/2003 -- Double quoted filenames via dcc from other clients
+	is now supported.  Please note that I object to this, but I am not 
+	oblivious to necessity.
+
+*** News -- 12/01/2003 -- New $windowctl() value, "DOUBLE"
+	You can now $windowctl(GET <refnum> DOUBLE) to get the value
+	of the window's double status bar.  It's 0 if the double 
+	status bar is off, and 1 if it is on.
+
 *** News -- 11/30/2003 -- /XECHO -L now overrides "target window"
 	I had a request from a couple of people who pointed out that
 	in epic4-1.1.*, numeric replies were now being sent to the

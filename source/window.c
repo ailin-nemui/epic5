@@ -1,4 +1,4 @@
-/* $EPIC: window.c,v 1.80 2003/12/01 03:21:20 jnelson Exp $ */
+/* $EPIC: window.c,v 1.81 2003/12/01 15:30:57 jnelson Exp $ */
 /*
  * window.c: Handles the organzation of the logical viewports (``windows'')
  * for irc.  This includes keeping track of what windows are open, where they
@@ -308,7 +308,11 @@ void 	delete_window (Window *window)
 	if (!window->screen)
 		invisible = 1;
 
-	fixed_wins = count_fixed_windows(window->screen);
+	if (window->screen)
+		fixed_wins = count_fixed_windows(window->screen);
+	else
+		fixed_wins = 0;
+
 	if (window->absolute_size && window->skip)
 		fixed = 1;
 	else
@@ -5547,6 +5551,8 @@ char 	*windowctl 	(char *input)
 		RETURN_INT(w->columns);
 	    } else if (!my_strnicmp(listc, "PROMPT", len)) {
 		RETURN_STR(w->prompt);
+	    } else if (!my_strnicmp(listc, "DOUBLE", len)) {
+		RETURN_STR(w->status.double_status);
 	    } else if (!my_strnicmp(listc, "STATUS_FORMAT", len)) {
 		RETURN_STR(w->status.line[0].raw);
 	    } else if (!my_strnicmp(listc, "STATUS_FORMAT1", len)) {

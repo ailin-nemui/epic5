@@ -2,7 +2,7 @@ EPIC4 Projects, Bugs, and other Errata:
 
 KNOWN ERRATA (eg, bugs, or unresolved requests):
 ------------------------------------------------
-* A lot of dcc output goes to target NULL when there is a nickname available.
+<none>
 
 [See http://www.epicsol.org/PROJECTS for things to come in the future]
 [See http://www.epicsol.org/CHANGELOG for things that changed in the past]
@@ -28,3 +28,6 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Make /xecho -l override the "who_from" target and always send to the level
 * Fix raw listen DCCs not obey /SET DCC_TIMEOUT.
 * Added outputting of long long ints to new math parser.
+* Add $windowctl(GET <refnum> DOUBLE) 
+* Support inbound double quoted filenames in dcc handshakes. bleh.
+* Fix NULL deref when you kill hidden windows (ie, /window killswap)
