@@ -17,3 +17,12 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Revamp /on 403 support -- check this over for problems!
 * Nominal support for 402 and 522 numerics for bogus dalnet who requests.
 * Fix after_expando_special to whine if no lval is present where it ought be.
+--
+* Import into cvs.  No cracks.
+* Fix 'make install' so it works again.
+* Work on the man page a bit.
+* Remove the #define DCC_CHECKSUM feature everybody hates.
+* Start including a "commit number" in irc.c
+* In numeric handling, use 'get_server_itsname()' to get server's name
+* Cope with stupid servers that send void mode changes
+* Better, working support for dalnet's extended who error replies.
