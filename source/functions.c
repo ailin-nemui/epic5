@@ -843,6 +843,7 @@ static	char	*alias_server_version  (void)
 #define RETURN_MSTR(x) return ((x) ? (x) : EMPTY_STRING);
 #define RETURN_STR(x) return m_strdup((x) ? (x) : EMPTY)
 #define RETURN_INT(x) return m_strdup(ltoa((x)))
+#define RETURN_FLOAT(x) return m_sprintf("%f", (double) (x))
 
 /*
  * XXXX REALLY REALLY REALLY REALLY REALLY REALLY REALLY IMPORTANT! XXXX
@@ -4958,11 +4959,9 @@ BUILT_IN_FUNCTION(function_remws, word)
 		*right = NULL,
 		**rhs = NULL, 
 		*booya = NULL;
-	int	leftc, 	
-		lefti,
+	int	leftc,
 		rightc,
 		righti;
-	int	found = 0;
 	size_t	rvclue=0;
 
 	left = word;
@@ -5943,20 +5942,42 @@ BUILT_IN_FUNCTION(function_longtoip, word)
 	RETURN_STR(inet_ntoa(addr));
 }
 
-#define MATH_FUNCTION(x, y) BUILT_IN_FUNCTION((x), word) \
-{ \
-	double	num; \
-	GET_FLOAT_ARG(num, word); \
-	errno=0; \
-	num = (double)(y)(num); \
-	if (!errno) \
-		return m_sprintf("%f", num); \
-	if (errno == EDOM) \
-		return m_strdup("DOM"); \
-	if (errno == ERANGE) \
-		return m_strdup("RANGE"); \
-	return m_strdup(""); \
-}
+#define MATH_RETVAL(x)						\
+	{							\
+		if (errno == 0) 				\
+			RETURN_FLOAT(x);			\
+		else if (errno == EDOM) 			\
+			RETURN_STR("DOM");			\
+		else if (errno == ERANGE) 			\
+			RETURN_STR("RANGE");			\
+		else						\
+			RETURN_EMPTY;				\
+	}
+
+#define MATH_FUNCTION(x, y) 					\
+	BUILT_IN_FUNCTION( x , word) 				\
+	{ 							\
+		double	num; 					\
+								\
+		GET_FLOAT_ARG(num, word); 			\
+		errno = 0; 					\
+		num = y (num); 					\
+		MATH_RETVAL(num)				\
+	}
+
+#define MATH_FUNCTION2(x, y) 					\
+	BUILT_IN_FUNCTION( x , word) 				\
+	{ 							\
+		int	level;					\
+		double	num;					\
+								\
+		errno = 0;					\
+		GET_INT_ARG(level, word);			\
+		GET_FLOAT_ARG(num, word);			\
+		num = y (level, num);				\
+		MATH_RETVAL(num)				\
+	}
+
 
 MATH_FUNCTION(function_exp, exp);
 MATH_FUNCTION(function_log, log);
@@ -5975,61 +5996,24 @@ MATH_FUNCTION(function_tan, tan);
 MATH_FUNCTION(function_acos, acos);
 MATH_FUNCTION(function_asin, asin);
 
+MATH_FUNCTION2(function_jn, jn);
+MATH_FUNCTION2(function_yn, yn);
+
 BUILT_IN_FUNCTION(function_atan, word)
 {
 	double	num, num1, num2;
 
+	errno = 0;
 	GET_FLOAT_ARG(num1, word);
-	errno=0;
-	if (word && *word) {
+	if (word && *word) 
+	{
 		GET_FLOAT_ARG(num2, word);
-		num = (double)atan2(num1, num2);
-	} else {
-		num = (double)atan(num1);
-	}
-	if (!errno)
-		return m_sprintf("%f", num);
-	if (errno == EDOM)
-		return m_strdup("DOM");
-	if (errno == ERANGE)
-		return m_strdup("RANGE");
-	return m_strdup("");
-}
+		num = atan2(num1, num2);
+	} 
+	else 
+		num = atan(num1);
 
-BUILT_IN_FUNCTION(function_jn, word)
-{
-	int	level;
-	double	num;
-
-	GET_INT_ARG(level, word);
-	GET_FLOAT_ARG(num, word);
-	errno=0;
-	num = (double)jn(level, num);
-	if (!errno)
-		return m_sprintf("%f", num);
-	if (errno == EDOM)
-		return m_strdup("DOM");
-	if (errno == ERANGE)
-		return m_strdup("RANGE");
-	return m_strdup("");
-}
-
-BUILT_IN_FUNCTION(function_yn, word)
-{
-	int	level;
-	double	num;
-
-	GET_INT_ARG(level, word);
-	GET_FLOAT_ARG(num, word);
-	errno=0;
-	num = (double)yn(level, num);
-	if (!errno)
-		return m_sprintf("%f", num);
-	if (errno == EDOM)
-		return m_strdup("DOM");
-	if (errno == ERANGE)
-		return m_strdup("RANGE");
-	return m_strdup("");
+	MATH_RETVAL(num)
 }
 
 #ifdef PERL
