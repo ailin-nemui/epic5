@@ -1,4 +1,4 @@
-/* $EPIC: ircaux.c,v 1.64 2003/02/17 23:48:48 crazyed Exp $ */
+/* $EPIC: ircaux.c,v 1.65 2003/02/27 02:59:25 crazyed Exp $ */
 /*
  * ircaux.c: some extra routines... not specific to irc... that I needed 
  *
@@ -2635,6 +2635,7 @@ int 	check_val (char *sub)
 		return 0;
 
 	/* get the numeric value (if any). */
+	errno = 0;
 	sval = strtod(sub, &endptr);
 
 	/* Numbers that cause exceptional conditions in strtod() are true */

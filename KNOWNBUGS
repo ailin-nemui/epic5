@@ -196,3 +196,10 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Fixed a bug in the commandqueues script.
 * Altered 324 processing so that the hook is called when joining a channel.
 * tabkey.ce alteratered to make input line modification smoother.
+
+* Fix for a serious problem in the language parser that causes script logic
+  to fail, perhaps requiring a restart.  This is *REMOTELY TRIGGERABLE*.
+  This bug appeared in the 1.1.* tree and isn't present in 1.0.1 which is the
+  latest release.  If you are running 1.1.* (commit id 470 or below), people
+  may be able to knock you off the irc server with specially crafted
+  messages.  I might release the details later to give people time to upgrade.
