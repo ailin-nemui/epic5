@@ -10,7 +10,7 @@
  */
 
 #if 0
-static	char	rcsid[] = "$Id: numbers.c,v 1.4 2000/12/27 03:43:20 jnelson Exp $";
+static	char	rcsid[] = "$Id: numbers.c,v 1.5 2001/01/12 17:43:11 jnelson Exp $";
 #endif
 
 #include "irc.h"
@@ -205,6 +205,7 @@ void 	numbered_command (char *from, int comm, char **ArgList)
 	{
 		char *	new_server;
 		int	new_port;
+		int	old_server = from_server;
 
 		if (!ArgList[0] || !ArgList[1] || !ArgList[2])
 			break;		/* Not what i'm expecting */
@@ -220,7 +221,11 @@ void 	numbered_command (char *from, int comm, char **ArgList)
 		close_server(from_server, "Administrative redirect");
 		window_check_servers();
 		add_to_server_list(new_server, new_port, NULL, NULL, 0);
+		server_reconnects_to(old_server, from_server);
+		from_server = old_server;
+#if 0
 		get_connected(from_server, from_server);
+#endif
 	}
 
 	case 14:		/* Erf/TS4 "cookie" numeric	014 */
@@ -858,11 +863,16 @@ void 	numbered_command (char *from, int comm, char **ArgList)
 		 */
 		if (do_hook(current_numeric, "%s %s", from, ArgList[0]))
 			display_msg(from, ArgList);
+#if 0
 		close_server(from_server, empty_string);
 		window_check_servers();
+#endif
 #ifndef I_DONT_TRUST_MY_USERS
 		if (from_server == primary_server)
+			server_reconnects_to(from_server, from_server + 1);
+#if 0
 			get_connected(from_server + 1, from_server);
+#endif
 #endif
 		break;
 	}

@@ -704,6 +704,7 @@ void	do_server (fd_set *rd)
 					     "Remote end closed connection" : 
 					     strerror(dgets_errno));
 
+#if 0
 				/*
 				 * If we were never connected to the server,
 				 * eg, they rejected us at registration time,
@@ -714,6 +715,9 @@ void	do_server (fd_set *rd)
 					get_connected(i, i);
 				else
 					get_connected(i + 1, i);
+#else
+				reconnect(i);
+#endif
 				i++;		/* NEVER DELETE THIS! */
 				break;
 			}
@@ -860,7 +864,11 @@ static void 	vsend_to_server (const char *format, va_list args)
 			server_list[server].save_channels = 1;
 			close_server(server, strerror(errno));
 			say("Write to server failed.  Closing connection.");
+#if 0
 			get_connected(server, server);
+#else
+			reconnect(server);
+#endif
 		    }
 		}
 	}
@@ -981,6 +989,7 @@ static int 	connect_to_server (int new_server)
 	 */
 	message_from((char *) 0, LOG_CRAP);
 	update_all_status();
+	server_reconnects_to(new_server, new_server + 1);
 	return 0;			/* New connection established */
 }
 
@@ -1125,6 +1134,18 @@ int 	connect_to_new_server (int new_server, int old_server, int new_conn)
 	return 0;
 }
 
+/*
+ * This function is a front end to the "get_connected" function; the purpose
+ * of this function is to make it easier for us to drop a note that we need
+ * to reconnect to a different server (such as if we recieve an 010 or a 465
+ * numeric), but want to wait until we actually recieve the EOF to reconnect.
+ * Thus, anyone can call "server_reconnects_to" to set what server we should
+ * reconnect to when we get an EOF.
+ */
+int	reconnect (int refnum)
+{
+	return get_connected(refnum, server_list[refnum].reconnect_to);
+}
 
 /*
  * 'get_connected' is a front end to 'connect_to_new_server' that repeatedly
@@ -1612,6 +1633,7 @@ void 	server_is_connected (int sic_index, int value)
 	server_list[sic_index].rejoined_channels = 0;
 	if (value)
 	{
+		server_list[sic_index].reconnect_to = sic_index;
 		server_list[sic_index].eof = 0;
 		clear_reconnect_counts();
 	}
@@ -1675,10 +1697,24 @@ int 	auto_reconnect_callback (void *d)
 	servref = my_atol(stuff);
 	new_free((char **)&d);
 
+#if 0
+	reconnect(servref);
+#else
 	get_connected(servref, servref);
+#endif
 	return 0;
 }
 
+int	server_reconnects_to (int oldref, int newref)
+{
+	if (oldref < 0 || oldref >= number_of_servers)
+		return 0;
+	if (newref >= number_of_servers)
+		newref = 0;
+	if (newref < 0)
+		return 0;
+	server_list[oldref].reconnect_to = newref;
+}
 
 
 /* PORTS */

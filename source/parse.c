@@ -669,7 +669,10 @@ static void	p_kill (char *from, char **ArgList)
 		say("Server [%s] has rejected you. (%s)",
 			from, ArgList[1] ? ArgList[1] : 
 			"probably due to a nick collision");
+		server_reconnects_to(from_server, from_server);
+#if 0
 		get_connected(from_server, from_server);
+#endif
 	}
 	else
 	{
