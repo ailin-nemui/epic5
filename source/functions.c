@@ -1,4 +1,4 @@
-/* $EPIC: functions.c,v 1.189 2005/02/19 22:28:59 jnelson Exp $ */
+/* $EPIC: functions.c,v 1.190 2005/02/21 03:11:35 jnelson Exp $ */
 /*
  * functions.c -- Built-in functions for ircII
  *
@@ -2710,13 +2710,8 @@ BUILT_IN_FUNCTION(function_sar, input)
 	char *	text;
 	char *	after;
 	char *	workbuf = NULL;
-	size_t	clue = 0;
-	size_t	searchlen;
 	char *	search;
 	char *	replace;
-	char *	pointer;
-	int	substitutions = 0;
-	ssize_t	span;
 
 	/*
 	 * Scan the leading part of the argument list, slurping up any
@@ -2764,61 +2759,13 @@ BUILT_IN_FUNCTION(function_sar, input)
 	else
 		text = malloc_strdup(last_segment);
 
-	if ((searchlen = strlen(search)) > 0)
-		searchlen--;
-
-	/*
-	 * Substitute the first "search" with "replace" in "text".
-	 */
-	do
-	{
-		/* Look for "search" in "text" */
-		if (case_sensitive)
-			pointer = strstr(text, search);
-		else
-		{
-			if ((span = stristr(text, search)) < 0)
-				pointer = NULL;
-			else
-				pointer = text + span;
-		}
-
-		/* If we did not find it, we're done with this substitution */
-		if (!pointer)
-			break;
-
-		/* Otherwise, chop off the start and end of the nixed string */
-		*pointer = *(pointer + searchlen) = 0;
-		pointer += searchlen + 1;
-
-		/* And recreate <before> + <replacement> + <after> */
-		malloc_strcat2_c(&workbuf, text, replace, &clue);
-		malloc_strcat_c(&workbuf, pointer, &clue);
-
-		/* Now 'text' shall be set to the substituted result. */
-		new_free(&text);
-		text = workbuf;
-		workbuf = NULL;
-
-		/* Just to stop infinite substitution loops */
-		if (substitutions++ > 10000)
-		{
-		    if (clue > 80)
-		       yell("$sar(/%s/%s/%80.80s...) suffers too many "
-				"substitutions", search, replace, text);
-		    else
-		       yell("$sar(/%s/%s/%s) suffers too many substitutions",
-				search, replace, text);
-		    break;
-		}
-
-		clue = 0;
-	}
-	while (global);
+	workbuf = substitute_string(text, search, replace, 
+					case_sensitive, global);
+	new_free(&text);
 
         if (variable) 
-                add_var_alias(last_segment, text, 0);
-	return text;
+                add_var_alias(last_segment, workbuf, 0);
+	return workbuf;
 }
 
 BUILT_IN_FUNCTION(function_center, word)
@@ -4721,57 +4668,10 @@ BUILT_IN_FUNCTION(function_msar, input)
 		break;
 	    input = after;
 
-	    if ((searchlen = strlen(search)) > 0)
-		searchlen--;
-
-	    /*
-	     * Substitute the first "search" with "replace" in "text".
-	     */
-	    do
-	    {
-		/* Look for "search" in "text" */
-		if (case_sensitive)
-			pointer = strstr(text, search);
-		else
-		{
-			if ((span = stristr(text, search)) < 0)
-				pointer = NULL;
-			else
-				pointer = text + span;
-		}
-
-		/* If we did not find it, we're done with this substitution */
-		if (!pointer)
-			break;
-
-		/* Otherwise, chop off the start and end of the nixed string */
-		*pointer = *(pointer + searchlen) = 0;
-		pointer += searchlen + 1;
-
-		/* And recreate <before> + <replacement> + <after> */
-		malloc_strcat2_c(&workbuf, text, replace, &clue);
-		malloc_strcat_c(&workbuf, pointer, &clue);
-
-		/* Now 'text' shall be set to the substituted result. */
-		new_free(&text);
-		text = workbuf;
-		workbuf = NULL;
-
-		/* Just to stop infinite substitution loops */
-		if (substitutions++ > 10000)
-		{
-		    if (clue > 80)
-		       yell("$msar(/%s/%s/%80.80s...) suffers too many "
-				"substitutions", search, replace, text);
-		    else
-		       yell("$msar(/%s/%s/%s) suffers too many substitutions",
-				search, replace, text);
-		    break;
-		}
-
-		clue = 0;
-	    }
-	    while (global);
+	    workbuf = substitute_string(text, search, replace, 
+					case_sensitive, global);
+	    new_free(&text);
+	    text = workbuf;
 	}
 
         if (variable) 

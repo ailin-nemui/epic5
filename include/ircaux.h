@@ -7,7 +7,7 @@
  *
  * See the COPYRIGHT file, or do a HELP IRCII COPYRIGHT 
  *
- * @(#)$Id: ircaux.h,v 1.73 2005/01/23 21:41:28 jnelson Exp $
+ * @(#)$Id: ircaux.h,v 1.74 2005/02/21 03:11:35 jnelson Exp $
  */
 
 #ifndef _IRCAUX_H_
@@ -193,8 +193,8 @@ void    dequoter                (char **, size_t *, int, int, const char *);
 #define my_isdigit(x) \
 	(isdigit(*x) || ((*x == '-' || *x == '+') && isdigit(x[1])))
 
-
-int vmy_strnicmp(int, char *, ...);
+int	vmy_strnicmp		(int, char *, ...);
+char *	substitute_string	(const char *, const char *, const char *, int, int);
 
 /* Used for the inbound mangling stuff */
 #define MANGLE_ESCAPES		1 << 0

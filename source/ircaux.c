@@ -1,4 +1,4 @@
-/* $EPIC: ircaux.c,v 1.127 2005/02/19 04:22:26 jnelson Exp $ */
+/* $EPIC: ircaux.c,v 1.128 2005/02/21 03:11:35 jnelson Exp $ */
 /*
  * ircaux.c: some extra routines... not specific to irc... that I needed 
  *
@@ -4783,7 +4783,7 @@ void	add_to_bucket (Bucket *b, const char *name, void *stuff)
  * vmy_strnicmp() compares given string against a set of strings, 
  * and returns the indexnumber of the first string which matches
  */
-int vmy_strnicmp(int len, char *str, ...)
+int	vmy_strnicmp (int len, char *str, ...)
 {
 	va_list ap;
 	int ret = 1;
@@ -4797,3 +4797,58 @@ int vmy_strnicmp(int len, char *str, ...)
 	va_end(ap);
 	return (cmp == NULL) ? 0 : ret;
 }
+
+char *	substitute_string (const char *string, const char *oldstr, const char *newstr, int case_sensitive, int global)
+{
+	char *	retval;
+	int	clue;
+	int	i;
+	size_t	retvalsize;
+	size_t	oldlen;
+	size_t	newlen;
+	size_t	stringlen;
+	const char *	p;
+
+	oldlen = strlen(oldstr);
+	newlen = strlen(newstr);
+	stringlen = strlen(string);
+	retvalsize = (((stringlen / oldlen) + 1) * newlen) + (stringlen * 2);
+
+	/* 
+	 * Oh, what the hey...
+	 * Remember, malloc_strcat_c() is cheap if the buffer already 
+	 * holds enough space for the result!
+	 */
+	retval = new_malloc(retvalsize);
+	clue = 0;
+	i = 0;
+
+	for (p = string; *p; p++)
+	{
+	    if (*p == *oldstr)
+	    {
+		if ( global >= 0 &&
+		     ((!case_sensitive && !my_strnicmp(p, oldstr, oldlen)) ||
+		      (case_sensitive && !strncmp(p, oldstr, oldlen)) ) )
+		{
+		    const char *s;
+
+		    for (s = newstr; *s; s++)
+			retval[i++] = *s;
+		    if (global == 0)
+			global = -1;
+		    continue;
+		}
+	    }
+	    retval[i++] = *p;
+	}
+
+	retval[i] = 0;
+	if (i > retvalsize)
+	    panic("substitute [%s] with [%s] in [%s] overflows [%ld] chars", 
+			oldstr, newstr, string, retvalsize);
+
+	return retval;
+}
+
+
