@@ -1,5 +1,5 @@
 /*
- * @(#)$Id: acconfig.h,v 1.2 2001/09/24 16:49:08 crazyed Exp $
+ * @(#)$Id: acconfig.h,v 1.3 2001/09/24 18:18:10 jnelson Exp $
  */
 
 /*
@@ -194,7 +194,7 @@
 
 /*
  *  Perl support.
- * /
+ */
 #undef PERL
 
 /* Define this is DIRSIZ takes no argument */

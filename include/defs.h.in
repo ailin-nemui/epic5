@@ -182,7 +182,7 @@
 #undef Rselect
 
 /*
- * Perl support.
+ *  Perl support.
  */
 #undef PERL
 
