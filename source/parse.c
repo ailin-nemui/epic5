@@ -1,4 +1,4 @@
-/* $EPIC: parse.c,v 1.56 2003/12/28 05:59:15 jnelson Exp $ */
+/* $EPIC: parse.c,v 1.57 2004/01/05 16:24:40 jnelson Exp $ */
 /*
  * parse.c: handles messages from the server.   Believe it or not.  I
  * certainly wouldn't if I were you. 
@@ -781,10 +781,7 @@ static void	p_kill (const char *from, const char *comm, const char **ArgList)
 
 
 	/*
-	 * We've been killed.  Save our channels, close up shop on 
-	 * this server.  We need to call window_check_servers before
-	 * we do any output, in case we want the output to go anywhere
-	 * meaningful.
+	 * We've been killed.  Bummer for us.
 	 */
 	if (!reason) { reason = "No Reason Given"; }
 
@@ -807,20 +804,6 @@ static void	p_kill (const char *from, const char *comm, const char **ArgList)
 		say("Too bad, you lose.");
 		irc_exit(1, NULL);
 	}
-
-	if (!background && get_int_var(AUTO_RECONNECT_VAR))
-	{
-		char *	sc = new_malloc(16);
-
-		snprintf(sc, 15, "%d", from_server);
-		add_timer(0, empty_string, 
-			  get_int_var(AUTO_RECONNECT_DELAY_VAR), 1,
-			  auto_reconnect_callback,
-			  sc, NULL, current_window->refnum);
-	}
-
-	/* Suppress auto-reconnect (to wait for above timer) */
-	server_reconnects_to(from_server, NOSERV);
 }
 
 static void	p_ping (const char *from, const char *comm, const char **ArgList)
@@ -1187,7 +1170,7 @@ static void	p_kick (const char *from, const char *comm, const char **ArgList)
 	l = message_from(channel, LEVEL_KICK);
 	if (do_hook(KICK_LIST, "%s %s %s %s", 
 			victim, from, channel, comment))
-		say("%s%s%s has been kicked off channel %s by %s (%s)", 
+		say("%s%s%s has been kicked off channel %s by %s%s%s (%s)", 
 			high, victim, high,
 			check_channel_type(channel), 
 			high, from, high, comment);

@@ -457,7 +457,7 @@
 #define DEFAULT_STATUS_SERVER " (%S)"
 #define DEFAULT_STATUS_TRUNCATE_RHS 1
 #define DEFAULT_STATUS_UMODE " (+%#)"
-#define DEFAULT_STATUS_USER "ircII-EPIC4 -- Type /help for help"
+#define DEFAULT_STATUS_USER "EPIC5 -- Type /help for help"
 #define DEFAULT_STATUS_USER1 ""
 #define DEFAULT_STATUS_USER2 ""
 #define DEFAULT_STATUS_USER3 ""
@@ -507,7 +507,7 @@
 #define	DEFAULT_TAB_MAX 0
 #define DEFAULT_TERM_DOES_BRIGHT_BLINK 0
 #define DEFAULT_UNDERLINE_VIDEO 1
-#define DEFAULT_USERINFO "EPIC4 -- Get your laundry brighter, not just whiter!"
+#define DEFAULT_USERINFO "EPIC5 -- Into the abyss"
 #define DEFAULT_VERBOSE_CTCP 1
 #define DEFAULT_WORD_BREAK ".,; \t"
 #define DEFAULT_WSERV_TYPE "screen"

@@ -1,4 +1,4 @@
-/* $EPIC: names.c,v 1.50 2003/12/28 05:59:15 jnelson Exp $ */
+/* $EPIC: names.c,v 1.51 2004/01/05 16:24:40 jnelson Exp $ */
 /*
  * names.c: This here is used to maintain a list of all the people currently
  * on your channel.  Seems to work 
@@ -78,47 +78,19 @@ struct	channel_stru *	prev;		/* pointer to previous channel */
 	int		server;		/* The server the channel is "on" */
 	int		winref;		/* The window the channel is "on" */
 	int		curr_count;	/* Current channel precedence */
-	int		waiting;	/* just acting as a placeholder... */
-	int		inactive;	/* waiting on a reconnect... */
-	int		bound;		/* Bound to this window? */
-	int		current;	/* Current to this window? */
+	int		waiting;	/* Syncing, waiting for names/who */
 	NickList	nicks;		/* alist of nicks on channel */
 
-	unsigned long	mode;		/* Current mode settings for channel */
-	unsigned long	i_mode;		/* channel mode for cached string */
-	char *		s_mode;		/* cached string version of modes */
+	char 		base_modes[54];	/* Just the modes w/o args */
 	int		limit;		/* max users for the channel */
 	char *		key;		/* key for this channel */
-	char		chop;		/* true if you are chop */
-	char		voice;		/* true if you are voiced */
-	char		half_assed;	/* true if you are a helper */
+	char *		modestr;	/* The whole mode string */
+
+	char		chop;		/* true if i'm a channel operator */
+	char		voice;		/* true if i'm a channel voice */
+	char		half_assed;	/* true if i'm a channel helper */
 	Timeval		join_time;	/* When we joined the channel */
 }	Channel;
-
-
-/*
- * The variable "defined_mode_str" must correspond in order to the modes 
- * defined here, or all heck will break loose.  You have been warned.
- */
-static	char	defined_mode_str[] = "aciklmnprstzDMOR";
-
-const int	MODE_ANONYMOUS	= 1 << 0;	/* av2.9 */
-const int	MODE_C		= 1 << 1;	/* erf/TS4 */
-const int 	MODE_INVITE 	= 1 << 2;	/* RFC */
-const int 	MODE_KEY    	= 1 << 3;	/* RFC */
-const int	MODE_LIMIT	= 1 << 4;	/* RFC */
-const int 	MODE_MODERATED	= 1 << 5;	/* RFC */
-const int	MODE_MSGS	= 1 << 6;	/* RFC */
-const int	MODE_PRIVATE	= 1 << 7;	/* RFC */
-const int	MODE_REGISTERED = 1 << 8;	/* Duhnet */
-const int	MODE_SECRET	= 1 << 9;	/* RFC */
-const int	MODE_TOPIC	= 1 << 10;	/* RFC */
-const int	MODE_Z		= 1 << 11;	/* erf/TS4 */
-const int	MODE_D		= 1 << 12;	/* special request */
-const int	MODE_M          = 1 << 13;	/* Duhnet */
-const int	MODE_OPER_ONLY	= 1 << 14;	/* Duhnet */
-const int	MODE_RESTRICTED = 1 << 15;	/* Duhnet */
-const int	MODE_C2		= 1 << 16;	/* Quakenet */
 
 
 /* channel_list: list of all the channels you are currently on */
@@ -193,18 +165,14 @@ static Channel *create_channel (const char *name, int server)
 	new_c->channel = malloc_strdup(name);
 	new_c->server = server;
 	new_c->waiting = 0;
-	new_c->inactive = 0;
 	new_c->winref = -1;
-	new_c->bound = 0;
-	new_c->current = 0;
 	new_c->nicks.max_alloc = new_c->nicks.max = 0;
 	new_c->nicks.list = NULL;
 	new_c->nicks.func = (alist_func) my_strnicmp;
 	new_c->nicks.hash = HASH_INSENSITIVE;
 
-	new_c->mode = 0;
-	new_c->i_mode = 0;
-	new_c->s_mode = NULL;
+	new_c->base_modes[0] = 0;
+	new_c->modestr = NULL;
 	new_c->limit = 0;
 	new_c->key = NULL;
 	new_c->chop = 0;
@@ -280,9 +248,7 @@ static void 	destroy_channel (Channel *chan)
 	if (chan->nicks.max_alloc)
 		clear_channel(chan);
 
-	chan->mode = 0;
-	chan->i_mode = 0;
-	new_free(&chan->s_mode);
+	new_free(&chan->modestr);
 	chan->limit = 0;
 	new_free(&chan->key); 
 	chan->chop = 0;
@@ -309,7 +275,6 @@ void 	add_channel (const char *name, int server)
 	else
 		new_c = create_channel(name, server);
 
-	new_c->inactive = 0;		/* Channel no longer is a placeholder */
 	new_c->waiting = 1;		/* This channel is "syncing" */
 	get_time(&new_c->join_time);
 
@@ -792,38 +757,7 @@ char	*create_nochops_list (const char *name, int server)
  */
 static char *	get_cmode (Channel *chan)
 {
-	int	mode_pos = 0,
-		str_pos = 0;
-	char	local_buffer[BIG_BUFFER_SIZE];
-
-	/* Used the cache value if its still good */
-	if ((chan->mode == chan->i_mode) && chan->s_mode)
-		return chan->s_mode;
-
-	chan->i_mode = chan->mode;
-
-	local_buffer[0] = 0;
-	while (chan->mode >= (1UL << mode_pos))
-	{
-		if (chan->mode & (1UL << mode_pos))
-			local_buffer[str_pos++] = defined_mode_str[mode_pos];
-		mode_pos++;
-	}
-	local_buffer[str_pos] = 0;
-
-	if (chan->key)
-	{
-		strlcat(local_buffer, " ", sizeof local_buffer);
-		strlcat(local_buffer, chan->key, sizeof local_buffer);
-	}
-	if (chan->limit)
-	{
-		strlcat(local_buffer, " ", sizeof local_buffer);
-		strlcat(local_buffer, ltoa(chan->limit), sizeof local_buffer);
-	}
-
-	malloc_strcpy(&chan->s_mode, local_buffer);
-	return (chan->s_mode);
+	return chan->modestr;
 }
 
 /*
@@ -882,8 +816,8 @@ static void	decifer_mode (const char *modes, Channel *chan)
 	int	add = 0;
 	char *	rest;
 	Nick *	nick;
-	int	value = 0;
 	char *	mode_str;
+	char	local_buffer[BIG_BUFFER_SIZE];
 
 	/* Make a copy of it.*/
 	mode_str = LOCAL_COPY(modes);
@@ -892,10 +826,15 @@ static void	decifer_mode (const char *modes, Channel *chan)
 	if (!(mode_str = next_arg(mode_str, &rest)))
 		return;
 
+	/* Update the base mode string... */
+	update_mode_str(chan->base_modes, 54, mode_str);
+
+	/* Now walk through and look for special stuff */
 	for (; *mode_str; mode_str++)
 	{
 	    const char *arg = NULL;
 
+	    /* Grab an argument if this mode takes one */
 	    switch (chanmodetype(*mode_str))
 	    {
 		case 6: case 1:
@@ -911,6 +850,7 @@ static void	decifer_mode (const char *modes, Channel *chan)
 			yell("Defaulting %c%c to CHANMODE type D", add?'+':'-', *mode_str);
 	    }
 
+	    /* Now look for modes that change state that we track */
 	    switch (*mode_str)
 	    {
 		case '+':
@@ -920,51 +860,6 @@ static void	decifer_mode (const char *modes, Channel *chan)
 			add = 0;
 			continue;
 
-		case 'a':
-			value = MODE_ANONYMOUS;
-			break;
-		case 'c':
-			value = MODE_C;
-			break;
-		case 'C':
-			value = MODE_C2;
-			break;
-		case 'D':
-			value = MODE_D;
-			break;
-		case 'i':
-			value = MODE_INVITE;
-			break;
-		case 'm':
-			value = MODE_MODERATED;
-			break;
-		case 'n':
-			value = MODE_MSGS;
-			break;
-		case 'p':
-			value = MODE_PRIVATE;
-			break;
-		case 'r':
-			value = MODE_REGISTERED;
-			break;
-		case 'R':
-			value = MODE_RESTRICTED;
-			break;
-		case 's':
-			value = MODE_SECRET;
-			break;
-		case 't':
-			value = MODE_TOPIC;
-			break;
-		case 'z':		/* Erf/TS4 "zapped" */
-			value = MODE_Z;
-			break;
-		case 'M':		/* Duhnet's mute-mode */
-			value = MODE_M;
-			break;
-		case 'O':		/* Duhhnet's oper-only */
-			value = MODE_OPER_ONLY;
-			break;
 		case 'k':
 		{
 			if (!arg)
@@ -975,24 +870,19 @@ static void	decifer_mode (const char *modes, Channel *chan)
 			    continue;
 			}
 
-			value = MODE_KEY;
-
 			if (add)
 				malloc_strcpy(&chan->key, arg);
 			else
 				new_free(&chan->key);
 
-			chan->i_mode = -1;	/* Revoke old cache */
 			break;	
 		}
 		case 'l':
 		{
-			value = MODE_LIMIT;
 			if (!add)
 				arg = zero;
 
 			chan->limit = my_atol(arg);
-			chan->i_mode = -1;	/* Revoke old cache */
 			continue;
 		}
 
@@ -1046,26 +936,29 @@ static void	decifer_mode (const char *modes, Channel *chan)
 				nick->half_assed = add;
 			continue;
 		}
-		case 'b':
-		case 'e':	/* borked erfnet ban exceptions */
-		case 'I':	/* borked ircnet invite exceptions */
-		{
-			continue;
-		}
 	    }
-
-	    if (add)
-		chan->mode |= value;
-	    else
-		chan->mode &= ~value;
 	}
 	if (rest && *rest)
 		yell("WARNING:  Mode parser or server is BROKE.  Remaining args: %s", rest);
 
+	/* XXX Not sure if i need to do this any more */
 	if (!chan->limit)
-		chan->mode &= ~MODE_LIMIT;
+		remove_mode_from_str(chan->base_modes, 54, 'l');
 	else
-		chan->mode |= MODE_LIMIT;
+		add_mode_to_str(chan->base_modes, 54, 'l');
+
+	strlcpy(local_buffer, chan->base_modes, sizeof local_buffer);
+	if (chan->key)
+	{
+		strlcat(local_buffer, " ", sizeof local_buffer);
+		strlcat(local_buffer, chan->key, sizeof local_buffer);
+	}
+	if (chan->limit)
+	{
+		strlcat(local_buffer, " ", sizeof local_buffer);
+		strlcat(local_buffer, ltoa(chan->limit), sizeof local_buffer);
+	}
+	malloc_strcpy(&chan->modestr, local_buffer);
 }
 
 /* XXX Probably doesnt belong here. im tired, though */
@@ -1139,9 +1032,8 @@ int 	is_channel_private (const char *channel, int server_index)
 	Channel *tmp = find_channel(channel, server_index);
 
 	if (tmp)
-		return (tmp->mode & (MODE_PRIVATE | MODE_SECRET));
-	else
-		return 0;
+		return (sindex(tmp->base_modes, "ps") ? 1 : 0);
+	return 0;
 }
 
 int	is_channel_nomsgs (const char *channel, int server_index)
@@ -1149,7 +1041,7 @@ int	is_channel_nomsgs (const char *channel, int server_index)
 	Channel *tmp = find_channel(channel, server_index);
 
 	if (tmp)
-		return (tmp->mode & (MODE_MSGS));
+		return (strchr(tmp->base_modes, 'n') ? 1 : 0);
 	else
 		return 0;
 }
@@ -1338,8 +1230,6 @@ static Channel *window_current_channel_internal (int window, int server)
         {
                 if (tmp->winref != window)
                         continue;
-                if (tmp->inactive)
-                        continue;
                 if (tmp->curr_count > maxcount)
                 {
                         maxcount = tmp->curr_count;
@@ -1363,21 +1253,6 @@ const char *  window_current_channel (int window, int server)
         if (!(tmp = window_current_channel_internal(window, server)))
                 return NULL;
         return tmp->channel;
-}
-
-void 	change_server_channels (int old_s, int new_s)
-{
-	Channel *tmp = NULL;
-
-	if (old_s < 0) return;		/* Sanity check */
-
-	while (traverse_all_channels(&tmp, old_s, 1))
-	{
-		tmp->server = new_s;
-		tmp->inactive = 1;
-		/* Is there any case where this is bad? */
-		clear_channel(tmp);	
-	}
 }
 
 int     is_current_channel (const char *channel, int server)
@@ -1424,74 +1299,6 @@ void 	destroy_server_channels (int server)
 		reset = 1;
 	}
 	window_check_channels();
-}
-
-
-/*
- * reconnect_all_channels:  the main auto-rejoin-on-reconnect function.
- * Called after you connect to a server as part of the "continuing action"
- * of a disconnect handling event.  It gloms up the channel names on the
- * list for the current server (which at this point are just acting as 
- * placeholders), and makes sure that all the windows are all happy with 
- * their current channels, and then spits out a JOIN for all of the 
- * channels, and then trashcans the channels.
- *
- * This probably never works quite like people expect.
- */
-void 	reconnect_all_channels (void)
-{
-	Channel *tmp = NULL;
-	char	*channels = NULL;
-	char	*keyed_channels = NULL;
-	char	*keys = NULL;
-	size_t	chan_clue = 0, kc_clue = 0, key_clue = 0;
-
-#if 0
-	/* Oh, what the heck. */
-	if (!get_int_var(AUTO_REJOIN_CONNECT_VAR)) {
-		destroy_server_channels(from_server);
-		return;
-	}
-#endif
-
-	while (traverse_all_channels(&tmp, from_server, 1))
-	{
-		if (!tmp->inactive)
-			yell("Ack.  Reconnecting channel [%s] on server [%d] "
-			     "but it isn't inactive!", 
-				tmp->channel, tmp->server);
-
-		if (tmp->key)
-		{
-			malloc_strcat_wordlist_c(&keyed_channels, ",", tmp->channel, &kc_clue);
-			malloc_strcat_wordlist_c(&keys, ",", tmp->key, &key_clue);
-		}
-		else
-			malloc_strcat_wordlist_c(&channels, ",", tmp->channel, &chan_clue);
-
-		clear_channel(tmp);
-	}
-
-	/* This is probably useless, but its harmless. */
-	save_channels(from_server);
-
-	/*
-	 * Interestingly enough, black magic on the server's part makes
-	 * this work.  I sure hope they dont "break" this in the future...
-	 */
-	if (keyed_channels)
-		send_to_server("JOIN %s %s", keyed_channels, keys);
-	if (channels)
-		send_to_server("JOIN %s", channels);
-
-	new_free(&channels);
-	new_free(&keyed_channels);
-	new_free(&keys);
-
-	/*
-	 * I wish i didnt have to do this... :/
-	 */
-	destroy_server_channels(from_server);
 }
 
 
@@ -1779,42 +1586,6 @@ char *	create_channel_list (int server)
 	return retval ? retval : malloc_strdup(empty_string);
 }
 
-/*
- * This is (supposed to be) only ever called by close_server, and is called
- * whenever it was requested that the channels on a closing server not be
- * thrown away, but instead converted into placeholders.  So that's what we
- * do here.
- */
-void 	save_channels (int servref)
-{
-	Window	*tmp = NULL;
-	Channel *tmpc = NULL;
-	const char *chan;
-
-	/*
-	 * Go through all of the windows for this server
-	 * and mark their current channels as WAITING.
-	 */
-	while (traverse_all_windows(&tmp))
-	{
-		if (tmp->server != servref)
-			continue;
-
-		if (tmp->waiting_channel)
-			continue;		/* Yea yea yea */
-
-		if ((chan = get_echannel_by_refnum(tmp->refnum)))
-			tmp->waiting_channel = malloc_strdup(chan);
-	}
-
-	/*
-	 * Go through all the channels for this server
-	 * and mark them as WAITING.
-	 */
-	while (traverse_all_channels(&tmpc, servref, 1))
-		tmpc->inactive = 1;
-}
-
 /* I don't know if this belongs here. */
 void	cant_join_channel (const char *channel, int server)
 {
@@ -1969,24 +1740,6 @@ void	channel_check_windows (void)
 			      "that doesn't exist any more!",
 				tmp->channel, tmp->server, 
 				tmp->winref);
-	}
-
-	/* Do test #7 -- check for abandoned channels */
-	for (tmp = channel_list; tmp;
-		reset ? (tmp = channel_list) : (tmp = tmp->next))
-	{
-		if (tmp->winref <= 0)
-			panic("I thought we just checked for this! [4]");
-
-		if (is_server_active(tmp->server) && tmp->inactive)
-			panic("Channel [%s] on server [%d] is inactive "
-				"even though this server is active!",
-				tmp->channel, tmp->server);
-
-		if (!is_server_active(tmp->server) && !tmp->inactive)
-			panic("Channel [%s] on server [%d] is NOT inactive "
-				"even though this server is NOT active!",
-				tmp->channel, tmp->server);
 	}
 
 	return;

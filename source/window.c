@@ -1,4 +1,4 @@
-/* $EPIC: window.c,v 1.96 2003/12/17 09:25:31 jnelson Exp $ */
+/* $EPIC: window.c,v 1.97 2004/01/05 16:24:40 jnelson Exp $ */
 /*
  * window.c: Handles the organzation of the logical viewports (``windows'')
  * for irc.  This includes keeping track of what windows are open, where they
@@ -526,8 +526,6 @@ delete_window_contents:
 #else
 	new_free((char **)&window);
 #endif
-	if (dead == 0)
-		window_check_servers();
 	do_hook(WINDOW_KILL_LIST, "%d %s", oldref, buffer);
 }
 
@@ -2049,17 +2047,6 @@ void	change_window_server (int old_server, int new_server)
 				continue;
 
 			tmp->server = new_server;
-
-#if 0
-			/* 
-			 * Unless we are disconnecting, deleting 
-			 * current_channel and waiting_channel is not
-			 * our responsibility.  But if we are disconnecting
-			 * then if we don't do it, nobody can.
-			 */
-			if (new_server == NOSERV)
-				window_discon(tmp, NULL);	/* XXXh */
-#endif
 		}
 	}
 
@@ -2079,26 +2066,7 @@ void	change_window_server (int old_server, int new_server)
 	
 	if (old_server == primary_server)
 		primary_server = new_server;
-	window_check_servers();
 }
-
-/*
- * windows_connected_to_server: This returns the number of windows that
- * are actively connected to a server.  This is used by /window server
- */
-static int	windows_connected_to_server (int server)
-{
-	Window	*tmp = NULL;
-	int	count = 0;
-
-	while (traverse_all_windows(&tmp))
-	{
-		if (tmp->server == server)
-			count++;
-	}
-	return count;
-}
-
 
 /*
  * window_check_servers: this checks the validity of the open servers vs the
@@ -2112,65 +2080,57 @@ static int	windows_connected_to_server (int server)
 void 	window_check_servers (void)
 {
 	Window	*tmp;
-	int	cnt, max, i, connected;
+	int	cnt, max, i;
 	int	prime = NOSERV;
+	int	status;
+	int	retval;
 
 	connected_to_server = 0;
 	max = server_list_size();
 	for (i = 0; i < max; i++)
 	{
-		connected = is_server_open(i);
-		cnt = 0;
+	    status = get_server_status(i);
+	    cnt = 0;
 
-		tmp = NULL;
-		while (traverse_all_windows(&tmp))
+	    tmp = NULL;
+	    while (traverse_all_windows(&tmp))
+	    {
+		if (tmp->server != i)
+		    continue;
+
+		/*
+		 * Ordinarily, a server begins its life in the "RECONNECT"
+		 * state, and when the first window is identified with it,
+		 * we will auto-connect to the server.  After we do this
+		 * the first time, it will work its way through to the 
+		 * "CLOSED" state where it will stay forever until someone
+		 * resets it back to "RECONNECT" with /server or /reconnect.
+		 */
+		if (status == SERVER_RECONNECT)
 		{
-			if (tmp->server == i)
-			{
-				/*
-				 * Generally, closed server connections have
-				 * their window's moved to new servers
-				 * gracefully.  In this case, something
-				 * really died.  We just make this window
-				 * not connected to any server and save the
-				 * last server so connect_to_new_server can
-				 * glum this window up next time.
-				 */
-				if (!connected)
-				{
-					tmp->last_server = i;
-					tmp->server = NOSERV;
-				}
-				else
-				{
-					prime = tmp->server;
-					cnt++;
-				}
-			}
+		    yell("window_check_servers() is bringing up server %d", i);
+		    retval = connect_to_server(i, 1);
+		}
+		else if (status == SERVER_ACTIVE)
+		    prime = tmp->server;
+		else if (status == SERVER_CLOSED && server_more_addrs(i))
+		{
+		    yell("window_check_servers() is restarting server %d", i);
+		    retval = connect_to_server(i, 0);
 		}
 
-		if (cnt)
-			connected_to_server++;
-		else if (connected)
-		{
-			set_server_save_channels(i, 0);
-			close_server(i, "No windows for this server");
-		}
+		cnt++;
+	    }
+
+	    if (cnt)
+		connected_to_server++;
+	    else if (status >= SERVER_CONNECTING && status < SERVER_CLOSING)
+		close_server(i, "No windows for this server");
 	}
-
-	if (dead)
-		return;
 
 	if (!is_server_open(primary_server))
-	{
-		tmp = NULL; 
-		while (traverse_all_windows(&tmp))
-		{
-			if (tmp->server == primary_server)
-			       tmp->server = prime;
-		}
 		primary_server = prime;
-	}
+
 	update_all_status();
 	cursor_to_input();
 }
@@ -3026,14 +2986,6 @@ static Window *window_clear (Window *window, char **args)
  * screen in a seperate process.  Please note that the external screen is
  * not actually controlled by the client, but rather by "wserv" which acts
  * as a pass-through filter on behalf of the client.
- *
- * Since the external screen is outside the client's process, it is not really
- * possible for the client to know when the external screen is resized, or
- * what that new size would be.  For this reason, you should not resize any
- * screen when you have external screens open.  If you do, the client will
- * surely become confused and the output will probably be garbled.  You can
- * restore some sanity by making sure that ALL external screens have the same
- * geometry, and then redrawing each screen.
  */
 static Window *window_create (Window *window, char **args)
 {
@@ -3149,7 +3101,6 @@ static Window *window_discon (Window *window, char **args)
 	new_free(&window->waiting_channel);
 	window->last_server = window->server;
 	window->server = NOSERV;	/* XXX This shouldn't be set here. */
-	window_check_servers();
 	return window;
 }
 
@@ -3746,7 +3697,6 @@ static	Window *window_noserv (Window *window, char **args)
 	new_free(&window->waiting_channel);
 	window->last_server = NOSERV;
 	window->server = NOSERV;	/* XXX This shouldn't be set here. */
-	window_check_servers();
 	return window;
 }
 
@@ -4477,59 +4427,26 @@ static Window *window_skip (Window *window, char **args)
 Window *window_server (Window *window, char **args)
 {
 	char *	arg;
-	int	newconn;
 
 	if ((arg = next_arg(*args, args)))
 	{
 		int i = find_server_refnum(arg, NULL);
 
-		if (windows_connected_to_server(window->server) > 1)
-		{
-			clear_reconnect_counts();	/* ?? */
-			newconn = 1;
-		}
-		else
-			newconn = 0;
-
-		if (!connect_to_new_server(i, window->server, 1))
-		{
-			/*
-			 * First find a new home for all our channels.
-			 * This is a must since we're moving to a 
-			 * different server, and we don't want the channels
-			 * on one server to point to a window on another
-			 * server.
-			 */
+		/*
+		 * Lose our channels
+		 */
+		new_free(&window->bind_channel);
+		new_free(&window->waiting_channel);
+		if (window->server != i)
 			reassign_window_channels(window->refnum);
 
-			/*
-			 * Associate ourselves with the new server.
-			 */
-			window->server = i;
-			window->last_server = NOSERV;
-
-			/*
-			 * Set the window's lastlog mask that is
-			 * in /set new_server_lastlog_level
-			 */
-			set_mask_by_refnum(window->refnum, 
-						new_server_lastlog_mask);
-
-			/*
-			 * And blow away any old channel information 
-			 * which we surely cannot use now.
-			 */
-			new_free(&window->bind_channel);
-			new_free(&window->waiting_channel);
-		}
-
 		/*
-		 * Now make sure everything seems coherent.
-		 * If we were the last window attached to that server,
-		 * then window_check_servers() will close up that server
-		 * for us and garbage collect any channels lying around.
+		 * Associate ourselves with the new server.
 		 */
-		window_check_servers();
+		window->server = i;
+		window->last_server = NOSERV;
+		if (get_server_status(i) >= SERVER_EOF)
+			set_server_status(i, SERVER_RECONNECT);
 	}
 	else
 		say("SERVER: You must specify a server");
@@ -5631,23 +5548,6 @@ static int	change_line (Window *window, const unsigned char *str)
 
 void	check_window_cursor (Window *window)
 {
-#if 0
-	if (window->scroll && window->cursor < window->display_size && 
-		window->cursor < window->scrolling_distance_from_display_ip)
-	{
-		recalculate_window_cursor_and_display_ip(window);
-	}
-
-	/* XXX This is a hack that covers up a bug elsewhere. */
-	if (window->hold_mode == 0 && window->autohold == 0 &&
-		    window->distance_from_display_ip > window->display_size)
-	{
-		window_scrollback_end(window);
-#if 0
-		yell("Unheld this window for you -- let #epic on efnet know!");
-#endif
-	}
-#endif
 }
 
 /* Used by function_windowctl */

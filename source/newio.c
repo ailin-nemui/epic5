@@ -1,4 +1,4 @@
-/* $EPIC: newio.c,v 1.17 2003/12/06 02:03:11 jnelson Exp $ */
+/* $EPIC: newio.c,v 1.18 2004/01/05 16:24:40 jnelson Exp $ */
 /*
  * newio.c: This is some handy stuff to deal with file descriptors in a way
  * much like stdio's FILE pointers 
@@ -500,7 +500,9 @@ int	new_close (int des)
 	 */
 	while ( global_max_fd >= 0 &&
 		!FD_ISSET(global_max_fd, &readables) &&
-		!FD_ISSET(global_max_fd, &held_readables))
+		!FD_ISSET(global_max_fd, &held_readables) &&
+		!FD_ISSET(global_max_fd, &writables) &&
+		!FD_ISSET(global_max_fd, &held_writables))
 			global_max_fd--;
 	return -1;
 }

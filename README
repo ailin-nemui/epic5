@@ -25,7 +25,7 @@ information that will help you get started with using EPIC.
   issues as bugs unless you also provide patches to fix the bug; otherwise 
   it would be a waste of your time.  You can also find in this file a list of
   changes since the last release of EPIC.  You can find all of the changes 
-  made in EPIC4 at http://www.epicsol.org/CHANGELOG
+  made in EPIC5 at http://www.epicsol.org/CHANGELOG5
 
 * The UPDATES file contains any amendments to the help files since the 
   last release of EPIC.  You can find all the amendments ever made since
@@ -58,9 +58,9 @@ information that will help you get started with using EPIC.
   * dccresum.txt - The original mIRC DCC RESUME document.
   * epic.1 - The manual page for EPIC, sutiable for use with 'man'.
   * local_vars - The original EPIC document explaning how local variables work.
-  * missing - A list of features present in EPIC3 that have been removed from
-    EPIC4.  Please do not report the absence of any of these features as a bug
-    as you would only be wasting your time.
+  * missing - A list of features present in previous versions of EPIC which
+    you may find missing int his version.  Please do not report the absence 
+    of any of these features as a bug as you would only be wasting your time.
   * nicknames - The original EPIC document that details how EPIC keeps track
     of what your nickname is, and how it tries to prevent being confused.
   * outputhelp - *** VERY IMPORTANT *** This file gives practical tips how

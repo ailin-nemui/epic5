@@ -1,4 +1,4 @@
-/* $EPIC: numbers.c,v 1.62 2003/12/28 05:59:15 jnelson Exp $ */
+/* $EPIC: numbers.c,v 1.63 2004/01/05 16:24:40 jnelson Exp $ */
 /*
  * numbers.c: handles all those strange numeric response dished out by that
  * wacky, nutty program we call ircd 
@@ -281,7 +281,7 @@ void 	numbered_command (const char *from, const char *comm, char const **ArgList
 		old_server = from_server;
 		add_to_server_list(new_server, new_port, NULL, NULL,
 				get_server_group(from_server), NULL, 0);
-		server_reconnects_to(old_server, from_server);
+		change_window_server(old_server, from_server);
 		from_server = old_server;
 
 		break;
@@ -856,7 +856,7 @@ void 	numbered_command (const char *from, const char *comm, char const **ArgList
 		 * connected to a server, then doing say() is not
 		 * a good idea.  So now it just doesnt do anything.
 		 */
-		server_reconnects_to(from_server, NOSERV);
+		change_window_server(from_server, NOSERV);
 		break;
 	}
 
@@ -1500,7 +1500,6 @@ END:
 			oper_command = 0;
 		else if (!is_server_registered(from_server))
 		{
-			server_reconnects_to(from_server, NOSERV);
 			say("Password required for connection to server %s",
 				get_server_name(from_server));
 			if (!dumb_mode)

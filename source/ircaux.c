@@ -1,4 +1,4 @@
-/* $EPIC: ircaux.c,v 1.107 2003/12/18 02:22:31 jnelson Exp $ */
+/* $EPIC: ircaux.c,v 1.108 2004/01/05 16:24:40 jnelson Exp $ */
 /*
  * ircaux.c: some extra routines... not specific to irc... that I needed 
  *
@@ -4462,5 +4462,97 @@ char *	endstr (char *src)
 	while (*src)
 		src++;
 	return src;
+}
+
+
+/* USER MODES */
+void	add_mode_to_str (char *modes, size_t len, int mode)
+{
+	char c, *p, *o;
+	char new_modes[1024];		/* Too huge for words */
+	int	i;
+
+	/* 
+	 * 'c' is the mode that is being added
+	 * 'o' is the umodes that are already set
+	 * 'p' is the string that we are building that adds 'c' to 'o'.
+	 */
+	c = (char)mode;
+	o = modes;
+	p = new_modes;
+
+	/* Copy the modes in 'o' that are alphabetically less than 'c' */
+	for (i = 0; o && o[i]; i++)
+	{
+		if (o[i] >= c)
+			break;
+		*p++ = o[i];
+	}
+
+	/* If 'c' is already set, copy it, otherwise add it. */
+	if (o && o[i] == c)
+		*p++ = o[i++];
+	else
+		*p++ = c;
+
+	/* Copy all the rest of the modes */
+	for (; o && o[i]; i++)
+		*p++ = o[i];
+
+	/* Nul terminate the new string and reset the server's info */
+	*p++ = 0;
+	strlcpy(modes, new_modes, len);
+}
+
+void	remove_mode_from_str (char *modes, size_t len, int mode)
+{
+	char c, *o, *p;
+	char new_modes[1024];		/* Too huge for words */
+	int	i;
+
+	/* 
+	 * 'c' is the mode that is being deleted
+	 * 'o' is the umodes that are already set
+	 * 'p' is the string that we are building that adds 'c' to 'o'.
+	 */
+	c = (char)mode;
+	o = modes;
+	p = new_modes;
+
+	/*
+	 * Copy the whole of 'o' to 'p', except for any instances of 'c'.
+	 */
+	for (i = 0; o && o[i]; i++)
+	{
+		if (o[i] != c)
+			*p++ = o[i];
+	}
+
+	/* Nul terminate the new string and reset the server's info */
+	*p++ = 0;
+	strlcpy(modes, new_modes, len);
+}
+
+void 	clear_modes (char *modes)
+{
+	*modes = 0;
+}
+
+void	update_mode_str (char *modes, size_t len, const char *changes)
+{
+	int		onoff = 1;
+
+	for (; *changes; changes++)
+	{
+		if (*changes == '-')
+			onoff = 0;
+		else if (*changes == '+')
+			onoff = 1;
+		else if (onoff == 1)
+			add_mode_to_str(modes, len, (int)*changes);
+		else if (onoff == 0)
+			remove_mode_from_str(modes, len, (int)*modes);
+	}
+	update_all_status();
 }
 

@@ -1,4 +1,4 @@
-/* $EPIC: commands.c,v 1.82 2003/12/17 09:25:30 jnelson Exp $ */
+/* $EPIC: commands.c,v 1.83 2004/01/05 16:24:40 jnelson Exp $ */
 /*
  * commands.c -- Stuff needed to execute commands in ircII.
  *		 Includes the bulk of the built in commands for ircII.
@@ -2312,8 +2312,8 @@ BUILT_IN_COMMAND(reconnect_cmd)
 
         say("Reconnecting to server %d", from_server);
 	set_server_quit_message(from_server, args);
-	server_reconnects_to(from_server, from_server);
-	reconnect(from_server, 1);
+	close_server(from_server, NULL);
+	set_server_status(from_server, SERVER_RECONNECT);
 }
 /* End of contributed code */
 

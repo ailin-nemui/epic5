@@ -62,4 +62,35 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Call "server_is_registered()" from 001, which loads ircrc among other things.
 * Reduce 004 so it only sets the server's version string id.
 * Nix got_initial_version_28
-
+* Allow client_connect() to be nonblocking
+* Allow Getaddrinfo() and Freeaddrinfo() to be called extern.
+* Track writable sockets in 'global_max_fd' too.
+* Keep a list of AI's for server addresses in the server code
+* When server connection lost before registration, use the next AI
+* Implement set_server_status(), which controls where server is in lifetime
+* Nix reconnect(), which is replaced by close_server + set_server_status().
+* Nix server_reconnects_to(), we no longer reconnect to servers.
+* Make /xdebug server_connect the default for this commit at least
+* Call window_check_servers() every time through io(), because...
+* Make window_check_servers() look for disconnected servers and restart them.
+* Add add_mode_to_str() which adds a channel or usermode to a string (sorted)
+* Make usermodes use add_mode_to_str()
+* Make channel modes use add_mode_to_str()
+* Now modes are not stored in bitmasks, not hard-coded at compile time. HUZZAH!
+* Nix "inactive" field in channels, channels are thrown away at disconnect
+* Don't allow channels to move between servers, natch.
+* Nix all the code to handle disconnected channels and such.
+* Use change_window_server() to move windows to new servers, because...
+* Make window_check_servers() auto-close windowless servers.
+* Make change_window_server(<server>, NOSERV) cause a disconnect from <server>
+* Don't honor /set auto_reconnect, we don't ever reconnect.
+* Fix printf() error in /on kick default output
+* Add new server state, SERVER_RECONNECT which means "i can be connected"
+* So now SERVER_CLOSED means "don't reconnect me"
+* Allow /server, /window server, and /reconnect to change CLOSED -> RECONNECT
+* Make server connections nonblocking.
+* Server connections are now nonrecursive, nonblocking, multi-protocol. HUZZAH!
+* GC a bunch of server code dealing with reconnection we don't use now.
+* Don't call window_check_servers() other than io() for sanity reasons.
+* Make /window server just change server, let w_c_s() bootstrap connection
+* Remove many window->channel->server sanity checks.

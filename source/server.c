@@ -1,4 +1,4 @@
-/* $EPIC: server.c,v 1.112 2003/12/28 05:59:15 jnelson Exp $ */
+/* $EPIC: server.c,v 1.113 2004/01/05 16:24:40 jnelson Exp $ */
 /*
  * server.c:  Things dealing with that wacky program we call ircd.
  *
@@ -58,32 +58,14 @@
 #include "translat.h"
 #include "notice.h"
 
-/*
- * Note to future maintainers -- we do a bit of chicanery here.  The 'flags'
- * member in the server structure is assuemd to be at least N bits wide,
- * where N is the number of possible user modes.  Since the server stores
- * our user modes in a similar fashion, this shouldnt ever be "broken",
- * and if it is, we'll just change to do it however the server does.
- * The easiest way to handle that would be just to use an fd_set.
- *
- * 'umodes' here is a bogus default.  When we recieve the 004 numeric, it
- * overrides 'umodes'.
- *
- * The 'o' user mode is a special case, in that we want to know when its on.
- * This is mirrored in the "operator" member, for historical reasons.  This is
- * a kludge and should be changed.
- */
-const 	char *	default_umodes = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
 static 	void 	remove_from_server_list (int i, int override);
 	void 	reset_nickname (int);
-	void	clear_reconnect_counts (void);
 	const char *get_server_group (int refnum);
 	const char *get_server_type (int refnum);
 	void	server_is_unregistered (int refnum);
 
 	int	connected_to_server = 0;	/* true when connection is
 						 * confirmed */
-	int	reconnects_to_hint = 0;		/* XXX Hack.  Don't remind me */
 
 static	char    lame_wait_nick[] = "***LW***";
 static	char    wait_nick[] = "***W***";
@@ -137,7 +119,7 @@ void 	add_to_server_list (const char *server, int port, const char *password, co
 		s->operator = 0;
 		s->des = -1;
 		s->version = 0;
-		s->status = SERVER_CLOSED;
+		s->status = SERVER_RECONNECT;
 		s->nickname = (char *) 0;
 		s->s_nickname = (char *) 0;
 		s->d_nickname = (char *) 0;
@@ -157,10 +139,10 @@ void 	add_to_server_list (const char *server, int port, const char *password, co
 		s->nickname_pending = 0;
 		s->fudge_factor = 0;
 		s->resetting_nickname = 0;
-		s->reconnects = 0;
-		s->reconnect_to = from_server;
 		s->quit_message = NULL;
-		s->save_channels = -1;
+		s->umode[0] = 0;
+		s->addrs = NULL;
+		s->next_addr = NULL;
 
 		s->doing_privmsg = 0;
 		s->doing_notice = 0;
@@ -795,8 +777,6 @@ BUILT_IN_COMMAND(servercmd)
 	 */
 	else if (*server == '+')
 	{
-		clear_reconnect_counts();
-
 		/* /SERVER +foo.bar.com is an alias for /window server */
 		if (*++server)
 			window_server(current_window, &server);
@@ -804,13 +784,15 @@ BUILT_IN_COMMAND(servercmd)
 		/* /SERVER + means go to the next server */
 		else
 		{
-			set_server_quit_message(from_server, 
-					"Changing servers");
-			server_reconnects_to(from_server, from_server + 1);
-			reconnect(from_server, 1);
-		}
+			int	new_server;
 
-		window_check_servers();
+			set_server_quit_message(from_server, "Changing servers");
+			if (from_server + 1 == number_of_servers)
+				new_server = 0;
+			else
+				new_server = from_server + 1;
+			change_window_server(from_server, new_server);
+		}
 	}
 
 	/*
@@ -818,8 +800,6 @@ BUILT_IN_COMMAND(servercmd)
 	 */
 	else if (*server == '-')
 	{
-		clear_reconnect_counts();
-
 		if (*++server)
 		{
 			i = find_server_refnum(server, &args);
@@ -831,23 +811,20 @@ BUILT_IN_COMMAND(servercmd)
 
 			set_server_quit_message(from_server, 
 					"Disconnected at user request");
-			server_reconnects_to(i, NOSERV);
-			reconnect(i, 1);
+			change_window_server(i, NOSERV);
 		}
 		else
 		{
-			set_server_quit_message(from_server, 
-					"Changing servers");
+			int	new_server;
+
+			set_server_quit_message(from_server, "Changing servers");
 			if (from_server == 0)
-				server_reconnects_to(from_server, 
-							number_of_servers - 1);
+				new_server = number_of_servers - 1;
 			else
-				server_reconnects_to(from_server, 
-							from_server - 1);
-			reconnect(from_server, 1);
+				new_server = from_server + 1;
+			change_window_server(from_server, from_server + 1);
 		}
 
-		window_check_servers();
 	}
 
 	/*
@@ -860,13 +837,9 @@ BUILT_IN_COMMAND(servercmd)
 		i = find_server_refnum(server, &args);
 		if (i != j)
 		{
-			clear_reconnect_counts();
 			if (my_stricmp(get_server_type(i), "IRC-SSL") == 0)
 				set_server_ssl_enabled(i, TRUE);
-
-			server_reconnects_to(j, i);
-			reconnect(j, 1);
-			window_check_servers();
+			change_window_server(j, i);
 		}
 		else
 			say("Connected to port %d of server %s",
@@ -880,7 +853,7 @@ BUILT_IN_COMMAND(servercmd)
  * do_server: check the given fd_set against the currently open servers in
  * the server list.  If one have information available to be read, it is read
  * and and parsed appropriately.  If an EOF is detected from an open server,
- * we call reconnect() to try to keep that server connection alive.
+ * and we haven't registered, window_check_servers() will restart for us.
  */
 void	do_server (fd_set *rd, fd_set *wd)
 {
@@ -898,22 +871,53 @@ void	do_server (fd_set *rd, fd_set *wd)
 			continue;
 
 		des = s->des;
+
+		/*
+		 * First look for nonblocking connects that are finished.
+		 */
+		if (des != -1 && FD_ISSET(des, wd))
+		{
+			SS name;
+			socklen_t len;
+
+			if (x_debug & DEBUG_SERVER_CONNECT)
+				yell("do_server: server [%d] is now ready to write", i);
+			/*
+			 * If the connect failed, then restart it.
+			 */
+			len = sizeof(name);
+			if (getpeername(des, (SA *)&name, &len))
+			{
+			    if (x_debug & DEBUG_SERVER_CONNECT)
+				yell("Server [%d] is not connected.  Restarting connection", i);
+			    close_server(i, NULL);
+			    connect_to_server(i, 0);
+			    continue;
+			}
+
+			register_server(i, s->d_nickname);
+			new_open(des);
+		}
+		if (des != -1)
+		    FD_CLR(des, wd);	/* Make sure it never comes up again */
+
 		if (des == -1 || !FD_ISSET(des, rd))
 		{
-			if (get_server_ssl_enabled(i) == TRUE)
-			{
+		    if (get_server_ssl_enabled(i) == TRUE)
+		    {
 #ifndef HAVE_SSL
-				panic("do_server on server %d claims to be"
-					"using SSL on non-ssl client", i);
+			panic("do_server on server %d claims to be"
+				"using SSL on non-ssl client", i);
 #else
-				if (!SSL_pending((SSL *)s->ssl_fd))
-					continue;
-#endif
-			}
-			else
+			if (!SSL_pending((SSL *)s->ssl_fd))
 				continue;
+#endif
+		    }
+		    else
+			continue;
 		}
-		FD_CLR(des, rd);	/* Make sure it never comes up again */
+		if (des != -1)
+		    FD_CLR(des, rd);	/* Make sure it never comes up again */
 
 		last_server = from_server = i;
 		junk = dgets(des, bufptr, get_server_line_length(from_server), 
@@ -921,57 +925,49 @@ void	do_server (fd_set *rd, fd_set *wd)
 
 		switch (junk)
  		{
-			case 0:		/* Sit on incomplete lines */
-				break;
+		    case 0:		/* Sit on incomplete lines */
+			break;
 
-			case -1:	/* EOF or other error */
-			{
-				if (s->save_channels == -1)
-					set_server_save_channels(i, 1);
+		    case -1:	/* EOF or other error */
+		    {
+			server_is_unregistered(i);
+			close_server(i, NULL);
+			say("Connection closed from %s: %s", 
+				s->name,
+				(dgets_errno == -1) ? 
+				     "Remote end closed connection" : 
+				     strerror(dgets_errno));
+			i++;		/* NEVER DELETE THIS! */
+			break;
+		    }
 
-				server_is_unregistered(i);
-				close_server(i, NULL);
-				say("Connection closed from %s: %s", 
-					s->name,
-					(dgets_errno == -1) ? 
-					     "Remote end closed connection" : 
-					     strerror(dgets_errno));
-				reconnect(i, 1);
-				i++;		/* NEVER DELETE THIS! */
-				break;
-			}
+		    default:	/* New inbound data */
+		    {
+			char *end;
+			int	l;
 
-			default:	/* New inbound data */
-			{
-				char *end;
-				int	l;
+			end = strlen(buffer) + buffer;
+			if (*--end == '\n')
+				*end-- = '\0';
+			if (*end == '\r')
+				*end-- = '\0';
 
-				end = strlen(buffer) + buffer;
-				if (*--end == '\n')
-					*end-- = '\0';
-				if (*end == '\r')
-					*end-- = '\0';
+			l = message_from(NULL, LEVEL_CRAP);
+			if (x_debug & DEBUG_INBOUND)
+				yell("[%d] <- [%s]", 
+					s->des, buffer);
 
-				l = message_from(NULL, LEVEL_CRAP);
-				if (x_debug & DEBUG_INBOUND)
-					yell("[%d] <- [%s]", 
-						s->des, buffer);
-
-				if (translation)
-					translate_from_server(buffer);
-				parsing_server_index = i;
-				parse_server(buffer, sizeof buffer);
-				parsing_server_index = NOSERV;
-				pop_message_from(l);
-				break;
-			}
-		}
-		from_server = primary_server;
+			if (translation)
+				translate_from_server(buffer);
+			parsing_server_index = i;
+			parse_server(buffer, sizeof buffer);
+			parsing_server_index = NOSERV;
+			pop_message_from(l);
+			break;
+		    }
+	        }
+	        from_server = primary_server;
 	}
-
-	/* Make sure primary_server is legit before we leave */
-	if (primary_server == NOSERV || !is_server_registered(primary_server))
-		window_check_servers();
 }
 
 
@@ -1093,7 +1089,7 @@ void	send_to_aserver_raw (int refnum, size_t len, const char *buffer)
 #else
 				SSL_shutdown((SSL *)s->ssl_fd);
 #endif
-			reconnect(refnum, 1);
+			close_server(refnum, NULL);
 		}
 	    }
 	}
@@ -1110,6 +1106,127 @@ void	flush_server (int servnum)
 
 /* CONNECTION/RECONNECTION STRATEGIES */
 /*
+ * Grab_server_address -- look up all of the addresses for a hostname and
+ *	save them in the Server data for later use.  Someone must free
+ * 	the results when they're done using the data (usually when we 
+ *	successfully connect, or when we run out of addrs)
+ */
+int	grab_server_address (int server)
+{
+	Server *s;
+	AI	hints, *results;
+	int	err;
+	int	i;
+
+	if (x_debug & DEBUG_SERVER_CONNECT)
+		yell("Grabbing server addresses for server [%d]", server);
+
+	if (!(s = get_server(server)))
+	{
+		yell("Could not lookup hostname for server [%d] that does not exist", server);
+		return -1;		/* XXXX */
+	}
+
+	if (s->addrs)
+	{
+		yell("This server still has addresses left over from last time.  Starting over anyways...");
+		Freeaddrinfo(s->addrs);
+		s->addrs = NULL;
+		s->next_addr = NULL;
+	}
+
+	memset(&hints, 0, sizeof(hints));
+	hints.ai_family = AF_UNSPEC;
+	hints.ai_socktype = SOCK_STREAM;
+	if ((err = Getaddrinfo(s->name, ltoa(s->port), &hints, &results)))
+	{
+		yell("Hostname lookup for [%s:%d] failed: %s (%d)",
+			s->name, s->port, gai_strerror(err), err);
+		return -3;
+	}
+
+	s->addrs = results;
+	s->next_addr = results;
+	if (x_debug & DEBUG_SERVER_CONNECT)
+	{
+		for (i = 0; results; results = results->ai_next)
+			i++;
+		yell("Found [%d] addresses for server [%d]", i, server);
+	}
+	return 0;
+}
+
+/*
+ * Make an attempt to connect to the next server address that will 
+ * receive us.  This is the guts of "connectory", but "connectory" is
+ * completely self-contained, and we have to be able to support looping
+ * through getaddrinfo() results, possibly on multiple asynchronous
+ * occasions.  So what we do is restart from where we left off before.
+ */
+int	connect_next_server_address (int server)
+{
+	Server *s;
+	int	err, fd;
+	SS	localaddr;
+	socklen_t locallen;
+	const AI *	ai;
+
+	if (!(s = get_server(server)))
+		return -1;		/* XXXX */
+
+	if (!s->addrs)
+	{
+		if (x_debug & DEBUG_SERVER_CONNECT)
+			yell("There are no addresses to connect to for server [%d]", server);
+		return -5;		/* XXXX */
+	}
+
+	for (ai = s->next_addr; ai; ai = ai->ai_next)
+	{
+	    if (x_debug & DEBUG_SERVER_CONNECT)
+		yell("Trying to connect to server [%d] using next address", server);
+	    err = inet_vhostsockaddr(ai->ai_family, -1, &localaddr, &locallen);
+	    if (err < 0)
+	    {
+	        if (x_debug & DEBUG_SERVER_CONNECT)
+			yell("Couldn't get vhost for family [%d], trying another address", ai->ai_family);
+		continue;
+	    }
+
+	    fd = client_connect((SA *)&localaddr, locallen, ai->ai_addr, ai->ai_addrlen, 0);
+	    if (fd < 0)
+	    {
+	        if (x_debug & DEBUG_SERVER_CONNECT)
+			yell("That address failed with error (%d:%s)", fd, strerror(fd));
+		err = fd;
+		fd = -1;
+		continue;
+	    }
+	    else
+		break;
+	}
+
+	if (!ai)
+	{
+	        if (x_debug & DEBUG_SERVER_CONNECT)
+			yell("Out of addresses to try for server [%d]!  Giving up", server);
+		Freeaddrinfo(s->addrs);
+		s->addrs = NULL;
+		s->next_addr = NULL;
+		return -12;
+	}
+	else
+		s->next_addr = ai->ai_next;
+
+	if (fd < 0)
+		return err;
+
+	if (x_debug & DEBUG_SERVER_CONNECT)
+		yell("connect_next_server_address returning [%d]", fd);
+	return fd;
+}
+
+/*
  * This establishes a new connection to 'new_server'.  This function does
  * not worry about why or where it is doing this.  It is only concerned
  * with getting a connection up and running.
@@ -1117,7 +1234,7 @@ void	flush_server (int servnum)
  * NOTICE! THIS MUST ONLY EVER BE CALLED BY connect_to_new_server()!
  * IF YOU CALL THIS ELSEWHERE, THINGS WILL BREAK AND ITS NOT MY FAULT!
  */
-static int 	connect_to_server (int new_server)
+int 	connect_to_server (int new_server, int restart)
 {
 	int 		des;
 	socklen_t	len;
@@ -1156,7 +1273,11 @@ static int 	connect_to_server (int new_server)
 	memset(&s->local_sockname, 0, sizeof(s->local_sockname));
 	memset(&s->remote_sockname, 0, sizeof(s->remote_sockname));
 
-	if ((des = connectory(AF_UNSPEC, s->name, ltoa(s->port))) < 0)
+	if (restart || s->addrs == NULL)
+		if (grab_server_address(new_server))
+			return -1;
+
+	if ((des = connect_next_server_address(new_server)) < 0)
 	{
 		if (x_debug & DEBUG_SERVER_CONNECT)
 			say("new_des is %d", des);
@@ -1176,8 +1297,10 @@ static int 	connect_to_server (int new_server)
 		return -1;		/* Connect failed */
 	}
 
+	if (x_debug & DEBUG_SERVER_CONNECT)
+		say("connect_next_server_address returned [%d]", des);
 	from_server = new_server;	/* XXX sigh */
-	new_open(des);
+	new_open_for_writing(des);
 
 	if (*s->name != '/')
 	{
@@ -1203,306 +1326,8 @@ static int 	connect_to_server (int new_server)
 	 * Reset everything and go on our way.
 	 */
 	update_all_status();
-	server_reconnects_to(new_server, new_server + 1);
 	return 0;			/* New connection established */
 }
-
-
-/*
- * This attempts to substitute a new connection to server 'new_server'
- * for the server connection 'old_server'.
- * If 'old_server' is NOSERV, then this is the first connection for the entire
- * 	client.  We have to handle this differently because no windows exist
- *	at this point and we have to be careful not to call 
- *	window_check_servers.
- * If 'new_conn' is 1, then this is a new server connection on an existing
- * 	window.  This is used when a window "splits off" from an existing
- *	server connection to a new server.
- */
-int 	connect_to_new_server (int new_server, int old_server, int new_conn)
-{
-	Server *s;
-	int	x;
-	int	old;
-
-	/*
-	 * First of all, if we can't connect to the new server, we don't
-	 * do anything here.  Note that this might succeed because we are
-	 * already connected to the new server, in which case 
-	 * 'is_server_registered' should be true.
-	 */
-	if ((x = connect_to_server(new_server)) == -1)
-	{
-		if (old_server != NOSERV && (s = get_server(old_server)) && s->des != -1)
-			say("Connection to server %s resumed...", s->name);
-
-		return -1;
-	}
-
-	/*
-	 * Now at this point, we have successfully opened a connection
-	 * to the new server.  What to do, what to do?
-	 */
-	from_server = new_server;	/* XXX sigh */
-
-	/*
-	 * If connect_to_server() resulted in a new server connection,
-	 * go ahead and register it.
-	 */
-	if (x == 0)
-	{
-		if (!(s = get_server(new_server)))
-			return -1;
-		register_server(new_server, s->d_nickname);
-	}
-
-	/*
-	 * If we're not actually switching servers...
-	 */
-	if (old_server == new_server)
-	{
-		/* 
-		 * If we were asked to connect to a server we were 
-		 * already connected to, then there's nothing more
-		 * to be done, eh?
-		 */
-		if (x == -3)
-			return 0;
-
-		/*
-		 * We must be reconnecting to a server.  Try to find
-		 * and grab all of its old windows that are just lying
-		 * around.  This should be harmless at worst.
-		 */
-		change_window_server(old_server, new_server);
-		return 0;
-	}
-
-	/*
-	 * At this point, we know that new_server != old_server, so we are
-	 * actually trying to change servers, rather than just try to re-
-	 * establish an old, dropped one.  We do some bookkeeping here to 
-	 * try to keep everything in order, as far as windows and channels go.
-	 * This is not done for /window server, though.
-	 */
-	if (new_conn == 0)
-	{
-		/* 
-		 * By default, all server channels are saved; however,
-		 * we save them just in case.
-		 */
-		if (is_server_open(old_server))
-		{
-			set_server_save_channels(old_server, 1);
-			close_server(old_server, "changing servers");
-		}
-
-		/*
-		 * Situation #1:  If we are /server'ing to a server
-		 * that was already connected, then we do *not* transfer
-		 * over the channels that are on the "old" server.  Instead
-		 * we trashcan them so they don't get in the way and become
-		 * phantom channels in the future.  Otherwise, if we are
-		 * establishing a brand new connection, we 
-		 */
-		if (x == -3)
-		{
-			destroy_waiting_channels(old_server);
-			destroy_server_channels(old_server);
-		}
-	
-		/*
-		 * If we are /server'ing to a server that was not already 
-		 * connected, then we *do* want to transfer over the 
-		 * channels that are on the "old" server.
-		 */
-		else
-			change_server_channels(old_server, new_server);
-
-		/*
-		 * If 'new_conn' is 0, and 'old_server' is NOSERV, then we're
-		 * doing something like a /server in a disconnected window.
-		 * That's no sweat.  We will just try to figure out what
-		 * server this window was last connected to, and move all
-		 * of those windows over to this new server.
-		 */
-		if (old_server == NOSERV)
-		{
-			if (!(old = get_window_oldserver(0)) != NOSERV)
-				old_server = old;
-		}
-
-		/*
-		 * In all situations, we always want to move all of the
-		 * windows over from the last server to this new server
-		 * as a logical group.  Grab any old windows that seem 
-		 * to want to be part of this fun as well.  Also, do a
-		 * window_check_servers() to make sure all is coherent.
-		 */
-		change_window_server(old_server, new_server);
-	}
-
-	/*
-	 * And it never hurts, in any situation, to set the AWAY message
-	 * if there is one.
-	 */
-	if (!get_server_away(new_server) && get_server_away(old_server))
-		set_server_away(new_server, get_server_away(old_server));
-
-	return 0;
-}
-
-/*
- * This function supplants the "get_connected" function; it started out life
- * as a front end to get_connected(), but it ended up being more flexible
- * than get_connected() and everyone was calling reconnect() instead, so I 
- * just rolled the two of them together and here we are.
- *
- * The purpose of this function is to make it easier to handle dropped
- * server connections.  If we recieve a Notice Of Termination (such as an
- * 010 or 465 numerics, or a KILL or such), we may not want to actually 
- * terminate the connection before the server does as it may send us more
- * important information.  Instead of closing the connection, we instead
- * drop a "hint" to the server what it should do when it sees an EOF.  For
- * most circumstances, the "hint" is "reconnect to yourself again".  However,
- * sometimes we want to reconnect to a different server.  For all of these
- * circumstances, this function is called to figure out what to do.
- *
- * Use the function "server_reconnects_to" to control how this function
- * behaves.  Setting the reconnecting server to NOSERV inhibits any connection
- * from occuring upon EOF.  Setting the reconnecting server to itself causes
- * a normal reconnect act.  Setting the reconnecting server to another refnum
- * causes the server connection to be migrated to that refnum.  The original
- * connection is closed only if the new refnum is successfully opened.
- *
- * The "samegroup" argument is new and i think every call to reconnect
- * uses the value '1' which means 'only try to connect to the same group
- * as whatever we're reconnecting to'; the code for value 0 may not be
- * tested very well, and i can't think of any uses for it, but eh, you 
- * never know what the future will hold.
- */
-int	reconnect (int oldserv, int samegroup)
-{
-	Server *s;
-	int	newserv;
-	int	i, j;
-	int	was_registered = 0;
-	int	registered;
-	int	max_reconnects = get_int_var(MAX_RECONNECTS_VAR);
-
-	if (!server_list)
-	{
-                if (do_hook(DISCONNECT_LIST, "No Server List"))
-		    say("No server list. Use /SERVER to connect to a server");
-		return -1;
-	}
-
-	if (oldserv == NOSERV)
-	{
-		newserv = reconnects_to_hint;
-		registered = 0;
-	}
-	else
-	{
-		if (!(s = get_server(oldserv)))
-			return -1;
-		was_registered = is_server_registered(oldserv);
-		newserv = s->reconnect_to;
-
-		/*
-		 * Inhibit automatic reconnections.
-		 */
-		if (!was_registered && newserv == oldserv &&
-				get_int_var(AUTO_RECONNECT_VAR) == 0)
-			newserv = NOSERV;
-
-		if (newserv != NOSERV)
-			set_server_save_channels(oldserv, 1);
-		else
-			set_server_save_channels(oldserv, 0);
-
-		if (newserv == oldserv || newserv == NOSERV)
-			close_server(oldserv, get_server_quit_message(oldserv));
-		registered = is_server_registered(oldserv);
-	}
-
-	if (newserv == NOSERV)
-	{
-		window_check_servers();
-		return -1;		/* User wants to disconnect */
-	}
-
-	/* Try all of the other servers, stop when one of them works. */
-	for (i = 0; i < number_of_servers; i++)
-	{
-		j = (i + newserv) % number_of_servers;
-		if (!(s = get_server(j)))
-			continue;
-		if (samegroup && newserv != NOSERV &&
-			my_stricmp(get_server_group(newserv), 
-				   get_server_group(j)))
-			continue;
-		if (newserv != oldserv && j == oldserv)
-			continue;
-		if (s->reconnects++ > max_reconnects) {
-			say("Auto-reconnect has been throttled because too many unsuccessfull attempts to connect to server %d have been performed.", j);
-			break;
-		}
-		if (connect_to_new_server(j, oldserv, 0) == 0)
-			return j;
-
-		/*
-		 * Because of the new way we handle things, if the old
-		 * server was connected, then this was because the user 
-		 * was trying to change to a new server; if the connection
-		 * to the new server failed, then we want to resume the old
-		 * connection.  But if the server was not connected, then 
-		 * that means we already saw an EOF on either the read or
-		 * write end, and so there is no connection to resume!  In
-		 * which case we just keep cycling our servers until we find
-		 * some place we like.
-		 */
-		if (registered)
-			break;
-	}
-
-	/* If we reach this point, we have failed.  Time to punt */
-
-	/*
-	 * If our prior state was registered, revert back to the prior
-	 * registered server.
-	 */
-	if (registered && newserv != oldserv)
-	{
-		say("A new server connection could not be established.");
-		say("Your previous server connection will be resumed.");
-		from_server = oldserv;
-		window_check_servers();
-		return -1;
-	}
-
-	/*
-	 * In any situation, if 'oldserv' is not registered at this point, 
-	 * then we need to throw away it's channels.
-	 */
-	if (!is_server_registered(oldserv))
-	{
-		destroy_waiting_channels(oldserv);
-		destroy_server_channels(oldserv);
-	}
-
-	/*
-	 * Our prior state was unregistered.  Tell the user
-	 * that we give up and tough luck.
-	 */
-	if (do_hook(DISCONNECT_LIST, "Unable to connect to a server"))
-		say("Sorry, cannot connect.  Use /SERVER to connect "
-						"to a server");
-
-	window_check_servers();
-	return -1;
-}
-
 
 int 	close_all_servers (const char *message)
 {
@@ -1511,8 +1336,7 @@ int 	close_all_servers (const char *message)
 	for (i = 0; i < number_of_servers; i++)
 	{
 		set_server_quit_message(i, message);
-		server_reconnects_to(i, NOSERV);
-		reconnect(i, 0);
+		change_window_server(i, NOSERV);
 	}
 
 	return 0;
@@ -1543,17 +1367,9 @@ void	close_server (int refnum, const char *message)
 	if (s->waiting_out > s->waiting_in)		/* XXX - hack! */
 		s->waiting_out = s->waiting_in = 0;
 
-	if (s->save_channels == 1)
-		save_channels(refnum);
-	else if (s->save_channels == 0)
-	{
-		destroy_waiting_channels(refnum);
-		destroy_server_channels(refnum);
-	}
-	else
-		panic("Somebody forgot to set save_channels for server %d", refnum);
+	destroy_waiting_channels(refnum);
+	destroy_server_channels(refnum);
 
-	s->save_channels = -1;
 	s->operator = 0;
 	new_free(&s->nickname);
 	new_free(&s->s_nickname);
@@ -1826,10 +1642,18 @@ void	register_server (int refnum, const char *nick)
 		return;
 
 	if (s->status != SERVER_CONNECTING)
+	{
+		if (x_debug & DEBUG_SERVER_CONNECT)
+			say("Server [%d] state should be [%d] but it is [%d]", refnum, SERVER_CONNECTING, s->status);
 		return;		/* Whatever */
+	}
 
 	if (is_server_registered(refnum))
+	{
+		if (x_debug & DEBUG_SERVER_CONNECT)
+			say("Server [%d] is already registered", refnum);
 		return;		/* Whatever */
+	}
 
 	s->status = SERVER_REGISTERING;
 
@@ -1897,6 +1721,8 @@ void	register_server (int refnum, const char *nick)
 			(LocalHostName ? LocalHostName : hostname), 
 			username, (*realname ? realname : space));
 	change_server_nickname(refnum, nick);
+	if (x_debug & DEBUG_SERVER_CONNECT)
+		yell("Registered with server [%d]", refnum);
 }
 
 /*
@@ -1914,8 +1740,8 @@ void 	password_sendline (char *data, char *line)
 	new_server = parse_server_index(data, 0);
 	set_server_password(new_server, line);
 	change_window_server(new_server, new_server);
-	server_reconnects_to(new_server, new_server);
-	reconnect(new_server, 1);
+	close_server(new_server, NULL);
+	set_server_status(new_server, SERVER_RECONNECT);
 }
 
 static const char *	get_server_password (int refnum)
@@ -1992,7 +1818,6 @@ void  server_is_registered (int refnum, const char *itsname, const char *ourname
 	accept_server_nickname(refnum, ourname);
 	set_server_itsname(refnum, itsname);
 
-	reconnect_all_channels();
 	reinstate_user_modes();
 	userhostbase(from_server, NULL, got_my_userhost, 1);
 
@@ -2019,10 +1844,6 @@ void  server_is_registered (int refnum, const char *itsname, const char *ourname
 	get_server_itsname(from_server));
 	window_check_channels();
 	s->status = SERVER_ACTIVE;
- 
-#if 0
-       s->reconnect_to = refnum;
-#endif
 }
 
 void	server_is_unregistered (int refnum)
@@ -2032,8 +1853,6 @@ void	server_is_unregistered (int refnum)
 	if (!(s = get_server(refnum)))
 		return;
 
-	if (!get_int_var(AUTO_REJOIN_CONNECT_VAR))
-		destroy_server_channels(refnum);
 	destroy_005(refnum);
 }
 
@@ -2074,9 +1893,7 @@ BUILT_IN_COMMAND(disconnectcmd)
 			message = args;
 
 		say("Disconnecting from server %s", get_server_itsname(i));
-		server_reconnects_to(i, NOSERV);
-		set_server_save_channels(i, 0);
-		close_server(i, message);
+		change_window_server(i, NOSERV);
 		update_all_status();
 	}
 
@@ -2084,42 +1901,6 @@ BUILT_IN_COMMAND(disconnectcmd)
                 if (do_hook(DISCONNECT_LIST, "Disconnected by user request"))
 			say("You are not connected to a server, use /SERVER to connect.");
 } 
-
-int 	auto_reconnect_callback (void *d)
-{
-	char *	stuff = (char *)d;
-	int	servref;
-
-	servref = parse_server_index(stuff, 0);
-	new_free((char **)&d);
-
-	if (servref == NOSERV)
-		return 0;		/* Don't bother */
-
-	server_reconnects_to(servref, servref);
-	reconnect(servref, 1);
-	return 0;
-}
-
-int	server_reconnects_to (int oldref, int newref)
-{
-	Server *old_s;
-	Server *new_s;
-
-	if (oldref == NOSERV)
-	{
-		reconnects_to_hint = newref;
-		return 1;
-	}
-
-	if (!(old_s = get_server(oldref)))
-		return 0;
-	if (newref != NOSERV && !(new_s = get_server(newref)))
-		return 0;
-
-	old_s->reconnect_to = newref;
-	return 1;
-}
 
 /* PORTS */
 static void    set_server_port (int refnum, int port)
@@ -2505,19 +2286,6 @@ void 	save_servers (FILE *fp)
 	}
 }
 
-void	clear_reconnect_counts (void)
-{
-	Server *s;
-	int	i;
-
-	for (i = 0; i < number_of_servers; i++)
-	{
-		if (!(s = get_server(i)))
-			continue;
-		s->reconnects = 0;
-	}
-}
-
 const char *get_server_type (int refnum)
 {
 	Server *s;
@@ -2593,9 +2361,9 @@ IACCESSOR(v, doing_ctcp)
 IACCESSOR(v, nickname_pending)
 IACCESSOR(v, sent)
 IACCESSOR(v, version)
-IACCESSOR(v, save_channels)
 IACCESSOR(v, line_length)
 IACCESSOR(v, max_cached_chan_size)
+IACCESSOR(v, status)
 SACCESSOR(chan, invite_channel, NULL)
 SACCESSOR(nick, last_notify_nick, NULL)
 SACCESSOR(nick, joined_nick, NULL)
@@ -3117,5 +2885,18 @@ void 	got_my_userhost (int refnum, UserhostItem *item, const char *nick, const c
 	freeme = malloc_strdup3(item->user, "@", item->host);
 	set_server_userhost(refnum, freeme);
 	new_free(&freeme);
+}
+
+int	server_more_addrs (int refnum)
+{
+	Server	*s;
+
+	if (!(s = get_server(refnum)))
+		return 0;
+
+	if (s->next_addr)
+		return 1;
+	else
+		return 0;
 }
 

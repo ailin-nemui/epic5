@@ -1,4 +1,4 @@
-/* $EPIC: network.c,v 1.52 2003/12/17 09:25:30 jnelson Exp $ */
+/* $EPIC: network.c,v 1.53 2004/01/05 16:24:40 jnelson Exp $ */
 /*
  * network.c -- handles stuff dealing with connecting and name resolving
  *
@@ -48,8 +48,8 @@ static int	set_blocking (int fd);
 static int	inet_remotesockaddr (int family, const char *host, const char *port, SS *storage, socklen_t *len);
 int	inet_vhostsockaddr (int family, int port, SS *storage, socklen_t *len);
 static int	Connect (int fd, SA *addr);
-static int	Getaddrinfo (const char *nodename, const char *servname, const AI *hints, AI **res);
-static void	Freeaddrinfo (AI *ai);
+	int	Getaddrinfo (const char *nodename, const char *servname, const AI *hints, AI **res);
+	void	Freeaddrinfo (AI *ai);
 static socklen_t	socklen (SA *sockaddr);
 static int	Getnameinfo(const SA *sa, socklen_t salen, char *host, size_t hostlen, char *serv, size_t servlen, int flags);
 
@@ -113,7 +113,7 @@ int	connectory (int family, const char *host, const char *port)
 		continue;
 
 	    /* Now try to do the connection. */
-	    fd = client_connect((SA *)&localaddr, locallen, ai->ai_addr, ai->ai_addrlen);
+	    fd = client_connect((SA *)&localaddr, locallen, ai->ai_addr, ai->ai_addrlen, 1);
 	    if (fd < 0)
 	    {
 		err = fd;
@@ -143,7 +143,7 @@ int	connectory (int family, const char *host, const char *port)
  *       rl - The sizeof(r) -- if 0, then 'r' is treated as a NULL value.
  *            Therefore, 0 is not permitted.
  */
-int	client_connect (SA *l, socklen_t ll, SA *r, socklen_t rl)
+int	client_connect (SA *l, socklen_t ll, SA *r, socklen_t rl, int blocking)
 {
 	int	fd = -1;
 	int	family = AF_UNSPEC;
@@ -212,15 +212,20 @@ int	client_connect (SA *l, socklen_t ll, SA *r, socklen_t rl)
 		err = Connect(fd, r);
 		if (err < 0 && errno != EAGAIN && errno != EINPROGRESS)
 			return close(fd), -11;
+		set_blocking(fd);
 
-		/* Now stall for a while until it succeeds or times out. */
-		errno = 0;
-		FD_ZERO(&set);
-		FD_SET(fd, &set);
-		to.tv_sec = get_int_var(CONNECT_TIMEOUT_VAR);
-		to.tv_usec = 0;
-		switch (select(fd + 1, NULL, &set, NULL, &to))
+		if (blocking)
 		{
+		    if (x_debug & DEBUG_SERVER_CONNECT)
+			yell("Starting a blocking connect for des [%d]...", fd);
+		    /* Now stall for a while until it succeeds or times out. */
+		    errno = 0;
+		    FD_ZERO(&set);
+		    FD_SET(fd, &set);
+		    to.tv_sec = get_int_var(CONNECT_TIMEOUT_VAR);
+		    to.tv_usec = 0;
+		    switch (select(fd + 1, NULL, &set, NULL, &to))
+		    {
 			case 0:
 				errno = ECONNABORTED;
 				/* FALLTHROUGH */
@@ -234,13 +239,17 @@ int	client_connect (SA *l, socklen_t ll, SA *r, socklen_t rl)
 				peerlen = sizeof(peer);
 				if (getpeername(fd, (SA *)&peer, &peerlen))
 					return close(fd), -12;
-				set_blocking(fd);
 			}
+		    }
+		    if (x_debug & DEBUG_SERVER_CONNECT)
+			yell("Ending blocking connect for des [%d]...", fd);
 		}
 	}
 	else
 		return -2;
 
+	if (x_debug & DEBUG_SERVER_CONNECT)
+		yell("Connected on des [%d]", fd);
 	return fd;
 }
 
@@ -659,7 +668,7 @@ static int Connect (int fd, SA *addr)
  * XXX - Ugh!  Some getaddrinfo()s take AF_UNIX paths as the 'servname'
  * instead of as the 'nodename'.  How heinous!
  */
-static int	Getaddrinfo (const char *nodename, const char *servname, const AI *hints, AI **res)
+int	Getaddrinfo (const char *nodename, const char *servname, const AI *hints, AI **res)
 {
 #ifdef GETADDRINFO_DOES_NOT_DO_AF_UNIX
 	int	do_af_unix = 0;
@@ -712,7 +721,7 @@ static int	Getaddrinfo (const char *nodename, const char *servname, const AI *hi
 		return getaddrinfo(nodename, servname, hints, res);
 }
 
-static void	Freeaddrinfo (AI *ai)
+void	Freeaddrinfo (AI *ai)
 {
 #ifdef GETADDRINFO_DOES_NOT_DO_AF_UNIX
 	if (ai->ai_family == AF_UNIX)

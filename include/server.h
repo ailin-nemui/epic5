@@ -35,18 +35,12 @@ typedef struct WaitCmdstru
         struct  WaitCmdstru *next;
 } WaitCmd;
 
-#define SERVER_CLOSED		0
-#define SERVER_CONNECTING	1
-#define SERVER_REGISTERING	2
-#define SERVER_SYNCING		3
-#define SERVER_ACTIVE		4
-#define SERVER_EOF		5
-#define SERVER_CLOSING		6
-
 /* Server: a structure for the server_list */
 typedef	struct
 {
 	char	*name;			/* the name of the server */
+const	AI 	*addrs;			/* Returned by getaddrinfo */
+const	AI	*next_addr;		/* The next one to try upon failure */
 	char	*itsname;		/* the server's idea of its name */
 	char	*password;		/* password for that server */
 	int	port;			/* port number on that server */
@@ -61,9 +55,11 @@ typedef	struct
 
 	int	nickname_pending;	/* Is a NICK command pending? */
 	int	resetting_nickname;	/* Is a nickname reset in progress? */
+#if 0
 	int	registration_pending;	/* Is a registration going on ? */
 	int	registered;		/* true if registration is assured */
 	int	rejoined_channels;	/* Has we tried to auto-rejoin? */
+#endif
 	char	*userhost;		/* my userhost on this server */
 	char	*away;			/* away message for this server */
 	int	operator;		/* true if operator */
@@ -190,6 +186,15 @@ static __inline__ Server *	get_server (int server)
 #define FUNNY_USERS             1 << 4
 #define FUNNY_NAME              1 << 5
 
+#define SERVER_RECONNECT	0
+#define SERVER_CONNECTING	1
+#define SERVER_REGISTERING	2
+#define SERVER_SYNCING		3
+#define SERVER_ACTIVE		4
+#define SERVER_EOF		5
+#define SERVER_CLOSING		6
+#define SERVER_CLOSED		7
+
 
 
 	BUILT_IN_COMMAND(servercmd);
@@ -216,6 +221,7 @@ static __inline__ Server *	get_server (int server)
 	void	send_to_server			(const char *, ...) __A(1);
 	void	send_to_aserver			(int, const char *, ...) __A(2);
 	void	send_to_aserver_raw		(int, size_t len, const char *buffer);
+	int	connect_to_server		(int, int);
 	int	connect_to_new_server		(int, int, int);
 	int	close_all_servers		(const char *);
 	void	close_server			(int, const char *);
@@ -326,6 +332,8 @@ const	char*	get_server_005			(int, const char *);
 	int	get_server_line_length		(int);
 	void	set_server_max_cached_chan_size	(int, int);
 	int	get_server_max_cached_chan_size	(int);
+	void	set_server_status		(int, int);
+	int	get_server_status		(int);
 
         void    set_server_invite_channel       (int, const char *);
 const char *    get_server_invite_channel       (int);
@@ -362,4 +370,6 @@ const char *	get_server_funny_match         	(int);
         int     get_server_window_count         (int);
 
 	char *	serverctl			(char *);
+
+	int	server_more_addrs		(int);
 #endif /* _SERVER_H_ */

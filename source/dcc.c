@@ -1,4 +1,4 @@
-/* $EPIC: dcc.c,v 1.87 2003/12/17 09:25:30 jnelson Exp $ */
+/* $EPIC: dcc.c,v 1.88 2004/01/05 16:24:40 jnelson Exp $ */
 /*
  * dcc.c: Things dealing client to client connections. 
  *
@@ -792,11 +792,11 @@ static	int	dcc_open (DCC_list *dcc)
 		if (inet_vhostsockaddr(FAMILY(dcc->offer), -1, 
 					&local, &locallen) < 0)
 		    dcc->socket = client_connect(NULL, 0, (SA *)&dcc->offer,
-							sizeof(dcc->offer));
+							sizeof(dcc->offer), 1);
 		else
 		    dcc->socket = client_connect((SA *)&local, locallen, 
 							(SA *)&dcc->offer, 
-							sizeof(dcc->offer));
+							sizeof(dcc->offer), 1);
 
 		if (dcc->socket < 0)
 		{
