@@ -1,4 +1,4 @@
-/* $EPIC: functions.c,v 1.165 2004/04/13 00:19:48 jnelson Exp $ */
+/* $EPIC: functions.c,v 1.166 2004/04/26 03:46:42 jnelson Exp $ */
 /*
  * functions.c -- Built-in functions for ircII
  *
@@ -332,6 +332,7 @@ static	char
 	*function_read 		(char *),
 	*function_realpath	(char *),
 	*function_regcomp	(char *),
+	*function_regcomp_cs	(char *),
 	*function_regexec	(char *),
 	*function_regerror	(char *),
 	*function_regfree	(char *),
@@ -646,6 +647,7 @@ static BuiltInFunctions	built_in_functions[] =
 	{ "READ",		function_read 		},
 	{ "REALPATH",		function_realpath	},
 	{ "REGCOMP",		function_regcomp	},
+	{ "REGCOMP_CS",		function_regcomp_cs	},
 	{ "REGERROR",		function_regerror	},
 	{ "REGEXEC",		function_regexec	},
 	{ "REGFREE",		function_regfree	},
@@ -4465,6 +4467,15 @@ BUILT_IN_FUNCTION(function_cexist, input)
 
 #ifdef HAVE_REGEX_H
 static int last_regex_error = 0; 		/* XXX */
+
+BUILT_IN_FUNCTION(function_regcomp_cs, input)
+{
+	regex_t preg;
+
+	memset(&preg, 0, sizeof(preg)); 	/* make valgrind happy */
+	last_regex_error = regcomp(&preg, input, REG_EXTENDED);
+	return encode((char *)&preg, sizeof(regex_t));
+}
 
 BUILT_IN_FUNCTION(function_regcomp, input)
 {
