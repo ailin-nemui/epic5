@@ -2108,7 +2108,7 @@ void	set_server_userhost (int refnum, const char *userhost)
 
 	/* Ack! */
 	FAMILY(server_list[from_server].uh_addr) = AF_INET;
-	if (inet_anyton(host + 1, zero, (SA *)&server_list[from_server].uh_addr))
+	if (inet_strton(host + 1, zero, (SA *)&server_list[from_server].uh_addr, 0))
 		yell("Ack.  The server says your userhost is [%s] and "
 		     "I can't figure out the IP address of that host! "
 		     "You won't be able to use /SET DCC_USE_GATEWAY_ADDR ON "

@@ -8,7 +8,7 @@
  */
 
 #if 0
-static	char	rcsid[] = "@(#)$Id: ircaux.c,v 1.37 2002/05/27 02:43:35 jnelson Exp $";
+static	char	rcsid[] = "@(#)$Id: ircaux.c,v 1.38 2002/05/27 15:13:00 jnelson Exp $";
 #endif
 
 #include "irc.h"
@@ -3792,7 +3792,7 @@ const char *	my_strerror (int number)
 
 /* 
  * Should I switch over to using getaddrinfo() directly or is using
- * inet_anyton() sufficient?
+ * inet_strton() sufficient?
  */
 const char *	switch_hostname (const char *new_hostname)
 {
@@ -3810,11 +3810,11 @@ const char *	switch_hostname (const char *new_hostname)
 	new_4.sin_family = AF_INET;
 	new_6.sin6_family = AF_INET6;
 
-	if (!inet_anyton(new_hostname, zero, (SA *)&new_4)) {
+	if (!inet_strton(new_hostname, zero, (SA *)&new_4, 0)) {
 		inet_ntop(AF_INET, &new_4.sin_addr, v4_name, 1024);
 		accept4 = 1;
 	}
-	if (!inet_anyton(new_hostname, zero, (SA *)&new_6)) {
+	if (!inet_strton(new_hostname, zero, (SA *)&new_6, 0)) {
 		inet_ntop(AF_INET6, &new_6.sin6_addr, v6_name, 1024);
 		accept6 = 1;
 	}

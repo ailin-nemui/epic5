@@ -9,7 +9,7 @@
  */
 
 #if 0
-static	char	rcsid[] = "@(#)$Id: dcc.c,v 1.24 2002/05/27 04:03:20 jnelson Exp $";
+static	char	rcsid[] = "@(#)$Id: dcc.c,v 1.25 2002/05/27 15:13:00 jnelson Exp $";
 #endif
 
 #include "irc.h"
@@ -1687,7 +1687,7 @@ char	*dcc_raw_connect (const char *host, const char *port, int family)
 	if (family == AF_INET)
 	{
 		FAMILY(my_sockaddr) = AF_INET;
-		if (inet_anyton(host, port, (SA *)&my_sockaddr))
+		if (inet_strton(host, port, (SA *)&my_sockaddr, 0))
 		{
 			say("Unknown host: %s", host);
 			message_from(NULL, LOG_CURRENT);
@@ -1840,7 +1840,7 @@ void	register_dcc_offer (char *user, char *type, char *description, char *addres
 	}
 
 	/* 
-	 * I'd love to use inet_anyton() here, but that can do dns
+	 * I'd love to use inet_strton() here, but that can do dns
 	 * lookups and people would probably exploit that for evil. :(
 	 */
 
@@ -1892,7 +1892,7 @@ void	register_dcc_offer (char *user, char *type, char *description, char *addres
 
 		fromhost++;
 		FAMILY(irc_addr) = FAMILY(Client->offer);
-		if (inet_anyton(fromhost, port, (SA *)&irc_addr))
+		if (inet_strton(fromhost, port, (SA *)&irc_addr, 0))
 		{
 			yell("### Incoming handshake has an address or port [%s:%s] that could not be figured out!", fromhost, port);
 			yell("### Please use caution in deciding whether to accept it or not");
@@ -2294,7 +2294,7 @@ static	void		process_incoming_listen (DCC_list *Client)
 	}
 
 	*host = 0;
-	inet_ntohn((SA *)&remaddr, socklen((SA *)&remaddr), host, sizeof(host), p_port, sizeof(p_port), 0);
+	inet_ntostr((SA *)&remaddr, socklen((SA *)&remaddr), host, sizeof(host), p_port, sizeof(p_port), 0);
 
 	strlcpy(fdstr, ltoa(new_socket), 10);
 	NewClient = dcc_searchlist(host, fdstr, DCC_RAW, 1, NULL, 0);

@@ -414,7 +414,7 @@ static int	inet_remotesockaddr (int family, const char *host, const char *port, 
 
 	((SA *)storage)->sa_family = family;
 
-	if ((err = inet_anyton(host, port, (SA *)storage)))
+	if ((err = inet_strton(host, port, (SA *)storage, 0)))
 		return err;
 
 	if ((*len = socklen((SA *)storage)) == 0)
@@ -426,7 +426,7 @@ static int	inet_remotesockaddr (int family, const char *host, const char *port, 
 
 /************************************************************************/
 /*
- * NAME: inet_anyton
+ * NAME: inet_strton
  * USAGE: Convert "any" kind of address represented by a string into
  *	  a socket address suitable for connect()ing or bind()ing with.
  * ARGS: hostname - The address to convert.  It may be any of the following:
@@ -439,7 +439,7 @@ static int	inet_remotesockaddr (int family, const char *host, const char *port, 
  *		If "hostname" is a p-addr, then the form of the p-addr
  *		must agree with the family in 'storage'.
  */
-int	inet_anyton (const char *host, const char *port, SA *storage)
+int	inet_strton (const char *host, const char *port, SA *storage, int flags)
 {
 	int family = storage->sa_family;
 
@@ -456,7 +456,7 @@ int	inet_anyton (const char *host, const char *port, SA *storage)
 		int retval;
 
 		memset(&hints, 0, sizeof(hints));
-		hints.ai_flags = 0;
+		hints.ai_flags = flags;
 		hints.ai_family = family;
 		hints.ai_socktype = SOCK_STREAM;
 		hints.ai_protocol = 0;
@@ -477,63 +477,7 @@ int	inet_anyton (const char *host, const char *port, SA *storage)
 }
 
 /*
- * NAME: inet_anytop
- * USAGE: Convert a Hostname into a "presentation address" (p-addr)
- * PLAIN ENGLISH: Convert "A.B.C.D" into "foo.bar.com"
- * ARGS: family - The family whose presesentation address format to use
- *	 host - The hostname to convert
- *       retval - A string to store the p-addr (RETURN VALUE)
- *       size - The length of 'retval' in bytes
- * RETURN VALUE: "retval" is returned upon success
- *		 "empty_string" is returned for any error.
- *
- * NOTES: In the future, this function will use getaddrinfo().
- */
-char *	inet_anytop (int family, const char *host, char *retval, int size)
-{
-	int	err;
-	SS	buffer;
-
-	((SA *)&buffer)->sa_family = family;
-	if ((err = inet_anyton(host, NULL, (SA *)&buffer)))
-		return empty_string;
-
-	if (!(inet_ntohn((SA *)&buffer, socklen((SA *)&buffer), 
-				retval, size, NULL, 0, NI_NUMERICHOST)))
-		return empty_string;
-
-	return retval;
-}
-
-/*
- * NAME: inet_anytohn
- * USAGE: Convert a "presentation address" (p-addr) into a Hostname
- * PLAIN ENGLISH: Convert "foo.bar.com" into "A.B.C.D"
- * ARGS: family - The family whose presesentation address format to use
- *	 ip - The presentation-address to look up
- *       retval - A string to store the hostname (RETURN VALUE)
- *       size - The length of 'retval' in bytes
- * RETURN VALUE: "retval" is returned upon success
- *		 "empty_string" is returned for any error.
- */
-char *	inet_anytohn (int family, const char *ip, char *retval, int size)
-{
-	int	err;
-	SS	buffer;
-
-	((SA *)&buffer)->sa_family = family;
-	if ((err = inet_anyton(ip, NULL, (SA *)&buffer)))
-		return empty_string;
-
-	if (!(inet_ntohn((SA *)&buffer, socklen((SA *)&buffer), 
-				retval, size, NULL, 0, NI_NAMEREQD)))
-		return empty_string;
-
-	return retval;
-}
-
-/*
- * NAME: inet_ntohn
+ * NAME: inet_ntostr
  * USAGE: Convert a "sockaddr name" (SA) into a Hostname/p-addr
  * PLAIN ENGLISH: Convert getpeername() into "foo.bar.com"
  * ARGS: name - The socket address, possibly returned by getpeername().
@@ -545,12 +489,69 @@ char *	inet_anytohn (int family, const char *ip, char *retval, int size)
  * NOTES: 'flags' should be set to NI_NAMEREQD if you don't want the remote
  *        host's p-addr if it does not have a DNS hostname.
  */
-char *	inet_ntohn (SA *name, socklen_t len, char *host, int hsize, char *port, int psize, int flags)
+char *	inet_ntostr (SA *name, socklen_t len, char *host, int hsize, char *port, int psize, int flags)
 {
 	if (getnameinfo(name, len, host, hsize, port, psize, flags))
 		return NULL;
 
 	return host;
+}
+
+/* * * * * * * * * */
+/*
+ * NAME: inet_strtop
+ * USAGE: Convert a Hostname into a "presentation address" (p-addr)
+ * PLAIN ENGLISH: Convert "A.B.C.D" into "foo.bar.com"
+ * ARGS: family - The family whose presesentation address format to use
+ *	 host - The hostname to convert
+ *       retval - A string to store the p-addr (RETURN VALUE)
+ *       size - The length of 'retval' in bytes
+ * RETURN VALUE: "retval" is returned upon success
+ *		 "empty_string" is returned for any error.
+ *
+ * NOTES: In the future, this function will use getaddrinfo().
+ */
+char *	inet_hntop (int family, const char *host, char *retval, int size)
+{
+	int	err;
+	SS	buffer;
+
+	((SA *)&buffer)->sa_family = family;
+	if ((err = inet_strton(host, NULL, (SA *)&buffer, 0)))
+		return empty_string;
+
+	if (!(inet_ntostr((SA *)&buffer, socklen((SA *)&buffer), 
+				retval, size, NULL, 0, NI_NUMERICHOST)))
+		return empty_string;
+
+	return retval;
+}
+
+/*
+ * NAME: inet_strtohn
+ * USAGE: Convert a "presentation address" (p-addr) into a Hostname
+ * PLAIN ENGLISH: Convert "foo.bar.com" into "A.B.C.D"
+ * ARGS: family - The family whose presesentation address format to use
+ *	 ip - The presentation-address to look up
+ *       retval - A string to store the hostname (RETURN VALUE)
+ *       size - The length of 'retval' in bytes
+ * RETURN VALUE: "retval" is returned upon success
+ *		 "empty_string" is returned for any error.
+ */
+char *	inet_ptohn (int family, const char *ip, char *retval, int size)
+{
+	int	err;
+	SS	buffer;
+
+	((SA *)&buffer)->sa_family = family;
+	if ((err = inet_strton(ip, NULL, (SA *)&buffer, AI_NUMERICHOST)))
+		return empty_string;
+
+	if (!(inet_ntostr((SA *)&buffer, socklen((SA *)&buffer), 
+				retval, size, NULL, 0, NI_NAMEREQD)))
+		return empty_string;
+
+	return retval;
 }
 
 /*
@@ -571,8 +572,8 @@ char *	inet_ntohn (SA *name, socklen_t len, char *host, int hsize, char *port, i
  */
 char *	one_to_another (int family, const char *what, char *retval, int size)
 {
-	if (inet_anytohn(family, what, retval, size) == empty_string)
-		inet_anytop(family, what, retval, size);
+	if (inet_ptohn(family, what, retval, size) == empty_string)
+		inet_hntop(family, what, retval, size);
 	return retval;
 }
 

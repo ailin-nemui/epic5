@@ -52,4 +52,12 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * So that means inet_anytop()/inet_anytohn() support ipv6.
 * Change/break one_to_another() [$convert()]-- fix this later.
 * Simplify Connect() now that we have socklen().
+* I never really did like these function names, so...
+* Change inet_anytop() to inet_hntop(), but it still does p->p conversion. :/
+* Change inet_anytohn() to inet_ptohn(), and it does proper p->hn convert. =)
+* Change inet_anyton() to inet_strton(), "any" is too broad
+* Change inet_ntohn() to inet_ntostr(), since it does n->p conversions, too!
+* Add an extra argument to inet_strton(), passed to getaddrinfo().
+* Remember that inet_ntostr() takes one too, passed to getnameinfo().
+* Change stuff in dcc.c/functions.c/server.c to accomodate naming changes.
 
