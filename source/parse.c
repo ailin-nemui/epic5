@@ -1,4 +1,4 @@
-/* $EPIC: parse.c,v 1.63 2004/08/17 16:09:46 crazyed Exp $ */
+/* $EPIC: parse.c,v 1.64 2005/01/12 00:12:21 jnelson Exp $ */
 /*
  * parse.c: handles messages from the server.   Believe it or not.  I
  * certainly wouldn't if I were you. 
@@ -173,8 +173,10 @@ static void 	BreakArgs (char *Input, const char **Sender, const char **OutPut)
 	 */
 	for (;;)
 	{
+/*
 		while (*Input && *Input == space)
 			Input++;
+*/
 
 		if (!*Input)
 			break;

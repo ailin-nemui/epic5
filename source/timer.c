@@ -1,4 +1,4 @@
-/* $EPIC: timer.c,v 1.47 2004/08/25 23:03:36 jnelson Exp $ */
+/* $EPIC: timer.c,v 1.48 2005/01/12 00:12:21 jnelson Exp $ */
 /*
  * timer.c -- handles timers in ircII
  *
@@ -413,12 +413,12 @@ void    dump_timers (void)
         {
                 time_left = time_diff(current, tmp->time);
                 if (time_left <= 0)
-                    yell("--> %-10s %-8.2f %-7ld %ld %s", 
+                    yell("--> %-10s %-10.2f %-7ld %ld %s", 
                                 tmp->ref, time_left, tmp->events, 
 				tmp->fires,
                                 tmp->callback ? "SYSTEM" : tmp->command);
                 else
-                    yell("    %-10s %-8.2f %-7ld %ld %s", 
+                    yell("    %-10s %-10.2f %-7ld %ld %s", 
                                 tmp->ref, time_left, tmp->events,
 				tmp->fires,
                                 tmp->callback ? "SYSTEM" : tmp->command);

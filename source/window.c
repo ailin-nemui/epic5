@@ -1,4 +1,4 @@
-/* $EPIC: window.c,v 1.129 2005/01/11 05:30:52 jnelson Exp $ */
+/* $EPIC: window.c,v 1.130 2005/01/12 00:12:21 jnelson Exp $ */
 /*
  * window.c: Handles the organzation of the logical viewports (``windows'')
  * for irc.  This includes keeping track of what windows are open, where they
@@ -2148,7 +2148,6 @@ void 	window_check_servers (void)
 	int	cnt, max, i;
 	int	prime = NOSERV;
 	int	status;
-	int	winref;
 
 	connected_to_server = 0;
 	max = server_list_size();

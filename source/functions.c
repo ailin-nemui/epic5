@@ -1,4 +1,4 @@
-/* $EPIC: functions.c,v 1.184 2005/01/06 23:54:13 jnelson Exp $ */
+/* $EPIC: functions.c,v 1.185 2005/01/12 00:12:20 jnelson Exp $ */
 /*
  * functions.c -- Built-in functions for ircII
  *
@@ -2646,8 +2646,10 @@ char *function_pop (char *word)
 
 	if (word && *word)
 	{
-		pointer = strrchr(word, ' ');
-		RETURN_STR(pointer ? pointer : word);
+		pointer = word + strlen(word);
+		while (pointer > word && !isspace(*pointer))
+			pointer--;
+		RETURN_STR(pointer > word ? pointer : word);
 	}
 
 	upper(var);
@@ -2658,7 +2660,10 @@ char *function_pop (char *word)
 		RETURN_EMPTY;
 	}
 
-	if (!(pointer = strrchr(value, ' ')))
+	pointer = value + strlen(value);
+	while (pointer > value && !isspace(*pointer))
+		pointer--;
+	if (pointer == value)
 	{
 		add_var_alias(var, empty_string, 0); /* dont forget this! */
 		return value;	/* one word -- return it */
@@ -3306,7 +3311,7 @@ BUILT_IN_FUNCTION(function_truncate, words)
 	else
 		RETURN_EMPTY;
 
-	while (*buffer == ' ')
+	while (*buffer && isspace(*buffer))
 		ov_strcpy(buffer, buffer+1);
 
 	RETURN_STR(buffer);
@@ -4117,8 +4122,7 @@ BUILT_IN_FUNCTION(function_winchan, input)
 	if (arg1 && is_channel(arg1))
 	{
 		int 	servnum = from_server;
-		char 	*chan, 
-			*serv = NULL;
+		char 	*chan;
 		int	win = -1;
 
 		chan = arg1;

@@ -1,4 +1,4 @@
-#$EPIC: environment,v 1.3 2002/08/12 16:59:49 jnelson Exp $
+#$EPIC: environment,v 1.4 2005/01/12 00:12:20 jnelson Exp $
 #
 # A NEW ENVIRONMENT (C) 1993
 # Written by Jeremy Nelson (jnelson@acronet.net)
@@ -117,8 +117,8 @@ on ^413 * echo MSG You havent specified a top level for the domain.
 on ^414 * echo MSG You cant send a msg with a wildcard in the domain.
 on ^421 * echo ERROR I dont recognize that command
 on ^431 * echo MSG You did not specify a nickname to send to
-on ^432 * echo NICK That is not a valid nickname!
-on ^433 * echo NICK The nickname \'$0\' is already in use
+on ^432 * echo NICK $1 is not a valid nickname!
+on ^433 * echo NICK The nickname \'$1\' is already in use
 on ^436 * echo ERROR Sorry, your nick is already in use.
 on ^441 * echo KICK $0 is not on this channel
 on ^442 * echo ERROR You are not on channel $1

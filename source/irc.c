@@ -1,4 +1,4 @@
-/* $EPIC: irc.c,v 1.801 2005/01/11 05:30:51 jnelson Exp $ */
+/* $EPIC: irc.c,v 1.802 2005/01/12 00:12:20 jnelson Exp $ */
 /*
  * ircII: a new irc client.  I like it.  I hope you will too!
  *
@@ -52,7 +52,7 @@ const char internal_version[] = "20040319";
 /*
  * In theory, this number is incremented for every commit.
  */
-const unsigned long	commit_id = 1132;
+const unsigned long	commit_id = 1133;
 
 /*
  * As a way to poke fun at the current rage of naming releases after
@@ -1019,7 +1019,7 @@ static void check_password (void)
 #define INPUT_PASSWD_LEN 15
 	char 	input_passwd[INPUT_PASSWD_LEN];
 #ifdef HAVE_GETPASS
-	strlcpy(input_passwd, getpass("Passwd: "), sizeof input_password);
+	strlcpy(input_passwd, getpass("Passwd: "), sizeof input_passwd);
 #else
 	fprintf(stderr, "Passwd: ");
 	fgets(input_passwd, INPUT_PASSWD_LEN - 1, stdin);

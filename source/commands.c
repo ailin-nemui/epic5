@@ -1,4 +1,4 @@
-/* $EPIC: commands.c,v 1.109 2004/10/30 14:56:16 crazyed Exp $ */
+/* $EPIC: commands.c,v 1.110 2005/01/12 00:12:20 jnelson Exp $ */
 /*
  * commands.c -- Stuff needed to execute commands in ircII.
  *		 Includes the bulk of the built in commands for ircII.
@@ -373,10 +373,11 @@ BUILT_IN_COMMAND(away)
 	{
 		if ((*args == '-') || (*args == '/'))
 		{
-			if ((arg = strchr(args, ' ')))
+			arg = args;
+			while (*arg && !isspace(*arg))
+				arg++;
+			if (arg)
 				*arg++ = 0;
-			else
-				arg = endstr(args);
 
 			if (0 == my_strnicmp(args+1, "A", 1))	/* all */
 			{
@@ -658,6 +659,7 @@ BUILT_IN_COMMAND(e_channel)
 BUILT_IN_COMMAND(e_nick)
 {
 	char	*nick;
+	const char *id;
 
 	if (!(nick = next_arg(args, &args)))
 	{
@@ -667,10 +669,14 @@ BUILT_IN_COMMAND(e_nick)
 		return;
 	}
 
-	if (!(nick = check_nickname(nick, 1)))
+	id = get_server_unique_id(from_server);
+	if (id == NULL || (my_stricmp(nick, id) && strcmp(nick, "0")))
 	{
+	    if (!(nick = check_nickname(nick, 1)))
+	    {
 		say("The nickname you specified is not a legal nickname.");
 		return;
+	    }
 	}
 
 	if (from_server == NOSERV)
@@ -726,7 +732,9 @@ BUILT_IN_COMMAND(e_pause)
 	 * I use comment here simply becuase its not going to mess
 	 * with the arguments.
 	 */
-	add_timer(0, "", seconds, 1, (int (*)(void *))commentcmd, NULL, NULL, current_window->refnum);
+	add_timer(0, empty_string, seconds, 1, 
+			(int (*)(void *))commentcmd, 
+			NULL, NULL, current_window->refnum);
 	while (time_diff(get_time(NULL), start) > 0)
 		io("e_pause");
 }
@@ -3645,20 +3653,13 @@ static	unsigned 	level = 0;
 		void	*arglist = NULL;
 		void	(*cmd) (const char *, char *, const char *) = NULL;
 
-		if ((rest = strchr(line, ' ')))
-		{
-			size_t size;
+		cline = LOCAL_COPY(line);
 
-			size = (rest - line) + 1;
-			cline = alloca(size);
-			strlcpy(cline, line, size);
+		rest = cline;
+		while (*rest && !isspace(*rest))
 			rest++;
-		}
-		else
-		{
-			cline = LOCAL_COPY(line);
-			rest = LOCAL_COPY(empty_string);
-		}
+		if (*rest)
+			*rest++ = 0;
 
 		upper(cline);
 		alias = get_cmd_alias(cline, &arglist, &cmd);

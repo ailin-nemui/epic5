@@ -1,4 +1,4 @@
-/* $EPIC: numbers.c,v 1.77 2004/10/01 20:30:53 jnelson Exp $ */
+/* $EPIC: numbers.c,v 1.78 2005/01/12 00:12:21 jnelson Exp $ */
 /*
  * numbers.c: handles all those strange numeric response dished out by that
  * wacky, nutty program we call ircd 
@@ -592,9 +592,14 @@ void 	numbered_command (const char *from, const char *comm, char const **ArgList
 		if (do_hook(current_numeric, "%s %d %s", 
 				from, number_of_bans, channel))
 #endif
-			put_it("%s Total number of bans on %s - %d",
-				banner(), channel, number_of_bans);
-
+		{
+			put_it("%s Total number of %s on %s - %d",
+				banner(), 
+                                numeric == 347 ? "invites" :
+                               (numeric == 349 ? "exceptions" :
+                               (numeric == 368 ? "bans" : "wounds")),
+                                channel, number_of_bans);
+		}
 		goto END;
 	}
 
@@ -712,23 +717,6 @@ void 	numbered_command (const char *from, const char *comm, char const **ArgList
 
 		break;
 	}
-	case 432:		/* #define ERR_ERRONEUSNICKNAME 432 */
-	{
-		const char	*nick;
-
-		if (!(nick = ArgList[0]))
-			{ rfc1459_odd(from, comm, ArgList); goto END; }
-
-		if (!my_stricmp(target, nick))
-			yell("WARNING:  Strange invalid nick message received."
-					"  You are probably lagged.");
-		else if (get_int_var(AUTO_NEW_NICK_VAR))
-			fudge_nickname(from_server);
-		else
-			reset_nickname(from_server);
-
-		break;
-	}
 
 	case 437:		/* av2.9's "Nick collision" numeric 437 */
 				/* Also, undernet/dalnet "You are banned" */
@@ -794,17 +782,6 @@ void 	numbered_command (const char *from, const char *comm, char const **ArgList
 			break;
 		}
 
-		/*
-		 * Otherwise, a nick command failed.  Oh boy.
-		 * If we are registered, abort the nick change and
-		 * hope for the best.
-		 */
-		if (is_server_registered(from_server))
-		{
-			accept_server_nickname(from_server, target);
-			break;
-		}
-
 		/* 
 		 * Otherwise, it's an ircnet "nick not available" error.
 		 * Let the nickname reset numerics handle this mess.
@@ -812,8 +789,10 @@ void 	numbered_command (const char *from, const char *comm, char const **ArgList
 		/* FALLTHROUGH */
 	}
 
+	case 432:		/* #define ERR_ERRONEUSNICKNAME 432 */
 	case 433:		/* #define ERR_NICKNAMEINUSE    433 */ 
-	case 438:		/* EFnet/TS4 "nick collision" numeric 438 */
+	case 438:		/* Undernet's "Stop changing your nick" */
+	case 439:		/* Comstud's "Can't change nickname" */
 	case 453:		/* EFnet/TS4 "nickname lost" numeric 453 */
 	{
 		const char	*nick;
@@ -821,13 +800,14 @@ void 	numbered_command (const char *from, const char *comm, char const **ArgList
 		if (!(nick = ArgList[0]))
 			{ rfc1459_odd(from, comm, ArgList); goto END; }
 
-		if (!my_stricmp(target, nick))
-			/* 
-			 * This should stop the "rolling nicks" in their tracks.
-			 */
-			yell("WARNING:  Strange invalid nick message received."
-					"  You are probably lagged.");
-		else if (get_int_var(AUTO_NEW_NICK_VAR))
+		/* If we're registered, nick command failed, just accept it */
+		if (is_server_registered(from_server))
+		{
+			accept_server_nickname(from_server, target);
+			break;
+		}
+
+		if (get_int_var(AUTO_NEW_NICK_VAR))
 			fudge_nickname(from_server);
 		else
 			reset_nickname(from_server);
@@ -835,12 +815,6 @@ void 	numbered_command (const char *from, const char *comm, char const **ArgList
 		if (!from)
 			from = "-1";
 
-		break;
-	}
-
-	case 439:		/* Comstud's "Can't change nickname" */
-	{
-		accept_server_nickname(from_server, target);
 		break;
 	}
 

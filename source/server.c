@@ -1,4 +1,4 @@
-/* $EPIC: server.c,v 1.142 2005/01/11 05:30:52 jnelson Exp $ */
+/* $EPIC: server.c,v 1.143 2005/01/12 00:12:21 jnelson Exp $ */
 /*
  * server.c:  Things dealing with that wacky program we call ircd.
  *
@@ -1197,6 +1197,7 @@ static int	connect_next_server_address (int server)
 					ai->ai_addr, ai->ai_addrlen);
 	    if (fd < 0)
 	    {
+		/* XXXX - 'fd' might be negative, strerror() is wrong! */
 	        if (x_debug & DEBUG_SERVER_CONNECT)
 			yell("That address failed with error (%d:%s)", 
 					fd, strerror(fd));
@@ -2109,6 +2110,7 @@ void	change_server_nickname (int refnum, const char *nick)
 {
 	Server *s;
 	char *	n;
+	const char *id;
 
 	if (!(s = get_server(refnum)))
 		return;			/* Uh, no. */
@@ -2117,13 +2119,23 @@ void	change_server_nickname (int refnum, const char *nick)
 	if (nick)
 	{
 		n = LOCAL_COPY(nick);
-		if ((n = check_nickname(n, 1)) != NULL)
+
+		id = get_server_unique_id(refnum);
+		if ((id && my_stricmp(n, id)) && strcmp(n, "0"))
 		{
-		    malloc_strcpy(&s->d_nickname, n);
-		    malloc_strcpy(&s->s_nickname, n);
+		    if (!(n = check_nickname(n, 1)))
+		    {
+			if (is_server_registered(refnum))
+			    say("Cannot change nickname: '%s' is invalid",
+					nick);
+			else
+			    reset_nickname(refnum);
+			return;	
+		    }
 		}
-		else
-			reset_nickname(refnum);
+
+		malloc_strcpy(&s->d_nickname, n);
+		malloc_strcpy(&s->s_nickname, n);
 	}
 
 	if (s->s_nickname)
@@ -2272,18 +2284,34 @@ void 	reset_nickname (int refnum)
 {
 	Server *s;
 	char	server_num[10];
+	char *	old_pending = NULL;
 
-	if (!(s = get_server(refnum)) || s->resetting_nickname == 1)
+	if (!(s = get_server(refnum)))
 		return; 		/* Don't repeat the reset */
 
 	s->resetting_nickname = 1;
-	say("You have specified an invalid nickname");
-	if (!dumb_mode)
+	if (s->s_nickname)
+		old_pending = LOCAL_COPY(s->s_nickname);
+
+	do_hook(NEW_NICKNAME_LIST, "%d %s %s", refnum, 
+			s->nickname ? s->nickname : "*", 
+			s->s_nickname ? s->s_nickname : "*");
+
+	if (!(s = get_server(refnum)))
+		return;			/* Just in case the user punted */
+
+	/* Did the user do a /NICK in the /ON NEW_NICKNAME ? */
+	if (s->s_nickname == NULL || 
+		(old_pending && !strcmp(old_pending, s->s_nickname)))
 	{
-		say("Please enter your nickname");
+	    say("You need to give me a new nickname before I can continue");
+	    if (!dumb_mode)
+	    {
+		say("Please enter a new nickname");
 		strlcpy(server_num, ltoa(refnum), sizeof server_num);
 		add_wait_prompt("Nickname: ", nickname_sendline, server_num,
 			WAIT_PROMPT_LINE, 1);
+	    }
 	}
 	update_all_status();
 }
@@ -2900,7 +2928,7 @@ char 	*serverctl 	(char *input)
 				RETURN_STR("ipv4");
 			else if (x->sa_family == AF_INET6)
 				RETURN_STR("ipv6");
-			else if (x->sa_family = AF_UNIX)
+			else if (x->sa_family == AF_UNIX)
 				RETURN_STR("unix");
 			else
 				RETURN_STR("unknown");

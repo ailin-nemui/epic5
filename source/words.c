@@ -1,4 +1,4 @@
-/* $EPIC: words.c,v 1.20 2004/03/19 06:05:13 jnelson Exp $ */
+/* $EPIC: words.c,v 1.21 2005/01/12 00:12:21 jnelson Exp $ */
 /*
  * words.c -- right now it just holds the stuff i wrote to replace
  * that beastie arg_number().  Eventually, i may move all of the
@@ -52,8 +52,6 @@
 
 
 
-#define risspace(c) (c == ' ')
- 
 /*
  * search() looks for a character forward or backward from mark 
  */
@@ -115,7 +113,7 @@ static const char *	find_forward_character (const char *input, const char *start
 	 * Make sure that the character before is the start of the
 	 * string or that it is a space.
 	 */
-	if (input > start && !risspace(input[-1]))
+	if (input > start && !isspace(input[-1]))
 		return NULL;
 
 	/*
@@ -134,7 +132,7 @@ static const char *	find_forward_character (const char *input, const char *start
 		else if ( (simple == 1 && input[0] == what) ||
 			  (simple == 0 && strchr(whats, *input)) )
 		{
-			if (input[1] == 0 || risspace(input[1]))
+			if (input[1] == 0 || isspace(input[1]))
 				return input;
 		}
 	}
@@ -186,7 +184,7 @@ static const char *	find_backward_quote (const char *input, const char *start, c
 	 * Make sure that the character after is either the end of the
 	 * string, or that it is a space.
 	 */
-	if (input[1] && !risspace(input[1]))
+	if (input[1] && !isspace(input[1]))
 		return NULL;
 
 	/*
@@ -210,7 +208,7 @@ static const char *	find_backward_quote (const char *input, const char *start, c
 		else if ( (simple == 1 && input[0] == what) ||
 			  (simple == 0 && strchr(whats, *input)) )
 		{
-			if (input == start || risspace(input[-1]))
+			if (input == start || isspace(input[-1]))
 				return input;
 		}
 		else if (input == start)
@@ -224,10 +222,10 @@ static const char *	find_backward_quote (const char *input, const char *start, c
 	 * for a normal word.
 	 */
 	input = saved_input;
-	while (input > start && !risspace(input[0]))
+	while (input > start && !isspace(input[0]))
 		input--;
 
-	if (risspace(input[0]))
+	if (isspace(input[0]))
 		input++;		/* Just in case we've gone too far */
 
 	return input;		/* Wherever we are is fine. */

@@ -1,5 +1,57 @@
 EPIC5-0.1
 
+*** News 01/11/2005 -- New /ON, /ON NEW_NICKNAME
+	This allows you to create your own nickname mangler whenever EPIC
+	is resetting your nickname to register to a server.  Remember that
+	your nickname is (usually) not reset if /SET AUTO_NEW_NICK is ON, so
+	you need to /SET that to OFF before this can be used.
+
+	Each time that your nickname is "reset" (see next entry), the
+	/ON NEW_NICKNAME hook will be thrown.
+		$0 - Server whose nickname is being reset
+		$1 - Your current nickname ("*" if you're unregistered)
+		$2 - The nickname you tried to change to ("*" if none)
+	You should somehow use this information to generate a new nickname
+	and then do a /NICK <newnick> operation.  You should avoid trying
+	to do anything else, particularly asynchronous things like /wait,
+	because the status of the connection is unknown when this /ON is
+	thrown (ie, you may not be connected).  Just stick to /NICK.
+
+	If you do not hook the /ON, or you do not do a /NICK within the
+	/ON, then epic will prompt you for a new nickname in the way it
+	has always done (so this change is opt-in and backwards compatable).
+
+*** News 01/11/2005 -- Changes to how nick change errors are handled
+	Until this point, EPIC sometimes (rather aggressively) forced the
+	user to provide a new nickname, when it wasn't necessary.  This 
+	was called "resetting" the nickname.  The variable /SET AUTO_NEW_NICK
+	existed to try to avoid needlessly annoying the user with requests
+	for nicknames when a new one could be whipped up.
+
+	Well, anyways, this has all been refactored.  If you are already 
+	connected to the server, epic will no longer "reset" your nickname 
+	when it recieves one of the many numerics that indicate that your 
+	nickname is not acceptable.  "Resets" will only occur when you are
+	unregistered (when you do not have a nickname yet).
+
+	As with before, if you have /SET AUTO_NEW_NICK ON, then your nickname
+	will never be "reset" unless the nickname mangler is unable to come
+	up with an alternate nickname for you.
+
+*** News 01/11/2005 -- Change to how /set new_server_lastlog_level works
+	In EPIC4, when you do /window server, the window that is changing
+	server has its window level changed to /SET NEW_SERVER_LASTLOG_LEVEL.
+	This can result in two windows with level ALL if the new server can't
+	be connected to.  Starting with now, this change will not occur until
+	after we have registered with the server (when we get the 001 numeric).
+
+	This means if you do /window new server foo.com, that the new window
+	will be level NONE until the connection to "foo.com" is successful.
+	Furthermore, only the "current window" for "foo.com" will be changed.
+	If you move multiple windows to a new server at the same time, only
+	one of them is the "current window" and only that window ever has
+	its window levels changed.  The others stay at "NONE".
+
 *** News 01/06/2005 -- Can now set ipv4/ipv6 vhosts separately
 	The /hostname (/irchost) and -H command line option may now take 
 	two hostnames, separated by a slash.  Example:

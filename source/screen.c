@@ -1,4 +1,4 @@
-/* $EPIC: screen.c,v 1.88 2005/01/06 23:54:13 jnelson Exp $ */
+/* $EPIC: screen.c,v 1.89 2005/01/12 00:12:21 jnelson Exp $ */
 /*
  * screen.c
  *
@@ -2268,11 +2268,23 @@ static void 	add_to_window (Window *window, const unsigned char *str)
 
 	if (!privileged_output)
 	{
+	   static int recursion = 0;
+
 	   if (!do_hook(WINDOW_LIST, "%u %s", window->refnum, str))
 		return;
 
-	   if ((pend = get_string_var(OUTPUT_REWRITE_VAR)))
-	   {
+	   /* 
+	    * If output rewriting causes more output, (such as a stray error
+	    * message) allow a few levels of nesting [just to be kind], but 
+	    * cut the recursion off at its knees at 5 levels.  This is an 
+	    * entirely arbitrary value.  Change it if you wish.
+	    * (Recursion detection by larne in epic4-2.1.3)
+	    */
+	    recursion++;
+	    if (recursion < 5)
+	    {
+	      if ((pend = get_string_var(OUTPUT_REWRITE_VAR)))
+	      {
 		char	*prepend_exp;
 		char	argstuff[10240];
 
@@ -2286,7 +2298,9 @@ static void 	add_to_window (Window *window, const unsigned char *str)
 
 		str = prepend_exp;
 		free_me = prepend_exp;
+	      }
 	   }
+	   recursion--;
 
 	   /* Normalize the line of output */
 	   strval = normalize_string(str, 0);

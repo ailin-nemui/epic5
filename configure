@@ -1,6 +1,6 @@
 #! /bin/sh
 
-# From configure.in Revision: 1.38 # Guess values for system-dependent variables and create Makefiles.
+# From configure.in Revision: 1.40 # Guess values for system-dependent variables and create Makefiles.
 # Generated automatically using autoconf version 2.13 
 # Copyright (C) 1992, 93, 94, 95, 96 Free Software Foundation, Inc.
 #
@@ -4907,7 +4907,7 @@ fi
 
 test "xno" != "x$withval" && for base in $withval /usr/local /usr
 do
-	for ver in 8.3 8.2 8.1 8.0
+	for ver in 8.4 8.3 8.2 8.1 8.0
 	do
 		incdir="$base/include/tcl$ver"
 		test -r $incdir/tcl.h || continue

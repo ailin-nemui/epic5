@@ -1,4 +1,4 @@
-/* $EPIC: newio.c,v 1.27 2005/01/07 07:09:46 jnelson Exp $ */
+/* $EPIC: newio.c,v 1.28 2005/01/12 00:12:20 jnelson Exp $ */
 /*
  * newio.c: This is some handy stuff to deal with file descriptors in a way
  * much like stdio's FILE pointers 
@@ -82,6 +82,7 @@
 #include "output.h"
 #include "newio.h"
 #include "ssl.h"
+#include "timer.h"
 
 #include <sys/ioctl.h>
 #ifdef HAVE_SYS_FILIO_H

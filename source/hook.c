@@ -1,4 +1,4 @@
-/* $EPIC: hook.c,v 1.45 2005/01/01 18:03:22 jnelson Exp $ */
+/* $EPIC: hook.c,v 1.46 2005/01/12 00:12:20 jnelson Exp $ */
 /*
  * hook.c: Does those naughty hook functions. 
  *
@@ -185,6 +185,7 @@ Hookables hook_function_templates[] =
 	{ "MSG",		(Hook *) 0,	2,	0,	0 },
 	{ "MSG_GROUP",		(Hook *) 0,	3,	0,	0 },
 	{ "NAMES",		(Hook *) 0,	2,	0,	0 },
+	{ "NEW_NICKNAME",	(Hook *) 0,	2,	0,	HF_NORECURSE },
 	{ "NICKNAME",		(Hook *) 0,	2,	0,	0 },
 	{ "NOTE",		(Hook *) 0,	3,	0,	0 },
 	{ "NOTICE",		(Hook *) 0,	2,	0,	0 },
@@ -205,7 +206,7 @@ Hookables hook_function_templates[] =
 	{ "SEND_MSG",		(Hook *) 0,	2,	0,	HF_NORECURSE },
 	{ "SEND_NOTICE",	(Hook *) 0,	2,	0,	HF_NORECURSE },
 	{ "SEND_PUBLIC",	(Hook *) 0,	2,	0,	HF_NORECURSE },
-	{ "SEND_TO_SERVER",	(Hook *) 0,	3,	0,	0 },
+	{ "SEND_TO_SERVER",	(Hook *) 0,	3,	0,	HF_NORECURSE },
 	{ "SERVER_ESTABLISHED",	(Hook *) 0,	2,	0,	0 },
 	{ "SERVER_LOST",	(Hook *) 0,	2,	0,	0 },
 	{ "SERVER_NOTICE",	(Hook *) 0,	1,	0,	0 },

@@ -7,7 +7,7 @@
  *
  * See the COPYRIGHT file, or do a HELP IRCII COPYRIGHT 
  *
- * @(#)$Id: ircaux.h,v 1.71 2004/10/13 23:25:54 jnelson Exp $
+ * @(#)$Id: ircaux.h,v 1.72 2005/01/12 00:12:20 jnelson Exp $
  */
 
 #ifndef _IRCAUX_H_
@@ -105,7 +105,6 @@ char *	pullstr 		(char *, char *);
 int 	empty 			(const char *);
 char *	safe_new_next_arg	(char *, char **);
 ssize_t	MatchingBracket 	(const char *, char, char);
-int	word_count 		(const char *);
 int	parse_number 		(char **);
 char *	remove_brackets 	(const char *, const char *);
 long	my_atol 		(const char *);
@@ -149,7 +148,8 @@ const char *	my_strerror	(int, int);
 int	slurp_file		(char **buffer, char *filename);
 char *	endstr			(char *);
 ssize_t searchbuf		(const unsigned char *, size_t, size_t, int);
-int	remove_from_comma_list (char *str, const char *what);
+int	remove_from_comma_list	(char *str, const char *what);
+char *	dequote_buffer		(char *str, size_t *len);
 
 void	add_mode_to_str		(char *, size_t, int);
 void	remove_mode_from_str	(char *, size_t, int);
@@ -189,8 +189,7 @@ char *  universal_next_arg_count (char *, char **, int, int, int, const char *);
 #define new_next_arg_count(a,b) universal_next_arg_count((a),(b),(c),DWORD_ALWAYS,1,"\"")
 void    dequoter                (char **, size_t *, int, int, const char *);
 
-extern	unsigned char isspace_table[256];
-#define my_isspace(x) isspace_table[(unsigned)(unsigned char)(x)]
+#define my_isspace(x) isspace(x)
 #define my_isdigit(x) \
 	(isdigit(*x) || ((*x == '-' || *x == '+') && isdigit(x[1])))
 

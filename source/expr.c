@@ -1,4 +1,4 @@
-/* $EPIC: expr.c,v 1.27 2004/08/26 16:04:46 jnelson Exp $ */
+/* $EPIC: expr.c,v 1.28 2005/01/12 00:12:20 jnelson Exp $ */
 /*
  * expr.c -- The expression mode parser and the textual mode parser
  * #included by alias.c -- DO NOT DELETE
@@ -172,10 +172,10 @@ static	char	*next_unit (char *str, const char *args, int stage)
 	ptr++;								\
 									\
 	/* Figure out the variable name were working on */		\
-	varname = expand_alias(str, args, NULL);		\
+	varname = expand_alias(str, args, NULL);			\
 	lastc = varname + strlen(varname) - 1;				\
-	while (lastc > varname && *lastc == ' ')			\
-		*lastc-- = '\0';					\
+	while (lastc > varname && isspace(*lastc))			\
+		*lastc-- = 0;						\
 	while (my_isspace(*varname))					\
 		 varname++;						\
 									\
@@ -185,7 +185,7 @@ static	char	*next_unit (char *str, const char *args, int stage)
 	new_free(&result1);						\
 									\
 	/* Get the value of the explicit argument */			\
-	result2 = next_unit(ptr, args, stage);		\
+	result2 = next_unit(ptr, args, stage);				\
 	var2 = func (result2);						\
 	new_free(&result2);						\
 }
@@ -278,8 +278,8 @@ static	char	*next_unit (char *str, const char *args, int stage)
 		lastc--;
 
 	/* and remove trailing spaces */
-	while (my_isspace(*lastc))
-		*lastc-- = '\0';
+	while (lastc > str && my_isspace(*lastc))
+		*lastc-- = 0;
 
 	/* Must have arguments.  Fill in if not supplied */
 	if (!args)
@@ -1004,7 +1004,7 @@ static	char	*next_unit (char *str, const char *args, int stage)
 				result2 = next_unit(ptr, args, stage);
 
 				lastc = result1 + strlen(result1) - 1;
-				while (lastc > result1 && *lastc == ' ')
+				while (lastc > result1 && isspace(*lastc))
 					*lastc-- = '\0';
 				for (varname = result1; my_isspace(*varname);)
 					varname++;
@@ -1404,7 +1404,7 @@ char	*expand_alias	(const char *string, const char *args, ssize_t *more_text)
 					(ch == LEFT_PAREN) ?
 					RIGHT_PAREN : RIGHT_BRACE)) < 0)
 			{
-				put_it("Unmatched %c", ch);
+				privileged_yell("Unmatched %c", ch);
 				/* 
 				 * DO NOT ``OPTIMIZE'' THIS BECAUSE
 				 * *STUFF IS NUL SO STRLEN(STUFF) IS 0!

@@ -3,11 +3,11 @@ EPIC5 Projects, Bugs, and other Errata:
 KNOWN ERRATA (eg, bugs, or unresolved requests):
 ------------------------------------------------
 * Some way to hook incomplete lines via dcc raw
-* Make it easier to script your own altnick stuff.
-  -- Make reset_nickname() call an /on before forcing user to select new nick.
 * Implement $symbolctl(), to supercede $aliasctl().
 * Need some way to fetch your hook info
 * /query targets with nicks crossing with dcc nicks don't match.
+* Zlonix wants a way to get the log id number in log rewriters.
+* /exec -direct /file/doesn't/exist gives bogus error message.
 
 [See http://www.epicsol.org/PROJECTS for things to come in the future]
 [See http://www.epicsol.org/CHANGELOG5 for things that changed in the past]
@@ -410,6 +410,9 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Fix ALL/ALL_OFF thing from epic4.
 * Fix $logctl() from epic4.
 * Fix bug with % followed by \ in wildcard patterns from epic4.
+* Fix a compile error when doing password protection (bug 12) (from epic4)
+* When creating the 'epic' symlink, use a relative path for jm. (bug 9) (epic4)
+* Allow package to be set when overwriting existing alias with no package.
 * Add arglists to hooks (by howl, who I will pester to document this). Woot!
 * Finish $hookctl(), by howl.
 * After connect()ing to a server, save the remote peername
@@ -423,3 +426,6 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Make /xdebug regex_debug outputs privileged yell()s, just for sanity.
 * Change /set new_server_lastlog_level to take effect on 001 (see UPDATES)
 * Refactor window_check_servers() to work with server's current window only.
+* Roll forward all the rest of changes from epic4 (i think)
+* Add /ON NEW_NICKNAME, when epic needs a new nickname from you.
+* Run 'make depend', fix compile errors, fix 'environment' script

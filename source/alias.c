@@ -1,4 +1,4 @@
-/* $EPIC: alias.c,v 1.62 2005/01/01 18:03:22 jnelson Exp $ */
+/* $EPIC: alias.c,v 1.63 2005/01/12 00:12:20 jnelson Exp $ */
 /*
  * alias.c -- Handles the whole kit and caboodle for aliases.
  *
@@ -1099,8 +1099,8 @@ void	add_var_stub_alias  (const char *orig_name, const char *stuff)
 		tmp->user_variable_package = malloc_strdup(current_package());
 		add_to_array ((array *)&globals, (array_item *)tmp);
 	}
-	else if (tmp->user_variable_package)
-	    if (strcmp(tmp->user_variable_package, current_package()))
+	else if (tmp->user_variable_package == NULL || 
+			strcmp(tmp->user_variable_package, current_package()))
 		malloc_strcpy(&tmp->user_variable_package, current_package());
 
 	malloc_strcpy(&(tmp->user_variable), stuff);
@@ -1172,9 +1172,9 @@ void	add_cmd_alias	(const char *orig_name, ArgList *arglist, const char *stuff)
 		tmp->user_command_package = malloc_strdup(current_package());
 		add_to_array ((array *)&globals, (array_item *)tmp);
 	}
-	else if (tmp->user_command_package)
-	    if (strcmp(tmp->user_command_package, current_package()))
-		malloc_strcpy(&(tmp->user_command_package), current_package());
+	else if (tmp->user_command_package == NULL ||
+			strcmp(tmp->user_command_package, current_package()))
+		malloc_strcpy(&tmp->user_command_package, current_package());
 
 	malloc_strcpy(&(tmp->user_command), stuff);
 	tmp->user_command_stub = 0;
@@ -1207,8 +1207,8 @@ void	add_cmd_stub_alias  (const char *orig_name, const char *stuff)
 		tmp->user_command_package = malloc_strdup(current_package());
 		add_to_array ((array *)&globals, (array_item *)tmp);
 	}
-	else if (tmp->user_command_package)
-	    if (strcmp(tmp->user_command_package, current_package()))
+	else if (tmp->user_command_package == NULL ||
+			strcmp(tmp->user_command_package, current_package()))
 		malloc_strcpy(&(tmp->user_command_package), current_package());
 
 	malloc_strcpy(&(tmp->user_command), stuff);

@@ -1,4 +1,4 @@
-/* $EPIC: who.c,v 1.40 2004/10/30 14:56:16 crazyed Exp $ */
+/* $EPIC: who.c,v 1.41 2005/01/12 00:12:21 jnelson Exp $ */
 /*
  * who.c -- The WHO queue.  The ISON queue.  The USERHOST queue.
  *
@@ -1201,7 +1201,7 @@ void isonbase (int refnum, char *args, void (*line) (int, char *, char *))
 {
 	IsonEntry 	*new_i;
 	char 		*next = args;
-	char		*oncmd = NULL, *offcmd = NULL, *stuff;
+	char		*oncmd = NULL, *offcmd = NULL;
 static	int		len = 500;
 	int		sendnext = 0;
 
@@ -1290,7 +1290,7 @@ void	ison_returned (int refnum, const char *from, const char *comm, const char *
 {
 	IsonEntry *new_i = ison_queue_top(refnum);
 	char	*off = NULL, *this1, *all1, *this2, *all2;
-	int	i, clue = 0;
+	int	clue = 0;
 
 	if (!new_i)
 	{
@@ -1472,7 +1472,7 @@ void userhostbase (int refnum, char *args, void (*line) (int, UserhostItem *, co
 	*buffer = 0;
 	while ((nick = next_arg(args, &args)) != NULL)
 	{
-		if (check_nickname(nick, 1))
+		if (check_nickname(nick, 1) || is_number(nick))
 		{
 			total++;
 			if (!fetch_userhost(refnum, nick))
