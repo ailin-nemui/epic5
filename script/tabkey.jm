@@ -1,152 +1,74 @@
 # tabkey.jm: a full-featured tab key script for epic4
 #
+# written by nsx
+#
 # this script features:
 #
-#   * target history cycling for /msg and /notice
+#  * target history cycling for /msg and /notice
+#  * match possibility cycling (zsh-style completion)
+#  * reverse cycling (ctrl + r)
+#  * shell-like completion for /exec
+#  * script name completion for /load
+#  * the ability to complete words anywhere in the input line
+#  * proper handling of file names that contain spaces
+#  * multi-server support
+#  * completion of aliases, command names, channel names, nicknames,
+#    /set variables, /help topics and file names
 #
-#   * match possibility cycling (zsh-style completion)
 #
-#   * reverse cycling (ctrl + r)
+# the latest version of this script may be found at:
 #
-#   * completion of command names, channel names, nicknames and file names
+# http://jmz.digitallinx.com/tabkey.jm
 #
-#   * shell-like completion for /exec
 #
-#   * proper handling of file names that contain spaces
-#
-#   * multi-server support
-#
-# sets this script uses:
-#
-#   NICK_COMPLETION_CHAR -- This character (or string of characters) will be
-#                           appended to a nickname, if nick completion is
-#                           performed as the first word of the input line.
-#                           This is usually set to ':'.
-#
-#   TAB_HISTORY_CYCLE_SIZE -- This value determines how many nicknames will
-#                             be held in the target history.
-#
-#   ZSH_STYLE_COMPLETION -- When there are multiple matchs possibilities for a
-#                           word, you can cycle through the possibilities by
-#                           hitting the tab key a 2nd time, if this is set on.
-#
-# note this script uses the serial number 50 for its serial hooks
+# note: this script uses the serial number 50 for its serial hooks
 #
 
+
 # *** config variables ***
+
 @nick_completion_char = []
 @tab_history_cycle_size = 10
-@zsh_style_completion = [OFF]
+@zsh_style_completion = [off]
 
 
 # *** global variables ***
+
 @last_input_line = []
 @match_index = -1
-@match_history = []
-@target_index = -2
-@target_history = []
+@match_cycle_list = []
+@target_index = 0
+@target_cycle_list = []
 
 
-bind ^I parse_command do_tabkey
-bind ^R parse_command do_cycling -1 $left($curpos() $L)
+bind ^I parse_command do_tabkey 1
+bind ^R parse_command do_tabkey -1
 
 alias add_target (msg_cmd, target) {
 	if (numwords($myservers()) > 1 && count(: $target) == 0 && left(1 $target) != [=]) {
 		@:target = [${servernum()}:${target}]
 	}
 
-	@target_history = remw("$msg_cmd $target" $target_history)
+	@target_cycle_list = remw("$msg_cmd $target" $target_cycle_list)
 
-	if (#target_history > ((tab_history_cycle_size * 2) -1)) {
-		@target_history = restw(2 $target_history)
+	if (#target_cycle_list > ((tab_history_cycle_size * 2) -1)) {
+		@target_cycle_list = restw(2 $target_cycle_list)
 	}
 
-	@target_index = #target_history - 2
+	@target_index = 0
 
-	@push(target_history $msg_cmd)
-	@push(target_history $target)
+	@push(target_cycle_list $msg_cmd)
+	@push(target_cycle_list $target)
 }
-
-alias cycle_match (direction) {
-	@:frag_start = current_fragment_start()
-
-	if (frag_start == -1) {
-		return
-	}
-
-	@:cur_pos = curpos()
-	@:fragment = mid($frag_start ${cur_pos - frag_start} $L)
-
-	if (mid($cur_pos 1 $L) == ["]) {
-		parsekey forward_character
-		parsekey backspace
-	}
-
-	if (index("$chr(32)" $fragment) == -1) {
-		repeat $strlen($fragment) parsekey backspace
-	} else {
-		repeat ${strlen($fragment) + 1} parsekey backspace
-	}
-
-	@match_index += direction
-
-	if (match_index == #match_history) {
-		@match_index = 0
-	} elsif (match_index < 0) {
-		@match_index = #match_history - 1
-	}
-
-	@:new_match = word($match_index $match_history)
-
-	if (index("$chr(32)" $new_match) == -1) {
-		xtype -l $new_match
-	} else {
-		xtype -l "$new_match"
-
-		parsekey backward_character
-	}
-
-	@last_input_line = left($curpos() $L)
-}
-
-alias cycle_msg (direction) {
-	if (#target_history < 2) {
-		return
-	}
-
-	@target_index += (direction * 2)
-
-	if (target_index == #target_history) {
-		@target_index = 0
-	} elsif (target_index < 0) {
-		@target_index = #target_history - 2
-	}
-
-	@:msg_cmd = word($target_index $target_history)
-	@:msg_targ = word(${target_index + 1} $target_history)
-
-	parsekey erase_line
-
-	xtype -l /${msg_cmd} ${msg_targ}${chr(32)}
-
-	@last_input_line = []
-}
-
-# current_fragment_start
-#
-# This function returns an index pointing to the beginning of the word that
-# curpos() points to.  Why do this when there's indextoword() and
-# wordtoindex()?  Because they don't work exactly as I'd like with quoted
-# words (regardless of whether extractw is set).
 
 alias current_fragment_start {
 	@:i = 0
+	@:j = curpos() - 1
 	@:last_space = 0
 	@:last_quote = 0
 	@:quotes = 0
-	@:cur_pos = curpos()
 
-	while (i < cur_pos) {
+	while (i < j) {
 		@:char = mid($i 1 $L)
 
 		if (char == [ ]) {
@@ -159,59 +81,89 @@ alias current_fragment_start {
 		@:i++
 	}
 
-	@:i++
-
 	if (quotes % 2) {
-		while (i < (@L + 1)) {
-			if (mid($i 1 $L) == ["]) {
-				return -1
-			}
-
-			@:i++
-		}
-
-		return ${last_quote + 1}
-	} else {
-		if (mid(${cur_pos - 1} 1 $L) == ["]) {
-			return -1
+		if (mid($curpos() 1 $L) == ["] || last_quote > last_space) {
+			return ${last_quote + 1}
+		} elsif (mid(${curpos() - 1} 1 $L) == ["]) {
+			parsekey backward_character
+			return ${last_quote + 1}
 		} else {
-			if (last_space) {
-				return ${last_space + 1}
-			} else {
-				return 0
-			}
+			return ${last_space + 1}
+		}
+	} else {
+		if (mid(${curpos() - 1} 1 $L) == [ ]) {
+			return $curpos()
+		} elsif (last_space) {
+			return ${last_space + 1}
+		} else {
+			return 0
 		}
 	}
 }
 
-# do_cycling
-#
-# This function performs target history cycling, or match possibility cycling,
-# if need be.
-#
-#  Returns: 1 if the input line should be parsed for completion
-#           0 if it should not
-#
+alias do_match_cycle (direction) {
+	@:frag_start = current_fragment_start()
 
-alias do_cycling (direction, input_line) {
-	if (L == []) {
-		@cycle_msg($direction)
-		return 0
-	} elsif (encode($input_line) == encode($last_input_line)) {
-		if (zsh_style_completion == [ON] && #match_history > 1) {
-			@cycle_match($direction)
-			return 0
-		} else {
-			return 0
-		}
-	} elsif (leftw(1 $L) == [/msg] || leftw(1 $L) == [/notice]) {
-		if (#L == 2 && mid(${@L - 1} 1 $L) == [ ]) {
-			@cycle_msg($direction)
-			return 0
-		}
-	} else {
-		return 1
+	if (frag_start == -1) {
+		return
 	}
+
+	@:fraglen = curpos() - frag_start
+
+	if (mid($curpos() 1 $L) == ["]) {
+		parsekey forward_character
+		repeat ${fraglen + 1} parsekey backspace
+	} elsif (mid(${curpos() - 1} 1 $L) == ["]) {
+		repeat ${fraglen + 1} parsekey backspace
+	} else {
+		repeat $fraglen parsekey backspace
+	}
+
+	if (mid(${curpos() - 1} 1 $L) == ["]) {
+		parsekey backspace
+	}
+
+	@match_index += direction
+
+	if (match_index == #match_cycle_list) {
+		@match_index = 0
+	} elsif (match_index < 0) {
+		@match_index = #match_cycle_list - 1
+	}
+
+	@:new_match = word($match_index $match_cycle_list)
+
+	if (index("$chr(32)" $new_match) == -1) {
+		xtype -l $new_match
+	} else {
+		xtype -l "$new_match"
+		parsekey backward_character
+	}
+
+	@last_input_line = left($curpos() $L)
+}
+
+alias do_msg_cycle (direction) {
+	if (#target_cycle_list < 2) {
+		return
+	}
+
+	@target_index -= (direction * 2)
+
+	if (target_index == #target_cycle_list) {
+		@target_index = 0
+	} elsif (target_index < 0) {
+		@target_index = #target_cycle_list - 2
+	}
+
+	@:msg_cmd = word($target_index $target_cycle_list)
+	@:msg_targ = word(${target_index + 1} $target_cycle_list)
+
+	parsekey erase_line
+
+	xtype -l /${msg_cmd} ${msg_targ}${chr(32)}
+
+	@last_input_line = []
 }
 
 alias do_set (variable, value) {
@@ -247,7 +199,7 @@ alias do_set (variable, value) {
 				xecho -b Value of TAB_HISTORY_CYCLE_SIZE cannot be less than 1
 			} else {
 				@tab_history_cycle_size = value
-				@target_history = rightw(${value * 2} $target_history)
+				@target_cycle_list = rightw(${value * 2} $target_cycle_list)
 				xecho -b Value of TAB_HISTORY_CYCLE_SIZE set to $value
 			}
 		}
@@ -255,9 +207,7 @@ alias do_set (variable, value) {
 		(ZSH_STYLE_COMPLETION) {
 			if (value == [on]) {
 				@zsh_style_completion = [ON]
-
-				xecho -b Value of ZSH_STYLE_COMPLETION set to ON
-			} elsif (value == [off]) {
+				xecho -b Value of ZSH_STYLE_COMPLETION set to ON                        } elsif (value == [off]) {
 				@zsh_style_completion = [OFF]
 
 				xecho -b Value of ZSH_STYLE_COMPLETION set to OFF
@@ -272,108 +222,133 @@ alias do_set (variable, value) {
 	}
 }
 
-alias do_tabkey {
-	@:cur_pos = curpos()
-	@:input_line = left($cur_pos $L)
+alias do_tabkey (cycle_direction) {
+	@:input_line = left($curpos() $L)
 
-	if (do_cycling(1 $input_line) == 0) {
+	if (L == []) {
+		@do_msg_cycle($cycle_direction)
 		return
+	} elsif (encode($input_line) == encode($last_input_line)) {
+		if (zsh_style_completion == [ON] && #match_cycle_list > 1) {
+			@do_match_cycle($cycle_direction)
+			return
+		} else {
+			return
+		}
+	} elsif (leftw(1 $L) == [/msg] || leftw(1 $L) == [/notice]) {
+		if (#L == 2 && mid(${@L - 1} 1 $L) == [ ]) {
+			@do_msg_cycle($cycle_direction)
+			return
+		}
 	}
 
 	@:frag_start = current_fragment_start()
 
-	if (frag_start == -1) {
+	if (frag_start == -1 || cycle_direction == -1) {
 		return
 	}
 
-	@:fragment = mid($frag_start ${cur_pos - frag_start} $L)
+	@:fragment = mid($frag_start ${curpos() - frag_start} $L)
 	@:fraglen = strlen($fragment)
 	@:padding = []
 
 	switch ($input_line) {
 		(/dcc %) {
 			@:matches = match_dcc($fragment)
-			@match_history = matches
 
 			if (#matches == 1) {
-				@:padding = [ ]
-			}
-		}
-
-		(/exec %) {
-			@:matches = match_exec($fragment)
-			@match_history = matches
-
-			if (#matches == 1 && !isdirectory($matches)) {
 				@:padding = [ ]
 			}
 		}
 
 		(/dcc send % *)
 
-		(/exec % *)
-
-		(/load *)
-
-		(/unload *) {
+		(/exec % *) {
 			@:matches = match_file($fragment)
-			@match_history = matches
 
 			if (#matches == 1 && !isdirectory($matches)) {
 				@:padding = [ ]
 			}
 		}
 
-		(/%) {
-			@:matches = match_command($rest($input_line))
-			@match_history = matches
+		(/exec %) {
+			@:matches = match_exec($fragment)
 
-			if (#matches == 1) {
+			if (#matches == 1 && !isdirectory($matches)) {
 				@:padding = [ ]
 			}
 		}
 
-		(@%)
-
-		(#%) {
-			@:matches = match_chan($fragment)
-			@match_history = matches
+		(/help %) {
+			@:matches = match_help($fragment)
 
 			if (#matches == 1) {
+				if (!isdirectory(${getset(HELP_PATH)}/${matches})) {
+					@:padding = [ ]
+				}
+			}
+		}
+
+		(/load *)
+
+		(/unload *) {
+			@:matches = match_load($fragment)
+
+			if (#matches == 1 && !isdirectory($matches)) {
 				@:padding = [ ]
 			}
 		}
 
-		(%) {
+		(/notify -%) {
+			@:fragment = rest($fragment)
+			@:fraglen--
 			@:matches = match_nick($fragment)
 
-			if (#matches == 1 && nick_completion_char != []) {
-				@:padding = [$nick_completion_char ]
-				@match_history = []
-			} elsif (#matches > 1 && nick_completion_char != []) {
-				@match_history = []
+			if (#matches == 1) {
+				@:padding = [ ]
+			}
+		}
 
-				fe ($matches) nickname {
-					@push(match_history ${nickname}${nick_completion_char})
-				}
-			} else {
-				@match_history = matches
+		(/set -%) {
+			@:fragment = rest($fragment)
+			@:fraglen--
+			@:matches = match_set($fragment)
+
+			if (#matches == 1) {
+				@:padding = [ ]
+			}
+		}
+
+		(/set %) {
+			@:matches = match_set($fragment)
+
+			if (#matches == 1) {
+				@:padding = [ ]
+			}
+		}
+
+		(/%) {
+			@:fragment = rest($fragment)
+			@:fraglen--
+			@:matches = match_command($fragment)
+
+			if (#matches == 1) {
+				@:padding = [ ]
 			}
 		}
 
 		(*) {
-			if (index(@# $fragment) == 0) {
-				@:matches = match_chan($fragment)
-				@match_history = matches
+			@:matches = []
 
-				if (#matches == 1) {
-					@:padding = [ ]
-				}
-			} else {
-				@:matches = match_nick($fragment)
-				@match_history = matches
+			@push(matches $match_chan($fragment))
+			@push(matches $match_nick($fragment))
 
-				if (#matches == 1) {
+			if (#matches == 1) {
+				if (#L == 1 && !ischannel($matches)) {
+					if (nick_completion_char != []) {
+						@:padding = [$nick_completion_char ]
+					}
+				} else {
 					@:padding = [ ]
 				}
 			}
@@ -385,8 +360,8 @@ alias do_tabkey {
 	@:match_prefix = prefix($matches)
 
 	if (@match_prefix <= fraglen && #matches > 1) {
-		xecho -c Possible matches:
-		xecho -c -- $matches
+		^eval xecho -c -- $tab_completion_matches_header_format
+		^eval xecho -c -- $tab_completion_matches_format
 		xecho -c
 		return
 	}
@@ -403,30 +378,29 @@ alias do_tabkey {
 
 	@:completion = rest($fraglen $match_prefix)
 
+	if (completion == [] && padding == []) {
+		return
+	}
+
 	if (index("$chr(32)" $fragment) == -1) {
 		if (index("$chr(32)" $match_prefix) != -1) {
-			if (mid($curpos() 1 $L) == ["]) {
-				parsekey forward_character
-				parsekey backspace
-			}
-
 			repeat $fraglen parsekey backspace
 
-			if (mid(${curpos() - 1} 1 $L) == ["]) {
-				parsekey backspace
-			}
+			if (mid($curpos() 1 $L) == ["] && mid(${curpos() - 1} 1 $L) == ["]) {
+				xtype -l $match_prefix
 
-			xtype -l "$match_prefix"
-
-			if (padding == []) {
-				parsekey backward_character
+				if (padding != []) {
+					parsekey forward_character
+				}
 			} else {
-				@pad_input_line($padding)
+				xtype -l "$match_prefix"
+
+				if (padding == []) {
+					parsekey backward_character
+				}
 			}
 		} else {
 			xtype -l $completion
-
-			@pad_input_line($padding)
 		}
 	} else {
 		xtype -l $completion
@@ -442,14 +416,12 @@ alias do_tabkey {
 			} else {
 				xtype -l "
 			}
-
-			@pad_input_line($padding)
 		}
 	}
 
-	if (completion != []) {
-		@last_input_line = []
-	}
+	@pad_input_line($padding)
+
+	@last_input_line = []
 }
 
 alias isdirectory (pathname) {
@@ -484,84 +456,131 @@ alias isexe (pathname) {
 }
 
 alias match_chan (fragment) {
-	return $pattern("${fragment}*" $mychannels())
+	@:matches = pattern("${fragment}*" $mychannels())
+	@match_cycle_list = matches
+
+	return $matches
 }
 
 alias match_command (fragment) {
 	@:matches = []
-	@:command_matches = getcommands(${fragment}*)
+	@:command_matches = []
 
-	@push(command_matches $aliasctl(alias pmatch ${fragment}*))
+	@push(matches $getcommands(${fragment}*))
+	@push(matches $aliasctl(alias pmatch ${fragment}*))
 
-	fe ($command_matches) command {
-		@push(matches /${command})
+	fe ($matches) match {
+		@push(command_matches /${match})
 	}
+
+	@match_cycle_list = uniq($command_matches)
 
 	return $uniq($matches)
 }
 
 alias match_dcc (fragment) {
 	@:dcc_cmds = [chat close closeall get list raw rename resume send]
+	@:matches = pattern(${fragment}% $dcc_cmds)
+	@match_cycle_list = matches
 
-	return $pattern(${fragment}% $dcc_cmds)
+	return $matches
 }
 
 alias match_exec (fragment) {
 	@:matches = []
 
 	if (index(/ $fragment) == -1) {
-		@:last_separator = 0
-		@:next_separator = 0
-		@:my_path = getenv(PATH)
-		@:my_path_len = strlen($my_path)
+		@:path_list = PATH
 
-		while (next_separator <= my_path_len) {
-			if (mid($next_separator 1 $my_path) == [:]) {
-				@:pathlen = next_separator - last_separator
-				@:pathname = mid($last_separator $pathlen $my_path)
+		while (path_list != []) {
+			@:pathname = before(: $path_list)
 
-				@:file_matches = glob("${pathname}/${fragment}*")
-
-				fe ($file_matches) filename {
-					if (isexe($filename)) {
-						@push(matches $after(-1 / $filename))
-					}
-				}
-
-				@:last_separator = next_separator + 1
+			if (pathname == []) {
+				@:pathname = path_list
+				@:path_list = []
+			} else {
+				@:path_list = after(: $path_list)
 			}
 
-			@:next_separator++
+			fe ($glob("${pathname}/${fragment}*")) filename {
+				if (isexe($filename)) {
+					@push(matches $after(-1 / $filename))
+				}
+			}
 		}
 
-		@:file_matches = glob("${fragment}*")
-
-		fe ($file_matches) filename {
-			if (isexe($filename) || isdirectory($filename)) {
+		fe ($glob("${fragment}*")) filename {
+			if (isdirectory($filename)) {
 				@push(matches $filename)
 			}
 		}
 	} else {
-		@:file_matches = glob("${fragment}*")
-
-		fe ($file_matches) filename {
+		fe ($glob("${fragment}*")) filename {
 			if (isexe($filename) || isdirectory($filename)) {
 				@push(matches $filename)
 			}
 		}
 	}
 
-	return $uniq($matches)
+	@match_cycle_list = matches = uniq($matches)
+
+	return $matches
 }
 
 alias match_file (fragment) {
-	return $glob("${fragment}*")
+	@:matches = glob("${fragment}*")
+	@match_cycle_list = matches
+
+	return $matches
 }
 
-alias match_nick (fragment) {
-	@:matches = pattern("${fragment}*" $onchannel())
+alias match_help (fragment) {
+	@:matches = []
+	@:help_path = getset(HELP_PATH)
+	@:help_matches = globi("${help_path}/${fragment}*")
 
-	if (matches == []) {
+	fe ($help_matches) match {
+		@push(matches $rest(${@help_path + 1} $match))
+	}
+
+	@match_cycle_list = matches
+
+	return $matches
+}
+
+alias match_load (fragment) {
+	@:matches = []
+
+	if (index(/ $fragment) == -1) {
+		@:path_list = LOAD_PATH
+
+		while (path_list != []) {
+			@:pathname = before(: $path_list)
+
+			if (pathname == []) {
+				@:pathname = path_list
+				@:path_list = []
+			} else {
+				@:path_list = after(: $path_list)
+			}
+
+			fe ($glob("${pathname}/${fragment}*")) filename {
+				@push(matches $after(-1 / $filename))
+			}
+		}
+	}
+
+	@push(matches $glob("${fragment}*"))
+
+	@match_cycle_list = matches = uniq($matches)
+
+	return $matches
+}
+		
+alias match_nick (fragment) {
+	@:nick_matches = pattern("${fragment}*" $onchannel())
+
+	if (nick_matches == []) {
 		@:nick_list = []
 
 		fe ($remw($C $mychannels())) nickname {
@@ -572,10 +591,47 @@ alias match_nick (fragment) {
 			@push(nick_list $nickname)
 		}
 
-		@:matches = pattern(${fragment}* $nick_list)
+		@:nick_matches = pattern(${fragment}* $nick_list)
 	}
 
-	return $uniq($matches)
+	if (nick_completion_char != [] && #matches > 1 && #L == 1) {
+		fe ($nick_matches) nickname {
+			@push(matches ${nickname}${nick_completion_char})
+		}
+	} else {
+		@:matches = nick_matches
+
+	}
+
+	@:matches = uniq($matches)
+	@match_cycle_list = matches
+
+	return $matches
+}
+
+alias match_set (fragment) {
+	@:matches = []
+	@:my_sets = [NICK_COMPLETION_CHAR TAB_HISTORY_CYCLE_SIZE ZSH_STYLE_COMPLETION]
+
+	@push(matches $getsets(${fragment}*))
+	@push(matches $pattern(${fragment}* $my_sets))
+
+	@match_cycle_list = matches
+
+	return $matches
+}
+
+alias match_theme (fragment) {
+	@:matches = []
+	@:theme_matches = globi("${theme_directory}/${fragment}*.theme")
+
+	fe ($theme_matches) match {
+		@push(matches $before(-1 . $rest(${@theme_directory + 1} $match)))
+	}
+
+	@match_cycle_list = matches
+
+	return $matches
 }
 
 alias msg (target, message) {
@@ -618,6 +674,12 @@ alias pad_input_line (padding) {
 	}
 }
 
+alias tclear {
+	@target_cycle_list = []
+	@target_index = -2
+
+	^eval xecho -- $tab_target_history_cleared_format
+}
 
 # *** hooks ***
 
