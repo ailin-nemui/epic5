@@ -9,7 +9,7 @@
  */
 
 #if 0
-static	char	rcsid[] = "@(#)$Id: notice.c,v 1.5 2001/11/15 17:29:00 jnelson Exp $";
+static	char	rcsid[] = "@(#)$Id: notice.c,v 1.6 2001/11/19 17:57:10 jnelson Exp $";
 #endif
 
 #include "irc.h"
@@ -125,7 +125,6 @@ static time_t	convert_note_time_to_real_time(char *stuff)
 static 	void 	parse_local_server_notice (char *from, char *to, char *line)
 {
 	int	lastlog_level;
-	int	hooked = 0;
 	const char *	f;
 
 	f = from;
@@ -137,15 +136,13 @@ static 	void 	parse_local_server_notice (char *from, char *to, char *line)
 	if (!strncmp(line, "*** Notice -- ", 13))
 	{
 		if (!strncmp(line + 14, "Received KILL message for ", 26))
-			hooked = kill_message(f, line + 40);
+			if (kill_message(f, line + 40))
+				return;
 
-		if (!hooked)
-		{
-			message_from(to, LOG_OPNOTE);
-			lastlog_level = set_lastlog_msg_level(LOG_OPNOTE);
-			if (!do_hook(OPER_NOTICE_LIST, "%s %s", f, line + 14))
-				hooked = 1;
-		}
+		message_from(to, LOG_OPNOTE);
+		lastlog_level = set_lastlog_msg_level(LOG_OPNOTE);
+		if (!do_hook(OPER_NOTICE_LIST, "%s %s", f, line + 14))
+			return;
 	}
 
 	/* NOTEs */
@@ -179,12 +176,11 @@ static 	void 	parse_local_server_notice (char *from, char *to, char *line)
 	{
 	    if (*line == '*' || *line == '#')
 	    {
-		if (!hooked && do_hook(SERVER_NOTICE_LIST, "%s %s", f, line))
+		if (do_hook(SERVER_NOTICE_LIST, "%s %s", f, line))
 			put_it("%s", line);
 	    }
 	    else
-		if (!hooked && do_hook(SERVER_NOTICE_LIST, "%s *** %s", 
-							f, line))
+		if (do_hook(SERVER_NOTICE_LIST, "%s *** %s", f, line))
 			say("%s", line);
 	}
 
@@ -243,24 +239,23 @@ void 	parse_notice (char *from, char **Args)
 		message_from(to, LOG_NOTICE);
 		type = PUBLIC_NOTICE_LIST;
 	}
+
+	/* Check to see if it is a "Server Notice" */
+	else if (!from || !*from || 
+		!strcmp(get_server_itsname(from_server), from))
+	{
+		parse_local_server_notice(from, to, line);
+		doing_notice = 0;
+		return;
+	}
+
+	/* It is a notice from someone else, possibly remote server */
 	else
 	{
-		/* Check to see if it is a "Server Notice" */
-		if (!from || !*from || 
-			!strcmp(get_server_itsname(from_server), from))
-		{
-			parse_local_server_notice(from, to, line);
-			doing_notice = 0;
-			return;
-		}
-
-		/* It is a notice from someone else, possibly remote server */
-		else
-		{
-			message_from(from, LOG_NOTICE);
-			type = NOTICE_LIST;
-		}
+		message_from(from, LOG_NOTICE);
+		type = NOTICE_LIST;
 	}
+
 
 	/* Set the default output target level */
 	level = set_lastlog_msg_level(LOG_NOTICE);
