@@ -44,4 +44,4 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Start exposing commit_id to the user, for bug reporting purposes.
 * Increase the precision of floating point results to 999 decimal places (ce)
 * Don't hook /on general_notice if user hooks /on kill or /on oper_notice.
-
+* Fix bug that showed all timers as having 0 seconds left.
