@@ -1,13 +1,13 @@
 # Emacs-like window handling
 #
-bind meta2-o next_window
-bind meta2-0 parse window kill
-bind meta2-1 parse window kill_others
-bind meta2-2 parse window new
-bind meta2-= parse window balance
-bind meta2-+ parse window grow 1
-bind meta2-- parse window shrink 1
-bind meta2-z parse window grow 1
-bind meta2-^z parse window shrink 1
-# bind meta2-^ parse window grow 1
-# bind meta2-^^ parse window grow 1
+bind ^Xo next_window
+bind ^X0 parse window kill
+bind ^X1 parse window kill_others
+bind ^X2 parse window new
+bind ^X= parse window balance
+bind ^X+ parse window grow 1
+bind ^X- parse window shrink 1
+bind ^Xz parse window grow 1
+bind ^X^z parse window shrink 1
+# bind ^X^ parse window grow 1
+# bind ^X^^ parse window grow 1

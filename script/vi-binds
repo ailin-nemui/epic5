@@ -1,63 +1,63 @@
 #
 # This script makes an attempt to simulate vi keybindings using the
-# meta4 sticky keybinding.  Who knows how successful I will be...
+# ^E sticky keybinding.  Who knows how successful I will be...
 # This is very much a work in progress.  Not every vi keybinding maps
 # nicely to an ircII keybinding.  Some of these new keybindings can just
 # as well be added to epic, some of them may never be.  Suggestions for
 # improvements are always welcome.
 #
 
-bind ^E meta4
-bind meta4-0 BEGINNING_OF_LINE
-bind meta4-$$ END_OF_LINE
-bind meta4-w FORWARD_WORD
-bind meta4-W FORWARD_WORD
-bind meta4-b BACKWARD_WORD
-bind meta4-B BACKWARD_WORD
-#bind meta4-e <end of current word>
-#bind meta4-E <end of current word>
-bind meta4-a parse_command {
+bind ^E ^E
+bind ^E0 BEGINNING_OF_LINE
+bind ^E$$ END_OF_LINE
+bind ^Ew FORWARD_WORD
+bind ^EW FORWARD_WORD
+bind ^Eb BACKWARD_WORD
+bind ^EB BACKWARD_WORD
+#bind ^Ee <end of current word>
+#bind ^EE <end of current word>
+bind ^Ea parse_command {
 	parsekey FORWARD_CHARACTER
-	parsekey META4
+	# Insert mode?
 }
-bind meta4-A parse_command {
+bind ^EA parse_command {
 	parsekey END_OF_LINE
-	parsekey META4
+	# Insert mode?
 }
-#bind meta4-r <overwrite mode>
-#bind meta4-R <delete line -- overwrite mode -- meta4>
-bind meta4-p YANK_FROM_CUTBUFFER
-bind meta4-x DELETE_CHARACTER
-bind meta4-X BACKSPACE
+#bind ^Er <overwrite mode>
+#bind ^ER <delete line -- overwrite mode -- ^E>
+bind ^Ep YANK_FROM_CUTBUFFER
+bind ^Ex DELETE_CHARACTER
+bind ^EX BACKSPACE
 
-#bind meta4-y <???>
-#bind meta4-Y <???>
-#bind meta4-i <insert-mode -- meta4>
-#bind meta4-I <start-of-line -- meta4>
+#bind ^Ey <???>
+#bind ^EY <???>
+#bind ^Ei <insert-mode>
+#bind ^EI <start-of-line + insert-mode>
 
-bind meta4-h BACKWARD_CHARACTER
-bind meta4-l FORWARD_CHARACTER
-bind meta4-k BACKWARD_HISTORY
-bind meta4-j FORWARD_HISTORY
+bind ^Eh BACKWARD_CHARACTER
+bind ^El FORWARD_CHARACTER
+bind ^Ek BACKWARD_HISTORY
+bind ^Ej FORWARD_HISTORY
 
-#bind meta4-u <Undo -- not possible>
-#bind meta4-U <Undo -- not possible>
+#bind ^Eu <Undo -- not possible>
+#bind ^EU <Undo -- not possible>
 
-#bind meta4-cw <delete word -- insert mode>
-#bind meta4-cW <delete word -- insert mode>
-#bind meta4-cb <delete to start-of-word -- insert mode>
-#bind meta4-cB <delete to start-of-word -- insert mode>
-#bind meta4-c$$ <delete to end-of-line -- insert mode>
-#bind meta4-C <delete to end-of-line -- insert mode>
-#bind meta4-c0 <delete to start-of-line -- insert mode
+#bind ^Ecw <delete word -- insert mode>
+#bind ^EcW <delete word -- insert mode>
+#bind ^Ecb <delete to start-of-word -- insert mode>
+#bind ^EcB <delete to start-of-word -- insert mode>
+#bind ^Ec$$ <delete to end-of-line -- insert mode>
+#bind ^EC <delete to end-of-line -- insert mode>
+#bind ^Ec0 <delete to start-of-line -- insert mode
 
-bind meta4-dd ERASE_LINE
-bind meta4-D ERASE_TO_END_OF_LINE
-#bind meta4-dw <delete word>
-#bind meta4-dW <delete word>
-#bind meta4-db <delete to start of word>
-#bind meta4-dB <delete to start of word>
-#bind meta4-d$$ <delete to end of line>
-#bind meta4-d0 <delete to start of line>
+bind ^Edd ERASE_LINE
+bind ^ED ERASE_TO_END_OF_LINE
+#bind ^Edw <delete word>
+#bind ^EdW <delete word>
+#bind ^Edb <delete to start of word>
+#bind ^EdB <delete to start of word>
+#bind ^Ed$$ <delete to end of line>
+#bind ^Ed0 <delete to start of line>
 
 #hop'y2k

@@ -1,14 +1,15 @@
+# $EPIC: newformat,v 1.2 2002/08/12 16:59:49 jnelson Exp $
 # This script is intended for use with 2.8 servers on all sites.
 # It's an extension of the 2.8script but with much much nicer 
 # formatting.
 # Written by Ian Frechette (daemon)
 
-@ RCS.newformat = [$$Header: /home/cvs/repository/epic5/script/Attic/newformat,v 1.1 2000/12/05 00:11:57 jnelson Exp $$]
+@ RCS.newformat = [$$Header: /home/cvs/repository/epic5/script/Attic/newformat,v 1.2 2002/08/12 16:59:49 jnelson Exp $$]
 # An operator command. ESC-t turns this option on and off.
 # It allows one to see users or not see them in a TRACE.
 # It also effects the output of STAT l
 
-^bind meta1-t parse_command tt
+^bind ^[t parse_command tt
 ^alias tt if (trace) { assign -trace } { assign trace x }
 
 # Stores the output of a trace for use with conall
