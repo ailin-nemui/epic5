@@ -15,6 +15,7 @@ KNOWN ERRATA (eg, bugs, or unresolved requests):
 * /query targets with nicks crossing with dcc nicks don't match.
 * $serverctl(get <ref> port) errors because the address we use is bogus.
 * A $serverctl() value to tell you what address family the socket is using.
+* $winquery() to return the window's current query.
 
 [See http://www.epicsol.org/PROJECTS for things to come in the future]
 [See http://www.epicsol.org/CHANGELOG5 for things that changed in the past]
@@ -401,3 +402,4 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * If /window changes current_window, reset from_server to cur_win->serv;
 * Altered the dcc_lost hook to return strerr() info.
 * Fixed $aliasctl(* match [mask]) to return only aliases and assigns.
+* Add %{3}W which is like %W but it's active for all input windows.

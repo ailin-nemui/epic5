@@ -1,5 +1,32 @@
 EPIC5-0.1
 
+*** News 10/01/2004 -- New status format, %{3}W
+	This is a compromise between %W and %{2}W.  %W only shows in the
+	input window when there are split windows, and %{2}W shows in all
+	split windows.  So %{3}W shows in the input window, even if it is
+	the only visible window (ie, there are no split windows).
+
+*** News 10/01/2004 -- New window option, "toplines"
+	You may now reserve 0 to 9 lines at the top of every windows to be
+	removed from the scrollable portion of the window, creating a place
+	for you to put things like a channel topic, or channel users, or
+	whatever.
+
+	/WINDOW TOPLINES <N>    	
+		Reserves and displays <N> lines at the top of the window, 
+		which will not be part of the window's scrollable display.
+		By default, toplines are blank until you set them with...
+	/WINDOW TOPLINE <N> "<string>"	
+		Sets the window's <N>th topline to <string>.  <N> must be 
+		1 to 9.  You should put <string> in double quotes.  You can
+		change toplines even if they aren't visible.
+
+	$windowctl(GET <refnum> TOPLINES)
+		Returns the number of toplines reserved at the top of the
+		window.
+	$windowctl(GET <refnum> TOPLINE <n>)
+		Returns the <n>th topline for the window.
+
 *** News 09/14/2004 -- Added Howls shebang script support.
 	It is now possible to write epic scripts that run from the shell
 	command line.  Yaaay..!  The nature of the epic binary itself made this
@@ -22,20 +49,6 @@ EPIC5-0.1
 	Use of the 0 or 1 argument form of /qcmd will now cause the timer to be
 	reset to 5 seconds, and if called as a function, the command will be
 	returned without executing it.
-
-*** News 09/10/2004 -- Command line option changes withdrawn.
-
-*** News 09/10/2004 -- Command line option changes.
-	-L now causes epic to interpret the arg list as the first of the
-	following forms rather than the second:
-		form 1: file nick serv serv ..
-		form 2: nick serv serv ..
-
-	-S <server-specification> will cause the argument to be added to the
-	server list.
-
-	These changes are an attempt to make epic5 more "shebang" friendly, and
-	they may be changed at some point in the future.
 
 *** News 08/25/2004 -- New target syntax, -<serverdesc>/<target>
 	You can now send messages to the special message type:
