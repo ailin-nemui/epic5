@@ -51,3 +51,5 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Add support for clock_gettime(), a posix version of gettimeofday()
 * Migrate all use of m_sprintf() over to malloc_sprintf()
 * Make malloc_sprintf() support a NULL first argument to simulate m_sprintf().
+* Fix some stragglers and GC unused m_sprintf() function.
+* Fix $serverwin() which was doing a bogus check on server refnums.

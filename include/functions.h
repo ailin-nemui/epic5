@@ -29,8 +29,8 @@
 #define RETURN_MSTR(x) return ((x) ? (x) : EMPTY_STRING)
 #define RETURN_STR(x) return m_strdup((x) ? (x) : EMPTY)
 #define RETURN_INT(x) return m_strdup(ltoa((x)))
-#define RETURN_FLOAT(x) return m_sprintf("%.50g", (double) (x))
-#define RETURN_FLOAT2(x) return m_sprintf("%.2f", (double) (x))
+#define RETURN_FLOAT(x) return malloc_sprintf(NULL, "%.50g", (double) (x))
+#define RETURN_FLOAT2(x) return malloc_sprintf(NULL, "%.2f", (double) (x))
 
 /*
  * XXXX REALLY REALLY REALLY REALLY REALLY REALLY REALLY IMPORTANT! XXXX

@@ -1,4 +1,4 @@
-/* $EPIC: ircaux.c,v 1.83 2003/07/09 05:45:22 jnelson Exp $ */
+/* $EPIC: ircaux.c,v 1.84 2003/07/09 14:28:57 jnelson Exp $ */
 /*
  * ircaux.c: some extra routines... not specific to irc... that I needed 
  *
@@ -559,25 +559,6 @@ char *	lower (char *str)
 	}
 	return ptr;
 }
-
-
-/* same thing, different variation */
-char *	m_sprintf (const char *pattern, ...)
-{
-	char booya[BIG_BUFFER_SIZE * 10 + 1];
-	*booya = 0;
-
-	if (pattern)
-	{
-		va_list args;
-		va_start(args, pattern);
-		vsnprintf(booya, BIG_BUFFER_SIZE * 10, pattern, args);
-		va_end(args);
-	}
-
-	return m_strdup(booya);
-}
-
 
 /* case insensitive string searching */
 ssize_t	stristr (const char *start, const char *srch)
