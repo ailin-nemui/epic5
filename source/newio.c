@@ -364,7 +364,7 @@ static	int		polls = 0;
 	if (timeout)
 	{
 		thetimeout = *timeout;
-		if (timeout->tv_sec == 0)
+		if (timeout->tv_sec == 0 && timeout->tv_usec == 0)
 		{
 			if (polls++ > 10000)
 				panic("Stuck in a polling loop. Help!");
