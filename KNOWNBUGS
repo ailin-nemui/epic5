@@ -586,3 +586,4 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Fix how i nixed /set reverse_status_bar, i totaly botched this.
 * Ok.  I botched /set full_status_line too.
 * OK.  I really botched /set show_channel_names.  Ugh. not my day!
+* OK! OK! OK!  So i commited the wrong builtins script. argh!
