@@ -1,4 +1,4 @@
-/* $EPIC: vars.c,v 1.23 2002/12/30 13:23:47 crazyed Exp $ */
+/* $EPIC: vars.c,v 1.24 2003/01/29 21:56:01 crazyed Exp $ */
 /*
  * vars.c: All the dealing of the irc variables are handled here. 
  *
@@ -836,7 +836,8 @@ char 	*make_string_var (const char *var_name)
 	switch (irc_variable[msv_index].type)
 	{
 		case STR_TYPE_VAR:
-			ret = m_strdup(irc_variable[msv_index].string);
+            if (irc_variable[msv_index].string)
+			    ret = m_strdup(irc_variable[msv_index].string);
 			break;
 		case INT_TYPE_VAR:
 			ret = m_strdup(ltoa(irc_variable[msv_index].integer));
@@ -1063,17 +1064,16 @@ void	do_stack_set (int type, char *args)
 		return;
 	}
 
-	if (!args)
-	{
-		say("Must specify a variable name to stack");
-		return;
-	}
-
-	varname = next_arg(args, &args);
-	upper(varname);
-
 	if (STACK_PUSH == type)
 	{
+		varname = next_arg(args, &args);
+		if (!varname)
+		{
+			say("Must specify a variable name to stack");
+			return;
+		}
+		upper(varname);
+
 		item = (VarStack *)new_malloc(sizeof(VarStack));
 		item->varname = m_strdup(varname);
 		item->value = make_string_var(varname);
@@ -1088,6 +1088,14 @@ void	do_stack_set (int type, char *args)
 	    VarStack *prev = NULL;
 	    enum VAR_TYPES var_index;
 	    int	owd = window_display;
+
+	    varname = next_arg(args, &args);
+	    if (!varname)
+	    {
+		say("Must specify a variable name to stack");
+		return;
+	    }
+	    upper(varname);
 
 	    for (item = set_stack; item; prev = item, item = item->next)
 	    {
@@ -1110,6 +1118,7 @@ void	do_stack_set (int type, char *args)
 
 		new_free(&item->varname);
 		new_free(&item->value);
+		new_free(&item);
 		return;
 	    }
 
@@ -1122,7 +1131,7 @@ void	do_stack_set (int type, char *args)
 	    VarStack *prev = NULL;
 
 	    for (item = set_stack; item; prev = item, item = item->next)
-		say("Variable [%s] = %s", item->varname, item->value);
+		say("Variable [%s] = %s", item->varname, item->value ? item->value : "<EMPTY>");
 
 	    return;
 	}

@@ -1,4 +1,4 @@
-/* $EPIC: functions.c,v 1.97 2003/01/29 06:28:01 jnelson Exp $ */
+/* $EPIC: functions.c,v 1.98 2003/01/29 21:56:01 crazyed Exp $ */
 /*
  * functions.c -- Built-in functions for ircII
  *
@@ -2167,7 +2167,7 @@ BUILT_IN_FUNCTION(function_beforew, word)
 	char	*placeholder;
 
 	lame = LOCAL_COPY(word);
-	where = my_atol((placeholder = function_rmatch(word)));
+	where = my_atol((placeholder = function_findw(word))) + 1;
 	new_free(&placeholder);
 
 	if (where < 1)
@@ -2185,7 +2185,7 @@ BUILT_IN_FUNCTION(function_tow, word)
 	char	*placeholder;
 
 	lame = LOCAL_COPY(word);
-	where = my_atol((placeholder = function_rmatch(word)));
+	where = my_atol((placeholder = function_findw(word))) + 1;
 	new_free(&placeholder);
 
 	if (where < 1)
@@ -2203,8 +2203,8 @@ BUILT_IN_FUNCTION(function_afterw, word)
 	char	*placeholder;
 
 	lame = m_strdup(word);
-	placeholder = function_rmatch(word);
-	where = my_atol(placeholder);
+	placeholder = function_findw(word);
+	where = my_atol(placeholder) + 1;
 
 	new_free(&placeholder);
 
@@ -2226,8 +2226,8 @@ BUILT_IN_FUNCTION(function_fromw, word)
 	char	*placeholder;
 
 	lame = m_strdup(word);
-	placeholder = function_rmatch(word);
-	where = my_atol(placeholder);
+	placeholder = function_findw(word);
+	where = my_atol(placeholder) + 1;
 
 	new_free(&placeholder);
 

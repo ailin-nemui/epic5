@@ -1,5 +1,46 @@
 EPIC4-1.2.0
 
+*** News 01/30/2003 -- $serverctl() general cleanup.
+	subcommands will be matched against as many characters as are
+	supplied.  This means that $serverctl(get 4 007) will not call the
+	005 subcommand for eg, but also that in ambiguous cases, the first
+	matching subcommand is used where they may not have been before.
+
+*** News 01/30/2003 -- $serverctl(?match *pattern*) does wildcard matching.
+	gmatch will return all servers matching group *pattern*.
+	imatch will return all servers matching (its) server name *pattern*.
+	omatch will return all servers matching (our) server name *pattern*.
+	match was never implemented and has been removed.
+	pmatch was never implemented and has been removed.
+
+*** News 01/30/2003 -- $serverctl(max)
+	$serverctl(max) now returns the number of _slots_ in the server
+	list.  Note that this currently equates to the largest number
+	of servers in the list at any one time.  It doesn't shrink if
+	you delete servers.
+
+*** News 01/30/2003 -- $afterw(), $beforew(), $fromw(), $tow()..
+	WARNING:  Incompatible change.  If you experience problems
+	because of this change, you should notify #epic on efnet.
+
+	These functions will now do fixed string matching rather than
+	pattern matching.  I figure that the old method of implementing
+	these functions is fundamentally flawed, and not useful for real
+	world applications.  Examination of many publicly available
+	scripts seems to indicate that these functions are avoided and
+	that where they are used, they constitute latent bugs since text
+	matching is desired.
+
+*** News 01/30/2003 -- $writeb() dequotes data.
+	This makes it capable of writing binary data.
+	$writeb($writefd $read($readfd $numbytes)) will copy $numbytes
+	of binary data from one FD to the other faithfully.
+
+*** News 01/30/2003 -- Subsecond /sleep.
+	/sleep now accepts floating point arguments.  This makes it much
+	the same as /usleep which accepts integer microsecond values,
+	but not entirely.
+
 *** News 12/23/2002 -- /exec options tuned.
 	-line, -linepart, -error and -errorpart can now be changed for a
 	process on the fly, using %process like the other options.

@@ -1,4 +1,4 @@
-/* $EPIC: server.c,v 1.86 2003/01/29 06:31:27 wd Exp $ */
+/* $EPIC: server.c,v 1.87 2003/01/29 21:56:01 crazyed Exp $ */
 /*
  * server.c:  Things dealing with that wacky program we call ircd.
  *
@@ -2873,6 +2873,7 @@ void set_server_005 (int refnum, char *setting, char *value)
 /* Used by function_serverctl */
 /*
  * $serverctl(REFNUM server-desc)
+ * $serverctl(MAX)
  * $serverctl(GET 0 [LIST])
  * $serverctl(SET 0 [ITEM] [VALUE])
  * $serverctl(MATCH [pattern])
@@ -2899,12 +2900,13 @@ void set_server_005 (int refnum, char *setting, char *value)
  */
 char 	*serverctl 	(char *input)
 {
-	int	refnum, num;
+	int	refnum, num, len;
 	char	*listc, *listc1;
 	const char *ret;
 
 	GET_STR_ARG(listc, input);
-	if (!my_strnicmp(listc, "REFNUM", 1)) {
+	len = strlen(listc);
+	if (!my_strnicmp(listc, "REFNUM", len)) {
 		char *server;
 
 		GET_STR_ARG(server, input);
@@ -2916,142 +2918,157 @@ char 	*serverctl 	(char *input)
 			RETURN_EMPTY;
 		}
 		RETURN_INT(find_server_refnum(server, &input));
-	} else if (!my_strnicmp(listc, "GET", 2)) {
+	} else if (!my_strnicmp(listc, "GET", len)) {
 		GET_INT_ARG(refnum, input);
 		if (!get_server(refnum))
 			RETURN_EMPTY;
 
 		GET_STR_ARG(listc, input);
-		if (!my_strnicmp(listc, "AWAY", 1)) {
+		len = strlen(listc);
+		if (!my_strnicmp(listc, "AWAY", len)) {
 			ret = get_server_away(refnum);
 			RETURN_STR(ret);
-		} else if (!my_strnicmp(listc, "CONNECTED", 3)) {
+		} else if (!my_strnicmp(listc, "CONNECTED", len)) {
 			num = is_server_registered(refnum);
 			RETURN_INT(num);
-		} else if (!my_strnicmp(listc, "COOKIE", 3)) {
+		} else if (!my_strnicmp(listc, "COOKIE", len)) {
 			ret = get_server_cookie(refnum);
 			RETURN_STR(ret);
-		} else if (!my_strnicmp(listc, "GROUP", 1)) {
+		} else if (!my_strnicmp(listc, "GROUP", len)) {
 			ret = get_server_group(refnum);
 			RETURN_STR(ret);
-		} else if (!my_strnicmp(listc, "ITSNAME", 1)) {
+		} else if (!my_strnicmp(listc, "ITSNAME", len)) {
 			ret = get_server_itsname(refnum);
 			RETURN_STR(ret);
-		} else if (!my_strnicmp(listc, "NAME", 2)) {
+		} else if (!my_strnicmp(listc, "NAME", len)) {
 			ret = get_server_name(refnum);
 			RETURN_STR(ret);
-		} else if (!my_strnicmp(listc, "NICKNAME", 2)) {
+		} else if (!my_strnicmp(listc, "NICKNAME", len)) {
 			ret = get_server_nickname(refnum);
 			RETURN_STR(ret);
-		} else if (!my_strnicmp(listc, "PASSWORD", 2)) {
+		} else if (!my_strnicmp(listc, "PASSWORD", len)) {
 			ret = get_server_password(refnum);
 			RETURN_STR(ret);
-		} else if (!my_strnicmp(listc, "PORT", 2)) {
+		} else if (!my_strnicmp(listc, "PORT", len)) {
 			num = get_server_port(refnum);
 			RETURN_INT(num);
-		} else if (!my_strnicmp(listc, "QUIT_MESSAGE", 1)) {
+		} else if (!my_strnicmp(listc, "QUIT_MESSAGE", len)) {
 			ret = get_server_quit_message(refnum);
 			RETURN_STR(ret);
-		} else if (!my_strnicmp(listc, "SSL", 1)) {
+		} else if (!my_strnicmp(listc, "SSL", len)) {
 			num = get_server_try_ssl(refnum);
 			RETURN_INT(num);
-		} else if (!my_strnicmp(listc, "UMODES", 6)) {
+		} else if (!my_strnicmp(listc, "UMODES", len)) {
 			ret = get_possible_umodes(refnum);
 			RETURN_STR(ret);
-		} else if (!my_strnicmp(listc, "UMODE", 2)) {
+		} else if (!my_strnicmp(listc, "UMODE", len)) {
 			ret = get_umode(refnum);
 			RETURN_STR(ret);
-		} else if (!my_strnicmp(listc, "USERHOST", 2)) {
+		} else if (!my_strnicmp(listc, "USERHOST", len)) {
 			ret = get_server_userhost(refnum);
 			RETURN_STR(ret);
-		} else if (!my_strnicmp(listc, "VERSION", 1)) {
+		} else if (!my_strnicmp(listc, "VERSION", len)) {
 			ret = get_server_version_string(refnum);
 			RETURN_STR(ret);
-		} else if (!my_strnicmp(listc, "005s", 4)) {
+		} else if (!my_strnicmp(listc, "005", len)) {
+			GET_STR_ARG(listc1, input);
+			ret = get_server_005(refnum, listc1);
+			RETURN_STR(ret);
+		} else if (!my_strnicmp(listc, "005s", len)) {
 			int ofs = from_server;
 			char *ret;
 			from_server = refnum;
 			ret = get_server_005s(input);
 			from_server = ofs;
 			RETURN_MSTR(ret);
-		} else if (!my_strnicmp(listc, "005", 3)) {
-			GET_STR_ARG(listc1, input);
-			ret = get_server_005(refnum, listc1);
-			RETURN_STR(ret);
 		}
-	} else if (!my_strnicmp(listc, "SET", 1)) {
+	} else if (!my_strnicmp(listc, "SET", len)) {
 		GET_INT_ARG(refnum, input);
 		if (!get_server(refnum))
 			RETURN_EMPTY;
 
 		GET_STR_ARG(listc, input);
-		if (!my_strnicmp(listc, "AWAY", 1)) {
+		len = strlen(listc);
+		if (!my_strnicmp(listc, "AWAY", len)) {
 			set_server_away(refnum, input);
 			RETURN_INT(1);
-		} else if (!my_strnicmp(listc, "CONNECTED", 3)) {
+		} else if (!my_strnicmp(listc, "CONNECTED", len)) {
 			RETURN_EMPTY;		/* Read only. */
-		} else if (!my_strnicmp(listc, "COOKIE", 3)) {
+		} else if (!my_strnicmp(listc, "COOKIE", len)) {
 			set_server_cookie(refnum, input);
 			RETURN_INT(1);
-		} else if (!my_strnicmp(listc, "GROUP", 1)) {
+		} else if (!my_strnicmp(listc, "GROUP", len)) {
 			set_server_group(refnum, input);
 			RETURN_INT(1);
-		} else if (!my_strnicmp(listc, "ITSNAME", 1)) {
+		} else if (!my_strnicmp(listc, "ITSNAME", len)) {
 			set_server_itsname(refnum, input);
 			RETURN_INT(1);
-		} else if (!my_strnicmp(listc, "NAME", 2)) {
+		} else if (!my_strnicmp(listc, "NAME", len)) {
 			set_server_name(refnum, input);
 			RETURN_INT(1);
-		} else if (!my_strnicmp(listc, "NICKNAME", 2)) {
+		} else if (!my_strnicmp(listc, "NICKNAME", len)) {
 			change_server_nickname(refnum, input);
 			RETURN_INT(1);
-		} else if (!my_strnicmp(listc, "PASSWORD", 2)) {
+		} else if (!my_strnicmp(listc, "PASSWORD", len)) {
 			set_server_password(refnum, input);
 			RETURN_INT(1);
-		} else if (!my_strnicmp(listc, "PORT", 2)) {
+		} else if (!my_strnicmp(listc, "PORT", len)) {
 			int port;
 
 			GET_INT_ARG(port, input);
 			set_server_port(refnum, port);
 			RETURN_INT(1);
-		} else if (!my_strnicmp(listc, "PRIMARY", 2)) {
+		} else if (!my_strnicmp(listc, "PRIMARY", len)) {
 			primary_server = refnum;
 			RETURN_INT(1);
-		} else if (!my_strnicmp(listc, "QUIT_MESSAGE", 1)) {
+		} else if (!my_strnicmp(listc, "QUIT_MESSAGE", len)) {
 			set_server_quit_message(refnum, input);
 			RETURN_INT(1);
-		} else if (!my_strnicmp(listc, "SSL", 1)) {
+		} else if (!my_strnicmp(listc, "SSL", len)) {
 			int value;
 
 			GET_INT_ARG(value, input);
 			set_server_try_ssl(refnum, value);
 			RETURN_INT(1);
-		} else if (!my_strnicmp(listc, "UMODES", 6)) {
+		} else if (!my_strnicmp(listc, "UMODES", len)) {
 			RETURN_EMPTY;		/* Read only for now */
-		} else if (!my_strnicmp(listc, "UMODE", 2)) {
+		} else if (!my_strnicmp(listc, "UMODE", len)) {
 			RETURN_EMPTY;		/* Read only for now */
-		} else if (!my_strnicmp(listc, "USERHOST", 2)) {
+		} else if (!my_strnicmp(listc, "USERHOST", len)) {
 			set_server_userhost(refnum, input);
-		} else if (!my_strnicmp(listc, "VERSION", 1)) {
+		} else if (!my_strnicmp(listc, "VERSION", len)) {
 			set_server_version_string(refnum, input);
-		} else if (!my_strnicmp(listc, "005", 3)) {
+		} else if (!my_strnicmp(listc, "005", len)) {
 			GET_STR_ARG(listc1, input);
 			set_server_005(refnum, listc1, input);
 			RETURN_INT(!!*input);
 		}
-	} else if (!my_strnicmp(listc, "MATCH", 1)) {
-		RETURN_EMPTY;		/* Not implemented for now. */
-	} else if (!my_strnicmp(listc, "PMATCH", 1)) {
-		RETURN_EMPTY;		/* Not implemented for now. */
-	} else if (!my_strnicmp(listc, "GMATCH", 2)) {
+	} else if (!my_strnicmp(listc, "OMATCH", len)) {
 		int	i;
 		char *retval = NULL;
 
-		for (i = 0; i < number_of_servers; i++) {
-			if (!my_stricmp(get_server_group(i), input))
+		for (i = 0; i < number_of_servers; i++)
+			if (wild_match(input, get_server_name(i)))
 				m_s3cat(&retval, space, ltoa(i));
-		}
-		RETURN_STR(retval);
+		RETURN_MSTR(retval);
+	} else if (!my_strnicmp(listc, "IMATCH", len)) {
+		int	i;
+		char *retval = NULL;
+
+		for (i = 0; i < number_of_servers; i++)
+			if (wild_match(input, get_server_itsname(i)))
+				m_s3cat(&retval, space, ltoa(i));
+		RETURN_MSTR(retval);
+	} else if (!my_strnicmp(listc, "GMATCH", len)) {
+		int	i;
+		char *retval = NULL;
+
+		for (i = 0; i < number_of_servers; i++)
+			if (wild_match(input, get_server_group(i)))
+				m_s3cat(&retval, space, ltoa(i));
+		RETURN_MSTR(retval);
+	} else if (!my_strnicmp(listc, "MAX", len)) {
+		RETURN_INT(number_of_servers);
 	} else
 		RETURN_EMPTY;
 

@@ -720,27 +720,21 @@ assert delitem(testarray 1) == 0
 assert delarray(testarray) == 0
 assert delarray(testarray) == -1
 
-# Testing function/command array consistancy.
+# Testing internal array consistency.
 echo
-@ :last = []
-fe ($getfunctions()) fn {
-	if (sort($last $fn) != uniq($last $fn)) {
-		echo $last and $fn are not in the correct order in built_in_functions[].
-	} elsif (!fnexist($fn)) {
-		echo Can't find function \$$fn\(\).
+fe (function command set) label {
+	@ :last = []
+	@ :array = [get${label}s]
+	echo Checking $label array consistency.
+	fe ( ${ [$array]() } ) fn {
+		if ( sort($last $fn) != uniq($last $fn) ) {
+			echo ${label}s $last and $fn are not in the correct order.
+		} elsif ( ![$array]($fn) ) {
+			echo Can't find $label $fn
+		}
+		@ :last = fn
 	}
-	@ :last = fn
 }
-@ :last = []
-fe ($getcommands()) cmd {
-	if (sort($last $cmd) != uniq($last $cmd)) {
-		echo $last and $cmd are not in the correct order in irc_command[].
-	} elsif (!cexist($cmd)) {
-		echo Can't find command ${cmd}.
-	}
-	@ :last = cmd
-}
-@ :last = []
 
 # Check whether functions are documented.
 echo

@@ -1,4 +1,4 @@
-/* $EPIC: parse.c,v 1.32 2003/01/27 06:56:13 jnelson Exp $ */
+/* $EPIC: parse.c,v 1.33 2003/01/29 21:56:01 crazyed Exp $ */
 /*
  * parse.c: handles messages from the server.   Believe it or not.  I
  * certainly wouldn't if I were you. 
@@ -546,6 +546,9 @@ static void	p_error (const char *from, const char *comm, char **ArgList)
 	PasteArgs(ArgList, 0);
 	if (!(error = ArgList[0]))
 		{ rfc1459_odd(from, comm, ArgList); return; }
+
+	if (!from || !isgraph(*from))
+		from = star;
 
 	if (do_hook(ERROR_LIST, "%s %s", from, error))
 		say("%s %s", from, error);

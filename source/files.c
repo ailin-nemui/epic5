@@ -1,4 +1,4 @@
-/* $EPIC: files.c,v 1.16 2002/12/11 19:20:23 crazyed Exp $ */
+/* $EPIC: files.c,v 1.17 2003/01/29 21:56:01 crazyed Exp $ */
 /*
  * files.c -- allows you to read/write files. Wow.
  *
@@ -228,6 +228,7 @@ int file_writeb (int window, int fd, char *stuff)
 {
 	File 	*ptr;
 	int	retval;
+	size_t	len = strlen(stuff);
 
 	if (window == 1)
 		ptr = lookup_logfile(fd);
@@ -237,7 +238,10 @@ int file_writeb (int window, int fd, char *stuff)
 	if (!ptr || !ptr->file)
 		return -1;
 
-	retval = fwrite(stuff, 1, strlen(stuff), ptr->file);
+	stuff = dequote_it(stuff, &len);
+	retval = fwrite(stuff, 1, len, ptr->file);
+	new_free(&stuff);
+
 	if ((fflush(ptr->file)) == EOF)
 		return -1;
 	return retval;

@@ -99,4 +99,13 @@ on ^unload "autoget" {
 	^on #dcc_request 414 -"% SEND *"
 }
 
+if ( getset(mirc_broken_dcc_resume) == [off] ) {
+	echo Warning: Turning mIRC DCC resume on
+	set mirc_broken_dcc_resume on
+}
+
+if ( getset(no_ctcp_flood) != [off] ) {
+	echo Warning: You may need to enter "/set no_ctcp_flood off" to autoget files from certain hosts.
+}
+
 #hop'y2k+1

@@ -90,3 +90,9 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Send output of who replies to LOG_CRAP as per previous behavior.
 * Fix /on 368 so it is hooked properly
 * Call expand_twiddle() and not normalize_filename in $glob[i](). (rb wd)
+* Fix so that stack push set can unset values (thanks to Tyrak).
+* Fix panic when doing stack push set with an empty set stack or 
+  stack pop set with a set stack containing items (thanks to Tyrak).
+* Fixed ERROR hook to display a star when not connected to a server.
+* Tuned internal array consistency checking in regression tests.
+* Added some debugging notices to autoget to warn of common problems.
