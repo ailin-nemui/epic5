@@ -65,9 +65,12 @@ const	AI	*next_addr;		/* The next one to try upon failure */
 	int	sent;			/* set if something has been sent,
 					 * used for redirect */
 	char	*redirect;		/* Who we're redirecting to here */
+	int	who_max;		/* Max pending whos */
 	WhoEntry *	who_queue;	/* Who queue */
-	IsonEntry *	ison_wait;	/* Ison wait queue */
+	int	ison_max;		/* Max pending isons */
 	IsonEntry *	ison_queue;	/* Ison queue */
+	IsonEntry *	ison_wait;	/* Ison wait queue */
+	int	userhost_max;		/* Max pending userhosts */
 	UserhostEntry *	userhost_queue;	/* Userhost queue */
 
 	SS	local_sockname; 	/* sockname of this connection */
@@ -315,6 +318,10 @@ const	char*	get_server_005			(int, const char *);
 	int	get_server_line_length		(int);
 	void	set_server_max_cached_chan_size	(int, int);
 	int	get_server_max_cached_chan_size	(int);
+	void	set_server_ison_max		(int, int);
+	int	get_server_ison_max		(int);
+	void	set_server_userhost_max		(int, int);
+	int	get_server_userhost_max		(int);
 	void	set_server_status		(int, int);
 	int	get_server_status		(int);
 

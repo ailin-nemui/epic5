@@ -1,4 +1,4 @@
-/* $EPIC: server.c,v 1.133 2004/06/28 23:48:15 jnelson Exp $ */
+/* $EPIC: server.c,v 1.134 2004/07/08 08:27:59 crazyed Exp $ */
 /*
  * server.c:  Things dealing with that wacky program we call ircd.
  *
@@ -134,7 +134,9 @@ void 	add_to_server_list (const char *server, int port, const char *password, co
 		s->line_length = IRCD_BUFFER_SIZE;
 		s->max_cached_chan_size = -1;
 		s->who_queue = NULL;
+		s->ison_max = 1;
 		s->ison_queue = NULL;
+		s->ison_wait = NULL;
 		s->userhost_queue = NULL;
 		memset(&s->uh_addr, 0, sizeof(s->uh_addr));
 		memset(&s->local_sockname, 0, sizeof(s->local_sockname));
@@ -261,6 +263,7 @@ static 	void 	remove_from_server_list (int i, int override)
 	new_free(&s->userhost);
 	new_free(&s->cookie);
 	new_free(&s->ison_queue);		/* XXX Aren't these free? */
+	new_free(&s->ison_wait);
 	new_free(&s->who_queue);
 	new_free(&s->invite_channel);
 	new_free(&s->last_notify_nick);
@@ -2439,6 +2442,8 @@ IACCESSOR(v, sent)
 IACCESSOR(v, version)
 IACCESSOR(v, line_length)
 IACCESSOR(v, max_cached_chan_size)
+IACCESSOR(v, ison_max)
+IACCESSOR(v, userhost_max)
 SACCESSOR(chan, invite_channel, NULL)
 SACCESSOR(nick, last_notify_nick, NULL)
 SACCESSOR(nick, joined_nick, NULL)
@@ -2823,6 +2828,9 @@ char 	*serverctl 	(char *input)
 		} else if (!my_strnicmp(listc, "MAXCACHESIZE", len)) {
 			num = get_server_max_cached_chan_size(refnum);
 			RETURN_INT(num);
+		} else if (!my_strnicmp(listc, "MAXISON", len)) {
+			num = get_server_ison_max(refnum);
+			RETURN_INT(num);
 		} else if (!my_strnicmp(listc, "CONNECTED", len)) {
 			num = is_server_registered(refnum);
 			RETURN_INT(num);
@@ -2892,6 +2900,11 @@ char 	*serverctl 	(char *input)
 			int	size;
 			GET_INT_ARG(size, input);
 			set_server_max_cached_chan_size(refnum, size);
+			RETURN_INT(1);
+		} else if (!my_strnicmp(listc, "MAXISON", len)) {
+			int	size;
+			GET_INT_ARG(size, input);
+			set_server_ison_max(refnum, size);
 			RETURN_INT(1);
 		} else if (!my_strnicmp(listc, "CONNECTED", len)) {
 			RETURN_EMPTY;		/* Read only. */

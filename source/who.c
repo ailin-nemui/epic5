@@ -1,4 +1,4 @@
-/* $EPIC: who.c,v 1.34 2004/06/28 23:48:15 jnelson Exp $ */
+/* $EPIC: who.c,v 1.35 2004/07/08 08:27:59 crazyed Exp $ */
 /*
  * who.c -- The WHO queue.  The ISON queue.  The USERHOST queue.
  *
@@ -792,16 +792,51 @@ static void ison_queue_add (int refnum, IsonEntry *item)
 	if (!(s = get_server(refnum)))
 		return;
 
-	bottom = s->ison_queue;
+	bottom = s->ison_wait;
 	while (bottom && bottom->next)
 		bottom = bottom->next;
 
 	if (!bottom)
-		s->ison_queue = item;
+		s->ison_wait = item;
 	else
 		bottom->next = item;
 
 	return;
+}
+
+static void ison_queue_send (int refnum)
+{
+	int count = 1;
+	Server *s;
+	IsonEntry *save, *bottom;
+
+	if (!(s = get_server(refnum)))
+		return;
+
+	if (!(save = s->ison_wait))
+		return;
+
+	bottom = s->ison_queue;
+	while (bottom)
+	{
+		if (s->ison_max && ++count > s->ison_max)
+			return;
+		else if (bottom->next)
+			bottom = bottom->next;
+		else
+			break;
+	}
+
+	s->ison_wait = save->next;
+
+	if (bottom)
+		bottom->next = save;
+	else
+		s->ison_queue = save;
+
+	save->next = NULL;
+
+	send_to_aserver(refnum, "ISON %s", save->ison_asked);
 }
 
 static void ison_queue_pop (int refnum)
@@ -863,6 +898,12 @@ static void ison_queue_list (int refnum)
 		yell("[%d] [%s] [%#x]", count, item->ison_asked, 
 				(unsigned)item->line);
 	}
+
+	for (item = s->ison_wait; item; item = item->next, count++)
+	{
+		yell("[%d] [%s] [%#x] (pending)", count, item->ison_asked, 
+				(unsigned)item->line);
+	}
 }
 
 BUILT_IN_COMMAND(isoncmd)
@@ -909,7 +950,7 @@ void isonbase (int refnum, char *args, void (*line) (int, char *, char *))
 			next = NULL;
 
 		malloc_strcpy(&new_i->ison_asked, args);
-		send_to_aserver(refnum, "ISON %s", new_i->ison_asked);
+		ison_queue_send(refnum);
 	}
 }
 
@@ -942,6 +983,7 @@ void	ison_returned (int refnum, const char *from, const char *comm, const char *
 	}
 
 	ison_queue_pop(refnum);
+	ison_queue_send(refnum);
 	return;
 }
 

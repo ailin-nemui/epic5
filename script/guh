@@ -25,6 +25,7 @@ alias whatchan
 
 alias is_on 
 {
+	@ serverctl(set $servernum() maxison 0)
 	^local blahblah
 	stack push on 303
 	^on ^303 * {

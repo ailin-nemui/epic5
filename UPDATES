@@ -1,5 +1,36 @@
 EPIC5-0.1
 
+*** News 07/08/2004 -- Changes to /ison and notify.
+	The back end of the notify system and the /ison command has been
+	changed to permit only a certain number of ISONs to be sent to a server
+	at one time.  The benefit of this is that it will typically prevent a
+	large notify list flooding the client off the server.
+
+	The down side is that it will cause scripts like $is_on() in script/guh
+	that use "/wait for ison .." to fail until they have been fixed.  The
+	fix is to put "@ serverctl(set $servernum() maxison 0)" at the top of
+	any alias that uses it.  This will turn the new behaviour off.
+
+	The notify system itself will not queue an ISON to be sent if there are
+	any ISONs waiting to be sent, but the /ison command will.
+
+	One final note is that the "waiting to be sent" queue won't be flushed
+	when the client reconnects to the server or when "/ison -f" is run.
+	This won't cause any particular damage, but it's not nice and will
+	probably change soon.
+
+*** News 07/08/2004 -- Userhost updating in NICK changes.
+	This is relevant to those who use the $serverctl() maxcache feature,
+	which, if in effect, will prevent a /who message being sent to a
+	server, and thereby make $userhost() fail for every nick that joined
+	the channel before the client did.
+
+	This patch will grab the userhost information for these users from the
+	NICK message itself, and help to rebuild the $userhost() database
+	faster.  It also makes it possible to manually get it into the database
+	by /pretend'ing a NICK message with a userhost obtained from other
+	sources such as the /userhost command.
+
 *** News 03/19/2004 -- New built in function, $tobase(<base> <num>) [howl]
 	This function converts <num>, a number in base 10, to base <base>.
 	For example, $tobase(16 65536) returns "10000"

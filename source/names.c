@@ -1,4 +1,4 @@
-/* $EPIC: names.c,v 1.61 2004/04/13 00:19:48 jnelson Exp $ */
+/* $EPIC: names.c,v 1.62 2004/07/08 08:27:59 crazyed Exp $ */
 /*
  * names.c: This here is used to maintain a list of all the people currently
  * on your channel.  Seems to work 
@@ -46,6 +46,7 @@
 #include "server.h"
 #include "list.h"
 #include "hook.h"
+#include "parse.h"
 
 typedef struct nick_stru
 {
@@ -583,6 +584,7 @@ void 	rename_nick (const char *old_nick, const char *new_nick, int server)
 		if ((tmp = (Nick *)remove_from_array((array *)&chan->nicks, old_nick)))
 		{
 			malloc_strcpy(&tmp->nick, new_nick);
+			malloc_strcpy(&tmp->userhost, FromUserHost);
 			add_to_array((array *)&chan->nicks, (array_item *)tmp);
 		}
 	}
