@@ -1,4 +1,4 @@
-/* $EPIC: commands.c,v 1.40 2002/11/07 05:48:37 jnelson Exp $ */
+/* $EPIC: commands.c,v 1.41 2002/11/08 03:06:47 jnelson Exp $ */
 /*
  * commands.c -- Stuff needed to execute commands in ircII.
  *		 Includes the bulk of the built in commands for ircII.
@@ -193,6 +193,7 @@ static  void	unshift_cmd 	(const char *, char *, const char *);
 static	void	version 	(const char *, char *, const char *);
 static 	void	waitcmd 	(const char *, char *, const char *);
 static	void	whois 		(const char *, char *, const char *);
+static	void	xechocmd 	(const char *, char *, const char *);
 static	void	xevalcmd 	(const char *, char *, const char *);
 static	void	xtypecmd 	(const char *, char *, const char *);
 static	void	allocdumpcmd	(const char *, char *, const char *);
@@ -373,7 +374,7 @@ static	IrcCommand irc_command[] =
 	{ "WHOWAS",	"WHOWAS",	whois,			0 },
 	{ "WINDOW",	NULL,		windowcmd,		0 }, /* window.c */
 	{ "XDEBUG",	NULL,		xdebugcmd,		0 }, /* debug.c */
-	{ "XECHO",	"XECHO",	echocmd,		0 },
+	{ "XECHO",	"XECHO",	xechocmd,		0 },
 	{ "XEVAL",	"XEVAL",	xevalcmd,		0 },
 	{ "XQUOTE",	"XQUOTE",	quotecmd,		0 },
 	{ "XTYPE",	NULL,		xtypecmd,		0 },
@@ -856,12 +857,20 @@ BUILT_IN_COMMAND(e_wallop)
 	message_from(NULL, LOG_CRAP);
 }
 
+/* Super simple, fast /ECHO */
+BUILT_IN_COMMAND(echocmd)
+{
+        int owd = window_display;
+        window_display = 1;
+        put_echo(args);
+        window_display = owd;
+}
+
 /*
- * echo: simply displays the args to the screen, or, if it's XECHO,
- * processes the flags first, then displays the text on the screen
+ * xecho: simply displays the args to the screen, with some flags.
  * XECHO	<- dont delete this, i search for it. ;-)
  */
-BUILT_IN_COMMAND(echocmd)
+BUILT_IN_COMMAND(xechocmd)
 {
 	unsigned display;
 	int	lastlog_level = 0;
@@ -879,21 +888,20 @@ BUILT_IN_COMMAND(echocmd)
 	int	xtended = 0;
 
 	old_to_window = to_window;
-	if (command && *command == 'X')
+
+	while (more && args && (*args == '-' || *args == '/'))
 	{
-	    while (more && args && (*args == '-' || *args == '/'))
+	    switch (toupper(args[1]))
 	    {
-		switch (toupper(args[1]))
+		case 'C':	/* CURRENT (output to user's current window) */
 		{
-		    case 'C':	/* CURRENT (output to user's current window) */
-		    {
 			next_arg(args, &args);
 			to_window = current_window;
 			break;
-		    }
+		}
 
-		    case 'L':
-		    {
+		case 'L':
+		{
 			flag_arg = next_arg(args, &args);
 
 			/* LINE (output to scratch window) */
@@ -933,10 +941,10 @@ BUILT_IN_COMMAND(echocmd)
 				}
 			}
 			break;
-		    }
+		}
 
-		    case 'V':	/* VISUAL (output to a visible window) */
-		    {
+		case 'V':	/* VISUAL (output to a visible window) */
+		{
 			/* There is always at least one visible window! */
 			Window *win = NULL;
 
@@ -952,10 +960,10 @@ BUILT_IN_COMMAND(echocmd)
 				}
 			}
 			break;
-		    }
+		}
 
-		    case 'W':	/* WINDOW (output to specified window) */
-		    {
+		case 'W':	/* WINDOW (output to specified window) */
+		{
 			flag_arg = next_arg(args, &args);
 			if (!(flag_arg = next_arg(args, &args)))
 				break;
@@ -964,25 +972,25 @@ BUILT_IN_COMMAND(echocmd)
 			else
 				to_window = get_window_by_name(flag_arg);
 			break;
-		    }
+		}
 
-		    case 'A':	/* ALL (output to all windows) */
-		    case '*':
-		    {
+		case 'A':	/* ALL (output to all windows) */
+		case '*':
+		{
 			next_arg(args, &args);
 			all_windows = 1;
 			break;
-		    }
+		}
 
-		    case 'B':	/* WITH BANNER */
-		    {
+		case 'B':	/* WITH BANNER */
+		{
 			next_arg(args, &args);
 			banner = 1;
 			break;
-		    }
+		}
 
-		    case 'R':   /* RAW OUTPUT TO TERMINAL */
-		    {
+		case 'R':   /* RAW OUTPUT TO TERMINAL */
+		{
 			next_arg(args, &args);
 			/*
 			 * Nuke reminded me of this.  Just because to_window
@@ -999,17 +1007,17 @@ BUILT_IN_COMMAND(echocmd)
 			term_flush();
 			to_window = old_to_window;
 			return;
-		    }
+		}
 
-		    case 'N': /* NOLOG (dont add to lastlog) */
-		    {
+		case 'N': /* NOLOG (dont add to lastlog) */
+		{
 			next_arg(args, &args);
 			nolog = 1;
 			break;
-		    }
+		}
 
-		    case 'S': /* SAY (dont output if suppressing output) */
-		    {
+		case 'S': /* SAY (dont output if suppressing output) */
+		{
 			next_arg(args, &args);
 			if (!window_display)
 			{
@@ -1017,10 +1025,10 @@ BUILT_IN_COMMAND(echocmd)
 				return;
 			}
 			break;
-		    }
+		}
 
-		    case 'X': /* X -- allow all attributes to be outputted */
-		    {
+		case 'X': /* X -- allow all attributes to be outputted */
+		{
 			next_arg(args, &args);
 
 			old_und = get_int_var(UNDERLINE_VIDEO_VAR);
@@ -1039,17 +1047,17 @@ BUILT_IN_COMMAND(echocmd)
 
 			xtended = 1;
 			break;
-		    }
+		}
 
-		    case '-': /* End of arg list */
-		    {
+		case '-': /* End of arg list */
+		{
 			next_arg(args, &args);
 			more = 0;
 			break;
-		    }
+		}
 
-		    default: /* Unknown */
-		    {
+		default: /* Unknown */
+		{
 			/*
 			 * Unknown flags are just spit out
 			 * like normal.  This is done so that
@@ -1058,12 +1066,11 @@ BUILT_IN_COMMAND(echocmd)
 			 */
 			more = 0;
 			break;
-		    }
 		}
-
-		if (!args)
-		    args = empty_string;
 	    }
+
+	    if (!args)
+		args = empty_string;
 	}
 
 	display = window_display;

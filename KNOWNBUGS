@@ -156,7 +156,8 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * But I think that calling recalc_win_curs_and_disp_ip might be bogus there.
 * Fix the recovery from the "output below window" bug.
 * Make notes that calling make_window_current() can kill the window.
-* Fix /WINDOW NAME so it takes extended-words (/window name "foo bar")
-* Add 'get_geom_by_winref()' for $geom(), 'const'ify a few things...
-* Fix $geom() so it can take a window refnum as an argument.
+* Fix /WINDOW NAME now take extended-words (/window name "foo bar"), from epic5
+* Add 'get_geom_by_winref()' for $geom(), 'const'ify a few things, from epic5
+* Fix $geom() so it can take a window refnum as an argument, from epic5
 * Replace $center() with a better one from epic5.
+* Split apart /ECHO and /XECHO, make /ECHO very streamlined, from epic5
