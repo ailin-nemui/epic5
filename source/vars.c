@@ -1,4 +1,4 @@
-/* $EPIC: vars.c,v 1.70 2005/03/28 23:50:07 jnelson Exp $ */
+/* $EPIC: vars.c,v 1.71 2005/03/29 00:45:23 jnelson Exp $ */
 /*
  * vars.c: All the dealing of the irc variables are handled here. 
  *
@@ -299,8 +299,8 @@ void 	init_variables_stage1 (void)
 	VAR(SHELL, STR,  NULL);
 	VAR(SHELL_FLAGS, STR,  NULL);
 	VAR(SHELL_LIMIT, INT,  NULL);
-/*
 	VAR(SHOW_CHANNEL_NAMES, BOOL, NULL);
+/*
 	VAR(SHOW_END_OF_MSGS, BOOL, NULL);
 */
 	VAR(SHOW_NUMERICS, BOOL, NULL);

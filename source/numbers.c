@@ -1,4 +1,4 @@
-/* $EPIC: numbers.c,v 1.84 2005/03/28 23:50:07 jnelson Exp $ */
+/* $EPIC: numbers.c,v 1.85 2005/03/29 00:45:23 jnelson Exp $ */
 /*
  * numbers.c: handles all those strange numeric response dished out by that
  * wacky, nutty program we call ircd 
@@ -1286,9 +1286,9 @@ DISPLAY:
 			if (do_hook(NAMES_LIST, "%s %s", channel, line))
 #if 0
 			    if (get_int_var(SHOW_CHANNEL_NAMES_VAR))
+#endif
 				say("Users on %s: %s",
 					check_channel_type(channel), line);
-#endif
 			break;
 		}
 
