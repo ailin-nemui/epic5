@@ -67,3 +67,4 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Make the output-window-searcher ignore from_server for LOG_DCC
 * Make status_hold and status_hold_lines use scrollback numbers too.
 * Make add_to_scrollback() redraw status bar if output while scrollbacking.
+* Do not increment arg_count when ignoring an empty argument in arglists.

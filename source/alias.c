@@ -1,4 +1,4 @@
-/* $EPIC: alias.c,v 1.37 2003/11/15 22:15:59 jnelson Exp $ */
+/* $EPIC: alias.c,v 1.38 2003/12/07 21:26:29 jnelson Exp $ */
 /*
  * alias.c -- Handles the whole kit and caboodle for aliases.
  *
@@ -733,13 +733,14 @@ ArgList	*parse_arglist (char *arglist)
 	ArgList *args = new_malloc(sizeof(ArgList));
 
 	args->void_flag = args->dot_flag = 0;
-	for (this_term = arglist; *this_term; this_term = next_term,arg_count++)
+	for (this_term = arglist; *this_term; this_term = next_term)
 	{
 		while (isspace(*this_term))
 			this_term++;
 		next_in_comma_list(this_term, &next_term);
 		if (!(varname = next_arg(this_term, &this_term)))
 			continue;
+
 		args->types[arg_count] = WORD;
 		if (!my_stricmp(varname, "void")) {
 			args->void_flag = 1;
@@ -785,6 +786,7 @@ ArgList	*parse_arglist (char *arglist)
 					yell("Bad modifier %s", modifier);
 				}
 			}
+			arg_count++;
 		}
 	}
 	args->vars[arg_count] = NULL;
