@@ -417,6 +417,7 @@ static BuiltInFunctions	built_in_functions[] =
 	{ "IFINDITEM",          function_ifinditem 	},
 	{ "IGETITEM",           function_igetitem 	},
 	{ "IGETMATCHES",	function_igetmatches	},
+	{ "IGETRMATCHES",	function_igetrmatches	},
 	{ "IGMASK",		function_igmask		},
 	{ "IGTYPE",		function_igtype		},
 	{ "INDEX",		function_index 		},

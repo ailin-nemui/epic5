@@ -475,6 +475,7 @@ BUILT_IN_FUNCTION(function_matchitem, input)
 BUILT_IN_FUNCTION(function_getmatches, input)
 {
         char    *result = (char *) 0;
+	size_t	resclue = 0;
         char    *name = (char *) 0;
         long    index;
         an_array *array;
@@ -487,7 +488,7 @@ BUILT_IN_FUNCTION(function_getmatches, input)
                         for (index = 0; index < array->size; index++)
                         {
                                 if (wild_match(input, array->item[index]) > 0)
-					m_s3cat(&result, space, ltoa(index));
+					m_sc3cat(&result, space, ltoa(index), &resclue);
                         }
                 }
         }
@@ -501,6 +502,7 @@ BUILT_IN_FUNCTION(function_getmatches, input)
 BUILT_IN_FUNCTION(function_igetmatches, input)
 {
 	char    *result = (char *) 0;
+	size_t	resclue = 0;
 	char    *name = (char *) 0;
 	long    item;
 	an_array *array;
@@ -513,7 +515,7 @@ BUILT_IN_FUNCTION(function_igetmatches, input)
 			for (item = 0; item < array->size; item++)
 			{
 				if (wild_match(input, array->item[item]) > 0)
-					m_s3cat(&result, space, ltoa(find_index(array, item)));
+					m_sc3cat(&result, space, ltoa(find_index(array, item)), &resclue);
 			}
 		}
 	}
@@ -565,6 +567,7 @@ BUILT_IN_FUNCTION(function_rmatchitem, input)
 BUILT_IN_FUNCTION(function_getrmatches, input)
 {
         char    *result = (char *) 0;
+	size_t	resclue = 0;
         char    *name = (char *) 0;
         long    index;
         an_array *array;
@@ -576,7 +579,7 @@ BUILT_IN_FUNCTION(function_getrmatches, input)
                         for (index = 0; index < array->size; index++)
                         {
                                 if (wild_match(array->item[index], input) > 0)
-					m_s3cat(&result, space, ltoa(index));
+					m_sc3cat(&result, space, ltoa(index), &resclue);
                         }
                 }
         }
@@ -593,6 +596,7 @@ BUILT_IN_FUNCTION(function_getrmatches, input)
 BUILT_IN_FUNCTION(function_igetrmatches, input)
 {
 	char    *result = (char *) 0;
+	size_t	resclue = 0;
 	char    *name = (char *) 0;
 	long    item;
 	an_array *array;
@@ -605,7 +609,7 @@ BUILT_IN_FUNCTION(function_igetrmatches, input)
 			for (item = 0; item < array->size; item++)
 			{
 				if (wild_match(array->item[item], input) > 0)
-					m_s3cat(&result, space, ltoa(find_index(array, item)));
+					m_sc3cat(&result, space, ltoa(find_index(array, item)), &resclue);
 			}
 		}
 	}
@@ -699,9 +703,10 @@ BUILT_IN_FUNCTION(function_getarrays, input)
 {
 	long index;
 	char *result = NULL;
+	size_t	resclue = 0;
 
 	for (index = 0; index < array_info.size; index++)
-		m_s3cat(&result, space, array_info.item[array_info.index[index]]);
+		m_sc3cat(&result, space, array_info.item[array_info.index[index]], &resclue);
 
 	if (!result)
 		RETURN_EMPTY;
@@ -942,11 +947,12 @@ BUILT_IN_FUNCTION(function_listarray, input)
 	an_array *array;
 	long	index;
 	char	*result = NULL;
+	size_t	resclue = 0;
 
 	if ((name = next_arg(input, &input)) && (array = get_array(name)))
 	{
 		for (index = 0; index < array->size; index++)
-			m_s3cat(&result, space, array->item[index]);
+			m_sc3cat(&result, space, array->item[index], &resclue);
 	}
 	return result ? result : m_strdup(empty_string);
 }

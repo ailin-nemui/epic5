@@ -9,7 +9,7 @@
  */
 
 #if 0
-static	char	rcsid[] = "$Id: vars.c,v 1.2 2001/06/22 22:34:35 jnelson Exp $";
+static	char	rcsid[] = "$Id: vars.c,v 1.3 2001/10/02 17:53:35 crazyed Exp $";
 #endif
 
 #include "irc.h"
@@ -800,9 +800,10 @@ char	*get_all_sets (void)
 {
 	int	i;
 	char	*ret = NULL;
+	size_t	rclue = 0;
 
 	for (i = 0; irc_variable[i].name; i++)
-		m_s3cat(&ret, space, irc_variable[i].name);
+		m_sc3cat(&ret, space, irc_variable[i].name, &rclue);
 	return ret;
 }
 
@@ -811,13 +812,14 @@ char	*get_set (const char *str)
 {
 	int	i;
 	char	*ret = NULL;
+	size_t	rclue = 0;
 
 	if (!str || !*str)
 		return get_all_sets();
 
 	for (i = 0; irc_variable[i].name; i++)
 		if (wild_match(str, irc_variable[i].name))
-			m_s3cat(&ret, space, irc_variable[i].name);
+			m_sc3cat(&ret, space, irc_variable[i].name, &rclue);
 
 	return ret ? ret : m_strdup(empty_string);
 }

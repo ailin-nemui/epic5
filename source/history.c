@@ -1,4 +1,4 @@
-/* $EPIC: history.c,v 1.3 2001/02/19 20:37:03 jnelson Exp $ */
+/* $EPIC: history.c,v 1.4 2001/10/02 17:53:34 crazyed Exp $ */
 /*
  * history.c: stuff to handle command line history 
  *
@@ -239,8 +239,9 @@ static	char	*last_com = NULL;
 				{
 					last_dir = OLDER;
 					new_free(&match_str);
-					ret = m_2dup("/", ptr);
-					return m_s3cat_s(&ret, " ", rest);
+					malloc_strcpy(&ret, tmp->stuff);
+					m_s3cat_s(&ret, " ", rest);
+					return (ret);
 				}
 			}
 		}
@@ -252,13 +253,13 @@ static	char	*last_com = NULL;
 	else
 	{
 		hist_num = my_atol(com);
-		if (hist_num > 0)
+		if (hist_num >= 0)
 		{
 			for (tmp = command_history_head; tmp; tmp = tmp->next)
 			{
 				if (tmp->number == hist_num)
 				{
-					ret = m_2dup("/", tmp->stuff);
+					malloc_strcpy(&ret, tmp->stuff);
 					m_s3cat_s(&ret, " ", rest);
 					return (ret);
 				}
@@ -272,14 +273,13 @@ static	char	*last_com = NULL;
 
 			if (tmp)
 			{
-				ret = m_2dup("/", tmp->stuff);
+				malloc_strcpy(&ret, tmp->stuff);
 				m_s3cat_s(&ret, " ", rest);
 				return (ret);
 			}
 		}
 
-		say("No such history entry: %d", hist_num);
-		return NULL;
+		say("No such history entry: %s", com);
 	}
 
 	return NULL;

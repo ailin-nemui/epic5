@@ -60,14 +60,15 @@ void	show_notify_list (int all)
 {
 	int	i;
 	char	*list = (char *) 0;
+	size_t	clue;
 
 	if (from_server == -1)
 		return;
 
-	for (i = 0; i < NOTIFY_MAX(from_server); i++)
+	for (i = 0, clue = 0; i < NOTIFY_MAX(from_server); i++)
 	{
 		if (NOTIFY_ITEM(from_server, i)->flag)
-		    m_s3cat(&list, space, NOTIFY_ITEM(from_server, i)->nick);
+		    m_sc3cat(&list, space, NOTIFY_ITEM(from_server, i)->nick, &clue);
 	}
 
 	if (list)
@@ -76,10 +77,10 @@ void	show_notify_list (int all)
 	if (all)
 	{
 		new_free(&list);
-		for (i = 0; i < NOTIFY_MAX(from_server); i++)
+		for (i = 0, clue = 0; i < NOTIFY_MAX(from_server); i++)
 		{
 			if (!NOTIFY_ITEM(from_server, i)->flag)
-			    m_s3cat(&list, space, NOTIFY_ITEM(from_server, i)->nick);
+			    m_sc3cat(&list, space, NOTIFY_ITEM(from_server, i)->nick, &clue);
 		}
 		if (list) 
 			say("Currently absent: %s", list);
@@ -99,6 +100,7 @@ static void	rebuild_notify_ison (int server)
 {
 	char *stuff;
 	int i;
+	size_t clue = 0;
 
 	if (from_server == -1)
 		return;		/* No server, no go */
@@ -110,8 +112,8 @@ static void	rebuild_notify_ison (int server)
 
 	for (i = 0; i < NOTIFY_MAX(from_server); i++)
 	{
-		m_s3cat(&(NOTIFY_LIST(from_server)->ison),
-			space, NOTIFY_ITEM(from_server, i)->nick);
+		m_sc3cat(&(NOTIFY_LIST(from_server)->ison),
+			space, NOTIFY_ITEM(from_server, i)->nick, &clue);
 	}
 }
 
@@ -128,6 +130,7 @@ BUILT_IN_COMMAND(notify)
 	NotifyItem	*new_n;
 	int		servnum;
 	int		added = 0;
+	size_t		clue = 0;
 
 	malloc_strcpy(&list, empty_string);
 	while ((nick = next_arg(args, &args)))
@@ -219,7 +222,7 @@ else
 
 	if (added)
 	{
-		m_s3cat(&list, space, new_n->nick);
+		m_sc3cat(&list, space, new_n->nick, &clue);
 		do_ison = 1;
 	}
 
@@ -486,6 +489,7 @@ void 	make_notify_list (int servnum)
 	NotifyItem *tmp;
 	char *list = NULL;
 	int i;
+	size_t clue = 0;
 
 	server_list[servnum].notify_list.list = NULL;
 	server_list[servnum].notify_list.max = 0;
@@ -502,7 +506,7 @@ void 	make_notify_list (int servnum)
 
 		add_to_array ((array *)NOTIFY_LIST(servnum),
 			      (array_item *)tmp);
-		m_s3cat(&list, space, tmp->nick);
+		m_sc3cat(&list, space, tmp->nick, &clue);
 	}
 
 	if (list)

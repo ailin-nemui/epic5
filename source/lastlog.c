@@ -9,7 +9,7 @@
  */
 
 #if 0
-static	char	rcsid[] = "@(#)$Id: lastlog.c,v 1.4 2001/08/28 00:49:22 jnelson Exp $";
+static	char	rcsid[] = "@(#)$Id: lastlog.c,v 1.5 2001/10/02 17:53:34 crazyed Exp $";
 #endif
 
 #include "irc.h"
@@ -851,6 +851,7 @@ char *function_lastlog (char *word)
 	Window *win;
 	int	levels;
 	int	line = 1;
+	size_t	rvclue = 0;
 
 	GET_STR_ARG(windesc, word);
 	GET_STR_ARG(pattern, word);
@@ -864,7 +865,7 @@ char *function_lastlog (char *word)
 	{
 		if (iter->level & levels)
 			if (wild_match(pattern, iter->msg))
-				m_s3cat(&retval, space, ltoa(line));
+				m_sc3cat(&retval, space, ltoa(line), &rvclue);
 	}
 
 	if (retval)

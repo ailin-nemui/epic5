@@ -561,13 +561,14 @@ char *	create_server_list (void)
 {
 	int	i;
 	char	*buffer = NULL;
+	size_t	bufclue = 0;
 
 	for (i = 0; i < number_of_servers; i++)
 	{
 		if (server_list[i].des != -1)
 		{
 			if (server_list[i].itsname)
-				m_s3cat(&buffer, space, server_list[i].itsname);
+				m_sc3cat(&buffer, space, server_list[i].itsname, &bufclue);
 			else
 				yell("Warning: I don't have server #%d's real"
 					"name yet -- using the hostname you "

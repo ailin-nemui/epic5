@@ -57,7 +57,7 @@ char *	my_next_expr (char **args, char type, int whine, int wantchar)
 
 	/* Remove any extraneous whitespace in the expression */
 	expr_start = skip_spaces(expr_start + 1);
-	remove_trailing_spaces(expr_start);
+	remove_trailing_spaces(expr_start, 0);
 
 	/*
 	 * It is guaranteed that (ptr2[-1] >= *args) and so it is further

@@ -312,7 +312,7 @@ char *	real_extract (char *start, int firstword, int lastword, int extended)
 	 */
 	while (my_isspace(*start))
 		start++;
-	remove_trailing_spaces(start);
+	remove_trailing_spaces(start, 0);
 
 	if (firstword == EOS)
 	{

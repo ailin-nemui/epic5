@@ -560,6 +560,7 @@ char 	*get_ignores_by_pattern (char *patterns, int covered)
 	Ignore	*tmp;
 	char 	*pattern;
 	char 	*retval = NULL;
+	size_t	clue = 0;
 
 	while ((pattern = new_next_arg(patterns, &patterns)))
 	{
@@ -567,7 +568,7 @@ char 	*get_ignores_by_pattern (char *patterns, int covered)
 		{
 			if (covered ? wild_match(tmp->nick, pattern)
 				    : wild_match(pattern, tmp->nick))
-				m_s3cat(&retval, space, tmp->nick);
+				m_sc3cat(&retval, space, tmp->nick, &clue);
 		}
 	}
 
@@ -661,6 +662,7 @@ char	*get_ignore_patterns_by_type (char *ctype)
 	Ignore	*tmp;
 	int	do_mask = 0, dont_mask = 0;
 	char	*result = NULL;
+	size_t	clue = 0;
 
 	/*
 	 * Convert the user's input into something we can use.
@@ -691,7 +693,7 @@ char	*get_ignore_patterns_by_type (char *ctype)
 			continue;
 
 		/* Add it to the fray */
-		m_s3cat(&result, " ", tmp->nick);
+		m_sc3cat(&result, " ", tmp->nick, &clue);
 	}
 
 	return result;

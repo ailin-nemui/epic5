@@ -819,10 +819,11 @@ char	*create_nick_list (const char *name, int server)
 	Channel *channel = find_channel(name, server);
 	char 	*str = NULL;
 	int 	i;
+	size_t	clue = 0;
 
 	if (channel)
 		for (i = 0; i < channel->nicks.max; i++)
-			m_s3cat(&str, space, channel->nicks.list[i]->nick);
+			m_sc3cat(&str, space, channel->nicks.list[i]->nick, &clue);
 
 	return str;
 }
@@ -832,11 +833,12 @@ char	*create_chops_list (const char *name, int server)
 	Channel *channel = find_channel(name, server);
 	char 	*str = NULL;
 	int 	i;
+	size_t	clue = 0;
 
 	if (channel)
 		for (i = 0; i < channel->nicks.max; i++)
 			if (channel->nicks.list[i]->chanop)
-				m_s3cat(&str, space, channel->nicks.list[i]->nick);
+				m_sc3cat(&str, space, channel->nicks.list[i]->nick, &clue);
 
 	if (!str)
 		return m_strdup(empty_string);
@@ -848,11 +850,12 @@ char	*create_nochops_list (const char *name, int server)
 	Channel *channel = find_channel(name, server);
 	char 	*str = NULL;
 	int 	i;
+	size_t	clue = 0;
 
 	if (channel)
 		for (i = 0; i < channel->nicks.max; i++)
 			if (!channel->nicks.list[i]->chanop)
-				m_s3cat(&str, space, channel->nicks.list[i]->nick);
+				m_sc3cat(&str, space, channel->nicks.list[i]->nick, &clue);
 
 	if (!str)
 		return m_strdup(empty_string);
@@ -1217,6 +1220,7 @@ char	*scan_channel (char *cname)
 	char		buffer[NICKNAME_LEN + 5];
 	char		*retval = NULL;
 	int		i;
+	size_t	clue = 0;
 
 	if (!wc)
 		return m_strdup(empty_string);
@@ -1237,7 +1241,7 @@ char	*scan_channel (char *cname)
 			buffer[1] = '.';
 
 		strlcpy(buffer + 2, nicks->list[i]->nick, NICKNAME_LEN);
-		m_s3cat(&retval, space, buffer);
+		m_sc3cat(&retval, space, buffer, &clue);
 	}
 
 	if (retval == NULL)
@@ -1398,6 +1402,7 @@ void 	reconnect_all_channels (void)
 	char	*channels = NULL;
 	char	*keyed_channels = NULL;
 	char	*keys = NULL;
+	size_t	chan_clue = 0, kc_clue = 0, key_clue = 0;
 
 	while (traverse_all_channels(&tmp, from_server))
 	{
@@ -1408,11 +1413,11 @@ void 	reconnect_all_channels (void)
 
 		if (tmp->key)
 		{
-			m_s3cat(&keyed_channels, ",", tmp->channel);
-			m_s3cat(&keys, ",", tmp->key);
+			m_sc3cat(&keyed_channels, ",", tmp->channel, &kc_clue);
+			m_sc3cat(&keys, ",", tmp->key, &key_clue);
 		}
 		else
-			m_s3cat(&channels, ",", tmp->channel);
+			m_sc3cat(&channels, ",", tmp->channel, &chan_clue);
 
 		clear_channel(tmp);
 	}
@@ -1724,11 +1729,12 @@ char *	create_channel_list (int server)
 {
 	Channel	*tmp = NULL;
 	char	*retval = NULL;
+	size_t	clue = 0;
 
 	if (server >= 0)
 	{
 		while (traverse_all_channels(&tmp, server))
-			m_s3cat(&retval, space, tmp->channel);
+			m_sc3cat(&retval, space, tmp->channel, &clue);
 	}
 
 	return retval ? retval : m_strdup(empty_string);

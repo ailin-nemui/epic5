@@ -20,6 +20,7 @@
 	char *	function_getmatches 	(char *);
 	char *	function_igetmatches 	(char *);
 	char *	function_getrmatches 	(char *);
+	char *	function_igetrmatches 	(char *);
 	char *	function_delitem 	(char *);
 	char *	function_numitems 	(char *);
 	char *	function_getarrays 	(char *);

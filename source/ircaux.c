@@ -8,7 +8,7 @@
  */
 
 #if 0
-static	char	rcsid[] = "@(#)$Id: ircaux.c,v 1.10 2001/09/26 18:32:03 jnelson Exp $";
+static	char	rcsid[] = "@(#)$Id: ircaux.c,v 1.11 2001/10/02 17:53:34 crazyed Exp $";
 #endif
 
 #include "irc.h"
@@ -580,16 +580,19 @@ char *	next_arg (char *str, char **new_ptr)
 	return str;
 }
 
-char *	remove_trailing_spaces (char *foo)
+char *	remove_trailing_spaces (char *foo, size_t *cluep)
 {
 	char *end;
+	size_t clue = cluep?*cluep:0;
 	if (!*foo)
 		return foo;
 
-	end = foo + strlen(foo) - 1;
+	end = clue + foo + strlen(clue + foo) - 1;
 	while (end > foo && my_isspace(*end))
 		end--;
 	end[1] = 0;
+	if (cluep) 
+		*cluep = end - foo;
 	return foo;
 }
 
@@ -600,20 +603,14 @@ char *	remove_trailing_spaces (char *foo)
 char *	last_arg (char **src, size_t *cluep)
 {
 	char *ptr;
-	size_t clue = cluep ? *cluep : 0;
 
 	if (!src || !*src)
 		return NULL;
 
-#if 0
-	ptr = *src + clue;
-	remove_trailing_spaces(ptr);
+	remove_trailing_spaces(*src, cluep);
+	ptr = *src + (cluep ? *cluep : 0);
 	ptr += strlen(ptr);
-#else
-	ptr = clue + *src + strlen(clue + *src);
-	while (ptr > *src && *--ptr == ' ') 
-		*ptr = 0;
-#endif
+	ptr -= 1;
 
 	if (*ptr == '"')
 	{

@@ -2487,9 +2487,10 @@ char	*get_nicklist_by_window (Window *win)
 {
 	WNickList *nick = win->nicks;
 	char *stuff = NULL;
+	size_t stuffclue = 0;
 
 	for (; nick; nick = nick->next)
-		m_s3cat(&stuff, space, nick->nick);
+		m_sc3cat(&stuff, space, nick->nick, &stuffclue);
 
 	if (!stuff)
 		return m_strdup(empty_string);
