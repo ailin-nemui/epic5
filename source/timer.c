@@ -1,4 +1,4 @@
-/* $EPIC: timer.c,v 1.40 2003/12/17 09:25:31 jnelson Exp $ */
+/* $EPIC: timer.c,v 1.41 2004/03/25 04:41:18 jnelson Exp $ */
 /*
  * timer.c -- handles timers in ircII
  *
@@ -242,6 +242,7 @@ typedef struct  timerlist_stru
 	Timeval	interval;
 	int	server;
 	int	window;
+	long	fires;
 }       Timer;
 
 static 	Timer *		PendingTimers;
@@ -268,6 +269,7 @@ static Timer * new_timer (void)
 	ntimer->interval.tv_usec = 0;
 	ntimer->server = FROMSERV;
 	ntimer->window = -1;
+	ntimer->fires = 0;
 	return ntimer;
 }
 
@@ -291,6 +293,7 @@ static Timer *clone_timer (Timer *otimer)
 	ntimer->interval = otimer->interval;
 	ntimer->server = otimer->server;
 	ntimer->window = otimer->window;
+	ntimer->fires = otimer->fires;
 	return ntimer;
 }
 
@@ -310,6 +313,8 @@ static void delete_timer (Timer *otimer)
 static int	schedule_timer (Timer *ntimer)
 {
 	Timer *tmp, *prev;
+
+	ntimer->fires = 0;
 
 	/* we've created it, now put it in order */
 	for (tmp = PendingTimers; tmp; tmp = tmp->next)
@@ -385,6 +390,40 @@ int 	timer_exists (const char *ref)
 		return 1;
 	else
 		return 0;
+}
+
+/*
+ * dump_timers: show all timers in case of emergency
+ */
+void    dump_timers (void)
+{
+        Timer   *tmp;
+        Timeval current;
+        double  time_left;
+
+        yell("*X*X*X*X*X*X*X*X*X* WARNING *X*X*X*X*X*X*X*X*X*X");
+        yell("POLLING LOOP DETECTED -- IMPORTANT DEBUGGING INFO");
+        yell("MAKE SURE TO SAVE THIS VERY IMPORTANT INFORMATION!");
+        yell("");
+        say("Timer     Seconds   Events Command");
+
+        get_time(&current);
+        for (tmp = PendingTimers; tmp; tmp = tmp->next)
+        {
+                time_left = time_diff(current, tmp->time);
+                if (time_left <= 0)
+                    yell("--> %-10s %-8.2f %-7ld %ld %s", 
+                                tmp->ref, time_left, tmp->events, 
+				tmp->fires,
+                                tmp->callback ? "SYSTEM" : tmp->command);
+                else
+                    yell("    %-10s %-8.2f %-7ld %ld %s", 
+                                tmp->ref, time_left, tmp->events,
+				tmp->fires,
+                                tmp->callback ? "SYSTEM" : tmp->command);
+        }
+        yell("Make sure to give this list to hop on #epic on efnet!");
+        yell("*X*X*X*X*X*X*X*X*X* WARNING *X*X*X*X*X*X*X*X*X*X");
 }
 
 
@@ -650,6 +689,7 @@ Timeval	TimerTimeout (void)
 
 	get_time(&current);
 	timeout_in = time_subtract(current, PendingTimers->time);
+	PendingTimers->fires++;
 	if (time_diff(right_away, timeout_in) < 0)
 		timeout_in = right_away;
 	return timeout_in;

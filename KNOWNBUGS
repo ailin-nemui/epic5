@@ -210,3 +210,4 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * GC a bunch of unused code, unused files, that kind of stuff.
 * Make all of the level names plural, it's more forgiving that way.
 * Fix /window channel.  Ooops!
+* Add a timer list dump for when a polling loop is detected.

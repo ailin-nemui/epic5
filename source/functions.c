@@ -1,4 +1,4 @@
-/* $EPIC: functions.c,v 1.163 2004/03/19 06:05:13 jnelson Exp $ */
+/* $EPIC: functions.c,v 1.164 2004/03/25 04:41:18 jnelson Exp $ */
 /*
  * functions.c -- Built-in functions for ircII
  *
@@ -6944,7 +6944,7 @@ BUILT_IN_FUNCTION(function_strtol, input)
  * Returns the string value of decimal number <number>, converted to base
  * <base>. <base> must be higher than, or equal to 2, or lower than, or 
  * equal to 36.
- * Written by howl
+ * Written by howl, from http://www.epicsol.org/~jnelson/base
  */
 BUILT_IN_FUNCTION(function_tobase, input)
 {
