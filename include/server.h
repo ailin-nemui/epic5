@@ -63,7 +63,6 @@ typedef	struct
 	IsonEntry *	ison_queue;	/* Ison queue */
 	UserhostEntry *	userhost_queue;	/* Userhost queue */
 
-	IA	local_addr;      	/* ip address of this connection */
 	ISA	local_sockname; 	/* sockname of this connection */
 	ISA	remote_sockname; 	/* sockname of this connection */
 	ISA	uh_addr;		/* ip address the server sees */

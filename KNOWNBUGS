@@ -50,3 +50,6 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Add a default typedef for socklen_t for those who haven't got one.
 * Revert ISC's inet_ntop/inet_pton, put in wrappers to inet_(a|n)to(n|a).
 * Fix API of inet_hntop/inet_ptohn to not use local static vars! yea!
+* Convert /server and wserv over to "connectory"
+* Nuke "connect_by_number", huzzah!
+* Reorder functions in network.c

@@ -1,4 +1,4 @@
-/* $EPIC: wserv.c,v 1.6 2002/05/07 00:05:45 jnelson Exp $ */
+/* $EPIC: wserv.c,v 1.7 2002/05/07 15:07:26 jnelson Exp $ */
 /*
  * wserv.c -- A little program to act as a pipe between the ircII process
  * 	      and an xterm window or GNU screen.
@@ -91,10 +91,10 @@ int	main (int argc, char **argv)
 	if ((port = atoi(argv[2])) == 0)
 		my_exit(2);		/* what the hey */
 
-	if ((data = connect_by_number(host, &port, AF_INET, SERVICE_CLIENT)) < 0)
+	if ((data = connectory(AF_INET, host, port)) < 0)
 		my_exit(23);
 
-	if ((cmd = connect_by_number(host, &port, AF_INET, SERVICE_CLIENT)) < 0)
+	if ((data = connectory(AF_INET, host, port)) < 0)
 		my_exit(25);
 
 

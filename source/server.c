@@ -106,7 +106,6 @@ void 	add_to_server_list (const char *server, int port, const char *password, co
 		s->who_queue = NULL;
 		s->ison_queue = NULL;
 		s->userhost_queue = NULL;
-		s->local_addr.s_addr = 0;
 		s->uh_addr.sin_addr.s_addr = 0;
 		s->umodes = NULL;
 		s->redirect = NULL;
@@ -1042,10 +1041,7 @@ void	flush_server (int servnum)
 static int 	connect_to_server (int new_server)
 {
 	int 		des;
-	ISA *		localaddr;
-	ISA *		remaddr;
 	int		len;
-	unsigned short	this_sucks;
 	Server *	s;
 
 	/*
@@ -1079,22 +1075,16 @@ static int 	connect_to_server (int new_server)
 	s->closing = 0;
 	oper_command = 0;
 	errno = 0;
-	localaddr = &s->local_sockname;
-	remaddr = &s->remote_sockname;
-	memset(localaddr, 0, sizeof(*localaddr));
-	memset(remaddr, 0, sizeof(*remaddr));
+	memset(&s->local_sockname, 0, sizeof(s->local_sockname));
+	memset(&s->remote_sockname, 0, sizeof(s->remote_sockname));
 
-	this_sucks = (unsigned short)s->port;
-	des = connect_by_number(s->name, &this_sucks, AF_UNSPEC, SERVICE_CLIENT);
-	s->port = this_sucks;
-
-	if (des < 0)
+	if ((des = connectory(AF_UNSPEC, s->name, s->port)) < 0)
 	{
 		if (x_debug & DEBUG_SERVER_CONNECT)
 			say("new_des is %d", des);
 
-		say("Unable to connect to port %d of server %s: %s", 
-				s->port, s->name, my_strerror(errno));
+		say("Unable to connect to port %d of server %s: [%d] %s", 
+				s->port, s->name, des, my_strerror(errno));
 #ifdef HAVE_SSL
 		s->ssl_enabled = FALSE; /* Would cause client to crash, if not wiped out */
 #endif
@@ -1106,12 +1096,11 @@ static int 	connect_to_server (int new_server)
 
 	if (*s->name != '/')
 	{
-		len = sizeof(*localaddr);
-		getsockname(des, (SA *)localaddr, &len);
-		s->local_addr = localaddr->sin_addr;
+		len = sizeof(s->local_sockname);
+		getsockname(des, (SA *)&s->local_sockname, &len);
 
-		len = sizeof(*remaddr);
-		getpeername(des, (SA *)remaddr, &len);
+		len = sizeof(s->remote_sockname);
+		getpeername(des, (SA *)&s->remote_sockname, &len);
 	}
 
 
@@ -2087,7 +2076,7 @@ int	get_server_local_port (int gsp_index)
 
 IA	get_server_local_addr (int servnum)
 {
-	return server_list[servnum].local_addr;
+	return server_list[servnum].local_sockname.sin_addr;
 }
 
 IA	get_server_uh_addr (int servnum)
