@@ -1,4 +1,4 @@
-/* $EPIC: functions.c,v 1.133 2003/07/31 06:53:19 jnelson Exp $ */
+/* $EPIC: functions.c,v 1.134 2003/09/17 20:50:35 jnelson Exp $ */
 /*
  * functions.c -- Built-in functions for ircII
  *
@@ -2605,11 +2605,11 @@ char *function_push (char *word)
 	upper(var);
 	value = get_variable(var);
 	if (!word || !*word)
-		return value;
+		RETURN_MSTR(value);
 
 	malloc_strcat_wordlist(&value, space, word);
 	add_var_alias(var, value, 0);
-	return value;
+	RETURN_MSTR(value);
 }
 
 char *function_pop (char *word)

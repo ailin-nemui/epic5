@@ -185,3 +185,4 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Fix /dcc chat nick -p 4444
 * Return empty string if you do $aliasctl(pmatch <bogus> <whatever>)
 * Update some copyright notices.
+* Fix panic from $push(:foo )
