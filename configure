@@ -1,6 +1,6 @@
 #! /bin/sh
 
-# From configure.in Revision: 1.8 # Guess values for system-dependent variables and create Makefiles.
+# From configure.in Revision: 1.9 # Guess values for system-dependent variables and create Makefiles.
 # Generated automatically using autoconf version 2.13 
 # Copyright (C) 1992, 93, 94, 95, 96 Free Software Foundation, Inc.
 #
@@ -4338,33 +4338,45 @@ rm -f conftest*
 
 echo $ac_n "checking to see if your struct sockaddr includes a length field""... $ac_c" 1>&6
 echo "configure:4341: checking to see if your struct sockaddr includes a length field" >&5
-cat > conftest.$ac_ext <<EOF
-#line 4343 "configure"
+if test "$cross_compiling" = yes; then
+  :
+else
+  cat > conftest.$ac_ext <<EOF
+#line 4346 "configure"
 #include "confdefs.h"
 
+#include <sys/types.h>
 #include <sys/socket.h>
+main()
+{
+	struct sockaddr sa;
+	sa.sa_len = 0;
+	exit(0);
+}
 
 EOF
-if (eval "$ac_cpp conftest.$ac_ext") 2>&5 |
-  egrep "sa_len" >/dev/null 2>&1; then
-  rm -rf conftest*
+if { (eval echo configure:4359: \"$ac_link\") 1>&5; (eval $ac_link) 2>&5; } && test -s conftest${ac_exeext} && (./conftest; exit) 2>/dev/null
+then
   cat >> confdefs.h <<\EOF
 #define HAVE_SA_LEN 1
 EOF
- echo "$ac_t""yes" 1>&6
+
+  echo "$ac_t""yes" 1>&6
 else
-  rm -rf conftest*
+  echo "configure: failed program was:" >&5
+  cat conftest.$ac_ext >&5
+  rm -fr conftest*
   echo "$ac_t""no" 1>&6
 fi
-rm -f conftest*
-
+rm -fr conftest*
+fi
 
 
 
 echo $ac_n "checking for struct sockaddr_storage""... $ac_c" 1>&6
-echo "configure:4366: checking for struct sockaddr_storage" >&5
+echo "configure:4378: checking for struct sockaddr_storage" >&5
 cat > conftest.$ac_ext <<EOF
-#line 4368 "configure"
+#line 4380 "configure"
 #include "confdefs.h"
 #include <sys/socket.h>
 EOF
@@ -4386,7 +4398,7 @@ rm -f conftest*
 
 
 echo $ac_n "checking whether to support SOCKS""... $ac_c" 1>&6
-echo "configure:4390: checking whether to support SOCKS" >&5
+echo "configure:4402: checking whether to support SOCKS" >&5
 # Check whether --with-socks or --without-socks was given.
 if test "${with_socks+set}" = set; then
   withval="$with_socks"
@@ -4438,7 +4450,7 @@ fi
 
 
 echo $ac_n "checking whether to support SOCKS5""... $ac_c" 1>&6
-echo "configure:4442: checking whether to support SOCKS5" >&5
+echo "configure:4454: checking whether to support SOCKS5" >&5
 # Check whether --with-socks5 or --without-socks5 was given.
 if test "${with_socks5+set}" = set; then
   withval="$with_socks5"
@@ -4472,7 +4484,7 @@ fi
 
 
 echo $ac_n "checking whether to support Perl""... $ac_c" 1>&6
-echo "configure:4476: checking whether to support Perl" >&5
+echo "configure:4488: checking whether to support Perl" >&5
 # Check whether --with-perl or --without-perl was given.
 if test "${with_perl+set}" = set; then
   withval="$with_perl"
@@ -4517,7 +4529,7 @@ if test "$program_prefix" = "NONE" ; then
 fi
 
 echo $ac_n "checking whether to support bounds checking gcc""... $ac_c" 1>&6
-echo "configure:4521: checking whether to support bounds checking gcc" >&5
+echo "configure:4533: checking whether to support bounds checking gcc" >&5
 # Check whether --with-bc or --without-bc was given.
 if test "${with_bc+set}" = set; then
   withval="$with_bc"
