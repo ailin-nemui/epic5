@@ -1,4 +1,4 @@
-/* $EPIC: screen.c,v 1.59 2003/10/28 05:53:57 jnelson Exp $ */
+/* $EPIC: screen.c,v 1.60 2003/10/30 01:07:06 jnelson Exp $ */
 /*
  * screen.c
  *
@@ -2476,8 +2476,11 @@ static void 	scroll_window (Window *window)
 		 * doing its job or something else is completely broken.
 		 * Probably shouldnt be fatal, but i want to trap these.
 		 */
-		if (window->holding_distance_from_display_ip > window->display_size || window->scrollback_distance_from_display_ip > window->display_size)
-			panic("Cant scroll this window!");
+		if (window->holding_distance_from_display_ip > window->display_size)
+			panic("Can't output to window [%d] because it is holding stuff: [%d] [%d]", window->refnum, window->holding_distance_from_display_ip, window->display_size);
+		if (window->scrollback_distance_from_display_ip > window->display_size)
+			panic("Can't output to window [%d] because it is scrolling back: [%d] [%d]", window->refnum, window->scrollback_distance_from_display_ip, window->display_size);
+
 
 		/* Scroll by no less than 1 line */
 		if ((scroll = get_int_var(SCROLL_LINES_VAR)) <= 0)
