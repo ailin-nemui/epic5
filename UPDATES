@@ -104,11 +104,11 @@ EPIC4-1.2.0
 	and the default is 60 (every minute).
 
 *** News 02/01/2002 -- $channel() value now includes half-op information
-	If a user is known to be a half-op, then the 'h' character will
+	If a user is known to be a half-op, then the '%' character will
 	be present in the first position before their nick.  This is the
 	position where you would normally see a @ for a channel operator.
 	Example:
-		$channel() might return		h.NICKNAME
+		$channel() might return		%.NICKNAME
 	if "NICKNAME" were a half-op on your current channel.
 
 *** News 02/01/2002 -- New flag to /LASTLOG, /LASTLOG -FILE
@@ -232,8 +232,48 @@ EPIC4-1.2.0
 	hostname, as before.
 
 *** News 02/01/2002 -- SSL support merged from the EPIC4-SSL project
-	$isencrypted(), $cipher(), $ssl().
-	ssl_server_cert hook.
+	Read the "README.SSL" file for some more information about the
+	particulars of SSL support, but here is a general overview:
+
+	When configuring EPIC before building it, to include SSL support:
+		./configure --with-ssl=/path/to/your/ssl/stuff
+	If you want to use SSLv2 instead of SSLv3 (the default), use:
+		./configure --with-ssl-ver=v2
+
+	To connect to a server using SSL:
+		/WINDOW SERVER -SSL <SERVERNAME>
+	(You cannot currently connect to an SSL server at startup time.)
+
+	New built in functions:
+	    $ssl()
+	      Returns 1 if SSL server connections are available, 0 if not.
+	    $isencrypted()
+	    $isencrypted(<servref>) 
+	      These return 1 if the server refnum (or current server)
+	      are SSL server connections, 0 if they are not.
+	    $cipher()
+	      Returns cipher information for an SSL server connection.
+
+	New hook:
+	    /ON SSL_SERVER_CERT
+		  $0  - server name
+		  $1  - certificate subject (urlencoded)
+		  $2  - certificate issuer (urlencoded)
+	    It is up to the scripter to accept or reject server certificates.
+
+	New status bar expando:
+	    The %| status bar expando will expand to either the value of
+	      /SET STATUS_SSL_ON or /SET STATUS_SSL_OFF depending on whether
+              the connection is SSL-enabled or not.
+
+	New built in /SETs:
+	    SSL_CERTFILE  - Path to certificate for SSL-enabled connections
+	    SSL_KEYFILE   - Path to key file for SSL-enabled connections
+	    SSL_PATH      - <I don't know what this does>
+	These sets do not do anything at the current time but probably will
+	be used in the future.
+	    STATUS_SSL_ON  - What %| will be for SSL server connections
+	    STATUS_SSL_OFF - What %| will be for non-SSL server connections
 
 *** News 02/01/2002 -- /ENCRYPT command takes additional argument
 	The /ENCRYPT command may now be used in a couple of new ways:
