@@ -21,6 +21,7 @@
 #include "status.h"
 #include "vars.h"
 #include "newio.h"
+#include "translat.h"
 
 /*
  * Note to future maintainers -- we do a bit of chicanery here.  The 'flags'
@@ -788,6 +789,8 @@ void	do_server (fd_set *rd)
 					yell("[%d] <- [%s]", 
 						server_list[i].des, buffer);
 
+				if (translation)
+					translate_from_server(buffer);
 				parsing_server_index = i;
 				parse_server(buffer);
 				parsing_server_index = -1;
@@ -894,6 +897,9 @@ static void 	vsend_to_server (const char *format, va_list args)
 	{
 		/* Keep the results short, and within reason. */
 		len = vsnprintf(buffer, BIG_BUFFER_SIZE, format, args);
+
+		if (translation)
+			translate_to_server(buffer);
 
 		if (outbound_line_mangler)
 		{

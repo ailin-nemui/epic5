@@ -338,7 +338,7 @@ server.o: server.c ../include/irc.h ../include/defs.h \
  ../include/lastlog.h ../include/exec.h ../include/window.h \
  ../include/status.h ../include/output.h ../include/names.h \
  ../include/hook.h ../include/screen.h ../include/vars.h \
- ../include/newio.h
+ ../include/newio.h ../include/translat.h
 status.o: status.c ../include/irc.h ../include/defs.h \
  ../include/config.h ../include/irc_std.h ../include/debug.h \
  ../include/dcc.h ../include/term.h ../include/screen.h \

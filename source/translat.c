@@ -30,7 +30,7 @@
 /* Globals */
 unsigned char	transToClient[256];    /* Server to client translation. */
 unsigned char	transFromClient[256];  /* Client to server translation. */
-char	translation = 0;	/* 0 for transparent (no) translation. */
+int	translation = 0;	/* 0 for transparent (no) translation. */
 
 
 
@@ -75,7 +75,8 @@ void	set_translation (char *tablename)
 		return;
 	}
 
-	/* Any problems in the translation tables between hosts are
+	/* 
+	 * Any problems in the translation tables between hosts are
 	 * almost certain to be caused here.
 	 * many scanf implementations do not work as defined. In particular,
 	 * scanf should ignore white space including new lines (many stop
@@ -113,4 +114,21 @@ void	set_translation (char *tablename)
 	}
 }
 
+void	translate_from_server (unsigned char *string)
+{
+	char *ptr;
+
+	for (ptr = string; *ptr; ptr++)
+		*ptr = transToClient[(unsigned)*ptr];
+	return;
+}
+
+void	translate_to_server (unsigned char *string)
+{
+	char *ptr;
+
+	for (ptr = string; *ptr; ptr++)
+		*ptr = transFromClient[(unsigned)*ptr];
+	return;
+}
 
