@@ -37,6 +37,8 @@
 	void 	add_cmd_alias 	   	(void);
 #endif
 	void	add_builtin_cmd_alias	(Char *name, void (*func) (Char *, char *, Char *));
+	void    add_builtin_func_alias  (const char *name, char * (*func) (char *));
+
 	void 	add_var_stub_alias 	(Char *name, Char *stuff);
 	void 	add_cmd_stub_alias 	(Char *name, Char *stuff);
 
@@ -46,6 +48,8 @@
 	char *	get_cmd_alias   	(Char *name, void **args,
                                          void (**func) (const char *, char *, 
                                                         const char *));
+	char *  get_func_alias		(const char *name, void **args, 
+					 char * (**func) (char *));
 	char **	get_subarray_elements 	(Char *root, int *howmany, int type);
 
 
@@ -84,6 +88,9 @@
  */
 	char *  call_lambda_function    (Char *, Char *, Char *);
 
+/* XXX Hrm. */
+	char *  parse_line_alias_special (const char *name, const char *what, char *args, int d1, int d2, void *arglist, int function);
+
 
 /*
  * This function is used to save all the current aliases to a global
@@ -121,7 +128,7 @@
  * Noone should call this function directly.
  */
 	char *	call_function		(char *, Char *);
-
+	void	init_functions		(void);
 
 
 /*

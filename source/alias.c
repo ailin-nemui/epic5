@@ -1,4 +1,4 @@
-/* $EPIC: alias.c,v 1.45 2004/06/27 14:33:36 jnelson Exp $ */
+/* $EPIC: alias.c,v 1.46 2004/06/27 15:07:07 jnelson Exp $ */
 /*
  * alias.c -- Handles the whole kit and caboodle for aliases.
  *
@@ -1017,6 +1017,8 @@ static Alias *make_new_Alias (const char *name)
 	tmp->name = malloc_strdup(name);
 	tmp->user_command = tmp->user_variable = NULL;
 	tmp->user_command_stub = tmp->user_variable_stub = NULL;
+	tmp->builtin_command = NULL;
+	tmp->builtin_function = NULL;
 	tmp->line = current_line();
 	tmp->cache_revoked = 0;
 	tmp->filename = malloc_strdup(current_package());
@@ -1211,6 +1213,25 @@ void	add_builtin_cmd_alias	(const char *name, void (*func) (const char *, char *
 	if (strcmp(tmp->filename, current_package()))
 		malloc_strcpy(&(tmp->filename), current_package());
 	tmp->builtin_command = func;
+	tmp->global = 1;
+	return;
+}
+
+void	add_builtin_func_alias	(const char *name, char * (*func) (char *))
+{
+	Alias *tmp = NULL;
+	int cnt, loc;
+
+	tmp = (Alias *) find_array_item ((array *)&cmd_alias, name, &cnt, &loc);
+	if (!tmp || cnt >= 0)
+	{
+		tmp = make_new_Alias(name);
+		add_to_array ((array *)&cmd_alias, (array_item *)tmp);
+	}
+
+	if (strcmp(tmp->filename, current_package()))
+		malloc_strcpy(&(tmp->filename), current_package());
+	tmp->builtin_function = func;
 	tmp->global = 1;
 	return;
 }
@@ -1643,12 +1664,14 @@ void	delete_cmd_alias (const char *orig_name, int noisy)
 	char *name;
 	/* XXX Hack */
 	void (*func) (const char *, char *, const char *) = NULL;
+	char * (*func2) (char *) = NULL;
 
 	name = remove_brackets(orig_name, NULL);
 	upper(name);
 	if ((item = (Alias *)remove_from_array ((array *)&cmd_alias, name)))
 	{
 		func = item->builtin_command;
+		func2 = item->builtin_function;
 
 		for (i = 0; i < cmd_alias.cache_size; i++)
 		{
@@ -1668,6 +1691,8 @@ void	delete_cmd_alias (const char *orig_name, int noisy)
 		/* XXX Hack -- Fix this properly later -- XXX */
 		if (func)
 			add_builtin_cmd_alias(name, func);
+		if (func2)
+			add_builtin_func_alias(name, func2);
 	}
 	else if (noisy)
 		say("No such alias: %s", name);
@@ -1935,6 +1960,23 @@ char *	get_cmd_alias (const char *name, void **args, void (**func) (const char *
 	return NULL;
 }
 
+char *	get_func_alias (const char *name, void **args, char * (**func) (char *))
+{
+	Alias *item;
+	int	howmany;
+
+	if ((item = find_cmd_alias(name, &howmany)))
+	{
+		if (args)
+			*args = (void *)item->arglist;
+		*func = item->builtin_function;
+		return item->user_command;
+	}
+
+	*func = NULL;
+	return NULL;
+}
+
 /*
  * This function is strictly O(N).  This should probably be addressed.
  *
@@ -2173,7 +2215,7 @@ char **	get_subarray_elements (const char *orig_root, int *howmany, int type)
 
 
 /* XXX What is this doing here? */
-static char *	parse_line_alias_special (const char *name, const char *what, char *args, int d1, int d2, void *arglist, int function)
+char *	parse_line_alias_special (const char *name, const char *what, char *args, int d1, int d2, void *arglist, int function)
 {
 	int	old_window_display = window_display;
 	int	old_last_function_call_level = last_function_call_level;

@@ -1,4 +1,4 @@
-/* $EPIC: functions.c,v 1.167 2004/05/04 00:34:59 jnelson Exp $ */
+/* $EPIC: functions.c,v 1.168 2004/06/27 15:07:07 jnelson Exp $ */
 /*
  * functions.c -- Built-in functions for ircII
  *
@@ -763,6 +763,14 @@ static BuiltInFunctions	built_in_functions[] =
 
 #define	NUMBER_OF_FUNCTIONS (sizeof(built_in_functions) / sizeof(BuiltInFunctions)) - 2
 
+void	init_functions (void)
+{
+	int	i;
+
+	for (i = 0; i < NUMBER_OF_FUNCTIONS; i++)
+		add_builtin_func_alias(built_in_functions[i].name, built_in_functions[i].func);
+}
+
 
 char	*built_in_alias (char c, int *returnval)
 {
@@ -796,11 +804,13 @@ char	*call_function (char *name, const char *args)
 	char	*tmp;
 	char	*result = (char *) 0;
 	char	*debug_copy = (char *) 0;
-	int	cnt, pos;
 	char	*lparen;
 	int	debugging;
 	size_t	size;
 	char *	buf;
+	const char *	alias;
+	char *	(*func) (char *) = NULL;;
+	void *	arglist = NULL;
 
 	debugging = get_int_var(DEBUG_VAR);
 
@@ -818,17 +828,26 @@ char	*call_function (char *name, const char *args)
 	else
 		lparen = endstr(name);
 
+	upper(name);
+	alias = get_func_alias(name, &arglist, &func);
+
+	if (!func && !alias)
+	{
+	    if (x_debug & DEBUG_UNKNOWN)
+		yell("Function call to non-existant alias [%s]", name);
+	    if (debugging & DEBUG_FUNCTIONS)
+		privileged_yell("Function %s(%s) returned ", name, lparen);
+            return malloc_strdup(empty_string);
+        }
+
 	tmp = expand_alias(lparen, args, NULL);
 	debug_copy = LOCAL_COPY(tmp);
 
-	upper(name);
-	find_fixed_array_item(built_in_functions, sizeof(BuiltInFunctions), 
-				NUMBER_OF_FUNCTIONS + 1, name, &cnt, &pos);
-
-	if (cnt < 0)
-		result = built_in_functions[pos].func(tmp);
-	else
-		result = call_user_function(name, tmp);
+	if (func)
+		result = func(tmp);
+	else if (alias)
+		result = parse_line_alias_special(name, alias, tmp, 
+						  0, 1, arglist, 1);
 
 	size = strlen(name) + strlen(debug_copy) + 15;
 	buf = (char *)alloca(size);
@@ -836,7 +855,8 @@ char	*call_function (char *name, const char *args)
 	MUST_BE_MALLOCED(result, buf);
 
 	if (debugging & DEBUG_FUNCTIONS)
-		privileged_yell("Function %s(%s) returned %s", name, debug_copy, result);
+		privileged_yell("Function %s(%s) returned %s", 
+					name, debug_copy, result);
 
 	new_free(&tmp);
 	return result;

@@ -258,3 +258,4 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Fix up parse_command() to get aliases and built in commands from aliases.
 * This unifies commands and alias name spaces. HUZZAH!
 * Optimize some stuff now that I've finished this.
+* Unify the built in functions with the command/alias list. HUZZAH!
