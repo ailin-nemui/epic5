@@ -275,7 +275,7 @@ alias nick_complete {
 }
 
 alias add_nickname {
-	if (numwords($myservers()) > 1 && count(: $0) == 0) {
+	if (numwords($myservers()) > 1 && count(: $0) == 0 && left(1 $0) != [=]) {
 		@:nickname = [$servernum():$0]
 	} {
 		@:nickname = [$0]
