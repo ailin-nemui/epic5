@@ -1,4 +1,4 @@
-/* $EPIC: server.c,v 1.120 2004/01/16 00:26:42 jnelson Exp $ */
+/* $EPIC: server.c,v 1.121 2004/01/22 03:24:34 jnelson Exp $ */
 /*
  * server.c:  Things dealing with that wacky program we call ircd.
  *
@@ -946,7 +946,7 @@ void	do_server (int fd)
 			new_open(des, do_server);
 		}
 
-		if (des == -1)
+		if (fd == -1)
 		{
 		    if (get_server_ssl_enabled(i) == TRUE)
 		    {

@@ -137,4 +137,4 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Refactor io() some more; no explicit dependancy on select() now
 * Refactor io(), optimize placement of some of the post-select operations.
 * When wserv changes size, recalculate windows, and allow io() to redraw it.
-
+* Fix typo in do_server() that caused a blocking read. doh! (rb adm)
