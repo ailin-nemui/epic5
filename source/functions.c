@@ -1,4 +1,4 @@
-/* $EPIC: functions.c,v 1.147 2003/12/06 02:03:11 jnelson Exp $ */
+/* $EPIC: functions.c,v 1.148 2003/12/06 03:58:05 jnelson Exp $ */
 /*
  * functions.c -- Built-in functions for ircII
  *
@@ -6920,12 +6920,17 @@ BUILT_IN_FUNCTION(function_numlines, input)
 {
 	int cols;
 	int numl = 0;
+	char *strval;
 
 	GET_INT_ARG(cols, input);
 	if (cols < 1)
 		RETURN_EMPTY;
-	prepare_display(input, cols, &numl, 0);
+	cols--;
 
+	/* Normalize the line of output */
+	strval = normalize_string(input, 0);
+	prepare_display(strval, cols, &numl, 0);
+	new_free(&strval);
 	RETURN_INT(numl+1);
 }
 

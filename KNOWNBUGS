@@ -58,3 +58,4 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Fix bounds error in /exec -direct
 * The last argument to open_file_for_write() needs to be lowercase.
 * Add $numlines() from fudd.
+* Fix some issues with $numlines()

@@ -132,7 +132,7 @@ extern	Server	**server_list;
 #ifdef NEED_SERVER_LIST
 static __inline__ Server *	get_server (int server)
 {
-	if (server == -1 && from_server != -1)
+	if (server == -1 && from_server >= 0)
 		server = from_server;
 	if (server < 0 || server >= number_of_servers)
 		return NULL;
