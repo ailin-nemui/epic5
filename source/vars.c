@@ -1,4 +1,4 @@
-/* $EPIC: vars.c,v 1.57 2004/07/28 01:02:39 jnelson Exp $ */
+/* $EPIC: vars.c,v 1.58 2004/07/29 16:39:50 jnelson Exp $ */
 /*
  * vars.c: All the dealing of the irc variables are handled here. 
  *
@@ -805,14 +805,7 @@ char 	*make_string_var_bydata (int type, void *vp)
 
 }
 
-/*
-GET_ARRAY_NAMES_FUNCTION(get_set, irc_variable)
-*/
-char *get_set (const char *str)
-{
-	yell("get_set: implement me!");
-	return malloc_strdup(empty_string);
-}
+GET_BUCKET_NAMES_FUNCTION(get_set, var_bucket)
 
 
 /*

@@ -17,6 +17,7 @@ KNOWN ERRATA (eg, bugs, or unresolved requests):
 * Need a way to decompile alias arglists back into strings for output.
 * Allow server groups anywhere a "server desc" is wanted
 * Allow /msg -<server desc>, including the group.
+* Some /set's need to be initialized before creating the first window!
 
 [See http://www.epicsol.org/PROJECTS for things to come in the future]
 [See http://www.epicsol.org/CHANGELOG5 for things that changed in the past]

@@ -119,5 +119,6 @@ char *(fn)(const char *str)                                                     
 }
 #define GET_FIXED_ARRAY_NAMES_FUNCTION(fn, array) GET_SOME_ARRAY_NAMES_FUNCTION((fn), ((array)[i].name), ((array)[i].name))
 #define GET_ARRAY_NAMES_FUNCTION(fn, array) GET_SOME_ARRAY_NAMES_FUNCTION((fn), ((array.list)[i]->name), (i < (array).max))
+#define GET_BUCKET_NAMES_FUNCTION(fn, bucket) GET_SOME_ARRAY_NAMES_FUNCTION((fn), ((bucket)->list[i].name), (i < (bucket)->numitems))
 
 #endif
