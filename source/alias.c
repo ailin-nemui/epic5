@@ -1,4 +1,4 @@
-/* $EPIC: alias.c,v 1.9 2002/08/26 17:20:14 crazyed Exp $ */
+/* $EPIC: alias.c,v 1.10 2002/09/02 22:05:51 jnelson Exp $ */
 /*
  * alias.c -- Handles the whole kit and caboodle for aliases.
  *
@@ -269,24 +269,24 @@ extern u_32int_t       alist_searches;
 extern u_32int_t       char_searches;
 
 
-	    say("Total aliases handled: %ld", 
+	    say("Total aliases handled: %lu", 
 			alias_total_allocated);
-	    say("Total bytes allocated to aliases: %ld", 
+	    say("Total bytes allocated to aliases: %lu", 
 			alias_total_bytes_allocated);
 
-	    say("Var cache hits/misses/passes/missed-by [%ld/%ld/%ld/%3.1f]",
+	    say("Var cache hits/misses/passes/missed-by [%lu/%lu/%lu/%3.1f]",
 			var_cache_hits, 
 			var_cache_misses, 
 			var_cache_passes, 
 			( var_cache_misses ? (double) 
 			  (var_cache_missed_by / var_cache_misses) : 0.0));
-	    say("Cmd cache hits/misses/passes/missed-by [%ld/%ld/%ld/%3.1f]",
+	    say("Cmd cache hits/misses/passes/missed-by [%lu/%lu/%lu/%3.1f]",
 			cmd_cache_hits, 
 			cmd_cache_misses, 
 			cmd_cache_passes,
 			( cmd_cache_misses ? (double)
 			  (cmd_cache_missed_by / cmd_cache_misses) : 0.0));
-	    say("Ints(bin/lin)/Chars(bin/lin)/Lookups: [(%d/%d)/(%d/%d)] (%d/%d)",
+	    say("Ints(bin/lin)/Chars(bin/lin)/Lookups: [(%lu/%lu)/(%lu/%lu)] (%lu/%lu)",
 			 bin_ints, lin_ints, bin_chars, lin_chars,
 			 alist_searches, char_searches);
 	    show_alias_caches();

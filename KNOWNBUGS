@@ -29,3 +29,4 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Remove a couple of no-ops in keys.c
 * Revamp do_log into two parts; open_log and close_log; do_log now a wrapper.
 * Fix a string that had a newline in it. spotted by Szabolcs Rumi.
+* Fix /alias /s say() formats to use %lu and not %d for unsigned longs.
