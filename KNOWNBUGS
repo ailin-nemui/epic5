@@ -65,3 +65,9 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Add support for [<ipv6 p-addr>] to parse_server_info().
 * Fix an off-by-one error in Getaddrinfo.  Bleh.
 * Fix a malloc() size mistake in Getaddrinfo.
+* Clean up configure.in - remove checks for scandir, inet_aton
+* Convert all uses of inet_pton() to inet_strton()
+* Convert all uses of inet_ntop() to inet_ntostr()
+* Remove checks for inet_pton(), inet_ntop(), gethostbyname2() in configure
+* Remove impls of inet_pton(), inet_ntop(), inet_aton() in compat.c
+* Alas, inet_strton() must fill in sin_len for 32-bit integer (dcc) case.

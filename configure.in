@@ -4,9 +4,9 @@ dnl except those bits attributed otherwise.
 dnl thanks to the screen 3.3 configure.in for giving me examples to
 dnl work from and steal ;)
 dnl
-dnl @(#)$Id: configure.in,v 1.15 2002/05/28 03:54:43 jnelson Exp $
+dnl @(#)$Id: configure.in,v 1.16 2002/05/28 04:55:56 jnelson Exp $
 
-AC_REVISION($Revision: 1.15 $)dnl
+AC_REVISION($Revision: 1.16 $)dnl
 AC_INIT(source/irc.c)
 AC_CONFIG_HEADER(include/defs.h)
 
@@ -193,11 +193,9 @@ AC_CHECK_FUNC(strtoul, AC_DEFINE(HAVE_STRTOUL),)
 AC_CHECK_FUNC(vsnprintf, AC_DEFINE(HAVE_VSNPRINTF),)
 AC_CHECK_FUNC(snprintf, AC_DEFINE(HAVE_SNPRINTF),)
 AC_CHECK_FUNC(sysconf, AC_DEFINE(HAVE_SYSCONF),)
-AC_CHECK_FUNC(scandir, AC_DEFINE(HAVE_SCANDIR),)
 AC_CHECK_FUNC(fpathconf, AC_DEFINE(HAVE_FPATHCONF),)
 AC_CHECK_FUNC(strerror, AC_DEFINE(HAVE_STRERROR),)
 AC_CHECK_FUNC(memmove, AC_DEFINE(HAVE_MEMMOVE),)
-AC_CHECK_FUNC(inet_aton, AC_DEFINE(HAVE_INET_ATON),)
 AC_CHECK_FUNC(setsid, AC_DEFINE(HAVE_SETSID),)
 AC_CHECK_FUNC(tparm, AC_DEFINE(HAVE_TPARM),)
 AC_CHECK_FUNC(getlogin, AC_DEFINE(HAVE_GETLOGIN),)
@@ -211,9 +209,6 @@ AC_CHECK_FUNC(sysctlbyname, AC_DEFINE(HAVE_SYSCTLBYNAME),)
 AC_MSG_CHECKING(for stpcpy in string.h)
 AC_EGREP_HEADER(stpcpy, string.h, AC_DEFINE(STPCPY_DECLARED)
 	AC_MSG_RESULT(yes), AC_MSG_RESULT(no),)
-AC_CHECK_FUNC(inet_ntop, AC_DEFINE(HAVE_INET_NTOP),)
-AC_CHECK_FUNC(inet_pton, AC_DEFINE(HAVE_INET_PTON),)
-AC_CHECK_FUNC(gethostbyname2, AC_DEFINE(HAVE_GETHOSTBYNAME2),)
 
 AC_HEADER_STDC
 AC_HEADER_TIME

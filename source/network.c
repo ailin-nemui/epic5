@@ -441,9 +441,15 @@ int	inet_strton (const char *host, const char *port, SA *storage, int flags)
 	int family = storage->sa_family;
 
         /* First check for legacy 32 bit integer DCC addresses */
-	if ((family == AF_INET || family == AF_UNSPEC) && is_number(host))
+	if ((family == AF_INET || family == AF_UNSPEC) && host && is_number(host))
 	{
+		((ISA *)storage)->sin_family = AF_INET;
+#ifdef HAVE_SA_LEN
+		((ISA *)storage)->sin_len = sizeof(ISA);
+#endif
 		((ISA *)storage)->sin_addr.s_addr = htonl(strtoul(host, NULL, 10));
+		if (port)
+			((ISA *)storage)->sin_port = htons((u_short)strtoul(port, NULL, 10));
 		return 0;
 	}
 	else
@@ -488,8 +494,12 @@ int	inet_strton (const char *host, const char *port, SA *storage, int flags)
  */
 char *	inet_ntostr (SA *name, socklen_t len, char *host, int hsize, char *port, int psize, int flags)
 {
-	if (getnameinfo(name, len, host, hsize, port, psize, flags))
+	int	retval;
+
+	if ((retval = getnameinfo(name, len, host, hsize, port, psize, flags))) {
+		yell("getnameinfo(%s): %s", host, gai_strerror(retval));
 		return NULL;
+	}
 
 	return host;
 }

@@ -9,7 +9,7 @@
  */
 
 #if 0
-static	char	rcsid[] = "@(#)$Id: dcc.c,v 1.25 2002/05/27 15:13:00 jnelson Exp $";
+static	char	rcsid[] = "@(#)$Id: dcc.c,v 1.26 2002/05/28 04:55:57 jnelson Exp $";
 #endif
 
 #include "irc.h"
@@ -570,12 +570,10 @@ int	dcc_opened (int fd, int result)
 	{
 		char p_addr[256];
 		char p_port[24];
+		SA *addr = (SA *)&dcc->peer_sockaddr;
 
-		if (FAMILY(dcc->peer_sockaddr) == AF_INET)
-		{
-			inet_ntop(AF_INET, &V4ADDR(dcc->peer_sockaddr), p_addr, 256);
-			snprintf(p_port, 24, "%hu", ntohs(V4PORT(dcc->peer_sockaddr)));
-		}
+		inet_ntostr(addr, socklen(addr), p_addr, 256, 
+				p_port, 24, NI_NUMERICHOST);
 
 		/* 
 		 * It would be nice if SEND also showed the filename
@@ -1745,10 +1743,10 @@ void	register_dcc_offer (char *user, char *type, char *description, char *addres
 	DCC_list *	Client;
 	int		CType, jvs_blah;
 	char *		c;
-	u_long		TempLong = 0;
 	int		do_auto = 0;	/* used in dcc chat collisions */
 	u_short		realport;	/* Bleh */
 	char 		p_addr[256];
+	int		err;
 
 	if (x_debug & DEBUG_DCC_SEARCH)
 		yell("register_dcc_offer: [%s|%s|%s|%s|%s|%s|%s]", user, type, description, address, port, size, extra);
@@ -1839,38 +1837,29 @@ void	register_dcc_offer (char *user, char *type, char *description, char *addres
 		return;
 	}
 
-	/* 
-	 * I'd love to use inet_strton() here, but that can do dns
-	 * lookups and people would probably exploit that for evil. :(
+	/*
+	 * Convert the handshake address to a sockaddr.  If it cannot be
+	 * figured out, warn the user and punt.
 	 */
-
-	if (strchr(address, '.'))
+	V4FAM(Client->offer) = AF_UNSPEC;
+	if ((err = inet_strton(address, port, (SA *)&Client->offer, AI_NUMERICHOST)))
 	{
-		V4FAM(Client->offer) = AF_INET;
-		if (inet_pton(AF_INET, address, &V4ADDR(Client->offer)) == 0)
-		{
-			say("DCC %s (%s) request from %s had mangled return "
-				"address [%s]", type, description, 
-						user, address);
-			return;
-		}
-		V4PORT(Client->offer) = htons(realport);
-		inet_ntop(AF_INET, &V4ADDR(Client->offer), p_addr, 256);
-	}
-	else if (strchr(address, ':'))
-	{
-		say("DCC IPv6 handshake recieved -- not supported!");
+		say("DCC %s (%s) request from %s had mangled return address "
+			"[%s] (%d)", type, description, user, address, err);
 		return;
 	}
-	else
-	{
-		TempLong = strtoul(address, NULL, 10);
-		V4FAM(Client->offer) = AF_INET;
-		V4ADDR(Client->offer).s_addr = htonl(TempLong);
-		V4PORT(Client->offer) = htons(realport);
-		inet_ntop(AF_INET, &V4ADDR(Client->offer), p_addr, 256);
-	}
 
+	/*
+	 * Convert the sockaddr back to a name that we can print.
+	 */
+	if (!inet_ntostr((SA *)&Client->offer, socklen((SA *)&Client->offer),
+			p_addr, 256, NULL, 0, NI_NUMERICHOST))
+	{
+		say("DCC %s (%s) request from %s could not be converted back "
+		    "into a p-addr [%s] [%s]", 
+			type, description, user, address, port);
+		return;
+	}
 
 #ifdef HACKED_DCC_WARNING
 	/* 
@@ -2124,6 +2113,7 @@ static	void	process_incoming_chat (DCC_list *Client)
 		int	sra;
 		char	p_addr[256];
 		char	p_port[24];
+		SA *	addr;
 
 		sra = sizeof(remaddr);
 		fd = Accept(Client->socket, (SA *)&Client->peer_sockaddr, &sra);
@@ -2140,12 +2130,9 @@ static	void	process_incoming_chat (DCC_list *Client)
 		Client->flags &= ~DCC_MY_OFFER;
 		Client->flags |= DCC_ACTIVE;
 
-		if (FAMILY(Client->peer_sockaddr) == AF_INET)
-		{
-			inet_ntop(AF_INET, &V4ADDR(Client->peer_sockaddr), p_addr, 256);
-			snprintf(p_port, 24, "%hu", ntohs(V4PORT(Client->peer_sockaddr)));
-		}
-
+		addr = (SA *)&Client->peer_sockaddr;
+		inet_ntostr(addr, socklen(addr), p_addr, 256, 
+				p_port, 24, NI_NUMERICHOST);
 
 		Client->locked++;
                 if (do_hook(DCC_CONNECT_LIST, "%s CHAT %s %s", 
@@ -2185,6 +2172,7 @@ static	void	process_incoming_chat (DCC_list *Client)
 		char 	uh[80];
 		char 	equal_nickname[80];
 		char	p_addr[256];
+		SA *	addr;
 
 		chomp(tmp);
 		my_decrypt(tmp, strlen(tmp), Client->encrypt);
@@ -2194,9 +2182,9 @@ static	void	process_incoming_chat (DCC_list *Client)
 		if (x_debug & DEBUG_INBOUND) 
 			yell("%s", tmp);
 
-		if (FAMILY(Client->peer_sockaddr) == AF_INET)
-			inet_ntop(AF_INET, &V4ADDR(Client->peer_sockaddr), p_addr, 256);
-
+		addr = (SA *)&Client->peer_sockaddr;
+		inet_ntostr(addr, socklen(addr), p_addr, 256, 
+				NULL, 0, NI_NUMERICHOST);
 
 #define CTCP_MESSAGE "CTCP_MESSAGE "
 #define CTCP_MESSAGE_LEN strlen(CTCP_MESSAGE)
@@ -2387,6 +2375,7 @@ static void		process_outgoing_file (DCC_list *Client)
 	int		new_fd;
 	char		p_addr[256];
 	char		p_port[24];
+	SA *		addr;
 
 	/*
 	 * The remote user has accepted the file offer
@@ -2421,11 +2410,9 @@ static void		process_outgoing_file (DCC_list *Client)
 			say("setsockopt failed: %s", strerror(errno));
 #endif
 
-		if (FAMILY(Client->peer_sockaddr) == AF_INET)
-		{
-			inet_ntop(AF_INET, &V4ADDR(Client->peer_sockaddr), p_addr, 256);
-			snprintf(p_port, 24, "%hu", ntohs(V4PORT(Client->peer_sockaddr)));
-		}
+		addr = (SA *)&Client->peer_sockaddr;
+		inet_ntostr(addr, socklen(addr), p_addr, 256, 
+				p_port, 24, NI_NUMERICHOST);
 
 		/*
 		 * Tell the user

@@ -6147,25 +6147,28 @@ BUILT_IN_FUNCTION(function_wincurline, input)
 
 BUILT_IN_FUNCTION(function_iptolong, word)
 {
-	char *	dotted_quad;
 	ISA	addr;
+	char *	dotted_quad;
 
+	addr.sin_family = AF_INET;
 	GET_STR_ARG(dotted_quad, word);
-	if (inet_pton(AF_INET, dotted_quad, &addr.sin_addr))
-		return m_sprintf("%lu", (unsigned long)ntohl(addr.sin_addr.s_addr));
-	RETURN_EMPTY;
+	if (inet_strton(dotted_quad, NULL, (SA *)&addr, AI_NUMERICHOST))
+		RETURN_EMPTY;
+	
+	return m_sprintf("%lu", (unsigned long)ntohl(addr.sin_addr.s_addr));
 }
 
 BUILT_IN_FUNCTION(function_longtoip, word)
 {
 	char *	ip32;
-	ISA	addr;
+	SS	addr;
 	char	retval[256];
 
 	GET_STR_ARG(ip32, word);
-	addr.sin_addr.s_addr = (unsigned long)ntohl(strtoul(ip32, NULL, 10));
-	if (inet_ntop(AF_INET, (void *)&addr.sin_addr, retval, 256) == 0)
+	((SA *)&addr)->sa_family = AF_INET;
+	if (inet_strton(ip32, NULL, (SA *)&addr, AI_NUMERICHOST))
 		RETURN_EMPTY;
+	inet_ntostr((SA *)&addr, socklen((SA *)&addr), retval, 256, NULL, 0, NI_NUMERICHOST);
 	RETURN_STR(retval);
 }
 

@@ -8,7 +8,7 @@
  */
 
 #if 0
-static	char	rcsid[] = "@(#)$Id: ircaux.c,v 1.38 2002/05/27 15:13:00 jnelson Exp $";
+static	char	rcsid[] = "@(#)$Id: ircaux.c,v 1.39 2002/05/28 04:55:57 jnelson Exp $";
 #endif
 
 #include "irc.h"
@@ -3811,11 +3811,13 @@ const char *	switch_hostname (const char *new_hostname)
 	new_6.sin6_family = AF_INET6;
 
 	if (!inet_strton(new_hostname, zero, (SA *)&new_4, 0)) {
-		inet_ntop(AF_INET, &new_4.sin_addr, v4_name, 1024);
+		inet_ntostr((SA *)&new_4, socklen((SA *)&new_4), 
+			v4_name, 1024, NULL, 0, NI_NUMERICHOST);
 		accept4 = 1;
 	}
 	if (!inet_strton(new_hostname, zero, (SA *)&new_6, 0)) {
-		inet_ntop(AF_INET6, &new_6.sin6_addr, v6_name, 1024);
+		inet_ntostr((SA *)&new_6, socklen((SA *)&new_6), 
+			v6_name, 1024, NULL, 0, NI_NUMERICHOST);
 		accept6 = 1;
 	}
 

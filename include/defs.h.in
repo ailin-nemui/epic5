@@ -95,9 +95,6 @@
 /* define this if you have memmove(3) */
 #undef HAVE_MEMMOVE
 
-/* define this if you have scandir(3) */
-#undef HAVE_SCANDIR
-
 /* define this if you have setenv(3) */
 #undef HAVE_SETENV
 
@@ -145,9 +142,6 @@
 
 /* define this if you are unsure what is is 32 bits */
 #undef UNKNOWN_32INT
-
-/* Define this if you have inet_aton(). */
-#undef HAVE_INET_ATON
 
 /* Define this if you need to include sys/select.h */
 #undef NEED_SYS_SELECT_H
@@ -236,15 +230,6 @@
 
 /* Define this if your system has SA_LEN in its sockaddrs */
 #undef HAVE_SA_LEN
-
-/* Define this if you have inet_ntop() */
-#undef HAVE_INET_NTOP
-
-/* Define this if you have inet_pton() */
-#undef HAVE_INET_PTON
-
-/* Define this if you have gethostbyname2() */
-#undef HAVE_GETHOSTBYNAME2
 
 /* Define this if you don't have siglen_t */
 #undef HAVE_SOCKLEN_T
