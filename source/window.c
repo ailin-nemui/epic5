@@ -2074,7 +2074,10 @@ void 	window_check_servers (void)
 		if (cnt)
 			connected_to_server++;
 		else if (connected)
+		{
+			dont_save_server_channels(i);
 			close_server(i, "No windows for this server");
+		}
 	}
 
 	if (dead)

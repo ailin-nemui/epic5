@@ -1739,14 +1739,8 @@ void 	save_channels (int servref)
 		if (tmp->server != servref)
 			continue;
 
-#if 0
-		/* You know, i'd be willing to bet this isnt neccesary */
-		if (!tmp->current_channel || !tmp->bind_channel)
-			continue;
-#else
 		if (tmp->waiting_channel)
 			continue;		/* Yea yea yea */
-#endif
 
 		tmp->waiting_channel = tmp->current_channel;
 		tmp->current_channel = NULL;

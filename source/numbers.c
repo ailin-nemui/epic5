@@ -10,7 +10,7 @@
  */
 
 #if 0
-static	char	rcsid[] = "$Id: numbers.c,v 1.7 2001/03/20 19:35:36 jnelson Exp $";
+static	char	rcsid[] = "$Id: numbers.c,v 1.8 2001/03/21 16:57:36 jnelson Exp $";
 #endif
 
 #include "irc.h"
@@ -1044,7 +1044,7 @@ void 	numbered_command (char *from, int comm, char **ArgList)
 					strmcat(buffer, " (Bad channel mask)", BIG_BUFFER_SIZE);
 					break;
 				case 477:
-					strmcat(buffer, " (You must use a registered nickname", BIG_BUFFER_SIZE);
+					strmcat(buffer, " (You must use a registered nickname)", BIG_BUFFER_SIZE);
 					break;
 			}
 			put_it("%s %s", numeric_banner(), buffer);

@@ -111,7 +111,7 @@ void 	add_to_server_list (const char *server, int port, const char *password, co
 		s->resetting_nickname = 0;
 		s->reconnects = 0;
 		s->quit_message = NULL;
-		s->save_channels = 0;
+		s->save_channels = -1;
 
 		if (password && *password)
 			malloc_strcpy(&s->password, password);
@@ -722,7 +722,9 @@ void	do_server (fd_set *rd)
 
 			case -1:	/* EOF or other error */
 			{
-				save_server_channels(i);
+				if (server_list[i].save_channels == -1)
+					save_server_channels(i);
+
 				server_is_connected(i, 0);
 				close_server(i, NULL);
 				say("Connection closed from %s: %s", 
@@ -998,7 +1000,7 @@ static int 	connect_to_server (int new_server)
 	/*
 	 * Reset everything and go on our way.
 	 */
-	message_from((char *) 0, LOG_CRAP);
+	message_from(NULL, LOG_CRAP);
 	update_all_status();
 	server_reconnects_to(new_server, new_server + 1);
 	return 0;			/* New connection established */
@@ -1080,15 +1082,12 @@ int 	connect_to_new_server (int new_server, int old_server, int new_conn)
 	 */
 	if (new_conn == 0)
 	{
+		/* 
+		 * By default, all server channels are saved; however,
+		 * we save them just in case.
+		 */
 		if (is_server_open(old_server))
 		{
-			/*
-			 * We need to close off the old connection now.  
-			 * We make sure to set the "save_channels" hint, 
-			 * that way the channels wont be trashcanned, and 
-			 * the windows wont be re-assigned on us.  This 
-			 * gives us a chance to do the right thing below.
-			 */
 			save_server_channels(old_server);
 			close_server(old_server, "changing servers");
 		}
@@ -1197,6 +1196,9 @@ int	reconnect (int oldserv)
 
 		if (newserv != -1)
 			save_server_channels(oldserv);
+		else
+			dont_save_server_channels(oldserv);
+
 		if (newserv == oldserv || newserv == -1)
 			close_server(oldserv, get_server_quit_message(oldserv));
 		connected = is_server_connected(oldserv);
@@ -1310,12 +1312,15 @@ void	close_server (int old, const char *message)
 	if (waiting_out > waiting_in)		/* XXX - hack! */
 		waiting_out = waiting_in = 0;
 
-	if (server_list[old].save_channels)
+	if (server_list[old].save_channels == 1)
 		save_channels(old);
-	else
+	else if (server_list[old].save_channels == 0)
 		destroy_server_channels(old);
+	else
+		panic("Somebody forgot to set "
+			"server_list[%d].save_channels!", old);
 
-	server_list[old].save_channels = 0;
+	server_list[old].save_channels = -1;
 	server_list[old].oper = 0;
 	server_list[old].registration_pending = 0;
 	server_list[old].connected = 0;
@@ -1354,7 +1359,10 @@ void 	save_server_channels (int servnum)
 	server_list[servnum].save_channels = 1;
 }
 
-
+void	dont_save_server_channels (int servnum)
+{
+	server_list[servnum].save_channels = 0;
+}
 
 
 /********************* OTHER STUFF ************************************/
@@ -1675,6 +1683,13 @@ void 	server_is_connected (int sic_index, int value)
 	server_list[sic_index].rejoined_channels = 0;
 	if (value)
 	{
+		/* 
+		 * By default, we want to save the server's channels.
+		 * If anything happens where we don't want to do this,
+		 * then we must turn it off, rather than the other way
+		 * around.
+		 */
+		save_server_channels(sic_index);
 		server_list[sic_index].reconnect_to = sic_index;
 		server_list[sic_index].eof = 0;
 		clear_reconnect_counts();
