@@ -1,4 +1,4 @@
-/* $EPIC: dcc.c,v 1.74 2003/09/25 03:18:49 jnelson Exp $ */
+/* $EPIC: dcc.c,v 1.75 2003/10/12 03:41:00 jnelson Exp $ */
 /*
  * dcc.c: Things dealing client to client connections. 
  *
@@ -1073,8 +1073,6 @@ void	dcc_chat_transmit (char *user, char *text, const char *orig, const char *ty
 {
 	int	fd;
 
-	message_from(NULL, LOG_DCC);
-
     do
     {
 	/*
@@ -1088,16 +1086,21 @@ void	dcc_chat_transmit (char *user, char *text, const char *orig, const char *ty
 
 		if (!(dcc = get_dcc_by_filedesc(fd)))
 		{
+			message_from(NULL, LOG_DCC);
 			put_it("Descriptor %d is not an open DCC RAW", fd);
 			break;
 		}
 
+		message_from(dcc->user, LOG_DCC);
 		dcc_message_transmit(DCC_RAW, dcc->user, dcc->description, 
 					text, orig, noisy, type);
 	}
 	else
+	{
+		message_from(user, LOG_DCC);
 		dcc_message_transmit(DCC_CHAT, user, NULL,
 					text, orig, noisy, type);
+	}
     }
     while (0);
 
@@ -1661,6 +1664,8 @@ static	void	dcc_send_raw (char *args)
 		say("No hostname specified for DCC RAW");
 		return;
 	}
+
+	message_from(name, LOG_DCC);
 	dcc_message_transmit(DCC_RAW, name, host, args, args, 1, NULL);
 }
 
