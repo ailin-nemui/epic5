@@ -1,4 +1,4 @@
-/* $EPIC: window.c,v 1.75 2003/10/20 15:39:58 jnelson Exp $ */
+/* $EPIC: window.c,v 1.76 2003/10/28 06:13:34 jnelson Exp $ */
 /*
  * window.c: Handles the organzation of the logical viewports (``windows'')
  * for irc.  This includes keeping track of what windows are open, where they
@@ -5338,7 +5338,7 @@ int	change_line (Window *window, const unsigned char *str)
 		add_to_display(window, empty_string);
 
 	/* Now find the line we want to change */
-	my_line = window->scrollback_top_of_display;
+	my_line = window->scrolling_top_of_display;
 	if (my_line == window->display_ip)
 		panic("Can't change line [%d] -- doesn't exist", 
 			chg_line);
