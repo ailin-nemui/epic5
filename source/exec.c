@@ -1,4 +1,4 @@
-/* $EPIC: exec.c,v 1.23 2003/10/31 08:19:24 crazyed Exp $ */
+/* $EPIC: exec.c,v 1.24 2003/12/04 22:59:03 crazyed Exp $ */
 /*
  * exec.c: handles exec'd process for IRCII 
  *
@@ -544,13 +544,13 @@ say("Output from process %d (%s) now going to you", i, proc->name);
 				my_args = new_malloc(sizeof(char *) * max);
 				while ((arg = new_next_arg(name, &name)))
 				{
-					if (cnt == max)
+					my_args[cnt] = arg;
+
+					if (++cnt >= max)
 					{
 						max += 5;
 						RESIZE(my_args, char *, max);
 					}
-
-					my_args[cnt++] = arg;
 				}
 				my_args[cnt] = NULL;
 				execvp(my_args[0], my_args);
