@@ -5943,66 +5943,50 @@ BUILT_IN_FUNCTION(function_longtoip, word)
 	RETURN_STR(inet_ntoa(addr));
 }
 
-BUILT_IN_FUNCTION(function_cos, word)
-{
-	double	num;
-
-	GET_FLOAT_ARG(num, word);
-	return m_sprintf("%f", (double)cos(num));
+#define MATH_FUNCTION(x, y) BUILT_IN_FUNCTION((x), word) \
+{ \
+	double	num; \
+	GET_FLOAT_ARG(num, word); \
+	errno=0; \
+	num = (double)(y)(num); \
+	if (!errno) \
+		return m_sprintf("%f", num); \
+	if (errno == EDOM) \
+		return m_strdup("DOM"); \
+	if (errno == ERANGE) \
+		return m_strdup("RANGE"); \
+	return m_strdup(""); \
 }
 
-BUILT_IN_FUNCTION(function_sin, word)
-{
-	double	num;
+MATH_FUNCTION(function_exp, exp);
+MATH_FUNCTION(function_log, log);
+MATH_FUNCTION(function_log10, log10);
 
-	GET_FLOAT_ARG(num, word);
-	return m_sprintf("%f", (double)sin(num));
-}
+MATH_FUNCTION(function_cosh, cosh);
+MATH_FUNCTION(function_sinh, sinh);
+MATH_FUNCTION(function_tanh, tanh);
+MATH_FUNCTION(function_acosh, acosh);
+MATH_FUNCTION(function_asinh, asinh);
+MATH_FUNCTION(function_atanh, atanh);
 
-BUILT_IN_FUNCTION(function_tan, word)
-{
-	double	num;
-
-	GET_FLOAT_ARG(num, word);
-	return m_sprintf("%f", (double)tan(num));
-}
-
-BUILT_IN_FUNCTION(function_acos, word)
-{
-	double	num;
-
-	GET_FLOAT_ARG(num, word);
-	return m_sprintf("%f", (double)acos(num));
-}
-
-BUILT_IN_FUNCTION(function_asin, word)
-{
-	double	num;
-
-	GET_FLOAT_ARG(num, word);
-	return m_sprintf("%f", (double)asin(num));
-}
+MATH_FUNCTION(function_cos, cos);
+MATH_FUNCTION(function_sin, sin);
+MATH_FUNCTION(function_tan, tan);
+MATH_FUNCTION(function_acos, acos);
+MATH_FUNCTION(function_asin, asin);
 
 BUILT_IN_FUNCTION(function_atan, word)
 {
-	double	num1, num2;
+	double	num, num1, num2;
 
 	GET_FLOAT_ARG(num1, word);
+	errno=0;
 	if (word && *word) {
 		GET_FLOAT_ARG(num2, word);
-		return m_sprintf("%f", (double)atan2(num1, num2));
+		num = (double)atan2(num1, num2);
 	} else {
-		return m_sprintf("%f", (double)atan(num1));
+		num = (double)atan(num1);
 	}
-}
-
-BUILT_IN_FUNCTION(function_cosh, word)
-{
-	double	num;
-
-	GET_FLOAT_ARG(num, word);
-	errno=0;
-	num = (double)cosh(num);
 	if (!errno)
 		return m_sprintf("%f", num);
 	if (errno == EDOM)
@@ -6012,70 +5996,6 @@ BUILT_IN_FUNCTION(function_cosh, word)
 	return m_strdup("");
 }
 
-BUILT_IN_FUNCTION(function_sinh, word)
-{
-	double	num;
-
-	GET_FLOAT_ARG(num, word);
-	return m_sprintf("%f", (double)sinh(num));
-}
-
-BUILT_IN_FUNCTION(function_tanh, word)
-{
-	double	num;
-
-	GET_FLOAT_ARG(num, word);
-	return m_sprintf("%f", (double)tanh(num));
-}
-
-BUILT_IN_FUNCTION(function_acosh, word)
-{
-	double	num;
-
-	GET_FLOAT_ARG(num, word);
-	return m_sprintf("%f", (double)acosh(num));
-}
-
-BUILT_IN_FUNCTION(function_asinh, word)
-{
-	double	num;
-
-	GET_FLOAT_ARG(num, word);
-	return m_sprintf("%f", (double)asinh(num));
-}
-
-BUILT_IN_FUNCTION(function_atanh, word)
-{
-	double	num1, num2;
-
-	GET_FLOAT_ARG(num1, word);
-	return m_sprintf("%f", (double)atanh(num1));
-}
-
-BUILT_IN_FUNCTION(function_exp, word)
-{
-	double	num;
-
-	GET_FLOAT_ARG(num, word);
-	return m_sprintf("%f", (double)exp(num));
-}
-
-BUILT_IN_FUNCTION(function_log, word)
-{
-	double	num;
-
-	GET_FLOAT_ARG(num, word);
-	return m_sprintf("%f", (double)log(num));
-}
-
-BUILT_IN_FUNCTION(function_log10, word)
-{
-	double	num;
-
-	GET_FLOAT_ARG(num, word);
-	return m_sprintf("%f", (double)log10(num));
-}
-
 BUILT_IN_FUNCTION(function_jn, word)
 {
 	int	level;
@@ -6083,7 +6003,15 @@ BUILT_IN_FUNCTION(function_jn, word)
 
 	GET_INT_ARG(level, word);
 	GET_FLOAT_ARG(num, word);
-	return m_sprintf("%f", (double)jn(level, num));
+	errno=0;
+	num = (double)jn(level, num);
+	if (!errno)
+		return m_sprintf("%f", num);
+	if (errno == EDOM)
+		return m_strdup("DOM");
+	if (errno == ERANGE)
+		return m_strdup("RANGE");
+	return m_strdup("");
 }
 
 BUILT_IN_FUNCTION(function_yn, word)
@@ -6093,7 +6021,15 @@ BUILT_IN_FUNCTION(function_yn, word)
 
 	GET_INT_ARG(level, word);
 	GET_FLOAT_ARG(num, word);
-	return m_sprintf("%f", (double)yn(level, num));
+	errno=0;
+	num = (double)yn(level, num);
+	if (!errno)
+		return m_sprintf("%f", num);
+	if (errno == EDOM)
+		return m_strdup("DOM");
+	if (errno == ERANGE)
+		return m_strdup("RANGE");
+	return m_strdup("");
 }
 
 #ifdef PERL
