@@ -9,7 +9,7 @@
  */
 
 #if 0
-static	char	rcsid[] = "@(#)$Id: dcc.c,v 1.11 2002/04/10 16:04:31 jnelson Exp $";
+static	char	rcsid[] = "@(#)$Id: dcc.c,v 1.12 2002/04/26 20:59:40 jnelson Exp $";
 #endif
 
 #include "irc.h"
@@ -47,10 +47,8 @@ static	char	rcsid[] = "@(#)$Id: dcc.c,v 1.11 2002/04/10 16:04:31 jnelson Exp $";
 #define DCC_REJECTED	((unsigned) 0x0200)
 #define DCC_STATES	((unsigned) 0xfff0)
 
-typedef struct sockaddr_in 	ISA;
-typedef struct sockaddr 	SA;
-typedef struct in_addr		IA;
-
+#define V4ADDR(x) ((ISA *)x->sin_addr)
+#define V4PORT(x) (ntohs((ISA *)x->sin_port))
 
 typedef	struct	DCC_struct
 {
@@ -66,17 +64,20 @@ typedef	struct	DCC_struct
 		char *		othername;
 		char *		encrypt;
 	struct	DCC_struct *	next;
+
+		ISA		peer_sockaddr;
 		IA		remote;
-		u_short		remport;
+		u_short		remport;		/* NOW IN HOST ORDER! */
+		ISA		local_sockaddr;
 		IA		local_addr;
-		u_short		local_port;
+		u_short		local_port;		/* HOST ORDER */
+
 		off_t		bytes_read;
 		off_t		bytes_sent;
 		int		window_sent;
 		int		window_max;
-	struct	timeval		lasttime;
-	struct	timeval		starttime;
-		char *		cksum;
+		Timeval		lasttime;
+		Timeval		starttime;
 		unsigned long	packets_total;
 		unsigned long	packets_transfer;
 		unsigned long	packets_ack;
@@ -115,8 +116,8 @@ static	char *		dcc_urldecode		(const char *);
 
 #ifdef MIRC_BROKEN_DCC_RESUME
 static	void		dcc_getfile_resume 	    (char *);
-static 	void 		dcc_getfile_resume_demanded (char *user, char *filename, char *port, char *offset);
-static	void		dcc_getfile_resume_start    (char *nick, char *filename, char *port, char *offset);
+static 	void 		dcc_getfile_resume_demanded (char *, char *, char *, char *);
+static	void		dcc_getfile_resume_start    (char *, char *, char *, char *);
 #endif
 
 
@@ -318,7 +319,6 @@ static 	void		dcc_erase (DCC_list *erased)
 	new_free(&erased->user);
 	new_free(&erased->othername);
 	new_free(&erased->encrypt);
-	new_free(&erased->cksum);
 	new_free((char **)&erased);
 }
 
@@ -513,7 +513,6 @@ static	DCC_list *dcc_searchlist (
 	new_client->window_max 		= 0;
 	new_client->window_sent 	= 0;
 	new_client->local_port 		= 0;
-	new_client->cksum 		= NULL;
 	new_client->encrypt 		= NULL;
 	new_client->resume_size		= 0;
 	get_time(&new_client->lasttime);
@@ -559,11 +558,12 @@ static	int		dcc_open (DCC_list *dcc)
 	 */
 	if (dcc->flags & DCC_THEIR_OFFER)
 	{
+		int len;
+
 		/*
 		 * XXXX -- hack -- XXXX
 		 * Connect to them.
 		 */
-		dcc->remport = ntohs(dcc->remport);
 		if ((dcc->write = connect_by_number(inet_ntoa(dcc->remote), &dcc->remport, SERVICE_CLIENT, PROTOCOL_TCP)) < 0)
 		{
 			dcc->flags |= DCC_DELETE;
@@ -576,7 +576,13 @@ static	int		dcc_open (DCC_list *dcc)
 			from_server = old_server;
 			return 0;
 		}
-		dcc->remport = htons(dcc->remport);
+
+		len = sizeof(dcc->local_sockaddr);
+		getsockname(dcc->write, (SA *)&dcc->local_sockaddr, &len);
+
+		len = sizeof(dcc->peer_sockaddr);
+		getpeername(dcc->write, (SA *)&dcc->peer_sockaddr, &len);
+		dcc->remport = ntohs(dcc->peer_sockaddr.sin_port);
 
 		/*
 		 * Set up the connection to be useful
@@ -613,7 +619,7 @@ static	int		dcc_open (DCC_list *dcc)
 						"%s %s %s %d %s %ld", 
 						user, type,
 						inet_ntoa(dcc->remote),
-						ntohs(dcc->remport),
+						dcc->remport,
 						dcc->description,
 						dcc->filesize);
 
@@ -624,7 +630,7 @@ static	int		dcc_open (DCC_list *dcc)
                                 jvs_blah = do_hook(DCC_CONNECT_LIST,
 						"%s GET %s %d %s %ld", 
 						user, inet_ntoa(dcc->remote),
-						ntohs(dcc->remport),
+						dcc->remport,
 						dcc->description,
 						dcc->filesize);
 			}
@@ -634,7 +640,7 @@ static	int		dcc_open (DCC_list *dcc)
 						"%s %s %s %d", 
 						user, type,
 						inet_ntoa(dcc->remote),
-						ntohs(dcc->remport));
+						dcc->remport);
 			}
 
                         if (jvs_blah)
@@ -1679,8 +1685,7 @@ char	*dcc_raw_connect(char *host, u_short port)
 		return m_strdup(empty_string);
 	}
 
-	/* Sorry. The missing 'htons' call here broke $connect() */
-	Client->remport = htons(port);
+	Client->remport = port;
 	memmove((char *)&Client->remote, (char *)&address, sizeof(address));
 	Client->flags = DCC_THEIR_OFFER | DCC_RAW;
 	if (!dcc_open(Client))
@@ -1724,7 +1729,6 @@ void	register_dcc_offer (char *user, char *type, char *description, char *addres
 	int		CType, jvs_blah;
 	char *		c;
 	u_long		TempLong = 0;
-	unsigned short	TempInt;
 	int		do_auto = 0;	/* used in dcc chat collisions */
 
 	if (x_debug & DEBUG_DCC_SEARCH)
@@ -1772,13 +1776,6 @@ void	register_dcc_offer (char *user, char *type, char *description, char *addres
 	Client = dcc_searchlist(description, user, CType, 1, NULL, -1);
 	filesize = 0;
 
-	/* 
-	 * 'x' is reserved for future timestamp extensions,
-	 * start ignoring it now.
-	 */
-	if (extra && *extra && *extra != 'x')
-		Client->cksum = m_strdup(extra);
-
 	if (Client->flags & DCC_MY_OFFER)
 	{
 		Client->flags |= DCC_DELETE;
@@ -1820,14 +1817,13 @@ void	register_dcc_offer (char *user, char *type, char *description, char *addres
 		}
 	}
 
-	TempInt = (unsigned short)strtoul(port, NULL, 10);
-	Client->remport = htons(TempInt);
-	if (TempInt < 1024)
+	Client->remport = (unsigned short)strtoul(port, NULL, 10);
+	if (Client->remport < 1024)
 	{
 		Client->flags |= DCC_DELETE;
 		say("DCC %s (%s) request from %s rejected because it "
 			"specified reserved port number (%hd) [%s]", 
-				type, description, user, TempInt, port);
+				type, description, user, Client->remport, port);
 		return;
 	}
 
@@ -1898,7 +1894,7 @@ void	register_dcc_offer (char *user, char *type, char *description, char *addres
 			 "%s %s %s %s %d %s %ld",
 			  user, type, description,
 			  inet_ntoa(Client->remote),
-			  ntohs(Client->remport),
+			  Client->remport,
 			  Client->description,
 			  Client->filesize);
 	else
@@ -1906,7 +1902,7 @@ void	register_dcc_offer (char *user, char *type, char *description, char *addres
 			 "%s %s %s %s %d",
 			  user, type, description,
 			  inet_ntoa(Client->remote),
-			  ntohs(Client->remport));
+			  Client->remport);
 	Client->locked--;
 
 	if (jvs_blah)
@@ -1958,11 +1954,11 @@ void	register_dcc_offer (char *user, char *type, char *description, char *addres
 	    if ((Client->flags & DCC_TYPES) == DCC_FILEREAD)
 		say("DCC %s (%s %ld) request received from %s!%s [%s:%d]",
 		    type, description, Client->filesize, user, FromUserHost,
-		    inet_ntoa(Client->remote), ntohs(Client->remport));
+		    inet_ntoa(Client->remote), Client->remport);
 	    else
 	        say("DCC %s (%s) request received from %s!%s [%s:%d]", 
 		    type, description, user, FromUserHost,
-		    inet_ntoa(Client->remote), ntohs(Client->remport));
+		    inet_ntoa(Client->remote), Client->remport);
 	}
 
 	get_time(&Client->lasttime);
@@ -2227,24 +2223,25 @@ static	void	process_incoming_chat (DCC_list *Client)
  */
 static	void		process_incoming_listen (DCC_list *Client)
 {
-struct	sockaddr_in	remaddr;
+	ISA		remaddr;
 	int		sra;
 	char		FdName[10];
 	DCC_list	*NewClient;
 	int		new_socket;
 struct	hostent		*hp;
 	const char	*Name;
+	int		len;
 
-	sra = sizeof(struct sockaddr_in);
-	new_socket = my_accept(Client->read, (struct sockaddr *) &remaddr, &sra);
+	sra = sizeof(remaddr);
+	new_socket = my_accept(Client->read, (SA *) &remaddr, &sra);
 	if (new_socket < 0)
 	{
 		yell("### DCC Error: accept() failed.  Punting.");
 		return;
 	}
 
-	if (0 != (hp = gethostbyaddr((char *)&remaddr.sin_addr,
-	    sizeof(remaddr.sin_addr), remaddr.sin_family)))
+	if ((hp = gethostbyaddr((char *)&remaddr.sin_addr,
+			    sizeof(remaddr.sin_addr), remaddr.sin_family)))
 		Name = hp->h_name;
 	else
 		Name = inet_ntoa(remaddr.sin_addr);
@@ -2252,8 +2249,12 @@ struct	hostent		*hp;
 	strlcpy(FdName, ltoa(new_socket), 10);
 	NewClient = dcc_searchlist(Name, FdName, DCC_RAW, 1, NULL, 0);
 	NewClient->read = NewClient->write = new_socket;
-	NewClient->remote = remaddr.sin_addr;
-	NewClient->remport = remaddr.sin_port;
+
+	len = sizeof(NewClient->peer_sockaddr);
+	NewClient->peer_sockaddr = remaddr;
+	NewClient->remote = NewClient->peer_sockaddr.sin_addr;
+	NewClient->remport = ntohs(NewClient->peer_sockaddr.sin_port);
+
 	NewClient->flags |= DCC_ACTIVE;
 	NewClient->bytes_read = NewClient->bytes_sent = 0L;
 	get_time(&NewClient->starttime);
@@ -2866,10 +2867,10 @@ static	void	dcc_getfile_resume (char *args)
 	Client->bytes_sent = 0L;
 	Client->bytes_read = Client->resume_size = sb.st_size;
 
-	malloc_strcpy(&Client->othername, ltoa((long)ntohs(Client->remport)));
+	malloc_strcpy(&Client->othername, ltoa((long)Client->remport));
 
 	if (x_debug & DEBUG_DCC_XMIT)
-		yell("SENDING DCC RESUME to [%s] [%s|%d|%ld]", user, filename, ntohs(Client->remport), (long)sb.st_size);
+		yell("SENDING DCC RESUME to [%s] [%s|%d|%ld]", user, filename, Client->remport, (long)sb.st_size);
 
 	/* Just in case we have to fool the protocol enforcement. */
 	old_dp = doing_privmsg;
@@ -2878,7 +2879,7 @@ static	void	dcc_getfile_resume (char *args)
 
 	doing_privmsg = doing_notice = in_ctcp_flag = 0;
 	send_ctcp(CTCP_PRIVMSG, user, CTCP_DCC, "RESUME %s %d %ld", 
-		filename, ntohs(Client->remport), (long)sb.st_size);
+		filename, Client->remport, (long)sb.st_size);
 
 	doing_privmsg = old_dp;
 	doing_notice = old_dn;

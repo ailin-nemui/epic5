@@ -118,7 +118,7 @@ int	connect_by_number (char *hostn, unsigned short *portnum, int service, int pr
 		int 	length;
 		int	ports;
 		int	realport;
-		struct sockaddr_in name;
+		ISA	name;
 		int	i;
 
 #ifdef IP_PORTRANGE
@@ -133,11 +133,13 @@ int	connect_by_number (char *hostn, unsigned short *portnum, int service, int pr
 		for (i = 0; i < 5; i++)
 		{
 			memset(&name, 0, sizeof(struct sockaddr_in));
-			name.sin_family = AF_INET;
 			if (LocalHostName)
-				name.sin_addr = LocalHostAddr;
+				name = LocalIPv4Addr;
 			else
+			{
+				name.sin_family = AF_INET;
 				name.sin_addr.s_addr = htonl(INADDR_ANY);
+			}
 
 			if (*portnum == 0)
 			{
@@ -530,5 +532,4 @@ static int	get_high_portnum (void)
 	return FALLBACK_HIGHPORT;
 #endif
 }
-
 

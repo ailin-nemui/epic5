@@ -1256,25 +1256,14 @@ BUILT_IN_COMMAND(e_hostname)
 {
 	if (args && *args)
 	{
-		struct hostent *hp;
-
-		if ((hp = gethostbyname(args)))
-		{
-			malloc_strcpy(&LocalHostName, args);
-			memmove((void *)&LocalHostAddr, hp->h_addr, 
-					sizeof(LocalHostAddr));
-			say("Local host name is now %s", LocalHostName);
-		}
-		else
-			say("Cannot set Local host name to invalid host [%s]!",
-					args);
+		const char *s = switch_hostname(args);
+		say("%s\n", s);
+		new_free(&s);
 	}
 	else
 		say("Local Host name is %s",
 			(LocalHostName) ? LocalHostName : hostname);
 }
-
-
 
 
 /*

@@ -266,4 +266,14 @@ struct sockaddr_storage {
 };
 #endif
 
+/*
+ * Define some lazy shorthand typedefs for commonly used structures
+ */
+typedef struct sockaddr_in 	ISA;
+typedef struct sockaddr 	SA;
+typedef struct in_addr		IA;
+typedef struct sockaddr_storage	SS;
+typedef struct timeval		Timeval;
+typedef struct stat		Stat;
+
 #endif /* __irc_std_h */

@@ -1,4 +1,4 @@
-/* $EPIC: wserv.c,v 1.3 2001/11/13 22:12:26 jnelson Exp $ */
+/* $EPIC: wserv.c,v 1.4 2002/04/26 20:59:40 jnelson Exp $ */
 /*
  * wserv.c -- A little program to act as a pipe between the ircII process
  * 	      and an xterm window or GNU screen.
@@ -189,6 +189,7 @@ static void 	my_exit(int value)
 /* These are here so we can link with network.o */
 char *		LocalHostName = NULL;
 struct in_addr 	LocalHostAddr;
+struct sockaddr_in LocalIPv4Addr;
 enum VAR_TYPES { unused };
 int 		get_int_var (enum VAR_TYPES unused) { return 5; }
 int	nonblocking_connect_callback (int fd, int (*f) (int, int, char *)) 

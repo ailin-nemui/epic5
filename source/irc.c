@@ -25,7 +25,7 @@ const char internal_version[] = "20020317";
 /*
  * In theory, this number is incremented for every commit.
  */
-const unsigned long	commit_id = 241;
+const unsigned long	commit_id = 242;
 
 /*
  * As a way to poke fun at the current rage of naming releases after
@@ -109,10 +109,10 @@ int		quick_startup = 0;
 int		dont_connect = 0;
 
 /* Set to the current time, each time you press a key. */
-struct timeval	idle_time = { 0, 0 };
+Timeval		idle_time = { 0, 0 };
 
 /* Set to the time the client booted up */
-struct timeval	start_time;
+Timeval		start_time;
 
 /* The number of child processes still unreaped. */
 int		child_dead = 0;
@@ -151,7 +151,7 @@ int		inhibit_logging = 0;
 int		loading_global = 0;
 
 /* This is reset every time io() is called.  Use this to save calls to time */
-struct timeval	now = {0, 0};
+Timeval		now = {0, 0};
 
 /*
  * If set, outbound connections will be bind()ed to the address
@@ -164,8 +164,9 @@ struct timeval	now = {0, 0};
  * set to addresses that do not belong to the current hostname.
  * If that happens, outbound connections will fail, and its not my fault.
  */
-char		*LocalHostName = NULL;
-struct	in_addr	LocalHostAddr;
+char *		LocalHostName = NULL;
+IA		LocalHostAddr;
+ISA		LocalIPv4Addr;
 
 int		inbound_line_mangler = 0,
 		outbound_line_mangler = 0;
@@ -458,7 +459,6 @@ static	void	parse_args (int argc, char **argv)
 	int ch;
 	int add_servers = 0;
 	struct passwd *entry;
-	struct hostent *hp;
 	char *ptr = (char *) 0;
 	char *tmp_hostname = NULL;
 	char *irc_path = NULL;
@@ -725,18 +725,15 @@ static	void	parse_args (int argc, char **argv)
 	/*
 	 * Figure out our virtual hostname, if any.
 	 */
+	memset(&LocalHostAddr, 0, sizeof(LocalHostAddr));
+	memset(&LocalIPv4Addr, 0, sizeof(LocalIPv4Addr));
+	LocalHostName = NULL;
+
 	if (tmp_hostname)
 	{
-		fprintf(stderr, "You specified a hostname of [%s]\n", tmp_hostname);
-		memset(&LocalHostAddr, 0, sizeof(LocalHostAddr));
-		if ((hp = gethostbyname(tmp_hostname)))
-		{
-			memmove((void *)&LocalHostAddr, hp->h_addr, sizeof(LocalHostAddr));
-			fprintf(stderr, "Ok.  I'll buy that.\n");
-			LocalHostName = m_strdup(tmp_hostname);
-		}
-		else
-			fprintf(stderr, "I can't configure for that address! (Trying normal hostname...)\n");
+		const char *s = switch_hostname(tmp_hostname);
+		fprintf(stderr, "%s\n", s);
+		new_free(&s);
 	}
 
 	/*
