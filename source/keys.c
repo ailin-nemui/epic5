@@ -20,6 +20,7 @@
 #include "names.h"
 #include "output.h"
 #include "screen.h"
+#include "stack.h"
 #include "term.h"
 #include "vars.h"
 #include "window.h"
@@ -760,7 +761,7 @@ int	find_meta_map	(uc key)
  *
  *	/BIND META2-C	BIND-ACTION	(Specify a meta map directly)
  *	/BIND ^[[A	BIND-ACTION	(^[[ is bound to META2 by default)
- *	/BIND ^[[11~	BIND-ACTION	(Force us to make suer ^[[11 is bound
+ *	/BIND ^[[11~	BIND-ACTION	(Force us to make sure ^[[11 is bound
  *					 to a meta map before returning.)
  */
 static int	parse_key (const uc *sequence, uc *term)
@@ -1325,5 +1326,152 @@ void	init_keys2 (void)
 	LKEY(key_end, SCROLL_END)
 	LKEY(key_ic, TOGGLE_INSERT_MODE)
 	LKEY(key_dc, DELETE_CHARACTER)
+}
+
+/*
+ * /stack ... bind handling goes here.  This works just like the rest of the
+ * /stack system.  Note: you can (obviously) only /stack actual keys, not
+ * entire meta-maps (perhaps this is a limitation that should be fixed
+ * later..?).
+ *
+ * I've modeled this code closely after the hook(on) stack code.
+ *
+ * I (wd) wrote this code, that is why it may not work right. ;)
+ */
+
+typedef struct bindstacklist
+{
+	int	meta;	/* meta/key pair for KEY()/map use */
+	uc	key;
+	KeyMap	*ent;	/* the bound entry */
+	struct bindstacklist *next;
+}	BindStack;
+
+static	BindStack *	bind_stack = NULL;
+
+void	do_stack_bind (int type, char *arg)
+{
+	int	meta;
+	uc	key;	/* for parse_key() ... */
+
+	if (!bind_stack && (type == STACK_POP || type == STACK_LIST))
+	{
+		say("BIND stack is empty!");
+		return;
+	}
+
+	if (type == STACK_PUSH)
+	{
+		/* determine what key is being pushed onto the stack, then
+		 * simply memcpy that key into ent and push it onto the stack.
+		 * nothing too rough. */
+		BindStack *bsp;
+
+		if ((meta = parse_key(arg, &key)) == -1) {
+		    yell("could not parse key %s!", arg);
+		    return;
+		}
+		if (!key) { /* bogus key entry */
+		    yell("you cannot /stack entire meta areas! %s is invalid.",
+			    arg);
+		    return;
+		}
+		if (KEY(meta, key) == NULL) {
+		    /* nothing in this key, error.. */
+		    say("key %s is not mapped!", arg);
+		    return;
+		}
+
+		bsp = (BindStack *)new_malloc(sizeof(BindStack));
+		bsp->meta = meta;
+		bsp->key = key;
+		bsp->next = bind_stack;
+		bsp->ent = (KeyMap *)new_malloc(sizeof(KeyMap));
+		memcpy(bsp->ent, KEY(meta, key), sizeof(KeyMap));
+		if (bsp->ent->stuff)
+		    bsp->ent->stuff = m_strdup(bsp->ent->stuff);
+		if (bsp->ent->filename)
+		    bsp->ent->filename = m_strdup(bsp->ent->filename);
+
+		bind_stack = bsp;
+		
+		return;
+	} else if (type == STACK_POP)
+	{
+		/* determine what is to be popped, and see if we can find it.
+		 * if we can't, gripe. */
+		BindStack *bsp, *bsptmp;
+
+		if ((meta = parse_key(arg, &key)) == -1) {
+		    yell("could not parse key %s", arg);
+		    return;
+		}
+		if (!key) { /* bogus key entry */
+		    yell("you cannot /stack entire meta areas! %s is invalid.",
+			    arg);
+		    return;
+		}
+
+		for (bsp = bind_stack;bsp;bsptmp = bsp, bsp = bsp->next) {
+			if (bsp->meta == meta && bsp->key == key) {
+				/* a winner */
+				if (KEY(meta, key) == NULL) {
+					/* I don't know if this can happen, but
+					 * let us assume it can.  if this is
+					 * the case, we just allocate a new
+					 * entry.  I guess we assume our
+					 * metamap exists.  maybe we shouldn't?
+					 */
+					KEY(meta, key) = (KeyMap *)new_malloc(sizeof(KeyMap));
+				} else {
+				    if (KEY(meta, key)->stuff)
+					    new_free((char **)&KEY(meta, key)->stuff);
+				    if (KEY(meta, key)->filename)
+					    new_free((char **)&KEY(meta, key)->filename);
+				}
+				memcpy(KEY(meta, key), bsp->ent,
+					sizeof(KeyMap));
+				if (bsp == bind_stack)
+					bind_stack = bsp->next;
+				else
+					bsptmp->next = bsp->next;
+
+				new_free((char **)&bsp);
+				return;
+			}
+		}
+
+		say("no bindings for %s are on the stack", arg);
+		return;
+	} else if (type == STACK_LIST) /* largely stolen from show_binding() */
+	{
+		BindStack *bsp;
+		char	meta_str[8];
+
+		for (bsp = bind_stack;bsp;bsp = bsp->next)
+		{
+			meta = bsp->meta;
+			if (meta < 1 || meta > MAX_META) {
+				meta = 0;
+				meta_str[0] = '\0';
+			} else
+				sprintf(meta_str, "META%d-", meta);
+
+			if (bsp->ent->key_index < 0) {
+				/* meta binding */	    
+				say("%s%s BOUND TO META%d_CHARACTER", meta_str,
+					display_key(bsp->key),
+					-bsp->ent->key_index);
+			} else {
+				/* regular */
+				say("%s%s BOUND TO %s %s", meta_str,
+					display_key(bsp->key),
+					key_names[bsp->ent->key_index].name,
+					SAFE(bsp->ent->stuff));
+			}
+		}
+		return;
+	}
+	say("Unknown STACK type ??");
 }
 

@@ -2522,6 +2522,8 @@ BUILT_IN_COMMAND(stackcmd)
 			do_stack_alias(type, args, STACK_DO_ASSIGN);
 		else if (!my_strnicmp(arg, "SET", len))
 			do_stack_set(type, args);
+		else if (!my_strnicmp(arg, "BIND", len))
+			do_stack_bind(type, args);
 		else
 		{
 			say("%s is not a valid STACK type", arg);

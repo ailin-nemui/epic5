@@ -15,6 +15,7 @@ KNOWN ERRATA (eg, bugs, or unresolved requests):
 
 THE CHANGELOG SINCE THE LAST RELEASE:
 -------------------------------------
+* Added /stack (push|pop|list) bind (wd)
 * Add $killpid() as a favor for Liandrin.
 * Really fix wserv this time.
 * Add GETADDR_DOES_NOT_DO_AF_UNIX for KAME, which doesn't do AF_UNIX

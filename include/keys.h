@@ -26,4 +26,5 @@ typedef void (*KeyBinding) (char, char *);
 	void		unload_bindings	(const char *);
 	void		resize_metamap	(int);
 
+	void		do_stack_bind	(int, char *);
 #endif /* _KEYS_H_ */

@@ -1,5 +1,11 @@
 EPIC4-1.2.0
 
+*** News 07/03/2002 -- /STACK now supports keybindings (wd)
+	The /STACK command now has added support for keybindings (/BIND).
+	The system works in the same manner as the other /STACK types, you
+	can push, pop, or list on the bind stack by doing one of
+	/STACK (push|pop|list) BIND <keybinding>
+
 *** News 05/26/2002 -- The beginnings of support for IPv6
 	On this date I commited the very first set of changes adding 
 	infrastructure for IPv6.  If you do not have IPv6 support, EPIC
