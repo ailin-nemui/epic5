@@ -113,8 +113,42 @@ EPIC4-1.2.0
 		$3- - The arguments to the CTCP
 
 *** News 02/01/2002 -- New flag to /XQUOTE, /XQUOTE -U
+	Usage:
+		/XQUOTE -U <url encoded string>
+	A <url encoded string> is a normal string that may also contain
+	%'s followed by two hexidecimal digits.  For each such instance of
+	%<hexdigit><hexdigit>, the instance is replaced with the corresponding
+	ascii character.  For example, "%20" would be replaced with a space.
+	The resulting decoded string is sent to the server as-is.
+
+	This function is useful if you need to send binary or other arbitrary
+	data to the server.
 
 *** News 02/01/2002 -- New built in script, 'commandqueues'
+	This uses several clever tricks to evade ircII's "quoting hell".
+	The following commands are available:
+
+	/1cmd <time> <command>		
+		Execute <command>, but only if <command> has not been executed
+		already by /1cmd in the previous <time> seconds.
+
+	/qcmd <time> <queue> <command>	
+		Add <command> to the end of queue <queue>, which will be 
+		executed in <time> seconds.
+
+	/fqcmd <time> <queue> <command>	
+		Add <command> to the beginning of queue <queue>, which will 
+		be executed in <time> seconds.
+
+	/q1cmd <time> <queue> <command> 
+		Equivalent to: /1cmd <time> qcmd <queue> <command>
+		as long as <command> is not already queued in <queue>
+
+	/fq1cmd <time> <queue> <command>
+		Equivalent to: /1cmd <time> fqcmd <queue> <command>
+		as long as <command> is not already queued in <queue>
+
+	Commands are executed in "literal" form (not subject to "quoting hell")
 
 *** News 02/01/2002 -- $uhc(), $mask(), and /ignore handle userhosts different
 
