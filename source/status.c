@@ -1,4 +1,4 @@
-/* $EPIC: status.c,v 1.28 2003/07/09 21:10:25 jnelson Exp $ */
+/* $EPIC: status.c,v 1.29 2003/07/15 01:26:04 jnelson Exp $ */
 /*
  * status.c: handles the status line updating, etc for IRCII 
  *
@@ -1005,7 +1005,7 @@ STATUS_FUNCTION(status_clock)
 	static	char	my_buffer[81];
 
 	if (get_int_var(CLOCK_VAR) && clock_format && DISPLAY_ON_WINDOW)
-		snprintf(my_buffer, 80, clock_format, update_clock(GET_TIME));
+		snprintf(my_buffer, 80, clock_format, get_clock());
 	else
 		*my_buffer = 0;
 

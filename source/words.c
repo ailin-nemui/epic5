@@ -1,4 +1,4 @@
-/* $EPIC: words.c,v 1.11 2003/07/14 17:07:25 jnelson Exp $ */
+/* $EPIC: words.c,v 1.12 2003/07/15 01:26:04 jnelson Exp $ */
 /*
  * words.c -- right now it just holds the stuff i wrote to replace
  * that beastie arg_number().  Eventually, i may move all of the
@@ -234,8 +234,41 @@ static const char *	find_backward_quote (const char *input, const char *start, c
 }
 
 /*
- * This is a little bit different -- If you want to grab the previous word
- * you need to move to the space that ends it.
+ * 'move_to_prev_word': Move a "mark" from its current position to the
+ *	beginning of the "previous" word.
+ *
+ * Arguments:
+ *  'str' - a pointer to a character pointer -- The initial value is the
+ *	    "mark", and it will be changed upon return to the beginning
+ *	    of the previous word.
+ *  'start' - The start of the string that (*str) points to.
+ *  'extended' - Whether double quoted words shall be supported
+ *  'delims' - The types of double quoets to honor (if applicable)
+ *
+ * Return value:
+ *  If (*str) points to 'start' or is NULL (there is no previous word)
+ *	the return value is 0.
+ *  Otherwise, the return value is 1.
+ *
+ * Notes:
+ *  Regardless of whether 'start' is actually the start of the string that
+ *    '*str' points to, this function will treat it as such and will never go
+ *    backwards further than 'start'.
+ *  If (*str) points to the nul that terminates 'start', then (*str) shall
+ *    be set to the first character in the last word in 'start'.
+ *  If (*str) points to the first character in any word, then (*str) shall
+ *    be set to the first character in the full word BEFORE (*str).
+ *  If (*str) points to the middle of a string, then (*str) shall be set to
+ *    the first character IN THAT WORD (*str) points to.
+ *  If (*str) points to a space, then (*str) shall be set to the first
+ *    character in the word before the space.
+ *  A "word" always begins on the second character after the end of a word
+ *    because the first character after a word is a space (which is reserved
+ *    because we might want to change it to a nul).  That means if there is
+ *    more than one space between words, the first space belongs to the "left"
+ *    word and all the rest of the spaces belong to the "right" word!
+ *
+ * XXX - The debugging printfs are ugly.
  */
 static int	move_to_prev_word (const char **str, const char *start, int extended, const char *delims)
 {
@@ -373,6 +406,46 @@ static int	move_to_prev_word (const char **str, const char *start, int extended,
 	return 1;
 }
 
+/*
+ * 'move_to_next_word': Move a "mark" from its current position to the
+ *	beginning of the "next" word.
+ *
+ * Arguments:
+ *  'str' - a pointer to a character pointer -- The initial value is the
+ *	    "mark", and it will be changed upon return to the beginning
+ *	    of the previous word.
+ *  'start' - The start of the string that (*str) points to.
+ *  'extended' - Whether double quoted words shall be supported
+ *  'delims' - The types of double quoets to honor (if applicable)
+ *
+ * Return value:
+ *  If (*str) is NULL or points to the end of a string (there is no next
+ *	word) the return value is 0.
+ *  Otherwise, the return value is 1.
+ *
+ * Notes:
+ *  Regardless of whether 'start' is actually the start of the string that
+ *    '*str' points to, this function will treat it as such and will never go
+ *    backwards further than 'start'.
+ *  If (*str) points to the nul that terminates 'start', then (*str) shall
+ *    be set to the first character in the last word in 'start'.
+ *  If (*str) points to the first character in any word, then (*str) shall
+ *    be set to the first character in the full word BEFORE (*str).
+ *  If (*str) points to the middle of a string, then (*str) shall be set to
+ *    the first character IN THAT WORD (*str) points to.
+ *  If (*str) points to a space, then (*str) shall be set to the first
+ *    character in the word before the space.
+ *  A "word" always begins on the second character after the end of a word
+ *    because the first character after a word is a space (which is reserved
+ *    because we might want to change it to a nul).  That means if there is
+ *    more than one space between words, the first space belongs to the "left"
+ *    word and all the rest of the spaces belong to the "right" word!
+ *  EXCEPT WHEN there are trailing spaces on a string and we are already in the
+ *    last word (there is not a next word).  In that case, ths current word 
+ *    claims all of the trailing spaces and (*str) is set to the trailing nul.
+ *
+ * XXX - The debugging printfs are ugly.
+ */
 static int	move_to_next_word (const char **str, const char *start, int extended, const char *delims)
 {
 	char	what;
@@ -513,8 +586,28 @@ static int	move_to_next_word (const char **str, const char *start, int extended,
 }
 
 /* 
- * Move to an absolute word number from start
- * First word is always numbered zero.
+ * 'real_move_to_abs_word' -- Find the start of the 'word'th word in 'start'.
+ *
+ * Arguments:
+ *  'start' - The string we will look into
+ *  'mark' - A pointer to a (char *) where we will set the return value.
+ *		MAY BE NULL
+ *  'word' - The number of the word we want to find
+ *  'extended' - Whether or not to support double quoted words
+ *  'quotes' - The types of double quotes we will support.
+ * 
+ * Return value:
+ *  The return value is the beginning of the 'word'th word in 'start'.
+ *   This may include leading whitespace which you will need to trim if
+ *   you don't want surroundign whitespace.  This may include trailing
+ *   whitespace if you ask for the last word and there is trailing whitespace.
+ *
+ * Notes:
+ *  'mark' is not used as an input parameter.  Upon return, it is set to 
+ *	the return value.
+ *  The return value is suitable for passing to 'strext' if you wanted to 
+ *	extract a string ending with the previous word!
+ *  Word numbering always counts from 0.
  */
 const char *	real_move_to_abs_word (const char *start, const char **mark, int word, int extended, const char *quotes)
 {
@@ -543,11 +636,8 @@ int	count_words (const char *str, int extended, const char *quotes)
 	const char *	pointer = str;
 	int		counter = 0;
 
-	while (*pointer && my_isspace(*pointer))
-		pointer++;
-
-	for (; *pointer; counter++)
-		move_to_next_word(&pointer, str, extended, quotes);
+	while (move_to_next_word(&pointer, str, extended, quotes))
+		counter++;
 
 	return counter;
 }

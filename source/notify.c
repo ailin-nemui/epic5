@@ -1,4 +1,4 @@
-/* $EPIC: notify.c,v 1.18 2003/07/10 13:08:57 jnelson Exp $ */
+/* $EPIC: notify.c,v 1.19 2003/07/15 01:26:04 jnelson Exp $ */
 /*
  * notify.c: a few handy routines to notify you when people enter and leave irc 
  *
@@ -338,8 +338,10 @@ void 	do_notify (void)
 	Server 		*s;
 	int 		old_from_server = from_server;
 	int		servnum;
+#if 0
 static	time_t		last_notify = 0;
 	int		interval = get_int_var(NOTIFY_INTERVAL_VAR);
+#endif
 
 	if (!number_of_servers)
 		return;
@@ -347,6 +349,7 @@ static	time_t		last_notify = 0;
 	if (x_debug & DEBUG_NOTIFY)
 		yell("do_notify() was called...");
 
+#if 0
 	if (time(NULL) < last_notify)
 		last_notify = time(NULL);
 	else if (!interval || interval > (time(NULL) - last_notify))
@@ -357,8 +360,9 @@ static	time_t		last_notify = 0;
 
 		return;		/* Not yet */
 	}
-
 	last_notify = time(NULL);
+#endif
+
 	for (servnum = 0; servnum < number_of_servers; servnum++)
 	{
 		if (!(s = get_server(servnum)))

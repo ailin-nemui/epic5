@@ -1,4 +1,4 @@
-/* $EPIC: vars.c,v 1.34 2003/07/10 13:08:57 jnelson Exp $ */
+/* $EPIC: vars.c,v 1.35 2003/07/15 01:26:04 jnelson Exp $ */
 /*
  * vars.c: All the dealing of the irc variables are handled here. 
  *
@@ -53,6 +53,7 @@
 #include "dcc.h"
 #include "keys.h"
 #include "translat.h"
+#include "timer.h"
 
 /* IrcVariable: structure for each variable in the variable table */
 typedef struct
@@ -97,6 +98,8 @@ static	void	set_mangle_outbound 	(char *value);
 static	void	set_mangle_logfiles 	(char *value);
 static	void	set_scroll 		(int value);
 static	void	set_notify_interval 	(int value);
+static	void	set_clock_interval 	(int value);
+static	void	set_mail_interval 	(int value);
 static	void	update_all_status_wrapper (char *ignored);
 
 /*
@@ -131,13 +134,14 @@ static	IrcVariable irc_variable[] =
 	{ "CLOCK",			BOOL_TYPE_VAR,	DEFAULT_CLOCK, NULL, update_all_status_wrapper, 0, 0 },
 	{ "CLOCK_24HOUR",		BOOL_TYPE_VAR,	DEFAULT_CLOCK_24HOUR, NULL, reset_clock, 0, 0 },
 	{ "CLOCK_FORMAT",		STR_TYPE_VAR,	0, NULL, set_clock_format, 0, 0 },
+	{ "CLOCK_INTERVAL",		INT_TYPE_VAR,	DEFAULT_CLOCK_INTERVAL, NULL, set_clock_interval, 0, 0 },
 	{ "CMDCHARS",			STR_TYPE_VAR,	0, NULL, NULL, 0, 0 },
 	{ "COLOR",			BOOL_TYPE_VAR,	DEFAULT_COLOR, NULL, NULL, 0, 0 },
 	{ "COMMAND_MODE",		BOOL_TYPE_VAR,	DEFAULT_COMMAND_MODE, NULL, NULL, 0, 0 },
 	{ "COMMENT_HACK",		BOOL_TYPE_VAR,	DEFAULT_COMMENT_HACK, NULL, NULL, 0, 0 },
 	{ "CONNECT_TIMEOUT",		INT_TYPE_VAR,	DEFAULT_CONNECT_TIMEOUT, NULL, NULL, 0, 0 },
 	{ "CONTINUED_LINE",		STR_TYPE_VAR,	0, NULL, set_continued_line, 0, 0 },
-	{ "CPU_SAVER_AFTER",		INT_TYPE_VAR,	DEFAULT_CPU_SAVER_AFTER, NULL, NULL, 0, 0 },
+	{ "CPU_SAVER_AFTER",		INT_TYPE_VAR,	DEFAULT_CPU_SAVER_AFTER, NULL, set_cpu_saver_after, 0, 0 },
 	{ "CPU_SAVER_EVERY",		INT_TYPE_VAR,	DEFAULT_CPU_SAVER_EVERY, NULL, NULL, 0, 0 },
 	{ "CURRENT_WINDOW_LEVEL",	STR_TYPE_VAR,	0, NULL, set_current_window_level, 0, 0 },
 	{ "DCC_AUTO_SEND_REJECTS",	BOOL_TYPE_VAR,	DEFAULT_DCC_AUTO_SEND_REJECTS, NULL, NULL, 0, 0 },
@@ -177,7 +181,7 @@ static	IrcVariable irc_variable[] =
 	{ "INPUT_PROMPT",		STR_TYPE_VAR,	0, NULL, set_input_prompt, 0, 0 },
 	{ "INSERT_MODE",		BOOL_TYPE_VAR,	DEFAULT_INSERT_MODE, NULL, update_all_status_wrapper, 0, 0 },
 	{ "INVERSE_VIDEO",		BOOL_TYPE_VAR,	DEFAULT_INVERSE_VIDEO, NULL, NULL, 0, 0 },
-	{ "KEY_INTERVAL",		INT_TYPE_VAR, DEFAULT_KEY_INTERVAL, NULL, set_key_interval, 0, 0 },
+	{ "KEY_INTERVAL",		INT_TYPE_VAR,	DEFAULT_KEY_INTERVAL, NULL, set_key_interval, 0, 0 },
 	{ "LASTLOG",			INT_TYPE_VAR,	DEFAULT_LASTLOG, NULL, set_lastlog_size, 0, 0 },
 	{ "LASTLOG_LEVEL",		STR_TYPE_VAR,	0, NULL, set_lastlog_level, 0, 0 },
 	{ "LOAD_PATH",			STR_TYPE_VAR,	0, NULL, NULL, 0, 0 },
@@ -185,6 +189,7 @@ static	IrcVariable irc_variable[] =
 	{ "LOGFILE",			STR_TYPE_VAR,	0, NULL, NULL, 0, 0 },
 	{ "LOG_REWRITE",		STR_TYPE_VAR,	0, NULL, NULL, 0, 0 },
 	{ "MAIL",			INT_TYPE_VAR,	DEFAULT_MAIL, NULL, update_all_status_wrapper, 0, 0 },
+	{ "MAIL_INTERVAL",		INT_TYPE_VAR,	DEFAULT_MAIL_INTERVAL, NULL, set_mail_interval, 0, 0 },
 	{ "MANGLE_INBOUND",		STR_TYPE_VAR,	0, NULL, set_mangle_inbound, 0, 0 },
 	{ "MANGLE_LOGFILES",		STR_TYPE_VAR,	0, NULL, set_mangle_logfiles, 0, 0 },
 	{ "MANGLE_OUTBOUND",		STR_TYPE_VAR,	0, NULL, set_mangle_outbound, 0, 0 },
@@ -887,8 +892,7 @@ static void 	set_clock_format (char *value)
 {
 	extern char *time_format; /* XXXX bogus XXXX */
 	malloc_strcpy(&time_format, value);
-	update_clock(RESET_TIME);
-	update_all_status();
+	reset_clock(NULL);
 }
 
 static void 	set_display_pc_characters (int value)
@@ -1060,6 +1064,27 @@ static	void	set_notify_interval (int value)
 		say("The /SET NOTIFY_INTERVAL value must be at least %d",
 			MINIMUM_NOTIFY_INTERVAL);
 		set_int_var(NOTIFY_INTERVAL_VAR, MINIMUM_NOTIFY_INTERVAL);
+	}
+}
+
+static	void	set_clock_interval (int value)
+{
+	if (value < MINIMUM_CLOCK_INTERVAL)
+	{
+		say("The /SET CLOCK_INTERVAL value must be at least %d",
+			MINIMUM_CLOCK_INTERVAL);
+		set_int_var(NOTIFY_INTERVAL_VAR, MINIMUM_CLOCK_INTERVAL);
+	}
+	do_update_clock(NULL);	/* XXX Oh heck, why not? */
+}
+
+static	void	set_mail_interval (int value)
+{
+	if (value < MINIMUM_MAIL_INTERVAL)
+	{
+		say("The /SET MAIL_INTERVAL value must be at least %d",
+			MINIMUM_MAIL_INTERVAL);
+		set_int_var(MAIL_INTERVAL_VAR, MINIMUM_MAIL_INTERVAL);
 	}
 }
 

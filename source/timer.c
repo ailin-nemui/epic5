@@ -1,4 +1,4 @@
-/* $EPIC: timer.c,v 1.33 2003/07/10 13:08:57 jnelson Exp $ */
+/* $EPIC: timer.c,v 1.34 2003/07/15 01:26:04 jnelson Exp $ */
 /*
  * timer.c -- handles timers in ircII
  *
@@ -52,7 +52,7 @@
 #include "functions.h"
 
 static int 	timer_exists (const char *ref);
-static int 	remove_timer (const char *ref);
+	int 	remove_timer (const char *ref);
 static void 	remove_all_timers (void);
 static	void	remove_window_timers (int winref);
 static	void	list_timers (const char *command);
@@ -468,7 +468,7 @@ static	int	create_timer_ref (const char *refnum_wanted, char *refnum_gets)
  * it should be more general and return -1 and let the caller
  * handle it.  Probably will be that way in a future release.
  */
-static int	remove_timer (const char *ref)
+int	remove_timer (const char *ref)
 {
 	Timer	*tmp;
 

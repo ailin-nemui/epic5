@@ -7,7 +7,7 @@
  *
  * See the COPYRIGHT file, or do a HELP IRCII COPYRIGHT 
  *
- * @(#)$Id: ircaux.h,v 1.55 2003/07/10 23:56:01 jnelson Exp $
+ * @(#)$Id: ircaux.h,v 1.56 2003/07/15 01:26:03 jnelson Exp $
  */
 
 #ifndef _IRCAUX_H_
@@ -151,6 +151,7 @@ int	last_char		(const char *);
 char *	next_in_comma_list	(char *, char **);
 char *	next_in_div_list	(char *, char **, char);
 char *	get_userhost		(void);
+double  time_to_next_interval	(int interval);
 int	charcount		(const char *, char);
 void	beep_em			(int);
 void	strip_control		(const char *, char *);

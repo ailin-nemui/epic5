@@ -1,4 +1,4 @@
-/* $EPIC: functions.c,v 1.129 2003/07/14 05:58:27 jnelson Exp $ */
+/* $EPIC: functions.c,v 1.130 2003/07/15 01:26:03 jnelson Exp $ */
 /*
  * functions.c -- Built-in functions for ircII
  *
@@ -838,7 +838,7 @@ static int	func_exist (char *name)
 /* built in expando functions */
 static	char	*alias_line 		(void) { return malloc_strdup(get_input()); }
 static	char	*alias_buffer 		(void) { return malloc_strdup(cut_buffer); }
-static	char	*alias_time 		(void) { return malloc_strdup(update_clock(GET_TIME)); }
+static	char	*alias_time 		(void) { return malloc_strdup(get_clock()); }
 static	char	*alias_dollar 		(void) { return malloc_strdup("$"); }
 static	char	*alias_detected 	(void) { return malloc_strdup(last_notify_nick); }
 static	char	*alias_nick 		(void) { return malloc_strdup((current_window->server != NOSERV) ? get_server_nickname(current_window->server) : empty_string); }

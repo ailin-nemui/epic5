@@ -1,4 +1,4 @@
-/* $EPIC: ircaux.c,v 1.89 2003/07/14 05:58:27 jnelson Exp $ */
+/* $EPIC: ircaux.c,v 1.90 2003/07/15 01:26:03 jnelson Exp $ */
 /*
  * ircaux.c: some extra routines... not specific to irc... that I needed 
  *
@@ -2775,6 +2775,21 @@ char *	get_userhost (void)
 	strlcat(userhost, "@", sizeof userhost);
 	strlcat(userhost, hostname, sizeof userhost);
 	return userhost;
+}
+
+
+double	time_to_next_interval (int interval)
+{
+	Timeval	right_now, then;
+
+	get_time(&right_now);
+
+	then.tv_usec = 1000000 - right_now.tv_usec;
+	if (interval == 1)
+		then.tv_sec = 0;
+	else
+		then.tv_sec = interval - (right_now.tv_sec + 1) % interval;
+	return (double)then.tv_sec + (double)then.tv_usec / 1000000;
 }
 
 

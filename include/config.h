@@ -56,6 +56,8 @@
  * is your whim.
  */
 #define MINIMUM_NOTIFY_INTERVAL 60
+#define MINIMUM_CLOCK_INTERVAL 1
+#define MINIMUM_MAIL_INTERVAL 60
 
 /*
  * The left and right brace characters ('{', '}') are special characters in
@@ -347,6 +349,7 @@
 #define DEFAULT_CLOCK 1
 #define DEFAULT_CLOCK_24HOUR 0
 #define DEFAULT_CLOCK_FORMAT NULL
+#define DEFAULT_CLOCK_INTERVAL 60
 #define DEFAULT_CMDCHARS "/"
 #define DEFAULT_COLOR 1
 #define DEFAULT_COMMAND_MODE 0
@@ -399,6 +402,7 @@
 #define DEFAULT_LOG 0
 #define DEFAULT_LOGFILE "irc.log"
 #define DEFAULT_MAIL 2
+#define DEFAULT_MAIL_INTERVAL 60
 #define DEFAULT_MAX_RECONNECTS 4
 #define DEFAULT_METRIC_TIME 0
 #define DEFAULT_MODE_STRIPPER 0

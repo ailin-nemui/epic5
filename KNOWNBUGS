@@ -98,3 +98,24 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Fix bug where $<num> (as the last word) would chop off the last character
 * It is necessary to remove trailing spaces for $<num>, historical practice.
 * Make /load trap the /return command -- see doc/pf-loader for why.
+* Add #define MINIMUM_CLOCK_INTERVAL and MINIMUM_MAIL_INTERVAL in config.h
+* Add #define DEFAULT_CLOCK_INTERVAL and DEFAULT_MAIL_INTERVAL in config.h
+* Add reset_system_timers(), do_update_clock(), and set_cpu_saver_after()
+* Add time_to_next_interval(), general form of time_to_next_minute().
+* Add get_clock() and reset_clock() to replace update_clock().
+* Make remove_timer() an extern function so i can delete timers. ;-)
+* Add /SET CLOCK_INTERVAL and /SET MAIL_INTERVAL
+* Make $T use the static clock.
+* Reorganize system timers 1 and 2 into four timers:
+* - CPU SAVER timer, checks for idleness, to turn on cpu saver
+* - CLOCK timer, updates the status bar clock periodically
+* - MAIL timer, checks for new mail periodically
+* - NOTIFY timer, checks for others on irc periodically
+* The above three honor "cpu saver" mode.
+* Nix the old "do_every_minute" timer.
+* Reorganize the clock generation stuff into "reset_*_clock" functions
+* Generate the clock statically; only update it from the CLOCK timer
+* Add reset_system_timers() which regenerates all four system timers.
+* Don't set system timers in main, call reset_system_timers() instead.
+* Don't enforce "notify interval" in do_notify(), handle that in NOTIFY timer.
+* Comment stuff in words.c
