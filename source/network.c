@@ -95,6 +95,7 @@ int	connectory (int family, const char *host, const char *port)
 	    }
 	}
 
+	Freeaddrinfo(results);
 	if (fd < 0)
 		return error;
 	return fd;
