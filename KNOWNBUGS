@@ -9,6 +9,7 @@ KNOWN ERRATA (eg, bugs, or unresolved requests):
 * Allegedly 464 numeric shouldn't force a reconnect if we're registered.
 * The mangler might expand things more than 3 times -- possible
   interference from the attribute parser?  caused by many ^v's.
+* Add /timer -delete_for_window or something to avoid window switch warnings?
  
 [See http://www.epicsol.org/PROJECTS for things to come in the future]
 [See http://www.epicsol.org/CHANGELOG for things that changed in the past]
