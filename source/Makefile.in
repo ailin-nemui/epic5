@@ -117,8 +117,7 @@ commands.o: commands.c ../include/irc.h ../include/defs.h \
  ../include/window.h ../include/status.h ../include/stack.h \
  ../include/term.h ../include/timer.h ../include/vars.h \
  ../include/newio.h
-compat.o: compat.c ../include/defs.h ../include/irc_std.h \
- ../include/irc.h ../include/config.h ../include/debug.h
+compat.o: compat.c ../include/defs.h ../include/irc_std.h
 crypt.o: crypt.c ../include/irc.h ../include/defs.h \
  ../include/config.h ../include/irc_std.h ../include/debug.h \
  ../include/crypt.h ../include/ctcp.h ../include/ircaux.h \
@@ -154,7 +153,8 @@ expr.o: expr.c
 expr2.o: expr2.c
 files.o: files.c ../include/irc.h ../include/defs.h \
  ../include/config.h ../include/irc_std.h ../include/debug.h \
- ../include/ircaux.h
+ ../include/ircaux.h ../include/files.h ../include/window.h \
+ ../include/lastlog.h ../include/status.h ../include/output.h
 flood.o: flood.c ../include/irc.h ../include/defs.h \
  ../include/config.h ../include/irc_std.h ../include/debug.h \
  ../include/flood.h ../include/hook.h ../include/ignore.h \
@@ -275,7 +275,8 @@ notice.o: notice.c ../include/irc.h ../include/defs.h \
  ../include/ircaux.h ../include/hook.h ../include/ignore.h \
  ../include/server.h ../include/who.h ../include/funny.h \
  ../include/output.h ../include/names.h ../include/parse.h \
- ../include/notify.h ../include/alist.h ../include/commands.h
+ ../include/notify.h ../include/alist.h ../include/notice.h \
+ ../include/commands.h
 notify.o: notify.c ../include/irc.h ../include/defs.h \
  ../include/config.h ../include/irc_std.h ../include/debug.h \
  ../include/alist.h ../include/ircaux.h ../include/notify.h \
@@ -387,8 +388,7 @@ words.o: words.c ../include/irc.h ../include/defs.h \
  ../include/ircaux.h
 wserv.o: wserv.c ../include/defs.h ../include/config.h \
  ../include/irc.h ../include/irc_std.h ../include/debug.h \
- ../include/term.h ../include/screen.h ../include/window.h \
- ../include/lastlog.h ../include/status.h ../include/ircaux.h
+ ../include/ircaux.h
 wterm.o: wterm.c ../include/irc.h ../include/defs.h \
  ../include/config.h ../include/irc_std.h ../include/debug.h \
  ../include/ircaux.h ../include/vars.h ../include/term.h \

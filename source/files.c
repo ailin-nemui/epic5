@@ -8,6 +8,9 @@
 
 #include "irc.h"
 #include "ircaux.h"
+#include "files.h"
+#include "window.h"
+#include "output.h"
 
 /* Here's the plan.
  *  You want to open a file.. you can READ it or you can WRITE it.
@@ -130,10 +133,32 @@ static File *lookup_file (int fd)
 	return (File *) 0;
 }
 
-int file_write (int fd, char *stuff)
+static File *lookup_logfile (int fd)
 {
-	File 	*ptr = lookup_file(fd);
+	FILE *x = NULL;
+	static File retval;
+	Window *w;
+
+	if (fd == -1)
+		x = irclog_fp;
+	if ((w = get_window_by_refnum(fd)))
+		x = w->log_fp;
+
+	retval.file = x;		/* XXX Should be a file */
+	retval.next = NULL;
+	return &retval;
+}
+
+
+int file_write (int window, int fd, char *stuff)
+{
+	File 	*ptr;
 	int	retval;
+
+	if (window == 1)
+		ptr = lookup_logfile(fd);
+	else
+		ptr = lookup_file(fd);
 
 	if (!ptr)
 		return -1;
@@ -144,10 +169,15 @@ int file_write (int fd, char *stuff)
 	return retval;
 }
 
-int file_writeb (int fd, char *stuff)
+int file_writeb (int window, int fd, char *stuff)
 {
-	File 	*ptr = lookup_file(fd);
+	File 	*ptr;
 	int	retval;
+
+	if (window == 1)
+		ptr = lookup_logfile(fd);
+	else
+		ptr = lookup_file(fd);
 
 	if (!ptr)
 		return -1;

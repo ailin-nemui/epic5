@@ -2771,14 +2771,20 @@ BUILT_IN_FUNCTION(function_write, words)
 {
 	char *fdc;
 	GET_STR_ARG(fdc, words);
-	RETURN_INT(file_write(my_atol(fdc), words));
+	if (*fdc == 'w' || *fdc == 'W')
+		RETURN_INT(file_write(1, my_atol(fdc + 1), words));
+	else
+		RETURN_INT(file_write(0, my_atol(fdc), words));
 }
 
 BUILT_IN_FUNCTION(function_writeb, words)
 {
 	char *fdc;
 	GET_STR_ARG(fdc, words);
-	RETURN_INT(file_writeb(my_atol(fdc), words));
+	if (*fdc == 'w' || *fdc == 'W')
+		RETURN_INT(file_writeb(1, my_atol(fdc + 1), words));
+	else
+		RETURN_INT(file_writeb(0, my_atol(fdc), words));
 }
 
 BUILT_IN_FUNCTION(function_read, words)
