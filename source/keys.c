@@ -1,4 +1,4 @@
-/* $EPIC: keys.c,v 1.23 2003/05/09 04:29:52 jnelson Exp $ */
+/* $EPIC: keys.c,v 1.24 2003/06/28 18:40:38 jnelson Exp $ */
 /*
  * keys.c:  Keeps track of what happens whe you press a key.
  *
@@ -197,7 +197,7 @@ unsigned char	*bind_string_compress	(const unsigned char *, int *);
 unsigned char	*bind_string_decompress	(unsigned char *, const unsigned char *, int);
 static int	bind_string		(const u_char *, const char *, char *);
 struct Key	*find_sequence		(const unsigned char *, int);
-void		show_all_bindings	(struct Key *, const unsigned char *, int);
+void		show_all_bindings	(struct Key *, const unsigned char *, size_t);
 void		show_all_rbindings	(struct Key *, const unsigned char *, int, struct Binding *);
 void		show_key		(struct Key *, const unsigned char *, int, int);
 
@@ -770,12 +770,12 @@ void init_termkeys (void) {
 /* save_bindings is called by the /save command to..well.. save bindings.
  * we call the save_bindings_recurse() function which acts a lot like
  * (surprise surprise) show_all_bindings/show_key in tandem. */
-void save_bindings_recurse (FILE *, struct Key *, const unsigned char *, int);
+void save_bindings_recurse (FILE *, struct Key *, const unsigned char *, size_t);
 void save_bindings (FILE *fp, int do_all) {
     save_bindings_recurse(fp, head_keymap, "", 0);
 }
 
-void save_bindings_recurse (FILE *fp, struct Key *map, const unsigned char *str, int len) {
+void save_bindings_recurse (FILE *fp, struct Key *map, const unsigned char *str, size_t len) {
     unsigned char c;
     unsigned char *newstr;
     unsigned char *ds; /* decompressed sequence */
@@ -1081,7 +1081,7 @@ doc/keys distributed with the EPIC source."
 /* support function for /bind:  this function shows, recursively, all the
  * keybindings.  given a map and a string to work from.  if the string is
  * NULL, the function recurses through the entire map. */
-void show_all_bindings (struct Key *map, const unsigned char *str, int len) {
+void show_all_bindings (struct Key *map, const unsigned char *str, size_t len) {
     unsigned char c;
     unsigned char *newstr;
     struct Binding *self_insert;

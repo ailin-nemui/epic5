@@ -1,4 +1,4 @@
-/* $EPIC: expr.c,v 1.15 2003/06/12 17:57:11 jnelson Exp $ */
+/* $EPIC: expr.c,v 1.16 2003/06/28 18:40:38 jnelson Exp $ */
 /*
  * expr.c -- The expression mode parser and the textual mode parser
  * #included by alias.c -- DO NOT DELETE
@@ -38,7 +38,7 @@
 #include <math.h>
 
 /* Function decls */
-static	void	TruncateAndQuote(char **, const char *, int, const char *);
+static	void	TruncateAndQuote (char **, const char *, ssize_t, const char *);
 static	char	*alias_special_char(char **, char *, const char *, char *, int *);
 static	void	do_alias_string (char *, char *);
 
@@ -1495,13 +1495,13 @@ char	*expand_alias	(const char *string, const char *args, int *args_flag, ssize_
  * The args_flag is set to 1 if any of the $n, $n-, $n-m, $-m, $*, or $() 
  * is used in the alias.  Otherwise it is left unchanged.
  */
-static	char	*alias_special_char(char **buffer, char *ptr, const char *args, char *quote_em, int *args_flag)
+static	char	*alias_special_char (char **buffer, char *ptr, const char *args, char *quote_em, int *args_flag)
 {
 	char	*tmp,
 		c;
 	int	my_upper,
-		my_lower,
-		length;
+		my_lower;
+	ssize_t	length;
 	ssize_t	span;
 
 	length = 0;
@@ -1900,8 +1900,11 @@ static	char	*alias_special_char(char **buffer, char *ptr, const char *args, char
  * TruncateAndQuote: This handles string width formatting and quoting for irc 
  * variables when [] or ^x is specified.
  */
-static	void	TruncateAndQuote(char **buff, const char *add, int length, const char *quote_em)
+static	void	TruncateAndQuote (char **buff, const char *add, ssize_t length, const char *quote_em)
 {
+	size_t	real_size;
+	char *	buffer;
+
 	if (!add)
 		panic("add is NULL");
 
@@ -1923,14 +1926,15 @@ static	void	TruncateAndQuote(char **buff, const char *add, int length, const cha
 		 * of the function, so yes, we can reference "add" after
 		 * the end of this block.
 		 */
-		char *buffer = alloca(abs(length) + 1);
+		real_size = abs(length) + 1;
+		buffer = alloca(real_size);
 		add = strformat(buffer, add, length, get_int_var(PAD_CHAR_VAR));
 	}
 	if (quote_em && add)	/* add shouldnt ever be NULL, though! */
 	{
 		/* Don't pass retval from "alloca" as func arg, use local. */
-		char *ptr = alloca(strlen(add) * 2 + 2);
-		add = double_quote(add, quote_em, ptr);
+		buffer = alloca(strlen(add) * 2 + 2);
+		add = double_quote(add, quote_em, buffer);
 	}
 
 	if (buff)

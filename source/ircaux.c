@@ -1,4 +1,4 @@
-/* $EPIC: ircaux.c,v 1.76 2003/05/30 19:58:10 jnelson Exp $ */
+/* $EPIC: ircaux.c,v 1.77 2003/06/28 18:40:38 jnelson Exp $ */
 /*
  * ircaux.c: some extra routines... not specific to irc... that I needed 
  *
@@ -2431,7 +2431,7 @@ char *	ftoa (double foo)
  * Changed to use the PAD_CHAR variable, which allows the user to specify
  * what character should be used to "fill out" the padding.
  */
-char *	strformat (char *dest, const char *src, int length, int pad)
+char *	strformat (char *dest, const char *src, ssize_t length, int pad)
 {
 	char *		ptr1 = dest;
 	const char *	ptr2 = src;
