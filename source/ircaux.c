@@ -1,4 +1,4 @@
-/* $EPIC: ircaux.c,v 1.117 2004/08/17 16:09:46 crazyed Exp $ */
+/* $EPIC: ircaux.c,v 1.118 2004/09/13 18:29:57 crazyed Exp $ */
 /*
  * ircaux.c: some extra routines... not specific to irc... that I needed 
  *
@@ -1447,7 +1447,7 @@ static FILE *	open_compression (char *executable, char *filename)
  * WITH A NEW VALUE (ie, the variable will be changed) UPON RETURN.  You must
  * not save the original value of '*filename' and use it after calling uzfopen.
  */
-FILE *	uzfopen (char **filename, const char *path, int do_error)
+FILE *	uzfopen (char **filename, const char *path, int do_error, struct stat *sb)
 {
 static int		setup				= 0;
 static 	Filename 	path_to_gunzip;
@@ -1458,6 +1458,7 @@ static 	Filename 	path_to_bunzip2;
 	Filename	candidate;
 	Stat 		file_info;
 	FILE *		doh;
+	int 		is_executable 			= 0;
 
 	if (!setup)
 	{
@@ -1577,22 +1578,22 @@ static 	Filename 	path_to_bunzip2;
 		goto file_not_found;
 	    }
 	    while (0);
-
-		stat(fullname, &file_info);
-		if (S_ISDIR(file_info.st_mode))
+		
+		if(stat(fullname, sb) < 0)
+		{
+			if (do_error)
+				yell("%s could not be accessed", fullname);
+			goto error_cleanup;
+		}
+	
+		if (S_ISDIR(sb->st_mode))
 		{
 		    if (do_error)
 			yell("%s is a directory", fullname);
 		    goto error_cleanup;
 		}
-		if (file_info.st_mode & 0111)
-		{
-		    if (do_error)
-			yell("Cannot open %s -- executable file", fullname);
-		    goto error_cleanup;
-		}
 	}
-
+	
 	/* 
 	 * At this point, we should have a filename in the variable
 	 * *filename, and it should exist.  If ok_to_decompress is one, then
@@ -1649,14 +1650,33 @@ int	slurp_file (char **buffer, char *filename)
 	FILE *	file;
 	size_t	count;
 
-	file = uzfopen(&filename, get_string_var(LOAD_PATH_VAR), 1);
+	file = uzfopen(&filename, get_string_var(LOAD_PATH_VAR), 1, &s);
+
+/*
 	if (stat(filename, &s) < 0)
 	{
 		fclose(file);
 		new_free(&filename);
-		return -1;		/* Whatever. */
+		return -1;
+	} 
+*/
+
+	if (s.st_mode & 0111)
+	{
+		int do_error;
+		do_error = 1;
+		if (do_error)
+			yell("Cannot open %s -- executable file", filename);
+		fclose(file);
+		new_free(&filename);
+		return -1; /* Whatever */
 	}
 
+	/*
+ 	 * There should probably be some sort of errortrapping function here, 
+	 * but I am not sure how to implement it, without running stat twice - 
+	 * that is.
+	 */
 	filesize = s.st_size;
 	if (!end_strcmp(filename, ".gz", 3))
 		filesize *= 7;

@@ -1,4 +1,4 @@
-/* $EPIC: dcc.c,v 1.103 2004/08/29 21:00:26 jnelson Exp $ */
+/* $EPIC: dcc.c,v 1.104 2004/09/13 18:29:57 crazyed Exp $ */
 /*
  * dcc.c: Things dealing client to client connections. 
  *
@@ -2784,9 +2784,9 @@ static void	process_dcc_chat_connected (DCC_list *dcc)
 	len = sizeof(name);
 	if (getpeername(dcc->socket, (SA *)&name, &len))
 	{
-	    if (do_hook(DCC_LOST_LIST, "%s CHAT connection failed", dcc->user))
-		say("DCC CHAT connection to %s lost [connection failed]", 
-							dcc->user);
+	    if (do_hook(DCC_LOST_LIST, "%s CHAT %s", dcc->user, strerror(errno)))
+		say("DCC CHAT connection to %s lost [%s]", 
+							dcc->user, strerror(errno));
 	    dcc->flags |= DCC_DELETE;
 	    unlock_dcc(dcc);
 	    return;
@@ -2940,9 +2940,9 @@ static void	process_dcc_raw_connected (DCC_list *dcc)
 	len = sizeof(name);
 	if (getpeername(dcc->socket, (SA *)&name, &len))
 	{
-	    if (do_hook(DCC_LOST_LIST, "%s RAW connection failed", dcc->user))
-		say("DCC RAW connection to %s lost [connection failed]", 
-							dcc->user);
+	    if (do_hook(DCC_LOST_LIST, "%s RAW %s", dcc->user, strerror(errno)))
+		say("DCC RAW connection to %s lost [%s]", 
+							dcc->user, strerror(errno));
 	    dcc->flags |= DCC_DELETE;
 	    unlock_dcc(dcc);
 	    return;
@@ -3342,9 +3342,9 @@ static void	process_dcc_get_connected (DCC_list *dcc)
 	if (getpeername(dcc->socket, (SA *)&name, &len))
 	{
 	    char *edesc = dcc_urlencode(dcc->description);
-	    if (do_hook(DCC_LOST_LIST, "%s GET %s connection failed", dcc->user, edesc))
-		say("DCC GET connection to %s lost [connection failed]", 
-							dcc->user);
+	    if (do_hook(DCC_LOST_LIST, "%s GET %s %s", dcc->user, edesc, strerror(errno)))
+		say("DCC GET connection to %s lost [%s]", 
+							dcc->user, strerror(errno));
 	    new_free(&edesc);
 	    dcc->flags |= DCC_DELETE;
 	    unlock_dcc(dcc);

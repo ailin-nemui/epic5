@@ -399,3 +399,4 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Reset "from_server" after every window operation
 * If /window doesn't change current_window, revert from_server to orig value
 * If /window changes current_window, reset from_server to cur_win->serv;
+* Altered the dcc_lost hook to return strerr() info.

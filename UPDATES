@@ -1,5 +1,28 @@
 EPIC5-0.1
 
+*** News 09/14/2004 -- Added Howls shebang script support.
+	It is now possible to write epic scripts that run from the shell
+	command line.  Yaaay..!  The nature of the epic binary itself made this
+	a little difficult at the interface level, so a little hackery was
+	required.  The form of the shebang line is this:
+
+		#!/path/to/epic -S [command line options] -l
+
+	Note that the -l switch must be the last on the line, and -S must be
+	the first.  Also note that at this point in time, -S will only work as
+	the first part of the first argument.  The results of the use of this
+	switch anywhere else is currently undefined.
+
+*** News 09/14/2004 -- Added some features to the commandqueues script.
+	The first argument to /1cmd may now have a second number attached, with
+	a coma.  This number if given, will cause any recurrences of the same
+	command within that number of seconds to reset the last-executed time
+	_without_ executing the command.
+
+	Use of the 0 or 1 argument form of /qcmd will now cause the timer to be
+	reset to 5 seconds, and if called as a function, the command will be
+	returned without executing it.
+
 *** News 09/10/2004 -- Command line option changes withdrawn.
 
 *** News 09/10/2004 -- Command line option changes.

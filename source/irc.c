@@ -1,4 +1,4 @@
-/* $EPIC: irc.c,v 1.786 2004/09/11 07:29:36 crazyed Exp $ */
+/* $EPIC: irc.c,v 1.787 2004/09/13 18:29:57 crazyed Exp $ */
 /*
  * ircII: a new irc client.  I like it.  I hope you will too!
  *
@@ -52,7 +52,7 @@ const char internal_version[] = "20040319";
 /*
  * In theory, this number is incremented for every commit.
  */
-const unsigned long	commit_id = 1117;
+const unsigned long	commit_id = 1118;
 
 /*
  * As a way to poke fun at the current rage of naming releases after
@@ -251,6 +251,7 @@ static		char	switch_help[] =
       -h\tPrint this help message                                     \n\
       -q\tThe program will not load your .ircrc file                  \n\
       -s\tThe program will not connect to a server upon startup       \n\
+      -S\tEach argument will be tokenised by whitechar                \n\
       -v\tPrint the version of this irc client and exit               \n\
       -x\tRun the client in full X_DEBUG mode                         \n\
       -c <chan>\tJoin <chan> after first connection to a server       \n\
@@ -509,6 +510,9 @@ static	void	parse_args (int argc, char **argv)
 	char *tmp_hostname = NULL;
 	char *the_path = NULL;
 	char *translation_path = NULL;
+	
+	int altargc = 0;
+	char **altargv;
 
 	extern char *optarg;
 	extern int optind;
@@ -639,11 +643,60 @@ static	void	parse_args (int argc, char **argv)
 
 	set_var_value(TRANSLATION_PATH_VAR, translation_path, 0);
 	new_free(&translation_path);
+	
+
+	/* The -S-option  / shebang tokeniser */
+	if (argc > 1 && ((argv[1][0] == '-' && argv[1][1] == 'S')
+		|| strchr(argv[1], ' ') != NULL 
+		|| strchr(argv[1], '\t') != NULL)
+	)
+	{
+		int argn, argpos, bufpos, c, n;
+		altargv = new_malloc(sizeof(char *));
+		altargv[0] = new_malloc(strlen(argv[0]) +1);
+		strcpy(altargv[0], argv[0]);
+		altargc = 1;
+		
+		for (argn = 1; argn < argc; argn++)
+		{
+		    int arglen = strlen(argv[argn]);
+		    char buffer[arglen +1];
+		    argpos = -1;
+		    do
+		    {
+		 	for (n = 0; n <= arglen; ) buffer[n++] = '\0';
+			bufpos = 0;
+			for (argpos++; argpos <= arglen; argpos++)
+			{
+				c = argv[argn][argpos];
+				if (c == '\0' || c == ' ' || c == '\t')
+					break;
+				buffer[bufpos++] = c;
+			}
+			if (bufpos == 0)
+			{
+				if (c == '\0')
+					break;
+				continue;
+			}
+			RESIZE(altargv, char *, altargc +1);
+			altargv[altargc] = new_malloc(bufpos +1);
+			strcpy(altargv[altargc++], buffer);
+			if (c != '\0')
+				continue;
+			break;   	
+		    } while(1);
+		}
+		RESIZE(altargv, char *, altargc +1);
+		altargv[altargc] = NULL;
+		argc = altargc;
+		argv = altargv;
+	}
 
 	/*
 	 * Parse the command line arguments.
 	 */
-	while ((ch = getopt(argc, argv, "aBbc:dfFhH:l:L:n:oOp:qsvxz:")) != EOF)
+	while ((ch = getopt(argc, argv, "aBbc:dfFhH:l:L:n:oOp:qsSvxz:")) != EOF)
 	{
 		switch (ch)
 		{
@@ -690,6 +743,9 @@ static	void	parse_args (int argc, char **argv)
 
 			case 's': /* dont connect - let user choose server */
 				dont_connect = 1;
+				break;
+			
+			case 'S': /* dummy option - to not choke on -S */
 				break;
 
 			case 'b':
@@ -811,6 +867,16 @@ static	void	parse_args (int argc, char **argv)
 		}
 	}
 
+	if (altargc > 0)
+	{
+		int argn;
+		for (argn = 0; argn < altargc; argn++)
+		{
+			new_free(&(altargv[altargc]));
+		}
+		new_free(&altargv);
+		altargc = 0;
+	}
 	
 	return;
 }

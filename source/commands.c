@@ -1,4 +1,4 @@
-/* $EPIC: commands.c,v 1.107 2004/09/11 07:29:36 crazyed Exp $ */
+/* $EPIC: commands.c,v 1.108 2004/09/13 18:29:57 crazyed Exp $ */
 /*
  * commands.c -- Stuff needed to execute commands in ircII.
  *		 Includes the bulk of the built in commands for ircII.
@@ -1468,6 +1468,7 @@ struct load_info
 	int	package_set_here;
 	int	line;
 	int	start_line;
+	struct stat sb;
 } load_level[MAX_LOAD_DEPTH] = { { NULL, NULL, 0, 0, 0, 0 } };
 
 int 	load_depth = -1;
@@ -1625,7 +1626,8 @@ BUILT_IN_COMMAND(load)
 	     * uzfopen() also frees 'expanded' for us on error.
 	     */
 	    expanded = malloc_strdup(filename);
-	    if (!(fp = uzfopen(&expanded, use_path, 1)))
+	    
+	    if (!(fp = uzfopen(&expanded, use_path, 1, &load_level[load_depth].sb)))
 		continue;
 
 	    load_level[load_depth].filename = expanded;
@@ -1690,6 +1692,12 @@ const	char	*defargs;
 	    if (!fgets(buffer, MAX_LINE_SIZE, fp))
 		break;
 
+	    if (loadinfo->line == 1 && loadinfo->sb.st_mode & 0111 &&
+	    	(buffer[0] != '#' || buffer[1] != '!'))
+	    {
+	    	yell("Cannot open %s -- executable file", loadinfo->filename);
+		return;
+	    }
 	    for (start = buffer; my_isspace(*start); start++)
 		;
 
@@ -2035,7 +2043,7 @@ static void	loader_pf (FILE *fp, const char *filename, const char *subargs, stru
 {
 	char *	buffer;
 	int	bufsize, pos;
-	int	this_char, newline, comment;
+	int	this_char, newline, comment, shebang;
 
 	loadinfo->loader = "pf";
 
@@ -2044,8 +2052,32 @@ static void	loader_pf (FILE *fp, const char *filename, const char *subargs, stru
 	pos = 0;
 	newline = 1;
 	comment = 0;
+	shebang = 0;
 
 	this_char = fgetc(fp);
+
+	/* Checks for a shebang. */
+	if (this_char == '#' && !feof(fp))
+	{
+		this_char = fgetc(fp);
+		if (this_char == '!')
+			shebang = 1;
+		ungetc(this_char, fp);
+		comment = 1;
+	}
+
+	/* 
+	 * If the file is executable, we'll usually fail at this point,
+	 * but if there's a shebang, we believe it's safe to load the 
+	 * file.
+	 */
+	
+	if (!shebang && loadinfo->sb.st_mode & 0111)
+	{
+		yell("Cannot open %s -- executable file", loadinfo->filename); 
+		new_free(&buffer);
+		return;
+	}
 	while (!feof(fp))
 	{
 	    do

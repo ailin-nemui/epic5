@@ -60,27 +60,45 @@ alias timer.ue (args) {
 #
 # Execute command on server _without_ expanding command.
 #
-alias scmd (args) fe ($split(, $shift(args))) serv {xeval -s $serv {$args}}
+alias scmd (args) fe ($split(, $shift(args))) serv {
+	xeval -s $serv -w $serverwin($serv) {$args}
+}
 
 #
 # Usage:
-#  1cmd [time [command]]
+#  1cmd [time,reset [command]]
 #
 # command will not be executed if the same command has been executed in
 # the last time seconds.
 #
-alias 1cmd {
-	@ :foo = encode($tolower($1-))
+# The time of the last execution of the command will be set to the current time
+# if it was executed, or if the last execution was less than "reset" seconds
+# ago.  This is useful for riding events which occur in waves.
+#
+alias 1cmd (sec,cmd) {
+	@ :foo = encode($tolower($cmd))
+	@ :time = time()
 	@ :eserv = 0 > servernum() ? [] : servernum()
-	if (time() - onecmd[$eserv][$foo] >= [$0]) {
-		@ onecmd[$eserv][$foo] = time()
-		$1-
+	@ :reset = split(, $sec)
+	@ :sec = shift(reset)
+	@ :reset = shift(reset)
+	if (!sec) {
+		$cmd
+		return
+	} elsif (time - onecmd[$eserv][$foo][t] <= reset) {
+		@ onecmd[$eserv][$foo][e] = time + sec
+		@ onecmd[$eserv][$foo][t] = time
+	} elsif (time - onecmd[$eserv][$foo][t] >= sec) {
+		@ onecmd[$eserv][$foo][e] = time + sec
+		@ onecmd[$eserv][$foo][t] = time
+		$cmd
 	}
-	if (time() != onecmd[$eserv] && (!rand(100))) {
-		@ onecmd[$eserv] = time()
+	if (time != onecmd[$eserv][lp] && !(++onecmd[$eserv][cnt] % 10)) {
+		@ onecmd[$eserv] = time
 		foreach onecmd[$eserv] bar {
-			if (onecmd[$eserv][$bar] < time()) {
-				@ onecmd[$eserv][$bar] = []
+			if (onecmd[$eserv][$bar][e] < time) {
+				@ onecmd[$eserv][$bar][t] = []
+				@ onecmd[$eserv][$bar][e] = []
 			}
 		}
 	}
@@ -129,8 +147,8 @@ fe (q push fq unshift) cmd op {
 		@ :sn = servernum()
 		@ :sn = sn < 0 ? [_] : sn
 		if (1 < #) {
-			@ :bar = [$1-]
-			@ ${op}(qcmd.${sn}.$0 \"$msar(gr/\\/\\\\/\"/\\\"/bar)\")
+			@ :foo = [$1-]
+			@ :foo = ${op}(qcmd.${sn}.$0 \"$msar(gr/\\/\\\\/\"/\\\"/foo)\")
 		} else {
 			if (1 == #) {
 				@ :foo = [qcmd.${sn}.$0]
@@ -148,13 +166,16 @@ fe (q push fq unshift) cmd op {
 					break
 				}
 			}
-			if (@foo) {
-				@ :bar = shift(qcmd[$sn][$foo])
-				$msar(gr/\\\\/\\/\\\"/\"/bar)
-			}
+			@ :bar = shift(qcmd[$sn][$foo])
 		}
-		if (@bar) ^timer -ref qcmd.$sn 5 qcmd
-		return $bar
+		if (functioncall()) {
+			return $msar(gr/\\\\/\\/\\\"/\"/bar)
+		} elsif (@bar) {
+			$msar(gr/\\\\/\\/\\\"/\"/bar)
+			^timer -ref qcmd.$sn -update 5 qcmd
+		} elsif (@foo) {
+			^timer -ref qcmd.$sn 5 qcmd
+		}
 	}
 }
 stack pop alias alias.tt
