@@ -33,8 +33,11 @@ KNOWN ERRATA (eg, bugs, or unresolved requests):
 * DCC send yourself a file and then DCC get it leads to wackiness
 * New function, you give it a window level, it gives you the window refnum
 * IPV6-over-dcc, i promised morty i would.
-* Add a script to implement /set suppress_server_motd.  Someone missed it. doh!
 * ON WHO hook not thrown in correct window.
+* Shall remove_trailing_spaces honor a \ before a space trailing?
+* get_window() should use get_window_by_desc() and not its own thing
+* Larne's "missing line" bug.
+* The "Select() failed" bug
 * $glob() and $globi() tend to choke on wierdly named filenames, or rather, on
   wierd masks.
 
@@ -48,10 +51,13 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Fix another build error on non-SSL systems.
 * Fix all the rest of the build errors now that I am able to.
 * Add support for channel mode +C at request of quakenet user.
-* /exec, /redir, $xdebug tuned as per UPDATES.
-* /set FLOATING_POINT_PRECISION added as per UPDATES.
+* Allow /redirect =<num> as well as /redirect =<nick> for dcc raw connections
+* Allow /redirect to use $* if it's available.
+* Fix $xdebug() to accept wildcard patterns.
+* Allow /exec -line et al to be changed in already running processes.
 * next_in_comma_list converted to next_in_div_list, div argument added.
-* Change default FLOATING_POINT_PRECISION from 6 to 16 which fixes a math bug.
+* Add /SET FLOATING_POINT_PRECISION, defaults to 6
+* Change /SET FLOATING_POINT_PRECISION default to 16
 * Add arg to next_args and new_next args to get a certain number of words
 * Rewrite /alias xxx (args) handling to use next_args_count and not extractw.
 * Tuned the call.xtrace alias in debug.irc.
@@ -75,6 +81,12 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Fix $timerctl() so it actually works (REFNUM/DELETE/GET/SET were broken)
 * Fix /TIMER -UPDATE so it doesn't reset events to -1 automatically.
 * Fix panic when you /server over from and to a connected server with chans
+* Add %{1}R status format, which always gives you the window's refnum.
+* Updated /redirect usage to reflect features it always had.
+* Removed size limitations on enquote_it().  This fixes $read().
+* Fix 'man' script.
+* Fix /set help_pager off so that it can be used.
+* Fix status_does_expandos code so it sets from_server to window's server.
 * Const correctness improvements.
 * Invert the meaning of 'new_check_flooding' to return TRUE if flooding.
 * Revamp funny.c, /list, /names, /mode reply handling.
@@ -91,12 +103,20 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Send output of who replies to LOG_CRAP as per previous behavior.
 * Fix /on 368 so it is hooked properly
 * Call expand_twiddle() and not normalize_filename in $glob[i](). (rb wd)
+* Fix bug where epic would crash if you try ssl on non-ssl server (wd)
 * Fix so that stack push set can unset values (thanks to Tyrak).
 * Fix panic when doing stack push set with an empty set stack or 
   stack pop set with a set stack containing items (thanks to Tyrak).
 * Fixed ERROR hook to display a star when not connected to a server.
 * Tuned internal array consistency checking in regression tests.
 * Added some debugging notices to autoget to warn of common problems.
+* Rewrite $serverctl() so it matches verbs in a different way.
+* Add $serverctl(gmatch *pattern*), $serverctl(imatch *pattern*)
+* Add $serverctl(omatch *pattern*), remove $serverctl(match|pmatch *pattern*)
+* Add $serverctl(max), returns maximum server refnum.
+* Change $afterw()/$beforew()/$fromw()/$tow() to use $findw() and not $rmatch()
+* Fix $writeb() so it dequotes data, so you can write binary data.
+* Fix /sleep so it takes same arguments as /usleep.
 * Uniformly use 32 bit file sizes in dcc.  That's the way it has to be.
 * Split process_incoming_chat into modular functions.  It's an experiment.
 * Remove the old, #if 0'd dcc_getfile_resume.
@@ -123,9 +143,21 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Add /LOG <refnum> ACTIVITY which updates activity timer w/o writing to log.
 * Add $logctl([GET|SET] <refnum> ACTIVITY) to get or set the activity timer. 
 * Add new script, "suppressmotd" to implemenet /set suppress_server_motd
+* Don't hook /on names twice in the normal case. (rb void)
+* Revamp $timerctl() to handle its args like $serverctl() does now.
+* Add a bunch of new functions in 'functions' script.  See UPDATES.
 * Tentative change to $glob*() making them "dequote" the glob before looking
   for it.  This probably isn't a real answer.  I get the feeling that a new
   pair of functions that make just one search as keerf suggested is probably
   the answer.
-* Fix for a leak (and an occasional coredump) in /list.
+* Set (and destroy) server->funny_match.  Fixes crash using /LIST.
 * Fix numeric handlers for 313, 317.
+* Docs say that $info(o) includes 'g' if $glob() is available.  Add it.
+* Revamp $win(serv|size|chan|bound|level)() to use get_window_by_desc.
+* Revamp $win(screen)() to use get_window_by_desc.
+* Use get_window_by_refnum(0) and not 'current_window'
+* Allow a \ to escape a space where spaces would be stripped.
+* Above bug fixes things like switch ($foo) {(foo\  ) {...}} to work.
+* Add handler for /on 330, "user is logged in" numeric in ircu.
+* Don't honor/ignore "#" in a window name/refnum.  This was lame anways.
+* Fix is_window_visible/get_window to use get_window_by_desc().

@@ -1,4 +1,4 @@
-/* $EPIC: functions.c,v 1.100 2003/02/05 21:48:12 crazyed Exp $ */
+/* $EPIC: functions.c,v 1.101 2003/02/10 21:41:15 jnelson Exp $ */
 /*
  * functions.c -- Built-in functions for ircII
  *
@@ -3369,16 +3369,14 @@ BUILT_IN_FUNCTION(function_lastserver, input)
 
 BUILT_IN_FUNCTION(function_winserv, input)
 {
-	int win = 0;
-	char *tmp;
 	Window *winp;
 
 	if (input && *input)
-	{
-		if ((tmp = new_next_arg(input, &input)))
-			win = my_atol(tmp);
-	}
-	if ((winp = get_window_by_refnum(win)))
+		winp = get_window_by_desc(input);
+	else
+		winp = get_window_by_refnum(0);
+
+	if (winp)
 		RETURN_INT(winp->server);
 
 	RETURN_INT(-1);
@@ -3564,21 +3562,17 @@ BUILT_IN_FUNCTION(function_epic, words)
 
 BUILT_IN_FUNCTION(function_winsize, words)
 {
-	int refnum;
 	Window *win;
 
 	if (words && *words)
-	{
-		GET_INT_ARG(refnum, words);
-		win = get_window_by_refnum(refnum);
-	}
+		win = get_window_by_desc(words);
 	else
-		win = current_window;
+		win = get_window_by_refnum(0);
 
-	if (!win)
-		RETURN_EMPTY;
+	if (win)
+		RETURN_INT(win->display_size);
 
-	RETURN_INT(win->display_size);
+	RETURN_EMPTY;
 }
 
 
@@ -3994,15 +3988,16 @@ BUILT_IN_FUNCTION(function_winchan, input)
 	 */
 	else 
 	{
-		Window *win = current_window;
+		Window *win;
 
 		if (arg1 && *arg1)
 			win = get_window_by_desc(arg1);
+		else
+			win = get_window_by_refnum(0);
 
-		if (!win)
-			RETURN_EMPTY;
-
-		RETURN_STR(win->current_channel);
+		if (win)
+			RETURN_STR(win->current_channel);
+		RETURN_EMPTY;
 	}
 }
 
@@ -4072,29 +4067,18 @@ BUILT_IN_FUNCTION(function_deuhc, input)
  */
 BUILT_IN_FUNCTION(function_winbound, input)
 {
-	Window *foo;
-	char *	stuff;
+	Window *win;
 	char *	retval;
 
-	if (!(stuff = new_next_arg(input, &input)))
-		RETURN_EMPTY;
-	if (my_atol(stuff) && (foo = get_window_by_refnum((unsigned)my_atol(stuff))))
-	{
-		retval = get_bound_channel(foo);
-		RETURN_STR(retval);
-	}
-	else if ((foo = get_window_by_name(stuff)))
-	{
-		retval = get_bound_channel(foo);
-		RETURN_STR(retval);
-	}
-	else if ((foo = get_window_bound_channel(stuff)))
-	{
-		retval = get_refnum_by_window(foo);
-		RETURN_STR(retval);
-	}
+	if (input && *input && is_channel(input))
+		win = get_window_bound_channel(input);
+	else if (input && *input)
+		win = get_window_by_desc(input);
+	else
+		win = get_window_by_refnum(0);
 
-	RETURN_EMPTY;
+	retval = get_bound_channel(win);
+	RETURN_STR(retval);
 }
 
 BUILT_IN_FUNCTION(function_ftime, words)
@@ -4209,7 +4193,7 @@ BUILT_IN_FUNCTION(function_winnames, input)
 	if (*input)
 		win = get_window_by_desc(input);
 	else
-		win = current_window;
+		win = get_window_by_refnum(0);
 
 	if (!win)
 		RETURN_EMPTY;
@@ -5088,16 +5072,12 @@ BUILT_IN_FUNCTION(function_chop, input)
 BUILT_IN_FUNCTION(function_winlevel, input)
 {
 	Window	*win;
-	char	*desc;
 	char *	retval;
 
 	if (input && *input)
-	{
-		GET_STR_ARG(desc, input);
-		win = get_window_by_desc(desc);
-	}
+		win = get_window_by_desc(input);
 	else
-		win = current_window;
+		win = get_window_by_refnum(0);
 
 	if (!win)
 		RETURN_EMPTY;
@@ -6052,7 +6032,7 @@ BUILT_IN_FUNCTION(function_builtin, input)
  * Author: IceKarma (ankh@canuck.gen.nz)
  * Contributed by: author
  *
- * Usage: $winscreen(#channel <server refnum|server name>)
+ * Usage: $winscreen(window <server refnum|server name>)
  * Given a channel name and either a server refnum or a direct server
  * name or an effective server name, this function will return the
  * refnum of the window where the channel is the current channel (on that
@@ -6063,21 +6043,17 @@ BUILT_IN_FUNCTION(function_builtin, input)
  */
 BUILT_IN_FUNCTION(function_winscreen, input)
 {
-	Window *	foo = NULL;
-	char *		stuff;
-	int		num;
+	Window *	win = NULL;
 
-	if (!(stuff = new_next_arg(input, &input)))
+	if (input && *input)
+		win = get_window_by_desc(input);
+	else
+		win = get_window_by_refnum(0);
+
+	if (!win || !win->screen)
 		RETURN_INT(-1);
 
-	if ((num = my_atol(stuff)))
-		foo = get_window_by_refnum(num);
-	if (!foo)
-		foo = get_window_by_name(stuff);
-	if (!foo || !foo->screen)
-		RETURN_INT(-1);
-
-	RETURN_INT(foo->screen->screennum);
+	RETURN_INT(win->screen->screennum);
 }
 
 /*

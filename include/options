@@ -35,9 +35,9 @@ const char compile_time_options[] = {
  					'f',
 #endif /* USE_FLOW_CONTROL */
  
-#ifdef INCLUDE_GLOB_FUNCTION
+#if 1
  					'g',
-#endif /* INCLUDE_GLOB_FUNCTION */
+#endif /* INCLUDE_GLOB_FUNCTION is now the default */
  
 #ifdef MIRC_BROKEN_DCC_RESUME
 					'i',

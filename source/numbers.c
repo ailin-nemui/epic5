@@ -1,4 +1,4 @@
-/* $EPIC: numbers.c,v 1.42 2003/02/08 06:38:30 jnelson Exp $ */
+/* $EPIC: numbers.c,v 1.43 2003/02/10 21:41:15 jnelson Exp $ */
 /*
  * numbers.c: handles all those strange numeric response dished out by that
  * wacky, nutty program we call ircd 
@@ -1157,6 +1157,21 @@ DISPLAY:
 		}
 		break;
 	}
+
+	case 330:		/* #define RPL_WHOISLOGGEDIN	330 */
+	{
+		const char *nick, *login;
+
+		PasteArgs(ArgList, 1);
+		if (!(nick = ArgList[0]))
+			{ rfc1459_odd(from, comm, ArgList); goto END; }
+		if (!(login = ArgList[1]))
+			{ rfc1459_odd(from, comm, ArgList); goto END; }
+
+		put_it("%s %s is logged in as %s", banner(), nick, login);
+		break;
+	}
+
 	case 332:		/* #define RPL_TOPIC            332 */
 	{
 		const char *channel, *topic;

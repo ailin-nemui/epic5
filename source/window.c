@@ -1,4 +1,4 @@
-/* $EPIC: window.c,v 1.54 2003/01/31 23:50:18 jnelson Exp $ */
+/* $EPIC: window.c,v 1.55 2003/02/10 21:41:15 jnelson Exp $ */
 /*
  * window.c: Handles the organzation of the logical viewports (``windows'')
  * for irc.  This includes keeping track of what windows are open, where they
@@ -1515,8 +1515,10 @@ Window *get_window_by_desc (const char *stuff)
 {
 	Window	*w = NULL;	/* bleh */
 
+/*
 	while (*stuff == '#')
 		stuff++;
+*/
 
 	if ((w = get_window_by_name(stuff)))
 		return w;
@@ -1636,15 +1638,15 @@ static	Window	*get_previous_window (Window *w)
  */
 int 	is_window_visible (char *arg)
 {
-	Window	*tmp;
+	Window	*win;
 
-	if (is_number(arg))
+	if ((win = get_window_by_desc(arg)))
 	{
-		if ((tmp = get_window_by_refnum(my_atol(arg))) != NULL)
-			return (tmp->screen) ? 1 : 0;
+		if (win->screen)
+			return 1;
+		else
+			return 0;
 	}
-	if ((tmp = get_window_by_name(arg)) != NULL)
-		return (tmp->screen) ? 1 : 0;
 
 	return -1;
 }
@@ -1652,7 +1654,7 @@ int 	is_window_visible (char *arg)
 /* 
  * XXXX i have no idea if this belongs here.
  */
-char *	get_status_by_refnum(unsigned refnum, int line)
+char *	get_status_by_refnum (unsigned refnum, int line)
 {
 	Window *the_window;
 
@@ -2443,22 +2445,18 @@ int     get_geom_by_winref (const char *desc, int *co, int *li)
 static Window *get_window (char *name, char **args)
 {
 	char	*arg;
-	Window	*tmp;
+	Window	*win;
 
-	if ((arg = next_arg(*args, args)) != NULL)
+	if ((arg = next_arg(*args, args)))
 	{
-		if (is_number(arg))
-		{
-			if ((tmp = get_window_by_refnum(my_atol(arg))) != NULL)
-				return (tmp);
-		}
-		if ((tmp = get_window_by_name(arg)) != NULL)
-			return (tmp);
+		if ((win = get_window_by_desc(arg)))
+			return win;
 		say("%s: No such window: %s", name, arg);
 	}
 	else
 		say("%s: Please specify a window refnum or name", name);
-	return ((Window *) 0);
+
+	return NULL;
 }
 
 /*
