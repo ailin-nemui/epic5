@@ -1,0 +1,151 @@
+# mail script.  lifted from anduril by wd.
+# this script is in the public domain
+
+# $Id: mail,v 1.1 2002/07/31 23:39:35 wd Exp $
+
+# this module is intended as a replacement for the built-in functionality of
+# epic's mail code.  currently it only handles mbox-style mail boxes.  it
+# allows the user to add and remove mboxes as desired, and change the
+# checking time.
+
+# you can /set mail_watch_time to change the time interval for scanning for
+# new mail
+# this script honors /set mail to completely enable/disable checking.
+#
+# you can use the /mbox command to list details about currently added
+# mailboxes.  you can also use it to add or delete folders from the list.
+
+@mail.folders = getenv(MAIL)
+
+^on ^set "mail_watch_time *" {
+    if ([$1] == []) {
+	echo $banner Current value of MAIL_WATCH_TIME is $mail.time
+	return
+    }
+    if (mail.time > 0) {
+	^timer -del mailcheck
+    }
+
+    if ([$1] > 0) {
+	@mail.time = [$1]
+	^timer -refnum mailcheck -rep -1 $mail.time mail.check
+    }
+    echo $banner Value of MAIL_WATCH_TIME set to $mail.time
+}
+
+alias mbox (cmd, args) {
+    if (cmd != [] && cmd != [list] && numwords($args) != 1) {
+	echo [mail] usage: /mbox [add|del|list] [folder]
+	return
+    } else if (cmd == []) {
+	@:cmd = [list]
+    }
+
+    @:folder = twiddle($args)
+
+    switch ($cmd) {
+	(add) {
+	    if (findw($folder $mail.folders) != -1) {
+		echo [mail] folder $args is already being monitored
+		return
+	    }
+
+	    @:stat = stat($folder)
+	    if (stat == []) {
+		echo [mail] stat\($folder\) failed.  either the file is not accesible or the system does not support stat(2).
+		return
+	    }
+	    @push(mail.folders $folder)
+	    @push(mail.times $word(11 $stat))
+	    
+	    echo [mail] now monitoring $folder for new mail
+	}
+	(del) {
+	    if (findw($folder $mail.folders) == -1) {
+		echo [mail] folder $folder is not being monitored
+		return
+	    }
+
+	    @mail.folders = remw($folder $mail.folders)
+	    echo [mail] no longer monitoring $folder for new mail
+	}
+	(list) {
+	    @:mtot = 0
+	    @:cols = word(0 $geom())
+	    echo $pad(${cols - 40} \" \" folder) $pad(20 \" \" last modified) $pad(8 \" \" size) $pad(8 \" \" messages)
+	    for xx in ($mail.folders) {
+		@:stat = stat($xx)
+		@:out = pad(${cols - 40} \" \" $xx)
+		if (stat != []) {
+		    @:out #= [ $pad(20 \" \" $strftime($word(11 $stat) %d/%m/%Y %H:%M:%S))]
+		    @:out #= [ $pad(8 \" \" $mail.size_fmt($word(7 $stat)))]
+		} else {
+		    @:out #= [ $pad(20 \" \" unknown) $pad(8 \" \" unknown)]
+		}
+		@:mcnt = 0
+		@:fd = open($xx R)
+		if (fd > -1) {
+		    while (!eof($fd)) {
+			if (word(1 $read($fd)) == [From]) {
+			    @:mcnt++
+			}
+		    }
+		}
+		@close($fd)
+		@:out #= [ $pad(8 \" \" $mcnt)]
+		@:mtot += mcnt
+		echo $out
+	    }
+	}
+	(*) {
+	    echo [mail] usage: /mbox [add|del|list] [folder]
+	}
+    }
+}
+
+alias mail.check {
+    if (numwords($mail.folders) == 0 || MAIL == 0 || MAIL == []) {
+	return
+    }
+
+    for (@:i = 0,i < numwords($mail.folders),@:i++) {
+	@:folder = word($i $mail.folders)
+	@:stat = stat($folder)
+	if (stat == []) {
+	    continue
+	}
+	if (word(11 $stat) > word($i $mail.times)) {
+	    echo [mail] new mail in $folder \($strftime($word(11 $stat) %d/%m/%Y %H:%M:%S)\)
+	    @mail.times = chngw($i $word(11 $stat) $mail.times)
+	}
+    }
+}
+
+alias mail.size_fmt (n) {
+    if (!n) {
+	return 0b
+    } elsif (n < 1024) {
+	return ${n}b
+    } elsif (n < 1048576) {
+	return $trunc(2 ${n / 1024})kb
+    } elsif (n < 1073741824) {
+	return $trunc(2 ${n / 1048576})mb
+    } elsif (n < 1099511627776) {
+	return $trunc(2 ${n / 1073741824})gb
+    }
+    return $trunc(2 ${n / 1099511627776})tb
+}
+
+for xx in ($mail.folders) {
+    @:stat = stat($xx)
+    if (stat == []) {
+	@mail.folders = remw($xx $mail.folders)
+    } else {
+	@push(mail.times $word(11 $stat))
+    }
+}
+
+@mail.time = [60]
+^timer -refnum mailcheck -rep -1 $mail.time mail.check
+
+# vi:set ts=8 sts=4 sw=4 tw=79 syntax=off ai smartindent:
