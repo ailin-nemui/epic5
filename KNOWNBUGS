@@ -50,4 +50,19 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Fix $printlen() -- must call normalize_string() before output_with_count()!
 * Make 'add_to_window' and 'window_disp' static to screen.c again.
 * "Fix" /WINDOW ECHO to not call add_to_window() but rather use "to_window".
-
+* Add support for $write[b]() to logfiles; prefix window refnum with 'w'.
+* Add support for $write[b]() to global logfile; logref "w-1".
+* Add $ceil(), $floor(), $abs() (crazyeddy)
+* Fix $trunc(... 0) to truncate number to an integer (crazyeddy)
+* Print floating point numbers with up to 50 places of precision.
+* Add a new argument to /encrypt, an external encryption filter.
+* Add epic-crypt-gpg and epic-crypt-gpg-aa to the script/ directory.
+* Fix bug with ROM_CHAR handling.
+* Add MIN()/MAX() macros for systems that don't define one.
+* Add an exec_pipe() function which returns the results of an ext. prog. (ce)
+* Fix integer math (ce)
+* Avoid using trunc(3), nonportable; use fmod() isntead (ce)
+* Always make sure Attributes are initialized before first use.
+* Add compat hacks for broken systems lacking setenv() and unsetenv().
+* CTCP SEDs recieved in NOTICEs are treated as CTCP REPLIES not queries. (ce)
+* Added $encryptparm() -- returns all information about /encrypt entries. (ce)
