@@ -13,7 +13,7 @@
 /*
  * irc_version is what $J returns, its the common-name for the version.
  */
-const char irc_version[] = "EPIC4-0.9.14";
+const char irc_version[] = "EPIC4-0.9.14-1";
 const char useful_info[] = "epic4 0 9 14";
 
 /*
@@ -25,7 +25,7 @@ const char internal_version[] = "20001208";
 /*
  * In theory, this number is incremented for every commit.
  */
-const unsigned long	commit_id = 9;
+const unsigned long	commit_id = 10;
 
 /*
  * As a way to poke fun at the current rage of naming releases after
