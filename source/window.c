@@ -3903,7 +3903,7 @@ Window *window_rejoin (Window *window, char **args)
 	char *	newchan = NULL;
 
 	/* First off, we have to be connected to join */
-	if (from_server == -1)
+	if (from_server == -1 || !is_server_connected(from_server))
 	{
 		say("You are not connected to a server.");
 		return window;
