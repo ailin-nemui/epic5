@@ -13,6 +13,7 @@ void clean_server_queues (int);
 /* XXX This should be in who.c */
 typedef struct WhoEntryT
 {
+	int  refnum;
 	int  dirty;
 	int  piggyback;
 	int  undernet_extended;
@@ -32,6 +33,8 @@ typedef struct WhoEntryT
 	void (*line) (int, const char *, const char *, const char **);
 	void (*end) (int, const char *, const char *, const char **);
 
+	Timeval	request_time;
+	Timeval	dirty_time;
 } WhoEntry;
 
 	BUILT_IN_COMMAND(whocmd);

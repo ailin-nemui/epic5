@@ -1,4 +1,4 @@
-/* $EPIC: debug.c,v 1.17 2004/07/03 06:31:18 crazyed Exp $ */
+/* $EPIC: debug.c,v 1.18 2004/10/04 23:56:20 jnelson Exp $ */
 /*
  * debug.c -- controll the values of x_debug.
  *
@@ -74,6 +74,7 @@ static struct debug_opts opts[] =
 	{ "SSL",		DEBUG_SSL },
 	{ "EXTRACTW_DEBUG",	DEBUG_EXTRACTW_DEBUG },
 	{ "MESSAGE_FROM",	DEBUG_MESSAGE_FROM },
+	{ "WHO_QUEUE",		DEBUG_WHO_QUEUE },
 	{ "ALL",		~0},
 	{ NULL,			0 },
 };

@@ -404,3 +404,4 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Fixed $aliasctl(* match [mask]) to return only aliases and assigns.
 * Add %{3}W which is like %W but it's active for all input windows.
 * Support efnet's +e and +I numeric replies.
+* Add a bunch of stuff to debug the who_queue to find and fix adm's bug.

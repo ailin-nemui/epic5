@@ -1,4 +1,4 @@
-/* $EPIC: ircaux.c,v 1.118 2004/09/13 18:29:57 crazyed Exp $ */
+/* $EPIC: ircaux.c,v 1.119 2004/10/04 23:56:20 jnelson Exp $ */
 /*
  * ircaux.c: some extra routines... not specific to irc... that I needed 
  *
@@ -462,6 +462,39 @@ char *	forcibly_remove_trailing_spaces (char *foo, size_t *cluep)
 char *	next_in_comma_list (char *str, char **after)
 {
 	return next_in_div_list(str, after, ',');
+}
+
+/* This is only used by WHO so i don't care if it's expensive. */
+int	remove_from_comma_list (char *str, const char *what)
+{
+	char *result = NULL;
+	size_t	clue = 0;
+	size_t	bufsiz;
+	char *s, *p;
+	int	removed = 0;
+
+	bufsiz = strlen(str) + 1;
+	p = str;
+
+	while (p && *p)
+	{
+		s = next_in_comma_list(p, &p);
+		if (!my_stricmp(s, what))
+		{
+			removed = 1;
+			continue;
+		}
+		if (clue)
+			malloc_strcat_c(&result, ",", &clue);
+		malloc_strcat_c(&result, s, &clue);
+	}
+
+	if (result)
+		strlcpy(str, result, bufsiz);
+	else
+		*str = 0;
+
+	return removed;
 }
 
 char *	next_in_div_list (char *str, char **after, char delim)
