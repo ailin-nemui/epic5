@@ -10,7 +10,7 @@
  */
 
 #if 0
-static	char	rcsid[] = "$Id: numbers.c,v 1.10 2001/03/21 19:46:01 jnelson Exp $";
+static	char	rcsid[] = "$Id: numbers.c,v 1.11 2001/03/23 17:08:04 jnelson Exp $";
 #endif
 
 #include "irc.h"
@@ -555,15 +555,15 @@ void 	numbered_command (char *from, int comm, char **ArgList)
 	case 402:
 	{
 		PasteArgs(ArgList, 1);
-		if (do_hook(current_numeric, "%s %s %s", from, 
-					ArgList[0], ArgList[1]))
-			display_msg(from, ArgList);
-
 		/* 
 		 * Some broken servers send this instead of a 315 numeric
 		 * when a who request has been completed.
 		 */
 		fake_who_end(from, ArgList[0]);
+
+		if (do_hook(current_numeric, "%s %s %s", from, 
+					ArgList[0], ArgList[1]))
+			display_msg(from, ArgList);
 		break;
 	}
 
@@ -574,21 +574,22 @@ void 	numbered_command (char *from, int comm, char **ArgList)
 	case 523:
 	{
 		PasteArgs(ArgList, 0);
-		if (do_hook(current_numeric, "%s %s", from, ArgList[0]))
-			display_msg(from, ArgList);
-
 		/* 
 		 * This dalnet error message doesn't even give us the
 		 * courtesy of telling us which who request was in error,
 		 * so we have to guess.  Whee.
 		 */
 		fake_who_end(from, NULL);
+
+		if (do_hook(current_numeric, "%s %s", from, ArgList[0]))
+			display_msg(from, ArgList);
 		break;
 	}
 
 	case 403:		/* #define ERR_NOSUCHCHANNEL    403 */
 	{
 		const char	*s;
+		int		blech = 0;
 
 		PasteArgs(ArgList, 1);
 
@@ -606,16 +607,12 @@ void 	numbered_command (char *from, int comm, char **ArgList)
 			break;
 		}
 
-		if (do_hook(current_numeric, "%s %s %s", from, 
-					ArgList[0], ArgList[1]))
-			display_msg(from, ArgList);
-
 		/* 
 		 * Some broken servers send this instead of a 315 numeric
 		 * when a who request has been completed.
 		 */
 		if (fake_who_end(from, ArgList[0]))
-			break;
+			;
 
 		/*
 		 * If you try to JOIN or PART the "*" named channel, as may
@@ -626,8 +623,12 @@ void 	numbered_command (char *from, int comm, char **ArgList)
 		 * this server claims does not exist; we blow the channel away
 		 * for good measure.
 		 */
-		if (strcmp(ArgList[0], "*"))
+		else if (strcmp(ArgList[0], "*"))
 			remove_channel(ArgList[0], from_server);
+
+		if (do_hook(current_numeric, "%s %s %s", from, 
+					ArgList[0], ArgList[1]))
+			display_msg(from, ArgList);
 
 		break;
 	}
@@ -703,9 +704,9 @@ void 	numbered_command (char *from, int comm, char **ArgList)
 		 */
 		if (ArgList[0] && ArgList[1] == NULL)
 		{
+			accept_server_nickname(from_server, user);
 			if (do_hook(current_numeric, "%s %s", from, ArgList[0]))
 				display_msg(from, ArgList);
-			accept_server_nickname(from_server, user);
 			break;
 		}
 
@@ -733,9 +734,9 @@ void 	numbered_command (char *from, int comm, char **ArgList)
 		 */
 		if (is_server_connected(from_server))
 		{
+			accept_server_nickname(from_server, user);
 			if (do_hook(current_numeric, "%s %s", from, ArgList[0]))
 				display_msg(from, ArgList);
-			accept_server_nickname(from_server, user);
 			break;
 		}
 
@@ -768,9 +769,9 @@ void 	numbered_command (char *from, int comm, char **ArgList)
 
 	case 439:		/* Comstud's "Can't change nickname" */
 	{
+		accept_server_nickname(from_server, user);
 		if (do_hook(current_numeric, "%s %s", from, ArgList[0]))
 			display_msg(from, ArgList);
-		accept_server_nickname(from_server, user);
 		break;
 	}
 
@@ -845,6 +846,7 @@ void 	numbered_command (char *from, int comm, char **ArgList)
 		}
 		break;
 	}
+
 	case 465:		/* #define ERR_YOUREBANNEDCREEP 465 */
 	{
 		PasteArgs(ArgList, 0);
@@ -853,9 +855,9 @@ void 	numbered_command (char *from, int comm, char **ArgList)
 		 * connected to a server, then doing say() is not
 		 * a good idea.  So now it just doesnt do anything.
 		 */
+		server_reconnects_to(from_server, -1);
 		if (do_hook(current_numeric, "%s %s", from, ArgList[0]))
 			display_msg(from, ArgList);
-		server_reconnects_to(from_server, -1);
 		break;
 	}
 
