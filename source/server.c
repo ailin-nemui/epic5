@@ -1726,6 +1726,16 @@ const char	*get_server_itsname (int gsi_index)
 		return server_list[gsi_index].name;
 }
 
+void	set_server_name (int ssi_index, const char *name)
+{
+	if (ssi_index==-1)
+		ssi_index=primary_server;
+	else if (ssi_index >= number_of_servers)
+		return;
+
+	malloc_strcpy(&server_list[ssi_index].name, name);
+}
+
 void	set_server_itsname (int ssi_index, const char *name)
 {
 	if (ssi_index==-1)
@@ -1889,6 +1899,11 @@ void 	password_sendline (char *data, char *line)
 		server_reconnects_to(new_server, new_server);
 		reconnect(new_server, 1);
 	}
+}
+
+char *	get_server_password (int refnum)
+{
+	return server_list[refnum].password;
 }
 
 /*
@@ -2058,6 +2073,11 @@ const char *	get_server_quit_message (int servref)
 }
 
 /* PORTS */
+void    set_server_port (int refnum, int port)
+{
+        server_list[refnum].port = port;
+}
+
 /* get_server_port: Returns the connection port for the given server index */
 int	get_server_port (int gsp_index)
 {
@@ -2090,6 +2110,27 @@ struct	in_addr	get_server_uh_addr (int servnum)
 }
 
 /* USERHOST */
+void	set_server_userhost (int refnum, const char *userhost)
+{
+	char *host;
+
+	if (!(host = strchr(userhost, '@')))
+	{
+		yell("Cannot set your userhost to [%s] because it does not
+		      contain a @ character!", userhost);
+		return;
+	}
+
+	malloc_strcpy(&server_list[from_server].userhost, userhost);
+
+	/* Ack! */
+	if (lame_external_resolv(host + 1, &server_list[from_server].uh_addr))
+		yell("Ack.  The server says your userhost is [%s] and "
+		     "I can't figure out the IP address of that host! "
+		     "You won't be able to use /SET DCC_USE_GATEWAY_ADDR ON "
+		     "with this server connection!", host + 1);
+}
+
 /*
  * get_server_userhost: return the userhost for this connection to server
  */
@@ -2108,16 +2149,11 @@ const char	*get_server_userhost (int gsu_index)
  */
 void 	got_my_userhost (UserhostItem *item, char *nick, char *stuff)
 {
-	new_free(&server_list[from_server].userhost);
-	server_list[from_server].userhost = m_3dup(item->user, "@", item->host);
+	char *freeme;
 
-	/* Ack! */
-	if (lame_external_resolv(item->host,
-				&server_list[from_server].uh_addr))
-		yell("Ack.  The server says your userhost is [%s] and "
-		     "I can't figure out the IP address of that host! "
-		     "You won't be able to use /SET DCC_USE_GATEWAY_ADDR ON "
-		     "with this server connection!", item->host);
+	freeme = m_3dup(item->user, "@", item->host);
+	set_server_userhost(from_server, freeme);
+	new_free(&freeme);
 }
 
 
@@ -2157,6 +2193,11 @@ void	set_server_cookie (int ssc_index, const char *cookie)
 		send_to_aserver(ssc_index, "COOKIE %s", 
 				server_list[ssc_index].cookie);
 	malloc_strcpy(&server_list[ssc_index].cookie, cookie);
+}
+
+char *  get_server_cookie (int ssc_index)
+{
+        return server_list[ssc_index].cookie;
 }
 
 /* MOTD */
@@ -2452,7 +2493,13 @@ void	clear_reconnect_counts (void)
 	for (i = 0; i < number_of_servers; i++)
 		server_list[i].reconnects = 0;
 }
+
 /* This didn't belong in the middle of the redirect stuff. */
+void    set_server_group (int refnum, const char *group)
+{
+        malloc_strcpy(&server_list[refnum].group, group);
+}
+
 const char *get_server_group (int refnum)
 {
 	if (refnum == -1 && from_server != -1)
@@ -2466,6 +2513,7 @@ const char *get_server_group (int refnum)
 
 	return server_list[refnum].group;
 }
+
 const char *get_server_type (int refnum)
 {
 	if (refnum == -1 && from_server != -1)
@@ -2478,4 +2526,162 @@ const char *get_server_type (int refnum)
 		return "IRC-SSL";
 	else
 		return "IRC";
+}
+
+
+#define EMPTY empty_string
+#define RETURN_EMPTY return m_strdup(EMPTY)
+#define RETURN_IF_EMPTY(x) if (empty( x )) RETURN_EMPTY
+#define GET_INT_ARG(x, y) {RETURN_IF_EMPTY(y); x = my_atol(safe_new_next_arg(y, &y));}
+#define GET_FLOAT_ARG(x, y) {RETURN_IF_EMPTY(y); x = atof(safe_new_next_arg(y, &y));}
+#define GET_STR_ARG(x, y) {RETURN_IF_EMPTY(y); x = new_next_arg(y, &y);RETURN_IF_EMPTY(x);}
+#define RETURN_STR(x) return m_strdup((x) ? (x) : EMPTY)
+#define RETURN_INT(x) return m_strdup(ltoa((x)))
+
+/* Used by function_aliasctl */
+/*
+ * $serverctl(REFNUM server-desc)
+ * $serverctl(GET 0 [LIST])
+ * $serverctl(SET 0 [ITEM] [VALUE])
+ * $serverctl(MATCH [pattern])
+ * $serverctl(PMATCH [pattern])
+ * $serverctl(GMATCH [group])
+ *
+ * [LIST] and [ITEM] are one of the following:
+ *	NAME		"ourname" for the server connection
+ * 	ITSNAME		"itsname" for the server connection
+ *	PASSWORD	The password we will use on connect
+ *	PORT		The port we will use on connect
+ *	GROUP		The group that this server belongs to
+ *	NICKNAME	The nickname we will use on connect
+ *	USERHOST	What the server thinks our userhost is.
+ *	AWAY		The away message
+ *	VERSION		The server's claimed version
+ *	UMODE		Our user mode
+ *	CONNECTED	Whether or not we are connected
+ *	COOKIE		Our TS/4 cookie
+ *	QUIT_MESSAGE	The quit message we will use next.
+ *	SSL		Whether this server is SSL-enabled or not.
+ */
+char 	*serverctl 	(char *input)
+{
+	int	refnum;
+	char *	listc;
+
+	GET_STR_ARG(listc, input);
+	if (!my_strnicmp(listc, "REFNUM", 1)) {
+		char *server;
+
+		GET_STR_ARG(server, input);
+		if (is_number(server)) {
+			int refnum;
+			refnum = atol(server);
+			if (refnum >= 0 && refnum < number_of_servers)
+				RETURN_STR(server);
+			RETURN_EMPTY;
+		}
+		RETURN_INT(find_server_refnum(server, &input));
+	} else if (!my_strnicmp(listc, "GET", 2)) {
+		GET_INT_ARG(refnum, input);
+		if (refnum < 0 || refnum >= number_of_servers)
+			RETURN_EMPTY;
+
+		GET_STR_ARG(listc, input);
+		if (!my_strnicmp(listc, "AWAY", 1)) {
+			RETURN_STR(get_server_away(refnum));
+		} else if (!my_strnicmp(listc, "CONNECTED", 3)) {
+			RETURN_INT(is_server_connected(refnum));
+		} else if (!my_strnicmp(listc, "COOKIE", 3)) {
+			RETURN_STR(get_server_cookie(refnum));
+		} else if (!my_strnicmp(listc, "GROUP", 1)) {
+			RETURN_STR(get_server_group(refnum));
+		} else if (!my_strnicmp(listc, "ITSNAME", 1)) {
+			RETURN_STR(get_server_itsname(refnum));
+		} else if (!my_strnicmp(listc, "NAME", 2)) {
+			RETURN_STR(get_server_name(refnum));
+		} else if (!my_strnicmp(listc, "NICKNAME", 2)) {
+			RETURN_STR(get_server_nickname(refnum));
+		} else if (!my_strnicmp(listc, "PASSWORD", 2)) {
+			RETURN_STR(get_server_password(refnum));
+		} else if (!my_strnicmp(listc, "PORT", 2)) {
+			RETURN_INT(get_server_port(refnum));
+		} else if (!my_strnicmp(listc, "QUIT_MESSAGE", 1)) {
+			RETURN_STR(get_server_quit_message(refnum));
+		} else if (!my_strnicmp(listc, "SSL", 1)) {
+			RETURN_INT(get_server_enable_ssl(refnum));
+		} else if (!my_strnicmp(listc, "UMODE", 2)) {
+			RETURN_STR(get_umode(refnum));
+		} else if (!my_strnicmp(listc, "USERHOST", 2)) {
+			RETURN_STR(get_server_userhost(refnum));
+		} else if (!my_strnicmp(listc, "VERSION", 1)) {
+			RETURN_STR(get_server_version_string(refnum));
+		}
+	} else if (!my_strnicmp(listc, "SET", 1)) {
+		GET_INT_ARG(refnum, input);
+		if (refnum < 0 || refnum >= number_of_servers)
+			RETURN_EMPTY;
+
+		GET_STR_ARG(listc, input);
+		if (!my_strnicmp(listc, "AWAY", 1)) {
+			set_server_away(refnum, input);
+			RETURN_INT(1);
+		} else if (!my_strnicmp(listc, "CONNECTED", 3)) {
+			RETURN_EMPTY;		/* Read only. */
+		} else if (!my_strnicmp(listc, "COOKIE", 3)) {
+			set_server_cookie(refnum, input);
+			RETURN_INT(1);
+		} else if (!my_strnicmp(listc, "GROUP", 1)) {
+			set_server_group(refnum, input);
+			RETURN_INT(1);
+		} else if (!my_strnicmp(listc, "ITSNAME", 1)) {
+			set_server_itsname(refnum, input);
+			RETURN_INT(1);
+		} else if (!my_strnicmp(listc, "NAME", 2)) {
+			set_server_name(refnum, input);
+			RETURN_INT(1);
+		} else if (!my_strnicmp(listc, "NICKNAME", 2)) {
+			change_server_nickname(refnum, input);
+			RETURN_INT(1);
+		} else if (!my_strnicmp(listc, "PASSWORD", 2)) {
+			set_server_password(refnum, input);
+			RETURN_INT(1);
+		} else if (!my_strnicmp(listc, "PORT", 2)) {
+			int port;
+
+			GET_INT_ARG(port, input);
+			set_server_port(refnum, port);
+			RETURN_INT(1);
+		} else if (!my_strnicmp(listc, "QUIT_MESSAGE", 1)) {
+			set_server_quit_message(refnum, input);
+			RETURN_INT(1);
+		} else if (!my_strnicmp(listc, "SSL", 1)) {
+			int value;
+
+			GET_INT_ARG(value, input);
+			set_server_enable_ssl(refnum, value);
+			RETURN_INT(1);
+		} else if (!my_strnicmp(listc, "UMODE", 2)) {
+			RETURN_EMPTY;		/* Read only for now */
+		} else if (!my_strnicmp(listc, "USERHOST", 2)) {
+			set_server_userhost(refnum, input);
+		} else if (!my_strnicmp(listc, "VERSION", 1)) {
+			set_server_version_string(refnum, input);
+		}
+	} else if (!my_strnicmp(listc, "MATCH", 1)) {
+		RETURN_EMPTY;		/* Not implemented for now. */
+	} else if (!my_strnicmp(listc, "PMATCH", 1)) {
+		RETURN_EMPTY;		/* Not implemented for now. */
+	} else if (!my_strnicmp(listc, "GMATCH", 2)) {
+		int	i;
+		char *retval = NULL;
+
+		for (i = 0; i < number_of_servers; i++) {
+			if (!my_stricmp(get_server_group(i), input))
+				m_s3cat(&retval, space, ltoa(i));
+		}
+		RETURN_STR(retval);
+	} else
+		RETURN_EMPTY;
+
+	RETURN_EMPTY;
 }

@@ -301,6 +301,7 @@ static	char
 	*function_sar 		(char *),
 	*function_seek		(char *),
 	*function_server_version (char *),
+	*function_serverctl	(char *),
 	*function_servergroup	(char *),
 	*function_servername	(char *),
 	*function_servernick	(char *),
@@ -575,6 +576,7 @@ static BuiltInFunctions	built_in_functions[] =
 	{ "RPATTERN",           function_rpattern 	},
 	{ "RSUBSTR",		function_rsubstr	},
 	{ "SAR",		function_sar 		},
+	{ "SERVERCTL",		function_serverctl	},
 	{ "SERVERGROUP",	function_servergroup	},
 	{ "SERVERNAME",		function_servername	},
 	{ "SERVERNICK",		function_servernick	},
@@ -6333,3 +6335,11 @@ BUILT_IN_FUNCTION(function_encryptparm, input)
 
 	RETURN_MSTR(ret);
 }
+
+BUILT_IN_FUNCTION(function_serverctl, input)
+{
+	extern char *serverctl (char *);
+	return serverctl(input);
+}
+
+
