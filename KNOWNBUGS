@@ -66,3 +66,4 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Add compat hacks for broken systems lacking setenv() and unsetenv().
 * CTCP SEDs recieved in NOTICEs are treated as CTCP REPLIES not queries. (ce)
 * Added $encryptparm() -- returns all information about /encrypt entries. (ce)
+* Fix prepare_display to append a zero-Attribute and not ^O to end of line.

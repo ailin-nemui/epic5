@@ -1864,7 +1864,10 @@ const 	u_char	*ptr;
 		} /* End of new line handling */
 	} /* End of (ptr = str; *ptr && (pos < BIG_BUFFER_SIZE - 8); ptr++) */
 
-	buffer[pos++] = ALL_OFF;
+        /* Reset all attributes to zero */
+        a.bold = a.underline = a.reverse = a.blink = a.altchar = 0;
+        a.color_fg = a.color_bg = a.fg_color = a.bg_color = 0;
+	pos += display_attributes(buffer + pos, &a);
 	buffer[pos] = '\0';
 	if (*buffer)
 		malloc_strcpy((char **)&(output[line++]),buffer);
