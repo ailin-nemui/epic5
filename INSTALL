@@ -39,6 +39,9 @@ any GNU software (however, this is _not_ GNU software)
 		is usually something like /usr/local
 	  --with-socks5[=PATH]
 		Same thing as above, but for SOCKS5.
+	  --with-perl[=PATH]
+		Enable the perl support in the scripting language.
+		WARNING:  Currently requires Perl 5.6+.
 
   o  This IRC II client should be able to compile and run on almost
      any modern unix (A ``modern'' unix is one that supports POSIX
