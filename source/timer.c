@@ -1,4 +1,4 @@
-/* $EPIC: timer.c,v 1.10 2002/09/26 22:41:43 jnelson Exp $ */
+/* $EPIC: timer.c,v 1.11 2002/11/26 23:03:14 jnelson Exp $ */
 /*
  * timer.c -- handles timers in ircII
  *
@@ -50,8 +50,10 @@
 #include "server.h"
 #include "screen.h"
 
-static	void	show_timer 		(const char *command);
-static 	void	delete_all_timers 	(void);
+static int 	timer_exists (const char *ref);
+static int 	remove_timer (const char *ref);
+static void 	remove_all_timers (void);
+static	void	list_timers (const char *command);
 
 /*
  * timercmd: the bit that handles the TIMER command.  If there are no
@@ -88,7 +90,7 @@ BUILT_IN_COMMAND(timercmd)
 			 * Delete_timer returns -1 on error.
 			 */
 			else if (timer_exists(ptr))
-				delete_timer(ptr);
+				remove_timer(ptr);
 
 			/*
 			 * Check to see if it is /timer -delete all
@@ -98,7 +100,7 @@ BUILT_IN_COMMAND(timercmd)
 			 * me first to understand why.
 			 */
 			else if (*ptr && !my_strnicmp(ptr, "ALL", strlen(ptr)))
-				delete_all_timers();
+				remove_all_timers();
 			else if (*ptr)
 				say("The timer \"%s\" doesn't exist!", ptr);
 			else
@@ -136,7 +138,7 @@ BUILT_IN_COMMAND(timercmd)
 			update = 1;
 
 		else if (!my_strnicmp(flag + 1, "L", 1))	/* LIST */
-			show_timer(command);
+			list_timers(command);
 		else if (!my_strnicmp(flag + 1, "W", 1))	/* WINDOW */
 		{
 			char 	*na;
@@ -187,10 +189,10 @@ BUILT_IN_COMMAND(timercmd)
 		else if (events == -2)
 			events = -1;
 
-		add_timer(update, want, interval, events, NULL, args, subargs, win);
+		add_timer(update, want, interval, events, NULL, args, subargs, win->refnum);
 	}
 	else
-		show_timer(command);
+		list_timers(command);
 
 	return;
 }
@@ -203,154 +205,187 @@ BUILT_IN_COMMAND(timercmd)
 typedef struct  timerlist_stru
 {
 	char	ref[REFNUM_MAX + 1];
-        struct timeval time;
+        Timeval time;
 	int	(*callback) (void *);
         void    *command;
 	char	*subargs;
+	struct	timerlist_stru *prev;
         struct  timerlist_stru *next;
 	long	events;
-	struct timeval	interval;
+	Timeval	interval;
 	int	server;
 	int	window;
-}       TimerList;
+}       Timer;
 
-static 	char *		schedule_timer (TimerList *ntimer);
-static	TimerList *	get_timer (const char *ref);
-
-static 	TimerList *	PendingTimers;
-static 	char *		current_exec_timer = empty_string;
-static	int 		parsingtimer = 0;
+static 	Timer *		PendingTimers;
 
 /*
- * ExecuteTimers:  checks to see if any currently pending timers have
- * gone off, and if so, execute them, delete them, etc, setting the
- * current_exec_timer, so that we can't remove the timer while its
- * still executing.
- *
- * changed the behavior: timers will not hook while we are waiting.
+ * create_timer: 
  */
-void 	ExecuteTimers (void)
+static Timer * new_timer (void)
 {
-	struct timeval	now;
-	TimerList *	current;
-	int		old_from_server = from_server;
+	Timer *	ntimer;
 
-	/*
-	 * We DONT want to parse timers if we're waiting,
-	 * if we're already parsing another time, or
-	 * if there are no timers, as it gets icky...
-	 */
-        if (waiting_out > waiting_in || parsingtimer || !PendingTimers)
-                return;
-
-        parsingtimer = 1;
-	get_time(&now);
-
-/*
-yell("PendingTimers->time is [%ld/%ld]", PendingTimers->time.tv_sec, PendingTimers->time.tv_usec);
-yell("now is [%ld/%ld]", now.tv_sec, now.tv_usec);
-yell("Difference is [%f]", time_diff(PendingTimers->time, now));
-*/
-
-	while (PendingTimers && time_diff(now, PendingTimers->time) < 0)
-	{
-		int	old_refnum = current_window->refnum;
-
-		current = PendingTimers;
-
-		/*
-		 * Restore from_server and current_window from when the
-		 * timer was registered
-		 */
-		make_window_current_by_refnum(current->window);
-
-		if (is_server_open(current->server))
-			from_server = current->server;
-		else if (is_server_open(current_window->server))
-			from_server = current_window->server;
-		else
-			from_server = -1;
-
-		/* 
-		 * If a callback function was registered, then
-		 * we use it.  If no callback function was registered,
-		 * then we use ''parse_line''.
-		 */
-		current_exec_timer = current->ref;
-		if (current->callback)
-			(*current->callback)(current->command);
-		else
-			parse_line("TIMER", (char *)current->command, 
-						current->subargs, 0,0);
-
-		current_exec_timer = empty_string;
-		from_server = old_from_server;
-		make_window_current_by_refnum(old_refnum);
-
-		/*
-		 * Remove timer from PendingTimers list
-		 * now that it has been executed
-		 */
-		PendingTimers = PendingTimers->next;
-
-		/*
-		 * Clean up or reschedule the timer
-		 */
-		if (current->events < 0 || (current->events != 1))
-		{
-			if (current->events != -1)
-				current->events--;
-/*
-yell("Rescheduling...");
-yell("current->time is [%ld/%ld]", current->time.tv_sec, current->time.tv_usec);
-yell("interval is [%ld/%ld]", current->interval.tv_sec, current->interval.tv_usec);
-*/
-			current->time = time_add(current->time, current->interval);
-/*
-yell("new time is [%ld/%ld]", current->time.tv_sec, current->time.tv_usec);
-*/
-
-			schedule_timer(current);
-		}
-		else
-		{
-			if (!current->callback)
-			{
-				new_free((char **)&current->command);
-				new_free((char **)&current->subargs);
-			}
-			new_free((char **)&current);
-		}
-	}
-        parsingtimer = 0;
+	ntimer = (Timer *) new_malloc(sizeof(Timer));
+	ntimer->ref[0] = 0;
+	ntimer->time.tv_sec = 0;
+	ntimer->time.tv_usec = 0;
+	ntimer->callback = NULL;
+	ntimer->command = NULL;
+	ntimer->subargs = NULL;
+	ntimer->prev = NULL;
+	ntimer->next = NULL;
+	ntimer->events = 0;
+	ntimer->interval.tv_sec = 0;
+	ntimer->interval.tv_usec = 0;
+	ntimer->server = -1;
+	ntimer->window = -1;
+	return ntimer;
 }
 
 /*
- * show_timer:  Display a list of all the TIMER commands that are
- * pending to be executed.
+ * clone_timer: Create a copy of an existing timer, suitable for rescheduling
  */
-static	void	show_timer (const char *command)
+static Timer *clone_timer (Timer *otimer)
 {
-	TimerList	*tmp;
-	struct timeval	current;
-	double		time_left;
+	Timer *ntimer = new_timer();
 
-	if (!PendingTimers)
+	strcpy(ntimer->ref, otimer->ref);
+	ntimer->time = otimer->time;
+	ntimer->callback = otimer->callback;
+	ntimer->command = m_strdup(otimer->command);
+	ntimer->subargs = m_strdup(otimer->subargs);
+	ntimer->prev = NULL;
+	ntimer->next = NULL;
+	ntimer->events = otimer->events;
+	ntimer->interval = otimer->interval;
+	ntimer->server = otimer->server;
+	ntimer->window = otimer->window;
+	return ntimer;
+}
+
+/*
+ * delete_timer:
+ */
+static void delete_timer (Timer *otimer)
+{
+	if (!otimer->callback)
 	{
-		say("%s: No commands pending to be executed", command);
-		return;
+		new_free((char **)&otimer->command);
+		new_free((char **)&otimer->subargs);
+	}
+	new_free((char **)&otimer);
+}
+
+static int	schedule_timer (Timer *ntimer)
+{
+	Timer *tmp, *prev;
+
+	/* we've created it, now put it in order */
+	for (tmp = PendingTimers; tmp; tmp = tmp->next)
+	{
+		if (time_diff(tmp->time, ntimer->time) < 0)
+			break;
 	}
 
-	get_time(&current);
-
-	say("%-10s %-10s %-7s %s", "Timer", "Seconds", "Events", "Command");
-	for (tmp = PendingTimers; tmp && (tmp->callback == NULL); tmp = tmp->next)
+	if (tmp == PendingTimers)
 	{
+		ntimer->prev = NULL;
+		ntimer->next = PendingTimers;
+		if (PendingTimers)
+			PendingTimers->prev = ntimer;
+		PendingTimers = ntimer;
+	}
+	else if (tmp)
+	{
+		prev = tmp->prev;
+		ntimer->next = tmp;
+		ntimer->prev = prev;
+		tmp->prev = ntimer;
+		prev->next = ntimer;
+	}
+	else		/* XXX! */
+	{
+		for (tmp = PendingTimers; tmp->next; tmp = tmp->next)
+			;
+		tmp->next = ntimer;
+		ntimer->prev = tmp;
+	}
+
+	return 0;
+}
+
+static int	unlink_timer (Timer *timer)
+{
+	Timer *prev, *next;
+
+	prev = timer->prev;
+	next = timer->next;
+
+	if (prev)
+		prev->next = next;
+	else
+		PendingTimers = next;
+
+	if (next)
+		next->prev = prev;
+
+	return 0;
+}
+
+static	Timer *get_timer (const char *ref)
+{
+	Timer *tmp;
+
+	for (tmp = PendingTimers; tmp; tmp = tmp->next)
+	{
+		if (!my_stricmp(tmp->ref, ref))
+			return tmp;
+	}
+
+	return NULL;
+}
+
+static int 	timer_exists (const char *ref)
+{
+	if (!ref || !*ref)
+		return 0;
+
+	if (get_timer(ref))
+		return 1;
+	else
+		return 0;
+}
+
+
+/*
+ * list_timers:  Display a list of all the TIMER commands that are
+ * pending to be executed.
+ */
+static	void	list_timers (const char *command)
+{
+	Timer	*tmp;
+	Timeval	current;
+	double	time_left;
+	int	timer_count = 0;
+
+	get_time(&current);
+	for (tmp = PendingTimers; tmp && !tmp->callback; tmp = tmp->next)
+	{
+		if (timer_count == 0)
+			say("%-10s %-10s %-7s %s", 
+				"Timer", "Seconds", "Events", "Command");
+
+		timer_count++;
 		time_left = time_diff(current, tmp->time);
 		if (time_left < 0)
 			time_left = 0;
-		say("%-10s %-8.2f %-7ld %s", tmp->ref, time_left, tmp->events, (char *)tmp->command);
+		say("%-10s %-8.2f %-7ld %s", tmp->ref, time_left, 
+					tmp->events, (char *)tmp->command);
 	}
+
+	if (timer_count == 0)
+		say("%s: No commands pending to be executed", command);
 }
 
 /*
@@ -361,12 +396,14 @@ static	void	show_timer (const char *command)
  * Automatically assigned refnums (when the user doesnt specify one) will
  * always be one more than the highest pending refnum.
  */
-static	int	create_timer_ref (char *refnum_want, char *refnum_gets)
+static	int	create_timer_ref (const char *refnum_wanted, char *refnum_gets)
 {
-	TimerList	*tmp;
-	int 		refnum = 0;
+	Timer	*tmp;
+	int 	refnum = 0;
+	char	*refnum_want;
 
 	/* Max of 10 characters. */
+	refnum_want = LOCAL_COPY(refnum_wanted);
 	if (strlen(refnum_want) > REFNUM_MAX)
 		refnum_want[REFNUM_MAX] = 0;
 
@@ -379,111 +416,54 @@ static	int	create_timer_ref (char *refnum_want, char *refnum_gets)
 			if (refnum < my_atol(tmp->ref))
 				refnum = my_atol(tmp->ref);
 		}
-		strmcpy(refnum_gets, ltoa(refnum+1), REFNUM_MAX);
+		strlcpy(refnum_gets, ltoa(refnum+1), REFNUM_MAX + 1);
 	}
 	else
 	{
-		/* 
-		 * If the refnum is being used by the current executing timer
-		 * it should be safe to use it as long as it will die after
-		 * this execution
-		 */
-		if (current_exec_timer != empty_string &&
-		    !my_stricmp(refnum_want, current_exec_timer))
-		{
-			if ((tmp = get_timer(current_exec_timer)) && tmp->events != 1)
-				return -1;
-		}
-		else
-		{
-			/* See if the refnum is available */
-			for (tmp = PendingTimers; tmp; tmp = tmp->next)
-			{
-				if (!my_stricmp(tmp->ref, refnum_want))
-					return -1;
-			}
-		}
-		strmcpy(refnum_gets, refnum_want, REFNUM_MAX);
+		/* See if the refnum is available */
+		if (get_timer(refnum_want))
+			return -1;		/* Already in use */
+
+		strlcpy(refnum_gets, refnum_want, REFNUM_MAX + 1);
 	}
 
 	return 0;
 }
 
 /*
- * Deletes a refnum.  This does cleanup only if the timer is a 
+ * Remove a timer.  This does cleanup only if the timer is a 
  * user-defined timer, otherwise no clean up is done (the caller
  * is responsible to handle it)  This shouldnt output an error,
  * it should be more general and return -1 and let the caller
  * handle it.  Probably will be that way in a future release.
  */
-int	delete_timer (char *ref)
+static int	remove_timer (const char *ref)
 {
-	TimerList	*tmp,
-			*prev;
+	Timer	*tmp;
 
-	if (current_exec_timer != empty_string)
+	if (!(tmp = get_timer(ref)))
 	{
-		say("You may not remove a TIMER within another TIMER");
+		say("TIMER: Can't delete (%s), no such refnum", ref);
 		return -1;
 	}
 
-	for (prev = tmp = PendingTimers; tmp; prev = tmp, tmp = tmp->next)
-	{
-		/* can only delete user created timers */
-		if (!my_stricmp(tmp->ref, ref))
-		{
-			if (tmp == prev)
-				PendingTimers = PendingTimers->next;
-			else
-				prev->next = tmp->next;
-
-			if (!tmp->callback)
-			{
-				new_free((char **)&tmp->command);
-				new_free((char **)&tmp->subargs);
-			}
-			new_free((char **)&tmp);
-			return 0;
-		}
-	}
-	say("TIMER: Can't delete (%s), no such refnum", ref);
-	return -1;
+	unlink_timer(tmp);
+	delete_timer(tmp);
+	return 0;
 }
 
-static void 	delete_all_timers (void)
+static void 	remove_all_timers (void)
 {
-	while (PendingTimers)
+	Timer *ref, *next;
+
+	for (ref = PendingTimers; ref; ref = next)
 	{
-	    if (delete_timer(PendingTimers->ref))
-	    {
-		say("TIMER: Deleting all timers aborted due to error");
-		return;
-	    }
+		next = ref->next;
+		if (ref->command)
+			continue;
+		unlink_timer(ref);
+		delete_timer(ref);
 	}
-}
-
-int 	timer_exists (const char *ref)
-{
-	if (!ref || !*ref)
-		return 0;
-
-	if (get_timer(ref))
-		return 1;
-	else
-		return 0;
-}
-
-static	TimerList *get_timer (const char *ref)
-{
-	TimerList *tmp;
-
-	for (tmp = PendingTimers; tmp; tmp = tmp->next)
-	{
-		if (!my_stricmp(tmp->ref, ref))
-			return tmp;
-	}
-
-	return NULL;
 }
 
 
@@ -510,88 +490,79 @@ static	TimerList *get_timer (const char *ref)
  *		 know anything of the nature of the argument.
  * subargs:	 should be NULL, its ignored anyhow.
  */
-char *add_timer (int update, char *refnum_want, double when, long events, int (callback) (void *), char *what, const char *subargs, Window *w)
+char *add_timer (int update, const char *refnum_want, double interval, long events, int (callback) (void *), const char *commands, const char *subargs, int winref)
 {
-	TimerList	*ntimer, *otimer = NULL;
-	char		refnum_got[REFNUM_MAX + 1];
+	Timer	*ntimer, *otimer = NULL;
+	char	refnum_got[REFNUM_MAX + 1];
+	Timeval now;
 
-	ntimer = (TimerList *) new_malloc(sizeof(TimerList));
-	ntimer->interval = double_to_timeval(when);
-	ntimer->time = time_add(get_time(NULL), ntimer->interval);
-	ntimer->events = events;
-	ntimer->server = from_server;
-	ntimer->window = w ? w->refnum : -1;
+	now = get_time(NULL);
 
 	if (update)
-		otimer = get_timer(refnum_want);
-
-	if (otimer)
 	{
-		if (when == -1)
+	    if (!(otimer = get_timer(refnum_want)))
+		update = 0;		/* Ok so we're not updating! */
+	}
+
+	if (update)
+	{
+		unlink_timer(otimer);
+		ntimer = clone_timer(otimer);
+		delete_timer(otimer);
+
+		if (interval != -1)
 		{
-			ntimer->time = otimer->time;
-			ntimer->interval = otimer->interval;
+			ntimer->interval = double_to_timeval(interval);
+			ntimer->time = time_add(now, ntimer->interval);
 		}
+		if (events != -2)
+			ntimer->events = events;
 
-		if (events == -1)
-			ntimer->events = otimer->events;
-
-		ntimer->callback = NULL;
-		if (what && *what)
+		if (callback)
 		{
-			ntimer->command = m_strdup(what);
-			ntimer->subargs = m_strdup(subargs);
+			if (ntimer->command)
+				new_free(&ntimer->command);
+			if (ntimer->subargs)
+				new_free(&ntimer->subargs);
+			ntimer->callback = callback;
+			ntimer->subargs = NULL;
 		}
 		else
 		{
-			ntimer->command = m_strdup(otimer->command);
-			ntimer->subargs = m_strdup(otimer->subargs);
+			if (ntimer->callback)
+				ntimer->callback = NULL;
+			malloc_strcpy((char **)&ntimer->command, commands);
+			malloc_strcpy(&ntimer->subargs, subargs);
 		}
 
-		delete_timer(refnum_want);
+		if (winref != -1)
+			ntimer->window = winref;
 	}
 	else
 	{
-		if ((ntimer->callback = callback))
+		if (create_timer_ref(refnum_want, refnum_got) == -1)
 		{
-			ntimer->command = (void *)what;
-			ntimer->subargs = (void *)NULL;
+			say("TIMER: Refnum '%s' already exists", refnum_want);
+			return NULL;
 		}
-		else
-		{
-			ntimer->command = m_strdup(what);
-			ntimer->subargs = m_strdup(subargs);
-		}
+
+		ntimer = new_timer();
+		/* This is safe. */
+		strcpy(ntimer->ref, refnum_got);
+		ntimer->interval = double_to_timeval(interval);
+		ntimer->time = time_add(now, ntimer->interval);
+		ntimer->events = events;
+		ntimer->callback = callback;
+		malloc_strcpy((char **)&ntimer->command, commands);
+		malloc_strcpy(&ntimer->subargs, subargs);
+		ntimer->window = winref;
 	}
 
-	if (create_timer_ref(refnum_want, refnum_got) == -1)
-	{
-		say("TIMER: Refnum '%s' already exists", refnum_want);
-		new_free((char **)&ntimer->command);
-		new_free((char **)&ntimer->subargs);
-		new_free((char **)&ntimer);
-		return NULL;
-	}
-	/* This is safe */
-	strcpy(ntimer->ref, refnum_got);
-
-	return schedule_timer(ntimer);
-}
-
-static char *schedule_timer (TimerList *ntimer)
-{
-	TimerList **slot;
-
-	/* we've created it, now put it in order */
-	for (slot = &PendingTimers; *slot; slot = &(*slot)->next)
-	{
-		if (time_diff((*slot)->time, ntimer->time) < 0)
-			break;
-	}
-	ntimer->next = *slot;
-	*slot = ntimer;
+	schedule_timer(ntimer);
 	return ntimer->ref;
 }
+
+
 
 /*
  * TimerTimeout:  Called from irc_io to help create the timeout
@@ -600,19 +571,82 @@ static char *schedule_timer (TimerList *ntimer)
 Timeval	TimerTimeout (void)
 {
 	Timeval	forever = {9999, 0};
+	Timeval right_away = {0, 0};
 	Timeval	current;
 	Timeval	timeout_in;
 
-	/* 
-	 * If executing ExecuteTimers here would be invalid, then
-	 * do not bother telling the caller we are ready.
-	 */
-        if (waiting_out > waiting_in || parsingtimer || !PendingTimers)
+	/* This, however, should never happen. */
+	if (!PendingTimers)
 		return forever;
 
 	get_time(&current);
 	timeout_in = time_subtract(current, PendingTimers->time);
-
+	if (time_diff(right_away, timeout_in) < 0)
+		timeout_in = right_away;
 	return timeout_in;
 }
+
+/*
+ * ExecuteTimers:  checks to see if any currently pending timers have
+ * gone off, and if so, execute them, delete them, etc, setting the
+ * current_exec_timer, so that we can't remove the timer while its
+ * still executing.
+ *
+ * changed the behavior: timers will not hook while we are waiting.
+ */
+void 	ExecuteTimers (void)
+{
+	Timeval	now;
+	Timer *	current, *next;
+	int	old_from_server = from_server;
+
+	get_time(&now);
+	while (PendingTimers && time_diff(now, PendingTimers->time) < 0)
+	{
+		int	old_refnum;
+
+		old_refnum = current_window->refnum;
+		current = PendingTimers;
+		unlink_timer(current);
+
+		/* Reschedule the timer if necessary */
+		if (current->events < 0 || (current->events != 1))
+		{
+			next = clone_timer(current);
+			if (next->events != -1)
+				next->events--;
+			next->time = time_add(next->time, next->interval);
+			schedule_timer(next);
+		}
+
+		/*
+		 * Restore from_server and current_window from when the
+		 * timer was registered
+		 */
+		make_window_current_by_refnum(current->window);
+
+		if (is_server_open(current->server))
+			from_server = current->server;
+		else if (is_server_open(current_window->server))
+			from_server = current_window->server;
+		else
+			from_server = -1;
+
+		/* 
+		 * If a callback function was registered, then
+		 * we use it.  If no callback function was registered,
+		 * then we use ''parse_line''.
+		 */
+		if (current->callback)
+			(*current->callback)(current->command);
+		else
+			parse_line("TIMER", (char *)current->command, 
+						current->subargs, 0,0);
+
+		from_server = old_from_server;
+		make_window_current_by_refnum(old_refnum);
+		delete_timer(current);
+	}
+}
+
 

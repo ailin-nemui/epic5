@@ -13,7 +13,7 @@
 	void	edit_char			(unsigned char);
 	void	change_input_prompt 		(int);
 	void	cursor_to_input 		(void);
-	void	do_input_timeouts		(void);
+	int	do_input_timeouts		(void *);
 	char *	get_input 			(void);
 	char *	get_input_prompt 		(void);
 	void	init_input 			(void);

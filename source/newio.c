@@ -1,4 +1,4 @@
-/* $EPIC: newio.c,v 1.6 2002/07/17 22:52:52 jnelson Exp $ */
+/* $EPIC: newio.c,v 1.7 2002/11/26 23:03:13 jnelson Exp $ */
 /*
  * newio.c: This is some handy stuff to deal with file descriptors in a way
  * much like stdio's FILE pointers 
@@ -240,7 +240,7 @@ int 	dgets (char *str, int des, int buffer)
 		 */
 		else if (nbytes)
 #else
-		nbytes == -1;
+		nbytes = -1;
 #endif
 		{
 			/* Better safe than sorry... */

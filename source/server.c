@@ -1,4 +1,4 @@
-/* $EPIC: server.c,v 1.73 2002/11/08 23:36:13 jnelson Exp $ */
+/* $EPIC: server.c,v 1.74 2002/11/26 23:03:14 jnelson Exp $ */
 /*
  * server.c:  Things dealing with that wacky program we call ircd.
  *
@@ -84,6 +84,8 @@ static	char *	do_umode (int du_index);
 						 * confirmed */
 	int	reconnects_to_hint = 0;		/* XXX Hack.  Don't remind me */
 
+static	char    lame_wait_nick[] = "***LW***";
+static	char    wait_nick[] = "***W***";
 
 /************************ SERVERLIST STUFF ***************************/
 

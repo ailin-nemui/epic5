@@ -1,4 +1,4 @@
-/* $EPIC: keys.c,v 1.16 2002/09/23 08:07:49 wd Exp $ */
+/* $EPIC: keys.c,v 1.17 2002/11/26 23:03:13 jnelson Exp $ */
 /*
  * keys.c:  Keeps track of what happens whe you press a key.
  *
@@ -46,6 +46,7 @@
 #include "term.h"
 #include "vars.h"
 #include "window.h"
+#include "timer.h"
 
 /* This file is split into two pieces.  The first piece represents bindings.
  * Bindings are now held in a linked list, allowing the user to add new ones
@@ -323,6 +324,11 @@ struct Key *handle_keypress (struct Key *last, struct timeval pressed,
 	return NULL;
     }
 
+    /* If there is a map and a keybinding, schedule a timeout */
+    if (kp->map && kp->bound)
+	add_timer(0, empty_string, get_int_var(KEY_INTERVAL_VAR) / 1000.0, 1,
+			do_input_timeouts, NULL, NULL, -1);
+
     /* if the key has a map associated, we can't automatically execute the
      * action.  return kp and wait quietly. */
     if (kp->map != NULL)
@@ -336,6 +342,7 @@ struct Key *handle_keypress (struct Key *last, struct timeval pressed,
 struct Key *timeout_keypress (struct Key *last, struct timeval pressed) {
     int mpress = 0; /* ms count since last pressing */
     struct timeval tv;
+    struct timeval now;
 
     if (last == NULL)
 	return NULL; /* fresh state, we need not worry about timeouts */
@@ -343,11 +350,12 @@ struct Key *timeout_keypress (struct Key *last, struct timeval pressed) {
     if (last->bound == NULL)
 	return last; /* wait unconditionally if this key is unbound. */
 
+    get_time(&now);
     tv = time_subtract(pressed, now);
     mpress = tv.tv_sec * 1000;
     mpress += tv.tv_usec / 1000;
 
-    if (mpress > get_int_var(KEY_INTERVAL_VAR)) {
+    if (mpress >= get_int_var(KEY_INTERVAL_VAR)) {
 	/* we timed out.  if the last key had some action associated,
 	 * execute that action. */
 	key_exec(last);
@@ -862,15 +870,11 @@ void unload_bindings_recurse (const char *pkg, struct Key *map) {
  * 'KEY_INTERVAL' /set is changed.  We modify an external variable which
  * defines how long the client will wait to timeout, at most. */
 void set_key_interval (int msec) {
-
     if (msec < 10) {
 	say("Setting KEY_INTERVAL below 10ms is not recommended.");
-	set_int_var(KEY_INTERVAL_VAR, 10);
 	msec = 10;
     }
 
-    input_timeout.tv_usec = (msec % 1000) * 1000;
-    input_timeout.tv_sec = msec / 1000;
     set_int_var(KEY_INTERVAL_VAR, msec);
 }
 

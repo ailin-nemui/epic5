@@ -120,7 +120,6 @@ extern		char *	irc_lib;
 extern		char *	irc_path;
 extern const 	char 	irc_version[];
 extern		char *	joined_nick;
-extern		char	lame_wait_nick[];
 extern		char *	last_notify_nick;
 extern		char *	LocalHostName;
 extern		char *	my_path;
@@ -137,7 +136,6 @@ extern	const	char *	unknown_userhost;
 extern	const	char 	useful_info[];
 extern		char	username[];
 extern		char	userhost[];
-extern		char	wait_nick[];
 extern		char	zero[];
 extern		char	comma[];
 

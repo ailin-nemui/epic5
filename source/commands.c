@@ -1,4 +1,4 @@
-/* $EPIC: commands.c,v 1.44 2002/11/12 00:28:11 jnelson Exp $ */
+/* $EPIC: commands.c,v 1.45 2002/11/26 23:03:13 jnelson Exp $ */
 /*
  * commands.c -- Stuff needed to execute commands in ircII.
  *		 Includes the bulk of the built in commands for ircII.
@@ -109,18 +109,6 @@
 	int	break_exception = 0;
 	int	continue_exception = 0;
 	int	return_exception = 0;
-
-typedef	struct	WaitCmdstru
-{
-	char	*stuff;
-	struct	WaitCmdstru	*next;
-}	WaitCmd;
-
-static	WaitCmd	*start_wait_list = NULL,
-		*end_wait_list = NULL;
-
-	char	lame_wait_nick[] = "***LW***";
-	char	wait_nick[] = "***W***";
 
 /* commands and whatnot */
 static  void    abortcmd 	(const char *, char *, const char *);
@@ -742,7 +730,7 @@ BUILT_IN_COMMAND(e_pause)
 	 * I use comment here simply becuase its not going to mess
 	 * with the arguments.
 	 */
-	add_timer(0, "", seconds, 1, (int (*)(void *))comment, NULL, NULL, current_window);
+	add_timer(0, "", seconds, 1, (int (*)(void *))comment, NULL, NULL, current_window->refnum);
 	while (time_diff(get_time(NULL), start) > 0)
 		io("e_pause");
 }

@@ -1,4 +1,4 @@
-/* $EPIC: irc.c,v 1.391 2002/11/26 21:15:17 crazyed Exp $ */
+/* $EPIC: irc.c,v 1.392 2002/11/26 23:03:13 jnelson Exp $ */
 /*
  * ircII: a new irc client.  I like it.  I hope you will too!
  *
@@ -52,7 +52,7 @@ const char internal_version[] = "20020819";
 /*
  * In theory, this number is incremented for every commit.
  */
-const unsigned long	commit_id = 395;
+const unsigned long	commit_id = 396;
 
 /*
  * As a way to poke fun at the current rage of naming releases after
@@ -137,9 +137,6 @@ int		dont_connect = 0;
 
 /* Set to the current time, each time you press a key. */
 Timeval		idle_time = { 0, 0 };
-
-/* Set to the current input timeout as defined by KEY_INTERVAL */
-Timeval		input_timeout = { 0, 0 };
 
 /* Set to the time the client booted up */
 Timeval		start_time;
@@ -806,16 +803,15 @@ static	void	parse_args (int argc, char **argv)
 void	io (const char *what)
 {
 static	const	char	*caller[51] = { NULL }; /* XXXX */
-	static	int	first_time = 1,
-			level = 0;
-static struct timeval	right_away,
-			timer,
-			*timeptr = NULL;
-		int	dccs;
-		fd_set	rd;
+static	int		level = 0,
+			old_level = 0,
+			last_warn = 0;
+static 	Timeval		right_away = { 0, 0 };
 
-	static	int	old_level = 0;
-	static	int	last_warn = 0;
+	Timeval		timer;
+	int		dccs;
+	fd_set		rd;
+
 
 	level++;
 	get_time(&now);
@@ -845,17 +841,6 @@ static struct timeval	right_away,
 
 	caller[level] = what;
 
-	/* first time we run this function, set up the timeouts */
-	if (first_time)
-	{
-		first_time = 0;
-
-		right_away.tv_usec = 0L;
-		right_away.tv_sec = 0L;
-
-		timer.tv_usec = 0L;
-	}
-
 	/* CHECK FOR CPU SAVER MODE */
 	if (!cpu_saver && get_int_var(CPU_SAVER_AFTER_VAR))
 		if (now.tv_sec - idle_time.tv_sec > get_int_var(CPU_SAVER_AFTER_VAR) * 60)
@@ -867,26 +852,22 @@ static struct timeval	right_away,
 	/* If there is a timer that expires sooner, wait for that */
 	/* There is now a timer at all times, so this is our baseline */
 	timer = TimerTimeout();
-	timeptr = &timer;
-
-	/* If there is an input timeout that expires sooner, wait for that */
-	if (time_diff(*timeptr, input_timeout) < 0)
-		timeptr = &input_timeout;
 
 	/* If there is a dead dcc, then do a poll */
 	if ((dccs = dcc_dead()))		/* XXX HACK! XXX */
-		timeptr = &right_away;
+		timer = right_away;
 
 	/* If for any reason the timeout is negative, do a poll */
-	if (time_diff(right_away, *timeptr) < 0)
-		timeptr = &right_away;
+	if (time_diff(right_away, timer) < 0)
+		timer = right_away;
 
 	/* GO AHEAD AND WAIT FOR SOME DATA TO COME IN */
-	switch (new_select(&rd, NULL, timeptr))
+	switch (new_select(&rd, NULL, &timer))
 	{
 		/* Timeout -- nothing interesting. */
 		case 0:
 		{
+			get_time(&now);
 #ifdef HAVE_SSL
 			/* Yes, this is slow, but we have to check for this */
 			do_server(&rd);
@@ -897,6 +878,7 @@ static struct timeval	right_away,
 		/* Interrupted system call -- check for SIGINT */
 		case -1:
 		{
+			get_time(&now);
 			if (cntl_c_hit)		/* SIGINT is useful */
 			{
 				edit_char('\003');
@@ -910,6 +892,7 @@ static struct timeval	right_away,
 		/* Check it out -- something is on one of our descriptors. */
 		default:
 		{
+			get_time(&now);
 			make_window_current(NULL);
 			dcc_check(&rd);
 			do_server(&rd);
@@ -923,7 +906,6 @@ static struct timeval	right_away,
 		dcc_check(&rd);		/* XXX HACK XXX */
 
 	ExecuteTimers();
-	do_input_timeouts(); /* run through input timeouts */
 	get_child_exit(-1);
 	if (level == 1 && need_defered_commands)
 		do_defered_commands();
@@ -1105,7 +1087,7 @@ int	do_every_minute (void *ignored)
 	if (first_call)
 	{
 		add_timer(0, system_timer2, 60.0, -1, do_every_minute,
-				NULL, NULL, NULL);
+				NULL, NULL, -1);
 		first_call = 0;
 	}
 
@@ -1301,7 +1283,7 @@ int 	main (int argc, char *argv[])
 		reconnect(-1, 0);		/* Connect to default server */
 
 	add_timer(0, system_timer, time_to_next_minute(), 1,
-			do_every_minute, NULL, NULL, NULL);
+			do_every_minute, NULL, NULL, -1);
 
 	get_time(&idle_time);
 	for (;;)

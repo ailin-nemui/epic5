@@ -1,5 +1,13 @@
 EPIC4-1.2.0
 
+*** News 11/26/2002 -- Restrictions on /TIMER within a /TIMER removed
+	There are now no restrictions whatsoever about where and when 
+	you can use /TIMER.  Until now, you could not update/change/delete 
+	a timer while another TIMER was executing.  This was particularly 
+	troublesome for people who wanted to be able to have a recurring 
+	timer and then be able to deactivated it; the only way to do this 
+	was with /defer.  Now you can /TIMER -delete it from within itself.
+
 *** News 11/07/2002 -- /XECHO -W now takes channel argument
 	Until now, the argument to /XECHO -W had to be a window refnum.
 	Now you can provide a channel as the argument, and epic will 

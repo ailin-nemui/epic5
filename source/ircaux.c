@@ -1,4 +1,4 @@
-/* $EPIC: ircaux.c,v 1.55 2002/11/12 00:28:11 jnelson Exp $ */
+/* $EPIC: ircaux.c,v 1.56 2002/11/26 23:03:13 jnelson Exp $ */
 /*
  * ircaux.c: some extra routines... not specific to irc... that I needed 
  *
@@ -264,7 +264,7 @@ void *	really_new_realloc (void **ptr, size_t size, char *fn, int line)
 			panic("realloc() failed, giving up!");
 
 		/* Re-initalize the MO buffer; magic(*ptr) is already set. */
-		*ptr += sizeof(MO);
+		*ptr = (void *)((char *)*ptr + sizeof(MO));
 		alloc_size(*ptr) = size;
 #ifdef ALLOC_DEBUG
 		alloc_table.entries[mo_ptr(*ptr)->entry] = *ptr;

@@ -169,4 +169,13 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Eliminate top-of-minute handling from io().
 * Eliminate CPU_SAVER stuff for the time being.
 * Change time_to_next_minute() to return a (double) not (Timeval)
-
+* Change do_input_timeouts() to a timer callback.
+* Nuke the now unused global /wait stuff
+* Revamp timer.c so you can add/change/delete/update timers during a timer
+* Change add_timer() so it takes a winref not a window pointer.
+* Make the "key timeout" thing happen on demand instead of a recurring timer
+* Remove the recurring "key timeout" timer.
+* Remove the 'key timeout' thing from io(), also 'first time' stuff.
+* Call get_time() after select() in io().
+* Fix two compile bugs found by larne.
+* Fix bug when you did /flush on a /clear window.
