@@ -27,4 +27,5 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Add provisional is_empty() function to ircaux.c for new ignore stuff.
 * Move the "highlight char" stuff from ignore.c to irc.c and vars.c
 * Make figure_out_address take a (const char *) since it doesn't change it
-
+* Document all the ignore stuff
+* Fix set_server_away() to accept changed away messages (rb hsoc)

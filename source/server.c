@@ -1,4 +1,4 @@
-/* $EPIC: server.c,v 1.100 2003/05/09 04:29:52 jnelson Exp $ */
+/* $EPIC: server.c,v 1.101 2003/06/30 22:42:19 jnelson Exp $ */
 /*
  * server.c:  Things dealing with that wacky program we call ircd.
  *
@@ -1609,7 +1609,7 @@ void	set_server_away (int refnum, const char *message)
 
 	if (message && *message)
 	{
-		if (!s->away || !strcmp(s->away, message))
+		if (!s->away || strcmp(s->away, message))
 			malloc_strcpy(&s->away, message);
 		if (is_server_registered(refnum))
 			send_to_aserver(refnum, "AWAY :%s", message);
