@@ -24,3 +24,6 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Fix typo that broke /notify on servers other than refnum 0
 * Make /server <host> honor server groups if can't connect to <host>
 * Make reconnects use the server group of NEW server not OLD server.
+* Add checks in configure for (long long)
+* Make support for (long long) unconditional in new math parser
+* Make 'l' appear in $info(o) if (long long) is being used in new math parser.

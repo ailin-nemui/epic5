@@ -1,5 +1,5 @@
 /*
- * @(#)$Id: acconfig.h,v 1.22 2003/09/25 21:24:33 jnelson Exp $
+ * @(#)$Id: acconfig.h,v 1.23 2003/11/21 16:18:12 jnelson Exp $
  */
 
 /*
@@ -307,3 +307,7 @@
 
 /* Define this if you have intptr_t */
 #undef HAVE_INTPTR_T
+
+/* Define this if you have a (long long) */
+#undef HAVE_LONG_LONG
+

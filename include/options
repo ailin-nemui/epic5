@@ -11,7 +11,7 @@
  * since the string has to be case insensitive.
  */
  
-/* Letters left: ajly */
+/* Letters left: dhjprwy */
 
 const char compile_time_options[] = {
  
@@ -46,6 +46,10 @@ const char compile_time_options[] = {
 #ifdef HACKED_DCC_WARNING
 					'k',
 #endif /* HACKED_DCC_WARNING */
+
+#ifdef HAVE_LONG_LONG
+					'l',
+#endif
 
 #if 1
 					'm',

@@ -1,4 +1,4 @@
-/* $EPIC: expr2.c,v 1.15 2003/10/31 08:19:24 crazyed Exp $ */
+/* $EPIC: expr2.c,v 1.16 2003/11/21 16:18:12 jnelson Exp $ */
 /*
  * Zsh: math.c,v 3.1.2.1 1997/06/01 06:13:15 hzoli Exp 
  * math.c - mathematical expression evaluation
@@ -140,7 +140,7 @@ typedef 	int		BooL;
  * Theoretically, INTTYPE and INTFUNC are independant because the return value
  * of INTFUNC is typecasted back to INTTYPE.
  */
-#if 0
+#ifdef HAVE_LONG_LONG
 typedef long long INTTYPE;
 #define INTFUNC(x) ((INTTYPE)atoll(x))
 #else

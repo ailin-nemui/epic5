@@ -1,5 +1,12 @@
 EPIC4-1.2.0
 
+*** News -- 11/21/2003 -- New math parser can now use 64 bit integers
+	The new experimental math parser (which you can turn on via 
+	/xdebug new_math) can now support 64 bit integers.  This is 
+	auto-detected when you run 'configure' and $info(o) will include
+	the letter 'l' for you scripters who want to be able to tell when
+	the host client can do big math and when it can't.
+
 *** News -- 10/31/2003 -- Most file $functions() now use the "" hack.
 	This hack works by allowing you to specify the empty filename "" in a
 	function call, and have the function read the remaining arg list as a

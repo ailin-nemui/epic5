@@ -4,9 +4,9 @@ dnl except those bits attributed otherwise.
 dnl thanks to the screen 3.3 configure.in for giving me examples to
 dnl work from and steal ;)
 dnl
-dnl @(#)$Id: configure.in,v 1.35 2003/09/25 21:24:33 jnelson Exp $
+dnl @(#)$Id: configure.in,v 1.36 2003/11/21 16:18:12 jnelson Exp $
 
-AC_REVISION($Revision: 1.35 $)dnl
+AC_REVISION($Revision: 1.36 $)dnl
 AC_INIT(source/irc.c)
 AC_CONFIG_HEADER(include/defs.h)
 
@@ -406,6 +406,16 @@ if test -f source/sig.inc; then
   /bin/rm -f source/sig.inc
 fi
 [echo $sig_name | sed -e 's/$/"};/' -e 's/ /", "/g' -e 's/^/static char *sys_siglist[] = { "/' >> source/sig.inc]
+fi
+
+dnl ----------------------------------------------------------
+dnl
+dnl Check for 'long long'
+dnl
+
+AC_CHECK_SIZEOF(long long, 0)
+if test "$ac_cv_sizeof_long_long" != 0; then
+	AC_DEFINE(HAVE_LONG_LONG)
 fi
 
 dnl ----------------------------------------------------------
