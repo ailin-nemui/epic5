@@ -10,7 +10,7 @@
  */
 
 #if 0
-static	char	rcsid[] = "$Id: numbers.c,v 1.13 2001/03/24 03:43:40 jnelson Exp $";
+static	char	rcsid[] = "$Id: numbers.c,v 1.14 2001/03/26 15:45:05 jnelson Exp $";
 #endif
 
 #include "irc.h"
@@ -884,6 +884,15 @@ void 	numbered_command (char *from, int comm, char **ArgList)
 	case 477:		/* #define ERR_NEEDREGGEDNICK	477 */
 	{
 		char *reason;
+
+		/* ircnet has a different 477 numeric. */
+		if (comm == 477 && ArgList[0] && *ArgList[0] == '+')
+		{
+			PasteArgs(ArgList, 0);
+			if (do_hook(current_numeric, "%s %s", from, ArgList[0]))
+				display_msg(from, ArgList);
+			break;
+		}
 
 		if (ArgList[0])
 			cant_join_channel(ArgList[0], from_server);
