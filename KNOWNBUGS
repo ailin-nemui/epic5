@@ -51,3 +51,4 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Fix ^C so it binds to SELF_INSERT again (wd)
 * New built in command, /LOG -- general purpose log files
 * New built in function, $logctl() -- operate on general purpose log files. 
+* Fix add_to_logfiles to handle target == NULL properly. doh!

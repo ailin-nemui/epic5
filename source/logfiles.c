@@ -1,4 +1,4 @@
-/* $EPIC: logfiles.c,v 1.4 2002/09/03 13:31:31 jnelson Exp $ */
+/* $EPIC: logfiles.c,v 1.5 2002/09/06 04:01:42 jnelson Exp $ */
 /*
  * logfiles.c - General purpose log files
  *
@@ -689,7 +689,10 @@ void	add_to_logs (int winref, int servref, const char *target, int level, const 
 		if (log->level && (log->level & level) != 0)
 			continue;
 
-		if (!find_in_list((List **)&log->targets, target, USE_WILDCARDS))
+		if (log->targets && !target)
+			continue;
+
+		if (target && !find_in_list((List **)&log->targets, target, USE_WILDCARDS))
 			continue;
 
 		/* OK!  We want to log it now! */
