@@ -1,4 +1,4 @@
-/* $EPIC: alias.c,v 1.65 2005/01/25 01:39:54 jnelson Exp $ */
+/* $EPIC: alias.c,v 1.66 2005/01/25 23:45:39 jnelson Exp $ */
 /*
  * alias.c -- Handles the whole kit and caboodle for aliases.
  *
@@ -125,6 +125,12 @@ struct SymbolStru *	saved;		/* For stacks */
 #define SAVED_BUILTIN_FUNCTION	 8
 #define SAVED_BUILTIN_EXPANDO	16
 #define SAVED_BUILTIN_VAR	32
+
+const char *symbol_types[] = {
+	"ASSIGN",		"ALIAS",		"BUILTIN_COMMAND",
+	"BUILTIN_FUNCTION",	"BUILTIN_EXPANDO",	"BUILTIN_VARIABLE",
+	NULL
+};
 
 /*
  * This is the description for a list of aliases
@@ -577,19 +583,19 @@ BUILT_IN_COMMAND(dumpcmd)
 	{
 		dumped = 0;
 
-		if (!strncmp(blah, "VAR", strlen(blah)) || all)
+		if (all || !strncmp(blah, "VAR", strlen(blah)))
 		{
 			say("Dumping your global variables");
 			destroy_var_aliases(&globals);
 			dumped++;
 		}
-		if (!strncmp(blah, "ALIAS", strlen(blah)) || all)
+		if (all || !strncmp(blah, "ALIAS", strlen(blah)))
 		{
 			say("Dumping your global aliases");
 			destroy_cmd_aliases(&globals);
 			dumped++;
 		}
-		if (!strncmp(blah, "ON", strlen(blah)) || all)
+		if (all || !strncmp(blah, "ON", strlen(blah)))
 		{
 			say("Dumping your ONs");
 			flush_on_hooks();
@@ -2062,7 +2068,7 @@ PMATCH_SYMBOL(builtin_variables, builtin_variable)
 PMATCH_SYMBOL(builtin_commands, builtin_command)
 PMATCH_SYMBOL(builtin_functions, builtin_function)
 PMATCH_SYMBOL(builtin_expandos, builtin_expando)
-
+static PMATCH_SYMBOL(any_symbol, name)
 
 /*****************************************************************************/
 /*
@@ -2129,14 +2135,24 @@ static	void	destroy_cmd_aliases (SymbolSet *my_array)
 	int cnt = 0;
 	Symbol *item;
 
-	for (cnt = 0; cnt < my_array->max; cnt++)
+	for (;;)
 	{
+	    for (cnt = 0; cnt < my_array->max; cnt++)
+	    {
 		item = my_array->list[cnt];
+		if (!item->user_command && !item->user_command_stub && 
+				!item->arglist && !item->user_command_package)
+			continue;
+
 		new_free((void **)&item->user_command);
+		new_free((void **)&item->user_command_package);
 		item->user_command_stub = 0;
 		destroy_arglist(&item->arglist);
-		if (!GC_symbol(item, (array *)my_array, cnt))
-			cnt++;
+		GC_symbol(item, (array *)my_array, cnt);
+		break;
+	    }
+	    if (cnt >= my_array->max)
+		    return;
 	}
 }
 
@@ -2145,15 +2161,23 @@ static	void	destroy_var_aliases (SymbolSet *my_array)
 	int cnt = 0;
 	Symbol *item;
 
-	for (cnt = 0; cnt < my_array->max; cnt++)
+	for (;;)
 	{
+	    for (cnt = 0; cnt < my_array->max; cnt++)
+	    {
 		item = my_array->list[cnt];
-		new_free((void **)&item->user_variable);
-		item->user_variable_stub = 0;
-		if (!GC_symbol(item, (array *)my_array, cnt))
-			cnt++;
-	}
+		if (!item->user_variable && !item->user_variable_stub)
+			continue;
 
+		new_free((void **)&item->user_variable);
+		new_free((void **)&item->user_variable_package);
+		item->user_variable_stub = 0;
+		GC_symbol(item, (array *)my_array, cnt);
+		break;
+	    }
+	    if (cnt >= my_array->max)
+		    return;
+	}
 }
 
 static	void	destroy_builtin_commands (SymbolSet *my_array)
@@ -2161,12 +2185,19 @@ static	void	destroy_builtin_commands (SymbolSet *my_array)
 	int cnt = 0;
 	Symbol *item;
 
-	for (cnt = 0; cnt < my_array->max; cnt++)
+	for (;;)
 	{
+	    for (cnt = 0; cnt < my_array->max; cnt++)
+	    {
 		item = my_array->list[cnt];
+		if (!item->builtin_command)
+			continue;
 		item->builtin_command = NULL;
-		if (!GC_symbol(item, (array *)my_array, cnt))
-			cnt++;
+		GC_symbol(item, (array *)my_array, cnt);
+		break;
+	    }
+	    if (cnt >= my_array->max)
+		    return;
 	}
 }
 
@@ -2175,12 +2206,19 @@ static	void	destroy_builtin_functions (SymbolSet *my_array)
 	int cnt = 0;
 	Symbol *item;
 
-	for (cnt = 0; cnt < my_array->max; cnt++)
+	for (;;)
 	{
+	    for (cnt = 0; cnt < my_array->max; cnt++)
+	    {
 		item = my_array->list[cnt];
+		if (!item->builtin_function)
+			continue;
 		item->builtin_function = NULL;
-		if (!GC_symbol(item, (array *)my_array, cnt))
-			cnt++;
+		GC_symbol(item, (array *)my_array, cnt);
+		break;
+	    }
+	    if (cnt >= my_array->max)
+		    return;
 	}
 }
 
@@ -2189,12 +2227,19 @@ static	void	destroy_builtin_expandos (SymbolSet *my_array)
 	int cnt = 0;
 	Symbol *item;
 
-	for (cnt = 0; cnt < my_array->max; cnt++)
+	for (;;)
 	{
+	    for (cnt = 0; cnt < my_array->max; cnt++)
+	    {
 		item = my_array->list[cnt];
+		if (!item->builtin_expando)
+			continue;
 		item->builtin_expando = NULL;
-		if (!GC_symbol(item, (array *)my_array, cnt))
-			cnt++;
+		GC_symbol(item, (array *)my_array, cnt);
+		break;
+	    }
+	    if (cnt >= my_array->max)
+		    return;
 	}
 }
 
@@ -2203,13 +2248,19 @@ static	void	destroy_builtin_variables (SymbolSet *my_array)
 	int cnt = 0;
 	Symbol *item;
 
-	for (cnt = 0; cnt < my_array->max; cnt++)
+	for (;;)
 	{
+	    for (cnt = 0; cnt < my_array->max; cnt++)
+	    {
 		item = my_array->list[cnt];
-		item->builtin_variable = NULL;
-
-		if (!GC_symbol(item, (array *)my_array, cnt))
-			cnt++;
+		if (!item->builtin_variable)
+			continue;
+		item->builtin_variable = NULL;		/* XXX memory leak */
+		GC_symbol(item, (array *)my_array, cnt);
+		break;
+	    }
+	    if (cnt >= my_array->max)
+		    return;
 	}
 }
 
@@ -3144,15 +3195,58 @@ static int	stack_list_builtin_variable_alias (const char *name)
 
 /*
  * Here's the plan.  An all-encompasing low-level symbol manipulation thingee.
+ * 	This interface is not intended to replace $aliasctl(), but rather to
+ *	supplement it.  No, $aliasctl() will never be removed.  Yes, much of
+ *	its functionality (but not all) is duplicated here.
  *
  * $symbolctl(TYPES)
  *	Return all of the types supported in this version of EPIC:
  *	ALIAS			ASSIGN			BUILTIN_COMMAND
  *	BUILTIN_FUNCTION	BUILTIN_EXPANDO		BUILTIN_VARIABLE
+ *
  * $symbolctl(PMATCH <type> <pattern>)
  *	Return all symbols of type <type> that match <pattern>.  You can use
  *	the special value "*" for <type> to get symbols of all types.
  *
+ * $symbolctl(CREATE <symbol>)
+ *	Ensure that <symbol> exists in the global symbol table.  When symbols
+ *	are first created, they do not contain any actual values, but rather
+ *	act as a placeholder in case you want to set any.  You must ensure 
+ *	that a symbol exists before you try to change its values.  CREATEing
+ *	a symbol that already exists is harmless; feel free to do it.
+ *
+ * $symbolctl(DELETE <symbol>)
+ * $symbolctl(DELETE <symbol> <type>)
+ *	Delete all of the values of a particular symbol, or just one type.
+ *	Example: $symbolctl(DELETE booya ALIAS) is the same as /alias -booya
+ *	Warning: You can delete built in variables/functions/etc with this!
+ *	         There's no way to restore them back if you do!  Caution!
+ *
+ * $symbolctl(CHECK <symbol>)
+ *	Inspects <symbol> to see if it has any values left.  If there are no
+ *	values left for <symbol>, it is removed from the global symbol table.
+ *	You must then CREATE it again if you want to use it later.
+ *
+ * 		*** IMPORTANT NOTE ABOUT "LEVELS" ****
+ * In order to "get" or "set" a symbol's values, the symbol needs to exist.
+ * If you try to "get" or "set" a symbol that doesn't exist, $symbolctl() will
+ * return the empty string to tell you that it failed.  You need to use the
+ * CREATE operation above to bootstrap a new symbol before using it.
+ *
+ * Now, /STACK PUSH and /STACK POP work by manipulating "levels" in the symbol
+ * table.  By rule, <level> == 1 always refers to the "current" value of a
+ * symbol.  If you do /STACK PUSH, then the value you pushed will be copied to
+ * <level> == 2.  If you /STACK PUSH something else, that values moves to 
+ * <level> == 3.  So what you can do is use "GET x LEVELS" to find out how 
+ * many levels a symbol has, and then use "GET x <num>" to find out if there
+ * is a symbol type that interest you at that level.  IN THIS WAY you can 
+ * directly manipulate the /stack push values without having to actually use
+ * the /stack command.
+ *
+ * In general, <level> is always 1 for everything you want to do, unless you 
+ * are intentionally monkeying around with your /stack values.
+ *
+ *	    *** NOW BACK TO YOUR REGULARLY SCHEDULED HELP ***
  * $symbolctl(GET <symbol> LEVELS)
  *	Return the number of levels of <symbol> that are /STACKed.  This
  *	value is always 1 unless you have /STACK PUSHed something.
@@ -3160,44 +3254,397 @@ static int	stack_list_builtin_variable_alias (const char *name)
  *	Return all of the <type>s that are defined for <symbol> at <level>.
  *	If <level> is 1, it gets the current value(s).  If <level> is > 1,
  *	it starts looking at the /STACK PUSHed values.
+ *
  * $symbolctl(GET <symbol> <level> ALIAS VALUE)
  * $symbolctl(GET <symbol> <level> ALIAS STUB)
  * $symbolctl(GET <symbol> <level> ALIAS PACKAGE)
  * $symbolctl(GET <symbol> <level> ALIAS ARGLIST)
+ *	Retrieve one of the values for one of your aliases
+ *
  * $symbolctl(GET <symbol> <level> ASSIGN VALUE)
  * $symbolctl(GET <symbol> <level> ASSIGN STUB)
  * $symbolctl(GET <symbol> <level> ASSIGN PACKAGE)
+ *	Retrieve one of the values for one of your assigns
+ *
  * $symbolctl(GET <symbol> <level> BUILTIN_COMMAND)
  * $symbolctl(GET <symbol> <level> BUILTIN_FUNCTION)
  * $symbolctl(GET <symbol> <level> BUILTIN_EXPANDO)
- * $symbolctl(GET <symbol> <level> BUILTIN_VARIABLE)
+ *	Returns 0 if these types are not in use (ie, if there is not a built
+ *	in command), and returns non-zero if there is.  If you're smart, you
+ *	won't try to do anything with the non-zero value.
+ *
  * $symbolctl(GET <symbol> <level> BUILTIN_VARIABLE TYPE)
  * $symbolctl(GET <symbol> <level> BUILTIN_VARIABLE DATA)
  * $symbolctl(GET <symbol> <level> BUILTIN_VARIABLE BUILTIN)
  * $symbolctl(GET <symbol> <level> BUILTIN_VARIABLE SCRIPT)
  * $symbolctl(GET <symbol> <level> BUILTIN_VARIABLE FLAGS)
+ *	Retrieve information about a /SET.  
+ *	The "TYPE" is one of "STR", "INT", "BOOL", or "CHAR"
+ *	Generally, either "BUILTIN" or "SCRIPT" is set, but not both.
  *
- * $symbolctl(SET <symbol> <level>)
- *	Return all of the <type>s that are defined for <symbol>.
  * $symbolctl(SET <symbol> <level> ALIAS VALUE <string>)
  * $symbolctl(SET <symbol> <level> ALIAS STUB <string>)
  * $symbolctl(SET <symbol> <level> ALIAS PACKAGE <string>)
  * $symbolctl(SET <symbol> <level> ALIAS ARGLIST <string>)
+ *	Change one of the values for one of your aliases.  If you omit
+ *	the <string>, it will clear the value.
+ *
  * $symbolctl(SET <symbol> <level> ASSIGN VALUE <string>)
  * $symbolctl(SET <symbol> <level> ASSIGN STUB <string>)
  * $symbolctl(SET <symbol> <level> ASSIGN PACKAGE <string>)
- * $symbolctl(SET <symbol> <level> BUILTIN_COMMAND)
- * $symbolctl(SET <symbol> <level> BUILTIN_FUNCTION)
- * $symbolctl(SET <symbol> <level> BUILTIN_EXPANDO)
+ *	Change one of the values for one of your assigns.  If you omit
+ *	the <string>, it will clear the value.
+ *
  * $symbolctl(SET <symbol> <level> BUILTIN_VARIABLE)
+ *	Create a new user-created /SET with default values (type == BOOL,
+ *	data == OFF, script is <empty>.)
  * $symbolctl(SET <symbol> <level> BUILTIN_VARIABLE TYPE <set-type>)
  * $symbolctl(SET <symbol> <level> BUILTIN_VARIABLE DATA <string>)
  * $symbolctl(SET <symbol> <level> BUILTIN_VARIABLE BUILTIN)
  * $symbolctl(SET <symbol> <level> BUILTIN_VARIABLE SCRIPT <code>)
  * $symbolctl(SET <symbol> <level> BUILTIN_VARIABLE FLAGS)
- *
- * $symbolctl(CREATE <symbol>)
- * $symbolctl(DELETE <symbol>)
- * $symbolctl(CHECK <symbol>)
+ *	Change one of the values for one of your /set's.  You cannot change
+ *	values for system /set's, sorry.  Setting the TYPE value changes the
+ *	DATA value to a default (<empty> for strings, 0 for everything else)
+ *	so always set DATA after setting TYPE. 
+ *	Yes, you can change the TYPE of a /set after you create it!
+ *	It's probably a bad idea to set FLAGS for the present.
  */
+char    *symbolctl      (char *input)
+{
+        int     refnum, len;
+        char    *listc;
+        char    *ret = NULL;
+	size_t	clue = 0;
+        Symbol  *s;
+	int	i;
+	int	level;
+	char	*symbol, *type, *pattern, *attr;
+	int	cnt, l;
+
+        GET_STR_ARG(listc, input);
+        len = strlen(listc);
+
+        if (!my_strnicmp(listc, "TYPES", len)) {
+	    for (i = 0; symbol_types[i]; i++)
+		malloc_strcat_word_c(&ret, space, symbol_types[i], &clue);
+	    RETURN_MSTR(ret);
+
+        } else if (!my_strnicmp(listc, "PMATCH", len)) {
+	    char **names;
+	    int	num = 0;
+	    int	maxret = 0;
+	    int	start = 0;
+	    int	rev = 0;
+
+	    GET_STR_ARG(type, input);
+	    GET_STR_ARG(pattern, input);
+	    if (!my_stricmp(type, "ALIAS")) {
+		names = pmatch_cmd_alias(pattern, &num, maxret, start, rev);
+	    } else if (!my_stricmp(type, "ASSIGN")) {
+		names = pmatch_assign_alias(pattern, &num, maxret, start, rev);
+	    } else if (!my_stricmp(type, "BUILTIN_COMMAND")) {
+		names = pmatch_builtin_commands(pattern, &num, maxret, start, rev);
+	    } else if (!my_stricmp(type, "BUILTIN_FUNCTION")) {
+		names = pmatch_builtin_functions(pattern, &num, maxret, start, rev);
+	    } else if (!my_stricmp(type, "BUILTIN_EXPANDO")) {
+		names = pmatch_builtin_expandos(pattern, &num, maxret, start, rev);
+	    } else if (!my_stricmp(type, "BUILTIN_VARIABLE")) {
+		names = pmatch_builtin_variables(pattern, &num, maxret, start, rev);
+	    } else if (!my_stricmp(type, "*")) {
+		names = pmatch_any_symbol(pattern, &num, maxret, start, rev);
+	    }
+	    for (i = 0; i < num; i++)
+		malloc_strcat_word_c(&ret, space, names[i], &clue);
+	    new_free((char **)&names);
+	    RETURN_MSTR(ret);
+
+        } else if (!my_strnicmp(listc, "CREATE", len)) {
+            GET_STR_ARG(symbol, input);
+	    upper(symbol);
+	    if (!(s = (Symbol *)find_array_item((array *)&globals, symbol, &cnt, &l)))
+	    {
+		s = make_new_Symbol(symbol);
+		add_to_array((array *)&globals, (array_item *)s);
+		RETURN_INT(1);
+	    }
+	    RETURN_INT(0);
+
+        } else if (!my_strnicmp(listc, "DELETE", len)) {
+            GET_STR_ARG(symbol, input);
+	    upper(symbol);
+	    s = (Symbol *)find_array_item((array *)&globals, symbol, &cnt, &l);
+	    if (s && cnt < 0) {
+		int	all = 0;
+
+		if (!input || !*input)
+		    all = 1;
+		if (all || !my_stricmp(input, "ASSIGN")) {
+		    new_free(&s->user_variable);
+		    s->user_variable_stub = 0;
+		    new_free(&s->user_variable_package);
+		}
+		if (all || !my_stricmp(input, "ALIAS")) {
+		    new_free(&s->user_command);
+		    s->user_command_stub = 0;
+		    new_free(&s->user_command_package);
+		    destroy_arglist(&s->arglist);
+		}
+		if (all || !my_stricmp(input, "BUILTIN_COMMAND"))
+		    s->builtin_command = NULL;
+		if (all || !my_stricmp(input, "BUILTIN_FUNCTION"))
+		    s->builtin_function = NULL;
+		if (all || !my_stricmp(input, "BUILTIN_EXPANDO"))
+		    s->builtin_expando = NULL;
+		if (all || !my_stricmp(input, "BUILTIN_EXPANDO"))
+		    s->builtin_variable = NULL;
+		GC_symbol(s, (array *)&globals, l);
+		RETURN_INT(1);
+	    }
+	    RETURN_INT(0);
+
+        } else if (!my_strnicmp(listc, "CHECK", len)) {
+            GET_STR_ARG(symbol, input);
+	    upper(symbol);
+	    s = (Symbol *)find_array_item((array *)&globals, symbol, &cnt, &l);
+	    if (s && cnt < 0) {
+		GC_symbol(s, (array *)&globals, l);
+		RETURN_INT(1);
+	    }
+	    RETURN_INT(0);
+
+        } else if (!my_strnicmp(listc, "GET", len)) {
+	    char *x;
+
+            GET_STR_ARG(symbol, input);
+	    upper(symbol);
+	    if (!(s = (Symbol *)find_array_item((array *)&globals, symbol, &cnt, &l)))
+                RETURN_EMPTY;
+
+	    GET_STR_ARG(x, input)
+	    if (!(my_stricmp(x, "LEVELS"))) {
+		i = 1;
+		while (s->saved)
+		    i++, s = s->saved;
+		RETURN_INT(i);
+	    }
+
+	    GET_INT_ARG(level, x);
+	    for (i = 1; i < level; i++)
+	    {
+		if (!s->saved)
+		    RETURN_EMPTY;
+		s = s->saved;
+	    }
+
+	    if (!input || !*input) {
+		if (s->user_variable || s->user_variable_stub)
+		    malloc_strcat_word_c(&ret, space, "ASSIGN", &clue);
+		if (s->user_command || s->user_command_stub)
+		    malloc_strcat_word_c(&ret, space, "ALIAS", &clue);
+		if (s->builtin_command)
+		    malloc_strcat_word_c(&ret, space, "BUILTIN_COMMAND", &clue);
+		if (s->builtin_function)
+		    malloc_strcat_word_c(&ret, space, "BUILTIN_FUNCTION", &clue);
+		if (s->builtin_expando)
+		    malloc_strcat_word_c(&ret, space, "BUILTIN_EXPANDO", &clue);
+		if (s->builtin_variable)
+		    malloc_strcat_word_c(&ret, space, "BUILTIN_VARIABLE", &clue);
+		RETURN_MSTR(ret);
+	    }
+
+	    GET_STR_ARG(type, input);
+            if (!my_stricmp(type, "ALIAS")) {
+		GET_STR_ARG(attr, input);
+		if (!my_stricmp(attr, "VALUE"))
+		    RETURN_STR(s->user_command);
+		else if (!my_stricmp(attr, "STUB"))
+		    RETURN_INT(s->user_command_stub);
+		else if (!my_stricmp(attr, "PACKAGE"))
+		    RETURN_STR(s->user_command_package);
+		else if (!my_stricmp(attr, "ARGLIST"))
+		    RETURN_MSTR(print_arglist(s->arglist));
+		else
+		    RETURN_EMPTY;
+            } else if (!my_stricmp(type, "ASSIGN")) {
+		GET_STR_ARG(attr, input);
+       		if (!my_stricmp(attr, "VALUE"))
+		    RETURN_STR(s->user_variable);
+		else if (!my_stricmp(attr, "STUB"))
+		    RETURN_INT(s->user_variable_stub);
+		else if (!my_stricmp(attr, "PACKAGE"))
+		    RETURN_STR(s->user_variable_package);
+		else
+		    RETURN_EMPTY;
+	    } else if (!my_stricmp(type, "BUILTIN_COMMAND")) {
+		RETURN_INT((long)s->builtin_command);
+            } else if (!my_stricmp(type, "BUILTIN_FUNCTION")) {
+		RETURN_INT((long)s->builtin_function);
+            } else if (!my_stricmp(type, "BUILTIN_EXPANDO")) {
+		RETURN_INT((long)s->builtin_expando);
+            } else if (!my_stricmp(type, "BUILTIN_VARIABLE")) {
+		if (!s->builtin_variable)
+			RETURN_EMPTY;
+
+		GET_STR_ARG(attr, input);
+       		if (!my_stricmp(attr, "TYPE")) {
+		    switch (s->builtin_variable->type) {
+			case STR_VAR: RETURN_STR("STR");
+			case INT_VAR: RETURN_STR("INT");
+			case BOOL_VAR: RETURN_STR("BOOL");
+			case CHAR_VAR: RETURN_STR("CHAR");
+			default: RETURN_STR("???");
+		    }
+		} else if (!my_stricmp(attr, "DATA"))
+		    RETURN_MSTR(make_string_var_bydata(s->builtin_variable->type, s->builtin_variable->data));
+		else if (!my_stricmp(attr, "FUNC"))
+		    RETURN_INT((long)s->builtin_variable->func);
+		else if (!my_stricmp(attr, "SCRIPT"))
+		    RETURN_STR(s->builtin_variable->script);
+		else if (!my_stricmp(attr, "FLAGS"))
+		    RETURN_INT(s->builtin_variable->flags);
+		else
+		    RETURN_EMPTY;
+	    } else
+		RETURN_EMPTY;
+        } else if (!my_strnicmp(listc, "SET", len)) {
+	    char *x;
+
+            GET_STR_ARG(symbol, input);
+	    upper(symbol);
+	    if (!(s = (Symbol *)find_array_item((array *)&globals, symbol, &cnt, &l)))
+                RETURN_EMPTY;
+
+	    GET_STR_ARG(x, input)
+	    GET_INT_ARG(level, x);
+	    for (i = 1; i < level; i++)
+	    {
+		if (!s->saved)
+		    RETURN_EMPTY;
+		s = s->saved;
+	    }
+
+	    GET_STR_ARG(type, input);
+            if (!my_stricmp(type, "ALIAS")) {
+		GET_STR_ARG(attr, input);
+		if (!my_stricmp(attr, "VALUE")) {
+		    if (input && *input)
+		        malloc_strcpy(&s->user_command, input);
+		    else
+			new_free(&s->user_command);
+		    RETURN_INT(1);
+		} else if (!my_stricmp(attr, "STUB")) {
+		    if (is_number(input)) {
+		        s->user_command_stub = my_atol(input);
+			RETURN_INT(1);
+		    }
+		    RETURN_EMPTY;
+		} else if (!my_stricmp(attr, "PACKAGE")) {
+		    if (input && *input)
+		        malloc_strcpy(&s->user_command_package, input);
+		    else
+			new_free(&s->user_command_package);
+		    RETURN_INT(1);
+		} else if (!my_stricmp(attr, "ARGLIST")) {
+		    destroy_arglist(&s->arglist);
+		    if (input && *input)
+		    	s->arglist = parse_arglist(input);
+		    RETURN_INT(1);
+		} else
+		    RETURN_EMPTY;
+            } else if (!my_stricmp(type, "ASSIGN")) {
+		GET_STR_ARG(attr, input);
+		if (!my_stricmp(attr, "VALUE")) {
+		    if (input && *input)
+		        malloc_strcpy(&s->user_variable, input);
+		    else
+			new_free(&s->user_variable);
+		    RETURN_INT(1);
+		} else if (!my_stricmp(attr, "STUB")) {
+		    if (is_number(input)) {
+		        s->user_variable_stub = my_atol(input);
+			RETURN_INT(1);
+		    }
+		    RETURN_EMPTY;
+		} else if (!my_stricmp(attr, "PACKAGE")) {
+		    if (input && *input)
+		        malloc_strcpy(&s->user_variable_package, input);
+		    else
+			new_free(&s->user_variable_package);
+		    RETURN_INT(1);
+		} else
+		    RETURN_EMPTY;
+	    } else if (!my_stricmp(type, "BUILTIN_COMMAND")) {
+		RETURN_EMPTY;
+            } else if (!my_stricmp(type, "BUILTIN_FUNCTION")) {
+		RETURN_EMPTY;
+            } else if (!my_stricmp(type, "BUILTIN_EXPANDO")) {
+		RETURN_EMPTY;
+            } else if (!my_stricmp(type, "BUILTIN_VARIABLE")) {
+		IrcVariable *v;
+
+		if (s->builtin_variable) {
+		    /* Not permitted to change a builtin variable */
+		    if (s->builtin_variable->func)
+			RETURN_EMPTY;
+		    v = s->builtin_variable;
+		} else {
+		    v = (IrcVariable *)new_malloc(sizeof(IrcVariable));
+		    v->type = BOOL_VAR;
+		    v->data = new_malloc(sizeof(union builtin_variable));
+		    v->data->integer = 0;
+		    v->flags = 0;
+		    v->func = NULL;
+		    v->script = NULL;
+		    add_builtin_variable_alias(symbol, v);
+		}
+
+		GET_STR_ARG(attr, input);
+       		if (!my_stricmp(attr, "TYPE")) {
+		    int newval;
+
+		    if (!input)
+			RETURN_EMPTY;
+
+		    if (!my_stricmp(input, "BOOL")) 	 newval = BOOL_VAR;
+		    else if (!my_stricmp(input, "STR"))  newval = STR_VAR;
+		    else if (!my_stricmp(input, "INT"))  newval = INT_VAR;
+		    else if (!my_stricmp(input, "CHAR")) newval = CHAR_VAR;
+		    else
+			RETURN_EMPTY;
+
+		    if (v->type == STR_VAR)
+			new_free(&v->data->string);
+		    if (newval == STR_VAR)
+			v->data->string = NULL;
+		    else
+			v->data->integer = 0;
+
+		    v->type = newval;
+		    RETURN_INT(1);
+		} else if (!my_stricmp(attr, "DATA")) {
+		    if (!*input)
+			input = NULL;
+		    RETURN_INT(set_variable(symbol, v, input, 0));
+		} else if (!my_stricmp(attr, "FUNC")) {
+		    RETURN_EMPTY;	/* Can't do this */
+		} else if (!my_stricmp(attr, "SCRIPT")) {
+		    if (input && *input)
+			malloc_strcpy(&v->script, input);
+		    else
+			new_free(&v->script);
+		    RETURN_INT(1);
+		} else if (!my_stricmp(attr, "FLAGS")) {
+		    if (!is_number(input))
+			RETURN_EMPTY;
+		    v->flags = my_atol(input);
+		    RETURN_INT(1);
+		} else
+		    RETURN_EMPTY;
+	    } else
+		RETURN_EMPTY;
+	} else
+	    RETURN_EMPTY;
+}
+
 

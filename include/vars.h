@@ -276,5 +276,6 @@ typedef struct
 	int	parse_mangle		(const char *, int, char **);
 	char	*get_set		(const char *);
 	char *	make_string_var_bydata	(int, void *);
+	int	set_variable		(const char *, IrcVariable *, const char *, int);
 
 #endif /* _VARS_H_ */

@@ -3,7 +3,6 @@ EPIC5 Projects, Bugs, and other Errata:
 KNOWN ERRATA (eg, bugs, or unresolved requests):
 ------------------------------------------------
 * Some way to hook incomplete lines via dcc raw
-* Implement $symbolctl(), to supercede $aliasctl().
 
 [See http://www.epicsol.org/PROJECTS for things to come in the future]
 [See http://www.epicsol.org/CHANGELOG5 for things that changed in the past]
@@ -41,6 +40,7 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Rename a bunch of functions and variables that use "mask" and not "level"
 * Make KICKs, PARTs, QUITs, MODEs, et al use their new special levels!
 * All levels now mean everything in every context!  HUZZAH! 
+* Release EPIC5-0.0.1
 * Make empty_string const.  Now we're cooking with gas! 
 * Const correctness madness!
 * Compile /ON patterns into regexes and use regexec() to parse them.
@@ -208,6 +208,7 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * New function, $tobase(<base> <num>), convert <num> in base 10 to base <base>.
 * GC a bunch of unused code, unused files, that kind of stuff.
 * Make all of the level names plural, it's more forgiving that way.
+* Release EPIC5-0.0.2
 * Fix /window channel.  Ooops!
 * Add a timer list dump for when a polling loop is detected.
 * Prefer timers over i/o to avoid the polling loop bug. ick.
@@ -435,3 +436,5 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Fix vhost support so we can do inbound sockets again.
 * Fix add_to_screen() so /query nick catches /dcc chat nick. (rb adm)
 * Fix /away -all which sends a bogus string to the server. (rb rain)
+* Fix /dump. doh.
+* Add $symbolctl().  See UPDATES.

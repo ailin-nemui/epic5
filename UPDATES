@@ -1,5 +1,125 @@
 EPIC5-0.1
 
+*** News 01/25/2005 -- New built in function, $symbolctl()
+	Here's the plan.  An all-encompasing low-level symbol manipulation 
+	thingee.  This interface is not intended to replace $aliasctl(), but 
+	rather to supplement it.  No, $aliasctl() will never be removed.  
+	Yes, much of its functionality (but not all) is duplicated here.
+
+	$symbolctl(TYPES)
+	     Return all of the types supported in this version of EPIC:
+	     ALIAS		ASSIGN			BUILTIN_COMMAND
+	     BUILTIN_FUNCTION	BUILTIN_EXPANDO		BUILTIN_VARIABLE
+
+	$symbolctl(PMATCH <type> <pattern>)
+	     Return all symbols of type <type> that match <pattern>.  You can 
+	     use the special value "*" for <type> to get symbols of all types.
+
+	$symbolctl(CREATE <symbol>)
+	     Ensure that <symbol> exists in the global symbol table.  When 
+	     symbols are first created, they do not contain any actual values, 
+	     but rather act as a placeholder in case you want to set any.  
+	     You must ensure that a symbol exists before you try to change 
+	     its values.  CREATEing a symbol that already exists is harmless; 
+	     feel free to do it.
+
+	$symbolctl(DELETE <symbol>)
+	$symbolctl(DELETE <symbol> <type>)
+	     Delete all of the values of a particular symbol, or just one type.
+	     Example: $symbolctl(DELETE booya ALIAS) is the same as 
+				/alias -booya
+	     Warning: You can delete built in variables/functions/etc with this!
+		      There's no way to restore them back if you do!  Caution!
+
+	$symbolctl(CHECK <symbol>)
+	     Inspects <symbol> to see if it has any values left.  If there are 
+	     no values left for <symbol>, it is removed from the global symbol 
+	     table.  You must then CREATE it again if you want to use it later.
+
+			*** IMPORTANT NOTE ABOUT "LEVELS" ****
+	In order to "get" or "set" a symbol's values, the symbol needs to exist.
+	If you try to "get" or "set" a symbol that doesn't exist, $symbolctl() 
+	will return the empty string to tell you that it failed.  You need to 
+	use the CREATE operation above to bootstrap a new symbol before using 
+	it.
+
+	Now, /STACK PUSH and /STACK POP work by manipulating "levels" in the 
+	symbol table.  By rule, <level> == 1 always refers to the "current" 
+	value of a symbol.  If you do /STACK PUSH, then the value you pushed 
+	will be copied to <level> == 2.  If you /STACK PUSH something else, 
+	that values moves to <level> == 3.  So what you can do is use 
+	"GET x LEVELS" to find out how many levels a symbol has, and then use 
+	"GET x <num>" to find out if there is a symbol type that interest you 
+	at that level.  IN THIS WAY you can directly manipulate the /stack push
+	values without having to actually use the /stack command.
+
+	In general, <level> is always 1 for everything you want to do, unless 
+	you are intentionally monkeying around with your /stack values.
+
+		 *** NOW BACK TO YOUR REGULARLY SCHEDULED HELP ***
+	$symbolctl(GET <symbol> LEVELS)
+	     Return the number of levels of <symbol> that are /STACKed.  This
+	     value is always 1 unless you have /STACK PUSHed something.
+	$symbolctl(GET <symbol> <level>)
+	     Return all of the <type>s that are defined for <symbol> at <level>.
+	     If <level> is 1, it gets the current value(s).  If <level> is > 1,
+	     it starts looking at the /STACK PUSHed values.
+
+	$symbolctl(GET <symbol> <level> ALIAS VALUE)
+	$symbolctl(GET <symbol> <level> ALIAS STUB)
+	$symbolctl(GET <symbol> <level> ALIAS PACKAGE)
+	$symbolctl(GET <symbol> <level> ALIAS ARGLIST)
+	     Retrieve one of the values for one of your aliases
+
+	$symbolctl(GET <symbol> <level> ASSIGN VALUE)
+	$symbolctl(GET <symbol> <level> ASSIGN STUB)
+	$symbolctl(GET <symbol> <level> ASSIGN PACKAGE)
+	     Retrieve one of the values for one of your assigns
+
+	$symbolctl(GET <symbol> <level> BUILTIN_COMMAND)
+	$symbolctl(GET <symbol> <level> BUILTIN_FUNCTION)
+	$symbolctl(GET <symbol> <level> BUILTIN_EXPANDO)
+	     Returns 0 if these types are not in use (ie, if there is not a 
+	     built in command), and returns non-zero if there is.  If you're 
+	     smart, you won't try to do anything with the non-zero value.
+
+	$symbolctl(GET <symbol> <level> BUILTIN_VARIABLE TYPE)
+	$symbolctl(GET <symbol> <level> BUILTIN_VARIABLE DATA)
+	$symbolctl(GET <symbol> <level> BUILTIN_VARIABLE BUILTIN)
+	$symbolctl(GET <symbol> <level> BUILTIN_VARIABLE SCRIPT)
+	$symbolctl(GET <symbol> <level> BUILTIN_VARIABLE FLAGS)
+	     Retrieve information about a /SET.  
+	     The "TYPE" is one of "STR", "INT", "BOOL", or "CHAR"
+	     Generally, either "BUILTIN" or "SCRIPT" is set, but not both.
+
+	$symbolctl(SET <symbol> <level> ALIAS VALUE <string>)
+	$symbolctl(SET <symbol> <level> ALIAS STUB <string>)
+	$symbolctl(SET <symbol> <level> ALIAS PACKAGE <string>)
+	$symbolctl(SET <symbol> <level> ALIAS ARGLIST <string>)
+	     Change one of the values for one of your aliases.  If you omit
+	     the <string>, it will clear the value.
+
+	$symbolctl(SET <symbol> <level> ASSIGN VALUE <string>)
+	$symbolctl(SET <symbol> <level> ASSIGN STUB <string>)
+	$symbolctl(SET <symbol> <level> ASSIGN PACKAGE <string>)
+	     Change one of the values for one of your assigns.  If you omit
+	     the <string>, it will clear the value.
+
+	$symbolctl(SET <symbol> <level> BUILTIN_VARIABLE)
+	     Create a new user-created /SET with default values (type == BOOL,
+	     data == OFF, script is <empty>.)
+	$symbolctl(SET <symbol> <level> BUILTIN_VARIABLE TYPE <set-type>)
+	$symbolctl(SET <symbol> <level> BUILTIN_VARIABLE DATA <string>)
+	$symbolctl(SET <symbol> <level> BUILTIN_VARIABLE BUILTIN)
+	$symbolctl(SET <symbol> <level> BUILTIN_VARIABLE SCRIPT <code>)
+	$symbolctl(SET <symbol> <level> BUILTIN_VARIABLE FLAGS)
+	     Change one of the values for one of your /set's.  You cannot 
+	     change values for system /set's, sorry.  Setting the TYPE value 
+	     changes the DATA value to a default (<empty> for strings, 0 for 
+	     everything else) so always set DATA after setting TYPE. 
+	     Yes, you can change the TYPE of a /set after you create it!
+	     It's probably a bad idea to set FLAGS for the present.
+
 *** News 01/13/2005 -- New $logctl() feature, $logctl(CURRENT)
 	$logctl(CURRENT) can return one of these values:
 

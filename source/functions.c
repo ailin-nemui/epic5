@@ -1,4 +1,4 @@
-/* $EPIC: functions.c,v 1.186 2005/01/23 21:41:28 jnelson Exp $ */
+/* $EPIC: functions.c,v 1.187 2005/01/25 23:45:39 jnelson Exp $ */
 /*
  * functions.c -- Built-in functions for ircII
  *
@@ -387,6 +387,7 @@ static	char
 	*function_strlen	(char *),
 	*function_strtol	(char *),
 	*function_substr	(char *),
+	*function_symbolctl	(char *),
 	*function_tan		(char *),
 	*function_tanh		(char *),
 	*function_tell		(char *),
@@ -712,6 +713,7 @@ static BuiltInFunctions	built_in_functions[] =
 	{ "STRLEN",		function_strlen		},
 	{ "STRTOL",		function_strtol		},
 	{ "SUBSTR",		function_substr		},
+	{ "SYMBOLCTL",		function_symbolctl	},
 	{ "TAN",		function_tan		},
 	{ "TANH",		function_tanh		},
 #ifdef TCL
@@ -3498,7 +3500,6 @@ BUILT_IN_FUNCTION(function_strlen, input)
 
 BUILT_IN_FUNCTION(function_aliasctl, input)
 {
-	extern char *aliasctl (char *);
 	return aliasctl(input);
 }
 
@@ -7089,3 +7090,10 @@ BUILT_IN_FUNCTION(function_fix_arglist, input)
 	}
 	RETURN_EMPTY;
 }
+
+BUILT_IN_FUNCTION(function_symbolctl, input)
+{
+	return symbolctl(input);
+}
+
+

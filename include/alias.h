@@ -211,6 +211,7 @@
 	char 	*canon_number (char *input);
 
 	char	*aliasctl (char *);
+	char	*symbolctl (char *);
 
 	char *	after_expando (char *, int, int *);
 

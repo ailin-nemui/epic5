@@ -1,4 +1,4 @@
-/* $EPIC: vars.c,v 1.65 2005/01/12 00:12:21 jnelson Exp $ */
+/* $EPIC: vars.c,v 1.66 2005/01/25 23:45:39 jnelson Exp $ */
 /*
  * vars.c: All the dealing of the irc variables are handled here. 
  *
@@ -62,8 +62,6 @@
 #include "reg.h"
 #include "commands.h"
 #include "if.h"
-
-static void 	set_variable (const char *, IrcVariable *, const char *, int);
 
 /*
  * The VIF_* macros stand for "(V)ariable.(i)nt_(f)lags", and have been
@@ -473,12 +471,13 @@ void 	set_var_value (int svv_index, const char *value, int noisy)
  * of manors.  It displays the results of the set and executes the function
  * defined in the var structure 
  */
-static void 	set_variable (const char *name, IrcVariable *var, const char *orig_value, int noisy)
+int 	set_variable (const char *name, IrcVariable *var, const char *orig_value, int noisy)
 {
 	char	*rest;
 	int	old;
 	int	changed = 0;
 	char	*value;
+	int	retval = 0;
 
 	if (orig_value)
 		value = LOCAL_COPY(orig_value);
@@ -492,8 +491,10 @@ static void 	set_variable (const char *name, IrcVariable *var, const char *orig_
 		if (value && *value && (value = next_arg(value, &rest)))
 		{
 			old = var->data->integer;
-			if (do_boolean(value, &(var->data->integer)))
+			if (do_boolean(value, &(var->data->integer))) {
 			    say("Value must be either ON, OFF, or TOGGLE");
+			    retval = -1;
+			}
 			else
 			    changed = 1;
 		}
@@ -509,12 +510,12 @@ static void 	set_variable (const char *name, IrcVariable *var, const char *orig_
 		}
 		else if (value && *value && (value = next_arg(value, &rest)))
 		{
-			if (strlen(value) > 1)
+			if (strlen(value) > 1) {
 			    say("Value of %s must be a single character", name);
-			else
-			{
-				var->data->integer = *value;
-				changed = 1;
+			    retval = -1;
+			} else {
+			    var->data->integer = *value;
+			    changed = 1;
 			}
 		}
 		break;
@@ -526,15 +527,16 @@ static void 	set_variable (const char *name, IrcVariable *var, const char *orig_
 		{
 			int	val;
 
-			if (!is_number(value))
+			if (!is_number(value)) {
 			    say("Value of %s must be numeric!", name);
-			else if ((val = my_atol(value)) < 0)
+			    retval = -1;
+			} else if ((val = my_atol(value)) < 0) {
 			    say("Value of %s must be a non-negative number", 
 					name);
-			else
-			{
-				var->data->integer = val;
-				changed = 1;
+			    retval = -1;
+			} else {
+			    var->data->integer = val;
+			    changed = 1;
 			}
 		}
 		break;
@@ -575,6 +577,8 @@ static void 	set_variable (const char *name, IrcVariable *var, const char *orig_
 
 	if (noisy)
 	    show_var_value(name, var, changed);
+
+	return retval;
 }
 
 static void	create_user_set (char *args)
