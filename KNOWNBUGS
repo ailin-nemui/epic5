@@ -131,3 +131,10 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Make io() call handle_filedescs() instead of the four callback functions.
 * This is the first stage of an extendable callback event looper!  huzzah!
 * Fix io() to call do_server(-1) to do ssl timeouts. bleh.
+* Hide new_select() behind wait_select(), which will hold the result fd_set's
+* Don't make do_filedesc() take fd_set's, but rather get them from wait_select.
+* Be cautious and when redrawing one screen, redraw all screens.
+* Refactor io() some more; no explicit dependancy on select() now
+* Refactor io(), optimize placement of some of the post-select operations.
+* When wserv changes size, recalculate windows, and allow io() to redraw it.
+

@@ -1,4 +1,4 @@
-/* $EPIC: irc.c,v 1.690 2004/01/16 00:26:42 jnelson Exp $ */
+/* $EPIC: irc.c,v 1.691 2004/01/20 16:11:54 jnelson Exp $ */
 /*
  * ircII: a new irc client.  I like it.  I hope you will too!
  *
@@ -52,7 +52,7 @@ const char internal_version[] = "20031217";
 /*
  * In theory, this number is incremented for every commit.
  */
-const unsigned long	commit_id = 1023;
+const unsigned long	commit_id = 1024;
 
 /*
  * As a way to poke fun at the current rage of naming releases after
@@ -833,11 +833,7 @@ static	const	char	*caller[51] = { NULL }; /* XXXX */
 static	int		level = 0,
 			old_level = 0,
 			last_warn = 0;
-static 	const Timeval	right_away = { 0, 0 };
-
 	Timeval		timer;
-	fd_set		rd, wd;
-
 
 	level++;
 	get_time(&now);
@@ -847,59 +843,45 @@ static 	const Timeval	right_away = { 0, 0 };
 
 	if (x_debug & DEBUG_WAITS)
 	{
-		if (level != old_level)
-		{
-			yell("Moving from io level [%d] to level [%d] from [%s]", old_level, level, what);
-			old_level = level;
-		}
+	    if (level != old_level)
+	    {
+		yell("Moving from io level [%d] to level [%d] from [%s]", 
+				old_level, level, what);
+		old_level = level;
+	    }
 	}
 
+	/* Try to avoid letting recursion of io() to get out of control */
 	if (level && (level - last_warn == 5))
 	{
-		last_warn = level;
-		yell("io's recursion level is [%d],  [%s]<-[%s]<-[%s]<-[%s]<-[%s]", level, what, caller[level-1], caller[level-2], caller[level-3], caller[level-4]);
-		if (level % 50 == 0)
-			panic("Ahoy there matey!  Abandon ship!");
+	    last_warn = level;
+	    yell("io's recursion level is [%d],  [%s]<-[%s]<-[%s]<-[%s]<-[%s]",
+			level, what, caller[level-1], caller[level-2], 
+					caller[level-3], caller[level-4]);
+	    if (level % 50 == 0)
+		panic("Ahoy there matey!  Abandon ship!");
 	}
 	else if (level && (last_warn - level == 5))
-		last_warn -= 5;
-
+	    last_warn -= 5;
 
 	caller[level] = what;
 
-#if 1
-	/* 
-	 * XXXXXXX! It pains me greatly to call this here.
-	 * This is an experimental test to see if i can get
-	 * away with not having to call update_all_windows()
-	 * in about a zillion other places by doing it here.
-	 */
-	update_all_windows();
-#endif
-
-	/* SET UP FD SETS */
-	rd = readables;
-	wd = writables;
-
-	/* If there is a timer that expires sooner, wait for that */
-	/* There is now a timer at all times, so this is our baseline */
+	/* Calculate the time to the next timer timeout */
 	timer = TimerTimeout();
 
-	/* If for any reason the timeout is negative, do a poll */
-	if (time_diff(right_away, timer) < 0)
-		timer = right_away;
-
 	/* GO AHEAD AND WAIT FOR SOME DATA TO COME IN */
-	switch (new_select(&rd, &wd, &timer))
+	make_window_current(NULL);
+	switch (wait_select(&timer))
 	{
-		/* Timeout -- nothing interesting. */
+		/* Timeout -- Need to do timers */
 		case 0:
 		{
-			get_time(&now);
 #ifdef HAVE_SSL
 			/* Yes, this is slow, but we have to check for this */
 			do_server(-1);
 #endif
+			get_time(&now);
+			ExecuteTimers();
 			break;
 		}
 
@@ -921,31 +903,47 @@ static 	const Timeval	right_away = { 0, 0 };
 		default:
 		{
 			get_time(&now);
-			make_window_current(NULL);
-			do_filedesc(&rd, &wd);
+			do_filedesc();
 			break;
 		} 
 	}
 
-	ExecuteTimers();
+	/* 
+	 * Various things that need to be done synchronously...
+	 */
+
+	/* Account for dead child processes */
 	get_child_exit(-1);
+
+	/* Run /DEFERed commands */
 	if (level == 1 && need_defered_commands)
 		do_defered_commands();
 
+	/* Make sure all the servers are connected that ought to be */
+	window_check_servers();
+
+	/* Make sure all the channels are joined that ought to be */
+	window_check_channels();
+
+	/* Redraw the screen after a SIGCONT */
+	if (need_redraw)
+		redraw_all_screens();
+
+	/* Make sure all the windows and status bars are made current */
+	update_all_windows();
+
+	/* Move the cursor back to the input line */
 	cursor_to_input();
 
-	/* (set in term.c) -- we need to redraw the screen */
-	if (need_redraw)
-		refresh_a_screen(main_screen);
-
-	window_check_servers();
-	window_check_channels();
-	update_all_windows();
+	/* Reclaim any alloca()ed space */
 	alloca(0);
+
+	/* Release this io() accounting level */
 	caller[level] = NULL;
 	level--;
 
 #ifdef DELAYED_FREES
+	/* Reclaim any malloc()ed space */
 	if (level == 0 && need_delayed_free)
 		do_delayed_frees();
 #endif

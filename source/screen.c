@@ -1,4 +1,4 @@
-/* $EPIC: screen.c,v 1.71 2004/01/15 22:31:03 jnelson Exp $ */
+/* $EPIC: screen.c,v 1.72 2004/01/20 16:11:54 jnelson Exp $ */
 /*
  * screen.c
  *
@@ -3034,7 +3034,7 @@ void 	do_screens (int fd)
 					*ptr++ = 0;
 				screen->li = atoi(buffer + 5);
 				screen->co = atoi(ptr);
-				refresh_a_screen(screen);
+				recalculate_windows(screen);
 			}
 			else if (!strncmp(buffer, "version=", 8))
 			{

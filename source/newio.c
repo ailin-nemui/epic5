@@ -1,4 +1,4 @@
-/* $EPIC: newio.c,v 1.19 2004/01/15 22:31:03 jnelson Exp $ */
+/* $EPIC: newio.c,v 1.20 2004/01/20 16:11:54 jnelson Exp $ */
 /*
  * newio.c: This is some handy stuff to deal with file descriptors in a way
  * much like stdio's FILE pointers 
@@ -87,6 +87,9 @@ typedef	struct	myio_struct
 
 static	MyIO	**io_rec = NULL;
 	int	dgets_errno = 0;
+
+	fd_set	working_rd, working_wd;
+static int 	new_select (fd_set *rd, fd_set *wd, Timeval *timeout);
 
 /*
  * Get_pending_bytes: What do you think it does?
@@ -309,10 +312,21 @@ ssize_t	dgets (int des, char *buf, size_t buflen, int buffer, void *ssl_aux)
 static	int global_max_fd = -1;
 
 /*
+ * wait_select: Wait for something to happen, using select
+ */
+int	wait_select (Timeval *timeout)
+{
+	working_rd = readables;
+	working_wd = writables;
+
+	return new_select(&working_rd, &working_wd, timeout);
+}
+
+/*
  * new_select: works just like select(), execpt I trimmed out the excess
  * parameters I didn't need.
  */
-int 	new_select (fd_set *rd, fd_set *wd, Timeval *timeout)
+static int 	new_select (fd_set *rd, fd_set *wd, Timeval *timeout)
 {
 static	int	polls = 0;
 	Timeval	thetimeout;
@@ -556,19 +570,27 @@ void set_socket_options (int s)
 #endif
 }
 
-void	do_filedesc (fd_set *rd, fd_set *wd)
+void	do_filedesc (void)
 {
 	int	i;
+	fd_set	rd, wd;
+
+	/* 
+	 * Make copies of the result fd_set's, for the callbacks
+	 * may recursively call io() which will clober the result fds!
+	 */
+	rd = working_rd;
+	wd = working_wd;
 
 	for (i = 0; i <= global_max_fd; i++)
 	{
-	    if (FD_ISSET(i, rd) || FD_ISSET(i, wd))
+	    if (FD_ISSET(i, &rd) || FD_ISSET(i, &wd))
 	    {
 		if (!io_rec[i])
 			panic("File descriptor [%d] got a callback but it's not set up", i);
 		io_rec[i]->callback(i);
-		FD_CLR(i, rd);
-		FD_CLR(i, wd);
+		FD_CLR(i, &rd);
+		FD_CLR(i, &wd);
 	    }
 	}
 }

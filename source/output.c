@@ -1,4 +1,4 @@
-/* $EPIC: output.c,v 1.11 2003/12/14 20:04:10 jnelson Exp $ */
+/* $EPIC: output.c,v 1.12 2004/01/20 16:11:54 jnelson Exp $ */
 /*
  * output.c: handles a variety of tasks dealing with the output from the irc
  * program 
@@ -72,35 +72,42 @@ static void	unflash (void)
 SIGNAL_HANDLER(sig_refresh_screen)
 {
 	need_redraw = 1;
-#if 0
-	refresh_a_screen(main_screen);
-#endif
 }
 
 /*
  * refresh_screen: Whenever the REFRESH_SCREEN function is activated, this
  * swoops into effect 
  */
-void refresh_screen (char dumb, char *dumber)
+void	refresh_screen (char dumb, char *dumber)
 {
-	refresh_a_screen(current_window->screen);
+	need_redraw = 1;
 }
 
-void	refresh_a_screen (Screen *screen)
+void	redraw_all_screens (void)
 {
-	unflash();
-	term_clear_screen();
+	Screen *s, *old_os;
 
-	if (screen != main_screen || term_resize())
-		recalculate_windows(current_window->screen);
-	else
-		redraw_all_windows();
+	old_os = output_screen;
+	for (s = screen_list; s; s = s->next)
+	{
+		output_screen = s;
+		unflash();
+		term_clear_screen();
+		if (s == main_screen && term_resize())
+			recalculate_windows(current_window->screen);
+	}
 
-	if (need_redraw)
-		need_redraw = 0;
+	/* Logically mark all windows as needing a redraw */
+	redraw_all_windows();
 
+	/* Physically redraw all windows and status bars */
 	update_all_windows();
+
+	/* Physically redraw all input lines */
 	update_input(UPDATE_ALL);
+
+	output_screen = old_os;
+	need_redraw = 0;
 }
 
 /* extern_write -- controls whether others may write to our terminal or not. */
