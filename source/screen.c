@@ -1,4 +1,4 @@
-/* $EPIC: screen.c,v 1.70 2003/12/21 05:47:04 jnelson Exp $ */
+/* $EPIC: screen.c,v 1.71 2004/01/15 22:31:03 jnelson Exp $ */
 /*
  * screen.c
  *
@@ -57,6 +57,7 @@
 #include "newio.h"
 
 #define CURRENT_WSERV_VERSION	4
+static void 	do_screens (int fd);
 
 /*
  * When some code wants to override the default lastlog level, and needs
@@ -2658,7 +2659,7 @@ Screen *create_new_screen (void)
 	new_s->fpout = stdout;
 	new_s->fdin = 0;
 	if (use_input)
-		new_open(0);
+		new_open(0, do_screens);
 	new_s->fpin = stdin;
 	new_s->control = -1;
 	new_s->wserv_version = 0;
@@ -2918,7 +2919,7 @@ Window	*create_additional_screen (void)
 					"to new screen");
 				return NULL;
 			}
-			new_open(new_s->fdin);
+			new_open(new_s->fdin, do_screens);
 			new_s->fpin = new_s->fpout = fdopen(new_s->fdin, "r+");
 			continue;
 		}
@@ -2935,7 +2936,7 @@ Window	*create_additional_screen (void)
                                 return NULL;
                         }
 
-			new_open(new_s->control);
+			new_open(new_s->control, do_screens);
 
                         if (!(win = new_window(new_s)))
                                 panic("WINDOW is NULL and it shouldnt be!");
@@ -3002,7 +3003,7 @@ void 	kill_screen (Screen *screen)
 
 
 /* * * * * * * * * * * * * USER INPUT HANDLER * * * * * * * * * * * */
-void 	do_screens (fd_set *rd, fd_set *wd)
+void 	do_screens (int fd)
 {
 	Screen *screen;
 	char 	buffer[IO_BUFFER_SIZE + 1];
@@ -3014,11 +3015,9 @@ void 	do_screens (fd_set *rd, fd_set *wd)
 			continue;
 
 #ifdef WINDOW_CREATE
-		if (screen->control != -1 && 
-		    FD_ISSET(screen->control, rd))	/* Wserv control */
+		/* wserv control */
+		if (screen->control != -1 && screen->control == fd)
 		{
-			FD_CLR(screen->control, rd);
-
 			if (dgets(screen->control, buffer, IO_BUFFER_SIZE, 1, NULL) < 0)
 			{
 				kill_screen(screen);
@@ -3052,11 +3051,9 @@ void 	do_screens (fd_set *rd, fd_set *wd)
 		}
 #endif
 
-		if (FD_ISSET(screen->fdin, rd))
+		if (screen->fdin == fd)
 		{
 			int	server;
-
-			FD_CLR(screen->fdin, rd);	/* No more! */
 
 #ifdef WINDOW_CREATE
 			if (screen != main_screen && screen->wserv_version == 0)

@@ -1,4 +1,4 @@
-/* $EPIC: exec.c,v 1.25 2003/12/17 09:25:30 jnelson Exp $ */
+/* $EPIC: exec.c,v 1.26 2004/01/15 22:31:03 jnelson Exp $ */
 /*
  * exec.c: handles exec'd process for IRCII 
  *
@@ -99,6 +99,7 @@ static 	void 	kill_all_processes 	(int signo);
 static 	int 	valid_process_index 	(int proccess);
 static 	int 	is_logical_unique 	(char *logical);
 static	int 	logical_to_index 	(const char *logical);
+static	void 	do_exec (int fd);
 
 /*
  * A nice array of the possible signals.  Used by the coredump trapping
@@ -670,8 +671,8 @@ say("Output from process %d (%s) now going to you", i, proc->name);
 			if (endc)
 				add_process_wait(proc->index, endc);
 
-			new_open(proc->p_stdout);
-			new_open(proc->p_stderr);
+			new_open(proc->p_stdout, do_exec);
+			new_open(proc->p_stderr, do_exec);
 			break;
 		}
 		}
@@ -687,7 +688,7 @@ say("Output from process %d (%s) now going to you", i, proc->name);
  * are closed.  If EOF has been asserted on both, then  we mark the process
  * as being "dumb".  Once it is reaped (exited), it is expunged.
  */
-void 		do_processes (fd_set *rd, fd_set *wd)
+void 		do_exec (int fd)
 {
 	int	i;
 	int	limit;
@@ -703,16 +704,14 @@ void 		do_processes (fd_set *rd, fd_set *wd)
 		if (!proc)
 			continue;
 
-		if (proc->p_stdout != -1 && FD_ISSET(proc->p_stdout, rd))
+		if (proc->p_stdout != -1 && proc->p_stdout == fd)
 		{
-			FD_CLR(proc->p_stdout, rd);
 			handle_filedesc(proc, &proc->p_stdout, 
 					EXEC_PROMPT_LIST, EXEC_LIST);
 		}
 
-		if (proc->p_stderr != -1 && FD_ISSET(proc->p_stderr, rd))
+		if (proc->p_stderr != -1 && proc->p_stdout == fd)
 		{
-			FD_CLR(proc->p_stderr, rd);
 			handle_filedesc(proc, &proc->p_stderr,
 					EXEC_PROMPT_LIST, EXEC_ERRORS_LIST);
 		}

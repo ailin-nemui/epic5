@@ -217,7 +217,6 @@ extern	const char *server_states[8];
 	char *	create_server_list		(void);	/* MALLOC */
 	int	server_list_size		(void);
 
-	void	do_server 			(fd_set *, fd_set *);
 	void	flush_server			(int);
 	void	send_to_server			(const char *, ...) __A(1);
 	void	send_to_aserver			(int, const char *, ...) __A(2);

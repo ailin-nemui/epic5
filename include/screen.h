@@ -156,7 +156,6 @@ unsigned char**	split_up_line		(const unsigned char *, int);
 	Window	*create_additional_screen (void);
 	void	kill_screen		(Screen *);
 	void	close_all_screen	(void);
-	void	do_screens		(fd_set *, fd_set *);
 
 const	u_char *all_off			(void);
 extern	int	normalize_never_xlate;

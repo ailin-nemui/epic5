@@ -126,3 +126,7 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Make /window discon the same as /window noserv, total disconnection.
 * Don't do anything on 465 (YOUREBANNEDCREEP) -- this will be scripted
 * Totaly refactor /SERVER -- documentation of course yet to come!
+* Make new_open[_for_write] take a callback function, stash it in io_rec.
+* Add handle_filedescs() which takes select() results and calls callbacks
+* Make io() call handle_filedescs() instead of the four callback functions.
+* This is the first stage of an extendable callback event looper!  huzzah!

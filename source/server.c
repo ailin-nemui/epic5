@@ -1,4 +1,4 @@
-/* $EPIC: server.c,v 1.118 2004/01/15 22:28:04 jnelson Exp $ */
+/* $EPIC: server.c,v 1.119 2004/01/15 22:31:03 jnelson Exp $ */
 /*
  * server.c:  Things dealing with that wacky program we call ircd.
  *
@@ -902,7 +902,7 @@ BUILT_IN_COMMAND(servercmd)
  * and and parsed appropriately.  If an EOF is detected from an open server,
  * and we haven't registered, window_check_servers() will restart for us.
  */
-void	do_server (fd_set *rd, fd_set *wd)
+void	do_server (int fd)
 {
 	Server *s;
 	char	buffer[IO_BUFFER_SIZE + 1];
@@ -922,7 +922,7 @@ void	do_server (fd_set *rd, fd_set *wd)
 		/*
 		 * First look for nonblocking connects that are finished.
 		 */
-		if (des != -1 && FD_ISSET(des, wd))
+		if (des != -1 && des == fd && s->status == SERVER_CONNECTING)
 		{
 			SS name;
 			socklen_t len;
@@ -943,12 +943,10 @@ void	do_server (fd_set *rd, fd_set *wd)
 			}
 
 			register_server(i, s->d_nickname);
-			new_open(des);
+			new_open(des, do_server);
 		}
-		if (des != -1)
-		    FD_CLR(des, wd);	/* Make sure it never comes up again */
 
-		if (des == -1 || !FD_ISSET(des, rd))
+		if (des == -1 && des != fd)	/* XXX WRONG! XXX */
 		{
 		    if (get_server_ssl_enabled(i) == TRUE)
 		    {
@@ -963,8 +961,6 @@ void	do_server (fd_set *rd, fd_set *wd)
 		    else
 			continue;
 		}
-		if (des != -1)
-		    FD_CLR(des, rd);	/* Make sure it never comes up again */
 
 		last_server = from_server = i;
 		junk = dgets(des, bufptr, get_server_line_length(from_server), 
@@ -1358,7 +1354,7 @@ int 	connect_to_server (int new_server, int restart)
 	if (x_debug & DEBUG_SERVER_CONNECT)
 		say("connect_next_server_address returned [%d]", des);
 	from_server = new_server;	/* XXX sigh */
-	new_open_for_writing(des);
+	new_open_for_writing(des, do_server);
 
 	if (*s->name != '/')
 	{

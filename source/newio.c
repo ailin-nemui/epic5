@@ -1,4 +1,4 @@
-/* $EPIC: newio.c,v 1.18 2004/01/05 16:24:40 jnelson Exp $ */
+/* $EPIC: newio.c,v 1.19 2004/01/15 22:31:03 jnelson Exp $ */
 /*
  * newio.c: This is some handy stuff to deal with file descriptors in a way
  * much like stdio's FILE pointers 
@@ -76,6 +76,7 @@ typedef	struct	myio_struct
 			write_pos;
 	int		segments;
 	int		error;
+	void		(*callback) (int fd);
 
 #if 0
 	void		(*read_callback)  (int fd, int numbytes, char *data);
@@ -379,7 +380,7 @@ static	int	polls = 0;
  * Register a filedesc for readable events
  * Set up its input buffer
  */
-int 	new_open (int des)
+int 	new_open (int des, void (*callback) (int))
 {
 	if (des < 0)
 		return des;		/* Invalid */
@@ -402,6 +403,18 @@ int 	new_open (int des)
 	if (des > global_max_fd)
 		global_max_fd = des;
 
+	if (io_rec[des] == NULL)
+	{
+		MyIO *ioe;
+		ioe = io_rec[des] = (MyIO *)new_malloc(sizeof(MyIO));
+		ioe->buffer_size = IO_BUFFER_SIZE;
+		ioe->buffer = (char *)new_malloc(ioe->buffer_size + 2);
+		ioe->read_pos = ioe->write_pos = 0;
+		ioe->segments = 0;
+		ioe->error = 0;
+	}
+
+	io_rec[des]->callback = callback;
 	return des;
 }
 
@@ -409,7 +422,7 @@ int 	new_open (int des)
  * Register a filedesc for readable events
  * Set up its input buffer
  */
-int 	new_open_for_writing (int des)
+int 	new_open_for_writing (int des, void (*callback) (int))
 {
 	if (des < 0)
 		return des;		/* Invalid */
@@ -428,6 +441,18 @@ int 	new_open_for_writing (int des)
 	if (des > global_max_fd)
 		global_max_fd = des;
 
+	if (io_rec[des] == NULL)
+	{
+		MyIO *ioe;
+		ioe = io_rec[des] = (MyIO *)new_malloc(sizeof(MyIO));
+		ioe->buffer_size = IO_BUFFER_SIZE;
+		ioe->buffer = (char *)new_malloc(ioe->buffer_size + 2);
+		ioe->read_pos = ioe->write_pos = 0;
+		ioe->segments = 0;
+		ioe->error = 0;
+	}
+
+	io_rec[des]->callback = callback;
 	return des;
 }
 
@@ -530,3 +555,21 @@ void set_socket_options (int s)
 	fcntl(fd, F_SETFL, info);
 #endif
 }
+
+void	do_filedesc (fd_set *rd, fd_set *wd)
+{
+	int	i;
+
+	for (i = 0; i <= global_max_fd; i++)
+	{
+	    if (FD_ISSET(i, rd) || FD_ISSET(i, wd))
+	    {
+		if (!io_rec[i])
+			panic("File descriptor [%d] got a callback but it's not set up", i);
+		io_rec[i]->callback(i);
+		FD_CLR(i, rd);
+		FD_CLR(i, wd);
+	    }
+	}
+}
+

@@ -1,4 +1,4 @@
-/* $EPIC: dcc.c,v 1.89 2004/01/07 16:05:02 jnelson Exp $ */
+/* $EPIC: dcc.c,v 1.90 2004/01/15 22:31:03 jnelson Exp $ */
 /*
  * dcc.c: Things dealing client to client connections. 
  *
@@ -146,6 +146,7 @@ static 	void		dcc_send_booster_ctcp 	(DCC_list *dcc);
 static	char *		dcc_urlencode		(const char *);
 static	char *		dcc_urldecode		(const char *);
 static	void		dcc_list 		(char *args);
+static	void		do_dcc 			(int fd);
 
 #ifdef MIRC_BROKEN_DCC_RESUME
 static	void		dcc_getfile_resume 	    (char *);
@@ -690,7 +691,7 @@ static int	dcc_connected (int fd, int result)
 	/*
 	 * Set up the connection to be useful
 	 */
-	new_open(dcc->socket);
+	new_open(dcc->socket, do_dcc);
 	dcc->flags &= ~DCC_THEIR_OFFER;
 	dcc->flags |= DCC_ACTIVE;
 
@@ -861,7 +862,7 @@ static	int	dcc_open (DCC_list *dcc)
 		inet_ntostr((SA *)&dcc->local_sockaddr, NULL, 0, p_port, 12, 0);
 		malloc_strcpy(&dcc->othername, p_port);
 #endif
-		new_open(dcc->socket);
+		new_open(dcc->socket, do_dcc);
 
 		/*
 		 * If this is to be a 2-peer connection, then we need to
@@ -2435,7 +2436,7 @@ display_it:
  * Check all DCCs for data, and if they have any, perform whatever
  * actions are required.
  */
-void	dcc_check (fd_set *Readables, fd_set *Writables)
+void	do_dcc (int fd)
 {
 	DCC_list	*Client;
 	int		previous_server;
@@ -2443,7 +2444,7 @@ void	dcc_check (fd_set *Readables, fd_set *Writables)
 	int		l;
 
 	/* Sanity */
-	if (!Readables)
+	if (fd < 0)
 		return;
 
 	/* Whats with all this double-pointer chicanery anyhow? */
@@ -2457,10 +2458,8 @@ void	dcc_check (fd_set *Readables, fd_set *Writables)
 	    if (Client->flags & DCC_DELETE)
 		continue;
 
-	    if (Readables && Client->socket != -1 && 
-		FD_ISSET(Client->socket, Readables))
+	    if (fd >= 0 && Client->socket != -1 && fd == Client->socket)
 	    {
-		FD_CLR(Client->socket, Readables);	/* No more! */
 		previous_server = from_server;
 		from_server = FROMSERV;
 
@@ -2561,7 +2560,7 @@ static	void	process_dcc_chat_connection (DCC_list *Client)
 	fd = Accept(Client->socket, (SA *)&Client->peer_sockaddr, &sra);
 	Client->socket = new_close(Client->socket);
 	if ((Client->socket = fd) > 0)
-		new_open(Client->socket);
+		new_open(Client->socket, do_dcc);
 	else
 	{
 		Client->flags |= DCC_DELETE;
@@ -2767,7 +2766,7 @@ static	void		process_incoming_listen (DCC_list *Client)
 	NewClient->flags |= DCC_QUOTED & Client->flags;
 	NewClient->bytes_read = NewClient->bytes_sent = 0;
 	get_time(&NewClient->starttime);
-	new_open(NewClient->socket);
+	new_open(NewClient->socket, do_dcc);
 
 	lock_dcc(Client);
 	if (do_hook(DCC_RAW_LIST, "%s %s N %s", 
@@ -2870,7 +2869,7 @@ static void	process_dcc_send_connection (DCC_list *dcc)
 		yell("### DCC Error: accept() failed.  Punting.");
 		return;
 	}
-	new_open(dcc->socket);
+	new_open(dcc->socket, do_dcc);
 	dcc->flags &= ~DCC_MY_OFFER;
 	dcc->flags |= DCC_ACTIVE;
 	get_time(&dcc->starttime);
