@@ -161,3 +161,7 @@ alias tabkey.method.nick {
 alias tabkey.method.nickchan {
 	return $remws(/ $tabkey.method.chan($*) $tabkey.method.nick($*))
 }
+
+alias tabkey.method.nickchannotify {
+	return $remws(/ $tabkey.method.chan($*) $sort($uniq($tabkey.method.nick($*) $tabkey.method.notify($*))))
+}

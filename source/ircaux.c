@@ -8,7 +8,7 @@
  */
 
 #if 0
-static	char	rcsid[] = "@(#)$Id: ircaux.c,v 1.43 2002/06/05 04:42:33 jnelson Exp $";
+static	char	rcsid[] = "@(#)$Id: ircaux.c,v 1.44 2002/06/06 23:28:58 crazyed Exp $";
 #endif
 
 #include "irc.h"
@@ -2012,8 +2012,8 @@ struct timeval 	get_time (struct timeval *timer)
 
 	if (timer)
 	{
-		timer.tv_sec = time2;
-		timer.tv_usec = 0;
+		timer->tv_sec = time2;
+		timer->tv_usec = 0;
 		return *timer;
 	}
 	timer2.tv_sec = time2;

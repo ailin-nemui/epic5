@@ -1099,7 +1099,7 @@ static void rfc1459_odd (char *from, char *comm, char **ArgList)
 {
 	PasteArgs(ArgList, 0);
 	if (do_hook(ODD_SERVER_STUFF_LIST, "%s %s %s", 
-		from ? from : "*", comm, ArgList[0]))
+		from && *from ? from : "*", comm, ArgList[0]))
 	{
 		if (from)
 			say("Odd server stuff: \"%s %s\" (%s)", comm, ArgList[0], from);

@@ -2751,15 +2751,18 @@ BUILT_IN_FUNCTION(function_split, word)
 
 BUILT_IN_FUNCTION(function_chr, word)
 {
-	char aboo[BIG_BUFFER_SIZE];
-	char *ack = aboo;
+	char *aboo = NULL;
+	char *ack;
 	char *blah;
 
+	aboo = new_malloc(word_count(word) + 1);
+	ack = aboo;
+	
 	while ((blah = next_arg(word, &word)))
 		*ack++ = (char)my_atol(blah);
 
 	*ack = '\0';
-	RETURN_STR(aboo);
+	RETURN_MSTR(aboo);
 }
 
 BUILT_IN_FUNCTION(function_ascii, word)

@@ -329,7 +329,7 @@ static int	inet_vhostsockaddr (int family, int port, SS *storage, socklen_t *len
 	AI	hints, *res;
 	int	err;
 
-	if (family == AF_UNIX)
+	if (family == AF_UNIX || !LocalHostName)
 	{
 		*len = 0;
 		return 0;		/* No vhost needed */
