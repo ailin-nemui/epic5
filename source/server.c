@@ -716,6 +716,7 @@ void	do_server (fd_set *rd)
 			case -1:	/* EOF or other error */
 			{
 				server_is_connected(i, 0);
+				close_server(i, NULL);
 				say("Connection closed from %s: %s", 
 					server_list[i].name,
 					(dgets_errno == -1) ? 
