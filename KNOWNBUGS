@@ -29,3 +29,10 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Add /window rejoin, which joins a channel in the window you want it to go.
 * Make /join use /window rejoin, you can use it in an /on now! Huzzah!
 * Fix move_channel_to_window to revoke /window bind when a chan moves away.
+* Fix possible null deref in move_channel_to_window when window not bound. (ce)
+* Fix general bogons in /queue to make it play nice with bounds checking gcc.
+* /Queue names are now case-preserving, not always folded to uppercase.
+* If you /set -var, give it the actual value NULL, not the empty string (ce)
+* -- This apparantly fixes /stack push|pop set ... (ce)
+* Fix /window rejoin to actually slurp it's arguments, not copy them (ce) 
+* Fix /window rejoin to properly paste channels-to-join together (ce)
