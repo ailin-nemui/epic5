@@ -21,6 +21,7 @@ KNOWN ERRATA (eg, bugs, or unresolved requests):
 * /dcc chat hop from an ipv6 server connection will default to ipv4 bind(),
   but send out an ipv6 address in the handshake. (send_booster_ctcp doesn't
   check what protocol get_server_local_address() returns.)
+* Support servers that send more than 15 arguments in their 005 numerics.
 
 [See http://www.epicsol.org/PROJECTS for things to come in the future]
 [See http://www.epicsol.org/CHANGELOG for things that changed in the past]

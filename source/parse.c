@@ -1,4 +1,4 @@
-/* $EPIC: parse.c,v 1.47 2003/09/26 17:11:02 jnelson Exp $ */
+/* $EPIC: parse.c,v 1.48 2003/10/19 22:49:29 jnelson Exp $ */
 /*
  * parse.c: handles messages from the server.   Believe it or not.  I
  * certainly wouldn't if I were you. 
@@ -132,7 +132,7 @@ static void 	BreakArgs (char *Input, char **Sender, const char **OutPut)
 	/*
 	 * Paranoia.  Clean out any bogus ptrs still left on OutPut...
 	 */
-	for (ArgCount = 0; ArgCount < MAXPARA; ArgCount++)
+	for (ArgCount = 0; ArgCount <= MAXPARA + 1; ArgCount++)
 		OutPut[ArgCount] = NULL;
 	ArgCount = 0;
 
@@ -187,7 +187,7 @@ static void 	BreakArgs (char *Input, char **Sender, const char **OutPut)
 		}
 
 		OutPut[ArgCount++] = Input;
-		if (ArgCount >= MAXPARA)
+		if (ArgCount > MAXPARA)
 			break;
 
 		while (*Input && *Input != space)
@@ -1309,7 +1309,7 @@ void 	parse_server (const char *orig_line, size_t orig_line_size)
 	char	*from;
 	const char	*comm;
 	const char	**ArgList;
-	const char	*TrueArgs[MAXPARA + 1];
+	const char	*TrueArgs[MAXPARA + 2];	/* Include space for command */
 	protocol_command *retval;
 	int	loc;
 	int	cnt;
