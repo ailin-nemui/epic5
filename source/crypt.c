@@ -9,7 +9,7 @@
  */
 
 #if 0
-static	char	rcsid[] = "@(#)$Id: crypt.c,v 1.4 2001/11/28 15:07:25 crazyed Exp $";
+static	char	rcsid[] = "@(#)$Id: crypt.c,v 1.5 2001/11/29 02:05:24 crazyed Exp $";
 #endif
 
 #include "irc.h"
@@ -85,7 +85,7 @@ Crypt	*is_crypted (char *nick)
 	if (!crypt_list)
 		return NULL;
 	if ((tmp = (Crypt *) list_lookup((List **)&crypt_list, nick,
-			USE_WILDCARDS, !REMOVE_FROM_LIST)) != NULL) {
+			!!strchr(nick, ','), !REMOVE_FROM_LIST)) != NULL) {
 		return tmp;
 	} else {
 		return NULL;
