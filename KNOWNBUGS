@@ -439,3 +439,5 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Fix /dump. doh.
 * Add $symbolctl().  See UPDATES.
 * Fix auto-completion bogosity with $symbolctl().
+* Release epic5-0.0.3
+* Add %{3}S, showing the server's group instead of its name.

@@ -1,5 +1,9 @@
 EPIC5-0.1
 
+*** News 01/27/2005 -- New status expando, %{3}S
+	%{3}S is just like %{2}S, but instead it shows the server's group
+	instead of the server's name.
+
 *** News 01/26/2005 -- Notes for forward compatability
 			*** /SET -CREATE DEPRECATED ***
 	EPIC5-0.0.3 includes /SET -CREATE, but this is deprecated, and will

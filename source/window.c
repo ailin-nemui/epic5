@@ -1,4 +1,4 @@
-/* $EPIC: window.c,v 1.132 2005/01/23 21:41:28 jnelson Exp $ */
+/* $EPIC: window.c,v 1.133 2005/01/28 05:16:30 jnelson Exp $ */
 /*
  * window.c: Handles the organzation of the logical viewports (``windows'')
  * for irc.  This includes keeping track of what windows are open, where they
@@ -2194,7 +2194,9 @@ void 	window_check_servers (void)
 	if (!is_server_open(primary_server))
 		primary_server = prime;
 
+/*
 	update_all_status();
+*/
 	cursor_to_input();
 }
 

@@ -1,4 +1,4 @@
-/* $EPIC: status.c,v 1.49 2004/10/01 20:17:56 jnelson Exp $ */
+/* $EPIC: status.c,v 1.50 2005/01/28 05:16:30 jnelson Exp $ */
 /*
  * status.c: handles the status line updating, etc for IRCII 
  *
@@ -222,6 +222,7 @@ struct status_formats status_expandos[] = {
 { 3, '7', status_user,	 	NULL, 			NULL },
 { 3, '8', status_user,	 	NULL, 			NULL },
 { 3, '9', status_user,	 	NULL, 			NULL },
+{ 3, 'S', status_server,        &server_format,     	&STATUS_SERVER_VAR },
 { 3, 'W', status_window,	NULL, 			NULL }
 };
 #define NUMBER_OF_EXPANDOS (sizeof(status_expandos) / sizeof(struct status_formats))
@@ -871,8 +872,12 @@ static	char	my_buffer[64];
 		return empty_string;
 
 	/* Figure out what server this window is on */
-	n = get_server_name(window->server);
-	if (map == 2)
+	if (map == 3)
+		n = get_server_group(window->server);
+	else
+		n = get_server_name(window->server);
+
+	if (map == 2 || map == 3)
 	{
 		snprintf(my_buffer, sizeof my_buffer, server_format, n);
 		return my_buffer;
