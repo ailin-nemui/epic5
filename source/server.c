@@ -383,64 +383,54 @@ void	parse_server_info (char *name, char **port, char **password, char **nick, c
 	do
 	{
 		ptr = name;
-yell("ptr before is '%s'", ptr);
 		if (*ptr == '"')
 			name = new_next_arg(ptr, &ptr);
-		ptr = findchar(ptr, ':');
+		ptr = strchr(ptr, ':');
 		if (!ptr)
 			break;
 		*ptr++ = 0;
 		if (!*ptr)
 			break;
-yell("ptr after is '%s'", ptr);
 		*port = ptr;
 
-yell("ptr before is '%s'", ptr);
 		if (*ptr == '"')
 			*port = new_next_arg(ptr, &ptr);
-		ptr = findchar(ptr, ':');
+		ptr = strchr(ptr, ':');
 		if (!ptr)
 			break;
 		*ptr++ = 0;
 		if (!*ptr)
 			break;
-yell("ptr after is '%s'", ptr);
 		*password = ptr;
 
-yell("ptr before is '%s'", ptr);
 		if (*ptr == '"')
 			*password = new_next_arg(ptr, &ptr);
-		ptr = findchar(ptr, ':');
+		ptr = strchr(ptr, ':');
 		if (!ptr)
 			break;
 		*ptr++ = 0;
 		if (!*ptr)
 			break;
-yell("ptr after is '%s'", ptr);
 		*nick = ptr;
 
-yell("ptr before is '%s'", ptr);
 		if (*ptr == '"')
 			*nick = new_next_arg(ptr, &ptr);
-		ptr = findchar(ptr, ':');
+		ptr = strchr(ptr, ':');
 		if (!ptr)
 			break;
 		*ptr++ = 0;
 		if (!*ptr)
 			break;
-yell("ptr after is '%s'", ptr);
 		*group = ptr;
 
-yell("ptr before is '%s'", ptr);
 		/* Ignore any additional, future fields */
 		if (*ptr == '"')
 			*group = new_next_arg(ptr, &ptr);
-		ptr = findchar(ptr, ':');
+		ptr = strchr(ptr, ':');
 		if (!ptr)
 			break;
 		else
 			*ptr++ = 0;
-yell("ptr after is '%s'", ptr);
 	}
 	while (0);
 }
