@@ -14,15 +14,13 @@
 	void	dcc_chat_transmit 	(char *, char *, const char *, 
 						const char *, int);
 	void	dcc_check 		(fd_set *, fd_set *);
-	void	dcc_list 		(char *);
+	BUILT_IN_COMMAND(dcc);
 	char *	dcc_raw_connect 	(const char *, const char *, int);
 	char *	dcc_raw_listen 		(int, unsigned short);
 	void	dcc_reject 		(const char *, char *, char *);
-	void	process_dcc 		(char *);
 	void	register_dcc_offer 	(const char *, char *, char *, char *, 
 					 char *, char *, char *, char *);
 	char *	DCC_get_current_transfer (void);
-	int	dcc_dead		(void);
 
 	char	*dccctl			(char *input);
 

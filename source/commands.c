@@ -1,4 +1,4 @@
-/* $EPIC: commands.c,v 1.61 2003/04/24 21:49:25 jnelson Exp $ */
+/* $EPIC: commands.c,v 1.62 2003/05/02 20:22:25 jnelson Exp $ */
 /*
  * commands.c -- Stuff needed to execute commands in ircII.
  *		 Includes the bulk of the built in commands for ircII.
@@ -118,7 +118,6 @@ static	void	breakcmd	(const char *, char *, const char *);
 static	void	comment 	(const char *, char *, const char *);
 static	void	continuecmd	(const char *, char *, const char *);
 static	void	ctcp 		(const char *, char *, const char *);
-static	void	dcc 		(const char *, char *, const char *);
 static	void	deop 		(const char *, char *, const char *);
 static	void	do_send_text 	(const char *, char *, const char *);
 static	void	sendlinecmd 	(const char *, char *, const char *);
@@ -225,7 +224,7 @@ static	IrcCommand irc_command[] =
 	{ "CONTINUE",	NULL,		continuecmd,		0 },
 	{ "CTCP",	NULL,		ctcp,			0 },
 	{ "DATE",	"TIME",		send_comm,		0 },
-	{ "DCC",	NULL,		dcc,			0 },
+	{ "DCC",	NULL,		dcc,			0 }, /* dcc.c */
 	{ "DEFER",	NULL,		defercmd,		0 },
 	{ "DEOP",	NULL,		deop,			0 },
 	{ "DESCRIBE",	NULL,		describe,		0 },
@@ -540,14 +539,6 @@ BUILT_IN_COMMAND(ctcp)
 	}
 	else
 		say("Usage: /CTCP <[=]nick|channel|*> [<request>]");
-}
-
-BUILT_IN_COMMAND(dcc)
-{
-	if (*args)
-		process_dcc(args);
-	else
-		dcc_list((char *) NULL);
 }
 
 struct defer {

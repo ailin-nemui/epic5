@@ -1,4 +1,4 @@
-/* $EPIC: words.c,v 1.4 2002/07/17 22:52:53 jnelson Exp $ */
+/* $EPIC: words.c,v 1.5 2003/05/02 20:22:26 jnelson Exp $ */
 /*
  * words.c -- right now it just holds the stuff i wrote to replace
  * that beastie arg_number().  Eventually, i may move all of the
@@ -62,9 +62,16 @@ char	*search (char *start, char **mark, char *chars, int how)
 	return *mark;
 }
 
+/* 
+ * If "extended" is 1, then honor /xdebug extractw.
+ * If "extended" is other than 1 but not zero, imply /xdebug extractw.
+ */
 #define CHECK_EXTENDED_SUPPORT					\
-	if (extended && ((x_debug & DEBUG_EXTRACTW) == 0))	\
-		extended = 0;
+	if (extended == 1 && ((x_debug & DEBUG_EXTRACTW) == 0))	\
+		extended = 0;					\
+        else if (extended)					\
+		extended = 1;					\
+
 
 /* 
  * Move to an absolute word number from start

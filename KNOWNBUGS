@@ -15,6 +15,7 @@ KNOWN ERRATA (eg, bugs, or unresolved requests):
 * IPV6-over-dcc, i promised morty i would.
 * Shall remove_trailing_spaces honor a \ before a space trailing?
 * New built in function to get who_from and who_level
+* Some way to color the input prompt?
 
 [See http://www.epicsol.org/PROJECTS for things to come in the future]
 [See http://www.epicsol.org/CHANGELOG for things that changed in the past]
@@ -77,3 +78,27 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Added a $prefix() regression test.
 * Aesthetic change to /exec pipe cleanups.
 * Changed nick rolling at 9/NICKLEN chars to distinguish the two more sensibly.
+* Move /DCC from commands.c to dcc.c
+* Nix the "dcc deadlist" crap.  Handle deleted dcc's more sensibly now.
+* Add a "dequote" internal function that removes "s in extended words.
+* Add "QWORDS" as new arglist type, for quoted-words with "s left in.
+* Add "arglist" regression test.
+* Fix strlcpy() in compat.c so it doesn't walk off end of string.
+* Implement more sensible "locking" mechanism for dcc's
+* Nix the nominally unimplemented "encrypt" feature for dcc
+* Create "dcc_create" to create dcc entry
+* Remove "creation" functionality from "dcc_searchlist"
+* Nix global variables 'filesize' and 'global_family' now unneeded.
+* Change order around of arguments to "dcc_searchlist".
+* Rename "dcc_opened" to "dcc_connected" since that is what it does.
+* Add "dcc_garbage_collect" which looks for dcc's that need removal.
+* Add "get_dcc_by_filedesc" and "get_dcc_by_refnum" to look up dcc's
+* Add "lock_dcc" and "unlock_dcc" to prevent dcc's from being GC'd.
+* Double check that all output that occurs in dcc.c goes to LOG_DCC
+* Use dcc_open in dcc_raw_listen() instead of doing the network stuff directly.
+* Allow "booster ctcp" to be sent for dcc chat re-offerings.
+* Reorganize register_dcc_offer() so it doesn't create dcc until all is well.
+* Reorganize process_outgoing_file() into sub-functions.
+* Don't call "dcc_dead" or "dcc_check" in main io() looper.
+* Fix new_next_arg_count() to use real_move_to_abs_word() to emulate $1 usage
+

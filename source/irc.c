@@ -1,4 +1,4 @@
-/* $EPIC: irc.c,v 1.504 2003/05/01 12:04:23 crazyed Exp $ */
+/* $EPIC: irc.c,v 1.505 2003/05/02 20:22:26 jnelson Exp $ */
 /*
  * ircII: a new irc client.  I like it.  I hope you will too!
  *
@@ -52,7 +52,7 @@ const char internal_version[] = "20030326";
 /*
  * In theory, this number is incremented for every commit.
  */
-const unsigned long	commit_id = 508;
+const unsigned long	commit_id = 509;
 
 /*
  * As a way to poke fun at the current rage of naming releases after
@@ -861,9 +861,11 @@ static 	const Timeval	right_away = { 0, 0 };
 	/* There is now a timer at all times, so this is our baseline */
 	timer = TimerTimeout();
 
+#if 0
 	/* If there is a dead dcc, then do a poll */
 	if ((dccs = dcc_dead()))		/* XXX HACK! XXX */
 		timer = right_away;
+#endif
 
 	/* If for any reason the timeout is negative, do a poll */
 	if (time_diff(right_away, timer) < 0)
@@ -910,8 +912,10 @@ static 	const Timeval	right_away = { 0, 0 };
 		} 
 	}
 
+#if 0
 	if (dccs)			/* XXX HACK XXX */
 		dcc_check(&rd, &wd);	/* XXX HACK XXX */
+#endif
 
 	ExecuteTimers();
 	get_child_exit(-1);

@@ -1,4 +1,4 @@
-/* $EPIC: compat.c,v 1.16 2003/04/24 21:49:25 jnelson Exp $ */
+/* $EPIC: compat.c,v 1.17 2003/05/02 20:22:26 jnelson Exp $ */
 /*
  * Everything that im not directly responsible for I put in here.  Almost
  * all of this stuff is either borrowed from somewhere else (for you poor
@@ -921,8 +921,10 @@ size_t	strlcpy (char *dst, const char *src, size_t siz)
 	/* Copy as many bytes as will fit */
 	if (n != 0 && --n != 0) {
 		do {
-			if ((*d++ = *s++) == 0)
+			if ((*d = *s) == 0)
 				break;
+			d++;
+			s++;
 		} while (--n != 0);
 	}
 
@@ -930,11 +932,11 @@ size_t	strlcpy (char *dst, const char *src, size_t siz)
 	if (n == 0) {
 		if (siz != 0)
 			*d = '\0';		/* NUL-terminate dst */
-		while (*s++)
-			;
+		while (*s)
+			s++;
 	}
 
-	return(s - src - 1);	/* count does not include NUL */
+	return(s - src);	/* count does not include NUL */
 }
 #endif
 

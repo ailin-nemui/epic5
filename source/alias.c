@@ -1,4 +1,4 @@
-/* $EPIC: alias.c,v 1.19 2003/04/24 21:49:24 jnelson Exp $ */
+/* $EPIC: alias.c,v 1.20 2003/05/02 20:22:25 jnelson Exp $ */
 /*
  * alias.c -- Handles the whole kit and caboodle for aliases.
  *
@@ -169,7 +169,8 @@ static unsigned long 	cmd_cache_passes = 0;
 enum ARG_TYPES {
 	WORD,
 	UWORD,
-	DWORD
+	DWORD,
+	QWORD
 };
 
 /* Ugh. XXX Bag on the side */
@@ -752,6 +753,11 @@ ArgList	*parse_arglist (char *arglist)
 					args->types[arg_count] = UWORD;
 					args->words[arg_count] = atol(value);
 				}
+				else if (!my_stricmp(modifier, "qwords"))
+				{
+					args->types[arg_count] = QWORD;
+					args->words[arg_count] = atol(value);
+				}
 				else if (!my_stricmp(modifier, "dwords"))
 				{
 					args->types[arg_count] = DWORD;
@@ -804,13 +810,19 @@ void	prepare_alias_call (void *al, char **stuff)
 		switch (args->types[i])
 		{
 			case WORD:
-				type = (x_debug & DEBUG_EXTRACTW);
+				if (x_debug & DEBUG_EXTRACTW)
+					type = 1;
+				else
+					type = 0;
 				break;
 			case UWORD:
 				type = 0;
 				break;
 			case DWORD:
 				type = 1;
+				break;
+			case QWORD:
+				type = 2;
 				break;
 		}
 
@@ -834,6 +846,10 @@ void	prepare_alias_call (void *al, char **stuff)
 			else
 				next_val = empty_string;
 		}
+
+		/* Do dequoting last so it's useful for ``defaults'' */
+		if (type == 1)
+			dequote(next_val);
 
 		/* Add the local variable */
 		add_local_alias(args->vars[i], next_val, 0);

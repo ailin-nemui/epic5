@@ -1,4 +1,4 @@
-/* $EPIC: ircaux.c,v 1.72 2003/04/24 21:49:25 jnelson Exp $ */
+/* $EPIC: ircaux.c,v 1.73 2003/05/02 20:22:26 jnelson Exp $ */
 /*
  * ircaux.c: some extra routines... not specific to irc... that I needed 
  *
@@ -638,6 +638,32 @@ char *	rstristr (const char *source, const char *search)
 	return NULL;
 }
 
+/* 
+ * "Dequote" a double quoted string by removing double quotes that surround
+ * double quoted words.  Capiche?
+ */
+char *	dequote (char *str)
+{
+	size_t	size;
+	char *	copy;
+	char *	word;
+	int	first_time = 1;
+
+	size = strlen(str) + 1;
+	copy = LOCAL_COPY(str);
+	*str = 0;
+
+	while ((word = new_next_arg(copy, &copy)))
+	{
+		if (first_time == 0)
+			strlcat(str, space, size);
+		strlcat(str, word, size);
+		first_time = 0;
+	}
+
+	return str;
+}
+
 
 char *	next_arg_count (char *str, char **new_ptr, int count)
 {
@@ -817,6 +843,14 @@ noquotedword:
  */
 char *	new_next_arg_count (char *str, char **new_ptr, int count)
 {
+	real_move_to_abs_word(str, (const char **)new_ptr, count, 2);
+	if ((*new_ptr)[0] && *new_ptr > str)
+		(*new_ptr)[-1] = 0;
+	return str;
+
+#if 0
+	char *copy;
+
 	char *orig = str;
 	char *str1 = str;
 	char *copy;
@@ -837,6 +871,7 @@ char *	new_next_arg_count (char *str, char **new_ptr, int count)
 	}
 
 	return orig;
+#endif
 }
 
 char * next_quoted_args (char *str, char **new_ptr, int count)
