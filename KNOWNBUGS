@@ -122,3 +122,11 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * The perl one apparently makes it possible to compile for perl 5.8.0.
 * Made /dcc close use new_next_arg for filenames to make it consistent.
 * Fixed dcc send resume so that it will resume with mirc.
+* Change m_strcat_ues_c to take a (char *) "unescape" param and not (int)
+* Rename m_strcat_ues_c to malloc_strcat_ues_c
+* Rewrite malloc_strcat_ues_c to support new semantics.
+* Make sure not to pass 0 to alloca() in ctcp checks
+* Initialize (DCC)->server [found by valgrind]
+* Change 'expand_alias' so 'unescape' is (char *) and not (int)
+* Add extra sanity checks in mangle_line against buffer overruns
+* Fix window_channel() to use new malloc_strcat_ues() arguments.

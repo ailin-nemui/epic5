@@ -1,4 +1,4 @@
-/* $EPIC: dcc.c,v 1.62 2003/05/17 18:30:21 crazyed Exp $ */
+/* $EPIC: dcc.c,v 1.63 2003/05/30 19:58:10 jnelson Exp $ */
 /*
  * dcc.c: Things dealing client to client connections. 
  *
@@ -489,6 +489,7 @@ static	DCC_list *dcc_create (
 	new_client->resume_size		= 0;
 	new_client->open_callback	= NULL;
 	new_client->refnum		= dcc_refnum++;
+	new_client->server		= from_server;
 	get_time(&new_client->lasttime);
 
 	ClientList = new_client;

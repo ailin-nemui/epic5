@@ -1,4 +1,4 @@
-/* $EPIC: ircaux.c,v 1.75 2003/05/17 18:30:21 crazyed Exp $ */
+/* $EPIC: ircaux.c,v 1.76 2003/05/30 19:58:10 jnelson Exp $ */
 /*
  * ircaux.c: some extra routines... not specific to irc... that I needed 
  *
@@ -1092,21 +1092,151 @@ char *	strlopencat (char *dest, size_t maxlen, ...)
 }
 
 /*
- * m_strcat_ues: Given two strings, concatenate the 2nd string to
- * the end of the first one, but if the "unescape" argument is 1, do
- * unescaping (like in strmcat_ue).
- * (Malloc_STRCAT_UnEscape Special, in case you were wondering. ;-))
+ * malloc_strcat_ues_c:  Just as with malloc_strcat, append 'src' to the end
+ * of '*dest', optionally dequoting (not copying backslashes from) 'src' 
+ * pursuant to the following rules:
  *
- * This uses a cheating, "not-as-efficient-as-possible" algorithm,
- * And boy do we pay for it.
+ * special == empty_string	De-quote all characters (remove all \'s)
+ * special == NULL		De-quote nothing ('src' is literal text)
+ * special is anything else	De-quote only \X where X is one of the
+ *				characters in 'special'.
+ *
+ * Examples where: dest == "one" and src == "t\w\o"
+ *	special == empty_string		result is "one two"
+ *					(remove all \'s)
+ *	special == NULL			result is "one t\w\o"
+ *					(remove no \'s)
+ *	special == "lmnop"		result is "one t\wo"
+ *					(remove the \ before o, but not w,
+ *					 because "o" is in "lmnop")
+ *
+ * "ues" stands for "UnEscape Special" and was written to replace the old
+ * ``strmcat_ue'' which had string length limit problems.  "_c" of course
+ * means this function takes a string length clue.  The previous name,
+ * 'm_strcat_ues_c' was changed becuase ISO C does not allow user symbols
+ * to start with ``m_''.
+ *
+ * Just as with 'malloc_strcat', 'src' may be NULL and this function will
+ * no-op (as opposed to crashing)
+ *
+ * The technique we use here is a hack, and it's expensive, but it works.
+ * 1) Copy 'src' into a temporary buffer, removing any \'s as proscribed
+ * 2) Append the temporary buffer to '*dest'
+ *
+ * NOTES: This is the "dequoter", also known as "Quoting Hell".  Everything
+ * that removes \'s uses this function to do it.
  */
-char *	m_strcat_ues_c (char **dest, const char *src, int unescape, size_t *cluep)
+char *	malloc_strcat_ues_c (char **dest, const char *src, const char *special, size_t *cluep)
 {
-	int 	total_length;
+	char *workbuf, *p;
+	const char *s;
+
+	/* If there is nothing to copy, just stop right here. */
+	if (!src || !*src)
+		return *dest;
+
+	/* If we're not dequoting, cut it short and return. */
+	if (special == NULL)
+	{
+		malloc_strcat_c(dest, src, cluep);
+		return *dest;
+	}
+
+	/* 
+	 * Set up a working buffer for our copy.
+	 * Reserve two extra spaces because the algorithm below
+	 * may copy two nuls to 'workbuf', and we need the space
+	 * for the second nul.
+	 */
+	workbuf = alloca(strlen(src) + 2);
+
+	/* Walk 'src' looking for characters to dequote */
+	for (s = src, p = workbuf; ; s++, p++)
+	{
+	    /* 
+	     * If we see a backslash, it is not at the end of the
+	     * string, and the character after it is contained in 
+	     * 'special', then skip the backslash.
+	     */
+	    if (*s == '\\')
+	    {
+		/*
+		 * If we are doing special dequote handling,
+		 * and the \ is not at the end of the string, 
+		 * and the character after it is contained
+		 * within ``special'', skip the \.
+		 */
+		if (special != empty_string)
+		{
+		    /*
+		     * If this character is handled by 'special', then
+		     * copy the next character and either continue to
+		     * the next character or stop if we're done.
+		     */
+		    if (s[1] && strchr(special, s[1]))
+		    {
+			if ((*p = *++s) == 0)
+			    break;
+			else
+			    continue;
+			/* NOTREACHED */
+		    }
+		}
+
+		/*
+		 * BACKWARDS COMPATABILITY:
+		 * In any case where \n, \p, \r, and \0 are not 
+		 * explicitly caught by 'special', we have to 
+		 * convert them to \020 (dle) to maintain backwards
+		 * compatability.
+		 */
+		if (s[1] == 'n' || s[1] == 'p' || 
+		    s[1] == 'r' || s[1] == '0')
+		{
+			s++;			/* Skip the \ */
+			*p = '\020';		/* Copy a \n */
+			continue;
+		}
+
+		/*
+		 * So it is not handled by 'special' and it is not
+		 * a legacy escape.  So we either need to copy or ignore
+		 * this \ based on the value of special.  If "special"
+		 * is empty_string, we remove it.  Otherwise, we keep it.
+		 */
+		if (special == empty_string)
+			s++;
+
+		/*
+		 * Copy this character (or in the above case, the character
+		 * after the \). If we copy a nul, then immediately stop the 
+		 * process here!
+		 */
+		if ((*p = *s) == 0)
+			break;
+	    }
+
+	    /* 
+	     * Always copy any non-slash character.
+	     * Stop when we reach the nul.
+	     */
+	    else
+		if ((*p = *s) == 0)
+			break;
+	}
+
+	/*
+	 * We're done!  Append 'workbuf' to 'dest'.
+	 */
+	malloc_strcat_c(dest, workbuf, cluep);
+	return *dest;
+
+#if 0
+	int 		total_length;
 	const char *	ptr;
-	char *	ptr2;
-	int	z;
-	size_t	clue = cluep ? *cluep : 0;
+	char *		ptr2;
+	int		z;
+	size_t		clue = cluep ? *cluep : 0;
 
 	if (!unescape)
 	{
@@ -1147,6 +1277,7 @@ char *	m_strcat_ues_c (char **dest, const char *src, int unescape, size_t *cluep
 	}
 	if (cluep) *cluep = ptr2 - *dest - 1;
 	return *dest;
+#endif
 }
 
 /*
@@ -3342,6 +3473,10 @@ size_t	mangle_line	(char *incoming, int how, size_t how_much)
 	 */
 	for (i = 0, s = incoming; *s; s++)
 	{
+		/* If buffer[i] is past the end, then stop right here! */
+		if (i >= how_much)
+			break;
+
 		switch (*s)
 		{
 			case 003:		/* color codes */
@@ -3355,8 +3490,12 @@ size_t	mangle_line	(char *incoming, int how, size_t how_much)
 				end = s + span;
 				if (!(stuff & STRIP_COLOR))
 				{
-					while (s < end)
-						buffer[i++] = *s++;
+				    /* 
+				     * Copy the string one byte at a time
+				     * but only as much as we have space for.
+				     */
+				    while (s < end && i < how_much)
+					buffer[i++] = *s++;
 				}
 				s = end - 1;
 				break;
@@ -3415,6 +3554,11 @@ size_t	mangle_line	(char *incoming, int how, size_t how_much)
 		}
 	}
 
+	/* If buffer[i] is off the end of the string, bring it back in. */
+	if (i >= how_much)
+		i = how_much - 1;
+
+	/* Terminate the mangled copy, and return to sender. */
 	buffer[i] = 0;
 	return strlcpy(incoming, buffer, how_much);
 }

@@ -1,4 +1,4 @@
-/* $EPIC: window.c,v 1.61 2003/05/09 04:29:52 jnelson Exp $ */
+/* $EPIC: window.c,v 1.62 2003/05/30 19:58:10 jnelson Exp $ */
 /*
  * window.c: Handles the organzation of the logical viewports (``windows'')
  * for irc.  This includes keeping track of what windows are open, where they
@@ -2774,8 +2774,8 @@ static Window *window_channel (Window *window, char **args)
 		 * a quick, and nasty hack, but i will re-assess the
 		 * situation later and improve what is being done here.
 		 */
-		arg = m_strcat_ues(&arg2, carg, 1);
-		sarg = m_strcat_ues(&arg3, sarg, 1);
+		arg = malloc_strcat_ues(&arg2, carg, empty_string);
+		sarg = malloc_strcat_ues(&arg3, sarg, empty_string);
 
 		while (traverse_all_windows(&w))
 		{

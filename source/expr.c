@@ -1,4 +1,4 @@
-/* $EPIC: expr.c,v 1.13 2003/05/30 01:05:30 jnelson Exp $ */
+/* $EPIC: expr.c,v 1.14 2003/05/30 19:58:10 jnelson Exp $ */
 /*
  * expr.c -- The expression mode parser and the textual mode parser
  * #included by alias.c -- DO NOT DELETE
@@ -435,6 +435,7 @@ static	char	*next_unit (char *str, const char *args, int *arg_flag, int stage)
 			*ptr++ = 0;
 
 			/* Taken more or less from call_user_function */
+			/* XXX - This should call parse_line_with_return! */
 			make_local_stack(NULL);
 			window_display = 0;
 			add_local_alias("FUNCTION_RETURN", empty_string, 0);
@@ -1343,7 +1344,7 @@ char	*expand_alias	(const char *string, const char *args, int *args_flag, ssize_
 	char	quote_temp[2];
 	char	ch;
 	int	is_quote = 0;
-	int	unescape = 1;
+	char *	unescape = empty_string;
 	size_t	buffclue = 0;
 
 	if (!string || !*string)
@@ -1351,7 +1352,7 @@ char	*expand_alias	(const char *string, const char *args, int *args_flag, ssize_
 
 	if (*string == '@' && more_text)
 	{
-		unescape = 0;
+		unescape = NULL;
 		*args_flag = 1; /* Stop the @ command from auto appending */
 	}
 	quote_temp[1] = 0;
@@ -1394,7 +1395,7 @@ char	*expand_alias	(const char *string, const char *args, int *args_flag, ssize_
 			if (!*ptr)
 				break;		/* Hrm. */
 
-			m_strcat_ues_c(&buffer, stuff, unescape, &buffclue);
+			malloc_strcat_ues_c(&buffer, stuff, unescape, &buffclue);
 
 			for (; *ptr == '^'; ptr++)
 			{
@@ -1432,7 +1433,7 @@ char	*expand_alias	(const char *string, const char *args, int *args_flag, ssize_
 
 			ch = *ptr;
 			*ptr = 0;
-			m_strcat_ues_c(&buffer, stuff, unescape, &buffclue);
+			malloc_strcat_ues_c(&buffer, stuff, unescape, &buffclue);
 			stuff = ptr;
 
 			*args_flag = 1;
@@ -1469,7 +1470,7 @@ char	*expand_alias	(const char *string, const char *args, int *args_flag, ssize_
 	}
 
 	if (stuff)
-		m_strcat_ues_c(&buffer, stuff, unescape, &buffclue);
+		malloc_strcat_ues_c(&buffer, stuff, unescape, &buffclue);
 
 	if (get_int_var(DEBUG_VAR) & DEBUG_EXPANSIONS)
 		yell("Expanded [%s] to [%s]", string, buffer);
