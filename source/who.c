@@ -1181,7 +1181,7 @@ void clean_server_queues (int i)
 {
 	int old_from_server = from_server;
 
-	if (i == -1 || !server_list || /* !server_list[i].connected */)
+	if (i == -1 || !server_list /* || !server_list[i].connected */)
 		return;		/* Whatever */
 
 	from_server = i;
