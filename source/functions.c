@@ -1,4 +1,4 @@
-/* $EPIC: functions.c,v 1.138 2003/10/10 06:22:39 jnelson Exp $ */
+/* $EPIC: functions.c,v 1.139 2003/10/23 09:09:52 jnelson Exp $ */
 /*
  * functions.c -- Built-in functions for ircII
  *
@@ -3464,7 +3464,11 @@ BUILT_IN_FUNCTION(function_winserv, input)
 
 BUILT_IN_FUNCTION(function_numwords, input)
 {
+#if 0
 	RETURN_INT(word_count(input));
+#else
+	RETURN_INT(count_words(input, DWORD_YES, "\""));
+#endif
 }
 
 BUILT_IN_FUNCTION(function_strlen, input)
@@ -6086,7 +6090,11 @@ BUILT_IN_FUNCTION(function_indextoword, input)
 		input[pos] = 'x';
 		input[pos + 1] = 0;
 	}
+#if 0
 	RETURN_INT(word_count(input) - 1);
+#else
+	RETURN_INT(count_words(input, DWORD_YES, "\"") - 1);
+#endif
 }
 
 BUILT_IN_FUNCTION(function_realpath, input)

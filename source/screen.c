@@ -1,4 +1,4 @@
-/* $EPIC: screen.c,v 1.57 2003/10/10 06:22:39 jnelson Exp $ */
+/* $EPIC: screen.c,v 1.58 2003/10/23 09:09:53 jnelson Exp $ */
 /*
  * screen.c
  *
@@ -2468,7 +2468,7 @@ static void 	scroll_window (Window *window)
 	 */
 	if (window->cursor == window->display_size)
 	{
-		int scroll, i;
+		int scroll;
 
 		/*
 		 * If we ever need to scroll a window that is in scrollback
@@ -2717,15 +2717,6 @@ Window	*create_additional_screen (void)
 		return NULL;
 	}
 
-	/* Check for X first. */
-	if ((displayvar = getenv("DISPLAY")))
-	{
-		if (!(termvar = getenv("TERM")))
-			say("I don't know how to create new windows for this terminal");
-		else
-			screen_type = ST_XTERM;
-	}
-
 	/*
 	 * Environment variable STY has to be set for screen to work..  so it is
 	 * the best way to check screen..  regardless of what TERM is, the 
@@ -2733,14 +2724,14 @@ Window	*create_additional_screen (void)
 	 * it will open a new screen process, and run the wserv in its first
 	 * window, not what we want...  -phone
 	 */
-	if (screen_type == ST_NOTHING && getenv("STY"))
+	if (getenv("STY"))
 		screen_type = ST_SCREEN;
-
-
-	if (screen_type == ST_NOTHING)
+	else if ((displayvar = getenv("DISPLAY")) && (termvar = getenv("TERM")))
+		screen_type = ST_XTERM;
+	else
 	{
 		say("I don't know how to create new windows for this terminal");
-		return (Window *) 0;
+		return NULL;
 	}
 
         say("Opening new %s...",

@@ -220,6 +220,24 @@ assert index(^the the) == -1
 assert index(^the one) == 0
 assert index(^the eon) == 1
 
+clear
+assert indextoword(0 one . ..  two ) == 0
+assert indextoword(1 one . ..  two ) == 0
+assert indextoword(2 one . ..  two ) == 0
+assert indextoword(3 one . ..  two ) == 0
+assert indextoword(4 one . ..  two ) == 1
+assert indextoword(5 one . ..  two ) == 1
+assert indextoword(6 one . ..  two ) == 2
+assert indextoword(7 one . ..  two ) == 2
+assert indextoword(8 one . ..  two ) == 2
+assert indextoword(9 one . ..  two ) == 3
+assert indextoword(10 one . ..  two ) == 3
+assert indextoword(11 one . ..  two ) == 3
+assert indextoword(12 one . ..  two ) == 3
+assert indextoword(13 one . ..  two ) == 3
+assert indextoword(14 one . ..  two ) == 3 
+assert indextoword(15 one . ..  two ) == []
+
 # testing $insertw()
 clear
 assert insertw() == []

@@ -5,23 +5,11 @@ KNOWN ERRATA (eg, bugs, or unresolved requests):
 * A missing 'else' in create_additional_screen causes gnu screen to be
   prefered over X windows.  Should this be fixed, or at least made an option?
   Maybe try X, fall back to gnu screen on failure?
-* Should /set beep off suppress stripping of beeps?
-* /TYPE honors keybindings, and calls edit_char(), but /XTYPE -L does not 
-  honor key bindings because it calls input_add_character().
-* Study update_input() and update_all_windows() and determine if used properly
-* Shall remove_trailing_spaces honor a \ before a space trailing?
-* Some way to color the input prompt?  (Probably not)
-* The way the pattern matcher handles ?'s after *'s is really lame.
-* /window disconnect (server -> -2) + /server 0 reconnects to previous server.
 * Something for %D to make it customizable?
-* [7] <- [:aussie.sydney.oz.org 330 complexnes Veneficus Veneficus
-                :is logged in as]
-  *** Veneficus is logged in as Veneficus :is logged in as
-* $indextoword() and extractw() don't play nice together.
 * /dcc chat hop from an ipv6 server connection will default to ipv4 bind(),
   but send out an ipv6 address in the handshake. (send_booster_ctcp doesn't
   check what protocol get_server_local_address() returns.)
-* Support servers that send more than 15 arguments in their 005 numerics.
+* We should look at using count_words() instead of word_count().
 
 [See http://www.epicsol.org/PROJECTS for things to come in the future]
 [See http://www.epicsol.org/CHANGELOG for things that changed in the past]
@@ -30,3 +18,10 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 -------------------------------------
 * Allow $serverctl(SET <refnum> UMODES) to work around ratbox-1.2-3.
 * Work around "(brown paper bag release)" version in 004 in ratbox-1.2-3
+* Use the server's message in our default 330 output.
+* Make $numwords() use count_words() as a test.  Looks ok so far...
+* Make $indextoword() use count_words().
+* Implement regression tests for $indextoword()
+* Any further problems with $indextoword() should add regress tests!
+* Make epic behave like ircII when doing /window create with screen and X.
+* Make move_to_next_word() stop when it hits a trailing nul, duh!
