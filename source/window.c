@@ -2604,6 +2604,7 @@ static int 	get_boolean (char *name, char **args, int *var)
 	char	*arg;
 	int	newval;
 
+	newval = *var;
 	if (!(arg = next_arg(*args, args)) || do_boolean(arg, &newval))
 	{
 		say("Value for %s must be ON, OFF, or TOGGLE", name);

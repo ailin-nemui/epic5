@@ -105,6 +105,7 @@ hook_functions[] =
 	{ "DISCONNECT",		(Hook *) 0,	1,	0,	0 },
         { "ENCRYPTED_NOTICE",   (Hook *) 0,     3,      0,      0 },
         { "ENCRYPTED_PRIVMSG",  (Hook *) 0,     3,      0,      0 },
+	{ "ERROR",		(Hook *) 0,	1,	0,	0 },
 	{ "EXEC",		(Hook *) 0,	2,	0,	0 },
 	{ "EXEC_ERRORS",	(Hook *) 0,	2,	0,	0 },
 	{ "EXEC_EXIT",		(Hook *) 0,	3,	0,	0 },

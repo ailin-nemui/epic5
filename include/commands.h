@@ -30,6 +30,8 @@ extern	int	break_exception;
 extern	int	continue_exception;
 extern	int	return_exception;
 
+extern	int	need_defered_commands;
+
 	int	check_wait_command 	(char *);
 	void	ExecuteTimers		(void);
 	void	parse_line 		(const char *, const char *, const char *, int, int);
@@ -38,5 +40,6 @@ extern	int	return_exception;
 	void	redirect_text		(int, const char *, const char *, char *, int);
 	int	command_exist		(char *);
 	BUILT_IN_COMMAND(e_channel);
+	void	do_defered_commands	(void);
 
 #endif /* __commands_h__ */

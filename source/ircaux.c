@@ -8,7 +8,7 @@
  */
 
 #if 0
-static	char	rcsid[] = "@(#)$Id: ircaux.c,v 1.3 2001/01/20 00:56:55 jnelson Exp $";
+static	char	rcsid[] = "@(#)$Id: ircaux.c,v 1.4 2001/01/23 19:00:27 jnelson Exp $";
 #endif
 
 #include "irc.h"
@@ -119,6 +119,7 @@ void *	really_new_malloc (size_t size, char *fn, int line)
 	return ptr;
 }
 
+#ifdef DELAYED_FREES
 /*
  * Instead of calling free() directly in really_new_free(), we instead 
  * delay that until the stack has been unwound completely.  This masks the
@@ -166,6 +167,7 @@ static void	delay_free (void *ptr)
 	}
 	delayed_free_table[delayed_frees++] = ptr;
 }
+#endif
 
 /*
  * really_new_free is the general interface to the free(3) call.
@@ -179,7 +181,11 @@ void *	really_new_free(void **ptr, char *fn, int line)
 	{
 		fatal_malloc_check(*ptr, NULL, fn, line);
 		alloc_size(*ptr) = FREED_VAL;
+#ifdef DELAYED_FREES
 		delay_free((void *)(mo_ptr(*ptr)));
+#else
+		free((void *)(mo_ptr(*ptr)));
+#endif
 	}
 	return ((*ptr = NULL));
 }
@@ -1266,6 +1272,10 @@ char *	path_search (char *name, char *path)
 	static	char	buffer[BIG_BUFFER_SIZE + 1];
 	char	*ptr,
 		*free_path = (char *) 0;
+
+	/* No Path -> Error */
+	if (!path)
+		return NULL;		/* Take THAT! */
 
 	/* A "relative" path is valid if the file exists */
 	/* A "relative" path is searched in the path if the

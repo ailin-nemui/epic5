@@ -12,3 +12,8 @@ KNOWN ERRATA (eg, bugs, or unresolved requests):
 THE CHANGELOG SINCE THE LAST RELEASE:
 -------------------------------------
 * Try to add some stuff that helps epic cope with server disconnections better.
+* Add /on error, hooks on an irc protocol ERROR message.
+* Fix window.c:get_boolean(), passing unitialized 'newval' integer.
+* Fix path_search() to not blithely assume path != NULL (whitedragon)
+* Axe the broken "input_timeout" feature that hasn't worked in 6 years.
+* Add the /defer command, to perform dangerous operations when it's safe.

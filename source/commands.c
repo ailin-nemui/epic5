@@ -115,6 +115,7 @@ static	void	sendlinecmd 	(const char *, char *, const char *);
 static	void	echocmd		(const char *, char *, const char *);
 static	void	funny_stuff 	(const char *, char *, const char *);
 static	void	cd 		(const char *, char *, const char *);
+static	void	defercmd	(const char *, char *, const char *);
 static	void	describe 	(const char *, char *, const char *);
 static	void	e_call		(const char *, char *, const char *);
 static	void	e_clear		(const char *, char *, const char *);
@@ -212,6 +213,7 @@ static	IrcCommand irc_command[] =
 	{ "CTCP",	NULL,		ctcp,			0 },
 	{ "DATE",	"TIME",		send_comm,		0 },
 	{ "DCC",	NULL,		dcc,			0 },
+	{ "DEFER",	NULL,		defercmd,		0 },
 	{ "DEOP",	NULL,		deop,			0 },
 	{ "DESCRIBE",	NULL,		describe,		0 },
 	{ "DIE",	"DIE",		send_comm,		0 },
@@ -539,6 +541,47 @@ BUILT_IN_COMMAND(dcc)
 	else
 		dcc_list((char *) NULL);
 }
+
+static	char ** defer_list = NULL;
+static	int	defer_list_size = -1;
+	int	need_defered_commands = 0;
+
+void	do_defered_commands (void)
+{
+	int	i;
+
+	if (defer_list)
+	{
+		for (i = 0; defer_list[i]; i++)
+		{
+			parse_line("deferred", defer_list[i], NULL, 0, 0);
+			new_free(&defer_list[i]);
+		}
+	}
+
+	defer_list_size = 1;
+	RESIZE(defer_list, char *, defer_list_size);
+	defer_list[0] = NULL;
+	need_defered_commands = 0;
+}
+
+BUILT_IN_COMMAND(defercmd)
+{
+	/* Bootstrap the defer list */
+	if (defer_list_size <= 0)
+	{
+		defer_list_size = 1;
+		RESIZE(defer_list, char *, defer_list_size);
+		defer_list[0] = NULL;
+	}
+
+	defer_list_size++;
+	RESIZE(defer_list, char *, defer_list_size);
+	defer_list[defer_list_size - 2] = m_strdup(args);
+	defer_list[defer_list_size - 1] = NULL;
+	need_defered_commands++;
+}
+
 
 BUILT_IN_COMMAND(deop)
 {

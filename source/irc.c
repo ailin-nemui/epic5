@@ -13,19 +13,19 @@
 /*
  * irc_version is what $J returns, its the common-name for the version.
  */
-const char irc_version[] = "EPIC4-0.9.15-10";
+const char irc_version[] = "EPIC4-0.9.15-11";
 const char useful_info[] = "epic4 0 9 15";
 
 /*
  * internal_version is what $V returns, its the integer-id for the
  * version, and corresponds to the date of release, YYYYMMDD.
  */ 
-const char internal_version[] = "20010119";
+const char internal_version[] = "20010123";
 
 /*
  * In theory, this number is incremented for every commit.
  */
-const unsigned long	commit_id = 28;
+const unsigned long	commit_id = 29;
 
 /*
  * As a way to poke fun at the current rage of naming releases after
@@ -755,15 +755,13 @@ void	io (const char *what)
 static	const	char	*caller[51] = { NULL }; /* XXXX */
 	static	int	first_time = 1,
 			level = 0;
-static	struct	timeval cursor_timeout,
-			clock_timeout,
+static	struct	timeval	clock_timeout,
 			right_away,
 			timer,
 			*timeptr = NULL;
 		int	hold_over;
 		int	dccs;
 		fd_set	rd;
-		Screen	*screen;
 
 	static	int	old_level = 0;
 	static	int	last_warn = 0;
@@ -800,10 +798,6 @@ static	struct	timeval cursor_timeout,
 	if (first_time)
 	{
 		first_time = 0;
-
-		/* time before cursor jumps from display area to input line */
-		cursor_timeout.tv_usec = 0L;
-		cursor_timeout.tv_sec = 1L;
 
 		/*
 		 * time delay for updating of internal clock
@@ -885,16 +879,12 @@ static	struct	timeval cursor_timeout,
 		dcc_check(&rd);		/* XXX HACK XXX */
 
 	ExecuteTimers();
-
 	get_child_exit(-1);
+	if (level == 1 && need_defered_commands)
+		do_defered_commands();
 
-	if (!hold_over)
-		cursor_to_input();
+	cursor_to_input();
 	timeptr = &clock_timeout;
-
-	for (screen = screen_list; screen; screen = screen->next)
-		if (screen->alive && is_cursor_in_display(screen))
-			timeptr = &cursor_timeout;
 
 	if (update_clock(RESET_TIME))
 	{
@@ -920,9 +910,10 @@ static	struct	timeval cursor_timeout,
 	caller[level] = NULL;
 	level--;
 
+#ifdef DELAYED_FREES
 	if (level == 0 && need_delayed_free)
 		do_delayed_frees();
-
+#endif
 	return;
 }
 

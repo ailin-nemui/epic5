@@ -495,7 +495,8 @@ static void p_error (char *from, char **ArgList)
 	PasteArgs(ArgList, 0);
 	if (!ArgList[0])
 		{fake();return;}
-	say("%s", ArgList[0]);
+	if (do_hook(ERROR_LIST, "%s", ArgList[0]))
+		say("%s", ArgList[0]);
 }
 
 void	add_user_who (char *from, char **ArgList)
