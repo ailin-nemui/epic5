@@ -48,7 +48,7 @@ alias grep
         @ x = 0
 	while (i) 
 	{
-		l = line($i $win)
+		@ l = line($i $win)
                 if (!regexec($re $l))
 		{
                         @ s[$x] = l
