@@ -627,7 +627,6 @@ void	who_end (char *from, char **ArgList)
 int	fake_who_end (char *from, char *who_target)
 {
 	WhoEntry 	*new_w = who_queue_top();
-	char 		buffer[1025];
 
 	if (who_whine)
 		who_whine = 0;
@@ -644,7 +643,7 @@ int	fake_who_end (char *from, char *who_target)
 		 * So 'who_target' isn't NULL here.  Make sure it's a 
 		 * legitimate match to our current top of who request.
 		 */
-		if (strcmp(new_w->who_target, who_target))
+		if (strncmp(new_w->who_target, who_target, strlen(who_target)))
 			return 0;
 	}
 
@@ -661,12 +660,13 @@ int	fake_who_end (char *from, char *who_target)
 			fake_ArgList[2] = NULL;
 			new_w->end(from, fake_ArgList);
 		}
-		else
+		else if (new_w->who_end)
 		{
-			snprintf(buffer, 1024, "%s %s", 
-					from, new_w->who_target);
-			if (new_w->who_end)
-			    parse_line(NULL, new_w->who_end, buffer, 0, 0);
+		    char	buffer[1025];
+
+		    snprintf(buffer, 1024, "%s %s", 
+				from, new_w->who_target);
+		    parse_line(NULL, new_w->who_end, buffer, 0, 0);
 		}
 	} 
 	while (new_w->piggyback && (new_w = new_w->next));
