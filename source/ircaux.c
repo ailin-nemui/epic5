@@ -8,13 +8,14 @@
  */
 
 #if 0
-static	char	rcsid[] = "@(#)$Id: ircaux.c,v 1.16 2001/11/19 16:52:47 crazyed Exp $";
+static	char	rcsid[] = "@(#)$Id: ircaux.c,v 1.17 2001/11/20 16:33:34 crazyed Exp $";
 #endif
 
 #include "irc.h"
 #include "screen.h"
 #include <pwd.h>
 #include <sys/stat.h>
+#include <sys/wait.h>
 #include "ircaux.h"
 #include "output.h"
 #include "term.h"
@@ -1484,6 +1485,79 @@ int 	end_strcmp (const char *one, const char *two, int bytes)
 		return -1;
 }
 
+
+char*	exec_pipe (char *executable, char *input, size_t *len, char**args)
+{
+	int	file_pointer;
+	int 	pipe0[2] = {-1, -1};
+	int 	pipe1[2] = {-1, -1};
+	pid_t	pid;
+	char *	ret = NULL;
+	size_t	retlen = 0, retlen1 = 0;
+
+	if (pipe(pipe0) || pipe(pipe1))
+	{
+		yell("Cannot start %s: %s\n", executable, strerror(errno));
+		close(pipe0[0]);
+		close(pipe0[1]);
+		close(pipe1[0]);
+		close(pipe1[1]);
+		return ret;
+	}
+
+	switch (pid = fork())
+	{
+		case -1:
+		{
+			yell("Cannot start %s: %s\n", 
+					executable, strerror(errno));
+			return ret;
+		}
+		case 0:
+		{
+			dup2(pipe0[0], 0);
+			dup2(pipe1[1], 1);
+			close(pipe0[1]);
+			close(pipe1[0]);
+			close(2);	/* we dont want to see errors yet */
+			setuid(getuid());
+			setgid(getgid());
+			execvp(executable, args);
+			_exit(0);
+		}
+		default :
+		{
+			int foo;
+			close(pipe0[0]);
+			close(pipe1[1]);
+			if (input && *input)
+			{
+				write(pipe0[1], input, *len);
+			}
+			close(pipe0[1]);
+			*len = 0;
+			for (;;) {
+				retlen += 4096;
+				if (0 <= retlen-retlen1)
+					new_realloc((void**)&ret, retlen);
+				foo = read(pipe1[0], ret+retlen1, retlen-retlen1);
+				if (0 == foo)
+					break;
+				if (-1 == foo) {
+					yell("Cannot start %s: %s\n", 
+						executable, strerror(errno));
+					break;
+				}
+				*len += foo;
+				retlen1 = retlen;
+			}
+			close(pipe1[0]);
+			waitpid(pid, NULL, WNOHANG);
+			break;
+		}
+	}
+	return ret;
+}
 
 static FILE *	open_compression (char *executable, char *filename)
 {
