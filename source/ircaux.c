@@ -1,4 +1,4 @@
-/* $EPIC: ircaux.c,v 1.109 2004/01/29 06:59:55 jnelson Exp $ */
+/* $EPIC: ircaux.c,v 1.110 2004/03/12 22:22:00 jnelson Exp $ */
 /*
  * ircaux.c: some extra routines... not specific to irc... that I needed 
  *
@@ -4571,5 +4571,25 @@ void	update_mode_str (char *modes, size_t len, const char *changes)
 			remove_mode_from_str(modes, len, (int)*modes);
 	}
 	update_all_status();
+}
+
+/*
+ * This function is 8 bit clean (it ignores nuls) so please do not just
+ * whimsically throw it away!
+ */
+ssize_t	searchbuf (const u_char *str, size_t start, size_t end, int find)
+{
+	size_t	retval, counter;
+
+	for (retval = counter = 0;;)
+	{
+		if (start + counter >= end)
+			return -1;
+		if (str[start + counter] == (char)find)
+			return counter;
+		counter++;
+	}
+
+	return -1;		/* Eh, whatever */
 }
 

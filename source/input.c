@@ -1,4 +1,4 @@
-/* $EPIC: input.c,v 1.20 2003/12/17 09:25:30 jnelson Exp $ */
+/* $EPIC: input.c,v 1.21 2004/03/12 22:22:00 jnelson Exp $ */
 /*
  * input.c: does the actual input line stuff... keeps the appropriate stuff
  * on the input line, handles insert/delete of characters/words... the whole
@@ -986,7 +986,10 @@ BUILT_IN_BINDING(input_clear_line)
 {
 	cursor_to_input();
 
-	malloc_strcpy(&cut_buffer, INPUT_BUFFER + MIN_POS);
+	/* Only copy if there is input. -wd */
+	if (MIN_CHAR)
+		malloc_strcpy(&cut_buffer, INPUT_BUFFER + MIN_POS);
+
 	MIN_CHAR = 0;
 	THIS_POS = MIN_POS;
 	term_move_cursor(INPUT_PROMPT_LEN, INPUT_LINE);

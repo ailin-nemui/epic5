@@ -1,4 +1,4 @@
-/* $EPIC: logfiles.c,v 1.23 2003/12/16 23:25:45 jnelson Exp $ */
+/* $EPIC: logfiles.c,v 1.24 2004/03/12 22:22:00 jnelson Exp $ */
 /*
  * logfiles.c - General purpose log files
  *
@@ -31,6 +31,7 @@
  * SUCH DAMAGE.
  */
 #include "irc.h"
+#include "levels.h"
 #include "log.h"
 #include "vars.h"
 #include "output.h"
@@ -91,7 +92,7 @@ static Logfile *	new_logfile (void)
 	log->targets = NULL;
 	for (i = 0; i < MAX_TARGETS; i++)
 		log->refnums[i] = -1;
-	log->mask.mask = _X(ALL);
+	log->mask.mask = LEVEL(ALL);
 	log->rewrite = NULL;
 	log->mangler = 0;
 	log->mangle_desc = NULL;
@@ -682,7 +683,7 @@ BUILT_IN_COMMAND(logcmd)
 }
 
 /****************************************************************************/
-void	add_to_logs (int winref, int servref, const char *target, int level, const char *orig_str)
+void	add_to_logs (int winref, int servref, const char *target, Mask mask, const char *orig_str)
 {
 	Logfile *log;
 	int	i;
@@ -693,7 +694,7 @@ void	add_to_logs (int winref, int servref, const char *target, int level, const 
 	    {
 		for (i = 0; i < MAX_TARGETS; i++) {
 		    if (log->refnums[i] == winref) {
-			if (log->mask.mask && (log->mask.mask & _Y(level)) == 0)
+			if (log->mask.mask && (log->mask.mask & mask.mask) == 0)
 				continue;
 			time(&log->activity);
 			add_to_log(log->log, winref, orig_str, log->mangler, log->rewrite);
@@ -705,7 +706,7 @@ void	add_to_logs (int winref, int servref, const char *target, int level, const 
 	    {
 		for (i = 0; i < MAX_TARGETS; i++) {
 		    if (log->refnums[i] == servref) {
-			if (log->mask.mask && (log->mask.mask & _Y(level)) == 0)
+			if (log->mask.mask && (log->mask.mask & mask.mask) == 0)
 				continue;
 			time(&log->activity);
 			add_to_log(log->log, winref, orig_str, log->mangler, log->rewrite);
@@ -718,7 +719,7 @@ void	add_to_logs (int winref, int servref, const char *target, int level, const 
 		if (log->servref != NOSERV && (log->servref != servref))
 			continue;
 
-		if (log->mask.mask && (log->mask.mask & _Y(level)) == 0)
+		if (log->mask.mask && (log->mask.mask & mask.mask) == 0)
 			continue;
 
 		if (log->targets && !target)

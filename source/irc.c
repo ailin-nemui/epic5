@@ -1,4 +1,4 @@
-/* $EPIC: irc.c,v 1.696 2004/03/04 18:53:45 jnelson Exp $ */
+/* $EPIC: irc.c,v 1.697 2004/03/12 22:22:00 jnelson Exp $ */
 /*
  * ircII: a new irc client.  I like it.  I hope you will too!
  *
@@ -52,7 +52,7 @@ const char internal_version[] = "20031217";
 /*
  * In theory, this number is incremented for every commit.
  */
-const unsigned long	commit_id = 1029;
+const unsigned long	commit_id = 1030;
 
 /*
  * As a way to poke fun at the current rage of naming releases after
@@ -1127,8 +1127,8 @@ int 	main (int argc, char *argv[])
 	init_binds();
 	init_keys();
 
-	fprintf(stderr, "EPIC Version 4 -- %s\n", ridiculous_version_name);
-	fprintf(stderr, "EPIC Software Labs (2002)\n");
+	fprintf(stderr, "EPIC Version 5 -- %s\n", ridiculous_version_name);
+	fprintf(stderr, "EPIC Software Labs (2004)\n");
 	fprintf(stderr, "Version (%s), Commit Id (%lu) -- Date (%s)\n", irc_version, commit_id, internal_version);
 	fprintf(stderr, "%s\n", compile_info);
 	fprintf(stderr, "Process [%d]", getpid());
@@ -1159,7 +1159,7 @@ int 	main (int argc, char *argv[])
 	my_signal(SIGALRM, nothing);
 	my_signal(SIGUSR1, sig_user1);
 
-	message_from(NULL, LEVEL_CRAP);
+	message_from(NULL, LEVEL(CRAP));
 
 	if ((dumb_mode == 0) && (init_screen() == 0))
 	{

@@ -68,10 +68,10 @@ static  const char *level_types[NUMBER_OF_LEVELS] =
 };
 
 /* Convert a #define LEVEL_* integer into a mask */
-#define _Y(x) ( x == LEVEL_ALL? x : x == LEVEL_NONE? x : (1 << ( x - 1 )))
+#define LEVELMASK(x) ( x == LEVEL_ALL? x : x == LEVEL_NONE? x : (1 << ( x - 1 )))
 
-/* Convert a level name (ie, _X(CRAP)) into a mask */
-#define _X(x) (_Y(LEVEL_ ## x))
+/* Convert a level name (ie, LEVEL(CRAP)) into a mask */
+#define LEVEL(x) (LEVELMASK(LEVEL_ ## x))
 
 typedef struct Mask { int mask; } Mask;
 

@@ -1,4 +1,4 @@
-/* $EPIC: window.c,v 1.101 2004/01/29 06:59:55 jnelson Exp $ */
+/* $EPIC: window.c,v 1.102 2004/03/12 22:22:00 jnelson Exp $ */
 /*
  * window.c: Handles the organzation of the logical viewports (``windows'')
  * for irc.  This includes keeping track of what windows are open, where they
@@ -99,7 +99,7 @@ const	char	*who_from = (char *) 0;
  * This is the lastlog level that any output should be sent out at.  This
  * determines what window output ultimately ends up in.
  */
-	int	who_level;
+	Mask	who_mask;
 
 /*
  * This is set to 1 if output is to be dispatched normally.  This is set to
@@ -196,9 +196,9 @@ Window	*new_window (Screen *screen)
 	new_w->scrolladj = 1;
 	new_w->notify_mask = real_notify_mask();
 	if (!current_window)		/* First window ever */
-		new_w->window_mask.mask = _X(ALL);
+		new_w->window_mask.mask = LEVEL(ALL);
 	else
-		new_w->window_mask.mask = _X(NONE);
+		new_w->window_mask.mask = LEVEL(NONE);
 
 	new_w->prompt = NULL;		/* Filled in later */
 	for (i = 0; i < 3; i++)
@@ -2138,15 +2138,15 @@ static void 	revamp_window_masks (Window *window)
 	Window	*tmp = NULL;
 	int	got_dcc;
 
-	got_dcc = (window->window_mask.mask & _X(DCC)) ? 1 : 0;
+	got_dcc = (window->window_mask.mask & LEVEL(DCC)) ? 1 : 0;
 	while (traverse_all_windows(&tmp))
 	{
 		if (tmp == window)
 			continue;
-		if (tmp->window_mask.mask & _X(DCC))
+		if (tmp->window_mask.mask & LEVEL(DCC))
 		{
 			if (got_dcc)
-				tmp->window_mask.mask &= ~(_X(DCC));
+				tmp->window_mask.mask &= ~(LEVEL(DCC));
 			got_dcc = 1;
 		}
 		if (window->server == tmp->server)
@@ -2165,9 +2165,9 @@ void 	message_to (int refnum)
 
 struct output_context {
 	const char *	who_from;
-	int	who_level;
+	Mask		who_mask;
 	const char *	who_file;
-	int	who_line;
+	int		who_line;
 };
 struct output_context *	contexts = NULL;
 int			context_max = -1;
@@ -2175,10 +2175,10 @@ int 			context_counter = -1;
 
 /*
  * message_from: With this you can set the who_from variable and the 
- * who_level variable, used by the display routines to decide which 
+ * who_mask variable, used by the display routines to decide which 
  * window messages should go to.
  */
-int	real_message_from (const char *who, int level, const char *file, int line)
+int	real_message_from (const char *who, int mask, const char *file, int line)
 {
 	if (context_max < 0)
 	{
@@ -2193,19 +2193,19 @@ int	real_message_from (const char *who, int level, const char *file, int line)
 	}
 
 	if (x_debug & DEBUG_MESSAGE_FROM)
-		yell("Setting context %d [%s:%d] {%s:%d}", context_counter, who?who:"NULL", level, file, line);
+		yell("Setting context %d [%s:%d] {%s:%d}", context_counter, who?who:"NULL", mask, file, line);
 
 #ifdef NO_CHEATING
 	malloc_strcpy(&contexts[context_counter].who_from, who);
 #else
 	contexts[context_counter].who_from = who;
 #endif
-	contexts[context_counter].who_level = level;
+	contexts[context_counter].who_mask.mask = mask;
 	contexts[context_counter].who_file = file;
 	contexts[context_counter].who_line = line;
 
 	who_from = who;
-	who_level = level;
+	who_mask.mask = mask;
 	return context_counter++;
 }
 
@@ -2223,11 +2223,11 @@ void	pop_message_from (int context)
 #ifdef NO_CHEATING
 	new_free(&contexts[context_counter].who_from);
 #endif
-	contexts[context_counter].who_level = -1;
+	contexts[context_counter].who_mask.mask = LEVEL(NONE);
 	contexts[context_counter].who_file = NULL;
 	contexts[context_counter].who_line = -1;
 	who_from = contexts[context_counter - 1].who_from;
-	who_level = contexts[context_counter - 1].who_level;
+	who_mask = contexts[context_counter - 1].who_mask;
 }
 
 /* * * * * * * * * * * CLEARING WINDOWS * * * * * * * * * * */
@@ -2755,7 +2755,7 @@ static Window *window_channel (Window *window, char **args)
 		arg = malloc_strcat_ues(&arg2, carg, empty_string);
 		sarg = malloc_strcat_ues(&arg3, sarg, empty_string);
 
-		l = message_from(arg, LEVEL_CRAP);
+		l = message_from(arg, LEVEL(CRAP));
 		if (im_on_channel(arg, window->server))
 		{
 			move_channel_to_window(arg, window->server, 
@@ -3284,7 +3284,7 @@ static Window *window_mask (Window *window, char **args)
 	int	add = 0;
 	Mask	mask;
 
-	mask.mask = _X(NONE);
+	mask.mask = LEVEL(NONE);
 	if ((arg = next_arg(*args, args)))
 	{
 		if (*arg == '+')
@@ -4415,7 +4415,7 @@ BUILT_IN_COMMAND(windowcmd)
 	int	l;
 
 	old_status_update = permit_status_update(0);
-	l = message_from(NULL, LEVEL_CURRENT);
+	l = message_from(NULL, LEVEL(CURRENT));
 	window = current_window;
 
 	while ((arg = next_arg(args, &args)))
@@ -4433,6 +4433,8 @@ BUILT_IN_COMMAND(windowcmd)
 				winref = window ? (int)window->refnum : -1;
 				window = options[i].func(window, &args); 
 				nargs++;
+				if (!window)
+					args = NULL;
 				do_hook(WINDOW_COMMAND_LIST, "%d %d", 
 					winref, window ? (int)window->refnum : -1);
 				break;

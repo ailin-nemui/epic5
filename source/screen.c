@@ -1,4 +1,4 @@
-/* $EPIC: screen.c,v 1.72 2004/01/20 16:11:54 jnelson Exp $ */
+/* $EPIC: screen.c,v 1.73 2004/03/12 22:22:00 jnelson Exp $ */
 /*
  * screen.c
  *
@@ -2118,14 +2118,14 @@ void 	add_to_screen (const unsigned char *buffer)
 	}
 
 	/*
-	 * The next priority is "LEVEL_CURRENT" which is the "default"
+	 * The next priority is "LEVEL(CURRENT)" which is the "default"
 	 * level for all non-routed output.  That is meant to ensure that
 	 * any extraneous error messages goes to a window where the user
 	 * will see it.  All specific output (e.g. incoming server stuff) 
-	 * is routed through one of the LEVEL_* levels, which is handled
+	 * is routed through one of the LEVEL(*) levels, which is handled
 	 * below.
 	 */
-	else if ((who_level == LEVEL_CURRENT) && 
+	else if ((who_mask.mask == LEVEL(CURRENT)) && 
 	        ((winref = get_winref_by_servref(from_server)) > -1) && 
                 (tmp = get_window_by_refnum(winref)))
 	{
@@ -2157,23 +2157,22 @@ void 	add_to_screen (const unsigned char *buffer)
 				}
 			}
 
+#define NORMAL_MASK (LEVEL(MSG) | LEVEL(NOTICE) | LEVEL(DCC) | LEVEL(CTCP) | LEVEL(ACTION))
+#define DCC_MASK (LEVEL(DCC) | LEVEL(CTCP) | LEVEL(ACTION))
+
 			/*
 			 * Check for /WINDOW QUERYs that apply.
 			 */
 			if (tmp->query_nick &&
-			   ( ((who_level == LEVEL_MSG || who_level == LEVEL_NOTICE
-			    || who_level == LEVEL_DCC || who_level == LEVEL_CTCP
-			    || who_level == LEVEL_ACTION)
+			    (   (  who_mask.mask & NORMAL_MASK
 				&& !my_stricmp(who_from, tmp->query_nick)
-				&& from_server == tmp->server)
-			  || ((who_level == LEVEL_DCC || who_level == LEVEL_CTCP
-			    || who_level == LEVEL_ACTION)
+				&& from_server == tmp->server ) 
+                            ||  (  who_mask.mask & DCC_MASK
 				&& *tmp->query_nick == '='
 				&& !my_stricmp(who_from, tmp->query_nick + 1))
-			  || ((who_level == LEVEL_DCC || who_level == LEVEL_CTCP
-			    || who_level == LEVEL_ACTION)
+			    ||  (  who_mask.mask & DCC_MASK
 				&& *tmp->query_nick == '='
-				&& !my_stricmp(who_from, tmp->query_nick))))
+				&& !my_stricmp(who_from, tmp->query_nick)) ) )
 			{
 				add_to_window(tmp, buffer);
 				return;
@@ -2214,7 +2213,7 @@ void 	add_to_screen (const unsigned char *buffer)
 	/*
 	 * Check to see if this level should go to current window
 	 */
-	if ((current_window_mask.mask & _Y(who_level)) &&
+	if ((current_window_mask.mask & who_mask.mask) &&
 	    ((winref = get_winref_by_servref(from_server)) > -1) && 
             (tmp = get_window_by_refnum(winref)))
 	{
@@ -2231,13 +2230,14 @@ void 	add_to_screen (const unsigned char *buffer)
 		/*
 		 * Check for /WINDOW LEVELs that apply
 		 */
-		if (who_level == LEVEL_DCC && tmp->window_mask.mask & _Y(who_level))
+		if (who_mask.mask & LEVEL(DCC) && 
+			tmp->window_mask.mask & who_mask.mask)
 		{
 			add_to_window(tmp, buffer);
 			return;
 		}
-		if (((from_server == tmp->server) || (from_server == NOSERV)) &&
-		    (_Y(who_level) & tmp->window_mask.mask))
+		if ((from_server == tmp->server || from_server == NOSERV)
+			&& tmp->window_mask.mask & who_mask.mask)
 		{
 			add_to_window(tmp, buffer);
 			return;
@@ -2363,7 +2363,7 @@ static void 	add_to_window (Window *window, const unsigned char *str)
 		 * if the user wants us to.
 		 */
 		if (!(window->miscflags & WINDOW_NOTIFIED) &&
-			_Y(who_level) & window->notify_mask.mask)
+			who_mask.mask & window->notify_mask.mask)
 		{
 			window->miscflags |= WINDOW_NOTIFIED;
 			if (window->miscflags & WINDOW_NOTIFY)
@@ -2402,7 +2402,7 @@ static void    window_disp (Window *window, const unsigned char *str, const unsi
 	int		numl = 0;
 
 	add_to_log(window->log_fp, window->refnum, orig_str, 0, NULL);
-	add_to_logs(window->refnum, from_server, who_from, who_level, orig_str);
+	add_to_logs(window->refnum, from_server, who_from, who_mask, orig_str);
 	add_to_lastlog(window, orig_str);
 
 	if (window->screen)
@@ -3021,7 +3021,7 @@ void 	do_screens (int fd)
 			if (dgets(screen->control, buffer, IO_BUFFER_SIZE, 1, NULL) < 0)
 			{
 				kill_screen(screen);
-				yell("Error from remote screen [%d].", dgets_errno);
+				yell("Error from remote screen [%d].", dgets-errno);
 				continue;
 			}
 
@@ -3144,8 +3144,7 @@ void 	do_screens (int fd)
 				 */
 				else
 					irc_exit(1, "Hey!  Where'd my controlling terminal go?");
-
-			} 
+			}
 			from_server = server;
 		}
 	} 

@@ -1,4 +1,4 @@
-/* $EPIC: commands.c,v 1.85 2004/01/15 05:54:55 jnelson Exp $ */
+/* $EPIC: commands.c,v 1.86 2004/03/12 22:22:00 jnelson Exp $ */
 /*
  * commands.c -- Stuff needed to execute commands in ircII.
  *		 Includes the bulk of the built in commands for ircII.
@@ -454,7 +454,7 @@ BUILT_IN_COMMAND(cd)
 	if ((arg = new_next_arg(args, &args)) != NULL)
 	{
 		if (normalize_filename(arg, dir))
-			say("CD: %s is not a valid directory", dir);
+			say("CD: %s contains an invalid directory", dir);
 		else if (chdir(dir))
 			say("CD: %s", strerror(errno));
 	}
@@ -635,7 +635,7 @@ BUILT_IN_COMMAND(describe)
 
 		message = args;
 
-		l = message_from(target, LEVEL_ACTION);
+		l = message_from(target, LEVEL(ACTION));
 		send_ctcp(CTCP_PRIVMSG, target, CTCP_ACTION, "%s", message);
 		if (do_hook(SEND_ACTION_LIST, "%s %s", target, message))
 			put_it("* -> %s: %s %s", target, get_server_nickname(from_server), message);
@@ -665,7 +665,7 @@ BUILT_IN_COMMAND(e_channel)
 {
 	int	l;
 
-	l = message_from(NULL, LEVEL_CRAP);
+	l = message_from(NULL, LEVEL(CRAP));
 	if (args && *args)
 		window_rejoin(current_window, &args);
 	else
@@ -853,7 +853,7 @@ BUILT_IN_COMMAND(e_wallop)
 {
 	int l;
 
-	l = message_from(NULL, LEVEL_WALLOP);
+	l = message_from(NULL, LEVEL(WALLOP));
 	send_to_server("%s :%s", command, args);
 	pop_message_from(l);
 }
@@ -934,7 +934,7 @@ BUILT_IN_COMMAND(xechocmd)
 				if (!(flag_arg = next_arg(args, &args)))
 					break;
 				if ((temp = str_to_level(flag_arg)) > -1)
-					l = message_from(NULL, temp);
+					l = message_from(NULL, LEVELMASK(temp));
 			}
 			break;
 		}
@@ -1315,7 +1315,7 @@ BUILT_IN_COMMAND(info)
 		say("Versions 2.2pre8 through 2.8.2 by Matthew Green");
 		say("\tCopyright 1992-1995 Matthew Green");
 		say("All EPIC versions by Jeremy Nelson and Others");
-		say("\tCopyright 1993-2003 EPIC Software Labs");
+		say("\tCopyright 1993-2004 EPIC Software Labs");
 		say(" ");
 		say("	    Contact the EPIC project (%s)", EMAIL_CONTACT);
 		say("	    for problems with this or any other EPIC client");
@@ -1326,7 +1326,7 @@ BUILT_IN_COMMAND(info)
 		say("       \tChip Norkus          <wd@epicsol.org>");
 		say("       \tCrazyEddy            <crazyed@epicsol.org>");
 		say("	    \tDennis Moore         <nimh@epicsol.org>");
-		say("       \tDialtone             <dialtone@epicsol.org>");
+                say("       \tErlend B. Mikkelsen  <howl@epicsol.org>");
 		say("	    \tJake Khuon           <khuon@epicsol.org>");
 		say("       \tJason Brand          <kitambi@epicsol.org>");
 		say("	    \tJeremy Nelson        <jnelson@epicsol.org>");
@@ -1422,7 +1422,7 @@ BUILT_IN_COMMAND(license)
  	yell("Copyright (c) 1992-1996 Matthew Green.");
  	yell("Copyright © 1993, 1997 Jeremy Nelson.");
 	yell("Copyright © 1994 Jake Khuon.");
-	yell("Coypright © 1995, 2003 EPIC Software Labs.");
+	yell("Coypright © 1995, 2004 EPIC Software Labs.");
 	yell("All rights reserved");
 	yell(" ");
 	yell("Redistribution and use in source and binary forms, with or");
@@ -2108,7 +2108,7 @@ BUILT_IN_COMMAND(mecmd)
 			send_ctcp(CTCP_PRIVMSG, target, CTCP_ACTION, 
 					"%s", args);
 
-			l = message_from(target, LEVEL_ACTION);
+			l = message_from(target, LEVEL(ACTION));
 			if (do_hook(SEND_ACTION_LIST, "%s %s", target, args))
 				put_it("* %s %s", get_server_nickname(from_server), args);
 			pop_message_from(l);
@@ -2387,7 +2387,7 @@ static	const char *	mode[] = {"w", "a"};
 
 	if (normalize_filename(file, realfile))
 	{
-		say("%s is not a valid directory", realfile);
+		say("%s contains an invalid directory", realfile);
 		return;
 	}
 
@@ -2952,7 +2952,7 @@ struct target_type
 	int  hook_type;
 	const char *command;
 	const char *format;
-	int  level;
+	int  mask;
 };
 
 
@@ -2997,10 +2997,10 @@ static	int	recursion = 0;
 	 */
 struct target_type target[4] = 
 {	
-	{NULL, NULL, SEND_MSG_LIST,     "PRIVMSG", "*%s*> %s" , LEVEL_MSG }, 
-	{NULL, NULL, SEND_PUBLIC_LIST,  "PRIVMSG", "%s> %s"   , LEVEL_PUBLIC },
-	{NULL, NULL, SEND_NOTICE_LIST,  "NOTICE",  "-%s-> %s" , LEVEL_NOTICE }, 
-	{NULL, NULL, SEND_NOTICE_LIST,  "NOTICE",  "-%s-> %s" , LEVEL_NOTICE }
+	{NULL, NULL, SEND_MSG_LIST,     "PRIVMSG", "*%s*> %s" , LEVEL(MSG) }, 
+	{NULL, NULL, SEND_PUBLIC_LIST,  "PRIVMSG", "%s> %s"   , LEVEL(PUBLIC) },
+	{NULL, NULL, SEND_NOTICE_LIST,  "NOTICE",  "-%s-> %s" , LEVEL(NOTICE) },
+	{NULL, NULL, SEND_NOTICE_LIST,  "NOTICE",  "-%s-> %s" , LEVEL(NOTICE) }
 };
 
 	if (!nick_list || !text)
@@ -3115,7 +3115,7 @@ struct target_type target[4] =
 			int	l;
 
 			copy = LOCAL_COPY(text);
-			l = message_from(current_nick, target[i].level);
+			l = message_from(current_nick, target[i].mask);
 
 			if (hook && do_hook(target[i].hook_type, "%s %s", 
 						current_nick, copy))
@@ -3150,7 +3150,7 @@ struct target_type target[4] =
 		if (!target[i].message)
 			continue;
 
-		l = message_from(target[i].nick_list, target[i].level);
+		l = message_from(target[i].nick_list, target[i].mask);
 		if (hook && do_hook(target[i].hook_type, "%s %s", 
 				    target[i].nick_list, target[i].message))
 		    put_it(target[i].format, target[i].nick_list, 

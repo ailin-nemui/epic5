@@ -1,4 +1,4 @@
-/* $EPIC: ctcp.c,v 1.35 2004/01/29 06:59:55 jnelson Exp $ */
+/* $EPIC: ctcp.c,v 1.36 2004/03/12 22:22:00 jnelson Exp $ */
 /*
  * ctcp.c:handles the client-to-client protocol(ctcp). 
  *
@@ -248,7 +248,7 @@ CTCP_HANDLER(do_atmosphere)
 
 	if (is_channel(to))
 	{
-		l = message_from(to, LEVEL_ACTION);
+		l = message_from(to, LEVEL(ACTION));
 		if (do_hook(ACTION_LIST, "%s %s %s", from, to, cmd))
 		{
 			if (is_current_channel(to, from_server))
@@ -259,7 +259,7 @@ CTCP_HANDLER(do_atmosphere)
 	}
 	else
 	{
-		l = message_from(from, LEVEL_ACTION);
+		l = message_from(from, LEVEL(ACTION));
 		if (do_hook(ACTION_LIST, "%s %s %s", from, to, cmd))
 			put_it("*> %s %s", from, cmd);
 	}
@@ -602,9 +602,9 @@ static	time_t	last_ctcp_parsed = 0;
 	if (delim_char > 8)
 		allow_ctcp_reply = 0;	/* Historical limit of 4 CTCPs */
 
-	flag = check_ignore_channel(from, FromUserHost, to, LEVEL_CTCP);
+	flag = check_ignore_channel(from, FromUserHost, to, LEVEL(CTCP));
 	fflag = new_check_flooding(from, FromUserHost, is_channel(to) ? to : NULL,
-						str, LEVEL_CTCP);
+						str, LEVEL(CTCP));
 
 	in_ctcp_flag++;
 	strlcpy(local_ctcp_buffer, str, sizeof(local_ctcp_buffer) - 2);
@@ -692,9 +692,9 @@ static	time_t	last_ctcp_parsed = 0;
 
 		/* Set up the window level/logging */
 		if (im_on_channel(to, from_server))
-			l = message_from(to, LEVEL_CTCP);
+			l = message_from(to, LEVEL(CTCP));
 		else
-			l = message_from(from, LEVEL_CTCP);
+			l = message_from(from, LEVEL(CTCP));
 
 		/*
 		 * Then we look for the correct CTCP.
@@ -827,7 +827,7 @@ char *	do_notice_ctcp (const char *from, const char *to, char *str)
 	if (delim_char > 8)
 		allow_ctcp_reply = 0;	/* Ignore all the CTCPs. */
 
-	flag = check_ignore_channel(from, FromUserHost, to, LEVEL_CTCP);
+	flag = check_ignore_channel(from, FromUserHost, to, LEVEL(CTCP));
 	if (!in_ctcp_flag)
 		in_ctcp_flag = -1;
 	strlcpy(local_ctcp_buffer, str, IRCD_BUFFER_SIZE - 2);
@@ -899,9 +899,9 @@ char *	do_notice_ctcp (const char *from, const char *to, char *str)
 
 		/* Set up the window level/logging */
 		if (is_channel(to))
-			l = message_from(to, LEVEL_CTCP);
+			l = message_from(to, LEVEL(CTCP));
 		else
-			l = message_from(from, LEVEL_CTCP);
+			l = message_from(from, LEVEL(CTCP));
 
 		/* Toss it at the user.  */
 		if (do_hook(CTCP_REPLY_LIST, "%s %s %s %s", from, to, ctcp_command, ctcp_argument))

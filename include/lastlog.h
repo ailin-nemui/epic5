@@ -13,7 +13,7 @@
 
 typedef struct	lastlog_stru
 {
-	int	level;
+	Mask	level;
 	char	*target;
 	char	*msg;
 	struct	lastlog_stru	*older;

@@ -752,30 +752,36 @@ assert delarray(testarray) == -1
 
 # Testing internal array consistency.
 echo
-fe (function command set) label {
+fe (function fnexist command cexist set) label exist {
 	@ :last = []
 	@ :array = [get${label}s]
 	echo Checking $label array consistency.
 	fe ( ${ [$array]() } ) fn {
 		if ( sort($last $fn) != uniq($last $fn) ) {
 			echo ${label}s $last and $fn are not in the correct order.
-		} elsif ( ![$array]($fn) ) {
+		} elsif ( exist && ![$exist]($fn) ) {
 			echo Can't find $label $fn
 		}
 		@ :last = fn
 	}
 }
 
-# Check whether functions are documented.
+# Check whether documentation exists.
 echo
 if (fexist($getset(help_path))) {
-	@ :funcs = tolower($getfunctions())
-	fe funcs func {
-		@func = 0 < fsize($globi($getset(help_path)/6*/$func)) ? [] : func
+	fe (function 6* command [1-5]* set 4*/set*) type section {
+		@ :list = [get${type}s]()
+		@ :list = tolower($list)
+		@ :section = [$getset(help_path)/$section]
+		fe list item {
+			@ item = 0 < fsize($globi($section/$item)) ? [] : item
+		}
+		if (#list) {
+			echo Undocumented ${type}s: $list
+		}
 	}
-	if (#funcs){
-		echo Undocumented functions: $funcs
-	}
+} else {
+	echo Skipping documentation test since no documentation was found.
 }
 
 echo

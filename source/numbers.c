@@ -1,4 +1,4 @@
-/* $EPIC: numbers.c,v 1.66 2004/01/29 06:59:55 jnelson Exp $ */
+/* $EPIC: numbers.c,v 1.67 2004/03/12 22:22:00 jnelson Exp $ */
 /*
  * numbers.c: handles all those strange numeric response dished out by that
  * wacky, nutty program we call ircd 
@@ -184,9 +184,9 @@ void 	numbered_command (const char *from, const char *comm, char const **ArgList
 	ArgList++;
 
 	if (ArgList[0] && is_channel(ArgList[0]))
-		l = message_from(ArgList[0], LEVEL_CRAP);
+		l = message_from(ArgList[0], LEVEL(CRAP));
 	else
-		l = message_from(NULL, LEVEL_CRAP);
+		l = message_from(NULL, LEVEL(CRAP));
 
 	numeric = atol(comm);
 	current_numeric = -numeric;	/* must be negative of numeric! */
@@ -477,7 +477,7 @@ void 	numbered_command (const char *from, const char *comm, char const **ArgList
 		if (!(channel = ArgList[1]))
 			{ rfc1459_odd(from, comm, ArgList); goto END; }
 		if (!(line = ArgList[2]))
-			{ rfc1459_odd(from, comm, ArgList); goto END; }
+			{ line = empty_string; }
 
 		if (channel_is_syncing(channel, from_server))
 		{
@@ -1228,7 +1228,7 @@ DISPLAY:
 			{ rfc1459_odd(from, comm, ArgList); goto END; }
 
 		pop_message_from(l);
-		l = message_from(channel, LEVEL_CRAP);
+		l = message_from(channel, LEVEL(CRAP));
 		put_it("%s Inviting %s to channel %s", banner(), nick, channel);
 		break;
 	}
@@ -1268,7 +1268,7 @@ DISPLAY:
 		{
 			/* If the user bites on /ON NAMES, then skip the rest */
 			pop_message_from(l);
-			l = message_from(channel, LEVEL_CRAP);
+			l = message_from(channel, LEVEL(CRAP));
 			if (do_hook(NAMES_LIST, "%s %s", channel, line))
 			    if (get_int_var(SHOW_CHANNEL_NAMES_VAR))
 				say("Users on %s: %s",
@@ -1294,7 +1294,7 @@ DISPLAY:
 			strlcpy(format, "%s: %s\t%s", sizeof format);
 
 		pop_message_from(l);
-		l = message_from(channel, LEVEL_CRAP);
+		l = message_from(channel, LEVEL(CRAP));
 		if (*type == '=') 
 		{
 		    if (last_width && ((int)strlen(channel) > last_width))

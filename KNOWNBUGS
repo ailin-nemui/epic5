@@ -3,6 +3,7 @@ EPIC5 Projects, Bugs, and other Errata:
 KNOWN ERRATA (eg, bugs, or unresolved requests):
 ------------------------------------------------
 * Some way to hook incomplete lines via dcc raw
+* Email zlonix (xakep@onet.ru) when i figure out why i can't input char 255.
 
 [See http://www.epicsol.org/PROJECTS for things to come in the future]
 [See http://www.epicsol.org/CHANGELOG5 for things that changed in the past]
@@ -149,3 +150,8 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Add server_ssl_reader(), a dgets reader for servers using SSL.
 * I probably broke SSL servers by doing this -- report bugs please!
 * Import epic4 commits 674 through 692, inclusive.
+* Import epic4 commits 693 through 710, inclusive (epic4-2.0 final)
+* Change _X and _Y macros to LEVEL and LEVELMASK for linux (sigh)
+* Add a searchbuf() 8 bit clean byte-finder for future use.
+* Convert flood checking, ignore checking, lastlog, logfiles to int masks.
+* Convert message_from to int masks.

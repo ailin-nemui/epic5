@@ -4,9 +4,9 @@ dnl except those bits attributed otherwise.
 dnl thanks to the screen 3.3 configure.in for giving me examples to
 dnl work from and steal ;)
 dnl
-dnl @(#)$Id: configure.in,v 1.39 2003/12/14 20:04:09 jnelson Exp $
+dnl @(#)$Id: configure.in,v 1.40 2004/03/12 22:21:59 jnelson Exp $
 
-AC_REVISION($Revision: 1.39 $)dnl
+AC_REVISION($Revision: 1.40 $)dnl
 AC_INIT(source/irc.c)
 AC_CONFIG_HEADER(include/defs.h)
 
@@ -637,7 +637,7 @@ AC_ARG_WITH(tcl,
 )
 test "xno" != "x$withval" && for base in $withval /usr/local /usr
 do
-	for ver in 8.3 8.2 8.1 8.0
+	for ver in 8.4 8.3 8.2 8.1 8.0
 	do
 		incdir="$base/include/tcl$ver"
 		test -r $incdir/tcl.h || continue

@@ -99,7 +99,6 @@ extern		int	quick_startup;
 extern		int	trusted_output;
 extern		int	use_flow_control;
 extern		int	use_iexten;
-extern		int	who_mask;
 extern		int	use_input;
 extern		int	waiting_out;
 extern		int	waiting_in;

@@ -132,9 +132,11 @@ fe (q push fq unshift) cmd op {
 			@ :bar = [$1-]
 			@ ${op}(qcmd.${sn}.$0 \"$msar(gr/\\/\\\\/\"/\\\"/bar)\")
 		} else {
-			@ :foo = []
 			if (1 == #) {
-				@ foo = [$0]
+				@ :foo = [qcmd.${sn}.$0]
+				@ :foo = aliasctl(assign match $foo)
+				@ :foo = shift(foo)
+				@ :foo = after(2 . $foo)
 			} elsif (islagged()) {
 				@ :bar = [ ]
 				# Do nothing if we're lagged.
@@ -142,7 +144,7 @@ fe (q push fq unshift) cmd op {
 				# fictitious lag measurement script.
 			} elsif (0 == #) {
 				foreach qcmd[$sn] bar {
-					@ foo = bar
+					@ :foo = bar
 					break
 				}
 			}
@@ -152,6 +154,7 @@ fe (q push fq unshift) cmd op {
 			}
 		}
 		if (@bar) ^timer -ref qcmd.$sn 5 qcmd
+		return $bar
 	}
 }
 stack pop alias alias.tt

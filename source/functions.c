@@ -1,4 +1,4 @@
-/* $EPIC: functions.c,v 1.155 2004/01/29 06:59:55 jnelson Exp $ */
+/* $EPIC: functions.c,v 1.156 2004/03/12 22:22:00 jnelson Exp $ */
 /*
  * functions.c -- Built-in functions for ircII
  *
@@ -3232,10 +3232,12 @@ BUILT_IN_FUNCTION(function_rename, words)
 	Filename expanded2;
 
 	GET_STR_ARG(filename1, words)
-	normalize_filename(filename1, expanded1);
+	if (normalize_filename(filename1, expanded1))
+		RETURN_INT(-1);
 
 	GET_STR_ARG(filename2, words)
-	normalize_filename(filename2, expanded2);
+	if (normalize_filename(filename2, expanded2))
+		RETURN_INT(-1);
 
 	RETURN_INT(rename(expanded1, expanded2));
 }
@@ -3936,7 +3938,8 @@ BUILT_IN_FUNCTION(function_mkdir, words)
 		char *fn = new_next_arg(words, &words);
 		if (!fn || !*fn)
 			fn = words, words = NULL;
-		normalize_filename(fn, expanded);
+		if (normalize_filename(fn, expanded))
+			failure++;
 		if (mkdir(expanded, 0777))
 			failure++;
 	}
@@ -6867,10 +6870,10 @@ BUILT_IN_FUNCTION(function_dccctl, input)
 BUILT_IN_FUNCTION(function_outputinfo, input)
 {
 	if (who_from)
-		return malloc_sprintf(NULL, "%s %s", level_types[who_level], 
+		return malloc_sprintf(NULL, "%s %s", mask_to_str(who_mask),
 						who_from);
 	else
-		return malloc_strdup(level_types[who_level]);
+		return malloc_strdup(mask_to_str(who_mask));
 }
 
 BUILT_IN_FUNCTION(function_levelwindow, input)
@@ -6883,7 +6886,7 @@ BUILT_IN_FUNCTION(function_levelwindow, input)
 	mask = str_to_mask(input);
 	while (traverse_all_windows(&w))
 	{
-		if ((w->window_mask.mask & _X(DCC)) && (mask.mask & _X(DCC)))
+		if ((w->window_mask.mask & LEVEL(DCC)) && (mask.mask & LEVEL(DCC)))
 			RETURN_INT(w->refnum);
 		if ((w->server == from_server) && (w->window_mask.mask & mask.mask))
 			RETURN_INT(w->refnum);

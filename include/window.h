@@ -182,7 +182,7 @@ typedef	struct	window_stack_stru
 extern	Window	*current_window;
 extern	Window	*to_window;
 extern	Window	*invisible_list;
-extern	int	who_level;
+extern	Mask	who_mask;
 extern	const char	*who_from;
 #if 0
 extern	int	in_window_command;

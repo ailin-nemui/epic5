@@ -1,4 +1,4 @@
-/* $EPIC: log.c,v 1.14 2003/12/14 20:04:10 jnelson Exp $ */
+/* $EPIC: log.c,v 1.15 2004/03/12 22:22:00 jnelson Exp $ */
 /*
  * log.c: handles the irc session logging functions 
  *
@@ -35,6 +35,7 @@
  */
 
 #include "irc.h"
+#include "levels.h"
 #include "log.h"
 #include "vars.h"
 #include "output.h"
@@ -69,7 +70,7 @@ static FILE *open_log (const char *logfile, FILE **fp)
 	if (normalize_filename(logfile, fullname))
 	{
 #if 0
-		say("SET LOGFILE: %s is not a valid directory", logfile);
+		say("SET LOGFILE: %s contains an invalid directory", logfile);
 		return NULL;
 #endif
 	}
@@ -154,7 +155,7 @@ void	set_log_file (const void *stuff)
 
 	if (normalize_filename(filename, expand))
 	{
-		say("SET LOGFILE: %s is not a valid directory", filename);
+		say("SET LOGFILE: %s contains an invalid directory", filename);
 		return;
 	}
 
