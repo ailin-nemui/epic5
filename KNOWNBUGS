@@ -534,3 +534,4 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Don't puke on default 353 output if the userlist arg is missing. (for ratbox)
 * Permit doing /window name to change case of window's name.
 * Fix more compiler warnings.
+* Fix accept() with pthreads.

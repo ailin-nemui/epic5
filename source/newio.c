@@ -1,4 +1,4 @@
-/* $EPIC: newio.c,v 1.41 2005/03/03 02:22:12 jnelson Exp $ */
+/* $EPIC: newio.c,v 1.42 2005/03/03 02:39:20 jnelson Exp $ */
 /*
  * newio.c:  Passive, callback-driven IO handling for sockets-n-stuff.
  *
@@ -695,7 +695,7 @@ static int	unix_accept (int channel)
 		fd_set	fdset;
 		FD_ZERO(&fdset);
 		FD_SET(channel, &fdset);
-		if (select(channel + 1, &fdset, NULL, NULL, NULL))
+		if (select(channel + 1, &fdset, NULL, NULL, NULL) < 0)
 		{
 			syserr("unix_accept: select(%d) failed: %s",
 				channel, strerror(errno));
