@@ -1,72 +1,47 @@
 			SSL support for EPIC
-			====================
+			--------------------
 
-Introduction
-============
-Not very much information here.  Please have also look at
-http://epicssl.sourceforge.net/ the homepage of this project. 
+Connecting
+----------
 
-Compilation
-===========
+In order to connect to an SSL-enabled server, a given server's "server-spec"
+must be defined correctly in order for /CONNECT to establish the connection.
 
-Just do ./configure. If it does not find openssl, specify it with
-./configure --with-ssl=DIR.  You can switch to SSLv2 with
-./configure --with-ssl-ver=v2.  Version 3 is used by default.
+Example:
 
-In the program, use
-/window server -ssl SERVERNAME
+<some SSL-enabled server>:<port>:<pass>:<nick>:<group>:IRC-SSL
 
-Currently working SSL server is f.e. rak.isternet.sk:6667, or hq.alert.sk:6667,
-channel #epic.  You can connect there using SSLv2 and SSLv3. (my nick is juraj)
+(Please note that only the first and last fields are mandatory to establish
+an SSL connection.)
+
+Alternatively, you may use the function $serverctl(SET <refnum> SSL) to change
+the connection strategy for a server that already exists in your server list.
 
 
 Scripting support
-=================
+-----------------
 
-There's also isencrypted() function for scripts implemented, try to load this
-to epic and see what happens:
+The function, cipher(), will return cipher type used in an already established
+SSL server connection.
 
-if (isencrypted())
-	{
-		say it is;
-	}
-	{
-		say it is not;
-	}
+The function, isencrypted(), is supplied to determine whether or not a given
+server connection is SSL-enabled or not.
 
-Now you can also add status indicator (whether the connection is encrypted or
-not) to status_format.  The right key for SSL/RAW status indicator is %|
+The hook, SSL_SERVER_CERT, will return server certificate information (if any)
+after a server connection is established.  WARNING:  This is hook is subject
+to change in the future.  Please do not rely on the output you receive from
+this hook.  You have been warned.
 
-Copyright
-=========
-
-SSL support is under the same license as EPIC irc client.  It was done by Juraj
-Bednar <bednar@isternet.sk>.  Send me any questions you may have about SSL
-support, but _NOT_ about Epic in general (I'm not an epic guru!!!)
+A new status indicator, %|, has been added to show a server SSL/RAW connection
+status.
 
 
-[Additions from B. Thomas Frazier <tfrazier@mjolnir.gisystems.net>]
+Credits
+-------
 
-* Updated diffs against recent epic releases are available at
-	http://ssl.epicsol.org
+Original SSL support for EPIC was written by Juraj Bednar.  You may find the
+details of that project at http://epicssl.sourceforge.net for the original
+source material.
 
-* New function cipher(<server>).  Returns cipher used on a SSL server.
-* New hook, SSL_SERVER_CERT, triggers when a connection is made to a server.
-	$0 - server name
-	$1 - certificate subject (urlencoded)
-	$2 - certificate issuer (urlencoded)
-	Leave it up to scripters to accept or reject server certificates.
-* SSLv2 connects removed.
-* New function ssl().  Returns 1 if compiled with SSL support.
-* Added debugging level for SSL connections.  (/xdebug +ssl)
-* New sets.  SSL_CERTFILE  SSL_KEYFILE  SSL_PATH
-	Paths for certificate and key files that may be used by SSL-enabled
-	DCC chat and server connections.
-* Not all SSL variables freed properly in server connections.  Fixed.
-
-To Do List
-
-* Optimize.  Use more generalized functions for establishing connections.
-* Do server certificate date checking
-* Fix SSL-enabled DCC chat (/dcc chat -ssl <nick>)
-* SSL-enabled RAW sockets
+Further modification was done by B. Thomas Frazier for inclusion into the
+regular distriubtion.

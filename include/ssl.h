@@ -1,6 +1,11 @@
 /*
  * ssl.h -- header file for ssl.c
  *
+ * Original framework written by Juraj Bednar
+ * Modified by B. Thomas Frazier
+ *
+ * Copyright 2000, 2002 EPIC Software Labs
+ *
  */
 
 #ifdef HAVE_SSL

@@ -4,9 +4,9 @@ dnl except those bits attributed otherwise.
 dnl thanks to the screen 3.3 configure.in for giving me examples to
 dnl work from and steal ;)
 dnl
-dnl @(#)$Id: configure.in,v 1.7 2002/04/17 06:56:39 jnelson Exp $
+dnl @(#)$Id: configure.in,v 1.8 2002/04/20 14:39:31 crazyed Exp $
 
-AC_REVISION($Revision: 1.7 $)dnl
+AC_REVISION($Revision: 1.8 $)dnl
 AC_INIT(source/irc.c)
 AC_CONFIG_HEADER(include/defs.h)
 
@@ -138,20 +138,6 @@ dnl A whole whack of possible places where this might be
         AC_CHECK_LIB(ssl,SSL_accept,[AC_DEFINE(HAVE_SSL)
       LIBS="$LIBS -lssl -lcrypto"],,-lcrypto)
 ])
-
-AC_ARG_WITH(ssl-ver,
-[  --with-ssl-ver[=vX]       Use SSLvX instead of default SSLv3 (v2 is supported)],
-[
-  case "$withval" in
-    v2)
-      AC_MSG_CHECKING(for SSL version)
-      AC_DEFINE(WANT_SSL2)
-      AC_MSG_RESULT(version 2)
-      ;;
-    esac
-
-])
-
 
 dnl this is for isc.  need the nsl_s library as well.
 if test -z "$libinet"; then

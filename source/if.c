@@ -354,6 +354,7 @@ BUILT_IN_COMMAND(foreach)
 	for (i = 0; i < total; i++)
 	{
 		add_local_alias(var, sublist[i] + slen + 1, 0);
+		new_free(&sublist[i]);
 
 		parse_line(NULL, body, subargs ? subargs : empty_string, 0, 0);
 	
@@ -369,9 +370,9 @@ BUILT_IN_COMMAND(foreach)
 		}
 		if (return_exception)
 			break;
-
-		new_free(&sublist[i]);
 	}
+	while (++i < total)
+		new_free(&sublist[i]);
 	will_catch_break_exceptions--;
 	will_catch_continue_exceptions--;
 

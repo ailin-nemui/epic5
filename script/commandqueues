@@ -90,28 +90,26 @@ fe (q push fq unshift) cmd op {
 	alias ${cmd}cmd {
 		if (servernum() < 0) {
 			$1-
+			return
 		} elsif (1 < #) {
 			@ :bar = [$1-]
 			@ ${op}(qcmd.${servernum()}.$0 \"$msar(gr/\\/\\\\/\"/\\\"/bar)\")
-			^timer -ref qcmd.$servernum() 5 qcmd
-		} else {
-			if (isconnected()) {
-				@ :foo = []
-				if (1 == #) {
-					@ foo = [$0]
-				} elsif (0 == #) {
-					foreach qcmd[$servernum()] bar {
-						@ foo = bar
-						break
-					}
-				}
-				if (@foo) {
-					@ :bar = shift(qcmd[$servernum()][$foo])
-					$msar(gr/\\\\/\\/\\\"/\"/bar)
-					^timer -ref qcmd.$servernum() 5 qcmd
+		} elsif (isconnected()) {
+			@ :foo = []
+			if (1 == #) {
+				@ foo = [$0]
+			} elsif (0 == #) {
+				foreach qcmd[$servernum()] bar {
+					@ foo = bar
+					break
 				}
 			}
+			if (@foo) {
+				@ :bar = shift(qcmd[$servernum()][$foo])
+				$msar(gr/\\\\/\\/\\\"/\"/bar)
+			}
 		}
+		if (@bar) ^timer -ref qcmd.$servernum() 5 qcmd
 	}
 	@ aliasctl(alias set ${cmd}cmd $sar(g/\${op}/${op}/$aliasctl(alias get ${cmd}cmd)))
 }

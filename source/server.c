@@ -1173,9 +1173,6 @@ int 	connect_to_new_server (int new_server, int old_server, int new_conn)
 	 */
 	from_server = new_server;	/* XXX sigh */
 
-	do_hook(SERVER_ESTABLISHED_LIST, "%s %d",
-		get_server_name(from_server), get_server_port(from_server));
-
 	/*
 	 * If connect_to_server() resulted in a new server connection,
 	 * go ahead and register it.
@@ -1808,8 +1805,10 @@ int	get_server_isssl (int gsn_index)
 void	register_server (int ssn_index, const char *nickname)
 {
 #ifdef HAVE_SSL
+	char*		cert_issuer;
+	char*		cert_subject;
 	int		alg;
-	int		sign_alg;
+	int		signed_alg;
 	X509		*server_cert;
 	EVP_PKEY	*server_pkey;
 #endif
@@ -1819,19 +1818,14 @@ void	register_server (int ssn_index, const char *nickname)
 	if (server_list[ssn_index].connected)
 		return;		/* Whatever */
 
+	do_hook(SERVER_ESTABLISHED_LIST, "%s %d",
+		get_server_name(from_server), get_server_port(from_server));
+
 	server_list[ssn_index].registration_pending = 1;
 #ifdef HAVE_SSL
 	if (server_list[ssn_index].enable_ssl == TRUE)
 	{
 		say("SSL negotiation in progress...");
-/* Old SSL connection routines.
-		SSLeay_add_ssl_algorithms();
-		SSL_load_error_strings();
-		server_list[ssn_index].ctx = SSL_CTX_new(SSLv3_client_method());
-		server_list[ssn_index].ssl_fd = SSL_new(server_list[ssn_index].ctx);
-		SSL_set_fd(server_list[ssn_index].ssl_fd, server_list[ssn_index].des);
-		SSL_connect(server_list[ssn_index].ssl_fd);
-*/		
 		/* Set up SSL connection */
 		server_list[ssn_index].ctx = SSL_CTX_init(0);
 		server_list[ssn_index].ssl_fd = SSL_FD_init(server_list[ssn_index].ctx,
@@ -1843,37 +1837,25 @@ void	register_server (int ssn_index, const char *nickname)
 		say("SSL negotiation on port %d of server %s complete",
 			server_list[ssn_index].port, get_server_name(ssn_index));
 		server_cert = SSL_get_peer_certificate(server_list[ssn_index].ssl_fd);
-		if (!(server_cert == NULL))
-		{
-			server_list[ssn_index].ssl_enabled = TRUE;
-			server_pkey = X509_get_pubkey(server_cert);
-			/* urlencoded to avoid problems with spaces */
-			do_hook(SSL_SERVER_CERT_LIST, "%s %s %s",
-				server_list[ssn_index].name,
-				urlencode(X509_NAME_oneline(X509_get_subject_name(server_cert),0,0)),
-				urlencode(X509_NAME_oneline(X509_get_issuer_name(server_cert),0,0)));
 
-			/* We should check certificate date validity here. */
+		cert_subject = X509_NAME_oneline(
+			X509_get_subject_name(server_cert),0,0);
+		say("subject: %s", urlencode(cert_subject));
+		cert_issuer = X509_NAME_oneline(
+			X509_get_issuer_name(server_cert),0,0);
+		say("issuer: %s", urlencode(cert_issuer));
 
-			if (x_debug & DEBUG_SSL)
-			{
-				alg = OBJ_obj2nid(server_cert->cert_info->key->algor->algorithm);
-				sign_alg = OBJ_obj2nid(server_cert->sig_alg->algorithm);		
-				say("Public key algorithm: %s (%d bits)  Sign algorithm: %s",
-					(alg == NID_undef) ? "UNKNOWN" : OBJ_nid2ln(alg), EVP_PKEY_bits(server_pkey),
-					(sign_alg == NID_undef) ? "UNKNOWN" : OBJ_nid2ln(sign_alg));
-			}
-			EVP_PKEY_free(server_pkey);
-		}
-		else
+		server_list[ssn_index].ssl_enabled = TRUE;
+		server_pkey = X509_get_pubkey(server_cert);
+		say("public key: %d", EVP_PKEY_bits(server_pkey));
+		if (do_hook(SSL_SERVER_CERT_LIST, "%s %s %s",
+			server_list[ssn_index].name,
+			cert_subject,
+			cert_issuer));
 		{
-			server_list[ssn_index].ssl_enabled = FALSE;
-			/* No server certificate found */
-			do_hook(SSL_SERVER_CERT_LIST, "%s %s %s",
-				server_list[ssn_index].name,
-				empty_string, empty_string);
 		}
-		X509_free(server_cert);
+		free(cert_issuer);
+		free(cert_subject);
 	}
 #endif
 	if (server_list[ssn_index].password)
