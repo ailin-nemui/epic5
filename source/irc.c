@@ -13,8 +13,8 @@
 /*
  * irc_version is what $J returns, its the common-name for the version.
  */
-const char irc_version[] = "EPIC4-0.9.17-13";
-const char useful_info[] = "epic4 0 9 17";
+const char irc_version[] = "EPIC4-0.10.0";
+const char useful_info[] = "epic4 0 10 0";
 
 /*
  * internal_version is what $V returns, its the integer-id for the
@@ -25,7 +25,7 @@ const char internal_version[] = "20010323";
 /*
  * In theory, this number is incremented for every commit.
  */
-const unsigned long	commit_id = 63;
+const unsigned long	commit_id = 64;
 
 /*
  * As a way to poke fun at the current rage of naming releases after
@@ -33,7 +33,7 @@ const unsigned long	commit_id = 63;
  * reality, I have decided to start doing that with EPIC.  These names
  * are intentionally and maliciously silly.  Complaints will be ignored.
  */
-const char ridiculous_version_name[] = "Transcribe";
+const char ridiculous_version_name[] = "Mythomania";
 
 #define __need_putchar_x__
 #include "status.h"
