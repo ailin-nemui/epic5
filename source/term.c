@@ -1,4 +1,4 @@
-/* $EPIC: term.c,v 1.3 2001/11/13 23:04:02 jnelson Exp $ */
+/* $EPIC: term.c,v 1.4 2001/12/18 17:04:36 crazyed Exp $ */
 /*
  * term.c -- termios and (termcap || terminfo) handlers
  *
@@ -861,6 +861,11 @@ int 	term_init (void)
 		    strcmp(current_term->TI_rmul, current_term->TI_sgr0))
 			strcat (current_term->TI_normal, current_term->TI_rmul);
 	}
+	/*
+	 * On some systems, alternate char set mode isn't exited with sgr0
+	 */
+	if (current_term->TI_rmacs)
+		strcat(current_term->TI_normal, current_term->TI_rmacs);
 
 
 	/*
