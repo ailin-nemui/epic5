@@ -1,4 +1,4 @@
-/* $EPIC: window.c,v 1.126 2004/08/29 21:00:26 jnelson Exp $ */
+/* $EPIC: window.c,v 1.127 2004/09/09 22:11:08 jnelson Exp $ */
 /*
  * window.c: Handles the organzation of the logical viewports (``windows'')
  * for irc.  This includes keeping track of what windows are open, where they
@@ -4443,6 +4443,7 @@ Window *window_server (Window *window, char **args)
 
 		if ((i = str_to_servref(arg)) == NOSERV)
 			i = str_to_newserv(arg);
+		from_server = i;
 
 		/*
 		 * Lose our channels
@@ -4787,10 +4788,12 @@ BUILT_IN_COMMAND(windowcmd)
 	char 	*arg;
 	int 	nargs = 0;
 	Window 	*window;
-	int	old_status_update;
+	int	old_status_update, old_from_server, old_current_window;
 	int	winref;
 	int	l;
 
+	old_from_server = from_server;
+	old_current_window = current_window->refnum;
 	old_status_update = permit_status_update(0);
 	l = message_from(NULL, LEVEL_CURRENT);
 	window = current_window;
@@ -4807,6 +4810,8 @@ BUILT_IN_COMMAND(windowcmd)
 		{
 			if (!my_strnicmp(arg, options[i].command, len))
 			{
+				if (window)
+					from_server = window->server;
 				winref = window ? (int)window->refnum : -1;
 				window = options[i].func(window, &args); 
 				nargs++;
@@ -4833,6 +4838,16 @@ BUILT_IN_COMMAND(windowcmd)
 
 	if (!nargs)
 		window_describe(current_window, NULL);
+
+	/*
+	 * "from_server" changes only if "current_window" changes.  So if
+	 * the latter has not changed, then reset from_server to its orig
+	 * value.  Otherwise, set it to the new current window's server!
+	 */
+	if (current_window && current_window->refnum != old_current_window)
+		from_server = current_window->server;
+	else
+		from_server = old_from_server;
 
 	permit_status_update(old_status_update);
 	pop_message_from(l);

@@ -11,6 +11,10 @@ KNOWN ERRATA (eg, bugs, or unresolved requests):
 * check_window_servers() should not change window_mask on connect, really.
 * Implement $symbolctl(), to supercede $aliasctl().
 * Need some way to fetch your hook info
+* /WINDOW SERVER doesn't change from_server, and REJOIN depends on it.
+* /query targets with nicks crossing with dcc nicks don't match.
+* $serverctl(get <ref> port) errors because the address we use is bogus.
+* A $serverctl() value to tell you what address family the socket is using.
 
 [See http://www.epicsol.org/PROJECTS for things to come in the future]
 [See http://www.epicsol.org/CHANGELOG5 for things that changed in the past]
@@ -391,3 +395,7 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Fix dcc compile error with --without-ipv6
 * Add $windowctl(GET ref TOPLINE num) and $windowctl(GET ref TOPLINES)
 * Revert changes to 1.59 of alias.c, which leaked accidentally.
+* Add -L and -S command line options (ce)
+* Reset "from_server" after every window operation
+* If /window doesn't change current_window, revert from_server to orig value
+* If /window changes current_window, reset from_server to cur_win->serv;
