@@ -1,4 +1,4 @@
-/* $EPIC: dcc.c,v 1.64 2003/06/12 17:57:11 jnelson Exp $ */
+/* $EPIC: dcc.c,v 1.65 2003/06/12 23:38:21 jnelson Exp $ */
 /*
  * dcc.c: Things dealing client to client connections. 
  *
@@ -2101,7 +2101,7 @@ void	register_dcc_offer (const char *user, char *type, char *description, char *
 			yell("### Please use caution in deciding whether to "
 				"accept it or not");
 		}
-		else if (FAMILY(dcc->offer) == AF_INET)
+		else if (FAMILY(offer) == AF_INET)
 		{
 		   if (V4ADDR(irc_addr).s_addr != V4ADDR(offer).s_addr)
 		   {

@@ -133,3 +133,4 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Fix some casts to update_transfer_buffer() to avoid bad data.
 * Fix really lame bug I introduced with /eval echo }{.  Don't ask.
 * Add a kludge to update_all_windows() to thwart infinite recursion.
+* Fix a bug with the HACKED_DCC_WARNING, reported by hsoc.
