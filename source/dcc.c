@@ -1,4 +1,4 @@
-/* $EPIC: dcc.c,v 1.88 2004/01/05 16:24:40 jnelson Exp $ */
+/* $EPIC: dcc.c,v 1.89 2004/01/07 16:05:02 jnelson Exp $ */
 /*
  * dcc.c: Things dealing client to client connections. 
  *
@@ -49,7 +49,6 @@
 #include "vars.h"
 #include "window.h"
 #include "term.h"
-#include "notice.h"
 
 #if 0
 /* This is an accident waiting to happen. */

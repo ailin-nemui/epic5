@@ -116,7 +116,6 @@ extern		char	hostname[NAME_LEN + 1];
 extern const 	char 	internal_version[];
 extern		char *	ircrc_file;
 extern		char *	epicrc_file;
-extern		char *	startup_file;
 extern		char *	irc_lib;
 extern const 	char 	irc_version[];
 extern		char *	last_notify_nick;
@@ -156,6 +155,8 @@ extern struct timeval	input_timeout;
 	void	io 			(const char *);
 	void	irc_exit 		(int, const char *, ...) /*__A(2)*/ __N;
 	void	irc_quit 		(char, char *);
+
+        void    load_ircrc              (void);	/* XXX parse.c */
 
 #include "reg.h"
 	void	dump_load_stack		(int);	 /* XXX command.c */

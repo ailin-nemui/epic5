@@ -1,4 +1,4 @@
-/* $EPIC: irc.c,v 1.683 2004/01/07 15:23:22 jnelson Exp $ */
+/* $EPIC: irc.c,v 1.684 2004/01/07 16:05:02 jnelson Exp $ */
 /*
  * ircII: a new irc client.  I like it.  I hope you will too!
  *
@@ -52,7 +52,7 @@ const char internal_version[] = "20031217";
 /*
  * In theory, this number is incremented for every commit.
  */
-const unsigned long	commit_id = 1016;
+const unsigned long	commit_id = 1017;
 
 /*
  * As a way to poke fun at the current rage of naming releases after
@@ -88,7 +88,6 @@ const char ridiculous_version_name[] = "Ineffectual";
 #include "timer.h"
 #include "newio.h"
 #include "parse.h"
-#include "notice.h"
 #include <pwd.h>
 
 
@@ -207,8 +206,7 @@ ISA6 *		LocalIPv6Addr = NULL;
 int		inbound_line_mangler = 0,
 		outbound_line_mangler = 0;
 
-char		*startup_file = NULL,		/* full path .epicrc file */
-		*epicrc_file = NULL,		/* full path .epicrc file */
+char		*epicrc_file = NULL,		/* full path .epicrc file */
 		*ircrc_file = NULL,		/* full path .ircrc file */
 		*my_path = (char *) 0,		/* path to users home dir */
 		*irc_lib = (char *) 0,		/* path to the ircII library */
@@ -1103,6 +1101,25 @@ static void check_invalid_host (void)
 	fclose(host_file);
 #endif
 	return;
+}
+
+/*************************************************************************/
+void    load_ircrc (void)
+{
+        char buffer[7];
+        strlcpy(buffer, "global", sizeof buffer);
+
+        loading_global = 1;
+        load("LOAD", buffer, empty_string);
+        loading_global = 0;
+
+        /* read the startup file */
+        if (access(epicrc_file, R_OK) == 0 && !quick_startup)
+                load("LOAD", epicrc_file, empty_string);
+        else if (access(ircrc_file, R_OK) == 0 && !quick_startup)
+                load("LOAD", ircrc_file, empty_string);
+
+        ircrc_loaded = 1;
 }
 
 /*************************************************************************/

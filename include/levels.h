@@ -17,27 +17,26 @@
 #define LEVEL_NOTICE	4
 #define LEVEL_WALL	5
 #define LEVEL_WALLOP	6
-#define LEVEL_NOTE	7
-#define LEVEL_OPNOTE	8
-#define LEVEL_SNOTE	9
-#define LEVEL_ACTION	10
-#define LEVEL_DCC	11
-#define LEVEL_CTCP	12
-#define LEVEL_INVITE	13
-#define LEVEL_JOIN	14
-#define LEVEL_NICK	15
-#define LEVEL_TOPIC	16
-#define LEVEL_PART	17
-#define LEVEL_QUIT	18
-#define LEVEL_KICK	19
-#define LEVEL_MODE	20
-#define LEVEL_USER1	21
-#define LEVEL_USER2	22
-#define LEVEL_USER3	23
-#define LEVEL_USER4	24
-#define LEVEL_HELP	25
+#define LEVEL_OPNOTE	7
+#define LEVEL_SNOTE	8
+#define LEVEL_ACTION	9
+#define LEVEL_DCC	10
+#define LEVEL_CTCP	11
+#define LEVEL_INVITE	12
+#define LEVEL_JOIN	13
+#define LEVEL_NICK	14
+#define LEVEL_TOPIC	15
+#define LEVEL_PART	16
+#define LEVEL_QUIT	17
+#define LEVEL_KICK	18
+#define LEVEL_MODE	19
+#define LEVEL_USER1	20
+#define LEVEL_USER2	21
+#define LEVEL_USER3	22
+#define LEVEL_USER4	23
+#define LEVEL_HELP	24
 #define LEVEL_ALL       0x7FFFFFFF
-#define NUMBER_OF_LEVELS	26
+#define NUMBER_OF_LEVELS	25
 
 static  const char *level_types[NUMBER_OF_LEVELS] =
 {
@@ -48,7 +47,6 @@ static  const char *level_types[NUMBER_OF_LEVELS] =
         "NOTICE",
         "WALL",
         "WALLOP",
-        "NOTE",
         "OPNOTE",
         "SNOTE",
         "ACTION",

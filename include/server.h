@@ -39,7 +39,7 @@ typedef struct WaitCmdstru
 typedef	struct
 {
 	char	*name;			/* the name of the server */
-const	AI 	*addrs;			/* Returned by getaddrinfo */
+	AI 	*addrs;			/* Returned by getaddrinfo */
 const	AI	*next_addr;		/* The next one to try upon failure */
 	char	*itsname;		/* the server's idea of its name */
 	char	*password;		/* password for that server */

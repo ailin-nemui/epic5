@@ -1,4 +1,4 @@
-/* $EPIC: ignore.c,v 1.17 2003/12/18 02:22:31 jnelson Exp $ */
+/* $EPIC: ignore.c,v 1.18 2004/01/07 16:05:02 jnelson Exp $ */
 /*
  * ignore.c: handles the ingore command for irc 
  *
@@ -65,7 +65,6 @@
  *	WALLOPS		WALLOPs messages sent to anybody.
  *	INVITES		INVITEs sent to you
  *	NOTICES		NOTICEs sent to anybody
- *	NOTES		"NOTE" notices sent to you.
  *	CTCPS		CTCP requests or CTCP replies sent to anybody
  *	TOPICS		TOPIC changes by anybody
  *	NICKS		NICK changes by anybody
@@ -384,7 +383,6 @@ static	char 	buffer[BIG_BUFFER_SIZE + 1];
 		HANDLE_TYPE(NOTICE, output_type)
 		HANDLE_TYPE(WALL, output_type)
 		HANDLE_TYPE(WALLOP, output_type)
-		HANDLE_TYPE(NOTE, output_type)
 		HANDLE_TYPE(OPNOTE, output_type)
 		HANDLE_TYPE(SNOTE, output_type)
 		HANDLE_TYPE(ACTION, output_type)
@@ -562,7 +560,7 @@ static int	change_ignore_mask_by_desc (const char *type, Mask *do_mask, Mask *do
 		    if (i == NUMBER_OF_LEVELS)
 		    {
 			say("You must specify one of the following:");
-			say("\tALL CRAP PUBLIC MSG NOTICE WALL WALLOP NOTE "
+			say("\tALL CRAP PUBLIC MSG NOTICE WALL WALLOP "
 				"OPNOTE SNOTE ACTION DCC CTCP INVITE JOIN "
 				"NICK TOPIC PART QUIT KICK MODE NONE "
 				"REASON \"<reason>\" TIMEOUT <seconds>");
@@ -836,7 +834,7 @@ static int	foreach_ignore (const char *nicklist, int create, int (*callback) (Ig
  *		     | +			Set highlight ignore
  *		     | [/|<empty string>]	Set suppressive ignore
  *  <level> := MSGS | PUBLIC | WALLS | WALLOPS | INVITES |
- *	       NOTICES | NOTES | CTCPS | TOPICS | NICKS | 
+ *	       NOTICES | CTCPS | TOPICS | NICKS | 
  *	       JOINS | PARTS | CRAP | NONE | ALL | 
  *	       REASON "<reason>" | TIMEOUT "<number>"
  *

@@ -1,4 +1,4 @@
-/* $EPIC: numbers.c,v 1.63 2004/01/05 16:24:40 jnelson Exp $ */
+/* $EPIC: numbers.c,v 1.64 2004/01/07 16:05:02 jnelson Exp $ */
 /*
  * numbers.c: handles all those strange numeric response dished out by that
  * wacky, nutty program we call ircd 
@@ -49,7 +49,6 @@
 #include "names.h"
 #include "parse.h"
 #include "commands.h"
-#include "notice.h"
 #include "notify.h"
 #include "vars.h"
 #include "who.h"

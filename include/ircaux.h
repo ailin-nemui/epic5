@@ -7,7 +7,7 @@
  *
  * See the COPYRIGHT file, or do a HELP IRCII COPYRIGHT 
  *
- * @(#)$Id: ircaux.h,v 1.61 2003/12/17 09:25:29 jnelson Exp $
+ * @(#)$Id: ircaux.h,v 1.62 2004/01/07 16:05:02 jnelson Exp $
  */
 
 #ifndef _IRCAUX_H_
@@ -165,6 +165,10 @@ char *	dequote_it		(char *str, size_t *len);
 const char *	my_strerror	(int, int);
 int	slurp_file		(char **buffer, char *filename);
 char *	endstr			(char *);
+void	add_mode_to_str		(char *, size_t, int);
+void	remove_mode_from_str	(char *, size_t, int);
+void	clear_modes		(char *);
+void	update_mode_str		(char *, size_t, const char *);
 
 size_t	strlcpy_c		(char *, const char *, size_t, size_t *);
 size_t	strlcat_c		(char *, const char *, size_t, size_t *);

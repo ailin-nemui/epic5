@@ -61,6 +61,8 @@ int     client_bind             (SA *, socklen_t);
 int     client_connect          (SA *, socklen_t, SA *, socklen_t, int);
 int     connectory              (int, const char *, const char *);
 int     inet_vhostsockaddr 	(int, int, SS *, socklen_t *);
+int	Getaddrinfo		(const char *, const char *, const AI *, AI **);
+void	Freeaddrinfo		(AI *);
 
 #define GNI_INTEGER 0x4000
 

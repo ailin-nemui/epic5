@@ -97,3 +97,7 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Backslash a bunch of regular pattern chars that are metachars in regexes
 * Nix note support
 * Revamp notice.c for its eventual assimiliation into parse.c
+* Assimilate notice.c into parse.c.  *poof*
+* Fix some compiler issues and so forth
+* Nix the NOTE level.
+* Move load_ircrc() to irc.c, nix "startup_file" global var.

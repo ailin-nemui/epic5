@@ -1,4 +1,4 @@
-/* $EPIC: parse.c,v 1.57 2004/01/05 16:24:40 jnelson Exp $ */
+/* $EPIC: parse.c,v 1.58 2004/01/07 16:05:02 jnelson Exp $ */
 /*
  * parse.c: handles messages from the server.   Believe it or not.  I
  * certainly wouldn't if I were you. 
@@ -54,7 +54,6 @@
 #include "numbers.h"
 #include "parse.h"
 #include "notify.h"
-#include "notice.h"
 #include "timer.h"
 
 #define STRING_CHANNEL 	'+'
@@ -1257,6 +1256,233 @@ static void	p_rpong (const char *from, const char *comm, const char **ArgList)
 		from, target_server, millisecs, delay);
 }
 
+/* 
+ * This is a special subset of server (OPER) notice.
+ */
+static int 	p_killmsg (const char *from, const char *cline)
+{
+	char *poor_sap;
+	char *bastard;
+	const char *path_to_bastard;
+	char *reason;
+	char *line;
+
+	line = LOCAL_COPY(cline);
+	poor_sap = next_arg(line, &line);
+
+	/* Dalnet kill BBC and doesnt append the period */
+	if (!end_strcmp(poor_sap, ".", 1))
+		chop(poor_sap, 1);
+
+	/* dalnet kill BBC and doesnt use "From", but "from" */
+	if (my_strnicmp(line, "From ", 5))
+	{
+		yell("Attempted to parse an ill-formed KILL request [%s %s]",
+			poor_sap, line);
+		return 0;
+	}
+	line += 5;
+	bastard = next_arg(line, &line);
+
+	/* Hybrid BBC and doesn't include the kill-path. */
+	/* Fend off future BBC kills */
+	if (my_strnicmp(line, "Path: ", 6))
+	{
+		path_to_bastard = "*";
+		reason = line;		/* Hope for the best */
+	}
+	else
+	{
+		line += 6;
+		path_to_bastard = next_arg(line, &line);
+		reason = line;
+	}
+
+	return !do_hook(KILL_LIST, "%s %s %s %s %s", from, poor_sap, bastard,
+					path_to_bastard, reason);
+}
+
+
+/*
+ * This is a special subset of NOTICEs, that were sent from the server
+ * we are connected to (not a remote server), to us (not to a channel).
+ */
+static 	void 	p_snotice (const char *from, const char *to, const char *line)
+{
+	const char *	f;
+	int	l;
+	int	retval;
+
+	f = from;
+	if (!f || !*f)
+		if (!(f = get_server_itsname(from_server)))
+			f = get_server_name(from_server);
+
+	/* OPERator Notices */
+	if (!strncmp(line, "*** Notice -- ", 13))
+	{
+		if (!strncmp(line + 14, "Received KILL message for ", 26))
+			if (p_killmsg(f, line + 40))
+				return;
+
+		l = message_from(to, LEVEL_OPNOTE);
+		retval = do_hook(OPER_NOTICE_LIST, "%s %s", f, line + 14);
+		pop_message_from(l);
+		if (!retval)
+			return;
+	}
+
+	l = message_from(to, LEVEL_SNOTE);
+
+	/* Check to see if the notice already has its own header... */
+	if (do_hook(GENERAL_NOTICE_LIST, "%s %s %s", f, to, line))
+	{
+	    if (*line == '*' || *line == '#')
+	    {
+		if (do_hook(SERVER_NOTICE_LIST, "%s %s", f, line))
+			put_it("%s", line);
+	    }
+	    else
+		if (do_hook(SERVER_NOTICE_LIST, "%s *** %s", f, line))
+			say("%s", line);
+	}
+
+	pop_message_from(l);
+}
+
+/*
+ * The main handler for those wacky NOTICE commands...
+ * This is as much like p_privmsg as i can get away with.
+ */
+static void 	p_notice (const char *from, const char *comm, const char **ArgList)
+{
+	const char 	*target, *message;
+	int		hook_type;
+	const char *	flood_channel = NULL;
+	const char *	high;
+	int		l;
+
+	PasteArgs(ArgList, 1);
+	if (!(target = ArgList[0]))
+		{ rfc1459_odd(from, comm, ArgList); return; }
+	if (!(message = ArgList[1]))
+		{ rfc1459_odd(from, comm, ArgList); return; }
+
+	set_server_doing_notice(from_server, 1);
+	sed = 0;
+
+	/* Do normal /CTCP reply handling */
+	/* XXX -- Casting "message" to (char *) is cheating. */
+	message = do_notice_ctcp(from, target, (char *)
+#ifdef HAVE_INTPTR_T
+							(intptr_t)
+#endif
+								message);
+	if (!*message) {
+		set_server_doing_notice(from_server, 0);
+		return;
+	}
+
+	/* Check to see if it is a "Server Notice" */
+	if ((!from || !*from) || !strcmp(get_server_itsname(from_server), from))
+	{
+		p_snotice(from, target, message);
+		set_server_doing_notice(from_server, 0);
+		return;
+	}
+	/* For pesky prefix-less NOTICEs substitute the server's name */
+	if (!from || !*from)
+		from = get_server_name(from_server);
+
+	/*
+	 * Note that NOTICEs from servers are not "server notices" unless
+	 * the target is not a channel (ie, it is sent to us).  Any notice
+	 * that is sent to a channel is a normal NOTICE, notwithstanding
+	 * _who_ sent it.
+	 */
+	if (is_channel(target) && im_on_channel(target, from_server))
+	{
+		flood_channel = target;
+		hook_type = PUBLIC_NOTICE_LIST;
+	}
+	else if (!is_me(from_server, target))
+	{
+		flood_channel = NULL;
+		hook_type = NOTICE_LIST;
+	}
+	else
+	{
+		flood_channel = NULL;
+		hook_type = NOTICE_LIST;
+		target = from;
+	}
+
+	/* Check for /ignore's */
+	switch (check_ignore_channel(from, FromUserHost, target, LEVEL_NOTICE))
+	{
+		case IGNORED:
+			set_server_doing_notice(from_server, 0);
+			return;
+		case HIGHLIGHTED:
+			high = highlight_char;
+			break; /* oops! */
+		default:
+			high = empty_string;
+	}
+
+	/* Let the user know if it is an encrypted notice */
+	/* Note that this is always hooked, even during a flood */
+	if (sed)
+	{
+		int	do_return = 1;
+
+		sed = 0;
+		l = message_from(target, LEVEL_NOTICE);
+
+		if (do_hook(ENCRYPTED_NOTICE_LIST, "%s %s %s", 
+				from, target, message))
+			do_return = 0;
+
+		pop_message_from(l);
+
+		if (do_return) {
+			set_server_doing_notice(from_server, 0);
+			return;
+		}
+	}
+
+	if (new_check_flooding(from, FromUserHost, flood_channel, 
+					message, LEVEL_NOTICE)) {
+		set_server_doing_notice(from_server, 0);
+		return;
+	}
+
+
+	/* Go ahead and throw it to the user */
+	l = message_from(target, LEVEL_NOTICE);
+
+	if (do_hook(GENERAL_NOTICE_LIST, "%s %s %s", from, target, message))
+	{
+	    if (hook_type == NOTICE_LIST)
+	    {
+		if (do_hook(hook_type, "%s %s", from, message))
+			put_it("%s-%s-%s %s", high, from, high, message);
+	    }
+	    else
+	    {
+		if (do_hook(hook_type, "%s %s %s", from, target, message))
+			put_it("%s-%s:%s-%s %s", high, from, target, high, 
+							message);
+	    }
+	}
+
+	/* Clean up and go home. */
+	pop_message_from(l);
+	set_server_doing_notice(from_server, 0);
+
+	/* Alas, this is not protected by protocol enforcement. :( */
+	notify_mark(from_server, from, 1, 0);
+}
 
 void	rfc1459_odd (const char *from, const char *comm, const char **ArgList)
 {
