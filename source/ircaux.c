@@ -8,7 +8,7 @@
  */
 
 #if 0
-static	char	rcsid[] = "@(#)$Id: ircaux.c,v 1.6 2001/03/14 20:01:46 jnelson Exp $";
+static	char	rcsid[] = "@(#)$Id: ircaux.c,v 1.7 2001/09/24 16:49:08 crazyed Exp $";
 #endif
 
 #include "irc.h"
@@ -191,9 +191,37 @@ void *	really_new_free(void **ptr, char *fn, int line)
 	return ((*ptr = NULL));
 }
 
+#if 1
+
+/* really_new_malloc in disguise */
+void *	really_new_realloc (void **ptr, size_t size, char *fn, int line)
+{
+	if (!size) {
+		*ptr=really_new_free(ptr, fn, line);
+	} else if (!*ptr) {
+		*ptr=really_new_malloc(size, fn, line);
+	} else {
+		*ptr -= sizeof(MO);
+		if (!(*ptr = (char *)realloc(*ptr, size + sizeof(MO))))
+			panic("realloc() failed, giving up!");
+
+		/* Store the size of the allocation in the buffer. */
+		*ptr += sizeof(MO);
+		alloc_size(*ptr) = size;
+	}
+	return *ptr;
+}
+
+#else
+
 void *	new_realloc (void **ptr, size_t size)
 {
 	char *ptr2 = NULL;
+	size_t  foo,bar;
+
+	/* Yes the function is ifdefed out, but this serves as a proof of concept. */
+	for (foo=1, bar=size+sizeof(MO); bar; foo<<=1, bar>>=1) /* Nothing */ ;
+	if (foo) {size=foo;}
 
 	if (*ptr)
 	{
@@ -214,6 +242,8 @@ void *	new_realloc (void **ptr, size_t size)
 
 	return ((*ptr = ptr2));
 }
+
+#endif
 
 /*
  * malloc_strcpy:  Mallocs enough space for src to be copied in to where
@@ -250,6 +280,7 @@ char *	malloc_strcpy (char **ptr, const char *src)
 char *	malloc_strcat (char **ptr, const char *src)
 {
 	size_t  msize;
+	size_t  psize;
 
 	if (*ptr)
 	{
@@ -259,9 +290,9 @@ char *	malloc_strcat (char **ptr, const char *src)
 		if (!src)
 			return *ptr;
 
-		msize = strlen(*ptr) + strlen(src) + 1;
+		msize = (psize=strlen(*ptr)) + strlen(src) + 1;
 		RESIZE(*ptr, char, msize);
-		return strcat(*ptr, src);
+		return strcat(psize+*ptr, src)-psize;
 	}
 
 	return (*ptr = m_strdup(src));
@@ -347,40 +378,41 @@ char *	m_strdup (const char *str)
 	return strcpy(ptr, str);
 }
 
-char *	m_e3cat (char **one, const char *yes1, const char *yes2)
+char *	m_ec3cat (char **one, const char *yes1, const char *yes2, size_t *clue)
 {
 	if (*one && **one)
-		return m_3cat(one, yes1, yes2);
+		return m_c3cat(one, yes1, yes2, clue);
 
 	return (*one = m_2dup(yes1, yes2));
 }
 
 
-char *	m_s3cat (char **one, const char *maybe, const char *definitely)
+char *	m_sc3cat (char **one, const char *maybe, const char *definitely, size_t *clue)
 {
 	if (*one && **one)
-		return m_3cat(one, maybe, definitely);
+		return m_c3cat(one, maybe, definitely, clue);
 
 	return malloc_strcpy(one, definitely);
 }
 
-char *	m_s3cat_s (char **one, const char *maybe, const char *ifthere)
+char *	m_sc3cat_s (char **one, const char *maybe, const char *ifthere, size_t *clue)
 {
 	if (ifthere && *ifthere)
-		return m_3cat(one, maybe, ifthere);
+		return m_c3cat(one, maybe, ifthere, clue);
 
 	return *one;
 }
 
-char *	m_3cat(char **one, const char *two, const char *three)
+char *	m_c3cat(char **one, const char *two, const char *three, size_t *clue)
 {
-	int 	msize = 0;
+	size_t	csize = clue?*clue:0;
+	int 	msize = csize;
 
 	if (*one)
 	{
 		if (alloc_size(*one) == FREED_VAL)
 			panic("free()d pointer passed to m_3cat");
-		msize += strlen(*one);
+		msize += strlen(csize+*one);
 	}
 	if (two)
 		msize += strlen(two);
@@ -396,9 +428,10 @@ char *	m_3cat(char **one, const char *two, const char *three)
 		RESIZE(*one, char, msize + 1);
 
 	if (two)
-		strcat(*one, two);
+		strcat(csize+*one, two);
 	if (three)
-		strcat(*one, three);
+		strcat(csize+*one, three);
+	if (clue) *clue=msize;
 
 	return *one;
 }
@@ -559,15 +592,16 @@ char *	remove_trailing_spaces (char *foo)
  * yanks off the last word from 'src'
  * kinda the opposite of next_arg
  */
-char *	last_arg (char **src)
+char *	last_arg (char **src, size_t *cluep)
 {
 	char *ptr;
+	size_t clue=cluep?*cluep:0;
 
 	if (!src || !*src)
 		return NULL;
 
-	remove_trailing_spaces(*src);
-	ptr = *src + strlen(*src) - 1;
+	ptr = clue + *src + strlen(clue+*src);
+	while (ptr > *src && *--ptr == ' ') *ptr = 0;
 
 	if (*ptr == '"')
 	{
@@ -598,15 +632,14 @@ char *	last_arg (char **src)
 		}
 	}
 
+	if (cluep) *cluep=ptr-*src;
 	if (ptr == *src)
 	{
-		ptr = *src;
 		*src = empty_string;
 	}
 	else
 	{
 		*ptr++ = 0;
-		remove_trailing_spaces(*src);
 	}
 	return ptr;
 }
@@ -2077,13 +2110,14 @@ char *	unsplitw (char ***container, int howmany)
 {
 	char *retval = NULL;
 	char **str = *container;
+	size_t clue = 0;
 
 	if (!str || !*str)
 		return NULL;
 
 	while (howmany)
 	{
-		m_s3cat(&retval, " ", *str);
+		if (*str && **str) m_sc3cat(&retval, " ", *str, &clue);
 		str++, howmany--;
 	}
 

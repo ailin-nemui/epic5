@@ -2354,6 +2354,7 @@ char 	*aliasctl 	(char *input)
 		{
 			char **mlist = NULL;
 			char *mylist = NULL;
+			size_t	mylistclue = 0;
 			int num = 0, ctr;
 
 			if (!my_stricmp(listc, "*"))
@@ -2368,7 +2369,7 @@ char 	*aliasctl 	(char *input)
 
 			for (ctr = 0; ctr < num; ctr++)
 			{
-				m_s3cat(&mylist, space, mlist[ctr]);
+				m_sc3cat(&mylist, space, mlist[ctr], &mylistclue);
 				new_free((char **)&mlist[ctr]);
 			}
 			new_free((char **)&mlist);
@@ -2380,6 +2381,7 @@ char 	*aliasctl 	(char *input)
 		{
 			char **	mlist = NULL;
 			char *	mylist = NULL;
+			size_t	mylistclue = 0;
 			int	num = 0,
 				ctr;
 
@@ -2390,7 +2392,7 @@ char 	*aliasctl 	(char *input)
 
 			for (ctr = 0; ctr < num; ctr++)
 			{
-				m_s3cat(&mylist, space, mlist[ctr]);
+				m_sc3cat(&mylist, space, mlist[ctr], &mylistclue);
 				new_free((char **)&mlist[ctr]);
 			}
 			new_free((char **)&mlist);

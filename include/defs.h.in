@@ -181,6 +181,11 @@
 #undef Rlisten
 #undef Rselect
 
+/*
+ * Perl support.
+ */
+#undef PERL
+
 /* Define this if you have setsid() */
 #undef HAVE_SETSID
 

@@ -518,6 +518,7 @@ char *	get_notify_nicks (int showserver, int showon)
 {
 	char *list = NULL;
 	int i;
+	size_t rvclue=0;
 
 	if (showserver < 0 || showserver >= number_of_servers)
 		return m_strdup(empty_string);
@@ -525,7 +526,7 @@ char *	get_notify_nicks (int showserver, int showon)
 	for (i = 0; i < NOTIFY_MAX(showserver); i++)
 	{
 		if (showon == -1 || showon == NOTIFY_ITEM(showserver, i)->flag)
-			m_s3cat(&list, space, NOTIFY_ITEM(showserver, i)->nick);
+			m_sc3cat(&list, space, NOTIFY_ITEM(showserver, i)->nick, &rvclue);
 	}
 
 	return (list ? list : m_strdup(empty_string));

@@ -7,7 +7,7 @@
  *
  * See the COPYRIGHT file, or do a HELP IRCII COPYRIGHT 
  *
- * @(#)$Id: ircaux.h,v 1.3 2001/03/07 18:03:23 jnelson Exp $
+ * @(#)$Id: ircaux.h,v 1.4 2001/09/24 16:49:08 crazyed Exp $
  */
 
 #ifndef _IRCAUX_H_
@@ -20,24 +20,29 @@ typedef int 	comp_func 		(char *, char *);
 
 #define new_malloc(x) really_new_malloc	((x), __FILE__, __LINE__)
 #define new_free(x)   really_new_free	((void **)(x), __FILE__, __LINE__)
+#define new_realloc(x,y) really_new_realloc ((x), (y), __FILE__, __LINE__)
 #define MUST_BE_MALLOCED(x, y) \
 		fatal_malloc_check ((void *)(x), (y), __FILE__, __LINE__)
 #define RESIZE(x, y, z) new_realloc	((void **)& (x), sizeof(y) * (z))
 #define LOCAL_COPY(y) strcpy(alloca(strlen((y)) + 1), y)
+#define m_e3cat(x,y,z) m_ec3cat((x),(y),(z),NULL)
+#define m_s3cat(x,y,z) m_sc3cat((x),(y),(z),NULL)
+#define m_s3cat_s(x,y,z) m_sc3cat_s((x),(y),(z),NULL)
+#define m_3cat(x,y,z) m_c3cat((x),(y),(z),NULL)
 
 extern	int	need_delayed_free;
 void	fatal_malloc_check	(void *, const char *, char *, int);
 void *	really_new_malloc 	(size_t, char *, int);
 void *	really_new_free 	(void **, char *, int);
 int	debug_new_free		(void **, char *, int);
-void *	new_realloc 		(void **, size_t);
+void *	really_new_realloc 	(void **, size_t, char *, int);
 
 char *	check_nickname 		(char *, int);
 char *	next_arg 		(char *, char **);
 char *	new_next_arg 		(char *, char **);
 char *	new_new_next_arg 	(char *, char **, char *);
 char *	s_next_arg		(char **);
-char *	last_arg 		(char **);
+char *	last_arg 		(char **, size_t *cluep);
 char *	expand_twiddle 		(char *);
 char *	upper 			(char *);
 char *	lower 			(char *);
@@ -48,10 +53,10 @@ char *	double_quote 		(const char *, const char *, char *);
 char *	malloc_strcpy 		(char **, const char *);
 char *	malloc_strcat 		(char **, const char *);
 char *	malloc_str2cpy		(char **, const char *, const char *);
-char *	m_s3cat_s 		(char **, const char *, const char *);
-char *	m_s3cat 		(char **, const char *, const char *);
-char *	m_3cat 			(char **, const char *, const char *);
-char *	m_e3cat 		(char **, const char *, const char *);
+char *	m_sc3cat_s 		(char **, const char *, const char *, size_t *clue);
+char *	m_sc3cat 		(char **, const char *, const char *, size_t *clue);
+char *	m_c3cat			(char **, const char *, const char *, size_t *clue);
+char *	m_ec3cat 		(char **, const char *, const char *, size_t *clue);
 char *	m_2dup 			(const char *, const char *);
 char *	m_3dup 			(const char *, const char *, const char *);
 char *	m_opendup 		(const char *, ...) __A(1);

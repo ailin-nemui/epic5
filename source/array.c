@@ -173,11 +173,13 @@ Karll on IRC
 
 #define ARRAY_THRESHOLD	100
 
+#if 0
 typedef struct an_array_struct {
 	char **item;
 	long *index;
 	long size;
 } an_array;
+#endif
 
 static an_array array_info = {
         (char **) 0,
@@ -353,6 +355,63 @@ void		delete_array (char *name)
                 new_free((char **)&array_array);
                 array_info.size = 0;
         }
+}
+
+/*
+ * This was once the inner loop of SETITEM.
+ * The documentation for it still applies.
+ */
+int set_item (char* name, long item, char* input)
+{
+	long index = 0;
+	long oldindex;
+	an_array *array;
+	int result = -1;
+	if (array_info.size && ((index = find_item(array_info, name)) >= 0))
+	{
+		array =  &array_array[array_info.index[index]];
+		result = -2;
+		if (item < array->size)
+		{
+			oldindex = find_index(array, item);
+			index = find_item(*array, input);
+			index = (index >= 0) ? index : (-index) - 1;
+			move_index(array, oldindex, index);
+			new_free(&array->item[item]);
+			malloc_strcpy(&array->item[item], input);
+			result = 0;
+		}
+		else if (item == array->size)
+		{
+			RESIZE(array->item, char *, array->size + 1);
+			array->item[item] = (char *) 0;
+			malloc_strcpy(&array->item[item], input);
+			index = find_item(*array, input);
+			index = (index >= 0) ? index : (-index) - 1;
+			insert_index(&array->index, &array->size, index);
+			result = 2;
+		}
+	}
+	else
+	{
+		if (item == 0)
+		{
+			RESIZE(array_array, an_array, array_info.size + 1);
+			array = &array_array[array_info.size];
+			array->size = 1;
+			array->item = (char **)new_malloc(sizeof(char *));
+			array->index = (long *)new_malloc(sizeof(long));
+			array->item[0] = (char*) 0;
+			array->index[0] = 0;
+			malloc_strcpy(&array->item[0], input);
+			RESIZE(array_info.item, char *, array_info.size + 1);
+			array_info.item[array_info.size] = (char *) 0;
+			malloc_strcpy(&array_info.item[array_info.size], name);
+			insert_index(&array_info.index, &array_info.size, (-index) - 1);
+			result = 1;
+		}
+	}
+	return result;
 }
 
 /*
@@ -615,9 +674,6 @@ BUILT_IN_FUNCTION(function_setitem, input)
 	char *name = (char *) 0;
 	char *itemstr = (char *) 0;
 	long item;
-	long index = 0;
-	long oldindex;
-	an_array *array;
 	int result = -1;
 
 	if ((name = next_arg(input, &input)))
@@ -628,50 +684,7 @@ BUILT_IN_FUNCTION(function_setitem, input)
 			if (item >= 0)
 			{
 				upper(name);
-				if (array_info.size && ((index = find_item(array_info, name)) >= 0))
-				{
-					array =  &array_array[array_info.index[index]];
-					result = -2;
-					if (item < array->size)
-					{
-						oldindex = find_index(array, item);
-						index = find_item(*array, input);
-						index = (index >= 0) ? index : (-index) - 1;
-						move_index(array, oldindex, index);
-						new_free(&array->item[item]);
-						malloc_strcpy(&array->item[item], input);
-						result = 0;
-					}
-					else if (item == array->size)
-					{
-						RESIZE(array->item, char *, array->size + 1);
-						array->item[item] = (char *) 0;
-						malloc_strcpy(&array->item[item], input);
-						index = find_item(*array, input);
-						index = (index >= 0) ? index : (-index) - 1;
-						insert_index(&array->index, &array->size, index);
-						result = 2;
-					}
-				}
-				else
-				{
-					if (item == 0)
-					{
-						RESIZE(array_array, an_array, array_info.size + 1);
-						array = &array_array[array_info.size];
-						array->size = 1;
-						array->item = (char **)new_malloc(sizeof(char *));
-						array->index = (long *)new_malloc(sizeof(long));
-						array->item[0] = (char*) 0;
-						array->index[0] = 0;
-						malloc_strcpy(&array->item[0], input);
-						RESIZE(array_info.item, char *, array_info.size + 1);
-						array_info.item[array_info.size] = (char *) 0;
-						malloc_strcpy(&array_info.item[array_info.size], name);
-						insert_index(&array_info.index, &array_info.size, (-index) - 1);
-						result = 1;
-					}
-				}
+				result = set_item(name, item, input);
 			}
 		}
 	}

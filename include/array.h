@@ -31,3 +31,9 @@
 	char *	function_gettmatch	(char *);
 
 #endif
+
+typedef struct an_array_struct {
+        char **item;
+        long *index;
+        long size;
+} an_array;

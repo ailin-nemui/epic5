@@ -124,6 +124,7 @@ array_item *array_pop (array *array, int which)
 	ret = ARRAY_ITEM(array, which);
 	move_array_items(array, which + 1, array->max, -1);
 	array->max--;
+	check_array_size(array);
 	return ret;
 }
 

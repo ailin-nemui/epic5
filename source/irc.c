@@ -236,6 +236,9 @@ void	irc_exit (int really_quit, char *format, ...)
 	char 	buffer[BIG_BUFFER_SIZE];
 	char *	sub_format;
 	int	old_window_display = window_display;
+#ifdef PERL
+	extern void perlstartstop(int);
+#endif
 
 	/*
 	 * If we get called recursively, something is hosed.
@@ -276,6 +279,9 @@ void	irc_exit (int really_quit, char *format, ...)
 
 	/* Do some clean up */
 	do_hook(EXIT_LIST, "%s", buffer);
+#ifdef PERL
+	perlstartstop(0);  /* In case there's perl code in the exit hook. */
+#endif
 	close_all_servers(buffer);
 	logger(0);
 	clean_up_processes();

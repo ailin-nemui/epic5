@@ -17,7 +17,7 @@ OBJECTS = alias.o alist.o array.o commands.o compat.o crypt.o ctcp.o \
 	ircsig.o keys.o lastlog.o list.o log.o mail.o names.o network.o \
 	newio.o notice.o notify.o numbers.o output.o parse.o queue.o reg.o \
 	screen.o server.o status.o term.o timer.o vars.o who.o window.o \
-	words.o @ALLOCA@
+	words.o @PERLDOTOH@ @ALLOCA@
 
 INCLUDES = -I@srcdir@/../include -I../include
 
@@ -73,6 +73,9 @@ irc.o: Makefile ../Makefile
 screen.o: Makefile ../Makefile
 	$(CC) $(CFLAGS) $(ANSIFLAGS) $(INCLUDES) -c @srcdir@/screen.c   \
 	-DWSERV_PATH=\"$(INSTALL_WSERV)\"
+
+perl.o: perl.c Makefile ../Makefile
+	$(CC) $(CFLAGS) $(ansiflags) $(INCLUDES) -c perl.c `perl -MExtUtils::Embed -e ccopts`
 
 
 #

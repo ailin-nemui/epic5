@@ -4,9 +4,9 @@ dnl except those bits attributed otherwise.
 dnl thanks to the screen 3.3 configure.in for giving me examples to
 dnl work from and steal ;)
 dnl
-dnl @(#)$Id: configure.in,v 1.1 2000/12/05 00:11:56 jnelson Exp $
+dnl @(#)$Id: configure.in,v 1.2 2001/09/24 16:49:08 crazyed Exp $
 
-AC_REVISION($Revision: 1.1 $)dnl
+AC_REVISION($Revision: 1.2 $)dnl
 AC_INIT(source/irc.c)
 AC_CONFIG_HEADER(include/defs.h)
 
@@ -366,6 +366,32 @@ AC_ARG_WITH(socks5,
 )
 
 dnl ----------------------------------------------------------
+dnl
+dnl Perl support?
+dnl
+
+AC_MSG_CHECKING(whether to support Perl)
+AC_ARG_WITH(perl,
+[  --with-perl[=PATH]       Compile with perl support.],
+[ case "$withval" in
+  no)
+	AC_MSG_RESULT(no)
+	;;
+  *)
+	if test "x$withval" != "xyes"; then
+		LIBS="$LIBS -L$withval"
+	fi
+
+	AC_MSG_RESULT(yes)
+	LIBS="$LIBS `perl -MExtUtils::Embed -e ldopts`"
+	PERLDOTOH="perl.o"
+	AC_DEFINE(PERL)
+	;;
+  esac ],
+  AC_MSG_RESULT(no)
+)
+
+dnl ----------------------------------------------------------
 dnl ----------------------------------------------------------
 dnl
 dnl closing stuff
@@ -381,6 +407,7 @@ dnl
 
 if test -z "$CFLAGS"; then CFLAGS=-g -O; fi
 if test -z "$LDFLAGS"; then LDFLAGS= ; fi
+if test -z "$PERLDOTOH"; then PERLDOTOH= ; fi
 if test -z "$bindir"; then bindir=\${prefix}/bin; fi
 if test -z "$libdir"; then libdir=\${prefix}/lib; fi
 if test -z "$irclibdir"; then irclibdir=\${libdir}/irc; fi
@@ -414,6 +441,7 @@ AC_ARG_WITH(bc,
 
 AC_SUBST(CFLAGS)
 AC_SUBST(LDFLAGS)
+AC_SUBST(PERLDOTOH)
 AC_SUBST(bindir)
 AC_SUBST(irclibdir)
 AC_SUBST(libexecdir)
