@@ -2,9 +2,6 @@ EPIC5 Projects, Bugs, and other Errata:
 
 KNOWN ERRATA (eg, bugs, or unresolved requests):
 ------------------------------------------------
-* Add $windowctl(DISPLAY_SIZE) for $winsize()
-* Add $windowctl(SCREEN) for $winscreen()
-* Add $windowctl(LINE <num>) for $winline()
 
 [See http://www.epicsol.org/PROJECTS for things to come in the future]
 [See http://www.epicsol.org/CHANGELOG5 for things that changed in the past]
@@ -605,3 +602,6 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Make //ignore output less visually jarring (change a tab to a space)
 * Permit /set -new_server_lastlog_level which won't change levels on /server
 * Permit /set -old_server_lastlog_level which will just confuse epic. ;-)
+* Add $windowctl(GET <win> DISPLAY_SIZE), same as $winsize()
+* Add $windowctl(GET <win> SCREEN), same as $winscreen()
+* Add $windowctl(GET <win> LINE <num>), same as $winline()
