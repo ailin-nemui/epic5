@@ -1,4 +1,4 @@
-/* $EPIC: ircaux.c,v 1.100 2003/11/07 03:55:57 jnelson Exp $ */
+/* $EPIC: ircaux.c,v 1.101 2003/11/14 21:23:40 jnelson Exp $ */
 /*
  * ircaux.c: some extra routines... not specific to irc... that I needed 
  *
@@ -2944,6 +2944,9 @@ size_t	mangle_line	(char *incoming, int how, size_t how_much)
 	char	*buffer;
 	size_t	i;
 	char	*s;
+
+	if (how_much == 0)
+		panic("mangle_line passed a zero-size buffer [%s] [%d]", incoming, how);
 
 	stuff = how;
 	buffer = alloca(how_much + 1);	/* Absurdly large */

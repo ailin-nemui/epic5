@@ -13,3 +13,6 @@ KNOWN ERRATA (eg, bugs, or unresolved requests):
 THE CHANGELOG SINCE THE LAST RELEASE:
 -------------------------------------
 * Implement experimental infinte recursion detector, see config.h
+* current_window_priority should be global variable
+* Valgrind is my hero -- fix buffer underruns with mangle_line().
+* Make the "current input window" its server's current window on user input.

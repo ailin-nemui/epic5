@@ -1,4 +1,4 @@
-/* $EPIC: parse.c,v 1.49 2003/10/31 08:19:24 crazyed Exp $ */
+/* $EPIC: parse.c,v 1.50 2003/11/14 21:23:41 jnelson Exp $ */
 /*
  * parse.c: handles messages from the server.   Believe it or not.  I
  * certainly wouldn't if I were you. 
@@ -1314,6 +1314,7 @@ void 	parse_server (const char *orig_line, size_t orig_line_size)
 	int	loc;
 	int	cnt;
 	char	*line;
+	size_t	size;
 
 	if (num_protocol_cmds == -1)
 		num_protocol_cmds = NUMBER_OF_COMMANDS;
@@ -1329,7 +1330,8 @@ void 	parse_server (const char *orig_line, size_t orig_line_size)
 	else if (!do_hook(RAW_IRC_LIST, "* %s", orig_line))
 		return;
 
-	line = alloca(orig_line_size + 1);
+	size = (orig_line_size + 1) * 11;
+	line = alloca(size + 1);
 	strlcpy(line, orig_line, orig_line_size);
 	if (inbound_line_mangler)
 	{

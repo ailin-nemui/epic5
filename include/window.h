@@ -187,6 +187,7 @@ extern	const char	*who_from;
 extern	int	in_window_command;
 #endif
 extern	unsigned window_display;
+extern	unsigned current_window_priority;
 
 
 	BUILT_IN_COMMAND(windowcmd);

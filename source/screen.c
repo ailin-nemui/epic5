@@ -1,4 +1,4 @@
-/* $EPIC: screen.c,v 1.61 2003/11/07 03:55:57 jnelson Exp $ */
+/* $EPIC: screen.c,v 1.62 2003/11/14 21:23:41 jnelson Exp $ */
 /*
  * screen.c
  *
@@ -3083,6 +3083,17 @@ void 	do_screens (fd_set *rd, fd_set *wd)
 			last_input_screen = screen;
 			output_screen = screen;
 			make_window_current(screen->current_window);
+			/*
+			 * In a multi-screen environment, it's possible for
+			 * the user to "switch" between windows connected to
+			 * the same server on multiple screens; this would
+			 * be the only place we would know about that.  So 
+			 * every time the user presses a key we have to set 
+			 * the screen's current window to be that window's
+			 * server's current window.  Right.
+			 * XXX Why do I know I'm going to regret this?
+			 */
+			current_window->priority = current_window_priority++;
 			from_server = current_window->server;
 
 			if (dumb_mode)
