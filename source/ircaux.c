@@ -8,7 +8,7 @@
  */
 
 #if 0
-static	char	rcsid[] = "@(#)$Id: ircaux.c,v 1.1 2000/12/05 00:11:57 jnelson Exp $";
+static	char	rcsid[] = "@(#)$Id: ircaux.c,v 1.2 2001/01/20 00:36:30 jnelson Exp $";
 #endif
 
 #include "irc.h"
@@ -120,6 +120,50 @@ void *	really_new_malloc (size_t size, char *fn, int line)
 }
 
 /*
+ * Instead of calling free() directly in really_new_free(), we instead 
+ * delay that until the stack has been unwound completely.  This masks the
+ * many bugs in epic where we hold a pointer to some object (such as a DCC
+ * item) and then invoke a sequence point.  When that sequence point returns
+ * we cannot assume that pointer is still valid.  But regretably we assume
+ * that so often that we can't just sweep this problem away.  The rules
+ * regarding double and invalid frees stays because that is all done at a 
+ * higher level.  The only thing this changes is that we do not release
+ * memory until it is impossible that we could be holding a pointer to it.
+ * This does not fix those bugs, only mitigates their damaging effect.
+ */
+	int	need_delayed_free = 0;
+static	void **	delayed_free_table;
+static	int	delayed_free_table_size = 0;
+static	int	delayed_frees = 0;
+
+void	do_delayed_frees (void)
+{
+	int	i;
+
+	for (i = 0; i < delayed_frees; i++)
+	{
+		free((void *)delayed_free_table[i]);
+		delayed_free_table[i] = NULL;
+	}
+	delayed_frees = 0;
+	need_delayed_free = 0;
+}
+
+static void	delay_free (void *ptr)
+{
+	need_delayed_free = 1;
+	if (delayed_frees >= delayed_free_table_size)
+	{
+		if (delayed_free_table_size)
+			delayed_free_table_size *= 2;
+		else
+			delayed_free_table_size = 128;
+		RESIZE(delayed_free_table, void *, delayed_free_table_size);
+	}
+	delayed_free_table[delayed_frees++] = ptr;
+}
+
+/*
  * really_new_free is the general interface to the free(3) call.
  * It is only called by way of the ``new_free'' #define.
  * You must always use new_free to free anything youve allocated
@@ -131,7 +175,7 @@ void *	really_new_free(void **ptr, char *fn, int line)
 	{
 		fatal_malloc_check(*ptr, NULL, fn, line);
 		alloc_size(*ptr) = FREED_VAL;
-		free((void *)(mo_ptr(*ptr)));
+		delay_free((void *)(mo_ptr(*ptr)));
 	}
 	return ((*ptr = NULL));
 }
