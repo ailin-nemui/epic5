@@ -168,16 +168,14 @@ char *file_read (int fd)
 		char	*ret = NULL;
 		size_t	len = 0, newlen = 4096;
 
-		new_realloc((void **)&ret, newlen);
-		ret[len] = 0;
 		while (1) {
-			ret[newlen-1] = 1;
+			new_realloc((void **)&ret, newlen);
+			ret[len] = 0;
 			if (NULL == fgets(ret+len, newlen-len, ptr->file))
 				break;
-			if (ret[newlen-1] == 1) break;
+			if (NULL != strchr(ret+len, '\n')) break;
 			len = newlen - 1;
 			newlen += 4096;
-			new_realloc((void **)&ret, newlen);
 		}
 
 		chomp(ret+len);
