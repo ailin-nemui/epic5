@@ -1,4 +1,4 @@
-/* $EPIC: commands.c,v 1.31 2002/07/17 22:52:52 jnelson Exp $ */
+/* $EPIC: commands.c,v 1.32 2002/07/23 00:16:58 jnelson Exp $ */
 /*
  * commands.c -- Stuff needed to execute commands in ircII.
  *		 Includes the bulk of the built in commands for ircII.
@@ -574,6 +574,7 @@ BUILT_IN_COMMAND(dcc)
 }
 
 static	char ** defer_list = NULL;
+static	char **	subarg_list = NULL;
 static	int	defer_list_size = -1;
 	int	need_defered_commands = 0;
 
@@ -585,14 +586,17 @@ void	do_defered_commands (void)
 	{
 		for (i = 0; defer_list[i]; i++)
 		{
-			parse_line("deferred", defer_list[i], NULL, 0, 0);
+			parse_line("deferred", defer_list[i], subarg_list[i], 0, 0);
 			new_free(&defer_list[i]);
+			new_free(&subarg_list[i]);
 		}
 	}
 
 	defer_list_size = 1;
 	RESIZE(defer_list, char *, defer_list_size);
+	RESIZE(subarg_list, char *, defer_list_size);
 	defer_list[0] = NULL;
+	subarg_list[0] = NULL;
 	need_defered_commands = 0;
 }
 
@@ -603,13 +607,18 @@ BUILT_IN_COMMAND(defercmd)
 	{
 		defer_list_size = 1;
 		RESIZE(defer_list, char *, defer_list_size);
+		RESIZE(subarg_list, char *, defer_list_size);
 		defer_list[0] = NULL;
+		subarg_list[0] = NULL;
 	}
 
 	defer_list_size++;
 	RESIZE(defer_list, char *, defer_list_size);
+	RESIZE(subarg_list, char *, defer_list_size);
 	defer_list[defer_list_size - 2] = m_strdup(args);
 	defer_list[defer_list_size - 1] = NULL;
+	subarg_list[defer_list_size - 2] = m_strdup(subargs);
+	subarg_list[defer_list_size - 1] = NULL;
 	need_defered_commands++;
 }
 
