@@ -1,4 +1,4 @@
-/* $EPIC: logfiles.c,v 1.2 2002/09/03 12:10:02 jnelson Exp $ */
+/* $EPIC: logfiles.c,v 1.3 2002/09/03 12:45:07 jnelson Exp $ */
 /*
  * logfiles.c - General purpose log files
  *
@@ -159,6 +159,43 @@ int	is_logfile_name_unique (const char *desc)
 	return 1;
 }
 
+void	clean_log_targets (Logfile *log)
+{
+	int	i;
+	WNickList *next;
+
+	for (i = 0; i < 32; i++)
+		log->refnums[i] = -1;
+
+	while (log->targets)
+	{
+		next = log->targets->next;
+		new_free(&log->targets->nick);
+		new_free((char **)&log->targets);
+		log->targets = next;
+	}
+}
+
+char *logfile_get_targets (Logfile *log)
+{
+	WNickList *tmp;
+	char *nicks = NULL;
+	int	i;
+
+	if (log->type == LOG_TARGETS)
+	{
+		for (tmp = log->targets; tmp; tmp = tmp->next)
+			m_s3cat(&nicks, ",", tmp->nick);
+	}
+	else if (log->type == LOG_SERVERS || log->type == LOG_WINDOWS)
+	{
+		for (i = 0; i < 32; i++)
+			if (log->refnums[i] != -1)
+				m_s3cat(&nicks, ",", ltoa(log->refnums[i]));
+	}
+
+	return nicks;
+}
 
 /************************************************************************/
 typedef Logfile *(*logfile_func) (Logfile *, char **);
@@ -242,7 +279,7 @@ static Logfile *	logfile_add (Logfile *log, char **args)
 
 static Logfile *	logfile_describe (Logfile *log, char **args)
 {
-	WNickList *tmp;
+	char *targets = NULL;
 
 	if (!log)
 	{
@@ -250,13 +287,17 @@ static Logfile *	logfile_describe (Logfile *log, char **args)
 		return NULL;
 	}
 
-	say("Logfile refnum %d is %s", log->refnum, onoff[log->active]);
-	say("\tLogical name: %s", log->name);
-	say("\t    Filename: %s", log->filename ? log->filename : "<NONE>");
-	for (tmp = log->targets; tmp; tmp = tmp->next)
-		say("\t      Target: %s", tmp->nick);
-	say("\tRewrite Rule: %s", log->rewrite ? log->rewrite : "<NONE>");
-	say("\tMangle rules: %s", log->mangle_desc ? log->mangle_desc : "<NONE>");
+	targets = logfile_get_targets(log);
+
+	say(" Logfile refnum %d is %s", log->refnum, onoff[log->active]);
+	say("\t Logical name: %s", log->name);
+	say("\t     Filename: %s", log->filename ? log->filename : "<NONE>");
+	say("\t         Type: %s", logtype[log->type]);
+	say("\tTarget/Refnum: %s", targets ? targets : "<NONE>");
+	say("\t Rewrite Rule: %s", log->rewrite ? log->rewrite : "<NONE>");
+	say("\t Mangle rules: %s", log->mangle_desc ? log->mangle_desc : "<NONE>");
+
+	new_free(&targets);
 	return log;
 }
 
@@ -312,37 +353,19 @@ static Logfile *	logfile_level (Logfile *log, char **args)
 static Logfile *	logfile_list (Logfile *log, char **args)
 {
 	Logfile *l;
-	char *nicks = NULL;
-	WNickList *tmp;
-	int	i;
+	char *targets = NULL;
 
 	say("Logfiles:");
 	for (l = logfiles; l; l = l->next)
 	{
-	    if (log->type == LOG_TARGETS)
-	    {
-		for (tmp = log->targets; tmp; tmp = tmp->next)
-			m_s3cat(&nicks, ",", tmp->nick);
-		say("Log %2d [%10s] is %s, file [%20s] targets [%s]", 
-			log->refnum, log->name, onoff[log->active],
-			log->filename ? log->filename : "<NONE>", 
-			nicks ? nicks : "<NONE>");
-		new_free(&nicks);
-	    }
-	    else if (log->type == LOG_SERVERS || log->type == LOG_WINDOWS)
-	    {
-		for (i = 0; i < 32; i++)
-		    if (log->refnums[i] != -1)
-			m_s3cat(&nicks, ",", ltoa(log->refnums[i]));
-		say("Log %2d [%10s] logging %s is %s, file [%20s] refnums [%s]",
-			log->refnum, log->name, logtype[log->type], 
-			onoff[log->active],
-			log->filename ? log->filename : "<NONE>", 
-			nicks ? nicks : "<NONE>");
-		new_free(&nicks);
-	    }
+		targets = logfile_get_targets(l);
+		say("Log %2d [%s] logging %s is %s, file %s targets %s",
+			l->refnum, l->name, logtype[l->type],
+			onoff[l->active],
+			l->filename ? l->filename : "<NONE>", 
+			targets ? targets : "<NONE>");
+		new_free(&targets);
 	}
-
 	return log;
 }
 
@@ -547,6 +570,7 @@ static Logfile *	logfile_type (Logfile *log, char **args)
 		return NULL;
 	}
 
+	clean_log_targets(log);
 	if (!my_strnicmp(arg, "SERVER", 1))
 		log->type = LOG_SERVERS;
 	else if (!my_strnicmp(arg, "WINDOW", 1))
@@ -630,9 +654,34 @@ BUILT_IN_COMMAND(logcmd)
 void	add_to_logs (int winref, int servref, const char *target, int level, const char *orig_str)
 {
 	Logfile *log;
+	int	i;
 
 	for (log = logfiles; log; log = log->next)
 	{
+	    if (log->type == LOG_WINDOWS)
+	    {
+		for (i = 0; i < 32; i++) {
+		    if (log->refnums[i] == winref) {
+			if (log->level && (log->level & level) != 0)
+				continue;
+			add_to_log(log->log, winref, orig_str, log->mangler, log->rewrite);
+		    }
+		}
+	    }
+
+	    if (log->type == LOG_SERVERS)
+	    {
+		for (i = 0; i < 32; i++) {
+		    if (log->refnums[i] == servref) {
+			if (log->level && (log->level & level) != 0)
+				continue;
+			add_to_log(log->log, winref, orig_str, log->mangler, log->rewrite);
+		    }
+		}
+	    }
+
+	    else if (log->type == LOG_TARGETS)
+	    {
 		if (log->servref != -1 && (log->servref != servref))
 			continue;
 
@@ -644,6 +693,7 @@ void	add_to_logs (int winref, int servref, const char *target, int level, const 
 
 		/* OK!  We want to log it now! */
 		add_to_log(log->log, winref, orig_str, log->mangler, log->rewrite);
+	    }
 	}
 }
 
@@ -694,9 +744,17 @@ char *logctl	(char *input)
 			RETURN_EMPTY;
 		RETURN_INT(log->refnum);
         } else if (!my_strnicmp(listc, "ADD", 2)) {
-		/* XXX */
+		GET_STR_ARG(refstr, input);
+		if (!(log = get_log_by_desc(input)))
+			RETURN_EMPTY;
+		logfile_add(log, &input);
+		RETURN_INT(1);
         } else if (!my_strnicmp(listc, "DELETE", 2)) {
-		/* XXX */
+		GET_STR_ARG(refstr, input);
+		if (!(log = get_log_by_desc(input)))
+			RETURN_EMPTY;
+		logfile_remove(log, &input);
+		RETURN_INT(1);
         } else if (!my_strnicmp(listc, "GET", 2)) {
                 GET_STR_ARG(refstr, input);
 		if (!(log = get_log_by_desc(input)))
@@ -712,12 +770,7 @@ char *logctl	(char *input)
                 } else if (!my_strnicmp(listc, "SERVER", 3)) {
 			RETURN_INT(log->servref);
                 } else if (!my_strnicmp(listc, "TARGETS", 3)) {
-			WNickList *tmp;
-			char *nicks;
-
-			for (tmp = log->targets; tmp; tmp = tmp->next)
-				m_s3cat(&nicks, ",", tmp->nick);
-			return nicks;
+			RETURN_MSTR(logfile_get_targets(log));
                 } else if (!my_strnicmp(listc, "LEVEL", 3)) {
 			RETURN_STR(bits_to_lastlog_level(log->level));
                 } else if (!my_strnicmp(listc, "REWRITE", 3)) {
@@ -743,20 +796,25 @@ char *logctl	(char *input)
 			logfile_server(log, &input);
 			RETURN_INT(1);
                 } else if (!my_strnicmp(listc, "TARGETS", 3)) {
-			/* XXX Delete all current targets XXX */
-			/* XXX Add all targets in 'input' XXX */
+			clean_log_targets(log);
+			logfile_add(log, &input);
+			RETURN_INT(1);
                 } else if (!my_strnicmp(listc, "LEVEL", 3)) {
 			logfile_level(log, &input);
+			RETURN_INT(1);
                 } else if (!my_strnicmp(listc, "REWRITE", 3)) {
 			logfile_rewrite(log, &input);
+			RETURN_INT(1);
                 } else if (!my_strnicmp(listc, "MANGLE", 3)) {
 			logfile_mangle(log, &input);
+			RETURN_INT(1);
                 } else if (!my_strnicmp(listc, "STATUS", 3)) {
 			GET_INT_ARG(val, input);
 			if (val)
 				logfile_on(log, &input);
 			else
 				logfile_off(log, &input);
+			RETURN_INT(1);
 		}
         } else if (!my_strnicmp(listc, "MATCH", 1)) {
                 RETURN_EMPTY;           /* Not implemented for now. */
