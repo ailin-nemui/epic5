@@ -1370,6 +1370,7 @@ void 	reconnect_all_channels (void)
 {
 	Channel *tmp = NULL;
 	char	*channels = NULL;
+	char	*keyed_channels = NULL;
 	char	*keys = NULL;
 
 	while (traverse_all_channels(&tmp, from_server))
@@ -1379,9 +1380,14 @@ void 	reconnect_all_channels (void)
 			     "but it isn't inactive!", 
 				tmp->channel, tmp->server);
 
-		/* Ugh.  Hybrid makes me do this. */
-		m_s3cat(&channels, ",", tmp->channel);
-		m_s3cat(&keys, ",", tmp->key ? tmp->key : empty_string);
+		if (tmp->key)
+		{
+			m_s3cat(&keyed_channels, ",", tmp->channel);
+			m_s3cat(&keys, ",", tmp->key);
+		}
+		else
+			m_s3cat(&channels, ",", tmp->channel);
+
 		clear_channel(tmp);
 	}
 
@@ -1392,11 +1398,13 @@ void 	reconnect_all_channels (void)
 	 * Interestingly enough, black magic on the server's part makes
 	 * this work.  I sure hope they dont "break" this in the future...
 	 */
+	if (keyed_channels)
+		send_to_server("JOIN %s %s", keyed_channels, keys);
 	if (channels)
-		send_to_server("JOIN %s %s", channels, 
-					keys ? keys : empty_string);
+		send_to_server("JOIN %s", channels);
 
 	new_free(&channels);
+	new_free(&keyed_channels);
 	new_free(&keys);
 
 	/*
