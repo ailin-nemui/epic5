@@ -110,6 +110,7 @@ void 	add_to_server_list (const char *server, int port, const char *password, co
 		s->registration_pending = 0;
 		s->resetting_nickname = 0;
 		s->reconnects = 0;
+		s->quit_message = NULL;
 
 		if (password && *password)
 			malloc_strcpy(&s->password, password);
@@ -621,6 +622,8 @@ BUILT_IN_COMMAND(servercmd)
 		/* /SERVER + means go to the next server */
 		else
 		{
+			set_server_quit_message(from_server, 
+					"Changing servers");
 			server_reconnects_to(from_server, from_server + 1);
 			reconnect(from_server);
 		}
@@ -644,11 +647,15 @@ BUILT_IN_COMMAND(servercmd)
 			    return;
 			}
 
+			set_server_quit_message(from_server, 
+					"Disconnected at user request");
 			server_reconnects_to(i, -1);
 			reconnect(i);
 		}
 		else
 		{
+			set_server_quit_message(from_server, 
+					"Changing servers");
 			server_reconnects_to(from_server, from_server - 1);
 			reconnect(from_server);
 		}
@@ -851,8 +858,11 @@ static void 	vsend_to_server (const char *format, va_list args)
 		    if (write(des, buffer, strlen(buffer)) == -1 && 
 			(!get_int_var(NO_FAIL_DISCONNECT_VAR)))
 		    {
-			say("Write to server failed.  Closing connection.");
-			reconnect(server);
+			if (server_list[server].connected)
+			{
+			    say("Write to server failed.  Closing connection.");
+			    reconnect(server);
+			}
 		    }
 		}
 	}
@@ -1125,6 +1135,10 @@ int 	connect_to_new_server (int new_server, int old_server, int new_conn)
  * numeric), but want to wait until we actually recieve the EOF to reconnect.
  * Thus, anyone can call "server_reconnects_to" to set what server we should
  * reconnect to when we get an EOF.
+ *
+ * XXX Closing 'refnum' before calling 'get_connected' flies in the face of
+ * all of the work that 'connect_to_new_server' does.  I am aware of this;
+ * there is no point in reminding me.
  */
 int	reconnect (int refnum)
 {
@@ -1134,7 +1148,7 @@ int	reconnect (int refnum)
 		save_server_channels(refnum);
 	if (refnum >= 0 && refnum < number_of_servers)
 	{
-		close_server(refnum, NULL);
+		close_server(refnum, get_server_quit_message(refnum));
 		new_server = server_list[refnum].reconnect_to;
 	}
 	else
@@ -1233,6 +1247,7 @@ int 	close_all_servers (const char *message)
 
 	for (i = 0; i < number_of_servers; i++)
 	{
+		set_server_quit_message(i, message);
 		server_reconnects_to(i, -1);
 		reconnect(i);
 	}
@@ -1717,6 +1732,22 @@ int	server_reconnects_to (int oldref, int newref)
 	return 1;
 }
 
+int	set_server_quit_message (int servref, const char *message)
+{
+	if (servref < 0 || servref >= number_of_servers)
+		return -1;
+	malloc_strcpy(&server_list[servref].quit_message, message);
+	return 0;
+}
+
+const char *	get_server_quit_message (int servref)
+{
+	if (servref < 0 || servref >= number_of_servers ||
+			server_list[servref].quit_message == NULL)
+		return "get_server_quit_message";
+
+	return server_list[servref].quit_message;
+}
 
 /* PORTS */
 /* get_server_port: Returns the connection port for the given server index */
