@@ -1,4 +1,4 @@
-/* $EPIC: functions.c,v 1.111 2003/03/29 08:10:22 jnelson Exp $ */
+/* $EPIC: functions.c,v 1.112 2003/04/07 18:48:53 crazyed Exp $ */
 /*
  * functions.c -- Built-in functions for ircII
  *
@@ -6037,7 +6037,7 @@ BUILT_IN_FUNCTION(function_stat, words)
 	if (normalize_filename(filename, expanded))
 		RETURN_INT(-1);
 
-	if (stat(filename, &sb) < 0)
+	if (stat(expanded, &sb) < 0)
 		RETURN_EMPTY;
 
 	snprintf(retval, BIG_BUFFER_SIZE,

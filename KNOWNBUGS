@@ -44,3 +44,6 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Don't hold elections for illegal window refnums.
 * Channel can't be current if it's not in a window.
 * Fix status_voice().
+* Fix $stat() so that it expands ~ correctly.
+* Fix ctcp over dcc to not coredump.
+* Fix dcc over dcc to not coredump.  (different issue)

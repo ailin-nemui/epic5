@@ -1,4 +1,4 @@
-/* $EPIC: dcc.c,v 1.55 2003/03/29 08:10:22 jnelson Exp $ */
+/* $EPIC: dcc.c,v 1.56 2003/04/07 18:48:53 crazyed Exp $ */
 /*
  * dcc.c: Things dealing client to client connections. 
  *
@@ -824,16 +824,17 @@ static void	dcc_send_booster_ctcp (DCC_list *dcc)
 	char *	nopath;
 	char *	type = dcc_types[dcc->flags & DCC_TYPES];
 	int	family;
+	int	server = from_server < 0 ? primary_server : from_server;
 
 	family = FAMILY(dcc->local_sockaddr);
 
 	if (get_int_var(DCC_USE_GATEWAY_ADDR_VAR))
-		my_sockaddr = get_server_uh_addr(from_server);
+		my_sockaddr = get_server_uh_addr(server);
 	else if (family == AF_INET && V4ADDR(dcc->local_sockaddr).s_addr == htonl(INADDR_ANY))
-		my_sockaddr = get_server_local_addr(from_server);
+		my_sockaddr = get_server_local_addr(server);
 #ifdef INET6
 	else if (family == AF_INET6 && memcmp(&V6ADDR(dcc->local_sockaddr), &in6addr_any, sizeof(in6addr_any)) == 0)
-		my_sockaddr = get_server_local_addr(from_server);
+		my_sockaddr = get_server_local_addr(server);
 #endif
 	else
 		my_sockaddr = dcc->local_sockaddr;
@@ -988,7 +989,7 @@ const	char 		*text_display, 	/* What to tell the user we sent */
 	 */
 	if (*text == CTCP_DELIM_CHAR && strncmp(text + 1, "ACTION", 6))
 	{
-		if (!strcmp(cmd, "PRIVMSG"))
+		if (!cmd || !strcmp(cmd, "PRIVMSG"))
 			strmcpy(tmp, "CTCP_MESSAGE ", DCC_BLOCK_SIZE);
 		else
 			strmcpy(tmp, "CTCP_REPLY ", DCC_BLOCK_SIZE);
