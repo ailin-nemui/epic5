@@ -1041,12 +1041,12 @@ void	flush_server (int servnum)
  */
 static int 	connect_to_server (int new_server)
 {
-	int 			des;
-	struct sockaddr_in *	localaddr;
-	struct sockaddr_in *	remaddr;
-	int			len;
-	unsigned short		this_sucks;
-	Server 			*s;
+	int 		des;
+	ISA *		localaddr;
+	ISA *		remaddr;
+	int		len;
+	unsigned short	this_sucks;
+	Server *	s;
 
 	/*
 	 * Can't connect to refnum -1, this is definitely an error.
@@ -2111,7 +2111,7 @@ void	set_server_userhost (int refnum, const char *userhost)
 	malloc_strcpy(&server_list[from_server].userhost, userhost);
 
 	/* Ack! */
-	if (lame_external_resolv(host + 1, &server_list[from_server].uh_addr))
+	if (inet_anyton(host + 1, &server_list[from_server].uh_addr))
 		yell("Ack.  The server says your userhost is [%s] and "
 		     "I can't figure out the IP address of that host! "
 		     "You won't be able to use /SET DCC_USE_GATEWAY_ADDR ON "

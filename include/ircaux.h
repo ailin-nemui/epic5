@@ -7,7 +7,7 @@
  *
  * See the COPYRIGHT file, or do a HELP IRCII COPYRIGHT 
  *
- * @(#)$Id: ircaux.h,v 1.14 2002/04/26 20:59:39 jnelson Exp $
+ * @(#)$Id: ircaux.h,v 1.15 2002/04/28 05:22:16 jnelson Exp $
  */
 
 #ifndef _IRCAUX_H_
@@ -192,8 +192,8 @@ int 	connect_by_number 	(char *, unsigned short *, int, int);
 char 	*host_to_ip 		(const char *);
 char 	*ip_to_host 		(const char *);
 char 	*one_to_another 	(const char *);
-int	my_accept		(int, struct sockaddr *, int *);
-int	lame_external_resolv	(const char *, struct in_addr *);
+int	my_accept		(int, SA *, int *);
+int	inet_anyton		(const char *, IA *);
 const char *switch_hostname	(const char *);
 
 extern	unsigned char isspace_table[256];

@@ -273,6 +273,7 @@ typedef struct sockaddr_in 	ISA;
 typedef struct sockaddr 	SA;
 typedef struct in_addr		IA;
 typedef struct sockaddr_storage	SS;
+typedef struct hostent		Hostent;
 typedef struct timeval		Timeval;
 typedef struct stat		Stat;
 

@@ -13,11 +13,12 @@
 
 #ifdef HAVE_SYS_UN_H
 #include <sys/un.h>
+typedef struct sockaddr_un USA;
 #endif
 
-static struct hostent *resolv (const char *);
-static struct hostent *lookup_host (const char *);
-static struct hostent *lookup_ip (const char *);
+static Hostent *resolv (const char *);
+static Hostent *lookup_host (const char *);
+static Hostent *lookup_ip (const char *);
 static int	get_low_portnum (void);
 static int	get_high_portnum (void);
 
@@ -35,6 +36,7 @@ static int	get_high_portnum (void);
  *
  *	- hostname - name of the host (pathname) to connect to (if applicable)
  *	- portnum - port number to connect to or listen on (0 if you dont care)
+ *		    IMPORTANT! PORTNUM IS IN HOST ORDER! IMPORTANT!
  *	- service -	0 - set up a listening socket
  *			1 - set up a connecting socket
  *	- protocol - 	0 - use the TCP protocol
@@ -56,12 +58,14 @@ static int	get_high_portnum (void);
  * Credit: I couldnt have put this together without the help of 4.4BSD
  * User Supplimentary Document #20 (Inter-process Communications tutorial)
  */
-int	connect_by_number (char *hostn, unsigned short *portnum, int service, int protocol)
+int	connect_by_number (char *host, unsigned short *port, int service, int protocol)
 {
-	int fd = -1;
-	int is_unix = (hostn && *hostn == '/');
-	int sock_type, proto_type;
+	int	fd = -1;
+	int	is_unix,
+		sock_type, 
+		proto_type;
 
+	is_unix = (host && *host == '/');
 	sock_type = (is_unix) ? AF_UNIX : AF_INET;
 	proto_type = (protocol == PROTOCOL_TCP) ? SOCK_STREAM : SOCK_DGRAM;
 
@@ -74,22 +78,22 @@ int	connect_by_number (char *hostn, unsigned short *portnum, int service, int pr
 #ifdef HAVE_SYS_UN_H
 	if (is_unix)
 	{
-		struct sockaddr_un name;
+		USA	name;
 
-		memset(&name, 0, sizeof(struct sockaddr_un));
+		memset(&name, 0, sizeof(name));
 		name.sun_family = AF_UNIX;
-		strlcpy(name.sun_path, hostn, sizeof(name.sun_path));
+		strlcpy(name.sun_path, host, sizeof(name.sun_path));
 #ifdef HAVE_SUN_LEN
 # ifdef SUN_LEN
 		name.sun_len = SUN_LEN(&name);
 # else
-		name.sun_len = strlen(hostn) + 1;
+		name.sun_len = strlen(host) + 1;
 # endif
 #endif
 
 		if (is_unix && (service == SERVICE_SERVER))
 		{
-			if (bind(fd, (struct sockaddr *)&name, strlen(name.sun_path) + 2))
+			if (bind(fd, (SA *)&name, strlen(name.sun_path) + 2))
 				return close(fd), -2;
 
 			if (protocol == PROTOCOL_TCP)
@@ -101,7 +105,7 @@ int	connect_by_number (char *hostn, unsigned short *portnum, int service, int pr
 		else if (service == SERVICE_CLIENT)
 		{
 			alarm(get_int_var(CONNECT_TIMEOUT_VAR));
-			if (connect (fd, (struct sockaddr *)&name, strlen(name.sun_path) + 2) < 0)
+			if (connect(fd, (SA *)&name, strlen(name.sun_path) + 2) < 0)
 			{
 				alarm(0);
 				return close(fd), -4;
@@ -116,23 +120,36 @@ int	connect_by_number (char *hostn, unsigned short *portnum, int service, int pr
 	if (!is_unix && (service == SERVICE_SERVER))
 	{
 		int 	length;
-		int	ports;
-		int	realport;
 		ISA	name;
 		int	i;
 
 #ifdef IP_PORTRANGE
+		/*
+		 * On 4.4BSD systems, this socket option asks the
+		 * operating system to select a port from the "high
+		 * port range" when we ask for port 0 (any port).
+		 * Maybe some day Linux will support this.
+		 */
 		if (getenv("EPIC_USE_HIGHPORTS"))
 		{
-			ports = IP_PORTRANGE_HIGH;
+			int ports = IP_PORTRANGE_HIGH;
 			setsockopt(fd, IPPROTO_IP, IP_PORTRANGE, 
 					(char *)&ports, sizeof(ports));
 		}
 #endif
 
+		/*
+		 * Make five stabs at trying to set up a passive socket.
+		 */
 		for (i = 0; i < 5; i++)
 		{
-			memset(&name, 0, sizeof(struct sockaddr_in));
+			/* 
+			 * Reset the local sockaddr...
+			 * Use the address stipulated by the user
+			 * via /hostname if there is one, otherwise
+			 * just ask for INADDR_ANY.
+			 */
+			memset(&name, 0, sizeof(name));
 			if (LocalHostName)
 				name = LocalIPv4Addr;
 			else
@@ -141,7 +158,18 @@ int	connect_by_number (char *hostn, unsigned short *portnum, int service, int pr
 				name.sin_addr.s_addr = htonl(INADDR_ANY);
 			}
 
-			if (*portnum == 0)
+			/*
+			 * Fill in the port number...
+			 * If the user wants a specific port, use it.
+			 * If they don't care, then if they want us to
+			 * give them a random port, grab a port at 
+			 * random in the port range being used (system
+			 * dependant, natch).  If the user doesn't care
+			 * and doesn't want a random port, just ask the
+			 * OS to assign us a port.  Some systems (OpenBSD)
+			 * hand out ports at random, which is a good thing.
+			 */
+			if (*port == 0)
 			{
 			    if (get_int_var(RANDOM_LOCAL_PORTS_VAR))
 			    {
@@ -149,18 +177,22 @@ int	connect_by_number (char *hostn, unsigned short *portnum, int service, int pr
 
 				lowport = get_low_portnum();
 				highport = get_high_portnum();
-				realport = random_number(0) % 
-					(highport - lowport) + lowport;
+				name.sin_port = htons(random_number(0) % 
+						(highport - lowport) + lowport);
 			    }
 			    else
-				realport = 0;
+				name.sin_port = htons(0);
 			}
 			else
-			    realport = *portnum;
+			    name.sin_port = htons(*port);
 
-			name.sin_port = htons(realport);
-
-			if (bind(fd, (struct sockaddr *)&name, sizeof(name)))
+			/*
+			 * Try to establish the local side of our passive
+			 * socket with our sockaddr.  If it fails because
+			 * the port is in use or not available, try again.
+			 * If it fails five tims, bummer for the user.
+			 */
+			if (bind(fd, (SA *)&name, sizeof(name)))
 			{
 			    if (errno == EADDRINUSE || errno == EADDRNOTAVAIL)
 			    {
@@ -175,11 +207,16 @@ int	connect_by_number (char *hostn, unsigned short *portnum, int service, int pr
 			break;
 		}
 
-		length = sizeof (name);
-		if (getsockname(fd, (struct sockaddr *)&name, &length))
+		/*
+		 * Get the local sockaddr of the passive socket,
+		 * specifically the port number, and stash it in
+		 * 'port' which is the return value to the caller.
+		 */	
+		length = sizeof(name);
+		if (getsockname(fd, (SA *)&name, &length))
 			return close(fd), -5;
 
-		*portnum = ntohs(name.sin_port);
+		*port = ntohs(name.sin_port);
 
 		if (protocol == PROTOCOL_TCP)
 			if (listen(fd, 4) < 0)
@@ -189,10 +226,8 @@ int	connect_by_number (char *hostn, unsigned short *portnum, int service, int pr
 	/* Inet domain client */
 	else if (!is_unix && (service == SERVICE_CLIENT))
 	{
-		struct sockaddr_in server;
-		struct sockaddr_in localaddr;
-		struct in_addr	   remoteaddr;
-		struct hostent     *hp;
+		ISA	server;
+		ISA	localaddr;
 
 		/*
 		 * Doing this bind is bad news unless you are sure that
@@ -201,16 +236,11 @@ int	connect_by_number (char *hostn, unsigned short *portnum, int service, int pr
 		 */
 		if (LocalHostName)
 		{
-			memset(&localaddr, 0, sizeof(struct sockaddr_in));
-			localaddr.sin_family = AF_INET;
-			localaddr.sin_addr = LocalHostAddr;
-			localaddr.sin_port = 0;
-			if (bind(fd, (struct sockaddr *)&localaddr, sizeof(localaddr)))
+			localaddr = LocalIPv4Addr;
+			localaddr.sin_port = htonl(0);
+			if (bind(fd, (SA *)&localaddr, sizeof(localaddr)))
 				return close(fd), -2;
 		}
-
-		memset(&server, 0, sizeof(struct sockaddr_in));
-		memset(&remoteaddr, 0, sizeof(remoteaddr));
 
 		/*
 		 * If this is an IP we're looking up, dont do a full resolve,
@@ -221,27 +251,18 @@ int	connect_by_number (char *hostn, unsigned short *portnum, int service, int pr
 		 * immediately call inet_aton again.
 		 * Does anyone call us here with a hostname?
 		 */
-		if (isdigit(hostn[strlen(hostn)-1]))
-		{
-			inet_aton(hostn, &remoteaddr);
-			memmove(&server.sin_addr, 
-				&remoteaddr, sizeof(remoteaddr));
-		}
-		else
-		{
-			if (!(hp = resolv(hostn)))
-			{
-				errno = -1;
-				return close(fd), -6;
-			}
-			memmove(&(server.sin_addr), hp->h_addr, hp->h_length);
-		}
-
+		memset(&server, 0, sizeof(server));
 		server.sin_family = AF_INET;
-		server.sin_port = htons(*portnum);
+		server.sin_port = htons(*port);
+
+		if (inet_anyton(host, &server.sin_addr))
+		{
+			errno = -1;
+			return close(fd), -6;
+		}
 
 		alarm(get_int_var(CONNECT_TIMEOUT_VAR));
-		if (connect (fd, (struct sockaddr *)&server, sizeof(server)) < 0)
+		if (connect(fd, (SA *)&server, sizeof(server)) < 0)
 		{
 			alarm(0);
 			return close(fd), -4;
@@ -257,30 +278,31 @@ int	connect_by_number (char *hostn, unsigned short *portnum, int service, int pr
 }
 
 
-int	lame_external_resolv (const char *hostname, struct in_addr *buffer)
+int	inet_anyton (const char *hostname, IA *addr)
 {
-	struct hostent 	*hp;
+	Hostent 	*hp;
 
-	if (isdigit(hostname[strlen(hostname)-1]))
+	if (isdigit(last_char(hostname)))
 	{
-		inet_aton(hostname, buffer);
+		inet_aton(hostname, addr);
 		return 0;
 	}
 
 	if (!(hp = resolv(hostname)))
 		return -1;
-	memmove(buffer, hp->h_addr, hp->h_length);
+
+	*addr = *(IA *)hp->h_addr;
 	return 0;
 }
 
-static struct hostent *resolv (const char *stuff)
+static Hostent *resolv (const char *stuff)
 {
-	struct hostent *hep;
+	Hostent *hep;
 
 	if (!*stuff)
 		return NULL;
 
-	if (isdigit(stuff[strlen(stuff)-1]))
+	if (isdigit(last_char(stuff)))
 		hep = lookup_ip(stuff);
 	else
 		hep = lookup_host(stuff);
@@ -288,9 +310,9 @@ static struct hostent *resolv (const char *stuff)
 	return hep;
 }
 
-static struct hostent *lookup_host (const char *host)
+static Hostent *lookup_host (const char *host)
 {
-	struct hostent *hep;
+	Hostent *hep;
 
 	alarm(1);
 	hep = gethostbyname(host);
@@ -298,56 +320,52 @@ static struct hostent *lookup_host (const char *host)
 	return hep;
 }
 
-char *	host_to_ip (const char *host)
+static Hostent *lookup_ip (const char *ip)
 {
-	struct hostent *hep = lookup_host(host);
-	static char ip[256];
+	IA addr;
+	Hostent *hep;
 
-	return (hep ? 
-		sprintf(ip,"%u.%u.%u.%u", 	hep->h_addr[0] & 0xff,
-						hep->h_addr[1] & 0xff,
-						hep->h_addr[2] & 0xff,
-						hep->h_addr[3] & 0xff),
-		ip : empty_string);
-}
-
-static struct hostent *lookup_ip (const char *ip)
-{
-	int b1 = 0, b2 = 0, b3 = 0, b4 = 0;
-	char foo[4];
-	struct hostent *hep;
-
-	sscanf(ip,"%d.%d.%d.%d", &b1, &b2, &b3, &b4);
-	foo[0] = b1;
-	foo[1] = b2;
-	foo[2] = b3;
-	foo[3] = b4;
+	if (inet_aton(ip, &addr) == 0)
+		return NULL;
 
 	alarm(1);
-	hep = gethostbyaddr(foo, 4, AF_INET);
+	hep = gethostbyaddr((const char *)&addr, 4, AF_INET);
 	alarm(0);
 
 	return hep;
 }
 
+char *	host_to_ip (const char *host)
+{
+	Hostent *hep;
+	static char ip[256];
+
+	if (!(hep = lookup_host(host)))
+		return empty_string;
+
+	strlcpy(ip, inet_ntoa(*(IA *)hep->h_addr), sizeof(ip));
+	return ip;
+}
+
 char *	ip_to_host (const char *ip)
 {
-	struct hostent *hep = lookup_ip(ip);
+	Hostent *hep;
 	static char host[256];		/* maximum hostname size. */
 
-	if (hep)
-		strlcpy(host, hep->h_name, sizeof(host));
+	if (!(hep = lookup_ip(ip)))
+		return empty_string;
 
-	return hep ? host : empty_string;
+	strlcpy(host, hep->h_name, sizeof(host));
+	return host;
 }
 
 char *	one_to_another (const char *what)
 {
 	/* if the last char is a digit, it's an ip, else a hostname. */
-	if (!isdigit(what[strlen(what)-1]))
-		return host_to_ip(what);
-	else
+	if (isdigit(last_char(what)))
 		return ip_to_host(what);
+	else
+		return host_to_ip(what);
 }
 
 int	set_non_blocking (int fd)
