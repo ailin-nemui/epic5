@@ -124,7 +124,7 @@ char* perlcall (const char* sub, char* in, char* out, long item, char* input) {
 	}
 	if (0<=item) {
 		I32 ax;
-		count = perl_call_pv(sub, G_EVAL|G_ARRAY);
+		count = perl_call_pv((char*)sub, G_EVAL|G_ARRAY);
 		SPAGAIN ;
 		SP -= count ;
 		ax = (SP - PL_stack_base) + 1 ;
@@ -135,7 +135,7 @@ char* perlcall (const char* sub, char* in, char* out, long item, char* input) {
 		snprintf(retval,31,"%u",count);
 	} else {
 		SV *sv;
-		count = perl_call_pv(sub, G_EVAL|G_SCALAR);
+		count = perl_call_pv((char*)sub, G_EVAL|G_SCALAR);
 		SPAGAIN ; sv=POPs ;
 		SV2STR(sv,retval);
 	}
@@ -152,7 +152,7 @@ char* perleval (const char* input) {
 		perlstartstop(1);
 		++perlcalldepth;
 		ENTER; SAVETMPS;
-		sv=perl_eval_pv(input, FALSE);
+		sv=perl_eval_pv((char*)input, FALSE);
 		SV2STR(sv,retval);
 		FREETMPS; LEAVE;
 		--perlcalldepth;
