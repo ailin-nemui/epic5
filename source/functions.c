@@ -2316,7 +2316,7 @@ BUILT_IN_FUNCTION(function_key, word)
 		if ((!channel || !*channel) && booya)
 			break;
 
-		key = get_channel_key(channel, current_window->server);
+		key = get_channel_key(channel, from_server);
 		m_sc3cat(&booya, space, (key && *key) ? key : "*", &rvclue);
 	}
 	while (word && *word);
@@ -2341,7 +2341,7 @@ BUILT_IN_FUNCTION(function_channelmode, word)
 		if ((!channel || !*channel) && booya)
 			break;
 
-		mode = get_channel_mode(channel, current_window->server);
+		mode = get_channel_mode(channel, from_server);
 		m_sc3cat(&booya, space, (mode && *mode) ? mode : "*", &rvclue);
 	}
 	while (word && *word);
