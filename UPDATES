@@ -1,5 +1,45 @@
 EPIC4-1.2.0
 
+*** News -- 11/30/2003 -- /XECHO -L now overrides "target window"
+	I had a request from a couple of people who pointed out that
+	in epic4-1.1.*, numeric replies were now being sent to the
+	target's window (ie, a channel's window) if the numeric was
+	for the target/channel.  They were perplexed that /XECHO -L CRAP
+	couldn't override this.  This is because /XECHO -L does not
+	reset the "target" and the "target" has higher priority than
+	the lastlog level.  This means that it's impossible to send 
+	output from an /ON for a channel to a window other than that
+	channel's window using /XECHO -L.  It seems more sensible that
+	/XECHO -L would override the channel's window, because if you
+	weren't expecting it to do that, you wouldn't have used /XECHO -L
+	in the first place, right?
+
+*** News -- 11/30/2003 -- "Fixed" and "skipped" windows now special
+	If a window is marked as both "fixed" (cannot change size) and
+	"skipped" (cannot be made the input window indirectly), then it
+	is now "frozen" -- it does not count towards the number of windows
+	on a screen for the purposes of /WINDOW KILL and /WINDOW HIDE.
+	To be more plain: you cannot kill or hide the last "non-frozen"
+	window on a screen.
+
+	It is probably not a good idea to "freeze" all of the windows on
+	the screen.  Leave one of them "not frozen".  I didn't test this
+	extensively, so if you try to break this, you probably will!
+
+*** News -- 11/30/2003 -- New /ON , /ON WINDOW_COMMAND
+	This /ON is hooked after each time a successful window command
+	is executed.  The value of $* is the refnum is the window that
+	was operated upon.  This /ON is hooked even if the command does
+	not change any state of the window.  This /ON is not hooked if
+	a /WINDOW command fails because of some error.
+
+	Example:
+		/on ^window_command * {echo Window $* command!}
+		/window 2 size 5 hide
+	would output
+		Window 2 command!
+		Window 2 command!
+
 *** News -- 11/24/2003 -- New built in function, $windowct()
 	You can now fetch much of the low-level information about your
 	windows using this function.  You cannot set them (yet), nor is

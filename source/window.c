@@ -1,4 +1,4 @@
-/* $EPIC: window.c,v 1.79 2003/11/24 21:11:17 jnelson Exp $ */
+/* $EPIC: window.c,v 1.80 2003/12/01 03:21:20 jnelson Exp $ */
 /*
  * window.c: Handles the organzation of the logical viewports (``windows'')
  * for irc.  This includes keeping track of what windows are open, where they
@@ -139,6 +139,7 @@ static 	void 	window_scrollforward_to_string (Window *window, regex_t *str);
 	int	change_line (Window *window, const unsigned char *str);
 	int	add_to_display (Window *window, const unsigned char *str);
 static	Display *new_display_line (Display *prev, Window *w);
+static int	count_fixed_windows (Screen *s);
 
 
 /* * * * * * * * * * * CONSTRUCTOR AND DESTRUCTOR * * * * * * * * * * * */
@@ -298,6 +299,8 @@ void 	delete_window (Window *window)
 	int	oldref;
 	int	i;
 	int	invisible = 0;
+	int	fixed_wins;
+	int	fixed;
 
 	if (!window)
 		window = current_window;
@@ -305,16 +308,28 @@ void 	delete_window (Window *window)
 	if (!window->screen)
 		invisible = 1;
 
+	fixed_wins = count_fixed_windows(window->screen);
+	if (window->absolute_size && window->skip)
+		fixed = 1;
+	else
+		fixed = 0;
+
 	/*
-	 * If this is the last window on a screen, and the client is not
-	 * exiting and there are no invisible windows, then /window kill
-	 * here is an error.  Tell the user and abort.
+	 * If this is a hidden window and the client is not going down,
+	 * you cannot kill this window if:
+	 *
+	 * 1) This is a fixed window and it is the only window.
+	 * 2) This is the only non-fixed window (unless a swap can occur)
 	 */
-	if ((dead == 0) && window->screen && 
-	    (window->screen->visible_windows == 1) && !invisible_list)
+	if (dead == 0 && window->screen)
 	{
+	    if ((fixed && window->screen->visible_windows == 1) ||
+	        (!fixed && window->screen->visible_windows - fixed_wins <= 1
+			&& !invisible_list))
+	    {
 		say("You can't kill the last window!");
 		return;
+	    }
 	}
 
 	/*
@@ -384,12 +399,15 @@ void 	delete_window (Window *window)
 	 */
 	if (invisible)
 		remove_from_invisible_list(window);
-	else if (window->screen->visible_windows > 1)
+	else if (fixed || !invisible_list)
 		remove_window_from_screen(window, 0);
-	else if (window->screen->visible_windows == 1)
+	else if (invisible_list)
 		swap_window(window, invisible_list);
 	else
-		panic("I don't know how to unlink this window!");
+	{
+		yell("I don't know how to kill window [%d]", window->refnum);
+		return;
+	}
 
 	/*
 	 * This is done for the sake of invisible windows; but it is a safe
@@ -1441,7 +1459,8 @@ void 	hide_window (Window *window)
 		say("You can't hide an invisible window.");
 		return;
 	}
-	if (window->screen->visible_windows == 1)
+	if (window->screen->visible_windows - 
+			count_fixed_windows(window->screen) <= 1)
 	{
 		say("You can't hide the last window.");
 		return;
@@ -4658,6 +4677,7 @@ BUILT_IN_COMMAND(windowcmd)
 	int 	nargs = 0;
 	Window 	*window;
 	int	old_status_update;
+	int	winref;
 
 	old_status_update = permit_status_update(0);
 	message_from(NULL, LOG_CURRENT);
@@ -4675,10 +4695,14 @@ BUILT_IN_COMMAND(windowcmd)
 		{
 			if (!my_strnicmp(arg, options[i].command, len))
 			{
+				winref = window->refnum;
 				window = options[i].func(window, &args); 
 				nargs++;
 				if (!window)
 					args = NULL;
+				else
+					do_hook(WINDOW_COMMAND_LIST, "%d", 
+						winref);
 				break;
 			}
 		}
@@ -5460,19 +5484,19 @@ char 	*windowctl 	(char *input)
 
 	GET_STR_ARG(listc, input);
 	len = strlen(listc);
-	if (!my_strnicmp(listc, "REFNUMS", len)) {
-		w = NULL;
-		while (traverse_all_windows(&w))
-		    malloc_strcat_wordlist(&ret, space, ltoa(w->refnum));
-		RETURN_MSTR(ret);
-	} else if (!my_strnicmp(listc, "NEW", len)) {
-	} else if (!my_strnicmp(listc, "REFNUM", len)) {
+	if (!my_strnicmp(listc, "REFNUM", len)) {
 	    char *windesc;
 
 	    GET_STR_ARG(windesc, input);
 	    if (!(w = get_window_by_desc(windesc)))
 		RETURN_EMPTY;
 	    RETURN_INT(w->refnum);
+	} else if (!my_strnicmp(listc, "REFNUMS", len)) {
+		w = NULL;
+		while (traverse_all_windows(&w))
+		    malloc_strcat_wordlist(&ret, space, ltoa(w->refnum));
+		RETURN_MSTR(ret);
+	} else if (!my_strnicmp(listc, "NEW", len)) {
 	} else if (!my_strnicmp(listc, "GET", len)) {
 	    GET_INT_ARG(refnum, input);
 	    if (!(w = get_window_by_refnum(refnum)))
@@ -5640,3 +5664,16 @@ char 	*windowctl 	(char *input)
 	update_all_windows();
 	RETURN_EMPTY;
 }
+
+static int	count_fixed_windows (Screen *s)
+{
+	int	count = 0;
+	Window *w;
+
+	for (w = s->window_list; w; w = w->next)
+		if (w->absolute_size && w->skip)
+			count++;
+
+	return count;
+}
+

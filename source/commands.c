@@ -1,4 +1,4 @@
-/* $EPIC: commands.c,v 1.75 2003/11/07 23:43:47 jnelson Exp $ */
+/* $EPIC: commands.c,v 1.76 2003/12/01 03:21:19 jnelson Exp $ */
 /*
  * commands.c -- Stuff needed to execute commands in ircII.
  *		 Includes the bulk of the built in commands for ircII.
@@ -874,7 +874,7 @@ BUILT_IN_COMMAND(xechocmd)
 	int	lastlog_level = 0;
 	int	from_level = 0;
 	char	*flag_arg;
-	int	temp;
+	int	temp = 0;
 	Window *old_to_window;
 	int	all_windows = 0;
 	int	want_banner = 0;
@@ -884,6 +884,8 @@ BUILT_IN_COMMAND(xechocmd)
 	int	old_und = 0, old_rev = 0, old_bold = 0, 
 		old_color = 0, old_blink = 0, old_ansi = 0;
 	int	xtended = 0;
+	const char *	old_mf = NULL;
+	int	old_ml = 0;
 
 	old_to_window = to_window;
 
@@ -933,9 +935,8 @@ BUILT_IN_COMMAND(xechocmd)
 					break;
 				if ((temp = parse_lastlog_level(flag_arg)))
 				{
-					lastlog_level = 
-						set_lastlog_msg_level(temp);
-					from_level = message_from_level(temp);
+					save_message_from(&old_mf, &old_ml);
+					message_from(NULL, temp);
 				}
 			}
 			break;
@@ -1115,11 +1116,9 @@ BUILT_IN_COMMAND(xechocmd)
 		set_int_var(DISPLAY_ANSI_VAR, old_ansi);
 	}
 
-	if (lastlog_level)
-	{
-		set_lastlog_msg_level(lastlog_level);
-		message_from_level(from_level);
-	}
+	if (temp)
+		restore_message_from(old_mf, old_ml);
+
 	if (nolog)
 		inhibit_logging = 0;
 	window_display = display;

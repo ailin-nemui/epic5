@@ -18,3 +18,11 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Make a more complicated wrapper for atoll() for libc5 and stuff.
 * Fix panics when changing hidden window's double status bar status.
 * Fix /lastlog <number> for kanan. 
+* Add /ON WINDOW_COMMAND, hooked after every /window command, $* is refnum.
+* Add concept of "fixed" or "frozen" windows when you SKIP ON FIXED ON
+* Fix /window kill to not kill the last "non-fixed" window
+* Fix /window hide to not hide the last "non-fixed" window
+* Allow /window kill to kill a "fixed" window, but not the last window.
+* (*gulp*) I hope all of the above works!
+* Fix $windowctl(REFNUM ...) it was out of order with REFNUMS
+* Make /xecho -l override the "who_from" target and always send to the level
