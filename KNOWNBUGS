@@ -6,7 +6,6 @@ KNOWN ERRATA (eg, bugs, or unresolved requests):
 * Implement $symbolctl(), to supercede $aliasctl().
 * Need some way to fetch your hook info
 * /query targets with nicks crossing with dcc nicks don't match.
-* Zlonix wants a way to get the log id number in log rewriters.
 
 [See http://www.epicsol.org/PROJECTS for things to come in the future]
 [See http://www.epicsol.org/CHANGELOG5 for things that changed in the past]
@@ -431,3 +430,4 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Fix bug that brought up all servers at once.
 * Fix /window topline so it doesn't chop/wrap-off last word.
 * Fix misleading error message if /exec -direct fails.
+* Add $logctl(CURRENT), refnum of the current logfile, -1 if none.

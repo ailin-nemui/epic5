@@ -1,5 +1,14 @@
 EPIC5-0.1
 
+*** News 01/13/2005 -- New $logctl() feature, $logctl(CURRENT)
+	$logctl(CURRENT) can return one of these values:
+
+		-1	Nothing is being logged right now
+		 0	Something is being logged to the global log, or to
+			a window log
+		>0	Something is being logged to the given log refnum.
+			You can use this log refnum with $logctl().
+
 *** News 01/11/2005 -- New /ON, /ON NEW_NICKNAME
 	This allows you to create your own nickname mangler whenever EPIC
 	is resetting your nickname to register to a server.  Remember that

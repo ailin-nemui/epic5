@@ -1,4 +1,4 @@
-/* $EPIC: logfiles.c,v 1.28 2004/11/02 23:17:34 jnelson Exp $ */
+/* $EPIC: logfiles.c,v 1.29 2005/01/13 16:06:06 jnelson Exp $ */
 /*
  * logfiles.c - General purpose log files
  *
@@ -697,7 +697,7 @@ void	add_to_logs (int winref, int servref, const char *target, int level, const 
 			if (!mask_isset(&log->mask, level))
 				continue;
 			time(&log->activity);
-			add_to_log(log->log, winref, orig_str, log->mangler, log->rewrite);
+			add_to_log(log->refnum, log->log, winref, orig_str, log->mangler, log->rewrite);
 		    }
 		}
 	    }
@@ -709,7 +709,7 @@ void	add_to_logs (int winref, int servref, const char *target, int level, const 
 			if (!mask_isset(&log->mask, level))
 				continue;
 			time(&log->activity);
-			add_to_log(log->log, winref, orig_str, log->mangler, log->rewrite);
+			add_to_log(log->refnum, log->log, winref, orig_str, log->mangler, log->rewrite);
 		    }
 		}
 	    }
@@ -730,7 +730,7 @@ void	add_to_logs (int winref, int servref, const char *target, int level, const 
 
 		/* OK!  We want to log it now! */
 		time(&log->activity);
-		add_to_log(log->log, winref, orig_str, log->mangler, log->rewrite);
+		add_to_log(log->refnum, log->log, winref, orig_str, log->mangler, log->rewrite);
 	    }
 	}
 }
@@ -882,6 +882,8 @@ char *logctl	(char *input)
                 RETURN_EMPTY;           /* Not implemented for now. */
         } else if (!my_strnicmp(listc, "PMATCH", 1)) {
                 RETURN_EMPTY;           /* Not implemented for now. */
+        } else if (!my_strnicmp(listc, "CURRENT", 1)) {
+		RETURN_INT(current_log_refnum);
         } else
                 RETURN_EMPTY;
 

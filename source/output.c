@@ -1,4 +1,4 @@
-/* $EPIC: output.c,v 1.13 2004/04/13 00:19:48 jnelson Exp $ */
+/* $EPIC: output.c,v 1.14 2005/01/13 16:06:06 jnelson Exp $ */
 /*
  * output.c: handles a variety of tasks dealing with the output from the irc
  * program 
@@ -192,7 +192,7 @@ int	init_screen (void)
  */
 void	put_echo (const unsigned char *str)
 {
-	add_to_log(irclog_fp, -1, str, 0, NULL);
+	add_to_log(0, irclog_fp, -1, str, 0, NULL);
 	add_to_screen(str);
 }
 

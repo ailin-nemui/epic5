@@ -1,4 +1,4 @@
-/* $EPIC: screen.c,v 1.90 2005/01/13 05:39:41 jnelson Exp $ */
+/* $EPIC: screen.c,v 1.91 2005/01/13 16:06:06 jnelson Exp $ */
 /*
  * screen.c
  *
@@ -2379,7 +2379,7 @@ static void    window_disp (Window *window, const unsigned char *str, const unsi
         int             cols;
 	int		numl = 0;
 
-	add_to_log(window->log_fp, window->refnum, orig_str, 0, NULL);
+	add_to_log(0, window->log_fp, window->refnum, orig_str, 0, NULL);
 	add_to_logs(window->refnum, from_server, who_from, who_level, orig_str);
 	add_to_lastlog(window, orig_str);
 

@@ -1,4 +1,4 @@
-/* $EPIC: log.c,v 1.18 2004/08/11 23:58:39 jnelson Exp $ */
+/* $EPIC: log.c,v 1.19 2005/01/13 16:06:06 jnelson Exp $ */
 /*
  * log.c: handles the irc session logging functions 
  *
@@ -44,7 +44,7 @@
 
 	FILE	*irclog_fp;
 	int	logfile_line_mangler;
-
+	int	current_log_refnum = -1;
 
 static FILE *open_log (const char *logfile, FILE **fp)
 {
@@ -142,15 +142,21 @@ void	logger (void *stuff)
 /*
  * add_to_log: add the given line to the log file.  If no log file is open
  * this function does nothing. 
+ * (Note:  "logref" should be -1 unless we are logging from a /log log, ie,
+ * any place that is not inside logfiles.c)
  */
-void 	add_to_log (FILE *fp, unsigned winref, const unsigned char *line, int mangler, const char *rewriter)
+void 	add_to_log (int logref, FILE *fp, unsigned winref, const unsigned char *line, int mangler, const char *rewriter)
 {
 	char	*local_line;
 	size_t	size;
 	int	must_free = 0;
+	int	old_logref;
 
 	if (!fp || inhibit_logging)
 		return;
+
+	old_logref = current_log_refnum;
+	current_log_refnum = logref;
 
 	/*
 	 * We need to make a local copy because 'mangle_line' 
@@ -201,4 +207,6 @@ void 	add_to_log (FILE *fp, unsigned winref, const unsigned char *line, int mang
 
 	if (must_free)
 		new_free(&local_line);
+
+	current_log_refnum = old_logref;
 }
