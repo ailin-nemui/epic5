@@ -9,7 +9,7 @@
  */
 
 #if 0
-static	char	rcsid[] = "@(#)$Id: notice.c,v 1.1 2000/12/05 00:11:57 jnelson Exp $";
+static	char	rcsid[] = "@(#)$Id: notice.c,v 1.2 2001/05/08 20:05:21 jnelson Exp $";
 #endif
 
 #include "irc.h"
@@ -434,8 +434,12 @@ int 	kill_message (const char *from, char *cline)
 	line += 5;
 	bastard = next_arg(line, &line);
 
-	/* Broken hybrid6 kill doesn't include a path. How lame. */
-	/* Fend off future broken kills */
+	/*
+	 * I was bullied into removing the comment that was here by
+	 * Dianora who was personally offended that i would refer to
+	 * breaking backwards compatability as "broken".
+	 */
+	/* Fend off future non-conformant kills */
 	if (my_strnicmp(line, "Path: ", 6))
 	{
 		path_to_bastard = "*";
