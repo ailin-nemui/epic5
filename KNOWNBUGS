@@ -34,7 +34,6 @@ KNOWN ERRATA (eg, bugs, or unresolved requests):
 * get_window() should use get_window_by_desc() and not its own thing
 * /eval echo $match("\\[s s1 \\\\"s *\\\\"\\]" "s s") really should work.
 * ^C,,, eats up all commas, not just the first one.
-* ON WHO hook not thrown in correct window.
 * New built in function to get who_from and who_level
 * getaddrinfo() supports AF_UNIX as the second argument, not the first.
 
@@ -237,3 +236,5 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Add $serverctl(SET|GET <refnum> MAXCACHESIZE), largest channel we do WHO for.
 * Move 'whobase' call from /on join to /on 324.
 * Don't call 'whobase' (userhost caching) if too many users on channel.
+* Fix who replies to use "who target" as target for output.
+* This makes /ON WHO hook in the correct window.
