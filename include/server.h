@@ -123,6 +123,7 @@ extern	int	parsing_server_index;
 	int	close_all_servers		(const char *);
 	void	close_server			(int, const char *);
 	void	save_server_channels		(int);
+	void	dont_save_server_channels	(int);
 
 	void	set_server_away			(int, const char *);
 const	char *	get_server_away			(int);
