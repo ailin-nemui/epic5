@@ -1369,6 +1369,7 @@ u_char *	normalize_string (const u_char *str, int logical)
 				pos += attrout(output + pos, &a);
 			}
 			pc++;
+			next_char();
 			break;
 		}
 
