@@ -136,7 +136,7 @@ alias history.get (direction, void) {
 		if (@L && @history.index == 0) {
 			history.add $L;
 		};
-		if ((history.index == (:numitems = numitems(array.history) - 1) || @history.index == 0) && histor_circleq == [on]) {
+		if ((history.index == (:numitems = numitems(array.history) - 1) || @history.index == 0) && history_circleq == [on]) {
 			history.show 0;
 		} else if (history.index < numitems && @history.index) {
 			history.show ${history.index + 1};
