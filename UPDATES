@@ -1,5 +1,41 @@
 EPIC4-1.2.0
 
+*** News 07/04/2003 -- More interfaces to $ignorectl()
+	You can now query and set the ignore's creation time, its 
+	last-used time, and the number of times it's been used:
+
+	$ignorectl(GET <refnum> CREATION)
+	- Return the time the ignore was created.  The first integer is in
+	  seconds and the second number is in milliseconds.  This is the 
+	  same format that $utime() uses.
+
+	$ignorectl(GET <refnum> LAST_USED)
+	- Return the time the ignore was used (triggered).  The first integer 
+	  is in seconds and the second number is in milliseconds.  This is 
+	  the same format that $utime() uses.
+
+	$ignorectl(GET <refnum> COUNTER)
+	- Return the number of times the ignore has been used (triggered).
+
+	$ignorectl(SET <refnum> CREATION <seconds> <milliseconds>)
+	- Set the time the ignore was created.  The two values shall be
+	  system clock time, that is, the number of seconds after the epoch
+	  when the ignore was created.  Why you would want to change 
+	  this is beyond me, but you know, whatever.  
+	  The ignore's refnum is returned.
+
+	$ignorectl(SET <refnum> LAST_USED <seconds> <milliseconds>)
+	- Set the time the ignore was last used (triggered).  The two values 
+	  shall be system clock time, that is, the number of seconds after 
+	  the epoch when the ignore was last used (triggered).
+	  The ignore's refnum is returned.
+
+	$ignorectl(SET <refnum> COUNTER <number>)
+	- Set the number of times the ignore has been used (triggered).
+	  This is probably most useful to reset to 0 if you want to see
+	  if an ignore is still being triggered or not.
+	  The ignore's refnum is returned.
+
 *** News 06/30/2003 -- Revamped /IGNORE support.
 	The /IGNORE support for epic has been mostly rewritten, but the
 	user-interface has tried to say the same.  Several new features

@@ -1,4 +1,4 @@
-/* $EPIC: ignore.c,v 1.10 2003/07/02 03:38:17 jnelson Exp $ */
+/* $EPIC: ignore.c,v 1.11 2003/07/04 17:11:53 jnelson Exp $ */
 /*
  * ignore.c: handles the ingore command for irc 
  *
@@ -122,6 +122,9 @@ typedef struct	IgnoreStru
 	int	type;			/* Suppressive ignores */
 	int	dont;			/* Exceptional ignores */
 	int	high;			/* Highlight ignores */
+	int	counter;		/* How many times it has triggered */
+	Timeval	creation;		/* When it was created */
+	Timeval	last_used;		/* When it was last ``triggered'' */
 	Timeval	expiration;		/* When this ignore expires */
 	char	*reason;
 }	Ignore;
@@ -154,6 +157,10 @@ static Ignore *new_ignore (const char *new_nick)
 	item->type = 0;
 	item->dont = 0;
 	item->high = 0;
+	item->counter = 0;
+	get_time(&item->creation);
+	item->last_used.tv_sec = 0;
+	item->last_used.tv_usec = 0;
 	item->expiration.tv_sec = 0;
 	item->expiration.tv_usec = 0;
 	add_to_list((List **)&ignored_nicks, (List *)item);
@@ -1098,6 +1105,18 @@ char *	ignorectl (char *input)
 				(long) i->expiration.tv_usec);
 		} else if (!my_strnicmp(listc, "REASON", len)) {
 			RETURN_STR(i->reason);
+		} else if (!my_strnicmp(listc, "COUNTER", len)) {
+			RETURN_INT(i->counter);
+		} else if (!my_strnicmp(listc, "CREATION", len)) {
+			char *ptr = NULL;
+			return malloc_sprintf(&ptr, "%ld %ld", 
+				(long) i->creation.tv_sec,
+				(long) i->creation.tv_usec);
+		} else if (!my_strnicmp(listc, "LAST_USED", len)) {
+			char *ptr = NULL;
+			return malloc_sprintf(&ptr, "%ld %ld", 
+				(long) i->last_used.tv_sec,
+				(long) i->last_used.tv_usec);
 		}
 	} else if (!my_strnicmp(listc, "SET", len)) {
 		int	refnum;
@@ -1139,6 +1158,23 @@ char *	ignorectl (char *input)
 				new_free(&i->reason);
 			else
 				malloc_strcpy(&i->reason, input);
+			RETURN_INT(i->refnum);
+		} else if (!my_strnicmp(listc, "CREATION", len)) {
+			Timeval to;
+
+			GET_INT_ARG(to.tv_sec, input);
+			GET_INT_ARG(to.tv_usec, input);
+			i->creation = to;
+			RETURN_INT(i->refnum);
+		} else if (!my_strnicmp(listc, "LAST_USED", len)) {
+			Timeval to;
+
+			GET_INT_ARG(to.tv_sec, input);
+			GET_INT_ARG(to.tv_usec, input);
+			i->last_used = to;
+			RETURN_INT(i->refnum);
+		} else if (!my_strnicmp(listc, "COUNTER", len)) {
+			GET_INT_ARG(i->counter, input);
 			RETURN_INT(i->refnum);
 		}
 	}
@@ -1229,11 +1265,23 @@ int	check_ignore_channel (const char *nick, const char *uh, const char *channel,
 	{
 		tmp = i_match;
 		if (tmp->dont & type)
+		{
+			tmp->counter++;
+			get_time(&tmp->last_used);
 			return NOT_IGNORED;
+		}
 		if (tmp->type & type)
+		{
+			tmp->counter++;
+			get_time(&tmp->last_used);
 			return IGNORED;
+		}
 		if (tmp->high & type)
+		{
+			tmp->counter++;
+			get_time(&tmp->last_used);
 			return HIGHLIGHTED;
+		}
 	}
 
 	/*
@@ -1244,11 +1292,23 @@ int	check_ignore_channel (const char *nick, const char *uh, const char *channel,
 	{
 		tmp = c_match;
 		if (tmp->dont & type)
+		{
+			tmp->counter++;
+			get_time(&tmp->last_used);
 			return NOT_IGNORED;
+		}
 		if (tmp->type & type)
+		{
+			tmp->counter++;
+			get_time(&tmp->last_used);
 			return IGNORED;
+		}
 		if (tmp->high & type)
+		{
+			tmp->counter++;
+			get_time(&tmp->last_used);
 			return HIGHLIGHTED;
+		}
 	}
 
 	/*
