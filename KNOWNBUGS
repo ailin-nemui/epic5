@@ -20,6 +20,8 @@ KNOWN ERRATA (eg, bugs, or unresolved requests):
 * Allow /msg -<server desc>, including the group.
 * Some /set's need to be initialized before creating the first window!
 * Calling dcc_connected(<fd>, 0) is always bogus. fix this.
+* It's possible to overflow the %F buffer with lots of ^C's and stuff.
+* Need some way to fetch your hook info
 
 [See http://www.epicsol.org/PROJECTS for things to come in the future]
 [See http://www.epicsol.org/CHANGELOG5 for things that changed in the past]
@@ -359,3 +361,14 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Fix /who -d[iagnose] from epic4.
 * Remove limits on timer refnames.
 * Add $mktime() from howl.
+* Nix /save and pray nobody notices.
+* Implement pmatch_* stuff in alias.c to use the unified symbol table.
+* Commands, functions, and expandos now 100% integrated.  HUZZAH!
+* Reimplement $get(set|command|function)s() to use the pmatch_* stuff.
+* So they now pick up changes at runtime. HUZZAH!
+* Allow built in /set to be conditionally added to the "set bucket"
+* Don't put user-created /set's in the bucket
+* Allow user to replace one user-created /sets but not builtin sets.
+* Allow mangling of ALT_CHAR -- how did this ever get missed?
+* Fix $currchans() so it works the way the documentation says it does.
+* Fix some const correctness issues, introduce others. bleh.

@@ -18,5 +18,6 @@
 	int     remove_timer	(const char *ref);
 	Timeval	TimerTimeout 	(void);
 	char *	timerctl	(char *);
+	void	dump_timers	(void);
 
 #endif /* _TIMER_H_ */

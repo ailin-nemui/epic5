@@ -1,4 +1,4 @@
-/* $EPIC: vars.c,v 1.58 2004/07/29 16:39:50 jnelson Exp $ */
+/* $EPIC: vars.c,v 1.59 2004/08/11 23:58:39 jnelson Exp $ */
 /*
  * vars.c: All the dealing of the irc variables are handled here. 
  *
@@ -63,7 +63,7 @@
 #include "commands.h"
 #include "if.h"
 
-static void 	set_variable (const char *, IrcVariable *, char *, int);
+static void 	set_variable (const char *, IrcVariable *, const char *, int);
 
 /*
  * The VIF_* macros stand for "(V)ariable.(i)nt_(f)lags", and have been
@@ -80,19 +80,19 @@ const char	*var_settings[] =
 
 	Bucket *var_bucket = NULL;
 
-static	void	eight_bit_characters 	(const void *);
-static 	void 	set_display_pc_characters (const void *);
-static 	void	set_dcc_timeout 	(const void *);
-static	void	set_mangle_inbound 	(const void *);
-static	void	set_mangle_outbound 	(const void *);
-static	void	set_mangle_logfiles 	(const void *);
-static	void	update_all_status_wrapper (const void *);
-static	void	set_highlight_char	(const void *);
-static	void	set_wserv_type		(const void *);
+static	void	eight_bit_characters 	(void *);
+static 	void 	set_display_pc_characters (void *);
+static 	void	set_dcc_timeout 	(void *);
+static	void	set_mangle_inbound 	(void *);
+static	void	set_mangle_outbound 	(void *);
+static	void	set_mangle_logfiles 	(void *);
+static	void	update_all_status_wrapper (void *);
+static	void	set_highlight_char	(void *);
+static	void	set_wserv_type		(void *);
 
 
 /* BIV stands for "built in variable" */
-static int	add_biv (const char *name, int type, void (*func) (const void *), const char *script, ...)
+static int	add_biv (const char *name, int bucket, int type, void (*func) (void *), const char *script, ...)
 {
 	IrcVariable *var;
 	va_list va;
@@ -129,11 +129,16 @@ static int	add_biv (const char *name, int type, void (*func) (const void *), con
 	va_end(va);
 
 	add_builtin_variable_alias(name, var);
-	add_to_bucket(var_bucket, name, var);
-	return (var_bucket->numitems - 1);
+	if (bucket)
+	{
+		add_to_bucket(var_bucket, name, var);
+		return (var_bucket->numitems - 1);
+	}
+	else
+		return -1;
 }
 
-#define VAR(x, y, z) x ## _VAR = add_biv( #x, y ## _VAR, z,NULL, DEFAULT_ ## x);
+#define VAR(x, y, z) x ## _VAR = add_biv( #x, 1, y ## _VAR, z,NULL, DEFAULT_ ## x);
 
 /*
  * init_variables: initializes the string variables that can't really be
@@ -454,7 +459,7 @@ static void	show_var_value (const char *name, IrcVariable *var, int newval)
  * of manors.  It displays the results of the set and executes the function
  * defined in the var structure 
  */
-void 	set_var_value (int svv_index, char *value, int noisy)
+void 	set_var_value (int svv_index, const char *value, int noisy)
 {
 	IrcVariable *var;
 
@@ -468,12 +473,14 @@ void 	set_var_value (int svv_index, char *value, int noisy)
  * of manors.  It displays the results of the set and executes the function
  * defined in the var structure 
  */
-static void 	set_variable (const char *name, IrcVariable *var, char *value, int noisy)
+static void 	set_variable (const char *name, IrcVariable *var, const char *orig_value, int noisy)
 {
 	char	*rest;
 	int	old;
 	int	changed = 0;
+	char	*value;
 
+	value = LOCAL_COPY(orig_value);
 	switch (var->type)
 	{
 	    case BOOL_VAR:
@@ -566,12 +573,14 @@ static void 	set_variable (const char *name, IrcVariable *var, char *value, int 
 	    show_var_value(name, var, changed);
 }
 
-void	create_user_set (char *args)
+static void	create_user_set (char *args)
 {
 	char *expr = NULL;
 	char *typestr;
 	int   type;
 	char *varname;
+	char *(*unused)(void);
+	IrcVariable *var;
 
 	varname = next_arg(args, &args);
 	if (!varname || !*varname)
@@ -612,10 +621,20 @@ void	create_user_set (char *args)
 	}
 
 	upper(varname);
+
+	get_var_alias(varname, &unused, &var);
+	if (var != NULL && var->func)
+	{
+		say("Cannot replace builtin var %s with created var", varname);
+		return;
+	}
+	else if (var != NULL && var->func == NULL)
+		delete_builtin_variable(varname);
+
 	if (type == STR_VAR)
-		add_biv(varname, type, NULL, expr, (char *)NULL);
+		add_biv(varname, 0, type, NULL, expr, (char *)NULL);
 	else
-		add_biv(varname, type, NULL, expr, 0);
+		add_biv(varname, 0, type, NULL, expr, 0);
 
 	say("Created new SET named \"%s\" of type %s ", varname, typestr);
 }
@@ -805,51 +824,6 @@ char 	*make_string_var_bydata (int type, void *vp)
 
 }
 
-GET_BUCKET_NAMES_FUNCTION(get_set, var_bucket)
-
-
-/*
- * save_variables: this writes all of the IRCII variables to the given FILE
- * pointer in such a way that they can be loaded in using LOAD or the -l switch 
- */
-void 	save_variables (FILE *fp, int do_all)
-{
-	IrcVariable *var;
-	const char *name;
-	int	i;
-
-	for (i = 0; i < var_bucket->numitems; i++)
-	{
-		var = (IrcVariable *)var_bucket->list[i].stuff;
-		name = var_bucket->list[i].name;
-
-		if (!strcmp(name, "DISPLAY") || 
-		    !strcmp(name, "CLIENT_INFORMATION"))
-			continue;
-
-		fprintf(fp, "SET ");
-		switch (var->type)
-		{
-		case BOOL_VAR:
-			fprintf(fp, "%s %s\n", name, var->data->integer ?
-				var_settings[ON] : var_settings[OFF]);
-			break;
-		case CHAR_VAR:
-			fprintf(fp, "%s %c\n", name, var->data->integer);
-			break;
-		case INT_VAR:
-			fprintf(fp, "%s %u\n", name, var->data->integer);
-			break;
-		case STR_VAR:
-			if (var->data->string)
-				fprintf(fp, "%s %s\n", name, var->data->string);
-			else
-				fprintf(fp, "-%s\n", name);
-			break;
-		}
-	}
-}
-
 
 /***************************************************************************/
 /* returns the size of the character set */
@@ -858,7 +832,7 @@ int 	charset_size (void)
 	return get_int_var(EIGHT_BIT_CHARACTERS_VAR) ? 256 : 128;
 }
 
-static void 	eight_bit_characters (const void *stuff)
+static void 	eight_bit_characters (void *stuff)
 {
 	VARIABLE *v;
 	int	value;
@@ -870,7 +844,7 @@ static void 	eight_bit_characters (const void *stuff)
 	set_term_eight_bit(value);
 }
 
-static void 	set_display_pc_characters (const void *stuff)
+static void 	set_display_pc_characters (void *stuff)
 {
 	VARIABLE *v;
 	int	value;
@@ -885,7 +859,7 @@ static void 	set_display_pc_characters (const void *stuff)
 	}
 }
 
-static void	set_dcc_timeout (const void *stuff)
+static void	set_dcc_timeout (void *stuff)
 {
 	VARIABLE *v;
 	int	value;
@@ -925,6 +899,10 @@ int	parse_mangle (const char *value, int nvalue, char **rv)
 				nvalue = (0x7FFFFFFF ^ (MANGLE_ESCAPES) ^ (STRIP_OTHER) ^ (STRIP_ALL_OFF));
 			else if (!my_strnicmp(str2, "-ALL", 4))
 				nvalue = 0;
+			else if (!my_strnicmp(str2, "ALT_CHAR", 3))
+				nvalue |= STRIP_ALT_CHAR;
+			else if (!my_strnicmp(str2, "ALT_CHAR", 4))
+				nvalue &= ~(STRIP_ALT_CHAR);
 			else if (!my_strnicmp(str2, "ANSI", 2))
 				nvalue |= MANGLE_ANSI_CODES;
 			else if (!my_strnicmp(str2, "-ANSI", 3))
@@ -1001,7 +979,7 @@ int	parse_mangle (const char *value, int nvalue, char **rv)
 	return nvalue;
 }
 
-static	void	set_mangle_inbound (const void *stuff)
+static	void	set_mangle_inbound (void *stuff)
 {
 	VARIABLE *v;
 	const char *value;
@@ -1015,7 +993,7 @@ static	void	set_mangle_inbound (const void *stuff)
 	new_free(&nv);
 }
 
-static	void	set_mangle_outbound (const void *stuff)
+static	void	set_mangle_outbound (void *stuff)
 {
 	VARIABLE *v;
 	const char *value;
@@ -1029,7 +1007,7 @@ static	void	set_mangle_outbound (const void *stuff)
 	new_free(&nv);
 }
 
-static	void	set_mangle_logfiles (const void *stuff)
+static	void	set_mangle_logfiles (void *stuff)
 {
 	VARIABLE *v;
 	const char *value;
@@ -1043,12 +1021,12 @@ static	void	set_mangle_logfiles (const void *stuff)
 	new_free(&nv);
 }
 
-static void	update_all_status_wrapper (const void *stuff)
+static void	update_all_status_wrapper (void *stuff)
 {
 	update_all_status();
 }
 
-static void    set_highlight_char (const void *stuff)
+static void    set_highlight_char (void *stuff)
 {
 	VARIABLE *v;
 	const char *s;
@@ -1071,7 +1049,7 @@ static void    set_highlight_char (const void *stuff)
                 malloc_strcpy(&highlight_char, s);
 }
 
-static void    set_wserv_type (const void *stuff)
+static void    set_wserv_type (void *stuff)
 {
 	VARIABLE *v;
 	const char *s;

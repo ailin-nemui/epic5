@@ -253,7 +253,7 @@ typedef struct
 {
         int             type;           /* variable types, see below */
         VARIABLE *      data;           /* The value of the variable */
-        void    (*func) (const void *); /* func called when var is set */
+        void    (*func) (void *); 	/* func called when var is set */
 	char *		script;		/* script called when var is set */
         u_short         flags;          /* flags for this variable */
 }       IrcVariable;
@@ -266,7 +266,7 @@ typedef struct
 	int	do_short_boolean 	(char *, short *);
 	int	get_int_var 		(int);
 	char *	get_string_var 		(int);
-	void	set_var_value		(int, char *, int);
+	void	set_var_value		(int, const char *, int);
 	void	init_variables_stage1	(void);
 	void	init_variables_stage2	(void);
 	char*	make_string_var 	(const char *);

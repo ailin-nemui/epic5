@@ -1,4 +1,4 @@
-/* $EPIC: notify.c,v 1.27 2004/07/08 08:27:59 crazyed Exp $ */
+/* $EPIC: notify.c,v 1.28 2004/08/11 23:58:39 jnelson Exp $ */
 /*
  * notify.c: a few handy routines to notify you when people enter and leave irc 
  *
@@ -511,23 +511,6 @@ void 	notify_userhost_reply (int refnum, const char *nick, const char *uh)
 }
 
 
-void 	save_notify (FILE *fp)
-{
-	Server *s = NULL;
-	int i;
-
-	for (i = 0; i < number_of_servers; i++)
-		if ((s = get_server(i)) && NOTIFY_MAX(s))
-			break;
-	if (!s)
-		return;			/* No notify list. */
-
-	fprintf(fp, "NOTIFY");
-	for (i = 0; i < NOTIFY_MAX(s); i++)
-		fprintf(fp, " %s", NOTIFY_ITEM(s, i)->nick);
-	fprintf(fp, "\n");
-}
-
 void 	make_notify_list (int refnum)
 {
 	Server *s, *sp = NULL;
@@ -615,12 +598,12 @@ void	notify_systimer (void)
 	do_notify();
 }
 
-void    set_notify_interval (const void *stuff)
+void    set_notify_interval (void *stuff)
 {
 	update_system_timer(notify_timeref);
 }
 
-void    set_notify (const void *stuff)
+void    set_notify (void *stuff)
 {
 	update_system_timer(notify_timeref);
 }

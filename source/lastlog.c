@@ -1,4 +1,4 @@
-/* $EPIC: lastlog.c,v 1.43 2004/07/29 16:59:03 jnelson Exp $ */
+/* $EPIC: lastlog.c,v 1.44 2004/08/11 23:58:39 jnelson Exp $ */
 /*
  * lastlog.c: handles the lastlog features of irc. 
  *
@@ -214,7 +214,7 @@ const char *	level_to_str (int i)
  * parses the settings and sets the lastlog_mask variable appropriately.  It
  * also rewrites the LASTLOG_LEVEL variable to make it look nice 
  */
-void	set_lastlog_mask (const void *stuff)
+void	set_lastlog_mask (void *stuff)
 {
 	VARIABLE *v;
 	const char *str;
@@ -228,7 +228,7 @@ void	set_lastlog_mask (const void *stuff)
 	current_window->lastlog_mask = lastlog_mask;
 }
 
-void	set_new_server_lastlog_mask (const void *stuff)
+void	set_new_server_lastlog_mask (void *stuff)
 {
 	VARIABLE *v;
 	const char *str;
@@ -240,7 +240,7 @@ void	set_new_server_lastlog_mask (const void *stuff)
 	malloc_strcpy(&v->string, mask_to_str(&new_server_lastlog_mask));
 }
 
-void	set_old_server_lastlog_mask (const void *stuff)
+void	set_old_server_lastlog_mask (void *stuff)
 {
 	VARIABLE *v;
 	const char *str;
@@ -281,7 +281,7 @@ void 	remove_from_lastlog (Window *window)
  * has gotten larger than it was before, all newer lastlog entries remain.
  * If it get smaller, some are deleted from the end. 
  */
-void	set_lastlog_size (const void *stuff)
+void	set_lastlog_size (void *stuff)
 {
 	VARIABLE *v;
 	int	size;
@@ -901,7 +901,7 @@ Mask	real_lastlog_mask (void)
 	return (lastlog_mask);
 }
 
-void	set_notify_mask (const void *stuff)
+void	set_notify_mask (void *stuff)
 {
 	VARIABLE *v;
 	const char *str;
@@ -915,7 +915,7 @@ void	set_notify_mask (const void *stuff)
 	current_window->notify_mask = notify_mask;
 }
 
-void	set_current_window_mask (const void *stuff)
+void	set_current_window_mask (void *stuff)
 {
 	VARIABLE *v;
 	const char *str;

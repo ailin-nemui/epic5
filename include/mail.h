@@ -13,7 +13,7 @@ extern	char	mail_timeref[];
 
 	const char *	check_mail	(void);
 	void	mail_systimer		(void);
-	void	set_mail_interval	(const void *);
-	void	set_mail		(const void *);
+	void	set_mail_interval	(void *);
+	void	set_mail		(void *);
 
 #endif /* _MAIL_H_ */

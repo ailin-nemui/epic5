@@ -1,4 +1,4 @@
-/* $EPIC: server.c,v 1.136 2004/08/08 03:52:50 jnelson Exp $ */
+/* $EPIC: server.c,v 1.137 2004/08/11 23:58:39 jnelson Exp $ */
 /*
  * server.c:  Things dealing with that wacky program we call ircd.
  *
@@ -2342,30 +2342,6 @@ int	check_server_redirect (int refnum, const char *who)
 	}
 
 	return 0;
-}
-
-/*
- * save_servers; dumps your serverlist to a file, which can be /load'ed
- * later.  --SrfRoG
- */
-void 	save_servers (FILE *fp)
-{
-	Server *s;
-	int	i;
-
-	for (i = 0; i < number_of_servers; i++)
-	{
-		if (!(s = get_server(i)))
-			continue;
-
-		/* SERVER -ADD server:port:password:nick */
-		fprintf(fp, "SERVER -ADD %s:%d:%s:%s:%s:%s\n",
-			s->name, s->port,
-			s->password ?  s->password : empty_string,
-			s->nickname ?  s->nickname : empty_string,
-			s->group ?  s->group : empty_string,
-			get_server_type(i));
-	}
 }
 
 const char *get_server_type (int refnum)

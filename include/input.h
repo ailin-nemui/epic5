@@ -20,7 +20,7 @@
 	void	input_move_cursor 		(int);
 	char	input_pause 			(char *);
 	void	set_input 			(const char *);
-	void	set_input_prompt 		(const void *);
+	void	set_input_prompt 		(void *);
 	void	update_input 			(int);
 
 /* keybinding functions */

@@ -1,4 +1,4 @@
-/* $EPIC: log.c,v 1.17 2004/07/23 00:49:46 jnelson Exp $ */
+/* $EPIC: log.c,v 1.18 2004/08/11 23:58:39 jnelson Exp $ */
 /*
  * log.c: handles the irc session logging functions 
  *
@@ -119,7 +119,7 @@ FILE *do_log (int flag, const char *logfile, FILE **fp)
 }
 
 /* logger: if flag is 0, logging is turned off, else it's turned on */
-void	logger (const void *stuff)
+void	logger (void *stuff)
 {
 	VARIABLE *v;
 	int	flag;

@@ -1,4 +1,4 @@
-/* $EPIC: status.c,v 1.46 2004/08/05 00:38:57 jnelson Exp $ */
+/* $EPIC: status.c,v 1.47 2004/08/11 23:58:39 jnelson Exp $ */
 /*
  * status.c: handles the status line updating, etc for IRCII 
  *
@@ -442,7 +442,7 @@ void	rebuild_a_status (Window *w)
  * This function is a /SET callback, so it must always take a (char *) as an
  * argument even though we don't care about it.
  */
-void	build_status	(const void *stuff)
+void	build_status	(void *stuff)
 {
 	Window 	*w = NULL;
 

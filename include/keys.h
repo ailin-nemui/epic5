@@ -18,7 +18,7 @@ BUILT_IN_COMMAND(parsekeycmd);
 	void	init_binds		(void);
 	void	init_keys 		(void);
 	void	init_termkeys 		(void);
-	void	set_key_interval	(const void *);
+	void	set_key_interval	(void *);
 	void	save_bindings 		(FILE *, int);
 	void	remove_bindings		(void);
 	void	unload_bindings		(const char *);

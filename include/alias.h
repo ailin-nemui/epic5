@@ -107,6 +107,13 @@
 
 	char **	get_subarray_elements 	(Char *root, int *howmany, int type);
 
+	extern  char ** pmatch_cmd_alias        (Char *name, int *howmany, int maxret, int start, int rev);
+	extern  char ** pmatch_assign_alias     (Char *name, int *howmany, int maxret, int start, int rev);
+	extern  char ** pmatch_builtin_commands        (Char *name, int *howmany, int maxret, int start, int rev);
+	extern  char ** pmatch_builtin_functions       (Char *name, int *howmany, int maxret, int start, int rev);
+	extern  char ** pmatch_builtin_expandos       (Char *name, int *howmany, int maxret, int start, int rev);
+	extern  char ** pmatch_builtin_variables       (Char *name, int *howmany, int maxret, int start, int rev);
+
 
 	void	bucket_var_alias (Bucket *, const char *);
 	void	bucket_cmd_alias (Bucket *, const char *);

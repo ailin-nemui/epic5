@@ -139,7 +139,7 @@ static	long	last_milliday;
 	}
 }
 
-void	reset_clock (const void *stuff)
+void	reset_clock (void *stuff)
 {
 	if (x_debug & DEBUG_BROKEN_CLOCK)
 		reset_broken_clock();
@@ -164,23 +164,23 @@ void	clock_systimer (void)
 	reset_clock(NULL);
 }
 
-void    set_clock_interval (const void *stuff)
+void    set_clock_interval (void *stuff)
 {
 	update_system_timer(clock_timeref);	/* XXX Oh heck, why not? */
 }
 
-void     set_clock_format (const void *stuff)
+void     set_clock_format (void *stuff)
 {
-	VARIABLE *v;
+	const VARIABLE *v;
 	const char *value;
 
-	v = (VARIABLE *)stuff;
+	v = (const VARIABLE *)stuff;
 	value = v->string;
         malloc_strcpy(&time_format, value);
         reset_clock(NULL);
 }
 
-void	set_clock (const void *stuff)
+void	set_clock (void *stuff)
 {
 	update_system_timer(clock_timeref);
 	update_all_status();
@@ -228,7 +228,7 @@ int	cpu_saver_timer (void *schedule_only)
 	return 0;
 }
 
-void    set_cpu_saver_after (const void *stuff)
+void    set_cpu_saver_after (void *stuff)
 {
 	VARIABLE *v;
 	int	value;
@@ -246,7 +246,7 @@ void    set_cpu_saver_after (const void *stuff)
                 cpu_saver_timer(NULL);
 }
 
-void	set_cpu_saver_every (const void *stuff)
+void	set_cpu_saver_every (void *stuff)
 {
 	VARIABLE *v;
 	int	value;

@@ -1,4 +1,4 @@
-/* $EPIC: timer.c,v 1.45 2004/08/08 04:20:27 jnelson Exp $ */
+/* $EPIC: timer.c,v 1.46 2004/08/11 23:58:39 jnelson Exp $ */
 /*
  * timer.c -- handles timers in ircII
  *
@@ -487,7 +487,7 @@ static	int	create_timer_ref (const char *refnum_wanted, char **refnum_gets)
 			if (refnum < my_atol(tmp->ref))
 				refnum = my_atol(tmp->ref);
 		}
-		malloc_sprintf(refnum_gets, "%ld", refnum + 1);
+		malloc_sprintf(refnum_gets, "%d", refnum + 1);
 	}
 	else
 	{

@@ -1,4 +1,4 @@
-/* $EPIC: term.c,v 1.14 2004/07/23 00:49:46 jnelson Exp $ */
+/* $EPIC: term.c,v 1.15 2004/08/11 23:58:39 jnelson Exp $ */
 /*
  * term.c -- termios and (termcap || terminfo) handlers
  *
@@ -1189,7 +1189,7 @@ void	set_term_eight_bit (int value)
 	tcsetattr(tty_des, TCSADRAIN, &newb);
 }
 
-void	set_meta_8bit (const void *stuff)
+void	set_meta_8bit (void *stuff)
 {
 	VARIABLE *v;
 	int	value;

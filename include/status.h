@@ -33,7 +33,7 @@ extern	Status	main_status;
 
 	char *	convert_sub_format (const char *, char);
 	int	make_status 	(struct WindowStru *, int);	/* Don't call */
-	void	build_status 	(const void *);
+	void	build_status 	(void *);
 	int	permit_status_update	(int);
 	void	rebuild_a_status (struct WindowStru *);		/* Don't call */
 

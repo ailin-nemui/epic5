@@ -1,4 +1,4 @@
-/* $EPIC: functions.c,v 1.176 2004/08/11 15:39:20 jnelson Exp $ */
+/* $EPIC: functions.c,v 1.177 2004/08/11 23:58:39 jnelson Exp $ */
 /*
  * functions.c -- Built-in functions for ircII
  *
@@ -1978,8 +1978,11 @@ BUILT_IN_FUNCTION(function_chngw, word)
  */
 BUILT_IN_FUNCTION(function_common, word)
 {
-	char    *left = (char *) 0, **leftw = NULL,
-		*right = (char *) 0, **rightw = NULL, *booya = NULL;
+	char    *left = (char *) 0;
+	char	*right = (char *) 0;
+	char 	*booya = NULL;
+	const char **leftw = NULL;
+	const char **rightw = NULL;
 	int	leftc, lefti,
 		rightc, righti;
 	size_t	rvclue=0;
@@ -2019,8 +2022,11 @@ BUILT_IN_FUNCTION(function_common, word)
  */
 BUILT_IN_FUNCTION(function_diff, word)
 {
-	char 	*left = NULL, **leftw = NULL,
-	     	*right = NULL, **rightw = NULL, *booya = NULL;
+	char 	*left = NULL,
+	     	*right = NULL, 
+		*booya = NULL;
+	const char **rightw = NULL,
+		   **leftw = NULL;
 	int 	lefti, leftc,
 	    	righti, rightc;
 	int 	found;
@@ -3724,7 +3730,7 @@ static int sort_it (const void *val1, const void *val2)
 BUILT_IN_FUNCTION(function_sort, words)
 {
 	int 	wordc;
-	char 	**wordl;
+	const char **wordl;
 	char	*retval;
 
 	if (!(wordc = splitw(words, &wordl)))
@@ -3771,7 +3777,7 @@ static int num_sort_it (const void *val1, const void *val2)
 BUILT_IN_FUNCTION(function_numsort, words)
 {
 	int wordc;
-	char **wordl;
+	const char **wordl;
 	char *retval;
 
 	if (!(wordc = splitw(words, &wordl)))
@@ -4003,7 +4009,8 @@ static int unsort_it (const void *v1, const void *v2)
  */
 BUILT_IN_FUNCTION(function_uniq, word)
 {
-        char    **list = NULL, *booya = NULL;
+        const char    **list = NULL;
+	char *booya = NULL;
         int     listc, listi, listo;
 
 	RETURN_IF_EMPTY(word);
@@ -4035,10 +4042,10 @@ BUILT_IN_FUNCTION(function_uniq, word)
 			listo = listi;
 		} else {
 			if (list[listi]<list[listo]) {
-				list[listo][0] = 0;
+				*(char *)list[listo] = 0;
 				listo = listi;
 			} else {
-				list[listi][0] = 0;
+				*(char *)list[listi] = 0;
 			}
 		}
 	}
@@ -4395,7 +4402,7 @@ BUILT_IN_FUNCTION(function_isconnected, input)
 
 BUILT_IN_FUNCTION(function_currchans, input)
 {
-	int server = NOSERV;
+	int server = -1;
 	Window *blah = NULL;
 	char *retval = NULL;
 	const char *chan;
@@ -4404,15 +4411,15 @@ BUILT_IN_FUNCTION(function_currchans, input)
 	if (input && *input)
 		GET_INT_ARG(server, input)
 	else
-		server = NOSERV;
+		server = -2;		/* DONT CHANGE THIS TO NOSERV */
 
-	if (server == NOSERV)
+	if (server == -1)
 		server = from_server;
 
 	clue = 0;
 	while (traverse_all_windows(&blah))
 	{
-		if (server != NOSERV && blah->server != server)
+		if (server != -2 && blah->server != server)
 			continue;
 		if (!(chan = get_echannel_by_refnum(blah->refnum)))
 			continue;
@@ -5408,10 +5415,10 @@ BUILT_IN_FUNCTION(function_pad, input)
 BUILT_IN_FUNCTION(function_remws, word)
 {
 	char    *left = NULL,
-		**lhs = NULL,
 		*right = NULL,
-		**rhs = NULL, 
 		*booya = NULL;
+const	char	**lhs = NULL,
+		**rhs = NULL;
 	int	leftc,
 		rightc,
 		righti;
@@ -5565,30 +5572,38 @@ BUILT_IN_FUNCTION(function_rest, input)
 
 /* Written by panasync */
 /* Re-written by CE */
-#define GET_FIXED_ARRAY_FUNCTION(thisfn, nextfn)         \
-BUILT_IN_FUNCTION((thisfn), input)                       \
-{                                                        \
-	char 	*s = NULL;                               \
-	char	*ret = NULL;                             \
-	size_t	clue = 0;                                \
-                                                         \
-	if (!input || !*input)                           \
-		return (nextfn)(NULL);                   \
-                                                         \
-	while ((s = next_arg(input, &input)))            \
-	{                                                \
-		char *s2 = (nextfn)(s);                  \
-		malloc_strcat_wordlist_c(&ret, space, s2, &clue);        \
-		new_free(&s2);                           \
-	}                                                \
-                                                         \
-	RETURN_MSTR(ret);                                \
+/* Re-re-written by Jeremy */
+#define GET_UNIFIED_ARRAY_FUNCTION(thisfn, nextfn)	\
+BUILT_IN_FUNCTION( thisfn , input)			\
+{							\
+	char *s = NULL;					\
+	char *r;					\
+	char *ret = NULL;				\
+	char **subresults;			\
+	size_t	clue = 0;				\
+	int	howmany = 0;				\
+							\
+	if (!input || !*input)					\
+	{							\
+		subresults = nextfn ("*", &howmany, 0, 0, 0);	\
+		ret = unsplitw((const char ***)&subresults, howmany);	\
+		RETURN_MSTR(ret);				\
+	}							\
+								\
+	while ((s = next_arg(input, &input)))			\
+	{							\
+		subresults = nextfn (s, &howmany, 0, 0, 0);		\
+		r = unsplitw((const char ***)&subresults, howmany);	\
+		malloc_strcat_wordlist_c(&ret, space, r, &clue);	\
+		new_free(&r);					\
+	}							\
+								\
+	RETURN_MSTR(ret);					\
 }
 
-GET_FIXED_ARRAY_FUNCTION(function_getsets, get_set)
-GET_FIXED_ARRAY_FUNCTION(function_getcommands, get_command)
-static GET_FIXED_ARRAY_NAMES_FUNCTION(get_function, built_in_functions)
-GET_FIXED_ARRAY_FUNCTION(function_getfunctions, get_function)
+GET_UNIFIED_ARRAY_FUNCTION(function_getsets, pmatch_builtin_variables)
+GET_UNIFIED_ARRAY_FUNCTION(function_getcommands, pmatch_builtin_commands)
+GET_UNIFIED_ARRAY_FUNCTION(function_getfunctions, pmatch_builtin_functions)
 
 /* Written by nutbar */
 BUILT_IN_FUNCTION(function_servernum, input)
@@ -5954,7 +5969,7 @@ BUILT_IN_FUNCTION(function_maxlen, input)
  */
 BUILT_IN_FUNCTION(function_prefix, input)
 {
-	char	**words = NULL;
+	const char	**words = NULL;
 	int	numwords;
 	int	max_len;
 	int	len_index;
@@ -6786,7 +6801,8 @@ BUILT_IN_FUNCTION(function_joinstr, input)
 
 BUILT_IN_FUNCTION(function_exec, input)
 {
-	char	*ret = NULL, **args = NULL;
+	char	*ret = NULL;
+	const char **args = NULL;
 	int	count, *fds, foo;
 	size_t	clue = 0;
 
@@ -7025,7 +7041,7 @@ BUILT_IN_FUNCTION(function_startupfile, input)
 BUILT_IN_FUNCTION(function_mktime, input)
 {
 	int ar[7], pos, retval;
-	struct tm time;
+	struct tm tmtime;
 	
 	for (pos = 0; pos < 7 && input && *input; pos++) 
 		GET_INT_ARG(ar[pos], input);
@@ -7033,14 +7049,14 @@ BUILT_IN_FUNCTION(function_mktime, input)
 	if (pos < 6)
 		RETURN_INT(-1);
 
-	time.tm_year = ar[0];
-	time.tm_mon = ar[1];
-	time.tm_mday = ar[2];
-	time.tm_hour = ar[3];
-	time.tm_min = ar[4];
-	time.tm_sec = ar[5];
-	time.tm_isdst = (pos > 6) ? ar[6] : -1;
+	tmtime.tm_year = ar[0];
+	tmtime.tm_mon = ar[1];
+	tmtime.tm_mday = ar[2];
+	tmtime.tm_hour = ar[3];
+	tmtime.tm_min = ar[4];
+	tmtime.tm_sec = ar[5];
+	tmtime.tm_isdst = (pos > 6) ? ar[6] : -1;
 	
-	retval = mktime (&time);
+	retval = mktime(&tmtime);
 	RETURN_INT(retval);	
 }

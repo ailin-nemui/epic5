@@ -1,4 +1,4 @@
-/* $EPIC: window.c,v 1.119 2004/08/05 01:00:31 jnelson Exp $ */
+/* $EPIC: window.c,v 1.120 2004/08/11 23:58:39 jnelson Exp $ */
 /*
  * window.c: Handles the organzation of the logical viewports (``windows'')
  * for irc.  This includes keeping track of what windows are open, where they
@@ -2497,7 +2497,7 @@ int	unhold_a_window (Window *w)
  * set_scroll_lines: called by /SET SCROLL_LINES to check the scroll lines
  * value 
  */
-void 	set_scroll_lines (const void *stuff)
+void 	set_scroll_lines (void *stuff)
 {
 	VARIABLE *v;
 	int	size;
@@ -2541,7 +2541,7 @@ int 	number_of_windows_on_screen (Window *w)
  * has gotten larger than it was before, all previous lastlog entry remain.
  * If it get smaller, some are deleted from the end. 
  */
-void    set_scrollback_size (const void *stuff)
+void    set_scrollback_size (void *stuff)
 {
 	VARIABLE *v;
 	int size;

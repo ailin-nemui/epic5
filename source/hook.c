@@ -1,4 +1,4 @@
-/* $EPIC: hook.c,v 1.40 2004/06/28 23:48:15 jnelson Exp $ */
+/* $EPIC: hook.c,v 1.41 2004/08/11 23:58:39 jnelson Exp $ */
 /*
  * hook.c: Does those naughty hook functions. 
  *
@@ -1112,64 +1112,6 @@ BUILT_IN_COMMAND(oncmd)
 			say("All ON lists are empty.");
 	}
 }
-
-
-/* * * * * * * * * * SAVING A HOOK * * * * * * * * * * */
-static	void	write_hook (FILE *fp, Hook *hook, const char *name)
-{
-	const char	*stuff = (char *) 0;
-	char	flexi = '"';
-
-	if (hook->flexible)
-		flexi = '\'';
-
-	switch (hook->noisy)
-	{
-		case SILENT:
-			stuff = "^";
-			break;
-		case QUIET:
-			stuff = "-";
-			break;
-		case NORMAL:
-			stuff = empty_string;
-			break;
-		case NOISY:
-			stuff = "+";
-			break;
-		case UNKNOWN:
-			stuff = "?";
-			break;
-		case SYSTEM:
-			stuff = "%";
-			break;
-	}
-
-	if (hook->sernum)
-		fprintf(fp, "ON #%s%s %d", stuff, name, hook->sernum);
-	else
-		fprintf(fp, "ON %s%s", stuff, name);
-
-	fprintf(fp, " %c%s%c {%s}\n", flexi, hook->nick, flexi, hook->stuff);
-}
-
-/*
- * save_hooks: for use by the SAVE command to write the hooks to a file so it
- * can be interpreted by the LOAD command 
- */
-void	save_hooks (FILE *fp, int do_all)
-{
-	Hook	*list;
-	int	which;
-
-	for (which = 0; which < NUMBER_OF_LISTS; which++)
-	{
-		for (list = hook_functions[which].list; list; list = list->next)
-			if (!list->global || do_all)
-				write_hook(fp,list, hook_functions[which].name);
-	}
-}
-
 
 
 /* * * * * * * * * * STACKING A HOOK * * * * * * * * */

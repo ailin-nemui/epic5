@@ -1,4 +1,4 @@
-/* $EPIC: alias.c,v 1.53 2004/07/26 23:35:20 jnelson Exp $ */
+/* $EPIC: alias.c,v 1.54 2004/08/11 23:58:39 jnelson Exp $ */
 /*
  * alias.c -- Handles the whole kit and caboodle for aliases.
  *
@@ -223,8 +223,6 @@ static	void 	destroy_builtin_expandos    (SymbolSet *);
 extern	char *  get_variable       (Char *name);
 extern	char ** glob_cmd_alias          (Char *name, int *howmany, int maxret, int start, int rev);
 extern	char ** glob_assign_alias	(Char *name, int *howmany, int maxret, int start, int rev);
-extern	char ** pmatch_cmd_alias        (Char *name, int *howmany, int maxret, int start, int rev);
-extern	char ** pmatch_assign_alias	(Char *name, int *howmany, int maxret, int start, int rev);
 extern	char *  get_cmd_alias           (Char *name, void **args, 
 					 void (**func) (const char *, char *, 
 					                const char *));
@@ -1231,7 +1229,7 @@ void	add_builtin_variable_alias (const char *name, IrcVariable *var)
 
 static	int	unstub_in_progress = 0;
 
-Symbol *unstub_variable (Symbol *item)
+static Symbol *unstub_variable (Symbol *item)
 {
 	char *name;
 	char *file;
@@ -1258,7 +1256,7 @@ Symbol *unstub_variable (Symbol *item)
 	return item;
 }
 
-Symbol *unstub_command (Symbol *item)
+static Symbol *unstub_command (Symbol *item)
 {
 	char *name;
 	char *file;
@@ -1552,7 +1550,7 @@ void	delete_builtin_variable (const char *orig_name)
 }
 
 /* * * */
-void	bucket_local_alias (Bucket *b, const char *name)
+static void	bucket_local_alias (Bucket *b, const char *name)
 {
 }
 
@@ -1916,6 +1914,7 @@ char **	glob_assign_alias (const char *name, int *howmany, int maxret, int start
 	return matches;
 }
 
+#if 0
 char **glob_builtin_commands (const char *name, int *howmany, int maxret, int start, int rev)
 {
 	return NULL;
@@ -1935,112 +1934,59 @@ char **glob_builtin_variables (const char *name, int *howmany, int maxret, int s
 {
 	return NULL;
 }
+#endif
 
-/*
- * This function is strictly O(N).  This should probably be addressed.
- */
-char **	pmatch_cmd_alias (const char *name, int *howmany, int maxret, int start, int rev)
-{
-	int	cnt, cnt1;
-	int 	len;
-	char 	**matches = NULL;
-	int 	matches_size = 5;
+#define PMATCH_SYMBOL(x, y) \
+char **	pmatch_ ## x (const char *name, int *howmany, int maxret, int start, int rev) \
+{ \
+	int    	cnt, cnt1; \
+	int     len; \
+	char **matches = NULL; \
+	int     matches_size = 5; \
+\
+	len = strlen(name); \
+	*howmany = 0; \
+	matches = RESIZE(matches, char *, matches_size); \
+\
+	for (cnt1 = 0; cnt1 < globals.max; cnt1++) \
+	{ \
+		cnt = rev ? globals.max - cnt1 - 1 : cnt1; \
+		if (!globals.list[cnt]-> y ) \
+			continue; \
+\
+		if (wild_match(name, globals.list[cnt]->name)) \
+		{ \
+			if (start--) \
+				continue; \
+			else \
+				start++; \
+			matches[*howmany] = globals.list[cnt]->name; \
+			*howmany += 1; \
+			if (*howmany == matches_size) \
+			{ \
+				matches_size += 5; \
+				RESIZE(matches, char *, matches_size); \
+			} \
+			if (maxret && --maxret <= 0) \
+				break; \
+		} \
+	} \
+\
+	if (*howmany) \
+		matches[*howmany] = NULL; \
+	else \
+		new_free((char **)&matches); \
+\
+	return matches; \
+} 
 
-	len = strlen(name);
-	*howmany = 0;
-	matches = RESIZE(matches, char *, matches_size);
+PMATCH_SYMBOL(assign_alias, user_variable)
+PMATCH_SYMBOL(cmd_alias, user_command)
+PMATCH_SYMBOL(builtin_variables, builtin_variable)
+PMATCH_SYMBOL(builtin_commands, builtin_command)
+PMATCH_SYMBOL(builtin_functions, builtin_function)
+PMATCH_SYMBOL(builtin_expandos, builtin_expando)
 
-	for (cnt1 = 0; cnt1 < globals.max; cnt1++)
-	{
-		cnt = rev ? globals.max - cnt1 - 1 : cnt1;
-		if (wild_match(name, globals.list[cnt]->name))
-		{
-			if (start--)
-				continue;
-			else
-				start++;
-			matches[*howmany] = malloc_strdup(globals.list[cnt]->name);
-			*howmany += 1;
-			if (*howmany == matches_size)
-			{
-				matches_size += 5;
-				RESIZE(matches, char *, matches_size);
-			}
-			if (maxret && --maxret <= 0)
-				break;
-		}
-	}
-
-	if (*howmany)
-		matches[*howmany] = NULL;
-	else
-		new_free((char **)&matches);
-
-	return matches;
-}
-
-/*
- * This function is strictly O(N).  This should probably be addressed.
- */
-char **	pmatch_assign_alias (const char *name, int *howmany, int maxret, int start, int rev)
-{
-	int    	cnt, cnt1;
-	int     len;
-	char    **matches = NULL;
-	int     matches_size = 5;
-
-	len = strlen(name);
-	*howmany = 0;
-	matches = RESIZE(matches, char *, matches_size);
-
-	for (cnt1 = 0; cnt1 < globals.max; cnt1++)
-	{
-		cnt = rev ? globals.max - cnt1 - 1 : cnt1;
-		if (wild_match(name, globals.list[cnt]->name))
-		{
-			if (start--)
-				continue;
-			else
-				start++;
-			matches[*howmany] = malloc_strdup(globals.list[cnt]->name);
-			*howmany += 1;
-			if (*howmany == matches_size)
-			{
-				matches_size += 5;
-				RESIZE(matches, char *, matches_size);
-			}
-			if (maxret && --maxret <= 0)
-				break;
-		}
-	}
-
-	if (*howmany)
-		matches[*howmany] = NULL;
-	else
-		new_free((char **)&matches);
-
-	return matches;
-}
-
-char **	pmatch_builtin_commands (const char *name, int *howmany, int maxret, int start, int rev)
-{
-	return NULL;
-}
-
-char **	pmatch_builtin_functions (const char *name, int *howmany, int maxret, int start, int rev)
-{
-	return NULL;
-}
-
-char **	pmatch_builtin_expandos (const char *name, int *howmany, int maxret, int start, int rev)
-{
-	return NULL;
-}
-
-char **	pmatch_builtin_variables (const char *name, int *howmany, int maxret, int start, int rev)
-{
-	return NULL;
-}
 
 /*****************************************************************************/
 /*
@@ -2102,42 +2048,6 @@ char **	get_subarray_elements (const char *orig_root, int *howmany, int type)
 
 
 /***************************************************************************/
-/*
- * save_aliases: This will write all of the aliases to the FILE pointer fp in
- * such a way that they can be read back in using LOAD or the -l switch 
- */
-void 	save_assigns	(FILE *fp, int do_all)
-{
-	int cnt = 0;
-
-	for (cnt = 0; cnt < globals.max; cnt++)
-	{
-	    Symbol *item = globals.list[cnt];
-	    if (item->user_variable)
-	    {
-		if (item->user_variable_stub)
-		    fprintf(fp, "STUB ");
-		fprintf(fp, "ASSIGN %s %s\n", item->name, item->user_variable);
-	    }
-	}
-}
-
-void 	save_aliases (FILE *fp, int do_all)
-{
-	int	cnt = 0;
-
-	for (cnt = 0; cnt < globals.max; cnt++)
-	{
-	    Symbol *item = globals.list[cnt];
-	    if (item->user_variable)
-	    {
-		if (item->user_command_stub)
-		    fprintf(fp, "STUB ");
-		fprintf(fp, "ALIAS %s {%s}\n", item->name, item->user_command);
-	    }
-	}	
-}
-
 static	void	destroy_cmd_aliases (SymbolSet *my_array)
 {
 	int cnt = 0;
@@ -2852,6 +2762,7 @@ int	stack_list_cmd_alias (const char *name)
 
 
 /* * * */
+#if 0
 int	stack_push_builtin_cmd_alias (const char *name)
 {
 	Symbol *item, *sym;
@@ -2924,7 +2835,7 @@ int	stack_list_builtin_cmd_alias (const char *name)
 		return 0;
 	return -1;
 }
-
+#endif
 
 /* * * */
 int	stack_push_builtin_func_alias (const char *name)
@@ -3076,7 +2987,7 @@ int	stack_list_builtin_expando_alias (const char *name)
 
 
 /* * * */
-int	stack_push_builtin_var_alias (const char *name)
+static int	stack_push_builtin_var_alias (const char *name)
 {
 	Symbol *item, *sym;
 	int	cnt = 0, loc = 0;
@@ -3096,7 +3007,7 @@ int	stack_push_builtin_var_alias (const char *name)
 	return 0;
 }
 
-int	stack_pop_builtin_var_alias (const char *name)
+static int	stack_pop_builtin_var_alias (const char *name)
 {
 	Symbol *item, *sym, *s, *n;
 	int	cnt = 0, loc = 0;
@@ -3124,7 +3035,7 @@ int	stack_pop_builtin_var_alias (const char *name)
 	return 0;
 }
 
-int	stack_list_builtin_variable_alias (const char *name)
+static int	stack_list_builtin_variable_alias (const char *name)
 {
 	Symbol *item, *sym;
 	int	counter = 0;

@@ -1,4 +1,4 @@
-/* $EPIC: keys.c,v 1.37 2004/07/23 00:49:46 jnelson Exp $ */
+/* $EPIC: keys.c,v 1.38 2004/08/11 23:58:39 jnelson Exp $ */
 /*
  * keys.c:  Keeps track of what happens whe you press a key.
  *
@@ -282,17 +282,19 @@ static void key_exec (struct Key *key) {
  * into a string, and then parses the string looking for the longest
  * possible input combinations and executing them as it goes. */
 void key_exec_bt (struct Key *key) {
-    unsigned char *kstr = (char *)empty_string;
-    unsigned char *nstr;
+    const unsigned char *kstr = (const unsigned char *)empty_string;
+    const unsigned char *nstr;
     int len = 1, kslen;
     struct Key *kp;
 
     /* now walk backwards, growing kstr as necessary */
     while (key != NULL) {
-	nstr = alloca(len + 1);
-	memcpy(nstr + 1, kstr, len);
-	nstr[0] = key->val;
-	kstr = nstr;
+        unsigned char *buf;
+
+	buf = alloca(len + 1);
+	memcpy(buf + 1, kstr, len);
+	buf[0] = key->val;
+	kstr = buf;
 	len++;
 	key = key->owner;
     }
@@ -804,41 +806,6 @@ void init_termkeys (void) {
 #undef TBIND
 }
 
-/* save_bindings is called by the /save command to..well.. save bindings.
- * we call the save_bindings_recurse() function which acts a lot like
- * (surprise surprise) show_all_bindings/show_key in tandem. */
-void save_bindings_recurse (FILE *, struct Key *, const unsigned char *, size_t);
-void save_bindings (FILE *fp, int do_all) {
-    save_bindings_recurse(fp, head_keymap, "", 0);
-}
-
-void save_bindings_recurse (FILE *fp, struct Key *map, const unsigned char *str, size_t len) {
-    int c;
-    unsigned char *newstr;
-    unsigned char *ds; /* decompressed sequence */
-    size_t size;
-
-    size = len + 2;
-    newstr = alloca(size);
-    strlcpy(newstr, str, size);
-    ds = alloca(((len + 1) * 2) + 1);
-
-    /* go through our map, see what is changed, and save it.  recurse down
-     * as necessary. */
-    newstr[len + 1] = '\0';
-    for (c = 0; c <= KEYMAP_SIZE - 1;c++) {
-	newstr[len] = c;
-	if (map[c].bound && map[c].changed) {
-	    bind_string_decompress(ds, newstr, len + 1);
-	    fprintf(fp, "BIND %s %s%s%s\n", ds, map[c].bound->name,
-		    (map[c].stuff ? " " : ""),
-		    (map[c].stuff ? map[c].stuff : ""));
-	}
-	if (map[c].map)
-	    save_bindings_recurse(fp, map[c].map, newstr, len + 1);
-    }
-}
-
 /* this is called only by irc_exit, and its purpose is to free
  * all our allocated stuff. */
 void remove_bindings_recurse (struct Key *);
@@ -908,7 +875,7 @@ void unload_bindings_recurse (const char *pkg, struct Key *map) {
 /* set_key_interval:  this is used to construct a new Timeval when the
  * 'KEY_INTERVAL' /set is changed.  We modify an external variable which
  * defines how long the client will wait to timeout, at most. */
-void set_key_interval (const void *stuff) {
+void set_key_interval (void *stuff) {
     VARIABLE *v;
     int msec;
 

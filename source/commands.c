@@ -1,4 +1,4 @@
-/* $EPIC: commands.c,v 1.101 2004/07/23 00:49:46 jnelson Exp $ */
+/* $EPIC: commands.c,v 1.102 2004/08/11 23:58:39 jnelson Exp $ */
 /*
  * commands.c -- Stuff needed to execute commands in ircII.
  *		 Includes the bulk of the built in commands for ircII.
@@ -88,16 +88,6 @@
 #define RIGHT 1
 #define LEFT 0
 
-/* used with /save */
-#define	SFLAG_ALIAS	0x0001
-#define SFLAG_ASSIGN	0x0002
-#define	SFLAG_BIND	0x0004
-#define SFLAG_NOTIFY	0x0008
-#define	SFLAG_ON	0x0010
-#define SFLAG_SERVER	0x0020
-#define	SFLAG_SET	0x0040
-#define SFLAG_ALL	0x00ff
-
 /* The maximum number of recursive LOAD levels allowed */
 #define MAX_LOAD_DEPTH 10
 
@@ -164,7 +154,6 @@ static	void	quotecmd	(const char *, char *, const char *);
 static  void    reconnect_cmd   (const char *, char *, const char *);
 static	void	redirect 	(const char *, char *, const char *);
 static	void	returncmd	(const char *, char *, const char *);
-static	void	save_settings 	(const char *, char *, const char *);
 static	void	send_2comm 	(const char *, char *, const char *);
 static	void	send_comm 	(const char *, char *, const char *);
 static	void	send_kick 	(const char *, char *, const char *);
@@ -302,7 +291,6 @@ static	IrcCommand irc_command[] =
 	{ "RESTART",	send_comm	},
 	{ "RETURN",	returncmd	},
 	{ "RPING",	send_comm	},
-	{ "SAVE",	save_settings	},
 	{ "SAY",	send_to_channel	},
 	{ "SEND",	send_to_target	},
 	{ "SENDLINE",	sendlinecmd	},
@@ -353,9 +341,6 @@ static	IrcCommand irc_command[] =
 	{ NULL,		commentcmd 	}
 };
 
-/* number of entries in irc_command array */
-#define	NUMBER_OF_COMMANDS (sizeof(irc_command) / sizeof(IrcCommand)) - 2
-
 void	init_commands (void)
 {
 	int	i;
@@ -366,17 +351,10 @@ void	init_commands (void)
 
 
 /* 
- * Full scale abort.  Does a "save" into the filename in line, and
- * then does a coredump
+ * Full scale abort.  
  */
-static void 	really_save (const char *, int, int, int);
 BUILT_IN_COMMAND(abortcmd)
 {
-	const char *filename = next_arg(args, &args);
-	int	flags = SFLAG_ALL;
-
-        filename = filename ? filename : "irc.aborted";
-	really_save(filename, flags, 0, 0);
         abort();
 }
  
@@ -2378,100 +2356,6 @@ BUILT_IN_COMMAND(redirect)
 		set_server_redirect(from_server, NULL);
 }
 
-/* This generates a file of your ircII setup */
-static void really_save (const char *file, int flags, int save_all, int append)
-{
-	FILE	*fp;
-static	const char *	mode[] = {"w", "a"};
-	Filename realfile;
-
-	if (normalize_filename(file, realfile))
-	{
-		say("%s contains an invalid directory", realfile);
-		return;
-	}
-
-	if (!(fp = fopen(realfile, mode[append]))) 
-	{
-		say("Error opening %s: %s", realfile, strerror(errno));
-		return;
-	}
-
-	if (flags & SFLAG_ALIAS)
-		save_aliases(fp, save_all);
-	if (flags & SFLAG_ASSIGN)
-		save_assigns(fp, save_all);
-	if (flags & SFLAG_BIND)
-		save_bindings(fp, save_all);
-	if (flags & SFLAG_NOTIFY)
-		save_notify(fp);
-	if (flags & SFLAG_ON)
-		save_hooks(fp, save_all);
-	if (flags & SFLAG_SERVER)
-		save_servers(fp);
-	if (flags & SFLAG_SET)
-		save_variables(fp, save_all);
-
-	fclose(fp);
-	say("Settings %s to %s", append ? "appended" : "saved", realfile);
-}
-
-/* save_settings: saves the current state of IRCII to a file */
-BUILT_IN_COMMAND(save_settings)
-{
-	char *	arg;
-	int	save_flags;
-	int	save_global;
-	int	save_append;
-
-	save_flags = save_global = save_append = 0;
-
-	while ((arg = next_arg(args, &args)) != NULL)
-	{
-		if (*arg != '-')
-			break;	/* Must be the filename */
-
-		upper(++arg);
-
-		     if (!strncmp("ALIAS", arg, 3))
-			save_flags |= SFLAG_ALIAS;
-		else if (!strncmp("ALL", arg, 3))
-			save_flags = SFLAG_ALL;
-		else if (!strncmp("APPEND", arg, 3))
-			save_append = 1;
-		else if (!strncmp("ASSIGN", arg, 2))
-			save_flags |= SFLAG_ASSIGN;
-		else if (!strncmp("BIND", arg, 1))
-			save_flags |= SFLAG_BIND;
-		else if (!strncmp("GLOBAL", arg, 1))
-			save_global = 1;
-		else if (!strncmp("NOTIFY", arg, 1))
-			save_flags |= SFLAG_NOTIFY;
-		else if (!strncmp("ON", arg, 1))
-			save_flags |= SFLAG_ON;
-		else if (!strncmp("SET", arg, 3))
-			save_flags |= SFLAG_SET;
-		else if (!strncmp("SERVER", arg, 3))
-			save_flags |= SFLAG_SERVER;
-		else
-			break;	/* Odd filename */
-	}
-
-	if (save_flags == 0)
-	{
-		say("Usage: SAVE [-ALIAS|-ASSIGN|-BIND|-NOTIFY|-ON|-SET|-SERVER|-ALL|-GLOBAL|-APPEND] [path]");
-		return;
-	}
-
-	if (!arg || !*arg)
-	{
-		say("You must specify a filename.");
-		return;
-	}
-
-	really_save(arg, save_flags, save_global, save_append);
-}
-
 BUILT_IN_COMMAND(squitcmd)
 {
 	char *server = NULL;
@@ -3207,8 +3091,6 @@ static void	eval_inputlist (char *args, char *line)
 {
 	runcmds(args, line);
 }
-
-GET_FIXED_ARRAY_NAMES_FUNCTION(get_command, irc_command)
 
 BUILT_IN_COMMAND(e_call)
 {

@@ -1,4 +1,4 @@
-/* $EPIC: input.c,v 1.24 2004/07/23 00:49:46 jnelson Exp $ */
+/* $EPIC: input.c,v 1.25 2004/08/11 23:58:39 jnelson Exp $ */
 /*
  * input.c: does the actual input line stuff... keeps the appropriate stuff
  * on the input line, handles insert/delete of characters/words... the whole
@@ -585,7 +585,7 @@ char *	get_input_prompt (void)
  * buffer.  This prompt cannot be backspaced over, etc.  It's a prompt.
  * Setting the prompt to null uses no prompt 
  */
-void	set_input_prompt (const void *stuff)
+void	set_input_prompt (void *stuff)
 {
 	VARIABLE *v;
 	const char *prompt;

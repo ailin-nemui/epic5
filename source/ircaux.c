@@ -1,4 +1,4 @@
-/* $EPIC: ircaux.c,v 1.115 2004/08/08 03:52:50 jnelson Exp $ */
+/* $EPIC: ircaux.c,v 1.116 2004/08/11 23:58:39 jnelson Exp $ */
 /*
  * ircaux.c: some extra routines... not specific to irc... that I needed 
  *
@@ -2131,14 +2131,14 @@ int	split_args (char *str, char **to, size_t maxargs)
 	return counter;
 }
 
-int 	splitw (char *str, char ***to)
+int 	splitw (char *str, const char ***to)
 {
 	int numwords = count_words(str, DWORD_YES, "\"");
 	int counter;
 
 	if (numwords)
 	{
-		*to = (char **)new_malloc(sizeof(char *) * numwords);
+		*to = (const char **)new_malloc(sizeof(char *) * numwords);
 		for (counter = 0; counter < numwords; counter++)
 			(*to)[counter] = safe_new_next_arg(str, &str);
 	}
@@ -2148,10 +2148,10 @@ int 	splitw (char *str, char ***to)
 	return numwords;
 }
 
-char *	unsplitw (char ***container, int howmany)
+char *	unsplitw (const char ***container, int howmany)
 {
 	char *retval = NULL;
-	char **str = *container;
+	const char **str = *container;
 	size_t clue = 0;
 
 	if (!str || !*str)

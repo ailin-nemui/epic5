@@ -26,19 +26,19 @@ extern	Mask	old_server_lastlog_mask;
 
 	Mask	real_lastlog_mask 		(void);
 	Mask	real_notify_mask 		(void);
-	void	set_lastlog_mask 		(const void *);
-	void	set_lastlog_size 		(const void *);
-	void	set_notify_mask 		(const void *);
+	void	set_lastlog_mask 		(void *);
+	void	set_lastlog_size 		(void *);
+	void	set_notify_mask 		(void *);
 	const char *	level_to_str 		(int);
 	char *	mask_to_str 			(const Mask *);
 	int	str_to_mask	 		(Mask *, const char *);
 	int	str_to_level			(const char *);
 	void	remove_from_lastlog		(struct WindowStru *);
-	void	set_current_window_mask 	(const void *);
+	void	set_current_window_mask 	(void *);
 	void	add_to_lastlog 		(struct WindowStru *, const char *);
 	char *	function_line			(char *);
 	char *	function_lastlog		(char *);
-	void	set_new_server_lastlog_mask	(const void *);
-	void	set_old_server_lastlog_mask	(const void *);
+	void	set_new_server_lastlog_mask	(void *);
+	void	set_old_server_lastlog_mask	(void *);
 
 #endif /* __lastlog_h_ */
