@@ -1,4 +1,4 @@
-/* $EPIC: functions.c,v 1.77 2002/07/30 16:12:59 crazyed Exp $ */
+/* $EPIC: functions.c,v 1.78 2002/08/08 19:32:55 jnelson Exp $ */
 /*
  * functions.c -- Built-in functions for ircII
  *
@@ -6427,8 +6427,9 @@ BUILT_IN_FUNCTION(function_killpid, input)
 	int	retval = 0;
 
 	GET_STR_ARG(sig_str, input);
-	if ((sig = my_atol(sig_str)) > 0)
+	if (is_number(sig_str))
 	{
+		sig = my_atol(sig_str);
 		if ((sig < 0) || (sig >= NSIG))
 			RETURN_EMPTY;
 	}
