@@ -1,4 +1,4 @@
-/* $EPIC: commands.c,v 1.67 2003/07/10 23:56:01 jnelson Exp $ */
+/* $EPIC: commands.c,v 1.68 2003/07/14 18:22:03 jnelson Exp $ */
 /*
  * commands.c -- Stuff needed to execute commands in ircII.
  *		 Includes the bulk of the built in commands for ircII.
@@ -1620,7 +1620,10 @@ BUILT_IN_COMMAND(load)
 	        malloc_strcpy(&load_level[load_depth].package,
 				load_level[load_depth-1].package);
 
+	    will_catch_return_exceptions++;
 	    loader(fp, expanded, sargs, &load_level[load_depth]);
+	    will_catch_return_exceptions--;
+	    return_exception = 0;
 
 	    new_free(&load_level[load_depth].filename);
 	    new_free(&load_level[load_depth].package);
@@ -1747,6 +1750,9 @@ static void	loader_std (FILE *fp, const char *filename, char *subargs, struct lo
 
 			parse_line(NULL, current_row, defargs, 0, 0);
 			new_free(&current_row);
+
+			if (return_exception)
+				return;
 		    }
 		    else if (!in_comment)
 			malloc_strcat(&current_row, ";");
@@ -1821,6 +1827,8 @@ static void	loader_std (FILE *fp, const char *filename, char *subargs, struct lo
 
 				    parse_line(NULL, current_row, defargs, 0,0);
 				    new_free(&current_row);
+				    if (return_exception)
+					return;
 				}
 
 				/* Just add semicolon and keep going */
@@ -1956,6 +1964,8 @@ static void	loader_std (FILE *fp, const char *filename, char *subargs, struct lo
 			
 			    parse_line(NULL, current_row, defargs, 0, 0);
 			    new_free(&current_row);
+			    if (return_exception)
+				return;
 			}
 			else if (ptr[1] == 0 && paste_level)
 			    no_semicolon = 0;
@@ -1984,8 +1994,11 @@ static void	loader_std (FILE *fp, const char *filename, char *subargs, struct lo
 	if (current_row)
 	{
 	    if (paste_level)
+	    {
 		error("Unexpected EOF in %s trying to match '{' at line %d",
 				filename, paste_line);
+	        new_free(&current_row);
+	    }
 	    else
 	    {
 		if (subargs)
@@ -1996,9 +2009,11 @@ static void	loader_std (FILE *fp, const char *filename, char *subargs, struct lo
 		    defargs = NULL;
 
 		parse_line(NULL, current_row, defargs, 0, 0);
-	    }
+	        new_free(&current_row);
 
-	    new_free(&current_row);
+	        if (return_exception)
+			return;
+	    }
 	}
 }
 

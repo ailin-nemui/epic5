@@ -4,6 +4,17 @@ This tutorial will use the 'fe' script provided with epic.  The final
 result is available as 'fe.pf' and you can load it with /LOAD -PF fe.pf
 if you want to.
 
+Rule 0: Put a sanity wrapper at the top of your script
+======================================================
+Always put the following line at the top of every pf script to allow it to
+be transparantly /load'ed by the user
+
+    if (word(2 $loadinfo()) != [pf]) { load -pf $word(1 $loadinfo());return }
+
+This checks to see what loader you're using [$word(2 $loadinfo())], and if 
+it is not the "pf" loader, then reload this script [$word(1 $loadinfo())]
+with the "pf" loader, and then "return" from the non-standard loader.
+
 Rule 1: Wrap C-like comments in multi-line comments
 ===================================================
 The : command is a comment and it takes a standard ircII argument list.  This
