@@ -330,6 +330,7 @@ void		delete_array (char *name)
                 new_free((char **)ptr);
         new_free((char **)&array->item);
         new_free((char **)&array->index);
+        new_free((char **)&array_info.item[item]);
 
         if (array_info.size > 1)
         {
