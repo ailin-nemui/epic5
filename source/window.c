@@ -321,6 +321,18 @@ void 	delete_window (Window *window)
 		goto delete_window_contents;
 	}
 
+	/* Move this window's channels anywhere else. */
+	/* 
+	 * Ugh. We've already marked the window as deceased, so it
+	 * officially no longer exists; on top of this, 'swap_window'
+	 * is a sequence point, so channels must be capable of syncing
+	 * up before that.  The ref checks will fail if there are any
+	 * channels on this window, because the window is dead, and so
+	 * we need to move the channels away before the sequence point.
+	 * I hope this explanation makes sense. ;-)
+	 */
+	reassign_window_channels(window);
+
 	/*
 	 * At this point, we know there must be one of three cases:
 	 * 1) The window is an invisible window
@@ -362,7 +374,6 @@ void 	delete_window (Window *window)
 	if (window == current_window)
 		panic("window == current_window -- this is wrong.");
 
-
 	/*
 	 * OK!  Now we have completely unlinked this window from whatever
 	 * window chain it was on before, be it a screen, or be it the
@@ -379,8 +390,6 @@ delete_window_contents:
 	else
 		strmcpy(buffer, ltoa(window->refnum), BIG_BUFFER_SIZE);
 
-	/* Move this window's channels anywhere else. */
-	reassign_window_channels(window);
 
 	/*
 	 * Clean up after the window's internal data.
