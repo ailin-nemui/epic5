@@ -1,4 +1,4 @@
-/* $EPIC: dcc.c,v 1.109 2005/02/19 04:22:26 jnelson Exp $ */
+/* $EPIC: dcc.c,v 1.110 2005/02/21 14:07:43 jnelson Exp $ */
 /*
  * dcc.c: Things dealing client to client connections. 
  *
@@ -355,7 +355,8 @@ static 	void		dcc_erase (DCC_list *erased)
 	 * In any event, blow it away.
 	 */
 	erased->socket = new_close(erased->socket);
-	erased->file = new_close(erased->file);
+	close(erased->file);
+	erased->file = -1;
 	new_free(&erased->description);	/* Magic check failure here */
 	new_free(&erased->filename);
 	new_free(&erased->user);

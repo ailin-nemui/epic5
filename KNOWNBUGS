@@ -495,3 +495,4 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Remove a panic that broke /wait.
 * Fix uninitialized variables in msar/sar.
 * Fix $sar() and $msar() so they don't infinitely substitute without buonds.
+* Fix more bugs, yay!

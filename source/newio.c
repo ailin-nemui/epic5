@@ -1,4 +1,4 @@
-/* $EPIC: newio.c,v 1.35 2005/02/19 14:25:08 jnelson Exp $ */
+/* $EPIC: newio.c,v 1.36 2005/02/21 14:07:43 jnelson Exp $ */
 /*
  * newio.c:  Passive, callback-driven IO handling for sockets-n-stuff.
  *
@@ -575,7 +575,7 @@ int	new_close (int vfd)
 	MyIO *	ioe;
 	int	channel;
 
-	if (vfd < 0 && vfd > global_max_vfd)
+	if (vfd < 0 || vfd > global_max_vfd)
 		return -1;
 
 	knoread(vfd);

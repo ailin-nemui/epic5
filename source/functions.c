@@ -1,4 +1,4 @@
-/* $EPIC: functions.c,v 1.190 2005/02/21 03:11:35 jnelson Exp $ */
+/* $EPIC: functions.c,v 1.191 2005/02/21 14:07:43 jnelson Exp $ */
 /*
  * functions.c -- Built-in functions for ircII
  *
@@ -2708,7 +2708,7 @@ BUILT_IN_FUNCTION(function_sar, input)
 	char	delimiter;
 	char *	last_segment;
 	char *	text;
-	char *	after;
+	char *	after, *after2;
 	char *	workbuf = NULL;
 	char *	search;
 	char *	replace;
@@ -2745,7 +2745,7 @@ BUILT_IN_FUNCTION(function_sar, input)
 	search = next_in_div_list(input, &after, delimiter);
 	RETURN_IF_EMPTY(search);
 	replace = next_in_div_list(after, &after, delimiter);
-	RETURN_IF_EMPTY(replace);
+/*	RETURN_IF_EMPTY(replace); */
 
 	/* 
 	 * The last segment is either a text string, or a variable.  If it
@@ -4664,8 +4664,10 @@ BUILT_IN_FUNCTION(function_msar, input)
 	    if (!search || !*search)
 		break;
 	    replace = next_in_div_list(after, &after, delimiter);
+/*
 	    if (!replace || !*replace)
 		break;
+*/
 	    input = after;
 
 	    workbuf = substitute_string(text, search, replace, 

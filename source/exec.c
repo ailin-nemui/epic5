@@ -1,4 +1,4 @@
-/* $EPIC: exec.c,v 1.31 2005/02/09 02:23:25 jnelson Exp $ */
+/* $EPIC: exec.c,v 1.32 2005/02/21 14:07:43 jnelson Exp $ */
 /*
  * exec.c: handles exec'd process for IRCII 
  *
@@ -485,12 +485,12 @@ say("Output from process %d (%s) now going to you", i, proc->name);
 		if (pipe(p0) || pipe(p1) || pipe(p2))
 		{
 			say("Unable to start new process: %s", strerror(errno));
-			new_close(p0[0]);
-			new_close(p0[1]);
-			new_close(p1[0]);
-			new_close(p1[1]);
-			new_close(p2[0]);
-			new_close(p2[1]);
+			close(p0[0]);
+			close(p0[1]);
+			close(p1[0]);
+			close(p1[1]);
+			close(p2[0]);
+			close(p2[1]);
 			return;
 		}
 
@@ -589,9 +589,9 @@ say("Output from process %d (%s) now going to you", i, proc->name);
 		default:
 		{
 			proc = new_malloc(sizeof(Process));
-			new_close(p0[0]);
-			new_close(p1[1]);
-			new_close(p2[1]);
+			close(p0[0]);
+			close(p1[1]);
+			close(p2[1]);
 
 			/*
 			 * Init the proc list if neccesary

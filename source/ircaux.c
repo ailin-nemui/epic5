@@ -1,4 +1,4 @@
-/* $EPIC: ircaux.c,v 1.128 2005/02/21 03:11:35 jnelson Exp $ */
+/* $EPIC: ircaux.c,v 1.129 2005/02/21 14:07:43 jnelson Exp $ */
 /*
  * ircaux.c: some extra routines... not specific to irc... that I needed 
  *
@@ -4809,7 +4809,9 @@ char *	substitute_string (const char *string, const char *oldstr, const char *ne
 	size_t	stringlen;
 	const char *	p;
 
-	oldlen = strlen(oldstr);
+	if (!(oldlen = strlen(oldstr)))
+		return malloc_strdup(string);
+
 	newlen = strlen(newstr);
 	stringlen = strlen(string);
 	retvalsize = (((stringlen / oldlen) + 1) * newlen) + (stringlen * 2);
@@ -4837,6 +4839,7 @@ char *	substitute_string (const char *string, const char *oldstr, const char *ne
 			retval[i++] = *s;
 		    if (global == 0)
 			global = -1;
+		    p += oldlen - 1;
 		    continue;
 		}
 	    }
