@@ -1,4 +1,4 @@
-/* $EPIC: numbers.c,v 1.38 2003/02/04 00:14:05 jnelson Exp $ */
+/* $EPIC: numbers.c,v 1.39 2003/02/04 00:19:04 jnelson Exp $ */
 /*
  * numbers.c: handles all those strange numeric response dished out by that
  * wacky, nutty program we call ircd 
@@ -944,16 +944,18 @@ DISPLAY:
 
 	case 311:		/* #define RPL_WHOISUSER        311 */
 	{
-		const char *nick, *user, *host, *name;
+		const char *nick, *user, *host, *channel, *name;
 
-		PasteArgs(ArgList, 3);
+		PasteArgs(ArgList, 4);
 		if (!(nick = ArgList[0]))
 			{ rfc1459_odd(from, comm, ArgList); goto END; }
 		if (!(user = ArgList[1]))
 			{ rfc1459_odd(from, comm, ArgList); goto END; }
 		if (!(host = ArgList[2]))
 			{ rfc1459_odd(from, comm, ArgList); goto END; }
-		if (!(name = ArgList[3]))
+		if (!(channel = ArgList[3]))
+			{ rfc1459_odd(from, comm, ArgList); goto END; }
+		if (!(name = ArgList[4]))
 			{ rfc1459_odd(from, comm, ArgList); goto END; }
 
 		put_it("%s %s is %s@%s (%s)", banner(), nick, user, host, name);
