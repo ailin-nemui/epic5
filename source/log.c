@@ -1,4 +1,4 @@
-/* $EPIC: log.c,v 1.19 2005/01/13 16:06:06 jnelson Exp $ */
+/* $EPIC: log.c,v 1.20 2005/03/11 05:02:22 jnelson Exp $ */
 /*
  * log.c: handles the irc session logging functions 
  *
@@ -145,7 +145,7 @@ void	logger (void *stuff)
  * (Note:  "logref" should be -1 unless we are logging from a /log log, ie,
  * any place that is not inside logfiles.c)
  */
-void 	add_to_log (int logref, FILE *fp, unsigned winref, const unsigned char *line, int mangler, const char *rewriter)
+void 	add_to_log (int logref, FILE *fp, long winref, const unsigned char *line, int mangler, const char *rewriter)
 {
 	char	*local_line;
 	size_t	size;
@@ -192,7 +192,7 @@ void 	add_to_log (int logref, FILE *fp, unsigned winref, const unsigned char *li
 		char    argstuff[10240];
 
 		/* First, create the $* list for the expando */
-		snprintf(argstuff, 10240, "%u %s", winref, local_line);
+		snprintf(argstuff, 10240, "%ld %s", winref, local_line);
 
 		/* Now expand the expando with the above $* */
 		prepend_exp = expand_alias(rewriter, argstuff,

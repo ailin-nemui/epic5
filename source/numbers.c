@@ -1,4 +1,4 @@
-/* $EPIC: numbers.c,v 1.80 2005/03/03 02:22:12 jnelson Exp $ */
+/* $EPIC: numbers.c,v 1.81 2005/03/11 05:02:22 jnelson Exp $ */
 /*
  * numbers.c: handles all those strange numeric response dished out by that
  * wacky, nutty program we call ircd 
@@ -1210,6 +1210,19 @@ DISPLAY:
 		howlong = time(NULL) - my_atol(when_str);
 		put_it("%s The topic was set by %s %ld sec ago",banner(), 
 				nick, howlong);
+		break;
+	}
+
+	case 338:		/* #define RPL_WHOISACTUALLY	338 */
+	{
+		const char *who, *host;
+
+		if (!(who = ArgList[0]))
+			{ rfc1459_odd(from, comm, ArgList); goto END; }
+		if (!(host = ArgList[1]))
+			{ rfc1459_odd(from, comm, ArgList); goto END; }
+
+		put_it("%s is actually using %s", who, host);
 		break;
 	}
 

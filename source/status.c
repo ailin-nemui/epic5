@@ -1,4 +1,4 @@
-/* $EPIC: status.c,v 1.52 2005/03/04 00:57:45 jnelson Exp $ */
+/* $EPIC: status.c,v 1.53 2005/03/11 05:02:22 jnelson Exp $ */
 /*
  * status.c: handles the status line updating, etc for IRCII 
  *
@@ -848,14 +848,12 @@ STATUS_FUNCTION(status_server)
 const	char	*n = NULL;
 static	char	my_buffer[64];
 
-#ifdef OLD_STATUS_S_EXPANDO_BEHAVIOR
 	/*
 	 * If there is only one server, dont bother telling the user
 	 * what it is.
 	 */
-	if (connected_to_server == 1 && map == 0)
+	if (map == 0 && connected_to_server == 1)
 		return empty_string;
-#endif
 
 	/*
 	 * If this window isnt connected to a server, say so.
@@ -1284,9 +1282,9 @@ STATUS_FUNCTION(status_user)
 		char		key;
 		int *		var;
 	} lookup[] = {
-	{ 0, 'U', &STATUS_USER0_VAR }, { 0, 'X', &STATUS_USER1_VAR },
+	{ 0, 'U', &STATUS_USER_VAR }, { 0, 'X', &STATUS_USER1_VAR },
 	{ 0, 'Y', &STATUS_USER2_VAR }, { 0, 'Z', &STATUS_USER3_VAR },
-	{ 0, '0', &STATUS_USER0_VAR }, { 0, '1', &STATUS_USER1_VAR },
+	{ 0, '0', &STATUS_USER_VAR }, { 0, '1', &STATUS_USER1_VAR },
 	{ 0, '2', &STATUS_USER2_VAR }, { 0, '3', &STATUS_USER3_VAR },
 	{ 0, '4', &STATUS_USER4_VAR }, { 0, '5', &STATUS_USER5_VAR },
 	{ 0, '6', &STATUS_USER6_VAR }, { 0, '7', &STATUS_USER7_VAR },

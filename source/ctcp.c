@@ -1,4 +1,4 @@
-/* $EPIC: ctcp.c,v 1.42 2005/01/12 00:12:20 jnelson Exp $ */
+/* $EPIC: ctcp.c,v 1.43 2005/03/11 05:02:22 jnelson Exp $ */
 /*
  * ctcp.c:handles the client-to-client protocol(ctcp). 
  *
@@ -383,7 +383,7 @@ CTCP_HANDLER(do_version)
 	send_ctcp(CTCP_NOTICE, from, CTCP_VERSION, 
 			"ircII %s *IX - %s", 
 			irc_version,
-			(tmp = get_string_var(CLIENTINFO_VAR)) ? 
+			(tmp = get_string_var(CLIENT_INFORMATION_VAR)) ? 
 				tmp : IRCII_COMMENT);
 #endif
 	return NULL;
@@ -454,7 +454,7 @@ CTCP_HANDLER(do_finger)
 #define GECOS_DELIMITER ','
 #endif
 
-#if !defined(I_DONT_TRUST_MY_USERS)
+#if defined(ALLOW_USER_SPECIFIED_LOGIN)
 	if ((ctcpuser = getenv("IRCUSER"))) 
 		strlcpy(userbuff, ctcpuser, sizeof userbuff);
 	else
@@ -466,7 +466,7 @@ CTCP_HANDLER(do_finger)
 			strlcpy(userbuff, "epic-user", sizeof userbuff);
 	}
 
-#if !defined(I_DONT_TRUST_MY_USERS)
+#if defined(ALLOW_USER_SPECIFIED_LOGIN)
 	if ((ctcpfinger = getenv("IRCFINGER"))) 
 		strlcpy(gecosbuff, ctcpfinger, sizeof gecosbuff);
 	else

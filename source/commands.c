@@ -1,4 +1,4 @@
-/* $EPIC: commands.c,v 1.115 2005/03/03 02:10:39 jnelson Exp $ */
+/* $EPIC: commands.c,v 1.116 2005/03/11 05:02:22 jnelson Exp $ */
 /*
  * commands.c -- Stuff needed to execute commands in ircII.
  *		 Includes the bulk of the built in commands for ircII.
@@ -1902,49 +1902,19 @@ const	char	*defargs;
 			if (in_comment)
 			    break;
 
-#ifdef BRACE_LOAD_HACK
-			/*
-			 * left-brace is probably only introducing a new 
-			 * brace-set if it
-			 *	*) Leads off a line
-			 * 	*) Is preceeded by whitespace
-			 *	*) Is not immediately following an rparen 
-			 * 	   or rbrace
-			 * In any other such case, the { is taken as a 
-			 * literal character and is not used for bracing. }
+			/* 
+			 * If we are opening a brand new {} pair, 
+			 * remember the line
 			 */
-			if (ptr > start && 
-			    !isspace(ptr[-1]) && 
-			    ptr[-1] != ')' &&
-			    ptr[-1] != '{' && 
-			    ptr[-1] != '}' && 
-			    ptr[-1] != '(' &&
-			    ptr[-1] != '$' && 
-			    ptr[-1] != '%')
-			{
-			    malloc_strcat(&current_row, "{");
-			    if (paste_level)
-				no_semicolon = 0;
-			    else
-				no_semicolon = 1;
-			}
-			else
-#endif
-			{
-			    /* 
-			     * If we are opening a brand new {} pair, 
-			     * remember the line
-			     */
-			    if (!paste_level)
+			if (!paste_level)
 				paste_line = loadinfo->line;
 
-			    paste_level++;
-			    if (ptr == start)
+			paste_level++;
+			if (ptr == start)
 				malloc_strcat(&current_row, " {");
-			    else
+			else
 				malloc_strcat(&current_row, "{");
-			    no_semicolon = 1;
-			}
+			no_semicolon = 1;
 			break;
 		    }
 		    case '}' :
@@ -1952,50 +1922,22 @@ const	char	*defargs;
 			if (in_comment)
 			    break;
 
-#ifdef BRACE_LOAD_HACK
-			/*
-			 * Same as above, only in reverse.  An rbrace is 
-			 * only taken as a special character if it
-			 *	*) Ends a line
-			 *	*) Is followed by whitespace
-			 *	*) Is followed by a rparen or rbrace.
-			 * Otherwise, it is just a normal character.
-			 */
-			if (ptr == start || 
-			    isspace(ptr[1]) || 
-			    ptr[1] != '(' || 
-			    ptr[1] != ')' || 
-			    ptr[1] != '{' || 
-			    ptr[1] != '}')
-#endif
+			if (!paste_level)
 			{
-			    if (!paste_level)
-			    {
 				error("Unexpected } in %s, line %d",
 					filename, loadinfo->line);
 				break;
-			    }
+			}
 
-			    paste_level--;
-			    /* 
-			     * If we're back to "level 0", then reset 
-			     * the paste line
-			     */
-			    if (!paste_level)
+			paste_level--;
+			/* 
+			 * If we're back to "level 0", then reset 
+			 * the paste line
+			 */
+			if (!paste_level)
 				paste_line = -1;
-			    malloc_strcat(&current_row, "}");
-			    no_semicolon = ptr[1] ? 1 : 0;
-			}
-#ifdef BRACE_LOAD_HACK
-			else
-			{	
-			    malloc_strcat(&current_row, "}");
-			    if (paste_level)
-				no_semicolon = 0;
-			    else
-				no_semicolon = 1;
-			}
-#endif
+			malloc_strcat(&current_row, "}");
+			no_semicolon = ptr[1] ? 1 : 0;
 			break;
 		    }
 		    case ';':
@@ -3819,6 +3761,7 @@ BUILT_IN_COMMAND(allocdumpcmd)
 
 BUILT_IN_COMMAND(botmodecmd)
 {
+#ifndef NO_BOTS
 	if (dumb_mode) {
 		use_input = 0;
 		background = 1;
@@ -3830,5 +3773,7 @@ BUILT_IN_COMMAND(botmodecmd)
 	} else {
 		say("Bot mode can only be entered from Dumb mode.");
 	}
-
+#else
+	yell("This client was configured not to allow bots.  Bummer.");
+#endif
 }

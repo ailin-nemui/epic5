@@ -1,4 +1,4 @@
-/* $EPIC: expr.c,v 1.28 2005/01/12 00:12:20 jnelson Exp $ */
+/* $EPIC: expr.c,v 1.29 2005/03/11 05:02:22 jnelson Exp $ */
 /*
  * expr.c -- The expression mode parser and the textual mode parser
  * #included by alias.c -- DO NOT DELETE
@@ -668,25 +668,28 @@ static	char	*next_unit (char *str, const char *args, int stage)
 				break;
 
 
-#ifdef FLOATING_POINT_SUPPORT
-			SETUP_FLOAT_OPERATION(NU_ADD)
+			if (get_int_var(FLOATING_POINT_MATH_VAR))
+			{
+			    SETUP_FLOAT_OPERATION(NU_ADD)
 
-			if (op == '-')
+			    if (op == '-')
 				dvalue3 = dvalue1 - dvalue2;
-			else
+			    else
 				dvalue3 = dvalue1 + dvalue2;
 
-			tmp = malloc_strdup(ftoa(dvalue3));
-#else
-			SETUP_INTEGER_OPERATION(NU_ADD)
-
-			if (op == '-')
-				value3 = value1 - value2;
+			    tmp = malloc_strdup(ftoa(dvalue3));
+			}
 			else
+			{
+			    SETUP_INTEGER_OPERATION(NU_ADD)
+
+			    if (op == '-')
+				value3 = value1 - value2;
+			    else
 				value3 = value1 + value2;
 
-			tmp = malloc_strdup(ltoa(value3));
-#endif
+			    tmp = malloc_strdup(ltoa(value3));
+			}
 			CLEANUP_IMPLIED()
 			return tmp;
 		}

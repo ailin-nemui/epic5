@@ -2,7 +2,7 @@ EPIC5 Projects, Bugs, and other Errata:
 
 KNOWN ERRATA (eg, bugs, or unresolved requests):
 ------------------------------------------------
-<none>
+* Sort the internal logfile list by refnum?
 
 [See http://www.epicsol.org/PROJECTS for things to come in the future]
 [See http://www.epicsol.org/CHANGELOG5 for things that changed in the past]
@@ -548,3 +548,13 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Don't try to figure out disconnected server's port from sockaddr, duh!
 * Prefer timers over i/o to prevent polling loop panics.
 * Check return value of uzfopen() before checking the stat field.
+* Fix compile error for #define UNAME_HACK
+* Fix crash when you do $open(/file/doesnt/exist R)
+* Add an /on 338 default handler.
+* Fix integer underflow with log file refnums
+* Rename STATUS_USER0 to STATUS_USER for backwards compat. oops!
+* Whack BRACE_LOAD_HACK, it's been unsupported for a while.  PF loader rules!
+* Don't allow /botmode if #define NO_BOTS
+* Fix DCC connections instantly "timing out"? (Check on this)
+* Whack FLOATING_POINT_SUPPORT and depend only on /set floating_point_math
+

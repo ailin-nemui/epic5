@@ -1,4 +1,4 @@
-/* $EPIC: dcc.c,v 1.112 2005/03/04 00:57:44 jnelson Exp $ */
+/* $EPIC: dcc.c,v 1.113 2005/03/11 05:02:22 jnelson Exp $ */
 /*
  * dcc.c: Things dealing client to client connections. 
  *
@@ -2964,12 +2964,16 @@ static void	process_dcc_raw_connected (DCC_list *dcc)
 		malloc_strcpy(&dcc->othername, "<any>");
 
 	dcc->user = malloc_strdup(ltoa(dcc->socket));
-	if (do_hook(DCC_RAW_LIST, "%s %s E %s", dcc->user, dcc->description, dcc->othername))
+	do_hook(DCC_RAW_LIST, "%s %s E %s", dcc->user, dcc->description, 
+						dcc->othername);
+/*
             if (do_hook(DCC_CONNECT_LIST,"%s RAW %s %s", 
 				dcc->user, dcc->description, dcc->othername))
 		say("DCC RAW connection to %s on %s via %s established.", 
 				dcc->description, dcc->user, dcc->othername);
+*/
 
+	dcc_connected(dcc->socket);
 	dcc->flags &= ~DCC_CONNECTING;
 	unlock_dcc(dcc);
 }

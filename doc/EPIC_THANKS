@@ -1,89 +1,55 @@
-Thanks to everyone who are helping to make EPIC4 a great client!
-(Now in alphabetical order!) (QCE is "Quality Control Engineer")
-(Mirror means they maintain an official mirror)
+Thanks to everyone who are helping to make EPIC5 a great client!
+		(Now in alphabetical order!) 
 
-	adm			Quality Control Engineer
-	ar			Contributing Quality Control Engineer
-	archon			Keeper of the Web Server
-				Chief Quality Engineer
-	arioch			Quality Control Engineer
-	Aztro			Contributing Tester
-	Bob Page		Major resource contributer
-	Bruns			Quality Control Engineer
-	ByteLord		Quality Control Engineer
-	Chord			Contributing Tester (Mirror)
-	CrackBaby		Honorary Contributing Tester
-				Creator of the Script Repository
-	CrazyEddy		Keeper of the Source Code (CQCE)
-	Crimedog		Contributing Tester
-	CrowMan			Honorary Keeper of the Archives
-	Da5id			Keeper of the DNS (QCE)
-	DavidW			Quality Control Engineer
-	DemoN			Major resource contributer
-	desaster		Quality Control Engineer
-	dialtone		Keeper of the Mirrors List (QCE)
-	ee			Contributing Tester
-	FireClown		Major Source Contributer
-	f0bia			Contributing Tester
-	fudd			Quality Control Engineer
-	hop 			Keeper of the Source Code (CQCE)
-	HSOC			Quality Control Engineer
-	howl			Contributing Quality Control Engineer
-	IceKarma		Quality Control Engineer
-	Jeff DeFouw		Contributing Tester
-	JVaughn			Contributing Tester
-	jmd			Quality Control Engineer
-	Kanan			Keeper of the Mailing List (QCE)
-	Kasi			Quality Control Engineer (mirror)
-	Keerf			Keeper of the Web Pages (QCE)
-	Knghtbrd		Quality Control Engineer
-	krisp			Quality Control Engineer
-	larne			Quality Control Engineer
-	LauraDax		Contributing Tester
-	MrBungle		Contributing Tester
-	nickerne		Quality Control Engineer (Mirror)
-	Nuke			Honorary Contributing Tester 
-				Former Keeper of the Help Files
-	Nutbar			Quality Control Engineer
-	Paladin			Keeper of the Help Files (QCE)
-	Panasync		Major Source Contributer
-	Peter Evans		Contributing Tester
-	Psykotyk		Contributing Tester
-	Q_			Quality Control Engineer
-	|Rain|			Contributing Quality Control Engineer
-	RoboHak			Assistant Keeper of the Source Code (CQCE)
-	Sandwlkr		Contributing Tester
-	sariel			Quality Control Engineer
-	scandal-		Contributing Tester
-	scromp			Quality Control Engineer
-	Simon			Contributing Tester
-	SrfRoG			Contributing Quality Control Engineer
-	StRoBe			Quality Control Engineer (Mirror)
-	synker			Quality Control Engineer
-	trey			Quality Control Engineer
-	tyrak			Quality Control Engineer
-	vampirmel		Quality Control Engineer
-	void			Assistant Keeper of the Web Pages (QCE)
-	wc			Keeper of the Web Pages
-				Chief Quality Control Engineer
-	wd			Keeper of the Source Code (CQCE)
-	whitefang		Quality Control Engineer
-	WintrHawk		Honorary Major Contributer
-	woofster		Contributing Tester
-	Xavier			Creator of the Script Repository (QCE)
-	Yoshi			Quality Control Engineer
-	zinx			Assistant Keeper of the Source Code (CQCE)
-	zyeshan			Quality Control Engineer
+		adm			Tester
+		ar			Contributer
+		archon			Contributer
+		arioch			Well-wisher
+		BlackJac		Contributer
+		Bob Page		Well-wisher
+		Bruns			Tester
+		CrackBaby		Contributer
+		CrazyEddy		Contributer
+		CrowMan			Contributer
+		Da5id			Contributer
+		desaster		Tester
+		dialtone		Tester
+		FireClown		Contributer
+		fudd			Tester
+		hop 			Contributer
+		HSOC			Tester
+		howl			Contributer
+		jm			Contributer
+		Kanan			Well-wisher
+		Kasi			Tester
+		Keerf			Contributer
+		Kitambi			Contributer
+		Knghtbrd		Contributer
+		larne			Contributer
+		mith			Tester
+		Nuke			Contributer
+		Panasync		Contributer
+		Q_			Tester
+		|Rain|			Contributer
+		RoboHak			Contributer
+		scromp			Well-wisher
+		SrfRoG			Contributer
+		trey			Well-wisher
+		void			Contributer
+		wc			Contributer
+		wd			Contributer
+		whitefang		Contributer
+		WintrHawk		Contributer
+		Xavier			Tester
+		Yoshi			Well-wisher
+		zinx			Contributer
 
-If you are actively using and debugging EPIC4 releases, or have contributed
-anything to EPIC4, and feel that you should be on this list, drop me a line 
-at jnelson@acronet.net.  You qualify for the "Quality Control Engineer" title
-if you dilligently test every release of epic4 (no matter how minor) to see 
-if it is broken in some manner.  Those who test when they can are "Contributing
-Testers".
+--------------------------------------------------------------------------
+Contributer 	Person contributed something that is included in EPIC5
+		or contributed to the www.epicsol.org website)
+Tester		Person tests EPIC5 regularly, keeping up with changes.
+Well-wisher	Others who have left their mark on the EPIC community
+--------------------------------------------------------------------------
+If you believe you should be included on this list, please accept my apology
+and send me an email at jnelson@epicsol.org so I can add you.
 
-
-I wish to thank everyone who has ever contributed at any time to the EPIC
-project: Chris Mattingly, Texaco, DeadelviS, murple, TaCo, Edge, Chaos, 
-Oldpink, Jos Bakus, aStaroth, flarp, Thumper, Riddler, S_Avatar, Sheik,
-Brian Edgington...

@@ -1,4 +1,4 @@
-/* $EPIC: files.c,v 1.24 2005/03/06 21:21:26 jnelson Exp $ */
+/* $EPIC: files.c,v 1.25 2005/03/11 05:02:22 jnelson Exp $ */
 /*
  * files.c -- allows you to read/write files. Wow.
  *
@@ -66,14 +66,14 @@ struct FILE___ {
 };
 typedef struct FILE___ File;
 
-static File *FtopEntry = (File *) 0;
+static File *	FtopEntry = (File *) 0;
 
-static File *new_file (void)
+static File *	new_file (FILE *the_file)
 {
 	File *tmp = FtopEntry;
 	File *tmp_file = (File *)new_malloc(sizeof(File));
 
-	if (FtopEntry == (File *) 0)
+	if (!FtopEntry)
 		FtopEntry = tmp_file;
 	else
 	{
@@ -81,10 +81,14 @@ static File *new_file (void)
 			tmp = tmp->next;
 		tmp->next = tmp_file;
 	}
+
+	tmp_file->file = the_file;
+	tmp_file->next = NULL;
+
 	return tmp_file;
 }
 
-static void remove_file (File *file)
+static void	remove_file (File *file)
 {
 	File *tmp = FtopEntry;
 
@@ -102,12 +106,11 @@ static void remove_file (File *file)
 }
 
 
-int open_file_for_read (const char *filename)
+int	open_file_for_read (const char *filename)
 {
 	char *dummy_filename = (char *) 0;
 	FILE *file;
 	struct stat sb;
-	File *nfs = new_file();
 
 	malloc_strcpy(&dummy_filename, filename);
 	file = uzfopen(&dummy_filename, ".", 1, &sb);
@@ -122,12 +125,11 @@ int open_file_for_read (const char *filename)
 		return -1;
 	}
 
-	nfs->file = file;
-	nfs->next = (File *) 0;
+	new_file(file);
 	return fileno(file);
 }
 
-int open_file_for_write (const char *filename, const char *mode)
+int	open_file_for_write (const char *filename, const char *mode)
 {
 	Filename expand;
 	FILE *file;
@@ -135,18 +137,14 @@ int open_file_for_write (const char *filename, const char *mode)
 	if (normalize_filename(filename, expand))
 		strlcpy(expand, filename, sizeof(expand));
 
-	if ((file = fopen(expand, mode)))
-	{
-		File *nfs = new_file();
-		nfs->file = file;
-		nfs->next = (File *) 0;
-		return fileno(file);
-	}
-	else 
+	if (!(file = fopen(expand, mode)))
 		return -1;
+
+	new_file(file);
+	return fileno(file);
 }
 
-int* open_exec_for_in_out_err (const char *filename, char * const *args)
+int *	open_exec_for_in_out_err (const char *filename, char * const *args)
 {
 	Filename expand;
 	FILE **files;
@@ -158,10 +156,9 @@ static	int ret[3];
 	if ((files = open_exec(filename, args)))
 	{
 		int foo;
-		for (foo = 0; foo < 3; foo++) {
-			File *nfs = new_file();
-			nfs->file = files[foo];
-			nfs->next = (File *) 0;
+		for (foo = 0; foo < 3; foo++) 
+		{
+			new_file(files[foo]);
 			ret[foo] = fileno(files[foo]);
 		}
 		return ret;
@@ -170,7 +167,7 @@ static	int ret[3];
 		return NULL;
 }
 
-static File *lookup_file (int fd)
+static File *	lookup_file (int fd)
 {
 	File *ptr = FtopEntry;
 
@@ -181,10 +178,10 @@ static File *lookup_file (int fd)
 		else
 			ptr = ptr -> next;
 	}
-	return (File *) 0;
+	return NULL;
 }
 
-static File *lookup_logfile (int fd)
+static File *	lookup_logfile (int fd)
 {
 	FILE *x = NULL;
 	static File retval;
@@ -210,7 +207,7 @@ int 	target_file_write (const char *fd, const char *stuff)
 		return -1;
 }
 
-int file_write (int window, int fd, const char *stuff)
+int	file_write (int window, int fd, const char *stuff)
 {
 	File 	*ptr;
 	int	retval;
@@ -229,7 +226,7 @@ int file_write (int window, int fd, const char *stuff)
 	return retval;
 }
 
-int file_writeb (int window, int fd, char *stuff)
+int	file_writeb (int window, int fd, char *stuff)
 {
 	File 	*ptr;
 	int	retval;
@@ -252,7 +249,7 @@ int file_writeb (int window, int fd, char *stuff)
 	return retval;
 }
 
-char *file_read (int fd)
+char *	file_read (int fd)
 {
 	File *ptr = lookup_file(fd);
 	if (!ptr)
@@ -288,7 +285,7 @@ char *file_read (int fd)
 	}
 }
 
-char *file_readb (int fd, int numb)
+char *	file_readb (int fd, int numb)
 {
 	File *ptr = lookup_file(fd);
 	if (!ptr)
