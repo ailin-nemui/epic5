@@ -6274,6 +6274,7 @@ BUILT_IN_FUNCTION(function_unsplit, input)
 		m_s3cat(&retval, sep, word);
 	RETURN_MSTR(retval);
 }
+
 BUILT_IN_FUNCTION(function_encryptparm, input)
 {
 	char	*ret = NULL, *entry = NULL;
@@ -6281,10 +6282,12 @@ BUILT_IN_FUNCTION(function_encryptparm, input)
 	Crypt	*key;
 
 	GET_STR_ARG(entry, input);
-	if ((key=is_crypted(entry))) {
+	if ((key = is_crypted(entry))) 
+	{
 		m_sc3cat  (&ret, " ", key->nick, &clue);
 		m_sc3cat_s(&ret, " ", key->key, &clue);
 		m_sc3cat_s(&ret, " ", key->prog, &clue);
 	}
+
 	RETURN_MSTR(ret);
 }

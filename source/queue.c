@@ -56,6 +56,7 @@ BUILT_IN_COMMAND(queuecmd)
 		list 		= 0,
 		flush 		= 0,
 		delete		= 0,
+		expand_now	= 0,
 		number          = -1;
 
 	if (!*args) {
@@ -82,6 +83,8 @@ BUILT_IN_COMMAND(queuecmd)
 		    delete = 1;
 		else if (!my_strnicmp(arg + 1, "FLUSH", 1))
 		    flush = 1;
+		else if (!my_strnicmp(arg + 1, "EXPAND_NOW", 1))
+		    expand_now = 1;
 		else if (!my_strnicmp(arg + 1, "HELP", 1)) {
 			say("Usage: /QUEUE -SHOW");
 			say("       /QUEUE -DO [-NO_FLUSH] <name>");
@@ -137,6 +140,16 @@ BUILT_IN_COMMAND(queuecmd)
 		{
 			say("QUEUE: The command body needs to be surrounded by curly braces");
 			return;
+		}
+
+		if (expand_now) 
+		{
+			char *	ick;
+			int	args_flag;
+
+			ick = expand_alias(cmds, subargs, &args_flag, NULL);
+			cmds = LOCAL_COPY(ick);
+			new_free(&ick);
 		}
 
 		if ((cnt = add_to_queue(&queue_list, name, cmds, subargs)))
