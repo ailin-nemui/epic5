@@ -1,4 +1,4 @@
-/* $EPIC: commands.c,v 1.69 2003/07/18 01:36:34 jnelson Exp $ */
+/* $EPIC: commands.c,v 1.70 2003/08/31 01:33:48 jnelson Exp $ */
 /*
  * commands.c -- Stuff needed to execute commands in ircII.
  *		 Includes the bulk of the built in commands for ircII.
@@ -2154,9 +2154,12 @@ BUILT_IN_COMMAND(pop_cmd)
 
 BUILT_IN_COMMAND(pretend_cmd)
 {
+	char *args_copy;
 	int	s = from_server;
 
-	parse_server(args);
+	args_copy = alloca(IO_BUFFER_SIZE + 1);
+	strlcpy(args_copy, args, IO_BUFFER_SIZE);
+	parse_server(args_copy, IO_BUFFER_SIZE);
 	from_server = s;
 }
 

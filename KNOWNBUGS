@@ -181,3 +181,4 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Include <stdint.h> or <inttypes.h> if they exist.
 * Reorganised, documented and generally screwed around with data_array/struct.
 * Very minor syntax changes to script/functions and script/deban.
+* Fix buffer overrun crash with CTCP UTC.

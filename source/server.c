@@ -1,4 +1,4 @@
-/* $EPIC: server.c,v 1.103 2003/07/10 13:08:57 jnelson Exp $ */
+/* $EPIC: server.c,v 1.104 2003/08/31 01:33:48 jnelson Exp $ */
 /*
  * server.c:  Things dealing with that wacky program we call ircd.
  *
@@ -948,7 +948,7 @@ void	do_server (fd_set *rd, fd_set *wd)
 				if (translation)
 					translate_from_server(buffer);
 				parsing_server_index = i;
-				parse_server(buffer);
+				parse_server(buffer, sizeof buffer);
 				parsing_server_index = NOSERV;
 				message_from(NULL, LOG_CRAP);
 				break;

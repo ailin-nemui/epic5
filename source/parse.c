@@ -1,4 +1,4 @@
-/* $EPIC: parse.c,v 1.42 2003/07/31 06:29:37 jnelson Exp $ */
+/* $EPIC: parse.c,v 1.43 2003/08/31 01:33:48 jnelson Exp $ */
 /*
  * parse.c: handles messages from the server.   Believe it or not.  I
  * certainly wouldn't if I were you. 
@@ -1296,7 +1296,7 @@ int 	num_protocol_cmds = -1;
  * parse_server: parses messages from the server, doing what should be done
  * with them 
  */
-void 	parse_server (const char *orig_line)
+void 	parse_server (const char *orig_line, size_t orig_line_size)
 {
 	char	*from;
 	const char	*comm;
@@ -1305,8 +1305,7 @@ void 	parse_server (const char *orig_line)
 	protocol_command *retval;
 	int	loc;
 	int	cnt;
-	char	*line = NULL;
-	size_t	size;
+	char	*line;
 
 	if (num_protocol_cmds == -1)
 		num_protocol_cmds = NUMBER_OF_COMMANDS;
@@ -1322,16 +1321,13 @@ void 	parse_server (const char *orig_line)
 	else if (!do_hook(RAW_IRC_LIST, "* %s", orig_line))
 		return;
 
+	line = alloca(orig_line_size + 1);
+	strlcpy(line, orig_line, orig_line_size);
 	if (inbound_line_mangler)
 	{
-		size = strlen(orig_line) * 11;
-		line = alloca(size + 1);
-		strlcpy(line, orig_line, size + 1);
-		if (mangle_line(line, inbound_line_mangler, size) > size)
-			yell("mangle_line truncated its result.  Ack.");
+	    if (mangle_line(line, inbound_line_mangler, sizeof line) > sizeof line)
+		yell("mangle_line truncated its result.  Ack.");
 	}
-	else
-		line = LOCAL_COPY(orig_line);
 
 	ArgList = TrueArgs;
 	BreakArgs(line, &from, ArgList);
