@@ -53,6 +53,7 @@ typedef	struct	WindowStru
 	char	*name;			/* Logical name for window */
 	int	server;			/* Server that win is connected to */
 	int	last_server;		/* Last server connected to */
+	int	priority;		/* "Current window Priority" */
 	int	top;			/* SCREEN line for top of window */
 	int	bottom;			/* SCREEN line for bottom of window */
 	int	cursor;			/* WINDOW line where the cursor is */
@@ -270,5 +271,6 @@ const 	char *	set_channel_by_refnum		(unsigned, const char *);
 	void	check_window_cursor		(Window *);
 	void	unhold_window			(Window *);
 	int     get_geom_by_winref 		(const char *, int *, int *);
+	int	get_winref_by_servref		(int);
 
 #endif /* __window_h__ */

@@ -1,4 +1,4 @@
-/* $EPIC: window.c,v 1.57 2003/03/24 03:40:37 jnelson Exp $ */
+/* $EPIC: window.c,v 1.58 2003/03/24 09:20:29 jnelson Exp $ */
 /*
  * window.c: Handles the organzation of the logical viewports (``windows'')
  * for irc.  This includes keeping track of what windows are open, where they
@@ -108,6 +108,13 @@ const	char	*who_from = (char *) 0;
  */
 	unsigned window_display = 1;
 
+/*
+ * Each time a window is made the current window, it grabs this value and
+ * increments it.  We use this value to track "current window"-ness in
+ * various contexts.
+ */
+	unsigned current_window_priority = 1;
+
 static 	void 	remove_from_invisible_list 	(Window *);
 static 	void 	swap_window 			(Window *, Window *);
 static	Window	*get_next_window  		(Window *);
@@ -169,6 +176,7 @@ Window	*new_window (Screen *screen)
 		new_w->server = NOSERV;
 	new_w->last_server = NOSERV;
 
+	new_w->priority = -1;		/* Filled in later */
 	new_w->top = 0;			/* Filled in later */
 	new_w->bottom = 0;		/* Filled in later */
 	new_w->cursor = -1;		/* Force a clear-screen */
@@ -417,7 +425,6 @@ delete_window_contents:
 	else
 		strmcpy(buffer, ltoa(window->refnum), BIG_BUFFER_SIZE);
 	oldref = window->refnum;
-
 
 	/*
 	 * Clean up after the window's internal data.
@@ -1586,6 +1593,25 @@ Window *get_window_by_name (const char *name)
 char *	get_refnum_by_window (const Window *w)
 {
 	return ltoa(w->refnum);
+}
+
+int	get_winref_by_servref (int servref)
+{
+	Window *tmp = NULL;
+	Window *best = NULL;
+
+	while (traverse_all_windows(&tmp))
+	{
+	    if (tmp->server != servref && tmp->last_server != servref)
+		continue;
+	    if (best == NULL || best->priority < tmp->priority)
+		best = tmp;
+	}
+
+	if (best)
+		return best->refnum;
+	else
+		return -1;
 }
 
 /*
@@ -5087,6 +5113,8 @@ static void 	set_screens_current_window (Screen *screen, Window *window)
 	}
 	if (current_window != window)
 		make_window_current(window);
+
+	window->priority = current_window_priority++;
 
 #if 0		/* Can we get away with not doing this? */
 	update_all_windows();

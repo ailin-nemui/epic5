@@ -1,4 +1,4 @@
-/* $EPIC: ircaux.c,v 1.68 2003/03/24 01:23:37 jnelson Exp $ */
+/* $EPIC: ircaux.c,v 1.69 2003/03/24 09:20:29 jnelson Exp $ */
 /*
  * ircaux.c: some extra routines... not specific to irc... that I needed 
  *
@@ -4172,17 +4172,57 @@ const char *	find_backward_quote (const char *input, const char *start)
 	return input;		/* Wherever we are is fine. */
 }
 
-const char *	my_strerror (int number)
+const char *	my_strerror (int err1, int err2)
 {
-	if (number < 0)
+static	char	buffer[1024];
+
+	if (err1 == -1)
 	{
+	    if (err2 < 0)
+	    {
 #ifdef HAVE_HSTRERROR
 		return hstrerror(h_errno);
 #else
 		return "Hostname lookup failure";
 #endif
+	    }
+	    else
+		return strerror(errno);
 	}
-	return strerror(errno);
+	else if (err1 == -2)
+	    return "The operation is not supported for the protocol family";
+	else if (err1 == -3)
+	    return "The hostname has no address in the protocol family";
+	else if (err1 == -4)
+	    return "The presentation internet address was invalid";
+	else if (err1 == -5)
+	    return "The hostname does not resolve";
+	else if (err1 == -6)
+	    return "There is no virtual host for the protocol family";
+	else if (err1 == -7)
+	    return "The remote peer to connect to was not provided";
+	else if (err1 == -8)
+	    return "The local and remote address are in different protocol families.";
+	else if (err1 == -9)
+	    return "Connection was not successful (may have timed out)";
+	else if (err1 == -10)
+	    return "Requested local port is not available.";
+	else if (err1 == -11)
+	{
+	    snprintf(buffer, 1024, "Connect failed: %s", strerror(err2));
+	    return buffer;
+	}
+	else if (err1 == -12)
+	    return "Connection was not successful (may have been reset)";
+	else if (err1 == -13)
+	    return "The local address to bind to was not provided";
+	else if (err1 == -14)
+	    return "The protocol family does not make sense";
+	else
+	{
+	    snprintf(buffer, 1024, "EPIC Network Error %d", err1);
+	    return buffer;
+	}
 }
 
 /* 

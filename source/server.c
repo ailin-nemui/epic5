@@ -1,4 +1,4 @@
-/* $EPIC: server.c,v 1.95 2003/03/24 03:03:19 jnelson Exp $ */
+/* $EPIC: server.c,v 1.96 2003/03/24 09:20:29 jnelson Exp $ */
 /*
  * server.c:  Things dealing with that wacky program we call ircd.
  *
@@ -1149,7 +1149,7 @@ static int 	connect_to_server (int new_server)
 		if ((s = get_server(new_server)))
 		{
 		    say("Unable to connect to port %d of server %s: [%d] %s", 
-				s->port, s->name, des, my_strerror(errno));
+				s->port, s->name, des, my_strerror(des, errno));
 
 		    /* Would cause client to crash, if not wiped out */
 		    set_server_ssl_enabled(new_server, FALSE);
@@ -3125,5 +3125,4 @@ void 	got_my_userhost (int refnum, UserhostItem *item, const char *nick, const c
 	set_server_userhost(refnum, freeme);
 	new_free(&freeme);
 }
-
 

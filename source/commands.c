@@ -1,4 +1,4 @@
-/* $EPIC: commands.c,v 1.58 2003/03/23 23:30:53 jnelson Exp $ */
+/* $EPIC: commands.c,v 1.59 2003/03/24 09:20:29 jnelson Exp $ */
 /*
  * commands.c -- Stuff needed to execute commands in ircII.
  *		 Includes the bulk of the built in commands for ircII.
@@ -550,8 +550,14 @@ BUILT_IN_COMMAND(dcc)
 		dcc_list((char *) NULL);
 }
 
-static	char ** defer_list = NULL;
-static	char **	subarg_list = NULL;
+struct defer {
+	char *	cmds;
+	int	servref;
+	char *	subargs;
+};
+typedef struct defer Defer;
+
+static	Defer *	defer_list = NULL;
 static	int	defer_list_size = -1;
 	int	need_defered_commands = 0;
 
@@ -561,19 +567,28 @@ void	do_defered_commands (void)
 
 	if (defer_list)
 	{
-		for (i = 0; defer_list[i]; i++)
-		{
-			parse_line("deferred", defer_list[i], subarg_list[i], 0, 0);
-			new_free(&defer_list[i]);
-			new_free(&subarg_list[i]);
-		}
+	    int old_from_server = from_server;
+	    int old_winref = get_winref_by_servref(from_server);
+
+	    for (i = 0; defer_list[i].cmds; i++)
+	    {
+		from_server = defer_list[i].servref;
+		make_window_current_by_refnum(get_winref_by_servref(from_server));
+
+		parse_line("deferred", defer_list[i].cmds, 
+				       defer_list[i].subargs, 0, 0);
+		new_free(&defer_list[i].cmds);
+		new_free(&defer_list[i].subargs);
+	    }
+
+	    from_server = old_from_server;
+	    make_window_current_by_refnum(old_winref);
 	}
 
 	defer_list_size = 1;
-	RESIZE(defer_list, char *, defer_list_size);
-	RESIZE(subarg_list, char *, defer_list_size);
-	defer_list[0] = NULL;
-	subarg_list[0] = NULL;
+	RESIZE(defer_list, Defer, defer_list_size);
+	defer_list[0].cmds = NULL;
+	defer_list[0].subargs = NULL;
 	need_defered_commands = 0;
 }
 
@@ -583,19 +598,19 @@ BUILT_IN_COMMAND(defercmd)
 	if (defer_list_size <= 0)
 	{
 		defer_list_size = 1;
-		RESIZE(defer_list, char *, defer_list_size);
-		RESIZE(subarg_list, char *, defer_list_size);
-		defer_list[0] = NULL;
-		subarg_list[0] = NULL;
+		RESIZE(defer_list, Defer, defer_list_size);
+		defer_list[0].cmds = NULL;
+		defer_list[0].subargs = NULL;
 	}
 
 	defer_list_size++;
-	RESIZE(defer_list, char *, defer_list_size);
-	RESIZE(subarg_list, char *, defer_list_size);
-	defer_list[defer_list_size - 2] = m_strdup(args);
-	defer_list[defer_list_size - 1] = NULL;
-	subarg_list[defer_list_size - 2] = m_strdup(subargs);
-	subarg_list[defer_list_size - 1] = NULL;
+	RESIZE(defer_list, Defer, defer_list_size);
+	defer_list[defer_list_size - 2].cmds = m_strdup(args);
+	defer_list[defer_list_size - 2].subargs = m_strdup(subargs);
+	defer_list[defer_list_size - 2].servref = from_server;
+
+	defer_list[defer_list_size - 1].cmds = NULL;
+	defer_list[defer_list_size - 1].subargs = NULL;
 	need_defered_commands++;
 }
 

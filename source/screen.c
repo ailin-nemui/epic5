@@ -1,4 +1,4 @@
-/* $EPIC: screen.c,v 1.46 2003/03/24 04:21:14 jnelson Exp $ */
+/* $EPIC: screen.c,v 1.47 2003/03/24 09:20:29 jnelson Exp $ */
 /*
  * screen.c
  *
@@ -2757,7 +2757,7 @@ Window	*create_additional_screen (void)
 	if ((new_cmd = client_bind((SA *)&local_sockaddr, sizeof(local_sockaddr))) < 0)
 	{
 		yell("Couldnt establish server side -- error [%d] [%s]", 
-				new_cmd, my_strerror(errno));
+				new_cmd, my_strerror(new_cmd, errno));
 		return NULL;
 	}
 	port = ntohs(local_sockaddr.sin_port);

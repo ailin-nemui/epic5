@@ -1,4 +1,4 @@
-/* $EPIC: timer.c,v 1.24 2003/03/24 01:23:37 jnelson Exp $ */
+/* $EPIC: timer.c,v 1.25 2003/03/24 09:20:29 jnelson Exp $ */
 /*
  * timer.c -- handles timers in ircII
  *
@@ -54,6 +54,7 @@
 static int 	timer_exists (const char *ref);
 static int 	remove_timer (const char *ref);
 static void 	remove_all_timers (void);
+static	void	remove_window_timers (int winref);
 static	void	list_timers (const char *command);
 
 /*
@@ -81,7 +82,16 @@ BUILT_IN_COMMAND(timercmd)
 		flag = next_arg(args, &args);
 		len = strlen(flag + 1);
 
-		if (!my_strnicmp(flag + 1, "DELETE", len))
+		if (!my_strnicmp(flag + 1, "DELETE_FOR_WINDOW", len))
+		{
+			int	winref;
+
+			if (!(ptr = next_arg(args, &args)) || !is_number(ptr))
+			    say("%s: Need a window number for -DELETE_FOR_WINDOW", command);
+			winref = atol(ptr);
+			remove_window_timers(winref);
+		}
+		else if (!my_strnicmp(flag + 1, "DELETE", len))
 		{
 			if (!(ptr = next_arg(args, &args)))
 			    say("%s: Need a timer reference number for -DELETE",
@@ -473,6 +483,22 @@ static void 	remove_all_timers (void)
 	{
 		next = ref->next;
 		if (ref->command)
+			continue;
+		unlink_timer(ref);
+		delete_timer(ref);
+	}
+}
+
+static	void	remove_window_timers (int winref)
+{
+	Timer *ref, *next;
+
+	for (ref = PendingTimers; ref; ref = next)
+	{
+		next = ref->next;
+		if (ref->command)
+			continue;
+		if (ref->window != winref)
 			continue;
 		unlink_timer(ref);
 		delete_timer(ref);

@@ -1,4 +1,4 @@
-/* $EPIC: dcc.c,v 1.51 2003/03/24 01:32:37 jnelson Exp $ */
+/* $EPIC: dcc.c,v 1.52 2003/03/24 09:20:29 jnelson Exp $ */
 /*
  * dcc.c: Things dealing client to client connections. 
  *
@@ -744,7 +744,8 @@ static	int	dcc_open (DCC_list *dcc)
 			dcc->locked--;
 			dcc->flags |= DCC_DELETE;
 			say("Unable to create connection: (%d) [%d] %s", 
-				dcc->socket, errno, my_strerror(errno));
+				dcc->socket, errno, 
+				my_strerror(dcc->socket, errno));
 			retval = -1;
 			break;
 		}
@@ -773,7 +774,8 @@ static	int	dcc_open (DCC_list *dcc)
 		{
 			dcc->flags |= DCC_DELETE;
 			say("Unable to create connection [%d]: %s", 
-				dcc->socket, my_strerror(errno));
+				dcc->socket, 
+				my_strerror(dcc->socket, errno));
 			retval = -1;
 			break;
 		}
@@ -1782,7 +1784,7 @@ char	*dcc_raw_listen (int family, unsigned short port)
 	{
 		Client->flags |= DCC_DELETE; 
 		say("Couldnt establish listening socket: [%d] %s", 
-			Client->socket, my_strerror(errno));
+			Client->socket, my_strerror(Client->socket, errno));
 		message_from(NULL, LOG_CURRENT);
 		return m_strdup(empty_string);
 	}
