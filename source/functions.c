@@ -1,4 +1,4 @@
-/* $EPIC: functions.c,v 1.119 2003/06/13 00:50:38 jnelson Exp $ */
+/* $EPIC: functions.c,v 1.120 2003/06/30 18:02:41 jnelson Exp $ */
 /*
  * functions.c -- Built-in functions for ircII
  *
@@ -258,6 +258,7 @@ static	char
 	*function_hash_32bit	(char *),
 	*function_idle		(char *),
 	*function_igmask	(char *),
+	*function_ignorectl	(char *),
 	*function_igtype	(char *),
 	*function_indextoword	(char *),
 	*function_info		(char *),
@@ -537,6 +538,7 @@ static BuiltInFunctions	built_in_functions[] =
 	{ "IGETMATCHES",	function_igetmatches	},
 	{ "IGETRMATCHES",	function_igetrmatches	},
 	{ "IGMASK",		function_igmask		},
+	{ "IGNORECTL",		function_ignorectl	},
 	{ "IGTYPE",		function_igtype		},
 	{ "INDEX",		function_index 		},
 	{ "INDEXTOITEM",        function_indextoitem 	},
@@ -6761,5 +6763,10 @@ BUILT_IN_FUNCTION(function_serverwin, input)
 
 	winref = get_winref_by_servref(sval);
 	RETURN_INT(winref);
+}
+
+BUILT_IN_FUNCTION(function_ignorectl, input)
+{
+        return ignorectl(input);
 }
 
