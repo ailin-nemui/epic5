@@ -1,4 +1,4 @@
-/* $EPIC: keys.c,v 1.6 2002/08/12 16:41:11 wd Exp $ */
+/* $EPIC: keys.c,v 1.7 2002/08/12 17:19:35 wd Exp $ */
 /*
  * keys.c:  Keeps track of what happens whe you press a key.
  *
@@ -74,9 +74,8 @@ struct Binding *add_binding(char *name, BindFunction func, char *alias) {
 	yell("add_binding(): func and alias both defined!");
 	return NULL;
     }
-    if (!name) {
+    if (!name)
 	return NULL; /* no binding name. */
-    }
 
     bp = find_binding(name);
     if (bp) {
@@ -92,7 +91,7 @@ struct Binding *add_binding(char *name, BindFunction func, char *alias) {
     } else {
 	bp->func = func;
 	bp->alias = NULL;
-	}
+    }
     bp->filename = m_strdup(current_package());
 
     add_to_list((List **)&binding_list, (List *)bp);
@@ -121,7 +120,7 @@ void remove_binding(char *name) {
 
 struct Binding *find_binding(char *name) {
     if (!name)
-	return;
+	return NULL;
 
     return (struct Binding *)find_in_list((List **)&binding_list, name, 0);
 }
@@ -213,7 +212,6 @@ struct Key *head_keymap;
  * keys as if they were individually pressed. */
 void key_exec_bt(struct Key *);
 void key_exec(struct Key *key) {
-    struct Binding *bp;
 
     if (key == NULL) {
 	yell("key_exec(): called with NULL key!");
@@ -348,10 +346,10 @@ int clean_keymap(struct Key *map) {
 	if (map[c].map) {
 	    if (clean_keymap(map[c].map))
 		save = 1; /* map still in use. */
-	else
+	    else
 		map[c].map = NULL; /* map destroyed, make sure to unlink. */
 	}
-	}
+    }
 
     if (!save)
 	new_free(&map); /* free the memory. */
@@ -397,10 +395,10 @@ unsigned char *bind_string_compress(unsigned char *str) {
 		} else {
 		    if (isalpha(*str))
 			*s++ = toupper(*str) - 64;
-		else
+		    else
 			*s++ = *str - 64;
 		    str++;
-	}
+		}
 		break;
 	    case '\\':
 		str++;
@@ -423,7 +421,7 @@ unsigned char *bind_string_compress(unsigned char *str) {
 		    str++;
 		} else if (*str) /* anything else that was escaped */
 		    *s++ = *str++;
-	else
+		else
 		    *s++ = '\\'; /* end-of-string.  no escape. */
 
 		break;
@@ -437,7 +435,7 @@ unsigned char *bind_string_compress(unsigned char *str) {
 	yell("bind_string_compress(): sequence [%s] compressed to nothing!",
 		oldstr);
 	return NULL;
-	}
+    }
     return new; /* should never be reached! */
 }
 
@@ -457,7 +455,7 @@ unsigned char *bind_string_decompress(unsigned char *dst, unsigned char *src) {
 	    src++;
 	} else
 	    *dst++ = *src++;
-	}
+    }
     *dst = '\0';
 
     return ret;
@@ -470,7 +468,8 @@ unsigned char *bind_string_decompress(unsigned char *dst, unsigned char *src) {
 struct Key *bind_string(unsigned char *sequence, char *bind, char *args) {
     unsigned char *cs; /* the compressed keysequence */
     unsigned char *s;
-    struct Key *kp, *map;
+    struct Key *kp = NULL;
+    struct Key *map = head_keymap;
     struct Binding *bp = NULL;
 
     if (!sequence || !bind) {
@@ -492,7 +491,6 @@ struct Key *bind_string(unsigned char *sequence, char *bind, char *args) {
     }
 
     s = cs;
-    map = head_keymap;
     while (*s) {
 	kp = &map[*s++];
 	if (*s) {
@@ -536,10 +534,11 @@ struct Key *find_sequence(unsigned char *seq) {
     unsigned char *cs = bind_string_compress(seq);
     unsigned char *s = cs;
     struct Key *map = head_keymap;
-    struct Key *key;
+    struct Key *key = NULL;
 
     if (cs == NULL)
-	return; /* yikes! */
+	return NULL; /* yikes! */
+
     /* we have to find the key.  this should only happen at the top
      * level, otherwise it's not going to act right! */
     while (*s) {
@@ -821,14 +820,16 @@ struct BindStack {
 
 static struct BindStack *bind_stack = NULL;
 void do_stack_bind(int type, char *arg) {
-    struct Key *key, *map;
-    struct BindStack *bsp, *bsptmp;
+    struct Key *key = NULL;
+    struct Key *map = head_keymap;
+    struct BindStack *bsp = NULL;
+    struct BindStack *bsptmp = NULL;
     unsigned char *cs, *s;
 
     if (!bind_stack && (type == STACK_POP || type == STACK_LIST)) {
 	say("BIND stack is empty!");
 	return;
-	}
+    }
 
     if (type == STACK_PUSH) {
 	/* compress the keysequence, then find the key represented by that
@@ -845,9 +846,9 @@ void do_stack_bind(int type, char *arg) {
 		map = key->map;
 		if (map == NULL) {
 		    key = NULL;
-				break;
-				}
+		    break;
 		}
+	    }
 	}
 
 	/* key is now.. something.  if it is NULL, assume there was nothing
@@ -863,7 +864,7 @@ void do_stack_bind(int type, char *arg) {
 
 	bind_stack = bsp;
 	return;
-    } else if( type == STACK_POP) {
+    } else if (type == STACK_POP) {
 	unsigned char *cs = bind_string_compress(arg);
 
 	if (cs == NULL)
@@ -878,7 +879,7 @@ void do_stack_bind(int type, char *arg) {
 		    bsptmp->next = bsp->next;
 
 		break;
-	}
+	    }
 	}
 
 	/* we'll break out when we find our first binding, or if there is
@@ -916,8 +917,8 @@ void do_stack_bind(int type, char *arg) {
 		key->changed = bsp->key.changed;
 		key->stuff = bsp->key.stuff;
 		key->filename = bsp->key.filename;
+	    }
 	}
-		}
 
 	new_free(&cs);
 	new_free(&bsp->sequence);
@@ -929,7 +930,7 @@ void do_stack_bind(int type, char *arg) {
 	    show_key(&bsp->key, bsp->sequence, 0);
 	say("END OF BIND STACK LISTING");
 	return;
-	}
+    }
     say("Unknown STACK type ??");
 }
 
@@ -955,27 +956,25 @@ void do_stack_bind(int type, char *arg) {
  */
 BUILT_IN_COMMAND(bindcmd) {
     unsigned char *seq;
-    unsigned char *compseq; /* compressed sequence */
     char *function;
-    struct Binding *bp;
     int recurse = 0;
 
     if ((seq = new_next_arg(args, &args)) == NULL) {
 	show_all_bindings(head_keymap, "");
 		return;
-	}
+    }
 
     /* look for flags */
     if (*seq == '-') {
 	if (!my_strnicmp(seq + 1, "DEFAULTS", 1)) {
-			init_keys();
+	    init_keys();
 	    init_termkeys();
-			return;
+	    return;
 	} else if (!my_strnicmp(seq + 1, "SYMBOLIC", 1)) {
 	    char * symbol;
 
-			if ((symbol = new_next_arg(args, &args)) == NULL)
-				return;
+	    if ((symbol = new_next_arg(args, &args)) == NULL)
+		return;
 	    if ((seq = get_term_capability(symbol, 0, 1)) == NULL) {
 		say("Symbolic name [%s] is not supported in your TERM type.",
 			symbol);
@@ -985,14 +984,14 @@ BUILT_IN_COMMAND(bindcmd) {
 	    recurse = 1;
 	    if ((seq = new_next_arg(args, &args)) == NULL) {
 		show_all_bindings(head_keymap, "");
-				return;
-			}
-		}
+		return;
+	    }
 	}
+    }
 
     if ((function = new_next_arg(args, &args)) == NULL) {
 	show_key(NULL, seq, recurse);
-		return;
+	return;
     }
 
     /* bind_string() will check any errors for us. */
@@ -1028,7 +1027,7 @@ void show_all_bindings(struct Key *map, unsigned char *str) {
 	newstr[len] = c;
 	if (map[c].map || (map[c].bound && map[c].bound != self_insert))
 	    show_key(&map[c], newstr, 1);
-	}
+    }
 }
 
 void show_key(struct Key *key, unsigned char *str, int recurse) {
@@ -1040,7 +1039,7 @@ void show_key(struct Key *key, unsigned char *str, int recurse) {
 	if (key == NULL)
 	    key = head_keymap; /* cheat here.  the first item in head_keymap
 				  will never have any real data in it. */
-	}
+    }
 
     bp = key->bound;
     if (!bp && ((recurse && !key->map) || !recurse))
@@ -1053,10 +1052,10 @@ void show_key(struct Key *key, unsigned char *str, int recurse) {
 		    bind_string_decompress(clean, str), 
 		    bp->name,
 		    (key->stuff ? " " : ""), (key->stuff ? key->stuff : ""));
-		}
+	}
 	if (recurse && key->map)
 	    show_all_bindings(key->map, str);
-	}
+    }
 }
 
 /* the /rbind command.  This command allows you to pass in the name of a
@@ -1064,7 +1063,6 @@ void show_key(struct Key *key, unsigned char *str, int recurse) {
  * function similar to 'show_all_bindings', but not quite the same, to
  * handle recursion. */
 BUILT_IN_COMMAND(rbindcmd) {
-    unsigned char *s;
     char *function;
     struct Binding *bp;
 
@@ -1077,7 +1075,7 @@ BUILT_IN_COMMAND(rbindcmd) {
 	else
 	    say("No such function %s", function);
 	return;
-	}
+    }
 
     show_all_rbindings(head_keymap, "", bp);
 }
@@ -1100,7 +1098,7 @@ void show_all_rbindings(struct Key *map, unsigned char *str,
 	    show_key(&map[c], newstr, 0);
 	if (map[c].map)
 	    show_all_rbindings(map[c].map, newstr, bind);
-		}
+    }
 }
 
 /* the parsekey command:  this command allows the user to execute a
@@ -1114,21 +1112,20 @@ BUILT_IN_COMMAND(parsekeycmd) {
     struct Key fake;
     struct Binding *bp;
     char *func;
-    char *stuff;
 
     if ((func = new_next_arg(args, &args)) != NULL) {
 	bp = find_binding(func);
 	if (bp == NULL) {
 	    say("No such function %s", func);
-		    return;
-		}
+	    return;
+	}
 
 	fake.val = '\0';
 	fake.bound = bp;
 	fake.map = NULL;
 	if (*args)
 	    fake.stuff = m_strdup(args);
-				else
+	else
 	    fake.stuff = NULL;
 	fake.filename = empty_string;
 
@@ -1136,7 +1133,7 @@ BUILT_IN_COMMAND(parsekeycmd) {
 
 	if (fake.stuff != NULL)
 	    new_free(&fake.stuff);
-		}
+    }
 }
 
 #define EMPTY empty_string
@@ -1176,7 +1173,7 @@ BUILT_IN_COMMAND(parsekeycmd) {
 void bindctl_getmap(struct Key *, unsigned char *, char **);
 char *bindctl(char *input)
 {
-    char *listc, *listc1;
+    char *listc;
     char *retval = NULL;
 
     GET_STR_ARG(listc, input);
@@ -1240,7 +1237,6 @@ char *bindctl(char *input)
 	    if (bp != NULL)
 		RETURN_STR(bp->filename);
 	} else if (!my_strnicmp(listc, "SETPACKAGE", 1)) {
-	    char *pkg;
 
 	    if (bp == NULL)
 		RETURN_INT(0);
@@ -1342,5 +1338,5 @@ void bindctl_getmap(struct Key *map, unsigned char *str, char **ret) {
 	    m_s3cat(ret, " ", bind_string_decompress(decomp, newstr));
 	if (map[c].map)
 	    bindctl_getmap(map[c].map, newstr, ret);
-			}
+    }
 }
