@@ -1,4 +1,4 @@
-/* $EPIC: ctcp.c,v 1.39 2004/03/17 15:57:43 jnelson Exp $ */
+/* $EPIC: ctcp.c,v 1.40 2004/07/26 23:35:20 jnelson Exp $ */
 /*
  * ctcp.c:handles the client-to-client protocol(ctcp). 
  *
@@ -377,7 +377,7 @@ CTCP_HANDLER(do_version)
 	send_ctcp(CTCP_NOTICE, from, CTCP_VERSION, 
 			"ircII %s %s %s - %s", 
 			irc_version, the_unix, the_version,
-			(tmp = get_string_var(CLIENTINFO_VAR)) ? 
+			(tmp = get_string_var(CLIENT_INFORMATION_VAR)) ? 
 				tmp : IRCII_COMMENT);
 #else
 	send_ctcp(CTCP_NOTICE, from, CTCP_VERSION, 
@@ -403,7 +403,7 @@ CTCP_HANDLER(do_userinfo)
 	char *tmp;
 
 	send_ctcp(CTCP_NOTICE, from, CTCP_USERINFO, "%s", 
-		(tmp = get_string_var(USERINFO_VAR)) ? tmp : "<No User Information>");
+		(tmp = get_string_var(USER_INFORMATION_VAR)) ? tmp : "<No User Information>");
 	return NULL;
 }
 

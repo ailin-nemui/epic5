@@ -9,8 +9,15 @@
 #define __vars_h__
 
 /* indexes for the irc_variable array */
+/*
 enum VAR_TYPES {
-	ALLOW_C1_CHARS_VAR,
+*/
+
+#ifndef VARS_C
+extern
+#endif
+
+int	ALLOW_C1_CHARS_VAR,
 	ALT_CHARSET_VAR,
 	ALWAYS_SPLIT_BIGGEST_VAR,
 	AUTO_NEW_NICK_VAR,
@@ -29,7 +36,7 @@ enum VAR_TYPES {
 	BLINK_VIDEO_VAR,
 	BOLD_VIDEO_VAR,
 	CHANNEL_NAME_WIDTH_VAR,
-	CLIENTINFO_VAR,
+	CLIENT_INFORMATION_VAR,
 	CLOCK_VAR,
 	CLOCK_24HOUR_VAR,
 	CLOCK_FORMAT_VAR,
@@ -147,7 +154,7 @@ enum VAR_TYPES {
 	STATUS_INSERT_VAR,
 	STATUS_MAIL_VAR,
 	STATUS_MODE_VAR,
-	STATUS_NICK_VAR,
+	STATUS_NICKNAME_VAR,
 	STATUS_NOSWAP_VAR,
 	STATUS_NOTIFY_VAR,
 	STATUS_NO_REPEAT_VAR,
@@ -211,8 +218,7 @@ enum VAR_TYPES {
 	TRANSLATION_VAR,
 	TRANSLATION_PATH_VAR,
 	UNDERLINE_VIDEO_VAR,
-	USER_INFO_VAR,
-#define	USERINFO_VAR USER_INFO_VAR
+	USER_INFORMATION_VAR,
 	VERBOSE_CTCP_VAR,
 	WORD_BREAK_VAR,
 	WSERV_PATH_VAR,
@@ -220,7 +226,7 @@ enum VAR_TYPES {
 	XTERM_VAR,
 	XTERM_OPTIONS_VAR,
 	NUMBER_OF_VARIABLES
-};
+/* } */ ;
 
 /* var_settings indexes ... also used in display.c for highlights */
 #define OFF 			0
@@ -242,14 +248,28 @@ typedef union builtin_variable {
 #define CHAR_VAR 	2
 #define BOOL_VAR 	3
 
+/* IrcVariable: structure for each variable in the variable table */
+typedef struct
+{
+        char *          name;           /* what the user types */
+        u_32int_t       hash;
+
+        int             type;           /* variable types, see below */
+        VARIABLE *      data;           /* The value of the variable */
+        void    (*func) (const void *); /* func called when var is set */
+	char *		script;		/* script called when var is set */
+        u_short         flags;          /* flags for this variable */
+}       IrcVariable;
+
+
 
 	BUILT_IN_COMMAND(setcmd);
 
 	int	do_boolean 		(char *, int *);
 	int	do_short_boolean 	(char *, short *);
-	int	get_int_var 		(enum VAR_TYPES);
-	char *	get_string_var 		(enum VAR_TYPES);
-	void	set_var_value		(enum VAR_TYPES, char *, int);
+	int	get_int_var 		(int);
+	char *	get_string_var 		(int);
+	void	set_var_value		(int, char *, int);
 	void	init_variables_stage1	(void);
 	void	init_variables_stage2	(void);
 	char*	make_string_var 	(const char *);
@@ -258,5 +278,6 @@ typedef union builtin_variable {
 	void	do_stack_set		(int, char *);
 	int	parse_mangle		(const char *, int, char **);
 	char	*get_set		(const char *);
+	char *	make_string_var_bydata	(int, void *);
 
 #endif /* _VARS_H_ */

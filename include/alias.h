@@ -9,6 +9,9 @@
 #ifndef __alias_h__
 #define __alias_h__
 
+#include "ircaux.h"
+#include "vars.h"
+
 /*
  * XXXX - These need to go away
  */
@@ -78,6 +81,7 @@
 #endif
 	void	add_builtin_cmd_alias	(Char *name, void (*func) (Char *, char *, Char *));
 	void    add_builtin_func_alias  (Char *name, char *(*func) (char *));
+	void	add_builtin_variable_alias (Char *, IrcVariable *);
 	void    add_builtin_expando     (Char *name, char *(*func) (void));
 
 	void 	add_var_stub_alias 	(Char *name, Char *stuff);
@@ -86,6 +90,7 @@
 	void	delete_builtin_command	(Char *);
 	void	delete_builtin_function	(Char *);
 	void	delete_builtin_expando	(Char *);
+	void	delete_builtin_variable (Char *);
 
 	char *	get_variable		(Char *name);
 	char **	glob_cmd_alias		(Char *name, int *howmany, 
@@ -98,10 +103,17 @@
 					 char * (**func) (char *));
 	char *  get_var_alias		(const char *name, 
 					 char *(**efunc)(void), 
-					 void (**sfunc)(const void *));
+					 IrcVariable **var);
 
 	char **	get_subarray_elements 	(Char *root, int *howmany, int type);
 
+
+	void	bucket_var_alias (Bucket *, const char *);
+	void	bucket_cmd_alias (Bucket *, const char *);
+	void	bucket_builtin_commands (Bucket *, const char *);
+	void	bucket_builtin_functions (Bucket *, const char *);
+	void	bucket_builtin_expandos (Bucket *, const char *);
+	void	bucket_builtin_variables (Bucket *, const char *);
 
 /* These are in expr.c */
 /*

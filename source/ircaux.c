@@ -1,4 +1,4 @@
-/* $EPIC: ircaux.c,v 1.112 2004/06/28 23:48:15 jnelson Exp $ */
+/* $EPIC: ircaux.c,v 1.113 2004/07/26 23:35:20 jnelson Exp $ */
 /*
  * ircaux.c: some extra routines... not specific to irc... that I needed 
  *
@@ -4677,5 +4677,77 @@ char *	after_expando (char *start, int lvalue, int *call)
 	 * All done!
 	 */
 	return str;
+}
+
+
+/****************************************************************************/
+/*
+ * XXX - CE is gonna kill me. :/
+ */
+/*
+ * Here's the plan.  A "Bucket" is a container of named stuff.  You start
+ * by creating a Bucket object, and pass that into a bucket collector.  
+ * What you should get back is an array of structs that contain a name 
+ * and a pointer.  You never own anything in the bucket, it belogns to the
+ * collector.  If the collector malloc()s memory, it must provide a free
+ * function when you're done with the bucket.
+ *
+ * struct BucketItem {
+ *	const char *name;
+ *	void *stuff;
+ * };
+ *
+ * struct Bucket {
+ *	int numitems;
+ *	int max;
+ *	BucketItem *list;
+ * };
+ *
+ */
+
+Bucket *new_bucket (void)
+{
+	Bucket *b;
+	int	i;
+
+	b = (Bucket *)new_malloc(sizeof(Bucket));
+	b->numitems = 0;
+	b->max = 16;
+	b->list = NULL;
+	RESIZE(b->list, BucketItem, b->max);
+	for (i = 0; i < b->max; i++)
+	{
+		b->list[i].name = NULL;
+		b->list[i].stuff = NULL;
+	}
+	return b;
+}
+
+void	free_bucket (Bucket **b)
+{
+	if ((*b)->list)
+		new_free((char **)((*b)->list));
+	new_free(b);
+}
+
+void	add_to_bucket (Bucket *b, const char *name, void *stuff)
+{
+	int i, newsize;
+
+	if (b->numitems + 1 == b->max)
+	{
+		newsize = b->max * 2;
+		RESIZE(b->list, BucketItem, newsize);
+		for (i = b->max; i < newsize; i++)
+		{
+			b->list[i].name = NULL;
+			b->list[i].stuff = NULL;
+		}
+		b->max = newsize;
+	}
+
+	b->list[b->numitems].name = name;
+	b->list[b->numitems].stuff = stuff;
+	b->numitems++;
 }
 

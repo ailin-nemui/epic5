@@ -1,4 +1,4 @@
-/* $EPIC: vars.c,v 1.55 2004/07/24 00:51:07 jnelson Exp $ */
+/* $EPIC: vars.c,v 1.56 2004/07/26 23:35:20 jnelson Exp $ */
 /*
  * vars.c: All the dealing of the irc variables are handled here. 
  *
@@ -34,8 +34,11 @@
  * SUCH DAMAGE.
  */
 
+#define VARS_C
+
 #include "irc.h"
 #include "alist.h"
+#include "alias.h"
 #include "status.h"
 #include "window.h"
 #include "lastlog.h"
@@ -58,15 +61,10 @@
 #include "mail.h"
 #include "reg.h"
 
-/* IrcVariable: structure for each variable in the variable table */
-typedef struct
-{
-	const char *	name;		/* what the user types */
-	int		type;		/* variable types, see below */
-	VARIABLE *	data;		/* The value of the variable */
-	void	(*func) (const void *); /* func called when var is set */
-	u_short		flags;		/* flags for this variable */
-}	IrcVariable;
+IrcVariable *irc_variable[256];		/* Fix this later, eh! */
+int	irc_variable_counter = 0;
+
+static void 	set_variable (IrcVariable *var, char *value, int noisy);
 
 /*
  * The VIF_* macros stand for "(V)ariable.(i)nt_(f)lags", and have been
@@ -81,10 +79,6 @@ const char	*var_settings[] =
 	"OFF", "ON", "TOGGLE"
 };
 
-static void 	set_string_var (enum VAR_TYPES var, const char *string);
-static void 	set_int_var (enum VAR_TYPES var, int value);
-static char 	*make_string_var_bydata (int type, void *);
-
 static	void	eight_bit_characters 	(const void *);
 static	void	set_realname 		(const void *);
 static 	void 	set_display_pc_characters (const void *);
@@ -96,247 +90,48 @@ static	void	update_all_status_wrapper (const void *);
 static	void	set_highlight_char	(const void *);
 static	void	set_wserv_type		(const void *);
 
-#define VARPROTO(x, y, z) { x, y, NULL, z, 0 },
 
-/*
- * irc_variable: all the irc variables used.  Note that the integer and
- * boolean defaults are set here, which the string default value are set in
- * the init_variables() procedure 
- */
-static	IrcVariable irc_variable[] =
+/* BIV stands for "built in variable" */
+static int	add_biv (const char *name, int type, void (*func) (const void *), const char *script, ...)
 {
-VARPROTO("ALLOW_C1_CHARS", 		BOOL_VAR, NULL)
-VARPROTO("ALT_CHARSET", 		BOOL_VAR, NULL)
-VARPROTO("ALWAYS_SPLIT_BIGGEST",	BOOL_VAR, NULL)
-VARPROTO("AUTO_NEW_NICK", 		BOOL_VAR, NULL)
-VARPROTO("AUTO_RECONNECT",		BOOL_VAR, NULL)
-VARPROTO("AUTO_RECONNECT_DELAY",	INT_VAR,  NULL)
-VARPROTO("AUTO_REJOIN",			BOOL_VAR, NULL)
-VARPROTO("AUTO_REJOIN_CONNECT",		BOOL_VAR, NULL)
-VARPROTO("AUTO_REJOIN_DELAY",		INT_VAR,  NULL)
-VARPROTO("AUTO_UNMARK_AWAY",		BOOL_VAR, NULL)
-VARPROTO("AUTO_WHOWAS",			BOOL_VAR, NULL)
-VARPROTO("BAD_STYLE",			BOOL_VAR, NULL)
-VARPROTO("BANNER",			STR_VAR,  NULL)
-VARPROTO("BANNER_EXPAND",		BOOL_VAR, NULL)
-VARPROTO("BEEP",			BOOL_VAR, NULL)
-VARPROTO("BEEP_MAX",			INT_VAR,  NULL)
-VARPROTO("BLINK_VIDEO",			BOOL_VAR, NULL)
-VARPROTO("BOLD_VIDEO",			BOOL_VAR, NULL)
-VARPROTO("CHANNEL_NAME_WIDTH",		INT_VAR,  update_all_status_wrapper)
-VARPROTO("CLIENT_INFORMATION",		STR_VAR,  NULL)
-VARPROTO("CLOCK",			BOOL_VAR, set_clock)
-VARPROTO("CLOCK_24HOUR",		BOOL_VAR, reset_clock)
-VARPROTO("CLOCK_FORMAT",		STR_VAR,  set_clock_format)
-VARPROTO("CLOCK_INTERVAL",		INT_VAR,  set_clock_interval)
-VARPROTO("CMDCHARS",			STR_VAR,  NULL)
-VARPROTO("COLOR",			BOOL_VAR, NULL)
-VARPROTO("COMMAND_MODE",		BOOL_VAR, NULL)
-VARPROTO("COMMENT_HACK",		BOOL_VAR, NULL)
-VARPROTO("CONNECT_TIMEOUT",		INT_VAR,  NULL)
-VARPROTO("CONTINUED_LINE",		STR_VAR,  NULL)
-VARPROTO("CPU_SAVER_AFTER",		INT_VAR,  set_cpu_saver_after)
-VARPROTO("CPU_SAVER_EVERY",		INT_VAR,  set_cpu_saver_every)
-VARPROTO("CURRENT_WINDOW_LEVEL", 	STR_VAR,  set_current_window_mask)
-VARPROTO("DCC_AUTO_SEND_REJECTS", 	BOOL_VAR, NULL)
-VARPROTO("DCC_DEQUOTE_FILENAMES", 	BOOL_VAR, NULL)
-VARPROTO("DCC_LONG_PATHNAMES",	 	BOOL_VAR, NULL)
-VARPROTO("DCC_SLIDING_WINDOW",	 	INT_VAR,  NULL)
-VARPROTO("DCC_STORE_PATH",	 	STR_VAR,  NULL)
-VARPROTO("DCC_TIMEOUT",		 	INT_VAR,  set_dcc_timeout)
-VARPROTO("DCC_USE_GATEWAY_ADDR", 	BOOL_VAR, NULL)
-VARPROTO("DEBUG",		 	INT_VAR,  NULL)
-VARPROTO("DISPATCH_UNKNOWN_COMMANDS", 	BOOL_VAR, NULL)
-VARPROTO("DISPLAY",		  	BOOL_VAR, NULL)
-VARPROTO("DISPLAY_ANSI",	  	BOOL_VAR, NULL)
-VARPROTO("DISPLAY_PC_CHARACTERS", 	INT_VAR,  set_display_pc_characters)
-VARPROTO("DO_NOTIFY_IMMEDIATELY",	BOOL_VAR, NULL)
-VARPROTO("EIGHT_BIT_CHARACTERS",  	BOOL_VAR, eight_bit_characters)
-VARPROTO("FLOATING_POINT_MATH",	  	BOOL_VAR, NULL)
-VARPROTO("FLOATING_POINT_PRECISION",	INT_VAR,  NULL)
-VARPROTO("FLOOD_AFTER",			INT_VAR,  NULL)
-VARPROTO("FLOOD_IGNORE",		BOOL_VAR, NULL)
-VARPROTO("FLOOD_MASKUSER",		INT_VAR,  NULL)
-VARPROTO("FLOOD_RATE",			INT_VAR,  NULL)
-VARPROTO("FLOOD_RATE_PER",		INT_VAR,  NULL)
-VARPROTO("FLOOD_USERS",			INT_VAR,  NULL)
-VARPROTO("FLOOD_WARNING",		BOOL_VAR, NULL)
-VARPROTO("FULL_STATUS_LINE",		BOOL_VAR, update_all_status_wrapper)
-VARPROTO("HELP_PAGER",			BOOL_VAR, NULL)
-VARPROTO("HELP_PATH",			STR_VAR,  NULL)
-VARPROTO("HELP_PROMPT",			BOOL_VAR, NULL)
-VARPROTO("HELP_WINDOW",			BOOL_VAR, NULL)
-VARPROTO("HIDE_PRIVATE_CHANNELS",	BOOL_VAR, update_all_status_wrapper)
-VARPROTO("HIGHLIGHT_CHAR",		STR_VAR,  set_highlight_char)
-VARPROTO("HIGH_BIT_ESCAPE",		INT_VAR,  set_meta_8bit)
-VARPROTO("HISTORY",			INT_VAR,  set_history_size)
-VARPROTO("HISTORY_CIRCLEQ",		BOOL_VAR, NULL)
-VARPROTO("HOLD_SLIDER",			INT_VAR,  NULL)
-VARPROTO("INDENT",			BOOL_VAR, NULL)
-VARPROTO("INPUT_ALIASES",		BOOL_VAR, NULL)
-VARPROTO("INPUT_PROMPT",		STR_VAR,  set_input_prompt)
-VARPROTO("INSERT_MODE",			BOOL_VAR, update_all_status_wrapper)
-VARPROTO("INVERSE_VIDEO",		BOOL_VAR, NULL)
-VARPROTO("KEY_INTERVAL",		INT_VAR,  set_key_interval)
-VARPROTO("LASTLOG",			INT_VAR,  set_lastlog_size)
-VARPROTO("LASTLOG_LEVEL",		STR_VAR,  set_lastlog_mask)
-VARPROTO("LOAD_PATH",			STR_VAR,  NULL)
-VARPROTO("LOG",				BOOL_VAR, logger)
-VARPROTO("LOGFILE",			STR_VAR,  NULL)
-VARPROTO("LOG_REWRITE",			STR_VAR,  NULL)
-VARPROTO("MAIL",			INT_VAR,  set_mail)
-VARPROTO("MAIL_INTERVAL",		INT_VAR,  set_mail_interval)
-VARPROTO("MANGLE_INBOUND",		STR_VAR,  set_mangle_inbound)
-VARPROTO("MANGLE_LOGFILES",		STR_VAR,  set_mangle_logfiles)
-VARPROTO("MANGLE_OUTBOUND",		STR_VAR,  set_mangle_outbound)
-VARPROTO("MAX_RECONNECTS",		INT_VAR,  NULL)
-VARPROTO("METRIC_TIME",			BOOL_VAR, reset_clock)
-VARPROTO("MIRC_BROKEN_DCC_RESUME",	BOOL_VAR, NULL)
-VARPROTO("MODE_STRIPPER",             	BOOL_VAR, NULL)
-VARPROTO("ND_SPACE_MAX",		INT_VAR,  NULL)
-VARPROTO("NEW_SERVER_LASTLOG_LEVEL",	STR_VAR,  set_new_server_lastlog_mask)
-VARPROTO("NOTIFY",			BOOL_VAR, set_notify)
-VARPROTO("NOTIFY_INTERVAL",		INT_VAR,  set_notify_interval)
-VARPROTO("NOTIFY_LEVEL",		STR_VAR,  set_notify_mask)
-VARPROTO("NOTIFY_ON_TERMINATION",	BOOL_VAR, NULL)
-VARPROTO("NOTIFY_USERHOST_AUTOMATIC",	BOOL_VAR, NULL)
-VARPROTO("NO_CONTROL_LOG",		BOOL_VAR, NULL)
-VARPROTO("NO_CTCP_FLOOD",		BOOL_VAR, NULL)
-VARPROTO("NO_FAIL_DISCONNECT",		BOOL_VAR, NULL)
-VARPROTO("NUM_OF_WHOWAS",		INT_VAR,  NULL)
-VARPROTO("OLD_SERVER_LASTLOG_LEVEL",	STR_VAR,  set_old_server_lastlog_mask)
-VARPROTO("OUTPUT_REWRITE",		STR_VAR,  NULL)
-VARPROTO("PAD_CHAR",			CHAR_VAR, NULL)
-VARPROTO("QUIT_MESSAGE",		STR_VAR,  NULL)
-VARPROTO("RANDOM_SOURCE",		INT_VAR,  NULL)
-VARPROTO("REALNAME",			STR_VAR,  set_realname)
-VARPROTO("REVERSE_STATUS_LINE",		BOOL_VAR, update_all_status_wrapper)
-VARPROTO("SCREEN_OPTIONS",		STR_VAR,  NULL)
-VARPROTO("SCROLLBACK",			INT_VAR,  set_scrollback_size)
-VARPROTO("SCROLLBACK_RATIO",		INT_VAR,  NULL)
-VARPROTO("SCROLL_LINES",		INT_VAR,  set_scroll_lines)
-VARPROTO("SECURITY",			INT_VAR,  NULL)
-VARPROTO("SHELL",			STR_VAR,  NULL)
-VARPROTO("SHELL_FLAGS",			STR_VAR,  NULL)
-VARPROTO("SHELL_LIMIT",			INT_VAR,  NULL)
-VARPROTO("SHOW_CHANNEL_NAMES",		BOOL_VAR, NULL)
-VARPROTO("SHOW_END_OF_MSGS",		BOOL_VAR, NULL)
-VARPROTO("SHOW_NUMERICS",		BOOL_VAR, NULL)
-VARPROTO("SHOW_STATUS_ALL",		BOOL_VAR, update_all_status_wrapper)
-VARPROTO("SHOW_WHO_HOPCOUNT", 		BOOL_VAR, NULL)
-VARPROTO("SSL_CERTFILE",		STR_VAR,  NULL)
-VARPROTO("SSL_KEYFILE",			STR_VAR,  NULL)
-VARPROTO("SSL_PATH",			STR_VAR,  NULL)
-VARPROTO("STATUS_AWAY",			STR_VAR,  build_status)
-VARPROTO("STATUS_CHANNEL",		STR_VAR,  build_status)
-VARPROTO("STATUS_CHANOP",		STR_VAR,  build_status)
-VARPROTO("STATUS_CLOCK",		STR_VAR,  build_status)
-VARPROTO("STATUS_CPU_SAVER",		STR_VAR,  build_status)
-VARPROTO("STATUS_DOES_EXPANDOS",	BOOL_VAR, NULL)
-VARPROTO("STATUS_FORMAT",		STR_VAR,  build_status)
-VARPROTO("STATUS_FORMAT1",		STR_VAR,  build_status)
-VARPROTO("STATUS_FORMAT2",		STR_VAR,  build_status)
-VARPROTO("STATUS_HALFOP",		STR_VAR,  build_status)
-VARPROTO("STATUS_HOLD",			STR_VAR,  build_status)
-VARPROTO("STATUS_HOLD_LINES",		STR_VAR,  build_status)
-VARPROTO("STATUS_INSERT",		STR_VAR,  build_status)
-VARPROTO("STATUS_MAIL",			STR_VAR,  build_status)
-VARPROTO("STATUS_MODE",			STR_VAR,  build_status)
-VARPROTO("STATUS_NICKNAME",		STR_VAR,  build_status)
-VARPROTO("STATUS_NOSWAP",		STR_VAR,  build_status)
-VARPROTO("STATUS_NOTIFY",		STR_VAR,  build_status)
-VARPROTO("STATUS_NO_REPEAT",		BOOL_VAR, build_status)
-VARPROTO("STATUS_OPER",			STR_VAR,  build_status)
-VARPROTO("STATUS_OVERWRITE",		STR_VAR,  build_status)
-VARPROTO("STATUS_QUERY",		STR_VAR,  build_status)
-VARPROTO("STATUS_SCROLLBACK",		STR_VAR,  build_status)
-VARPROTO("STATUS_SERVER",		STR_VAR,  build_status)
-VARPROTO("STATUS_SSL_OFF",		STR_VAR,  build_status)
-VARPROTO("STATUS_SSL_ON",		STR_VAR,  build_status)
-VARPROTO("STATUS_TRUNCATE_RHS",		BOOL_VAR, build_status)
-VARPROTO("STATUS_UMODE",		STR_VAR,  build_status)
-VARPROTO("STATUS_USER",			STR_VAR,  build_status)
-VARPROTO("STATUS_USER1",		STR_VAR,  build_status)
-VARPROTO("STATUS_USER10",		STR_VAR,  build_status)
-VARPROTO("STATUS_USER11",		STR_VAR,  build_status)
-VARPROTO("STATUS_USER12",		STR_VAR,  build_status)
-VARPROTO("STATUS_USER13",		STR_VAR,  build_status)
-VARPROTO("STATUS_USER14",		STR_VAR,  build_status)
-VARPROTO("STATUS_USER15",		STR_VAR,  build_status)
-VARPROTO("STATUS_USER16",		STR_VAR,  build_status)
-VARPROTO("STATUS_USER17",		STR_VAR,  build_status)
-VARPROTO("STATUS_USER18",		STR_VAR,  build_status)
-VARPROTO("STATUS_USER19",		STR_VAR,  build_status)
-VARPROTO("STATUS_USER2",		STR_VAR,  build_status)
-VARPROTO("STATUS_USER20",		STR_VAR,  build_status)
-VARPROTO("STATUS_USER21",		STR_VAR,  build_status)
-VARPROTO("STATUS_USER22",		STR_VAR,  build_status)
-VARPROTO("STATUS_USER23",		STR_VAR,  build_status)
-VARPROTO("STATUS_USER24",		STR_VAR,  build_status)
-VARPROTO("STATUS_USER25",		STR_VAR,  build_status)
-VARPROTO("STATUS_USER26",		STR_VAR,  build_status)
-VARPROTO("STATUS_USER27",		STR_VAR,  build_status)
-VARPROTO("STATUS_USER28",		STR_VAR,  build_status)
-VARPROTO("STATUS_USER29",		STR_VAR,  build_status)
-VARPROTO("STATUS_USER3",		STR_VAR,  build_status)
-VARPROTO("STATUS_USER30",		STR_VAR,  build_status)
-VARPROTO("STATUS_USER31",		STR_VAR,  build_status)
-VARPROTO("STATUS_USER32",		STR_VAR,  build_status)
-VARPROTO("STATUS_USER33",		STR_VAR,  build_status)
-VARPROTO("STATUS_USER34",		STR_VAR,  build_status)
-VARPROTO("STATUS_USER35",		STR_VAR,  build_status)
-VARPROTO("STATUS_USER36",		STR_VAR,  build_status)
-VARPROTO("STATUS_USER37",		STR_VAR,  build_status)
-VARPROTO("STATUS_USER38",		STR_VAR,  build_status)
-VARPROTO("STATUS_USER39",		STR_VAR,  build_status)
-VARPROTO("STATUS_USER4",		STR_VAR,  build_status)
-VARPROTO("STATUS_USER5",		STR_VAR,  build_status)
-VARPROTO("STATUS_USER6",		STR_VAR,  build_status)
-VARPROTO("STATUS_USER7",		STR_VAR,  build_status)
-VARPROTO("STATUS_USER8",		STR_VAR,  build_status)
-VARPROTO("STATUS_USER9",		STR_VAR,  build_status)
-VARPROTO("STATUS_VOICE",		STR_VAR,  build_status)
-VARPROTO("STATUS_WINDOW",		STR_VAR,  build_status)
-VARPROTO("SUPPRESS_FROM_REMOTE_SERVER",	BOOL_VAR, NULL)
-VARPROTO("SWITCH_CHANNELS_BETWEEN_WINDOWS", BOOL_VAR, NULL)
-VARPROTO("SWITCH_CHANNEL_ON_PART",	BOOL_VAR, NULL)
-VARPROTO("TAB",				BOOL_VAR, NULL)
-VARPROTO("TAB_MAX",			INT_VAR,  NULL)
-VARPROTO("TERM_DOES_BRIGHT_BLINK",	BOOL_VAR, NULL)
-VARPROTO("TRANSLATION",			STR_VAR,  set_translation)
-VARPROTO("TRANSLATION_PATH",		STR_VAR,  NULL)
-VARPROTO("UNDERLINE_VIDEO",		BOOL_VAR, NULL)
-VARPROTO("USER_INFORMATION", 		STR_VAR,  NULL)
-VARPROTO("VERBOSE_CTCP",		BOOL_VAR, NULL)
-VARPROTO("WORD_BREAK",			STR_VAR,  NULL)
-VARPROTO("WSERV_PATH",			STR_VAR,  NULL)
-VARPROTO("WSERV_TYPE",			STR_VAR,  set_wserv_type)
-VARPROTO("XTERM",			STR_VAR,  NULL)
-VARPROTO("XTERM_OPTIONS", 		STR_VAR,  NULL)
-VARPROTO(NULL,				0,	  0)
-};
+	IrcVariable *var;
+	va_list va;
+	int numval;
+	const char *strval;
 
-/*
- * set_string_var: sets the string variable given as an index into the
- * variable table to the given string.  If string is null, the current value
- * of the string variable is freed and set to null 
- */
-__inline
-static void 	set_string_var (enum VAR_TYPES var, const char *string)
-{
-	if (string)
-		malloc_strcpy(&(irc_variable[var].data->string), string);
-	else
-		new_free(&(irc_variable[var].data->string));
+	var = (IrcVariable *)new_malloc(sizeof(IrcVariable));
+	var->name = malloc_strdup(name);
+	var->type = type;
+	var->script = malloc_strdup(script);
+	var->func = func;
+
+	var->data = new_malloc(sizeof(union builtin_variable));
+	var->flags = 0;
+
+	va_start(va, script);
+	switch (var->type) {
+	    case BOOL_VAR:
+	    case CHAR_VAR:
+	    case INT_VAR:
+		numval = va_arg(va, int);
+		var->data->integer = numval;
+		break;
+	    case STR_VAR:
+		strval = va_arg(va, char *);
+		if (strval)
+			var->data->string = malloc_strdup(strval);
+		else
+			var->data->string = NULL;
+		break;
+	}
+	va_end(va);
+
+	add_builtin_variable_alias(name, var);
+	irc_variable[irc_variable_counter++] = var;
+	return (irc_variable_counter - 1);
 }
 
-/* Same story, second verse. */
-__inline
-static void 	set_int_var (enum VAR_TYPES var, int value)
-{
-	irc_variable[var].data->integer = value;
-}
-
+#define VAR(x, y, z) x ## _VAR = add_biv( #x, y ## _VAR, z,NULL, DEFAULT_ ## x);
 
 /*
  * init_variables: initializes the string variables that can't really be
@@ -344,235 +139,250 @@ static void 	set_int_var (enum VAR_TYPES var, int value)
  */
 void 	init_variables_stage1 (void)
 {
-	int 	i;
+	int	i;
 	char 	*s;
 
-	for (i = 1; i < NUMBER_OF_VARIABLES - 1; i++)
-		if (strcmp(irc_variable[i-1].name, irc_variable[i].name) >= 0)
-			panic("Variable [%d] (%s) is out of order.", i, irc_variable[i].name);
+	for (i = 0; i < 256; i++)
+		irc_variable[i] = NULL;
 
-	for (i = 0; i < NUMBER_OF_VARIABLES; i++)
-	{
-	    irc_variable[i].data = new_malloc(sizeof(union builtin_variable));
-	    switch (irc_variable[i].type) {
-		case BOOL_VAR:
-		case CHAR_VAR:
-		case INT_VAR:
-			irc_variable[i].data->integer = 0;
-			break;
-		case STR_VAR:
-			irc_variable[i].data->string = NULL;
-			break;
-	    }
-	}
-
-	set_int_var(ALLOW_C1_CHARS_VAR,		DEFAULT_ALLOW_C1_CHARS);
-	set_int_var(ALT_CHARSET_VAR, 		DEFAULT_ALT_CHARSET);
-	set_int_var(ALWAYS_SPLIT_BIGGEST_VAR, 	DEFAULT_ALWAYS_SPLIT_BIGGEST);
-	set_int_var(AUTO_NEW_NICK_VAR,		DEFAULT_AUTO_NEW_NICK);
-	set_int_var(AUTO_RECONNECT_VAR,         DEFAULT_AUTO_RECONNECT);
-	set_int_var(AUTO_RECONNECT_DELAY_VAR,	DEFAULT_AUTO_RECONNECT_DELAY);
-	set_int_var(AUTO_REJOIN_VAR,            DEFAULT_AUTO_REJOIN);
-	set_int_var(AUTO_REJOIN_CONNECT_VAR,	DEFAULT_AUTO_REJOIN_CONNECT);
-	set_int_var(AUTO_REJOIN_DELAY_VAR,	DEFAULT_AUTO_REJOIN_DELAY);
-	set_int_var(AUTO_UNMARK_AWAY_VAR,	DEFAULT_AUTO_UNMARK_AWAY);
-	set_int_var(AUTO_WHOWAS_VAR,		DEFAULT_AUTO_WHOWAS);
-	set_int_var(BAD_STYLE_VAR,		DEFAULT_BAD_STYLE);
-	set_int_var(BEEP_VAR,			DEFAULT_BEEP);
-	set_int_var(BEEP_MAX_VAR,		DEFAULT_BEEP_MAX);
-	set_int_var(BLINK_VIDEO_VAR,		DEFAULT_BLINK_VIDEO);
-	set_int_var(BOLD_VIDEO_VAR,		DEFAULT_BOLD_VIDEO);
-	set_int_var(CHANNEL_NAME_WIDTH_VAR,	DEFAULT_CHANNEL_NAME_WIDTH);
-	set_int_var(CLOCK_VAR,			DEFAULT_CLOCK);
-	set_int_var(CLOCK_24HOUR_VAR,		DEFAULT_CLOCK_24HOUR);
-	set_int_var(CLOCK_INTERVAL_VAR,		DEFAULT_CLOCK_INTERVAL);
-	set_int_var(COLOR_VAR,			DEFAULT_COLOR);
-	set_int_var(COMMAND_MODE_VAR,		DEFAULT_COMMAND_MODE);
-	set_int_var(COMMENT_HACK_VAR,		DEFAULT_COMMENT_HACK);
-	set_int_var(CONNECT_TIMEOUT_VAR,	DEFAULT_CONNECT_TIMEOUT);
-	set_int_var(CPU_SAVER_AFTER_VAR,	DEFAULT_CPU_SAVER_AFTER);
-	set_int_var(CPU_SAVER_EVERY_VAR,	DEFAULT_CPU_SAVER_EVERY);
-	set_int_var(DCC_AUTO_SEND_REJECTS_VAR,	DEFAULT_DCC_AUTO_SEND_REJECTS);
-	set_int_var(DCC_DEQUOTE_FILENAMES_VAR,	DEFAULT_DCC_DEQUOTE_FILENAMES);
-	set_int_var(DCC_LONG_PATHNAMES_VAR,	DEFAULT_DCC_LONG_PATHNAMES);
-	set_int_var(DCC_SLIDING_WINDOW_VAR,	DEFAULT_DCC_SLIDING_WINDOW);
-	set_int_var(DCC_TIMEOUT_VAR,		DEFAULT_DCC_TIMEOUT);
-	set_int_var(DISPATCH_UNKNOWN_COMMANDS_VAR,	DEFAULT_DISPATCH_UNKNOWN_COMMANDS);
-	set_int_var(DISPLAY_VAR,		DEFAULT_DISPLAY);
-	set_int_var(DISPLAY_ANSI_VAR,		DEFAULT_DISPLAY_ANSI);
-	set_int_var(DISPLAY_PC_CHARACTERS_VAR,	DEFAULT_DISPLAY_PC_CHARACTERS);
-	set_int_var(DO_NOTIFY_IMMEDIATELY_VAR,	DEFAULT_DO_NOTIFY_IMMEDIATELY);
-	set_int_var(EIGHT_BIT_CHARACTERS_VAR,	DEFAULT_EIGHT_BIT_CHARACTERS);
-	set_int_var(FLOATING_POINT_MATH_VAR,	DEFAULT_FLOATING_POINT_MATH);
-	set_int_var(FLOATING_POINT_PRECISION_VAR, DEFAULT_FLOATING_POINT_PRECISION);
-	set_int_var(FLOOD_AFTER_VAR,		DEFAULT_FLOOD_AFTER);
-	set_int_var(FLOOD_IGNORE_VAR,		DEFAULT_FLOOD_IGNORE);
-	set_int_var(FLOOD_MASKUSER_VAR,		DEFAULT_FLOOD_MASKUSER);
-	set_int_var(FLOOD_RATE_VAR,		DEFAULT_FLOOD_RATE);
-	set_int_var(FLOOD_RATE_PER_VAR,		DEFAULT_FLOOD_RATE_PER);
-	set_int_var(FLOOD_USERS_VAR,		DEFAULT_FLOOD_USERS);
-	set_int_var(FLOOD_WARNING_VAR,		DEFAULT_FLOOD_WARNING);
-	set_int_var(FULL_STATUS_LINE_VAR,	DEFAULT_FULL_STATUS_LINE);
-	set_int_var(HELP_PAGER_VAR,		DEFAULT_HELP_PAGER);
-	set_int_var(HELP_PROMPT_VAR,		DEFAULT_HELP_PROMPT);
-	set_int_var(HELP_WINDOW_VAR,		DEFAULT_HELP_WINDOW);
-	set_int_var(HIDE_PRIVATE_CHANNELS_VAR,	DEFAULT_HIDE_PRIVATE_CHANNELS);
-	set_int_var(HIGH_BIT_ESCAPE_VAR,	DEFAULT_HIGH_BIT_ESCAPE);
-	set_int_var(HISTORY_VAR,		DEFAULT_HISTORY);
-	set_int_var(HISTORY_CIRCLEQ_VAR,	DEFAULT_HISTORY_CIRCLEQ);
-	set_int_var(HOLD_SLIDER_VAR,		DEFAULT_HOLD_SLIDER);
-	set_int_var(INDENT_VAR,			DEFAULT_INDENT);
-	set_int_var(INPUT_ALIASES_VAR,		DEFAULT_INPUT_ALIASES);
-	set_int_var(INSERT_MODE_VAR,		DEFAULT_INSERT_MODE);
-	set_int_var(INVERSE_VIDEO_VAR,		DEFAULT_INVERSE_VIDEO);
-	set_int_var(KEY_INTERVAL_VAR,		DEFAULT_KEY_INTERVAL);
-	set_int_var(LASTLOG_VAR,		DEFAULT_LASTLOG);
-	set_int_var(LOG_VAR,			DEFAULT_LOG);
-	set_int_var(MAIL_VAR,			DEFAULT_MAIL);
-	set_int_var(MAIL_INTERVAL_VAR,		DEFAULT_MAIL_INTERVAL);
-	set_int_var(MAX_RECONNECTS_VAR,		DEFAULT_MAX_RECONNECTS);
-	set_int_var(METRIC_TIME_VAR,		DEFAULT_METRIC_TIME);
-	set_int_var(MODE_STRIPPER_VAR,          DEFAULT_MODE_STRIPPER);
-	set_int_var(ND_SPACE_MAX_VAR,		DEFAULT_ND_SPACE_MAX);
-	set_int_var(NOTIFY_VAR,			DEFAULT_NOTIFY);
-	set_int_var(NOTIFY_INTERVAL_VAR,	DEFAULT_NOTIFY_INTERVAL);
-	set_int_var(NOTIFY_ON_TERMINATION_VAR,	DEFAULT_NOTIFY_ON_TERMINATION);
-	set_int_var(NOTIFY_USERHOST_AUTOMATIC_VAR,	DEFAULT_NOTIFY_USERHOST_AUTOMATIC);
-	set_int_var(NO_CONTROL_LOG_VAR,		DEFAULT_NO_CONTROL_LOG);
-	set_int_var(NO_CTCP_FLOOD_VAR,		DEFAULT_NO_CTCP_FLOOD);
-	set_int_var(NO_FAIL_DISCONNECT_VAR,	DEFAULT_NO_FAIL_DISCONNECT);
-	set_int_var(NUM_OF_WHOWAS_VAR,		DEFAULT_NUM_OF_WHOWAS);
-	set_int_var(PAD_CHAR_VAR,		DEFAULT_PAD_CHAR);
-	set_int_var(RANDOM_SOURCE_VAR,		DEFAULT_RANDOM_SOURCE);
-	set_int_var(REVERSE_STATUS_LINE_VAR,	DEFAULT_REVERSE_STATUS_LINE);
-	set_int_var(SCROLLBACK_VAR,		DEFAULT_SCROLLBACK);
-	set_int_var(SCROLLBACK_RATIO_VAR,	DEFAULT_SCROLLBACK_RATIO);
-	set_int_var(SCROLL_LINES_VAR,		DEFAULT_SCROLL_LINES);
-	set_int_var(SECURITY_VAR,		DEFAULT_SECURITY);
-	set_int_var(SHELL_LIMIT_VAR,		DEFAULT_SHELL_LIMIT);
-	set_int_var(SHOW_CHANNEL_NAMES_VAR,	DEFAULT_SHOW_CHANNEL_NAMES);
-	set_int_var(SHOW_END_OF_MSGS_VAR,	DEFAULT_SHOW_END_OF_MSGS);
-	set_int_var(SHOW_NUMERICS_VAR,		DEFAULT_SHOW_NUMERICS);
-	set_int_var(SHOW_STATUS_ALL_VAR,	DEFAULT_SHOW_STATUS_ALL);
-	set_int_var(SHOW_WHO_HOPCOUNT_VAR, 	DEFAULT_SHOW_WHO_HOPCOUNT);
-	set_int_var(STATUS_NO_REPEAT_VAR,       DEFAULT_STATUS_NO_REPEAT);
-	set_int_var(STATUS_TRUNCATE_RHS_VAR,	DEFAULT_STATUS_TRUNCATE_RHS);
-	set_int_var(SUPPRESS_FROM_REMOTE_SERVER_VAR, 	DEFAULT_SUPPRESS_FROM_REMOTE_SERVER);
-	set_int_var(SWITCH_CHANNELS_BETWEEN_WINDOWS_VAR,	DEFAULT_SWITCH_CHANNELS_BETWEEN_WINDOWS);
-	set_int_var(SWITCH_CHANNEL_ON_PART_VAR,	DEFAULT_SWITCH_CHANNEL_ON_PART);
-	set_int_var(TAB_VAR,			DEFAULT_TAB);
-	set_int_var(TAB_MAX_VAR,		DEFAULT_TAB_MAX);
-	set_int_var(TERM_DOES_BRIGHT_BLINK_VAR,	DEFAULT_TERM_DOES_BRIGHT_BLINK);
-	set_int_var(UNDERLINE_VIDEO_VAR,	DEFAULT_UNDERLINE_VIDEO);
-	set_int_var(VERBOSE_CTCP_VAR,		DEFAULT_VERBOSE_CTCP);
-
-	set_string_var(BANNER_VAR, DEFAULT_BANNER);
-	set_string_var(CMDCHARS_VAR, DEFAULT_CMDCHARS);
-	set_string_var(CURRENT_WINDOW_LEVEL_VAR, DEFAULT_CURRENT_WINDOW_LEVEL);
-	set_string_var(LOGFILE_VAR, DEFAULT_LOGFILE);
-	set_string_var(SHELL_VAR, DEFAULT_SHELL);
-	set_string_var(SHELL_FLAGS_VAR, DEFAULT_SHELL_FLAGS);
-	set_string_var(CONTINUED_LINE_VAR, DEFAULT_CONTINUED_LINE);
-	set_string_var(INPUT_PROMPT_VAR, DEFAULT_INPUT_PROMPT);
-	set_string_var(HIGHLIGHT_CHAR_VAR, DEFAULT_HIGHLIGHT_CHAR);
-	set_string_var(LASTLOG_LEVEL_VAR, DEFAULT_LASTLOG_LEVEL);
-	set_string_var(LOG_REWRITE_VAR, NULL);
-	set_string_var(MANGLE_INBOUND_VAR, NULL);
-	set_string_var(MANGLE_LOGFILES_VAR, NULL);
-	set_string_var(MANGLE_OUTBOUND_VAR, NULL);
-	set_string_var(NEW_SERVER_LASTLOG_LEVEL_VAR, 
-			DEFAULT_NEW_SERVER_LASTLOG_LEVEL);
-	set_string_var(NOTIFY_LEVEL_VAR, DEFAULT_NOTIFY_LEVEL);
-	set_string_var(OLD_SERVER_LASTLOG_LEVEL_VAR, 
-			DEFAULT_OLD_SERVER_LASTLOG_LEVEL);
-	set_string_var(OUTPUT_REWRITE_VAR, NULL);
-	set_string_var(QUIT_MESSAGE_VAR, DEFAULT_QUIT_MESSAGE);
-	set_string_var(REALNAME_VAR, realname);
-	set_string_var(SSL_CERTFILE_VAR, NULL);
-	set_string_var(SSL_KEYFILE_VAR, NULL);
-	set_string_var(SSL_PATH_VAR, NULL);
-	set_string_var(STATUS_FORMAT_VAR, DEFAULT_STATUS_FORMAT);
-	set_string_var(STATUS_FORMAT1_VAR, DEFAULT_STATUS_FORMAT1);
-	set_string_var(STATUS_FORMAT2_VAR, DEFAULT_STATUS_FORMAT2);
-	set_string_var(STATUS_AWAY_VAR, DEFAULT_STATUS_AWAY);
-	set_string_var(STATUS_CHANNEL_VAR, DEFAULT_STATUS_CHANNEL);
-	set_string_var(STATUS_CHANOP_VAR, DEFAULT_STATUS_CHANOP);
-	set_string_var(STATUS_HALFOP_VAR, DEFAULT_STATUS_HALFOP);
-	set_string_var(STATUS_SSL_ON_VAR, DEFAULT_STATUS_SSL_ON);
-	set_string_var(STATUS_SSL_OFF_VAR, DEFAULT_STATUS_SSL_OFF);
-	set_string_var(STATUS_CLOCK_VAR, DEFAULT_STATUS_CLOCK);
-	set_string_var(STATUS_CPU_SAVER_VAR, DEFAULT_STATUS_CPU_SAVER);
-	set_string_var(STATUS_HOLD_VAR, DEFAULT_STATUS_HOLD);
-	set_string_var(STATUS_HOLD_LINES_VAR, DEFAULT_STATUS_HOLD_LINES);
-	set_string_var(STATUS_INSERT_VAR, DEFAULT_STATUS_INSERT);
-	set_string_var(STATUS_MAIL_VAR, DEFAULT_STATUS_MAIL);
-	set_string_var(STATUS_MODE_VAR, DEFAULT_STATUS_MODE);
-	set_string_var(STATUS_NICK_VAR, DEFAULT_STATUS_NICK);
-	set_string_var(STATUS_NOSWAP_VAR, DEFAULT_STATUS_NOSWAP);
-	set_string_var(STATUS_OPER_VAR, DEFAULT_STATUS_OPER);
-	set_string_var(STATUS_OVERWRITE_VAR, DEFAULT_STATUS_OVERWRITE);
-	set_string_var(STATUS_QUERY_VAR, DEFAULT_STATUS_QUERY);
-	set_string_var(STATUS_SCROLLBACK_VAR, DEFAULT_STATUS_SCROLLBACK);
-	set_string_var(STATUS_SERVER_VAR, DEFAULT_STATUS_SERVER);
-	set_string_var(STATUS_UMODE_VAR, DEFAULT_STATUS_UMODE);
-	set_string_var(STATUS_USER0_VAR, DEFAULT_STATUS_USER);
-	set_string_var(STATUS_USER1_VAR, DEFAULT_STATUS_USER1);
-	set_string_var(STATUS_USER2_VAR, DEFAULT_STATUS_USER2);
-	set_string_var(STATUS_USER3_VAR, DEFAULT_STATUS_USER3);
-	set_string_var(STATUS_USER4_VAR, DEFAULT_STATUS_USER4);
-	set_string_var(STATUS_USER5_VAR, DEFAULT_STATUS_USER5);
-	set_string_var(STATUS_USER6_VAR, DEFAULT_STATUS_USER6);
-	set_string_var(STATUS_USER7_VAR, DEFAULT_STATUS_USER7);
-	set_string_var(STATUS_USER8_VAR, DEFAULT_STATUS_USER8);
-	set_string_var(STATUS_USER9_VAR, DEFAULT_STATUS_USER9);
-	set_string_var(STATUS_USER10_VAR, DEFAULT_STATUS_USER10);
-	set_string_var(STATUS_USER11_VAR, DEFAULT_STATUS_USER11);
-	set_string_var(STATUS_USER12_VAR, DEFAULT_STATUS_USER12);
-	set_string_var(STATUS_USER13_VAR, DEFAULT_STATUS_USER13);
-	set_string_var(STATUS_USER14_VAR, DEFAULT_STATUS_USER14);
-	set_string_var(STATUS_USER15_VAR, DEFAULT_STATUS_USER15);
-	set_string_var(STATUS_USER16_VAR, DEFAULT_STATUS_USER16);
-	set_string_var(STATUS_USER17_VAR, DEFAULT_STATUS_USER17);
-	set_string_var(STATUS_USER18_VAR, DEFAULT_STATUS_USER18);
-	set_string_var(STATUS_USER19_VAR, DEFAULT_STATUS_USER19);
-	set_string_var(STATUS_USER20_VAR, DEFAULT_STATUS_USER20);
-	set_string_var(STATUS_USER21_VAR, DEFAULT_STATUS_USER21);
-	set_string_var(STATUS_USER22_VAR, DEFAULT_STATUS_USER22);
-	set_string_var(STATUS_USER23_VAR, DEFAULT_STATUS_USER23);
-	set_string_var(STATUS_USER24_VAR, DEFAULT_STATUS_USER24);
-	set_string_var(STATUS_USER25_VAR, DEFAULT_STATUS_USER25);
-	set_string_var(STATUS_USER26_VAR, DEFAULT_STATUS_USER26);
-	set_string_var(STATUS_USER27_VAR, DEFAULT_STATUS_USER27);
-	set_string_var(STATUS_USER28_VAR, DEFAULT_STATUS_USER28);
-	set_string_var(STATUS_USER29_VAR, DEFAULT_STATUS_USER29);
-	set_string_var(STATUS_USER30_VAR, DEFAULT_STATUS_USER30);
-	set_string_var(STATUS_USER31_VAR, DEFAULT_STATUS_USER31);
-	set_string_var(STATUS_USER32_VAR, DEFAULT_STATUS_USER32);
-	set_string_var(STATUS_USER33_VAR, DEFAULT_STATUS_USER33);
-	set_string_var(STATUS_USER34_VAR, DEFAULT_STATUS_USER34);
-	set_string_var(STATUS_USER35_VAR, DEFAULT_STATUS_USER35);
-	set_string_var(STATUS_USER36_VAR, DEFAULT_STATUS_USER36);
-	set_string_var(STATUS_USER37_VAR, DEFAULT_STATUS_USER37);
-	set_string_var(STATUS_USER38_VAR, DEFAULT_STATUS_USER38);
-	set_string_var(STATUS_USER39_VAR, DEFAULT_STATUS_USER39);
-	set_string_var(STATUS_VOICE_VAR, DEFAULT_STATUS_VOICE);
-	set_string_var(STATUS_WINDOW_VAR, DEFAULT_STATUS_WINDOW);
-	set_string_var(TRANSLATION_VAR, NULL);
-	set_string_var(USERINFO_VAR, DEFAULT_USERINFO);
-	set_string_var(XTERM_VAR, DEFAULT_XTERM);
-	set_string_var(XTERM_OPTIONS_VAR, DEFAULT_XTERM_OPTIONS);
-	set_string_var(STATUS_NOTIFY_VAR, DEFAULT_STATUS_NOTIFY);
-	set_string_var(CLIENTINFO_VAR, IRCII_COMMENT);
-	set_string_var(WORD_BREAK_VAR, DEFAULT_WORD_BREAK);
-	set_string_var(WSERV_PATH_VAR, WSERV_PATH);
-	set_string_var(WSERV_TYPE_VAR, DEFAULT_WSERV_TYPE);
-
+	VAR(ALLOW_C1_CHARS, 		BOOL, NULL)
+	VAR(ALT_CHARSET, 		BOOL, NULL)
+	VAR(ALWAYS_SPLIT_BIGGEST, 	BOOL, NULL)
+	VAR(AUTO_NEW_NICK,		BOOL, NULL)
+	VAR(AUTO_RECONNECT, 		BOOL, NULL)
+	VAR(AUTO_RECONNECT_DELAY, 	INT,  NULL)
+	VAR(AUTO_REJOIN, 		BOOL, NULL)
+	VAR(AUTO_REJOIN_CONNECT, 	BOOL, NULL)
+	VAR(AUTO_REJOIN_DELAY, 		INT,  NULL)
+	VAR(AUTO_UNMARK_AWAY, 		BOOL, NULL)
+	VAR(AUTO_WHOWAS, 		BOOL, NULL)
+	VAR(BAD_STYLE, 			BOOL, NULL)
+	VAR(BANNER, 			STR,  NULL)
+#define DEFAULT_BANNER_EXPAND 0
+	VAR(BANNER_EXPAND, 		BOOL, NULL)
+	VAR(BEEP, 			BOOL, NULL)
+	VAR(BEEP_MAX, 			INT,  NULL)
+	VAR(BLINK_VIDEO, 		BOOL, NULL)
+	VAR(BOLD_VIDEO, 		BOOL, NULL)
+	VAR(CHANNEL_NAME_WIDTH, 	INT,  update_all_status_wrapper)
+#define DEFAULT_CLIENT_INFORMATION IRCII_COMMENT
+	VAR(CLIENT_INFORMATION, 	STR,  NULL)
+	VAR(CLOCK, 			BOOL, set_clock);
+	VAR(CLOCK_24HOUR, 		BOOL, reset_clock);
+	VAR(CLOCK_FORMAT, 		STR,  set_clock_format);
+	VAR(CLOCK_INTERVAL, 		INT,  set_clock_interval);
+	VAR(CMDCHARS, 			STR,  NULL);
+	VAR(COLOR, BOOL, NULL);
+	VAR(COMMAND_MODE, BOOL, NULL);
+	VAR(COMMENT_HACK, BOOL, NULL);
+	VAR(CONNECT_TIMEOUT, INT,  NULL);
+	VAR(CONTINUED_LINE, STR,  NULL);
+	VAR(CPU_SAVER_AFTER, INT,  set_cpu_saver_after);
+	VAR(CPU_SAVER_EVERY, INT,  set_cpu_saver_every);
+	VAR(CURRENT_WINDOW_LEVEL, STR,  set_current_window_mask);
+	VAR(DCC_AUTO_SEND_REJECTS, BOOL, NULL);
+	VAR(DCC_DEQUOTE_FILENAMES, BOOL, NULL);
+	VAR(DCC_LONG_PATHNAMES, BOOL, NULL);
+	VAR(DCC_SLIDING_WINDOW, INT,  NULL);
+#define DEFAULT_DCC_STORE_PATH NULL
+	VAR(DCC_STORE_PATH, STR,  NULL);
+	VAR(DCC_TIMEOUT, INT,  set_dcc_timeout);
+#define DEFAULT_DCC_USE_GATEWAY_ADDR 0
+	VAR(DCC_USE_GATEWAY_ADDR, BOOL, NULL)
+#define DEFAULT_DEBUG 0
+	VAR(DEBUG, INT,  NULL);
+	VAR(DISPATCH_UNKNOWN_COMMANDS, BOOL, NULL);
+	VAR(DISPLAY, BOOL, NULL);
+	VAR(DISPLAY_ANSI, BOOL, NULL);
+	VAR(DISPLAY_PC_CHARACTERS, INT,  set_display_pc_characters);
+	VAR(DO_NOTIFY_IMMEDIATELY, BOOL, NULL);
+	VAR(EIGHT_BIT_CHARACTERS, BOOL, eight_bit_characters);
+	VAR(FLOATING_POINT_MATH, BOOL, NULL);
+	VAR(FLOATING_POINT_PRECISION, INT,  NULL);
+	VAR(FLOOD_AFTER, INT,  NULL);
+	VAR(FLOOD_IGNORE, BOOL, NULL);
+	VAR(FLOOD_MASKUSER, INT,  NULL);
+	VAR(FLOOD_RATE, INT,  NULL);
+	VAR(FLOOD_RATE_PER, INT,  NULL);
+	VAR(FLOOD_USERS, INT,  NULL);
+	VAR(FLOOD_WARNING, BOOL, NULL);
+	VAR(FULL_STATUS_LINE, BOOL, update_all_status_wrapper);
+	VAR(HELP_PAGER, BOOL, NULL);
 	/*
 	 * Construct the default help path
 	 */
 	s = malloc_strdup(irc_lib);
 	malloc_strcat(&s, "/help");
-	set_string_var(HELP_PATH_VAR, s);
+#define DEFAULT_HELP_PATH s
+	VAR(HELP_PATH, STR,  NULL);
+	VAR(HELP_PROMPT, BOOL, NULL);
+	VAR(HELP_WINDOW, BOOL, NULL);
+	VAR(HIDE_PRIVATE_CHANNELS, BOOL, update_all_status_wrapper);
+	VAR(HIGHLIGHT_CHAR, STR,  set_highlight_char);
+	VAR(HIGH_BIT_ESCAPE, INT,  set_meta_8bit);
+	VAR(HISTORY, INT,  set_history_size);
+	VAR(HISTORY_CIRCLEQ, BOOL, NULL);
+	VAR(HOLD_SLIDER, INT,  NULL);
+	VAR(INDENT, BOOL, NULL);
+	VAR(INPUT_ALIASES, BOOL, NULL);
+	VAR(INPUT_PROMPT, STR,  set_input_prompt);
+	VAR(INSERT_MODE, BOOL, update_all_status_wrapper);
+	VAR(INVERSE_VIDEO, BOOL, NULL);
+	VAR(KEY_INTERVAL, INT,  set_key_interval);
+	VAR(LASTLOG, INT,  set_lastlog_size);
+	VAR(LASTLOG_LEVEL, STR,  set_lastlog_mask);
+#define DEFAULT_LOAD_PATH NULL
+	VAR(LOAD_PATH, STR,  NULL);
+	VAR(LOG, BOOL, logger);
+	VAR(LOGFILE, STR,  NULL);
+#define DEFAULT_LOG_REWRITE NULL
+	VAR(LOG_REWRITE, STR,  NULL);
+	VAR(MAIL, INT,  set_mail);
+	VAR(MAIL_INTERVAL, INT,  set_mail_interval);
+#define DEFAULT_MANGLE_INBOUND NULL
+	VAR(MANGLE_INBOUND, STR,  set_mangle_inbound);
+#define DEFAULT_MANGLE_LOGFILES NULL
+	VAR(MANGLE_LOGFILES, STR,  set_mangle_logfiles);
+#define DEFAULT_MANGLE_OUTBOUND NULL
+	VAR(MANGLE_OUTBOUND, STR,  set_mangle_outbound);
+	VAR(MAX_RECONNECTS, INT,  NULL);
+	VAR(METRIC_TIME, BOOL, reset_clock);
+#define DEFAULT_MIRC_BROKEN_DCC_RESUME 0
+	VAR(MIRC_BROKEN_DCC_RESUME, BOOL, NULL);
+	VAR(MODE_STRIPPER, BOOL, NULL);
+	VAR(ND_SPACE_MAX, INT,  NULL);
+	VAR(NEW_SERVER_LASTLOG_LEVEL, STR,  set_new_server_lastlog_mask);
+	VAR(NOTIFY, BOOL, set_notify);
+	VAR(NOTIFY_INTERVAL, INT,  set_notify_interval);
+	VAR(NOTIFY_LEVEL, STR,  set_notify_mask);
+	VAR(NOTIFY_ON_TERMINATION, BOOL, NULL);
+	VAR(NOTIFY_USERHOST_AUTOMATIC, BOOL, NULL);
+	VAR(NO_CONTROL_LOG, BOOL, NULL);
+	VAR(NO_CTCP_FLOOD, BOOL, NULL);
+	VAR(NO_FAIL_DISCONNECT, BOOL, NULL);
+	VAR(NUM_OF_WHOWAS, INT,  NULL);
+	VAR(OLD_SERVER_LASTLOG_LEVEL, STR,  set_old_server_lastlog_mask);
+#define DEFAULT_OUTPUT_REWRITE NULL
+	VAR(OUTPUT_REWRITE, STR,  NULL);
+	VAR(PAD_CHAR, CHAR, NULL);
+	VAR(QUIT_MESSAGE, STR,  NULL);
+	VAR(RANDOM_SOURCE, INT,  NULL);
+#define DEFAULT_REALNAME realname
+	VAR(REALNAME, STR,  set_realname);
+	VAR(REVERSE_STATUS_LINE, BOOL, update_all_status_wrapper);
+#define DEFAULT_SCREEN_OPTIONS NULL
+	VAR(SCREEN_OPTIONS, STR,  NULL);
+	VAR(SCROLLBACK, INT,  set_scrollback_size);
+	VAR(SCROLLBACK_RATIO, INT,  NULL);
+	VAR(SCROLL_LINES, INT,  set_scroll_lines);
+	VAR(SECURITY, INT,  NULL);
+	VAR(SHELL, STR,  NULL);
+	VAR(SHELL_FLAGS, STR,  NULL);
+	VAR(SHELL_LIMIT, INT,  NULL);
+	VAR(SHOW_CHANNEL_NAMES, BOOL, NULL);
+	VAR(SHOW_END_OF_MSGS, BOOL, NULL);
+	VAR(SHOW_NUMERICS, BOOL, NULL);
+	VAR(SHOW_STATUS_ALL, BOOL, update_all_status_wrapper);
+	VAR(SHOW_WHO_HOPCOUNT, BOOL, NULL);
+#define DEFAULT_SSL_CERTFILE NULL
+	VAR(SSL_CERTFILE, STR,  NULL);
+#define DEFAULT_SSL_KEYFILE NULL
+	VAR(SSL_KEYFILE, STR,  NULL);
+#define DEFAULT_SSL_PATH NULL
+	VAR(SSL_PATH, STR,  NULL);
+	VAR(STATUS_AWAY, STR,  build_status);
+	VAR(STATUS_CHANNEL, STR,  build_status);
+	VAR(STATUS_CHANOP, STR,  build_status);
+	VAR(STATUS_CLOCK, STR,  build_status);
+	VAR(STATUS_CPU_SAVER, STR,  build_status);
+#define DEFAULT_STATUS_DOES_EXPANDOS 0
+	VAR(STATUS_DOES_EXPANDOS, BOOL, NULL);
+	VAR(STATUS_FORMAT, STR,  build_status);
+	VAR(STATUS_FORMAT1, STR,  build_status);
+	VAR(STATUS_FORMAT2, STR,  build_status);
+	VAR(STATUS_HALFOP, STR,  build_status);
+	VAR(STATUS_HOLD, STR,  build_status);
+	VAR(STATUS_HOLD_LINES, STR,  build_status);
+	VAR(STATUS_INSERT, STR,  build_status);
+	VAR(STATUS_MAIL, STR,  build_status);
+	VAR(STATUS_MODE, STR,  build_status);
+#define DEFAULT_STATUS_NICKNAME DEFAULT_STATUS_NICK
+	VAR(STATUS_NICKNAME, STR,  build_status);
+	VAR(STATUS_NOSWAP, STR,  build_status);
+	VAR(STATUS_NOTIFY, STR,  build_status);
+	VAR(STATUS_NO_REPEAT, BOOL, build_status);
+	VAR(STATUS_OPER, STR,  build_status);
+	VAR(STATUS_OVERWRITE, STR,  build_status);
+	VAR(STATUS_QUERY, STR,  build_status);
+	VAR(STATUS_SCROLLBACK, STR,  build_status);
+	VAR(STATUS_SERVER, STR,  build_status);
+	VAR(STATUS_SSL_OFF, STR,  build_status);
+	VAR(STATUS_SSL_ON, STR,  build_status);
+	VAR(STATUS_TRUNCATE_RHS, BOOL, build_status);
+	VAR(STATUS_UMODE, STR,  build_status);
+#define DEFAULT_STATUS_USER0 DEFAULT_STATUS_USER
+	VAR(STATUS_USER0, STR,  build_status);
+	VAR(STATUS_USER1, STR,  build_status);
+	VAR(STATUS_USER10, STR,  build_status);
+	VAR(STATUS_USER11, STR,  build_status);
+	VAR(STATUS_USER12, STR,  build_status);
+	VAR(STATUS_USER13, STR,  build_status);
+	VAR(STATUS_USER14, STR,  build_status);
+	VAR(STATUS_USER15, STR,  build_status);
+	VAR(STATUS_USER16, STR,  build_status);
+	VAR(STATUS_USER17, STR,  build_status);
+	VAR(STATUS_USER18, STR,  build_status);
+	VAR(STATUS_USER19, STR,  build_status);
+	VAR(STATUS_USER2, STR,  build_status);
+	VAR(STATUS_USER20, STR,  build_status);
+	VAR(STATUS_USER21, STR,  build_status);
+	VAR(STATUS_USER22, STR,  build_status);
+	VAR(STATUS_USER23, STR,  build_status);
+	VAR(STATUS_USER24, STR,  build_status);
+	VAR(STATUS_USER25, STR,  build_status);
+	VAR(STATUS_USER26, STR,  build_status);
+	VAR(STATUS_USER27, STR,  build_status);
+	VAR(STATUS_USER28, STR,  build_status);
+	VAR(STATUS_USER29, STR,  build_status);
+	VAR(STATUS_USER3, STR,  build_status);
+	VAR(STATUS_USER30, STR,  build_status);
+	VAR(STATUS_USER31, STR,  build_status);
+	VAR(STATUS_USER32, STR,  build_status);
+	VAR(STATUS_USER33, STR,  build_status);
+	VAR(STATUS_USER34, STR,  build_status);
+	VAR(STATUS_USER35, STR,  build_status);
+	VAR(STATUS_USER36, STR,  build_status);
+	VAR(STATUS_USER37, STR,  build_status);
+	VAR(STATUS_USER38, STR,  build_status);
+	VAR(STATUS_USER39, STR,  build_status);
+	VAR(STATUS_USER4, STR,  build_status);
+	VAR(STATUS_USER5, STR,  build_status);
+	VAR(STATUS_USER6, STR,  build_status);
+	VAR(STATUS_USER7, STR,  build_status);
+	VAR(STATUS_USER8, STR,  build_status);
+	VAR(STATUS_USER9, STR,  build_status);
+	VAR(STATUS_VOICE, STR,  build_status);
+	VAR(STATUS_WINDOW, STR,  build_status);
+	VAR(SUPPRESS_FROM_REMOTE_SERVER, BOOL, NULL);
+	VAR(SWITCH_CHANNELS_BETWEEN_WINDOWS, BOOL, NULL);
+	VAR(SWITCH_CHANNEL_ON_PART, BOOL, NULL);
+	VAR(TAB, BOOL, NULL);
+	VAR(TAB_MAX, INT,  NULL);
+	VAR(TERM_DOES_BRIGHT_BLINK, BOOL, NULL);
+#define DEFAULT_TRANSLATION NULL
+	VAR(TRANSLATION, STR,  set_translation);
+#define DEFAULT_TRANSLATION_PATH NULL
+	VAR(TRANSLATION_PATH, STR,  NULL);
+	VAR(UNDERLINE_VIDEO, BOOL, NULL);
+	VAR(USER_INFORMATION, STR,  NULL);
+	VAR(VERBOSE_CTCP, BOOL, NULL);
+	VAR(WORD_BREAK, STR,  NULL);
+#define DEFAULT_WSERV_PATH WSERV_PATH
+	VAR(WSERV_PATH, STR,  NULL);
+	VAR(WSERV_TYPE, STR,  set_wserv_type);
+	VAR(XTERM, STR,  NULL);
+	VAR(XTERM_OPTIONS, STR,  NULL);
+
 	new_free(&s);
 }
 
@@ -583,9 +393,9 @@ void 	init_variables_stage2 (void)
 	/*
 	 * Forcibly init all the variables
 	 */
-	for (i = 0; i < NUMBER_OF_VARIABLES; i++)
+	for (i = 0; i < irc_variable_counter; i++)
 	{
-		IrcVariable *var = &irc_variable[i];
+		IrcVariable *var = irc_variable[i];
 
 		if (var->func)
 		{
@@ -624,31 +434,10 @@ int 	do_boolean (char *str, int *value)
 	return (0);
 }
 
-/*
- * get_variable_index: converts a string into an offset into the set table.
- * Returns NUMBER_OF_VARIABLES if varname doesn't exist.
- */
-static enum VAR_TYPES get_variable_index (const char *varname)
+static void	show_var_value (IrcVariable *var, int newval)
 {
-	enum VAR_TYPES	retval;
-	int	cnt;
-
-	find_fixed_array_item(irc_variable, sizeof(IrcVariable), 
-				NUMBER_OF_VARIABLES, varname, &cnt, 
-				(int *)&retval);
-
-	if (cnt < 0)
-		return retval;
-
-	return NUMBER_OF_VARIABLES;
-}
-
-void	show_var_value (enum VAR_TYPES svv_index, int newval)
-{
-	IrcVariable *var;
 	char *value;
 
-	var = &irc_variable[svv_index];
 	value = make_string_var_bydata(var->type, (void *)var->data);
 
 	if (!value)
@@ -665,14 +454,26 @@ void	show_var_value (enum VAR_TYPES svv_index, int newval)
  * of manors.  It displays the results of the set and executes the function
  * defined in the var structure 
  */
-void 	set_var_value (enum VAR_TYPES svv_index, char *value, int noisy)
+void 	set_var_value (int svv_index, char *value, int noisy)
+{
+	IrcVariable *var;
+
+	var = irc_variable[svv_index];
+	set_variable(var, value, noisy);
+}
+
+/*
+ * set_var_value: Given the variable structure and the string representation
+ * of the value, this sets the value in the most verbose and error checking
+ * of manors.  It displays the results of the set and executes the function
+ * defined in the var structure 
+ */
+static void 	set_variable (IrcVariable *var, char *value, int noisy)
 {
 	char	*rest;
-	IrcVariable *var;
 	int	old;
 	int	changed = 0;
 
-	var = &(irc_variable[svv_index]);
 	switch (var->type)
 	{
 	    case BOOL_VAR:
@@ -755,8 +556,59 @@ void 	set_var_value (enum VAR_TYPES svv_index, char *value, int noisy)
 	}
 
 	if (noisy)
-	    show_var_value(svv_index, changed);
+	    show_var_value(var, changed);
 }
+
+void	create_user_set (char *args)
+{
+	char *expr = NULL;
+	char *typestr;
+	int   type;
+	char *varname;
+
+	varname = next_arg(args, &args);
+	if (!varname || !*varname)
+	{
+		say("Usage: /SET -CREATE varname <TYPE> [{<code>}]");
+		return;
+	}
+
+	while (args && *args && isspace(*args))
+		args++;
+	typestr = next_arg(args, &args);
+	if (typestr && !my_stricmp(typestr, "BOOL"))
+		type = BOOL_VAR;
+	else if (typestr && !my_stricmp(typestr, "STR"))
+		type = STR_VAR;
+	else if (typestr && !my_stricmp(typestr, "INT"))
+		type = INT_VAR;
+	else if (typestr && !my_stricmp(typestr, "CHAR"))
+		type = CHAR_VAR;
+	else
+	{
+		say("Usage: /SET -CREATE varname <TYPE> [{<code>}]");
+		return;
+	}
+
+	while (args && *args && isspace(*args))
+		args++;
+	if (*args == '{')
+	{
+		expr = next_expr(&args, '(');
+		if (!expr || !*expr)
+		{
+			say("Usage: /SET -CREATE varname <TYPE> [{<code>}]");
+			return;
+		}
+	}
+
+	upper(varname);
+	if (type == STR_VAR)
+		add_biv(varname, type, NULL, expr, (char *)NULL);
+	else
+		add_biv(varname, type, NULL, expr, 0);
+}
+
 
 /*
  * set_variable: The SET command sets one of the irc variables.  The args
@@ -767,8 +619,11 @@ BUILT_IN_COMMAND(setcmd)
 {
 	char	*var = NULL;
 	int	cnt;
-enum VAR_TYPES	sv_index;
 	int	hook = 0;
+	char *	(*dummy) (void);
+	IrcVariable *thevar;
+	int	i;
+	Bucket	*b;
 
 	/*
 	 * XXX Ugh.  This is a hideous offense of good taste which is
@@ -777,6 +632,14 @@ enum VAR_TYPES	sv_index;
 	 */
 	while (args && *args && isspace(*args))
 		args++;
+
+	if (!my_strnicmp(args, "-create", 7))
+	{
+		next_arg(args, &args);
+		create_user_set(args);
+		return;
+	}
+
 	var = args;
 	while (args && *args && !isspace(*args))
 		args++;
@@ -793,75 +656,77 @@ enum VAR_TYPES	sv_index;
 
 		/* Exact match? */
 		upper(var);
-		find_fixed_array_item(irc_variable, sizeof(IrcVariable), 
-					NUMBER_OF_VARIABLES, var, &cnt, 
-					(int *)&sv_index);
+		b = new_bucket();
+		bucket_builtin_variables(b, var);
 
-		if (cnt == 1)
-			cnt = -1;
+		if (b->numitems == 1)
+			thevar = (IrcVariable *)b->list[0].stuff;
+		else if (b->numitems > 1 && !my_stricmp(var, b->list[0].name))
+			thevar = (IrcVariable *)b->list[0].stuff;
+		else
+			thevar = NULL;
 
-		if ((cnt >= 0) || !(irc_variable[sv_index].flags & VIF_PENDING))
+		if (!thevar || !(thevar->flags & VIF_PENDING))
 			hook = 1;
 
-		if (cnt < 0)
-			irc_variable[sv_index].flags |= VIF_PENDING;
+		if (thevar)
+			thevar->flags |= VIF_PENDING;
 
 		if (hook)
 		{
 			hook = do_hook(SET_LIST, "%s %s", 
 				var, args ? args : "<unset>");
 
-			if (hook && (cnt < 0))
+			if (hook && thevar)
 			{
 				hook = do_hook(SET_LIST, "%s %s",
-					irc_variable[sv_index].name, 
+					thevar->name, 
 					args ? args : "<unset>");
 			}
 		}
 
-		if (cnt < 0)
-			irc_variable[sv_index].flags &= ~VIF_PENDING;
+		if (thevar)
+			thevar->flags &= ~VIF_PENDING;
 
 		/* If the user hooked it, we're all done! */
 		if (!hook)
 			return;
 
 		/* User didn't offer at it -- do the default thing. */
-		if (cnt < 0)
+		if (thevar)
 		{
-			set_var_value(sv_index, args, 1);
+			if (args && !*args)
+				show_var_value(thevar, 0);
+			else
+				set_variable(thevar, args, 1);
 			return;
 		}
 
-		/* User didn't offer at it, and it isn't valid */
-		if (cnt == 0)
+		if (b->numitems == 0)
 		{
-			if (do_hook(SET_LIST, "set-error No such variable \"%s\"", var))
-				say("No such variable \"%s\"", var);
-			return;
+		    if (do_hook(SET_LIST, "set-error No such variable \"%s\"", 
+					var))
+			say("No such variable \"%s\"", var);
+		    return;
 		}
 
-		/* User didn't offer at it, and it's ambiguous */
-		if (do_hook(SET_LIST, "set-error %s is ambiguous", var))
+		else if (b->numitems > 1)
 		{
+		    if (do_hook(SET_LIST, "set-error %s is ambiguous", var))
+		    {
 			say("%s is ambiguous", var);
-			for (cnt += sv_index; (int)sv_index < cnt; 
-				sv_index = (enum VAR_TYPES)(sv_index + 1))
-			{
-				char es[1];
-				es[0] = 0;
-				set_var_value(sv_index, es, 1);
-			}
+			for (i = 0; i < b->numitems; i++)
+			    show_var_value((IrcVariable *)b->list[i].stuff, 0);
+		    }
 		}
 	}
 	else
         {
-		int var_index;
-		for (var_index = 0; var_index < NUMBER_OF_VARIABLES; var_index++)
+		int idx; 
+		for (idx = 0; idx < irc_variable_counter; idx++)
 		{
-			char es[1];
-			es[0] = 0;
-			set_var_value(var_index, es, 1);
+		    IrcVariable *v = irc_variable[idx];
+		    show_var_value(v, 0);
 		}
         }
 }
@@ -870,57 +735,37 @@ enum VAR_TYPES	sv_index;
  * get_string_var: returns the value of the string variable given as an index
  * into the variable table.  Does no checking of variable types, etc 
  */
-char *	get_string_var (enum VAR_TYPES var)
+char *	get_string_var (int var)
 {
-	return (irc_variable[var].data->string);
+	return (irc_variable[var]->data->string);
 }
 
 /*
  * get_int_var: returns the value of the integer string given as an index
  * into the variable table.  Does no checking of variable types, etc 
  */
-int 	get_int_var (enum VAR_TYPES var)
+int 	get_int_var (int var)
 {
-	return (irc_variable[var].data->integer);
+	return (irc_variable[var]->data->integer);
 }
 
-/*
- * save_variables: this writes all of the IRCII variables to the given FILE
- * pointer in such a way that they can be loaded in using LOAD or the -l switch 
- */
-void 	save_variables (FILE *fp, int do_all)
+char 	*make_string_var (const char *var_name)
 {
-	IrcVariable *var;
+	char *	(*dummy) (void);
+	IrcVariable *thevar = NULL;
+	char	*copy;
 
-	for (var = irc_variable; var->name; var++)
-	{
-		if (strcmp(var->name, "DISPLAY") == 0 || strcmp(var->name, "CLIENT_INFORMATION") == 0)
-			continue;
-		fprintf(fp, "SET ");
-		switch (var->type)
-		{
-		case BOOL_VAR:
-			fprintf(fp, "%s %s\n", var->name, var->data->integer ?
-				var_settings[ON] : var_settings[OFF]);
-			break;
-		case CHAR_VAR:
-			fprintf(fp, "%s %c\n", var->name, var->data->integer);
-			break;
-		case INT_VAR:
-			fprintf(fp, "%s %u\n", var->name, var->data->integer);
-			break;
-		case STR_VAR:
-			if (var->data->string)
-				fprintf(fp, "%s %s\n", var->name,
-					var->data->string);
-			else
-				fprintf(fp, "-%s\n", var->name);
-			break;
-		}
-	}
+	copy = LOCAL_COPY(var_name);
+	upper(copy);
+
+	get_var_alias(var_name, &dummy, &thevar);
+	if (thevar == NULL)
+		return NULL;
+
+	return make_string_var_bydata(thevar->type, thevar->data);
 }
 
-static char 	*make_string_var_bydata (int type, void *vp)
+char 	*make_string_var_bydata (int type, void *vp)
 {
 	char	*ret = (char *) 0;
 	VARIABLE *data = (VARIABLE *)vp;
@@ -947,24 +792,57 @@ static char 	*make_string_var_bydata (int type, void *vp)
 
 }
 
-char 	*make_string_var (const char *var_name)
+/*
+GET_ARRAY_NAMES_FUNCTION(get_set, irc_variable)
+*/
+char *get_set (const char *str)
 {
-	enum VAR_TYPES	msv_index;
-	char	*copy;
-
-	copy = LOCAL_COPY(var_name);
-	upper(copy);
-
-	msv_index = get_variable_index(copy);
-	if (msv_index == NUMBER_OF_VARIABLES)
-		return NULL;
-
-	return make_string_var_bydata(irc_variable[msv_index].type, irc_variable[msv_index].data);
+	yell("get_set: implement me!");
+	return malloc_strdup(empty_string);
 }
 
 
-GET_FIXED_ARRAY_NAMES_FUNCTION(get_set, irc_variable)
+/*
+ * save_variables: this writes all of the IRCII variables to the given FILE
+ * pointer in such a way that they can be loaded in using LOAD or the -l switch 
+ */
+void 	save_variables (FILE *fp, int do_all)
+{
+	IrcVariable *var;
+	int	i;
 
+	for (i = 0; i < irc_variable_counter; i++)
+	{
+		var = irc_variable[i];
+
+		if (strcmp(var->name, "DISPLAY") == 0 || strcmp(var->name, "CLIENT_INFORMATION") == 0)
+			continue;
+		fprintf(fp, "SET ");
+		switch (var->type)
+		{
+		case BOOL_VAR:
+			fprintf(fp, "%s %s\n", var->name, var->data->integer ?
+				var_settings[ON] : var_settings[OFF]);
+			break;
+		case CHAR_VAR:
+			fprintf(fp, "%s %c\n", var->name, var->data->integer);
+			break;
+		case INT_VAR:
+			fprintf(fp, "%s %u\n", var->name, var->data->integer);
+			break;
+		case STR_VAR:
+			if (var->data->string)
+				fprintf(fp, "%s %s\n", var->name,
+					var->data->string);
+			else
+				fprintf(fp, "-%s\n", var->name);
+			break;
+		}
+	}
+}
+
+
+/***************************************************************************/
 /* returns the size of the character set */
 int 	charset_size (void)
 {
@@ -1220,6 +1098,7 @@ static void    set_wserv_type (const void *stuff)
 }
 
 
+/***************************************************************************/
 /*******/
 typedef struct	varstacklist
 {
@@ -1234,6 +1113,8 @@ void	do_stack_set (int type, char *args)
 {
 	VarStack *item;
 	char *varname = NULL;
+	char *(*dummy) (void) = NULL;
+	IrcVariable *var;
 
 	if (set_stack == NULL && (type == STACK_POP || type == STACK_LIST))
 	{
@@ -1263,7 +1144,6 @@ void	do_stack_set (int type, char *args)
 	else if (STACK_POP == type)
 	{
 	    VarStack *prev = NULL;
-	    enum VAR_TYPES var_index;
 	    int	owd = window_display;
 
 	    varname = next_arg(args, &args);
@@ -1287,10 +1167,8 @@ void	do_stack_set (int type, char *args)
 			prev->next = item->next;
 
 		window_display = 0; 
-		var_index = get_variable_index(item->varname);
-		if (var_index == NUMBER_OF_VARIABLES)
-			return;		/* Do nothing */
-		set_var_value(var_index, item->value, 1);
+		get_var_alias(item->varname, &dummy, &var);
+		set_variable(var, item->value, 1);
 		window_display = owd; 
 
 		new_free(&item->varname);

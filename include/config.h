@@ -509,7 +509,7 @@
 #define	DEFAULT_TAB_MAX 0
 #define DEFAULT_TERM_DOES_BRIGHT_BLINK 0
 #define DEFAULT_UNDERLINE_VIDEO 1
-#define DEFAULT_USERINFO "EPIC5 -- Into the abyss"
+#define DEFAULT_USER_INFORMATION "EPIC5 -- Into the abyss"
 #define DEFAULT_VERBOSE_CTCP 1
 #define DEFAULT_WORD_BREAK ".,; \t"
 #define DEFAULT_WSERV_TYPE "screen"

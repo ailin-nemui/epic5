@@ -1,4 +1,4 @@
-/* $EPIC: alias.c,v 1.52 2004/07/23 00:49:46 jnelson Exp $ */
+/* $EPIC: alias.c,v 1.53 2004/07/26 23:35:20 jnelson Exp $ */
 /*
  * alias.c -- Handles the whole kit and caboodle for aliases.
  *
@@ -56,6 +56,7 @@
 #include "functions.h"
 #include "words.h"
 #include "reg.h"
+#include "vars.h"
 
 #define LEFT_BRACE '{'
 #define RIGHT_BRACE '}'
@@ -108,7 +109,7 @@ typedef	struct	SymbolStru
         void    (*builtin_command) (const char *, char *, const char *);
 	char *	(*builtin_function) (char *);
 	char *	(*builtin_expando) (void);
-	void	(*builtin_variable) (const void *);
+	IrcVariable *	builtin_variable;
 
 struct SymbolStru *	saved;		/* For stacks */
 	int	saved_hint;
@@ -1208,6 +1209,22 @@ void	add_builtin_expando	(const char *name, char *(*func) (void))
 	return;
 }
 
+void	add_builtin_variable_alias (const char *name, IrcVariable *var)
+{
+	Symbol *tmp = NULL;
+	int cnt, loc;
+
+	tmp = (Symbol *) find_array_item ((array *)&globals, name, &cnt, &loc);
+	if (!tmp || cnt >= 0)
+	{
+		tmp = make_new_Symbol(name);
+		add_to_array((array *)&globals, (array_item *)tmp);
+	}
+
+	tmp->builtin_variable = var;
+	return;
+}
+
 
 
 /************************ LOW LEVEL INTERFACE *************************/
@@ -1516,6 +1533,54 @@ void	delete_builtin_expando (const char *orig_name)
 	}
 	new_free(&name);
 }
+
+void	delete_builtin_variable (const char *orig_name)
+{
+	Symbol *item;
+	char *	name;
+	int	cnt, loc;
+
+	name = remove_brackets(orig_name, NULL);
+	upper(name);
+	item = (Symbol *)find_array_item((array *)&globals, name, &cnt, &loc);
+	if (item && cnt < 0)
+	{
+		item->builtin_variable = NULL;
+		GC_symbol(item, (array *)&globals, cnt);
+	}
+	new_free(&name);
+}
+
+/* * * */
+void	bucket_local_alias (Bucket *b, const char *name)
+{
+}
+
+#define BUCKET_FUNCTION(x, y) \
+void	bucket_ ## x (Bucket *b, const char *name)	\
+{								\
+	int	i;						\
+	size_t	len;						\
+	Symbol *item;						\
+								\
+	len = strlen(name);					\
+	for (i = 0; i < globals.max; i++)			\
+	{							\
+		item = globals.list[i];				\
+		if (!my_strnicmp(name, item->name, len))	\
+		{						\
+		    if (item-> y )				\
+			add_to_bucket(b, item->name, item-> y);	\
+		}						\
+	}							\
+}
+
+BUCKET_FUNCTION(var_alias, user_variable)
+BUCKET_FUNCTION(cmd_alias, user_command)
+BUCKET_FUNCTION(builtin_commands, builtin_command)
+BUCKET_FUNCTION(builtin_functions, builtin_function)
+BUCKET_FUNCTION(builtin_expandos, builtin_expando)
+BUCKET_FUNCTION(builtin_variables, builtin_variable)
 
 /* * * */
 static void	list_local_alias (const char *orig_name)
@@ -2368,9 +2433,13 @@ static char *	get_variable_with_args (const char *str, const char *args)
 			copy = 1, ret = alias->user_variable;
 		else if (alias->builtin_expando)
 			copy = 0, ret = alias->builtin_expando();
+		else if (alias->builtin_variable)
+			copy = 0, ret = make_string_var_bydata(alias->builtin_variable->type, alias->builtin_variable->data);
 	}
+/*
 	else if ((ret = make_string_var(str)))
 		copy = 0;
+*/
 	else
 		copy = 1, ret = getenv(str);
 
@@ -2415,19 +2484,19 @@ char *	get_func_alias (const char *name, void **args, char * (**func) (char *))
 	return NULL;
 }
 
-char *	get_var_alias (const char *name, char *(**efunc)(void), void (**sfunc)(const void *))
+char *	get_var_alias (const char *name, char *(**efunc)(void), IrcVariable **var)
 {
 	Symbol *item;
 
 	if ((item = lookup_symbol(name)))
 	{
 		*efunc = item->builtin_expando;
-		*sfunc = item->builtin_variable;
+		*var = item->builtin_variable;
 		return item->user_variable;
 	}
 
 	*efunc = NULL;
-	*sfunc = NULL;
+	*var = NULL;
 	return NULL;
 }
 
@@ -3070,7 +3139,16 @@ int	stack_list_builtin_variable_alias (const char *name)
 		if (sym->builtin_variable == NULL)
 		    say("\t%s\t<Placeholder>", sym->name);
 		else 
-		    say("\t%s\t%p", sym->name, sym->builtin_variable);
+		{
+		    char *s;
+		    s = make_string_var_bydata(sym->builtin_variable->type, 
+					(void *)sym->builtin_variable->data);
+		    if (!s)
+			s = malloc_strdup("<EMPTY>");
+
+		    say("\t%s\t%s", sym->name, s);
+		    new_free(&s);
+		}
 		counter++;
 	    }
 	}

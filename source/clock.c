@@ -267,21 +267,21 @@ void	set_cpu_saver_every (const void *stuff)
 struct system_timer {
 	char *	name;
 	int	honors_cpu_saver;
-	int	interval_variable;
-	int	toggle_variable;
+	int *	interval_variable;
+	int *	toggle_variable;
 	Timeval	last_event;
 	void	(*callback) (void);
 };
 
 struct system_timer system_timers[] = {
 	{ clock_timeref, 	1, 
-	  CLOCK_INTERVAL_VAR, 	CLOCK_VAR, 	{ 0, 0 },
+	  &CLOCK_INTERVAL_VAR, 	&CLOCK_VAR, 	{ 0, 0 },
 	  clock_systimer 	},
 	{ notify_timeref, 	1, 
-	  NOTIFY_INTERVAL_VAR,  NOTIFY_VAR, 	{ 0, 0 },
+	  &NOTIFY_INTERVAL_VAR,  &NOTIFY_VAR, 	{ 0, 0 },
 	  notify_systimer	},
 	{ mail_timeref, 	1, 
-	  MAIL_INTERVAL_VAR, 	MAIL_VAR, 	{ 0, 0 },
+	  &MAIL_INTERVAL_VAR, 	&MAIL_VAR, 	{ 0, 0 },
 	  mail_systimer 	},
 	{ NULL,			0, 
 	  0,			0,		{ 0, 0 },
@@ -303,7 +303,7 @@ static int	system_timer (void *entry)
 	}
 	else
 	{
-	    nominal_timeout = get_int_var(item->interval_variable);
+	    nominal_timeout = get_int_var(*item->interval_variable);
 	    timeout = time_to_next_interval(nominal_timeout);
 	}
 
@@ -329,8 +329,8 @@ int	update_system_timer (const char *entry)
 		/* This needs to be set before calling 'system_timer' */
 		get_time(&now);
 
-		if (get_int_var(system_timers[i].toggle_variable) &&
-		    get_int_var(system_timers[i].interval_variable))
+		if (get_int_var(*system_timers[i].toggle_variable) &&
+		    get_int_var(*system_timers[i].interval_variable))
 			system_timer(&system_timers[i]);
 		else
 		{

@@ -7,7 +7,7 @@
  *
  * See the COPYRIGHT file, or do a HELP IRCII COPYRIGHT 
  *
- * @(#)$Id: ircaux.h,v 1.66 2004/03/18 01:04:03 jnelson Exp $
+ * @(#)$Id: ircaux.h,v 1.67 2004/07/26 23:35:20 jnelson Exp $
  */
 
 #ifndef _IRCAUX_H_
@@ -211,5 +211,22 @@ extern	int	outbound_line_mangler;
 extern	int	inbound_line_mangler;
 extern	int	logfile_line_mangler;
 size_t	mangle_line		(char *, int, size_t);
+
+struct BucketItem {
+	const char *name;
+	void *stuff;
+};
+typedef struct BucketItem BucketItem;
+
+struct Bucket {
+	int numitems;
+	int max;
+	BucketItem *list;
+};
+typedef struct Bucket Bucket;
+
+	Bucket *new_bucket (void);
+	void	free_bucket (Bucket **);
+	void	add_to_bucket (Bucket *, const char *, void *);
 
 #endif /* _IRCAUX_H_ */
