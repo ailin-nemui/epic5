@@ -1757,36 +1757,39 @@ char *	get_cmd_alias (char *name, int *howmany, char **complete_name, void **arg
 
 /*
  * This function is strictly O(N).  This should probably be addressed.
+ *
+ * Updated as per get_subarray_elements.
  */
 char **	glob_cmd_alias (char *name, int *howmany)
 {
-	int	cnt;
-	int	cmp;
-	int 	len;
-	char 	**matches = NULL;
-	int 	matches_size = 5;
+	int	pos, max;
+	int    	cnt;
+	int     len;
+	char    **matches = NULL;
+	int     matches_size = 0;
 
 	len = strlen(name);
 	*howmany = 0;
-	matches = RESIZE(matches, char *, matches_size);
+	if (len) {
+		find_array_item((array*)&cmd_alias, name, &max, &pos);
+	} else {
+		pos = 0;
+		max = cmd_alias.max;
+	}
+	if (0 > max) max = -max;
 
-	for (cnt = 0; cnt < cmd_alias.max; cnt++)
+	for (cnt = 0; cnt < max; cnt++, pos++)
 	{
-		if (!(cmp = strncmp(name, cmd_alias.list[cnt]->name, len)))
-		{
-			if (strchr(cmd_alias.list[cnt]->name + len, '.'))
-				continue;
+		if (strchr(cmd_alias.list[pos]->name + len, '.'))
+			continue;
 
-			matches[*howmany] = m_strdup(cmd_alias.list[cnt]->name);
-			*howmany += 1;
-			if (*howmany == matches_size)
-			{
-				matches_size += 5;
-				RESIZE(matches, char *, matches_size);
-			}
+		if (*howmany >= matches_size)
+		{
+			matches_size += 5;
+			RESIZE(matches, char *, matches_size + 1);
 		}
-		else if (cmp < 0)
-			break;
+		matches[*howmany] = m_strdup(cmd_alias.list[pos]->name);
+		*howmany += 1;
 	}
 
 	if (*howmany)
@@ -1799,36 +1802,39 @@ char **	glob_cmd_alias (char *name, int *howmany)
 
 /*
  * This function is strictly O(N).  This should probably be addressed.
+ *
+ * Updated as per get_subarray_elements.
  */
 char **	glob_assign_alias (char *name, int *howmany)
 {
+	int	pos, max;
 	int    	cnt;
-	int     cmp;
 	int     len;
 	char    **matches = NULL;
-	int     matches_size = 5;
+	int     matches_size = 0;
 
 	len = strlen(name);
 	*howmany = 0;
-	matches = RESIZE(matches, char *, matches_size);
+	if (len) {
+		find_array_item((array*)&var_alias, name, &max, &pos);
+	} else {
+		pos = 0;
+		max = var_alias.max;
+	}
+	if (0 > max) max = -max;
 
-	for (cnt = 0; cnt < var_alias.max; cnt++)
+	for (cnt = 0; cnt < max; cnt++, pos++)
 	{
-		if (!(cmp = strncmp(name, var_alias.list[cnt]->name, len)))
-		{
-			if (strchr(var_alias.list[cnt]->name + len, '.'))
-				continue;
+		if (strchr(var_alias.list[pos]->name + len, '.'))
+			continue;
 
-			matches[*howmany] = m_strdup(var_alias.list[cnt]->name);
-			*howmany += 1;
-			if (*howmany == matches_size)
-			{
-				matches_size += 5;
-				RESIZE(matches, char *, matches_size);
-			}
+		if (*howmany >= matches_size)
+		{
+			matches_size += 5;
+			RESIZE(matches, char *, matches_size + 1);
 		}
-		else if (cmp < 0)
-			break;
+		matches[*howmany] = m_strdup(var_alias.list[pos]->name);
+		*howmany += 1;
 	}
 
 	if (*howmany)
@@ -1911,19 +1917,26 @@ char **	pmatch_assign_alias (char *name, int *howmany)
 	return matches;
 }
 
-
 /*
  * This function is strictly O(N).  This should probably be addressed.
+ *
+ * OK, so it isn't _strictly_ O(N) anymore, however, it is still O(N)
+ * for N being all elements below the subarray being requested.  This
+ * makes recursive /foreach's such as purge run much faster, however,
+ * since each variable will be tested no more than its current depth
+ * times, rather than every single time a /foreach is performed.
+ *
+ * In the worst case scenario where the entire variable space consists
+ * of a single flat subarray, the new algorithm would perform no worse
+ * than the old.
  */
 char **	get_subarray_elements (char *root, int *howmany, int type)
 {
 	AliasSet *as;		/* XXXX */
-
-	int len, len2;
-	int cnt;
+	int pos, cnt, max;
 	int cmp = 0;
 	char **matches = NULL;
-	int matches_size = 5;
+	int matches_size = 0;
 	size_t end;
 	char *last = NULL;
 
@@ -1931,32 +1944,27 @@ char **	get_subarray_elements (char *root, int *howmany, int type)
 		as = &cmd_alias;
 	else
 		as = &var_alias;
+	root = m_2dup(root, ".");
+	find_array_item((array*)as, root, &max, &pos);
 
-	len = strlen(root);
+	if (0 > max) max = -max;
 	*howmany = 0;
-	matches = RESIZE(matches, char *, matches_size);
+	cmp = strlen(root);
+	new_free(&root);
 
-	for (cnt = 0; cnt < as->max; cnt++)
+	for (cnt = 0; cnt < max; cnt++, pos++)
 	{
-		len2 = strlen(as->list[cnt]->name);
-		if ( (len < len2) &&
-		     ((cmp = streq(root, as->list[cnt]->name)) == len))
+		end = strcspn(ARRAY_ITEM(as, pos)->name + cmp, ".");
+		if (last && !my_strnicmp(ARRAY_ITEM(as, pos)->name, last, cmp + end))
+			continue;
+		if (*howmany >= matches_size)
 		{
-			if (as->list[cnt]->name[cmp] == '.')
-			{
-				end = strcspn(as->list[cnt]->name + cmp + 1, ".");
-				if (last && !my_strnicmp(as->list[cnt]->name, last, cmp + 1 + end))
-					continue;
-				matches[*howmany] = m_strndup(as->list[cnt]->name, cmp + 1 + end);
-				last = matches[*howmany];
-				*howmany += 1;
-				if (*howmany == matches_size)
-				{
-					matches_size += 5;
-					RESIZE(matches, char *, matches_size);
-				}
-			}
+			matches_size = *howmany + 5;
+			RESIZE(matches, char *, matches_size + 1);
 		}
+		matches[*howmany] = m_strndup(ARRAY_ITEM(as, pos)->name, cmp + end);
+		last = matches[*howmany];
+		*howmany += 1;
 	}
 
 	if (*howmany)

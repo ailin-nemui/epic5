@@ -53,9 +53,6 @@ u_32int_t	lin_chars;
 u_32int_t	alist_searches;
 u_32int_t	char_searches;
 
-#define ARRAY_ITEM(array, loc) ((array_item *) ((array) -> list [ (loc) ]))
-#define LARRAY_ITEM(array, loc) (((array) -> list [ (loc) ]))
-
 
 /* Function decls */
 static void check_array_size (array *list);

@@ -3,13 +3,13 @@
  * This script requires ircII-EPIC4.
  */
 
-# returns 1 if $0 matches or is matched by $1, 0 if not.
-alias comatch @ function_return = (rmatch($0 $1) || rmatch($1 $0))
+# returns non-0 if $0 matches or is matched by $1-, 0 if not.
+alias comatch @ function_return = (match($*) || rmatch($*))
 
 alias deban_mode 
 {
         fe ($*) bx by bz {
-                @ moder = bz?[-bbb]:by?[-bb]:bx?[-b]:[]
+                @ :moder = bz?[-bbb]:by?[-bb]:bx?[-b]:[]
                 if (moder) {
                         mode * $moder $bx $by $bz
                 }

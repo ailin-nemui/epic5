@@ -96,4 +96,7 @@ array_item *	array_pop		(array *, int);
 void *		find_fixed_array_item 	(void *, size_t, int, const char *, 
 					 int *, int *);
 
+#define ARRAY_ITEM(array, loc) ((array_item *) ((array) -> list [ (loc) ]))
+#define LARRAY_ITEM(array, loc) (((array) -> list [ (loc) ]))
+
 #endif
