@@ -40,7 +40,7 @@
 const 	char *	umodes = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
 static	char *	do_umode (int du_index);
 	void 	reset_nickname (int);
-static void	clear_reconnect_counts (void);
+	void	clear_reconnect_counts (void);
 
 	int	never_connected = 1;		/* true until first connection
 						 * is made */
@@ -2159,7 +2159,7 @@ void 	save_servers (FILE *fp)
 	}
 }
 
-static void	clear_reconnect_counts (void)
+void	clear_reconnect_counts (void)
 {
 	int	i;
 

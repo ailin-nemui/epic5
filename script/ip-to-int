@@ -13,7 +13,7 @@ alias ip_to_int (ip, void)
 {
 	@ :ip_list = split(. $ip)
 	@ :ip32 = 0
-	fe ($ip_list) xx {
+	for xx in ($ip_list) {
 		@ ip32 = (ip32 << 8) + xx
 	}
 	return $ip32

@@ -18,7 +18,7 @@ alias showop
 	@ ao.name = []
 	echo *** AutoOp list.  Addop user@host to add.  Delop <num>  to remove
 	echo *** <num> nickname!username@hostname 
-	fe ($op_list) ao.name {
+	for ao.name in ($op_list) {
 		echo *** $[5]count $ao.name
 		@ count++
 	}
@@ -31,7 +31,7 @@ alias showchan
 	@ ao.name = []
 	echo *** AutoOp chan list.  Addchan #channel add.  Delchan <num>  to remove
 	echo *** <num> #channel
-	fe ($chan_list) ao.name {
+	for ao.name in ($chan_list) {
 		echo *** $[5]count $ao.name
 		@ count++
 	}

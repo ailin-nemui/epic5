@@ -24,7 +24,7 @@ FILE *do_log (int flag, char *logfile, FILE **fp)
 struct	tm	*ugh;
 
 	time(&t);
-	ugh = gmtime(&t);
+	ugh = localtime(&t);		/* Not gmtime, m'kay? */
 	/* Ugh.  Solaris. */
 	strftime(my_buffer, 255, "%a %b %d %H:%M:%S %Y", ugh);
 

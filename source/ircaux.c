@@ -8,7 +8,7 @@
  */
 
 #if 0
-static	char	rcsid[] = "@(#)$Id: ircaux.c,v 1.5 2001/03/07 18:03:23 jnelson Exp $";
+static	char	rcsid[] = "@(#)$Id: ircaux.c,v 1.6 2001/03/14 20:01:46 jnelson Exp $";
 #endif
 
 #include "irc.h"
@@ -2047,7 +2047,7 @@ int	split_args (char *str, char **to, size_t maxargs)
 		{
 			if (counter > 0)
 				ptr[-1] = 0;
-			to[counter] = next_expr_failok(&ptr, *ptr);
+			to[counter] = next_expr_with_type(&ptr, *ptr);
 		}
 		else
 			to[counter] = new_next_arg(ptr, &ptr);

@@ -11,6 +11,7 @@
 
 	char *	next_expr 		(char **, char);
 	char *	next_expr_failok 	(char **, char);
+	char *	next_expr_with_type	(char **, char);
 
 	BUILT_IN_COMMAND(ifcmd);
 	BUILT_IN_COMMAND(docmd);

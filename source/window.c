@@ -3955,7 +3955,10 @@ Window *window_server (Window *window, char **args)
 		int i = find_server_refnum(arg, NULL);
 
 		if (windows_connected_to_server(window->server) > 1)
+		{
+			clear_reconnect_counts();	/* ?? */
 			newconn = 1;
+		}
 		else
 			newconn = 0;
 

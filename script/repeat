@@ -8,10 +8,20 @@
  */
 
 /*
+ * Post-modern format:
+ * Requires EPIC4-0.9.17 and up
+ * Method: Iterative loop
+ * Can be called recursively?  Yes. (/for uses local variables)
+ */
+: alias repeat {
+:	for aa from 1 to $0 { $1- }
+: }
+
+/*
  * Modern format:
  * Requires: EPIC4pre0 and up
  * Method: word-selection
- * Can be called recursively?  Yes.
+ * Can be called recursively?  Yes. (/fe uses local variables now)
  */
 : alias repeat {
 : 	fe ($jot(1 $0)) aa { $1- }
@@ -21,7 +31,7 @@
  * Modern format:
  * Requires: EPIC3pre5 and up
  * Method: word-selection
- * Can be called recursively?  Yes.
+ * Can be called recursively?  Yes. (global variables and push)
  */
 : alias repeat {
 : 	stack push assign aaa.r
@@ -34,7 +44,7 @@
  * Modern format:
  * Requires ircII2.2.9+6 and up.
  * Method: word-selection
- * Can be called recursively?  No.
+ * Can be called recursively?  No. (no local variables in epic yet)
  */
 : alias repeat fe ($jot(1 $0)) r.x {$1-}
 

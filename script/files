@@ -16,11 +16,9 @@ alias cat {
 /* Search for a string in a group of files */
 /* This is, of course, case insensitive */
 alias grep {
-	fe ($1-) x 
-	{
+	for x in ($1-) {
 		@ fd = open($x R)
-		while (!eof($fd)) 
-		{ 
+		while (!eof($fd)) { 
 			@ line = read($fd)
 			if (match(*$0* $line))
 				{echo $x: $line}

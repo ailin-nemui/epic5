@@ -7,7 +7,7 @@ alias scandir
 	^local retval
 	^local last
 
-	fe ($glob($*/*)) x
+	for x in ($glob($*/*))
 	{
 		if (!(last = after(-1 / $x))) \
 			@ last = x

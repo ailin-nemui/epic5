@@ -57,7 +57,7 @@ alias tc.get_nick_backward {
 	((--tc.position < 0) && (tc.position += tc.num_nicks))
 }
 
-alias addnick fe ($*) x {tc.add_to_list $x}
+alias addnick for x in ($*) {tc.add_to_list $x}
 alias nicklist xecho -b Nickname list: $tc.msglist
 
 on #-msg -12782 * tc.add_to_list $0

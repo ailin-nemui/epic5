@@ -191,5 +191,6 @@ const	char *	get_server_redirect		(int);
 	int     set_server_quit_message 	(int, const char *message);
 const char *    get_server_quit_message		(int);
 
+	void	clear_reconnect_counts		(void);
 
 #endif /* _SERVER_H_ */

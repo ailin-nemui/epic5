@@ -68,7 +68,7 @@ alias hop part *
 
 alias o fe ($*) x y z {mode * +ooo $x $y $z}
 alias d fe ($*) x y z {mode * -ooo $x $y $z}
-alias k fe ($*) x {kick * $x}
+alias k for x in ($*) {kick * $x}
 alias mo mode *
 
 # the "wrong person" alias! /oops <nickname> to resend message to

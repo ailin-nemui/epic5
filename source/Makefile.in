@@ -230,7 +230,8 @@ ircaux.o: ircaux.c ../include/irc.h ../include/defs.h \
  ../include/config.h ../include/irc_std.h ../include/debug.h \
  ../include/screen.h ../include/window.h ../include/lastlog.h \
  ../include/status.h ../include/ircaux.h ../include/output.h \
- ../include/term.h ../include/vars.h ../include/alias.h
+ ../include/term.h ../include/vars.h ../include/alias.h \
+ ../include/if.h
 ircsig.o: ircsig.c ../include/irc.h ../include/defs.h \
  ../include/config.h ../include/irc_std.h ../include/debug.h
 keys.o: keys.c ../include/irc.h ../include/defs.h ../include/config.h \
@@ -259,8 +260,9 @@ names.o: names.c ../include/irc.h ../include/defs.h \
  ../include/config.h ../include/irc_std.h ../include/debug.h \
  ../include/ircaux.h ../include/alist.h ../include/names.h \
  ../include/output.h ../include/screen.h ../include/window.h \
- ../include/lastlog.h ../include/status.h ../include/server.h \
- ../include/who.h ../include/list.h ../include/hook.h
+ ../include/lastlog.h ../include/status.h ../include/vars.h \
+ ../include/server.h ../include/who.h ../include/list.h \
+ ../include/hook.h
 network.o: network.c ../include/irc.h ../include/defs.h \
  ../include/config.h ../include/irc_std.h ../include/debug.h \
  ../include/ircaux.h ../include/vars.h ../include/newio.h

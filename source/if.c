@@ -24,59 +24,65 @@
  * next_expr finds the next expression delimited by brackets. The type
  * of bracket expected is passed as a parameter. Returns NULL on error.
  */
-__inline__
-char *	my_next_expr (char **args, char type, int whine)
+static __inline__
+char *	my_next_expr (char **args, char type, int whine, int wantchar)
 {
-	char	*ptr,
-		*ptr2,
-		*ptr3;
+	char	*expr_start,
+		*expr_end;
 
-	if (!*args)
-		return NULL;
-	ptr2 = *args;
-	if (!*ptr2)
-		return 0;
-
-	if (*ptr2 != type)
+	if (!*args || !**args || **args != type)
 	{
 		if (whine)
 			say("Expression syntax");
-		return 0;
+		return NULL;
 	}
 
-	ptr = MatchingBracket(ptr2 + 1, type, (type == '(') ? ')' : '}');
-	if (!ptr)
+	/* Find the end of the expression and terminate it. */
+	expr_start = *args;
+	if (!(expr_end = MatchingBracket(expr_start + 1, type, 
+					(type == '(') ? ')' : '}')))
 	{
 		say("Unmatched '%c'", type);
-		return 0;
+		return NULL;
 	}
-	*ptr = '\0';
+	*expr_end = 0;
 
-	do
-		ptr2++;
-	while (my_isspace(*ptr2));
+	/* 
+	 * Reset the input string to non-whitespace after the expression.
+	 * "expr_end + 1" is safe here -- "expr_end" points at where the
+	 * old } or ) was, and there is at the very least a nul character
+	 * after that.
+	 */
+	*args = skip_spaces(expr_end + 1);
 
-	ptr3 = ptr+1;
-	while (my_isspace(*ptr3))
-		ptr3++;
-	*args = ptr3;
-	if (*ptr2)
-	{
-		ptr--;
-		while (my_isspace(*ptr))
-			*ptr-- = '\0';
-	}
-	return ptr2;
+	/* Remove any extraneous whitespace in the expression */
+	expr_start = skip_spaces(expr_start + 1);
+	remove_trailing_spaces(expr_start);
+
+	/*
+	 * It is guaranteed that (ptr2[-1] >= *args) and so it is further
+	 * guaranteed that assigning to ptr2[-1] is valid.  So we will stick
+	 * the type of expression there just in case anyone wants it.
+	 */
+	if (wantchar)
+		*--expr_start = type;
+
+	return expr_start;
+}
+
+char *	next_expr_with_type (char **args, char type)
+{
+	return my_next_expr (args, type, 0, 1);
 }
 
 char *	next_expr_failok (char **args, char type)
 {
-	return my_next_expr (args, type, 0);
+	return my_next_expr (args, type, 0, 0);
 }
 
 char *	next_expr (char **args, char type)
 {
-	return my_next_expr (args, type, 1);
+	return my_next_expr (args, type, 1, 0);
 }
 
 
@@ -510,6 +516,8 @@ void	for_next_cmd (int argc, char **argv, const char *subargs)
 		cmds = argv[5];
 	}
 
+	if (*cmds == '{')
+		cmds++;
 	will_catch_break_exceptions++;
 	will_catch_continue_exceptions++;
 	for (i = start; i <= end; i += step)
@@ -547,6 +555,10 @@ void	for_fe_cmd (int argc, char **argv, const char *subargs)
 	list = argv[2];
 	cmds = argv[3];
 
+	if (*cmds == '{')
+		cmds++;
+	if (*list == '(')
+		list++;
 	x = real_list = expand_alias(list, subargs, &args_flag, NULL);
 	will_catch_break_exceptions++;
 	will_catch_continue_exceptions++;
@@ -570,6 +582,11 @@ void	for_fe_cmd (int argc, char **argv, const char *subargs)
 	new_free(&x);
 }
 
+void	for_pattern_cmd (int argc, char **argv, const char *subargs)
+{
+	error("/FOR var IN <pattern> {commands} reserved for future use");
+}
+
 BUILT_IN_COMMAND(loopcmd)
 {
 	int	argc;
@@ -585,7 +602,12 @@ BUILT_IN_COMMAND(loopcmd)
 	else if (!my_stricmp(argv[1], "from") || !my_stricmp(argv[1], "="))
 		for_next_cmd(argc, argv, subargs);
 	else if (!my_stricmp(argv[1], "in"))
-		for_fe_cmd(argc, argv, subargs);
+	{
+		if (*argv[2] == '(')
+			for_fe_cmd(argc, argv, subargs);
+		else
+			for_pattern_cmd(argc, argv, subargs);
+	}
 	else
 		error("%s: syntax error", command);
 }
@@ -617,7 +639,7 @@ BUILT_IN_COMMAND(forcmd)
 	/* Get the whole () thing */
 	if ((working = next_expr_failok(&args, '(')) == NULL)	/* ) */
 	{
-		loopcmd(command, args, subargs);
+		loopcmd("FOR", args, subargs);
 		return;
 	}
 
