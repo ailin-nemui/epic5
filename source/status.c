@@ -1,4 +1,4 @@
-/* $EPIC: status.c,v 1.20 2003/03/21 07:46:58 jnelson Exp $ */
+/* $EPIC: status.c,v 1.21 2003/03/23 19:44:17 jnelson Exp $ */
 /*
  * status.c: handles the status line updating, etc for IRCII 
  *
@@ -1417,13 +1417,14 @@ STATUS_FUNCTION(status_position)
 {
 	static char my_buffer[81];
 
-	snprintf(my_buffer, 80, "(%d-%d)", 
+	snprintf(my_buffer, 80, "(%d-%d[%d/%d])", 
+			window->distance_from_display_ip,
+			window->display_size, window->hold_mode, 
+			window->autohold);
 #if 0
 			window->screen->input_line,
 			window->screen->input_cursor);
 #endif
-			window->distance_from_display_ip,
-			window->display_size);
 	return my_buffer;
 }
 

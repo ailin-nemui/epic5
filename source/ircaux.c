@@ -1,4 +1,4 @@
-/* $EPIC: ircaux.c,v 1.66 2003/03/17 19:39:39 crazyed Exp $ */
+/* $EPIC: ircaux.c,v 1.67 2003/03/23 19:44:17 jnelson Exp $ */
 /*
  * ircaux.c: some extra routines... not specific to irc... that I needed 
  *
@@ -1935,7 +1935,7 @@ static FILE *	open_compression (char *executable, char *filename)
  * WITH A NEW VALUE (ie, the variable will be changed) UPON RETURN.  You must
  * not save the original value of '*filename' and use it after calling uzfopen.
  */
-FILE *	uzfopen (char **filename, char *path, int do_error)
+FILE *	uzfopen (char **filename, const char *path, int do_error)
 {
 static int		setup				= 0;
 static 	Filename 	path_to_gunzip;

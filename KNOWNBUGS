@@ -20,7 +20,6 @@ KNOWN ERRATA (eg, bugs, or unresolved requests):
 * The check for "sun_len" in <sys/un.h> is bogus and unnecessary since we
   can just use #ifdef HAVE_SA_LEN for that.
 * Input cursor wigs out if 2ndary window is < 32 columns wide...
-* ^C,,, eats up all commas, not just the first one.
 * Join #foo, then join #foobar, doesn't WHO for #foobar (maxxx)
 * Built in functions need to call 'parse_server_index'!
 * Study update_input() and update_all_windows() and determine if used properly
@@ -33,11 +32,10 @@ KNOWN ERRATA (eg, bugs, or unresolved requests):
 * DCC send yourself a file and then DCC get it leads to wackiness
 * New function, you give it a window level, it gives you the window refnum
 * IPV6-over-dcc, i promised morty i would.
-* ON WHO hook not thrown in correct window.
 * Shall remove_trailing_spaces honor a \ before a space trailing?
 * get_window() should use get_window_by_desc() and not its own thing
-* Larne's "missing line" bug.
 * The "Select() failed" bug
+* /eval echo $match("\\[s s1 \\\\"s *\\\\"\\]" "s s") really should work.
 * $glob() and $globi() tend to choke on wierdly named filenames, or rather, on
   wierd masks.
 * msg from drogoh!~drogoh@216.249.173.230: ./Data/popups.ini:n288=..Send
@@ -45,6 +43,10 @@ KNOWN ERRATA (eg, bugs, or unresolved requests):
   $rand(200,1999)  | echo 10 Send flooding $$1 for next 30 secs 
 * $isnumber() will cause internal damage to the client when fed numbers that
   are too large for some unknown reason.
+* ^C,,, eats up all commas, not just the first one.
+* ON WHO hook not thrown in correct window.
+* New built in function to get who_from and who_level
+* getaddrinfo() supports AF_UNIX as the second argument, not the first.
 
 [See http://www.epicsol.org/PROJECTS for things to come in the future]
 [See http://www.epicsol.org/CHANGELOG for things that changed in the past]
@@ -219,4 +221,15 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Reorganize param list to dgets() to include a length argument
 * Add (set|get)_server_line_length(), the maximum size of an irc protocol line.
 * Convert dgets() callers to the new calling style.
-
+* Explicitly set "mask" to 0 in cs_alist_hash(), so it is initialized
+* Change type() to typecmd() to avoid name conflicts.
+* Change 'dot' to 'dotlocl' to avoid name conflicts.
+* Change 'op' to 'reduce' to avoid name conflicts.
+* Fix a typo in the error message from /window kill.
+* Add a panic to detect larne's recent bug that I fixed, just in case.
+* Constify the "path" argument to uzfopen().
+* Make sure return value of strlen() is assigned to a 'size_t' not an 'int'.
+* Split load() into load() and load1(), load1() reads a file opened by load().
+* Now load() is "interpretation-free", and load1() can be replaced.
+* Fix various minor compile-time issues.
+* Change %P status line expando to give more useful information.

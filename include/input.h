@@ -61,7 +61,7 @@
 	void 	type_text 			(char, char *);
 
 /* this was in keys.h, but it lives in input.c, so. */
-	BUILT_IN_COMMAND(type);
+	BUILT_IN_COMMAND(typecmd);
 /* used by update_input */
 #define NO_UPDATE 0
 #define UPDATE_ALL 1

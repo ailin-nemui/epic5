@@ -1,4 +1,4 @@
-/* $EPIC: input.c,v 1.10 2003/01/11 04:26:52 jnelson Exp $ */
+/* $EPIC: input.c,v 1.11 2003/03/23 19:44:17 jnelson Exp $ */
 /*
  * input.c: does the actual input line stuff... keeps the appropriate stuff
  * on the input line, handles insert/delete of characters/words... the whole
@@ -1336,7 +1336,7 @@ void	edit_char (u_char key)
  * This was moved from keys.c, because it certainly does not belong there,
  * and this seemed a reasonable place for it to go for now.
  */
-BUILT_IN_COMMAND(type)
+BUILT_IN_COMMAND(typecmd)
 {
 	int	c;
 	char	key;

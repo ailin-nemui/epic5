@@ -1,4 +1,4 @@
-/* $EPIC: screen.c,v 1.44 2003/03/23 02:48:33 jnelson Exp $ */
+/* $EPIC: screen.c,v 1.45 2003/03/23 19:44:17 jnelson Exp $ */
 /*
  * screen.c
  *
@@ -2436,6 +2436,10 @@ static void 	scroll_window (Window *window)
 {
 	if (dumb_mode)
 		return;
+
+	if (window->cursor > window->display_size)
+		panic("Window [%d]'s cursor [%d] is off the display [%d]",
+			window->refnum, window->cursor, window->display_size);
 
 	/*
 	 * If the cursor is beyond the window then we should probably

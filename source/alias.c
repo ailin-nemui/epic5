@@ -1,4 +1,4 @@
-/* $EPIC: alias.c,v 1.17 2003/03/17 19:39:39 crazyed Exp $ */
+/* $EPIC: alias.c,v 1.18 2003/03/23 19:44:17 jnelson Exp $ */
 /*
  * alias.c -- Handles the whole kit and caboodle for aliases.
  *
@@ -1583,7 +1583,8 @@ void	delete_cmd_alias (char *name, int noisy)
 
 static void	list_local_alias (char *name)
 {
-	int len = 0, cnt;
+	size_t len = 0;
+	int cnt;
 	int DotLoc, LastDotLoc = 0;
 	char *LastStructName = NULL;
 	char *s;
@@ -1624,7 +1625,7 @@ static void	list_local_alias (char *name)
 static
 void	list_var_alias (char *name)
 {
-	int	len;
+	size_t	len;
 	int	DotLoc,
 		LastDotLoc = 0;
 	char	*LastStructName = NULL;
@@ -1676,7 +1677,7 @@ void	list_var_alias (char *name)
 static
 void	list_cmd_alias (char *name)
 {
-	int	len;
+	size_t	len;
 	int	DotLoc,
 		LastDotLoc = 0;
 	char	*LastStructName = NULL;
@@ -2207,8 +2208,8 @@ void 	make_local_stack 	(const char *name)
 			call_stack[wind_index].alias.func = strncmp;
 			call_stack[wind_index].alias.cache = NULL;
 			call_stack[wind_index].alias.cache_size = -1;
-			call_stack[wind_index].current = NULL;
 			call_stack[wind_index].alias.hash = HASH_INSENSITIVE;
+			call_stack[wind_index].current = NULL;
 			call_stack[wind_index].name = NULL;
 			call_stack[wind_index].parent = -1;
 		}

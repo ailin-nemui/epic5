@@ -1,4 +1,4 @@
-/* $EPIC: expr2.c,v 1.4 2002/11/07 05:48:37 jnelson Exp $ */
+/* $EPIC: expr2.c,v 1.5 2003/03/23 19:44:17 jnelson Exp $ */
 /*
  * Zsh: math.c,v 3.1.2.1 1997/06/01 06:13:15 hzoli Exp 
  * math.c - mathematical expression evaluation
@@ -988,7 +988,7 @@ __inline static	void	pop_3_tokens (expr_info *c, BooL *a, TOKEN *v, TOKEN *w)
  * This is the reducer.  It takes the relevant arguments off the argument
  * stack and then performs the neccesary operation on them.
  */
-static void	op (expr_info *cx, int what)
+static void	reduce (expr_info *cx, int what)
 {
 	double	a, b;
 	BooL	c, d;
@@ -2197,7 +2197,7 @@ static void	mathparse (expr_info *c, int pc)
 			mathparse(c, prec[QUEST]);
 			if (u)
 				c->noeval--;
-			op(c, QUEST);
+			reduce(c, QUEST);
 
 			continue;
 		}
@@ -2255,7 +2255,7 @@ static void	mathparse (expr_info *c, int pc)
 			 * Then reduce this operation.
 			 */
 			c->noeval = onoeval;
-			op(c, otok);
+			reduce(c, otok);
 			continue;
 		}
 	    }
