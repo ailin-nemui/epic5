@@ -1,4 +1,4 @@
-/* $EPIC: server.c,v 1.92 2003/03/17 19:39:39 crazyed Exp $ */
+/* $EPIC: server.c,v 1.93 2003/03/23 02:48:33 jnelson Exp $ */
 /*
  * server.c:  Things dealing with that wacky program we call ircd.
  *
@@ -143,6 +143,7 @@ void 	add_to_server_list (const char *server, int port, const char *password, co
 		s->registered = 0;
 		s->eof = 0;
 		s->port = port;
+		s->line_length = IRCD_BUFFER_SIZE;
 		s->who_queue = NULL;
 		s->ison_queue = NULL;
 		s->userhost_queue = NULL;
@@ -899,7 +900,8 @@ void	do_server (fd_set *rd, fd_set *wd)
 		FD_CLR(des, rd);	/* Make sure it never comes up again */
 
 		last_server = from_server = i;
-		junk = dgets(bufptr, des, 1, s->ssl_fd);
+		junk = dgets(des, bufptr, get_server_line_length(from_server), 
+				1, s->ssl_fd);
 
 		switch (junk)
  		{
@@ -2590,6 +2592,7 @@ IACCESSOR(v, nickname_pending)
 IACCESSOR(v, sent)
 IACCESSOR(v, version)
 IACCESSOR(v, save_channels)
+IACCESSOR(v, line_length)
 SACCESSOR(chan, invite_channel, NULL)
 SACCESSOR(nick, last_notify_nick, NULL)
 SACCESSOR(nick, joined_nick, NULL)

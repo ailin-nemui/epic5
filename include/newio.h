@@ -10,7 +10,7 @@
 
 extern 	int 	dgets_errno;
 
-	int 	dgets 			(char *, int, int, void *);
+	int 	dgets 			(int, char *, size_t, int, void *);
 	int 	new_select 		(fd_set *, fd_set *, struct timeval *);
 	int	new_open		(int);
 	int	new_open_for_writing	(int);

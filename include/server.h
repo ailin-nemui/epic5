@@ -81,6 +81,7 @@ typedef	struct
 	int	reconnects;		/* Number of reconnects done */
 	char 	*cookie;		/* Erf/TS4 "cookie" value */
 	int	save_channels;		/* True if abnormal connection */
+	int	line_length;		/* How long a protocol command may be */
 	int	closing;		/* True if close_server called */
 	int	reconnect_to;		/* Server to connect to on EOF */
 	char	*quit_message;		/* Where we stash a quit message */
@@ -309,6 +310,8 @@ const	char*	get_server_005			(int, char*);
 	int	get_server_save_channels	(int);
 	void	set_server_protocol_state	(int, int);
 	int	get_server_protocol_state	(int);
+	void	set_server_line_length		(int, int);
+	int	get_server_line_length		(int);
 
         void    set_server_invite_channel       (int, const char *);
 const char *    get_server_invite_channel       (int);

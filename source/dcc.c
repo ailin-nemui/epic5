@@ -1,4 +1,4 @@
-/* $EPIC: dcc.c,v 1.49 2003/03/21 07:46:58 jnelson Exp $ */
+/* $EPIC: dcc.c,v 1.50 2003/03/23 02:48:33 jnelson Exp $ */
 /*
  * dcc.c: Things dealing client to client connections. 
  *
@@ -2322,7 +2322,7 @@ static	void	process_dcc_chat_data (DCC_list *Client)
 
 	/* Get a new line via dgets. */
         tmp = alloca(IO_BUFFER_SIZE + 1);
-	bytesread = dgets(tmp, Client->socket, 1, NULL);
+	bytesread = dgets(Client->socket, tmp, IO_BUFFER_SIZE, 1, NULL);
 
 	/* 
 	 * bytesread == 0 means there was new data, but it was an incomplete
@@ -2456,7 +2456,7 @@ static	void		process_incoming_raw (DCC_list *Client)
 	long	bytesread;
 
         bufptr = tmp;
-	switch ((int)(bytesread = dgets(bufptr, Client->socket, 0, NULL)))
+	switch ((int)(bytesread = dgets(Client->socket, bufptr, IO_BUFFER_SIZE, 0, NULL)))
 	{
 	    case -1:
 	    {

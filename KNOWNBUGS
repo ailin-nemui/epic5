@@ -216,3 +216,7 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Use "global_family" var to pass hint what socket fam to use.  AF_INET for now.
 * Add extra sanity check just in case window->screen goes NULL in status redraw
 * Fix several benign compile-time issues.
+* Reorganize param list to dgets() to include a length argument
+* Add (set|get)_server_line_length(), the maximum size of an irc protocol line.
+* Convert dgets() callers to the new calling style.
+

@@ -1,4 +1,4 @@
-/* $EPIC: screen.c,v 1.43 2003/03/21 17:10:08 jnelson Exp $ */
+/* $EPIC: screen.c,v 1.44 2003/03/23 02:48:33 jnelson Exp $ */
 /*
  * screen.c
  *
@@ -3005,7 +3005,7 @@ void 	do_screens (fd_set *rd, fd_set *wd)
 		{
 			FD_CLR(screen->control, rd);
 
-			if (dgets(buffer, screen->control, 1, NULL) < 0)
+			if (dgets(screen->control, buffer, IO_BUFFER_SIZE, 1, NULL) < 0)
 			{
 				kill_screen(screen);
 				yell("Error from remote screen [%d].", dgets_errno);
@@ -3071,7 +3071,7 @@ void 	do_screens (fd_set *rd, fd_set *wd)
 
 			if (dumb_mode)
 			{
-				if (dgets(buffer, screen->fdin, 1, NULL) < 0)
+				if (dgets(screen->fdin, buffer, IO_BUFFER_SIZE, 1, NULL) < 0)
 				{
 					say("IRCII exiting on EOF from stdin");
 					irc_exit(1, "EPIC - EOF from stdin");
