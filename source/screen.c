@@ -1,4 +1,4 @@
-/* $EPIC: screen.c,v 1.45 2003/03/23 19:44:17 jnelson Exp $ */
+/* $EPIC: screen.c,v 1.46 2003/03/24 04:21:14 jnelson Exp $ */
 /*
  * screen.c
  *
@@ -610,7 +610,7 @@ const u_char *read_color_seq (const u_char *start, void *d, int blinkbold)
 			}
 		}
 
-		if (*ptr == ',')
+		if (fg && *ptr == ',')
 			continue;
 		break;
 	}

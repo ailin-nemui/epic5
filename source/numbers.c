@@ -1,4 +1,4 @@
-/* $EPIC: numbers.c,v 1.45 2003/03/24 03:03:19 jnelson Exp $ */
+/* $EPIC: numbers.c,v 1.46 2003/03/24 04:21:14 jnelson Exp $ */
 /*
  * numbers.c: handles all those strange numeric response dished out by that
  * wacky, nutty program we call ircd 
@@ -1500,7 +1500,7 @@ END:
 
 		if (oper_command)
 			oper_command = 0;
-		else
+		else if (!is_server_registered(from_server))
 		{
 			server_reconnects_to(from_server, NOSERV);
 			say("Password required for connection to server %s",

@@ -6,16 +6,12 @@ KNOWN ERRATA (eg, bugs, or unresolved requests):
   prefered over X windows.  Should this be fixed, or at least made an option?
   Maybe try X, fall back to gnu screen on failure?
 * Should /set beep off suppress stripping of beeps?
-* Allegedly 464 numeric shouldn't force a reconnect if we're registered.
 * Add /timer -delete_for_window or something to avoid window switch warnings?
 * After calling connectory(), try to output meaningful error messages, not 
   just blindly calling my_strerror(errno).
 * /TYPE honors keybindings, and calls edit_char(), but /XTYPE -L does not 
   honor key bindings because it calls input_add_character().
 * /DEFER needs to be server-specific.
-* The check for "sun_len" in <sys/un.h> is bogus and unnecessary since we
-  can just use #ifdef HAVE_SA_LEN for that.
-* Input cursor wigs out if 2ndary window is < 32 columns wide...
 * Join #foo, then join #foobar, doesn't WHO for #foobar (maxxx)
 * Built in functions need to call 'parse_server_index'!
 * Study update_input() and update_all_windows() and determine if used properly
@@ -31,7 +27,6 @@ KNOWN ERRATA (eg, bugs, or unresolved requests):
 * Shall remove_trailing_spaces honor a \ before a space trailing?
 * get_window() should use get_window_by_desc() and not its own thing
 * /eval echo $match("\\[s s1 \\\\"s *\\\\"\\]" "s s") really should work.
-* ^C,,, eats up all commas, not just the first one.
 * New built in function to get who_from and who_level
 * getaddrinfo() supports AF_UNIX as the second argument, not the first.
 
@@ -239,3 +234,6 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Add window_scroll_(backward|forward|backwards_lines|forwards_line)
 * Add /WINDOW SCROLL_BACKWARD, /WINDOW SCROLL_FORWARD
 * Add /WINDOW SCROLL_START, /WINDOW SCROLL_END
+* Fix bug that caused cursor to go wacky on screen < 32 columns.
+* Fix 464 handler to only prompt for password if we're not registered yet.
+* Fix bug that made ^C,,, slurp up all ,'s after it.
