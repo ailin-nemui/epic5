@@ -276,6 +276,7 @@ static	char
 	*function_sort		(char *),
 	*function_split 	(char *),
 	*function_splice 	(char *),
+	*function_ssl		(char *),
 	*function_stat		(char *),
 	*function_status	(char *),
 	*function_stripansi	(char *),
@@ -510,6 +511,7 @@ static BuiltInFunctions	built_in_functions[] =
 	{ "SPLICE",		function_splice 	},
 	{ "SPLIT",		function_split 		},
 	{ "SRAND",		function_srand 		},
+	{ "SSL",		function_ssl		},
 	{ "STAT",		function_stat		},
 	{ "STATUS",		function_status		},
 	{ "STIME",		function_stime 		},
@@ -5797,13 +5799,19 @@ BUILT_IN_FUNCTION(function_wincurline, input)
 }
 
 /*
- * These three functions contributed by 
+ * These four functions contributed by 
  * B. Thomas Frazier (tfrazier@mjolnir.gisystems.net)
  * On December 12, 2000.
  */
 BUILT_IN_FUNCTION(function_isencrypted, input)
 {
 	/* For now, all connections are not encrypted */
+	RETURN_INT(0);
+}
+
+BUILT_IN_FUNCTION(function_ssl, input)
+{
+	/* This distribution does not include SSL support. */
 	RETURN_INT(0);
 }
 

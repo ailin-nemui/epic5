@@ -2,7 +2,6 @@ EPIC4 Projects, Bugs, and other Errata:
 
 KNOWN ERRATA (eg, bugs, or unresolved requests):
 ------------------------------------------------
-* Reconnecting still gets bogus quit message from get_server_quit_message().
 <none>
  
 [See http://www.epicsol.org/PROJECTS for things to come in the future]
@@ -10,13 +9,4 @@ KNOWN ERRATA (eg, bugs, or unresolved requests):
 
 THE CHANGELOG SINCE THE LAST RELEASE:
 -------------------------------------
-* Try to add some stuff that helps epic cope with server disconnections better.
-* Add /on error, hooks on an irc protocol ERROR message.
-* Fix window.c:get_boolean(), passing unitialized 'newval' integer.
-* Fix path_search() to not blithely assume path != NULL (whitedragon)
-* New version of the 'hybrid6' script, from is.
-* Axe the broken "input_timeout" feature that hasn't worked in 6 years.
-* Add, but #ifdef'd out, a delayed-free mechanism -- strictly experimental.
-* Add the /defer command, to perform dangerous operations when it's safe.
-* Many changes from robohak to fix /on channel_* bogons I introduced. ;-)
-* Lice should now work again with 0.9.16.
+* Add $ssl() built in function for lateral compatability with epic-ssl
