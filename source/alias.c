@@ -1,4 +1,4 @@
-/* $EPIC: alias.c,v 1.36 2003/11/07 23:43:47 jnelson Exp $ */
+/* $EPIC: alias.c,v 1.37 2003/11/15 22:15:59 jnelson Exp $ */
 /*
  * alias.c -- Handles the whole kit and caboodle for aliases.
  *
@@ -2307,6 +2307,7 @@ void 	destroy_aliases (int type)
 		new_free((void **)&(my_array->list[cnt]->name));
 		new_free((void **)&(my_array->list[cnt]->stub));
 		new_free((void **)&(my_array->list[cnt]->filename));
+		destroy_arglist(my_array->list[cnt]->arglist);
 		new_free((void **)&(my_array->list[cnt]));	/* XXX Hrm. */
 	}
 	for (cnt = 0; cnt < my_array->cache_size; cnt++)

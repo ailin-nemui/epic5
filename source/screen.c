@@ -1,4 +1,4 @@
-/* $EPIC: screen.c,v 1.62 2003/11/14 21:23:41 jnelson Exp $ */
+/* $EPIC: screen.c,v 1.63 2003/11/15 22:15:59 jnelson Exp $ */
 /*
  * screen.c
  *
@@ -2423,8 +2423,6 @@ static void    window_disp (Window *window, const unsigned char *str, const unsi
 
 static int	ok_to_output (Window *window)
 {
-	int	retval = 1;
-
 	/*
 	 * Output is ok as long as the three top of displays all are 
 	 * within a screenful of the insertion point!
@@ -2433,18 +2431,17 @@ static int	ok_to_output (Window *window)
 	{
 	    if (window->scrolling_distance_from_display_ip >=
 				window->display_size)
-		retval = 0;
+		return 0;	/* Definitely no output here */
 	}
-	else if (window->holding_top_of_display)
+
+	if (window->holding_top_of_display)
 	{
 	    if (window->holding_distance_from_display_ip >
 				window->display_size)
-		retval = 0;
+		return 0;	/* Definitely no output here */
 	}
-	else
-		retval = 1;
 
-	return retval;		/* Output is authorized */
+	return 1;		/* Output is authorized */
 }
 
 /*
