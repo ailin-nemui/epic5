@@ -3,8 +3,8 @@
 #
 
 package help
-alias h help.help
-alias help help.help
+alias h {help.help $*}
+alias help {help.help $*}
 
 # help.isdir is stolen more or less from nsx's tabkey script. Thanks nsx!
 alias help.isdir (dir) {
@@ -149,6 +149,7 @@ alias help.help {
 		} else {
 			# More than one match, dispatch and we're done.
 			@ match = [${tmp == [*] ? [] : tmp}*]
+			echo $tmp
 			@ dir = [$root]
 			@ break = 1
 			break
@@ -218,7 +219,11 @@ alias help.help {
 		if (dp == [] && file != [] && fexist($file) == 1 && !help.isdir($file)) {
 			if (fp == []) {
 				@ fp = open("$file" "R")
-				@ tmp = [$G Help on $name]
+				if (match(*.gz $name)) {
+					@ tmp = [$G Help on $before(-1 . $name)]
+				} {
+					@ tmp = [$G Help on $name]
+				}
 				@ line += numlines($width $tmp)
 				xecho -w $win -- $tmp
 			}

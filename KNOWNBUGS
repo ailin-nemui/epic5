@@ -237,3 +237,5 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Add /set old_server_lastlog_level, for when you merge windows to servers.
 * Add %{2}W status expando for black, shows /set status_window in all windows.
 * Fix a bug with hook pattern counting found by hsoc and adm.
+* Update to newest help script from howl
+* Add a "slowcat" script I wrote for larne.
