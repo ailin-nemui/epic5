@@ -534,8 +534,9 @@ char *	create_server_list (void)
 			if (server_list[i].itsname)
 				m_s3cat(&buffer, space, server_list[i].itsname);
 			else
-				yell("Warning: server_list[%d].itsname is "
-					"null and it shouldnt be", i);
+				yell("Warning: I don't have server #%d's real"
+					"name yet -- using the hostname you "
+					"gave me instead", i)
 		}
 	}
 
