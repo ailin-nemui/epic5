@@ -12,6 +12,7 @@ KNOWN ERRATA (eg, bugs, or unresolved requests):
 * Shall remove_trailing_spaces honor a \ before a space trailing?
 * Some way to color the input prompt?  (Probably not)
 * The way the pattern matcher handles ?'s after *'s is really lame.
+* /window disconnect (server -> -2) + /server 0 reconnects to previous server.
 
 [See http://www.epicsol.org/PROJECTS for things to come in the future]
 [See http://www.epicsol.org/CHANGELOG for things that changed in the past]
