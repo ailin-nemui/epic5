@@ -1,4 +1,4 @@
-/* $EPIC: commands.c,v 1.94 2004/06/25 22:01:17 jnelson Exp $ */
+/* $EPIC: commands.c,v 1.95 2004/06/27 04:30:17 jnelson Exp $ */
 /*
  * commands.c -- Stuff needed to execute commands in ircII.
  *		 Includes the bulk of the built in commands for ircII.
@@ -2881,53 +2881,25 @@ BUILT_IN_COMMAND(xtypecmd)
  */
 
 /*
- * find_command: looks for the given name in the command list, returning a
- * pointer to the first match and the number of matches in cnt.  If no
- * matches are found, null is returned (as well as cnt being 0). The command
- * list is sorted, so we do a binary search.  The returned commands always
- * points to the first match in the list.  If the match is exact, it is
- * returned and cnt is set to the number of matches * -1.  Thus is 4 commands
- * matched, but the first was as exact match, cnt is -4.
- */
-static IrcCommand *find_command (char *com, int *cnt)
-{
-	IrcCommand *retval;
-	int loc;
-
-	/*
-	 * As a special case, the empty or NULL command is send_text.
-	 */
-	if (!com || !*com)
-	{
-		*cnt = -1;
-		return irc_command;
-	}
-
-	retval = (IrcCommand *)find_fixed_array_item ((void *)irc_command, 
-			sizeof(IrcCommand), NUMBER_OF_COMMANDS + 1, 
-			com, cnt, &loc);
-	return retval;
-}
-
-/*
  * Returns 1 if the given built in command exists,
  * Returns 0 if not.
  */
 int	command_exist (char *command)
 {
-	int num;
-	char *buf;
+	char *name;
+	int	howmany;
+	void *	args = NULL;
+	void 	(*func) (const char *, char *, const char *) = NULL;
 
 	if (!command || !*command)
 		return 0;
+	name = LOCAL_COPY(command);
+	upper(name);
 
-	buf = LOCAL_COPY(command);
-	upper(buf);
-
-	if (find_command(buf, &num))
-		return (num < 0) ? 1 : 0;
-
-	return 0;
+	get_cmd_alias(name, &howmany, NULL, &args, &func);
+	if (func == NULL)
+		return 0;
+	return 1;
 }
 
 int	redirect_text (int to_server, const char *nick_list, const char *text, char *command, int hook)
@@ -3601,10 +3573,9 @@ static	unsigned 	level = 0;
 				*alias = NULL,
 				*alias_name = NULL;
 		char		*cline;
-		int		cmd_cnt,
-				alias_cnt = 0;
-		IrcCommand	*command;
+		int		alias_cnt = 0;
 		void		*arglist = NULL;
+		void		(*cmd) (const char *, char *, const char *) = NULL;
 
 		if ((rest = strchr(line, ' ')))
 		{
@@ -3623,13 +3594,13 @@ static	unsigned 	level = 0;
 
 		upper(cline);
 
-		if (cmdchar_used < 2)
-		    alias = get_cmd_alias(cline, &alias_cnt, 
-					  &alias_name, &arglist);
-		command = find_command(cline, &cmd_cnt);
+		alias = get_cmd_alias(cline, &alias_cnt, 
+					  &alias_name, &arglist, &cmd);
 
-		if (((alias == NULL || alias_cnt > 0) ||
-		     (command == NULL || cmd_cnt > 0)) && *cline == '!')
+		if (cmdchar_used >= 2)
+			alias = NULL;		/* Unconditionally */
+
+		if (alias == NULL && cmd == NULL && *cline == '!')
 		{
 			if ((cline = do_history(cline + 1, rest)) != NULL)
 			{
@@ -3651,10 +3622,10 @@ static	unsigned 	level = 0;
 		if (hist_flag && add_to_hist)
 			add_to_history(this_cmd);
 
-		if (alias && alias_cnt < 0)
+		if (alias)
 			call_user_alias(alias_name, alias, rest, arglist);
-		else if (command && cmd_cnt < 0)
-			command->func(command->name, rest, sub_args);
+		else if (cmd)
+			cmd(alias_name, rest, sub_args);
 		else if (get_int_var(DISPATCH_UNKNOWN_COMMANDS_VAR))
 			send_to_server("%s %s", cline, rest);
 		else

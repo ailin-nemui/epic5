@@ -1,4 +1,4 @@
-/* $EPIC: alias.c,v 1.43 2004/06/25 22:01:16 jnelson Exp $ */
+/* $EPIC: alias.c,v 1.44 2004/06/27 04:30:17 jnelson Exp $ */
 /*
  * alias.c -- Handles the whole kit and caboodle for aliases.
  *
@@ -251,7 +251,9 @@ extern	char ** glob_assign_alias	(Char *name, int *howmany, int maxret, int star
 extern	char ** pmatch_cmd_alias        (Char *name, int *howmany, int maxret, int start, int rev);
 extern	char ** pmatch_assign_alias	(Char *name, int *howmany, int maxret, int start, int rev);
 extern	char *  get_cmd_alias           (Char *name, int *howmany, 
-					 char **complete_name, void **args);
+					 char **complete_name, void **args, 
+					 void (**func) (const char *, char *, 
+					                const char *));
 extern	char ** get_subarray_elements   (Char *root, int *howmany, int type);
 
 
@@ -998,6 +1000,9 @@ static void	show_alias_caches (void)
 	for (i = 0; i < cmd_alias.cache_size; i++)
 	{
 		if (cmd_alias.cache[i])
+		    if (cmd_alias.cache[i]->user_command == NULL)
+			yell("CMD cache [%d]: [%s] (builtin)", i, cmd_alias.cache[i]->name);
+		    else
 			yell("CMD cache [%d]: [%s] [%s]", i, cmd_alias.cache[i]->name, cmd_alias.cache[i]->user_command);
 		else
 			yell("CMD cache [%d]: empty", i);
@@ -1426,7 +1431,7 @@ static Alias *	find_cmd_alias (const char *name, int *cnt)
 			cmd_cache_passes++;
 	}
 
-	if (*cnt < 0 || *cnt == 1)
+	if (*cnt < 0)		/*  || *cnt == 1) */
 	{
 		if (cmd_alias.cache[cache])
 			cmd_alias.cache[cache]->cache_revoked = 
@@ -1466,9 +1471,6 @@ static Alias *	find_cmd_alias (const char *name, int *cnt)
 			if (!item)
 				return NULL;
 		}
-
-		if (item->user_command == NULL)
-			return NULL;		/* For now */
 
 		return item;
 	}
@@ -1796,6 +1798,9 @@ void	list_cmd_alias (const char *orig_name)
 
 	for (cnt = 0; cnt < cmd_alias.max; cnt++)
 	{
+		if (cmd_alias.list[cnt]->user_command == NULL)
+			continue;
+
 		if (!name || !strncmp(cmd_alias.list[cnt]->name, name, len))
 		{
 			script = cmd_alias.list[cnt]->filename[0]
@@ -1914,7 +1919,7 @@ char	*get_variable_with_args (const char *str, const char *args)
 	return (copy ? malloc_strdup(ret) : ret);
 }
 
-char *	get_cmd_alias (const char *name, int *howmany, char **complete_name, void **args)
+char *	get_cmd_alias (const char *name, int *howmany, char **complete_name, void **args, void (**func) (const char *, char *, const char *))
 {
 	Alias *item;
 
@@ -1924,8 +1929,11 @@ char *	get_cmd_alias (const char *name, int *howmany, char **complete_name, void
 			malloc_strcpy(complete_name, item->name);
 		if (args)
 			*args = (void *)item->arglist;
+		*func = item->builtin_command;
 		return item->user_command;
 	}
+
+	*func = NULL;
 	return NULL;
 }
 
@@ -2254,8 +2262,9 @@ char 	*call_user_function	(const char *alias_name, char *args)
 	char 	*sub_buffer;
 	int 	cnt;
 	void	*arglist = NULL;
+	void	(*dummy) (const char *, char *, const char *);
 
-	sub_buffer = get_cmd_alias(alias_name, &cnt, NULL, &arglist);
+	sub_buffer = get_cmd_alias(alias_name, &cnt, NULL, &arglist, &dummy);
 	if (cnt < 0)
 		result = parse_line_alias_special(alias_name, sub_buffer, 
 						args, 0, 1, arglist, 1);

@@ -44,7 +44,9 @@
 	char **	glob_cmd_alias		(Char *name, int *howmany, 
 					 int maxret, int start, int rev);
 	char *	get_cmd_alias   	(Char *name, int *howmany, 
-					 char **complete_name, void **args);
+					 char **complete_name, void **args,
+                                         void (**func) (const char *, char *, 
+                                                        const char *));
 	char **	get_subarray_elements 	(Char *root, int *howmany, int type);
 
 
