@@ -187,6 +187,8 @@ static 	void 	remove_from_server_list (int i)
 	new_free(&s->userhost);
 	new_free(&s->cookie);
 	new_free(&s->umodes);
+	new_free(&s->ison_queue);
+	new_free(&s->who_queue);
 	destroy_notify_list(i);
 
 	memmove(&server_list[i], &server_list[i + 1], 

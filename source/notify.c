@@ -525,6 +525,7 @@ destroy_notify_list (int servnum)
 		new_free(&item->nick);
 		new_free(&item);
 	}
+	new_free(&(NOTIFY_LIST(servnum)->ison));
 	new_free(NOTIFY_LIST(servnum));
 }
 
