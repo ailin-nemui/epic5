@@ -1,4 +1,4 @@
-/* $EPIC: parse.c,v 1.46 2003/09/25 21:24:33 jnelson Exp $ */
+/* $EPIC: parse.c,v 1.47 2003/09/26 17:11:02 jnelson Exp $ */
 /*
  * parse.c: handles messages from the server.   Believe it or not.  I
  * certainly wouldn't if I were you. 
@@ -1333,7 +1333,7 @@ void 	parse_server (const char *orig_line, size_t orig_line_size)
 	strlcpy(line, orig_line, orig_line_size);
 	if (inbound_line_mangler)
 	{
-	    if (mangle_line(line, inbound_line_mangler, sizeof line) > sizeof line)
+	    if (mangle_line(line, inbound_line_mangler, orig_line_size) > orig_line_size)
 		yell("mangle_line truncated its result.  Ack.");
 	}
 

@@ -14,6 +14,7 @@ KNOWN ERRATA (eg, bugs, or unresolved requests):
 * The way the pattern matcher handles ?'s after *'s is really lame.
 * /window disconnect (server -> -2) + /server 0 reconnects to previous server.
 * New math parser can't handle  @ foo[bar].baz = 0
+* /xeval -- should stop option processing, ala /xecho.
 * /window flush should NOT turn hold mode off!
 * Something for %D to make it customizable?
 * [7] <- [:aussie.sydney.oz.org 330 complexnes Veneficus Veneficus
