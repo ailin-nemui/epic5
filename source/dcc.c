@@ -9,7 +9,7 @@
  */
 
 #if 0
-static	char	rcsid[] = "@(#)$Id: dcc.c,v 1.1 2000/12/05 00:11:56 jnelson Exp $";
+static	char	rcsid[] = "@(#)$Id: dcc.c,v 1.2 2000/12/07 18:24:43 jnelson Exp $";
 #endif
 
 #include "irc.h"
@@ -107,7 +107,6 @@ static	void		process_incoming_listen (DCC_list *);
 static	void		process_incoming_raw 	(DCC_list *);
 static	void		process_outgoing_file 	(DCC_list *);
 static	void		process_incoming_file 	(DCC_list *);
-static	void		file_checksum 		(unsigned char foo[], char *);
 static	void		DCC_close_filesend 	(DCC_list *, char *);
 static	void		update_transfer_buffer 	(char *format, ...);
 static 	void		dcc_send_booster_ctcp 	(DCC_list *dcc);
@@ -766,23 +765,6 @@ static void	dcc_send_booster_ctcp (DCC_list *dcc)
 	{
 		char *	url_name = dcc_urlencode(nopath);
 
-#ifdef USE_DCC_CHECKSUM
-		/*
-		 * Figure out the file checksum so the
-		 * remote user can check it later.
-		 */
-		unsigned char foo[4];
-		file_checksum(foo, dcc->description);
-		dcc->cksum = m_sprintf("%x%x%x%x", 
-			foo[0], foo[1], foo[2], foo[3]);
-
-		send_ctcp(CTCP_PRIVMSG, dcc->user, CTCP_DCC,
-			 "%s %s %lu %u %ld %s", 
-			 type, url_name,
-			 (u_long) ntohl(myip.s_addr),
-			 (u_short) dcc->local_port,
-			 dcc->filesize, dcc->cksum);
-#else
 		/*
 		 * Dont bother with the checksum.
 		 */
@@ -792,7 +774,6 @@ static void	dcc_send_booster_ctcp (DCC_list *dcc)
 			 (u_long) ntohl(myip.s_addr),
 			 (u_short) dcc->local_port,
 			 dcc->filesize);
-#endif
 
 		/*
 		 * Tell the user we sent out the request
@@ -1962,19 +1943,6 @@ void	register_dcc_offer (char *user, char *type, char *description, char *addres
 		    else if (statit.st_size == Client->filesize)
 		    {
 			say("WARNING: File [%s] exists, and its the same size.", Client->description);
-#ifdef USE_DCC_CHECKSUM
-			if (Client->cksum)
-			{
-			    char buffer[10];
-			    char foo[5];
-			    file_checksum(foo, Client->description);
-			    sprintf(buffer, "%x%x%x%x", 
-				foo[0], foo[1], foo[2], foo[3]);
-			    if (!strcmp(Client->cksum, buffer))
-				say("WARNING: The two files are confirmed to be identical.");
-			}
-#endif
-
 			say("Use /DCC CLOSE GET %s %s        to not get the file.", user, Client->description);
 			say("Use /DCC RENAME %s %s           to get the file anyways under a different name.", user, Client->description);
 			say("Use /DCC GET %s %s              to overwrite the existing file.", user, Client->description);
@@ -2613,22 +2581,6 @@ static	void		process_incoming_file (DCC_list *Client)
 	{
 		if (Client->bytes_read < Client->filesize)
 			say("DCC GET to %s lost -- Remote peer closed connection", Client->user);
-
-#ifdef USE_DCC_CHECKSUM
-		else if (Client->cksum)
-		{
-			unsigned char foo[4];
-			char tmpbuf[64];
-
-			/* Client->filename isn't valid in RESUME (SrfRoG) */
-			file_checksum(foo, Client->description);
-			sprintf(tmpbuf, "%x%x%x%x", foo[0], foo[1], foo[2], foo[3]);
-			if (strcmp(Client->cksum, tmpbuf))
-				yell("### Incoming file's checksum does not match [%s] [%s]", Client->cksum, tmpbuf);
-			else
-				yell("### Incoming file has been recieved with no errors.");
-		}
-#endif
 		DCC_close_filesend(Client, "GET");
 	}
 	else
@@ -2801,35 +2753,6 @@ static void 	update_transfer_buffer (char *format, ...)
 
 }
 
-
-static void 	file_checksum (unsigned char cksum[], char *filename)
-{
-	int	open_file;
-const	int	chunks_per_block = 2048;
-const	int	block_size	 = chunks_per_block * 4;
-	u_char	*block;
-	u_char	*ptr;
-	int	i, j;
-
-	if ((open_file = open(filename, O_RDONLY, 0)) == -1)
-	{
-		yell("### Couldnt open %s: %s\n",filename, strerror(errno));
-		return;
-	}
-
-	block = alloca(block_size);
-
-	cksum[0] = cksum[1] = cksum[2] = cksum[3] = 0;
-	while ((i = read(open_file, block, block_size)))
-	{
-		while (i < block_size)
-			block[i++] = 0;
-
-		for (ptr = block, j = 0; j < block_size; j++)
-			cksum[j % 4] ^= *ptr++;
-	}
-	close(open_file);
-}
 
 static	char *	dcc_urlencode (const char *s)
 {

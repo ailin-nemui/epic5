@@ -151,14 +151,6 @@
 #define MIRC_BROKEN_DCC_RESUME
 
 /*
- * Define this if you want the traditional EPIC behavior of checksumming
- * files before they are sent and verification after they are recieved.
- * If this is #undef'd, you will not send out checksums, nor will you use
- * any checksums if they are recieved (from other epic clients).
- */
-#define USE_DCC_CHECKSUM
-
-/*
  * Youll want to define this if your system is missing the glob()
  * call, or if its broken (solaris).
  *
