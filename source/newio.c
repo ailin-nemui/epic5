@@ -1,4 +1,4 @@
-/* $EPIC: newio.c,v 1.46 2005/03/06 04:42:16 jnelson Exp $ */
+/* $EPIC: newio.c,v 1.47 2005/03/06 21:09:37 jnelson Exp $ */
 /*
  * newio.c:  Passive, callback-driven IO handling for sockets-n-stuff.
  *
@@ -391,6 +391,7 @@ static	int	polls = 0;
 		    dump_timers();
 		    panic("Stuck in a polling loop. Help!");
 		}
+		return 0;		/* Timers are more important */
 	    }
 	    else
 		polls = 0;

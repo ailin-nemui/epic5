@@ -546,3 +546,4 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Fix up the configure script so ./configure --help lines up all nice.
 * Don't emit spurious warnings when user hits control-c
 * Don't try to figure out disconnected server's port from sockaddr, duh!
+* Prefer timers over i/o to prevent polling loop panics.
