@@ -1,4 +1,4 @@
-/* $EPIC: mail.c,v 1.12 2003/07/22 21:12:54 jnelson Exp $ */
+/* $EPIC: mail.c,v 1.13 2003/09/25 03:24:20 jnelson Exp $ */
 /*
  * mail.c -- a gross simplification of mail checking.
  * Only unix maildrops (``mbox'') are supported.
@@ -353,9 +353,10 @@ void	set_mail (const void *stuff)
 {
 	int	value = *(const int *)stuff;
 
-	if (value < 0 || value > 2)
+	if (value < 0 || value > 3)
 	{
-		say("/SET MAIL must be 0, 1, or 2");
+		say("/SET MAIL must be 0, 1, 2, or 3");
+		set_int_var(MAIL_VAR, 0);
 		return;
 	}
 	else if (value == 0)
