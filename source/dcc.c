@@ -1,10 +1,10 @@
-/* $EPIC: dcc.c,v 1.56 2003/04/07 18:48:53 crazyed Exp $ */
+/* $EPIC: dcc.c,v 1.57 2003/04/24 21:49:25 jnelson Exp $ */
 /*
  * dcc.c: Things dealing client to client connections. 
  *
  * Copyright (c) 1991, 1992 Troy Rollo.
  * Copyright (c) 1992-1996 Matthew Green.
- * Copyright © 1995, 2002 EPIC Software Labs
+ * Copyright © 1995, 2003 EPIC Software Labs
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -614,10 +614,10 @@ int	dcc_chat_active (const char *user)
 
 int	dcc_opened (int fd, int result)
 {
-	DCC_list *dcc;
-	int	len;
-	char *	type;
-	int	jvs_blah;
+	DCC_list *	dcc;
+	socklen_t	len;
+	char *		type;
+	int		jvs_blah;
 
 	for (dcc = ClientList; dcc ; dcc = dcc->next)
 	{
@@ -990,13 +990,13 @@ const	char 		*text_display, 	/* What to tell the user we sent */
 	if (*text == CTCP_DELIM_CHAR && strncmp(text + 1, "ACTION", 6))
 	{
 		if (!cmd || !strcmp(cmd, "PRIVMSG"))
-			strmcpy(tmp, "CTCP_MESSAGE ", DCC_BLOCK_SIZE);
+			strlcpy(tmp, "CTCP_MESSAGE ", sizeof tmp);
 		else
-			strmcpy(tmp, "CTCP_REPLY ", DCC_BLOCK_SIZE);
+			strlcpy(tmp, "CTCP_REPLY ", sizeof tmp);
 	}
 
-	strmcat(tmp, text, DCC_BLOCK_SIZE);
-	strmcat(tmp, "\n", DCC_BLOCK_SIZE); 
+	strlcat(tmp, text, sizeof tmp);
+	strlcat(tmp, "\n", sizeof tmp);
 
 	message_from(dcc->user, LOG_DCC);
 
@@ -1382,9 +1382,9 @@ static	void	dcc_getfile (char *args, int resume)
 		return;
 	}
 }
-static void dcc_getfile_get	(char *args) { return dcc_getfile(args, 0); }
+static void dcc_getfile_get	(char *args) { dcc_getfile(args, 0); }
 #ifdef MIRC_BROKEN_DCC_RESUME
-static void dcc_getfile_resume	(char *args) { return dcc_getfile(args, 1); }
+static void dcc_getfile_resume	(char *args) { dcc_getfile(args, 1); }
 #endif
 
 /*
@@ -1396,9 +1396,10 @@ static char *	calc_speed (u_32int_t sofar, Timeval sta, Timeval cur)
 	double		tdiff = time_diff(sta, cur);
 
 	if (sofar == 0 || tdiff <= 0.0)
-		snprintf(buf, 7, "N/A");
+		snprintf(buf, sizeof(buf), "N/A");
 	else
-		snprintf(buf, 7, "%4.1f", (double)sofar / tdiff / 1024.0);
+		snprintf(buf, sizeof(buf), "%4.1f", 
+				(double)sofar / tdiff / 1024.0);
 	return buf;
 }
 
@@ -1411,13 +1412,13 @@ static char *	calc_size (u_32int_t fsize)
 	static char	buf[8];
 
 	if (fsize < 1 << 10)
-		snprintf(buf, 8, "%ld", (long)fsize);
+		snprintf(buf, sizeof buf, "%ld", (long)fsize);
 	else if (fsize < 1 << 20)
-		snprintf(buf, 8, "%3.1fKb", (float)fsize / (1 << 10));
+		snprintf(buf, sizeof buf, "%3.1fKb", (float)fsize / (1 << 10));
 	else if (fsize < 1 << 30)
-		snprintf(buf, 8, "%3.1fMb", (float)fsize / (1 << 20));
+		snprintf(buf, sizeof buf, "%3.1fMb", (float)fsize / (1 << 20));
 	else
-		snprintf(buf, 8, "%3.1fGb", (float)fsize / (1 << 30));
+		snprintf(buf, sizeof buf, "%3.1fGb", (float)fsize / (1 << 30));
 
 	return buf;
 }
@@ -1505,12 +1506,12 @@ static	char		*format =
 			prop = (double)tot_size / Client->filesize;
 			perc = prop * 100;
 
-			sprintf(completed, "%ld%%", perc);
-			strmcpy(size, calc_size(Client->filesize), 8);
+			snprintf(completed, sizeof completed, "%ld%%", perc);
+			strlcpy(size, calc_size(Client->filesize), sizeof size);
 		}
 		else
 		{
-			strlcpy(completed, calc_size(tot_size), 9);
+			strlcpy(completed, calc_size(tot_size), sizeof completed);
 			*size = 0;
 		}
 
@@ -1535,7 +1536,7 @@ static	char		*format =
 		if (act_sent)
 		{
 			strlcpy(speed, calc_speed(act_sent, 
-				Client->starttime, get_time(NULL)), 9);
+				Client->starttime, get_time(NULL)), sizeof speed);
 		}
 		else
 			*speed = 0;
@@ -2319,7 +2320,8 @@ static	char *	process_dcc_chat_ctcps (DCC_list *Client, char *tmp)
 			FromUserHost = Client->userhost;
 		else
 			FromUserHost = unknown_userhost;
-		snprintf(equal_nickname, 80, "=%s", Client->user);
+		snprintf(equal_nickname, sizeof equal_nickname, 
+				"=%s", Client->user);
 
 		message_from(Client->user, LOG_CTCP);
 		if (ctcp_request == 1)
@@ -2339,11 +2341,10 @@ static	char *	process_dcc_chat_ctcps (DCC_list *Client, char *tmp)
 
 static	void	process_dcc_chat_data (DCC_list *Client)
 {
-	char	*tmp;
+	char	tmp[IO_BUFFER_SIZE + 1];
 	long	bytesread;
 
 	/* Get a new line via dgets. */
-        tmp = alloca(IO_BUFFER_SIZE + 1);
 	bytesread = dgets(Client->socket, tmp, IO_BUFFER_SIZE, 1, NULL);
 
 	/* 
@@ -2377,10 +2378,8 @@ static	void	process_dcc_chat_data (DCC_list *Client)
 		yell("DCC: [%d] <- [%s]", Client->socket, tmp);
 
 	/* Handle any CTCPs... */
-	tmp = process_dcc_chat_ctcps(Client, tmp);
-
 	/* If the message is empty, ignore it... */
-	if (!tmp || !*tmp)
+	if (!process_dcc_chat_ctcps(Client, tmp) || !*tmp)
 		return;
 
 	/* Otherwise throw the message to the user. */
@@ -2390,10 +2389,9 @@ static	void	process_dcc_chat_data (DCC_list *Client)
 	{
 		if (get_server_away(NOSERV))
 		{
-			strlcat(tmp, "<", IO_BUFFER_SIZE);
-			strlcat(tmp, my_ctime(time(NULL)), 
-					IO_BUFFER_SIZE);
-			strlcat(tmp, ">", IO_BUFFER_SIZE);
+			strlcat(tmp, "<", sizeof tmp);
+			strlcat(tmp, my_ctime(time(NULL)), sizeof tmp);
+			strlcat(tmp, ">", sizeof tmp);
 		}
 		put_it("=%s= %s", Client->user, tmp);
 	}
@@ -2423,7 +2421,7 @@ static	void		process_incoming_listen (DCC_list *Client)
 	DCC_list	*NewClient;
 	int		new_socket;
 	char		host[1025];
-	int		len;
+	socklen_t	len;
 	char		p_port[24];
 	char		l_port[24];
 	char		trash[1025] = "";
@@ -2439,7 +2437,7 @@ static	void		process_incoming_listen (DCC_list *Client)
 	*host = 0;
 	inet_ntostr((SA *)&remaddr, host, sizeof(host), p_port, sizeof(p_port), 0);
 
-	strlcpy(fdstr, ltoa(new_socket), 10);
+	strlcpy(fdstr, ltoa(new_socket), sizeof fdstr);
 	NewClient = dcc_searchlist(host, fdstr, DCC_RAW, 1, NULL, 0);
 	NewClient->socket = new_socket;
 
@@ -2912,16 +2910,17 @@ static void	DCC_close_filesend (DCC_list *Client, char *info)
 		xfer = Client->bytes_sent - Client->resume_size;
 	else
 		xfer = Client->bytes_read - Client->resume_size;
-	sprintf(lame_ultrix, "%2.4g", (xfer / 1024.0 / xtime));
+	snprintf(lame_ultrix, sizeof(lame_ultrix), 
+			"%2.4g", (xfer / 1024.0 / xtime));
 
 	/* Cant pass %g to put_it (lame ultrix/dgux), fix suggested by sheik. */
 	if (xfer <= 0)
 		xfer = 1;
-	sprintf(lame_ultrix2, "%2.4g", xfer / 1024.0);
+	snprintf(lame_ultrix2, sizeof(lame_ultrix2), "%2.4g", xfer / 1024.0);
 
 	if (xtime <= 0)
 		xtime = 1;
-	sprintf(lame_ultrix3, "%2.6g", xtime);
+	snprintf(lame_ultrix3, sizeof(lame_ultrix3), "%2.6g", xtime);
 
 	Client->flags |= DCC_DELETE;
 
@@ -2952,7 +2951,9 @@ static void 	update_transfer_buffer (char *format, ...)
 	{
 		va_list args;
 		va_start(args, format);
-		vsnprintf(DCC_current_transfer_buffer, 255, format, args);
+		vsnprintf(DCC_current_transfer_buffer, 
+				sizeof DCC_current_transfer_buffer, 
+				format, args);
 		va_end(args);
 	}
 	else

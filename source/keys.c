@@ -1,4 +1,4 @@
-/* $EPIC: keys.c,v 1.21 2002/12/26 16:40:31 jnelson Exp $ */
+/* $EPIC: keys.c,v 1.22 2003/04/24 21:49:25 jnelson Exp $ */
 /*
  * keys.c:  Keeps track of what happens whe you press a key.
  *
@@ -774,14 +774,15 @@ void save_bindings (FILE *fp, int do_all) {
     save_bindings_recurse(fp, head_keymap, "", 0);
 }
 
-void save_bindings_recurse (FILE *fp, struct Key *map, unsigned char *str,
-	int len) {
+void save_bindings_recurse (FILE *fp, struct Key *map, unsigned char *str, int len) {
     unsigned char c;
     unsigned char *newstr;
     unsigned char *ds; /* decompressed sequence */
+    size_t size;
 
-    newstr = alloca(len + 2);
-    strcpy(newstr, str);
+    size = len + 2;
+    newstr = alloca(size);
+    strlcpy(newstr, str, size);
     ds = alloca(((len + 1) * 2) + 1);
 
     /* go through our map, see what is changed, and save it.  recurse down
@@ -1083,10 +1084,12 @@ void show_all_bindings (struct Key *map, unsigned char *str, int len) {
     unsigned char c;
     unsigned char *newstr;
     struct Binding *self_insert;
+    size_t size;
 
     self_insert = find_binding("SELF_INSERT");
-    newstr = alloca(len + 2);
-    strcpy(newstr, str);
+    size = len + 2;
+    newstr = alloca(size);
+    strlcpy(newstr, str, size);
 
     /* show everything in our map.  recurse down. */
     newstr[len + 1] = '\0';
@@ -1146,13 +1149,14 @@ BUILT_IN_COMMAND(rbindcmd) {
     show_all_rbindings(head_keymap, "", 0, bp);
 }
 
-void show_all_rbindings (struct Key *map, unsigned char *str, int len,
-	struct Binding *bind) {
+void show_all_rbindings (struct Key *map, unsigned char *str, int len, struct Binding *bind) {
     unsigned char c;
     unsigned char *newstr;
+    size_t size;
 
-    newstr = alloca(len + 2);
-    strcpy(newstr, str);
+    size = len + 2;
+    newstr = alloca(size);
+    strlcpy(newstr, str, size);
 
     /* this time, show only those things bound to our function, and call on
      * ourselves to recurse instead. */
@@ -1370,9 +1374,11 @@ void bindctl_getmap (struct Key *map, unsigned char *str, int len, char **ret) {
     unsigned char c;
     unsigned char *newstr;
     unsigned char *decomp;
+    size_t size;
 
-    newstr = alloca(len + 2);
-    strcpy(newstr, str);
+    size = len + 2;
+    newstr = alloca(size);
+    strlcpy(newstr, str, size);
     decomp = alloca(((len + 1) * 2) + 1);
 
     /* grab all keys that are bound, put them in ret, and continue. */

@@ -1,11 +1,11 @@
-/* $EPIC: vars.c,v 1.27 2003/03/29 08:10:22 jnelson Exp $ */
+/* $EPIC: vars.c,v 1.28 2003/04/24 21:49:25 jnelson Exp $ */
 /*
  * vars.c: All the dealing of the irc variables are handled here. 
  *
  * Copyright (c) 1990 Michael Sandroff.
  * Copyright (c) 1991, 1992 Troy Rollo.
  * Copyright (c) 1992-1996 Matthew Green.
- * Copyright © 1993, 2002 EPIC Software Labs.
+ * Copyright © 1993, 2003 EPIC Software Labs.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -856,7 +856,7 @@ char 	*make_string_var (const char *var_name)
 
 }
 
-GET_FIXED_ARRAY_NAMES_FUNCTION(get_set, irc_variable);
+GET_FIXED_ARRAY_NAMES_FUNCTION(get_set, irc_variable)
 
 /* returns the size of the character set */
 int 	charset_size (void)
@@ -878,7 +878,7 @@ static void 	set_realname (char *value)
 		say("Unsetting your realname will do you no good.  So there.");
 		value = empty_string;
 	}
-	strmcpy(realname, value, REALNAME_LEN);
+	strlcpy(realname, value, sizeof realname);
 }
 
 static void 	set_clock_format (char *value)

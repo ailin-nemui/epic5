@@ -1,4 +1,4 @@
-/* $EPIC: reg.c,v 1.4 2002/07/17 22:52:52 jnelson Exp $ */
+/* $EPIC: reg.c,v 1.5 2003/04/24 21:49:25 jnelson Exp $ */
 /*
  * reg.c - "glob"-like wildcard pattern matching (not regexes)
  *
@@ -547,9 +547,9 @@ int wild_match (const char *p, const char *str)
 				int tmpval;
 				char my_buff[BIG_BUFFER_SIZE + 1];
 
-				strlcpy(my_buff, pattern, BIG_BUFFER_SIZE);
-				strlcat(my_buff, arg, BIG_BUFFER_SIZE);
-				strlcat(my_buff, ptr, BIG_BUFFER_SIZE);
+				strlcpy(my_buff, pattern, sizeof my_buff);
+				strlcat(my_buff, arg, sizeof my_buff);
+				strlcat(my_buff, ptr, sizeof my_buff);
 
 				/*
 				 * The total_explicit we return is whatever
@@ -646,10 +646,10 @@ char *	pattern2regex (const char *pattern, int *weight)
 			strextend(retval, '.', 1);
 			break;
 		case '%' :
-			strcat(retval, "[^ \t]*");
+			strlcat(retval, "[^ \t]*", retsize);
 			break;
 		case '*' :
-			strcat(retval, ".*");
+			strlcat(retval, ".*", retsize);
 			break;
 		case '\\' :
 			if (pat[1] != '[')
@@ -688,15 +688,15 @@ char *	pattern2regex (const char *pattern, int *weight)
 			placeholder += 2;
 
 			arg = new_next_arg(placeholder, &placeholder);
-			strcat(retval, "(");
-			strcat(retval, arg);
+			strlcat(retval, "(", retsize);
+			strlcat(retval, arg, retsize);
 
 			while ((arg = new_next_arg(placeholder, &placeholder)))
 			{
-				strcat(retval, "|");
-				strcat(retval, arg);
+				strlcat(retval, "|", retsize);
+				strlcat(retval, arg, retsize);
 			}
-			strcat(retval, ")");
+			strlcat(retval, ")", retsize);
 			break;
 		   }
 		   end:

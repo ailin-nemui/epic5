@@ -1,4 +1,4 @@
-/* $EPIC: numbers.c,v 1.47 2003/03/26 07:26:07 jnelson Exp $ */
+/* $EPIC: numbers.c,v 1.48 2003/04/24 21:49:25 jnelson Exp $ */
 /*
  * numbers.c: handles all those strange numeric response dished out by that
  * wacky, nutty program we call ircd 
@@ -6,7 +6,7 @@
  * Copyright (c) 1990 Michael Sandroff.
  * Copyright (c) 1991, 1992 Troy Rollo.
  * Copyright (c) 1992-1996 Matthew Green.
- * Copyright © 1993, 2002 EPIC Software Labs.
+ * Copyright © 1993, 2003 EPIC Software Labs.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -73,18 +73,18 @@ const char *	banner (void)
 	char *str;
 
 	if (current_numeric < 0 && get_int_var(SHOW_NUMERICS_VAR))
-		sprintf(thing, "%3.3u", -current_numeric);
+		snprintf(thing, sizeof thing, "%3.3u", -current_numeric);
 	else if ((str = get_string_var(BANNER_VAR)))
 	{
 		if (get_int_var(BANNER_EXPAND_VAR))
 		{
 			int af;
 			char *foo = expand_alias(str, empty_string, &af, NULL);
-			strmcpy(thing, foo, 79);
+			strlcpy(thing, foo, sizeof thing);
 			new_free(&foo);
 		}
 		else
-			strlcpy(thing, str, 80);
+			strlcpy(thing, str, sizeof thing);
 	}
 	else
 		*thing = 0;
@@ -1116,7 +1116,7 @@ DISPLAY:
 				(unsigned) last_width,
 				(unsigned) last_width);
 			else
-				strcpy(format, "%s\t%-5s  %s");
+				strlcpy(format, "%s\t%-5s  %s", sizeof format);
 		}
 
 		if (*channel == '*')
@@ -1293,10 +1293,10 @@ DISPLAY:
 					(unsigned char) last_width,
 					(unsigned char) last_width);
 			else
-				strcpy(format, "%s: %s\t%s");
+				strlcpy(format, "%s: %s\t%s", sizeof format);
 		}
 		else
-			strcpy(format, "%s: %s\t%s");
+			strlcpy(format, "%s: %s\t%s", sizeof format);
 
 		message_from(channel, LOG_CRAP);
 		if (*type == '=') 
@@ -1510,7 +1510,7 @@ END:
 				get_server_name(from_server));
 			if (!dumb_mode)
 			{
-				strlcpy(server_num, ltoa(from_server), 8);
+				strlcpy(server_num, ltoa(from_server), sizeof server_num);
 				add_wait_prompt("Server Password:", 
 					password_sendline,
 				       server_num, WAIT_PROMPT_LINE, 0);
@@ -1528,6 +1528,7 @@ END:
 static void	add_user_who (int refnum, const char *from, const char *comm, const char **ArgList)
 {
 	const char 	*channel, *user, *host, *server, *nick;
+	size_t	size;
 	char 	*userhost;
 
 	if (!(channel = ArgList[0]))
@@ -1541,9 +1542,9 @@ static void	add_user_who (int refnum, const char *from, const char *comm, const 
 	if (!(nick = ArgList[4]))
 		{ rfc1459_odd(from, "*", ArgList); return; }
 
-	/* Obviously this is safe. */
-	userhost = alloca(strlen(user) + strlen(host) + 2);
-	sprintf(userhost, "%s@%s", user, host);
+	size = strlen(user) + strlen(host) + 2;
+	userhost = alloca(size);
+	snprintf(userhost, size, "%s@%s", user, host);
 	add_userhost_to_channel(channel, nick, refnum, userhost);
 }
 

@@ -1,4 +1,4 @@
-/* $EPIC: irc.c,v 1.501 2003/04/22 13:28:04 crazyed Exp $ */
+/* $EPIC: irc.c,v 1.502 2003/04/24 21:49:25 jnelson Exp $ */
 /*
  * ircII: a new irc client.  I like it.  I hope you will too!
  *
@@ -52,7 +52,7 @@ const char internal_version[] = "20030326";
 /*
  * In theory, this number is incremented for every commit.
  */
-const unsigned long	commit_id = 505;
+const unsigned long	commit_id = 506;
 
 /*
  * As a way to poke fun at the current rage of naming releases after
@@ -520,11 +520,11 @@ static	void	parse_args (int argc, char **argv)
 		{
 			if ((ptr = strchr(entry->pw_gecos, ',')))
 				*ptr = 0;
-			strmcpy(realname, entry->pw_gecos, REALNAME_LEN);
+			strlcpy(realname, entry->pw_gecos, sizeof realname);
 		}
 
 		if (entry->pw_name && *(entry->pw_name))
-			strmcpy(username, entry->pw_name, NAME_LEN);
+			strlcpy(username, entry->pw_name, sizeof username);
 
 		if (entry->pw_dir && *(entry->pw_dir))
 			malloc_strcpy(&my_path, entry->pw_dir);
@@ -532,7 +532,7 @@ static	void	parse_args (int argc, char **argv)
 
 
 	if ((ptr = getenv("IRCNICK")))
-		strmcpy(nickname, ptr, NICKNAME_LEN);
+		strlcpy(nickname, ptr, sizeof nickname);
 
 	/*
 	 * We now allow users to use IRCUSER or USER if we couldnt get the
@@ -546,26 +546,26 @@ static	void	parse_args (int argc, char **argv)
 	 */
 	if (!*username)
 		if ((ptr = getenv("LOGNAME")) && *ptr)
-			strmcpy(username, ptr, NAME_LEN);
+			strlcpy(username, ptr, sizeof username);
 
 #ifndef ALLOW_USER_SPECIFIED_LOGIN
 	if (!*username)
 #endif
 		if ((ptr = getenv("IRCUSER")) && *ptr) 
-			strmcpy(username, ptr, NAME_LEN);
+			strlcpy(username, ptr, sizeof username);
 #ifdef ALLOW_USER_SPECIFIED_LOGIN
 		else if (*username)
 			;
 #endif
 		else if ((ptr = getenv("USER")) && *ptr) 
-			strmcpy(username, ptr, NAME_LEN);
+			strlcpy(username, ptr, sizeof username);
 		else if ((ptr = getenv("HOME")) && *ptr)
 		{
 			char *ptr2 = strrchr(ptr, '/');
 			if (ptr2)
-				strmcpy(username, ptr2, NAME_LEN);
+				strlcpy(username, ptr2, sizeof username);
 			else
-				strmcpy(username, ptr, NAME_LEN);
+				strlcpy(username, ptr, sizeof username);
 		}
 		else
 		{
@@ -576,11 +576,11 @@ static	void	parse_args (int argc, char **argv)
 		}
 
 	if ((ptr = getenv("IRCNAME")))
-		strmcpy(realname, ptr, REALNAME_LEN);
+		strlcpy(realname, ptr, sizeof realname);
 	else if ((ptr = getenv("NAME")))
-		strmcpy(realname, ptr, REALNAME_LEN);
+		strlcpy(realname, ptr, sizeof realname);
 	else if (!*realname)
-		strmcpy(realname, "*Unknown*", REALNAME_LEN);
+		strlcpy(realname, "*Unknown*", sizeof realname);
 
 	if ((ptr = getenv("HOME")))
 		malloc_strcpy(&my_path, ptr);
@@ -685,7 +685,7 @@ static	void	parse_args (int argc, char **argv)
 				break;
 
 			case 'n':
-				strmcpy(nickname, optarg, NICKNAME_LEN);
+				strlcpy(nickname, optarg, sizeof nickname);
 				break;
 
 			case 'x': /* x_debug flag */
@@ -694,7 +694,7 @@ static	void	parse_args (int argc, char **argv)
 
 			case 'z':
 #ifdef ALLOW_USER_SPECIFIED_LOGIN
-				strmcpy(username, optarg, NAME_LEN);
+				strlcpy(username, optarg, sizeof username);
 #endif
 				break;
 
@@ -721,14 +721,14 @@ static	void	parse_args (int argc, char **argv)
 	argv += optind;
 
 	if (argc && **argv && !strchr(*argv, '.'))
-		strmcpy(nickname, *argv++, NICKNAME_LEN), argc--;
+		strlcpy(nickname, *argv++, sizeof nickname), argc--;
 
 	/*
  	 * "nickname" needs to be valid before we call build_server_list,
 	 * so do a final check on whatever nickname we're going to use.
 	 */
 	if (!*nickname)
-		strmcpy(nickname, username, NICKNAME_LEN);
+		strlcpy(nickname, username, sizeof nickname);
 
 	for (; *argv; argc--, argv++)
 		if (**argv)
@@ -766,7 +766,7 @@ static	void	parse_args (int argc, char **argv)
 	LocalHostName = NULL;
 	if (tmp_hostname)
 	{
-		const char *s = switch_hostname(tmp_hostname);
+		char *s = switch_hostname(tmp_hostname);
 		fprintf(stderr, "%s\n", s);
 		new_free(&s);
 	}
@@ -833,7 +833,7 @@ static 	const Timeval	right_away = { 0, 0 };
 	if (level && (level - last_warn == 5))
 	{
 		last_warn = level;
-		yell("io's nesting level is [%d],  [%s]<-[%s]<-[%s]<-[%s]<-[%s]", level, what, caller[level-1], caller[level-2], caller[level-3], caller[level-4]);
+		yell("io's recursion level is [%d],  [%s]<-[%s]<-[%s]<-[%s]<-[%s]", level, what, caller[level-1], caller[level-2], caller[level-3], caller[level-4]);
 		if (level % 50 == 0)
 			panic("Ahoy there matey!  Abandon ship!");
 	}
@@ -943,7 +943,7 @@ static void check_password (void)
 #define INPUT_PASSWD_LEN 15
 	char 	input_passwd[INPUT_PASSWD_LEN];
 #ifdef HAVE_GETPASS
-	strlcpy(input_passwd, getpass("Passwd: "), INPUT_PASSWD_LEN);
+	strlcpy(input_passwd, getpass("Passwd: "), sizeof input_password);
 #else
 	fprintf(stderr, "Passwd: ");
 	fgets(input_passwd, INPUT_PASSWD_LEN - 1, stdin);

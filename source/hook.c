@@ -1,11 +1,11 @@
-/* $EPIC: hook.c,v 1.15 2003/01/31 23:50:18 jnelson Exp $ */
+/* $EPIC: hook.c,v 1.16 2003/04/24 21:49:25 jnelson Exp $ */
 /*
  * hook.c: Does those naughty hook functions. 
  *
  * Copyright (c) 1990 Michael Sandroff.
  * Copyright (c) 1991, 1992 Troy Rollo.
  * Copyright (c) 1992-1996 Matthew Green.
- * Copyright © 1993, 2002 EPIC Software Labs.
+ * Copyright © 1993, 2003 EPIC Software Labs.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -228,19 +228,19 @@ static char *	fill_it_out (char *str, int params)
 	while ((arg = next_arg(ptr, &ptr)) != NULL)
 	{
 		if (*buffer)
-			strmcat(buffer, " ", BIG_BUFFER_SIZE);
-		strmcat(buffer, arg, BIG_BUFFER_SIZE);
+			strlcat(buffer, " ", sizeof buffer);
+		strlcat(buffer, arg, sizeof buffer);
 		if (++i == params)
 			break;
 	}
 
 	for (; i < params; i++)
-		strmcat(buffer, (i < params-1) ? " %" : " *", BIG_BUFFER_SIZE);
+		strlcat(buffer, (i < params-1) ? " %" : " *", sizeof buffer);
 
 	if (*ptr)
 	{
-		strmcat(buffer, " ", BIG_BUFFER_SIZE);
-		strmcat(buffer, ptr, BIG_BUFFER_SIZE);
+		strlcat(buffer, " ", sizeof buffer);
+		strlcat(buffer, ptr, sizeof buffer);
 	}
 	return m_strdup(buffer);
 }
@@ -336,7 +336,7 @@ static void add_numeric_hook (int numeric, char *nick, char *stuff, int noisy, i
 	{
 		entry = (NumericList *) new_malloc(sizeof(NumericList));
 		entry->numeric = numeric;
-		sprintf(entry->name, "%3.3u", numeric);
+		snprintf(entry->name, sizeof(entry->name), "%3.3u", numeric);
 		entry->next = NULL;
 		entry->list = NULL;
 		add_numeric_list(entry);
@@ -617,7 +617,7 @@ static int show_numeric_list (int numeric)
 
 	if (numeric)
 	{
-		sprintf(buf, "%3.3u", numeric);
+		snprintf(buf, sizeof buf, "%3.3u", numeric);
 		if ((tmp = find_numeric_list(numeric)))
 		{
 			for (list = tmp->list; list; list = list->next, cnt++)
@@ -1467,7 +1467,8 @@ void	do_stack_on (int type, char *args)
 					nptr->list = p->list;
 					nptr->next = NULL;
 					nptr->numeric = -which;
-					sprintf(nptr->name, "%3.3u", -which);
+					snprintf(nptr->name, sizeof(nptr->name),
+						"%3.3u", -which);
 					add_numeric_list(nptr);
 				}
 			}

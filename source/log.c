@@ -1,4 +1,4 @@
-/* $EPIC: log.c,v 1.9 2002/12/19 03:22:59 jnelson Exp $ */
+/* $EPIC: log.c,v 1.10 2003/04/24 21:49:25 jnelson Exp $ */
 /*
  * log.c: handles the irc session logging functions 
  *
@@ -187,7 +187,7 @@ void 	add_to_log (FILE *fp, unsigned winref, const unsigned char *line, int mang
 	 */
 	size = strlen(line) * 11;
 	local_line = alloca(size + 1);
-	strcpy(local_line, line);
+	strlcpy(local_line, line, size + 1);
 
 	/* Do this first */
 	if (mangler == 0)

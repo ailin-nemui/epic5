@@ -1,4 +1,4 @@
-/* $EPIC: mail.c,v 1.4 2002/12/19 03:22:59 jnelson Exp $ */
+/* $EPIC: mail.c,v 1.5 2003/04/24 21:49:25 jnelson Exp $ */
 /*
  * mail.c -- a gross simplification of mail checking.
  * Only unix maildrops are supported.
@@ -205,7 +205,7 @@ char *	check_mail (void)
 			    }
 
 			    old_count = count;
-			    sprintf(ret_str, "%d", old_count);
+			    snprintf(ret_str, sizeof ret_str, "%d", old_count);
 			    /* FALLTHROUGH */
 			  }
 

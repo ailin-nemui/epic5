@@ -1,11 +1,11 @@
-/* $EPIC: server.c,v 1.97 2003/03/29 08:10:22 jnelson Exp $ */
+/* $EPIC: server.c,v 1.98 2003/04/24 21:49:25 jnelson Exp $ */
 /*
  * server.c:  Things dealing with that wacky program we call ircd.
  *
  * Copyright (c) 1990 Michael Sandroff.
  * Copyright (c) 1991, 1992 Troy Rollo.
  * Copyright (c) 1992-1996 Matthew Green.
- * Copyright © 1993, 2002 EPIC Software Labs.
+ * Copyright © 1993, 2003 EPIC Software Labs.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -606,14 +606,14 @@ int 	read_server_file (void)
 	char	*defaultgroup = NULL;
 
 	if (getenv("IRC_SERVERS_FILE"))
-		strmcpy(file_path, getenv("IRC_SERVERS_FILE"), MAXPATHLEN);
+		strlcpy(file_path, getenv("IRC_SERVERS_FILE"), sizeof file_path);
 	else
 	{
 #ifdef SERVERS_FILE
 		*file_path = 0;
 		if (SERVERS_FILE[0] != '/' && SERVERS_FILE[0] != '~')
-			strmcpy(file_path, irc_lib, MAXPATHLEN);
-		strmcat(file_path, SERVERS_FILE, MAXPATHLEN);
+			strlcpy(file_path, irc_lib, sizeof file_path);
+		strlcat(file_path, SERVERS_FILE, sizeof file_path);
 #else
 		return -1;
 #endif
@@ -1018,7 +1018,7 @@ static void 	vsend_to_aserver (int refnum, const char *format, va_list args)
 			buffer[IRCD_BUFFER_SIZE - 2] = 0;
 		if (x_debug & DEBUG_OUTBOUND)
 			yell("[%d] -> [%s]", des, buffer);
-		strmcat(buffer, "\r\n", IRCD_BUFFER_SIZE);
+		strlcat(buffer, "\r\n", sizeof buffer);
 
 		/* This "from_server" hack is for the benefit of do_hook. */
 		ofs = from_server;
@@ -1107,7 +1107,7 @@ void	flush_server (int servnum)
 static int 	connect_to_server (int new_server)
 {
 	int 		des;
-	int		len;
+	socklen_t	len;
 	Server *	s;
 
 	/*
@@ -2331,7 +2331,7 @@ void	accept_server_nickname (int refnum, const char *nick)
 	s->fudge_factor = 0;
 
 	if (refnum == primary_server)
-		strmcpy(nickname, nick, NICKNAME_LEN);
+		strlcpy(nickname, nick, sizeof nickname);
 
 	update_all_status();
 }
@@ -2374,11 +2374,11 @@ const	char	*nicklen_005;
 	 * if maybe we're doing some other type of NICK change.
 	 */
 	if (s->s_nickname)
-		strlcpy(l_nickname, s->s_nickname, NICKNAME_LEN);
+		strlcpy(l_nickname, s->s_nickname, sizeof l_nickname);
 	else if (s->nickname)
-		strlcpy(l_nickname, s->nickname, NICKNAME_LEN);
+		strlcpy(l_nickname, s->nickname, sizeof l_nickname);
 	else
-		strlcpy(l_nickname, nickname, NICKNAME_LEN);
+		strlcpy(l_nickname, nickname, sizeof l_nickname);
 
 
 	if (s->fudge_factor < strlen(l_nickname))
@@ -2403,7 +2403,7 @@ const	char	*nicklen_005;
 	nicklen = nicklen > 0 ? nicklen : 9;
 
 	if (strlen(l_nickname) < nicklen)
-		strcat(l_nickname, "_");
+		strlcat(l_nickname, "_", sizeof l_nickname);
 
 	/* 
 	 * The nickname is 9 characters long. roll the nickname
@@ -2459,7 +2459,7 @@ void 	reset_nickname (int refnum)
 	if (!dumb_mode)
 	{
 		say("Please enter your nickname");
-		strcpy(server_num, ltoa(refnum));
+		strlcpy(server_num, ltoa(refnum), sizeof server_num);
 		add_wait_prompt("Nickname: ", nickname_sendline, server_num,
 			WAIT_PROMPT_LINE, 1);
 	}
@@ -2611,8 +2611,8 @@ SACCESSOR(text, sent_body, NULL)
 SACCESSOR(nick, redirect, NULL)
 SACCESSOR(group, group, "<default>")
 SACCESSOR(message, quit_message, "get_server_quit_message")
-SACCESSOR(cookie, cookie, NULL);
-SACCESSOR(ver, version_string, NULL);
+SACCESSOR(cookie, cookie, NULL)
+SACCESSOR(ver, version_string, NULL)
 
 GET_IATTRIBUTE(operator)
 void	set_server_operator (int refnum, int flag)
@@ -2627,7 +2627,7 @@ void	set_server_operator (int refnum, int flag)
 	do_umode(refnum);
 }
 
-SACCESSOR(name, name, "<none>");
+SACCESSOR(name, name, "<none>")
 SET_SATTRIBUTE(name, itsname)
 const char	*get_server_itsname (int refnum)
 {
@@ -2718,6 +2718,7 @@ void 	server_hard_wait (int i)
 {
 	Server *s;
 	int	proto, old_from_server;
+	char	reason[1024];
 
 	if (!(s = get_server(i)))
 		return;
@@ -2725,6 +2726,7 @@ void 	server_hard_wait (int i)
 	if (!is_server_registered(i))
 		return;
 
+	snprintf(reason, 1024, "WAIT on server %d", i);
 	proto = get_server_protocol_state(i);
 	old_from_server = from_server;
 
@@ -2732,7 +2734,7 @@ void 	server_hard_wait (int i)
 	lock_stack_frame();
 	send_to_aserver(i, "%s", lame_wait_nick);
 	while ((s = get_server(i)) && (s->waiting_in < s->waiting_out))
-		io("oh_my_wait");
+		io(reason);
 
 	set_server_protocol_state(i, proto);
 	from_server = old_from_server;
@@ -2803,7 +2805,7 @@ int	check_server_wait (int refnum, const char *nick)
 IACCESSOR(v, funny_min)
 IACCESSOR(v, funny_max)
 IACCESSOR(v, funny_flags)
-SACCESSOR(match, funny_match, NULL);
+SACCESSOR(match, funny_match, NULL)
 
 void	set_server_funny_stuff (int refnum, int min, int max, int flags, const char *stuff)
 {

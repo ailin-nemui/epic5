@@ -1,4 +1,4 @@
-/* $EPIC: wserv.c,v 1.12 2002/07/17 22:52:53 jnelson Exp $ */
+/* $EPIC: wserv.c,v 1.13 2003/04/24 21:49:25 jnelson Exp $ */
 /*
  * wserv.c -- A little program to act as a pipe between the ircII process
  * 	      and an xterm window or GNU screen.
@@ -99,6 +99,10 @@ int	main (int argc, char **argv)
 	 * First thing we do is tell the parent what protocol we plan on
 	 * talking.  We will start the protocol at version 4, for this is
 	 * the fourth generation of wservs.
+	 *
+	 * We cannot use 'snprintf' here because we do not have the compat
+	 * functions and some systems do not have snprintf!  This use of
+	 * sprintf is demonstrably safe.
 	 */
 	sprintf(stuff, "version=%d\n", CURRENT_WSERV_VERSION);
 	t = write(cmd, stuff, strlen(stuff));

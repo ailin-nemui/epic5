@@ -204,12 +204,6 @@
 /* Define this if you have strlcat() */
 #undef HAVE_STRLCAT
 
-/* Define this if you have stpcpy() */
-#undef HAVE_STPCPY
-
-/* Define this if you have a function decl for stpcpy() */
-#undef STPCPY_DECLARED
-
 /* Define this if you have hstrerror, for h_errno use */
 #undef HAVE_HSTRERROR
 

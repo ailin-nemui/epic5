@@ -1,8 +1,8 @@
-/* $EPIC: network.c,v 1.45 2003/03/29 08:10:22 jnelson Exp $ */
+/* $EPIC: network.c,v 1.46 2003/04/24 21:49:25 jnelson Exp $ */
 /*
  * network.c -- handles stuff dealing with connecting and name resolving
  *
- * Copyright © 1995-2002 Jeremy Nelson
+ * Copyright © 1995, 2003 Jeremy Nelson
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -101,7 +101,7 @@ int	connectory (int family, const char *host, const char *port)
 	hints.ai_socktype = SOCK_STREAM;
 	if ((err = Getaddrinfo(host, port, &hints, &results)))
 	{
-		yell("gai_strerror: [%d:%s]", err, gai_strerror(err));
+		yell("Hostname lookup for [%s:%s] failed: %s (%d)", host, port, gai_strerror(err), err);
 		return -5;
 	}
 

@@ -1,8 +1,8 @@
-/* $EPIC: who.c,v 1.20 2003/03/29 08:10:22 jnelson Exp $ */
+/* $EPIC: who.c,v 1.21 2003/04/24 21:49:25 jnelson Exp $ */
 /*
  * who.c -- The WHO queue.  The ISON queue.  The USERHOST queue.
  *
- * Copyright © 1996, 2002 EPIC Software Labs.
+ * Copyright © 1996, 2003 EPIC Software Labs.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -526,11 +526,12 @@ do
 	if (last_width != get_int_var(CHANNEL_NAME_WIDTH_VAR))
 	{
 		if ((last_width = get_int_var(CHANNEL_NAME_WIDTH_VAR)) != 0)
-		    sprintf(format, "%%-%u.%us %%-9s %%-3s %%s@%%s (%%s)",
+		    snprintf(format, sizeof format, 
+				"%%-%u.%us %%-9s %%-3s %%s@%%s (%%s)",
 					(unsigned) last_width,
 					(unsigned) last_width);
 		else
-		    strcpy(format, "%s\t%-9s %-3s %s@%s (%s)");
+		    strlcpy(format, "%s\t%-9s %-3s %s@%s (%s)", sizeof format);
 	}
 	channel = ArgList[0];
 	user    = ArgList[1];
@@ -1031,8 +1032,8 @@ void userhostbase (int refnum, char *args, void (*line) (int, UserhostItem *, co
 				server_query_reqd++;
 
 			if (*buffer)
-				strmcat(buffer, " ", BIG_BUFFER_SIZE);
-			strmcat(buffer, nick, BIG_BUFFER_SIZE);
+				strlcat(buffer, " ", sizeof buffer);
+			strlcat(buffer, nick, sizeof buffer);
 		}
 
 		else if (!my_strnicmp(nick, "-cmd", 2))
@@ -1065,7 +1066,7 @@ void userhostbase (int refnum, char *args, void (*line) (int, UserhostItem *, co
 	if (!userhost_cmd && !total)
 	{
 		server_query_reqd++;
-		strlcpy(buffer, get_server_nickname(refnum), BIG_BUFFER_SIZE);
+		strlcpy(buffer, get_server_nickname(refnum), sizeof buffer);
 	}
 
 	ptr = buffer;

@@ -1,4 +1,4 @@
-/* $EPIC: input.c,v 1.12 2003/03/24 04:21:13 jnelson Exp $ */
+/* $EPIC: input.c,v 1.13 2003/04/24 21:49:25 jnelson Exp $ */
 /*
  * input.c: does the actual input line stuff... keeps the appropriate stuff
  * on the input line, handles insert/delete of characters/words... the whole
@@ -7,7 +7,7 @@
  * Copyright (c) 1990 Michael Sandroff.
  * Copyright (c) 1991, 1992 Troy Rollo.
  * Copyright (c) 1992-1996 Matthew Green.
- * Copyright © 1999, 2002 EPIC Software Labs.
+ * Copyright © 1999, 2003 EPIC Software Labs.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -88,7 +88,7 @@
 #define MIN_CHAR 		INPUT_BUFFER[MIN_POS]
 #define PREV_CHAR 		INPUT_BUFFER[THIS_POS-1]
 #define NEXT_CHAR 		INPUT_BUFFER[THIS_POS+1]
-#define ADD_TO_INPUT(x) 	strmcat(INPUT_BUFFER, (x), INPUT_BUFFER_SIZE);
+#define ADD_TO_INPUT(x) 	strlcat(INPUT_BUFFER, (x), sizeof INPUT_BUFFER);
 #define INPUT_ONSCREEN 		current_screen->input_visible
 #define INPUT_VISIBLE 		INPUT_BUFFER[INPUT_ONSCREEN]
 #define ZONE			current_screen->input_zone_len
@@ -498,7 +498,7 @@ void 	change_input_prompt (int direction)
 	/* XXXXXX THIS is totaly wrong. XXXXXX */
 	if (!last_input_screen->promptlist)
 	{
-		strcpy(INPUT_BUFFER, last_input_screen->saved_input_buffer);
+		strlcpy(INPUT_BUFFER, last_input_screen->saved_input_buffer, sizeof INPUT_BUFFER);
 		THIS_POS = last_input_screen->saved_buffer_pos;
 		MIN_POS = last_input_screen->saved_min_buffer_pos;
 		*last_input_screen->saved_input_buffer = 0;
@@ -511,7 +511,7 @@ void 	change_input_prompt (int direction)
 
 	else if (!last_input_screen->promptlist->next)
 	{
-		strcpy(last_input_screen->saved_input_buffer, INPUT_BUFFER);
+		strlcpy(last_input_screen->saved_input_buffer, INPUT_BUFFER, sizeof INPUT_BUFFER);
 		last_input_screen->saved_buffer_pos = THIS_POS;
 		last_input_screen->saved_min_buffer_pos = MIN_POS;
 		*INPUT_BUFFER = 0;
@@ -550,7 +550,7 @@ void	input_move_cursor (int dir)
  */
 void	set_input (char *str)
 {
-	strmcpy(INPUT_BUFFER + MIN_POS, str, INPUT_BUFFER_SIZE - MIN_POS);
+	strlcpy(INPUT_BUFFER + MIN_POS, str, INPUT_BUFFER_SIZE - MIN_POS);
 	THIS_POS = strlen(INPUT_BUFFER);
 	update_input(UPDATE_ALL);
 }
@@ -769,12 +769,13 @@ BUILT_IN_BINDING(input_end_of_line)
 void	cut_input (int anchor)
 {
 	char *	buffer;
-	int	size;
+	size_t	size;
 
 	if (anchor < THIS_POS)
 	{
-		buffer = alloca((size = THIS_POS - anchor) + 1);
-		strmcpy(buffer, &INPUT_BUFFER[anchor], size);
+		size = THIS_POS - anchor;
+		buffer = alloca(size + 1);
+		strlcpy(buffer, &INPUT_BUFFER[anchor], size + 1);
 		malloc_strcpy(&cut_buffer, buffer);
 
 		buffer = LOCAL_COPY(&THIS_CHAR);
@@ -784,8 +785,9 @@ void	cut_input (int anchor)
 	}
 	else
 	{
-		buffer = alloca((size = anchor - THIS_POS) + 1);
-		strmcpy(buffer, &THIS_CHAR, size);
+		size = anchor - THIS_POS;
+		buffer = alloca(size + 1);
+		strlcpy(buffer, &THIS_CHAR, size + 1);
 		malloc_strcpy(&cut_buffer, buffer);
 
 		buffer = LOCAL_COPY(&INPUT_BUFFER[anchor]);

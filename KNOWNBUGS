@@ -48,3 +48,27 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Fix ctcp over dcc to not coredump.
 * Fix dcc over dcc to not coredump.  (different issue)
 * Add %{1}+ as a special favor to howl.
+* Convert all uses of strcpy() to strlcpy()
+* Convert all uses of strcat() to strlcat()
+* Convert all uses of strmcpy() to strlcpy()
+* Convert all uses of strmcat() to strlcat()
+* Convert all uses of sprintf() to snprintf()
+* As much as possible, use 'sizeof var' in snprintf/strlcpy/strlcat.
+* Qualify the size of some global vars so we can sizeof() them.
+* Nuke strmcpy(), strmcat(), strmcat_ue(), strmccat(),
+* Change strmopencat() to strlopencat().
+* Change strmpcat() to strlpcat().
+* Fix switch_hostname so it doesn't return a (const) string.
+* Fix TimerTimeout so it doesn't return a (const) Timeval.
+* Change things like (ret) to do ret while (0); for when "ret" is "{}".
+* Fix initialization for load_level
+* Stop passing in static strings into io(), so we can modify them.
+* Make messages passed to io() more informative to the user.
+* Fix CTCP FINGER handler not to assume (struct pw) strings can be overwritten.
+* Use (socklen_t) and not an (int) for socket sizes.
+* Don't return a value in a void function...
+* Don't use return value of process_dcc_chat_ctcps() for assignment.
+* Don't put semicolons after function bodies
+* Fix $getopt() to save 'input_size' so we can use it with strl*().
+* Convert all uses of stpcpy() to strlcat() and strlopencat().
+* Nix checks for stpcpy() in configure -- regen configure.

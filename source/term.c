@@ -1,4 +1,4 @@
-/* $EPIC: term.c,v 1.7 2002/07/17 22:52:53 jnelson Exp $ */
+/* $EPIC: term.c,v 1.8 2003/04/24 21:49:25 jnelson Exp $ */
 /*
  * term.c -- termios and (termcap || terminfo) handlers
  *
@@ -849,24 +849,24 @@ int 	term_init (void)
 
 	current_term->TI_normal[0] = 0;
 	if (current_term->TI_sgr0)
-		strcat(current_term->TI_normal, current_term->TI_sgr0);
+		strlcat(current_term->TI_normal, current_term->TI_sgr0, sizeof current_term->TI_normal);
 	if (current_term->TI_rmso)
 	{
 		if (current_term->TI_sgr0 && 
 		    strcmp(current_term->TI_rmso, current_term->TI_sgr0))
-			strcat(current_term->TI_normal, current_term->TI_rmso);
+			strlcat(current_term->TI_normal, current_term->TI_rmso, sizeof current_term->TI_sgr0);
 	}
 	if (current_term->TI_rmul)
 	{
 		if (current_term->TI_sgr0 && 
 		    strcmp(current_term->TI_rmul, current_term->TI_sgr0))
-			strcat (current_term->TI_normal, current_term->TI_rmul);
+			strlcat(current_term->TI_normal, current_term->TI_rmul, sizeof current_term->TI_normal);
 	}
 	/*
 	 * On some systems, alternate char set mode isn't exited with sgr0
 	 */
 	if (current_term->TI_rmacs)
-		strcat(current_term->TI_normal, current_term->TI_rmacs);
+		strlcat(current_term->TI_normal, current_term->TI_rmacs, sizeof current_term->TI_normal);
 
 
 	/*
@@ -1006,21 +1006,21 @@ int 	term_init (void)
 
 		*cbuf = 0;
 		if (current_term->TI_setaf) 
-		    strcat(cbuf, tparm(current_term->TI_setaf, i & 0x07, 0));
+		    strlcat(cbuf, tparm(current_term->TI_setaf, i & 0x07, 0), sizeof cbuf);
 		else if (current_term->TI_setf)
-		    strcat(cbuf, tparm(current_term->TI_setf, i & 0x07, 0));
+		    strlcat(cbuf, tparm(current_term->TI_setf, i & 0x07, 0), sizeof cbuf);
 		else
-		    sprintf(cbuf, "\033[%dm", (i & 0x07) + 30);
+		    snprintf(cbuf, sizeof cbuf, "\033[%dm", (i & 0x07) + 30);
 
 		current_term->TI_forecolors[i] = m_strdup(cbuf);
 
 		*cbuf = 0;
 		if (current_term->TI_setab)
-		    strcat (cbuf, tparm(current_term->TI_setab, i & 0x07, 0));
+		    strlcat(cbuf, tparm(current_term->TI_setab, i & 0x07, 0), sizeof cbuf);
 		else if (current_term->TI_setb)
-		    strcat (cbuf, tparm(current_term->TI_setb, i & 0x07, 0));
+		    strlcat(cbuf, tparm(current_term->TI_setb, i & 0x07, 0), sizeof cbuf);
 		else
-			sprintf(cbuf, "\033[%dm", (i & 0x07) + 40);
+		    snprintf(cbuf, sizeof cbuf, "\033[%dm", (i & 0x07) + 40);
 
 		current_term->TI_backcolors[i] = m_strdup(cbuf);
 	}
@@ -1364,8 +1364,8 @@ void	term_scroll (int top, int bot, int n)
 		 * region was the full screen.  That test *always* fails,
 		 * because we never scroll the bottom line of the screen.
 		 */
-		strcpy(start, tparm(current_term->TI_csr, top, bot));
-		strcpy(final, tparm(current_term->TI_csr, 0, current_term->TI_lines-1));
+		strlcpy(start, tparm(current_term->TI_csr, top, bot), sizeof start);
+		strlcpy(final, tparm(current_term->TI_csr, 0, current_term->TI_lines-1), sizeof final);
 
 		if (n > 0)
 		{
@@ -1374,10 +1374,10 @@ void	term_scroll (int top, int bot, int n)
 			if (current_term->TI_indn)
 			{
 				oneshot = 1;
-				strcpy(thing, tparm(current_term->TI_indn, rn, rn));
+				strlcpy(thing, tparm(current_term->TI_indn, rn, rn), sizeof thing);
 			}
 			else
-				strcpy(thing, current_term->TI_ind);
+				strlcpy(thing, current_term->TI_ind, sizeof thing);
 		}
 		else
 		{
@@ -1386,17 +1386,17 @@ void	term_scroll (int top, int bot, int n)
 			if (current_term->TI_rin)
 			{
 				oneshot = 1;
-				strcpy (thing, tparm(current_term->TI_rin, rn, rn));
+				strlcpy(thing, tparm(current_term->TI_rin, rn, rn), sizeof thing);
 			}
 			else
-				strcpy (thing, current_term->TI_ri);
+				strlcpy(thing, current_term->TI_ri, sizeof thing);
 		}
 	}
 
 	else if (current_term->TI_wind && (current_term->TI_ri || current_term->TI_rin) && (current_term->TI_ind || current_term->TI_indn))
 	{
-		strcpy(start, tparm(current_term->TI_wind, top, bot, 0, current_term->TI_cols-1));
-		strcpy(final, tparm(current_term->TI_wind, 0, current_term->TI_lines-1, 0, current_term->TI_cols-1));
+		strlcpy(start, tparm(current_term->TI_wind, top, bot, 0, current_term->TI_cols-1), sizeof start);
+		strlcpy(final, tparm(current_term->TI_wind, 0, current_term->TI_lines-1, 0, current_term->TI_cols-1), sizeof final);
 
 		if (n > 0)
 		{
@@ -1405,10 +1405,10 @@ void	term_scroll (int top, int bot, int n)
 			if (current_term->TI_indn)
 			{
 				oneshot = 1;
-				strcpy (thing, tparm(current_term->TI_indn, rn, rn));
+				strlcpy(thing, tparm(current_term->TI_indn, rn, rn), sizeof thing);
 			}
 			else
-				strcpy (thing, current_term->TI_ind);
+				strlcpy(thing, current_term->TI_ind, sizeof thing);
 		}
 		else
 		{
@@ -1417,10 +1417,10 @@ void	term_scroll (int top, int bot, int n)
 			if (current_term->TI_rin)
 			{
 				oneshot = 1;
-				strcpy (thing,tparm(current_term->TI_rin, rn, rn));
+				strlcpy(thing, tparm(current_term->TI_rin, rn, rn), sizeof thing);
 			}
 			else
-				strcpy (thing, current_term->TI_ri);
+				strlcpy(thing, current_term->TI_ri, sizeof thing);
 		}
 	}
 
@@ -1434,18 +1434,18 @@ void	term_scroll (int top, int bot, int n)
 			if (current_term->TI_dl)
 			{
 				oneshot = 1;
-				strcpy (thing, tparm(current_term->TI_dl, rn, rn));
+				strlcpy(thing, tparm(current_term->TI_dl, rn, rn), sizeof thing);
 			}
 			else
-				strcpy (thing, current_term->TI_dl1);
+				strlcpy(thing, current_term->TI_dl1, sizeof thing);
 
 			if (current_term->TI_il)
 			{
 				oneshot = 1;
-				strcpy(final, tparm(current_term->TI_il, rn, rn));
+				strlcpy(final, tparm(current_term->TI_il, rn, rn), sizeof final);
 			}
 			else
-				strcpy(final, current_term->TI_il1);
+				strlcpy(final, current_term->TI_il1, sizeof final);
 		}
 		else
 		{
@@ -1454,18 +1454,18 @@ void	term_scroll (int top, int bot, int n)
 			if (current_term->TI_il)
 			{
 				oneshot = 1;
-				strcpy (thing, tparm(current_term->TI_il, rn, rn));
+				strlcpy(thing, tparm(current_term->TI_il, rn, rn), sizeof thing);
 			}
 			else
-				strcpy (thing, current_term->TI_il1);
+				strlcpy(thing, current_term->TI_il1, sizeof thing);
 
 			if (current_term->TI_dl)
 			{
 				oneshot = 1;
-				strcpy(final, tparm(current_term->TI_dl, rn, rn));
+				strlcpy(final, tparm(current_term->TI_dl, rn, rn), sizeof thing);
 			}
 			else
-				strcpy(final, current_term->TI_dl1);
+				strlcpy(final, current_term->TI_dl1, sizeof thing);
 		}
 	}
 
@@ -1616,14 +1616,14 @@ static	char		retval[128];
 			case CAP_TYPE_INT:
 				if (!(int *)t->ptr)
 					return NULL;
-				strcpy(retval, ltoa(* (int *)(t->ptr)));
+				strlcpy(retval, ltoa(* (int *)(t->ptr)), sizeof retval);
 				return retval;
 			case CAP_TYPE_STR:
 				if (!(char **)t->ptr || !*(char **)t->ptr)
 					return NULL;
-				strcpy(retval, mangle ? 
+				strlcpy(retval, mangle ? 
 					control_mangle(*(char **)t->ptr) :
-						      (*(char **)t->ptr));
+						      (*(char **)t->ptr), sizeof retval);
 				return retval;
 		    }
 		}

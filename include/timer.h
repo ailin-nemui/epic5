@@ -14,7 +14,7 @@
 	char *	add_timer	(int, const char *, double, long, 
 				 int (*) (void *), const char *, 
 				 const char *, int);
-const	Timeval	TimerTimeout 	(void);
+	Timeval	TimerTimeout 	(void);
 	char *	timerctl	(char *);
 
 #endif /* _TIMER_H_ */

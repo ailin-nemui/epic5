@@ -1,11 +1,11 @@
-/* $EPIC: functions.c,v 1.112 2003/04/07 18:48:53 crazyed Exp $ */
+/* $EPIC: functions.c,v 1.113 2003/04/24 21:49:25 jnelson Exp $ */
 /*
  * functions.c -- Built-in functions for ircII
  *
  * Copyright (c) 1990 Michael Sandroff.
  * Copyright (c) 1991, 1992 Troy Rollo.
  * Copyright (c) 1992-1996 Matthew Green.
- * Copyright © 1993, 2002 EPIC Software Labs
+ * Copyright © 1993, 2003 EPIC Software Labs
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -762,6 +762,7 @@ char	*call_function (char *name, const char *args, int *args_flag)
 	int	cnt, pos;
 	char	*lparen, *rparen;
 	int	debugging;
+	size_t	size;
 	char *	buf;
 
 	debugging = get_int_var(DEBUG_VAR);
@@ -790,8 +791,9 @@ char	*call_function (char *name, const char *args, int *args_flag)
 	else
 		result = call_user_function(name, tmp);
 
-	buf = (char *)alloca(strlen(name) + strlen(debug_copy) + 15);
-	sprintf(buf, "$%s(%s)", name, debug_copy);
+	size = strlen(name) + strlen(debug_copy) + 15;
+	buf = (char *)alloca(size);
+	snprintf(buf, size, "$%s(%s)", name, debug_copy);
 	MUST_BE_MALLOCED(result, buf);
 
 	if (debugging & DEBUG_FUNCTIONS)
@@ -1099,23 +1101,23 @@ BUILT_IN_FUNCTION(function_tdiff, input)
 	if (days)
 	{
 		if (days == 1)
-			strmcat(tmp, "1 day ", size);
+			strlcat(tmp, "1 day ", size);
 		else
-			strmpcat(tmp, size, "%ld days ", (long)days);
+			strlpcat(tmp, size, "%ld days ", (long)days);
 	}
 	if (hours)
 	{
 		if (hours == 1)
-			strmcat(tmp, "1 hour ", size);
+			strlcat(tmp, "1 hour ", size);
 		else
-			strmpcat(tmp, size, "%ld hours ", (long)hours);
+			strlpcat(tmp, size, "%ld hours ", (long)hours);
 	}
 	if (minutes)
 	{
 		if (minutes == 1)
-			strmcat(tmp, "1 minute ", size);
+			strlcat(tmp, "1 minute ", size);
 		else
-			strmpcat(tmp, size, "%ld minutes ", (long)minutes);
+			strlpcat(tmp, size, "%ld minutes ", (long)minutes);
 	}
 
 	if (seconds || (!days && !hours && !minutes) || 
@@ -1128,17 +1130,17 @@ BUILT_IN_FUNCTION(function_tdiff, input)
 		 * then we know that we have a real, authentic number AFTER
 		 * the decmial point.  As long as it isnt zero, we want it.
 		 */
-		strmcat(tmp, ltoa(seconds), size);
+		strlcat(tmp, ltoa(seconds), size);
 		if (*after == '.')
 		{
 			if ((number = atol(after + 1)))
-				strmcat(tmp, after, size);
+				strlcat(tmp, after, size);
 		}
 
 		if (seconds == 1 && number == 0)
-			strmcat(tmp, " second", size);
+			strlcat(tmp, " second", size);
 		else
-			strmcat(tmp, " seconds", size);
+			strlcat(tmp, " seconds", size);
 	}
 	else
 		chop(tmp, 1);	/* Chop off that space! */
@@ -1829,19 +1831,9 @@ BUILT_IN_FUNCTION(function_remw, word)
 					*str = 0;
 				}
 				else if (str > word)
-				{
-					char *safe;
-					/* Obviously this is safe. */
-					safe = LOCAL_COPY(str + len);
-					strcpy(str - 1, safe);
-				}
+					ov_strcpy(str - 1, str + len);
 				else 
-				{
-					char *safe;
-					/* Obviously this is safe. */
-					safe = LOCAL_COPY(str + len + 1);
-					strcpy(str, safe);
-				}
+					ov_strcpy(str, str + len + 1);
 				break;
 			}
 		}
@@ -2796,7 +2788,7 @@ BUILT_IN_FUNCTION(function_center, word)
 	 */
 	pad = stringlen + ((fieldsize - stringlen) / 2);
 	padc = (char *)new_malloc(pad + 1);
-	sprintf(padc, "%*s", pad, word);                /* Right justify it */
+	snprintf(padc, pad + 1, "%*s", pad, word);       /* Right justify it */
 	return padc;
 }
 
@@ -3095,7 +3087,7 @@ BUILT_IN_FUNCTION(function_translate, words)
 				 * Check to make sure we arent
 				 * just eliminating the character.
 				 * If we arent, put in the new char,
-				 * otherwise strcpy it away
+				 * otherwise ov_strcpy it away
 				 */
 				if (size_new)
 					*ptr = newc[(x<size_new)?x:size_new-1];
@@ -3192,10 +3184,10 @@ BUILT_IN_FUNCTION(function_truncate, words)
 		float foo;
 		int end;
 
-		sprintf(format, "%%.%de", -num-1);
-		sprintf(buffer, format, value);
+		snprintf(format, sizeof format, "%%.%de", -num-1);
+		snprintf(buffer, sizeof buffer, format, value);
 		foo = atof(buffer);
-		sprintf(buffer, "%f", foo);
+		snprintf(buffer, sizeof buffer, "%f", foo);
 		end = strlen(buffer) - 1;
 		if (end == 0)
 			RETURN_EMPTY;
@@ -3207,8 +3199,8 @@ BUILT_IN_FUNCTION(function_truncate, words)
 	}
 	else if (num >= 0)
 	{
-		sprintf(format, "%%10.%dlf", num);
-		sprintf(buffer, format, value);
+		snprintf(format, sizeof format, "%%10.%dlf", num);
+		snprintf(buffer, sizeof buffer, format, value);
 	}
 	else
 		RETURN_EMPTY;
@@ -3239,6 +3231,7 @@ BUILT_IN_FUNCTION(function_tdiff2, input)
 		seconds;
 	char	tmp[80];
 	char	*tstr;
+	size_t	size;
 
 	GET_INT_ARG(ltime, input);
 
@@ -3249,27 +3242,28 @@ BUILT_IN_FUNCTION(function_tdiff2, input)
 	hours = ltime % 24;
 	days = (ltime - hours) / 24;
 	tstr = tmp;
+	size = sizeof tmp;
 
 	if (days)
 	{
-		sprintf(tstr, "%ldd ", days);
+		snprintf(tstr, size, "%ldd ", days);
+		size -= strlen(tstr);
 		tstr += strlen(tstr);
 	}
 	if (hours)
 	{
-		sprintf(tstr, "%ldh ", hours);
+		snprintf(tstr, size, "%ldh ", hours);
+		size -= strlen(tstr);
 		tstr += strlen(tstr);
 	}
 	if (minutes)
 	{
-		sprintf(tstr, "%ldm ", minutes);
+		snprintf(tstr, size, "%ldm ", minutes);
+		size -= strlen(tstr);
 		tstr += strlen(tstr);
 	}
 	if (seconds || (!days && !hours && !minutes))
-	{
-		sprintf(tstr, "%lds", seconds);
-		tstr += strlen(tstr);
-	}
+		snprintf(tstr, size, "%lds", seconds);
 	else
 		*--tstr = 0;	/* chop off that space! */
 
@@ -3495,8 +3489,8 @@ BUILT_IN_FUNCTION(function_crypt, words)
 
 	GET_STR_ARG(blah, words)
 	GET_STR_ARG(bleh, words)
-	strmcpy(pass, blah, 8);
-	strmcpy(seed, bleh, 2);
+	strlcpy(pass, blah, sizeof pass);
+	strlcpy(seed, bleh, sizeof seed);
 	ret = crypt(pass, seed);
 	RETURN_STR(ret);		/* Dont call function in macro! */
 }
@@ -3568,19 +3562,22 @@ BUILT_IN_FUNCTION(function_pass, words)
 BUILT_IN_FUNCTION(function_repeat, words)
 {
 	int	num;
+	size_t	size;
 	char *	final = NULL;
 	char *	p;
+	char *	endp;
 
 	GET_INT_ARG(num, words);
 	if (num < 1)
 		RETURN_EMPTY;
 
-	final = (char *)new_malloc(strlen(words) * num + 1);
+	size = strlen(words) * num + 1;
+	final = (char *)new_malloc(size);
+	endp = final + size;
 	*final = 0;
 
-	p = final;
-	for (; num > 0; num--)
-		p = stpcpy(p, words);
+	for (p = final; num > 0; num--)
+		p += strlcpy(p, words, endp - p);
 	return final;
 }
 
@@ -3745,8 +3742,13 @@ BUILT_IN_FUNCTION(function_glob, word)
 		{
 			if (sindex(globbers.gl_pathv[i], " \""))
 			{
-				char *b = alloca(strlen(globbers.gl_pathv[i]) + 4);
-				sprintf(b, "\"%s\"", globbers.gl_pathv[i]);
+				size_t size;
+				char *b;
+
+				size = strlen(globbers.gl_pathv[i]) + 4;
+				b = alloca(size);
+				snprintf(b, size, "\"%s\"", 
+						globbers.gl_pathv[i]);
 				m_sc3cat(&retval, space, b, &rvclue);
 			}
 			else
@@ -3792,8 +3794,13 @@ BUILT_IN_FUNCTION(function_globi, word)
 		{
 			if (sindex(globbers.gl_pathv[i], " \""))
 			{
-				char *b = alloca(strlen(globbers.gl_pathv[i]) + 4);
-				sprintf(b, "\"%s\"", globbers.gl_pathv[i]);
+				size_t size;
+				char *b;
+
+				size = strlen(globbers.gl_pathv[i]) + 4;
+				b = alloca(size);
+				snprintf(b, size, "\"%s\"", 
+						globbers.gl_pathv[i]);
 				m_sc3cat(&retval, space, b, &rvclue);
 			}
 			else
@@ -3936,6 +3943,7 @@ BUILT_IN_FUNCTION(function_uniq, word)
 	char	*tval;
 	char	*input;
 	size_t	rvclue=0;
+	size_t	size;
 
 	/*
 	 * XXX This algorithm is too expensive.  It should be done
@@ -3946,8 +3954,9 @@ BUILT_IN_FUNCTION(function_uniq, word)
 	booya = m_strdup(list[0]);
         for (listi = 1; listi < listc; listi++)
         {
-		input = alloca(strlen(list[listi]) + strlen(booya) + 2);
-		stpcpy(stpcpy(stpcpy(input, list[listi]), space), booya);
+		size = strlen(list[listi]) + strlen(booya) + 2;
+		input = alloca(size);
+		strlopencat(input, size, list[listi], space, booya, NULL);
 
 		tval = function_findw(input);
 		if (my_atol(tval) == -1)
@@ -5430,10 +5439,10 @@ BUILT_IN_FUNCTION((thisfn), input)                       \
 	RETURN_MSTR(ret);                                \
 }
 
-GET_FIXED_ARRAY_FUNCTION(function_getsets, get_set);
-GET_FIXED_ARRAY_FUNCTION(function_getcommands, get_command);
-GET_FIXED_ARRAY_NAMES_FUNCTION(get_function, built_in_functions);
-GET_FIXED_ARRAY_FUNCTION(function_getfunctions, get_function);
+GET_FIXED_ARRAY_FUNCTION(function_getsets, get_set)
+GET_FIXED_ARRAY_FUNCTION(function_getcommands, get_command)
+GET_FIXED_ARRAY_NAMES_FUNCTION(get_function, built_in_functions)
+GET_FIXED_ARRAY_FUNCTION(function_getfunctions, get_function)
 
 /* Written by nutbar */
 BUILT_IN_FUNCTION(function_servernum, input)
@@ -5494,8 +5503,7 @@ BUILT_IN_FUNCTION(function_stripcrap, input)
 
 	size = strlen(input) * 11 + 1;
 	output = new_malloc(size);
-	/* Obviously this is safe. */
-	strcpy(output, input);
+	strlcpy(output, input, size);
 	if (mangle_line(output, mangle, size) > size)
 		;		/* Result has been truncated. ick. */
 	return output;			/* DONT MALLOC THIS */
@@ -5539,6 +5547,7 @@ static	char	*switches = NULL,
 		*last_input = NULL,
 		*swptr = NULL,
 		*aptr = NULL;
+static	size_t	input_size = 0;
 	char	*optopt_var, 
 		*optarg_var,
 		*optstr,
@@ -5554,8 +5563,6 @@ static	char	*switches = NULL,
 	 */
 	if (last_input == NULL || strcmp(last_input, input)) 
 	{
-		size_t	input_size;
-
 		input_size = strlen(input);
 		malloc_strcpy(&last_input, input);
 
@@ -5617,8 +5624,8 @@ static	char	*switches = NULL,
 				if (tmp[1])
 				{
 					tmp++;
-					strcat(args, tmp);
-					strcat(args, " ");
+					strlcat(args, tmp, input_size + 1);
+					strlcat(args, " ", input_size + 1);
 					*swptr++ = ':';
 					break;
 				}
@@ -5646,8 +5653,8 @@ static	char	*switches = NULL,
 		    if (*tmp == '-' && tmp[1] == '-')
 		    {
 			tmp += 2;
-			strcat(extra_args, tmp);
-			strcat(extra_args, input);
+			strlcat(extra_args, tmp, input_size * 2 + 1);
+			strlcat(extra_args, input, input_size * 2 + 1);
 			*input = 0;
 		    }
 
@@ -5673,8 +5680,8 @@ static	char	*switches = NULL,
 			 * a switch which requires an arg and we can
 			 * just tack the word onto the end of args[] 
 			 */
-			strcat(args, tmp);
-			strcat(args, " ");
+			strlcat(args, tmp, input_size + 1);
+			strlcat(args, " ", input_size + 1);
 			*swptr++ = ':';
 			arg_flag = 0;
 		    }
@@ -5685,8 +5692,8 @@ static	char	*switches = NULL,
 			 * args[] after all the switches have been
 			 * looked at. 
 			 */
-			strcat(extra_args, tmp);
-			strcat(extra_args, " ");
+			strlcat(extra_args, tmp, input_size * 2 + 1);
+			strlcat(extra_args, " ", input_size * 2 + 1);
 		    }
 		}
 	    }
@@ -5700,7 +5707,7 @@ static	char	*switches = NULL,
 		*swptr++ = '-';
 	    else if (arg_flag == 2)
 		*swptr++ = '_';
-	    strcat(args, extra_args);
+	    strlcat(args, extra_args, input_size);
 
 	    *swptr = 0;
 	    swptr = switches;
@@ -5832,7 +5839,7 @@ BUILT_IN_FUNCTION(function_prefix, input)
 		if (my_strnicmp(words[0], words[word_index], len_index))
 		{
 			retval = new_malloc(len_index + 1);
-			strmcpy(retval, words[0], len_index - 1);
+			strlcpy(retval, words[0], len_index + 1);
 			new_free((char **)&words);
 			return retval;
 		}
@@ -6385,29 +6392,29 @@ BUILT_IN_FUNCTION(function_cipher, input)
 	}
 
 
-MATH_FUNCTION(function_abs, fabs);
-MATH_FUNCTION(function_ceil, ceil);
-MATH_FUNCTION(function_floor, floor);
+MATH_FUNCTION(function_abs, fabs)
+MATH_FUNCTION(function_ceil, ceil)
+MATH_FUNCTION(function_floor, floor)
 
-MATH_FUNCTION(function_exp, exp);
-MATH_FUNCTION(function_log, log);
-MATH_FUNCTION(function_log10, log10);
+MATH_FUNCTION(function_exp, exp)
+MATH_FUNCTION(function_log, log)
+MATH_FUNCTION(function_log10, log10)
 
-MATH_FUNCTION(function_cosh, cosh);
-MATH_FUNCTION(function_sinh, sinh);
-MATH_FUNCTION(function_tanh, tanh);
-MATH_FUNCTION(function_acosh, acosh);
-MATH_FUNCTION(function_asinh, asinh);
-MATH_FUNCTION(function_atanh, atanh);
+MATH_FUNCTION(function_cosh, cosh)
+MATH_FUNCTION(function_sinh, sinh)
+MATH_FUNCTION(function_tanh, tanh)
+MATH_FUNCTION(function_acosh, acosh)
+MATH_FUNCTION(function_asinh, asinh)
+MATH_FUNCTION(function_atanh, atanh)
 
-MATH_FUNCTION(function_cos, cos);
-MATH_FUNCTION(function_sin, sin);
-MATH_FUNCTION(function_tan, tan);
-MATH_FUNCTION(function_acos, acos);
-MATH_FUNCTION(function_asin, asin);
+MATH_FUNCTION(function_cos, cos)
+MATH_FUNCTION(function_sin, sin)
+MATH_FUNCTION(function_tan, tan)
+MATH_FUNCTION(function_acos, acos)
+MATH_FUNCTION(function_asin, asin)
 
-MATH_FUNCTION2(function_jn, jn);
-MATH_FUNCTION2(function_yn, yn);
+MATH_FUNCTION2(function_jn, jn)
+MATH_FUNCTION2(function_yn, yn)
 
 BUILT_IN_FUNCTION(function_atan, word)
 {

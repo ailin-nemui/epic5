@@ -1,4 +1,4 @@
-/* $EPIC: glob.c,v 1.5 2002/12/19 03:22:59 jnelson Exp $ */
+/* $EPIC: glob.c,v 1.6 2003/04/24 21:49:25 jnelson Exp $ */
 #include "config.h"
 #if defined(NEED_GLOB)
 
@@ -791,7 +791,7 @@ static DIR *g_opendir		(	register Char *str,
 	char buf[MAXPATHLEN];
 
 	if (!*str)
-		strcpy(buf, ".");
+		strlcpy(buf, ".", sizeof buf);
 	else
 		g_Ctoc(str, buf);
 

@@ -1,4 +1,4 @@
-/* $EPIC: status.c,v 1.24 2003/04/10 23:14:56 jnelson Exp $ */
+/* $EPIC: status.c,v 1.25 2003/04/24 21:49:25 jnelson Exp $ */
 /*
  * status.c: handles the status line updating, etc for IRCII 
  *
@@ -6,7 +6,7 @@
  * Copyright (c) 1991, 1992 Troy Rollo.
  * Copyright (c) 1992-1996 Matthew Green.
  * Copyright © 1994 Jake Khuon.
- * Copyright © 1995, 2002 EPIC Software Labs.
+ * Copyright © 1995, 2003 EPIC Software Labs.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -60,7 +60,7 @@
 
 /*
  * Maximum number of "%" expressions in a status line format.  If you change
- * this number, you must manually change the sprintf() in make_status 
+ * this number, you must manually change the snprintf() in make_status 
  */
 #define STATUS_FUNCTION(x) static Char * x (Window *window, int map, int key)
 #define MAX_FUNCTIONS 40
@@ -226,7 +226,7 @@ struct status_formats status_expandos[] = {
  * sub-portions of the status line to a format statement specially designed
  * for that sub-portions.  convert_sub_format looks for a single occurence of
  * %c (where c is passed to the function). When found, it is replaced by "%s"
- * for use is a sprintf.  All other occurences of % followed by any other
+ * for use in a snprintf.  All other occurences of % followed by any other
  * character are left unchanged.  Only the first occurence of %c is
  * converted, all subsequence occurences are left unchanged.  This routine
  * mallocs the returned string. 
@@ -279,7 +279,7 @@ char	*convert_sub_format (const char *format, char c)
  * This walks a raw format string and parses out any expandos that it finds.
  * An expando is handled by pre-fetching any string variable that is used
  * by the callback function, the callback function is registered, and a
- * %s format is put in the sprintf()-able return value (stored in buffer).
+ * %s format is put in the snprintf()-able return value (stored in buffer).
  * All other characters are copied as-is to the return value.
  */
 static void	build_status_format (Status *s, int k)
@@ -499,6 +499,7 @@ int	make_status (Window *window, int must_redraw)
 	u_char	rhs_buffer  [BIG_BUFFER_SIZE + 1];
 	Char	*func_value [MAX_FUNCTIONS];
 	u_char	*ptr;
+	size_t	save_size;
 
 	/* We do NOT redraw status bars for hidden windows */
 	if (!window->screen || !status_updates_permitted)
@@ -618,7 +619,7 @@ int	make_status (Window *window, int must_redraw)
 			str = expand_alias(buffer, empty_string, &af, NULL);
 			from_server = old_fs;
 			current_window = old;
-			strmcpy(buffer, str, BIG_BUFFER_SIZE);
+			strlcpy(buffer, str, sizeof buffer);
 			new_free(&str);
 		}
 
@@ -724,8 +725,8 @@ int	make_status (Window *window, int must_redraw)
 
 			numf = window->screen->co - pr_lhs - pr_rhs -1;
 			while (numf-- >= 0)
-				strmcat(lhs_buffer, lhs_fillchar, 
-						BIG_BUFFER_SIZE);
+				strlcat(lhs_buffer, lhs_fillchar, 
+						sizeof lhs_buffer);
 		}
 
 		/*
@@ -736,13 +737,14 @@ int	make_status (Window *window, int must_redraw)
 			int chars = window->screen->co - pr_lhs - 1;
 
 			while (chars-- >= 0)
-				strmcat(lhs_buffer, lhs_fillchar, 
-						BIG_BUFFER_SIZE);
+				strlcat(lhs_buffer, lhs_fillchar, 
+						sizeof lhs_buffer);
 		}
 
-		strlcpy(buffer, lhs_buffer, BIG_BUFFER_SIZE -6);
-		strlcat(buffer, rhs_buffer, BIG_BUFFER_SIZE -6);
-		strlcat(buffer, all_off(), BIG_BUFFER_SIZE);
+		save_size = strlen(all_off());
+		strlcpy(buffer, lhs_buffer, sizeof buffer - save_size);
+		strlcat(buffer, rhs_buffer, sizeof buffer - save_size);
+		strlcat(buffer, all_off(), sizeof buffer);
 		new_free(&str);
 
 		/*
@@ -976,18 +978,18 @@ static	char	my_buffer[81];
 		if (window->miscflags & WINDOW_NOTIFIED)
 		{
 			if (doneone++)
-				strmcat(buf2, ",", 80);
-			strmcat(buf2, (map == 1 && window->name) ? 
+				strlcat(buf2, ",", sizeof buf2);
+			strlcat(buf2, (map == 1 && window->name) ? 
 					window->name :
-					ltoa(window->refnum), 80);
+					ltoa(window->refnum), sizeof buf2);
 		}
 	}
 
 	/*
-	 * Only do the sprintf if there are windows to process.
+	 * Only do the snprintf if there are windows to process.
 	 */
 	if (doneone && notify_format)
-		snprintf(my_buffer, 80, notify_format, buf2);
+		snprintf(my_buffer, sizeof my_buffer, notify_format, buf2);
 
 	return my_buffer;
 }
@@ -1074,7 +1076,7 @@ static	char	my_buffer[81];
 	if (window->server < 0)
 		return empty_string;
 
-	strmcpy(localbuf, get_umode(window->server), 19);
+	strlcpy(localbuf, get_umode(window->server), sizeof localbuf);
 	if (!*localbuf)
 		return empty_string;
 
@@ -1162,9 +1164,9 @@ static	char	my_buffer[IRCD_BUFFER_SIZE + 1];
 
 	if (get_int_var(HIDE_PRIVATE_CHANNELS_VAR) && 
 	    is_channel_private(chan, window->server))
-		strmcpy(channel, "*private*", IRCD_BUFFER_SIZE);
+		strlcpy(channel, "*private*", sizeof channel);
 	else
-		strmcpy(channel, chan, IRCD_BUFFER_SIZE);
+		strlcpy(channel, chan, sizeof channel);
 
 	num = get_int_var(CHANNEL_NAME_WIDTH_VAR);
 	if (num > 0 && strlen(channel) > num)
@@ -1366,7 +1368,7 @@ STATUS_FUNCTION(status_refnum)
 	static char my_buffer[81];
 
 	strlcpy(my_buffer, window->name ? window->name 
-					: ltoa(window->refnum), 80);
+					: ltoa(window->refnum), sizeof my_buffer);
 	return my_buffer;
 }
 
@@ -1374,7 +1376,7 @@ STATUS_FUNCTION(status_refnum_real)
 {
 	static char my_buffer[81];
 
-	strlcpy(my_buffer, ltoa(window->refnum), 80);
+	strlcpy(my_buffer, ltoa(window->refnum), sizeof my_buffer);
 	return my_buffer;
 }
 
@@ -1489,7 +1491,7 @@ STATUS_FUNCTION(status_windowspec)
 	static char my_buffer[81];
 
 	if (window->status.special)
-		strmcpy(my_buffer, window->status.special, 80);
+		strlcpy(my_buffer, window->status.special, sizeof my_buffer);
 	else
 		*my_buffer = 0;
 

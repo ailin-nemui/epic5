@@ -1,4 +1,4 @@
-/* $EPIC: expr2.c,v 1.5 2003/03/23 19:44:17 jnelson Exp $ */
+/* $EPIC: expr2.c,v 1.6 2003/04/24 21:49:25 jnelson Exp $ */
 /*
  * Zsh: math.c,v 3.1.2.1 1997/06/01 06:13:15 hzoli Exp 
  * math.c - mathematical expression evaluation
@@ -34,7 +34,7 @@
  */
 /*
  * Substantial modifications by Jeremy Nelson which are
- * Coypright 1998, 2000 EPIC Software Labs, All rights reserved.
+ * Coypright 1998, 2003 EPIC Software Labs, All rights reserved.
  *
  * You may distribute this file under the same terms as the above, by 
  * including the parties "Jeremy Nelson" and "EPIC Software Labs" to the 

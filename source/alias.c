@@ -1,11 +1,11 @@
-/* $EPIC: alias.c,v 1.18 2003/03/23 19:44:17 jnelson Exp $ */
+/* $EPIC: alias.c,v 1.19 2003/04/24 21:49:24 jnelson Exp $ */
 /*
  * alias.c -- Handles the whole kit and caboodle for aliases.
  *
  * Copyright (c) 1990 Michael Sandroff.
  * Copyright (c) 1991, 1992 Troy Rollo.
  * Copyright (c) 1992-1996 Matthew Green.
- * Copyright © 1997, 2002 EPIC Software Labs
+ * Copyright © 1997, 2003 EPIC Software Labs
  * All rights reserved.
  * 
  * Redistribution and use in source and binary forms, with or without

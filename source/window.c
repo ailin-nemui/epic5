@@ -1,4 +1,4 @@
-/* $EPIC: window.c,v 1.59 2003/03/29 08:10:22 jnelson Exp $ */
+/* $EPIC: window.c,v 1.60 2003/04/24 21:49:25 jnelson Exp $ */
 /*
  * window.c: Handles the organzation of the logical viewports (``windows'')
  * for irc.  This includes keeping track of what windows are open, where they
@@ -7,7 +7,7 @@
  * Copyright (c) 1990 Michael Sandroff.
  * Copyright (c) 1991, 1992 Troy Rollo.
  * Copyright (c) 1992-1996 Matthew Green.
- * Copyright © 1997, 2002 EPIC Software Labs.
+ * Copyright © 1997, 2003 EPIC Software Labs.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -420,9 +420,9 @@ delete_window_contents:
 
 	/* Save a copy of the refnum for /on window_kill later. */
 	if (window->name)
-		strmcpy(buffer, window->name, BIG_BUFFER_SIZE);
+		strlcpy(buffer, window->name, sizeof buffer);
 	else
-		strmcpy(buffer, ltoa(window->refnum), BIG_BUFFER_SIZE);
+		strlcpy(buffer, ltoa(window->refnum), sizeof buffer);
 	oldref = window->refnum;
 
 	/*
@@ -3354,21 +3354,21 @@ static Window *window_log (Window *window, char **args)
 	else if (!(logfile = get_string_var(LOGFILE_VAR)))
 		logfile = empty_string;
 
-	strmcpy(buffer,  logfile, BIG_BUFFER_SIZE);
+	strlcpy(buffer, logfile, sizeof buffer);
 
 	if (add_ext)
 	{
 		const char *title = empty_string;
 
-		strmcat(buffer, ".", BIG_BUFFER_SIZE);
+		strlcat(buffer, ".", sizeof buffer);
 		if ((title = get_echannel_by_refnum(window->refnum)))
-			strmcat(buffer, title, BIG_BUFFER_SIZE);
+			strlcat(buffer, title, sizeof buffer);
 		else if ((title = window->query_nick))
-			strmcat(buffer, title, BIG_BUFFER_SIZE);
+			strlcat(buffer, title, sizeof buffer);
 		else
 		{
-			strmcat(buffer, "Window_", BIG_BUFFER_SIZE);
-			strmcat(buffer, ltoa(window->refnum), BIG_BUFFER_SIZE);
+			strlcat(buffer, "Window_", sizeof buffer);
+			strlcat(buffer, ltoa(window->refnum), sizeof buffer);
 		}
 	}
 

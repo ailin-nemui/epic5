@@ -1,4 +1,4 @@
-/* $EPIC: commands.c,v 1.60 2003/03/29 08:10:22 jnelson Exp $ */
+/* $EPIC: commands.c,v 1.61 2003/04/24 21:49:25 jnelson Exp $ */
 /*
  * commands.c -- Stuff needed to execute commands in ircII.
  *		 Includes the bulk of the built in commands for ircII.
@@ -6,7 +6,7 @@
  * Copyright (c) 1990 Michael Sandroff.
  * Copyright (c) 1991, 1992 Troy Rollo.
  * Copyright (c) 1992-1996 Matthew Green.
- * Copyright © 1995, 2002 EPIC Software Labs
+ * Copyright © 1995, 2003 EPIC Software Labs
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -1462,7 +1462,7 @@ struct load_info
 	int	package_set_here;
 	int	line;
 	int	start_line;
-} load_level[MAX_LOAD_DEPTH] = { { NULL, NULL, 0, 0, 0 } };
+} load_level[MAX_LOAD_DEPTH] = { { NULL, NULL, 0, 0, 0, 0 } };
 
 int 	load_depth = -1;
 
@@ -2266,7 +2266,7 @@ BUILT_IN_COMMAND(realname_cmd)
 {
         if (*args)
 	{
-                strmcpy(realname, args, REALNAME_LEN);
+                strlcpy(realname, args, sizeof realname);
 		say("Realname at next server connnection: %s", realname);
 	}
 	else
@@ -2567,9 +2567,9 @@ BUILT_IN_COMMAND(set_username)
 	if (blah && *blah)
 	{
 		if (!strcmp(blah, "-"))
-			strmcpy(username, empty_string, NAME_LEN);
+			strlcpy(username, empty_string, sizeof username);
 		else 
-			strmcpy(username, blah, NAME_LEN);
+			strlcpy(username, blah, sizeof username);
 		say("Username has been changed to '%s'",username);
 	}
 	else
@@ -2734,6 +2734,7 @@ BUILT_IN_COMMAND(waitcmd)
 	else if (ctl_arg && *ctl_arg == '%')
 	{
 		int	w_index = is_valid_process(ctl_arg);
+		char	reason[1024];
 
 		if (w_index != -1)
 		{
@@ -2745,9 +2746,11 @@ BUILT_IN_COMMAND(waitcmd)
 			}
 			else
 			{
+				snprintf(reason, 1024, "WAIT on EXEC %s", 
+						ctl_arg);
 				lock_stack_frame();
 				while (process_is_running(ctl_arg))
-					io("wait %proc");
+					io(reason);
 				unlock_stack_frame();
 			}
 		}
@@ -3020,7 +3023,7 @@ struct target_type target[4] =
 
 	    else if (*current_nick == '/')
 	    {
-		line = m_opendup(current_nick, " ", text, NULL);
+		line = m_3dup(current_nick, space, text);
 		parse_command(line, 0, empty_string);
 		new_free(&line);
 	    }
@@ -3231,18 +3234,18 @@ void 	command_completion (char unused, char *not_used)
 				if (command)
 				{
 					say("Commands:");
-					strmcpy(buffer, "\t", BIG_BUFFER_SIZE);
+					strlcpy(buffer, "\t", sizeof buffer);
 					c = 0;
 					for (i = 0; i < cmd_cnt; i++)
 					{
-						strmcat(buffer, command[i].name,
-							BIG_BUFFER_SIZE);
+						strlcat(buffer, command[i].name,
+							sizeof buffer);
 						for (len = strlen(command[i].name); len < 15; len++)
-							strmcat(buffer, " ", BIG_BUFFER_SIZE);
+							strlcat(buffer, " ", sizeof buffer);
 						if (++c == 4)
 						{
 							say("%s", buffer);
-							strmcpy(buffer, "\t", BIG_BUFFER_SIZE);
+							strlcpy(buffer, "\t", sizeof buffer);
 							c = 0;
 						}
 					}
@@ -3252,17 +3255,17 @@ void 	command_completion (char unused, char *not_used)
 				if (aliases)
 				{
 					say("Aliases:");
-					strmcpy(buffer, "\t", BIG_BUFFER_SIZE);
+					strlcpy(buffer, "\t", sizeof buffer);
 					c = 0;
 					for (i = 0; i < alias_cnt; i++)
 					{
-						strmcat(buffer, aliases[i], BIG_BUFFER_SIZE);
+						strlcat(buffer, aliases[i], sizeof buffer);
 						for (len = strlen(aliases[i]); len < 15; len++)
-							strmcat(buffer, " ", BIG_BUFFER_SIZE);
+							strlcat(buffer, " ", sizeof buffer);
 						if (++c == 4)
 						{
 							say("%s", buffer);
-							strmcpy(buffer, "\t", BIG_BUFFER_SIZE);
+							strlcpy(buffer, "\t", sizeof buffer);
 							c = 0;
 						}
 						new_free(&(aliases[i]));
@@ -3664,8 +3667,11 @@ static	unsigned 	level = 0;
 
 		if ((rest = strchr(line, ' ')))
 		{
-			cline = alloca((rest - line) + 1);
-			strmcpy(cline, line, rest - line);
+			size_t size;
+
+			size = (rest - line) + 1;
+			cline = alloca(size);
+			strlcpy(cline, line, size);
 			rest++;
 		}
 		else

@@ -1,4 +1,4 @@
-/* $EPIC: ignore.c,v 1.5 2002/07/17 22:52:52 jnelson Exp $ */
+/* $EPIC: ignore.c,v 1.6 2003/04/24 21:49:25 jnelson Exp $ */
 /*
  * ignore.c: handles the ingore command for irc 
  *
@@ -82,7 +82,6 @@ static void 	ignore_nickname (const char *nicklist, int type, int flag)
 	char *	ptr;
 	char	new_nick[IRCD_BUFFER_SIZE + 1];
 	char	buffer[BIG_BUFFER_SIZE+1];
-	char *	p;
 	char *	mnick;
 	char *	user;
 	char *	host;
@@ -96,9 +95,9 @@ static void 	ignore_nickname (const char *nicklist, int type, int flag)
 			continue;
 
 		if (figure_out_address(nick, &mnick, &user, &host))
-			strlcpy(new_nick, nick, IRCD_BUFFER_SIZE);
+			strlcpy(new_nick, nick, sizeof new_nick);
 		else
-			snprintf(new_nick, IRCD_BUFFER_SIZE, "%s!%s@%s",
+			snprintf(new_nick, sizeof new_nick, "%s!%s@%s",
 				mnick, user, host);
 
 		if (!(new_i = (Ignore *) list_lookup((List **)&ignored_nicks, 
@@ -181,33 +180,33 @@ static void 	ignore_nickname (const char *nicklist, int type, int flag)
 		}
 		else if (type)
 		{
-			p = stpcpy(buffer, msg);
+			strlcpy(buffer, msg, sizeof buffer);
 			if (type & IGNORE_MSGS)
-				p = stpcpy(p, " MSGS");
+				strlcat(buffer, " MSGS", sizeof buffer);
 			if (type & IGNORE_PUBLIC)
-				p = stpcpy(p, " PUBLIC");
+				strlcat(buffer, " PUBLIC", sizeof buffer);
 			if (type & IGNORE_WALLS)
-				p = stpcpy(p, " WALLS");
+				strlcat(buffer, " WALLS", sizeof buffer);
 			if (type & IGNORE_WALLOPS)
-				p = stpcpy(p, " WALLOPS");
+				strlcat(buffer, " WALLOPS", sizeof buffer);
 			if (type & IGNORE_INVITES)
-				p = stpcpy(p, " INVITES");
+				strlcat(buffer, " INVITES", sizeof buffer);
 			if (type & IGNORE_NOTICES)
-				p = stpcpy(p, " NOTICES");
+				strlcat(buffer, " NOTICES", sizeof buffer);
 			if (type & IGNORE_NOTES)
-				p = stpcpy(p, " NOTES");
+				strlcat(buffer, " NOTES", sizeof buffer);
 			if (type & IGNORE_CTCPS)
-				p = stpcpy(p, " CTCPS");
+				strlcat(buffer, " CTCPS", sizeof buffer);
 			if (type & IGNORE_TOPICS)
-				p = stpcpy(p, " TOPICS");
+				strlcat(buffer, " TOPICS", sizeof buffer);
 			if (type & IGNORE_NICKS)
-				p = stpcpy(p, " NICKS");
+				strlcat(buffer, " NICKS", sizeof buffer);
 			if (type & IGNORE_JOINS)
-				p = stpcpy(p, " JOINS");
+				strlcat(buffer, " JOINS", sizeof buffer);
 			if (type & IGNORE_PARTS)
-				p = stpcpy(p, " PARTS");
+				strlcat(buffer, " PARTS", sizeof buffer);
 			if (type & IGNORE_CRAP)
-				p = stpcpy(p, " CRAP");
+				strlcat(buffer, " CRAP", sizeof buffer);
 			say("%s from %s", buffer, new_i->nick);
 		}
 	}
@@ -262,11 +261,11 @@ static int 	remove_ignore (char *nick)
 #define BBS BIG_BUFFER_SIZE
 #define HANDLE_TYPE(x, y)						\
 	     if ((tmp->dont & x) == x)					\
-		strmcat(buffer, " DONT-" y, BBS);			\
+		strlcat(buffer, " DONT-" y, sizeof buffer);		\
 	else if ((tmp->type & x) == x)					\
-		strmcat(buffer, " " y, BBS);				\
+		strlcat(buffer, " " y, sizeof buffer);			\
 	else if ((tmp->high & x) == x)					\
-		strmopencat(buffer, BBS, space, high, y, high, NULL);
+		strlopencat(buffer, sizeof buffer, space, high, y, high, NULL);
 
 char	*get_ignore_types (Ignore *tmp)
 {

@@ -1,4 +1,4 @@
-/* $EPIC: names.c,v 1.40 2003/04/04 17:52:59 jnelson Exp $ */
+/* $EPIC: names.c,v 1.41 2003/04/24 21:49:25 jnelson Exp $ */
 /*
  * names.c: This here is used to maintain a list of all the people currently
  * on your channel.  Seems to work 
@@ -6,7 +6,7 @@
  * Copyright (c) 1990 Michael Sandroff.
  * Copyright (c) 1991, 1992 Troy Rollo.
  * Copyright (c) 1992-1996 Matthew Green.
- * Copyright © 1993, 2002 EPIC Software Labs.
+ * Copyright © 1993, 2003 EPIC Software Labs.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -667,7 +667,8 @@ const char *	check_channel_type (const char *channel)
 	if (*channel != '!' || strlen(channel) < 6)
 		return channel;
 
-	sprintf(new_channel_format, "[%.6s] %s", channel, channel + 6);
+	snprintf(new_channel_format, sizeof new_channel_format,
+			"[%.6s] %s", channel, channel + 6);
 	return new_channel_format;
 #endif
 }
@@ -812,13 +813,13 @@ static char *	get_cmode (Channel *chan)
 
 	if (chan->key)
 	{
-		strlcat(local_buffer, " ", BIG_BUFFER_SIZE);
-		strlcat(local_buffer, chan->key, BIG_BUFFER_SIZE);
+		strlcat(local_buffer, " ", sizeof local_buffer);
+		strlcat(local_buffer, chan->key, sizeof local_buffer);
 	}
 	if (chan->limit)
 	{
-		strlcat(local_buffer, " ", BIG_BUFFER_SIZE);
-		strlcat(local_buffer, ltoa(chan->limit), BIG_BUFFER_SIZE);
+		strlcat(local_buffer, " ", sizeof local_buffer);
+		strlcat(local_buffer, ltoa(chan->limit), sizeof local_buffer);
 	}
 
 	malloc_strcpy(&chan->s_mode, local_buffer);
@@ -1227,7 +1228,7 @@ char	*scan_channel (char *cname)
 		else
 			buffer[1] = '.';
 
-		strlcpy(buffer + 2, nicks->list[i]->nick, NICKNAME_LEN);
+		strlcpy(buffer + 2, nicks->list[i]->nick, sizeof(buffer) - 2);
 		m_sc3cat(&retval, space, buffer, &clue);
 	}
 
@@ -1273,7 +1274,7 @@ void 	list_channels (void)
 void 	switch_channels (char dumb, char *dumber)
 {
 	int	lowcount = current_channel_counter;
-	Char *	winner;
+	Char *	winner = NULL;
 	int	highcount = -1;
 	int	current;
 	int	server;
@@ -1309,7 +1310,7 @@ void 	switch_channels (char dumb, char *dumber)
 	 * If there are no channels on this window, punt.
 	 * If there is only one channel on this window, punt.
 	 */
-	if (highcount == -1 || highcount == lowcount)
+	if (winner == NULL || highcount == -1 || highcount == lowcount)
 		return;
 
 	/*

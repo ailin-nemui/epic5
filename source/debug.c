@@ -1,4 +1,4 @@
-/* $EPIC: debug.c,v 1.8 2002/12/30 13:23:47 crazyed Exp $ */
+/* $EPIC: debug.c,v 1.9 2003/04/24 21:49:25 jnelson Exp $ */
 /*
  * debug.c -- controll the values of x_debug.
  *
@@ -92,8 +92,8 @@ BUILT_IN_COMMAND(xdebugcmd)
 		for (i = 0; opts[i].command; i++)
 		{
 			if (buffer[0])
-				strmcat(buffer, ", ", 511);
-			strmcat(buffer, opts[i].command, 511);
+				strlcat(buffer, ", ", sizeof buffer);
+			strlcat(buffer, opts[i].command, sizeof buffer);
 		}
 
 		say("Usage: XDEBUG [-][+]%s", buffer);

@@ -1,4 +1,4 @@
-/* $EPIC: parse.c,v 1.37 2003/03/29 08:10:22 jnelson Exp $ */
+/* $EPIC: parse.c,v 1.38 2003/04/24 21:49:25 jnelson Exp $ */
 /*
  * parse.c: handles messages from the server.   Believe it or not.  I
  * certainly wouldn't if I were you. 
@@ -6,7 +6,7 @@
  * Copyright (c) 1990 Michael Sandroff.
  * Copyright (c) 1991, 1992 Troy Rollo.
  * Copyright (c) 1992-1996 Matthew Green.
- * Copyright © 1997, 2002 EPIC Software Labs.
+ * Copyright © 1997, 2003 EPIC Software Labs.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -564,6 +564,7 @@ static void	p_error (const char *from, const char *comm, const char **ArgList)
 static void	add_user_who (int refnum, const char *from, const char *comm, const char **ArgList)
 {
 	const char 	*channel, *user, *host, *server, *nick;
+	size_t	size;
 	char 	*userhost;
 
 	if (!(channel = ArgList[0]))
@@ -578,8 +579,9 @@ static void	add_user_who (int refnum, const char *from, const char *comm, const 
 		{ rfc1459_odd(from, "*", ArgList); return; }
 
 	/* Obviously this is safe. */
-	userhost = alloca(strlen(user) + strlen(host) + 2);
-	sprintf(userhost, "%s@%s", user, host);
+	size = strlen(user) + strlen(host) + 2;
+	userhost = alloca(size);
+	snprintf(userhost, size, "%s@%s", user, host);
 	add_userhost_to_channel(channel, nick, refnum, userhost);
 }
 
@@ -660,9 +662,9 @@ static void	p_channel (const char *from, const char *comm, const char **ArgList)
 
 	*extra = 0;
 	if (op)
-		strcat(extra, " (+o)");
+		strlcat(extra, " (+o)", sizeof extra);
 	if (vo)
-		strcat(extra, " (+v)");
+		strlcat(extra, " (+v)", sizeof extra);
 
 	message_from(channel, LOG_CRAP);
 	if (do_hook(JOIN_LIST, "%s %s %s %s", 
@@ -1324,7 +1326,7 @@ void 	parse_server (const char *orig_line)
 	{
 		size = strlen(orig_line) * 11;
 		line = alloca(size + 1);
-		strcpy(line, orig_line);
+		strlcpy(line, orig_line, size + 1);
 		if (mangle_line(line, inbound_line_mangler, size) > size)
 			yell("mangle_line truncated its result.  Ack.");
 	}

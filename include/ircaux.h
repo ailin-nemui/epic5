@@ -7,7 +7,7 @@
  *
  * See the COPYRIGHT file, or do a HELP IRCII COPYRIGHT 
  *
- * @(#)$Id: ircaux.h,v 1.42 2003/03/29 08:10:22 jnelson Exp $
+ * @(#)$Id: ircaux.h,v 1.43 2003/04/24 21:49:24 jnelson Exp $
  */
 
 #ifndef _IRCAUX_H_
@@ -86,11 +86,8 @@ int	my_strnicmp 		(const unsigned char *, const unsigned char *, size_t);
 int	scanstr 		(char *, char *);
 void	really_free 		(int);
 char *	chop 			(char *, size_t);
-char *	strmcpy 		(char *, const char *, int);
-char *	strmcat 		(char *, const char *, int);
-char *	strmcat_ue 		(char *, const char *, int);
 char *	m_strcat_ues_c 		(char **, const char *, int, size_t *);
-char *	strmopencat		(char *, int, ...);
+char *	strlopencat		(char *, size_t, ...);
 char *	stristr 		(const char *, const char *);
 char *	rstristr 		(const char *, const char *);
 char *	findchar		(char *, int);
@@ -133,7 +130,6 @@ char *	remove_brackets 	(const char *, const char *, int *);
 long	my_atol 		(const char *);
 u_long	hashpjw 		(char *, u_long);
 char *	m_dupchar 		(int);
-char *	strmccat		(char *, char, int);
 off_t	file_size		(const char *);
 int	file_exists		(const char *);
 int	isdir			(const char *);
@@ -167,7 +163,7 @@ int	count_char		(const unsigned char *, const unsigned char);
 char *	strnrchr		(char *, char, int);
 void	mask_digits		(char **);
 char *	strpcat			(char *, const char *, ...) __A(2);
-char *  strmpcat		(char *, size_t, const char *, ...) __A(3);
+char *  strlpcat		(char *, size_t, const char *, ...) __A(3);
 u_char *strcpy_nocolorcodes	(u_char *, const u_char *);
 u_long	random_number		(u_long);
 char *	urlencode		(const char *);
@@ -216,7 +212,7 @@ char 	*inet_hntop 		(int, const char *, char *, int);
 char 	*inet_ptohn 		(int, const char *, char *, int);
 char 	*one_to_another 	(int, const char *, char *, int);
 int	Accept			(int, SA *, int *);
-const char *switch_hostname	(const char *);
+char 	*switch_hostname	(const char *);
 int	ip_bindery		(int family, u_short port, SS *storage);
 int	client_bind		(SA *, socklen_t);
 int	client_connect		(SA *, socklen_t, SA *, socklen_t);
@@ -278,9 +274,6 @@ int	snprintf (char *, size_t, const char *, ...);
 #endif
 #ifndef HAVE_SETSID
 int	setsid (void);
-#endif
-#ifndef STPCPY_DECLARED
-char *	stpcpy (char *, const char *);
 #endif
 char *	my_realpath (const char *pathname, char resolved_path[]);
 

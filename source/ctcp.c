@@ -1,11 +1,11 @@
-/* $EPIC: ctcp.c,v 1.20 2003/03/29 08:10:22 jnelson Exp $ */
+/* $EPIC: ctcp.c,v 1.21 2003/04/24 21:49:25 jnelson Exp $ */
 /*
  * ctcp.c:handles the client-to-client protocol(ctcp). 
  *
  * Copyright (c) 1990 Michael Sandroff.
  * Copyright (c) 1991, 1992 Troy Rollo.
  * Copyright (c) 1992-1996 Matthew Green.
- * Copyright © 1993, 2002 EPIC Software Labs
+ * Copyright © 1993, 2003 EPIC Software Labs
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -336,8 +336,8 @@ CTCP_HANDLER(do_clientinfo)
 
 		for (i = 0; i < NUMBER_OF_CTCPS; i++)
 		{
-			strmcat(buffer, ctcp_cmd[i].name, BIG_BUFFER_SIZE);
-			strmcat(buffer, " ", BIG_BUFFER_SIZE);
+			strlcat(buffer, ctcp_cmd[i].name, sizeof buffer);
+			strlcat(buffer, " ", sizeof buffer);
 		}
 		send_ctcp(CTCP_NOTICE, from, CTCP_CLIENTINFO,
 			"%s :Use CLIENTINFO <COMMAND> to get more specific information", 
@@ -436,6 +436,8 @@ CTCP_HANDLER(do_finger)
 	char	*ctcpuser,
 		*ctcpfinger;
 	const char	*my_host;
+	char	userbuff[NAME_LEN + 1];
+	char	gecosbuff[NAME_LEN + 1];
 
 	if ((my_host = get_server_userhost(from_server)) &&
 			strchr(my_host, '@'))
@@ -452,18 +454,33 @@ CTCP_HANDLER(do_finger)
 #define GECOS_DELIMITER ','
 #endif
 
-	if ((tmp = strchr(pwd->pw_gecos, GECOS_DELIMITER)) != NULL)
-		*tmp = '\0';
-
 #if !defined(I_DONT_TRUST_MY_USERS)
 	if ((ctcpuser = getenv("IRCUSER"))) 
-		strmcpy(pwd->pw_name, ctcpuser, NAME_LEN);
-	if ((ctcpfinger = getenv("IRCFINGER"))) 
-		strmcpy(pwd->pw_gecos, ctcpfinger, NAME_LEN);
+		strlcpy(userbuff, ctcpuser, sizeof userbuff);
+	else
 #endif
+	{
+		if (!pwd->pw_name)
+			pwd->pw_name = "epic-user";
+		strlcpy(userbuff, pwd->pw_name, sizeof userbuff);
+	}
+
+#if !defined(I_DONT_TRUST_MY_USERS)
+	if ((ctcpfinger = getenv("IRCFINGER"))) 
+		strlcpy(gecosbuff, ctcpfinger, sizeof gecosbuff);
+	else
+#endif
+	{
+		if (!pwd->pw_gecos)
+			pwd->pw_gecos = "Esteemed EPIC User";
+		strlcpy(gecosbuff, pwd->pw_gecos, sizeof gecosbuff);
+		if ((tmp = strchr(gecosbuff, GECOS_DELIMITER)) != NULL)
+			*tmp = 0;
+	}
+
 	send_ctcp(CTCP_NOTICE, from, CTCP_FINGER, 
 		"%s (%s@%s) Idle %ld second%s", 
-		pwd->pw_gecos, pwd->pw_name, my_host, diff, plural(diff));
+		gecosbuff, userbuff, my_host, diff, plural(diff));
 
 	return NULL;
 }
@@ -526,12 +543,13 @@ CTCP_HANDLER(do_ping_reply)
 	}
 
 	/*
-	 * 'cmd', a variable passed in from do_notice_ctcp()
-	 * points to a buffer which is MUCH larger than the
-	 * string 'cmd' points at.  So this is safe, even
-	 * if it looks "unsafe".
+	 * 'cmd' is a pointer to the inside of do_ctcp's 'the_ctcp' buffer
+	 * which is IRCD_BUFFER_SIZE bytes big; cmd points to (allegedly)
+	 * the sixth position.  But just be paranoid and assume half that, 
+	 * so we will always be safe.
 	 */
-	sprintf(cmd, "%f seconds", (float)(tsec + (tusec / 1000000.0)));
+	snprintf(cmd, IRCD_BUFFER_SIZE / 2, "%f seconds", 
+			(float)(tsec + (tusec / 1000000.0)));
 	return NULL;
 }
 
@@ -558,7 +576,7 @@ CTCP_HANDLER(do_ping_reply)
  * contain any CTCPs.  So we check to see if there are any CTCPs in the
  * message before we bother doing anything.  THIS IS AN INELEGANT HACK!
  * But the call to charcount() is less expensive than even one copy to 
- * strcpy() since they both evaluate *each* character, and charcount()
+ * strlcpy() since they both evaluate *each* character, and charcount()
  * doesnt have to do a write unless the character is present.  So it is 
  * definitely worth the cost to save CPU time for 99% of the PRIVMSGs.
  */
@@ -589,10 +607,10 @@ static	time_t	last_ctcp_parsed = 0;
 						str, CTCP_FLOOD); 
 
 	in_ctcp_flag++;
-	strmcpy(local_ctcp_buffer, str, IRCD_BUFFER_SIZE - 2);
+	strlcpy(local_ctcp_buffer, str, sizeof(local_ctcp_buffer) - 2);
 
 	lastlog_level = set_lastlog_msg_level(LOG_CTCP);
-	for (;;strmcat(local_ctcp_buffer, last, BIG_BUFFER_SIZE - 2))
+	for (;;strlcat(local_ctcp_buffer, last, sizeof(local_ctcp_buffer) - 2))
 	{
 		if (split_CTCP(local_ctcp_buffer, the_ctcp, last))
 			break;		/* All done! */
@@ -743,7 +761,7 @@ static	time_t	last_ctcp_parsed = 0;
 		 * If its an ``INLINE'' CTCP, we paste it back in.
 		 */
 		if (ctcp_cmd[i].flag & CTCP_INLINE)
-			strmcat(local_ctcp_buffer, ptr, BIG_BUFFER_SIZE);
+			strlcat(local_ctcp_buffer, ptr, sizeof local_ctcp_buffer);
 
 		/* 
 		 * If its ``INTERESTING'', tell the user.
@@ -781,11 +799,10 @@ static	time_t	last_ctcp_parsed = 0;
 	in_ctcp_flag--;
 
 	/* 
-	 * Since 'local_ctcp_buffer' is derived from 'str',
-	 * strlen(local_ctcp_buffer) <= strlen(str) in all circumstances,
-	 * so this strcpy is safe.
+	 * 'str' is required to be BIG_BUFFER_SIZE + 1 or bigger per the API.
 	 */
-	return strcpy(str, local_ctcp_buffer);
+	strlcpy(str, local_ctcp_buffer, BIG_BUFFER_SIZE);
+	return str;
 }
 
 
@@ -817,9 +834,9 @@ char *	do_notice_ctcp (const char *from, const char *to, char *str)
 	flag = check_ignore_channel(from, FromUserHost, to, IGNORE_CTCPS);
 	if (!in_ctcp_flag)
 		in_ctcp_flag = -1;
-	strmcpy(local_ctcp_buffer, str, IRCD_BUFFER_SIZE - 2);
+	strlcpy(local_ctcp_buffer, str, IRCD_BUFFER_SIZE - 2);
 
-	for (;;strmcat(local_ctcp_buffer, last, BIG_BUFFER_SIZE))
+	for (;;strlcat(local_ctcp_buffer, last, sizeof local_ctcp_buffer))
 	{
 		if (split_CTCP(local_ctcp_buffer, the_ctcp, last))
 			break;		/* All done! */
@@ -878,7 +895,7 @@ char *	do_notice_ctcp (const char *from, const char *to, char *str)
 		{
 			if ((ptr = ctcp_cmd[i].repl(ctcp_cmd + i, from, to, ctcp_argument)))
 			{
-				strmcat(local_ctcp_buffer, ptr, BIG_BUFFER_SIZE);
+				strlcat(local_ctcp_buffer, ptr, sizeof local_ctcp_buffer);
 				new_free(&ptr);
 				continue;
 			}
@@ -908,7 +925,8 @@ char *	do_notice_ctcp (const char *from, const char *to, char *str)
 	 * local_ctcp_buffer is derived from 'str', so its always
 	 * smaller or equal in size to 'str', so this copy is safe.
 	 */
-	return strcpy(str, local_ctcp_buffer);
+	strlcpy(str, local_ctcp_buffer, BIG_BUFFER_SIZE);
+	return str;
 }
 
 
@@ -1016,7 +1034,7 @@ static int split_CTCP (char *raw_message, char *ctcp_dest, char *after_ctcp)
 	}
 	*ctcp_end++ = 0;
 
-	strmcpy(ctcp_dest, ctcp_start, IRCD_BUFFER_SIZE - 2);
-	strmcpy(after_ctcp, ctcp_end, IRCD_BUFFER_SIZE - 2);
+	strlcpy(ctcp_dest, ctcp_start, IRCD_BUFFER_SIZE - 1);
+	strlcpy(after_ctcp, ctcp_end, IRCD_BUFFER_SIZE - 1);
 	return 0;		/* All done! */
 }

@@ -1,11 +1,11 @@
-/* $EPIC: crypt.c,v 1.10 2003/01/26 03:25:38 jnelson Exp $ */
+/* $EPIC: crypt.c,v 1.11 2003/04/24 21:49:25 jnelson Exp $ */
 /*
  * crypt.c: handles some encryption of messages stuff. 
  *
  * Copyright (c) 1990 Michael Sandroff.
  * Copyright (c) 1991, 1992 Troy Rollo.
  * Copyright (c) 1992-1996 Matthew Green.
- * Copyright © 1995, 2002 EPIC Software Labs
+ * Copyright © 1995, 2003 EPIC Software Labs
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -259,7 +259,7 @@ char 	*crypt_msg (char *str, Crypt *key)
 	char	thing[6];
 	char	*ptr;
 
-	sprintf(thing, "%cSED ", CTCP_DELIM_CHAR);
+	snprintf(thing, 6, "%cSED ", CTCP_DELIM_CHAR);
 	*buffer = 0;
 	if ((ptr = do_crypt(str, key, 1)))
 	{
@@ -267,13 +267,13 @@ char 	*crypt_msg (char *str, Crypt *key)
 			yell("WARNING: Empty encrypted message, but message "
 			     "sent anyway.  Bug?");
 		}
-		strmcat(buffer, thing, CRYPT_BUFFER_SIZE);
-		strmcat(buffer, ptr, CRYPT_BUFFER_SIZE);
-		strmcat(buffer, CTCP_DELIM_STR, CRYPT_BUFFER_SIZE);
+		strlcat(buffer, thing, sizeof buffer);
+		strlcat(buffer, ptr, sizeof buffer);
+		strlcat(buffer, CTCP_DELIM_STR, sizeof buffer);
 		new_free(&ptr);
 	}
 	else
-		strmcat(buffer, str, CRYPT_BUFFER_SIZE);
+		strlcat(buffer, str, sizeof buffer);
 
 	return m_strdup(buffer);
 }
@@ -295,11 +295,11 @@ char 	*decrypt_msg (char *str, Crypt *key)
 
 	if ((ptr = do_crypt(str, key, 0)) != NULL)
 	{
-		strmcpy(buffer, ptr, CRYPT_BUFFER_SIZE);
+		strlcpy(buffer, ptr, CRYPT_BUFFER_SIZE + 1);
 		new_free(&ptr);
 	}
 	else
-		strmcat(buffer, str, CRYPT_BUFFER_SIZE);
+		strlcat(buffer, str, CRYPT_BUFFER_SIZE + 1);
 
 	return buffer;
 }

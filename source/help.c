@@ -1,11 +1,11 @@
-/* $EPIC: help.c,v 1.6 2003/01/26 03:25:38 jnelson Exp $ */
+/* $EPIC: help.c,v 1.7 2003/04/24 21:49:25 jnelson Exp $ */
 /*
  * help.c: handles the help stuff for irc 
  *
  * Copyright (c) 1990 Michael Sandroff.
  * Copyright (c) 1991, 1992 Troy Rollo.
  * Copyright (c) 1992-1996 Matthew Green.
- * Copyright © 1995, 2002 EPIC Software Labs.
+ * Copyright © 1995, 2003 EPIC Software Labs.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -46,11 +46,6 @@
  * It is invalid to call help from more than one screen, at the moment,
  * because there is to much to keep track of - phone, jan 1993.
  */
-
-#if 0
-static char rcsid[] = "@(#)$Id: help.c,v 1.6 2003/01/26 03:25:38 jnelson Exp $";
-#endif
-
 #include "irc.h"
 #include "help.h"
 #include "input.h"
@@ -211,7 +206,7 @@ static	void	help_prompt (char *name, char *line)
 		{
 			char	tmp[BIG_BUFFER_SIZE + 1];
 
-			sprintf(tmp, "%s%sHelp? ", help_topic_list,
+			snprintf(tmp, sizeof tmp, "%s%sHelp? ", help_topic_list,
 				*help_topic_list ? " " : empty_string);
 			if (!dumb_mode)
 				add_wait_prompt(tmp, help_me, help_topic_list,
@@ -332,7 +327,8 @@ static	void	help_show_paused_topic (char *name, char *line)
 		{
 			char	buf[BIG_BUFFER_SIZE];
 
-			sprintf(buf, "%s%sHelp? ", name, (name && *name) ? " " : empty_string);
+			snprintf(buf, sizeof buf, "%s%sHelp? ", 
+				name, (name && *name) ? " " : empty_string);
 			if (!dumb_mode)
 				add_wait_prompt(buf, help_me, name, WAIT_PROMPT_LINE, 1);
 		}
@@ -368,10 +364,10 @@ static	void	help_me (char *topics, char *args)
 	char	buffer[BIG_BUFFER_SIZE+1];
 	char *	pattern = NULL;
 
-	strcpy(help_topic_list, topics);
+	strlcpy(help_topic_list, topics, sizeof help_topic_list);
 	ptr = get_string_var(HELP_PATH_VAR);
 
-	sprintf(path, "%s/%s", ptr, topics);
+	snprintf(path, sizeof path, "%s/%s", ptr, topics);
 	for (ptr = path; (ptr = strchr(ptr, ' '));)
 		*ptr = '/';
 
@@ -402,7 +398,7 @@ static	void	help_me (char *topics, char *args)
 		else
 			*help_topic_list = '\0';
 
-		sprintf(tmp, "%s%sHelp? ", help_topic_list, *help_topic_list ? " " : empty_string);
+		snprintf(tmp, sizeof tmp, "%s%sHelp? ", help_topic_list, *help_topic_list ? " " : empty_string);
 
 		if (!dumb_mode)
 			add_wait_prompt(tmp, help_me, help_topic_list, WAIT_PROMPT_LINE, 1);
@@ -452,6 +448,7 @@ static	void	help_me (char *topics, char *args)
 		 * Gather up the names of the files in the help directory.
 		 */
 		{
+			size_t size;
 #ifndef HAVE_FCHDIR
 			char 	opath[MAXPATHLEN + 1];
 			getcwd(opath, MAXPATHLEN);
@@ -459,11 +456,11 @@ static	void	help_me (char *topics, char *args)
 			int 	cwd = open(".", O_RDONLY);
 #endif
 
+			size = strlen(path) + 2 + strlen(this_arg) + 3;
+
 			chdir(path);
-			pattern = alloca(strlen(path) + 2 + 
-					 strlen(this_arg) + 3);
-			strcpy(pattern, this_arg);
-			strcat(pattern, "*");
+			pattern = alloca(size);
+			snprintf(pattern, size, "%s*", this_arg);
 #ifdef GLOB_INSENSITIVE
 			bsd_glob(pattern, GLOB_INSENSITIVE, NULL, &g);
 #else
@@ -549,7 +546,7 @@ switch (entries)
 			set_help_screen(NULL);
 			break;
 		}
-		sprintf(tmp, "%s%sHelp? ", help_topic_list, *help_topic_list ? " " : empty_string);
+		snprintf(tmp, sizeof tmp, "%s%sHelp? ", help_topic_list, *help_topic_list ? " " : empty_string);
 		if (!dumb_mode)
 			add_wait_prompt(tmp, help_me, help_topic_list, WAIT_PROMPT_LINE, 1);
 
@@ -565,15 +562,15 @@ switch (entries)
 	}
 	case 1:
 	{
-		sprintf(tmp, "%s/%s", path, g.gl_pathv[0]);
+		snprintf(tmp, sizeof tmp, "%s/%s", path, g.gl_pathv[0]);
 		stat(tmp, &stat_buf);
 		if (stat_buf.st_mode & S_IFDIR)
 		{
-			strcpy(path, tmp);
+			strlcpy(path, tmp, sizeof path);
 			if (*help_topic_list)
-				strcat(help_topic_list, " ");
+				strlcat(help_topic_list, " ", sizeof help_topic_list);
 
-			strcat(help_topic_list, g.gl_pathv[0]);
+			strlcat(help_topic_list, g.gl_pathv[0], sizeof help_topic_list);
 
 			if (!(this_arg = next_arg(args, &args)))
 			{
@@ -596,19 +593,19 @@ switch (entries)
 	default:
 	{
 		help_show_directory = 1;
-		strcpy(paused_topic, help_topic_list);
+		strlcpy(paused_topic, help_topic_list, sizeof paused_topic);
 		help_pause_add_line("*** %s choices:", help_topic_list);
 		entry_size += 2;
 		cols = (current_term->TI_cols - 10) / entry_size;
 
-		strcpy(buffer, empty_string);
+		strlcpy(buffer, empty_string, sizeof(buffer));
 		cnt = 0;
 
 		for (i = 0; i < entries; i++)
 		{
 			if (!end_strcmp(g.gl_pathv[i], ".gz", 3))
 				chop(g.gl_pathv[i], 3);
-			strcat(buffer, g.gl_pathv[i]);
+			strlcat(buffer, g.gl_pathv[i], sizeof buffer);
 
 			/*
 			 * Since we already know how many columns each
@@ -619,7 +616,7 @@ switch (entries)
 			if (++cnt == cols)
 			{
 				help_pause_add_line("%s", buffer);
-				strcpy(buffer, empty_string);
+				*buffer = 0;
 				cnt = 0;
 			}
 

@@ -1,4 +1,4 @@
-/* $EPIC: ircaux.c,v 1.71 2003/04/04 04:37:19 jnelson Exp $ */
+/* $EPIC: ircaux.c,v 1.72 2003/04/24 21:49:25 jnelson Exp $ */
 /*
  * ircaux.c: some extra routines... not specific to irc... that I needed 
  *
@@ -6,7 +6,7 @@
  * Copyright (c) 1991, 1992 Troy Rollo.
  * Copyright (c) 1992-1996 Matthew Green.
  * Copyright © 1994 Jake Khuon.
- * Copyright © 1993, 2002 EPIC Software Labs.
+ * Copyright © 1993, 2003 EPIC Software Labs.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -340,26 +340,34 @@ void malloc_dump (char* file) {
  */
 char *	malloc_strcpy (char **ptr, const char *src)
 {
+	size_t	size;
+
 	if (!src)
 		return new_free(ptr);	/* shrug */
 
 	if (*ptr)
 	{
-		if (alloc_size(*ptr) == FREED_VAL)
+		size = alloc_size(*ptr);
+		if (size == FREED_VAL)
 			panic("free()d pointer passed to malloc_strcpy");
 
 		/* No copy neccesary! */
 		if (*ptr == src)
 			return *ptr;
 
-		if (alloc_size(*ptr) > strlen(src))
-			return strcpy(*ptr, src);
+		if (size > strlen(src))
+		{
+			strlcpy(*ptr, src, size);
+			return *ptr;
+		}
 
 		new_free(ptr);
 	}
 
-	*ptr = new_malloc(strlen(src) + 1);
-	return strcpy(*ptr, src);
+	size = strlen(src) + 1;
+	*ptr = new_malloc(size);
+	strlcpy(*ptr, src, size);
+	return *ptr;
 }
 
 /* malloc_strcat: Yeah, right */
@@ -378,10 +386,15 @@ char *	malloc_strcat_c (char **ptr, const char *src, size_t *cluep)
 		if (!src)
 			return *ptr;
 
-		msize = (psize = clue + strlen(clue + *ptr)) + (ssize = strlen(src)) + 1;
+		psize = clue + strlen(clue + *ptr);
+		ssize = strlen(src);
+		msize = psize + ssize + 1;
+
 		RESIZE(*ptr, char, msize);
-		if (cluep) *cluep = psize + ssize;
-		return strcat(psize+*ptr, src)-psize;
+		if (cluep) 
+			*cluep = psize + ssize;
+		strlcat(psize + *ptr, src, msize - psize);
+		return (*ptr);
 	}
 
 	return (*ptr = m_strdup(src));
@@ -389,25 +402,32 @@ char *	malloc_strcat_c (char **ptr, const char *src, size_t *cluep)
 
 char *	malloc_str2cpy(char **ptr, const char *src1, const char *src2)
 {
+	size_t	size;
+
 	if (!src1 && !src2)
 		return new_free(ptr);
 
 	if (*ptr)
 	{
-		if (alloc_size(*ptr) == FREED_VAL)
+		size = alloc_size(*ptr);
+
+		if (size == FREED_VAL)
 			panic("free()d pointer passed to malloc_str2cpy");
 
-		if (alloc_size(*ptr) > strlen(src1) + strlen(src2))
+		if (size > strlen(src1) + strlen(src2))
 		{
-			stpcpy(stpcpy(*ptr, src1), src2);
+			**ptr = 0;
+			strlopencat(*ptr, size, src1, src2, NULL);
 			return *ptr;
 		}
 
 		new_free(ptr);
 	}
 
-	*ptr = new_malloc(strlen(src1) + strlen(src2) + 1);
-	stpcpy(stpcpy(*ptr, src1), src2);
+	size = strlen(src1) + strlen(src2) + 1;
+	*ptr = new_malloc(size);
+	**ptr = 0;
+	strlopencat(*ptr, size, src1, src2, NULL);
 	return *ptr;
 			/* * */
 }
@@ -418,7 +438,8 @@ char *	m_2dup (const char *str1, const char *str2)
 	size_t msize = strlen(str1) + strlen(str2) + 1;
 	char * buffer = (char *)new_malloc(msize);
 
-	stpcpy(stpcpy(buffer, str1), str2);
+	*buffer = 0;
+	strlopencat(buffer, msize, str1, str2, NULL);
 	return buffer;
 }
 
@@ -427,44 +448,23 @@ char *	m_3dup (const char *str1, const char *str2, const char *str3)
 	size_t msize = strlen(str1) + strlen(str2) + strlen(str3) + 1;
 	char *buffer = (char *)new_malloc(msize);
 
-	stpcpy(stpcpy(stpcpy(buffer, str1), str2), str3);
+	*buffer = 0;
+	strlopencat(buffer, msize, str1, str2, str3, NULL);
 	return buffer;
 }
-
-char *	m_opendup (const char *str1, ...)
-{
-	va_list args;
-	int size;
-	char *this_arg = NULL;
-	char *retval = NULL;
-	char *p;
-
-	size = strlen(str1);
-	va_start(args, str1);
-	while ((this_arg = va_arg(args, char *)))
-		size += strlen(this_arg);
-
-	retval = (char *)new_malloc(size + 1);
-
-	p = stpcpy(retval, str1);
-	va_start(args, str1);
-	while ((this_arg = va_arg(args, char *)))
-		p = stpcpy(p, this_arg);
-
-	va_end(args);
-	return retval;
-}
-
 
 char *	m_strdup (const char *str)
 {
 	char *ptr;
+	size_t size;
 
 	if (!str)
 		str = empty_string;
 
-	ptr = (char *)new_malloc(strlen(str) + 1);
-	return strcpy(ptr, str);
+	size = strlen(str) + 1;
+	ptr = (char *)new_malloc(size);
+	strlcpy(ptr, str, size);
+	return ptr;
 }
 
 char *	m_ec3cat (char **one, const char *yes1, const char *yes2, size_t *clue)
@@ -494,7 +494,7 @@ char *	m_sc3cat_s (char **one, const char *maybe, const char *ifthere, size_t *c
 
 char *	m_c3cat(char **one, const char *two, const char *three, size_t *clue)
 {
-	size_t	csize = clue?*clue:0;
+	size_t	csize = clue ? *clue : 0;
 	int 	msize = csize;
 
 	if (*one)
@@ -517,9 +517,9 @@ char *	m_c3cat(char **one, const char *two, const char *three, size_t *clue)
 		RESIZE(*one, char, msize + 1);
 
 	if (two)
-		strcat(csize + *one, two);
+		strlcat(csize + *one, two, msize + 1 - csize);
 	if (three)
-		strcat(csize + *one, three);
+		strlcat(csize + *one, three, msize + 1 - csize);
 	if (clue) 
 		*clue = msize;
 
@@ -812,30 +812,31 @@ noquotedword:
  *
  * This is just a little bit of a crock.  The basic problem here is the
  * dequoting which will dispose of the distinction between the words,
- * but presumably that's what we want.  Also, note that stpcpy isn't
- * supposed to be used with overlapping blocks, but since new_next_arg
- * always returns an equal or shorter string, it should work.  (since
- * str1 <= str).
+ * but presumably that's what we want.  I rewrote this to not use stpcpy.
+ * though I am not sure i didn't break it.
  */
 char *	new_next_arg_count (char *str, char **new_ptr, int count)
 {
-	char *ret = str;
+	char *orig = str;
 	char *str1 = str;
-	*new_ptr = str;
+	char *copy;
+	char *endp;
 
+	*new_ptr = str;
+	endp = str + strlen(str);		/* end of the string */
 	while (count-- > 0 && *new_ptr && **new_ptr)
 	{
-		str = new_next_arg(*new_ptr, new_ptr);
-		if (str)
+		if ((str = new_next_arg(*new_ptr, new_ptr)))
 		{
-			str = LOCAL_COPY(str);
-			if (str1 != ret)
-				str1 = stpcpy(str1, space);
-			str1 = stpcpy(str1, str);
+			copy = LOCAL_COPY(str);
+			if (str1 != orig)
+				*str1++ = ' ';
+			strlcpy(str1, copy, endp - str1);
+			str1 += strlen(str1);
 		}
 	}
 
-	return ret;
+	return orig;
 }
 
 char * next_quoted_args (char *str, char **new_ptr, int count)
@@ -1106,31 +1107,9 @@ char *	strext (const char *start, const char *end)
 }
 
 
-/*
- * strmcpy:  Used to call strncpy(), but that was bogus.  Now we call
- * strlcpy() and just return the same old thing.  Anyone who needs strlcpy()'s
- * return code can just call it directly.
- */
-char *	strmcpy (char *dest, const char *src, int maxlen)
+char *	strlopencat (char *dest, size_t maxlen, ...)
 {
-	strlcpy(dest, src, maxlen + 1);		/* XXX kludge */
-	return dest;
-}
-
-/*
- * strmcat: Used to call strcat(), but that was bogus and a lot of work
- * to boot.  Now we call strlcat() and just return the same old thing.
- * Anyone who needs strlcat()'s return code can just call it directly.
- */
-char *	strmcat (char *dest, const char *src, int maxlen)
-{
-	strlcat(dest, src, maxlen + 1);		/* XXX kludge */
-	return dest;
-}
-
-char *	strmopencat (char *dest, int maxlen, ...)
-{
-	va_list args;
+	va_list	args;
 	int 	size;
 	char *	this_arg = NULL;
 	int 	this_len;
@@ -1141,8 +1120,8 @@ char *	strmopencat (char *dest, int maxlen, ...)
 	endp = dest + maxlen;		/* This better not be an error */
 	size = strlen(dest);		/* Find the end of the string */
 	p = dest + size;		/* We will start catting there */
+	va_start(args, maxlen);
 
-	va_start(args, maxlen);		/* Begin grabbing args */
 	for (;;)
 	{
 		/* Grab the next string, stop if no more */
@@ -1160,42 +1139,10 @@ char *	strmopencat (char *dest, int maxlen, ...)
 		}
 
 		/* Otherwise, we have enough space, copy it */
-		p = stpcpy(p, this_arg);
+		p += strlcpy(p, this_arg, endp - p);
 	}
 
 	va_end(args);
-	return dest;
-}
-
-
-/*
- * strmcat_ue: like strcat, but truncs the dest string to maxlen (thus the dest
- * should be able to handle maxlen + 1 (for the null)). Also unescapes
- * backslashes.
- */
-char *	strmcat_ue (char *dest, const char *src, int maxlen)
-{
-	int	dstlen;
-
-	dstlen = strlen(dest);
-	dest += dstlen;
-	maxlen -= dstlen;
-	while (*src && maxlen > 0)
-	{
-		if (*src == '\\')
-		{
-			if (strchr("npr0", src[1]))
-				*dest++ = '\020';
-			else if (*(src + 1))
-				*dest++ = *++src;
-			else
-				*dest++ = '\\';
-		}
-		else
-			*dest++ = *src;
-		src++;
-	}
-	*dest = 0;
 	return dest;
 }
 
@@ -2390,10 +2337,11 @@ char *	ftoa (double foo)
 	extern double fmod (double, double);
 
 	if (get_int_var(FLOATING_POINT_MATH_VAR)) {
-		sprintf(buffer, "%.*g", get_int_var(FLOATING_POINT_PRECISION_VAR), foo);
+		snprintf(buffer, sizeof buffer, "%.*g", 
+			get_int_var(FLOATING_POINT_PRECISION_VAR), foo);
 	} else {
 		foo -= fmod(foo, 1);
-		sprintf(buffer, "%.0f", foo);
+		snprintf(buffer, sizeof buffer, "%.0f", foo);
 	}
 	return buffer;
 }
@@ -2402,7 +2350,7 @@ char *	ftoa (double foo)
  * Formats "src" into "dest" using the given length.  If "length" is
  * negative, then the string is right-justified.  If "length" is
  * zero, nothing happens.  Sure, i cheat, but its cheaper then doing
- * two sprintf's.
+ * two snprintf's.
  *
  * Changed to use the PAD_CHAR variable, which allows the user to specify
  * what character should be used to "fill out" the padding.
@@ -2671,46 +2619,6 @@ char 	*strextend (char *str, char app, int num)
 	return str;
 }
 
-/*
- * Appends the given character to the string
- */
-char 	*strmccat (char *str, char c, int howmany)
-{
-	int x = strlen(str);
-
-	if (x < howmany)
-		str[x] = c;
-	str[x+1] = 0;
-
-	return str;
-}
-
-/*
- * Pull a substring out of a larger string
- * If the ending delimiter doesnt occur, then we dont pass
- * anything (by definition).  This is because we dont want
- * to introduce a back door into CTCP handlers.
- */
-char 	*pullstr (char *source_string, char *dest_string)
-{
-	char delim = *source_string;
-	char *end;
-
-	end = strchr(source_string + 1, delim);
-
-	/* If there is no closing delim, then we punt. */
-	if (!end)
-		return NULL;
-
-	*end = 0;
-	end++;
-
-	strcpy(dest_string, source_string + 1);
-	strcpy(source_string, end);
-	return dest_string;
-}
-
-
 int 	empty (const char *str)
 {
 #if 0
@@ -2829,7 +2737,8 @@ size_t 	streq (const char *one, const char *two)
 char *	m_strndup (const char *str, size_t len)
 {
 	char *retval = (char *)new_malloc(len + 1);
-	return strmcpy(retval, str, len);
+	strlcpy(retval, str, len + 1);
+	return retval;
 }
 
 char *	spanstr (const char *str, const char *tar)
@@ -2854,7 +2763,7 @@ char *	prntdump(const char *ptr, size_t size)
 	int i;
 static char dump[65];
 
-	strmcat(dump, ptr, 64);
+	strlcat(dump, ptr, sizeof dump);
 
 	for (i = 0; i < size && i < 64; i++)
 	{
@@ -2870,9 +2779,9 @@ static char dump[65];
 /* XXXX this doesnt belong here. im not sure where it goes, though. */
 char *	get_userhost (void)
 {
-	strmcpy(userhost, username, NAME_LEN);
-	strmcat(userhost, "@", NAME_LEN);
-	strmcat(userhost, hostname, NAME_LEN);
+	strlcpy(userhost, username, sizeof userhost);
+	strlcat(userhost, "@", sizeof userhost);
+	strlcat(userhost, hostname, sizeof userhost);
 	return userhost;
 }
 
@@ -3365,15 +3274,15 @@ char *	strnrchr(char *start, char which, int howmany)
 
 /*
  * This replaces some number of numbers (1 or more) with a single asterisk.
- * We know that the final strcpy() is safe, since we never make a string that
- * is longer than the source string, always less than or equal in size.
  */
 void	mask_digits (char **host)
 {
 	char	*src_ptr;
 	char 	*retval, *retval_ptr;
+	size_t	size;
 
-	retval = retval_ptr = alloca(strlen(*host) + 1);
+	size = strlen(*host) + 1;
+	retval = retval_ptr = alloca(size);
 	src_ptr = *host;
 
 	while (*src_ptr)
@@ -3390,33 +3299,19 @@ void	mask_digits (char **host)
 	}
 
 	*retval_ptr = 0;
-	strcpy(*host, retval);
-	return;
+	strlcpy(*host, retval, size);
 }
 
-char *	strpcat (char *source, const char *format, ...)
+char *	strlpcat (char *source, size_t size, const char *format, ...)
 {
 	va_list args;
 	char	buffer[BIG_BUFFER_SIZE + 1];
 
 	va_start(args, format);
-	vsnprintf(buffer, BIG_BUFFER_SIZE, format, args);
+	vsnprintf(buffer, sizeof buffer, format, args);
 	va_end(args);
 
-	strcat(source, buffer);
-	return source;
-}
-
-char *	strmpcat (char *source, size_t siz, const char *format, ...)
-{
-	va_list args;
-	char	buffer[BIG_BUFFER_SIZE + 1];
-
-	va_start(args, format);
-	vsnprintf(buffer, BIG_BUFFER_SIZE, format, args);
-	va_end(args);
-
-	strmcat(source, buffer, siz);
+	strlcat(source, buffer, size);
 	return source;
 }
 
@@ -4228,7 +4123,7 @@ static	char	buffer[1024];
  * Should I switch over to using getaddrinfo() directly or is using
  * inet_strton() sufficient?
  */
-const char *	switch_hostname (const char *new_hostname)
+char *	switch_hostname (const char *new_hostname)
 {
 	char *	retval;
 	ISA 	new_4;
@@ -4257,14 +4152,14 @@ const char *	switch_hostname (const char *new_hostname)
 		return retval;
 	}
 
-	strcpy(v4_name, "<none>");
+	strlcpy(v4_name, "<none>", sizeof v4_name);
 	new_4.sin_family = AF_INET;
 	if (!inet_strton(new_hostname, zero, (SA *)&new_4, 0)) {
 		inet_ntostr((SA *)&new_4, v4_name, 1024, NULL, 0, NI_NUMERICHOST);
 		accept4 = 1;
 	}
 
-	strcpy(v6_name, "<none>");
+	strlcpy(v6_name, "<none>", sizeof v6_name);
 #ifdef INET6
 	new_6.sin6_family = AF_INET6;
 	if (!inet_strton(new_hostname, zero, (SA *)&new_6, 0)) {

@@ -1,8 +1,8 @@
-/* $EPIC: array.c,v 1.11 2003/03/24 01:23:37 jnelson Exp $ */
+/* $EPIC: array.c,v 1.12 2003/04/24 21:49:25 jnelson Exp $ */
 /*
  * array.c -- Karll's Array Suite
  *
- * Copyright © 1993, 1995 Aaron Gifford and others.
+ * Copyright © 1993, 2003 Aaron Gifford and others.
  * All rights reserved, used with permission.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -529,7 +529,7 @@ BUILT_IN_FUNCTION((fn), input)                                                \
 				best_match = current_match;                   \
 			}                                                     \
 		}                                                             \
-		(ret);                                                        \
+		do ret while (0);					      \
 	}                                                                     \
                                                                               \
 	RETURN_INT(match);                                                    \
@@ -557,7 +557,7 @@ BUILT_IN_FUNCTION((fn), input)                                               \
 	if ((name = next_arg(input, &input)) &&                              \
 	    (array = get_array(name)) && input)                              \
 	{                                                                    \
-	    (pre);                                                           \
+	    do pre while (0);                                                \
 	    for (index = 0; index < array->size; index++)                    \
 		if (wild_match((wm1), (wm2)) > 0)                            \
 		    m_sc3cat_s(&result, space, ltoa(index), &resclue);       \
@@ -604,7 +604,7 @@ BUILT_IN_FUNCTION((fn), input)                                               \
                                                                              \
 	if ((name = next_arg(input, &input)) && (array = get_array(name)))   \
 	{                                                                    \
-		(pre);                                                       \
+		do pre while (0);                                            \
 		while ((itemstr = next_arg(input, &input)))                  \
 		{                                                            \
 			item = my_atol(itemstr);                             \

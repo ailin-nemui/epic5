@@ -92,7 +92,7 @@ static char *ai_errlist[] = {
 #define GET_CANONNAME(ai, str) \
 if (pai->ai_flags & AI_CANONNAME) {\
 	if (((ai)->ai_canonname = (char *)malloc(strlen(str) + 1)) != NULL) {\
-		strcpy((ai)->ai_canonname, (str));\
+		strlcpy((ai)->ai_canonname, (str), strlen(str) + 1);\
 	} else {\
 		error = EAI_MEMORY;\
 		goto free;\
@@ -555,14 +555,14 @@ int getnameinfo__compat (const struct sockaddr *sa, size_t salen, char *host, si
 		snprintf(numserv, sizeof(numserv), "%d", ntohs(port));
 		if (strlen(numserv) > servlen)
 			return ENI_MEMORY;
-		strcpy(serv, numserv);
+		strlcpy(serv, numserv, servlen);
 	} else {
 #if defined(HAVE_GETSERVBYPORT)
 		sp = getservbyport(port, (flags & NI_DGRAM) ? "udp" : "tcp");
 		if (sp) {
 			if (strlen(sp->s_name) > servlen)
 				return ENI_MEMORY;
-			strcpy(serv, sp->s_name);
+			strlcpy(serv, sp->s_name, servlen);
 		} else
 			return ENI_NOSERVNAME;
 #else
@@ -588,7 +588,7 @@ int getnameinfo__compat (const struct sockaddr *sa, size_t salen, char *host, si
 			return ENI_SYSTEM;
 		if (strlen(numaddr) > hostlen)
 			return ENI_MEMORY;
-		strcpy(host, numaddr);
+		strlcpy(host, numaddr, hostlen);
 	} else {
 		hp = gethostbyaddr(addr, afd->a_addrlen, afd->a_af);
 		h_error = h_errno;
@@ -601,7 +601,7 @@ int getnameinfo__compat (const struct sockaddr *sa, size_t salen, char *host, si
 			if (strlen(hp->h_name) > hostlen) {
 				return ENI_MEMORY;
 			}
-			strcpy(host, hp->h_name);
+			strlcpy(host, hp->h_name, hostlen);
 		} else {
 			if (flags & NI_NAMEREQD)
 				return ENI_NOHOSTNAME;
@@ -610,7 +610,7 @@ int getnameinfo__compat (const struct sockaddr *sa, size_t salen, char *host, si
 				return ENI_NOHOSTNAME;
 			if (strlen(numaddr) > hostlen)
 				return ENI_MEMORY;
-			strcpy(host, numaddr);
+			strlcpy(host, numaddr, hostlen);
 		}
 	}
 	return SUCCESS;

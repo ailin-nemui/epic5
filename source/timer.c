@@ -1,10 +1,10 @@
-/* $EPIC: timer.c,v 1.27 2003/04/08 22:32:24 jnelson Exp $ */
+/* $EPIC: timer.c,v 1.28 2003/04/24 21:49:25 jnelson Exp $ */
 /*
  * timer.c -- handles timers in ircII
  *
  * Copyright (c) 1991, 1992 Troy Rollo.
  * Copyright (c) 1992-1996 Matthew Green.
- * Copyright © 1997, 2002 EPIC Software Labs.
+ * Copyright © 1997, 2003 EPIC Software Labs.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -275,7 +275,7 @@ static Timer *clone_timer (Timer *otimer)
 {
 	Timer *ntimer = new_timer();
 
-	strcpy(ntimer->ref, otimer->ref);
+	strlcpy(ntimer->ref, otimer->ref, sizeof ntimer->ref);
 	ntimer->time = otimer->time;
 	ntimer->callback = otimer->callback;
 	ntimer->command = m_strdup(otimer->command);
@@ -423,6 +423,8 @@ static	void	list_timers (const char *command)
  * The user is allowed to use any string as a refnum, we dont really care.
  * Automatically assigned refnums (when the user doesnt specify one) will
  * always be one more than the highest pending refnum.
+ *
+ * "refnum_gets" must be REFNUM_MAX + 1 bytes by definition of API.
  */
 static	int	create_timer_ref (const char *refnum_wanted, char *refnum_gets)
 {
@@ -593,8 +595,7 @@ char *add_timer (int update, const char *refnum_want, double interval, long even
 		}
 
 		ntimer = new_timer();
-		/* This is safe. */
-		strcpy(ntimer->ref, refnum_got);
+		strlcpy(ntimer->ref, refnum_got, sizeof ntimer->ref);
 		ntimer->interval = double_to_timeval(interval);
 		ntimer->time = time_add(now, ntimer->interval);
 		ntimer->events = events;
@@ -616,7 +617,7 @@ char *add_timer (int update, const char *refnum_want, double interval, long even
  * TimerTimeout:  Called from irc_io to help create the timeout
  * part of the call to select.
  */
-const Timeval	TimerTimeout (void)
+Timeval	TimerTimeout (void)
 {
 	Timeval	forever = {9999, 0};
 	Timeval right_away = {0, 0};

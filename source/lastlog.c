@@ -1,11 +1,11 @@
-/* $EPIC: lastlog.c,v 1.17 2003/01/31 23:50:18 jnelson Exp $ */
+/* $EPIC: lastlog.c,v 1.18 2003/04/24 21:49:25 jnelson Exp $ */
 /*
  * lastlog.c: handles the lastlog features of irc. 
  *
  * Copyright (c) 1990 Michael Sandroff.
  * Copyright (c) 1991, 1992 Troy Rollo.
  * Copyright (c) 1992-1996 Matthew Green.
- * Copyright © 1993, 2002 EPIC Software Labs.
+ * Copyright © 1993, 2003 EPIC Software Labs.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -82,11 +82,11 @@ static void	warn_lastlog_levels (void)
 	char buffer[BIG_BUFFER_SIZE + 1];
 	int i;
 
-	strmcpy(buffer, "Valid levels: ", BIG_BUFFER_SIZE);
+	strlcpy(buffer, "Valid levels: ", sizeof buffer);
 	for (i = 0; i < NUMBER_OF_LEVELS; i++)
 	{
-		strmcat(buffer, levels[i], BIG_BUFFER_SIZE);
-		strmcat(buffer, " ", BIG_BUFFER_SIZE);
+		strlcat(buffer, levels[i], sizeof buffer);
+		strlcat(buffer, " ", sizeof buffer);
 	}
 	say("%s", buffer);
 }
@@ -102,9 +102,9 @@ char	*bits_to_lastlog_level (int level)
 		p;
 
 	if (level == LOG_ALL)
-		strcpy(buffer, "ALL");
+		strlcpy(buffer, "ALL", sizeof buffer);
 	else if (level == 0)
-		strcpy(buffer, "NONE");
+		strlcpy(buffer, "NONE", sizeof buffer);
 	else
 	{
 		*buffer = '\0';
@@ -113,8 +113,8 @@ char	*bits_to_lastlog_level (int level)
 			if (level & p)
 			{
 				if (*buffer)
-					strmcat(buffer, " ", 255);
-				strmcat(buffer, levels[i], 255);
+					strlcat(buffer, " ", sizeof buffer);
+				strlcat(buffer, levels[i], sizeof buffer);
 			}
 		}
 	}
@@ -535,8 +535,12 @@ BUILT_IN_COMMAND(lastlog)
 	}
 	if (match)
 	{
-		char *	blah = alloca(strlen(match) + 3);
-		sprintf(blah, "*%s*", match);
+		size_t	size;
+		char *	blah;
+
+		size = strlen(match) + 3;
+		blah = alloca(size);
+		snprintf(blah, size, "*%s*", match);
 		match = blah;
 	}
 	if (regex)

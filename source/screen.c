@@ -1,10 +1,10 @@
-/* $EPIC: screen.c,v 1.48 2003/03/29 08:10:22 jnelson Exp $ */
+/* $EPIC: screen.c,v 1.49 2003/04/24 21:49:25 jnelson Exp $ */
 /*
  * screen.c
  *
  * Copyright (c) 1993-1996 Matthew Green.
  * Copyright © 1998 J. Kean Johnston, used with permission
- * Copyright © 1997, 2002 EPIC Software Labs.
+ * Copyright © 1997, 2003 EPIC Software Labs.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -1803,8 +1803,11 @@ const 	u_char	*ptr;
 				if (do_indent && (indent < (max_cols / 3)) &&
 						(strlen(cont_ptr) < indent))
 				{
-					cont = alloca(indent+10); /* sb pana */
-					sprintf(cont, "%-*s", indent, cont_ptr);
+					size_t size = indent + 10;;
+
+					cont = alloca(size);    /* sb pana */
+					snprintf(cont, size, 
+						"%-*s", indent, cont_ptr);
 				}
 
 				/*
@@ -1890,9 +1893,9 @@ const 	u_char	*ptr;
 			/* 'pos' has already been incremented... */
 			buffer[pos] = 0;
 			pos_copy = LOCAL_COPY(buffer + word_break);
-			strlcpy(buffer, cont, BIG_BUFFER_SIZE / 2);
+			strlcpy(buffer, cont, sizeof(buffer) / 2);
 			display_attributes(buffer + strlen(buffer), &saved_a);
-			strlcat(buffer, pos_copy, BIG_BUFFER_SIZE / 2);
+			strlcat(buffer, pos_copy, sizeof(buffer) / 2);
 
 			pos = strlen(buffer);
 			/* Watch this -- ugh. how expensive! :( */

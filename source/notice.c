@@ -1,11 +1,11 @@
-/* $EPIC: notice.c,v 1.20 2003/02/19 03:26:45 crazyed Exp $ */
+/* $EPIC: notice.c,v 1.21 2003/04/24 21:49:25 jnelson Exp $ */
 /*
  * notice.c: special stuff for parsing NOTICEs
  *
  * Copyright (c) 1990 Michael Sandroff.
  * Copyright (c) 1991, 1992 Troy Rollo.
  * Copyright (c) 1992-1996 Matthew Green.
- * Copyright © 1993, 2002 EPIC Software Labs.
+ * Copyright © 1993, 2003 EPIC Software Labs.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -472,7 +472,7 @@ int 	kill_message (const char *from, const char *cline)
 void    load_ircrc (void)
 {
         char buffer[7];
-        strcpy(buffer, "global");
+        strlcpy(buffer, "global", sizeof buffer);
 
         loading_global = 1;
         load("LOAD", buffer, empty_string);

@@ -1,4 +1,4 @@
-/* $EPIC: expr.c,v 1.10 2003/03/23 19:44:17 jnelson Exp $ */
+/* $EPIC: expr.c,v 1.11 2003/04/24 21:49:25 jnelson Exp $ */
 /*
  * expr.c -- The expression mode parser and the textual mode parser
  * #included by alias.c -- DO NOT DELETE
@@ -6,7 +6,7 @@
  * Copyright (c) 1990 Michael Sandroff.
  * Copyright (c) 1991, 1992 Troy Rollo.
  * Copyright (c) 1992-1996 Matthew Green.
- * Copyright © 1993, 2002 EPIC Software Labs
+ * Copyright © 1993, 2003 EPIC Software Labs
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -139,7 +139,7 @@ static	char	*next_unit (char *str, const char *args, int *arg_flag, int stage)
 		*ptr2,			/* used to point matching brackets */
 		*right,			/* used to denote end of bracket-set */
 		*lastc,			/* used to denote end of token-set */
-		*tmp = NULL,		/* place to sprintf() into */
+		*tmp = NULL,		/* place to m_sprintf() into */
 		op;			/* the op were working on */
 	int	got_sloshed = 0,	/* If the last char was a slash */
 		display;
@@ -553,11 +553,8 @@ static	char	*next_unit (char *str, const char *args, int *arg_flag, int stage)
 						strlen(result1) + 
 						(ptr ? strlen(ptr) : 0) + 2;
 
-				/* Obviously, these are safe. */
 				result2 = alloca(size);
-				strcpy(result2, str);
-				strcat(result2, ".");
-				strcat(result2, result1);
+				snprintf(result2, size, "%s.%s", str, result1);
 				new_free(&result1);
 
 				/*
@@ -569,8 +566,7 @@ static	char	*next_unit (char *str, const char *args, int *arg_flag, int stage)
 				 */
 				if (ptr && *ptr)
 				{
-					/* Obviously, this is safe. */
-					strcat(result2, ptr);
+					strlcat(result2, ptr, size);
 					result1 = next_unit(result2, args, arg_flag, stage);
 				}
 				else

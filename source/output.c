@@ -1,4 +1,4 @@
-/* $EPIC: output.c,v 1.7 2002/12/19 03:22:59 jnelson Exp $ */
+/* $EPIC: output.c,v 1.8 2003/04/24 21:49:25 jnelson Exp $ */
 /*
  * output.c: handles a variety of tasks dealing with the output from the irc
  * program 
@@ -178,8 +178,8 @@ int	init_screen (void)
 }
 
 /*
- * put_echo: a display routine for echo that doesnt require an sprintf,
- * so it doesnt have that overhead, and it also doesnt hvae any size 
+ * put_echo: a display routine for echo that doesnt require an snprintf,
+ * so it doesnt have that overhead, and it also doesnt have any size 
  * limitations.  The sky's the limit!
  */
 void	put_echo (const unsigned char *str)
@@ -197,8 +197,8 @@ void	put_echo (const unsigned char *str)
  *
  * Some systems (notorously Ultrix) cannot gracefully convert float
  * variables through "..." into va_list, and attempting to do so will 
- * cause a crash on dereference (in vsprintf()), so do do that.  You'll
- * have to sprintf() the floats into strings and then pass the string 
+ * cause a crash on dereference (in vsnprintf()), so don't do that.  You'll
+ * have to snprintf() the floats into strings and then pass the string 
  * in with %s.  Ugh.  This is not a bug on our part.
  */
 void	put_it (const char *format, ...)
@@ -207,7 +207,7 @@ void	put_it (const char *format, ...)
 	{
 		va_list args;
 		va_start (args, format);
-		vsnprintf(putbuf, OBNOXIOUS_BUFFER_SIZE, format, args);
+		vsnprintf(putbuf, sizeof putbuf, format, args);
 		va_end(args);
 		put_echo(putbuf);
 	}
@@ -219,7 +219,7 @@ void	file_put_it (FILE *fp, const char *format, ...)
 	{
 		va_list args;
 		va_start (args, format);
-		vsnprintf(putbuf, OBNOXIOUS_BUFFER_SIZE, format, args);
+		vsnprintf(putbuf, sizeof putbuf, format, args);
 		va_end(args);
 		if (fp)
 		{
@@ -250,17 +250,17 @@ void 	vsay (const char *format, va_list args)
 			    char *foo;
 
 			    foo = expand_alias(str, empty_string, &af, NULL);
-			    strlcpy(putbuf, foo, OBNOXIOUS_BUFFER_SIZE);
+			    strlcpy(putbuf, foo, sizeof putbuf);
 			    new_free(&foo);
 			}
 			else
-			    strlcpy(putbuf, str, OBNOXIOUS_BUFFER_SIZE);
+			    strlcpy(putbuf, str, sizeof putbuf);
 
-			strlcat(putbuf, " ", OBNOXIOUS_BUFFER_SIZE);
+			strlcat(putbuf, " ", sizeof putbuf);
 		}
 
 		vsnprintf(putbuf + strlen(putbuf), 
-			OBNOXIOUS_BUFFER_SIZE - strlen(putbuf) - 1, 
+			sizeof(putbuf) - strlen(putbuf) - 1, 
 			format, args);
 
 		put_echo(putbuf);
@@ -281,7 +281,7 @@ void	yell (const char *format, ...)
 	{
 		va_list args;
 		va_start (args, format);
-		vsnprintf(putbuf, OBNOXIOUS_BUFFER_SIZE, format, args);
+		vsnprintf(putbuf, sizeof putbuf, format, args);
 		va_end(args);
 		if (do_hook(YELL_LIST, "%s", putbuf))
 			put_echo(putbuf);
@@ -299,7 +299,7 @@ void 	error (const char *format, ...)
 	{
 		va_list args;
 		va_start (args, format);
-		vsnprintf(putbuf, OBNOXIOUS_BUFFER_SIZE, format, args);
+		vsnprintf(putbuf, sizeof putbuf, format, args);
 		va_end(args);
 		do_hook(YELL_LIST, "%s", putbuf);
 		put_echo(putbuf);

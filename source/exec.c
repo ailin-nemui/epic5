@@ -1,11 +1,11 @@
-/* $EPIC: exec.c,v 1.17 2003/03/29 08:10:22 jnelson Exp $ */
+/* $EPIC: exec.c,v 1.18 2003/04/24 21:49:25 jnelson Exp $ */
 /*
  * exec.c: handles exec'd process for IRCII 
  *
  * Copyright (c) 1990 Michael Sandroff.
  * Copyright (c) 1991, 1992 Troy Rollo.
  * Copyright (c) 1992-1996 Matthew Green.
- * Copyright © 1997, 2002 EPIC Software Labs
+ * Copyright © 1997, 2003 EPIC Software Labs
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -945,6 +945,7 @@ int 		text_to_process (int proc_index, const char *text, int show)
 {
 	Process	*	proc;
 	char	*	my_buffer;
+	size_t	size;
 
 	if (valid_process_index(proc_index) == 0)
 		return 1;
@@ -956,10 +957,9 @@ int 		text_to_process (int proc_index, const char *text, int show)
 		put_it("%s%s", get_prompt_by_refnum(proc->refnum), text);
 	message_to(0);
 
-	my_buffer = alloca(strlen(text) + 2);
-	/* Obviously this is safe. */
-	strcpy(my_buffer, text);
-	strcat(my_buffer, "\n");
+	size = strlen(text) + 2;
+	my_buffer = alloca(size);
+	snprintf(my_buffer, size, "%s\n", text);
 	write(proc->p_stdin, my_buffer, strlen(my_buffer));
 	set_prompt_by_refnum(proc->refnum, empty_string);
 

@@ -1,8 +1,8 @@
-/* $EPIC: files.c,v 1.17 2003/01/29 21:56:01 crazyed Exp $ */
+/* $EPIC: files.c,v 1.18 2003/04/24 21:49:25 jnelson Exp $ */
 /*
  * files.c -- allows you to read/write files. Wow.
  *
- * Copyright © 1995, 2002 EPIC Software Labs
+ * Copyright © 1995, 2003 EPIC Software Labs
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
