@@ -429,7 +429,7 @@ static void p_privmsg (char *from, char **Args)
 
 static void p_quit (char *from, char **ArgList)
 {
-	int		one_prints = 0;
+	int		one_prints = 1;
 	const char *	chan;
 	char *		Reason;
 
@@ -439,9 +439,16 @@ static void p_quit (char *from, char **ArgList)
 		Reason = ArgList[0] ? ArgList[0] : "?";
 		for (chan = walk_channels(1, from); chan; chan = walk_channels(0, from))
 		{
+			if (check_ignore_channel(from, FromUserHost, chan,
+							IGNORE_CRAP) == IGNORED)
+			{       
+				one_prints = 0;
+				continue;
+			}
+
 			message_from(chan, LOG_CRAP);
-			if (do_hook(CHANNEL_SIGNOFF_LIST, "%s %s %s", chan, from, Reason))
-				one_prints = 1;
+			if (!do_hook(CHANNEL_SIGNOFF_LIST, "%s %s %s", chan, from, Reason))
+				one_prints = 0;
 			message_from((char *) 0, LOG_CURRENT);
 		}
 		if (one_prints)

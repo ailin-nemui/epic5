@@ -2056,7 +2056,7 @@ BUILT_IN_COMMAND(quotecmd)
 {
 	int	old_from_server = from_server;
 	int	urlencoded = 0;
-	int	length;
+	size_t	length;
 
 	if (*command == 'X')
 	{

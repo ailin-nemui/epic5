@@ -9,7 +9,7 @@
  */
 
 #if 0
-static	char	rcsid[] = "@(#)$Id: crypt.c,v 1.5 2001/11/29 02:05:24 crazyed Exp $";
+static	char	rcsid[] = "@(#)$Id: crypt.c,v 1.6 2002/02/18 06:59:13 crazyed Exp $";
 #endif
 
 #include "irc.h"
@@ -183,7 +183,7 @@ void 	my_decrypt (char *str, int len, char *key)
 	str[i] = (char) 0;
 }
 
-char* 	prog_crypt (char *str, int *len, Crypt *key, int flag)
+char* 	prog_crypt (char *str, size_t *len, Crypt *key, int flag)
 {
 	char	*ret = NULL, *input;
 	char	*args[] = { key->prog, flag ? "encrypt" : "decrypt" , NULL };
@@ -203,7 +203,7 @@ char* 	prog_crypt (char *str, int *len, Crypt *key, int flag)
 
 static 	char *do_crypt (char *str, Crypt *key, int flag)
 {
-	int	c;
+	size_t	c;
 	char	*free = NULL;
 
 	c = strlen(str);
