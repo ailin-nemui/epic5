@@ -63,7 +63,7 @@ on ^set "paste_delay %" {
 	if (!isnumber($1) || [$1] <= 0) {
 		xecho -b Usage: /SET PASTE_DELAY seconds
 	} {
-		paste.delay = [$1]
+		@ paste.delay = [$1]
 		xecho -b PASTE_DELAY set to $paste.delay seconds.
 	}
 }
@@ -71,6 +71,11 @@ on ^set "paste_delay %" {
 # # #
 alias setup_paste 
 {
+	stack push bind ^I
+	bind ^I self_insert
+
+	stack push on input
+	on input -
 	on ^input * {
 		if (paste.strip) {
 			//send $0 $1-
@@ -78,11 +83,16 @@ alias setup_paste
 			//send $*
 		}
 	}
+	timer -refnum PASTEOFF $paste.delay set paste off
 }
 
+# The 'defer' is for epic clients before epic4-1.1.8
 alias remove_paste
 {
 	on input -*
+	stack pop on input
+	stack pop bind ^I
+	defer ^timer -delete PASTEOFF
 }
 
 #hop'y2k3
