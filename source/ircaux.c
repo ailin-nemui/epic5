@@ -1,4 +1,4 @@
-/* $EPIC: ircaux.c,v 1.46 2002/07/17 22:52:52 jnelson Exp $ */
+/* $EPIC: ircaux.c,v 1.47 2002/07/26 17:10:07 jnelson Exp $ */
 /*
  * ircaux.c: some extra routines... not specific to irc... that I needed 
  *
@@ -3826,31 +3826,36 @@ const char *	switch_hostname (const char *new_hostname)
 {
 	char *	retval;
 	ISA 	new_4;
-	ISA6 	new_6;
 	char 	v4_name[1024];
-	char	v6_name[1024];
 	int	accept4 = 0;
+#ifdef INET6
+	ISA6 	new_6;
+#endif
+	char	v6_name[1024];
 	int	accept6 = 0;
 
 	strcpy(v4_name, "<none>");
-	strcpy(v6_name, "<none>");
-
 	new_4.sin_family = AF_INET;
-	new_6.sin6_family = AF_INET6;
-
 	if (!inet_strton(new_hostname, zero, (SA *)&new_4, 0)) {
 		inet_ntostr((SA *)&new_4, v4_name, 1024, NULL, 0, NI_NUMERICHOST);
 		accept4 = 1;
 	}
+
+	strcpy(v6_name, "<none>");
+#ifdef INET6
+	new_6.sin6_family = AF_INET6;
 	if (!inet_strton(new_hostname, zero, (SA *)&new_6, 0)) {
 		inet_ntostr((SA *)&new_6, v6_name, 1024, NULL, 0, NI_NUMERICHOST);
 		accept6 = 1;
 	}
+#endif
 
 	if (accept4 || accept6)
 	{
 		new_free(&LocalIPv4Addr);
+#ifdef INET6
 		new_free(&LocalIPv6Addr);
+#endif
 
 		if (accept4)
 		{
@@ -3858,11 +3863,13 @@ const char *	switch_hostname (const char *new_hostname)
 		    *LocalIPv4Addr = new_4;
 		}
 
+#ifdef INET6
 		if (accept6) 
 		{
 		    LocalIPv6Addr = (ISA6 *)new_malloc(sizeof(*LocalIPv6Addr));
 		    *LocalIPv6Addr = new_6;
 		}
+#endif
 
 		malloc_strcpy(&LocalHostName, new_hostname);
 

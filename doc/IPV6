@@ -1,3 +1,61 @@
+(connectory)
+        memset(&hints, 0, sizeof(hints));
+        hints.ai_family = family;
+        hints.ai_socktype = SOCK_STREAM;
+        if ((err = Getaddrinfo(host, port, &hints, &results)))
+                return -5;
+---
+(inet_vhostsockaddr)
+        /*
+         * Can it really be this simple?
+         */
+        memset(&hints, 0, sizeof(hints));
+        hints.ai_family = family;
+        hints.ai_socktype = SOCK_STREAM;
+        if (port != -1)
+        {
+                hints.ai_flags = AI_PASSIVE;
+                snprintf(p_port, 12, "%hu", port);
+                p = p_port;
+        }
+
+        if ((err = Getaddrinfo(LocalHostName, p, &hints, &res)))
+                return -10;
+---
+(inet_strton -- <INTERESTING>)
+AI_NUMERICHOST
+                memset(&hints, 0, sizeof(hints));
+                hints.ai_flags = flags;
+                hints.ai_family = family;
+                hints.ai_socktype = SOCK_STREAM;
+                hints.ai_protocol = 0;
+
+                if ((retval = Getaddrinfo(host, port, &hints, &results))) {
+                    yell("getaddrinfo(%s): %s", host, gai_strerror(retval));
+                    return -5;
+                }
+---
+(wserv)
+        memset(&hints, 0, sizeof(hints));
+        hints.ai_flags = 0;
+        hints.ai_family = AF_INET;
+        hints.ai_socktype = SOCK_STREAM;
+        hints.ai_protocol = 0;
+
+        if ((retval = getaddrinfo(host, port, &hints, &results))) {
+            yell("getaddrinfo(%s): %s", host, gai_strerror(retval));
+            my_exit(6);
+        }
+
+
+
+
+
+
+
+
+
+-------------------------------------------------------------------------------
 This document details the conversion of EPIC into an IPv6 program.  If this
 document can be made use to anyone else, they are welcome to it.
 

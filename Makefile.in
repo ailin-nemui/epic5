@@ -131,7 +131,7 @@ installepic installirc: epic installdirs test
 #
 # wserv
 #
-wserv4: source/wserv.c source/Makefile
+wserv4: source/wserv.c source/gailib.c source/Makefile
 	@cd source; $(MAKE2) wserv4
 
 WSERV	 = $(wserv_exe)

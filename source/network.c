@@ -1,4 +1,4 @@
-/* $EPIC: network.c,v 1.37 2002/07/17 22:52:52 jnelson Exp $ */
+/* $EPIC: network.c,v 1.38 2002/07/26 17:10:07 jnelson Exp $ */
 /*
  * network.c -- handles stuff dealing with connecting and name resolving
  *
@@ -489,7 +489,7 @@ int	inet_ntostr (SA *name, char *host, int hsize, char *port, int psize, int fla
 	socklen_t len;
 
 	len = socklen(name);
-	if ((retval = Getnameinfo(name, len, host, hsize, port, psize, flags))) {
+	if ((retval = Getnameinfo(name, len, host, hsize, port, psize, flags | NI_NUMERICSERV))) {
 		yell("Getnameinfo(%s): %s", host, gai_strerror(retval));
 		return retval;
 	}
@@ -725,8 +725,10 @@ static socklen_t	socklen (SA *sockaddr)
 {
 	if (sockaddr->sa_family == AF_INET)
 		return sizeof(ISA);
+#ifdef INET6
 	else if (sockaddr->sa_family == AF_INET6)
 		return sizeof(ISA6);
+#endif
 	else if (sockaddr->sa_family == AF_UNIX)
 		return strlen(((USA *)sockaddr)->sun_path) + 2;
 	else

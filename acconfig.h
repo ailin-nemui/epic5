@@ -1,5 +1,5 @@
 /*
- * @(#)$Id: acconfig.h,v 1.13 2002/05/27 02:43:35 jnelson Exp $
+ * @(#)$Id: acconfig.h,v 1.14 2002/07/26 17:10:07 jnelson Exp $
  */
 
 /*
@@ -271,4 +271,13 @@
 
 /* Define this if you have a getaddrinfo() with missing functionality */
 #undef GETADDRINFO_DOES_NOT_DO_AF_UNIX
+
+/* Define this if you do not want INET6 support */
+#undef DO_NOT_USE_IPV6
+
+/* Define this if you have struct addrinfo */
+#undef HAVE_STRUCT_ADDRINFO
+
+/* Define this if you have struct sockaddr_in6 */
+#undef HAVE_STRUCT_SOCKADDR_IN6
 

@@ -12,6 +12,15 @@
 #include "defs.h"
 
 /*
+ * Try to turn back the IPv6 monster at the gate
+ */
+#ifdef DO_NOT_USE_IPV6
+# undef INET6
+#else
+# define INET6
+#endif
+
+/*
  * Everybody needs these ANSI headers...
  */
 #include <stdio.h>
@@ -271,17 +280,50 @@ struct sockaddr_storage {
 typedef int socklen_t;
 #endif
 
+#ifndef HAVE_STRUCT_SOCKADDR_IN6
+#undef INET6
+#endif
+
+#if !defined(HAVE_GETADDRINFO) || !defined(HAVE_GETNAMEINFO) || !defined(HAVE_STRUCT_ADDRINFO)
+# define NEED_GAILIB
+# undef INET6
+# ifndef HAVE_GETADDRINFO
+#  define getaddrinfo getaddrinfo__compat
+#  define freeaddrinfo freeaddrinfo__compat
+#  define gai_strerror gai_strerror__compat
+   struct addrinfo__compat {
+        int     ai_flags;       /* AI_PASSIVE, AI_CANONNAME */
+        int     ai_family;      /* PF_xxx */
+        int     ai_socktype;    /* SOCK_xxx */
+        int     ai_protocol;    /* 0 or IPPROTO_xxx for IPv4 and IPv6 */
+        size_t  ai_addrlen;     /* length of ai_addr */
+        char    *ai_canonname;  /* canonical name for hostname */
+        struct sockaddr *ai_addr;       /* binary address */
+        struct addrinfo__compat *ai_next;    /* next structure in linked list */
+   };
+#  define addrinfo addrinfo__compat
+# endif
+# ifndef HAVE_GETNAMEINFO
+#  define getnameinfo getnameinfo__compat
+# endif
+# include "gailib.h"
+#endif
+
+
 /*
  * Define some lazy shorthand typedefs for commonly used structures
  */
 typedef struct sockaddr 	SA;
 typedef struct sockaddr_storage	SS;
-typedef struct sockaddr_in6	ISA6;
-typedef struct sockaddr_in6	I6SA;
 typedef struct sockaddr_in 	ISA;
 typedef struct in_addr		IA;
+
+#ifdef INET6
+typedef struct sockaddr_in6	ISA6;
+typedef struct sockaddr_in6	I6SA;
 typedef struct in6_addr		IA6;
 typedef struct in6_addr		I6A;
+#endif
 
 typedef struct addrinfo		AI;
 typedef struct hostent		Hostent;

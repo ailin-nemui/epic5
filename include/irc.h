@@ -143,7 +143,9 @@ extern		char	zero[];
 extern		char	comma[];
 
 extern 		ISA *	LocalIPv4Addr;
+#ifdef INET6
 extern		ISA6 *	LocalIPv6Addr;
+#endif
 extern		fd_set  readables;
 extern struct timeval 	start_time;
 extern struct timeval	idle_time;

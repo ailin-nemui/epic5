@@ -1,4 +1,4 @@
-/* $EPIC: dcc.c,v 1.34 2002/07/17 22:52:52 jnelson Exp $ */
+/* $EPIC: dcc.c,v 1.35 2002/07/26 17:10:07 jnelson Exp $ */
 /*
  * dcc.c: Things dealing client to client connections. 
  *
@@ -769,8 +769,10 @@ static void	dcc_send_booster_ctcp (DCC_list *dcc)
 
 	if (family == AF_INET)
 		V4PORT(my_sockaddr) = V4PORT(dcc->local_sockaddr);
+#ifdef INET6
 	else if (family == AF_INET6)
 		V6PORT(my_sockaddr) = V6PORT(dcc->local_sockaddr);
+#endif
 	else
 	{
 		yell("Could not send a CTCP handshake becuase the address family is not supported.");

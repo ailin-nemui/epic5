@@ -10,6 +10,12 @@ KNOWN ERRATA (eg, bugs, or unresolved requests):
 * The mangler might expand things more than 3 times -- possible
   interference from the attribute parser?  caused by many ^v's.
 * Add /timer -delete_for_window or something to avoid window switch warnings?
+* Conditionalize on AF_INET6 support for those who don't have it.
+* Need an AI_NUMERICHOST
+* Need to #define addrinfo addrinfo__compat
+* Check for uses of ISA6 
+* After calling connectory(), try to output meaningful error messages, not 
+  just blindly calling my_strerror(errno).
  
 [See http://www.epicsol.org/PROJECTS for things to come in the future]
 [See http://www.epicsol.org/CHANGELOG for things that changed in the past]
