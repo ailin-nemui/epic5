@@ -1,4 +1,4 @@
-/* $EPIC: network.c,v 1.53 2004/01/05 16:24:40 jnelson Exp $ */
+/* $EPIC: network.c,v 1.54 2004/01/08 02:44:35 jnelson Exp $ */
 /*
  * network.c -- handles stuff dealing with connecting and name resolving
  *
@@ -48,8 +48,6 @@ static int	set_blocking (int fd);
 static int	inet_remotesockaddr (int family, const char *host, const char *port, SS *storage, socklen_t *len);
 int	inet_vhostsockaddr (int family, int port, SS *storage, socklen_t *len);
 static int	Connect (int fd, SA *addr);
-	int	Getaddrinfo (const char *nodename, const char *servname, const AI *hints, AI **res);
-	void	Freeaddrinfo (AI *ai);
 static socklen_t	socklen (SA *sockaddr);
 static int	Getnameinfo(const SA *sa, socklen_t salen, char *host, size_t hostlen, char *serv, size_t servlen, int flags);
 

@@ -101,3 +101,10 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Fix some compiler issues and so forth
 * Nix the NOTE level.
 * Move load_ircrc() to irc.c, nix "startup_file" global var.
+* Always change server state using set_server_status(), because...
+* Add /ON SERVER_STATUS, $0 is refnum, $1 is old state, $2 is new state
+* Delete /on widelist, no longer used
+* Prototype mode string manipulation functions
+* Reorganize names.h to reflect new realities
+* Prototype (Get|Free)addrinfo() now that server.c uses them.
+* Nix /window bind, rebind, unbound; $windowctl(* BIND_CHANNEL *)

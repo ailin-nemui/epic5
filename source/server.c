@@ -1,4 +1,4 @@
-/* $EPIC: server.c,v 1.114 2004/01/07 16:05:02 jnelson Exp $ */
+/* $EPIC: server.c,v 1.115 2004/01/08 02:44:35 jnelson Exp $ */
 /*
  * server.c:  Things dealing with that wacky program we call ircd.
  *
@@ -69,6 +69,12 @@ static 	void 	remove_from_server_list (int i, int override);
 static	char    lame_wait_nick[] = "***LW***";
 static	char    wait_nick[] = "***W***";
 static	int	never_connected = 1;
+
+const char *server_states[8] = {
+	"RECONNECT",		"CONNECTING",		"REGISTERING",
+	"SYNCING"		"ACTIVE",		"EOF",
+	"CLOSING",		"CLOSED"
+};
 
 /************************ SERVERLIST STUFF ***************************/
 
@@ -1265,7 +1271,7 @@ int 	connect_to_server (int new_server, int restart)
 	say("Connecting to port %d of server %s [refnum %d]", 
 			s->port, s->name, new_server);
 
-	s->status = SERVER_CONNECTING;
+	set_server_status(new_server, SERVER_CONNECTING);
 	s->closing = 0;
 	oper_command = 0;
 	errno = 0;
@@ -1292,7 +1298,7 @@ int 	connect_to_server (int new_server, int restart)
 		else
 			say("Unable to connect to server.");
 
-		s->status = SERVER_CLOSED;
+		set_server_status(new_server, SERVER_CLOSED);
 		return -1;		/* Connect failed */
 	}
 
@@ -1361,7 +1367,7 @@ void	close_server (int refnum, const char *message)
 
 	was_registered = is_server_registered(refnum);
 
-	s->status = SERVER_CLOSING;
+	set_server_status(refnum, SERVER_CLOSING);
 	clean_server_queues(refnum);
 	if (s->waiting_out > s->waiting_in)		/* XXX - hack! */
 		s->waiting_out = s->waiting_in = 0;
@@ -1404,7 +1410,7 @@ void	close_server (int refnum, const char *message)
 	do_hook(SERVER_LOST_LIST, "%d %s %s", 
 			refnum, s->name, message ? message : empty_string);
 	s->des = new_close(s->des);
-	s->status = SERVER_CLOSED;
+	set_server_status(refnum, SERVER_CLOSED);
 }
 
 /********************* OTHER STUFF ************************************/
@@ -1640,10 +1646,10 @@ void	register_server (int refnum, const char *nick)
 	if (!(s = get_server(refnum)))
 		return;
 
-	if (s->status != SERVER_CONNECTING)
+	if (get_server_status(refnum) != SERVER_CONNECTING)
 	{
 		if (x_debug & DEBUG_SERVER_CONNECT)
-			say("Server [%d] state should be [%d] but it is [%d]", refnum, SERVER_CONNECTING, s->status);
+			say("Server [%d] state should be [%d] but it is [%d]", refnum, SERVER_CONNECTING, get_server_status(refnum));
 		return;		/* Whatever */
 	}
 
@@ -1654,7 +1660,7 @@ void	register_server (int refnum, const char *nick)
 		return;		/* Whatever */
 	}
 
-	s->status = SERVER_REGISTERING;
+	set_server_status(refnum, SERVER_REGISTERING);
 
 	do_hook(SERVER_ESTABLISHED_LIST, "%s %d",
 		get_server_name(refnum), get_server_port(refnum));
@@ -1790,11 +1796,13 @@ int	is_server_open (int refnum)
 int	is_server_registered (int refnum)
 {
 	Server *s;
+	int	status;
 
 	if (!(s = get_server(refnum)))
 		return 0;
 
-	if (s->status == SERVER_SYNCING  || s->status == SERVER_ACTIVE)
+	status = get_server_status(refnum);
+	if (status == SERVER_SYNCING  || status == SERVER_ACTIVE)
 		return 1;
 	else
 		return 0;
@@ -1812,7 +1820,7 @@ void  server_is_registered (int refnum, const char *itsname, const char *ourname
 	if (!(s = get_server(refnum)))
 		return;
 
-	s->status = SERVER_SYNCING;
+	set_server_status(refnum, SERVER_SYNCING);
 
 	accept_server_nickname(refnum, ourname);
 	set_server_itsname(refnum, itsname);
@@ -1842,7 +1850,7 @@ void  server_is_registered (int refnum, const char *itsname, const char *ourname
 	get_server_port(refnum), 
 	get_server_itsname(from_server));
 	window_check_channels();
-	s->status = SERVER_ACTIVE;
+	set_server_status(refnum, SERVER_ACTIVE);
 }
 
 void	server_is_unregistered (int refnum)
@@ -1862,7 +1870,7 @@ int	is_server_active (int refnum)
 	if (!(s = get_server(refnum)))
 		return 0;
 
-	if (s->status == SERVER_ACTIVE)
+	if (get_server_status(refnum) == SERVER_ACTIVE)
 		return 1;
 	return 0;
 }
@@ -2362,7 +2370,6 @@ IACCESSOR(v, sent)
 IACCESSOR(v, version)
 IACCESSOR(v, line_length)
 IACCESSOR(v, max_cached_chan_size)
-IACCESSOR(v, status)
 SACCESSOR(chan, invite_channel, NULL)
 SACCESSOR(nick, last_notify_nick, NULL)
 SACCESSOR(nick, joined_nick, NULL)
@@ -2375,6 +2382,31 @@ SACCESSOR(group, group, "<default>")
 SACCESSOR(message, quit_message, "get_server_quit_message")
 SACCESSOR(cookie, cookie, NULL)
 SACCESSOR(ver, version_string, NULL)
+
+GET_IATTRIBUTE(status)
+void	set_server_status (int refnum, int flag)
+{
+	Server *s;
+	int	old_status;
+	const char *oldstr, *newstr;
+
+	if (!(s = get_server(refnum)))
+		return;
+
+	if (flag < 0 || flag > SERVER_CLOSED)
+		return;			/* Not acceptable */
+
+	old_status = s->status;
+	if (old_status < 0 || old_status > SERVER_CLOSED)
+		oldstr = "UNKNOWN";
+
+	s->status = flag;
+
+	newstr = server_states[flag];
+	oldstr = server_states[old_status];
+	do_hook(SERVER_STATUS_LIST, "%d %s %s", refnum, oldstr, newstr);
+}
+
 
 GET_IATTRIBUTE(operator)
 void	set_server_operator (int refnum, int flag)

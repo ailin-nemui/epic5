@@ -1,4 +1,4 @@
-/* $EPIC: names.c,v 1.51 2004/01/05 16:24:40 jnelson Exp $ */
+/* $EPIC: names.c,v 1.52 2004/01/08 02:44:35 jnelson Exp $ */
 /*
  * names.c: This here is used to maintain a list of all the people currently
  * on your channel.  Seems to work 
@@ -102,7 +102,7 @@ static	char		new_channel_format[BIG_BUFFER_SIZE];
 #else
 static	int	match_chan_with_id (const char *chan, const char *match);
 #endif
-	void	channel_hold_election (int winref);
+static	void	channel_hold_election (int winref);
 
 
 /*
@@ -285,15 +285,8 @@ void 	add_channel (const char *name, int server)
 	    {
 		if (tmp->server != from_server)
 			continue;
-		if (!tmp->waiting_channel && !tmp->bind_channel)
+		if (!tmp->waiting_channel)
 			 continue;
-
-		if (tmp->bind_channel && 
-			!match_chan_with_id(name, tmp->bind_channel))
-		{
-			was_window = tmp->refnum;
-			break;
-		}
 
 		if (tmp->waiting_channel &&
 			!match_chan_with_id(name, tmp->waiting_channel))
@@ -1486,14 +1479,6 @@ void   move_channel_to_window (const char *chan, int server, int old_w, int new_
 		panic("Channel [%s:%d] is on window [%d] not on window [%d] (moving to [%d])",
 			chan, server, tmp->winref, old_w, new_w);
 
-	/* 
-	 * Unbind this channel unconditionally unless the new window has
-	 * already bound it.
-	 */
-	x = get_bound_channel_by_refnum(new_w);
-	if (x && my_stricmp(chan, x))
-		unbind_channel(chan, tmp->server);
-
 	/*
 	 * If the old window is waiting for this channel, make the new
 	 * window wait for this channel.
@@ -1506,7 +1491,7 @@ void   move_channel_to_window (const char *chan, int server, int old_w, int new_
 }
 
 
-void	channel_hold_election (int winref)
+static void	channel_hold_election (int winref)
 {
 	if (winref <= 0)
 		return;			/* Whatever.  Probably should panic */

@@ -1,5 +1,94 @@
 EPIC5-0.1
 
+*** News 01/07/2004 -- Removal of WINDOW BIND feature
+	As part of the larger project to decouple windows from channels,
+	the "window bind" feature has been removed.  This means you can 
+	no longer /WINDOW BIND, /WINDOW REBIND, /WINDOW UNBIND, and you 
+	cannot use $windowctl(* BIND_CHANNEL *).  It is expected that 
+	eventually scripts will take over the job of routing channels to 
+	the appropriate windows and EPIC will stay entirely out of the way.
+
+*** News 01/07/2004 -- New /ON, /ON SERVER_STATUS
+	This /ON is thrown every time a server changes its "state".
+	The states are listed below in "Server States" and I won't
+	go into that again here.
+		$0 - The server changing state
+		$1 - The old status (a string, not a number)
+		$2 - The new status
+	If you find that you do something particularly onerous in 
+	this /ON and EPIC panics or crashes, try /DEFERing it, and
+	if that doesn't work either, let me know.
+
+*** News 01/07/2004 -- Removal of NOTE support
+	I doubt anyone will notice this, and if you do, bummer.
+
+*** News 01/07/2004 -- Server states
+	<This is a big deal to document this properly.   Stay tuned>
+
+*** News 01/07/2004 -- Channels are not tracked across disconnects
+	When you are disconnected from a server for *any* reason, EPIC
+	will not retain knowledge of the channels for the next connection
+	and will not rejoin them.  It is expected that scripts will use
+	this to their advantage to fully control the semantics you will
+	have governing "auto-rejoin-on-reconnect".
+
+*** News 01/07/2004 -- Server connections are now brought up asynchronously
+	When you do /WINDOW SERVER or /SERVER or otherwise change the
+	server of a window, the server is not immediately connected or
+	disconnected, and the change will not take effect until the
+	next time through the event looper.  This means that all server
+	connections are "asychronous" (they don't interrupt the current
+	flow of the script).  This means you most definitely cannot
+	do /WINDOW SERVER <host> CHANNEL <channel> any more.  So please
+	stop doing that. ;-)  Use /ON SERVER_STATUS to join channels.
+
+*** News 01/07/2004 -- /XDEBUG SERVER_CONNECT a lot more interesting
+	If you want to watch epic work its gory nonblocking connects,
+	you can turn on this /xdebug and see everything in its glory.
+
+*** News 01/07/2004 -- Nonblocking server connects
+	EPIC now does all server connections using asynchronous, 
+	nonrecursive, nonblocking connections.  And yes, it still 
+	supports multiple protocols and multiple addresses (ie, 
+	"us.undernet.org"), and *yes*, it will try another address if 
+	a server refuses us registration ("You do not have access to 
+	this server").
+
+*** News 01/07/2004 -- EPIC no longer tracks server "dialect" per se
+	The $version() string now always returns "2.8" since all 
+	servers are nominally 2.8 class (rfc1459) servers, and epic
+	does not attempt to determine if it's an undernet, ircnet,
+	efnet, or dalnet server, etc.  This is mostly because scripts
+	can hook /on 004 if they care, and the 005 numeric (ISUPPORT)
+	is making dependance on the server's version much less important.
+
+*** News 01/07/2004 -- EPIC loads ~/.ircrc (or ~/.epicrc) on 001 now
+	Traditionally, ircII has loaded your ircrc when it received 
+	the 002 numeric, and traditionally, epic has done it when it
+	received the 004 numeric.  Due to some refactoring in epic,
+	it is now possible for epic to load your ircrc when it receives
+	the 001 numeric *and before it hooks /on 001*  This means you 
+	shouldn't have to suffer the default epic output for any of
+	the numerics from the server.
+
+*** News 01/07/2004 -- Usermodes now tracked as strings instead of bits
+	Before this change, ircII clients had always tracked your user
+	and channel modes as bits, and the valid (supported) modes were
+	hardcoded into the client at compile time.  With this change, 
+	EPIC will no longer track your modes using bits, but instead 
+	using strings.  This means that epic won't need source code
+	changes to support new modes from your server.  You can't do
+	$serverctl(SET|GET <refnum> UMODES) any more (but the old
+	"UMODE" still works)
+
+*** News 01/07/2004 -- /ON wildcard patterns now compiled into regexes
+	At or around this date, EPIC started converting wildcard patterns
+	used by /ON into extended POSIX regexes and compiling them, and
+	using the regexes instead of the pattern matcher.  In the future,
+	epic will allow you to specify your own regexes.  "Flexible"
+	/on hooks are still wildcard pattern matched (for now) because
+	recompiling the pattern every time the /on is thrown is senseless.
+
 *** News -- 12/16/2003 -- New levels, KICK, QUIT, and MODE
 	So just for a canonical list, here are all of the levels supported
 	by flood, ignore, lastlog, and windows:

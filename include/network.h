@@ -49,6 +49,9 @@
 #define V6ADDR(x) (V6(x)->sin6_addr)
 #define V6PORT(x) (V6(x)->sin6_port)
 
+int	Getaddrinfo	(const char *, const char *, const AI *, AI **);
+void	Freeaddrinfo	(AI *);
+
 int     inet_strton             (const char *, const char *, SA *, int);
 int     inet_ntostr             (SA *, char *, int, char *, int, int);
 const char *inet_hntop             (int, const char *, char *, int);

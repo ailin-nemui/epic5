@@ -140,7 +140,6 @@ typedef	struct	WindowStru
 					 * is set, a JOIN to that channel will
 					 * put that channel into this win.
 					 */
-        char    *bind_channel;          /* Current bound channel for win */
 	char	*query_nick;		/* Current default target for win */
 	WNickList *nicks;		/* List of nick-queries for this win */
 
@@ -240,7 +239,6 @@ const	char	*get_echannel_by_refnum		(unsigned);
 	Window	*get_window_bound_channel	(const char *);
 	int	is_bound_anywhere		(const char *);
 	int	is_bound			(const char *, int);
-	void    unbind_channel 			(const char *, int);
 	char	*get_bound_channel		(Window *);
 	void	destroy_waiting_channels	(int);
 	int	get_window_server		(unsigned);

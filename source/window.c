@@ -1,4 +1,4 @@
-/* $EPIC: window.c,v 1.97 2004/01/05 16:24:40 jnelson Exp $ */
+/* $EPIC: window.c,v 1.98 2004/01/08 02:44:35 jnelson Exp $ */
 /*
  * window.c: Handles the organzation of the logical viewports (``windows'')
  * for irc.  This includes keeping track of what windows are open, where they
@@ -231,7 +231,6 @@ Window	*new_window (Screen *screen)
 	new_w->hold_slider = get_int_var(HOLD_SLIDER_VAR);
 
 	new_w->waiting_channel = NULL;
-	new_w->bind_channel = NULL;
 	new_w->query_nick = NULL;
 	new_w->nicks = NULL;
 
@@ -478,7 +477,6 @@ delete_window_contents:
 	/* Various things... */
 	new_free(&window->query_nick);
 	new_free(&window->waiting_channel);
-	new_free(&window->bind_channel);
 	new_free(&window->logfile);
 	new_free(&window->name);
 
@@ -1906,41 +1904,12 @@ const char 	*get_echannel_by_refnum (unsigned refnum)
 
 int	get_winref_by_bound_channel (const char *channel, int server)
 {
-	Window *tmp = NULL;
-
-	while (traverse_all_windows(&tmp))
-	{
-	    if (tmp->server != server)
-		continue;
-	    if (tmp->bind_channel && !my_stricmp(tmp->bind_channel, channel))
-		return tmp->refnum;
-	}
-
 	return -1;
 }
 
 const char *	get_bound_channel_by_refnum (unsigned refnum)
 {
-	Window *tmp;
-	if (!(tmp = get_window_by_refnum(refnum)))
-		return NULL;
-	return tmp->bind_channel;
-}
-
-void 	unbind_channel (const char *channel, int server)
-{
-	Window *tmp = NULL;
-
-	while (traverse_all_windows(&tmp))
-	{
-	    if (tmp->server == server && tmp->bind_channel &&
-		!my_stricmp(tmp->bind_channel, channel))
-	    {
-		new_free(&tmp->bind_channel);
-		tmp->bind_channel = NULL;
-		return;
-	    }
-	}
+	return NULL;
 }
 
 int	is_window_waiting_for_channel (unsigned refnum, const char *chan)
@@ -2746,115 +2715,6 @@ static Window *window_beep_always (Window *window, char **args)
 }
 
 /*
- * /WINDOW BIND <#channel>
- * Indicates that the window should be "bound" to the specified channel.
- * "binding" a channel to a window means that the channel will always 
- * belong to this window, no matter what.  For example, if a channel is
- * bound to a window, you can do a /join #channel in any window, and it 
- * will always "join" in this window.  This is especially useful when
- * you are disconnected from a server, because when you reconnect, the client
- * often loses track of which channel went to which window.  Binding your
- * channels gives the client a hint where channels belong.
- *
- * You can rebind a channel to a new window, even after it has already
- * been bound elsewhere.
- */
-static Window *window_bind (Window *window, char **args)
-{
-	char *arg;
-	Window *w = NULL;
-	const char *chan;
-
-	if ((arg = next_arg(*args, args)))
-	{
-		if (!is_channel(arg))
-		{
-			say("BIND: %s is not a valid channel name", arg);
-			return NULL;
-		}
-
-		/*
-		 * If its already bound, no point in continuing.
-		 */
-		if (window->bind_channel && !my_stricmp(window->bind_channel, arg))
-		{
-			say("Window is already bound to channel %s", arg);
-			return window;
-		}
-
-		/*
-		 * If the window is bound to something else, let the user
-		 * know about that.
-		 */
-		if (window->bind_channel)
-		{
-			say("Unbinding channel %s from this window", 
-				window->bind_channel);
-			window->bind_channel = NULL;
-		}
-
-		/*
-		 * You must either bind the current channel to a window, or
-		 * you must be binding to a window without a current channel
-		 */
-		chan = get_echannel_by_refnum(window->refnum);
-		if (chan)
-		{
-			if (!my_stricmp(chan, arg))
-				malloc_strcpy(&window->bind_channel, arg);
-			else
-				say("You may only /WINDOW BIND the current channel for this window");
-			return window;
-		}
-
-
-		/*
-		 * So we know this window doesnt have a current channel.
-		 * So we have to find the window where it IS the current
-		 * channel (if it is at all)
-		 */
-		while (traverse_all_windows(&w))
-		{
-			/*
-			 * If we have found a window where this channel
-			 * is the current channel, then we make it so that
-			 * it is the current channel here.
-			 * Also, move_channel_to_window transfer cancels the
-			 * channels' bound status on the old window.
-			 */
-			chan = get_echannel_by_refnum(w->refnum);
-			if (chan && !my_stricmp(chan, arg) &&
-			    w->server == window->server)
-			{
-				move_channel_to_window(arg, window->server, 
-						w->refnum, window->refnum);
-			}
-		}
-
-		/*
-		 * Now we mark this channel as being bound here.
-		 * and as being our current channel.
-		 */
-		malloc_strcpy(&window->bind_channel, arg);
-		say("Window is bound to channel %s", arg);
-
-		if (im_on_channel(arg, window->server))
-		{
-			move_channel_to_window(arg, window->server, 
-						0, window->refnum);
-			say("Current channel for window now %s", arg);
-		}
-	}
-
-	else if ((arg = window->bind_channel))
-		say("Window is bound to channel %s", arg);
-	else
-		say("Window is not bound to any channel");
-
-	return window;
-}
-
-/*
  * /WINDOW CHANNEL <#channel>
  * Directs the client to make a specified channel the current channel for
  * the window -- it will JOIN the channel if you are not already on it.
@@ -2871,9 +2731,7 @@ static Window *window_channel (Window *window, char **args)
 		*arg,
 		*arg2 = NULL,
 		*arg3 = NULL;
-	Window 	*w = NULL;
 	const char *carg;
-	const char *chan;
 	int	l;
 
 	/* Fix by Jason Brand, Nov 6, 2000 */
@@ -2917,26 +2775,6 @@ static Window *window_channel (Window *window, char **args)
 		 */
 		arg = malloc_strcat_ues(&arg2, carg, empty_string);
 		sarg = malloc_strcat_ues(&arg3, sarg, empty_string);
-
-		while (traverse_all_windows(&w))
-		{
-			if (w == window || w->server != window->server)
-				continue;	/* Not us! */
-
-			if (w->bind_channel &&
-				!my_stricmp(arg, w->bind_channel))
-			{
-			    say("Channel %s is already bound elsewhere", arg);
-			    new_free(&arg2);
-			    new_free(&arg3);
-			    return window;
-			}
-
-			chan = get_echannel_by_refnum(w->refnum);
-			if (chan && !my_stricmp(arg, chan))
-			    move_channel_to_window(arg, w->server,
-						w->refnum, window->refnum);
-		}
 
 		l = message_from(arg, LEVEL_CRAP);
 		if (im_on_channel(arg, window->server))
@@ -3049,9 +2887,6 @@ if (window->waiting_channel)
 	say("\tWaiting channel: %s", 
 				window->waiting_channel);
 
-if (window->bind_channel)
-	say("\tBound channel: %s", 
-				window->bind_channel);
 	say("\tQuery User: %s", 
 				window->query_nick ? 
 				window->query_nick : "<None>");
@@ -3097,7 +2932,6 @@ else
 static Window *window_discon (Window *window, char **args)
 {
 	reassign_window_channels(window->refnum);
-	new_free(&window->bind_channel);
 	new_free(&window->waiting_channel);
 	window->last_server = window->server;
 	window->server = NOSERV;	/* XXX This shouldn't be set here. */
@@ -3693,7 +3527,6 @@ static	Window *window_noserv (Window *window, char **args)
 {
 	/* This is just like /window discon but last_server is set to NOSERV */
 	reassign_window_channels(window->refnum);
-	new_free(&window->bind_channel);
 	new_free(&window->waiting_channel);
 	window->last_server = NOSERV;
 	window->server = NOSERV;	/* XXX This shouldn't be set here. */
@@ -3927,81 +3760,6 @@ Window *window_query (Window *window, char **args)
 }
 
 /*
- * /WINDOW REBIND <#channel>
- * The channel will be "bound" to this window unconditionally.  This is
- * the same as /window bind, except that <#channel> does not need to be
- * the current channel of this window.  It may be bound elsewhere, for
- * example.  This function will handle all of that for you.  This function
- * will not fail unless you goof up the argument.
- *
- * Note: This operation is intentionally silent -- Please do not add a 
- * whole bunch of says and yells in here.  The primary purpose of this 
- * function is to be used in things like /on connect where all the output
- * just gets in the way and gives the user no useful information.
- */
-static Window *window_rebind (Window *window, char **args)
-{
-	char *arg;
-	Window *w = NULL;
-
-	if (!(arg = next_arg(*args, args)))
-	{
-		say("REBIND: requires a channel argument");
-		return NULL;
-	}
-
-	if (!is_channel(arg))
-	{
-		say("REBIND: %s is not a valid channel name", arg);
-		return NULL;
-	}
-
-	/*
-	 * If its already bound, just accept it and stop here.
-	 */
-	if (window->bind_channel && !my_stricmp(window->bind_channel, arg))
-		return window;
-
-	/*
-	 * Unbind whatever is currently bound to the window...
-	 */
-	if (window->bind_channel)
-		new_free(&window->bind_channel);
-
-	/*
-	 * Go a-hunting to see if any other window claims this channel.
-	 * If they do, forcibly take it from them.
-	 */
-	while (traverse_all_windows(&w))
-	{
-		/*
-		 * If we have found a window where this channel
-		 * is the current channel, then we make it so that
-		 * it is the current channel here.  This informs
-		 * the channel that it now belongs to us.
-		 * This also unbinds it from the old window.
-		 */
-		const char *chan = get_echannel_by_refnum(w->refnum);
-		if (chan && !my_stricmp(arg, chan) && 
-		    w->server == window->server)
-			move_channel_to_window(arg, w->server, 
-						w->refnum, window->refnum);
-	}
-
-	/*
-	 * Now lay claim to the channel as belonging to us.
-	 * and as being our current channel.  Tell ourselves
-	 * (and the user) that we own this channel now.
-	 */
-	malloc_strcpy(&window->bind_channel, arg);
-	if (im_on_channel(arg, window->server))
-		move_channel_to_window(arg, window->server,
-					0, window->refnum);
-
-	return window;
-}
-
-/*
  * /WINDOW REJOIN <#channel>[,<#channel>]
  * Here's the plan:
  *
@@ -4092,22 +3850,12 @@ Window *window_rejoin (Window *window, char **args)
 		 * take it (wrong server) then we find somebody else to take
 		 * it.  If we can't find somebody else, then we're screwed.
 		 */
-
-		/* If we're on the channel... */
-		if (im_on_channel(chan, from_server))
+		if (im_on_channel(chan, window->server))
 		{
-			/* And i'm on the right server, grab the channel */
-			if (window->server == from_server)
-			{
-				Window *other;
-
-				other = get_window_by_refnum(get_channel_winref(chan, from_server));
-				move_channel_to_window(chan, from_server, 
-						other->refnum, window->refnum);
-				say("You are now talking to channel %s", 
-					check_channel_type(chan));
-			}
-			/* Otherwise, Do not move the channel */
+			move_channel_to_window(chan, window->server, 
+						0, window->refnum);
+			say("You are now talking to channel %s", 
+				check_channel_type(chan));
 		}
 
 		/* I am NOT on the channel. */
@@ -4122,12 +3870,6 @@ Window *window_rejoin (Window *window, char **args)
 			{
 			    if (w->server != from_server)
 				continue;
-			    if (w->bind_channel &&
-			        !my_stricmp(w->bind_channel, chan))
-			    {
-				owner = w;
-				break;
-			    }
 			    if (w->waiting_channel &&
 			        !my_stricmp(w->waiting_channel, chan))
 			    {
@@ -4435,7 +4177,6 @@ Window *window_server (Window *window, char **args)
 		/*
 		 * Lose our channels
 		 */
-		new_free(&window->bind_channel);
 		new_free(&window->waiting_channel);
 		if (window->server != i)
 			reassign_window_channels(window->refnum);
@@ -4445,7 +4186,7 @@ Window *window_server (Window *window, char **args)
 		 */
 		window->server = i;
 		window->last_server = NOSERV;
-		if (get_server_status(i) >= SERVER_EOF)
+		if (get_server_status(i) >= SERVER_CLOSING)
 			set_server_status(i, SERVER_RECONNECT);
 	}
 	else
@@ -4602,30 +4343,6 @@ static Window *window_swappable (Window *window, char **args)
 	return window;
 }
 
-static Window *window_unbind (Window *window, char **args)
-{
-	char *arg;
-
-	if ((arg = next_arg(*args, args)))
-	{
-		if (get_winref_by_bound_channel(arg, window->server) > 0)
-		{
-			say("Channel %s is no longer bound", arg);
-			unbind_channel(arg, from_server);
-		}
-		else
-			say("Channel %s is not bound", arg);
-	}
-	else
-	{
-		say("Channel %s is no longer bound", window->bind_channel);
-		new_free(&window->bind_channel);
-	}
-	return window;
-}
-
-
-
 typedef Window *(*window_func) (Window *, char **args);
 
 typedef struct window_ops_T {
@@ -4638,7 +4355,6 @@ static const window_ops options [] = {
 	{ "BACK",		window_back 		},
 	{ "BALANCE",		window_balance 		},
 	{ "BEEP_ALWAYS",	window_beep_always 	},
-	{ "BIND",		window_bind 		},
 	{ "CHANNEL",		window_channel 		},
 	{ "CLEAR",		window_clear		},
 	{ "CREATE",		window_create 		},
@@ -4682,7 +4398,6 @@ static const window_ops options [] = {
 	{ "PROMPT",		window_prompt 		},
 	{ "PUSH",		window_push 		},
 	{ "QUERY",		window_query		},
-	{ "REBIND",		window_rebind		},
 	{ "REFNUM",		window_refnum 		},
 	{ "REFNUM_OR_SWAP",	window_refnum_or_swap	},
 	{ "REFRESH",		window_refresh		},
@@ -4711,7 +4426,6 @@ static const window_ops options [] = {
 	{ "STATUS_SPECIAL",	window_status_special	},
 	{ "SWAP",		window_swap 		},
 	{ "SWAPPABLE",		window_swappable	},
-	{ "UNBIND",		window_unbind 		},
 	{ NULL,			NULL 			}
 };
 
@@ -5711,7 +5425,7 @@ char 	*windowctl 	(char *input)
 	    } else if (!my_strnicmp(listc, "WAITING_CHANNEL", len)) {
 		RETURN_STR(w->waiting_channel);
 	    } else if (!my_strnicmp(listc, "BIND_CHANNEL", len)) {
-		RETURN_STR(w->bind_channel);
+		RETURN_STR(empty_string);
 	    } else if (!my_strnicmp(listc, "QUERY_NICK", len)) {
 		RETURN_STR(w->query_nick);
 	    } else if (!my_strnicmp(listc, "NICKLIST", len)) {
