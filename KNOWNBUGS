@@ -6,6 +6,10 @@ KNOWN ERRATA (eg, bugs, or unresolved requests):
   prefered over X windows.  Should this be fixed, or at least made an option?
   Maybe try X, fall back to gnu screen on failure?
 * Should /set beep off suppress stripping of beeps?
+* Allegedly 464 numeric shouldn't force a reconnect if we're registered.
+* The mangler might expand things more than 3 times -- possible
+  interference from the attribute parser?  caused by many ^v's.
+
  
 [See http://www.epicsol.org/PROJECTS for things to come in the future]
 [See http://www.epicsol.org/CHANGELOG for things that changed in the past]
@@ -16,3 +20,29 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Fix bug with unitialized local var passed to prepare_display (rb da5id)
 * Fix bug with kb/s not showing up for /DCC GETs
 * Add a check in configure for sa_len in (struct sockaddr), for linux.
+*
+* --- Thus begins The Great IPv4 Cleanup ---
+* Change connect_by_number to take a "family" instead of "protocol" param.
+* Rename host_to_ip, ip_to_host to inet_hntop, inet_ptohn, add family args
+* Change inet_anyton to take SA instead of IA.
+* Add ip_bindery, client_bind, client_connect, connectory, family-independant
+  replacements for connect_by_number.
+* Convert many many IA's to ISA's or even better, to SS's.
+* Revamp how vhost support is handled -- future support for ipv6 possible.
+* Nuke LocalHostAddr, supplanted by LocalIPv4Addr for now.
+* Totaly rewrite how dcc keeps track of ipv4 addresses. Remove redundant data.
+* Keep ports and addresses together in SA's, don't keep separately.
+* Ports that are kept separately are kept in host order.
+* Migrate away from connect_by_number() to the replacement functions in dcc.
+* Ditto for /window create.
+* Eliminate superfluous calls to get(peer|sock)name.
+* Make nearly everything in network.c family-independant capable.
+* Start using inet_pton() and inet_ntop() isntead of inet_aton() etc.
+* All this lets me start identifying and documenting hardcoded AF_INET 
+  code and pushing hardcoded assumptions back into "user space"
+* Add inet_vhostsockaddr() to fill in local sockaddr
+* Add inet_remotesockaddr() to convert host/port to remote sockaddr.
+* Don't do reconnect increment before connection -- breaks /server.
+* Add stuff to configure to check for gethostbyname2, inet_pton, inet_ntop
+* Add ISC's inet_ntop() and inet_pton() to compat.c, just in case.
+* I did a checkin somewhere around here.

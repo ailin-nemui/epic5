@@ -2885,19 +2885,19 @@ BUILT_IN_FUNCTION(function_rewind, words)
 
 BUILT_IN_FUNCTION(function_iptoname, words)
 {
-	char	*ret = ip_to_host(words);
+	char	*ret = inet_ptohn(AF_INET, words);
 	RETURN_STR(ret);		/* Dont put function call in macro! */
 }
 
 BUILT_IN_FUNCTION(function_nametoip, words)
 {
-	char	*ret = host_to_ip(words);
+	char	*ret = inet_hntop(AF_INET, words);
 	RETURN_STR(ret);		/* Dont put function call in macro! */
 }
 
 BUILT_IN_FUNCTION(function_convert, words)
 {
-	char	*ret = one_to_another(words);
+	char	*ret = one_to_another(AF_INET, words);
 	RETURN_STR(ret);		/* Dont put function call in macro! */
 }
 
@@ -6135,22 +6135,22 @@ BUILT_IN_FUNCTION(function_wincurline, input)
 BUILT_IN_FUNCTION(function_iptolong, word)
 {
 	char *	dotted_quad;
-	IA	addr;
+	ISA	addr;
 
 	GET_STR_ARG(dotted_quad, word);
-	if (inet_aton(dotted_quad, &addr))
-		return m_sprintf("%lu", (unsigned long)ntohl(addr.s_addr));
+	if (inet_aton(dotted_quad, &addr.sin_addr))
+		return m_sprintf("%lu", (unsigned long)ntohl(addr.sin_addr.s_addr));
 	RETURN_EMPTY;
 }
 
 BUILT_IN_FUNCTION(function_longtoip, word)
 {
 	char *	ip32;
-	IA	addr;
+	ISA	addr;
 
 	GET_STR_ARG(ip32, word);
-	addr.s_addr = (unsigned long)ntohl(strtoul(ip32, NULL, 10));
-	RETURN_STR(inet_ntoa(addr));
+	addr.sin_addr.s_addr = (unsigned long)ntohl(strtoul(ip32, NULL, 10));
+	RETURN_STR(inet_ntoa(addr.sin_addr));
 }
 
 BUILT_IN_FUNCTION(function_isencrypted, input)

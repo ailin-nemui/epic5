@@ -1,5 +1,5 @@
 /*
- * @(#)$Id: acconfig.h,v 1.10 2002/04/21 06:03:21 jnelson Exp $
+ * @(#)$Id: acconfig.h,v 1.11 2002/05/07 00:05:45 jnelson Exp $
  */
 
 /*
@@ -256,4 +256,13 @@
 
 /* Define this if your system has SA_LEN in its sockaddrs */
 #undef HAVE_SA_LEN
+
+/* Define this if you have inet_ntop() */
+#undef HAVE_INET_NTOP
+
+/* Define this if you have inet_pton() */
+#undef HAVE_INET_PTON
+
+/* Define this if you have gethostbyname2() */
+#undef HAVE_GETHOSTBYNAME2
 

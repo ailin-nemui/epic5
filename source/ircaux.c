@@ -8,7 +8,7 @@
  */
 
 #if 0
-static	char	rcsid[] = "@(#)$Id: ircaux.c,v 1.34 2002/04/26 20:59:40 jnelson Exp $";
+static	char	rcsid[] = "@(#)$Id: ircaux.c,v 1.35 2002/05/07 00:05:45 jnelson Exp $";
 #endif
 
 #include "irc.h"
@@ -3797,15 +3797,22 @@ const char *	switch_hostname (const char *new_hostname)
 
 	if ((hp = gethostbyname(new_hostname)))
 	{
-		LocalHostAddr = *(IA *)hp->h_addr;
+		if (hp->h_addrtype == AF_INET)
+		{
+			LocalIPv4Addr.sin_family = AF_INET;
+			LocalIPv4Addr.sin_port = 0;
+			LocalIPv4Addr.sin_addr = *(IA *)hp->h_addr;
+		}
+		else
+		{
+			retval = m_sprintf("I cannot configure [%s] because it resolves to an IPv6 address -- local address not changed.", new_hostname);
+			return retval;
+		}
 
-		LocalIPv4Addr.sin_family = AF_INET;
-		LocalIPv4Addr.sin_port = 0;
-		LocalIPv4Addr.sin_addr = LocalHostAddr;
 
 		malloc_strcpy(&LocalHostName, new_hostname);
 		retval = m_sprintf("Local address changed to [%s] (%s)",
-			LocalHostName, inet_ntoa(LocalHostAddr));
+			LocalHostName, inet_ntoa(LocalIPv4Addr.sin_addr));
 	}
 	else
 		retval = m_sprintf("I cannot configure [%s] -- local address not changed.", new_hostname);

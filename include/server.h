@@ -66,7 +66,7 @@ typedef	struct
 	IA	local_addr;      	/* ip address of this connection */
 	ISA	local_sockname; 	/* sockname of this connection */
 	ISA	remote_sockname; 	/* sockname of this connection */
-	IA	uh_addr;		/* ip address the server sees */
+	ISA	uh_addr;		/* ip address the server sees */
 	NotifyList	notify_list;	/* Notify list for this server */
 	int	reconnects;		/* Number of reconnects done */
 	char 	*cookie;		/* Erf/TS4 "cookie" value */

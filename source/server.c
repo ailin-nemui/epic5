@@ -107,7 +107,7 @@ void 	add_to_server_list (const char *server, int port, const char *password, co
 		s->ison_queue = NULL;
 		s->userhost_queue = NULL;
 		s->local_addr.s_addr = 0;
-		s->uh_addr.s_addr = 0;
+		s->uh_addr.sin_addr.s_addr = 0;
 		s->umodes = NULL;
 		s->redirect = NULL;
 		s->cookie = NULL;
@@ -1085,8 +1085,7 @@ static int 	connect_to_server (int new_server)
 	memset(remaddr, 0, sizeof(*remaddr));
 
 	this_sucks = (unsigned short)s->port;
-	des = connect_by_number(s->name, &this_sucks,
-					SERVICE_CLIENT, PROTOCOL_TCP);
+	des = connect_by_number(s->name, &this_sucks, AF_UNSPEC, SERVICE_CLIENT);
 	s->port = this_sucks;
 
 	if (des < 0)
@@ -1363,7 +1362,7 @@ int	reconnect (int oldserv, int samegroup)
 			continue;
 		if (newserv != oldserv && j == oldserv)
 			continue;
-		if (++server_list[j].reconnects > max_reconnects) {
+		if (server_list[j].reconnects++ > max_reconnects) {
 			say("Auto-reconnect has been throttled because too many unsuccessfull attempts to connect to server %d have been performed.", j);
 			break;
 		}
@@ -2093,7 +2092,7 @@ IA	get_server_local_addr (int servnum)
 
 IA	get_server_uh_addr (int servnum)
 {
-	return server_list[servnum].uh_addr;
+	return server_list[servnum].uh_addr.sin_addr;
 }
 
 /* USERHOST */
@@ -2111,6 +2110,7 @@ void	set_server_userhost (int refnum, const char *userhost)
 	malloc_strcpy(&server_list[from_server].userhost, userhost);
 
 	/* Ack! */
+	server_list[from_server].uh_addr.sin_family = AF_INET;
 	if (inet_anyton(host + 1, &server_list[from_server].uh_addr))
 		yell("Ack.  The server says your userhost is [%s] and "
 		     "I can't figure out the IP address of that host! "

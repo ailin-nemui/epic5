@@ -1262,7 +1262,7 @@ BUILT_IN_COMMAND(e_hostname)
 	}
 	else
 		say("Local Host name is %s",
-			(LocalHostName) ? LocalHostName : hostname);
+			LocalHostName ? LocalHostName : hostname);
 }
 
 

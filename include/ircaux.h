@@ -7,7 +7,7 @@
  *
  * See the COPYRIGHT file, or do a HELP IRCII COPYRIGHT 
  *
- * @(#)$Id: ircaux.h,v 1.16 2002/04/29 02:18:20 jnelson Exp $
+ * @(#)$Id: ircaux.h,v 1.17 2002/05/07 00:05:45 jnelson Exp $
  */
 
 #ifndef _IRCAUX_H_
@@ -184,17 +184,19 @@ char *		real_extract2 		(const char *, int, int, int);
 /* Used for connect_by_number */
 #define SERVICE_SERVER 	0
 #define SERVICE_CLIENT 	1
-#define PROTOCOL_TCP 	0
-#define PROTOCOL_UDP 	1
 
 /* Used from network.c */
 int 	connect_by_number 	(char *, unsigned short *, int, int);
-char 	*host_to_ip 		(const char *);
-char 	*ip_to_host 		(const char *);
-char 	*one_to_another 	(const char *);
+char 	*inet_hntop 		(int, const char *);
+char 	*inet_ptohn 		(int, const char *);
+char 	*one_to_another 	(int, const char *);
 int	my_accept		(int, SA *, int *);
-int	inet_anyton		(const char *, IA *);
+int	inet_anyton		(const char *, SA *);
 const char *switch_hostname	(const char *);
+int	ip_bindery		(int family, u_short port, SS *storage);
+int	client_bind		(SA *, socklen_t);
+int	client_connect		(SA *, socklen_t, SA *, socklen_t);
+int	connectory		(int, const char *, u_short);
 
 extern	unsigned char isspace_table[256];
 #define my_isspace(x) isspace_table[(unsigned)(unsigned char)(x)]

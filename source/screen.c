@@ -2810,6 +2810,7 @@ Window	*create_additional_screen (void)
         char    	*displayvar,
                 	*termvar;
         int     	screen_type = ST_NOTHING;
+	ISA		local_sockaddr;
         ISA		new_socket;
 	int		new_cmd;
 	fd_set		fd_read;
@@ -2859,14 +2860,13 @@ Window	*create_additional_screen (void)
                 screen_type == ST_SCREEN ? "screen" :
                                            "wound" );
 
-	port = 0;
-	new_cmd = connect_by_number(NULL, &port, SERVICE_SERVER, PROTOCOL_TCP);
-	if (new_cmd < 0)
+	if ((new_cmd = ip_bindery(AF_INET, 0, (SS *)&local_sockaddr)) < 0)
 	{
 		yell("Couldnt establish server side -- error [%d] [%s]", 
 				new_cmd, my_strerror(errno));
 		return NULL;
 	}
+	port = ntohs(local_sockaddr.sin_port);
 
 	oldscreen = current_window->screen;
 	new_s = create_new_screen();

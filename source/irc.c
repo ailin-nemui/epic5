@@ -25,7 +25,7 @@ const char internal_version[] = "20020317";
 /*
  * In theory, this number is incremented for every commit.
  */
-const unsigned long	commit_id = 247;
+const unsigned long	commit_id = 248;
 
 /*
  * As a way to poke fun at the current rage of naming releases after
@@ -165,7 +165,6 @@ Timeval		now = {0, 0};
  * If that happens, outbound connections will fail, and its not my fault.
  */
 char *		LocalHostName = NULL;
-IA		LocalHostAddr;
 ISA		LocalIPv4Addr;
 
 int		inbound_line_mangler = 0,
@@ -725,7 +724,6 @@ static	void	parse_args (int argc, char **argv)
 	/*
 	 * Figure out our virtual hostname, if any.
 	 */
-	memset(&LocalHostAddr, 0, sizeof(LocalHostAddr));
 	memset(&LocalIPv4Addr, 0, sizeof(LocalIPv4Addr));
 	LocalHostName = NULL;
 

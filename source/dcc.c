@@ -9,7 +9,7 @@
  */
 
 #if 0
-static	char	rcsid[] = "@(#)$Id: dcc.c,v 1.15 2002/04/29 02:18:21 jnelson Exp $";
+static	char	rcsid[] = "@(#)$Id: dcc.c,v 1.16 2002/05/07 00:05:45 jnelson Exp $";
 #endif
 
 #include "irc.h"
@@ -64,11 +64,10 @@ typedef	struct	DCC_struct
 		char *		encrypt;
 	struct	DCC_struct *	next;
 
-		ISA		peer_sockaddr;
-		IA		remote;
-		u_short		remport;		/* NOW IN HOST ORDER! */
-		ISA		local_sockaddr;
-		u_short		local_port;		/* HOST ORDER */
+		ISA		offer;			/* Their offer */
+		ISA		peer_sockaddr;		/* Their saddr */
+		ISA		local_sockaddr;		/* Our saddr */
+		u_short		want_port;		/* HOST ORDER */
 
 		off_t		bytes_read;
 		off_t		bytes_sent;
@@ -508,7 +507,7 @@ static	DCC_list *dcc_searchlist (
 	new_client->starttime.tv_usec 	= 0;
 	new_client->window_max 		= 0;
 	new_client->window_sent 	= 0;
-	new_client->local_port 		= 0;
+	new_client->want_port 		= 0;
 	new_client->encrypt 		= NULL;
 	new_client->resume_size		= 0;
 	get_time(&new_client->lasttime);
@@ -531,14 +530,12 @@ int	dcc_chat_active (char *user)
  * Whenever a DCC changes state from WAITING->ACTIVE, it calls this function
  * to initiate the internet connection for the transaction.
  */
-static	int		dcc_open (DCC_list *dcc)
+static	int	dcc_open (DCC_list *dcc)
 {
-	char *		user;
-	char *		type;
-	ISA		remaddr;
-	int		rl = sizeof(remaddr);
-	int		old_server;
-	int		jvs_blah;
+	char *	user;
+	char *	type;
+	int	old_server;
+	int	jvs_blah;
 
 	/*
 	 * Initialize our idea of what is going on.
@@ -550,23 +547,22 @@ static	int		dcc_open (DCC_list *dcc)
 	type = dcc_types[dcc->flags & DCC_TYPES];
 
 	/*
-	 * If this is ME accepting someone ELSES offer...
+	 * DCC GET or DCC CHAT -- accept someone else's offer.
 	 */
 	if (dcc->flags & DCC_THEIR_OFFER)
 	{
-		int len;
+		int	len;
 
-		/*
-		 * XXXX -- hack -- XXXX
-		 * Connect to them.
-		 */
-		if ((dcc->socket = connect_by_number(inet_ntoa(dcc->remote), &dcc->remport, SERVICE_CLIENT, PROTOCOL_TCP)) < 0)
+		dcc->socket = client_connect(NULL, 0, (SA *)&dcc->offer, 
+						sizeof(dcc->offer));
+
+		if (dcc->socket < 0)
 		{
 			dcc->flags |= DCC_DELETE;
 
 			message_from(NULL, LOG_DCC);
-			say("Unable to create connection: [%d] %s", 
-				errno, my_strerror(errno));
+			say("Unable to create connection: (%d) [%d] %s", 
+				dcc->socket, errno, my_strerror(errno));
 			message_from(NULL, LOG_CURRENT);
 
 			from_server = old_server;
@@ -578,7 +574,6 @@ static	int		dcc_open (DCC_list *dcc)
 
 		len = sizeof(dcc->peer_sockaddr);
 		getpeername(dcc->socket, (SA *)&dcc->peer_sockaddr, &len);
-		dcc->remport = ntohs(dcc->peer_sockaddr.sin_port);
 
 		/*
 		 * Set up the connection to be useful
@@ -586,12 +581,6 @@ static	int		dcc_open (DCC_list *dcc)
 		new_open(dcc->socket);
 		dcc->flags &= ~DCC_THEIR_OFFER;
 		dcc->flags |= DCC_ACTIVE;
-
-		/*
-		 * Who is on the other end?
-		 * XXX Probably could stand to be sanity checked...
-		 */
-		getpeername(dcc->socket, (SA *) &remaddr, &rl);
 
 		/*
 		 * If this was a two-peer connection, then tell the user
@@ -611,40 +600,41 @@ static	int		dcc_open (DCC_list *dcc)
 			if (!strcmp(type, "SEND"))
 			{
                             jvs_blah = do_hook(DCC_CONNECT_LIST,
-						"%s %s %s %d %s %ld", 
-						user, type,
-						inet_ntoa(dcc->remote),
-						dcc->remport,
-						dcc->description,
-						dcc->filesize);
+					"%s %s %s %hu %s %ld", 
+					user, type,
+					inet_ntoa(dcc->peer_sockaddr.sin_addr),
+					ntohs(dcc->peer_sockaddr.sin_port),
+					dcc->description,
+					dcc->filesize);
 
 			    /*
 			     * Compatability with bitchx
 			     */
 			    if (jvs_blah)
                                 jvs_blah = do_hook(DCC_CONNECT_LIST,
-						"%s GET %s %d %s %ld", 
-						user, inet_ntoa(dcc->remote),
-						dcc->remport,
-						dcc->description,
-						dcc->filesize);
+					"%s GET %s %hu %s %ld", 
+					user, 
+					inet_ntoa(dcc->peer_sockaddr.sin_addr),
+					ntohs(dcc->peer_sockaddr.sin_port),
+					dcc->description,
+					dcc->filesize);
 			}
                         else
 			{
                             jvs_blah = do_hook(DCC_CONNECT_LIST,
-						"%s %s %s %d", 
-						user, type,
-						inet_ntoa(dcc->remote),
-						dcc->remport);
+					"%s %s %s %hu", 
+					user, type,
+					inet_ntoa(dcc->peer_sockaddr.sin_addr),
+					ntohs(dcc->peer_sockaddr.sin_port));
 			}
 
                         if (jvs_blah)
 			{
 			    message_from(NULL, LOG_DCC);
-			    say("DCC %s connection with %s[%s:%d] established",
+			    say("DCC %s connection with %s[%s:%hu] established",
 					type, user, 
-					inet_ntoa(remaddr.sin_addr),
-					ntohs(remaddr.sin_port));
+					inet_ntoa(dcc->peer_sockaddr.sin_addr),
+					ntohs(dcc->peer_sockaddr.sin_port));
 			    message_from(NULL, LOG_CURRENT);
 			}
 		}
@@ -660,13 +650,10 @@ static	int		dcc_open (DCC_list *dcc)
 	}
 
 	/*
-	 * The user is asking us to open up an OUTBOUND connection to a 
-	 * remote peer.
+	 * DCC SEND or DCC CHAT -- make someone an offer they can't refuse.
 	 */
 	else
 	{
-		int len;
-
 		/*
 		 * Mark that we're waiting for the remote peer to answer,
 		 * and then open up a listen()ing socket for them.  If our
@@ -676,21 +663,18 @@ static	int		dcc_open (DCC_list *dcc)
 		 * for a port if our random port isnt available.
 		 */
 		dcc->flags |= DCC_MY_OFFER;
-		if ((dcc->socket = connect_by_number(NULL, &dcc->local_port,
-				SERVICE_SERVER, PROTOCOL_TCP)) < 0)
+		dcc->socket = ip_bindery(AF_INET, dcc->want_port, 
+					(SS *)&dcc->local_sockaddr);
+		if (dcc->socket < 0)
 		{
 			dcc->flags |= DCC_DELETE;
 			message_from(NULL, LOG_DCC);
-			say("Unable to create connection: %s", 
-				my_strerror(errno));
+			say("Unable to create connection [%d]: %s", 
+				dcc->socket, my_strerror(errno));
 			message_from(NULL, LOG_CURRENT);
 			from_server = old_server;
 			return 0;
 		}
-
-		len = sizeof(dcc->local_sockaddr);
-		getsockname(dcc->socket, (SA *)&dcc->local_sockaddr, &len);
-		dcc->local_port = ntohs(dcc->local_sockaddr.sin_port);
 
 #ifdef MIRC_BROKEN_DCC_RESUME
 		/*
@@ -699,7 +683,7 @@ static	int		dcc_open (DCC_list *dcc)
 		 * back that port number as its ID of what file it wants
 		 * to resume (rather than the filename. ick.)
 		 */
-		malloc_strcpy(&dcc->othername, ltoa(dcc->local_port));
+		malloc_strcpy(&dcc->othername, ltoa((long)ntohs(dcc->local_sockaddr.sin_port)));
 #endif
 		new_open(dcc->socket);
 
@@ -726,14 +710,15 @@ static void	dcc_send_booster_ctcp (DCC_list *dcc)
 {
 	char		*nopath;
 	char		*type = dcc_types[dcc->flags & DCC_TYPES];
-	IA		myip;
+	ISA		my_sockaddr;
 
 	if (get_int_var(DCC_USE_GATEWAY_ADDR_VAR))
-		myip = get_server_uh_addr(from_server);
+		my_sockaddr.sin_addr = get_server_uh_addr(from_server);
 	else if (dcc->local_sockaddr.sin_addr.s_addr == htonl(INADDR_ANY))
-		myip = get_server_local_addr(from_server);
+		my_sockaddr.sin_addr = get_server_local_addr(from_server);
 	else
-		myip = dcc->local_sockaddr.sin_addr;
+		my_sockaddr.sin_addr = dcc->local_sockaddr.sin_addr;
+	my_sockaddr.sin_port = dcc->local_sockaddr.sin_port;
 
 	/*
 	 * If this is to be a 2-peer connection, then we need to
@@ -766,8 +751,8 @@ static void	dcc_send_booster_ctcp (DCC_list *dcc)
 		send_ctcp(CTCP_PRIVMSG, dcc->user, CTCP_DCC,
 			 "%s %s %lu %hu %ld",
 			 type, url_name,
-			 (u_long) ntohl(myip.s_addr),
-			 (u_short) dcc->local_port,
+			 (u_long)ntohl(my_sockaddr.sin_addr.s_addr),
+			 ntohs(my_sockaddr.sin_port),
 			 dcc->filesize);
 
 		/*
@@ -794,8 +779,8 @@ static void	dcc_send_booster_ctcp (DCC_list *dcc)
 		send_ctcp(CTCP_PRIVMSG, dcc->user, CTCP_DCC,
 			 "%s %s %lu %u", 
 			 type, nopath,
-			 (u_long) ntohl(myip.s_addr),
-			 (u_short) dcc->local_port);
+			 (u_long)ntohl(my_sockaddr.sin_addr.s_addr),
+			 ntohs(my_sockaddr.sin_port));
 
 		/*
 		 * And tell the user
@@ -1036,7 +1021,7 @@ static void	dcc_chat (char *args)
 	}
 
 	dcc->flags |= DCC_TWOCLIENTS;
-	dcc->local_port = portnum;
+	dcc->want_port = portnum;
 	dcc_open(dcc);
 }
 
@@ -1597,7 +1582,7 @@ static	void	dcc_filesend (char *args)
 		}
 
 		Client->flags |= DCC_TWOCLIENTS;
-		Client->local_port = portnum;
+		Client->want_port = portnum;
 		dcc_open(Client);
 	    } /* The WHILE */
 	} /* The IF */
@@ -1634,7 +1619,9 @@ char	*dcc_raw_listen (unsigned short port)
 		return m_strdup(empty_string);
 	}
 
-	if ((Client->socket = connect_by_number(NULL, &port, SERVICE_SERVER, PROTOCOL_TCP)) < 0)
+	Client->want_port = port;
+	if ((Client->socket = ip_bindery(AF_INET, Client->want_port,
+					(SS *)&Client->local_sockaddr)))
 	{
 		Client->flags |= DCC_DELETE; 
 		say("Couldnt establish listening socket: [%d] %s", 
@@ -1645,9 +1632,8 @@ char	*dcc_raw_listen (unsigned short port)
 
 	new_open(Client->socket);
 	get_time(&Client->starttime);
-	Client->local_port = port;
 	Client->flags |= DCC_ACTIVE;
-	Client->user = m_strdup(ltoa(Client->local_port));
+	Client->user = m_strdup(ltoa(Client->want_port));
 	message_from(NULL, LOG_CURRENT);
 
 	return m_strdup(Client->user);
@@ -1661,15 +1647,17 @@ char	*dcc_raw_connect(char *host, u_short port)
 {
 	DCC_list *	Client;
 	char *		bogus;
-	IA		address;
+	ISA		my_sockaddr;
 
 	message_from(NULL, LOG_DCC);
-	if (inet_anyton(host, &address))
+	my_sockaddr.sin_family = AF_INET;
+	if (inet_anyton(host, (SA *)&my_sockaddr))
 	{
 		say("Unknown host: %s", host);
 		message_from(NULL, LOG_CURRENT);
 		return m_strdup(empty_string);
 	}
+	my_sockaddr.sin_port = htons(port);
 
 	bogus = LOCAL_COPY(ltoa(port));
 	Client = dcc_searchlist(host, bogus, DCC_RAW, 1, NULL, -1);
@@ -1680,8 +1668,7 @@ char	*dcc_raw_connect(char *host, u_short port)
 		return m_strdup(empty_string);
 	}
 
-	Client->remport = port;
-	Client->remote = address;
+	Client->offer = my_sockaddr;
 	Client->flags = DCC_THEIR_OFFER | DCC_RAW;
 	if (!dcc_open(Client))
 	{
@@ -1798,7 +1785,8 @@ void	register_dcc_offer (char *user, char *type, char *description, char *addres
 
 	if (strchr(address, '.'))
 	{
-		if (inet_aton(address, &Client->remote) == 0)
+		Client->offer.sin_family = AF_INET;
+		if (inet_pton(AF_INET, address, &Client->offer.sin_addr) == 0)
 		{
 			say("DCC %s (%s) request from %s had mangled return "
 				"address [%s]", type, description, 
@@ -1814,16 +1802,18 @@ void	register_dcc_offer (char *user, char *type, char *description, char *addres
 	else
 	{
 		TempLong = strtoul(address, NULL, 10);
-		Client->remote.s_addr = htonl(TempLong);
+		Client->offer.sin_family = AF_INET;
+		Client->offer.sin_addr.s_addr = htonl(TempLong);
 	}
 
-	Client->remport = (u_short)strtoul(port, NULL, 10);
-	if (Client->remport < 1024)
+	Client->offer.sin_port = htons((u_short)strtoul(port, NULL, 10));
+	if (ntohs(Client->offer.sin_port) < 1024)
 	{
 		Client->flags |= DCC_DELETE;
 		say("DCC %s (%s) request from %s rejected because it "
-			"specified reserved port number (%hd) [%s]", 
-				type, description, user, Client->remport, port);
+			"specified reserved port number (%hu) [%s]", 
+				type, description, user, 
+				ntohs(Client->offer.sin_port), port);
 		return;
 	}
 
@@ -1836,7 +1826,7 @@ void	register_dcc_offer (char *user, char *type, char *description, char *addres
 	 */
 	{
 		char 		*fromhost;
-		IA		irc_addr;
+		ISA		irc_addr;
 
 		if (!(fromhost = strchr(FromUserHost, '@')))
 		{
@@ -1845,21 +1835,22 @@ void	register_dcc_offer (char *user, char *type, char *description, char *addres
 		}
 
 		fromhost++;
-		if (inet_anyton(fromhost, &irc_addr))
+		irc_addr.sin_family = AF_INET;
+		if (inet_anyton(fromhost, (SS *)&irc_addr))
 		{
 			yell("### Incoming handshake has an address [%s] that could not be figured out!", fromhost);
 			yell("### Please use caution in deciding whether to accept it or not");
 		}
-		else if (irc_addr.s_addr != Client->remote.s_addr)
+		else if (irc_addr.sin_addr.s_addr != Client->offer.sin_addr.s_addr)
 		{
-			say("WARNING: Fake dcc handshake detected! [%x]", Client->remote.s_addr);
+			say("WARNING: Fake dcc handshake detected! [%x]", Client->offer.sin_addr.s_addr);
 			say("Unless you know where this dcc request is coming from");
 			say("It is recommended you ignore it!");
 		}
 	}
 #endif
 
-	if (!TempLong || !Client->remport)
+	if (!Client->offer.sin_addr.s_addr || !ntohs(Client->offer.sin_port))
 	{
 		Client->flags |= DCC_DELETE;
 		yell("### DCC handshake from %s ignored becuase it had an null port or address", user);
@@ -1884,16 +1875,16 @@ void	register_dcc_offer (char *user, char *type, char *description, char *addres
 	       jvs_blah = do_hook(DCC_REQUEST_LIST,
 			 "%s %s %s %s %d %s %ld",
 			  user, type, description,
-			  inet_ntoa(Client->remote),
-			  Client->remport,
+			  inet_ntoa(Client->offer.sin_addr),
+			  ntohs(Client->offer.sin_port),
 			  Client->description,
 			  Client->filesize);
 	else
 	       jvs_blah = do_hook(DCC_REQUEST_LIST,
 			 "%s %s %s %s %d",
 			  user, type, description,
-			  inet_ntoa(Client->remote),
-			  Client->remport);
+			  inet_ntoa(Client->offer.sin_addr),
+			  ntohs(Client->offer.sin_port));
 	Client->locked--;
 
 	if (jvs_blah)
@@ -1945,11 +1936,13 @@ void	register_dcc_offer (char *user, char *type, char *description, char *addres
 	    if ((Client->flags & DCC_TYPES) == DCC_FILEREAD)
 		say("DCC %s (%s %ld) request received from %s!%s [%s:%d]",
 		    type, description, Client->filesize, user, FromUserHost,
-		    inet_ntoa(Client->remote), Client->remport);
+		    inet_ntoa(Client->offer.sin_addr), 
+		    ntohs(Client->offer.sin_port));
 	    else
 	        say("DCC %s (%s) request received from %s!%s [%s:%d]", 
 		    type, description, user, FromUserHost,
-		    inet_ntoa(Client->remote), Client->remport);
+		    inet_ntoa(Client->offer.sin_addr),
+		    ntohs(Client->offer.sin_port));
 	}
 
 	get_time(&Client->lasttime);
@@ -2242,10 +2235,11 @@ struct	hostent		*hp;
 	NewClient = dcc_searchlist(Name, FdName, DCC_RAW, 1, NULL, 0);
 	NewClient->socket = new_socket;
 
-	len = sizeof(NewClient->peer_sockaddr);
 	NewClient->peer_sockaddr = remaddr;
-	NewClient->remote = NewClient->peer_sockaddr.sin_addr;
-	NewClient->remport = ntohs(NewClient->peer_sockaddr.sin_port);
+	NewClient->offer = remaddr;
+
+	len = sizeof(NewClient->local_sockaddr);
+	getsockname(NewClient->socket, (SA *)&NewClient->local_sockaddr, &len);
 
 	NewClient->flags |= DCC_ACTIVE;
 	NewClient->bytes_read = NewClient->bytes_sent = 0L;
@@ -2253,16 +2247,15 @@ struct	hostent		*hp;
 	new_open(NewClient->socket);
 
 	Client->locked++;
-	if (do_hook(DCC_RAW_LIST, "%s %s N %d", NewClient->user,
-						NewClient->description,
-						Client->local_port))
-            if (do_hook(DCC_CONNECT_LIST,"%s RAW %s %d", NewClient->user,
-                                                     NewClient->description,
-                                                     Client->local_port))
+	if (do_hook(DCC_RAW_LIST, "%s %s N %hu", 
+			NewClient->user, NewClient->description,
+			ntohs(NewClient->local_sockaddr.sin_port)))
+            if (do_hook(DCC_CONNECT_LIST,"%s RAW %s %d", 
+			NewClient->user, NewClient->description,
+			ntohs(NewClient->local_sockaddr.sin_port)))
 		say ("DCC RAW connection to %s on %s via %d established",
-					NewClient->description,
-					NewClient->user,
-					Client->local_port);
+			NewClient->description, NewClient->user,
+			ntohs(NewClient->local_sockaddr.sin_port));
 	Client->locked--;
 }
 
@@ -2859,10 +2852,10 @@ static	void	dcc_getfile_resume (char *args)
 	Client->bytes_sent = 0L;
 	Client->bytes_read = Client->resume_size = sb.st_size;
 
-	malloc_strcpy(&Client->othername, ltoa((long)Client->remport));
+	malloc_strcpy(&Client->othername, ltoa((long)ntohs(Client->offer.sin_port)));
 
 	if (x_debug & DEBUG_DCC_XMIT)
-		yell("SENDING DCC RESUME to [%s] [%s|%d|%ld]", user, filename, Client->remport, (long)sb.st_size);
+		yell("SENDING DCC RESUME to [%s] [%s|%d|%ld]", user, filename, ntohs(Client->offer.sin_port), (long)sb.st_size);
 
 	/* Just in case we have to fool the protocol enforcement. */
 	old_dp = doing_privmsg;
@@ -2871,7 +2864,7 @@ static	void	dcc_getfile_resume (char *args)
 
 	doing_privmsg = doing_notice = in_ctcp_flag = 0;
 	send_ctcp(CTCP_PRIVMSG, user, CTCP_DCC, "RESUME %s %d %ld", 
-		filename, Client->remport, (long)sb.st_size);
+		filename, (int)ntohs(Client->offer.sin_port), (long)sb.st_size);
 
 	doing_privmsg = old_dp;
 	doing_notice = old_dn;
