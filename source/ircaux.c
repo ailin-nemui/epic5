@@ -8,7 +8,7 @@
  */
 
 #if 0
-static	char	rcsid[] = "@(#)$Id: ircaux.c,v 1.26 2002/01/12 21:13:15 jnelson Exp $";
+static	char	rcsid[] = "@(#)$Id: ircaux.c,v 1.27 2002/01/16 05:07:59 crazyed Exp $";
 #endif
 
 #include "irc.h"
@@ -2736,8 +2736,8 @@ char *	encode(const char *str, int len)
 
 	while (len)
 	{
-		*ptr++ = (*str >> 4) + 0x41;
-		*ptr++ = (*str & 0x0f) + 0x41;
+		*ptr++ = ((unsigned char)*str >> 4) + 0x41;
+		*ptr++ = ((unsigned char)*str & 0x0f) + 0x41;
 		str++;
 		len--;
  	}

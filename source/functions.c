@@ -1281,19 +1281,7 @@ BUILT_IN_FUNCTION(function_strip, input)
  */
 static char	*function_encode (unsigned char *input)
 {
-	char	*result;
-	int	i = 0;
-
-	result = (char *)new_malloc(strlen(input) * 2 + 1);
-	while (*input)
-	{
-		result[i++] = (*input >> 4) + 0x41;
-		result[i++] = (*input & 0x0f) + 0x41;
-		input++;
-	}
-	result[i] = '\0';
-
-	return result;		/* DONT USE RETURN_STR HERE! */
+	return encode(input, strlen(input));	/* DONT USE RETURN_STR HERE! */
 }
 
 
@@ -1313,21 +1301,7 @@ static char	*function_encode (unsigned char *input)
  */
 static char	*function_decode (unsigned char *input)
 {
-	char	*result;
-	int	i = 0;
-
-	result = (char *)new_malloc(strlen(input) / 2 + 1);
-
-	while (input[0] && input[1])
-	{
-		/* oops, this isnt quite right. */
-		result[i] = ((input[0] - 0x41) << 4) | (input[1] - 0x41);
-		input += 2;
-		i++;
-	}
-	result[i] = '\0';
-
-	return result;		/* DONT USE RETURN_STR HERE! */
+	return decode(input);	/* DONT USE RETURN_STR HERE! */
 }
 
 
@@ -2878,8 +2852,11 @@ BUILT_IN_FUNCTION(function_error, words)
 
 BUILT_IN_FUNCTION(function_skip, words)
 {
-	RETURN_IF_EMPTY(words);
-	RETURN_INT(file_skip(my_atol(new_next_arg(words, &words))));
+	int arg1, arg2 = 1;
+	GET_INT_ARG(arg1, words);
+	if (words && *words)
+		GET_INT_ARG(arg2, words);
+	RETURN_INT(file_skip(arg1, arg2));
 }
 
 BUILT_IN_FUNCTION(function_isfilevalid, words)
@@ -4255,13 +4232,13 @@ BUILT_IN_FUNCTION(function_cexist, input)
  */
 
 #ifdef HAVE_REGEX_H
-static int last_error = 0; 		/* XXX */
+static int last_regex_error = 0; 		/* XXX */
 
 BUILT_IN_FUNCTION(function_regcomp, input)
 {
 	regex_t preg;
 
-	last_error = regcomp(&preg, input, REG_EXTENDED | REG_ICASE | REG_NOSUB);
+	last_regex_error = regcomp(&preg, input, REG_EXTENDED | REG_ICASE);
 	return encode((char *)&preg, sizeof(regex_t));
 }
 
@@ -4269,29 +4246,42 @@ BUILT_IN_FUNCTION(function_regexec, input)
 {
 	char *unsaved;
 	regex_t *preg;
-	int retval;
 
 	GET_STR_ARG(unsaved, input);
 	preg = (regex_t *)decode(unsaved);
-	retval = regexec(preg, input, 0, NULL, 0);
+	last_regex_error = regexec(preg, input, 0, NULL, 0);
 	new_free((char **)&preg);
-	RETURN_INT(retval);		/* DONT PASS FUNC CALL TO RETURN_INT */
+	RETURN_INT(last_regex_error);	/* DONT PASS FUNC CALL TO RETURN_INT */
+}
+
+BUILT_IN_FUNCTION(function_regmatches, input)
+{
+	char *unsaved;
+	size_t nmatch;
+	regex_t *preg;
+	regmatch_t *pmatch;
+
+	GET_STR_ARG(unsaved, input);
+	GET_INT_ARG(nmatch, input);
+	preg = (regex_t *)decode(unsaved);
+	RESIZE(pmatch, regmatch_t, nmatch);
+	last_regex_error = regexec(preg, input, nmatch, pmatch, 0);
+	new_free((char **)&preg);
+	new_free((char **)&pmatch);
+	RETURN_INT(last_regex_error);	/* DONT PASS FUNC CALL TO RETURN_INT */
 }
 
 BUILT_IN_FUNCTION(function_regerror, input)
 {
 	char *unsaved;
 	regex_t *preg;
-	char error_buf[1024];
-	int errcode;
+	char error_buf[1024] = "";
 
-	GET_INT_ARG(errcode, input);
 	GET_STR_ARG(unsaved, input);
 	preg = (regex_t *)decode(unsaved);
 
-	if (errcode == -1)
-		errcode = last_error;
-	regerror(errcode, preg, error_buf, 1023);
+	if (last_regex_error)
+		regerror(last_regex_error, preg, error_buf, 1024);
 	new_free((char **)&preg);
 	RETURN_STR(error_buf);
 }

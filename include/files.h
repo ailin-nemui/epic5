@@ -22,6 +22,6 @@
 	int	file_rewind		(int);
 	int	file_error		(int);
 	int	file_seek		(int, long, const char *);
-	int	file_skip		(int);
+	int	file_skip		(int, int);
 
 #endif

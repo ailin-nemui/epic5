@@ -282,18 +282,20 @@ int	file_seek (int fd, long offset, const char *whence)
 		return -1;
 }
 
-int	file_skip (int fd)
+int	file_skip (int fd, int lines)
 {
-	char blah[10240];
-	File *ptr = lookup_file (fd);
+	int line = 0;
 
-	if (!ptr)
-		return -1;
+	while (line < lines && !file_eof(fd))
+	{
+		char *foo = file_read(fd);
+		new_free(&foo);
+		line++;
+	}
+	if (file_eof(fd))
+		line--;
 
-	if (fgets(blah, 10239, ptr->file))
-		return feof(ptr->file);
-	else
-		return -1;
+	return line;
 }
 
 int	file_close (int fd)
