@@ -1,0 +1,28 @@
+This version of EPIC5 may contain strong cryptographic code which is
+export-controlled from the USA.  In accordance with USA export controls
+governing the export of munitions-grade cryptography in open-source software,
+we have sent notice to the USA government about our anonymous publication
+of the EPIC5 source code, in the following message:
+
+	Message-ID: <013301c46447$d1ee7da0$369cfa04@2mbit.com>
+	From: "Brian Bruns" <bruns@2mbit.com>
+	To: <crypt@bis.doc.gov>, <enc@ncsc.mil>
+	Date: Wed, 7 Jul 2004 13:28:20 -0400
+	Subject: Notification under 740.13e about exporting open source 
+                 software with crypto
+
+It is our understanding that only "original exporters" need to perform
+this step, and sites that slavishly mirror the original export do not
+need to disclose to the government.  HOWEVER, NOTWITHSTANDING THIS, THIS
+IS NOT LEGAL ADVICE AND WE SUGGEST YOU DO NOT DEPEND ON OUR UNDERSTANDING 
+IN LIEU OF YOUR LEGAL OBLIGATIONS.  We are not lawyers and we cannot defend
+you if our understanding is incorrect.
+
+However, you may be considered an "original exporter" if you make
+modifications to the source code, for example as a necessary step in porting
+EPIC5 to a new system.  You would probably do well to disclose your port
+to the government in accordance with all applicable laws.
+
+Crypto Contact: Brian Burns (bruns@2mbit.com) on behalf of EPIC SOFTWARE LABS.
+
+#end of file
