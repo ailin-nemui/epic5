@@ -1,4 +1,4 @@
-/* $EPIC: commands.c,v 1.86 2004/03/12 22:22:00 jnelson Exp $ */
+/* $EPIC: commands.c,v 1.87 2004/03/15 03:24:51 jnelson Exp $ */
 /*
  * commands.c -- Stuff needed to execute commands in ircII.
  *		 Includes the bulk of the built in commands for ircII.
@@ -635,7 +635,7 @@ BUILT_IN_COMMAND(describe)
 
 		message = args;
 
-		l = message_from(target, LEVEL(ACTION));
+		l = message_from(target, LEVEL_ACTION);
 		send_ctcp(CTCP_PRIVMSG, target, CTCP_ACTION, "%s", message);
 		if (do_hook(SEND_ACTION_LIST, "%s %s", target, message))
 			put_it("* -> %s: %s %s", target, get_server_nickname(from_server), message);
@@ -665,7 +665,7 @@ BUILT_IN_COMMAND(e_channel)
 {
 	int	l;
 
-	l = message_from(NULL, LEVEL(CRAP));
+	l = message_from(NULL, LEVEL_CRAP);
 	if (args && *args)
 		window_rejoin(current_window, &args);
 	else
@@ -853,7 +853,7 @@ BUILT_IN_COMMAND(e_wallop)
 {
 	int l;
 
-	l = message_from(NULL, LEVEL(WALLOP));
+	l = message_from(NULL, LEVEL_WALLOP);
 	send_to_server("%s :%s", command, args);
 	pop_message_from(l);
 }
@@ -934,7 +934,7 @@ BUILT_IN_COMMAND(xechocmd)
 				if (!(flag_arg = next_arg(args, &args)))
 					break;
 				if ((temp = str_to_level(flag_arg)) > -1)
-					l = message_from(NULL, LEVELMASK(temp));
+					l = message_from(NULL, temp);
 			}
 			break;
 		}
@@ -2108,7 +2108,7 @@ BUILT_IN_COMMAND(mecmd)
 			send_ctcp(CTCP_PRIVMSG, target, CTCP_ACTION, 
 					"%s", args);
 
-			l = message_from(target, LEVEL(ACTION));
+			l = message_from(target, LEVEL_ACTION);
 			if (do_hook(SEND_ACTION_LIST, "%s %s", target, args))
 				put_it("* %s %s", get_server_nickname(from_server), args);
 			pop_message_from(l);
@@ -2997,10 +2997,10 @@ static	int	recursion = 0;
 	 */
 struct target_type target[4] = 
 {	
-	{NULL, NULL, SEND_MSG_LIST,     "PRIVMSG", "*%s*> %s" , LEVEL(MSG) }, 
-	{NULL, NULL, SEND_PUBLIC_LIST,  "PRIVMSG", "%s> %s"   , LEVEL(PUBLIC) },
-	{NULL, NULL, SEND_NOTICE_LIST,  "NOTICE",  "-%s-> %s" , LEVEL(NOTICE) },
-	{NULL, NULL, SEND_NOTICE_LIST,  "NOTICE",  "-%s-> %s" , LEVEL(NOTICE) }
+	{NULL, NULL, SEND_MSG_LIST,     "PRIVMSG", "*%s*> %s" , LEVEL_MSG }, 
+	{NULL, NULL, SEND_PUBLIC_LIST,  "PRIVMSG", "%s> %s"   , LEVEL_PUBLIC },
+	{NULL, NULL, SEND_NOTICE_LIST,  "NOTICE",  "-%s-> %s" , LEVEL_NOTICE },
+	{NULL, NULL, SEND_NOTICE_LIST,  "NOTICE",  "-%s-> %s" , LEVEL_NOTICE }
 };
 
 	if (!nick_list || !text)

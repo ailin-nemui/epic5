@@ -1,4 +1,4 @@
-/* $EPIC: window.c,v 1.102 2004/03/12 22:22:00 jnelson Exp $ */
+/* $EPIC: window.c,v 1.103 2004/03/15 03:24:52 jnelson Exp $ */
 /*
  * window.c: Handles the organzation of the logical viewports (``windows'')
  * for irc.  This includes keeping track of what windows are open, where they
@@ -99,7 +99,7 @@ const	char	*who_from = (char *) 0;
  * This is the lastlog level that any output should be sent out at.  This
  * determines what window output ultimately ends up in.
  */
-	Mask	who_mask;
+	int	who_level;
 
 /*
  * This is set to 1 if output is to be dispatched normally.  This is set to
@@ -196,9 +196,9 @@ Window	*new_window (Screen *screen)
 	new_w->scrolladj = 1;
 	new_w->notify_mask = real_notify_mask();
 	if (!current_window)		/* First window ever */
-		new_w->window_mask.mask = LEVEL(ALL);
+		mask_setall(&new_w->window_mask);
 	else
-		new_w->window_mask.mask = LEVEL(NONE);
+		mask_unsetall(&new_w->window_mask);
 
 	new_w->prompt = NULL;		/* Filled in later */
 	for (i = 0; i < 3; i++)
@@ -2136,21 +2136,26 @@ void 	set_mask_by_refnum (unsigned refnum, Mask mask)
 static void 	revamp_window_masks (Window *window)
 {
 	Window	*tmp = NULL;
-	int	got_dcc;
+	int	i;
 
-	got_dcc = (window->window_mask.mask & LEVEL(DCC)) ? 1 : 0;
-	while (traverse_all_windows(&tmp))
+	for (i = 0; i < NUMBER_OF_LEVELS; i++)
 	{
+	    if (!mask_isset(&window->window_mask, i))
+		continue;
+
+	    tmp = NULL;
+	    while (traverse_all_windows(&tmp))
+	    {
 		if (tmp == window)
-			continue;
-		if (tmp->window_mask.mask & LEVEL(DCC))
-		{
-			if (got_dcc)
-				tmp->window_mask.mask &= ~(LEVEL(DCC));
-			got_dcc = 1;
-		}
-		if (window->server == tmp->server)
-			tmp->window_mask.mask ^= (tmp->window_mask.mask & window->window_mask.mask);
+		    continue;
+		if (i == LEVEL_DCC && mask_isset(&tmp->window_mask, i))
+		    mask_unset(&tmp->window_mask, i);
+
+		if (tmp->server != window->server)
+		    continue;
+		if (mask_isset(&tmp->window_mask, i))
+		    mask_unset(&tmp->window_mask, i);
+	    }
 	}
 }
 
@@ -2165,7 +2170,7 @@ void 	message_to (int refnum)
 
 struct output_context {
 	const char *	who_from;
-	Mask		who_mask;
+	int		who_level;
 	const char *	who_file;
 	int		who_line;
 };
@@ -2178,7 +2183,7 @@ int 			context_counter = -1;
  * who_mask variable, used by the display routines to decide which 
  * window messages should go to.
  */
-int	real_message_from (const char *who, int mask, const char *file, int line)
+int	real_message_from (const char *who, int level, const char *file, int line)
 {
 	if (context_max < 0)
 	{
@@ -2193,19 +2198,19 @@ int	real_message_from (const char *who, int mask, const char *file, int line)
 	}
 
 	if (x_debug & DEBUG_MESSAGE_FROM)
-		yell("Setting context %d [%s:%d] {%s:%d}", context_counter, who?who:"NULL", mask, file, line);
+		yell("Setting context %d [%s:%d] {%s:%d}", context_counter, who?who:"NULL", level, file, line);
 
 #ifdef NO_CHEATING
 	malloc_strcpy(&contexts[context_counter].who_from, who);
 #else
 	contexts[context_counter].who_from = who;
 #endif
-	contexts[context_counter].who_mask.mask = mask;
+	contexts[context_counter].who_level = level;
 	contexts[context_counter].who_file = file;
 	contexts[context_counter].who_line = line;
 
 	who_from = who;
-	who_mask.mask = mask;
+	who_level = level;
 	return context_counter++;
 }
 
@@ -2223,11 +2228,11 @@ void	pop_message_from (int context)
 #ifdef NO_CHEATING
 	new_free(&contexts[context_counter].who_from);
 #endif
-	contexts[context_counter].who_mask.mask = LEVEL(NONE);
+	contexts[context_counter].who_level = LEVEL_NONE;
 	contexts[context_counter].who_file = NULL;
 	contexts[context_counter].who_line = -1;
 	who_from = contexts[context_counter - 1].who_from;
-	who_mask = contexts[context_counter - 1].who_mask;
+	who_level = contexts[context_counter - 1].who_level;
 }
 
 /* * * * * * * * * * * CLEARING WINDOWS * * * * * * * * * * */
@@ -2486,7 +2491,7 @@ static void 	list_a_window (Window *window, int len)
 		      cnw, cnw, chan ? chan : "<None>",
 		                window->query_nick ? window->query_nick : "<None>",
 		                get_server_itsname(window->server),
-		                mask_to_str(window->window_mask),
+		                mask_to_str(&window->window_mask),
 		                window->screen ? empty_string : " Hidden");
 }
 
@@ -2755,7 +2760,7 @@ static Window *window_channel (Window *window, char **args)
 		arg = malloc_strcat_ues(&arg2, carg, empty_string);
 		sarg = malloc_strcat_ues(&arg3, sarg, empty_string);
 
-		l = message_from(arg, LEVEL(CRAP));
+		l = message_from(arg, LEVEL_CRAP);
 		if (im_on_channel(arg, window->server))
 		{
 			move_channel_to_window(arg, window->server, 
@@ -2887,11 +2892,11 @@ else
 	say("\tHold mode is %s", 
 				onoff[window->holding_top_of_display ? 1 : 0]);
 	say("\tWindow Level is %s", 
-				mask_to_str(window->window_mask));
+				mask_to_str(&window->window_mask));
 	say("\tLastlog level is %s", 
-				mask_to_str(window->lastlog_mask));
+				mask_to_str(&window->lastlog_mask));
 	say("\tNotify level is %s", 
-				mask_to_str(window->notify_mask));
+				mask_to_str(&window->notify_mask));
 
 	if (window->nicks)
 	{
@@ -3264,8 +3269,8 @@ static Window *window_lastlog_mask (Window *window, char **args)
 	char *arg = next_arg(*args, args);;
 
 	if (arg)
-		window->lastlog_mask = str_to_mask(arg);
-	say("Lastlog level is %s", mask_to_str(window->lastlog_mask));
+		str_to_mask(&window->lastlog_mask, arg);
+	say("Lastlog level is %s", mask_to_str(&window->lastlog_mask));
 	return window;
 }
 
@@ -3278,31 +3283,39 @@ static Window *window_lastlog_mask (Window *window, char **args)
  * exception to this is the "DCC" level, which may only be set to one window
  * for the entire client.
  */
-static Window *window_mask (Window *window, char **args)
+static Window *window_level (Window *window, char **args)
 {
 	char 	*arg;
 	int	add = 0;
 	Mask	mask;
+	int	i;
 
-	mask.mask = LEVEL(NONE);
+	mask_unsetall(&mask);
 	if ((arg = next_arg(*args, args)))
 	{
-		if (*arg == '+')
-			add = 1, arg++;
-		else if (*arg == '-')
-			add = -1, arg++;
+	    if (*arg == '+')
+		add = 1, arg++;
+	    else if (*arg == '-')
+		add = -1, arg++;
 
-		mask = str_to_mask(arg);
-		if (add == 1)
-			window->window_mask.mask |= mask.mask;
-		else if (add == 0)
-			window->window_mask.mask = mask.mask;
-		else if (add == -1)
-			window->window_mask.mask &= ~mask.mask;
+	    str_to_mask(&mask, arg);
+	    if (add == 0)
+	    {
+		mask_unsetall(&window->window_mask);
+		add = 1;
+	    }
+
+	    for (i = 0; i < NUMBER_OF_LEVELS; i++)
+	    {
+		if (add == 1 && mask_isset(&mask, i))
+			mask_set(&window->window_mask, i);
+		if (add == -1 && mask_isset(&mask, i))
+			mask_unset(&window->window_mask, i);
 
 		revamp_window_masks(window);
+	    }
 	}
-	say("Window level is %s", mask_to_str(window->window_mask));
+	say("Window level is %s", mask_to_str(&window->window_mask));
 	return window;
 }
 
@@ -3531,8 +3544,8 @@ static Window *window_notify_mask (Window *window, char **args)
 	char *arg;
 
 	if ((arg = next_arg(*args, args)))
-		window->notify_mask = str_to_mask(arg);
-	say("Window notify level is %s", mask_to_str(window->notify_mask));
+		str_to_mask(&window->notify_mask, arg);
+	say("Window notify level is %s", mask_to_str(&window->notify_mask));
 	return window;
 }
 
@@ -4354,7 +4367,7 @@ static const window_ops options [] = {
 	{ "LAST", 		window_last 		},
 	{ "LASTLOG",		window_lastlog 		},
 	{ "LASTLOG_LEVEL",	window_lastlog_mask 	},
-	{ "LEVEL",		window_mask		},
+	{ "LEVEL",		window_level		},
 	{ "LIST",		window_list 		},
 	{ "LOG",		window_log 		},
 	{ "LOGFILE",		window_logfile 		},
@@ -4415,7 +4428,7 @@ BUILT_IN_COMMAND(windowcmd)
 	int	l;
 
 	old_status_update = permit_status_update(0);
-	l = message_from(NULL, LEVEL(CURRENT));
+	l = message_from(NULL, LEVEL_CURRENT);
 	window = current_window;
 
 	while ((arg = next_arg(args, &args)))
@@ -5361,9 +5374,9 @@ char 	*windowctl 	(char *input)
 	    } else if (!my_strnicmp(listc, "BEEP_ALWAYS", len)) {
 		RETURN_INT(w->beep_always);
 	    } else if (!my_strnicmp(listc, "NOTIFY_LEVEL", len)) {
-		RETURN_STR(mask_to_str(w->notify_mask));
+		RETURN_STR(mask_to_str(&w->notify_mask));
 	    } else if (!my_strnicmp(listc, "WINDOW_LEVEL", len)) {
-		RETURN_STR(mask_to_str(w->window_mask));
+		RETURN_STR(mask_to_str(&w->window_mask));
 	    } else if (!my_strnicmp(listc, "SKIP", len)) {
 		RETURN_INT(w->skip);
 	    } else if (!my_strnicmp(listc, "COLUMNS", len)) {
@@ -5411,7 +5424,7 @@ char 	*windowctl 	(char *input)
 	    } else if (!my_strnicmp(listc, "NICKLIST", len)) {
 		RETURN_MSTR(get_nicklist_by_window(w));
 	    } else if (!my_strnicmp(listc, "LASTLOG_LEVEL", len)) {
-		RETURN_STR(mask_to_str(w->lastlog_mask));
+		RETURN_STR(mask_to_str(&w->lastlog_mask));
 	    } else if (!my_strnicmp(listc, "LASTLOG_SIZE", len)) {
 		RETURN_INT(w->lastlog_size);
 	    } else if (!my_strnicmp(listc, "LASTLOG_MAX", len)) {

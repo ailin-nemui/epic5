@@ -4,6 +4,7 @@ KNOWN ERRATA (eg, bugs, or unresolved requests):
 ------------------------------------------------
 * Some way to hook incomplete lines via dcc raw
 * Email zlonix (xakep@onet.ru) when i figure out why i can't input char 255.
+* /LIST *foo* goes into a polling loop (adm)
 
 [See http://www.epicsol.org/PROJECTS for things to come in the future]
 [See http://www.epicsol.org/CHANGELOG5 for things that changed in the past]

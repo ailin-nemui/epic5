@@ -1,4 +1,4 @@
-/* $EPIC: screen.c,v 1.73 2004/03/12 22:22:00 jnelson Exp $ */
+/* $EPIC: screen.c,v 1.74 2004/03/15 03:24:51 jnelson Exp $ */
 /*
  * screen.c
  *
@@ -2125,7 +2125,7 @@ void 	add_to_screen (const unsigned char *buffer)
 	 * is routed through one of the LEVEL(*) levels, which is handled
 	 * below.
 	 */
-	else if ((who_mask.mask == LEVEL(CURRENT)) && 
+	else if ((who_level == LEVEL_CURRENT) && 
 	        ((winref = get_winref_by_servref(from_server)) > -1) && 
                 (tmp = get_window_by_refnum(winref)))
 	{
@@ -2157,20 +2157,20 @@ void 	add_to_screen (const unsigned char *buffer)
 				}
 			}
 
-#define NORMAL_MASK (LEVEL(MSG) | LEVEL(NOTICE) | LEVEL(DCC) | LEVEL(CTCP) | LEVEL(ACTION))
-#define DCC_MASK (LEVEL(DCC) | LEVEL(CTCP) | LEVEL(ACTION))
+#define NORMAL_MASK (LEVEL_MSG | LEVEL_NOTICE | LEVEL_DCC | LEVEL_CTCP | LEVEL_ACTION)
+#define DCC_MASK (LEVEL_DCC | LEVEL_CTCP | LEVEL_ACTION)
 
 			/*
 			 * Check for /WINDOW QUERYs that apply.
 			 */
 			if (tmp->query_nick &&
-			    (   (  who_mask.mask & NORMAL_MASK
+			    (   (  who_level & NORMAL_MASK
 				&& !my_stricmp(who_from, tmp->query_nick)
 				&& from_server == tmp->server ) 
-                            ||  (  who_mask.mask & DCC_MASK
+                            ||  (  who_level & DCC_MASK
 				&& *tmp->query_nick == '='
 				&& !my_stricmp(who_from, tmp->query_nick + 1))
-			    ||  (  who_mask.mask & DCC_MASK
+			    ||  (  who_level & DCC_MASK
 				&& *tmp->query_nick == '='
 				&& !my_stricmp(who_from, tmp->query_nick)) ) )
 			{
@@ -2213,7 +2213,7 @@ void 	add_to_screen (const unsigned char *buffer)
 	/*
 	 * Check to see if this level should go to current window
 	 */
-	if ((current_window_mask.mask & who_mask.mask) &&
+	if ((mask_isset(&current_window_mask, who_level)) &&
 	    ((winref = get_winref_by_servref(from_server)) > -1) && 
             (tmp = get_window_by_refnum(winref)))
 	{
@@ -2230,14 +2230,14 @@ void 	add_to_screen (const unsigned char *buffer)
 		/*
 		 * Check for /WINDOW LEVELs that apply
 		 */
-		if (who_mask.mask & LEVEL(DCC) && 
-			tmp->window_mask.mask & who_mask.mask)
+		if (who_level == LEVEL_DCC && 
+			mask_isset(&tmp->window_mask, who_level))
 		{
 			add_to_window(tmp, buffer);
 			return;
 		}
 		if ((from_server == tmp->server || from_server == NOSERV)
-			&& tmp->window_mask.mask & who_mask.mask)
+			&& mask_isset(&tmp->window_mask, who_level))
 		{
 			add_to_window(tmp, buffer);
 			return;
@@ -2363,7 +2363,7 @@ static void 	add_to_window (Window *window, const unsigned char *str)
 		 * if the user wants us to.
 		 */
 		if (!(window->miscflags & WINDOW_NOTIFIED) &&
-			who_mask.mask & window->notify_mask.mask)
+			mask_isset(&window->notify_mask, who_level))
 		{
 			window->miscflags |= WINDOW_NOTIFIED;
 			if (window->miscflags & WINDOW_NOTIFY)
@@ -2402,7 +2402,7 @@ static void    window_disp (Window *window, const unsigned char *str, const unsi
 	int		numl = 0;
 
 	add_to_log(window->log_fp, window->refnum, orig_str, 0, NULL);
-	add_to_logs(window->refnum, from_server, who_from, who_mask, orig_str);
+	add_to_logs(window->refnum, from_server, who_from, who_level, orig_str);
 	add_to_lastlog(window, orig_str);
 
 	if (window->screen)

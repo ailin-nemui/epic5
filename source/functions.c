@@ -1,4 +1,4 @@
-/* $EPIC: functions.c,v 1.156 2004/03/12 22:22:00 jnelson Exp $ */
+/* $EPIC: functions.c,v 1.157 2004/03/15 03:24:51 jnelson Exp $ */
 /*
  * functions.c -- Built-in functions for ircII
  *
@@ -5319,7 +5319,7 @@ BUILT_IN_FUNCTION(function_winlevel, input)
 	if (!win)
 		RETURN_EMPTY;
 
-	retval = mask_to_str(win->window_mask);
+	retval = mask_to_str(&win->window_mask);
 	RETURN_STR(retval);
 }
 
@@ -6870,10 +6870,10 @@ BUILT_IN_FUNCTION(function_dccctl, input)
 BUILT_IN_FUNCTION(function_outputinfo, input)
 {
 	if (who_from)
-		return malloc_sprintf(NULL, "%s %s", mask_to_str(who_mask),
+		return malloc_sprintf(NULL, "%s %s", level_to_str(who_level),
 						who_from);
 	else
-		return malloc_strdup(mask_to_str(who_mask));
+		return malloc_strdup(level_to_str(who_level));
 }
 
 BUILT_IN_FUNCTION(function_levelwindow, input)
@@ -6881,14 +6881,19 @@ BUILT_IN_FUNCTION(function_levelwindow, input)
 	Mask	mask;
 	Window	*w = NULL;
 	int	server;
+	int	i;
 
 	GET_INT_ARG(server, input);
-	mask = str_to_mask(input);
+	str_to_mask(&mask, input);		/* Errors are just ignored */
 	while (traverse_all_windows(&w))
 	{
-		if ((w->window_mask.mask & LEVEL(DCC)) && (mask.mask & LEVEL(DCC)))
-			RETURN_INT(w->refnum);
-		if ((w->server == from_server) && (w->window_mask.mask & mask.mask))
+	    if (mask_isset(&mask, LEVEL_DCC) && 
+		mask_isset(&w->window_mask, LEVEL_DCC))
+		RETURN_INT(w->refnum);
+
+	    for (i = 0; i < NUMBER_OF_LEVELS; i++)
+		if (mask_isset(&mask, i) &&
+		    mask_isset(&w->window_mask, i))
 			RETURN_INT(w->refnum);
 	}
 	RETURN_INT(-1);

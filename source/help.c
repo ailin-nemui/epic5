@@ -1,4 +1,4 @@
-/* $EPIC: help.c,v 1.15 2004/03/12 22:22:00 jnelson Exp $ */
+/* $EPIC: help.c,v 1.16 2004/03/15 03:24:51 jnelson Exp $ */
 /*
  * help.c: handles the help stuff for irc 
  *
@@ -731,7 +731,8 @@ static	void create_help_window (void)
 		use_help_window = 1;
 		help_window->holding_top_of_display = NULL;
 		recalculate_window_cursor_and_display_ip(help_window);
-		help_window->window_mask.mask = LEVEL(HELP);
+		mask_unsetall(&help_window->window_mask);
+		mask_set(&help_window->window_mask, LEVEL_HELP);
 		update_all_windows();
 	}
 	else
@@ -774,8 +775,8 @@ static	void	help_put_it	(const char *topic, const char *format, ...)
 			Window *old_to_window = to_window;
 
 			/*
-			 * 'to_window' is of higher priority than who_mask
-			 * so we don't have to mangle who_mask to send the
+			 * 'to_window' is of higher priority than who_level
+			 * so we don't have to mangle who_level to send the
 			 * output to the help window.
 			 */
 			if (help_window)

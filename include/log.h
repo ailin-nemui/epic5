@@ -14,7 +14,7 @@
 	void	set_log_file 	(const void *);
 	void	add_to_log 	(FILE *, unsigned, const unsigned char *, int, const char *);
 	BUILT_IN_COMMAND(logcmd);
-	void	add_to_logs	(int, int, const char *, Mask, const char *);
+	void	add_to_logs	(int, int, const char *, int, const char *);
 	char *	logctl		(char *);
 
 #endif /* _LOG_H_ */

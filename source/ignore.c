@@ -1,4 +1,4 @@
-/* $EPIC: ignore.c,v 1.19 2004/03/12 22:22:00 jnelson Exp $ */
+/* $EPIC: ignore.c,v 1.20 2004/03/15 03:24:51 jnelson Exp $ */
 /*
  * ignore.c: handles the ingore command for irc 
  *
@@ -152,9 +152,9 @@ static Ignore *new_ignore (const char *new_nick)
 	upper(item->nick);
 	item->reason = NULL;
 	item->refnum = ++global_ignore_refnum;
-	item->type.mask = LEVEL(NONE);
-	item->dont.mask = LEVEL(NONE);
-	item->high.mask = LEVEL(NONE);
+	mask_unsetall(&item->type);
+	mask_unsetall(&item->dont);
+	mask_unsetall(&item->high);
 	item->counter = 0;
 	get_time(&item->creation);
 	item->last_used.tv_sec = 0;
@@ -343,21 +343,21 @@ static int 	remove_ignore (const char *nick)
  *  must make a copy of it.  You must not try to write to the string.
  */
 #define HANDLE_TYPE(x,y)						\
-	if ((item->dont.mask & LEVEL(x)) == LEVEL(x))			\
+	if (mask_isset(&item->dont, LEVEL_ ## x))			\
 	{								\
 	    if ((y) == 1)						\
 		strlcat_c(buffer, " DONT-" #x, sizeof buffer, &clue);	\
 	    else if ((y) == 2)						\
 		strlcat_c(buffer, " ^" #x, sizeof buffer, &clue);	\
 	}								\
-	else if ((item->type.mask & LEVEL(x)) == LEVEL(x))		\
+	else if (mask_isset(&item->type, LEVEL_ ## x))			\
 	{								\
 	    if ((y) == 1)						\
 		strlcat_c(buffer, " " #x, sizeof buffer, &clue);	\
 	    else if ((y) == 2)						\
 		strlcat_c(buffer, " /" #x, sizeof buffer, &clue);	\
 	}								\
-	else if ((item->high.mask & LEVEL(x)) == LEVEL(x))		\
+	else if (mask_isset(&item->high, LEVEL_ ## x))			\
 	{								\
 	    if ((y) == 1)						\
 		strlopencat_c(buffer, sizeof buffer, &clue, space, 	\
@@ -444,7 +444,7 @@ static int	change_ignore_mask_by_desc (const char *type, Mask *do_mask, Mask *do
 	int	len;
 	Mask	*mask = NULL, *del1, *del2, *del3;
 	char *	copy;
-	int	bit = LEVEL(NONE);
+	int	bit = LEVEL_NONE;
 	int	i;
 
 	copy = LOCAL_COPY(type);
@@ -542,17 +542,17 @@ static int	change_ignore_mask_by_desc (const char *type, Mask *do_mask, Mask *do
 			del1 = do_mask;
 			del2 = dont_mask;
 			del3 = high_mask;
-			bit = LEVEL(ALL);
+			bit = LEVEL_ALL;
 		}
 		else if (!my_strnicmp(l2, "ALL", len))
-			bit = LEVEL(ALL);
+			bit = LEVEL_ALL;
 		else
 		{
 		    for (i = 0; i < NUMBER_OF_LEVELS; i++)
 		    {
 			if (!my_strnicmp(l2, level_types[i], len))
 			{
-			    bit = LEVELMASK(i);
+			    bit = i;
 			    break;
 			}
 		    }
@@ -569,13 +569,13 @@ static int	change_ignore_mask_by_desc (const char *type, Mask *do_mask, Mask *do
 		}
 
 		if (mask)
-			mask->mask |= bit;
+			mask_set(mask, bit);
 		if (del1)
-			del1->mask &= ~bit;
+			mask_unset(del1, bit);
 		if (del2)
-			del2->mask &= ~bit;
+			mask_unset(del2, bit);
 		if (del3)
-			del3->mask &= ~bit;
+			mask_unset(del3, bit);
 	    }
 	}
 
@@ -613,9 +613,8 @@ static int	ignore_change (Ignore *item, int type, void *data)
 	 * Garbage collect this ignore if it is clear.
 	 * remove_ignore() does the output for us here.
 	 */
-	if ((item->type.mask == LEVEL(NONE)) && 
-	    (item->high.mask == LEVEL(NONE)) &&
-	    (item->dont.mask == LEVEL(NONE)))
+	if (mask_isnone(&item->type) && mask_isnone(&item->high) &&
+	    mask_isnone(&item->dont))
 	{
 		remove_ignore(item->nick);
 		return 0;
@@ -958,7 +957,9 @@ char	*get_ignore_patterns_by_type (char *ctype)
 	char	*result = NULL;
 	size_t	clue = 0;
 
-	do_mask.mask = dont_mask.mask = high_mask.mask = LEVEL(NONE);
+	mask_unsetall(&do_mask);
+	mask_unsetall(&dont_mask);
+	mask_unsetall(&high_mask);
 
 	/*
 	 * Convert the user's input into something we can use.
@@ -966,30 +967,37 @@ char	*get_ignore_patterns_by_type (char *ctype)
 	 * just punt right here.
 	 */
 	change_ignore_mask_by_desc(ctype, &do_mask, &dont_mask, &high_mask, NULL, NULL);
-	if (do_mask.mask == LEVEL(NONE) && dont_mask.mask == LEVEL(NONE) && high_mask.mask == LEVEL(NONE))
+	if (mask_isnone(&do_mask) && mask_isnone(&do_mask) && mask_isnone(&high_mask))
 		return malloc_strdup(empty_string);
 
 	for (tmp = ignored_nicks; tmp; tmp = tmp->next)
 	{
-		/*
-		 * change_ignore_mask_by_desc is supposed to ensure that
-		 * each bit is set only once in 'do_mask', 'dont_mask', 
-		 * and 'high_mask', and we already know this is the case
-		 * for the Ignores.  So we check each of the three ignore
-		 * types, and if this ignore has all of the levels set in
-		 * all of the right places, it's ok.  It could have more 
-		 * levels than what the user asked for, but it can't have 
-		 * levels with different dispositions.
-		 */
-		if ((tmp->dont.mask & dont_mask.mask) != dont_mask.mask)
-			continue;
-		if ((tmp->type.mask & do_mask.mask) != do_mask.mask)
-			continue;
-		if ((tmp->high.mask & high_mask.mask) != high_mask.mask)
-			continue;
+	    int	i;
 
-		/* Add it to the fray */
-		malloc_strcat_word_c(&result, space, tmp->nick, &clue);
+	    /*
+	     * change_ignore_mask_by_desc is supposed to ensure that
+	     * each bit is set only once in 'do_mask', 'dont_mask', 
+	     * and 'high_mask', and we already know this is the case
+	     * for the Ignores.  So we check each of the three ignore
+	     * types, and if this ignore has all of the levels set in
+	     * all of the right places, it's ok.  It could have more 
+	     * levels than what the user asked for, but it can't have 
+	     * levels with different dispositions.
+	     */
+	    for (i = 0; i < NUMBER_OF_LEVELS; i++)
+	    {
+		if (mask_isset(&dont_mask, i) && !mask_isset(&tmp->dont, i))
+			goto bail;
+		if (mask_isset(&do_mask, i) && !mask_isset(&tmp->type, i))
+			goto bail;
+		if (mask_isset(&high_mask, i) && !mask_isset(&tmp->high, i))
+			goto bail;
+	    }
+
+	    /* Add it to the fray */
+	    malloc_strcat_word_c(&result, space, tmp->nick, &clue);
+bail:
+	    continue;
 	}
 
 	return result;
@@ -1093,11 +1101,11 @@ char *	ignorectl (char *input)
 		} else if (!my_strnicmp(listc, "LEVELS", len)) {
 			RETURN_STR(get_ignore_types(i, 2));
 		} else if (!my_strnicmp(listc, "SUPPRESS", len)) {
-			RETURN_INT(i->type.mask);
+			RETURN_INT(i->type.__bits[0]);
 		} else if (!my_strnicmp(listc, "EXCEPT", len)) {
-			RETURN_INT(i->dont.mask);
+			RETURN_INT(i->dont.__bits[0]);
 		} else if (!my_strnicmp(listc, "HIGHLIGHT", len)) {
-			RETURN_INT(i->high.mask);
+			RETURN_INT(i->high.__bits[0]);
 		} else if (!my_strnicmp(listc, "EXPIRATION", len)) {
 			char *ptr = NULL;
 			return malloc_sprintf(&ptr, "%ld %ld", 
@@ -1134,17 +1142,19 @@ char *	ignorectl (char *input)
 			malloc_strcpy(&i->nick, input);
 			RETURN_INT(i->refnum);
 		} else if (!my_strnicmp(listc, "LEVELS", len)) {
-			i->type.mask = i->dont.mask = i->high.mask = LEVEL(NONE);
+			mask_unsetall(&i->type);
+			mask_unsetall(&i->dont);
+			mask_unsetall(&i->high);
 			ignore_change(i, 1, input);
 			RETURN_INT(i->refnum);
 		} else if (!my_strnicmp(listc, "SUPPRESS", len)) {
-			GET_INT_ARG(i->type.mask, input);
+			GET_INT_ARG(i->type.__bits[0], input);
 			RETURN_INT(i->refnum);
 		} else if (!my_strnicmp(listc, "EXCEPT", len)) {
-			GET_INT_ARG(i->dont.mask, input);
+			GET_INT_ARG(i->dont.__bits[0], input);
 			RETURN_INT(i->refnum);
 		} else if (!my_strnicmp(listc, "HIGHLIGHT", len)) {
-			GET_INT_ARG(i->high.mask, input);
+			GET_INT_ARG(i->high.__bits[0], input);
 			RETURN_INT(i->refnum);
 		} else if (!my_strnicmp(listc, "EXPIRATION", len)) {
 			Timeval to;
@@ -1205,7 +1215,7 @@ int	check_ignore (const char *nick, const char *uh, int mask)
  * i was not inspired with a better name.  This function is simply the
  * old 'check_ignore', only it has an additional check for a channel target.
  */
-int	check_ignore_channel (const char *nick, const char *uh, const char *channel, int mask)
+int	check_ignore_channel (const char *nick, const char *uh, const char *channel, int level)
 {
 	char 	nuh[IRCD_BUFFER_SIZE];
 	Ignore	*tmp;
@@ -1264,19 +1274,19 @@ int	check_ignore_channel (const char *nick, const char *uh, const char *channel,
 	if (i_match)
 	{
 		tmp = i_match;
-		if (tmp->dont.mask & mask)
+		if (mask_isset(&tmp->dont, level))
 		{
 			tmp->counter++;
 			get_time(&tmp->last_used);
 			return NOT_IGNORED;
 		}
-		if (tmp->type.mask & mask)
+		if (mask_isset(&tmp->type, level))
 		{
 			tmp->counter++;
 			get_time(&tmp->last_used);
 			return IGNORED;
 		}
-		if (tmp->high.mask & mask)
+		if (mask_isset(&tmp->high, level))
 		{
 			tmp->counter++;
 			get_time(&tmp->last_used);
@@ -1291,19 +1301,19 @@ int	check_ignore_channel (const char *nick, const char *uh, const char *channel,
 	else if (c_match)
 	{
 		tmp = c_match;
-		if (tmp->dont.mask & mask)
+		if (mask_isset(&tmp->dont, level))
 		{
 			tmp->counter++;
 			get_time(&tmp->last_used);
 			return NOT_IGNORED;
 		}
-		if (tmp->type.mask & mask)
+		if (mask_isset(&tmp->type, level))
 		{
 			tmp->counter++;
 			get_time(&tmp->last_used);
 			return IGNORED;
 		}
-		if (tmp->high.mask & mask)
+		if (mask_isset(&tmp->high, level))
 		{
 			tmp->counter++;
 			get_time(&tmp->last_used);

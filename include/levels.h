@@ -67,13 +67,6 @@ static  const char *level_types[NUMBER_OF_LEVELS] =
         "HELP"
 };
 
-/* Convert a #define LEVEL_* integer into a mask */
-#define LEVELMASK(x) ( x == LEVEL_ALL? x : x == LEVEL_NONE? x : (1 << ( x - 1 )))
-
-/* Convert a level name (ie, LEVEL(CRAP)) into a mask */
-#define LEVEL(x) (LEVELMASK(LEVEL_ ## x))
-
-
 /*-
  * Copyright (c) 1982, 1986, 1989, 1991, 1993
  *	The Regents of the University of California.  All rights reserved.
@@ -114,19 +107,12 @@ typedef struct Mask {
 	unsigned int	__bits[BIT_WORDS];
 } Mask;
 
-__inline static int	mask_set (Mask *set, int bit)
+__inline static int	mask_setall (Mask *set)
 {
-	if (!BIT_VALID(bit))
-		return -1;
-	set->__bits[BIT_WORD(bit)] |= BIT_BIT(bit);
-	return 0;
-}
+	int i;
 
-__inline static int	mask_unset (Mask *set, int bit)
-{
-	if (!BIT_VALID(bit))
-		return -1;
-	set->__bits[BIT_WORD(bit)] &= ~BIT_BIT(bit);
+	for (i = 0; i < BIT_WORDS; i++)
+		set->__bits[i] = ~0U;
 	return 0;
 }
 
@@ -139,12 +125,29 @@ __inline static int	mask_unsetall (Mask *set)
 	return 0;
 }
 
-__inline static int	mask_setall (Mask *set)
+__inline static int	mask_set (Mask *set, int bit)
 {
-	int i;
+	if (bit == LEVEL_NONE)
+		return mask_unsetall(set);
+	if (bit == LEVEL_ALL)
+		return mask_setall(set);
 
-	for (i = 0; i < BIT_WORDS; i++)
-		set->__bits[i] = ~0U;
+	if (!BIT_VALID(bit))
+		return -1;
+	set->__bits[BIT_WORD(bit)] |= BIT_BIT(bit);
+	return 0;
+}
+
+__inline static int	mask_unset (Mask *set, int bit)
+{
+	if (bit == LEVEL_NONE)
+		return mask_setall(set);
+	if (bit == LEVEL_ALL)
+		return mask_unsetall(set);
+
+	if (!BIT_VALID(bit))
+		return -1;
+	set->__bits[BIT_WORD(bit)] &= ~BIT_BIT(bit);
 	return 0;
 }
 
@@ -168,9 +171,13 @@ __inline static int	mask_isnone (const Mask *set)
 	return 1;
 }
 
-
 __inline static int	mask_isset (const Mask *set, int bit)
 {
+	if (bit == LEVEL_NONE)
+		return mask_isnone(set);
+	if (bit == LEVEL_ALL)
+		return mask_isall(set);
+
 	if (!BIT_VALID(bit))
 		return -1;
 	return ((set->__bits[BIT_WORD(bit)] & BIT_BIT(bit)) ? 1 : 0);

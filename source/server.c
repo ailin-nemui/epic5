@@ -1,4 +1,4 @@
-/* $EPIC: server.c,v 1.126 2004/03/12 22:22:00 jnelson Exp $ */
+/* $EPIC: server.c,v 1.127 2004/03/15 03:24:52 jnelson Exp $ */
 /*
  * server.c:  Things dealing with that wacky program we call ircd.
  *
@@ -1007,7 +1007,7 @@ void	do_server (int fd)
 			    if (*end == '\r')
 				*end-- = '\0';
 
-			    l = message_from(NULL, LEVEL(CRAP));
+			    l = message_from(NULL, LEVEL_CRAP);
 			    if (x_debug & DEBUG_INBOUND)
 				yell("[%d] <- [%s]", 
 					s->des, buffer);

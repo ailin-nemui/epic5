@@ -13,7 +13,7 @@
 
 typedef struct	lastlog_stru
 {
-	Mask	level;
+	int	level;
 	char	*target;
 	char	*msg;
 	struct	lastlog_stru	*older;
@@ -37,8 +37,8 @@ extern	Mask	new_server_lastlog_mask;
 	void	set_lastlog_size 		(const void *);
 	void	set_notify_mask 		(const void *);
 	const char *	level_to_str 		(int);
-	char *	mask_to_str 			(Mask);
-	Mask	str_to_mask	 		(const char *);
+	char *	mask_to_str 			(const Mask *);
+	int	str_to_mask	 		(Mask *, const char *);
 	int	str_to_level			(const char *);
 	void	remove_from_lastlog		(struct WindowStru *);
 	void	set_current_window_mask 	(const void *);
