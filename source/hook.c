@@ -860,10 +860,17 @@ int 	do_hook (int which, char *format, ...)
 		name_copy = LOCAL_COPY(name);
 		stuff_copy = LOCAL_COPY(tmp->stuff);
 
-		if (tmp->noisy == UNKNOWN)
+		if (retval == RESULT_PENDING)
 		{
 			result = parse_line_with_return(name_copy, 
 						stuff_copy, buffer, 0, 0);
+
+			if (result && atol(result))
+				retval = SUPPRESS_DEFAULT;
+			else
+				retval = DONT_SUPPRESS_DEFAULT;
+
+			new_free(&result);
 		}
 		else
 		{
@@ -877,14 +884,6 @@ int 	do_hook (int which, char *format, ...)
 			parse_line(name_copy, stuff_copy, buffer, 0, 0);
 			will_catch_return_exceptions--;
 			return_exception = 0;
-		}
-
-		if (retval == RESULT_PENDING)
-		{
-			if (result && atol(result))
-				retval = SUPPRESS_DEFAULT;
-			else
-				retval = DONT_SUPPRESS_DEFAULT;
 		}
 
 		/*
