@@ -9,6 +9,7 @@ KNOWN ERRATA (eg, bugs, or unresolved requests):
 * Changing attribute in the middle of a word that totaly wraps does not
   "bleed" to subsequent lines (ie, ^C34<40 a's> <40a's>^C35<100 a's>
 * queue test {echo1};queue test {echo 2};queue -del test 1;queue -del test 2
+* Problem with mangling "^B^B^Btesting" -- first ^B gets eaten.
 * Doing /server on disconnected window; where multiple disconnected windows
   are connected to the same server causes all of the windows to think they
   are bringing up the server, and grab /set new_server_lastlog_level.
@@ -357,3 +358,4 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Fix $winline() from epic4.
 * Fix /who -d[iagnose] from epic4.
 * Remove limits on timer refnames.
+* Add $mktime() from howl.

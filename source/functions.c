@@ -1,4 +1,4 @@
-/* $EPIC: functions.c,v 1.175 2004/08/08 03:52:49 jnelson Exp $ */
+/* $EPIC: functions.c,v 1.176 2004/08/11 15:39:20 jnelson Exp $ */
 /*
  * functions.c -- Built-in functions for ircII
  *
@@ -303,6 +303,7 @@ static	char
 	*function_metric_time	(char *),
 	*function_midw 		(char *),
 	*function_mkdir		(char *),
+	*function_mktime	(char *),
 	*function_msar		(char *),
 	*function_nametoip 	(char *),
 	*function_nochops 	(char *),
@@ -609,6 +610,7 @@ static BuiltInFunctions	built_in_functions[] =
 	{ "MID",		function_mid 		},
 	{ "MIDW",               function_midw 		},
 	{ "MKDIR",		function_mkdir		},
+	{ "MKTIME",		function_mktime		},
 	{ "MSAR",		function_msar		},
 	{ "MYCHANNELS",		function_channels 	},
 	{ "MYSERVERS",		function_servers 	},
@@ -7011,4 +7013,34 @@ BUILT_IN_FUNCTION(function_startupfile, input)
 	if (startup_file)
 		RETURN_STR(startup_file);
 	RETURN_EMPTY;
+}
+
+/*
+ * $mktime(year month day hour minute second dst)
+ * - Requires at least six (6) arguments
+ * - Returns -1 on error
+ * - Refer to the mktime(3) manpage for instructions on usage.
+ * Written by howl
+ */
+BUILT_IN_FUNCTION(function_mktime, input)
+{
+	int ar[7], pos, retval;
+	struct tm time;
+	
+	for (pos = 0; pos < 7 && input && *input; pos++) 
+		GET_INT_ARG(ar[pos], input);
+	
+	if (pos < 6)
+		RETURN_INT(-1);
+
+	time.tm_year = ar[0];
+	time.tm_mon = ar[1];
+	time.tm_mday = ar[2];
+	time.tm_hour = ar[3];
+	time.tm_min = ar[4];
+	time.tm_sec = ar[5];
+	time.tm_isdst = (pos > 6) ? ar[6] : -1;
+	
+	retval = mktime (&time);
+	RETURN_INT(retval);	
 }
