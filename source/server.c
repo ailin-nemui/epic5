@@ -1,4 +1,4 @@
-/* $EPIC: server.c,v 1.85 2003/01/26 03:25:38 jnelson Exp $ */
+/* $EPIC: server.c,v 1.86 2003/01/29 06:31:27 wd Exp $ */
 /*
  * server.c:  Things dealing with that wacky program we call ircd.
  *
@@ -274,8 +274,8 @@ static 	void 	remove_from_server_list (int i)
 		panic("Deleting server %d which claims to be using SSL on"
 			"a non-ssl client", i);
 #else
-		SSL_free((SSL *)&s->ssl_fd);
-		SSL_CTX_free((SSL_CTX *)&s->ctx);
+		SSL_free((SSL *)s->ssl_fd);
+		SSL_CTX_free((SSL_CTX *)s->ctx);
 #endif
 	}
 	new_free(&server_list[i]);
@@ -1871,7 +1871,7 @@ void	register_server (int refnum, const char *nickname)
 		if (!server_cert) {
 			say ("SSL negotiation failed");
 			say ("WARNING: Bailing to no encryption");
-			SSL_CTX_free((SSL_CTX *)&s->ctx);
+			SSL_CTX_free((SSL_CTX *)s->ctx);
 			send_to_aserver(refnum, "%s", empty_string);
 		} else {
 			char *u_cert_subject, *u_cert_issuer;
