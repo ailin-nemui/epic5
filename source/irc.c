@@ -1,4 +1,4 @@
-/* $EPIC: irc.c,v 1.444 2003/02/04 00:19:04 jnelson Exp $ */
+/* $EPIC: irc.c,v 1.445 2003/02/04 01:13:20 jnelson Exp $ */
 /*
  * ircII: a new irc client.  I like it.  I hope you will too!
  *
@@ -52,7 +52,7 @@ const char internal_version[] = "20021226";
 /*
  * In theory, this number is incremented for every commit.
  */
-const unsigned long	commit_id = 447;
+const unsigned long	commit_id = 449;
 
 /*
  * As a way to poke fun at the current rage of naming releases after
@@ -1112,12 +1112,33 @@ int	do_every_minute (void *ignored)
 
 	/* Now what do we want to do every minute? */
 	update_clock(RESET_TIME);
-	do_notify();
 	if (get_int_var(CLOCK_VAR) || check_mail_status(NULL))
 	{
 		update_all_status();
 		cursor_to_input();
 	}
+	return 0;
+}
+
+int	do_notify_stuff (void *ignored)
+{
+	/*
+	 * If CPU saver has been turned on, then ratchet down NOTIFY as well.
+	 */
+	if (cpu_saver)
+	{
+	    double timeout = 0;
+
+	    if ((timeout = get_int_var(CPU_SAVER_EVERY_VAR)) < 60)
+		timeout = 60.0;
+	    add_timer(0, system_timer2, timeout, 
+			1, do_notify_stuff, NULL, NULL, -1);
+	}
+	else
+	    add_timer(0, system_timer2, get_int_var(NOTIFY_INTERVAL_VAR),
+			1, do_notify_stuff, NULL, NULL, -1);
+
+	do_notify();
 	return 0;
 }
 
@@ -1127,6 +1148,8 @@ void	cpu_saver_off (void)
 	update_all_status();
 	add_timer(1, system_timer, time_to_next_minute(), 
 			1, do_every_minute, NULL, NULL, -1);
+	add_timer(1, system_timer2, time_to_next_minute(),
+			1, do_notify_stuff, NULL, NULL, -1);
 }
 
 /*
@@ -1312,6 +1335,8 @@ int 	main (int argc, char *argv[])
 
 	add_timer(0, system_timer, time_to_next_minute(), 1,
 			do_every_minute, NULL, NULL, -1);
+	add_timer(0, system_timer2, time_to_next_minute(), 1,
+			do_notify_stuff, NULL, NULL, -1);
 
 	get_time(&idle_time);
 	for (;;)

@@ -45,6 +45,19 @@
 #define DEFAULT_SERVER "localhost irc.efnet.net irc.undernet.org irc.dal.net"
 
 /*
+ * The minimum value that /SET NOTIFY_INTERVAL can be set to.
+ * This version of epic allows a script (or the user) to set a time interval
+ * between NOTIFY checks to something other than the historical value of
+ * 60 seconds.  However, very low values may have a strongly negative effect
+ * on CPU usage or on lag time to the server, and so you, the person compiling
+ * this client, may not want /SET NOTIFY_INTERVAL to be set lower than a 
+ * value you consider to be appropriate.  The default is 60 because that
+ * is the historical value.  You may change this to be higher or lower, as
+ * is your whim.
+ */
+#define MINIMUM_NOTIFY_INTERVAL 60
+
+/*
  * The left and right brace characters ('{', '}') are special characters in
  * the IRC character set, becuase they represent scandanavian characters and
  * are not expected to be treated any differently than any other alphanumeric

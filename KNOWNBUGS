@@ -109,3 +109,9 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * In /xecho, rename 'banner' local var to 'want_banner'.
 * Revamp p_notice to look like and act like p_privmsg as much as possible.
 * Finish the rest of the larnifications.  Done with phase 1.  Huzzah!
+* Fixes for NAMES processing, found by paladin (ce)
+* Fixes for configure to do deeper searching for perl (ce)
+* Fix /on 311, /on 312. /on 317, /on 353, and /on names.
+* Split NOTIFY stuff off into its own timer
+* Add #define MINIMUM_NOTIFY_INTERVAL in config.h
+* Add set_notify_interval, force that /SET NOTIFY_INTERVAL >= MIN_NOT_INT

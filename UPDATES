@@ -1,5 +1,65 @@
 EPIC4-1.2.0
 
+*** News 02/03/2003 -- "Larnifications" to epic's server handling code
+	Traditionally, ircII clients have trusted the server to send
+	well formed data.  If messages from the server were badly formed
+	(for example, if arguments were missing or in the wrong order),
+	ircII clients (including epic of course) would crash.  Due to the
+	repeated requests of some server developers, and particularly 
+	because of larne, who used to make sport of epic by modifying his
+	server to send numeric garbage at epic to make it crash, a long
+	and substantial project to rewrite all of the code that handles
+	messages from the server has been undertaken.  This marks the end
+	of the first stage of the project, which protects epic from the
+	server sending not enough arguments, which would cause a crash.
+	Internally, I have referred to this as the "larnification project"
+	in honor of larne, the person who pushed me over the edge into 
+	doing this sooner rather than later.  I got his consent to use his
+	nickname like this, so please don't think I'm making fun of him.
+	For history's sake, this is an offshoot of the previous project
+	which was called "Larneproofing" which was a band-aid to prevent
+	most of the obvious problems caused by server's sending bad data.
+	This was a full rewrite of the protocol-handling code.
+
+*** News 02/03/2003 -- Changes to how and when notifies are done
+	Previously, NOTIFY events always occured at the top of every minute,
+	along with other things like the updating of the system clock and
+	/on timer.  But now NOTIFY has been broken off into its own separate
+	timer whose interval is controlled by /SET NOTIFY_INTERVAL (see below).
+	How this will work is that each notify event will occur precisely
+	/SET NOTIFY_INTERVAL seconds apart, except for the following cases!
+
+	*) When the client starts up, the first notify event occurs at the
+	   top of the next minute *without regard to whatever the original
+	   value of /SET NOTIFY_INTERVAL is!*  After this first notify 
+	   event, the normal rules apply.
+	*) When you enter CPU_SAVER mode, the next notify event will occur 
+	   at its regular scheduled time, but subsequent notify events will
+	   occur at /SET CPU_SAVER_EVERY intervals!  (IE, /SET CPU_SAVER_EVERY
+	   overrides /SET NOTIFY_INTERVAL when you're in cpu saver mode)
+	*) When you leave CPU_SAVER mode, the next notify event will occur
+	   at the top of the next minute *without regard to whatever value
+	   of /set notify_interval!  After the top of the next minute, the
+	   regular rules apply.
+
+	These rules are needed to maintain as much backwards compatability
+	as much as possible for most users, who will not change anything.
+
+*** News 02/03/2003 -- Changes to /SET NOTIFY_INTERVAL
+	There is a new #define in config.h, #define MINIMUM_NOTIFY_INTERVAL
+	which is an integer value that sets the minimum permissable value
+	of /SET NOTIFY_INTERVAL.  If you attempt to /SET to a lower value,
+	it will be change to the minimum value.  The default value is 60,
+	and you can change it in config.h if you wish.
+
+*** News 02/03/2003 -- Changes to /ON WINDOW_KILL
+	Previously, /ON WINDOW_KILL provided the window's "name or refnum"
+	as $0.  But if you wanted to get the refnum, you couldn't because
+	the window had already been destroyed.  So /ON WINDOW_KILL has been
+	extended so $1 is always the window's refnum:
+		$0	Window's "name or refnum"
+		$1	Window's refnum
+
 *** News 01/30/2003 -- $serverctl() general cleanup.
 	subcommands will be matched against as many characters as are
 	supplied.  This means that $serverctl(get 4 007) will not call the

@@ -1,4 +1,4 @@
-/* $EPIC: vars.c,v 1.24 2003/01/29 21:56:01 crazyed Exp $ */
+/* $EPIC: vars.c,v 1.25 2003/02/04 01:13:20 jnelson Exp $ */
 /*
  * vars.c: All the dealing of the irc variables are handled here. 
  *
@@ -96,6 +96,7 @@ static	void	set_mangle_inbound 	(char *value);
 static	void	set_mangle_outbound 	(char *value);
 static	void	set_mangle_logfiles 	(char *value);
 static	void	set_scroll 		(int value);
+static	void	set_notify_interval 	(int value);
 
 /*
  * irc_variable: all the irc variables used.  Note that the integer and
@@ -190,7 +191,7 @@ static	IrcVariable irc_variable[] =
         { "MODE_STRIPPER",              BOOL_TYPE_VAR,  DEFAULT_MODE_STRIPPER, NULL, NULL, 0, 0 },
 	{ "ND_SPACE_MAX",		INT_TYPE_VAR,	DEFAULT_ND_SPACE_MAX, NULL, NULL, 0, 0 },
 	{ "NEW_SERVER_LASTLOG_LEVEL",	STR_TYPE_VAR,	0, NULL, set_new_server_lastlog_level, 0, 0 },
-	{ "NOTIFY_INTERVAL",		INT_TYPE_VAR,	DEFAULT_NOTIFY_INTERVAL, NULL, NULL, 0, 0 },
+	{ "NOTIFY_INTERVAL",		INT_TYPE_VAR,	DEFAULT_NOTIFY_INTERVAL, NULL, set_notify_interval, 0, 0 },
 	{ "NOTIFY_LEVEL",		STR_TYPE_VAR,	0, NULL, set_notify_level, 0, 0 },
 	{ "NOTIFY_ON_TERMINATION",	BOOL_TYPE_VAR,	DEFAULT_NOTIFY_ON_TERMINATION, NULL, NULL, 0, 0 },
 	{ "NOTIFY_USERHOST_AUTOMATIC",	BOOL_TYPE_VAR,	DEFAULT_NOTIFY_USERHOST_AUTOMATIC, NULL, NULL, 0, 0 },
@@ -1041,6 +1042,16 @@ static	void	set_scroll (int value)
 	else
 		window_scroll(current_window, &my_zero);
 	window_display = owd;
+}
+
+static	void	set_notify_interval (int value)
+{
+	if (value < MINIMUM_NOTIFY_INTERVAL)
+	{
+		say("The /SET NOTIFY_INTERVAL value must be at least %d",
+			MINIMUM_NOTIFY_INTERVAL);
+		set_int_var(NOTIFY_INTERVAL_VAR, MINIMUM_NOTIFY_INTERVAL);
+	}
 }
 
 /*******/
