@@ -25,7 +25,7 @@ const char internal_version[] = "20011112";
 /*
  * In theory, this number is incremented for every commit.
  */
-const unsigned long	commit_id = 144;
+const unsigned long	commit_id = 145;
 
 /*
  * As a way to poke fun at the current rage of naming releases after
@@ -358,22 +358,22 @@ to it, please dont worry about filling it out.  You might try talking	\n\
 to the person who is in charge of IRC at your site and see if you can	\n\
 get them to help you.							\n\
 									\n\
-This version of IRC II is  --->[%s]					\n\
+This version of IRC II is  --->[%s (%lu)]				\n\
 The date of release is     --->[%s]					\n\
 									\n\
 * * * * * * * * * * * * * * * * * * * * * * * *				\n\
-The program will now terminate.						\n", irc_version, internal_version);
+The program will now terminate.						\n", irc_version, commit_id, internal_version);
 
 		fflush(stdout);
 		panic_dump_call_stack();
 	}
 
         if (x_debug & DEBUG_CRASH)
-                irc_exit(0, "Hmmm. %s has another bug.  Go figure...",
-			irc_version);
+                irc_exit(0, "Hmmm. %s (%lu) has another bug.  Go figure...",
+			irc_version, commit_id);
         else
-                irc_exit(1, "Hmmm. %s has another bug.  Go figure...",
-			irc_version);
+                irc_exit(1, "Hmmm. %s (%lu) has another bug.  Go figure...",
+			irc_version, commit_id);
 }
 
 /*
@@ -432,7 +432,7 @@ SIGNAL_HANDLER(sig_user1)
 
 static	void	show_version (void)
 {
-	printf("ircII %s (Date of release: %s)\n\r",irc_version,internal_version);
+	printf("ircII %s (Commit id: %lu) (Date of release: %s)\n\r", irc_version, commit_id, internal_version);
 	exit (0);
 }
 
@@ -1197,7 +1197,7 @@ int 	main (int argc, char *argv[])
 
 	fprintf(stderr, "EPIC Version 4 -- %s\n", ridiculous_version_name);
 	fprintf(stderr, "EPIC Software Labs (2000)\n");
-	fprintf(stderr, "Version (%s) -- Date (%s)\n", irc_version, internal_version);
+	fprintf(stderr, "Version (%s), Commit Id (%lu) -- Date (%s)\n", irc_version, commit_id, internal_version);
 	fprintf(stderr, "%s\n", compile_info);
 	fprintf(stderr, "Process [%d]", getpid());
 	if (isatty(0))

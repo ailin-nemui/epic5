@@ -5,6 +5,7 @@ KNOWN ERRATA (eg, bugs, or unresolved requests):
 * A missing 'else' in create_additional_screen causes gnu screen to be
   prefered over X windows.  Should this be fixed, or at least made an option?
   Maybe try X, fall back to gnu screen on failure?
+* /on general_notice should not be hooked if /on kill or /on note are hooked.
  
 [See http://www.epicsol.org/PROJECTS for things to come in the future]
 [See http://www.epicsol.org/CHANGELOG for things that changed in the past]
@@ -34,3 +35,11 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * What this means is that attributes in /set continued_line don't "bleed"
 * Add support for ~/.epicrc which is prefered to ~/.ircrc.
 * Fix the "Warning, file exists" check for dcc to honor /set dcc_store_path.
+* Add $info(i), which is the commit_id.  I should have added this long ago.
+* Fix $read() to accept lines of any length (crazyeddy)
+* Fix window_disp() to pass raw display strings to lastlog and log.
+* Fix $status() to return a denormalized string.
+* Fix bug where cursor would not be returned to input line after status update
+* Make the output of /query go to the affected window.
+* Thwart attempts to /JOIN (/window rejoin) to an unconnected server.
+* Start exposing commit_id to the user, for bug reporting purposes.
