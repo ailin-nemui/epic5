@@ -1,4 +1,4 @@
-/* $EPIC: logfiles.c,v 1.6 2002/09/06 19:28:29 jnelson Exp $ */
+/* $EPIC: logfiles.c,v 1.7 2002/09/06 19:38:12 jnelson Exp $ */
 /*
  * logfiles.c - General purpose log files
  *
@@ -665,7 +665,7 @@ void	add_to_logs (int winref, int servref, const char *target, int level, const 
 	    {
 		for (i = 0; i < 32; i++) {
 		    if (log->refnums[i] == winref) {
-			if (log->level && (log->level & level) != 0)
+			if (log->level && (log->level & level) == 0)
 				continue;
 			add_to_log(log->log, winref, orig_str, log->mangler, log->rewrite);
 		    }
@@ -676,7 +676,7 @@ void	add_to_logs (int winref, int servref, const char *target, int level, const 
 	    {
 		for (i = 0; i < 32; i++) {
 		    if (log->refnums[i] == servref) {
-			if (log->level && (log->level & level) != 0)
+			if (log->level && (log->level & level) == 0)
 				continue;
 			add_to_log(log->log, winref, orig_str, log->mangler, log->rewrite);
 		    }
@@ -688,7 +688,7 @@ void	add_to_logs (int winref, int servref, const char *target, int level, const 
 		if (log->servref != -1 && (log->servref != servref))
 			continue;
 
-		if (log->level && (log->level & level) != 0)
+		if (log->level && (log->level & level) == 0)
 			continue;
 
 		if (log->targets && !target)

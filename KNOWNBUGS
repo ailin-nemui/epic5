@@ -52,3 +52,5 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * New built in command, /LOG -- general purpose log files
 * New built in function, $logctl() -- operate on general purpose log files. 
 * Fix add_to_logfiles to handle target == NULL properly. doh!
+* Add server refnum info to /log list and /log describe
+* Fix add_to_logfiles, check for log level was inverted.
