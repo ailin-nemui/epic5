@@ -293,7 +293,9 @@ int	find_in_server_list (const char *server, int port)
  * This extracts the salient information from the string and returns the
  * server_list index for that server.  If the information describes a server
  * that is not in the server_list, that information is *automatically added*
- * to the server_list and a new index is returned.
+ * to the server_list and a new index is returned.  Double-quoted words are
+ * supported as long as you use them reasonably.  Double-quoted words protect
+ * any colons on the inside from inadvertant mis-parsing.
  *
  * This function always succeeds.
  */
@@ -323,10 +325,10 @@ int 	find_server_refnum (char *server, char **rest)
 	 */
 	else if (rest && *rest)
 	{
-		cport = next_arg(*rest, rest);
-		password = next_arg(*rest, rest);
-		nick = next_arg(*rest, rest);
-		group = next_arg(*rest, rest);
+		cport = new_next_arg(*rest, rest);
+		password = new_next_arg(*rest, rest);
+		nick = new_next_arg(*rest, rest);
+		group = new_next_arg(*rest, rest);
 	}
 
 	if (cport && *cport)
@@ -370,6 +372,7 @@ int	parse_server_index (const char *str)
  * point to null. 
  *
  * "*group" must be set to something (even if it is NULL) before calling this!
+ * Colons can be backslashed.
  */
 void	parse_server_info (char *name, char **port, char **password, char **nick, char **group)
 {
@@ -379,37 +382,65 @@ void	parse_server_info (char *name, char **port, char **password, char **nick, c
 
 	do
 	{
-		if (!(ptr = strchr(name, ':')))
+		ptr = name;
+yell("ptr before is '%s'", ptr);
+		if (*ptr == '"')
+			name = new_next_arg(ptr, &ptr);
+		ptr = findchar(ptr, ':');
+		if (!ptr)
 			break;
 		*ptr++ = 0;
 		if (!*ptr)
 			break;
+yell("ptr after is '%s'", ptr);
 		*port = ptr;
 
-		if (!(ptr = strchr(ptr, ':')))
+yell("ptr before is '%s'", ptr);
+		if (*ptr == '"')
+			*port = new_next_arg(ptr, &ptr);
+		ptr = findchar(ptr, ':');
+		if (!ptr)
 			break;
 		*ptr++ = 0;
 		if (!*ptr)
 			break;
+yell("ptr after is '%s'", ptr);
 		*password = ptr;
 
-		if (!(ptr = strchr(ptr, ':')))
+yell("ptr before is '%s'", ptr);
+		if (*ptr == '"')
+			*password = new_next_arg(ptr, &ptr);
+		ptr = findchar(ptr, ':');
+		if (!ptr)
 			break;
 		*ptr++ = 0;
 		if (!*ptr)
 			break;
+yell("ptr after is '%s'", ptr);
 		*nick = ptr;
 
-		if (!(ptr = strchr(ptr, ':')))
+yell("ptr before is '%s'", ptr);
+		if (*ptr == '"')
+			*nick = new_next_arg(ptr, &ptr);
+		ptr = findchar(ptr, ':');
+		if (!ptr)
 			break;
 		*ptr++ = 0;
 		if (!*ptr)
 			break;
+yell("ptr after is '%s'", ptr);
 		*group = ptr;
 
+yell("ptr before is '%s'", ptr);
 		/* Ignore any additional, future fields */
-		if ((ptr = strchr(ptr, ':')) != NULL)
+		if (*ptr == '"')
+			*group = new_next_arg(ptr, &ptr);
+		ptr = findchar(ptr, ':');
+		if (!ptr)
+			break;
+		else
 			*ptr++ = 0;
+yell("ptr after is '%s'", ptr);
 	}
 	while (0);
 }

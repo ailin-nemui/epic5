@@ -8,7 +8,7 @@
  */
 
 #if 0
-static	char	rcsid[] = "@(#)$Id: ircaux.c,v 1.31 2002/02/13 23:02:49 jnelson Exp $";
+static	char	rcsid[] = "@(#)$Id: ircaux.c,v 1.32 2002/02/14 16:33:25 jnelson Exp $";
 #endif
 
 #include "irc.h"
@@ -886,6 +886,25 @@ char *	next_in_comma_list (char *str, char **after)
 	}
 
 	return str;
+}
+
+/* Find the next instance of 'what' that isn't backslashed. */
+char *	findchar (char *str, int what)
+{
+	char *p;
+
+	for (p = str; *p; p++)
+	{
+		if (p[0] == '\\' && p[1])
+			p++;
+		else if (p[0] == what)
+			break;
+	}
+
+	if (*p == what)
+		return p;
+	else
+		return NULL;
 }
 
 unsigned char stricmp_table [] = 

@@ -136,3 +136,4 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Change $channel() indicator for +h users to use '%' insteazd of 'h'
 * Do repo-direct work: Move the README.SSL file to doc/
 * Start fixing up some of the documentation for the 1.1.3 release!
+* Support double-quoted words in server specifications. (rb wd)
