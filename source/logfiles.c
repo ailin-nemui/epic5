@@ -1,4 +1,4 @@
-/* $EPIC: logfiles.c,v 1.27 2004/08/24 23:27:24 jnelson Exp $ */
+/* $EPIC: logfiles.c,v 1.28 2004/11/02 23:17:34 jnelson Exp $ */
 /*
  * logfiles.c - General purpose log files
  *
@@ -795,19 +795,19 @@ char *logctl	(char *input)
 		RETURN_INT(log->refnum);
         } else if (!my_strnicmp(listc, "ADD", 2)) {
 		GET_STR_ARG(refstr, input);
-		if (!(log = get_log_by_desc(input)))
+		if (!(log = get_log_by_desc(refstr)))
 			RETURN_EMPTY;
 		logfile_add(log, &input);
 		RETURN_INT(1);
         } else if (!my_strnicmp(listc, "DELETE", 2)) {
 		GET_STR_ARG(refstr, input);
-		if (!(log = get_log_by_desc(input)))
+		if (!(log = get_log_by_desc(refstr)))
 			RETURN_EMPTY;
 		logfile_remove(log, &input);
 		RETURN_INT(1);
         } else if (!my_strnicmp(listc, "GET", 2)) {
                 GET_STR_ARG(refstr, input);
-		if (!(log = get_log_by_desc(input)))
+		if (!(log = get_log_by_desc(refstr)))
 			RETURN_EMPTY;
 
                 GET_STR_ARG(listc, input);
@@ -838,7 +838,7 @@ char *logctl	(char *input)
 		}
         } else if (!my_strnicmp(listc, "SET", 1)) {
                 GET_STR_ARG(refstr, input);
-		if (!(log = get_log_by_desc(input)))
+		if (!(log = get_log_by_desc(refstr)))
 			RETURN_EMPTY;
 
 		GET_STR_ARG(listc, input);
