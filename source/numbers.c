@@ -10,7 +10,7 @@
  */
 
 #if 0
-static	char	rcsid[] = "$Id: numbers.c,v 1.20 2002/02/27 02:57:19 crazyed Exp $";
+static	char	rcsid[] = "$Id: numbers.c,v 1.21 2002/05/09 23:17:04 jnelson Exp $";
 #endif
 
 #include "irc.h"
@@ -279,6 +279,9 @@ void 	numbered_command (char *from, int comm, char **ArgList)
 	/* XXX Doesn't belong here */
 	case 313:		/* #define RPL_WHOISOPERATOR    313 */
 	{
+		if (!ArgList[0] || !ArgList[1])
+			break;		/* Larne-proof epic */
+
 		PasteArgs(ArgList, 1);
 		if (do_hook(current_numeric, "%s %s %s", from, ArgList[0], ArgList[1]))
 			put_it("%s %s %s", numeric_banner(), ArgList[0], ArgList[1]);

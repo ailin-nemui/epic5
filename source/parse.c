@@ -85,7 +85,7 @@ char *	PasteArgs (char **arg_list, int paste_point)
 	 * Make sure there are enough args to parse...
 	 */
 	for (i = 0; i < paste_point; i++)
-		if (!arg_list[i])
+		if (!arg_list[i] || !*arg_list[i])
 			return NULL;		/* Not enough args */
 
 	for (i = paste_point; arg_list[i] && arg_list[i + 1]; i++)

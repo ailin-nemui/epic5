@@ -8,7 +8,7 @@
  */
 
 #if 0
-static	char	rcsid[] = "@(#)$Id: funny.c,v 1.1 2000/12/05 00:11:57 jnelson Exp $";
+static	char	rcsid[] = "@(#)$Id: funny.c,v 1.2 2002/05/09 23:17:04 jnelson Exp $";
 #endif
 
 #include "irc.h"
@@ -138,6 +138,9 @@ void	funny_list (char *from, char **ArgList)
 static	char	format[25];
 static	int	last_width = -1;
 
+	if (!ArgList[0] || !ArgList[1] || !ArgList[2])
+		return;		/* Larne-proof */
+
 	if (last_width != get_int_var(CHANNEL_NAME_WIDTH_VAR))
 	{
 		if ((last_width = get_int_var(CHANNEL_NAME_WIDTH_VAR)) != 0)
@@ -217,6 +220,9 @@ static	int	last_width = -1;
 	int	cnt;
 	char	*ptr;
 	char	*line;
+
+	if (!Args[0] || !Args[1] || !Args[2])
+		return;		/* Larne-proof */
 
 	PasteArgs(Args, 2);
 	type = Args[0];
