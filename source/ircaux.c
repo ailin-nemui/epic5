@@ -1,4 +1,4 @@
-/* $EPIC: ircaux.c,v 1.78 2003/06/30 04:14:02 jnelson Exp $ */
+/* $EPIC: ircaux.c,v 1.79 2003/07/01 19:10:05 jnelson Exp $ */
 /*
  * ircaux.c: some extra routines... not specific to irc... that I needed 
  *
@@ -1930,7 +1930,14 @@ static FILE *	open_compression (char *executable, char *filename)
 			close(2);	/* we dont want to see errors */
 			setuid(getuid());
 			setgid(getgid());
-			execl(executable, executable, "-c", filename, NULL);
+
+			/* 
+			 * 'compress', 'uncompress, 'gzip', 'gunzip',
+			 * 'bzip2' and 'bunzip'2 on my system all support
+			 * the -d option reasonably.  I hope they do
+			 * elsewhere. :d
+			 */
+			execl(executable, executable, "-d", "-c", filename, NULL);
 			_exit(0);
 		}
 		default :
