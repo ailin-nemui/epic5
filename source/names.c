@@ -17,6 +17,7 @@
 #include "output.h"
 #include "screen.h"
 #include "window.h"
+#include "vars.h"
 #include "server.h"
 #include "list.h"
 #include "hook.h"
@@ -263,6 +264,12 @@ static void 	clear_channel (Channel *chan)
 /* Channel destructor -- caller must free "chan". */
 static void 	destroy_channel (Channel *chan)
 {
+	Channel	*tmp;
+	char *	old_from = NULL;
+	char *	new_to = NULL;
+	int	old_refnum = 0;
+	int	new_refnum = 0;
+
 	if (chan != channel_list)
 	{
 		if (!chan->prev)
@@ -279,33 +286,41 @@ static void 	destroy_channel (Channel *chan)
 	if (chan->next)
 		chan->next->prev = chan->prev;
 
-	if (chan->window)
+	if (chan->window && chan->window->current_channel &&
+		!my_stricmp(chan->channel, chan->window->current_channel))
 	{
-		/*
-		 * If 'chan' is a current channel (and believe me, there is
-		 * no easy way to tell short of looking), then we will want
-		 * to give the window a chance to do something about it.  So
-		 * we call channel_going_away to tell the window that this 
-		 * channel's days are numbered.  If this is a current channel
-		 * then it will reset it's current channel to some other
-		 * channel it has, or to nothing, as the case may be.  It is
-		 * customary for the window to arrange for this channel's
-		 * window to be set to NULL if this was indeed the current
-		 * channel, so we *still* have to test to make sure that this
-		 * channel is not the current channel when this returns (ugh).
-		 */
-		channel_going_away(chan->window, chan->channel);
+		old_from = m_strdup(chan->window->current_channel);
+		old_refnum = chan->window->refnum;
+		new_free(&chan->window->current_channel);
+		chan->window->update |= UPDATE_STATUS;
 
-		/*
-		 * So if 'chan->window' is not null, then this was probably
-		 * not a current channel.  But if 'current_channel' exists,
-		 * and it's pointing at us, look out!  If this ever does
-		 * happen, we take matters into our own hands and tell the
-		 * window to get lost.
-		 */
-		if (chan->window && chan->window->current_channel)
-		  if (!my_stricmp(chan->window->current_channel, chan->channel))
-			set_channel_by_refnum(chan->window->refnum, NULL);
+		if (get_int_var(SWITCH_CHANNEL_ON_PART_VAR))
+		{
+		    for (tmp = channel_list; tmp; tmp = tmp->next)
+		    {
+			if (tmp == chan || tmp->window != chan->window ||
+					tmp->server != chan->server)
+				continue;
+
+			new_to = m_strdup(tmp->channel);
+			new_refnum = tmp->window->refnum;
+			malloc_strcpy(&chan->window->current_channel, 
+					tmp->channel);
+
+			/*
+			 * Remove "waiting channel" if we're waiting for 
+			 * this channel.  ;-)
+			 */
+			if (chan->window->waiting_channel && 
+				!my_stricmp(tmp->channel, 
+						chan->window->waiting_channel))
+				new_free(&chan->window->waiting_channel);
+
+			set_channel_window(chan->window, 
+					chan->window->current_channel);
+			break;
+		     }
+		}
 	}
 
 	new_free(&chan->channel);
@@ -322,6 +337,19 @@ static void 	destroy_channel (Channel *chan)
 	new_free(&chan->key); 
 	chan->chop = 0;
 	chan->voice = 0;
+
+	if (old_from)
+	{
+		do_hook(SWITCH_CHANNELS_LIST, "%d %s %s",
+				old_refnum, old_from, zero);
+		new_free(&old_from);
+	}
+	if (new_to)
+	{
+		do_hook(SWITCH_CHANNELS_LIST, "%d %s %s",
+				new_refnum, zero, new_to);
+		new_free(&new_to);
+	}
 }
 
 /*
@@ -1511,7 +1539,8 @@ void   move_channel_to_window (const char *chan, Window *old_w, Window *new_w)
 	int	reset_old_w = 0;
 	int	found = 0;
 
-	if (!old_w || old_w->server < 0 || !chan || !strcmp(chan, zero))
+	if (!old_w || !old_w->current_channel || !new_w ||
+			old_w->server < 0 || !chan || !strcmp(chan, zero))
 	       return;
 
 	while (traverse_all_channels(&tmp, old_w->server))
@@ -1523,8 +1552,6 @@ void   move_channel_to_window (const char *chan, Window *old_w, Window *new_w)
 			new_free(&old_w->current_channel);
 			old_w->update |= UPDATE_STATUS;
 
-			if (new_w)
-			{
 			    if (new_w->current_channel)
 				old_chan = m_strdup(new_w->current_channel);
 			    else
@@ -1542,7 +1569,6 @@ void   move_channel_to_window (const char *chan, Window *old_w, Window *new_w)
 
 			    new_w->update |= UPDATE_STATUS;
 			    set_channel_window(new_w, new_w->current_channel);
-			}
 
 			reset_old_w = 1;
 			break;
@@ -1552,9 +1578,10 @@ void   move_channel_to_window (const char *chan, Window *old_w, Window *new_w)
 
 	if (reset_old_w)
 	{
+	    tmp = NULL;
 	    while (traverse_all_channels(&tmp, old_w->server))
 	    {
-		if (tmp->window == old_w)
+		if (tmp->window == old_w && my_stricmp(tmp->channel, chan))
 		{
 		    malloc_strcpy(&old_w->current_channel, tmp->channel);
 
@@ -1575,8 +1602,7 @@ void   move_channel_to_window (const char *chan, Window *old_w, Window *new_w)
 
 	    do_hook(SWITCH_CHANNELS_LIST, "%d %s %s", 
 			old_w->refnum, chan, zero);
-	    if (new_w)
-		    do_hook(SWITCH_CHANNELS_LIST, "%d %s %s", 
+	    do_hook(SWITCH_CHANNELS_LIST, "%d %s %s", 
 			new_w->refnum, old_chan ? old_chan : zero, chan);
 	    if (found)
 		do_hook(SWITCH_CHANNELS_LIST, "%d %s %s", old_w->refnum, zero,
