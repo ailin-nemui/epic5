@@ -275,10 +275,8 @@ alias nick_complete {
 }
 
 alias add_nickname {
-	@:s_ref = servernum()
-
-	if (numwords($myservers()) > 1 && s_ref > -1) {
-		@:nickname = [$0:$s_ref]
+	if (numwords($myservers()) > 1 && count(: $0) == 0) {
+		@:nickname = [$servernum():$0]
 	} {
 		@:nickname = [$0]
 	}
@@ -312,15 +310,9 @@ alias msg_cycle {
 	@nick_index = nick_index == 0 ? nick_items - 1 : nick_index - 1
 }
 
-alias msg {
-	@:nick = before(: $0)
-	@:server = after(: $0)
 
-	if (server == []) {
-		//msg $*
-	} {
-		xeval -s $server {//msg $nick $1-}
-	}
+on ^send_to_server "% % PRIVMSG %:% *" {
+	xquote -s $before(: $3) PRIVMSG $after(: $3) $4-
 }
 
 on #^action 10 "*" {
