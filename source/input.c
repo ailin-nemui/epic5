@@ -1,4 +1,4 @@
-/* $EPIC: input.c,v 1.14 2003/05/09 04:29:52 jnelson Exp $ */
+/* $EPIC: input.c,v 1.15 2003/07/16 00:56:43 jnelson Exp $ */
 /*
  * input.c: does the actual input line stuff... keeps the appropriate stuff
  * on the input line, handles insert/delete of characters/words... the whole
@@ -46,6 +46,7 @@
 #define __need_term_flush__
 #include "irc.h"
 #include "alias.h"
+#include "clock.h"
 #include "commands.h"
 #include "exec.h"
 #include "history.h"
@@ -1236,13 +1237,6 @@ BUILT_IN_BINDING(parse_text)
 {
 	parse_line(NULL, string, empty_string, 0, 0);
 }
-
-BUILT_IN_BINDING(cpu_saver_on)
-{
-	cpu_saver = 1;
-	update_all_status();
-}
-
 
 /*
  * edit_char: handles each character for an input stream.  Not too difficult

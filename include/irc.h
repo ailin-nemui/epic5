@@ -83,7 +83,6 @@
 /* irc.c's global variables */
 extern		int	away_set;
 extern		int	background;
-extern		int	cpu_saver;
 extern		int	current_numeric;
 extern		int	dead;
 extern volatile	int	dead_children_processes;
@@ -155,9 +154,6 @@ extern struct timeval	input_timeout;
 	void	io 			(const char *);
 	void	irc_exit 		(int, const char *, ...) /*__A(2)*/ __N;
 	void	irc_quit 		(char, char *);
-	void	reset_system_timers	(int);
-	int	do_update_clock		(void *);
-	void	set_cpu_saver_after	(int);
 
 #include "reg.h"
 	void	dump_load_stack		(int);	 /* XXX command.c */

@@ -119,3 +119,15 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Don't set system timers in main, call reset_system_timers() instead.
 * Don't enforce "notify interval" in do_notify(), handle that in NOTIFY timer.
 * Comment stuff in words.c
+* Change #define DEFAULT_CPU_SAVER_EVERY to 60, it needs not be 0.
+* Create 'clock.c', to hold clock generation, system timers, cpu saver watchdog
+* Create notion of "sys(tem)timers", callbacks for mail, notify, clock gen.
+* Add 'system_timer', generalized callback for all of the system timers.
+* Fix add_timer() so the 'command' argument does what the docs say it does.
+* Extern 'timer_exists' so we don't try to remove_timer() and invalid timer
+* Redo dependancies because clock.h exists.
+* Add code to bootstrap mail systimer with /set mail
+* Add code to bootstrap clock generation with /set clock
+* Add code to bootstrap notify handling with /set notify_interval.
+* Start enforcing "NOTIFY_INTERVAL" again in do_notify() to avoid excess flood.
+

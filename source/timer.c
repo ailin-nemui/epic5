@@ -1,4 +1,4 @@
-/* $EPIC: timer.c,v 1.34 2003/07/15 01:26:04 jnelson Exp $ */
+/* $EPIC: timer.c,v 1.35 2003/07/16 00:56:43 jnelson Exp $ */
 /*
  * timer.c -- handles timers in ircII
  *
@@ -51,7 +51,7 @@
 #include "screen.h"
 #include "functions.h"
 
-static int 	timer_exists (const char *ref);
+	int 	timer_exists (const char *ref);
 	int 	remove_timer (const char *ref);
 static void 	remove_all_timers (void);
 static	void	remove_window_timers (int winref);
@@ -233,7 +233,7 @@ typedef struct  timerlist_stru
 	char	ref[REFNUM_MAX + 1];
         Timeval time;
 	int	(*callback) (void *);
-        void    *command;
+        const void *command;
 	char	*subargs;
 	struct	timerlist_stru *prev;
         struct  timerlist_stru *next;
@@ -372,7 +372,7 @@ static	Timer *get_timer (const char *ref)
 	return NULL;
 }
 
-static int 	timer_exists (const char *ref)
+int 	timer_exists (const char *ref)
 {
 	if (!ref || !*ref)
 		return 0;
@@ -537,7 +537,7 @@ static	void	remove_window_timers (int winref)
  *		 know anything of the nature of the argument.
  * subargs:	 should be NULL, its ignored anyhow.
  */
-char *add_timer (int update, const char *refnum_want, double interval, long events, int (callback) (void *), const char *commands, const char *subargs, int winref)
+char *add_timer (int update, const char *refnum_want, double interval, long events, int (callback) (void *), const void *commands, const char *subargs, int winref)
 {
 	Timer	*ntimer, *otimer = NULL;
 	char	refnum_got[REFNUM_MAX + 1];
@@ -573,13 +573,14 @@ char *add_timer (int update, const char *refnum_want, double interval, long even
 			if (ntimer->subargs)
 				new_free(&ntimer->subargs);
 			ntimer->callback = callback;
+			ntimer->command = commands;
 			ntimer->subargs = NULL;
 		}
 		else
 		{
 			if (ntimer->callback)
 				ntimer->callback = NULL;
-			malloc_strcpy((char **)&ntimer->command, commands);
+			malloc_strcpy((char **)&ntimer->command, (const char *)commands);
 			malloc_strcpy(&ntimer->subargs, subargs);
 		}
 
@@ -601,7 +602,11 @@ char *add_timer (int update, const char *refnum_want, double interval, long even
 		ntimer->time = time_add(right_now, ntimer->interval);
 		ntimer->events = events;
 		ntimer->callback = callback;
-		malloc_strcpy((char **)&ntimer->command, commands);
+		if (callback)
+			ntimer->command = commands;
+		else
+			malloc_strcpy((char **)&ntimer->command, 
+					(const char *)commands);
 		malloc_strcpy(&ntimer->subargs, subargs);
 		ntimer->window = winref;
 		ntimer->server = from_server;
@@ -689,7 +694,7 @@ void 	ExecuteTimers (void)
 		 */
 		get_time(&right_now);
 		if (current->callback)
-			(*current->callback)(current->command);
+			(*current->callback)((void *)current->command);
 		else
 			parse_line("TIMER", (char *)current->command, 
 						current->subargs ? 

@@ -1,4 +1,4 @@
-/* $EPIC: status.c,v 1.29 2003/07/15 01:26:04 jnelson Exp $ */
+/* $EPIC: status.c,v 1.30 2003/07/16 00:56:43 jnelson Exp $ */
 /*
  * status.c: handles the status line updating, etc for IRCII 
  *
@@ -52,6 +52,7 @@
 #include "names.h"
 #include "ircaux.h"
 #include "alias.h"
+#include "clock.h"
 
 #ifdef Char
 #undef Char

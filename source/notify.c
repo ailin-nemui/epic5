@@ -1,4 +1,4 @@
-/* $EPIC: notify.c,v 1.19 2003/07/15 01:26:04 jnelson Exp $ */
+/* $EPIC: notify.c,v 1.20 2003/07/16 00:56:43 jnelson Exp $ */
 /*
  * notify.c: a few handy routines to notify you when people enter and leave irc 
  *
@@ -52,6 +52,10 @@
 #include "parse.h"
 #include "vars.h"
 #include "who.h"
+#include "clock.h"
+#include "timer.h"
+#include "window.h"
+#include "input.h"
 
 void 	batch_notify_userhost		(const char *nick);
 void 	dispatch_notify_userhosts	(int);
@@ -338,10 +342,8 @@ void 	do_notify (void)
 	Server 		*s;
 	int 		old_from_server = from_server;
 	int		servnum;
-#if 0
 static	time_t		last_notify = 0;
 	int		interval = get_int_var(NOTIFY_INTERVAL_VAR);
-#endif
 
 	if (!number_of_servers)
 		return;
@@ -349,7 +351,6 @@ static	time_t		last_notify = 0;
 	if (x_debug & DEBUG_NOTIFY)
 		yell("do_notify() was called...");
 
-#if 0
 	if (time(NULL) < last_notify)
 		last_notify = time(NULL);
 	else if (!interval || interval > (time(NULL) - last_notify))
@@ -361,7 +362,6 @@ static	time_t		last_notify = 0;
 		return;		/* Not yet */
 	}
 	last_notify = time(NULL);
-#endif
 
 	for (servnum = 0; servnum < number_of_servers; servnum++)
 	{
@@ -618,5 +618,31 @@ char *	get_notify_nicks (int refnum, int showon)
 	}
 
 	return (list ? list : malloc_strdup(empty_string));
+}
+
+/***************************************************************************/
+char 	notify_timeref[] = "NOTTIM";
+
+void	notify_systimer (void)
+{
+	do_notify();
+}
+
+void    set_notify_interval (int value)
+{
+	if (value == 0)
+	{
+		stop_system_timer(notify_timeref);
+		return;
+	}
+
+        if (value < MINIMUM_NOTIFY_INTERVAL)
+        {
+                say("The /SET NOTIFY_INTERVAL value must be at least %d",
+                        MINIMUM_NOTIFY_INTERVAL);
+                set_int_var(NOTIFY_INTERVAL_VAR, MINIMUM_NOTIFY_INTERVAL);
+        }
+
+	start_system_timer(notify_timeref);
 }
 

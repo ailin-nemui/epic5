@@ -1,4 +1,4 @@
-/* $EPIC: irc.c,v 1.550 2003/07/15 01:26:03 jnelson Exp $ */
+/* $EPIC: irc.c,v 1.551 2003/07/16 00:56:43 jnelson Exp $ */
 /*
  * ircII: a new irc client.  I like it.  I hope you will too!
  *
@@ -52,7 +52,7 @@ const char internal_version[] = "20030613";
 /*
  * In theory, this number is incremented for every commit.
  */
-const unsigned long	commit_id = 555;
+const unsigned long	commit_id = 556;
 
 /*
  * As a way to poke fun at the current rage of naming releases after
@@ -64,6 +64,7 @@ const char ridiculous_version_name[] = "Innocuous";
 
 #define __need_putchar_x__
 #include "status.h"
+#include "clock.h"
 #include "dcc.h"
 #include "names.h"
 #include "vars.h"
@@ -147,9 +148,6 @@ int		child_dead = 0;
 /* Set if the current output is from a trusted source */
 int		trusted_output = 1;
 
-/* Whether or not we're in CPU saver mode */
-int		cpu_saver = 0;
-
 /* Set to 0 when you want to suppress all beeps (such as window repaints) */
 int		global_beep_ok = 1;
 
@@ -216,10 +214,6 @@ char		*startup_file = NULL,		/* full path .epicrc file */
 		userhost[NAME_LEN + 1],		/* userhost of user */
 		*send_umode = NULL,		/* sent umode */
 		*last_notify_nick = (char *) 0,	/* last detected nickname */
-		cpu_saver_timer[] = "CPUTIM1",
-		clock_timer[]     = "CLKTIM1",
-		mail_timer[]      = "MAITIM1",
-		notify_timer[]    = "NOTTIM1",
 		empty_string[] = "",		/* just an empty string */
 		space[] = " ",			/* just a lonely space */
 		on[] = "ON",
@@ -1082,270 +1076,6 @@ static void check_invalid_host (void)
 	return;
 }
 
-/**************************************************************************/
-static int	do_mail_checking (void *schedule_only)
-{
-	double timeout = 0;
-
-	if (cpu_saver)
-	{
-	    if ((timeout = get_int_var(CPU_SAVER_EVERY_VAR)) < 60)
-		timeout = 60.0;
-	    add_timer(1, mail_timer, timeout, 
-			1, do_mail_checking, NULL, NULL, -1);
-	}
-	else
-	{
-	    int nominal_timeout = get_int_var(MAIL_INTERVAL_VAR);
-	    if (nominal_timeout <= 0)
-		nominal_timeout = 1;
-
-	    timeout = time_to_next_interval(nominal_timeout);
-	    add_timer(1, mail_timer, timeout,
-			1, do_mail_checking, NULL, NULL, -1);
-	}
-
-	if (schedule_only)
-		return 0;
-
-	if (check_mail_status(NULL))
-	{
-		update_all_status();
-		cursor_to_input();
-	}
-	return 0;
-}
-
-int	do_update_clock (void *schedule_only)
-{
-	double timeout = 0;
-
-	if (cpu_saver)
-	{
-	    if ((timeout = get_int_var(CPU_SAVER_EVERY_VAR)) < 60)
-		timeout = 60.0;
-	    add_timer(1, clock_timer, timeout, 
-			1, do_update_clock, NULL, NULL, -1);
-	}
-	else
-	{
-	    int nominal_timeout = get_int_var(CLOCK_INTERVAL_VAR);
-	    if (nominal_timeout <= 0)
-		nominal_timeout = 1;
-
-	    timeout = time_to_next_interval(nominal_timeout);
-	    add_timer(1, clock_timer, timeout,
-			1, do_update_clock, NULL, NULL, -1);
-	}
-
-	if (schedule_only)
-		return 0;
-
-	/* reset_clock does `update_all_status' and `cursor_to_input' for us */
-	reset_clock(NULL);
-	return 0;
-}
-
-static int	do_notify_stuff (void *schedule_only)
-{
-	double	timeout;
-
-	/*
-	 * If CPU saver has been turned on, then ratchet down NOTIFY as well.
-	 */
-	if (cpu_saver)
-	{
-	    double timeout = 0;
-
-	    if ((timeout = get_int_var(CPU_SAVER_EVERY_VAR)) < 60)
-		timeout = 60.0;
-	    add_timer(1, notify_timer, timeout, 
-			1, do_notify_stuff, NULL, NULL, -1);
-	}
-	else
-	{
-	    int nominal_timeout = get_int_var(NOTIFY_INTERVAL_VAR);
-	    if (nominal_timeout <= 0)
-		nominal_timeout = 1;
-
-	    timeout = time_to_next_interval(nominal_timeout);
-	    add_timer(1, notify_timer, timeout,
-			1, do_notify_stuff, NULL, NULL, -1);
-	}
-
-	if (schedule_only)
-		return 0;
-
-	do_notify();
-	return 0;
-}
-
-/*
- * This is a watchdog timer that checks to see when we're idle enough to 
- * turn on CPU SAVER mode.  The above timers may honor what we do here but
- * they're not required to.
- */
-static int	cpu_saver_watchdog (void *schedule_only)
-{
-	double	interval;
-	double	been_idlin;
-	int	after;
-
-	if (cpu_saver)
-		return 0;
-
-	get_time(&now);
-	been_idlin = time_diff(idle_time, now);
-	interval = get_int_var(CPU_SAVER_AFTER_VAR) * 60;
-
-	if (interval < 1)
-		return 0;
-
-	if (been_idlin > interval)
-		cpu_saver_on(0, NULL);
-	else
-		add_timer(1, cpu_saver_timer, interval - been_idlin, 
-				1, cpu_saver_watchdog, NULL, NULL, -1);
-	return 0;
-}
-
-void    set_cpu_saver_after (int value)
-{
-        if (value == 0)
-                remove_timer(cpu_saver_timer);
-        else
-                cpu_saver_watchdog(NULL);
-}
-
-/*
- * When cpu saver mode is turned off (by the user pressing a key), then
- * we immediately do all of the system timers and then they will reset
- * themselves to go off as regular.
- */
-void	reset_system_timers (int schedule_only)
-{
-	int *ugh = NULL;
-
-	if (schedule_only)
-		ugh = &schedule_only;
-
-	cpu_saver = 0;
-	do_update_clock(ugh);
-	do_notify_stuff(ugh);
-	do_mail_checking(ugh);
-	cpu_saver_watchdog(ugh);
-}
-
-/***************************************************************************/
-/*
- * I moved this here, because it didnt really belong in status.c
- */
-/* 
- * XXX This is bogus -- it gets set when you do /set clock_format.
- * The reason we use a global variable is to cut down on the number of
- * calls to get_string_var, which is truly bogus, but neccesary for any
- * semblance of efficiency.
- */
-	char		*time_format = (char *) 0;	/* XXX Bogus XXX */
-static	const char	*strftime_24hour = "%R";
-static	const char	*strftime_12hour = "%I:%M%p";
-static	char		current_clock[256];
-
-static void	reset_broken_clock (void)
-{
-	snprintf(current_clock, sizeof current_clock, 
-		"%c12%c:%c00AM%c",
-		BLINK_TOG, BLINK_TOG, BLINK_TOG, BLINK_TOG);
-}
-
-static void	reset_standard_clock (void)
-{
-static		int	min = -1;
-static		int	hour = -1;
-		Timeval	tv;
-	struct 	tm	time_val;
-		time_t	hideous;
-
-	/*
-	 * This is cheating because we only call localtime() once per minute.
-	 * This implicitly assumes that you only want to get the localtime
-	 * info once every minute, which we do.  If you wanted to get it every
-	 * second (which we dont), you DONT WANT TO DO THIS!
-	 */
-	get_time(&tv);
-	hideous = tv.tv_sec;
-	time_val = *localtime(&hideous);
-
-	if (time_format)	/* XXX Bogus XXX */
-		strftime(current_clock, sizeof current_clock, 
-				time_format, &time_val);
-	else if (get_int_var(CLOCK_24HOUR_VAR))
-		strftime(current_clock, sizeof current_clock,
-				strftime_24hour, &time_val);
-	else
-		strftime(current_clock, sizeof current_clock,
-				strftime_12hour, &time_val);
-
-	if ((time_val.tm_min != min) || (time_val.tm_hour != hour))
-	{
-		int	old_server = from_server;
-
-		hour = time_val.tm_hour;
-		min = time_val.tm_min;
-
-		from_server = primary_server;
-		do_hook(TIMER_LIST, "%02d:%02d", hour, min);
-		do_hook(IDLE_LIST, "%ld", (tv.tv_sec - idle_time.tv_sec) / 60);
-		from_server = old_server;
-	}
-}
-
-static void	reset_metric_clock (void)
-{
-static	long	last_milliday;
-	double	metric_time;
-	long	current_milliday;
-
-	get_metric_time(&metric_time);
-	current_milliday = (long)metric_time;
-
-	snprintf(current_clock, sizeof current_clock, 
-			"%ld", (long)metric_time);
-
-	if (current_milliday != last_milliday)
-	{
-		int	old_server = from_server;
-		int	idle_milliday;
-
-		idle_milliday = (int)(timeval_to_metric(&idle_time).mt_mdays);
-		from_server = primary_server;
-		do_hook(TIMER_LIST, "%03ld", current_milliday);
-		do_hook(IDLE_LIST, "%ld", 
-			(long)(idle_milliday - current_milliday));
-		from_server = old_server;
-		last_milliday = current_milliday;
-	}
-}
-
-void	reset_clock (char *unused)
-{
-	if (x_debug & DEBUG_BROKEN_CLOCK)
-		reset_broken_clock();
-	else if (get_int_var(METRIC_TIME_VAR))
-		reset_metric_clock();
-	else
-		reset_standard_clock();
-
-	update_all_status();
-	cursor_to_input();
-}
-
-/* update_clock: figures out the current time and returns it in a nice format */
-const char *	get_clock (void)
-{
-	return current_clock;
-}
-
 /*************************************************************************/
 int 	main (int argc, char *argv[])
 {
@@ -1433,7 +1163,7 @@ int 	main (int argc, char *argv[])
 		reconnect(NOSERV, 0);		/* Connect to default server */
 
 	get_time(&idle_time);
-	reset_system_timers(0);
+	reset_system_timers();
 
 	for (;;)
 		io("main");

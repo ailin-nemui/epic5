@@ -1,4 +1,4 @@
-/* $EPIC: vars.c,v 1.35 2003/07/15 01:26:04 jnelson Exp $ */
+/* $EPIC: vars.c,v 1.36 2003/07/16 00:56:43 jnelson Exp $ */
 /*
  * vars.c: All the dealing of the irc variables are handled here. 
  *
@@ -54,6 +54,8 @@
 #include "keys.h"
 #include "translat.h"
 #include "timer.h"
+#include "clock.h"
+#include "mail.h"
 
 /* IrcVariable: structure for each variable in the variable table */
 typedef struct
@@ -90,16 +92,12 @@ const char	*var_settings[] =
 
 static	void	eight_bit_characters 	(int);
 static	void	set_realname 		(char *);
-static 	void 	set_clock_format 	(char *);
 static 	void 	set_display_pc_characters (int value);
 static 	void	set_dcc_timeout 	(int value);
 static	void	set_mangle_inbound 	(char *value);
 static	void	set_mangle_outbound 	(char *value);
 static	void	set_mangle_logfiles 	(char *value);
 static	void	set_scroll 		(int value);
-static	void	set_notify_interval 	(int value);
-static	void	set_clock_interval 	(int value);
-static	void	set_mail_interval 	(int value);
 static	void	update_all_status_wrapper (char *ignored);
 
 /*
@@ -131,7 +129,7 @@ static	IrcVariable irc_variable[] =
 	{ "BOLD_VIDEO",			BOOL_TYPE_VAR,	DEFAULT_BOLD_VIDEO, NULL, NULL, 0, 0 },
 	{ "CHANNEL_NAME_WIDTH",		INT_TYPE_VAR,	DEFAULT_CHANNEL_NAME_WIDTH, NULL, update_all_status_wrapper, 0, 0 },
 	{ "CLIENT_INFORMATION",		STR_TYPE_VAR,	0, NULL, NULL, 0, 0 },
-	{ "CLOCK",			BOOL_TYPE_VAR,	DEFAULT_CLOCK, NULL, update_all_status_wrapper, 0, 0 },
+	{ "CLOCK",			BOOL_TYPE_VAR,	DEFAULT_CLOCK, NULL, set_clock, 0, 0 },
 	{ "CLOCK_24HOUR",		BOOL_TYPE_VAR,	DEFAULT_CLOCK_24HOUR, NULL, reset_clock, 0, 0 },
 	{ "CLOCK_FORMAT",		STR_TYPE_VAR,	0, NULL, set_clock_format, 0, 0 },
 	{ "CLOCK_INTERVAL",		INT_TYPE_VAR,	DEFAULT_CLOCK_INTERVAL, NULL, set_clock_interval, 0, 0 },
@@ -142,7 +140,7 @@ static	IrcVariable irc_variable[] =
 	{ "CONNECT_TIMEOUT",		INT_TYPE_VAR,	DEFAULT_CONNECT_TIMEOUT, NULL, NULL, 0, 0 },
 	{ "CONTINUED_LINE",		STR_TYPE_VAR,	0, NULL, set_continued_line, 0, 0 },
 	{ "CPU_SAVER_AFTER",		INT_TYPE_VAR,	DEFAULT_CPU_SAVER_AFTER, NULL, set_cpu_saver_after, 0, 0 },
-	{ "CPU_SAVER_EVERY",		INT_TYPE_VAR,	DEFAULT_CPU_SAVER_EVERY, NULL, NULL, 0, 0 },
+	{ "CPU_SAVER_EVERY",		INT_TYPE_VAR,	DEFAULT_CPU_SAVER_EVERY, NULL, set_cpu_saver_every, 0, 0 },
 	{ "CURRENT_WINDOW_LEVEL",	STR_TYPE_VAR,	0, NULL, set_current_window_level, 0, 0 },
 	{ "DCC_AUTO_SEND_REJECTS",	BOOL_TYPE_VAR,	DEFAULT_DCC_AUTO_SEND_REJECTS, NULL, NULL, 0, 0 },
 	{ "DCC_LONG_PATHNAMES",		BOOL_TYPE_VAR,	DEFAULT_DCC_LONG_PATHNAMES, NULL, NULL, 0, 0 },
@@ -888,13 +886,6 @@ static void 	set_realname (char *value)
 	strlcpy(realname, value, sizeof realname);
 }
 
-static void 	set_clock_format (char *value)
-{
-	extern char *time_format; /* XXXX bogus XXXX */
-	malloc_strcpy(&time_format, value);
-	reset_clock(NULL);
-}
-
 static void 	set_display_pc_characters (int value)
 {
 	if (value < 0 || value > 5)
@@ -1055,37 +1046,6 @@ static	void	set_scroll (int value)
 		window_scroll(current_window, &whatever);
 	}
 	window_display = owd;
-}
-
-static	void	set_notify_interval (int value)
-{
-	if (value < MINIMUM_NOTIFY_INTERVAL)
-	{
-		say("The /SET NOTIFY_INTERVAL value must be at least %d",
-			MINIMUM_NOTIFY_INTERVAL);
-		set_int_var(NOTIFY_INTERVAL_VAR, MINIMUM_NOTIFY_INTERVAL);
-	}
-}
-
-static	void	set_clock_interval (int value)
-{
-	if (value < MINIMUM_CLOCK_INTERVAL)
-	{
-		say("The /SET CLOCK_INTERVAL value must be at least %d",
-			MINIMUM_CLOCK_INTERVAL);
-		set_int_var(NOTIFY_INTERVAL_VAR, MINIMUM_CLOCK_INTERVAL);
-	}
-	do_update_clock(NULL);	/* XXX Oh heck, why not? */
-}
-
-static	void	set_mail_interval (int value)
-{
-	if (value < MINIMUM_MAIL_INTERVAL)
-	{
-		say("The /SET MAIL_INTERVAL value must be at least %d",
-			MINIMUM_MAIL_INTERVAL);
-		set_int_var(MAIL_INTERVAL_VAR, MINIMUM_MAIL_INTERVAL);
-	}
 }
 
 static void	update_all_status_wrapper (char *ignored)

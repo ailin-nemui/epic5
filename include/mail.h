@@ -9,7 +9,11 @@
 #ifndef __mail_h__
 #define __mail_h__
 
+extern	char	mail_timeref[];
+
 	char	*check_mail 		(void);
 	int	check_mail_status 	(void *);
+	void	mail_systimer		(void);
+	void	set_mail_interval	(int);
 
 #endif /* _MAIL_H_ */

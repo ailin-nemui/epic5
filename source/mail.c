@@ -1,4 +1,4 @@
-/* $EPIC: mail.c,v 1.7 2003/07/09 21:10:25 jnelson Exp $ */
+/* $EPIC: mail.c,v 1.8 2003/07/16 00:56:43 jnelson Exp $ */
 /*
  * mail.c -- a gross simplification of mail checking.
  * Only unix maildrops are supported.
@@ -39,6 +39,10 @@
 #include "vars.h"
 #include "ircaux.h"
 #include "output.h"
+#include "clock.h"
+#include "timer.h"
+#include "window.h"
+#include "input.h"
 #ifndef _POSIX_SOURCE
 # define _POSIX_SOURCE
 #endif
@@ -220,3 +224,39 @@ char *	check_mail (void)
 	}
 	return NULL;
 }
+
+char 	mail_timeref[] = "MAILTIM";
+
+void	mail_systimer (void)
+{
+	if (check_mail_status(NULL))
+	{
+		update_all_status();
+		cursor_to_input();
+	}
+	return;
+}
+
+void    set_mail_interval (int value)
+{
+        if (value < MINIMUM_MAIL_INTERVAL) 
+        {
+                say("The /SET MAIL_INTERVAL value must be at least %d",
+                        MINIMUM_MAIL_INTERVAL);
+                set_int_var(MAIL_INTERVAL_VAR, MINIMUM_MAIL_INTERVAL);
+        }
+}
+
+void	set_mail (int value)
+{
+	if (value < 0 || value > 2)
+	{
+		say("/SET MAIL must be 0, 1, or 2");
+		return;
+	}
+	else if (value == 0)
+		stop_system_timer(mail_timeref);
+	else
+		start_system_timer(mail_timeref);
+}
+

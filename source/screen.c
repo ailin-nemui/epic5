@@ -1,4 +1,4 @@
-/* $EPIC: screen.c,v 1.52 2003/07/15 01:26:04 jnelson Exp $ */
+/* $EPIC: screen.c,v 1.53 2003/07/16 00:56:43 jnelson Exp $ */
 /*
  * screen.c
  *
@@ -36,6 +36,7 @@
 #define __need_putchar_x__
 #include "irc.h"
 #include "alias.h"
+#include "clock.h"
 #include "exec.h"
 #include "screen.h"
 #include "window.h"
@@ -3075,7 +3076,7 @@ void 	do_screens (fd_set *rd, fd_set *wd)
 			 */
 			get_time(&idle_time);
 			if (cpu_saver)
-				reset_system_timers(0);
+				reset_system_timers();
 
 			server = from_server;
 			last_input_screen = screen;
