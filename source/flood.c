@@ -1,4 +1,4 @@
-/* $EPIC: flood.c,v 1.23 2004/08/17 16:09:46 crazyed Exp $ */
+/* $EPIC: flood.c,v 1.24 2005/01/23 21:41:28 jnelson Exp $ */
 /*
  * flood.c: handle channel flooding.
  *
@@ -113,7 +113,10 @@ static	int	 pos = 0;
 	double	 diff;
 	Flooding *tmp;
 	int	l;
-const	char	*free = nuh = malloc_strdup(nuh);
+	char *	freeit;
+
+	freeit = malloc_strdup(nuh);
+	nuh = freeit;
 
 	/*
 	 * Figure out how many people we want to track
@@ -155,14 +158,14 @@ const	char	*free = nuh = malloc_strdup(nuh);
 		if (flood)
 			new_free((char **)&flood);
 		users = 0;
-		new_free(&free);
+		new_free(&freeit);
 		return 0;
 	}
 
 	if (nuh && *nuh)
 		nuh = normalize_nuh(nuh);
 	else {
-		new_free(&free);
+		new_free(&freeit);
 		return 0;
 	}
 
@@ -245,7 +248,7 @@ const	char	*free = nuh = malloc_strdup(nuh);
 		tmp->start = right_now;
 
 		pos = (0 < old_pos ? old_pos : users) - 1;
-		new_free(&free);
+		new_free(&freeit);
 		return 0;
 	}
 	else
@@ -282,7 +285,7 @@ const	char	*free = nuh = malloc_strdup(nuh);
 		}
 	}
 
-	new_free(&free);
+	new_free(&freeit);
 
 	if (get_int_var(FLOOD_IGNORE_VAR))
 		return retval;

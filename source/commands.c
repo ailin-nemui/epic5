@@ -1,4 +1,4 @@
-/* $EPIC: commands.c,v 1.110 2005/01/12 00:12:20 jnelson Exp $ */
+/* $EPIC: commands.c,v 1.111 2005/01/23 21:41:28 jnelson Exp $ */
 /*
  * commands.c -- Stuff needed to execute commands in ircII.
  *		 Includes the bulk of the built in commands for ircII.
@@ -1476,7 +1476,7 @@ struct load_info
 	int	line;
 	int	start_line;
 	struct stat sb;
-} load_level[MAX_LOAD_DEPTH] = { { NULL, NULL, 0, 0, 0, 0 } };
+} load_level[MAX_LOAD_DEPTH];
 
 int 	load_depth = -1;
 
@@ -1555,6 +1555,7 @@ static void	loader_pf  (FILE *fp, const char *filename, const char *args, struct
  * though it were typed in (passes each line to parse_line). 
  * ---loadcmd---
  */
+static	const char *unknown = "<unknown>";
 BUILT_IN_COMMAND(load)
 {
 	char *	filename;
@@ -1573,6 +1574,15 @@ BUILT_IN_COMMAND(load)
 		say("No more than %d levels of LOADs allowed", MAX_LOAD_DEPTH);
 		return;
 	}
+
+	/* Make sure no old (bogus) values are lying around. */
+	load_level[load_depth].filename = NULL;
+	load_level[load_depth].package = NULL;
+	load_level[load_depth].loader = NULL;
+	load_level[load_depth].package_set_here = 0;
+	load_level[load_depth].line = 0;
+	load_level[load_depth].start_line = 0;
+	/* What to do with load_level[load_depth].sb? */
 
 	display = window_display;
 	window_display = 0;
@@ -3034,21 +3044,21 @@ struct target_type target[4] =
 	    else if (*current_nick == '-' && strchr(current_nick + 1, '/'))
 	    {
 		int	servref;
-		char *	server;
-		char *	target;
+		char *	servername;
+		char *	msgtarget;
 
-		server = current_nick + 1;
-		target = strchr(server, '/');
-		*target++ = 0;
+		servername = current_nick + 1;
+		msgtarget = strchr(servername, '/');
+		*msgtarget++ = 0;
 
-		if ((servref = str_to_servref(server)) == NOSERV)
+		if ((servref = str_to_servref(servername)) == NOSERV)
 		{
-			yell("Unknown server [%s] in target", server);
+			yell("Unknown server [%s] in target", servername);
 			continue;
 		}
 
 		/* XXX -- Recursion is a hack. (but it works) */
-		send_text(servref, target, text, command, hook ? -1 : 0);
+		send_text(servref, msgtarget, text, command, hook ? -1 : 0);
 		continue;
 	    }
 	    else

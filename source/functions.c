@@ -1,4 +1,4 @@
-/* $EPIC: functions.c,v 1.185 2005/01/12 00:12:20 jnelson Exp $ */
+/* $EPIC: functions.c,v 1.186 2005/01/23 21:41:28 jnelson Exp $ */
 /*
  * functions.c -- Built-in functions for ircII
  *
@@ -43,6 +43,7 @@
  */
 
 #include "irc.h"
+#define __need_ArgList_t__
 #include "alias.h"
 #include "alist.h"
 #include "array.h"
@@ -518,7 +519,7 @@ static BuiltInFunctions	built_in_functions[] =
 #endif
 	{ "FINDW",		function_findw		},
 	{ "FINDWS",		function_findws		},
-	{ "FIX_ARGLIST",		function_fix_arglist		},
+	{ "FIX_ARGLIST",	function_fix_arglist	},
 	{ "FLOODINFO",		function_floodinfo	},
 	{ "FLOOR",		function_floor		},
 	{ "FNEXIST",		function_fnexist	},
@@ -1989,8 +1990,8 @@ BUILT_IN_FUNCTION(function_common, word)
 	char    *left = (char *) 0;
 	char	*right = (char *) 0;
 	char 	*booya = NULL;
-	const char **leftw = NULL;
-	const char **rightw = NULL;
+	char **leftw = NULL;
+	char **rightw = NULL;
 	int	leftc, lefti,
 		rightc, righti;
 	size_t	rvclue=0;
@@ -2033,7 +2034,7 @@ BUILT_IN_FUNCTION(function_diff, word)
 	char 	*left = NULL,
 	     	*right = NULL, 
 		*booya = NULL;
-	const char **rightw = NULL,
+	char **rightw = NULL,
 		   **leftw = NULL;
 	int 	lefti, leftc,
 	    	righti, rightc;
@@ -3723,7 +3724,7 @@ static int sort_it (const void *val1, const void *val2)
 BUILT_IN_FUNCTION(function_sort, words)
 {
 	int 	wordc;
-	const char **wordl;
+	char **wordl;
 	char	*retval;
 
 	if (!(wordc = splitw(words, &wordl)))
@@ -3770,7 +3771,7 @@ static int num_sort_it (const void *val1, const void *val2)
 BUILT_IN_FUNCTION(function_numsort, words)
 {
 	int wordc;
-	const char **wordl;
+	char **wordl;
 	char *retval;
 
 	if (!(wordc = splitw(words, &wordl)))
@@ -4002,7 +4003,7 @@ static int unsort_it (const void *v1, const void *v2)
  */
 BUILT_IN_FUNCTION(function_uniq, word)
 {
-        const char    **list = NULL;
+        char    **list = NULL;
 	char *booya = NULL;
         int     listc, listi, listo;
 
@@ -5426,7 +5427,7 @@ BUILT_IN_FUNCTION(function_remws, word)
 	char    *left = NULL,
 		*right = NULL,
 		*booya = NULL;
-const	char	**lhs = NULL,
+	char	**lhs = NULL,
 		**rhs = NULL;
 	int	leftc,
 		rightc,
@@ -5595,14 +5596,14 @@ BUILT_IN_FUNCTION( thisfn , input)			\
 	if (!input || !*input)					\
 	{							\
 		subresults = nextfn ("*", &howmany, 0, 0, 0);	\
-		ret = unsplitw((const char ***)&subresults, howmany);	\
+		ret = unsplitw(&subresults, howmany);	\
 		RETURN_MSTR(ret);				\
 	}							\
 								\
 	while ((s = next_arg(input, &input)))			\
 	{							\
 		subresults = nextfn (s, &howmany, 0, 0, 0);		\
-		r = unsplitw((const char ***)&subresults, howmany);	\
+		r = unsplitw(&subresults, howmany);	\
 		malloc_strcat_wordlist_c(&ret, space, r, &clue);	\
 		new_free(&r);					\
 	}							\
@@ -5978,7 +5979,7 @@ BUILT_IN_FUNCTION(function_maxlen, input)
  */
 BUILT_IN_FUNCTION(function_prefix, input)
 {
-	const char	**words = NULL;
+	char	**words = NULL;
 	int	numwords;
 	int	max_len;
 	int	len_index;
@@ -6811,7 +6812,7 @@ BUILT_IN_FUNCTION(function_joinstr, input)
 BUILT_IN_FUNCTION(function_exec, input)
 {
 	char	*ret = NULL;
-	const char **args = NULL;
+	char **args = NULL;
 	int	count, *fds, foo;
 	size_t	clue = 0;
 

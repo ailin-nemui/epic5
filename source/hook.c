@@ -1,4 +1,4 @@
-/* $EPIC: hook.c,v 1.46 2005/01/12 00:12:20 jnelson Exp $ */
+/* $EPIC: hook.c,v 1.47 2005/01/23 21:41:28 jnelson Exp $ */
 /*
  * hook.c: Does those naughty hook functions. 
  *
@@ -37,6 +37,7 @@
 #include "irc.h"
 #include "hook.h"
 #include "ircaux.h"
+#define __need_ArgList_t__
 #include "alias.h"
 #include "window.h"
 #include "output.h"
@@ -352,7 +353,7 @@ static char *	fill_it_out (char *str, int params)
  * 	Add a hook to the hooklist
  *	Returns -1 on error, or size of list if successful.
  */
-int inc_hooklist(int size)
+static int	inc_hooklist (int size)
 {
 	int newsize, n;
 	if (size < 1)
@@ -372,8 +373,7 @@ int inc_hooklist(int size)
  * Removes n NULL-pointers from the end of hooklist.
  * Returns -1 on error, and size of list if successful
  */
-
-int dec_hooklist(int n)
+static int	dec_hooklist (int n)
 {
 	int size, newsize;
 	if (n < 1)
@@ -396,7 +396,7 @@ int dec_hooklist(int n)
 /*
  * Will return the next empty slot in the hooklist
  */
-int next_empty_hookslot()
+static int	next_empty_hookslot (void)
 {
 	int n;
 	for (n = 0; n < hooklist_size; n++)
@@ -487,7 +487,7 @@ static int 	find_hook (char *name, int *first, int quiet)
  * entry to the list as specified by the rest of the parameters.  The new
  * entry is added in alphabetical order (by nick). 
  */
-int add_hook (int which, char *nick, ArgList *arglist, char *stuff, int noisy, int not, int sernum, int flexible)
+static int	add_hook (int which, char *nick, ArgList *arglist, char *stuff, int noisy, int not, int sernum, int flexible)
 {
 	Hook	*new_h;
 	
@@ -1552,7 +1552,7 @@ int hook_find_free_serial(int dir, int from, int which) {
 }
 
 /* get_noise_id() returns identifer for noise chr */
-int get_noise_id (char *chr)
+static int	get_noise_id (char *chr)
 {
 	int n;
 	n = atol(chr);
@@ -1821,6 +1821,7 @@ char *hookctl (char *input)
 	char *str;
 	char *hookname;
 	char *name;
+	const char *cname;
 	char *ret = NULL;
 	char *tmp;
 	char *nick;
@@ -1936,26 +1937,10 @@ char *hookctl (char *input)
 	case HOOKCTL_RETVAL:
 		if (!current_hook)
 			RETURN_EMPTY;
-		if (!set)
-		{
-			if (!input || !*input)
-				RETURN_INT(current_hook->retval);
-			else
-			{
-				switch (current_hook->retval)
-				{
-					case -1:	RETURN_STR("NO_ACTION_TAKEN");
-					case 0:		RETURN_STR("SUPPRESS_DEFAULT");
-					case 1:		RETURN_STR("DONT_SUPPRESS_DEFAULT");
-					case 2:		RETURN_STR("RESULT_PENDING");
-					default:	RETURN_STR("UNKNOWN");
-				}
-			}
-		}
+		if (!input || !*input)
+			RETURN_INT(current_hook->retval);
 		else
 		{
-			if (!input || !*input)
-				RETURN_INT(0);
 			GET_STR_ARG(str, input);
 			if (!isdigit(str[0]) && str[0] != '-')
 				tmp_int = -2 + vmy_strnicmp(strlen(str), str, 
@@ -1975,12 +1960,10 @@ char *hookctl (char *input)
 	
 	/* go-switch */
 	case HOOKCTL_DENY_ALL_HOOKS:
-		if (!set)
+		if (!input || !*input)
 			RETURN_INT(deny_all_hooks);
 		else
 		{
-			if (!input || !*input)
-				RETURN_INT(-1);
 			GET_INT_ARG(tmp_int, input);
 			deny_all_hooks = tmp_int ? 1 : 0;
 			RETURN_INT(deny_all_hooks);
@@ -2023,7 +2006,7 @@ char *hookctl (char *input)
 		/* Walk through the entire list, starting with the named hooks */
 		for (tmp_int = 0; tmp_int < NUMBER_OF_LISTS; tmp_int++)
 		{
-			if ((prop != 1 && hook_functions[tmp_int].list == NULL
+			if (((prop != 1 && hook_functions[tmp_int].list == NULL)
 				|| (str && !wild_match(str, hook_functions[tmp_int].name))
 			)
 			)
@@ -2061,7 +2044,7 @@ char *hookctl (char *input)
 	/* go-switch */
 	case HOOKCTL_SERIAL:
 	case HOOKCTL_PACKAGE:
-		if (action == HOOKCTL_SERIAL)
+		if (go == HOOKCTL_SERIAL)
 			is_serial = 1;
 		if (!input || !*input)
 			RETURN_EMPTY;
@@ -2206,7 +2189,7 @@ char *hookctl (char *input)
 				RETURN_EMPTY;
 
 			if (!input || !*input)
-				str = "";
+				str = LOCAL_COPY(empty_string);
 			else
 				str = input;
 		
@@ -2385,7 +2368,6 @@ char *hookctl (char *input)
 				GET_INT_ARG(id, input);
 				if (noise_level_num <= id)
 					RETURN_EMPTY;
-				name = (char *) noise_info[id]->name;
 			}
 			else
 			{
@@ -2397,7 +2379,6 @@ char *hookctl (char *input)
 				}
 				if (noise_level_num == tmp_int)
 					RETURN_EMPTY;
-				name = (char *) noise_info[tmp_int]->name;
 				id = tmp_int;
 			}
 		

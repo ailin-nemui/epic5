@@ -67,7 +67,6 @@ typedef struct IsonEntryT
 
 
 /* USERHOST queue */
-
 typedef struct UserhostItemT
 {
 	char *	nick;
@@ -80,11 +79,11 @@ typedef struct UserhostItemT
 
 typedef struct UserhostEntryT
 {
-	char *		format;
-	char *		userhost_asked;
-	char *		text;
-	struct UserhostEntryT *	next;
-	void 		(*func) (int, UserhostItem *, const char *, const char *);
+        const char *    format;
+        char *          userhost_asked;
+        char *          text;
+        struct UserhostEntryT * next;
+        void            (*func) (int, UserhostItem *, const char *, const char *); 
 } UserhostEntry;
 
 	BUILT_IN_COMMAND(userhostcmd);

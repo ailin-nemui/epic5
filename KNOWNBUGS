@@ -431,3 +431,8 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Fix /window topline so it doesn't chop/wrap-off last word.
 * Fix misleading error message if /exec -direct fails.
 * Add $logctl(CURRENT), refnum of the current logfile, -1 if none.
+* Hide ArgListT in alias.h to only those who need it, to save numbers.c
+* Fix up a lot of compile warnings all over the place.
+* Some changes to $hookctl() might need feedback from howl...
+* Fix vhost support so we can do inbound sockets again.
+

@@ -1,4 +1,4 @@
-/* $EPIC: ircaux.c,v 1.125 2005/01/12 00:12:20 jnelson Exp $ */
+/* $EPIC: ircaux.c,v 1.126 2005/01/23 21:41:28 jnelson Exp $ */
 /*
  * ircaux.c: some extra routines... not specific to irc... that I needed 
  *
@@ -2183,14 +2183,14 @@ int	split_args (char *str, char **to, size_t maxargs)
 	return counter;
 }
 
-int 	splitw (char *str, const char ***to)
+int 	splitw (char *str, char ***to)
 {
 	int numwords = count_words(str, DWORD_YES, "\"");
 	int counter;
 
 	if (numwords)
 	{
-		*to = (const char **)new_malloc(sizeof(char *) * numwords);
+		*to = (char **)new_malloc(sizeof(char *) * numwords);
 		for (counter = 0; counter < numwords; counter++)
 			(*to)[counter] = safe_new_next_arg(str, &str);
 	}
@@ -2200,10 +2200,10 @@ int 	splitw (char *str, const char ***to)
 	return numwords;
 }
 
-char *	unsplitw (const char ***container, int howmany)
+char *	unsplitw (char ***container, int howmany)
 {
 	char *retval = NULL;
-	const char **str = *container;
+	char **str = *container;
 	size_t clue = 0;
 
 	if (!str || !*str)
@@ -3499,9 +3499,12 @@ char	*dequote_it (char *str, size_t *len)
  */
 char	*dequote_buffer (char *str, size_t *len)
 {
-	char	*malloc = dequote_it(str, len);
-	char	*ret = memmove(str, malloc, 1 + *len);
-	new_free(&malloc);
+	char *freeme;
+	char *ret;
+
+	freeme = dequote_it(str, len);
+	ret = memmove(str, freeme, *len + 1);
+	new_free(&freeme);
 	return ret;
 }
 

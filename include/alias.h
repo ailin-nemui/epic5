@@ -226,6 +226,7 @@ enum ARG_TYPES {
 	QWORD
 };
 
+#ifdef __need_ArgList_t__
 /* Ugh. XXX Bag on the side */
 struct ArgListT {
 	char *	vars[32];
@@ -236,11 +237,11 @@ struct ArgListT {
 	int	dot_flag;
 };
 typedef struct ArgListT ArgList;
-extern ArgList	*parse_arglist (char *arglist);
+extern ArgList *parse_arglist (char *arglist);
 extern void	destroy_arglist (ArgList **);
-extern char *print_arglist(ArgList *);
+extern char *	print_arglist (ArgList *);
 extern ArgList *clone_arglist (ArgList *);
-
+#endif
 
 
 #endif /* _ALIAS_H_ */

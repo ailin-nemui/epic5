@@ -104,6 +104,267 @@ EPIC5-0.1
 	the hook's userial (unique serial)
 
 *** News 01/01/2005 -- New function: $hookctl() (howl)
+    This function presents a low-level interface to the /on system
+
+    === ADDING AND REMOVING HOOKS ===
+    $hookctl(ADD [#][!][']<noise><TYPE> [<serial>] <pattern> 
+							[(<arg list>)] <code>)
+	Compare this to:
+	   /ON [#]<noise><TYPE> [<serial>] [!]<pattern> [(<arglist>)] <code>
+
+	Where [#] is used to indicate a <serial> number should be used,
+	where [!] is used to indicate that the ON is a "negative" ON
+	where ['] is used to indicate that the ON is a "flexible" ON
+	where [<noise>] is one of "?", "^", "-", "+", "%", or nothing.
+	where [<TYPE>] is one of the ON types (ACTION, MSG, PUBLIC, etc)
+	where [<serial>] is the ON's serial number (NOT the refnum!)
+	where [<pattern>] is the ON's wildcard pattern (the "nick") that is
+		matched against $* each time the ON is checked
+	where [<code>] is the ircII code that is executed each time the ON
+		is run.
+
+	ADD registers a new /ON and returns the /ON's new <refnum>.  This
+	<refnum> can be used in other $hookctl() operations.
+
+	Example: $hookctl(ADD ^MSG * (nick, msg) {echo msg from $nick: $msg})
+	   is the same as
+		/ON ^MSG * (nick, msg) {echo msg from $nick: $msg}
+	   except it returns the new /on's <refnum> (of course).
+
+    $hookctl(REMOVE <refnum>) 
+	Delete the given /ON.
+
+    === WORKING WITH THE ONs YOU'VE CREATED ===
+    -- In these GET HOOK operations, the values in <> are the values that
+       were originally provided to the ADD operation (or the /ON command)
+
+    $hookctl(GET HOOK <refnum> ARGUMENT_LIST)
+	Return an /ON's <arglist> if it has one.
+
+    $hookctl(GET HOOK <refnum> FLEXIBLE)
+	Return 1 if /ON was created with ['] (flexible -- <pattern> is 
+		expanded each time the /ON is checked)
+	Return 0 if not.
+
+    $hookctl(GET HOOK <refnum> NICK)
+	Return an /ON's <pattern>.
+
+    $hookctl(GET HOOK <refnum> NOT)
+	Return 1 if /ON was created with [!] (negative on)
+	Return 0 if not.
+
+    $hookctl(GET HOOK <refnum> NOISE)
+    $hookctl(GET HOOK <refnum> NOISY)
+	Return an /ON's <noise>.
+
+    $hookctl(GET HOOK <refnum> PACKAGE)
+	Return an /ON's </package> value.
+
+    $hookctl(GET HOOK <refnum> SERIAL)
+	Return an /ON's <serial>.  If one wasn't given, 0 is the default.
+
+    $hookctl(GET HOOK <refnum> SKIP)
+	Return 1 if the /ON is being "skipped" 
+		("skipped" == ignored -- treated as if it had been deleted)
+
+    $hookctl(GET HOOK <refnum> STUFF)
+	Return an /ON's <stuff>
+		("stuff" == the ircII code when the /ON goes off)
+
+    $hookctl(GET HOOK <refnum> TYPE)
+	Return an /ON's <TYPE>
+
+    -- In these SET HOOK operations, if you attempt to change a value so it
+       clobbers (duplicates) an existing ON's value, then the operation will
+       either fail, or it will replace the existing ON.  I'll have to ask
+       howl how he handled this.
+
+    $hookctl(SET HOOK <refnum> ARGUMENT_LIST)
+	Clear an /ON's argument list (so it no longer takes one)
+
+    $hookctl(SET HOOK <refnum> ARGUMENT_LIST <list>)
+	Replace an /ON's argument list
+
+    $hookctl(SET HOOK <refnum> FLEXIBLE [0|1])
+	Clear (or set) an /ON's flexible-pattern attribute
+
+    $hookctl(SET HOOK <refnum> NICK <pattern>)
+	Change an /ON's <pattern>.  Warning -- You can only have one /ON
+	per serial number with the exact same <pattern>.
+
+    $hookctl(SET HOOK <refnum> NOT [0|1])
+	Clear (or set) an /ON's "negative on" attribute
+
+    $hookctl(SET HOOK <refnum> NOISE <noiseref|noise>)
+    $hookctl(SET HOOK <refnum> NOISY <noiseref|noise>)
+	Change an /ON's <noise> value using either a noise-refnum or
+	the noise's name itsself
+	Example: $hookctl(SET HOOK 147 NOISE SILENT)
+	     and $hookctl(SET HOOK 147 NOISE 1) do the same thing.
+	
+    $hookctl(SET HOOK <refnum> PACKAGE <string>)
+	Change an /ON's </package> value.  This is used by /unload.
+
+    $hookctl(SET HOOK <refnum> SERIAL <number>)
+	Change an /ON's <serial> value.  Warning -- You can only have one 
+	/ON per serial number with the exact same <pattern>.
+
+    $hookctl(SET HOOK <refnum> SKIP [0|1])
+	Clear (or set) an /ON's skippable attribute.  When an /ON is being
+	"skipped", it cannot ever be executed; it is treated as if it were
+	deleted. 
+
+    $hookctl(SET HOOK <refnum> STUFF <ircII code>)
+	Change the ircII commands executed when an /ON goes off.
+
+
+    === GETTING INFORMATION ABOUT ON TYPES ===
+    $hookctl(LIST)
+    $hookctl(LIST LISTS)
+	Return all of the valid <TYPE>s
+
+    $hookctl(LIST LISTS <pattern>)
+	Return all of the valie <TYPE>s that match the <pattern>
+	Ex: $hookctl(LIST LISTS g*) returns "GENERAL_NOTICE GENERAL_PRIVMSG"
+
+    $hookctl(LIST POPULATED_LISTS)
+	Return all of the valid <TYPE>s that have an /ON registered for them.
+
+    $hookctl(LIST POPULATED_LISTS <pattern>)
+	Return all of the valid <TYPE>s that match the <pattern> that have an
+	/ON registered for them.
+
+    $hookctl(LIST HOOKS)
+	Return all of the registered <refnum>s
+
+    $hookctl(LIST HOOKS <pattern>)
+	Return all registered <refnum>s for <TYPE>s that match <pattern>.
+	Ex: $hookctl(LIST HOOKS MSG) returns the refnums of your /ON MSG's
+
+    $hookctl(FIRST_NAMED_HOOK)
+	Return the number such that
+		$word($hookctl(FIRST_NAMED_HOOK) $hookctl(LIST))
+	returns the first non-numeric /ON type.
+
+    $hookctl(NUMBER_OF_LISTS)   
+    $hookctl(COUNT)
+    $hookctl(COUNT LISTS)
+	Return the number of items in $hookctl(LIST)
+
+    $hookctl(COUNT LISTS <pattern>)
+	Return the number of items in $hookctl(LIST LISTS <pattern>)
+
+    $hookctl(COUNT POPULATED_LISTS)
+	Return the number of items in $hookctl(LIST POPULATED_LISTS)
+
+    $hookctl(COUNT POPULATED_LISTS <pattern>)
+	Return the number of items in $hookctl(LIST POPULATED_LISTS <pattern>)
+
+    $hookctl(COUNT HOOKS)
+	Return the number of items in $hookctl(LIST HOOKS)
+
+    $hookctl(COUNT HOOKS <pattern>)
+	Return the number of items in $hookctl(LIST HOOKS <pattern>)
+
+    $hookctl(GET LIST <TYPE> NAME)
+	This just returns <TYPE>, since the name of any <TYPE> is itsself.
+
+    $hookctl(GET LIST <TYPE> PARAMS)
+	Return the mininum number of words in $* for any /ON of this type.
+	Remember that your <pattern> is expected to match a $* that has 
+	AT LEAST this number of words.  If your <pattern> doesn't, the /ON
+	will never go off.
+
+    $hookctl(GET LIST <TYPE> MARK)
+	Return the number of invocations of this /ON type are pending.
+	For example, the first time an /ON MSG event is thrown, then 
+	$hookctl(GET LIST MSG MARK) is 1.  If your /ON does something 
+	funky like a /WAIT and another MSG comes in before your /ON is
+	finished, then $hookctl(GET LIST MSG MARK) is 2.
+
+    $hookctl(GET LIST <TYPE> FLAGS)
+	This is an internal bitmask value.  The only defined bit is 1, which
+	is used to prevent an /ON from going off recursively.  One such ON
+	is /ON INPUT.  If $hookctl(GET LIST INPUT MARK) is 1, then another
+	/ON INPUT event is thrown, no /ON's will actually be executed; the
+	ON is considered unhooked.  This allows you do perform certain
+	commands (like /sendline) from within certain /ON's (like /on input)
+	where without this flag that would result in infinite recursion
+	(and crash)
+
+    === GETTING INFORMATION ABOUT NOISE TYPES ===
+    $hookctl(DEFAULT_NOISE_LEVEL)
+	This always returns "NORMAL" for now.  This is the <noisetype> whose
+	VALUE (see below) is the null character.
+
+    $hookctl(NOISE_LEVELS) 
+	This returns all of the <noisetype> values.
+	Ex: $hookctl(NOISE_LEVELS) returns "SILENT QUIET NORMAL NOISY SYSTEM"
+
+    $hookctl(NOISE_LEVELS <pattern>)
+	This returns all of the <noisetype> values that match <pattern>
+	Ex: $hookctl(NOISE LEVELS s*) returns "SILENT SYSTEM"
+
+    $hookctl(NOISE_LEVEL_NUM)   
+	This returns the highest <noiseref> value.
+
+    In the GET NOISE operations, <noisetype> is the name of a noise 
+    flag.  This is one of "SILENT", "QUIET", "NORMAL", "NOISY", and 
+    "SYSTEM".  <noiseref> is a refnum that uniquely identifies each
+    of the noise types.  The above are numbered 1, 2, 3, 4, and 5 
+    respectively.
+
+    $hookctl(GET NOISE <noisetype|noiseref> NAME)
+	Get the name of the noise type.  One of "SILENT", "QUIET", 
+	"NORMAL", "NOISY", or "SYSTEM"
+
+    $hookctl(GET NOISE <noisetype|noiseref> DISPLAY)
+	Returns 0 if the noise type does a /SET DISPLAY OFF while
+		executing the /ON body.
+	Returns 1 if /SET DISPLAY is not changed when the /ON goes off.
+
+    $hookctl(GET NOISE <noisetype|noiseref> ALERT)
+	Returns 0 if you are not told when the /ON is executed.
+	Returns 1 if you are told whenever the /ON is executed.
+
+    $hookctl(GET NOISE <noisetype|noiseref> SUPPRESS)
+	Preface:  With most /ON's, if you do not have any /ON's that 
+		are appropriate to run, then some "default" action will
+		be taken.
+	Returns 0 if executing the /ON does not cause the "default" action
+		to be suppressed.
+	Returns 1 if executing the /ON causes the "default" action to be
+		suppressed.
+
+    $hookctl(GET NOISE <noisetype|noiseref> VALUE) 	(refnum)
+	Returns the refnum of the noise type.
+	Example: $hookctl(GET NOISE SILENT VALUE) returns "1".
+
+    $hookctl(GET NOISE <noisetype|noiseref> IDENTIFIER)
+	Returns the <noise> value to use when you want to use this noise type.
+	Example: $hookctl(GET NOISE SILENT IDENTIFIER) returns "^".
+
+    $hookctl(GET NOISE <noisetype|noiseref> CUSTOM)
+	This always returns 0 for now.
+
+
+    === MISCELLANEOUS OPERATIONS ===
+    $hookctl(HALTCHAIN <refnum>)
+    $hookctl(DENY_ALL_HOOKS)
+    $hookctl(DENY_ALL_HOOKS 1)
+    $hookctl(DENY_ALL_HOOKS 0)
+    $hookctl(EMPTY_SLOTS)
+    $hookctl(EXECUTING_HOOKS)
+    $hookctl(HOOKLIST_SIZE)
+    $hookctl(LAST_CREATED_HOOK)
+    $hookctl(PACKAGE <package> [<type>])
+    $hookctl(SERIAL <sernum> [<type>])
+    $hookctl(RETVAL)
+    $hookctl(RETVAL <value>)
+    $hookctl(LOOKUP <type> <pattern> <serial>)
+    $hookctl(MATCH <type> <pattern>) 
+
+*** News 01/01/2005 -- New function: $hookctl() (howl)
     This new function, $hookctl(), lets the users do pretty much whatever
 	they
 

@@ -1,4 +1,4 @@
-/* $EPIC: server.c,v 1.143 2005/01/12 00:12:21 jnelson Exp $ */
+/* $EPIC: server.c,v 1.144 2005/01/23 21:41:28 jnelson Exp $ */
 /*
  * server.c:  Things dealing with that wacky program we call ircd.
  *
@@ -1979,7 +1979,7 @@ int	get_server_local_port (int refnum)
 	return 0;
 }
 
-SS	get_server_remote_addr (int refnum)
+static SS	get_server_remote_addr (int refnum)
 {
 	Server *s;
 
@@ -2678,7 +2678,8 @@ static void	reset_server_altnames (int refnum, char *new_altnames)
 		return;
 
 	for (i = 0; i < s->altnames->numitems; i++)
-		new_free(&s->altnames->list[i].name);
+		/* XXX Free()ing this (const char *) is ok */
+		new_free((char **)&s->altnames->list[i].name);	
 
 	s->altnames->numitems = 0;
 

@@ -1,4 +1,4 @@
-/* $EPIC: ssl.c,v 1.7 2004/01/25 06:48:03 jnelson Exp $ */
+/* $EPIC: ssl.c,v 1.8 2005/01/23 21:41:28 jnelson Exp $ */
 /*
  * ssl.c: SSL connection functions
  *
@@ -68,7 +68,8 @@ SSL *SSL_FD_init (SSL_CTX *ctx, int des)
 
 int	ssl_reader (void *ssl_aux, char **buffer, size_t *buffer_size, size_t *start)
 {
-	int	c, numbytes;
+	int	c, numb;
+	size_t	numbytes;
 	int	failsafe = 0;
 
 	c = SSL_read((SSL *)ssl_aux, (*buffer) + (*start), 
@@ -82,8 +83,10 @@ int	ssl_reader (void *ssl_aux, char **buffer, size_t *buffer_size, size_t *start
 	 */
 
 	/* So if any byte are left buffered by SSL... */
-	while ((numbytes = SSL_pending((SSL *)ssl_aux)) > 0)
+	while ((numb = SSL_pending((SSL *)ssl_aux)) > 0)
 	{
+		numbytes = numb;		/* We know it's positive ! */
+
 		/* This is to prevent an impossible deadlock */
 		if (failsafe++ > 1000)
 			panic("Caught in SSL_pending() loop! (%d)", numbytes);

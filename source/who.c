@@ -1,4 +1,4 @@
-/* $EPIC: who.c,v 1.41 2005/01/12 00:12:21 jnelson Exp $ */
+/* $EPIC: who.c,v 1.42 2005/01/23 21:41:28 jnelson Exp $ */
 /*
  * who.c -- The WHO queue.  The ISON queue.  The USERHOST queue.
  *
@@ -1201,8 +1201,8 @@ void isonbase (int refnum, char *args, void (*line) (int, char *, char *))
 {
 	IsonEntry 	*new_i;
 	char 		*next = args;
-	char		*oncmd = NULL, *offcmd = NULL;
-static	int		len = 500;
+	char		*on_cmd = NULL, *offcmd = NULL;
+static	size_t		len = 500;
 	int		sendnext = 0;
 
 	/* Maybe should output a warning? */
@@ -1241,7 +1241,7 @@ static	int		len = 500;
 		if (!my_stricmp(arg, "-oncmd"))
 		{
 			if ((stuff = next_expr(&args, '{')))
-				oncmd = stuff;
+				on_cmd = stuff;
 			else
 				say("Need {...} argument for -ONCMD argument.");
 		}
@@ -1273,7 +1273,7 @@ static	int		len = 500;
 			next = NULL;
 
 		malloc_strcpy(&new_i->ison_asked, args);
-		malloc_strcpy(&new_i->oncmd, oncmd);
+		malloc_strcpy(&new_i->oncmd, on_cmd);
 		malloc_strcpy(&new_i->offcmd, offcmd);
 		ison_queue_send(refnum);
 	}
@@ -1289,7 +1289,7 @@ static	int		len = 500;
 void	ison_returned (int refnum, const char *from, const char *comm, const char **ArgList)
 {
 	IsonEntry *new_i = ison_queue_top(refnum);
-	char	*off = NULL, *this1, *all1, *this2, *all2;
+	char	*do_off = NULL, *this1, *all1, *this2, *all2;
 	int	clue = 0;
 
 	if (!new_i)
@@ -1303,8 +1303,8 @@ void	ison_returned (int refnum, const char *from, const char *comm, const char *
 	if (new_i->offcmd)
 		while ((this2 = next_arg(all2, &all2)))
 			while ((this1 = next_arg(all1, &all1)) && my_stricmp(this1, this2))
-				malloc_strcat_wordlist_c(&off, space, this1, &clue);
-	malloc_strcat_wordlist_c(&off, space, all1, &clue);
+				malloc_strcat_wordlist_c(&do_off, space, this1, &clue);
+	malloc_strcat_wordlist_c(&do_off, space, all1, &clue);
 
 	PasteArgs(ArgList, 0);
 	if (new_i->line) 
@@ -1316,14 +1316,14 @@ void	ison_returned (int refnum, const char *from, const char *comm, const char *
 	{
 		if (new_i->oncmd && ArgList[0])
 			runcmds(new_i->oncmd, ArgList[0]);
-		if (new_i->offcmd && off && *off)
-			runcmds(new_i->offcmd, off);
+		if (new_i->offcmd && do_off && *do_off)
+			runcmds(new_i->offcmd, do_off);
 		if (!new_i->oncmd && !new_i->offcmd &&
 				do_hook(current_numeric, "%s", ArgList[0]))
 			put_it("%s Currently online: %s", banner(), ArgList[0]);
 	}
 
-	new_free(&off);
+	new_free(&do_off);
 	ison_queue_pop(refnum);
 	ison_queue_send(refnum);
 	return;
@@ -1619,8 +1619,11 @@ void	userhost_returned (int refnum, const char *from, const char *comm, const ch
 		/*
 		 * Grab the next nickname
 		 */
-		char *	cnick = next_arg(ptr, &ptr);
-		int 	len = strlen(cnick);
+		char *	cnick;
+		size_t	len;
+
+		cnick = next_arg(ptr, &ptr);
+		len = strlen(cnick);
 
 		/*
 		 * Now either it is present at the next argument

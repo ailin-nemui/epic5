@@ -1,4 +1,4 @@
-/* $EPIC: window.c,v 1.131 2005/01/13 05:39:41 jnelson Exp $ */
+/* $EPIC: window.c,v 1.132 2005/01/23 21:41:28 jnelson Exp $ */
 /*
  * window.c: Handles the organzation of the logical viewports (``windows'')
  * for irc.  This includes keeping track of what windows are open, where they
@@ -4791,7 +4791,8 @@ BUILT_IN_COMMAND(windowcmd)
 	char 	*arg;
 	int 	nargs = 0;
 	Window 	*window;
-	int	old_status_update, old_from_server, old_current_window;
+	int	old_status_update, old_from_server;
+	unsigned	old_current_window;
 	int	winref;
 	int	l;
 
