@@ -1,5 +1,71 @@
 EPIC4-1.2.0
 
+*** News 02/13/2002 -- Completely redesigned /QUEUE command
+	The /QUEUE command has been completely revamped and redesigned.
+	The old quirky bugs and mis-features and poor design have been
+	removed and replaced with a better system.  Forget about how 
+	/QUEUE used to work, here is how it works now. =)
+
+	/QUEUE				List the name and size of all pending 
+					 queues
+	/QUEUE -SHOW			List the name and contents of all 
+					 pending queues
+	/QUEUE -LIST <name>		List the contents of the <name>d queue
+	/QUEUE -FLUSH <name>		Delete the queue and all of its contents
+	/QUEUE -DELETE <name> <number>	Delete the <number>th entry in the 
+					 <name>d queue; all entries are moved 
+					 down one position.  Entries are 
+					 counted from number 1.
+	/QUEUE -DO <name>		Run the contents of the <name>d queue
+					 and delete the queue when done.
+	/QUEUE -DO -NO_FLUSH <name>	Run the contents of the <name>d queue
+					 but do not delete the contents.
+	/QUEUE -EXPAND_NOW <name> { <commands> }
+					Expand <commands> now, and then add
+					 the result as a new entry to the
+					 <named>d queue.  SEE NOTES BELOW.
+	/QUEUE <name> { <commands> }	Add <commands> as a new entry to the
+					 <name>d queue.
+	/QUEUE -HELP			Syntax information for /QUEUE.
+
+	In general, queues are created when you first add a command to them.
+	Queues are destroyed when they are run, or when you flush them.  It
+	is not an error and you will not get a message if you try to flush
+	a queue that does not exist.  If you try to operate on a queue that
+	does not have any commands, you will get an error message.  While you
+	may be able to get away with specifying flags in combinations other
+	than the ones listed above, it is not recommended.
+
+	With that out of the way, you may be asking, "What are /QUEUEs?"
+	Queues are named entities into which you can put an arbitrary number
+	of commands, which you want to execute all of at some later time.
+	The absolutely most obvious use of this is to programmatically 
+	create an "unload" feature for a script pack.  Every file can add
+	an entry into some named queue to un-do the effects of that script.
+	This can be much more effective than /unload, which is rather 
+	primitive.
+
+	The old /QUEUE had some big problems; it always expanded your 
+	<commands> twice -- once when you added them to the /queue and then
+	once again when they were executed.  This subjected your commands to
+	"quoting hell" and made using /QUEUE awkward since you had to make
+	sure none of your expandos contained more expandos.
+
+	Now /QUEUE will only expand your <commands> once: just before they
+	are executed.  Now, you might be thinking "what about $* and $0 and
+	$1 and so forth?"  The good news is that /QUEUE saves $* and uses it
+	when <commands> is executed.  This means that you _can_ use $* and $0
+	and $1 and so on in your <commands>, and they will expand to whatever
+	they would have been when you added them to the /queue.  However, any
+	OTHER expandos (such as $N or $C or function calls) will all be 
+	expanded with their values _just before the command is run_ and NOT
+	with the values they had at the time you added the command to the
+	/queue!  THIS BREAKS BACKWARDS COMPATABILITY.  If you need backwards
+	compatable behavior for some bizarre reason, the -EXPAND_NOW flag is
+	available to simulate the original behavior of /QUEUE.  I would urge
+	you to only use this as a crutch and to stop using it as soon as you
+	can arrange it.
+
 *** News 02/02/2002 -- New special /MSG target, target 0
 	If you send a message to target 0 (/msg 0) then EPIC will just
 	silently drop the message with no output.  This was done, because
@@ -169,19 +235,40 @@ EPIC4-1.2.0
 	$isencrypted(), $cipher(), $ssl().
 	ssl_server_cert hook.
 
-*** News 02/01/2002 -- /QUEUE doesn't double-eval your code any longer.
+*** News 02/01/2002 -- /ENCRYPT command takes additional argument
+	The /ENCRYPT command may now be used in a couple of new ways:
+		/ENCRYPT <target> <password>
+		/ENCRYPT <target>,<sender> <password>
+		/ENCRYPT <target> <password> <program>
+		/ENCRYPT <target>,<sender> <password> <program>
 
-*** News 02/01/2002 -- Improved CRYPT support 
+	The nickname argument may now be a wildcard pattern; but only if it
+	is in the format:
+		<target>,<sender>
+	where <target> is a channel, or your own nickname, and <sender> is
+	a full <nick>!<user>@<host> prefix.  
+
 	The /encrypt command can take an additional <program> argument after
-	nick and key, which will cause epic to use the named program to encrypt
-	and decrypt your messages.  Two usable example scripts have been supplied
-	which use GNU Privacy Guard in symetric encryption mode.  The nick
-	argument for /encrypt has also been expanded to allow for wildcard
-	patterns which will be applied against #dest,source!user@host for
-	received messages.  In addition to these, the function $encryptparm() has
-	been added, which takes a nick argument, and returns all the arguments
-	that were supplied to the original /encrypt command.  This is likely to
-	be useful for public key crypto scripts.
+	nick and key, which will be run to encrypt and decrypt your messages.
+	Two usable example scripts have been supplied which use GNU Privacy 
+	Guard in symetric encryption mode.  
+
+	Example:
+		/encrypt #epic,*!*@epicsol.org keypass mycrypto
+	Would decrypt any messages sent to #epic by anyone at *!*@epicsol.org
+	with the "mycrypto" program using the password "keypass"
+
+*** News 02/01/2002 -- New built in function, $encryptparm()
+	The $encryptparm(<nick>) function will return the command line
+	argument that was passed to the /ENCRYPT command when you first
+	established the encrypted conversaion with <nick>
+
+	Example:
+		$encryptparm(#epic,hop!jnelson@epicsol.org)
+	might return, using the above example...
+		#epic,*!*@epicsol.org keypass mycrypto
+
+	This is likely to be useful for public key crypto scripts.
 
 *** News 02/01/2002 -- Change to $trunc(0 <num>) : it now returns an integer
 	$trunc(0 <num>) returns the integer <retval> with the largest absolute 
