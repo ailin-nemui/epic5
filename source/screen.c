@@ -3106,6 +3106,7 @@ void 	do_screens (fd_set *rd)
 		if (!screen->alive)
 			continue;
 
+#ifdef WINDOW_CREATE
 		if (screen->control != -1 && 
 		    FD_ISSET(screen->control, rd))	/* Wserv control */
 		{
@@ -3142,6 +3143,7 @@ void 	do_screens (fd_set *rd)
 				screen->wserv_version = version;
 			}
 		}
+#endif
 
 		if (FD_ISSET(screen->fdin, rd))
 		{
@@ -3149,12 +3151,14 @@ void 	do_screens (fd_set *rd)
 
 			FD_CLR(screen->fdin, rd);	/* No more! */
 
+#ifdef WINDOW_CREATE
 			if (screen != main_screen && screen->wserv_version == 0)
 			{
 				kill_screen(screen);
 				yell("The WSERV used to create this new screen is too old.");
 				return;
 			}
+#endif
 
 			/*
 			 * This section of code handles all in put from 
