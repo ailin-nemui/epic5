@@ -23,3 +23,4 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Fix failsafe declaration for MAXPATHLEN for hurd in irc_std.h and glob.c.
 * Fixes to make dcc-over-ctcp-over-dcc work again (|Rain|)
 * Fix $querywin() so it can take a second argument, a server ref (for scromp)
+* Add $halfop(), returns +h status (1, 0, -1) (Ay-ar)

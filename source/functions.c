@@ -217,6 +217,7 @@ static	char
 	*function_ischanvoice	(char *),
 	*function_isdigit 	(char *),
 	*function_isencrypted	(char *),
+	*function_ishalfop	(char *),
 	*function_isnumber	(char *),
 	*function_jot 		(char *),
 	*function_key 		(char *),
@@ -437,6 +438,7 @@ static BuiltInFunctions	built_in_functions[] =
 	{ "ISDIGIT",		function_isdigit 	},
 	{ "ISDISPLAYING",	function_isdisplaying	},
 	{ "ISENCRYPTED",	function_isencrypted	},
+	{ "ISHALFOP",		function_ishalfop	},
 	{ "ISNUMBER",		function_isnumber	},
 	{ "ITEMTOINDEX",        function_itemtoindex 	},
 	{ "JOT",                function_jot 		},
@@ -4764,6 +4766,13 @@ BUILT_IN_FUNCTION(function_ischanvoice, input)
 	RETURN_INT(is_chanvoice(input, nick));
 }
 
+BUILT_IN_FUNCTION(function_ishalfop, input)
+{
+	char	*nick;
+
+	GET_STR_ARG(nick, input);
+	RETURN_INT(is_halfop(input, nick));
+}
 BUILT_IN_FUNCTION(function_servports, input)
 {
 	int	servnum = from_server;

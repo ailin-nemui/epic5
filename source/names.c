@@ -794,6 +794,16 @@ int	is_chanvoice (const char *channel, const char *nick)
 		return 0;
 }
 
+int	is_halfop (const char *channel, const char *nick)
+{
+	Nick *n;
+
+	if ((n = find_nick(from_server, channel, nick)))
+		return n->half_assed;
+	else
+		return 0;
+}
+
 int	number_on_channel (const char *name, int server)
 {
 	Channel *channel = find_channel(name, server);
