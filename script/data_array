@@ -1,0 +1,76 @@
+# Array manipulation functions.
+#
+
+#
+# General one liners.  Brief description:
+#
+#   The *item functions operate on one array element.
+#   The *items functions operate on as many elements as there are args.
+#
+#   getndelitems:   splice the items $1- from the array and return them as a list.
+#   getranditem[s]: return one/$#1- random array element.
+#   setnextitem[s]: set a new array element[s] with $1- as contents.
+#   setranditem[s]: replace a random array element[s] with $1-
+#   setrmaxitem[s]: setnextitem if $1 > numitems else setranditem.
+#   setuniqitem[s]: setnextitem if the array item[s] doesn't already exist.
+#
+alias.t getndelitems (ar,it) fe it it {@it=0<=it?it:(numitems($ar)+it)};@:function_return=getitem($ar $it),delitems($ar $it)
+alias.t getranditem  (ar,args) return $getitem($ar $rand($numitems($ar)))
+alias.t getranditems (ar,args) fe args foo {@foo=getitem($ar $rand($numitems($ar)))};return $args
+alias.t setnextitem  (ar,args) return $setitem($ar $numitems($ar) $args)
+alias.t setnextitems (ar,args) fe args foo {@foo=setitem($ar $numitems($ar) $foo)};return $args
+alias.t setranditem  (ar,args) return $setitem($ar $rand($numitems($ar)) $args)
+alias.t setranditems (ar,args) fe args foo {@foo=setitem($ar $rand($numitems($ar)) $foo)};return $args
+alias.t setrmaxitem  (ar,it,args) @:ni=numitems($ar);return $setitem($ar ${it>ni?ni:rand($ni)} $args)
+alias.t setrmaxitems (ar,it,args) @:ni=numitems($ar);fe args foo {@foo=setitem($ar ${it>ni?ni++:rand($ni)} $foo)};return $args
+alias.t setuniqitem  (ar,args) if (0>finditem($ar $args)){return $setitem($ar $numitems($ar) $args)}
+alias.t setuniqitems (ar,args) fe args foo {@foo=0>finditem($ar $foo)?setitem($ar $numitems($ar) $foo):-1};return $args
+
+#
+# Delete contents matching $1- of array $0.
+# If an arg isn't specified, it equates to *.
+#
+alias.t array.purge (args) {
+	@ :mask = []
+	fe ($shift(args)) foo {
+		@ 1>#args ? delarray($foo) : delitems($foo $getmatches($foo $args))
+	}
+}
+
+#
+# Load files $1- into array $0
+#
+alias.t array.read (args) {
+	@ :ar = shift(args)
+	@ :it = numitems($ar)
+	fe ($glob($args)) fn {
+		@ :fd = open($fn r)
+		while ((:dt = read($fd)) || !eof($fd)) {
+			@ usetitem($ar ${it++} $dt)
+		}
+		@ close($fd)
+	}
+}
+
+#
+# Give a brief summary of all matching arrays, or all arrays.
+alias.t array.stat {
+	fe ($getarrays($*)) foo {
+		echo $[-$min(5 $strlen($numitems($foo)))]numitems($foo) $foo
+	}
+}
+
+#
+# I tried to clean these up.  Really I did.  Just give me some time.
+#
+# Brief summary:
+#   .dump/.grep displays matching contents of matching arrays (in different ways).
+#   .codump/.cogrep as above but sews together multiple arrays for displaying.
+#   .idump/.igrep/.coidump/.coigrep sorted versions of above.
+#   .write/.iwrite inverse of .read, differing in the order in which lines are written.
+#   .flush/.iflush write and delete the arrays.
+#
+fe (dump " -banner" "\$array [\$item,\$#content,\$@content] " grep " -nobanner" "") cmd banner fnord {fe (i$cmd igetitem igetmatches $cmd getitem getmatches) foo bar baz {alias.t array.$foo (arrays default *, mask default *) fe ($getarrays($arrays)) array \{fe \(\$${baz}($array $mask)\) item \{@:content=${bar}($array $item)\;xecho$banner -nolog -- $fnord\$content\}\}}}
+fe (dump "\$array [\$item,\$#content,\$@content] " grep "") cmd fnord {fe (coi$cmd "indextoitem($array $igetmatches" ")" co$cmd getmatches "") foo bar baz {alias.t array.$foo @:array=[\$0]\;@:mk=[\$1]\;@:ar=beforew($mk $2-)\;fe \(\$${bar}($array $afterw($mk $2-))$baz\) item \{@:content=\;fe ($ar) foo {@push(content $getitem($foo $item))}\;xecho -banner -nolog -- $fnord\$content\}}}
+fe (write getmatches getitem iwrite igetmatches igetitem) foo bar baz {alias.t array.${foo} @:fd=open($0 w)\;fe ($getarrays($1)) foo \{fe \(\$${bar}\(\$foo \$\{3>[\$#]?[*]:[\$2-]\}\)\) bar \{@write\(\$fd \$${baz}($foo $bar)\)\}\}\;@close($fd)}
+fe (flush write iflush iwrite) cmd sub {alias.t array.$cmd array.$sub \$*\;array.purge \$1-}

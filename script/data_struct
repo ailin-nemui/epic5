@@ -1,0 +1,264 @@
+#
+# Struct/Assign manipulation functions.
+#
+# The distinction between the two is that the assign functions operate on
+# the entire alias space whereas the struct functions operate only on sub
+# structures.  The assign functions are typically slower per call, but since
+# they do all the work in one call, they can be faster than the recursive
+# struct functions.
+#
+
+#
+# Assign functions.
+#
+# Make two aliases for every alias.  One for assign handling, one for alias handling.
+#
+stack push alias alias.tt
+alias.t alias.tt alias.t $*;alias.t $sar(g/assign/alias/$*)
+
+#
+# Check the consistency of the internal structures.  The only
+# reason to use these is if an epic bug is suspected.
+#
+alias.tt assign.check {
+	@ :last = []
+	fe ($aliasctl(assign pmatch "\\[$*\\]")) foo {
+		if (uniq($last $foo)!=sort($last $foo)) {
+			echo assign consistancy failure: $last >= $foo
+			@ last = foo
+		}
+	}
+	echo -- Checked $#aliasctl(assign pmatch "\\[$*\\]") assigns matching $*
+}
+#
+# Faster version.  Tells you whether there's an error, not where it is.
+#
+alias.tt assign.qcheck {
+	@ :list = aliasctl(assign pmatch "\\[$*\\]")
+	@ :status = uniq($list) == sort($list) ? [passed] : [failed]
+	echo Checked $#aliasctl(assign pmatch "\\[$*\\]") assigns matching $*: $status
+}
+
+#
+# Dump all assigns with name matching the given masks.
+#
+alias.tt assign.dump {
+	@ :list = aliasctl(assign pmatch "\\[$*\\]")
+	fe ($list) e {
+		echo [$aliasctl(assign getpackage $e)] $e$chr(9)$aliasctl(assign get $e)
+	}
+	@ list = #list
+	if (functioncall()) {
+		return $list
+	} else {
+		echo Dumped $list matching $*
+	}
+}
+
+#
+# Dump all assigns with name matching the first arg and
+# contents matching the rest.
+#
+alias.tt assign.grep (args) {
+	@ :list = aliasctl(assign pmatch "\\[$shift(args)\\]")
+	fe ($list) e {
+		if (aliasctl(assign get $e) =~ args) {
+			echo [$aliasctl(assign getpackage $e)] $e$chr(9)$aliasctl(assign get $e)
+		}
+	}
+	@ list = #list
+	if (functioncall()) {
+		return $list
+	} else {
+		echo Dumped $list matching $*
+	}
+}
+
+#
+# Delete and reassign all matching vars.  Theoretically, this is a no-op.
+#
+alias.tt assign.pack {
+	@ :baz = []
+	@ :list = aliasctl(assign pmatch "\\[$*\\]")
+	fe ($list) foo {
+		@ baz = aliasctl(assign getpackage $foo)
+		@ aliasctl(assign set $foo $aliasctl(assign get $foo))
+		@ aliasctl(assign setpackage $foo $baz)
+	}
+	@ list = #list
+	if (functioncall()) {
+		return $list
+	} else {
+		if (isdisplaying()) {
+			echo Packed $list matching $*
+		}
+	}
+}
+
+#
+# Delete all matching vars.
+#
+alias.tt assign.purge {
+	if (functioncall()) {
+		@:matches=0
+		fe ($revw($*)) mask {
+			@ :list = revw($aliasctl(assign pmatch "$mask"))
+			fe ($list) bar {^assign -$bar}
+			@ matches += #list
+		}
+		return $matches
+	} else {
+		@ :list = assign.purge($*)
+		if (isdisplaying()) {
+			echo Purged $list matching $*
+		}
+	}
+}
+
+#
+# Write matching assigns to a file which can then be /load'ed.
+#
+alias.tt assign.save {
+	@:pkg=rand(0)
+	@:utime1=utime()
+	@:fh=open($0 W T)
+	@:matches=0
+	fe ($1-) mask {
+		@:list=aliasctl(assign pmatch "$mask")
+		fe list foo {
+			if (pkg!=aliasctl(assign getpackage $foo)) {
+				@write($fh PACKAGE ${pkg=aliasctl(assign getpackage $foo)})
+			}
+			@write($fh assign $foo $sar(g/\{/\\\{/$sar(g/\}/\\\}/$aliasctl(assign get $foo))))
+			@foo=0
+		}
+		@matches+=#list
+	}
+	@close($fh)
+	@:utime2=utime()
+	if (functioncall()) {
+		return $matches
+	} else {
+		if (isdisplaying()) {
+			echo Wrote $matches matching $1- in $tdiffu($utime2 $utime1).
+		}
+	}
+}
+#
+# As for .save, but write a $decode() encoded file which won't be
+# damaged by specific variable contents.
+#
+alias.tt assign.esave {
+	@:pkg=rand(0)
+	@:utime1=utime()
+	@:fh=open($0 W T)
+	@:matches=0
+	fe ($1-) mask {
+		@:list=aliasctl(assign pmatch "$mask")
+		fe list foo {
+			if (pkg!=aliasctl(assign getpackage $foo)) {
+				@write($fh PACKAGE ${pkg=aliasctl(assign getpackage $foo)})
+			}
+			@write($fh @aliasctl\(assign set $foo \$decode\($encode($aliasctl(assign get $foo))\)\))
+			@foo=0
+		}
+		@matches+=#list
+	}
+	@close($fh)
+	@:utime2=utime()
+	if (functioncall()) {
+		return $matches
+	} else {
+		if (isdisplaying()) {
+			echo Wrote $matches matching $1- in $tdiffu($utime2 $utime1).
+		}
+	}
+}
+
+#
+# Save the data, then delete it.  Repeat until no more data exists.
+# The reason the procedure is repeated is because of the aforementioned
+# potential bug that .check checks for.
+#
+alias.tt assign.flush {
+	do {
+		assign.save $*
+		assign.purge $1-
+	} while (foo != (:foo = assign.pack($1-)))
+}
+#
+# As above but use .esave.
+#
+alias.tt assign.eflush {
+	do {
+		assign.esave $*
+		assign.purge $1-
+	} while (foo!=(:foo=assign.pack($1-)))
+}
+
+#
+# End of /assign.* functions.
+#
+stack pop alias alias.tt
+
+#
+# struct functions.
+#
+
+#
+# Recursively erase a structure.
+#
+alias.t struct.purge {
+	fe ($*) foo {
+		^assign -$foo
+	}
+	return ${struct.purgesub($*)+#}
+}
+#
+# Continued.
+# The third sub-loop should never be entered.  It's there for company.
+#
+alias.t struct.purgesub {
+	fe ($*) foo {
+		@ :bar = aliasctl(assign match ${foo}.)
+		@ :hit += #bar
+		fe bar baz {
+			^assign -$baz
+		}
+		foreach $foo bar {
+			@ hit += struct.purgesub(${foo}.${bar})
+		}
+		foreach $foo bar {
+			^assign -${foo}.${bar}
+		}
+	}
+	return ${0+hit}
+}
+
+#
+# Save a structure, like array.save.
+#
+alias.t struct.savefn {
+	@ :fd = open($0 w)
+	@ :hit = struct.savefd($fd $1-)
+	@ close($fd)
+	return $hit
+}
+#
+# Continued.  Save to an FD.
+#
+alias.t struct.savefd {
+	@:fd=[$0]
+	fe ($1-) foo {
+		if (strlen($($foo))) {
+			@ write($fd assign $foo $sar(g/\{/\\\{/$sar(g/\}/\\\}/$aliasctl(assign get $foo))))
+			@ :hit = 1
+		} else {
+			@ :hit = 0
+		}
+		foreach $foo bar {
+			@ hit += struct.savefd($fd ${foo}.${bar})
+		}
+	}
+	return $hit
+}
