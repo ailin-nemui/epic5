@@ -5,11 +5,11 @@ if (word(2 $loadinfo()) != [pf]) {
 
 #	Copyright (c) 2005 David B. Kratter (BlackJac@EFNet)
 #
-#	Version: 1.0.2005.03.20.1
+#	Version: 1.0.2005.03.21.1
 #
 #	This script simulates the history feature of epic4 for epic5. The
-#	behavior and key bindings should be identical to the original. Several
-#	significant improvements have been made over the original epic4
+#	behavior and key bindings should be nearly identical to the original.
+#	Several significant improvements have been made over the original epic4
 #	implementation.
 #
 #	Settings:
@@ -136,8 +136,12 @@ alias history.get (direction, void) {
 		if (@L && @history.index == 0) {
 			history.add $L;
 		};
-		if ((history.index == (:numitems = numitems(array.history) - 1) || @history.index == 0) && history_circleq == [on]) {
-			history.show 0;
+		if ((history.index == (:numitems = numitems(array.history) - 1) || @history.index == 0)) {
+			if (history_circleq == [on]) {
+				history.show 0;
+			} else {
+				history.erase;
+			};
 		} else if (history.index < numitems && @history.index) {
 			history.show ${history.index + 1};
 		};
@@ -173,9 +177,8 @@ alias historyctl (action, ...) {
 			if (history) {
 				history.add $*;
 				return 1;
-			} else {
-				return 0;
 			};
+			return 0;
 		};
 		(delete) {
 			@ delitem(array.history $0);
@@ -187,9 +190,8 @@ alias historyctl (action, ...) {
 			if (strlen($getitem(array.history $0))) {
 				@ history.index = [$0];
 				return 1;
-			} else {
-				return 0;
 			};
+			return 0;
 		};
 		(read) {
 			if ((:fd = open(${[$0] ? [$0] : history_save_file} R)) > -1) {
@@ -232,19 +234,21 @@ alias sendline (...) {
 
 @ bindctl(function BACKWARD_HISTORY create "history.get -1");
 
+@ bindctl(function ERASE_HISTORY create history.erase);
+
 @ bindctl(function FORWARD_HISTORY create "history.get 1");
 
 @ bindctl(function SHOVE_TO_HISTORY create history.shove);
 
-fe (P [OA [[A) hh {
-	bind ^$hh BACKWARD_HISTORY;
-};
-                
 fe (N [OB [[B) hh {
-	bind ^$hh FORWARD_HISTORY;
+	@ bindctl(sequence ^$hh set forward_history);
 };
 
-bind ^U parse_command history.erase;
+fe (P [OA [[A) hh {
+	@ bindctl(sequence ^$hh set backward_history);
+};
+                
+@ bindctl(sequence ^U set erase_history);
 
 ^on ^input "/!*" {
 	@ :find = after(! $0);
