@@ -149,6 +149,12 @@ static	char
 	*function_strftime	(char *),
 
 /* the countless "extended" functions */
+	*function_acos		(char *),
+	*function_asin		(char *),
+	*function_atan		(char *),
+	*function_acosh		(char *),
+	*function_asinh		(char *),
+	*function_atanh		(char *),
 	*function_after 	(char *),
 	*function_afterw 	(char *),
 	*function_aliasctl	(char *),
@@ -170,6 +176,7 @@ static	char
 	*function_convert 	(char *),
 	*function_copattern 	(char *),
 	*function_cos		(char *),
+	*function_cosh		(char *),
 	*function_count		(char *),
 	*function_cparse	(char *),
 	*function_crypt 	(char *),
@@ -178,6 +185,7 @@ static	char
 	*function_diff 		(char *),
 	*function_eof 		(char *),
 	*function_epic		(char *),
+	*function_exp		(char *),
 	*function_fnexist	(char *),
 	*function_fexist 	(char *),
 	*function_filter 	(char *),
@@ -219,12 +227,15 @@ static	char
 	*function_isencrypted	(char *),
 	*function_ishalfop	(char *),
 	*function_isnumber	(char *),
+	*function_jn		(char *),
 	*function_jot 		(char *),
 	*function_key 		(char *),
 	*function_lastserver	(char *),
 	*function_leftpc	(char *),
 	*function_leftw 	(char *),
 	*function_loadinfo	(char *),
+	*function_log		(char *),
+	*function_log10		(char *),
 	*function_longtoip	(char *),
 	*function_mask		(char *),
 	*function_maxlen	(char *),
@@ -282,6 +293,7 @@ static	char
 	*function_servernum	(char *),
 	*function_servports	(char *),
 	*function_sin		(char *),
+	*function_sinh		(char *),
 	*function_sort		(char *),
 	*function_split 	(char *),
 	*function_splice 	(char *),
@@ -294,8 +306,8 @@ static	char
 	*function_stripcrap	(char *),
 	*function_strlen	(char *),
 	*function_substr	(char *),
-	*function_sin		(char *),
 	*function_tan		(char *),
+	*function_tanh		(char *),
 	*function_tow 		(char *),
 	*function_translate 	(char *),
 	*function_truncate 	(char *),
@@ -324,7 +336,8 @@ static	char
 	*function_winvisible	(char *),
 	*function_wordtoindex	(char *),
 	*function_write 	(char *),
-	*function_writeb	(char *);
+	*function_writeb	(char *),
+	*function_yn		(char *);
 
 extern char
 	*function_push		(char *),
@@ -348,10 +361,16 @@ typedef struct
  */
 static BuiltInFunctions	built_in_functions[] =
 {
+	{ "ACOS",		function_acos		},
+	{ "ACOSH",		function_acosh		},
 	{ "AFTER",              function_after 		},
 	{ "AFTERW",             function_afterw 	},
 	{ "ALIASCTL",		function_aliasctl	},
 	{ "ASCII",              function_ascii 		},
+	{ "ASIN",		function_asin		},
+	{ "ASINH",		function_asinh		},
+	{ "ATAN",		function_atan		},
+	{ "ATANH",		function_atanh		},
 	{ "BEFORE",             function_before 	},
 	{ "BEFOREW",            function_beforew 	},
 	{ "BUILTIN_EXPANDO",	function_builtin	},
@@ -372,6 +391,7 @@ static BuiltInFunctions	built_in_functions[] =
 	{ "CONVERT",		function_convert 	},
 	{ "COPATTERN",          function_copattern 	},
 	{ "COS",		function_cos		},
+	{ "COSH",		function_cosh		},
 	{ "COUNT",		function_count		},
 	{ "CPARSE",		function_cparse		},
 	{ "CRYPT",		function_crypt		},
@@ -385,6 +405,7 @@ static BuiltInFunctions	built_in_functions[] =
 	{ "ENCODE",	  (bf *)function_encode 	},
 	{ "EOF",		function_eof 		},
 	{ "EPIC",		function_epic		},
+	{ "EXP",		function_exp		},
 	{ "FEXIST",             function_fexist 	},
 	{ "FILTER",             function_filter 	},
 	{ "FINDITEM",           function_finditem 	},
@@ -442,6 +463,7 @@ static BuiltInFunctions	built_in_functions[] =
 	{ "ISHALFOP",		function_ishalfop	},
 	{ "ISNUMBER",		function_isnumber	},
 	{ "ITEMTOINDEX",        function_itemtoindex 	},
+	{ "JN",			function_jn		},
 	{ "JOT",                function_jot 		},
 	{ "KEY",                function_key 		},
 	{ "LASTLOG",		function_lastlog	}, /* lastlog.h */
@@ -453,6 +475,8 @@ static BuiltInFunctions	built_in_functions[] =
 	{ "LISTARRAY",		function_listarray	},
 	{ "LISTEN",		function_listen 	},
 	{ "LOADINFO",		function_loadinfo	},
+	{ "LOG",		function_log		},
+	{ "LOG10",		function_log10		},
 	{ "LONGTOIP",		function_longtoip	},
 	{ "MASK",		function_mask		},
 	{ "MATCH",		function_match 		},
@@ -527,6 +551,7 @@ static BuiltInFunctions	built_in_functions[] =
 	{ "SETITEM",            function_setitem 	},
 	{ "SHIFT",		function_shift 		},
 	{ "SIN",		function_sin		},
+	{ "SINH",		function_sinh		},
 	{ "SORT",		function_sort		},
 	{ "SPLICE",		function_splice 	},
 	{ "SPLIT",		function_split 		},
@@ -544,6 +569,7 @@ static BuiltInFunctions	built_in_functions[] =
 	{ "STRLEN",		function_strlen		},
 	{ "SUBSTR",		function_substr		},
 	{ "TAN",		function_tan		},
+	{ "TANH",		function_tanh		},
 	{ "TDIFF",		function_tdiff 		},
 	{ "TDIFF2",		function_tdiff2 	},
 	{ "TIME",		function_time 		},
@@ -585,6 +611,7 @@ static BuiltInFunctions	built_in_functions[] =
 	{ "WORDTOINDEX",	function_wordtoindex	},
 	{ "WRITE",		function_write 		},
 	{ "WRITEB",		function_writeb		},
+	{ "YN",			function_yn		},
 	{ (char *) 0,		NULL }
 };
 
@@ -4944,23 +4971,13 @@ BUILT_IN_FUNCTION(function_remws, word)
 
 	*right++ = 0;
 	leftc = splitw(left, &lhs);
+	qsort((void *)lhs, leftc, sizeof(char *), sort_it);
 	rightc = splitw(right, &rhs);
 
 	for (righti = 0; righti < rightc; righti++)
 	{
-		found = 0;
-		for (lefti = 0; lefti < leftc; lefti++)
-		{
-			if (rhs[righti] && lhs[lefti]  &&
-			    !my_stricmp(lhs[lefti], rhs[righti]))
-			{
-				found = 1;
-				break;
-			}
-		}
-		if (!found)
+		if (!bsearch(&rhs[righti], lhs, leftc, sizeof(char *), sort_it))
 			m_sc3cat(&booya, space, rhs[righti], &rvclue);
-		rhs[righti] = NULL;
 	}
 
 	new_free((char **)&lhs);
@@ -5948,6 +5965,127 @@ BUILT_IN_FUNCTION(function_tan, word)
 
 	GET_FLOAT_ARG(num, word);
 	return m_sprintf("%f", (double)tan(num));
+}
+
+BUILT_IN_FUNCTION(function_acos, word)
+{
+	double	num;
+
+	GET_FLOAT_ARG(num, word);
+	return m_sprintf("%f", (double)acos(num));
+}
+
+BUILT_IN_FUNCTION(function_asin, word)
+{
+	double	num;
+
+	GET_FLOAT_ARG(num, word);
+	return m_sprintf("%f", (double)asin(num));
+}
+
+BUILT_IN_FUNCTION(function_atan, word)
+{
+	double	num1, num2;
+
+	GET_FLOAT_ARG(num1, word);
+	if (word && *word) {
+		GET_FLOAT_ARG(num2, word);
+		return m_sprintf("%f", (double)atan2(num1, num2));
+	} else {
+		return m_sprintf("%f", (double)atan(num1));
+	}
+}
+
+BUILT_IN_FUNCTION(function_cosh, word)
+{
+	double	num;
+
+	GET_FLOAT_ARG(num, word);
+	return m_sprintf("%f", (double)cosh(num));
+}
+
+BUILT_IN_FUNCTION(function_sinh, word)
+{
+	double	num;
+
+	GET_FLOAT_ARG(num, word);
+	return m_sprintf("%f", (double)sinh(num));
+}
+
+BUILT_IN_FUNCTION(function_tanh, word)
+{
+	double	num;
+
+	GET_FLOAT_ARG(num, word);
+	return m_sprintf("%f", (double)tanh(num));
+}
+
+BUILT_IN_FUNCTION(function_acosh, word)
+{
+	double	num;
+
+	GET_FLOAT_ARG(num, word);
+	return m_sprintf("%f", (double)acosh(num));
+}
+
+BUILT_IN_FUNCTION(function_asinh, word)
+{
+	double	num;
+
+	GET_FLOAT_ARG(num, word);
+	return m_sprintf("%f", (double)asinh(num));
+}
+
+BUILT_IN_FUNCTION(function_atanh, word)
+{
+	double	num1, num2;
+
+	GET_FLOAT_ARG(num1, word);
+	return m_sprintf("%f", (double)atanh(num1));
+}
+
+BUILT_IN_FUNCTION(function_exp, word)
+{
+	double	num;
+
+	GET_FLOAT_ARG(num, word);
+	return m_sprintf("%f", (double)exp(num));
+}
+
+BUILT_IN_FUNCTION(function_log, word)
+{
+	double	num;
+
+	GET_FLOAT_ARG(num, word);
+	return m_sprintf("%f", (double)log(num));
+}
+
+BUILT_IN_FUNCTION(function_log10, word)
+{
+	double	num;
+
+	GET_FLOAT_ARG(num, word);
+	return m_sprintf("%f", (double)log10(num));
+}
+
+BUILT_IN_FUNCTION(function_jn, word)
+{
+	int	level;
+	double	num;
+
+	GET_INT_ARG(level, word);
+	GET_FLOAT_ARG(num, word);
+	return m_sprintf("%f", (double)jn(level, num));
+}
+
+BUILT_IN_FUNCTION(function_yn, word)
+{
+	int	level;
+	double	num;
+
+	GET_INT_ARG(level, word);
+	GET_FLOAT_ARG(num, word);
+	return m_sprintf("%f", (double)yn(level, num));
 }
 
 #ifdef PERL
