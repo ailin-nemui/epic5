@@ -3,7 +3,9 @@ EPIC5 Projects, Bugs, and other Errata:
 KNOWN ERRATA (eg, bugs, or unresolved requests):
 ------------------------------------------------
 * Allow /set -new_server_lastlog_level to not change lastlog level on connect
-* Add $serverctl(FROM_SERVER) and $serverctl(LAST_SERVER)
+* Add $windowctl(DISPLAY_SIZE) for $winsize()
+* Add $windowctl(SCREEN) for $winscreen()
+* Add $windowctl(LINE <num>) for $winline()
 
 [See http://www.epicsol.org/PROJECTS for things to come in the future]
 [See http://www.epicsol.org/CHANGELOG5 for things that changed in the past]
@@ -600,3 +602,4 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Whack the invite in 2.8script, the builtin is much smarter!
 * Fix various things for fudd's loadformats script.
 * Add $serverctl(LAST_SERVER) and $serverctl(FROM_SERVER) for blackjac.
+* Comment out the round 2 $win*() functions.

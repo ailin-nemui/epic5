@@ -1,4 +1,4 @@
-/* $EPIC: functions.c,v 1.196 2005/03/19 03:55:55 jnelson Exp $ */
+/* $EPIC: functions.c,v 1.197 2005/04/01 22:09:48 jnelson Exp $ */
 /*
  * functions.c -- Built-in functions for ircII
  *
@@ -747,23 +747,35 @@ static BuiltInFunctions	built_in_functions[] =
 	{ "UTIME",		function_utime	 	},
 	{ "VERSION",		function_server_version },
 	{ "WHICH",		function_which 		},
+#if 0
 	{ "WINBOUND",		function_winbound	},
+#endif
 	{ "WINCHAN",		function_winchan	},
+#if 0
 	{ "WINCURSORLINE",	function_wincurline	},
+#endif
 	{ "WINDOWCTL",		function_windowctl	},
+#if 0
 	{ "WINLEVEL",		function_winlevel	},
+#endif
 	{ "WINLINE",		function_winline	},
+#if 0
 	{ "WINNAM",		function_winnam 	},
 	{ "WINNICKLIST",	function_winnames	},
 	{ "WINNUM",		function_winnum 	},
 	{ "WINQUERY",		function_winquery 	},
 	{ "WINREFS",		function_winrefs	},
+#endif
 	{ "WINSCREEN",		function_winscreen	},
+#if 0
 	{ "WINSCROLLBACKSIZE",	function_winsbsize	},
 	{ "WINSERV",		function_winserv	},
+#endif
 	{ "WINSIZE",		function_winsize	},
+#if 0
 	{ "WINSTATUSSIZE",	function_winstatsize	},
 	{ "WINVISIBLE",		function_winvisible	},
+#endif
 	{ "WORD",		function_word 		},
 	{ "WORDTOINDEX",	function_wordtoindex	},
 	{ "WRITE",		function_write 		},
@@ -1478,6 +1490,7 @@ BUILT_IN_FUNCTION(function_word, word)
 }
 
 
+#if 0
 /*
  * Usage: $winnum()
  * Returns: the index number for the current window
@@ -1497,7 +1510,9 @@ BUILT_IN_FUNCTION(function_winnum, input)
 		RETURN_INT(-1);
 	RETURN_INT(win->refnum);
 }
+#endif
 
+#if 0
 BUILT_IN_FUNCTION(function_winnam, input)
 {
 	Window *win = NULL;
@@ -1511,6 +1526,7 @@ BUILT_IN_FUNCTION(function_winnam, input)
 		RETURN_EMPTY;
 	RETURN_STR(win->name);
 }
+#endif
 
 BUILT_IN_FUNCTION(function_connect, input)
 {
@@ -3387,6 +3403,7 @@ BUILT_IN_FUNCTION(function_lastserver, input)
 	RETURN_INT(last_server);
 }
 
+#if 0
 BUILT_IN_FUNCTION(function_winserv, input)
 {
 	Window *winp;
@@ -3401,6 +3418,7 @@ BUILT_IN_FUNCTION(function_winserv, input)
 
 	RETURN_INT(-1);
 }
+#endif
 
 BUILT_IN_FUNCTION(function_numwords, input)
 {
@@ -3998,10 +4016,12 @@ BUILT_IN_FUNCTION(function_uniq, word)
 	RETURN_MSTR(booya);
 }
 
+#if 0
 BUILT_IN_FUNCTION(function_winvisible, word)
 {
 	RETURN_INT(is_window_visible(word));
 }
+#endif
 
 BUILT_IN_FUNCTION(function_status, word)
 {
@@ -4161,10 +4181,12 @@ BUILT_IN_FUNCTION(function_deuhc, input)
  * Given a channel, tells you what window its bound to.
  * Given a window, tells you what channel its bound to.
  */
+#if 0
 BUILT_IN_FUNCTION(function_winbound, input)
 {
 	RETURN_EMPTY;
 }
+#endif
 
 BUILT_IN_FUNCTION(function_ftime, words)
 {
@@ -4281,6 +4303,7 @@ BUILT_IN_FUNCTION(function_servernick, input)
 	RETURN_STR(retval);
 }
 
+#if 0
 BUILT_IN_FUNCTION(function_winnames, input)
 {
 	Window *win;
@@ -4295,6 +4318,7 @@ BUILT_IN_FUNCTION(function_winnames, input)
 
 	return get_nicklist_by_window(win);
 }
+#endif
 
 BUILT_IN_FUNCTION(function_isconnected, input)
 {
@@ -4965,6 +4989,7 @@ BUILT_IN_FUNCTION(function_querywin, args)
 	RETURN_INT(-1);
 }
 
+#if 0
 BUILT_IN_FUNCTION(function_winquery, args)
 {
 	int refnum;
@@ -4977,7 +5002,9 @@ BUILT_IN_FUNCTION(function_winquery, args)
 		RETURN_EMPTY;
 	RETURN_STR(nick);
 }
+#endif
 
+#if 0
 BUILT_IN_FUNCTION(function_winrefs, args)
 {
 	Window *w = NULL;
@@ -4989,6 +5016,7 @@ BUILT_IN_FUNCTION(function_winrefs, args)
 
 	RETURN_MSTR(retval);
 }
+#endif
 
 /*
  * $mask(type address)      OR
@@ -5170,6 +5198,7 @@ BUILT_IN_FUNCTION(function_chop, input)
 	return buffer;
 }
 
+#if 0
 BUILT_IN_FUNCTION(function_winlevel, input)
 {
 	Window	*win;
@@ -5186,6 +5215,7 @@ BUILT_IN_FUNCTION(function_winlevel, input)
 	retval = mask_to_str(&win->window_mask);
 	RETURN_STR(retval);
 }
+#endif
 
 BUILT_IN_FUNCTION(function_igtype, input)
 {
@@ -6218,6 +6248,7 @@ BUILT_IN_FUNCTION(function_wordtoindex, input)
 	RETURN_INT((int)(ptr - input));
 }
 
+#if 0
 /*
  * Date: Tue, 25 Apr 2000 20:30:15 -0400
  * Author: IceKarma (ankh@canuck.gen.nz)
@@ -6243,7 +6274,9 @@ BUILT_IN_FUNCTION(function_winsbsize, input)
 		RETURN_INT(-1);
 	RETURN_INT(win->display_buffer_size - 1);
 }
+#endif
 
+#if 0
 /*
  * Date: Tue, 25 Apr 2000 20:40:18 -0400
  * Author: IceKarma (ankh@canuck.gen.nz)
@@ -6269,7 +6302,9 @@ BUILT_IN_FUNCTION(function_winstatsize, input)
 		RETURN_INT(-1);
 	RETURN_INT(win->status.double_status ? 2 : 1);
 }
+#endif
 
+#if 0
 /*
  * Date: Tue, 25 Apr 2000 20:46:25 -0400
  * Author: IceKarma (ankh@canuck.gen.nz)
@@ -6295,6 +6330,7 @@ BUILT_IN_FUNCTION(function_wincurline, input)
 		RETURN_INT(-1);
 	RETURN_INT(win->cursor);
 }
+#endif
 
 BUILT_IN_FUNCTION(function_winline, input)
 {
