@@ -3910,7 +3910,6 @@ Window *window_rejoin (Window *window, char **args)
 	}
 	keys = new_next_arg(*args, args);
 
-
 	/* Iterate over each channel name in the list. */
 	while (*channels && (chan = next_in_comma_list(channels, &channels)))
 	{
@@ -4030,7 +4029,10 @@ Window *window_rejoin (Window *window, char **args)
 	}
 	if (newchan)
 	{
-		send_to_aserver(from_server, "JOIN %s %s", newchan, keys);
+		if (keys)
+			send_to_aserver(from_server, "JOIN %s %s", newchan, keys);
+		else
+			send_to_aserver(from_server, "JOIN %s", newchan);
 		new_free(&newchan);
 	}
 
