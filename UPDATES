@@ -1,5 +1,15 @@
 EPIC4-1.2.0
 
+*** News 06/12/2003 -- New built in function, $serverwin([<server refnum>])
+	Given an optional server refnum (the current server is the default)
+	this function returns the last window connected to the server to be
+	made the client's global current window.  The idea of this is to 
+	give you a window you can use with /xeval to run a command, or 
+	/xecho some text in the context of the correct server.  If you 
+	want the "current channel" in an /on, you should do something like
+		$winchan($serverwin())
+	instead of $C.
+
 *** News 06/12/2003 -- Improvements to epic's source code
 	A lot of changes have happened internally to EPIC to improve the
 	quality of its source code.  For those of you who know about C,

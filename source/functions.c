@@ -1,4 +1,4 @@
-/* $EPIC: functions.c,v 1.118 2003/05/17 18:30:21 crazyed Exp $ */
+/* $EPIC: functions.c,v 1.119 2003/06/13 00:50:38 jnelson Exp $ */
 /*
  * functions.c -- Built-in functions for ircII
  *
@@ -354,6 +354,7 @@ static	char
 	*function_serverourname	(char *),
 	*function_servertype	(char *),
 	*function_servports	(char *),
+	*function_serverwin	(char *),
 	*function_sin		(char *),
 	*function_sinh		(char *),
 	*function_skip		(char *),
@@ -654,6 +655,7 @@ static BuiltInFunctions	built_in_functions[] =
 	{ "SERVERNUM",		function_servernum	},
 	{ "SERVEROURNAME",	function_serverourname	},
 	{ "SERVERTYPE",		function_servertype	},
+	{ "SERVERWIN",		function_serverwin	},
 	{ "SERVPORTS",		function_servports	},
 	{ "SETITEM",            function_setitem 	},
 	{ "SHIFT",		function_shift 		},
@@ -6744,5 +6746,20 @@ BUILT_IN_FUNCTION(function_levelwindow, input)
 			RETURN_INT(w->refnum);
 	}
 	RETURN_INT(-1);
+}
+
+BUILT_IN_FUNCTION(function_serverwin, input)
+{
+	int     	sval = from_server;
+	int		winref;
+
+	if (*input)
+		GET_INT_ARG(sval, input);
+
+	if (sval < 0 || sval >= server_list_size())
+		RETURN_STR(NULL);
+
+	winref = get_winref_by_servref(sval);
+	RETURN_INT(winref);
 }
 
