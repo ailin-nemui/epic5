@@ -1,4 +1,4 @@
-/* $EPIC: who.c,v 1.13 2002/12/19 03:22:59 jnelson Exp $ */
+/* $EPIC: who.c,v 1.14 2002/12/26 16:40:31 jnelson Exp $ */
 /*
  * who.c -- The WHO queue.  The ISON queue.  The USERHOST queue.
  *
@@ -36,6 +36,7 @@
 #include "commands.h"
 #include "ircaux.h"
 #include "who.h"
+#include "ssl.h"
 #include "server.h"
 #include "window.h"
 #include "vars.h"

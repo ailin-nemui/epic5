@@ -18,10 +18,6 @@
 #include "notify.h"
 #include "alist.h"
 
-#ifdef HAVE_SSL
-#include "ssl.h"
-#endif
-
 /* XXXX Ick.  Gross.  Bad. XXX */
 struct notify_stru;
 

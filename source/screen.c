@@ -1,4 +1,4 @@
-/* $EPIC: screen.c,v 1.38 2002/12/23 15:11:27 jnelson Exp $ */
+/* $EPIC: screen.c,v 1.39 2002/12/26 16:40:31 jnelson Exp $ */
 /*
  * screen.c
  *
@@ -758,7 +758,7 @@ u_char *	normalize_string (const u_char *str, int logical)
 	int		nds_max, nds_cnt = 0;
 	int		pc = 0;
 	int		reverse, bold, blink, underline, altchar, color, allow_c1, boldback;
-	size_t		(*attrout) (u_char *, Attribute *);
+	size_t		(*attrout) (u_char *, Attribute *) = NULL;
 
 	/* Figure out how many beeps/tabs/nds's we can handle */
 	if (!(beep_max  = get_int_var(BEEP_MAX_VAR)))

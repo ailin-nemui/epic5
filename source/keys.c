@@ -1,4 +1,4 @@
-/* $EPIC: keys.c,v 1.20 2002/12/23 15:11:27 jnelson Exp $ */
+/* $EPIC: keys.c,v 1.21 2002/12/26 16:40:31 jnelson Exp $ */
 /*
  * keys.c:  Keeps track of what happens whe you press a key.
  *
@@ -249,7 +249,7 @@ void key_exec (struct Key *key) {
  * possible input combinations and executing them as it goes. */
 void key_exec_bt (struct Key *key) {
     unsigned char *kstr = empty_string, *nstr;
-    int len = 1, kslen, i;
+    int len = 1, kslen;
     struct Key *kp;
 
     /* now walk backwards, growing kstr as necessary */

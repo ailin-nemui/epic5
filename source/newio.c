@@ -1,4 +1,4 @@
-/* $EPIC: newio.c,v 1.10 2002/12/26 05:46:12 jnelson Exp $ */
+/* $EPIC: newio.c,v 1.11 2002/12/26 16:40:31 jnelson Exp $ */
 /*
  * newio.c: This is some handy stuff to deal with file descriptors in a way
  * much like stdio's FILE pointers 
@@ -43,6 +43,7 @@
 #include "ircaux.h"
 #include "output.h"
 #include "newio.h"
+#include "ssl.h"
 
 #include <sys/ioctl.h>
 #ifdef HAVE_SYS_FILIO_H
@@ -156,7 +157,8 @@ static	void	init_io (void)
  */
 int	dgets (char *str, int des, int buffer, void *ssl_aux)
 {
-	int	cnt = 0, c;
+	int	cnt = 0, 
+		c = 0;		/* gcc can die. */
 	MyIO	*ioe;
 
 	if (!io_rec)

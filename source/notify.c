@@ -1,4 +1,4 @@
-/* $EPIC: notify.c,v 1.12 2002/12/19 03:22:59 jnelson Exp $ */
+/* $EPIC: notify.c,v 1.13 2002/12/26 16:40:31 jnelson Exp $ */
 /*
  * notify.c: a few handy routines to notify you when people enter and leave irc 
  *
@@ -46,6 +46,7 @@
 #include "notify.h"
 #include "ircaux.h"
 #include "hook.h"
+#include "ssl.h"
 #include "server.h"
 #include "output.h"
 #include "parse.h"
@@ -521,7 +522,7 @@ void 	notify_userhost_reply (int refnum, char *nick, char *userhost)
 
 void 	save_notify (FILE *fp)
 {
-	Server *s;
+	Server *s = NULL;
 	int i;
 
 	for (i = 0; i < number_of_servers; i++)
@@ -538,7 +539,7 @@ void 	save_notify (FILE *fp)
 
 void 	make_notify_list (int refnum)
 {
-	Server *s, *sp;
+	Server *s, *sp = NULL;
 	NotifyItem *tmp;
 	char *list = NULL;
 	int i;

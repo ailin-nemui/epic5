@@ -7,9 +7,6 @@
 
 #ifndef __newio_h__
 #define __newio_h__
-#ifdef HAVE_SSL
-#include "ssl.h"
-#endif
 
 extern 	int 	dgets_errno;
 

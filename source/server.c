@@ -1,4 +1,4 @@
-/* $EPIC: server.c,v 1.82 2002/12/25 06:26:45 crazyed Exp $ */
+/* $EPIC: server.c,v 1.83 2002/12/26 16:40:31 jnelson Exp $ */
 /*
  * server.c:  Things dealing with that wacky program we call ircd.
  *
@@ -40,6 +40,7 @@
 #include "functions.h"
 #include "alias.h"
 #include "parse.h"
+#include "ssl.h"
 #include "server.h"
 #include "ircaux.h"
 #include "lastlog.h"
@@ -55,9 +56,6 @@
 #include "vars.h"
 #include "newio.h"
 #include "translat.h"
-#ifdef HAVE_SSL
-#include "ssl.h"
-#endif
 
 /*
  * Note to future maintainers -- we do a bit of chicanery here.  The 'flags'
@@ -1771,7 +1769,7 @@ const char	*get_server_cipher (int refnum)
 		return empty_string;
 
 #ifndef HAVE_SSL
-	return empty_string
+	return empty_string;
 #else
 	return SSL_get_cipher((SSL *)s->ssl_fd);
 #endif
@@ -2618,7 +2616,6 @@ void	set_server_try_ssl (int refnum, int flag)
 #ifndef HAVE_SSL
 	if (flag == TRUE)
 		say("This server does not have SSL support.");
-	set_server_type(refnum, "IRC");
 	flag = FALSE;
 #endif
 	s->try_ssl = flag;
@@ -2635,8 +2632,8 @@ void	set_server_ssl_enabled (int refnum, int flag)
 #ifndef HAVE_SSL
 	if (flag == TRUE)
 		say("This server does not have SSL support.");
-	set_server_type(refnum, "IRC");
 	flag = FALSE;
+	s->try_ssl = flag;
 #endif
 	s->ssl_enabled = flag;
 }

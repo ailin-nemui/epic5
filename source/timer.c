@@ -1,4 +1,4 @@
-/* $EPIC: timer.c,v 1.17 2002/12/19 03:22:59 jnelson Exp $ */
+/* $EPIC: timer.c,v 1.18 2002/12/26 16:40:31 jnelson Exp $ */
 /*
  * timer.c -- handles timers in ircII
  *
@@ -145,7 +145,7 @@ BUILT_IN_COMMAND(timercmd)
 		else if (!my_strnicmp(flag + 1, "W", 1))	/* WINDOW */
 		{
 			char 	*na;
-			Window *win;
+			Window *win = NULL;
 
 			if ((na = next_arg(args, &args)))
 				win = get_window_by_desc(na);

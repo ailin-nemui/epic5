@@ -184,6 +184,13 @@ extern	char	*sys_errlist[];
 #endif
 #define NULL (void *) 0
 
+/*
+ * Make sure there is TRUE and FALSE
+ */
+#ifndef TRUE
+#define TRUE 1
+#define FALSE 0
+#endif
 
 /*
  * Can you believe some systems done #define this?
