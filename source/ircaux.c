@@ -8,7 +8,7 @@
  */
 
 #if 0
-static	char	rcsid[] = "@(#)$Id: ircaux.c,v 1.29 2002/01/31 21:47:29 crazyed Exp $";
+static	char	rcsid[] = "@(#)$Id: ircaux.c,v 1.30 2002/01/31 23:38:40 crazyed Exp $";
 #endif
 
 #include "irc.h"
@@ -2911,7 +2911,10 @@ int	figure_out_domain (char *fqdn, char **host, char **domain, int *ip)
 	int	number;
 
 	/* determine if we have an IP, use dot to hold this */
-	if (dot = strrchr(fqdn, '.') && my_atol(dot + 1))
+	/* is_number is better than my_atol since floating point
+	 * base 36 numbers are pretty much invalid as IPs.
+	 */
+	if ((dot = strrchr(fqdn, '.')) && is_number(dot + 1))
 		*ip = 1;
 	else
 		*ip = 0;
