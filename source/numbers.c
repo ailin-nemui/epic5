@@ -10,7 +10,7 @@
  */
 
 #if 0
-static	char	rcsid[] = "$Id: numbers.c,v 1.5 2001/01/12 17:43:11 jnelson Exp $";
+static	char	rcsid[] = "$Id: numbers.c,v 1.6 2001/01/12 20:11:36 jnelson Exp $";
 #endif
 
 #include "irc.h"
@@ -218,14 +218,10 @@ void 	numbered_command (char *from, int comm, char **ArgList)
 				new_server, new_port, ArgList[2]))
 			display_msg(from, ArgList);
 
-		close_server(from_server, "Administrative redirect");
-		window_check_servers();
 		add_to_server_list(new_server, new_port, NULL, NULL, 0);
 		server_reconnects_to(old_server, from_server);
 		from_server = old_server;
-#if 0
-		get_connected(from_server, from_server);
-#endif
+		break;
 	}
 
 	case 14:		/* Erf/TS4 "cookie" numeric	014 */
@@ -840,9 +836,9 @@ void 	numbered_command (char *from, int comm, char **ArgList)
 		{
 			char	server_num[8];
 
+			server_reconnects_to(from_server, -1);
 			say("Password required for connection to server %s",
 				get_server_name(from_server));
-			close_server(from_server, empty_string);
 			if (!dumb_mode)
 			{
 				strlcpy(server_num, ltoa(from_server), 8);
@@ -863,17 +859,7 @@ void 	numbered_command (char *from, int comm, char **ArgList)
 		 */
 		if (do_hook(current_numeric, "%s %s", from, ArgList[0]))
 			display_msg(from, ArgList);
-#if 0
-		close_server(from_server, empty_string);
-		window_check_servers();
-#endif
-#ifndef I_DONT_TRUST_MY_USERS
-		if (from_server == primary_server)
-			server_reconnects_to(from_server, from_server + 1);
-#if 0
-			get_connected(from_server + 1, from_server);
-#endif
-#endif
+		server_reconnects_to(from_server, -1);
 		break;
 	}
 

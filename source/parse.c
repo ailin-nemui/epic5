@@ -661,18 +661,11 @@ static void	p_kill (char *from, char **ArgList)
 	 * we do any output, in case we want the output to go anywhere
 	 * meaningful.
 	 */
-	save_server_channels(from_server);
-	close_server(from_server, empty_string);
-
 	if (strchr(from, '.'))
         {
 		say("Server [%s] has rejected you. (%s)",
 			from, ArgList[1] ? ArgList[1] : 
 			"probably due to a nick collision");
-		server_reconnects_to(from_server, from_server);
-#if 0
-		get_connected(from_server, from_server);
-#endif
 	}
 	else
 	{
@@ -705,9 +698,9 @@ static void	p_kill (char *from, char **ArgList)
 				  auto_reconnect_callback,
 				  sc, NULL, current_window);
 		}
-	}
 
-	window_check_servers();
+		server_reconnects_to(from_server, -1);
+	}
 }
 
 static void p_ping (char *from, char **ArgList)

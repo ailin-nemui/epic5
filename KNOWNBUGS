@@ -2,6 +2,7 @@ EPIC4 Projects, Bugs, and other Errata:
 
 KNOWN ERRATA (eg, bugs, or unresolved requests):
 ------------------------------------------------
+* Channel_going_away's abuse of unset_window_current_channel is entirely bogus.
 <none>
  
 [See http://www.epicsol.org/PROJECTS for things to come in the future]
@@ -9,10 +10,4 @@ KNOWN ERRATA (eg, bugs, or unresolved requests):
 
 THE CHANGELOG SINCE THE LAST RELEASE:
 -------------------------------------
-* Fix null deref when reciving some of dalnet's error end-of-who replies.
-* Fix panic caused by /on switch_windows during /window hide.
-* New functions, $iptolong(), $longtoip() and $isencrypted()
-* Add support for Duhnet's +O channel mode.
-* Add support for av2.9's +a channel mode.
-* Add support for efnext's 010 "use another server" numeric.
-* Change remove_window_from_screen to take a 'hide' argument.
+* Try to add some stuff that helps epic cope with server disconnections better.

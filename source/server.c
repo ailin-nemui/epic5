@@ -46,7 +46,7 @@ static void	clear_reconnect_counts (void);
 						 * is made */
 	int	connected_to_server = 0;	/* true when connection is
 						 * confirmed */
-
+	int	reconnects_to_hint = -1;	/* XXX Hack.  Don't remind me */
 
 
 /************************ SERVERLIST STUFF ***************************/
@@ -619,7 +619,10 @@ BUILT_IN_COMMAND(servercmd)
 
 		/* /SERVER + means go to the next server */
 		else
-			get_connected(from_server + 1, from_server);
+		{
+			server_reconnects_to(from_server, from_server + 1);
+			reconnect(from_server);
+		}
 
 		window_check_servers();
 	}
@@ -639,11 +642,15 @@ BUILT_IN_COMMAND(servercmd)
 			    say("You can't close your primary server!");
 			    return;
 			}
-			server_list[i].save_channels = 0;
-			close_server(i, "closing server");
+
+			server_reconnects_to(i, -1);
+			reconnect(i);
 		}
 		else
-			get_connected(from_server - 1, from_server);
+		{
+			server_reconnects_to(from_server, from_server - 1);
+			reconnect(from_server);
+		}
 
 		window_check_servers();
 	}
@@ -657,7 +664,8 @@ BUILT_IN_COMMAND(servercmd)
 
 		clear_reconnect_counts();
 		i = find_server_refnum(server, &args);
-		connect_to_new_server(i, j, 0);
+		server_reconnects_to(j, i);
+		reconnect(j);
 		window_check_servers();
 	}
 }
@@ -695,29 +703,12 @@ void	do_server (fd_set *rd)
 			{
 				int	sopen = is_server_connected(i);
 
-				/* Always save channels */
-				save_server_channels(i);
-				close_server(i, empty_string);
 				say("Connection closed from %s: %s", 
 					server_list[i].name,
 					(dgets_errno == -1) ? 
 					     "Remote end closed connection" : 
 					     strerror(dgets_errno));
-
-#if 0
-				/*
-				 * If we were never connected to the server,
-				 * eg, they rejected us at registration time,
-				 * then we will just move on to the next
-				 * server in the list.
-				 */
-				if (sopen)
-					get_connected(i, i);
-				else
-					get_connected(i + 1, i);
-#else
 				reconnect(i);
-#endif
 				i++;		/* NEVER DELETE THIS! */
 				break;
 			}
@@ -861,14 +852,8 @@ static void 	vsend_to_server (const char *format, va_list args)
 		    if (write(des, buffer, strlen(buffer)) == -1 && 
 			(!get_int_var(NO_FAIL_DISCONNECT_VAR)))
 		    {
-			server_list[server].save_channels = 1;
-			close_server(server, strerror(errno));
 			say("Write to server failed.  Closing connection.");
-#if 0
-			get_connected(server, server);
-#else
 			reconnect(server);
-#endif
 		    }
 		}
 	}
@@ -1078,7 +1063,7 @@ int 	connect_to_new_server (int new_server, int old_server, int new_conn)
 			 * the windows wont be re-assigned on us.  This 
 			 * gives us a chance to do the right thing below.
 			 */
-			server_list[old_server].save_channels = 1;
+			save_server_channels(old_server);
 			close_server(old_server, "changing servers");
 		}
 
@@ -1144,7 +1129,20 @@ int 	connect_to_new_server (int new_server, int old_server, int new_conn)
  */
 int	reconnect (int refnum)
 {
-	return get_connected(refnum, server_list[refnum].reconnect_to);
+	int	new_server;
+
+	if (server_list[refnum].reconnect_to != -1)
+		save_server_channels(refnum);
+	if (refnum >= 0 && refnum < number_of_servers)
+	{
+		close_server(refnum, NULL);
+		new_server = server_list[refnum].reconnect_to;
+	}
+	else
+		new_server = reconnects_to_hint;
+
+	if (new_server != -1)
+		return get_connected(refnum, new_server);
 }
 
 /*
@@ -1235,8 +1233,8 @@ int 	close_all_servers (const char *message)
 
 	for (i = 0; i < number_of_servers; i++)
 	{
-		server_list[i].save_channels = 0;
-		close_server(i, message);
+		server_reconnects_to(i, -1);
+		reconnect(i);
 	}
 
 	return 0;
@@ -1575,7 +1573,7 @@ void 	password_sendline (char *data, char *line)
 	{
 		new_server = atoi(next_arg(line, &line));
 		set_server_password(new_server, line);
-		connect_to_new_server(new_server, new_server, 1);
+		reconnect(new_server);
 	}
 }
 
@@ -1680,8 +1678,8 @@ BUILT_IN_COMMAND(disconnectcmd)
 			message = args;
 
 		say("Disconnecting from server %s", get_server_itsname(i));
-		close_server(i, message);
-		window_check_servers();
+		send_to_server("QUIT :%s", message);
+		server_reconnects_to(i, -1);
 	}
 
 	if (!connected_to_server)
@@ -1697,21 +1695,23 @@ int 	auto_reconnect_callback (void *d)
 	servref = my_atol(stuff);
 	new_free((char **)&d);
 
-#if 0
+	server_reconnects_to(servref, servref);
 	reconnect(servref);
-#else
-	get_connected(servref, servref);
-#endif
 	return 0;
 }
 
 int	server_reconnects_to (int oldref, int newref)
 {
+	if (oldref == -1)
+	{
+		reconnects_to_hint = newref;
+		return;
+	}
 	if (oldref < 0 || oldref >= number_of_servers)
 		return 0;
 	if (newref >= number_of_servers)
 		newref = 0;
-	if (newref < 0)
+	if (newref < -1)
 		return 0;
 	server_list[oldref].reconnect_to = newref;
 }

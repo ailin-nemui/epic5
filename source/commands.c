@@ -2100,21 +2100,14 @@ BUILT_IN_COMMAND(realname_cmd)
  */
 BUILT_IN_COMMAND(reconnect_cmd)
 {
-        char scommnd[6];
-
 	if (from_server == -1)
 	{
 		say("Reconnect to what server? (You're not connected)");
 		return;
 	}
         say("Reconnecting to server %d", from_server);
-        snprintf(scommnd, 5, "+%i", from_server);
-	if (!args || !*args)
-		args = "Reconnecting";
-
-	save_server_channels(from_server);
-        close_server(from_server, args);
-	connect_to_new_server(from_server, from_server, 0);
+	server_reconnects_to(from_server, from_server);
+	reconnect(from_server);
 }
 /* End of contributed code */
 

@@ -67,6 +67,7 @@ typedef	struct
 	char 	*cookie;		/* Erf/TS4 "cookie" value */
 	int	save_channels;		/* True if abnormal connection */
 	int	closing;		/* True if close_server called */
+	int	reconnect_to;		/* Server to connect to on EOF */
 }	Server;
 extern	Server	*server_list;
 #endif	/* NEED_SERVER_LIST */
@@ -149,6 +150,7 @@ const 	char *	get_server_version_string	(int);
 	int	is_server_connected		(int);
 	void	server_is_connected		(int, int);
 	int	auto_reconnect_callback		(void *);
+	int	server_reconnects_to		(int, int);
 
 	int	get_server_port			(int);
 	int	get_server_local_port		(int);
