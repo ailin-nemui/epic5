@@ -178,6 +178,7 @@ static	char
 	*function_common 	(char *),
 	*function_convert 	(char *),
 	*function_copattern 	(char *),
+	*function_corpattern 	(char *),
 	*function_cos		(char *),
 	*function_cosh		(char *),
 	*function_count		(char *),
@@ -272,7 +273,6 @@ static	char
 	*function_printlen	(char *),
 	*function_querywin	(char *),
 	*function_randread	(char *),
-	*function_rcopattern 	(char *),
 	*function_read 		(char *),
 	*function_realpath	(char *),
 	*function_regcomp	(char *),
@@ -404,6 +404,7 @@ static BuiltInFunctions	built_in_functions[] =
 	{ "CONNECT",		function_connect 	},
 	{ "CONVERT",		function_convert 	},
 	{ "COPATTERN",          function_copattern 	},
+	{ "CORPATTERN",		function_corpattern 	},
 	{ "COS",		function_cos		},
 	{ "COSH",		function_cosh		},
 	{ "COUNT",		function_count		},
@@ -539,7 +540,6 @@ static BuiltInFunctions	built_in_functions[] =
 	{ "QUERYWIN",		function_querywin	},
 	{ "RAND",		function_rand 		},
 	{ "RANDREAD",		function_randread	},
-	{ "RCOPATTERN",		function_rcopattern 	},
 	{ "READ",		function_read 		},
 	{ "REALPATH",		function_realpath	},
 	{ "REGCOMP",		function_regcomp	},
@@ -2059,11 +2059,11 @@ BUILT_IN_FUNCTION(function_copattern, word)
 	RETURN_MSTR(booya);
 }
 
-/* $rcopattern(pattern var_1 var_2)
+/* $corpattern(pattern var_1 var_2)
  *
  * As per $copattern(), except that the strings in var_1 are wildcard patterns.
  */
-BUILT_IN_FUNCTION(function_rcopattern, word)
+BUILT_IN_FUNCTION(function_corpattern, word)
 {
 	char	*booya = (char *) 0,
 		*pattern = (char *) 0,
