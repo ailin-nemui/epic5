@@ -1,4 +1,4 @@
-/* $EPIC: parse.c,v 1.26 2002/11/08 23:36:12 jnelson Exp $ */
+/* $EPIC: parse.c,v 1.27 2002/11/16 18:04:49 crazyed Exp $ */
 /*
  * parse.c: handles messages from the server.   Believe it or not.  I
  * certainly wouldn't if I were you. 
@@ -329,6 +329,7 @@ static void p_privmsg (char *from, char **Args)
 	{
 		message_from(to, LOG_PUBLIC);	/* Duh! */
 		malloc_strcpy(&public_nick, from);
+		set_server_public_nick(from);
 		flood_channel = to;
 		flood_type = PUBLIC_FLOOD;
 		log_type = LOG_PUBLIC;
@@ -573,6 +574,7 @@ static void	p_channel (char *from, char **ArgList)
 
 	channel = ArgList[0];
 	malloc_strcpy(&joined_nick, from);
+	set_server_joined_nick(from);
 
 	/*
 	 * Workaround for extremely gratuitous protocol change in ef2.9
