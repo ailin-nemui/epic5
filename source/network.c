@@ -1,4 +1,4 @@
-/* $EPIC: network.c,v 1.59 2005/01/31 05:08:12 jnelson Exp $ */
+/* $EPIC: network.c,v 1.60 2005/02/10 05:10:57 jnelson Exp $ */
 /*
  * network.c -- handles stuff dealing with connecting and name resolving
  *
@@ -50,6 +50,7 @@ int	inet_vhostsockaddr (int family, int port, SS *storage, socklen_t *len);
 static int	Connect (int fd, SA *addr);
 static socklen_t	socklen (SA *sockaddr);
 static int	Getnameinfo(const SA *sa, socklen_t salen, char *host, size_t hostlen, char *serv, size_t servlen, int flags);
+static void    set_socket_options (int s);
 
 /*
    Retval    Meaning
@@ -683,5 +684,29 @@ static socklen_t	socklen (SA *sockaddr)
 		return strlen(((USA *)sockaddr)->sun_path) + 2;
 	else
 		return 0;
+}
+
+/* set's socket options */
+static void    set_socket_options (int s)
+{
+        int     opt = 1;
+        int     optlen = sizeof(opt);
+#ifndef NO_STRUCT_LINGER
+        struct linger   lin;
+
+        lin.l_onoff = lin.l_linger = 0;
+        setsockopt(s, SOL_SOCKET, SO_LINGER, (char *)&lin, optlen);
+#endif
+
+        setsockopt(s, SOL_SOCKET, SO_REUSEADDR, (char *)&opt, optlen);
+        opt = 1;
+        setsockopt(s, SOL_SOCKET, SO_KEEPALIVE, (char *)&opt, optlen);
+
+#if notyet
+        /* This is waiting for nonblock-aware code */
+        info = fcntl(fd, F_GETFL, 0);
+        info |= O_NONBLOCK;
+        fcntl(fd, F_SETFL, info);
+#endif
 }
 

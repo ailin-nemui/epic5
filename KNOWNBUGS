@@ -2,7 +2,9 @@ EPIC5 Projects, Bugs, and other Errata:
 
 KNOWN ERRATA (eg, bugs, or unresolved requests):
 ------------------------------------------------
-* Some way to hook incomplete lines via dcc raw
+* Check to see if we can hook incomplete lines via dcc now
+* Debug everything -- check to make sure dcc and ssl works
+* Figure out who is supposed to call shutdown_ssl().
 
 [See http://www.epicsol.org/PROJECTS for things to come in the future]
 [See http://www.epicsol.org/CHANGELOG5 for things that changed in the past]
@@ -469,3 +471,11 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * As much as possible, have server treat the ssl case as "normal"
 * Implement all ssl interfaces even in non-ssl case, guard with panics
 * Null-terminate after a read, just for laughs and giggles.
+* Add a dgets_buffer() to inject data into dgets() system.
+* Fix up dgets() so it has read() like semantics.
+* Fix up dgets() callers to use it like a read() type function.
+* Turn off /xdebug server_connected hardcoded at startup for now.
+* Fix up unix_* io functions to use dgets_buffer().
+* Fix do_filedesc() to repeatedly call callback until buffer is clean
+* Move set_socket_options() to network.c, make do_filedesc() global func
+* No longer null terminate the read()s, unnecessary now.

@@ -1,4 +1,4 @@
-/* $EPIC: debug.c,v 1.18 2004/10/04 23:56:20 jnelson Exp $ */
+/* $EPIC: debug.c,v 1.19 2005/02/10 05:10:57 jnelson Exp $ */
 /*
  * debug.c -- controll the values of x_debug.
  *
@@ -36,7 +36,11 @@
 #include "output.h"
 #include "reg.h"
 
+#if 0
 unsigned long x_debug = DEBUG_SERVER_CONNECT;
+#else
+unsigned long x_debug = 0;
+#endif
 
 struct debug_opts
 {

@@ -72,8 +72,7 @@ extern 	int 	dgets_errno;
 
 	size_t	get_pending_bytes	(int);
 	ssize_t	dgets 			(int, char *, size_t, int);
-	void 	set_socket_options 	(int);
-	int	is_ssl_enabled		(int);
+	void	do_filedesc		(void);
 
 #ifdef USE_SELECT
 	int	select__do_wait			(struct timeval *);
@@ -82,14 +81,12 @@ extern 	int 	dgets_errno;
 	int 	select__new_close 		(int);
 	int	select__new_hold_fd		(int);
 	int	select__new_unhold_fd		(int);
-	void    select__do_filedesc 		(void);
 #define do_wait 		select__do_wait
 #define new_open 		select__new_open
 #define new_open_for_writing 	select__new_open_for_writing
 #define new_close 		select__new_close
 #define new_hold_fd 		select__new_hold_fd
 #define new_unhold_fd 		select__new_unhold_fd
-#define do_filedesc 		select__do_filedesc
 #endif
 
 #endif

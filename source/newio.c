@@ -1,11 +1,6 @@
-/* $EPIC: newio.c,v 1.31 2005/02/09 03:26:58 jnelson Exp $ */
+/* $EPIC: newio.c,v 1.32 2005/02/10 05:10:57 jnelson Exp $ */
 /*
- * newio.c: This is some handy stuff to deal with file descriptors in a way
- * much like stdio's FILE pointers 
- *
- * IMPORTANT NOTE:  If you use the routines here-in, you shouldn't switch to
- * using normal reads() on the descriptors cause that will cause bad things
- * to happen.  If using any of these routines, use them all 
+ * newio.c:  Passive, callback-driven IO handling for sockets-n-stuff.
  *
  * Copyright (c) 1990 Michael Sandroff.
  * Copyright (c) 1991, 1992 Troy Rollo.
@@ -40,41 +35,65 @@
  */
 
 /*
- * This file contains two major sections, which deal with multiplexing I/O 
- * intended for systems that have integer based file descriptors.  Porting
- * this to work on other integer based file descriptor systems should be 
- * pretty easy, and doesn't require changing anything else in EPIC.  Systems
- * that use something other than integers for file descriptors will require
- * more work, but shouldn't be /too/ difficult.
+ * Here's the plan -- a two-phase data buffering system that can be adapted
+ * to systems with fully asynchronous i/o (vms, threads).
  *
- * In section 1, is "dgets", which does line-buffering on any file
- * descriptor in the same way fgets() does for (FILE *)s.  Everything in 
- * EPIC that does line buffering uses dgets() to handle this job.
+ * Each file descriptor is tracked based on two things:
+ *	1) How the fd produces data.
+ *	2) A function to call when there is data to consume.
  *
- * "dgets" includes these functions:
- *   get_pending_bytes(), which returns the number of bytes buffered by 
- *		the dgets system for a file descriptor.  
- *   init_io(), which initializes the dgets() subsystem.  The name sucks.
- *   unix_read(), which is a dgets() reader function that uses the unix
- *		read(2) system call to fill the buffers.
- *   dgets() which takes a file descriptor, a buffer, a buffer size, and 
- *		a reader callback function.  dgets() works in two steps,
- *		first filling its own buffers with a supplied reader func,
- *		and then returning the first line from this buffer.  Further
- *		lines will be returned in subsequent calls to dgets().
- * Making "dgets" work on non-unix systems is as simple as replacing the 
- * "unix_read()" function with whatever you use on the new system to pull
- * bytes off of a file descriptor.  The rest of EPIC does not need to be
- * changed, though you may want to look at how servers work with SSL.
+ * At the highest level, a file descriptor is declared for use with
+ *
+ *	int new_open (int fd, void (*callback)(int), int io_type)
+ *
+ * whereby we provide the file descriptor, the consumer callback, and the
+ * io production type.  After calling new_open(), you must never call read()
+ * or write() or accept() or connect() on the fd.
+ *
+ * Newio arranges for the file descriptor to send any data it generates to
+ * the dgets buffers:
+ *	int dgets_buffer (int fd, void *data, size_t len)
+ * When data is generated and buffered, the file descriptor is considered
+ * "dirty" ("not clean").  After a file descriptor is dirty, your callback
+ * is repeatedly called until the file descriptor is no longer dirty.
+ *
+ * Your callback can clean a file descriptor by calling dgets():
+ *	ssize_t	dgets (int des, char *buf, size_t buflen, int buffer)
+ * Dgets() will remove some data from the buffer and return it to you.
+ * 'buffer' controls how much data you want dgets() to return.
+ *
+ * When all file descriptors are "clean", the do_wait() function is called,
+ * and it is expected to return when one or more file descriptors are "dirty"
+ * or when the timeout expires.  After it returns, do_filedesc() is called
+ * to "clean" all of the dirty file descriptors by repeatedly calling your
+ * provided callback.
+ *
+ * So here is the flow of the system:
+ *	1) You create a file descriptor
+ * 	2) Call new_open()
+ *	3) Call do_wait()
+ *	4) Call handle_filedesc()
+ *	   4a) This will call your callbacks on any dirty fd's.
+ *	5) Go back to 3
+ *	
+ * This is the essential parts of the main loop that drives EPIC.
+ *
  * 
- * In section 2, are the "event drivers" which are sets of functions that 
- * handle the management of file descriptors and a "sleep function" which 
- * epic calls when it has nothing else to do, and which does not return 
- * until there is something to do.  See newio.h for a lot more info, but
- * basically there are implementations for unix select(2) and freebsd's 
- * kqueue(2) systems here.  You should be able to write new sets of functions
- * for non-unix systems (like VMS) pretty easily, and nothing else in EPIC
- * need change.
+ * Questions and answers:
+ * Q) So how is this different than what was done before?
+ * A) Before, do_wait() returned when an IO operation was possible, and 
+ *    your callback was expected to perform the operation (usually by calling
+ *    dgets() with a io callback).  Now, the IO operation is performed before
+ *    do_wait() returns, and the only thing dgets() does is copy data from
+ *    its buffers to yours.  Therefore, you can call dgets() anytime and it
+ *    will never block.
+ * Q) Should I create a loop around dgets() in my callback?
+ * A) That is not necessary.  Your callback should just perform one logical
+ *    operation.  If there is more data left, your callback will be called
+ *    again until you've exhausted all of the data.  An implied loop around 
+ *    dgets() is a of this system.
+ * Q) Why does this documentation suck so much?
+ * A) I wrote it in a big hurry.  Maybe I'll "fix" it again later.
  */
 
 #include "irc.h"
@@ -118,7 +137,7 @@ typedef	struct	myio_struct
 		clean,
 		held;
 	void	(*callback) (int fd);
-	int	(*io_callback) (int, char **, size_t *, size_t *);
+	int	(*io_callback) (int fd);
 }           MyIO;
 
 static	MyIO **	io_rec = NULL;
@@ -126,6 +145,10 @@ static	int	global_max_fd = -1;
 	int	dgets_errno = 0;
 
 static void	new_io_event (int fd);
+
+static int	unix_read (int fd);
+static int	unix_accept (int fd);
+static int	unix_connect (int fd);
 
 /*
  * Get_pending_bytes: What do you think it does?
@@ -138,7 +161,7 @@ size_t 	get_pending_bytes (int fd)
 	return 0;
 }
 
-static	void	init_io (void)
+static void	init_io (void)
 {
 	static	int	first = 1;
 
@@ -153,115 +176,104 @@ static	void	init_io (void)
 	}
 }
 
-static int	unix_read (int fd, char **buffer, size_t *buffer_size, size_t *start)
+int	dgets_buffer (int des, void *data, size_t len)
 {
-	int	c;
+	MyIO *ioe;
 
-	c = read(fd, (*buffer) + (*start), (*buffer_size) - (*start) - 1);
-	*((*buffer) + (*start) + c) = 0;		/* XXX */
-	return c;
+	if (!io_rec)
+		init_io();
+
+	if (len < 0)
+		return 0;			/* XXX ? */
+
+	if (!(ioe = io_rec[des]))
+		panic("dgets called on unsetup fd %d", des);
+
+	/* 
+	 * An old exploit just sends us characters every .8 seconds without
+	 * ever sending a newline.  Cut off anyone who tries that.
+	 */
+	if (ioe->segments > MAX_SEGMENTS)
+	{
+		yell("***XXX*** Too many read()s on des [%d] without a "
+				"newline! ***XXX***", des);
+		ioe->error = ECONNABORTED;
+		ioe->clean = 0;
+		return;
+	}
+	/* If the buffer completely empties, then clean it.  */
+	else if (ioe->read_pos == ioe->write_pos)
+	{
+		ioe->read_pos = ioe->write_pos = 0;
+		ioe->buffer[0] = 0;
+		ioe->segments = 0;
+	}
+	/*
+	 * If read_pos is non-zero, then some of the data was consumed,
+	 * but not all of it (or it would be caught above), so we have
+	 * an incomplete line of data in the buffer.  Move it to the 
+	 * start of the buffer.
+	 */
+	else if (ioe->read_pos)
+	{
+		size_t	len;
+		len = ioe->write_pos - ioe->read_pos;
+		memmove(ioe->buffer, ioe->buffer + ioe->read_pos, len);
+		ioe->read_pos = 0;
+		ioe->write_pos = len;
+		ioe->buffer[len] = 0;
+		ioe->segments = 1;
+	}
+
+	if (ioe->buffer_size - ioe->write_pos < len)
+	{
+		while (ioe->buffer_size - ioe->write_pos < len)
+			ioe->buffer_size += IO_BUFFER_SIZE;
+		RESIZE(ioe->buffer, char, ioe->buffer_size);
+	}
+
+	memcpy((ioe->buffer) + (ioe->write_pos), data, len);
+	ioe->write_pos += len;
+	ioe->clean = 0;
+	ioe->segments++;
+	return 0;
 }
 
-static int	unix_accept (int fd, char **buffer, size_t *buffer_size, size_t *start)
-{
-	int	c;
-	int	newfd;
-	SS	addr;
-	socklen_t len;
-
-	len = sizeof(addr);
-	newfd = Accept(fd, (SA *)&addr, &len);
-
-	if ((*buffer_size) - (*start) < sizeof(newfd) + sizeof(addr))
-		panic("unix_accept: Buffer isn't big enough.  "
-			"%d bytes left, need %d.", 
-				(*buffer) - (*start), 
-				sizeof(newfd) + sizeof(addr));
-
-	memcpy((*buffer) + (*start), &newfd, sizeof(newfd));
-	memcpy((*buffer) + (*start) + sizeof(newfd), &addr, sizeof(addr));
-	return sizeof(newfd) + sizeof(addr);
-}
-
-static int	unix_connect (int fd, char **buffer, size_t *buffer_size, size_t *start)
-{
-	int	gsn_result;
-	SS	localaddr;
-	int	gpn_result;
-	SS	remoteaddr;
-	socklen_t len;
-	int	x;
-
-	len = sizeof(localaddr);
-	errno = 0;
-	getsockname(fd, (SA *)&localaddr, &len);
-	gsn_result = errno;
-
-	len = sizeof(remoteaddr);
-	errno = 0;
-	getpeername(fd, (SA *)&remoteaddr, &len);
-	gpn_result = errno;
-
-	if ((*buffer_size) - (*start) < (sizeof(SS) + sizeof(int)) * 2)
-		panic("unix_accept: Buffer isn't big enough.  "
-			"%d bytes left, need %d.", 
-				(*buffer) - (*start), 
-				(sizeof(SS) + sizeof(int)) * 2);
-
-	x = 0;
-	memcpy((*buffer) + (*start) + x, &gsn_result, sizeof(gsn_result));
-	x += sizeof(gsn_result);
-	memcpy((*buffer) + (*start) + x, &localaddr, sizeof(localaddr));
-	x += sizeof(localaddr);
-	memcpy((*buffer) + (*start) + x, &gpn_result, sizeof(gpn_result));
-	x += sizeof(gpn_result);
-	memcpy((*buffer) + (*start) + x, &remoteaddr, sizeof(remoteaddr));
-	x += sizeof(remoteaddr);
-
-	return x;
-}
-
-/*
- * dgets() is used by:
- *	dcc.c for DCC CHAT (buffer = 1)
- *	dcc.c for DCC RAW (buffer = 0)
- *	exec.c for handling inbound data from execd processes (buffer = 0)
- *	screen.c for reading in from a created screen (buffer = 0)
- *	screen.c for reading stdin when process is in dumb mode. (buffer = 1)
- *	server.c for reading in lines from server (buffer = 1)
- *	server.c for the /flush command (buffer = 0)
- */
 /*
  * All new dgets -- no more trap doors!
  *
- * There are at least four ways to look at this function.
- * The most important variable is 'buffer', which determines if
- * we force line buffering.  If it is on, then we will sit on any
- * incomplete lines until they get a newline.  This is the default
- * behavior for server connections, because they *must* be line
- * delineated.  However, when are getting input from an untrusted
- * source (eg, dcc chat, /exec'd process), we cannot assume that every
- * line will be newline delinated.  So in those cases, 'buffer' is 0,
- * and we force a flush on whatever we can slurp, without waiting for
- * a newline.
+ * dgets() returns the next buffered unit of data from the buffers.
+ * "buffer" controls what "buffered unit of data" means.  This function
+ * should only be called from within a new_open() callback function!
+ *
+ * Arguments:
+ * 1) des    - A "dirty" file descriptor.  You know that a file descriptor is
+ *	       dirty when your new_open() callback is called.
+ * 2) buf    - A buffer into which to copy the data from the file descriptor
+ * 3) buflen - The size of 'buf'.
+ * 4) buffer - The type of buffering to perform.
+ *	-1	No line buffering, return everything.
+ *	 0	Partial line buffering.  Return a line of data if there is
+ *		one; Return everything if there isn't one.
+ *	 1	Full line buffering.  Return a line of data if there is one,
+ *		Return nothing if there isn't one.
  *
  * Return values:
- *
- *	-1 -- The file descriptor is dead.  Either an EOF occured, or a
- *	      read() error occured, or the buffer for the filedesc filled
- *	      up, or some other non-recoverable error occured.
- *	 0 -- If the data read in from the file descriptor did not form a 
- *	      complete line, then zero is always returned.  This should be
- *	      considered a stopping condition.  Do not call dgets() again
- *	      after it returns 0, because unless more data is avaiable on
- *	      the fd, it will return -1, which you would misinterpret as an
- *	      error condition.
- *	      If "buffer" is 0, then whatever we have available will be 
- *	      returned in "str".
- *	      If "buffer" is not 0, then we will retain whatever we have
- *	      available, waiting for the newline to occur perhaps next time.
- *	>0 -- If a full, newline terminated line was available, the length
- *	      of the line is returned.
+ *	buffer == -1		(The results are NOT null terminated)
+ *		-1	The file descriptor is dead.  dgets_errno contains
+ *			the error (-1 means EOF).
+ *		 0	There is no data available to read.
+ *		>0	The number of bytes returned.
+ *	buffer == 0		(The results are null terminated)
+ *		-1	The file descriptor is dead.  dgets_errno contains
+ *			the error (-1 means EOF).
+ *		 0	Some data was returned, but it was an incomplete line.
+ *		>0	A full line of data was returned.
+ *	buffer == 1		(The results are null terminated)
+ *		-1	The file descriptor is dead.  dgets_errno contains
+ *			the error (-1 means EOF).
+ *		 0	No data was returned.
+ *		>0	A full line of data was returned.
  */
 ssize_t	dgets (int des, char *buf, size_t buflen, int buffer)
 {
@@ -276,14 +288,12 @@ ssize_t	dgets (int des, char *buf, size_t buflen, int buffer)
 
 	if (buflen == 0)
 	{
-		yell("***XXX*** Buffer for des [%d] is zero-length! ***XXX***", des);
-		dgets_errno = ENOMEM; /* Cough */
-		return -1;
+	    yell("**XX** Buffer for des [%d] is zero-length! **XX**", des);
+	    dgets_errno = ENOMEM; /* Cough */
+	    return -1;
 	}
 
-	ioe = io_rec[des];
-
-	if (ioe == NULL)
+	if (!(ioe = io_rec[des]))
 		panic("dgets called on unsetup fd %d", des);
 
 	if ((dgets_errno = ioe->error))
@@ -295,7 +305,8 @@ ssize_t	dgets (int des, char *buf, size_t buflen, int buffer)
 	 * in more data.  Check again to see if there is a newline.  If
 	 * there is not, and the caller wants a complete line, just punt.
 	 */
-	if (buffer == 1 && !strchr(ioe->buffer + ioe->read_pos, '\n'))
+	if (buffer == 1 && !memchr(ioe->buffer + ioe->read_pos, '\n', 
+					ioe->write_pos - ioe->read_pos))
 	{
 		ioe->clean = 1;
 		return 0;
@@ -311,10 +322,24 @@ ssize_t	dgets (int des, char *buf, size_t buflen, int buffer)
 	    h = ioe->buffer[ioe->read_pos++];
 	    consumed++;
 
+	    /* Only copy the data if there is some place to put it. */
 	    if (cnt <= buflen - 1)
 		buf[cnt++] = h;
-	    if (buffer >= 0 && h == '\n')
-		break;
+
+	    /* 
+	     * For buffered data, don't stop until we see the newline. 
+	     * For unbuffered data, stop if we run out of space.
+	     */
+	    if (buffer >= 0)
+	    {
+		if (h == '\n')
+		    break;
+	    }
+	    else
+	    {
+		if (cnt == buflen)
+		    break;
+	    }
 	}
 
 	if (ioe->read_pos == ioe->write_pos)
@@ -359,29 +384,45 @@ ssize_t	dgets (int des, char *buf, size_t buflen, int buffer)
 	    return 0;
 }
 
-/* set's socket options */
-void	set_socket_options (int s)
+void	do_filedesc (void)
 {
-	int	opt = 1;
-	int	optlen = sizeof(opt);
-#ifndef NO_STRUCT_LINGER
-	struct linger	lin;
+	int	i;
 
-	lin.l_onoff = lin.l_linger = 0;
-	setsockopt(s, SOL_SOCKET, SO_LINGER, (char *)&lin, optlen);
-#endif
-
-	setsockopt(s, SOL_SOCKET, SO_REUSEADDR, (char *)&opt, optlen);
-	opt = 1;
-	setsockopt(s, SOL_SOCKET, SO_KEEPALIVE, (char *)&opt, optlen);
-
-#if notyet
-	/* This is waiting for nonblock-aware code */
-	info = fcntl(fd, F_GETFL, 0);
-	info |= O_NONBLOCK;
-	fcntl(fd, F_SETFL, info);
-#endif
+	for (i = 0; i <= global_max_fd; i++)
+	{
+		/* Then tell the user they have data ready for them. */
+		while (io_rec[i] && !io_rec[i]->clean)
+			io_rec[i]->callback(i);
+	}
 }
+
+/************************************************************************/
+/******************** Start of unix-specific code here ******************/
+/************************************************************************/
+static void	new_io_event (int fd)
+{
+	MyIO *ioe;
+	int	c;
+
+	ioe = io_rec[fd];
+
+	/* If it's dirty, something is very wrong. */
+	if (!ioe->clean)
+		panic("new_io_event: fd [%d] hasn't been cleaned yet", fd);
+
+	if ((c = ioe->io_callback(fd)) <= 0)
+	{
+		ioe->error = errno;
+		if (x_debug & DEBUG_INBOUND) 
+			yell("FD [%d] FAILED [%d:%s]", 
+				fd, c, strerror(ioe->error));
+		return;
+	}
+
+	if (x_debug & DEBUG_INBOUND) 
+		yell("FD [%d], did [%d]", fd, c);
+}
+
 
 #ifdef USE_SELECT
 
@@ -523,6 +564,8 @@ int	select__new_close (int des)
 	return -1;
 }
 
+
+/* * * * * * Begin the select-specific part of things * * * * */
 static	fd_set	working_rd, working_wd;
 
 /*
@@ -536,7 +579,6 @@ static	int	polls = 0;
 	Timeval *newtimeout = &thetimeout;
 	int	i,
 		set = 0;
-	fd_set 	new_f;
 	int	retval;
 
 	working_rd = readables;
@@ -563,7 +605,6 @@ static	int	polls = 0;
 	if (!io_rec)
 		panic("new_select called before io_rec was initialized");
 
-	FD_ZERO(&new_f);
 	for (i = 0; i <= global_max_fd; i++)
 	{
 		/*
@@ -573,9 +614,8 @@ static	int	polls = 0;
 		 * caller didn't ask about the fd, because that leads to 
 		 * a busy-loop.
 		 */
-		if (io_rec[i])
-		    if (!io_rec[i]->clean)
-			set++;
+		if (io_rec[i] && !io_rec[i]->clean)
+			panic("fd [%d] is not clean", i);
 	}
 
 	/*
@@ -584,130 +624,84 @@ static	int	polls = 0;
 	 * contents of an ircd packet without doing expensive select() calls
 	 * inbetween each line.
 	 */
-	if (set)
-		return set;
+	retval = select(global_max_fd + 1, &working_rd, &working_wd, 
+				NULL, newtimeout);
 
-	else
-	{
-		retval = select(global_max_fd + 1, &working_rd, &working_wd, 
-					NULL, newtimeout);
-
-		if (retval <= 0)
-			return retval;
-
-		for (i = 0; i <= global_max_fd; i++)
-		{
-		    if (FD_ISSET(i, &working_rd) || FD_ISSET(i, &working_wd))
-		    {
-			if (!io_rec[i])
-				panic("FD %d is ready, but not set up!", i);
-
-			/* If it's clean, read in more data */
-			if (io_rec[i]->clean)
-			    new_io_event(i);
-		    }
-		}
-
+	if (retval <= 0)
 		return retval;
-	}
-}
-
-
-void	select__do_filedesc (void)
-{
-	int	i;
 
 	for (i = 0; i <= global_max_fd; i++)
 	{
+	    if (FD_ISSET(i, &working_rd) || FD_ISSET(i, &working_wd))
+	    {
 		if (!io_rec[i])
-			continue;
+			panic("FD %d is ready, but not set up!", i);
 
-		/* Then tell the user they have data ready for them. */
-		if (!io_rec[i]->clean)
-			io_rec[i]->callback(i);
+		/* If it's clean, read in more data */
+		if (io_rec[i]->clean)
+		    new_io_event(i);
+	    }
 	}
+
+	return retval;
 }
-
-static void	new_io_event (int fd)
-{
-	MyIO *ioe;
-	int	c;
-
-	ioe = io_rec[fd];
-
-	/* If it's dirty, something is very wrong. */
-	if (!ioe->clean)
-		panic("new_io_event: fd [%d] hasn't been cleaned yet", fd);
-
-	/* DGETS BUFFER MANAGEMENT */
-	/* 
-	 * An old exploit just sends us characters every .8 seconds without
-	 * ever sending a newline.  Cut off anyone who tries that.
-	 */
-	if (ioe->segments > MAX_SEGMENTS)
-	{
-		yell("***XXX*** Too many read()s on des [%d] without a "
-				"newline! ***XXX***", fd);
-		ioe->error = ECONNABORTED;
-		ioe->clean = 0;
-		return;
-	}
-
-	/* If the buffer completely empties, then clean it.  */
-	else if (ioe->read_pos == ioe->write_pos)
-	{
-		ioe->read_pos = ioe->write_pos = 0;
-		ioe->buffer[0] = 0;
-		ioe->segments = 0;
-	}
-
-	/*
-	 * If read_pos is non-zero, then some of the data was consumed,
-	 * but not all of it (or it would be caught above), so we have
-	 * an incomplete line of data in the buffer.  Move it to the 
-	 * start of the buffer.
-	 */
-	else if (ioe->read_pos)
-	{
-		size_t	len;
-		len = ioe->write_pos - ioe->read_pos;
-		memmove(ioe->buffer, ioe->buffer + ioe->read_pos, len);
-		ioe->read_pos = 0;
-		ioe->write_pos = len;
-		ioe->segments = 1;
-	}
-
-	/*
-	 * Dont try to read into a full buffer.
-	 */
-	if (ioe->write_pos >= ioe->buffer_size)
-	{
-		yell("***XXX*** Buffer for des [%d] is filled! ***XXX***", fd);
-		ioe->error = ENOMEM; /* Cough */
-		ioe->clean = 0;
-		return;
-	}
-
-	c = ioe->io_callback(fd, &ioe->buffer, &ioe->buffer_size, &ioe->write_pos);
-	ioe->clean = 0;
-
-	if (c <= 0)
-	{
-		ioe->error = errno;
-		if (x_debug & DEBUG_INBOUND) 
-			yell("FD [%d] FAILED [%d:%s]", 
-				fd, c, strerror(ioe->error));
-		return;
-	}
-
-	if (x_debug & DEBUG_INBOUND) 
-		yell("FD [%d], did [%d]", fd, c);
-
-	ioe->write_pos += c;
-	ioe->segments++;
-}
-
 
 #endif
+
+
+static int	unix_read (int fd)
+{
+	char	buffer[8192];
+	int	c;
+
+	c = read(fd, buffer, sizeof(buffer));
+	if (c == 0)
+		errno = -1;
+	else if (c > 0)
+		dgets_buffer(fd, buffer, c);
+	return c;
+}
+
+static int	unix_accept (int fd)
+{
+	int	newfd;
+	SS	addr;
+	socklen_t len;
+
+	len = sizeof(addr);
+	newfd = Accept(fd, (SA *)&addr, &len);
+
+	dgets_buffer(fd, &newfd, sizeof(newfd));
+	dgets_buffer(fd, &addr, sizeof(addr));
+	return sizeof(newfd) + sizeof(addr);
+}
+
+static int	unix_connect (int fd)
+{
+	int	gsn_result;
+	SS	localaddr;
+	int	gpn_result;
+	SS	remoteaddr;
+	socklen_t len;
+
+	len = sizeof(localaddr);
+	errno = 0;
+	getsockname(fd, (SA *)&localaddr, &len);
+	gsn_result = errno;
+
+	dgets_buffer(fd, &gsn_result, sizeof(gsn_result));
+	dgets_buffer(fd, &localaddr, sizeof(localaddr));
+
+	len = sizeof(remoteaddr);
+	errno = 0;
+	getpeername(fd, (SA *)&remoteaddr, &len);
+	gpn_result = errno;
+
+	dgets_buffer(fd, &gpn_result, sizeof(gpn_result));
+	dgets_buffer(fd, &remoteaddr, sizeof(localaddr));
+
+	return (sizeof(int) + sizeof(SS)) * 2;
+}
+
 
 /* No KQUEUE support for now. */

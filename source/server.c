@@ -1,4 +1,4 @@
-/* $EPIC: server.c,v 1.147 2005/02/09 02:23:25 jnelson Exp $ */
+/* $EPIC: server.c,v 1.148 2005/02/10 05:10:57 jnelson Exp $ */
 /*
  * server.c:  Things dealing with that wacky program we call ircd.
  *
@@ -862,30 +862,31 @@ void	do_server (int fd)
 		    if (x_debug & DEBUG_SERVER_CONNECT)
 			yell("do_server: server [%d] is now ready to write", i);
 
-		    c = dgets(des, bigbuf, sizeof(bigbuf), -1);
-		    if (c <= 0)
-		    {
-			if (x_debug & DEBUG_SERVER_CONNECT)
-			    yell("Server [%d] is not connected.  Restarting connection", i);
-			close_server(i, NULL);
-			connect_to_server(i, 0);
-			continue;
-		    }
+#define DGETS(x, y) dgets( x , (char *) & y , sizeof y , -1);
 
-		    /* Skip over the local name, we don't care. */
-		    x = 0;
-		    x += sizeof(retval);
-		    x += sizeof(name);
-		    memcpy(&retval, bigbuf + x, sizeof(retval));
-		    memcpy(&name, bigbuf + x, sizeof(name));
+		    c = DGETS(des, retval)
+		    if (c < sizeof(retval) || retval)
+			goto something_broke;
 
-		    /*
-		     * If the connect failed, then restart it.
-		     */
-		    if (retval)
+		    c = DGETS(des, name)
+		    if (c < sizeof(name))
+			goto something_broke;
+
+		    c = DGETS(des, retval)
+		    if (c < sizeof(retval) || retval)
+			goto something_broke;
+
+		    c = DGETS(des, name)
+		    if (c < sizeof(name))
+			goto something_broke;
+
+		    /* XXX - I don't care if this is abusive.  */
+		    while (0)
 		    {
+something_broke:
 			if (x_debug & DEBUG_SERVER_CONNECT)
-			    yell("Server [%d] is not connected.  Restarting connection", i);
+			    yell("Server [%d] is not connected.  "
+					"Restarting connection", i);
 			close_server(i, NULL);
 			connect_to_server(i, 0);
 			continue;

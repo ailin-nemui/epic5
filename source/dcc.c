@@ -1,4 +1,4 @@
-/* $EPIC: dcc.c,v 1.107 2005/02/09 02:23:25 jnelson Exp $ */
+/* $EPIC: dcc.c,v 1.108 2005/02/10 05:10:57 jnelson Exp $ */
 /*
  * dcc.c: Things dealing client to client connections. 
  *
@@ -674,43 +674,31 @@ static	int	dcc_get_connect_addrs (DCC_list *dcc)
 
 	type = dcc_types[dcc->flags & DCC_TYPES];
 
-	c = dgets(dcc->socket, bigbuf, sizeof(bigbuf), -1);
-	if (c <= 0)
-	{
-		dcc->flags |= DCC_DELETE;
-		yell("### DCC Error: connect() failed (%s).", 
-			strerror(dgets_errno));
-		return -1;
-	}
+#define DGETS(x, y) dgets( x , (char *) & y , sizeof y , -1);
 
-	x = 0;
-	memcpy(&retval, bigbuf + x, sizeof(retval));
-	x += sizeof(retval);
-	memcpy(&dcc->local_sockaddr, bigbuf + x, sizeof(dcc->local_sockaddr));
-	x += sizeof(dcc->local_sockaddr);
+	c = DGETS(dcc->socket, retval)
+	if (c < sizeof(retval) || retval)
+		goto something_broke;
 
-	if (retval)
-	{
-	    say("DCC %s connection with %s could not be established: %s",
-			type, dcc->user, strerror(retval));
-	    dcc->flags |= DCC_DELETE;
-	    return -1;
-	}
+	c = DGETS(dcc->socket, dcc->local_sockaddr)
+	if (c < sizeof(dcc->local_sockaddr))
+		goto something_broke;
 
-	memcpy(&retval, bigbuf + x, sizeof(retval));
-	x += sizeof(retval);
-	memcpy(&dcc->peer_sockaddr, bigbuf + x, sizeof(dcc->peer_sockaddr));
-	x += sizeof(dcc->peer_sockaddr);
+	c = DGETS(dcc->socket, retval)
+	if (c < sizeof(retval) || retval)
+		goto something_broke;
 
-	if (retval)
-	{
-	    say("DCC %s connection with %s could not be established: %s",
-			type, dcc->user, strerror(retval));
-	    dcc->flags |= DCC_DELETE;
-	    return -1;
-	}
+	c = DGETS(dcc->socket, dcc->peer_sockaddr)
+	if (c < sizeof(dcc->peer_sockaddr))
+		goto something_broke;
 
 	return 0;
+
+something_broke:
+	say("DCC %s connection with %s could not be established: %s",
+			type, dcc->user, strerror(retval));
+	dcc->flags |= DCC_DELETE;
+	return -1;
 }
 
 /*
@@ -2642,21 +2630,18 @@ static	void	process_dcc_chat_connection (DCC_list *Client)
 	char	p_port[24];
 	SA *	addr;
 	int	fd;
-	int	c;
+	int	c1, c2;
 	char	bigbuf[2048];
 
-	c = dgets(Client->socket, bigbuf, sizeof(bigbuf), -1);
-	if (c <= 0)
+	c1 = DGETS(Client->socket, fd)
+	c2 = DGETS(Client->socket, Client->peer_sockaddr)
+	if (c1 != sizeof(fd) || c2 != sizeof(Client->peer_sockaddr))
 	{
 		Client->flags |= DCC_DELETE;
 		yell("### DCC Error: accept() failed (%s).", 
 			strerror(dgets_errno));
 		return;
 	}
-
-	memcpy(&fd, bigbuf, sizeof(fd));
-	memcpy(&Client->peer_sockaddr, bigbuf + sizeof(fd), 
-				sizeof(Client->peer_sockaddr));
 
 	Client->socket = new_close(Client->socket);
 	if ((Client->socket = fd) > 0)
@@ -2866,19 +2851,18 @@ static	void		process_incoming_listen (DCC_list *Client)
 	char		p_port[24];
 	char		l_port[24];
 	char		trash[1025] = "";
-	int		c;
+	int		c1, c2;
 	char		bigbuf[2048];
 
-	c = dgets(Client->socket, bigbuf, sizeof(bigbuf), -1);
-	if (c < 0)
+	c1 = DGETS(Client->socket, new_socket)
+	c2 = DGETS(Client->socket, remaddr)
+	if (c1 != sizeof(new_socket) || c2 != sizeof(remaddr))
 	{
-		yell("### DCC Error: accept() failed (%s)", 
-				strerror(dgets_errno));
+		Client->flags |= DCC_DELETE;
+		yell("### DCC Error: accept() failed (%s).", 
+			strerror(dgets_errno));
 		return;
 	}
-
-	memcpy(&new_socket, bigbuf, sizeof(new_socket));
-	memcpy(&remaddr, bigbuf + sizeof(new_socket), sizeof(remaddr));
 
 	if (new_socket < 0)
 	{
@@ -3043,24 +3027,18 @@ static void	process_dcc_send_connection (DCC_list *dcc)
 	char		p_addr[256];
 	char		p_port[24];
 	char		*encoded_description;
-	int		c;
+	int		c1, c2;
 	char		bigbuf[2048];
 
-	/*
-	 * Open up the network connection
-	 */
-	c = dgets(dcc->socket, bigbuf, sizeof(bigbuf), -1);
-	if (c <= 0)
+	c1 = DGETS(dcc->socket, new_fd)
+	c2 = DGETS(dcc->socket, dcc->peer_sockaddr)
+	if (c1 != sizeof(new_fd) || c2 != sizeof(dcc->peer_sockaddr))
 	{
 		dcc->flags |= DCC_DELETE;
-		yell("### DCC Error: accept() failed (%s)",
-				strerror(dgets_errno));
+		yell("### DCC Error: accept() failed (%s).", 
+			strerror(dgets_errno));
 		return;
 	}
-
-	memcpy(&new_fd, bigbuf, sizeof(new_fd));
-	memcpy(&dcc->peer_sockaddr, bigbuf + sizeof(new_fd), 
-				sizeof(dcc->peer_sockaddr));
 
 	dcc->socket = new_close(dcc->socket);
 	if ((dcc->socket = new_fd) < 0)
