@@ -288,7 +288,7 @@ static Queue  	*do_queue (Queue *queue, int noflush)
         do
 	{
 		if (tmp->what != (char *) 0)
-			parse_line("QUEUE", tmp->what, empty_string, 0, 0);
+			parse_line("QUEUE", tmp->what, NULL, 0, 0);
 		tmp = tmp->next;
 	}
         while (tmp != (CmdList *) 0);
