@@ -813,6 +813,7 @@ void	do_server (fd_set *rd)
 
 /* SERVER OUTPUT STUFF */
 static void 	vsend_to_server (const char *format, va_list args);
+void		send_to_server_raw (size_t len, const char *buffer);
 
 void	send_to_aserver (int refnum, const char *format, ...)
 {
@@ -871,16 +872,7 @@ static void 	vsend_to_server (const char *format, va_list args)
 		if (do_hook(SEND_TO_SERVER_LIST, "%d %d %s", 
 				server, des, buffer))
 		{
-		    if (write(des, buffer, strlen(buffer)) == -1 && 
-			(!get_int_var(NO_FAIL_DISCONNECT_VAR)))
-		    {
-			if (server_list[server].connected)
-			{
-			    server_is_connected(des, 0);
-			    say("Write to server failed.  Closing connection.");
-			    reconnect(server, 1);
-			}
-		    }
+			send_to_server_raw (strlen(buffer), buffer);
 		}
 	}
 	else if (from_server == -1)
@@ -889,6 +881,28 @@ static void 	vsend_to_server (const char *format, va_list args)
 		say("You are not connected to a server, "
 			"use /SERVER to connect.");
         }
+}
+
+void	send_to_server_raw (size_t len, const char *buffer)
+{
+	int des, server;
+
+	if ((server = from_server) == -1)
+		server = primary_server;
+
+	if (server != -1 && (des = server_list[server].des) != -1 && buffer)
+	{
+		if (write(des, buffer, len) == -1 && 
+			(!get_int_var(NO_FAIL_DISCONNECT_VAR)))
+		{
+			if (server_list[server].connected)
+			{
+				server_is_connected(des, 0);
+				say("Write to server failed.  Closing connection.");
+				reconnect(server, 1);
+			}
+		}
+	}
 }
 
 void	clear_sent_to_server (int servnum)

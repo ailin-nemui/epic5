@@ -8,7 +8,7 @@
  */
 
 #if 0
-static	char	rcsid[] = "@(#)$Id: ircaux.c,v 1.24 2001/12/10 20:47:56 crazyed Exp $";
+static	char	rcsid[] = "@(#)$Id: ircaux.c,v 1.25 2002/01/10 02:26:30 crazyed Exp $";
 #endif
 
 #include "irc.h"
@@ -3472,7 +3472,7 @@ char *	urlencode (const char *s)
 		  )					\
 )
 
-char *	urldecode (char *s)
+char *	urldecode (char *s, size_t *length)
 {
 	const char *p1;
 	char *	p2;
@@ -3484,16 +3484,17 @@ char *	urldecode (char *s)
 	if (!s || !*s)
 		return NULL;
 
-	len = strlen(s);
+	len = length ? *length : strlen(s);
 	retval = alloca(len + 1);
 
-	for (p1 = s, p2 = retval; *p1; p1++, p2++)
+	for (p1 = s, p2 = retval; len--; p1++, p2++)
 	{
-		if (*p1 == '%' &&
-		    ((p1[1] && ((val1 = XTOI(p1[1])) != -1)) &&
-		     (p1[2] && ((val2 = XTOI(p1[2])) != -1))))
+		if (*p1 == '%' && len >= 2 &&
+		    (((val1 = XTOI(p1[1])) != -1) &&
+		     ((val2 = XTOI(p1[2])) != -1)))
 		{
 			p1++, p1++;
+			len--, len--;
 			*p2 = (val1 << 4) | val2;
 		}
 		else
@@ -3501,7 +3502,9 @@ char *	urldecode (char *s)
 	}
 
 	*p2 = 0;
-	return strcpy(s, retval);
+	if (length)
+		*length = p2 - retval;
+	return memcpy(s, retval, p2 - retval + 1);
 }
 
 unsigned char isspace_table [256] = 

@@ -117,6 +117,7 @@ extern	int	parsing_server_index;
 	void	flush_server			(int);
 	void	send_to_aserver			(int, const char *, ...) __A(2);
 	void	send_to_server			(const char *, ...) __A(1);
+	void	send_to_server_raw		(size_t len, const char *buffer);
 	void	clear_sent_to_server		(int);
 	int	sent_to_server			(int);
 
@@ -140,6 +141,7 @@ const	char *	get_umode			(int);
 
 const	char *	get_server_name			(int);
 const	char *	get_server_itsname		(int);
+const	char *	get_server_group		(int);
 	void	set_server_itsname		(int, const char *);
 	void	set_server_version_string	(int, const char *);
 const 	char *	get_server_version_string	(int);

@@ -298,9 +298,11 @@ static	char
 	*function_sar 		(char *),
 	*function_seek		(char *),
 	*function_server_version (char *),
+	*function_servergroup	(char *),
 	*function_servername	(char *),
 	*function_servernick	(char *),
 	*function_servernum	(char *),
+	*function_serverourname	(char *),
 	*function_servports	(char *),
 	*function_sin		(char *),
 	*function_sinh		(char *),
@@ -566,9 +568,11 @@ static BuiltInFunctions	built_in_functions[] =
 	{ "RPATTERN",           function_rpattern 	},
 	{ "RSUBSTR",		function_rsubstr	},
 	{ "SAR",		function_sar 		},
+	{ "SERVERGROUP",	function_servergroup	},
 	{ "SERVERNAME",		function_servername	},
 	{ "SERVERNICK",		function_servernick	},
 	{ "SERVERNUM",		function_servernum	},
+	{ "SERVEROURNAME",	function_serverourname	},
 	{ "SERVPORTS",		function_servports	},
 	{ "SETITEM",            function_setitem 	},
 	{ "SHIFT",		function_shift 		},
@@ -3209,6 +3213,46 @@ BUILT_IN_FUNCTION(function_servername, input)
 	RETURN_STR(which);
 }
 
+BUILT_IN_FUNCTION(function_serverourname, input)
+{
+	int 	sval = from_server;
+	const char *	which;
+
+	if (*input)
+		GET_INT_ARG(sval, input);
+
+	/* garbage in, garbage out. */
+	if (sval < 0 || sval >= number_of_servers)
+		RETURN_EMPTY;
+
+	/* Skip the itsname test. */
+
+	/* Next we try what we think its name is */
+	which = get_server_name(sval);
+
+	/* Ok. i give up, return a null. */
+	RETURN_STR(which);
+}
+
+BUILT_IN_FUNCTION(function_servergroup, input)
+{
+	int 	sval = from_server;
+	const char *	which;
+
+	if (*input)
+		GET_INT_ARG(sval, input);
+
+	/* garbage in, garbage out. */
+	if (sval < 0 || sval >= number_of_servers)
+		RETURN_EMPTY;
+
+	/* Next we try what we think its name is */
+	which = get_server_group(sval);
+
+	/* Ok. i give up, return a null. */
+	RETURN_STR(which);
+}
+
 BUILT_IN_FUNCTION(function_lastserver, input)
 {
 	RETURN_INT(last_server);
@@ -5820,7 +5864,7 @@ BUILT_IN_FUNCTION(function_urlencode, input)
 /* Submitted by srfrog, August 11, 1999 */
 BUILT_IN_FUNCTION(function_urldecode, input)
 {
-	char *retval = urldecode(input);
+	char *retval = urldecode(input, NULL);
 	RETURN_STR(retval);
 }
 

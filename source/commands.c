@@ -2054,6 +2054,8 @@ BUILT_IN_COMMAND(query)
 BUILT_IN_COMMAND(quotecmd)
 {
 	int	old_from_server = from_server;
+	int	urlencoded = 0;
+	int	length;
 
 	if (*command == 'X')
 	{
@@ -2065,6 +2067,10 @@ BUILT_IN_COMMAND(quotecmd)
 				int sval = my_atol(next_arg(args, &args));
 				if (is_server_connected(sval))
 					from_server = sval;
+			}
+			else if (!my_strnicmp(flag + 1, "U", 1)) /* URL quoting */
+			{
+				urlencoded++;
 			}
 			else if (!my_strnicmp(flag + 1, "A", 1)) /* ALL */
 			{
@@ -2080,13 +2086,23 @@ BUILT_IN_COMMAND(quotecmd)
 						}
 					}
 				}
-				from_server = old_from_server;
-				return;
+				goto end;
+			}
+			else
+			{
+				/* End option processing on unknown arg. */
+				break;
 			}
 		}
 	}
 
-	if (args && *args)
+	if (urlencoded)
+	{
+		length = strlen(args);
+		urldecode(args, &length);
+		send_to_server_raw(length, args);
+	}
+	else if (args && *args)
 	{
 		char	*comm = new_next_arg(args, &args);
 		protocol_command *p;
@@ -2105,8 +2121,7 @@ BUILT_IN_COMMAND(quotecmd)
 		if (cnt < 0 && (rfc1459[loc].flags & PROTO_NOQUOTE))
 		{
 			yell("Doing /QUOTE %s is not permitted.  Use the client's built in command instead.", comm);
-			from_server = old_from_server;
-			return;
+			goto end;
 		}
 
 		/*
@@ -2119,6 +2134,7 @@ BUILT_IN_COMMAND(quotecmd)
 		send_to_server("%s %s", comm, args);
 	}
 
+end:
 	from_server = old_from_server;
 }
 

@@ -9,7 +9,7 @@
  */
 
 #if 0
-static	char	rcsid[] = "@(#)$Id: dcc.c,v 1.7 2001/11/14 22:15:33 jnelson Exp $";
+static	char	rcsid[] = "@(#)$Id: dcc.c,v 1.8 2002/01/10 02:26:30 crazyed Exp $";
 #endif
 
 #include "irc.h"
@@ -2775,7 +2775,7 @@ static	char *	dcc_urldecode (const char *s)
 	char *str, *p1;
 
 	str = m_strdup(s);
-	urldecode(str);
+	urldecode(str, NULL);
 
 	for (p1 = str; *p1; p1++)
 	{
