@@ -165,6 +165,7 @@ static 	void	waitcmd 	(const char *, char *, const char *);
 static	void	whois 		(const char *, char *, const char *);
 static	void	xevalcmd 	(const char *, char *, const char *);
 static	void	xtypecmd 	(const char *, char *, const char *);
+static	void	allocdumpcmd	(const char *, char *, const char *);
 
 /* other */
 static	void	eval_inputlist 	(char *, char *);
@@ -196,6 +197,7 @@ static	IrcCommand irc_command[] =
         { "ABORT",      NULL,           abortcmd,               0 },
 	{ "ADMIN",	"ADMIN",	send_comm, 		0 },
 	{ "ALIAS",	zero,		aliascmd,		0 }, /* alias.c */
+	{ "ALLOCDUMP",	NULL,		allocdumpcmd,		0 },
 	{ "ASSIGN",	one,		assigncmd,		0 }, /* alias.c */
 	{ "AWAY",	"AWAY",		away,			0 },
 	{ "BEEP",	0,		beepcmd,		0 },
@@ -3703,5 +3705,10 @@ BUILT_IN_COMMAND(returncmd)
 			add_local_alias("FUNCTION_RETURN", args, 0);
 		return_exception++;
 	}
+}
+
+BUILT_IN_COMMAND(allocdumpcmd)
+{
+	malloc_dump(args);
 }
 

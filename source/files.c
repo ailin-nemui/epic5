@@ -165,6 +165,7 @@ char *file_read (int fd)
 		return m_strdup(empty_string);
 	else
 	{
+#if 0
 		char	*ret = NULL;
 		size_t	len = 0, newlen = 4096;
 
@@ -182,6 +183,14 @@ char *file_read (int fd)
 		new_realloc((void **)&ret, len+strlen(ret+len));
 
 		return ret ? ret : m_strdup(empty_string);
+#else
+		char blah[10240];
+		if (fgets(blah, 10239, ptr->file))
+			chop(blah, 1);
+		else
+			blah[0] = 0;
+		return m_strdup(blah);
+#endif
 	}
 }
 

@@ -7,7 +7,7 @@
  *
  * See the COPYRIGHT file, or do a HELP IRCII COPYRIGHT 
  *
- * @(#)$Id: ircaux.h,v 1.7 2001/11/12 21:46:45 jnelson Exp $
+ * @(#)$Id: ircaux.h,v 1.8 2001/11/16 06:42:28 crazyed Exp $
  */
 
 #ifndef _IRCAUX_H_
@@ -36,6 +36,7 @@ void *	really_new_malloc 	(size_t, char *, int);
 void *	really_new_free 	(void **, char *, int);
 int	debug_new_free		(void **, char *, int);
 void *	really_new_realloc 	(void **, size_t, char *, int);
+void	malloc_dump		(char *);
 
 char *	check_nickname 		(char *, int);
 char *	next_arg 		(char *, char **);

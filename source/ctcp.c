@@ -10,7 +10,7 @@
  */
 
 #if 0
-static	char	rcsid[] = "@(#)$Id: ctcp.c,v 1.4 2001/11/15 17:29:00 jnelson Exp $";
+static	char	rcsid[] = "@(#)$Id: ctcp.c,v 1.5 2001/11/16 06:42:28 crazyed Exp $";
 #endif
 
 #include "irc.h"
@@ -481,7 +481,7 @@ CTCP_HANDLER(do_ping_reply)
 
 	tsec = t.tv_sec - orig;
 
-	if ((ptr = strchr(cmd, ' ')))
+	if ((ptr = sindex(cmd, " .")))
 	{
 		*ptr++ = 0;
 		tusec = t.tv_usec - my_atol(ptr);

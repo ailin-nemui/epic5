@@ -8,7 +8,7 @@
  */
 
 #if 0
-static	char	rcsid[] = "@(#)$Id: ircaux.c,v 1.13 2001/11/14 18:35:35 jnelson Exp $";
+static	char	rcsid[] = "@(#)$Id: ircaux.c,v 1.14 2001/11/16 06:42:28 crazyed Exp $";
 #endif
 
 #include "irc.h"
@@ -33,7 +33,19 @@ typedef struct _mo_money
 {
 	unsigned magic;
 	int size;
+#ifdef ALLOC_DEBUG
+	unsigned entry;
+	char* fn;
+	int line;
+#endif
 } MO;
+
+#ifdef ALLOC_DEBUG
+struct {
+	int size;
+	void** entries;
+} alloc_table = { 0, NULL };
+#endif
 
 #define mo_ptr(ptr) ((MO *)( (char *)(ptr) - sizeof(MO) ))
 #define alloc_size(ptr) ((mo_ptr(ptr))->size)
@@ -58,6 +70,10 @@ static int	malloc_check (void *ptr)
 		return ALLOC_MAGIC_FAILED;
 	if (alloc_size(ptr) == FREED_VAL)
 		return ALREADY_FREED;
+#ifdef ALLOC_DEBUG
+	if (ptr != alloc_table.entries[mo_ptr(ptr)->entry])
+		return ALREADY_FREED;
+#endif
 	return NO_ERROR;
 }
 
@@ -117,6 +133,14 @@ void *	really_new_malloc (size_t size, char *fn, int line)
 	ptr += sizeof(MO);
 	magic(ptr) = ALLOC_MAGIC;
 	alloc_size(ptr) = size;
+#ifdef ALLOC_DEBUG
+	mo_ptr(ptr)->entry = alloc_table.size;
+	mo_ptr(ptr)->fn = fn;
+	mo_ptr(ptr)->line = line;
+	alloc_table.size++;
+	alloc_table.entries = realloc(alloc_table.entries, (alloc_table.size) * sizeof(void**));
+	alloc_table.entries[alloc_table.size-1] = ptr;
+#endif
 	return ptr;
 }
 
@@ -182,6 +206,11 @@ void *	really_new_free(void **ptr, char *fn, int line)
 	{
 		fatal_malloc_check(*ptr, NULL, fn, line);
 		alloc_size(*ptr) = FREED_VAL;
+#ifdef ALLOC_DEBUG
+		alloc_table.entries[mo_ptr(*ptr)->entry]
+			= alloc_table.entries[--alloc_table.size];
+		mo_ptr(alloc_table.entries[mo_ptr(*ptr)->entry])->entry = mo_ptr(*ptr)->entry;
+#endif
 #ifdef DELAYED_FREES
 		delay_free((void *)(mo_ptr(*ptr)));
 #else
@@ -212,6 +241,9 @@ void *	really_new_realloc (void **ptr, size_t size, char *fn, int line)
 		/* Re-initalize the MO buffer; magic(*ptr) is already set. */
 		*ptr += sizeof(MO);
 		alloc_size(*ptr) = size;
+#ifdef ALLOC_DEBUG
+		alloc_table.entries[mo_ptr(*ptr)->entry] = *ptr;
+#endif
 	}
 	return *ptr;
 }
@@ -248,6 +280,23 @@ void *	new_realloc (void **ptr, size_t size)
 }
 
 #endif
+
+void malloc_dump (char* file) {
+#ifdef ALLOC_DEBUG
+	int	foo, bar;
+	FILE	*fd;
+
+	if (!(file && *file && (fd=fopen(file, "a"))))
+		fd=stdout;
+
+	for (foo = alloc_table.size; foo--;) {
+		fprintf(fd, "%s/%d\t%d\t", mo_ptr(alloc_table.entries[foo])->fn, mo_ptr(alloc_table.entries[foo])->line, mo_ptr(alloc_table.entries[foo])->size);
+		for (bar = 0; bar<mo_ptr(alloc_table.entries[foo])->size; bar++)
+			fprintf(fd, " %x", (unsigned char)(((char*)(alloc_table.entries[foo]))[bar]));
+		fprintf(fd, "\n");
+	}
+#endif
+}
 
 /*
  * malloc_strcpy:  Mallocs enough space for src to be copied in to where
