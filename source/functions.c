@@ -5038,7 +5038,6 @@ BUILT_IN_FUNCTION(function_ishalfop, input)
 BUILT_IN_FUNCTION(function_servports, input)
 {
 	int	servnum = from_server;
-	char	buffer[32], buffer2[32];
 
 	if (*input)
 		GET_INT_ARG(servnum, input);
@@ -5048,8 +5047,8 @@ BUILT_IN_FUNCTION(function_servports, input)
 	if (servnum < 0 || servnum > number_of_servers)
 		RETURN_EMPTY;
 
-	return m_sprintf("%s %s", get_server_port(servnum, buffer, 32),
-				  get_server_local_port(servnum, buffer2, 32));
+	return m_sprintf("%d %d", get_server_port(servnum),
+				  get_server_local_port(servnum));
 }
 
 BUILT_IN_FUNCTION(function_chop, input)
