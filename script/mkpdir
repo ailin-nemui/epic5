@@ -1,0 +1,8 @@
+#Simulate /exec mkdir -p <dirname>
+
+alias mkpdir (dirname, void) {
+	while (mkdir($dirname) != 0) {
+		mkpdir($before(-1 / $dirname))
+	}
+}
+#hop'01 

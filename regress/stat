@@ -1,0 +1,58 @@
+/* $EPIC: stat,v 1.1 2002/08/02 22:13:55 jnelson Exp $ */
+@ cl    = [\\[0m
+@ blk   = [\\[0\;30m]
+@ blu   = [\\[0\;34m]
+@ grn   = [\\[0\;32m]
+@ cyn   = [\\[0\;36m]
+@ red   = [\\[0\;31m]
+@ mag   = [\\[0\;35m]
+@ yel   = [\\[0\;33m]
+@ wht   = [\\[0\;37m]
+@ hblk  = [\\[1\;30m]
+@ hblu  = [\\[1\;34m]
+@ hgrn  = [\\[1\;32m]
+@ hcyn  = [\\[1\;36m]
+@ hred  = [\\[1\;31m]
+@ hmag  = [\\[1\;35m]
+@ hyel  = [\\[1\;33m]
+@ hwht  = [\\[1\;37m]
+@ bwht  = [\\[47m]
+@ bmag  = [\\[45m]
+@ bblu  = [\\[44m]
+@ bred  = [\\[41m]
+@ bblk  = [\\[40m]
+@ bgrn  = [\\[42m]
+@ byel  = [\\[43m]
+@ bcyn  = [\\[46m]
+# [0m
+
+@sc1=blu
+@sc2=hblu
+@sc3=bblu
+@sc4=hblu
+
+
+alias stat9 {
+
+^set status_format1 $(sc2)Ú$(sc1)Ä$(hblk)Äú\(%*%=%@$(cl)%N$(hblk)..%#$(hblk)\)$(hblk)-[\(%C$(hblk)..%+$(hblk)\)]Ä%>Ä\($(cl)lag$(hblk)..$(cl)%1$(hblk)\) $(sc1)Ä$(sc2)ÄÄ¿
+^set input_prompt  
+^set status_format2 $(sc1)À$(sc2)Ä$(sc1)Ä$(hblk)úù $(sc1)o$(hblk)\($(cl)%2$(hblk)\) $(sc1)n$(hblk)\($(cl)%3$(hblk)\)ÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ%>$(hblk)\($(cl)%T$(hblk)\)ÄÄÄ$(hblk)\($(sc1)win$(hblk)/$(sc2)%R$(hblk)\) $(hblk)úÄ$(sc1)Ä$(sc2)Ù
+
+^set status_umode $(sc2)+$(sc1)%#$(hblk)
+^set status_oper $(sc1)*
+^set status_lag %L
+^set status_channel $(cl)%C
+^set status_mode $(sc2)+$(sc1)%+\)
+^set status_clock %T
+^set status_chanop $(sc1)@
+^set status_format5 %> %5
+^set status_mail $(hblk) $(hwht)m$(cl)ai$(hblk)l $(hwht)%M
+^set status_user5 $(sc1)s$(hblk)/$(sc2)$S
+^set status_voice +
+^set status_away  $(hblk)[$(sc1)away$(hblk)]
+^set status_hold_lines $(hblk)\[$(hwht)%B$(hblk)]
+^set status_query $(hblk)\[$(blu)Q$(wht): $(wht)%Q$(hblk)]
+
+}
+stat9
+^window double on
