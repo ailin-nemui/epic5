@@ -250,5 +250,16 @@ sigfunc *my_signal (int, sigfunc *);
 #include <sys/sysctl.h>
 #endif
 
+/*
+ * Define an RFC2553 compatable "struct sockaddr_storage" if we do not
+ * already have one.
+ */
+#ifndef HAVE_STRUCT_SOCKADDR_STORAGE
+struct sockaddr_storage {
+	u_char ss_len;
+	u_char ss_family;
+	u_char padding[128 - 2];
+};
+#endif
 
 #endif /* __irc_std_h */

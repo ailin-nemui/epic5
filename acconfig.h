@@ -1,5 +1,5 @@
 /*
- * @(#)$Id: acconfig.h,v 1.8 2002/04/10 16:04:31 jnelson Exp $
+ * @(#)$Id: acconfig.h,v 1.9 2002/04/17 06:56:39 jnelson Exp $
  */
 
 /*
@@ -250,4 +250,7 @@
 
 /* Define this if you have SO_SNDLOWAT */
 #undef HAVE_SO_SNDLOWAT
+
+/* Define this if you have struct sockaddr_storage */
+#undef HAVE_STRUCT_SOCKADDR_STORAGE
 

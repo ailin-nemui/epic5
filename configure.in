@@ -4,9 +4,9 @@ dnl except those bits attributed otherwise.
 dnl thanks to the screen 3.3 configure.in for giving me examples to
 dnl work from and steal ;)
 dnl
-dnl @(#)$Id: configure.in,v 1.6 2002/04/10 16:04:31 jnelson Exp $
+dnl @(#)$Id: configure.in,v 1.7 2002/04/17 06:56:39 jnelson Exp $
 
-AC_REVISION($Revision: 1.6 $)dnl
+AC_REVISION($Revision: 1.7 $)dnl
 AC_INIT(source/irc.c)
 AC_CONFIG_HEADER(include/defs.h)
 
@@ -404,6 +404,18 @@ else
 		AC_DEFINE(UNKNOWN_32INT)
 	fi
 fi
+
+
+dnl ----------------------------------------------------------
+dnl
+dnl checks for ipv6-related things
+dnl
+
+AC_MSG_CHECKING(for struct sockaddr_storage)
+AC_EGREP_HEADER([struct( |	)*sockaddr_storage], sys/socket.h, 
+  AC_MSG_RESULT(yes) 
+  AC_DEFINE(HAVE_STRUCT_SOCKADDR_STORAGE),
+  AC_MSG_RESULT(no))
 
 
 dnl ----------------------------------------------------------
