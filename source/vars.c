@@ -1,4 +1,4 @@
-/* $EPIC: vars.c,v 1.67 2005/03/11 05:02:22 jnelson Exp $ */
+/* $EPIC: vars.c,v 1.68 2005/03/21 02:59:16 jnelson Exp $ */
 /*
  * vars.c: All the dealing of the irc variables are handled here. 
  *
@@ -45,7 +45,6 @@
 #include "log.h"
 #include "hook.h"
 #include "sedcrypt.h"
-#include "history.h"
 #include "notify.h"
 #include "vars.h"
 #include "input.h"
@@ -223,7 +222,9 @@ void 	init_variables_stage1 (void)
 	VAR(HIDE_PRIVATE_CHANNELS, BOOL, update_all_status_wrapper);
 	VAR(HIGHLIGHT_CHAR, STR,  set_highlight_char);
 	VAR(HIGH_BIT_ESCAPE, INT,  set_meta_8bit);
+#if 0
 	VAR(HISTORY, INT,  set_history_size);
+#endif
 	VAR(HISTORY_CIRCLEQ, BOOL, NULL);
 	VAR(HOLD_SLIDER, INT,  NULL);
 	VAR(INDENT, BOOL, NULL);

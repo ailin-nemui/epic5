@@ -1,4 +1,4 @@
-/* $EPIC: commands.c,v 1.118 2005/03/19 03:55:55 jnelson Exp $ */
+/* $EPIC: commands.c,v 1.119 2005/03/21 02:59:16 jnelson Exp $ */
 /*
  * commands.c -- Stuff needed to execute commands in ircII.
  *		 Includes the bulk of the built in commands for ircII.
@@ -45,7 +45,6 @@
 #include "commands.h"
 #include "exec.h"
 #include "files.h"
-#include "history.h"
 #include "hook.h"
 #include "server.h"
 #include "if.h"
@@ -233,7 +232,6 @@ static	IrcCommand irc_command[] =
 	{ "FLUSH",	flush		},
         { "FOR",        forcmd		}, /* if.c */
 	{ "FOREACH",	foreach		}, /* if.c */
-	{ "HISTORY",	history		}, /* history.c */
 	{ "HOOK",	hookcmd		},
 	{ "HOSTNAME",	e_hostname	},
 	{ "IF",		ifcmd		}, /* if.c */
@@ -3543,9 +3541,9 @@ void	parse_line (const char *name, const char *org_line, const char *args, int h
  * character of the line is equal to irc_variable[CMDCHAR_VAR].value, the
  * line is used as an irc command and parsed appropriately.  If the first
  * character is anything else, the line is sent to the current channel or to
- * the current query user.  If hist_flag is true, commands will be added to
- * the command history as appropriate.  Otherwise, parsed commands will not
- * be added. 
+ * the current query user.  [obsolete] If hist_flag is true, commands will 
+ * be added to the command history as appropriate [obsolete].  Otherwise, 
+ * parsed commands will not be added. 
  *
  * Parse_command() only parses a single command.In general, you will want to 
  * use parse_line() to execute things.Parse command recognizes no quoted
@@ -3623,15 +3621,19 @@ static	unsigned 	level = 0;
 	if (hist_flag && !cmdchar_used && !get_int_var(COMMAND_MODE_VAR))
 	{
 		send_text(from_server, get_target_by_refnum(0), line, NULL, 1);
+#if 0
 		if (hist_flag && add_to_hist)
 			add_to_history(this_cmd);
+#endif
 		/* Special handling for ' and : */
 	}
 	else if (*com == '\'' && get_int_var(COMMAND_MODE_VAR))
 	{
 		send_text(from_server, get_target_by_refnum(0), line + 1, NULL, 1);
+#if 0
 		if (hist_flag && add_to_hist)
 			add_to_history(this_cmd);
+#endif
 	}
 	else if ((*com == '@') || (*com == '('))
 	{
@@ -3659,8 +3661,10 @@ static	unsigned 	level = 0;
 		if ((tmp = parse_inline(my_line + 1, sub_args)))
 			new_free(&tmp);
 
+#if 0
 		if (hist_flag && add_to_hist)
 			add_to_history(this_cmd);
+#endif
 	}
 	else do
 	{
@@ -3683,6 +3687,7 @@ static	unsigned 	level = 0;
 		if (cmdchar_used >= 2)
 			alias = NULL;		/* Unconditionally */
 
+#if 0
 		if (alias == NULL && cmd == NULL && *cline == '!')
 		{
 			if ((cline = do_history(cline + 1, rest)) != NULL)
@@ -3699,9 +3704,12 @@ static	unsigned 	level = 0;
 
 			break;
 		}
+#endif
 
+#if 0
 		if (hist_flag && add_to_hist)
 			add_to_history(this_cmd);
+#endif
 
 		if (alias)
 			call_user_command(cline, alias, rest, arglist);

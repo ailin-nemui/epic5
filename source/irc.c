@@ -1,4 +1,4 @@
-/* $EPIC: irc.c,v 1.854 2005/03/21 02:54:17 jnelson Exp $ */
+/* $EPIC: irc.c,v 1.855 2005/03/21 02:59:16 jnelson Exp $ */
 /*
  * ircII: a new irc client.  I like it.  I hope you will too!
  *
@@ -81,7 +81,6 @@ const char ridiculous_version_name[] = "Scurrilous";
 #include "ircaux.h"
 #include "commands.h"
 #include "window.h"
-#include "history.h"
 #include "exec.h"
 #include "notify.h"
 #include "mail.h"
@@ -335,7 +334,9 @@ void	irc_exit (int really_quit, const char *format, ...)
 	window_display = 0;
 	dumpcmd(NULL, NULL, NULL);
 	set_lastlog_size(&value);
+#if 0
 	set_history_size(&value);
+#endif
 	remove_channel(NULL, 0);
 	destroy_call_stack();
 	remove_bindings();

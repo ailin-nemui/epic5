@@ -1,4 +1,4 @@
-/* $EPIC: input.c,v 1.25 2004/08/11 23:58:39 jnelson Exp $ */
+/* $EPIC: input.c,v 1.26 2005/03/21 02:59:16 jnelson Exp $ */
 /*
  * input.c: does the actual input line stuff... keeps the appropriate stuff
  * on the input line, handles insert/delete of characters/words... the whole
@@ -49,7 +49,6 @@
 #include "clock.h"
 #include "commands.h"
 #include "exec.h"
-#include "history.h"
 #include "hook.h"
 #include "input.h"
 #include "ircaux.h"
@@ -1000,8 +999,10 @@ BUILT_IN_BINDING(input_clear_line)
 	term_clear_to_eol();
 	cursor_not_in_display(last_input_screen);
 	update_input(NO_UPDATE);
+#if 0
 	if (get_int_var(HISTORY_CIRCLEQ_VAR))
 		abort_history_browsing(0);
+#endif
 }
 
 /*
@@ -1118,6 +1119,7 @@ BUILT_IN_BINDING(backward_character)
 	input_move_cursor(LEFT);
 }
 
+#if 0
 BUILT_IN_BINDING(backward_history)
 {
 	get_history(OLDER);		/* Cursor up -- older -- prev */
@@ -1127,6 +1129,7 @@ BUILT_IN_BINDING(forward_history)
 {
 	get_history(NEWER);		/* Cursor down -- newer -- next */
 }
+#endif
 
 /*
  * XXX This keybinding is a bletcherous hideous noxious offense and must

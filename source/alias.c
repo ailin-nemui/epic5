@@ -1,4 +1,4 @@
-/* $EPIC: alias.c,v 1.72 2005/03/19 03:55:55 jnelson Exp $ */
+/* $EPIC: alias.c,v 1.73 2005/03/21 02:59:16 jnelson Exp $ */
 /*
  * alias.c -- Handles the whole kit and caboodle for aliases.
  *
@@ -42,7 +42,6 @@
 #include "array.h"
 #include "commands.h"
 #include "files.h"
-#include "history.h"
 #include "hook.h"
 #include "input.h"
 #include "ircaux.h"

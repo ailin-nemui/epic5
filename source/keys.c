@@ -1,4 +1,4 @@
-/* $EPIC: keys.c,v 1.38 2004/08/11 23:58:39 jnelson Exp $ */
+/* $EPIC: keys.c,v 1.39 2005/03/21 02:59:16 jnelson Exp $ */
 /*
  * keys.c:  Keeps track of what happens whe you press a key.
  *
@@ -35,7 +35,6 @@
 #include "config.h"
 #include "commands.h"
 #include "functions.h"
-#include "history.h"
 #include "ircaux.h"
 #include "input.h"
 #include "keys.h"
@@ -167,7 +166,9 @@ void init_binds (void) {
     ADDBIND("ALTCHARSET",		    insert_altcharset		    );
     ADDBIND("BACKSPACE",		    input_backspace		    );
     ADDBIND("BACKWARD_CHARACTER",	    backward_character		    );
+#if 0
     ADDBIND("BACKWARD_HISTORY",		    backward_history		    );
+#endif
     ADDBIND("BACKWARD_WORD",		    input_backward_word		    );
     ADDBIND("BEGINNING_OF_LINE",	    input_beginning_of_line	    );
     ADDBIND("BLINK",			    insert_blink		    );
@@ -183,7 +184,9 @@ void init_binds (void) {
     ADDBIND("ERASE_TO_BEG_OF_LINE",	    input_clear_to_bol		    );
     ADDBIND("ERASE_TO_END_OF_LINE",	    input_clear_to_eol		    );
     ADDBIND("FORWARD_CHARACTER",	    forward_character		    );
+#if 0
     ADDBIND("FORWARD_HISTORY",		    forward_history		    );
+#endif
     ADDBIND("FORWARD_WORD",		    input_forward_word		    );
     ADDBIND("HIGHLIGHT_OFF",		    highlight_off		    );
     ADDBIND("NEXT_WINDOW",		    next_window			    );
@@ -201,7 +204,9 @@ void init_binds (void) {
     ADDBIND("SCROLL_START",		    scrollback_start		    );
     ADDBIND("SELF_INSERT",		    input_add_character		    );
     ADDBIND("SEND_LINE",		    send_line			    );
+#if 0
     ADDBIND("SHOVE_TO_HISTORY",		    shove_to_history		    );
+#endif
     ADDBIND("STOP_IRC",			    term_pause			    );
     ADDBIND("SWAP_LAST_WINDOW",		    swap_last_window		    );
     ADDBIND("SWAP_NEXT_WINDOW",		    swap_next_window		    );

@@ -1,4 +1,4 @@
-/* $EPIC: expr.c,v 1.30 2005/03/19 03:55:55 jnelson Exp $ */
+/* $EPIC: expr.c,v 1.31 2005/03/21 02:59:16 jnelson Exp $ */
 /*
  * expr.c -- The expression mode parser and the textual mode parser
  * #included by alias.c -- DO NOT DELETE
@@ -1582,6 +1582,7 @@ static	char	*alias_special_char (char **buffer, char *ptr, const char *args, cha
 			return (ptr);
 		}
 
+#if 0
 		/*
 		 * $!...! is the history mechanism.  Given a string, it will
 		 * return the most previously executed command that contains
@@ -1599,6 +1600,7 @@ static	char	*alias_special_char (char **buffer, char *ptr, const char *args, cha
 			}
 			return (ptr);
 		}
+#endif
 
 		/*
 		 * ${...} is the expression parser.  Given a mathematical
