@@ -1,5 +1,39 @@
 EPIC4-1.2.0
 
+*** News 11/14/2001 -- Support for ~/.epicrc file
+	LET ME JUST START BY SAYING THIS IS NOT MODELED AFTER BX.
+	Some of you use both epic and ircII and you would like to be
+	able to keep separate .ircrc files and .epicrc files.  Now you
+	can do that.  If you have a ~/.epicrc file, then epic will load
+	that and WILL NOT LOAD your ~/.ircrc.  If you do not have a
+	~/.epicrc file, then epic will load your ~/.ircrc as it always
+	has.  The EPICRC environment variable is accepted; it behaves
+	in the same way as the IRCRC environment variable.
+
+*** News 11/14/2001 -- Color support has changed somewhat
+	Before this date, color handling was done by reacting to each
+	attribute change.  For example, a ^B either turned bold on, or
+	it turned it off.  But EPIC didn't keep track of ther attributes,
+	and on some systems, turning bold off turned reverse and color off.
+	Also, turning on color turned off reverse and bold.  Many scripts 
+	have come to kludge around this by "assuming" that turning certain 
+	things on (like color) or off (like bold) had side effects on other
+	attributes.  This was never intentional and it is certainly confusing.
+	On this date, a new attribute parser was introduced that does not
+	impose *any side effects whatsoever* on attribute changes.  If you
+	change colors, it will NOT turn off bold or reverse.  If you turn off
+	bold it will NOT turn off colors or underline.  If you turn on bold,
+	it will NOT turn off colors.  Each attribute (bold, underline,
+	reverse, flash, color) are handled independantly and separately.
+	Each time you turn an attribute on or off, only that attribute is
+	affected.  The sum result of what you see on the screen is then
+	the cumulative effect of all the attributes which are on.  This
+	means if you turn bold on and then turn on color, you will get 
+	bold color.  If you turn on reverse and turn on color, you will 
+	get reversed colors.  If you turn on reverse, turn on color, then
+	turn off color, you will still have reverse!  Hopefully this will
+	make everything much more sane and clean.
+
 *** News 11/13/2001 -- Resizable wserv support (wserv4)
 	I backported the implementation of wserv4 from EPIC5.  The main
 	features of wserv4 are that it uses two channels of communication

@@ -10,6 +10,7 @@
 
 	void 	parse_notice 		(char *, char **);
 	void 	got_initial_version_28 	(char **);
+	void	load_ircrc		(void);
 
 extern	int 	doing_notice;
 

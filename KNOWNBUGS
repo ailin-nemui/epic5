@@ -32,3 +32,4 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Honor attribute markup in /set continued_line
 * Save attributes from the end of one line to after the continued_Line.
 * What this means is that attributes in /set continued_line don't "bleed"
+* Add support for ~/.epicrc which is prefered to ~/.ircrc.

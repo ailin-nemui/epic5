@@ -13,7 +13,8 @@
 
 #define IRCII_COMMENT   "Accept no limitations."
 #define IRCRC_NAME 	"/.ircrc"
-#define EMAIL_CONTACT 	"ircii-epic@concentric.net"
+#define EPICRC_NAME 	"/.epicrc"
+#define EMAIL_CONTACT 	"list@epicsol.org"
 
 /*
  * Here you can set the in-line quote character, normally backslash, to
@@ -114,6 +115,8 @@ extern		char	hostname[];
 extern const 	char 	internal_version[];
 extern		char *	invite_channel;
 extern		char *	ircrc_file;
+extern		char *	epicrc_file;
+extern		char *	startup_file;
 extern		char *	irc_lib;
 extern		char *	irc_path;
 extern const 	char 	irc_version[];

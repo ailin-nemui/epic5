@@ -9,7 +9,7 @@
  */
 
 #if 0
-static	char	rcsid[] = "@(#)$Id: notice.c,v 1.3 2001/05/08 22:14:22 jnelson Exp $";
+static	char	rcsid[] = "@(#)$Id: notice.c,v 1.4 2001/11/14 21:37:23 jnelson Exp $";
 #endif
 
 #include "irc.h"
@@ -28,6 +28,7 @@ static	char	rcsid[] = "@(#)$Id: notice.c,v 1.3 2001/05/08 22:14:22 jnelson Exp $
 #include "names.h"
 #include "parse.h"
 #include "notify.h"
+#include "notice.h"
 #include "commands.h"
 
 static	time_t 	convert_note_time_to_real_time (char *stuff);
@@ -379,20 +380,7 @@ void 	got_initial_version_28 (char **ArgList)
 		never_connected = 0;
 
 		if (!ircrc_loaded)
-		{
-			char buffer[7];
-			strcpy(buffer, "global");
-
-			loading_global = 1;
-			load("LOAD", buffer, empty_string);
-			loading_global = 0;
-
-			/* read the .ircrc file */
-			if (access(ircrc_file, R_OK) == 0 && !quick_startup)
-				load("LOAD", ircrc_file, empty_string);
-
-			ircrc_loaded = 1;
-		}
+			load_ircrc();
 
 		if (default_channel)
 		{
@@ -450,5 +438,32 @@ int 	kill_message (const char *from, char *cline)
 
 	return !do_hook(KILL_LIST, "%s %s %s %s %s", from, poor_sap, bastard,
 					path_to_bastard, reason);
+}
+
+/*
+ * XXX - I suppose this doesn't belong here, but where does it belong?
+ */
+void    load_ircrc (void)
+{
+        char buffer[7];
+        strcpy(buffer, "global");
+
+        loading_global = 1;
+        load("LOAD", buffer, empty_string);
+        loading_global = 0;
+
+        /* read the startup file */
+        if (access(epicrc_file, R_OK) == 0 && !quick_startup)
+        {
+                load("LOAD", epicrc_file, empty_string);
+                startup_file = epicrc_file;
+        }
+        else if (access(ircrc_file, R_OK) == 0 && !quick_startup)
+        {
+                load("LOAD", ircrc_file, empty_string);
+                startup_file = ircrc_file;
+        }
+
+        ircrc_loaded = 1;
 }
 

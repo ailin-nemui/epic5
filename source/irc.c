@@ -25,7 +25,7 @@ const char internal_version[] = "20011112";
 /*
  * In theory, this number is incremented for every commit.
  */
-const unsigned long	commit_id = 135;
+const unsigned long	commit_id = 136;
 
 /*
  * As a way to poke fun at the current rage of naming releases after
@@ -171,7 +171,9 @@ int		inbound_line_mangler = 0,
 		outbound_line_mangler = 0;
 
 char		*invite_channel = (char *) 0,	/* last channel of an INVITE */
-		*ircrc_file = (char *) 0,	/* full path .ircrc file */
+		*startup_file = NULL,		/* full path .epicrc file */
+		*epicrc_file = NULL,		/* full path .epicrc file */
+		*ircrc_file = NULL,		/* full path .ircrc file */
 		*my_path = (char *) 0,		/* path to users home dir */
 		*irc_lib = (char *) 0,		/* path to the ircII library */
 		*default_channel = NULL,	/* Channel to join on connect */
@@ -552,6 +554,11 @@ static	void	parse_args (int argc, char **argv)
 	if ((ptr = getenv("IRCPORT")))
 		irc_port = my_atol(ptr);
 
+	if ((ptr = getenv("EPICRC")))
+		epicrc_file = m_strdup(ptr);
+	else
+		epicrc_file = m_2dup(my_path, EPICRC_NAME);
+
 	if ((ptr = getenv("IRCRC")))
 		ircrc_file = m_strdup(ptr);
 	else
@@ -613,7 +620,7 @@ static	void	parse_args (int argc, char **argv)
 
 			case 'l': /* Load some file instead of ~/.ircrc */
 			case 'L': /* Same as above. Doesnt work like before */
-				malloc_strcpy(&ircrc_file, optarg);
+				malloc_strcpy(&epicrc_file, optarg);
 				break;
 
 			case 'a': /* add server, not replace */
@@ -1248,20 +1255,7 @@ int 	main (int argc, char *argv[])
 
 	/* XXXX Move this somewhere else eventually XXXX */
 	if (load_ircrc_right_away)
-	{
-		char	buffer[7];
-		strcpy(buffer, "global");
-
-		loading_global = 1;
-		load("LOAD", buffer, empty_string);
-		loading_global = 0;
-
-		/* read the .ircrc file */
-		if (access(ircrc_file, R_OK) == 0 && !quick_startup)
-			load("LOAD", ircrc_file, empty_string);
-
-		ircrc_loaded = 1;
-	}
+		load_ircrc();
 
 	if (dont_connect)
 		display_server_list();		/* Let user choose server */
