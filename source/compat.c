@@ -901,7 +901,7 @@ unsigned long strtoul (const char *nptr, char **endptr, int base)
  * This replaces inet_addr, the return value from which
  * cannot distinguish between failure and a local broadcast address.
  */
-int inet_aton(const char *cp, struct in_addr *addr)
+int inet_aton (const char *cp, IA *addr)
 {
 	unsigned long	val;
 	int		base, n;

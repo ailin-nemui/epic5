@@ -2810,7 +2810,7 @@ Window	*create_additional_screen (void)
         char    	*displayvar,
                 	*termvar;
         int     	screen_type = ST_NOTHING;
-        struct  sockaddr_in new_socket;
+        ISA		new_socket;
 	int		new_cmd;
 	fd_set		fd_read;
 	struct	timeval	timeout;
@@ -3004,9 +3004,8 @@ Window	*create_additional_screen (void)
 	    {
 		if (new_s->fdin == 0) 
 		{
-			new_s->fdin = accept(new_cmd, 
-					(struct sockaddr *)&new_socket,
-					&new_sock_size);
+			new_s->fdin = accept(new_cmd, (SA *)&new_socket,
+						&new_sock_size);
 			if ((new_s->fdout = new_s->fdin) < 0)
 			{
 				close(new_cmd);
@@ -3021,9 +3020,8 @@ Window	*create_additional_screen (void)
 		}
 		else
 		{
-			new_s->control = accept(new_cmd,
-					(struct sockaddr *)&new_socket,
-					&new_sock_size);
+			new_s->control = accept(new_cmd, (SA *)&new_socket,
+						&new_sock_size);
 			close(new_cmd);
 			if (new_s->control < 0)
 			{

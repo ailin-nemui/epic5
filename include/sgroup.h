@@ -47,8 +47,8 @@ struct server_typ {
 	WhoisEntry *	who_queue;		/* WHO Queue */
 	IsonEntry *	ison_queue;		/* ISON Queue */
 	UserhostEntry *	userhost_queue;		/* USERHOST Queue */
-	struct in_addr	local_addr;		/* My local ip address */
-	struct sockaddr_in local_sockname;	/* My local sockname */
+	IA		local_addr;		/* My local ip address */
+	ISA		local_sockname;		/* My local sockname */
 	NotifyList	notify_list;		/* List of nicks to watch */
 	int		reconnects;		/* Number of retries */
 	char *		cookie;			/* EF/TS4 "cookie" value. */

@@ -1108,11 +1108,11 @@ static int 	connect_to_server (int new_server)
 	if (*s->name != '/')
 	{
 		len = sizeof(*localaddr);
-		getsockname(des, (struct sockaddr *)localaddr, &len);
+		getsockname(des, (SA *)localaddr, &len);
 		s->local_addr = localaddr->sin_addr;
 
 		len = sizeof(*remaddr);
-		getpeername(des, (struct sockaddr *)remaddr, &len);
+		getpeername(des, (SA *)remaddr, &len);
 	}
 
 
@@ -2086,12 +2086,12 @@ int	get_server_local_port (int gsp_index)
 	return ntohs(server_list[gsp_index].local_sockname.sin_port);
 }
 
-struct in_addr	get_server_local_addr (int servnum)
+IA	get_server_local_addr (int servnum)
 {
 	return server_list[servnum].local_addr;
 }
 
-struct	in_addr	get_server_uh_addr (int servnum)
+IA	get_server_uh_addr (int servnum)
 {
 	return server_list[servnum].uh_addr;
 }

@@ -63,10 +63,10 @@ typedef	struct
 	IsonEntry *	ison_queue;	/* Ison queue */
 	UserhostEntry *	userhost_queue;	/* Userhost queue */
 
-	struct in_addr local_addr;      /* ip address of this connection */
-	struct sockaddr_in local_sockname; /* sockname of this connection */
-	struct sockaddr_in remote_sockname; /* sockname of this connection */
-	struct in_addr uh_addr;		/* ip address the server sees */
+	IA	local_addr;      	/* ip address of this connection */
+	ISA	local_sockname; 	/* sockname of this connection */
+	ISA	remote_sockname; 	/* sockname of this connection */
+	IA	uh_addr;		/* ip address the server sees */
 	NotifyList	notify_list;	/* Notify list for this server */
 	int	reconnects;		/* Number of reconnects done */
 	char 	*cookie;		/* Erf/TS4 "cookie" value */
@@ -174,8 +174,8 @@ const	char *	get_server_cipher		(int);
 
 	int	get_server_port			(int);
 	int	get_server_local_port		(int);
-struct in_addr	get_server_local_addr		(int);
-struct in_addr	get_server_uh_addr		(int);
+	IA	get_server_local_addr		(int);
+	IA	get_server_uh_addr		(int);
 
 const	char *	get_server_userhost		(int);
 	void 	got_my_userhost 		(UserhostItem *, char *, 

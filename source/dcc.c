@@ -9,7 +9,7 @@
  */
 
 #if 0
-static	char	rcsid[] = "@(#)$Id: dcc.c,v 1.14 2002/04/29 01:15:59 jnelson Exp $";
+static	char	rcsid[] = "@(#)$Id: dcc.c,v 1.15 2002/04/29 02:18:21 jnelson Exp $";
 #endif
 
 #include "irc.h"
@@ -2074,7 +2074,7 @@ static	void	process_incoming_chat (DCC_list *Client)
 
 	if (Client->flags & DCC_MY_OFFER)
 	{
-		sra = sizeof(struct sockaddr_in);
+		sra = sizeof(remaddr);
 		fd = my_accept(Client->socket, (SA *) &remaddr, &sra);
 		Client->socket = new_close(Client->socket);
 		if ((Client->socket = fd) > 0)

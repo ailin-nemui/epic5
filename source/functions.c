@@ -6135,7 +6135,7 @@ BUILT_IN_FUNCTION(function_wincurline, input)
 BUILT_IN_FUNCTION(function_iptolong, word)
 {
 	char *	dotted_quad;
-	struct in_addr	addr;
+	IA	addr;
 
 	GET_STR_ARG(dotted_quad, word);
 	if (inet_aton(dotted_quad, &addr))
@@ -6146,7 +6146,7 @@ BUILT_IN_FUNCTION(function_iptolong, word)
 BUILT_IN_FUNCTION(function_longtoip, word)
 {
 	char *	ip32;
-	struct in_addr	addr;
+	IA	addr;
 
 	GET_STR_ARG(ip32, word);
 	addr.s_addr = (unsigned long)ntohl(strtoul(ip32, NULL, 10));

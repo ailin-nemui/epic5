@@ -459,7 +459,7 @@ int	set_blocking (int fd)
  * has been closed in the interim.  This wrapper for accept() attempts to
  * defeat this by making the accept() call nonblocking.
  */
-int	my_accept (int s, struct sockaddr *addr, int *addrlen)
+int	my_accept (int s, SA *addr, int *addrlen)
 {
 	int	retval;
 
