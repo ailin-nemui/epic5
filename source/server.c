@@ -1,4 +1,4 @@
-/* $EPIC: server.c,v 1.77 2002/12/19 03:22:59 jnelson Exp $ */
+/* $EPIC: server.c,v 1.78 2002/12/19 15:18:08 jnelson Exp $ */
 /*
  * server.c:  Things dealing with that wacky program we call ircd.
  *
@@ -1010,7 +1010,7 @@ static void 	vsend_to_aserver (int refnum, const char *format, va_list args)
 		/* This "from_server" hack is for the benefit of do_hook. */
 		ofs = from_server;
 		from_server = refnum;
-		if (do_hook(SEND_TO_SERVER_LIST, "%d %d %s", server, des, buffer))
+		if (do_hook(SEND_TO_SERVER_LIST, "%d %d %s", from_server, des, buffer))
 			send_to_aserver_raw(refnum, strlen(buffer), buffer);
 		from_server = ofs;
 	}
