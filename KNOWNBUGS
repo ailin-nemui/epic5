@@ -2,6 +2,9 @@ EPIC4 Projects, Bugs, and other Errata:
 
 KNOWN ERRATA (eg, bugs, or unresolved requests):
 ------------------------------------------------
+* When you do /server <refnum> from a disconnected state, it does not
+  honor server groups.
+
 [None]
 
 [See http://www.epicsol.org/PROJECTS for things to come in the future]
@@ -39,3 +42,6 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Fix compiler warning comparing pointer against integer
 * Fix word appender to NOT USE DOUBLE QUOTES if /xdebug extractw is off!
 * Fix the word appender so it actually works right.
+* Fix urldecode
+* /lastlog -msgs 3 is obliged to skip back 3 msgs, not just 3 lastlog entries.
+* Fix warnings in gailib.h

@@ -1,4 +1,4 @@
-/* $EPIC: lastlog.c,v 1.27 2003/10/28 05:53:57 jnelson Exp $ */
+/* $EPIC: lastlog.c,v 1.28 2003/11/07 03:51:10 jnelson Exp $ */
 /*
  * lastlog.c: handles the lastlog features of irc. 
  *
@@ -630,10 +630,12 @@ BUILT_IN_COMMAND(lastlog)
 
 	    end = current_window->lastlog_newest;
 	    start = end;
-	    for (i = 1; i < number; i++)
+	    for (i = 1; i < number; )
 	    {
 		if (start == current_window->lastlog_oldest)
 			break;
+		if (!level_mask || (level_mask & start->level))
+			i++;
 		start = start->older;
 	    }
 
