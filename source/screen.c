@@ -1,4 +1,4 @@
-/* $EPIC: screen.c,v 1.69 2003/12/17 09:25:30 jnelson Exp $ */
+/* $EPIC: screen.c,v 1.70 2003/12/21 05:47:04 jnelson Exp $ */
 /*
  * screen.c
  *
@@ -1814,7 +1814,7 @@ const	u_char	*cont_ptr;
 				 * Otherwise, we just use /set continued_line, 
 				 * whatever it is.
 				 */
-				else if (!*cont && *cont_ptr)
+				else if ((!cont || !*cont) && *cont_ptr)
 					cont = LOCAL_COPY(cont_ptr);
 
 				cont_free = cont = normalize_string(cont, 0);
