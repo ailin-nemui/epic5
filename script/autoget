@@ -12,8 +12,8 @@
 #       files begining with specific names.
 # New:  /autoreget acts much the same as /autoget, but the patterns apply
 #       to requests for which the file already exists.
-#       /autoclobber takes one argument and specifies the reget mode.
-#       This can be one of GET, RESUME, RENAME.  For RENAME,
+#       /autoclobber takes two arguments specifying the reget modes.
+#       These can be one of GET, RESUME, RENAME.  For RENAME,
 #       a random string will be appended to the filename.
 # Note: All commas in the filename are replaced with dots for the purpose
 #       of matching to make it harder for people to accidentally or
@@ -32,69 +32,90 @@
 package autoget
 
 # Take possession of these variables while not clobbering them.
-fe (getpatterns * regetpatterns * regettype resume) var val {
-	@ autoget[$var] = autoget[$var] ? autoget[$var] : [$val]
+fe (patterns.get * patterns.reget * reget.part resume reget.full close) var val {
+	@ autoget[$var] = autoget.$var ? autoget.$var : [$val]
 }
 
 on #-dcc_request 414 "% SEND *" {
 	@ :path = [$getset(dcc_store_path)/$urldecode($2)]
 	if ([$6] <= fsize("$path")) {
-		@ :patterns = autoget.regetpatterns
-		@ :action = [rename]
+		@ :patterns = autoget.patterns.reget
+		@ :action = autoget.reget.full
 	} elsif (0 < fsize("$path")) {
-		@ :patterns = autoget.regetpatterns
-		@ :action = autoget.regettype
+		@ :patterns = autoget.patterns.reget
+		@ :action = autoget.reget.part
 	} else {
-		@ :patterns = autoget.getpatterns
+		@ :patterns = autoget.patterns.get
 		@ :action = [get]
 	}
-	if (rmatch($0!$userhost(),$3,$tr(/,/./$2) $autoget.rejectpatterns)) {
+	if (rmatch($0!$userhost(),$3,$tr(/,/./$2) $autoget.patterns.reject)) {
 		# Nothing.
 	} elsif (rmatch($0!$userhost(),$3,$tr(/,/./$2) $patterns)) {
-		if (action == [rename]) {
+		if (action == []) {
+			return
+		} elsif (action == [rename]) {
 			@ :extra = 0
 			do {
 				@ extra += rand(10)
 			} while (0 < fexist("$path~$extra"))
 			@ rename("$path" "$path~$extra")
 			@ action = [get]
+		} elsif (action == [close]) {
+			@ action = [close get]
+		} elsif (!rmatch("$action" get resume)) {
+			echo $action?
+			return
 		}
 		dcc $action $0 $2
 	}
 }
 
+stack push alias alias
 alias alias fe (get reget reject) cmd {//alias $sar(g/XXX/$cmd/$*)}
 alias autoXXX {
 	if (strlen($*) == 0) {
-		xecho -b AutoXXX n!u@h,IP,files matching [$autoget.XXXpatterns]
+		echo AutoXXX n!u@h,IP,files matching [$autoget.XXXpatterns]
 		return
 	}
 	fe ($*) x {
 		if (left(1 $x) == [-]) {
 			@ x = rest(1 $x)
 			@ autoget.XXXpatterns = remw($x $autoget.XXXpatterns)
-		} {
+		} else {
 			push autoget.XXXpatterns $x
 		}
 	}
 }
-//alias -alias
+stack pop alias alias
 
-alias autoclobber {
-	if (rmatch($0 get rename resume)) {
-		@ autoget.regettype = [$0]
-	} elsif (#) {
-		xecho -b Please specify one of: GET RENAME RESUME
+alias autoclobber (args) {
+	@ :types = [part full]
+	if (#args) {
+		fe ($args) arg {
+			if (!types) {
+				break
+			} elsif (!arg) {
+				@ shift(types)
+			} elsif (rmatch("$arg" get rename resume close)) {
+				@ autoget[reget][$shift(types)] = arg
+			} else {
+				echo $arg isn't one of: GET RENAME RESUME CLOSE
+			}
+		}
 	} else {
-		xecho -b Autoclobber mode is: $autoget.regettype
+		echo Usage: /autoclobber [partial-mode] [full-mode]
+		fe ($types) type {
+			echo Autoclobber $type mode is: $autoget[reget][$type]
+		}
 	}
 }
 
 on ^unload "autoget" {
-	^assign -autoget.getpatterns
-	^assign -autoget.regetpatterns
-	^assign -autoget.regettype
-	^assign -autoget.rejectpatterns
+	^assign -autoget.patterns.get
+	^assign -autoget.patterns.reget
+	^assign -autoget.patterns.reject
+	^assign -autoget.reget.part
+	^assign -autoget.reget.full
 	^alias -autoget
 	^alias -autoreget
 	^alias -autoreject

@@ -59,3 +59,29 @@ alias exclude {
         @ rename($0.new $0)
 }                          
 
+#
+# This is exactly the same as $randread() except that
+# $randread() seeks to a random _point_ in the file
+# whereas this seeks to a random _line_.
+#
+# Also, you can specify any number of files/globs and
+# it will return one line from every file.
+#
+alias randomread {
+	@ :ret = glob($*)
+	fe ret ret {
+		@ :fd = open("$ret" r)
+		@ :line = 2 ** 30
+		@ :line = fskip($fd $line)
+		@ :line = rand($line)
+		@ fseek($fd 0 set)
+		@ fskip($fd $line)
+		@ :ret = read($fd)
+		@ close($fd)
+	}
+	if (functioncall()) {
+		return $ret
+	} else {
+		echo $ret
+	}
+}

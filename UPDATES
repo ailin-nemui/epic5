@@ -1,5 +1,24 @@
 EPIC4-1.2.0
 
+*** News 08/30/2003 -- New function $randomread() in the files script.
+	It works much like the $randread() builtin, but it avoids certain
+	potential bugs, and will return one line from each specified file.
+
+*** News 08/30/2003 -- commandqueues script updates.
+	q1cmd now permits you to specify multiple comma separated queues
+	to test against for the specific purpose of blocking.  The command
+	will only be queued on the first.
+
+	qcmd now makes reference to a non-existant function called
+	$islagged().  If this returns a true value, qcmd will stop right
+	there so that the server doesn't get mistakenly flooded.
+
+*** News 08/30/2003 -- Autoget script enhanced.
+	A new autoclobber mode for those occasions when your transfer just
+	keeps failing. "/autoclobber resume close" (the default) means that if
+	the request is for a file larger than the one you have, the transfer
+	will resume, otherwise the request will be rejected.
+
 *** News 07/19/2003 -- New argument to /LASTLOG, /LASTLOG -TARGET
 	Items are stored in your lastlog along with the "display target".
 	If the message has anything to do with a channel, the target is

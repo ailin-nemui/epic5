@@ -13,8 +13,20 @@
 #
 # Make two aliases for every alias.  One for assign handling, one for alias handling.
 #
+stack push alias alias.ttt
 stack push alias alias.tt
-alias alias.tt alias $*;alias $sar(g/assign/alias/$*)
+alias alias.ttt (args) {
+	alias $args
+	@ sar(gr/assign/alias/args)
+	alias $args
+}
+alias alias.tt (args) {
+	alias.ttt $args
+	@ sar(gr/assign./assign.r/args)
+	@ sar(gr/pmatch/rpmatch/args)
+	@ sar(gr/;@ :list = revw($list);/;/args)
+	alias.ttt $args
+}
 
 #
 # Check the consistency of the internal structures.  The only
@@ -89,10 +101,8 @@ alias.tt assign.pack {
 	@ list = #list
 	if (functioncall()) {
 		return $list
-	} else {
-		if (isdisplaying()) {
-			echo Packed $list matching $*
-		}
+	} elsif (isdisplaying()) {
+		echo Packed $list matching $*
 	}
 }
 
@@ -101,12 +111,11 @@ alias.tt assign.pack {
 #
 alias.tt assign.purge {
 	if (functioncall()) {
-		@:matches=0
-		fe ($revw($*)) mask {
-			@ :list = revw($aliasctl(assign pmatch "$mask"))
-			fe ($list) bar {^assign -$bar}
-			@ matches += #list
-		}
+		@ :matches = 0
+		@ :list = aliasctl(assign pmatch "\\[$*\\]")
+		@ :list = revw($list)
+		fe ($list) bar {^assign -$bar}
+		@ matches += #list
 		return $matches
 	} else {
 		@ :list = assign.purge($*)
@@ -120,27 +129,23 @@ alias.tt assign.purge {
 # Write matching assigns to a file which can then be /load'ed.
 #
 alias.tt assign.save {
-	@:pkg=rand(0)
-	@:fh=open($0 W T)
-	@:matches=0
-	fe ($1-) mask {
-		@:list=aliasctl(assign pmatch "$mask")
-		fe list foo {
-			if (pkg!=aliasctl(assign getpackage $foo)) {
-				@write($fh PACKAGE ${pkg=aliasctl(assign getpackage $foo)})
-			}
-			@write($fh assign $foo $sar(g/\{/\\\{/$sar(g/\}/\\\}/$aliasctl(assign get $foo))))
-			@foo=0
+	@ :pkg = rand(0)
+	@ :fh = open($0 W T)
+	@ :matches = 0
+	@ :list = aliasctl(assign pmatch "\\[$1-\\]")
+	fe list foo {
+		if (pkg != aliasctl(assign getpackage $foo)) {
+			@ write($fh PACKAGE ${pkg=aliasctl(assign getpackage $foo)})
 		}
-		@matches+=#list
+		@ write($fh assign $foo $sar(g/\{/\\\{/$sar(g/\}/\\\}/$aliasctl(assign get $foo))))
+		@ foo = 0
 	}
-	@close($fh)
+	@ matches += #list
+	@ close($fh)
 	if (functioncall()) {
 		return $matches
-	} else {
-		if (isdisplaying()) {
-			echo Wrote $matches matching $1-
-		}
+	} elsif (isdisplaying()) {
+		echo Wrote $matches matching $1-
 	}
 }
 #
@@ -148,27 +153,23 @@ alias.tt assign.save {
 # damaged by certain variable contents.
 #
 alias.tt assign.esave {
-	@:pkg=rand(0)
-	@:fh=open($0 W T)
-	@:matches=0
-	fe ($1-) mask {
-		@:list=aliasctl(assign pmatch "$mask")
-		fe list foo {
-			if (pkg!=aliasctl(assign getpackage $foo)) {
-				@write($fh PACKAGE ${pkg=aliasctl(assign getpackage $foo)})
-			}
-			@write($fh @aliasctl\(assign set $foo \$decode\($encode($aliasctl(assign get $foo))\)\))
-			@foo=0
+	@ :pkg = rand(0)
+	@ :fh = open($0 W T)
+	@ :matches = 0
+	@ :list = aliasctl(assign pmatch "\\[$1-\\]")
+	fe list foo {
+		if (pkg != aliasctl(assign getpackage $foo)) {
+			@ write($fh PACKAGE ${pkg=aliasctl(assign getpackage $foo)})
 		}
-		@matches+=#list
+		@ write($fh @aliasctl\(assign set $foo \$decode\($encode($aliasctl(assign get $foo))\)\))
+		@ foo = 0
 	}
-	@close($fh)
+	@ matches += #list
+	@ close($fh)
 	if (functioncall()) {
 		return $matches
-	} else {
-		if (isdisplaying()) {
-			echo Wrote $matches matching $1-
-		}
+	} elsif (isdisplaying()) {
+		echo Wrote $matches matching $1-
 	}
 }
 
@@ -181,7 +182,8 @@ alias.tt assign.flush {
 	do {
 		assign.save $*
 		assign.purge $1-
-	} while (foo != (:foo = assign.pack($1-)))
+		@ :bar = numwords($aliasctl(assign pmatch "\\[$1-\\]"))
+	} while (foo != (:foo = bar) || (foo && foo == aliasctl(maxret)))
 }
 #
 # As above but use .esave.
@@ -190,13 +192,15 @@ alias.tt assign.eflush {
 	do {
 		assign.esave $*
 		assign.purge $1-
-	} while (foo!=(:foo=assign.pack($1-)))
+		@ :bar = numwords($aliasctl(assign pmatch "\\[$1-\\]"))
+	} while (foo != (:foo = bar) || (foo && foo == aliasctl(maxret)))
 }
 
 #
 # End of /assign.* functions.
 #
 stack pop alias alias.tt
+stack pop alias alias.ttt
 
 #
 # struct functions.
@@ -219,6 +223,7 @@ alias struct.purge {
 alias struct.purgesub {
 	fe ($*) foo {
 		@ :bar = aliasctl(assign match ${foo}.)
+		@ :bar = revw($bar)
 		@ :hit += #bar
 		fe ($bar) baz {
 			^assign -$baz

@@ -100,6 +100,10 @@ alias 1cmd {
 # The same as "1cmd {time} qcmd {queue} {command}", only, the command also
 # won't be scheduled if the same command is already scheduled.
 #
+# Also, with [f]q1cmd, you can specify a coma separated list of queues for
+# the second argument.  All these queues will be searched for duplicates but
+# the first will be the queue given to qcmd.
+#
 stack push alias alias.tt
 alias alias.tt (cmd,op,args) {
 	@ sar(gr/\${cmd}/${cmd}/args)
@@ -111,33 +115,40 @@ fe (q push fq unshift) cmd op {
 		@ :argz = args
 		@ sar(gr/\\/\\\\/argz)
 		@ sar(gr/\"/\\\"/argz)
-		if (0 > findw("$argz" $qcmd[$servernum()][$qc])) {
-			1cmd $qo ${cmd}cmd $qc $args
+		@ :qc = split(, $qc)
+		fe ($qc) qqcc {
+			if (0 <= findw("$argz" $qcmd[$servernum()][$qqcc])) {
+				return
+			}
 		}
+		1cmd $qo ${cmd}cmd $shift(qc) $args
 	}
 	alias.tt $cmd $op ${cmd}cmd {
-		if (servernum() < 0) {
-			$1-
-			return
-		} elsif (1 < #) {
+		@ :sn = servernum()
+		@ :sn = sn < 0 ? [_] : sn
+		if (1 < #) {
 			@ :bar = [$1-]
-			@ ${op}(qcmd.${servernum()}.$0 \"$msar(gr/\\/\\\\/\"/\\\"/bar)\")
-		} elsif (isconnected()) {
+			@ ${op}(qcmd.${sn}.$0 \"$msar(gr/\\/\\\\/\"/\\\"/bar)\")
+		} else {
 			@ :foo = []
 			if (1 == #) {
 				@ foo = [$0]
+			} elsif (islagged()) {
+				# Do nothing if we're lagged.
+				# This is meant to be a link to a
+				# fictitious lag measurement script.
 			} elsif (0 == #) {
-				foreach qcmd[$servernum()] bar {
+				foreach qcmd[$sn] bar {
 					@ foo = bar
 					break
 				}
 			}
 			if (@foo) {
-				@ :bar = shift(qcmd[$servernum()][$foo])
+				@ :bar = shift(qcmd[$sn][$foo])
 				$msar(gr/\\\\/\\/\\\"/\"/bar)
 			}
 		}
-		if (@bar) ^timer -ref qcmd.$servernum() 5 qcmd
+		if (@bar) ^timer -ref qcmd.$sn 5 qcmd
 	}
 }
 stack pop alias alias.tt

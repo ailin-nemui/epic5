@@ -4,7 +4,7 @@
  */
 
 # returns non-0 if $0 matches or is matched by $1-, 0 if not.
-alias comatch @ function_return = (match($*) || rmatch($*))
+alias comatch @ function_return = match($*) || rmatch($*)
 
 alias deban_mode 
 {

@@ -374,7 +374,7 @@ alias cut (num,sep,args) {
 }
 
 # Bit of a hack here.  Return all args with spacing removed.
-alias words return $remws(/ $*)
+alias words return $unsplit(" " $*)
 
 # $chvoices() returns the  voiced users on a channel.
 # $chnovoices() is the compliment.

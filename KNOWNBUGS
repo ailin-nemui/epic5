@@ -179,3 +179,5 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Fix $push(:foo   ) and $unshift() too, (bugref 5)
 * Change word handling for eg, [foo   ] so $0 is [foo] and $1 is [  ].
 * Include <stdint.h> or <inttypes.h> if they exist.
+* Reorganised, documented and generally screwed around with data_array/struct.
+* Very minor syntax changes to script/functions and script/deban.

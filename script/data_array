@@ -10,24 +10,40 @@
 # Note that unlike their inbuilt counterparts, these generally accept negative
 # item numbers as the distance from the top of the array, starting with -1.
 #
+# Let's start with some basics:
+#
 #   getndelitems:   splice the items $1- from the array and return them as a list.
 #   getndelindex:   splice the indices $1- from the array and return them as a list.
-#   getandritem[s]: Get an' Del Random item[s].
-#   getandmitem[s]: Get an' Del item[s] matching Mask ($1-).
-#   getranditem[s]: return one/$#1- random array element.
+#   getnrolitems:   Splice items $2- from $0, put them at the end of $1, and return them.
+#   itemnorm:       Supporting function.  Fixes/removes invalid item numbers.
+#
+alias itemnorm (ar,it) @:ni=numitems($ar);fe it it {@it+=0<=it?0:ni,it=0<=it&&it<ni?it:[]};return $it
+alias getndelitems (ar,it) @:it=itemnorm($ar $it),:function_return=getitem($ar $it),delitems($ar $it)
+alias getndelindex (ar,it) @:it=itemnorm($ar $it),:function_return=igetitem($ar $it),delitems($ar $indextoitem($ar $it))
+alias getnrolitems (a1,a2,it) @:dt=:it=itemnorm($a1 $it);fe it it {setnextitem $a2 ${it=getitem($a1 $it)}};@delitems($a1 $dt);return $it
+#
+# Now onto some more complex functions:
+#
+#   getmaskitem[s]: return one/all array elements matching $1-.
+#   getandmitem[s]: Get an' Del item[s] matching Mask ($1-) from array $0.
+#   getandmitem[s]: Get an' Rol item[s] matching Mask ($2-) from array $0 to $1.
+#
+alias getmaskitem  (ar,mask) @:it=getmatches($ar $mask);return ${getitem($ar $word($rand($#it) $it))}
+alias getmaskitems (ar,mask) return $getitem($ar $getmatches($ar $mask))
+alias getandmitem  (ar,mask) @:it=getmatches($ar $mask);return ${getndelitems($ar $word($rand($#it) $it))}
+alias getandmitems (ar,mask) return $getndelitems($ar $getmatches($ar $mask))
+alias getanrmitem  (a1,a2,mask) @:it=getmatches($a1 $mask);return ${getnrolitems($a1 $a2 $word($rand($#it) $it))}
+alias getanrmitems (a1,a2,mask) return $getnrolitems($a1 $a2 $getmatches($a1 $mask))
+#
+# The set*item functions update arrays in certain potentially useful ways.
+#
+# The set*items functions call their set*item counterpart for each word given.
+#
 #   setnextitem[s]: set a new array element[s] with $1- as contents.
 #   setranditem[s]: replace a random array element[s] with $1-
 #   setrmaxitem[s]: setnextitem if $1 > numitems else setranditem.
 #   setuniqitem[s]: setnextitem if the array item[s] doesn't already exist.
 #
-alias getndelitems (ar,it) fe it it {@it=0<=it?it:(numitems($ar)+it)};@:function_return=getitem($ar $it),delitems($ar $it)
-alias getndelindex (ar,it) fe it it {@it=0<=it?it:(numitems($ar)+it)};@:function_return=igetitem($ar $it),delitems($ar $indextoitem($ar $it))
-alias getranditem  (ar,it) return $getitem($ar $rand($numitems($ar)))
-alias getranditems (ar,it) fe it foo {@foo=getitem($ar $rand($numitems($ar)))};return $it
-alias getandritem  (ar,it) return $getndelitems($ar $rand($numitems($ar)))
-alias getandritems (ar,it) @:mi=numitems($ar);fe it it {@it=rand($mi)};return $getndelitems($ar $it)
-alias getandmitem  (ar,mask) @:it=getmatches($ar $mask);return ${#it?getndelitems($ar $word($rand($#it) $it)):[]}
-alias getandmitems (ar,mask) return $getndelitems($ar $getmatches($ar $mask))
 alias setnextitem  (ar,args) return $setitem($ar $numitems($ar) $args)
 alias setnextitems (ar,args) fe args foo {@foo=setitem($ar $numitems($ar) $foo)};return $args
 alias setranditem  (ar,args) return $setitem($ar $rand($numitems($ar)) $args)
@@ -67,7 +83,7 @@ alias array.read (args) {
 # Give a brief summary of all matching arrays, or all arrays.
 alias array.stat {
 	fe ($getarrays($*)) foo {
-		echo $[-$min(5 $strlen($numitems($foo)))]numitems($foo) $foo
+		echo $numitems($foo)/$#listarray($foo)/$@listarray($foo) $foo
 	}
 }
 
@@ -83,7 +99,7 @@ alias array.stat {
 #
 fe (dump " -banner" "\$array [\$[-4]item \$[-2]#content \$[-3]@content] " grep " -nobanner" "") cmd banner fnord {
 	fe (i$cmd igetitem igetmatches $cmd getitem getmatches) foo bar baz {
-		alias array.$foo (arrays default *, mask default *) fe ($getarrays($arrays)) array \{fe \(\$${baz}($array $mask)\) item \{@:content=${bar}($array $item)\;echo $fnord\$content\}\}
+		alias array.$foo (arrays default *, mask default *) fe ($getarrays($arrays)) array \{fe \(\$${baz}($array $mask)\) item \{@:content=${bar}($array $item)\;echo $fnord\$content\}\;array.stat \$array\}
 	}
 }
 fe (dump "\$array [\$[-4]item \$[-2]#content \$[-3]@content] " grep "") cmd fnord {
