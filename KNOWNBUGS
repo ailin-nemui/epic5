@@ -83,4 +83,4 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Fix casting error that caused $urlencode() of high bit chars to segfault
 * If swapping in a window that has no room for double status, recalculate all
 * If double-on in a window that has no room for it, recalculate all
-
+* Fix for rain's meta-compat script

@@ -1,4 +1,4 @@
-# $EPIC: meta-compat,v 1.1 2003/12/11 23:07:16 jnelson Exp $
+# $EPIC: meta-compat,v 1.2 2003/12/13 17:39:52 jnelson Exp $
 # meta-compat - compatibility layer for old-style /bind METAx-y sequences
 #
 # Copyright 2003 Ben Winslow <rain bluecherry net>
@@ -17,7 +17,7 @@ alias bind (binding, boundto) {
 	@metacompat.depth++
 
 	if (metacompat.depth > 100) {
-		xecho -b meta-compat: recursed too many times for /bind $binding $bindto
+		xecho -b meta-compat: recursed too many times for /bind $binding $boundto
 		return
 	}
 
