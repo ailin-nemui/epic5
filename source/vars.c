@@ -9,7 +9,7 @@
  */
 
 #if 0
-static	char	rcsid[] = "$Id: vars.c,v 1.7 2001/11/13 22:12:26 jnelson Exp $";
+static	char	rcsid[] = "$Id: vars.c,v 1.8 2001/12/19 19:51:15 jnelson Exp $";
 #endif
 
 #include "irc.h"
@@ -182,6 +182,7 @@ static	IrcVariable irc_variable[] =
 	{ "RANDOM_SOURCE",		INT_TYPE_VAR,	DEFAULT_RANDOM_SOURCE, NULL, NULL, 0, 0 },
 	{ "REALNAME",			STR_TYPE_VAR,	0, NULL, set_realname, 0, 0 },
 	{ "REVERSE_STATUS_LINE",	BOOL_TYPE_VAR,	DEFAULT_REVERSE_STATUS_LINE, NULL, update_all_status, 0, 0 },
+	{ "ROM_CHAR",			BOOL_TYPE_VAR,	DEFAULT_ROM_CHAR, NULL, NULL, 0, 0 },
 	{ "SCREEN_OPTIONS",             STR_TYPE_VAR,   0, NULL, NULL, 0, 0 },
 	{ "SCROLL",			BOOL_TYPE_VAR,	1, NULL, set_scroll, 0, 0 },
 	{ "SCROLLBACK",			INT_TYPE_VAR,	DEFAULT_SCROLLBACK, NULL, set_scrollback_size, 0, 0 },

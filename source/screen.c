@@ -637,7 +637,7 @@ static	u_char	ansi_state[256] = {
 /*	^H	^I	^J	^K	^L	^M	^N	^O */
 	6,	8,	0,	6,	0,	6,	6,	4,  /* 010 */
 /*	^P	^Q	^R	^S	^T	^U	^V	^W */
-	6,	6,	6,	9,	4,	6,	4,	6,  /* 020 */
+	6,	6,	5,	9,	4,	6,	4,	6,  /* 020 */
 /*	^X	^Y	^Z	^[	^\	^]	^^	^_ */
 	6,	6,	6,	2,	6,	6,	6,	4,  /* 030 */
 	0,	0,	0,	0,	0,	0,	0,	0,  /* 040 */
@@ -716,7 +716,7 @@ u_char *	normalize_string (const u_char *str, int logical)
 	int		tab_max, tab_cnt = 0;
 	int		nds_max, nds_cnt = 0;
 	int		pc = 0;
-	int		reverse, bold, blink, underline, altchar, color;
+	int		reverse, bold, blink, underline, altchar, color, rom_char;
 	size_t		(*attrout) (u_char *, Attribute *);
 
 	/* Figure out how many beeps/tabs/nds's we can handle */
@@ -729,7 +729,7 @@ u_char *	normalize_string (const u_char *str, int logical)
 	if (!(nds_max	= get_int_var(ND_SPACE_MAX_VAR)))
 		nds_max = -1;
 	if (normalize_permit_all_attributes)	/* XXXX */
-		reverse = bold = blink = underline = altchar = color = 1;
+		reverse = bold = blink = underline = altchar = color = rom_char = 1;
 	else
 	{
 		reverse 	= get_int_var(INVERSE_VIDEO_VAR);
@@ -738,6 +738,7 @@ u_char *	normalize_string (const u_char *str, int logical)
 		underline 	= get_int_var(UNDERLINE_VIDEO_VAR);
 		altchar 	= get_int_var(ALT_CHARSET_VAR);
 		color 		= get_int_var(COLOR_VAR);
+		rom_char	= get_int_var(ROM_CHAR_VAR);
 	}
 	if (logical == 0)
 		attrout = display_attributes;	/* prep for screen output */
@@ -1352,7 +1353,7 @@ u_char *	normalize_string (const u_char *str, int logical)
 		case 5:
 		{
 			put_back();
-			if (str[0] && str[1] && str[2] && str[3])
+			if (str[0] && str[1] && str[2] && str[3] && rom_char)
 			{
 				u_char	val = 0;
 

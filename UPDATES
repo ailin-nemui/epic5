@@ -1,5 +1,18 @@
 EPIC4-1.2.0
 
+*** News 12/19/2001 -- New /SET, /SET ROM_CHAR
+	For whatever reason, I forgot to add this /SET years ago.  This set
+	controls whether or not EPIC will honor "ROM_CHARs", which are 
+	basically the character ^R (ascii 18) followed by three literal
+	characters holding digits.  The ROM_CHAR sequence is replaced with
+	the ascii character described in the sequence.  This is useful for
+	people who have access to VGA consoles and want to be able to output
+	the smiley-face type stuff in the low ascii characters.  It's also
+	good for malicious outside users who want to send you ^R027 which 
+	would be output as an escape character.  This is bad.  This /SET
+	defaults to OFF for what I hope are obvious reasons.  Turn it on
+	only at your own peril!
+
 *** News 11/14/2001 -- Support for ~/.epicrc file
 	LET ME JUST START BY SAYING THIS IS NOT MODELED AFTER BX.
 	Some of you use both epic and ircII and you would like to be

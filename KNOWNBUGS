@@ -72,3 +72,5 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * "Fix" /queue so it doesn't double-eval your commands up front.
 * Fixed ctrl-e (alt-char) problems.  Thanks to desaster and knghtbrd.
 * Disabled ROM characters.  Many thanks to zinx for figuring it all out.
+* Add /SET ROM_CHAR, which controls parsing of ^R codes, default is OFF.
+* Re-enabled ROM characters, now that they can be /SET off.
