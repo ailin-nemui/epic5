@@ -1,4 +1,4 @@
-/* $EPIC: window.c,v 1.39 2002/10/18 21:10:23 jnelson Exp $ */
+/* $EPIC: window.c,v 1.40 2002/10/21 23:15:32 jnelson Exp $ */
 /*
  * window.c: Handles the organzation of the logical viewports (``windows'')
  * for irc.  This includes keeping track of what windows are open, where they
@@ -242,6 +242,13 @@ Window	*new_window (Screen *screen)
 
 	new_w->deceased = 0;
 
+	/* Moved here from below the if. */
+	/*
+	 * We have to know how big the window is before we can fill in 
+	 * the display...
+	 */
+	resize_window_display(new_w);
+
 	if (screen)
 	{
 		/*
@@ -258,11 +265,6 @@ Window	*new_window (Screen *screen)
 	else
 		add_to_invisible_list(new_w);
 
-	/*
-	 * We have to know how big the window is before we can fill in 
-	 * the display...
-	 */
-	resize_window_display(new_w);
 
 	/*
 	 * Offer it to the user.  I dont know if this will break stuff
@@ -1083,6 +1085,13 @@ void	resize_window_display (Window *window)
 	/*
 	 * This is called in new_window to initialize the
 	 * display the first time
+	 *
+	 * XXX - But not from where you'd expect.  This gets called
+	 * by update_all_windows() by way of set_screens_current_window()
+	 * by way of new_window(), but if the window is invisible, then
+	 * resize_window_display() only gets called once, not twice.
+	 *
+	 * XXX - And why does this have to be HERE?
 	 */
 	if (!window->top_of_scrollback)
 	{
