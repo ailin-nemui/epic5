@@ -1,4 +1,4 @@
-/* $EPIC: names.c,v 1.28 2002/08/09 15:16:14 crazyed Exp $ */
+/* $EPIC: names.c,v 1.29 2002/08/26 16:08:36 crazyed Exp $ */
 /*
  * names.c: This here is used to maintain a list of all the people currently
  * on your channel.  Seems to work 
@@ -983,7 +983,7 @@ static	char	modemap[256];
 	modemap['+'] = modemap['-'] = modetype++;
 
 	if (!prefix || *prefix++ != '(')
-		prefix = "ov";
+		prefix = "ohv";
 	for (; *prefix && *prefix != ')'; prefix++)
 		modemap[*prefix] = modetype;
 	modetype++;
