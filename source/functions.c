@@ -3320,6 +3320,8 @@ BUILT_IN_FUNCTION(function_info, words)
 		RETURN_STR(useful_info);
 	else if (!my_strnicmp(which, "R", 1))
 		RETURN_STR(ridiculous_version_name);
+	else if (!my_strnicmp(which, "I", 1))
+		RETURN_INT(commit_id);
 	else
 		RETURN_EMPTY;
 	/* more to be added as neccesary */
