@@ -9,7 +9,7 @@
  */
 
 #if 0
-static	char	rcsid[] = "@(#)$Id: dcc.c,v 1.27 2002/05/28 05:37:58 jnelson Exp $";
+static	char	rcsid[] = "@(#)$Id: dcc.c,v 1.28 2002/06/02 06:25:10 jnelson Exp $";
 #endif
 
 #include "irc.h"
@@ -572,8 +572,7 @@ int	dcc_opened (int fd, int result)
 		char p_port[24];
 		SA *addr = (SA *)&dcc->peer_sockaddr;
 
-		inet_ntostr(addr, socklen(addr), p_addr, 256, 
-				p_port, 24, NI_NUMERICHOST);
+		inet_ntostr(addr, p_addr, 256, p_port, 24, NI_NUMERICHOST);
 
 		/* 
 		 * It would be nice if SEND also showed the filename
@@ -1849,8 +1848,7 @@ void	register_dcc_offer (char *user, char *type, char *description, char *addres
 	/*
 	 * Convert the sockaddr back to a name that we can print.
 	 */
-	if (!inet_ntostr((SA *)&Client->offer, socklen((SA *)&Client->offer),
-			p_addr, 256, NULL, 0, NI_NUMERICHOST))
+	if (!inet_ntostr((SA *)&Client->offer, p_addr, 256, NULL, 0, NI_NUMERICHOST))
 	{
 		say("DCC %s (%s) request from %s could not be converted back "
 		    "into a p-addr [%s] [%s]", 
@@ -2128,8 +2126,7 @@ static	void	process_incoming_chat (DCC_list *Client)
 		Client->flags |= DCC_ACTIVE;
 
 		addr = (SA *)&Client->peer_sockaddr;
-		inet_ntostr(addr, socklen(addr), p_addr, 256, 
-				p_port, 24, NI_NUMERICHOST);
+		inet_ntostr(addr, p_addr, 256, p_port, 24, NI_NUMERICHOST);
 
 		Client->locked++;
                 if (do_hook(DCC_CONNECT_LIST, "%s CHAT %s %s", 
@@ -2180,8 +2177,7 @@ static	void	process_incoming_chat (DCC_list *Client)
 			yell("%s", tmp);
 
 		addr = (SA *)&Client->peer_sockaddr;
-		inet_ntostr(addr, socklen(addr), p_addr, 256, 
-				NULL, 0, NI_NUMERICHOST);
+		inet_ntostr(addr, p_addr, 256, NULL, 0, NI_NUMERICHOST);
 
 #define CTCP_MESSAGE "CTCP_MESSAGE "
 #define CTCP_MESSAGE_LEN strlen(CTCP_MESSAGE)
@@ -2279,7 +2275,7 @@ static	void		process_incoming_listen (DCC_list *Client)
 	}
 
 	*host = 0;
-	inet_ntostr((SA *)&remaddr, socklen((SA *)&remaddr), host, sizeof(host), p_port, sizeof(p_port), 0);
+	inet_ntostr((SA *)&remaddr, host, sizeof(host), p_port, sizeof(p_port), 0);
 
 	strlcpy(fdstr, ltoa(new_socket), 10);
 	NewClient = dcc_searchlist(host, fdstr, DCC_RAW, 1, NULL, 0);
@@ -2408,8 +2404,7 @@ static void		process_outgoing_file (DCC_list *Client)
 #endif
 
 		addr = (SA *)&Client->peer_sockaddr;
-		inet_ntostr(addr, socklen(addr), p_addr, 256, 
-				p_port, 24, NI_NUMERICHOST);
+		inet_ntostr(addr, p_addr, 256, p_port, 24, NI_NUMERICHOST);
 
 		/*
 		 * Tell the user

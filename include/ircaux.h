@@ -7,7 +7,7 @@
  *
  * See the COPYRIGHT file, or do a HELP IRCII COPYRIGHT 
  *
- * @(#)$Id: ircaux.h,v 1.25 2002/05/29 04:15:32 crazyed Exp $
+ * @(#)$Id: ircaux.h,v 1.26 2002/06/02 06:25:09 jnelson Exp $
  */
 
 #ifndef _IRCAUX_H_
@@ -195,7 +195,7 @@ char *		real_extract2 		(const char *, int, int, int);
 #define V4PORT(x) (V4(x)->sin_port)
 
 int	inet_strton		(const char *, const char *, SA *, int);
-char *	inet_ntostr		(SA *, socklen_t, char *, int, char *, int, int);
+char *	inet_ntostr		(SA *, char *, int, char *, int, int);
 char 	*inet_hntop 		(int, const char *, char *, int);
 char 	*inet_ptohn 		(int, const char *, char *, int);
 char 	*one_to_another 	(int, const char *, char *, int);
@@ -205,9 +205,6 @@ int	ip_bindery		(int family, u_short port, SS *storage);
 int	client_bind		(SA *, socklen_t);
 int	client_connect		(SA *, socklen_t, SA *, socklen_t);
 int	connectory		(int, const char *, const char *);
-int	Getaddrinfo		(const char *, const char *, const AI *, AI **);
-void    Freeaddrinfo 		(AI *ai);
-socklen_t socklen		(SA *);
 
 extern	unsigned char isspace_table[256];
 #define my_isspace(x) isspace_table[(unsigned)(unsigned char)(x)]

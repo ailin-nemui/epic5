@@ -6183,7 +6183,7 @@ BUILT_IN_FUNCTION(function_longtoip, word)
 	((SA *)&addr)->sa_family = AF_INET;
 	if (inet_strton(ip32, NULL, (SA *)&addr, AI_NUMERICHOST))
 		RETURN_EMPTY;
-	inet_ntostr((SA *)&addr, socklen((SA *)&addr), retval, 256, NULL, 0, NI_NUMERICHOST);
+	inet_ntostr((SA *)&addr, retval, 256, NULL, 0, NI_NUMERICHOST);
 	RETURN_STR(retval);
 }
 

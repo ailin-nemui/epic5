@@ -25,6 +25,9 @@ static int	set_blocking (int fd);
 static int	inet_remotesockaddr (int family, const char *host, const char *port, SS *storage, socklen_t *len);
 static int	inet_vhostsockaddr (int family, SS *storage, socklen_t *len);
 static int	Connect (int fd, SA *addr);
+static int	Getaddrinfo (const char *nodename, const char *servname, const AI *hints, AI **res);
+static void	Freeaddrinfo (AI *ai);
+static socklen_t	socklen (SA *sockaddr);
 
 /*
    Retval    Meaning
@@ -52,32 +55,49 @@ static int	Connect (int fd, SA *addr);
  * ARGS: family - AF_INET is the only supported argument.
  *       host - A hostname or "dotted quad" (or equivalent).
  *       port - The remote port to connect to in *HOST ORDER*.
- * NOTES: This function is family independant.
+ *
+ * XXX - This so violates everything I really wanted this function to be,
+ * but I changed it to call getaddrinfo() directly instead of calling
+ * inet_vhostsockaddr() because I wanted it to be able to take advantage
+ * of connecting to multiple protocols and multiple ip addresses (for things
+ * like ``us.undernet.org'') without having to do multiple calls to
+ * getaddrinfo() which could be quite costly.
  */
 int	connectory (int family, const char *host, const char *port)
 {
+	AI	hints, *results, *ai;
+	int	error;
+	int	fd;
 	SS	  localaddr;
 	socklen_t locallen;
-	SS	  remaddr;
-	socklen_t remlen;
-	int	  err;
 
-	/* 
-	 * First, cheat by using getaddrinfo() to grok the 
-	 * family of "host" for us.
-	 */
-	if ((err = inet_remotesockaddr(family, host, port, &remaddr, &remlen)))
-		return err;
+	memset(&hints, 0, sizeof(hints));
+	hints.ai_family = family;
+	hints.ai_socktype = SOCK_STREAM;
+	if ((error = Getaddrinfo(host, port, &hints, &results)))
+		return -5;
 
-	/*
-	 * Now get the Virtual Host info (if any) for that family
-	 */
-	family = ((SA *)&remaddr)->sa_family;
-	if ((err = inet_vhostsockaddr(family, (SS *)&localaddr, &locallen)))
-		return err;
+	fd = -1;
+	for (ai = results; ai; ai = ai->ai_next) 
+	{
+	    /* First, look up the virtual host we use for this protocol. */
+	    error = inet_vhostsockaddr(ai->ai_family, &localaddr, &locallen);
+	    if (error < 0)
+		continue;
 
-	return client_connect((SA *)&localaddr, locallen, 
-			      (SA *)&remaddr, remlen);
+	    /* Now try to do the connection. */
+	    fd = client_connect((SA *)&localaddr, locallen, ai->ai_addr, ai->ai_addrlen);
+	    if (fd < 0)
+	    {
+		error = fd;
+		fd = -1;
+		continue;
+	    }
+	}
+
+	if (fd < 0)
+		return error;
+	return fd;
 }
 
 /*
@@ -92,7 +112,6 @@ int	connectory (int family, const char *host, const char *port)
  *           the connection.  NULL is not permitted.
  *       rl - The sizeof(r) -- if 0, then 'r' is treated as a NULL value.
  *            Therefore, 0 is not permitted.
- * NOTES: This function is protocol independant but lacks IPv6 support
  */
 int	client_connect (SA *l, socklen_t ll, SA *r, socklen_t rl)
 {
@@ -185,6 +204,8 @@ int	client_connect (SA *l, socklen_t ll, SA *r, socklen_t rl)
 			}
 		}
 	}
+	else
+		return -2;
 
 	return fd;
 }
@@ -206,7 +227,7 @@ int	client_connect (SA *l, socklen_t ll, SA *r, socklen_t rl)
  *        possible to authoritatively figure out the local IP address
  *        without using ioctl().  However, we guess the best we may.
  *
- * NOTES: This function is protocol independant but lacks IPv6 support.
+ * NOTES: This function lacks IPv6 support.
  *        This function lacks Unix Domain Socket support.
  */
 int	ip_bindery (int family, unsigned short port, SS *storage)
@@ -290,7 +311,6 @@ int	ip_bindery (int family, unsigned short port, SS *storage)
  *               the connection.  NULL is not permitted.
  *       local_len - The sizeof(l) -- if 0, then 'l' is treated as a NULL 
  *		     value.  Therefore, 0 is not permitted.
- * NOTES: This function is protocol independant.
  */
 int	client_bind (SA *local, socklen_t local_len)
 {
@@ -359,7 +379,6 @@ int	client_bind (SA *local, socklen_t local_len)
  *             was copied, or set to 0 if no virtual host is available in
  *             the given family.
  * NOTES: If "len" is set to 0, do not attempt to bind() 'storage'!
- * NOTES: This function is protocol independant.
  */
 static int	inet_vhostsockaddr (int family, SS *storage, socklen_t *len)
 {
@@ -403,7 +422,6 @@ static int	inet_vhostsockaddr (int family, SS *storage, socklen_t *len)
  *       host - The host whose address shall be put in the sockaddr
  *       port - The port to put into the sockaddr -- MUST BE IN HOST ORDER!
  *       storage - Pointer to a sockaddr structure appropriate for family.
- * NOTES: This function is protocol independant but lacks IPv6 support.
  */
 static int	inet_remotesockaddr (int family, const char *host, const char *port, SS *storage, socklen_t *len)
 {
@@ -492,10 +510,12 @@ int	inet_strton (const char *host, const char *port, SA *storage, int flags)
  * NOTES: 'flags' should be set to NI_NAMEREQD if you don't want the remote
  *        host's p-addr if it does not have a DNS hostname.
  */
-char *	inet_ntostr (SA *name, socklen_t len, char *host, int hsize, char *port, int psize, int flags)
+char *	inet_ntostr (SA *name, char *host, int hsize, char *port, int psize, int flags)
 {
 	int	retval;
+	socklen_t len;
 
+	len = socklen(name);
 	if ((retval = getnameinfo(name, len, host, hsize, port, psize, flags))) {
 		yell("getnameinfo(%s): %s", host, gai_strerror(retval));
 		return NULL;
@@ -506,7 +526,7 @@ char *	inet_ntostr (SA *name, socklen_t len, char *host, int hsize, char *port, 
 
 /* * * * * * * * * */
 /*
- * NAME: inet_strtop
+ * NAME: inet_hntop
  * USAGE: Convert a Hostname into a "presentation address" (p-addr)
  * PLAIN ENGLISH: Convert "A.B.C.D" into "foo.bar.com"
  * ARGS: family - The family whose presesentation address format to use
@@ -515,8 +535,6 @@ char *	inet_ntostr (SA *name, socklen_t len, char *host, int hsize, char *port, 
  *       size - The length of 'retval' in bytes
  * RETURN VALUE: "retval" is returned upon success
  *		 "empty_string" is returned for any error.
- *
- * NOTES: In the future, this function will use getaddrinfo().
  */
 char *	inet_hntop (int family, const char *host, char *retval, int size)
 {
@@ -527,15 +545,14 @@ char *	inet_hntop (int family, const char *host, char *retval, int size)
 	if ((err = inet_strton(host, NULL, (SA *)&buffer, 0)))
 		return empty_string;
 
-	if (!(inet_ntostr((SA *)&buffer, socklen((SA *)&buffer), 
-				retval, size, NULL, 0, NI_NUMERICHOST)))
+	if (!inet_ntostr((SA *)&buffer, retval, size, NULL, 0, NI_NUMERICHOST))
 		return empty_string;
 
 	return retval;
 }
 
 /*
- * NAME: inet_strtohn
+ * NAME: inet_ptohn
  * USAGE: Convert a "presentation address" (p-addr) into a Hostname
  * PLAIN ENGLISH: Convert "foo.bar.com" into "A.B.C.D"
  * ARGS: family - The family whose presesentation address format to use
@@ -554,8 +571,7 @@ char *	inet_ptohn (int family, const char *ip, char *retval, int size)
 	if ((err = inet_strton(ip, NULL, (SA *)&buffer, AI_NUMERICHOST)))
 		return empty_string;
 
-	if (!(inet_ntostr((SA *)&buffer, socklen((SA *)&buffer), 
-				retval, size, NULL, 0, NI_NAMEREQD)))
+	if (!inet_ntostr((SA *)&buffer, retval, size, NULL, 0, NI_NAMEREQD))
 		return empty_string;
 
 	return retval;
@@ -635,24 +651,6 @@ static int	set_blocking (int fd)
 		return -1;
 #endif
 	return 0;
-}
-
-/****************************************************************************/
-/*
- * It is possible for a race condition to exist; such that select()
- * indicates that a listen()ing socket is able to recieve a new connection
- * and that a later accept() call will still block because the connection
- * has been closed in the interim.  This wrapper for accept() attempts to
- * defeat this by making the accept() call nonblocking.
- */
-int	Accept (int s, SA *addr, int *addrlen)
-{
-	int	retval;
-
-	set_non_blocking(s);
-	retval = accept(s, addr, addrlen);
-	set_blocking(s);
-	return retval;
 }
 
 /****************************************************************************/
@@ -769,12 +767,30 @@ static int	get_high_portnum (void)
 #endif
 }
 
+/****************************************************************************/
+/*
+ * It is possible for a race condition to exist; such that select()
+ * indicates that a listen()ing socket is able to recieve a new connection
+ * and that a later accept() call will still block because the connection
+ * has been closed in the interim.  This wrapper for accept() attempts to
+ * defeat this by making the accept() call nonblocking.
+ */
+int	Accept (int s, SA *addr, int *addrlen)
+{
+	int	retval;
+
+	set_non_blocking(s);
+	retval = accept(s, addr, addrlen);
+	set_blocking(s);
+	return retval;
+}
+
 static int Connect (int fd, SA *addr)
 {
 	return connect(fd, addr, socklen(addr));
 }
 
-int	Getaddrinfo (const char *nodename, const char *servname, const AI *hints, AI **res)
+static int	Getaddrinfo (const char *nodename, const char *servname, const AI *hints, AI **res)
 {
 #ifdef GETADDRINFO_DOES_NOT_DO_AF_UNIX
 	int	do_af_unix = 0;
@@ -819,7 +835,7 @@ int	Getaddrinfo (const char *nodename, const char *servname, const AI *hints, AI
 	return getaddrinfo(nodename, servname, hints, res);
 }
 
-void	Freeaddrinfo (AI *ai)
+static void	Freeaddrinfo (AI *ai)
 {
 #ifdef GETADDRINFO_DOES_NOT_DO_AF_UNIX
 	if (ai->ai_family == AF_UNIX)
@@ -834,7 +850,7 @@ void	Freeaddrinfo (AI *ai)
 	freeaddrinfo(ai);
 }
 
-socklen_t	socklen (SA *sockaddr)
+static socklen_t	socklen (SA *sockaddr)
 {
 	if (sockaddr->sa_family == AF_INET)
 		return sizeof(ISA);
