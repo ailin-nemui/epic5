@@ -1,4 +1,4 @@
-/* $EPIC: who.c,v 1.22 2003/05/09 04:29:52 jnelson Exp $ */
+/* $EPIC: who.c,v 1.23 2003/05/27 17:24:55 jnelson Exp $ */
 /*
  * who.c -- The WHO queue.  The ISON queue.  The USERHOST queue.
  *
@@ -481,12 +481,10 @@ static	int	last_width = -1;
 			*host,
 			*server,
 			*nick,
-			*status;
+			*status,
+			*realname;
 	char 	*name;
 	WhoEntry *new_w = who_queue_top(refnum);
-
-	if (!ArgList[5])
-		return;		/* Fake! */
 
 	if (!new_w)
 	{
@@ -533,14 +531,23 @@ do
 		else
 		    strlcpy(format, "%s\t%-9s %-3s %s@%s (%s)", sizeof format);
 	}
-	channel = ArgList[0];
-	user    = ArgList[1];
-	host    = ArgList[2];
-	server  = ArgList[3];
-	nick    = ArgList[4];
-	status  = ArgList[5];
+
+	if (!(channel = ArgList[0]))
+		{ rfc1459_odd(from, comm, ArgList); break; }
+	if (!(user    = ArgList[1]))
+		{ rfc1459_odd(from, comm, ArgList); break; }
+	if (!(host    = ArgList[2]))
+		{ rfc1459_odd(from, comm, ArgList); break; }
+	if (!(server  = ArgList[3]))
+		{ rfc1459_odd(from, comm, ArgList); break; }
+	if (!(nick    = ArgList[4]))
+		{ rfc1459_odd(from, comm, ArgList); break; }
+	if (!(status  = ArgList[5]))
+		{ rfc1459_odd(from, comm, ArgList); break; }
 	PasteArgs(ArgList, 6);
-	name    = LOCAL_COPY(ArgList[6]);
+	if (!(realname  = ArgList[6]))
+		{ rfc1459_odd(from, comm, ArgList); break; }
+	name = LOCAL_COPY(realname);
 
 	if (*status == 'S')	/* this only true for the header WHOREPLY */
 	{
