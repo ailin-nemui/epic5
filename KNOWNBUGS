@@ -220,4 +220,4 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Make everything capable of dealing with "gaps" in server_list[].
 * Use a bunch of macros, to handle with getting and setting server attrs.
 * Make as much as possible use refnums as params and not from_server.
-
+* Fix bugs with send_to_aserver(). doh!

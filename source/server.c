@@ -1,4 +1,4 @@
-/* $EPIC: server.c,v 1.78 2002/12/19 15:18:08 jnelson Exp $ */
+/* $EPIC: server.c,v 1.79 2002/12/19 16:37:55 jnelson Exp $ */
 /*
  * server.c:  Things dealing with that wacky program we call ircd.
  *
@@ -979,13 +979,12 @@ static void 	vsend_to_aserver (int refnum, const char *format, va_list args)
 	size_t	size = BIG_BUFFER_SIZE * 11;
 	int	len,
 		des;
-	int	server;
 	int	ofs;
 
 	if (!(s = get_server(refnum)))
 		return;
 
-	if (server != NOSERV && (des = s->des) != -1 && format)
+	if (refnum != NOSERV && (des = s->des) != -1 && format)
 	{
 		/* Keep the results short, and within reason. */
 		len = vsnprintf(buffer, BIG_BUFFER_SIZE, format, args);
@@ -1016,7 +1015,7 @@ static void 	vsend_to_aserver (int refnum, const char *format, va_list args)
 	}
 	else if (from_server == NOSERV)
         {
-	    if (do_hook(DISCONNECT_LIST,"No Connection to %d", server))
+	    if (do_hook(DISCONNECT_LIST,"No Connection to %d", refnum))
 		say("You are not connected to a server, "
 			"use /SERVER to connect.");
         }
