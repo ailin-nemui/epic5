@@ -72,7 +72,7 @@ struct timeval		join_time;	/* When we joined the channel */
  * The variable "mode_str" must correspond in order to the modes defined
  * here, or all heck will break loose.  You have been warned.
  */
-static	char	mode_str[] = "aciklmnprstzMOR";
+static	char	mode_str[] = "aciklmnprstzDMOR";
 
 const int	MODE_ANONYMOUS	= 1 << 0;	/* av2.9 */
 const int	MODE_C		= 1 << 1;	/* erf/TS4 */
@@ -86,9 +86,10 @@ const int	MODE_REGISTERED = 1 << 8;	/* Duhnet */
 const int	MODE_SECRET	= 1 << 9;	/* RFC */
 const int	MODE_TOPIC	= 1 << 10;	/* RFC */
 const int	MODE_Z		= 1 << 11;	/* erf/TS4 */
-const int	MODE_M          = 1 << 12;	/* Duhnet */
-const int	MODE_OPER_ONLY	= 1 << 13;	/* Duhnet */
-const int	MODE_RESTRICTED = 1 << 14;	/* Duhnet */
+const int	MODE_D		= 1 << 12;	/* special request */
+const int	MODE_M          = 1 << 13;	/* Duhnet */
+const int	MODE_OPER_ONLY	= 1 << 14;	/* Duhnet */
+const int	MODE_RESTRICTED = 1 << 15;	/* Duhnet */
 
 
 /* channel_list: list of all the channels you are currently on */
