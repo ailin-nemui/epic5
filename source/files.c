@@ -169,7 +169,7 @@ int file_write (int window, int fd, const char *stuff)
 	else
 		ptr = lookup_file(fd);
 
-	if (!ptr)
+	if (!ptr || !ptr->file)
 		return -1;
 
 	retval = fprintf(ptr->file, "%s\n", stuff);
@@ -188,7 +188,7 @@ int file_writeb (int window, int fd, char *stuff)
 	else
 		ptr = lookup_file(fd);
 
-	if (!ptr)
+	if (!ptr || !ptr->file)
 		return -1;
 
 	retval = fwrite(stuff, 1, strlen(stuff), ptr->file);

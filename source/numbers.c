@@ -10,7 +10,7 @@
  */
 
 #if 0
-static	char	rcsid[] = "$Id: numbers.c,v 1.17 2001/10/10 22:47:17 crazyed Exp $";
+static	char	rcsid[] = "$Id: numbers.c,v 1.18 2002/02/02 16:44:13 jnelson Exp $";
 #endif
 
 #include "irc.h"
@@ -155,16 +155,23 @@ void 	numbered_command (char *from, int comm, char **ArgList)
 		lastlog_level;
 	int	old_current_numeric = current_numeric;
 
+	/* There are no valid numerics that do not have arguments */
 	if (!ArgList[0] || !ArgList[1])
 		return;
 
 	user = (*ArgList[0]) ? ArgList[0] : NULL;
+	ArgList++;
 
 	lastlog_level = set_lastlog_msg_level(LOG_CRAP);
 	message_from(NULL, LOG_CRAP);
-	ArgList++;
+
 	current_numeric = -comm;	/* must be negative of numeric! */
 
+	/*
+	 * This first switch statement is only for those numerics which
+	 * require special handling by the client.  Numerics which require
+	 * no more than displaying a message are handled below and not here.
+	 */
 	switch (comm)
 	{
 	/*
@@ -229,6 +236,7 @@ void 	numbered_command (char *from, int comm, char **ArgList)
 		set_server_cookie(from_server, ArgList[0]);
 		break;
 
+	/* XXX Doesn't belong here */
 	case 301:		/* #define RPL_AWAY             301 */
         {
                 PasteArgs(ArgList, 1);
@@ -246,6 +254,7 @@ void 	numbered_command (char *from, int comm, char **ArgList)
 		ison_returned(from, ArgList);
 		break;
 
+	/* XXX Doesn't belong here */
 	case 311:		/* #define RPL_WHOISUSER        311 */
         {
                 PasteArgs(ArgList, 4);
@@ -258,6 +267,7 @@ void 	numbered_command (char *from, int comm, char **ArgList)
                 break;
         }
 
+	/* XXX Doesn't belong here */
 	case 312:		/* #define RPL_WHOISSERVER      312 */
 	{
 		if (do_hook(current_numeric, "%s %s %s %s", from, ArgList[0], ArgList[1], ArgList[2]))
@@ -266,6 +276,7 @@ void 	numbered_command (char *from, int comm, char **ArgList)
 		break;
 	}
 
+	/* XXX Doesn't belong here */
 	case 313:		/* #define RPL_WHOISOPERATOR    313 */
 	{
 		PasteArgs(ArgList, 1);
@@ -274,6 +285,7 @@ void 	numbered_command (char *from, int comm, char **ArgList)
 		break;
 	}
 
+	/* XXX Doesn't belong here */
 	case 314:		/* #define RPL_WHOWASUSER       314 */
 	{
 		PasteArgs(ArgList, 4);
@@ -296,6 +308,7 @@ void 	numbered_command (char *from, int comm, char **ArgList)
 	case 316:		/* supported, but deprecated */
 		break;
 
+	/* XXX Doesn't belong here */
 	case 317:		/* #define RPL_WHOISIDLE        317 */
 	{
 		char	flag, *nick, *idle_str, *startup_str;
@@ -353,6 +366,7 @@ void 	numbered_command (char *from, int comm, char **ArgList)
 		break;
 	}
 
+	/* XXX Doesn't belong here */
 	case 318:		/* #define RPL_ENDOFWHOIS       318 */
         {
                 PasteArgs(ArgList, 0);
@@ -362,6 +376,7 @@ void 	numbered_command (char *from, int comm, char **ArgList)
                 break;
         }
 
+	/* XXX Doesn't belong here */
 	case 319:		/* #define RPL_WHOISCHANNELS    319 */
 	{
 		PasteArgs(ArgList, 1);
@@ -371,12 +386,14 @@ void 	numbered_command (char *from, int comm, char **ArgList)
 	}
 
 	case 321:		/* #define RPL_LISTSTART        321 */
+	{
 		ArgList[0] = "Channel\0Users\0Topic";
 		ArgList[1] = ArgList[0] + 8;
 		ArgList[2] = ArgList[1] + 6;
 		ArgList[3] = (char *) 0;
 		funny_list(from, ArgList);
 		break;
+	}
 
 	case 322:		/* #define RPL_LIST             322 */
 		funny_list(from, ArgList);
@@ -386,6 +403,7 @@ void 	numbered_command (char *from, int comm, char **ArgList)
 		funny_mode(from, ArgList);
 		break;
 
+	/* XXX Doesn't belong here */
 	case 340:		/* #define RPL_INVITING_OTHER	340 */
 	{
 		if (ArgList[2])
@@ -397,6 +415,7 @@ void 	numbered_command (char *from, int comm, char **ArgList)
 		break;
 	}
 
+	/* XXX Doesn't belong here */
 	case 341:		/* #define RPL_INVITING         341 */
 	{
 		if (ArgList[1])
@@ -421,6 +440,7 @@ void 	numbered_command (char *from, int comm, char **ArgList)
 		xwhoreply(NULL, ArgList);
 		break;
 
+	/* XXX Doesn't belong here */
 	case 366:		/* #define RPL_ENDOFNAMES       366 */
 	{
 		int	flag = 1;
@@ -520,6 +540,8 @@ void 	numbered_command (char *from, int comm, char **ArgList)
 		set_server_motd(from_server, 0);
 		break;
 	}
+
+	/* XXX Shouldn't this set "You're operator" flag for hybrid? */
 	case 381: 		/* #define RPL_YOUREOPER        381 */
 		PasteArgs(ArgList, 0);
 		if (!is_server_connected(from_server))
@@ -865,6 +887,7 @@ void 	numbered_command (char *from, int comm, char **ArgList)
 		break;
 	}
 
+	/* XXX These do not belong here */
 	case 219:		/* #define RPL_ENDOFSTATS       219 */
 	case 232:		/* #define RPL_ENDOFSERVICES    232 */
 	case 365:		/* #define RPL_ENDOFLINKS       365 */
