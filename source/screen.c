@@ -1530,6 +1530,7 @@ const 	u_char	*ptr;
 		*words,
 		*pos_copy;
 	Attribute	a;
+	u_char	*cont_free = NULL;
 
 	if (recursion)
 		panic("prepare_display() called recursively");
@@ -1749,7 +1750,7 @@ const 	u_char	*ptr;
 				else if (!*cont && *cont_ptr)
 					cont = cont_ptr;
 
-				cont = normalize_string(cont, 0);
+				cont_free = cont = normalize_string(cont, 0);
 
 				/*
 				 * XXXX "line wrap bug" fix.  If we are here,
@@ -1851,6 +1852,7 @@ const 	u_char	*ptr;
 
 	recursion--;
 	new_free(&output[line]);
+	new_free(&cont_free);
 	*lused = line - 1;
 	return output;
 }

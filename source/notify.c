@@ -516,6 +516,17 @@ void 	make_notify_list (int servnum)
 	}
 }
 
+destroy_notify_list (int servnum)
+{
+	NotifyItem *item;
+	while (NOTIFY_MAX(servnum))
+	{
+		item = (NotifyItem*) array_pop((array*)NOTIFY_LIST(servnum), 0);
+		new_free(&item->nick);
+		new_free(&item);
+	}
+	new_free(NOTIFY_LIST(servnum));
+}
 
 char *	get_notify_nicks (int showserver, int showon)
 {

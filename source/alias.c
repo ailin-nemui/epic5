@@ -1624,8 +1624,7 @@ void	list_cmd_alias (char *name)
 		if (!name || !strncmp(cmd_alias.list[cnt]->name, name, len))
 		{
 			script = cmd_alias.list[cnt]->filename[0]
-				? m_strdup(cmd_alias.list[cnt]->filename)
-				: "*";
+				? cmd_alias.list[cnt]->filename : "*";
 
 			if ((s = strchr(cmd_alias.list[cnt]->name + len, '.')))
 			{

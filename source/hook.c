@@ -320,6 +320,7 @@ static void add_numeric_hook (int numeric, char *nick, char *stuff, int noisy, i
 		new_h = (Hook *)new_malloc(sizeof(Hook));
 		new_h->nick = NULL;
 		new_h->stuff = NULL;
+		new_h->filename = NULL;
 	}
 
 	malloc_strcpy(&new_h->nick, nick);
@@ -329,7 +330,7 @@ static void add_numeric_hook (int numeric, char *nick, char *stuff, int noisy, i
 	new_h->sernum = sernum;
 	new_h->flexible = flexible;
 	new_h->global = loading_global;
-	new_h->filename = m_strdup(current_package());
+	malloc_strcpy(&new_h->filename, current_package());
 	new_h->next = NULL;
 
 	upper(new_h->nick);
@@ -357,6 +358,7 @@ static void add_hook (int which, char *nick, char *stuff, int noisy, int not, in
 		new_h = (Hook *)new_malloc(sizeof(Hook));
 		new_h->nick = NULL;
 		new_h->stuff = NULL;
+		new_h->filename = NULL;
 	}
 
 	malloc_strcpy(&new_h->nick, nick);
@@ -366,7 +368,7 @@ static void add_hook (int which, char *nick, char *stuff, int noisy, int not, in
 	new_h->sernum = sernum;
 	new_h->flexible = flexible;
 	new_h->global = loading_global;
-	new_h->filename = m_strdup(current_package());
+	malloc_strcpy(&new_h->filename, current_package());
 	new_h->next = NULL;
 
 	upper(new_h->nick);

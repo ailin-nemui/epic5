@@ -186,6 +186,8 @@ static 	void 	remove_from_server_list (int i)
 	new_free(&s->d_nickname);
 	new_free(&s->userhost);
 	new_free(&s->cookie);
+	new_free(&s->umodes);
+	destroy_notify_list(i);
 
 	memmove(&server_list[i], &server_list[i + 1], 
 			(number_of_servers - i - 1) * sizeof(Server));

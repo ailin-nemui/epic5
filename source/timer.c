@@ -531,6 +531,8 @@ char *add_timer (int update, char *refnum_want, double when, long events, int (c
 	if (create_timer_ref(refnum_want, refnum_got) == -1)
 	{
 		say("TIMER: Refnum '%s' already exists", refnum_want);
+		new_free((char **)&ntimer->command);
+		new_free((char **)&ntimer->subargs);
 		new_free((char **)&ntimer);
 		return NULL;
 	}

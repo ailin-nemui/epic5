@@ -6187,7 +6187,7 @@ BUILT_IN_FUNCTION(function_unsplit, input)
 	GET_STR_ARG(sep, input);
 	while ((word = new_next_arg(input, &input)))
 		m_s3cat(&retval, sep, word);
-	RETURN_STR(retval);
+	RETURN_MSTR(retval);
 }
 
 
