@@ -1,4 +1,4 @@
-/* $EPIC: timer.c,v 1.9 2002/09/04 22:48:18 wd Exp $ */
+/* $EPIC: timer.c,v 1.10 2002/09/26 22:41:43 jnelson Exp $ */
 /*
  * timer.c -- handles timers in ircII
  *
@@ -597,29 +597,21 @@ static char *schedule_timer (TimerList *ntimer)
  * TimerTimeout:  Called from irc_io to help create the timeout
  * part of the call to select.
  */
-static struct timeval none = { 0, 0 };
-struct timeval TimerTimeout (void)
+Timeval	TimerTimeout (void)
 {
-	struct timeval	current;
-	struct timeval	timeout_in;
+	Timeval	forever = {9999, 0};
+	Timeval	current;
+	Timeval	timeout_in;
 
 	/* 
 	 * If executing ExecuteTimers here would be invalid, then
 	 * do not bother telling the caller we are ready.
 	 */
         if (waiting_out > waiting_in || parsingtimer || !PendingTimers)
-                return input_timeout;
+		return forever;
 
 	get_time(&current);
 	timeout_in = time_subtract(current, PendingTimers->time);
-
-	/* if 'timeout_in' is further away than 'input_timeout' we need to
-	 * return input_timeout. */
-	if (timeout_in.tv_sec > input_timeout.tv_sec)
-		timeout_in = input_timeout;
-	else if (timeout_in.tv_sec == input_timeout.tv_sec &&
-		 timeout_in.tv_usec > input_timeout.tv_usec)
-		timeout_in = input_timeout;
 
 	return timeout_in;
 }

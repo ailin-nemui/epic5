@@ -1,4 +1,4 @@
-/* $EPIC: vars.c,v 1.17 2002/08/12 16:41:11 wd Exp $ */
+/* $EPIC: vars.c,v 1.18 2002/09/26 22:41:43 jnelson Exp $ */
 /*
  * vars.c: All the dealing of the irc variables are handled here. 
  *
@@ -96,7 +96,6 @@ static	void	set_mangle_inbound 	(char *value);
 static	void	set_mangle_outbound 	(char *value);
 static	void	set_mangle_logfiles 	(char *value);
 static	void	set_scroll 		(int value);
-static	void	set_hold_interval	(int value);
 
 /*
  * irc_variable: all the irc variables used.  Note that the integer and
@@ -167,8 +166,6 @@ static	IrcVariable irc_variable[] =
 	{ "HIGH_BIT_ESCAPE",		INT_TYPE_VAR,	DEFAULT_HIGH_BIT_ESCAPE, NULL, set_meta_8bit, 0, 0 },
 	{ "HISTORY",			INT_TYPE_VAR,	DEFAULT_HISTORY, NULL, set_history_size, 0, 0 },
 	{ "HISTORY_CIRCLEQ",		BOOL_TYPE_VAR,	DEFAULT_HISTORY_CIRCLEQ, NULL, NULL, 0, 0 },
-	{ "HOLD_INTERVAL",		INT_TYPE_VAR,	DEFAULT_HOLD_INTERVAL, NULL, set_hold_interval, 0, 0 },
-	{ "HOLD_MODE",			BOOL_TYPE_VAR,	DEFAULT_HOLD_MODE, NULL, reset_line_cnt, 0, 0 },
 	{ "INDENT",			BOOL_TYPE_VAR,	DEFAULT_INDENT, NULL, NULL, 0, 0 },
 	{ "INPUT_ALIASES",		BOOL_TYPE_VAR,	DEFAULT_INPUT_ALIASES, NULL, NULL, 0, 0 },
 	{ "INPUT_PROMPT",		STR_TYPE_VAR,	0, NULL, set_input_prompt, 0, 0 },
@@ -884,21 +881,6 @@ static void	set_dcc_timeout (int value)
 		dcc_timeout = (time_t) -1;
 	else
 		dcc_timeout = value;
-}
-
-static	void	set_hold_interval (int value)
-{
-	static int	old_value = -1;
-	Window *	window = NULL;
-
-	if (value == old_value)
-		return;
-	while (traverse_all_windows(&window))
-	{
-		if (window->hold_interval == old_value)
-			window->hold_interval = value;
-	}
-	old_value = value;
 }
 
 int	parse_mangle (char *value, int nvalue, char **rv)

@@ -1,4 +1,4 @@
-/* $EPIC: irc.c,v 1.360 2002/09/23 08:07:49 wd Exp $ */
+/* $EPIC: irc.c,v 1.361 2002/09/26 22:41:43 jnelson Exp $ */
 /*
  * ircII: a new irc client.  I like it.  I hope you will too!
  *
@@ -52,7 +52,7 @@ const char internal_version[] = "20020819";
 /*
  * In theory, this number is incremented for every commit.
  */
-const unsigned long	commit_id = 364;
+const unsigned long	commit_id = 366;
 
 /*
  * As a way to poke fun at the current rage of naming releases after
@@ -805,7 +805,6 @@ static	struct	timeval	clock_timeout,
 			right_away,
 			timer,
 			*timeptr = NULL;
-		int	hold_over;
 		int	dccs;
 		fd_set	rd;
 
@@ -878,17 +877,24 @@ static	struct	timeval	clock_timeout,
 	if (cpu_saver && get_int_var(CPU_SAVER_EVERY_VAR))
 		clock_timeout.tv_sec += (get_int_var(CPU_SAVER_EVERY_VAR) - 1) * 60;
 
+	/* If nothing else, wait for the next minute */
 	if (!timeptr)
 		timeptr = &clock_timeout;
+
+	/* If there is a timer that expires sooner, wait for that */
 	timer = TimerTimeout();
 	if (time_diff(*timeptr, timer) < 0)
 		timeptr = &timer;
 
-	if ((hold_over = unhold_windows()))
-		timeptr = &right_away;
+	/* If there is an input timeout that expires sooner, wait for that */
+	if (time_diff(*timeptr, input_timeout) < 0)
+		timeptr = &input_timeout;
+
+	/* If there is a dead dcc, then do a poll */
 	if ((dccs = dcc_dead()))		/* XXX HACK! XXX */
 		timeptr = &right_away;
 
+	/* If for any reason the timeout is negative, do a poll */
 	if (time_diff(right_away, *timeptr) < 0)
 		timeptr = &right_away;
 
@@ -962,6 +968,7 @@ static	struct	timeval	clock_timeout,
 		refresh_a_screen(main_screen);
 
 	window_check_channels();
+	update_all_windows();
 	alloca(0);
 	caller[level] = NULL;
 	level--;

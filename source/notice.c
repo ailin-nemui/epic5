@@ -1,4 +1,4 @@
-/* $EPIC: notice.c,v 1.12 2002/07/30 19:37:17 crazyed Exp $ */
+/* $EPIC: notice.c,v 1.13 2002/09/26 22:41:43 jnelson Exp $ */
 /*
  * notice.c: special stuff for parsing NOTICEs
  *
@@ -55,6 +55,7 @@
 static	time_t 	convert_note_time_to_real_time (char *stuff);
 static	int 	kill_message (const char *from, char *line);
 	int	doing_notice = 0;
+static	int	never_connected = 1;
 
 
 /*
@@ -402,6 +403,7 @@ void 	got_initial_version_28 (char **ArgList)
 	if (never_connected)
 	{
 		never_connected = 0;
+		permit_status_update(1);
 
 		if (!ircrc_loaded)
 			load_ircrc();

@@ -14,43 +14,99 @@ KNOWN ERRATA (eg, bugs, or unresolved requests):
   just blindly calling my_strerror(errno).
 * scrollback/scrollforward/scrollend should be controlled by /window verbs
   and not solely by keybindings.
-* Plus something that scrolls back to a certain word in scrollback, for adm.
 * /TYPE honors keybindings, and calls edit_char(), but /XTYPE does not honor
   key bindings because it calls input_add_character().
 * Some way to turn off virtual host support (ie, reverse /hostname)
+* /DEFER needs to be server-specific.
+* The key timeout thing goes off every second -- should only when necessary.
+---
 
 [See http://www.epicsol.org/PROJECTS for things to come in the future]
 [See http://www.epicsol.org/CHANGELOG for things that changed in the past]
 
 THE CHANGELOG SINCE THE LAST RELEASE:
 -------------------------------------
-* Fix spelling mistake (wd)
-* Fix bug with bind_string (wd)
-* Accept +h as a "channel mode with arg" by default (ce)
-* /exec leak fix for -line, -part, etc. (ce)
-* /for var from x to y step z works for negative z now. (ce)                
-* Local variable tweaks. (ce)
-* Fixed $word() to not discard words after a "". (ce)
-* Fix /userip to use the internal USERHOST queue (ce)                       
-* -- You may need to use /userip -direct to avoid the cache (ce)
-* Karll Array overhaul.  Performance improvements for large arrays. (ce)
-* Karll arrays now stored unsorted internally (ce)
-* New funcs $usetitem() and $delitems() work on unsorted karll array (ce)
-* Karll arrays will be auto-sorted if you do anything that needs it (ce)
-* Extend karll array funcs to allow for additional item/index args (ce):
--- $getitem(array $getmatches(array *cat*)) returns all items with "cat"
--- $getitem(array2 $getmatches(array1 *cat*)) is like $copattern().
-* Fix the 307 handler (ce)
-* Better handling for /USRIP, always use the userhost queue (ce)            
-* Fix expand_twiddle to take a (const char *)
-* Fix do_log and set_log_file to take a (const char *)
-* Remove a couple of no-ops in keys.c
-* Revamp do_log into two parts; open_log,close_log; do_log now a wrapper.   
-* Fix a string that had a newline in it. spotted by Szabolcs Rumi.
-* Fix /alias /s to use %lu for unsigned longs
-* Fix ^C so it binds to SELF_INSERT again (wd)
-* New built in command, /LOG -- general purpose log files
-* New built in function, $logctl() -- operate on general purpose log files. 
 * Fix add_to_logfiles to handle target == NULL properly. doh!
 * Add server refnum info to /log list and /log describe
 * Fix add_to_logfiles, check for log level was inverted.
+* Switch window/status updates from active to passive-repaint.
+-- This reduces unecessary/redundant window/status repaints.
+* Don't perform useless term_cr()/term_newline() in rite().
+* Pass 'foreground', not 1 to output_with_count to determine if output ok.
+* Always use window->screen to determine visibility. Whack 'visible' var.
+* Rename 'distance_from_display' to 'distance_from_display_ip'
+* Break add_to_display_list() into add_to_scrollback()/ok_to_output().
+* Check position of cursor and display_ip at end of window_disp().
+* Move scrollback trimming to bulk job at end of window_disp().
+* Don't perform redundant term_flush() at end of window_disp()
+* Screen no longer needs term_flush().
+* Don't count lines being held in ok_to_output(). (we can't uncount them)
+* Whack obsolete 'holding_something', 'held_displayed' 'lines_displayed'
+* Don't use 'scrollback_point', but rather the flag 'autohold'.
+* Whack obsolete 'scrollback_point' in (struct window).
+* Whack obsolete 'lines_scrolled_back' in (struct window)
+* Don't allow output (ie, don't scroll window) (ie, window is "held" in place)
+*  If 'hold_mode' (set by /window hold_mode) is on
+*  or 'auto_hold' (set by SCROLL_*) is on
+* When output is held, you can only move window with scrollback operations.
+* Fix input.c to call cursor_not_in_display after moving cursor. duh.
+* Fix screen.c to call cursor_in_display after moving cursor. duh.
+* Break repaint_window() into repaint_one_line() and repaint_window_body()
+* If 'window->cursor' == -1, that forces redraw of window body.
+* repaint_window_body() always redraws entire window body now.
+* Whack obsolete 'repaint_start' and 'repaint_end' from (struct window)
+* repaint_one_line() repaints just one line upon request.
+* Allow /xecho -line on every window (All windows are scratch windows)
+* Rename 'scratch_line' to 'change_line' in (struct window).
+* Whack obsolete add_to_scratch_window()
+* Call update_all_windows() at the end of io() to ensure timely updates.
+* Move the "update" #define's from window.h to window.c
+* Add window_body_needs_redraw(), replaces REDRAW_DISPLAY_(FULL|FAST).
+* Whack no-scroll mode for now, it never did work right.	XXX FIXME XXX
+* Move add_to_display_list() from screen.c to window.c
+* Remove distinction between "held buffer" and "scrollback buffer"
+* Whack unhold_a_window() and unhold_windows(), no more "hold mode"
+* Whack /SET HOLD_MODE -- use /window hold_mode now (shimmed)
+* Whack /SET HOLD_INTERVAL -- use /window hold_interval (shimmed)
+* /CLEAR -U is presently ignored (fixed)
+* /FLUSH doesn't do /WINDOW FLUSH right now (won't fix this)
+* Don't unhold after CLEAR_WINDOW and UNCLEAR_WINDOW keybinds. (fixed)
+* window.c needs putchar_x() now.
+* Add /WINDOW MOVE_TO <num> which moves window to specific location on screen.
+* Now when stuff is held when you're in scrollback, you scroll all the way down.
+* Rnm 'recalculate_window_cursor' to 'recalculate_window_cursor_and_display_ip'
+* Don't unecessarily call cursor_to_input().
+* Change last four numbers in geometry info in /WINDOW DESCRIBE
+* Fix /WINDOW FLUSH to properly flush everything below bottom of screen
+* If you /WINDOW HOLD_MODE OFF it does an /UNCLEAR
+* /WINDOW SCRATCH deprecated; takes argument and performs no action.
+* /WINDOW SCROLL broken; takes argument and performs no action.
+* /WINDOW SCROLLBACK 0 does a /WINDOW FLUSH. (???)
+* Add /WINDOW SEARCH_BACK and /WINDOW SEARCH_FORWARD, regex scrollback opers.
+* Optimize recycling of display lines to avoid one more malloc/free.
+* Major rewrite of the scrollback/forward/start/end implementation.
+* Add change_line(), which is used by /xecho -line to rewrite your scrollback.
+* Change 'make_status' to take an extra integer argument
+* Rename 'status_update' to 'permit_status_update'
+* Add window_statusbar_needs_update(), replaces UPDATE_STATUS
+* Add window_statusbar_needs_redraw(), replaces REDRAW_STATUS
+* Whack (redraw|update)_window_statusbar()
+* Don't bother updating statusbars when it's redundant...
+* Move logic of whether to calculate status bar into make_status().
+* Move logic of whether to force redraw status bar into make_status().
+* Whack %B (always empty string) (fixed)
+* Change %H so it's on if holding, not if lines held
+* Make 'never_connected' static to notice.c
+* Don't use 'never_connected' to figure how to display "can't use nick" nums.
+* Whack obsolete "redirect" stuff from (struct screen).
+* Fix some printf-format issues with /alias /s
+* Make sure we don't pass a negative timeout to select().
+* Disentagle the key sequence timeout from TimerTimeout().
+* If you SCROLL_FORWARD to the very end, do an /unclear for backwards compat.
+* Fix /clear -u and /unclear -u to turn off hold mode like they used to.
+* Fix CLEAR_SCREEN and UNCLEAR_SCREEN keybindings to turn off hold mode
+* Create /set hold_mode(_interval) compat script shims in 'basical'.
+* Recalculate the lines_held value when calculating cursor and display_ip.
+* Fix the lines_held status bar thingee, now full backwards compat.
+* Fix ok_to_output to update status every /window hold_interval lines, not 10.
+* Remove K&R support from info.c.sh -- this should make OS X users happy.

@@ -1,4 +1,4 @@
-/* $EPIC: names.c,v 1.31 2002/08/30 16:51:25 crazyed Exp $ */
+/* $EPIC: names.c,v 1.32 2002/09/26 22:41:43 jnelson Exp $ */
 /*
  * names.c: This here is used to maintain a list of all the people currently
  * on your channel.  Seems to work 
@@ -319,7 +319,7 @@ static void 	destroy_channel (Channel *chan)
 		old_from = m_strdup(chan->window->current_channel);
 		old_refnum = chan->window->refnum;
 		new_free(&chan->window->current_channel);
-		chan->window->update |= UPDATE_STATUS;
+		window_statusbar_needs_update(chan->window);
 
 		if (get_int_var(SWITCH_CHANNEL_ON_PART_VAR))
 		{
@@ -1731,7 +1731,7 @@ void   move_channel_to_window (const char *chan, Window *old_w, Window *new_w)
 		if (!my_stricmp(chan, old_w->current_channel))
 		{
 			new_free(&old_w->current_channel);
-			old_w->update |= UPDATE_STATUS;
+			window_statusbar_needs_update(old_w);
 
 			if (new_w->current_channel)
 				old_chan = m_strdup(new_w->current_channel);
@@ -1747,8 +1747,8 @@ void   move_channel_to_window (const char *chan, Window *old_w, Window *new_w)
 			if (new_w->waiting_channel && 
 			    !my_stricmp(chan, new_w->waiting_channel))
 				    new_free(&new_w->waiting_channel);
+			window_statusbar_needs_update(new_w);
 
-			new_w->update |= UPDATE_STATUS;
 			set_channel_window(new_w, new_w->current_channel);
 			reset_old_w = 1;
 			break;
@@ -1773,7 +1773,7 @@ void   move_channel_to_window (const char *chan, Window *old_w, Window *new_w)
 							old_w->waiting_channel))
 			new_free(&old_w->waiting_channel);
 
-		    old_w->update |= UPDATE_STATUS;
+		    window_statusbar_needs_update(old_w);
 		    set_channel_window(old_w, old_w->current_channel);
 		    found = 1;
 		    break;

@@ -1,4 +1,4 @@
-/* $EPIC: input.c,v 1.6 2002/08/12 17:19:35 wd Exp $ */
+/* $EPIC: input.c,v 1.7 2002/09/26 22:41:43 jnelson Exp $ */
 /*
  * input.c: does the actual input line stuff... keeps the appropriate stuff
  * on the input line, handles insert/delete of characters/words... the whole
@@ -442,6 +442,7 @@ void	update_input (int update)
 		 */
 		term_clear_to_eol();
 		term_move_cursor(INPUT_CURSOR, INPUT_LINE);
+		cursor_not_in_display(last_input_screen);
 	}
 
 	/*
@@ -465,6 +466,7 @@ void	update_input (int update)
 		safe_puts(&(THIS_CHAR), len, echo);
 		term_clear_to_eol();
 		term_move_cursor(INPUT_CURSOR, INPUT_LINE);
+		cursor_not_in_display(last_input_screen);
 	}
 
 	/*
@@ -472,7 +474,10 @@ void	update_input (int update)
 	 * line, then go ahead and do that.
 	 */
 	else if (update == UPDATE_JUST_CURSOR)
+	{
 		term_move_cursor(INPUT_CURSOR, INPUT_LINE);
+		cursor_not_in_display(last_input_screen);
+	}
 
 	/*
 	 * Turn the terminal echo back on, and flush all of the output
@@ -678,6 +683,7 @@ static void	input_delete_char_from_screen (void)
 			term_move_cursor(last_input_screen->co - 1, INPUT_LINE);
 			term_putchar(INPUT_BUFFER[pos]);
 			term_move_cursor(INPUT_CURSOR, INPUT_LINE);
+			cursor_not_in_display(last_input_screen);
 		}
 
 		/* XXX - Very possibly, this is pointless */
@@ -960,6 +966,7 @@ BUILT_IN_BINDING(input_clear_to_bol)
 	THIS_POS = MIN_POS;
 	term_move_cursor(INPUT_PROMPT_LEN, INPUT_LINE);
 	term_clear_to_eol();
+	cursor_not_in_display(last_input_screen);
 	update_input(UPDATE_FROM_CURSOR);
 }
 
@@ -975,6 +982,7 @@ BUILT_IN_BINDING(input_clear_line)
 	THIS_POS = MIN_POS;
 	term_move_cursor(INPUT_PROMPT_LEN, INPUT_LINE);
 	term_clear_to_eol();
+	cursor_not_in_display(last_input_screen);
 	update_input(NO_UPDATE);
 	if (get_int_var(HISTORY_CIRCLEQ_VAR))
 		abort_history_browsing(0);
@@ -1115,7 +1123,9 @@ BUILT_IN_BINDING(send_line)
 	char *	line = LOCAL_COPY(get_input());
 
 	from_server = get_window_server(0);
+#if 0
 	unhold_a_window(last_input_screen->current_window);
+#endif
 	MIN_CHAR = 0;
 	THIS_POS = MIN_POS;
 
@@ -1206,14 +1216,12 @@ BUILT_IN_BINDING(type_text)
  */
 BUILT_IN_BINDING(clear_screen)
 {
-	hold_mode(NULL, OFF, 1);
-	clear_window_by_refnum(0);
+	clear_window_by_refnum(0, 1);
 }
 
 BUILT_IN_BINDING(input_unclear_screen)
 {
-	hold_mode(NULL, OFF, 1);
-	unclear_window_by_refnum(0);
+	unclear_window_by_refnum(0, 1);
 }
 
 /* parse_text: the bindable function that executes its string */

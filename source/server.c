@@ -1,4 +1,4 @@
-/* $EPIC: server.c,v 1.68 2002/09/01 18:27:52 jnelson Exp $ */
+/* $EPIC: server.c,v 1.69 2002/09/26 22:41:43 jnelson Exp $ */
 /*
  * server.c:  Things dealing with that wacky program we call ircd.
  *
@@ -78,8 +78,6 @@ static	char *	do_umode (int du_index);
 	const char *get_server_group (int refnum);
 	const char *get_server_type (int refnum);
 
-	int	never_connected = 1;		/* true until first connection
-						 * is made */
 	int	connected_to_server = 0;	/* true when connection is
 						 * confirmed */
 	int	reconnects_to_hint = 0;		/* XXX Hack.  Don't remind me */

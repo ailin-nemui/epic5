@@ -1,4 +1,4 @@
-/* $EPIC: numbers.c,v 1.29 2002/08/27 15:14:32 crazyed Exp $ */
+/* $EPIC: numbers.c,v 1.30 2002/09/26 22:41:43 jnelson Exp $ */
 /*
  * numbers.c: handles all those strange numeric response dished out by that
  * wacky, nutty program we call ircd 
@@ -877,11 +877,10 @@ void 	numbered_command (char *from, int comm, char **ArgList)
 			reset_nickname(from_server);
 
 		PasteArgs(ArgList, 0);
-		if (never_connected &&
-			do_hook(current_numeric, "-1 %s", *ArgList))
+		if (from && do_hook(current_numeric, "-1 %s", *ArgList))
 				display_msg(from, ArgList);
-		else if (!never_connected && 
-			do_hook(current_numeric, "%s %s", from, *ArgList))
+		else if (!from && do_hook(current_numeric, "%s %s", 
+							from, *ArgList))
 				display_msg(from, ArgList);
 
 		break;

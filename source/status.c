@@ -1,4 +1,4 @@
-/* $EPIC: status.c,v 1.12 2002/07/17 22:52:53 jnelson Exp $ */
+/* $EPIC: status.c,v 1.13 2002/09/26 22:41:43 jnelson Exp $ */
 /*
  * status.c: handles the status line updating, etc for IRCII 
  *
@@ -115,8 +115,16 @@ static	char	*nick_format		= (char *) 0;
 static	char	*server_format 		= (char *) 0;
 static	char	*notify_format 		= (char *) 0;
 
-Status	main_status;
-int	main_status_init = 0;
+	Status	main_status;
+	int	main_status_init = 0;
+static void	init_status	(void);
+
+/*
+ * Status updates are not permitted until we are connected to a server.
+ * Got_initial_version_28 will set this to 1 when we first get connected
+ * to a server.
+ */
+int     status_updates_permitted = 0;
 
 /*
  * This is the list of possible expandos.  Note that you should not use
@@ -272,7 +280,7 @@ char	*convert_sub_format (const char *format, char c)
  * %s format is put in the sprintf()-able return value (stored in buffer).
  * All other characters are copied as-is to the return value.
  */
-void	build_status_format (Status *s, int k)
+static void	build_status_format (Status *s, int k)
 {
 	char	buffer[BIG_BUFFER_SIZE + 1];
 	int	cp;
@@ -352,10 +360,13 @@ void	build_status_format (Status *s, int k)
 }
 
 /*
- * This function does two things:
- * 1) Rebuilds the status_func[] tables for each of the three possible
- *    status_format's (single, lower double, upper double)
- * 2) Causes the status bars to be redrawn immediately.
+ * This function either rebuilds the status_func[] tables for each of the
+ * three possible status_format's (single, lower double, upper double) for
+ * a particular window (w != NULL) or for the global default status bars
+ * (w == NULL)
+ *
+ * This function should only by the functions that actually change the 
+ * status formats (build_status, new_window, and window_status_format*)
  */
 void	rebuild_a_status (Window *w)
 {
@@ -414,7 +425,33 @@ void	rebuild_a_status (Window *w)
 	}
 }
 
-void	init_status	(void)
+/*
+ * This function causes every status bar, both global and per-window to be
+ * rebuilt, and marks every window as needing its status bar redrawn.
+ * This function can be quite expensive.
+ *
+ * This function should be called whenever you change the global status format
+ * (/SET STATUS_FORMAT*) or one of the sub-components (/SET STATUS_*)
+ * 
+ * This function is a /SET callback, so it must always take a (char *) as an
+ * argument even though we don't care about it.
+ */
+void	build_status	(char *unused)
+{
+	Window 	*w = NULL;
+
+	if (!main_status_init)
+		init_status();
+
+	rebuild_a_status(w);
+	while (traverse_all_windows(&w))
+		rebuild_a_status(w);
+
+	update_all_status();
+}
+
+
+static void	init_status	(void)
 {
 	int	i, k;
 
@@ -436,18 +473,14 @@ void	init_status	(void)
 	main_status_init = 1;
 }
 
-void	build_status	(char *unused)
+/*
+ * permit_status_update: sets the status_update_flag to whatever flag is.
+ */
+int     permit_status_update (int flag)
 {
-	Window 	*w = NULL;
-
-	if (!unused && !main_status_init)
-		init_status();
-
-	rebuild_a_status(w);
-	while (traverse_all_windows(&w))
-		rebuild_a_status(w);
-
-	update_all_status();
+        int old_flag = status_updates_permitted;
+        status_updates_permitted = flag;
+        return old_flag;
 }
 
 
@@ -456,7 +489,7 @@ void	build_status	(char *unused)
  * but the crecendo of complaints with regards to this just got to be too 
  * irritating, so i fixed it early.
  */
-void	make_status (Window *window)
+void	make_status (Window *window, int must_redraw)
 {
 	int	status_line;
 	u_char	buffer	    [BIG_BUFFER_SIZE + 1];
@@ -464,6 +497,10 @@ void	make_status (Window *window)
 	u_char	rhs_buffer  [BIG_BUFFER_SIZE + 1];
 	Char	*func_value [MAX_FUNCTIONS];
 	u_char	*ptr;
+
+	/* We do NOT redraw status bars for hidden windows */
+	if (!window->screen || !status_updates_permitted)
+		return;
 
 	for (status_line = 0; status_line < window->status.double_status + 1; status_line++)
 	{
@@ -710,14 +747,15 @@ void	make_status (Window *window)
 			status_line, 
 			buffer);
 
-		if (dumb_mode)
+		if (dumb_mode || !foreground)
 			continue;
 
 		/*
 		 * Update the status line on the screen.
 		 * First check to see if it has changed
+		 * Remember this is only done in full screen mode.
 		 */
-		if (!window->status.line[status_line].result ||
+		if (must_redraw || !window->status.line[status_line].result ||
 			strcmp(buffer, window->status.line[status_line].result))
 		{
 			/*
@@ -729,13 +767,10 @@ void	make_status (Window *window)
 			/*
 			 * Output the status line to the screen
 			 */
-			if (!dumb_mode)
-			{
-				output_screen = window->screen;
-				term_move_cursor(0, window->bottom + status_line);
-				output_with_count(buffer, 1, 1);
-				cursor_in_display(window);
-			}
+			output_screen = window->screen;
+			term_move_cursor(0, window->bottom + status_line);
+			output_with_count(buffer, 1, 1);
+			cursor_in_display(window);
 		}
 	}
 
@@ -1267,8 +1302,7 @@ STATUS_FUNCTION(status_hold)
 {
 	char *text;
 
-	if (window->holding_something && 
-	    (text = get_string_var(STATUS_HOLD_VAR)))
+	if (window->lines_held && (text = get_string_var(STATUS_HOLD_VAR)))
 		return text;
 	else
 		return empty_string;
@@ -1362,12 +1396,12 @@ STATUS_FUNCTION(status_position)
 	static char my_buffer[81];
 
 	snprintf(my_buffer, 80, "(%d-%d)", 
+#if 0
 			window->screen->input_line,
 			window->screen->input_cursor);
-#if 0
-			window->lines_scrolled_back,
-			window->distance_from_display);
 #endif
+			window->distance_from_display_ip,
+			window->display_size);
 	return my_buffer;
 }
 
@@ -1379,7 +1413,7 @@ STATUS_FUNCTION(status_scrollback)
 {
 	char *stuff;
 
-	if (window->scrollback_point && 
+	if (window->autohold && 
 	    (stuff = get_string_var(STATUS_SCROLLBACK_VAR)))
 		return stuff;
 	else
@@ -1390,10 +1424,10 @@ STATUS_FUNCTION(status_scroll_info)
 {
 	static char my_buffer[81];
 
-	if (window->scrollback_point)
+	if (window->autohold)
 	{
 		snprintf(my_buffer, 80, " (Scroll: %d of %d)", 
-				window->distance_from_display,
+				window->distance_from_display_ip,
 				window->display_buffer_size - 1);
 	}
 	else

@@ -1,4 +1,4 @@
-/* $EPIC: window.c,v 1.35 2002/07/30 05:30:27 jnelson Exp $ */
+/* $EPIC: window.c,v 1.36 2002/09/26 22:41:43 jnelson Exp $ */
 /*
  * window.c: Handles the organzation of the logical viewports (``windows'')
  * for irc.  This includes keeping track of what windows are open, where they
@@ -36,6 +36,9 @@
  * SUCH DAMAGE.
  */
 
+/* Sigh */
+#define __need_putchar_x__
+
 #include "irc.h"
 #include "screen.h"
 #include "window.h"
@@ -62,6 +65,11 @@ static char *onoff[] = { "OFF", "ON" };
 /* Resize relatively or absolutely? */
 #define RESIZE_REL 1
 #define RESIZE_ABS 2
+
+/* used by the update flag to determine what needs updating */
+#define REDRAW_DISPLAY     1 << 0
+#define UPDATE_STATUS      1 << 1
+#define REDRAW_STATUS      1 << 2
 
 /*
  * The current window.  This replaces the old notion of "curr_scr_win" 
@@ -113,13 +121,6 @@ const	char	*who_from = (char *) 0;
  */
 	unsigned window_display = 1;
 
-/*
- * This is set to 1 if the status bar may be updated immediately.  This is
- * set to 0 if all status updates should be suppressed.  You need to remember
- * to set it back to 1 before the updates will take effect. ;-)
- */
-	int	status_update_flag = 1;
-
 static 	void 	remove_from_invisible_list 	(Window *);
 static 	void 	swap_window 			(Window *, Window *);
 static	Window	*get_next_window  		(Window *);
@@ -131,7 +132,12 @@ static 	Window *window_next 			(Window *, char **);
 static 	Window *window_previous 		(Window *, char **);
 static	void 	set_screens_current_window 	(Screen *, Window *);
 static	void 	remove_window_from_screen (Window *window, int hide);
-static Window *window_discon (Window *window, char **args);
+static 	Window *window_discon (Window *window, char **args);
+static 	void	window_scrollback_end (Window *window);
+static 	void 	window_scrollback_to_string (Window *window, regex_t *str);
+static 	void 	window_scrollforward_to_string (Window *window, regex_t *str);
+	int	change_line (Window *window, const unsigned char *str);
+	int	add_to_display (Window *window, const unsigned char *str);
 
 
 /* * * * * * * * * * * CONSTRUCTOR AND DESTRUCTOR * * * * * * * * * * * */
@@ -173,16 +179,16 @@ Window	*new_window (Screen *screen)
 
 	new_w->top = 0;			/* Filled in later */
 	new_w->bottom = 0;		/* Filled in later */
-	new_w->cursor = 0;		/* Filled in later */
+	new_w->cursor = -1;		/* Force a clear-screen */
+	new_w->noscrollcursor = -1;
 	new_w->absolute_size = 0;
 	new_w->line_cnt = 0;
 	new_w->old_size = 1;		/* Filled in later */
-	new_w->visible = 1;
 	new_w->update = 0;
 	new_w->miscflags = 0;
 	new_w->beep_always = 0;
-	new_w->scratch_line = -1;
-	new_w->noscroll = 0;
+	new_w->change_line = -1;
+	new_w->scroll = 1;
 	new_w->skip = 0;
 	new_w->notify_level = real_notify_level();
 	if (!current_window)		/* First window ever */
@@ -206,22 +212,14 @@ Window	*new_window (Screen *screen)
 	new_w->top_of_display = NULL;		/* Filled in later */
 	new_w->ceiling_of_display = NULL;	/* Filled in later */
 	new_w->display_ip = NULL;		/* Filled in later */
-	new_w->scrollback_point = NULL;
 	new_w->display_buffer_size = 0;
 	new_w->display_buffer_max = get_int_var(SCROLLBACK_VAR);
 	new_w->display_size = 1;		/* Filled in later */
-	new_w->lines_scrolled_back = 0;
-	new_w->distance_from_display = 0;
-	new_w->repaint_start = 0;
-	new_w->repaint_end = -1;
+	new_w->distance_from_display_ip = 0;
 
-	new_w->hold_mode = get_int_var(HOLD_MODE_VAR);
-	new_w->holding_something = 0;
-	new_w->held_displayed = 0;
-	new_w->lines_displayed = 0;
-	new_w->lines_held = 0;
-	new_w->last_lines_held = 0;
-	new_w->hold_interval = get_int_var(HOLD_INTERVAL_VAR);
+	new_w->hold_mode = 0;
+	new_w->autohold = 0;
+	new_w->hold_interval = 10;
 
 	new_w->waiting_channel = NULL;
 	new_w->current_channel = NULL;
@@ -503,7 +501,7 @@ void 	delete_all_windows (void)
 		delete_window(win);
 }
 
-/* * * * * * * * * * * * * * * * ITERATE OVER WINDOWS * * * * * * * * * * */
+/* * * * * * * * * * * ITERATE OVER WINDOWS * * * * * * * * * * * * * * * */
 /*
  * traverse_all_windows: Based on the old idea by phone that there should 
  * be a way to iterate the window list without having to keep a static
@@ -615,7 +613,6 @@ void 	add_to_invisible_list (Window *window)
 
 	invisible_list = window;
 	window->prev = (Window *) 0;
-	window->visible = 0;
 	if (window->screen)
 		window->columns = window->screen->co;
 	else
@@ -641,7 +638,6 @@ Window *add_to_window_list (Screen *screen, Window *new_w)
 
 	screen->visible_windows++;
 	new_w->screen = screen;
-	new_w->visible = 1;
 	new_w->miscflags &= ~WINDOW_NOTIFIED;
 
 	/*
@@ -718,7 +714,7 @@ static void 	remove_window_from_screen (Window *window, int hide)
 {
 	Screen *s;
 
-	if (!window->visible || !((s = window->screen)))
+	if (!((s = window->screen)))
 		panic("This window is not on a screen");
 
 	/*
@@ -758,7 +754,7 @@ static void 	remove_window_from_screen (Window *window, int hide)
 }
 
 
-/* * * * * * * * * * * * SIZE AND LOCATION PRIMITIVES * * * * * * * */
+/* * * * * * * * * * * * SIZE AND LOCATION PRIMITIVES * * * * * * * * * * * */
 /*
  * recalculate_window_positions: This runs through the window list and
  * re-adjusts the top and bottom fields of the windows according to their
@@ -776,10 +772,12 @@ void	recalculate_window_positions (Screen *screen)
 	top = 0;
 	for (tmp = screen->window_list; tmp; tmp = tmp->next)
 	{
-		tmp->update |= REDRAW_DISPLAY_FULL | REDRAW_STATUS;
 		tmp->top = top;
 		tmp->bottom = top + tmp->display_size;
 		top += tmp->display_size + 1 + tmp->status.double_status;
+
+		window_body_needs_redraw(tmp);
+		window_statusbar_needs_redraw(tmp);
 	}
 }
 
@@ -802,7 +800,7 @@ static void 	swap_window (Window *v_window, Window *window)
 		return;
 	}
 
-	if (window->visible || !v_window->visible)
+	if (window->screen || !v_window->screen)
 	{
 		say("You can only SWAP a hidden window with a visible window.");
 		return;
@@ -829,7 +827,6 @@ static void 	swap_window (Window *v_window, Window *window)
 			       v_window->status.double_status - 
 				window->status.double_status;
 	window->bottom = window->top + window->display_size;
-	window->visible = 1;
 	window->screen = v_window->screen;
 	if (v_window->screen->current_window == v_window)
 		v_window->screen->current_window = window;
@@ -863,7 +860,8 @@ static void 	swap_window (Window *v_window, Window *window)
 	/*
 	 * And recalculate the window's positions.
 	 */
-	window->update |= REDRAW_DISPLAY_FULL | REDRAW_STATUS;
+	window_body_needs_redraw(window);
+	window_statusbar_needs_redraw(window);
 	window->miscflags &= ~WINDOW_NOTIFIED;
 	update_input(UPDATE_ALL);
 }
@@ -936,103 +934,63 @@ static void 	move_window (Window *window, int offset)
  */
 static void 	move_window_to (Window *window, int offset)
 {
-	return;
-#if 0
-	Window	*tmp,
-		*last;
-	int	count;
-	int	pos;
+	Window *w;
+	Screen *s;
+	int	i;
 
 	if (offset <= 0)
 		return;
 
-	if (!window->screen)
+	if (!(s = window->screen))
 		return;		/* Whatever */
 
-	last = NULL;
+	if (s->visible_windows == 1)
+		return;		/* Whatever */
 
-	/*
-	 * First, remove the window from the screen's list
-	 */
+	if (offset > s->visible_windows)
+		offset = s->visible_windows;
+
+	/* Unlink the window from the screen */
 	if (window->prev)
 		window->prev->next = window->next;
 	else
-		window->screen->window_list = window->next;
+		s->window_list = window->next;
 
 	if (window->next)
 		window->next->prev = window->prev;
+	else
+		s->window_list_end = window->prev;
 
-	/*
-	 * Reset the pointers, just to be safe
-	 */
-	window->next = NULL;
-	window->prev = NULL;
+	/* Now figure out where it goes */
+	for (w = s->window_list, i = 1; i < offset; i++)
+		w = w->next;
 
-	tmp = window->screen->window_list;
-	for (count = 1; count < offset; count++)
-		tmp = tmp->next;
-
-	/*
-	 * Now 'tmp' points at the window we must put AFTER this window.
-	 */
-	if (tmp->prev)
+	/* Now relink it where it belongs */
+	if (w)
 	{
-		window->prev = tmp->prev;
-		tmp->prev->next = window;
+		if (w->prev)
+		{
+			w->prev->next = window;
+			window->prev = w->prev;
+		}
+		else
+		{
+			s->window_list = window;
+			window->prev = NULL;
+		}
 	}
 	else
-		window->screen->window_list = window;
-	tmp->prev = window;
-
-	/*
-	 * Now walk off the positions from the top, starting with 1
-	 */
-	for (win_pos = 0, tmp = window->screen->window_list; tmp;
-				tmp = tmp->next, win_pos++)
 	{
-		if (window == tmp)
-			break;
-		last = tmp;
+		s->window_list_end->next = window;
+		window->prev = s->window_list_end;
+		s->window_list_end = window;
 	}
 
-	if (!tmp)
-		return;
+	window->next = w;
 
-	if (!last)
-		window->screen->window_list = tmp->next;
-	else
-		last->next = tmp->next;
-
-	if (tmp->next)
-		tmp->next->prev = last;
-	else
-		window->screen->window_list_end = last;
-
-	if (offset < 0)
-		win_pos = (window->screen->visible_windows + offset + win_pos) %
-		    window->screen->visible_windows;
-	else
-		win_pos = (offset + win_pos) % window->screen->visible_windows;
-
-	last = NULL;
-	for (pos = 0, tmp = window->screen->window_list;
-			    pos != win_pos; tmp = tmp->next, pos++)
-		last = tmp;
-
-	if (!last)
-		window->screen->window_list = window;
-	else
-		last->next = window;
-
-	if (tmp)
-		tmp->prev = window;
-	else
-		window->screen->window_list_end = window;
-
-	window->prev = last;
-	window->next = tmp;
-	recalculate_window_positions(window->screen);
-#endif
+	set_screens_current_window(s, window);
+	make_window_current(window);
+	recalculate_window_positions(s);
 }
 
 /*
@@ -1056,7 +1014,7 @@ static 	void 	resize_window (int how, Window *window, int offset)
 	if (!window)
 		window = current_window;
 
-	if (!window->visible)
+	if (!window->screen)
 	{
 		say("You cannot change the size of hidden windows!");
 		return;
@@ -1094,26 +1052,6 @@ static 	void 	resize_window (int how, Window *window, int offset)
 
 	window_size = window->display_size + offset;
 	other_size = other->display_size - offset;
-
-#if 0
-	if (how == RESIZE_REL)
-	{
-		window_size = window->display_size + offset;
-		other_size = other->display_size - offset;
-	}
-	else /* absolute size */
-	{
-		/* 
-		 * How much its growing/shrinking by.  if
-		 * offset > display_size, then window_size < 0.
-		 * and other window is shrinking.  If offset < display_size,
-		 * the window_size > 0, and other_window is growing.
-		 */
-		window_size = offset;
-		offset -= window->display_size;
-		other_size = other->display_size - offset;
-	}
-#endif
 
 	if ((window_size < 0) || (other_size < 0))
 	{
@@ -1157,7 +1095,7 @@ void	resize_window_display (Window *window)
 		window->ceiling_of_display = window->top_of_display;
 		window->old_size = 1;
 	}
-	else if (window->scrollback_point)
+	else if (window->hold_mode)
 		;
 	else
 	{
@@ -1187,7 +1125,7 @@ void	resize_window_display (Window *window)
 		else if (cnt < 0)
 		{
 			/* Use any whitespace we may have lying around */
-			cnt += (window->old_size - window->distance_from_display);
+			cnt += (window->old_size - window->distance_from_display_ip);
 			for (i = 0; i > cnt; i--)
 			{
 				if (tmp == window->display_ip)
@@ -1196,19 +1134,49 @@ void	resize_window_display (Window *window)
 			}
 		}
 		window->top_of_display = tmp;
-		recalculate_window_cursor(window);
+		recalculate_window_cursor_and_display_ip(window);
 	}
 
 	/*
 	 * Mark the window for redraw and store the new window size.
 	 */
-	window->update |= REDRAW_DISPLAY_FULL | REDRAW_STATUS;
+	window_body_needs_redraw(window);
+	window_statusbar_needs_redraw(window);
 	window->old_size = window->display_size;
 	return;
 }
 
 
 /* * * * * * * * * * * * WINDOW UPDATING AND RESIZING * * * * * * * * * */
+/*
+ * THese three functions are the one and only functions that are authorized
+ * to be used to declare that something needs to be updated on the screen.
+ */
+
+/*
+ * statusbar_needs_update
+ */
+void	window_statusbar_needs_update (Window *w)
+{
+	w->update |= UPDATE_STATUS;
+}
+
+/*
+ * statusbar_needs_redraw
+ */
+void	window_statusbar_needs_redraw (Window *w)
+{
+	w->update |= REDRAW_STATUS;
+}
+
+/*
+ * window_body_needs_redraw
+ */
+void	window_body_needs_redraw (Window *w)
+{
+	w->cursor = -1;
+}
+
 /*
  * redraw_all_windows: This basically clears and redraws the entire display
  * portion of the screen.  All windows and status lines are draws.  This does
@@ -1221,10 +1189,64 @@ void 	redraw_all_windows (void)
 	if (dumb_mode)
 		return;
 
-	while (traverse_all_windows(&tmp))
-		tmp->update |= REDRAW_STATUS | REDRAW_DISPLAY_FAST;
+	while (traverse_all_windows(&tmp)) {
+		window_body_needs_redraw(tmp);
+		window_statusbar_needs_redraw(tmp);
+	}
 }
 
+/*
+ * update_all_status: This performs a logical "update_window_status" on
+ * every window for the current screen.
+ */
+void 	update_all_status (void)
+{
+	Window	*window;
+
+	window = NULL;
+	while (traverse_all_windows(&window))
+		window_statusbar_needs_update(window);
+}
+
+/*
+ * update_all_windows: This goes through each visible window and draws the
+ * necessary portions according the the update field of the window. 
+ */
+void 	update_all_windows (void)
+{
+	Window	*tmp = NULL;
+
+	if (in_window_command)
+		return;
+
+	while (traverse_all_windows(&tmp))
+	{
+		/* Never try to update/redraw an invisible window */
+		if (!tmp->screen)
+			continue;
+
+		if (tmp->display_size != tmp->old_size)
+			resize_window_display(tmp);
+
+		if (tmp->cursor == -1 || 
+			(tmp->scroll && 
+			 tmp->cursor < tmp->distance_from_display_ip  &&
+			 tmp->cursor < tmp->display_size))
+			repaint_window_body(tmp);
+
+		if (tmp->update & REDRAW_STATUS)
+			make_status(tmp, 1);
+		else if (tmp->update & UPDATE_STATUS)
+			make_status(tmp, 0);
+
+		/* XXX - But what about if something failed? */
+		tmp->update = 0;
+	}
+
+	update_input(UPDATE_JUST_CURSOR);
+}
+
+/****************************************************************************/
 /*
  * Rebalance_windows: this is called when you want all the windows to be
  * rebalanced, except for those who have a set size.
@@ -1275,8 +1297,6 @@ void	rebalance_windows (Screen *screen)
 	}
 	recalculate_window_positions(screen);
 }
-
-
 
 /*
  * recalculate_windows: this is called when the terminal size changes (as
@@ -1352,48 +1372,6 @@ void 	recalculate_windows (Screen *screen)
 	recalculate_window_positions(screen);
 }
 
-/*
- * update_all_windows: This goes through each visible window and draws the
- * necessary portions according the the update field of the window. 
- */
-void 	update_all_windows (void)
-{
-	Window	*tmp = NULL;
-
-	if (in_window_command)
-		return;
-
-	while (traverse_all_windows(&tmp))
-	{
-		if (tmp->display_size != tmp->old_size)
-			resize_window_display(tmp);
-		if (tmp->visible && tmp->update)
-		{
-			int fast_window = tmp->update & REDRAW_DISPLAY_FAST;
-			int full_window = tmp->update & REDRAW_DISPLAY_FULL;
-			int r_status = tmp->update & REDRAW_STATUS;
-			int u_status = tmp->update & UPDATE_STATUS;
-
-			/* Dont do the fast vs full bogus optimization */
-			if (full_window || fast_window)
-			{
-				repaint_window(tmp, tmp->repaint_start,
-						    tmp->repaint_end);
-			}
-
-			if (r_status)
-				update_window_status(tmp, 1);
-			else if (u_status)
-				update_window_status(tmp, 0);
-		}
-		tmp->update = 0;
-		tmp->repaint_start = 0;
-		tmp->repaint_end = -1;
-	}
-	update_input(UPDATE_JUST_CURSOR);
-}
-
-
 /* * * * * * * * LOCATION AND COMPOSITION OF WINDOWS ON SCREEN * * * * * * */
 /*
  * goto_window: This will switch the current window to the N'th window 
@@ -1454,7 +1432,6 @@ void 	swap_last_window (char dumb, char *dumber)
 	swap_window(current_window, invisible_list);
 	message_from((char *) 0, LOG_CRAP);
 	update_all_windows();
-	cursor_to_input();
 }
 
 /*
@@ -1515,7 +1492,6 @@ void 	previous_window (char dumb, char *dumber)
 void 	swap_previous_window (char dumb, char *dumber)
 {
 	window_previous(current_window, NULL);
-	cursor_to_input();
 	update_all_windows();
 }
 
@@ -1677,10 +1653,10 @@ int 	is_window_visible (char *arg)
 	if (is_number(arg))
 	{
 		if ((tmp = get_window_by_refnum(my_atol(arg))) != NULL)
-			return tmp->visible;
+			return (tmp->screen) ? 1 : 0;
 	}
 	if ((tmp = get_window_by_name(arg)) != NULL)
-		return tmp->visible;
+		return (tmp->screen) ? 1 : 0;
 
 	return -1;
 }
@@ -1706,64 +1682,6 @@ char *	get_status_by_refnum(unsigned refnum, int line)
 
 
 
-/* * * * * * * * * * * * * * * * STATUS LINE * * * * * * * * * * * * * */
-/*
- * update_window_status: Update the status line(s) for just one specified
- * window.  If 'refresh' is 1, then we forcibly redraw the status, otherwise
- * we just update it if it has changed.
- */
-void 	update_window_status (Window *window, int refresh)
-{
-	if (!window)
-		window = current_window;
-	if ((!window->visible) || !status_update_flag || never_connected)
-		return;
-
-	if (refresh)
-	{
-		new_free(&(window->status.line[0].result));
-		new_free(&(window->status.line[1].result));
-	}
-	make_status(window);
-}
-
-/*
- * update_all_status: This performs a logical "update_window_status" on
- * every window for the current screen.
- */
-void 	update_all_status (void)
-{
-	Window	*window;
-
-	if (!status_update_flag || never_connected || !foreground)
-		return;
-
-	window = NULL;
-	while (traverse_all_windows(&window))
-	{
-		if (!window->visible)		/* on the invisible list */
-			break;
-		make_status(window);
-	}
-
-	update_input(UPDATE_JUST_CURSOR);
-}
-
-/*
- * status_update: sets the status_update_flag to whatever flag is.  This also
- * calls update_all_status(), which will update the status line if the flag
- * was true, otherwise it's just ignored 
- */
-int	status_update (int flag)
-{
-	int old_flag = status_update_flag;
-
-	status_update_flag = flag;
-	update_all_status();
-	cursor_to_input();
-	return old_flag;
-}
-
 /* * * * * * * * * * * * * INPUT PROMPT * * * * * * * * * * * * * * */
 /*
  * set_prompt_by_refnum: changes the prompt for the given window.  A window
@@ -1778,9 +1696,6 @@ void 	set_prompt_by_refnum (unsigned refnum, char *prompt)
 		tmp = current_window;
 	malloc_strcpy(&tmp->prompt, prompt);
 }
-
-
-
 
 /* get_prompt_by_refnum: returns the prompt for the given window refnum */
 char 	*get_prompt_by_refnum (unsigned refnum)
@@ -1819,7 +1734,7 @@ const char	*query_nick (void)
 }
 
 
-/* * * * * * * * * * * * * * * * * * CHANNELS * * * * * * * * * * * * * */
+/* * * * * * * * * * * * * * CHANNELS * * * * * * * * * * * * * * * * * */
 /*
  * is_current_channel: Returns true is channel is a current channel for any
  * window.  If the delete flag is set, the unset channel as the current
@@ -1870,7 +1785,7 @@ const char *set_channel_by_refnum (unsigned int refnum, const char *channel)
 	if (tmp->waiting_channel && channel &&
 				!my_stricmp(channel, tmp->waiting_channel))
 		new_free(&tmp->waiting_channel);
-	tmp->update |= UPDATE_STATUS;
+	window_statusbar_needs_update(tmp);
 	if (tmp->current_channel)
 		set_channel_window(tmp, tmp->current_channel);
 	do_hook(SWITCH_CHANNELS_LIST, "%d %s %s", refnum, 
@@ -2304,50 +2219,29 @@ static void 	clear_window (Window *window)
 	if (dumb_mode)
 		return;
 
-	/* Scratch windows */
-	if (window->scratch_line != -1)
-	{
-		Display *curr_line;
+	window->top_of_display = window->display_ip;
+	window->ceiling_of_display = window->top_of_display;
+	if (window->miscflags & WINDOW_NOTIFIED)
+		window->miscflags &= ~WINDOW_NOTIFIED;
+	recalculate_window_cursor_and_display_ip(window);
 
-		/* Just walk every line and nuke whatever is in it */
-		curr_line = window->top_of_display;
-		while (curr_line && curr_line != window->display_ip)
-		{
-			malloc_strcpy(&curr_line->line, empty_string);
-			curr_line = curr_line->next;
-		}
-	}
-
-	/* Normal windows */
-	else
-	{
-		window->top_of_display = window->display_ip;
-		window->ceiling_of_display = window->top_of_display;
-		window->cursor = 0;
-		window->lines_scrolled_back = 0;
-		window->scrollback_point = NULL;
-		window->held_displayed = 0;
-		if (window->miscflags & WINDOW_NOTIFIED)
-			window->miscflags &= ~WINDOW_NOTIFIED;
-	}
-
-	repaint_window(window, 0, -1);
-	update_window_status(window, 1);
+	window_body_needs_redraw(window);
+	window_statusbar_needs_redraw(window);
 }
 
-void 	clear_all_windows (int unhold, int visible, int hidden)
+void 	clear_all_windows (int visible, int hidden, int unhold)
 {
 	Window *tmp = NULL;
 
 	while (traverse_all_windows(&tmp))
 	{
-		if (visible && !hidden && !tmp->visible)
+		if (visible && !hidden && !tmp->screen)
 			continue;
-		if (!visible && hidden && tmp->visible)
+		if (!visible && hidden && tmp->screen)
 			continue;
 
-		if (unhold)
-			hold_mode(tmp, OFF, 1);
+		if (unhold && (tmp->hold_mode || tmp->autohold))
+			unhold_window(tmp);
 		clear_window(tmp);
 	}
 }
@@ -2356,12 +2250,14 @@ void 	clear_all_windows (int unhold, int visible, int hidden)
  * clear_window_by_refnum: just like clear_window(), but it uses a refnum. If
  * the refnum is invalid, the current window is cleared. 
  */
-void 	clear_window_by_refnum (unsigned refnum)
+void 	clear_window_by_refnum (unsigned refnum, int unhold)
 {
 	Window	*tmp;
 
 	if (!(tmp = get_window_by_refnum(refnum)))
 		tmp = current_window;
+	if (unhold && (tmp->hold_mode || tmp->autohold))
+		unhold_window(tmp);
 	clear_window(tmp);
 }
 
@@ -2372,9 +2268,6 @@ static void	unclear_window (Window *window)
 	if (dumb_mode)
 		return;
 
-	if (window->scratch_line != -1)
-		return;			/* Cant unclear a scratch window */
-
 	window->top_of_display = window->display_ip;
 	for (i = 0; i < window->display_size; i++)
 	{
@@ -2383,33 +2276,36 @@ static void	unclear_window (Window *window)
 		window->top_of_display = window->top_of_display->prev;
 	}
 	window->ceiling_of_display = window->top_of_display;
-	repaint_window(window, 0, -1);
-	update_window_status(window, 0);
+
+	window_body_needs_redraw(window);
+	window_statusbar_needs_redraw(window);
 }
 
-void	unclear_all_windows (int unhold, int visible, int hidden)
+void	unclear_all_windows (int visible, int hidden, int unhold)
 {
 	Window *tmp = NULL;
 
 	while (traverse_all_windows(&tmp))
 	{
-		if (visible && !hidden && !tmp->visible)
+		if (visible && !hidden && !tmp->screen)
 			continue;
-		if (!visible && hidden && tmp->visible)
+		if (!visible && hidden && tmp->screen)
 			continue;
 
-		if (unhold)
-			hold_mode(tmp, OFF, 1);
+		if (unhold && (tmp->hold_mode || tmp->autohold))
+			unhold_window(tmp);
 		unclear_window(tmp);
 	}
 }
 
-void	unclear_window_by_refnum (unsigned refnum)
+void	unclear_window_by_refnum (unsigned refnum, int unhold)
 {
 	Window *tmp;
 
 	if (!(tmp = get_window_by_refnum(refnum)))
 		tmp = current_window;
+	if (unhold && (tmp->hold_mode || tmp->autohold))
+		unhold_window(tmp);
 	unclear_window(tmp);
 }
 
@@ -2533,7 +2429,7 @@ static void 	list_a_window (Window *window, int len)
 		                window->query_nick ? window->query_nick : "<None>",
 		                get_server_itsname(window->server),
 		                bits_to_lastlog_level(window->window_level),
-		                window->visible ? empty_string : " Hidden");
+		                window->screen ? empty_string : " Hidden");
 }
 
 
@@ -2587,7 +2483,7 @@ static Window *get_invisible_window (char *name, char **args)
 		}
 		if ((tmp = get_window(name, &arg)) != NULL)
 		{
-			if (!tmp->visible)
+			if (!tmp->screen)
 				return (tmp);
 			else
 			{
@@ -2691,8 +2587,8 @@ static Window *window_back (Window *window, char **args)
 		tmp = last_input_screen->window_list;
 
 	make_window_current(tmp);
-	if (tmp->visible)
-		set_screens_current_window(last_input_screen, tmp);
+	if (tmp->screen)
+		set_screens_current_window(tmp->screen, tmp);
 	else
 	{
 		swap_window(window, tmp);
@@ -2812,7 +2708,7 @@ static Window *window_bind (Window *window, char **args)
 			    w->server == window->server)
 			{
 				move_channel_to_window(arg, w, window);
-				w->update |= UPDATE_STATUS;
+				window_statusbar_needs_update(w);
 			}
 		}
 
@@ -2916,10 +2812,7 @@ Window *window_channel (Window *window, char **args)
 
 			if (w->current_channel &&
 				!my_stricmp(arg, w->current_channel))
-			{
 			    move_channel_to_window(arg, w, window);
-			    w->update |= UPDATE_STATUS;
-			}
 		}
 
 		message_from(arg, LOG_CRAP);
@@ -3018,8 +2911,8 @@ else
 	say("\tScreen: %p",	window->screen);
 	say("\tGeometry Info: [%d %d %d %d %d %d]", 
 				window->top, window->bottom, 
-				window->held_displayed, window->display_size,
-				window->cursor, window->distance_from_display);
+				0, window->display_size,
+				window->cursor, window->distance_from_display_ip);
 	say("\tCO, LI are [%d %d]", current_term->TI_cols, current_term->TI_lines);
 	say("\tCurrent channel: %s", 
 				window->current_channel ? 
@@ -3103,8 +2996,6 @@ static Window *window_double (Window *window, char **args)
 
 	window->display_size += current - window->status.double_status;
 	recalculate_window_positions(window->screen);
-	redraw_all_windows();
-	build_status(NULL);
 	return window;
 }
 
@@ -3157,7 +3048,7 @@ static	Window *window_fixed (Window *window, char **args)
  */
 static	Window *window_flush (Window *window, char **args)
 {
-	flush_everything_being_held(window);
+	flush_scrollback_after(window);
 	return window;
 }
 
@@ -3262,7 +3153,9 @@ static Window *window_hold_mode (Window *window, char **args)
 	if (get_boolean("HOLD_MODE", args, &window->hold_mode))
 		return NULL;
 
-	set_var_value(HOLD_MODE_VAR, onoff[window->hold_mode]);
+	if (window->hold_mode == 0)
+		window_scrollback_end(window);
+
 	return window;
 }
 
@@ -3552,7 +3445,7 @@ static Window *window_name (Window *window, char **args)
 		else if (is_window_name_unique(arg))
 		{
 			malloc_strcpy(&window->name, arg);
-			window->update |= UPDATE_STATUS;
+			window_statusbar_needs_update(window);
 		}
 
 		else
@@ -3696,7 +3589,7 @@ static Window *window_pop (Window *window, char **args)
 		if (!win)
 			continue;
 
-		if (win->visible)
+		if (win->screen)
 			set_screens_current_window(win->screen, win);
 		else
 			show_window(win);
@@ -3744,7 +3637,7 @@ static Window *window_prompt (Window *window, char **args)
 	if ((arg = next_arg(*args, args)))
 	{
 		malloc_strcpy(&window->prompt, arg);
-		window->update |= UPDATE_STATUS;
+		window_statusbar_needs_update(window);
 	}
 	else
 		say("You must specify a prompt for the window!");
@@ -3776,7 +3669,7 @@ Window *window_query (Window *window, char **args)
 	if ((nick = window->query_nick))
 	{
 		say("Ending conversation with %s", window->query_nick);
-		window->update |= UPDATE_STATUS;
+		window_statusbar_needs_update(window);
 
 		a = nick;
 		while (a && *a)
@@ -3828,7 +3721,7 @@ Window *window_query (Window *window, char **args)
 		to_window = sw;
 
 		malloc_strcpy(&window->query_nick, nick);
-		window->update |= UPDATE_STATUS;
+		window_statusbar_needs_update(window);
 		a = nick;
 		while (a && *a)
 		{
@@ -3839,7 +3732,9 @@ Window *window_query (Window *window, char **args)
 		}
 	}
 
+/*
 	update_input(UPDATE_ALL);
+*/
 	return window;
 }
 
@@ -3903,7 +3798,7 @@ static Window *window_rebind (Window *window, char **args)
 		    w->server == window->server)
 		{
 			move_channel_to_window(arg, w, window);
-			w->update |= UPDATE_STATUS;
+			window_statusbar_needs_update(window);
 		}
 	}
 
@@ -4106,7 +4001,7 @@ static Window *window_refnum (Window *window, char **args)
 	{
 		window = tmp;
 		make_window_current(tmp);
-		if (tmp->visible)
+		if (tmp->screen)
 		{
 			set_screens_current_window(tmp->screen, tmp);
 			window = tmp;
@@ -4130,7 +4025,7 @@ static Window *window_refnum_or_swap (Window *window, char **args)
 		return NULL;
 	}
 
-	if (tmp->visible)
+	if (tmp->screen)
 	{
 		make_window_current(tmp);
 		set_screens_current_window(tmp->screen, tmp);
@@ -4140,6 +4035,7 @@ static Window *window_refnum_or_swap (Window *window, char **args)
 
 	return tmp;
 }
+
 static Window *window_refresh (Window *window, char **args)
 {
 	int oiwc = in_window_command;
@@ -4183,6 +4079,7 @@ static Window *window_remove (Window *window, char **args)
 	return window;
 }
 
+/* This is a NO-OP now -- every window is a scratch window */
 static	Window *window_scratch (Window *window, char **args)
 {
 	int scratch = 0;
@@ -4190,55 +4087,109 @@ static	Window *window_scratch (Window *window, char **args)
 	if (get_boolean("SCRATCH", args, &scratch))
 		return NULL;
 
-	if (scratch == 1)
-		window->scratch_line = 0;
-	else
-	{
-		window->scratch_line = -1;
-		window->top_of_display = window->display_ip;
-		window->update |= REDRAW_DISPLAY_FULL | REDRAW_STATUS;
-	}
 	return window;
 }
 
+/* XXX - Need to come back and fix this... */
 Window *window_scroll (Window *window, char **args)
 {
-	int scroll = 0;
+	int 	scroll = 0;
+	int	count;
 
 	if (get_boolean("SCROLL", args, &scroll))
 		return NULL;
 
-	if (scroll == 1 && window->scratch_line == -1)
-		return window;
-	if (scroll == 0 && window->scratch_line == 0)
-		return window;
+#if 0
+	if (!(window->scroll = scroll))
+	{
+		while (window->display_buffer_size < window->display_size)
+			add_to_display(window, empty_string);
+		window->noscrollcursor = 0;
+		unclear_window(window);
+	}
+#endif
 
-	if (scroll == 1)
-	{
-		window->scratch_line = -1;
-		window->top_of_display = window->display_ip;
-		window->update |= REDRAW_DISPLAY_FULL | REDRAW_STATUS;
-	}
-	else
-	{
-		window->scratch_line = 0;
-		window->noscroll = 1;
-	}
 	return window;
 }
 
 static	Window *window_scrollback (Window *window, char **args)
 {
-	int val = get_number("SCROLLBACK", args);
+	int val;
 
-	if (!val)
-		return NULL;
-	if (val < window->display_size * 2)
-		window->display_buffer_max = window->display_size * 2;
-	else
-		window->display_buffer_max = val;
+	if (args && *args && **args)
+	{
+		val = get_number("SCROLLBACK", args);
+
+		if (val == 0)
+			flush_scrollback_after(window);
+		else if (val < window->display_size * 2)
+			window->display_buffer_max = window->display_size * 2;
+		else
+			window->display_buffer_max = val;
+	}
 
 	say("Window scrollback size set to %d", window->display_buffer_max);
+	return window;
+}
+
+regex_t *last_regex = NULL;
+
+static int	new_search_term (const char *arg)
+{
+	int	errcode;
+
+	if (last_regex)
+		regfree(last_regex);
+	else
+		last_regex = new_malloc(sizeof(*last_regex));
+
+	errcode = regcomp(last_regex, arg, 
+				REG_EXTENDED | REG_ICASE | REG_NOSUB);
+	if (errcode != 0)
+	{
+		char	errstr[1024];
+
+		regerror(errcode, last_regex, errstr, sizeof(errstr));
+		say("The regex [%s] isn't acceptable because [%s]", 
+				arg, errstr);
+		return -1;
+	}
+	return 0;
+}
+
+static Window *window_search_back (Window *window, char **args)
+{
+	char *arg;
+
+	if ((arg = new_next_arg(*args, args)))
+	{
+		if (new_search_term(arg))
+			return window;
+	}
+
+	if (last_regex)
+		window_scrollback_to_string(window, last_regex);
+	else
+		say("Need to know what to search for");
+
+	return window;
+}
+
+static Window *window_search_forward (Window *window, char **args)
+{
+	char *arg;
+
+	if ((arg = new_next_arg(*args, args)))
+	{
+		if (new_search_term(arg))
+			return window;
+	}
+
+	if (last_regex)
+		window_scrollforward_to_string(window, last_regex);
+	else
+		say("Need to know what to search for");
+
 	return window;
 }
 
@@ -4408,7 +4359,7 @@ static Window *window_status_format (Window *window, char **args)
 
 	arg = new_next_arg(*args, args);
 	malloc_strcpy(&window->status.line[0].raw, arg);
-	window->update |= REDRAW_STATUS;
+	window_statusbar_needs_redraw(window);
 	rebuild_a_status(window);
 
 	return window;
@@ -4420,7 +4371,7 @@ static Window *window_status_format1 (Window *window, char **args)
 
 	arg = new_next_arg(*args, args);
 	malloc_strcpy(&window->status.line[1].raw, arg);
-	window->update |= REDRAW_STATUS;
+	window_statusbar_needs_redraw(window);
 	rebuild_a_status(window);
 
 	return window;
@@ -4432,7 +4383,7 @@ static Window *window_status_format2 (Window *window, char **args)
 
 	arg = new_next_arg(*args, args);
 	malloc_strcpy(&window->status.line[2].raw, arg);
-	window->update |= REDRAW_STATUS;
+	window_statusbar_needs_redraw(window);
 	rebuild_a_status(window);
 
 	return window;
@@ -4444,7 +4395,7 @@ static Window *window_status_special (Window *window, char **args)
 
 	arg = new_next_arg(*args, args);
 	malloc_strcpy(&window->status.special, arg);
-	window->update |= REDRAW_STATUS;
+	window_statusbar_needs_redraw(window);
 
 	return window;
 }
@@ -4547,6 +4498,8 @@ static const window_ops options [] = {
 	{ "SCRATCH",		window_scratch		},
 	{ "SCROLL",		window_scroll		},
 	{ "SCROLLBACK",		window_scrollback	}, /* * */
+	{ "SEARCH_BACK",	window_search_back	},
+	{ "SEARCH_FORWARD",	window_search_forward	},
 	{ "SERVER",		window_server 		},
 	{ "SHOW",		window_show 		},
 	{ "SHOW_ALL",		window_show_all		}, /* * */
@@ -4572,7 +4525,7 @@ BUILT_IN_COMMAND(windowcmd)
 	int 	oiwc = in_window_command;
 
 	in_window_command = 1;
-	old_status_update = status_update_flag;
+	old_status_update = permit_status_update(0);
 	message_from(NULL, LOG_CURRENT);
 	window = current_window;
 
@@ -4613,21 +4566,14 @@ BUILT_IN_COMMAND(windowcmd)
 		window_describe(current_window, NULL);
 
 	in_window_command = oiwc;
-	status_update_flag = old_status_update;
+	permit_status_update(old_status_update);
 	message_from((char *) 0, LOG_CRAP);
-	update_all_windows();
-	update_all_status();
-	cursor_to_input();
 	window_check_channels();
+	update_all_windows();
 }
 
 
-/*
- * Everything after this line is in the wrong place.  Consider it 
- * "miscelaneous", and pending reformatting.  Ick.
- */
-
-/* * * * * * * * * * * SCROLLBACK BUFFER * * * * * * * * * * * * * * */
+/********************** SCROLLBACK BUFFER MAINTAINANCE **********************/
 /* 
  * XXXX Dont you DARE touch this XXXX 
  *
@@ -4644,11 +4590,25 @@ void 	delete_display_line (Display *stuff)
 	if (recycle == stuff)
 		panic("recycle == stuff is bogus");
 	if (recycle)
+	{
+		new_free((char **)&recycle->line);
 		new_free((char **)&recycle);
+	}
 	recycle = stuff;
+#if 0
 	new_free(&stuff->line);
+#endif
+	*(stuff->line) = 0;
 }
 
+/*
+ * CAUTION: The return value of this function may or may not have 'line'
+ * set to NULL.  Therefore, you MUST call malloc_strcpy() to initialize 
+ * the 'line' field.  You will cause memory leaks if you fail to do this!
+ * By not free()ing line, we save a free()/malloc() if the new original line
+ * had enough space to hold the new line.  We let malloc_strcpy() do the
+ * dirty work there.
+ */
 Display *new_display_line (Display *prev)
 {
 	Display *stuff;
@@ -4659,18 +4619,127 @@ Display *new_display_line (Display *prev)
 		recycle = NULL;
 	}
 	else
+	{
 		stuff = (Display *)new_malloc(sizeof(Display));
+		stuff->line = NULL;
+	}
 
+#if 0
 	stuff->line = NULL;
+#endif
 	stuff->prev = prev;
 	stuff->next = NULL;
 	return stuff;
 }
 
-/* * * * * * * * * * * Scrollback functionality * * * * * * * * * * */
-void 	scrollback_backwards_lines (int lines)
+/*
+ * This function adds an item to the window's scrollback.  If the item
+ * should be displayed on the screen, then 1 is returned.  If the item is
+ * not to be displayed, then 0 is returned.  This function handles all
+ * the hold_mode stuff.
+ */
+int 	add_to_scrollback (Window *window, const unsigned char *str)
 {
-	Window	*window = current_window;
+	/*
+	 * If this is a scratch window, do that somewhere else
+	 */
+	if (window->change_line != -1)
+		return change_line(window, str);
+
+	return add_to_display(window, str);
+}
+
+int	add_to_display (Window *window, const unsigned char *str)
+{
+	/* Add to the display list */
+	window->display_ip->next = new_display_line(window->display_ip);
+	malloc_strcpy(&window->display_ip->line, str);
+	window->display_ip = window->display_ip->next;
+	window->display_buffer_size++;
+	window->distance_from_display_ip++;
+	return 1;
+}
+
+
+int	trim_scrollback (Window *window)
+{
+	/* Never trim the scrollback if we're holding something. */
+	if (window->hold_mode || window->autohold)
+		return 0;
+
+	/*
+	 * Before outputting the line, we snip back the top of the
+	 * display buffer.  (The fact that we do this only when we get
+	 * to here is what keeps whats currently on the window always
+	 * active -- once we get out of hold mode or scrollback mode, then
+	 * we truncate the display buffer at that point.)
+	 */
+	while (window->display_buffer_size > window->display_buffer_max)
+	{
+		Display *next = window->top_of_scrollback->next;
+		delete_display_line(window->top_of_scrollback);
+		window->top_of_scrollback = next;
+		window->display_buffer_size--;
+	}
+
+	/* Ok.  Go ahead and print it */
+	return 1;
+}
+
+int	flush_scrollback_after (Window *window)
+{
+	Display *curr_line, *next_line;
+	int	count;
+
+	curr_line = window->top_of_display;
+	for (count = 1; count < window->display_size; count++)
+		if ((curr_line = curr_line->next) == window->display_ip)
+			return 0;
+
+	next_line = curr_line->next;
+	curr_line->next = window->display_ip;
+	window->display_ip->prev = curr_line;
+	curr_line = next_line;
+	while (curr_line != window->display_ip)
+	{
+		next_line = curr_line->next;
+		delete_display_line(curr_line);
+		window->display_buffer_size--;
+		curr_line = next_line;
+	}
+
+	window->hold_mode = 0;
+	recalculate_window_cursor_and_display_ip(window);
+	window_scrollback_end(window);
+	return 1;
+}
+
+
+
+/* * * * * * * * * * * Scrollback functionality * * * * * * * * * * */
+static void	window_scrollback_start (Window *window)
+{
+	if (window->display_buffer_size <= window->display_size)
+	{
+		term_beep();
+		return;
+	}
+
+	window->autohold = 1;
+	window->top_of_display = window->top_of_scrollback;
+	window_body_needs_redraw(window);
+	window_statusbar_needs_update(window);
+}
+
+static void	window_scrollback_end (Window *window)
+{
+	window->autohold = 0;
+	if (window->distance_from_display_ip >= window->display_size)
+		unclear_window(window);
+}
+
+static void 	window_scrollback_backwards_lines (Window *window, int lines)
+{
 	Display *new_top = window->top_of_display;
 	int	new_lines;
 
@@ -4680,32 +4749,27 @@ void 	scrollback_backwards_lines (int lines)
 		return;
 	}
 
-	if (!window->scrollback_point)
-		window->scrollback_point = window->top_of_display;
-
 	for (new_lines = 0; new_lines < lines; new_lines++)
 	{
 		if (new_top == window->top_of_scrollback)
 			break;
 		new_top = new_top->prev;
 	}
-
 	window->top_of_display = new_top;
-	window->lines_scrolled_back += new_lines;
-	recalculate_window_cursor(window);
-	repaint_window(window, 0, -1);
-	update_window_status(window, 0);
-	cursor_not_in_display(window->screen);
-	update_input(UPDATE_JUST_CURSOR);
+
+	window->autohold = 1;
+	recalculate_window_cursor_and_display_ip(window);
+	window_body_needs_redraw(window);
+	window_statusbar_needs_update(window);
 }
 
-void 	scrollback_forwards_lines (int lines)
+static void 	window_scrollback_forwards_lines (Window *window, int lines)
 {
-	Window	*window = current_window;
 	Display *new_top = window->top_of_display;
 	int	new_lines = 0;
 
-	if (new_top == window->display_ip || !window->scrollback_point)
+	if (window->hold_mode == 0 &&
+		window->distance_from_display_ip <= window->display_size)
 	{
 		term_beep();
 		return;
@@ -4713,284 +4777,157 @@ void 	scrollback_forwards_lines (int lines)
 
 	for (new_lines = 0; new_lines < lines; new_lines++)
 	{
-		if (new_top == window->scrollback_point)
+		if (new_top == window->display_ip)
 			break;
 		new_top = new_top->next;
 	}
-
 	window->top_of_display = new_top;
-	window->lines_scrolled_back -= new_lines;
-	recalculate_window_cursor(window);
-	repaint_window(window, 0, -1);
-	update_window_status(window, 0);
-	cursor_not_in_display(window->screen);
-	update_input(UPDATE_JUST_CURSOR);
 
-	if (window->lines_scrolled_back <= 0)
-		scrollback_end (0, NULL);
+	recalculate_window_cursor_and_display_ip(window);
+	window_body_needs_redraw(window);
+	window_statusbar_needs_update(window);
+
+	if (window->distance_from_display_ip <= window->display_size)
+	{
+		window->autohold = 0;
+		unclear_window(window);		/* Historical reasons */
+	}
+}
+
+static void 	window_scrollback_to_string (Window *window, regex_t *preg)
+{
+	Display *new_top = window->top_of_display;
+
+	while (new_top != window->top_of_scrollback)
+	{
+		/* Always move up a line before searching */
+		new_top = new_top->prev;
+
+		if (regexec(preg, new_top->line, 0, NULL, 0) == 0)
+		{
+			window->top_of_display = new_top;
+
+			window->autohold = 1;
+			recalculate_window_cursor_and_display_ip(window);
+			window_body_needs_redraw(window);
+			window_statusbar_needs_update(window);
+			return;
+		}
+	}
+
+	term_beep();
+}
+
+static void 	window_scrollforward_to_string (Window *window, regex_t *preg)
+{
+	Display *new_top = window->top_of_display;
+
+	if (new_top == window->display_ip)
+		return;
+
+	while (new_top->next != window->display_ip)
+	{
+		/* Always move up a line before searching */
+		new_top = new_top->next;
+
+		if (regexec(preg, new_top->line, 0, NULL, 0) == 0)
+		{
+			window->top_of_display = new_top;
+
+			recalculate_window_cursor_and_display_ip(window);
+			window_body_needs_redraw(window);
+			window_statusbar_needs_update(window);
+			if (window->distance_from_display_ip <= window->display_size)
+				window->autohold = 0;
+			return;
+		}
+	}
+
+	term_beep();
+}
+
+/* * * * * * * * */
+static void	window_scrollback_forward (Window *window)
+{
+	int 	ratio = get_int_var(SCROLLBACK_RATIO_VAR);
+	int	lines;
+
+	if (ratio < 1) 
+		ratio = 1;
+	if (ratio > 100) 
+		ratio = 100;
+
+	if ((lines = current_window->display_size * ratio / 100) < 1)
+		lines = 1;
+	window_scrollback_forwards_lines(current_window, lines);
+}
+
+static void	window_scrollback_backward (Window *window)
+{
+	int 	ratio = get_int_var(SCROLLBACK_RATIO_VAR);
+	int	lines;
+
+	if (ratio < 1) 
+		ratio = 1;
+	if (ratio > 100) 
+		ratio = 100;
+
+	if ((lines = current_window->display_size * ratio / 100) < 1)
+		lines = 1;
+	window_scrollback_backwards_lines(current_window, lines);
 }
 
 void 	scrollback_forwards (char dumb, char *dumber)
 {
-	int 	ratio = get_int_var(SCROLLBACK_RATIO_VAR);
-	int	lines;
-
-	if (ratio < 1) 
-		ratio = 1;
-	if (ratio > 100) 
-		ratio = 100;
-
-	if ((lines = current_window->display_size * ratio / 100) < 1)
-		lines = 1;
-	scrollback_forwards_lines(lines);
+	window_scrollback_forward(current_window);
 }
 
 void 	scrollback_backwards (char dumb, char *dumber)
 {
-	int 	ratio = get_int_var(SCROLLBACK_RATIO_VAR);
-	int	lines;
-
-	if (ratio < 1) 
-		ratio = 1;
-	if (ratio > 100) 
-		ratio = 100;
-
-	if ((lines = current_window->display_size * ratio / 100) < 1)
-		lines = 1;
-	scrollback_backwards_lines(lines);
+	window_scrollback_backward(current_window);
 }
-
 
 void 	scrollback_end (char dumb, char *dumber)
 {
-	Window	*window = current_window;
-
-	if (!window->scrollback_point)
-	{
-		term_beep();
-		return;
-	}
-
-	/* Adjust the top of window only if we would move forward. */
-	if (window->lines_scrolled_back > 0)
-		window->top_of_display = window->scrollback_point;
-
-	window->lines_scrolled_back = 0;
-	window->scrollback_point = NULL;
-	repaint_window(window, 0, -1);
-	update_window_status(window, 0);
-	cursor_not_in_display(window->screen);
-	update_input(UPDATE_JUST_CURSOR);
+	window_scrollback_end(current_window);
 }
 
 void 	scrollback_start (char dumb, char *dumber)
 {
-	Window	*window = current_window;
-
-	if (window->display_buffer_size <= window->display_size)
-	{
-		term_beep();
-		return;
-	}
-
-	if (!window->scrollback_point)
-		window->scrollback_point = window->top_of_display;
-
-	while (window->top_of_display != window->top_of_scrollback)
-	{
-		window->top_of_display = window->top_of_display->prev;
-		window->lines_scrolled_back++;
-	}
-
-	repaint_window(window, 0, -1);
-	update_window_status(window, 0);
-	cursor_not_in_display(window->screen);
-	update_input(UPDATE_JUST_CURSOR);
+	window_scrollback_start(current_window);
 }
+
 
 
 /* HOLD MODE STUFF */
-/*
- * hold_mode: sets the "hold mode".  Really.  If the update flag is true,
- * this will also update the status line, if needed, to display the hold mode
- * state.  If update is false, only the internal flag is set.
- * -- Note: update is always 1. --
- */
-void	hold_mode (Window *window, int flag, int update)
-{
-	if (!window)
-		window = current_window;
-
-	if (flag != ON && window->scrollback_point)
-		update = 0;
-
-	if (flag == TOGGLE)
-	{
-		if (window->hold_mode == OFF)
-			window->hold_mode = ON;
-		else
-			window->hold_mode = OFF;
-	}
-	else
-		window->hold_mode = flag;
-
-	if (!update)
-	{
-		window->last_lines_held = -1;
-		return;
-	}
-
-	if (window->lines_held != window->last_lines_held)
-	{
-		window->last_lines_held = window->lines_held;
-		update_window_status(window, 0);
-		if (window->update | UPDATE_STATUS)
-			window->update -= UPDATE_STATUS;
-		cursor_in_display(window);
-		update_input(NO_UPDATE);
-	}
-}
-
-/*
- * This checks to see if any windows need to be unheld or not
- */
-int	unhold_windows(void)
-{
-	Window 	*w = NULL;
-	int	retval = 0;
-
-	while (traverse_all_windows(&w))
-	{
-		if (!w->hold_mode && w->lines_held)
-		{
-			if (unhold_a_window(w))
-				retval++;
-		}
-	}
-
-	return retval;
-}
-
-
-
 void 	unstop_all_windows (char dumb, char *dumber)
 {
 	Window	*tmp = NULL;
 
 	while (traverse_all_windows(&tmp))
-		hold_mode(tmp, OFF, 1);
-}
-
-/*
- * reset_line_cnt: called by /SET HOLD_MODE to reset the line counter so we
- * always get a held screen after the proper number of lines 
- */
-void 	reset_line_cnt (int value)
-{
-	current_window->hold_mode = value;
-	current_window->held_displayed = 0;
+	{
+		tmp->hold_mode = 0;
+		window_scrollback_end(tmp);
+	}
 }
 
 /* toggle_stop_screen: the BIND function TOGGLE_STOP_SCREEN */
 void 	toggle_stop_screen (char unused, char *not_used)
 {
-	hold_mode((Window *) 0, TOGGLE, 1);
+	current_window->hold_mode = !current_window->hold_mode;
+	if (current_window->hold_mode == 0)
+		window_scrollback_end(current_window);
 	update_all_windows();
 }
 
-/* 
- * If "scrollback_point" is set, then anything below the bottom of the screen
- * at that point gets nuked.
- * If "scrollback_point" is not set, anything below the current position of
- * the screen gets nuked.
- */
-void 	flush_everything_being_held (Window *window)
+void	unhold_window (Window *window)
 {
-	Display *ptr, *save;
-	int 	count;
-
-	if (!window)
-		window = current_window;
-
-	count = window->display_size;
-
-	if (window->scrollback_point)
-		ptr = window->scrollback_point;
-	else
-		ptr = window->top_of_display;
-
-	/* Save one screenfull of stuff. */
-	while (--count > 0)
-	{
-		ptr = ptr->next;
-
-		/* XXX - ptr can be NULL if the screen is blank. */
-		if (!ptr || ptr == window->display_ip)
-			return;		/* Nothing to flush */
-	}
-
-	save = ptr->next;
-	ptr->next = window->display_ip;
-	window->display_ip->prev = ptr;
-	ptr = save;
-
-	while (ptr != window->display_ip)
-	{
-		Display *next = ptr->next;
-		delete_display_line(ptr);
-		window->lines_held--;
-		window->display_buffer_size--;
-		ptr = next;
-	}
-
-	recalculate_window_cursor(window);
-	if (window->lines_held != 0)
-		panic("lines_held == %d after flushing", window->lines_held);
-
-	window->holding_something = 0;
-	hold_mode(window, OFF, 1);
+	window->hold_mode = 0;
+	window_scrollback_end(window);
 }
 
 
-/*
- * This adjusts the viewport up one full screen.  This calls rite() 
- * indirectly, because repaint_window() uses rite() to do the work.
- * This belongs somewhere else.
- */
-int	unhold_a_window (Window *window)
-{
-	int amount = window->display_size;
-
-	if (window->holding_something &&
-		(window->distance_from_display < window->display_size))
-	{
-		window->holding_something = 0;
-		window->lines_held = 0;
-	}
-
-	if (!window->lines_held || window->scrollback_point)
-		return 0;		/* Right. */
-
-	if (window->lines_held < amount)
-		amount = window->lines_held;
-
-	window->lines_held -= amount;
-	window->held_displayed = 0;
-
-	if (!window->lines_held)
-		window->holding_something = 0;
-
-	if (!amount)
-		return 0;		/* Whatever */
-
-	while (amount--)
-		window->top_of_display = window->top_of_display->next;
-
-	repaint_window(window, 0, -1);
-	update_window_status(window, 0);
-	return 1;
-}
-
+/**************************************************************************/
 /*
  * Miscelaneous -- these probably belong somewhere else, but until then,
  * theyre here.
@@ -4998,22 +4935,46 @@ int	unhold_a_window (Window *window)
 
 
 /*
- * This figures out just where the cursor is supposed to be on a window
- * by starting at the top of the window and walking downwards until it
- * finds the insertion point.  It correctly deals with scrollback and
- * hold mode by putting the cursor on the bottom line.
+ * The "Window Cursor" tells the output routines where the next line of
+ * output to this window should go.  "Window Top" is offset of the window's
+ * first line on the physical screen.  So by adding "Window Top" to "Window
+ * Cursor", we know where to put the next line.
+ *
+ * However, as a special idiom, if "Window Cursor" is equal to the "Window 
+ * Display Size", it points at the status bar; this is a special case which
+ * is always to be interpreted in one of two ways:
+ *
+ *	"Window Scrollback Point" is not set:	Scroll window before output
+ *	"Window Scrollback Point" is set:	Do not do any on output.
+ *
+ * In all cases where "Window Cursor" is less than "Window Display Size",
+ * output will occur.
+ *
+ * This function also recalculates "Window Distance From Top Of Display To
+ * the Insertion Point" which is used to decide whether to do output 
+ * supression in hold mode and other places.
  */
-void 	recalculate_window_cursor (Window *window)
+void 	recalculate_window_cursor_and_display_ip (Window *window)
 {
 	Display *tmp;
 
-	window->cursor = window->distance_from_display = 0;
+	window->cursor = window->distance_from_display_ip = 0;
 	for (tmp = window->top_of_display; tmp != window->display_ip;
 				tmp = tmp->next)
-		window->cursor++, window->distance_from_display++;
+		window->cursor++, window->distance_from_display_ip++;
 
 	if (window->cursor > window->display_size)
 		window->cursor = window->display_size;
+
+	if (window->distance_from_display_ip - window->display_size - 1 <
+			window->lines_held)
+	{
+		if (window->distance_from_display_ip - window->display_size - 1 < 0)
+			window->lines_held = 0;
+		else
+			window->lines_held = window->distance_from_display_ip - 
+						window->display_size - 1;
+	}
 }
 
 /*
@@ -5047,11 +5008,11 @@ static void 	set_screens_current_window (Screen *screen, Window *window)
 	{
 		if (screen->current_window)
 		{
-			screen->current_window->update |= UPDATE_STATUS;
+			window_statusbar_needs_update(screen->current_window);
 			screen->last_window_refnum = screen->current_window->refnum;
 		}
 		screen->current_window = window;
-		screen->current_window->update |= UPDATE_STATUS;
+		window_statusbar_needs_update(screen->current_window);
 	}
 	if (current_window != window)
 		make_window_current(window);
@@ -5112,3 +5073,63 @@ void 	make_window_current (Window *window)
 		old_screen, old_window,
 		new_screen, new_window);
 }
+
+/**************************************************************************/
+/*
+ * This puts the given string into a scratch window.  It ALWAYS suppresses
+ * any further action (by returning a FAIL, so rite() is not called).
+ */
+int	change_line (Window *window, const unsigned char *str)
+{
+	Display *my_line;
+	int 	cnt;
+	int	change_line;
+
+	change_line = window->change_line;
+	window->change_line = -1;
+
+	/* Must have been asked to change a line */
+	if (change_line == -1)
+		panic("This is not a scratch window.");
+
+	/* Outputting to a 0 size window is a no-op. */
+	if (window->display_size == 0)
+		return 0;
+
+	/* Must be within the bounds of the size of the window */
+	if (change_line >= window->display_size)
+		panic("change_line is too big.");
+
+	/* Make sure that the line exists that we want to change */
+	while (window->distance_from_display_ip <= change_line)
+		add_to_display(window, empty_string);
+
+	/* Now find the line we want to change */
+	my_line = window->top_of_display;
+	if (my_line == window->display_ip)
+		panic("Can't change line [%d] -- doesn't exist", 
+			change_line);
+	for (cnt = 0; cnt < change_line; cnt++)
+	{
+		my_line = my_line->next;
+		if (my_line == window->display_ip)
+			panic("Can't change line [%d] -- doesn't exist", 
+				change_line);
+	}
+
+	/*
+	 * Now change the line, move the logical cursor, and then let
+	 * the caller (window_disp) output the new line.
+	 */
+	malloc_strcpy(&my_line->line, str);
+	window->cursor = change_line;
+	return 1;		/* Express a success */
+}
+
+void	check_window_cursor (Window *window)
+{
+	if (window->scroll && window->cursor < window->display_size && 
+			window->cursor < window->distance_from_display_ip)
+		recalculate_window_cursor_and_display_ip(window);
+}
+

@@ -1,4 +1,4 @@
-/* $EPIC: screen.c,v 1.33 2002/09/03 11:43:12 jnelson Exp $ */
+/* $EPIC: screen.c,v 1.34 2002/09/26 22:41:43 jnelson Exp $ */
 /*
  * screen.c
  *
@@ -34,7 +34,6 @@
  */
 
 #define __need_putchar_x__
-#define __need_term_flush__
 #include "irc.h"
 #include "alias.h"
 #include "exec.h"
@@ -160,7 +159,7 @@ static int 	rite 		    (Window *window, const unsigned char *str);
 static void 	scroll_window 	    (Window *window);
 static void 	add_to_window (Window *window, const unsigned char *str);
 static void    window_disp (Window *window, const unsigned char *str, const unsigned char *orig_str);
-static int 	add_to_display_list (Window *window, const unsigned char *str);
+static	int	ok_to_output (Window *window);
 
 /*
  * XXX -- Full disclosure -- FireClown says it is completely the wrong
@@ -1961,12 +1960,8 @@ static int 	rite (Window *window, const unsigned char *str)
 	output_screen = window->screen;
 	scroll_window(window);
 
-	if (window->visible && foreground && window->display_size)
-	{
-		output_with_count(str, 1, 1);
-		term_cr();
-		term_newline();
-	}
+	if (window->screen && window->display_size)
+		output_with_count(str, 1, foreground);
 
 	window->cursor++;
 	return 0;
@@ -2327,7 +2322,7 @@ static void 	add_to_window (Window *window, const unsigned char *str)
 	 * this here.  This also avoids the terrible problem of 
 	 * recursive calls to split_up_line, which are bad.
 	 */
-	if (!window->visible)
+	if (!window->screen)
 	{
 		/*
 		 * This is for archon -- he wanted a way to have 
@@ -2402,183 +2397,18 @@ static void    window_disp (Window *window, const unsigned char *str, const unsi
 	/* Suppress status updates while we're outputting. */
         for (lines = prepare_display(str, cols, &numl, 0); *lines; lines++)
 	{
-		if (add_to_display_list(window, *lines))
-			rite(window, *lines);
+		if (add_to_scrollback(window, *lines))
+			if (ok_to_output(window))
+				rite(window, *lines);
 	}
-	term_flush();
+
+	check_window_cursor(window);
+	trim_scrollback(window);
 	cursor_to_input();
 }
 
-/*
- * This puts the given string into a scratch window.  It ALWAYS suppresses
- * any further action (by returning a FAIL, so rite() is not called).
- */
-static	int	add_to_scratch_window_display_list (Window *window, const unsigned char *str)
+static int	ok_to_output (Window *window)
 {
-	Display *my_line, 
-		*my_line_prev;
-	int 	cnt;
-
-	/* Must be a scratch window */
-	if (window->scratch_line == -1)
-		panic("This is not a scratch window.");
-
-	/* Outputting to a 0 size scratch window is a no-op. */
-	if (window->display_size == 0)
-		return 0;
-
-	/* Must be within the bounds of the size of the window */
-	if (window->scratch_line >= window->display_size)
-		panic("scratch_line is too big.");
-
-	my_line = window->top_of_display;
-	my_line_prev = NULL;
-
-	/* 
-	 * 'window->scratch_line' is set to the place where the next line
-	 * of output will be placed.  However, the actual contents of the
-	 * screen's display is allocated on the fly, and display_ip might
-	 * closer than 'scratch_line' entries from 'top_of_display'.  So to
-	 * forstall that possibility, this auto-grows the window display so
-	 * that it contains at least 'scratch_line' entries.
-	 */
-	for (cnt = 0; cnt < window->scratch_line; cnt++)
-	{
-	    if (my_line == window->display_ip)
-	    {
-		/* This is not the first line being inserted */
-		if (my_line_prev)
-		{
-			my_line_prev->next = new_display_line(my_line_prev);
-			my_line = my_line_prev->next;
-			my_line->next = window->display_ip;
-			window->display_ip->prev = my_line;
-			window->display_buffer_size++;
-		}
-
-		/* This is the first line being inserted... */
-		else
-		{
-			/* 
-			 * This is a really bad and awful hack.
-			 * Is all this _really_ neccesary?
-			 */
-
-			if (window->top_of_display != window->display_ip)
-				panic("top_of_display != display_ip");
-
-			my_line = new_display_line(NULL);
-			window->top_of_display = my_line;
-			window->top_of_scrollback = my_line;
-
-			my_line->next = window->display_ip;
-			window->display_ip->prev = my_line;
-#if 0
-			window->display_buffer_size++;
-#endif
-		}
-	    }
-
-	    my_line_prev = my_line;
-	    my_line = my_line->next;
-	}
-
-	/*
-	 * Except that we only actually create the window display to be
-	 * one entry less than it should be, so at this point, if my_line
-	 * is the same as display_ip, then we have to create one more
-	 * entry to hold the data.  XXX This is not handled very elegantly.
-	 */
-	if (my_line == window->display_ip)
-	{
-		my_line = new_display_line(window->display_ip->prev);
-		if (window->display_ip->prev)
-			window->display_ip->prev->next = my_line;
-		my_line->next = window->display_ip;
-		window->display_ip->prev = my_line;
-		window->display_buffer_size++;
-	}
-
-	/*
-	 * Alright then!  Copy the line of output into the buffer, and
-	 * set the cursor to just after this line.
-	 */
-	malloc_strcpy(&my_line->line, str);
-	window->cursor = window->scratch_line;
-
-	/*
-	 * Increment the scratch line to the next location.
-	 */
-	window->scratch_line++;
-	if (window->scratch_line >= window->display_size)
-		window->scratch_line = 0;	/* Just go back to top */
-
-	/*
-	 * For /window scroll off, clear the next line as long as it is
-	 * not the display_ip entry.
-	 */
-	if (window->noscroll)
-	{
-		if (window->scratch_line == 0)
-			my_line = window->top_of_display;
-		else if (my_line->next != window->display_ip)
-			my_line = my_line->next;
-		else
-			my_line = NULL;
-
-		if (my_line)
-			malloc_strcpy(&my_line->line, empty_string);
-	}
-
-	/*
-	 * If this is a visible window, output the new line.
-	 * If this is a non-scrolling window, clear the next line.
-	 */
-	if (window->visible)
-	{
-		window->cursor = window->scratch_line;
-		window->screen->cursor_window = window;
-		term_move_cursor(0, window->top + window->cursor);
-		term_clear_to_eol();
-		output_with_count(str, 1, 1);
-		term_all_off();
-		if (window->noscroll)
-		{
-		    term_move_cursor(0, window->top + window->scratch_line);
-		    term_clear_to_eol();
-		}
-	}
-
-	window->scratch_line++;
-	if (window->scratch_line >= window->display_size)
-		window->scratch_line = 0;	/* Just go back to top */
-	window->cursor = window->scratch_line;
-	return 0;		/* Express a failure */
-}
-
-
-/*
- * This function adds an item to the window's display list.  If the item
- * should be displayed on the screen, then 1 is returned.  If the item is
- * not to be displayed, then 0 is returned.  This function handles all
- * the hold_mode stuff.
- */
-static int 	add_to_display_list (Window *window, const unsigned char *str)
-{
-	/*
-	 * If this is a scratch window, do that somewhere else
-	 */
-	if (window->scratch_line != -1)
-		return add_to_scratch_window_display_list(window, str);
-
-
-	/* Add to the display list */
-	window->display_ip->next = new_display_line(window->display_ip);
-	malloc_strcpy(&window->display_ip->line, str);
-	window->display_ip = window->display_ip->next;
-	window->display_buffer_size++;
-	window->distance_from_display++;
-
 	/*
 	 * IF:
 	 * We are at the bottom of the screen AND scrollback mode is on
@@ -2588,42 +2418,16 @@ static int 	add_to_display_list (Window *window, const unsigned char *str)
 	 * THEN:
 	 * We defeat the output.
 	 */
-	if (((window->distance_from_display > window->display_size) &&
-						window->scrollback_point) ||
-		(window->hold_mode &&
-			(++window->held_displayed > window->display_size)) ||
-		(window->holding_something && window->lines_held))
-	{
-		if (!window->holding_something)
-			window->holding_something = 1;
+	if ((window->hold_mode || window->autohold) && 
+			window->distance_from_display_ip > window->display_size)
+        {
+                window->lines_held++;
+                if (window->lines_held % window->hold_interval == 0)
+                        window_statusbar_needs_update(window);
+                return 0;
+        }
 
-		window->lines_held++;
-		if (window->lines_held >= window->last_lines_held + 10)
-		{
-			update_window_status(window, 0);
-			window->last_lines_held = window->lines_held;
-		}
-		return 0;
-	}
-
-
-	/*
-	 * Before outputting the line, we snip back the top of the
-	 * display buffer.  (The fact that we do this only when we get
-	 * to here is what keeps whats currently on the window always
-	 * active -- once we get out of hold mode or scrollback mode, then
-	 * we truncate the display buffer at that point.)
-	 */
-	while (window->display_buffer_size > window->display_buffer_max)
-	{
-		Display *next = window->top_of_scrollback->next;
-		delete_display_line(window->top_of_scrollback);
-		window->top_of_scrollback = next;
-		window->display_buffer_size--;
-	}
-
-	/* Ok.  Go ahead and print it */
-	return 1;
+	return 1;		/* Output is authorized */
 }
 
 /*
@@ -2651,9 +2455,8 @@ static void 	scroll_window (Window *window)
 		 * doing its job or something else is completely broken.
 		 * Probably shouldnt be fatal, but i want to trap these.
 		 */
-		if (window->holding_something || window->scrollback_point)
+		if (window->hold_mode || window->autohold)
 			panic("Cant scroll this window!");
-
 
 		/* Scroll by no less than 1 line */
 		if ((scroll = get_int_var(SCROLL_LINES_VAR)) <= 0)
@@ -2663,11 +2466,11 @@ static void 	scroll_window (Window *window)
 		for (i = 0; i < scroll; i++)
 		{
 			window->top_of_display = window->top_of_display->next;
-			window->distance_from_display--;
+			window->distance_from_display_ip--;
 		}
 
 		/* Adjust the top of the physical display */
-		if (window->visible && foreground && window->display_size)
+		if (window->screen && foreground && window->display_size)
 		{
 			term_scroll(window->top,
 				window->top + window->cursor - 1, 
@@ -2681,11 +2484,12 @@ static void 	scroll_window (Window *window)
 	/*
 	 * Move to the new line and wipe it
 	 */
-	if (window->visible && window->display_size)
+	if (window->screen && window->display_size)
 	{
 		window->screen->cursor_window = window;
 		term_move_cursor(0, window->top + window->cursor);
 		term_clear_to_eol();
+		cursor_in_display(window);
 	}
 }
 
@@ -2734,60 +2538,73 @@ int 	is_cursor_in_display (Screen *screen)
 
 /* * * * * * * SCREEN UDPATING AND RESIZING * * * * * * * * */
 /*
- * repaint_window: redraw the "m"th through the "n"th part of the window.
- * If end_line is -1, then that means clear the display if any of it appears
- * after the end of the scrollback buffer.
+ * To only be called internally
+ * 'window' and 'line' are not checked for errors.  DO NOT pass in bogus
+ * values for these parameters -- epic will crash if you do.
  */
-void 	repaint_window (Window *w, int start_line, int end_line)
+void	repaint_one_line (Window *window, int line)
 {
-	Window *window = (Window *)w;
+	Display *curr_line;
+	int	count;
+
+	if (dumb_mode || !window->screen)
+		return;
+
+	global_beep_ok = 0;		/* Suppress beeps */
+	curr_line = window->top_of_display;
+	for (count = 0; count < line; count++)
+	{
+		curr_line = curr_line->next;
+		if (curr_line == window->display_ip)
+			break;
+	}
+
+	window->cursor = line;
+	rite(window, curr_line->line);
+	global_beep_ok = 1;		/* Suppress beeps */
+}
+
+/*
+ * repaint_window_body: redraw the entire window's scrollable region
+ * The old logic for doing a partial repaint has been removed with prejudice.
+ */
+void 	repaint_window_body (Window *window)
+{
 	Display *curr_line;
 	int 	count;
-	int 	clean_display = 0;
-
-	if (dumb_mode || !window->visible)
-		return;
 
 	if (!window)
 		window = current_window;
 
-	if (end_line == -1)
-	{
-		end_line = window->display_size;
-		clean_display = 1;
-	}
-
-	curr_line = window->top_of_display;
-	for (count = 0; count < start_line; count++)
-		curr_line = curr_line->next;
+	if (dumb_mode || !window->screen)
+		return;
 
 	global_beep_ok = 0;		/* Suppress beeps */
-	window->cursor = start_line;
-	for (count = start_line; count < end_line; count++)
+
+	curr_line = window->top_of_display;
+	window->cursor = 0;
+	for (count = 0; count < window->display_size; count++)
 	{
 		rite(window, curr_line->line);
 
+		/*
+		 * Clean off the rest of this window.
+		 */
 		if (curr_line == window->display_ip)
+		{
+			window->cursor--;		/* Bumped by rite */
+			for (; count < window->display_size; count++)
+			{
+				term_clear_to_eol();
+				term_newline();
+			}
 			break;
+		}
 
 		curr_line = curr_line->next;
 	}
+
 	global_beep_ok = 1;		/* Suppress beeps */
-
-	/*
-	 * If "end_line" is -1, then we're supposed to clear off the rest
-	 * of the display, if possible.  Do that here.
-	 */
-	if (clean_display)
-	{
-		for (; count < end_line - 1; count++)
-		{
-			term_clear_to_eol();
-			term_newline();
-		}
-	}
-
-	recalculate_window_cursor(window);	/* XXXX */
 }
 
 
@@ -2845,14 +2662,11 @@ Screen *create_new_screen (void)
 	new_s->wserv_version = 0;
 	new_s->alive = 1;
 	new_s->promptlist = NULL;
-	new_s->redirect_name = NULL;
-	new_s->redirect_token = NULL;
 	new_s->tty_name = (char *) 0;
 	new_s->li = current_term->TI_lines;
 	new_s->co = current_term->TI_cols;
 	new_s->old_li = 0; 
 	new_s->old_co = 0;
-	new_s->redirect_server = -1;
 
 	new_s->buffer_pos = new_s->buffer_min_pos = 0;
 	new_s->input_buffer[0] = '\0';

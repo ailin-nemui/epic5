@@ -68,3 +68,6 @@ alias rwhois quote whois $0 $1
 
 # Sent notices should by default not be visible
 on ^send_notice * :
+
+on ^set "hold_mode *" window $*
+on ^set "hold_mode_interval *" window $*

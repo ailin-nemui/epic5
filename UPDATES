@@ -1,5 +1,90 @@
 EPIC4-1.2.0
 
+*** News 09/26/2002 -- New /WINDOW verbs, SEARCH_BACK and SEARCH_FORWARD
+	These two window verbs take a regular expression (regex) and scroll
+	backward or scroll forward to the previous or next line which 
+	matches the regex, and makes that matching line the top of the 
+	screen.  For example:
+		/WINDOW SEARCH_BACK foo
+	will scroll your window backwards until it finds a line that 
+	contains the string "foo"; that line will be put at the top of 
+	the window.
+
+	If you search backwards or forwards, and there are no matches
+	in the direction you're going, then this operation will beep 
+	and will not change your display.
+
+	Please remember that these operations put you into scrollback mode,
+	so you will need to use the SCROLL_END keybinding to see any new 
+	output that arrives.
+
+*** News 09/26/2002 -- Decoupling of /FLUSH and /WINDOW FLUSH
+	Previously, if you did /FLUSH, it threw away data from the server
+	and also threw away your hold buffer.  Now that there is no hold
+	buffer, it becomes less sensible for /FLUSH to force you to throw
+	away something that doesn't really exist.  So /FLUSH now only
+	throws away data from the server but does not mess with your
+	scrollback buffer.  If you want to mess with your scrollback buffer
+	you can of course always do /WINDOW FLUSH.
+
+*** News 09/26/2002 -- Refinement of /WINDOW FLUSH
+	Now that there is no distinction between the scrollback buffer and
+	the hold buffer, it is not possible for /WINDOW FLUSH to remove the
+	hold buffer.  So /WINDOW FLUSH has changed; what it does now is throw
+	away everything in your scrollback buffer below whatever is currently
+	on your screen, and it turns off /WINDOW HOLD_MODE and it turns of
+	scrollback mode.
+
+*** News 09/26/2002 -- Mostly broken feature /WINDOW SCROLL now totaly broken
+	The /WINDOW SCROLL feature which did not work properly now is 
+	completely useless.  The value of /WINDOW SCROLL is ignored; all
+	windows must scroll.
+
+*** News 09/26/2002 -- Refinement of meaning of /WINDOW HOLD_MODE ON
+	When you have /WINDOW HOLD_MODE on, the top of the window is fixed;
+	it is held; it will not move unless you move it.  Now that the hold
+	buffer and scrollback buffer are fully integrated, you can move 
+	forward through the hold buffer by using the SCROLL_FORWARD keybinding,
+	just as if you were being scrolled back.  Please remember that if you
+	have /WINDOW HOLD_MODE ON, it does not act like normal scrollback 
+	functionality; when you reach the bottom of the hold buffer, it will
+	never automatically turn HOLD_MODE off.  You must do that yourself.
+	This is to maintain backwards compatability.
+
+*** News 09/26/2002 -- /SET HOLD_MODE and /SET HOLD_MODE_INTERVAL now scripted
+	The /SET HOLD_MODE and /SET HOLD_MODE_INTERVAL sets have always been
+	aliases for /WINDOW HOLD_MODE and /WINDOW HOLD_MODE_INTERVAL.  So the
+	hardcoded /SETs have been removed from EPIC and script compatability
+	shims have been put into the 'basical' script which is loaded when
+	you start EPIC.  Unless you don't use epic's scripts, you will not
+	notice any change.
+
+*** News 09/26/2002 -- Remove /WINDOW SCRATCH (unnecessary)
+	As part of the integration of scrollback and hold buffers, every
+	window was made capable of supporting /XECHO -LINE.  In simple
+	terms, every window is now a scratch window, so you no longer need
+	to /WINDOW SCRATCH ON before you use /XECHO -LINE.
+
+*** News 09/26/2002 -- Finished integration of scrollback and hold buffers
+	The primary change you will notice is when you are using scrollback
+	and you reach the "scrollback point", you will no longer turbo-scroll
+	to the end of the hold buffer.  This annoying "feature" was due to
+	the incomplete integration of the scollback and hold buffers.  You
+	are now able to scroll back and forth freely through both the scroll
+	back and hold buffers, and you do not leave scrollback mode until you
+	reach the end of the hold buffer.
+
+*** News 09/11/2002 -- New window verb, /WINDOW MOVE_TO
+	The /WINDOW MOVE_TO <N> verb makes the operative window the Nth 
+	window on the screen (counting from 1, just as /WINDOW GOTO does)
+	For example, if your screen has five windows, (A B C D E), and you 
+	go to window D and do /WINDOW MOVE_TO 2 then your screen will be 
+	re-ordered to (A D B C E).  If <N> is less than 1, then this 
+	command does nothing.  If <N> is greater than the number of windows
+	on the screen, the operative window is made the last window on 
+	the screen.  Nothing about the content of any window changes -- 
+	only the order they appear on the screen.
+
 *** News 09/03/2002 -- New built in command, /LOG, general purpose log files
 	General Purpose Log Files work quite a bit like windows, but instead
 	of displaying to your screen, they write to a file.

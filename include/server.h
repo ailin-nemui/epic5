@@ -96,7 +96,6 @@ extern	Server	*server_list;
 
 extern	int	number_of_servers;
 extern	int	connected_to_server;
-extern	int	never_connected;
 extern	int	primary_server;
 extern	int	from_server;
 extern	int	last_server;

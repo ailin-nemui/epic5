@@ -22,13 +22,6 @@
  */
 struct	ScreenStru;
 
-
-/* used by the update flag to determine what needs updating */
-#define REDRAW_DISPLAY_FULL 	1 << 0
-#define REDRAW_DISPLAY_FAST 	1 << 1
-#define UPDATE_STATUS 		1 << 2
-#define REDRAW_STATUS 		1 << 3
-
 /* var_settings indexes */
 #define OFF 			0
 #define ON 			1
@@ -63,27 +56,23 @@ typedef	struct	WindowStru
 	int	top;			/* SCREEN line for top of window */
 	int	bottom;			/* SCREEN line for bottom of window */
 	int	cursor;			/* WINDOW line where the cursor is */
+	int	noscrollcursor;		/* Where the next line goes */
 	int	line_cnt;		/* Number of lines ON DISPLAY */
 	int	absolute_size;		/* True if window doesnt rebalance */
 	int	scroll;			/* True if the window scrolls */
-	int	scratch_line;		/* True if this is a scratch window */
-	int	noscroll;		/* True if window doesn't scroll */
+	int	change_line;		/* True if this is a scratch window */
 	int	old_size;		/* 
 					 * Usu. same as display_size except
 					 * right after a screen resize, and
 					 * is used as a flag for resize_display
 					 */
-	int	visible;		/* True if the window is on a SCREEN */
 	int	update;			/* True if window display is dirty */
-	int	repaint_start;		/* Where to start repainting */
-	int	repaint_end;		/* Where to stop repainting */
 	unsigned miscflags;		/* Miscellaneous flags. */
 	int	beep_always;		/* True if a beep to win always beeps */
 	int	notify_level;		/* the notify level.. */
 	int	window_level;		/* Lastlog level for the window */
 	int	skip;			/* Whether window should be skipped */
 	int	columns;		/* How wide we are when hidden */
-	int	hold_interval;		/* How often update "hold" on status */
 
 	/* Input and Status stuff */
 	char	*prompt;		/* Current EXEC prompt for window */
@@ -112,8 +101,7 @@ typedef	struct	WindowStru
 	Display *top_of_scrollback,	/* Start of the scrollback buffer */
 		*top_of_display,	/* Where the viewport starts */
 		*ceiling_of_display,	/* The farthest back top_of_display */
-		*display_ip,		/* Where next line goes in rite() */
-		*scrollback_point;	/* Where t_o_d was at start of sb */
+		*display_ip;		/* Where next line goes in rite() */
 	int	display_buffer_size;	/* How big the scrollback buffer is */
 	int	display_buffer_max;	/* How big its supposed to be */
 	int	display_size;		/* How big the window is - status */
@@ -121,12 +109,12 @@ typedef	struct	WindowStru
 	int	lines_scrolled_back;	/* Where window is relatively */
 
 	int	hold_mode;		/* True if we want to hold stuff */
-	int	holding_something;	/* True if we ARE holding something */
-	int	held_displayed;		/* lines displayed since last hold */
-	int	lines_displayed;	/* Lines held since last unhold */
+	int	autohold;		/* True if we are in temp hold mode */
+
 	int	lines_held;		/* Lines currently being held */
+	int	hold_interval;		/* How often to update status bar */
 	int	last_lines_held;	/* Last time we updated "lines held" */
-	int	distance_from_display;	/* How far t_o_d is from d_ip */
+	int	distance_from_display_ip; /* How far t_o_d is from d_ip */
 
 	/* Channel stuff */
         char    *waiting_channel;       /*
@@ -193,6 +181,9 @@ extern	unsigned window_display;
 	void	add_to_invisible_list		(Window *);
 	Window	*add_to_window_list		(struct ScreenStru *, Window *);
 	void	recalculate_window_positions	(struct ScreenStru *);
+	void	window_statusbar_needs_update	(Window *);
+	void	window_statusbar_needs_redraw	(Window *);
+	void	window_body_needs_redraw	(Window *);
 	void	redraw_all_windows		(void);
 	void	recalculate_windows		(struct ScreenStru *);
 	void	rebalance_windows		(struct ScreenStru *);
@@ -211,7 +202,10 @@ extern	unsigned window_display;
 	char	*get_refnum_by_window		(const Window *);
 	int	is_window_visible		(char *);
 	char	*get_status_by_refnum		(unsigned, int);
-	void	update_window_status		(Window *, int);
+#if 0
+	void	redraw_window_statusbar		(Window *);
+	void	update_window_statusbar		(Window *);
+#endif
 	void	update_all_status		(void);
 	void	set_prompt_by_refnum		(unsigned, char *);
 	char 	*get_prompt_by_refnum		(unsigned);
@@ -240,9 +234,9 @@ const 	char *	set_channel_by_refnum		(unsigned, const char *);
 	void	message_from			(const char *, int);
 	int	message_from_level		(int);
 	void	clear_all_windows		(int, int, int);
-	void	clear_window_by_refnum		(unsigned);
+	void	clear_window_by_refnum		(unsigned, int);
 	void	unclear_all_windows		(int, int, int);
-	void	unclear_window_by_refnum	(unsigned);
+	void	unclear_window_by_refnum	(unsigned, int);
 	void	set_scrollback_size		(int);
 	void	set_scroll_lines		(int);
 	void	set_continued_line		(char *);
@@ -250,19 +244,18 @@ const 	char *	set_channel_by_refnum		(unsigned, const char *);
 	int	number_of_windows_on_screen	(Window *);
 	void	delete_display_line		(Display *);
 	Display *new_display_line		(Display *);
-	void	scrollback_backwards_lines	(int);
-	void	scrollback_forwards_lines	(int);
+	int	add_to_scrollback		(Window *, const unsigned char *);
+	int	trim_scrollback			(Window *);
+	int	flush_scrollback_after		(Window *);
 	void	scrollback_backwards		(char, char *);
 	void	scrollback_forwards		(char, char *);
 	void	scrollback_end			(char, char *);
 	void	scrollback_start		(char, char *);
-	void	hold_mode			(Window *, int , int);
 	void	unstop_all_windows		(char, char *);
-	void	reset_line_cnt			(int);
 	void	toggle_stop_screen		(char, char *);
 	void	flush_everything_being_held	(Window *);
 	int	unhold_a_window			(Window *);
-	void	recalculate_window_cursor	(Window *);
+	void	recalculate_window_cursor_and_display_ip	(Window *);
 	char	*get_nicklist_by_window		(Window *); /* XXX */
 	void	make_window_current_by_refnum	(int);
 	void	make_window_current		(Window *);
@@ -273,5 +266,9 @@ const 	char *	set_channel_by_refnum		(unsigned, const char *);
 	int	unhold_windows			(void);
 	int	channel_going_away		(Window *, const char *);
 	void	window_check_channels		(void);
+
+	int	add_to_scratch_window_scrollback (Window *, const unsigned char *);
+	void	check_window_cursor		(Window *);
+	void	unhold_window			(Window *);
 
 #endif /* __window_h__ */

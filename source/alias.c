@@ -1,4 +1,4 @@
-/* $EPIC: alias.c,v 1.10 2002/09/02 22:05:51 jnelson Exp $ */
+/* $EPIC: alias.c,v 1.11 2002/09/26 22:41:43 jnelson Exp $ */
 /*
  * alias.c -- Handles the whole kit and caboodle for aliases.
  *
@@ -287,8 +287,8 @@ extern u_32int_t       char_searches;
 			( cmd_cache_misses ? (double)
 			  (cmd_cache_missed_by / cmd_cache_misses) : 0.0));
 	    say("Ints(bin/lin)/Chars(bin/lin)/Lookups: [(%lu/%lu)/(%lu/%lu)] (%lu/%lu)",
-			 bin_ints, lin_ints, bin_chars, lin_chars,
-			 alist_searches, char_searches);
+			 (unsigned long)bin_ints, (unsigned long)lin_ints, (unsigned long)bin_chars, (unsigned long)lin_chars,
+			 (unsigned long) alist_searches, (unsigned long)char_searches);
 	    show_alias_caches();
 	    return;
 	}

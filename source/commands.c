@@ -1,4 +1,4 @@
-/* $EPIC: commands.c,v 1.34 2002/09/03 11:43:12 jnelson Exp $ */
+/* $EPIC: commands.c,v 1.35 2002/09/26 22:41:43 jnelson Exp $ */
 /*
  * commands.c -- Stuff needed to execute commands in ircII.
  *		 Includes the bulk of the built in commands for ircII.
@@ -497,7 +497,7 @@ BUILT_IN_COMMAND(e_clear)
 
 		/* UNHOLD */
 		else if (!my_strnicmp(arg+1, "U", 1))
-			unhold = 1;
+			unhold = 1;		/* Obsolete */
 
 		else if (!my_strnicmp(arg+1, "V", 1))
 			visible = 1, hidden = 0, all = 1;
@@ -512,21 +512,17 @@ BUILT_IN_COMMAND(e_clear)
 	if (all)
 	{
 		if (clear)
-			clear_all_windows(unhold, visible, hidden);
+			clear_all_windows(visible, hidden, unhold);
 		else
-			unclear_all_windows(unhold, visible, hidden);
+			unclear_all_windows(visible, hidden, unhold);
 	}
 	else
 	{
-		if (unhold)
-			hold_mode(NULL, OFF, 1);
-
 		if (clear)
-			clear_window_by_refnum(0);
+			clear_window_by_refnum(0, unhold);
 		else
-			unclear_window_by_refnum(0);
+			unclear_window_by_refnum(0, unhold);
 	}
-	update_input(UPDATE_JUST_CURSOR);
 }
 
 /* comment: does the /COMMENT command, useful in .ircrc */
@@ -674,10 +670,7 @@ BUILT_IN_COMMAND(do_send_text)
 BUILT_IN_COMMAND(e_channel)
 {
 	if (args && *args)
-	{
 		window_rejoin(current_window, &args);
-		update_all_status();
-	}
 	else
 		list_channels();
 
@@ -918,13 +911,6 @@ BUILT_IN_COMMAND(echocmd)
 					to_window = old_to_window;
 					return;
 				}
-				else if (to_window->scratch_line == -1)
-				{
-					yell("%s: -LINE only works on scratch windows", command);
-					to_window = old_to_window;
-					return;
-				}
-
 				to_line = my_atol(next_arg(args, &args));
 				if (to_line < 0 || 
 					to_line >= to_window->display_size)
@@ -935,7 +921,7 @@ BUILT_IN_COMMAND(echocmd)
 					to_window = old_to_window;
 					return;
 				}
-				to_window->scratch_line = to_line;
+				to_window->change_line = to_line;
 			}
 
 			/* LEVEL (use specified lastlog level) */
@@ -963,7 +949,7 @@ BUILT_IN_COMMAND(echocmd)
 
 			while ((traverse_all_windows(&win)))
 			{
-				if (win->visible)
+				if (win->screen)
 				{
 					to_window = win;
 					break;
@@ -1186,8 +1172,10 @@ BUILT_IN_COMMAND(evalcmd)
 /* flush: flushes all pending stuff coming from the server */
 BUILT_IN_COMMAND(flush)
 {
+#if 0
 	if (get_int_var(HOLD_MODE_VAR))
 		flush_everything_being_held(NULL);
+#endif
 
 	say("Standby, Flushing server output...");
 	flush_server(from_server);
@@ -1566,7 +1554,7 @@ BUILT_IN_COMMAND(load)
 
 	display = window_display;
 	window_display = 0;
-	status_update(0);	/* No updates to the status bar! */
+	permit_status_update(0);	/* No updates to the status bar! */
 
 	/* 
 	 * We iterate over the whole list -- if we use the -args flag, the
@@ -1946,7 +1934,8 @@ case ';' :
 	 */
 	if (get_int_var(DISPLAY_VAR))
 	       window_display = display;
-	status_update(1);
+	permit_status_update(1);
+	update_all_status();
 
 	new_free(&load_level[load_depth].package);
 	load_depth--;
@@ -2083,7 +2072,6 @@ BUILT_IN_COMMAND(push_cmd)
 BUILT_IN_COMMAND(query)
 {
 	window_query(current_window, &args);
-	update_window_status(current_window, 0);
 }
 
 /*

@@ -32,12 +32,12 @@ typedef struct  status_stuff {
 extern	Status	main_status;
 
 	char *	convert_sub_format (const char *, char);
-	void	make_status 	(struct WindowStru *);
+	void	make_status 	(struct WindowStru *, int);	/* Don't call */
 	char	*update_clock 	(int);
 	void	reset_clock 	(char *);
 	void	build_status 	(char *);
-	int	status_update 	(int);
-	void	rebuild_a_status (struct WindowStru *);
+	int	permit_status_update	(int);
+	void	rebuild_a_status (struct WindowStru *);		/* Don't call */
 
 #define GET_TIME 	1
 #define RESET_TIME 	2
