@@ -567,10 +567,10 @@ char *	inet_ntohn (SA *name, char *retval, int size)
 	{
 		Hostent *hep;
 
-		if ((hep = gethostbyaddr((char *)&V4ADDR(name), 4, AF_INET)))
+		if ((hep = gethostbyaddr((char *)&V4ADDR(*name), 4, AF_INET)))
 			strlcpy(retval, hep->h_name, size);
 		else
-			inet_ntop(AF_INET, &V4ADDR(name), retval, size);
+			inet_ntop(AF_INET, &V4ADDR(*name), retval, size);
 
 		return retval;
 	}
