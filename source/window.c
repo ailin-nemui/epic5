@@ -1,4 +1,4 @@
-/* $EPIC: window.c,v 1.70 2003/09/23 21:49:47 jnelson Exp $ */
+/* $EPIC: window.c,v 1.71 2003/09/24 21:51:33 jnelson Exp $ */
 /*
  * window.c: Handles the organzation of the logical viewports (``windows'')
  * for irc.  This includes keeping track of what windows are open, where they
@@ -834,7 +834,10 @@ static void 	swap_window (Window *v_window, Window *window)
 	window->bottom = window->top + window->display_size;
 	window->screen = v_window->screen;
 	if (v_window->screen->current_window == v_window)
+	{
 		v_window->screen->current_window = window;
+		window->priority = current_window_priority++;
+	}
 
 	/*
 	 * Put the window to be swapped into the screen list
