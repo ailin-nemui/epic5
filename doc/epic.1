@@ -17,6 +17,8 @@
 .Op Ar \-l filename
 .Op Ar \-L filename 
 .Op Ar \-n nickname
+.Op Ar \-o
+.Op Ar \-O
 .Op Ar \-p port
 .Op Ar \-q 
 .Op Ar \-v
@@ -106,6 +108,14 @@ This option overrides the
 .Ev IRCNICK
 environment variable.  
 This option can be overridden if you specify nickname argument in the command line (see below).
+.It Fl o
+Force use of IEXTEN termios characters.  
+POSIX systems are allowed to reserve additional control characters to perform special actions when IEXTEN is turned on.  
+On 4.4BSD, the control-V and control-O keys are used by IEXTEN and thus cannot be used in key bindings within EPIC since the terminal never sends them to EPIC.
+.It Fl O
+Disable use of IEXTEN termios characters.  
+This makes all of the keys reserved by your system's IEXTEN termios option available to be used in key bindings.  
+On 4.4BSD, this flag is necessary if you want to use control-V and control-O in your key bindings.
 .It Fl p Ar port
 Use the specified port as the default port for new server connections.
 The default port is usually 6667.  
