@@ -138,6 +138,16 @@ char *alloca();
 # endif
 #endif
 
+/*
+ * Define the MIN and MAX macros if they don't already exist.
+ */
+#ifndef MIN
+# define MIN(a,b) (((a)<(b))?(a):(b))
+#endif
+#ifndef MAX
+# define MAX(a,b) (((a)>(b))?(a):(b))
+#endif
+
 
 /*
  * Deal with brokenness with sys_errlist.
