@@ -1,4 +1,4 @@
-/* $EPIC: hook.c,v 1.31 2003/12/23 02:36:05 jnelson Exp $ */
+/* $EPIC: hook.c,v 1.32 2003/12/25 04:39:49 jnelson Exp $ */
 /*
  * hook.c: Does those naughty hook functions. 
  *
@@ -89,6 +89,7 @@ struct	hook_stru *next;
 
 	char	*nick;			/* /on type NICK stuff */
 	char	*stuff;			/* /on type nick STUFF */
+	char 	*regexpr;
 	regex_t	regex;			/* Compiled form of "NICK" */
 	int	regex_weight;		/* How much 'weight' it has */
 
@@ -377,6 +378,7 @@ static void add_numeric_hook (int numeric, char *nick, char *stuff, int noisy, i
 	malloc_strcpy(&new_h->stuff, stuff);
         if (flexible == 0)
         {
+	    new_h->regexpr = pattern2regex(new_h->nick, &new_h->regex_weight);
             new_h->regex_weight = pattern_regcomp(&new_h->regex, new_h->nick,
                                 REG_EXTENDED | REG_ICASE | REG_NOSUB);
             if (new_h->regex_weight < 0)
@@ -423,6 +425,7 @@ static void add_hook (int which, char *nick, char *stuff, int noisy, int not, in
 	malloc_strcpy(&new_h->stuff, stuff);
         if (flexible == 0)
         {
+	    new_h->regexpr = pattern2regex(new_h->nick, &new_h->regex_weight);
             new_h->regex_weight = pattern_regcomp(&new_h->regex, new_h->nick,
                                 REG_EXTENDED | REG_ICASE | REG_NOSUB);
             if (new_h->regex_weight < 0)
@@ -464,6 +467,7 @@ static void remove_numeric_hook (int numeric, char *nick, int sernum, int quiet)
 					    (tmp->flexible?'\'':'"'), numeric);
 				}
 				new_free(&(tmp->nick));
+				new_free(&(tmp->regexpr));
 				regfree(&tmp->regex);
 				new_free(&(tmp->stuff));
 				new_free(&(tmp->filename));
@@ -485,6 +489,7 @@ static void remove_numeric_hook (int numeric, char *nick, int sernum, int quiet)
 				next = tmp->next;
 				tmp->not = 1;
 				new_free(&(tmp->nick));
+				new_free(&(tmp->regexpr));
 				regfree(&tmp->regex);
 				new_free(&(tmp->stuff));
 				new_free(&(tmp->filename));
@@ -529,6 +534,7 @@ static void remove_hook (int which, char *nick, int sernum, int quiet)
 					hook_functions[which].name);
 
 			new_free(&(tmp->nick));
+			new_free(&(tmp->regexpr));
 			regfree(&tmp->regex);
 			new_free(&(tmp->stuff));
 			new_free(&(tmp->filename));
@@ -565,6 +571,7 @@ static void remove_hook (int which, char *nick, int sernum, int quiet)
 				top = tmp->next;
 			tmp->not = 1;
 			new_free(&(tmp->nick));
+			new_free(&(tmp->regexpr));
 			regfree(&tmp->regex);
 			new_free(&(tmp->stuff));
 			new_free(&(tmp->filename));
@@ -636,11 +643,14 @@ void	unload_on_hooks (char *filename)
 /* show_hook shows a single hook */
 static void 	show_hook (Hook *list, const char *name)
 {
-	say("[%s] On %s from %c%s%c do %s [%s] <%d>",
+	say("[%s] On %s from %c%s%c %s%s%s do %s [%s] <%d>",
 	    list->filename[0] ? list->filename : "*",
 	    name,
-	    (list->flexible?'\'':'"'), list->nick, 
-	    (list->flexible?'\'':'"'), 
+	    (list->flexible ? '\'' : '"'), list->nick, 
+	    (list->flexible ? '\'' : '"'), 
+	    (list->flexible ? "" : "("), 
+	    (list->flexible ? "" : list->regexpr),
+	    (list->flexible ? "" : ")"), 
 	    (list->not ? "nothing" : list->stuff),
 	    noise_info[list->noisy].name,
 	    list->sernum);
@@ -851,7 +861,17 @@ int 	do_hook (int which, const char *format, ...)
 			else
 			{
 				if (!regexec(&tmp->regex, buffer, 0, NULL, 0))
+				{
+					if (x_debug & DEBUG_REGEX_DEBUG)
+						yell("Matching (%s) against (%s) -- MATCHES", buffer, tmp->regexpr);
 					currmatch = tmp->regex_weight;
+				}
+				else
+				{
+					if (x_debug & DEBUG_REGEX_DEBUG)
+						yell("Matching (%s) against (%s) -- NO MATCH", buffer, tmp->regexpr);
+				}
+
 			}
 
 			/*

@@ -1,4 +1,4 @@
-/* $EPIC: reg.c,v 1.7 2003/12/23 02:36:05 jnelson Exp $ */
+/* $EPIC: reg.c,v 1.8 2003/12/25 04:39:49 jnelson Exp $ */
 /*
  * reg.c - "glob"-like wildcard pattern matching (not regexes)
  *
@@ -710,6 +710,8 @@ char *	pattern2regex (const char *pattern, int *weight)
 			break;
 	    }
 	}
+
+	(*weight)++;		/* The nul counts towards the weight */
 
 	if (x_debug & DEBUG_REGEX_DEBUG)
 		yell("[%s] -> [%s]", pattern, retval);
