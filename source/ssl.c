@@ -1,4 +1,4 @@
-/* $EPIC: ssl.c,v 1.10 2005/02/19 04:22:26 jnelson Exp $ */
+/* $EPIC: ssl.c,v 1.11 2005/02/22 00:28:35 jnelson Exp $ */
 /*
  * ssl.c: SSL connection functions
  *
@@ -49,13 +49,20 @@
 #include "ssl.h"
 #include "newio.h"
 
+static	int	firsttime = 1;
+
 static SSL_CTX	*SSL_CTX_init (int server)
 {
 	SSL_CTX	*ctx;
 	
-	SSLeay_add_ssl_algorithms();
-	SSL_load_error_strings();
-	ctx = SSL_CTX_new(server ? SSLv3_server_method() : SSLv3_client_method());
+	if (firsttime)
+	{
+		SSL_load_error_strings();
+		SSL_library_init();
+		firsttime = 0;
+	}
+
+	ctx = SSL_CTX_new(server ? SSLv23_server_method() : SSLv23_client_method());
 	SSL_CTX_set_session_cache_mode(ctx, SSL_SESS_CACHE_BOTH);
 	SSL_CTX_set_timeout(ctx, 300);
 	return(ctx);
@@ -253,6 +260,13 @@ int	ssl_read (int vfd)
 			panic("Caught in SSL_pending() loop! (%d)", vfd);
 
 		c = SSL_read(x->ssl_fd, buffer, sizeof(buffer));
+		if (c < 0)
+		{
+		    int ssl_error = SSL_get_error(x->ssl_fd, c);
+		    if (ssl_error == SSL_ERROR_NONE)
+			yell("SSL_read failed with [%d]/[%d]", c, ssl_error);
+		}
+
 		if (c == 0)
 			errno = -1;
 		else if (c > 0)

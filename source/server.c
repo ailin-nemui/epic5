@@ -1,4 +1,4 @@
-/* $EPIC: server.c,v 1.149 2005/02/19 04:22:26 jnelson Exp $ */
+/* $EPIC: server.c,v 1.150 2005/02/22 00:28:35 jnelson Exp $ */
 /*
  * server.c:  Things dealing with that wacky program we call ircd.
  *
@@ -898,12 +898,13 @@ something_broke:
 		    else
 			new_open(des, do_server, NEWIO_RECV);
 
-		    register_server(i, s->d_nickname);
 
 		    if (is_ssl_enabled(des))
 			set_server_ssl_enabled(i, TRUE);
 		    else
 			set_server_ssl_enabled(i, FALSE);
+
+		    register_server(i, s->d_nickname);
 		}
 
 	        /* Everything else is a normal read. */
