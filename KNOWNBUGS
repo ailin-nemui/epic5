@@ -171,3 +171,4 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Change all /SET callback functions to take (const void *).
 * Fix some rather obvious bugs.  I take the blame for all this.
 * Fix $<num> to not have leading or trailing spaces, cause zinx said so. ;-)
+* Fix real_extract2 because I'm a moron.  Ugh.  Reported anonymously.

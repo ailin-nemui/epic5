@@ -1,4 +1,4 @@
-/* $EPIC: words.c,v 1.13 2003/07/28 03:20:31 jnelson Exp $ */
+/* $EPIC: words.c,v 1.14 2003/07/28 14:21:22 jnelson Exp $ */
 /*
  * words.c -- right now it just holds the stuff i wrote to replace
  * that beastie arg_number().  Eventually, i may move all of the
@@ -781,6 +781,16 @@ char *	real_extract2 (const char *start, int firstword, int lastword, int extend
 		return malloc_strdup(empty_string);
 
 	/*
+	 * XXX Backwards compatability requires that $<num> not 
+	 * have any leading spaces.
+	 */
+	if (firstword == lastword)
+	{
+		while (mark && *mark && isspace(*mark))
+			mark++;
+	}
+
+	/*
 	 * This is kind of tricky, because the string we are
 	 * copying out of is const.  So we cant just null off
 	 * the trailing character and malloc_strdup it.
@@ -789,14 +799,10 @@ char *	real_extract2 (const char *start, int firstword, int lastword, int extend
 
 	/* 
 	 * XXX Backwards compatability requires that $<num> not have
-	 * any leading or trailing spaces, even if it is the last word.
+	 * any trailing spaces, even if it is the last word.
 	 */
 	if (firstword == lastword)
-	{
-		while (retval && isspace(*retval))
-			retval++;
 		remove_trailing_spaces(retval, 0);
-	}
 
 	return retval;
 }
