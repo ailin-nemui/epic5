@@ -1762,6 +1762,8 @@ void	cant_join_channel (const char *channel, int server)
 	{
 		if (w->server != server)
 			continue;
+		if (!w->waiting_channel)
+			continue;
 		if (!my_stricmp(w->waiting_channel, channel))
 			new_free(&w->waiting_channel);
 	}
