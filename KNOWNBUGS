@@ -130,3 +130,4 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Add handle_filedescs() which takes select() results and calls callbacks
 * Make io() call handle_filedescs() instead of the four callback functions.
 * This is the first stage of an extendable callback event looper!  huzzah!
+* Fix io() to call do_server(-1) to do ssl timeouts. bleh.
