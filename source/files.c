@@ -1,4 +1,4 @@
-/* $EPIC: files.c,v 1.21 2003/10/31 08:19:24 crazyed Exp $ */
+/* $EPIC: files.c,v 1.22 2003/11/07 03:55:57 jnelson Exp $ */
 /*
  * files.c -- allows you to read/write files. Wow.
  *
@@ -102,7 +102,7 @@ static void remove_file (File *file)
 }
 
 
-int open_file_for_read (char *filename)
+int open_file_for_read (const char *filename)
 {
 	char *dummy_filename = (char *) 0;
 	FILE *file;
@@ -122,7 +122,7 @@ int open_file_for_read (char *filename)
 		return -1;
 }
 
-int open_file_for_write (char *filename, char *mode)
+int open_file_for_write (const char *filename, const char *mode)
 {
 	Filename expand;
 	FILE *file;
@@ -141,7 +141,7 @@ int open_file_for_write (char *filename, char *mode)
 		return -1;
 }
 
-int* open_exec_for_in_out_err (char *filename, char **args)
+int* open_exec_for_in_out_err (const char *filename, char * const *args)
 {
 	Filename expand;
 	FILE **files;

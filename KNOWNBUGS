@@ -45,3 +45,7 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Fix urldecode
 * /lastlog -msgs 3 is obliged to skip back 3 msgs, not just 3 lastlog entries.
 * Fix warnings in gailib.h
+* Fix some const correctness issues
+* Make message_to() take an (int) and not (unsigned) so we can pass in -1.
+* Fix some arglist regression tests to reflect new extractw semantics.
+* Fix uninitialized variable in ok_to_output() that caused panics.

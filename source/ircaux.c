@@ -1,4 +1,4 @@
-/* $EPIC: ircaux.c,v 1.99 2003/11/07 03:51:10 jnelson Exp $ */
+/* $EPIC: ircaux.c,v 1.100 2003/11/07 03:55:57 jnelson Exp $ */
 /*
  * ircaux.c: some extra routines... not specific to irc... that I needed 
  *
@@ -1181,7 +1181,7 @@ int 	end_strcmp (const char *val1, const char *val2, size_t bytes)
  *
  * Special Note: stdin and stdout are not expected to be textual.
  */
-char*	exec_pipe (char *executable, char *input, size_t *len, char **args)
+char*	exec_pipe (const char *executable, char *input, size_t *len, char * const *args)
 {
 	int 	pipe0[2] = {-1, -1};
 	int 	pipe1[2] = {-1, -1};
@@ -1286,7 +1286,7 @@ char*	exec_pipe (char *executable, char *input, size_t *len, char **args)
  *
  * On failure, close everything and return NULL.
  */
-FILE **	open_exec (char *executable, char **args)
+FILE **	open_exec (const char *executable, char * const *args)
 {
 static	FILE *	file_pointers[3];
 	int 	pipe0[2] = {-1, -1};

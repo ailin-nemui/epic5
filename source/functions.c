@@ -1,4 +1,4 @@
-/* $EPIC: functions.c,v 1.143 2003/11/03 18:30:44 jnelson Exp $ */
+/* $EPIC: functions.c,v 1.144 2003/11/07 03:55:57 jnelson Exp $ */
 /*
  * functions.c -- Built-in functions for ircII
  *
@@ -6797,7 +6797,7 @@ BUILT_IN_FUNCTION(function_exec, input)
 	if (!count || !args)
 		RETURN_EMPTY;
 
-	fds = open_exec_for_in_out_err(args[0], args);
+	fds = open_exec_for_in_out_err(args[0], (char * const *)args);
 	new_free(&args);
 
 	if (fds)

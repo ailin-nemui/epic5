@@ -247,7 +247,7 @@ const	char	*get_echannel_by_refnum		(unsigned);
 	void	reclaim_windows			(int, int);
 	void	window_check_servers		(void);
 	void	set_level_by_refnum		(unsigned, int);
-	void	message_to			(unsigned);
+	void	message_to			(int);
 	void	save_message_from		(const char **, int *);
 	void	restore_message_from		(const char *, int);
 	void	message_from			(const char *, int);

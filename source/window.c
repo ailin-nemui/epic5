@@ -1,4 +1,4 @@
-/* $EPIC: window.c,v 1.76 2003/10/28 06:13:34 jnelson Exp $ */
+/* $EPIC: window.c,v 1.77 2003/11/07 03:55:57 jnelson Exp $ */
 /*
  * window.c: Handles the organzation of the logical viewports (``windows'')
  * for irc.  This includes keeping track of what windows are open, where they
@@ -2137,9 +2137,9 @@ static void 	revamp_window_levels (Window *window)
  * message_to: This allows you to specify a window (by refnum) as a
  * destination for messages.  Used by EXEC routines quite nicely 
  */
-void 	message_to (unsigned refnum)
+void 	message_to (int refnum)
 {
-	to_window = (refnum != -1) ? get_window_by_refnum(refnum) : NULL;
+	to_window = (refnum != -1) ? get_window_by_refnum((unsigned)refnum) : NULL;
 }
 
 /*

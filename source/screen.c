@@ -1,4 +1,4 @@
-/* $EPIC: screen.c,v 1.60 2003/10/30 01:07:06 jnelson Exp $ */
+/* $EPIC: screen.c,v 1.61 2003/11/07 03:55:57 jnelson Exp $ */
 /*
  * screen.c
  *
@@ -2423,7 +2423,7 @@ static void    window_disp (Window *window, const unsigned char *str, const unsi
 
 static int	ok_to_output (Window *window)
 {
-	int	retval;
+	int	retval = 1;
 
 	/*
 	 * Output is ok as long as the three top of displays all are 

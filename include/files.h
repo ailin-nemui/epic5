@@ -10,9 +10,9 @@
 #ifndef __files_h__
 #define __files_h__
 
-	int	open_file_for_read 	(char *);
-	int	open_file_for_write 	(char *, char *);
-	int *	open_exec_for_in_out_err(char *, char **);
+	int	open_file_for_read 	(const char *);
+	int	open_file_for_write 	(const char *, const char *);
+	int *	open_exec_for_in_out_err(const char *, char * const *);
 	int	target_file_write	(const char *, const char *);
 	int	file_write 		(int, int, const char *);
 	int	file_writeb 		(int, int, char *);
