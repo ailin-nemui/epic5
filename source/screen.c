@@ -337,9 +337,10 @@ void 	add_to_window (Window *window, const unsigned char *str)
 	int	must_free = 0;
 
 	if (window->server >= 0 && get_server_redirect(window->server))
-		redirect_text(window->server, 
+		if (redirect_text(window->server, 
 			        get_server_redirect(window->server),
-				str, NULL, 0);
+				str, NULL, 0))
+			return;
 
 	if (do_hook(WINDOW_LIST, "%u %s", window->refnum, str))
 	{

@@ -806,56 +806,6 @@ void	do_server (fd_set *rd)
 		window_check_servers();
 }
 
-/*
- * flush_server: eats all output from server, until there is at least a
- * second delay between bits of servers crap... useful to abort a /links. 
- * If you do this, you may lose JOINs/PARTs/QUITs, etc which have a severe
- * impact on the consistency of the client's internal data.
- *
- * XXXX - this is utterly useless at best, and pointless at worst.
- */
-void 	flush_server (void)
-{
-	fd_set rd;
-	struct timeval timeout;
-	int	flushing = 1;
-	int	des;
-	char	buffer[IO_BUFFER_SIZE + 1];
-
-	if ((des = server_list[from_server].des) == -1)
-		return;
-	timeout.tv_usec = 0;
-	timeout.tv_sec = 1;
-	while (flushing)
-	{
-		FD_ZERO(&rd);
-		FD_SET(des, &rd);
-		switch (new_select(&rd, (fd_set *) 0, &timeout))
-		{
-			case -1:
-			case 0:
-				flushing = 0;
-				break;
-			default:
-			{
-				if (FD_ISSET(des, &rd))
-				{
-					FD_CLR(des, &rd);
-					if (dgets(buffer, des, 0) == 0)
-						flushing = 0;
-				}
-				break;
-			}
-		}
-	}
-
-	/* make sure we've read a full line from server */
-	FD_ZERO(&rd);
-	FD_SET(des, &rd);
-	if (new_select(&rd, (fd_set *) 0, &timeout) > 0)
-		dgets(buffer, des, 1);
-}
-
 
 /* SERVER OUTPUT STUFF */
 static void 	vsend_to_server (const char *format, va_list args);
@@ -945,6 +895,14 @@ void	clear_sent_to_server (int servnum)
 int	sent_to_server (int servnum)
 {
 	return server_list[servnum].sent;
+}
+
+void	flush_server (int servnum)
+{
+	if (!is_server_connected(servnum))
+		return;
+	set_server_redirect(servnum, "0");
+	send_to_aserver(servnum, "%s", "***0");
 }
 
 
@@ -2207,20 +2165,6 @@ const char *get_server_redirect (int s)
 	return server_list[s].redirect;
 }
 
-const char *get_server_group (int refnum)
-{
-	if (refnum == -1 && from_server != -1)
-		refnum = from_server;
-
-	if (refnum >= number_of_servers || refnum < 0)
-		return 0;
-
-	if (server_list[refnum].group == NULL)
-		return "<default>";
-
-	return server_list[refnum].group;
-}
-
 int	check_server_redirect (const char *who)
 {
 	if (!who || !server_list[from_server].redirect)
@@ -2230,6 +2174,8 @@ int	check_server_redirect (const char *who)
 	    !strcmp(who + 3, server_list[from_server].redirect))
 	{
 		set_server_redirect(from_server, NULL);
+		if (!strcmp(who + 3, "0"))
+			say("Server flush done.");
 		return 1;
 	}
 
@@ -2268,3 +2214,17 @@ void	clear_reconnect_counts (void)
 		server_list[i].reconnects = 0;
 }
 
+/* This didn't belong in the middle of the redirect stuff. */
+const char *get_server_group (int refnum)
+{
+	if (refnum == -1 && from_server != -1)
+		refnum = from_server;
+
+	if (refnum >= number_of_servers || refnum < 0)
+		return 0;
+
+	if (server_list[refnum].group == NULL)
+		return "<default>";
+
+	return server_list[refnum].group;
+}

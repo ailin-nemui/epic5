@@ -1144,7 +1144,7 @@ BUILT_IN_COMMAND(flush)
 		flush_everything_being_held(NULL);
 
 	say("Standby, Flushing server output...");
-	flush_server();
+	flush_server(from_server);
 	say("Done");
 }
 
@@ -2729,11 +2729,14 @@ int	command_exist (char *command)
 	return 0;
 }
 
-void	redirect_text (int to_server, const char *nick_list, const char *text, char *command, int hook)
+int	redirect_text (int to_server, const char *nick_list, const char *text, char *command, int hook)
 {
 static	int 	recursion = 0;
 	int 	old_from_server = from_server;
 	int	allow = 0;
+
+	if (!strcmp(nick_list, "0"))		/* This is the redirect sink */
+		return 1;
 
 	from_server = to_server;
 	if (recursion++ == 0)
@@ -2747,6 +2750,7 @@ static	int 	recursion = 0;
 
 	recursion--;
 	from_server = old_from_server;
+	return 0;
 }
 
 

@@ -1,5 +1,38 @@
 EPIC4-1.2.0
 
+*** News 11/13/2001 -- /FLUSH now uses the "redirect sink"
+	Until now, /FLUSH worked by actually throwing away all data from
+	the server until there was a 1 second pause.  Since none of this
+	data was processed, if things like JOINs or QUITs or KICKs were
+	thrown away, the client could become terribly confused and possibly
+	even crash.  This has changed: now the /flush command does not
+	throw away all input from the server, but instead just suppresses
+	all output for the current server command.  This means that all of
+	your /on's will still be processed, but you won't have to see the
+	output (if you were doing a /who ** or a /links for exmaple).
+	Bottom line: it is now safe to do /flush again!
+
+*** News 11/13/2001 -- The "redirect sink" -- target 0, and practice uses
+	You may now do /REDIRECT 0 to suppress all output from a server
+	command.  Target 0 is called the "redirect sink" and any output
+	that is redirected to it will NOT be displayed.  This technique
+	is very useful for trapping only a few /on's for a complex query
+	(such as /whois) and not having to worry about extra/unknown 
+	numerics cluttering up the user's screen.  Consider this:
+
+			on ^318 * { @count++ }
+			redirect 0 whois hop
+
+	Normally, if you were to do "whois hop", you would see all the other
+	numerics, which would be ugly if you're trying to catch the whois
+	replies with /on's.  This is especially true for networks which use
+	extra numerics in their whois replies that your script may not know
+	about.  So if you just /redirect 0 your server queries, then any
+	/on's that you don't catch that would otherwise send output to the
+	user's screen will redirect their output to the "sink", ie, it will
+	not be displayed.  This should make it much easier to script whois
+	replies.
+
 *** News 11/12/2001 -- Changes to /SETENV let you unset environment variables
 	You may now unset environment variables with the /SETENV command by
 	prefixing the environment variable name with a single hyphen and by

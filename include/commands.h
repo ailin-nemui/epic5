@@ -37,7 +37,7 @@ extern	int	need_defered_commands;
 	void	parse_line 		(const char *, const char *, const char *, int, int);
 	BUILT_IN_COMMAND(load);
 	void	send_text	 	(const char *, const char *, const char *, int);
-	void	redirect_text		(int, const char *, const char *, char *, int);
+	int	redirect_text		(int, const char *, const char *, char *, int);
 	int	command_exist		(char *);
 	BUILT_IN_COMMAND(e_channel);
 	void	do_defered_commands	(void);

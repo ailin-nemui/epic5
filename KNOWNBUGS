@@ -23,3 +23,7 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Migrate calc_speed in dcc.c to using 'struct timeval's instead of time_t's
 * Fix /xecho -v
 * Make /pause take a fractional argument, ie, /pause 1.5
+* Implement "redirect sink", nickname 0, causes all output to be suppressed
+* Implement /flush to use the redirect sink instead of throwing out good data.
+  -- This means /flush is safe to use again!  Huzzah!
+* You can use /REDIRECT 0 WHOIS <nick> for example to suppress "extra" output

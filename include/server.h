@@ -114,7 +114,7 @@ extern	int	parsing_server_index;
 	int	server_list_size		(void);
 
 	void	do_server 			(fd_set *);
-	void	flush_server			(void);
+	void	flush_server			(int);
 	void	send_to_aserver			(int, const char *, ...) __A(2);
 	void	send_to_server			(const char *, ...) __A(1);
 	void	clear_sent_to_server		(int);
