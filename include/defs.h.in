@@ -222,14 +222,12 @@
 /* Define this if you have hstrerror, for h_errno use */
 #undef HAVE_HSTRERROR
 
-/* Define this if you have sysctlbyname() */
-#undef HAVE_SYSCTLBYNAME
-
 /* Define this if you want OPENSSL support */
 #undef HAVE_SSL
-
-/* Define this if you want SSLv2 instead of SSLv3 */
+/* Define this if you want OPENSSL2 support */
 #undef WANT_SSL2
+/* Define this if you have sysctlbyname() */
+#undef HAVE_SYSCTLBYNAME
 
 /* The number of bytes in a unsigned int.  */
 #undef SIZEOF_UNSIGNED_INT

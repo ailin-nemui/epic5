@@ -1,5 +1,5 @@
 /*
- * @(#)$Id: acconfig.h,v 1.6 2002/01/25 21:57:09 crazyed Exp $
+ * @(#)$Id: acconfig.h,v 1.7 2002/01/25 22:12:23 crazyed Exp $
  */
 
 /*
@@ -241,8 +241,8 @@
 
 /* Define this if you want OPENSSL support */
 #undef HAVE_SSL
-/* Define this if you want OPENSSL support */
-#undef HAVE_SSL
+/* Define this if you want OPENSSL2 support */
+#undef WANT_SSL2
 /* Define this if you have sysctlbyname() */
 #undef HAVE_SYSCTLBYNAME
 
