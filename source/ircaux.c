@@ -1,4 +1,4 @@
-/* $EPIC: ircaux.c,v 1.84 2003/07/09 14:28:57 jnelson Exp $ */
+/* $EPIC: ircaux.c,v 1.85 2003/07/09 14:43:50 jnelson Exp $ */
 /*
  * ircaux.c: some extra routines... not specific to irc... that I needed 
  *
@@ -370,36 +370,6 @@ char *	malloc_strcpy (char **ptr, const char *src)
 	*ptr = new_malloc(size);
 	strlcpy(*ptr, src, size);
 	return *ptr;
-}
-
-/* malloc_strcat: Yeah, right */
-char *	malloc_strcat_c (char **ptr, const char *src, size_t *cluep)
-{
-	size_t  msize;
-	size_t  psize;
-	size_t  ssize;
-	size_t	clue = cluep ? *cluep : 0;
-
-	if (*ptr)
-	{
-		if (alloc_size(*ptr) == FREED_VAL)
-			panic("free()d pointer passed to malloc_strcat");
-
-		if (!src)
-			return *ptr;
-
-		psize = clue + strlen(clue + *ptr);
-		ssize = strlen(src);
-		msize = psize + ssize + 1;
-
-		RESIZE(*ptr, char, msize);
-		if (cluep) 
-			*cluep = psize + ssize;
-		strlcat(psize + *ptr, src, msize - psize);
-		return (*ptr);
-	}
-
-	return (*ptr = m_strdup(src));
 }
 
 char *	malloc_str2cpy(char **ptr, const char *src1, const char *src2)
@@ -4356,6 +4326,379 @@ int     is_string_empty (const char *str)
  
         return 1;
 }
+
+/*
+ * malloc_strcpy_c: Make a copy of a string into heap space, which may
+ *	optionally be provided, with an optional clue.
+ *
+ * Arguments:
+ *  'ptr' - A pointer to a variable pointer that is either:
+ *	    1) The value NULL or a valid heap pointer to space which is not
+ *		large enough to hold 'src', in which case heap space will be
+ *		allocated, and the original value of (*ptr) will be invalidated.
+ *	    2) A valid heap pointer to space which is large enough to hold 'src'
+ *		in which case 'src' will be copied to the heap space.
+ *  'src' - The string to be copied.  If NULL, (*ptr) is invalidated (freed).
+ *
+ * Return value:
+ *  If 'src' is NULL, an invalid heap pointer.
+ *  If 'src' is not NULL, a valid heap pointer that contains a copy of 'src'.
+ *  (*ptr) is set to the return value.
+ *  This function will not return (panic) if (*ptr) is not NULL and is 
+ *	not a valid heap pointer.
+ *
+ * Notes:
+ *  If (*ptr) is not big enough to hold 'src' then the original value (*ptr) 
+ * 	will be invalidated and must not be used after this function returns.
+ *  You must deallocate the space later by passing (ptr) to the new_free() 
+ *	function.
+ */
+char *	malloc_strcpy_c (char **ptr, const char *src, size_t *clue)
+{
+	size_t	size, size_src;
+
+	if (!src)
+	{
+		if (clue)
+			*clue = 0;
+		return new_free(ptr);	/* shrug */
+	}
+
+	if (*ptr)
+	{
+		size = alloc_size(*ptr);
+		if (size == (size_t) FREED_VAL)
+			panic("free()d pointer passed to malloc_strcpy");
+
+		/* No copy neccesary! */
+		if (*ptr == src)
+			return *ptr;
+
+		size_src = strlen(src);
+		if (size > size_src)
+		{
+			strlcpy(*ptr, src, size);
+			if (clue)
+				*clue = size_src;
+			return *ptr;
+		}
+
+		new_free(ptr);
+	}
+
+	size = strlen(src);
+	*ptr = new_malloc(size + 1);
+	strlcpy(*ptr, src, size + 1);
+	if (clue)
+		*clue = size;
+	return *ptr;
+}
+
+/*
+ * malloc_strcat_c: Append a copy of 'src' to the end of '*ptr', with an 
+ *	optional "clue" (length of (*ptr))
+ *
+ * Arguments:
+ *  'ptr' - A pointer to a variable pointer that is either:
+ *	    1) The value NULL or a valid heap pointer to space which is not
+ *		large enough to hold 'src', in which case heap space will be
+ *		allocated, and the original value of (*ptr) will be invalidated.
+ *	    2) A valid heap pointer to space which shall contain a valid
+ *		nul-terminated C string.
+ *  'src' - The string to be copied.  If NULL, this function is a no-op.
+ *  'cluep' - A pointer to an integer holding the string length of (*ptr).
+ *		may be NULL.
+ *
+ * Return value:
+ *  If 'src' is NULL, the original value of (*ptr) is returned.
+ *  If 'src' is not NULL, a valid heap pointer that contains the catenation 
+ *	of the string originally contained in (*ptr) and 'src'.
+ *  (*ptr) is set to the return value.
+ *  This function will not return (panic) if (*ptr) is not NULL and is 
+ *	not a valid heap pointer.
+ *  If 'cluep' is not NULL, it will be set to the string length of the 
+ *	new value of (*ptr).
+ *
+ * Notes:
+ *  If (*ptr) is not big enough to take on the catenated string, then the
+ *	original value (*ptr) will be invalidated and must not be used after
+ *	this function returns.
+ *  This function needs to determine how long (*ptr) is, and unless you 
+ *	provide 'cluep' it will do a strlen(*ptr).  If (*ptr) is quite
+ *	large, this could be an expensive operation.  The use of a clue
+ *	is an optimization option.
+ *  If you don't want to bother with the 'clue', use the malloc_strcat macro.
+ *  You must deallocate the space later by passing (ptr) to the new_free() 
+ *	function.
+ */
+char *	malloc_strcat_c (char **ptr, const char *src, size_t *cluep)
+{
+	size_t  msize;
+	size_t  psize;
+	size_t  ssize;
+	size_t	clue = cluep ? *cluep : 0;
+
+	if (*ptr)
+	{
+		if (alloc_size(*ptr) == FREED_VAL)
+			panic("free()d pointer passed to malloc_strcat");
+
+		if (!src)
+			return *ptr;
+
+		psize = clue + strlen(clue + *ptr);
+		ssize = strlen(src);
+		msize = psize + ssize + 1;
+
+		RESIZE(*ptr, char, msize);
+		if (cluep) 
+			*cluep = psize + ssize;
+		strlcat(psize + *ptr, src, msize - psize);
+		return (*ptr);
+	}
+
+	return (*ptr = m_strdup(src));
+}
+
+/*
+ * malloc_strdup: Allocate and return a pointer to valid heap space into
+ *	which a copy of 'str' has been placed.
+ *
+ * Arguments:
+ *  'str' - The string to be copied.  If NULL, a zero length string will
+ *		be copied in its place.
+ *
+ * Return value:
+ *  If 'str' is not NULL, then a valid heap pointer containing a copy of 'str'.
+ *  If 'str' is NULL, then a valid heap pointer containing a 0-length string.
+ *
+ * Notes:
+ *  You must deallocate the space later by passing a pointer to the return
+ *	value to the new_free() function.
+ */
+char *	malloc_strdup (const char *str)
+{
+	char *ptr;
+	size_t size;
+
+	if (!str)
+		str = empty_string;
+
+	size = strlen(str) + 1;
+	ptr = (char *)new_malloc(size);
+	strlcpy(ptr, str, size);
+	return ptr;
+}
+
+/*
+ * malloc_strdup2: Allocate and return a pointer to valid heap space into
+ *	which a catenation of 'str1' and 'str2' have been placed.
+ *
+ * Arguments:
+ *  'str1' - The first string to be copied.  If NULL, a zero-length string
+ *		will be used in its place.
+ *  'str2' - The second string to be copied.  If NULL, a zero-length string
+ *		will be used in its place.
+ *
+ * Return value:
+ *  A valid heap pointer containing a copy of 'str1' and 'str2' catenated 
+ *	together.  'str1' and 'str2' may be substituted as indicated above.
+ *
+ * Notes:
+ *  You must deallocate the space later by passing a pointer to the return
+ *	value to the new_free() function.
+ */
+char *	malloc_strdup2 (const char *str1, const char *str2)
+{
+	size_t msize;
+	char * buffer;
+
+	/* Prevent a crash. */
+	if (str1 == NULL)
+		str1 = empty_string;
+	if (str2 == NULL)
+		str2 = empty_string;
+
+	msize = strlen(str1) + strlen(str2) + 1;
+	buffer = (char *)new_malloc(msize);
+	*buffer = 0;
+	strlopencat_c(buffer, msize, NULL, str1, str2, NULL);
+	return buffer;
+}
+
+/*
+ * malloc_strdup3: Allocate and return a pointer to valid heap space into
+ *	which a catenation of 'str1', 'str2', and 'str3' have been placed.
+ *
+ * Arguments:
+ *  'str1' - The first string to be copied.  If NULL, a zero-length string
+ *		will be used in its place.
+ *  'str2' - The second string to be copied.  If NULL, a zero-length string
+ *		will be used in its place.
+ *  'str3' - The third string to be copied.  If NULL, a zero-length string
+ *		will be used in its place.
+ *
+ * Return value:
+ *  A valid heap pointer containing a copy of 'str1', 'str2', and 'str3' 
+ *	catenated together.  'str1', 'str2', and 'str3' may be substituted 
+ *	as indicated above.
+ *
+ * Notes:
+ *  You must deallocate the space later by passing a pointer to the return
+ *	value to the new_free() function.
+ */
+char *	malloc_strdup3 (const char *str1, const char *str2, const char *str3)
+{
+	size_t msize;
+	char *buffer;
+
+	if (!str1)
+		str1 = empty_string;
+	if (!str2)
+		str2 = empty_string;
+	if (!str3)
+		str3 = empty_string;
+
+	msize = strlen(str1) + strlen(str2) + strlen(str3) + 1;
+	buffer = (char *)new_malloc(msize);
+	*buffer = 0;
+	strlopencat_c(buffer, msize, NULL, str1, str2, str3, NULL);
+	return buffer;
+}
+
+/*
+ * malloc_strcat2_c: Append a copy of 'str1' and 'str2'' to the end of 
+ *	'*ptr', with an optional "clue" (length of (*ptr))
+ *
+ * Arguments:
+ *  'ptr' - A pointer to a variable pointer that is either NULL or a valid
+ *		heap pointer which shall contain a valid C string.
+ *  'str1' - The first of two strings to be appended to '*ptr'.
+ *		May be NULL.
+ *  'str2' - The second of two strings to be appended to '*ptr'.
+ *		May be NULL.
+ *  'cluep' - A pointer to an integer holding the string length of (*ptr).
+ *		May be NULL.
+ *
+ * Return value:
+ *  The catenation of the three strings '*ptr', 'str1', and 'str2', except
+ *	if either 'str1' or 'str2' are NULL, those values are ignored.
+ *  (*ptr) is set to the return value.
+ *  This function will not return (panic) if (*ptr) is not NULL and is 
+ *	not a valid heap pointer.
+ *  If 'cluep' is not NULL, it will be set to the string length of the 
+ *	new value of (*ptr).
+ *
+ * Notes:
+ *  The original value of (*ptr) is always invalidated by this function and
+ *	may not be used after this function returns.
+ *  This function needs to determine how long (*ptr) is, and unless you 
+ *	provide 'cluep' it will do a strlen(*ptr).  If (*ptr) is quite
+ *	large, this could be an expensive operation.  The use of a clue
+ *	is an optimization option.
+ *  If you don't want to bother with the 'clue', use the malloc_strcat2 macro.
+ *  You must deallocate the space later by passing (ptr) to the new_free() 
+ *	function.
+ */
+char *	malloc_strcat2_c (char **ptr, const char *str1, const char *str2, size_t *clue)
+{
+	size_t	csize;
+	int 	msize;
+
+	csize = clue ? *clue : 0;
+	msize = csize;
+
+	if (*ptr)
+	{
+		if (alloc_size(*ptr) == FREED_VAL)
+			panic("free()d pointer passed to malloc_strcat2");
+		msize += strlen(csize + *ptr);
+	}
+	if (str1)
+		msize += strlen(str1);
+	if (str2)
+		msize += strlen(str2);
+
+	if (!*ptr)
+	{
+		*ptr = new_malloc(msize + 1);
+		**ptr = 0;
+	}
+	else
+		RESIZE(*ptr, char, msize + 1);
+
+	if (str1)
+		strlcat(csize + *ptr, str1, msize + 1 - csize);
+	if (str2)
+		strlcat(csize + *ptr, str2, msize + 1 - csize);
+	if (clue) 
+		*clue = msize;
+
+	return *ptr;
+}
+
+/*
+ * malloc_strcat_wordlist_c: Append a word list to another word list using
+ *	a delimiter, with an optional "clue" (length of (*ptr))
+ *
+ * Arguments:
+ *  'ptr' - A pointer to a variable pointer that is either NULL or a valid
+ *		heap pointer which shall contain a valid C string which 
+ *		represents a word list (words separated by delimiters)
+ *  'word_delim' - The delimiter to use to separate (*ptr) from 'word_list'.
+ *		May be NULL if no delimiter is desired.
+ *  'word_list' - The word list to append to (*ptr).
+ *		May be NULL.
+ *  'cluep' - A pointer to an integer holding the string length of (*ptr).
+ *		May be NULL.
+ *
+ * Return value:
+ *  If "wordlist" is either NULL or a zero-length string, this function
+ *	does nothing, and returns the original value of (*ptr).
+ *  If "wordlist" is not NULL and not a zero-length string, and (*ptr) is
+ *	either NULL or a zero-length string, (*ptr) is set to "wordlist",
+ *	and the new value of (*ptr) is returned.
+ *  If "wordlist" is not NULL and not a zero-length string, and (*ptr) is
+ *	not NULL and not a zero-length string, (*ptr) is set to the 
+ *	catenation of (*ptr), 'word_delim', and 'wordlist' and is the
+ *	return value.  
+ *  This function will not return (panic) if (*ptr) is not NULL and is 
+ *	not a valid heap pointer.
+ *  If 'cluep' is not NULL, it will be set to the string length of the 
+ *	new value of (*ptr).
+ *
+ * Notes:
+ *  The idea of this function is given two word lists, either of which 
+ *	may contain zero or more words, paste them together using a
+ *	delimiter, which for word lists, is usually a space, but could
+ *	be any character.
+ *  Unless "wordlist" is NULL or a zero-length string, the original value
+ *	of (*ptr) is invalidated and may not be used after this function
+ *	returns.
+ *  This function needs to determine how long (*ptr) is, and unless you 
+ *	provide 'cluep' it will do a strlen(*ptr).  If (*ptr) is quite
+ *	large, this could be an expensive operation.  The use of a clue
+ *	is an optimization option.
+ *  If you don't want to bother with the 'clue', use the 
+ *	malloc_strcat_wordlist macro.
+ *  You must deallocate the space later by passing (ptr) to the new_free() 
+ *	function.
+ *  A WORD LIST IS CONSIDERED TO HAVE ONE ELEMENT IF IT HAS ANY CHARACTERS
+ *	EVEN IF THAT CHARACTER IS A DELIMITER (ie, a space).
+ */
+char *	malloc_strcat_wordlist_c (char **ptr, const char *word_delim, const char *wordlist, size_t *clue)
+{
+	if (wordlist && *wordlist)
+	{
+	    if (*ptr && **ptr)
+		return malloc_strcat2_c(ptr, word_delim, wordlist, clue);
+	    else
+		return malloc_strcpy_c(ptr, wordlist, clue);
+	}
+	else
+	    return *ptr;
+}
+
 
 /*
  * malloc_sprintf: write a formatted string to heap memory

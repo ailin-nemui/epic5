@@ -7,7 +7,7 @@
  *
  * See the COPYRIGHT file, or do a HELP IRCII COPYRIGHT 
  *
- * @(#)$Id: ircaux.h,v 1.51 2003/07/09 14:28:57 jnelson Exp $
+ * @(#)$Id: ircaux.h,v 1.52 2003/07/09 14:43:50 jnelson Exp $
  */
 
 #ifndef _IRCAUX_H_
@@ -171,6 +171,23 @@ size_t	strlcpy_c		(char *, const char *, size_t, size_t *);
 size_t	strlcat_c		(char *, const char *, size_t, size_t *);
 char *  strlopencat_c		(char *dest, size_t maxlen, size_t *cluep, ...);
 int     is_string_empty 	(const char *str);
+
+char *	malloc_strcpy_c		(char **, const char *, size_t *);
+char *	malloc_strcat_c		(char **, const char *, size_t *);
+char *	malloc_strdup 		(const char *);
+char *	malloc_strdup2 		(const char *, const char *);
+char *	malloc_strdup3 		(const char *, const char *, const char *);
+char *	malloc_strcat2_c	(char **, const char *, const char *, size_t *);
+char *	malloc_strcat_wordlist_c (char **, const char *, const char *,size_t *);
+char *	malloc_sprintf 		(char **, const char *, ...) __A(2);
+
+#if notyet
+#define malloc_strcpy(x,y) malloc_strcpy_c((x),(y),NULL)
+#define malloc_strcat(x,y) malloc_strcat_c((x),(y),NULL)
+#define m_strdup malloc_strdup
+#define malloc_strcat2(x,y,z) malloc_strcat2_c((x),(y),(z),NULL)
+#define malloc_strcat_wordlist(x,y,z) malloc_strcat_wordlist_c((x),(y),(z),NULL)
+#endif
 
 extern	unsigned char isspace_table[256];
 #define my_isspace(x) isspace_table[(unsigned)(unsigned char)(x)]
