@@ -1,4 +1,4 @@
-/* $EPIC: vars.c,v 1.21 2002/12/23 18:37:15 jnelson Exp $ */
+/* $EPIC: vars.c,v 1.22 2002/12/25 05:54:06 jnelson Exp $ */
 /*
  * vars.c: All the dealing of the irc variables are handled here. 
  *
@@ -492,7 +492,7 @@ enum VAR_TYPES get_variable_index (const char *varname)
 				NUMBER_OF_VARIABLES, varname, &cnt, 
 				(int *)&retval);
 
-	if (cnt < 0 || cnt == 1)
+	if (cnt < 0)
 		return retval;
 
 	return NUMBER_OF_VARIABLES;
@@ -828,7 +828,7 @@ char 	*make_string_var (const char *var_name)
 	copy = LOCAL_COPY(var_name);
 	upper(copy);
 
-	msv_index = get_variable_index(var_name);
+	msv_index = get_variable_index(copy);
 	if (msv_index == NUMBER_OF_VARIABLES)
 		return NULL;
 
