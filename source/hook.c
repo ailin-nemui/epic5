@@ -1,4 +1,4 @@
-/* $EPIC: hook.c,v 1.32 2003/12/25 04:39:49 jnelson Exp $ */
+/* $EPIC: hook.c,v 1.33 2003/12/25 15:30:11 jnelson Exp $ */
 /*
  * hook.c: Does those naughty hook functions. 
  *
@@ -372,6 +372,7 @@ static void add_numeric_hook (int numeric, char *nick, char *stuff, int noisy, i
 		new_h->nick = NULL;
 		new_h->stuff = NULL;
 		new_h->filename = NULL;
+		new_h->regexpr = NULL;
 	}
 
 	malloc_strcpy(&new_h->nick, nick);
@@ -419,6 +420,7 @@ static void add_hook (int which, char *nick, char *stuff, int noisy, int not, in
 		new_h->nick = NULL;
 		new_h->stuff = NULL;
 		new_h->filename = NULL;
+		new_h->regexpr = NULL;
 	}
 
 	malloc_strcpy(&new_h->nick, nick);

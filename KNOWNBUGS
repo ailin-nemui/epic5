@@ -45,3 +45,4 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Compile /ON patterns into regexes and use regexec() to parse them.
 * Fix matching of /on type "*" to always have a weight of 1. (rb adm)
 * Tack a ^ and $ onto regexes in pattern2regex().
+* Flexible hooks need to have 'hook->regexpr' set to NULL to avoid segfault
