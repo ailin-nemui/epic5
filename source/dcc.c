@@ -1,4 +1,4 @@
-/* $EPIC: dcc.c,v 1.50 2003/03/23 02:48:33 jnelson Exp $ */
+/* $EPIC: dcc.c,v 1.51 2003/03/24 01:32:37 jnelson Exp $ */
 /*
  * dcc.c: Things dealing client to client connections. 
  *
@@ -1114,7 +1114,7 @@ void	process_dcc(char *args)
 
 
 /*
- * Usage: /DCC CHAT <nick> [-e passkey]
+ * Usage: /DCC CHAT <nick> [-p port]|[-6]|[-4]
  */
 static void	dcc_chat (char *args)
 {
@@ -1128,10 +1128,13 @@ static void	dcc_chat (char *args)
 		return;
 	}
 
+	/* The default is AF_INET */
+	global_family = AF_INET;
+
 	/*
 	 * Check to see if there is a flag
 	 */
-	if (*args == '-')
+	while (*args == '-')
 	{
 		if (args[1] == 'p')
 		{
@@ -1139,9 +1142,18 @@ static void	dcc_chat (char *args)
 			if (args && *args)
 			    portnum = my_atol(next_arg(args, &args));
 		}
+		if (args[1] == '6')
+		{
+			next_arg(args, &args);
+			global_family = AF_INET;
+		}
+		if (args[1] == '4')
+		{
+			next_arg(args, &args);
+			global_family = AF_INET6;
+		}
 	}
 
-	global_family = AF_INET;
 	dcc = dcc_searchlist("chat", user, DCC_CHAT, 1, NULL, -1);
 	if ((dcc->flags & DCC_ACTIVE) || (dcc->flags & DCC_MY_OFFER))
 	{
