@@ -527,7 +527,7 @@ static int	get_high_portnum (void)
 			return FALLBACK_HIGHPORT;
 	}
 #else
-	return FALLBACK_HIGHWPORT;
+	return FALLBACK_HIGHPORT;
 #endif
 }
 
