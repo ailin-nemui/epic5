@@ -182,7 +182,11 @@ installscript: installdirs test
 
 helpdir   = $(epicdir)/help
 installhelp: installdirs
-	(cd @srcdir@/help; tar cf - .) | (cd $(IP)$(helpdir); tar xf -)
+	if ./my_test -d help ; then \
+		(cd @srcdir@/help; tar cf - .) | (cd $(IP)$(helpdir); tar xf -)  ; \
+	else \
+		echo No help files to install. ; \
+	fi
 
 installman: installdirs
 	$(INSTALL_DATA) @srcdir@/doc/epic.1 $(IP)/$(mandir)/man1/$(epic).1

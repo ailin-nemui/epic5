@@ -143,3 +143,4 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Hack up /set <variable><space><space> so it works again.  ugh.
 * Dont allow /timer -repeat -1 0 because that busy-loops.
 * Add shell of $windowctl() which will be filled in going forward.
+* Add a more sensible 'make installhelp' rule, courtesy of Steven Plunkett
