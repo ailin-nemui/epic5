@@ -4,9 +4,9 @@ dnl except those bits attributed otherwise.
 dnl thanks to the screen 3.3 configure.in for giving me examples to
 dnl work from and steal ;)
 dnl
-dnl @(#)$Id: configure.in,v 1.11 2002/05/07 00:05:45 jnelson Exp $
+dnl @(#)$Id: configure.in,v 1.12 2002/05/07 00:21:13 jnelson Exp $
 
-AC_REVISION($Revision: 1.11 $)dnl
+AC_REVISION($Revision: 1.12 $)dnl
 AC_INIT(source/irc.c)
 AC_CONFIG_HEADER(include/defs.h)
 
@@ -223,6 +223,15 @@ AC_TYPE_PID_T
 AC_TYPE_SIZE_T
 AC_TYPE_UID_T
 AC_FUNC_ALLOCA
+
+dnl ----------------------------------------------------------
+dnl Check to see if we have socklen_t
+dnl
+AC_MSG_CHECKING(for socklen_t)
+AC_EGREP_HEADER(socklen_t, sys/socket.h,
+  AC_MSG_RESULT(yes)
+  AC_DEFINE(HAVE_SOCKLEN_T),
+  AC_MSG_RESULT(no))
 
 dnl ----------------------------------------------------------
 dnl

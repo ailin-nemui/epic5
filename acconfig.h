@@ -1,5 +1,5 @@
 /*
- * @(#)$Id: acconfig.h,v 1.11 2002/05/07 00:05:45 jnelson Exp $
+ * @(#)$Id: acconfig.h,v 1.12 2002/05/07 00:21:13 jnelson Exp $
  */
 
 /*
@@ -265,4 +265,7 @@
 
 /* Define this if you have gethostbyname2() */
 #undef HAVE_GETHOSTBYNAME2
+
+/* Define this if you don't have siglen_t */
+#undef HAVE_SOCKLEN_T
 

@@ -9,7 +9,7 @@
  */
 
 #if 0
-static	char	rcsid[] = "@(#)$Id: dcc.c,v 1.16 2002/05/07 00:05:45 jnelson Exp $";
+static	char	rcsid[] = "@(#)$Id: dcc.c,v 1.17 2002/05/07 00:21:13 jnelson Exp $";
 #endif
 
 #include "irc.h"
@@ -1836,7 +1836,7 @@ void	register_dcc_offer (char *user, char *type, char *description, char *addres
 
 		fromhost++;
 		irc_addr.sin_family = AF_INET;
-		if (inet_anyton(fromhost, (SS *)&irc_addr))
+		if (inet_anyton(fromhost, (SA *)&irc_addr))
 		{
 			yell("### Incoming handshake has an address [%s] that could not be figured out!", fromhost);
 			yell("### Please use caution in deciding whether to accept it or not");

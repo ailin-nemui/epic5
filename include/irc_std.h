@@ -266,6 +266,10 @@ struct sockaddr_storage {
 };
 #endif
 
+#ifndef HAVE_SOCKLEN_T
+typedef int socklen_t;
+#endif
+
 /*
  * Define some lazy shorthand typedefs for commonly used structures
  */
