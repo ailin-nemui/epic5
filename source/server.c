@@ -2196,13 +2196,15 @@ void 	save_servers (FILE *fp)
 	for (i = 0; i < number_of_servers; i++)
 	{
 		/* SERVER -ADD server:port:password:nick */
-		fprintf(fp, "SERVER -ADD %s:%d:%s:%s\n",
+		fprintf(fp, "SERVER -ADD %s:%d:%s:%s:%s\n",
 			server_list[i].name,
 			server_list[i].port,
 			server_list[i].password ? 
 				server_list[i].password : empty_string,
 			server_list[i].nickname ?
-				server_list[i].nickname : empty_string);
+				server_list[i].nickname : empty_string,
+			server_list[i].group ?
+				server_list[i].group : empty_string);
 	}
 }
 
