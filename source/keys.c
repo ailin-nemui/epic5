@@ -1,4 +1,4 @@
-/* $EPIC: keys.c,v 1.14 2002/09/01 18:27:52 jnelson Exp $ */
+/* $EPIC: keys.c,v 1.15 2002/09/03 06:06:52 wd Exp $ */
 /*
  * keys.c:  Keeps track of what happens whe you press a key.
  *
@@ -594,7 +594,7 @@ void init_keys (void) {
     /* now bind the special single-character inputs */
     BIND("^A", "BEGINNING_OF_LINE");
     BIND("^B", "BOLD");
-    /* ^C */
+    BIND("^C", "SELF_INSERT");
     BIND("^D", "DELETE_CHARACTER");
     BIND("^E", "END_OF_LINE");
     BIND("^F", "BLINK");
