@@ -95,3 +95,5 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Make /window server just change server, let w_c_s() bootstrap connection
 * Remove many window->channel->server sanity checks.
 * Backslash a bunch of regular pattern chars that are metachars in regexes
+* Nix note support
+* Revamp notice.c for its eventual assimiliation into parse.c

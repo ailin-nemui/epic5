@@ -1,4 +1,4 @@
-/* $EPIC: notice.c,v 1.32 2003/12/28 05:59:15 jnelson Exp $ */
+/* $EPIC: notice.c,v 1.33 2004/01/07 15:23:22 jnelson Exp $ */
 /*
  * notice.c: special stuff for parsing NOTICEs
  *
@@ -51,95 +51,55 @@
 #include "notice.h"
 #include "commands.h"
 
-static	time_t 	convert_note_time_to_real_time (char *stuff);
-static	int 	kill_message (const char *from, const char *line);
-
-
-/*
- * The client apparantly never was adapted to handle the new NOTE syntax.
- * So i had to kludge this up to work with it.  Currently, NOTEs are sent
- * something like this:
- *
- *	NOTICE yournick :Note from nick!user@host /xxxd:xxh:xxm/ [N] message
- *
- * and parse() calls parse_notice(), who notices that there is no pefix
- * and passes it off to parse_local_server_notice(), who checks to see 
- * if it is a note (it is), blows away the "Note from" part, and re-sets 
- * the "from" and "FromUserHost" parts with the nick!user@host part and 
- * passes us the buck with 'line' pointing at the time description 
- * (the /.../ part)
- */
-static void 	parse_note (char *from, char *line)
+static int 	p_killmsg (const char *from, const char *cline)
 {
-	char	*date,
-		*flags;
-const	char	*high;
-	time_t	when;
-	int	l;
+	char *poor_sap;
+	char *bastard;
+	const char *path_to_bastard;
+	char *reason;
+	char *line;
 
-	switch (check_ignore(from, FromUserHost, LEVEL_NOTE))
+	line = LOCAL_COPY(cline);
+	poor_sap = next_arg(line, &line);
+
+	/* Dalnet kill BBC and doesnt append the period */
+	if (!end_strcmp(poor_sap, ".", 1))
+		chop(poor_sap, 1);
+
+	/* dalnet kill BBC and doesnt use "From", but "from" */
+	if (my_strnicmp(line, "From ", 5))
 	{
-		case IGNORED:
-			return;
-		case HIGHLIGHTED:
-			high = highlight_char;
-			break;
-		default:
-			high = empty_string;
+		yell("Attempted to parse an ill-formed KILL request [%s %s]",
+			poor_sap, line);
+		return 0;
+	}
+	line += 5;
+	bastard = next_arg(line, &line);
+
+	/* Hybrid BBC and doesn't include the kill-path. */
+	/* Fend off future BBC kills */
+	if (my_strnicmp(line, "Path: ", 6))
+	{
+		path_to_bastard = "*";
+		reason = line;		/* Hope for the best */
+	}
+	else
+	{
+		line += 6;
+		path_to_bastard = next_arg(line, &line);
+		reason = line;
 	}
 
-	if (check_flooding(from, FromUserHost, LEVEL_NOTE, line))
-		return;
-
-/* 
-	at this point, line looks like:
-	"/xxxd:xxh:xxm/ [FLAGS] message goes here"
- */
-	date = next_arg(line, &line);
-	flags = next_arg(line, &line);
-
-	when = convert_note_time_to_real_time(date);
-
-	l = message_from(from, LEVEL_NOTE);
-	if (do_hook(NOTE_LIST, "%s %lu %s", from, when, line))
-	{
-		if (time(NULL) - when > 60)	/* not just sent */
-			put_it("%s[%s]%s %s (%s)", high, from, high, 
-						   line, my_ctime(when));
-		else
-			put_it("%s[%s]%s %s", high, from, high, line);
-	}
-
-	pop_message_from(l);
+	return !do_hook(KILL_LIST, "%s %s %s %s %s", from, poor_sap, bastard,
+					path_to_bastard, reason);
 }
 
-static time_t	convert_note_time_to_real_time(char *stuff)
-{
-	time_t days = 0, hours = 0, minutes = 0;
-
-	stuff++;			      /* first character is a '/' */
-	days = strtoul(stuff, &stuff, 10);    /* get the number of days */
-	stuff++;			      /* skip over the 'd' */
-	stuff++;			      /* skip over the ':' */
-	hours = strtoul(stuff, &stuff, 10);   /* get the number of hours */
-	stuff++;			      /* skip over the 'h' */
-	stuff++;			      /* skip over the ':' */
-	minutes = strtoul(stuff, &stuff, 10); /* get the number of minutes */
-	stuff++;			      /* skip over the 'm' */
-	stuff++;			      /* skip over the '/' */
-	if (*stuff)
-		yell("cntto: bad format");
-
-	hours += days * 24;
-	minutes += hours * 60;
-	return (time(NULL) - minutes * 60);
-}
 
 /*
  * This parses NOTICEs that are sent from that wacky ircd we are connected
  * to, and 'to' is guaranteed not to be a channel.
  */
-static 	void 	parse_local_server_notice (const char *from, const char *to, const char *line)
+static 	void 	p_snotice (const char *from, const char *to, const char *line)
 {
 	const char *	f;
 	int	l;
@@ -154,7 +114,7 @@ static 	void 	parse_local_server_notice (const char *from, const char *to, const
 	if (!strncmp(line, "*** Notice -- ", 13))
 	{
 		if (!strncmp(line + 14, "Received KILL message for ", 26))
-			if (kill_message(f, line + 40))
+			if (p_killmsg(f, line + 40))
 				return;
 
 		l = message_from(to, LEVEL_OPNOTE);
@@ -162,32 +122,6 @@ static 	void 	parse_local_server_notice (const char *from, const char *to, const
 		pop_message_from(l);
 		if (!retval)
 			return;
-	}
-
-	/* NOTEs */
-	else if (!strncmp(line, "Note", 4))
-	{
-		char *note_from = NULL;
-		char *point = NULL;
-
-		if (strlen(line) > 10)
-		{
-			/* Skip the "Note From" part */
-			note_from = LOCAL_COPY(line + 10); 
-
-			if ((point = strchr(note_from, '!')))
-			{
-				*point++ = 0;
-				FromUserHost = line;
-				if ((point = strchr(FromUserHost, ' ')))
-				{
-					*point++ = 0;
-					parse_note(note_from, point);
-				}
-				FromUserHost = empty_string;
-			}
-		}
-		return;
 	}
 
 	l = message_from(to, LEVEL_SNOTE);
@@ -244,7 +178,7 @@ void 	p_notice (const char *from, const char *comm, const char **ArgList)
 	/* Check to see if it is a "Server Notice" */
 	if ((!from || !*from) || !strcmp(get_server_itsname(from_server), from))
 	{
-		parse_local_server_notice(from, target, message);
+		p_snotice(from, target, message);
 		set_server_doing_notice(from_server, 0);
 		return;
 	}
@@ -340,49 +274,6 @@ void 	p_notice (const char *from, const char *comm, const char **ArgList)
 
 	/* Alas, this is not protected by protocol enforcement. :( */
 	notify_mark(from_server, from, 1, 0);
-}
-
-int 	kill_message (const char *from, const char *cline)
-{
-	char *poor_sap;
-	char *bastard;
-	const char *path_to_bastard;
-	char *reason;
-	char *line;
-
-	line = LOCAL_COPY(cline);
-	poor_sap = next_arg(line, &line);
-
-	/* Dalnet kill BBC and doesnt append the period */
-	if (!end_strcmp(poor_sap, ".", 1))
-		chop(poor_sap, 1);
-
-	/* dalnet kill BBC and doesnt use "From", but "from" */
-	if (my_strnicmp(line, "From ", 5))
-	{
-		yell("Attempted to parse an ill-formed KILL request [%s %s]",
-			poor_sap, line);
-		return 0;
-	}
-	line += 5;
-	bastard = next_arg(line, &line);
-
-	/* Hybrid BBC and doesn't include the kill-path. */
-	/* Fend off future BBC kills */
-	if (my_strnicmp(line, "Path: ", 6))
-	{
-		path_to_bastard = "*";
-		reason = line;		/* Hope for the best */
-	}
-	else
-	{
-		line += 6;
-		path_to_bastard = next_arg(line, &line);
-		reason = line;
-	}
-
-	return !do_hook(KILL_LIST, "%s %s %s %s %s", from, poor_sap, bastard,
-					path_to_bastard, reason);
 }
 
 /*
