@@ -189,7 +189,6 @@ char *file_readb (int fd, int numb)
 	}
 }
 
-
 int	file_eof (int fd)
 {
 	File *ptr = lookup_file (fd);
@@ -197,6 +196,57 @@ int	file_eof (int fd)
 		return -1;
 	else
 		return feof(ptr->file);
+}
+
+int	file_error (int fd)
+{
+	File *ptr = lookup_file (fd);
+	if (!ptr)
+		return -1;
+	else
+		return ferror(ptr->file);
+}
+
+int	file_rewind (int fd)
+{
+	File *ptr = lookup_file (fd);
+	if (!ptr)
+		return -1;
+	else
+	{
+		rewind(ptr->file);
+		return ferror(ptr->file);
+	}
+}
+
+int	file_seek (int fd, long offset, const char *whence)
+{
+	File *ptr = lookup_file (fd);
+	if (!ptr)
+		return -1;
+
+	if (!my_stricmp(whence, "SET"))
+		return fseek(ptr->file, offset, SEEK_SET);
+	else if (!my_stricmp(whence, "CUR"))
+		return fseek(ptr->file, offset, SEEK_CUR);
+	else if (!my_stricmp(whence, "END"))
+		return fseek(ptr->file, offset, SEEK_END);
+	else
+		return -1;
+}
+
+int	file_skip (int fd)
+{
+	char blah[10240];
+	File *ptr = lookup_file (fd);
+
+	if (!ptr)
+		return -1;
+
+	if (fgets(blah, 10239, ptr->file))
+		return feof(ptr->file);
+	else
+		return -1;
 }
 
 int	file_close (int fd)
@@ -215,4 +265,5 @@ int	file_valid (int fd)
 		return 1;
 	return 0;
 }
+
 

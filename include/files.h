@@ -19,5 +19,9 @@
 	int	file_eof 		(int);
 	int	file_close 		(int);
 	int	file_valid		(int);
+	int	file_rewind		(int);
+	int	file_error		(int);
+	int	file_seek		(int, long, const char *);
+	int	file_skip		(int);
 
 #endif

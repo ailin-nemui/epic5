@@ -185,6 +185,7 @@ static	char
 	*function_diff 		(char *),
 	*function_eof 		(char *),
 	*function_epic		(char *),
+	*function_error		(char *),
 	*function_exp		(char *),
 	*function_fnexist	(char *),
 	*function_fexist 	(char *),
@@ -220,6 +221,7 @@ static	char
 	*function_isconnected	(char *),
 	*function_iscurchan	(char *),
 	*function_isdisplaying	(char *),
+	*function_isfilevalid	(char *),
 	*function_irclib	(char *),
 	*function_isalpha 	(char *),
 	*function_ischanvoice	(char *),
@@ -279,6 +281,7 @@ static	char
 	*function_restw 	(char *),
 	*function_reverse 	(char *),
 	*function_revw 		(char *),
+	*function_rewind	(char *),
 	*function_rfilter 	(char *),
 	*function_rightw 	(char *),
 	*function_rigmask	(char *),
@@ -287,6 +290,7 @@ static	char
 	*function_rpattern 	(char *),
 	*function_rsubstr	(char *),
 	*function_sar 		(char *),
+	*function_seek		(char *),
 	*function_server_version (char *),
 	*function_servername	(char *),
 	*function_servernick	(char *),
@@ -294,6 +298,7 @@ static	char
 	*function_servports	(char *),
 	*function_sin		(char *),
 	*function_sinh		(char *),
+	*function_skip		(char *),
 	*function_sort		(char *),
 	*function_split 	(char *),
 	*function_splice 	(char *),
@@ -407,7 +412,11 @@ static BuiltInFunctions	built_in_functions[] =
 	{ "EOF",		function_eof 		},
 	{ "EPIC",		function_epic		},
 	{ "EXP",		function_exp		},
+	{ "FERROR",		function_error		},
 	{ "FEXIST",             function_fexist 	},
+	{ "FREWIND",		function_rewind		},
+	{ "FSEEK",		function_seek		},
+	{ "FSKIP",		function_skip		},
 	{ "FILTER",             function_filter 	},
 	{ "FINDITEM",           function_finditem 	},
 	{ "FINDW",		function_findw		},
@@ -461,6 +470,7 @@ static BuiltInFunctions	built_in_functions[] =
 	{ "ISDIGIT",		function_isdigit 	},
 	{ "ISDISPLAYING",	function_isdisplaying	},
 	{ "ISENCRYPTED",	function_isencrypted	},
+	{ "ISFILEVALID",	function_isfilevalid	},
 	{ "ISHALFOP",		function_ishalfop	},
 	{ "ISNUMBER",		function_isnumber	},
 	{ "ITEMTOINDEX",        function_itemtoindex 	},
@@ -2785,12 +2795,48 @@ BUILT_IN_FUNCTION(function_read, words)
 		return file_read (my_atol(fdc));
 }
 
+BUILT_IN_FUNCTION(function_seek, words)
+{
+	char *fdc = NULL, 
+	     *numb = NULL, 
+	     *whence = NULL;
+
+	GET_STR_ARG(fdc, words);
+	GET_STR_ARG(numb, words);
+	GET_STR_ARG(whence, words);
+
+	RETURN_INT(file_seek(my_atol(fdc), my_atol(numb), whence));
+}
+
 BUILT_IN_FUNCTION(function_eof, words)
 {
 	RETURN_IF_EMPTY(words);
 	RETURN_INT(file_eof(my_atol(new_next_arg(words, &words))));
 }
 
+BUILT_IN_FUNCTION(function_error, words)
+{
+	RETURN_IF_EMPTY(words);
+	RETURN_INT(file_error(my_atol(new_next_arg(words, &words))));
+}
+
+BUILT_IN_FUNCTION(function_skip, words)
+{
+	RETURN_IF_EMPTY(words);
+	RETURN_INT(file_skip(my_atol(new_next_arg(words, &words))));
+}
+
+BUILT_IN_FUNCTION(function_isfilevalid, words)
+{
+	RETURN_IF_EMPTY(words);
+	RETURN_INT(file_valid(my_atol(new_next_arg(words, &words))));
+}
+
+BUILT_IN_FUNCTION(function_rewind, words)
+{
+	RETURN_IF_EMPTY(words);
+	RETURN_INT(file_rewind(my_atol(new_next_arg(words, &words))));
+}
 
 BUILT_IN_FUNCTION(function_iptoname, words)
 {

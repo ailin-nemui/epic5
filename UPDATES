@@ -1,348 +1,41 @@
-EPIC4pre2
+EPIC4-1.2.0
 
-*** News -- Nov 9, 2001 -- New built in function, $unsplit(<sep> <word list>)
-	Unsplit takes two arguments, a separator string and a word list.
-	The return value is each word in <word list> separated by <sep>
-	instead of by spaces.  Multiple spaces will be condensed into one
-	<sep>.  This is intentionally useful for creating channel lists 
-	to pass to /join.  See the example in /WINDOW REJOIN for good ideas.
+*** News 11/12/2001 -- New built in functions for file manipulations
+	Several new functions have been added to help you manipulate files
+	that are opened with $open().
 
-*** News -- Nov 9, 2001 -- New math functions added (crazyeddy)
-	The following built in math functions have been added.  
+	$fskip(<fd>)
+	   This function reads the next line of the file and discards it.
+	   It returns the end-of-file condition of the file after the read.
+	   If <fd> is not a valid file, -1 is returned.
 
-		$acos(number)		Arc cosine
-		$acosh(number)		Inverse hyperbolic cosine
-		$asin(number)		Arc sine
-		$asinh(number)		Inverse hyperbolic sine
-		$atan(number)		Arc tangent of one variable
-		$atan(number2 number2)	Arc tangent of two variables
-		$atanh(number)		Inverse hyperbolic tangent
-		$cosh(number)		Hyperbolic cosine
-		$exp(number)		Exponential value
-		$jn(int number)		Bessel function of the first kind
-					of the integer order [int]
-		$log(number)		Natural logarithm
-		$log10(number)		Base-10 logarithm
-		$sinh(number)		Hyperbolic sine
-		$tanh(number)		Hyperbolic tangent
-		$yn(int number)		Bessel function of the secnod kind
-					of the integer order [int]
+	$fseek(<fd> <numbytes> <whence>)
+	   This function changes the file position indicator.  The file
+	   position indicator is moved <numbytes> (a 31 bit signed number)
+	   away from <whence>, which is a symbolic anchor with the following
+	   possible values:
+		SET	Move <numbytes> from the beginning of the file
+		CUR	Move <numbytes> forward or backward from the
+			current file position indicator
+		END	Move <numbytes> forward or backward from the
+			end of the file.
+	   <numbytes> can't be greater than 2GB, and this is a limitation
+	   in the fseek(3) interface, so don't complain to me about it.
+	   If a seek error occurs, -1 is returned and $error(<fd>) will
+	   return 1.  If <fd> Is not a valid file, -1 is returned.
 
-	All of these functions may return a "RANGE" or a "DOMAIN" error,
-	the nature of which is different for each function.  In case of
-	a "RANGE" error, the return value of the function shall be the
-	string "RANGE".  In case of a "DOMAIN" error, the return value of
-	the function shall be the string "DOM".  If no error occurs, then
-	a floating point number is returned in "%f" printf format.
+	$frewind(<fd>)
+	   This function sets the file position indicator to the beginning
+	   of the file.  It is the same as $seek(<fd> 0 SET).  If <fd> is
+	   not a valid file, -1 is returned.
 
-*** News -- Oct 24, 2001 -- Support for channel mode +M (adm)
-	Support for Dalnet's channel mode +M, which prohibits non-registered
-	users from sending privmsgs to the channel, was added on this date.
+	$ferror(<fd>)
+	   This function returns the file error indicator, either 0 or 1.  
+	   This is set whenever any error occurs and can be cleared by 
+           resetting the file position indicator.  If <fd> is not a valid
+	   file, -1 is returned.
 
-*** News -- Oct 24, 2001 -- New built in /set, /SET AUTO_REJOIN_CONNECT
-	Normally when you are disconnected from a server, and epic is able
-	to immediately reconnect to a new server, epic will rejoin all of
-	the channels you were on at the time you were disconnected.  
-	Some scripters do not like this behavior and would prefer that EPIC
-	not get in their way.  This /SET permits you to turn off the auto-
-	channel-rejoin feature and puts the responsibility for rejoining
-	channels on connect entirely on the script; EPIC will NOT interfere.
+	$isfilevalid(<fd>)
+	   This function returns 1 if <fd> is a valid value previously 
+	   returned by $open() and returns 0 otherwise.
 
-	This /SET does not make epic capable of joining channels it does
-	not otherwise have the capability of rejoining.  It only permits
-	scripters a way to turn off the auto-rejoin-on-reconnect feature.
-
-*** News -- Oct 9, 2001 -- $querywin() now takes an optional server argument
-	Previously, $querywin() only took a nickname and returned any
-	window with a query to that nickname regardless of the server.
-	But if you need to get the query window for a nick on a particular
-	server, you may now specify the server refnum as the SECOND argument.
-	For example, $querywin(hop 2) would only return the window refnum
-	for a query you have with "hop" on server refnum 2.  The argument
-	must be a server refnum (not a server name).  If you do not give
-	a server refnum, backwards compatability is retained.
-
-*** News -- Oct 9, 2001 -- General speed improvements (crazyeddy)
-	Crazyeddy has spent a lot of effort in improving the speed of
-	epic's string handling.  This means EPIC should be even faster
-	than ever.  Much thanks go to him for his dilligent hard work!
-
-*** News -- Oct 9, 2001 -- New standard script, 'autoget'
-	I was asked one too many times "how do i turn on autoget in epic?"
-	Well, just /load autoget and you will get the /autoget command.
-
-	Usage:
-		/autoget	
-			See the patterns you are autogetting.
-		/autoget <pattern> [<pattern>]
-			Automagically dcc get any file offered to you 
-			that matches the specified pattern(s).  You can
-			autoget as many patterns as you want.
-		/autoget -<pattern> [-<pattern>]
-			Remove the pattern(s) from the autoget list.
-		/unload autoget
-			Get rid of the /autoget alias and don't do any
-			more autogetting.
-
-*** News -- Oct 9, 2001 -- New standard script, 'altchan'
-	I was asked one too many times "why can't i do <alt>-<number> to 
-	switch between my windows like in BitchX?"  Well, just /load altchan
-	and you will have this functionality.  This requires that your 
-	terminal emulator treats <alt>-<char> as <escape>-<char>, which 
-	applies to most of the people who ask this question. ;-)
-
-*** News -- Oct 9, 2001 -- /JOIN command uses /WINDOW REJOIN now
-	The /JOIN built in command now uses /WINDOW REJOIN as its internal
-	implementation, instead of /WINDOW CHANNEL.  You should now refer
-	to /WINDOW REJOIN for details of how the /JOIN command works.  This
-	is an improvement, for the record. ;-)
-
-*** News -- Oct 9, 2001 -- New /WINDOW command, /WINDOW REJOIN
-	The /WINDOW REJOIN command can be used to join channels and 
-	is sensitive to your window bindings.  Here is how it works:
-
-		/WINDOW REJOIN <#channel>[,<#channel>]
-
-	For each channel you list, for the current server,
-	* If we are on the channel
-	  * If the operative window is connected to the current server
-	    -> Move the channel to the operative window.
-	  * If the operative window is NOT connected to the current server
-	    -> Do nothing (fail silently)
-	* If we are NOT on the channel
-	  * If there is a window that claims to own this channel (bound)
-	    -> Join the channel and put it in that window.
-	  * If there is NOT a window that claims to own this channel
-	    * If the operative window is connected to the current server
-	      -> Join the channel in the current window
-	    * If the operative window is not connected to the current server
-	      -> Join the channel and put it in any window we find that is
-		 connected to the current server.
-
-	It is expressly implied that you can use /WINDOW REJOIN inside of
-	an /ON and that the channel(s) will *NOT BE REMOVED* from their
-	bound window(s), if any.  What this means is that you can now do
-	something like this:
-
-	alias join_channels_in_new_server (server, ...) {
-	    if (![$*]) { return }
-	    window new server $server rebind $0
-	    fe ($1-) x { window new rebind $x }
-	    ^on ^connect $server join $unsplit(, $*)\;^on connect -server
-	}
-
-*** News -- Oct 9, 2001 -- New /WINDOW command, /WINDOW REBIND
-	The /WINDOW REBIND command is to be used when you wish to bind
-	a channel to a window unconditionally.  Typically, /WINDOW BIND
-	will fail if you try to bind a channel other than the current
-	channel, but /WINDOW REBIND does not fail.  If you are on the
-	channel, then the channel is forcibly made the current channel.
-	This command is suitable for use in /ON CONNECT where you may
-	want to bind channels to windows before /WINDOW REJOINing them,
-	and making sure they go to the window you expect.
-
-*** News -- Oct 9, 2001 -- How to specify server groups in ircII.servers
-	The format of the "ircII.servers" file has been improved somewhat.
-	You may now include blank lines in the file, and you may include
-	comment lines that begin with #.  You can include a server group
-	name in square brackets on a line all by itself, and every server
-	description that follows it will use that server group as a default.
-	You can provide as many different server groups as you like.
-
-	Example ircII.servers file:
-		# The two efnet servers I can connect with.
-		[efnet]
-		irc.prison.net
-		irc.east.gblx.net
-
-		# Undernet server round robin
-		[undernet]
-		irc.us.undernet.org
-		irc.eu.undernet.org
-
-		# Dalnet round robin
-		[dalnet]
-		irc.dal.net
-
-*** News -- Oct 9, 2001 -- Server groups are optional.
-	Don't worry -- the changes below are all backwards compatable.
-	You will see no change unless and until you are ready to start
-	using them.  By default, all servers are put into the "default"
-	server group, and epic will behave exactly as it always has.
-	Only those server that you explicitly put into a different group
-	will not be part of the "default" group, and act differently.
-
-*** News -- Oct 9, 2001 -- Server groups cannot be changed.
-	The server group name is assigned when you the server description
-	is first given to epic.  If you do not provide a server group name
-	at the start, then you cannot go back and give one later.  If you 
-	give a server group name, you cannot go back and change it later.
-	If you do need to change the server group name, you will have to 
-	delete the current server refnum, and create a new server description
-	with the changed server group name.  This may be changed in the 
-	future, but don't hold your breath.
-
-*** News -- Oct 9, 2001 -- How to specify server groups with /SERVER
-	The /SERVER and /SERVER -ADD and /WINDOW SERVER commands take a 
-	"server description", which is a single word with multiple
-	fields separated by colons.  The first four fields are the
-	same as ircII: hostname, portnum, password, and nickname.  
-	But you can now provide a fifth field, which will be the server
-	group that description should belong to.
-
-	Examples:
-		/server irc.prison.net::::efnet
-		/server -add irc.east.gblx.net:6666:::efnet
-		/server -add irc.us.undernet.org:6660:::undernet
-		/server -add irc.eu.undernet.org:6665:::undernet
-		/window server irc.dal.net:7000::myregisterednickname:dalnet
-
-*** News -- Oct 9, 2001 -- Server group support (specced by srfrog)
-	Whenever you are disconnected from a server, epic tries to reconnect 
-	you to the same server.  But if it is unsucessful, then it tries to 
-	connect you to the "next" server.  Sometimes, however, the "next"
-	server is on another network, and so you, your windows, and your
-	channels are rudely dumped onto another network that you didn't 
-	want to be on.  This has been a constant source of irritation for
-	users.  Well, now you can control this behavior more closely.
-
-	Whenever epic is disconnected from a server, it will only reconnect
-	to servers that belong to the same "server group" as the disconnected
-	server.  Any server that belongs to another server group will be
-	"skipped" and epic will NOT try to connect to it.  EPIC will still go
-	through your server list only once.  If EPIC cannot find a server in
-	the same group to connect to, it will tell you to use the /SERVER 
-	command to reconnect.
-
-*** News -- Oct 9, 2001 -- New built in function, $ishalfop()
-	The $ishalfop() function takes two arguments; a nickname, and a 
-	channel, and returns 1, 0, or -1 depending on whether the person 
-	is a half-op, the person is not a half-op, or we do not know if 
-	the person is a half-op or not.  "Half-op" is a hybrid thing.  
-	If you don't understand why EPIC wouldn't know if someone is a
-	half-op or not, see the docs for $isvoice().
-
-*** News -- Oct 9, 2001 -- New built in function, $igetrmatches() (crazyeddy)
-	Crazyeddy wrote this, and I don't know what it does.  Maybe
-	he would like to document it.
-
-*** News -- Oct 9, 2001 -- New flags to the /LASTLOG command
-	Someone reported a crash in the /lastlog command, and rather than
-	just try to fix a mundane bug, we decided to have a little more fun
-	and take this opportunity to rewrite the /lastlog command like we
-	had been planning to do forever.  Throw out everything you know
-	about the lastlog command, here is how it works!  (Brief summary:
-	Every argument now has an option flag to go with it if you want to
-	use it; backwards compatability is retained; the -regex option 
-	lets you do regex matching (instead of, or in addition to ircII 
-	matching.)
-
- * The /LASTLOG command:
- * Syntax:
- *      /LASTLOG [options] [<string>] [<number1> [<number2>]]
- * Options:
- *      -                       Do not show header and footer
- *      -reverse                Show matches newest-to-oldest (reverse order)
- *                              instead of oldest-to-newest (normal order)
- *      -literal <pattern>      <string> is search target, not option.
- *      -regex <regex>          line must match <regex>.
- *      -max <number>           Only show first <number> matches
- *      -number <number>        Start at the <number>th recent entry.
- *      -skip <number>          Skip this many leading lastlog entries
- *      -<LEVEL>                Add <LEVEL> to "level mask"
- *      --<LEVEL>               Remove <LEVEL> from "level mask"
- *      -ALL                    Add all levels to "level mask"
- *      --ALL                   Reset/clear the "level mask" <default>
- *      <pattern>               <pattern> is search target
- *      <number1>               Start from the <number1>th most recent record.
- *      <number2>               Continue <number2> more records after that.
- *
- * The /LASTLOG command shows all of the lines that have appeared to your
- * window's lastlog; the oldest one first, and the newest one last, except
- * that the following seven restrictions apply IN THIS ORDER:
- *      1 If the -reverse option is specified, lines will be shown in
- *        "reverse order", that is the newest one first, and the oldest
- *        one last.
- *      2 If any of the "LEVEL" options (including ALL) are specified,
- *        then the line must have one of the lastlog levels specified
- *        by the "level mask".
- *      3 If the -number option is specified only the most recent <number>
- *        lines will be looked at.
- *      4 If the -skip option is specified, the first <number> lines after
- *	  the start (either the oldest entry, or whatever you specified 
- *	  with the -number option) will be skipped (will not be looked at).
- *      5 If the -literal option is specified, some portion of the line
- *        must be matched by the pattern <pattern>.
- *      6 If the -regex option is specified, some portion of the line
- *        must be matched by the regex <regex>.
- *      7 If the -max option is specified, only the first <number> matching
- *        lines will be shown; others will be suppressed.
- * Furthermore:
- *      * The "level mask" is turned off by default which means that all
- *        rule #2 doesn't apply.  --ALL forcibly turns off the level mask.
- *      * "LEVEL" options are cumulative and sequential.  That means that
- *        if you turn off a level and then later turn it back on, it will
- *        be on.  If you turn off all options with --ALL and then turn
- *        some back on, those after --ALL will be on.
- *      * Up to three naked options may be specified for backwards
- *        compatability with ircII.  The very first naked parameter that
- *        is not a number is considered to be the argument to the -LITERAL
- *        option.  The second naked parameter had better be a number and
- *        it is taken as the argument to the -NUMBER option.  The third naked
- *        parameter also needs to be a number and is taken as the argument
- *        to the -SKIP option.  This can get confusing; always use the
- *        options in scripts -- only use backwards compatability options
- *        at the input prompt. ;-)
-
-*** News -- Oct 9, 2001 -- Random local port usage support improved.
-	Some of the more paranoid of our epic bretheren were very unhappy
-	that /set random_local_ports did not co-exist with firewall holes.
-	The purpose of /set random_local_ports has been changed somewhat.
-	If it is OFF (traditional behavior), then epic will continue to 
-	ask the operating system for a local port number to use for things
-	like dcc sends and so on.  Some systems (like openbsd) return a 
-	random local port automatically, and so you never need to /set this
-	to ON.  Other systems (like linux) return local ports sequentially,
-	and so you may want to /set this ON.
-
-	When /set to ON, EPIC will attempt to determine your "port range".
-	On Linux, we read "/proc/sys/net/ipv4/ip_local_port_range" to get 
-	the local port range, and then choose up to 5 random numbers within
-	that range.  If we fail 5 times, we ask the kernel to give us a port.
-	If you use a firewall, you need to make sure you properly configure
-	that file so that EPIC can properly find a random port!
-
-	On 4.4BSD systems, we first check the EPIC_USE_HIGHPORTS environment
-	variable.  If it is set, then we use sysctl to figure out what the
-	"high port range" is, and we choose up to 5 random numbers within
-	that range.  If we fail 5 times, we ask the kernel to give us a port.
-	If you are using a firewall, you need to make sure you properly 
-	configure your sysctl settings so EPIC can properly find a random port!
-	If EPIC_USE_HIGHPORTS is not set, then epic uses syctl to figure
-	out what the "normal port range" is.
-
-		Operating System:	What you need to configure:
-		-----------------	---------------------------
-		    Linux              /proc/sys/net/ipv4/ip_local_port_range
-		    FreeBSD	       sysctl net.inet.ip.portrange.first
-		    		       sysctl net.inet.ip.portrange.last
-		    		       sysctl net.inet.ip.portrange.hifirst
-		    		       sysctl net.inet.ip.portrange.hilast
-		    OpenBSD            sysctl net.inet.ip.portfirst
-		    		       sysctl net.inet.ip.portlast
-		    		       sysctl net.inet.ip.porthifirst
-		    		       sysctl net.inet.ip.porthilast
-
-*** News -- Oct 9, 2001 -- Perl support; new built in functions (crazyeddy)
-	This sews a perl interpreter (libperl) into the epic binary and
-	adds bridges between the ircii and perl programming environments.
-	$perl(), $perlcall() and $perlxcall() have been added to the ircii
-	language.  EPIC::eval, EPIC::cmd and EPIC::expr are available for
-	doing stuff in epic from the perl environment.
-
-*** News -- Oct 25, 2001 -- $igetrmatches()? now works.
-	This was already present in the code, but was inaccessible due to
-	not being linked into the language structures.
-
-*** News -- Oct 9, 2001 -- Bunch of new updates
-	Everything for EPIC4-1.1.1 was documented here...
