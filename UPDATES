@@ -1,5 +1,31 @@
 EPIC4-1.2.0
 
+*** News 09/27/2002 -- New function $logctl() - control logfiles
+	This has actually existed since 09/03/2002, but I forgot to document
+	it, so here goes!
+
+	Usage:
+	------
+	$logctl(REFNUM log-desc)
+	$logctl(ADD log-desc [target])
+	$logctl(DELETE log-desc [target])
+	$logctl(GET <refnum> [ITEM])
+	$logctl(SET <refnum> [ITEM] [VALUE])
+	$logctl(MATCH [pattern])
+	$logctl(PMATCH [pattern])
+
+	where [ITEM] is one of the following
+	      REFNUM          The refnum for the log (GET only)
+	      NAME            The logical name for the log
+	      FILENAME        The filename this log writes to
+	      SERVER          The server this log associates with (-1 for any)
+	      TARGETS         All of the targets for this log
+	      LEVEL           The Lastlog Level for this log
+	      REWRITE         The rewrite rule for this log
+	      MANGLE          The mangle rule for this log
+	      STATUS          1 if log is on, 0 if log is off.
+              TYPE            The type of the log (SERVERS, WINDOWS, TARGETS)
+
 *** News 09/26/2002 -- New /WINDOW verbs, SEARCH_BACK and SEARCH_FORWARD
 	These two window verbs take a regular expression (regex) and scroll
 	backward or scroll forward to the previous or next line which 

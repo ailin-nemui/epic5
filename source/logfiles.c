@@ -1,4 +1,4 @@
-/* $EPIC: logfiles.c,v 1.7 2002/09/06 19:38:12 jnelson Exp $ */
+/* $EPIC: logfiles.c,v 1.8 2002/09/27 17:06:39 jnelson Exp $ */
 /*
  * logfiles.c - General purpose log files
  *
@@ -735,6 +735,7 @@ void	add_to_logs (int winref, int servref, const char *target, int level, const 
  *	REWRITE		The rewrite rule for this log
  *	MANGLE		The mangle rule for this log
  *	STATUS		1 if log is on, 0 if log is off.
+ *	TYPE		Either "TARGET", "WINDOW", or "SERVER"
  */
 char *logctl	(char *input)
 {
@@ -785,6 +786,8 @@ char *logctl	(char *input)
 			RETURN_STR(log->mangle_desc);
                 } else if (!my_strnicmp(listc, "STATUS", 3)) {
 			RETURN_INT(log->active);
+                } else if (!my_strnicmp(listc, "TYPE", 3)) {
+			RETURN_STR(logtype[log->type]);
 		}
         } else if (!my_strnicmp(listc, "SET", 1)) {
                 GET_STR_ARG(refstr, input);
@@ -821,7 +824,12 @@ char *logctl	(char *input)
 			else
 				logfile_off(log, &input);
 			RETURN_INT(1);
+                } else if (!my_strnicmp(listc, "TYPE", 3)) {
+			logfile_type(log, &input);
+			RETURN_INT(1);
 		}
+
+
         } else if (!my_strnicmp(listc, "MATCH", 1)) {
                 RETURN_EMPTY;           /* Not implemented for now. */
         } else if (!my_strnicmp(listc, "PMATCH", 1)) {
