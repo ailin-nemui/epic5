@@ -1,5 +1,5 @@
 /*
- * @(#)$Id: acconfig.h,v 1.16 2002/08/06 03:45:48 jnelson Exp $
+ * @(#)$Id: acconfig.h,v 1.17 2002/10/18 21:45:19 jnelson Exp $
  */
 
 /*
@@ -290,3 +290,5 @@
 /* Define this if you have getnameinfo */
 #undef HAVE_GETNAMEINFO
 
+/* Define this if you have sys_siglist declared */
+#undef SYS_SIGLIST_DECLARED

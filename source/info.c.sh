@@ -18,7 +18,6 @@ cat > info.c << __E__O__F__
  * info.c -- info about who compiled this version.
  * This file is auto-magically created.   Changes will be nuked.
  */
-
 #include "config.h"
 #ifdef ANONYMOUS_COMPILE
 #define USER "<anonymous>"

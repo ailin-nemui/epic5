@@ -4,13 +4,11 @@ dnl except those bits attributed otherwise.
 dnl thanks to the screen 3.3 configure.in for giving me examples to
 dnl work from and steal ;)
 dnl
-dnl @(#)$Id: configure.in,v 1.20 2002/08/06 03:45:48 jnelson Exp $
+dnl @(#)$Id: configure.in,v 1.21 2002/10/18 21:45:19 jnelson Exp $
 
-AC_REVISION($Revision: 1.20 $)dnl
+AC_REVISION($Revision: 1.21 $)dnl
 AC_INIT(source/irc.c)
 AC_CONFIG_HEADER(include/defs.h)
-
-
 
 dnl ----------------------------------------------------------
 dnl
@@ -313,6 +311,7 @@ AC_TRY_RUN([
 #include <sys/types.h>
 #include <sys/signal.h>
 #include <signal.h>
+#include <unistd.h>
 main()
 {
 	char *s = sys_siglist[0];

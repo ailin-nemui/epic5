@@ -126,3 +126,4 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Fix uzfopen() to look for 'bunzip2' in addition to 'bunzip'.
 * Fix bug with /QUEUE -delete
 * Remove unused variable in window_scroll().
+* #include <unistd.h> for configure check for sys_siglist[] for netbsd.
