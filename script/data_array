@@ -7,7 +7,13 @@
 #   The *item functions operate on one array element.
 #   The *items functions operate on as many elements as there are args.
 #
+# Note that unlike their inbuilt counterparts, these generally accept negative
+# item numbers as the distance from the top of the array, starting with -1.
+#
 #   getndelitems:   splice the items $1- from the array and return them as a list.
+#   getndelindex:   splice the indices $1- from the array and return them as a list.
+#   getandritem[s]: Get an' Del Random item[s].
+#   getandmitem[s]: Get an' Del item[s] matching Mask ($1-).
 #   getranditem[s]: return one/$#1- random array element.
 #   setnextitem[s]: set a new array element[s] with $1- as contents.
 #   setranditem[s]: replace a random array element[s] with $1-
@@ -15,8 +21,13 @@
 #   setuniqitem[s]: setnextitem if the array item[s] doesn't already exist.
 #
 alias getndelitems (ar,it) fe it it {@it=0<=it?it:(numitems($ar)+it)};@:function_return=getitem($ar $it),delitems($ar $it)
-alias getranditem  (ar,args) return $getitem($ar $rand($numitems($ar)))
-alias getranditems (ar,args) fe args foo {@foo=getitem($ar $rand($numitems($ar)))};return $args
+alias getndelindex (ar,it) fe it it {@it=0<=it?it:(numitems($ar)+it)};@:function_return=igetitem($ar $it),delitems($ar $indextoitem($ar $it))
+alias getranditem  (ar,it) return $getitem($ar $rand($numitems($ar)))
+alias getranditems (ar,it) fe it foo {@foo=getitem($ar $rand($numitems($ar)))};return $it
+alias getandritem  (ar,it) return $getndelitems($ar $rand($numitems($ar)))
+alias getandritems (ar,it) @:mi=numitems($ar);fe it it {@it=rand($mi)};return $getndelitems($ar $it)
+alias getandmitem  (ar,mask) @:it=getmatches($ar $mask);return ${#it?getndelitems($ar $word($rand($#it) $it)):[]}
+alias getandmitems (ar,mask) return $getndelitems($ar $getmatches($ar $mask))
 alias setnextitem  (ar,args) return $setitem($ar $numitems($ar) $args)
 alias setnextitems (ar,args) fe args foo {@foo=setitem($ar $numitems($ar) $foo)};return $args
 alias setranditem  (ar,args) return $setitem($ar $rand($numitems($ar)) $args)

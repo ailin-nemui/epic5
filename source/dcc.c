@@ -1,4 +1,4 @@
-/* $EPIC: dcc.c,v 1.58 2003/05/02 20:22:26 jnelson Exp $ */
+/* $EPIC: dcc.c,v 1.59 2003/05/06 03:35:49 crazyed Exp $ */
 /*
  * dcc.c: Things dealing client to client connections. 
  *
@@ -1282,8 +1282,8 @@ static	void	dcc_getfile (char *args, int resume)
 	char		*user;
 	char		*filename = NULL;
 	DCC_list	*dcc;
-	Filename	fullname;
-	Filename	pathname;
+	Filename	fullname = "";
+	Filename	pathname = "";
 	int		file;
 	char 		*realname = NULL;
 	int		get_all = 0;
@@ -1318,14 +1318,13 @@ static	void	dcc_getfile (char *args, int resume)
 			return;
 		}
 
-		*pathname = 0;
 		if (get_string_var(DCC_STORE_PATH_VAR))
 		{
 			strlcpy(pathname, get_string_var(DCC_STORE_PATH_VAR), 
 						sizeof(pathname));
 		}
 
-		if (normalize_filename(pathname, fullname))
+		if (*pathname && normalize_filename(pathname, fullname))
 		{
 			say("%s is not a valid directory", fullname);
 			return;
@@ -3316,12 +3315,17 @@ char *	dccctl (char *input)
 			RETURN_INT(client->locked);
 		} else if (!my_strnicmp(listc, "HELD", len)) {
 			RETURN_INT(client->held);
+		} else if (!my_strnicmp(listc, "HELDTIME", len)) {
+			RETURN_FLOAT(client->heldtime);
 		} else if (!my_strnicmp(listc, "LASTTIME", len)) {
 			m_sc3cat_s(&retval, space, ltoa(client->lasttime.tv_sec), &clue);
 			m_sc3cat_s(&retval, space, ltoa(client->lasttime.tv_usec), &clue);
 		} else if (!my_strnicmp(listc, "STARTTIME", len)) {
 			m_sc3cat_s(&retval, space, ltoa(client->starttime.tv_sec), &clue);
 			m_sc3cat_s(&retval, space, ltoa(client->starttime.tv_usec), &clue);
+		} else if (!my_strnicmp(listc, "HOLDTIME", len)) {
+			m_sc3cat_s(&retval, space, ltoa(client->holdtime.tv_sec), &clue);
+			m_sc3cat_s(&retval, space, ltoa(client->holdtime.tv_usec), &clue);
 		} else if (!my_strnicmp(listc, "REMADDR", len)) {
 			char	host[1025], port[25];
 			if (!(client->flags & DCC_ACTIVE) ||
