@@ -1,4 +1,4 @@
-/* $EPIC: commands.c,v 1.98 2004/06/28 23:48:15 jnelson Exp $ */
+/* $EPIC: commands.c,v 1.99 2004/07/01 00:14:54 crazyed Exp $ */
 /*
  * commands.c -- Stuff needed to execute commands in ircII.
  *		 Includes the bulk of the built in commands for ircII.
@@ -1253,14 +1253,14 @@ BUILT_IN_COMMAND(funny_stuff)
 		if (min && ircu)
 		{
 			if (max)
-				send_to_server("WHO >%d,<%d", min - 1, max + 1);
+				send_to_server("%s >%d,<%d", command, min - 1, max + 1);
 			else
-				send_to_server("WHO >%d", min - 1);
+				send_to_server("%s >%d", command, min - 1);
 		}
 		else if (max && ircu)
-			send_to_server("WHO <%d", max + 1);
+			send_to_server("%s <%d", command, max + 1);
 		else
-			send_to_server("WHO %s", empty_string);
+			send_to_server("%s %s", command, empty_string);
 	}
 	else
 	{
@@ -1269,14 +1269,14 @@ BUILT_IN_COMMAND(funny_stuff)
 		if (min && ircu)
 		{
 			if (max)
-				send_to_server("WHO >%d,<%d", min - 1, max + 1);
+				send_to_server("%s >%d,<%d", command, min - 1, max + 1);
 			else
-				send_to_server("WHO >%d", min - 1);
+				send_to_server("%s >%d", command, min - 1);
 		}
 		else if (max && ircu)
-			send_to_server("WHO <%d", max + 1);
+			send_to_server("%s <%d", command, max + 1);
 		else
-			send_to_server("WHO %s", stuff);
+			send_to_server("%s %s", command, stuff);
 	}
 }
 
