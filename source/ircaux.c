@@ -8,7 +8,7 @@
  */
 
 #if 0
-static	char	rcsid[] = "@(#)$Id: ircaux.c,v 1.20 2001/11/27 00:09:28 crazyed Exp $";
+static	char	rcsid[] = "@(#)$Id: ircaux.c,v 1.21 2001/11/27 00:51:24 crazyed Exp $";
 #endif
 
 #include "irc.h"
@@ -1538,8 +1538,15 @@ char*	exec_pipe (char *executable, char *input, size_t *len, char**args)
 		setuid(getuid());
 		setgid(getgid());
 		execvp(executable, args);
+#if 0
+		/*
+		 * OK, well the problem with this is that the message
+		 * is going to go out on stdout right, and where does
+		 * that end up?
+		 */
 		yell("Cannot exec %s: %s", 
 			executable, strerror(errno));
+#endif
 		_exit(0);
 	default :
 		close(pipe0[0]);
