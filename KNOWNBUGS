@@ -84,4 +84,12 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Start fetching ports by calling inet_ntostr() instead of peeking directly
   -- into the sockaddr.  This yields protocol independance.
 * Fix bug where $listen() or /dcc send w/o a virtual host caused NULL deref.
-
+* Fix for previous $listen() fix from nsx (ce)
+* Fix /ON ODD_SERVER_STUFF to not have a blank server field (ce)
+* Fix $chr() so it doesn't have size limits (ce)
+* Fix get_time() if #undef HAVE_GETTIMEOFDAY (ce)
+* Addition to tabkey.ce (ce)
+* Make $listen() and server connections both work at the same time.
+* Fix decl for 'need_redraw' which is a volatile.
+* Fix NULL deref if you did /window flush in an empty window (rb adm)
+* Unbreak larneproofing for /on 367 which was too strict for ircnet. 
