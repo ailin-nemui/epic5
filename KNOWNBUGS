@@ -376,3 +376,4 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Fix $getset() which is supposed to be case insensitive (typo), rb Xavier
 * Make the work buffer for %F and %{1}F much bigger (2k, was 80 bytes)
 * Avoid NULL deref on brok^H^H^H^Hempty numeric replies
+* Fix aliasctl(): values returned by pmatch_* are not to be freed. (rb ce)

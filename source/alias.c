@@ -1,4 +1,4 @@
-/* $EPIC: alias.c,v 1.55 2004/08/12 16:48:01 jnelson Exp $ */
+/* $EPIC: alias.c,v 1.56 2004/08/15 21:35:44 jnelson Exp $ */
 /*
  * alias.c -- Handles the whole kit and caboodle for aliases.
  *
@@ -2579,10 +2579,7 @@ static	int maxret = 0;
 				RETURN_EMPTY;
 
 			for (ctr = 0; ctr < num; ctr++)
-			{
 				malloc_strcat_word_c(&mylist, space, mlist[ctr], &mylistclue);
-				new_free((char **)&mlist[ctr]);
-			}
 			new_free((char **)&mlist);
 			if (mylist)
 				return mylist;
