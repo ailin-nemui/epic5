@@ -1,4 +1,4 @@
-/* $EPIC: who.c,v 1.10 2002/08/26 17:20:14 crazyed Exp $ */
+/* $EPIC: who.c,v 1.11 2002/08/26 18:27:10 crazyed Exp $ */
 /*
  * who.c -- The WHO queue.  The ISON queue.  The USERHOST queue.
  *
@@ -916,7 +916,7 @@ BUILT_IN_COMMAND(userhostcmd)
 
 BUILT_IN_COMMAND(useripcmd)
 {
-	if (get_server_005(from_server, "USERIP"))
+	if (1 || get_server_005(from_server, "USERIP"))
 		userhostbase(args, NULL, 0);
 	/* Be kind to the user.  :-) */
 	else
