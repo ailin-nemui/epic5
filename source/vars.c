@@ -1,4 +1,4 @@
-/* $EPIC: vars.c,v 1.59 2004/08/11 23:58:39 jnelson Exp $ */
+/* $EPIC: vars.c,v 1.60 2004/08/12 16:48:01 jnelson Exp $ */
 /*
  * vars.c: All the dealing of the irc variables are handled here. 
  *
@@ -480,7 +480,11 @@ static void 	set_variable (const char *name, IrcVariable *var, const char *orig_
 	int	changed = 0;
 	char	*value;
 
-	value = LOCAL_COPY(orig_value);
+	if (orig_value)
+		value = LOCAL_COPY(orig_value);
+	else
+		value = NULL;
+
 	switch (var->type)
 	{
 	    case BOOL_VAR:
@@ -630,6 +634,8 @@ static void	create_user_set (char *args)
 	}
 	else if (var != NULL && var->func == NULL)
 		delete_builtin_variable(varname);
+
+	/* XXX Need to free 'var' here! */
 
 	if (type == STR_VAR)
 		add_biv(varname, 0, type, NULL, expr, (char *)NULL);

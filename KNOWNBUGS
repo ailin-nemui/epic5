@@ -18,7 +18,6 @@ KNOWN ERRATA (eg, bugs, or unresolved requests):
 * Need a way to decompile alias arglists back into strings for output.
 * Allow server groups anywhere a "server desc" is wanted
 * Allow /msg -<server desc>, including the group.
-* Some /set's need to be initialized before creating the first window!
 * Calling dcc_connected(<fd>, 0) is always bogus. fix this.
 * It's possible to overflow the %F buffer with lots of ^C's and stuff.
 * Need some way to fetch your hook info
@@ -372,3 +371,4 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Allow mangling of ALT_CHAR -- how did this ever get missed?
 * Fix $currchans() so it works the way the documentation says it does.
 * Fix some const correctness issues, introduce others. bleh.
+* Fix typo that caused /set -create twice to crash and burn.

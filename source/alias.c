@@ -1,4 +1,4 @@
-/* $EPIC: alias.c,v 1.54 2004/08/11 23:58:39 jnelson Exp $ */
+/* $EPIC: alias.c,v 1.55 2004/08/12 16:48:01 jnelson Exp $ */
 /*
  * alias.c -- Handles the whole kit and caboodle for aliases.
  *
@@ -1493,7 +1493,7 @@ void	delete_builtin_command (const char *orig_name)
 	if (item && cnt < 0)
 	{
 		item->builtin_command = NULL;
-		GC_symbol(item, (array *)&globals, cnt);
+		GC_symbol(item, (array *)&globals, loc);
 	}
 	new_free(&name);
 }
@@ -1510,7 +1510,7 @@ void	delete_builtin_function (const char *orig_name)
 	if (item && cnt < 0)
 	{
 		item->builtin_function = NULL;
-		GC_symbol(item, (array *)&globals, cnt);
+		GC_symbol(item, (array *)&globals, loc);
 	}
 	new_free(&name);
 }
@@ -1527,7 +1527,7 @@ void	delete_builtin_expando (const char *orig_name)
 	if (item && cnt < 0)
 	{
 		item->builtin_expando = NULL;
-		GC_symbol(item, (array *)&globals, cnt);
+		GC_symbol(item, (array *)&globals, loc);
 	}
 	new_free(&name);
 }
@@ -1544,7 +1544,7 @@ void	delete_builtin_variable (const char *orig_name)
 	if (item && cnt < 0)
 	{
 		item->builtin_variable = NULL;
-		GC_symbol(item, (array *)&globals, cnt);
+		GC_symbol(item, (array *)&globals, loc);
 	}
 	new_free(&name);
 }
