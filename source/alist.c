@@ -1,3 +1,4 @@
+/* $EPIC: alist.c,v 1.8 2002/07/06 03:50:10 jnelson Exp $ */
 /*
  * alist.c -- resizeable arrays.
  *

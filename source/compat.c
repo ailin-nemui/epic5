@@ -1,3 +1,4 @@
+/* $EPIC: compat.c,v 1.11 2002/07/06 03:50:10 jnelson Exp $ */
 /*
  * Everything that im not directly responsible for I put in here.  Almost
  * all of this stuff is either borrowed from somewhere else (for you poor
