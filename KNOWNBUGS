@@ -8,9 +8,7 @@ KNOWN ERRATA (eg, bugs, or unresolved requests):
 * SSL server i can use warped.bluecherry.net:7000
 * irc.link-net.org:7000:::linknet:irc-ssl
 * Sort out the whole errno/dgets_errno/my_strerror mess.
-* Can auto-reconnects happen to servers with multiple addrs after normal con?
-* Failed connects cause select spinning -- knoread not called i guess.
-* dcc offers are borked, receiving dcc offers causes panic.
+* Receiving dcc offers causes panic for Kitambi
 
 [See http://www.epicsol.org/PROJECTS for things to come in the future]
 [See http://www.epicsol.org/CHANGELOG5 for things that changed in the past]
@@ -503,3 +501,5 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Fix /window <refnum> scroll_backwards/forwards.
 * Try to auto-detect select(2) failures.
 * Fix the second lamest bug ever. DO NOT DO CONTNIUE WITHIN WHILE (0) DUMMY.
+* Fix accept() with pthreads.  Nonblocking + pthreads == Bad.
+* Throw away all unused addrs when we are registered, to ensure no reconnects.

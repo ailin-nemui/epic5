@@ -1,4 +1,4 @@
-/* $EPIC: server.c,v 1.152 2005/02/25 05:50:40 jnelson Exp $ */
+/* $EPIC: server.c,v 1.153 2005/02/27 04:47:46 jnelson Exp $ */
 /*
  * server.c:  Things dealing with that wacky program we call ircd.
  *
@@ -1738,6 +1738,13 @@ void  server_is_registered (int refnum, const char *itsname, const char *ourname
 
 	if (!(s = get_server(refnum)))
 		return;
+
+	/* Throw away the rest of addresses to stop reconnections */
+	if (x_debug & DEBUG_SERVER_CONNECT)
+	    yell("We're connected! Throwing away the rest of the addrs");
+	Freeaddrinfo(s->addrs);
+	s->addrs = NULL;
+	s->next_addr = NULL;
 
 	set_server_status(refnum, SERVER_SYNCING);
 

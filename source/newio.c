@@ -1,4 +1,4 @@
-/* $EPIC: newio.c,v 1.37 2005/02/25 01:27:12 jnelson Exp $ */
+/* $EPIC: newio.c,v 1.38 2005/02/27 04:47:46 jnelson Exp $ */
 /*
  * newio.c:  Passive, callback-driven IO handling for sockets-n-stuff.
  *
@@ -646,6 +646,16 @@ static int	unix_accept (int channel)
 	SS	addr;
 	socklen_t len;
 
+#ifdef USE_PTHREADS
+	/* XXX I hate this, but pthreads don't play nice with nonblocking. */
+	{
+		fd_set	fdset;
+		FD_ZERO(&fdset);
+		FD_SET(channel, &fdset);
+		select(channel + 1, &fdset, NULL, NULL, NULL);
+	}
+#endif
+
 	len = sizeof(addr);
 	newfd = Accept(channel, (SA *)&addr, &len);
 
@@ -663,7 +673,7 @@ static int	unix_connect (int channel)
 	socklen_t len;
 
 #ifdef USE_PTHREADS
-	/* XXX I hate this, but it's necessary for pthreads */
+	/* XXX I hate this, but pthreads don't play nice with nonblocking. */
 	{
 		fd_set	fdset;
 		FD_ZERO(&fdset);

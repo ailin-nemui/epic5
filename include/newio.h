@@ -59,10 +59,10 @@
  
 #ifndef __newio_h__
 #define __newio_h__
-#define USE_SELECT
+#define USE_SELECT 
 /* #define USE_FREEBSD_KQUEUE  */
 /* #define USE_POLL */
-/* #define USE_PTHREADS */
+/* #define USE_PTHREADS  */
 /* #define VIRTUAL_FILEDESCRIPTORS */
 
 #define NEWIO_READ	1
