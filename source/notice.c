@@ -9,7 +9,7 @@
  */
 
 #if 0
-static	char	rcsid[] = "@(#)$Id: notice.c,v 1.4 2001/11/14 21:37:23 jnelson Exp $";
+static	char	rcsid[] = "@(#)$Id: notice.c,v 1.5 2001/11/15 17:29:00 jnelson Exp $";
 #endif
 
 #include "irc.h"
@@ -175,15 +175,18 @@ static 	void 	parse_local_server_notice (char *from, char *to, char *line)
 	lastlog_level = set_lastlog_msg_level(LOG_SNOTE);
 
 	/* Check to see if the notice already has its own header... */
-	if (*line == '*' || *line == '#')
+	if (do_hook(GENERAL_NOTICE_LIST, "%s %s %s", f, to, line))
 	{
+	    if (*line == '*' || *line == '#')
+	    {
 		if (!hooked && do_hook(SERVER_NOTICE_LIST, "%s %s", f, line))
 			put_it("%s", line);
-	}
-	else
+	    }
+	    else
 		if (!hooked && do_hook(SERVER_NOTICE_LIST, "%s *** %s", 
 							f, line))
 			say("%s", line);
+	}
 
 	if (lastlog_level)
 	{
@@ -299,15 +302,18 @@ void 	parse_notice (char *from, char **Args)
 		goto the_end;
 
 	/* Offer the notice to the user and do output */
-	if (type == NOTICE_LIST)
+	if (do_hook(GENERAL_NOTICE_LIST, "%s %s %s", from, to, line))
 	{
+	    if (type == NOTICE_LIST)
+	    {
 		if (do_hook(type, "%s %s", from, line))
 			put_it("%s-%s-%s %s", high, from, high, line);
-	}
-	else
-	{
+	    }
+	    else
+	    {
 		if (do_hook(type, "%s %s %s", from, to, line))
 			put_it("%s-%s:%s-%s %s", high, from, to, high, line);
+	    }
 	}
 	if (beep_on_level & LOG_NOTICE)
 		beep_em(1);

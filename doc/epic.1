@@ -55,7 +55,6 @@ So just a word of caution, make sure that your system administrator and your irc
 Force the startup file to be loaded immediately rather than waiting until a connection to a server is established.
 .It Fl c Ar chan
 Join the specified channel the first time you successfully connect to a server.
-.TP 
 .It Fl d
 Operate in 
 .Dq dumb mode.
@@ -75,7 +74,6 @@ With this option, the control-S and control-Q keys are available to be bound to 
 However, you will not have hardware flow control.
 .It Fl h
 Display a moderately concise help message and exit immediately.
-.TP
 .It Fl H Ar hostname
 Use the IP address of the specified hostname as your default IP address.
 This can be used if you have multiple IP addresses on the same machine and you want to use an address other than the default address.  
@@ -138,18 +136,15 @@ This overrides all other options, including the -n option and the
 .Ev IRCNICK 
 environment variable.  
 If all else fails, then the client uses your login name as the default nickname.
-.TP
 .It server,[server]
 After the nickname, a list of one or more server specifications can be listed.
 Unless you specify the -a option, this will replace your default server list!
 The -a option forces any servers listed here to be appended to the default server list.
-.IP
 The format for server specifications is:
 .sp
 .Dl hostname:port:password:nick
 .sp
 Any item can be omitted by leaving the field blank, and any trailing colons can also be omitted.
-.El
 .Sh "DETAILED DESCRIPTION"
 .Ss "The Screen:"
 The screen is split into two parts, separated by an inverse-video status line (if supported).
@@ -207,8 +202,6 @@ If you're totaly stumped and trying to get on efnet, try this.
 If you're totaly stumped and trying to get on undernet, try this.
 .It Nm "epic nickname irc.dal.net"
 If you're totaly stumped and trying to get on dalnet, try this.
-.TP
-.El
 .Sh "FILES"
 .Bl -tag -width "/usr/local/share/epic"
 .It Nm /usr/local/bin/epic
@@ -224,7 +217,6 @@ default directory containing message-of-the-day, master initialization,
 help files and 
 .Nm epic
 scripts
-.El
 .Sh "THE HELP FILES"
 Starting up the client is the easy part.  
 Once you get connected, you'll probably find you have no idea what you're doing.
@@ -252,10 +244,10 @@ Lots of great help for new irc users.
 .Nm epic
 handles the following signals gracefully
 .Pp
+.TP
 .Bl -tag -width "IRCSERVER" 
 .It SIGUSR1
 Closes all DCC connections and EXEC'd processes.
-.El
 .Pp
 .Sh "ENVIRONMENT VARIABLES"
 It can be helpful to predefine certain variables in in the
@@ -265,7 +257,6 @@ It can be helpful to predefine certain variables in in the
 , or
 .Pa ~/.login
 file:
-.TP
 .Bl -tag -width "IRCSERVER"
 .It Ev IRCNICK    
 The user's default IRC nickname
@@ -280,7 +271,6 @@ Overrides the default home page in
 .Pa /etc/password
 .It Ev TERM     
 The type of terminal emulation to use
-.El
 .Sh "SEE ALSO"
 .Xr ircd 8
 .Sh BUGS

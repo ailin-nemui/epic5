@@ -360,6 +360,8 @@ static void p_privmsg (char *from, char **Args)
 
 	if (flood && hook_normal)
 	{ 
+	  if (do_hook(GENERAL_PRIVMSG_LIST, "%s %s %s", from, to, ptr))
+	  {
 	    switch (list_type)
 	    {
 		case PUBLIC_MSG_LIST:
@@ -412,8 +414,9 @@ static void p_privmsg (char *from, char **Args)
 			break;
 		}
 	    }
-	    if (beep_on_level & log_type)
-		    beep_em(1);
+	  }
+	  if (beep_on_level & log_type)
+	    beep_em(1);
 	}
 
 	sed = 0;
