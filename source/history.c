@@ -1,4 +1,4 @@
-/* $EPIC: history.c,v 1.2 2001/02/17 22:44:15 jnelson Exp $ */
+/* $EPIC: history.c,v 1.3 2001/02/19 20:37:03 jnelson Exp $ */
 /*
  * history.c: stuff to handle command line history 
  *
@@ -119,7 +119,7 @@ void	add_to_history (char *line)
 {
 	History *new_h;
 
-	if (get_int_var(HISTORY_VAR) == 0 || !line || *line)
+	if (get_int_var(HISTORY_VAR) == 0 || !line || !*line)
 		return;
 
 	last_dir = OLDER;
