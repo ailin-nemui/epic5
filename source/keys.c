@@ -1,4 +1,4 @@
-/* $EPIC: keys.c,v 1.7 2002/08/12 17:19:35 wd Exp $ */
+/* $EPIC: keys.c,v 1.8 2002/08/12 17:44:06 wd Exp $ */
 /*
  * keys.c:  Keeps track of what happens whe you press a key.
  *
@@ -1211,7 +1211,10 @@ char *bindctl(char *input)
 
 	    RETURN_INT(find_binding(func) ? 1 : 0);
 	} else if (!my_stricmp(listc, "GET")) {
-	    if (bp->func)
+
+	    if (bp == NULL)
+		RETURN_EMPTY;
+	    else if (bp->func)
 		malloc_sprintf(&retval, "interal %p", bp->func);
 	    else
 		m_s3cat(&retval, "alias ", bp->alias);
