@@ -25,16 +25,19 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Migrate calc_speed in dcc.c to using 'struct timeval's instead of time_t's
 * Fix /xecho -v
 * Make /pause take a fractional argument, ie, /pause 1.5
+* Make /timer take a fractional argument, ie, /timer 1.5 ....
 * Implement "redirect sink", nickname 0, causes all output to be suppressed
 * Implement /flush to use the redirect sink instead of throwing out good data.
   -- This means /flush is safe to use again!  Huzzah!
 * You can use /REDIRECT 0 WHOIS <nick> for example to suppress "extra" output
-* Resizable wserv support, merged from epic5.
+* Resizable wserv support, merged from epic5.  "wserv" now called "wserv4"!
+* Add /set wserv_path to let you choose the wserv you want to use.
 * New highlight renderer, from epic5.  Touches a lot of stuff.  May break?
 * Honor attribute markup in /set continued_line
 * Save attributes from the end of one line to after the continued_Line.
 * What this means is that attributes in /set continued_line don't "bleed"
 * Add support for ~/.epicrc which is prefered to ~/.ircrc.
+* Change the email list address to list@epicsol.org.
 * Fix the "Warning, file exists" check for dcc to honor /set dcc_store_path.
 * Add $info(i), which is the commit_id.  I should have added this long ago.
 * Fix $read() to accept lines of any length (crazyeddy)
@@ -45,6 +48,7 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Thwart attempts to /JOIN (/window rejoin) to an unconnected server.
 * Start exposing commit_id to the user, for bug reporting purposes.
 * Increase the precision of floating point results to 999 decimal places (ce)
+* Add /on general_notice and /on general_privmsg.
 * Don't hook /on general_notice if user hooks /on kill or /on oper_notice.
 * Fix bug that showed all timers as having 0 seconds left.
 * Fix $printlen() -- must call normalize_string() before output_with_count()!
@@ -55,7 +59,7 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Add $ceil(), $floor(), $abs() (crazyeddy)
 * Fix $trunc(... 0) to truncate number to an integer (crazyeddy)
 * Print floating point numbers with up to 50 places of precision.
-* Add a new argument to /encrypt, an external encryption filter.
+* Add a new argument to /crypt, an external encryption filter.
 * Add epic-crypt-gpg and epic-crypt-gpg-aa to the script/ directory.
 * Fix bug with ROM_CHAR handling.
 * Add MIN()/MAX() macros for systems that don't define one.
@@ -65,7 +69,7 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Always make sure Attributes are initialized before first use.
 * Add compat hacks for broken systems lacking setenv() and unsetenv().
 * CTCP SEDs recieved in NOTICEs are treated as CTCP REPLIES not queries. (ce)
-* Added $encryptparm() -- returns all information about /encrypt entries. (ce)
+* Added $encryptparm() -- nick, key, and prog info of /crypt entries (ce)
 * Fix prepare_display to append a zero-Attribute and not ^O to end of line.
 * "Fix" /queue so it doesn't double-eval your commands at runtime.
 * Revert last change
@@ -76,3 +80,46 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Re-enabled ROM characters, now that they can be /SET off.
 * Remove /SET ROM_CHAR, and the rom_char handling stuff entirely.
 * Add /SET ALLOW_C1_CHAR which defaults to off, to [dis]allow ascii 128-159.
+* SSL support (ay-ar)  See "README.SSL"
+* Add /xdebug ssl to debug SSL stuff, right? (ar)
+* Add /on ssl_server_cert per above. (ar)
+* Add /set ssl_certfile and /set ssl_keyfile and /set ssl_path per above. (ar)
+* Add /set status_ssl_off and /set status_ssl_on per above. (ar)
+* Replace $isencrypted() function, per above (ar)
+* Replace $ssl() function, per above (ar)
+* Add $cipher() function, per above (ar)
+* Add %| status bar expando for SSL server connections, per above. (ar)
+* Maintainance work on the man page, spelling fixes, markup fixes.
+* Fix the "redirect sink" so it hooks /on redirect, but suppresses output.
+* Whack up figure_out_address to cope with networks that present hostnames
+  without dots in them. (wd)
+* Fix $uh(), $mask(), and /ignore per above (wd)
+* New script, 'commandqueues' (ce)
+* New supplement scripts 'epic-crypt-pgp' and 'epic-crypt-pgp-aa' (ce)
+* Various Bugs fixed and memory leaks found (ce)
+* Algorithm improvements, replacements, and enhancements (ce)
+* Malloc debug tracking -- #define ALLOC_DEBUG (ce)
+* New command, /ALLOCDUMP, dumps stats about malloc use, per above (ce)
+* New flag to /QUOTE, /QUOTE -U takes a url encoded string, dequotes it and
+  sends it to the server -- useful for sending odd characters. (ce)
+* /ON CTCP_REPLY changed!  $0 = from; $1 = to; $2 = command; $3- = args
+* Add ftoa(), which is used for the math parser to format decmial values. (ce)
+* Pull the guts of $encode() and $decode() and put them in ircaux.c.
+* Track flooders by nick!user@host instead of just nickname. (ce)
+* Add $corpattern() fn - like $copattern(), but $var1 is wildcard pats. (ce)
+* Add $regmatches() function
+* Add $servergroup() function - returns the servergroup a servref is in (ce)
+* Add $serverourname() function - returns ourname for a servref (ce)
+* Fix $chankey() and $chanmode() to use from_server, not current window's serv
+* Fix some bugs with how the regex functions work. (ce)
+* Add support for if (..) {...} elif (...) {...}
+* Add support for if (..) {...} else if (...) {...}
+* Output the commit_id with the version id whenever possible.
+* Save the server's group name in a /SAVE.
+* Add /lastlog -file to output lastlog to a file. (??)
+* In $channel() output, put 'h' for half-assed channel ops. (ce)
+* Fix rebuild_all_notify() -- gah! (ce)
+* Change /set notify_interval 0 to turn off notify entirely. (ce)
+* Add send_to_server_raw() internal function (ce)
+* Add /window notified, turns on the "window notified" flag (ce)
+
