@@ -9,7 +9,7 @@
  */
 
 #if 0
-static	char	rcsid[] = "$Id: vars.c,v 1.4 2001/10/09 04:27:09 crazyed Exp $";
+static	char	rcsid[] = "$Id: vars.c,v 1.5 2001/10/20 17:19:04 jnelson Exp $";
 #endif
 
 #include "irc.h"
@@ -30,6 +30,7 @@ static	char	rcsid[] = "$Id: vars.c,v 1.4 2001/10/09 04:27:09 crazyed Exp $";
 #include "stack.h"
 #include "dcc.h"
 #include "keys.h"
+#include "translat.h"
 
 /* IrcVariable: structure for each variable in the variable table */
 typedef struct
@@ -266,6 +267,8 @@ static	IrcVariable irc_variable[] =
 	{ "TAB",			BOOL_TYPE_VAR,	DEFAULT_TAB, NULL, NULL, 0, 0 },
 	{ "TAB_MAX",			INT_TYPE_VAR,	DEFAULT_TAB_MAX, NULL, NULL, 0, 0 },
 	{ "TERM_DOES_BRIGHT_BLINK",	BOOL_TYPE_VAR,	DEFAULT_TERM_DOES_BRIGHT_BLINK, NULL, NULL, 0, 0 },
+	{ "TRANSLATION",		STR_TYPE_VAR,	0, NULL, set_translation, 0, 0 },
+	{ "TRANSLATION_PATH",		STR_TYPE_VAR,	0, NULL, NULL, 0, 0 },
 	{ "UNDERLINE_VIDEO",		BOOL_TYPE_VAR,	DEFAULT_UNDERLINE_VIDEO, NULL, NULL, 0, 0 },
 	{ "USER_INFORMATION", 		STR_TYPE_VAR,	0, NULL, NULL, 0, 0 },
 	{ "VERBOSE_CTCP",		BOOL_TYPE_VAR,	DEFAULT_VERBOSE_CTCP, NULL, NULL, 0, 0 },
@@ -371,6 +374,7 @@ void 	init_variables (void)
 	set_string_var(STATUS_USER39_VAR, DEFAULT_STATUS_USER39);
 	set_string_var(STATUS_VOICE_VAR, DEFAULT_STATUS_VOICE);
 	set_string_var(STATUS_WINDOW_VAR, DEFAULT_STATUS_WINDOW);
+	set_string_var(TRANSLATION_VAR, NULL);
 	set_string_var(USERINFO_VAR, DEFAULT_USERINFO);
 	set_string_var(XTERM_VAR, DEFAULT_XTERM);
 	set_string_var(XTERM_OPTIONS_VAR, DEFAULT_XTERM_OPTIONS);

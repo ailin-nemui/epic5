@@ -25,7 +25,7 @@ const char internal_version[] = "20010730";
 /*
  * In theory, this number is incremented for every commit.
  */
-const unsigned long	commit_id = 113;
+const unsigned long	commit_id = 114;
 
 /*
  * As a way to poke fun at the current rage of naming releases after
@@ -173,7 +173,6 @@ int		inbound_line_mangler = 0,
 char		*invite_channel = (char *) 0,	/* last channel of an INVITE */
 		*ircrc_file = (char *) 0,	/* full path .ircrc file */
 		*my_path = (char *) 0,		/* path to users home dir */
-		*irc_path = (char *) 0,		/* paths used by /load */
 		*irc_lib = (char *) 0,		/* path to the ircII library */
 		*default_channel = NULL,	/* Channel to join on connect */
 		nickname[NICKNAME_LEN + 1],	/* users nickname */
@@ -460,6 +459,8 @@ static	void	parse_args (int argc, char **argv)
 	struct hostent *hp;
 	char *ptr = (char *) 0;
 	char *tmp_hostname = NULL;
+	char *irc_path = NULL;
+	char *translation_path = NULL;
 
 	extern char *optarg;
 	extern int optind;
@@ -575,7 +576,13 @@ static	void	parse_args (int argc, char **argv)
 	if ((ptr = getenv("IRCHOST")) && *ptr)
 		tmp_hostname = ptr;
 
+	if ((ptr = getenv("IRCTRANSLATIONPATH")))
+		translation_path = m_strdup(ptr);
+	else
+		translation_path = m_2dup(IRCLIB, "/translation/");
 
+	set_string_var(TRANSLATION_PATH_VAR, translation_path);
+	new_free(&translation_path);
 
 	/*
 	 * Parse the command line arguments.

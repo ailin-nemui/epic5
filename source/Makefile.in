@@ -16,8 +16,8 @@ OBJECTS = alias.o alist.o array.o commands.o compat.o crypt.o ctcp.o \
 	help.o history.o hook.o if.o ignore.o input.o irc.o ircaux.o \
 	ircsig.o keys.o lastlog.o list.o log.o mail.o names.o network.o \
 	newio.o notice.o notify.o numbers.o output.o parse.o queue.o reg.o \
-	screen.o server.o status.o term.o timer.o vars.o who.o window.o \
-	words.o @PERLDOTOH@ @ALLOCA@
+	screen.o server.o status.o term.o timer.o translat.o vars.o who.o \
+	window.o words.o @PERLDOTOH@ @ALLOCA@
 
 INCLUDES = -I@srcdir@/../include -I../include
 
@@ -358,6 +358,11 @@ timer.o: timer.c ../include/irc.h ../include/defs.h \
  ../include/status.h ../include/timer.h ../include/hook.h \
  ../include/output.h ../include/commands.h ../include/server.h \
  ../include/who.h ../include/screen.h
+translat.o: translat.c ../include/irc.h ../include/defs.h \
+ ../include/config.h ../include/irc_std.h ../include/debug.h \
+ ../include/vars.h ../include/translat.h ../include/ircaux.h \
+ ../include/window.h ../include/lastlog.h ../include/status.h \
+ ../include/screen.h ../include/output.h
 vars.o: vars.c ../include/irc.h ../include/defs.h ../include/config.h \
  ../include/irc_std.h ../include/debug.h ../include/alist.h \
  ../include/ircaux.h ../include/status.h ../include/window.h \
@@ -365,7 +370,7 @@ vars.o: vars.c ../include/irc.h ../include/defs.h ../include/config.h \
  ../include/crypt.h ../include/history.h ../include/notify.h \
  ../include/vars.h ../include/input.h ../include/term.h \
  ../include/screen.h ../include/output.h ../include/stack.h \
- ../include/dcc.h ../include/keys.h
+ ../include/dcc.h ../include/keys.h ../include/translat.h
 who.o: who.c ../include/irc.h ../include/defs.h ../include/config.h \
  ../include/irc_std.h ../include/debug.h ../include/commands.h \
  ../include/ircaux.h ../include/who.h ../include/server.h \
