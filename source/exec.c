@@ -1,4 +1,4 @@
-/* $EPIC: exec.c,v 1.33 2005/02/23 03:41:36 jnelson Exp $ */
+/* $EPIC: exec.c,v 1.34 2005/03/20 20:50:18 jnelson Exp $ */
 /*
  * exec.c: handles exec'd process for IRCII 
  *
@@ -1098,10 +1098,9 @@ static void 	cleanup_dead_processes (void)
 			}
 		}
 
-		if (deadproc->p_stdin != -1)
-			new_close(deadproc->p_stdin);
-		new_close(deadproc->p_stdout);
-		new_close(deadproc->p_stderr);
+		deadproc->p_stdin = new_close(deadproc->p_stdin);
+		deadproc->p_stdout = new_close(deadproc->p_stdout);
+		deadproc->p_stderr = new_close(deadproc->p_stderr);
 		new_free(&deadproc->name);
 		new_free(&deadproc->logical);
 		new_free(&deadproc->who);
@@ -1169,8 +1168,7 @@ static void 	close_in (int idx)
 		return;
 
 	proc = process_list[idx];
-	if (proc->p_stdin != -1)
-		proc->p_stdin = new_close(proc->p_stdin);
+	proc->p_stdin = new_close(proc->p_stdin);
 }
 
 

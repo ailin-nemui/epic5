@@ -1,4 +1,4 @@
-/* $EPIC: newio.c,v 1.48 2005/03/19 03:55:55 jnelson Exp $ */
+/* $EPIC: newio.c,v 1.49 2005/03/20 20:50:18 jnelson Exp $ */
 /*
  * newio.c:  Passive, callback-driven IO handling for sockets-n-stuff.
  *
@@ -574,30 +574,32 @@ int	new_close (int vfd)
 {
 	MyIO *	ioe;
 
-	if (vfd < 0 || vfd > global_max_vfd)
-		return -1;
+	if (vfd == -1)
+		return -1;		/* Oh well. */
 
-	knoread(vfd);
-	knowrite(vfd);
-
-	if ((ioe = io_rec[vfd]))
+	if (vfd >= 0 && vfd <= global_max_vfd && (ioe = io_rec[vfd]))
 	{
 		if (ioe->io_callback == ssl_read)	/* XXX */
 			shutdown_ssl(ioe->channel);
+		knoread(vfd);
+		knowrite(vfd);
+
 		unix_close(ioe->channel);
+
 		new_free(&ioe->buffer); 
 		new_free((char **)&(io_rec[vfd]));
+
+		/*
+		 * If we're closing the highest fd in use, then we
+		 * want to adjust global_max_vfd downward to the next 
+		 * highest fd.
+		 */
+		if (vfd == global_max_vfd)
+		    while (global_max_vfd >= 0 && !io_rec[global_max_vfd])
+			global_max_vfd--;
 	}
 	else
-		unix_close(vfd);		/* XXX */
-
-	/*
-	 * If we're closing the highest fd in use, then we
-	 * want to adjust global_max_vfd downward to the next highest fd.
-	 */
-	if (vfd == global_max_vfd)
-	    while (global_max_vfd >= 0 && !io_rec[global_max_vfd])
-		global_max_vfd--;
+		unix_close(vfd);
 
 	return -1;
 }
