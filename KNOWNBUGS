@@ -22,4 +22,5 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Fix passwd_sendline to get the server refnum from "data" and not "line", duh!
 * Passworded servers now are handled correctly. Huzzah!
 * FD_CLR filedesc's after FD_ISSET in input handlers, to avoid bogons.
+* Fix /disconnect to call close_server() and update_status().
 * Release epic4-0.10.0

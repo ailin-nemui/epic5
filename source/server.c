@@ -1741,8 +1741,10 @@ BUILT_IN_COMMAND(disconnectcmd)
 			message = args;
 
 		say("Disconnecting from server %s", get_server_itsname(i));
-		send_to_server("QUIT :%s", message);
 		server_reconnects_to(i, -1);
+		dont_save_server_channels(i);
+		close_server(i, message);
+		update_all_status();
 	}
 
 	if (!connected_to_server)
@@ -2031,6 +2033,7 @@ void 	fudge_nickname (int servnum)
 	 */
 	if (s->nickname_pending)
 	{
+		nick_command_is_pending(servnum, 0);
 		new_free(&s->s_nickname);
 		return;
 	}
