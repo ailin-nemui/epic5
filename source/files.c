@@ -165,13 +165,25 @@ char *file_read (int fd)
 		return m_strdup(empty_string);
 	else
 	{
-		char blah[10240];
-		if (fgets(blah, 10239, ptr->file))
-			chop(blah, 1);
-		else
-			blah[0] = 0;
+		char	*ret = NULL;
+		size_t	len = 0, newlen = 4096;
 
-		return m_strdup(blah);
+		new_realloc((void **)&ret, newlen);
+		ret[len] = 0;
+		while (1) {
+			ret[newlen-1] = 1;
+			if (NULL == fgets(ret+len, newlen-len, ptr->file))
+				break;
+			if (ret[newlen-1] == 1) break;
+			len = newlen - 1;
+			newlen += 4096;
+			new_realloc((void **)&ret, newlen);
+		}
+
+		chomp(ret+len);
+		new_realloc((void **)&ret, len+strlen(ret+len));
+
+		return ret ? ret : m_strdup(empty_string);
 	}
 }
 
