@@ -1,4 +1,4 @@
-/* $EPIC: functions.c,v 1.93 2002/12/19 03:22:58 jnelson Exp $ */
+/* $EPIC: functions.c,v 1.94 2002/12/23 04:17:22 jnelson Exp $ */
 /*
  * functions.c -- Built-in functions for ircII
  *
@@ -3962,7 +3962,7 @@ BUILT_IN_FUNCTION(function_winchan, input)
 		chan = arg1;
 		if ((serv = new_next_arg(input, &input)))
 		{
-			if ((servnum = parse_server_index(serv, 0)) != NOSERV)
+			if ((servnum = parse_server_index(serv, 0)) == NOSERV)
 				servnum = find_in_server_list(serv, 0);
 		}
 
