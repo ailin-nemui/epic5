@@ -1,4 +1,4 @@
-/* $EPIC: keys.c,v 1.10 2002/08/13 05:05:21 wd Exp $ */
+/* $EPIC: keys.c,v 1.11 2002/08/13 23:52:19 wd Exp $ */
 /*
  * keys.c:  Keeps track of what happens whe you press a key.
  *
@@ -68,7 +68,7 @@ struct Binding *binding_list;
  * but never both.  If no binding with this name exists, we create a new one
  * and fill in the details, then add it to the list of available bindings in
  * the client.  Otherwise, we yell and go home. */
-struct Binding *add_binding(char *name, BindFunction func, char *alias) {
+struct Binding *add_binding (char *name, BindFunction func, char *alias) {
     struct Binding *bp;
     if (func && alias) {
 	yell("add_binding(): func and alias both defined!");
@@ -99,7 +99,7 @@ struct Binding *add_binding(char *name, BindFunction func, char *alias) {
     return bp;
 }
 
-void remove_binding(char *name) {
+void remove_binding (char *name) {
     struct Binding *bp;
 
     if (!name)
@@ -118,14 +118,14 @@ void remove_binding(char *name) {
     return;
 }
 
-struct Binding *find_binding(char *name) {
+struct Binding *find_binding (char *name) {
     if (!name)
 	return NULL;
 
     return (struct Binding *)find_in_list((List **)&binding_list, name, 0);
 }
 
-void init_binds(void) {
+void init_binds (void) {
 #define ADDBIND(x, y) add_binding(x, y, NULL);
     /* there is no 'NOTHING' bind anymore. */
     ADDBIND("ALTCHARSET",		    insert_altcharset		    );
@@ -189,15 +189,15 @@ void init_binds(void) {
  * bindings, as well as get the binding for a key in a current input
  * sequence, or a string of keys. */
 
-struct Key *construct_keymap(struct Key *);
-int clean_keymap(struct Key *);
-unsigned char *bind_string_compress(unsigned char *, int *);
-unsigned char *bind_string_decompress(unsigned char *, unsigned char *, int);
-struct Key *bind_string(unsigned char *, char *, char *);
-struct Key *find_sequence(unsigned char *, int);
-void show_all_bindings(struct Key *, unsigned char *, int);
-void show_all_rbindings(struct Key *, unsigned char *, int, struct Binding *);
-void show_key(struct Key *, unsigned char *, int, int);
+struct Key	*construct_keymap	(struct Key *);
+int		clean_keymap		(struct Key *);
+unsigned char	*bind_string_compress	(unsigned char *, int *);
+unsigned char	*bind_string_decompress	(unsigned char *, unsigned char *, int);
+struct Key	*bind_string		(unsigned char *, char *, char *);
+struct Key	*find_sequence		(unsigned char *, int);
+void		show_all_bindings	(struct Key *, unsigned char *, int);
+void		show_all_rbindings	(struct Key *, unsigned char *, int, struct Binding *);
+void		show_key		(struct Key *, unsigned char *, int, int);
 
 /* this is set when we're post-init to keep track of changed keybindings. */
 unsigned char bind_post_init = 0;
@@ -210,8 +210,8 @@ struct Key *head_keymap;
  * sequence that didn't resolve.  if that is the case, use the special
  * 'key_exec_bt' function to walk backwards along the line and execute the
  * keys as if they were individually pressed. */
-void key_exec_bt(struct Key *);
-void key_exec(struct Key *key) {
+void key_exec_bt (struct Key *);
+void key_exec (struct Key *key) {
 
     if (key == NULL) {
 	yell("key_exec(): called with NULL key!");
@@ -244,7 +244,7 @@ void key_exec(struct Key *key) {
 /* this is an interesting function.  it finds the 'owning' key that the map
  * our current key is in (ugh. :) lives in.  if this is non-NULL, it calls
  * back on that, then executes the 'value' of the key itself. */
-void key_exec_bt(struct Key *key) {
+void key_exec_bt (struct Key *key) {
 
     /* key->owner should point back to the owning key, if it is not NULL. */
     if (key->owner != NULL)
@@ -258,7 +258,7 @@ void key_exec_bt(struct Key *key) {
  * previous key's action (if there has been a timeout).  The timeout factor
  * is set in milliseconds by the KEY_INTERVAL variable.  See further for
  * instructions. :) */
-struct Key *handle_keypress(struct Key *last, struct timeval pressed,
+struct Key *handle_keypress (struct Key *last, struct timeval pressed,
 			     unsigned char key) {
     struct Key *kp;
     
@@ -288,7 +288,7 @@ struct Key *handle_keypress(struct Key *last, struct timeval pressed,
     return NULL;
 }
 
-struct Key *timeout_keypress(struct Key *last, struct timeval pressed) {
+struct Key *timeout_keypress (struct Key *last, struct timeval pressed) {
     int mpress = 0; /* ms count since last pressing */
     struct timeval tv;
 
@@ -311,7 +311,7 @@ struct Key *timeout_keypress(struct Key *last, struct timeval pressed) {
     return last; /* still waiting.. */
 }
 
-struct Key *construct_keymap(struct Key *owner) {
+struct Key *construct_keymap (struct Key *owner) {
     unsigned char c;
     struct Key *map = new_malloc(sizeof(struct Key) * KEYMAP_SIZE);
 
@@ -333,7 +333,7 @@ struct Key *construct_keymap(struct Key *owner) {
  * to keep memory clear and (more importantly) to make sure that artifacts
  * are not left around in the timeout system.  the function returns positive
  * if *the map passed* was removed, negative otherwise. */
-int clean_keymap(struct Key *map) {
+int clean_keymap (struct Key *map) {
     unsigned char c;
     int save = 0;
 
@@ -373,7 +373,7 @@ int clean_keymap(struct Key *map) {
  * \^: escape the caret (hat, whatever.. :)
  * \\: the \ character. ;)
  */
-unsigned char *bind_string_compress(unsigned char *str, int *len) {
+unsigned char *bind_string_compress (unsigned char *str, int *len) {
     unsigned char *new, *s, *oldstr;
     unsigned char c;
 
@@ -455,7 +455,7 @@ unsigned char *bind_string_compress(unsigned char *str, int *len) {
 
 /* this decompresses a compressed bind string into human-readable form.  it
  * assumes sufficient memory has already been allocated for it. */
-unsigned char *bind_string_decompress(unsigned char *dst, unsigned char
+unsigned char *bind_string_decompress (unsigned char *dst, unsigned char
 	*src, int srclen) {
     unsigned char *ret = dst;
 
@@ -482,7 +482,7 @@ unsigned char *bind_string_decompress(unsigned char *dst, unsigned char
  * to, and optionally arguments to that function, and does all the work
  * necessary to bind it.  it will create new keymaps as it goes, if
  * necessary, etc. */
-struct Key *bind_string(unsigned char *sequence, char *bind, char *args) {
+struct Key *bind_string (unsigned char *sequence, char *bind, char *args) {
     unsigned char *cs; /* the compressed keysequence */
     unsigned char *s;
     int slen;
@@ -546,7 +546,7 @@ struct Key *bind_string(unsigned char *sequence, char *bind, char *args) {
  * if we can find the key bound to this sequence, return it, otherwise
  * return NULL.  If slen is 0, assume this is an uncompressed sequence.  If
  * it is not, assume it was compressed for us. */
-struct Key *find_sequence(unsigned char *seq, int slen) {
+struct Key *find_sequence (unsigned char *seq, int slen) {
     unsigned char *cs = NULL;
     unsigned char *s;
     struct Key *map = head_keymap;
@@ -580,7 +580,7 @@ struct Key *find_sequence(unsigned char *seq, int slen) {
     
 /* init_keys:  initialize default keybindings that apply without terminal
  * specificity.  we use the above functions to take care of this */
-void init_keys(void) {
+void init_keys (void) {
     unsigned char c;
     unsigned char s[2];
     head_keymap = construct_keymap(NULL);
@@ -692,7 +692,7 @@ void init_keys(void) {
 
 /* init_termkeys:  formerly init_keys2, this is called after we can get
  * terminal-specific key-sequences. */
-void init_termkeys(void) {
+void init_termkeys (void) {
 
 #define TBIND(x, y) {                                                     \
     char *l = get_term_capability(#x, 0, 1);                              \
@@ -718,12 +718,12 @@ void init_termkeys(void) {
 /* save_bindings is called by the /save command to..well.. save bindings.
  * we call the save_bindings_recurse() function which acts a lot like
  * (surprise surprise) show_all_bindings/show_key in tandem. */
-void save_bindings_recurse(FILE *, struct Key *, unsigned char *, int);
-void save_bindings(FILE *fp, int do_all) {
+void save_bindings_recurse (FILE *, struct Key *, unsigned char *, int);
+void save_bindings (FILE *fp, int do_all) {
     save_bindings_recurse(fp, head_keymap, "", 0);
 }
 
-void save_bindings_recurse(FILE *fp, struct Key *map, unsigned char *str,
+void save_bindings_recurse (FILE *fp, struct Key *map, unsigned char *str,
 	int len) {
     unsigned char c;
     unsigned char *newstr;
@@ -751,8 +751,8 @@ void save_bindings_recurse(FILE *fp, struct Key *map, unsigned char *str,
 
 /* this is called only by irc_exit, and its purpose is to free
  * all our allocated stuff. */
-void remove_bindings_recurse(struct Key *);
-void remove_bindings(void) {
+void remove_bindings_recurse (struct Key *);
+void remove_bindings (void) {
 
     while (binding_list != NULL)
 	remove_binding(binding_list->name);
@@ -760,7 +760,7 @@ void remove_bindings(void) {
     remove_bindings_recurse(head_keymap);
 }
 
-void remove_bindings_recurse(struct Key *map) {
+void remove_bindings_recurse (struct Key *map) {
     unsigned char c;
 
     /* go through our map, clear any memory that might be left lying around.
@@ -779,8 +779,8 @@ void remove_bindings_recurse(struct Key *map) {
 /* this is called when a package is unloaded.  we should unset any
  * package-specific keybindings, and also remove any package-specific bind
  * functions. */
-void unload_bindings_recurse(const char *, struct Key *);
-void unload_bindings(const char *pkg) {
+void unload_bindings_recurse (const char *, struct Key *);
+void unload_bindings (const char *pkg) {
     struct Binding *bp, *bp2;
 
     /* clean the binds out first. */
@@ -796,7 +796,7 @@ void unload_bindings(const char *pkg) {
     clean_keymap(head_keymap);
 }
 
-void unload_bindings_recurse(const char *pkg, struct Key *map) {
+void unload_bindings_recurse (const char *pkg, struct Key *map) {
     unsigned char c;
 
     /* go through, see which keys are package specific, unload them. */
@@ -818,7 +818,7 @@ void unload_bindings_recurse(const char *pkg, struct Key *map) {
 /* set_key_interval:  this is used to construct a new timeval when the
  * 'KEY_INTERVAL' /set is changed.  We modify an external variable which
  * defines how long the client will wait to timeout, at most. */
-void set_key_interval(int msec) {
+void set_key_interval (int msec) {
 
     if (msec < 10) {
 	say("Setting KEY_INTERVAL below 10ms is not recommended.");
@@ -843,7 +843,7 @@ struct BindStack {
 };
 
 static struct BindStack *bind_stack = NULL;
-void do_stack_bind(int type, char *arg) {
+void do_stack_bind (int type, char *arg) {
     struct Key *key = NULL;
     struct Key *map = head_keymap;
     struct BindStack *bsp = NULL;
@@ -1032,7 +1032,7 @@ doc/keys distributed with the EPIC source."
 /* support function for /bind:  this function shows, recursively, all the
  * keybindings.  given a map and a string to work from.  if the string is
  * NULL, the function recurses through the entire map. */
-void show_all_bindings(struct Key *map, unsigned char *str, int len) {
+void show_all_bindings (struct Key *map, unsigned char *str, int len) {
     unsigned char c;
     unsigned char *newstr;
     struct Binding *self_insert;
@@ -1050,7 +1050,7 @@ void show_all_bindings(struct Key *map, unsigned char *str, int len) {
     }
 }
 
-void show_key(struct Key *key, unsigned char *str, int slen, int recurse) {
+void show_key (struct Key *key, unsigned char *str, int slen, int recurse) {
     struct Binding *bp;
     unsigned char *clean = alloca(((strlen(str) + 1) * 2) + 1);
 
@@ -1099,7 +1099,7 @@ BUILT_IN_COMMAND(rbindcmd) {
     show_all_rbindings(head_keymap, "", 0, bp);
 }
 
-void show_all_rbindings(struct Key *map, unsigned char *str, int len,
+void show_all_rbindings (struct Key *map, unsigned char *str, int len,
 	struct Binding *bind) {
     unsigned char c;
     unsigned char *newstr;
@@ -1188,8 +1188,8 @@ BUILT_IN_COMMAND(parsekeycmd) {
  * key sequence and [PACKAGE] is any free form package string.
  */
 
-void bindctl_getmap(struct Key *, unsigned char *, int, char **);
-char *bindctl(char *input)
+void bindctl_getmap (struct Key *, unsigned char *, int, char **);
+char *bindctl (char *input)
 {
     char *listc;
     char *retval = NULL;
@@ -1331,7 +1331,7 @@ char *bindctl(char *input)
     RETURN_EMPTY;
 }
 
-void bindctl_getmap(struct Key *map, unsigned char *str, int len, char **ret) {
+void bindctl_getmap (struct Key *map, unsigned char *str, int len, char **ret) {
     unsigned char c;
     unsigned char *newstr;
     unsigned char *decomp;
