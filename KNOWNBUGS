@@ -24,9 +24,30 @@ KNOWN ERRATA (eg, bugs, or unresolved requests):
 
 THE CHANGELOG SINCE THE LAST RELEASE:
 -------------------------------------
+* Fix spelling mistake (wd)
+* Fix bug with bind_string (wd)
+* Accept +h as a "channel mode with arg" by default (ce)
+* /exec leak fix for -line, -part, etc. (ce)
+* /for var from x to y step z works for negative z now. (ce)                
+* Local variable tweaks. (ce)
+* Fixed $word() to not discard words after a "". (ce)
+* Fix /userip to use the internal USERHOST queue (ce)                       
+* -- You may need to use /userip -direct to avoid the cache (ce)
+* Karll Array overhaul.  Performance improvements for large arrays. (ce)
+* Karll arrays now stored unsorted internally (ce)
+* New funcs $usetitem() and $delitems() work on unsorted karll array (ce)
+* Karll arrays will be auto-sorted if you do anything that needs it (ce)
+* Extend karll array funcs to allow for additional item/index args (ce):
+-- $getitem(array $getmatches(array *cat*)) returns all items with "cat"
+-- $getitem(array2 $getmatches(array1 *cat*)) is like $copattern().
+* Fix the 307 handler (ce)
+* Better handling for /USRIP, always use the userhost queue (ce)            
 * Fix expand_twiddle to take a (const char *)
 * Fix do_log and set_log_file to take a (const char *)
 * Remove a couple of no-ops in keys.c
-* Revamp do_log into two parts; open_log and close_log; do_log now a wrapper.
+* Revamp do_log into two parts; open_log,close_log; do_log now a wrapper.   
 * Fix a string that had a newline in it. spotted by Szabolcs Rumi.
-* Fix /alias /s say() formats to use %lu and not %d for unsigned longs.
+* Fix /alias /s to use %lu for unsigned longs
+* Fix ^C so it binds to SELF_INSERT again (wd)
+* New built in command, /LOG -- general purpose log files
+* New built in function, $logctl() -- operate on general purpose log files. 

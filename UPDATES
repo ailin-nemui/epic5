@@ -1,19 +1,104 @@
 EPIC4-1.2.0
 
-*** News 08/12/2002 -- New keybindings system in place (wd)
-	The old keybinding system (keys.c) has been completely rewritten to
-	add support for various new functionalities.  It is now possible to
-	bind arbitrarily long strings of arbitrary values to binding
-	functions, as well as to bind substrings of these to other
-	functions.  The META system has been removed as a result of this, so
-	you can no longer bind to any META*_* functions.  Also, there is
-	no longer a META_STATES set.
+*** News 09/03/2002 -- New built in command, /LOG, general purpose log files
+	General Purpose Log Files work quite a bit like windows, but instead
+	of displaying to your screen, they write to a file.
 
-*** News 08/12/2002 -- New function $bindctl(...) (wd)
-	Another side effect of the new keys system, a bindctl function
-	has been added which allows for the creation of new binding
-	functions, the retrieval of all currently available functions, and
-	other low-level interfaces to the binding system.  Detailed
-	information can be retrieved in the bindctl(6) help oage.
+	Each /LOG command works by choosing a logfile, and then performing
+	one or more actions upon it -- just like the /WINDOW command.
+	However, there is no concept as a "current logfile" so each time you
+	use the /LOG command you need to re-specify the log you want to use.
+
+	These are the operations currently supported by /LOG
+
+	Options that modify the log's configuration
+	-------------------------------------------
+		NEW		
+			Create a new logfile to work on.
+		REFNUM <name|number>
+			Work on the specified log file, using either it's
+			name (see below) or its refnum.
+		NAME <name>
+			Change the logical name of the logfile to <name>.
+			You can use <name> in /LOG REFNUM later.
+		FILENAME <name>
+			Change the filename that this log writes to.  You
+			MUST specify a filename before you can turn a log ON!
+		TYPE
+			Each logfile can log one of three different "types"
+			of things; either a list of nicks or channels 
+			("TARGETS"), a list of windows ("WINDOWS") or a list
+			of servers ("SERVERS").  The default type is TARGETS.
+			WARNING!  If you use /LOG TYPE, all of the current
+			targets you have added to the log will be destroyed,
+			even if you don't change the type!  This is how you 
+			can destroy the target list if you want to start over.
+		SERVER <server refnum>
+			Change the server this logfile belongs to.  By default
+			the log belongs to whatever the current server was
+			when it was created.  If you use the special server
+			refnum -1, then the log works for all servers.
+
+	Options that modify the log's state
+	-----------------------------------
+		ON
+			Turn the logfile on.
+		OFF
+			Turn the logfile off.
+
+	Options that modify the log's target list
+	-----------------------------------------
+		ADD <nick|channel|refnum>[,<nick|channel|refnum>...]
+			If the log is of "TARGET" type, then add a list of 
+			one or more nicks or channels to the current target
+			list.  If the log is of "WINDOW" or "SERVER" type,
+			then add a list of one or more window or server
+			refnums to the list.
+		REMOVE <nick|channel>[,<nick|channel>...]
+			If the log is of "TARGET" type, then remove a list of 
+			one or more nicks or channels to the current target
+			list.  If the log is of "WINDOW" or "SERVER" type,
+			then remove a list of one or more window or server
+			refnums to the list.
+
+	Options that modify how the log writes to the logfile
+	-----------------------------------------------------
+		MANGLE
+			Change how stuff written to the log will be "mangled".
+			By default, the logfile will be mangled by whatever 
+			/SET MANGLE_LOGFILES is set to.
+		REWRITE
+			Change how stuff written to the log will be "rewritten".
+			By default, the logfile is rewritten by whatever 
+			/SET LOG_REWRITE is set to.
+
+	Other options
+	-------------
+		KILL
+			Irreversably destroy a logfile.  Once you kill a 
+			logfile, you cannot operate on it again.
+		DESCRIBE
+			Give detailed information about the current state
+			of the logfile.
+		LIST
+			Give brief information about all logfiles.
+
+
+	Examples:
+	---------
+	If you wanted to log #epic, you could do something like this:
+		/LOG NEW NAME epic-log FILENAME ~/logs/#epic ADD #epic ON
+	Then if you wanted to close that log later you could do
+		/LOG REFNUM epic-log OFF
+	or
+		/LOG REFNUM epic-log KILL
+
+	If you wanted to log anything that went to windows 2 or 3:
+		/LOG NEW NAME mywinlog FILENAME ~/logs/win23 TYPE windows
+		/LOG REFNUM mywinlog ADD 2,3 ON
+
+	If you wanted to log anything that happened on server 2:
+		/LOG NEW NAME servlog FILENAME ~/logs/serv2 TYPE servers
+		/LOG REFNUM servlog ADD 2 ON
 
 # End of file
