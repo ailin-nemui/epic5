@@ -606,11 +606,14 @@ static	int		polls = 0;
 		/*
 		 * Check to see if there is a complete line sitting in the
 		 * fd's buffer.  If there is, then we just tag this fd as
-		 * being ready.  No sweat.
+		 * being ready.  No sweat.  Don't mark the fd ready if the
+		 * caller didn't ask about the fd, because that leads to 
+		 * a busy-loop.
 		 */
 		if (io_rec[i])
 		{
 		    if (io_rec[i]->read_pos < io_rec[i]->write_pos &&
+			FD_ISSET(i, rd) &&
 		        strchr(io_rec[i]->buffer + io_rec[i]->read_pos, '\n'))
 		    {
 			FD_SET(i, &new_f);
