@@ -1,11 +1,11 @@
-/* $EPIC: words.c,v 1.15 2003/07/31 16:49:56 jnelson Exp $ */
+/* $EPIC: words.c,v 1.16 2003/09/12 01:42:47 jnelson Exp $ */
 /*
  * words.c -- right now it just holds the stuff i wrote to replace
  * that beastie arg_number().  Eventually, i may move all of the
  * word functions out of ircaux and into here.  Now wouldnt that
  * be a beastie of a patch! Beastie! Beastie!
  *
- * Copyright © 1994 EPIC Software Labs.
+ * Copyright © 1994, 2003 EPIC Software Labs.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without

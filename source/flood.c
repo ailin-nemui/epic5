@@ -1,9 +1,9 @@
-/* $EPIC: flood.c,v 1.13 2003/07/10 13:08:56 jnelson Exp $ */
+/* $EPIC: flood.c,v 1.14 2003/09/12 01:42:47 jnelson Exp $ */
 /*
  * flood.c: handle channel flooding.
  *
  * Copyright (c) 1990-1992 Tomi Ollila
- * Copyright © 1997 EPIC Software Labs
+ * Copyright © 1997, 2003 EPIC Software Labs
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without

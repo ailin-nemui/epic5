@@ -182,3 +182,6 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Reorganised, documented and generally screwed around with data_array/struct.
 * Very minor syntax changes to script/functions and script/deban.
 * Fix buffer overrun crash with CTCP UTC.
+* Fix /dcc chat nick -p 4444
+* Return empty string if you do $aliasctl(pmatch <bogus> <whatever>)
+* Update some copyright notices.

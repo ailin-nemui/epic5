@@ -1,4 +1,4 @@
-/* $EPIC: alias.c,v 1.30 2003/07/31 06:53:19 jnelson Exp $ */
+/* $EPIC: alias.c,v 1.31 2003/09/12 01:42:47 jnelson Exp $ */
 /*
  * alias.c -- Handles the whole kit and caboodle for aliases.
  *
@@ -2552,8 +2552,10 @@ char 	*aliasctl 	(char *input)
 
 			if (list == COMMAND_ALIAS)
 				mlist = glob_cmd_alias(listc, &num);
-			else
+			else if (list == VAR_ALIAS)
 				mlist = glob_assign_alias(listc, &num);
+			else
+				RETURN_EMPTY;
 
 			for (ctr = 0; ctr < num; ctr++)
 			{
@@ -2575,8 +2577,10 @@ char 	*aliasctl 	(char *input)
 
 			if (list == COMMAND_ALIAS)
 				mlist = pmatch_cmd_alias(listc, &num);
-			else
+			else if (list == VAR_ALIAS)
 				mlist = pmatch_assign_alias(listc, &num);
+			else
+				RETURN_EMPTY;
 
 			for (ctr = 0; ctr < num; ctr++)
 			{
