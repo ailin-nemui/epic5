@@ -12,7 +12,7 @@
 # decryption.
 #
 # Since the plaintext and cyphertext are read in non-newline binary
-# mode, echo -e is used.
+# mode, echo -n is used.
 
 function encrypt {
 	(echo ${parms[0]} ; cat ) | gpg -ca --batch --passphrase-fd 0 | (

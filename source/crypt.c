@@ -9,7 +9,7 @@
  */
 
 #if 0
-static	char	rcsid[] = "@(#)$Id: crypt.c,v 1.2 2001/11/26 18:35:36 crazyed Exp $";
+static	char	rcsid[] = "@(#)$Id: crypt.c,v 1.3 2001/11/27 00:09:28 crazyed Exp $";
 #endif
 
 #include "irc.h"
@@ -195,6 +195,8 @@ char* 	prog_crypt (char *str, int *len, Crypt *key, int flag)
 	*len += iplen;
 	ret = exec_pipe(key->prog, input, len, args);
 	new_free((char**)&input);
+	new_realloc((void**)&ret, 1+*len);
+	ret[*len] = 0;
 	return ret;
 }
 

@@ -8,7 +8,7 @@
  */
 
 #if 0
-static	char	rcsid[] = "@(#)$Id: ircaux.c,v 1.19 2001/11/26 18:35:36 crazyed Exp $";
+static	char	rcsid[] = "@(#)$Id: ircaux.c,v 1.20 2001/11/27 00:09:28 crazyed Exp $";
 #endif
 
 #include "irc.h"
@@ -1584,8 +1584,6 @@ char*	exec_pipe (char *executable, char *input, size_t *len, char**args)
 		close(pipe0[1]);
 		close(pipe1[0]);
 		waitpid(pid, NULL, WNOHANG);
-		new_realloc((void**)&ret, 1+rdpos);
-		ret[rdpos] = 0; /* Not strictly necessary, but just in case. */
 		new_realloc((void**)&ret, rdpos);
 		break;
 	}
