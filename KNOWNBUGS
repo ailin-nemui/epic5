@@ -74,3 +74,6 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Always ignore spaces after semicolons in parse_line (the {} parser).
 * Some compiler warning fixes from rain.
 * Fix defects and a memory leak in the pf loader.
+* Fixes to 'less' script from howl
+* New 'help' script from howl
+* Add /WINDOW SCROLLADJ.

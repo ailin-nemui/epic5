@@ -85,6 +85,10 @@ alias clear_notify_records {
 }
 
 alias detect_signons {
+	if (notify == [OFF]) {
+		return
+	}
+
 	fe ($myservers(*)) refnum {
 		if (np_in_progress[$refnum] == 1) {
 			continue

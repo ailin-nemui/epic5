@@ -1,5 +1,41 @@
 EPIC4-1.2.0
 
+*** News -- 12/11/2003 -- Command parser ignores spaces after semicolons
+	Since the dawn of the modern ircII syntax, the following syntax
+	has caused consternation with scripters:
+		/eval {two; three}
+	because it runs the /two alias, and then outputs the text "three"
+	to the current target (channel-or-query).  This is because the
+	command parser does not ignore spaces after semicolons; a leading
+	space results in ircII assuming you are wanting to run the empty
+	command (yes, there is actually an empty command), which just 
+	happens to be the /say command.  Well, enough is enough.  I'm 
+	putting a stop to this.  If you depend on this horrifically broken
+	behavior, then the time has come to switch to using /SAY.  The
+	rest of us will enjoy not having to freak out about spaces after
+	semicolons.
+
+*** News -- 12/11/2003 -- New /WINDOW verb, /WINDOW SCROLLADJ [ON|OFF]
+	When the default value of ON is used, when you "GROW" a window,
+	or otherwise cause the size of a window to be increased, the top
+	of the scrollable view is moved back so you can see more of the
+	lines that have recently scrolled off the screen.  If you change
+	this to OFF, the behavior is more like ircII, where when something
+	scrolls off the window, nothing will bring it back unless you go
+	into scrollback mode.
+
+*** News -- 12/11/2003 -- New /ON, /ON WINDOW_BEFOREKILL 
+	The value of $* is the window refnum (number) of the window that
+	is about to be killed.  You cannot stop the kill from happening,
+	but you do get this opportunity to save any information about the
+	window that you might want.  *DANGER*DANGER*DANGER*  EPIC does not
+	try to stop you from doing something really dumb in this /ON, and
+	if you try to change the window being killed, or you affect the
+	visibility or invisibility of any window, you run the definite chance
+	of confusing EPIC and causing a panic.  This is not a bug, this is 
+	just your peril if you ignore this warning.  Use /DEFER to run 
+	commands safely from within /ONs.
+
 *** News -- 12/05/2003 -- New built in function $numlines() (fudd)
 	The first argument to $numlines() is the width of a line (which you
 	can get from $geom() if you want to use that), and the rest of the
@@ -89,6 +125,15 @@ EPIC4-1.2.0
 	might output
 		Window 2 2 command!
 		Window 2 1 command!
+
+			 *DANGER*DANGER*DANGER*  
+	EPIC does not try to stop you from doing something really dumb in 
+	this /ON, and if you try to change the window being killed, or you 
+	affect the visibility or invisibility of any window, you run the 
+	definite chance of confusing EPIC and causing a panic.  This is not 
+	a bug, this is just your peril if you ignore this warning.  Use 
+	/DEFER to run commands safely from within /ONs.
+			 *DANGER*DANGER*DANGER*  
 
 *** News -- 11/24/2003 -- New built in function, $windowct()
 	You can now fetch much of the low-level information about your

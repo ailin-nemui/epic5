@@ -1,0 +1,334 @@
+#
+# Help replacement written by howl 2003
+#
+
+package help
+alias h help.help
+alias help help.help
+
+# help.isdir is stolen more or less from nsx's tabkey script. Thanks nsx!
+alias help.isdir (dir) {
+	return ${(left(1 $word(2 $stat("$dir"))) & 4)? 1 : 0}
+}
+
+alias help.help {
+	^local pager,prompt,dir,file,fp,dp,size,win,line,list,name,match,width,pad
+	^local tmp,tmp1,tmp2,tmp3,tmp4,tmp5,var,taken,varlist,unset,clear,padlen
+	^local more,break,nohelp,myinput,oldinput,noparse,helppath,path,root
+	^local nocheck,helpwin,last,realroot,window
+	
+	push varlist dir dp file fp line match name pad pager path prompt realroot
+	push varlist win window
+
+	@ path = getset(help_path)
+	@ window = getset(help_window) == [on] ? 1 : 0
+	@ prompt = getset(help_prompt) == [on] ? 1 : 0
+	@ pager = getset(help_pager) == [on] ? 1 : 0
+
+	@ noparse = nohelp = nocheck = 0
+	
+	@ list = [$*]
+	push list *
+	while (tmp = shift(list)) {
+		if (!noparse && tmp =~ [-*]) {
+			switch ($tmp) {
+				(-var) (-v) {
+					@ var = shift(list)
+					@ tmp = aliasctl(assign pmatch help.cache.${var}.*))
+					while (tmp2 = shift(tmp)) { 
+						^eval @ $after(3 . $tmp2) = $tmp2 
+					}
+					@ nocheck = 1
+				}
+				(-break) {
+					@ close($fp)
+					@ fp = dp = file = dir = []
+				}
+				(-newhelp) {
+					^local realroot,name,line,match,root,file,dir,dp,fp 
+					^local nocheck 0
+				}
+				(-kill) {
+					@ tmp = shift(list)
+					if (tmp != [] && tmp != [*] && numwords($aliasctl(assign pmatch help.cache.${tmp}.*)) == 0) {
+						xecho -say -b -c -- HELP: No such cache: $tmp
+						return
+					}
+					if (tmp == [*]) {
+						fe ($aliasctl(assign pmatch help.cache.*.fp)) tmp2 {
+							@ tmp2 = aliasctl(assign get $tmp2)
+							if (tmp2 != -1 && tmp2 != []) {
+								@ tmp3 = close($tmp2)
+							}
+						}
+						fe ($aliasctl(assign pmatch help.cache.*.win)) tmp2 {
+							if (aliasctl(assign get ${tmp2}dow) == 1) {
+								@ tmp2 = aliasctl(assign get $tmp2)
+								if (0 < tmp2 && windowctl(GET $tmp2 REFNUM) != []) {
+									^window $tmp2 kill
+								}
+							}
+						}
+						fe ($aliasctl(assign pmatch help.cache.*.*)) tmp2 {
+							^assign -$tmp2
+						}
+						
+					} else {
+						@ tmp2 = aliasctl(assign get help.cache.${tmp}.fd)
+						if (tmp2 != -1 && tmp2 != []) {
+							@ tmp3 = close($tmp2)
+						}
+						@ tmp2 = aliasctl(assign get help.cache.${tmp}.win)
+						if (0 < tmp2 && windowctl(GET $tmp2 REFNUM) != [] && aliasctl(assign get help.cache.${tmp}.window) == 1) {
+							^window $tmp2 kill
+						}
+						fe ($aliasctl(assign pmatch help.cache.${tmp}.*)) tmp2 {
+							^assign -$tmp2
+						}
+					}
+					xecho -say -b -c -- HELP: Cleared cache for $tmp
+					return
+				}
+				(-path) { @ path = shift(list) }
+				(-pager) { @ pager = 1 }
+				(-nopager) { @ pager = 0 }
+				(-prompt) { @ prompt = 1 }
+				(-noprompt) { @ prompt = 0 }
+				(-window) { @ window = 1 }
+				(-nowindow) { @ window = 0 }
+				(-help) {
+					xecho -b -c -say -- HELP supports the following switches
+					xecho -b -c -say -- -path *         Override HELP_PATH
+					xecho -b -c -say -- -[no]pager      Override HELP_PAGER
+					xecho -b -c -say -- -[no]prompt     Override HELP_PROMPT
+					xecho -b -c -say -- -[no]window     Override HELP_WINDOW
+					xecho -b -c -say -- Usage: /help <switches> [--] <help topic>
+					return
+				}
+				(--) { @ noparse = 1 }
+			}
+			continue
+		}
+		@ noparse = 1
+		if (nocheck) break
+		if (@path == 0 && @root == 0) {
+			xecho -say -b -c -- No HELP_PATH set.
+			return
+		}
+		if (tmp == [?]) {
+			@ tmp = [*]
+		}
+		if (@root == 0) {
+			while (tmp2 = shift(path)) {
+				if (fexist($tmp2/$tmp) == 1) {
+					@ root = tmp2
+					@ realroot = tmp2
+				} elif (0 < numwords($glob($tmp2/$tmp*))) {
+					@ root = tmp2
+					@ realroot = tmp2
+				} else {
+					@ break = 1
+					@ nohelp = 1
+					xecho -w ${win == [] ? 0 : win} -b -- No help available on $tmp: Use ? for list of topics.
+					break	
+				}
+			}
+			if (@root == 0) {
+				break
+			}
+		}
+		if (fexist($root/$tmp) == 1) {
+			@ tmp2 = [$root/$tmp]
+		} elif (numwords($glob($root/$tmp*)) == 1) {
+			@ tmp2 = glob($root/$tmp*)
+		} elif (numwords($glob($root/$tmp*)) == 0) {
+			@ break = 1
+			@ nohelp = 1
+			xecho -w ${win == [] ? 0 : win} -b -- No help available on $tmp: Use ? for list of topics.
+			break
+		} else {
+			# More than one match, dispatch and we're done.
+			@ match = [${tmp == [*] ? [] : tmp}*]
+			@ dir = [$root]
+			@ break = 1
+			break
+		}
+		@ last = after(${count(/ $root)+1} / $tmp2)
+		if (last =~ [*/]) @ last = before(-1 / $last)
+		@ name #= (@name > 0 ? [ ] : []) ## last
+		if (!help.isdir($tmp2)) {
+			@ file = tmp2
+			@ dir = []
+			@ break = 1
+			@ match = []
+			break
+		} else {
+			@ root = [$tmp2]
+			@ dir = []
+		}
+	}
+	if (break != 1 && nocheck != 1) {
+		@ dir = root
+		@ match = [*]
+	}
+	if (dir != []) {
+		@ tmp = split(/ $rest($strlen($realroot) $dir))
+	} else {
+		@ tmp = split(/ $rest($strlen($realroot) $file))
+		@ tmp = revw($restw(1 $revw($tmp)))
+	}
+	@ myinput = tmp	
+	@ line = more = nohelp = 0
+	@ pad = (pad == [] ? [ ] : pad)
+
+	if (var == []) {
+		@ var = 0
+		until (help[cache][$var][taken] != 1) @ var++
+		@ help[cache][$var][taken] = 1
+	} elif (help[cache][$var][taken] != 1) {
+		@ help[cache][$var][taken] = 1 
+	}
+
+
+	if (clear == 1) {
+		xecho -say -b -- HELP: Cleared cache
+		fe ($aliasctl(assign pmatch help.cache.*.fp)) fp {
+			@ tmp = close($fp)
+			# echo close\($fp\) returned $tmp
+		}
+		fe ($aliasctl(assign pmatch help.cache.*.*)) tmp {
+			^assign -$tmp
+		}
+		return
+	}
+	if (unset == 1 && var != []) {
+		^help.help -kill $var
+	}
+	if (!nohelp) {
+		if (window && win == []) {
+			window new
+			@ win = winnum(0)
+		}
+		@ size = (size == [] ? winsize($win) : size)
+		@ width = (width == [] ? word(0 $geom($win)) -1 : width)
+
+		if (file == [] && dir != [] && fexist($dir/$last) == 1 && match == [*]) {
+			@ file = [$dir$last]
+		}
+		if (dp == [] && file != [] && fexist($file) == 1 && !help.isdir($file)) {
+			if (fp == []) {
+				@ fp = open("$file" "R")
+				@ tmp = [$G Help on $name]
+				@ line += numlines($width $tmp)
+				xecho -w $win -- $tmp
+			}
+			if (fp != []) {
+				while (!eof($fp) && (pager == 0 || line < size)) {
+					@ tmp = read($fp)
+					if (tmp =~ [#*] || tmp =~ [!*]) continue
+					@ line += numlines($width $tmp)
+					if (!eof($fp)) {
+						xecho -w $win -- $tmp
+					}
+				}
+				if (eof($fp)) {
+					@ close($fp)
+					@ fp = []
+					if (dir != []) {
+						@ line++
+						xecho -w $win --
+					}
+				}
+			}
+		}
+		if (fp == [] && dir != []) {
+			if (dp == []) xecho -b -w $win -- ${name ? [$name choices] : [Choices]} \($match\)
+			@ tmp = stripcrap(ALL $glob("$dir/$match"))
+			@ tmp1 = strlen($dir/)
+			@ tmp2 = maxlen($tmp) - strlen($dir/)
+			@ tmp3 = []
+			@ padlen = strlen(ALL $pad)
+
+			while (tmp4 = shift(tmp)) {
+				if (tmp4 =~ [*/CVS/] || (dp != [] && dp != tmp4)) continue
+				@ dp = []
+				@ tmp5 = pad($tmp2 " " $rest($tmp1 $tmp4))
+				if (tmp3 == []) {
+					@ tmp3 = tmp5
+				} elif ((strlen($tmp3) + padlen + tmp2) <= width) {
+					@ tmp3 #= pad ## tmp5
+				} else {
+					@ line++
+					if (pager == 0 || line < size) {
+						xecho -w $win -- $tmp3 
+						@ tmp3 = tmp5
+					} else {
+						@ dp = tmp4
+						@ more = 1
+						break
+					}
+				}
+			}
+			if (more != 1) {
+				if (tmp3 != []) {
+					@ line++
+					xecho -w $win -- $tmp3
+					@ tmp = dp = []
+				} elif (numwords($tmp) == 0) {
+					@ dp = []
+				}
+			}
+		}
+	}
+	while (tmp = shift(varlist)) {
+		^eval @ help[cache][$var][$tmp] = $tmp
+	}
+	if (nohelp == 0 && (fp != [] && !eof($fp)) || more == 1) {
+		help.more $var
+	}
+	if (fp == [] && dp == []) {
+		if (prompt) {
+			help.prompt $var $encode(Help?) $encode(-. $unsplit(" " $myinput)) .
+		} else {
+			^help.help -kill $var
+		}
+	}
+}
+alias help.more (var, key) {
+	if (@key != 1) {
+		^eval input_char "*** Hit any key for more. Q to quit, A for all, and F to finish ***" \{ help.more $var \$* \}
+		return
+	}
+	if (key == [q]) {
+		^help.help -var $var -break
+	} elif (key == [a]) {
+		^help.help -var $var -nopager 
+	} elif (key == [f]) {
+		^help.help -var $var -noprompt -nopager	
+	} else {
+		^help.help -var $var
+	}
+}
+alias help.prompt (var, prompt, old, ...) {
+	^local tmp,input
+	@ old = after(- $decode($old))
+	@ prompt = decode($prompt)
+	@ tmp = unsplit(" " $afterw(. $old) $prompt)
+	if ([$0] == [.]) {
+		^eval input "$tmp " help.prompt $var $encode($prompt) $encode(-$unsplit(" " $old)) \\\$*
+		return
+	}
+	if ([$0] == []) {
+		@ old = revw($restw(1 $revw($old)))
+		if (numwords($old) == 0) {
+			^help.help -kill $var
+			return
+		}
+		@ tmp = unsplit(" " $afterw(. $old) $prompt)
+		^eval input "$tmp " help.prompt $var $encode($prompt) $encode(-$unsplit(" " $old)) \\\$*
+	} else {
+		help.help -var $var -newhelp $unsplit(" " $afterw(. $old) $*)
+	}
+}
+
+# howl (2003)

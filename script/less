@@ -4,6 +4,9 @@
 # My apologies in advance to archon.
 # Modified on Jan 25, 1999 as an example of how to use arglists.
 #
+# Modified by howl on Des 8, 2003, to honour numlines(), and close file
+# on 'q'
+#
 
 alias less (file default "-help")
 {
@@ -22,10 +25,11 @@ alias less_file (file, count, winnum default 0, void)
 {
 	^local line 0
 	^local ugh
-
-	while (!eof($file) && (line++ < count))
+	^local width ${word(0 $geom())-1}
+	while (!eof($file) && (line < count))
 	{
 		@ ugh = read($file)
+		@ line +=  numlines($width $ugh)
 		if (!eof($file)) {
 			xecho -w $winnum $ugh
 		}
@@ -38,7 +42,12 @@ alias less_file (file, count, winnum default 0, void)
 		@ less.w  = winnum
 		input_char "Enter q to quit, or anything else to continue "
 		{
-			if ([$0] != [q]) {less_file $less.fd $less.nl $less.w}
+			if ([$0] != [q]) {
+				less_file $less.fd $less.nl $less.w
+			}
+			{
+				@ close($file)
+			}
 		}
 	}
 	{
@@ -47,3 +56,4 @@ alias less_file (file, count, winnum default 0, void)
 }
 
 #hop'96,99
+#howl'03

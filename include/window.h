@@ -75,6 +75,7 @@ typedef	struct	WindowStru
 	int	skip;			/* Whether window should be skipped */
 	int	columns;		/* How wide we are when hidden */
 	int	swappable;		/* Can it be swapped in or out? */
+	int	scrolladj;		/* Push back top-of-win on grow? */
 
 	/* Input and Status stuff */
 	char	*prompt;		/* Current EXEC prompt for window */

@@ -1,4 +1,4 @@
-/* $EPIC: window.c,v 1.90 2003/12/09 06:16:14 jnelson Exp $ */
+/* $EPIC: window.c,v 1.91 2003/12/11 23:07:16 jnelson Exp $ */
 /*
  * window.c: Handles the organzation of the logical viewports (``windows'')
  * for irc.  This includes keeping track of what windows are open, where they
@@ -193,6 +193,7 @@ Window	*new_window (Screen *screen)
 	new_w->scroll = 1;
 	new_w->skip = 0;
 	new_w->swappable = 1;
+	new_w->scrolladj = 1;
 	new_w->notify_level = real_notify_level();
 	if (!current_window)		/* First window ever */
 		new_w->window_level = LOG_ALL;
@@ -1167,12 +1168,20 @@ void	resize_window_display (Window *window)
 	 */
 	if (cnt > 0)
 	{
+	    /* 
+	     * If "SCROLLADJUST" is off, then do not push back the top of
+	     * display to reveal what has previously scrolled off (for
+	     * ircII compatability
+	     */
+	    if (window->scrolladj)
+	    {
 		for (i = 0; i < cnt; i++)
 		{
 			if (!tmp || !tmp->prev)
 				break;
 			tmp = tmp->prev;
 		}
+	    }
 	}
 
 	/*
@@ -4291,6 +4300,15 @@ Window *window_scroll (Window *window, char **args)
 	return window;
 }
 
+static Window *window_scrolladj (Window *window, char **args)
+{
+	if (get_boolean("SCROLLADJ", args, &window->scrolladj))
+		return NULL;
+
+	return window;
+}
+
+
 static	Window *window_scrollback (Window *window, char **args)
 {
 	int val;
@@ -4727,6 +4745,7 @@ static const window_ops options [] = {
 	{ "REMOVE",		window_remove 		},
 	{ "SCRATCH",		window_scratch		},
 	{ "SCROLL",		window_scroll		},
+	{ "SCROLLADJ",		window_scrolladj	},
 	{ "SCROLLBACK",		window_scrollback	}, /* * */
 	{ "SCROLL_BACKWARD",	window_scroll_backward	},
 	{ "SCROLL_END",		window_scroll_end	},
@@ -5686,6 +5705,8 @@ char 	*windowctl 	(char *input)
 		RETURN_STR(w->logfile);
 	    } else if (!my_strnicmp(listc, "SWAPPABLE", len)) {
 		RETURN_INT(w->swappable);
+	    } else if (!my_strnicmp(listc, "SCROLLADJ", len)) {
+		RETURN_INT(w->swappable);
 	    } else if (!my_strnicmp(listc, "DECEASED", len)) {
 		RETURN_INT(w->deceased);
 	    }
@@ -5746,6 +5767,7 @@ char 	*windowctl 	(char *input)
 	    } else if (!my_strnicmp(listc, "LOGGING", len)) {
 	    } else if (!my_strnicmp(listc, "LOGFILE", len)) {
 	    } else if (!my_strnicmp(listc, "SWAPPABLE", len)) {
+	    } else if (!my_strnicmp(listc, "SCROLLADJ", len)) {
 	    } else if (!my_strnicmp(listc, "DECEASED", len)) {
 	    }
 #endif
