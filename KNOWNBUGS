@@ -31,3 +31,7 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Add $windowctl(GET <refnum> DOUBLE) 
 * Support inbound double quoted filenames in dcc handshakes. bleh.
 * Fix NULL deref when you kill hidden windows (ie, /window killswap)
+* Update tabkey.jm one last time
+* Add 'notify' script, a replacement for the notify command.
+* Fix $windowctl(GET <refnum> DOUBLE)
+* Make /on window_command give two refnums, the before and after refnums.

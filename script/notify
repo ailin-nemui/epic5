@@ -1,0 +1,382 @@
+# notify.irc: a module to detect the presence of nicknames
+#
+# written by nsx
+#
+# /set variables this script uses:
+#
+#   NOTIFY -- turns notify system on or off
+#
+#   NOTIFY_INTERVAL -- how often (in seconds) to check for signons and signoffs
+#
+#   NOTIFY_USERHOST_AUTOMATIC -- if set on, userhosts will be displayed in
+#                                the signon messages (this can lag you if you
+#                                have a very large notify list)
+#
+#
+# note: this script uses the serial number 100 for its serial hooks
+#
+
+package notify.irc
+
+
+# global config vars
+@notify = [ON]
+@notify_interval = 30
+@notify_userhost_automatic = [ON]
+@ison_req_size = 500
+
+
+# turn off epic's built-in notify system
+on ^set -"NOTIFY *"
+set notify off
+
+
+alias change_notify_status (refnum, newstatus, nicklist) {
+	@:notify_lock = [$(notify_lock_$(refnum))]
+
+	if (newstatus == [online]) {
+		push online_list_$(refnum) $nicklist
+
+		if (notify_userhost_automatic == [on]) {
+			xeval -server $refnum {
+				wait for {
+					fe ($nicklist) n1 n2 n3 n4 n5 {
+						userhost $n1 $n2 $n3 $n4 $n5 -cmd {
+							if ([$4] == [<UNKNOWN>]) {
+								xecho -b -w $serv_win() -- Signon by $0 \(\) detected
+							} else {
+								xecho -b -w $serv_win() -- Signon by $0 \($3@$4\) detected
+							}
+						}
+					}
+				}
+			}
+		} else {
+			fe ($nicklist) nickname {
+				xecho -b -w $serv_win() -- Signon by $nickname detected
+			}
+		}
+
+		if (notify_lock == 1) {
+			push et_signons_$(refnum) $nicklist
+		}
+	} elsif (newstatus == [offline]) {
+		@online_list_$(refnum) = remws($nicklist / $(online_list_$(refnum)))
+		fe ($nicklist) nickname {
+			xecho -b -w $serv_win() -- Signoff by $nickname detected
+		}
+
+		if (notify_lock == 1) {
+			push et_signoffs_$(refnum) $nicklist
+		}
+	}
+}
+
+alias clear_hist {
+	fe ($myservers()) serv {
+		@:refnum = servernum($serv)
+		@ison_hist_$(refnum) = []
+	}
+}
+
+alias clear_locks {
+	fe ($myservers()) serv {
+		@:refnum = servernum($serv)
+		@notify_lock_$(refnum) = 0
+	}
+}
+
+alias clear_notify_list {
+	fe ($notify_list) nickname {
+		@remove_notify_hooks($nickname)
+	}
+
+	@notify_list = []
+
+	fe ($myservers()) serv {
+		@:refnum = servernum($serv)
+		@online_list_$(refnum) = []
+	}
+}
+
+alias detect_signons {
+	if (notify_list == []) {
+		return
+	}
+
+	fe ($myservers()) serv {
+		@:refnum = servernum($serv)
+		@:notify_lock = [$(notify_lock_$(refnum))]
+
+		if (notify_lock == 1) {
+			continue
+		}
+
+		@et_signoffs_$(refnum) = []
+		@et_signons_$(refnum) = []
+		@ison_$(refnum) = []
+
+		xeval -server $refnum {
+			//ison $notify_list$()
+		}
+
+		repeat ${(@notify_list / (ison_req_size + 1)) + 1} push ison_hist_$(refnum) n
+		@notify_lock_$(refnum) = 1
+	}
+}
+
+alias ison (nicklist) {
+	repeat ${(@nicklist / (ison_req_size + 1)) + 1} push ison_hist_$(servernum()) m
+	//ison $nicklist
+}
+
+alias notify (nicklist) {
+	@:online_list = [$(online_list_$(servernum()))]
+	@:offline_list = remws($online_list / $notify_list)
+
+	if (nicklist == []) {
+		xecho -b -w $serv_win() -- Currently online: $online_list
+		xecho -b -w $serv_win() -- Currently offline: $offline_list
+
+		return
+	}
+
+	if (nicklist == [-]) {
+		@clear_notify_list()
+
+		xecho -b -w $serv_win() -- the notify list has been cleared
+		return
+	}
+
+	fe ($nicklist) nickname {
+		if (left(1 $nickname) == [-]) {
+			@:nickname = rest($nickname)
+
+			if (findw($nickname $notify_list) != -1) {
+				@remove_notify_entry($nickname)
+
+				xecho -b -w 1 -- $nickname has been removed from the notify list
+			} else {
+				xecho -b -w 1 -- $nickname is not in the notify list!
+			}
+		} else {
+			if (findw($nickname $notify_list) == -1) {
+				push notify_list $nickname
+
+				xecho -b -w 1 -- $nickname has been added to the notify list
+			} else {
+				xecho -b -w 1 -- $nickname is already in the notify list!
+			}
+		}
+	}
+
+	@detect_signons()
+}
+
+alias process_ison_reply (refnum, ison_list) {
+	@notify_lock_$(refnum) = 0
+	@:new_offline_nicks = []
+	@:new_online_nicks = []
+	@:online_list = [$(online_list_$(refnum))]
+	@:offline_list = remws($online_list / $notify_list)
+	@:et_signoffs = [$(et_signoffs_$(refnum))]
+	@:et_signons = [$(et_signonfs_$(refnum))]
+	@:ison_list = remws($et_signoffs / $(ison_$(refnum)))
+
+	push ison_list $et_signons
+
+	fe ($offline_list) nickname {
+		if (findw($nickname $ison_list) != -1) {
+			push new_online_nicks $nickname
+		}
+	}
+
+	fe ($online_list) nickname {
+		if (findw($nickname $ison_list) == -1) {
+			push new_offline_nicks $nickname
+		}
+	}
+
+	if (new_offline_nicks != []) {
+		@change_notify_status($refnum offline $new_offline_nicks)
+	}
+
+	if (new_online_nicks != []) {
+		@change_notify_status($refnum online $new_online_nicks)
+	}
+}
+
+alias remove_notify_entry (nickname) {
+	@notify_list = remw($nickname $notify_list)
+
+	fe ($myservers()) serv {
+		@:refnum = servernum($serv)
+		@:online_list_$(refnum) = remw($nickname $(online_list($refnum)))
+	}
+}
+
+alias serv_win (refnum) {
+	@:win_max = [255]
+	@:i = [1]
+
+	if (refnum == []) {
+		@:refnum = servernum()
+	}
+
+	while (i < win_max) {
+		if (winserv($i) == refnum) {
+			return $i
+		}
+
+		@:i++
+	}
+}
+
+^on #^channel_nick 100 "*" {
+	@:refnum = servernum()
+	@:online_list = [$(online_list_$(refnum))]
+	@:offline_list = remws($online_list / $notify_list)
+
+	if (findw($1 $online_list) != -1) {
+		@change_notify_status($refnum offline $1)
+	}
+
+	if (findw($2 $offline_list) != -1) {
+		@change_notify_status($refnum online $2)
+	}
+}
+
+^on #^channel_signoff 100 "*" {
+	@:refnum = servernum()
+	@:online_list = [$(online_list_$(refnum))]
+
+	if (findw($1 $online_list) != -1) {
+		@change_notify_status($refnum offline $1)
+	}
+}
+
+on #^join 100 "*" {
+	@:refnum = servernum()
+	@:offline_list = remws($(online_list_$(refnum)) / $notify_list)
+
+	if (findw($0 $offline_list) != -1) {
+		@change_notify_status($refnum online $0)
+	}
+}
+
+^on #^msg 100 "*" {
+	@:refnum = servernum()
+	@:offline_list = remws($(online_list_$(refnum)) / $notify_list)
+
+	if (findw($0 $offline_list) != -1) {
+		@change_notify_status($refnum online $0)
+	}
+}
+
+^on #^notice 100 "*" {
+	@:refnum = servernum()
+	@:offline_list = remws($(online_list_$(refnum)) / $notify_list)
+
+	if (findw($0 $offline_list) != -1) {
+		@change_notify_status($refnum online $0)
+	}
+}
+
+on #^server_lost 100 "*" {
+	@:refnum = [$0]
+
+	@ison_hist_$(refnum) = []
+	@notify_lock_$(refnum) = 0
+}
+
+on ^set "NOTIFY *" {
+	if ([$1] == []) {
+		xecho -b Current value of NOTIFY is $notify
+	} elsif ([$1] == [off]) {
+		@notify = [off]
+
+		^timer -del notcheck
+
+		xecho -b Value of NOTIFY set to OFF
+	} elsif ([$1] == [on]) {
+		@notify = [on]
+
+		^eval timer -refnum notcheck -rep -1 $notify_interval @detect_signons()
+
+		xecho -b Value of NOTIFY set to ON
+	} else {
+		xecho -b Value of NOTIFY must be ON or OFF
+	}
+}
+
+on ^set "NOTIFY_INTERVAL *" {
+	if ([$1] == []) {
+		xecho -b Current value of NOTIFY_INTERVAL is $notify_interval
+	} elsif (!isnumber($1)) {
+		xecho -b Value of NOTIFY_INTERVAL must be numeric!
+	} elsif ([$1] < 1) {
+		xecho -b Value of NOTIFY_INTERVAL must be greater than or equal to 1
+	} else {
+		@notify_interval = [$1]
+
+		^timer -del notcheck
+		^eval timer -refnum notcheck -rep -1 $notify_interval @detect_signons()
+
+		xecho -b Value of NOTIFY_INTERVAL set to $notify_interval
+	}
+}
+
+on ^set "NOTIFY_USERHOST_AUTOMATIC *" {
+	if ([$1] == []) {
+		xecho -b Current value of NOTIFY_USERHOST_AUTOMATIC is $notify_userhost_automatic
+	} elsif ([$1] == [off]) {
+		@notify_userhost_automatic = [OFF]
+		xecho -b Value of NOTIFY_USERHOST_AUTOMATIC set to OFF
+	} elsif ([$1] == [on]) {
+		@notify_userhost_automatic = [ON]
+		xecho -b Value of NOTIFY_USERHOST_AUTOMATIC set to ON
+	} else {
+		xecho -b Value of NOTIFY_USERHOST_AUTOMATIC must be ON or OFF
+	}
+}
+
+on #^003 100 "*" {
+	@:refnum = servernum()
+
+	@ison_hist_$(refnum) = []
+	@notify_lock_$(refnum) = 0
+}
+
+on ^303 "*" {
+	@:refnum = servernum()
+	@:ison_type = left(1 $(ison_hist_$(refnum)))
+	@:new_ison_hist = restw($(ison_hist_$(refnum)))
+	@ison_hist_$(refnum) = new_ison_hist
+
+	if (ison_type == [n]) {
+		push ison_$(refnum) $*
+
+		if (index(n $new_ison_hist) == -1) {
+			@process_ison_reply($refnum $(ison_list_$(refnum)))
+		}
+	} else {
+		xecho -b -w $serv_win() online: $*
+	}
+}
+
+on #^401 100 "*" {
+	@:refnum = servernum()
+	@:online_list = [$(online_list_$(refnum))]
+
+	if (findw($1 $online_list) != -1) {
+		@change_notify_status($refnum offline $1)
+	}
+}
+
+@clear_notify_list()
+@clear_locks()
+@clear_hist()
+@detect_signons()
+^eval timer -refnum notcheck -rep -1 $notify_interval @detect_signons()
+
+#nsx'2K3

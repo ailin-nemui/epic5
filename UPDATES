@@ -37,17 +37,22 @@ EPIC4-1.2.0
 
 *** News -- 11/30/2003 -- New /ON , /ON WINDOW_COMMAND
 	This /ON is hooked after each time a successful window command
-	is executed.  The value of $* is the refnum is the window that
-	was operated upon.  This /ON is hooked even if the command does
-	not change any state of the window.  This /ON is not hooked if
-	a /WINDOW command fails because of some error.
+	is executed.  The value of $0 is the refnum of the current window
+	before the command was executed (ie, the window the command started
+	with or operated upon), and $1 is the refnum of the current window
+	after the command was executed.  If $0 and $1 are the same, then 
+	the command executed upon that window.  If $0 and $1 are different
+	then some command was run that changed the current window (ala,
+	/WINDOW SWAP or HIDE or REFNUM)  This /ON is hooked even if the 
+	command does not change any state of the window.  When a command
+	fails, the value of $1 is the number -1.
 
 	Example:
 		/on ^window_command * {echo Window $* command!}
 		/window 2 size 5 hide
-	would output
-		Window 2 command!
-		Window 2 command!
+	might output
+		Window 2 2 command!
+		Window 2 1 command!
 
 *** News -- 11/24/2003 -- New built in function, $windowct()
 	You can now fetch much of the low-level information about your

@@ -21,7 +21,7 @@
 # http://jmz.digitallinx.com/tabkey.jm
 #
 #
-# note: this script uses the serial number 50 for its serial hooks
+# note: this script uses the serial number 110 for its serial hooks
 #
 
 
@@ -654,46 +654,46 @@ alias tclear {
 # *** hooks ***
 
 if (info(i) >= 225) {
-	^on #^general_notice 50 "% *" {
+	^on #^general_notice 110 "% *" {
 		@add_target(notice $1)
 	}
 } else {
-	^on #^raw_irc 50 "% NOTICE *" {
+	^on #^raw_irc 110 "% NOTICE *" {
 		@add_target(notice $2)
 	}
 }
 
-on #^dcc_chat 50 "*" {
+on #^dcc_chat 110 "*" {
 	@add_target(msg =$0)
 }
 
-on #^dcc_connect 50 "% CHAT *" {
+on #^dcc_connect 110 "% CHAT *" {
 	@add_target(msg =$0)
 }
 
-on #^msg 50 "*" {
+on #^msg 110 "*" {
 	@add_target(msg $0)
 }
 
-on #^notice 50 "*" {
+on #^notice 110 "*" {
 	@add_target(notice $0)
 }
 
-on #^send_action 50 "*" {
+on #^send_action 110 "*" {
 	if (!rmatch($0 #* &* +*) ) {
 		@add_target(msg $0)
 	}
 }
 
-on #^send_dcc_chat 50 "*" {
+on #^send_dcc_chat 110 "*" {
 	@add_target(msg =$0)
 }
 
-on #^send_msg 50 "*" {
+on #^send_msg 110 "*" {
 	@add_target(msg $0)
 }
 
-on #^send_notice 50 "*" {
+on #^send_notice 110 "*" {
 	@add_target(notice $0)
 }
 
