@@ -1,4 +1,4 @@
-/* $EPIC: timer.c,v 1.15 2002/12/09 16:41:26 jnelson Exp $ */
+/* $EPIC: timer.c,v 1.16 2002/12/11 19:20:24 crazyed Exp $ */
 /*
  * timer.c -- handles timers in ircII
  *
@@ -49,6 +49,7 @@
 #include "commands.h"
 #include "server.h"
 #include "screen.h"
+#include "functions.h"
 
 static int 	timer_exists (const char *ref);
 static int 	remove_timer (const char *ref);
@@ -377,8 +378,11 @@ static	void	list_timers (const char *command)
 	int	timer_count = 0;
 
 	get_time(&current);
-	for (tmp = PendingTimers; tmp && !tmp->callback; tmp = tmp->next)
+	for (tmp = PendingTimers; tmp; tmp = tmp->next)
 	{
+		if (tmp->callback)
+			continue;
+
 		if (timer_count == 0)
 			say("%-10s %-10s %-7s %s", 
 				"Timer", "Seconds", "Events", "Command");
@@ -544,6 +548,7 @@ char *add_timer (int update, const char *refnum_want, double interval, long even
 
 		if (winref != -1)
 			ntimer->window = winref;
+
 	}
 	else
 	{
@@ -660,4 +665,169 @@ void 	ExecuteTimers (void)
 	}
 }
 
+
+/* MaXxX--> */
+
+/* used by function_timerctl */
+char 	*timerctl 	(char *input)
+{
+	char		*ptr;
+	struct		timeval	now;
+	Timer		*timer;
+
+	enum { EXISTS, GETTIME, SETTIME, GETEVENTS, SETEVENTS, GETCOMMAND, SETCOMMAND,
+		GETSERVER, SETSERVER, GETWINDOW, SETWINDOW, GETARGS, SETARGS, GETREFNUMS } op;
+	/* EXISTS and GETTIME will be almost the same - in fact, $timerctl(EXISTS refnum) === $timerctl(GETTIME refnum) > 0 */
+
+	GET_STR_ARG(ptr, input);
+
+	if (!my_strnicmp(ptr, "EXISTS", 1))
+		op = EXISTS;
+	else if (!my_strnicmp(ptr, "GETTIME", 4))
+		op = GETTIME;
+	else if (!my_strnicmp(ptr, "SETTIME", 4))
+		op = SETTIME;
+	else if (!my_strnicmp(ptr, "GETEVENTS", 4))
+		op = GETEVENTS;
+	else if (!my_strnicmp(ptr, "SETEVENTS", 4))
+		op = SETEVENTS;
+	else if (!my_strnicmp(ptr, "GETCOMMAND", 4))
+		op = GETCOMMAND;
+	else if (!my_strnicmp(ptr, "SETCOMMAND", 4))
+		op = SETCOMMAND;
+	else if (!my_strnicmp(ptr, "GETSERVER", 4))
+		op = GETSERVER;
+	else if (!my_strnicmp(ptr, "SETSERVER", 4))
+		op = SETSERVER;
+	else if (!my_strnicmp(ptr, "GETWINDOW", 4))
+		op = GETWINDOW;
+	else if (!my_strnicmp(ptr, "SETWINDOW", 4))
+		op = SETWINDOW;
+	else if (!my_strnicmp(ptr, "GETARGS", 4))
+		op = GETARGS;
+	else if (!my_strnicmp(ptr, "SETARGS", 4))
+		op = SETARGS;
+	else if (!my_strnicmp(ptr, "GETREFNUMS", 4))
+		op = GETREFNUMS;
+	else {
+		RETURN_EMPTY;
+	}
+
+	switch (op)
+	{
+		case (EXISTS) :
+		case (GETTIME) :
+		case (GETEVENTS) :
+		case (GETCOMMAND) :
+		case (GETSERVER) :
+		case (GETWINDOW) :
+		case (GETARGS) :
+		case (SETTIME) :
+		case (SETEVENTS) :
+		case (SETCOMMAND) :
+		case (SETSERVER) :
+		case (SETWINDOW) :
+		case (SETARGS) :
+		{
+			GET_STR_ARG(ptr, input);
+
+			if (!(timer = get_timer(ptr))) {
+				if (op == EXISTS)
+					RETURN_INT(0);
+				else
+					RETURN_EMPTY;
+			}
+			if (op == EXISTS)
+				RETURN_INT(1);
+
+			if (op == GETTIME || op == SETTIME)
+				get_time(&now);	/* will be needed in either case */
+
+			if (op == GETTIME)
+				RETURN_FLOAT2(time_diff(now, timer->time));
+
+			if (op == GETEVENTS)
+				RETURN_INT(timer->events);
+
+			if (op == GETCOMMAND)
+				RETURN_STR(timer->command);
+
+			if (op == GETSERVER)
+				RETURN_INT(timer->server);
+
+			if (op == GETWINDOW)
+				RETURN_INT(timer->window);
+
+			if (op == GETCOMMAND)
+				RETURN_STR(timer->subargs);
+
+			/* uh-oh, SETting stuff... here comes the tricky part... for me, anyway... */
+			if (op == SETTIME) {
+				double newtime;
+				GET_FLOAT_ARG(newtime, input);
+				if (newtime<0)
+					RETURN_EMPTY;
+				timer->interval = double_to_timeval(newtime);
+				timer->time = time_add(now, timer->interval);
+				RETURN_FLOAT2(newtime);
+			}
+
+			if (op == SETEVENTS) {
+				int newevents;
+				GET_INT_ARG(newevents, input);
+				if (newevents<1)
+					RETURN_EMPTY;
+				timer->events = newevents;
+				RETURN_INT(newevents);
+			}
+
+			if (op == SETCOMMAND) {
+				if (!input || !*input)
+					RETURN_EMPTY;
+				malloc_strcpy((char**)&(timer->command), input);
+				RETURN_INT(1);
+			}
+
+			if (op == SETSERVER) {
+				int newserver;
+				GET_INT_ARG(newserver, input);
+				if (newserver<0 || newserver>=number_of_servers)
+					RETURN_EMPTY;
+				timer->server = newserver;
+				RETURN_INT(newserver);
+			}
+
+			if (op == SETWINDOW) {
+				int newwin;
+				GET_INT_ARG(newwin, input);
+				if (newwin<1)
+					RETURN_EMPTY;
+				timer->window = newwin;
+				RETURN_INT(newwin);
+			}
+
+			if (op == SETARGS) {
+				if (!input || !*input)
+					RETURN_EMPTY;
+				malloc_strcpy((char**)&(timer->subargs), input);
+				RETURN_INT(1);
+			}
+			break;
+		}
+		case (GETREFNUMS): {
+			ptr = NULL;
+			for (timer = PendingTimers; timer; timer = timer->next) {
+				if (timer->callback)
+					continue;
+				else
+					m_s3cat_s(&ptr, space, timer->ref);
+			}
+			RETURN_MSTR(ptr);
+			break;
+		}
+	}
+
+	RETURN_EMPTY;
+}
+/* <--MaXxX */
 

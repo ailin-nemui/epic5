@@ -720,6 +720,40 @@ assert delitem(testarray 1) == 0
 assert delarray(testarray) == 0
 assert delarray(testarray) == -1
 
+# Testing function/command array consistancy.
+echo
+@ :last = []
+fe ($getfunctions()) fn {
+	if (sort($last $fn) != uniq($last $fn)) {
+		echo $last and $fn are not in the correct order in built_in_functions[].
+	} elsif (!fnexist($fn)) {
+		echo Can't find function \$$fn\(\).
+	}
+	@ :last = fn
+}
+@ :last = []
+fe ($getcommands()) cmd {
+	if (sort($last $cmd) != uniq($last $cmd)) {
+		echo $last and $cmd are not in the correct order in irc_command[].
+	} elsif (!cexist($cmd)) {
+		echo Can't find command ${cmd}.
+	}
+	@ :last = cmd
+}
+@ :last = []
+
+# Check whether functions are documented.
+echo
+if (fexist($getset(help_path))) {
+	@ :funcs = tolower($getfunctions())
+	fe funcs func {
+		@func = 0 < fsize($globi($getset(help_path)/6*/$func)) ? [] : func
+	}
+	if (#funcs){
+		echo Undocumented functions: $funcs
+	}
+}
+
 echo
 echo
 echo

@@ -1,4 +1,4 @@
-/* $EPIC: server.c,v 1.75 2002/12/02 01:01:59 jnelson Exp $ */
+/* $EPIC: server.c,v 1.76 2002/12/11 19:20:23 crazyed Exp $ */
 /*
  * server.c:  Things dealing with that wacky program we call ircd.
  *
@@ -37,6 +37,7 @@
 #define NEED_SERVER_LIST
 #include "irc.h"
 #include "commands.h"
+#include "functions.h"
 #include "alias.h"
 #include "parse.h"
 #include "server.h"
@@ -2376,6 +2377,8 @@ int	is_nick_command_pending (int servnum)
  */
 void 	fudge_nickname (int servnum)
 {
+const	char	*nicklen_005;
+	int	nicklen;
 	char 	l_nickname[NICKNAME_LEN + 1];
 	Server *s = &server_list[servnum];
 
@@ -2420,7 +2423,11 @@ void 	fudge_nickname (int servnum)
 	 * Process of fudging a nickname:
 	 * If the nickname length is less then 9, add an underscore.
 	 */
-	if (strlen(l_nickname) < 9)
+	nicklen_005 = get_server_005(from_server, "NICKLEN");
+	nicklen = nicklen_005 ? atol(nicklen_005) : 9;
+	nicklen = nicklen > 0 ? nicklen : 9;
+
+	if (strlen(l_nickname) < nicklen)
 		strcat(l_nickname, "_");
 
 	/* 
@@ -2428,18 +2435,17 @@ void 	fudge_nickname (int servnum)
 	 */
 	else
 	{
-		char tmp = l_nickname[8];
-		l_nickname[8] = l_nickname[7]; l_nickname[7] = l_nickname[6];
-		l_nickname[6] = l_nickname[5]; l_nickname[5] = l_nickname[4];
-		l_nickname[4] = l_nickname[3]; l_nickname[3] = l_nickname[2];
-		l_nickname[2] = l_nickname[1]; l_nickname[1] = l_nickname[0];
+		char tmp = l_nickname[nicklen-1];
+		int foo;
+		for (foo = nicklen-1; foo>0; foo--)
+			l_nickname[foo] = l_nickname[foo-1];
 		l_nickname[0] = tmp;
 	}
 
 	/*
 	 * This is the degenerate case
 	 */
-	if (!strcmp(l_nickname, "_________"))
+	if (strspn(l_nickname, "_") >= nicklen)
 	{
 		reset_nickname(servnum);
 		return;
@@ -2724,7 +2730,10 @@ const char *	get_server_sent_body (void)
  */
 void 	server_hard_wait (int i)
 {
-	int	old_from_server;
+	int old_doing_privmsg = doing_privmsg();
+	int old_doing_notice = doing_notice();
+	int old_doing_ctcp = doing_ctcp();
+	int old_from_server = from_server;
 
 	CHECK_SERVER(i)
 
@@ -2737,6 +2746,10 @@ void 	server_hard_wait (int i)
 	send_to_aserver(i, "%s", lame_wait_nick);
 	while (SERVER(i) && (SERVER(i)->waiting_in < SERVER(i)->waiting_out))
 		io("oh_my_wait");
+
+	set_doing_privmsg(old_doing_privmsg);
+	set_doing_notice(old_doing_notice);
+	set_doing_ctcp(old_doing_ctcp);
 	from_server = old_from_server;
 }
 
@@ -2833,7 +2846,7 @@ const char* get_server_005 (int refnum, char *setting)
 	int cnt, loc;
 
 	if (0 > refnum || refnum >= number_of_servers)
-		return empty_string;
+		return NULL;
 	item = (A005_item*)find_array_item((array*)(&server_list[refnum].a005), setting, &cnt, &loc);
 	if (0 > cnt)
 		return ((*item).value);
@@ -2866,6 +2879,7 @@ void set_server_005 (int refnum, char *setting, char *value)
 }
 
 
+#if 0
 #define EMPTY empty_string
 #define EMPTY_STRING m_strdup(EMPTY)
 #define RETURN_EMPTY return m_strdup(EMPTY)
@@ -2876,6 +2890,7 @@ void set_server_005 (int refnum, char *setting, char *value)
 #define RETURN_MSTR(x) return ((x) ? (x) : EMPTY_STRING);
 #define RETURN_STR(x) return m_strdup((x) ? (x) : EMPTY)
 #define RETURN_INT(x) return m_strdup(ltoa((x)))
+#endif
 
 /* Used by function_serverctl */
 /*

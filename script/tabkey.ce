@@ -63,12 +63,12 @@ alias tabkey {
 	@ :word = mid($wordind ${curpos()-wordind} $L)
 	@ :matches = []
 	if (!index($cmdchars $L)) {
-		wait for @ matches = tabkey.cmd($word)
+		wait for @ :matches = tabkey.cmd($word)
 	} else {
 		wait for @ :matches = tabkey.default($word)
 	}
 	@ :prefix = prefix($matches)
-	@ :prefix = 2 > #prefix ? prefix : ["$prefix"]
+	@ :prefix = 0 > index("$chr($jot(32 1))" $prefix) ? prefix : ["$prefix"]
 	if (1 < numwords($matches) && word == prefix) {
 		echo Completions for \"$word\": $matches
 	} elsif (#matches && strlen($word) <= strlen($prefix)) {

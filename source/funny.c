@@ -1,4 +1,4 @@
-/* $EPIC: funny.c,v 1.7 2002/07/17 22:52:52 jnelson Exp $ */
+/* $EPIC: funny.c,v 1.8 2002/12/11 19:20:23 crazyed Exp $ */
 /*
  * funny.c: Handles the /LIST and /NAMES replies.  Also deals with the
  * /NAMES and /MODE replies that we have automatically sent to us when
@@ -403,7 +403,7 @@ void	update_user_mode (char *modes)
 			int 	c = *modes;
 
 			idx = ccspan(p_umodes, c);
-			if (p_umodes[idx] == 0)
+			if (p_umodes && p_umodes[idx] == 0)
 				yell("WARNING: Invalid user mode %c referenced on server %d",
 						*modes, last_server);
 			else

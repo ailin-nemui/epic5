@@ -1,4 +1,4 @@
-/* $EPIC: ircaux.c,v 1.56 2002/11/26 23:03:13 jnelson Exp $ */
+/* $EPIC: ircaux.c,v 1.57 2002/12/11 19:20:23 crazyed Exp $ */
 /*
  * ircaux.c: some extra routines... not specific to irc... that I needed 
  *
@@ -152,7 +152,7 @@ void *	really_new_malloc (size_t size, char *fn, int line)
 	char	*ptr;
 
 	if (!(ptr = (char *)malloc(size + sizeof(MO))))
-		panic("Malloc() failed, giving up!");
+		panic("Malloc() failed from [%s/%d], giving up!", fn, line);
 
 	/* Store the size of the allocation in the buffer. */
 	ptr += sizeof(MO);
@@ -250,6 +250,8 @@ void *	really_new_free(void **ptr, char *fn, int line)
 /* really_new_malloc in disguise */
 void *	really_new_realloc (void **ptr, size_t size, char *fn, int line)
 {
+	void *newptr = NULL;
+
 	if (!size) 
 		*ptr = really_new_free(ptr, fn, line);
 	else if (!*ptr)
@@ -260,8 +262,13 @@ void *	really_new_realloc (void **ptr, size_t size, char *fn, int line)
 		fatal_malloc_check(*ptr, NULL, fn, line);
 
 		/* Copy everything, including the MO buffer */
-		if (!(*ptr = (char *)realloc(mo_ptr(*ptr), size + sizeof(MO))))
-			panic("realloc() failed, giving up!");
+		if ((newptr = (char *)realloc(mo_ptr(*ptr), size + sizeof(MO))))
+		{
+			*ptr = newptr;
+		} else {
+			new_free(ptr);
+			panic("realloc() failed from [%s/%d], giving up!", fn, line);
+		}
 
 		/* Re-initalize the MO buffer; magic(*ptr) is already set. */
 		*ptr = (void *)((char *)*ptr + sizeof(MO));
@@ -1628,6 +1635,10 @@ char*	exec_pipe (char *executable, char *input, size_t *len, char**args)
 	case -1:
 		yell("Cannot fork for %s: %s", 
 				executable, strerror(errno));
+		close(pipe0[0]);
+		close(pipe0[1]);
+		close(pipe1[0]);
+		close(pipe1[1]);
 		return ret;
 	case 0:
 		dup2(pipe0[0], 0);
@@ -1696,6 +1707,95 @@ char*	exec_pipe (char *executable, char *input, size_t *len, char**args)
 	}
 	*len = rdpos;
 	return ret;
+}
+
+/*
+ * exec() something and return three FILE's.
+ *
+ * On failure, close everything and return NULL.
+ */
+FILE **	open_exec (char *executable, char **args)
+{
+static	FILE *	file_pointers[3];
+	int 	pipe0[2] = {-1, -1};
+	int 	pipe1[2] = {-1, -1};
+	int 	pipe2[2] = {-1, -1};
+
+	if (pipe(pipe0) == -1 || pipe(pipe1) == -1 || pipe(pipe2) == -1)
+	{
+		yell("Cannot open exec pipes: %s\n", strerror(errno));
+		close(pipe0[0]);
+		close(pipe0[1]);
+		close(pipe1[0]);
+		close(pipe1[1]);
+		close(pipe2[0]);
+		close(pipe2[1]);
+		return NULL;
+	}
+
+	switch (fork())
+	{
+		case -1:
+		{
+			yell("Cannot fork for exec: %s\n", 
+					strerror(errno));
+			close(pipe0[0]);
+			close(pipe0[1]);
+			close(pipe1[0]);
+			close(pipe1[1]);
+			close(pipe2[0]);
+			close(pipe2[1]);
+			return NULL;
+		}
+		case 0:
+		{
+			dup2(pipe0[0], 0);
+			dup2(pipe1[1], 1);
+			dup2(pipe2[1], 2);
+			close(pipe0[1]);
+			close(pipe1[0]);
+			close(pipe2[0]);
+			setuid(getuid());
+			setgid(getgid());
+			execvp(executable, args);
+			_exit(0);
+		}
+		default :
+		{
+			close(pipe0[0]);
+			close(pipe1[1]);
+			close(pipe2[1]);
+			if (!(file_pointers[0] = fdopen(pipe0[1], "w")))
+			{
+				yell("Cannot open exec STDIN: %s\n", 
+						strerror(errno));
+				close(pipe0[1]);
+				close(pipe1[0]);
+				close(pipe2[0]);
+				return NULL;
+			}
+			if (!(file_pointers[1] = fdopen(pipe1[0], "r")))
+			{
+				yell("Cannot open exec STDOUT: %s\n", 
+						strerror(errno));
+				fclose(file_pointers[0]);
+				close(pipe1[0]);
+				close(pipe2[0]);
+				return NULL;
+			}
+			if (!(file_pointers[2] = fdopen(pipe2[0], "r")))
+			{
+				yell("Cannot open exec STDERR: %s\n", 
+						strerror(errno));
+				fclose(file_pointers[0]);
+				fclose(file_pointers[1]);
+				close(pipe2[0]);
+				return NULL;
+			}
+			break;
+		}
+	}
+	return file_pointers;
 }
 
 static FILE *	open_compression (char *executable, char *filename)
@@ -3624,6 +3724,99 @@ char *	urldecode (char *s, size_t *length)
 	if (length)
 		*length = p2 - retval;
 	return memcpy(s, retval, p2 - retval + 1);
+}
+
+/*
+ * quote_it: This quotes the given string making it sendable via irc.  A
+ * pointer to the length of the data is required and the data need not be
+ * null terminated (it can contain nulls).  Returned is a malloced, null
+ * terminated string.
+ */
+char	*enquote_it (char *str, size_t len)
+{
+	char	buffer[BIG_BUFFER_SIZE + 1];
+	char	*ptr;
+	int	i;
+
+	ptr = buffer;
+	for (i = 0; i < len; i++)
+	{
+		switch (str[i])
+		{
+			case CTCP_DELIM_CHAR:	*ptr++ = CTCP_QUOTE_CHAR;
+						*ptr++ = 'a';
+						break;
+			case '\n':		*ptr++ = CTCP_QUOTE_CHAR;
+						*ptr++ = 'n';
+						break;
+			case '\r':		*ptr++ = CTCP_QUOTE_CHAR;
+						*ptr++ = 'r';
+						break;
+			case CTCP_QUOTE_CHAR:	*ptr++ = CTCP_QUOTE_CHAR;
+						*ptr++ = CTCP_QUOTE_CHAR;
+						break;
+			case '\0':		*ptr++ = CTCP_QUOTE_CHAR;
+						*ptr++ = '0';
+						break;
+			default:		*ptr++ = str[i];
+						break;
+		}
+	}
+	*ptr = '\0';
+	return m_strdup(buffer);
+}
+
+/*
+ * ctcp_unquote_it: This takes a null terminated string that had previously
+ * been quoted using ctcp_quote_it and unquotes it.  Returned is a malloced
+ * space pointing to the unquoted string.  NOTE: a trailing null is added for
+ * convenied, but the returned data may contain nulls!.  The len is modified
+ * to contain the size of the data returned. 
+ */
+char	*dequote_it (char *str, size_t *len)
+{
+	char	*buffer;
+	char	*ptr;
+	char	c;
+	int	i,
+		new_size = 0;
+
+	buffer = (char *) new_malloc(sizeof(char) * *len + 1);
+	ptr = buffer;
+	i = 0;
+	while (i < *len)
+	{
+		if ((c = str[i++]) == CTCP_QUOTE_CHAR)
+		{
+			switch (c = str[i++])
+			{
+				case CTCP_QUOTE_CHAR:
+					*ptr++ = CTCP_QUOTE_CHAR;
+					break;
+				case 'a':
+					*ptr++ = CTCP_DELIM_CHAR;
+					break;
+				case 'n':
+					*ptr++ = '\n';
+					break;
+				case 'r':
+					*ptr++ = '\r';
+					break;
+				case '0':
+					*ptr++ = '\0';
+					break;
+				default:
+					*ptr++ = c;
+					break;
+			}
+		}
+		else
+			*ptr++ = c;
+		new_size++;
+	}
+	*ptr = '\0';
+	*len = new_size;
+	return (buffer);
 }
 
 unsigned char isspace_table [256] = 

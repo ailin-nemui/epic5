@@ -1,4 +1,4 @@
-/* $EPIC: exec.c,v 1.10 2002/11/08 23:36:12 jnelson Exp $ */
+/* $EPIC: exec.c,v 1.11 2002/12/11 19:20:23 crazyed Exp $ */
 /*
  * exec.c: handles exec'd process for IRCII 
  *
@@ -93,6 +93,7 @@ static	int	process_list_size = 0;
 static 	void 	handle_filedesc 	(Process *, int *, int, int);
 static 	void 	cleanup_dead_processes 	(void);
 static 	void 	ignore_process 		(int index);
+static 	void 	close_in		(int index);
 static 	void 	kill_process 		(int, int);
 static 	void 	kill_all_processes 	(int signo);
 static 	int 	valid_process_index 	(int proccess);
@@ -288,6 +289,19 @@ BUILT_IN_COMMAND(execcmd)
 				return;
 
 			ignore_process(i);
+			return;
+		}
+
+		/*
+		 * /EXEC -CLOSEIN close the processes STDIN,
+		 * in the hope that it will take the hint.
+		 */
+		else if (my_strnicmp(flag, "CLOSEIN", len) == 0)
+		{
+			if ((i = get_process_index(&args)) == -1)
+				return;
+
+			close_in(i);
 			return;
 		}
 
@@ -897,6 +911,7 @@ void 		clean_up_processes (void)
 		say("Closing all left over exec's");
 		kill_all_processes(SIGTERM);
 		sleep(2);
+		get_child_exit(-1);
 		kill_all_processes(SIGKILL);
 	}
 }
@@ -1134,6 +1149,23 @@ static void 	ignore_process (int index)
 		proc->p_stderr = new_close(proc->p_stderr);
 
 	proc->dumb = 1;
+}
+
+/*
+ * close_in:  When we are finished with the process but still want the
+ * rest of its output, we close its input, and hopefully it will get the
+ * message and close up shop.
+ */
+static void 	close_in (int index)
+{
+	Process *proc;
+
+	if (valid_process_index(index) == 0)
+		return;
+
+	proc = process_list[index];
+	if (proc->p_stdin != -1)
+		proc->p_stdin = new_close(proc->p_stdin);
 }
 
 

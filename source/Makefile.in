@@ -17,7 +17,7 @@ OBJECTS = alias.o alist.o array.o commands.o compat.o crypt.o ctcp.o \
 	ircsig.o keys.o lastlog.o list.o log.o logfiles.o mail.o names.o network.o \
 	newio.o notice.o notify.o numbers.o output.o parse.o queue.o reg.o \
 	screen.o server.o ssl.o status.o term.o timer.o translat.o vars.o who.o \
-	window.o words.o @PERLDOTOH@ @ALLOCA@
+	window.o words.o @PERLDOTOH@ @TCLDOTOH@ @ALLOCA@
 
 INCLUDES = -I@srcdir@/../include -I../include
 
@@ -72,6 +72,9 @@ vars.o: Makefile ../Makefile
 
 perl.o: perl.c Makefile ../Makefile
 	$(CC) $(CFLAGS) $(ansiflags) $(INCLUDES) -c perl.c `perl -MExtUtils::Embed -e ccopts`
+
+tcl.o: tcl.c Makefile ../Makefile
+	$(CC) $(CFLAGS) $(ansiflags) $(INCLUDES) -c tcl.c -I/usr/include/tcl8.3
 
 
 #

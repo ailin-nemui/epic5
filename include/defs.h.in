@@ -179,9 +179,10 @@
 #undef Rselect
 
 /*
- *  Perl support.
+ *  Language support.
  */
 #undef PERL
+#undef TCL
 
 /* Define this if you have setsid() */
 #undef HAVE_SETSID

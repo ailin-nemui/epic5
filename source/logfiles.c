@@ -1,4 +1,4 @@
-/* $EPIC: logfiles.c,v 1.10 2002/11/28 00:17:09 jnelson Exp $ */
+/* $EPIC: logfiles.c,v 1.11 2002/12/11 19:20:23 crazyed Exp $ */
 /*
  * logfiles.c - General purpose log files
  *
@@ -39,6 +39,7 @@
 #include "list.h"
 #include "server.h"
 #include "window.h"
+#include "functions.h"
 
 #define MAX_TARGETS 32
 
@@ -708,6 +709,7 @@ void	add_to_logs (int winref, int servref, const char *target, int level, const 
 }
 
 /*****************************************************************************/
+#if 0
 #define EMPTY empty_string
 #define EMPTY_STRING m_strdup(EMPTY)
 #define RETURN_EMPTY return m_strdup(EMPTY)
@@ -718,6 +720,7 @@ void	add_to_logs (int winref, int servref, const char *target, int level, const 
 #define RETURN_MSTR(x) return ((x) ? (x) : EMPTY_STRING);
 #define RETURN_STR(x) return m_strdup((x) ? (x) : EMPTY)
 #define RETURN_INT(x) return m_strdup(ltoa((x)))
+#endif
 
 /* Used by function_logctl */
 /*

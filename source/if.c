@@ -1,4 +1,4 @@
-/* $EPIC: if.c,v 1.14 2002/08/26 17:20:14 crazyed Exp $ */
+/* $EPIC: if.c,v 1.15 2002/12/11 19:20:23 crazyed Exp $ */
 /*
  * if.c: the IF, WHILE, FOREACH, DO, FE, FEC, and FOR commands for IRCII 
  *
@@ -434,7 +434,7 @@ BUILT_IN_COMMAND(fe)
 	if (!subargs)
 		subargs = empty_string;
 
-	if (isalnum(*args)) {
+	if (*args == ':' || isalnum(*args)) {
 		mapvar = next_arg(args, &args);
 		templist = get_variable(mapvar);
 	} else if ((list = next_expr(&args, '('))) {

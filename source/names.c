@@ -1,4 +1,4 @@
-/* $EPIC: names.c,v 1.33 2002/11/08 23:36:12 jnelson Exp $ */
+/* $EPIC: names.c,v 1.34 2002/12/11 19:20:23 crazyed Exp $ */
 /*
  * names.c: This here is used to maintain a list of all the people currently
  * on your channel.  Seems to work 
@@ -620,7 +620,7 @@ const	char	*prefix;
 	if (prefix && *prefix == '(' && (prefix = strchr(prefix, ')')))
 		prefix++;
 	if (!prefix || !*prefix)
-		prefix = "@+";
+		prefix = "@%+";
 
 	/* 
 	 * This is defensive just in case someone in the future
@@ -965,48 +965,28 @@ static char *	get_cmode (Channel *chan)
 int	chanmodetype (char mode)
 {
 const	char	*chanmodes, *prefix;
-static	char	*ochanmodes, *oprefix;
-static	int	initialised = 0;
-static	char	modemap[256];
-	char	modetype = 1;
+	char	modetype = 3;
+
+	if (strchr("+-", mode))
+		return 1;
 
 	prefix = get_server_005(from_server, "PREFIX");
-	chanmodes = get_server_005(from_server, "CHANMODES");
-
-	/*
-	 * This whole paragraph can be blown away if necessary as it is
-	 * only here to prevent us having to continue on with what is
-	 * presumably the more complicated, slower stuff.
-	 */
-	if (!initialised)
-		initialised++;
-	else if (!prefix != !oprefix || !chanmodes != !ochanmodes);
-	else if (prefix && oprefix && strcmp(prefix, oprefix));
-	else if (chanmodes && ochanmodes && strcmp(chanmodes, ochanmodes));
-	else return modemap[(int)mode];
-	malloc_strcpy(&oprefix, prefix);
-	malloc_strcpy(&ochanmodes, chanmodes);
-
-	/* There is a not insignificant performance hit for this */
-	memset(modemap,0,sizeof(modemap));
-
-	modemap['+'] = modemap['-'] = modetype++;
-
 	if (!prefix || *prefix++ != '(')
 		prefix = "ohv";
 	for (; *prefix && *prefix != ')'; prefix++)
-		modemap[(int)*prefix] = modetype;
-	modetype++;
+		if (*prefix == mode)
+			return 2;
 
+	chanmodes = get_server_005(from_server, "CHANMODES");
 	if (!chanmodes)
 		chanmodes = "b,k,l,imnpst";
 	for (; *chanmodes; chanmodes++)
 		if (*chanmodes == ',')
 			modetype++;
-		else
-			modemap[(int)*chanmodes] = modetype;
+		else if (*chanmodes == mode)
+			return modetype;
 
-	return modemap[(int)mode];
+	return 0;
 }
 
 /*

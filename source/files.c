@@ -1,4 +1,4 @@
-/* $EPIC: files.c,v 1.15 2002/10/21 15:21:43 jnelson Exp $ */
+/* $EPIC: files.c,v 1.16 2002/12/11 19:20:23 crazyed Exp $ */
 /*
  * files.c -- allows you to read/write files. Wow.
  *
@@ -141,6 +141,30 @@ int open_file_for_write (char *filename)
 		return -1;
 }
 
+int* open_exec_for_in_out_err (char *filename, char **args)
+{
+	Filename expand;
+	FILE **files;
+static	int ret[3];
+
+	if (normalize_filename(filename, expand))
+		strlcpy(expand, filename, sizeof(expand));
+
+	if ((files = open_exec(filename, args)))
+	{
+		int foo;
+		for (foo = 0; foo < 3; foo++) {
+			File *nfs = new_file();
+			nfs->file = files[foo];
+			nfs->next = (File *) 0;
+			ret[foo] = fileno(files[foo]);
+		}
+		return ret;
+	}
+	else 
+		return NULL;
+}
+
 static File *lookup_file (int fd)
 {
 	File *ptr = FtopEntry;
@@ -231,6 +255,8 @@ char *file_read (int fd)
 		size_t	len = 0;
 		size_t	newlen = 0;
 
+		clearerr(ptr->file);
+
 		for (;;)
 		{
 		    newlen += 4096;
@@ -261,9 +287,12 @@ char *file_readb (int fd, int numb)
 	else
 	{
 		char *blah = (char *)new_malloc(numb+1);
-		fread(blah, 1, numb, ptr->file);
-		blah[numb] = 0;
-		return blah;
+		char *bleh = NULL;
+		clearerr(ptr->file);
+		numb = fread(blah, 1, numb, ptr->file);
+		bleh = enquote_it(blah, numb);
+		new_free(&blah);
+		return bleh;
 	}
 }
 

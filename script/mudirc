@@ -35,15 +35,12 @@ alias mud {
 alias c_mud {
         @ keyw = [$0]
         @ mudcon = mudcon + 1
-        if (mudcon == 5)
-        {
+        if (mudcon > 4) {
                 @ mudcon = mudcon - 1
                 echo *** Too many muds open (limit of 4)
-        }
-        {
+        } elsif (fd = mud[$encode($0)][fd] = connect($1 $2)) {
                 window new name $keyw level NONE
 
-		@ fd = mud[$encode($0)][fd] = connect($1 $2)
 		^on ^dcc_raw "$fd % d *" \{xecho -w $keyw $$chop($3-)\}
 		^on ^dcc_raw "$fd % c" {
 			on dcc_raw -"$0 % c"

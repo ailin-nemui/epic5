@@ -1,4 +1,4 @@
-/* $EPIC: functions.c,v 1.90 2002/11/20 03:54:08 wd Exp $ */
+/* $EPIC: functions.c,v 1.91 2002/12/11 19:20:23 crazyed Exp $ */
 /*
  * functions.c -- Built-in functions for ircII
  *
@@ -64,6 +64,8 @@
 #include "notify.h"
 #include "numbers.h"
 #include "crypt.h"
+#include "timer.h" /*MaXxX*/
+#include "functions.h"
 #include "options"
 
 #include <sys/stat.h>
@@ -188,6 +190,7 @@ static	char
 	*function_afterw 	(char *),
 	*function_aliasctl	(char *),
 	*function_ascii 	(char *),
+	*function_asciiq 	(char *),
 	*function_before 	(char *),
 	*function_beforew 	(char *),
 	*function_bindctl	(char *),
@@ -202,6 +205,7 @@ static	char
 	*function_chop		(char *),
 	*function_chops 	(char *),
 	*function_chr 		(char *),
+	*function_chrq 		(char *),
 	*function_cipher	(char *),
 	*function_close 	(char *),
 	*function_common 	(char *),
@@ -220,6 +224,7 @@ static	char
 	*function_eof 		(char *),
 	*function_epic		(char *),
 	*function_error		(char *),
+	*function_exec		(char *),
 	*function_exp		(char *),
 	*function_fnexist	(char *),
 	*function_fexist 	(char *),
@@ -359,7 +364,11 @@ static	char
 	*function_substr	(char *),
 	*function_tan		(char *),
 	*function_tanh		(char *),
-	*function_tow 		(char *),
+	*function_timerctl	(char *), /*MaXxX*/
+#ifdef TCL
+	*function_tcl		(char *),
+#endif
+	*function_tow		(char *),
 	*function_translate 	(char *),
 	*function_truncate 	(char *),
 	*function_ttyname	(char *),
@@ -378,6 +387,7 @@ static	char
 	*function_winchan	(char *),
 	*function_wincurline	(char *),
 	*function_winlevel	(char *),
+	*function_winline	(char *),
 	*function_winnames	(char *),
 	*function_winrefs	(char *),
 	*function_winsbsize	(char *),
@@ -396,6 +406,7 @@ extern char
 	*function_pop		(char *),
 	*function_shift		(char *),
 	*function_unshift	(char *),
+	*function_floodinfo	(char *),
 	*function_xdebug	(char *);
 
 typedef char *(bf) (char *);
@@ -420,7 +431,8 @@ static BuiltInFunctions	built_in_functions[] =
 	{ "AFTER",              function_after 		},
 	{ "AFTERW",             function_afterw 	},
 	{ "ALIASCTL",		function_aliasctl	},
-	{ "ASCII",              function_ascii 		},
+	{ "ASCII",		function_ascii 		},
+	{ "ASCIIQ",		function_asciiq 	},
 	{ "ASIN",		function_asin		},
 	{ "ASINH",		function_asinh		},
 	{ "ATAN",		function_atan		},
@@ -440,7 +452,8 @@ static BuiltInFunctions	built_in_functions[] =
 	{ "CHNGW",              function_chngw 		},
 	{ "CHOP",		function_chop		},
 	{ "CHOPS",              function_chops 		},
-	{ "CHR",                function_chr 		},
+	{ "CHR",		function_chr 		},
+	{ "CHRQ",		function_chrq 		},
 	{ "CIPHER",		function_cipher		},
 	{ "CLOSE",		function_close 		},
 	{ "COMMON",             function_common 	},
@@ -465,12 +478,14 @@ static BuiltInFunctions	built_in_functions[] =
 	{ "ENCRYPTPARM",	function_encryptparm	},
 	{ "EOF",		function_eof 		},
 	{ "EPIC",		function_epic		},
+	{ "EXEC",		function_exec		},
 	{ "EXP",		function_exp		},
 	{ "FERROR",		function_error		},
 	{ "FEXIST",             function_fexist 	},
 	{ "FILTER",             function_filter 	},
 	{ "FINDITEM",           function_finditem 	},
 	{ "FINDW",		function_findw		},
+	{ "FLOODINFO",		function_floodinfo	},
 	{ "FLOOR",		function_floor		},
 	{ "FNEXIST",		function_fnexist	},
 	{ "FREWIND",		function_rewind		},
@@ -575,7 +590,7 @@ static BuiltInFunctions	built_in_functions[] =
 	{ "OPEN",		function_open 		},
 	{ "PAD",		function_pad		},
 	{ "PASS",		function_pass		},
-	{ "PATTERN",            function_pattern 	},
+	{ "PATTERN",		function_pattern	},
 #ifdef PERL
 	{ "PERL",		function_perl		},
 	{ "PERLCALL",		function_perlcall	},
@@ -647,9 +662,13 @@ static BuiltInFunctions	built_in_functions[] =
 	{ "SUBSTR",		function_substr		},
 	{ "TAN",		function_tan		},
 	{ "TANH",		function_tanh		},
+#ifdef TCL
+	{ "TCL",		function_tcl		},
+#endif
 	{ "TDIFF",		function_tdiff 		},
 	{ "TDIFF2",		function_tdiff2 	},
 	{ "TIME",		function_time 		},
+	{ "TIMERCTL",		function_timerctl	}, /*MaXxX*/
 	{ "TOLOWER",		function_tolower 	},
 	{ "TOUPPER",		function_toupper 	},
 	{ "TOW",                function_tow 		},
@@ -676,6 +695,7 @@ static BuiltInFunctions	built_in_functions[] =
 	{ "WINCHAN",		function_winchan	},
 	{ "WINCURSORLINE",	function_wincurline	},
 	{ "WINLEVEL",		function_winlevel	},
+	{ "WINLINE",		function_winline	},
 	{ "WINNAM",		function_winnam 	},
 	{ "WINNICKLIST",	function_winnames	},
 	{ "WINNUM",		function_winnum 	},
@@ -732,11 +752,9 @@ char	*call_function (char *name, const char *args, int *args_flag)
 	char	*debug_copy = (char *) 0;
 	int	cnt, pos;
 	char	*lparen, *rparen;
-	int	debugging = 0;
+	int	debugging;
 
-	debugging = 1;
-	if (get_int_var(DEBUG_VAR) & DEBUG_FUNCTIONS)
-		debugging = 2;
+	debugging = get_int_var(DEBUG_VAR);
 
 	if ((lparen = strchr(name, '(')))
 	{
@@ -770,7 +788,7 @@ char	*call_function (char *name, const char *args, int *args_flag)
 		sprintf(buf, "$%s(%s)", name, debug_copy);
 		MUST_BE_MALLOCED(result, buf);
 
-		if (debugging == 2)
+		if (debugging & DEBUG_FUNCTIONS)
 			yell("Function %s(%s) returned %s", 
 				name, debug_copy, result);
 	}
@@ -902,38 +920,6 @@ static	char	*alias_server_version  (void)
 	optimization reasons, and also to further distance ircii's code
 	from EPIC.
  *	*	*	*	*	*	*	*	*	*/
-
-/* 
- * These are defined to make the construction of the built-in functions
- * easier and less prone to bugs and unexpected behaviors.  As long as
- * you consistently use these macros to do the dirty work for you, you
- * will never have to do bounds checking as the macros do that for you. >;-) 
- *
- * Yes, i realize it makes the code slightly less efficient, but i feel that 
- * the cost is minimal compared to how much time i have spent over the last 
- * year debugging these functions and the fact i wont have to again. ;-)
- */
-#define EMPTY empty_string
-#define EMPTY_STRING m_strdup(EMPTY)
-#define RETURN_EMPTY return EMPTY_STRING
-#define RETURN_IF_EMPTY(x) if (empty( (x) )) RETURN_EMPTY
-#define GET_INT_ARG(x, y) {RETURN_IF_EMPTY((y)); x = my_atol(safe_new_next_arg((y), &(y)));}
-#define GET_FLOAT_ARG(x, y) {RETURN_IF_EMPTY((y)); x = atof(safe_new_next_arg((y), &(y)));}
-#define GET_STR_ARG(x, y) {RETURN_IF_EMPTY((y)); x = new_next_arg((y), &(y));RETURN_IF_EMPTY((x));}
-#define RETURN_MSTR(x) return ((x) ? (x) : EMPTY_STRING);
-#define RETURN_STR(x) return m_strdup((x) ? (x) : EMPTY)
-#define RETURN_INT(x) return m_strdup(ltoa((x)))
-#define RETURN_FLOAT(x) return m_sprintf("%.50g", (double) (x))
-
-/*
- * XXXX REALLY REALLY REALLY REALLY REALLY REALLY REALLY IMPORTANT! XXXX
- *
- * Don't ever Ever EVER pass a function call to the RETURN_* macros.
- * They _WILL_ evaluate the term twice, and for some function calls, 
- * that can result in a memory leak, or worse.
- */
-
-#define BUILT_IN_FUNCTION(x, y) static char * x (char * y)
 
 /*
  * Usage: $left(number text)
@@ -1211,12 +1197,9 @@ BUILT_IN_FUNCTION(function_match, input)
 
 	GET_STR_ARG(pattern, input);
 
-	while (input && *input)
+	while ((word = new_next_arg(input, &input)))
 	{
-		while (input && my_isspace(*input))
-			input++;
 		match_index++;
-		GET_STR_ARG(word, input);
 		if ((current_match = wild_match(pattern, word)) > best_match)
 		{
 			match = match_index;
@@ -1245,20 +1228,19 @@ BUILT_IN_FUNCTION(function_rmatch, input)
 
 	GET_STR_ARG(word, input);
 
-	while (input && *input)
+	while ((pattern = new_next_arg(input, &input)))
 	{
-		while (input && my_isspace(*input))
-			input++;
 		rmatch_index++;
-		GET_STR_ARG(pattern, input);
 		if ((current_match = wild_match(pattern, word)) > best_match)
 		{
 			match = rmatch_index;
 			best_match = current_match;
 		}
+#if 0
 		/* WARNING WARNING HACK IN PROGRESS WARNING WARNING */
 		while (input && my_isspace(*input))
 			input++;
+#endif
 	}
 
 	RETURN_INT(match);
@@ -2548,7 +2530,7 @@ char *function_push (char *word)
 	GET_STR_ARG(var, word);
 	upper(var);
 	value = get_variable(var);
-	m_s3cat(&value, space, word);
+	m_s3cat_s(&value, space, word);
 	add_var_alias(var, value, 0);
 	return value;
 }
@@ -2818,6 +2800,25 @@ BUILT_IN_FUNCTION(function_chr, word)
 	RETURN_MSTR(aboo);
 }
 
+BUILT_IN_FUNCTION(function_chrq, word)
+{
+	char *aboo = NULL;
+	char *ack;
+	char *blah;
+
+	aboo = new_malloc(word_count(word) + 1);
+	ack = aboo;
+	
+	while ((blah = next_arg(word, &word)))
+		*ack++ = (char)my_atol(blah);
+
+	*ack = '\0';
+	ack = enquote_it(aboo, ack-aboo);
+	new_free(&aboo);
+
+	RETURN_MSTR(ack);
+}
+
 BUILT_IN_FUNCTION(function_ascii, word)
 {
 	char *aboo = NULL;
@@ -2826,9 +2827,27 @@ BUILT_IN_FUNCTION(function_ascii, word)
 	if (!word || !*word)
 		RETURN_EMPTY;
 
-	aboo = m_strdup(ltoa((long)(unsigned char)*word));
-	while (*++word)
-		m_c3cat(&aboo, space, ltoa((long)(unsigned char)*word), &rvclue);
+	for (; *word; ++word)
+		m_sc3cat_s(&aboo, space, ltoa((long)(unsigned char)*word), &rvclue);
+
+	return aboo;
+}
+
+BUILT_IN_FUNCTION(function_asciiq, word)
+{
+	char	*aboo = NULL, *free;
+	size_t	rvclue=0;
+	size_t	len = strlen(word);
+
+	if (!word || !*word)
+		RETURN_EMPTY;
+
+	free = word = dequote_it(word, &len);
+
+	for (; 0 < len--; word++)
+		m_sc3cat_s(&aboo, space, ltoa((long)(unsigned char)*word), &rvclue);
+
+	new_free(&free);
 
 	return aboo;
 }
@@ -3109,12 +3128,10 @@ BUILT_IN_FUNCTION(function_rename, words)
 	Filename expanded2;
 
 	GET_STR_ARG(filename1, words)
-	if (normalize_filename(filename1, expanded1))
-		RETURN_INT(-1);
+	normalize_filename(filename1, expanded1);
 
 	GET_STR_ARG(filename2, words)
-	if (normalize_filename(filename2, expanded2))
-		RETURN_INT(-1);
+	normalize_filename(filename2, expanded2);
 
 	RETURN_INT(rename(expanded1, expanded2));
 }
@@ -3382,6 +3399,14 @@ BUILT_IN_FUNCTION(function_aliasctl, input)
 	extern char *aliasctl (char *);
 	return aliasctl(input);
 }
+
+/*MaXxX>*/
+BUILT_IN_FUNCTION(function_timerctl, input)
+{
+	extern char *timerctl (char *);
+	return timerctl(input);
+}
+/*<MaXxX*/
 
 /* 
  * Next two contributed by Scott H Kilau (sheik), who for some reason doesnt 
@@ -3684,8 +3709,8 @@ BUILT_IN_FUNCTION(function_glob, word)
 	while (word && *word)
 	{
 		GET_STR_ARG(path, word);
-		if (normalize_filename(path, path2))
-			strlcpy(path2, path, sizeof(path2));
+		normalize_filename(path, path2);
+		strlcpy(path2, path, sizeof(path2));
 
 		if ((numglobs = glob(path2, GLOB_MARK, NULL, &globbers)) < 0)
 			RETURN_INT(numglobs);
@@ -3721,8 +3746,8 @@ BUILT_IN_FUNCTION(function_globi, word)
 	while (word && *word)
 	{
 		GET_STR_ARG(path, word);
-		if (normalize_filename(path, path2))
-			strlcpy(path2, path, sizeof(path2));
+		normalize_filename(path, path2);
+		strlcpy(path2, path, sizeof(path2));
 
 		if ((numglobs = bsd_glob(path2, GLOB_MARK | GLOB_INSENSITIVE, 
 					NULL, &globbers)) < 0)
@@ -3754,9 +3779,8 @@ BUILT_IN_FUNCTION(function_mkdir, words)
 
 	while (words && *words)
 	{
-		if (normalize_filename(new_next_arg(words, &words), expanded))
-			failure++;
-		else if (mkdir(expanded, 0777))
+		normalize_filename(new_next_arg(words, &words), expanded);
+		if (mkdir(expanded, 0777))
 			failure++;
 	}
 
@@ -6154,6 +6178,28 @@ BUILT_IN_FUNCTION(function_wincurline, input)
 	RETURN_INT(winp->cursor);
 }
 
+BUILT_IN_FUNCTION(function_winline, input)
+{
+	Window	*Win;
+	Display	*Line;
+	int	line;
+
+	GET_INT_ARG(line, input);
+	if (!(Win = *input ? get_window_by_desc(input) : current_window))
+		RETURN_INT(-1);
+
+	Line = Win->top_of_display;
+	for (; line > 0 && Line; line--)
+		Line = Line->next;
+
+	if (Line && Line->line) {
+		char *ret = denormalize_string(Line->line);
+		RETURN_MSTR(ret);
+	}
+	else 
+		RETURN_EMPTY;
+}
+
 /*
  * These four functions contributed by 
  * B. Thomas Frazier (tfrazier@mjolnir.gisystems.net)
@@ -6336,6 +6382,16 @@ BUILT_IN_FUNCTION(function_perlxcall, input)
 
 #endif
 
+#ifdef TCL
+
+BUILT_IN_FUNCTION(function_tcl, input)
+{
+	extern char* tcleval ( char* );
+	return tcleval ( input );
+}
+
+#endif
+
 BUILT_IN_FUNCTION(function_unsplit, input)
 {
 	char *	sep;
@@ -6464,6 +6520,30 @@ BUILT_IN_FUNCTION(function_joinstr, input)
 	return retval;
 }
 
+BUILT_IN_FUNCTION(function_exec, input)
+{
+	char	*ret = NULL, **args = NULL;
+	int	count, *fds, foo;
+	size_t	clue = 0;
+
+	RETURN_IF_EMPTY(input);
+	count = splitw(input, &args);
+	RESIZE(args, void *, count+1);
+	args[count] = NULL;
+
+	if (!count || !args)
+		RETURN_EMPTY;
+
+	fds = open_exec_for_in_out_err(args[0], args);
+	new_free(&args);
+
+	if (fds)
+		for (foo = 0; foo < 3; foo++)
+			m_sc3cat_s(&ret, space, ltoa(fds[foo]), &clue);
+
+	RETURN_MSTR(ret);
+}
+
 /*
  * getserial function:
  * arguments: <type> [...]
@@ -6496,4 +6576,3 @@ BUILT_IN_FUNCTION(function_getserial, input) {
 
     RETURN_EMPTY;
 }
-

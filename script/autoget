@@ -7,33 +7,95 @@
 #	pattern.
 # You can mix and match <pattern>s and -<pattern>s.
 #
+# New:  Patterns will now be matched against nick!user@host,IP,file.
+#       This shouldn't really be incompatible unless you autoget
+#       files begining with specific names.
+# New:  /autoreget acts much the same as /autoget, but the patterns apply
+#       to requests for which the file already exists.
+#       /autoclobber takes one argument and specifies the reget mode.
+#       This can be one of GET, RESUME, RENAME.  For RENAME,
+#       a random string will be appended to the filename.
+# Note: All commas in the filename are replaced with dots for the purpose
+#       of matching to make it harder for people to accidentally or
+#       purposely bypass well written masks by sending you specific
+#       filenames.  Nevertheless, this isn't really a safe authentication
+#       method.
+#
+# Note: If the sender (an fserv perhaps) sends elaborate messages before
+#       the transfer begins and NO_CTCP_FLOOD is on (it is on by
+#       default), the ctcp flood protection mechanism can be triggered
+#       and the transfer can fail to start.  It may be better for you
+#       to turn this feature off and make other flood protection
+#       arrangements.
+#
 package autoget
-@ autoget_patterns = [ ]
+@ autoget.getpatterns = [ ]
+@ autoget.regetpatterns = [ ]
+@ autoget.regettype = [resume]
 
 on #-dcc_request 414 "% SEND *" {
-	if (rmatch($2 $autoget_patterns)) {
-		dcc get $0 $2
+	@ :path = [$getset(dcc_store_path)/$2]
+	if ([$6] <= fsize($path)) {
+		@ :patterns = autoget.regetpatterns
+		@ :action = [rename]
+	} elsif (0 < fexist($path)) {
+		@ :patterns = autoget.regetpatterns
+		@ :action = autoget.regettype
+	} else {
+		@ :patterns = autoget.getpatterns
+		@ :action = [get]
+	}
+	if (rmatch($0!$userhost(),$3,$tr(/,/./$2) $autoget.rejectpatterns)) {
+		# Nothing.
+	} elsif (rmatch($0!$userhost(),$3,$tr(/,/./$2) $patterns)) {
+		if (action == [rename]) {
+			@ :extra = 0
+			do {
+				@ extra += rand(10)
+			} while (0 < fexist($path~$extra))
+			@ rename($path $path~$extra)
+			@ action = [get]
+		}
+		dcc $action $0 $2
 	}
 }
 
-alias autoget {
+alias alias fe (get reget reject) cmd {//alias $sar(g/XXX/$cmd/$*)}
+alias autoXXX {
 	if (strlen($*) == 0) {
-		xecho -b Autogetting files matching [$autoget_patterns]
+		xecho -b AutoXXX n!u@h,IP,files matching [$autoget.XXXpatterns]
 		return
 	}
 	fe ($*) x {
 		if (left(1 $x) == [-]) {
 			@ x = rest(1 $x)
-			@ autoget_patterns = remw($x $autoget_patterns)
+			@ autoget.XXXpatterns = remw($x $autoget.XXXpatterns)
 		} {
-			push autoget_patterns $x
+			push autoget.XXXpatterns $x
 		}
 	}
 }
- 
+//alias -alias
+
+alias autoclobber {
+	if (rmatch($0 get rename resume)) {
+		@ autoget.regettype = [$0]
+	} elsif (#) {
+		xecho -b Please specify one of: GET RENAME RESUME
+	} else {
+		xecho -b Autoclobber mode is: $autoget.regettype
+	}
+}
+
 on ^unload "autoget" {
-	^assign -autoget_patterns
+	^assign -autoget.getpatterns
+	^assign -autoget.regetpatterns
+	^assign -autoget.regettype
+	^assign -autoget.rejectpatterns
 	^alias -autoget
+	^alias -autoreget
+	^alias -autoreject
+	^alias -autoclobber
 	^on #dcc_request 414 -"% SEND *"
 }
 

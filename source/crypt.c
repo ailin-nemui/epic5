@@ -1,4 +1,4 @@
-/* $EPIC: crypt.c,v 1.8 2002/07/17 22:52:52 jnelson Exp $ */
+/* $EPIC: crypt.c,v 1.9 2002/12/11 19:20:23 crazyed Exp $ */
 /*
  * crypt.c: handles some encryption of messages stuff. 
  *
@@ -235,11 +235,11 @@ static 	char *do_crypt (char *str, Crypt *key, int flag)
 			free = str = (char*)prog_crypt(str, &c, key, flag);
 		else
 			my_encrypt(str, c, key->key);
-		str = ctcp_quote_it(str, c);
+		str = enquote_it(str, c);
 	}
 	else
 	{
-		str = ctcp_unquote_it(str, &c);
+		str = dequote_it(str, &c);
 		if (key->prog)
 			str = (char*)prog_crypt(free = str, &c, key, flag);
 		else

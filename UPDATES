@@ -1,5 +1,144 @@
 EPIC4-1.2.0
 
+*** News 12/11/2002 -- Nick fudger now uses NICKLEN 005.
+
+*** News 12/11/2002 -- /on DCC_RAW mask change
+	The remote-port field of this hook in the "connection accepted"
+	mode (where field 2 is "N") has changed.  Field 3 is now the
+	_local_ port rather than the remote.  This probably won't be a
+	problem for anyone, since the remote port is rather useless
+	information on its own, and examination of some popular scripts
+	bears this out.
+
+	If this _is_ causing a problem for you, then you should contact
+	#epic on efnet.
+
+*** News 12/11/2002 -- /exec "-closein %proc" flag - better pipe control.
+	This should make /exec much more useful for things like sort and
+	md5sum which will only start "working" when their input closes.
+
+*** News 12/11/2002 -- /alias arguments list "improvement".
+	The "alias [alias] (arg, arg, args) { [body] }" form of /alias has
+	been changed to work more like the documentation says it does.
+
+	This means that (args words 2) will actually take 2 words from the
+	args list.  In addition, if /xdebug extractw is on, then "double
+	quoted words" will be treated as such too.
+
+	There is a slight performance penalty for this and it can probably
+	be improved.  It would be nice to be able to specify how double
+	quoted words should be treated in the args list too.
+
+*** News 12/11/2002 -- Enhanced autoget script.
+	Autoget has three new commands:  /autoreget, /autoreject and
+	/autoclobber.  The first two take masks for arguments, and the
+	third is used to specify how autoreget will work.
+
+	Also, the masks have changed.  You can still specify *.ext, but
+	the mask will be matched against nick!user@host,IP,file.  This
+	only matters if you currently use file* as a mask, in which case
+	you need to specify *,*,file* or *file* now.
+
+*** News 12/11/2002 -- String length limits on /pretend removed.
+	The string length is now limited by the limits epic puts on a
+	message received from the server.
+
+*** News 12/11/2002 -- $tcl() - Tcl support.
+	$tcl() will take a Tcl expression and evaluate it much like
+	$perl() does with Perl expressions.  In addition, the tcl
+	interpreter has an epic command which works like this:
+	  * "epic cmd [epic command]" runs the epic command.
+	  * "epic eval [epic command]" evaluates the epic command.
+	  * "epic expr [epic expression]" returns whatever the epic
+	    expression returns.
+
+	There is no equivalent to $perlcall() just yet, and it may
+	never come, so to escape quoting hell it is necessary to pull any
+	data the expression requires into Tclspace via the epic command
+	described above.
+
+	Don't even bother trying this out just yet as the configure
+	script hasn't quite been finished for this.  You need to specify
+	--with-tcl when you run configure to get it working.
+
+*** News 12/11/2002 -- Slightly enhanced flood detection
+	New features:
+	  * /SET FLOOD_RATE_PER acts as a divisor for FLOOD_RATE.
+	  * /set FLOOD_MASKUSER to values 0, 1 or 2.
+	  * $floodinfo(*) returns the internal counters that match *.
+	  * Improved algorithm which will hopefully retain the flooders
+	    longer when the buffer is too small to hold all of them.
+	  * Returning 1 from the FLOOD hook will now cause the counters
+	    for the user to be reset.
+
+	When FLOOD_MASKUSER is set to 2, the internal counters apply to
+	hosts only.  When it is 0, they apply to the user@host, which is
+	the old behaviour.  When it is 1, the user@host is used if
+	the user begins with an alphanumeric character, and only the
+	host otherwise.  A value of 1 will probably catch most drones
+	more effectively but the default is 0.
+
+	The values returned by $floodinfo() are "lists of lists" and the
+	fields for each list are:
+	  * USER@HOST or @HOST
+	  * Channel or *
+	  * Message type
+	  * Server
+	  * Message count
+	  * Seconds since first message
+
+	This flood detection is still far from perfect or complete.  It
+	is necessary for FLOOD_USERS to be at least as large as the
+	number of flooders for it to work effectively.  If it is half
+	that number, it will be struggling to keep up with half of them.
+
+*** News 12/11/2002 -- New function $winline() - read window lines
+	Like $line() but reads from the window instead of the lastlog
+	buffer.
+
+*** News 12/11/2002 -- New function $timerctl() - control timers
+	Usage:
+	------
+	$timerctl(getrefnums)
+	$timerctl(exists [ref])
+	$timerctl(getcommand [ref])
+	$timerctl(getargs [ref])
+	$timerctl(gettime [ref])
+	$timerctl(getevents [ref])
+	$timerctl(getserver [ref])
+	$timerctl(getwindow [ref])
+	$timerctl(setcommand [ref] [value])
+	$timerctl(setargs [ref] [value])
+	$timerctl(settime [ref] [value])
+	$timerctl(setevents [ref] [value])
+	$timerctl(setserver [ref] [value])
+	$timerctl(setwindow [ref] [value])
+
+	$timerctl() will only operate on timers that already exist.  This
+	is the initial release and it may be reworked at some point.
+
+	With thanks to MaXxX.
+
+*** News 12/11/2002 -- New function $exec()
+	$exec() runs the command given and returns three pipes for STDIN,
+	STDOUT and STDERR of the process.  These can be used with $read()
+	and $write(), however reading from a pipe that is empty or
+	writing to one that is full will cause epic to block and perhaps
+	deadlock, so the semantics can be tricky.  This is not designed
+	to be a replacement for /exec.
+
+*** News 12/11/2002 -- $read($fd $bytes) now returns quoted strings.
+	$read($fd $bytes) will now quote the dangerous characters listed
+	below in the return value.  With the new function $asciiq()
+	below, this gives the scripter the ability to read (but not yet
+	write) binary data.
+
+*** News 12/11/2002 -- New functions $asciiq and $chrq()
+	These are designed to more easily handle binary data.  $asciiq()
+	will translate \r, \n, \0, \a and \\ to CR, LF, NULL, 0x01 and
+	"\" prior to returning the ascii values of the string.  $chrq()
+	is the compliment of $asciiq().
+
 *** News 11/26/2002 -- Restrictions on /TIMER within a /TIMER removed
 	There are now no restrictions whatsoever about where and when 
 	you can use /TIMER.  Until now, you could not update/change/delete 

@@ -1,4 +1,4 @@
-/* $EPIC: ctcp.c,v 1.16 2002/11/08 23:36:12 jnelson Exp $ */
+/* $EPIC: ctcp.c,v 1.17 2002/12/11 19:20:23 crazyed Exp $ */
 /*
  * ctcp.c:handles the client-to-client protocol(ctcp). 
  *
@@ -971,99 +971,6 @@ void	send_ctcp (int type, char *to, int datatag, char *format, ...)
 	send_text(to, putbuf2, ctcp_type[type], 0);
 }
 
-
-/*
- * quote_it: This quotes the given string making it sendable via irc.  A
- * pointer to the length of the data is required and the data need not be
- * null terminated (it can contain nulls).  Returned is a malloced, null
- * terminated string.
- */
-char	*ctcp_quote_it (char *str, int len)
-{
-	char	buffer[BIG_BUFFER_SIZE + 1];
-	char	*ptr;
-	int	i;
-
-	ptr = buffer;
-	for (i = 0; i < len; i++)
-	{
-		switch (str[i])
-		{
-			case CTCP_DELIM_CHAR:	*ptr++ = CTCP_QUOTE_CHAR;
-						*ptr++ = 'a';
-						break;
-			case '\n':		*ptr++ = CTCP_QUOTE_CHAR;
-						*ptr++ = 'n';
-						break;
-			case '\r':		*ptr++ = CTCP_QUOTE_CHAR;
-						*ptr++ = 'r';
-						break;
-			case CTCP_QUOTE_CHAR:	*ptr++ = CTCP_QUOTE_CHAR;
-						*ptr++ = CTCP_QUOTE_CHAR;
-						break;
-			case '\0':		*ptr++ = CTCP_QUOTE_CHAR;
-						*ptr++ = '0';
-						break;
-			default:		*ptr++ = str[i];
-						break;
-		}
-	}
-	*ptr = '\0';
-	return m_strdup(buffer);
-}
-
-/*
- * ctcp_unquote_it: This takes a null terminated string that had previously
- * been quoted using ctcp_quote_it and unquotes it.  Returned is a malloced
- * space pointing to the unquoted string.  NOTE: a trailing null is added for
- * convenied, but the returned data may contain nulls!.  The len is modified
- * to contain the size of the data returned. 
- */
-char	*ctcp_unquote_it (char *str, size_t *len)
-{
-	char	*buffer;
-	char	*ptr;
-	char	c;
-	int	i,
-		new_size = 0;
-
-	buffer = (char *) new_malloc(sizeof(char) * *len + 1);
-	ptr = buffer;
-	i = 0;
-	while (i < *len)
-	{
-		if ((c = str[i++]) == CTCP_QUOTE_CHAR)
-		{
-			switch (c = str[i++])
-			{
-				case CTCP_QUOTE_CHAR:
-					*ptr++ = CTCP_QUOTE_CHAR;
-					break;
-				case 'a':
-					*ptr++ = CTCP_DELIM_CHAR;
-					break;
-				case 'n':
-					*ptr++ = '\n';
-					break;
-				case 'r':
-					*ptr++ = '\r';
-					break;
-				case '0':
-					*ptr++ = '\0';
-					break;
-				default:
-					*ptr++ = c;
-					break;
-			}
-		}
-		else
-			*ptr++ = c;
-		new_size++;
-	}
-	*ptr = '\0';
-	*len = new_size;
-	return (buffer);
-}
 
 int 	get_ctcp_val (char *str)
 {

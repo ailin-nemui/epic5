@@ -1,4 +1,4 @@
-/* $EPIC: keys.c,v 1.17 2002/11/26 23:03:13 jnelson Exp $ */
+/* $EPIC: keys.c,v 1.18 2002/12/11 19:20:23 crazyed Exp $ */
 /*
  * keys.c:  Keeps track of what happens whe you press a key.
  *
@@ -34,6 +34,7 @@
 #include "irc.h"
 #include "config.h"
 #include "commands.h"
+#include "functions.h"
 #include "history.h"
 #include "ircaux.h"
 #include "input.h"
@@ -1201,6 +1202,7 @@ BUILT_IN_COMMAND(parsekeycmd) {
     }
 }
 
+#if 0
 #define EMPTY empty_string
 #define EMPTY_STRING m_strdup(EMPTY)
 #define RETURN_EMPTY return m_strdup(EMPTY)
@@ -1211,6 +1213,7 @@ BUILT_IN_COMMAND(parsekeycmd) {
 #define RETURN_MSTR(x) return ((x) ? (x) : EMPTY_STRING);
 #define RETURN_STR(x) return m_strdup((x) ? (x) : EMPTY)
 #define RETURN_INT(x) return m_strdup(ltoa((x)))
+#endif
 
 /* Used by function_bindctl */
 /*

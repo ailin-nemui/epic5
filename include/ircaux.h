@@ -7,7 +7,7 @@
  *
  * See the COPYRIGHT file, or do a HELP IRCII COPYRIGHT 
  *
- * @(#)$Id: ircaux.h,v 1.35 2002/11/12 00:28:11 jnelson Exp $
+ * @(#)$Id: ircaux.h,v 1.36 2002/12/11 19:20:23 crazyed Exp $
  */
 
 #ifndef _IRCAUX_H_
@@ -95,6 +95,7 @@ char *	findchar		(char *, int);
 FILE *	uzfopen 		(char **, char *, int);
 int	end_strcmp 		(const char *, const char *, int);
 char*   exec_pipe		(char *, char *, size_t *, char**);
+FILE **	open_exec		(char *executable, char **args);
 void	panic 			(char *, ...) __A(1) __N;
 int	vt100_decode 		(char);
 int	count_ansi		(char *, int);
@@ -168,6 +169,8 @@ u_char *strcpy_nocolorcodes	(u_char *, const u_char *);
 u_long	random_number		(u_long);
 char *	urlencode		(const char *);
 char *	urldecode		(char *, size_t *);
+char *	enquote_it		(char *str, size_t len);
+char *	dequote_it		(char *str, size_t *len);
 const char *	find_forward_quote	(const char *, const char *);
 const char *	find_backward_quote	(const char *, const char *);
 const char *	my_strerror		(int);
@@ -277,5 +280,11 @@ int	setsid (void);
 char *	stpcpy (char *, const char *);
 #endif
 char *	my_realpath (const char *pathname, char resolved_path[]);
+
+#define CTCP_DELIM_CHAR 	'\001'
+#define CTCP_DELIM_STR 		"\001"
+#define CTCP_QUOTE_CHAR 	'\\'
+#define CTCP_QUOTE_STR 		"\\"
+#define CTCP_QUOTE_EM 		"\r\n\001\\"
 
 #endif /* _IRCAUX_H_ */

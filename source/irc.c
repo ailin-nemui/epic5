@@ -1,4 +1,4 @@
-/* $EPIC: irc.c,v 1.398 2002/12/09 16:41:26 jnelson Exp $ */
+/* $EPIC: irc.c,v 1.399 2002/12/11 19:20:23 crazyed Exp $ */
 /*
  * ircII: a new irc client.  I like it.  I hope you will too!
  *
@@ -322,6 +322,7 @@ void	irc_exit (int really_quit, char *format, ...)
 #endif
 	close_all_servers(buffer);
 	logger(0);
+	get_child_exit(-1);  /* In case some children died in the exit hook. */
 	clean_up_processes();
 
 	/* Arrange to have the cursor on the input line after exit */

@@ -1,4 +1,4 @@
-/* $EPIC: dcc.c,v 1.40 2002/11/08 23:36:12 jnelson Exp $ */
+/* $EPIC: dcc.c,v 1.41 2002/12/11 19:20:23 crazyed Exp $ */
 /*
  * dcc.c: Things dealing client to client connections. 
  *
@@ -1999,7 +1999,7 @@ void	register_dcc_offer (char *user, char *type, char *description, char *addres
 		{
 		    if (statit.st_size < Client->filesize)
 		    {
-			say("WARNING: File [%s] exists but is smaller then the file offered.", realpath);
+			say("WARNING: File [%s] exists but is smaller than the file offered.", realpath);
 			say("Use /DCC CLOSE GET %s %s        to not get the file.", user, Client->description);
 #ifdef MIRC_BROKEN_DCC_RESUME
 			say("Use /DCC RESUME %s %s           to continue the copy where it left off.", user, Client->description);
@@ -2316,6 +2316,8 @@ static	void		process_incoming_listen (DCC_list *Client)
 	char		host[1025];
 	int		len;
 	char		p_port[24];
+	char		l_port[24];
+	char		trash[1025] = "";
 
 	sra = sizeof(remaddr);
 	new_socket = Accept(Client->socket, (SA *) &remaddr, &sra);
@@ -2337,6 +2339,7 @@ static	void		process_incoming_listen (DCC_list *Client)
 
 	len = sizeof(NewClient->local_sockaddr);
 	getsockname(NewClient->socket, (SA *)&NewClient->local_sockaddr, &len);
+	inet_ntostr((SA *)&Client->local_sockaddr, trash, sizeof(trash), l_port, sizeof(l_port), 0);
 
 	NewClient->flags |= DCC_ACTIVE;
 	NewClient->bytes_read = NewClient->bytes_sent = 0L;
@@ -2345,9 +2348,9 @@ static	void		process_incoming_listen (DCC_list *Client)
 
 	Client->locked++;
 	if (do_hook(DCC_RAW_LIST, "%s %s N %s", 
-			NewClient->user, NewClient->description, p_port))
+			NewClient->user, NewClient->description, l_port))
             if (do_hook(DCC_CONNECT_LIST,"%s RAW %s %s", 
-			NewClient->user, NewClient->description, p_port))
+			NewClient->user, NewClient->description, l_port))
 		say("DCC RAW connection to %s on %s via %s established",
 			NewClient->description, NewClient->user, p_port);
 	Client->locked--;

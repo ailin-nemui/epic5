@@ -1,4 +1,4 @@
-/* $EPIC: perl.c,v 1.9 2002/08/26 17:20:14 crazyed Exp $ */
+/* $EPIC: perl.c,v 1.10 2002/12/11 19:20:23 crazyed Exp $ */
 /*
  * perl.c -- The perl interfacing routines.
  *
@@ -36,6 +36,7 @@
 #include "array.h"
 #include "alias.h"
 #include "commands.h"
+#include "functions.h"
 #include "output.h"
 #include <EXTERN.h>
 #include <perl.h>
@@ -47,8 +48,6 @@ PerlInterpreter	*my_perl;
 EXTERN_C void xs_init _((void));
 EXTERN_C void boot_DynaLoader _((CV* cv));
 
-/* RETURN_MSTR copied from functions.c rather than including due to complications. */
-#define RETURN_MSTR(x) return ((x) ? (x) : m_strdup(""));
 #define SV2STR(x,y) (y)=(void*)m_strdup((char*)SvPV_nolen(x))
 #ifndef SvPV_nolen
 STRLEN	trash;
@@ -88,6 +87,21 @@ static XS (XS_expr) {
 	XSRETURN(items);
 }
 
+static XS (XS_call) {
+	unsigned foo, food = 0;
+	char* retval=NULL;
+	char* arg=NULL;
+	dXSARGS;
+	for (foo=0; foo<items; foo++) {
+		arg = m_strdup((char*)SvPV_nolen(ST(foo)));
+		retval = (char*)call_function(arg, "", &food);
+		XST_mPV(foo, retval);
+		new_free(&arg);
+		new_free(&retval);
+	}
+	XSRETURN(items);
+}
+
 static XS (XS_yell) {
 	unsigned foo;
 	dXSARGS;
@@ -108,6 +122,7 @@ xs_init(void)
 	newXS("EPIC::cmd", XS_cmd, "IRC");
 	newXS("EPIC::eval", XS_eval, "IRC");
 	newXS("EPIC::expr", XS_expr, "IRC");
+	newXS("EPIC::call", XS_call, "IRC");
 	newXS("EPIC::yell", XS_yell, "IRC");
 }
 

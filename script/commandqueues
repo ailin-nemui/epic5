@@ -45,7 +45,7 @@ package qcmd
 #
 # Execute command on server _without_ expanding command.
 #
-alias scmd xeval -s $0 {$1-}
+alias scmd (args) fe ($split(, $shift(args))) serv {xeval -s $serv {$args}}
 
 #
 # Usage:
@@ -57,15 +57,15 @@ alias scmd xeval -s $0 {$1-}
 alias 1cmd {
 	@ :foo = encode($tolower($1-))
 	@ :eserv = servernum()
-	if (time() - 1cmd[$eserv][$foo] >= [$0]) {
-		@ 1cmd[$eserv][$foo] = time()
+	if (time() - onecmd[$eserv][$foo] >= [$0]) {
+		@ onecmd[$eserv][$foo] = time()
 		$1-
 	}
-	if ((!rand(10)) && time() != 1cmd[$eserv]) {
-		@ 1cmd[$eserv] = time()
-		foreach 1cmd[$eserv] bar {
-			if (1cmd[$eserv][$bar] < time()) {
-				@ 1cmd[$eserv][$bar] = []
+	if ((!rand(10)) && time() != onecmd[$eserv]) {
+		@ onecmd[$eserv] = time()
+		foreach onecmd[$eserv] bar {
+			if (onecmd[$eserv][$bar] < time()) {
+				@ onecmd[$eserv][$bar] = []
 			}
 		}
 	}

@@ -1,4 +1,4 @@
-/* $EPIC: lastlog.c,v 1.14 2002/12/04 03:28:05 jnelson Exp $ */
+/* $EPIC: lastlog.c,v 1.15 2002/12/11 19:20:23 crazyed Exp $ */
 /*
  * lastlog.c: handles the lastlog features of irc. 
  *
@@ -42,6 +42,7 @@
 #include "ircaux.h"
 #include "output.h"
 #include "numbers.h"
+#include "functions.h"
 #include <regex.h>
 
 static int	show_lastlog (Lastlog **l, int *skip, int *number, int, char *match, regex_t *reg, int *max);
@@ -863,12 +864,14 @@ void	set_current_window_level (char *str)
 			bits_to_lastlog_level(current_window_level));
 }
 
+#if 0
 #define EMPTY empty_string
 #define RETURN_EMPTY return m_strdup(EMPTY)
 #define RETURN_IF_EMPTY(x) if (empty( x )) RETURN_EMPTY
 #define GET_INT_ARG(x, y) {RETURN_IF_EMPTY(y); x = my_atol(safe_new_next_arg(y, &y));}
 #define GET_STR_ARG(x, y) {RETURN_IF_EMPTY((y)); x = new_next_arg((y), &(y));RETURN_IF_EMPTY((x));}
 #define RETURN_STR(x) return m_strdup(x ? x : EMPTY);
+#endif
 
 /*
  * $line(<line number> [window number])

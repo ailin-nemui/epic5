@@ -1,4 +1,4 @@
-/* $EPIC: alias.c,v 1.11 2002/09/26 22:41:43 jnelson Exp $ */
+/* $EPIC: alias.c,v 1.12 2002/12/11 19:20:23 crazyed Exp $ */
 /*
  * alias.c -- Handles the whole kit and caboodle for aliases.
  *
@@ -53,6 +53,7 @@
 #include "vars.h"
 #include "window.h"
 #include "keys.h"
+#include "functions.h"
 
 #define LEFT_BRACE '{'
 #define RIGHT_BRACE '}'
@@ -169,6 +170,7 @@ static unsigned long 	cmd_cache_passes = 0;
 struct ArgListT {
 	char *	vars[32];
 	char *	defaults[32];
+	int	words[32];
 	int	void_flag;
 	int	dot_flag;
 };
@@ -722,14 +724,20 @@ ArgList	*parse_arglist (char *arglist)
 		} else {
 			args->vars[arg_count] = m_strdup(varname);
 			args->defaults[arg_count] = NULL;
+			args->words[arg_count] = 1;
 
-			if (!(modifier = next_arg(this_term, &this_term)))
-				continue;
-			if (!my_stricmp(modifier, "default"))
+			while ((modifier = next_arg(this_term, &this_term)))
 			{
-			    if (!(value = new_next_arg(this_term, &this_term)))
-				continue;
-			    args->defaults[arg_count] = m_strdup(value);
+				if (!(value = new_next_arg(this_term, &this_term)))
+						break;
+				if (!my_stricmp(modifier, "default"))
+				{
+					args->defaults[arg_count] = m_strdup(value);
+				}
+				else if (!my_stricmp(modifier, "words"))
+				{
+					args->words[arg_count] = atol(value);
+				}
 			}
 		}
 	}
@@ -758,6 +766,8 @@ void	prepare_alias_call (void *al, char **stuff)
 {
 	ArgList *args = (ArgList *)al;
 	int	i;
+	int	arg = 0;
+	char	*free = NULL;
 
 	if (!args)
 		return;
@@ -771,13 +781,16 @@ void	prepare_alias_call (void *al, char **stuff)
 		/* Last argument on the list and no ... argument? */
 		if (!args->vars[i + 1] && !args->dot_flag && !args->void_flag)
 		{
-			next_val = *stuff;
+			free = next_val = extractw(*stuff, arg, EOS);
 			*stuff = empty_string;
 		}
 
 		/* Yank the next word from the arglist */
 		else
-			next_val = next_arg(*stuff, stuff);
+		{
+			free = next_val = extractw(*stuff, arg, arg + args->words[i] - 1);
+			arg += args->words[i];
+		}
 
 		if (!next_val || !*next_val)
 		{
@@ -791,11 +804,17 @@ void	prepare_alias_call (void *al, char **stuff)
 		add_local_alias(args->vars[i], next_val, 0);
 		if (expanded)
 			new_free(&expanded);
+		if (free)
+			new_free(&free);
 	}
 
 	/* Throw away rest of args if wanted */
 	if (args->void_flag)
 		*stuff = empty_string;
+	else if (args->dot_flag)
+		strcpy(*stuff, (free = extractw(*stuff, arg, EOS)));
+	if (free)
+		new_free(&free);
 }
 
 /**************************** INTERMEDIATE INTERFACE *********************/
@@ -2281,6 +2300,7 @@ void 	destroy_call_stack 	(void)
 
 
 /****************************** ALIASCTL ************************************/
+#if 0
 #define EMPTY empty_string
 #define RETURN_EMPTY return m_strdup(EMPTY)
 #define RETURN_IF_EMPTY(x) if (empty( x )) RETURN_EMPTY
@@ -2289,6 +2309,7 @@ void 	destroy_call_stack 	(void)
 #define GET_STR_ARG(x, y) {RETURN_IF_EMPTY(y); x = new_next_arg(y, &y);RETURN_IF_EMPTY(x);}
 #define RETURN_STR(x) return m_strdup((x) ? (x) : EMPTY)
 #define RETURN_INT(x) return m_strdup(ltoa((x)))
+#endif
 
 /* Used by function_aliasctl */
 /* MUST BE FIXED */
