@@ -1074,7 +1074,7 @@ void	userhost_returned (char *from, char **ArgList)
 			item.user = strchr(item.nick, '=');
 			if (!item.user)
 			{
-				yell("Can't parse broken USERHOST reply [%s]", 
+				yell("Can't parse useless USERHOST reply [%s]", 
 						*ArgList);
 				userhost_queue_pop();
 			}
@@ -1098,7 +1098,7 @@ void	userhost_returned (char *from, char **ArgList)
 			item.host = strchr(item.user, '@');
 			if (!item.host)
 			{
-				yell("Can't parse broken USERHOST reply [%s]", 
+				yell("Can't parse useless USERHOST reply [%s]", 
 						*ArgList);
 				userhost_queue_pop();
 				return;

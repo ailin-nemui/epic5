@@ -970,7 +970,7 @@ static void	decifer_mode (const char *modes, Channel *chan)
 				if (!(key = next_arg(rest, &rest)))
 				{
 				    yell("Channel %s is +k, but has no key.  "
-					 "This server is broken", 
+					 "This server broke backwards compatability",
 					 chan->channel);
 				    continue;
 				}
@@ -1021,7 +1021,7 @@ static void	decifer_mode (const char *modes, Channel *chan)
 				{
 					yell("Channel %s got a mode +v "
 					     "without an argument.  "
-					     "This server is broken.",
+					     "This server broke backwards compatability",
 						chan->channel);
 					continue;
 				}
@@ -1038,7 +1038,7 @@ static void	decifer_mode (const char *modes, Channel *chan)
 				{
 					yell("Channel %s got a mode +h "
 					     "without an argument.  "
-					     "This server is broken.",
+					     "This server broke backwards compatability",
 						chan->channel);
 					continue;
 				}

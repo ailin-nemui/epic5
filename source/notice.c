@@ -9,7 +9,7 @@
  */
 
 #if 0
-static	char	rcsid[] = "@(#)$Id: notice.c,v 1.2 2001/05/08 20:05:21 jnelson Exp $";
+static	char	rcsid[] = "@(#)$Id: notice.c,v 1.3 2001/05/08 22:14:22 jnelson Exp $";
 #endif
 
 #include "irc.h"
@@ -420,11 +420,11 @@ int 	kill_message (const char *from, char *cline)
 	line = LOCAL_COPY(cline);
 	poor_sap = next_arg(line, &line);
 
-	/* Broken Dalnet kill doesnt append the period */
+	/* Dalnet kill BBC and doesnt append the period */
 	if (!end_strcmp(poor_sap, ".", 1))
 		chop(poor_sap, 1);
 
-	/* Broken dalnet kill doesnt use "From", but "from" */
+	/* dalnet kill BBC and doesnt use "From", but "from" */
 	if (my_strnicmp(line, "From ", 5))
 	{
 		yell("Attempted to parse an ill-formed KILL request [%s %s]",
@@ -434,12 +434,8 @@ int 	kill_message (const char *from, char *cline)
 	line += 5;
 	bastard = next_arg(line, &line);
 
-	/*
-	 * I was bullied into removing the comment that was here by
-	 * Dianora who was personally offended that i would refer to
-	 * breaking backwards compatability as "broken".
-	 */
-	/* Fend off future non-conformant kills */
+	/* Hybrid BBC and doesn't include the kill-path. */
+	/* Fend off future BBC kills */
 	if (my_strnicmp(line, "Path: ", 6))
 	{
 		path_to_bastard = "*";

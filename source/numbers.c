@@ -10,7 +10,7 @@
  */
 
 #if 0
-static	char	rcsid[] = "$Id: numbers.c,v 1.14 2001/03/26 15:45:05 jnelson Exp $";
+static	char	rcsid[] = "$Id: numbers.c,v 1.15 2001/05/08 22:14:22 jnelson Exp $";
 #endif
 
 #include "irc.h"
@@ -550,14 +550,14 @@ void 	numbered_command (char *from, int comm, char **ArgList)
 		break;
 	}
 
-	/* Broken dalnet extended who replies. */
+	/* Bizarre dalnet extended who replies. */
         /* ":%s 402 %s %s :No such server" */
 	case 402:
 	{
 		PasteArgs(ArgList, 1);
 		/* 
-		 * Some broken servers send this instead of a 315 numeric
-		 * when a who request has been completed.
+		 * Some servers BBC by sending this instead of
+		 * a 315 numeric when a who request has been completed.
 		 */
 		fake_who_end(from, ArgList[0]);
 
@@ -567,7 +567,7 @@ void 	numbered_command (char *from, int comm, char **ArgList)
 		break;
 	}
 
-	/* Yet more broken dalnet extended who replies. */
+	/* Yet more bizarre dalnet extended who replies. */
 	/* ":%s 522 %s :/WHO Syntax incorrect, use /who ? for help" */
         /* ":%s 523 %s :Error, /who limit of %d exceed." */
 	case 522:
@@ -597,7 +597,7 @@ void 	numbered_command (char *from, int comm, char **ArgList)
 		if (my_strnicmp(s, from, strlen(s)))
 			break;
 
-		/* Some broken servers may send back an empty reply. */
+		/* Some servers BBC and send back an empty reply. */
 		if (!ArgList[0])
 		{
 			if (do_hook(current_numeric, "%s *", from))
@@ -607,8 +607,8 @@ void 	numbered_command (char *from, int comm, char **ArgList)
 		}
 
 		/* 
-		 * Some broken servers send this instead of a 315 numeric
-		 * when a who request has been completed.
+		 * Some servers BBC and send this instead of a
+		 * 315 numeric when a who request has been completed.
 		 */
 		if (fake_who_end(from, ArgList[0]))
 			;
