@@ -4,8 +4,7 @@ KNOWN ERRATA (eg, bugs, or unresolved requests):
 ------------------------------------------------
 * When you do /server <refnum> from a disconnected state, it does not
   honor server groups.
-
-[None]
+* A lot of dcc output goes to target NULL when there is a nickname available.
 
 [See http://www.epicsol.org/PROJECTS for things to come in the future]
 [See http://www.epicsol.org/CHANGELOG for things that changed in the past]
