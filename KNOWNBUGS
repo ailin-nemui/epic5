@@ -581,3 +581,5 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Comment out all of the history code.  It compiles.  Will GC it later.
 * Round one of blackjac's 'builtins' script.
 * Comment out a ton of now-scripted sets.  Will GC it later.
+* Take a new arg to new_open() to control whether INFO -- errors are output.
+* Don't output the "INFO --" things for dcc or execs

@@ -1,4 +1,4 @@
-/* $EPIC: server.c,v 1.160 2005/03/06 04:48:42 jnelson Exp $ */
+/* $EPIC: server.c,v 1.161 2005/03/28 23:53:58 jnelson Exp $ */
 /*
  * server.c:  Things dealing with that wacky program we call ircd.
  *
@@ -895,10 +895,10 @@ something_broke:
 		    if (get_server_try_ssl(i) == TRUE)
 		    {
 			startup_ssl(des, des);
-			new_open(des, do_server, NEWIO_SSL_READ);
+			new_open(des, do_server, NEWIO_SSL_READ, 0);
 		    }
 		    else
-			new_open(des, do_server, NEWIO_RECV);
+			new_open(des, do_server, NEWIO_RECV, 0);
 
 
 		    if (is_ssl_enabled(des))
@@ -1282,7 +1282,7 @@ int 	connect_to_server (int new_server, int restart)
 	if (x_debug & DEBUG_SERVER_CONNECT)
 		say("connect_next_server_address returned [%d]", des);
 	from_server = new_server;	/* XXX sigh */
-	new_open(des, do_server, NEWIO_CONNECT);
+	new_open(des, do_server, NEWIO_CONNECT, 0);
 
 	/* Don't check getpeername(), we're not connected yet. */
 	if (*s->name != '/')

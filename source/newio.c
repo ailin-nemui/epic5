@@ -1,4 +1,4 @@
-/* $EPIC: newio.c,v 1.49 2005/03/20 20:50:18 jnelson Exp $ */
+/* $EPIC: newio.c,v 1.50 2005/03/28 23:53:58 jnelson Exp $ */
 /*
  * newio.c:  Passive, callback-driven IO handling for sockets-n-stuff.
  *
@@ -71,7 +71,8 @@ typedef	struct	myio_struct
 		clean,
 		held;
 	void	(*callback) (int vfd);
-	int	(*io_callback) (int vfd);
+	int	(*io_callback) (int vfd, int quiet);
+	int	quiet;
 }           MyIO;
 
 static	MyIO **	io_rec = NULL;
@@ -92,11 +93,11 @@ static	void	klock (void);
 static	void	kunlock (void);
 
 /* These functions implement basic i/o operations for unix */
-static int	unix_read (int channel);
-static int	unix_recv (int channel);
-static int	unix_accept (int channel);
-static int	unix_connect (int channel);
-static int	unix_close (int channel);
+static int	unix_read (int channel, int);
+static int	unix_recv (int channel, int);
+static int	unix_accept (int channel, int);
+static int	unix_connect (int channel, int);
+static int	unix_close (int channel, int);
 
 /* 
  * On systems where vfd != channel, you need these functions to 
@@ -167,8 +168,9 @@ int	dgets_buffer (int channel, void *data, ssize_t len)
 	 */
 	if (ioe->segments > MAX_SEGMENTS)
 	{
-		syserr("dgets_buffer: Too many read()s on channel [%d] without"
-			" a newline -- shutting off bad peer", channel);
+		if (!ioe->quiet)
+		    syserr("dgets_buffer: Too many read()s on channel [%d] "
+			"without a newline -- shutting off bad peer", channel);
 		ioe->error = -1;
 		ioe->clean = 0;
 		kunlock();
@@ -266,7 +268,8 @@ ssize_t	dgets (int vfd, char *buf, size_t buflen, int buffer)
 
 	if (ioe->error)
 	{
-	    syserr("dgets: Reporting exception for vfd [%d]", vfd);
+	    if (!ioe->quiet)
+	       syserr("dgets: Reporting exception for vfd [%d]", vfd);
 	    return -1;
 	}
 
@@ -466,7 +469,7 @@ size_t 	get_pending_bytes (int vfd)
  * Set up its input buffer
  * Returns an vfd!
  */
-int 	new_open (int channel, void (*callback) (int), int io_type)
+int 	new_open (int channel, void (*callback) (int), int io_type, int quiet)
 {
 	MyIO *ioe;
 	int	vfd;
@@ -497,6 +500,7 @@ int 	new_open (int channel, void (*callback) (int), int io_type)
 	ioe->error = 0;
 	ioe->clean = 1;
 	ioe->held = 0;
+	ioe->quiet = quiet;
 
 	if (io_type == NEWIO_READ)
 		ioe->io_callback = unix_read;
@@ -584,7 +588,7 @@ int	new_close (int vfd)
 		knoread(vfd);
 		knowrite(vfd);
 
-		unix_close(ioe->channel);
+		unix_close(ioe->channel, ioe->quiet);
 
 		new_free(&ioe->buffer); 
 		new_free((char **)&(io_rec[vfd]));
@@ -599,7 +603,7 @@ int	new_close (int vfd)
 			global_max_vfd--;
 	}
 	else
-		unix_close(vfd);
+		unix_close(vfd, 0);
 
 	return -1;
 }
@@ -608,18 +612,19 @@ int	new_close (int vfd)
 /***********************************************************************/
 /******************** Start of unix-specific code here ******************/
 /************************************************************************/
-static int	unix_close (int channel)
+static int	unix_close (int channel, int quiet)
 {
 	if (close(channel))
 	{
-		syserr("unix_close: close(%d) failed: %s", 
+		if (!quiet)
+		   syserr("unix_close: close(%d) failed: %s", 
 			channel, strerror(errno));
 		return -1;
 	}
 	return 0;
 }
 
-static int	unix_read (int channel)
+static int	unix_read (int channel, int quiet)
 {
 	ssize_t	c;
 	char	buffer[8192];
@@ -627,19 +632,22 @@ static int	unix_read (int channel)
 	c = read(channel, buffer, sizeof buffer);
 	if (c == 0)
 	{
-		syserr("unix_read: EOF for fd %d ", channel);
+		if (!quiet)
+		   syserr("unix_read: EOF for fd %d ", channel);
 		return 0;
 	}
 	else if (c < 0)
 	{
-		syserr("unix_read: read(%d) failed: %s", 
+		if (!quiet)
+		   syserr("unix_read: read(%d) failed: %s", 
 				channel, strerror(errno));
 		return -1;
 	}
 
 	if (dgets_buffer(channel, buffer, c))
 	{
-		syserr("unix_read: dgets_buffer(%d, %*s) failed",
+		if (!quiet)
+		   syserr("unix_read: dgets_buffer(%d, %*s) failed",
 				channel, c, buffer);
 		return -1;
 	}
@@ -647,7 +655,7 @@ static int	unix_read (int channel)
 	return c;
 }
 
-static int	unix_recv (int channel)
+static int	unix_recv (int channel, int quiet)
 {
 	ssize_t	c;
 	char	buffer[8192];
@@ -655,19 +663,22 @@ static int	unix_recv (int channel)
 	c = recv(channel, buffer, sizeof buffer, 0);
 	if (c == 0)
 	{
-		syserr("unix_recv: EOF for fd %d ", channel);
+		if (!quiet)
+		   syserr("unix_recv: EOF for fd %d ", channel);
 		return 0;
 	}
 	else if (c < 0)
 	{
-		syserr("unix_recv: read(%d) failed: %s", 
+		if (!quiet)
+		   syserr("unix_recv: read(%d) failed: %s", 
 				channel, strerror(errno));
 		return -1;
 	}
 
 	if (dgets_buffer(channel, buffer, c))
 	{
-		syserr("unix_recv: dgets_buffer(%d, %*s) failed",
+		if (!quiet)
+		   syserr("unix_recv: dgets_buffer(%d, %*s) failed",
 				channel, c, buffer);
 		return -1;
 	}
@@ -675,7 +686,7 @@ static int	unix_recv (int channel)
 	return c;
 }
 
-static int	unix_accept (int channel)
+static int	unix_accept (int channel, int quiet)
 {
 	int	newfd;
 	SS	addr;
@@ -689,7 +700,8 @@ static int	unix_accept (int channel)
 		FD_SET(channel, &fdset);
 		if (select(channel + 1, &fdset, NULL, NULL, NULL) < 0)
 		{
-			syserr("unix_accept: select(%d) failed: %s",
+			if (!quiet)
+			   syserr("unix_accept: select(%d) failed: %s",
 				channel, strerror(errno));
 		}
 	}
@@ -697,14 +709,15 @@ static int	unix_accept (int channel)
 
 	len = sizeof(addr);
 	if ((newfd = Accept(channel, (SA *)&addr, &len)) < 0)
-		syserr("unix_accept: Accept(%d) failed", channel);
+		if (!quiet)
+		   syserr("unix_accept: Accept(%d) failed", channel);
 
 	dgets_buffer(channel, &newfd, sizeof(newfd));
 	dgets_buffer(channel, &addr, sizeof(addr));
 	return sizeof(newfd) + sizeof(addr);
 }
 
-static int	unix_connect (int channel)
+static int	unix_connect (int channel, int quiet)
 {
 	int	gsn_result;
 	SS	localaddr;
@@ -720,7 +733,8 @@ static int	unix_connect (int channel)
 		FD_SET(channel, &fdset);
 		if (select(channel + 1, NULL, &fdset, NULL, NULL) < 0)
 		{
-			syserr("unix_connect: select(%d) failed: %s",
+			if (!quiet)
+			   syserr("unix_connect: select(%d) failed: %s",
 				channel, strerror(errno));
 		}
 	}
@@ -763,11 +777,12 @@ static void	new_io_event (int vfd)
 	if (!ioe->clean)
 		panic("new_io_event: vfd [%d] hasn't been cleaned yet", vfd);
 
-	if ((c = ioe->io_callback(vfd)) <= 0)
+	if ((c = ioe->io_callback(vfd, ioe->quiet)) <= 0)
 	{
 		ioe->error = -1;
 		ioe->clean = 0;
-		syserr("new_io_event: io_callback(%d) "
+		if (!ioe->quiet)
+		   syserr("new_io_event: io_callback(%d) "
 				"said fd should be closed", vfd);
 
 		if (x_debug & DEBUG_INBOUND) 

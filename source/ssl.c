@@ -1,4 +1,4 @@
-/* $EPIC: ssl.c,v 1.16 2005/03/11 05:02:22 jnelson Exp $ */
+/* $EPIC: ssl.c,v 1.17 2005/03/28 23:53:58 jnelson Exp $ */
 /*
  * ssl.c: SSL connection functions
  *
@@ -35,6 +35,9 @@
  * SUCH DAMAGE.
  */
 
+#include "irc.h"
+#ifdef HAVE_SSL
+
 #include <openssl/crypto.h>
 #include <openssl/x509.h>
 #include <openssl/pem.h>
@@ -42,8 +45,6 @@
 #include <openssl/err.h>
 #include <openssl/opensslconf.h>
 
-#include "irc.h"
-#ifdef HAVE_SSL
 #include "ircaux.h"
 #include "output.h"
 #include "hook.h"
@@ -238,7 +239,7 @@ int	write_ssl (int vfd, const void *data, size_t len)
 	return err;
 }
 
-int	ssl_read (int vfd)
+int	ssl_read (int vfd, int quiet)
 {
 	ssl_info *x;
 	int	c;
@@ -268,7 +269,9 @@ int	ssl_read (int vfd)
 		{
 		    int ssl_error = SSL_get_error(x->ssl_fd, c);
 		    if (ssl_error == SSL_ERROR_NONE)
-			yell("SSL_read failed with [%d]/[%d]", c, ssl_error);
+			if (!quiet)
+			   syserr("SSL_read failed with [%d]/[%d]", 
+					c, ssl_error);
 		}
 
 		if (c == 0)

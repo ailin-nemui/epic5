@@ -75,8 +75,7 @@
 	void	init_newio		(void);
 	size_t	get_pending_bytes	(int);
 
-	int	new_open		(int, void (*) (int), int);
-	int	new_open_for_writing	(int, void (*) (int));
+	int	new_open		(int, void (*) (int), int, int);
 	int	new_hold_fd		(int);
 	int	new_unhold_fd		(int);
 	int 	new_close 		(int);
