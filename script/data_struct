@@ -120,7 +120,6 @@ alias.tt assign.purge {
 #
 alias.tt assign.save {
 	@:pkg=rand(0)
-	@:utime1=utime()
 	@:fh=open($0 W T)
 	@:matches=0
 	fe ($1-) mask {
@@ -135,22 +134,20 @@ alias.tt assign.save {
 		@matches+=#list
 	}
 	@close($fh)
-	@:utime2=utime()
 	if (functioncall()) {
 		return $matches
 	} else {
 		if (isdisplaying()) {
-			echo Wrote $matches matching $1- in $tdiffu($utime2 $utime1).
+			echo Wrote $matches matching $1-
 		}
 	}
 }
 #
 # As for .save, but write a $decode() encoded file which won't be
-# damaged by specific variable contents.
+# damaged by certain variable contents.
 #
 alias.tt assign.esave {
 	@:pkg=rand(0)
-	@:utime1=utime()
 	@:fh=open($0 W T)
 	@:matches=0
 	fe ($1-) mask {
@@ -165,12 +162,11 @@ alias.tt assign.esave {
 		@matches+=#list
 	}
 	@close($fh)
-	@:utime2=utime()
 	if (functioncall()) {
 		return $matches
 	} else {
 		if (isdisplaying()) {
-			echo Wrote $matches matching $1- in $tdiffu($utime2 $utime1).
+			echo Wrote $matches matching $1-
 		}
 	}
 }
