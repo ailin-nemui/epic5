@@ -1,4 +1,4 @@
-/* $EPIC: irc.c,v 1.753 2004/07/26 23:35:20 jnelson Exp $ */
+/* $EPIC: irc.c,v 1.754 2004/07/28 01:02:39 jnelson Exp $ */
 /*
  * ircII: a new irc client.  I like it.  I hope you will too!
  *
@@ -52,7 +52,7 @@ const char internal_version[] = "20040319";
 /*
  * In theory, this number is incremented for every commit.
  */
-const unsigned long	commit_id = 1086;
+const unsigned long	commit_id = 1087;
 
 /*
  * As a way to poke fun at the current rage of naming releases after
@@ -214,7 +214,6 @@ char		*startup_file = NULL,		/* Set when epicrc loaded */
 		*default_channel = NULL,	/* Channel to join on connect */
 		nickname[NICKNAME_LEN + 1],	/* users nickname */
 		hostname[NAME_LEN + 1],		/* name of current host */
-		realname[REALNAME_LEN + 1],	/* real name of user */
 		username[NAME_LEN + 1],		/* usernameof user */
 		userhost[NAME_LEN + 1],		/* userhost of user */
 		*send_umode = NULL,		/* sent umode */
@@ -515,7 +514,6 @@ static	void	parse_args (int argc, char **argv)
 	extern int optind;
 
 	*nickname = 0;
-	*realname = 0;
 	*username = 0;
 
 	/* 
@@ -529,7 +527,7 @@ static	void	parse_args (int argc, char **argv)
 		{
 			if ((ptr = strchr(entry->pw_gecos, ',')))
 				*ptr = 0;
-			strlcpy(realname, entry->pw_gecos, sizeof realname);
+			set_var_value(REALNAME_VAR, entry->pw_gecos, 0);
 		}
 
 		if (entry->pw_name && *(entry->pw_name))
@@ -585,11 +583,15 @@ static	void	parse_args (int argc, char **argv)
 		}
 
 	if ((ptr = getenv("IRCNAME")))
-		strlcpy(realname, ptr, sizeof realname);
+		set_var_value(REALNAME_VAR, ptr, 0);
 	else if ((ptr = getenv("NAME")))
-		strlcpy(realname, ptr, sizeof realname);
-	else if (!*realname)
-		strlcpy(realname, "*Unknown*", sizeof realname);
+		set_var_value(REALNAME_VAR, ptr, 0);
+	else
+	{
+		ptr = get_string_var(REALNAME_VAR);
+		if (!ptr || !*ptr)
+			set_var_value(REALNAME_VAR, "*Unknown*", 0);
+	}
 
 	if ((ptr = getenv("HOME")))
 		malloc_strcpy(&my_path, ptr);

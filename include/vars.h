@@ -251,9 +251,6 @@ typedef union builtin_variable {
 /* IrcVariable: structure for each variable in the variable table */
 typedef struct
 {
-        char *          name;           /* what the user types */
-        u_32int_t       hash;
-
         int             type;           /* variable types, see below */
         VARIABLE *      data;           /* The value of the variable */
         void    (*func) (const void *); /* func called when var is set */

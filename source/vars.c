@@ -1,4 +1,4 @@
-/* $EPIC: vars.c,v 1.56 2004/07/26 23:35:20 jnelson Exp $ */
+/* $EPIC: vars.c,v 1.57 2004/07/28 01:02:39 jnelson Exp $ */
 /*
  * vars.c: All the dealing of the irc variables are handled here. 
  *
@@ -60,11 +60,10 @@
 #include "clock.h"
 #include "mail.h"
 #include "reg.h"
+#include "commands.h"
+#include "if.h"
 
-IrcVariable *irc_variable[256];		/* Fix this later, eh! */
-int	irc_variable_counter = 0;
-
-static void 	set_variable (IrcVariable *var, char *value, int noisy);
+static void 	set_variable (const char *, IrcVariable *, char *, int);
 
 /*
  * The VIF_* macros stand for "(V)ariable.(i)nt_(f)lags", and have been
@@ -79,8 +78,9 @@ const char	*var_settings[] =
 	"OFF", "ON", "TOGGLE"
 };
 
+	Bucket *var_bucket = NULL;
+
 static	void	eight_bit_characters 	(const void *);
-static	void	set_realname 		(const void *);
 static 	void 	set_display_pc_characters (const void *);
 static 	void	set_dcc_timeout 	(const void *);
 static	void	set_mangle_inbound 	(const void *);
@@ -100,9 +100,11 @@ static int	add_biv (const char *name, int type, void (*func) (const void *), con
 	const char *strval;
 
 	var = (IrcVariable *)new_malloc(sizeof(IrcVariable));
-	var->name = malloc_strdup(name);
 	var->type = type;
-	var->script = malloc_strdup(script);
+	if (script)
+		var->script = malloc_strdup(script);
+	else
+		var->script = NULL;
 	var->func = func;
 
 	var->data = new_malloc(sizeof(union builtin_variable));
@@ -127,8 +129,8 @@ static int	add_biv (const char *name, int type, void (*func) (const void *), con
 	va_end(va);
 
 	add_builtin_variable_alias(name, var);
-	irc_variable[irc_variable_counter++] = var;
-	return (irc_variable_counter - 1);
+	add_to_bucket(var_bucket, name, var);
+	return (var_bucket->numitems - 1);
 }
 
 #define VAR(x, y, z) x ## _VAR = add_biv( #x, y ## _VAR, z,NULL, DEFAULT_ ## x);
@@ -139,11 +141,9 @@ static int	add_biv (const char *name, int type, void (*func) (const void *), con
  */
 void 	init_variables_stage1 (void)
 {
-	int	i;
 	char 	*s;
 
-	for (i = 0; i < 256; i++)
-		irc_variable[i] = NULL;
+	var_bucket = new_bucket();
 
 	VAR(ALLOW_C1_CHARS, 		BOOL, NULL)
 	VAR(ALT_CHARSET, 		BOOL, NULL)
@@ -267,8 +267,8 @@ void 	init_variables_stage1 (void)
 	VAR(PAD_CHAR, CHAR, NULL);
 	VAR(QUIT_MESSAGE, STR,  NULL);
 	VAR(RANDOM_SOURCE, INT,  NULL);
-#define DEFAULT_REALNAME realname
-	VAR(REALNAME, STR,  set_realname);
+#define DEFAULT_REALNAME NULL
+	VAR(REALNAME, STR,  NULL);
 	VAR(REVERSE_STATUS_LINE, BOOL, update_all_status_wrapper);
 #define DEFAULT_SCREEN_OPTIONS NULL
 	VAR(SCREEN_OPTIONS, STR,  NULL);
@@ -393,9 +393,9 @@ void 	init_variables_stage2 (void)
 	/*
 	 * Forcibly init all the variables
 	 */
-	for (i = 0; i < irc_variable_counter; i++)
+	for (i = 0; i < var_bucket->numitems; i++)
 	{
-		IrcVariable *var = irc_variable[i];
+		IrcVariable *var = (IrcVariable *)var_bucket->list[i].stuff;
 
 		if (var->func)
 		{
@@ -434,7 +434,7 @@ int 	do_boolean (char *str, int *value)
 	return (0);
 }
 
-static void	show_var_value (IrcVariable *var, int newval)
+static void	show_var_value (const char *name, IrcVariable *var, int newval)
 {
 	char *value;
 
@@ -444,7 +444,7 @@ static void	show_var_value (IrcVariable *var, int newval)
 		value = malloc_strdup("<EMPTY>");
 
 	say("%s value of %s is %s", newval ? "New" : "Current", 
-					var->name, value);
+					name, value);
 	new_free(&value);
 }
 
@@ -458,8 +458,8 @@ void 	set_var_value (int svv_index, char *value, int noisy)
 {
 	IrcVariable *var;
 
-	var = irc_variable[svv_index];
-	set_variable(var, value, noisy);
+	var = (IrcVariable *)var_bucket->list[svv_index].stuff;
+	set_variable(var_bucket->list[svv_index].name, var, value, noisy);
 }
 
 /*
@@ -468,7 +468,7 @@ void 	set_var_value (int svv_index, char *value, int noisy)
  * of manors.  It displays the results of the set and executes the function
  * defined in the var structure 
  */
-static void 	set_variable (IrcVariable *var, char *value, int noisy)
+static void 	set_variable (const char *name, IrcVariable *var, char *value, int noisy)
 {
 	char	*rest;
 	int	old;
@@ -499,8 +499,7 @@ static void 	set_variable (IrcVariable *var, char *value, int noisy)
 		else if (value && *value && (value = next_arg(value, &rest)))
 		{
 			if (strlen(value) > 1)
-			    say("Value of %s must be a single character",
-					var->name);
+			    say("Value of %s must be a single character", name);
 			else
 			{
 				var->data->integer = *value;
@@ -517,10 +516,10 @@ static void 	set_variable (IrcVariable *var, char *value, int noisy)
 			int	val;
 
 			if (!is_number(value))
-			    say("Value of %s must be numeric!", var->name);
+			    say("Value of %s must be numeric!", name);
 			else if ((val = my_atol(value)) < 0)
 			    say("Value of %s must be a non-negative number", 
-					var->name);
+					name);
 			else
 			{
 				var->data->integer = val;
@@ -547,16 +546,24 @@ static void 	set_variable (IrcVariable *var, char *value, int noisy)
 
 	if (changed)
 	{
-	    if (var->func && !(var->flags & VIF_PENDING))
+	    if ((var->func || var->script) && !(var->flags & VIF_PENDING))
 	    {
 		var->flags |= VIF_PENDING;
-		(var->func)(var->data);
+		if (var->func)
+		    (var->func)(var->data);
+		if (var->script)
+		{
+		    char *s;
+		    s = make_string_var_bydata(var->type, (void *)var->data);
+		    parse_line("SET", var->script, s, 0);
+		    new_free(&s);
+		}
 		var->flags &= ~VIF_PENDING;
 	    }
 	}
 
 	if (noisy)
-	    show_var_value(var, changed);
+	    show_var_value(name, var, changed);
 }
 
 void	create_user_set (char *args)
@@ -576,13 +583,15 @@ void	create_user_set (char *args)
 	while (args && *args && isspace(*args))
 		args++;
 	typestr = next_arg(args, &args);
-	if (typestr && !my_stricmp(typestr, "BOOL"))
+	upper(typestr);
+
+	if (typestr && !strcmp(typestr, "BOOL"))
 		type = BOOL_VAR;
-	else if (typestr && !my_stricmp(typestr, "STR"))
+	else if (typestr && !strcmp(typestr, "STR"))
 		type = STR_VAR;
-	else if (typestr && !my_stricmp(typestr, "INT"))
+	else if (typestr && !strcmp(typestr, "INT"))
 		type = INT_VAR;
-	else if (typestr && !my_stricmp(typestr, "CHAR"))
+	else if (typestr && !strcmp(typestr, "CHAR"))
 		type = CHAR_VAR;
 	else
 	{
@@ -594,7 +603,7 @@ void	create_user_set (char *args)
 		args++;
 	if (*args == '{')
 	{
-		expr = next_expr(&args, '(');
+		expr = next_expr(&args, '{');
 		if (!expr || !*expr)
 		{
 			say("Usage: /SET -CREATE varname <TYPE> [{<code>}]");
@@ -607,6 +616,8 @@ void	create_user_set (char *args)
 		add_biv(varname, type, NULL, expr, (char *)NULL);
 	else
 		add_biv(varname, type, NULL, expr, 0);
+
+	say("Created new SET named \"%s\" of type %s ", varname, typestr);
 }
 
 
@@ -618,10 +629,8 @@ void	create_user_set (char *args)
 BUILT_IN_COMMAND(setcmd)
 {
 	char	*var = NULL;
-	int	cnt;
-	int	hook = 0;
-	char *	(*dummy) (void);
 	IrcVariable *thevar;
+	const char *name;
 	int	i;
 	Bucket	*b;
 
@@ -659,46 +668,45 @@ BUILT_IN_COMMAND(setcmd)
 		b = new_bucket();
 		bucket_builtin_variables(b, var);
 
-		if (b->numitems == 1)
-			thevar = (IrcVariable *)b->list[0].stuff;
-		else if (b->numitems > 1 && !my_stricmp(var, b->list[0].name))
-			thevar = (IrcVariable *)b->list[0].stuff;
-		else
-			thevar = NULL;
-
-		if (!thevar || !(thevar->flags & VIF_PENDING))
-			hook = 1;
-
-		if (thevar)
-			thevar->flags |= VIF_PENDING;
-
-		if (hook)
+		if (b->numitems == 1 ||
+		      (b->numitems > 1 && !my_stricmp(var, b->list[0].name)))
 		{
-			hook = do_hook(SET_LIST, "%s %s", 
-				var, args ? args : "<unset>");
-
-			if (hook && thevar)
-			{
-				hook = do_hook(SET_LIST, "%s %s",
-					thevar->name, 
-					args ? args : "<unset>");
-			}
+			thevar = (IrcVariable *)b->list[0].stuff;
+			name = b->list[0].name;
+		}
+		else
+		{
+			thevar = NULL;
+			name = NULL;
 		}
 
-		if (thevar)
-			thevar->flags &= ~VIF_PENDING;
+		if (!thevar || !(thevar->flags & VIF_PENDING))
+		{
+			if (thevar)
+				thevar->flags |= VIF_PENDING;
 
-		/* If the user hooked it, we're all done! */
-		if (!hook)
-			return;
+			if (!do_hook(SET_LIST, "%s %s", 
+					var, args ? args : "<unset>"))
+				return;		/* Grabed -- stop. */
+
+			if (name)
+			{
+			    if (!do_hook(SET_LIST, "%s %s",
+					name, args ? args : "<unset>"))
+				return;		/* Grabed -- stop. */
+			}
+
+			if (thevar)
+				thevar->flags &= ~VIF_PENDING;
+		}
 
 		/* User didn't offer at it -- do the default thing. */
 		if (thevar)
 		{
 			if (args && !*args)
-				show_var_value(thevar, 0);
+				show_var_value(name, thevar, 0);
 			else
-				set_variable(thevar, args, 1);
+				set_variable(name, thevar, args, 1);
 			return;
 		}
 
@@ -716,18 +724,23 @@ BUILT_IN_COMMAND(setcmd)
 		    {
 			say("%s is ambiguous", var);
 			for (i = 0; i < b->numitems; i++)
-			    show_var_value((IrcVariable *)b->list[i].stuff, 0);
+			    show_var_value(b->list[i].name, 
+					(IrcVariable *)b->list[i].stuff, 0);
 		    }
 		}
+
+		free_bucket(&b);
 	}
 	else
         {
-		int idx; 
-		for (idx = 0; idx < irc_variable_counter; idx++)
-		{
-		    IrcVariable *v = irc_variable[idx];
-		    show_var_value(v, 0);
-		}
+		b = new_bucket();
+		bucket_builtin_variables(b, empty_string);
+
+		for (i = 0; i < b->numitems; i++)
+		    show_var_value(b->list[i].name, 
+				(IrcVariable *)b->list[i].stuff, 0);
+
+		free_bucket(&b);
         }
 }
 
@@ -737,7 +750,7 @@ BUILT_IN_COMMAND(setcmd)
  */
 char *	get_string_var (int var)
 {
-	return (irc_variable[var]->data->string);
+	return ((IrcVariable *)var_bucket->list[var].stuff)->data->string;
 }
 
 /*
@@ -746,7 +759,7 @@ char *	get_string_var (int var)
  */
 int 	get_int_var (int var)
 {
-	return (irc_variable[var]->data->integer);
+	return ((IrcVariable *)var_bucket->list[var].stuff)->data->integer;
 }
 
 char 	*make_string_var (const char *var_name)
@@ -809,33 +822,36 @@ char *get_set (const char *str)
 void 	save_variables (FILE *fp, int do_all)
 {
 	IrcVariable *var;
+	const char *name;
 	int	i;
 
-	for (i = 0; i < irc_variable_counter; i++)
+	for (i = 0; i < var_bucket->numitems; i++)
 	{
-		var = irc_variable[i];
+		var = (IrcVariable *)var_bucket->list[i].stuff;
+		name = var_bucket->list[i].name;
 
-		if (strcmp(var->name, "DISPLAY") == 0 || strcmp(var->name, "CLIENT_INFORMATION") == 0)
+		if (!strcmp(name, "DISPLAY") || 
+		    !strcmp(name, "CLIENT_INFORMATION"))
 			continue;
+
 		fprintf(fp, "SET ");
 		switch (var->type)
 		{
 		case BOOL_VAR:
-			fprintf(fp, "%s %s\n", var->name, var->data->integer ?
+			fprintf(fp, "%s %s\n", name, var->data->integer ?
 				var_settings[ON] : var_settings[OFF]);
 			break;
 		case CHAR_VAR:
-			fprintf(fp, "%s %c\n", var->name, var->data->integer);
+			fprintf(fp, "%s %c\n", name, var->data->integer);
 			break;
 		case INT_VAR:
-			fprintf(fp, "%s %u\n", var->name, var->data->integer);
+			fprintf(fp, "%s %u\n", name, var->data->integer);
 			break;
 		case STR_VAR:
 			if (var->data->string)
-				fprintf(fp, "%s %s\n", var->name,
-					var->data->string);
+				fprintf(fp, "%s %s\n", name, var->data->string);
 			else
-				fprintf(fp, "-%s\n", var->name);
+				fprintf(fp, "-%s\n", name);
 			break;
 		}
 	}
@@ -859,22 +875,6 @@ static void 	eight_bit_characters (const void *stuff)
 	if (value == ON && !term_eight_bit())
 		say("Warning!  Your terminal says it does not support eight bit characters");
 	set_term_eight_bit(value);
-}
-
-static void 	set_realname (const void *stuff)
-{
-	VARIABLE *v;
-	const char *value;
-
-	v = (VARIABLE *)stuff;
-	value = v->string;
-
-	if (!value)
-	{
-		say("Unsetting your realname will do you no good.  So there.");
-		value = empty_string;
-	}
-	strlcpy(realname, value, sizeof realname);
 }
 
 static void 	set_display_pc_characters (const void *stuff)
@@ -1168,7 +1168,7 @@ void	do_stack_set (int type, char *args)
 
 		window_display = 0; 
 		get_var_alias(item->varname, &dummy, &var);
-		set_variable(var, item->value, 1);
+		set_variable(item->varname, var, item->value, 1);
 		window_display = owd; 
 
 		new_free(&item->varname);

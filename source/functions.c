@@ -1,4 +1,4 @@
-/* $EPIC: functions.c,v 1.173 2004/07/26 23:35:20 jnelson Exp $ */
+/* $EPIC: functions.c,v 1.174 2004/07/28 01:02:39 jnelson Exp $ */
 /*
  * functions.c -- Built-in functions for ircII
  *
@@ -877,7 +877,7 @@ static  char    *alias_recv_nick        (void) { return malloc_strdup((get_serve
 static  char    *alias_msg_body         (void) { return malloc_strdup((get_server_sent_body(from_server)) ? get_server_sent_body(from_server) : empty_string); }
 static  char    *alias_joined_nick      (void) { return malloc_strdup((get_server_joined_nick(from_server)) ? get_server_joined_nick(from_server) : empty_string); }
 static  char    *alias_public_nick      (void) { return malloc_strdup((get_server_public_nick(from_server)) ? get_server_public_nick(from_server) : empty_string); }
-static  char    *alias_show_realname 	(void) { return malloc_strdup(realname); }
+static  char    *alias_show_realname 	(void) { return malloc_strdup(get_string_var(REALNAME_VAR)); }
 static	char	*alias_version_str 	(void) { return malloc_strdup(irc_version); }
 static  char    *alias_invite           (void) { return malloc_strdup((get_server_invite_channel(from_server)) ? get_server_invite_channel(from_server) : empty_string); }
 static	char	*alias_oper 		(void) { return malloc_strdup((from_server != -1) ? get_server_operator(from_server) ?  get_string_var(STATUS_OPER_VAR) : empty_string : empty_string); }

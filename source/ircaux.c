@@ -1,4 +1,4 @@
-/* $EPIC: ircaux.c,v 1.113 2004/07/26 23:35:20 jnelson Exp $ */
+/* $EPIC: ircaux.c,v 1.114 2004/07/28 01:02:39 jnelson Exp $ */
 /*
  * ircaux.c: some extra routines... not specific to irc... that I needed 
  *
@@ -4726,7 +4726,7 @@ Bucket *new_bucket (void)
 void	free_bucket (Bucket **b)
 {
 	if ((*b)->list)
-		new_free((char **)((*b)->list));
+		new_free((char **)&((*b)->list));
 	new_free(b);
 }
 

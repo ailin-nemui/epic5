@@ -333,3 +333,15 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Revamp how /set works, using buckets, to implement auto-completion.
 * $getsets() is not implemented yet, do that too. 
 * When looking up $<setname>, use the unified symbol table. HUZZAH!
+* Refactor IrcVariable to not depend on having the varname.
+* This will lead to multiple hard links to the same /set value in the future.
+* Nix the 'name' and 'hash' values in IrcVariable, no longer needed.
+* Make all uses of "realname" use the /set realname variable (rb adm)
+* Nix the global "realname" variable, use /set realname for all.
+* Fix bug with free_bucket()
+* Fix compile warnings in vars.c
+* Store built in variable xref table in a bucket.
+* When changing a user-created /set, start calling the user's scriptback
+* Allow the user's scriptback to call /set to override the user's value.
+* Tell the user that they created a new /set.
+
