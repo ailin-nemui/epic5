@@ -1,4 +1,4 @@
-/* $EPIC: newio.c,v 1.22 2004/01/25 06:48:02 jnelson Exp $ */
+/* $EPIC: newio.c,v 1.23 2004/01/25 07:04:49 jnelson Exp $ */
 /*
  * newio.c: This is some handy stuff to deal with file descriptors in a way
  * much like stdio's FILE pointers 
@@ -37,6 +37,44 @@
  * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
  * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
+ */
+
+/*
+ * This file contains two major sections, which deal with multiplexing I/O 
+ * intended for systems that have integer based file descriptors.  Porting
+ * this to work on other integer based file descriptor systems should be 
+ * pretty easy, and doesn't require changing anything else in EPIC.  Systems
+ * that use something other than integers for file descriptors will require
+ * more work, but shouldn't be /too/ difficult.
+ *
+ * In section 1, is "dgets", which does line-buffering on any file
+ * descriptor in the same way fgets() does for (FILE *)s.  Everything in 
+ * EPIC that does line buffering uses dgets() to handle this job.
+ *
+ * "dgets" includes these functions:
+ *   get_pending_bytes(), which returns the number of bytes buffered by 
+ *		the dgets system for a file descriptor.  
+ *   init_io(), which initializes the dgets() subsystem.  The name sucks.
+ *   unix_read(), which is a dgets() reader function that uses the unix
+ *		read(2) system call to fill the buffers.
+ *   dgets() which takes a file descriptor, a buffer, a buffer size, and 
+ *		a reader callback function.  dgets() works in two steps,
+ *		first filling its own buffers with a supplied reader func,
+ *		and then returning the first line from this buffer.  Further
+ *		lines will be returned in subsequent calls to dgets().
+ * Making "dgets" work on non-unix systems is as simple as replacing the 
+ * "unix_read()" function with whatever you use on the new system to pull
+ * bytes off of a file descriptor.  The rest of EPIC does not need to be
+ * changed, though you may want to look at how servers work with SSL.
+ * 
+ * In section 2, are the "event drivers" which are sets of functions that 
+ * handle the management of file descriptors and a "sleep function" which 
+ * epic calls when it has nothing else to do, and which does not return 
+ * until there is something to do.  See newio.h for a lot more info, but
+ * basically there are implementations for unix select(2) and freebsd's 
+ * kqueue(2) systems here.  You should be able to write new sets of functions
+ * for non-unix systems (like VMS) pretty easily, and nothing else in EPIC
+ * need change.
  */
 
 #include "irc.h"
@@ -110,6 +148,15 @@ static	void	init_io (void)
 		first = 0;
 	}
 }
+
+static int	unix_read (int fd, char **buffer, size_t *buffer_size, size_t *start)
+{
+	int	c;
+
+	c = read(fd, (*buffer) + (*start), (*buffer_size) - (*start) - 1);
+	return c;
+}
+
 
 /*
  * dgets() is used by:
@@ -313,14 +360,6 @@ void	set_socket_options (int s)
 	info |= O_NONBLOCK;
 	fcntl(fd, F_SETFL, info);
 #endif
-}
-
-static int	unix_read (int fd, char **buffer, size_t *buffer_size, size_t *start)
-{
-	int	c;
-
-	c = read(fd, (*buffer) + (*start), (*buffer_size) - (*start) - 1);
-	return c;
 }
 
 #ifdef USE_SELECT
