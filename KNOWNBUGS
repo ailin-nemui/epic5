@@ -115,3 +115,7 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Split NOTIFY stuff off into its own timer
 * Add #define MINIMUM_NOTIFY_INTERVAL in config.h
 * Add set_notify_interval, force that /SET NOTIFY_INTERVAL >= MIN_NOT_INT
+* Add $logctl(REFNUMS [ACTIVE|INACTIVE|ALL]), return all log refnums, for wd.
+* Add an "activity timer" to logfiles to indicate last time written to.
+* Add /LOG <refnum> ACTIVITY which updates activity timer w/o writing to log.
+* Add $logctl([GET|SET] <refnum> ACTIVITY) to get or set the activity timer. 

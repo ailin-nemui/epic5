@@ -1,5 +1,27 @@
 EPIC4-1.2.0
 
+*** News 02/03/2003 -- $logctl(REFNUMS [ACTIVE|INACTIVE|ALL])
+	You can now do the following things with logfiles:
+		$logctl(REFNUMS ACTIVE)
+			returns all ACTIVE (on) logfiles
+		$logctl(REFNUMS INACTIVE)
+			returns all INACTIVE (off) logfiles
+		$logctl(REFNUMS ALL)
+			returns all logfiles
+
+*** News 02/03/2003 -- Logs now keep track of "last written time"
+	Each logfile now has an "activity timer" which is reset when
+	you first create the logfile, when you turn it on, or when you
+	turn it off, or when any output is written to the logfile.
+	You can work with this timer in the following ways:
+
+		$logctl(GET <refnum> ACTIVITY)
+			returns the last time the logfile was written to
+		$logctl(SET <refnum> ACTIVITY)
+			resets the log file's activity timer to current time
+		/LOG <refnum> ACTIVITY
+			resets the log file's activity timer to current time
+
 *** News 02/03/2003 -- "Larnifications" to epic's server handling code
 	Traditionally, ircII clients have trusted the server to send
 	well formed data.  If messages from the server were badly formed

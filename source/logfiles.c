@@ -1,4 +1,4 @@
-/* $EPIC: logfiles.c,v 1.13 2002/12/23 15:11:27 jnelson Exp $ */
+/* $EPIC: logfiles.c,v 1.14 2003/02/04 02:29:43 jnelson Exp $ */
 /*
  * logfiles.c - General purpose log files
  *
@@ -67,6 +67,8 @@ struct Logfile {
 	int	mangler;
 	char *	mangle_desc;
 	int	active;
+
+	time_t	activity;
 };
 
 typedef struct Logfile Logfile;
@@ -94,6 +96,7 @@ Logfile *	new_logfile (void)
 	log->mangler = 0;
 	log->mangle_desc = NULL;
 	log->active = 0;
+	time(&log->activity);
 
 	logfiles = log;
 	return log;
@@ -204,6 +207,7 @@ char *logfile_get_targets (Logfile *log)
 /************************************************************************/
 typedef Logfile *(*logfile_func) (Logfile *, char **);
 
+static Logfile *logfile_activity (Logfile *log, char **args);
 static Logfile *logfile_add (Logfile *log, char **args);
 static Logfile *logfile_describe (Logfile *log, char **args);
 static Logfile *logfile_filename (Logfile *log, char **args);
@@ -218,6 +222,18 @@ static Logfile *logfile_refnum (Logfile *log, char **args);
 static Logfile *logfile_remove (Logfile *log, char **args);
 static Logfile *logfile_rewrite (Logfile *log, char **args);
 static Logfile *logfile_type (Logfile *log, char **args);
+
+static Logfile *	logfile_activity (Logfile *log, char **args)
+{
+	if (!log)
+	{
+		say("ACTIVITY: You need to specify a logfile first");
+		return NULL;
+	}
+
+	time(&log->activity);
+	return log;
+}
 
 static Logfile *	logfile_add (Logfile *log, char **args)
 {
@@ -448,6 +464,7 @@ static Logfile *	logfile_off (Logfile *log, char **args)
 		return log;
 	}
 
+	time(&log->activity);
 	do_log(0, log->filename, &log->log);
 	log->active = 0;
 	return log;
@@ -467,6 +484,7 @@ static Logfile *	logfile_on (Logfile *log, char **args)
 		return log;
 	}
 
+	time(&log->activity);
 	do_log(1, log->filename, &log->log);
 	log->active = 1;
 	return log;
@@ -596,6 +614,7 @@ typedef struct logfile_ops_T {
 } logfile_ops;
 
 static const logfile_ops options [] = {
+	{ "ACTIVITY",	logfile_activity	},
 	{ "ADD",	logfile_add		},
 	{ "DESCRIBE",	logfile_describe	},
 	{ "FILENAME",	logfile_filename	},
@@ -672,6 +691,7 @@ void	add_to_logs (int winref, int servref, const char *target, int level, const 
 		    if (log->refnums[i] == winref) {
 			if (log->level && (log->level & level) == 0)
 				continue;
+			time(&log->activity);
 			add_to_log(log->log, winref, orig_str, log->mangler, log->rewrite);
 		    }
 		}
@@ -683,6 +703,7 @@ void	add_to_logs (int winref, int servref, const char *target, int level, const 
 		    if (log->refnums[i] == servref) {
 			if (log->level && (log->level & level) == 0)
 				continue;
+			time(&log->activity);
 			add_to_log(log->log, winref, orig_str, log->mangler, log->rewrite);
 		    }
 		}
@@ -703,6 +724,7 @@ void	add_to_logs (int winref, int servref, const char *target, int level, const 
 			continue;
 
 		/* OK!  We want to log it now! */
+		time(&log->activity);
 		add_to_log(log->log, winref, orig_str, log->mangler, log->rewrite);
 	    }
 	}
@@ -711,6 +733,7 @@ void	add_to_logs (int winref, int servref, const char *target, int level, const 
 /*****************************************************************************/
 /* Used by function_logctl */
 /*
+ * $logctl(REFNUMS [ACTIVE|INACTIVE|ALL])
  * $logctl(REFNUM log-desc)
  * $logctl(ADD log-desc [target])
  * $logctl(DELETE log-desc [target])
@@ -739,7 +762,28 @@ char *logctl	(char *input)
 	Logfile	*log;
 
 	GET_STR_ARG(listc, input);
-        if (!my_strnicmp(listc, "REFNUM", 1)) {
+        if (!my_strnicmp(listc, "REFNUMS", 7)) {
+		char *	retval = NULL;
+		int	active;
+
+		GET_STR_ARG(refstr, input);
+		if (!my_stricmp(refstr, "ACTIVE"))
+			active = 1;
+		else if (!my_stricmp(refstr, "INACTIVE"))
+			active = 0;
+		else if (!my_stricmp(refstr, "ALL"))
+			active = -1;
+		else
+			RETURN_EMPTY;
+
+		for (log = logfiles; log; log = log->next)
+		{
+			if (active != -1 && active != log->active)
+				continue;
+			m_s3cat_s(&retval, space, ltoa(log->refnum));
+		}
+		RETURN_MSTR(retval);
+        } else if (!my_strnicmp(listc, "REFNUM", 6)) {
 		GET_STR_ARG(refstr, input);
 		if (!(log = get_log_by_desc(input)))
 			RETURN_EMPTY;
@@ -784,6 +828,8 @@ char *logctl	(char *input)
 			RETURN_INT(log->active);
                 } else if (!my_strnicmp(listc, "TYPE", 3)) {
 			RETURN_STR(logtype[log->type]);
+		} else if (!my_strnicmp(listc, "ACTIVITY", 1)) {
+			RETURN_INT(log->activity);
 		}
         } else if (!my_strnicmp(listc, "SET", 1)) {
                 GET_STR_ARG(refstr, input);
@@ -823,9 +869,10 @@ char *logctl	(char *input)
                 } else if (!my_strnicmp(listc, "TYPE", 3)) {
 			logfile_type(log, &input);
 			RETURN_INT(1);
+                } else if (!my_strnicmp(listc, "ACTIVITY", 1)) {
+			logfile_activity(log, &input);
+			RETURN_INT(1);
 		}
-
-
         } else if (!my_strnicmp(listc, "MATCH", 1)) {
                 RETURN_EMPTY;           /* Not implemented for now. */
         } else if (!my_strnicmp(listc, "PMATCH", 1)) {
