@@ -72,3 +72,4 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Make move_channel_to_window() do automatic de-binding for us.
 * This means we can fix /window channel to not hunt for the "other" window.
 * Fix /window channel to use send_to_aserver().
+* When killing a window, move channels before swapping, avoids ref int panic.
