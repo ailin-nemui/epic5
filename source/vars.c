@@ -1,4 +1,4 @@
-/* $EPIC: vars.c,v 1.26 2003/02/17 23:48:48 crazyed Exp $ */
+/* $EPIC: vars.c,v 1.27 2003/03/29 08:10:22 jnelson Exp $ */
 /*
  * vars.c: All the dealing of the irc variables are handled here. 
  *
@@ -293,6 +293,7 @@ static	IrcVariable irc_variable[] =
 	{ "STATUS_VOICE",		STR_TYPE_VAR,	0, NULL, build_status, 0, 0 },
 	{ "STATUS_WINDOW",		STR_TYPE_VAR,	0, NULL, build_status, 0, 0 },
         { "SUPPRESS_FROM_REMOTE_SERVER",BOOL_TYPE_VAR,  DEFAULT_SUPPRESS_FROM_REMOTE_SERVER, NULL, NULL, 0, 0},
+	{ "SWITCH_CHANNELS_BETWEEN_WINDOWS",	BOOL_TYPE_VAR,	DEFAULT_SWITCH_CHANNELS_BETWEEN_WINDOWS, NULL, NULL, 0, 0 },
 	{ "SWITCH_CHANNEL_ON_PART",	BOOL_TYPE_VAR,	DEFAULT_SWITCH_CHANNEL_ON_PART, NULL, NULL, 0, 0 },
 	{ "TAB",			BOOL_TYPE_VAR,	DEFAULT_TAB, NULL, NULL, 0, 0 },
 	{ "TAB_MAX",			INT_TYPE_VAR,	DEFAULT_TAB_MAX, NULL, NULL, 0, 0 },

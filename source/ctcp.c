@@ -1,4 +1,4 @@
-/* $EPIC: ctcp.c,v 1.19 2003/01/26 03:25:38 jnelson Exp $ */
+/* $EPIC: ctcp.c,v 1.20 2003/03/29 08:10:22 jnelson Exp $ */
 /*
  * ctcp.c:handles the client-to-client protocol(ctcp). 
  *
@@ -253,7 +253,7 @@ CTCP_HANDLER(do_atmosphere)
 		message_from(to, LOG_ACTION);
 		if (do_hook(ACTION_LIST, "%s %s %s", from, to, cmd))
 		{
-			if (is_current_channel(to, 0))
+			if (is_current_channel(to, from_server))
 				put_it("* %s %s", from, cmd);
 			else
 				put_it("* %s:%s %s", from, to, cmd);

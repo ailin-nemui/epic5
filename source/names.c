@@ -1,4 +1,4 @@
-/* $EPIC: names.c,v 1.38 2003/01/26 03:25:38 jnelson Exp $ */
+/* $EPIC: names.c,v 1.39 2003/03/29 08:10:22 jnelson Exp $ */
 /*
  * names.c: This here is used to maintain a list of all the people currently
  * on your channel.  Seems to work 
@@ -67,16 +67,19 @@ typedef	struct	nick_list_stru
 	hash_type hash;
 }	NickList;
 
+static	int	current_channel_counter = 0;
+
 /* ChannelList: structure for the list of channels you are current on */
 typedef	struct	channel_stru
 {
 struct	channel_stru *	next;		/* pointer to next channel */
 struct	channel_stru *	prev;		/* pointer to previous channel */
 	char *		channel;	/* channel name */
-	int		server;		/* last or present server connection */
+	int		server;		/* The server the channel is "on" */
+	int		winref;		/* The window the channel is "on" */
+	int		curr_count;	/* Current channel precedence */
 	int		waiting;	/* just acting as a placeholder... */
 	int		inactive;	/* waiting on a reconnect... */
-	Window	*	window;		/* the window the channel is "on" */
 	int		bound;		/* Bound to this window? */
 	int		current;	/* Current to this window? */
 	NickList	nicks;		/* alist of nicks on channel */
@@ -127,89 +130,31 @@ static	char		new_channel_format[BIG_BUFFER_SIZE];
 #else
 static	int	match_chan_with_id (const char *chan, const char *match);
 #endif
+	void	channel_hold_election (int winref);
 
 
 /*
  * This isnt strictly neccesary, its more of a cosmetic function.
  */
-int	traverse_all_channels (Channel **ptr, int server)
+static int	traverse_all_channels (Channel **ptr, int server, int only_this_server)
 {
-	int	real_server;
-
-	if (server < 0)			/* XXX */
-		real_server = -(server + 1);
-	else
-		real_server = server;
-
 	if (!*ptr)
 		*ptr = channel_list;
 	else
 		*ptr = (*ptr)->next;
 
-	if (real_server == server)
-		while (*ptr && (*ptr)->server != real_server)
+	if (only_this_server)
+		while (*ptr && (*ptr)->server != server)
 			*ptr = (*ptr)->next;
 	else
-		while (*ptr && (*ptr)->server == real_server)
+		while (*ptr && (*ptr)->server == server)
 			*ptr = (*ptr)->next;
 
 
-	/*
-	 * Cheap check to save CPU
-	 */
 	if (!*ptr)
 		return 0;
 
-	/*
-	 * Ugh.  Ok.  If we get here, then we either have a channel that
-	 * is not attached to a window (how does that happen? [when the
-	 * window is killed, you idjit!])  or the window we are attached 
-	 * to is not on the same server that we think we should be.  In 
-	 * all cases, *our* concept of what server we are on is most 
-	 * important.  So we have to go find a window that thinks its on 
-	 * the same server we are.
-	 */
-	if (!(*ptr)->window || (is_server_registered((*ptr)->window->server) &&
-				(*ptr)->window->server != (*ptr)->server))
-	{
-		Window *w = NULL;
-		(*ptr)->window = NULL;
-
-		while (traverse_all_windows(&w))
-		{
-			if (w->server == (*ptr)->server)
-			{
-				if (x_debug & DEBUG_CHANNELS)
-					yell("Reparented channel [%s] to "
-						"window [%d] on server [%d]", 
-						(*ptr)->channel, w->refnum,
-						w->server);
-				(*ptr)->window = w;
-			}
-		}
-
-		/*
-		 * This should probably be an impossible case.  I cannot
-		 * imagine any situation where we would have a server open
-		 * with channels on it, but without any window attached to
-		 * it.  We'll just output this bogus message for now.
-		 *
-		 * This used to output the message if the channel was on the
-		 * list, but that came up when the server was already
-		 * connected, which wasnt terribly useful.
-		 */
-		if (!(*ptr)->window)
-		{
-			/*
-			 * Not sure if anyone cares about this message
-			 * Probably should be cleaned up after.  Hopefully
-			 * someone will call window_check_servers() soon.
-			 */
-			say("Found orphaned channel [%s] on server [%d]",
-				(*ptr)->channel, (*ptr)->server);
-		}
-	}
-
+	/* The tests that used to be done here moved elsewhere */
 	return 1;
 }
 
@@ -229,10 +174,10 @@ static Channel *find_channel (const char *channel, int server)
 
 	/* Automatically grok the ``*'' channel. */
 	if (!channel || !*channel || !strcmp(channel, "*"))
-		if (!(channel = get_channel_by_refnum(0)))
+		if (!(channel = get_echannel_by_refnum(0)))
 			return NULL;		/* sb colten */
 
-	while (traverse_all_channels(&ch, server))
+	while (traverse_all_channels(&ch, server, 1))
 		if (!my_stricmp(ch->channel, channel))
 			return ch;
 
@@ -249,7 +194,7 @@ static Channel *create_channel (const char *name, int server)
 	new_c->server = server;
 	new_c->waiting = 0;
 	new_c->inactive = 0;
-	new_c->window = NULL;
+	new_c->winref = -1;
 	new_c->bound = 0;
 	new_c->current = 0;
 	new_c->nicks.max_alloc = new_c->nicks.max = 0;
@@ -292,11 +237,10 @@ static void 	clear_channel (Channel *chan)
 /* Channel destructor -- caller must free "chan". */
 static void 	destroy_channel (Channel *chan)
 {
-	Channel	*tmp;
-	char *	old_from = NULL;
-	char *	new_to = NULL;
-	int	old_refnum = 0;
-	int	new_refnum = 0;
+	int	is_current_now;
+	Char *	new_current_channel;
+
+	is_current_now = is_current_channel(chan->channel, chan->server);
 
 	if (chan != channel_list)
 	{
@@ -314,46 +258,24 @@ static void 	destroy_channel (Channel *chan)
 	if (chan->next)
 		chan->next->prev = chan->prev;
 
-	if (chan->window && chan->window->current_channel &&
-		!my_stricmp(chan->channel, chan->window->current_channel))
+	/*
+	 * If we are a current window, then we will no longer be so;
+	 * We must hold an election for a new current window and throw
+	 * the switch channels thing.
+	 */
+	if (is_current_now)
 	{
-		old_from = m_strdup(chan->window->current_channel);
-		old_refnum = chan->window->refnum;
-		new_free(&chan->window->current_channel);
-		window_statusbar_needs_update(chan->window);
+	    channel_hold_election(chan->winref);
+	    if (!(new_current_channel = get_echannel_by_refnum(chan->winref)))
+		new_current_channel = zero;
 
-		if (get_int_var(SWITCH_CHANNEL_ON_PART_VAR))
-		{
-		    for (tmp = channel_list; tmp; tmp = tmp->next)
-		    {
-			if (tmp->window != chan->window || 
-					tmp->server != chan->server)
-				continue;
-
-			new_to = m_strdup(tmp->channel);
-			new_refnum = tmp->window->refnum;
-			malloc_strcpy(&chan->window->current_channel, 
-					tmp->channel);
-
-			/*
-			 * Remove "waiting channel" if we're waiting for 
-			 * this channel.  ;-)
-			 */
-			if (chan->window->waiting_channel && 
-				!my_stricmp(tmp->channel, 
-						chan->window->waiting_channel))
-				new_free(&chan->window->waiting_channel);
-
-			set_channel_window(chan->window, 
-					chan->window->current_channel);
-			break;
-		     }
-		}
+	    do_hook(SWITCH_CHANNELS_LIST, "%d %s %s",
+			chan->winref, chan->channel, new_current_channel);
 	}
 
 	new_free(&chan->channel);
 	chan->server = NOSERV;
-	chan->window = NULL;
+	chan->winref = -1;
 
 	if (chan->nicks.max_alloc)
 		clear_channel(chan);
@@ -365,19 +287,6 @@ static void 	destroy_channel (Channel *chan)
 	new_free(&chan->key); 
 	chan->chop = 0;
 	chan->voice = 0;
-
-	if (old_from)
-	{
-		do_hook(SWITCH_CHANNELS_LIST, "%d %s %s",
-				old_refnum, old_from, zero);
-		new_free(&old_from);
-	}
-	if (new_to)
-	{
-		do_hook(SWITCH_CHANNELS_LIST, "%d %s %s",
-				new_refnum, zero, new_to);
-		new_free(&new_to);
-	}
 }
 
 /*
@@ -387,38 +296,16 @@ static void 	destroy_channel (Channel *chan)
 void 	add_channel (const char *name, int server)
 {
 	Channel *new_c;
-	int	was_current;
-	Window	*was_window = NULL;
+	int	was_window = -1;
 	Window	*tmp = NULL;
-
-	/* Bogus dependancy on 'from_server == server' here. */
-	was_current = is_current_channel(name, 0);
 
 	if ((new_c = find_channel(name, server)))
 	{
-		was_window = new_c->window;
-
-		/* 
-		 * Defensive panics to make sure we don't do anything
-		 * that will lead to a crash later.
-		 */
-		if (was_current && was_window == NULL)
-			panic("Channel [%s] is current but it's not "
-				"on a window!", name);
-		if (was_current && my_stricmp(name, was_window->current_channel))
-			panic("Channel [%s] is current, but not in "
-				"the window it thinks it is!", name);
-		if (!was_current && !my_stricmp(name, was_window->current_channel))
-			panic("Channel [%s] is not current, but it's window "
-				"thinks that it is!", name);
-
+		was_window = new_c->winref;
 		destroy_channel(new_c);
 		malloc_strcpy(&(new_c->channel), name);
 		new_c->server = server;
 	}
-	else if (was_current)
-		panic("Channel [%s] is current but I couldn't find it!",
-			name);
 	else
 		new_c = create_channel(name, server);
 
@@ -426,49 +313,39 @@ void 	add_channel (const char *name, int server)
 	new_c->waiting = 1;		/* This channel is "syncing" */
 	get_time(&new_c->join_time);
 
-	if (was_current)
+	if (was_window == -1)
 	{
-		if (was_window == NULL)
-			panic("Channel [%s] cannot be both current "
-				"and windowless!", name);
-
-		new_c->window = was_window;
-		set_channel_by_refnum(was_window->refnum, name);
-		update_all_windows();
-		return;
-	}
-
-	/* Try to find "our" window for this channel. */
-	while (traverse_all_windows(&tmp))
-	{
+	    /* Try to find "our" window for this channel. */
+	    while (traverse_all_windows(&tmp))
+	    {
 		if (tmp->server != from_server)
 			continue;
 		if (!tmp->waiting_channel && !tmp->bind_channel)
 			 continue;
 
-		if ((tmp->bind_channel && 
-			!match_chan_with_id(name, tmp->bind_channel)) ||
-		    (tmp->waiting_channel &&
-			!match_chan_with_id(name, tmp->waiting_channel)))
+		if (tmp->bind_channel && 
+			!match_chan_with_id(name, tmp->bind_channel))
 		{
-			set_channel_by_refnum(tmp->refnum, name);
-			new_c->window = tmp;
-			update_all_windows();
-			return;
+			was_window = tmp->refnum;
+			break;
 		}
+
+		if (tmp->waiting_channel &&
+			!match_chan_with_id(name, tmp->waiting_channel))
+		{
+			new_free(&tmp->waiting_channel);
+			was_window = tmp->refnum;
+			break;
+		}
+	    }
 	}
 
-	/* Try to find a window that is reasonable */
-	if (new_c->window == NULL)
-	{
-		/* If current window is on the correct server, use it. */
-		if (get_window_server(0) == from_server)
-			new_c->window = current_window;
-		else
-			new_c->window = NULL;
-	}
+	if (was_window == -1)
+		was_window = get_winref_by_servref(from_server);
 
+	set_channel_window(name, from_server, was_window, 1);
 	update_all_windows();
+	return;
 }
 
 /*
@@ -516,8 +393,6 @@ void 	remove_channel (const char *channel, int server)
  * Nickname maintainance
  *
  */
-
-
 static Nick *	find_nick_on_channel (Channel *ch, const char *nick)
 {
 	int cnt, loc;
@@ -528,6 +403,15 @@ static Nick *	find_nick_on_channel (Channel *ch, const char *nick)
 		return NULL;
 
 	return new_n;
+}
+
+static Nick *	find_nick (int server, const char *channel, const char *nick)
+{
+	Channel *ch;
+	if ((ch = find_channel(channel, server)))
+		return find_nick_on_channel(ch, nick);
+
+	return NULL;
 }
 
 /*
@@ -571,32 +455,6 @@ static Nick *	find_suspicious_on_channel (Channel *ch, const char *nick)
 	return NULL;
 }
 
-static Nick *	find_nick (int server, const char *channel, const char *nick)
-{
-	Channel *ch;
-	if ((ch = find_channel(channel, server)))
-		return find_nick_on_channel(ch, nick);
-
-	return NULL;
-}
-
-/*
- * check_channel_type: checks if the given channel is a normal #channel
- * or a new !channel from irc2.10.  If the latter, then it reformats it
- * a bit into a more user-friendly form.
- */
-const char *	check_channel_type (const char *channel)
-{
-	/* Grumblesmurf */
-	return channel;
-#if 0
-	if (*channel != '!' || strlen(channel) < 6)
-		return channel;
-
-	sprintf(new_channel_format, "[%.6s] %s", channel, channel + 6);
-	return new_channel_format;
-#endif
-}
 
 
 /*
@@ -753,14 +611,13 @@ void 	add_userhost_to_channel (const char *channel, const char *nick, int server
  */
 void 	remove_from_channel (const char *channel, const char *nick, int server)
 {
-	Channel *chan;
+	Channel *chan = NULL;
 	Nick	*tmp;
 
-	for (chan = channel_list; chan; chan = chan->next)
-	{
-		if (chan->server != server)
-			continue;
+	if (server == NOSERV) return;
 
+	while (traverse_all_channels(&chan, server, 1))
+	{
 		/* This is correct, dont change it! */
 		if (channel && my_stricmp(channel, chan->channel))
 			continue;
@@ -786,7 +643,7 @@ void 	rename_nick (const char *old_nick, const char *new_nick, int server)
 
 	if (server == NOSERV) return;		/* Sanity check */
 
-	while (traverse_all_channels(&chan, server))
+	while (traverse_all_channels(&chan, server, 1))
 	{
 		if ((tmp = (Nick *)remove_from_array((array *)&chan->nicks, old_nick)))
 		{
@@ -794,6 +651,25 @@ void 	rename_nick (const char *old_nick, const char *new_nick, int server)
 			add_to_array((array *)&chan->nicks, (array_item *)tmp);
 		}
 	}
+}
+
+
+/*
+ * check_channel_type: checks if the given channel is a normal #channel
+ * or a new !channel from irc2.10.  If the latter, then it reformats it
+ * a bit into a more user-friendly form.
+ */
+const char *	check_channel_type (const char *channel)
+{
+	/* Grumblesmurf */
+	return channel;
+#if 0
+	if (*channel != '!' || strlen(channel) < 6)
+		return channel;
+
+	sprintf(new_channel_format, "[%.6s] %s", channel, channel + 6);
+	return new_channel_format;
+#endif
 }
 
 int 	im_on_channel (const char *channel, int refnum)
@@ -856,9 +732,11 @@ char	*create_nick_list (const char *name, int server)
 	int 	i;
 	size_t	clue = 0;
 
-	if (channel)
-		for (i = 0; i < channel->nicks.max; i++)
-			m_sc3cat(&str, space, channel->nicks.list[i]->nick, &clue);
+	if (!channel)
+		return NULL;
+
+	for (i = 0; i < channel->nicks.max; i++)
+		m_sc3cat(&str, space, channel->nicks.list[i]->nick, &clue);
 
 	return str;
 }
@@ -870,10 +748,12 @@ char	*create_chops_list (const char *name, int server)
 	int 	i;
 	size_t	clue = 0;
 
-	if (channel)
-		for (i = 0; i < channel->nicks.max; i++)
-			if (channel->nicks.list[i]->chanop)
-				m_sc3cat(&str, space, channel->nicks.list[i]->nick, &clue);
+	if (!channel)
+		return m_strdup(empty_string);
+
+	for (i = 0; i < channel->nicks.max; i++)
+	    if (channel->nicks.list[i]->chanop)
+		m_sc3cat(&str, space, channel->nicks.list[i]->nick, &clue);
 
 	if (!str)
 		return m_strdup(empty_string);
@@ -887,10 +767,12 @@ char	*create_nochops_list (const char *name, int server)
 	int 	i;
 	size_t	clue = 0;
 
-	if (channel)
-		for (i = 0; i < channel->nicks.max; i++)
-			if (!channel->nicks.list[i]->chanop)
-				m_sc3cat(&str, space, channel->nicks.list[i]->nick, &clue);
+	if (!channel)
+		return m_strdup(empty_string);
+
+	for (i = 0; i < channel->nicks.max; i++)
+	    if (!channel->nicks.list[i]->chanop)
+		m_sc3cat(&str, space, channel->nicks.list[i]->nick, &clue);
 
 	if (!str)
 		return m_strdup(empty_string);
@@ -996,11 +878,11 @@ const	char	*chanmodes, *prefix;
  */
 static void	decifer_mode (const char *modes, Channel *chan)
 {
-	int		add = 0;
-	char		*rest;
-	Nick		*nick;
-	int		value = 0;
-	char		*mode_str;
+	int	add = 0;
+	char *	rest;
+	Nick *	nick;
+	int	value = 0;
+	char *	mode_str;
 
 	/* Make a copy of it.*/
 	mode_str = LOCAL_COPY(modes);
@@ -1011,168 +893,170 @@ static void	decifer_mode (const char *modes, Channel *chan)
 
 	for (; *mode_str; mode_str++)
 	{
-		const char *arg = NULL;
-		switch (chanmodetype(*mode_str))
-		{
-			case 6: case 1:
+	    const char *arg = NULL;
+
+	    switch (chanmodetype(*mode_str))
+	    {
+		case 6: case 1:
+			break;
+		case 5:
+			if (!add) break;
+		case 4: case 3: case 2:
+			if ((arg = next_arg(rest, &rest)))
 				break;
-			case 5:
-				if (!add) break;
-			case 4: case 3: case 2:
-				if ((arg = next_arg(rest, &rest)))
-					break;
-				yell("WARNING:  Mode parser or server is BROKE.  Mode=%c%c args: %s"
-						, add?'+':'-', *mode_str, rest);
-			default:
-				yell("Defaulting %c%c to CHANMODE type D", add?'+':'-', *mode_str);
+			yell("WARNING:  Mode parser or server is BROKE.  Mode=%c%c args: %s",
+					add ? '+' : '-', *mode_str, rest);
+		default:
+			yell("Defaulting %c%c to CHANMODE type D", add?'+':'-', *mode_str);
+	    }
+
+	    switch (*mode_str)
+	    {
+		case '+':
+			add = 1;
+			continue;
+		case '-':
+			add = 0;
+			continue;
+
+		case 'a':
+			value = MODE_ANONYMOUS;
+			break;
+		case 'c':
+			value = MODE_C;
+			break;
+		case 'C':
+			value = MODE_C2;
+			break;
+		case 'D':
+			value = MODE_D;
+			break;
+		case 'i':
+			value = MODE_INVITE;
+			break;
+		case 'm':
+			value = MODE_MODERATED;
+			break;
+		case 'n':
+			value = MODE_MSGS;
+			break;
+		case 'p':
+			value = MODE_PRIVATE;
+			break;
+		case 'r':
+			value = MODE_REGISTERED;
+			break;
+		case 'R':
+			value = MODE_RESTRICTED;
+			break;
+		case 's':
+			value = MODE_SECRET;
+			break;
+		case 't':
+			value = MODE_TOPIC;
+			break;
+		case 'z':		/* Erf/TS4 "zapped" */
+			value = MODE_Z;
+			break;
+		case 'M':		/* Duhnet's mute-mode */
+			value = MODE_M;
+			break;
+		case 'O':		/* Duhhnet's oper-only */
+			value = MODE_OPER_ONLY;
+			break;
+		case 'k':
+		{
+			if (!arg)
+			{
+			    yell("Channel %s is +k, but has no key.  "
+				 "This server broke backwards compatability",
+				 chan->channel);
+			    continue;
+			}
+
+			value = MODE_KEY;
+
+			if (add)
+				malloc_strcpy(&chan->key, arg);
+			else
+				new_free(&chan->key);
+
+			chan->i_mode = -1;	/* Revoke old cache */
+			break;	
 		}
-		switch (*mode_str)
+		case 'l':
 		{
-			case '+':
-				add = 1;
-				continue;
-			case '-':
-				add = 0;
-				continue;
+			value = MODE_LIMIT;
+			if (!add)
+				arg = zero;
 
-			case 'a':
-				value = MODE_ANONYMOUS;
-				break;
-			case 'c':
-				value = MODE_C;
-				break;
-			case 'C':
-				value = MODE_C2;
-				break;
-			case 'D':
-				value = MODE_D;
-				break;
-			case 'i':
-				value = MODE_INVITE;
-				break;
-			case 'm':
-				value = MODE_MODERATED;
-				break;
-			case 'n':
-				value = MODE_MSGS;
-				break;
-			case 'p':
-				value = MODE_PRIVATE;
-				break;
-			case 'r':
-				value = MODE_REGISTERED;
-				break;
-			case 'R':
-				value = MODE_RESTRICTED;
-				break;
-			case 's':
-				value = MODE_SECRET;
-				break;
-			case 't':
-				value = MODE_TOPIC;
-				break;
-			case 'z':		/* Erf/TS4 "zapped" */
-				value = MODE_Z;
-				break;
-			case 'M':		/* Duhnet's mute-mode */
-				value = MODE_M;
-				break;
-			case 'O':		/* Duhhnet's oper-only */
-				value = MODE_OPER_ONLY;
-				break;
-			case 'k':
-			{
-				if (!arg)
-				{
-				    yell("Channel %s is +k, but has no key.  "
-					 "This server broke backwards compatability",
-					 chan->channel);
-				    continue;
-				}
-
-				value = MODE_KEY;
-
-				if (add)
-					malloc_strcpy(&chan->key, arg);
-				else
-					new_free(&chan->key);
-
-				chan->i_mode = -1;	/* Revoke old cache */
-				break;	
-			}
-			case 'l':
-			{
-				value = MODE_LIMIT;
-				if (!add)
-					arg = zero;
-
-				chan->limit = my_atol(arg);
-				chan->i_mode = -1;	/* Revoke old cache */
-				continue;
-			}
-
-			case 'o':
-			{
-				/* 
-				 * Borked av2.9 sends a +o to the channel
-				 * when you create it, but doesnt bother to
-				 * send your nickname, too. blah.
-				 */
-				if (!arg)
-				    arg = get_server_nickname(from_server);
-
-				if (is_me(from_server, arg))
-					chan->chop = add;
-				if ((nick = find_nick_on_channel(chan, arg)))
-					nick->chanop = add;
-				continue;
-			}
-			case 'v':
-			{
-				if (!arg)
-				{
-					yell("Channel %s got a mode +v "
-					     "without an argument.  "
-					     "This server broke backwards compatability",
-						chan->channel);
-					continue;
-				}
-
-				if (is_me(from_server, arg))
-					chan->voice = add;
-				if ((nick = find_nick_on_channel(chan, arg)))
-					nick->voice = add;
-				continue;
-			}
-			case 'h': /* erfnet's borked 'half-assed oper' mode */
-			{
-				if (!arg)
-				{
-					yell("Channel %s got a mode +h "
-					     "without an argument.  "
-					     "This server broke backwards compatability",
-						chan->channel);
-					continue;
-				}
-
-				if (is_me(from_server, arg))
-					chan->half_assed = add;
-				if ((nick = find_nick_on_channel(chan, arg)))
-					nick->half_assed = add;
-				continue;
-			}
-			case 'b':
-			case 'e':	/* borked erfnet ban exceptions */
-			case 'I':	/* borked ircnet invite exceptions */
-			{
-				continue;
-			}
+			chan->limit = my_atol(arg);
+			chan->i_mode = -1;	/* Revoke old cache */
+			continue;
 		}
 
-		if (add)
-			chan->mode |= value;
-		else
-			chan->mode &= ~value;
+		case 'o':
+		{
+			/* 
+			 * Borked av2.9 sends a +o to the channel
+			 * when you create it, but doesnt bother to
+			 * send your nickname, too. blah.
+			 */
+			if (!arg)
+			    arg = get_server_nickname(from_server);
+
+			if (is_me(from_server, arg))
+				chan->chop = add;
+			if ((nick = find_nick_on_channel(chan, arg)))
+				nick->chanop = add;
+			continue;
+		}
+		case 'v':
+		{
+			if (!arg)
+			{
+				yell("Channel %s got a mode +v "
+				     "without an argument.  "
+				     "This server broke backwards compatability",
+					chan->channel);
+				continue;
+			}
+
+			if (is_me(from_server, arg))
+				chan->voice = add;
+			if ((nick = find_nick_on_channel(chan, arg)))
+				nick->voice = add;
+			continue;
+		}
+		case 'h': /* erfnet's borked 'half-assed oper' mode */
+		{
+			if (!arg)
+			{
+				yell("Channel %s got a mode +h "
+				     "without an argument.  "
+				     "This server broke backwards compatability",
+					chan->channel);
+				continue;
+			}
+
+			if (is_me(from_server, arg))
+				chan->half_assed = add;
+			if ((nick = find_nick_on_channel(chan, arg)))
+				nick->half_assed = add;
+			continue;
+		}
+		case 'b':
+		case 'e':	/* borked erfnet ban exceptions */
+		case 'I':	/* borked ircnet invite exceptions */
+		{
+			continue;
+		}
+	    }
+
+	    if (add)
+		chan->mode |= value;
+	    else
+		chan->mode &= ~value;
 	}
 	if (rest && *rest)
 		yell("WARNING:  Mode parser or server is BROKE.  Remaining args: %s", rest);
@@ -1310,7 +1194,7 @@ static void 	show_channel (Channel *chan)
 		chan->channel, 
 		get_cmode(chan),
 		get_server_name(chan->server), 
-		chan->window ? chan->window->refnum : -1,
+		chan->winref > 0 ? chan->winref : -1,
 		local_buf);
 }
 
@@ -1358,6 +1242,7 @@ char	*scan_channel (char *cname)
 void 	list_channels (void)
 {
 	Channel *tmp = NULL;
+	const char *channame;
 
 	if (!channel_list)
 	{
@@ -1365,20 +1250,20 @@ void 	list_channels (void)
 		return;
 	}
 
-	if (get_channel_by_refnum(0))
-		say("Current channel %s", get_channel_by_refnum(0));
+	if ((channame = get_echannel_by_refnum(0)))
+		say("Current channel %s", channame);
 	else
 		say("No current channel for this window");
 
 	say("You are on the following channels:");
-	while (traverse_all_channels(&tmp, from_server))
+	while (traverse_all_channels(&tmp, from_server, 1))
 		show_channel(tmp);
 
 	if (connected_to_server != 1)
 	{
 		say("Other servers:");
 		tmp = NULL;
-		while (traverse_all_channels(&tmp, (-from_server) - 1))
+		while (traverse_all_channels(&tmp, from_server, 0))
 			show_channel(tmp);
 	}
 }
@@ -1387,40 +1272,95 @@ void 	list_channels (void)
 /* This is a keybinding */
 void 	switch_channels (char dumb, char *dumber)
 {
-	Channel *tmp = NULL;
-	Channel *start = NULL;
-	char	*nc = get_channel_by_refnum(0);
+	int	lowcount = current_channel_counter;
+	Char *	winner;
+	int	highcount = -1;
+	int	current;
+	int	server;
+	Channel *chan;
+	int	xswitch;
 
-	if (!channel_list)
-		return;		/* Dont bother */
+	current = get_window_by_refnum(0)->refnum;
+	server = get_window_server(0);
+	xswitch = get_int_var(SWITCH_CHANNELS_BETWEEN_WINDOWS_VAR);
 
-	if (nc)
-		if ((start = find_channel(nc, from_server)))
-			tmp = start->next;
-
-	if (!tmp)
-		tmp = channel_list;
-
-	/*
-	 * This attempts to make an entire pass through the channel_list
-	 * starting at the "previous" channel.
-	 */
-	while (tmp != start)
+	chan = NULL;
+	while (traverse_all_channels(&chan, server, 1))
 	{
-		if (tmp->server != from_server || 
-			is_current_channel(tmp->channel, 0))
-		{
-			tmp = tmp->next;
-			if (!tmp && start)
-				tmp = channel_list;
+		/* Don't switch to another window's chan's */
+		if (xswitch == 0 && chan->winref != current)
 			continue;
-		}
 
-		set_channel_by_refnum(0, tmp->channel);
-		break;
+		/* Don't switch to another window's current channel */
+		if (chan->winref != current &&
+		    is_current_channel(chan->channel, chan->server))
+			continue;
+
+		if (chan->curr_count > highcount)
+		    highcount = chan->curr_count;
+		if (chan->curr_count < lowcount)
+		{
+		    lowcount = chan->curr_count;
+		    winner = chan->channel;
+		}
 	}
 
-	update_all_windows();
+	/*
+	 * If there are no channels on this window, punt.
+	 * If there is only one channel on this window, punt.
+	 */
+	if (highcount == -1 || highcount == lowcount)
+		return;
+
+	/*
+	 * Reset the oldest channel as current.
+	 */
+	set_channel_window(winner, server, current, 1);
+}
+
+/* 
+ * This is the guts for "window_current_channel", where current-channel
+ * elections occur.
+ */
+static Channel *window_current_channel_internal (int window, int server)
+{
+        Channel *       tmp = NULL;
+        int             maxcount = -1;
+        Channel *       winner = NULL;
+
+        if (server == -1)
+                return NULL;            /* No channel. */
+        /* This can cause crashes */
+
+        while (traverse_all_channels(&tmp, server, 1))
+        {
+                if (tmp->winref != window)
+                        continue;
+                if (tmp->inactive)
+                        continue;
+                if (tmp->curr_count > maxcount)
+                {
+                        maxcount = tmp->curr_count;
+                        winner = tmp;
+                }
+        }
+
+        if (winner)
+                return winner;
+        return NULL;
+}
+
+/* 
+ * This is the guts for "get_echannel_by_refnum", 
+ * the current-channel feature.
+ */
+const char *  window_current_channel (int window, int server)
+{
+        Channel *       tmp;
+
+        if (!(tmp = window_current_channel_internal(window, server)))
+                return NULL;
+        return tmp->channel;
 }
 
 void 	change_server_channels (int old_s, int new_s)
@@ -1429,7 +1369,7 @@ void 	change_server_channels (int old_s, int new_s)
 
 	if (old_s < 0) return;		/* Sanity check */
 
-	while (traverse_all_channels(&tmp, old_s))
+	while (traverse_all_channels(&tmp, old_s, 1))
 	{
 		tmp->server = new_s;
 		tmp->inactive = 1;
@@ -1438,22 +1378,27 @@ void 	change_server_channels (int old_s, int new_s)
 	}
 }
 
-/*
- * This is called whenever you're not going to reconnect and
- * destroy_server_channels() is called.
- */
-void	destroy_waiting_channels (int server)
+int  channel_window (const char * channel, int server)
 {
-	Window *tmp = NULL;
+	Channel *ch;
 
-	while (traverse_all_windows(&tmp))
-	{
-		if (tmp->server != server)
-			continue;
-		new_free(&tmp->waiting_channel);
-	}
+	if ((ch = find_channel(channel, server)))
+                return ch->winref;
+        return 0;
 }
-		
+
+int     is_current_channel (const char *channel, int server)
+{
+        int  window;
+        const char *  name;
+ 
+        if ((window = channel_window(channel, server)))
+                if ((name = window_current_channel(window, server)))
+                        if (!my_stricmp(name, channel)) 
+                                return 1;
+        return 0; 
+}
+
 /*
  * This is called by connect_to_new_server(), if the new server we are going
  * to attach to is already an established connection; by close_server(), if
@@ -1514,7 +1459,7 @@ void 	reconnect_all_channels (void)
 		return;
 	}
 
-	while (traverse_all_channels(&tmp, from_server))
+	while (traverse_all_channels(&tmp, from_server, 1))
 	{
 		if (!tmp->inactive)
 			yell("Ack.  Reconnecting channel [%s] on server [%d] "
@@ -1559,11 +1504,7 @@ const char *	what_channel (const char *nick)
 {
 	Channel *tmp = NULL;
 
-	if (current_window->current_channel &&
-	    is_on_channel(current_window->current_channel, nick))
-		return current_window->current_channel;
-
-	while (traverse_all_channels(&tmp, from_server))
+	while (traverse_all_channels(&tmp, from_server, 1))
 	{
 		if (find_nick_on_channel(tmp, nick))
 			return tmp->channel;
@@ -1579,7 +1520,7 @@ const char *	walk_channels (int init, const char *nick)
 	if (init)
 		tmp = NULL;
 
-	while (traverse_all_channels(&tmp, from_server))
+	while (traverse_all_channels(&tmp, from_server, 1))
 	{
 		if (find_nick_on_channel(tmp, nick))
 			return (tmp->channel);
@@ -1595,7 +1536,7 @@ const char *	fetch_userhost (int server, const char *nick)
 
 	if (server == NOSERV) return NULL;		/* Sanity check */
 
-	while (traverse_all_channels(&tmp, server))
+	while (traverse_all_channels(&tmp, server, 1))
 	{
 		if ((user = find_nick_on_channel(tmp, nick)) && 
 				user->userhost)
@@ -1635,217 +1576,189 @@ int 	get_channel_voice (const char *channel, int server)
 		return 0;
 }
 
-Window *	get_channel_window (const char *channel, int server)
+int	get_channel_winref (const char *channel, int server)
 {
 	Channel *tmp = find_channel(channel, server);
 
 	if (tmp)
-		return tmp->window;
+		return tmp->winref;
 
-	return NULL;
+	return -1;
 }
 
-void 	set_channel_window (Window *window, const char *channel)
+void 	set_channel_window (const char *channel, int server, int winref, int as_current)
 {
 	Channel *tmp;
+	int	is_current_now;
+	int	old_window;
+	Char *	old_window_new_curchan;
+	Char *	new_window_old_curchan;
 
 	if (channel == NULL)
 		panic("channel == NULL in set_channel_window!");
 
-	if (!(tmp = find_channel(channel, window->server)))
+	if ((tmp = find_channel(channel, get_window_server(winref))))
 	{
+		/* We need to know if we are a current channel. */
+		is_current_now = is_current_channel(channel, server);
+
+		/* 
+		 * Sanity check -- if we are already the current channel
+		 * of the target window, then don't do anything more.
+		 */
+		if (is_current_now && tmp->winref == winref && as_current)
+			return;
+
+		/*
+		 * We need to know the present current channel of the new
+		 * target window.
+		 */
+		if (!(new_window_old_curchan = get_echannel_by_refnum(winref)))
+			new_window_old_curchan = zero;
+
+		/* move the channel to the new window */
+		old_window = tmp->winref;
+		tmp->winref = winref;
+		if (as_current)
+			tmp->curr_count = current_channel_counter++;
+		else
+			tmp->curr_count = 0;
+
+		/* 
+		 * If we moved to a new window, and we were the current
+		 * channel of the old window, then we need to hold an election
+		 * for a new current channel on the old window.  We also
+		 * throw the switch channels thing.
+	 	 */
+		if (old_window != winref && old_window > 0 && is_current_now)
+		{
+		    channel_hold_election(old_window);
+		    if (!(old_window_new_curchan = get_echannel_by_refnum(old_window)))
+			old_window_new_curchan = zero;
+		    do_hook(SWITCH_CHANNELS_LIST, "%d %s %s",
+				old_window, channel, old_window_new_curchan);
+		}
+
+		/* 
+		 * But in every case we are made a current channel,
+		 * we need to hold an election for a new current channel
+		 * (which we will win) and throw the switch channels thing.
+	 	 */
+		if (as_current)
+		{
+			channel_hold_election(winref);
+			do_hook(SWITCH_CHANNELS_LIST, "%d %s %s",
+				winref, new_window_old_curchan, channel);
+		}
+	}
+	else
 		yell("WARNING! set_channel_window is acting on a channel "
 			"that doesn't exist even though the window is "
 			"expecting it.  This is probably a bug. "
-			"[%s] [%d]", channel, window->server);
-	}
-	else
-		tmp->window = window;
+			"[%s] [%d]", channel, get_window_server(winref));
 }
 
-/*
- * This finds the channel that is the current channel of the specified
- * window, and sets the channel to some new window that wants to steal it.
- */
-void	unset_window_current_channel (Window *old_w, Window *new_w)
-{
-	Channel *tmp = NULL;
-	char	*chan;
-
-	if (old_w->server == NOSERV) return;		/* Sanity check */
-
-	while (traverse_all_channels(&tmp, old_w->server))
-	{
-		if (tmp->window == old_w && !my_stricmp(tmp->channel, old_w->current_channel))
-		{
-			chan = LOCAL_COPY(old_w->current_channel);
-			set_channel_by_refnum(old_w->refnum, NULL);
-			set_channel_by_refnum(new_w->refnum, chan);
-			return;
-		}
-	}
-}
 
 /*
  * This moves "chan" from "old_w" to "new_w", safely -- this replaces the old
  * way of "unset_window_current_channel" and "reset_window_current_channel".
  * This was written by Robohak in January 2001.
  */
-void   move_channel_to_window (const char *chan, Window *old_w, Window *new_w)
+void   move_channel_to_window (const char *chan, int server, int old_w, int new_w)
 {
 	Channel *tmp = NULL;
-	char *	old_chan = NULL;
-	int	reset_old_w = 0;
-	int	found = 0;
+	const char *x;
 
-	if (!old_w || !old_w->current_channel || !new_w ||
-			old_w->server == NOSERV || !chan || !strcmp(chan, zero))
-	       return;
+	if (chan == NULL || strcmp(chan, zero) == 0)
+		return;
 
-	while (traverse_all_channels(&tmp, old_w->server))
-	{
-	    if (tmp->window == old_w && !my_stricmp(chan, tmp->channel))
-	    {
-		/*
-		 * First off, if this channel is bound to this window,
-		 * we gotta unbind it or there's going to be trouble
-		 * later on...
-		 */
-		if (old_w->bind_channel && !my_stricmp(chan, old_w->bind_channel))
-			new_free(&old_w->bind_channel);
+	if (old_w <= 0)
+		old_w = get_channel_winref(chan, server);
 
-		if (!my_stricmp(chan, old_w->current_channel))
-		{
-			new_free(&old_w->current_channel);
-			window_statusbar_needs_update(old_w);
+        if (old_w <= 0 || new_w <= 0 || get_window_server(old_w) != server)
+		return;
 
-			if (new_w->current_channel)
-				old_chan = m_strdup(new_w->current_channel);
-			else
-				old_chan = NULL;
+	if (!(tmp = find_channel(chan, server)))
+		return;
+	if (tmp->winref != old_w)
+		panic("Channel [%s:%d] is on window [%d] not on window [%d] (moving to [%d])",
+			chan, server, tmp->winref, old_w, new_w);
 
-			malloc_strcpy(&new_w->current_channel, chan);
+	/* 
+	 * Unbind this channel unconditionally unless the new window has
+	 * already bound it.
+	 */
+	x = get_bound_channel_by_refnum(new_w);
+	if (x && my_stricmp(chan, x))
+		unbind_channel(chan, tmp->server);
 
-			/* 
-			 * Remove "waiting_channel" if we're waiting for 
-			 * this channel. ;-) 
-			 */
-			if (new_w->waiting_channel && 
-			    !my_stricmp(chan, new_w->waiting_channel))
-				    new_free(&new_w->waiting_channel);
-			window_statusbar_needs_update(new_w);
+	/*
+	 * If the old window is waiting for this channel, make the new
+	 * window wait for this channel.
+	 */
+	if (is_window_waiting_for_channel(old_w, chan))
+		move_waiting_channel(old_w, new_w);
 
-			set_channel_window(new_w, new_w->current_channel);
-			reset_old_w = 1;
-			break;
-		}
-	    }
-	}
-
-	if (reset_old_w)
-	{
-	    tmp = NULL;
-	    while (traverse_all_channels(&tmp, old_w->server))
-	    {
-		if (tmp->window == old_w && my_stricmp(tmp->channel, chan))
-		{
-		    malloc_strcpy(&old_w->current_channel, tmp->channel);
-
-		    /* 
-		     * Remove "waiting_channel" if we're waiting for this 
-		     * channel. ;-) 
-		     */
-		    if (old_w->waiting_channel && !my_stricmp(tmp->channel, 
-							old_w->waiting_channel))
-			new_free(&old_w->waiting_channel);
-
-		    window_statusbar_needs_update(old_w);
-		    set_channel_window(old_w, old_w->current_channel);
-		    found = 1;
-		    break;
-		}
-	    }
-
-	    do_hook(SWITCH_CHANNELS_LIST, "%d %s %s", 
-			old_w->refnum, chan, zero);
-	    do_hook(SWITCH_CHANNELS_LIST, "%d %s %s", 
-			new_w->refnum, old_chan ? old_chan : zero, chan);
-	    if (found)
-		do_hook(SWITCH_CHANNELS_LIST, "%d %s %s", old_w->refnum, zero,
-		       old_w->current_channel ? old_w->current_channel : zero);
-
-	    new_free(&old_chan);
-	}
+	/* set_channel_window calls new elections */
+	set_channel_window(chan, server, new_w, 1);
 }
 
 
-/*
- * This attempts to find another current channel for a window when the 
- * current channel for a window is 'stolen' by another window.
- */
-void	reset_window_current_channel (Window *w)
+void	channel_hold_election (int winref)
 {
-	Channel *tmp = NULL;
-
-	if (w->server == NOSERV) return;		/* Sanity check */
-
-	while (traverse_all_channels(&tmp, w->server))
-	{
-		if (tmp->window == w)
-		{
-			set_channel_by_refnum(w->refnum, tmp->channel);
-			return;
-		}
-	}
+	window_statusbar_needs_update(get_window_by_refnum(winref));
+	update_all_windows();
 }
+
 
 /*
  * For any given window, re-assign all of the channels that are connected
  * to that window.
  */
-void	reassign_window_channels (Window *window)
+void	reassign_window_channels (int window)
 {
 	Channel *tmp = NULL;
 	Window *w = NULL;
 	int	caution = 0;
+	int	winserv;
+	int	winoldserv;
 
-	if (window->server == NOSERV && window->last_server == NOSERV)
+	winserv = get_window_server(window);
+	winoldserv = get_window_oldserver(window);
+
+	if (winserv == NOSERV && winoldserv == NOSERV)
 		caution = 1;
 
 	for (tmp = channel_list; tmp; tmp = tmp->next)
 	{
-		if (tmp->window != window)
+		if (tmp->winref != window)
 			continue;
 
 		if (caution)
 		{
 			yell("Deleting channels for disconnected window [%d] "
-				"-- caution!", window->refnum);
+				"-- caution!", window);
 			caution = 0;
 		}
 
-		if (tmp->server != window->server && 
-			tmp->server != window->last_server)
+		if (tmp->server != winserv && tmp->server != winoldserv)
 		{
 			yell("Channel [%s:%d] is connected to window [%d] "
 				"which is apparantly on another server", 
-				tmp->channel, tmp->server, window->refnum);
+				tmp->channel, tmp->server, window);
 		}
 
 		/*
-		 * If all else fails, and we can't find another window
-		 * for this channel, its window will be NULL and that
-		 * will be picked up by traverse_all_channels() the next
-		 * time.  We would of course hope that someone will
-		 * call window_check_servers() after calling this function,
-		 * to make sure these orphaned channels are cleaned up.
+		 * Find a new home for this channel...
+		 * If no new windows are found, 'winref' remains -1 and
+		 * I'm not exactly quite sure what will happen there...
 		 */
-		tmp->window = NULL;
+		tmp->winref = -1;
 		while (traverse_all_windows(&w))
 		{
-			if (w->server == tmp->server && w != window)
+			if (w->server == tmp->server && w->refnum != window)
 			{
-				tmp->window = w;
+				tmp->winref = w->refnum;
 				break;
 			}
 		}
@@ -1860,7 +1773,7 @@ char *	create_channel_list (int server)
 
 	if (server >= 0)
 	{
-		while (traverse_all_channels(&tmp, server))
+		while (traverse_all_channels(&tmp, server, 1))
 			m_sc3cat(&retval, space, tmp->channel, &clue);
 	}
 
@@ -1877,6 +1790,7 @@ void 	save_channels (int servref)
 {
 	Window	*tmp = NULL;
 	Channel *tmpc = NULL;
+	const char *chan;
 
 	/*
 	 * Go through all of the windows for this server
@@ -1890,15 +1804,15 @@ void 	save_channels (int servref)
 		if (tmp->waiting_channel)
 			continue;		/* Yea yea yea */
 
-		tmp->waiting_channel = tmp->current_channel;
-		tmp->current_channel = NULL;
+		if ((chan = get_echannel_by_refnum(tmp->refnum)))
+			tmp->waiting_channel = m_strdup(chan);
 	}
 
 	/*
 	 * Go through all the channels for this server
 	 * and mark them as WAITING.
 	 */
-	while (traverse_all_channels(&tmpc, servref))
+	while (traverse_all_channels(&tmpc, servref, 1))
 		tmpc->inactive = 1;
 }
 
@@ -1991,7 +1905,7 @@ void	channel_check_windows (void)
 	{
 		reset = 0;
 
-		if (tmp->window)
+		if (tmp->winref > 0)
 			continue;
 
 		w = NULL;
@@ -2005,13 +1919,13 @@ void	channel_check_windows (void)
 			     "window refnum [%d]",
 				tmp->channel, tmp->server, 
 				w->refnum);
-			tmp->window = w;
+			tmp->winref = w->refnum;
 			reset = 1;
 			break;
 		    }
 		}
 
-		if (tmp->window == NULL)
+		if (tmp->winref <= 0)
 		{
 			yell("Repaired referential integrity failure: "
 			     "server [%d] has channels, but no "
@@ -2027,65 +1941,42 @@ void	channel_check_windows (void)
 	for (tmp = channel_list; tmp; 
 		reset ? (tmp = channel_list) : (tmp = tmp->next))
 	{
-		if (tmp->window == NULL)
+		if (tmp->winref <= 0)
 			panic("I thought we just checked for this! [1]");
 
-		if (tmp->window->server == NOSERV && 
-				tmp->server == tmp->window->last_server)
+		if (get_window_server(tmp->winref) == NOSERV && 
+			     tmp->server == get_window_oldserver(tmp->winref))
 			continue;			/* This is OK. */
 
-		if (tmp->server != tmp->window->server)
+		if (tmp->server != get_window_server(tmp->winref))
 			panic("Referential integrity failure: "
 			      "Channel [%s] on server [%d] is connected "
 			      "to window [%d] on server [%d]",
 				tmp->channel, tmp->server, 
-				tmp->window->refnum, tmp->window->server);
+				tmp->winref, get_window_server(tmp->winref));
 	}
 
 	/* Do test #5 -- check for bogus windows */
 	for (tmp = channel_list; tmp; 
 		reset ? (tmp = channel_list) : (tmp = tmp->next))
 	{
-		if (tmp->window == NULL)
+		if (tmp->winref <= 0)
 			panic("I thought we just checked for this! [2]");
 
-		if (tmp->window != get_window_by_refnum(tmp->window->refnum))
+		if (!get_window_by_refnum(tmp->winref))
 			panic("Referential integrity failure: "
 			      "Channel [%s] on server [%d] is connected "
-			      "to window [%d] on server [%d] "
+			      "to window [%d] "
 			      "that doesn't exist any more!",
 				tmp->channel, tmp->server, 
-				tmp->window->refnum, tmp->window->server);
-	}
-
-	/* Do test #6 -- check for current channel-less windows */
-	for (tmp = channel_list; tmp;
-		reset ? (tmp = channel_list) : (tmp = tmp->next))
-	{
-		if (tmp->window == NULL)
-			panic("I thought we just checked for this! [3]");
-
-		/* Defer this check until after we have attempted rejoin */
-		if (did_server_rejoin_channels(tmp->server))
-		{
-		  if (tmp->window->current_channel == NULL &&
-			tmp->window->waiting_channel == NULL)
-		  {
-		       yell("Repaired referential integrity failure: "
-			"Window [%d] has channels, but no current or waiting "
-			"channel -- making [%s] the current channel.",
-				tmp->window->refnum, tmp->channel);
-		       set_channel_by_refnum(tmp->window->refnum, tmp->channel);
-		       update_all_windows();
-		  }
-		}
+				tmp->winref);
 	}
 
 	/* Do test #7 -- check for abandoned channels */
 	for (tmp = channel_list; tmp;
 		reset ? (tmp = channel_list) : (tmp = tmp->next))
 	{
-		if (tmp->window == NULL)
+		if (tmp->winref <= 0)
 			panic("I thought we just checked for this! [4]");
 
 		if (did_server_rejoin_channels(tmp->server) && tmp->inactive)

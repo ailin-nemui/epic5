@@ -120,7 +120,6 @@ typedef	struct	WindowStru
 					 * is set, a JOIN to that channel will
 					 * put that channel into this win.
 					 */
-	char	*current_channel;	/* Current channel for win */
         char    *bind_channel;          /* Current bound channel for win */
 	char	*query_nick;		/* Current default target for win */
 	WNickList *nicks;		/* List of nick-queries for this win */
@@ -209,11 +208,12 @@ extern	unsigned window_display;
 	void	update_all_status		(void);
 	void	set_prompt_by_refnum		(unsigned, char *);
 	char 	*get_prompt_by_refnum		(unsigned);
-	char	*get_target_by_refnum		(unsigned);
+const	char	*get_target_by_refnum		(unsigned);
 const char	*query_nick			(void);
 	void	set_query_nick			(char *);
-	int	is_current_channel		(const char *, char);
+	int	is_current_channel		(const char *, int);
 const 	char *	set_channel_by_refnum		(unsigned, const char *);
+const	char	*get_echannel_by_refnum		(unsigned);
 	char	*get_channel_by_refnum		(unsigned);
 	int	is_bound_to_window		(const Window *, const char *);
 	Window	*get_window_bound_channel	(const char *);
@@ -221,6 +221,7 @@ const 	char *	set_channel_by_refnum		(unsigned, const char *);
 	int	is_bound			(const char *, int);
 	void    unbind_channel 			(const char *, int);
 	char	*get_bound_channel		(Window *);
+	void	destroy_waiting_channels	(int);
 	int	get_window_server		(unsigned);
 	int	get_window_oldserver		(unsigned);
 	void	set_window_server		(int, int, int);
@@ -272,5 +273,10 @@ const 	char *	set_channel_by_refnum		(unsigned, const char *);
 	void	unhold_window			(Window *);
 	int     get_geom_by_winref 		(const char *, int *, int *);
 	int	get_winref_by_servref		(int);
+
+	int    is_window_waiting_for_channel (unsigned, const char *);
+	void   move_waiting_channel (unsigned oldref, unsigned newref);
+	int    get_winref_by_bound_channel (const char *channel, int server);
+	const char *   get_bound_channel_by_refnum (unsigned refnum);
 
 #endif /* __window_h__ */

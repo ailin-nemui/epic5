@@ -10,7 +10,7 @@
 #define __dcc_h__
 
 	void	close_all_dcc 		(void);
-	int	dcc_chat_active		(char *);
+	int	dcc_chat_active		(const char *);
 	void	dcc_chat_transmit 	(char *, char *, const char *, 
 						const char *, int);
 	void	dcc_check 		(fd_set *, fd_set *);

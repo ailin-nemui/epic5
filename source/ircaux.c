@@ -1,4 +1,4 @@
-/* $EPIC: ircaux.c,v 1.69 2003/03/24 09:20:29 jnelson Exp $ */
+/* $EPIC: ircaux.c,v 1.70 2003/03/29 08:10:22 jnelson Exp $ */
 /*
  * ircaux.c: some extra routines... not specific to irc... that I needed 
  *
@@ -2994,7 +2994,7 @@ const char *	strfill (char c, int num)
 }
 
 
-char *	encode(const char *str, int len)
+char *	encode(const char *str, size_t len)
 {
 	char *retval;
 	char *ptr;
@@ -3003,7 +3003,6 @@ char *	encode(const char *str, int len)
 		len = strlen(str);
 
 	ptr = retval = new_malloc(len * 2 + 1);
-
 	while (len)
 	{
 		*ptr++ = ((unsigned char)*str >> 4) + 0x41;

@@ -1,4 +1,4 @@
-/* $EPIC: screen.c,v 1.47 2003/03/24 09:20:29 jnelson Exp $ */
+/* $EPIC: screen.c,v 1.48 2003/03/29 08:10:22 jnelson Exp $ */
 /*
  * screen.c
  *
@@ -2130,12 +2130,13 @@ void 	add_to_screen (const unsigned char *buffer)
 		tmp = NULL;
 		while (traverse_all_windows(&tmp))
 		{
+			const char *chan = get_echannel_by_refnum(tmp->refnum);
+
 			/*
 			 * Check for /WINDOW CHANNELs that apply.
 			 * (Any current channel will do)
 			 */
-			if (tmp->current_channel &&
-				!my_stricmp(who_from, tmp->current_channel))
+			if (chan && !my_stricmp(who_from, chan))
 			{
 				if (tmp->server == from_server)
 				{
@@ -2190,7 +2191,7 @@ void 	add_to_screen (const unsigned char *buffer)
 		 */
 		if (from_server != NOSERV && is_channel(who_from))
 		{
-			if ((tmp = get_channel_window(who_from, from_server)))
+			if ((tmp = get_window_by_refnum(get_channel_winref(who_from, from_server))))
 			{
 				add_to_window(tmp, buffer);
 				return;

@@ -1,4 +1,4 @@
-/* $EPIC: dcc.c,v 1.54 2003/03/24 18:36:46 jnelson Exp $ */
+/* $EPIC: dcc.c,v 1.55 2003/03/29 08:10:22 jnelson Exp $ */
 /*
  * dcc.c: Things dealing client to client connections. 
  *
@@ -606,7 +606,7 @@ static	DCC_list *dcc_searchlist (
 /*
  * Added by Chaos: Is used in edit.c for checking redirect.
  */
-int	dcc_chat_active (char *user)
+int	dcc_chat_active (const char *user)
 {
 	return (dcc_searchlist("chat", user, DCC_CHAT, 0, NULL, 1)) ? 1 : 0;
 }

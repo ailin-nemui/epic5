@@ -1,4 +1,4 @@
-/* $EPIC: server.c,v 1.96 2003/03/24 09:20:29 jnelson Exp $ */
+/* $EPIC: server.c,v 1.97 2003/03/29 08:10:22 jnelson Exp $ */
 /*
  * server.c:  Things dealing with that wacky program we call ircd.
  *
@@ -160,6 +160,7 @@ void 	add_to_server_list (const char *server, int port, const char *password, co
 		s->registration_pending = 0;
 		s->resetting_nickname = 0;
 		s->reconnects = 0;
+		s->reconnect_to = from_server;
 		s->quit_message = NULL;
 		s->save_channels = -1;
 

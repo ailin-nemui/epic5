@@ -1,4 +1,4 @@
-/* $EPIC: status.c,v 1.21 2003/03/23 19:44:17 jnelson Exp $ */
+/* $EPIC: status.c,v 1.22 2003/03/29 08:10:22 jnelson Exp $ */
 /*
  * status.c: handles the status line updating, etc for IRCII 
  *
@@ -1012,12 +1012,14 @@ STATUS_FUNCTION(status_clock)
 STATUS_FUNCTION(status_mode)
 {
 	char	*mode = (char *) 0;
+const char *	chan;
 static  char    my_buffer[81];
 
 	*my_buffer = 0;
-	if (window->current_channel && window->server != NOSERV)
+	if (window->server != NOSERV && 
+           (chan = get_echannel_by_refnum(window->refnum)))
 	{
-                mode = get_channel_mode(window->current_channel,window->server);
+                mode = get_channel_mode(chan, window->server);
 		if (mode && *mode && mode_format)
 		{
 			/*
@@ -1075,15 +1077,17 @@ static	char	my_buffer[81];
 STATUS_FUNCTION(status_chanop)
 {
 	char	*text;
+	const char *chan;
 
-	if (!window->current_channel || window->server == NOSERV)
+	if (window->server == NOSERV ||
+           (!(chan = get_echannel_by_refnum(window->refnum))))
 		return empty_string;
 	
-	if (get_channel_oper(window->current_channel, window->server) &&
+	if (get_channel_oper(chan, window->server) &&
 		(text = get_string_var(STATUS_CHANOP_VAR)))
 			return text;
 
-	if (get_channel_halfop(window->current_channel, window->server) &&
+	if (get_channel_halfop(chan, window->server) &&
 		(text = get_string_var(STATUS_HALFOP_VAR)))
 			return text;
 
@@ -1133,18 +1137,22 @@ static	char	my_buffer[81];
  */
 STATUS_FUNCTION(status_channel)
 {
+	const char *chan;
 	char 	channel[IRCD_BUFFER_SIZE + 1];
 static	char	my_buffer[IRCD_BUFFER_SIZE + 1];
 	int	num;
 
-	if (!window->current_channel || window->server == NOSERV || !channel_format)
+	if (window->server == NOSERV || !channel_format)
+		return empty_string;
+
+	if (!(chan = get_echannel_by_refnum(window->refnum)))
 		return empty_string;
 
 	if (get_int_var(HIDE_PRIVATE_CHANNELS_VAR) && 
-	    is_channel_private(window->current_channel, window->server))
+	    is_channel_private(chan, window->server))
 		strmcpy(channel, "*private*", IRCD_BUFFER_SIZE);
 	else
-		strmcpy(channel, window->current_channel, IRCD_BUFFER_SIZE);
+		strmcpy(channel, chan, IRCD_BUFFER_SIZE);
 
 	num = get_int_var(CHANNEL_NAME_WIDTH_VAR);
 	if (num > 0 && strlen(channel) > num)
@@ -1163,10 +1171,14 @@ static	char	my_buffer[IRCD_BUFFER_SIZE + 1];
 STATUS_FUNCTION(status_voice)
 {
 	char *text;
+	const char *chan;
 
-	if (window->current_channel && window->server != NOSERV &&
-	    get_channel_voice(window->current_channel, window->server) &&
-	    !get_channel_oper(window->current_channel, window->server) &&
+	if (window->server == NOSERV ||
+           (chan = get_echannel_by_refnum(window->refnum)))
+		return empty_string;
+
+	if (get_channel_voice(chan, window->server) &&
+	    !get_channel_oper(chan, window->server) &&
 	    (text = get_string_var(STATUS_VOICE_VAR)))
 		return text;
 

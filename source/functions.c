@@ -1,4 +1,4 @@
-/* $EPIC: functions.c,v 1.110 2003/03/26 07:16:27 crazyed Exp $ */
+/* $EPIC: functions.c,v 1.111 2003/03/29 08:10:22 jnelson Exp $ */
 /*
  * functions.c -- Built-in functions for ircII
  *
@@ -762,6 +762,7 @@ char	*call_function (char *name, const char *args, int *args_flag)
 	int	cnt, pos;
 	char	*lparen, *rparen;
 	int	debugging;
+	char *	buf;
 
 	debugging = get_int_var(DEBUG_VAR);
 
@@ -778,8 +779,7 @@ char	*call_function (char *name, const char *args, int *args_flag)
 		lparen = empty_string;
 
 	tmp = expand_alias(lparen, args, args_flag, NULL);
-	if (debugging)
-		debug_copy = LOCAL_COPY(tmp);
+	debug_copy = LOCAL_COPY(tmp);
 
 	upper(name);
 	find_fixed_array_item(built_in_functions, sizeof(BuiltInFunctions), 
@@ -790,17 +790,12 @@ char	*call_function (char *name, const char *args, int *args_flag)
 	else
 		result = call_user_function(name, tmp);
 
-	if (debugging)
-	{
-		char *	buf;
-		buf = (char *)alloca(strlen(name) + strlen(debug_copy) + 15);
-		sprintf(buf, "$%s(%s)", name, debug_copy);
-		MUST_BE_MALLOCED(result, buf);
+	buf = (char *)alloca(strlen(name) + strlen(debug_copy) + 15);
+	sprintf(buf, "$%s(%s)", name, debug_copy);
+	MUST_BE_MALLOCED(result, buf);
 
-		if (debugging & DEBUG_FUNCTIONS)
-			yell("Function %s(%s) returned %s", 
-				name, debug_copy, result);
-	}
+	if (debugging & DEBUG_FUNCTIONS)
+		yell("Function %s(%s) returned %s", name, debug_copy, result);
 
 	new_free(&tmp);
 	return result;
@@ -855,8 +850,8 @@ static	char	*alias_currdir  	(void)
 
 static	char	*alias_channel 		(void) 
 { 
-	char	*tmp; 
-	return m_strdup((tmp = get_channel_by_refnum(0)) ? tmp : zero);
+	const char	*tmp; 
+	return m_strdup((tmp = get_echannel_by_refnum(0)) ? tmp : zero);
 }
 
 static	char	*alias_server 		(void)
@@ -876,7 +871,7 @@ static	char	*alias_query_nick 	(void)
 
 static	char	*alias_target 		(void)
 {
-	char	*tmp;
+	const char	*tmp;
 	return m_strdup((tmp = get_target_by_refnum(0)) ? tmp : empty_string);
 }
 
@@ -893,15 +888,15 @@ static	char	*alias_cmdchar 		(void)
 
 static	char	*alias_chanop 		(void)
 {
-	char	*tmp;
-	return m_strdup(((tmp = get_channel_by_refnum(0)) && get_channel_oper(tmp, get_window_server(0))) ?
+	const char	*tmp;
+	return m_strdup(((tmp = get_echannel_by_refnum(0)) && get_channel_oper(tmp, get_window_server(0))) ?
 		"@" : empty_string);
 }
 
 static	char	*alias_modes 		(void)
 {
-	char	*tmp;
-	return m_strdup((tmp = get_channel_by_refnum(0)) ?
+	const char	*tmp;
+	return m_strdup((tmp = get_echannel_by_refnum(0)) ?
 		get_channel_mode(tmp, get_window_server(0)) : empty_string);
 }
 
@@ -4011,7 +4006,7 @@ BUILT_IN_FUNCTION(function_winchan, input)
 		int 	servnum = from_server;
 		char 	*chan, 
 			*serv = NULL;
-		Window 	*winp = NULL;	/* XXXX */
+		int	win = -1;
 
 		chan = arg1;
 		if ((serv = new_next_arg(input, &input)))
@@ -4021,8 +4016,8 @@ BUILT_IN_FUNCTION(function_winchan, input)
 		}
 
 		/* Now return window for *any* channel. */
-		if ((winp = get_channel_window(chan, servnum)))
-			RETURN_INT(winp->refnum);
+		if ((win = get_channel_winref(chan, servnum)))
+			RETURN_INT(win);
 
 		RETURN_INT(-1);
 	}
@@ -4040,7 +4035,7 @@ BUILT_IN_FUNCTION(function_winchan, input)
 			win = get_window_by_refnum(0);
 
 		if (win)
-			RETURN_STR(win->current_channel);
+			RETURN_STR(get_echannel_by_refnum(win->refnum));
 		RETURN_EMPTY;
 	}
 }
@@ -4130,20 +4125,27 @@ BUILT_IN_FUNCTION(function_deuhc, input)
  */
 BUILT_IN_FUNCTION(function_winbound, input)
 {
-	Window *win;
-	char *	retval;
+	int	win;
+	const char *	retval;
 
 	if (input && *input && is_channel(input))
-		win = get_window_bound_channel(input);
-	else if (input && *input)
-		win = get_window_by_desc(input);
-	else
-		win = get_window_by_refnum(0);
-
-	if (!win)
+	{
+		if ((win = get_winref_by_bound_channel(input, from_server)))
+			RETURN_INT(win);
 		RETURN_EMPTY;
+	}
 
-	retval = get_bound_channel(win);
+	if (input && *input)
+	{
+		Window *w;
+		if (!(w = get_window_by_desc(input)))
+			RETURN_EMPTY;
+		win = w->refnum;
+	}
+	else
+		win = 0;
+
+	retval = get_bound_channel_by_refnum(win);
 	RETURN_STR(retval);
 }
 
@@ -4290,6 +4292,7 @@ BUILT_IN_FUNCTION(function_currchans, input)
 	int server = NOSERV;
 	Window *blah = NULL;
 	char *retval = NULL;
+	const char *chan;
 
 	if (input && *input)
 		GET_INT_ARG(server, input)
@@ -4303,13 +4306,13 @@ BUILT_IN_FUNCTION(function_currchans, input)
 	{
 		if (server != NOSERV && blah->server != server)
 			continue;
-		if (!blah->current_channel)
+		if (!(chan = get_echannel_by_refnum(blah->refnum)))
 			continue;
 
 		m_s3cat(&retval, space, "\"");
 		malloc_strcat(&retval, ltoa(blah->server));
 		malloc_strcat(&retval, space);
-		malloc_strcat(&retval, blah->current_channel);
+		malloc_strcat(&retval, chan);
 		malloc_strcat(&retval, "\"");
 	}
 
@@ -4369,6 +4372,7 @@ BUILT_IN_FUNCTION(function_regcomp, input)
 {
 	regex_t preg;
 
+	memset(&preg, 0, sizeof(preg)); 	/* make valgrind happy */
 	last_regex_error = regcomp(&preg, input, REG_EXTENDED | REG_ICASE);
 	return encode((char *)&preg, sizeof(regex_t));
 }
@@ -5193,19 +5197,19 @@ BUILT_IN_FUNCTION(function_getpgrp, input)
 
 BUILT_IN_FUNCTION(function_iscurchan, input)
 {
-	char 	*chan;
 	Window 	*w = NULL;
+	const char *chan;
+	char *arg;
 
-	GET_STR_ARG(chan, input);
+	GET_STR_ARG(arg, input);
 	while (traverse_all_windows(&w))
 	{
 		/*
 		 * Check to see if the channel specified is the current
 		 * channel on *any* window for the current server.
 		 */
-		if (w->current_channel &&
-			!my_stricmp(chan, w->current_channel) &&
-			w->server == from_server)
+		if ((chan = get_echannel_by_refnum(w->refnum)) &&
+			!my_stricmp(arg, chan) && w->server == from_server)
 				RETURN_INT(1);
 	}
 

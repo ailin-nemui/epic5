@@ -1,4 +1,4 @@
-/* $EPIC: who.c,v 1.19 2003/03/24 03:24:18 jnelson Exp $ */
+/* $EPIC: who.c,v 1.20 2003/03/29 08:10:22 jnelson Exp $ */
 /*
  * who.c -- The WHO queue.  The ISON queue.  The USERHOST queue.
  *
@@ -243,8 +243,8 @@ BUILT_IN_COMMAND(whocmd)
  */
 void 	whobase (int refnum, char *args, void (*line) (int, const char *, const char *, const char **), void (*end) (int, const char *, const char *, const char **))
 {
-	char	*arg,
-		*channel = NULL;
+	char	*arg;
+	const char	*channel = NULL;
 	int	no_args = 1,
 		len;
 	WhoEntry *new_w, *old;
@@ -409,7 +409,7 @@ void 	whobase (int refnum, char *args, void (*line) (int, const char *, const ch
 	    }
 	    else if (strcmp(arg, "*") == 0)
 	    {
-		channel = get_channel_by_refnum(0);
+		channel = get_echannel_by_refnum(0);
 		if (!channel || !*channel)
 		{
 			say("You are not on a channel.  "

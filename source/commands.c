@@ -1,4 +1,4 @@
-/* $EPIC: commands.c,v 1.59 2003/03/24 09:20:29 jnelson Exp $ */
+/* $EPIC: commands.c,v 1.60 2003/03/29 08:10:22 jnelson Exp $ */
 /*
  * commands.c -- Stuff needed to execute commands in ircII.
  *		 Includes the bulk of the built in commands for ircII.
@@ -512,7 +512,7 @@ BUILT_IN_COMMAND(comment)
 
 BUILT_IN_COMMAND(ctcp)
 {
-	char	*to;
+	const char	*to;
 	char	*stag;
 	int	tag;
 	int	type;
@@ -520,7 +520,7 @@ BUILT_IN_COMMAND(ctcp)
 	if ((to = next_arg(args, &args)) != NULL)
 	{
 		if (!strcmp(to, "*"))
-			if ((to = get_channel_by_refnum(0)) == NULL)
+			if ((to = get_echannel_by_refnum(0)) == NULL)
 				to = zero;
 
 		if ((stag = next_arg(args, &args)) != NULL)
@@ -622,7 +622,7 @@ BUILT_IN_COMMAND(deop)
 
 BUILT_IN_COMMAND(describe)
 {
-	char	*target;
+	const char	*target;
 
 	target = next_arg(args, &args);
 	if (target && args && *args)
@@ -630,7 +630,7 @@ BUILT_IN_COMMAND(describe)
 		char	*message;
 
 		if (!strcmp(target, "*"))
-			if ((target = get_channel_by_refnum(0)) == NULL)
+			if ((target = get_echannel_by_refnum(0)) == NULL)
 				target = zero;
 
 		message = args;
@@ -647,10 +647,10 @@ BUILT_IN_COMMAND(describe)
 
 BUILT_IN_COMMAND(do_send_text)
 {
-	char	*tmp;
+	const char	*tmp;
 
 	if (command)
-		tmp = get_channel_by_refnum(0);
+		tmp = get_echannel_by_refnum(0);
 	else
 		tmp = get_target_by_refnum(0);
 
@@ -777,7 +777,7 @@ BUILT_IN_COMMAND(e_privmsg)
 				return;
 			}
 		}
-		else if (!strcmp(nick, "*") && (!(nick = get_channel_by_refnum(0))))
+		else if (!strcmp(nick, "*") && (!(nick = get_echannel_by_refnum(0))))
 			nick = zero;
 		send_text(nick, args, command, window_display);
 		set_server_sent_body(from_server, args);
@@ -811,10 +811,10 @@ BUILT_IN_COMMAND(e_quit)
  */
 BUILT_IN_COMMAND(e_topic)
 {
-	char 	*arg;
-	char 	*channel = get_channel_by_refnum(0);
 	int	clear_topic = 0;
 	char	*args_copy;
+	const char *channel = get_echannel_by_refnum(0);
+	const char *arg;
 
 	if (args && *args == '-')
 		clear_topic = 1, args++;
@@ -967,7 +967,7 @@ BUILT_IN_COMMAND(xechocmd)
 				break;
 
 			if (!(to_window = get_window_by_desc(flag_arg)))
-				to_window = get_channel_window(flag_arg, from_server);
+				to_window = get_window_by_refnum(get_channel_winref(flag_arg, from_server));
 			break;
 		}
 
@@ -1184,8 +1184,8 @@ BUILT_IN_COMMAND(flush)
 
 BUILT_IN_COMMAND(funny_stuff)
 {
-	char	*arg,
-		*stuff;
+	char	*arg;
+	const char	*stuff;
 	int	min = 0,
 		max = 0,
 		flags = 0,
@@ -1233,7 +1233,7 @@ BUILT_IN_COMMAND(funny_stuff)
 	}
 
 	if (strcmp(stuff, "*") == 0)
-		if (!(stuff = get_channel_by_refnum(0)))
+		if (!(stuff = get_echannel_by_refnum(0)))
 			stuff = empty_string;
 
 	/* Channel names can contain stars! */
@@ -2080,7 +2080,7 @@ BUILT_IN_COMMAND(mecmd)
 {
 	if (args && *args)
 	{
-		char	*target;
+		const char	*target;
 
 		if ((target = get_target_by_refnum(0)) != NULL)
 		{
@@ -2298,7 +2298,7 @@ BUILT_IN_COMMAND(reconnect_cmd)
 
 BUILT_IN_COMMAND(redirect)
 {
-	char	*who;
+	const char	*who;
 
 	if ((who = next_arg(args, &args)) == NULL)
 	{
@@ -2312,7 +2312,7 @@ BUILT_IN_COMMAND(redirect)
 		return;
 	}
 
-	if (!strcmp(who, "*") && !(who = get_channel_by_refnum(0)))
+	if (!strcmp(who, "*") && !(who = get_echannel_by_refnum(0)))
 	{
 		say("Must be on a channel to redirect to '*'");
 		return;
@@ -2449,6 +2449,7 @@ BUILT_IN_COMMAND(save_settings)
 BUILT_IN_COMMAND(send_2comm)
 {
 	char	*reason = NULL;
+	const char *target;
 
 	if (!(args = next_arg(args, &reason)))
 		args = empty_string;
@@ -2457,15 +2458,17 @@ BUILT_IN_COMMAND(send_2comm)
 
 	if (!args || !*args || !strcmp(args, "*"))
 	{
-		args = get_channel_by_refnum(0);
-		if (!args || !*args)
-			args = "*";	/* what-EVER */
+		target = get_echannel_by_refnum(0);
+		if (!target || !*target)
+			target = "*";	/* what-EVER */
 	}
+	else
+		target = args;
 
 	if (reason && *reason)
-		send_to_server("%s %s :%s", command, args, reason);
+		send_to_server("%s %s :%s", command, target, reason);
 	else
-		send_to_server("%s %s", command, args);
+		send_to_server("%s %s", command, target);
 }
 
 /*
@@ -2488,7 +2491,7 @@ BUILT_IN_COMMAND(send_kick)
 {
 	char	*kickee,
 		*comment;
-	char	*channel;
+	const char	*channel;
 
 	char usage[] = "Usage: %s <channel|*> <nickname> [comment]";
 
@@ -2506,7 +2509,7 @@ BUILT_IN_COMMAND(send_kick)
 
 	comment = args?args:empty_string;
 	if (!strcmp(channel, "*"))
-		channel = get_channel_by_refnum(0);
+		channel = get_echannel_by_refnum(0);
 
 	send_to_server("%s %s %s :%s", command, channel, kickee, comment);
 }
@@ -2518,8 +2521,8 @@ BUILT_IN_COMMAND(send_kick)
  */
 BUILT_IN_COMMAND(send_channel_com)
 {
-	char	*ptr,
-		*s;
+	char	*ptr;
+	const char	*s;
 
 	char usage[] = "Usage: %s <*|#channel> [arguments]";
 
@@ -2527,7 +2530,7 @@ BUILT_IN_COMMAND(send_channel_com)
 
 	if (ptr && !strcmp(ptr, "*"))
 	{
-		if ((s = get_channel_by_refnum(0)) != NULL)
+		if ((s = get_echannel_by_refnum(0)) != NULL)
 			send_to_server("%s %s %s", command, s, args?args:empty_string);
 		else
 			say("%s * is not valid since you are not on a channel", command);

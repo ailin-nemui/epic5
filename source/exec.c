@@ -1,4 +1,4 @@
-/* $EPIC: exec.c,v 1.16 2003/03/23 02:48:33 jnelson Exp $ */
+/* $EPIC: exec.c,v 1.17 2003/03/29 08:10:22 jnelson Exp $ */
 /*
  * exec.c: handles exec'd process for IRCII 
  *
@@ -117,8 +117,8 @@ static	int 	logical_to_index 	(const char *logical);
  */
 BUILT_IN_COMMAND(execcmd)
 {
-	char		*who = NULL,
-			*logical = NULL,
+	const char	*who = NULL;
+	char		*logical = NULL,
 			*redirect = NULL,
 			*flag;
 	unsigned 	refnum = 0;
@@ -185,7 +185,7 @@ BUILT_IN_COMMAND(execcmd)
 			else
 				redirect = "PRIVMSG";
 
-			if (!(who = get_channel_by_refnum(0)))
+			if (!(who = get_echannel_by_refnum(0)))
 			{
 			     say("No current channel in this window for -OUT");
 			     return;

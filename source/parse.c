@@ -1,4 +1,4 @@
-/* $EPIC: parse.c,v 1.36 2003/03/24 03:03:19 jnelson Exp $ */
+/* $EPIC: parse.c,v 1.37 2003/03/29 08:10:22 jnelson Exp $ */
 /*
  * parse.c: handles messages from the server.   Believe it or not.  I
  * certainly wouldn't if I were you. 
@@ -322,7 +322,7 @@ static void	p_privmsg (const char *from, const char *comm, const char **ArgList)
 				!is_on_channel(target, from)) {
 			hook_type = PUBLIC_MSG_LIST;
 			hook_format = "%s(%s/%s)%s %s";
-		} else if (is_current_channel(target, 0)) {
+		} else if (is_current_channel(target, from_server)) {
 			hook_type = PUBLIC_LIST;
 			hook_format = "%s<%s%.0s>%s %s";
 		} else {
@@ -1075,7 +1075,8 @@ static void	p_kick (const char *from, const char *comm, const char **ArgList)
 		/*
 		 * Uh-oh.  If win is null we have a problem.
 		 */
-		if (!(win = get_channel_window(channel, from_server)))
+		if (!(win = get_window_by_refnum(
+				get_channel_winref(channel, from_server))))
 		{
 		    /*
 		     * Check to see if we got a KICK for a 
