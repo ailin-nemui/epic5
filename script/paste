@@ -1,0 +1,88 @@
+#
+# Here's the plan...
+#
+# We want a scripted /set paste, when we turn it on, it sends whatever we type
+# to the current target.  We also need to be able to turn it off automatically
+# because we won't be able to type any commands while it's active.  We need
+# to be able to configure the timeout, and we also want to be able to strip
+# any leading whitespace on the lines we paste.  (AnguzHawk asked for this
+# feature particularly.)
+#
+
+@ paste.on = 0
+@ paste.strip = 0
+@ paste.delay = 30
+
+# Uncomment this if you want a key binding.
+bind ^P parse_command { set paste toggle }
+
+# # #
+on ^set "paste %" {
+	xecho -b PASTE is ${paste.on ? [ON] : [OFF]}
+	xecho -b PASTE_STRIP is ${paste.strip ? [ON] : [OFF]}
+	xecho -b PASTE_DELAY is $paste.delay
+}
+
+on ^set "paste toggle" {
+	set paste ${paste.on ? [off] : [on]}
+}
+
+on ^set "paste on" {
+	@ paste.on = 1
+	setup_paste
+	xecho -b PASTE mode ON -- automatically turns off in $paste.delay seconds.
+}
+
+on ^set "paste off" {
+	@ paste.on = 0
+	remove_paste
+	xecho -b PASTE mode OFF
+}
+
+# # #
+on ^set "paste_strip %" {
+	xecho -b Usage: /SET PASTE_STRIP [ON|OFF]
+}
+
+on ^set "paste_strip toggle" {
+	set paste_strip ${paste.on ? [off] : [on]}
+}
+
+on ^set "paste_strip on" {
+	@ paste.strip = 1
+	xecho -b PASTE stripping set to ON
+}
+
+on ^set "paste_strip off" {
+	@ paste.strip = 0
+	xecho -b PASTE stripping set to OFF
+}
+
+# # #
+on ^set "paste_delay %" {
+	if (!isnumber($1) || [$1] <= 0) {
+		xecho -b Usage: /SET PASTE_DELAY seconds
+	} {
+		paste.delay = [$1]
+		xecho -b PASTE_DELAY set to $paste.delay seconds.
+	}
+}
+
+# # #
+alias setup_paste 
+{
+	on ^input * {
+		if (paste.strip) {
+			//send $0 $1-
+		} else {
+			//send $*
+		}
+	}
+}
+
+alias remove_paste
+{
+	on input -*
+}
+
+#hop'y2k3

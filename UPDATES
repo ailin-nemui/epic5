@@ -1,3 +1,33 @@
 EPIC4-1.2.0
 
+*** News 06/21/2003 -- New built in script, 'paste', /SET PASTE ON|OFF
+	The 'paste' script implements three new sets and one keybinding:
+
+	1) /SET PASTE (ON|OFF)
+	2) /SET PASTE_STRIP (ON|OFF)
+	3) /SET PASTE_DELAY <number>
+	4) Binds key ^P to /SET PASTE TOGGLE
+
+	When you /SET PASTE ON, everything you type at the input prompt is
+	taken to be literal text that you're pasting and it is sent to your
+	current target without any interpretation by epic.  This means you
+	can paste things like C code with comments, or ircII code without
+	EPIC interpreting your paste as commands.  When you /SET PASTE OFF,
+	everything goes back to normal.  The default is OFF.
+
+	Because it is theoretically possible for you to get stuck into
+	paste mode, where you would be unable to /SET PASTE OFF, there are
+	two ways out of "paste mode".  The ^P (control-P) key binding will
+	toggle the paste mode, turning it off if it is on (and turning it 
+	on if it is off...).  The "paste mode" feature also turns itself
+	off after a short delay, which you can control with /SET PASTE_DELAY.
+	The default paste delay is 30 seconds.
+
+	Anguzhawk, who asked me for this script originally, also wanted to
+	able to strip off leading whitespace on pre-formatted text that
+	he was pasting.  If you /SET PASTE_STRIP ON, then epic will remove
+	all leading whitespace from any text you paste.  If you 
+	/SET PASTE_STRIP OFF, everything goes back to normal.  The default
+	is OFF.
+ 
 # End of file
