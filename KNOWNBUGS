@@ -15,3 +15,5 @@ KNOWN ERRATA (eg, bugs, or unresolved requests):
 THE CHANGELOG SINCE THE LAST RELEASE:
 -------------------------------------
 * Fix compile bugs if you #undef WINDOW_CREATE
+* Fix bug with unitialized local var passed to prepare_display (rb da5id)
+* Fix bug with kb/s not showing up for /DCC GETs

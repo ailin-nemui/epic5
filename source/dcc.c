@@ -9,7 +9,7 @@
  */
 
 #if 0
-static	char	rcsid[] = "@(#)$Id: dcc.c,v 1.9 2002/03/11 18:39:14 jnelson Exp $";
+static	char	rcsid[] = "@(#)$Id: dcc.c,v 1.10 2002/03/31 03:57:19 jnelson Exp $";
 #endif
 
 #include "irc.h"
@@ -1355,7 +1355,7 @@ static	char		*format =
 		/*
 		 * Figure out something sane for the xfer speed.
 		 */
-		if (Client->bytes_sent)
+		if (act_sent)
 		{
 			strlcpy(speed, calc_speed(act_sent, 
 				Client->starttime, get_time(NULL)), 9);
