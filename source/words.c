@@ -1,4 +1,4 @@
-/* $EPIC: words.c,v 1.14 2003/07/28 14:21:22 jnelson Exp $ */
+/* $EPIC: words.c,v 1.15 2003/07/31 16:49:56 jnelson Exp $ */
 /*
  * words.c -- right now it just holds the stuff i wrote to replace
  * that beastie arg_number().  Eventually, i may move all of the
@@ -506,7 +506,7 @@ static int	move_to_next_word (const char **str, const char *start, int extended,
 	/*
 	 * Always skip leading spaces
 	 */
-	while (pos && isspace(*pos))
+	while (*pos && isspace(*pos))
 		pos++;
 
 	if (x_debug & DEBUG_EXTRACTW_DEBUG)
@@ -550,6 +550,7 @@ static int	move_to_next_word (const char **str, const char *start, int extended,
 		    yell(".... move_to_next_word: at next space: [%s]", pos);
 	}
 
+#if 0
 	/*
 	 * 'pos' now points at the space just after the end of the word;
 	 * This space belongs to us, but any further spaces do not long
@@ -577,6 +578,10 @@ static int	move_to_next_word (const char **str, const char *start, int extended,
 		    yell("... move_to_next_word: there's another word.");
 		pos++;
 	}
+#else
+	if (*pos)
+		pos++;
+#endif
 
 	if (x_debug & DEBUG_EXTRACTW_DEBUG)
 	    yell("... move_to_next_word: next word starts with [%s]", pos);
@@ -837,7 +842,7 @@ char *	real_extract (char *start, int firstword, int lastword, int extended)
 	 * to the whitespace anyhow, noone should have any problem with
 	 * those ops removing bothersome whitespace when needed.)
 	 */
-	while (my_isspace(*start))
+	while (*start && my_isspace(*start))
 		start++;
 	remove_trailing_spaces(start, 0);
 
