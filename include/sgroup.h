@@ -27,6 +27,7 @@ struct server_typ {
 	char *		name;			/* Our idea of server's name */
 	char *		itsname;		/* Its idea of server's name */
 	int		port;			/* Port to use */
+	char *		server_type		/* Server type */
 
 	char *		password;		/* Password to use on server */
 	char *		userhost;		/* My userhost on server */

@@ -46,6 +46,7 @@ static	char *	do_umode (int du_index);
 	void 	reset_nickname (int);
 	void	clear_reconnect_counts (void);
 	const char *get_server_group (int refnum);
+	const char *get_server_type (int refnum);
 
 	int	never_connected = 1;		/* true until first connection
 						 * is made */
@@ -72,7 +73,7 @@ static	char *	do_umode (int du_index);
  * passes.  If the server is not on the list, it is added to the end. In
  * either case, the server is made the current server. 
  */
-void 	add_to_server_list (const char *server, int port, const char *password, const char *nick, const char *group, int overwrite)
+void 	add_to_server_list (const char *server, int port, const char *password, const char *nick, const char *group, const char *server_type, int overwrite)
 {
 	Server *s;
 
@@ -120,16 +121,19 @@ void 	add_to_server_list (const char *server, int port, const char *password, co
 		s->save_channels = -1;
 #ifdef HAVE_SSL
 		s->enable_ssl = FALSE;
+		s->ssl_enabled = FALSE;
 #endif
 
 		if (password && *password)
 			malloc_strcpy(&s->password, password);
-		if (group && *group)
-			malloc_strcpy(&s->group, group);
 		if (nick && *nick)
 			malloc_strcpy(&s->d_nickname, nick);
 		else if (!s->d_nickname)
 			malloc_strcpy(&s->d_nickname, nickname);
+		if (group && *group)
+			malloc_strcpy(&s->group, group);
+		if (server_type && *server_type)
+			s->enable_ssl = my_stricmp(server_type, "IRC-SSL") ? 0 : 1;
 		malloc_strcpy(&s->umodes, umodes);
 
 		make_notify_list(from_server);
@@ -198,7 +202,7 @@ static 	void 	remove_from_server_list (int i)
 	destroy_notify_list(i);
 
 #ifdef HAVE_SSL
-	if (server_list[i].enable_ssl == TRUE)
+	if (server_list[i].ssl_enabled == TRUE)
 	{
 		SSL_free((SSL *)&s->ssl_fd);
 		SSL_CTX_free((SSL_CTX *)&s->ctx);
@@ -286,9 +290,9 @@ int	find_in_server_list (const char *server, int port)
  *
  *		refnum	 (where refnum is an integer for an existing server)
  * or
- *		hostname:port:password:nickname:group
+ *		hostname:port:password:nickname:group:type
  * or
- *		hostname port password nickname group
+ *		hostname port password nickname group type
  *
  * This extracts the salient information from the string and returns the
  * server_list index for that server.  If the information describes a server
@@ -306,7 +310,8 @@ int 	find_server_refnum (char *server, char **rest)
 	char 	*cport = NULL, 
 		*password = NULL,
 		*nick = NULL,
-		*group = NULL;
+		*group = NULL,
+		*server_type = NULL;
 
 	/*
 	 * First of all, check for an existing server refnum
@@ -318,7 +323,7 @@ int 	find_server_refnum (char *server, char **rest)
 	 * Next check to see if its a "server:port:password:nick"
 	 */
 	else if (strchr(server, ':'))
-		parse_server_info(server, &cport, &password, &nick, &group);
+		parse_server_info(server, &cport, &password, &nick, &group, &server_type);
 
 	/*
 	 * Next check to see if its "server port password nick"
@@ -329,6 +334,7 @@ int 	find_server_refnum (char *server, char **rest)
 		password = new_next_arg(*rest, rest);
 		nick = new_next_arg(*rest, rest);
 		group = new_next_arg(*rest, rest);
+		server_type = new_next_arg(*rest, rest);
 	}
 
 	if (cport && *cport)
@@ -338,7 +344,7 @@ int 	find_server_refnum (char *server, char **rest)
 	 * Add to the server list (this will update the port
 	 * and password fields).
 	 */
-	add_to_server_list(server, port, password, nick, group, 1);
+	add_to_server_list(server, port, password, nick, group, server_type, 1);
 	return from_server;
 }
 
@@ -374,11 +380,11 @@ int	parse_server_index (const char *str)
  * "*group" must be set to something (even if it is NULL) before calling this!
  * Colons can be backslashed.
  */
-void	parse_server_info (char *name, char **port, char **password, char **nick, char **group)
+void	parse_server_info (char *name, char **port, char **password, char **nick, char **group, char **server_type)
 {
 	char *ptr;
 
-	*port = *password = *nick = NULL;
+	*port = *password = *nick = *server_type = NULL;
 
 	do
 	{
@@ -423,9 +429,18 @@ void	parse_server_info (char *name, char **port, char **password, char **nick, c
 			break;
 		*group = ptr;
 
-		/* Ignore any additional, future fields */
 		if (*ptr == '"')
 			*group = new_next_arg(ptr, &ptr);
+		ptr = strchr(ptr, ':');
+		if (!ptr)
+			break;
+		*ptr++ = 0;
+		if (!*ptr)
+			break;
+		*server_type = ptr;
+
+		if (*ptr == '"')
+			*server_type = new_next_arg(ptr, &ptr);
 		ptr = strchr(ptr, ':');
 		if (!ptr)
 			break;
@@ -452,6 +467,7 @@ void	parse_server_info (char *name, char **port, char **password, char **nick, c
  *
  * servername::password:servergroup
  *
+ *
  * Note also that this routine mucks around with the server string passed to it,
  * so make sure this is ok 
  */
@@ -461,7 +477,8 @@ void	build_server_list (char *servers, char *group)
 		*rest,
 		*password = (char *) 0,
 		*port = (char *) 0,
-		*nick = (char *) 0;
+		*nick = (char *) 0,
+		*server_type = (char *) 0;
 	int	port_num;
 
 	if (!servers)
@@ -474,13 +491,13 @@ void	build_server_list (char *servers, char *group)
 
 		while ((host = next_arg(servers, &servers)))
 		{
-			parse_server_info(host, &port, &password, &nick, &group);
+			parse_server_info(host, &port, &password, &nick, &group, &server_type);
                         if (port && *port && (port_num = my_atol(port)))
 				;
 			else
 				port_num = irc_port;
 
-			add_to_server_list(host, port_num, password, nick, group, 0);
+			add_to_server_list(host, port_num, password, nick, group, server_type, 0);
 		}
 		servers = rest;
 	}
@@ -574,25 +591,28 @@ void 	display_server_list (void)
 	{
 		if (!server_list[i].nickname)
 		{
-			say("\t%d) %s %d [%s]", i,
+			say("\t%d) %s %d [%s] %s", i,
 				server_list[i].name,
 				server_list[i].port,
-				get_server_group(i));
+				get_server_group(i),
+				get_server_type(i));
 		}
 		else
 		{
 			if (is_server_open(i))
-				say("\t%d) %s %d (%s) [%s]", i,
+				say("\t%d) %s %d (%s) [%s] %s", i,
 					server_list[i].name,
 					server_list[i].port,
 					server_list[i].nickname,
-					get_server_group(i));
+					get_server_group(i),
+					get_server_type(i));
 			else
-				say("\t%d) %s %d (was %s) [%s]", i,
+				say("\t%d) %s %d (was %s) [%s] %s", i,
 					server_list[i].name,
 					server_list[i].port,
 					server_list[i].nickname,
-					get_server_group(i));
+					get_server_group(i),
+					get_server_type(i));
 		}
 	}
 }
@@ -644,21 +664,6 @@ BUILT_IN_COMMAND(servercmd)
 		display_server_list();
 		return;
 	}
-
-#ifdef HAVE_SSL
-	if ((i = find_in_server_list(server, 0)) != -1)
-		server_list[i].enable_ssl=FALSE;
-	if (strlen(server) > 1 && !my_strnicmp(server, "-SSL", strlen(server)))
-	{
-		if (!(server = new_next_arg(args, &args)))
-		{
-			say("Not enough paramters - supply server name please");
-			return;
-		}
-		say("Trying to establish SSL connection with server: %s", server);
-		ssl_connect=TRUE;
-	}
-#endif
 
 	/*
 	 * Delete an existing server
@@ -713,14 +718,7 @@ BUILT_IN_COMMAND(servercmd)
 
 		/* /SERVER +foo.bar.com is an alias for /window server */
 		if (*++server)
-		{
-#ifdef HAVE_SSL
-			i = find_server_refnum(server, &args);
-			if (ssl_connect == TRUE)
-				server_list[i].enable_ssl = TRUE;
-#endif
 			window_server(current_window, &server);
-		}
 
 		/* /SERVER + means go to the next server */
 		else
@@ -783,9 +781,12 @@ BUILT_IN_COMMAND(servercmd)
 		{
 			clear_reconnect_counts();
 #ifdef HAVE_SSL
+			if (my_stricmp(get_server_type(i), "IRC-SSL") == 0)
+				ssl_connect=TRUE;
 			if (ssl_connect == TRUE)
 				server_list[i].enable_ssl = TRUE;
 #endif
+
 			server_reconnects_to(j, i);
 			reconnect(j, 0);
 			window_check_servers();
@@ -819,7 +820,7 @@ void	do_server (fd_set *rd)
 		if (des == -1 || !FD_ISSET(des, rd))
 		{
 #ifdef HAVE_SSL
-			if (server_list[i].enable_ssl == TRUE)
+			if (server_list[i].ssl_enabled == TRUE)
 			{
 				if (!SSL_pending(server_list[i].ssl_fd))
 					continue;
@@ -832,7 +833,7 @@ void	do_server (fd_set *rd)
 
 		last_server = from_server = i;
 #ifdef HAVE_SSL
-		if (server_list[i].enable_ssl == TRUE)
+		if (server_list[i].ssl_enabled == TRUE)
 			junk = SSL_dgets(bufptr, des, 1, IO_BUFFER_SIZE, server_list[i].ssl_fd);
 		else
 #endif
@@ -975,7 +976,7 @@ void	send_to_server_raw (size_t len, const char *buffer)
 	if (server != -1 && (des = server_list[server].des) != -1 && buffer)
 	{
 #ifdef HAVE_SSL
-		if (server_list[server].enable_ssl == TRUE)
+		if (server_list[server].ssl_enabled == TRUE)
 		{
 			if (server_list[server].ssl_fd == 0)
 			{
@@ -999,7 +1000,7 @@ void	send_to_server_raw (size_t len, const char *buffer)
 				server_is_connected(des, 0);
 				say("Write to server failed.  Closing connection.");
 #ifdef HAVE_SSL
-				if (server_list[server].enable_ssl == TRUE)
+				if (server_list[server].ssl_enabled == TRUE)
 					SSL_shutdown(server_list[server].ssl_fd);
 #endif
 				reconnect(server, 1);
@@ -1094,7 +1095,7 @@ static int 	connect_to_server (int new_server)
 		say("Unable to connect to port %d of server %s: %s", 
 				s->port, s->name, my_strerror(errno));
 #ifdef HAVE_SSL
-		s->enable_ssl = FALSE; /* Would cause client to crash, if not wiped out */
+		s->ssl_enabled = FALSE; /* Would cause client to crash, if not wiped out */
 #endif
 		return -1;		/* Connect failed */
 	}
@@ -1117,7 +1118,7 @@ static int 	connect_to_server (int new_server)
 	 * Initialize all of the server_list data items
 	 * XXX - Calling add_to_server_list is a hack.
 	 */
-	add_to_server_list(s->name, s->port, NULL, NULL, NULL, 1);
+	add_to_server_list(s->name, s->port, NULL, NULL, NULL, NULL, 1);
 	s->des = des;
 	s->oper = 0;
 	if (!s->d_nickname)
@@ -1493,7 +1494,7 @@ void	close_server (int old, const char *message)
 		    if (was_connected)
 			    send_to_aserver(old, "QUIT :%s\n", message);
 #ifdef HAVE_SSL
-		    if (server_list[old].enable_ssl==TRUE)
+		    if (server_list[old].ssl_enabled == TRUE)
 		    {
 			    say("Closing SSL connection");
 			    SSL_shutdown(server_list[old].ssl_fd);
@@ -1747,6 +1748,11 @@ const char *	get_server_version_string (int servnum)
 
 #ifdef HAVE_SSL
 
+int	get_server_enable_ssl (int gsn_index)
+{
+	return server_list[gsn_index].enable_ssl;
+}
+
 void	set_server_enable_ssl (int gsn_index, int value)
 {
 	server_list[gsn_index].enable_ssl = value;
@@ -1760,7 +1766,7 @@ int	get_server_isssl (int gsn_index)
 	else if (gsn_index == -1 || gsn_index >= number_of_servers)
 		return 0;
 
-	return ((server_list[gsn_index].enable_ssl == TRUE) ? (1) : (0));
+	return ((server_list[gsn_index].ssl_enabled == TRUE) ? (1) : (0));
 }
 
 const char	*get_server_cipher (int gsn_index)
@@ -1768,7 +1774,7 @@ const char	*get_server_cipher (int gsn_index)
 	if (gsn_index == -1)
 		gsn_index = primary_server;
 	else if (gsn_index == -1 || gsn_index >= number_of_servers
-		|| server_list[gsn_index].enable_ssl == FALSE)
+		|| server_list[gsn_index].ssl_enabled == FALSE)
 		return empty_string;
 
 	return (SSL_get_cipher(server_list[gsn_index].ssl_fd));
@@ -1824,6 +1830,7 @@ void	register_server (int ssn_index, const char *nickname)
 		server_cert = SSL_get_peer_certificate(server_list[ssn_index].ssl_fd);
 		if (!(server_cert == NULL))
 		{
+			server_list[ssn_index].ssl_enabled = TRUE;
 			server_pkey = X509_get_pubkey(server_cert);
 			/* urlencoded to avoid problems with spaces */
 			do_hook(SSL_SERVER_CERT_LIST, "%s %s %s",
@@ -1845,6 +1852,7 @@ void	register_server (int ssn_index, const char *nickname)
 		}
 		else
 		{
+			server_list[ssn_index].ssl_enabled = FALSE;
 			/* No server certificate found */
 			do_hook(SSL_SERVER_CERT_LIST, "%s %s %s",
 				server_list[ssn_index].name,
@@ -2424,7 +2432,7 @@ void 	save_servers (FILE *fp)
 	for (i = 0; i < number_of_servers; i++)
 	{
 		/* SERVER -ADD server:port:password:nick */
-		fprintf(fp, "SERVER -ADD %s:%d:%s:%s:%s\n",
+		fprintf(fp, "SERVER -ADD %s:%d:%s:%s:%s:%s\n",
 			server_list[i].name,
 			server_list[i].port,
 			server_list[i].password ? 
@@ -2432,7 +2440,8 @@ void 	save_servers (FILE *fp)
 			server_list[i].nickname ?
 				server_list[i].nickname : empty_string,
 			server_list[i].group ?
-				server_list[i].group : empty_string);
+				server_list[i].group : empty_string,
+			get_server_type(i));
 	}
 }
 
@@ -2456,4 +2465,17 @@ const char *get_server_group (int refnum)
 		return "<default>";
 
 	return server_list[refnum].group;
+}
+const char *get_server_type (int refnum)
+{
+	if (refnum == -1 && from_server != -1)
+		refnum = from_server;
+
+	if (refnum >= number_of_servers || refnum < 0)
+		return 0;
+
+	if (server_list[refnum].enable_ssl)
+		return "IRC-SSL";
+	else
+		return "IRC";
 }

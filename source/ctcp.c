@@ -10,7 +10,7 @@
  */
 
 #if 0
-static	char	rcsid[] = "@(#)$Id: ctcp.c,v 1.10 2002/01/24 10:45:25 crazyed Exp $";
+static	char	rcsid[] = "@(#)$Id: ctcp.c,v 1.11 2002/02/27 02:57:19 crazyed Exp $";
 #endif
 
 #include "irc.h"
@@ -995,7 +995,7 @@ char	*ctcp_quote_it (char *str, int len)
  * convenied, but the returned data may contain nulls!.  The len is modified
  * to contain the size of the data returned. 
  */
-char	*ctcp_unquote_it (char *str, int *len)
+char	*ctcp_unquote_it (char *str, size_t *len)
 {
 	char	*buffer;
 	char	*ptr;

@@ -306,6 +306,7 @@ static	char
 	*function_servernick	(char *),
 	*function_servernum	(char *),
 	*function_serverourname	(char *),
+	*function_servertype	(char *),
 	*function_servports	(char *),
 	*function_sin		(char *),
 	*function_sinh		(char *),
@@ -579,6 +580,7 @@ static BuiltInFunctions	built_in_functions[] =
 	{ "SERVERNICK",		function_servernick	},
 	{ "SERVERNUM",		function_servernum	},
 	{ "SERVEROURNAME",	function_serverourname	},
+	{ "SERVERTYPE",		function_servertype	},
 	{ "SERVPORTS",		function_servports	},
 	{ "SETITEM",            function_setitem 	},
 	{ "SHIFT",		function_shift 		},
@@ -3231,6 +3233,25 @@ BUILT_IN_FUNCTION(function_servergroup, input)
 
 	/* Next we try what we think its name is */
 	which = get_server_group(sval);
+
+	/* Ok. i give up, return a null. */
+	RETURN_STR(which);
+}
+
+BUILT_IN_FUNCTION(function_servertype, input)
+{
+	int 	sval = from_server;
+	const char *	which;
+
+	if (*input)
+		GET_INT_ARG(sval, input);
+
+	/* garbage in, garbage out. */
+	if (sval < 0 || sval >= number_of_servers)
+		RETURN_EMPTY;
+
+	/* Next we try what we think its name is */
+	which = get_server_type(sval);
 
 	/* Ok. i give up, return a null. */
 	RETURN_STR(which);

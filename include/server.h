@@ -77,7 +77,8 @@ typedef	struct
 #ifdef HAVE_SSL
 	SSL_CTX*	ctx;
 	SSL_METHOD*	meth;
-	int	enable_ssl;
+	int	enable_ssl;		/* SSL requested on next connection. */
+	int	ssl_enabled;		/* Current SSL status. */
 	SSL*	ssl_fd;
 #endif
 }	Server;
@@ -111,12 +112,13 @@ extern	int	parsing_server_index;
 
 	void	add_to_server_list 		(const char *, int, 
 						 const char *, const char *, 
-						 const char *, int);
+						 const char *, const char *,
+						 int);
 	int	find_in_server_list		(const char *, int);
 	int	find_server_refnum		(char *, char **rest);
 	int	parse_server_index		(const char *);
 	void	parse_server_info		(char *, char **, char **,
-						 char **, char **);
+						 char **, char **, char **);
 	void	build_server_list		(char *, char *);
 	int	read_server_file		(void);
 	void	display_server_list		(void);
@@ -152,6 +154,7 @@ const	char *	get_umode			(int);
 const	char *	get_server_name			(int);
 const	char *	get_server_itsname		(int);
 const	char *	get_server_group		(int);
+const	char *	get_server_type			(int);
 	void	set_server_itsname		(int, const char *);
 	void	set_server_version_string	(int, const char *);
 const 	char *	get_server_version_string	(int);
@@ -209,5 +212,6 @@ const char *    get_server_quit_message		(int);
 
 	void	clear_reconnect_counts		(void);
 
+	int	get_server_enable_ssl 		(int);
 	void   	set_server_enable_ssl 		(int, int);
 #endif /* _SERVER_H_ */

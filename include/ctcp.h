@@ -37,7 +37,7 @@ extern	int	sed;
 extern	int	in_ctcp_flag;
 
 	char *	ctcp_quote_it 	(char *, int);
-	char *	ctcp_unquote_it (char *, int *);
+	char *	ctcp_unquote_it (char *, size_t *);
 	char *	do_ctcp 	(char *, char *, char *);
 	char *	do_notice_ctcp 	(char *, char *, char *);
 	int	in_ctcp 	(void);

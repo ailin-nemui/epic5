@@ -4224,17 +4224,9 @@ Window *window_server (Window *window, char **args)
 
 	if ((arg = next_arg(*args, args)))
 	{
-#ifdef HAVE_SSL
-	   if (!my_strnicmp(arg, "-SSL", strlen(arg)))
-	   {
-		withSSL=TRUE;
-		arg = next_arg(*args, args);
-	   }
-	   if (arg) {
-#endif
 		int i = find_server_refnum(arg, NULL);
 #ifdef HAVE_SSL
-		set_server_enable_ssl(i, withSSL);
+		withSSL = get_server_enable_ssl(i);
 #endif
 
 		if (windows_connected_to_server(window->server) > 1)
@@ -4285,9 +4277,6 @@ Window *window_server (Window *window, char **args)
 		 * for us and garbage collect any channels lying around.
 		 */
 		window_check_servers();
-#ifdef HAVE_SSL
-	   }
-#endif
 	}
 	else
 		say("SERVER: You must specify a server");
