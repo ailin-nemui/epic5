@@ -1,4 +1,4 @@
-/* $EPIC: dcc.c,v 1.70 2003/07/18 01:36:34 jnelson Exp $ */
+/* $EPIC: dcc.c,v 1.71 2003/07/20 15:23:49 jnelson Exp $ */
 /*
  * dcc.c: Things dealing client to client connections. 
  *
@@ -862,6 +862,12 @@ static void	dcc_send_booster_ctcp (DCC_list *dcc)
 	const char *	type = dcc_types[dcc->flags & DCC_TYPES];
 	int	family;
 	int	server = from_server < 0 ? primary_server : from_server;
+
+	if (!is_server_registered(server))
+	{
+		yell("You cannot use DCC while not connected to a server.");
+		return;
+	}
 
 	family = FAMILY(dcc->local_sockaddr);
 
