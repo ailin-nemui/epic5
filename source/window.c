@@ -1,4 +1,4 @@
-/* $EPIC: window.c,v 1.44 2002/11/07 05:48:37 jnelson Exp $ */
+/* $EPIC: window.c,v 1.45 2002/11/07 06:17:24 jnelson Exp $ */
 /*
  * window.c: Handles the organzation of the logical viewports (``windows'')
  * for irc.  This includes keeping track of what windows are open, where they
@@ -5147,10 +5147,10 @@ void	check_window_cursor (Window *window)
 		recalculate_window_cursor_and_display_ip(window);
 
 	/* XXX This is a hack that covers up a bug elsewhere. */
-	if (current_window->hold_mode == 0 && current_window->autohold == 0 &&
+	if (window->hold_mode == 0 && window->autohold == 0 &&
 		    window->distance_from_display_ip > window->display_size)
 	{
-		window_scrollback_end(current_window);
+		window_scrollback_end(window);
 #if 0
 		yell("Unheld this window for you -- let #epic on efnet know!");
 #endif
