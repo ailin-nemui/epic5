@@ -9,6 +9,7 @@ KNOWN ERRATA (eg, bugs, or unresolved requests):
 * irc.link-net.org:7000:::linknet:irc-ssl
 * Sort out the whole errno/dgets_errno/my_strerror mess.
 * Receiving dcc offers causes panic for Kitambi
+* Pthreads + SSL may not be a winning combination.
 
 [See http://www.epicsol.org/PROJECTS for things to come in the future]
 [See http://www.epicsol.org/CHANGELOG5 for things that changed in the past]
