@@ -1,4 +1,4 @@
-/* $EPIC: reg.c,v 1.12 2004/04/13 00:19:48 jnelson Exp $ */
+/* $EPIC: reg.c,v 1.13 2004/05/05 16:06:09 jnelson Exp $ */
 /*
  * reg.c - "glob"-like wildcard pattern matching (not regexes)
  *
@@ -131,7 +131,7 @@ static int new_match (const unsigned char *pattern, const unsigned char *string)
 	{
 		if (sanity++ > 100000)
 		{
-			yell("Infinite loop in match!");
+			yell("Infinite loop in match! -- Returning [0]");
 			return 0;
 		}
 
@@ -160,7 +160,7 @@ static int new_match (const unsigned char *pattern, const unsigned char *string)
 			if (!*string)
 			{
 				if (x_debug & DEBUG_REGEX_DEBUG)
-					yell("More pattern, no source, Failure");
+					yell("More pattern, no source, Failure.  Returning [0]");
 				return 0;
 			}
 
@@ -237,13 +237,13 @@ static int new_match (const unsigned char *pattern, const unsigned char *string)
 				if (*pattern)
 				{
 					if (x_debug & DEBUG_REGEX_DEBUG)
-						yell("Ran out of source matching after %%");
+						yell("Ran out of source matching after %%.  Returning [0]");
 					return 0;
 				}
 				else
 				{
 					if (x_debug & DEBUG_REGEX_DEBUG)
-						yell("Success!");
+						yell("Success!  Returning [%d]", count);
 					return count;
 				}
 			}
@@ -275,7 +275,7 @@ static int new_match (const unsigned char *pattern, const unsigned char *string)
                           {
                                if (x_debug & DEBUG_REGEX_DEBUG)
                                {
-                                  yell("Found a space trying to match the [%d] after a %%\\, so this doesn't match.", (int)*(pattern + 1));
+                                  yell("Found a space trying to match the [%d] after a %%\\, so this doesn't match.  Returning [0]", (int)*(pattern + 1));
                                   return 0;
                                }
                           }
@@ -366,7 +366,7 @@ static int new_match (const unsigned char *pattern, const unsigned char *string)
 			if (asterisk && !*pattern)
 			{
 				if (x_debug & DEBUG_REGEX_DEBUG)
-					yell("Wildcard at end of pattern. success!");
+					yell("Wildcard at end of pattern. success!  Returning [%d]", count);
 				return count;
 			}
 
@@ -388,7 +388,7 @@ static int new_match (const unsigned char *pattern, const unsigned char *string)
 			if (!*string)
 			{
 				if (x_debug & DEBUG_REGEX_DEBUG)
-					yell("Ran out of source matching ?");
+					yell("Ran out of source matching ?. Returning [0]");
 				return 0;
 			}
 			string++;
@@ -408,7 +408,7 @@ static int new_match (const unsigned char *pattern, const unsigned char *string)
 			if (!*pattern)
 			{
 				if (x_debug & DEBUG_REGEX_DEBUG)
-					yell("Lone \\ at end of pattern, failed");
+					yell("Lone \\ at end of pattern, failed.  Returning [0]");
 				return 0;
 			}
 
@@ -423,7 +423,7 @@ static int new_match (const unsigned char *pattern, const unsigned char *string)
 			if (tolower(*pattern) != tolower(*string))
 			{
 				if (x_debug & DEBUG_REGEX_DEBUG)
-					yell("characters [%d] and [%d] after \\ dont match", tolower(*pattern), tolower(*string));
+					yell("characters [%d] and [%d] after \\ dont match.  Returning [0]", tolower(*pattern), tolower(*string));
 				return 0;
 			}
 
@@ -444,7 +444,7 @@ static int new_match (const unsigned char *pattern, const unsigned char *string)
 			if (!*pattern && !*string)
 			{
 				if (x_debug & DEBUG_REGEX_DEBUG)
-					yell("Success!");
+					yell("Success!  Returning [%d]", count);
 				return count;
 			}
 
@@ -491,7 +491,7 @@ static int new_match (const unsigned char *pattern, const unsigned char *string)
 			else
 			{
 				if (x_debug & DEBUG_REGEX_DEBUG)
-					yell("Characters [%d] and [%d] dont match", tolower(*pattern), tolower(*string));
+					yell("Characters [%d] and [%d] dont match.  Returning [0]", tolower(*pattern), tolower(*string));
 				return 0;
 			}
 
@@ -502,7 +502,7 @@ static int new_match (const unsigned char *pattern, const unsigned char *string)
 
 	/* NOTREACHED */
 	if (x_debug & DEBUG_REGEX_DEBUG)
-		yell("ABAONDON SHIP!");
+		yell("ABAONDON SHIP!  Returning [0]");
 	return 0;
 }
 
