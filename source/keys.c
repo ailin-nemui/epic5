@@ -1,4 +1,4 @@
-/* $EPIC: keys.c,v 1.15 2002/09/03 06:06:52 wd Exp $ */
+/* $EPIC: keys.c,v 1.16 2002/09/23 08:07:49 wd Exp $ */
 /*
  * keys.c:  Keeps track of what happens whe you press a key.
  *
@@ -219,8 +219,9 @@ void key_exec (struct Key *key) {
     }
 
     /* if the key isn't bound to anything, and it has an owner, assume we
-     * got a premature terminator for a key sequence.  walk backwards along
-     * our path, and execute each key independently. */
+     * got a premature terminator for one or more key sequences.  call
+     * key_exec_bt to go back and see about executing the input in smaller
+     * chunks. */
     if (key->bound == NULL) {
 	if (key->owner != NULL)
 	    key_exec_bt(key);
@@ -241,16 +242,60 @@ void key_exec (struct Key *key) {
     return;
 }
 	
-/* this is an interesting function.  it finds the 'owning' key that the map
- * our current key is in (ugh. :) lives in.  if this is non-NULL, it calls
- * back on that, then executes the 'value' of the key itself. */
+/* this function unwinds the current 'stack' of input keys, placing them
+ * into a string, and then parses the string looking for the longest
+ * possible input combinations and executing them as it goes. */
 void key_exec_bt (struct Key *key) {
+    unsigned char *kstr = empty_string, *nstr;
+    int len = 1, kslen, i;
+    struct Key *kp;
 
-    /* key->owner should point back to the owning key, if it is not NULL. */
-    if (key->owner != NULL)
-	key_exec_bt(key->owner);
+    /* now walk backwards, growing kstr as necessary */
+    while (key != NULL) {
+	nstr = alloca(len + 1);
+	memcpy(nstr + 1, kstr, len);
+	nstr[0] = key->val;
+	kstr = nstr;
+	len++;
+	key = key->owner;
+    }
 
-    key_exec(&head_keymap[key->val]);
+    /* kstr should contain our keystring now, so walk along it and find the
+     * longest patterns available *that terminate*.  what this means is that
+     * we need to go backwards along kstr until we find something that
+     * terminates, then we need to lop off that part of kstr, and start
+     * again.  this is not particularly efficient. :/ */
+    kslen = len;
+    while (*kstr) {
+	kp = NULL;
+	nstr = kstr;
+	kslen--;
+	while (nstr != (kstr + kslen)) {
+	    if (nstr == kstr) /* beginning of string */
+		kp = &head_keymap[*nstr];
+	    else if (kp->map != NULL)
+		kp = &kp->map[*nstr];
+	    else
+		break; /* no luck here */
+	    nstr++;
+	}
+	/* did we get to the end?  if we did and found a key that executes,
+	 * go ahead and execute it.  if kslen is equal to 1, and we didn't
+	 * have any luck, simply discard the key and continue plugging
+	 * forward. */
+	if (nstr == (kstr + kslen)) {
+	    if (kp->bound != NULL || kslen == 1) {
+		if (kp->bound != NULL)
+		    key_exec(kp);
+		len -= (nstr - kstr);
+		kslen = len; 
+		kstr = nstr; /* move kstr forward */
+		continue; /* now move along */
+	    }
+	}
+	/* otherwise, we'll just continue above (where kslen is decremented
+	 * and nstr is re-set */
+    }
 }
 
 /* this function tries to retrieve the binding for a key pressed on the
