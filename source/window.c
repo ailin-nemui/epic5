@@ -3584,7 +3584,15 @@ static Window *window_next (Window *window, char **args)
 
 static	Window *window_noserv (Window *window, char **args)
 {
-	return window_discon(window, args);
+	/* This is just like /window discon except last_server is set to -1 */
+	reassign_window_channels(window);
+	new_free(&window->current_channel);
+	new_free(&window->bind_channel);
+	new_free(&window->waiting_channel);
+	window->last_server = -1;
+	window->server = -1;		/* XXX This shouldn't be set here. */
+	window_check_servers();
+	return window;
 }
 
 static Window *window_notify (Window *window, char **args)
