@@ -20,6 +20,7 @@ extern	int	system_exception;
 
 extern	int	need_defered_commands;
 
+	void	init_commands		(void);
 	void	parse_line 		(const char *, const char *, const char *, int, int);
 	BUILT_IN_COMMAND(load);
 	void	send_text	 	(const char *, const char *, const char *, int);

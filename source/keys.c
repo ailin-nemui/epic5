@@ -1,4 +1,4 @@
-/* $EPIC: keys.c,v 1.34 2004/04/13 00:19:48 jnelson Exp $ */
+/* $EPIC: keys.c,v 1.35 2004/06/25 22:01:17 jnelson Exp $ */
 /*
  * keys.c:  Keeps track of what happens whe you press a key.
  *
@@ -173,7 +173,6 @@ void init_binds (void) {
     ADDBIND("BLINK",			    insert_blink		    );
     ADDBIND("BOLD",			    insert_bold			    );
     ADDBIND("CLEAR_SCREEN",		    clear_screen		    );
-    ADDBIND("COMMAND_COMPLETION",	    command_completion		    );
     ADDBIND("CPU_SAVER",		    cpu_saver_on		    );
     ADDBIND("DELETE_CHARACTER",		    input_delete_character	    );
     ADDBIND("DELETE_NEXT_WORD",		    input_delete_next_word	    );
@@ -730,7 +729,6 @@ void init_keys (void) {
 #endif
 
     /* now for what was formerly meta1 (escape) sequences. */
-    BIND("^[^[", "COMMAND_COMPLETION");
     BIND("^[.", "CLEAR_SCREEN");
     BIND("^[<", "SCROLL_START");
     BIND("^[>", "SCROLL_END");

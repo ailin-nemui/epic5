@@ -1,0 +1,13 @@
+#
+# Here's the plan
+# In epic5-0.0.3, I removed a bunch of built in commands that were actually
+# hardcoded aliases.  I have put them here, as user aliases.
+#
+alias bye {//quit $*}
+alias date {//time $*}
+alias exit {//quit $*}
+alias host {//userhost $*}
+alias irchost {//hostname $*}
+alias leave {//part $*}
+alias signoff {//quit $*}
+

@@ -1,4 +1,4 @@
-/* $EPIC: commands.c,v 1.93 2004/04/13 00:19:48 jnelson Exp $ */
+/* $EPIC: commands.c,v 1.94 2004/06/25 22:01:17 jnelson Exp $ */
 /*
  * commands.c -- Stuff needed to execute commands in ircII.
  *		 Includes the bulk of the built in commands for ircII.
@@ -129,7 +129,8 @@ static	void	commentcmd 	(const char *, char *, const char *);
 static	void	continuecmd	(const char *, char *, const char *);
 static	void	ctcp 		(const char *, char *, const char *);
 static	void	deop 		(const char *, char *, const char *);
-static	void	do_send_text 	(const char *, char *, const char *);
+static	void	send_to_channel	(const char *, char *, const char *);
+static	void	send_to_target	(const char *, char *, const char *);
 static	void	sendlinecmd 	(const char *, char *, const char *);
 static	void	echocmd		(const char *, char *, const char *);
 static	void	funny_stuff 	(const char *, char *, const char *);
@@ -196,9 +197,7 @@ typedef void (*CmdFunc) (const char *, char *, const char *);
 typedef	struct
 {
 	const char *	name;		/* what the user types */
-	const char *	server_func;	/* what gets sent to the server */
 	CmdFunc 	func;		/* function that is the command */
-	unsigned	flags;
 }	IrcCommand;
 
 /*
@@ -209,166 +208,165 @@ typedef	struct
  */
 static	IrcCommand irc_command[] =
 {
-	{ "",		empty_string,	do_send_text,		0 },
-	{ "#",		NULL,		commentcmd, 		0 },
-	{ ":",		NULL,		commentcmd, 		0 },
-        { "ABORT",      NULL,           abortcmd,               0 },
-	{ "ADMIN",	"ADMIN",	send_comm, 		0 },
-	{ "ALIAS",	zero,		aliascmd,		0 }, /* alias.c */
-	{ "ALLOCDUMP",	NULL,		allocdumpcmd,		0 },
-	{ "ASSIGN",	one,		assigncmd,		0 }, /* alias.c */
-	{ "AWAY",	"AWAY",		away,			0 },
-	{ "BEEP",	0,		beepcmd,		0 },
-	{ "BIND",	NULL,		bindcmd,		0 }, /* keys.c */
-	{ "BLESS",	"BLESS",	blesscmd,		0 },
-	{ "BREAK",	NULL,		breakcmd,		0 },
-	{ "BYE",	"QUIT",		e_quit,			0 },
-	{ "CALL",	NULL,		e_call,			0 },
-	{ "CD",		NULL,		cd,			0 },
-	{ "CHANNEL",	"JOIN",		e_channel,		0 },
-	{ "CLEAR",	"CLEAR",	e_clear,		0 },
-	{ "COMMENT",	NULL,		commentcmd,		0 },
-	{ "CONNECT",	"CONNECT",	send_comm,		0 },
-	{ "CONTINUE",	NULL,		continuecmd,		0 },
-	{ "CTCP",	NULL,		ctcp,			0 },
-	{ "DATE",	"TIME",		send_comm,		0 },
-	{ "DCC",	NULL,		dcc_cmd,		0 }, /* dcc.c */
-	{ "DEFER",	NULL,		defercmd,		0 },
-	{ "DEOP",	NULL,		deop,			0 },
-	{ "DESCRIBE",	NULL,		describe,		0 },
-	{ "DIE",	"DIE",		send_comm,		0 },
-	{ "DISCONNECT",	NULL,		disconnectcmd,		0 }, /* server.c */
-        { "DO",         NULL,           docmd,                  0 }, /* if.c */
-        { "DUMP",       NULL,           dumpcmd,		0 }, /* alias.c */
-	{ "ECHO",	NULL,		echocmd,		0 },
-	{ "ENCRYPT",	NULL,		encrypt_cmd,		0 }, /* crypt.c */
-	{ "EVAL",	"EVAL",		evalcmd,		0 },
-#ifdef EXEC_COMMAND
-	{ "EXEC",	NULL,		execcmd,		0 }, /* exec.c */
-#else
-	{ "EXEC",	NULL,		NULL,			0 },
-#endif
-	{ "EXIT",	"QUIT",		e_quit,			0 },
-        { "FE",         "FE",           fe,		        0 }, /* if.c */
-        { "FEC",        "FEC",          fe,                     0 }, /* if.c */
-	{ "FLUSH",	NULL,		flush,			0 },
-        { "FOR",        NULL,           forcmd,		        0 }, /* if.c */
-	{ "FOREACH",	NULL,		foreach,		0 }, /* if.c */
-	{ "HISTORY",	NULL,		history,		0 }, /* history.c */
-	{ "HOOK",	NULL,		hookcmd,		0 },
-	{ "HOST",	"USERHOST",	userhostcmd,		0 },
-	{ "HOSTNAME",	"HOSTNAME",	e_hostname,		0 },
-	{ "IF",		"IF",		ifcmd,			0 }, /* if.c */
-	{ "IGNORE",	NULL,		ignore,			0 }, /* ignore.c */
-	{ "INFO",	"INFO",		info,			0 },
-	{ "INPUT",	"INPUT",	inputcmd,		0 },
-	{ "INPUT_CHAR",	"INPUT_CHAR",	inputcmd,		0 },
-	{ "INVITE",	"INVITE",	send_comm,		0 },
-	{ "IRCHOST",	"HOSTNAME",	e_hostname,		0 },
-	{ "IRCNAME",	NULL,		realname_cmd,		0 },
-	{ "IRCUSER",	NULL,		set_username,		0 },
-	{ "ISON",	"ISON",		isoncmd,		0 },
-	{ "JOIN",	"JOIN",		e_channel,		0 },
-	{ "KICK",	"KICK",		send_kick,		0 },
-	{ "KILL",	"KILL",		send_2comm,		0 },
-	{ "KNOCK",	"KNOCK",	send_channel_com,	0 },
-	{ "LASTLOG",	NULL,		lastlog,		0 }, /* lastlog.c */
-	{ "LEAVE",	"PART",		send_2comm,		0 },
-	{ "LICENSE",	NULL,		license,		0 },
-	{ "LINKS",	"LINKS",	send_comm,		0 },
-	{ "LIST",	"LIST",		funny_stuff,		0 },
-	{ "LOAD",	"LOAD",		load,			0 },
-	{ "LOCAL",	"2",		localcmd,		0 }, /* alias.c */
-	{ "LOG",	"LOG",		logcmd,			0 }, /* logfiles.c */
-	{ "LUSERS",	"LUSERS",	send_comm,		0 },
-	{ "MAP",	"MAP",		send_comm,		0 },
-	{ "ME",		NULL,		mecmd,			0 },
-	{ "MESG",	"MESG",		extern_write,		0 },
-	{ "MODE",	"MODE",		send_channel_com,	0 },
-	{ "MOTD",	"MOTD",		send_comm,		0 },
-	{ "MSG",	"PRIVMSG",	e_privmsg,		0 },
-	{ "NAMES",	"NAMES",	funny_stuff,		0 },
-	{ "NICK",	"NICK",		e_nick,			0 },
-	{ "NOTE",	"NOTE",		send_comm,		0 },
-	{ "NOTICE",	"NOTICE",	e_privmsg,		0 },
-	{ "NOTIFY",	NULL,		notify,			0 }, /* notify.c */
-	{ "ON",		NULL,		oncmd,			0 }, /* hook.c */
-	{ "OPER",	"OPER",		oper,			0 },
-	{ "PACKAGE",	NULL,		packagecmd,		0 },
-	{ "PARSEKEY",	NULL,		parsekeycmd,		0 },
-	{ "PART",	"PART",		send_2comm,		0 },
-	{ "PAUSE",	NULL,		e_pause,		0 },
-	{ "PING",	NULL, 		pingcmd,		0 },
-	{ "POP",	NULL,		pop_cmd,		0 },
-	{ "PRETEND",	NULL,		pretend_cmd,		0 },
-	{ "PUSH",	NULL,		push_cmd,		0 },
-	{ "QUERY",	NULL,		query,			0 },
-        { "QUEUE",      NULL,           queuecmd,               0 }, /* queue.c */
-	{ "QUIT",	"QUIT",		e_quit,			0 },
-	{ "QUOTE",	"QUOTE",	quotecmd,		0 },
-	{ "RBIND",	zero,		rbindcmd,		0 }, /* keys.c */
-        { "REALNAME",   NULL,           realname_cmd,           0 },
-	{ "RECONNECT",  NULL,           reconnect_cmd,          0 },
-	{ "REDIRECT",	NULL,		redirect,		0 },
-	{ "REHASH",	"REHASH",	send_comm,		0 },
-	{ "REPEAT",	"REPEAT",	repeatcmd,		0 },
-	{ "RESTART",	"RESTART",	send_comm,		0 },
-	{ "RETURN",	NULL,		returncmd,		0 },
-	{ "RPING",	"RPING",	send_comm,		0 },
-	{ "SAVE",	NULL,		save_settings,		0 },
-	{ "SAY",	empty_string,	do_send_text,		0 },
-	{ "SEND",	NULL,		do_send_text,		0 },
-	{ "SENDLINE",	empty_string,	sendlinecmd,		0 },
-	{ "SERVER",	NULL,		servercmd,		0 }, /* server.c */
-	{ "SERVLIST",	"SERVLIST",	send_comm,		0 },
-	{ "SET",	NULL,		setcmd,			0 }, /* vars.c */
-	{ "SETENV",	NULL,		setenvcmd,		0 },
-	{ "SHIFT",	NULL,		shift_cmd,		0 },
-	{ "SHOOK",	NULL,		shookcmd,		0 },
-	{ "SIGNOFF",	"QUIT",		e_quit,			0 },
-	{ "SILENCE",	"SILENCE",	send_comm,		0 },
-	{ "SLEEP",	NULL,		sleepcmd,		0 },
-	{ "SQUERY",	"SQUERY",	send_2comm,		0 },
-	{ "SQUIT",	"SQUIT",	squitcmd,		0 },
-	{ "STACK",	NULL,		stackcmd,		0 }, /* stack.c */
-	{ "STATS",	"STATS",	send_comm,		0 },
-	{ "STUB",	"STUB",		stubcmd,		0 }, /* alias.c */
-	{ "SWITCH",	"SWITCH",	switchcmd,		0 }, /* if.c */
-	{ "TIME",	"TIME",		send_comm,		0 },
-	{ "TIMER",	"TIMER",	timercmd,		0 },
-	{ "TOPIC",	"TOPIC",	e_topic,		0 },
-	{ "TRACE",	"TRACE",	send_comm,		0 },
-	{ "TYPE",	NULL,		typecmd,		0 }, /* keys.c */
-	{ "UNCLEAR",	"UNCLEAR",	e_clear,		0 },
-	{ "UNLESS",	"UNLESS",	ifcmd,			0 }, /* if.c */
-	{ "UNLOAD",	NULL,		unloadcmd,		0 }, /* alias.c */
-	{ "UNSHIFT",	NULL,		unshift_cmd,		0 },
-	{ "UNTIL",	"UNTIL",	whilecmd,		0 },
-	{ "UPING",	"UPING",	send_comm,		0 },
-	{ "USERHOST",	NULL,		userhostcmd,		0 },
-	{ "USERIP",	"USERIP",	useripcmd,		0 },
-	{ "USLEEP",	NULL,		usleepcmd,		0 },
-	{ "USRIP",	"USRIP",	usripcmd,		0 },
-	{ "VERSION",	"VERSION",	version,		0 },
-	{ "WAIT",	NULL,		waitcmd,		0 },
-	{ "WALLCHOPS",	"WALLCHOPS",	send_2comm,		0 },
-	{ "WALLOPS",	"WALLOPS",	e_wallop,		0 },
-	{ "WHICH",	"WHICH",	load,			0 },
-	{ "WHILE",	"WHILE",	whilecmd,		0 }, /* if.c */
-	{ "WHO",	"WHO",		whocmd,			0 }, /* who.c */
-	{ "WHOIS",	"WHOIS",	whois,			0 },
-	{ "WHOWAS",	"WHOWAS",	whois,			0 },
-	{ "WINDOW",	NULL,		windowcmd,		0 }, /* window.c */
-	{ "XDEBUG",	NULL,		xdebugcmd,		0 }, /* debug.c */
-	{ "XECHO",	"XECHO",	xechocmd,		0 },
-	{ "XEVAL",	"XEVAL",	xevalcmd,		0 },
-	{ "XQUOTE",	"XQUOTE",	quotecmd,		0 },
-	{ "XTYPE",	NULL,		xtypecmd,		0 },
-	{ NULL,		NULL,		commentcmd,		0 }
+	{ "",		send_to_channel	},
+	{ "#",		commentcmd	},
+	{ ":",		commentcmd	},
+        { "ABORT",      abortcmd	},
+	{ "ADMIN",	send_comm	},
+	{ "ALIAS",	aliascmd	}, /* alias.c */
+	{ "ALLOCDUMP",	allocdumpcmd	},
+	{ "ASSIGN",	assigncmd	}, /* alias.c */
+	{ "AWAY",	away		},
+	{ "BEEP",	beepcmd		},
+	{ "BIND",	bindcmd		}, /* keys.c */
+	{ "BLESS",	blesscmd	},
+	{ "BREAK",	breakcmd	},
+	{ "CALL",	e_call		},
+	{ "CD",		cd		},
+	{ "CHANNEL",	e_channel	},
+	{ "CLEAR",	e_clear		},
+	{ "COMMENT",	commentcmd	},
+	{ "CONNECT",	send_comm	},
+	{ "CONTINUE",	continuecmd	},
+	{ "CTCP",	ctcp		},
+	{ "DCC",	dcc_cmd		}, /* dcc.c */
+	{ "DEFER",	defercmd	},
+	{ "DEOP",	deop		},
+	{ "DESCRIBE",	describe	},
+	{ "DIE",	send_comm	},
+	{ "DISCONNECT",	disconnectcmd	}, /* server.c */
+        { "DO",         docmd           }, /* if.c */
+        { "DUMP",       dumpcmd		}, /* alias.c */
+	{ "ECHO",	echocmd		},
+	{ "ENCRYPT",	encrypt_cmd	}, /* crypt.c */
+	{ "EVAL",	evalcmd		},
+	{ "EXEC",	execcmd		}, /* exec.c */
+	{ "EXIT",	e_quit		},
+        { "FE",         fe		}, /* if.c */
+        { "FEC",        fe              }, /* if.c */
+	{ "FLUSH",	flush		},
+        { "FOR",        forcmd		}, /* if.c */
+	{ "FOREACH",	foreach		}, /* if.c */
+	{ "HISTORY",	history		}, /* history.c */
+	{ "HOOK",	hookcmd		},
+	{ "HOSTNAME",	e_hostname	},
+	{ "IF",		ifcmd		}, /* if.c */
+	{ "IGNORE",	ignore		}, /* ignore.c */
+	{ "INFO",	info		},
+	{ "INPUT",	inputcmd	},
+	{ "INPUT_CHAR",	inputcmd	},
+	{ "INVITE",	send_comm	},
+	{ "IRCNAME",	realname_cmd	},
+	{ "IRCUSER",	set_username	},
+	{ "ISON",	isoncmd		},
+	{ "JOIN",	e_channel	},
+	{ "KICK",	send_kick	},
+	{ "KILL",	send_2comm	},
+	{ "KNOCK",	send_channel_com},
+	{ "LASTLOG",	lastlog		}, /* lastlog.c */
+	{ "LICENSE",	license		},
+	{ "LINKS",	send_comm	},
+	{ "LIST",	funny_stuff	},
+	{ "LOAD",	load		},
+	{ "LOCAL",	localcmd	}, /* alias.c */
+	{ "LOG",	logcmd		}, /* logfiles.c */
+	{ "LUSERS",	send_comm	},
+	{ "MAP",	send_comm	},
+	{ "ME",		mecmd		},
+	{ "MESG",	extern_write	},
+	{ "MODE",	send_channel_com},
+	{ "MOTD",	send_comm	},
+	{ "MSG",	e_privmsg	},
+	{ "NAMES",	funny_stuff	},
+	{ "NICK",	e_nick		},
+	{ "NOTE",	send_comm	},
+	{ "NOTICE",	e_privmsg	},
+	{ "NOTIFY",	notify		}, /* notify.c */
+	{ "ON",		oncmd		}, /* hook.c */
+	{ "OPER",	oper		},
+	{ "PACKAGE",	packagecmd	},
+	{ "PARSEKEY",	parsekeycmd	},
+	{ "PART",	send_2comm	},
+	{ "PAUSE",	e_pause		},
+	{ "PING",	pingcmd		},
+	{ "POP",	pop_cmd		},
+	{ "PRETEND",	pretend_cmd	},
+	{ "PUSH",	push_cmd	},
+	{ "QUERY",	query		},
+        { "QUEUE",      queuecmd        }, /* queue.c */
+	{ "QUIT",	e_quit		},
+	{ "QUOTE",	quotecmd	},
+	{ "RBIND",	rbindcmd	}, /* keys.c */
+        { "REALNAME",   realname_cmd    },
+	{ "RECONNECT",  reconnect_cmd   },
+	{ "REDIRECT",	redirect	},
+	{ "REHASH",	send_comm	},
+	{ "REPEAT",	repeatcmd	},
+	{ "RESTART",	send_comm	},
+	{ "RETURN",	returncmd	},
+	{ "RPING",	send_comm	},
+	{ "SAVE",	save_settings	},
+	{ "SAY",	send_to_channel	},
+	{ "SEND",	send_to_target	},
+	{ "SENDLINE",	sendlinecmd	},
+	{ "SERVER",	servercmd	}, /* server.c */
+	{ "SERVLIST",	send_comm	},
+	{ "SET",	setcmd		}, /* vars.c */
+	{ "SETENV",	setenvcmd	},
+	{ "SHIFT",	shift_cmd	},
+	{ "SHOOK",	shookcmd	},
+	{ "SILENCE",	send_comm	},
+	{ "SLEEP",	sleepcmd	},
+	{ "SQUERY",	send_2comm	},
+	{ "SQUIT",	squitcmd	},
+	{ "STACK",	stackcmd	}, /* stack.c */
+	{ "STATS",	send_comm	},
+	{ "STUB",	stubcmd		}, /* alias.c */
+	{ "SWITCH",	switchcmd	}, /* if.c */
+	{ "TIME",	send_comm	},
+	{ "TIMER",	timercmd	},
+	{ "TOPIC",	e_topic		},
+	{ "TRACE",	send_comm	},
+	{ "TYPE",	typecmd		}, /* keys.c */
+	{ "UNCLEAR",	e_clear		},
+	{ "UNLESS",	ifcmd		}, /* if.c */
+	{ "UNLOAD",	unloadcmd	}, /* alias.c */
+	{ "UNSHIFT",	unshift_cmd	},
+	{ "UNTIL",	whilecmd	},
+	{ "UPING",	send_comm	},
+	{ "USERHOST",	userhostcmd	},
+	{ "USERIP",	useripcmd	},
+	{ "USLEEP",	usleepcmd	},
+	{ "USRIP",	usripcmd	},
+	{ "VERSION",	version		},
+	{ "WAIT",	waitcmd		},
+	{ "WALLCHOPS",	send_2comm	},
+	{ "WALLOPS",	e_wallop	},
+	{ "WHICH",	load		},
+	{ "WHILE",	whilecmd	}, /* if.c */
+	{ "WHO",	whocmd		}, /* who.c */
+	{ "WHOIS",	whois		},
+	{ "WHOWAS",	whois		},
+	{ "WINDOW",	windowcmd	}, /* window.c */
+	{ "XDEBUG",	xdebugcmd	}, /* debug.c */
+	{ "XECHO",	xechocmd	},
+	{ "XEVAL",	xevalcmd	},
+	{ "XQUOTE",	quotecmd	},
+	{ "XTYPE",	xtypecmd	},
+	{ NULL,		commentcmd 	}
 };
 
 /* number of entries in irc_command array */
 #define	NUMBER_OF_COMMANDS (sizeof(irc_command) / sizeof(IrcCommand)) - 2
+
+void	init_commands (void)
+{
+	int	i;
+
+	for (i = 0; i < NUMBER_OF_COMMANDS; i++)
+	    add_builtin_cmd_alias(irc_command[i].name, irc_command[i].func);
+}
+
 
 /* 
  * Full scale abort.  Does a "save" into the filename in line, and
@@ -418,7 +416,7 @@ BUILT_IN_COMMAND(away)
 				args = arg;
 			else
 			{
-				say("%s: %s unknown flag", command, args);
+				say("AWAY: %s unknown flag", args);
 				return;
 			}
 		}
@@ -645,15 +643,19 @@ BUILT_IN_COMMAND(describe)
 		say("Usage: /DESCRIBE <[=]nick|channel|*> <action description>");
 }
 
-BUILT_IN_COMMAND(do_send_text)
+BUILT_IN_COMMAND(send_to_target)
 {
 	const char	*tmp;
 
-	if (command)
-		tmp = get_echannel_by_refnum(0);
-	else
-		tmp = get_target_by_refnum(0);
+	tmp = get_target_by_refnum(0);
+	send_text(tmp, args, NULL, 1);
+}
 
+BUILT_IN_COMMAND(send_to_channel)
+{
+	const char	*tmp;
+
+	tmp = get_echannel_by_refnum(0);
 	send_text(tmp, args, NULL, 1);
 }
 
@@ -761,6 +763,9 @@ BUILT_IN_COMMAND(e_privmsg)
 {
 	const char	*nick;
 
+	if (!strcmp(command, "MSG"))
+		command = "PRIVMSG";		/* *cough* */
+
 	if ((nick = next_arg(args, &args)) != NULL)
 	{
 		if (!strcmp(nick, "."))
@@ -837,12 +842,12 @@ BUILT_IN_COMMAND(e_topic)
 	if (is_channel(arg))
 	{
 		if ((args && *args) || clear_topic)
-			send_to_server("%s %s :%s", command, arg, args);
+			send_to_server("TOPIC %s :%s", arg, args);
 		else
-			send_to_server("%s %s", command, arg);
+			send_to_server("TOPIC %s", arg);
 	}
 	else if (channel)
-		send_to_server("%s %s :%s", command, channel, args_copy);
+		send_to_server("TOPIC %s :%s", channel, args_copy);
 	else
 		say("You are not on a channel in this window.");
 }
@@ -854,7 +859,7 @@ BUILT_IN_COMMAND(e_wallop)
 	int l;
 
 	l = message_from(NULL, LEVEL_WALLOP);
-	send_to_server("%s :%s", command, args);
+	send_to_server("WALLOPS :%s", args);
 	pop_message_from(l);
 }
 
@@ -912,7 +917,7 @@ BUILT_IN_COMMAND(xechocmd)
 
 				if (!to_window)
 				{
-					yell("%s: -LINE only works if -WIN is specified first", command);
+					yell("XECHO: -LINE only works if -WIN is specified first");
 					to_window = old_to_window;
 					return;
 				}
@@ -920,8 +925,8 @@ BUILT_IN_COMMAND(xechocmd)
 				if (to_line < 0 || 
 					to_line >= to_window->display_size)
 				{
-					yell("%s: -LINE %d is out of range for window (max %d)", 
-						command, to_line, 
+					yell("XECHO: -LINE %d is out of range for window (max %d)", 
+						to_line, 
 						to_window->display_size - 1);
 					to_window = old_to_window;
 					return;
@@ -1248,14 +1253,14 @@ BUILT_IN_COMMAND(funny_stuff)
 		if (min && ircu)
 		{
 			if (max)
-				send_to_server("%s >%d,<%d", command, min - 1, max + 1);
+				send_to_server("WHO >%d,<%d", min - 1, max + 1);
 			else
-				send_to_server("%s >%d", command, min - 1);
+				send_to_server("WHO >%d", min - 1);
 		}
 		else if (max && ircu)
-			send_to_server("%s <%d", command, max + 1);
+			send_to_server("WHO <%d", max + 1);
 		else
-			send_to_server("%s %s", command, empty_string);
+			send_to_server("WHO %s", empty_string);
 	}
 	else
 	{
@@ -1264,14 +1269,14 @@ BUILT_IN_COMMAND(funny_stuff)
 		if (min && ircu)
 		{
 			if (max)
-				send_to_server("%s >%d,<%d", command, min - 1, max + 1);
+				send_to_server("WHO >%d,<%d", min - 1, max + 1);
 			else
-				send_to_server("%s >%d", command, min - 1);
+				send_to_server("WHO >%d", min - 1);
 		}
 		else if (max && ircu)
-			send_to_server("%s <%d", command, max + 1);
+			send_to_server("WHO <%d", max + 1);
 		else
-			send_to_server("%s %s", command, stuff);
+			send_to_server("WHO %s", stuff);
 	}
 }
 
@@ -1366,7 +1371,7 @@ BUILT_IN_COMMAND(info)
 		say("       \tDarren Reed           Jeff Grills");
 		say("	    \tChris Williams");
 	}
-	send_to_server("%s %s", command, args?args:empty_string);
+	send_to_server("INFO %s", args?args:empty_string);
 }
 
 /*
@@ -2487,9 +2492,9 @@ BUILT_IN_COMMAND(squitcmd)
 		return;
 	}
 	if (reason && *reason)
-		send_to_server("%s %s :%s", command, server, reason);
+		send_to_server("SQUIT %s :%s", server, reason);
 	else
-		send_to_server("%s %s", command, server);
+		send_to_server("SQUIT %s", server);
 }
 
 BUILT_IN_COMMAND(send_2comm)
@@ -2537,17 +2542,17 @@ BUILT_IN_COMMAND(send_kick)
 	const char	*comment;
 	const char	*channel;
 
-	char usage[] = "Usage: %s <channel|*> <nickname> [comment]";
+	char usage[] = "Usage: KICK <channel|*> <nickname> [comment]";
 
 	if (!(channel = next_arg(args, &args)))
 	{
-		yell(usage, command);
+		yell("%s", usage);
 		return;
 	}
 
 	if (!(kickee = next_arg(args, &args)))
 	{
-		yell(usage, command);
+		yell("%s", usage);
                 return;
 	}
 
@@ -2555,7 +2560,7 @@ BUILT_IN_COMMAND(send_kick)
 	if (!strcmp(channel, "*"))
 		channel = get_echannel_by_refnum(0);
 
-	send_to_server("%s %s %s :%s", command, channel, kickee, comment);
+	send_to_server("KICK %s %s :%s", channel, kickee, comment);
 }
 
 /*
@@ -2749,11 +2754,11 @@ BUILT_IN_COMMAND(version)
 	char	*host;
 
 	if ((host = next_arg(args, &args)) != NULL)
-		send_to_server("%s %s", command, host);
+		send_to_server("VERSION %s", host);
 	else
 	{ 
 		say ("Client: ircII %s (Commit Id: %ld) (Internal Version: %s)", irc_version, commit_id, internal_version);
-		send_to_server("%s", command);
+		send_to_server("VERSION");
 	}
 }
 
@@ -3029,6 +3034,9 @@ struct target_type target[4] =
 	recursion++;
 	next_nick = LOCAL_COPY(nick_list);
 
+	if (command && !strcmp(command, "MSG"))
+		command = "PRIVMSG";		/* XXX */
+
 	while ((current_nick = next_nick))
 	{
 	    if ((next_nick = strchr(current_nick, ',')))
@@ -3201,142 +3209,6 @@ static void	eval_inputlist (char *args, char *line)
 }
 
 GET_FIXED_ARRAY_NAMES_FUNCTION(get_command, irc_command)
-
-/* 
- * This is a key binding and has to be here because it looks at the
- * command array which is static to this file.
- */
-/*
- * command_completion: builds lists of commands and aliases that match the
- * given command and displays them for the user's lookseeing 
- */
-BUILT_IN_BINDING(command_completion)
-{
-	int		do_aliases = 1;
-	int		cmd_cnt,
-			alias_cnt,
-			i,
-			c,
-			len;
-	char		**aliases = NULL;
-	char		*line = NULL,
-			*com,
-			*rest,
-			firstcmdchar[2] = "/";
-	IrcCommand	*command;
-	char		buffer[BIG_BUFFER_SIZE + 1];
-	const char	*cmdchars;
-
-	malloc_strcpy(&line, get_input());
-	if (((com = next_arg(line, &rest)) != NULL) && *com)
-	{
-		if (!(cmdchars = get_string_var(CMDCHARS_VAR)))
-			cmdchars = DEFAULT_CMDCHARS;
-
-		if (*com == '/' || strchr(cmdchars, *com))
-		{
-			com++;
-			*firstcmdchar = *cmdchars;
-			if (*com && strchr(cmdchars, *com))
-			{
-				do_aliases = 0;
-				alias_cnt = 0;
-				com++;
-			}
-			else
-				do_aliases = 1;
-
-			upper(com);
-			if (do_aliases)
-				aliases = glob_cmd_alias(com, &alias_cnt, 0, 0, 0);
-
-			if ((command = find_command(com, &cmd_cnt)) != NULL)
-			{
-				if (cmd_cnt < 0)
-					cmd_cnt *= -1;
-
-				/* special case for the empty string */
-				if (*(command->name) == (char) 0)
-				{
-					command++;
-					cmd_cnt = NUMBER_OF_COMMANDS;
-				}
-			}
-
-			if ((alias_cnt == 1) && (cmd_cnt == 0))
-			{
-				snprintf(buffer, BIG_BUFFER_SIZE, "%s%s %s", firstcmdchar, *aliases, rest);
-				set_input(buffer);
-				new_free((char **)aliases);
-				new_free((char **)&aliases);
-			}
-			else if (((cmd_cnt == 1) && (alias_cnt == 0)) ||
-			    ((cmd_cnt == 1) && (alias_cnt == 1) &&
-			     (!strcmp(aliases[0], command->name))))
-			{
-				snprintf(buffer, BIG_BUFFER_SIZE, "%s%s%s %s", firstcmdchar,
-					do_aliases ? empty_string : firstcmdchar,
-					command->name, rest);
-				set_input(buffer);
-			}
-			else
-			{
-				*buffer = (char) 0;
-				if (command)
-				{
-					say("Commands:");
-					strlcpy(buffer, "\t", sizeof buffer);
-					c = 0;
-					for (i = 0; i < cmd_cnt; i++)
-					{
-						strlcat(buffer, command[i].name,
-							sizeof buffer);
-						for (len = strlen(command[i].name); len < 15; len++)
-							strlcat(buffer, " ", sizeof buffer);
-						if (++c == 4)
-						{
-							say("%s", buffer);
-							strlcpy(buffer, "\t", sizeof buffer);
-							c = 0;
-						}
-					}
-					if (c)
-						say("%s", buffer);
-				}
-				if (aliases)
-				{
-					say("Aliases:");
-					strlcpy(buffer, "\t", sizeof buffer);
-					c = 0;
-					for (i = 0; i < alias_cnt; i++)
-					{
-						strlcat(buffer, aliases[i], sizeof buffer);
-						for (len = strlen(aliases[i]); len < 15; len++)
-							strlcat(buffer, " ", sizeof buffer);
-						if (++c == 4)
-						{
-							say("%s", buffer);
-							strlcpy(buffer, "\t", sizeof buffer);
-							c = 0;
-						}
-						new_free(&(aliases[i]));
-					}
-					if (strlen(buffer) > 1)
-						say("%s", buffer);
-					new_free((char **)&aliases);
-				}
-				if (!*buffer)
-					term_beep();
-			}
-		}
-		else
-			term_beep();
-	}
-	else
-		term_beep();
-
-	new_free(&line);
-}
 
 BUILT_IN_COMMAND(e_call)
 {
@@ -3723,7 +3595,7 @@ static	unsigned 	level = 0;
 		if (hist_flag && add_to_hist)
 			add_to_history(this_cmd);
 	}
-	else
+	else do
 	{
 		char		*rest,
 				*alias = NULL,
@@ -3752,115 +3624,46 @@ static	unsigned 	level = 0;
 		upper(cline);
 
 		if (cmdchar_used < 2)
-			alias = get_cmd_alias(cline, &alias_cnt, 
-						&alias_name, &arglist);
+		    alias = get_cmd_alias(cline, &alias_cnt, 
+					  &alias_name, &arglist);
+		command = find_command(cline, &cmd_cnt);
 
-		if (alias && alias_cnt < 0)
+		if (((alias == NULL || alias_cnt > 0) ||
+		     (command == NULL || cmd_cnt > 0)) && *cline == '!')
 		{
-			if (hist_flag && add_to_hist)
-				add_to_history(this_cmd);
-			call_user_alias(alias_name, alias, rest, arglist);
-			new_free(&alias_name);
-		}
-		else
-		{
-			/* History */
-			if (*cline == '!')
+			if ((cline = do_history(cline + 1, rest)) != NULL)
 			{
-				if ((cline = do_history(cline + 1, rest)) != NULL)
-				{
-					if (level == 1)
-						set_input(cline);
-					else
-						parse_command(cline, 0, sub_args);
-
-					new_free(&cline);
-				}
+				if (level == 1)
+					set_input(cline);
 				else
-					set_input(empty_string);
+					parse_command(cline, 0, sub_args);
+
+				new_free(&cline);
 			}
 			else
-			{
-				if (hist_flag && add_to_hist)
-					add_to_history(this_cmd);
-				command = find_command(cline, &cmd_cnt);
+				set_input(empty_string);
 
-				/*
-				 * At this point we know that there are
-				 * no exact matches for the alias.
-				 * What we do have to do is check to see
-				 * if there is a completed match for any
-				 * aliases (alias_cnt == 1), or completed
-				 * match for any commands (cmd_cnt == 1)
-				 * or any exact matches for commands
-				 * (cmd_cnt == -1)
-				 */
-
-				/*
-				 * First we see if there is an exact match
-				 * for commands, or if there was a completion
-				 * with no alias completions:
-				 */
-				if (cmd_cnt < 0 ||
-				   (alias_cnt == 0 && cmd_cnt == 1))
-				{
-				    /* I should make a function to do this */
-					if (!strcmp(command->name, "EXEC") && get_int_var(SECURITY_VAR) & SECURITY_NO_NONINTERACTIVE_EXEC)
-						yell("Warning: the command '%s %s' was not executed due to a security violation", command->name, rest);
-					else if (!strcmp(command->name, "SET") && get_int_var(SECURITY_VAR) & SECURITY_NO_NONINTERACTIVE_SET)
-						yell("Warning: the command '%s %s' was not executed due to a security violation", command->name, rest);
-					else if (command->func)
-						command->func(command->server_func, rest, sub_args);
-					else
-						say("%s: command disabled", command->name);
-				}
-
-				/*
-				 * If there is no built in command, or the
-				 * built in command is overriden by the alias,
-				 * then run the alias.
-				 */
-				else if ((alias_cnt == 1 && 
-					  cmd_cnt == 1 && 
-					  !strcmp(alias_name, command->name)) 
-				      || (alias_cnt == 1 && 
-					  cmd_cnt == 0))
-				{
-					call_user_alias(alias_name, alias,
-							rest, arglist);
-				}
-
-				/*
-				 * Otherwise, if the command is your nickname
-				 * fake a /me command.
-				 */
-				else if (is_me(from_server, cline))
-					mecmd(NULL, rest, empty_string);
-
-				/*
-				 * Kasi has asked me at least 6 times for this.
-				 * If i just go ahead and add it, he will
-				 * stop asking me.... :P
-				 */
-				else if (get_int_var(DISPATCH_UNKNOWN_COMMANDS_VAR))
-					send_to_server("%s %s", cline, rest);
-
-				/*
-				 * If its not ambiguous,
-				 */
-				else if (alias_cnt + cmd_cnt > 1)
-					say("Ambiguous command: %s", cline);
-
-				/*
-				 * Nothing to do but whine at the user.
-				 */
-				else
-					say("Unknown command: %s", cline);
-			}
-			if (alias)
+			if (alias_name)
 				new_free(&alias_name);
+			break;
 		}
+
+		if (hist_flag && add_to_hist)
+			add_to_history(this_cmd);
+
+		if (alias && alias_cnt < 0)
+			call_user_alias(alias_name, alias, rest, arglist);
+		else if (command && cmd_cnt < 0)
+			command->func(command->name, rest, sub_args);
+		else if (get_int_var(DISPATCH_UNKNOWN_COMMANDS_VAR))
+			send_to_server("%s %s", cline, rest);
+		else
+			say("Unknown command: %s", cline);
+
+		new_free(&alias_name);
 	}
+	while (0);
+
 	if (old_display_var != get_int_var(DISPLAY_VAR))
 		window_display = get_int_var(DISPLAY_VAR);
 	else

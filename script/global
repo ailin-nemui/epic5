@@ -6,6 +6,7 @@ alias d- ^set display off
 alias d+ ^set display on
 #
 # The basic setup for ircII
+load builtins
 load basical
 load 2.8script
 # If you want this script, load it in your .ircrc

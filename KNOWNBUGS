@@ -242,3 +242,16 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Add a "slowcat" script I wrote for larne.
 * Add $serverctl(GET * STATUS) for ce.
 * Fix typo with $logctl(REFNUM <x>), rb Zlonix
+* Split alias item to hold commands and variables separately
+* Nix COMMAND_COMPLETION keybinding.  Script replacement forthcoming.
+* Nix "Use your nickname as alias for /me" feature.
+* Nix automatic command completion (ie, /whoi no longer expands to /whois)
+* Work towards not using 'command' var in builtin commands.
+* This will allow me to get rid of 'server_func' in builtin command data type
+* Nix the 'flags' var in builtin command data type.
+* Nix the 'serv_command' var in builtin command data type.
+* Create 'init_builtin_commands' to run at startup, add commands to alias
+* Shimmy find_cmd_alias to ignore built in commands for now.  Not for long!
+* So built in commands should be hung off of aliases now.
+* Create 'builtins' script that aliases some previously builtin commands.
+* Load this script from global.  Don't forget to alarm users.

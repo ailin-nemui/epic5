@@ -16,6 +16,11 @@
 #define VAR_ALIAS 		1
 #define VAR_ALIAS_LOCAL 	2
 
+#ifdef Char
+#undef Char
+#endif
+#define Char const char
+
 /*
  * These are the user commands.  Dont call these directly.
  */
@@ -26,19 +31,21 @@
 	BUILT_IN_COMMAND(dumpcmd);
 	BUILT_IN_COMMAND(unloadcmd);
 
-	void 	add_var_alias      	(const char *name, const char *stuff, int noisy);
-	void 	add_local_alias    	(const char *name, const char *stuff, int noisy);
+	void 	add_var_alias      	(Char *name, Char *stuff, int noisy);
+	void 	add_local_alias    	(Char *name, Char *stuff, int noisy);
 #if 0	/* Internal now */
 	void 	add_cmd_alias 	   	(void);
 #endif
-	void 	add_var_stub_alias 	(const char *name, const char *stuff);
-	void 	add_cmd_stub_alias 	(const char *name, const char *stuff);
+	void	add_builtin_cmd_alias	(Char *name, void (*func) (Char *, char *, Char *));
+	void 	add_var_stub_alias 	(Char *name, Char *stuff);
+	void 	add_cmd_stub_alias 	(Char *name, Char *stuff);
 
-	char *	get_variable		(const char *name);
-	char **	glob_cmd_alias		(const char *name, int *howmany, int maxret, int start, int rev);
-	char *	get_cmd_alias   	(const char *name, int *howmany, 
+	char *	get_variable		(Char *name);
+	char **	glob_cmd_alias		(Char *name, int *howmany, 
+					 int maxret, int start, int rev);
+	char *	get_cmd_alias   	(Char *name, int *howmany, 
 					 char **complete_name, void **args);
-	char **	get_subarray_elements 	(const char *root, int *howmany, int type);
+	char **	get_subarray_elements 	(Char *root, int *howmany, int type);
 
 
 /* These are in expr.c */
@@ -52,7 +59,7 @@
  *   of the commands (after the first semicolon, or the null).  If NULL,
  *   then the entire text will be expanded.
  */
-	char *	expand_alias 		(const char *, const char *, ssize_t *);
+	char *	expand_alias 		(Char *, Char *, ssize_t *);
 
 /*
  * This is the interface to the "expression parser"
@@ -60,21 +67,21 @@
  * The second argument is the command line expandoes ($0, $1, etc)
  * The third argument will be set if the command line expandoes are used.
  */
-	char *	parse_inline 		(char *, const char *);
+	char *	parse_inline 		(char *, Char *);
 
 /*
  * This function is used to call a user-defined function.
  * Noone should be calling this directly except for call_function.
  */
-	char *	call_user_function 	(const char *, char *);
-	void	call_user_alias		(const char *, char *, char *, void *);
+	char *	call_user_function 	(Char *, char *);
+	void	call_user_alias		(Char *, char *, char *, void *);
 
 /*
  * This function is used to call a lambda (``anonymous'') function.
  * You provide the lambda function name, its contents, and $*, and
  * it returns you $FUNCTION_RETURN.
  */
-	char *  call_lambda_function    (const char *, const char *, const char *);
+	char *  call_lambda_function    (Char *, Char *, Char *);
 
 
 /*
@@ -112,14 +119,14 @@
  * This is only used by next_unit and expand_alias to call built in functions.
  * Noone should call this function directly.
  */
-	char *	call_function		(char *, const char *);
+	char *	call_function		(char *, Char *);
 
 
 
 /*
  * These are the two primitives for runtime stacks.
  */
-	int	make_local_stack 	(const char *);
+	int	make_local_stack 	(Char *);
 	void	destroy_local_stack 	(void);
 	void	set_current_command 	(char *);
 	void	bless_local_stack 	(void);

@@ -1,4 +1,4 @@
-/* $EPIC: alias.c,v 1.42 2004/04/13 00:19:48 jnelson Exp $ */
+/* $EPIC: alias.c,v 1.43 2004/06/25 22:01:16 jnelson Exp $ */
 /*
  * alias.c -- Handles the whole kit and caboodle for aliases.
  *
@@ -230,32 +230,32 @@ void	destroy_arglist (ArgList *);
  * Specifically, if you create a global variable and then want to delete it,
  * try using a local variable so it is reaped automatically.
  */
-extern	void    add_var_alias      (const char *name, const char *stuff, int noisy);
-extern  void    add_local_alias    (const char *name, const char *stuff, int noisy);
-extern  void    add_cmd_alias      (const char *name, ArgList *arglist, const char *stuff);
-extern  void    add_var_stub_alias (const char *name, const char *stuff);
-extern  void    add_cmd_stub_alias (const char *name, const char *stuff);
-static	void	delete_var_alias   (const char *name, int noisy);
-static	void	delete_cmd_alias   (const char *name, int noisy);
-/*	void	delete_local_alias (const char *name); 		*/
-static	void	unload_cmd_alias   (const char *fn);
-static	void	unload_var_alias   (const char *fn);
-static	void	list_cmd_alias     (const char *name);
-static	void	list_var_alias     (const char *name);
-static	void	list_local_alias   (const char *name);
+extern	void    add_var_alias      (Char *name, Char *stuff, int noisy);
+extern  void    add_local_alias    (Char *name, Char *stuff, int noisy);
+extern  void    add_cmd_alias      (Char *name, ArgList *arglist, Char *stuff);
+extern  void    add_var_stub_alias (Char *name, Char *stuff);
+extern  void    add_cmd_stub_alias (Char *name, Char *stuff);
+static	void	delete_var_alias   (Char *name, int noisy);
+static	void	delete_cmd_alias   (Char *name, int noisy);
+/*	void	delete_local_alias (Char *name); 		*/
+static	void	unload_cmd_alias   (Char *fn);
+static	void	unload_var_alias   (Char *fn);
+static	void	list_cmd_alias     (Char *name);
+static	void	list_var_alias     (Char *name);
+static	void	list_local_alias   (Char *name);
 static	void 	destroy_aliases    (int type);
 
-extern	char *  get_variable       (const char *name);
-extern	char ** glob_cmd_alias          (const char *name, int *howmany, int maxret, int start, int rev);
-extern	char ** glob_assign_alias	(const char *name, int *howmany, int maxret, int start, int rev);
-extern	char ** pmatch_cmd_alias        (const char *name, int *howmany, int maxret, int start, int rev);
-extern	char ** pmatch_assign_alias	(const char *name, int *howmany, int maxret, int start, int rev);
-extern	char *  get_cmd_alias           (const char *name, int *howmany, 
+extern	char *  get_variable       (Char *name);
+extern	char ** glob_cmd_alias          (Char *name, int *howmany, int maxret, int start, int rev);
+extern	char ** glob_assign_alias	(Char *name, int *howmany, int maxret, int start, int rev);
+extern	char ** pmatch_cmd_alias        (Char *name, int *howmany, int maxret, int start, int rev);
+extern	char ** pmatch_assign_alias	(Char *name, int *howmany, int maxret, int start, int rev);
+extern	char *  get_cmd_alias           (Char *name, int *howmany, 
 					 char **complete_name, void **args);
-extern	char ** get_subarray_elements   (const char *root, int *howmany, int type);
+extern	char ** get_subarray_elements   (Char *root, int *howmany, int type);
 
 
-static	char *	get_variable_with_args (const char *str, const char *args);
+static	char *	get_variable_with_args (Char *str, Char *args);
 static	void show_alias_caches(void);
 
 /************************** HIGH LEVEL INTERFACE ***********************/
@@ -370,7 +370,7 @@ extern u_32int_t       char_searches;
 
 		    args++;
 		    if ((span = MatchingBracket(args, '(', ')')) < 0)
-			say("Unmatched lparen in %s %s", command, real_name);
+			say("Unmatched lparen in ALIAS %s", real_name);
 		    else
 		    {
 			ptr = args + span;
@@ -378,8 +378,8 @@ extern u_32int_t       char_searches;
 			while (*ptr && my_isspace(*ptr))
 				ptr++;
 			if (!*ptr)
-				say("Missing alias body in %s %s", 
-					command, real_name);
+				say("Missing alias body in ALIAS %s", 
+					real_name);
 
 			while (*args && my_isspace(*args))
 				args++;
@@ -399,7 +399,7 @@ extern u_32int_t       char_searches;
 
 		    args++;
 		    if ((span = MatchingBracket(args, '{', '}')) < 0)
-			say("Unmatched brace in %s %s", command, real_name);
+			say("Unmatched brace in ALIAS %s", real_name);
 		    else
 		    {
 			ptr = args + span;
@@ -408,8 +408,8 @@ extern u_32int_t       char_searches;
 				ptr++;
 
 			if (*ptr)
-				say("Junk [%s] after closing brace in %s %s", 
-					ptr, command, real_name);
+				say("Junk [%s] after closing brace in ALIAS %s", 
+					ptr, real_name);
 
 			while (*args && my_isspace(*args))
 				args++;
@@ -501,7 +501,7 @@ BUILT_IN_COMMAND(stubcmd)
 	int 	type;
 	char 	*cmd;
 	char 	*name;
-const 	char 	*usage = "Usage: %s (alias|assign) <name> <file> [<file> ...]";
+const 	char 	*usage = "Usage: STUB (alias|assign) <name> <file> [<file> ...]";
 
 	/*
 	 * The first argument is the type of stub to make
@@ -510,7 +510,7 @@ const 	char 	*usage = "Usage: %s (alias|assign) <name> <file> [<file> ...]";
 	if (!(cmd = upper(next_arg(args, &args))))
 	{
 		error("Missing stub type");
-		say(usage, command);
+		say("%s", usage);
 		return;
 	}
 
@@ -521,7 +521,7 @@ const 	char 	*usage = "Usage: %s (alias|assign) <name> <file> [<file> ...]";
 	else
 	{
 		error("[%s] is an Unrecognized stub type", cmd);
-		say(usage, command);
+		say("%s", usage);
 		return;
 	}
 
@@ -532,7 +532,7 @@ const 	char 	*usage = "Usage: %s (alias|assign) <name> <file> [<file> ...]";
 	if (!(name = next_arg(args, &args)))
 	{
 		error("Missing alias name");
-		say(usage, command);
+		say("%s", usage);
 		return;
 	}
 
@@ -549,7 +549,7 @@ const 	char 	*usage = "Usage: %s (alias|assign) <name> <file> [<file> ...]";
 	if (!args || !*args)
 	{
 		error("Missing file name");
-		say(usage, command);
+		say("%s", usage);
 		return;
 	}
 
@@ -921,6 +921,15 @@ typedef	struct	AliasItemStru
 	int	global;			/* set if loaded from `global' */
 	int	cache_revoked;		/* Cache revocation index */
 	ArgList *arglist;		/* List of arguments to alias */
+
+	char *	user_variable;
+	char *	user_variable_stub;
+	char *	user_command;
+	char *	user_command_stub;
+        void    (*builtin_command) (const char *, char *, const char *);
+	char *	(*builtin_function) (char *);
+	char *	(*builtin_expando) (void);
+	void	(*builtin_variable) (const void *);
 }	Alias;
 
 /*
@@ -981,7 +990,7 @@ static void	show_alias_caches (void)
 	for (i = 0; i < var_alias.cache_size; i++)
 	{
 		if (var_alias.cache[i])
-			yell("VAR cache [%d]: [%s] [%s]", i, var_alias.cache[i]->name, var_alias.cache[i]->stuff);
+			yell("VAR cache [%d]: [%s] [%s]", i, var_alias.cache[i]->name, var_alias.cache[i]->user_variable);
 		else
 			yell("VAR cache [%d]: empty", i);
 	}
@@ -989,7 +998,7 @@ static void	show_alias_caches (void)
 	for (i = 0; i < cmd_alias.cache_size; i++)
 	{
 		if (cmd_alias.cache[i])
-			yell("CMD cache [%d]: [%s] [%s]", i, cmd_alias.cache[i]->name, cmd_alias.cache[i]->stuff);
+			yell("CMD cache [%d]: [%s] [%s]", i, cmd_alias.cache[i]->name, cmd_alias.cache[i]->user_command);
 		else
 			yell("CMD cache [%d]: empty", i);
 	}
@@ -1002,7 +1011,8 @@ static Alias *make_new_Alias (const char *name)
 {
 	Alias *tmp = (Alias *) new_malloc(sizeof(Alias));
 	tmp->name = malloc_strdup(name);
-	tmp->stuff = tmp->stub = NULL;
+	tmp->user_command = tmp->user_variable = NULL;
+	tmp->user_command_stub = tmp->user_variable_stub = NULL;
 	tmp->line = current_line();
 	tmp->cache_revoked = 0;
 	tmp->filename = malloc_strdup(current_package());
@@ -1080,12 +1090,12 @@ void	add_var_alias	(const char *orig_name, const char *stuff, int noisy)
 		 */
 		if (strcmp(tmp->filename, current_package()))
 			malloc_strcpy(&(tmp->filename), current_package());
-		malloc_strcpy(&(tmp->stuff), stuff);
-		new_free(&tmp->stub);
+		malloc_strcpy(&(tmp->user_variable), stuff);
+		new_free(&tmp->user_variable_stub);
 		tmp->global = loading_global;
 
 		alias_total_allocated++;
-		alias_total_bytes_allocated += strlen(tmp->name) + strlen(tmp->stuff) + strlen(tmp->filename);
+		alias_total_bytes_allocated += strlen(tmp->name) + strlen(tmp->user_variable) + strlen(tmp->filename);
 
 		/*
 		 * And tell the user.
@@ -1136,11 +1146,11 @@ void	add_local_alias	(const char *orig_name, const char *stuff, int noisy)
 	/* Fill in the interesting stuff */
 	if (strcmp(tmp->filename, current_package()))
 		malloc_strcpy(&(tmp->filename), current_package());
-	malloc_strcpy(&(tmp->stuff), stuff);
+	malloc_strcpy(&(tmp->user_variable), stuff);
 	alias_total_allocated++;
-	if (tmp->stuff)		/* Oh blah. */
+	if (tmp->user_variable)		/* Oh blah. */
 	{
-		alias_total_bytes_allocated += strlen(tmp->stuff);
+		alias_total_bytes_allocated += strlen(tmp->user_variable);
 		if (x_debug & DEBUG_LOCAL_VARS && noisy)
 		    yell("Assign %s (local) added [%s]", name, stuff);
 		else if (noisy)
@@ -1168,19 +1178,39 @@ void	add_cmd_alias	(const char *orig_name, ArgList *arglist, const char *stuff)
 
 	if (strcmp(tmp->filename, current_package()))
 		malloc_strcpy(&(tmp->filename), current_package());
-	malloc_strcpy(&(tmp->stuff), stuff);
-	new_free(&tmp->stub);
+	malloc_strcpy(&(tmp->user_command), stuff);
+	new_free(&tmp->user_command_stub);
 	tmp->global = loading_global;
 	destroy_arglist(tmp->arglist);
 	tmp->arglist = arglist;
 
 	alias_total_allocated++;
-	alias_total_bytes_allocated += strlen(tmp->stuff);
+	alias_total_bytes_allocated += strlen(tmp->user_command);
 	say("Alias	%s added [%s]", name, stuff);
 
 	new_free(&name);
 	return;
 }
+
+void	add_builtin_cmd_alias	(const char *name, void (*func) (const char *, char *, const char *))
+{
+	Alias *tmp = NULL;
+	int cnt, loc;
+
+	tmp = (Alias *) find_array_item ((array *)&cmd_alias, name, &cnt, &loc);
+	if (!tmp || cnt >= 0)
+	{
+		tmp = make_new_Alias(name);
+		add_to_array ((array *)&cmd_alias, (array_item *)tmp);
+	}
+
+	if (strcmp(tmp->filename, current_package()))
+		malloc_strcpy(&(tmp->filename), current_package());
+	tmp->builtin_command = func;
+	tmp->global = 1;
+	return;
+}
+
 
 void	add_var_stub_alias  (const char *orig_name, const char *stuff)
 {
@@ -1210,12 +1240,12 @@ void	add_var_stub_alias  (const char *orig_name, const char *stuff)
 
 		if (strcmp(tmp->filename, current_package()))
 			malloc_strcpy(&(tmp->filename), current_package());
-		malloc_strcpy(&(tmp->stub), stuff);
-		new_free(&tmp->stuff);
+		malloc_strcpy(&(tmp->user_variable_stub), stuff);
+		new_free(&tmp->user_variable);
 		tmp->global = loading_global;
 
 		alias_total_allocated++;
-		alias_total_bytes_allocated += strlen(tmp->stub);
+		alias_total_bytes_allocated += strlen(tmp->user_variable_stub);
 		say("Assign %s stubbed to file %s", name, stuff);
 	}
 
@@ -1239,12 +1269,12 @@ void	add_cmd_stub_alias  (const char *orig_name, const char *stuff)
 
 	if (strcmp(tmp->filename, current_package()))
 		malloc_strcpy(&(tmp->filename), current_package());
-	malloc_strcpy(&(tmp->stub), stuff);
-	new_free(&tmp->stuff);
+	malloc_strcpy(&(tmp->user_command_stub), stuff);
+	new_free(&tmp->user_command);
 	tmp->global = loading_global;
 
 	alias_total_allocated++;
-	alias_total_bytes_allocated += strlen(tmp->stub);
+	alias_total_bytes_allocated += strlen(tmp->user_command_stub);
 	say("Alias %s stubbed to file %s", name, stuff);
 
 	new_free(&name);
@@ -1329,11 +1359,11 @@ static Alias *	find_var_alias (const char *name)
 						item->cache_revoked;
 		}
 
-		if (item->stub)
+		if (item->user_variable_stub)
 		{
 			char *file;
 
-			file = LOCAL_COPY(item->stub);
+			file = LOCAL_COPY(item->user_variable_stub);
 			delete_var_alias(item->name, 0);
 
 			if (!unstub_in_progress)
@@ -1412,11 +1442,11 @@ static Alias *	find_cmd_alias (const char *name, int *cnt)
 						item->cache_revoked;
 		}
 
-		if (item->stub)
+		if (item->user_command_stub)
 		{
 			char *file;
 
-			file = LOCAL_COPY(item->stub);
+			file = LOCAL_COPY(item->user_command_stub);
 			delete_cmd_alias(item->name, 0);
 
 			if (!unstub_in_progress)
@@ -1437,8 +1467,8 @@ static Alias *	find_cmd_alias (const char *name, int *cnt)
 				return NULL;
 		}
 
-		if (!item->stuff)
-			panic("item->stuff is NULL and it shouldn't be.");
+		if (item->user_command == NULL)
+			return NULL;		/* For now */
 
 		return item;
 	}
@@ -1543,7 +1573,7 @@ static Alias *	find_local_alias (const char *orig_name, AliasSet **list)
 		if (alias)
 		{
 			if (x_debug & DEBUG_LOCAL_VARS) 
-				yell("I found [%s] in level [%d] (%s)", name, c, alias->stuff);
+				yell("I found [%s] in level [%d] (%s)", name, c, alias->user_variable);
 			break;
 		}
 
@@ -1592,8 +1622,8 @@ void	delete_var_alias (const char *orig_name, int noisy)
 		}
 
 		new_free(&(item->name));
-		new_free(&(item->stuff));
-		new_free(&(item->stub));
+		new_free(&(item->user_variable));
+		new_free(&(item->user_variable_stub));
 		new_free(&(item->filename));
 		new_free((char **)&item);
 		if (noisy)
@@ -1610,11 +1640,15 @@ void	delete_cmd_alias (const char *orig_name, int noisy)
 	Alias *item;
 	int i;
 	char *name;
+	/* XXX Hack */
+	void (*func) (const char *, char *, const char *) = NULL;
 
 	name = remove_brackets(orig_name, NULL);
 	upper(name);
 	if ((item = (Alias *)remove_from_array ((array *)&cmd_alias, name)))
 	{
+		func = item->builtin_command;
+
 		for (i = 0; i < cmd_alias.cache_size; i++)
 		{
 			if (cmd_alias.cache[i] == item)
@@ -1622,13 +1656,17 @@ void	delete_cmd_alias (const char *orig_name, int noisy)
 		}
 
 		new_free(&(item->name));
-		new_free(&(item->stuff));
-		new_free(&(item->stub));
+		new_free(&(item->user_command));
+		new_free(&(item->user_command_stub));
 		new_free(&(item->filename));
 		destroy_arglist(item->arglist);
 		new_free((char **)&item);
 		if (noisy)
 			say("Alias	%s removed", name);
+
+		/* XXX Hack -- Fix this properly later -- XXX */
+		if (func)
+			add_builtin_cmd_alias(name, func);
 	}
 	else if (noisy)
 		say("No such alias: %s", name);
@@ -1675,7 +1713,7 @@ static void	list_local_alias (const char *orig_name)
 					}
 				}
 				else
-					put_it("\t%s\t%s", call_stack[cnt].alias.list[x]->name, call_stack[cnt].alias.list[x]->stuff);
+					put_it("\t%s\t%s", call_stack[cnt].alias.list[x]->name, call_stack[cnt].alias.list[x]->user_variable);
 			}
 		}
 	}
@@ -1724,10 +1762,10 @@ void	list_var_alias (const char *orig_name)
 			}
 			else
 			{
-				if (var_alias.list[cnt]->stub)
-					say("[%s]\t%s STUBBED TO %s", script, var_alias.list[cnt]->name, var_alias.list[cnt]->stub);
+				if (var_alias.list[cnt]->user_variable_stub)
+					say("[%s]\t%s STUBBED TO %s", script, var_alias.list[cnt]->name, var_alias.list[cnt]->user_variable_stub);
 				else
-					say("[%s]\t%s\t%s", script, var_alias.list[cnt]->name, var_alias.list[cnt]->stuff);
+					say("[%s]\t%s\t%s", script, var_alias.list[cnt]->name, var_alias.list[cnt]->user_variable);
 			}
 		}
 	}
@@ -1775,10 +1813,10 @@ void	list_cmd_alias (const char *orig_name)
 			}
 			else
 			{
-				if (cmd_alias.list[cnt]->stub)
-					say("[%s]\t%s STUBBED TO %s", script, cmd_alias.list[cnt]->name, cmd_alias.list[cnt]->stub);
+				if (cmd_alias.list[cnt]->user_command_stub)
+					say("[%s]\t%s STUBBED TO %s", script, cmd_alias.list[cnt]->name, cmd_alias.list[cnt]->user_command_stub);
 				else
-					say("[%s]\t%s\t%s", script, cmd_alias.list[cnt]->name, cmd_alias.list[cnt]->stuff);
+					say("[%s]\t%s\t%s", script, cmd_alias.list[cnt]->name, cmd_alias.list[cnt]->user_command);
 			}
 		}
 	}
@@ -1857,11 +1895,11 @@ char	*get_variable_with_args (const char *str, const char *args)
 	 * local == 1   means "global variables not allowed"
 	 */
 	if ((local != -1) && (alias = find_local_alias(name, NULL)))
-		copy = 1, ret = alias->stuff;
+		copy = 1, ret = alias->user_variable;
 	else if (local == 1)
 		;
 	else if ((alias = find_var_alias(name)) != NULL)
-		copy = 1, ret = alias->stuff;
+		copy = 1, ret = alias->user_variable;
 	else if ((strlen(str) == 1) && (ret = built_in_alias(*str, NULL)))
 		copy = 0;
 	else if ((ret = make_string_var(str)))
@@ -1886,7 +1924,7 @@ char *	get_cmd_alias (const char *name, int *howmany, char **complete_name, void
 			malloc_strcpy(complete_name, item->name);
 		if (args)
 			*args = (void *)item->arglist;
-		return item->stuff;
+		return item->user_command;
 	}
 	return NULL;
 }
@@ -2250,9 +2288,9 @@ void 	save_assigns	(FILE *fp, int do_all)
 	{
 		if (!var_alias.list[cnt]->global || do_all)
 		{
-			if (var_alias.list[cnt]->stub)
+			if (var_alias.list[cnt]->user_variable_stub)
 				fprintf(fp, "STUB ");
-			fprintf(fp, "ASSIGN %s %s\n", var_alias.list[cnt]->name, var_alias.list[cnt]->stuff);
+			fprintf(fp, "ASSIGN %s %s\n", var_alias.list[cnt]->name, var_alias.list[cnt]->user_variable);
 		}
 	}
 }
@@ -2265,9 +2303,9 @@ void 	save_aliases (FILE *fp, int do_all)
 	{
 		if (!cmd_alias.list[cnt]->global || do_all)
 		{
-			if (cmd_alias.list[cnt]->stub)
+			if (cmd_alias.list[cnt]->user_command_stub)
 				fprintf(fp, "STUB ");
-			fprintf(fp, "ALIAS %s {%s}\n", cmd_alias.list[cnt]->name, cmd_alias.list[cnt]->stuff);
+			fprintf(fp, "ALIAS %s {%s}\n", cmd_alias.list[cnt]->name, cmd_alias.list[cnt]->user_command);
 		}
 	}	
 }
@@ -2287,9 +2325,18 @@ void 	destroy_aliases (int type)
 
 	for (cnt = 0; cnt < my_array->max; cnt++)
 	{
-		new_free((void **)&(my_array->list[cnt]->stuff));
+	    if (my_array == &cmd_alias)
+	    {
+		new_free((void **)&(my_array->list[cnt]->user_command));
+		new_free((void **)&(my_array->list[cnt]->user_command_stub));
+	    }
+	    else
+	    {
+		new_free((void **)&(my_array->list[cnt]->user_variable));
+		new_free((void **)&(my_array->list[cnt]->user_variable_stub));
+	    }
+
 		new_free((void **)&(my_array->list[cnt]->name));
-		new_free((void **)&(my_array->list[cnt]->stub));
 		new_free((void **)&(my_array->list[cnt]->filename));
 		destroy_arglist(my_array->list[cnt]->arglist);
 		new_free((void **)&(my_array->list[cnt]));	/* XXX Hrm. */
@@ -2535,7 +2582,10 @@ static	int maxret = 0;
 			if (alias)
 			{
 				if (op == GET)
-					RETURN_STR(alias->stuff);
+				    if (list == COMMAND_ALIAS)
+					RETURN_STR(alias->user_command);
+                                    else
+					RETURN_STR(alias->user_variable);
 				else if (op == EXISTS)
 					RETURN_INT(1);
 				else if (op == GETPACKAGE)
@@ -2747,6 +2797,7 @@ void	do_stack_alias (int type, char *args, int which)
 		say("%s is not on the %s stack!", args, name);
 		return;
 	}
+#if 0
 	if (type == STACK_LIST)
 	{
 		AliasStack	*tmp;
@@ -2765,6 +2816,7 @@ void	do_stack_alias (int type, char *args, int which)
 		}
 		return;
 	}
+#endif
 	say("Unknown STACK type ??");
 }
 
