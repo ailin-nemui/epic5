@@ -1,4 +1,4 @@
-/* $EPIC: alias.c,v 1.48 2004/06/29 04:07:47 jnelson Exp $ */
+/* $EPIC: alias.c,v 1.49 2004/06/29 04:24:10 jnelson Exp $ */
 /*
  * alias.c -- Handles the whole kit and caboodle for aliases.
  *
@@ -1124,9 +1124,10 @@ void	add_cmd_stub_alias  (const char *orig_name, const char *stuff)
 		tmp->user_command_filename = malloc_strdup(current_package());
 		add_to_array ((array *)&globals, (array_item *)tmp);
 	}
-
-	if (strcmp(tmp->user_command_filename, current_package()))
+	else if (tmp->user_command_filename)
+	    if (strcmp(tmp->user_command_filename, current_package()))
 		malloc_strcpy(&(tmp->user_command_filename), current_package());
+
 	malloc_strcpy(&(tmp->user_command_stub), stuff);
 	new_free(&tmp->user_command);
 
