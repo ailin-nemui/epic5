@@ -9,7 +9,7 @@
  */
 
 #if 0
-static	char	rcsid[] = "$Id: vars.c,v 1.9 2001/12/19 20:21:45 jnelson Exp $";
+static	char	rcsid[] = "$Id: vars.c,v 1.10 2002/01/25 21:57:10 crazyed Exp $";
 #endif
 
 #include "irc.h"
@@ -197,6 +197,9 @@ static	IrcVariable irc_variable[] =
 	{ "SHOW_NUMERICS",		BOOL_TYPE_VAR,	DEFAULT_SHOW_NUMERICS, NULL, NULL, 0, 0 },
 	{ "SHOW_STATUS_ALL",		BOOL_TYPE_VAR,	DEFAULT_SHOW_STATUS_ALL, NULL, update_all_status, 0, 0 },
 	{ "SHOW_WHO_HOPCOUNT", 		BOOL_TYPE_VAR,	DEFAULT_SHOW_WHO_HOPCOUNT, NULL, NULL, 0, 0 },
+	{ "SSL_CERTFILE",		STR_TYPE_VAR,	0, NULL, NULL, 0, 0 },
+	{ "SSL_KEYFILE",		STR_TYPE_VAR,	0, NULL, NULL, 0, 0 },
+	{ "SSL_PATH",			STR_TYPE_VAR,	0, NULL, NULL, 0, 0 },
 	{ "STATUS_AWAY",		STR_TYPE_VAR,	0, NULL, build_status, 0, 0 },
 	{ "STATUS_CHANNEL",		STR_TYPE_VAR,	0, NULL, build_status, 0, 0 },
 	{ "STATUS_CHANOP",		STR_TYPE_VAR,	0, NULL, build_status, 0, 0 },
@@ -219,6 +222,8 @@ static	IrcVariable irc_variable[] =
 	{ "STATUS_QUERY",		STR_TYPE_VAR,	0, NULL, build_status, 0, 0 },
 	{ "STATUS_SCROLLBACK",		STR_TYPE_VAR,	0, NULL, build_status, 0, 0 },
 	{ "STATUS_SERVER",		STR_TYPE_VAR,	0, NULL, build_status, 0, 0 },
+	{ "STATUS_SSL_OFF",		STR_TYPE_VAR,	0, NULL, build_status, 0, 0 },
+	{ "STATUS_SSL_ON",		STR_TYPE_VAR,	0, NULL, build_status, 0, 0 },
 	{ "STATUS_TRUNCATE_RHS",	BOOL_TYPE_VAR,	DEFAULT_STATUS_TRUNCATE_RHS, NULL, build_status, 0, 0 },
 	{ "STATUS_UMODE",		STR_TYPE_VAR,	0, NULL, build_status, 0, 0 },
 	{ "STATUS_USER",		STR_TYPE_VAR,	0, NULL, build_status, 0, 0 },
@@ -315,12 +320,17 @@ void 	init_variables (void)
 	set_string_var(OUTPUT_REWRITE_VAR, NULL);
 	set_string_var(QUIT_MESSAGE_VAR, DEFAULT_QUIT_MESSAGE);
 	set_string_var(REALNAME_VAR, realname);
+	set_string_var(SSL_CERTFILE_VAR, NULL);
+	set_string_var(SSL_KEYFILE_VAR, NULL);
+	set_string_var(SSL_PATH_VAR, NULL);
 	set_string_var(STATUS_FORMAT_VAR, DEFAULT_STATUS_FORMAT);
 	set_string_var(STATUS_FORMAT1_VAR, DEFAULT_STATUS_FORMAT1);
 	set_string_var(STATUS_FORMAT2_VAR, DEFAULT_STATUS_FORMAT2);
 	set_string_var(STATUS_AWAY_VAR, DEFAULT_STATUS_AWAY);
 	set_string_var(STATUS_CHANNEL_VAR, DEFAULT_STATUS_CHANNEL);
 	set_string_var(STATUS_CHANOP_VAR, DEFAULT_STATUS_CHANOP);
+	set_string_var(STATUS_SSL_ON_VAR, DEFAULT_STATUS_SSL_ON);
+	set_string_var(STATUS_SSL_OFF_VAR, DEFAULT_STATUS_SSL_OFF);
 	set_string_var(STATUS_CLOCK_VAR, DEFAULT_STATUS_CLOCK);
 	set_string_var(STATUS_CPU_SAVER_VAR, DEFAULT_STATUS_CPU_SAVER);
 	set_string_var(STATUS_HOLD_VAR, DEFAULT_STATUS_HOLD);

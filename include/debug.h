@@ -35,6 +35,7 @@ extern 	unsigned long 	x_debug;
 #define DEBUG_AUTOKEY		1 << 21
 #define DEBUG_EXTRACTW		1 << 22
 #define DEBUG_SLASH_HACK	1 << 23
+#define DEBUG_SSL		1 << 24
 #define DEBUG_LASTLOG		1 << 24
 
 #endif

@@ -22,6 +22,9 @@
 #include "vars.h"
 #include "newio.h"
 #include "translat.h"
+#ifdef HAVE_SSL
+#include "ssl.h"
+#endif
 
 /*
  * Note to future maintainers -- we do a bit of chicanery here.  The 'flags'
@@ -115,6 +118,9 @@ void 	add_to_server_list (const char *server, int port, const char *password, co
 		s->reconnects = 0;
 		s->quit_message = NULL;
 		s->save_channels = -1;
+#ifdef HAVE_SSL
+		s->enable_ssl = FALSE;
+#endif
 
 		if (password && *password)
 			malloc_strcpy(&s->password, password);
@@ -190,6 +196,14 @@ static 	void 	remove_from_server_list (int i)
 	new_free(&s->ison_queue);
 	new_free(&s->who_queue);
 	destroy_notify_list(i);
+
+#ifdef HAVE_SSL
+	if (server_list[i].enable_ssl == TRUE)
+	{
+		SSL_free((SSL *)&s->ssl_fd);
+		SSL_CTX_free((SSL_CTX *)&s->ctx);
+	}
+#endif
 
 	memmove(&server_list[i], &server_list[i + 1], 
 			(number_of_servers - i - 1) * sizeof(Server));
@@ -600,12 +614,30 @@ BUILT_IN_COMMAND(servercmd)
 {
 	char	*server = NULL;
 	int	i;
+#ifdef HAVE_SSL
+	int     ssl_connect = FALSE;
+#endif
 
 	if ((server = next_arg(args, &args)) == NULL)
 	{
 		display_server_list();
 		return;
 	}
+
+#ifdef HAVE_SSL
+	if ((i = find_in_server_list(server, 0)) != -1)
+		server_list[i].enable_ssl=FALSE;
+	if (strlen(server) > 1 && !my_strnicmp(server, "-SSL", strlen(server)))
+	{
+		if (!(server = new_next_arg(args, &args)))
+		{
+			say("Not enough paramters - supply server name please");
+			return;
+		}
+		say("Trying to establish SSL connection with server: %s", server);
+		ssl_connect=TRUE;
+	}
+#endif
 
 	/*
 	 * Delete an existing server
@@ -660,7 +692,14 @@ BUILT_IN_COMMAND(servercmd)
 
 		/* /SERVER +foo.bar.com is an alias for /window server */
 		if (*++server)
+		{
+#ifdef HAVE_SSL
+			i = find_server_refnum(server, &args);
+			if (ssl_connect == TRUE)
+				server_list[i].enable_ssl = TRUE;
+#endif
 			window_server(current_window, &server);
+		}
 
 		/* /SERVER + means go to the next server */
 		else
@@ -722,6 +761,10 @@ BUILT_IN_COMMAND(servercmd)
 		if (i != j)
 		{
 			clear_reconnect_counts();
+#ifdef HAVE_SSL
+			if (ssl_connect == TRUE)
+				server_list[i].enable_ssl = TRUE;
+#endif
 			server_reconnects_to(j, i);
 			reconnect(j, 0);
 			window_check_servers();
@@ -753,12 +796,29 @@ void	do_server (fd_set *rd)
 
 		des = server_list[i].des;
 		if (des == -1 || !FD_ISSET(des, rd))
-			continue;
+		{
+#ifdef HAVE_SSL
+			if (server_list[i].enable_ssl == TRUE)
+			{
+				if (!SSL_pending(server_list[i].ssl_fd))
+					continue;
+			}
+			else
+#endif
+ 			continue;
+		}
 		FD_CLR(des, rd);	/* Make sure it never comes up again */
 
 		last_server = from_server = i;
-		switch ((junk = dgets(bufptr, des, 1)))
-		{
+#ifdef HAVE_SSL
+		if (server_list[i].enable_ssl == TRUE)
+			junk = SSL_dgets(bufptr, des, 1, IO_BUFFER_SIZE, server_list[i].ssl_fd);
+		else
+#endif
+		junk = dgets(bufptr, des, 1);
+
+		switch (junk)
+ 		{
 			case 0:		/* Sit on incomplete lines */
 				break;
 
@@ -844,6 +904,9 @@ static void 	vsend_to_server (const char *format, va_list args)
 	int	len,
 		des;
 	int	server;
+#ifdef HAVE_SSL
+	int	isssl;
+#endif
 
 	if ((server = from_server) == -1)
 		server = primary_server;
@@ -886,19 +949,41 @@ static void 	vsend_to_server (const char *format, va_list args)
 void	send_to_server_raw (size_t len, const char *buffer)
 {
 	int des, server;
+	int err = 0;
 
 	if ((server = from_server) == -1)
 		server = primary_server;
 
 	if (server != -1 && (des = server_list[server].des) != -1 && buffer)
 	{
-		if (write(des, buffer, len) == -1 && 
+#ifdef HAVE_SSL
+		if (server_list[server].enable_ssl == TRUE)
+		{
+			if (server_list[server].ssl_fd == 0)
+			{
+				say("SSL write error - ssl socket=0");
+				return;
+			}
+			err = SSL_write(server_list[server].ssl_fd, buffer, strlen(buffer));
+			BIO_flush(SSL_get_wbio(server_list[server].ssl_fd));
+		}
+		else
+#endif 
+		err = write(des, buffer, strlen(buffer));
+
+		if (err == -1 &&
 			(!get_int_var(NO_FAIL_DISCONNECT_VAR)))
 		{
 			if (server_list[server].connected)
 			{
+				/* server_list[server].save_channels == 1; */
+				/* close_server(server, strerror(errno));  */
 				server_is_connected(des, 0);
 				say("Write to server failed.  Closing connection.");
+#ifdef HAVE_SSL
+				if (server_list[server].enable_ssl == TRUE)
+					SSL_shutdown(server_list[server].ssl_fd);
+#endif
 				reconnect(server, 1);
 			}
 		}
@@ -990,6 +1075,9 @@ static int 	connect_to_server (int new_server)
 
 		say("Unable to connect to port %d of server %s: %s", 
 				s->port, s->name, my_strerror(errno));
+#ifdef HAVE_SSL
+		s->enable_ssl = FALSE; /* Would cause client to crash, if not wiped out */
+#endif
 		return -1;		/* Connect failed */
 	}
 
@@ -1386,6 +1474,13 @@ void	close_server (int old, const char *message)
 		     */
 		    if (was_connected)
 			    send_to_aserver(old, "QUIT :%s\n", message);
+#ifdef HAVE_SSL
+		    if (server_list[old].enable_ssl==TRUE)
+		    {
+			    say("Closing SSL connection");
+			    SSL_shutdown(server_list[old].ssl_fd);
+		    }
+#endif
 		    do_hook(SERVER_LOST_LIST, "%d %s %s", 
 				old, server_list[old].name, message);
 		}
@@ -1632,10 +1727,48 @@ const char *	get_server_version_string (int servnum)
 	 return server_list[servnum].version_string;
 }
 
+#ifdef HAVE_SSL
+/* get_server_isssl: returns 1 if the server is using SSL connection */
+int	get_server_isssl (int gsn_index)
+{
+	if (gsn_index == -1)
+		gsn_index = primary_server;
+	else if (gsn_index == -1 || gsn_index >= number_of_servers)
+		return 0;
+
+	return ((server_list[gsn_index].enable_ssl == TRUE) ? (1) : (0));
+}
+
+const char	*get_server_cipher (int gsn_index)
+{
+	if (gsn_index == -1)
+		gsn_index = primary_server;
+	else if (gsn_index == -1 || gsn_index >= number_of_servers
+		|| server_list[gsn_index].enable_ssl == FALSE)
+		return empty_string;
+
+	return (SSL_get_cipher(server_list[gsn_index].ssl_fd));
+}
+
+#else
+
+/* get_server_isssl: returns 1 if the server is using SSL connection */
+int	get_server_isssl (int gsn_index)
+{
+	return 0;
+}
+#endif
 
 /* CONNECTION/REGISTRATION STATUS */
 void	register_server (int ssn_index, const char *nickname)
 {
+#ifdef HAVE_SSL
+	int		err;
+	int		alg;
+	int		sign_alg;
+	X509		*server_cert;
+	EVP_PKEY	*server_pkey;
+#endif;
 	if (server_list[ssn_index].registration_pending)
 		return;		/* Whatever */
 
@@ -1643,6 +1776,60 @@ void	register_server (int ssn_index, const char *nickname)
 		return;		/* Whatever */
 
 	server_list[ssn_index].registration_pending = 1;
+#ifdef HAVE_SSL
+	if (server_list[ssn_index].enable_ssl == TRUE)
+	{
+		say("SSL negotiation in progress...");
+/* Old SSL connection routines.
+		SSLeay_add_ssl_algorithms();
+		SSL_load_error_strings();
+		server_list[ssn_index].ctx = SSL_CTX_new(SSLv3_client_method());
+		server_list[ssn_index].ssl_fd = SSL_new(server_list[ssn_index].ctx);
+		SSL_set_fd(server_list[ssn_index].ssl_fd, server_list[ssn_index].des);
+		SSL_connect(server_list[ssn_index].ssl_fd);
+*/		
+		/* Set up SSL connection */
+		server_list[ssn_index].ctx = SSL_CTX_init(0);
+		server_list[ssn_index].ssl_fd = SSL_FD_init(server_list[ssn_index].ctx,
+			server_list[ssn_index].des);
+
+		if (x_debug & DEBUG_SSL)
+			say("SSL negotiation using %s",
+				get_server_cipher(ssn_index));
+		say("SSL negotiation on port %d of server %s complete",
+			server_list[ssn_index].port, get_server_name(ssn_index));
+		server_cert = SSL_get_peer_certificate(server_list[ssn_index].ssl_fd);
+		if (!(server_cert == NULL))
+		{
+			server_pkey = X509_get_pubkey(server_cert);
+			/* urlencoded to avoid problems with spaces */
+			do_hook(SSL_SERVER_CERT_LIST, "%s %s %s",
+				server_list[ssn_index].name,
+				urlencode(X509_NAME_oneline(X509_get_subject_name(server_cert),0,0)),
+				urlencode(X509_NAME_oneline(X509_get_issuer_name(server_cert),0,0)));
+
+			/* We should check certificate date validity here. */
+
+			if (x_debug & DEBUG_SSL)
+			{
+				alg = OBJ_obj2nid(server_cert->cert_info->key->algor->algorithm);
+				sign_alg = OBJ_obj2nid(server_cert->sig_alg->algorithm);		
+				say("Public key algorithm: %s (%d bits)  Sign algorithm: %s",
+					(alg == NID_undef) ? "UNKNOWN" : OBJ_nid2ln(alg), EVP_PKEY_bits(server_pkey),
+					(sign_alg == NID_undef) ? "UNKNOWN" : OBJ_nid2ln(sign_alg));
+			}
+			EVP_PKEY_free(server_pkey);
+		}
+		else
+		{
+			/* No server certificate found */
+			do_hook(SSL_SERVER_CERT_LIST, "%s %s %s",
+				server_list[ssn_index].name,
+				NULL, NULL);
+		}
+		X509_free(server_cert);
+	}
+#endif
 	if (server_list[ssn_index].password)
 		send_to_aserver(ssn_index, "PASS %s", 
 			server_list[ssn_index].password);
@@ -2233,7 +2420,6 @@ void	clear_reconnect_counts (void)
 	for (i = 0; i < number_of_servers; i++)
 		server_list[i].reconnects = 0;
 }
-
 /* This didn't belong in the middle of the redirect stuff. */
 const char *get_server_group (int refnum)
 {

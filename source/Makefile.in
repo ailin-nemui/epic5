@@ -16,7 +16,7 @@ OBJECTS = alias.o alist.o array.o commands.o compat.o crypt.o ctcp.o \
 	help.o history.o hook.o if.o ignore.o input.o irc.o ircaux.o \
 	ircsig.o keys.o lastlog.o list.o log.o mail.o names.o network.o \
 	newio.o notice.o notify.o numbers.o output.o parse.o queue.o reg.o \
-	screen.o server.o status.o term.o timer.o translat.o vars.o who.o \
+	screen.o server.o ssl.o status.o term.o timer.o translat.o vars.o who.o \
 	window.o words.o @PERLDOTOH@ @ALLOCA@
 
 INCLUDES = -I@srcdir@/../include -I../include
@@ -336,6 +336,7 @@ server.o: server.c ../include/irc.h ../include/defs.h \
  ../include/status.h ../include/output.h ../include/names.h \
  ../include/hook.h ../include/screen.h ../include/vars.h \
  ../include/newio.h ../include/translat.h
+ssl.o: ssl.c ../include/dcc.h  ../include/defs.h ../include/irc.h ../include/server.h ../include/ssl.h
 status.o: status.c ../include/irc.h ../include/defs.h \
  ../include/config.h ../include/irc_std.h ../include/debug.h \
  ../include/dcc.h ../include/term.h ../include/screen.h \

@@ -414,6 +414,8 @@
 #define DEFAULT_STATUS_AWAY " (Away)"
 #define DEFAULT_STATUS_CHANNEL " %C"
 #define DEFAULT_STATUS_CHANOP "@"
+#define DEFAULT_STATUS_SSL_ON "*SSL*"
+#define DEFAULT_STATUS_SSL_OFF "*RAW*"
 #define DEFAULT_STATUS_CLOCK " %T"
 #define DEFAULT_STATUS_CPU_SAVER " (%L)"
 #define DEFAULT_STATUS_FORMAT "%T [%R] %*%=%@%N%#%S%H%B%Q%A%C%+%I%O%M%F%L %D %U %W"

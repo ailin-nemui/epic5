@@ -1,0 +1,72 @@
+			SSL support for EPIC
+			====================
+
+Introduction
+============
+Not very much information here.  Please have also look at
+http://epicssl.sourceforge.net/ the homepage of this project. 
+
+Compilation
+===========
+
+Just do ./configure. If it does not find openssl, specify it with
+./configure --with-ssl=DIR.  You can switch to SSLv2 with
+./configure --with-ssl-ver=v2.  Version 3 is used by default.
+
+In the program, use
+/window server -ssl SERVERNAME
+
+Currently working SSL server is f.e. rak.isternet.sk:6667, or hq.alert.sk:6667,
+channel #epic.  You can connect there using SSLv2 and SSLv3. (my nick is juraj)
+
+
+Scripting support
+=================
+
+There's also isencrypted() function for scripts implemented, try to load this
+to epic and see what happens:
+
+if (isencrypted())
+	{
+		say it is;
+	}
+	{
+		say it is not;
+	}
+
+Now you can also add status indicator (whether the connection is encrypted or
+not) to status_format.  The right key for SSL/RAW status indicator is %|
+
+Copyright
+=========
+
+SSL support is under the same license as EPIC irc client.  It was done by Juraj
+Bednar <bednar@isternet.sk>.  Send me any questions you may have about SSL
+support, but _NOT_ about Epic in general (I'm not an epic guru!!!)
+
+
+[Additions from B. Thomas Frazier <tfrazier@mjolnir.gisystems.net>]
+
+* Updated diffs against recent epic releases are available at
+	http://ssl.epicsol.org
+
+* New function cipher(<server>).  Returns cipher used on a SSL server.
+* New hook, SSL_SERVER_CERT, triggers when a connection is made to a server.
+	$0 - server name
+	$1 - certificate subject (urlencoded)
+	$2 - certificate issuer (urlencoded)
+	Leave it up to scripters to accept or reject server certificates.
+* SSLv2 connects removed.
+* New function ssl().  Returns 1 if compiled with SSL support.
+* Added debugging level for SSL connections.  (/xdebug +ssl)
+* New sets.  SSL_CERTFILE  SSL_KEYFILE  SSL_PATH
+	Paths for certificate and key files that may be used by SSL-enabled
+	DCC chat and server connections.
+* Not all SSL variables freed properly in server connections.  Fixed.
+
+To Do List
+
+* Optimize.  Use more generalized functions for establishing connections.
+* Do server certificate date checking
+* Fix SSL-enabled DCC chat (/dcc chat -ssl <nick>)
+* SSL-enabled RAW sockets

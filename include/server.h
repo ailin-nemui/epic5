@@ -17,6 +17,10 @@
 /* To get definition of Notify */
 #include "notify.h"
 
+#ifdef HAVE_SSL
+#include "ssl.h"
+#endif
+
 /* XXXX Ick.  Gross.  Bad. XXX */
 struct notify_stru;
 
@@ -70,6 +74,12 @@ typedef	struct
 	int	closing;		/* True if close_server called */
 	int	reconnect_to;		/* Server to connect to on EOF */
 	char	*quit_message;		/* Where we stash a quit message */
+#ifdef HAVE_SSL
+	SSL_CTX*	ctx;
+	SSL_METHOD*	meth;
+	int	enable_ssl;
+	SSL*	ssl_fd;
+#endif
 }	Server;
 extern	Server	*server_list;
 #endif	/* NEED_SERVER_LIST */
@@ -145,7 +155,9 @@ const	char *	get_server_group		(int);
 	void	set_server_itsname		(int, const char *);
 	void	set_server_version_string	(int, const char *);
 const 	char *	get_server_version_string	(int);
-
+	int	get_server_isssl		(int);
+const	char *	get_server_cipher		(int);
+ 
 	void	register_server			(int, const char *);
 	void	server_registration_is_not_pending (int);
 	void	password_sendline		(char *, char *);

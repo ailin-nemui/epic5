@@ -45,6 +45,7 @@ static struct debug_opts opts[] =
 	{ "EXTRACTW",		DEBUG_EXTRACTW },
 	{ "SLASH_HACK",		DEBUG_SLASH_HACK },
 	{ "LASTLOG",		DEBUG_LASTLOG },
+	{ "SSL",		DEBUG_SSL },
 	{ "ALL",		0xFFFFFFFF },
 	{ NULL,			0 },
 };

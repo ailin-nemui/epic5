@@ -174,6 +174,7 @@ static	char
 	*function_chop		(char *),
 	*function_chops 	(char *),
 	*function_chr 		(char *),
+	*function_cipher	(char *),
 	*function_close 	(char *),
 	*function_common 	(char *),
 	*function_convert 	(char *),
@@ -226,6 +227,7 @@ static	char
 	*function_isaway	(char *),
 	*function_isconnected	(char *),
 	*function_iscurchan	(char *),
+	*function_isencrypted	(char *),
 	*function_isdisplaying	(char *),
 	*function_isfilevalid	(char *),
 	*function_irclib	(char *),
@@ -402,6 +404,7 @@ static BuiltInFunctions	built_in_functions[] =
 	{ "CHOP",		function_chop		},
 	{ "CHOPS",              function_chops 		},
 	{ "CHR",                function_chr 		},
+	{ "CIPHER",		function_cipher		},
 	{ "CLOSE",		function_close 		},
 	{ "COMMON",             function_common 	},
 	{ "CONNECT",		function_connect 	},
@@ -6081,17 +6084,6 @@ BUILT_IN_FUNCTION(function_wincurline, input)
  * B. Thomas Frazier (tfrazier@mjolnir.gisystems.net)
  * On December 12, 2000.
  */
-BUILT_IN_FUNCTION(function_isencrypted, input)
-{
-	/* For now, all connections are not encrypted */
-	RETURN_INT(0);
-}
-
-BUILT_IN_FUNCTION(function_ssl, input)
-{
-	/* This distribution does not include SSL support. */
-	RETURN_INT(0);
-}
 
 BUILT_IN_FUNCTION(function_iptolong, word)
 {
@@ -6112,6 +6104,43 @@ BUILT_IN_FUNCTION(function_longtoip, word)
 	GET_STR_ARG(ip32, word);
 	addr.s_addr = (unsigned long)ntohl(strtoul(ip32, NULL, 10));
 	RETURN_STR(inet_ntoa(addr));
+}
+
+BUILT_IN_FUNCTION(function_isencrypted, input)
+{
+	int	sval = from_server;
+
+	if (*input)
+		GET_INT_ARG(sval, input);
+
+	/* garbage in, garbage out. */
+	if (sval < 0 || sval >= number_of_servers)
+		RETURN_INT(0);
+
+	/* Check if it is encrypted connection */
+	RETURN_INT(get_server_isssl(sval));
+}
+
+BUILT_IN_FUNCTION(function_ssl, words)
+{
+#ifdef HAVE_SSL
+	RETURN_INT(1);
+#else
+	RETURN_INT(0);
+#endif
+}
+
+BUILT_IN_FUNCTION(function_cipher, input)
+{
+	int     sval = from_server;
+
+	if (*input)
+		GET_INT_ARG(sval, input);
+
+	if (sval < 0 || sval >= number_of_servers)
+		RETURN_STR(NULL);
+
+	RETURN_STR(get_server_cipher(sval));
 }
 
 #define MATH_RETVAL(x)						\
@@ -6233,8 +6262,6 @@ BUILT_IN_FUNCTION(function_unsplit, input)
 		m_s3cat(&retval, sep, word);
 	RETURN_MSTR(retval);
 }
-
-
 BUILT_IN_FUNCTION(function_encryptparm, input)
 {
 	char	*ret = NULL, *entry = NULL;

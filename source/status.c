@@ -26,6 +26,9 @@
 #include "names.h"
 #include "ircaux.h"
 #include "alias.h"
+#ifdef HAVE_SSL
+#include "ssl.h"
+#endif
 
 #ifdef Char
 #undef Char
@@ -44,6 +47,7 @@ STATUS_FUNCTION(status_nickname);
 STATUS_FUNCTION(status_query_nick);
 STATUS_FUNCTION(status_right_justify);
 STATUS_FUNCTION(status_chanop);
+STATUS_FUNCTION(status_ssl);
 STATUS_FUNCTION(status_channel);
 STATUS_FUNCTION(status_server);
 STATUS_FUNCTION(status_mode);
@@ -132,6 +136,7 @@ struct status_formats status_expandos[] = {
 { 0, '=', status_voice,		NULL, 			-1 },
 { 0, '>', status_right_justify,	NULL, 			-1 },
 { 0, '@', status_chanop,	NULL, 			-1 },
+{ 0, '|', status_ssl,		NULL,			-1 },
 { 0, '0', status_user,		NULL, 			-1 },
 { 0, '1', status_user,		NULL, 			-1 },
 { 0, '2', status_user,		NULL, 			-1 },
@@ -1008,6 +1013,22 @@ STATUS_FUNCTION(status_chanop)
 		return text;
 
 	return empty_string;
+}
+
+/*
+ * are we using SSL conenction?
+ */
+STATUS_FUNCTION(status_ssl)
+{
+#ifdef HAVE_SSL
+
+	if (window->server != -1 && get_server_isssl(window->server))
+		return get_string_var(STATUS_SSL_ON_VAR);
+	else
+		return get_string_var(STATUS_SSL_OFF_VAR);
+#else
+	return empty_string;
+#endif
 }
 
 

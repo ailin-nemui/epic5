@@ -147,6 +147,7 @@ installwserv: wserv4 installdirs test
 #
 scriptdir = $(epicdir)/script
 installscript: installdirs test
+	-chmod -x @srcdir@/script/*
 	-@(								\
 		if ./my_test -f $(IP)$(scriptdir)/local; then		\
 			if ./my_test -f script/local; then 		\
@@ -161,17 +162,14 @@ installscript: installdirs test
 		if ./my_test -f $$target; then \
 			if ./my_test $$i -nt $$target; then \
 				$(INSTALL_DATA) $$i $$target; \
-				chmod -x $$target; \
 			fi; \
 		elif ./my_test -f $$target.gz; then \
 			if ./my_test $$i -nt $$target.gz; then \
 				$(INSTALL_DATA) $$i $$target; \
-				chmod -x $$target; \
 				gzip -f $$target; \
 			fi; \
-		elif ./my_test -f $$i; then \
+		else \
 			$(INSTALL_DATA) $$i $$target; \
-			chmod -x $$target; \
 			if ./my_test -f $(IP)$(scriptdir)/gzip-scripts; then \
 				gzip -f $$target; \
 			fi; \

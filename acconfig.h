@@ -1,5 +1,5 @@
 /*
- * @(#)$Id: acconfig.h,v 1.5 2001/11/28 22:58:02 jnelson Exp $
+ * @(#)$Id: acconfig.h,v 1.6 2002/01/25 21:57:09 crazyed Exp $
  */
 
 /*
@@ -239,6 +239,10 @@
 /* Define this if you have hstrerror, for h_errno use */
 #undef HAVE_HSTRERROR
 
+/* Define this if you want OPENSSL support */
+#undef HAVE_SSL
+/* Define this if you want OPENSSL support */
+#undef HAVE_SSL
 /* Define this if you have sysctlbyname() */
 #undef HAVE_SYSCTLBYNAME
 

@@ -12,6 +12,7 @@
 #include "screen.h"
 #include "window.h"
 #include "vars.h"
+#define NEED_SERVER_LIST
 #include "server.h"
 #include "list.h"
 #include "term.h"
@@ -25,6 +26,9 @@
 #include "parse.h"
 #include "commands.h"
 #include "exec.h"
+#ifdef HAVE_SSL
+#include "ssl.h"
+#endif
 
 static char *onoff[] = { "OFF", "ON" };
 
@@ -4207,10 +4211,24 @@ Window *window_server (Window *window, char **args)
 {
 	char *	arg;
 	int	newconn;
+#ifdef HAVE_SSL
+	int withSSL = FALSE;
+#endif
 
 	if ((arg = next_arg(*args, args)))
 	{
+#ifdef HAVE_SSL
+	   if (!my_strnicmp(arg, "-SSL", strlen(arg)))
+	   {
+		withSSL=TRUE;
+		arg = next_arg(*args, args);
+	   }
+	   if (arg) {
+#endif
 		int i = find_server_refnum(arg, NULL);
+#ifdef HAVE_SSL
+		server_list[i].enable_ssl=withSSL;
+#endif
 
 		if (windows_connected_to_server(window->server) > 1)
 		{
@@ -4260,6 +4278,9 @@ Window *window_server (Window *window, char **args)
 		 * for us and garbage collect any channels lying around.
 		 */
 		window_check_servers();
+#ifdef HAVE_SSL
+	   }
+#endif
 	}
 	else
 		say("SERVER: You must specify a server");

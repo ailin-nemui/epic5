@@ -156,6 +156,7 @@ hook_functions[] =
 	{ "SET",		(Hook *) 0,	2,	0,	0 },
 	{ "SIGNOFF",		(Hook *) 0,	1,	0,	0 },
 	{ "SILENCE",		(Hook *) 0,	2,	0,	0 },
+	{ "SSL_SERVER_CERT",	(Hook *) 0,	3,	0,	0 },
 	{ "STATUS_UPDATE",	(Hook *) 0,	3,	0,	0 },
 	{ "SWITCH_CHANNELS",	(Hook *) 0,	3,	0,	0 },
 	{ "SWITCH_WINDOWS",	(Hook *) 0,	4,	0,	0 },

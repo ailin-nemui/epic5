@@ -7,10 +7,17 @@
 
 #ifndef __newio_h__
 #define __newio_h__
+#ifdef HAVE_SSL
+#include "ssl.h"
+#endif
 
 extern 	int 	dgets_errno;
 
 	int 	dgets 			(char *, int, int);
+#ifdef HAVE_SSL
+	int	SSL_dgets		(char *, int, int, int, SSL*);
+#endif
+
 	int 	new_select 		(fd_set *, fd_set *, struct timeval *);
 	int	new_open		(int);
 	int 	new_close 		(int);

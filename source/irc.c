@@ -25,7 +25,7 @@ const char internal_version[] = "20011203";
 /*
  * In theory, this number is incremented for every commit.
  */
-const unsigned long	commit_id = 192;
+const unsigned long	commit_id = 193;
 
 /*
  * As a way to poke fun at the current rage of naming releases after
@@ -868,7 +868,13 @@ static	struct	timeval	clock_timeout,
 	{
 		/* Timeout -- nothing interesting. */
 		case 0:
+		{
+#ifdef HAVE_SSL
+			/* Yes, this is slow, but we have to check for this */
+			do_server(&rd);
+#endif
 			break;
+		}
 
 		/* Interrupted system call -- check for SIGINT */
 		case -1:
