@@ -1,4 +1,4 @@
-/* $EPIC: server.c,v 1.115 2004/01/08 02:44:35 jnelson Exp $ */
+/* $EPIC: server.c,v 1.116 2004/01/14 03:04:31 jnelson Exp $ */
 /*
  * server.c:  Things dealing with that wacky program we call ircd.
  *
@@ -72,7 +72,7 @@ static	int	never_connected = 1;
 
 const char *server_states[8] = {
 	"RECONNECT",		"CONNECTING",		"REGISTERING",
-	"SYNCING"		"ACTIVE",		"EOF",
+	"SYNCING",		"ACTIVE",		"EOF",
 	"CLOSING",		"CLOSED"
 };
 
@@ -678,16 +678,20 @@ void 	display_server_list (void)
 			continue;
 
 		if (!s->nickname)
-			say("\t%d) %s %d [%s] %s", i, s->name, s->port, 
-				get_server_group(i), get_server_type(i));
+			say("\t%d) %s %d [%s] %s [%s]", i, s->name, s->port, 
+				get_server_group(i), get_server_type(i),
+				server_states[get_server_status(i)]);
 		else if (is_server_open(i))
-			say("\t%d) %s %d (%s) [%s] %s", i, s->name, s->port,
+			say("\t%d) %s %d (%s) [%s] %s [%s]", 
+				i, s->name, s->port,
 				s->nickname, get_server_group(i),
-				get_server_type(i));
+				get_server_type(i),
+				server_states[get_server_status(i)]);
 		else
-			say("\t%d) %s %d (was %s) [%s] %s", i, s->name, 
+			say("\t%d) %s %d (was %s) [%s] %s [%s]", i, s->name, 
 				s->port, s->nickname, get_server_group(i),
-				get_server_type(i));
+				get_server_type(i),
+				server_states[get_server_status(i)]);
 	}
 }
 
@@ -797,6 +801,10 @@ BUILT_IN_COMMAND(servercmd)
 			else
 				new_server = from_server + 1;
 			change_window_server(from_server, new_server);
+
+			/* Allow this server to auto-reconnect */
+			if (get_server_status(new_server) == SERVER_CLOSED)
+				set_server_status(new_server, SERVER_RECONNECT);
 		}
 	}
 
@@ -845,6 +853,10 @@ BUILT_IN_COMMAND(servercmd)
 			if (my_stricmp(get_server_type(i), "IRC-SSL") == 0)
 				set_server_ssl_enabled(i, TRUE);
 			change_window_server(j, i);
+
+			/* Allow this server to auto-reconnect */
+			if (get_server_status(i) == SERVER_CLOSED)
+				set_server_status(i, SERVER_RECONNECT);
 		}
 		else
 			say("Connected to port %d of server %s",
@@ -2384,7 +2396,7 @@ SACCESSOR(cookie, cookie, NULL)
 SACCESSOR(ver, version_string, NULL)
 
 GET_IATTRIBUTE(status)
-void	set_server_status (int refnum, int flag)
+void	set_server_status (int refnum, int new_status)
 {
 	Server *s;
 	int	old_status;
@@ -2393,16 +2405,16 @@ void	set_server_status (int refnum, int flag)
 	if (!(s = get_server(refnum)))
 		return;
 
-	if (flag < 0 || flag > SERVER_CLOSED)
+	if (new_status < 0 || new_status > SERVER_CLOSED)
 		return;			/* Not acceptable */
 
 	old_status = s->status;
 	if (old_status < 0 || old_status > SERVER_CLOSED)
 		oldstr = "UNKNOWN";
 
-	s->status = flag;
+	s->status = new_status;
 
-	newstr = server_states[flag];
+	newstr = server_states[new_status];
 	oldstr = server_states[old_status];
 	do_hook(SERVER_STATUS_LIST, "%d %s %s", refnum, oldstr, newstr);
 }

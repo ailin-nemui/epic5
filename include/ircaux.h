@@ -7,7 +7,7 @@
  *
  * See the COPYRIGHT file, or do a HELP IRCII COPYRIGHT 
  *
- * @(#)$Id: ircaux.h,v 1.63 2004/01/08 02:44:35 jnelson Exp $
+ * @(#)$Id: ircaux.h,v 1.64 2004/01/14 03:04:31 jnelson Exp $
  */
 
 #ifndef _IRCAUX_H_
@@ -32,13 +32,6 @@ typedef int 	comp_func 		(char *, char *);
 		fatal_malloc_check ((void *)(x), (y), __FILE__, __LINE__)
 #define RESIZE(x, y, z) new_realloc	((void **)& (x), sizeof(y) * (z))
 
-#if 0
-#define m_e3cat(x,y,z) m_ec3cat((x),(y),(z),NULL)
-#define m_s3cat(x,y,z) m_sc3cat((x),(y),(z),NULL)
-#define m_s3cat_s(x,y,z) m_sc3cat_s((x),(y),(z),NULL)
-#define m_3cat(x,y,z) m_c3cat((x),(y),(z),NULL)
-#endif
-
 #define malloc_strcat(x,y) malloc_strcat_c((x),(y),NULL)
 #define malloc_strcat_ues(x,y,z) malloc_strcat_ues_c((x),(y),(z),NULL)
 
@@ -50,13 +43,6 @@ void *	really_new_realloc 	(void **, size_t, const char *, int);
 void	malloc_dump		(const char *);
 
 char *	check_nickname 		(char *, int);
-#if 0
-char *	dequote			(char *);
-#define next_arg(a,b) next_arg_count((a),(b),1)
-char *	next_arg_count 		(char *, char **, int);
-char *	new_next_arg		(char *, char **);
-char *	new_next_arg_count 	(char *, char **, int);
-#endif
 char *	new_new_next_arg_count 	(char *, char **, char *, int);
 char *	s_next_arg		(char **);
 char *	last_arg 		(char **, size_t *cluep);
@@ -75,10 +61,9 @@ char *	malloc_sprintf 		(char **, const char *, ...) __A(2);
 int	is_number 		(const char *);
 int	is_real_number 		(const char *);
 char *	my_ctime 		(time_t);
-extern	unsigned char stricmp_table[];
+extern	unsigned char	stricmp_table[];
 int	my_stricmp 		(const unsigned char *, const unsigned char *);
 int	my_strnicmp 		(const unsigned char *, const unsigned char *, size_t);
-int	scanstr 		(char *, char *);
 void	really_free 		(int);
 char *	chop 			(char *, size_t);
 char *	malloc_strcat_ues_c	(char **, const char *, const char *, size_t *);
@@ -91,8 +76,6 @@ int	end_strcmp 		(const char *, const char *, size_t);
 char*   exec_pipe		(const char *, char *, size_t *, char *const *);
 FILE **	open_exec		(const char *executable, char * const *args);
 void	panic 			(const char *, ...) __A(1) __N;
-int	vt100_decode 		(char);
-int	count_ansi		(char *, int);
 int	fw_strcmp 		(comp_len_func *, char *, char *);
 int	lw_strcmp 		(comp_func *, char *, char *);
 int	open_to 		(char *, int, int);
@@ -125,7 +108,6 @@ int	word_count 		(const char *);
 int	parse_number 		(char **);
 char *	remove_brackets 	(const char *, const char *);
 long	my_atol 		(const char *);
-u_long	hashpjw 		(char *, u_long);
 char *	malloc_dupchar 		(int);
 off_t	file_size		(const char *);
 int	file_exists		(const char *);

@@ -2,7 +2,7 @@ EPIC5 Projects, Bugs, and other Errata:
 
 KNOWN ERRATA (eg, bugs, or unresolved requests):
 ------------------------------------------------
-<none>
+* Some way to hook incomplete lines via dcc raw
 
 [See http://www.epicsol.org/PROJECTS for things to come in the future]
 [See http://www.epicsol.org/CHANGELOG5 for things that changed in the past]
@@ -108,3 +108,8 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Reorganize names.h to reflect new realities
 * Prototype (Get|Free)addrinfo() now that server.c uses them.
 * Nix /window bind, rebind, unbound; $windowctl(* BIND_CHANNEL *)
+* Be careful what modes we add to modestr in update_channel_mode.
+* GC some old epic4 macros which we don't use
+* Fix a typo that b0rked /on server_status
+* Force output for a server connection to go to its connected window.
+* Make /server reset server's status, so it can be reconnected to.

@@ -1,4 +1,4 @@
-/* $EPIC: names.c,v 1.52 2004/01/08 02:44:35 jnelson Exp $ */
+/* $EPIC: names.c,v 1.53 2004/01/14 03:04:31 jnelson Exp $ */
 /*
  * names.c: This here is used to maintain a list of all the people currently
  * on your channel.  Seems to work 
@@ -819,9 +819,6 @@ static void	decifer_mode (const char *modes, Channel *chan)
 	if (!(mode_str = next_arg(mode_str, &rest)))
 		return;
 
-	/* Update the base mode string... */
-	update_mode_str(chan->base_modes, 54, mode_str);
-
 	/* Now walk through and look for special stuff */
 	for (; *mode_str; mode_str++)
 	{
@@ -864,18 +861,30 @@ static void	decifer_mode (const char *modes, Channel *chan)
 			}
 
 			if (add)
+			{
 				malloc_strcpy(&chan->key, arg);
+				add_mode_to_str(chan->base_modes, 54, *mode_str);
+			}
 			else
+			{
 				new_free(&chan->key);
+				remove_mode_from_str(chan->base_modes, 54, *mode_str);
+			}
 
 			break;	
 		}
+
 		case 'l':
 		{
 			if (!add)
 				arg = zero;
 
 			chan->limit = my_atol(arg);
+			if (chan->limit)
+				add_mode_to_str(chan->base_modes, 54, *mode_str);
+			else
+				remove_mode_from_str(chan->base_modes, 54, *mode_str);
+
 			continue;
 		}
 
@@ -929,16 +938,17 @@ static void	decifer_mode (const char *modes, Channel *chan)
 				nick->half_assed = add;
 			continue;
 		}
+		default:
+		{
+		    if (add)
+			add_mode_to_str(chan->base_modes, 54, *mode_str);
+		    else
+			remove_mode_from_str(chan->base_modes, 54, *mode_str);
+		}
 	    }
 	}
 	if (rest && *rest)
 		yell("WARNING:  Mode parser or server is BROKE.  Remaining args: %s", rest);
-
-	/* XXX Not sure if i need to do this any more */
-	if (!chan->limit)
-		remove_mode_from_str(chan->base_modes, 54, 'l');
-	else
-		add_mode_to_str(chan->base_modes, 54, 'l');
 
 	strlcpy(local_buffer, chan->base_modes, sizeof local_buffer);
 	if (chan->key)
@@ -1462,7 +1472,6 @@ void 	set_channel_window (const char *channel, int server, int winref, int as_cu
 void   move_channel_to_window (const char *chan, int server, int old_w, int new_w)
 {
 	Channel *tmp = NULL;
-	const char *x;
 
 	if (chan == NULL || strcmp(chan, zero) == 0)
 		return;

@@ -1,4 +1,4 @@
-/* $EPIC: window.c,v 1.98 2004/01/08 02:44:35 jnelson Exp $ */
+/* $EPIC: window.c,v 1.99 2004/01/14 03:04:31 jnelson Exp $ */
 /*
  * window.c: Handles the organzation of the logical viewports (``windows'')
  * for irc.  This includes keeping track of what windows are open, where they
@@ -1999,6 +1999,9 @@ int	get_window_oldserver (unsigned refnum)
 /*
  * Changes any windows that are currently using "old_server" to instead
  * use "new_server".  This is only ever called by connect_to_new_server.
+ *
+ * Somehow, someone has to be responsible for resetting the server's 
+ * status to RECONNECT if it is at CLOSED.  For now, that's not here.
  */
 void	change_window_server (int old_server, int new_server)
 {
@@ -2075,6 +2078,7 @@ void 	window_check_servers (void)
 		 * "CLOSED" state where it will stay forever until someone
 		 * resets it back to "RECONNECT" with /server or /reconnect.
 		 */
+		to_window = tmp;		/* Force output to this win */
 		if (status == SERVER_RECONNECT)
 		{
 		    yell("window_check_servers() is bringing up server %d", i);
@@ -2087,6 +2091,7 @@ void 	window_check_servers (void)
 		    yell("window_check_servers() is restarting server %d", i);
 		    retval = connect_to_server(i, 0);
 		}
+		to_window = NULL;
 
 		cnt++;
 	    }
