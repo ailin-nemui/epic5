@@ -95,7 +95,9 @@ char *	next_expr (char **args, char type)
  *		if (expr) {......}
  *		if (expr) {......} {......}
  *		if (expr) {......} else {......}
+ *		if (expr) {......} elif (expr2) {......}
  *		if (expr) {......} elsif (expr2) {......}
+ *		if (expr) {......} else if (expr2) {......}
  * etc.
  */
 
@@ -142,7 +144,17 @@ BUILT_IN_COMMAND(ifcmd)
 		{
 			if (args)
 			{
-				if (!my_strnicmp(args, "elsif ", 6))
+				if (!my_strnicmp(args, "elif ", 5))
+				{
+					args += 5;
+					continue;
+				}
+				else if (!my_strnicmp(args, "else if ", 8))
+				{
+					args += 8;
+					continue;
+				}
+				else if (!my_strnicmp(args, "elsif ", 6))
 				{
 					args += 6;
 					continue;
