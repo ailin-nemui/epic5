@@ -344,4 +344,4 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * When changing a user-created /set, start calling the user's scriptback
 * Allow the user's scriptback to call /set to override the user's value.
 * Tell the user that they created a new /set.
-
+* Support +I from ratbox, for adm.

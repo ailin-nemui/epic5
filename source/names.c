@@ -1,4 +1,4 @@
-/* $EPIC: names.c,v 1.62 2004/07/08 08:27:59 crazyed Exp $ */
+/* $EPIC: names.c,v 1.63 2004/07/29 14:47:06 jnelson Exp $ */
 /*
  * names.c: This here is used to maintain a list of all the people currently
  * on your channel.  Seems to work 
@@ -912,6 +912,7 @@ static void	decifer_mode (const char *modes, Channel *chan)
 
 		case 'b':
 		case 'e':
+		case 'I':
 			continue;	/* Just skip 'em. */
 
 		default:
