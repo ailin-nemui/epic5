@@ -29,3 +29,6 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * You can use /REDIRECT 0 WHOIS <nick> for example to suppress "extra" output
 * Resizable wserv support, merged from epic5.
 * New highlight renderer, from epic5.  Touches a lot of stuff.  May break?
+* Honor attribute markup in /set continued_line
+* Save attributes from the end of one line to after the continued_Line.
+* What this means is that attributes in /set continued_line don't "bleed"

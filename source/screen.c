@@ -1759,6 +1759,7 @@ const 	u_char	*ptr;
 				else if (!*cont && *cont_ptr)
 					cont = cont_ptr;
 
+				cont = normalize_string(cont, 0);
 
 				/*
 				 * XXXX "line wrap bug" fix.  If we are here,
@@ -1827,6 +1828,7 @@ const 	u_char	*ptr;
 			buffer[pos] = 0;
 			pos_copy = LOCAL_COPY(buffer + word_break);
 			strlcpy(buffer, cont, BIG_BUFFER_SIZE / 2);
+			display_attributes(buffer + strlen(buffer), &a);
 			strlcat(buffer, pos_copy, BIG_BUFFER_SIZE / 2);
 
 			pos = strlen(buffer);
