@@ -1,4 +1,4 @@
-/* $EPIC: status.c,v 1.16 2003/01/11 04:26:52 jnelson Exp $ */
+/* $EPIC: status.c,v 1.17 2003/01/13 14:33:55 jnelson Exp $ */
 /*
  * status.c: handles the status line updating, etc for IRCII 
  *
@@ -88,6 +88,7 @@ STATUS_FUNCTION(status_hold_lines);
 STATUS_FUNCTION(status_window);
 STATUS_FUNCTION(status_mail);
 STATUS_FUNCTION(status_refnum);
+STATUS_FUNCTION(status_refnum_real);
 STATUS_FUNCTION(status_null_function);
 STATUS_FUNCTION(status_notify_windows);
 STATUS_FUNCTION(status_voice);
@@ -190,6 +191,7 @@ struct status_formats status_expandos[] = {
 { 1, '9', status_user,		NULL, 			-1 },
 { 1, 'F', status_notify_windows,&notify_format,		STATUS_NOTIFY_VAR },
 { 1, 'K', status_scroll_info,	NULL,			-1 },
+{ 1, 'R', status_refnum_real,   NULL, 			-1 },
 { 1, 'S', status_server,        &server_format,     	STATUS_SERVER_VAR },
 { 1, 'T', status_test,		NULL,			-1 },
 { 2, '0', status_user,	 	NULL, 			-1 },
@@ -1333,6 +1335,14 @@ STATUS_FUNCTION(status_refnum)
 
 	strlcpy(my_buffer, window->name ? window->name 
 					: ltoa(window->refnum), 80);
+	return my_buffer;
+}
+
+STATUS_FUNCTION(status_refnum_real)
+{
+	static char my_buffer[81];
+
+	strlcpy(my_buffer, ltoa(window->refnum), 80);
 	return my_buffer;
 }
 
