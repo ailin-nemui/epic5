@@ -1032,7 +1032,7 @@ STATUS_FUNCTION(status_ssl)
 	if (window->server != -1 && get_server_isssl(window->server) &&
 		(text = get_string_var(STATUS_SSL_ON_VAR)))
 			return text;
-	else if (text = get_string_var(STATUS_SSL_ON_VAR))
+	else if (text = get_string_var(STATUS_SSL_OFF_VAR))
 			return text;
 #endif
 	return empty_string;
