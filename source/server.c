@@ -1,4 +1,4 @@
-/* $EPIC: server.c,v 1.137 2004/08/11 23:58:39 jnelson Exp $ */
+/* $EPIC: server.c,v 1.138 2004/08/17 16:09:46 crazyed Exp $ */
 /*
  * server.c:  Things dealing with that wacky program we call ircd.
  *
@@ -138,7 +138,9 @@ void 	add_to_server_list (const char *server, int port, const char *password, co
 		s->ison_max = 1;
 		s->ison_queue = NULL;
 		s->ison_wait = NULL;
+		s->userhost_max = 1;
 		s->userhost_queue = NULL;
+		s->userhost_wait = NULL;
 		memset(&s->uh_addr, 0, sizeof(s->uh_addr));
 		memset(&s->local_sockname, 0, sizeof(s->local_sockname));
 		memset(&s->remote_sockname, 0, sizeof(s->remote_sockname));
@@ -1901,6 +1903,7 @@ void  server_is_registered (int refnum, const char *itsname, const char *ourname
 
 	reinstate_user_modes();
 	userhostbase(from_server, NULL, got_my_userhost, 1);
+	isonbase(from_server, NULL, NULL);
 
 	if (never_connected)
 	{
@@ -2811,6 +2814,9 @@ char 	*serverctl 	(char *input)
 		} else if (!my_strnicmp(listc, "MAXISON", len)) {
 			num = get_server_ison_max(refnum);
 			RETURN_INT(num);
+		} else if (!my_strnicmp(listc, "MAXUSERHOST", len)) {
+			num = get_server_userhost_max(refnum);
+			RETURN_INT(num);
 		} else if (!my_strnicmp(listc, "CONNECTED", len)) {
 			num = is_server_registered(refnum);
 			RETURN_INT(num);
@@ -2888,6 +2894,11 @@ char 	*serverctl 	(char *input)
 			int	size;
 			GET_INT_ARG(size, input);
 			set_server_ison_max(refnum, size);
+			RETURN_INT(1);
+		} else if (!my_strnicmp(listc, "MAXUSERHOST", len)) {
+			int	size;
+			GET_INT_ARG(size, input);
+			set_server_userhost_max(refnum, size);
 			RETURN_INT(1);
 		} else if (!my_strnicmp(listc, "CONNECTED", len)) {
 			RETURN_EMPTY;		/* Read only. */

@@ -1,4 +1,4 @@
-/* $EPIC: dcc.c,v 1.100 2004/06/19 11:33:59 crazyed Exp $ */
+/* $EPIC: dcc.c,v 1.101 2004/08/17 16:09:46 crazyed Exp $ */
 /*
  * dcc.c: Things dealing client to client connections. 
  *
@@ -2698,6 +2698,7 @@ static	void	process_dcc_chat_data (DCC_list *Client)
 	char	tmp[IO_BUFFER_SIZE + 1];
 	ssize_t	bytesread;
 	int	l;
+const	char	*OFUH = FromUserHost;
 
 	/* Get a new line via dgets. */
 	bytesread = dgets(Client->socket, tmp, IO_BUFFER_SIZE, 1, NULL);
@@ -2738,6 +2739,10 @@ static	void	process_dcc_chat_data (DCC_list *Client)
 	/* Otherwise throw the message to the user. */
 	l = message_from(Client->user, LEVEL_DCC);
 	lock_dcc(Client);
+	if (Client->userhost && *Client->userhost)
+		FromUserHost = Client->userhost;
+	else
+		FromUserHost = unknown_userhost;
 	if (do_hook(DCC_CHAT_LIST, "%s %s", Client->user, tmp))
 	{
 		if (get_server_away(NOSERV))
@@ -2748,6 +2753,7 @@ static	void	process_dcc_chat_data (DCC_list *Client)
 		}
 		put_it("=%s= %s", Client->user, tmp);
 	}
+	FromUserHost = OFUH;
 	unlock_dcc(Client);
 	pop_message_from(l);
 }
@@ -3745,6 +3751,15 @@ char *	dccctl (char *input)
 				RETURN_EMPTY;
 			malloc_strcat_word_c(&retval, space, host, &clue);
 			malloc_strcat_word_c(&retval, space, port, &clue);
+		} else if (!my_strnicmp(listc, "READABLE", len)) {
+			int retint;
+
+			FD_ZERO(&fd);
+			FD_SET(client->socket, &fd);
+			to.tv_sec = 0;
+			to.tv_usec = 0;
+			retint = select(client->socket + 1, &fd, NULL, NULL, &to) > 0;
+			RETURN_INT(retint);
 		} else if (!my_strnicmp(listc, "WRITABLE", len)) {
 			int retint;
 
@@ -3853,6 +3868,24 @@ char *	dccctl (char *input)
 	} else if (!my_strnicmp(listc, "UNHELD", len)) {
 		for (client = ClientList; client; client = client->next)
 			if (!client->held)
+				malloc_strcat_word_c(&retval, space, ltoa(client->refnum), &clue);
+	} else if (!my_strnicmp(listc, "READABLES", len)) {
+		int	max = 0;
+
+		FD_ZERO(&fd);
+		to.tv_sec = 0;
+		to.tv_usec = 0;
+		for (client = ClientList; client; client = client->next)
+		{
+			FD_SET(client->socket, &fd);
+			if (client->socket > max)
+				max = client->socket;
+		}
+
+		select(max + 1, &fd, NULL, NULL, &to);
+
+		for (client = ClientList; client; client = client->next)
+			if (FD_ISSET(client->socket, &fd))
 				malloc_strcat_word_c(&retval, space, ltoa(client->refnum), &clue);
 	} else if (!my_strnicmp(listc, "WRITABLES", len)) {
 		int	max = 0;

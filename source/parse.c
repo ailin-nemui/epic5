@@ -1,4 +1,4 @@
-/* $EPIC: parse.c,v 1.62 2004/03/19 06:05:13 jnelson Exp $ */
+/* $EPIC: parse.c,v 1.63 2004/08/17 16:09:46 crazyed Exp $ */
 /*
  * parse.c: handles messages from the server.   Believe it or not.  I
  * certainly wouldn't if I were you. 
@@ -905,7 +905,7 @@ static void	p_mode (const char *from, const char *comm, const char **ArgList)
 			break;
 	}
 
-	if (check_flooding(from, FromUserHost, LEVEL_MODE, changes))
+	if (new_check_flooding(from, FromUserHost, target, changes, LEVEL_MODE))
 		goto do_update_mode;
 
 	l = message_from(m_target, LEVEL_MODE);
@@ -1103,7 +1103,7 @@ static void	p_kick (const char *from, const char *comm, const char **ArgList)
 	}
 
 
-	if (check_flooding(from, FromUserHost, LEVEL_KICK, victim))
+	if (new_check_flooding(from, FromUserHost, channel, victim, LEVEL_KICK))
 		goto do_remove_nick;
 
 	l = message_from(channel, LEVEL_KICK);
@@ -1139,7 +1139,9 @@ static void	p_part (const char *from, const char *comm, const char **ArgList)
 	if (!(reason = ArgList[1])) { }
 
 	if ((check_ignore_channel(from, FromUserHost, 
-					channel, LEVEL_PART) != IGNORED))
+				channel, LEVEL_PART) != IGNORED)
+		&& !new_check_flooding(from, FromUserHost, channel,
+			reason ? reason : star, LEVEL_PART))
 	{
 		l = message_from(channel, LEVEL_PART);
 		if (reason)		/* Dalnet part messages */
@@ -1319,6 +1321,8 @@ static void 	p_notice (const char *from, const char *comm, const char **ArgList)
 #endif
 								message);
 	if (!*message) {
+		new_check_flooding(from, FromUserHost, flood_channel, 
+					message, LEVEL_NOTICE);
 		set_server_doing_notice(from_server, 0);
 		return;
 	}

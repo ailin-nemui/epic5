@@ -1,4 +1,4 @@
-/* $EPIC: commands.c,v 1.102 2004/08/11 23:58:39 jnelson Exp $ */
+/* $EPIC: commands.c,v 1.103 2004/08/17 16:09:46 crazyed Exp $ */
 /*
  * commands.c -- Stuff needed to execute commands in ircII.
  *		 Includes the bulk of the built in commands for ircII.
@@ -114,6 +114,7 @@ static  void    abortcmd 	(const char *, char *, const char *);
 static	void	away 		(const char *, char *, const char *);
 static	void	beepcmd 	(const char *, char *, const char *);
 static	void	blesscmd	(const char *, char *, const char *);
+static	void	botmodecmd	(const char *, char *, const char *);
 static	void	breakcmd	(const char *, char *, const char *);
 static	void	commentcmd 	(const char *, char *, const char *);
 static	void	continuecmd	(const char *, char *, const char *);
@@ -208,6 +209,7 @@ static	IrcCommand irc_command[] =
 	{ "BEEP",	beepcmd		},
 	{ "BIND",	bindcmd		}, /* keys.c */
 	{ "BLESS",	blesscmd	},
+	{ "BOTMODE",	botmodecmd	},
 	{ "BREAK",	breakcmd	},
 	{ "CALL",	e_call		},
 	{ "CD",		cd		},
@@ -3694,3 +3696,17 @@ BUILT_IN_COMMAND(allocdumpcmd)
 	malloc_dump(args);
 }
 
+BUILT_IN_COMMAND(botmodecmd)
+{
+	if (dumb_mode) {
+		use_input = 0;
+		background = 1;
+		my_signal(SIGHUP, SIG_IGN);
+		freopen("/dev/null", "w", stdout);
+		if (fork())
+			_exit(0);
+	} else {
+		say("Bot mode can only be entered from Dumb mode.");
+	}
+
+}

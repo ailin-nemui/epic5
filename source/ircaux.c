@@ -1,4 +1,4 @@
-/* $EPIC: ircaux.c,v 1.116 2004/08/11 23:58:39 jnelson Exp $ */
+/* $EPIC: ircaux.c,v 1.117 2004/08/17 16:09:46 crazyed Exp $ */
 /*
  * ircaux.c: some extra routines... not specific to irc... that I needed 
  *
@@ -3427,6 +3427,18 @@ char	*dequote_it (char *str, size_t *len)
 	*ptr = '\0';
 	*len = new_size;
 	return (buffer);
+}
+
+/*
+ * As above, but act as if the malloc never occured.  dequote_it should
+ * probably be written in terms of dequote_buffer for performance purposes.
+ */
+char	*dequote_buffer (char *str, size_t *len)
+{
+	char	*malloc = dequote_it(str, len);
+	char	*ret = memmove(str, malloc, 1 + *len);
+	new_free(&malloc);
+	return ret;
 }
 
 unsigned char isspace_table [256] = 

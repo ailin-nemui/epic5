@@ -73,6 +73,7 @@ const	AI	*next_addr;		/* The next one to try upon failure */
 	IsonEntry *	ison_wait;	/* Ison wait queue */
 	int	userhost_max;		/* Max pending userhosts */
 	UserhostEntry *	userhost_queue;	/* Userhost queue */
+	UserhostEntry *	userhost_wait;	/* Userhost wait queue */
 
 	SS	local_sockname; 	/* sockname of this connection */
 	SS	remote_sockname; 	/* sockname of this connection */

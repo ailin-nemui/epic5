@@ -1,4 +1,4 @@
-/* $EPIC: alias.c,v 1.56 2004/08/15 21:35:44 jnelson Exp $ */
+/* $EPIC: alias.c,v 1.57 2004/08/17 16:09:46 crazyed Exp $ */
 /*
  * alias.c -- Handles the whole kit and caboodle for aliases.
  *
@@ -1293,8 +1293,7 @@ static Symbol *	lookup_symbol (const char *name)
 	int 	loc;
 	int 	cnt = 0;
 
-	if (!strncmp(name, "::", 2))
-		name += 2;		/* Accept ::global */
+	name += strspn(name, ":");		/* Accept ::global */
 
 	item = (Symbol *)find_array_item((array *)&globals, name, &cnt, &loc);
 	if (cnt >= 0)

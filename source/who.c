@@ -1,4 +1,4 @@
-/* $EPIC: who.c,v 1.36 2004/08/08 03:52:50 jnelson Exp $ */
+/* $EPIC: who.c,v 1.37 2004/08/17 16:09:46 crazyed Exp $ */
 /*
  * who.c -- The WHO queue.  The ISON queue.  The USERHOST queue.
  *
@@ -657,7 +657,9 @@ void	xwhoreply (int refnum, const char *from, const char *comm, const char **Arg
 	/* Who replies always go to the current window */
 	l = message_from(new_w->who_target, LEVEL_CRAP);
 	PasteArgs(ArgList, 0);
-	if (do_hook(current_numeric, "%s", ArgList[0]))
+	if (new_w->who_stuff)
+		runcmds(new_w->who_stuff, ArgList[0]);
+	else if (do_hook(current_numeric, "%s", ArgList[0]))
 		put_it("%s %s", banner(), ArgList[0]);
 	pop_message_from(l);
 }
@@ -667,6 +669,7 @@ void	who_end (int refnum, const char *from, const char *comm, const char **ArgLi
 {
 	WhoEntry 	*new_w = who_queue_top(refnum);
 	char 		buffer[1025];
+	char		*target = malloc_strdup(ArgList[0]);
 	int		l;
 
 	PasteArgs(ArgList, 0);
@@ -674,11 +677,13 @@ void	who_end (int refnum, const char *from, const char *comm, const char **ArgLi
 	if (who_whine)
 		who_whine = 0;
 	if (!new_w)
-		return;	
+		return;
 
 	l = message_from(new_w->who_target, LEVEL_CRAP);
 	do
 	{
+		char *foo = strstr(new_w->who_target, target);
+
 		/* Defer to another function, if neccesary.  */
 		if (new_w->end)
 			new_w->end(refnum, from, comm, ArgList);
@@ -692,11 +697,30 @@ void	who_end (int refnum, const char *from, const char *comm, const char **ArgLi
 			    if (do_hook(current_numeric, "%s", buffer))
 				put_it("%s %s", banner(), buffer);
 		}
-	} 
+
+		if (foo > new_w->who_target)
+		{
+			if (*--foo == ',')
+				*foo = '\0';
+		}
+		else if (foo == new_w->who_target
+			&& strcmp(new_w->who_target, target))
+		{
+			foo += strlen(target);
+			if (*foo++ == ',')
+				strcpy(new_w->who_target, foo);
+		}
+		else
+		{
+			*new_w->who_target = '\0';
+		}
+	}
 	while (new_w->piggyback && (new_w = new_w->next));
 	pop_message_from(l);
 
-	who_queue_pop(refnum);
+	if (!*new_w->who_target)
+		who_queue_pop(refnum);
+	new_free(&target);
 }
 
 /*
@@ -952,6 +976,7 @@ void isonbase (int refnum, char *args, void (*line) (int, char *, char *))
 		malloc_strcpy(&new_i->ison_asked, args);
 		ison_queue_send(refnum);
 	}
+	ison_queue_send(refnum);
 }
 
 /* 
@@ -1017,16 +1042,51 @@ static void userhost_queue_add (int refnum, UserhostEntry *item)
 	if (!(s = get_server(refnum)))
 		return;
 
-	bottom = userhost_queue_top(refnum);
+	bottom = s->userhost_wait;
 	while (bottom && bottom->next)
 		bottom = bottom->next;
 
 	if (!bottom)
-		s->userhost_queue = item;
+		s->userhost_wait = item;
 	else
 		bottom->next = item;
 
 	return;
+}
+
+static void userhost_queue_send (int refnum)
+{
+	int count = 1;
+	Server *s;
+	UserhostEntry *save, *bottom;
+
+	if (!(s = get_server(refnum)))
+		return;
+
+	if (!(save = s->userhost_wait))
+		return;
+
+	bottom = s->userhost_queue;
+	while (bottom)
+	{
+		if (s->userhost_max && ++count > s->userhost_max)
+			return;
+		else if (bottom->next)
+			bottom = bottom->next;
+		else
+			break;
+	}
+
+	s->userhost_wait = save->next;
+
+	if (bottom)
+		bottom->next = save;
+	else
+		s->userhost_queue = save;
+
+	save->next = NULL;
+
+	send_to_aserver(refnum, save->format, save->userhost_asked);
 }
 
 static void userhost_queue_pop (int refnum)
@@ -1048,6 +1108,7 @@ static void userhost_queue_pop (int refnum)
 static UserhostEntry *get_new_userhost_entry (int refnum)
 {
 	UserhostEntry *new_u = (UserhostEntry *)new_malloc(sizeof(UserhostEntry));
+	new_u->format = NULL;
 	new_u->userhost_asked = NULL;
 	new_u->text = NULL;
 	new_u->next = NULL;
@@ -1085,6 +1146,7 @@ void userhostbase (int refnum, char *args, void (*line) (int, UserhostItem *, co
 	char 	*ptr, 
 		*next_ptr,
 		*body = NULL;
+	int	count = 5;
 
 	/* Maybe should output a warning? */
 	if (!is_server_registered(refnum))
@@ -1103,6 +1165,12 @@ void userhostbase (int refnum, char *args, void (*line) (int, UserhostItem *, co
 				strlcat(buffer, " ", sizeof buffer);
 			strlcat(buffer, nick, sizeof buffer);
 		}
+
+		else if (!my_strnicmp(nick, "-direct", 2))
+			server_query_reqd++;
+
+		else if (!my_strnicmp(nick, "-count", 3))
+			count = atol(safe_new_next_arg(args, &args));
 
 		else if (!my_strnicmp(nick, "-cmd", 2))
 		{
@@ -1126,9 +1194,6 @@ void userhostbase (int refnum, char *args, void (*line) (int, UserhostItem *, co
 			userhost_cmd = 1;
 			break;
 		}
-
-		else if (!my_strnicmp(nick, "-direct", 2))
-			server_query_reqd++;
 	}
 
 	if (!userhost_cmd && !total)
@@ -1146,18 +1211,20 @@ void userhostbase (int refnum, char *args, void (*line) (int, UserhostItem *, co
 		{
 			UserhostEntry *new_u = get_new_userhost_entry(refnum);
 
-			move_to_abs_word(ptr, (const char **)&next_ptr, 5);
+			move_to_abs_word(ptr, (const char **)&next_ptr, count);
 
 			if (next_ptr && *next_ptr && next_ptr > ptr)
 				next_ptr[-1] = 0;
 
 			new_u->userhost_asked = malloc_strdup(ptr);
 			if (do_userhost == 1)
-				send_to_aserver(refnum, "USERHOST %s", new_u->userhost_asked);
+				new_u->format = "USERHOST %s";
 			else if (do_userhost == 0)
-				send_to_aserver(refnum, "USERIP %s", new_u->userhost_asked);
+				new_u->format = "USERIP %s";
 			else
-				send_to_aserver(refnum, "USRIP %s", new_u->userhost_asked);
+				new_u->format = "USRIP %s";
+
+			userhost_queue_send(refnum);
 
 			if (userhost_cmd)
 				new_u->text = malloc_strdup(body);
@@ -1346,6 +1413,7 @@ void	userhost_returned (int refnum, const char *from, const char *comm, const ch
 	}
 
 	userhost_queue_pop(refnum);
+	userhost_queue_send(refnum);
 }
 
 void	userhost_cmd_returned (int refnum, UserhostItem *stuff, const char *nick, const char *text)

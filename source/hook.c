@@ -1,4 +1,4 @@
-/* $EPIC: hook.c,v 1.41 2004/08/11 23:58:39 jnelson Exp $ */
+/* $EPIC: hook.c,v 1.42 2004/08/17 16:09:46 crazyed Exp $ */
 /*
  * hook.c: Does those naughty hook functions. 
  *
@@ -141,7 +141,7 @@ Hookables hook_function_templates[] =
 	{ "EXEC_EXIT",		(Hook *) 0,	3,	0,	0 },
 	{ "EXEC_PROMPT",	(Hook *) 0,	2,	0,	0 },
         { "EXIT",               (Hook *) 0,     1,      0,      0 },
-	{ "FLOOD",		(Hook *) 0,	3,	0,	0 },
+	{ "FLOOD",		(Hook *) 0,	5,	0,	0 },
 	{ "GENERAL_NOTICE",	(Hook *) 0,	3,	0,	0 },
 	{ "GENERAL_PRIVMSG",	(Hook *) 0,	3,	0,	0 },
 	{ "HELP",		(Hook *) 0,	2,	0,	0 },

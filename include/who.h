@@ -75,6 +75,7 @@ typedef struct UserhostItemT
 
 typedef struct UserhostEntryT
 {
+	char *		format;
 	char *		userhost_asked;
 	char *		text;
 	struct UserhostEntryT *	next;

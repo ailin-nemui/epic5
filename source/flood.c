@@ -1,4 +1,4 @@
-/* $EPIC: flood.c,v 1.22 2004/06/29 07:50:54 crazyed Exp $ */
+/* $EPIC: flood.c,v 1.23 2004/08/17 16:09:46 crazyed Exp $ */
 /*
  * flood.c: handle channel flooding.
  *
@@ -82,8 +82,14 @@ static const char *	normalize_nuh (const char *nuh)
 	} else if (!nuh) {
 	} else if (maskuser == 1 && isalnum(*nuh)) {
 	} else {
+		char prefix = *nuh;
 		char *nnuh = strrchr(nuh, '@');
-		nuh = nnuh ? nnuh : nuh;
+		if (nnuh - nuh >= 2) {
+			*--nnuh = *star;
+			if (maskuser == 1)
+				*--nnuh = prefix;
+			nuh = nnuh;
+		}
 	}
 
 	return nuh;
@@ -107,7 +113,7 @@ static	int	 pos = 0;
 	double	 diff;
 	Flooding *tmp;
 	int	l;
-
+const	char	*free = nuh = malloc_strdup(nuh);
 
 	/*
 	 * Figure out how many people we want to track
@@ -149,13 +155,16 @@ static	int	 pos = 0;
 		if (flood)
 			new_free((char **)&flood);
 		users = 0;
+		new_free(&free);
 		return 0;
 	}
 
 	if (nuh && *nuh)
 		nuh = normalize_nuh(nuh);
-	else
+	else {
+		new_free(&free);
 		return 0;
+	}
 
 	/*
 	 * What server are we using?
@@ -236,6 +245,7 @@ static	int	 pos = 0;
 		tmp->start = right_now;
 
 		pos = (0 < old_pos ? old_pos : users) - 1;
+		new_free(&free);
 		return 0;
 	}
 	else
@@ -251,9 +261,9 @@ static	int	 pos = 0;
 		diff = time_diff(tmp->start, right_now);
 
 		if ((diff == 0.0 || tmp->cnt / diff >= rate) &&
-				(retval = do_hook(FLOOD_LIST, "%s %s %s %s",
+				(retval = do_hook(FLOOD_LIST, "%s %s %s %d %s",
 				nick, level_to_str(tmp->level),
-				chan ? chan : "*", line)))
+				chan ? chan : "*", tmp->cnt, line)))
 		{
 			tmp->floods++;
 			l = message_from(chan, LEVEL_CRAP);
@@ -272,6 +282,8 @@ static	int	 pos = 0;
 		}
 	}
 
+	new_free(&free);
+
 	if (get_int_var(FLOOD_IGNORE_VAR))
 		return retval;
 	else
@@ -289,19 +301,62 @@ int	check_flooding (const char *nick, const char *nuh, int mask, const char *lin
  */
 char *	function_floodinfo (char *args)
 {
-	const char	*arg;
+	char	*arg;
 	char *ret = NULL;
 	size_t	clue = 0;
 	Timeval right_now;
 	int	i;
+	double	idiff;
 
 	get_time(&right_now);
 
 	while ((arg = new_next_arg(args, &args))) {
-		if (!strspn(arg, "*?"))
-			arg = normalize_nuh(arg);
+	const	char	*nuh = star;
+	const	char	*chan = star;
+	const	char	*level = star;
+		int	server = -1;
+		int	count = 0;
+		double	diff = 0;
+		double	rate = 0;
+		int	cless = 0, dless = 0, rless = 0;
+		size_t	len = strlen(arg);
+
+		dequote_buffer(arg, &len);
+		if (arg && *arg)
+			GET_STR_ARG(nuh, arg);
+		if (arg && *arg)
+			GET_STR_ARG(chan, arg);
+		if (arg && *arg)
+			GET_STR_ARG(level, arg);
+		if (arg && *arg)
+			GET_INT_ARG(server, arg);
+		if (arg && *arg)
+			GET_INT_ARG(count, arg);
+		if (arg && *arg)
+			GET_FLOAT_ARG(diff, arg);
+		if (arg && *arg)
+			GET_FLOAT_ARG(rate, arg);
+		if (count < 0)
+			count= -count, cless++;
+		if (diff < 0)
+			diff = -diff, dless++;
+		if (rate < 0)
+			rate = -rate, rless++;
+
 		for (i = 0; i < users; i++) {
-			if (flood[i].nuh && wild_match(arg, flood[i].nuh)) {
+			if (server >= 0 && flood[i].server != server) {
+			} else if (!flood[i].nuh) {
+			} else if (!wild_match(nuh, flood[i].nuh) && !wild_match(flood[i].nuh, nuh)) {
+			} else if (!wild_match(chan, flood[i].channel ? flood[i].channel : star)) {
+			} else if (!wild_match(level, level_to_str(flood[i].level))) {
+			} else if (!cless && flood[i].cnt < count) {
+			} else if ( cless && flood[i].cnt > count) {
+			} else if (!(idiff = time_diff(flood[i].start, right_now))) {
+			} else if (!dless && idiff < diff) {
+			} else if ( dless && idiff > diff) {
+			} else if (!rless && flood[i].cnt / idiff < rate) {
+			} else if ( rless && flood[i].cnt / idiff > rate) {
+			} else {
 				malloc_strcat_wordlist_c(&ret, space, "\"", &clue);
 				malloc_strcat_wordlist_c(&ret, empty_string, flood[i].nuh, &clue);
 				malloc_strcat_wordlist_c(&ret, space, flood[i].channel ? flood[i].channel : star, &clue);

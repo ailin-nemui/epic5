@@ -1,5 +1,106 @@
 EPIC5-0.1
 
+*** News 08/18/2004 -- Overloadable function aliases.
+	When an alias name "collides" with a built in function, the built in
+	function has traditionally been called.  This update changes this
+	behaviour to calling the alias first.
+
+	NOTE:  This will cause recursive loops in scripts that rely on this
+	behaviour.  To fix this the aliases in question need to be renamed or
+	rewritten to use the following ::function() feature.
+
+	It is possible to call the built in with the :: notation used for
+	global variables, as in $::function().  $:function() will explicitly
+	call the alias.
+
+	NOTE:  Do not use the $::function() and $:function() features just yet,
+	as they will crash epic if the alias or the built in doesn't exist.  It
+	is safe to use if you are sure they do though.
+
+*** News 08/02/2004 -- New commands for $dccctl().
+	$dccctl(readables) will return the refnums of DCCs that have data
+	waiting to be read and $dccctl(get [refnum] readable) will return a 1
+	or 0 depending on whether the given refnum is readable or not.
+
+	Since epic will automatically read data from all unheld DCCs, this
+	feature is expected to be useful only for DCCs in the "held" state.
+
+*** News 08/02/2004 -- General improvements to the flood detection system.
+	Flood detection now works for channel PARTS and for ctcp replies, which
+	is bound to the NOTICES flood.
+
+	Also, the first argument from each flood returned from $floodinfo()
+	when flood_maskuser is set to 1 or 2 is now a valid user@host mask for
+	the flooder in question, suitable for putting in a ban or kline.
+
+*** News 08/02/2004 -- New argument for /on flood.
+	The fourth argument ($3) in the flood hook is now the number of repeats
+	of the flood in question.  This makes it easy to deal with particular
+	kinds of floods in different ways, as they occur.  For example:
+
+	/on "% parts % 5" mode $2 +b *!*@$after(@ $userhost())
+	/on "% ctcps % 5" mode $2 +b *!*@$after(@ $userhost())
+	/on "% % % 50" mode $2 +b *!*@$after(@ $userhost())
+
+*** News 08/02/2004 -- Improvements to $floodinfo().
+	$floodinfo() will now accept as input the same list of lists it
+	outputs.  The lists themselves don't have to be complete.  Any
+	unspecified arguments will match all records.  For example:
+
+	$floodinfo("% #chan joins")  # Return all join records for #chan.
+	$floodinfo(*)                # This still works.
+	$floodinfo($floodinfo(*))    # Same output as above.
+
+	Feeding $floodinfo() output back into its input is useful for tuning
+	the flood /sets by seeing which non-flooders are being caught long term
+	in the system.
+
+	The fields are these:
+
+	u@h mask that matches the flooder.  Defaults to "*".
+	channel mask.  Defaults to "*".
+	flood type mask.  Defaults to "*".
+	Server number.  Defaults to -1, which matches all.
+	Numeric minimum number of flood hits.
+	Numeric minimum duration of flood.
+	Numeric minimum flood rate.
+
+	The last three numeric arguments may be negative, in which case, they
+	specify the _maximum_ values.  These fields make it possible to deal
+	with different kinds of floods in different ways _after_ they occur.
+	For example, a join flood may be falsely triggered by a net join, but
+	it is reasonable to expect that if you have join and part flood records
+	for the same u@h, then it is participating in a join/part flood.
+
+	/on "% parts % 5" {
+		if (floodinfo("$userhost() $2 joins $servernum() 5")) {
+			mode $2 +b *!*@$after(@ $userhost())
+		}
+	}
+
+	Or alternately:
+
+	/on "% joins % 5" {
+		if (floodinfo("$userhost() $2 parts $servernum() 5")) {
+			mode $2 +b *!*@$after(@ $userhost())
+		}
+	}
+
+*** News 08/02/2004 -- Changes to /userhost and notify.
+	The changes to the ison back end mentioned in the previous entry now
+	also apply to the userhost back end, along with the caveats relating to
+	/wait and flush.  This applies to the /userhost, /userip and /usrip
+	commands.
+
+	A new option has been added to these commands.  /userhost -count
+	[number] will change the number of items that epic will put into each
+	USERHOST request.  This isn't a particularly significant change since
+	this number is already tuned to a number that works on all servers.
+
+	To change the number of USERHOST requests sent at one time, use
+	$serverctl(set [servernum] maxuserhost [number]).  Set it to 0 to turn
+	the new behaviour off.
+
 *** News 07/08/2004 -- Changes to /ison and notify.
 	The back end of the notify system and the /ison command has been
 	changed to permit only a certain number of ISONs to be sent to a server
