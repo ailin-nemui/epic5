@@ -198,8 +198,8 @@ Window	*new_window (Screen *screen)
 	new_w->query_nick = NULL;
 	new_w->nicks = NULL;
 
-	new_w->lastlog_head = NULL;
-	new_w->lastlog_tail = NULL;
+	new_w->lastlog_oldest = NULL;
+	new_w->lastlog_newest = NULL;
 	new_w->lastlog_level = real_lastlog_level();
 	new_w->lastlog_size = 0;
 	new_w->lastlog_max = get_int_var(LASTLOG_VAR);

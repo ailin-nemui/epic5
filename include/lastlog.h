@@ -13,8 +13,8 @@ typedef struct	lastlog_stru
 {
 	int	level;
 	char	*msg;
-	struct	lastlog_stru	*next;
-	struct	lastlog_stru	*prev;
+	struct	lastlog_stru	*older;
+	struct	lastlog_stru	*newer;
 }	Lastlog;
 
 #define LOG_NONE	0x000000

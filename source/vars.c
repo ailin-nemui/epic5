@@ -9,7 +9,7 @@
  */
 
 #if 0
-static	char	rcsid[] = "$Id: vars.c,v 1.1 2000/12/05 00:11:57 jnelson Exp $";
+static	char	rcsid[] = "$Id: vars.c,v 1.2 2001/06/22 22:34:35 jnelson Exp $";
 #endif
 
 #include "irc.h"
@@ -165,7 +165,6 @@ static	IrcVariable irc_variable[] =
         { "MODE_STRIPPER",              BOOL_TYPE_VAR,  DEFAULT_MODE_STRIPPER, NULL, NULL, 0, 0 },
 	{ "ND_SPACE_MAX",		INT_TYPE_VAR,	DEFAULT_ND_SPACE_MAX, NULL, NULL, 0, 0 },
 	{ "NEW_SERVER_LASTLOG_LEVEL",	STR_TYPE_VAR,	0, NULL, set_new_server_lastlog_level, 0, 0 },
-	{ "NOTIFY_HANDLER",		STR_TYPE_VAR, 	0, NULL, set_notify_handler, 0, 0 },
 	{ "NOTIFY_INTERVAL",		INT_TYPE_VAR,	DEFAULT_NOTIFY_INTERVAL, NULL, NULL, 0, 0 },
 	{ "NOTIFY_LEVEL",		STR_TYPE_VAR,	0, NULL, set_notify_level, 0, 0 },
 	{ "NOTIFY_ON_TERMINATION",	BOOL_TYPE_VAR,	DEFAULT_NOTIFY_ON_TERMINATION, NULL, NULL, 0, 0 },
@@ -306,7 +305,6 @@ void 	init_variables (void)
 	set_string_var(MANGLE_OUTBOUND_VAR, NULL);
 	set_string_var(NEW_SERVER_LASTLOG_LEVEL_VAR, 
 			DEFAULT_NEW_SERVER_LASTLOG_LEVEL);
-	set_string_var(NOTIFY_HANDLER_VAR, DEFAULT_NOTIFY_HANDLER);
 	set_string_var(NOTIFY_LEVEL_VAR, DEFAULT_NOTIFY_LEVEL);
 	set_string_var(OUTPUT_REWRITE_VAR, NULL);
 	set_string_var(QUIT_MESSAGE_VAR, DEFAULT_QUIT_MESSAGE);

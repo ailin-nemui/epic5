@@ -44,6 +44,7 @@ static struct debug_opts opts[] =
 	{ "AUTOKEY",		DEBUG_AUTOKEY },
 	{ "EXTRACTW",		DEBUG_EXTRACTW },
 	{ "SLASH_HACK",		DEBUG_SLASH_HACK },
+	{ "LASTLOG",		DEBUG_LASTLOG },
 	{ "ALL",		0xFFFFFFFF },
 	{ NULL,			0 },
 };

@@ -482,26 +482,6 @@ void 	save_notify (FILE *fp)
 	}
 }
 
-/* I hate broken compilers -mrg */
-static	char	*vals[] = { "NOISY", "QUIET", "OLD", (char *) 0 };
-
-void 	set_notify_handler (char *value)
-{
-	int	len;
-	int	i;
-	char	*s;
-
-	if (!value)
-		value = empty_string;
-
-	for (i = 0, len = strlen (value); (s = vals[i]); i++)
-		if (!my_strnicmp(value, s, len))
-			break;
-
-	set_string_var(NOTIFY_HANDLER_VAR, s);
-	return;
-}
-
 void 	make_notify_list (int servnum)
 {
 	NotifyItem *tmp;

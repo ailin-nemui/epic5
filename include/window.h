@@ -141,8 +141,8 @@ typedef	struct	WindowStru
 
 
 	/* /LASTLOG stuff */
-	Lastlog	*lastlog_head;		/* pointer to top of lastlog list */
-	Lastlog	*lastlog_tail;		/* pointer to bottom of lastlog list */
+	Lastlog	*lastlog_newest;	/* pointer to top of lastlog list */
+	Lastlog	*lastlog_oldest;	/* pointer to bottom of lastlog list */
 	int	lastlog_level;		/* The LASTLOG_LEVEL, determines what
 					 * messages go to lastlog */
 	int	lastlog_size;		/* number of messages in lastlog. */

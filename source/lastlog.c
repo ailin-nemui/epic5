@@ -9,7 +9,7 @@
  */
 
 #if 0
-static	char	rcsid[] = "@(#)$Id: lastlog.c,v 1.1 2000/12/05 00:11:57 jnelson Exp $";
+static	char	rcsid[] = "@(#)$Id: lastlog.c,v 1.2 2001/06/22 22:34:35 jnelson Exp $";
 #endif
 
 #include "irc.h"
@@ -19,6 +19,9 @@ static	char	rcsid[] = "@(#)$Id: lastlog.c,v 1.1 2000/12/05 00:11:57 jnelson Exp 
 #include "vars.h"
 #include "ircaux.h"
 #include "output.h"
+#include <regex.h>
+
+static int	show_lastlog (Lastlog **l, int *skip, int *number, int, char *match, regex_t *reg, int *max);
 
 /*
  * lastlog_level: current bitmap setting of which things should be stored in
@@ -180,21 +183,21 @@ void	set_new_server_lastlog_level (char *str)
 
 void 	remove_from_lastlog (Window *window)
 {
-	Lastlog *tmp;
-	Lastlog *end_holder;
+	Lastlog *new_oldest;
+	Lastlog *being_removed;
 
-	if (window->lastlog_tail)
+	if (window->lastlog_oldest)
 	{
-		end_holder = window->lastlog_tail;
-		tmp = window->lastlog_tail->prev;
-		window->lastlog_tail = tmp;
-		if (tmp)
-			tmp->next = (Lastlog *) 0;
+		being_removed = window->lastlog_oldest;
+		new_oldest = being_removed->newer;
+		window->lastlog_oldest = new_oldest;
+		if (new_oldest)
+			new_oldest->older = NULL;
 		else
-			window->lastlog_head = window->lastlog_tail;
+			window->lastlog_newest = NULL;
 		window->lastlog_size--;
-		new_free((char **)&(end_holder->msg));
-		new_free((char **)&end_holder);
+		new_free((char **)&(being_removed->msg));
+		new_free((char **)&being_removed);
 	}
 	else
 		window->lastlog_size = 0;
@@ -202,7 +205,7 @@ void 	remove_from_lastlog (Window *window)
 
 /*
  * set_lastlog_size: sets up a lastlog buffer of size given.  If the lastlog
- * has gotten larger than it was before, all previous lastlog entry remain.
+ * has gotten larger than it was before, all newer lastlog entries remain.
  * If it get smaller, some are deleted from the end. 
  */
 void	set_lastlog_size (int size)
@@ -235,181 +238,353 @@ int 	set_lastlog_msg_level (int level)
 
 
 /*
- * lastlog: the /LASTLOG command.  Displays the lastlog to the screen. If
- * args contains a valid integer, only that many lastlog entries are shown
- * (if the value is less than lastlog_size), otherwise the entire lastlog is
- * displayed 
+ * The /LASTLOG command:
+ * Syntax:
+ *	/LASTLOG [options] [<string>] [<number1> [<number2>]]
+ * Options:
+ *	-			Do not show header and footer
+ *	-reverse		Show matches newest-to-oldest (reverse order)
+ *			        instead of oldest-to-newest (normal order)
+ * 	-literal <pattern>	<string> is search target, not option.
+ *	-regex <regex>		line must match <regex>.
+ *	-max <number>		Only show first <number> matches
+ *	-skip <number>		Skip this many leading lastlog entries
+ *	-number <number>	Only search this many lastlog entries
+ *	-<LEVEL>		Add <LEVEL> to "level mask"
+ *	--<LEVEL>		Remove <LEVEL> from "level mask"
+ *	-ALL			Add all levels to "level mask"
+ *	--ALL			Reset/clear the "level mask" <default>
+ *	<pattern>		<pattern> is search target
+ *	<number1>		Start <number1> records into the lastlog
+ *	<number2>		Continue <number2> records into the lastlog.
+ *
+ * The /LASTLOG command shows all of the lines that have appeared to your
+ * window's lastlog; the oldest one first, and the newest one last, except
+ * that the following seven restrictions apply IN THIS ORDER:
+ *	1 If the -reverse option is specified, lines will be shown in
+ *	  "reverse order", that is the newest one first, and the oldest
+ *	  one last.
+ *	2 If any of the "LEVEL" options (including ALL) are specified,
+ *	  then the line must have one of the lastlog levels specified
+ *	  by the "level mask".
+ *	3 If the -skip option is specified, the first <number> lines 
+ *	  will be skipped (will not be displayed)
+ *	4 If the -number option is specified only the first <number> 
+ *	  lines will be matched.
+ *	5 If the -literal option is specified, some portion of the line
+ *	  must be matched by the pattern <pattern>
+ *	6 If the -regex option is specified, some portion of the line
+ *	  must be matched by the regex <regex>
+ *	7 If the -max option is specified, only the first <number> matching
+ *	  lines will be shown; others will be suppressed.
+ * Furthermore:
+ *      * The "level mask" is turned off by default which means that all
+ *	  rule #2 doesn't apply.  --ALL forcibly turns off the level mask.
+ *	* "LEVEL" options are cumulative and sequential.  That means that
+ *	  if you turn off a level and then later turn it back on, it will
+ *	  be on.  If you turn off all options with --ALL and then turn 
+ *	  some back on, those after --ALL will be on.
+ *	* Up to three naked options may be specified for backwards 
+ *	  compatability with ircII.  The very first naked parameter that 
+ *	  is not a number is considered to be the argument to the -LITERAL 
+ *	  option.  The second naked parameter had better be a number and
+ *	  it is taken as the argument to the -SKIP option.  The third naked
+ *	  parameter also needs to be a number and is taken as the argument
+ *	  to the -NUMBER option.  This can get confusing; always use the
+ *	  options in scripts -- only use backwards compatability options
+ *	  at the input prompt. ;-)
  */
 BUILT_IN_COMMAND(lastlog)
 {
-	int	cnt,
-		from = 0,
-		p,
-		i,
-		level = 0,
-		msg_level,
-		len,
-		mask = 0,
-		header = 1,
-		lines = 0,
-		reverse = 0;
-	int	remove = 0;
-	Lastlog *start_pos;
-	char	*match = NULL,
-		*arg;
-	char	*blah = NULL;
+	int		reverse = 0;
+	int		level_mask = 0;
+	int		skip = -1;
+	int		number = INT_MAX;
+	int		max = -1;
+	char *		match = NULL;
+	char *		regex = NULL;
+	Lastlog *	start;
+	Lastlog *	end;
+	Lastlog *	l;
+	regex_t 	realreg;
+	regex_t *	reg = NULL;
+	int		cnt;
+	char *		arg;
+	int		header = 1;
+	int		save_level;
 
-	message_from((char *) 0, LOG_CURRENT);
+	message_from(NULL, LOG_CURRENT);
 	cnt = current_window->lastlog_size;
+	save_level = current_window->lastlog_level;
+	current_window->lastlog_level = 0;
 
 	while ((arg = new_next_arg(args, &args)) != NULL)
 	{
-		if (*arg == '-')
+	    size_t	len = strlen(arg);
+
+	    if (!strcmp(arg, "-"))
+		header = 0;
+	    else if (!my_strnicmp(arg, "-LITERAL", len))
+	    {
+		if (!(match = new_next_arg(args, &args)))
 		{
-			arg++;
-			if (!(len = strlen(arg)))
-				header = 0;
-			else if (!my_strnicmp(arg, "LITERAL", len))
-			{
-				if (match)
-				{
-					say("Second -LITERAL argument ignored");
-					new_next_arg(args, &args);
-					continue;
-				}
-				if ((match = new_next_arg(args, &args)) != NULL)
-					continue;
-				say("Need pattern for -LITERAL");
-				return;
-			}
-			else if (!my_strnicmp(arg, "MAX", len))
-			{
-				char *ptr;
-				if ((ptr = new_next_arg(args, &args)))
-					lines = my_atol(ptr);
-				if (lines < 0)
-					lines = 0;
-			}
-			else if (!my_strnicmp(arg, "REVERSE", len))
-				reverse = 1;
-			else
-			{
-				/*
-				 * A single hyphen is "show this level only"
-				 * A double hyphen is "dont show this level"
-				 */
-				if (*arg == '-')
-					remove = 1, arg++;
-				else
-					remove = 0;
-
-				/*
-				 * Which can be combined with -ALL, which 
-				 * turns on all levels.  Use --MSGS or
-				 * whatever to turn off ones you dont want.
-				 */
-				if (!my_strnicmp(arg, "ALL", len))
-				{
-					if (remove)
-						mask = 0;
-					else
-						mask = LOG_ALL;
-					continue;	/* Go to next arg */
-				}
-
-				/*
-				 * Find the lastlog level in our list.
-				 */
-				for (i = 0, p = 1; 
-				     i < NUMBER_OF_LEVELS; 
-				     i++, p *= 2)
-				{
-					if (!my_strnicmp(levels[i], arg, len))
-					{
-						if (remove)
-							mask &= ~p;
-						else
-							mask |= p;
-						break;
-					}
-				}
-
-				if (i == NUMBER_OF_LEVELS)
-				{
-					say("Unknown flag: %s", arg);
-					message_from((char *) 0, LOG_CRAP);
-					return;
-				}
-			}
+			yell("LASTLOG -LITERAL requires an argument.");
+			goto bail;
 		}
-		else
+	    }
+	    else if (!my_strnicmp(arg, "-REGEX", len))
+	    {
+		if (!(regex = new_next_arg(args, &args)))
 		{
-			if (level == 0)
-			{
-				if (match || isdigit(*arg))
-				{
-					cnt = atoi(arg);
-					level++;
-				}
-				else
-					match = arg;
-			}
-			else if (level == 1)
-			{
-				from = atoi(arg);
-				level++;
-			}
+			yell("LASTLOG -REGEX requires an argument.");
+			goto bail;
 		}
+	    }
+	    else if (!my_strnicmp(arg, "-MAXIMUM", len))
+	    {
+		char *x = new_next_arg(args, &args);
+		if (!is_number(x))
+		{
+			yell("LASTLOG -MAXIMUM requires a numerical argument.");
+			goto bail;
+		}
+		if ((max = my_atol(x)) < 0)
+		{
+			yell("LASTLOG -MAXIMUM argument must be "
+					"a positive number.");
+			goto bail;
+		}
+	    }
+	    else if (!my_strnicmp(arg, "-SKIP", len))
+	    {
+		char *x = new_next_arg(args, &args);
+		if (!is_number(x))
+		{
+			yell("LASTLOG -SKIP requires a numerical argument.");
+			goto bail;
+		}
+		if ((skip = my_atol(x)) < 0)
+		{
+			yell("LASTLOG -SKIP argument must be "
+					"a positive number.");
+			goto bail;
+		}
+	    }
+	    else if (!my_strnicmp(arg, "-NUMBER", len))
+	    {
+		char *x = new_next_arg(args, &args);
+		if (!is_number(x))
+		{
+			yell("LASTLOG -NUMBER requires a numerical argument.");
+			goto bail;
+		}
+		if ((number = my_atol(x)) < 0)
+		{
+			yell("LASTLOG -NUMBER argument must be "
+					"a positive number.");
+			goto bail;
+		}
+	    }
+	    else if (!my_strnicmp(arg, "-REVERSE", len))
+		reverse = 1;
+	    else if (!my_strnicmp(arg, "-ALL", len))
+		level_mask = LOG_ALL;
+	    else if (!my_strnicmp(arg, "--ALL", len))
+		level_mask = 0;
+	    else if (!my_strnicmp(arg, "--", 2))
+	    {
+		int	i;
+		for (i = 0; i < NUMBER_OF_LEVELS; i++)
+		{
+		    if (!my_strnicmp(levels[i], arg+2, len-2));
+		    {
+			level_mask &= ~(1 << i);
+			break;
+		    }
+		}
+		if (i == NUMBER_OF_LEVELS)
+		{
+			say("Unknown flag: %s", arg);
+			goto bail;
+		}
+	    }
+	    else if (!my_strnicmp(arg, "-", 1))
+	    {
+		int	i;
+		for (i = 0; i < NUMBER_OF_LEVELS; i++)
+		{
+		    if (!my_strnicmp(levels[i], arg+2, len-2));
+		    {
+			level_mask |= (1 << i);
+			break;
+		    }
+		}
+		if (i == NUMBER_OF_LEVELS)
+		{
+			say("Unknown flag: %s", arg);
+			goto bail;
+		}
+	    }
+	    else if (is_number(arg) && skip == -1)
+	    {
+		if ((skip = my_atol(arg)) < 0)
+		{
+			yell("LASTLOG requires a positive number argument.");
+			goto bail;
+		}
+	    }
+	    else if (is_number(arg) && skip != -1)
+	    {
+		if ((number = my_atol(arg)) < 0)
+		{
+			yell("LASTLOG requires a positive number argument.");
+			goto bail;
+		}
+	    }
+	    else
+		match = arg;
 	}
 
-	start_pos = current_window->lastlog_head;
-	level = current_window->lastlog_level;
-	msg_level = set_lastlog_msg_level(0);
-
-	if (!reverse)
+	/* Normalize arguments here */
+	if (skip > cnt)
 	{
-		for (i = 0; (i < from) && start_pos; start_pos = start_pos->next)
-			if (!mask || (mask & start_pos->level))
-				i++;
-
-		for (i = 0; (i < cnt) && start_pos; start_pos = start_pos->next)
-			if (!mask || (mask & start_pos->level))
-				i++;
-		start_pos = start_pos ? start_pos->prev : current_window->lastlog_tail;
+		if (x_debug & DEBUG_LASTLOG)
+			yell("l: skip [%d] > cnt [%d]", skip, cnt);
+		goto bail;	/* Skipping the entire thing is a no-op */
 	}
-	else
-		start_pos = current_window->lastlog_head;
+	if (skip >= 0 && number <= 0)
+	{
+		if (x_debug & DEBUG_LASTLOG)
+			yell("l: number [%d] <= 0", number);
+		goto bail;		/* Iterating 0 records is a no-op */
+	}
+	if (max == 0)
+	{
+		if (x_debug & DEBUG_LASTLOG)
+			yell("l: max == 0");
+		goto bail;		/* Displaying 0 records is a no-op */
+	}
+	if (match)
+	{
+		char *	blah = alloca(strlen(match) + 3);
+		sprintf(blah, "*%s*", match);
+		match = blah;
+	}
+	if (regex)
+	{
+		int	options = REG_EXTENDED | REG_ICASE | REG_NOSUB;
+		int	errcode;
 
-	/* Let's not get confused here, display a seperator.. -lynx */
+		if ((errcode = regcomp(&realreg, regex, options)))
+		{
+			char errmsg[1024];
+			regerror(errcode, &realreg, errmsg, 1024);
+			yell("%s", errmsg);
+			goto bail;
+		}
+		reg = &realreg;
+	}
+
+	if (x_debug & DEBUG_LASTLOG)
+	{
+		yell("Lastlog summary status:");
+		yell("Pattern: [%s]", match);
+		yell("Regex: [%s]", regex);
+		yell("Header: %d", header);
+		yell("Reverse: %d", reverse);
+		yell("Skip: %d", skip);
+		yell("Number: %d", number);
+		yell("Max: %d", max);
+	}
+
+	/* Iterate over the lastlog here */
 	if (header)
 		say("Lastlog:");
 
-	if (match)
+	if (reverse == 0)
 	{
-		blah = (char *)alloca(strlen(match) + 3);
-		sprintf(blah, "*%s*", match);
-	}
+	    start = current_window->lastlog_oldest;
+	    end = current_window->lastlog_newest;
 
-	for (i = 0; 
-	     (i < cnt) && start_pos; 
-	     start_pos = (reverse ? start_pos->next : start_pos->prev))
+	    for (l = start; l && l != end; l && (l = l->newer))
+	    {
+		if (show_lastlog(&l, &skip, &number, level_mask, 
+				match, reg, &max))
+			put_it("%s", l->msg);
+	    }
+	}
+	else
 	{
-		if (!mask || (mask & start_pos->level))
-		{
-			i++;
-			if (!match || wild_match(blah, start_pos->msg))
-			{
-				put_it("%s", start_pos->msg);
-				if (!--lines)
-					break;
-			}
-		}
+	    start = current_window->lastlog_newest;
+	    end = current_window->lastlog_oldest;
+
+	    for (l = start; l && l != end; l && (l = l->older))
+	    {
+		if (show_lastlog(&l, &skip, &number, level_mask, 
+				match, reg, &max))
+			put_it("%s", l->msg);
+	    }
 	}
 	if (header)
 		say("End of Lastlog");
-	current_window->lastlog_level = level;
+bail:
+	if (reg)
+		regfree(reg);
+	current_window->lastlog_level = save_level;
 	set_lastlog_msg_level(msg_level);
-	message_from((char *) 0, LOG_CRAP);
+	message_from(NULL, LOG_CRAP);
+	return;
+}
+
+static int	show_lastlog (Lastlog **l, int *skip, int *number, int level_mask, char *match, regex_t *reg, int *max)
+{
+	if (*skip > 0)
+	{
+		if (x_debug & DEBUG_LASTLOG)
+			yell("Skip > 0 -- [%d]", *skip);
+		(*skip)--;	/* Have not skipped enough leading records */
+		return 0;
+	}
+	if (*number == 0)
+	{
+		if (x_debug & DEBUG_LASTLOG)
+			yell("Number == 0");
+		*l = NULL;	/* Have iterated over the max num. records */
+		return 0;
+	}
+	if (*number > 0)
+		(*number)--;	/* Have not yet iterated over max records */
+
+	if (level_mask && (((*l)->level & level_mask) == 0))
+	{
+		if (x_debug & DEBUG_LASTLOG)
+			yell("Level_mask != level ([%d] [%d])",
+				level_mask, (*l)->level);
+		return 0;			/* Not of proper level */
+	}
+	if (match && !wild_match(match, (*l)->msg))
+	{
+		if (x_debug & DEBUG_LASTLOG)
+			yell("Line [%s] not matched [%s]", (*l)->msg, match);
+		return 0;			/* Pattern match failed */
+	}
+	if (reg && regexec(reg, (*l)->msg, 0, NULL, 0))
+	{
+		if (x_debug & DEBUG_LASTLOG)
+			yell("Line [%s] not regexed", (*l)->msg);
+		return 0;			/* Regex match failed */
+	}
+	if (*max == 0)
+	{
+		if (x_debug & DEBUG_LASTLOG)
+			yell("max == 0");
+		*l = NULL;	/* Have shown maximum number of matches */
+		return 0;
+	}
+	if (*max > 0)
+		(*max)--;	/* Have not yet shown max number of matches */
+
+	return 1;		/* Show it! */
 }
 
 /*
@@ -434,17 +609,17 @@ void 	add_to_lastlog (Window *window, const char *line)
 #endif
 		{
 			new_l = (Lastlog *)new_malloc(sizeof(Lastlog));
-			new_l->next = window->lastlog_head;
-			new_l->prev = NULL;
+			new_l->older = window->lastlog_newest;
+			new_l->newer = NULL;
 			new_l->level = msg_level;
 			new_l->msg = m_strdup(line);
 
-			if (window->lastlog_head)
-				window->lastlog_head->prev = new_l;
-			window->lastlog_head = new_l;
+			if (window->lastlog_newest)
+				window->lastlog_newest->newer = new_l;
+			window->lastlog_newest = new_l;
 
-			if (!window->lastlog_tail)
-				window->lastlog_tail = window->lastlog_head;
+			if (!window->lastlog_oldest)
+				window->lastlog_oldest = window->lastlog_newest;
 
 			if (window->lastlog_size++ >= window->lastlog_max)
 				remove_from_lastlog(window);
@@ -529,13 +704,13 @@ char 	*function_line (char *word)
 		RETURN_EMPTY;
 
 	/* Get the line from the lastlog */
-	for (start_pos = win->lastlog_head; line; start_pos = start_pos->next)
+	for (start_pos = win->lastlog_newest; line; start_pos = start_pos->older)
 		line--;
 
 	if (!start_pos)
-		start_pos = win->lastlog_tail;
+		start_pos = win->lastlog_oldest;
 	else
-		start_pos = start_pos->prev;
+		start_pos = start_pos->newer;
 
 	if (do_level)
 		return m_sprintf("%s %s", start_pos->msg, 
@@ -569,7 +744,7 @@ char *function_lastlog (char *word)
 	if (!(win = get_window_by_desc(windesc)))
 		RETURN_EMPTY;
 
-	for (iter = win->lastlog_head; iter; iter = iter->next, line++)
+	for (iter = win->lastlog_newest; iter; iter = iter->older, line++)
 	{
 		if (iter->level & levels)
 			if (wild_match(pattern, iter->msg))
