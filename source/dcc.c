@@ -9,7 +9,7 @@
  */
 
 #if 0
-static	char	rcsid[] = "@(#)$Id: dcc.c,v 1.22 2002/05/16 20:51:03 jnelson Exp $";
+static	char	rcsid[] = "@(#)$Id: dcc.c,v 1.23 2002/05/27 02:43:35 jnelson Exp $";
 #endif
 
 #include "irc.h"
@@ -1676,10 +1676,9 @@ char	*dcc_raw_listen (unsigned short port)
 /*
  * Usage: $connect(<hostname> <portnum> <family>)
  */
-char	*dcc_raw_connect(char *host, u_short port, int family)
+char	*dcc_raw_connect (const char *host, const char *port, int family)
 {
 	DCC_list *	Client;
-	char *		bogus;
 	SS		my_sockaddr;
 
 	memset(&my_sockaddr, 0, sizeof(my_sockaddr));
@@ -1688,20 +1687,18 @@ char	*dcc_raw_connect(char *host, u_short port, int family)
 	if (family == AF_INET)
 	{
 		FAMILY(my_sockaddr) = AF_INET;
-		if (inet_anyton(host, (SA *)&my_sockaddr))
+		if (inet_anyton(host, port, (SA *)&my_sockaddr))
 		{
 			say("Unknown host: %s", host);
 			message_from(NULL, LOG_CURRENT);
 			return m_strdup(empty_string);
 		}
-		V4PORT(my_sockaddr) = htons(port);
 	}
 
-	bogus = LOCAL_COPY(ltoa(port));
-	Client = dcc_searchlist(host, bogus, DCC_RAW, 1, NULL, -1);
+	Client = dcc_searchlist(host, port, DCC_RAW, 1, NULL, -1);
 	if (Client->flags & DCC_ACTIVE)
 	{
-		say("A previous DCC RAW to %s on %s exists", host, bogus);
+		say("A previous DCC RAW to %s on %s exists", host, port);
 		message_from(NULL, LOG_CURRENT);
 		return m_strdup(empty_string);
 	}
@@ -1716,10 +1713,10 @@ char	*dcc_raw_connect(char *host, u_short port, int family)
 
 	Client->user = m_strdup(ltoa(Client->socket));
 	Client->locked++;
-	if (do_hook(DCC_RAW_LIST, "%s %s E %d", Client->user, host, port))
-            if (do_hook(DCC_CONNECT_LIST,"%s RAW %s %d", 
+	if (do_hook(DCC_RAW_LIST, "%s %s E %s", Client->user, host, port))
+            if (do_hook(DCC_CONNECT_LIST,"%s RAW %s %s", 
 				Client->user, host, port))
-		say("DCC RAW connection to %s on %s via %d established", 
+		say("DCC RAW connection to %s on %s via %s established", 
 				host, Client->user, port);
 	Client->locked--;
 
@@ -1895,9 +1892,9 @@ void	register_dcc_offer (char *user, char *type, char *description, char *addres
 
 		fromhost++;
 		FAMILY(irc_addr) = FAMILY(Client->offer);
-		if (inet_anyton(fromhost, (SA *)&irc_addr))
+		if (inet_anyton(fromhost, port, (SA *)&irc_addr))
 		{
-			yell("### Incoming handshake has an address [%s] that could not be figured out!", fromhost);
+			yell("### Incoming handshake has an address or port [%s:%s] that could not be figured out!", fromhost, port);
 			yell("### Please use caution in deciding whether to accept it or not");
 		}
 		else if (FAMILY(Client->offer) == AF_INET)
@@ -2129,7 +2126,7 @@ static	void	process_incoming_chat (DCC_list *Client)
 		char	p_port[24];
 
 		sra = sizeof(remaddr);
-		fd = my_accept(Client->socket, (SA *)&Client->peer_sockaddr, &sra);
+		fd = Accept(Client->socket, (SA *)&Client->peer_sockaddr, &sra);
 		Client->socket = new_close(Client->socket);
 		if ((Client->socket = fd) > 0)
 			new_open(Client->socket);
@@ -2284,23 +2281,23 @@ static	void		process_incoming_listen (DCC_list *Client)
 	char		fdstr[10];
 	DCC_list	*NewClient;
 	int		new_socket;
-	char		hostname[256];
+	char		host[256];
 	int		len;
 	char		p_port[24];
 
 	sra = sizeof(remaddr);
-	new_socket = my_accept(Client->socket, (SA *) &remaddr, &sra);
+	new_socket = Accept(Client->socket, (SA *) &remaddr, &sra);
 	if (new_socket < 0)
 	{
 		yell("### DCC Error: accept() failed.  Punting.");
 		return;
 	}
 
-	*hostname = 0;
-	inet_ntohn((SA *)&remaddr, hostname, sizeof(hostname));
+	*host = 0;
+	inet_ntohn((SA *)&remaddr, host, sizeof(host));
 
 	strlcpy(fdstr, ltoa(new_socket), 10);
-	NewClient = dcc_searchlist(hostname, fdstr, DCC_RAW, 1, NULL, 0);
+	NewClient = dcc_searchlist(host, fdstr, DCC_RAW, 1, NULL, 0);
 	NewClient->socket = new_socket;
 
 	NewClient->peer_sockaddr = remaddr;
@@ -2403,7 +2400,7 @@ static void		process_outgoing_file (DCC_list *Client)
 		 * Open up the network connection
 		 */
 		sra = sizeof(remaddr);
-		new_fd = my_accept(Client->socket, (SA *)&Client->peer_sockaddr, &sra);
+		new_fd = Accept(Client->socket, (SA *)&Client->peer_sockaddr, &sra);
 		Client->socket = new_close(Client->socket);
 		if ((Client->socket = new_fd) < 0)
 		{

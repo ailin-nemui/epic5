@@ -4,9 +4,9 @@ dnl except those bits attributed otherwise.
 dnl thanks to the screen 3.3 configure.in for giving me examples to
 dnl work from and steal ;)
 dnl
-dnl @(#)$Id: configure.in,v 1.13 2002/05/17 18:10:25 crazyed Exp $
+dnl @(#)$Id: configure.in,v 1.14 2002/05/27 02:43:35 jnelson Exp $
 
-AC_REVISION($Revision: 1.13 $)dnl
+AC_REVISION($Revision: 1.14 $)dnl
 AC_INIT(source/irc.c)
 AC_CONFIG_HEADER(include/defs.h)
 
@@ -244,7 +244,7 @@ AC_EGREP_HEADER(fd_set, sys/types.h,
   AC_EGREP_HEADER(fd_set, sys/select.h,
     AC_MSG_RESULT(yes)
     AC_DEFINE(NEED_SYS_SELECT_H),
-    AC_MSG_RESULT(no, ugh.))) 
+    AC_MSG_RESULT(no. ugh.))) 
 
 
 dnl ----------------------------------------------------------
@@ -256,7 +256,7 @@ AC_MSG_CHECKING(for struct linger)
 AC_EGREP_HEADER([struct( |	)*linger], sys/socket.h, 
   AC_MSG_RESULT(yes), 
   AC_DEFINE(NO_STRUCT_LINGER) 
-  AC_MSG_RESULT(no, ugh.))
+  AC_MSG_RESULT(no. ugh.))
 
 
 
@@ -448,6 +448,42 @@ AC_EGREP_HEADER([struct( |	)*sockaddr_storage], sys/socket.h,
   AC_DEFINE(HAVE_STRUCT_SOCKADDR_STORAGE),
   AC_MSG_RESULT(no))
 
+dnl ----------------------------------------------------------
+dnl
+dnl Some implementations of getaddrinfo (*cough*KAME*cough*) don't 
+dnl support the AF_UNIX protocol family.  For these partially incomplete 
+dnl implementations, we must add our own support in a wrapper.
+dnl
+
+AC_MSG_CHECKING(to see if your getaddrinfo supports AF_UNIX)
+AC_TRY_RUN([
+#include <sys/types.h>
+#include <sys/socket.h>
+#include <netdb.h>
+#include <sys/un.h>
+
+main()
+{
+	struct addrinfo hints;
+	struct addrinfo *results;
+	int	retval;
+
+	memset(&hints, 0, sizeof(hints));
+	hints.ai_flags = 0;
+	hints.ai_family = AF_UNIX;
+	hints.ai_socktype = SOCK_STREAM;
+	hints.ai_protocol = 0;
+
+	retval = getaddrinfo("/tmp/.ircd/6667", NULL, &hints, &results);
+	if (retval == EA_ADDRFAMILY)
+		exit(1);
+	else
+		exit(0);
+}
+],
+  AC_MSG_RESULT(yes),
+  AC_DEFINE(GETADDRINFO_DOES_NOT_DO_AF_UNIX)
+  AC_MSG_RESULT(no. ugh), :)
 
 dnl ----------------------------------------------------------
 dnl

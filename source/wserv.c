@@ -1,4 +1,4 @@
-/* $EPIC: wserv.c,v 1.9 2002/05/22 03:30:27 jnelson Exp $ */
+/* $EPIC: wserv.c,v 1.10 2002/05/27 02:43:35 jnelson Exp $ */
 /*
  * wserv.c -- A little program to act as a pipe between the ircII process
  * 	      and an xterm window or GNU screen.
@@ -43,11 +43,8 @@
 
 #include "defs.h"
 #include "config.h"
-#include "irc.h"
-#include "ircaux.h"
-#include <errno.h>
+#include "irc_std.h"
 #include <sys/ioctl.h>
-#include <sys/stat.h>
 #ifdef _ALL_SOURCE
 #include <termios.h>
 #else
@@ -55,29 +52,31 @@
 #endif
 
 
-static 	int 		data = -1;
-static	int		cmd = -1;
-static	char		buffer[256];
-static	int		got_sigwinch = 0;
-static	int		tty_des;
-static	struct	termios	oldb, newb;
+static 	int 	data = -1;
+static	int	cmd = -1;
+static	char	buffer[256];
+static	int	got_sigwinch = 0;
+static	int	tty_des;
+static	struct termios	oldb, newb;
 
-static	void 		my_exit(int);
-static	void 		ignore (int);
-static	void		sigwinch_func (int);
-static	int 		term_init (void);
-static	void 		term_resize (void);
+static	void 	my_exit(int);
+static	void 	ignore (int);
+static	void	sigwinch_func (int);
+static	int 	term_init (void);
+static	void 	term_resize (void);
+static	void	yell (const char *format, ...);
+static	int	connectory (int, const char *, const char *);
 
 
 int	main (int argc, char **argv)
 {
-	fd_set		reads;
-	int		nread;
-	unsigned short 	port;
-	char 		*host;
-	char		*tmp;
-	int		t;
-	char		stuff[100];
+	fd_set	reads;
+	int	nread;
+	char * 	port;
+	char *	host;
+	char *	tmp;
+	int	t;
+	char	stuff[100];
 
 	my_signal(SIGHUP, SIG_IGN);
 	my_signal(SIGQUIT, SIG_IGN);
@@ -88,8 +87,7 @@ int	main (int argc, char **argv)
 		my_exit(1);
 
 	host = argv[1];
-	if ((port = atoi(argv[2])) == 0)
-		my_exit(2);		/* what the hey */
+	port = argv[2];
 
 	if ((data = connectory(AF_INET, host, port)) < 0)
 		my_exit(23);
@@ -183,15 +181,41 @@ static void 	my_exit(int value)
 	exit(value);
 }
 
-/* These are here so we can link with network.o */
-char *	LocalHostName = NULL;
-ISA	LocalIPv4Addr;
-enum VAR_TYPES { unused };
-int 	get_int_var (enum VAR_TYPES unused) { return 5; }
-int	nonblocking_connect_callback (int fd, int (*f) (int, int, char *)) 
-	{ return -1; }
 
+static int	connectory (int family, const char *host, const char *port)
+{
+	AI	hints;
+	AI *	results;
+	int 	retval;
+	int	s;
 
+	if (family != AF_INET)		/* AF_INET only for now */
+		my_exit(6);
+
+	memset(&hints, 0, sizeof(hints));
+	hints.ai_flags = 0;
+	hints.ai_family = family;
+	hints.ai_socktype = SOCK_STREAM;
+	hints.ai_protocol = 0;
+
+	if ((retval = getaddrinfo(host, port, &hints, &results))) {
+	    yell("getaddrinfo(%s): %s", host, gai_strerror(retval));
+	    my_exit(6);
+	}
+
+	if ((s = socket(results->ai_family, results->ai_socktype, results->ai_protocol)) < 0) {
+	    yell("socket(%s): %s", host, gai_strerror(retval));
+	    my_exit(6);
+	}
+
+	if (connect(s, results->ai_addr, results->ai_addrlen) < 0) {
+	    yell("connect(%s): %s", host, strerror(errno));
+	    my_exit(6);
+	}
+
+	freeaddrinfo(results);
+	return s;
+}
 
 
 /*
@@ -263,88 +287,16 @@ static void 	term_resize (void)
 	}
 }
 
-/* For network.c */
-int     last_char (const char *string)
+static void	yell (const char *format, ...)
 {
-        while (string && string[0] && string[1])
-                string++;
-
-        return (int)*string;
-}
-
-#ifndef HAVE_STRLCPY
-size_t        strlcpy (char *dst, const char *src, size_t siz)
-{
-	char *		d = dst;
-	const char *	s = src;
-	size_t		n = siz;
-
-	if (n > 0)
-		n--;            /* Save space for the NUL */
-
-	/* Copy as many bytes as will fit */
-	while (n > 0)
-	{
-		if (!(*d = *s))
-			break;
-		d++;
-		s++;
-		n--;
-	}
-
-	/* Not enough room in dst, add NUL and traverse rest of src */
-	if (n == 0 && siz)
-		*d = 0;              /* NUL-terminate dst */
-
-	return strlen(src);
-}
-#endif
-
-#ifndef HAVE_INET_NTOP
-const char *inet_ntop (int af, const void *src, char *dst, size_t size)
-{
-        if (af == AF_INET)
+        if (format)
         {
-                strlcpy(dst, inet_ntoa(*(IA *)src), size);
-                return dst;
+                va_list args;
+                va_start(args, format);
+		vfprintf(stderr, format, args);
+		sleep(5);
+		my_exit(4);
         }
-
-        errno = EAFNOSUPPORT;
-        return (NULL);
-}
-#endif
-
-#ifndef HAVE_INET_PTON
-int inet_pton (int af, const char *src, void *dst)
-{
-        if (af == AF_INET)
-                return inet_aton(src, (IA *)dst);
-
-        errno = EAFNOSUPPORT;
-        return (-1);
-}
-#endif
-
-char	empty_string[] = "";
-void            set_socket_options (int des) { }
-u_long          random_number (u_long unused) { return random(); }
-/* swift and easy -- returns the size of the file */
-off_t   file_size (const char *filename)
-{
-        struct stat statbuf;
-
-        if (!stat(filename, &statbuf))
-                return (off_t)(statbuf.st_size);
-        else
-                return -1;
-}
-
-int     file_exists (const char *filename)
-{
-        if (file_size(filename) == -1)
-                return 0;
-        else
-                return 1;
 }
 
 /* End of file */

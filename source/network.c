@@ -10,23 +10,23 @@
 #include "ircaux.h"
 #include "vars.h"
 #include "newio.h"
+#include "output.h"
+#include <sys/ioctl.h>
 
 #ifdef HAVE_SYS_UN_H
 #include <sys/un.h>
 typedef struct sockaddr_un USA;
 #endif
 
-static Hostent *resolv (int, const char *);
 static Hostent *lookup_host (int, const char *);
 static Hostent *lookup_addr (int family, const char *ip);
 static int	get_low_portnum (void);
 static int	get_high_portnum (void);
 static int	set_non_blocking (int fd);
 static int	set_blocking (int fd);
-static int	inet_remotesockaddr (int family, const char *host, u_short port, SS *storage, socklen_t *len);
+static int	inet_remotesockaddr (int family, const char *host, const char *port, SS *storage, socklen_t *len);
 static int	inet_vhostsockaddr (int family, SS *storage, socklen_t *len);
 static int	Connect (int fd, SA *addr);
-
 
 /*
    Retval    Meaning
@@ -44,6 +44,7 @@ static int	Connect (int fd, SA *addr);
    -11       The connect()ion failed (at connect() time)
    -12       The connection could not be established (after connect() time)
    -13       The local sockaddr to bind was not provided.
+   -14       The family request does not make sense.
 */
 
 /*****************************************************************************/
@@ -55,7 +56,7 @@ static int	Connect (int fd, SA *addr);
  *       port - The remote port to connect to in *HOST ORDER*.
  * NOTES: This function is family independant.
  */
-int	connectory (int family, const char *host, unsigned short port)
+int	connectory (int family, const char *host, const char *port)
 {
 	SS	  localaddr;
 	socklen_t locallen;
@@ -67,10 +68,8 @@ int	connectory (int family, const char *host, unsigned short port)
 	{
 		if (host && *host == '/')
 			family = AF_UNIX;
-		else if (host && strchr(host, ':')) {
-			errno = EAFNOSUPPORT;
-			return -2;
-		}
+		else if (host && strchr(host, ':'))
+			family = AF_INET6;
 		else
 			family = AF_INET;
 	}
@@ -140,7 +139,7 @@ int	client_connect (SA *l, socklen_t ll, SA *r, socklen_t rl)
 		}
 		alarm(0);
 	}
-	else if (family == AF_INET)
+	else if (family == AF_INET || family == AF_INET6)
 	{
 		if (l && bind(fd, l, ll))
 		{
@@ -321,7 +320,7 @@ int	client_bind (SA *local, socklen_t local_len)
 	 * port range" when we ask for port 0 (any port).
 	 * Maybe some day Linux will support this.
 	 */
-	if (getenv("EPIC_USE_HIGHPORTS"))
+	if (family == AF_INET && getenv("EPIC_USE_HIGHPORTS"))
 	{
 		int ports = IP_PORTRANGE_HIGH;
 		setsockopt(fd, IPPROTO_IP, IP_PORTRANGE, 
@@ -365,17 +364,29 @@ int	client_bind (SA *local, socklen_t local_len)
  *             was copied, or set to 0 if no virtual host is available in
  *             the given family.
  * NOTES: If "len" is set to 0, do not attempt to bind() 'storage'!
- * NOTES: This function is protocol independant but lacks IPv6 support.
+ * NOTES: This function is protocol independant.
  */
 static int	inet_vhostsockaddr (int family, SS *storage, socklen_t *len)
 {
 	if (family == AF_INET)
 	{
-		if (LocalHostName)
+		if (LocalIPv4Addr)
 		{
-			*(ISA *)storage = LocalIPv4Addr;
+			*(ISA *)storage = *LocalIPv4Addr;
 			((ISA *)storage)->sin_port = htonl(0);
 			*len = sizeof(ISA);
+			return 0;
+		}
+		*len = 0;
+		return 0;
+	}
+	else if (family == AF_INET6)
+	{
+		if (LocalIPv6Addr)
+		{
+			*(ISA6 *)storage = *LocalIPv6Addr;
+			((ISA6 *)storage)->sin6_port = htonl(0);
+			*len = sizeof(ISA6);
 			return 0;
 		}
 		*len = 0;
@@ -399,109 +410,82 @@ static int	inet_vhostsockaddr (int family, SS *storage, socklen_t *len)
  *       storage - Pointer to a sockaddr structure appropriate for family.
  * NOTES: This function is protocol independant but lacks IPv6 support.
  */
-static int	inet_remotesockaddr (int family, const char *host, u_short port, SS *storage, socklen_t *len)
+static int	inet_remotesockaddr (int family, const char *host, const char *port, SS *storage, socklen_t *len)
 {
 	int	err;
 
+	((SA *)storage)->sa_family = family;
+
+	if ((err = inet_anyton(host, port, (SA *)storage)))
+		return err;
+
 	if (family == AF_INET)
-	{
-		memset(storage, 0, sizeof(ISA));
-		((ISA *)storage)->sin_family = family;
-		((ISA *)storage)->sin_port = htons(port);
-
-		/*
-		 * Call inet_anyton() to get a (struct in_addr) of the
-		 * hostname.  inet_anyton() does not do a DNS lookup for
-		 * dotted quad IPv4 addresses, so it's "cheap" for that
-		 * purpose.
-		 */
-		if ((err = inet_anyton(host, (SA *)storage)))
-			return err;
-
 		*len = sizeof(ISA);
-		return 0;
-	}
+	else if (family == AF_INET6)
+		*len = sizeof(ISA6);
 	else if (family == AF_UNIX)
-	{
-		memset(storage, 0, sizeof(USA));
-		((USA *)storage)->sun_family = family;
-		strlcpy(((USA *)storage)->sun_path, host, sizeof(((USA *)storage)->sun_path));
-#ifdef HAVE_SUN_LEN
-# ifdef SUN_LEN
-		((USA *)storage)->sun_len = SUN_LEN((USA *)storage);
-# else
-		((USA *)storage)->sun_len = strlen(host) + 1;
-# endif
-#endif
 		*len = strlen(((USA *)storage)->sun_path) + 2;
-		return 0;
-	}
+	else
+		return -2;
 
-	return -2;
+	return 0;
 }
 
 
-/* NOTES: This function is protocol independant but lacks IPv6 support. */
-int	inet_anyton (const char *hostname, SA *storage)
+/*
+ * NAME: inet_anyton
+ * USAGE: Convert "any" kind of address represented by a string into
+ *	  a socket address suitable for connect()ing or bind()ing with.
+ * ARGS: hostname - The address to convert.  It may be any of the following:
+ *		IPv4 "Presentation Address"	(A.B.C.D)
+ *		IPv6 "Presentation Address"	(A:B::C:D)
+ *		Hostname			(foo.bar.com)
+ *		32 bit host order ipv4 address	(2134546324)
+ *	 storage - A pointer to a (struct sockaddr_storage) with the 
+ *		"family" argument filled in (AF_INET or AF_INET6).  
+ *		If "hostname" is a p-addr, then the form of the p-addr
+ *		must agree with the family in 'storage'.
+ *
+ * NOTES: In the future, AF_UNIX will be a supported family.
+ * NOTES: In the future, AF_UNSPEC will be a supported family.
+ */
+int	inet_anyton (const char *host, const char *port, SA *storage)
 {
 	int family = storage->sa_family;
 
-	if (family == AF_INET)
+        /* First check for legacy 32 bit integer DCC addresses */
+	if (family == AF_INET && is_number(host))
 	{
-		Hostent	*hp;
+		((ISA *)storage)->sin_addr.s_addr = htonl(strtoul(host, NULL, 10));
+		return 0;
+	}
+	else
+	{
+		AI hints;
+		AI *results;
+		int retval;
 
-		if (isdigit(last_char(hostname)))
-		{
-			if (strchr(hostname, ':'))
-				return -4;
-			else if (strchr(hostname, '.'))
-			{
-				if (inet_pton(AF_INET, hostname, &((ISA *)storage)->sin_addr) == 1)
-					return 0;
-				return -4;
-			}
-			else
-			{
-				((ISA *)storage)->sin_addr.s_addr = htonl(strtoul(hostname, NULL, 10));
-				return 0;
-			}
+		memset(&hints, 0, sizeof(hints));
+		hints.ai_flags = 0;
+		hints.ai_family = family;
+		hints.ai_socktype = SOCK_STREAM;
+		hints.ai_protocol = 0;
+
+		if ((retval = Getaddrinfo(host, port, &hints, &results))) {
+		    yell("getaddrinfo(%s): %s", host, gai_strerror(retval));
+		    return -5;
 		}
-		else
-		{
-			if (!(hp = resolv(family, hostname)))
-				return -5;
 
-			if (hp->h_addrtype != family)
-				return -3;		/* IPv6 */
+		/* memcpy can bite me. */
+		memcpy(storage, results->ai_addr, results->ai_addrlen);
 
-			((ISA *)storage)->sin_addr = *(IA *)hp->h_addr;
-			return 0;
-		}
+		Freeaddrinfo(results);
+		return 0;
 	}
 
 	return -2;
 }
 
-/* NOTES: This function is protocol independant but lacks IPv6 support. */
-static Hostent *resolv (int family, const char *stuff)
-{
-	Hostent *hep = NULL;
-
-	if (!*stuff)
-		return NULL;
-
-	if (family == AF_INET)
-	{
-		if (isdigit(last_char(stuff)))
-			hep = lookup_addr(family, stuff);
-		else
-			hep = lookup_host(family, stuff);
-	}
-
-	return hep;
-}
-
-/* NOTES: This function is protocol independant */
 static Hostent *lookup_host (int family, const char *host)
 {
 	Hostent *hep = NULL;
@@ -534,7 +518,19 @@ static Hostent *lookup_addr (int family, const char *ip)
 	return hep;
 }
 
-/* NOTES: This function is protocol independant */
+/*
+ * NAME: inet_hntop
+ * USAGE: Convert a Hostname into a "presentation address" (p-addr)
+ * PLAIN ENGLISH: Convert "A.B.C.D" into "foo.bar.com"
+ * ARGS: family - The family whose presesentation address format to use
+ *	 host - The hostname to convert
+ *       retval - A string to store the p-addr (RETURN VALUE)
+ *       size - The length of 'retval' in bytes
+ * RETURN VALUE: "retval" is returned upon success
+ *		 "empty_string" is returned for any error.
+ *
+ * NOTES: In the future, this function will use getaddrinfo().
+ */
 char *	inet_hntop (int family, const char *host, char *retval, int size)
 {
 	Hostent *hep;
@@ -548,7 +544,19 @@ char *	inet_hntop (int family, const char *host, char *retval, int size)
 	return retval;
 }
 
-/* NOTES: This function is protocol independant */
+/*
+ * NAME: inet_ptohn
+ * USAGE: Convert a "presentation address" (p-addr) into a Hostname
+ * PLAIN ENGLISH: Convert "foo.bar.com" into "A.B.C.D"
+ * ARGS: family - The family whose presesentation address format to use
+ *	 ip - The presentation-address to look up
+ *       retval - A string to store the hostname (RETURN VALUE)
+ *       size - The length of 'retval' in bytes
+ * RETURN VALUE: "retval" is returned upon success
+ *		 "empty_string" is returned for any error.
+ *
+ * NOTES: In the future, this function will use getaddrinfo().
+ */
 char *	inet_ptohn (int family, const char *ip, char *retval, int size)
 {
 	Hostent *hep;
@@ -560,7 +568,20 @@ char *	inet_ptohn (int family, const char *ip, char *retval, int size)
 	return retval;
 }
 
-/* NOTES: This function is protocol independant but lacks IPv6 support. */
+/*
+ * NAME: inet_ntohn
+ * USAGE: Convert a "sockaddr name" (SA) into a Hostname/p-addr
+ * PLAIN ENGLISH: Convert getpeername() into "foo.bar.com"
+ * ARGS: name - The socket address, possibly returned by getpeername().
+ *       retval - A string to store the hostname/paddr (RETURN VALUE)
+ *       size - The length of 'retval' in bytes
+ * RETURN VALUE: "retval" is returned upon success
+ *		 "empty_string" is returned for any error.
+ *
+ * NOTES: If the remote host does not have a reverse hostname lookup, then
+ *        the sockaddr's p-addr will be returned.
+ * NOTES: In the future, this function will use getaddrinfo().
+ */
 char *	inet_ntohn (SA *name, char *retval, int size)
 {
 	if (FAMILY(*name) == AF_INET)
@@ -578,7 +599,22 @@ char *	inet_ntohn (SA *name, char *retval, int size)
 	return NULL;
 }
 
-/* NOTES: This function is protocol independant */
+/*
+ * NAME: one_to_another
+ * USAGE: Convert a p-addr to a Hostname, or a Hostname to a p-addr.
+ * PLAIN ENGLISH: Convert "A.B.C.D" to "foo.bar.com" or convert "foo.bar.com"
+ *                into "A.B.C.D"
+ * ARGS: family - The address family in which to convert (AF_INET/AF_INET6)
+ *	 what - Either a Hostname or a p-addr.
+ *       retval - If "what" is a Hostname, a place to store the p-addr
+ *                If "what" is a p-addr, a place to store the Hostname
+ *       size - The length of 'retval' in bytes
+ * RETURN VALUE: "retval" is returned upon success
+ *		 "empty_string" is returned for any error.
+ *
+ * NOTES: If "what" is a p-addr and there is no hostname associated with that 
+ *        address, that is considered an error and empty_string is returned.
+ */
 char *	one_to_another (int family, const char *what, char *retval, int size)
 {
 	if (inet_ptohn(family, what, retval, size) == empty_string)
@@ -647,7 +683,7 @@ static int	set_blocking (int fd)
  * has been closed in the interim.  This wrapper for accept() attempts to
  * defeat this by making the accept() call nonblocking.
  */
-int	my_accept (int s, SA *addr, int *addrlen)
+int	Accept (int s, SA *addr, int *addrlen)
 {
 	int	retval;
 
@@ -781,3 +817,64 @@ static int Connect (int fd, SA *addr)
 	errno = EAFNOSUPPORT;
 	return -1;
 }
+
+int	Getaddrinfo (const char *nodename, const char *servname, const AI *hints, AI **res)
+{
+#ifdef GETADDRINFO_DOES_NOT_DO_AF_UNIX
+	int	do_af_unix = 0;
+	USA 	storage;
+	AI *	results;
+	int	len;
+
+	if (strchr(nodename, '/'))
+		do_af_unix = 1;
+	if (hints && hints->ai_family == AF_UNIX)
+		do_af_unix = 1;
+
+	if (do_af_unix)
+	{
+                memset(&storage, 0, sizeof(USA));
+                storage.sun_family = AF_UNIX;
+                strlcpy(storage.sun_path, nodename, sizeof(storage.sun_path));
+#ifdef HAVE_SUN_LEN
+# ifdef SUN_LEN
+                storage.sun_len = SUN_LEN(&storage);
+# else
+                storage.sun_len = strlen(nodename) + 1;
+# endif
+#endif
+                len = strlen(storage.sun_path) + 2;
+
+		(*res) = new_malloc(sizeof(*results));
+		(*res)->ai_flags = 0;
+		(*res)->ai_family = AF_UNIX;
+		(*res)->ai_socktype = SOCK_STREAM;
+		(*res)->ai_protocol = 0;
+		(*res)->ai_addrlen = len;
+		(*res)->ai_canonname = m_strdup(nodename);
+		(*res)->ai_addr = new_malloc(sizeof(struct sockaddr));
+		*((USA *)(*res)->ai_addr) = storage;
+		(*res)->ai_next = 0;
+
+                return 0;
+	}
+#endif
+
+	return getaddrinfo(nodename, servname, hints, res);
+}
+
+void	Freeaddrinfo (AI *ai)
+{
+#ifdef GETADDRINFO_DOES_NOT_DO_AF_UNIX
+	if (ai->ai_family == AF_UNIX)
+	{
+		new_free(&ai->ai_canonname);
+		new_free(&ai->ai_addr);
+		new_free(&ai);
+		return;
+	}
+#endif
+
+	freeaddrinfo(ai);
+}
+

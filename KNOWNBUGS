@@ -17,3 +17,27 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 -------------------------------------
 * Add $killpid() as a favor for Liandrin.
 * Really fix wserv this time.
+* Add GETADDR_DOES_NOT_DO_AF_UNIX for KAME, which doesn't do AF_UNIX
+* Change dcc_raw_connect() to take a string port, not integer
+* Add LocalIPv6Addr, for IPv6 virtual hostnames
+* Include <sys/stat.h> in irc_std.h.  Clean up elsewhere later.
+* Add a bunch of typedefs for IPv6 and stuff.
+* Change inet_anyton() to take a port string
+* Change connectory() to take a port string, not a number.
+* Change my_accept() to Accept()
+* Add wrappers for getaddrinfo()/freeaddrinfo(), with first letter in caps.
+* Decouple wserv4 from network.c.  Now can do yell() and malloc() in network.c.
+* Rip a lot of k-rap out of wserv.c that was there only for network.c
+* Add connectory() (such as it is) to wserv.c.
+* Change all uses of 'hostname' (a global variable) to 'host'
+* Rewrite switch_hostname() to use getaddrinfo() and support IPv6 for virthosts
+* Change LocalIPv4Addr/LocalIPv6Addr to pointers, manage in switch_hostname()
+* Remove now unused resolv() function.
+* Change inet_remotesockaddr() to take a port string, not a number.
+* Add IPv6 p-addr support to connectory().  Hostnames still default to IPv4.
+* "EPIC_USE_HIGHPORTS" only works for IPv4 now.
+* Support IPv6 virtual hosts in inet_vhostsockaddr()
+* Add IPv6 support to inet_remotesockaddr()
+* Push AF_UNIX support in inet_remotesockaddr() off to Getaddrinfo().
+* Convert inet_anyton() to use Getaddrinfo(), which adds IPv6 support.
+* Add some comments to help me in the future.

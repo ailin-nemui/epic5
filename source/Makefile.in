@@ -44,8 +44,8 @@ clean::
 	$(RM) epic $(OBJECTS)
 
 # wserv
-wserv4: wserv.o ircsig.o network.o
-	$(CC) $(CFLAGS) $(LDFLAGS) -o wserv4 wserv.o ircsig.o network.o $(LIBS)
+wserv4: wserv.o ircsig.o
+	$(CC) $(CFLAGS) $(LDFLAGS) -o wserv4 wserv.o ircsig.o $(LIBS)
 clean::
 	$(RM) wserv4 wserv.o
 

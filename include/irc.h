@@ -142,8 +142,8 @@ extern		char	wait_nick[];
 extern		char	zero[];
 extern		char	comma[];
 
-extern 		IA	LocalHostAddr;
-extern 		ISA	LocalIPv4Addr;
+extern 		ISA *	LocalIPv4Addr;
+extern		ISA6 *	LocalIPv6Addr;
 extern		fd_set  readables;
 extern struct timeval 	start_time;
 extern struct timeval	idle_time;

@@ -1403,11 +1403,11 @@ BUILT_IN_FUNCTION(function_winnam, input)
 
 BUILT_IN_FUNCTION(function_connect, input)
 {
-	char	*host;
-	int	port;
+	char *host;
+	char *port;
 
 	GET_STR_ARG(host, input);
-	GET_INT_ARG(port, input);
+	GET_STR_ARG(port, input);
 
 	return dcc_raw_connect(host, port, AF_INET);	/* DONT USE RETURN_STR HERE! */
 }

@@ -29,6 +29,7 @@
 #include <limits.h>
 #include <sys/param.h>
 #include <errno.h>
+#include <sys/stat.h>
 
 /*
  * Everybody needs these INET headers...
@@ -273,10 +274,16 @@ typedef int socklen_t;
 /*
  * Define some lazy shorthand typedefs for commonly used structures
  */
-typedef struct sockaddr_in 	ISA;
 typedef struct sockaddr 	SA;
-typedef struct in_addr		IA;
 typedef struct sockaddr_storage	SS;
+typedef struct sockaddr_in6	ISA6;
+typedef struct sockaddr_in6	I6SA;
+typedef struct sockaddr_in 	ISA;
+typedef struct in_addr		IA;
+typedef struct in6_addr		IA6;
+typedef struct in6_addr		I6A;
+
+typedef struct addrinfo		AI;
 typedef struct hostent		Hostent;
 typedef struct timeval		Timeval;
 typedef struct stat		Stat;

@@ -1,5 +1,5 @@
 /*
- * @(#)$Id: acconfig.h,v 1.12 2002/05/07 00:21:13 jnelson Exp $
+ * @(#)$Id: acconfig.h,v 1.13 2002/05/27 02:43:35 jnelson Exp $
  */
 
 /*
@@ -268,4 +268,7 @@
 
 /* Define this if you don't have siglen_t */
 #undef HAVE_SOCKLEN_T
+
+/* Define this if you have a getaddrinfo() with missing functionality */
+#undef GETADDRINFO_DOES_NOT_DO_AF_UNIX
 

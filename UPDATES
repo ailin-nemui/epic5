@@ -1,5 +1,12 @@
 EPIC4-1.2.0
 
+*** News 05/26/2002 -- The beginnings of support for IPv6
+	On this date I commited the very first set of changes adding 
+	infrastructure for IPv6.  If you do not have IPv6 support, EPIC
+	may not compile for you until we add compatability shims.  There
+	is no timeframe for this -- you may need to stick with EPIC4-1.1.5
+	until this conversion is cleared up.
+
 *** News 05/20/2002 -- New functionality to /FE and /FEC
 	CrazyEddy needs to document this. =)  Keep a look out in the future
 	for updates to this item.

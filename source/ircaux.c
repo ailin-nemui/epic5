@@ -8,7 +8,7 @@
  */
 
 #if 0
-static	char	rcsid[] = "@(#)$Id: ircaux.c,v 1.36 2002/05/23 03:35:17 jnelson Exp $";
+static	char	rcsid[] = "@(#)$Id: ircaux.c,v 1.37 2002/05/27 02:43:35 jnelson Exp $";
 #endif
 
 #include "irc.h"
@@ -3097,13 +3097,13 @@ char *	strnrchr(char *start, char which, int howmany)
  * We know that the final strcpy() is safe, since we never make a string that
  * is longer than the source string, always less than or equal in size.
  */
-void	mask_digits (char **hostname)
+void	mask_digits (char **host)
 {
 	char	*src_ptr;
 	char 	*retval, *retval_ptr;
 
-	retval = retval_ptr = alloca(strlen(*hostname) + 1);
-	src_ptr = *hostname;
+	retval = retval_ptr = alloca(strlen(*host) + 1);
+	src_ptr = *host;
 
 	while (*src_ptr)
 	{
@@ -3119,7 +3119,7 @@ void	mask_digits (char **hostname)
 	}
 
 	*retval_ptr = 0;
-	strcpy(*hostname, retval);
+	strcpy(*host, retval);
 	return;
 }
 
@@ -3790,29 +3790,56 @@ const char *	my_strerror (int number)
 	return strerror(errno);
 }
 
+/* 
+ * Should I switch over to using getaddrinfo() directly or is using
+ * inet_anyton() sufficient?
+ */
 const char *	switch_hostname (const char *new_hostname)
 {
-	struct hostent *hp;
-	char *retval;
+	char *	retval;
+	ISA 	new_4;
+	ISA6 	new_6;
+	char 	v4_name[1024];
+	char	v6_name[1024];
+	int	accept4 = 0;
+	int	accept6 = 0;
 
-	if ((hp = gethostbyname(new_hostname)))
+	strcpy(v4_name, "<none>");
+	strcpy(v6_name, "<none>");
+
+	new_4.sin_family = AF_INET;
+	new_6.sin6_family = AF_INET6;
+
+	if (!inet_anyton(new_hostname, zero, (SA *)&new_4)) {
+		inet_ntop(AF_INET, &new_4.sin_addr, v4_name, 1024);
+		accept4 = 1;
+	}
+	if (!inet_anyton(new_hostname, zero, (SA *)&new_6)) {
+		inet_ntop(AF_INET6, &new_6.sin6_addr, v6_name, 1024);
+		accept6 = 1;
+	}
+
+	if (accept4 || accept6)
 	{
-		if (hp->h_addrtype == AF_INET)
+		new_free(&LocalIPv4Addr);
+		new_free(&LocalIPv6Addr);
+
+		if (accept4)
 		{
-			LocalIPv4Addr.sin_family = AF_INET;
-			LocalIPv4Addr.sin_port = 0;
-			LocalIPv4Addr.sin_addr = *(IA *)hp->h_addr;
-		}
-		else
-		{
-			retval = m_sprintf("I cannot configure [%s] because it resolves to an IPv6 address -- local address not changed.", new_hostname);
-			return retval;
+		    LocalIPv4Addr = (ISA *)new_malloc(sizeof(*LocalIPv4Addr));
+		    *LocalIPv4Addr = new_4;
 		}
 
+		if (accept6) 
+		{
+		    LocalIPv6Addr = (ISA6 *)new_malloc(sizeof(*LocalIPv6Addr));
+		    *LocalIPv6Addr = new_6;
+		}
 
 		malloc_strcpy(&LocalHostName, new_hostname);
-		retval = m_sprintf("Local address changed to [%s] (%s)",
-			LocalHostName, inet_ntoa(LocalIPv4Addr.sin_addr));
+
+		retval = m_sprintf("Local address changed to [%s] (%s) (%s)",
+				LocalHostName, v4_name, v6_name);
 	}
 	else
 		retval = m_sprintf("I cannot configure [%s] -- local address not changed.", new_hostname);

@@ -1080,7 +1080,7 @@ static int 	connect_to_server (int new_server)
 	memset(&s->local_sockname, 0, sizeof(s->local_sockname));
 	memset(&s->remote_sockname, 0, sizeof(s->remote_sockname));
 
-	if ((des = connectory(AF_UNSPEC, s->name, s->port)) < 0)
+	if ((des = connectory(AF_UNSPEC, s->name, ltoa(s->port))) < 0)
 	{
 		if (x_debug & DEBUG_SERVER_CONNECT)
 			say("new_des is %d", des);
@@ -2108,7 +2108,7 @@ void	set_server_userhost (int refnum, const char *userhost)
 
 	/* Ack! */
 	FAMILY(server_list[from_server].uh_addr) = AF_INET;
-	if (inet_anyton(host + 1, (SA *)&server_list[from_server].uh_addr))
+	if (inet_anyton(host + 1, zero, (SA *)&server_list[from_server].uh_addr))
 		yell("Ack.  The server says your userhost is [%s] and "
 		     "I can't figure out the IP address of that host! "
 		     "You won't be able to use /SET DCC_USE_GATEWAY_ADDR ON "

@@ -15,7 +15,7 @@
 						const char *, int);
 	void	dcc_check 		(fd_set *);
 	void	dcc_list 		(char *);
-	char *	dcc_raw_connect 	(char *, u_short, int);
+	char *	dcc_raw_connect 	(const char *, const char *, int);
 	char *	dcc_raw_listen 		(unsigned short);
 	void	dcc_reject 		(char *, char *, char *);
 	void	process_dcc 		(char *);
