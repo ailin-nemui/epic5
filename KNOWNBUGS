@@ -5,6 +5,8 @@ KNOWN ERRATA (eg, bugs, or unresolved requests):
 * A missing 'else' in create_additional_screen causes gnu screen to be
   prefered over X windows.  Should this be fixed, or at least made an option?
   Maybe try X, fall back to gnu screen on failure?
+* If you create a new query window in /on #msg -33, then the message does
+  not go to that query window!
  
 [See http://www.epicsol.org/PROJECTS for things to come in the future]
 [See http://www.epicsol.org/CHANGELOG for things that changed in the past]
@@ -45,3 +47,7 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Increase the precision of floating point results to 999 decimal places (ce)
 * Don't hook /on general_notice if user hooks /on kill or /on oper_notice.
 * Fix bug that showed all timers as having 0 seconds left.
+* Fix $printlen() -- must call normalize_string() before output_with_count()!
+* Make 'add_to_window' and 'window_disp' static to screen.c again.
+* "Fix" /WINDOW ECHO to not call add_to_window() but rather use "to_window".
+

@@ -5057,7 +5057,13 @@ BUILT_IN_FUNCTION(function_remws, word)
 
 BUILT_IN_FUNCTION(function_printlen, input)
 {
-	RETURN_INT(output_with_count(input, 0, 0));
+	u_char *copy;
+	int	retval;
+
+	copy = normalize_string(input, 0);	/* Normalize string */
+	retval = output_with_count(input, 0, 0);
+	new_free(&copy);
+	RETURN_INT(retval);
 }
 
 BUILT_IN_FUNCTION(function_stripansicodes, input)

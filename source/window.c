@@ -3086,16 +3086,20 @@ static Window *window_double (Window *window, char **args)
  */
 static	Window *window_echo (Window *window, char **args)
 {
-extern	void add_to_window (Window *, const unsigned char *); /* XXXXX */
-
 	const char *to_echo;
+	Window *old_to_window;
 
 	if (**args == '"')
 		to_echo = new_next_arg(*args, args);
 	else
 		to_echo = *args, *args = NULL;
 
-	add_to_window(window, (const unsigned char *)to_echo);
+	/* Calling add_to_window() directly is a hack. */
+	old_to_window = to_window;
+	to_window = window;
+	add_to_screen(to_echo);
+	to_window = old_to_window;
+
 	return window;
 }
 

@@ -135,8 +135,8 @@
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
 static int 	rite 		    (Window *window, const unsigned char *str);
 static void 	scroll_window 	    (Window *window);
-void 	add_to_window (Window *window, const unsigned char *str);
-void    window_disp (Window *window, const unsigned char *str, const unsigned char *orig_str);
+static void 	add_to_window (Window *window, const unsigned char *str);
+static void    window_disp (Window *window, const unsigned char *str, const unsigned char *orig_str);
 static int 	add_to_display_list (Window *window, const unsigned char *str);
 
 /*
@@ -1543,7 +1543,7 @@ const 	u_char	*ptr;
 		c,
 		*words,
 		*pos_copy;
-	Attribute	a = {0}, sa;
+	Attribute	a = {0};
 
 	if (recursion)
 		panic("prepare_display() called recursively");
@@ -2207,7 +2207,7 @@ void 	add_to_screen (const unsigned char *buffer)
  * rite() handles the *appearance* of the display, writing to the screen as
  * neccesary.
  */
-void 	add_to_window (Window *window, const unsigned char *str)
+static void 	add_to_window (Window *window, const unsigned char *str)
 {
 	int	must_free = 0;
 	char *	pend;
@@ -2311,7 +2311,7 @@ void 	add_to_window (Window *window, const unsigned char *str)
  * chunks, suitable for putting onto the display.  We then call our back end
  * function to do the actual physical output.
  */
-void    window_disp (Window *window, const unsigned char *str, const unsigned char *orig_str)
+static void    window_disp (Window *window, const unsigned char *str, const unsigned char *orig_str)
 {
         u_char **       lines;
         int             cols;
