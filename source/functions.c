@@ -319,6 +319,7 @@ static	char
 	*function_uname		(char *),
 	*function_uniq		(char *),
 	*function_unlink 	(char *),
+	*function_unsplit	(char *),
 	*function_urldecode	(char *),
 	*function_urlencode	(char *),
 	*function_winbound	(char *),
@@ -586,6 +587,7 @@ static BuiltInFunctions	built_in_functions[] =
 	{ "UNIQ",		function_uniq		},
 	{ "UNLINK",		function_unlink 	},
 	{ "UNSHIFT",		function_unshift 	},
+	{ "UNSPLIT",		function_unsplit	},
 	{ "URLDECODE",		function_urldecode	},
 	{ "URLENCODE",		function_urlencode	},
 	{ "USERHOST",		function_userhost 	},
@@ -6045,3 +6047,17 @@ BUILT_IN_FUNCTION(function_perlxcall, input)
 }
 
 #endif
+
+BUILT_IN_FUNCTION(function_unsplit, input)
+{
+	char *	sep;
+	char *	word;
+	char *	retval = NULL;
+
+	GET_STR_ARG(sep, input);
+	while ((word = new_next_arg(input, &input)))
+		m_s3cat(&retval, sep, word);
+	RETURN_STR(retval);
+}
+
+

@@ -1,5 +1,40 @@
 EPIC4pre2
 
+*** News -- Nov 9, 2001 -- New built in function, $unsplit(<sep> <word list>)
+	Unsplit takes two arguments, a separator string and a word list.
+	The return value is each word in <word list> separated by <sep>
+	instead of by spaces.  Multiple spaces will be condensed into one
+	<sep>.  This is intentionally useful for creating channel lists 
+	to pass to /join.  See the example in /WINDOW REJOIN for good ideas.
+
+*** News -- Nov 9, 2001 -- New math functions added (crazyeddy)
+	The following built in math functions have been added.  
+
+		$acos(number)		Arc cosine
+		$acosh(number)		Inverse hyperbolic cosine
+		$asin(number)		Arc sine
+		$asinh(number)		Inverse hyperbolic sine
+		$atan(number)		Arc tangent of one variable
+		$atan(number2 number2)	Arc tangent of two variables
+		$atanh(number)		Inverse hyperbolic tangent
+		$cosh(number)		Hyperbolic cosine
+		$exp(number)		Exponential value
+		$jn(int number)		Bessel function of the first kind
+					of the integer order [int]
+		$log(number)		Natural logarithm
+		$log10(number)		Base-10 logarithm
+		$sinh(number)		Hyperbolic sine
+		$tanh(number)		Hyperbolic tangent
+		$yn(int number)		Bessel function of the secnod kind
+					of the integer order [int]
+
+	All of these functions may return a "RANGE" or a "DOMAIN" error,
+	the nature of which is different for each function.  In case of
+	a "RANGE" error, the return value of the function shall be the
+	string "RANGE".  In case of a "DOMAIN" error, the return value of
+	the function shall be the string "DOM".  If no error occurs, then
+	a floating point number is returned in "%f" printf format.
+
 *** News -- Oct 24, 2001 -- Support for channel mode +M (adm)
 	Support for Dalnet's channel mode +M, which prohibits non-registered
 	users from sending privmsgs to the channel, was added on this date.
@@ -63,8 +98,48 @@ EPIC4pre2
 	is an improvement, for the record. ;-)
 
 *** News -- Oct 9, 2001 -- New /WINDOW command, /WINDOW REJOIN
+	The /WINDOW REJOIN command can be used to join channels and 
+	is sensitive to your window bindings.  Here is how it works:
+
+		/WINDOW REJOIN <#channel>[,<#channel>]
+
+	For each channel you list, for the current server,
+	* If we are on the channel
+	  * If the operative window is connected to the current server
+	    -> Move the channel to the operative window.
+	  * If the operative window is NOT connected to the current server
+	    -> Do nothing (fail silently)
+	* If we are NOT on the channel
+	  * If there is a window that claims to own this channel (bound)
+	    -> Join the channel and put it in that window.
+	  * If there is NOT a window that claims to own this channel
+	    * If the operative window is connected to the current server
+	      -> Join the channel in the current window
+	    * If the operative window is not connected to the current server
+	      -> Join the channel and put it in any window we find that is
+		 connected to the current server.
+
+	It is expressly implied that you can use /WINDOW REJOIN inside of
+	an /ON and that the channel(s) will *NOT BE REMOVED* from their
+	bound window(s), if any.  What this means is that you can now do
+	something like this:
+
+	alias join_channels_in_new_server (server, ...) {
+	    if (![$*]) { return }
+	    window new server $server rebind $0
+	    fe ($1-) x { window new rebind $x }
+	    ^on ^connect $server join $unsplit(, $*)\;^on connect -server
+	}
 
 *** News -- Oct 9, 2001 -- New /WINDOW command, /WINDOW REBIND
+	The /WINDOW REBIND command is to be used when you wish to bind
+	a channel to a window unconditionally.  Typically, /WINDOW BIND
+	will fail if you try to bind a channel other than the current
+	channel, but /WINDOW REBIND does not fail.  If you are on the
+	channel, then the channel is forcibly made the current channel.
+	This command is suitable for use in /ON CONNECT where you may
+	want to bind channels to windows before /WINDOW REJOINing them,
+	and making sure they go to the window you expect.
 
 *** News -- Oct 9, 2001 -- How to specify server groups in ircII.servers
 	The format of the "ircII.servers" file has been improved somewhat.

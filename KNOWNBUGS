@@ -75,3 +75,5 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * When killing a window, move channels before swapping, avoids ref int panic.
 * Add /set auto_rejoin_connect, idea from David Buckley.
 * Add support for dalnet channel mode +M, from adm.
+* Add a whole mess of math functions, from crazyeddy.
+* Add $unsplit(<sep> <word list>), to join a list of words with a separator.
