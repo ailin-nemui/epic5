@@ -9,7 +9,7 @@
  */
 
 #if 0
-static	char	rcsid[] = "@(#)$Id: dcc.c,v 1.12 2002/04/26 20:59:40 jnelson Exp $";
+static	char	rcsid[] = "@(#)$Id: dcc.c,v 1.13 2002/04/28 14:54:58 jnelson Exp $";
 #endif
 
 #include "irc.h"
@@ -670,7 +670,7 @@ static	int		dcc_open (DCC_list *dcc)
 	 */
 	else
 	{
-		unsigned short	port = dcc->local_port;
+		int len;
 
 		/*
 		 * Mark that we're waiting for the remote peer to answer,
@@ -681,7 +681,7 @@ static	int		dcc_open (DCC_list *dcc)
 		 * for a port if our random port isnt available.
 		 */
 		dcc->flags |= DCC_MY_OFFER;
-		if ((dcc->read = connect_by_number(NULL, &port, 
+		if ((dcc->read = connect_by_number(NULL, &dcc->local_port,
 				SERVICE_SERVER, PROTOCOL_TCP)) < 0)
 		{
 			dcc->flags |= DCC_DELETE;
@@ -692,7 +692,10 @@ static	int		dcc_open (DCC_list *dcc)
 			from_server = old_server;
 			return 0;
 		}
-		dcc->local_port = port;
+
+		len = sizeof(dcc->local_sockaddr);
+		getsockname(dcc->write, (SA *)&dcc->local_sockaddr, &len);
+		dcc->local_port = ntohs(dcc->local_sockaddr.sin_port);
 
 #ifdef MIRC_BROKEN_DCC_RESUME
 		/*
@@ -731,9 +734,11 @@ static void	dcc_send_booster_ctcp (DCC_list *dcc)
 	IA		myip;
 
 	if (get_int_var(DCC_USE_GATEWAY_ADDR_VAR))
-		myip.s_addr = get_server_uh_addr(from_server).s_addr;
+		myip = get_server_uh_addr(from_server);
+	else if (dcc->local_sockaddr.sin_addr.s_addr == htonl(INADDR_ANY))
+		myip = get_server_local_addr(from_server);
 	else
-		myip.s_addr = get_server_local_addr(from_server).s_addr;
+		myip = dcc->local_sockaddr.sin_addr;
 
 	/*
 	 * If this is to be a 2-peer connection, then we need to
