@@ -1,6 +1,9 @@
 #include "irc.h"
 #include "ircaux.h"
 #include "array.h"
+#include "alias.h"
+#include "commands.h"
+#include "output.h"
 #include <EXTERN.h>
 #include <perl.h>
 #include <XSUB.h>
@@ -50,7 +53,6 @@ static XS (XS_expr) {
 
 static XS (XS_yell) {
 	unsigned foo;
-	char* retval=NULL;
 	dXSARGS;
 	for (foo=0; foo<items; foo++) {
 		yell("Perl: %s",SvPV_nolen(ST(foo)));

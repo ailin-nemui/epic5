@@ -311,6 +311,10 @@ parse.o: parse.c ../include/irc.h ../include/defs.h \
  ../include/status.h ../include/flood.h ../include/output.h \
  ../include/numbers.h ../include/parse.h ../include/notify.h \
  ../include/alist.h ../include/notice.h ../include/timer.h
+perl.o: perl.c ../include/irc.h ../include/defs.h ../include/config.h \
+ ../include/irc_std.h ../include/debug.h ../include/ircaux.h \
+ ../include/array.h ../include/alias.h ../include/commands.h \
+ ../include/output.h
 queue.o: queue.c ../include/irc.h ../include/defs.h \
  ../include/config.h ../include/irc_std.h ../include/debug.h \
  ../include/alias.h ../include/commands.h ../include/if.h \

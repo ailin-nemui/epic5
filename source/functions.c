@@ -3601,9 +3601,6 @@ BUILT_IN_FUNCTION(function_uniq, word)
 {
         char    **list = NULL, *booya = NULL;
         int     listc, listi, listo;
-	char	*tval;
-	char	*input;
-	size_t	rvclue=0;
 
 	RETURN_IF_EMPTY(word);
         listc = splitw(word, &list);
@@ -3644,6 +3641,10 @@ BUILT_IN_FUNCTION(function_uniq, word)
 	booya = unsplitw(&list, listc);
 
 #else
+    { /* Oh hush.  It is #ifdef'd out, after all. */
+	char	*tval;
+	char	*input;
+	size_t	rvclue=0;
 
 	/*
 	 * XXX This algorithm is too expensive.  It should be done
@@ -3662,7 +3663,7 @@ BUILT_IN_FUNCTION(function_uniq, word)
 			m_sc3cat(&booya, space, list[listi], &rvclue);
 		new_free(&tval);
         }
-
+    }
 #endif
 
         new_free((char **)&list);
