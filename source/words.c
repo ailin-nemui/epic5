@@ -1,4 +1,4 @@
-/* $EPIC: words.c,v 1.10 2003/07/14 05:58:27 jnelson Exp $ */
+/* $EPIC: words.c,v 1.11 2003/07/14 17:07:25 jnelson Exp $ */
 /*
  * words.c -- right now it just holds the stuff i wrote to replace
  * that beastie arg_number().  Eventually, i may move all of the
@@ -592,12 +592,9 @@ ssize_t	move_word_rel (const char *start, const char **mark, int word, int exten
  */
 char *	real_extract2 (const char *start, int firstword, int lastword, int extended)
 {
-	/* 
-	 * If firstword or lastword is negative, then
-	 * we take those values from the end of the string
-	 */
 	const char *	mark;
 	const char *	mark2;
+	char *		retval;
 
 	/*
 	 * 'firstword == EOS' means we should return the last word
@@ -683,7 +680,7 @@ char *	real_extract2 (const char *start, int firstword, int lastword, int extend
 	/*
 	 * move back one position, because we are the start of the NEXT word.
 	 */
-	if (mark2 > start)
+	if (*mark2 && mark2 > start)
 		mark2--;
 
 	/* 
@@ -698,7 +695,15 @@ char *	real_extract2 (const char *start, int firstword, int lastword, int extend
 	 * copying out of is const.  So we cant just null off
 	 * the trailing character and malloc_strdup it.
 	 */
-	return strext(mark, mark2);
+	retval = strext(mark, mark2);
+
+	/* 
+	 * XXX Backwards compatability requires that $<num> not have
+	 * any trailing spaces, even if it is the last word.
+	 */
+	if (firstword == lastword)
+		remove_trailing_spaces(retval, 0);
+	return retval;
 }
 
 /*

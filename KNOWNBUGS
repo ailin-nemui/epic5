@@ -95,4 +95,5 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Remove now pointless "strip extraneous spaces" feature.
 * Don't worry about cheating in real_extractw
 * Fix last_arg() per all of the above
-
+* Fix bug where $<num> (as the last word) would chop off the last character
+* It is necessary to remove trailing spaces for $<num>, historical practice.
