@@ -175,3 +175,4 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Fix $<num> to not have leading or trailing spaces, cause zinx said so. ;-)
 * Fix real_extract2 because I'm a moron.  Ugh.  Reported anonymously.
 * Add nsx's 'tabkey.jm' script.
+* Fix some compile warnings, use (intptr_t) -- i hope this doesn't bite me.

@@ -1,4 +1,4 @@
-/* $EPIC: notice.c,v 1.22 2003/05/09 04:29:52 jnelson Exp $ */
+/* $EPIC: notice.c,v 1.23 2003/07/31 06:29:37 jnelson Exp $ */
 /*
  * notice.c: special stuff for parsing NOTICEs
  *
@@ -237,7 +237,7 @@ void 	p_notice (const char *from, const char *comm, const char **ArgList)
 
 	/* Do normal /CTCP reply handling */
 	/* XXX -- Casting "message" to (char *) is cheating. */
-	message = do_notice_ctcp(from, target, (char *)message);
+	message = do_notice_ctcp(from, target, (char *)(intptr_t)message);
 	if (!*message) {
 		set_server_doing_notice(from_server, 0);
 		return;

@@ -1,4 +1,4 @@
-/* $EPIC: alias.c,v 1.28 2003/07/10 23:56:01 jnelson Exp $ */
+/* $EPIC: alias.c,v 1.29 2003/07/31 06:29:37 jnelson Exp $ */
 /*
  * alias.c -- Handles the whole kit and caboodle for aliases.
  *
@@ -2183,7 +2183,7 @@ char *  call_lambda_function (const char *name, const char *what, const char *ar
 	 * C does not allow you to treat a pointer as conditionally const, so
 	 * we just use the cast to hide that.  This is absolutely safe.
 	 */
-	return parse_line_alias_special(name, what, (char *)args, 0, 0, NULL, 1);
+	return parse_line_alias_special(name, what, (char *)(intptr_t)args, 0, 0, NULL, 1);
 }
 
 /************************************************************************/

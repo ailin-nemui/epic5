@@ -1,4 +1,4 @@
-/* $EPIC: ircaux.c,v 1.92 2003/07/18 21:54:22 jnelson Exp $ */
+/* $EPIC: ircaux.c,v 1.93 2003/07/31 06:29:37 jnelson Exp $ */
 /*
  * ircaux.c: some extra routines... not specific to irc... that I needed 
  *
@@ -2809,7 +2809,11 @@ static	int 	which = 0;
 	 */
 	if (which == 0)
 	{
-		struct tm *now_tm = gmtime(&right_now.tv_sec);
+		time_t	blargh;
+		struct tm *now_tm;
+
+		blargh = right_now.tv_sec;
+		now_tm = gmtime(&blargh);
 
 		if (!which)
 		{
@@ -2825,7 +2829,12 @@ static	int 	which = 0;
 		then.tv_sec = 60 - (right_now.tv_sec + 1) % 60;
 	else 	/* which == 2 */
 	{
-		struct tm *now_tm = gmtime(&right_now.tv_sec);
+		time_t	blargh;
+		struct tm *now_tm;
+
+		blargh = right_now.tv_sec;
+		now_tm = gmtime(&blargh);
+
 		then.tv_sec = 60 - (now_tm->tm_sec + 1) % 60;
 	}
 
