@@ -1844,7 +1844,7 @@ void	register_server (int ssn_index, const char *nickname)
 			say ("SSL negotiation failed");
 			say ("WARNING: Bailing to no encryption");
 			SSL_CTX_free((SSL_CTX *)&server_list[ssn_index].ctx);
-			send_to_aserver(ssn_index, "");
+			send_to_aserver(ssn_index, "%s", empty_string);
 		} else {
 			char *u_cert_subject, *u_cert_issuer;
 			cert_subject = X509_NAME_oneline(
