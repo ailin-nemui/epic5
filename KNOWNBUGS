@@ -10,6 +10,10 @@ KNOWN ERRATA (eg, bugs, or unresolved requests):
 * More intelligent "level-collision" handling on /window server.
 * Add %{1}W to display even on a single visible window.
 * Make it easier to script your own altnick stuff.
+* Changing attribute in the middle of a word that totaly wraps does not
+  "bleed" to subsequent lines (ie, ^C34<40 a's> <40a's>^C35<100 a's>
+* do_hook crashes when you remove all of the /on's for a numeric within it.
+* /on <hook> "pattern" {} acts like /on <hook> ^"pattern"
 
 [See http://www.epicsol.org/PROJECTS for things to come in the future]
 [See http://www.epicsol.org/CHANGELOG5 for things that changed in the past]
@@ -228,4 +232,10 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Avoid a NULL deref with "parse_command" keybinding.
 * Fix (maybe?) a NULL deref with prepare_display() that hsoc tripped across.
 * Revert all the regex stuff for /on's -- the idea needs a lot more thoguht.
-* Convert do_hook()'s algorithm so it's safe to delete /on's from within /on's
+* Create one unified "hook" table for numerics and named hooks
+* Nuke "numeric lists" as separate beast in hook.c
+* Refactor code to only worry about one hook table. 
+* Refactor do_hook() to re-start at start of list every time /on runs
+* This makes it 100% safe to edit/delete /on's from within /on's, HUZZAH!
+* Revert /on type ^"pattern" to epic4 behavior (suppressive action)
+* Add /on type !"pattern" to act like ircII's /on type ^"pattern" (exceptive)

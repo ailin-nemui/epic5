@@ -1,4 +1,4 @@
-/* $EPIC: numbers.c,v 1.70 2004/04/13 00:19:48 jnelson Exp $ */
+/* $EPIC: numbers.c,v 1.71 2004/05/04 00:34:59 jnelson Exp $ */
 /*
  * numbers.c: handles all those strange numeric response dished out by that
  * wacky, nutty program we call ircd 
@@ -68,8 +68,8 @@ const char *	banner (void)
 	static	char	thing[80];
 	char *str;
 
-	if (current_numeric < 0 && get_int_var(SHOW_NUMERICS_VAR))
-		snprintf(thing, sizeof thing, "%3.3u", -current_numeric);
+	if (current_numeric > 0 && get_int_var(SHOW_NUMERICS_VAR))
+		snprintf(thing, sizeof thing, "%3.3u", current_numeric);
 	else if ((str = get_string_var(BANNER_VAR)))
 	{
 		if (get_int_var(BANNER_EXPAND_VAR))
@@ -190,7 +190,7 @@ void 	numbered_command (const char *from, const char *comm, char const **ArgList
 		l = message_from(NULL, LEVEL_CRAP);
 
 	numeric = atol(comm);
-	current_numeric = -numeric;	/* must be negative of numeric! */
+	current_numeric = numeric;	/* must be negative of numeric! */
 
 	/*
 	 * This first switch statement is only used for those numerics

@@ -1,4 +1,4 @@
-/* $EPIC: irc.c,v 1.721 2004/04/30 18:34:28 jnelson Exp $ */
+/* $EPIC: irc.c,v 1.722 2004/05/04 00:34:59 jnelson Exp $ */
 /*
  * ircII: a new irc client.  I like it.  I hope you will too!
  *
@@ -52,7 +52,7 @@ const char internal_version[] = "20040319";
 /*
  * In theory, this number is incremented for every commit.
  */
-const unsigned long	commit_id = 1054;
+const unsigned long	commit_id = 1055;
 
 /*
  * As a way to poke fun at the current rage of naming releases after
@@ -109,7 +109,7 @@ int		use_iexten = -1;
  * of the numeric.  Its negative so if we pass it to do_hook, it can
  * tell its a numeric and not a named ON event.
  */
-int		current_numeric;
+int		current_numeric = -1;
 
 /* Set if the client is not using a termios interface */
 int		dumb_mode = 0;

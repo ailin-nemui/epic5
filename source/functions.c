@@ -1,4 +1,4 @@
-/* $EPIC: functions.c,v 1.166 2004/04/26 03:46:42 jnelson Exp $ */
+/* $EPIC: functions.c,v 1.167 2004/05/04 00:34:59 jnelson Exp $ */
 /*
  * functions.c -- Built-in functions for ircII
  *
@@ -880,7 +880,7 @@ static	char	*alias_version 		(void) { return malloc_strdup(internal_version); }
 static  char    *alias_show_userhost 	(void) { return malloc_strdup(get_server_userhost(from_server)); }
 static  char    *alias_online 		(void) { return malloc_sprintf(NULL, "%ld",(long)start_time.tv_sec); }
 static  char    *alias_idle 		(void) { return malloc_sprintf(NULL, "%ld",time(NULL)-idle_time.tv_sec); }
-static	char	*alias_current_numeric	(void) { return malloc_sprintf(NULL, "%03d", -current_numeric); }
+static	char	*alias_current_numeric	(void) { return malloc_sprintf(NULL, "%03d", current_numeric); }
 static	char	*alias_banner		(void) { return malloc_strdup(banner()); }
 
 static	char	*alias_currdir  	(void)
