@@ -1,4 +1,4 @@
-/* $EPIC: functions.c,v 1.180 2004/08/24 23:27:23 jnelson Exp $ */
+/* $EPIC: functions.c,v 1.181 2004/08/25 23:03:36 jnelson Exp $ */
 /*
  * functions.c -- Built-in functions for ircII
  *
@@ -3399,7 +3399,10 @@ BUILT_IN_FUNCTION(function_servername, input)
 	int 		refnum;
 	const char *	itsname;
 
-	refnum = str_to_servref(input);
+	if (is_string_empty(input))
+		refnum = from_server;
+	else
+		refnum = str_to_servref(input);
 
 	/* get_server_itsname does all the work for us. */
 	itsname = get_server_itsname(refnum);
@@ -3411,7 +3414,10 @@ BUILT_IN_FUNCTION(function_serverourname, input)
 	int 		refnum;
 	const char *	ourname;
 
-	refnum = str_to_servref(input);
+	if (is_string_empty(input))
+		refnum = from_server;
+	else
+		refnum = str_to_servref(input);
 
 	/* Ask it what our name is */
 	ourname = get_server_name(refnum);
@@ -3423,7 +3429,10 @@ BUILT_IN_FUNCTION(function_servergroup, input)
 	int 		refnum;
 	const char *	group;
 
-	refnum = str_to_servref(input);
+	if (is_string_empty(input))
+		refnum = from_server;
+	else
+		refnum = str_to_servref(input);
 
 	/* Next we try what we think its group is */
 	group = get_server_group(refnum);
@@ -3435,7 +3444,10 @@ BUILT_IN_FUNCTION(function_servertype, input)
 	int 		refnum;
 	const char *	group;
 
-	refnum = str_to_servref(input);
+	if (is_string_empty(input))
+		refnum = from_server;
+	else
+		refnum = str_to_servref(input);
 
 	/* Next we try what we think its type is */
 	group = get_server_type(refnum);
@@ -4104,7 +4116,10 @@ BUILT_IN_FUNCTION(function_winchan, input)
 		int	win = -1;
 
 		chan = arg1;
-		servnum = str_to_servref(input);
+		if (is_string_empty(input))
+			servnum = from_server;
+		else
+			servnum = str_to_servref(input);
 
 		/* Now return window for *any* channel. */
 		if ((win = get_channel_winref(chan, servnum)))
@@ -4320,7 +4335,12 @@ BUILT_IN_FUNCTION(function_servernick, input)
 		if (!my_stricmp(servdesc, "<global>"))
 			RETURN_STR(nickname);
 
-		if ((refnum = str_to_servref(input)) == NOSERV)
+		if (is_string_empty(input))
+			refnum = from_server;
+		else
+			refnum = str_to_servref(input);
+
+		if (refnum == NOSERV)
 			RETURN_EMPTY;
 	}
 	else if (from_server != NOSERV)

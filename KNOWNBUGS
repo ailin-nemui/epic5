@@ -382,3 +382,5 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Add $serverctl(GET|SET <refnum> ALIAS) get and set server alternate desigs
 * Add $serverctl(GET|SET <refnum> ALIASES) get and set entire list.
 * Fix memory leak with /on set
+* Fix memory leak with /timer
+* Fix $server*() functions, when passed no arguments.

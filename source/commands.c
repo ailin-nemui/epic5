@@ -1,4 +1,4 @@
-/* $EPIC: commands.c,v 1.104 2004/08/24 23:27:23 jnelson Exp $ */
+/* $EPIC: commands.c,v 1.105 2004/08/25 23:03:36 jnelson Exp $ */
 /*
  * commands.c -- Stuff needed to execute commands in ircII.
  *		 Includes the bulk of the built in commands for ircII.
@@ -1149,7 +1149,10 @@ BUILT_IN_COMMAND(xevalcmd)
 			char *s;
 			int val;
 
-			s = next_arg(args, &args);
+			/* No argument means no commands means ignore it */
+			if (!(s = next_arg(args, &args)))
+				return;
+
 			val = str_to_servref(s);
 			if (is_server_registered(val))
 				from_server = val;
@@ -2211,7 +2214,10 @@ BUILT_IN_COMMAND(quotecmd)
 			char *s;
 			int sval;
 
-			s = next_arg(args, &args);
+			/* No argument means no commands means ignore it. */
+			if (!(s = next_arg(args, &args)))
+				return;
+
 			sval = str_to_servref(s);
 			if (!is_server_open(sval))
 			{

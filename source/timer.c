@@ -1,4 +1,4 @@
-/* $EPIC: timer.c,v 1.46 2004/08/11 23:58:39 jnelson Exp $ */
+/* $EPIC: timer.c,v 1.47 2004/08/25 23:03:36 jnelson Exp $ */
 /*
  * timer.c -- handles timers in ircII
  *
@@ -307,6 +307,7 @@ static void delete_timer (Timer *otimer)
 		new_free((char **)&otimer->command);
 		new_free((char **)&otimer->subargs);
 	}
+	new_free(&otimer->ref);
 	new_free((char **)&otimer);
 }
 
