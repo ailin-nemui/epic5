@@ -32,3 +32,4 @@ KNOWN ERRATA (eg, bugs, or unresolved requests):
 THE CHANGELOG SINCE THE LAST RELEASE:
 -------------------------------------
 * Fix $getset() by using the correct variable to do the lookup. :P
+* Fix build error on non-SSL systems.

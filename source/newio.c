@@ -1,4 +1,4 @@
-/* $EPIC: newio.c,v 1.9 2002/12/23 15:11:27 jnelson Exp $ */
+/* $EPIC: newio.c,v 1.10 2002/12/26 05:46:12 jnelson Exp $ */
 /*
  * newio.c: This is some handy stuff to deal with file descriptors in a way
  * much like stdio's FILE pointers 
@@ -203,9 +203,13 @@ int	dgets (char *str, int des, int buffer, void *ssl_aux)
 
 	    if (ssl_aux)
 	    {
+#ifndef HAVE_SSL
+		panic("Attempt to call SSL_read on non-ssl client");
+#else
 		/* Better safe than sorry... */
 		c = SSL_read((SSL *)ssl_aux, ioe->buffer + ioe->write_pos,
 				ioe->buffer_size - ioe->write_pos - 1);
+#endif
 	    }
 	    else
 	    {
