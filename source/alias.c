@@ -1,4 +1,4 @@
-/* $EPIC: alias.c,v 1.60 2004/09/06 19:41:12 jnelson Exp $ */
+/* $EPIC: alias.c,v 1.61 2004/09/15 10:54:08 crazyed Exp $ */
 /*
  * alias.c -- Handles the whole kit and caboodle for aliases.
  *
@@ -1916,6 +1916,8 @@ char **	glob_cmd_alias (const char *name, int *howmany, int maxret, int start, i
 
 	for (cnt = 0; cnt < max; cnt++, pos++)
 	{
+		if (!globals.list[pos]->user_command)
+			continue;
 		if (strchr(globals.list[pos]->name + len, '.'))
 			continue;
 
@@ -1961,6 +1963,8 @@ char **	glob_assign_alias (const char *name, int *howmany, int maxret, int start
 
 	for (cnt = 0; cnt < max; cnt++, pos++)
 	{
+		if (!globals.list[pos]->user_variable)
+			continue;
 		if (strchr(globals.list[pos]->name + len, '.'))
 			continue;
 
