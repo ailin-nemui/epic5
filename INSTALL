@@ -42,6 +42,10 @@ any GNU software (however, this is _not_ GNU software)
 	  --with-perl[=PATH]
 		Enable the perl support in the scripting language.
 		WARNING:  Currently requires Perl 5.6+.
+	  --with-ssl[=PATH]
+		Enable support for SSLv3 connections to servers.
+	  --with-ssl-ver=v2
+		Use SSLv2 instead of SSLv3
 
   o  This IRC II client should be able to compile and run on almost
      any modern unix (A ``modern'' unix is one that supports POSIX
@@ -60,8 +64,8 @@ any GNU software (however, this is _not_ GNU software)
      available from the same place you got the source code from.
      This release uses a new layout format for its various parts that differs
      from the historical ircII defaults.  The binary is called 'epic', the
-     library is put into .../share/epic by default, and the 'wserv'
-     binary ends up as .../libexec/wserv.
+     library is put into .../share/epic by default, and the 'wserv4'
+     binary ends up as .../libexec/wserv4.
 
   o  You can now delete the object files and binaries if you want to
      save some space by typing `make clean'.  If you are sure you probably
