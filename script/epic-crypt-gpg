@@ -4,7 +4,8 @@
 # of the protocol, while being quite usable.
 #
 # the first input line contains words, the first of which is the key,
-# and additional arguments, which aren't used right now.
+# and additional arguments, which aren't used right now, so they are
+# discarded.
 #
 # When the end of the line is reached, the rest of the input is to be
 # read as binary input of the plaintext or cyphertext in _binary_ mode.
@@ -12,17 +13,17 @@
 # be present.
 
 function encrypt {
-	( echo ${parms[0]} ; cat ) | gpg -c --batch --passphrase-fd 0
+	( echo "$KEY" ; cat ) | gpg -c --batch --passphrase-fd 0
 }
 
 function decrypt {
-	( echo ${parms[0]} ; cat ) | gpg --batch --passphrase-fd 0
+	( echo "$KEY" ; cat ) | gpg --batch --passphrase-fd 0
 }
 
 proto="$1"
 shift 1
 
-read -a parms
+read KEY TRASH
 
 case "$proto" in
 encrypt) encrypt "$@" ;;

@@ -35,6 +35,7 @@
 #include "term.h"
 #include "notify.h"
 #include "numbers.h"
+#include "crypt.h"
 #include "options"
 
 #include <sys/stat.h>
@@ -185,6 +186,7 @@ static	char
 	*function_currchans	(char *),
 	*function_deuhc		(char *),
 	*function_diff 		(char *),
+	*function_encryptparm 	(char *),
 	*function_eof 		(char *),
 	*function_epic		(char *),
 	*function_error		(char *),
@@ -414,6 +416,7 @@ static BuiltInFunctions	built_in_functions[] =
 	{ "DEUHC",		function_deuhc		},
 	{ "DIFF",               function_diff 		},
 	{ "ENCODE",	  (bf *)function_encode 	},
+	{ "ENCRYPTPARM",	function_encryptparm	},
 	{ "EOF",		function_eof 		},
 	{ "EPIC",		function_epic		},
 	{ "EXP",		function_exp		},
@@ -6151,3 +6154,13 @@ BUILT_IN_FUNCTION(function_unsplit, input)
 }
 
 
+BUILT_IN_FUNCTION(function_encryptparm, input)
+{
+	char *ret = NULL, *entry = NULL;
+	Crypt *key;
+
+	GET_STR_ARG(entry, input);
+	if ((key=is_crypted(entry)))
+		ret = m_sprintf("%s %s %s", key->nick, key->key, key->prog);
+	RETURN_MSTR(ret);
+}

@@ -15,7 +15,7 @@
 # mode, echo -n is used.
 
 function encrypt {
-	( echo ${parms[0]} ; cat ) | gpg -ca --batch --passphrase-fd 0 | (
+	( echo "$KEY" ; cat ) | gpg -ca --batch --passphrase-fd 0 | (
 		while read && [ -n "$REPLY" ] ; do : ; done
 		while read && [ -n "$REPLY" ] ; do
 			[ -n "$LAST" ] && echo -n "$LAST " ;
@@ -32,13 +32,13 @@ function decrypt {
 		echo
 		for foo in "${input[@]}" ; do echo "$foo" ; done
 		echo "$LAST"
-	) ) | ( echo "${parms[0]}" ; cat ) | gpg -a --batch --passphrase-fd 0
+	) ) | ( echo "$KEY" ; cat ) | gpg -a --batch --passphrase-fd 0
 }
 
 proto="$1"
 shift 1
 
-read -a parms
+read KEY TRASH
 
 case "$proto" in
 encrypt) encrypt "$@" ;;
