@@ -1,4 +1,4 @@
-/* $EPIC: irc.c,v 1.561 2003/07/22 21:12:54 jnelson Exp $ */
+/* $EPIC: irc.c,v 1.562 2003/07/23 04:43:55 jnelson Exp $ */
 /*
  * ircII: a new irc client.  I like it.  I hope you will too!
  *
@@ -52,7 +52,7 @@ const char internal_version[] = "20030613";
 /*
  * In theory, this number is incremented for every commit.
  */
-const unsigned long	commit_id = 566;
+const unsigned long	commit_id = 567;
 
 /*
  * As a way to poke fun at the current rage of naming releases after
@@ -268,6 +268,7 @@ void	irc_exit (int really_quit, const char *format, ...)
 	char 	buffer[BIG_BUFFER_SIZE];
 	char *	sub_format;
 	int	old_window_display = window_display;
+	int	value;
 #ifdef PERL
 	extern void perlstartstop(int);
 #endif
@@ -321,7 +322,8 @@ void	irc_exit (int really_quit, const char *format, ...)
 	perlstartstop(0);  /* In case there's perl code in the exit hook. */
 #endif
 	close_all_servers(buffer);
-	logger(0);
+	value = 0;
+	logger(&value);
 	get_child_exit(-1);  /* In case some children died in the exit hook. */
 	clean_up_processes();
 
@@ -337,8 +339,8 @@ void	irc_exit (int really_quit, const char *format, ...)
 	/* Try to free as much memory as possible */
 	window_display = 0;
 	dumpcmd(NULL, NULL, NULL);
-	set_lastlog_size(0);
-	set_history_size(0);
+	set_lastlog_size(&value);
+	set_history_size(&value);
 	remove_channel(NULL, 0);
 	destroy_call_stack();
 	remove_bindings();

@@ -1,4 +1,4 @@
-/* $EPIC: lastlog.c,v 1.24 2003/07/22 21:12:54 jnelson Exp $ */
+/* $EPIC: lastlog.c,v 1.25 2003/07/23 04:43:55 jnelson Exp $ */
 /*
  * lastlog.c: handles the lastlog features of irc. 
  *
@@ -133,8 +133,10 @@ int	parse_lastlog_level (const char *orig)
 	int	warn = 0;
 	char *	str;
 
-	str = LOCAL_COPY(orig);
+	if (!orig)
+		return 0;		/* Whatever */
 
+	str = LOCAL_COPY(orig);
 	level = 0;
 	while ((str = next_arg(str, &rest)) != NULL)
 	{
