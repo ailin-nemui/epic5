@@ -1,4 +1,4 @@
-/* $EPIC: vars.c,v 1.68 2005/03/21 02:59:16 jnelson Exp $ */
+/* $EPIC: vars.c,v 1.69 2005/03/21 03:16:28 jnelson Exp $ */
 /*
  * vars.c: All the dealing of the irc variables are handled here. 
  *
@@ -224,8 +224,8 @@ void 	init_variables_stage1 (void)
 	VAR(HIGH_BIT_ESCAPE, INT,  set_meta_8bit);
 #if 0
 	VAR(HISTORY, INT,  set_history_size);
-#endif
 	VAR(HISTORY_CIRCLEQ, BOOL, NULL);
+#endif
 	VAR(HOLD_SLIDER, INT,  NULL);
 	VAR(INDENT, BOOL, NULL);
 	VAR(INPUT_ALIASES, BOOL, NULL);
