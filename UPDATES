@@ -1,5 +1,94 @@
 EPIC4-1.2.0
 
+*** News -- 11/24/2003 -- New built in function, $windowct()
+	You can now fetch much of the low-level information about your
+	windows using this function.  You cannot set them (yet), nor is
+	this expected for the upcoming production release.  You can still
+	always use the /window command to change things around.
+
+	$windowctl(REFNUMS)
+	- Return all window refnums currently in use.
+
+	$windowctl(REFNUM [number|name])
+	- Given a window refnum or a window name, return the window's
+	  refnum, suitable for use with $windowctl(GET ...)
+
+	$windowctl(GET <refnum> [item])
+	- Where [ITEM] is one of:
+
+	REFNUM 		The value of /WINDOW NUMBER
+	NAME		The value of /WINDOW NAME
+	SERVER		The server refnum this window is connected to.
+	LAST_SERVER 	When SERVER is -1 (disconnected), this is the refnum
+			of the last server this window was connected to.
+	PRIORITY 	Each time you change the current input window, this
+			value is incremented.  The window with the highest
+			priority value on a server is the server's 
+			"current window"
+	VISIBLE		1 if the window is visible, 0 if it is hidden
+	TOP		The line on the screen where the window starts, 
+			if it is visible
+	BOTTOM		The line on the screen where the window ends, if
+			it is visible
+	CURSOR		How many lines from the top of the window the cursor
+			should be put for the next line of output.
+	NOSCROLLCURSOR	This is always -1.
+	FIXED		The integer value of /WINDOW FIXED
+	SCROLL		The integer value of /WINDOW SCROLL (always 1)
+	CHANGE_LINE	The next line to be changed by changed by /xecho -l
+	OLD_SIZE	The size of the window the last time that we checked;
+			usually the same as DISPLAY_SIZE
+	UPDATE		Some non-zero value if the window needs to be updated,
+			either by redrawing it's body or its status bar
+	MISCFLAGS	1 if /WINDOW NOTIFY is on, 3 if a /WINDOW NOTIFY 
+			window has had output since the last time it was 
+			visible (ie, included in %F)
+	BEEP_ALWAYS	Integer value of /WINDOW BEEP_ALWAYS
+	NOTIFY_LEVEL	The value of /WINDOW NOTIFY_LEVEL
+	WINDOW_LEVEL	The value of /WINDOW LEVEL
+	SKIP		Integer value of /WINDOW SKIP
+	COLUMNS		How many vertical columns wide the window is
+	PROMPT		The current input prompt for this window.
+	STATUS_FORMAT	The value of /WINDOW STATUS_FORMAT
+	STATUS_FORMAT1	The value of /WINDOW STATUS_FORMAT1
+	STATUS_FORMAT2	The value of /WINDOW STATUS_FORMAT2
+	STATUS_LINE	The actual status bar when /window double off
+	STATUS_LINE1	The actual 1st status bar when /window double on
+	STATUS_LINE2	The actual 2nd status bar when /window double on
+	DISPLAY_BUFFER_SIZE
+			How many items are in the scrollback (display) buffer
+	DISPLAY_BUFFER_MAX
+			The value of /WINDOW SCROLLBACK or /SET SCROLLBACK
+	SCROLLING_DISTANCE
+			How far away the top of the standard view is from
+			the bottom of the scrollback buffer.
+	HOLDING_DISTANCE
+			How far away the top of the hold view is from the
+			bottom of the scrollback buffer.
+	SCROLBACK_DISTANCE
+			How far away the top of the scrollback view is from
+			the bottom of the scrollback buffer
+	DISPLAY_COUNTER	The serial number to be used by the next item put
+			into the scrollback buffer.
+	HOLD_SLIDER	How much the hold view "slides" up every time you
+			hit <enter>.  Value of /SET HOLD_SLIDER
+	HOLD_INTERVAL	The value of /SET HOLD_INTERVAL
+	LAST_LINES_HELD	How many lines are beind held, as seen in %H.
+	WAITING_CHANNEL	The last channel you /JOINed in this window.  You
+			can only have one waiting channel per window.
+	BIND_CHANNEL	The value of /WINDOW BIND
+	QUERY_NICK	The value of /WINDOW QUERY
+	NICKLIST	The nicks you added with /WINDOW ADD
+	LASTLOG_LEVEL	The levels of output that the window should put into
+			its lastlog, value of /WINDOW LASTLOG_LEVEL
+	LASTLOG_SIZE	How many items are in the window's lastlog.
+	LASTLOG_MAX	How big the window's lastlog can be; value of
+			/WINDOW LASTLOG or /SET LASTLOG
+	LOGGING		The integer value of /WINDOW LOG
+	LOGFILE		The current filename used by the window's log.
+	DECEASED	Should always be 0, but may be 1 if the window is
+			"dying" but this would be quite exceptional.
+
 *** News -- 11/21/2003 -- /SERVER <host> now honors server groups
 	Whenever EPIC tries to connect to a new server, particularly
 	when you do /SERVER <host> it will honor the server group of

@@ -3,7 +3,6 @@ EPIC4 Projects, Bugs, and other Errata:
 KNOWN ERRATA (eg, bugs, or unresolved requests):
 ------------------------------------------------
 * A lot of dcc output goes to target NULL when there is a nickname available.
-* Document $windowctl()
 
 [See http://www.epicsol.org/PROJECTS for things to come in the future]
 [See http://www.epicsol.org/CHANGELOG for things that changed in the past]
