@@ -67,8 +67,10 @@ int	connectory (int family, const char *host, unsigned short port)
 	{
 		if (host && *host == '/')
 			family = AF_UNIX;
-		else if (host && strchr(host, ':'))
-			family = AF_INET6;
+		else if (host && strchr(host, ':')) {
+			errno = EAFNOSUPPORT;
+			return -2;
+		}
 		else
 			family = AF_INET;
 	}
@@ -138,7 +140,7 @@ int	client_connect (SA *l, socklen_t ll, SA *r, socklen_t rl)
 		}
 		alarm(0);
 	}
-	else if (family == AF_INET || family == AF_INET6)
+	else if (family == AF_INET)
 	{
 		if (l && bind(fd, l, ll))
 		{
