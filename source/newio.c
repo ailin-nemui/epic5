@@ -1,4 +1,4 @@
-/* $EPIC: newio.c,v 1.36 2005/02/21 14:07:43 jnelson Exp $ */
+/* $EPIC: newio.c,v 1.37 2005/02/25 01:27:12 jnelson Exp $ */
 /*
  * newio.c:  Passive, callback-driven IO handling for sockets-n-stuff.
  *
@@ -753,10 +753,34 @@ static	int	kdoit (Timeval *timeout)
 
 	working_rd = readables;
 	working_wd = writables;
+	errno = 0;
 	retval = select(global_max_channel + 1, &working_rd, &working_wd, 
 			NULL, timeout);
 	if (retval <= 0)
-		return retval;
+	{
+	    if (errno == EBADF)
+	    {
+		struct timeval t = {0, 0};
+
+		for (channel = 0; channel <= global_max_channel; channel++)
+		{
+		    FD_ZERO(&working_rd);
+		    FD_SET(channel, &working_rd);
+		    errno = 0;
+		    retval = select(channel + 1, &working_rd, NULL, NULL, &t);
+		    if (retval < 0)
+		    {
+			yell("Closing channel %d because: %s", 
+					channel, strerror(errno));
+			FD_CLR(channel, &readables);
+			FD_CLR(channel, &writables);
+			new_close(channel);
+		    }
+		}
+	    }
+
+	    return retval;
+	}
 
 	for (channel = 0; channel <= global_max_channel; channel++)
 	{
