@@ -9,7 +9,7 @@
  */
 
 #if 0
-static	char	rcsid[] = "@(#)$Id: dcc.c,v 1.4 2001/09/26 16:37:10 jnelson Exp $";
+static	char	rcsid[] = "@(#)$Id: dcc.c,v 1.5 2001/09/26 18:32:03 jnelson Exp $";
 #endif
 
 #include "irc.h"
@@ -664,11 +664,7 @@ static	int		dcc_open (DCC_list *dcc)
 	 */
 	else
 	{
-		unsigned short 	portnum1 = 0;
-		unsigned short	portnum2 = 0;
-
-		if (get_int_var(RANDOM_LOCAL_PORTS_VAR))
-			portnum1 = random_number(0) % (65536 - 1024) + 1024;
+		unsigned short	port = 0;
 
 		/*
 		 * Mark that we're waiting for the remote peer to answer,
@@ -679,12 +675,9 @@ static	int		dcc_open (DCC_list *dcc)
 		 * for a port if our random port isnt available.
 		 */
 		dcc->flags |= DCC_MY_OFFER;
-		if ((dcc->read = connect_by_number(NULL, &portnum1, 
-					SERVICE_SERVER, PROTOCOL_TCP)) < 0)
+		if ((dcc->read = connect_by_number(NULL, &port, 
+				SERVICE_SERVER, PROTOCOL_TCP)) < 0)
 		{
-		    if ((dcc->read = connect_by_number(NULL, &portnum2,
-					SERVICE_SERVER, PROTOCOL_TCP)) < 0)
-		    {
 			dcc->flags |= DCC_DELETE;
 			message_from(NULL, LOG_DCC);
 			say("Unable to create connection: %s", 
@@ -692,12 +685,8 @@ static	int		dcc_open (DCC_list *dcc)
 			message_from(NULL, LOG_CURRENT);
 			from_server = old_server;
 			return 0;
-		    }
-		    else
-			dcc->local_port = portnum2;
 		}
-		else
-		    dcc->local_port = portnum1;
+		dcc->local_port = port;
 
 #ifdef MIRC_BROKEN_DCC_RESUME
 		/*

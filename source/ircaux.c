@@ -8,7 +8,7 @@
  */
 
 #if 0
-static	char	rcsid[] = "@(#)$Id: ircaux.c,v 1.9 2001/09/25 17:52:24 jnelson Exp $";
+static	char	rcsid[] = "@(#)$Id: ircaux.c,v 1.10 2001/09/26 18:32:03 jnelson Exp $";
 #endif
 
 #include "irc.h"
@@ -1818,7 +1818,7 @@ int 	opento(const char *filename, int flags, off_t position)
 
 
 /* swift and easy -- returns the size of the file */
-off_t 	file_size (char *filename)
+off_t 	file_size (const char *filename)
 {
 	struct stat statbuf;
 
@@ -1826,6 +1826,14 @@ off_t 	file_size (char *filename)
 		return (off_t)(statbuf.st_size);
 	else
 		return -1;
+}
+
+int	file_exists (const char *filename)
+{
+	if (file_size(filename) == -1)
+		return 0;
+	else
+		return 1;
 }
 
 /* Gets the time in second/usecond if you can,  second/0 if you cant. */

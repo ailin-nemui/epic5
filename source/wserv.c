@@ -20,6 +20,7 @@
 #include "ircaux.h"
 #include <errno.h>
 #include <sys/uio.h>
+#include <sys/stat.h>
 
 static 	int 	s;
 static	char	buffer[256];
@@ -261,5 +262,23 @@ char 		empty_string[] = "";
 enum VAR_TYPES { unused };
 int 		get_int_var (enum VAR_TYPES unused) { return 5; }
 void 		set_socket_options (int des) { }
+u_long		random_number (u_long unused) { return random(); }
+/* swift and easy -- returns the size of the file */
+off_t 	file_size (const char *filename)
+{
+	struct stat statbuf;
 
+	if (!stat(filename, &statbuf))
+		return (off_t)(statbuf.st_size);
+	else
+		return -1;
+}
+
+int	file_exists (const char *filename)
+{
+	if (file_size(filename) == -1)
+		return 0;
+	else
+		return 1;
+}
 /* End of file */

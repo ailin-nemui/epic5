@@ -1272,12 +1272,16 @@ BUILT_IN_COMMAND(e_hostname)
 	{
 		struct hostent *hp;
 
-		malloc_strcpy(&LocalHostName, args);
-
-		if ((hp = gethostbyname(LocalHostName)))
-			memmove((void *)&LocalHostAddr, hp->h_addr, sizeof(LocalHostAddr));
-
-		say("Local host name is now %s", LocalHostName);
+		if ((hp = gethostbyname(args)))
+		{
+			malloc_strcpy(&LocalHostName, args);
+			memmove((void *)&LocalHostAddr, hp->h_addr, 
+					sizeof(LocalHostAddr));
+			say("Local host name is now %s", LocalHostName);
+		}
+		else
+			say("Cannot set Local host name to invalid host [%s]!",
+					args);
 	}
 	else
 		say("Local Host name is %s",

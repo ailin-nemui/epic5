@@ -1,5 +1,5 @@
 /*
- * @(#)$Id: acconfig.h,v 1.3 2001/09/24 18:18:10 jnelson Exp $
+ * @(#)$Id: acconfig.h,v 1.4 2001/09/26 18:32:03 jnelson Exp $
  */
 
 /*
@@ -235,4 +235,7 @@
 
 /* Define this if you have hstrerror, for h_errno use */
 #undef HAVE_HSTRERROR
+
+/* Define this if you have sysctlbyname() */
+#undef HAVE_SYSCTLBYNAME
 

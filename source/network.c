@@ -18,6 +18,8 @@
 static struct hostent *resolv (const char *);
 static struct hostent *lookup_host (const char *);
 static struct hostent *lookup_ip (const char *);
+static int	get_low_portnum (void);
+static int	get_high_portnum (void);
 
 /*
 	#define SERVICE_SERVER 0
@@ -115,12 +117,9 @@ int	connect_by_number (char *hostn, unsigned short *portnum, int service, int pr
 	{
 		int 	length;
 		int	ports;
+		int	realport;
 		struct sockaddr_in name;
-
-		memset(&name, 0, sizeof(struct sockaddr_in));
-		name.sin_family = AF_INET;
-		name.sin_addr.s_addr = htonl(INADDR_ANY);
-		name.sin_port = htons(*portnum);
+		int	i;
 
 #ifdef IP_PORTRANGE
 		if (getenv("EPIC_USE_HIGHPORTS"))
@@ -131,8 +130,48 @@ int	connect_by_number (char *hostn, unsigned short *portnum, int service, int pr
 		}
 #endif
 
-		if (bind(fd, (struct sockaddr *)&name, sizeof(name)))
-			return close(fd), -2;
+		for (i = 0; i < 5; i++)
+		{
+			memset(&name, 0, sizeof(struct sockaddr_in));
+			name.sin_family = AF_INET;
+			if (LocalHostName)
+				name.sin_addr = LocalHostAddr;
+			else
+				name.sin_addr.s_addr = htonl(INADDR_ANY);
+
+			if (*portnum == 0)
+			{
+			    if (get_int_var(RANDOM_LOCAL_PORTS_VAR))
+			    {
+				int	lowport, highport;
+
+				lowport = get_low_portnum();
+				highport = get_high_portnum();
+				realport = random_number(0) % 
+					(highport - lowport) + lowport;
+			    }
+			    else
+				realport = 0;
+			}
+			else
+			    realport = *portnum;
+
+			name.sin_port = htons(realport);
+
+			if (bind(fd, (struct sockaddr *)&name, sizeof(name)))
+			{
+			    if (errno == EADDRINUSE || errno == EADDRNOTAVAIL)
+			    {
+				if (i >= 5)
+					return close(fd), -2;
+				else
+					continue;
+			    }
+			    else 
+				return close(fd), -2;
+			}
+			break;
+		}
 
 		length = sizeof (name);
 		if (getsockname(fd, (struct sockaddr *)&name, &length))
@@ -378,4 +417,118 @@ int	my_accept (int s, struct sockaddr *addr, int *addrlen)
 	set_blocking(s);
 	return retval;
 }
+
+#define FALLBACK_LOWPORT 1024
+#define FALLBACK_HIGHPORT 65535
+
+static int	get_low_portnum (void)
+{
+	if (file_exists("/proc/sys/net/ipv4/ip_local_port_range"))
+	{
+		char	buffer[80];
+		int	fd;
+		int	first, second;
+
+		fd = open("/proc/sys/net/ipv4/ip_local_port_range", O_RDONLY);
+		if (fd < 0)
+			return FALLBACK_LOWPORT;
+		read(fd, buffer, 80);
+		close(fd);
+		sscanf(buffer, "%d %d", &first, &second);
+		return first;
+	}
+
+#ifdef IP_PORTRANGE
+	if (getenv("EPIC_USE_HIGHPORTS"))
+	{
+#ifdef HAVE_SYSCTLBYNAME
+		char	buffer[1024];
+		size_t	bufferlen = 1024;
+
+		if (sysctlbyname("net.inet.ip.portrange.hifirst", buffer, 
+				&bufferlen, NULL, 0))
+			return *(int *)buffer;
+		else if (sysctlbyname("net.inet.ip.porthifirst", buffer, 
+				&bufferlen, NULL, 0))
+			return *(int *)buffer;
+		else
+#endif
+			return FALLBACK_LOWPORT;
+	}
+	else
+	{
+#ifdef HAVE_SYSCTLBYNAME
+		char	buffer[1024];
+		size_t	bufferlen = 1024;
+
+		if (sysctlbyname("net.inet.ip.portrange.first", buffer, 
+					&bufferlen, NULL, 0))
+			return *(int *)buffer;
+		else if (sysctlbyname("net.inet.ip.portfirst", buffer, 
+					&bufferlen, NULL, 0))
+			return *(int *)buffer;
+		else
+#endif
+			return FALLBACK_LOWPORT;
+	}
+#else
+	return FALLBACK_LOWPORT;
+#endif
+}
+
+static int	get_high_portnum (void)
+{
+	if (file_exists("/proc/sys/net/ipv4/ip_local_port_range"))
+	{
+		char	buffer[80];
+		int	fd;
+		int	first, second;
+
+		fd = open("/proc/sys/net/ipv4/ip_local_port_range", O_RDONLY);
+		if (fd < 0)
+			return FALLBACK_HIGHPORT;
+		read(fd, buffer, 80);
+		close(fd);
+		sscanf(buffer, "%d %d", &first, &second);
+		return second;
+	}
+
+#ifdef IP_PORTRANGE
+	if (getenv("EPIC_USE_HIGHPORTS"))
+	{
+#ifdef HAVE_SYSCTLBYNAME
+		char	buffer[1024];
+		size_t	bufferlen = 1024;
+
+		if (sysctlbyname("net.inet.ip.portrange.hilast", buffer, 
+				&bufferlen, NULL, 0))
+			return *(int *)buffer;
+		else if (sysctlbyname("net.inet.ip.porthilast", buffer, 
+				&bufferlen, NULL, 0))
+			return *(int *)buffer;
+		else
+#endif
+			return FALLBACK_HIGHPORT;
+	}
+	else
+	{
+#ifdef HAVE_SYSCTLBYNAME
+		char	buffer[1024];
+		size_t	bufferlen = 1024;
+
+		if (sysctlbyname("net.inet.ip.portrange.last", buffer, 
+					&bufferlen, NULL, 0))
+			return *(int *)buffer;
+		else if (sysctlbyname("net.inet.ip.portlast", buffer, 
+					&bufferlen, NULL, 0))
+			return *(int *)buffer;
+		else
+#endif
+			return FALLBACK_HIGHPORT;
+	}
+#else
+	return FALLBACK_HIGHWPORT;
+#endif
+}
+
 

@@ -234,5 +234,9 @@ sigfunc *my_signal (int, sigfunc *);
 #define howmany(x, y)   (((x) + ((y) - 1)) / (y))
 #endif
 
+#if defined(HAVE_SYS_SYSCTL_H)
+#include <sys/sysctl.h>
+#endif
+
 
 #endif /* __irc_std_h */

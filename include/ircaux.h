@@ -7,7 +7,7 @@
  *
  * See the COPYRIGHT file, or do a HELP IRCII COPYRIGHT 
  *
- * @(#)$Id: ircaux.h,v 1.4 2001/09/24 16:49:08 crazyed Exp $
+ * @(#)$Id: ircaux.h,v 1.5 2001/09/26 18:32:03 jnelson Exp $
  */
 
 #ifndef _IRCAUX_H_
@@ -115,7 +115,8 @@ long	my_atol 		(const char *);
 u_long	hashpjw 		(char *, u_long);
 char *	m_dupchar 		(int);
 char *	strmccat		(char *, char, int);
-off_t	file_size		(char *);
+off_t	file_size		(const char *);
+int	file_exists		(const char *);
 int	is_root			(const char *, const char *, int);
 size_t	streq			(const char *, const char *);
 char *	m_strndup		(const char *, size_t);

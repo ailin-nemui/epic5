@@ -4,9 +4,9 @@ dnl except those bits attributed otherwise.
 dnl thanks to the screen 3.3 configure.in for giving me examples to
 dnl work from and steal ;)
 dnl
-dnl @(#)$Id: configure.in,v 1.2 2001/09/24 16:49:08 crazyed Exp $
+dnl @(#)$Id: configure.in,v 1.3 2001/09/26 18:32:03 jnelson Exp $
 
-AC_REVISION($Revision: 1.2 $)dnl
+AC_REVISION($Revision: 1.3 $)dnl
 AC_INIT(source/irc.c)
 AC_CONFIG_HEADER(include/defs.h)
 
@@ -126,7 +126,7 @@ dnl
 dnl Checking for headers, functions, and a type declarations
 dnl
 
-AC_CHECK_HEADERS(fcntl.h netdb.h regex.h sys/fcntl.h sys/file.h sys/select.h sys/syslimits.h sys/un.h sys/time.h termcap.h sys/filio.h)
+AC_CHECK_HEADERS(fcntl.h netdb.h regex.h sys/fcntl.h sys/file.h sys/select.h sys/syslimits.h sys/un.h sys/time.h termcap.h sys/filio.h sys/sysctl.h)
 
 if test $termcap -eq 0 ; then
 	AC_CHECK_FUNC(setupterm, AC_DEFINE(HAVE_TERMINFO),)
@@ -154,6 +154,7 @@ AC_CHECK_FUNC(hstrerror, AC_DEFINE(HAVE_HSTRERROR),)
 AC_CHECK_FUNC(strlcpy, AC_DEFINE(HAVE_STRLCPY),)
 AC_CHECK_FUNC(strlcat, AC_DEFINE(HAVE_STRLCAT),)
 AC_CHECK_FUNC(stpcpy, AC_DEFINE(HAVE_STPCPY),)
+AC_CHECK_FUNC(sysctlbyname, AC_DEFINE(HAVE_SYSCTLBYNAME),)
 AC_MSG_CHECKING(for stpcpy in string.h)
 AC_EGREP_HEADER(stpcpy, string.h, AC_DEFINE(STPCPY_DECLARED)
 	AC_MSG_RESULT(yes), AC_MSG_RESULT(no),)
