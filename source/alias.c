@@ -1,4 +1,4 @@
-/* $EPIC: alias.c,v 1.16 2003/02/27 20:20:56 wd Exp $ */
+/* $EPIC: alias.c,v 1.17 2003/03/17 19:39:39 crazyed Exp $ */
 /*
  * alias.c -- Handles the whole kit and caboodle for aliases.
  *
@@ -2208,6 +2208,7 @@ void 	make_local_stack 	(const char *name)
 			call_stack[wind_index].alias.cache = NULL;
 			call_stack[wind_index].alias.cache_size = -1;
 			call_stack[wind_index].current = NULL;
+			call_stack[wind_index].alias.hash = HASH_INSENSITIVE;
 			call_stack[wind_index].name = NULL;
 			call_stack[wind_index].parent = -1;
 		}

@@ -1,4 +1,4 @@
-/* $EPIC: dcc.c,v 1.47 2003/02/25 23:56:52 crazyed Exp $ */
+/* $EPIC: dcc.c,v 1.48 2003/03/17 19:39:39 crazyed Exp $ */
 /*
  * dcc.c: Things dealing client to client connections. 
  *
@@ -81,6 +81,7 @@ typedef	struct	DCC_struct
 	char *		description;
 	char *		filename;
 	char *		user;
+	char *		userhost;
 	char *		othername;
 	char *		encrypt;
 struct	DCC_struct *	next;
@@ -96,6 +97,8 @@ struct	DCC_struct *	next;
 	int		window_max;
 	Timeval		lasttime;
 	Timeval		starttime;
+	Timeval		holdtime;
+	double		heldtime;
 	u_32int_t	packets_total;
 	u_32int_t	packets_transfer;
 	u_32int_t	packets_ack;
@@ -371,7 +374,7 @@ void 	close_all_dcc (void)
 
 /*
  * Place the dcc on hold.  Return 1
- * (fail) if * it was already on hold.
+ * (fail) if it was already on hold.
  */
 int	dcc_hold (DCC_list *dcc)
 {
@@ -379,6 +382,7 @@ int	dcc_hold (DCC_list *dcc)
 	if (dcc->held)
 		return 1;
 	else {
+		get_time(&dcc->holdtime);
 		dcc->held = 1;
 		return 0;
 	}
@@ -390,10 +394,15 @@ int	dcc_hold (DCC_list *dcc)
  */
 int	dcc_unhold (DCC_list *dcc)
 {
+	Timeval now;
+
 	new_unhold_fd(dcc->socket);
 	if (!dcc->held)
 		return 1;
 	else {
+		get_time(&now);
+		dcc->heldtime += time_diff(dcc->holdtime, now);
+		get_time(&dcc->holdtime);
 		dcc->held = 0;
 		return 0;
 	}
@@ -568,12 +577,18 @@ static	DCC_list *dcc_searchlist (
 	new_client->packets_ack 	= 0;
 	new_client->next 		= ClientList;
 	new_client->user 		= m_strdup(user);
+	new_client->userhost 		= (FromUserHost && *FromUserHost)
+					? m_strdup(FromUserHost)
+					: m_strdup(unknown_userhost);
 	new_client->description 	= m_strdup(description);
 	new_client->othername 		= m_strdup(othername);
 	new_client->bytes_read 		= 0;
 	new_client->bytes_sent 		= 0;
 	new_client->starttime.tv_sec 	= 0;
 	new_client->starttime.tv_usec 	= 0;
+	new_client->holdtime.tv_sec 	= 0;
+	new_client->holdtime.tv_usec 	= 0;
+	new_client->heldtime		= 0.0;
 	new_client->window_max 		= 0;
 	new_client->window_sent 	= 0;
 	new_client->want_port 		= 0;
@@ -2246,8 +2261,6 @@ static	void	process_dcc_chat_error (DCC_list *Client)
 static	char *	process_dcc_chat_ctcps (DCC_list *Client, char *tmp)
 {
 	char 	equal_nickname[80];
-	char	p_addr[256];
-	SA *	addr;
 	char 	uh[80];
 	int	ctcp_request = 0, ctcp_reply = 0;
 
@@ -2274,11 +2287,12 @@ static	char *	process_dcc_chat_ctcps (DCC_list *Client, char *tmp)
 
 	if (ctcp_request == 1 || ctcp_reply == 1)
 	{
-		addr = (SA *)&Client->peer_sockaddr;
-		inet_ntostr(addr, p_addr, 256, NULL, 0, NI_NUMERICHOST);
+		const char *OFUH = FromUserHost;
 
-		snprintf(uh, 80, "Unknown@%s", p_addr);
-		FromUserHost = uh;
+		if (Client->userhost && *Client->userhost)
+			FromUserHost = Client->userhost;
+		else
+			FromUserHost = unknown_userhost;
 		snprintf(equal_nickname, 80, "=%s", Client->user);
 
 		message_from(Client->user, LOG_CTCP);
@@ -2288,7 +2302,7 @@ static	char *	process_dcc_chat_ctcps (DCC_list *Client, char *tmp)
 			tmp = do_notice_ctcp(equal_nickname, nickname, tmp);
 		message_from(NULL, LOG_CURRENT);
 
-		FromUserHost = empty_string;
+		FromUserHost = OFUH;
 	}
 
 	if (!tmp || !*tmp)
@@ -2867,6 +2881,7 @@ static void	DCC_close_filesend (DCC_list *Client, char *info)
 	double 	xtime, xfer;
 
 	xtime = time_diff(Client->starttime, get_time(NULL));
+	xtime -= Client->heldtime;
 	if (Client->bytes_sent)
 		xfer = Client->bytes_sent - Client->resume_size;
 	else
@@ -3103,11 +3118,15 @@ char 	*dccctl 	(char *input)
 			RETURN_STR(client->filename);
 		} else if (!my_strnicmp(listc, "USER", len)) {
 			RETURN_STR(client->user);
+		} else if (!my_strnicmp(listc, "USERHOST", len)) {
+			RETURN_STR(client->userhost);
 		} else if (!my_strnicmp(listc, "OTHERNAME", len)) {
 			RETURN_STR(client->othername);
 		} else if (!my_strnicmp(listc, "ENCRYPT", len)) {
 			RETURN_STR(client->encrypt);
-		} else if (!my_strnicmp(listc, "FILESIZE", len)) {
+		} else if (!my_strnicmp(listc, "SIZE", len)) {
+			RETURN_INT(client->filesize);
+		} else if (!my_strnicmp(listc, "FILESIZE", len)) {  /* DEPRECATED */
 			RETURN_INT(client->filesize);
 		} else if (!my_strnicmp(listc, "RESUMESIZE", len)) {
 			RETURN_INT(client->resume_size);
@@ -3129,20 +3148,24 @@ char 	*dccctl 	(char *input)
 			m_sc3cat_s(&retval, space, ltoa(client->starttime.tv_usec), &clue);
 		} else if (!my_strnicmp(listc, "REMADDR", len)) {
 			char	host[1025], port[25];
-			if (inet_ntostr((SA *)&client->peer_sockaddr,
-						host, sizeof(host),
-						port, sizeof(port), 0))
+			if (!(client->flags & DCC_ACTIVE) ||
+				inet_ntostr((SA *)&client->peer_sockaddr,
+					host, sizeof(host),
+					port, sizeof(port), NI_NUMERICHOST))
 				RETURN_EMPTY;
 			m_sc3cat_s(&retval, space, host, &clue);
 			m_sc3cat_s(&retval, space, port, &clue);
 		} else if (!my_strnicmp(listc, "LOCADDR", len)) {
 			char	host[1025], port[25];
-			if (inet_ntostr((SA *)&client->local_sockaddr,
-						host, sizeof(host),
-						port, sizeof(port), 0))
+			if (!(client->flags & DCC_ACTIVE) ||
+				inet_ntostr((SA *)&client->local_sockaddr,
+					host, sizeof(host),
+					port, sizeof(port), NI_NUMERICHOST))
 				RETURN_EMPTY;
 			m_sc3cat_s(&retval, space, host, &clue);
 			m_sc3cat_s(&retval, space, port, &clue);
+		} else {
+			RETURN_EMPTY;
 		}
 	} else if (!my_strnicmp(listc, "SET", len)) {
 		GET_INT_ARG(ref, input);
@@ -3162,6 +3185,18 @@ char 	*dccctl 	(char *input)
 			client->refnum = newref;
 
 			RETURN_INT(1);
+		} else if (!my_strnicmp(listc, "DESCRIPTION", len)) {
+			malloc_strcpy(&client->description, input);
+		} else if (!my_strnicmp(listc, "FILENAME", len)) {
+			malloc_strcpy(&client->filename, input);
+		} else if (!my_strnicmp(listc, "USER", len)) {
+			malloc_strcpy(&client->user, input);
+		} else if (!my_strnicmp(listc, "USERHOST", len)) {
+			malloc_strcpy(&client->userhost, input);
+		} else if (!my_strnicmp(listc, "OTHERNAME", len)) {
+			malloc_strcpy(&client->othername, input);
+		} else if (!my_strnicmp(listc, "ENCRYPT", len)) {
+			malloc_strcpy(&client->encrypt, input);
 		} else if (!my_strnicmp(listc, "HELD", len)) {
 			long	hold, held;
 
@@ -3172,7 +3207,10 @@ char 	*dccctl 	(char *input)
 				held = dcc_unhold(client);
 
 			RETURN_INT(held);
+		} else {
+			RETURN_EMPTY;
 		}
+		RETURN_INT(1);
 	} else if (!my_strnicmp(listc, "TYPEMATCH", len)) {
 		for (client = ClientList; client; client = client->next)
 			if (wild_match(input, dcc_types[client->flags & DCC_TYPES]))
@@ -3189,6 +3227,10 @@ char 	*dccctl 	(char *input)
 		for (client = ClientList; client; client = client->next)
 			if (wild_match(input, client->user ? client->user : EMPTY))
 				m_sc3cat_s(&retval, space, ltoa(client->refnum), &clue);
+	} else if (!my_strnicmp(listc, "USERHOSTMATCH", len)) {
+		for (client = ClientList; client; client = client->next)
+			if (wild_match(input, client->userhost ? client->userhost : EMPTY))
+				m_sc3cat_s(&retval, space, ltoa(client->refnum), &clue);
 	} else if (!my_strnicmp(listc, "OTHERMATCH", len)) {
 		for (client = ClientList; client; client = client->next)
 			if (wild_match(input, client->othername ? client->othername : EMPTY))
@@ -3196,6 +3238,14 @@ char 	*dccctl 	(char *input)
 	} else if (!my_strnicmp(listc, "LOCKED", len)) {
 		for (client = ClientList; client; client = client->next)
 			if (client->locked)
+				m_sc3cat_s(&retval, space, ltoa(client->refnum), &clue);
+	} else if (!my_strnicmp(listc, "HELD", len)) {
+		for (client = ClientList; client; client = client->next)
+			if (client->held)
+				m_sc3cat_s(&retval, space, ltoa(client->refnum), &clue);
+	} else if (!my_strnicmp(listc, "UNHELD", len)) {
+		for (client = ClientList; client; client = client->next)
+			if (!client->held)
 				m_sc3cat_s(&retval, space, ltoa(client->refnum), &clue);
 	} else
 		RETURN_EMPTY;

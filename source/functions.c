@@ -1,4 +1,4 @@
-/* $EPIC: functions.c,v 1.106 2003/02/18 16:33:32 crazyed Exp $ */
+/* $EPIC: functions.c,v 1.107 2003/03/17 19:39:39 crazyed Exp $ */
 /*
  * functions.c -- Built-in functions for ircII
  *
@@ -3442,8 +3442,12 @@ BUILT_IN_FUNCTION(function_fexist, words)
         Filename expanded;
 	char	*filename;
 
+#if 1
+	filename = words;
+#else
 	if (!(filename = new_next_arg(words, &words)))
 		RETURN_INT(-1);
+#endif
 
 	if (normalize_filename(filename, expanded))
 		RETURN_INT(-1);
@@ -3459,7 +3463,12 @@ BUILT_IN_FUNCTION(function_fsize, words)
 	Filename expanded;
 	char *	filename;
 
-	if (!(filename = new_next_arg(words, &words)))
+#if 1
+	filename = words;
+#else
+	filename = new_next_arg(words, &words);
+#endif
+	if (!filename)
 		RETURN_INT(-1);
 
 	if (normalize_filename(filename, expanded))

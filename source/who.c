@@ -1,4 +1,4 @@
-/* $EPIC: who.c,v 1.17 2003/01/31 23:50:18 jnelson Exp $ */
+/* $EPIC: who.c,v 1.18 2003/03/17 19:39:39 crazyed Exp $ */
 /*
  * who.c -- The WHO queue.  The ISON queue.  The USERHOST queue.
  *
@@ -1276,16 +1276,19 @@ void	userhost_returned (int refnum, const char *from, const char *comm, const ch
 
 void	userhost_cmd_returned (int refnum, UserhostItem *stuff, const char *nick, const char *text)
 {
-	char	args[BIG_BUFFER_SIZE + 1];
+	char	*args = NULL;
+	size_t	clue = 0;
 
 	/* This should be safe, though its playing it fast and loose */
-	strcpy(args, stuff->nick ? stuff->nick : empty_string);
-	strcat(args, stuff->oper ? " + " : " - ");
-	strcat(args, stuff->away ? "+ " : "- ");
-	strcat(args, stuff->user ? stuff->user : empty_string);
-	strcat(args, space);
-	strcat(args, stuff->host ? stuff->host : empty_string);
+	malloc_strcat_c(&args, stuff->nick ? stuff->nick : empty_string, &clue);
+	malloc_strcat_c(&args, stuff->oper ? " + " : " - ", &clue);
+	malloc_strcat_c(&args, stuff->away ? "+ " : "- ", &clue);
+	malloc_strcat_c(&args, stuff->user ? stuff->user : empty_string, &clue);
+	malloc_strcat_c(&args, space, &clue);
+	malloc_strcat_c(&args, stuff->host ? stuff->host : empty_string, &clue);
 	parse_line(NULL, text, args, 0, 0);
+
+	new_free(&args);
 }
 
 void	clean_server_queues (int i)

@@ -1,4 +1,4 @@
-/* $EPIC: screen.c,v 1.40 2003/01/11 04:26:52 jnelson Exp $ */
+/* $EPIC: screen.c,v 1.41 2003/03/17 19:39:39 crazyed Exp $ */
 /*
  * screen.c
  *
@@ -1873,7 +1873,7 @@ const 	u_char	*ptr;
 			 * and if they overflow the line we let them bleed
 			 * to the next line.
 			 */
-			while (buffer[word_break] == ' ' && word_break < pos)
+			while (word_break < pos && buffer[word_break] == ' ')
 				word_break++;
 
 			/*

@@ -29,6 +29,8 @@ static __inline u_32int_t  cs_alist_hash (const char *s, u_32int_t *mask)
 			x = (s[0] << 24) | (s[1] << 16) | (s[2] << 8) | s[3], 
 				(*mask = 0xffffff00 | (s[3] ? 0xff : 0x00));
 	}
+	else
+		*mask = 0;
 	return x;
 }
 #endif

@@ -56,7 +56,7 @@ alias scmd (args) fe ($split(, $shift(args))) serv {xeval -s $serv {$args}}
 #
 alias 1cmd {
 	@ :foo = encode($tolower($1-))
-	@ :eserv = rightw(1 $numsort(0 $servernum()))
+	@ :eserv = 0 > servernum() ? [] : servernum()
 	if (time() - onecmd[$eserv][$foo] >= [$0]) {
 		@ onecmd[$eserv][$foo] = time()
 		$1-

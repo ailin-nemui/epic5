@@ -70,6 +70,7 @@ typedef	struct
 					 * used for redirect */
 	char	*redirect;		/* Who we're redirecting to here */
 	WhoEntry *	who_queue;	/* Who queue */
+	IsonEntry *	ison_wait;	/* Ison wait queue */
 	IsonEntry *	ison_queue;	/* Ison queue */
 	UserhostEntry *	userhost_queue;	/* Userhost queue */
 

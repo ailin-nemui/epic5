@@ -203,3 +203,16 @@ THE CHANGELOG SINCE THE LAST RELEASE:
   latest release.  If you are running 1.1.* (commit id 470 or below), people
   may be able to knock you off the irc server with specially crafted
   messages.  I might release the details later to give people time to upgrade.
+
+* Ran "Valgrind" over epic which turned up a handful of potential bugs.
+* Fixed DCC "hold" mode.  Unfortunately epic was using the state of the fd
+  sets to determine whether to wind back the number of open fds, so putting
+  a dcc on hold made it possible for it to get lost.
+* More minor $dccctl() cleanups.
+* Changed the log level for when a flood is triggered to CRAP.
+* Altered $fsize() and $fexists() (temporarily) to take the whole arg list
+  as a file name.  I will probably change the file functions to use $glob()s
+  null argument trick at some point.
+* Fix for an arbitrary select() loop yell from hop and nsx.
+* Fix for a window bug from hop.
+* Bug fix from cras [details withheld].

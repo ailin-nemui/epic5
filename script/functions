@@ -393,3 +393,8 @@ alias $cmd (args) {
 	return $ret
 }
 stack pop alias alias
+
+alias mychats (args) {
+	@ :function_return = dccctl(typematch chat)
+	fe function_return dcc {@ :dcc = [=]##dccctl(get $dcc user)}
+}

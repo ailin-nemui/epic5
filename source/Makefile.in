@@ -71,7 +71,7 @@ vars.o: Makefile ../Makefile
 	-DWSERV_PATH=\"$(INSTALL_WSERV)\"
 
 perl.o: perl.c Makefile ../Makefile
-	$(CC) $(CFLAGS) $(ansiflags) $(INCLUDES) -c perl.c `perl -MExtUtils::Embed -e ccopts`
+	$(CC) $(CFLAGS) $(ansiflags) $(INCLUDES) -c @srcdir@/perl.c `perl -MExtUtils::Embed -e ccopts`
 
 
 #

@@ -1,4 +1,4 @@
-/* $EPIC: newio.c,v 1.12 2003/02/25 23:56:52 crazyed Exp $ */
+/* $EPIC: newio.c,v 1.13 2003/03/17 19:39:39 crazyed Exp $ */
 /*
  * newio.c: This is some handy stuff to deal with file descriptors in a way
  * much like stdio's FILE pointers 
@@ -365,6 +365,10 @@ int 	new_open (int des)
 		FD_SET(des, &readables);
 	if (FD_ISSET(des, &writables))
 		FD_CLR(des, &writables);
+	if (FD_ISSET(des, &held_readables))
+		FD_CLR(des, &held_readables);
+	if (FD_ISSET(des, &held_writables))
+		FD_CLR(des, &held_writables);
 
 	/*
 	 * Keep track of the highest fd in use.
@@ -389,6 +393,8 @@ int 	new_open_for_writing (int des)
 
 	if (!FD_ISSET(des, &writables))
 		FD_SET(des, &writables);
+	if (!FD_ISSET(des, &held_writables))
+		FD_SET(des, &held_writables);
 
 	/*
 	 * Keep track of the highest fd in use.
@@ -404,16 +410,19 @@ int 	new_open_for_writing (int des)
  *
  * Remove the fd from the select fd sets so
  * that it won't bother us until we unhold it.
+ *
+ * Note that this is meant to be a read/write
+ * hold and that this only operates on read
+ * sets because that's all the client uses.
  */
 int	new_hold_fd (int des)
 {
-	if (des < 0)
-		return des;		/* Invalid */
-	if (des > global_max_fd)
-		return des;		/* Invalid */
-
-	if (FD_ISSET(des, &readables))
+	if (0 <= des && des <= global_max_fd
+		&& FD_ISSET(des, &readables))
+	{
+		FD_SET(des, &held_readables);
 		FD_CLR(des, &readables);
+	}
 
 	return des;
 }
@@ -423,13 +432,12 @@ int	new_hold_fd (int des)
  */
 int	new_unhold_fd (int des)
 {
-	if (des < 0)
-		return des;		/* Invalid */
-	if (des > global_max_fd)
-		return des;		/* Invalid */
-
-	if (!FD_ISSET(des, &readables))
+	if (0 <= des && des <= global_max_fd
+		&& FD_ISSET(des, &held_readables))
+	{
 		FD_SET(des, &readables);
+		FD_CLR(des, &held_readables);
+	}
 
 	return des;
 }
@@ -447,6 +455,10 @@ int	new_close (int des)
 		FD_CLR(des, &readables);
 	if (FD_ISSET(des, &writables))
 		FD_CLR(des, &writables);
+	if (FD_ISSET(des, &held_readables))
+		FD_CLR(des, &held_readables);
+	if (FD_ISSET(des, &held_writables))
+		FD_CLR(des, &held_writables);
 
 	if (io_rec)
 	{
@@ -460,14 +472,9 @@ int	new_close (int des)
 	 * If we're closing the highest fd in use, then we
 	 * want to adjust global_max_fd downward to the next highest fd.
 	 */
-	if (des == global_max_fd)
-	{
-		do
-			des--;
-		while (!FD_ISSET(des, &readables));
-
-		global_max_fd = des;
-	}
+	while ( !FD_ISSET(global_max_fd, &readables) &&
+		!FD_ISSET(global_max_fd, &held_readables))
+			global_max_fd--;
 	return -1;
 }
 

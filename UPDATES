@@ -1,5 +1,18 @@
 EPIC4-1.2.0
 
+*** News 03/18/2003 -- $dccctl() changes.
+	Added $dccctl(xxx), where xxx is one of HELD, UNHELD, USERHOSTMATCH.
+	Added $dccctl(get [ref] xxx) where xxx is one of USERHOST, SIZE.
+	Added $dccctl(set [ref] xxx) where xxx is one of DESCRIPTION,
+		FILENAME, USER, USERHOST, OTHERNAME, ENCRYPT.
+
+	DCCs will record the current userhost taken from $userhost() (no
+	args).  This will be used to set the same variable for message
+	processing under dcc chats.  This isn't entirely useful at this point
+	because if you initiate a dcc request from within any privmsg hook,
+	where the userhost variable is correctly set, the request will be
+	translated to a notice.  This is true even for dcc chats.
+
 *** News 02/25/2003 -- Added %{1}D status variable.
 	This acts exactly like %D, but is present on all windows where
 	%D is present only on the window that has the DCC lastlog level.
@@ -33,6 +46,7 @@ EPIC4-1.2.0
 	$dccctl(refnums)	returns all open DCCs.
 	$dccctl(get [refnum] [element])
 	$dccctl(set [refnum] [element])
+	$dccctl(typematch [pattern])
 	$dccctl(descmatch [pattern])
 	$dccctl(filematch [pattern])
 	$dccctl(usermatch [pattern])
