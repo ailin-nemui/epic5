@@ -5473,6 +5473,9 @@ BUILT_IN_FUNCTION(function_prefix, input)
 	RETURN_IF_EMPTY(input);
 
 	numwords = splitw(input, &words);
+	if (numwords == 0)
+		RETURN_EMPTY;		/* "Oh bother," said pooh. */
+
 	max_len = strlen(words[0]);
 
 	for (len_index = 1; len_index <= max_len; len_index++)
