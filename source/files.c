@@ -1,4 +1,4 @@
-/* $EPIC: files.c,v 1.23 2004/09/13 18:29:57 crazyed Exp $ */
+/* $EPIC: files.c,v 1.24 2005/03/06 21:21:26 jnelson Exp $ */
 /*
  * files.c -- allows you to read/write files. Wow.
  *
@@ -107,9 +107,14 @@ int open_file_for_read (const char *filename)
 	char *dummy_filename = (char *) 0;
 	FILE *file;
 	struct stat sb;
+	File *nfs = new_file();
+
 	malloc_strcpy(&dummy_filename, filename);
 	file = uzfopen(&dummy_filename, ".", 1, &sb);
 	new_free(&dummy_filename);
+
+	if (!file)
+		return -1;
 
 	if (sb.st_mode & 0111)
 	{
@@ -117,15 +122,9 @@ int open_file_for_read (const char *filename)
 		return -1;
 	}
 
-	if (file)
-	{
-		File *nfs = new_file();
-		nfs->file = file;
-		nfs->next = (File *) 0;
-		return fileno(file);
-	}
-	else
-		return -1;
+	nfs->file = file;
+	nfs->next = (File *) 0;
+	return fileno(file);
 }
 
 int open_file_for_write (const char *filename, const char *mode)
