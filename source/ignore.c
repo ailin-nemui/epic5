@@ -1,4 +1,4 @@
-/* $EPIC: ignore.c,v 1.9 2003/06/30 22:40:34 jnelson Exp $ */
+/* $EPIC: ignore.c,v 1.10 2003/07/02 03:38:17 jnelson Exp $ */
 /*
  * ignore.c: handles the ingore command for irc 
  *
@@ -1092,7 +1092,8 @@ char *	ignorectl (char *input)
 		} else if (!my_strnicmp(listc, "HIGHLIGHT", len)) {
 			RETURN_INT(i->high);
 		} else if (!my_strnicmp(listc, "EXPIRATION", len)) {
-			return malloc_sprintf(NULL, "%ld %ld", 
+			char *ptr = NULL;
+			return malloc_sprintf(&ptr, "%ld %ld", 
 				(long) i->expiration.tv_sec,
 				(long) i->expiration.tv_usec);
 		} else if (!my_strnicmp(listc, "REASON", len)) {
