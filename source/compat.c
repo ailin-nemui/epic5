@@ -1139,15 +1139,15 @@ char *	stpcpy (char *to, const char *from)
 int	setenv (const char *name, const char *value, int overwrite)
 {
 	static int warning = 0;
-	char *value;
+	char *envvalue;
 
 	if (warning == 0) {
 		yell("Warning: Your system does not have setenv(3).  Setting the same environment variable multiple times will result in memory leakage.  This is unavoidable and does not represent a bug in EPIC.");
 		warning = 1;
 	}
 
-	value = m_sprintf("%s=%s", name, value);
-	putenv(value);
+	envvalue = m_sprintf("%s=%s", name, value);
+	putenv(envvalue);
 	return 0;
 }
 #endif
