@@ -596,3 +596,4 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Refactor the startup loading stuff
 * Move a couple of loads out of basical and into global.
 * Round two of blackjac's builtins script.
+* Cleanse 2.8script of stuff that has bitrotted to death.
