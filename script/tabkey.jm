@@ -1,0 +1,325 @@
+# tabkey.jm: a full-featured tab key module for epic
+#
+# written by nsx
+#
+#
+# Here's the plan:
+#
+# First off, the word fragment (which may not be a fragment at all, but
+# rather, a complete word, though we have no way of knowing this yet) that
+# we're going to attempt to complete is determined.  If the current word
+# pointed to by the input line cursor is quoted, then that word becomes the
+# word fragment we'll attempt to complete.  If the word is not quoted, then all
+# characters from the beginning of the word pointed to by the input line cursor
+# to the cursor itself become the fragment we'll try to complete.
+#
+# We now analyze the input line to see if it matches certain patterns, and
+# determine which method of completion we'll use based on which pattern it
+# matches.
+#
+# If our input line matches "/msg <word><space>", we recall the item in our
+# nickname history pointed to by our nickname history index.  We then type out
+# the command "/msg <nick><space>", where <nick> is that nickname we recalled
+# from the history.  If there are no nicknames in the history, nothing at all
+# is done.
+#
+# If our input line matches "/dcc <word>", then dcc command completion is
+# attempted.  This matches the word fragment against all known dcc commands.
+#
+# If our input line begins with "/dcc send <word1> <word2>" or "/load", we
+# attempt file name completion.  This matches the word fragment against any
+# local path name that exists.
+#
+# If our input line matches "/<word>" we attempt command completion.  This
+# matches the word fragment against both internal commands and aliases.
+#
+# If our input line is empty, we attempt nickname history cycling as described
+# above.
+#
+# If our input line matches none of the above, we analyze the first character
+# of the fragment.  If it begins with a '#' or a '&', channel name completion
+# is attempted.  This matches the word fragment against all channels we're
+# currently on.
+#
+# If our fragment does not begin with '#' or '&', nickname completion is
+# attempted.  This matches the word fragment against all nicknames in the
+# current channel.  If no matches are found, we then match the word fragment
+# against all nicknames in all other channels we're on and all
+# nicknames in our notify list that are presently online.
+#
+# If there was multiple matches for the word fragment, we replace the word
+# fragment with the common prefix for these matches, if any.  We also display
+# all of the possible matches on the screen, unless they're the same list of
+# possible matches we displayed less than 5 seconds ago.  This way, we hope to
+# avoid unnecessary repetition.
+#
+# If there was only one match for the word fragment, we replace the word
+# fragment with that match.  We also append a space unless nickname completion
+# took place, and the completed word is the only word in the input line.  Most
+# of the time this occurs, I assume people are trying to address somebody.  I
+# do this so that the optional colon can be appended after the nickname,
+# without having to backspace.
+#
+# If we perform file name completion and the completed path name is a
+# directory, we treat the completed word as if it's a partial completion (in
+# that no space is appended), since we cannot be certain whether or not the
+# path name is complete, unless it's a file.
+#
+# If the completed word (partial or complete) needs to be enclosed in
+# quotation marks, we meet this provision.  If the completed word is partial,
+# we place the cursor on the enclosing quotation mark, so that further
+# completion can take place without having to manually reposition the cursor.
+#
+# For each outgoing msg or outgoing DCC CHAT message, we add the recipient
+# to our nickname history.
+#
+# For each incoming msg or incoming DCC CHAT message, we add the sender to
+# our nickname history.
+#
+# For each DCC CHAT connection that takes place, we add the other party to
+# our nickname history.
+#
+# Each time a nickname is added to our nickname history, we first remove any
+# prior occurrences of the nickname that may exist.  We then check to see if
+# our nickname history is at its capacity (10 nicknames).  If it is, the oldest
+# nickname in our history is discarded.  Next, we add the nickname to the
+# history.  Lastly, we set our nickname index to point to the nickname that was
+# just added.
+
+
+# *** global variables ***
+
+
+# nickname history array
+@delarray(nick_hist)
+
+# nickname history index
+@nick_index = -1
+
+# the matches from the last tab key press
+@last_matches = []
+
+# how far the cursor is from the end of the word fragment
+@end_offset = 0
+
+# whether or not the word fragment needs to be quoted (0 or 1)
+@word_fragq = 0
+
+
+bind ^I parse_command do_tabkey
+
+alias do_tabkey {
+	@:cur_pos = curpos()
+	@:cur_word = word($indextoword($cur_pos $L ) $L )
+	@:frag_start = wordtoindex($indextoword($cur_pos $L ) $L )
+
+	if (index("$chr($jot(32 1))" $cur_word) == -1) {
+		@word_fragq = 0
+		@end_offset = 0
+		@:word_frag = mid($frag_start ${cur_pos - frag_start} $L)
+	} {
+		@word_fragq = 1
+		@end_offset = (frag_start + @cur_word - cur_pos) + 2
+		@:word_frag = cur_word
+
+		if (end_offset < 0) {
+			return
+		}
+	}
+
+	if (leftw(1 $L) == [/msg] && #L == 2 && mid(${@L - 1} 1 $L) == [ ]) {
+		@msg_cycle()
+		return
+	}
+
+	switch ($L) {
+		(/dcc %) {
+			@dcc_complete($word_frag)
+		}
+		(/dcc send % *)
+		(/load *) {
+			@file_complete($word_frag)
+		}
+		(/%) {
+			@command_complete($right(${@L - 1} $L))
+		}
+		() {
+			@msg_cycle()
+		}
+		(*) {
+			@:firstc = left(1 $word_frag)
+			if (firstc == [#] || firstc == [&]) {
+				@chan_complete($word_frag)
+			} {
+				@nick_complete($word_frag)
+			}
+		}
+	}
+}
+
+# replace_fragment (frag_len, matches...)
+#
+# This function replaces the word fragment.  If given a single match, the word
+# fragment is replaced with that match.  If multiple matches are given, the
+# common prefix for those matches replaces the word fragment.  If no matches
+# are given, this function does nothing.
+#
+# It expects the fragment length (so it can know how many times to backspace)
+# to be its first argument, and all matches for the word fragment to be the
+# rest of its arguments.  This function also expects the global variable
+# end_offset to be set, so that it can position the cursor after the word
+# fragment, if needed, before backspacing to clear it.  This needs to be done,
+# for example, when the tab key was pressed while the cursor was in the middle
+# of a quoted word.
+
+alias replace_fragment {
+	@:matches = [$1-]
+	@:match_pfx = prefix($1-)
+	@:frag_len = word_fragq ? [$0] + 2 : [$0]
+
+	if (#matches && #match_pfx) {
+		repeat $end_offset parsekey forward_character
+		repeat $frag_len parsekey backspace
+
+		if (index("$chr($jot(32 1))" $match_pfx) != -1) {
+			@:match_pfx = ["$match_pfx"]
+			@word_fragq = 1
+		}
+
+		if (#matches > 1) {
+			unless (matches == last_matches) {
+				xecho -c Possible matches:
+				xecho -c $matches
+				xecho -c
+				@last_matches = matches
+				timer 5 @last_matches = []
+			}
+
+			xtype -l $match_pfx
+
+			if (word_fragq) {
+				parsekey backward_character
+			}
+		} {
+			xtype -l $matches$chr(32)
+		}
+	}
+}
+
+alias chan_complete {
+	@:word_frag = [$*]
+	@:frag_matches = pattern("$word_frag*" $mychannels())
+
+	@replace_fragment($@word_frag $frag_matches)
+}
+
+alias command_complete {
+	@:word_frag = [$*]
+	@:frag_matches = getcommands($word_frag*)
+
+	@push(frag_matches $aliasctl(alias pmatch $word_frag*))
+
+	@replace_fragment($@word_frag $frag_matches)
+}
+
+alias dcc_complete {
+	@:word_frag = [$*]
+	@:dcc_cmds = [chat close closeall get list raw rename resume send]
+	@:frag_matches = pattern($word_frag% $dcc_cmds)
+
+	@replace_fragment($@word_frag $frag_matches)
+}
+
+alias file_complete {
+	@:word_frag = [$*]
+	@:frag_matches = glob("$word_frag*")
+
+	@replace_fragment($@word_frag $frag_matches)
+
+	if (#frag_matches == 1) {
+		@:stat_ret = stat($frag_matches)
+
+		if (left(1 $word(2 $stat_ret)) == 4) {
+			parsekey backspace
+			if (word_fragq) {
+				parsekey backward_character
+			}
+		}
+	}
+}
+
+alias nick_complete {
+	@:word_frag = [$*]
+	@:frag_matches = pattern("$word_frag*" $onchannel())
+
+	if (frag_matches == []) {
+		^local nick_list
+
+		fe ($remw($C $mychannels())) nick_name {
+			@push(nick_list $onchannel($nick_name))
+		}
+
+		fe ($notify(on)) nick_name {
+			@push(nick_list $nick_name)
+		}
+
+		@:nick_list = uniq($nick_list)
+		@:frag_matches = pattern($word_frag% $nick_list)
+	}
+
+	@replace_fragment($@word_frag $frag_matches)
+
+	if (#L == 1 && #frag_matches == 1) {
+		parsekey backspace
+	}
+}
+
+alias add_nickname {
+	@:nick_items = numitems(nick_hist)
+	@:prev_oc = finditem(nick_hist $0)
+
+	if (prev_oc > -1) {
+		@delitem(nick_hist $prev_oc)
+		@:nick_items--
+	}
+
+	if (nick_items > 9) {
+		@delitem(nick_hist 0)
+		@:nick_items--
+	}
+
+	@setitem(nick_hist $nick_items $0)
+	@nick_index = nick_items
+}
+
+alias msg_cycle {
+	@:nick_items = numitems(nick_hist)
+
+	if (!(nick_items)) {
+		return
+	}
+
+	parsekey erase_line
+	xtype -l /msg $getitem(nick_hist $nick_index)$chr(32)
+	@nick_index = nick_index == 0 ? nick_items - 1 : nick_index - 1
+}
+
+on #^dcc_chat 10 "*" {
+	@add_nickname(=$0)
+}
+
+on #^dcc_connect 10 "% CHAT *" {
+	@add_nickname(=$0)
+}
+
+on #^msg 10 "*" {
+	@add_nickname($0)
+}
+
+on #^send_dcc_chat 10 "*" {
+	@add_nickname(=$0)
+}
+
+on #^send_msg 10 "*" {
+	@add_nickname($0)
+}

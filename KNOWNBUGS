@@ -13,6 +13,8 @@ KNOWN ERRATA (eg, bugs, or unresolved requests):
 * Some way to color the input prompt?  (Probably not)
 * The way the pattern matcher handles ?'s after *'s is really lame.
 * /window disconnect (server -> -2) + /server 0 reconnects to previous server.
+* New math parser can't handle  @ foo[bar].baz = 0
+* Some way to get the client's global default nickname?
 
 [See http://www.epicsol.org/PROJECTS for things to come in the future]
 [See http://www.epicsol.org/CHANGELOG for things that changed in the past]
@@ -172,3 +174,4 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Fix some rather obvious bugs.  I take the blame for all this.
 * Fix $<num> to not have leading or trailing spaces, cause zinx said so. ;-)
 * Fix real_extract2 because I'm a moron.  Ugh.  Reported anonymously.
+* Add nsx's 'tabkey.jm' script.
