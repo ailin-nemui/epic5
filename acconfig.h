@@ -1,5 +1,5 @@
 /*
- * @(#)$Id: acconfig.h,v 1.25 2003/11/22 23:29:22 jnelson Exp $
+ * @(#)$Id: acconfig.h,v 1.26 2005/03/04 00:57:43 jnelson Exp $
  */
 
 /*
@@ -319,4 +319,16 @@
 
 /* Define this if you have atoq() */
 #undef HAVE_ATOQ
+
+/* Define this to use select() */
+#undef USE_SELECT
+
+/* Define this to use poll() */
+#undef USE_POLL
+
+/* Define this to use kqueue() */
+#undef USE_KQUEUE
+
+/* Define this to use pthreads */
+#undef USE_PTHREAD
 

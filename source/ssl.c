@@ -1,4 +1,4 @@
-/* $EPIC: ssl.c,v 1.12 2005/02/28 14:23:30 jnelson Exp $ */
+/* $EPIC: ssl.c,v 1.13 2005/03/04 00:57:45 jnelson Exp $ */
 /*
  * ssl.c: SSL connection functions
  *
@@ -40,6 +40,7 @@
 #include <openssl/pem.h>
 #include <openssl/ssl.h>
 #include <openssl/err.h>
+#include <openssl/opensslconf.h>
 
 #include "irc.h"
 #ifdef HAVE_SSL
@@ -50,6 +51,7 @@
 #include "newio.h"
 
 static	int	firsttime = 1;
+static void	ssl_setup_locking (void);
 
 static SSL_CTX	*SSL_CTX_init (int server)
 {
@@ -59,12 +61,14 @@ static SSL_CTX	*SSL_CTX_init (int server)
 	{
 		SSL_load_error_strings();
 		SSL_library_init();
+		ssl_setup_locking();
 		firsttime = 0;
 	}
 
 	ctx = SSL_CTX_new(server ? SSLv23_server_method() : SSLv23_client_method());
 	SSL_CTX_set_session_cache_mode(ctx, SSL_SESS_CACHE_BOTH);
 	SSL_CTX_set_timeout(ctx, 300);
+
 	return(ctx);
 }
 
@@ -299,6 +303,41 @@ int	is_ssl_enabled (int vfd)
 		return 0;
 }
 
+# ifdef USE_PTHREAD
+#include <pthread.h>
+pthread_mutex_t *ssl_mutexes = NULL;
+
+static void	ssl_locking_callback (int mode, int n, const char *file, int line)
+{
+	if (mode & CRYPTO_LOCK)
+		pthread_mutex_lock(&ssl_mutexes[n]);
+	else
+		pthread_mutex_unlock(&ssl_mutexes[n]);
+}
+
+static unsigned long	ssl_id_callback (void)
+{
+	return (unsigned long)pthread_self();
+}
+
+static void	ssl_setup_locking (void)
+{
+	int	i, num;
+
+	num = CRYPTO_num_locks();
+	ssl_mutexes = (pthread_mutex_t *)new_malloc(sizeof(pthread_mutex_t) * num);
+	for (i = 0; i < num; i++)
+		pthread_mutex_init(&ssl_mutexes[i], NULL);
+
+	CRYPTO_set_locking_callback(ssl_locking_callback);
+	CRYPTO_set_id_callback(ssl_id_callback);
+}
+# else
+static void	ssl_setup_locking (void)
+{
+	return;
+}
+# endif
 #else
 
 int	startup_ssl (int vfd)

@@ -1,4 +1,4 @@
-/* $EPIC: status.c,v 1.51 2005/02/03 01:33:39 jnelson Exp $ */
+/* $EPIC: status.c,v 1.52 2005/03/04 00:57:45 jnelson Exp $ */
 /*
  * status.c: handles the status line updating, etc for IRCII 
  *
@@ -212,6 +212,7 @@ struct status_formats status_expandos[] = {
 { 2, '9', status_user,	 	NULL, 			NULL },
 { 2, 'S', status_server,        &server_format,     	&STATUS_SERVER_VAR },
 { 2, 'W', status_window,	NULL, 			NULL },
+{ 2, '+', status_mode,		&mode_format,       	&STATUS_MODE_VAR },
 { 3, '0', status_user,	 	NULL, 			NULL },
 { 3, '1', status_user,	 	NULL, 			NULL },
 { 3, '2', status_user,	 	NULL, 			NULL },
@@ -223,7 +224,8 @@ struct status_formats status_expandos[] = {
 { 3, '8', status_user,	 	NULL, 			NULL },
 { 3, '9', status_user,	 	NULL, 			NULL },
 { 3, 'S', status_server,        &server_format,     	&STATUS_SERVER_VAR },
-{ 3, 'W', status_window,	NULL, 			NULL }
+{ 3, 'W', status_window,	NULL, 			NULL },
+{ 3, '+', status_mode,		&mode_format,       	&STATUS_MODE_VAR }
 };
 #define NUMBER_OF_EXPANDOS (sizeof(status_expandos) / sizeof(struct status_formats))
 
@@ -1004,24 +1006,33 @@ static  char    	my_buffer[81];
 	if ((chan = get_echannel_by_refnum(window->refnum)))
 		mode = get_channel_mode(chan, window->server);
 
-	/* If this is %+, and there is not a mode, punt. */
-	if (mode == 0 && (!mode || !*mode))
-		return my_buffer;
-
-	/* If this is %{1}+, and there is not a mode, use empty string */
 	if (!mode)
 		mode = empty_string;
 
-	/*
-	 * This gross hack is required to make sure that the 
-	 * channel key doesnt accidentally contain anything 
-	 * dangerous...
-	 */
-	if (get_int_var(STATUS_DOES_EXPANDOS_VAR))
+	/* If this is %+, and there is not a mode, punt. */
+	if (map == 0 && !*mode)
+		return my_buffer;
+
+	if (map == 0 || map == 1)
 	{
+	    /*
+	     * This gross hack is required to make sure that the 
+	     * channel key doesnt accidentally contain anything 
+	     * dangerous...
+	     */
+	    if (get_int_var(STATUS_DOES_EXPANDOS_VAR) && strchr(mode, '$'))
+	    {
 		char *mode2 = alloca(strlen(mode) * 2 + 1);
 		double_quote(mode, "$", mode2);
 		mode = mode2;
+	    }
+	}
+	else if (map == 2 || map == 3)
+	{
+		char *x, *c;
+		x = LOCAL_COPY(mode);
+		if (!(mode = next_arg(x, &x)))
+			mode = empty_string;
 	}
 
 	/* Press the mode into the status format. */

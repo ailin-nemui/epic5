@@ -4,9 +4,9 @@ dnl except those bits attributed otherwise.
 dnl thanks to the screen 3.3 configure.in for giving me examples to
 dnl work from and steal ;)
 dnl
-dnl @(#)$Id: configure.in,v 1.40 2004/03/12 22:21:59 jnelson Exp $
+dnl @(#)$Id: configure.in,v 1.41 2005/03/04 00:57:43 jnelson Exp $
 
-AC_REVISION($Revision: 1.40 $)dnl
+AC_REVISION($Revision: 1.41 $)dnl
 AC_INIT(source/irc.c)
 AC_CONFIG_HEADER(include/defs.h)
 
@@ -76,6 +76,49 @@ if test -d /usr/ccs/lib; then
 fi
 
 
+dnl ----------------------------------------------------------
+dnl   Where does this belong?
+AC_MSG_CHECKING(which multiplexer function to use)
+AC_ARG_WITH(multiplex,
+[  --with-multiplex[=TYPE]   Multiplexer type (TYPE=select,poll,kqueue,pthread)
+],[
+	if test "x$withval" = "x"; then
+		with_multiplex="select"
+	elif test "x$withval" = "xselect"; then
+		with_multiplex="select"
+	elif test "x$withval" = "xpoll"; then
+		with_multiplex="poll"
+	elif test "x$withval" = "xkqueue"; then
+		with_multiplex="kqueue"
+	elif test "x$withval" = "xpthread"; then
+		with_multiplex="pthread_create"
+		CFLAGS="$CFLAGS -pthread"
+	else
+		with_multiplex="select"
+	fi
+],[
+	with_multiplex="select"
+])
+AC_MSG_RESULT($with_multiplex)
+AC_CHECK_FUNC($with_multiplex, [
+	if test "x$with_multiplex" = "xselect" ; then
+		AC_DEFINE(USE_SELECT)
+		threading=0
+	elif test "x$with_multiplex" = "xpoll" ; then
+		AC_DEFINE(USE_POLL)
+		threading=0
+	elif test "x$with_multiplex" = "xkqueue" ; then
+		AC_DEFINE(USE_KQUEUE)
+		threading=0
+	elif test "x$with_multiplex" = "xpthread_create" ; then
+		AC_DEFINE(USE_PTHREAD)
+		threading=1
+	fi
+],[
+	AC_DEFINE(USE_SELECT)
+	threading=0
+])
+
 
 dnl ----------------------------------------------------------
 dnl
@@ -109,7 +152,6 @@ else
 	# Otherwise, go hunting for it.
 	if test -z "$have_ssl" ; then
 	    for ssldir in "$with_ssl" /usr/local/ssl /usr/local/openssl; do
-
 		if test -n "$have_ssl"; then
 			break;
 		fi
@@ -129,18 +171,39 @@ else
 	fi
 
 	# If we found it somewhere, great!  Otherwise, revert.
-	if test -n "$have_ssl"; then
-		AC_DEFINE(HAVE_SSL)
-		AC_MSG_RESULT(yes)
-	else
+	if test ! -n "$have_ssl"; then
 		LIBS="$saved_LIBS"
 		CFLAGS="$saved_CFLAGS"
 		AC_MSG_RESULT(no)
 		if test "x$with_ssl" != "x"; then
 			AC_MSG_ERROR([You requested SSL support, but OpenSSL was not found. Please supply a pathname to OpenSSL])
 		fi
+	else
+	    if test "x$threading" = "x1" ; then
+		AC_MSG_RESULT(yes)
+		AC_MSG_CHECKING(whether your SSL is threading compatable)
+		AC_TRY_RUN([
+#define OPENSSL_THREAD_DEFINES
+#include <openssl/opensslconf.h>
+main ()
+{
+#if defined(THREADS)
+        exit(0);
+#else
+        exit(1);
+#endif
+}
+],
+		AC_MSG_RESULT(yes)
+		AC_DEFINE(HAVE_SSL),
+		AC_MSG_RESULT(no. Your system can not do SSL with pthreads), :)
+	    else
+		AC_DEFINE(HAVE_SSL)
+		AC_MSG_RESULT(yes)
+	    fi
 	fi
 fi
+
 
 dnl this is for isc.  need the nsl_s library as well.
 if test -z "$libinet"; then

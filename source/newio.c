@@ -1,4 +1,4 @@
-/* $EPIC: newio.c,v 1.42 2005/03/03 02:39:20 jnelson Exp $ */
+/* $EPIC: newio.c,v 1.43 2005/03/04 00:57:45 jnelson Exp $ */
 /*
  * newio.c:  Passive, callback-driven IO handling for sockets-n-stuff.
  *
@@ -40,13 +40,9 @@
 #include "newio.h"
 #include "ssl.h"
 #include "timer.h"
+#ifdef USE_PTHREAD
 #include <pthread.h>
-
-/* You MUST define one and ONLY one of these USE_* macros! */
-#define USE_SELECT
-/* #define USE_FREEBSD_KQUEUE */
-/* #define USE_POLL */
-/* #define USE_PTHREADS */
+#endif
 
 /* This is still an experimental feature. */
 /* #define VIRTUAL_FILEDESCRIPTORS */
@@ -689,7 +685,7 @@ static int	unix_accept (int channel)
 	SS	addr;
 	socklen_t len;
 
-#ifdef USE_PTHREADS
+#ifdef USE_PTHREAD
 	/* XXX I hate this, but pthreads don't play nice with nonblocking. */
 	{
 		fd_set	fdset;
@@ -720,7 +716,7 @@ static int	unix_connect (int channel)
 	SS	remoteaddr;
 	socklen_t len;
 
-#ifdef USE_PTHREADS
+#ifdef USE_PTHREAD
 	/* XXX I hate this, but pthreads don't play nice with nonblocking. */
 	{
 		fd_set	fdset;
@@ -1088,7 +1084,7 @@ static	void	kunlock (void) { return; }
 /*
  * Implementation of pthread front-end to synchronous unix system calls
  */
-#ifdef USE_PTHREADS
+#ifdef USE_PTHREAD
 #include <pthread.h>
 
 struct pthread_stuff {

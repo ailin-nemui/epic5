@@ -536,3 +536,10 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Fix more compiler warnings.
 * Fix accept() with pthreads.
 * When accept()ing with pthreads, can the new conn really be nonblocking?
+* Add --with-multiplex=[select|poll|kqueue|pthread] to configure
+* Check thread-safety of SSL in configure when using pthreads.
+* Don't unconditionally skip leading :'s in symbol names.
+* When calling functions, handle skipping leading :'s specially.
+* Add support for pthread locking for ssl to ssl.c
+* Add %{2}+ and %{3}+ status expandos that only show the mode string.
+* Use AI_ADDRCONFIG flag to tell getaddrinfo() we only want addrs we can use.

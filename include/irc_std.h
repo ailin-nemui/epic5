@@ -58,7 +58,9 @@
 #ifdef HAVE_NETDB_H
 #include <netdb.h>
 #endif
-
+#ifndef AI_ADDRCONFIG
+# define AI_ADDRCONFIG 0
+#endif
 
 /*
  * Some systems define tputs, etc in this header

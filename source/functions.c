@@ -1,4 +1,4 @@
-/* $EPIC: functions.c,v 1.192 2005/03/03 02:10:39 jnelson Exp $ */
+/* $EPIC: functions.c,v 1.193 2005/03/04 00:57:44 jnelson Exp $ */
 /*
  * functions.c -- Built-in functions for ircII
  *
@@ -826,6 +826,9 @@ char	*call_function (char *name, const char *args)
 		lparen = endstr(name);
 
 	upper(name);
+	type = strspn(name, ":");
+	name += type;
+
 	alias = get_func_alias(name, &arglist, &func);
 
 	if (!func && !alias)
@@ -839,7 +842,6 @@ char	*call_function (char *name, const char *args)
 
 	tmp = expand_alias(lparen, args, NULL);
 	debug_copy = LOCAL_COPY(tmp);
-	type = strspn(name, ":");
 
 	if (func && type != 1)
 		result = func(tmp);

@@ -1,4 +1,4 @@
-/* $EPIC: ircaux.c,v 1.131 2005/03/03 02:22:12 jnelson Exp $ */
+/* $EPIC: ircaux.c,v 1.132 2005/03/04 00:57:44 jnelson Exp $ */
 /*
  * ircaux.c: some extra routines... not specific to irc... that I needed 
  *
@@ -3545,7 +3545,7 @@ char *	switch_hostname (const char *new_hostname)
 	if (v4 && *v4)
 	{
 	    new_4.sin_family = AF_INET;
-	    if (!inet_strton(v4, zero, (SA *)&new_4, 0))
+	    if (!inet_strton(v4, zero, (SA *)&new_4, AI_ADDRCONFIG))
 	    {
 		if ((fd = client_bind((SA *)&new_4, sizeof(ISA))) >= 0)
 		{
@@ -3562,7 +3562,7 @@ char *	switch_hostname (const char *new_hostname)
 	if (v6 && *v6)
 	{
 	    new_6.sin6_family = AF_INET6;
-	    if (!inet_strton(v6, zero, (SA *)&new_6, 0)) 
+	    if (!inet_strton(v6, zero, (SA *)&new_6, AI_ADDRCONFIG)) 
 	    {
 		if ((fd = client_bind((SA *)&new_6, sizeof(ISA6))) >= 0)
 		{

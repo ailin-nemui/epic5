@@ -1,5 +1,55 @@
 EPIC5-0.1
 
+*** News 03/03/2005 -- New status bar expandos, %{2}+ and %{3}+
+	These two status exapndos act like %+ and %{1}+ respectively,
+	except that %{2}+ and %{3}+ will contain only the mode string,
+	and not any subsequent arguments.  Specifically, %{2}+ and %{3}+
+	don't include the channel's key or user limit (if any).
+
+*** News 03/03/2005 -- New configure options, --with-multiplex
+	You can choose which multiplex function you want epic to use with
+	a new configure option, "--with-multiplex".  These are the values:
+			--with-multiplex=select
+			--with-multiplex=poll
+			--with-multiplex=kqueue
+			--with-multiplex=pthread
+	If you don't choose a multiplexer, or you choose one that isn't
+	supported by your system, it will use select instead.  Note that
+	the kqueue() support is only tested on freebsd-4 and freebsd-5.
+
+	If you use --with-multiplex=pthread and --with-ssl together,
+	and your openssl version was not compiled to be thread-safe, then
+	you won't be able to use ssl with pthreads (it would crash if 
+	you tried).
+
+*** News 03/03/2005 -- New $hookctl() operation, "GET HOOK <ref> STRING"
+	The $hookctl(GET HOOK <ref> STRING) operation returns a string that
+	is suitable for passing to /eval {....} to recreate the hook.  This
+	will be used by scripts that want to "/save" an /on.  If you write
+	these values to a file, you will be able to /load it later.
+
+*** News 03/03/2005 -- Changes to how error messages are displayed
+	Traditionally, ircII clients have tried to emit one error message
+	for each error event, putting all of the information into one line.
+	This has its advantages and disadvantages.  The main disadvantage is
+	that if information is difficult to pass around, it is usually 
+	discarded, and the user may be given a vague or useless error message.
+
+	So now error reporting has been revamped in epic.  Whenever an error
+	is actually generated (or first noticed), the information that is 
+	available will be displayed to the screen.  Then a failure condition
+	will be sent up to the higher levels of epic, and each higher level	
+	will give you whatever information it has available.  Thus, while an
+	error message may take up 3 or 4 lines of display, each line has a 
+	little piece of information the others don't, and taken together, you
+	get the full picture of what happened.
+
+	Each error line looks like this:
+			*** ERROR -- <message>
+	where "***" is the value of /SET BANNER.  These errors are yells, 
+	so if you want to hide them, use /ON YELL.
+
+
 *** News 02/28/2005 -- !!! IMPORTANT !!! "global" SCRIPT NO LONGER AUTO-LOADED
 		This is a backwards incompatable change!
 

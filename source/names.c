@@ -1,4 +1,4 @@
-/* $EPIC: names.c,v 1.64 2005/02/03 01:33:39 jnelson Exp $ */
+/* $EPIC: names.c,v 1.65 2005/03/04 00:57:44 jnelson Exp $ */
 /*
  * names.c: This here is used to maintain a list of all the people currently
  * on your channel.  Seems to work 
@@ -719,7 +719,7 @@ char	*create_nochops_list (const char *name, int server)
  * get_cmode: Get the current mode string for the specified server.
  * We only do a refresh if the mode has changed since we generated it.
  */
-static char *	get_cmode (Channel *chan)
+static const char *	get_cmode (Channel *chan)
 {
 	return chan->modestr;
 }

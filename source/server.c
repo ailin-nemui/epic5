@@ -1,4 +1,4 @@
-/* $EPIC: server.c,v 1.156 2005/03/03 02:10:40 jnelson Exp $ */
+/* $EPIC: server.c,v 1.157 2005/03/04 00:57:45 jnelson Exp $ */
 /*
  * server.c:  Things dealing with that wacky program we call ircd.
  *
@@ -1107,6 +1107,7 @@ static int	grab_server_address (int server)
 	memset(&hints, 0, sizeof(hints));
 	hints.ai_family = AF_UNSPEC;
 	hints.ai_socktype = SOCK_STREAM;
+	hints.ai_flags = AI_ADDRCONFIG;
 	if ((err = Getaddrinfo(s->name, ltoa(s->port), &hints, &results)))
 	{
 		yell("DNS lookup for [%s] (server %d) failed.", 
@@ -1937,9 +1938,9 @@ static void	set_server_userhost (int refnum, const char *uh)
 
 	/* Ack!  Oh well, it's for DCC. */
 	FAMILY(s->uh_addr) = AF_INET;
-	if (inet_strton(host + 1, zero, (SA *)&s->uh_addr, 0))
+	if (inet_strton(host + 1, zero, (SA *)&s->uh_addr, AI_ADDRCONFIG))
 		yell("Ack.  The server says your userhost is [%s] and "
-		     "I can't figure out the IPv4 address of that host! "
+		     "I can't figure out the IP address of that host! "
 		     "You won't be able to use /SET DCC_USE_GATEWAY_ADDR ON "
 		     "with this server connection!", host + 1);
 }

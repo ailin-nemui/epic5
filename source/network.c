@@ -1,4 +1,4 @@
-/* $EPIC: network.c,v 1.62 2005/03/03 02:50:08 jnelson Exp $ */
+/* $EPIC: network.c,v 1.63 2005/03/04 00:57:45 jnelson Exp $ */
 /*
  * network.c -- handles stuff dealing with connecting and name resolving
  *
@@ -362,7 +362,7 @@ static int	inet_remotesockaddr (int family, const char *host, const char *port, 
 {
 	((SA *)storage)->sa_family = family;
 
-	if (inet_strton(host, port, (SA *)storage, 0))
+	if (inet_strton(host, port, (SA *)storage, AI_ADDRCONFIG))
 	{
 		syserr("inet_remotesockaddr: inet_strton(%d,%s,%s) failed",
 					family, host, port);
@@ -485,7 +485,7 @@ int	inet_hntop (int family, const char *host, char *retval, int size)
 	SS	buffer;
 
 	((SA *)&buffer)->sa_family = family;
-	if (inet_strton(host, NULL, (SA *)&buffer, 0))
+	if (inet_strton(host, NULL, (SA *)&buffer, AI_ADDRCONFIG))
 	{
 		syserr("inet_hntop: inet_strton(%d,%s) failed", family, host);
 		return -1;

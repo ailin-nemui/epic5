@@ -1,4 +1,4 @@
-/* $EPIC: dcc.c,v 1.111 2005/03/03 02:10:39 jnelson Exp $ */
+/* $EPIC: dcc.c,v 1.112 2005/03/04 00:57:44 jnelson Exp $ */
 /*
  * dcc.c: Things dealing client to client connections. 
  *
@@ -2077,7 +2077,7 @@ char	*dcc_raw_connect (const char *host, const char *port, int family)
     {
 	memset(&my_sockaddr, 0, sizeof(my_sockaddr));
 	FAMILY(my_sockaddr) = family;
-	if (inet_strton(host, port, (SA *)&my_sockaddr, 0))
+	if (inet_strton(host, port, (SA *)&my_sockaddr, AI_ADDRCONFIG))
 	{
 		say("Unknown host: %s", host);
 		break;
@@ -2270,7 +2270,7 @@ void	register_dcc_offer (const char *user, char *type, char *description, char *
 
 		fromhost++;
 		FAMILY(irc_addr) = FAMILY(offer);
-		if (inet_strton(fromhost, port, (SA *)&irc_addr, 0))
+		if (inet_strton(fromhost, port, (SA *)&irc_addr, AI_ADDRCONFIG))
 		{
 			yell("### Incoming handshake has an address or port "
 				"[%s:%s] that could not be figured out!", 
@@ -3837,7 +3837,7 @@ char *	dccctl (char *input)
 
 			V4FAM(a) = AF_UNSPEC;
 			if ((client->flags & DCC_ACTIVE) ||
-					inet_strton(host, port, (SA *)&a, 0))
+					inet_strton(host, port, (SA *)&a, AI_ADDRCONFIG))
 				RETURN_EMPTY;
 
 			memcpy(&client->offer, &a, sizeof client->offer);
