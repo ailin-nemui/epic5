@@ -1,4 +1,4 @@
-/* $EPIC: numbers.c,v 1.81 2005/03/11 05:02:22 jnelson Exp $ */
+/* $EPIC: numbers.c,v 1.82 2005/03/12 01:40:22 jnelson Exp $ */
 /*
  * numbers.c: handles all those strange numeric response dished out by that
  * wacky, nutty program we call ircd 
@@ -1222,7 +1222,7 @@ DISPLAY:
 		if (!(host = ArgList[1]))
 			{ rfc1459_odd(from, comm, ArgList); goto END; }
 
-		put_it("%s is actually using %s", who, host);
+		put_it("%s %s is actually using %s", banner(), who, host);
 		break;
 	}
 

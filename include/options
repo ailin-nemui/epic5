@@ -39,6 +39,10 @@ const char compile_time_options[] = {
  					'g',
 #endif /* INCLUDE_GLOB_FUNCTION is now the default */
  
+#ifdef IMPLIED_ON_HOOKS
+					'h',
+#endif
+
 #ifdef MIRC_BROKEN_DCC_RESUME
 					'i',
 #endif /* MIRC_BROKEN_DCC_RESUME */

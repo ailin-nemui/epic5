@@ -1,4 +1,4 @@
-/* $EPIC: hook.c,v 1.50 2005/03/03 02:10:39 jnelson Exp $ */
+/* $EPIC: hook.c,v 1.51 2005/03/12 01:40:22 jnelson Exp $ */
 /*
  * hook.c: Does those naughty hook functions. 
  *
@@ -85,23 +85,19 @@ typedef struct	hook_stru
 {
 	struct	hook_stru *next;
 
-	char	*nick;			/* /on type NICK stuff */
-	char	*stuff;			/* /on type nick STUFF */
-	int 	type;			/* what kind of hook this is */
-	
-	int userial;		/* Unique serial for this hook */
+	int 	type;		/* /on #TYPE sernum nick (arglist) stuff */
+	int 	sernum;		/* /on #type SERNUM nick (arglist) stuff */
+	char *	nick;		/* /on #type sernum NICK (arglist) stuff */
+	ArgList *arglist;	/* /on #type sernum nick (ARGLIST) stuff */
+	char *	stuff;		/* /on #type sernum nick (arglist) STUFF */
 
-	int	not;			/* /on type ^nick stuff */
-	int	noisy;			/* /on [^-+]type nick stuff */
+	int	not;		/* /on #type sernum ^NICK */
+	int	noisy;		/* /on #[^-+]TYPE sernum nick (arglist) stuff */
+	int	flexible;	/* /on #type sernum 'NICK' (arglist) stuff */
 
-	int skip;			/* hook will be skipped, like it doesn't exist */
-	int	sernum;			/* /on #type NUM nick stuff */
-					/* Default sernum is 0. */
-
-	int	flexible;		/* on type 'NICK' stuff */
-
-	char	*filename;		/* Where it was loaded */
-	ArgList *arglist;	/* You know, argument list */
+	int	userial;	/* Unique serial for this hook */
+	int	skip;		/* hook will be treated like it doesn't exist */
+	char *	filename;	/* Where it was loaded */
 }	Hook;
 
 /* 
@@ -137,99 +133,100 @@ typedef struct Hookables
 	int	params;			/* Number of parameters expected */
 	int	mark;			/* Hook type is currently active */
 	unsigned flags;			/* Anything else needed */
+	char *	implied;		/* Implied output if unhooked */
 } Hookables;
 
 Hookables hook_function_templates[] =
 {
-	{ "ACTION",		(Hook *) 0,	3,	0,	0 },
-	{ "CHANNEL_NICK",	(Hook *) 0,	3,	0,	0 },
-	{ "CHANNEL_SIGNOFF",	(Hook *) 0,	3,	0,	0 },
-	{ "CHANNEL_SYNC",	(Hook *) 0,	3,	0,	0 },
-	{ "CONNECT",		(Hook *) 0,	2,	0,	0 },
-	{ "CTCP",		(Hook *) 0,	4,	0,	0 },
-	{ "CTCP_REPLY",		(Hook *) 0,	4,	0,	0 },
-	{ "CTCP_REQUEST",	(Hook *) 0,	4,	0,	0 },
-	{ "DCC_ACTIVITY",	(Hook *) 0,	1,	0,	0 },
-	{ "DCC_CHAT",		(Hook *) 0,	2,	0,	0 },
-        { "DCC_CONNECT",        (Hook *) 0,     2,      0,      0 },
-	{ "DCC_LIST",		(Hook *) 0,	8,	0,	0 },
-        { "DCC_LOST",           (Hook *) 0,     2,      0,      0 },
-	{ "DCC_OFFER", 		(Hook *) 0,	2,	0,	0 },
-	{ "DCC_RAW",		(Hook *) 0,	3,	0,	0 },
-        { "DCC_REQUEST",        (Hook *) 0,     4,      0,      0 },
-	{ "DISCONNECT",		(Hook *) 0,	1,	0,	0 },
-        { "ENCRYPTED_NOTICE",   (Hook *) 0,     3,      0,      0 },
-        { "ENCRYPTED_PRIVMSG",  (Hook *) 0,     3,      0,      0 },
-	{ "ERROR",		(Hook *) 0,	1,	0,	0 },
-	{ "EXEC",		(Hook *) 0,	2,	0,	0 },
-	{ "EXEC_ERRORS",	(Hook *) 0,	2,	0,	0 },
-	{ "EXEC_EXIT",		(Hook *) 0,	3,	0,	0 },
-	{ "EXEC_PROMPT",	(Hook *) 0,	2,	0,	0 },
-        { "EXIT",               (Hook *) 0,     1,      0,      0 },
-	{ "FLOOD",		(Hook *) 0,	5,	0,	0 },
-	{ "GENERAL_NOTICE",	(Hook *) 0,	3,	0,	0 },
-	{ "GENERAL_PRIVMSG",	(Hook *) 0,	3,	0,	0 },
-	{ "HELP",		(Hook *) 0,	2,	0,	0 },
-	{ "HOOK",		(Hook *) 0,	1,	0,	0 },
-	{ "IDLE",		(Hook *) 0,	1,	0,	0 },
-	{ "INPUT",		(Hook *) 0,	1,	0,	HF_NORECURSE },
-	{ "INVITE",		(Hook *) 0,	3,	0,	0 },
-	{ "JOIN",		(Hook *) 0,	4,	0,	0 },
-	{ "KICK",		(Hook *) 0,	3,	0,	0 },
-	{ "KILL",		(Hook *) 0,	5,	0,	0 },
-	{ "LEAVE",		(Hook *) 0,	2,	0,	0 },
-	{ "LIST",		(Hook *) 0,	3,	0,	0 },
-	{ "MAIL",		(Hook *) 0,	2,	0,	0 },
-	{ "MODE",		(Hook *) 0,	3,	0,	0 },
-	{ "MODE_STRIPPED",	(Hook *) 0,	3,	0,	0 },
-	{ "MSG",		(Hook *) 0,	2,	0,	0 },
-	{ "MSG_GROUP",		(Hook *) 0,	3,	0,	0 },
-	{ "NAMES",		(Hook *) 0,	2,	0,	0 },
-	{ "NEW_NICKNAME",	(Hook *) 0,	2,	0,	HF_NORECURSE },
-	{ "NICKNAME",		(Hook *) 0,	2,	0,	0 },
-	{ "NOTE",		(Hook *) 0,	3,	0,	0 },
-	{ "NOTICE",		(Hook *) 0,	2,	0,	0 },
-	{ "NOTIFY_SIGNOFF",	(Hook *) 0,	1,	0,	0 },
-	{ "NOTIFY_SIGNON",	(Hook *) 0,	2,	0,	0 },
-	{ "ODD_SERVER_STUFF",	(Hook *) 0,	3,	0,	0 },
-	{ "OPER_NOTICE",	(Hook *) 0,	2,	0,	0 },
-	{ "PONG",		(Hook *) 0,	2,	0,	0 },
-	{ "PUBLIC",		(Hook *) 0,	3,	0,	0 },
-	{ "PUBLIC_MSG",		(Hook *) 0,	3,	0,	0 },
-	{ "PUBLIC_NOTICE",	(Hook *) 0,	3,	0,	0 },
-	{ "PUBLIC_OTHER",	(Hook *) 0,	3,	0,	0 },
-	{ "RAW_IRC",		(Hook *) 0,	1,	0,	0 },
-	{ "REDIRECT",		(Hook *) 0,	2,	0,	HF_NORECURSE },
-	{ "SEND_ACTION",	(Hook *) 0,	2,	0,	HF_NORECURSE },
-	{ "SEND_CTCP",		(Hook *) 0,	3,	0,	HF_NORECURSE },
-	{ "SEND_DCC_CHAT",	(Hook *) 0,	2,	0,	HF_NORECURSE },
-	{ "SEND_MSG",		(Hook *) 0,	2,	0,	HF_NORECURSE },
-	{ "SEND_NOTICE",	(Hook *) 0,	2,	0,	HF_NORECURSE },
-	{ "SEND_PUBLIC",	(Hook *) 0,	2,	0,	HF_NORECURSE },
-	{ "SEND_TO_SERVER",	(Hook *) 0,	3,	0,	HF_NORECURSE },
-	{ "SERVER_ESTABLISHED",	(Hook *) 0,	2,	0,	0 },
-	{ "SERVER_LOST",	(Hook *) 0,	2,	0,	0 },
-	{ "SERVER_NOTICE",	(Hook *) 0,	1,	0,	0 },
-	{ "SERVER_STATUS",	(Hook *) 0,	3,	0,	0 },
-	{ "SET",		(Hook *) 0,	2,	0,	0 },
-	{ "SIGNOFF",		(Hook *) 0,	1,	0,	0 },
-	{ "SILENCE",		(Hook *) 0,	2,	0,	0 },
-	{ "SSL_SERVER_CERT",	(Hook *) 0,	3,	0,	0 },
-	{ "STATUS_UPDATE",	(Hook *) 0,	3,	0,	0 },
-	{ "SWITCH_CHANNELS",	(Hook *) 0,	3,	0,	0 },
-	{ "SWITCH_WINDOWS",	(Hook *) 0,	4,	0,	0 },
-	{ "TIMER",		(Hook *) 0,	1,	0,	0 },
-	{ "TOPIC",		(Hook *) 0,	2,	0,	0 },
-	{ "UNLOAD",		(Hook *) 0,	1,	0,	0 },
-	{ "WALL",		(Hook *) 0,	2,	0,	0 },
-	{ "WALLOP",		(Hook *) 0,	3,	0,	0 },
-	{ "WHO",		(Hook *) 0,	6,	0,	0 },
-	{ "WINDOW",		(Hook *) 0,	2,	0,	HF_NORECURSE },
-	{ "WINDOW_COMMAND",	(Hook *) 0,	1, 	0,	0 },
-	{ "WINDOW_CREATE",	(Hook *) 0,	1, 	0,	0 },
-	{ "WINDOW_BEFOREKILL",	(Hook *) 0,	1,	0,	0 },
-	{ "WINDOW_KILL",	(Hook *) 0,	2,	0,	0 },
-	{ "YELL",		(Hook *) 0,	1,	0,	0 },
+	{ "ACTION",		NULL,	3,	0,	0,	NULL },
+	{ "CHANNEL_NICK",	NULL,	3,	0,	0,	NULL },
+	{ "CHANNEL_SIGNOFF",	NULL,	3,	0,	0,	NULL },
+	{ "CHANNEL_SYNC",	NULL,	3,	0,	0,	NULL },
+	{ "CONNECT",		NULL,	2,	0,	0,	NULL },
+	{ "CTCP",		NULL,	4,	0,	0,	NULL },
+	{ "CTCP_REPLY",		NULL,	4,	0,	0,	NULL },
+	{ "CTCP_REQUEST",	NULL,	4,	0,	0,	NULL },
+	{ "DCC_ACTIVITY",	NULL,	1,	0,	0,	NULL },
+	{ "DCC_CHAT",		NULL,	2,	0,	0,	NULL },
+        { "DCC_CONNECT",        NULL,   2,      0,      0,	NULL },
+	{ "DCC_LIST",		NULL,	8,	0,	0,	NULL },
+        { "DCC_LOST",           NULL,   2,      0,      0,	NULL },
+	{ "DCC_OFFER", 		NULL,	2,	0,	0,	NULL },
+	{ "DCC_RAW",		NULL,	3,	0,	0,	NULL },
+        { "DCC_REQUEST",        NULL,   4,      0,      0,	NULL },
+	{ "DISCONNECT",		NULL,	1,	0,	0,	NULL },
+        { "ENCRYPTED_NOTICE",   NULL,   3,      0,      0,	NULL },
+        { "ENCRYPTED_PRIVMSG",  NULL,   3,      0,      0,	NULL },
+	{ "ERROR",		NULL,	1,	0,	0,	NULL },
+	{ "EXEC",		NULL,	2,	0,	0,	NULL },
+	{ "EXEC_ERRORS",	NULL,	2,	0,	0,	NULL },
+	{ "EXEC_EXIT",		NULL,	3,	0,	0,	NULL },
+	{ "EXEC_PROMPT",	NULL,	2,	0,	0,	NULL },
+        { "EXIT",               NULL,   1,      0,      0,	NULL },
+	{ "FLOOD",		NULL,	5,	0,	0,	NULL },
+	{ "GENERAL_NOTICE",	NULL,	3,	0,	0,	NULL },
+	{ "GENERAL_PRIVMSG",	NULL,	3,	0,	0,	NULL },
+	{ "HELP",		NULL,	2,	0,	0,	NULL },
+	{ "HOOK",		NULL,	1,	0,	0,	NULL },
+	{ "IDLE",		NULL,	1,	0,	0,	NULL },
+	{ "INPUT",		NULL,	1,	0,	HF_NORECURSE,	NULL },
+	{ "INVITE",		NULL,	3,	0,	0,	NULL },
+	{ "JOIN",		NULL,	4,	0,	0,	NULL },
+	{ "KICK",		NULL,	3,	0,	0,	NULL },
+	{ "KILL",		NULL,	5,	0,	0,	NULL },
+	{ "LEAVE",		NULL,	2,	0,	0,	NULL },
+	{ "LIST",		NULL,	3,	0,	0,	NULL },
+	{ "MAIL",		NULL,	2,	0,	0,	NULL },
+	{ "MODE",		NULL,	3,	0,	0,	NULL },
+	{ "MODE_STRIPPED",	NULL,	3,	0,	0,	NULL },
+	{ "MSG",		NULL,	2,	0,	0,	NULL },
+	{ "MSG_GROUP",		NULL,	3,	0,	0,	NULL },
+	{ "NAMES",		NULL,	2,	0,	0,	NULL },
+	{ "NEW_NICKNAME",	NULL,	2,	0,	HF_NORECURSE,	NULL },
+	{ "NICKNAME",		NULL,	2,	0,	0,	NULL },
+	{ "NOTE",		NULL,	3,	0,	0,	NULL },
+	{ "NOTICE",		NULL,	2,	0,	0,	NULL },
+	{ "NOTIFY_SIGNOFF",	NULL,	1,	0,	0,	NULL },
+	{ "NOTIFY_SIGNON",	NULL,	2,	0,	0,	NULL },
+	{ "ODD_SERVER_STUFF",	NULL,	3,	0,	0,	NULL },
+	{ "OPER_NOTICE",	NULL,	2,	0,	0,	NULL },
+	{ "PONG",		NULL,	2,	0,	0,	NULL },
+	{ "PUBLIC",		NULL,	3,	0,	0,	NULL },
+	{ "PUBLIC_MSG",		NULL,	3,	0,	0,	NULL },
+	{ "PUBLIC_NOTICE",	NULL,	3,	0,	0,	NULL },
+	{ "PUBLIC_OTHER",	NULL,	3,	0,	0,	NULL },
+	{ "RAW_IRC",		NULL,	1,	0,	0,	NULL },
+	{ "REDIRECT",		NULL,	2,	0,	HF_NORECURSE,	NULL },
+	{ "SEND_ACTION",	NULL,	2,	0,	HF_NORECURSE,	NULL },
+	{ "SEND_CTCP",		NULL,	3,	0,	HF_NORECURSE,	NULL },
+	{ "SEND_DCC_CHAT",	NULL,	2,	0,	HF_NORECURSE,	NULL },
+	{ "SEND_MSG",		NULL,	2,	0,	HF_NORECURSE,	NULL },
+	{ "SEND_NOTICE",	NULL,	2,	0,	HF_NORECURSE,	NULL },
+	{ "SEND_PUBLIC",	NULL,	2,	0,	HF_NORECURSE,	NULL },
+	{ "SEND_TO_SERVER",	NULL,	3,	0,	HF_NORECURSE,	NULL },
+	{ "SERVER_ESTABLISHED",	NULL,	2,	0,	0,	NULL },
+	{ "SERVER_LOST",	NULL,	2,	0,	0,	NULL },
+	{ "SERVER_NOTICE",	NULL,	1,	0,	0,	NULL },
+	{ "SERVER_STATUS",	NULL,	3,	0,	0,	NULL },
+	{ "SET",		NULL,	2,	0,	0,	NULL },
+	{ "SIGNOFF",		NULL,	1,	0,	0,	NULL },
+	{ "SILENCE",		NULL,	2,	0,	0,	NULL },
+	{ "SSL_SERVER_CERT",	NULL,	3,	0,	0,	NULL },
+	{ "STATUS_UPDATE",	NULL,	3,	0,	0,	NULL },
+	{ "SWITCH_CHANNELS",	NULL,	3,	0,	0,	NULL },
+	{ "SWITCH_WINDOWS",	NULL,	4,	0,	0,	NULL },
+	{ "TIMER",		NULL,	1,	0,	0,	NULL },
+	{ "TOPIC",		NULL,	2,	0,	0,	NULL },
+	{ "UNLOAD",		NULL,	1,	0,	0,	NULL },
+	{ "WALL",		NULL,	2,	0,	0,	NULL },
+	{ "WALLOP",		NULL,	3,	0,	0,	NULL },
+	{ "WHO",		NULL,	6,	0,	0,	NULL },
+	{ "WINDOW",		NULL,	2,	0,	HF_NORECURSE,	NULL },
+	{ "WINDOW_COMMAND",	NULL,	1, 	0,	0,	NULL },
+	{ "WINDOW_CREATE",	NULL,	1, 	0,	0,	NULL },
+	{ "WINDOW_BEFOREKILL",	NULL,	1,	0,	0,	NULL },
+	{ "WINDOW_KILL",	NULL,	2,	0,	0,	NULL },
+	{ "YELL",		NULL,	1,	0,	0,	NULL },
 };
 
 static Hookables *hook_functions = NULL;
@@ -725,7 +722,7 @@ int 	do_hook (int which, const char *format, ...)
 	Hook		*tmp;
 	const char	*name 		= (char *) 0;
 	int		retval;
-	char 	buffer 			[BIG_BUFFER_SIZE * 10 +1];
+	char 		buffer[BIG_BUFFER_SIZE * 10 +1];
 	unsigned	display		= window_display;
 	char *		stuff_copy;
 	int		noise, old;
@@ -733,15 +730,17 @@ int 	do_hook (int which, const char *format, ...)
 	int		serial_number;
 	struct Current_hook *hook;
 
+	*buffer = 0;
+
 	if (!hook_functions_initialized)
 		initialize_hook_functions();
 
 	/* If deny_all_hooks is set, no hooks are permitted executed. */
-	if (deny_all_hooks)
-		return NO_ACTION_TAKEN;
-
-	if (!hook_functions[which].list)
-		return NO_ACTION_TAKEN;
+	if (deny_all_hooks || !hook_functions[which].list)
+	{
+		retval = NO_ACTION_TAKEN;
+		goto implied_hook;
+	}
 
 	/*
 	 * If we're already executing the type, and we're
@@ -750,7 +749,10 @@ int 	do_hook (int which, const char *format, ...)
 	 */
 	if (hook_functions[which].mark && 
 	    (hook_functions[which].flags & HF_NORECURSE))
-		return NO_ACTION_TAKEN;
+	{
+		retval = NO_ACTION_TAKEN;
+		goto implied_hook;
+	}
 
 	/*
 	 * Press the buffer using the specified format string and args
@@ -761,7 +763,7 @@ int 	do_hook (int which, const char *format, ...)
 	if (format)
 	{
 		va_list args;
-		va_start (args, format);
+		va_start(args, format);
 		vsnprintf(buffer, BIG_BUFFER_SIZE * 10, format, args);
 		va_end(args);
 	}
@@ -944,6 +946,43 @@ int 	do_hook (int which, const char *format, ...)
 	/*
 	 * And return the user-specified suppression level
 	 */
+	if (retval == SUPPRESS_DEFAULT || !hook_functions[which].implied)
+		return retval;
+
+    implied_hook:
+#ifdef IMPLIED_ON_HOOKS
+    do
+    {
+	char *func_call = NULL;
+	char *func_retval;
+
+	if (!hook_functions[which].implied)
+		break;
+
+	if (*buffer == 0)
+	{
+	    if (format)
+	    {
+		va_list args;
+		va_start(args, format);
+		vsnprintf(buffer, BIG_BUFFER_SIZE * 10, format, args);
+		va_end(args);
+	    }
+	    else
+		panic("do_hook: format is NULL");
+	}
+
+	malloc_sprintf(&func_call, "cparse(%s)", hook_functions[which].implied);
+	func_retval = call_function(func_call, buffer);
+	put_echo(func_retval);
+
+	new_free(&func_call);
+	new_free(&func_retval);
+	retval = SUPPRESS_DEFAULT;
+    }
+    while (0);
+#endif
+
 	return retval;
 }
 
@@ -2504,8 +2543,9 @@ char *hookctl (char *input)
 				prop = vmy_strnicmp(strlen(str), str,
 					"FLAGS",		"MARK", 		"NAME",
 					"PARAMETRES", 	"PARAMETERS",	"PARAMS",
-					NULL);
+					"IMPLIED",		NULL);
 			}
+
 			switch (prop)
 			{
 				case 1:		RETURN_INT(hooks->flags);
@@ -2514,6 +2554,22 @@ char *hookctl (char *input)
 				case 4:
 				case 5:
 				case 6:		RETURN_INT(hooks->params);
+#ifdef IMPLIED_ON_HOOKS
+				case 7:		if (set) {
+								if (*input == '{')
+								{
+									size_t span;
+									span = MatchingBracket(input+1, '{', '}');
+									if (span >= 0) {
+										input[span + 1] = 0;
+										input++;
+									}
+								}
+								malloc_strcpy(&hooks->implied, input);
+								RETURN_INT(1);
+							} else
+								RETURN_STR(hooks->implied);
+#endif
 			}
 			RETURN_EMPTY;
 			break;

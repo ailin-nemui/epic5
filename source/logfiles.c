@@ -1,4 +1,4 @@
-/* $EPIC: logfiles.c,v 1.30 2005/03/11 05:02:22 jnelson Exp $ */
+/* $EPIC: logfiles.c,v 1.31 2005/03/12 01:40:22 jnelson Exp $ */
 /*
  * logfiles.c - General purpose log files
  *
@@ -78,11 +78,20 @@ int	logref = 0;
 
 static Logfile *	new_logfile (void)
 {
-	Logfile *log;
+	Logfile *log, *ptr;
 	int	i;
 
 	log = (Logfile *)new_malloc(sizeof(Logfile));
-	log->next = logfiles;
+
+	/* Move it to the end of the list. */
+	for (ptr = logfiles; ptr && ptr->next;)
+		ptr = ptr->next;
+	if (ptr)
+		ptr->next = log;
+	else
+		logfiles = log;
+
+	log->next = NULL;
 	log->refnum = ++logref;
 	log->name = malloc_sprintf(NULL, "%d", log->refnum);
 	log->filename = NULL;

@@ -315,6 +315,7 @@
  */
 #define DEFAULT_IRCPATH "~/.epic:~/.irc:%s/script:."
 
+#undef IMPLIED_ON_HOOKS
 
 /*
  * Below are the IRCII variable defaults.  For boolean variables, use 1 for

@@ -1,0 +1,36 @@
+#
+# Here's the plan...
+# We have an input file that looks like this:
+#	^TYPE FORMAT...$
+# where TYPE is an ON type, and FORMAT is something that can be /echo'd for
+# for that of ON.  We want to open up a file, and slurp it into $hookctl().
+# 
+
+alias loadformats (filename, void) 
+{
+	if (index(h $info(O)) == -1) {
+		xecho -b Your client doesn't have implied hooks, sorry.
+		return
+	}
+
+	^local fd,line,type,retval,formats_loaded
+
+	@ fd = open($filename R)
+	@ line = read($fd)
+	while (!eof($fd))
+	{
+		@ type = shift(line)
+		@ retval = hookctl(SET LIST $type IMPLIED $line)
+		if (retval != 1) {
+			xecho -b Could not load format: $type $line
+		} else {
+			@ formats_loaded++;
+		}
+		@ line = read($fd)
+	}
+
+	xecho -b Loaded $formats_loaded formats from $(filename).
+	@close($fd)
+}
+
+#hop'2K5

@@ -2,7 +2,7 @@ EPIC5 Projects, Bugs, and other Errata:
 
 KNOWN ERRATA (eg, bugs, or unresolved requests):
 ------------------------------------------------
-* Sort the internal logfile list by refnum?
+* Keep timestamps with lastlog stuff
 
 [See http://www.epicsol.org/PROJECTS for things to come in the future]
 [See http://www.epicsol.org/CHANGELOG5 for things that changed in the past]
@@ -557,4 +557,7 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Don't allow /botmode if #define NO_BOTS
 * Fix DCC connections instantly "timing out"? (Check on this)
 * Whack FLOATING_POINT_SUPPORT and depend only on /set floating_point_math
-
+* Add $hookctl(SET LIST <type> IMPLIED <string>) though it's off by default.
+* If you do turn it on, it shows up as 'h' in $info(o)
+* Sort logfiles by refnum, so new refnums always go at the end of the list.
+* Fix up 338 again, oops!

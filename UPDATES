@@ -1,5 +1,23 @@
 EPIC5-0.1
 
+*** News 03/11/2005 -- New $hookctl(SET LIST <type> IMPLIED <string>)
+	A lot of people create a large number of on hooks that look like:
+		ON ^TYPE * { echo $cparse($format[type]) }
+	for each TYPE.  Since all of these ONs are otherwise identical,
+	they clutter up the /on list, and managing all of the variables
+	is a hassle.  So there is now a feature to allow you to set an
+	"implied" on hook that does nothing more than the above.
+
+	You can now set a format with 
+		$hookctl(SET LIST <type> IMPLIED <string>)
+	and if you don't have an /ON <type> *, then epic will do
+		echo $cparse(<string>)
+	and suppress the normal output.
+
+	You may surround <string> with {}s if you wish, to avoid quoting
+	hell.  Match sure to keep your {}s matched up if you do so.
+	See the "loadformats" info above for how to practically use this.
+
 *** News 03/03/2005 -- New status bar expandos, %{2}+ and %{3}+
 	These two status exapndos act like %+ and %{1}+ respectively,
 	except that %{2}+ and %{3}+ will contain only the mode string,
