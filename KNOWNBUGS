@@ -173,6 +173,7 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Change all /SET callback functions to take (const void *).
 * Fix some rather obvious bugs.  I take the blame for all this.
 * Fix $<num> to not have leading or trailing spaces, cause zinx said so. ;-)
-* Fix real_extract2 because I'm a moron.  Ugh.  Reported anonymously.
+* Fix real_extract2 because I'm a moron.  Ugh.  (bugref 4)
 * Add nsx's 'tabkey.jm' script.
 * Fix some compile warnings, use (intptr_t) -- i hope this doesn't bite me.
+* Fix $push(:foo   ) and $unshift() too, (bugref 5)

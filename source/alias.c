@@ -1,4 +1,4 @@
-/* $EPIC: alias.c,v 1.29 2003/07/31 06:29:37 jnelson Exp $ */
+/* $EPIC: alias.c,v 1.30 2003/07/31 06:53:19 jnelson Exp $ */
 /*
  * alias.c -- Handles the whole kit and caboodle for aliases.
  *
@@ -73,7 +73,7 @@
  * if the expando is an rvalue or an lvalue (it *does* make a difference)
  */
 static 	const char *lval[] = { "rvalue", "lvalue" };
-static  char *after_expando (char *start, int lvalue, int *call)
+char *	after_expando (char *start, int lvalue, int *call)
 {
 	char	*rest;
 	char	*str;
@@ -151,11 +151,14 @@ static  char *after_expando (char *start, int lvalue, int *call)
 	 */
 	if (str == start || (str == start + 1 && *start == ':'))
 	{
+	    if (!lvalue)
+	    {
 		int is_builtin = 0;
 
 		built_in_alias(*start, &is_builtin);
 		if (is_builtin && (str == start))
 			str++;
+	    }
 	}
 
 

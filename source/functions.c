@@ -1,4 +1,4 @@
-/* $EPIC: functions.c,v 1.132 2003/07/22 21:12:54 jnelson Exp $ */
+/* $EPIC: functions.c,v 1.133 2003/07/31 06:53:19 jnelson Exp $ */
 /*
  * functions.c -- Built-in functions for ircII
  *
@@ -2547,13 +2547,27 @@ char *function_shift (char *word)
 	return booya;
 }
 
+/*
+ * Usage: $unshift(<lval> <text>)
+ * Note that <lval> and <text> are not <word> or <word list>, so the
+ * rules governing double quotes and spaces and all that don't apply.
+ * If <lval> has an illegal character, the false value is returned.
+ */
 char *function_unshift (char *word)
 {
 	char    *value = (char *) 0;
 	char    *var    = (char *) 0;
 	char	*booya  = (char *) 0;
 
-	GET_STR_ARG(var, word);
+	var = word;
+	word = after_expando(word, 1, NULL);
+
+	if (isspace(*word))
+		*word++ = 0;
+	/* If the variable has an illegal character, punt */
+	else if (*word)
+		RETURN_EMPTY;
+
 	value = get_variable(var);
 	if (!word || !*word)
 		return value;
@@ -2566,14 +2580,33 @@ char *function_unshift (char *word)
 	return booya;
 }
 
+/*
+ * Usage: $push(<lval> <text>)
+ * Note that <lval> is an <lval> and not a <word> so it doesn't
+ * honor double quotes and you can't have invalid characters in it.
+ * If there is a syntax error, the false value is returned.  Note
+ * that <text> is <text> and not <word list> so you can't put double
+ * quotes in there, either.
+ */
 char *function_push (char *word)
 {
 	char    *value = (char *) 0;
 	char    *var    = (char *) 0;
 
-	GET_STR_ARG(var, word);
+	var = word;
+	word = after_expando(word, 1, NULL);
+
+	if (isspace(*word))
+		*word++ = 0;
+	/* If the variable has an illegal character, punt */
+	else if (*word)
+		RETURN_EMPTY;
+
 	upper(var);
 	value = get_variable(var);
+	if (!word || !*word)
+		return value;
+
 	malloc_strcat_wordlist(&value, space, word);
 	add_var_alias(var, value, 0);
 	return value;

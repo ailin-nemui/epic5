@@ -141,4 +141,6 @@
 	char 	*canon_number (char *input);
 
 	char	*aliasctl (char *);
+
+	char *	after_expando (char *, int, int *);
 #endif /* _ALIAS_H_ */
