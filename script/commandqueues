@@ -29,13 +29,13 @@
 # someone from within a hook without having to worry about expansion.  This
 # is easy enough.  /whois does not expand its arguments, however, hooks can
 # generate floods, so you put the whois in a timer say.  The problem with
-# this is that /timer _does_ expand its arguments, so you end up with two
-# levels of expansion to deal with.
+# this is that /timer _does_ expand its arguments, so you end up with an
+# extra level of expansion to deal with.
 #
 # These aliases solve these problems.  Commands are given as arguments and
-# are normally not expanded, just as if they had been given from the
-# command line.  If you wish to have them expanded when they are run,
-# precede them with /eval.
+# are normally not expanded, just as if they had been given to a built in
+# command.  If you wish to have them expanded when they are run, precede
+# them with /eval, or use a /timer or a /queue instead.
 
 package qcmd
 
