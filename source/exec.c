@@ -477,7 +477,7 @@ say("Output from process %d (%s) now going to you", i, proc->name);
 			/*
 			 * Pretend to be just a dumb terminal
 			 */
-			bsd_setenv("TERM", "tty", 1);
+			setenv("TERM", "tty", 1);
 
 			/*
 			 * Figure out what shell (if any) we're using

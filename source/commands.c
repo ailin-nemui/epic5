@@ -2435,9 +2435,17 @@ BUILT_IN_COMMAND(setenvcmd)
 	char *env_var;
 
 	if ((env_var = next_arg(args, &args)) != NULL)
-		bsd_setenv(env_var, args, 1);
+	{
+		if (*env_var == '-' && empty(args))
+			unsetenv(env_var + 1);
+		else 
+		{
+			unsetenv(env_var);
+			setenv(env_var, args, 1);
+		}
+	}
 	else
-		say("Usage: SETENV <var-name> <value>");
+		say("Usage: SETENV [-]<var-name> [<value>]");
 }
 
 BUILT_IN_COMMAND(shift_cmd)
