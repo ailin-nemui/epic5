@@ -14,7 +14,9 @@ KNOWN ERRATA (eg, bugs, or unresolved requests):
   are bringing up the server, and grab /set new_server_lastlog_level.
   -- This is caused because connect_to_server() changes the server's state,
      but we don't take that into account when running through the windows.
-
+* Need a way to decompile alias arglists back into strings for output.
+* Allow server groups anywhere a "server desc" is wanted
+* Allow /msg -<server desc>, including the group.
 
 [See http://www.epicsol.org/PROJECTS for things to come in the future]
 [See http://www.epicsol.org/CHANGELOG5 for things that changed in the past]
@@ -305,3 +307,4 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Unify output of /set values as "[New|Current] value of <var> is <val>"
 * Don't limit the size of /set continued_line, this will be revisited soon.
 * Quick and dirty hack to work around adm's bug, will fix this later.
+* Fix bogon in make_string_var().
