@@ -1,0 +1,81 @@
+# All these aliases take commands as arguments and have the property that
+# they will not exand those commands prior to execution, making them safe.
+
+#
+# Usage:
+#  scmd [server [command]]
+#
+# Execute command on server _without_ expanding command.
+#
+alias scmd xeval -s $0 {$1-}
+
+#
+# Usage:
+#  1cmd [time [command [args]]]
+#
+# command will not be executed if the same command has been executed in
+# the last time seconds.
+#
+alias 1cmd {
+	@:foo=encodel($1-)
+	@:eserv=encodel($servername())
+	if ([$0]<=(time()-last[1cmd][$eserv][$foo])&&60>(utimen()-last[pingorpong][$eserv])) {
+		@last[1cmd][$eserv][$foo]=time()
+		$1-
+	}
+	if ((!rand(10))&&time()!=last[1cmd][$eserv]) {
+		@last[1cmd][$eserv]=time()
+		foreach last[1cmd][$eserv] bar {
+			if (time()>last[1cmd][$eserv][$bar]) {
+				@last[1cmd][$eserv][$bar]=
+			}
+		}
+	}
+}
+
+#
+# Usage:
+#  qcmd [queue [command [args]]]
+#  fqcmd [queue [command [args]]]
+#
+# Queue command, and schedule a timer for later execution.  Prevents flooding.
+# fqcmd adds the command to the beginning of the queue instead of the end.
+#
+#  q1cmd [time [queue [command [args]]]]
+#  fq1cmd [time [queue [command [args]]]]
+#
+# The same as "1cmd {time} qcmd {queue} {command}", only, the command also
+# won't be scheduled if the same command is already scheduled.
+#
+fe (q push fq unshift) cmd op {
+	alias ${cmd}1cmd unless (match("$2-" $qcmd[$servernum()][$1]))\{1cmd \$0 ${cmd}cmd \$1-\}
+	alias ${cmd}cmd {
+		if (0>servernum()) {
+			$1-
+		} elsif (1<#) {
+			@:bar=[$1-]
+			@${op}(qcmd.${servernum()}.$0 \"$msar(gr/\\/\\\\/\"/\\\"/bar)\")
+			^timer -ref qcmd.$servernum() 5 qcmd
+		} else {
+			@:eserv=encodel($servername($servernum()))
+			if (isconnected()) {
+				@:foo=
+				if (1==#) {
+					@foo=[$0]
+				} elsif (0==#) {
+					foreach qcmd[$servernum()] bar {
+						@foo=foo?foo:bar
+					}
+				}
+				if (@foo) {
+					^timer -ref qcmd.$servernum() 5 qcmd
+					if (60>utimen()-last[pingorpong][$eserv]) {
+						@:bar=shift(qcmd[$servernum()][$foo])
+						eval $msar(gr/\\\\/\\/\\\"/\"/bar)
+					}
+				}
+			}
+		}
+	}
+	@aliasctl(alias set ${cmd}cmd $sar(g/\${op}/${op}/$aliasctl(alias get ${cmd}cmd)))
+}

@@ -13,7 +13,7 @@
 # be present.
 
 function encrypt {
-	( echo "$KEY" ; cat ) | gpg -c --batch --passphrase-fd 0
+	( echo "$KEY" ; cat ) | gpg -c -z 9 --batch --passphrase-fd 0
 }
 
 function decrypt {
