@@ -1540,6 +1540,10 @@ const 	u_char	*ptr;
         /* Reset all attributes to zero */
         a.bold = a.underline = a.reverse = a.blink = a.altchar = 0;
         a.color_fg = a.color_bg = a.fg_color = a.bg_color = 0;
+        saved_a.bold = saved_a.underline = saved_a.reverse = 0;
+	saved_a.blink = saved_a.altchar = 0;
+        saved_a.color_fg = saved_a.color_bg = saved_a.fg_color = 0;
+	saved_a.bg_color = 0;
 
 	do_indent = get_int_var(INDENT_VAR);
 	if (!(words = get_string_var(WORD_BREAK_VAR)))
@@ -1590,6 +1594,22 @@ const 	u_char	*ptr;
                                 }
                                 else
                                         abort();
+
+				/*
+				 * XXX This isn't a hack, but it _is_ ugly!
+				 * Because I'm too lazy to find a better place
+				 * to put this (down among the line wrapping
+				 * logic would be a good place), I take the
+				 * cheap way out by "saving" any attribute
+				 * changes that occur prior to the first space
+				 * in a line.  If there are no spaces for the
+				 * rest of the line, then this *is* the saved
+				 * attributes we will need to start the next
+				 * line.  This fixes an abort().
+				 */
+				if (word_break == 0)
+					saved_a = a;
+
                                 continue;          /* Skip the column check */
                         }
 
@@ -1775,9 +1795,17 @@ const 	u_char	*ptr;
 				/* 
 				 * Chop the line right here if it will
 				 * overflow the next line.
+				 *
+				 * Save the attributes, too! (05/29/02)
+				 *
+				 * XXX Saving the attributes may be 
+				 * spurious but i'm erring on the side
+				 * of caution for the moment.
 				 */
-				if (lhs_count <= continued_count)
+				if (lhs_count <= continued_count) {
 					word_break = pos;
+					saved_a = a;
+				}
 
 				/*
 				 * XXXX End of nasty nasty hack.

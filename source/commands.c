@@ -2571,7 +2571,7 @@ BUILT_IN_COMMAND(version)
 		send_to_server("%s %s", command, host);
 	else
 	{ 
-		say ("Client: ircII %s (Internal Version: %s)", irc_version, internal_version);
+		say ("Client: ircII %s (Commit Id: %ld) (Internal Version: %s)", irc_version, commit_id, internal_version);
 		send_to_server("%s", command);
 	}
 }
