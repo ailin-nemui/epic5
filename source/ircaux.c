@@ -1,4 +1,4 @@
-/* $EPIC: ircaux.c,v 1.51 2002/10/18 21:10:23 jnelson Exp $ */
+/* $EPIC: ircaux.c,v 1.52 2002/10/21 15:21:43 jnelson Exp $ */
 /*
  * ircaux.c: some extra routines... not specific to irc... that I needed 
  *
@@ -1454,7 +1454,7 @@ int	path_search (const char *name, const char *xpath, Filename result)
 	char	*ptr;
 
 	/* No Path -> Error */
-	if (!path)
+	if (!xpath)
 		return -1;		/* Take THAT! */
 
 	/*
@@ -1751,6 +1751,13 @@ static FILE *	open_compression (char *executable, char *filename)
  * Front end to fopen() that will open ANY file, compressed or not, and
  * is relatively smart about looking for the possibilities, and even
  * searches a path for you! ;-)
+ *
+ * NOTICE -- 'filename' is an input/output parameter.  On input, it must
+ * be a malloc()ed string containing a file to open.  On output, it will
+ * be changed to point to the actual filename that was opened.  THE ORIGINAL
+ * INPUT VALUE IS ALWAYS FREE()D IN EVERY CIRCUMSTANCE.  IT WILL BE REPLACED
+ * WITH A NEW VALUE (ie, the variable will be changed) UPON RETURN.  You must
+ * not save the original value of '*filename' and use it after calling uzfopen.
  */
 FILE *	uzfopen (char **filename, char *path, int do_error)
 {
@@ -1804,7 +1811,7 @@ static 	Filename 	path_to_bunzip2;
 			if (do_error)
 				yell("Cannot open file %s because gunzip "
 					"was not found", *filename);
-			goto cleanup;
+			goto error_cleanup;
 		}
 
 		ok_to_decompress = 2;
@@ -1818,7 +1825,7 @@ static 	Filename 	path_to_bunzip2;
 			if (do_error)
 				yell("Cannot open file %s becuase uncompress "
 					"was not found", *filename);
-			goto cleanup;
+			goto error_cleanup;
 		}
 
 		ok_to_decompress = 1;
@@ -1832,7 +1839,7 @@ static 	Filename 	path_to_bunzip2;
 			if (do_error)
 				yell("Cannot open file %s because bunzip "
 					"was not found", *filename);
-			goto cleanup;
+			goto error_cleanup;
 		}
 
 		ok_to_decompress = 3;
@@ -1888,13 +1895,13 @@ static 	Filename 	path_to_bunzip2;
 		{
 		    if (do_error)
 			yell("%s is a directory", fullname);
-		    goto cleanup;
+		    goto error_cleanup;
 		}
 		if (file_info.st_mode & 0111)
 		{
 		    if (do_error)
 			yell("Cannot open %s -- executable file", fullname);
-		    goto cleanup;
+		    goto error_cleanup;
 		}
 	}
 
@@ -1917,7 +1924,7 @@ static 	Filename 	path_to_bunzip2;
 		if (do_error)
 			yell("Cannot open compressed file %s becuase no "
 				"uncompressor was found", *filename);
-		goto cleanup;
+		goto error_cleanup;
 	}
 
 	/* Its not a compressed file... Try to open it regular-like. */
@@ -1928,13 +1935,13 @@ static 	Filename 	path_to_bunzip2;
 	else if (do_error)
 		yell("Cannot open file %s: %s", *filename, strerror(errno));
 
-	goto cleanup;
+	goto error_cleanup;
 
 file_not_found:
 	if (do_error)
 		yell("File not found: %s", *filename);
 
-cleanup:
+error_cleanup:
 	new_free(filename);
 	return NULL;
 }

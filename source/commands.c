@@ -1,4 +1,4 @@
-/* $EPIC: commands.c,v 1.37 2002/10/18 21:10:22 jnelson Exp $ */
+/* $EPIC: commands.c,v 1.38 2002/10/21 15:21:43 jnelson Exp $ */
 /*
  * commands.c -- Stuff needed to execute commands in ircII.
  *		 Includes the bulk of the built in commands for ircII.
@@ -1576,6 +1576,7 @@ BUILT_IN_COMMAND(load)
 
 		/*
 		 * uzfopen emits an error if the file is not found, so we dont.
+		 * uzfopen() also frees 'expanded' for us on error.
 		 */
 		expanded = m_strdup(filename);
 		if (!(fp = uzfopen(&expanded, irc_path, 1)))
