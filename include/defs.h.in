@@ -258,6 +258,9 @@
 /* Define this if you have clock_gettime() */
 #undef HAVE_CLOCK_GETTIME
 
+/* Define this if you have intptr_t */
+#undef HAVE_INTPTR_T
+
 /* The number of bytes in a unsigned int.  */
 #undef SIZEOF_UNSIGNED_INT
 

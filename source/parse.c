@@ -1,4 +1,4 @@
-/* $EPIC: parse.c,v 1.45 2003/09/23 21:49:47 jnelson Exp $ */
+/* $EPIC: parse.c,v 1.46 2003/09/25 21:24:33 jnelson Exp $ */
 /*
  * parse.c: handles messages from the server.   Believe it or not.  I
  * certainly wouldn't if I were you. 
@@ -105,7 +105,11 @@ const char *	PasteArgs (const char **arg_list, int paste_point)
 
 	for (i = paste_point; arg_list[i] && arg_list[i + 1]; i++)
 	{
-		ptr = (char *)(intptr_t)arg_list[i];
+		ptr = (char *)
+#ifdef HAVE_INTPTR_T
+				(intptr_t)
+#endif
+					   arg_list[i];
 		ptr[strlen(ptr)] = ' ';
 	}
 	arg_list[paste_point + 1] = NULL;
@@ -304,7 +308,11 @@ static void	p_privmsg (const char *from, const char *comm, const char **ArgList)
 	 * until we know there's other stuff besides the ctcp in the
 	 * message, which keeps things going to the wrong window.
 	 */
-	message = do_ctcp(from, target, (char *)(intptr_t)message);
+	message = do_ctcp(from, target, (char *)
+#ifdef HAVE_INTPTR_T
+					(intptr_t)
+#endif
+						message);
 	if (!*message) {
 		set_server_doing_privmsg(from_server, 0);
 		return;
