@@ -1,4 +1,4 @@
-/* $EPIC: numbers.c,v 1.39 2003/02/04 00:19:04 jnelson Exp $ */
+/* $EPIC: numbers.c,v 1.40 2003/02/04 01:24:45 jnelson Exp $ */
 /*
  * numbers.c: handles all those strange numeric response dished out by that
  * wacky, nutty program we call ircd 
@@ -1056,6 +1056,11 @@ DISPLAY:
 		break;
 	}
 
+	case 321:		/* #define RPL_LISTSTART	321 */
+		/* Our screwy 321 handling demands this. BAH! */
+		put_it("%s Channel Users Topic", banner());
+		break;
+
 	case 322:		/* #define RPL_LIST             322 */
 	{
 		static char format[25];
@@ -1105,7 +1110,6 @@ DISPLAY:
 		break;
 	}
 
-/*********** HERE *************/
 	case 329:		/* #define CREATION_TIME	329 */
 	{
 		const char *channel, *time1_str, *time2_str, *time3_str;
