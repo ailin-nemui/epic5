@@ -1,4 +1,4 @@
-/* $EPIC: server.c,v 1.81 2002/12/23 18:37:15 jnelson Exp $ */
+/* $EPIC: server.c,v 1.82 2002/12/25 06:26:45 crazyed Exp $ */
 /*
  * server.c:  Things dealing with that wacky program we call ircd.
  *
@@ -260,6 +260,13 @@ static 	void 	remove_from_server_list (int i)
 	new_free(&s->umodes);
 	new_free(&s->ison_queue);		/* XXX Aren't these free? */
 	new_free(&s->who_queue);
+	new_free(&s->invite_channel);
+	new_free(&s->last_notify_nick);
+	new_free(&s->joined_nick);
+	new_free(&s->public_nick);
+	new_free(&s->recv_nick);
+	new_free(&s->sent_nick);
+	new_free(&s->sent_body);
 	destroy_notify_list(i);
 	destroy_005(i);
 
@@ -2765,6 +2772,9 @@ void destroy_005 (int refnum)
 
 	while ((new_i = (A005_item*)array_pop((array*)(&s->a005), 0)))
 		destroy_a_005(new_i);
+	s->a005.max = 0;
+	s->a005.total_max = 0;
+	new_free(&s->a005.list);
 }
 
 GET_ARRAY_NAMES_FUNCTION(get_server_005s, (__FROMSERV->a005))

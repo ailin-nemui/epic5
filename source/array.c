@@ -1,4 +1,4 @@
-/* $EPIC: array.c,v 1.8 2002/12/23 15:11:26 jnelson Exp $ */
+/* $EPIC: array.c,v 1.9 2002/12/25 06:26:45 crazyed Exp $ */
 /*
  * array.c -- Karll's Array Suite
  *
@@ -682,45 +682,33 @@ BUILT_IN_FUNCTION(function_numarrays, input)
  * function_finditem() does a binary search and returns the item number of
  * the string that exactly matches the string searched for, or it returns
  * -1 if unable to find the array, or -2 if unable to find the item.
- */
-BUILT_IN_FUNCTION(function_finditem, input)
-{
-        char    *name = (char *) 0;
-        an_array *array;
-	long	item = -1;
-
-	if ((name = next_arg(input, &input)) && (array = get_array(name)))
-        {
-		if (input)
-		{
-			item = find_item(array, input, -1);
-			item = (item >= 0) ? array->index[item] : -2;
-		}
-        }
-	RETURN_INT(item);
-}
-
-/*
+ *
  * function_ifinditem() does a binary search and returns the index number of
  * the string that exactly matches the string searched for, or it returns
  * -1 if unable to find the array, or -2 if unable to find the item.
  */
-BUILT_IN_FUNCTION(function_ifinditem, input)
-{
-        char    *name = (char *) 0;
-        an_array *array;
-        long    item = -1;
-
-        if ((name = next_arg(input, &input)) && (array = get_array(name)))
-        {
-		if (input)
-		{
-			if ((item = find_item(array, input, -1)) < 0)
-				item = -2;
-		}
-        }
-	RETURN_INT(item);
+#define FINDI(func, trans1, trans2)                                         \
+BUILT_IN_FUNCTION((func), input)                                            \
+{                                                                           \
+        char    *name = (char *) 0;                                         \
+        an_array *array;                                                    \
+	long	item = -1;                                                  \
+                                                                            \
+	if ((name = next_arg(input, &input)) && (array = get_array(name)))  \
+        {                                                                   \
+		if (input)                                                  \
+		{                                                           \
+			item = find_item(array, input, -1);                 \
+			item = (item >= 0) ? (trans1) : (trans2);           \
+		}                                                           \
+        }                                                                   \
+	RETURN_INT(item);                                                   \
 }
+FINDI(function_finditem, array->index[item], -2)
+FINDI(function_ifinditem, item, -2)
+FINDI(function_finditems, array->index[item], array->index[~item])
+FINDI(function_ifinditems, item, ~item)
+#undef FINDI
 
 /*
  * function_indextoitem() converts an index number to an item number for the

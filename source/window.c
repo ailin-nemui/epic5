@@ -1,4 +1,4 @@
-/* $EPIC: window.c,v 1.51 2002/12/23 15:11:27 jnelson Exp $ */
+/* $EPIC: window.c,v 1.52 2002/12/25 06:26:45 crazyed Exp $ */
 /*
  * window.c: Handles the organzation of the logical viewports (``windows'')
  * for irc.  This includes keeping track of what windows are open, where they
@@ -2809,6 +2809,7 @@ Window *window_channel (Window *window, char **args)
 			{
 			    say("Channel %s is already bound elsewhere", arg);
 			    new_free(&arg2);
+			    new_free(&arg3);
 			    return window;
 			}
 
@@ -2833,6 +2834,7 @@ Window *window_channel (Window *window, char **args)
 		}
 
 		new_free(&arg2);
+		new_free(&arg3);
 	}
 	/* else
 		set_channel_by_refnum(window->refnum, zero); */

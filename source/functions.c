@@ -1,4 +1,4 @@
-/* $EPIC: functions.c,v 1.95 2002/12/23 15:11:27 jnelson Exp $ */
+/* $EPIC: functions.c,v 1.96 2002/12/25 06:26:45 crazyed Exp $ */
 /*
  * functions.c -- Built-in functions for ircII
  *
@@ -482,7 +482,10 @@ static BuiltInFunctions	built_in_functions[] =
 	{ "FERROR",		function_error		},
 	{ "FEXIST",             function_fexist 	},
 	{ "FILTER",             function_filter 	},
-	{ "FINDITEM",           function_finditem 	},
+	{ "FINDITEM",		function_finditem 	},
+#if 0
+	{ "FINDITEMS",		function_finditems 	},
+#endif
 	{ "FINDW",		function_findw		},
 	{ "FLOODINFO",		function_floodinfo	},
 	{ "FLOOR",		function_floor		},
@@ -517,7 +520,10 @@ static BuiltInFunctions	built_in_functions[] =
 	{ "HASH_32BIT",		function_hash_32bit	},
 	{ "IDLE",		function_idle		},
 	{ "IFINDFIRST",		function_ifindfirst 	},
+#if 0
 	{ "IFINDITEM",		function_ifinditem	},
+#endif
+	{ "IFINDITEMS",		function_ifinditems	},
 	{ "IGETITEM",           function_igetitem 	},
 	{ "IGETMATCHES",	function_igetmatches	},
 	{ "IGETRMATCHES",	function_igetrmatches	},
@@ -5379,7 +5385,7 @@ BUILT_IN_FUNCTION(function_servernum, input)
 	/* 
 	 * Return current server refnum if no input given
 	 */
-	if (!*input)
+	if (!input || !*input)
 		RETURN_INT(from_server);
 
 	GET_STR_ARG(which, input);
