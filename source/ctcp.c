@@ -1,4 +1,4 @@
-/* $EPIC: ctcp.c,v 1.22 2003/05/09 04:29:52 jnelson Exp $ */
+/* $EPIC: ctcp.c,v 1.23 2003/05/09 22:31:14 jnelson Exp $ */
 /*
  * ctcp.c:handles the client-to-client protocol(ctcp). 
  *
@@ -953,7 +953,8 @@ void	send_ctcp (int type, const char *to, int datatag, const char *format, ...)
 	int	len;
 
 	/* Make sure that the final \001 doesnt get truncated */
-	len = IRCD_BUFFER_SIZE - (12 + strlen(to));
+	if ((len = IRCD_BUFFER_SIZE - (12 + strlen(to))) < 0)
+		return;				/* Whatever! */
 	putbuf2 = alloca(len);
 
 	if (format)
