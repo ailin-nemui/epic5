@@ -1,4 +1,4 @@
-/* $EPIC: irc.c,v 1.393 2002/11/28 00:17:09 jnelson Exp $ */
+/* $EPIC: irc.c,v 1.394 2002/11/28 01:17:12 jnelson Exp $ */
 /*
  * ircII: a new irc client.  I like it.  I hope you will too!
  *
@@ -52,7 +52,7 @@ const char internal_version[] = "20020819";
 /*
  * In theory, this number is incremented for every commit.
  */
-const unsigned long	commit_id = 397;
+const unsigned long	commit_id = 398;
 
 /*
  * As a way to poke fun at the current rage of naming releases after
@@ -841,11 +841,6 @@ static 	Timeval		right_away = { 0, 0 };
 
 	caller[level] = what;
 
-	/* CHECK FOR CPU SAVER MODE */
-	if (!cpu_saver && get_int_var(CPU_SAVER_AFTER_VAR))
-		if (now.tv_sec - idle_time.tv_sec > get_int_var(CPU_SAVER_AFTER_VAR) * 60)
-			cpu_saver_on(0, NULL);
-
 	/* SET UP FD SETS */
 	rd = readables;
 
@@ -1077,20 +1072,33 @@ static void check_invalid_host (void)
 	return;
 }
 
+/**************************************************************************/
+
 /*
  * I moved this here, because it didnt really belong in status.c
  */
 int	do_every_minute (void *ignored)
 {
-	static	int	first_call = 1;
+	/* Schedule the next instance */
+	if (!cpu_saver && get_int_var(CPU_SAVER_AFTER_VAR))
+		if (now.tv_sec - idle_time.tv_sec > 
+				get_int_var(CPU_SAVER_AFTER_VAR) * 60)
+			cpu_saver_on(0, NULL);
 
-	if (first_call)
+	if (cpu_saver)
 	{
-		add_timer(0, system_timer2, 60.0, -1, do_every_minute,
-				NULL, NULL, -1);
-		first_call = 0;
-	}
+	    double timeout = 0;
 
+	    if ((timeout = get_int_var(CPU_SAVER_EVERY_VAR)) < 60)
+		timeout = 60.0;
+	    add_timer(0, system_timer, timeout, 
+			1, do_every_minute, NULL, NULL, -1);
+	}
+	else
+	    add_timer(0, system_timer, time_to_next_minute(), 
+			1, do_every_minute, NULL, NULL, -1);
+
+	/* Now what do we want to do every minute? */
 	update_clock(RESET_TIME);
 	do_notify();
 	if (get_int_var(CLOCK_VAR) || check_mail_status(NULL))
@@ -1099,6 +1107,14 @@ int	do_every_minute (void *ignored)
 		cursor_to_input();
 	}
 	return 0;
+}
+
+void cpu_saver_off (void)
+{
+	cpu_saver = 0;
+	update_all_status();
+	add_timer(1, system_timer, time_to_next_minute(), 
+			1, do_every_minute, NULL, NULL, -1);
 }
 
 /*

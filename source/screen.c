@@ -1,4 +1,4 @@
-/* $EPIC: screen.c,v 1.35 2002/11/28 00:17:09 jnelson Exp $ */
+/* $EPIC: screen.c,v 1.36 2002/11/28 01:17:12 jnelson Exp $ */
 /*
  * screen.c
  *
@@ -3065,10 +3065,7 @@ void 	do_screens (fd_set *rd)
 			 */
 			get_time(&idle_time);
 			if (cpu_saver)
-			{
-				cpu_saver = 0;
-				update_all_status();
-			}
+				cpu_saver_off();
 
 			server = from_server;
 			last_input_screen = screen;

@@ -178,3 +178,4 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Call get_time() after select() in io().
 * Fix two compile bugs found by larne.
 * Fix bug when you did /flush on a /clear window.
+* Uncripple CPU_SAVER mode.  Works fine now!  Huzzah!

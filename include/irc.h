@@ -156,6 +156,7 @@ extern struct timeval	input_timeout;
 	void	io 			(const char *);
 	void	irc_exit 		(int, char *, ...) /*__A(2)*/ __N;
 	void	irc_quit 		(char, char *);
+	void	cpu_saver_off		(void);
 #include "reg.h"
 	void	dump_load_stack		(int);	 /* XXX command.c */
 const	char *	current_filename	(void);  /* XXX command.c */

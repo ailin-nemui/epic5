@@ -184,6 +184,9 @@ EPIC4-1.2.0
 			the log belongs to whatever the current server was
 			when it was created.  If you use the special server
 			refnum -1, then the log works for all servers.
+		LEVEL <levels>
+			The lastlog levels to send to this log.  ALL is the
+			default.
 
 	Options that modify the log's state
 	-----------------------------------
