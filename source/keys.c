@@ -1,4 +1,4 @@
-/* $EPIC: keys.c,v 1.12 2002/08/19 17:09:06 wd Exp $ */
+/* $EPIC: keys.c,v 1.13 2002/08/23 22:45:30 wd Exp $ */
 /*
  * keys.c:  Keeps track of what happens whe you press a key.
  *
@@ -193,7 +193,7 @@ struct Key	*construct_keymap	(struct Key *);
 int		clean_keymap		(struct Key *);
 unsigned char	*bind_string_compress	(unsigned char *, int *);
 unsigned char	*bind_string_decompress	(unsigned char *, unsigned char *, int);
-struct Key	*bind_string		(unsigned char *, char *, char *);
+int		bind_string		(unsigned char *, char *, char *);
 struct Key	*find_sequence		(unsigned char *, int);
 void		show_all_bindings	(struct Key *, unsigned char *, int);
 void		show_all_rbindings	(struct Key *, unsigned char *, int, struct Binding *);
@@ -482,7 +482,7 @@ unsigned char *bind_string_decompress (unsigned char *dst, unsigned char
  * to, and optionally arguments to that function, and does all the work
  * necessary to bind it.  it will create new keymaps as it goes, if
  * necessary, etc. */
-struct Key *bind_string (unsigned char *sequence, char *bind, char *args) {
+int bind_string (unsigned char *sequence, char *bind, char *args) {
     unsigned char *cs; /* the compressed keysequence */
     unsigned char *s;
     int slen;
@@ -492,20 +492,20 @@ struct Key *bind_string (unsigned char *sequence, char *bind, char *args) {
 
     if (!sequence || !bind) {
 	yell("bind_string(): called without sequence or bind function!");
-	return NULL;
+	return 0;
     }
 
     /* nothing (the binding) is special, it's okay if they request
      * 'NOTHING', we just do some other work. */
     if (my_stricmp(bind, "NOTHING") && (bp = find_binding(bind)) == NULL) {
 	say("No such function %s", bind);
-	return NULL;
+	return 0;
     }
 
     cs = bind_string_compress(sequence, &slen);
     if (cs == NULL) {
 	yell("bind_string(): couldn't compress sequence %s", sequence);
-	return NULL;
+	return 0;
     }
 
     s = cs;
@@ -539,7 +539,7 @@ struct Key *bind_string (unsigned char *sequence, char *bind, char *args) {
     if (bind_post_init)
 	clean_keymap(head_keymap);
     new_free(&cs);
-    return kp;
+    return 1;
 }
 
 /* this tries to find the key identified by 'seq' which may be uncompressed.
@@ -586,9 +586,9 @@ void init_keys (void) {
     head_keymap = construct_keymap(NULL);
 
 #define BIND(x, y) bind_string(x, y, NULL);
-    /* first, bind the whole head table to SELF_INSERT */
+    /* bind characters 32 - 255 to SELF_INSERT. */
     s[1] = '\0';
-    for (c = 1;c < KEYMAP_SIZE - 1;c++) {
+    for (c = 32;c < KEYMAP_SIZE - 1;c++) {
 	s[0] = c;
 	BIND(s, "SELF_INSERT");
     }
@@ -1283,8 +1283,7 @@ char *bindctl (char *input)
 	} else if (!my_stricmp(listc, "SET")) {
 	    GET_STR_ARG(listc, input);
 
-	    RETURN_INT(
-		    bind_string(seq, listc, (*input ? input : NULL)) ? 1 : 0);
+	    RETURN_INT(bind_string(seq, listc, (*input ? input : NULL)));
 	} else if (!my_strnicmp(listc, "GETPACKAGE", 4)) {
 	    if (key == NULL)
 		RETURN_EMPTY;
