@@ -1,4 +1,4 @@
-/* $EPIC: lastlog.c,v 1.35 2004/03/15 03:24:51 jnelson Exp $ */
+/* $EPIC: lastlog.c,v 1.36 2004/03/15 17:00:14 jnelson Exp $ */
 /*
  * lastlog.c: handles the lastlog features of irc. 
  *
@@ -112,7 +112,6 @@ int	str_to_mask (Mask *mask, const char *orig)
 		neg;
 	int	warn = 0;
 	char *	str;
-	Mask	level;
 
 	mask_unsetall(mask);
 

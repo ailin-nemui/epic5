@@ -106,7 +106,7 @@ static  const char *level_types[NUMBER_OF_LEVELS] =
  * SUCH DAMAGE.
  */
 
-#define BIT_WORDS      4
+#define BIT_WORDS      1
 #define BIT_MAXBIT     NUMBER_OF_LEVELS
 #define BIT_IDX(bit)   ((bit) - 1)
 #define BIT_WORD(bit)  (BIT_IDX(bit) >> 5)

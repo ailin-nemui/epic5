@@ -162,3 +162,7 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * But now levels are officially stored in opaque data type!
 * And that data type is not limited to 32 bits! HUZZAH!
 * Add 6 new lastlog levels (USER5-USER10) to celebrate.
+* Reduce the size of level masks to 1 byte, to save cpu.
+* Add turn_on_level() and turn_off_level(), for reasons that escape me.
+* Nix the /help command, make howl's scripted replacement the default.
+* Add $cofilter() entry so you can use it (it was already written)

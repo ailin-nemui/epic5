@@ -1,4 +1,4 @@
-/* $EPIC: window.c,v 1.103 2004/03/15 03:24:52 jnelson Exp $ */
+/* $EPIC: window.c,v 1.104 2004/03/15 17:00:14 jnelson Exp $ */
 /*
  * window.c: Handles the organzation of the logical viewports (``windows'')
  * for irc.  This includes keeping track of what windows are open, where they
@@ -140,7 +140,6 @@ static	int	change_line 			(Window *, const unsigned char *);
 static	int	add_to_display 			(Window *, const unsigned char *);
 static	Display *new_display_line 		(Display *prev, Window *w);
 static int	count_fixed_windows 		(Screen *s);
-static	void 	set_mask_by_refnum (unsigned refnum, Mask mask);
 
 
 /* * * * * * * * * * * CONSTRUCTOR AND DESTRUCTOR * * * * * * * * * * * */
@@ -2112,17 +2111,34 @@ void 	window_check_channels (void)
 
 /* * * * * * * * * * LEVELS * * * * * * * * * */
 /*
- * set_mask_by_refnum: This sets the window mask given a refnum.  It
- * revamps the windows masks as well using revamp_window_masks() 
+ * turn_on_level: Turns the level on for the given window, to the exclusion
+ * of all other windows on the client.  Useful for LEVEL_HELP.
+ * Returns 0 if bit was set, or -1 if it's already set elsewhere
  */
-void 	set_mask_by_refnum (unsigned refnum, Mask mask)
+int	turn_on_level (unsigned refnum, int level)
 {
-	Window	*tmp;
+	Window *win;
+	Window *tmp = NULL;
 
-	if (!(tmp = get_window_by_refnum(refnum)))
-		tmp = current_window;
-	tmp->window_mask = mask;
-	revamp_window_masks(tmp);
+	if (!(win = get_window_by_refnum(refnum)))
+		return -1;
+
+	while (traverse_all_windows(&tmp))
+	{
+	    if (mask_isset(&tmp->window_mask, level))
+		return -1;
+	}
+	mask_set(&win->window_mask, level);
+	return -1;
+}
+
+int	turn_off_level (int level)
+{
+	Window *tmp = NULL;
+
+	while (traverse_all_windows(&tmp))
+		mask_unset(&tmp->window_mask, level);
+	return 0;
 }
 
 /*
@@ -2148,13 +2164,9 @@ static void 	revamp_window_masks (Window *window)
 	    {
 		if (tmp == window)
 		    continue;
-		if (i == LEVEL_DCC && mask_isset(&tmp->window_mask, i))
-		    mask_unset(&tmp->window_mask, i);
-
-		if (tmp->server != window->server)
-		    continue;
 		if (mask_isset(&tmp->window_mask, i))
-		    mask_unset(&tmp->window_mask, i);
+		    if (i == LEVEL_DCC || tmp->server == window->server)
+			mask_unset(&tmp->window_mask, i);
 	    }
 	}
 }

@@ -13,7 +13,7 @@ RM	= rm -f
 
 OBJECTS = alias.o alist.o array.o clock.o commands.o compat.o crypt.o ctcp.o \
 	dcc.o debug.o exec.o files.o flood.o functions.o gailib.o glob.o \
-	help.o history.o hook.o if.o ignore.o input.o irc.o ircaux.o \
+	history.o hook.o if.o ignore.o input.o irc.o ircaux.o \
 	ircsig.o keys.o lastlog.o list.o log.o logfiles.o mail.o names.o network.o \
 	newio.o notify.o numbers.o output.o parse.o queue.o reg.o \
 	screen.o server.o ssl.o status.o term.o timer.o translat.o vars.o who.o \
@@ -124,8 +124,8 @@ commands.o: commands.c ../include/irc.h ../include/defs.h \
   ../include/ircaux.h ../include/compat.h ../include/network.h \
   ../include/words.h ../include/sedcrypt.h ../include/ctcp.h \
   ../include/dcc.h ../include/commands.h ../include/exec.h \
-  ../include/files.h ../include/help.h ../include/history.h \
-  ../include/hook.h ../include/server.h ../include/who.h ../include/if.h \
+  ../include/files.h ../include/history.h ../include/hook.h \
+  ../include/server.h ../include/who.h ../include/if.h \
   ../include/ignore.h ../include/levels.h ../include/input.h \
   ../include/keys.h ../include/lastlog.h ../include/log.h \
   ../include/names.h ../include/notify.h ../include/numbers.h \
@@ -288,7 +288,7 @@ keys.o: keys.c ../include/irc.h ../include/defs.h ../include/config.h \
   ../include/term.h ../include/vars.h ../include/timer.h
 lastlog.o: lastlog.c ../include/irc.h ../include/defs.h \
   ../include/config.h ../include/irc_std.h ../include/debug.h \
-  ../include/reg.h ../include/lastlog.h ../include/levels.h \
+  ../include/reg.h ../include/levels.h ../include/lastlog.h \
   ../include/window.h ../include/status.h ../include/screen.h \
   ../include/vars.h ../include/ircaux.h ../include/compat.h \
   ../include/network.h ../include/words.h ../include/output.h \
@@ -299,16 +299,16 @@ list.o: list.c ../include/irc.h ../include/defs.h ../include/config.h \
   ../include/network.h ../include/words.h
 log.o: log.c ../include/irc.h ../include/defs.h ../include/config.h \
   ../include/irc_std.h ../include/debug.h ../include/reg.h \
-  ../include/log.h ../include/vars.h ../include/output.h \
-  ../include/ircaux.h ../include/compat.h ../include/network.h \
-  ../include/words.h ../include/alias.h
+  ../include/levels.h ../include/log.h ../include/vars.h \
+  ../include/output.h ../include/ircaux.h ../include/compat.h \
+  ../include/network.h ../include/words.h ../include/alias.h
 logfiles.o: logfiles.c ../include/irc.h ../include/defs.h \
   ../include/config.h ../include/irc_std.h ../include/debug.h \
-  ../include/reg.h ../include/log.h ../include/vars.h ../include/output.h \
-  ../include/ircaux.h ../include/compat.h ../include/network.h \
-  ../include/words.h ../include/alias.h ../include/list.h \
-  ../include/server.h ../include/who.h ../include/window.h \
-  ../include/lastlog.h ../include/levels.h ../include/status.h \
+  ../include/reg.h ../include/levels.h ../include/log.h ../include/vars.h \
+  ../include/output.h ../include/ircaux.h ../include/compat.h \
+  ../include/network.h ../include/words.h ../include/alias.h \
+  ../include/list.h ../include/server.h ../include/who.h \
+  ../include/window.h ../include/lastlog.h ../include/status.h \
   ../include/functions.h
 mail.o: mail.c ../include/irc.h ../include/defs.h ../include/config.h \
   ../include/irc_std.h ../include/debug.h ../include/reg.h \

@@ -78,3 +78,6 @@ on %set "hold_mode_interval *" window $*
 ## ... or comment out this.
 #load hold_mode
 
+## Load the help command
+load help
+

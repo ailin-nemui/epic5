@@ -1,4 +1,4 @@
-/* $EPIC: functions.c,v 1.157 2004/03/15 03:24:51 jnelson Exp $ */
+/* $EPIC: functions.c,v 1.158 2004/03/15 17:00:14 jnelson Exp $ */
 /*
  * functions.c -- Built-in functions for ircII
  *
@@ -473,6 +473,7 @@ static BuiltInFunctions	built_in_functions[] =
 	{ "CHRQ",		function_chrq 		},
 	{ "CIPHER",		function_cipher		},
 	{ "CLOSE",		function_close 		},
+	{ "COFILTER",		function_cofilter	},
 	{ "CORFILTER",		function_corfilter	},
 	{ "COMMON",             function_common 	},
 	{ "CONNECT",		function_connect 	},

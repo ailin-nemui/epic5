@@ -1,4 +1,4 @@
-/* $EPIC: commands.c,v 1.87 2004/03/15 03:24:51 jnelson Exp $ */
+/* $EPIC: commands.c,v 1.88 2004/03/15 17:00:14 jnelson Exp $ */
 /*
  * commands.c -- Stuff needed to execute commands in ircII.
  *		 Includes the bulk of the built in commands for ircII.
@@ -50,7 +50,6 @@
 #include "commands.h"
 #include "exec.h"
 #include "files.h"
-#include "help.h"
 #include "history.h"
 #include "hook.h"
 #include "server.h"
@@ -248,7 +247,6 @@ static	IrcCommand irc_command[] =
 	{ "FLUSH",	NULL,		flush,			0 },
         { "FOR",        NULL,           forcmd,		        0 }, /* if.c */
 	{ "FOREACH",	NULL,		foreach,		0 }, /* if.c */
-	{ "HELP",	NULL,		help,			0 }, /* help.c */
 	{ "HISTORY",	NULL,		history,		0 }, /* history.c */
 	{ "HOOK",	NULL,		hookcmd,		0 },
 	{ "HOST",	"USERHOST",	userhostcmd,		0 },
