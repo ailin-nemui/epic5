@@ -403,3 +403,4 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Altered the dcc_lost hook to return strerr() info.
 * Fixed $aliasctl(* match [mask]) to return only aliases and assigns.
 * Add %{3}W which is like %W but it's active for all input windows.
+* Support efnet's +e and +I numeric replies.
