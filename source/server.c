@@ -676,11 +676,17 @@ BUILT_IN_COMMAND(servercmd)
 	{
 		int	j = from_server;
 
-		clear_reconnect_counts();
 		i = find_server_refnum(server, &args);
-		server_reconnects_to(j, i);
-		reconnect(j);
-		window_check_servers();
+		if (i != j)
+		{
+			clear_reconnect_counts();
+			server_reconnects_to(j, i);
+			reconnect(j);
+			window_check_servers();
+		}
+		else
+			say("Connected to port %d of server %s",
+				server_list[j].port, server_list[j].name);
 	}
 }
 
