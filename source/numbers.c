@@ -10,7 +10,7 @@
  */
 
 #if 0
-static	char	rcsid[] = "$Id: numbers.c,v 1.2 2000/12/06 03:25:52 jnelson Exp $";
+static	char	rcsid[] = "$Id: numbers.c,v 1.3 2000/12/21 07:45:05 jnelson Exp $";
 #endif
 
 #include "irc.h"
@@ -199,6 +199,28 @@ void 	numbered_command (char *from, int comm, char **ArgList)
 		if (do_hook(current_numeric, "%s %s", from, *ArgList))
 			display_msg(from, ArgList);
 		break;
+	}
+
+	case 10:		/* EFNext "Use another server"	010 */
+	{
+		char *	new_server;
+		int	new_port;
+
+		if (!ArgList[0] || !ArgList[1] || !ArgList[2])
+			break;		/* Not what i'm expecting */
+
+		new_server = ArgList[0];
+		new_port = atoi(ArgList[1]);
+		PasteArgs(ArgList, 2);
+
+		if (do_hook(current_numeric, "%s %d %s", from, 
+				new_server, new_port, ArgList[2]))
+			display_msg(from, ArgList);
+
+		close_server(from_server, "Administrative redirect");
+		window_check_servers();
+		add_to_server_list(new_server, new_port, NULL, NULL, 0);
+		get_connected(from_server, from_server);
 	}
 
 	case 14:		/* Erf/TS4 "cookie" numeric	014 */

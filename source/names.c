@@ -71,7 +71,7 @@ struct timeval		join_time;	/* When we joined the channel */
  * The variable "mode_str" must correspond in order to the modes defined
  * here, or all heck will break loose.  You have been warned.
  */
-static	char	mode_str[] = "aciklmnprstzR";
+static	char	mode_str[] = "aciklmnprstzOR";
 
 const int	MODE_ANONYMOUS	= 1 << 0;	/* av2.9 */
 const int	MODE_C		= 1 << 1;	/* erf/TS4 */
@@ -81,11 +81,12 @@ const int	MODE_LIMIT	= 1 << 4;	/* RFC */
 const int 	MODE_MODERATED	= 1 << 5;	/* RFC */
 const int	MODE_MSGS	= 1 << 6;	/* RFC */
 const int	MODE_PRIVATE	= 1 << 7;	/* RFC */
-const int	MODE_REGISTERED = 1 << 8;	/* Dalnet */
+const int	MODE_REGISTERED = 1 << 8;	/* Duhnet */
 const int	MODE_SECRET	= 1 << 9;	/* RFC */
 const int	MODE_TOPIC	= 1 << 10;	/* RFC */
 const int	MODE_Z		= 1 << 11;	/* erf/TS4 */
-const int	MODE_RESTRICTED = 1 << 12;	/* Dalnet */
+const int	MODE_OPER_ONLY	= 1 << 12;	/* Duhnet */
+const int	MODE_RESTRICTED = 1 << 13;	/* Duhnet */
 
 
 /* channel_list: list of all the channels you are currently on */
@@ -927,6 +928,9 @@ static void	decifer_mode (const char *modes, Channel *chan)
 				break;
 			case 'z':		/* Erf/TS4 "zapped" */
 				value = MODE_Z;
+				break;
+			case 'O':		/* Duhhnet's oper-only */
+				value = MODE_OPER_ONLY;
 				break;
 			case 'k':
 			{

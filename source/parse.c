@@ -888,7 +888,7 @@ static void strip_modes (char *from, char *channel, char *line)
 
 			case 'a' : case 'i' : case 'm' : case 'n' :
 			case 'p' : case 's' : case 't' : case 'z' : 
-			case 'c' : case 'r' : case 'R' :
+			case 'c' : case 'r' : case 'R' : case 'O' :
 			{
 				do_hook(MODE_STRIPPED_LIST,
 					"%s %s %c%c",
