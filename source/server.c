@@ -1,4 +1,4 @@
-/* $EPIC: server.c,v 1.122 2004/01/23 08:03:53 jnelson Exp $ */
+/* $EPIC: server.c,v 1.123 2004/01/25 06:48:02 jnelson Exp $ */
 /*
  * server.c:  Things dealing with that wacky program we call ircd.
  *
@@ -896,6 +896,27 @@ BUILT_IN_COMMAND(servercmd)
 
 
 /* SERVER INPUT STUFF */
+static int	server_ssl_reader (int fd, char **buffer, size_t *buffer_size, size_t *start)
+{
+#ifndef HAVE_SSL
+	panic("Attempt to call server_ssl_reader on non-ssl client");
+#else
+	Server *s;
+	int	i;
+
+	for (i = 0; i < number_of_servers; i++)
+	{
+		if (!(s = get_server(i)))
+		    continue;
+		if (s->des == fd)
+		    return ssl_reader(s->ssl_fd, buffer, buffer_size, start);
+	}
+
+	panic("Server_ssl_reader callback on fd [%d] is not a server", fd);
+#endif
+	return -1;
+}
+
 /*
  * do_server: check the given fd_set against the currently open servers in
  * the server list.  If one have information available to be read, it is read
@@ -954,8 +975,8 @@ void	do_server (int fd)
 		else
 		{
 		    last_server = from_server = i;
-		    junk = dgets(des, bufptr, get_server_line_length(i), 
-				1, s->ssl_fd);
+		    junk = dgets(des, bufptr, get_server_line_length(i), 1,
+				  s->ssl_fd ? server_ssl_reader : NULL);
 
 		    switch (junk)
 		    {

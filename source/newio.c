@@ -1,4 +1,4 @@
-/* $EPIC: newio.c,v 1.21 2004/01/23 08:03:53 jnelson Exp $ */
+/* $EPIC: newio.c,v 1.22 2004/01/25 06:48:02 jnelson Exp $ */
 /*
  * newio.c: This is some handy stuff to deal with file descriptors in a way
  * much like stdio's FILE pointers 
@@ -80,9 +80,10 @@ typedef	struct	myio_struct
 }           MyIO;
 
 static	MyIO	**io_rec = NULL;
-	int	dgets_errno = 0;
 static	int	global_max_fd = -1;
+	int	dgets_errno = 0;
 
+static int	unix_read (int fd, char **buffer, size_t *buffer_size, size_t *start);
 
 /*
  * Get_pending_bytes: What do you think it does?
@@ -152,7 +153,7 @@ static	void	init_io (void)
  *	>0 -- If a full, newline terminated line was available, the length
  *	      of the line is returned.
  */
-ssize_t	dgets (int des, char *buf, size_t buflen, int buffer, void *ssl_aux)
+ssize_t	dgets (int des, char *buf, size_t buflen, int buffer, int (*reader) (int, char **, size_t *, size_t *))
 {
 	ssize_t	cnt = 0;
 	int	c = 0;		/* gcc can die. */
@@ -207,53 +208,10 @@ ssize_t	dgets (int des, char *buf, size_t buflen, int buffer, void *ssl_aux)
 		return -1;
 	    }
 
-	    if (ssl_aux)
-	    {
-#ifndef HAVE_SSL
-		panic("Attempt to call SSL_read on non-ssl client");
-#else
-		int	numbytes;
+	    if (!reader)
+		reader = unix_read;		/* Change for other systems */
 
-		/*
-		 * I cannot begin to describe what I think of this interface,
-		 * if this is really how it works.  I only hope this code 
-		 * here is needlessly defensive.  Read a chunk of data from
-		 * SSL, and if there is anything left over, make room for it
-		 * and tack that onto the end (resizing if necessary),
-		 * because we *MUST* transfer everything buffered by SSL to
-		 * our buffers before we return.
-		 */
-		c = SSL_read((SSL *)ssl_aux, ioe->buffer + ioe->write_pos,
-				ioe->buffer_size - ioe->write_pos - 1);
-
-		/* BAH! HUMBUG! */
-		numbytes = SSL_pending((SSL *)ssl_aux);
-		if (numbytes > 0)
-		{
-		    /* Copied from down below.  Bah.  Humbug. */
-		    ioe->buffer[ioe->write_pos + c] = 0;
-		    ioe->write_pos += c;
-		    ioe->segments++;
-
-		    /* BAH! HUMBUG! AGAIN! */
-		    if (numbytes > ioe->buffer_size - ioe->write_pos - 1)
-		    {
-		       /* XXX Yes, I know this is larger than it needs to be. */
-		       ioe->buffer_size += numbytes;
-		       RESIZE(ioe->buffer, char, ioe->buffer_size + 2);
-		    }
-
-		    c = SSL_read((SSL *)ssl_aux, ioe->buffer + ioe->write_pos,
-				ioe->buffer_size - ioe->write_pos - 1);
-		}
-#endif
-	    }
-	    else
-	    {
-		/* Better safe than sorry... */
-		c = read(des, ioe->buffer + ioe->write_pos,
-				ioe->buffer_size - ioe->write_pos - 1);
-	    }
+	    c = reader(des, &ioe->buffer, &ioe->buffer_size, &ioe->write_pos);
 
 	    if (x_debug & DEBUG_INBOUND) 
 		yell("FD [%d], did [%d]", des, c);
@@ -334,7 +292,7 @@ ssize_t	dgets (int des, char *buf, size_t buflen, int buffer, void *ssl_aux)
 }
 
 /* set's socket options */
-void set_socket_options (int s)
+void	set_socket_options (int s)
 {
 	int	opt = 1;
 	int	optlen = sizeof(opt);
@@ -357,6 +315,13 @@ void set_socket_options (int s)
 #endif
 }
 
+static int	unix_read (int fd, char **buffer, size_t *buffer_size, size_t *start)
+{
+	int	c;
+
+	c = read(fd, (*buffer) + (*start), (*buffer_size) - (*start) - 1);
+	return c;
+}
 
 #ifdef USE_SELECT
 

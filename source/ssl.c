@@ -1,4 +1,4 @@
-/* $EPIC: ssl.c,v 1.6 2002/12/23 15:11:27 jnelson Exp $ */
+/* $EPIC: ssl.c,v 1.7 2004/01/25 06:48:03 jnelson Exp $ */
 /*
  * ssl.c: SSL connection functions
  *
@@ -65,5 +65,50 @@ SSL *SSL_FD_init (SSL_CTX *ctx, int des)
 	SSL_connect(ssl);
 	return(ssl);
 }
+
+int	ssl_reader (void *ssl_aux, char **buffer, size_t *buffer_size, size_t *start)
+{
+	int	c, numbytes;
+	int	failsafe = 0;
+
+	c = SSL_read((SSL *)ssl_aux, (*buffer) + (*start), 
+			(*buffer_size) - (*start) - 1);
+
+	/*
+	 * So SSL_read() might read stuff from the socket (thus defeating
+	 * a further select/poll) and buffer it internally.  We need to make
+	 * sure we don't leave any data on the table and flush out any data
+	 * that could be left over if the above read didn't do the job.
+	 */
+
+	/* So if any byte are left buffered by SSL... */
+	while ((numbytes = SSL_pending((SSL *)ssl_aux)) > 0)
+	{
+		/* This is to prevent an impossible deadlock */
+		if (failsafe++ > 1000)
+			panic("Caught in SSL_pending() loop! (%d)", numbytes);
+
+		/* NUL terminate what we just read */
+		(*buffer)[(*start) + c] = 0;
+
+		/* Move the write position past what we just read */
+		*start = (*start) + c;
+
+		/* If there is not enough room to store the rest of the bytes */
+		if (numbytes > (*buffer_size) - (*start) - 1)
+		{
+			/* Resize the buffer... */
+			*buffer_size = (*buffer_size) + numbytes;
+			RESIZE((*buffer), char, (*buffer_size) + 2);
+		}
+
+		/* And read everything that is left. */
+		c = SSL_read((SSL *)ssl_aux, (*buffer) + (*start),
+				(*buffer_size) - (*start) - 1);
+	}
+
+	return c;
+}
+
 
 #endif

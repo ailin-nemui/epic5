@@ -29,4 +29,6 @@
 	SSL_CTX*	SSL_CTX_init	(int server);
 	SSL		*SSL_FD_init	(SSL_CTX *ctx, int des);
 
+	int     ssl_reader (void *ssl_aux, char **buffer, size_t *buffer_size, size_t *start);
+
 #endif

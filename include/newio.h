@@ -69,7 +69,7 @@
 extern 	int 	dgets_errno;
 
 	size_t	get_pending_bytes	(int);
-	ssize_t	dgets 			(int, char *, size_t, int, void *);
+	ssize_t	dgets 			(int, char *, size_t, int, int (*)(int, char **, size_t *, size_t *));
 	void 	set_socket_options 	(int);
 
 #ifdef USE_SELECT

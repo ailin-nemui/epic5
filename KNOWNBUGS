@@ -143,3 +143,8 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Refactor how dgets() works with incomplete SSL reads, slurp up everything
 * Nix the bletcherous do_server(-1) hack in io().
 * Fix a few more bogons in do_server().
+* Abstract the reading function out of dgets() via an argument
+* Add unix_read(), the default reader for dgets()
+* Add ssl_reader(), a dgets-like reader for SSL connections
+* Add server_ssl_reader(), a dgets reader for servers using SSL.
+* I probably broke SSL servers by doing this -- report bugs please!
