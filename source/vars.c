@@ -9,7 +9,7 @@
  */
 
 #if 0
-static	char	rcsid[] = "$Id: vars.c,v 1.13 2002/05/13 21:53:15 jnelson Exp $";
+static	char	rcsid[] = "$Id: vars.c,v 1.14 2002/05/29 04:15:32 crazyed Exp $";
 #endif
 
 #include "irc.h"
@@ -903,7 +903,7 @@ int	parse_mangle (char *value, int nvalue, char **rv)
 			else if (!my_strnicmp(str2, "-ALL_OFF", 5))
 				nvalue &= ~(STRIP_ALL_OFF);
 			else if (!my_strnicmp(str2, "ALL", 3))
-				nvalue = (0x7FFFFFFF - (MANGLE_ESCAPES));
+				nvalue = (0x7FFFFFFF ^ (MANGLE_ESCAPES) ^ (STRIP_OTHER));
 			else if (!my_strnicmp(str2, "-ALL", 4))
 				nvalue = 0;
 			else if (!my_strnicmp(str2, "ANSI", 2))
@@ -932,6 +932,10 @@ int	parse_mangle (char *value, int nvalue, char **rv)
 				nvalue &= ~(STRIP_ND_SPACE);
 			else if (!my_strnicmp(str2, "NONE", 2))
 				nvalue = 0;
+			else if (!my_strnicmp(str2, "OTHER", 2))
+				nvalue |= STRIP_OTHER;
+			else if (!my_strnicmp(str2, "-OTHER", 3))
+				nvalue &= ~(STRIP_OTHER);
 			else if (!my_strnicmp(str2, "REVERSE", 2))
 				nvalue |= STRIP_REVERSE;
 			else if (!my_strnicmp(str2, "-REVERSE", 3))
@@ -969,6 +973,8 @@ int	parse_mangle (char *value, int nvalue, char **rv)
 			m_s3cat(&nv, comma, "ND_SPACE");
 		if (nvalue & STRIP_ALL_OFF)
 			m_s3cat(&nv, comma, "ALL_OFF");
+		if (nvalue & STRIP_OTHER)
+			m_s3cat(&nv, comma, "OTHER");
 
 		*rv = nv;
 	}

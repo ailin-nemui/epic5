@@ -7,7 +7,7 @@
  *
  * See the COPYRIGHT file, or do a HELP IRCII COPYRIGHT 
  *
- * @(#)$Id: ircaux.h,v 1.24 2002/05/28 23:10:20 jnelson Exp $
+ * @(#)$Id: ircaux.h,v 1.25 2002/05/29 04:15:32 crazyed Exp $
  */
 
 #ifndef _IRCAUX_H_
@@ -226,6 +226,7 @@ extern	unsigned char isspace_table[256];
 #define STRIP_ND_SPACE		1 << 8
 #define STRIP_ALT_CHAR		1 << 9
 #define STRIP_ALL_OFF		1 << 10
+#define STRIP_OTHER		1 << 11
 
 extern	int	outbound_line_mangler;
 extern	int	inbound_line_mangler;

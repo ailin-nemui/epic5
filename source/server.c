@@ -1840,24 +1840,36 @@ void	register_server (int ssn_index, const char *nickname)
 			server_list[ssn_index].port, get_server_name(ssn_index));
 		server_cert = SSL_get_peer_certificate(server_list[ssn_index].ssl_fd);
 
-		cert_subject = X509_NAME_oneline(
-			X509_get_subject_name(server_cert),0,0);
-		say("subject: %s", urlencode(cert_subject));
-		cert_issuer = X509_NAME_oneline(
-			X509_get_issuer_name(server_cert),0,0);
-		say("issuer: %s", urlencode(cert_issuer));
+		if (!server_cert) {
+			say ("SSL negotiation failed");
+			say ("WARNING: Bailing to no encryption");
+			SSL_CTX_free((SSL_CTX *)&server_list[ssn_index].ctx);
+			send_to_aserver(ssn_index, "");
+		} else {
+			char *u_cert_subject, *u_cert_issuer;
+			cert_subject = X509_NAME_oneline(
+				X509_get_subject_name(server_cert),0,0);
+			u_cert_subject = urlencode(cert_subject);
+			say("subject: %s", u_cert_subject);
+			cert_issuer = X509_NAME_oneline(
+				X509_get_issuer_name(server_cert),0,0);
+			u_cert_issuer = urlencode(cert_issuer);
+			say("issuer: %s", u_cert_issuer);
 
-		server_list[ssn_index].ssl_enabled = TRUE;
-		server_pkey = X509_get_pubkey(server_cert);
-		say("public key: %d", EVP_PKEY_bits(server_pkey));
-		if (do_hook(SSL_SERVER_CERT_LIST, "%s %s %s",
-			server_list[ssn_index].name,
-			cert_subject,
-			cert_issuer));
-		{
+			server_list[ssn_index].ssl_enabled = TRUE;
+			server_pkey = X509_get_pubkey(server_cert);
+			say("public key: %d", EVP_PKEY_bits(server_pkey));
+			if (do_hook(SSL_SERVER_CERT_LIST, "%s %s %s",
+				server_list[ssn_index].name,
+				cert_subject,
+				cert_issuer))
+			{
+			}
+			new_free(&u_cert_issuer);
+			new_free(&u_cert_subject);
+			free(cert_issuer);
+			free(cert_subject);
 		}
-		free(cert_issuer);
-		free(cert_subject);
 	}
 #endif
 	if (server_list[ssn_index].password)
