@@ -20,6 +20,7 @@ KNOWN ERRATA (eg, bugs, or unresolved requests):
 * The key timeout thing goes off every second -- should only when necessary.
 * The check for "sun_len" in <sys/un.h> is bogus and unnecessary since we
   can just use #ifdef HAVE_SA_LEN for that.
+* Input cursor wigs out if 2ndary window is < 32 columns wide...
 ---
 
 [See http://www.epicsol.org/PROJECTS for things to come in the future]
@@ -153,4 +154,9 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Then forcibly call resize_window_display() to update old_display_size.
 * And then call make_window_current() last to make sure window updates there.
 * But I think that calling recalc_win_curs_and_disp_ip might be bogus there.
+* Fix the recovery from the "output below window" bug.
 * Make notes that calling make_window_current() can kill the window.
+* Fix /WINDOW NAME so it takes extended-words (/window name "foo bar")
+* Add 'get_geom_by_winref()' for $geom(), 'const'ify a few things...
+* Fix $geom() so it can take a window refnum as an argument.
+* Replace $center() with a better one from epic5.

@@ -1,4 +1,4 @@
-/* $EPIC: functions.c,v 1.87 2002/10/28 23:45:39 jnelson Exp $ */
+/* $EPIC: functions.c,v 1.88 2002/11/08 02:59:35 jnelson Exp $ */
 /*
  * functions.c -- Built-in functions for ircII
  *
@@ -2758,26 +2758,33 @@ BUILT_IN_FUNCTION(function_sar, word)
 
 BUILT_IN_FUNCTION(function_center, word)
 {
-	int	length,
-		pad,
-		width;
-	char 	*padc;
+	size_t  fieldsize,
+		stringlen,
+		pad;
+	char    *padc;
 
-	if (!word || !*word)
-		RETURN_EMPTY;
+	/* The width they want */
+	GET_INT_ARG(fieldsize, word)
 
-	width = my_atol(new_next_arg(word, &word));
-	length = strlen(word);
-	
-	if ((pad = width - length) < 0)
-		RETURN_STR(word);
+	/* The width we have */
+	stringlen = strlen(word);
 
-	pad /= 2;
-	padc = (char *)new_malloc(width+1);
-	memset(padc, ' ', pad);
-	padc[pad] = 0;
+	/* The string is wider than the field, just return it */
+	if (stringlen > fieldsize)
+	RETURN_STR(word);
 
-	return strcat(padc, word);		/* XXX Should do strcpy here */
+	/*
+	 * Calculate how much space we need.
+	 * For a string of length N, centered in a field of length X,
+	 * N / 2 is the size of the string in each half of the field;
+	 * (X - N) / 2 is the size of the space in each half of the field;
+	 * Therefore, the size of the field is:
+	 *      N + ((X - N) / 2)
+	 */
+	pad = stringlen + ((fieldsize - stringlen) / 2);
+	padc = (char *)new_malloc(pad + 1);
+	sprintf(padc, "%*s", pad, word);                /* Right justify it */
+	return padc;
 }
 
 BUILT_IN_FUNCTION(function_split, word)
@@ -3476,9 +3483,18 @@ BUILT_IN_FUNCTION(function_info, words)
 
 BUILT_IN_FUNCTION(function_geom, words)
 {
-	/* Erf. CO and LI are ints. (crowman) */
-	return m_sprintf("%d %d", current_term->TI_cols, 
-				  current_term->TI_lines);
+        const char *refnum;
+        int  col, li;
+
+        if (!words || !*words)
+                refnum = zero;
+        else
+                GET_STR_ARG(refnum, words);
+
+        if (get_geom_by_winref(refnum, &col, &li))
+                RETURN_EMPTY;
+
+        return m_sprintf("%d %d", col, li);
 }
 
 BUILT_IN_FUNCTION(function_pass, words)

@@ -1,4 +1,4 @@
-/* $EPIC: window.c,v 1.45 2002/11/07 06:17:24 jnelson Exp $ */
+/* $EPIC: window.c,v 1.46 2002/11/08 02:59:35 jnelson Exp $ */
 /*
  * window.c: Handles the organzation of the logical viewports (``windows'')
  * for irc.  This includes keeping track of what windows are open, where they
@@ -1528,7 +1528,7 @@ static void 	show_window (Window *window)
 /*
  * get_window_by_desc: Given either a refnum or a name, find that window
  */
-Window *get_window_by_desc (char *stuff)
+Window *get_window_by_desc (const char *stuff)
 {
 	Window	*w = NULL;	/* bleh */
 
@@ -1572,7 +1572,7 @@ Window *get_window_by_refnum (unsigned refnum)
  * get_window_by_name: returns a pointer to a window with a matching logical
  * name or null if no window matches 
  */
-Window *get_window_by_name (char *name)
+Window *get_window_by_name (const char *name)
 {
 	Window	*tmp = NULL;
 
@@ -2440,6 +2440,17 @@ static void 	list_a_window (Window *window, int len)
 		                get_server_itsname(window->server),
 		                bits_to_lastlog_level(window->window_level),
 		                window->screen ? empty_string : " Hidden");
+}
+
+int     get_geom_by_winref (const char *desc, int *co, int *li)
+{
+        Window  *win = get_window_by_desc(desc);
+
+        if (!win || !win->screen)
+                return -1;
+        *co = win->screen->co;
+        *li = win->screen->li;
+        return 0;
 }
 
 
@@ -3446,7 +3457,7 @@ static Window *window_name (Window *window, char **args)
 {
 	char *arg;
 
-	if ((arg = next_arg(*args, args)))
+	if ((arg = new_next_arg(*args, args)))
 	{
 		/* /window name -  unsets the window name */
 		if (!strcmp(arg, "-"))

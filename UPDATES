@@ -1,5 +1,22 @@
 EPIC4-1.2.0
 
+*** News 11/07/2002 -- $center() improved
+	$center() was rewritten here, so if you see any problems, this is
+	probably when they were introduced.
+
+*** News 11/07/2002 -- $geom() can now take a window reference
+	Until now, $geom() returned the size of the screen as reported 
+	by your TERM setting.  This was not always entirely useful.  The
+	size returned is now always the 'true size' of the screen.  You 
+	can also give it a window reference (eg, on another screen) to get
+	the geometry of a secondary screen.  This is important now that 
+	screens can be independantly sized.
+
+*** News 11/07/2002 -- /WINDOW NAME now takes extended words as arguments
+	You can now give a window a name with spaces in it by surrounding
+	the entire name with double quotes.  For example:
+		/window name "My Window #1"
+
 *** News 09/27/2002 -- New function $logctl() - control logfiles
 	This has actually existed since 09/03/2002, but I forgot to document
 	it, so here goes!

@@ -197,8 +197,8 @@ extern	unsigned window_display;
 	void	swap_previous_window		(char, char *);
 	void	back_window			(void);
 	Window 	*get_window_by_refnum		(unsigned);
-	Window	*get_window_by_name		(char *);
-	Window  *get_window_by_desc		(char *);
+	Window	*get_window_by_name		(const char *);
+	Window  *get_window_by_desc		(const char *);
 	char	*get_refnum_by_window		(const Window *);
 	int	is_window_visible		(char *);
 	char	*get_status_by_refnum		(unsigned, int);
@@ -270,5 +270,6 @@ const 	char *	set_channel_by_refnum		(unsigned, const char *);
 	int	add_to_scratch_window_scrollback (Window *, const unsigned char *);
 	void	check_window_cursor		(Window *);
 	void	unhold_window			(Window *);
+	int     get_geom_by_winref 		(const char *, int *, int *);
 
 #endif /* __window_h__ */
