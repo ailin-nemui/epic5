@@ -1,4 +1,4 @@
-/* $EPIC: newio.c,v 1.24 2004/03/25 04:41:18 jnelson Exp $ */
+/* $EPIC: newio.c,v 1.25 2004/03/28 16:26:08 jnelson Exp $ */
 /*
  * newio.c: This is some handy stuff to deal with file descriptors in a way
  * much like stdio's FILE pointers 
@@ -548,6 +548,7 @@ static	int	polls = 0;
 				dump_timers();
 				panic("Stuck in a polling loop. Help!");
 			}
+			return 0;		/* Timers are more important */
 		}
 		else
 			polls = 0;
