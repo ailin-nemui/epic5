@@ -100,3 +100,5 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Fix callers of inet_ntostr() to handle integer return values.
 * Add support in the DCC handshake generator for IPv6 addrs.
 * Fixed NULL deref if you did /FE with no arguments
+* Some minor cleanup work in dcc.c, restructure of dcc_open.
+* Don't outright restrict DCC handshakes to only IPv4.  Getting closer!

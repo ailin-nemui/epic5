@@ -9,7 +9,7 @@
  */
 
 #if 0
-static	char	rcsid[] = "@(#)$Id: dcc.c,v 1.31 2002/06/21 19:46:45 jnelson Exp $";
+static	char	rcsid[] = "@(#)$Id: dcc.c,v 1.32 2002/06/21 20:13:03 jnelson Exp $";
 #endif
 
 #include "irc.h"
@@ -588,21 +588,19 @@ int	dcc_opened (int fd, int result)
 		 */
 		if (!strcmp(type, "SEND"))
 		{
-		    jvs_blah = do_hook(DCC_CONNECT_LIST,
-				"%s %s %s %s %s %ld", 
-				dcc->user, type, p_addr, p_port,
-				dcc->description,
-				dcc->filesize);
-
-		    /*
-		     * Compatability with bitchx
-		     */
-		    if (jvs_blah)
+		    if ((jvs_blah = do_hook(DCC_CONNECT_LIST,
+					"%s %s %s %s %s %ld", 
+					dcc->user, type, p_addr, p_port,
+					dcc->description,
+					dcc->filesize)))
+			    /*
+			     * Compatability with bitchx
+			     */
 			jvs_blah = do_hook(DCC_CONNECT_LIST,
-				"%s GET %s %s %s %ld", 
-				dcc->user, p_addr, p_port,
-				dcc->description,
-				dcc->filesize);
+					"%s GET %s %s %s %ld", 
+					dcc->user, p_addr, p_port,
+					dcc->description,
+					dcc->filesize);
 		}
 		else
 		{
@@ -637,47 +635,44 @@ int	dcc_opened (int fd, int result)
  */
 static	int	dcc_open (DCC_list *dcc)
 {
-	int	old_server;
+	int	old_server = from_server;
 	char	p_port[12];
+	int	retval = 0;
 
 	/*
 	 * Initialize our idea of what is going on.
 	 */
-	old_server = from_server;
 	if (from_server == -1)
 		from_server = get_window_server(0);
+	message_from(NULL, LOG_DCC);
 
-	/*
-	 * DCC GET or DCC CHAT -- accept someone else's offer.
-	 */
-	if (dcc->flags & DCC_THEIR_OFFER)
+	do
 	{
-		dcc->socket = client_connect(NULL, 0, (SA *)&dcc->offer, 
-						sizeof(dcc->offer));
-
-		if (dcc->socket < 0)
+	    /*
+	     * DCC GET or DCC CHAT -- accept someone else's offer.
+	     */
+	    if (dcc->flags & DCC_THEIR_OFFER)
+	    {
+		if ((dcc->socket = client_connect(NULL, 0, (SA *)&dcc->offer, 
+						  sizeof(dcc->offer))) < 0)
 		{
 			dcc->flags |= DCC_DELETE;
-
-			message_from(NULL, LOG_DCC);
 			say("Unable to create connection: (%d) [%d] %s", 
 				dcc->socket, errno, my_strerror(errno));
-			message_from(NULL, LOG_CURRENT);
-
-			from_server = old_server;
-			return -1;
+			retval = -1;
+			break;
 		}
 
 		dcc_opened(dcc->socket, 0);
 		from_server = old_server;
-		return 0;
-	}
+		break;
+	    }
 
-	/*
-	 * DCC SEND or DCC CHAT -- make someone an offer they can't refuse.
-	 */
-	else
-	{
+	    /*
+	     * DCC SEND or DCC CHAT -- make someone an offer they can't refuse.
+	     */
+	    else
+	    {
 		/*
 		 * Mark that we're waiting for the remote peer to answer,
 		 * and then open up a listen()ing socket for them.  If our
@@ -687,17 +682,14 @@ static	int	dcc_open (DCC_list *dcc)
 		 * for a port if our random port isnt available.
 		 */
 		dcc->flags |= DCC_MY_OFFER;
-		dcc->socket = ip_bindery(dcc->family, dcc->want_port, 
-					 &dcc->local_sockaddr);
-		if (dcc->socket < 0)
+		if ((dcc->socket = ip_bindery(dcc->family, dcc->want_port, 
+					      &dcc->local_sockaddr)) < 0)
 		{
 			dcc->flags |= DCC_DELETE;
-			message_from(NULL, LOG_DCC);
 			say("Unable to create connection [%d]: %s", 
 				dcc->socket, my_strerror(errno));
-			message_from(NULL, LOG_CURRENT);
-			from_server = old_server;
-			return -1;
+			retval = -1;
+			break;
 		}
 
 #ifdef MIRC_BROKEN_DCC_RESUME
@@ -719,10 +711,13 @@ static	int	dcc_open (DCC_list *dcc)
 		 */
 		if (dcc->flags & DCC_TWOCLIENTS)
 			dcc_send_booster_ctcp(dcc);
-
-		from_server = old_server;
-		return 0;
+	    }
 	}
+	while (0);
+
+	message_from(NULL, LOG_CURRENT);
+	from_server = old_server;
+	return retval;
 }
 
 /*
@@ -791,16 +786,13 @@ static void	dcc_send_booster_ctcp (DCC_list *dcc)
 	{
 		char *	url_name = dcc_urlencode(nopath);
 
-		if (family == AF_INET)
-		{
-			/*
-			 * Dont bother with the checksum.
-			 */
-			send_ctcp(CTCP_PRIVMSG, dcc->user, CTCP_DCC,
-				 "%s %s %s %s %ld",
-				 type, url_name, p_host, p_port,
-				 dcc->filesize);
-		}
+		/*
+		 * Dont bother with the checksum.
+		 */
+		send_ctcp(CTCP_PRIVMSG, dcc->user, CTCP_DCC,
+			 "%s %s %s %s %ld",
+			 type, url_name, p_host, p_port,
+			 dcc->filesize);
 
 		/*
 		 * Tell the user we sent out the request
@@ -820,15 +812,12 @@ static void	dcc_send_booster_ctcp (DCC_list *dcc)
 	 */
 	else
 	{
-		if (family == AF_INET)
-		{
-			/*
-			 * Send out the handshake
-			 */
-			send_ctcp(CTCP_PRIVMSG, dcc->user, CTCP_DCC,
-				 "%s %s %s %s", 
-				 type, nopath, p_host, p_port);
-		}
+		/*
+		 * Send out the handshake
+		 */
+		send_ctcp(CTCP_PRIVMSG, dcc->user, CTCP_DCC,
+			 "%s %s %s %s", 
+			 type, nopath, p_host, p_port);
 
 		/*
 		 * And tell the user
