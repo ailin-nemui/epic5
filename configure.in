@@ -4,9 +4,9 @@ dnl except those bits attributed otherwise.
 dnl thanks to the screen 3.3 configure.in for giving me examples to
 dnl work from and steal ;)
 dnl
-dnl @(#)$Id: configure.in,v 1.27 2003/01/11 04:26:52 jnelson Exp $
+dnl @(#)$Id: configure.in,v 1.28 2003/02/02 07:54:29 crazyed Exp $
 
-AC_REVISION($Revision: 1.27 $)dnl
+AC_REVISION($Revision: 1.28 $)dnl
 AC_INIT(source/irc.c)
 AC_CONFIG_HEADER(include/defs.h)
 
@@ -596,9 +596,14 @@ AC_ARG_WITH(perl,
 [  --with-perl[=PATH]       Compile with perl support.],
 [ test -z "$withval" && withval=yes ],
 )
-test "xno" != "x$withval" && for base in $withval /usr/local /usr
+test "xno" != "x$withval" && for base in $withval /usr/local /usr /
 do
-	test -r $base/lib/libperl.so || continue
+	FOUND=
+	for ext in so a dll ; do
+		test -r $base/lib/libperl.$ext && FOUND=1
+		test -r $base/libperl.$ext && FOUND=1
+	done
+	test -n "$FOUND" || continue
 	AC_MSG_RESULT(yes)
 	LIBS="$LIBS `perl -MExtUtils::Embed -e ldopts`"
 	PERLDOTOH="perl.o"

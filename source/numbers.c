@@ -1,4 +1,4 @@
-/* $EPIC: numbers.c,v 1.36 2003/01/31 23:50:18 jnelson Exp $ */
+/* $EPIC: numbers.c,v 1.37 2003/02/02 07:54:30 crazyed Exp $ */
 /*
  * numbers.c: handles all those strange numeric response dished out by that
  * wacky, nutty program we call ircd 
@@ -486,7 +486,7 @@ void 	numbered_command (const char *from, const char *comm, char const **ArgList
 
 		    /* If the user bites on /ON NAMES, then skip the rest */
 		    message_from(channel, LOG_CRAP);
-		    if (do_hook(NAMES_LIST, "%s %s", channel, line))
+		    if (!do_hook(NAMES_LIST, "%s %s", channel, line))
 			goto END;
 		    message_from(NULL, LOG_CURRENT);
 		}
@@ -1206,7 +1206,7 @@ DISPLAY:
 	case 353:		/* #define RPL_NAMREPLY         353 */
 	{
 		static int last_width;
-		static char * format;
+		char format[41];
 		const char	*type, *channel, *line;
 
 		PasteArgs(ArgList, 2);
@@ -1226,6 +1226,8 @@ DISPLAY:
 			else
 				strcpy(format, "%s: %s\t%s");
 		}
+		else
+			strcpy(format, "%s: %s\t%s");
 
 		message_from(channel, LOG_CRAP);
 		if (*type == '=') 
