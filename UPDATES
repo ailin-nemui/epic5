@@ -1,5 +1,57 @@
 EPIC4-1.2.0
 
+*** News 03/23/2002 -- /DEFER now server sensitive
+	When you do /DEFER <commands>, it will remember the current server
+	and it will restore to that server when the commands are executed.
+	At execution time, the commands will be run in the server's 
+	"current window" (see immediately below) which may or may not be
+	the current window when you did the /defer, but it will definitely
+	be a window connected to the server!
+
+*** News 03/23/2002 -- "Current window" tracking by server
+	A new experimental feature is being added whereby each time you
+	change the current window, it becomes its server's "current window".
+	Since you can only have one current window per screen, but you can
+	have more than one server connected per screen, epic may need to 
+	know what the "current window" is for a server other than the 
+	current window's server.  Is this confusing enough yet?  Well,
+	think of it this way.  EPIC will keep track of the last window
+	that was the current window for all of your servers.  Whenever
+	EPIC needs to get a "current window" that is connected to a specific
+	server, it can use this feature to find the last window that was
+	a "current window" that is connected to the server.  This is not 
+	an automatic thing; features will have to be converted to use this.
+	Watch for updates.
+
+*** News 03/23/2002 -- New /TIMER verb, /TIMER -DELETE_FOR_WINDOW <winref>
+	If you do /TIMER -DELETE_FOR_WINDOW <winref> then all of the pending
+	timers for window <winref> will be deleted.  You may want to do this
+	before you destroy a window to make sure it's timers do not go off 
+	in another window!
+
+*** News 03/23/2002 -- New $serverctl() value, "MAXCACHESIZE"
+	This value allows you to set the size of the largest channel for which
+	userhost caching will be done.  If you set this to a non-negative
+	number, only channels with up to this many values will do userhost
+	caching.  If you set this value to 0, you will turn off userhost
+	caching for this server, and if you set the value to a negative number
+	you will enable userhost caching for all channels.  You may need to
+	tweak this value on servers where doing a WHO #chan for a channel
+	with an extremely large number of users will cause the server to
+	flood you off.  Or if you just hate userhost caching.
+
+	Examples:
+	$serverctl(SET 0 MAXCACHESIZE 100)
+		Don't do userhost caching for channels with more than 100
+		users when you join on server 0.
+	$serverctl(SET 2 MAXCACHESIZE 0)
+		Don't do userhost caching for any channels on server 2.
+	$serverctl(SET 2 MAXCACHESIZE -1)
+		Turn userhost caching on for all channels on server 2.
+	$serverctl(GET 2 MAXCACHESIZE)
+		Return the maximum size of a channel on server 2 for 
+		which userhost caching will be done.
+
 *** News 03/23/2002 -- New window verbs to control scrollback
 	Now you can scroll around in windows without needing to use the
 	key bindings.
