@@ -14,7 +14,7 @@
 # Make two aliases for every alias.  One for assign handling, one for alias handling.
 #
 stack push alias alias.tt
-alias.t alias.tt alias.t $*;alias.t $sar(g/assign/alias/$*)
+alias alias.tt alias $*;alias $sar(g/assign/alias/$*)
 
 #
 # Check the consistency of the internal structures.  The only
@@ -205,7 +205,7 @@ stack pop alias alias.tt
 #
 # Recursively erase a structure.
 #
-alias.t struct.purge {
+alias struct.purge {
 	fe ($*) foo {
 		^assign -$foo
 	}
@@ -216,7 +216,7 @@ alias.t struct.purge {
 # The third sub-loop does what the first does and should never be entered.
 # It's there for company.
 #
-alias.t struct.purgesub {
+alias struct.purgesub {
 	fe ($*) foo {
 		@ :bar = aliasctl(assign match ${foo}.)
 		@ :hit += #bar
@@ -236,7 +236,7 @@ alias.t struct.purgesub {
 #
 # Save a structure, like array.save.
 #
-alias.t struct.savefn {
+alias struct.savefn {
 	@ :fd = open($0 w)
 	@ :hit = struct.savefd($fd $1-)
 	@ close($fd)
@@ -245,7 +245,7 @@ alias.t struct.savefn {
 #
 # Continued.  Save to an FD.
 #
-alias.t struct.savefd {
+alias struct.savefd {
 	@:fd=[$0]
 	fe ($1-) foo {
 		if (strlen($($foo))) {
