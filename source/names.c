@@ -1,4 +1,4 @@
-/* $EPIC: names.c,v 1.27 2002/08/02 16:21:17 crazyed Exp $ */
+/* $EPIC: names.c,v 1.28 2002/08/09 15:16:14 crazyed Exp $ */
 /*
  * names.c: This here is used to maintain a list of all the people currently
  * on your channel.  Seems to work 
@@ -1032,9 +1032,10 @@ static void	decifer_mode (const char *modes, Channel *chan)
 			case 4: case 3: case 2:
 				if (arg = next_arg(rest, &rest))
 					break;
-			default:
 				yell("WARNING:  Mode parser or server is BROKE.  Mode=%c%c args: %s"
 						, add?'+':'-', *mode_str, rest);
+			default:
+				yell("Defaulting %c%c to CHANMODE type D", add?'+':'-', *mode_str);
 		}
 		switch (*mode_str)
 		{
