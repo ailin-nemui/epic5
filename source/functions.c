@@ -1,4 +1,4 @@
-/* $EPIC: functions.c,v 1.146 2003/11/18 05:36:10 jnelson Exp $ */
+/* $EPIC: functions.c,v 1.147 2003/12/06 02:03:11 jnelson Exp $ */
 /*
  * functions.c -- Built-in functions for ircII
  *
@@ -307,6 +307,7 @@ static	char
 	*function_notify	(char *),
 	*function_notifywindows	(char *),
 	*function_notw 		(char *),
+	*function_numlines	(char *),
 	*function_numonchannel 	(char *),
 	*function_numsort	(char *),
 	*function_numwords 	(char *),
@@ -610,6 +611,7 @@ static BuiltInFunctions	built_in_functions[] =
 	{ "NOTW",               function_notw 		},
 	{ "NUMARRAYS",          function_numarrays 	},
 	{ "NUMITEMS",           function_numitems 	},
+	{ "NUMLINES",		function_numlines	},
 	{ "NUMONCHANNEL",	function_numonchannel 	},
 	{ "NUMSORT",		function_numsort	},
 	{ "NUMWORDS",		function_numwords	},
@@ -2995,7 +2997,7 @@ BUILT_IN_FUNCTION(function_open, words)
 	else if (!my_stricmp(words, "W"))
 		RETURN_INT(open_file_for_write(filename, "a"));
 	else
-		RETURN_INT(open_file_for_write(filename, words));
+		RETURN_INT(open_file_for_write(filename, lower(words)));
 }
 
 BUILT_IN_FUNCTION(function_close, words)
@@ -6907,5 +6909,23 @@ BUILT_IN_FUNCTION(function_metric_time, input)
 BUILT_IN_FUNCTION(function_windowctl, input)
 {
         return windowctl(input);
+}
+
+/*
+ * $numlines(<columns> <string>)
+ * Returns the number of lines that <string> will occupy after final
+ * display in a window with a width of <columns>, or nothing on error.
+ */
+BUILT_IN_FUNCTION(function_numlines, input)
+{
+	int cols;
+	int numl = 0;
+
+	GET_INT_ARG(cols, input);
+	if (cols < 1)
+		RETURN_EMPTY;
+	prepare_display(input, cols, &numl, 0);
+
+	RETURN_INT(numl+1);
 }
 

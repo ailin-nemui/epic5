@@ -54,3 +54,7 @@ THE CHANGELOG SINCE THE LAST RELEASE:
   skip non-swappable windows.
 * Fix /window kill so it doesn't swap in a window too early.
 * Make NOTICEs from servers to channels (on ircnet) go to that channel's win.
+* Tell getopt about -o and -O
+* Fix bounds error in /exec -direct
+* The last argument to open_file_for_write() needs to be lowercase.
+* Add $numlines() from fudd.

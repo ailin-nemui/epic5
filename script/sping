@@ -221,23 +221,19 @@ alias my_floor (number) {
 	}
 }
 
-alias remove_ping_list_entry (field, value, entry_size, list) {
+alias remove_matching_pings (field, value, entry_size, list) {
 	@:item = [!]
-	@:new_list = list
+	@:new_list = []
 
 	for (@:i = field, item != [], @:i += entry_size) {
 		@:item = word($i $list)
 
-		if (item == value) {
-			@:ping_id = word(${i - field} $list)
-			@:new_list_start = leftw(${i - field} $list)
-			@:new_list_end = rightw(${(#list - (i - field)) - entry_size} $list)
+		if (item != value) {
+			@:ping_entry = midw(${i - field} $entry_size $list)
 
-			if (new_list_start == []) {
-				@:new_list = new_list_end
-			} else {
-				@:new_list = new_list_start ## [ ] ## new_list_end
-			}
+			push new_list $ping_entry
+		} else {
+			@:ping_id = word(${i - field} $list)
 
 			^eval timer -del $ping_id
 		}
@@ -268,7 +264,7 @@ alias timeout_sping (ping_id, server) {
 		return
 	}
 
-	@sping_list = remove_ping_list_entry(0 $ping_id 5 $sping_list)
+	@sping_list = remove_matching_pings(0 $ping_id 5 $sping_list)
 
 	xecho -b -w $serv_win() -- PING to $server timed out
 }
@@ -281,7 +277,7 @@ alias timeout_vping (ping_id, server) {
 		return
 	}
 
-	@:vping_list = remove_ping_list_entry(0 $ping_id 4 $vping_list)
+	@:vping_list = remove_matching_pings(0 $ping_id 4 $vping_list)
 	@vpings[$refnum] = vping_list
 
 	xecho -b -w $serv_win() -- VPING to $server timed out
@@ -290,14 +286,14 @@ alias timeout_vping (ping_id, server) {
 
 # *** hooks ***
 
-# upon connection to any server, let's make sure the ping queues for that
-# server are clean
+# upon connection to any server, let's make sure we're not still waiting for
+# any responses previously sent from that server
 
 on #^connect 105 "*" {
 	@:refnum = servernum($0)
 	@:vpings[$refnum] = []
 
-	@sping_list = remove_ping_list_entry(4 $0 5 $sping_list)
+	@sping_list = remove_matching_pings(3 $refnum 5 $sping_list)
 }
 
 on ^pong "*" {
@@ -312,17 +308,17 @@ on #^server_lost 105 "*" {
 	@:refnum = [$0]
 	@:vpings[$refnum] = []
 
-	@sping_list = remove_ping_list_entry(3 $refnum 5 $sping_list)
+	@sping_list = remove_matching_pings(3 $refnum 5 $sping_list)
 }
 
 # if we're told that a server doesn't exist, let's make sure we're not waiting
 # a ping reply from that server.
 
 on #^402 105 "*" {
-	@sping_list = remove_ping_list_entry(4 $1 5 $sping_list)
+	@sping_list = remove_matching_pings(4 $1 5 $sping_list)
 
 	fe ($myservers(*)) refnum {
-		@vpings[$refnum] = remove_ping_list_entry(3 $1 4 $vpings[$refnum])
+		@vpings[$refnum] = remove_matching_pings(3 $1 4 $vpings[$refnum])
 	}
 }
 

@@ -1,4 +1,4 @@
-/* $EPIC: ircaux.c,v 1.102 2003/12/03 05:21:11 jnelson Exp $ */
+/* $EPIC: ircaux.c,v 1.103 2003/12/06 02:03:11 jnelson Exp $ */
 /*
  * ircaux.c: some extra routines... not specific to irc... that I needed 
  *
@@ -1133,7 +1133,7 @@ static	int recursion = 0;		/* Recursion is bad */
 	}
 
 	term_reset();
-	fprintf(stderr, "An unrecoverable logic error has occured.\n");
+	fprintf(stderr, "An unrecoverable logic error has occurred.\n");
 	fprintf(stderr, "Please fill out the BUG_FORM file, and include the following message:\n");
 	fprintf(stderr, "Panic: [%s (%lu):%s]\n", irc_version, commit_id, buffer);
 	panic_dump_call_stack();

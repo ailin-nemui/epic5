@@ -1,5 +1,12 @@
 EPIC4-1.2.0
 
+*** News -- 12/05/2003 -- New built in function $numlines() (fudd)
+	The first argument to $numlines() is the width of a line (which you
+	can get from $geom() if you want to use that), and the rest of the
+	text is some text.  The return value is the number of screen lines
+	that will be taken up if you were to /echo the text to a window of
+	the given number of columns.
+
 *** News -- 12/03/2003 -- New command line arguments, -o and -O
 	POSIX termios allowed systems to define "extended characters" (IEXTEN)
 	which are interpreted by the kernel and are not passed onto the
