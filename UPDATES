@@ -1,5 +1,170 @@
 EPIC4-1.2.0
 
+*** News 06/30/2003 -- Revamped /IGNORE support.
+	The /IGNORE support for epic has been mostly rewritten, but the
+	user-interface has tried to say the same.  Several new features
+	have been added:
+
+	1) Refnum support -- You can refer to an ignore by either its mask
+	   or its refnum.  Output from /IGNORE includes the refnum.
+	2) Timeout support -- You can set an amount of time an ignore should
+	   be in force before it is automatically expired.  At the end of
+	   the timeout, the ignore is removed and you are notified.
+	3) Ignore reasons -- You can attach to each ignore a reason string
+	   why you are ignoring the reason.  This can help you in case you
+	   want to know when you set it or why the person is bothering you...
+
+	Refnum support should be pretty easy to use -- wheerever you would
+	normally give an ignore mask, you just use a refnum, for example:
+
+	/ignore *!*really@long.address.com all
+	*** Now ignoring ALL from *!*really@long.address.com (refnum 1)
+	/ignore 1 none
+	*** *!*really@long.address.com removed from ignorance list (ignore 
+	+   refnum 1)
+
+	/ignore *!*@foo.com all timeout 10
+	*** Now ignoring ALL from *!*@foo.com (refnum 2)
+	[ after 10 seconds pass ]
+	*** *!*@foo.com removed from ignorance list (ignore refnum 2)
+
+	/ignore *!*@booya.com all reason "getting on my nerves"
+	*** Now ignoring ALL from *!*@booya.com (refnum 3) because getting 
+	+   on my nerves
+
+*** News 06/30/2003 -- New built in function, $ignorectl()
+	This is a low-level interface to the ignore system
+
+	$ignorectl(REFNUMS)
+	- Return all integer refnums for all active ignores.
+
+	$ignorectl(REFNUM <ignore-pattern>)
+	- Given an exact ignore pattern, return that ignore's refnum.
+
+	$ignorectl(ADD <ignore-pattern> [level-desc])
+	- Add a new ignore, ala /IGNORE <ignore-pattern> <level-desc>
+	  and return the refnum for the new ignore.  <ignore-pattern> is
+	  taken literally and should not contain spaces or commas.
+
+	$ignorectl(CHANGE <refnum> [level-desc])
+	- Change the <refnum> ignore by adding or subtracting levels as
+	  indicated by [level-desc].  If <refnum> is not a number or does
+	  not represent a valid ignore, the empty string is returned.
+	  Otherwise, <refnum> is returned.
+
+	$ignorectl(DELETE <refnum>)
+	- Remove the ignore numbered <refnum>
+
+	$ignorectl(PATTERN <wildcard pattern>)
+	- The effect of $igmask(<wildcard pattern>): treating each ignore
+	  pattern as a literal string, return all refnums whose ignore masks
+	  are matched by the <wildcard pattern>.
+
+	$ignorectl(RPATTERN <nick!user@host>)
+	- The effect of $rigmask(<nick!user@host>): treating the argument
+	  as a nick!user@host string, return all refnums whose ignore masks
+	  match the nick!user@host string, that is, each ignore which would
+	  "cover" the nick!user@host.
+
+	$ignorectl(WITH_TYPES [level-desc])
+	- The effect of $rigtype([level-desc]): return the refnums of all
+	  ignores which contain at least all of the levels indicated.  It
+	  is possible for an ignore to have MORE levels set, but of those
+	  levels which are requested, all of them must be present.
+
+	$ignorectl(GET <refnum> NICK)
+	- Return the ignore-pattern for the ignore refnum
+
+	$ignorectl(GET <refnum> LEVELS)
+	- Like $igtype(), but better: return a space separated list of 
+	  all of the ignore levels that are active for this ignore, each
+	  level prefixed with exactly one character which indicates that
+	  level's disposition:
+		/<level>	Suppressive ignore
+		+<level>	Highlight ignore
+		^<level>	Exceptive ignore
+
+	$ignorectl(GET <refnum> SUPPRESS)
+	- Return an integer value that contains a bitwise representation
+	  of all of the suppressed levels for this ignore.  The exact layout
+	  of this value is epic-version-dependant and may change in the
+	  future.  If you use this value in a script, make sure you are
+	  using a layout compatable with the version of epic the user is
+	  using.
+
+	$ignorectl(GET <refnum> EXCEPT)
+	- Return an integer value that contains a bitwise representation
+	  of all of the excepted levels for this ignore.  See above for
+	  warning about trying to use this value.
+
+	$ignorectl(GET <refnum> HIGHLIGHT)
+	- Return an integer value that contains a bitwise representation
+	  of all of the highlighted levels for this ignore.  See above for
+	  warning about trying to use this value.
+
+	$ignorectl(GET <refnum> EXPIRATION)
+	- Return the time the ignore is to expire as two integers. The first
+	  integer is the seconds and the second number is the milliseconds.
+	  This is the same format that $utime() uses.  If the ignore does not
+	  expire, both values are 0.
+
+	$ignorectl(GET <refnum> REASON)
+	- Return the reason the user set the ignore, if any.
+
+	$ignorectl(SET <refnum> NICK <ignore-pattern>)
+	- Set the ignore-pattern for the ignore refnum.
+	  *** WARNING *** The ignore list is usually sorted, and changing
+	  this value may de-sort the ignore list.  The result of this is
+	  uncertain and could destabilize epic.  It is probably not a good
+	  idea to change an ignore's pattern.  
+	  The new ignore mask is returned.
+
+	$ignorectl(SET <refnum> LEVELS <level-desc>)
+	- Unconditionally set the ignore levels to <level-desc>.  All levels
+	  previously in use are cleared and replaced with the new levels.
+	  You should prefix each level with one character to indicate it's
+	  disposition:
+		/<level>	Suppressive ignore
+		+<level>	Highlight ignore
+		^<level>	Exceptive ignore
+	  The number 1 is returned.
+
+	$ignorectl(SET <refnum> SUPPRESS <integer>)
+	- Unconditionally set the integer value corresopnding to the 
+	  suppressive ignores for this ignore item.  
+	  *** WARNING *** The exact layout of this value is version 
+	  dependant on epic and may change in the future, so changing this 
+	  value directly like this could corrupt the ignore if you don't 
+	  know what version of epic you are using.  You Have Been Warned.
+	  The number 1 is returned.
+
+	$ignorectl(SET <refnum> EXCEPT <integer>)
+	- Unconditionally set the integer value corresopnding to the 
+	  exceptive ignores for this ignore item.  See above warning
+	  The number 1 is returned.
+
+	$ignorectl(SET <refnum> HIGHLIGHT <integer>)
+	- Unconditionally set the integer value corresopnding to the 
+	  highlighted ignores for this ignore item.  See above warning
+	  The number 1 is returned.
+
+	$ignorectl(SET <refnum> EXPIRATION <seconds> <milliseconds>)
+	- Set the time an ignore shall expire.  The two values shall be
+	  system clock time, that is, the number of seconds after the epoch
+	  when the ignore shall be removed.  This is not the expiration 
+	  interval (the number of seconds from now it should be removed) but
+	  rather the absolute system clock time it should be removed.  You
+	  can add the expiration interval to $utime() to get this value.
+	  If both values are 0, the ignore will not expire.  
+	  The number 1 is returned.
+
+	$ignorectl(SET <refnum> REASON [reason])
+	- Set the reason the user set the ignore.  The return value is the
+	  reason.  If no reason is given, the ignore's reason is removed.
+	  If set, the new reason is returned.  
+	  If unset, the number 1 is returned.
+
+
 *** News 06/21/2003 -- New built in script, 'paste', /SET PASTE ON|OFF
 	The 'paste' script implements three new sets and one keybinding:
 
