@@ -42,14 +42,6 @@ alias leave
 	}
 }
 
-alias invite {
-	if ([$1]) 
-		{//invite $0 $1} 
-		{//invite $0 $C}
-}
-
-alias off { on $0 -$1- }
-
 # Ban list:
 on ^367 * xecho -b $[$CHANNEL_NAME_WIDTH]1 $2-
 
