@@ -1321,6 +1321,22 @@ void 	change_server_channels (int old_s, int new_s)
 }
 
 /*
+ * This is called whenever you're not going to reconnect and
+ * destroy_server_channels() is called.
+ */
+void	destroy_waiting_channels (int server)
+{
+	Window *tmp = NULL;
+
+	while (traverse_all_windows(&tmp))
+	{
+		if (tmp->server != server)
+			continue;
+		new_free(&tmp->waiting_channel);
+	}
+}
+		
+/*
  * This is called by connect_to_new_server(), if the new server we are going
  * to attach to is already an established connection; by close_server(), if
  * it was asked to have the server's channels thrown away; by 

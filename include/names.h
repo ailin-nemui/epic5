@@ -37,6 +37,7 @@ struct WindowStru;
 	void	list_channels		(void);
 	void	switch_channels		(char, char *);
 	void	change_server_channels	(int, int);
+	void	destroy_waiting_channels	(int);
 	void	destroy_server_channels	(int);
 	void	reconnect_all_channels	(void);
 	Char *	what_channel		(Char *);
