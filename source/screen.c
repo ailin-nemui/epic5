@@ -1,4 +1,4 @@
-/* $EPIC: screen.c,v 1.89 2005/01/12 00:12:21 jnelson Exp $ */
+/* $EPIC: screen.c,v 1.90 2005/01/13 05:39:41 jnelson Exp $ */
 /*
  * screen.c
  *
@@ -2584,7 +2584,7 @@ void 	repaint_window_body (Window *window)
 			cols = window->columns - 1;
 
 		n = normalize_string(str, 0);
-		lines = prepare_display(n, cols, &numls, 0);
+		lines = prepare_display(n, cols, &numls, PREPARE_NOWRAP);
 		if (*lines)
 			output_with_count(*lines, 1, foreground);
 		new_free(&n);

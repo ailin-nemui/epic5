@@ -429,3 +429,5 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Roll forward all the rest of changes from epic4 (i think)
 * Add /ON NEW_NICKNAME, when epic needs a new nickname from you.
 * Run 'make depend', fix compile errors, fix 'environment' script
+* Fix bug that brought up all servers at once.
+* Fix /window topline so it doesn't chop/wrap-off last word.

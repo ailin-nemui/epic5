@@ -1,4 +1,4 @@
-/* $EPIC: window.c,v 1.130 2005/01/12 00:12:21 jnelson Exp $ */
+/* $EPIC: window.c,v 1.131 2005/01/13 05:39:41 jnelson Exp $ */
 /*
  * window.c: Handles the organzation of the logical viewports (``windows'')
  * for irc.  This includes keeping track of what windows are open, where they
@@ -2156,14 +2156,17 @@ void 	window_check_servers (void)
 	    status = get_server_status(i);
 	    cnt = 0;
 
-	    if ((tmp = get_window_by_servref(i)))
-		connected_to_server++;
-	    else if (status >= SERVER_CONNECTING && status < SERVER_CLOSING)
-            {
-		if (1)
+	    if (!(tmp = get_window_by_servref(i)))
+	    {
+		if (status >= SERVER_CONNECTING && status < SERVER_CLOSING)
+            	{
+		    if (1)
 			close_server(i, "No windows for this server");
+	        }
+		continue;		/* Move on to next server */
 	    }
 
+	    connected_to_server++;
 	    to_window = tmp;
 
 	    if (status == SERVER_RECONNECT)
