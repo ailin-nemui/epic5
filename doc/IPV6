@@ -1,0 +1,106 @@
+This document details the conversion of EPIC into an IPv6 program.  If this
+document can be made use to anyone else, they are welcome to it.
+
+EPIC is a particularly interesting case study for IPv4 to IPv6 transition
+because it touches every direction of every domain.  It is (obviously)
+an IPv4 client, but it is also an IPv4 server (DCCs).  It is a Unix Domain
+client, and it can be a Unix Domain server (but this is not in use).
+
+Fortunately for us, all of the networking related code is contained in three
+subsystems (/DCC, /SERVER, and /WINDOW CREATE), and five modules: dcc.c,
+network.c, screen.c, server.c, and wserv.c.
+
+EPIC has traditionally retained and stored data on an "ad hoc" basis.  Whenever
+a piece of data is needed, it is retrieved from whatever place is the most
+convenient and stashed away in a variable.  This means that some data we keep
+in multiple places (redundancy).  An example:  the result of a hostname lookup
+is an in_addr which we store as the "remote address" of the peer.  After the
+connect(2), getpeername(2) returns a struct sockaddr which also contains this
+"remote address".  Now we have two copies of the same information.  The 
+maintainer then is left to wonder why we have two different copies and what
+each copy is to be used for.
+
+The first thing to do is take a catalog of all the data items used to store
+networking information.  This includes in_addr's, sockaddr's, and what they
+are used for and why they are kept.  We can then design a more efficient
+and practical list of data items stored.
+
+CATALOG OF IPV4 DATA:
+---------------------
+dcc.c
+=====
+in_addr		DCC_list.remote
+u_short		DCC_list.remport
+in_addr		DCC_list.local_addr
+u_short		DCC_list.local_port
+
+hostent		dcc_raw_connect.hp
+in_addr		dcc_send_booster_ctcp.myip
+hostent		register_dcc_offer.hostent_fromhost
+sockaddr_in	process_incoming_chat.remaddr
+sockaddr_in	process_incoming_listen.remaddr
+hostent		process_incoming_listen.hp
+sockaddr_in	process_outgoing_file.remaddr
+sockaddr_in	dcc_open.remaddr
+
+server.c/h
+========
+in_addr		Server.local_addr
+sockaddr_in	Server.local_sockname;
+sockaddr_in	Server.remote_sockname;
+in_addr		Server.uh_addr;
+
+sockaddr_in	connect_to_server.localaddr
+sockaddr_in	connect_to_server.remaddr
+in_addr		get_server_local_addr (servnum)
+in_addr		get_server_uh_addr (servnum)
+
+irc.c
+=====
+in_addr		LocalHostAddr;
+hostent		parse_args.hp
+
+functions.c
+===========
+in_addr		function_iptolong.addr
+in_addr		function_longtoip.addr
+
+network.c
+=========
+[include here]
+
+commands.c
+==========
+hostent		e_hostname.hp
+
+CATALOG OF IPV4 FUNCTION CALLS:
+-------------------------------
+inet_aton
+=========
+dcc.c		register_dcc_offer
+functions.c	function_iptolong
+network.c	connect_by_number
+network.c	lame_external_resolv
+
+inet_ntoa
+=========
+dcc.c		dcc_open
+dcc.c		register_dcc_offer
+dcc.c		process_incoming_chat
+dcc.c		process_incoming_listen
+dcc.c		process_outgoing_file
+functions.c	function_longtoip
+
+gethostbyname
+=============
+commands.c	e_hostname
+dcc.c		dcc_raw_connect
+dcc.c		register_dcc_offer
+irc.c		parse_args
+network.c	lookup_host
+
+gethostbyaddr
+=============
+dcc.c		process_incoming_listen
+network.c	lookup_ip (via resolv() and ip_to_host())
+
