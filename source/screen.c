@@ -2864,7 +2864,7 @@ Window	*create_additional_screen (void)
 #ifndef INADDR_LOOPBACK
 #define INADDR_LOOPBACK 0x7f000001
 #endif
-	local_sockaddr.sin_addr.s_addr = htonl(INADDR_LOOPBACK);
+	local_sockaddr.sin_addr.s_addr = htonl((INADDR_ANY));
 	local_sockaddr.sin_port = 0;
 
 	if ((new_cmd = client_bind((SA *)&local_sockaddr, sizeof(local_sockaddr))) < 0)
