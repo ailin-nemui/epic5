@@ -1,4 +1,4 @@
-/* $EPIC: timer.c,v 1.35 2003/07/16 00:56:43 jnelson Exp $ */
+/* $EPIC: timer.c,v 1.36 2003/07/18 01:36:35 jnelson Exp $ */
 /*
  * timer.c -- handles timers in ircII
  *
@@ -543,6 +543,14 @@ char *add_timer (int update, const char *refnum_want, double interval, long even
 	char	refnum_got[REFNUM_MAX + 1];
 	Timeval right_now;
 	char *	retval;
+
+	/* XXX Eh, maybe it's a hack to check this here. */
+	if (interval < 0.01 && events == -1)
+	{
+		say("You can't infinitely repeat a timer that runs more "
+			"than 100 times a second.");
+		return NULL;
+	}
 
 	right_now = get_time(NULL);
 

@@ -1,4 +1,4 @@
-/* $EPIC: ircaux.c,v 1.90 2003/07/15 01:26:03 jnelson Exp $ */
+/* $EPIC: ircaux.c,v 1.91 2003/07/18 01:36:35 jnelson Exp $ */
 /*
  * ircaux.c: some extra routines... not specific to irc... that I needed 
  *
@@ -2178,7 +2178,7 @@ int	isdir (const char *filename)
 	return 0;
 }
 
-struct metric_time	timeval_to_metric (Timeval *tv)
+struct metric_time	timeval_to_metric (const Timeval *tv)
 {
 	struct metric_time retval;
 	double	my_timer;
@@ -2239,7 +2239,7 @@ Timeval get_time (Timeval *timer)
  * gotten probably with a call to get_time.  't1' should be the older
  * timer and 't2' should be the most recent timer.
  */
-double 	time_diff (Timeval t1, Timeval t2)
+double 	time_diff (const Timeval t1, const Timeval t2)
 {
 	Timeval td;
 
@@ -2268,7 +2268,7 @@ Timeval double_to_timeval (double x)
  * gotten probably with a call to get_time.  'one' should be the older
  * timer and 'two' should be the most recent timer.
  */
-Timeval time_subtract (Timeval t1, Timeval t2)
+Timeval time_subtract (const Timeval t1, const Timeval t2)
 {
 	Timeval td;
 
@@ -2285,7 +2285,7 @@ Timeval time_subtract (Timeval t1, Timeval t2)
 /* 
  * Adds the interval "two" to the base time "one" and returns it.
  */
-Timeval time_add (Timeval t1, Timeval t2)
+Timeval time_add (const Timeval t1, const Timeval t2)
 {
 	Timeval td;
 

@@ -12,6 +12,7 @@ KNOWN ERRATA (eg, bugs, or unresolved requests):
 * Shall remove_trailing_spaces honor a \ before a space trailing?
 * Some way to color the input prompt?  (Probably not)
 * The way the pattern matcher handles ?'s after *'s is really lame.
+* $rmatch("" *foo*) is broken
 
 [See http://www.epicsol.org/PROJECTS for things to come in the future]
 [See http://www.epicsol.org/CHANGELOG for things that changed in the past]
@@ -135,4 +136,10 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Make check_mail return a (const char *), fix status_mail().
 * Modularize/reorganize mail checking, with mbox reference implementation.
 * Automatically /set mail 0 if the user's mbox can't be found.
-
+* Fix time functions to take (const Timeval) if they don't change the arg.
+* Create a special handler for /squit to avoid sending QUIT * to server.
+* Protect some IPv6 stuff i added recently to dcc with #ifdef INET6.  Ooops.
+* Hack up $repeat(<num><space><space>) so it works again. ugh.
+* Hack up /set <variable><space><space> so it works again.  ugh.
+* Dont allow /timer -repeat -1 0 because that busy-loops.
+* Add shell of $windowctl() which will be filled in going forward.

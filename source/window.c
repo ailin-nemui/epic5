@@ -1,4 +1,4 @@
-/* $EPIC: window.c,v 1.66 2003/07/16 23:23:31 jnelson Exp $ */
+/* $EPIC: window.c,v 1.67 2003/07/18 01:36:35 jnelson Exp $ */
 /*
  * window.c: Handles the organzation of the logical viewports (``windows'')
  * for irc.  This includes keeping track of what windows are open, where they
@@ -56,6 +56,7 @@
 #include "parse.h"
 #include "commands.h"
 #include "exec.h"
+#include "functions.h"
 
 static const char *onoff[] = { "OFF", "ON" };
 
@@ -5212,3 +5213,184 @@ void	check_window_cursor (Window *window)
 	}
 }
 
+/* Used by function_windowctl */
+/*
+ * $windowctl(REFNUMS)
+ * $windowctl(REFNUM window-desc)
+ * $windowctl(MAX)
+ * $windowctl(GET 0 [LIST])
+ * $windowctl(SET 0 [ITEM] [VALUE])
+ *
+ * [LIST] and [ITEM] are one of the following:
+ *	REFNUM			Unique integer that identifies one window
+ *	NAME			A name given to the window by user
+ *	SERVER			The server this window sends msgs to
+ *	LAST_SERVER		If disconnected, the last server connected.
+ *	PRIORITY		The "current window" priority on this server.
+ *	VISIBLE			Whether this window is on a screen or not
+ *	TOP
+ *	BOTTOM
+ *	CURSOR
+ *	NOSCROLLCURSOR
+ *	ABSOLUTE_SIZE
+ *	SCROLL
+ *	CHANGE_LINE
+ *	OLD_SIZE
+ *	UPDATE
+ *	MISCFLAGS
+ *	BEEP_ALWAYS
+ *	NOTIFY_LEVEL
+ *	WINDOW_LEVEL
+ *	SKIP
+ *	COLUMNS
+ *	PROMPT
+ *	STATUS_FORMAT
+ *	STATUS_FORMAT1
+ *	STATUS_FORMAT2
+ *	DISPLAY_BUFFER_SIZE
+ *	DISPLAY_BUFFER_MAX
+ *	DISPLAY_SIZE
+ *	HOLD_MODE
+ *	AUTOHOLD
+ *	LINES_HELD
+ *	HOLD_INTERVAL
+ *	LAST_LINES_HELD
+ *	DISTANCE_FROM_DISPLAY_IP
+ *	WAITING_CHANNEL
+ *	BIND_CHANNEL
+ *	QUERY_NICK
+ *	NICKLIST
+ *	LASTLOG_LEVEL
+ *	LASTLOG_SIZE
+ *	LASTLOG_MAX
+ *	LOGGING
+ *	LOGFILE
+ *	DECEASED
+ */
+char 	*windowctl 	(char *input)
+{
+	int	refnum, num, len;
+	char	*listc, *listc1;
+	const char *ret;
+	Window	*w;
+
+	GET_STR_ARG(listc, input);
+	len = strlen(listc);
+	if (!my_strnicmp(listc, "REFNUMS", len)) {
+	} else if (!my_strnicmp(listc, "NEW", len)) {
+	} else if (!my_strnicmp(listc, "REFNUM", len)) {
+		char *windesc;
+
+		GET_STR_ARG(windesc, input);
+		if (!(w = get_window_by_desc(windesc)))
+			RETURN_EMPTY;
+		RETURN_INT(w->refnum);
+	} else if (!my_strnicmp(listc, "GET", len)) {
+		GET_INT_ARG(refnum, input);
+		if (!(w = get_window_by_refnum(refnum)))
+			RETURN_EMPTY;
+
+		GET_STR_ARG(listc, input);
+		len = strlen(listc);
+
+		if (!my_strnicmp(listc, "REFNUM", len)) {
+		} else if (!my_strnicmp(listc, "NAME", len)) {
+		} else if (!my_strnicmp(listc, "SERVER", len)) {
+		} else if (!my_strnicmp(listc, "LAST_SERVER", len)) {
+		} else if (!my_strnicmp(listc, "PRIORITY", len)) {
+		} else if (!my_strnicmp(listc, "TOP", len)) {
+		} else if (!my_strnicmp(listc, "BOTTOM", len)) {
+		} else if (!my_strnicmp(listc, "CURSOR", len)) {
+		} else if (!my_strnicmp(listc, "NOSCROLLCURSOR", len)) {
+		} else if (!my_strnicmp(listc, "ABSOLUTE_SIZE", len)) {
+		} else if (!my_strnicmp(listc, "SCROLL", len)) {
+		} else if (!my_strnicmp(listc, "CHANGE_LINE", len)) {
+		} else if (!my_strnicmp(listc, "OLD_SIZE", len)) {
+		} else if (!my_strnicmp(listc, "UPDATE", len)) {
+		} else if (!my_strnicmp(listc, "MISCFLAGS", len)) {
+		} else if (!my_strnicmp(listc, "BEEP_ALWAYS", len)) {
+		} else if (!my_strnicmp(listc, "NOTIFY_LEVEL", len)) {
+		} else if (!my_strnicmp(listc, "WINDOW_LEVEL", len)) {
+		} else if (!my_strnicmp(listc, "SKIP", len)) {
+		} else if (!my_strnicmp(listc, "COLUMNS", len)) {
+		} else if (!my_strnicmp(listc, "PROMPT", len)) {
+		} else if (!my_strnicmp(listc, "STATUS_FORMAT", len)) {
+		} else if (!my_strnicmp(listc, "STATUS_FORMAT1", len)) {
+		} else if (!my_strnicmp(listc, "STATUS_FORMAT2", len)) {
+		} else if (!my_strnicmp(listc, "DISPLAY_BUFFER_SIZE", len)) {
+		} else if (!my_strnicmp(listc, "DISPLAY_BUFFER_MAX", len)) {
+		} else if (!my_strnicmp(listc, "DISPLAY_SIZE", len)) {
+		} else if (!my_strnicmp(listc, "HOLD_MODE", len)) {
+		} else if (!my_strnicmp(listc, "AUTOHOLD", len)) {
+		} else if (!my_strnicmp(listc, "LINES_HELD", len)) {
+		} else if (!my_strnicmp(listc, "HOLD_INTERVAL", len)) {
+		} else if (!my_strnicmp(listc, "LAST_LINES_HELD", len)) {
+		} else if (!my_strnicmp(listc, "DISTANCE_FROM_DISPLAY_IP", len)) {
+		} else if (!my_strnicmp(listc, "WAITING_CHANNEL", len)) {
+		} else if (!my_strnicmp(listc, "BIND_CHANNEL", len)) {
+		} else if (!my_strnicmp(listc, "QUERY_NICK", len)) {
+		} else if (!my_strnicmp(listc, "NICKLIST", len)) {
+		} else if (!my_strnicmp(listc, "LASTLOG_LEVEL", len)) {
+		} else if (!my_strnicmp(listc, "LASTLOG_SIZE", len)) {
+		} else if (!my_strnicmp(listc, "LASTLOG_MAX", len)) {
+		} else if (!my_strnicmp(listc, "LOGGING", len)) {
+		} else if (!my_strnicmp(listc, "LOGFILE", len)) {
+		} else if (!my_strnicmp(listc, "DECEASED", len)) {
+		}
+	} else if (!my_strnicmp(listc, "SET", len)) {
+		GET_INT_ARG(refnum, input);
+		if (!(w = get_window_by_refnum(refnum)))
+			RETURN_EMPTY;
+
+		GET_STR_ARG(listc, input);
+		len = strlen(listc);
+
+		if (!my_strnicmp(listc, "REFNUM", len)) {
+		} else if (!my_strnicmp(listc, "NAME", len)) {
+		} else if (!my_strnicmp(listc, "SERVER", len)) {
+		} else if (!my_strnicmp(listc, "LAST_SERVER", len)) {
+		} else if (!my_strnicmp(listc, "PRIORITY", len)) {
+		} else if (!my_strnicmp(listc, "TOP", len)) {
+		} else if (!my_strnicmp(listc, "BOTTOM", len)) {
+		} else if (!my_strnicmp(listc, "CURSOR", len)) {
+		} else if (!my_strnicmp(listc, "NOSCROLLCURSOR", len)) {
+		} else if (!my_strnicmp(listc, "ABSOLUTE_SIZE", len)) {
+		} else if (!my_strnicmp(listc, "SCROLL", len)) {
+		} else if (!my_strnicmp(listc, "CHANGE_LINE", len)) {
+		} else if (!my_strnicmp(listc, "OLD_SIZE", len)) {
+		} else if (!my_strnicmp(listc, "UPDATE", len)) {
+		} else if (!my_strnicmp(listc, "MISCFLAGS", len)) {
+		} else if (!my_strnicmp(listc, "BEEP_ALWAYS", len)) {
+		} else if (!my_strnicmp(listc, "NOTIFY_LEVEL", len)) {
+		} else if (!my_strnicmp(listc, "WINDOW_LEVEL", len)) {
+		} else if (!my_strnicmp(listc, "SKIP", len)) {
+		} else if (!my_strnicmp(listc, "COLUMNS", len)) {
+		} else if (!my_strnicmp(listc, "PROMPT", len)) {
+		} else if (!my_strnicmp(listc, "STATUS_FORMAT", len)) {
+		} else if (!my_strnicmp(listc, "STATUS_FORMAT1", len)) {
+		} else if (!my_strnicmp(listc, "STATUS_FORMAT2", len)) {
+		} else if (!my_strnicmp(listc, "DISPLAY_BUFFER_SIZE", len)) {
+		} else if (!my_strnicmp(listc, "DISPLAY_BUFFER_MAX", len)) {
+		} else if (!my_strnicmp(listc, "DISPLAY_SIZE", len)) {
+		} else if (!my_strnicmp(listc, "HOLD_MODE", len)) {
+		} else if (!my_strnicmp(listc, "AUTOHOLD", len)) {
+		} else if (!my_strnicmp(listc, "LINES_HELD", len)) {
+		} else if (!my_strnicmp(listc, "HOLD_INTERVAL", len)) {
+		} else if (!my_strnicmp(listc, "LAST_LINES_HELD", len)) {
+		} else if (!my_strnicmp(listc, "DISTANCE_FROM_DISPLAY_IP", len)) {
+		} else if (!my_strnicmp(listc, "WAITING_CHANNEL", len)) {
+		} else if (!my_strnicmp(listc, "BIND_CHANNEL", len)) {
+		} else if (!my_strnicmp(listc, "QUERY_NICK", len)) {
+		} else if (!my_strnicmp(listc, "NICKLIST", len)) {
+		} else if (!my_strnicmp(listc, "LASTLOG_LEVEL", len)) {
+		} else if (!my_strnicmp(listc, "LASTLOG_SIZE", len)) {
+		} else if (!my_strnicmp(listc, "LASTLOG_MAX", len)) {
+		} else if (!my_strnicmp(listc, "LOGGING", len)) {
+		} else if (!my_strnicmp(listc, "LOGFILE", len)) {
+		} else if (!my_strnicmp(listc, "DECEASED", len)) {
+		}
+	} else
+		RETURN_EMPTY;
+
+	RETURN_EMPTY;
+}

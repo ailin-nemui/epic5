@@ -1,4 +1,4 @@
-/* $EPIC: dcc.c,v 1.69 2003/07/10 13:08:56 jnelson Exp $ */
+/* $EPIC: dcc.c,v 1.70 2003/07/18 01:36:34 jnelson Exp $ */
 /*
  * dcc.c: Things dealing client to client connections. 
  *
@@ -1173,11 +1173,13 @@ static void	dcc_chat (char *args)
 			if (args && *args)
 			    portnum = my_atol(next_arg(args, &args));
 		}
+#ifdef INET6
 		if (args[1] == '6')
 		{
 			next_arg(args, &args);
 			family = AF_INET6;
 		}
+#endif
 		if (args[1] == '4')
 		{
 			next_arg(args, &args);
@@ -1748,8 +1750,10 @@ static	void	dcc_filesend (char *args)
 				if (args && *args)
 				    portnum = my_atol(next_arg(args, &args));
 			}
+#ifdef INET6
 			else if (this_arg[1] == '6')
 				family = AF_INET6;
+#endif
 			else if (this_arg[1] == '4')
 				family = AF_INET;
 
@@ -2066,10 +2070,12 @@ void	register_dcc_offer (const char *user, char *type, char *description, char *
 		break;
 	    }
 	}
+#ifdef INET6
 	else if (FAMILY(offer) == AF_INET6)
 	{
 		/* Reserved for future expansion */
 	}
+#endif
 
 #ifdef HACKED_DCC_WARNING
 	/*
@@ -2113,10 +2119,12 @@ void	register_dcc_offer (const char *user, char *type, char *description, char *
 		   }
 		}
 	}
+#ifdef INET6
 	else if (FAMILY(offer) == AF_INET6)
 	{
 		/* Reserved for future expansion */
 	}
+#endif
 #endif
 
 	/* 	CHECK HANDSHAKE PORT FOR VALIDITY 	*/

@@ -1,4 +1,4 @@
-/* $EPIC: vars.c,v 1.37 2003/07/16 23:23:31 jnelson Exp $ */
+/* $EPIC: vars.c,v 1.38 2003/07/18 01:36:35 jnelson Exp $ */
 /*
  * vars.c: All the dealing of the irc variables are handled here. 
  *
@@ -679,12 +679,25 @@ void 	set_var_value (int svv_index, char *value)
  */
 BUILT_IN_COMMAND(setcmd)
 {
-	char	*var;
+	char	*var = NULL;
 	int	cnt;
 enum VAR_TYPES	sv_index;
 	int	hook = 0;
 
-	if ((var = next_arg(args, &args)) != NULL)
+	/*
+	 * XXX Ugh.  This is a hideous offense of good taste which is
+	 * necessary to support set's abominable syntax, particularly
+	 * acute with /set continued_line<space><space>
+	 */
+	while (args && *args && isspace(*args))
+		args++;
+	var = args;
+	while (args && *args && !isspace(*args))
+		args++;
+	if (args && *args)
+		*args++ = 0;
+
+	if (var && *var)
 	{
 		if (*var == '-')
 		{

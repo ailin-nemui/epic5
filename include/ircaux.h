@@ -7,7 +7,7 @@
  *
  * See the COPYRIGHT file, or do a HELP IRCII COPYRIGHT 
  *
- * @(#)$Id: ircaux.h,v 1.56 2003/07/15 01:26:03 jnelson Exp $
+ * @(#)$Id: ircaux.h,v 1.57 2003/07/18 01:36:34 jnelson Exp $
  */
 
 #ifndef _IRCAUX_H_
@@ -108,11 +108,11 @@ int	fw_strcmp 		(comp_len_func *, char *, char *);
 int	lw_strcmp 		(comp_func *, char *, char *);
 int	open_to 		(char *, int, int);
 struct metric_time get_metric_time	(double *);
-struct metric_time timeval_to_metric	(Timeval *);
+struct metric_time timeval_to_metric	(const Timeval *);
 Timeval get_time		(Timeval *);
-double 	time_diff 		(Timeval, Timeval);
-Timeval time_add		(Timeval, Timeval);
-Timeval time_subtract		(Timeval, Timeval);
+double 	time_diff 		(const Timeval, const Timeval);
+Timeval time_add		(const Timeval, const Timeval);
+Timeval time_subtract		(const Timeval, const Timeval);
 Timeval double_to_timeval 	(double);
 const char *	plural 		(int);
 double	time_to_next_minute 	(void);

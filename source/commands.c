@@ -1,4 +1,4 @@
-/* $EPIC: commands.c,v 1.68 2003/07/14 18:22:03 jnelson Exp $ */
+/* $EPIC: commands.c,v 1.69 2003/07/18 01:36:34 jnelson Exp $ */
 /*
  * commands.c -- Stuff needed to execute commands in ircII.
  *		 Includes the bulk of the built in commands for ircII.
@@ -165,6 +165,7 @@ static	void	send_kick 	(const char *, char *, const char *);
 static	void	send_channel_com (const char *, char *, const char *);
 static  void    set_username 	(const char *, char *, const char *);
 static	void	setenvcmd	(const char *, char *, const char *);
+static	void	squitcmd	(const char *, char *, const char *);
 static	void	usleepcmd	(const char *, char *, const char *);
 static  void	shift_cmd 	(const char *, char *, const char *);
 static	void	sleepcmd 	(const char *, char *, const char *);
@@ -323,7 +324,7 @@ static	IrcCommand irc_command[] =
 	{ "SILENCE",	"SILENCE",	send_comm,		0 },
 	{ "SLEEP",	NULL,		sleepcmd,		0 },
 	{ "SQUERY",	"SQUERY",	send_2comm,		0 },
-	{ "SQUIT",	"SQUIT",	send_2comm,		0 },
+	{ "SQUIT",	"SQUIT",	squitcmd,		0 },
 	{ "STACK",	NULL,		stackcmd,		0 }, /* stack.c */
 	{ "STATS",	"STATS",	send_comm,		0 },
 	{ "STUB",	"STUB",		stubcmd,		0 }, /* alias.c */
@@ -2451,6 +2452,22 @@ BUILT_IN_COMMAND(save_settings)
 	}
 
 	really_save(arg, save_flags, save_global, save_append);
+}
+
+BUILT_IN_COMMAND(squitcmd)
+{
+	char *server = NULL;
+	char *reason = NULL;
+
+	if (!(server = new_next_arg(args, &reason)))
+	{
+		say("Usage: /SQUIT <server> [<reason>]");
+		return;
+	}
+	if (reason && *reason)
+		send_to_server("%s %s :%s", command, server, reason);
+	else
+		send_to_server("%s %s", command, server);
 }
 
 BUILT_IN_COMMAND(send_2comm)

@@ -1,4 +1,4 @@
-/* $EPIC: functions.c,v 1.130 2003/07/15 01:26:03 jnelson Exp $ */
+/* $EPIC: functions.c,v 1.131 2003/07/18 01:36:34 jnelson Exp $ */
 /*
  * functions.c -- Built-in functions for ircII
  *
@@ -3596,9 +3596,21 @@ BUILT_IN_FUNCTION(function_repeat, words)
 	char *	retval = NULL;
 	size_t	clue;
 
-	GET_INT_ARG(num, words);
+	/*
+	 * XXX - This is a brutal, unmerciful, and heinous offense
+	 * against all that is good and right in the world.  However,
+	 * backwards compatability requires that $repeat(10  ) work,
+	 * even though that violates standard practice of word extraction.
+	 *
+	 * This replaces a GET_INT_ARG(num, words)
+	 */
+	num = strtoul(words, &words, 10);
+	if (words && *words)
+		*words++;
+
 	if (num < 1)
 		RETURN_EMPTY;
+
 
 	size = strlen(words) * num + 1;
 	retval = (char *)new_malloc(size);
