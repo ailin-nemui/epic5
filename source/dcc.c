@@ -9,7 +9,7 @@
  */
 
 #if 0
-static	char	rcsid[] = "@(#)$Id: dcc.c,v 1.21 2002/05/10 18:41:20 jnelson Exp $";
+static	char	rcsid[] = "@(#)$Id: dcc.c,v 1.22 2002/05/16 20:51:03 jnelson Exp $";
 #endif
 
 #include "irc.h"
@@ -77,6 +77,8 @@ typedef	struct	DCC_struct
 		unsigned long	packets_ack;
 		long		packets_outstanding;
 		off_t		resume_size;
+
+		int		(*open_callback) (struct DCC_struct *);
 }	DCC_list;
 
 static	off_t		filesize = 0;
@@ -92,6 +94,7 @@ static	void		dcc_erase 		(DCC_list *);
 static	void		dcc_filesend 		(char *);
 static	void		dcc_getfile 		(char *);
 static	int		dcc_open 		(DCC_list *);
+static	int		dcc_opened		(int, int);
 static	void 		dcc_really_erase 	(void);
 static	void		dcc_rename 		(char *);
 static	DCC_list *	dcc_searchlist 		(const char *, const char *, unsigned, int, const char *, int);
@@ -507,6 +510,7 @@ static	DCC_list *dcc_searchlist (
 	new_client->want_port 		= 0;
 	new_client->encrypt 		= NULL;
 	new_client->resume_size		= 0;
+	new_client->open_callback	= NULL;
 	get_time(&new_client->lasttime);
 
 	ClientList = new_client;
@@ -522,6 +526,109 @@ int	dcc_chat_active (char *user)
 }
 
 
+int	dcc_opened (int fd, int result)
+{
+	DCC_list *dcc;
+	int	len;
+	char *	type;
+	int	jvs_blah;
+
+	for (dcc = ClientList; dcc ; dcc = dcc->next)
+	{
+		/* Never return deleted entries */
+		if (dcc->flags & DCC_DELETE)
+			continue;
+
+		if (dcc->socket == fd)
+			break;
+	}
+
+	if (!dcc)
+		return -1;	/* Don't want it */
+
+	type = dcc_types[dcc->flags & DCC_TYPES];
+
+	len = sizeof(dcc->local_sockaddr);
+	getsockname(dcc->socket, (SA *)&dcc->local_sockaddr, &len);
+
+	len = sizeof(dcc->peer_sockaddr);
+	getpeername(dcc->socket, (SA *)&dcc->peer_sockaddr, &len);
+
+	/*
+	 * Set up the connection to be useful
+	 */
+	new_open(dcc->socket);
+	dcc->flags &= ~DCC_THEIR_OFFER;
+	dcc->flags |= DCC_ACTIVE;
+
+	/*
+	 * If this was a two-peer connection, then tell the user
+	 * that the connection was successfull.
+	 */
+	dcc->locked++;
+	if ((dcc->flags & DCC_TYPES) != DCC_RAW)
+	{
+		char p_addr[256];
+		char p_port[24];
+
+		if (FAMILY(dcc->peer_sockaddr) == AF_INET)
+		{
+			inet_ntop(AF_INET, &V4ADDR(dcc->peer_sockaddr), p_addr, 256);
+			snprintf(p_port, 24, "%hu", ntohs(V4PORT(dcc->peer_sockaddr)));
+		}
+
+		/* 
+		 * It would be nice if SEND also showed the filename
+		 * and size (since it's possible to have multiple
+		 * SEND requests queued), so we check for a file size
+		 * first. 
+		 * Actually, that was wrong.  We just check the type.
+		 * so that it doesnt choke on zero-length files.
+		 */
+		if (!strcmp(type, "SEND"))
+		{
+		    jvs_blah = do_hook(DCC_CONNECT_LIST,
+				"%s %s %s %s %s %ld", 
+				dcc->user, type, p_addr, p_port,
+				dcc->description,
+				dcc->filesize);
+
+		    /*
+		     * Compatability with bitchx
+		     */
+		    if (jvs_blah)
+			jvs_blah = do_hook(DCC_CONNECT_LIST,
+				"%s GET %s %s %s %ld", 
+				dcc->user, p_addr, p_port,
+				dcc->description,
+				dcc->filesize);
+		}
+		else
+		{
+		    jvs_blah = do_hook(DCC_CONNECT_LIST,
+				"%s %s %s %s", 
+				dcc->user, type, p_addr, p_port);
+		}
+
+		if (jvs_blah)
+		{
+		    message_from(NULL, LOG_DCC);
+		    say("DCC %s connection with %s[%s:%s] established",
+				type, dcc->user, p_addr, p_port);
+		    message_from(NULL, LOG_CURRENT);
+		}
+	}
+	dcc->locked--;
+
+	/*
+	 * Record the time the connection was started, 
+	 * Clean up and then return.
+	 */
+	get_time(&dcc->starttime);
+	if (dcc->open_callback)
+		dcc->open_callback(dcc);
+	return 0;		/* Going to keep it. */
+}
 
 /*
  * Whenever a DCC changes state from WAITING->ACTIVE, it calls this function
@@ -529,27 +636,20 @@ int	dcc_chat_active (char *user)
  */
 static	int	dcc_open (DCC_list *dcc)
 {
-	char *	user;
-	char *	type;
 	int	old_server;
-	int	jvs_blah;
 
 	/*
 	 * Initialize our idea of what is going on.
 	 */
-	user = dcc->user;
 	old_server = from_server;
 	if (from_server == -1)
 		from_server = get_window_server(0);
-	type = dcc_types[dcc->flags & DCC_TYPES];
 
 	/*
 	 * DCC GET or DCC CHAT -- accept someone else's offer.
 	 */
 	if (dcc->flags & DCC_THEIR_OFFER)
 	{
-		int	len;
-
 		dcc->socket = client_connect(NULL, 0, (SA *)&dcc->offer, 
 						sizeof(dcc->offer));
 
@@ -563,88 +663,12 @@ static	int	dcc_open (DCC_list *dcc)
 			message_from(NULL, LOG_CURRENT);
 
 			from_server = old_server;
-			return 0;
+			return -1;
 		}
 
-		len = sizeof(dcc->local_sockaddr);
-		getsockname(dcc->socket, (SA *)&dcc->local_sockaddr, &len);
-
-		len = sizeof(dcc->peer_sockaddr);
-		getpeername(dcc->socket, (SA *)&dcc->peer_sockaddr, &len);
-
-		/*
-		 * Set up the connection to be useful
-		 */
-		new_open(dcc->socket);
-		dcc->flags &= ~DCC_THEIR_OFFER;
-		dcc->flags |= DCC_ACTIVE;
-
-		/*
-		 * If this was a two-peer connection, then tell the user
-		 * that the connection was successfull.
-		 */
-		dcc->locked++;
-		if ((dcc->flags & DCC_TYPES) != DCC_RAW)
-		{
-			char p_addr[256];
-			char p_port[24];
-
-			if (FAMILY(dcc->peer_sockaddr) == AF_INET)
-			{
-				inet_ntop(AF_INET, &V4ADDR(dcc->peer_sockaddr), p_addr, 256);
-				snprintf(p_port, 24, "%hu", ntohs(V4PORT(dcc->peer_sockaddr)));
-			}
-
-                        /* 
-			 * It would be nice if SEND also showed the filename
-                         * and size (since it's possible to have multiple
-                         * SEND requests queued), so we check for a file size
-                         * first. 
-			 * Actually, that was wrong.  We just check the type.
-			 * so that it doesnt choke on zero-length files.
-			 */
-			if (!strcmp(type, "SEND"))
-			{
-                            jvs_blah = do_hook(DCC_CONNECT_LIST,
-					"%s %s %s %s %s %ld", 
-					user, type, p_addr, p_port,
-					dcc->description,
-					dcc->filesize);
-
-			    /*
-			     * Compatability with bitchx
-			     */
-			    if (jvs_blah)
-                                jvs_blah = do_hook(DCC_CONNECT_LIST,
-					"%s GET %s %s %s %ld", 
-					user, p_addr, p_port,
-					dcc->description,
-					dcc->filesize);
-			}
-                        else
-			{
-                            jvs_blah = do_hook(DCC_CONNECT_LIST,
-					"%s %s %s %s", 
-					user, type, p_addr, p_port);
-			}
-
-                        if (jvs_blah)
-			{
-			    message_from(NULL, LOG_DCC);
-			    say("DCC %s connection with %s[%s:%s] established",
-					type, user, p_addr, p_port);
-			    message_from(NULL, LOG_CURRENT);
-			}
-		}
-		dcc->locked--;
-
-		/*
-		 * Record the time the connection was started, 
-		 * Clean up and then return.
-		 */
-		get_time(&dcc->starttime);
+		dcc_opened(dcc->socket, 0);
 		from_server = old_server;
-		return 1;
+		return 0;
 	}
 
 	/*
@@ -671,7 +695,7 @@ static	int	dcc_open (DCC_list *dcc)
 				dcc->socket, my_strerror(errno));
 			message_from(NULL, LOG_CURRENT);
 			from_server = old_server;
-			return 0;
+			return -1;
 		}
 
 #ifdef MIRC_BROKEN_DCC_RESUME
@@ -695,7 +719,7 @@ static	int	dcc_open (DCC_list *dcc)
 			dcc_send_booster_ctcp(dcc);
 
 		from_server = old_server;
-		return 2;
+		return 0;
 	}
 }
 
@@ -1160,7 +1184,8 @@ static	void	dcc_getfile (char *args)
 		}
 
 		dcc->flags |= DCC_TWOCLIENTS;
-		if (!dcc_open(dcc))
+		dcc->open_callback = NULL;
+		if (dcc_open(dcc))
 		{
 			if (get_all)
 				continue;
@@ -1193,7 +1218,6 @@ static	void	dcc_getfile (char *args)
 					strerror(errno) : 
 					"<No Error>");
 		}
-
 		if (!get_all)
 			break;
 	}
@@ -1684,7 +1708,7 @@ char	*dcc_raw_connect(char *host, u_short port, int family)
 
 	Client->offer = my_sockaddr;
 	Client->flags = DCC_THEIR_OFFER | DCC_RAW;
-	if (!dcc_open(Client))
+	if (dcc_open(Client))
 	{
 		message_from(NULL, LOG_CURRENT);
 		return m_strdup(empty_string);
@@ -1719,7 +1743,7 @@ char	*dcc_raw_connect(char *host, u_short port, int family)
 /*
  * When a user does a CTCP DCC, it comes here for preliminary parsing.
  */
-void	register_dcc_offer (char *user, char *type, char *description, char *address, char *port, char *size, char *extra)
+void	register_dcc_offer (char *user, char *type, char *description, char *address, char *port, char *size, char *extra, char *rest)
 {
 	DCC_list *	Client;
 	int		CType, jvs_blah;
@@ -2625,7 +2649,7 @@ static	void		process_incoming_file (DCC_list *Client)
 	if ((write(Client->file, tmp, bytesread)) == -1)
 	{
 		Client->flags |= DCC_DELETE;
-		say("Write to local file failed.  Giving up.");
+		say("Write to local file [%d] failed, giving up: [%s]", Client->file, strerror(errno));
 		return;
 	}
 
@@ -2995,7 +3019,7 @@ static	void	dcc_getfile_resume_start (char *nick, char *filename, char *port, ch
 		return;		/* Its fake. */
 
 	Client->flags |= DCC_TWOCLIENTS;
-	if (!dcc_open(Client))
+	if (dcc_open(Client))
 		return;
 
 	if (!(fullname = expand_twiddle(Client->description)))

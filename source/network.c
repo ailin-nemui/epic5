@@ -136,7 +136,7 @@ int	client_connect (SA *l, socklen_t ll, SA *r, socklen_t rl)
 		if (Connect(fd, r) < 0)
 		{
 			alarm(0);
-			return close(fd), -9;
+			return close(fd), -1;
 		}
 		alarm(0);
 	}
@@ -775,6 +775,8 @@ static int Connect (int fd, SA *addr)
 {
 	if (addr->sa_family == AF_INET)
 		return connect(fd, addr, sizeof(ISA));
+	else if (addr->sa_family == AF_UNIX)
+		return connect(fd, addr, strlen(((USA *)addr)->sun_path) + 2);
 
 	errno = EAFNOSUPPORT;
 	return -1;

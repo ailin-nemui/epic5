@@ -20,7 +20,7 @@
 	void	dcc_reject 		(char *, char *, char *);
 	void	process_dcc 		(char *);
 	void	register_dcc_offer 	(char *, char *, char *, char *, 
-					 char *, char *, char *);
+					 char *, char *, char *, char *);
 	char *	DCC_get_current_transfer (void);
 	int	dcc_dead		(void);
 

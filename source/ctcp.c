@@ -10,7 +10,7 @@
  */
 
 #if 0
-static	char	rcsid[] = "@(#)$Id: ctcp.c,v 1.11 2002/02/27 02:57:19 crazyed Exp $";
+static	char	rcsid[] = "@(#)$Id: ctcp.c,v 1.12 2002/05/16 20:51:03 jnelson Exp $";
 #endif
 
 #include "irc.h"
@@ -271,7 +271,7 @@ CTCP_HANDLER(do_dcc)
 	size = next_arg(cmd, &cmd);
 	extra_flags = next_arg(cmd, &cmd);
 
-	register_dcc_offer(from, type, description, inetaddr, port, size, extra_flags);
+	register_dcc_offer(from, type, description, inetaddr, port, size, extra_flags, cmd);
 	return NULL;
 }
 
