@@ -3,8 +3,10 @@ Thanks to everyone who are helping to make EPIC4 a great client!
 (Mirror means they maintain an official mirror)
 
 	adm			Quality Control Engineer
+	ar			Contributing Quality Control Engineer
 	archon			Keeper of the Web Server
 				Chief Quality Engineer
+	arioch			Quality Control Engineer
 	Aztro			Contributing Tester
 	Bob Page		Major resource contributer
 	Bruns			Quality Control Engineer
@@ -12,6 +14,7 @@ Thanks to everyone who are helping to make EPIC4 a great client!
 	Chord			Contributing Tester (Mirror)
 	CrackBaby		Honorary Contributing Tester
 				Creator of the Script Repository
+	CrazyEddy		Contributing Quality Control Engineer
 	Crimedog		Contributing Tester
 	CrowMan			Honorary Keeper of the Archives
 	Da5id			Keeper of the DNS (QCE)
@@ -22,37 +25,36 @@ Thanks to everyone who are helping to make EPIC4 a great client!
 	FireClown		Major Source Contributer
 	f0bia			Contributing Tester
 	fudd			Quality Control Engineer
-	hop 			Keeper of the Source Code (QCE)
+	hop 			Keeper of the Source Code (CQCE)
 	HSOC			Quality Control Engineer
 	IceKarma		Quality Control Engineer
 	Jeff DeFouw		Contributing Tester
 	JVaughn			Contributing Tester
 	jmd			Quality Control Engineer
 	Kanan			Keeper of the Mailing List (QCE)
-	Kasi			Keeper of the Help Files (Mirror) (QCE)
+	Kasi			Quality Control Engineer (mirror)
 	Keerf			Keeper of the Web Pages (QCE)
 	Knghtbrd		Quality Control Engineer
 	krisp			Quality Control Engineer
-	LauraDax		Quality Control Engineer (Mirror)
+	LauraDax		Contributing Tester
 	MrBungle		Contributing Tester
 	nickerne		Quality Control Engineer (Mirror)
 	Nuke			Honorary Contributing Tester 
 				Former Keeper of the Help Files
 	Nutbar			Quality Control Engineer
-	Obi-Wan			Contributing Tester
 	Paladin			Quality Control Engineer
 	Panasync		Major Source Contributer
 	Peter Evans		Contributing Tester
 	Psykotyk		Contributing Tester
 	Q_			Quality Control Engineer
-	|Rain|			Quality Control Engineer
-	RoboHak			Assistant Keeper of the Source Code (QCE)
+	|Rain|			Contributing Quality Control Engineer
+	RoboHak			Keeper of the Source Code (CQCE)
 	Sandwlkr		Contributing Tester
 	sariel			Quality Control Engineer
 	scandal-		Contributing Tester
 	scromp			Quality Control Engineer
 	Simon			Contributing Tester
-	SrfRoG			Assistant Keeper of the Source Code (QCE)
+	SrfRoG			Contributing Quality Control Engineer
 	StRoBe			Quality Control Engineer (Mirror)
 	synker			Quality Control Engineer
 	trey			Quality Control Engineer
@@ -61,12 +63,13 @@ Thanks to everyone who are helping to make EPIC4 a great client!
 	void			Quality Control Engineer
 	wc			Keeper of the Web Pages
 				Chief Quality Control Engineer
+	wd			Quality Control Engineer
 	whitefang		Keeper of the EPIC Scripting Challenge (QCE)
 	WintrHawk		Honorary Major Contributer
 	woofster		Contributing Tester
 	Xavier			Keeper of the Script Repository (QCE)
 	Yoshi			Quality Control Engineer
-	zinx			Assistant Keeper of the Source Code (QCE)
+	zinx			Assistant Keeper of the Source Code (CQCE)
 	zyeshan			Quality Control Engineer
 
 If you are actively using and debugging EPIC4 releases, or have contributed
