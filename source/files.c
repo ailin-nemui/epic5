@@ -165,32 +165,30 @@ char *file_read (int fd)
 		return m_strdup(empty_string);
 	else
 	{
-#if 1
 		char	*ret = NULL;
-		size_t	len = 0, newlen = 4096;
+		char	*end = NULL;
+		size_t	len = 0;
+		size_t	newlen = 0;
 
-		while (1) {
-			new_realloc((void **)&ret, newlen);
-			ret[len] = 0;
-			if (NULL == fgets(ret+len, newlen-len, ptr->file))
-				break;
-			if (NULL != strchr(ret+len, '\n')) break;
-			len = newlen - 1;
-			newlen += 4096;
+		for (;;)
+		{
+		    newlen += 4096;
+		    RESIZE(ret, char, newlen);
+		    ret[len] = 0;	/* Keep this -- C requires it! */
+		    if (!fgets(ret + len, newlen - len, ptr->file))
+			break;
+		    if ((end = strchr(ret + len, '\n')))
+			break;
+		    len = newlen - 1;
 		}
 
-		chop(ret+len,1);
-		new_realloc((void **)&ret, len+strlen(ret+len));
+		/* Do we need to truncate the result? */
+		if (end)
+			*end = 0;	/* Either the newline */
+		else if (ferror(ptr->file))
+			*ret = 0;	/* Or the whole thing on error */
 
-		return ret ? ret : m_strdup(empty_string);
-#else
-		char blah[10240];
-		if (fgets(blah, 10239, ptr->file))
-			chop(blah, 1);
-		else
-			blah[0] = 0;
-		return m_strdup(blah);
-#endif
+		return ret;
 	}
 }
 
