@@ -545,3 +545,4 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Hide SSL capability behind "client_ssl_enabled()", nix all #ifdef HAVE_SSL
 * Fix up the configure script so ./configure --help lines up all nice.
 * Don't emit spurious warnings when user hits control-c
+* Don't try to figure out disconnected server's port from sockaddr, duh!

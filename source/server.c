@@ -1,4 +1,4 @@
-/* $EPIC: server.c,v 1.159 2005/03/04 05:30:59 jnelson Exp $ */
+/* $EPIC: server.c,v 1.160 2005/03/06 04:48:42 jnelson Exp $ */
 /*
  * server.c:  Things dealing with that wacky program we call ircd.
  *
@@ -1871,7 +1871,8 @@ int	get_server_port (int refnum)
 	if (!(s = get_server(refnum)))
 		return 0;
 
-	if (!inet_ntostr((SA *)&s->remote_sockname, NULL, 0, p_port, 12, 0))
+	if (is_server_open(refnum))
+	   if (!inet_ntostr((SA *)&s->remote_sockname, NULL, 0, p_port, 12, 0))
 		return atol(p_port);
 
 	return s->port;
@@ -1885,7 +1886,8 @@ int	get_server_local_port (int refnum)
 	if (!(s = get_server(refnum)))
 		return 0;
 
-	if (!inet_ntostr((SA *)&s->local_sockname, NULL, 0, p_port, 12, 0))
+	if (is_server_open(refnum))
+	    if (!inet_ntostr((SA *)&s->local_sockname, NULL, 0, p_port, 12, 0))
 		return atol(p_port);
 
 	return 0;
