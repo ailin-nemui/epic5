@@ -1,4 +1,4 @@
-/* $EPIC: ircaux.c,v 1.54 2002/11/08 23:36:12 jnelson Exp $ */
+/* $EPIC: ircaux.c,v 1.55 2002/11/12 00:28:11 jnelson Exp $ */
 /*
  * ircaux.c: some extra routines... not specific to irc... that I needed 
  *
@@ -2693,7 +2693,7 @@ char *	get_userhost (void)
 
 
 /* Fancy attempt to compensate for broken time_t's */
-struct timeval 	time_to_next_minute (void)
+double	time_to_next_minute (void)
 {
 	static	int 	which = 0;
 	struct timeval	now, then;
@@ -2727,7 +2727,8 @@ struct timeval 	time_to_next_minute (void)
 		struct tm *now_tm = gmtime(&now.tv_sec);
 		then.tv_sec = 60 - (now_tm->tm_sec + 1) % 60;
 	}
-	return then;
+
+	return (double)then.tv_sec + (double)then.tv_usec / 1000000;
 }
 
 /*

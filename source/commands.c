@@ -1,4 +1,4 @@
-/* $EPIC: commands.c,v 1.43 2002/11/08 23:36:12 jnelson Exp $ */
+/* $EPIC: commands.c,v 1.44 2002/11/12 00:28:11 jnelson Exp $ */
 /*
  * commands.c -- Stuff needed to execute commands in ircII.
  *		 Includes the bulk of the built in commands for ircII.
@@ -1323,7 +1323,9 @@ BUILT_IN_COMMAND(info)
 		say("       \tChip Norkus          <wd@epicsol.org>");
 		say("       \tCrazyEddy            <crazyed@epicsol.org>");
 		say("	    \tDennis Moore         <nimh@epicsol.org>");
+		say("       \tDialtone             <dialtone@epicsol.org>");
 		say("	    \tJake Khuon           <khuon@epicsol.org>");
+		say("       \tJason Brand          <kitambi@epicsol.org>");
 		say("	    \tJeremy Nelson        <jnelson@epicsol.org>");
 		say("       \tRobert Chady         <chady@epicsol.org>");
 		say("       \tRobohak              <robohak@epicsol.org>");
@@ -1335,7 +1337,7 @@ BUILT_IN_COMMAND(info)
 		say("The EPIC Project:");
 		say("There are far too many people in the EPIC project to ");
 		say("thank them properly here, so we set up a web page:");
-		say("\t\thttp://www.epicsol.org/credits.phtml");
+		say("\t\thttp://www.epicsol.org/?page=credits");
 		say(" ");
 		say("A special thank you to all who rabidly use and support");
 		say("the EPIC client and what it stands for");

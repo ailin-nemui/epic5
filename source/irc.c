@@ -1,4 +1,4 @@
-/* $EPIC: irc.c,v 1.387 2002/11/08 23:37:48 jnelson Exp $ */
+/* $EPIC: irc.c,v 1.388 2002/11/12 00:28:11 jnelson Exp $ */
 /*
  * ircII: a new irc client.  I like it.  I hope you will too!
  *
@@ -52,7 +52,7 @@ const char internal_version[] = "20020819";
 /*
  * In theory, this number is incremented for every commit.
  */
-const unsigned long	commit_id = 391;
+const unsigned long	commit_id = 392;
 
 /*
  * As a way to poke fun at the current rage of naming releases after
@@ -216,6 +216,8 @@ char		*startup_file = NULL,		/* full path .epicrc file */
 		userhost[NAME_LEN + 1],		/* userhost of user */
 		*send_umode = NULL,		/* sent umode */
 		*last_notify_nick = (char *) 0,	/* last detected nickname */
+		system_timer[]  = "SYSTIM1",
+		system_timer2[] = "SYSTIM2",
 		empty_string[] = "",		/* just an empty string */
 		space[] = " ",			/* just a lonely space */
 		on[] = "ON",
@@ -806,8 +808,7 @@ void	io (const char *what)
 static	const	char	*caller[51] = { NULL }; /* XXXX */
 	static	int	first_time = 1,
 			level = 0;
-static	struct	timeval	clock_timeout,
-			right_away,
+static struct timeval	right_away,
 			timer,
 			*timeptr = NULL;
 		int	dccs;
@@ -849,21 +850,6 @@ static	struct	timeval	clock_timeout,
 	{
 		first_time = 0;
 
-		/*
-		 * time delay for updating of internal clock
-		 *
-		 * Instead of looking every 15 seconds and seeing if
-		 * the clock has changed, we now figure out how much
-		 * time there is to the next clock change and then wait
-		 * until then.  There is a small performance penalty 
-		 * in actually calculating when the next minute will tick, 
-		 * but that will be offset by the fact that we will only
-		 * call select() once a minute instead of 4 times.
-		 * Plus you get the benefit of the clock actually changing
-		 * on time rather than up to 15 seconds later.
-		 */
-		clock_timeout.tv_usec = 0L;
-
 		right_away.tv_usec = 0L;
 		right_away.tv_sec = 0L;
 
@@ -878,18 +864,10 @@ static	struct	timeval	clock_timeout,
 	/* SET UP FD SETS */
 	rd = readables;
 
-	clock_timeout = time_to_next_minute();
-	if (cpu_saver && get_int_var(CPU_SAVER_EVERY_VAR))
-		clock_timeout.tv_sec += (get_int_var(CPU_SAVER_EVERY_VAR) - 1) * 60;
-
-	/* If nothing else, wait for the next minute */
-	if (!timeptr)
-		timeptr = &clock_timeout;
-
 	/* If there is a timer that expires sooner, wait for that */
+	/* There is now a timer at all times, so this is our baseline */
 	timer = TimerTimeout();
-	if (time_diff(*timeptr, timer) < 0)
-		timeptr = &timer;
+	timeptr = &timer;
 
 	/* If there is an input timeout that expires sooner, wait for that */
 	if (time_diff(*timeptr, input_timeout) < 0)
@@ -951,22 +929,6 @@ static	struct	timeval	clock_timeout,
 		do_defered_commands();
 
 	cursor_to_input();
-	timeptr = &clock_timeout;
-
-	if (update_clock(RESET_TIME))
-	{
-		/* 
-		 * Do notify first so the server is working on it
-		 * while we do the other crap.
-		 */
-		do_notify();
-
-		if (get_int_var(CLOCK_VAR) || check_mail_status(NULL))
-		{
-			update_all_status();
-			cursor_to_input();
-		}
-	}
 
 	/* (set in term.c) -- we need to redraw the screen */
 	if (need_redraw)
@@ -1131,6 +1093,30 @@ static void check_invalid_host (void)
 	fclose(host_file);
 #endif
 	return;
+}
+
+/*
+ * I moved this here, because it didnt really belong in status.c
+ */
+int	do_every_minute (void *ignored)
+{
+	static	int	first_call = 1;
+
+	if (first_call)
+	{
+		add_timer(0, system_timer2, 60.0, -1, do_every_minute,
+				NULL, NULL, NULL);
+		first_call = 0;
+	}
+
+	update_clock(RESET_TIME);
+	do_notify();
+	if (get_int_var(CLOCK_VAR) || check_mail_status(NULL))
+	{
+		update_all_status();
+		cursor_to_input();
+	}
+	return 0;
 }
 
 /*
@@ -1306,14 +1292,18 @@ int 	main (int argc, char *argv[])
 	if (load_ircrc_right_away)
 		load_ircrc();
 
+	set_input(empty_string);
+	set_input_prompt(get_string_var(INPUT_PROMPT_VAR));
+
 	if (dont_connect)
 		display_server_list();		/* Let user choose server */
 	else
 		reconnect(-1, 0);		/* Connect to default server */
 
+	add_timer(0, system_timer, time_to_next_minute(), 1,
+			do_every_minute, NULL, NULL, NULL);
+
 	get_time(&idle_time);
-	set_input(empty_string);
-	set_input_prompt(get_string_var(INPUT_PROMPT_VAR));
 	for (;;)
 		io("main");
 	/* NOTREACHED */

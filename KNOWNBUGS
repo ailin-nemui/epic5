@@ -165,3 +165,8 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Make $B, $., $,, $:, $;, $I, /WAIT stuff server specific, from epic5
 * Make tracking of doing_(privmsg|notice|ctcp) server specific, from epic5
 * Fixes for Const Correctness.
+* Implement top-of-minute handling in a system timer
+* Eliminate top-of-minute handling from io().
+* Eliminate CPU_SAVER stuff for the time being.
+* Change time_to_next_minute() to return a (double) not (Timeval)
+
