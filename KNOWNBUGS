@@ -20,3 +20,4 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Fix /window query, it was a victim of larneproofing.  Ooops!
 * Hook in $windowctl(), just for fun for now.
 * Enclose a few more dcc outputs in the target nick context.
+* Fix panic when you did /clear + <scrollback> + full page of output.
