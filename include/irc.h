@@ -144,6 +144,7 @@ extern 		ISA *	LocalIPv4Addr;
 extern		ISA6 *	LocalIPv6Addr;
 #endif
 extern		fd_set  readables;
+extern		fd_set  writables;
 extern struct timeval 	start_time;
 extern struct timeval	idle_time;
 extern struct timeval	now;

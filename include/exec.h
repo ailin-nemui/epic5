@@ -10,7 +10,7 @@
 #define	__exec_h__
 
 	BUILT_IN_COMMAND(execcmd);
-	void	do_processes		(fd_set *);
+	void	do_processes		(fd_set *, fd_set *);
 	int	get_child_exit		(pid_t);
 	void	clean_up_processes	(void);
 	int	text_to_process		(int, const char *, int);

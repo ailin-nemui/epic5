@@ -54,10 +54,11 @@ typedef	struct
 	int	nickname_pending;	/* Is a NICK command pending? */
 	int	resetting_nickname;	/* Is a nickname reset in progress? */
 	int	registration_pending;	/* Is a registration going on ? */
+	int	registered;		/* true if registration is assured */
 	int	rejoined_channels;	/* Has we tried to auto-rejoin? */
 	char	*userhost;		/* my userhost on this server */
 	char	*away;			/* away message for this server */
-	int	oper;			/* true if operator */
+	int	operator;		/* true if operator */
 	int	version;		/* the version of the server -
 					 * defined above */
 	int	server2_8;		/* defined if we get an 001 numeric */
@@ -67,7 +68,6 @@ typedef	struct
 	char	*umodes;		/* Possible user modes */
 	char	umode[54];		/* Currently set user modes */
 	int	s_takes_arg;		/* Set to 1 if s user mode has arg */
-	int	connected;		/* true if connection is assured */
 	int	des;			/* file descriptor to server */
 	int	eof;			/* eof flag for server */
 	int	sent;			/* set if something has been sent,
@@ -98,7 +98,7 @@ typedef	struct
 
         int             doing_privmsg;
         int             doing_notice;
-        int             in_ctcp_flag;
+        int             doing_ctcp;
         int             waiting_in;
         int             waiting_out;
         WaitCmd *       start_wait_list;
@@ -112,15 +112,50 @@ typedef	struct
         char *          sent_nick;
         char *          sent_body;
 }	Server;
-extern	Server	*server_list;
+extern	Server	**server_list;
 #endif	/* NEED_SERVER_LIST */
 
-extern	int	number_of_servers;
-extern	int	connected_to_server;
-extern	int	primary_server;
-extern	int	from_server;
-extern	int	last_server;
-extern	int	parsing_server_index;
+	extern	int	number_of_servers;
+	extern	int	connected_to_server;
+	extern	int	primary_server;
+	extern	int	from_server;
+	extern	int	last_server;
+	extern	int	parsing_server_index;
+
+#ifdef NEED_SERVER_LIST
+static __inline__ Server *	get_server (int server)
+{
+	if (server == -1 && from_server != -1)
+		server = from_server;
+	if (server < 0 || server >= number_of_servers)
+		return NULL;
+	return server_list[server];
+}
+
+/* 
+ * These two macros do bounds checking on server refnums that are
+ * passed into various server functions
+ */
+#define CHECK_SERVER(x)				\
+{						\
+	if (!get_server(x))			\
+		return;				\
+}
+
+#define CHECK_SERVER_RET(x, y)			\
+{						\
+	if (!get_server(x))			\
+		return (y);			\
+}
+
+
+#define __FROMSERV	get_server(from_server)
+#define SERVER(x)	get_server(x)
+
+#endif	/* NEED_SERVER_LIST */
+
+#define NOSERV		-2
+#define FROMSERV	-1
 
 /*
  * type definition to distinguish different
@@ -145,7 +180,7 @@ extern	int	parsing_server_index;
 						 int);
 	int	find_in_server_list		(const char *, int);
 	int	find_server_refnum		(char *, char **rest);
-	int	parse_server_index		(const char *);
+	int	parse_server_index		(const char *, int);
 	void	parse_server_info		(char **, char **, char **,
 						 char **, char **, char **);
 	void	build_server_list		(char *, char *);
@@ -154,19 +189,14 @@ extern	int	parsing_server_index;
 	char *	create_server_list		(void);	/* MALLOC */
 	int	server_list_size		(void);
 
-	void	do_server 			(fd_set *);
+	void	do_server 			(fd_set *, fd_set *);
 	void	flush_server			(int);
-	void	send_to_aserver			(int, const char *, ...) __A(2);
 	void	send_to_server			(const char *, ...) __A(1);
-	void	send_to_server_raw		(size_t len, const char *buffer);
-	void	clear_sent_to_server		(int);
-	int	sent_to_server			(int);
-
+	void	send_to_aserver			(int, const char *, ...) __A(2);
+	void	send_to_aserver_raw		(int, size_t len, const char *buffer);
 	int	connect_to_new_server		(int, int, int);
 	int	close_all_servers		(const char *);
 	void	close_server			(int, const char *);
-	void	save_server_channels		(int);
-	void	dont_save_server_channels	(int);
 
 	void	set_server_away			(int, const char *);
 const	char *	get_server_away			(int);
@@ -182,10 +212,10 @@ const	char *	get_umode			(int);
 	int	get_server_version		(int);
 
 const	char *	get_server_name			(int);
+	void	set_server_itsname		(int, const char *);
 const	char *	get_server_itsname		(int);
 const	char *	get_server_group		(int);
 const	char *	get_server_type			(int);
-	void	set_server_itsname		(int, const char *);
 	void	set_server_version_string	(int, const char *);
 const 	char *	get_server_version_string	(int);
 	int	get_server_isssl		(int);
@@ -196,8 +226,8 @@ const	char *	get_server_cipher		(int);
 	void	password_sendline		(char *, char *);
 	char *	set_server_password		(int, const char *);
 	int	is_server_open			(int);
-	int	is_server_connected		(int);
-	void	server_is_connected		(int, int);
+	int	is_server_registered		(int);
+	void	server_is_registered		(int, int);
 	int	auto_reconnect_callback		(void *);
 	int	server_reconnects_to		(int, int);
 	int	reconnect			(int, int);
@@ -208,13 +238,13 @@ const	char *	get_server_cipher		(int);
 	SS	get_server_uh_addr		(int);
 
 const	char *	get_server_userhost		(int);
-	void 	got_my_userhost 		(UserhostItem *, char *, 
+	void 	got_my_userhost 		(int, UserhostItem *, char *, 
 						 char *);
 
 	int	get_server_operator		(int);
 	void	set_server_operator		(int, int);
 
-	void	set_server_cookie		(int, const char *);
+	void	use_server_cookie		(int);
 
 const	char *	get_server_nickname		(int);
 	int	is_me				(int, const char *);
@@ -224,18 +254,14 @@ const	char *	get_pending_nickname		(int);
 	void	fudge_nickname			(int);
 	void	nickname_sendline		(char *, char *);
 	void	reset_nickname			(int);
-	void	nick_command_is_pending		(int, int);
-	int	is_nick_command_pending		(int);
 
 	void	set_server_redirect		(int, const char *);
 const	char *	get_server_redirect		(int);
-	int	check_server_redirect		(const char *);
+	int	check_server_redirect		(int, const char *);
 	void	save_servers			(FILE *);
 
 	void	server_did_rejoin_channels	(int);
 	int	did_server_rejoin_channels	(int);
-	int     set_server_quit_message 	(int, const char *message);
-const char *    get_server_quit_message		(int);
 
 	void	clear_reconnect_counts		(void);
 
@@ -247,30 +273,49 @@ const char *    get_server_quit_message		(int);
 const	char*	get_server_005			(int, char*);
 	void	set_server_005			(int, char*, char*);
 
-        void            server_hard_wait (int);
-        void            server_passive_wait (int, const char *);
-        int             check_server_wait (const char *);
-        int             doing_privmsg (void);
-        int             doing_notice (void);
-        int             doing_ctcp (void);
-        void            set_doing_privmsg (int);
-        void            set_doing_notice (int);
-        void            set_doing_ctcp (int);
-        void            set_server_invite_channel       (const char *);
-        const char *    get_server_invite_channel       (void);
-        void            set_server_last_notify          (const char *);
-        const char *    get_server_last_notify          (void);
-        void            set_server_joined_nick          (const char *);
-        const char *    get_server_joined_nick          (void);
-        void            set_server_public_nick          (const char *);
-        const char *    get_server_public_nick          (void);
-        void            set_server_recv_nick            (const char *);
-        const char *    get_server_recv_nick            (void);
-        void            set_server_sent_nick            (const char *);
-        const char *    get_server_sent_nick            (void);
-        void            set_server_sent_body            (const char *);
-        const char *    get_server_sent_body            (void);
-        void            set_server_window_count         (int, int);
-        int             get_server_window_count         (int);
+        void    server_hard_wait 		(int);
+        void    server_passive_wait 		(int, const char *);
+        int     check_server_wait 		(int, const char *);
+
+        void    set_server_doing_privmsg 	(int, int);
+        int     get_server_doing_privmsg 	(int);
+        void    set_server_doing_notice 	(int, int);
+        int     get_server_doing_notice 	(int);
+        void    set_server_doing_ctcp 		(int, int);
+        int     get_server_doing_ctcp 		(int);
+	void	set_server_nickname_pending	(int, int);
+	int	get_server_nickname_pending	(int);
+	void	set_server_sent			(int, int);
+	int	get_server_sent			(int);
+	void	set_server_enable_ssl		(int, int);
+	int	get_server_enable_ssl		(int);
+	void	set_server_ssl_enabled		(int, int);
+	int	get_server_ssl_enabled		(int);
+	void	set_server_save_channels	(int, int);
+	int	get_server_save_channels	(int);
+	void	set_server_protocol_state	(int, int);
+	int	get_server_protocol_state	(int);
+
+        void    set_server_invite_channel       (int, const char *);
+const char *    get_server_invite_channel       (int);
+        void    set_server_last_notify          (int, const char *);
+const char *    get_server_last_notify          (int);
+        void    set_server_joined_nick          (int, const char *);
+const char *    get_server_joined_nick          (int);
+        void    set_server_public_nick          (int, const char *);
+const char *    get_server_public_nick          (int);
+        void    set_server_recv_nick            (int, const char *);
+const char *    get_server_recv_nick            (int);
+        void    set_server_sent_nick            (int, const char *);
+const char *    get_server_sent_nick            (int);
+        void	set_server_sent_body            (int, const char *);
+const char *    get_server_sent_body            (int);
+	void	set_server_quit_message 	(int, const char *message);
+const char *    get_server_quit_message		(int);
+	void	set_server_cookie		(int, const char *);
+const char *	get_server_cookie         	(int);
+
+        void    set_server_window_count         (int, int);
+        int     get_server_window_count         (int);
 
 #endif /* _SERVER_H_ */

@@ -1,4 +1,4 @@
-/* $EPIC: timer.c,v 1.16 2002/12/11 19:20:24 crazyed Exp $ */
+/* $EPIC: timer.c,v 1.17 2002/12/19 03:22:59 jnelson Exp $ */
 /*
  * timer.c -- handles timers in ircII
  *
@@ -246,7 +246,7 @@ static Timer * new_timer (void)
 	ntimer->events = 0;
 	ntimer->interval.tv_sec = 0;
 	ntimer->interval.tv_usec = 0;
-	ntimer->server = -1;
+	ntimer->server = FROMSERV;
 	ntimer->window = -1;
 	return ntimer;
 }
@@ -643,7 +643,7 @@ void 	ExecuteTimers (void)
 		else if (is_server_open(current_window->server))
 			from_server = current_window->server;
 		else
-			from_server = -1;
+			from_server = NOSERV;
 
 		/* 
 		 * If a callback function was registered, then
@@ -666,168 +666,128 @@ void 	ExecuteTimers (void)
 }
 
 
-/* MaXxX--> */
-
-/* used by function_timerctl */
-char 	*timerctl 	(char *input)
+/* Used by function_timerctl */
+/*
+ * $timerctl(REFNUM refnum)
+ * $timerctl(ADD <refnum> <interval> <events> <commands> <subargs> <window>)
+ * $timerctl(DELETE <refnum>)
+ * $timerctl(GET <refnum> [LIST])
+ * $timerctl(SET <refnum> [ITEM] [VALUE])
+ * $timerctl(REFNUMS)
+ *
+ * [LIST] and [ITEM] are one of the following
+ *	TIMEOUT		The precise time the timer will be executed
+ *	COMMAND		The commands that will be executed
+ *	SUBARGS		The vaule of $* used when this timer is executed
+ *	REPEATS		The number of times this timer will be executed
+ *	INTERVAL	The interval of time between executions
+ *	SERVER		The server this timer bound to
+ *	WINDOW		The window this timer bound to
+ */
+char *	timerctl (char *input)
 {
-	char		*ptr;
-	struct		timeval	now;
-	Timer		*timer;
+	char *	refstr;
+	char *	listc;
+	Timer *	t;
 
-	enum { EXISTS, GETTIME, SETTIME, GETEVENTS, SETEVENTS, GETCOMMAND, SETCOMMAND,
-		GETSERVER, SETSERVER, GETWINDOW, SETWINDOW, GETARGS, SETARGS, GETREFNUMS } op;
-	/* EXISTS and GETTIME will be almost the same - in fact, $timerctl(EXISTS refnum) === $timerctl(GETTIME refnum) > 0 */
+	GET_STR_ARG(listc, input)
+	if (!my_strnicmp(listc, "REFNUMS", 6)) {
+		char *	retval = NULL;
+		size_t	clue = 0;
 
-	GET_STR_ARG(ptr, input);
+		for (t = PendingTimers; t; t = t->next)
+			m_sc3cat(&retval, space, t->ref, &clue);
+		RETURN_MSTR(retval);
+	} else if (!my_strnicmp(listc, "REFNUM", 5)) {
+		GET_STR_ARG(refstr, input);
+		if (!(t = get_timer(input)))
+			RETURN_EMPTY;
+		RETURN_STR(t->ref);
+	} else if (!my_strnicmp(listc, "ADD", 2)) {
+		RETURN_EMPTY;		/* XXX - Not implemented yet. */
+	} else if (!my_strnicmp(listc, "DELETE", 2)) {
+		GET_STR_ARG(refstr, input);
+		if (!(t = get_timer(input)))
+			RETURN_EMPTY;
+		if (t->command)
+			RETURN_EMPTY;
+		RETURN_INT(remove_timer(input));
+	} else if (!my_strnicmp(listc, "GET", 2)) {
+		GET_STR_ARG(refstr, input);
+		if (!(t = get_timer(input)))
+			RETURN_EMPTY;
 
-	if (!my_strnicmp(ptr, "EXISTS", 1))
-		op = EXISTS;
-	else if (!my_strnicmp(ptr, "GETTIME", 4))
-		op = GETTIME;
-	else if (!my_strnicmp(ptr, "SETTIME", 4))
-		op = SETTIME;
-	else if (!my_strnicmp(ptr, "GETEVENTS", 4))
-		op = GETEVENTS;
-	else if (!my_strnicmp(ptr, "SETEVENTS", 4))
-		op = SETEVENTS;
-	else if (!my_strnicmp(ptr, "GETCOMMAND", 4))
-		op = GETCOMMAND;
-	else if (!my_strnicmp(ptr, "SETCOMMAND", 4))
-		op = SETCOMMAND;
-	else if (!my_strnicmp(ptr, "GETSERVER", 4))
-		op = GETSERVER;
-	else if (!my_strnicmp(ptr, "SETSERVER", 4))
-		op = SETSERVER;
-	else if (!my_strnicmp(ptr, "GETWINDOW", 4))
-		op = GETWINDOW;
-	else if (!my_strnicmp(ptr, "SETWINDOW", 4))
-		op = SETWINDOW;
-	else if (!my_strnicmp(ptr, "GETARGS", 4))
-		op = GETARGS;
-	else if (!my_strnicmp(ptr, "SETARGS", 4))
-		op = SETARGS;
-	else if (!my_strnicmp(ptr, "GETREFNUMS", 4))
-		op = GETREFNUMS;
-	else {
+		GET_STR_ARG(listc, input);
+		if (!my_strnicmp(listc, "TIMEOUT", 1)) {
+			return m_sprintf("%ld %ld", (long) t->time.tv_sec,
+						    (long) t->time.tv_usec);
+		} else if (!my_strnicmp(listc, "COMMAND", 1)) {
+			if (t->command)
+				RETURN_EMPTY;
+			RETURN_STR(t->command);
+		} else if (!my_strnicmp(listc, "SUBARGS", 1)) {
+			if (t->command)
+				RETURN_EMPTY;
+			RETURN_STR(t->subargs);
+		} else if (!my_strnicmp(listc, "REPEATS", 1)) {
+			RETURN_INT(t->events);
+		} else if (!my_strnicmp(listc, "INTERVAL", 1)) {
+			return m_sprintf("%ld %ld", (long) t->interval.tv_sec,
+						    (long) t->interval.tv_usec);
+		} else if (!my_strnicmp(listc, "SERVER", 1)) {
+			RETURN_INT(t->server);
+		} else if (!my_strnicmp(listc, "WINDOW", 1)) {
+			RETURN_INT(t->window);
+		}
+	} else if (!my_strnicmp(listc, "SET", 2)) {
+		GET_STR_ARG(refstr, input);
+		if (!(t = get_timer(input)))
+			RETURN_EMPTY;
+
+		/* Changing internal system timers is strictly prohibited */
+		if (t->command)
+			RETURN_EMPTY;
+
+		GET_STR_ARG(listc, input);
+		if (!my_strnicmp(listc, "TIMEOUT", 1)) {
+			time_t	tv_sec;
+			long	tv_usec;
+
+			GET_INT_ARG(tv_sec, input);
+			GET_INT_ARG(tv_usec, input);
+			t->time.tv_sec = tv_sec;
+			t->time.tv_usec = tv_usec;
+		} else if (!my_strnicmp(listc, "COMMAND", 1)) {
+			malloc_strcpy((char **)&t->command, input);
+		} else if (!my_strnicmp(listc, "SUBARGS", 1)) {
+			malloc_strcpy(&t->subargs, input);
+		} else if (!my_strnicmp(listc, "REPEATS", 1)) {
+			long	repeats;
+
+			GET_INT_ARG(repeats, input);
+			t->events = repeats;
+		} else if (!my_strnicmp(listc, "INTERVAL", 1)) {
+			time_t	tv_sec;
+			long	tv_usec;
+
+			GET_INT_ARG(tv_sec, input);
+			GET_INT_ARG(tv_usec, input);
+			t->interval.tv_sec = tv_sec;
+			t->interval.tv_usec = tv_usec;
+		} else if (!my_strnicmp(listc, "SERVER", 1)) {
+			int	refnum;
+
+			GET_INT_ARG(refnum, input);
+			t->server = refnum;
+		} else if (!my_strnicmp(listc, "WINDOW", 1)) {
+			int	winref;
+
+			GET_INT_ARG(winref, input);
+			t->window = winref;
+		}
+	} else
 		RETURN_EMPTY;
-	}
-
-	switch (op)
-	{
-		case (EXISTS) :
-		case (GETTIME) :
-		case (GETEVENTS) :
-		case (GETCOMMAND) :
-		case (GETSERVER) :
-		case (GETWINDOW) :
-		case (GETARGS) :
-		case (SETTIME) :
-		case (SETEVENTS) :
-		case (SETCOMMAND) :
-		case (SETSERVER) :
-		case (SETWINDOW) :
-		case (SETARGS) :
-		{
-			GET_STR_ARG(ptr, input);
-
-			if (!(timer = get_timer(ptr))) {
-				if (op == EXISTS)
-					RETURN_INT(0);
-				else
-					RETURN_EMPTY;
-			}
-			if (op == EXISTS)
-				RETURN_INT(1);
-
-			if (op == GETTIME || op == SETTIME)
-				get_time(&now);	/* will be needed in either case */
-
-			if (op == GETTIME)
-				RETURN_FLOAT2(time_diff(now, timer->time));
-
-			if (op == GETEVENTS)
-				RETURN_INT(timer->events);
-
-			if (op == GETCOMMAND)
-				RETURN_STR(timer->command);
-
-			if (op == GETSERVER)
-				RETURN_INT(timer->server);
-
-			if (op == GETWINDOW)
-				RETURN_INT(timer->window);
-
-			if (op == GETCOMMAND)
-				RETURN_STR(timer->subargs);
-
-			/* uh-oh, SETting stuff... here comes the tricky part... for me, anyway... */
-			if (op == SETTIME) {
-				double newtime;
-				GET_FLOAT_ARG(newtime, input);
-				if (newtime<0)
-					RETURN_EMPTY;
-				timer->interval = double_to_timeval(newtime);
-				timer->time = time_add(now, timer->interval);
-				RETURN_FLOAT2(newtime);
-			}
-
-			if (op == SETEVENTS) {
-				int newevents;
-				GET_INT_ARG(newevents, input);
-				if (newevents<1)
-					RETURN_EMPTY;
-				timer->events = newevents;
-				RETURN_INT(newevents);
-			}
-
-			if (op == SETCOMMAND) {
-				if (!input || !*input)
-					RETURN_EMPTY;
-				malloc_strcpy((char**)&(timer->command), input);
-				RETURN_INT(1);
-			}
-
-			if (op == SETSERVER) {
-				int newserver;
-				GET_INT_ARG(newserver, input);
-				if (newserver<0 || newserver>=number_of_servers)
-					RETURN_EMPTY;
-				timer->server = newserver;
-				RETURN_INT(newserver);
-			}
-
-			if (op == SETWINDOW) {
-				int newwin;
-				GET_INT_ARG(newwin, input);
-				if (newwin<1)
-					RETURN_EMPTY;
-				timer->window = newwin;
-				RETURN_INT(newwin);
-			}
-
-			if (op == SETARGS) {
-				if (!input || !*input)
-					RETURN_EMPTY;
-				malloc_strcpy((char**)&(timer->subargs), input);
-				RETURN_INT(1);
-			}
-			break;
-		}
-		case (GETREFNUMS): {
-			ptr = NULL;
-			for (timer = PendingTimers; timer; timer = timer->next) {
-				if (timer->callback)
-					continue;
-				else
-					m_s3cat_s(&ptr, space, timer->ref);
-			}
-			RETURN_MSTR(ptr);
-			break;
-		}
-	}
 
 	RETURN_EMPTY;
 }
-/* <--MaXxX */
 

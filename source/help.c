@@ -1,4 +1,4 @@
-/* $EPIC: help.c,v 1.2 2002/07/17 22:52:52 jnelson Exp $ */
+/* $EPIC: help.c,v 1.3 2002/12/19 03:22:59 jnelson Exp $ */
 /*
  * help.c: handles the help stuff for irc 
  *
@@ -48,7 +48,7 @@
  */
 
 #if 0
-static char rcsid[] = "@(#)$Id: help.c,v 1.2 2002/07/17 22:52:52 jnelson Exp $";
+static char rcsid[] = "@(#)$Id: help.c,v 1.3 2002/12/19 03:22:59 jnelson Exp $";
 #endif
 
 #include "irc.h"
@@ -62,7 +62,6 @@ static char rcsid[] = "@(#)$Id: help.c,v 1.2 2002/07/17 22:52:52 jnelson Exp $";
 #include "term.h"
 #include "vars.h"
 #include "window.h"
-#include <sys/stat.h>
 #include "glob.h"
 
 /* Forward declarations */
@@ -355,7 +354,7 @@ static	void	help_me (char *topics, char *args)
 		cnt,
 		i,
 		cols;
-	struct	stat	stat_buf;
+	Stat	stat_buf;
 	char	path[BIG_BUFFER_SIZE+1];
 	int	help_paused_first_call = 0;
 	char *	help_paused_path = (char *) 0;

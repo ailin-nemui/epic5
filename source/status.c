@@ -1,4 +1,4 @@
-/* $EPIC: status.c,v 1.13 2002/09/26 22:41:43 jnelson Exp $ */
+/* $EPIC: status.c,v 1.14 2002/12/19 03:22:59 jnelson Exp $ */
 /*
  * status.c: handles the status line updating, etc for IRCII 
  *
@@ -843,7 +843,7 @@ static	char	my_buffer[64];
 	/*
 	 * If this window isnt connected to a server, say so.
 	 */
-	if (window->server == -1)
+	if (window->server == NOSERV)
 		return "No Server";
 
 	/*
@@ -1007,7 +1007,7 @@ STATUS_FUNCTION(status_mode)
 static  char    my_buffer[81];
 
 	*my_buffer = 0;
-	if (window->current_channel && window->server != -1)
+	if (window->current_channel && window->server != NOSERV)
 	{
                 mode = get_channel_mode(window->current_channel,window->server);
 		if (mode && *mode && mode_format)
@@ -1068,7 +1068,7 @@ STATUS_FUNCTION(status_chanop)
 {
 	char	*text;
 
-	if (!window->current_channel && window->server == -1)
+	if (!window->current_channel || window->server == NOSERV)
 		return empty_string;
 	
 	if (get_channel_oper(window->current_channel, window->server) &&
@@ -1090,7 +1090,7 @@ STATUS_FUNCTION(status_ssl)
 #ifdef HAVE_SSL
 	char *text;
 
-	if (window->server != -1 && get_server_isssl(window->server) &&
+	if (window->server != NOSERV && get_server_isssl(window->server) &&
 		(text = get_string_var(STATUS_SSL_ON_VAR)))
 			return text;
 	else if ((text = get_string_var(STATUS_SSL_OFF_VAR)))
@@ -1131,7 +1131,7 @@ STATUS_FUNCTION(status_channel)
 static	char	my_buffer[IRCD_BUFFER_SIZE + 1];
 	int	num;
 
-	if (!window->current_channel || window->server == -1 || !channel_format)
+	if (!window->current_channel || window->server == NOSERV || !channel_format)
 		return empty_string;
 
 	if (get_int_var(HIDE_PRIVATE_CHANNELS_VAR) && 
@@ -1158,7 +1158,7 @@ STATUS_FUNCTION(status_voice)
 {
 	char *text;
 
-	if (window->current_channel && window->server != -1 &&
+	if (window->current_channel && window->server != NOSERV &&
 	    get_channel_voice(window->current_channel, window->server) &&
 	    !get_channel_oper(window->current_channel, window->server) &&
 	    (text = get_string_var(STATUS_VOICE_VAR)))
@@ -1234,7 +1234,7 @@ STATUS_FUNCTION(status_away)
 	if (connected_to_server == 1 && !DISPLAY_ON_WINDOW)
 		return empty_string;
 
-	if (window->server != -1 && 
+	if (window->server != NOSERV && 
 	    get_server_away(window->server) && 
 	    (text = get_string_var(STATUS_AWAY_VAR)))
 		return text;
@@ -1312,7 +1312,7 @@ STATUS_FUNCTION(status_oper)
 {
 	char *text;
 
-	if (window->server != -1 && get_server_operator(window->server) &&
+	if (window->server != NOSERV && get_server_operator(window->server) &&
 	    (text = get_string_var(STATUS_OPER_VAR)) &&
 	    (connected_to_server != 1 || DISPLAY_ON_WINDOW))
 		return text;

@@ -1,4 +1,4 @@
-/* $EPIC: exec.c,v 1.11 2002/12/11 19:20:23 crazyed Exp $ */
+/* $EPIC: exec.c,v 1.12 2002/12/19 03:22:58 jnelson Exp $ */
 /*
  * exec.c: handles exec'd process for IRCII 
  *
@@ -180,7 +180,7 @@ BUILT_IN_COMMAND(execcmd)
 		 */
 		if (my_strnicmp(flag, "OUT", len) == 0)
 		{
-			if (doing_privmsg())
+			if (get_server_doing_privmsg(from_server))
 				redirect = "NOTICE";
 			else
 				redirect = "PRIVMSG";
@@ -222,7 +222,7 @@ BUILT_IN_COMMAND(execcmd)
 		 */
 		else if (my_strnicmp(flag, "MSG", len) == 0)
 		{
-			if (doing_privmsg())
+			if (get_server_doing_privmsg(from_server))
 				redirect = "NOTICE";
 			else
 				redirect = "PRIVMSG";
@@ -685,7 +685,7 @@ say("Output from process %d (%s) now going to you", i, proc->name);
  * are closed.  If EOF has been asserted on both, then  we mark the process
  * as being "dumb".  Once it is reaped (exited), it is expunged.
  */
-void 		do_processes (fd_set *rd)
+void 		do_processes (fd_set *rd, fd_set *wd)
 {
 	int	i;
 	int	limit;
@@ -946,19 +946,6 @@ int 		text_to_process (int proc_index, const char *text, int show)
 	set_prompt_by_refnum(proc->refnum, empty_string);
 
 	return (0);
-}
-
-/*
- * When a server goes away, re-assign all of the /exec's that are
- * current bound to that server.
- */
-void 		exec_server_delete (int i)
-{
-	int	j;
-
-	for (j = 0; j < process_list_size; j++)
-		if (process_list[j] && process_list[j]->server >= i)
-			process_list[j]->server--;
 }
 
 /*

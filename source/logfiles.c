@@ -1,4 +1,4 @@
-/* $EPIC: logfiles.c,v 1.11 2002/12/11 19:20:23 crazyed Exp $ */
+/* $EPIC: logfiles.c,v 1.12 2002/12/19 03:22:59 jnelson Exp $ */
 /*
  * logfiles.c - General purpose log files
  *
@@ -562,7 +562,7 @@ static Logfile *	logfile_server (Logfile *log, char **args)
 	if (!is_number(arg))
 		say("SERVER: The log's server needs to be a number");
 	else
-		log->servref = my_atol(arg);
+		log->servref = parse_server_index(arg, 1);
 
 	return log;
 }
@@ -690,7 +690,7 @@ void	add_to_logs (int winref, int servref, const char *target, int level, const 
 
 	    else if (log->type == LOG_TARGETS)
 	    {
-		if (log->servref != -1 && (log->servref != servref))
+		if (log->servref != NOSERV && (log->servref != servref))
 			continue;
 
 		if (log->level && (log->level & level) == 0)

@@ -1,4 +1,4 @@
-/* $EPIC: newio.c,v 1.7 2002/11/26 23:03:13 jnelson Exp $ */
+/* $EPIC: newio.c,v 1.8 2002/12/19 03:22:59 jnelson Exp $ */
 /*
  * newio.c: This is some handy stuff to deal with file descriptors in a way
  * much like stdio's FILE pointers 
@@ -270,7 +270,7 @@ int 	dgets (char *str, int des, int buffer)
 			 * Very little to do at this point but force the
 			 * issue and figure out what the heck went wrong.
 			 */
-			struct timeval t = { 0, 0 };
+			Timeval t = { 0, 0 };
 			fd_set testing;
 
 			FD_ZERO(&testing);
@@ -490,7 +490,7 @@ int SSL_dgets (char *str, int des, int buffer, int buffersize, SSL* ssl_fd)
 			 * Very little to do at this point but force the
 			 * issue and figure out what the heck went wrong.
 			 */
-			struct timeval t = { 0, 0 };
+			Timeval t = { 0, 0 };
 			fd_set testing;
 
 			FD_ZERO(&testing);
@@ -600,14 +600,14 @@ static	int global_max_fd = -1;
  * new_select: works just like select(), execpt I trimmed out the excess
  * parameters I didn't need.
  */
-int 	new_select (fd_set *rd, fd_set *wd, struct timeval *timeout)
+int 	new_select (fd_set *rd, fd_set *wd, Timeval *timeout)
 {
-static	int		polls = 0;
-	struct timeval	thetimeout;
-	struct timeval *newtimeout = &thetimeout;
-		int	i,
-			set = 0;
-		fd_set 	new_f;
+static	int	polls = 0;
+	Timeval	thetimeout;
+	Timeval *newtimeout = &thetimeout;
+	int	i,
+		set = 0;
+	fd_set 	new_f;
 
 
 	if (timeout)
@@ -678,6 +678,8 @@ int 	new_open (int des)
 
 	if (!FD_ISSET(des, &readables))
 		FD_SET(des, &readables);
+	if (FD_ISSET(des, &writables))
+		FD_CLR(des, &writables);
 
 	/*
 	 * Keep track of the highest fd in use.
@@ -688,6 +690,29 @@ int 	new_open (int des)
 	return des;
 }
 
+/*
+ * Register a filedesc for readable events
+ * Set up its input buffer
+ */
+int 	new_open_for_writing (int des)
+{
+	if (des < 0)
+		return des;		/* Invalid */
+
+	if (!io_rec)
+		init_io();
+
+	if (!FD_ISSET(des, &writables))
+		FD_SET(des, &writables);
+
+	/*
+	 * Keep track of the highest fd in use.
+	 */
+	if (des > global_max_fd)
+		global_max_fd = des;
+
+	return des;
+}
 
 /*
  * Unregister a filedesc for readable events 
@@ -700,6 +725,8 @@ int	new_close (int des)
 
 	if (FD_ISSET(des, &readables))
 		FD_CLR(des, &readables);
+	if (FD_ISSET(des, &writables))
+		FD_CLR(des, &writables);
 
 	if (io_rec)
 	{

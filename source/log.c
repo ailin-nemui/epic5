@@ -1,4 +1,4 @@
-/* $EPIC: log.c,v 1.8 2002/12/11 19:20:23 crazyed Exp $ */
+/* $EPIC: log.c,v 1.9 2002/12/19 03:22:59 jnelson Exp $ */
 /*
  * log.c: handles the irc session logging functions 
  *
@@ -40,7 +40,6 @@
 #include "output.h"
 #include "ircaux.h"
 #include "alias.h"
-#include <sys/stat.h>
 
 	FILE	*irclog_fp;
 	int	logfile_line_mangler;

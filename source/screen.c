@@ -1,4 +1,4 @@
-/* $EPIC: screen.c,v 1.36 2002/11/28 01:17:12 jnelson Exp $ */
+/* $EPIC: screen.c,v 1.37 2002/12/19 03:22:59 jnelson Exp $ */
 /*
  * screen.c
  *
@@ -2192,7 +2192,7 @@ void 	add_to_screen (const unsigned char *buffer)
 		 * we'd better check to see if this should go to a
 		 * specific window (i dont agree with this, though)
 		 */
-		if (from_server != -1 && is_channel(who_from))
+		if (from_server != NOSERV && is_channel(who_from))
 		{
 			if ((tmp = get_channel_window(who_from, from_server)))
 			{
@@ -2221,7 +2221,7 @@ void 	add_to_screen (const unsigned char *buffer)
 		/*
 		 * Check for /WINDOW LEVELs that apply
 		 */
-		if (((from_server == tmp->server) || (from_server == -1)) &&
+		if (((from_server == tmp->server) || (from_server == NOSERV)) &&
 		    (who_level & tmp->window_level))
 		{
 			add_to_window(tmp, buffer);
@@ -2281,7 +2281,7 @@ static void 	add_to_window (Window *window, const unsigned char *str)
 	char *	pend;
 	char *	strval;
 
-	if (window->server >= 0 && get_server_redirect(window->server))
+	if (get_server_redirect(window->server))
 		if (redirect_text(window->server, 
 			        get_server_redirect(window->server),
 				str, NULL, 0))
@@ -2701,7 +2701,7 @@ Window	*create_additional_screen (void)
         ISA		new_socket;
 	int		new_cmd;
 	fd_set		fd_read;
-	struct	timeval	timeout;
+	Timeval		timeout;
 	pid_t		child;
 	unsigned short 	port;
 	int		new_sock_size;
@@ -2992,7 +2992,7 @@ void 	kill_screen (Screen *screen)
 
 
 /* * * * * * * * * * * * * USER INPUT HANDLER * * * * * * * * * * * */
-void 	do_screens (fd_set *rd)
+void 	do_screens (fd_set *rd, fd_set *wd)
 {
 	Screen *screen;
 	char 	buffer[IO_BUFFER_SIZE + 1];

@@ -1,4 +1,4 @@
-/* $EPIC: parse.c,v 1.29 2002/12/11 19:20:23 crazyed Exp $ */
+/* $EPIC: parse.c,v 1.30 2002/12/19 03:22:59 jnelson Exp $ */
 /*
  * parse.c: handles messages from the server.   Believe it or not.  I
  * certainly wouldn't if I were you. 
@@ -309,7 +309,7 @@ static void p_privmsg (char *from, char **Args)
 		return;
 	}
 
-	set_doing_privmsg(1);
+	set_server_doing_privmsg(from_server, 1);
 	sed = 0;
 
 	/*
@@ -321,7 +321,7 @@ static void p_privmsg (char *from, char **Args)
 	ptr = do_ctcp(from, to, ptr);
 	if (!*ptr)
 	{
-		set_doing_privmsg(0);
+		set_server_doing_privmsg(from_server, 0);
 		return;
 	}
 
@@ -330,7 +330,7 @@ static void p_privmsg (char *from, char **Args)
 	{
 		message_from(to, LOG_PUBLIC);	/* Duh! */
 		malloc_strcpy(&public_nick, from);
-		set_server_public_nick(from);
+		set_server_public_nick(from_server, from);
 		flood_channel = to;
 		flood_type = PUBLIC_FLOOD;
 		log_type = LOG_PUBLIC;
@@ -370,7 +370,7 @@ static void p_privmsg (char *from, char **Args)
 	{
 		case IGNORED:
 		{
-			set_doing_privmsg(0);
+			set_server_doing_privmsg(from_server, 0);
 			return;
 		}
 		case HIGHLIGHTED:
@@ -416,13 +416,13 @@ static void p_privmsg (char *from, char **Args)
 		}
 		case MSG_LIST:
 		{
-			set_server_recv_nick(from);
-			if (get_server_away(-2))
+			set_server_recv_nick(from_server, from);
+			if (get_server_away(NOSERV))
 				beep_em(get_int_var(BEEP_WHEN_AWAY_VAR));
 
 			if (do_hook(list_type, "%s %s", from, ptr))
 			{
-			    if (get_server_away(-2))
+			    if (get_server_away(NOSERV))
 			    {
 				time_t blah = time(NULL);
 				put_it("%s*%s*%s %s <%.16s>", 
@@ -456,7 +456,7 @@ static void p_privmsg (char *from, char **Args)
 	sed = 0;
 	set_lastlog_msg_level(level);
 	message_from(NULL, LOG_CURRENT);
-	set_doing_privmsg(0);
+	set_server_doing_privmsg(from_server, 0);
 }
 
 static void p_quit (char *from, char **ArgList)
@@ -491,7 +491,7 @@ static void p_quit (char *from, char **ArgList)
 			message_from((char *) 0, LOG_CURRENT);
 		}
 	}
-	notify_mark(from, 0, 0);
+	notify_mark(from_server, from, 0, 0);
 	remove_from_channel((char *) 0, from, from_server);
 	message_from((char *) 0, LOG_CURRENT);
 
@@ -519,9 +519,9 @@ static void p_pong (char *from, char **ArgList)
 
 	if (!my_stricmp(from, get_server_itsname(from_server)))
 	{
-		if (check_server_redirect(ArgList[1]))
+		if (check_server_redirect(from_server, ArgList[1]))
 			return;
-		if (check_server_wait(ArgList[1]))
+		if (check_server_wait(from_server, ArgList[1]))
 			return;
 	}
 
@@ -543,24 +543,24 @@ static void p_error (char *from, char **ArgList)
 		say("%s %s", from, ArgList[0]);
 }
 
-void	add_user_who (char *from, char **ArgList)
+void	add_user_who (int refnum, char *from, char **ArgList)
 {
 	char *userhost;
 
 	/* Obviously this is safe. */
 	userhost = alloca(strlen(ArgList[1]) + strlen(ArgList[2]) + 2);
 	sprintf(userhost, "%s@%s", ArgList[1], ArgList[2]);
-	add_userhost_to_channel(ArgList[0], ArgList[4], from_server, userhost);
+	add_userhost_to_channel(ArgList[0], ArgList[4], refnum, userhost);
 }
 
-void	add_user_end (char *from, char **ArgList)
+void	add_user_end (int refnum, char *from, char **ArgList)
 {
 	char *		copy;
 	const char *	channel;
 
 	copy = LOCAL_COPY(ArgList[0]);
 	channel = next_arg(copy, &copy);
-	channel_not_waiting(channel, from_server);
+	channel_not_waiting(channel, refnum);
 }
 
 static void	p_channel (char *from, char **ArgList)
@@ -575,7 +575,7 @@ static void	p_channel (char *from, char **ArgList)
 
 	channel = ArgList[0];
 	malloc_strcpy(&joined_nick, from);
-	set_server_joined_nick(from);
+	set_server_joined_nick(from_server, from);
 
 	/*
 	 * Workaround for extremely gratuitous protocol change in ef2.9
@@ -593,7 +593,7 @@ static void	p_channel (char *from, char **ArgList)
 	{
 		add_channel(channel, from_server);
 		send_to_server("MODE %s", channel);
-		whobase(channel, add_user_who, add_user_end);
+		whobase(from_server, channel, add_user_who, add_user_end);
 	}
 	else
 	{
@@ -634,7 +634,7 @@ static void	p_channel (char *from, char **ArgList)
 	 * This should be done last to ensure that the userhost has been
 	 * properly handled...
 	 */
-	notify_mark(from, 1, 0);
+	notify_mark(from_server, from, 1, 0);
 }
 
 static void 	p_invite (char *from, char **ArgList)
@@ -662,8 +662,8 @@ static void 	p_invite (char *from, char **ArgList)
 		if (do_hook(INVITE_LIST, "%s %s %s", from, ArgList[1],FromUserHost))
 			say("%s%s (%s)%s invites you to channel %s", high,
 				from, FromUserHost, high, ArgList[1]);
-		set_server_invite_channel(ArgList[1]);
-		set_server_recv_nick(from);
+		set_server_invite_channel(from_server, ArgList[1]);
+		set_server_recv_nick(from_server, from);
 	}
 }
 
@@ -745,7 +745,7 @@ static void	p_kill (char *from, char **ArgList)
 				  sc, NULL, current_window->refnum);
 		}
 
-		server_reconnects_to(from_server, -1);
+		server_reconnects_to(from_server, NOSERV);
 	}
 }
 
@@ -790,7 +790,7 @@ static void p_nick (char *from, char **ArgList)
 	{
 		accept_server_nickname(from_server, line);
 		its_me = 1;
-		nick_command_is_pending(from_server, 0);
+		set_server_nickname_pending(from_server, 0);
 	}
 
 	switch (check_ignore(from, FromUserHost, IGNORE_NICKS))
@@ -834,9 +834,9 @@ static void p_nick (char *from, char **ArgList)
 	}
 
 do_rename:
-	notify_mark(from, 0, 0);
+	notify_mark(from_server, from, 0, 0);
 	rename_nick(from, line, from_server);
-	notify_mark(line, 1, 0);
+	notify_mark(from_server, line, 1, 0);
 }
 
 static void p_mode (char *from, char **ArgList)

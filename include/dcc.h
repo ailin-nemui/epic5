@@ -13,7 +13,7 @@
 	int	dcc_chat_active		(char *);
 	void	dcc_chat_transmit 	(char *, char *, const char *, 
 						const char *, int);
-	void	dcc_check 		(fd_set *);
+	void	dcc_check 		(fd_set *, fd_set *);
 	void	dcc_list 		(char *);
 	char *	dcc_raw_connect 	(const char *, const char *, int);
 	char *	dcc_raw_listen 		(int, unsigned short);

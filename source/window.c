@@ -1,4 +1,4 @@
-/* $EPIC: window.c,v 1.48 2002/11/26 23:03:14 jnelson Exp $ */
+/* $EPIC: window.c,v 1.49 2002/12/19 03:22:59 jnelson Exp $ */
 /*
  * window.c: Handles the organzation of the logical viewports (``windows'')
  * for irc.  This includes keeping track of what windows are open, where they
@@ -174,8 +174,8 @@ Window	*new_window (Screen *screen)
 	if (current_window)
 		new_w->server = current_window->server;
 	else
-		new_w->server = -1;
-	new_w->last_server = -1;
+		new_w->server = NOSERV;
+	new_w->last_server = NOSERV;
 
 	new_w->top = 0;			/* Filled in later */
 	new_w->bottom = 0;		/* Filled in later */
@@ -1926,7 +1926,7 @@ void	change_window_server (int old_server, int new_server)
 			 * our responsibility.  But if we are disconnecting
 			 * then if we don't do it, nobody can.
 			 */
-			if (new_server == -1)
+			if (new_server == NOSERV)
 				window_discon(tmp, NULL);	/* XXXh */
 #endif
 		}
@@ -1938,12 +1938,12 @@ void	change_window_server (int old_server, int new_server)
 	tmp = NULL;
 	while (traverse_all_windows(&tmp))
 	{
-		if (tmp->server != -1)
+		if (tmp->server != NOSERV)
 			continue;
 		if (tmp->last_server != old_server)
 			continue;
 		tmp->server = new_server;
-		tmp->last_server = -1;
+		tmp->last_server = NOSERV;
 	}
 	
 	if (old_server == primary_server)
@@ -1982,7 +1982,7 @@ void 	window_check_servers (void)
 {
 	Window	*tmp;
 	int	cnt, max, i, connected;
-	int	prime = -1;
+	int	prime = NOSERV;
 
 	connected_to_server = 0;
 	max = server_list_size();
@@ -2008,7 +2008,7 @@ void 	window_check_servers (void)
 				if (!connected)
 				{
 					tmp->last_server = i;
-					tmp->server = -1;
+					tmp->server = NOSERV;
 				}
 				else
 				{
@@ -2022,7 +2022,7 @@ void 	window_check_servers (void)
 			connected_to_server++;
 		else if (connected)
 		{
-			dont_save_server_channels(i);
+			set_server_save_channels(i, 0);
 			close_server(i, "No windows for this server");
 		}
 	}
@@ -2777,7 +2777,7 @@ Window *window_channel (Window *window, char **args)
 	const char *carg;
 
 	/* Fix by Jason Brand, Nov 6, 2000 */
-	if (window->server == -1)
+	if (window->server == NOSERV)
 	{
 		say("This window is not connected to a server.");
 		return NULL;
@@ -2793,7 +2793,7 @@ Window *window_channel (Window *window, char **args)
 
 		if (!my_strnicmp(carg, "-i", 2))
 		{
-			if (!(carg = get_server_invite_channel()))
+			if (!(carg = get_server_invite_channel(window->server)))
 			{
 				say("You have not been invited to a channel!");
 				return window;
@@ -2927,8 +2927,7 @@ else
 
 	say("\tServer: %d - %s",
 				window->server, 
-				window->server > -1 ? 
-				get_server_name(window->server) : "<None>");
+				get_server_name(window->server));
 	say("\tScreen: %p",	window->screen);
 	say("\tGeometry Info: [%d %d %d %d %d %d %d %d %d]", 
 				window->top, window->bottom, 
@@ -2998,7 +2997,7 @@ static Window *window_discon (Window *window, char **args)
 	new_free(&window->bind_channel);
 	new_free(&window->waiting_channel);
 	window->last_server = window->server;
-	window->server = -1;		/* XXX This shouldn't be set here. */
+	window->server = NOSERV;	/* XXX This shouldn't be set here. */
 	window_check_servers();
 	return window;
 }
@@ -3530,13 +3529,13 @@ static Window *window_next (Window *window, char **args)
 
 static	Window *window_noserv (Window *window, char **args)
 {
-	/* This is just like /window discon except last_server is set to -1 */
+	/* This is just like /window discon but last_server is set to NOSERV */
 	reassign_window_channels(window);
 	new_free(&window->current_channel);
 	new_free(&window->bind_channel);
 	new_free(&window->waiting_channel);
-	window->last_server = -1;
-	window->server = -1;		/* XXX This shouldn't be set here. */
+	window->last_server = NOSERV;
+	window->server = NOSERV;	/* XXX This shouldn't be set here. */
 	window_check_servers();
 	return window;
 }
@@ -3714,12 +3713,12 @@ Window *window_query (Window *window, char **args)
 	{
 		if (!strcmp(nick, "."))
 		{
-			if (!(nick = get_server_sent_nick()))
+			if (!(nick = get_server_sent_nick(window->server)))
 				say("You have not messaged anyone yet");
 		}
 		else if (!strcmp(nick, ","))
 		{
-			if (!(nick = get_server_recv_nick()))
+			if (!(nick = get_server_recv_nick(window->server)))
 				say("You have not recieved a message yet");
 		}
 		else if (!strcmp(nick, "*") && 
@@ -3874,7 +3873,7 @@ Window *window_rejoin (Window *window, char **args)
 	char *	newchan = NULL;
 
 	/* First off, we have to be connected to join */
-	if (from_server == -1 || !is_server_connected(from_server))
+	if (from_server == NOSERV || !is_server_registered(from_server))
 	{
 		say("You are not connected to a server.");
 		return window;
@@ -3895,7 +3894,7 @@ Window *window_rejoin (Window *window, char **args)
 		/* Handle /join -i, which joins last invited channel */
 		if (!my_strnicmp(chan, "-i", 2))
                 {
-                        if (!(chan = get_server_invite_channel()))
+                        if (!(chan = get_server_invite_channel(window->server)))
 			{
                                 say("You have not been invited to a channel!");
 				continue;
@@ -4007,9 +4006,9 @@ Window *window_rejoin (Window *window, char **args)
 	if (newchan)
 	{
 		if (keys)
-			send_to_aserver(from_server, "JOIN %s %s", newchan, keys);
+			send_to_server("JOIN %s %s", newchan, keys);
 		else
-			send_to_aserver(from_server, "JOIN %s", newchan);
+			send_to_server("JOIN %s", newchan);
 		new_free(&newchan);
 	}
 
@@ -4263,7 +4262,7 @@ Window *window_server (Window *window, char **args)
 			 * Associate ourselves with the new server.
 			 */
 			window->server = i;
-			window->last_server = -1;
+			window->last_server = NOSERV;
 
 			/*
 			 * Set the window's lastlog level that is

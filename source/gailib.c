@@ -46,7 +46,7 @@ static const char in_loopback[] = { 127, 0, 0, 1 };
 struct sockinet {
 	u_char	si_len;
 	u_char	si_family;
-	u_short	si_port;
+	unsigned short	si_port;
 };
 
 static struct afd {
@@ -189,7 +189,7 @@ int getaddrinfo__compat (const char *hostname, const char *servname, const AI *h
 	char pton[PTON_MAX];
 	AI ai;
 	AI *pai;
-	u_short port;
+	unsigned short port;
 
 	/* initialize file static vars */
 	sentinel.ai_next = NULL;
@@ -357,7 +357,7 @@ int getaddrinfo__compat (const char *hostname, const char *servname, const AI *h
 	/* hostname as numeric name */
 	for (i = 0; afdl[i].a_af; i++) {
 		if (inet_pton__compat(afdl[i].a_af, hostname, pton)) {
-			u_long v4a;
+			unsigned long v4a;
 
 			switch (afdl[i].a_af) {
 			case AF_INET:
@@ -415,7 +415,7 @@ int getaddrinfo__compat (const char *hostname, const char *servname, const AI *h
 
 static int get_name (const char *addr, struct afd *afd, AI **res, char *numaddr, AI *pai, int port0)
 {
-	u_short port = port0 & 0xffff;
+	unsigned short port = port0 & 0xffff;
 	struct hostent *hp;
 	AI *cur;
 	int error = 0;
@@ -439,7 +439,7 @@ static int get_name (const char *addr, struct afd *afd, AI **res, char *numaddr,
 
 static int get_addr (const char *hostname, int af, AI **res, AI *pai, int port0)
 {
-	u_short port = port0 & 0xffff;
+	unsigned short port = port0 & 0xffff;
 	AI sentinel;
 	struct hostent *hp;
 	AI *top, *cur;
@@ -521,10 +521,10 @@ int getnameinfo__compat (const struct sockaddr *sa, size_t salen, char *host, si
 	struct servent *sp;
 #endif
 	struct hostent *hp;
-	u_short port;
+	unsigned short port;
 	int family, len, i;
 	char *addr, *p;
-	u_long v4a;
+	unsigned long v4a;
 	int h_error;
 	char numserv[512];
 	char numaddr[512];

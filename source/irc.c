@@ -1,4 +1,4 @@
-/* $EPIC: irc.c,v 1.399 2002/12/11 19:20:23 crazyed Exp $ */
+/* $EPIC: irc.c,v 1.400 2002/12/19 03:22:59 jnelson Exp $ */
 /*
  * ircII: a new irc client.  I like it.  I hope you will too!
  *
@@ -52,7 +52,7 @@ const char internal_version[] = "20020819";
 /*
  * In theory, this number is incremented for every commit.
  */
-const unsigned long	commit_id = 402;
+const unsigned long	commit_id = 403;
 
 /*
  * As a way to poke fun at the current rage of naming releases after
@@ -811,7 +811,7 @@ static 	Timeval		right_away = { 0, 0 };
 
 	Timeval		timer;
 	int		dccs;
-	fd_set		rd;
+	fd_set		rd, wd;
 
 
 	level++;
@@ -844,6 +844,7 @@ static 	Timeval		right_away = { 0, 0 };
 
 	/* SET UP FD SETS */
 	rd = readables;
+	wd = writables;
 
 	/* If there is a timer that expires sooner, wait for that */
 	/* There is now a timer at all times, so this is our baseline */
@@ -858,7 +859,7 @@ static 	Timeval		right_away = { 0, 0 };
 		timer = right_away;
 
 	/* GO AHEAD AND WAIT FOR SOME DATA TO COME IN */
-	switch (new_select(&rd, NULL, &timer))
+	switch (new_select(&rd, &wd, &timer))
 	{
 		/* Timeout -- nothing interesting. */
 		case 0:
@@ -866,7 +867,7 @@ static 	Timeval		right_away = { 0, 0 };
 			get_time(&now);
 #ifdef HAVE_SSL
 			/* Yes, this is slow, but we have to check for this */
-			do_server(&rd);
+			do_server(&rd, &wd);
 #endif
 			break;
 		}
@@ -890,16 +891,16 @@ static 	Timeval		right_away = { 0, 0 };
 		{
 			get_time(&now);
 			make_window_current(NULL);
-			dcc_check(&rd);
-			do_server(&rd);
-			do_processes(&rd);
-			do_screens(&rd);
+			dcc_check(&rd, &wd);
+			do_server(&rd, &wd);
+			do_processes(&rd, &wd);
+			do_screens(&rd, &wd);
 			break;
 		} 
 	}
 
 	if (dccs)			/* XXX HACK XXX */
-		dcc_check(&rd);		/* XXX HACK XXX */
+		dcc_check(&rd, &wd);	/* XXX HACK XXX */
 
 	ExecuteTimers();
 	get_child_exit(-1);
@@ -1110,7 +1111,7 @@ int	do_every_minute (void *ignored)
 	return 0;
 }
 
-void cpu_saver_off (void)
+void	cpu_saver_off (void)
 {
 	cpu_saver = 0;
 	update_all_status();
@@ -1133,13 +1134,13 @@ static	char	*strftime_12hour = "%I:%M%p";
 	int	broken_clock = 0;
 
 /* update_clock: figures out the current time and returns it in a nice format */
-char	*update_clock (int flag)
+char *	update_clock (int flag)
 {
 static		char	time_str[61];
 static		int	min = -1;
 static		int	hour = -1;
 
-	struct	timeval	tv;
+		Timeval	tv;
 static 	struct 	tm	time_val;
 static		time_t	last_minute = -1;
 		time_t	hideous;
@@ -1297,7 +1298,7 @@ int 	main (int argc, char *argv[])
 	if (dont_connect)
 		display_server_list();		/* Let user choose server */
 	else
-		reconnect(-1, 0);		/* Connect to default server */
+		reconnect(NOSERV, 0);		/* Connect to default server */
 
 	add_timer(0, system_timer, time_to_next_minute(), 1,
 			do_every_minute, NULL, NULL, -1);

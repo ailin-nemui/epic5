@@ -1,4 +1,4 @@
-/* $EPIC: names.c,v 1.34 2002/12/11 19:20:23 crazyed Exp $ */
+/* $EPIC: names.c,v 1.35 2002/12/19 03:22:59 jnelson Exp $ */
 /*
  * names.c: This here is used to maintain a list of all the people currently
  * on your channel.  Seems to work 
@@ -81,15 +81,15 @@ struct	channel_stru *	prev;		/* pointer to previous channel */
 	int		current;	/* Current to this window? */
 	NickList	nicks;		/* alist of nicks on channel */
 
-	u_long		mode;		/* Current mode settings for channel */
-	u_long		i_mode;		/* channel mode for cached string */
+	unsigned long	mode;		/* Current mode settings for channel */
+	unsigned long	i_mode;		/* channel mode for cached string */
 	char *		s_mode;		/* cached string version of modes */
 	int		limit;		/* max users for the channel */
 	char *		key;		/* key for this channel */
 	char		chop;		/* true if you are chop */
 	char		voice;		/* true if you are voiced */
 	char		half_assed;	/* true if you are a helper */
-struct timeval		join_time;	/* When we joined the channel */
+	Timeval		join_time;	/* When we joined the channel */
 }	Channel;
 
 
@@ -135,7 +135,7 @@ int	traverse_all_channels (Channel **ptr, int server)
 {
 	int	real_server;
 
-	if (server < 0)
+	if (server < 0)			/* XXX */
 		real_server = -(server + 1);
 	else
 		real_server = server;
@@ -168,7 +168,7 @@ int	traverse_all_channels (Channel **ptr, int server)
 	 * important.  So we have to go find a window that thinks its on 
 	 * the same server we are.
 	 */
-	if (!(*ptr)->window || (is_server_connected((*ptr)->window->server) &&
+	if (!(*ptr)->window || (is_server_registered((*ptr)->window->server) &&
 				(*ptr)->window->server != (*ptr)->server))
 	{
 		Window *w = NULL;
@@ -223,7 +223,7 @@ static Channel *find_channel (const char *channel, int server)
 {
 	Channel *ch = NULL;
 
-	if (server == -1)
+	if (server == NOSERV)
 		server = primary_server;
 
 	/* Automatically grok the ``*'' channel. */
@@ -351,7 +351,7 @@ static void 	destroy_channel (Channel *chan)
 	}
 
 	new_free(&chan->channel);
-	chan->server = -1;
+	chan->server = NOSERV;
 	chan->window = NULL;
 
 	if (chan->nicks.max_alloc)
@@ -783,7 +783,7 @@ void 	rename_nick (const char *old_nick, const char *new_nick, int server)
 	Channel *chan = NULL;
 	Nick	*tmp;
 
-	if (server < 0) return;		/* Sanity check */
+	if (server == NOSERV) return;		/* Sanity check */
 
 	while (traverse_all_channels(&chan, server))
 	{
@@ -1459,7 +1459,7 @@ void 	destroy_server_channels (int server)
 	Channel	*tmp = NULL;
 	int	reset = 0;
 
-	if (server < 0)
+	if (server == NOSERV)
 		return;		/* Sanity check */
 
 	/*
@@ -1587,7 +1587,7 @@ const char *	fetch_userhost (int server, const char *nick)
 	Channel *tmp = NULL;
 	Nick *user = NULL;
 
-	if (server < 0) return NULL;		/* Sanity check */
+	if (server == NOSERV) return NULL;		/* Sanity check */
 
 	while (traverse_all_channels(&tmp, server))
 	{
@@ -1666,7 +1666,7 @@ void	unset_window_current_channel (Window *old_w, Window *new_w)
 	Channel *tmp = NULL;
 	char	*chan;
 
-	if (old_w->server < 0) return;		/* Sanity check */
+	if (old_w->server == NOSERV) return;		/* Sanity check */
 
 	while (traverse_all_channels(&tmp, old_w->server))
 	{
@@ -1693,7 +1693,7 @@ void   move_channel_to_window (const char *chan, Window *old_w, Window *new_w)
 	int	found = 0;
 
 	if (!old_w || !old_w->current_channel || !new_w ||
-			old_w->server < 0 || !chan || !strcmp(chan, zero))
+			old_w->server == NOSERV || !chan || !strcmp(chan, zero))
 	       return;
 
 	while (traverse_all_channels(&tmp, old_w->server))
@@ -1781,7 +1781,7 @@ void	reset_window_current_channel (Window *w)
 {
 	Channel *tmp = NULL;
 
-	if (w->server < 0) return;		/* Sanity check */
+	if (w->server == NOSERV) return;		/* Sanity check */
 
 	while (traverse_all_channels(&tmp, w->server))
 	{
@@ -1803,7 +1803,7 @@ void	reassign_window_channels (Window *window)
 	Window *w = NULL;
 	int	caution = 0;
 
-	if (window->server < 0 && window->last_server < 0)
+	if (window->server == NOSERV && window->last_server == NOSERV)
 		caution = 1;
 
 	for (tmp = channel_list; tmp; tmp = tmp->next)
@@ -1859,17 +1859,6 @@ char *	create_channel_list (int server)
 	}
 
 	return retval ? retval : m_strdup(empty_string);
-}
-
-void 	channel_server_delete (int i)
-{
-	Channel	*tmp;
-
-	for (tmp = channel_list; tmp; tmp = tmp->next)
-	{
-		if (tmp->server >= i)
-			tmp->server--;
-	}
 }
 
 /*
@@ -1931,17 +1920,14 @@ int 	auto_rejoin_callback (void *d)
 {
 	char *	data    = (char *) d;
 	char *	channel	= next_arg(data, &data);
-	int 	server	= my_atol(next_arg(data, &data));
+	int 	server	= parse_server_index(next_arg(data, &data), 0);
 	Window *window 	= get_window_by_refnum(my_atol(next_arg(data, &data)));
 	char *	key    	= next_arg(data, &data);
-	int 	ofs	= from_server;
 
-	from_server = server;
 	if (key && *key)
-		send_to_server("JOIN %s %s", channel, key);
+		send_to_aserver(server, "JOIN %s %s", channel, key);
 	else
-		send_to_server("JOIN %s", channel);
-	from_server = ofs;
+		send_to_aserver(server, "JOIN %s", channel);
 
 	if (window)
 		malloc_strcpy(&window->waiting_channel, channel);
@@ -2037,7 +2023,7 @@ void	channel_check_windows (void)
 		if (tmp->window == NULL)
 			panic("I thought we just checked for this! [1]");
 
-		if (tmp->window->server == -1 && 
+		if (tmp->window->server == NOSERV && 
 				tmp->server == tmp->window->last_server)
 			continue;			/* This is OK. */
 
@@ -2099,7 +2085,7 @@ void	channel_check_windows (void)
 				"even though this server is connected!",
 				tmp->channel, tmp->server);
 
-		if (is_server_connected(tmp->server) &&
+		if (is_server_registered(tmp->server) &&
 				!did_server_rejoin_channels(tmp->server) && 
 				!tmp->inactive)
 			panic("Channel [%s] on server [%d] is NOT inactive "

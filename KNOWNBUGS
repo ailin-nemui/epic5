@@ -20,6 +20,10 @@ KNOWN ERRATA (eg, bugs, or unresolved requests):
 * The check for "sun_len" in <sys/un.h> is bogus and unnecessary since we
   can just use #ifdef HAVE_SA_LEN for that.
 * Input cursor wigs out if 2ndary window is < 32 columns wide...
+* ^C,,, eats up all commas, not just the first one.
+* Join #foo, then join #foobar, doesn't WHO for #foobar (maxxx)
+* Handle all filesizes in dcc uniformly as 64 bit off_t's.
+* Built in functions need to call 'parse_server_index'!
 ---
 
 [See http://www.epicsol.org/PROJECTS for things to come in the future]
@@ -183,3 +187,37 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Fix /wait (server_hard_wait()) so it tracks/resets from_server (fb CE)
 * Fix /timer so it tracks from_server properly (fb CE)
 * Make /lastlog -context work more like grep -<number>
+* Use server_list_size() and not number_of_servers outside of server.c
+* Use NOSERV and not -1 for "no server"
+* Use (Timeval) and not (struct timeval)
+* Fix (get|set)_server_sent_*() et al to take server refnum.
+* Use parse_server_index() and not my_atol() to parse server refnums
+* re-indent quotecmd
+* Rename is_server_connected() to is_server_registered
+* Make /quote work as long as server is open (not registered)
+* Use send_to_aserver() when it can avoid setting from_server unecessarily
+* Change sent_to_server and clear_sent_to_server to (set|get)server_sent().
+* Change doing_* to get_server_doing_*.
+* Use (unsigned short) and not (u_short)
+* Use (unsigned long) and not (u_long)
+* Make output_reject_ctcp() take a refnum
+* Lock a dcc while we are connecting it, just in case. ;-)
+* Fix /dcc send -p <port>
+* Store protocol enforcements as (get|set)_server_protocol_state().
+* Use (Stat) and not (struct stat)
+* Rewrite $timerctl() so it works like $logctl()
+* Rename is_server_connected() to is_server_registered()
+* Fix an off-by-one error with /FOR ... IN ...
+* Keep track of both readable and writable fd's with newio stuff.
+* Convert server_list to an array of pointers
+* When user /server -delete's, leave a gap, don't change refnums around.
+* Nix code that handles deleting server refnums.
+* New function, new_open_for_writing(), for when we do nonblocking connects.
+* Change new_open() to deregister fd as "writable"
+* Renovate the notify stuff to take refnums and not just use from_server.
+* Renovate /WHO, /ISON, /USERHOST to take refnums and not just use from_server.
+* Make everything that uses server_list[] use get_server() instead.
+* Make everything capable of dealing with "gaps" in server_list[].
+* Use a bunch of macros, to handle with getting and setting server attrs.
+* Make as much as possible use refnums as params and not from_server.
+

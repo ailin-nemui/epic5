@@ -1,4 +1,4 @@
-/* $EPIC: notify.c,v 1.11 2002/07/17 22:52:52 jnelson Exp $ */
+/* $EPIC: notify.c,v 1.12 2002/12/19 03:22:59 jnelson Exp $ */
 /*
  * notify.c: a few handy routines to notify you when people enter and leave irc 
  *
@@ -53,9 +53,9 @@
 #include "who.h"
 
 void 	batch_notify_userhost		(char *nick);
-void 	dispatch_notify_userhosts	(void);
-void 	notify_userhost_dispatch	(UserhostItem *f, char *, char *);
-void 	notify_userhost_reply		(char *nick, char *userhost);
+void 	dispatch_notify_userhosts	(int);
+void 	notify_userhost_dispatch	(int, UserhostItem *f, char *, char *);
+void 	notify_userhost_reply		(int, char *nick, char *userhost);
 
 /* NotifyList: the structure for the notify stuff */
 typedef	struct	notify_stru
@@ -77,27 +77,28 @@ typedef struct	notify_alist
 } NotifyList;
 #endif
 
-	void	ison_notify 		(char *, char *);
+static 	void	ison_notify (int refnum, char *AskedFor, char *AreOn);
 static 	void	rebuild_notify_ison 	(int server);
 
 
-#define NOTIFY_LIST(s)		(&(server_list[s].notify_list))
-#define NOTIFY_MAX(s)  		(NOTIFY_LIST(s)->max)
-#define NOTIFY_ITEM(s, i) 	(NOTIFY_LIST(s)->list[i])
+#define NOTIFY_LIST(s)		(&(s->notify_list))
+#define NOTIFY_MAX(s)  		(s->notify_list.max)
+#define NOTIFY_ITEM(s, i) 	(s->notify_list.list[i])
 
-void	show_notify_list (int all)
+static void	show_notify_list (int all)
 {
+	Server *s;
 	int	i;
 	char	*list = (char *) 0;
 	size_t	clue;
 
-	if (from_server == -1)
+	if (!(s = get_server(from_server)))
 		return;
 
-	for (i = 0, clue = 0; i < NOTIFY_MAX(from_server); i++)
+	for (i = 0, clue = 0; i < NOTIFY_MAX(s); i++)
 	{
-		if (NOTIFY_ITEM(from_server, i)->flag)
-		    m_sc3cat(&list, space, NOTIFY_ITEM(from_server, i)->nick, &clue);
+		if (NOTIFY_ITEM(s, i)->flag)
+		    m_sc3cat(&list, space, NOTIFY_ITEM(s, i)->nick, &clue);
 	}
 
 	if (list)
@@ -106,10 +107,10 @@ void	show_notify_list (int all)
 	if (all)
 	{
 		new_free(&list);
-		for (i = 0, clue = 0; i < NOTIFY_MAX(from_server); i++)
+		for (i = 0, clue = 0; i < NOTIFY_MAX(s); i++)
 		{
-			if (!NOTIFY_ITEM(from_server, i)->flag)
-			    m_sc3cat(&list, space, NOTIFY_ITEM(from_server, i)->nick, &clue);
+			if (!NOTIFY_ITEM(s, i)->flag)
+			    m_sc3cat(&list, space, NOTIFY_ITEM(s, i)->nick, &clue);
 		}
 		if (list) 
 			say("Currently absent: %s", list);
@@ -125,24 +126,25 @@ static	void	rebuild_all_ison (void)
 		rebuild_notify_ison(i);
 }
 
-static void	rebuild_notify_ison (int server)
+static void	rebuild_notify_ison (int refnum)
 {
+	Server *s;
 	char *stuff;
 	int i;
 	size_t clue = 0;
 
-	if (server < 0 || server > number_of_servers)
+	if (!(s = get_server(refnum)))
 		return;		/* No server, no go */
 
-	stuff = NOTIFY_LIST(server)->ison;
+	stuff = NOTIFY_LIST(s)->ison;
 
-	if (NOTIFY_LIST(server)->ison)
-		NOTIFY_LIST(server)->ison[0] = 0;
+	if (NOTIFY_LIST(s)->ison)
+		NOTIFY_LIST(s)->ison[0] = 0;
 
-	for (i = 0; i < NOTIFY_MAX(server); i++)
+	for (i = 0; i < NOTIFY_MAX(s); i++)
 	{
-		m_sc3cat(&(NOTIFY_LIST(server)->ison),
-			space, NOTIFY_ITEM(server, i)->nick, &clue);
+		m_sc3cat(&(NOTIFY_LIST(s)->ison),
+			space, NOTIFY_ITEM(s, i)->nick, &clue);
 	}
 }
 
@@ -150,6 +152,7 @@ static void	rebuild_notify_ison (int server)
 /* notify: the NOTIFY command.  Does the whole ball-o-wax */
 BUILT_IN_COMMAND(notify)
 {
+	Server		*s;
 	char		*nick,
 			*list = (char *) 0,
 			*ptr;
@@ -157,132 +160,137 @@ BUILT_IN_COMMAND(notify)
 	int		do_ison = 0;
 	int		shown = 0;
 	NotifyItem	*new_n;
-	int		servnum;
+	int		refnum;
 	int		added = 0;
 	size_t		clue = 0;
 
 	malloc_strcpy(&list, empty_string);
 	while ((nick = next_arg(args, &args)))
 	{
-		for (no_nicks = 0; nick; nick = ptr)
-		{
-shown = 0;
-if ((ptr = strchr(nick, ',')))
-	*ptr++ = '\0';
+	    for (no_nicks = 0; nick; nick = ptr)
+	    {
+		shown = 0;
+		if ((ptr = strchr(nick, ',')))
+		    *ptr++ = '\0';
 
-if (*nick == '-')
-{
-	nick++;
-	if (*nick)
-	{
-		for (servnum = 0; servnum < number_of_servers; servnum++)
+		if (*nick == '-')
 		{
-			if ((new_n = (NotifyItem *)remove_from_array(
-				(array *)NOTIFY_LIST(servnum), nick)))
+		    nick++;
+		    if (*nick)
+		    {
+			for (refnum = 0; refnum < number_of_servers; refnum++)
 			{
+			    if (!(s = get_server(refnum)))
+				continue;
+
+			    if ((new_n = (NotifyItem *)remove_from_array(
+					(array *)NOTIFY_LIST(s), nick)))
+			    {
 				new_free(&(new_n->nick));
 				new_free((char **)&new_n);
 
 				if (!shown)
 				{
-					say("%s removed from notify list",
-						nick);
-					shown = 1;
+				    say("%s removed from notify list", nick);
+				    shown = 1;
 				}
-			}
-			else
-			{
+			    }
+			    else
+			    {
 				if (!shown)
 				{
-					say("%s is not on the notify list", 
-						nick);
-					shown = 1;
+				    say("%s is not on the notify list", nick);
+				    shown = 1;
 				}
+			    }
 			}
-		}
-	}
-	else
-	{
-		for (servnum = 0; servnum < number_of_servers; servnum++)
-		{
-			while ((new_n = (NotifyItem *)array_pop(
-				(array *)NOTIFY_LIST(servnum), 0)))
+		    }
+		    else
+		    {
+			for (refnum = 0; refnum < number_of_servers; refnum++)
 			{
+			    if (!(s = get_server(refnum)))
+				continue;
+
+			    while ((new_n = (NotifyItem *)array_pop(
+						(array *)NOTIFY_LIST(s), 0)))
+			    {
 				new_free(&new_n->nick);
 				new_free((char **)&new_n);
+			    }
 			}
+			say("Notify list cleared");
+		    }
 		}
-		say("Notify list cleared");
-	}
-}
-else
-{
-	/* compatibility */
-	if (*nick == '+')
-		nick++;
-
-	if (!*nick)
-	{
-		show_notify_list(0);
-		continue;
-	}
-
-	if (strchr(nick, '*'))
-	{
-		say("Wildcards not allowed in NOTIFY nicknames!");
-		continue;
-	}
-
-	for (servnum = 0; servnum < number_of_servers; servnum++)
-	{
-		if ((new_n = (NotifyItem *)array_lookup(
-				(array *)NOTIFY_LIST(servnum), nick, 0, 0)))
+		else
 		{
-			continue;	/* Already there! */
+		    /* compatibility */
+		    if (*nick == '+')
+			nick++;
+
+		    if (!*nick)
+		    {
+			show_notify_list(0);
+			continue;
+		    }
+
+		    if (strchr(nick, '*'))
+		    {
+			say("Wildcards not allowed in NOTIFY nicknames!");
+			continue;
+		    }
+
+		    for (refnum = 0; refnum < number_of_servers; refnum++)
+		    {
+			if (!(s = get_server(refnum)))
+			    continue;
+
+			if ((new_n = (NotifyItem *)array_lookup(
+					(array *)NOTIFY_LIST(s), nick, 0, 0)))
+			{
+			    continue;	/* Already there! */
+			}
+
+			new_n = (NotifyItem *)new_malloc(sizeof(NotifyItem));
+			new_n->nick = m_strdup(nick);
+			new_n->flag = 0;
+			add_to_array((array *)NOTIFY_LIST(s), 
+					(array_item *)new_n);
+			added = 1;
+		     }
+
+		    if (added)
+		    {
+			m_sc3cat(&list, space, new_n->nick, &clue);
+			do_ison = 1;
+		    }
+
+		    say("%s added to the notification list", nick);
 		}
-
-		new_n = (NotifyItem *)new_malloc(sizeof(NotifyItem));
-		new_n->nick = m_strdup(nick);
-		new_n->flag = 0;
-		add_to_array((array *)NOTIFY_LIST(servnum), 
-			     (array_item *)new_n);
-		added = 1;
-	}
-
-	if (added)
-	{
-		m_sc3cat(&list, space, new_n->nick, &clue);
-		do_ison = 1;
-	}
-
-	say("%s added to the notification list", nick);
-}
-
-		} /* End of for */
+	    } /* End of for */
 	} /* End of while */
 
 	if (do_ison && get_int_var(DO_NOTIFY_IMMEDIATELY_VAR))
 	{
-		int ofs = from_server;
+	    for (refnum = 0; refnum < number_of_servers; refnum++)
+	    {
+		if (!(s = get_server(refnum)))
+		    continue;
 
-		for (servnum = 0; servnum < number_of_servers; servnum++)
-		{
-			from_server = servnum;
-			if (is_server_connected(from_server))
-				if (list && *list)
-					isonbase(list, ison_notify);
-		}
-		from_server = ofs;
+		if (is_server_registered(refnum))
+		    if (list && *list)
+			isonbase(refnum, list, ison_notify);
+	    }
 	}
 
 	new_free(&list);
 	rebuild_all_ison();
 
 	if (no_nicks)
-		show_notify_list(1);
+	    show_notify_list(1);
 }
 
-void	ison_notify (char *AskedFor, char *AreOn)
+static void	ison_notify (int refnum, char *AskedFor, char *AreOn)
 {
 	char	*NextAsked;
 	char	*NextGot;
@@ -299,7 +307,7 @@ void	ison_notify (char *AskedFor, char *AreOn)
 		{
 			if (x_debug & DEBUG_NOTIFY)
 				yell("OK.  Found [%s].", NextAsked);
-			notify_mark(NextAsked, 1, 1);
+			notify_mark(refnum, NextAsked, 1, 1);
 			NextGot = next_arg(AreOn, &AreOn);
 			if (x_debug & DEBUG_NOTIFY)
 				yell("Looking for [%s]", NextGot ? NextGot : "<Nobody>");
@@ -308,7 +316,7 @@ void	ison_notify (char *AskedFor, char *AreOn)
 		{
 			if (x_debug & DEBUG_NOTIFY)
 				yell("Well, [%s] doesnt look to be on.", NextAsked);
-			notify_mark(NextAsked, 0, 1);
+			notify_mark(refnum, NextAsked, 0, 1);
 		}
 	}
 
@@ -316,7 +324,7 @@ void	ison_notify (char *AskedFor, char *AreOn)
 		if (AreOn && *AreOn)
 			yell("Hrm.  There's stuff left in AreOn, and there shouldn't be. [%s]", AreOn);
 
-	dispatch_notify_userhosts();
+	dispatch_notify_userhosts(refnum);
 }
 
 /*
@@ -326,6 +334,7 @@ void	ison_notify (char *AskedFor, char *AreOn)
  */
 void 	do_notify (void)
 {
+	Server 		*s;
 	int 		old_from_server = from_server;
 	int		servnum;
 static	time_t		last_notify = 0;
@@ -351,32 +360,35 @@ static	time_t		last_notify = 0;
 	last_notify = time(NULL);
 	for (servnum = 0; servnum < number_of_servers; servnum++)
 	{
-		if (is_server_connected(servnum))
+		if (!(s = get_server(servnum)))
+			continue;
+
+		if (!is_server_registered(servnum))
 		{
-			from_server = servnum;
-			if (NOTIFY_LIST(servnum)->ison && 
-			    *NOTIFY_LIST(servnum)->ison)
-			{
-				isonbase(NOTIFY_LIST(servnum)->ison, ison_notify);
-				if (x_debug & DEBUG_NOTIFY)
-				    yell("Notify ISON issued for server [%d]", 
-						servnum);
-			}
-			else if (NOTIFY_MAX(servnum))
-			{
-				if (x_debug & DEBUG_NOTIFY)
-					yell("Server [%d]'s notify list is"
-						"empty and it shouldn't be.",
-							servnum);
-				rebuild_all_ison();
-			}
-			else if (x_debug & DEBUG_NOTIFY)
-				yell("Server [%d]'s notify list is empty.",
-					servnum);
-		}
-		else if (x_debug & DEBUG_NOTIFY)
+		    if (x_debug & DEBUG_NOTIFY)
 			yell("Server [%d] is not connected so we "
 			     "will not issue an ISON for it.", servnum);
+		    continue;
+		}
+
+		from_server = servnum;
+		if (NOTIFY_LIST(s)->ison && *NOTIFY_LIST(s)->ison)
+		{
+			isonbase(servnum, NOTIFY_LIST(s)->ison, ison_notify);
+			if (x_debug & DEBUG_NOTIFY)
+			    yell("Notify ISON issued for server [%d]", servnum);
+		}
+		else if (NOTIFY_MAX(s))
+		{
+			if (x_debug & DEBUG_NOTIFY)
+				yell("Server [%d]'s notify list is"
+					"empty and it shouldn't be.",
+						servnum);
+			rebuild_all_ison();
+		}
+		else if (x_debug & DEBUG_NOTIFY)
+			yell("Server [%d]'s notify list is empty.",
+				servnum);
 	}
 
 	if (x_debug & DEBUG_NOTIFY)
@@ -401,14 +413,18 @@ static	time_t		last_notify = 0;
  * be doing an extra server request -- which we're already doing anyhow! --
  * so in the worst case this cant be any worse than it is already.
  */
-void 	notify_mark (char *nick, int flag, int doit)
+void 	notify_mark (int refnum, char *nick, int flag, int doit)
 {
+	Server		*s;
 	NotifyItem 	*tmp;
 	int		count;
 	int		loc;
 
+	if (!(s = get_server(refnum)))
+		return;
+
 	if ((tmp = (NotifyItem *)find_array_item(
-				(array *)NOTIFY_LIST(from_server), nick, 
+				(array *)NOTIFY_LIST(s), nick, 
 				&count, &loc)) && count < 0)
 	{
 		if (flag)
@@ -418,12 +434,12 @@ void 	notify_mark (char *nick, int flag, int doit)
 			    if (get_int_var(NOTIFY_USERHOST_AUTOMATIC_VAR))
 			        batch_notify_userhost(nick);
 			    else
-				notify_userhost_reply(nick, NULL);
+				notify_userhost_reply(refnum, nick, NULL);
 			}
 			tmp->flag = 1;
 
 			if (!doit)
-				dispatch_notify_userhosts();
+				dispatch_notify_userhosts(refnum);
 		}
 		else
 		{
@@ -452,35 +468,38 @@ void 	batch_notify_userhost (char *nick)
 	batched_notifies++;
 }
 
-void 	dispatch_notify_userhosts (void)
+void 	dispatch_notify_userhosts (int refnum)
 {
 	if (batched_notify_userhosts)
 	{
 		if (x_debug & DEBUG_NOTIFY)
 			yell("Dispatching notifies to server [%d], [%s]", from_server, batched_notify_userhosts);
-		userhostbase(batched_notify_userhosts, notify_userhost_dispatch, 1);
+		userhostbase(refnum, batched_notify_userhosts, notify_userhost_dispatch, 1);
 		new_free(&batched_notify_userhosts);
 		batched_notifies = 0;
 	}
 }
 
-void 	notify_userhost_dispatch (UserhostItem *stuff, char *nick, char *text)
+void 	notify_userhost_dispatch (int refnum, UserhostItem *stuff, char *nick, char *text)
 {
 	char userhost[BIG_BUFFER_SIZE + 1];
 
 	snprintf(userhost, BIG_BUFFER_SIZE, "%s@%s", stuff->user, stuff->host);
-	notify_userhost_reply(stuff->nick, userhost);
+	notify_userhost_reply(refnum, stuff->nick, userhost);
 }
 
-void 	notify_userhost_reply (char *nick, char *userhost)
+void 	notify_userhost_reply (int refnum, char *nick, char *userhost)
 {
+	Server *s;
 	NotifyItem *tmp;
 
 	if (!userhost)
 		userhost = empty_string;
 
-	if ((tmp = (NotifyItem *)array_lookup(
-				(array *)NOTIFY_LIST(from_server), nick, 0, 0)))
+	if (!(s = get_server(refnum)))
+		return;
+
+	if ((tmp = (NotifyItem *)array_lookup((array *)NOTIFY_LIST(s), nick, 0, 0)))
 	{
 		if (do_hook(NOTIFY_SIGNON_LIST, "%s %s", nick, userhost))
 		{
@@ -502,77 +521,97 @@ void 	notify_userhost_reply (char *nick, char *userhost)
 
 void 	save_notify (FILE *fp)
 {
+	Server *s;
 	int i;
 
-	if (number_of_servers && NOTIFY_MAX(0))
-	{
-		fprintf(fp, "NOTIFY");
-		for (i = 0; i < NOTIFY_MAX(0); i++)
-			fprintf(fp, " %s", NOTIFY_ITEM(0, i)->nick);
-		fprintf(fp, "\n");
-	}
+	for (i = 0; i < number_of_servers; i++)
+		if ((s = get_server(i)) && NOTIFY_MAX(s))
+			break;
+	if (!s)
+		return;			/* No notify list. */
+
+	fprintf(fp, "NOTIFY");
+	for (i = 0; i < NOTIFY_MAX(s); i++)
+		fprintf(fp, " %s", NOTIFY_ITEM(s, i)->nick);
+	fprintf(fp, "\n");
 }
 
-void 	make_notify_list (int servnum)
+void 	make_notify_list (int refnum)
 {
+	Server *s, *sp;
 	NotifyItem *tmp;
 	char *list = NULL;
 	int i;
 	size_t clue = 0;
 
-	server_list[servnum].notify_list.list = NULL;
-	server_list[servnum].notify_list.max = 0;
-	server_list[servnum].notify_list.max_alloc = 0;
-	server_list[servnum].notify_list.func = (alist_func)my_stricmp;
-	server_list[servnum].notify_list.hash = HASH_INSENSITIVE;
-	server_list[servnum].notify_list.ison = NULL;
+	if (!(s = get_server(refnum)))
+		return;
 
-	for (i = 0; i < NOTIFY_MAX(0); i++)
+	s->notify_list.list = NULL;
+	s->notify_list.max = 0;
+	s->notify_list.max_alloc = 0;
+	s->notify_list.func = (alist_func)my_stricmp;
+	s->notify_list.hash = HASH_INSENSITIVE;
+	s->notify_list.ison = NULL;
+
+	for (i = 0; i < number_of_servers; i++)
+		if ((sp = get_server(i)) && NOTIFY_MAX(s))
+			break;
+	if (!sp)
+		return;			/* No notify list to copy. */
+
+	for (i = 0; i < NOTIFY_MAX(sp); i++)
 	{
 		tmp = (NotifyItem *)new_malloc(sizeof(NotifyItem));
-		tmp->nick = m_strdup(NOTIFY_ITEM(0, i)->nick);
+		tmp->nick = m_strdup(NOTIFY_ITEM(sp, i)->nick);
 		tmp->flag = 0;
 
-		add_to_array ((array *)NOTIFY_LIST(servnum),
-			      (array_item *)tmp);
+		add_to_array ((array *)NOTIFY_LIST(s), (array_item *)tmp);
 		m_sc3cat(&list, space, tmp->nick, &clue);
 	}
 
 	if (list)
 	{
-		isonbase(list, ison_notify);
+		isonbase(refnum, list, ison_notify);
 		new_free(&list);
 	}
 }
 
-void	destroy_notify_list (int servnum)
+void	destroy_notify_list (int refnum)
 {
+	Server *s;
 	NotifyItem *	item;
 
-	while (NOTIFY_MAX(servnum))
+	if (!(s = get_server(refnum)))
+		return;
+
+	while (NOTIFY_MAX(s))
 	{
-		item = (NotifyItem *) array_pop((array* )NOTIFY_LIST(servnum), 0);
-		if (item) new_free(&item->nick);
+		item = (NotifyItem *) array_pop((array *)NOTIFY_LIST(s), 0);
+		if (item) 
+			new_free(&item->nick);
 		new_free(&item);
 	}
-	new_free(&(NOTIFY_LIST(servnum)->ison));
-	new_free(NOTIFY_LIST(servnum));
+	new_free(&(NOTIFY_LIST(s)->ison));
+	new_free(NOTIFY_LIST(s));
 }
 
-char *	get_notify_nicks (int showserver, int showon)
+char *	get_notify_nicks (int refnum, int showon)
 {
+	Server *s;
 	char *list = NULL;
 	int i;
 	size_t rvclue=0;
 
-	if (showserver < 0 || showserver >= number_of_servers)
+	if (!(s = get_server(refnum)))
 		return m_strdup(empty_string);
 
-	for (i = 0; i < NOTIFY_MAX(showserver); i++)
+	for (i = 0; i < NOTIFY_MAX(s); i++)
 	{
-		if (showon == -1 || showon == NOTIFY_ITEM(showserver, i)->flag)
-			m_sc3cat(&list, space, NOTIFY_ITEM(showserver, i)->nick, &rvclue);
+		if (showon == -1 || showon == NOTIFY_ITEM(s, i)->flag)
+			m_sc3cat(&list, space, NOTIFY_ITEM(s, i)->nick, &rvclue);
 	}
 
 	return (list ? list : m_strdup(empty_string));
 }
+

@@ -24,7 +24,7 @@ typedef struct notify_alist
 
 	BUILT_IN_COMMAND(notify);
 	void	do_notify 		(void);
-	void	notify_mark 		(char *, int, int);
+	void	notify_mark 		(int, char *, int, int);
 	void	save_notify 		(FILE *);
 	void	set_notify_handler 	(char *);
 	void	make_notify_list 	(int);

@@ -15,5 +15,6 @@
 				 int (*) (void *), const char *, 
 				 const char *, int);
 	Timeval	TimerTimeout 	(void);
+	char *	timerctl	(char *);
 
 #endif /* _TIMER_H_ */

@@ -1,4 +1,4 @@
-/* $EPIC: numbers.c,v 1.32 2002/11/08 23:36:12 jnelson Exp $ */
+/* $EPIC: numbers.c,v 1.33 2002/12/19 03:22:59 jnelson Exp $ */
 /*
  * numbers.c: handles all those strange numeric response dished out by that
  * wacky, nutty program we call ircd 
@@ -205,9 +205,9 @@ void 	numbered_command (char *from, int comm, char **ArgList)
 	case 001:	/* #define RPL_WELCOME          001 */
 	{
 		accept_server_nickname(from_server, user);
-		server_is_connected(from_server, 1);
+		server_is_registered(from_server, 1);
 
-		userhostbase(NULL, got_my_userhost, 1);
+		userhostbase(from_server, NULL, got_my_userhost, 1);
 		PasteArgs(ArgList, 0);
 		if (do_hook(current_numeric, "%s %s", from, *ArgList)) 
 			display_msg(from, ArgList);
@@ -272,6 +272,7 @@ void 	numbered_command (char *from, int comm, char **ArgList)
 	}
 
 	case 14:		/* Erf/TS4 "cookie" numeric	014 */
+		use_server_cookie(from_server);
 		set_server_cookie(from_server, ArgList[0]);
 		break;
 
@@ -292,11 +293,11 @@ void 	numbered_command (char *from, int comm, char **ArgList)
 		if (!get_server_005(from_server, "USERIP"))
 			goto DEFAULT;
 	case 302:		/* #define RPL_USERHOST         302 */
-		userhost_returned(from, ArgList);
+		userhost_returned(from_server, from, ArgList);
 		break;
 
 	case 303:		/* #define RPL_ISON             303 */
-		ison_returned(from, ArgList);
+		ison_returned(from_server, from, ArgList);
 		break;
 
 	/* XXX Doesn't belong here */
@@ -358,7 +359,7 @@ void 	numbered_command (char *from, int comm, char **ArgList)
 	case 315:		/* #define RPL_ENDOFWHO         315 */
 	{
 		PasteArgs(ArgList, 0);
-		who_end(from, ArgList);
+		who_end(from_server, from, ArgList);
 		break;
 	}
 
@@ -510,7 +511,7 @@ void 	numbered_command (char *from, int comm, char **ArgList)
 
 
 	case 352:		/* #define RPL_WHOREPLY         352 */
-		whoreply((char *) 0, ArgList);
+		whoreply(from_server, NULL, ArgList);
 		break;
 
 	case 353:		/* #define RPL_NAMREPLY         353 */
@@ -518,7 +519,7 @@ void 	numbered_command (char *from, int comm, char **ArgList)
 		break;
 
 	case 354:		/* #define RPL_XWHOREPLY	354 */
-		xwhoreply(NULL, ArgList);
+		xwhoreply(from_server, NULL, ArgList);
 		break;
 
 	/* XXX Doesn't belong here */
@@ -587,7 +588,7 @@ void 	numbered_command (char *from, int comm, char **ArgList)
 	/* XXX Shouldn't this set "You're operator" flag for hybrid? */
 	case 381: 		/* #define RPL_YOUREOPER        381 */
 		PasteArgs(ArgList, 0);
-		if (!is_server_connected(from_server))
+		if (!is_server_registered(from_server))
 			say("Odd server stuff from %s: %s", from, ArgList[0]);
 		else if (do_hook(current_numeric, "%s %s", from, ArgList[0]))
 			display_msg(from, ArgList);
@@ -604,7 +605,7 @@ void 	numbered_command (char *from, int comm, char **ArgList)
 						ArgList[0], ArgList[1]))
 			put_it("%s %s: %s", numeric_banner(), 
 						ArgList[0], ArgList[1]);
-		notify_mark(ArgList[0], 0, 0);
+		notify_mark(from_server, ArgList[0], 0, 0);
 
 		if (get_int_var(AUTO_WHOWAS_VAR))
 		{
@@ -630,7 +631,7 @@ void 	numbered_command (char *from, int comm, char **ArgList)
 		 * Some servers BBC by sending this instead of
 		 * a 315 numeric when a who request has been completed.
 		 */
-		fake_who_end(from, ArgList[0]);
+		fake_who_end(from_server, from, ArgList[0]);
 
 		if (do_hook(current_numeric, "%s %s %s", from, 
 					ArgList[0], ArgList[1]))
@@ -650,7 +651,7 @@ void 	numbered_command (char *from, int comm, char **ArgList)
 		 * courtesy of telling us which who request was in error,
 		 * so we have to guess.  Whee.
 		 */
-		fake_who_end(from, NULL);
+		fake_who_end(from_server, from, NULL);
 
 		if (do_hook(current_numeric, "%s %s", from, ArgList[0]))
 			display_msg(from, ArgList);
@@ -684,7 +685,7 @@ void 	numbered_command (char *from, int comm, char **ArgList)
 		 * Some servers BBC and send this instead of a
 		 * 315 numeric when a who request has been completed.
 		 */
-		if (fake_who_end(from, ArgList[0]))
+		if (fake_who_end(from_server, from, ArgList[0]))
 			;
 
 		/*
@@ -708,9 +709,9 @@ void 	numbered_command (char *from, int comm, char **ArgList)
 
 	case 421:		/* #define ERR_UNKNOWNCOMMAND   421 */
 	{
-		if (check_server_redirect(ArgList[0]))
+		if (check_server_redirect(from_server, ArgList[0]))
 			break;
-		if (check_server_wait(ArgList[0]))
+		if (check_server_wait(from_server, ArgList[0]))
 			break;
 
 		PasteArgs(ArgList, 0);
@@ -807,7 +808,7 @@ void 	numbered_command (char *from, int comm, char **ArgList)
 		 * If we are registered, abort the nick change and
 		 * hope for the best.
 		 */
-		if (is_server_connected(from_server))
+		if (is_server_registered(from_server))
 		{
 			accept_server_nickname(from_server, user);
 			if (do_hook(current_numeric, "%s %s", from, ArgList[0]))
@@ -910,7 +911,7 @@ void 	numbered_command (char *from, int comm, char **ArgList)
 		{
 			char	server_num[8];
 
-			server_reconnects_to(from_server, -1);
+			server_reconnects_to(from_server, NOSERV);
 			say("Password required for connection to server %s",
 				get_server_name(from_server));
 			if (!dumb_mode)
@@ -932,7 +933,7 @@ void 	numbered_command (char *from, int comm, char **ArgList)
 		 * connected to a server, then doing say() is not
 		 * a good idea.  So now it just doesnt do anything.
 		 */
-		server_reconnects_to(from_server, -1);
+		server_reconnects_to(from_server, NOSERV);
 		if (do_hook(current_numeric, "%s %s", from, ArgList[0]))
 			display_msg(from, ArgList);
 		break;

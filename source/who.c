@@ -1,4 +1,4 @@
-/* $EPIC: who.c,v 1.12 2002/08/27 15:14:32 crazyed Exp $ */
+/* $EPIC: who.c,v 1.13 2002/12/19 03:22:59 jnelson Exp $ */
 /*
  * who.c -- The WHO queue.  The ISON queue.  The USERHOST queue.
  *
@@ -82,9 +82,14 @@
 #define WHO_INVISIBLE	0x2000
 
 
-static WhoEntry *who_queue_top (void)
+static WhoEntry *who_queue_top (int refnum)
 {
-	return server_list[from_server].who_queue;
+	Server *s;
+
+	if (!(s = get_server(refnum)))
+		return NULL;
+
+	return s->who_queue;
 }
 
 /*
@@ -93,25 +98,35 @@ static WhoEntry *who_queue_top (void)
  * asking, and they want to know who is LAST (before them)
  * So it sucks.  Sue me.
  */
-static WhoEntry *who_previous_query (WhoEntry *me)
+static WhoEntry *who_previous_query (int refnum, WhoEntry *me)
 {
-	WhoEntry *what = who_queue_top();
+	WhoEntry *what;
+	Server *s;
 
+	if (!(s = get_server(refnum)))
+		return NULL;
+
+	what = who_queue_top(refnum);
 	while (what && what->next != me)
 		what = what->next;
 
 	return what;
 }
 
-static void who_queue_add (WhoEntry *item)
+static void who_queue_add (int refnum, WhoEntry *item)
 {
-	WhoEntry *bottom = who_queue_top();
+	WhoEntry *bottom;
+	Server *s;
 
+	if (!(s = get_server(refnum)))
+		return;
+
+	bottom = who_queue_top(refnum);
 	while (bottom && bottom->next)
 		bottom = bottom->next;
 
 	if (!bottom)
-		server_list[from_server].who_queue = item;
+		s->who_queue = item;
 	else
 		bottom->next = item;
 
@@ -131,18 +146,22 @@ static void delete_who_item (WhoEntry *save)
 	new_free((char **)&save);
 }
 
-static void who_queue_pop (void)
+static void who_queue_pop (int refnum)
 {
 	WhoEntry *save;
 	int	piggyback;
+	Server *s;
+
+	if (!(s = get_server(refnum)))
+		return;
 
 	do
 	{
-		if (!(save = server_list[from_server].who_queue))
+		if (!(save = s->who_queue))
 			break;
 
 		piggyback = save->piggyback;
-		server_list[from_server].who_queue = save->next;
+		s->who_queue = save->next;
 		delete_who_item(save);
 	}
 	while (piggyback);
@@ -173,13 +192,16 @@ static WhoEntry *get_new_who_entry (void)
 	return new_w;
 }
 
-static void who_queue_list (void)
+static void who_queue_list (int refnum)
 {
-	WhoEntry *item = server_list[from_server].who_queue;
+	WhoEntry *item;
 	int count = 0;
+	Server *s;
 
-	item = server_list[from_server].who_queue;
-	while (item)
+	if (!(s = get_server(refnum)))
+		return;
+
+	for (item = s->who_queue; item; item = item->next)
 	{
 		yell("[%d] [%d] [%s] [%s] [%s]", count,
 			item->who_mask,
@@ -187,18 +209,20 @@ static void who_queue_list (void)
 			item->who_stuff ? item->who_stuff : empty_string,
 			item->who_end ? item->who_end : empty_string);
 		count++;
-		item = item->next;
 	}
 }
 
-static void who_queue_flush (void)
+static void who_queue_flush (int refnum)
 {
-	WhoEntry *item;
+	Server *s;
 
-	while ((item = server_list[from_server].who_queue))
-		who_queue_pop();
+	if (!(s = get_server(refnum)))
+		return;
 
-	yell("Who queue for server [%d] purged", from_server);
+	while (s->who_queue)
+		who_queue_pop(refnum);
+
+	yell("Who queue for server [%d] purged", refnum);
 }
 
 
@@ -209,14 +233,14 @@ static void who_queue_flush (void)
  */
 BUILT_IN_COMMAND(whocmd)
 {
-	whobase(args, NULL, NULL);
+	whobase(from_server, args, NULL, NULL);
 }
 
 
 /*
  * whobase: What does all the work.
  */
-void 	whobase(char *args, void (*line) (char *, char **), void (*end) (char *, char **))
+void 	whobase (int refnum, char *args, void (*line) (int, char *, char **), void (*end) (int, char *, char **))
 {
 	char	*arg,
 		*channel = NULL;
@@ -225,7 +249,7 @@ void 	whobase(char *args, void (*line) (char *, char **), void (*end) (char *, c
 	WhoEntry *new_w, *old;
 
 	/* Maybe should output a warning? */
-	if (!is_server_connected(from_server))
+	if (!is_server_registered(refnum))
 		return;
 
 	new_w = get_new_who_entry();
@@ -340,7 +364,7 @@ void 	whobase(char *args, void (*line) (char *, char **), void (*end) (char *, c
 		}
 		else if (!strncmp(arg, "f", 1))
 		{
-			who_queue_flush();
+			who_queue_flush(refnum);
 			delete_who_item(new_w);
 			return;
 		}
@@ -359,7 +383,7 @@ void 	whobase(char *args, void (*line) (char *, char **), void (*end) (char *, c
 		}
 		else if (!strncmp(arg, "d", 1))
 		{
-			who_queue_list();
+			who_queue_list(refnum);
 			delete_who_item(new_w);
 			return;
 		}
@@ -370,9 +394,9 @@ void 	whobase(char *args, void (*line) (char *, char **), void (*end) (char *, c
 			new_w->undernet_extended = 0;
 			new_free(&new_w->who_stuff);
 			new_free(&new_w->who_end);
-			who_queue_add(new_w);
+			who_queue_add(refnum, new_w);
 
-			send_to_server("WHO %s", args);
+			send_to_aserver(refnum, "WHO %s", args);
 			return;
 		}
 		else
@@ -408,12 +432,12 @@ void 	whobase(char *args, void (*line) (char *, char **), void (*end) (char *, c
 		channel = "*.*";
 	new_w->who_target = m_strdup(channel);
 
-	who_queue_add(new_w);
+	who_queue_add(refnum, new_w);
 
 	/*
 	 * Check to see if we can piggyback
 	 */
-	old = who_previous_query(new_w);
+	old = who_previous_query(refnum, new_w);
 	if (old && !old->dirty && old->who_target && channel && 
 		!strcmp(old->who_target, channel))
 	{
@@ -423,7 +447,8 @@ void 	whobase(char *args, void (*line) (char *, char **), void (*end) (char *, c
 	}
 	else if (new_w->undernet_extended)
 	{
-		send_to_server("WHO %s %s%s%s", new_w->who_target,
+		send_to_aserver(refnum, "WHO %s %s%s%s", 
+			new_w->who_target,
 			(new_w->who_mask & WHO_OPS) ?  "o" : "",
 			(new_w->who_mask & WHO_INVISIBLE) ? "x" : "",
 			new_w->undernet_extended_args ? 
@@ -431,11 +456,13 @@ void 	whobase(char *args, void (*line) (char *, char **), void (*end) (char *, c
 	}
 	else if (new_w->dalnet_extended)
 	{
-		send_to_server("WHO %s %s", new_w->dalnet_extended_args,
+		send_to_aserver(refnum, "WHO %s %s", 
+			new_w->dalnet_extended_args,
 			new_w->who_target);
 	}
 	else
-		send_to_server("WHO %s %s%s", new_w->who_target,
+		send_to_aserver(refnum, "WHO %s %s%s", 
+			new_w->who_target,
 			(new_w->who_mask & WHO_OPS) ?  "o" : "",
 			(new_w->who_mask & WHO_INVISIBLE) ? "x" : "");
 
@@ -443,7 +470,7 @@ void 	whobase(char *args, void (*line) (char *, char **), void (*end) (char *, c
 
 static int who_whine = 0;
 
-void	whoreply (char *from, char **ArgList)
+void	whoreply (int refnum, char *from, char **ArgList)
 {
 static	char	format[40];
 static	int	last_width = -1;
@@ -455,7 +482,7 @@ static	int	last_width = -1;
 		*nick,
 		*stat,
 		*name;
-	WhoEntry *new_w = who_queue_top();
+	WhoEntry *new_w = who_queue_top(refnum);
 
 	if (!ArgList[5])
 		return;		/* Fake! */
@@ -466,7 +493,7 @@ static	int	last_width = -1;
                 new_w->line = NULL;
                 new_w->end = NULL;
                 new_w->who_target = m_strdup(star);
-                who_queue_add(new_w);
+                who_queue_add(refnum, new_w);
 	}
 
 	if (new_w->undernet_extended)
@@ -488,7 +515,7 @@ do
 	 */
 	if (new_w->line)
 	{
-		new_w->line(from, ArgList);
+		new_w->line(refnum, from, ArgList);
 		continue;
 	}
 
@@ -582,9 +609,9 @@ while (new_w->piggyback && (new_w = new_w->next));
 }
 
 /* Undernet's 354 numeric reply. */
-void	xwhoreply (char *from, char **ArgList)
+void	xwhoreply (int refnum, char *from, char **ArgList)
 {
-	WhoEntry *new_w = who_queue_top();
+	WhoEntry *new_w = who_queue_top(refnum);
 
 	if (!new_w)
 	{
@@ -593,7 +620,7 @@ void	xwhoreply (char *from, char **ArgList)
 		new_w->end = NULL;
 		new_w->who_target = m_strdup(star);
 		new_w->undernet_extended = 1;
-		who_queue_add(new_w);
+		who_queue_add(refnum, new_w);
 	}
 
 	if (!new_w->undernet_extended)
@@ -606,9 +633,9 @@ void	xwhoreply (char *from, char **ArgList)
 }
 
 
-void	who_end (char *from, char **ArgList)
+void	who_end (int refnum, char *from, char **ArgList)
 {
-	WhoEntry 	*new_w = who_queue_top();
+	WhoEntry 	*new_w = who_queue_top(refnum);
 	char 		buffer[1025];
 
 	if (who_whine)
@@ -620,7 +647,7 @@ void	who_end (char *from, char **ArgList)
 	{
 		/* Defer to another function, if neccesary.  */
 		if (new_w->end)
-			new_w->end(from, ArgList);
+			new_w->end(refnum, from, ArgList);
 		else
 		{
 			snprintf(buffer, 1024, "%s %s", from, ArgList[0]);
@@ -634,7 +661,7 @@ void	who_end (char *from, char **ArgList)
 	} 
 	while (new_w->piggyback && (new_w = new_w->next));
 
-	who_queue_pop();
+	who_queue_pop(refnum);
 }
 
 /*
@@ -650,9 +677,9 @@ void	who_end (char *from, char **ArgList)
  * to correctly match up error codes to requests.  Gee whiz, you wouldn't
  * think it would be that hard to get this right.
  */
-int	fake_who_end (char *from, char *who_target)
+int	fake_who_end (int refnum, char *from, char *who_target)
 {
-	WhoEntry 	*new_w = who_queue_top();
+	WhoEntry 	*new_w = who_queue_top(refnum);
 
 	if (who_whine)
 		who_whine = 0;
@@ -687,7 +714,7 @@ int	fake_who_end (char *from, char *who_target)
 			fake_ArgList[0] = new_w->who_target;
 			fake_ArgList[1] = "fake_who_end";
 			fake_ArgList[2] = NULL;
-			new_w->end(from, fake_ArgList);
+			new_w->end(refnum, from, fake_ArgList);
 		}
 		else if (new_w->who_end)
 		{
@@ -700,7 +727,7 @@ int	fake_who_end (char *from, char *who_target)
 	} 
 	while (new_w->piggyback && (new_w = new_w->next));
 
-	who_queue_pop();
+	who_queue_pop(refnum);
 	return 1;
 }
 
@@ -714,27 +741,37 @@ int	fake_who_end (char *from, char *who_target)
  *
  *
  */
-static void ison_queue_add (IsonEntry *item)
+static void ison_queue_add (int refnum, IsonEntry *item)
 {
-	IsonEntry *bottom = server_list[from_server].ison_queue;
+	Server *s;
+	IsonEntry *bottom;
 
+	if (!(s = get_server(refnum)))
+		return;
+
+	bottom = s->ison_queue;
 	while (bottom && bottom->next)
 		bottom = bottom->next;
 
 	if (!bottom)
-		server_list[from_server].ison_queue = item;
+		s->ison_queue = item;
 	else
 		bottom->next = item;
 
 	return;
 }
 
-static void ison_queue_pop (void)
+static void ison_queue_pop (int refnum)
 {
-	IsonEntry *save = server_list[from_server].ison_queue;
-	if (save)
+	Server *s;
+	IsonEntry *save;
+
+	if (!(s = get_server(refnum)))
+		return;
+
+	if ((save = s->ison_queue))
 	{
-		server_list[from_server].ison_queue = save->next;
+		s->ison_queue = save->next;
 		new_free(&save->ison_asked);
 		new_free(&save->ison_got);
 		new_free((char **)&save);
@@ -742,33 +779,46 @@ static void ison_queue_pop (void)
 	return;
 }
 
-static IsonEntry *ison_queue_top (void)
+static IsonEntry *ison_queue_top (int refnum)
 {
-	return server_list[from_server].ison_queue;
+	Server *s;
+
+	if (!(s = get_server(refnum)))
+		return NULL;
+
+	return s->ison_queue;
 }
 
-static IsonEntry *get_new_ison_entry (void)
+static IsonEntry *get_new_ison_entry (int refnum)
 {
-	IsonEntry *new_w = (IsonEntry *)new_malloc(sizeof(IsonEntry));
+	Server *s;
+	IsonEntry *new_w;
+
+	if (!(s = get_server(refnum)))
+		return NULL;
+
+	new_w = (IsonEntry *)new_malloc(sizeof(IsonEntry));
 	new_w->ison_asked = NULL;
 	new_w->ison_got = NULL;
 	new_w->next = NULL;
 	new_w->line = NULL;
-	ison_queue_add(new_w);
+	ison_queue_add(refnum, new_w);
 	return new_w;
 }
 
-static void ison_queue_list (void)
+static void ison_queue_list (int refnum)
 {
-	IsonEntry *item = server_list[from_server].ison_queue;
+	Server *s;
+	IsonEntry *item;
 	int count = 0;
 
-	while (item)
+	if (!(s = get_server(refnum)))
+		return;
+
+	for (item = s->ison_queue; item; item = item->next, count++)
 	{
 		yell("[%d] [%s] [%#x]", count, item->ison_asked, 
 				(unsigned)item->line);
-		count++;
-		item = item->next;
 	}
 }
 
@@ -777,35 +827,33 @@ BUILT_IN_COMMAND(isoncmd)
 	if (!args || !*args)
 		args = LOCAL_COPY(get_server_nickname(from_server));
 
-#if 1
 	if (!my_stricmp(args, "-d"))
 	{
-		ison_queue_list();
+		ison_queue_list(from_server);
 		return;
 	}
 	if (!my_stricmp(args, "-f"))
 	{
-		while (ison_queue_top())
-			ison_queue_pop();
+		while (ison_queue_top(from_server))
+			ison_queue_pop(from_server);
 		return;
 	}
-#endif
 
-	isonbase(args, NULL);
+	isonbase(from_server, args, NULL);
 }
 
-void isonbase (char *args, void (*line) (char *, char *))
+void isonbase (int refnum, char *args, void (*line) (int, char *, char *))
 {
 	IsonEntry 	*new_i;
 	char 		*next = args;
 
 	/* Maybe should output a warning? */
-	if (!is_server_connected(from_server))
+	if (!is_server_registered(refnum))
 		return;
 
 	while ((args = next))
 	{
-		new_i = get_new_ison_entry();
+		new_i = get_new_ison_entry(refnum);
 		new_i->line = line;
 		if (strlen(args) > 500)
 		{
@@ -818,7 +866,7 @@ void isonbase (char *args, void (*line) (char *, char *))
 			next = NULL;
 
 		malloc_strcpy(&new_i->ison_asked, args);
-		send_to_server("ISON %s", new_i->ison_asked);
+		send_to_aserver(refnum, "ISON %s", new_i->ison_asked);
 	}
 }
 
@@ -828,9 +876,9 @@ void isonbase (char *args, void (*line) (char *, char *))
  * Although we will check first that the top element expected is
  * actually an ISON.
  */
-void	ison_returned (char *from, char **ArgList)
+void	ison_returned (int refnum, char *from, char **ArgList)
 {
-	IsonEntry *new_i = ison_queue_top();
+	IsonEntry *new_i = ison_queue_top(refnum);
 
 	if (!new_i)
 	{
@@ -840,14 +888,14 @@ void	ison_returned (char *from, char **ArgList)
 
 	PasteArgs(ArgList, 0);
 	if (new_i->line)
-		new_i->line(new_i->ison_asked, ArgList[0]);
+		new_i->line(refnum, new_i->ison_asked, ArgList[0]);
 	else
 	{
 		if (do_hook(current_numeric, "%s", ArgList[0]))
 			put_it("%s Currently online: %s", numeric_banner(), ArgList[0]);
 	}
 
-	ison_queue_pop();
+	ison_queue_pop(refnum);
 	return;
 }
 
@@ -863,45 +911,60 @@ void	ison_returned (char *from, char **ArgList)
  *
  *
  */
-static void userhost_queue_add (UserhostEntry *item)
+static UserhostEntry *userhost_queue_top (int refnum)
 {
-	UserhostEntry *bottom = server_list[from_server].userhost_queue;
+	Server *s;
 
+	if (!(s = get_server(refnum)))
+		return NULL;
+
+	return s->userhost_queue;
+}
+
+static void userhost_queue_add (int refnum, UserhostEntry *item)
+{
+	UserhostEntry *bottom;
+	Server *s;
+
+	if (!(s = get_server(refnum)))
+		return;
+
+	bottom = userhost_queue_top(refnum);
 	while (bottom && bottom->next)
 		bottom = bottom->next;
 
 	if (!bottom)
-		server_list[from_server].userhost_queue = item;
+		s->userhost_queue = item;
 	else
 		bottom->next = item;
 
 	return;
 }
 
-static void userhost_queue_pop (void)
+static void userhost_queue_pop (int refnum)
 {
-	UserhostEntry *save = server_list[from_server].userhost_queue;
-	server_list[from_server].userhost_queue = save->next;
+	UserhostEntry *save;
+	Server *s;
 
+	if (!(s = get_server(refnum)))
+		return;
+
+	save = s->userhost_queue;
+	s->userhost_queue = save->next;
 	new_free(&save->userhost_asked);
 	new_free(&save->text);
 	new_free((char **)&save);
 	return;
 }
 
-static UserhostEntry *userhost_queue_top (void)
-{
-	return server_list[from_server].userhost_queue;
-}
-
-static UserhostEntry *get_new_userhost_entry (void)
+static UserhostEntry *get_new_userhost_entry (int refnum)
 {
 	UserhostEntry *new_u = (UserhostEntry *)new_malloc(sizeof(UserhostEntry));
 	new_u->userhost_asked = NULL;
 	new_u->text = NULL;
 	new_u->next = NULL;
 	new_u->func = NULL;
-	userhost_queue_add(new_u);
+	userhost_queue_add(refnum, new_u);
 	return new_u;
 }
 
@@ -911,20 +974,20 @@ static UserhostEntry *get_new_userhost_entry (void)
  */
 BUILT_IN_COMMAND(userhostcmd)
 {
-	userhostbase(args, NULL, 1);
+	userhostbase(from_server, args, NULL, 1);
 }
 
 BUILT_IN_COMMAND(useripcmd)
 {
-	userhostbase(args, NULL, 0);
+	userhostbase(from_server, args, NULL, 0);
 }
 
 BUILT_IN_COMMAND(usripcmd)
 {
-	userhostbase(args, NULL, 2);
+	userhostbase(from_server, args, NULL, 2);
 }
 
-void userhostbase(char *args, void (*line) (UserhostItem *, char *, char *), int userhost)
+void userhostbase (int refnum, char *args, void (*line) (int, UserhostItem *, char *, char *), int userhost)
 {
 	int	total = 0,
 		userhost_cmd = 0;
@@ -936,7 +999,7 @@ void userhostbase(char *args, void (*line) (UserhostItem *, char *, char *), int
 		*body = NULL;
 
 	/* Maybe should output a warning? */
-	if (!is_server_connected(from_server))
+	if (!is_server_registered(refnum))
 		return;
 
 	*buffer = 0;
@@ -945,7 +1008,7 @@ void userhostbase(char *args, void (*line) (UserhostItem *, char *, char *), int
 		if (check_nickname(nick, 1))
 		{
 			total++;
-			if (!fetch_userhost(from_server, nick))
+			if (!fetch_userhost(refnum, nick))
 				server_query_reqd++;
 
 			if (*buffer)
@@ -983,7 +1046,7 @@ void userhostbase(char *args, void (*line) (UserhostItem *, char *, char *), int
 	if (!userhost_cmd && !total)
 	{
 		server_query_reqd++;
-		strlcpy(buffer, get_server_nickname(from_server), BIG_BUFFER_SIZE);
+		strlcpy(buffer, get_server_nickname(refnum), BIG_BUFFER_SIZE);
 	}
 
 	ptr = buffer;
@@ -993,7 +1056,7 @@ void userhostbase(char *args, void (*line) (UserhostItem *, char *, char *), int
 		ptr = buffer;
 		while (ptr && *ptr)
 		{
-			UserhostEntry *new_u = get_new_userhost_entry();
+			UserhostEntry *new_u = get_new_userhost_entry(refnum);
 
 			move_to_abs_word(ptr, (const char **)&next_ptr, 5);
 
@@ -1002,11 +1065,11 @@ void userhostbase(char *args, void (*line) (UserhostItem *, char *, char *), int
 
 			new_u->userhost_asked = m_strdup(ptr);
 			if (userhost == 1)
-				send_to_server("USERHOST %s", new_u->userhost_asked);
+				send_to_aserver(refnum, "USERHOST %s", new_u->userhost_asked);
 			else if (userhost == 0)
-				send_to_server("USERIP %s", new_u->userhost_asked);
+				send_to_aserver(refnum, "USERIP %s", new_u->userhost_asked);
 			else
-				send_to_server("USRIP %s", new_u->userhost_asked);
+				send_to_aserver(refnum, "USRIP %s", new_u->userhost_asked);
 
 			if (userhost_cmd)
 				new_u->text = m_strdup(body);
@@ -1026,7 +1089,7 @@ void userhostbase(char *args, void (*line) (UserhostItem *, char *, char *), int
 		while (ptr && *ptr)
 		{
 			char *nick = next_arg(ptr, &ptr);
-			const char *ouh = fetch_userhost(from_server, nick);
+			const char *ouh = fetch_userhost(refnum, nick);
 			char *uh;
 			UserhostItem item = {NULL, 0, 0, 0, NULL, NULL};
 
@@ -1043,9 +1106,9 @@ void userhostbase(char *args, void (*line) (UserhostItem *, char *, char *), int
 				item.host = "<UNKNOWN>";
 
 			if (line)
-				line(&item, nick, body);
+				line(refnum, &item, nick, body);
 			else if (userhost_cmd)
-				userhost_cmd_returned(&item, nick, body);
+				userhost_cmd_returned(refnum, &item, nick, body);
 			else
 				yell("Yowza!  I dont know what to do here!");
 		}
@@ -1059,9 +1122,9 @@ void userhostbase(char *args, void (*line) (UserhostItem *, char *, char *), int
  * through this queue will cause it to be corrupted and the client will
  * go higgledy-piggledy.
  */
-void	userhost_returned (char *from, char **ArgList)
+void	userhost_returned (int refnum, char *from, char **ArgList)
 {
-	UserhostEntry *top = userhost_queue_top();
+	UserhostEntry *top = userhost_queue_top(refnum);
 	char *ptr;
 
 	if (!top)
@@ -1102,7 +1165,7 @@ void	userhost_returned (char *from, char **ArgList)
 			{
 				yell("Can't parse useless USERHOST reply [%s]", 
 						*ArgList);
-				userhost_queue_pop();
+				userhost_queue_pop(refnum);
 			}
 
 			if (item.user[-1] == '*')
@@ -1126,7 +1189,7 @@ void	userhost_returned (char *from, char **ArgList)
 			{
 				yell("Can't parse useless USERHOST reply [%s]", 
 						*ArgList);
-				userhost_queue_pop();
+				userhost_queue_pop(refnum);
 				return;
 			}
 			*item.host++ = 0;
@@ -1137,7 +1200,7 @@ void	userhost_returned (char *from, char **ArgList)
 			 * feed the callback with the info.
 			 */
 			if (top->func)
-				top->func(&item, cnick, top->text);
+				top->func(refnum, &item, cnick, top->text);
 
 			/*
 			 * Otherwise, the user just did /userhost,
@@ -1181,15 +1244,15 @@ void	userhost_returned (char *from, char **ArgList)
 				item.oper = item.away = 0;
 				item.connected = 1;
 
-				top->func(&item, cnick, top->text);
+				top->func(refnum, &item, cnick, top->text);
 			}
 		}
 	}
 
-	userhost_queue_pop();
+	userhost_queue_pop(refnum);
 }
 
-void	userhost_cmd_returned (UserhostItem *stuff, char *nick, char *text)
+void	userhost_cmd_returned (int refnum, UserhostItem *stuff, char *nick, char *text)
 {
 	char	args[BIG_BUFFER_SIZE + 1];
 
@@ -1203,25 +1266,16 @@ void	userhost_cmd_returned (UserhostItem *stuff, char *nick, char *text)
 	parse_line(NULL, text, args, 0, 0);
 }
 
-void clean_server_queues (int i)
+void	clean_server_queues (int i)
 {
-	int old_from_server = from_server;
+	while (who_queue_top(i))
+		who_queue_pop(i);
 
-	if (i == -1 || !server_list /* || !server_list[i].connected */)
-		return;		/* Whatever */
+	while (ison_queue_top(i))
+		ison_queue_pop(i);
 
-	from_server = i;
-
-	while (server_list[i].who_queue)
-		who_queue_pop();
-
-	while (server_list[i].ison_queue)
-		ison_queue_pop();
-
-	while (server_list[i].userhost_queue)
-		userhost_queue_pop();
-
-	from_server = old_from_server;
+	while (userhost_queue_top(i))
+		userhost_queue_pop(i);
 }
 
 

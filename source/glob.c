@@ -1,4 +1,4 @@
-/* $EPIC: glob.c,v 1.4 2002/07/17 22:52:52 jnelson Exp $ */
+/* $EPIC: glob.c,v 1.5 2002/12/19 03:22:59 jnelson Exp $ */
 #include "config.h"
 #if defined(NEED_GLOB)
 
@@ -108,7 +108,7 @@
 #define	M_MASK		0xffff
 #define	M_ASCII		0x00ff
 
-typedef u_short Char;
+typedef unsigned short Char;
 
 #define	CHAR(c)		((Char)((c)&M_ASCII))
 #define	META(c)		((Char)((c)|M_QUOTE))
@@ -123,10 +123,10 @@ typedef u_short Char;
 
 static int	 	compare (const void *, const void *);
 static void	 	g_Ctoc (const Char *, char *);
-static int	 	g_lstat (Char *, struct stat *, glob_t *);
+static int	 	g_lstat (Char *, Stat *, glob_t *);
 static DIR	*	g_opendir (Char *, glob_t *);
 static Char	*	g_strchr (Char *, int);
-static int	 	g_stat (Char *, struct stat *, glob_t *);
+static int	 	g_stat (Char *, Stat *, glob_t *);
 static int	 	glob0 (const Char *, glob_t *);
 static int	 	glob1 (Char *, glob_t *);
 static int	 	glob2 (Char *, Char *, Char *, glob_t *);
@@ -514,7 +514,7 @@ static int glob2		(	Char *pathbuf,
 					Char *pattern,
 					glob_t *pglob		)
 {
-	struct stat sb;
+	Stat sb;
 	Char *p, *q;
 	int anymeta;
 
@@ -802,7 +802,7 @@ static DIR *g_opendir		(	register Char *str,
 }
 
 static int g_lstat		(	register Char *fn,
-					struct stat *sb,
+					Stat *sb,
 					glob_t *pglob			)
 {
 	char buf[MAXPATHLEN];
@@ -814,7 +814,7 @@ static int g_lstat		(	register Char *fn,
 }
 
 static int g_stat		(	register Char *fn,
-					struct stat *sb,
+					Stat *sb,
 					glob_t *pglob			)
 {
 	char buf[MAXPATHLEN];

@@ -1,4 +1,4 @@
-/* $EPIC: notice.c,v 1.14 2002/11/08 23:36:12 jnelson Exp $ */
+/* $EPIC: notice.c,v 1.15 2002/12/19 03:22:59 jnelson Exp $ */
 /*
  * notice.c: special stuff for parsing NOTICEs
  *
@@ -247,7 +247,7 @@ void 	parse_notice (char *from, char **Args)
 	 * Suppress the sending of PRIVMSGs or NOTICEs until this
 	 * global variable is reset.
 	 */
-	set_doing_notice(1);
+	set_server_doing_notice(from_server, 1);
 	sed = 0;
 
 	/*
@@ -267,7 +267,7 @@ void 	parse_notice (char *from, char **Args)
 		!strcmp(get_server_itsname(from_server), from))
 	{
 		parse_local_server_notice(from, to, line);
-		set_doing_notice(0);
+		set_server_doing_notice(from_server, 0);
 		return;
 	}
 
@@ -295,7 +295,7 @@ void 	parse_notice (char *from, char **Args)
 	}
 
 	/* Check for /notify's */
-	notify_mark(from, 1, 0);
+	notify_mark(from_server, from, 1, 0);
 
 	/* Do normal /CTCP reply handling */
 	line = do_notice_ctcp(from, to, line);
@@ -339,7 +339,7 @@ the_end:
 	/* Clean up and go home. */
 	set_lastlog_msg_level(level);
 	message_from(NULL, level);
-	set_doing_notice(0);
+	set_server_doing_notice(from_server, 0);
 }
 
 /*

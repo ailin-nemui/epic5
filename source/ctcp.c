@@ -1,4 +1,4 @@
-/* $EPIC: ctcp.c,v 1.17 2002/12/11 19:20:23 crazyed Exp $ */
+/* $EPIC: ctcp.c,v 1.18 2002/12/19 03:22:58 jnelson Exp $ */
 /*
  * ctcp.c:handles the client-to-client protocol(ctcp). 
  *
@@ -213,9 +213,9 @@ CTCP_HANDLER(do_sed)
 		 * There might be a CTCP message in there,
 		 * so we see if we can find it.
 		 */
-		if (doing_privmsg())
+		if (get_server_doing_privmsg(from_server))
 			ret2 = m_strdup(do_ctcp(from, to, ret));
-		else if (doing_notice())
+		else if (get_server_doing_notice(from_server))
 			ret2 = m_strdup(do_notice_ctcp(from, to, ret));
 		sed = 1;
 	}
@@ -498,11 +498,11 @@ CTCP_HANDLER(do_dcc_reply)
  */
 CTCP_HANDLER(do_ping_reply)
 {
-	struct timeval 	t;
-	time_t 		tsec = 0, 
-			tusec = 0, 
-			orig;
-	char *		ptr;
+	Timeval t;
+	time_t 	tsec = 0, 
+		tusec = 0, 
+		orig;
+	char *	ptr;
 
 	if (!cmd || !*cmd)
 		return NULL;		/* This is a fake -- cant happen. */

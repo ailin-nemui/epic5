@@ -1,4 +1,4 @@
-/* $EPIC: mail.c,v 1.3 2002/10/18 21:10:23 jnelson Exp $ */
+/* $EPIC: mail.c,v 1.4 2002/12/19 03:22:59 jnelson Exp $ */
 /*
  * mail.c -- a gross simplification of mail checking.
  * Only unix maildrops are supported.
@@ -42,7 +42,6 @@
 #ifndef _POSIX_SOURCE
 # define _POSIX_SOURCE
 #endif
-#include <sys/stat.h>
 #include <utime.h>
 
 static	char	*mail_path = (char *) 0;
@@ -54,12 +53,12 @@ static	char	*mail_path = (char *) 0;
  */
 int	check_mail_status (void *ptr)
 {
-	static	time_t	old_stat = 0;
-	struct stat	sb;
-	struct stat *	stat_buf;
+static	time_t	old_stat = 0;
+	Stat	sb;
+	Stat *	stat_buf;
 
 	if (ptr)
-		stat_buf = (struct stat *)ptr;
+		stat_buf = (Stat *)ptr;
 	else
 		stat_buf = &sb;
 
@@ -128,10 +127,10 @@ int	check_mail_status (void *ptr)
  * If mailbox has more emails than it did last time we checked,
  *	throw an /ON MAIL event.
  */
-char	*check_mail (void)
+char *	check_mail (void)
 {
-	struct stat 	stat_buf;
-	int		state;
+	Stat 	stat_buf;
+	int	state;
 
 	switch ((state = get_int_var(MAIL_VAR)))
 	{

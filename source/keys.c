@@ -1,4 +1,4 @@
-/* $EPIC: keys.c,v 1.18 2002/12/11 19:20:23 crazyed Exp $ */
+/* $EPIC: keys.c,v 1.19 2002/12/19 03:22:59 jnelson Exp $ */
 /*
  * keys.c:  Keeps track of what happens whe you press a key.
  *
@@ -305,8 +305,7 @@ void key_exec_bt (struct Key *key) {
  * previous key's action (if there has been a timeout).  The timeout factor
  * is set in milliseconds by the KEY_INTERVAL variable.  See further for
  * instructions. :) */
-struct Key *handle_keypress (struct Key *last, struct timeval pressed,
-			     unsigned char key) {
+struct Key *handle_keypress (struct Key *last, Timeval pressed, unsigned char key) {
     struct Key *kp;
     
     /* we call the timeout code here, too, just to be safe. */
@@ -340,10 +339,10 @@ struct Key *handle_keypress (struct Key *last, struct timeval pressed,
     return NULL;
 }
 
-struct Key *timeout_keypress (struct Key *last, struct timeval pressed) {
+struct Key *timeout_keypress (struct Key *last, Timeval pressed) {
     int mpress = 0; /* ms count since last pressing */
-    struct timeval tv;
-    struct timeval now;
+    Timeval tv;
+    Timeval now;
 
     if (last == NULL)
 	return NULL; /* fresh state, we need not worry about timeouts */
@@ -867,7 +866,7 @@ void unload_bindings_recurse (const char *pkg, struct Key *map) {
     }
 }
 
-/* set_key_interval:  this is used to construct a new timeval when the
+/* set_key_interval:  this is used to construct a new Timeval when the
  * 'KEY_INTERVAL' /set is changed.  We modify an external variable which
  * defines how long the client will wait to timeout, at most. */
 void set_key_interval (int msec) {

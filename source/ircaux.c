@@ -1,4 +1,4 @@
-/* $EPIC: ircaux.c,v 1.57 2002/12/11 19:20:23 crazyed Exp $ */
+/* $EPIC: ircaux.c,v 1.58 2002/12/19 03:22:59 jnelson Exp $ */
 /*
  * ircaux.c: some extra routines... not specific to irc... that I needed 
  *
@@ -38,7 +38,6 @@
 #include "irc.h"
 #include "screen.h"
 #include <pwd.h>
-#include <sys/stat.h>
 #include <sys/wait.h>
 #include "ircaux.h"
 #include "output.h"
@@ -1868,7 +1867,7 @@ static 	Filename 	path_to_bunzip2;
 	int 		ok_to_decompress 		= 0;
 	Filename	fullname;
 	Filename	candidate;
-	struct stat 	file_info;
+	Stat 		file_info;
 	FILE *		doh;
 
 	if (!setup)
@@ -2053,13 +2052,13 @@ error_cleanup:
  */ 
 int	slurp_file (char **buffer, char *filename)
 {
-	char *		local_buffer;
-	size_t		offset;
-	off_t		local_buffer_size;
-	off_t		file_size;
-	struct stat	s;
-	FILE *		file;
-	size_t		count;
+	char *	local_buffer;
+	size_t	offset;
+	off_t	local_buffer_size;
+	off_t	file_size;
+	Stat	s;
+	FILE *	file;
+	size_t	count;
 
 	file = uzfopen(&filename, get_string_var(LOAD_PATH_VAR), 1);
 	if (stat(filename, &s) < 0)
@@ -2152,7 +2151,7 @@ int 	opento(const char *filename, int flags, off_t position)
 /* swift and easy -- returns the size of the file */
 off_t 	file_size (const char *filename)
 {
-	struct stat statbuf;
+	Stat statbuf;
 
 	if (!stat(filename, &statbuf))
 		return (off_t)(statbuf.st_size);
@@ -2170,7 +2169,7 @@ int	file_exists (const char *filename)
 
 int	isdir (const char *filename)
 {
-	struct stat statbuf;
+	Stat statbuf;
 
 	if (!stat(filename, &statbuf))
 	{
@@ -2181,9 +2180,9 @@ int	isdir (const char *filename)
 }
 
 /* Gets the time in second/usecond if you can,  second/0 if you cant. */
-struct timeval 	get_time (struct timeval *timer)
+Timeval get_time (Timeval *timer)
 {
-	static struct timeval timer2;
+	static Timeval timer2;
 
 #ifdef HAVE_GETTIMEOFDAY
 	if (timer)
@@ -2213,9 +2212,9 @@ struct timeval 	get_time (struct timeval *timer)
  * gotten probably with a call to get_time.  'one' should be the older
  * timer and 'two' should be the most recent timer.
  */
-double 	time_diff (struct timeval one, struct timeval two)
+double 	time_diff (Timeval one, Timeval two)
 {
-	struct timeval td;
+	Timeval td;
 
 	td.tv_sec = two.tv_sec - one.tv_sec;
 	td.tv_usec = two.tv_usec - one.tv_usec;
@@ -2223,9 +2222,9 @@ double 	time_diff (struct timeval one, struct timeval two)
 	return (double)td.tv_sec + ((double)td.tv_usec / 1000000.0);
 }
 
-struct timeval double_to_timeval (double x)
+Timeval double_to_timeval (double x)
 {
-	struct timeval td;
+	Timeval td;
 	time_t	s;
 
 	s = (time_t) x;
@@ -2242,9 +2241,9 @@ struct timeval double_to_timeval (double x)
  * gotten probably with a call to get_time.  'one' should be the older
  * timer and 'two' should be the most recent timer.
  */
-struct timeval 	time_subtract (struct timeval one, struct timeval two)
+Timeval time_subtract (Timeval one, Timeval two)
 {
-	struct timeval td;
+	Timeval td;
 
 	td.tv_sec = two.tv_sec - one.tv_sec;
 	td.tv_usec = two.tv_usec - one.tv_usec;
@@ -2259,9 +2258,9 @@ struct timeval 	time_subtract (struct timeval one, struct timeval two)
 /* 
  * Adds the interval "two" to the base time "one" and returns it.
  */
-struct timeval 	time_add (struct timeval one, struct timeval two)
+Timeval time_add (Timeval one, Timeval two)
 {
-	struct timeval td;
+	Timeval td;
 
 	td.tv_usec = one.tv_usec + two.tv_usec;
 	td.tv_sec = one.tv_sec + two.tv_sec;
@@ -2795,8 +2794,8 @@ char *	get_userhost (void)
 /* Fancy attempt to compensate for broken time_t's */
 double	time_to_next_minute (void)
 {
-	static	int 	which = 0;
-	struct timeval	now, then;
+static	int 	which = 0;
+	Timeval	now, then;
 
 	get_time(&now);
 
@@ -3516,15 +3515,15 @@ size_t	mangle_line	(char *incoming, int how, size_t how_much)
 static	unsigned long	randm (unsigned long l)
 {
 	/* patch from Sarayan to make $rand() better */
-static	const	long	RAND_A = 16807L;
-static	const	long	RAND_M = 2147483647L;
-static	const	long	RAND_Q = 127773L;
-static	const	long	RAND_R = 2836L;
-static		u_long	z = 0;
-		long	t;
+static	const	long		RAND_A = 16807L;
+static	const	long		RAND_M = 2147483647L;
+static	const	long		RAND_Q = 127773L;
+static	const	long		RAND_R = 2836L;
+static		unsigned long	z = 0;
+		long		t;
 
 	if (z == 0)
-		z = (u_long) getuid();
+		z = (unsigned long) getuid();
 
 	if (l == 0)
 	{
@@ -3538,7 +3537,7 @@ static		u_long	z = 0;
 	else
 	{
 		if ((long) l < 0)
-			z = (u_long) getuid();
+			z = (unsigned long) getuid();
 		else
 			z = l;
 		return 0;
@@ -3554,7 +3553,8 @@ static		u_long	z = 0;
  */
 static unsigned long randt_2 (void)
 {
-	struct timeval 	tp1;
+	Timeval tp1;
+
 	get_time(&tp1);
 	return (unsigned long) tp1.tv_usec;
 }

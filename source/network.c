@@ -1,4 +1,4 @@
-/* $EPIC: network.c,v 1.41 2002/08/06 03:45:52 jnelson Exp $ */
+/* $EPIC: network.c,v 1.42 2002/12/19 03:22:59 jnelson Exp $ */
 /*
  * network.c -- handles stuff dealing with connecting and name resolving
  *
@@ -446,7 +446,7 @@ int	inet_strton (const char *host, const char *port, SA *storage, int flags)
 #endif
 		((ISA *)storage)->sin_addr.s_addr = htonl(strtoul(host, NULL, 10));
 		if (port)
-			((ISA *)storage)->sin_port = htons((u_short)strtoul(port, NULL, 10));
+			((ISA *)storage)->sin_port = htons((unsigned short)strtoul(port, NULL, 10));
 		return 0;
 	}
 	else

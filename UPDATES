@@ -1,6 +1,46 @@
 EPIC4-1.2.0
 
+*** News 12/18/2002 -- New function $timerctl() - control /TIMERs
+	Usage:
+	------
+	$timerctl(REFNUMS)
+	$timerctl(REFNUM <refnum>)
+	$timerctl(ADD <refnum> <interval> <events> <commands> \
+			<subargs> <window>)		(NOT IMPLEMENTED YET)
+	$timerctl(DELETE <refnum>)
+	$timerctl(GET <refnum> <item>)
+	$timerctl(SET <refnum> <item> <value>)
+
+	Where <item> is one of the following:
+		TIMEOUT		Returns "<seconds> <useconds>" representing
+				when the timer is scheduled to go off.
+		COMMAND		What commands shall be executed.
+		SUBARGS		What the value of $* shall be
+		REPEATS		The number of times that this timer shall
+				execute (usually 1 for one-shot timers)
+		INTERVAL	The interval to wait between executions
+				(takes effect the next time timer executed)
+		SERVER		The server the timer is connected to
+		WINDOW		The window the timer is connected to
+
+	REFNUMS returns all active timer refnums, including system timers.
+	REFNUM returns the refnum for the timer if it is a valid refnum.
+	ADD is not implemented yet.  Use /TIMER for now.
+	DELETE removes a timer, natch
+	GET returns one of the attributes of the timer
+	SET changes one of the attributes of the timer.
+
+	SET is dangerous.  You can really confuse epic by changing values
+	to nonsensical or conflicting values.  In exchange for giving you
+	total flexibility, you must suffer the peril of any mistakes you
+	make stomping on your own timers.  You are not allowed to change
+	attributes for system timers.  You are not allowed to delete system
+	timers.
+
 *** News 12/11/2002 -- Nick fudger now uses NICKLEN 005.
+	If your server's nickname length is other than 9, epic will 
+	extend with _'s your nickname to the permitted length to find
+	you a nickname that is available for use.
 
 *** News 12/11/2002 -- /on DCC_RAW mask change
 	The remote-port field of this hook in the "connection accepted"
@@ -95,29 +135,6 @@ EPIC4-1.2.0
 *** News 12/11/2002 -- New function $winline() - read window lines
 	Like $line() but reads from the window instead of the lastlog
 	buffer.
-
-*** News 12/11/2002 -- New function $timerctl() - control timers
-	Usage:
-	------
-	$timerctl(getrefnums)
-	$timerctl(exists [ref])
-	$timerctl(getcommand [ref])
-	$timerctl(getargs [ref])
-	$timerctl(gettime [ref])
-	$timerctl(getevents [ref])
-	$timerctl(getserver [ref])
-	$timerctl(getwindow [ref])
-	$timerctl(setcommand [ref] [value])
-	$timerctl(setargs [ref] [value])
-	$timerctl(settime [ref] [value])
-	$timerctl(setevents [ref] [value])
-	$timerctl(setserver [ref] [value])
-	$timerctl(setwindow [ref] [value])
-
-	$timerctl() will only operate on timers that already exist.  This
-	is the initial release and it may be reworked at some point.
-
-	With thanks to MaXxX.
 
 *** News 12/11/2002 -- New function $exec()
 	$exec() runs the command given and returns three pipes for STDIN,

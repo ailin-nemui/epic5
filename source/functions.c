@@ -1,4 +1,4 @@
-/* $EPIC: functions.c,v 1.92 2002/12/12 21:10:56 crazyed Exp $ */
+/* $EPIC: functions.c,v 1.93 2002/12/19 03:22:58 jnelson Exp $ */
 /*
  * functions.c -- Built-in functions for ircII
  *
@@ -64,11 +64,10 @@
 #include "notify.h"
 #include "numbers.h"
 #include "crypt.h"
-#include "timer.h" /*MaXxX*/
+#include "timer.h"
 #include "functions.h"
 #include "options"
 
-#include <sys/stat.h>
 #ifdef HAVE_REGEX_H
 # include <regex.h>
 #endif
@@ -364,7 +363,7 @@ static	char
 	*function_substr	(char *),
 	*function_tan		(char *),
 	*function_tanh		(char *),
-	*function_timerctl	(char *), /*MaXxX*/
+	*function_timerctl	(char *),
 #ifdef TCL
 	*function_tcl		(char *),
 #endif
@@ -668,7 +667,7 @@ static BuiltInFunctions	built_in_functions[] =
 	{ "TDIFF",		function_tdiff 		},
 	{ "TDIFF2",		function_tdiff2 	},
 	{ "TIME",		function_time 		},
-	{ "TIMERCTL",		function_timerctl	}, /*MaXxX*/
+	{ "TIMERCTL",		function_timerctl	},
 	{ "TOLOWER",		function_tolower 	},
 	{ "TOUPPER",		function_toupper 	},
 	{ "TOW",                function_tow 		},
@@ -820,16 +819,16 @@ static	char	*alias_buffer 		(void) { return m_strdup(cut_buffer); }
 static	char	*alias_time 		(void) { return m_strdup(update_clock(GET_TIME)); }
 static	char	*alias_dollar 		(void) { return m_strdup("$"); }
 static	char	*alias_detected 	(void) { return m_strdup(last_notify_nick); }
-static	char	*alias_nick 		(void) { return m_strdup((current_window->server != -1) ? get_server_nickname(current_window->server) : empty_string); }
+static	char	*alias_nick 		(void) { return m_strdup((current_window->server != NOSERV) ? get_server_nickname(current_window->server) : empty_string); }
 static	char	*alias_away 		(void) { return m_strdup(get_server_away(from_server)); }
-static  char    *alias_sent_nick        (void) { return m_strdup((get_server_sent_nick()) ? get_server_sent_nick() : empty_string); }
-static  char    *alias_recv_nick        (void) { return m_strdup((get_server_recv_nick()) ? get_server_recv_nick() : empty_string); }
-static  char    *alias_msg_body         (void) { return m_strdup((get_server_sent_body()) ? get_server_sent_body() : empty_string); }
-static  char    *alias_joined_nick      (void) { return m_strdup((get_server_joined_nick()) ? get_server_joined_nick() : empty_string); }
-static  char    *alias_public_nick      (void) { return m_strdup((get_server_public_nick()) ? get_server_public_nick() : empty_string); }
+static  char    *alias_sent_nick        (void) { return m_strdup((get_server_sent_nick(from_server)) ? get_server_sent_nick(from_server) : empty_string); }
+static  char    *alias_recv_nick        (void) { return m_strdup((get_server_recv_nick(from_server)) ? get_server_recv_nick(from_server) : empty_string); }
+static  char    *alias_msg_body         (void) { return m_strdup((get_server_sent_body(from_server)) ? get_server_sent_body(from_server) : empty_string); }
+static  char    *alias_joined_nick      (void) { return m_strdup((get_server_joined_nick(from_server)) ? get_server_joined_nick(from_server) : empty_string); }
+static  char    *alias_public_nick      (void) { return m_strdup((get_server_public_nick(from_server)) ? get_server_public_nick(from_server) : empty_string); }
 static  char    *alias_show_realname 	(void) { return m_strdup(realname); }
 static	char	*alias_version_str 	(void) { return m_strdup(irc_version); }
-static  char    *alias_invite           (void) { return m_strdup((get_server_invite_channel()) ? get_server_invite_channel() : empty_string); }
+static  char    *alias_invite           (void) { return m_strdup((get_server_invite_channel(from_server)) ? get_server_invite_channel(from_server) : empty_string); }
 static	char	*alias_oper 		(void) { return m_strdup((from_server != -1) ? get_server_operator(from_server) ?  get_string_var(STATUS_OPER_VAR) : empty_string : empty_string); }
 static	char	*alias_version 		(void) { return m_strdup(internal_version); }
 static  char    *alias_show_userhost 	(void) { return m_strdup(get_server_userhost(from_server)); }
@@ -852,10 +851,11 @@ static	char	*alias_channel 		(void)
 
 static	char	*alias_server 		(void)
 {
-	return m_strdup((parsing_server_index != -1) ?
+	return m_strdup((parsing_server_index != NOSERV) ?
 		         get_server_itsname(parsing_server_index) :
-		         (get_window_server(0) != -1) ?
-			        get_server_itsname(get_window_server(0)) : empty_string);
+		         (get_window_server(0) != NOSERV) ?
+			        get_server_itsname(get_window_server(0)) : 
+				empty_string);
 }
 
 static	char	*alias_query_nick 	(void)
@@ -899,9 +899,9 @@ static	char	*alias_server_version  (void)
 {
 	int s = from_server;
 
-	if (s == -1)
+	if (s == NOSERV)
 	{
-		if (primary_server != -1)
+		if (primary_server != NOSERV)
 			s = primary_server;
 		else
 			return m_strdup(empty_string);
@@ -1116,7 +1116,7 @@ BUILT_IN_FUNCTION(function_tdiff, input)
 	if (seconds || (!days && !hours && !minutes) || 
 			(*after == '.' && is_number(after + 1)))
 	{
-		u_long number = 0;
+		unsigned long number = 0;
 
 		/*
 		 * If we have a decmial point, and is_number() returns 1,
@@ -1542,9 +1542,9 @@ BUILT_IN_FUNCTION(function_servers, input)
 		RETURN_MSTR(retval);
 	}
 
-	for (count = 0; count < number_of_servers; count++)
+	for (count = 0; count < server_list_size(); count++)
 	{
-		if (is_server_connected(count))
+		if (is_server_registered(count))
 			m_sc3cat(&retval, space, ltoa(count), &rvclue);
 	}
 	if (!retval)
@@ -3087,11 +3087,7 @@ BUILT_IN_FUNCTION(function_server_version, word)
 	int servnum;
 	int version;
 
-	servnum = ((word && *word) ? my_atol(next_arg(word, &word)) : primary_server);
-
-	if (servnum > number_of_servers)
-		RETURN_STR("unknown");
-
+	servnum = parse_server_index(word, 1);
 	version = get_server_version(servnum);
 
 	if (version == Server2_8) 		RETURN_STR("2.8");
@@ -3256,7 +3252,7 @@ BUILT_IN_FUNCTION(function_tdiff2, input)
  */
 BUILT_IN_FUNCTION(function_utime, input)
 {
-	struct timeval tp;
+	Timeval tp;
 
 	get_time(&tp);
 	return m_sprintf("%ld %ld", (long)tp.tv_sec, (long)tp.tv_usec);
@@ -3282,84 +3278,82 @@ BUILT_IN_FUNCTION(function_stripansi, input)
 
 BUILT_IN_FUNCTION(function_servername, input)
 {
-	int 	sval = from_server;
-	const char *	which;
+	int 		refnum;
+	const char *	itsname;
 
 	if (*input)
-		GET_INT_ARG(sval, input);
+	{
+		const char *	serv;
 
-	/* garbage in, garbage out. */
-	if (sval < 0 || sval >= number_of_servers)
-		RETURN_EMPTY;
+		GET_STR_ARG(serv, input);
+		refnum = parse_server_index(serv, 1);
+	}
+	else
+		refnum = from_server;
 
-	/* First we try to see what the server thinks it name is */
-	which = get_server_itsname(sval);
-
-	/* Next we try what we think its name is */
-	if (!which)
-		which = get_server_name(sval);
-
-	/* Ok. i give up, return a null. */
-	RETURN_STR(which);
+	/* get_server_itsname does all the work for us. */
+	itsname = get_server_itsname(refnum);
+	RETURN_STR(itsname);
 }
 
 BUILT_IN_FUNCTION(function_serverourname, input)
 {
-	int 	sval = from_server;
-	const char *	which;
+	int 		refnum;
+	const char *	ourname;
 
 	if (*input)
-		GET_INT_ARG(sval, input);
+	{
+		const char *	serv;
 
-	/* garbage in, garbage out. */
-	if (sval < 0 || sval >= number_of_servers)
-		RETURN_EMPTY;
+		GET_STR_ARG(serv, input);
+		refnum = parse_server_index(serv, 1);
+	}
+	else
+		refnum = from_server;
 
-	/* Skip the itsname test. */
-
-	/* Next we try what we think its name is */
-	which = get_server_name(sval);
-
-	/* Ok. i give up, return a null. */
-	RETURN_STR(which);
+	/* Ask it what our name is */
+	ourname = get_server_name(refnum);
+	RETURN_STR(ourname);
 }
 
 BUILT_IN_FUNCTION(function_servergroup, input)
 {
-	int 	sval = from_server;
-	const char *	which;
+	int 		refnum;
+	const char *	group;
 
 	if (*input)
-		GET_INT_ARG(sval, input);
+	{
+		const char *	serv;
 
-	/* garbage in, garbage out. */
-	if (sval < 0 || sval >= number_of_servers)
-		RETURN_EMPTY;
+		GET_STR_ARG(serv, input);
+		refnum = parse_server_index(serv, 1);
+	}
+	else
+		refnum = from_server;
 
-	/* Next we try what we think its name is */
-	which = get_server_group(sval);
-
-	/* Ok. i give up, return a null. */
-	RETURN_STR(which);
+	/* Next we try what we think its group is */
+	group = get_server_group(refnum);
+	RETURN_STR(group);
 }
 
 BUILT_IN_FUNCTION(function_servertype, input)
 {
-	int 	sval = from_server;
-	const char *	which;
+	int 		refnum;
+	const char *	group;
 
 	if (*input)
-		GET_INT_ARG(sval, input);
+	{
+		const char *	serv;
 
-	/* garbage in, garbage out. */
-	if (sval < 0 || sval >= number_of_servers)
-		RETURN_EMPTY;
+		GET_STR_ARG(serv, input);
+		refnum = parse_server_index(serv, 1);
+	}
+	else
+		refnum = from_server;
 
-	/* Next we try what we think its name is */
-	which = get_server_type(sval);
-
-	/* Ok. i give up, return a null. */
-	RETURN_STR(which);
+	/* Next we try what we think its type is */
+	group = get_server_type(refnum);
+	RETURN_STR(group);
 }
 
 BUILT_IN_FUNCTION(function_lastserver, input)
@@ -3400,13 +3394,7 @@ BUILT_IN_FUNCTION(function_aliasctl, input)
 	return aliasctl(input);
 }
 
-/*MaXxX>*/
-BUILT_IN_FUNCTION(function_timerctl, input)
-{
-	extern char *timerctl (char *);
-	return timerctl(input);
-}
-/*<MaXxX*/
+
 
 /* 
  * Next two contributed by Scott H Kilau (sheik), who for some reason doesnt 
@@ -3974,9 +3962,7 @@ BUILT_IN_FUNCTION(function_winchan, input)
 		chan = arg1;
 		if ((serv = new_next_arg(input, &input)))
 		{
-			if (my_isdigit(serv))
-				servnum = my_atol(serv);
-			else
+			if ((servnum = parse_server_index(serv, 0)) != NOSERV)
 				servnum = find_in_server_list(serv, 0);
 		}
 
@@ -4097,9 +4083,9 @@ BUILT_IN_FUNCTION(function_winbound, input)
 
 BUILT_IN_FUNCTION(function_ftime, words)
 {
-	char	*filename;
+	char *	filename;
 	Filename fullname;
-	struct stat s;
+	Stat 	s;
 
 	GET_STR_ARG(filename, words);
 
@@ -4187,11 +4173,11 @@ BUILT_IN_FUNCTION(function_servernick, input)
 	if (*input)
 	{
 		GET_STR_ARG(servdesc, input);
-		if ((refnum = parse_server_index(servdesc)) == -1)
-			if ((refnum = find_in_server_list(servdesc, 0)) == -1)
+		if ((refnum = parse_server_index(servdesc, 1)) == NOSERV)
+			if ((refnum = find_in_server_list(servdesc, 0)) == NOSERV)
 				RETURN_EMPTY;
 	}
-	else if (from_server != -1)
+	else if (from_server != NOSERV)
 		refnum = from_server;
 	else
 		RETURN_EMPTY;
@@ -4230,26 +4216,26 @@ BUILT_IN_FUNCTION(function_isconnected, input)
 	if (refnum == -1)
 		refnum = from_server;
 
-	RETURN_INT(is_server_connected(refnum));
+	RETURN_INT(is_server_registered(refnum));
 }
 
 BUILT_IN_FUNCTION(function_currchans, input)
 {
-	int server = -1;
+	int server = NOSERV;
 	Window *blah = NULL;
 	char *retval = NULL;
 
 	if (input && *input)
 		GET_INT_ARG(server, input)
 	else
-		server = -2;
+		server = NOSERV;
 
-	if (server == -1)
+	if (server == NOSERV)
 		server = from_server;
 
 	while (traverse_all_windows(&blah))
 	{
-		if (server != -2 && blah->server != server)
+		if (server != NOSERV && blah->server != server)
 			continue;
 		if (!blah->current_channel)
 			continue;
@@ -5063,7 +5049,7 @@ BUILT_IN_FUNCTION(function_servports, input)
 
 	if (servnum == -1)
 		servnum = from_server;
-	if (servnum < 0 || servnum > number_of_servers)
+	if (servnum < 0 || servnum > server_list_size())
 		RETURN_EMPTY;
 
 	return m_sprintf("%d %d", get_server_port(servnum),
@@ -5401,7 +5387,7 @@ BUILT_IN_FUNCTION(function_servernum, input)
 	/*
 	 * Find the matching server name from the list
 	 */
-	for (sval = 0; sval < number_of_servers; sval++) 
+	for (sval = 0; sval < server_list_size(); sval++) 
 	{
 		/*
 		 * Try and match to what the server thinks its name is
@@ -5970,9 +5956,9 @@ BUILT_IN_FUNCTION(function_urldecode, input)
 
 BUILT_IN_FUNCTION(function_stat, input)
 {
-	char *		filename;
-	char 		retval[BIG_BUFFER_SIZE];
-	struct stat	sb;
+	char *	filename;
+	char 	retval[BIG_BUFFER_SIZE];
+	Stat	sb;
 
 	GET_STR_ARG(filename, input);
 	if (stat(filename, &sb) < 0)
@@ -5987,9 +5973,9 @@ BUILT_IN_FUNCTION(function_stat, input)
 		(int)	sb.st_uid,		/* Owner UID */
 		(int)	sb.st_gid,		/* Owner GID */
 		(int)	sb.st_rdev,		/* Device type */
-		(u_long)sb.st_size,		/* Size of file */
-		(u_long)sb.st_blksize,		/* Size of each block */
-		(u_long)sb.st_blocks,		/* Blocks used in file */
+		(unsigned long)sb.st_size,	/* Size of file */
+		(unsigned long)sb.st_blksize,	/* Size of each block */
+		(unsigned long)sb.st_blocks,	/* Blocks used in file */
 		(long)	sb.st_atime,		/* Last-access time */
 		(long)	sb.st_mtime,		/* Last-modified time */
 		(long)	sb.st_ctime		/* Last-change time */
@@ -6239,7 +6225,7 @@ BUILT_IN_FUNCTION(function_isencrypted, input)
 		GET_INT_ARG(sval, input);
 
 	/* garbage in, garbage out. */
-	if (sval < 0 || sval >= number_of_servers)
+	if (sval < 0 || sval >= server_list_size())
 		RETURN_INT(0);
 
 	/* Check if it is encrypted connection */
@@ -6263,7 +6249,7 @@ BUILT_IN_FUNCTION(function_cipher, input)
 	if (*input)
 		GET_INT_ARG(sval, input);
 
-	if (sval < 0 || sval >= number_of_servers)
+	if (sval < 0 || sval >= server_list_size())
 		RETURN_STR(NULL);
 
 	RETURN_STR(get_server_cipher(sval));
@@ -6574,3 +6560,9 @@ BUILT_IN_FUNCTION(function_getserial, input) {
 
     RETURN_EMPTY;
 }
+
+BUILT_IN_FUNCTION(function_timerctl, input)
+{
+	return timerctl(input);
+}
+

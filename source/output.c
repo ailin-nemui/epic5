@@ -1,4 +1,4 @@
-/* $EPIC: output.c,v 1.6 2002/09/03 11:43:12 jnelson Exp $ */
+/* $EPIC: output.c,v 1.7 2002/12/19 03:22:59 jnelson Exp $ */
 /*
  * output.c: handles a variety of tasks dealing with the output from the irc
  * program 
@@ -36,7 +36,6 @@
  */
 
 #include "irc.h"
-#include <sys/stat.h>
 #include "output.h"
 #include "vars.h"
 #include "input.h"
@@ -109,7 +108,7 @@ void	refresh_a_screen (Screen *screen)
 BUILT_IN_COMMAND(extern_write)
 {
 	char *tty;
-	struct stat sbuf;
+	Stat sbuf;
 	const int OTHER_WRITE = 020;
 
 	if (!(tty = ttyname(2)))

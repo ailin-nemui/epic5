@@ -1,4 +1,4 @@
-/* $EPIC: flood.c,v 1.5 2002/12/11 19:20:23 crazyed Exp $ */
+/* $EPIC: flood.c,v 1.6 2002/12/19 03:22:58 jnelson Exp $ */
 /*
  * flood.c: handle channel flooding.
  *
@@ -73,7 +73,7 @@ typedef struct flood_stru
 
 	FloodType	type;
 	long		cnt;
-	struct timeval	start;
+	Timeval		start;
 	int		floods;
 }	Flooding;
 
@@ -116,7 +116,7 @@ static	int	 pos = 0;
 		 numusers,
 		 server,
 		 retval = 1;
-	struct timeval	 right_now;
+	Timeval	 right_now;
 	double	 diff;
 	Flooding *tmp;
 
@@ -142,7 +142,7 @@ static	int	 pos = 0;
 		{
 			flood[i].nuh = NULL;
 			flood[i].channel = NULL;
-			flood[i].server = -1;
+			flood[i].server = NOSERV;
 			flood[i].type = -1;
 			flood[i].cnt = 0;
 			get_time(&(flood[i].start));
@@ -172,7 +172,7 @@ static	int	 pos = 0;
 	/*
 	 * What server are we using?
 	 */
-	server = (from_server == -1) ? primary_server : from_server;
+	server = (from_server == NOSERV) ? primary_server : from_server;
 
 	/*
 	 * Look in the flooding array.
@@ -294,7 +294,7 @@ char *	function_floodinfo (char *args)
 {
 	char	*arg, *ret = NULL;
 	size_t	clue = 0;
-	struct	timeval right_now;
+	Timeval right_now;
 	int	i;
 
 	get_time(&right_now);
