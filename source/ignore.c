@@ -1,4 +1,4 @@
-/* $EPIC: ignore.c,v 1.8 2003/06/30 04:14:01 jnelson Exp $ */
+/* $EPIC: ignore.c,v 1.9 2003/06/30 22:40:34 jnelson Exp $ */
 /*
  * ignore.c: handles the ingore command for irc 
  *
@@ -1112,25 +1112,33 @@ char *	ignorectl (char *input)
 		len = strlen(listc);
 		if (!my_strnicmp(listc, "NICK", len)) {
 			malloc_strcpy(&i->nick, input);
+			RETURN_INT(i->refnum);
 		} else if (!my_strnicmp(listc, "LEVELS", len)) {
 			i->type = i->dont = i->high = 0;
 			ignore_change(i, 1, input);
+			RETURN_INT(i->refnum);
 		} else if (!my_strnicmp(listc, "SUPPRESS", len)) {
 			GET_INT_ARG(i->type, input);
+			RETURN_INT(i->refnum);
 		} else if (!my_strnicmp(listc, "EXCEPT", len)) {
 			GET_INT_ARG(i->dont, input);
+			RETURN_INT(i->refnum);
 		} else if (!my_strnicmp(listc, "HIGHLIGHT", len)) {
 			GET_INT_ARG(i->high, input);
+			RETURN_INT(i->refnum);
 		} else if (!my_strnicmp(listc, "EXPIRATION", len)) {
 			Timeval to;
 
 			GET_INT_ARG(to.tv_sec, input);
 			GET_INT_ARG(to.tv_usec, input);
 			i->expiration = to;
-			RETURN_INT(1);
+			RETURN_INT(i->refnum);
 		} else if (!my_strnicmp(listc, "REASON", len)) {
-			malloc_strcpy(&i->reason, input);
-			RETURN_STR(i->reason);
+			if (is_string_empty(input))
+				new_free(&i->reason);
+			else
+				malloc_strcpy(&i->reason, input);
+			RETURN_INT(i->refnum);
 		}
 	}
 
