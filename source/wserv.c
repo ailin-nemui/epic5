@@ -1,4 +1,4 @@
-/* $EPIC: wserv.c,v 1.7 2002/05/07 15:07:26 jnelson Exp $ */
+/* $EPIC: wserv.c,v 1.8 2002/05/07 16:49:35 jnelson Exp $ */
 /*
  * wserv.c -- A little program to act as a pipe between the ircII process
  * 	      and an xterm window or GNU screen.
@@ -298,6 +298,31 @@ size_t        strlcpy (char *dst, const char *src, size_t siz)
 		*d = 0;              /* NUL-terminate dst */
 
 	return strlen(src);
+}
+#endif
+
+#ifndef HAVE_INET_NTOP
+const char *inet_ntop (int af, const void *src, char *dst, size_t size)
+{
+        if (af == AF_INET)
+        {
+                strlcpy(dst, inet_ntoa(*(IA *)src), size);
+                return dst;
+        }
+
+        errno = EAFNOSUPPORT;
+        return (NULL);
+}
+#endif
+
+#ifndef HAVE_INET_PTON
+int inet_pton (int af, const char *src, void *dst)
+{
+        if (af == AF_INET)
+                return inet_aton(src, (IA *)dst);
+
+        errno = EAFNOSUPPORT;
+        return (-1);
 }
 #endif
 
