@@ -9,7 +9,7 @@
  */
 
 #if 0
-static	char	rcsid[] = "@(#)$Id: lastlog.c,v 1.6 2001/10/08 04:35:47 jnelson Exp $";
+static	char	rcsid[] = "@(#)$Id: lastlog.c,v 1.7 2001/10/12 22:33:53 jnelson Exp $";
 #endif
 
 #include "irc.h"
@@ -462,17 +462,17 @@ BUILT_IN_COMMAND(lastlog)
 			goto bail;
 		}
 	    }
-	    else if (is_number(arg) && skip == -1)
+	    else if (is_number(arg) && number == INT_MAX)
 	    {
-		if ((skip = my_atol(arg)) < 0)
+		if ((number = my_atol(arg)) < 0)
 		{
 			yell("LASTLOG requires a positive number argument.");
 			goto bail;
 		}
 	    }
-	    else if (is_number(arg) && skip != -1)
+	    else if (is_number(arg) && number != INT_MAX)
 	    {
-		if ((number = my_atol(arg)) < 0)
+		if ((skip = my_atol(arg)) < 0)
 		{
 			yell("LASTLOG requires a positive number argument.");
 			goto bail;
@@ -561,8 +561,16 @@ BUILT_IN_COMMAND(lastlog)
 	 */
 	if (reverse == 0)
 	{
-	    start = current_window->lastlog_oldest;
+	    int i;
+
 	    end = current_window->lastlog_newest;
+	    start = end;
+	    for (i = 1; i < number; i++)
+	    {
+		if (start == current_window->lastlog_oldest)
+			break;
+		start = start->older;
+	    }
 
 	    for (l = start; l; (void)(l && (l = l->newer)))
 	    {
@@ -597,12 +605,23 @@ BUILT_IN_COMMAND(lastlog)
 			if (counter == 0 && before != -1 && separator)
 				show_separator = 1;
 		}
+
+		if (l == end)
+			break;
 	    }
 	}
 	else
 	{
+	    int i;
+
 	    start = current_window->lastlog_newest;
-	    end = current_window->lastlog_oldest;
+	    end = start;
+	    for (i = 1; i < number; i++)
+	    {
+		if (end == current_window->lastlog_oldest)
+			break;
+		end = end->older;
+	    }
 
 	    for (l = start; l; (void)(l && (l = l->older)))
 	    {
@@ -635,6 +654,8 @@ BUILT_IN_COMMAND(lastlog)
 			if (counter == 0 && before != -1 && separator)
 				show_separator = 1;
 		}
+		if (l == end)
+			break;
 	    }
 	}
 	if (header)
@@ -661,6 +682,7 @@ static int	show_lastlog (Lastlog **l, int *skip, int *number, int level_mask, ch
 		(*skip)--;	/* Have not skipped enough leading records */
 		return 0;
 	}
+#if 0
 	if (*number == 0)
 	{
 		if (x_debug & DEBUG_LASTLOG)
@@ -670,6 +692,7 @@ static int	show_lastlog (Lastlog **l, int *skip, int *number, int level_mask, ch
 	}
 	if (*number > 0)
 		(*number)--;	/* Have not yet iterated over max records */
+#endif
 
 	if (level_mask && (((*l)->level & level_mask) == 0))
 	{
