@@ -68,3 +68,8 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Make status_hold and status_hold_lines use scrollback numbers too.
 * Make add_to_scrollback() redraw status bar if output while scrollbacking.
 * Do not increment arg_count when ignoring an empty argument in arglists.
+* Add /ON WINDOW_BEFOREKILL
+* Another iteration of the 'notify' script, hooks the system's /ONs now! =)
+* Put a space in place of a newline in the PF loader.
+* Always ignore spaces after semicolons in parse_line (the {} parser).
+* Some compiler warning fixes from rain.

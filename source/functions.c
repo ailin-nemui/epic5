@@ -1,4 +1,4 @@
-/* $EPIC: functions.c,v 1.148 2003/12/06 03:58:05 jnelson Exp $ */
+/* $EPIC: functions.c,v 1.149 2003/12/09 04:37:52 jnelson Exp $ */
 /*
  * functions.c -- Built-in functions for ircII
  *
@@ -3684,7 +3684,7 @@ BUILT_IN_FUNCTION(function_repeat, words)
 	 */
 	num = strtoul(words, &words, 10);
 	if (words && *words)
-		*words++;
+		words++;
 
 	if (num < 1)
 		RETURN_EMPTY;

@@ -1,4 +1,4 @@
-/* $EPIC: commands.c,v 1.76 2003/12/01 03:21:19 jnelson Exp $ */
+/* $EPIC: commands.c,v 1.77 2003/12/09 04:37:52 jnelson Exp $ */
 /*
  * commands.c -- Stuff needed to execute commands in ircII.
  *		 Includes the bulk of the built in commands for ircII.
@@ -2068,6 +2068,10 @@ static void	loader_pf (FILE *fp, const char *filename, char *subargs, struct loa
 		    break;
 		}
 
+		/* If the last thing we saw was a newline, put a space here */
+		if (newline)
+		    buffer[pos++] = ' ';
+
 		/* We are no longer at a newline */
 		newline = 0;
 
@@ -3496,7 +3500,13 @@ void	parse_line (const char *name, const char *org_line, const char *args, int h
 		if (span < 0)
 			line = NULL;
 		else
+		{
 			line += span;
+
+			/* Willfully ignore spaces after semicolons. */
+			while (line && *line && isspace(*line))
+				line++;
+		}
 
 		/*
 		 * Now we run the command.

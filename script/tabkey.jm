@@ -142,7 +142,7 @@ alias do_match_cycle (direction) {
 		parsekey backward_character
 	}
 
-	@last_input_line = left($curpos() $L)
+	@last_input_line = L
 }
 
 alias do_msg_cycle (direction) {
@@ -230,7 +230,7 @@ alias do_tabkey (cycle_direction) {
 	if (L == []) {
 		@do_msg_cycle($cycle_direction)
 		return
-	} elsif (encode($input_line) == encode($last_input_line)) {
+	} elsif (encode($L) == encode($last_input_line)) {
 		if (zsh_style_completion == [ON] && #match_cycle_list > 1) {
 			@do_match_cycle($cycle_direction)
 			return
@@ -357,7 +357,7 @@ alias do_tabkey (cycle_direction) {
 		}
 	}
 
-	@last_input_line = input_line
+	@last_input_line = L
 	@match_index = -1
 	@:match_prefix = prefix($matches)
 

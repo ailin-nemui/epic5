@@ -1,4 +1,4 @@
-/* $EPIC: window.c,v 1.88 2003/12/07 20:16:53 jnelson Exp $ */
+/* $EPIC: window.c,v 1.89 2003/12/09 04:37:52 jnelson Exp $ */
 /*
  * window.c: Handles the organzation of the logical viewports (``windows'')
  * for irc.  This includes keeping track of what windows are open, where they
@@ -379,6 +379,9 @@ void 	delete_window (Window *window)
 		 */
 		goto delete_window_contents;
 	}
+
+	/* Let the script have a stab at this first. */
+	do_hook(WINDOW_BEFOREKILL_LIST, "%d", window->refnum);
 
 	/* Move this window's channels anywhere else. */
 	/* 
@@ -5560,8 +5563,8 @@ void	check_window_cursor (Window *window)
  */
 char 	*windowctl 	(char *input)
 {
-	int	refnum, num, len;
-	char	*listc, *listc1;
+	int	refnum, len;
+	char	*listc;
 	char 	*ret = NULL;
 	Window	*w;
 
