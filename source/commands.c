@@ -1,4 +1,4 @@
-/* $EPIC: commands.c,v 1.108 2004/09/13 18:29:57 crazyed Exp $ */
+/* $EPIC: commands.c,v 1.109 2004/10/30 14:56:16 crazyed Exp $ */
 /*
  * commands.c -- Stuff needed to execute commands in ircII.
  *		 Includes the bulk of the built in commands for ircII.
@@ -152,7 +152,6 @@ static	void	pretend_cmd	(const char *, char *, const char *);
 static  void    push_cmd 	(const char *, char *, const char *);
 static	void	query		(const char *, char *, const char *);
 static	void	quotecmd	(const char *, char *, const char *);
-static  void    reconnect_cmd   (const char *, char *, const char *);
 static	void	redirect 	(const char *, char *, const char *);
 static	void	returncmd	(const char *, char *, const char *);
 static	void	send_2comm 	(const char *, char *, const char *);
@@ -286,7 +285,7 @@ static	IrcCommand irc_command[] =
 	{ "QUIT",	e_quit		},
 	{ "QUOTE",	quotecmd	},
 	{ "RBIND",	rbindcmd	}, /* keys.c */
-	{ "RECONNECT",  reconnect_cmd   },
+	{ "RECONNECT",  reconnectcmd    }, /* server.c */
 	{ "REDIRECT",	redirect	},
 	{ "REHASH",	send_comm	},
 	{ "REPEAT",	repeatcmd	},
@@ -2316,34 +2315,6 @@ BUILT_IN_COMMAND(quotecmd)
 
 		send_to_aserver(refnum, "%s %s", comm, args);
 	}
-}
-
-/*
- * RECONNECT command.  Reset a server's state to RECONNECT if necessary.
- * if necesasry.  This is dangerous.  Better to use /SERVER.
- * current server number (which is stored in from_server). 
- * This command puts the REALNAME command in effect.
- */
-BUILT_IN_COMMAND(reconnect_cmd)
-{
-	int	server;
-
-	if ((server = from_server) == NOSERV)
-	{
-	    say("Reconnect to what server?  (You're not connected)");
-	    return;
-	}
-
-	if (!args || !*args)
-		args = LOCAL_COPY("Reconnecting");
-
-        say("Reconnecting to server %d", server);
-	if (is_server_open(server))
-	{
-		set_server_quit_message(server, args);
-		close_server(server, NULL);
-	}
-	set_server_status(server, SERVER_RECONNECT);
 }
 
 BUILT_IN_COMMAND(redirect)

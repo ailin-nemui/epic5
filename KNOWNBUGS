@@ -406,3 +406,9 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Fix memory leak with remove_from_comma_list().
 * Add $winquery(), written by howl
 * Add $hookctl(), written by howl, who needs to write an UPDATES entry.
+* Rolled /disconnect and /reconnect into the same code.
+* This allows /reconnect to use an optional servernum argument.
+* Changed "/server -a" to leave the new or selected server as the current
+  server, which is the historical behaviour.
+* The server_established hook is now thrown in the context of that server.
+* Fixed a missing comma bug in remove_from_comma_list().

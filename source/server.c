@@ -1,4 +1,4 @@
-/* $EPIC: server.c,v 1.139 2004/08/24 23:27:24 jnelson Exp $ */
+/* $EPIC: server.c,v 1.140 2004/10/30 14:56:16 crazyed Exp $ */
 /*
  * server.c:  Things dealing with that wacky program we call ircd.
  *
@@ -735,15 +735,15 @@ BUILT_IN_COMMAND(servercmd)
 			return;
 		}
 
-		if ((i = str_to_servref(server)) != NOSERV)
+		if ((from_server = str_to_servref(server)) != NOSERV)
 		{
 			say("Server [%s] already exists as server %d", 
-					server, i);
+					server, from_server);
 			return;
 		}
 
-		i = str_to_newserv(server);
-		say("Server [%s] added as server %d", server, i);
+		from_server = str_to_newserv(server);
+		say("Server [%s] added as server %d", server, from_server);
 		return;
 	}
 
@@ -1643,6 +1643,7 @@ const char	*get_server_cipher (int refnum)
 void	register_server (int refnum, const char *nick)
 {
 	Server *	s;
+	int		ofs = from_server;
 
 	if (!(s = get_server(refnum)))
 		return;
@@ -1663,8 +1664,10 @@ void	register_server (int refnum, const char *nick)
 
 	set_server_status(refnum, SERVER_REGISTERING);
 
+	from_server = refnum;
 	do_hook(SERVER_ESTABLISHED_LIST, "%s %d",
 		get_server_name(refnum), get_server_port(refnum));
+	from_server = ofs;
 
 	if (get_server_try_ssl(refnum) == TRUE)
 	{
@@ -1886,6 +1889,7 @@ BUILT_IN_COMMAND(disconnectcmd)
 	char	*server;
 	const char *message;
 	int	i;
+	int	recon = strcmp(command, "DISCONNECT");
 
 	if (!(server = next_arg(args, &args)))
 		i = get_window_server(0);
@@ -1900,10 +1904,12 @@ BUILT_IN_COMMAND(disconnectcmd)
 
 	if (get_server(i))
 	{
-		if (!args || !*args)
-			message = "Disconnecting";
-		else
+		if (args && *args)
 			message = args;
+		else if (recon)
+			message = "Reconnecting";
+		else
+			message = "Disconnecting";
 
 		say("Disconnecting from server %s", get_server_itsname(i));
 		close_server(i, message);
@@ -1913,7 +1919,18 @@ BUILT_IN_COMMAND(disconnectcmd)
 	if (!connected_to_server)
                 if (do_hook(DISCONNECT_LIST, "Disconnected by user request"))
 			say("You are not connected to a server, use /SERVER to connect.");
+
+	if (recon)
+	{
+		set_server_status(i, SERVER_RECONNECT);
+		say("Reconnecting to server %s", get_server_itsname(i));
+	}
 } 
+
+BUILT_IN_COMMAND(reconnectcmd)
+{
+	disconnectcmd(command, args, subargs);
+}
 
 /* PORTS */
 static void    set_server_port (int refnum, int port)

@@ -1,4 +1,4 @@
-/* $EPIC: ircaux.c,v 1.121 2004/10/13 23:25:55 jnelson Exp $ */
+/* $EPIC: ircaux.c,v 1.122 2004/10/30 14:56:16 crazyed Exp $ */
 /*
  * ircaux.c: some extra routines... not specific to irc... that I needed 
  *
@@ -484,9 +484,7 @@ int	remove_from_comma_list (char *str, const char *what)
 			removed = 1;
 			continue;
 		}
-		if (clue)
-			malloc_strcat_c(&result, ",", &clue);
-		malloc_strcat_c(&result, s, &clue);
+		malloc_strcat_wordlist_c(&result, ",", s, &clue);
 	}
 
 	if (result)

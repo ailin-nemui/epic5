@@ -1,4 +1,4 @@
-/* $EPIC: who.c,v 1.39 2004/10/05 00:00:21 jnelson Exp $ */
+/* $EPIC: who.c,v 1.40 2004/10/30 14:56:16 crazyed Exp $ */
 /*
  * who.c -- The WHO queue.  The ISON queue.  The USERHOST queue.
  *
@@ -1056,13 +1056,20 @@ int	fake_who_end (int refnum, const char *from, const char *comm, const char *wh
  *
  *
  */
-static void ison_queue_add (int refnum, IsonEntry *item)
+static void ison_queue_add (int refnum, IsonEntry *item, int next)
 {
 	Server *s;
 	IsonEntry *bottom;
 
 	if (!(s = get_server(refnum)))
 		return;
+
+	if (next)
+	{
+		item->next = s->ison_wait;
+		s->ison_wait = item;
+		return;
+	}
 
 	bottom = s->ison_wait;
 	while (bottom && bottom->next)
@@ -1124,6 +1131,8 @@ static void ison_queue_pop (int refnum)
 		s->ison_queue = save->next;
 		new_free(&save->ison_asked);
 		new_free(&save->ison_got);
+		new_free(&save->oncmd);
+		new_free(&save->offcmd);
 		new_free((char **)&save);
 	}
 	return;
@@ -1139,7 +1148,7 @@ static IsonEntry *ison_queue_top (int refnum)
 	return s->ison_queue;
 }
 
-static IsonEntry *get_new_ison_entry (int refnum)
+static IsonEntry *get_new_ison_entry (int refnum, int next)
 {
 	Server *s;
 	IsonEntry *new_w;
@@ -1152,7 +1161,9 @@ static IsonEntry *get_new_ison_entry (int refnum)
 	new_w->ison_got = NULL;
 	new_w->next = NULL;
 	new_w->line = NULL;
-	ison_queue_add(refnum, new_w);
+	new_w->oncmd = NULL;
+	new_w->offcmd = NULL;
+	ison_queue_add(refnum, new_w, next);
 	return new_w;
 }
 
@@ -1183,18 +1194,6 @@ BUILT_IN_COMMAND(isoncmd)
 	if (!args || !*args)
 		args = LOCAL_COPY(get_server_nickname(from_server));
 
-	if (!my_stricmp(args, "-d"))
-	{
-		ison_queue_list(from_server);
-		return;
-	}
-	if (!my_stricmp(args, "-f"))
-	{
-		while (ison_queue_top(from_server))
-			ison_queue_pop(from_server);
-		return;
-	}
-
 	isonbase(from_server, args, NULL);
 }
 
@@ -1202,18 +1201,70 @@ void isonbase (int refnum, char *args, void (*line) (int, char *, char *))
 {
 	IsonEntry 	*new_i;
 	char 		*next = args;
+	char		*oncmd = NULL, *offcmd = NULL, *stuff;
+static	int		len = 500;
+	int		sendnext = 0;
 
 	/* Maybe should output a warning? */
 	if (!is_server_registered(refnum))
 		return;
 
+	while (args && *args == '-')
+	{
+		char *arg = next_arg(args, &args);
+		char *stuff;
+
+		if (!my_stricmp(arg, "-d"))
+		{
+			ison_queue_list(from_server);
+		}
+		if (!my_stricmp(arg, "-f"))
+		{
+			while (ison_queue_top(from_server))
+				ison_queue_pop(from_server);
+		}
+		if (!my_stricmp(arg, "-s"))
+		{
+			ison_queue_send(refnum);
+		}
+		if (!my_stricmp(arg, "-n"))
+		{
+			sendnext++;
+		}
+		if (!my_stricmp(arg, "-len"))
+		{
+			if ((stuff = next_arg(args, &args)))
+				len = MAX(100, atol(stuff));
+			else
+				say("Need numeric argument for -LEN argument.");
+		}
+		if (!my_stricmp(arg, "-oncmd"))
+		{
+			if ((stuff = next_expr(&args, '{')))
+				oncmd = stuff;
+			else
+				say("Need {...} argument for -ONCMD argument.");
+		}
+		if (!my_stricmp(arg, "-offcmd"))
+		{
+			if ((stuff = next_expr(&args, '{')))
+				offcmd = stuff;
+			else
+				say("Need {...} argument for -OFFCMD argument.");
+		}
+	}
+
+	if (!args || !*args)
+		return;
+
+	next = args;
 	while ((args = next))
 	{
-		new_i = get_new_ison_entry(refnum);
+		new_i = get_new_ison_entry(refnum, sendnext);
 		new_i->line = line;
-		if (strlen(args) > 500)
+		if (strlen(args) > len)
 		{
-			next = args + 500;
+			next = args + len;
 			while (!isspace(*next))
 				next--;
 			*next++ = 0;
@@ -1222,6 +1273,8 @@ void isonbase (int refnum, char *args, void (*line) (int, char *, char *))
 			next = NULL;
 
 		malloc_strcpy(&new_i->ison_asked, args);
+		malloc_strcpy(&new_i->oncmd, oncmd);
+		malloc_strcpy(&new_i->offcmd, offcmd);
 		ison_queue_send(refnum);
 	}
 	ison_queue_send(refnum);
@@ -1236,12 +1289,22 @@ void isonbase (int refnum, char *args, void (*line) (int, char *, char *))
 void	ison_returned (int refnum, const char *from, const char *comm, const char **ArgList)
 {
 	IsonEntry *new_i = ison_queue_top(refnum);
+	char	*off = NULL, *this1, *all1, *this2, *all2;
+	int	i, clue = 0;
 
 	if (!new_i)
 	{
 		yell("### Please dont do /QUOTE ISON.");
 		return;
 	}
+
+	all1 = LOCAL_COPY(new_i->ison_asked);
+	all2 = LOCAL_COPY(ArgList[0]);
+	if (new_i->offcmd)
+		while ((this2 = next_arg(all2, &all2)))
+			while ((this1 = next_arg(all1, &all1)) && my_stricmp(this1, this2))
+				malloc_strcat_wordlist_c(&off, space, this1, &clue);
+	malloc_strcat_wordlist_c(&off, space, all1, &clue);
 
 	PasteArgs(ArgList, 0);
 	if (new_i->line) 
@@ -1251,10 +1314,16 @@ void	ison_returned (int refnum, const char *from, const char *comm, const char *
 	}
 	else
 	{
-		if (do_hook(current_numeric, "%s", ArgList[0]))
+		if (new_i->oncmd && ArgList[0])
+			runcmds(new_i->oncmd, ArgList[0]);
+		if (new_i->offcmd && off && *off)
+			runcmds(new_i->offcmd, off);
+		if (!new_i->oncmd && !new_i->offcmd &&
+				do_hook(current_numeric, "%s", ArgList[0]))
 			put_it("%s Currently online: %s", banner(), ArgList[0]);
 	}
 
+	new_free(&off);
 	ison_queue_pop(refnum);
 	ison_queue_send(refnum);
 	return;

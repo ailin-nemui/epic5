@@ -56,6 +56,8 @@ typedef struct IsonEntryT
 	char *ison_got;
 	struct IsonEntryT *next;
 	void (*line) (int, char *, char *);
+	char *oncmd;
+	char *offcmd;
 } IsonEntry;
 
 	BUILT_IN_COMMAND(isoncmd);

@@ -186,6 +186,7 @@ extern	const char *server_states[8];
 
 	BUILT_IN_COMMAND(servercmd);
 	BUILT_IN_COMMAND(disconnectcmd);
+	BUILT_IN_COMMAND(reconnectcmd);
 
 	int	str_to_servref		(Char *);
 	int	str_to_newserv		(Char *);

@@ -1,5 +1,41 @@
 EPIC5-0.1
 
+*** News 10/29/2004 -- New /ison features.
+	To go with the -d and -f switches, the following switches have been
+	added to exploit the new queueing mechanism:
+
+		-n                  # Prioritise this request.
+		-s                  # Send the next ison request now.
+		-len number         # Change the number of nicks per request.
+		-oncmd {commands}   # Run these commands for online users.
+		-offcmd {commands}  # Run these commands for offline users.
+
+	The descriptions of these switches are simplistic and a little
+	inaccurate.  Some clarifications follow.
+
+	-len will change the maximum length of an ISON request from 500 to the
+	given number.  This number will be used for _all_ requests from then on
+	including those from the notify system.  In practice it may be
+	necessary in some cases to tune this value downwards to avoid the
+	server dropping some names off the list when they are all online.
+
+	-oncmd and -offcmd will run the given lines of code with $* set to all
+	the users that a reply indicates are online or offline, respectively.
+	Note that a single /ison request can generate multiple replies.  Also
+	note, that there is no guarantee that the code will or will not run if
+	$* is empty.
+
+	-n will place the current requests at the head of the queue.  This is
+	useful when many requests are waiting to be sent and it is necessary to
+	have this one replied to quickly.  Note that if the request isn't
+	actually sent by the time the next -n is used, the newer request will
+	always get the higher priority.
+
+	-s will "kick" the ison system back into action in cases where
+	something has gone wrong and it has become necessary to use the -f flag
+	for eg.  This is more of a debugging tool.  It will not actually cause
+	more than $serverctl(get $servernum() maxison) requests to be sent.
+
 *** News 10/01/2004 -- New status format, %{3}W
 	This is a compromise between %W and %{2}W.  %W only shows in the
 	input window when there are split windows, and %{2}W shows in all
