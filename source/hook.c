@@ -1,4 +1,4 @@
-/* $EPIC: hook.c,v 1.35 2004/04/13 00:19:48 jnelson Exp $ */
+/* $EPIC: hook.c,v 1.36 2004/04/30 18:34:28 jnelson Exp $ */
 /*
  * hook.c: Does those naughty hook functions. 
  *
@@ -90,9 +90,6 @@ struct	hook_stru *next;
 
 	char	*nick;			/* /on type NICK stuff */
 	char	*stuff;			/* /on type nick STUFF */
-	char 	*regexpr;
-	regex_t	regex;			/* Compiled form of "NICK" */
-	int	regex_weight;		/* How much 'weight' it has */
 
 	int	not;			/* /on type ^nick stuff */
 	int	noisy;			/* /on [^-+]type nick stuff */
@@ -373,20 +370,10 @@ static void add_numeric_hook (int numeric, char *nick, char *stuff, int noisy, i
 		new_h->nick = NULL;
 		new_h->stuff = NULL;
 		new_h->filename = NULL;
-		new_h->regexpr = NULL;
 	}
 
 	malloc_strcpy(&new_h->nick, nick);
 	malloc_strcpy(&new_h->stuff, stuff);
-        if (flexible == 0)
-        {
-	    new_h->regexpr = pattern2regex(new_h->nick, &new_h->regex_weight);
-            new_h->regex_weight = pattern_regcomp(&new_h->regex, new_h->nick,
-                                REG_EXTENDED | REG_ICASE | REG_NOSUB);
-            if (new_h->regex_weight < 0)
-                panic("new_h->regex_weight is < 0");
-        }
-
 	new_h->noisy = noisy;
 	new_h->not = not;
 	new_h->sernum = sernum;
@@ -421,20 +408,10 @@ static void add_hook (int which, char *nick, char *stuff, int noisy, int not, in
 		new_h->nick = NULL;
 		new_h->stuff = NULL;
 		new_h->filename = NULL;
-		new_h->regexpr = NULL;
 	}
 
 	malloc_strcpy(&new_h->nick, nick);
 	malloc_strcpy(&new_h->stuff, stuff);
-        if (flexible == 0)
-        {
-	    new_h->regexpr = pattern2regex(new_h->nick, &new_h->regex_weight);
-            new_h->regex_weight = pattern_regcomp(&new_h->regex, new_h->nick,
-                                REG_EXTENDED | REG_ICASE | REG_NOSUB);
-            if (new_h->regex_weight < 0)
-                panic("new_h->regex_weight is < 0");
-        }
-
 	new_h->noisy = noisy;
 	new_h->not = not;
 	new_h->sernum = sernum;
@@ -470,8 +447,6 @@ static void remove_numeric_hook (int numeric, char *nick, int sernum, int quiet)
 					    (tmp->flexible?'\'':'"'), numeric);
 				}
 				new_free(&(tmp->nick));
-				new_free(&(tmp->regexpr));
-				regfree(&tmp->regex);
 				new_free(&(tmp->stuff));
 				new_free(&(tmp->filename));
 				new_free((char **)&tmp);
@@ -492,8 +467,6 @@ static void remove_numeric_hook (int numeric, char *nick, int sernum, int quiet)
 				next = tmp->next;
 				tmp->not = 1;
 				new_free(&(tmp->nick));
-				new_free(&(tmp->regexpr));
-				regfree(&tmp->regex);
 				new_free(&(tmp->stuff));
 				new_free(&(tmp->filename));
 				new_free((char **)&tmp);
@@ -537,8 +510,6 @@ static void remove_hook (int which, char *nick, int sernum, int quiet)
 					hook_functions[which].name);
 
 			new_free(&(tmp->nick));
-			new_free(&(tmp->regexpr));
-			regfree(&tmp->regex);
 			new_free(&(tmp->stuff));
 			new_free(&(tmp->filename));
 			tmp->next = NULL;
@@ -574,8 +545,6 @@ static void remove_hook (int which, char *nick, int sernum, int quiet)
 				top = tmp->next;
 			tmp->not = 1;
 			new_free(&(tmp->nick));
-			new_free(&(tmp->regexpr));
-			regfree(&tmp->regex);
 			new_free(&(tmp->stuff));
 			new_free(&(tmp->filename));
 			tmp->next = NULL;
@@ -646,14 +615,11 @@ void	unload_on_hooks (char *filename)
 /* show_hook shows a single hook */
 static void 	show_hook (Hook *list, const char *name)
 {
-	say("[%s] On %s from %c%s%c %s%s%s do %s [%s] <%d>",
+	say("[%s] On %s from %c%s%c do %s [%s] <%d>",
 	    list->filename[0] ? list->filename : "*",
 	    name,
 	    (list->flexible ? '\'' : '"'), list->nick, 
 	    (list->flexible ? '\'' : '"'), 
-	    (list->flexible ? "" : "("), 
-	    (list->flexible ? "" : list->regexpr),
-	    (list->flexible ? "" : ")"), 
 	    (list->not ? "nothing" : list->stuff),
 	    noise_info[list->noisy].name,
 	    list->sernum);
@@ -733,9 +699,11 @@ int 	do_hook (int which, const char *format, ...)
 	const char	*name 		= (char *) 0;
 	int		retval 		= DONT_SUPPRESS_DEFAULT;
 	unsigned	display		= window_display;
-	int		i;
-	Hook		*hook_array	[2048];
-	int		hook_num = 0;
+	char *		name_copy;
+	char *		stuff_copy;
+	int		noise, old;
+	char		quote;
+	int		serial_number;
 
 	/*
 	 * Figure out where the hooks are for the event type were asserting
@@ -775,7 +743,7 @@ int 	do_hook (int which, const char *format, ...)
 	/*
 	 * No hooks to look at?  No problem.  Drop out.
 	 */
-	if (!list)
+	if (!list || !*list)
 		return NO_ACTION_TAKEN;
 
 
@@ -804,147 +772,79 @@ int 	do_hook (int which, const char *format, ...)
 		hook_functions[which].mark++;
 
 
-	/* not attached, so dont "fix" it */
+        serial_number = INT_MIN;
+        for (;;serial_number++)
 	{
-		int 	currser 	= 0,
-			oldser 		= INT_MIN,
-			currmatch 	= 0, 
-			oldmatch 	= 0;
-		Hook *	bestmatch 	= (Hook *) 0;
+	    for (tmp = *list; tmp; tmp = tmp->next)
+            {
+		Hook *besthook = NULL;
 
-		/*
-		 * Walk the list of hooks for this event
-		 */
-		for (tmp = *list; tmp; tmp = tmp->next)
+		if (tmp->sernum < serial_number)
+		    continue;
+
+		if (tmp->sernum > serial_number)
+		    serial_number = tmp->sernum;
+
+		for (; tmp && tmp->sernum == serial_number; tmp = tmp->next)
 		{
-			char *	tmpnick = (char *) 0;
+		    int bestmatch = 0;
+		    int currmatch;
 
-			/*
-			 * save the current serial number
-			 */
-			currser = tmp->sernum;
+		    if (tmp->flexible)
+		    {
+			/* XXX What about context? */
+			char *tmpnick;
+			tmpnick = expand_alias(tmp->nick, empty_string, NULL);
+		        currmatch = wild_match(tmpnick, buffer);
+			new_free(&tmpnick);
+		    }
+		    else
+		        currmatch = wild_match(tmp->nick, buffer);
 
-			/*
-			 * Is this a different serial number than the
-			 * last hook?  If it is, then we save the previous
-			 * serial number's best hook to the hook_array.
-			 */
-			if (currser != oldser)
-			{
-				/*
-				 * This would happen if the list is out
-				 * of order.  This probably should not be
-				 * fatal, but it is probably irrecoverable.
-				 * It needs to be trapped and fixed.
-				 */
-				if (currser < oldser)
-					panic("currser [%d] is less than oldser [%d]", currser, oldser);
-
-				oldser = currser;
-				currmatch = oldmatch = 0;
-				if (bestmatch)
-					hook_array[hook_num++] = bestmatch;
-				bestmatch = (Hook *) 0;
-			}
-
-			/*
-			 * If this is a flexible hook, expand the nick stuff
-			 */
-			if (tmp->flexible)
-			{
-				/* 
-				 * XXX Something ought to be done here
-				 * with current_window, but ick, how?
-				 */
-				tmpnick = expand_alias(tmp->nick, empty_string,
-							 NULL);
-				currmatch = wild_match(tmpnick, buffer);
-				new_free(&tmpnick);
-			}
-			else
-			{
-				if (!regexec(&tmp->regex, buffer, 0, NULL, 0))
-				{
-					if (x_debug & DEBUG_REGEX_DEBUG)
-						yell("Matching (%s) against (%s) -- MATCHES", buffer, tmp->regexpr);
-					currmatch = tmp->regex_weight;
-				}
-				else
-				{
-					if (x_debug & DEBUG_REGEX_DEBUG)
-						yell("Matching (%s) against (%s) -- NO MATCH", buffer, tmp->regexpr);
-				}
-
-			}
-
-			/*
-			 * If it is the "best match" so far, then we mark
-			 * its "value" and save a pointer to it.
-			 */
-			if (currmatch > oldmatch)
-			{
-				oldmatch = currmatch;
-				bestmatch = tmp;
-			}
+		    if (currmatch > bestmatch)
+			besthook = tmp;
 		}
 
-		/*
-		 * Ok. we've walked the list.  If the last hook had a best
-		 * match, use that one too. =)
-		 */
-		if (bestmatch)
-			hook_array[hook_num++] = bestmatch;
-	}
+		/* If nothing matched, then run the next serial number. */
+		if (!besthook)
+			break;
 
-
-	/*
-	 * Now we walk the list of collected hook events that are to be run
-	 */
-	for (i = 0; i < hook_num; i++)
-	{
-		char *		name_copy;
-		char *		stuff_copy;
-		char *		result = NULL;
-		int		noise, old;
+		/* Run the hook */
+		tmp = besthook;
 
 		/*
-		 * This should never happen.
+		 * If the winning event is a "null" event, then move on to 
+		 * the next serial number.
 		 */
-		if (!(tmp = hook_array[i]))
-			panic("hook_array[%d] is null", i);
+		if (tmp->not || !tmp->stuff || !*tmp->stuff)
+			break;
+
+		/* Copy off everything important from 'tmp'. */
+		noise = tmp->noisy;
+		name_copy = LOCAL_COPY(name);
+		stuff_copy = LOCAL_COPY(tmp->stuff);
+		quote = tmp->flexible ? '\'' : '"';
+
+		/*
+		 * YOU CAN'T TOUCH ``tmp'' AFTER THIS POINT!!!
+		 */
 
 		/* 
 		 * Check to see if this hook is supposed to supress the
 		 * default action for the event.
 		 */
-		if (noise_info[tmp->noisy].suppress == 1 && tmp->sernum == 0)
+		if (noise_info[noise].suppress == 1 && serial_number == 0)
 			retval = SUPPRESS_DEFAULT;
-		else if (noise_info[tmp->noisy].suppress == -1 && tmp->sernum == 0)
+		else if (noise_info[noise].suppress == -1 && serial_number == 0)
 			retval = RESULT_PENDING;
-
-		/*
-		 * If this is a negated event, or there isnt anything to be
-		 * executed, then we dont bother.  Just go on to the next one
-		 */
-		if (tmp->not || !tmp->stuff || !*tmp->stuff)
-			continue;
-
-		name_copy = LOCAL_COPY(name);
-		stuff_copy = LOCAL_COPY(tmp->stuff);
-		noise = tmp->noisy;
 
 		/*
 		 * If this is a NORMAL or NOISY hook, then we tell the user
 		 * that we're going to execute the hook.
 		 */
-		if (noise_info[tmp->noisy].alert)
+		if (noise_info[noise].alert)
 			say("%s activated by %c%s%c", 
-				name, tmp->flexible ? '\'' : '"',
-				buffer, tmp->flexible ? '\'' : '"');
-
-		/*
-		 * YOU CAN'T TOUCH ``tmp'' AFTER THIS POINT
-		 */
+				name, quote, buffer, quote);
 
 		/*
 		 * Save some information that may be reset in the 
@@ -958,6 +858,8 @@ int 	do_hook (int which, const char *format, ...)
 
 		if (retval == RESULT_PENDING)
 		{
+			char *result;
+
 			result = call_lambda_function(name_copy, stuff_copy,
 							buffer);
 
@@ -988,6 +890,14 @@ int 	do_hook (int which, const char *format, ...)
 		 */
 		system_exception = old;
 		window_display = display;
+
+		/* Move onto the next serial number. */
+		break;
+	    }
+
+	    /* If 'tmp' is null here, we've processed all of them. */
+	    if (!tmp)
+		break;
 	}
 
 	/*

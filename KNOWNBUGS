@@ -4,6 +4,12 @@ KNOWN ERRATA (eg, bugs, or unresolved requests):
 ------------------------------------------------
 * Some way to hook incomplete lines via dcc raw
 * Deleting an /on from a lower numbered serial number is a bad idea.
+* Add /window kill_all_hidden for rain.
+* Allow %W to fill up with spaces if it's in the middle of status bar?
+* Some way to set ipv4 and ipv6 vhosts separately?
+* More intelligent "level-collision" handling on /window server.
+* Add %{1}W to display even on a single visible window.
+* Make it easier to script your own altnick stuff.
 
 [See http://www.epicsol.org/PROJECTS for things to come in the future]
 [See http://www.epicsol.org/CHANGELOG5 for things that changed in the past]
@@ -220,3 +226,6 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Make the input line use (unsigned char), not (char), huzzah!
 * Make the "othername" ($3 in /on dcc_raw "E") the port number.
 * Avoid a NULL deref with "parse_command" keybinding.
+* Fix (maybe?) a NULL deref with prepare_display() that hsoc tripped across.
+* Revert all the regex stuff for /on's -- the idea needs a lot more thoguht.
+* Convert do_hook()'s algorithm so it's safe to delete /on's from within /on's

@@ -1,4 +1,4 @@
-/* $EPIC: dcc.c,v 1.98 2004/04/13 00:19:48 jnelson Exp $ */
+/* $EPIC: dcc.c,v 1.99 2004/04/30 18:34:28 jnelson Exp $ */
 /*
  * dcc.c: Things dealing client to client connections. 
  *
@@ -1510,8 +1510,8 @@ static	void	dcc_getfile (char *args, int resume)
 			dcc->bytes_sent = 0;
 			dcc->bytes_read = dcc->resume_size = sb.st_size;
 
-			if ((file = open(dcc->filename,
-					O_WRONLY|O_CREAT, 0644)) == -1)
+			if ((file = open(fullname,
+					O_WRONLY|O_APPEND, 0644)) == -1)
 			{
 				say("Unable to open %s: %s", 
 					fullname, errno ? 
