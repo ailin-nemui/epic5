@@ -11,7 +11,7 @@ EPIC5-0.1
 	a new configure option, "--with-multiplex".  These are the values:
 			--with-multiplex=select
 			--with-multiplex=poll
-			--with-multiplex=kqueue
+			--with-multiplex=freebsd-kqueue
 			--with-multiplex=pthread
 	If you don't choose a multiplexer, or you choose one that isn't
 	supported by your system, it will use select instead.  Note that
