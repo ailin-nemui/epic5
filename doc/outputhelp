@@ -1,0 +1,39 @@
+People have often commented how they can get color and/or eight bit
+characters working when running epic linked against ncurses and running
+under gnu screen.
+
+All of this information was graciously provided by johnnie_doe@hotmail.com
+(Starv@ircnet)
+
+COLORS:
+-------
+To get colors under gnu screen, add these lines to your .screenrc file:
+
+termcap  vt102 'AF=\E[3%dm:AB=\E[4%dm'
+terminfo vt102 'AF=\E[3%p1%dm:AB=\E[4%p1%dm'
+
+If screen does not default to 'vt102', make sure you set TERM to vt102 before
+you run epic.
+
+
+EIGHT BIT CHARS:
+---------------
+If epic is linked against ncurses (it is by default), you can set some
+ncurses options to make it accept eight bit characters more gracefully.
+Add the following lines to your .inputrc:
+
+set meta-flag on
+set convert-meta off
+set output-meta on
+
+Then in EPIC, you may need to:
+	/set eight_bit ON
+	/set high_bit_escape 0
+and you should be on your way.
+
+If you are using GNU screen, make sure you have "defc1 off" in your 
+screenrc file, because screen won't even display characters 128-159
+with it on (and it is on by default). (from Ben Winslow, May 16, 1999)
+
+Good luck!
+Jeremy

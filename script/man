@@ -1,0 +1,16 @@
+alias man 
+{
+	if ([$0]) 
+	{
+		fe (1 2 3 4 5 6 7 8 n) man.type 
+		{
+			if (glob($help_path/$man.type*/$0)) 
+			{
+				help $man.type $*
+				help -wait
+			}
+		}
+	}
+}
+
+#Dawid Kuroczko'97

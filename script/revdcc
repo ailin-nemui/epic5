@@ -1,0 +1,171 @@
+/*******************************************************************************
+September 1, 1996
+
+they said it couldn't be done...  THEY WERE WRONG.
+
+          Reverse DCC for ircii-epic by archon <archon@tamu.edu>
+
+The purpose of this script is to allow clients behind firewalls to dcc
+send.  If you and your intended recipient are both firewalled, use mail or
+ftp.
+
+Basically, instead of telling the recipient to connect to your machine
+where you will send them the file, you tell them to use their own
+own machine, then you send it.
+
+Both you and the recipient must be running this script for it to work.
+
+Thanks:
+  hop <jnelson@acronet.net> for writing EPIC, and for helping to get this
+  script working smoothly.
+       
+
+Versions/Updates
+----------------
+ 1.0a: it actually works for text files. wow, that wasn't so hard now was it?
+ 1.0b: added uuencoding to work for binary files
+       fixed fexist() test in revsend
+ 1.0c: changed port selection to be decided by the receiver
+ 1.0d: minor fixes and cleaning up.  completed revclose.  added help.
+
+*******************************************************************************/
+
+set novice off
+
+alias ento {
+  @ function_return = encode($tolower($0))
+}
+
+alias revsend {
+  if ([$1]) {
+    @ rev.file = [$1]
+    userhost $0 -cmd if (index(. $4) > 0) {
+      @ rev.nick = ento($0)
+      @ rev.host[$rev.nick] = [$4]
+      if (fexist($rev.file) > 0) {
+        push sendqueue[$rev.nick] $rev.file
+        echo *** Sending reverse DCC request to $0
+        ^on ^ctcp_reply "$0 REVDCC REJECT $rev.file" {
+	  echo *** $0 has rejected reverse DCC SEND of $3
+	  @ rev.host[$rev.nick] = sendqueue[$rev.nick] = []
+	  ^on ctcp_reply -"$0 REVDCC REJECT $rev.file"
+	}
+        quote privmsg $0 :REVDCC SEND $rev.file\
+	@ rev.nick = rev.file = rev.seed = []
+      }{
+        echo *** Cannot access $W/$rev.file
+      }
+    }{
+      echo *** $0\: No such nick
+    }
+  }{
+    echo *** Usage: /revsend nick file
+  }
+}
+
+alias revget {
+  if ([$1]) {
+    @ rev.rnick = ento($0)
+    if (rev.fname[$rev.rnick]) {
+      echo *** Getting $1 from $0
+      @ listen($rev.port[$rev.rnick])
+      quote notice $0 :REVDCC GET $1 $rev.port[$rev.rnick]\
+      @ rev.rnick = []
+    }{
+      echo *** No reverse DCC SENDS pending from $0
+    }
+  }{
+    echo *** Usage: /revget nick file 
+  }
+}
+
+alias receivefile {
+  @ rev.snick = [$3]
+  @ rev.file[$rev.snick] = [$0\.uu]
+  @ rev.lsocket = [$1]
+  @ rev.lport = [$2]
+  @ fd = open($rev.file[$rev.snick] W)
+  stack push on dcc_raw
+  ^on ^dcc_raw "$1 % D*" {
+#    exec -name decodefile$rev.file[$rev.snick] $3-
+    @ write($fd $3-)
+  }
+  ^on ^dcc_lost "$1 RAW *" {
+    echo *** Connection closed: File transfer complete... decoding.
+    ^on dcc_raw -"$rev.lsocket % D*"
+    ^on dcc_lost -"$0 RAW *"
+    dcc close raw_listen $rev.lport
+    @ close($fd)
+    ^on ^exec_exit "decodefile$rev.file[$rev.snick] *" {
+      echo *** Decoding complete
+      ^on exec_exit -"decodefile$rev.file[$rev.snick] *"
+      ^on dcc_raw -"% % N $rev.port[$rev.snick]"
+      @ unlink($rev.file[$rev.snick])
+      @ fd = sendnick = rev.file[$rev.snick] = rev.lsocket = rev.lport = rev.fname[$rev.snick] = rev.port[$rev.snick] = rev.snick = []
+    }
+    stack pop on dcc_raw
+    exec -name decodefile$rev.file[$rev.snick] uudecode $rev.file[$rev.snick]
+  }
+}
+
+alias revclose {
+  quote notice $0 :REVDCC REJECT $1\
+}
+
+on ^ctcp_reply "% REVDCC GET *" {
+  @ getnick = ento($0)
+  @ rev.sfile[$getnick] = [$3]
+  @ rev.sendport[$getnick] = [$4]
+  if (match($3 $sendqueue[$getnick])) {
+    ^on ^exec "sendfile$getnick *" {
+      dcc raw $rev.socket[$getnick] $rev.host[$getnick] $1-
+    }
+    ^on ^exec_exit "sendfile$getnick *" {
+      ^on exec -"sendfile$getnick *"
+      ^on exec_exit -"sendfile$getnick *"
+      ^on dcc_raw -"$rev.socket[$getnick] $rev.host[$getnick] C*"
+      ^on ctcp_reply -"$decode($getnick) REVDCC REJECT $rev.sfile[$getnick]"
+      timer 2 ^dcc close raw $rev.socket[$getnick]
+      echo *** Connection closed. File transfer complete.
+      @ rev.host[$getnick] = sendqueue[$getnick] = rev.sendport[$getnick] = rev.socket[$getnick] = rev.sfile[$getnick] = getnick = []
+    }
+    @ rev.socket[$getnick] = connect($rev.host[$getnick] $rev.sendport[$getnick])
+    echo *** Sending $3 to $0
+    ^exec -name sendfile$getnick uuencode $3 $3
+  }
+}
+
+on ^ctcp "% % REVDCC SEND *" {
+  @ sendnick = ento($0)
+  @ rev.fname[$sendnick] = [$4]
+  @ rev.seed = srand($time())
+  @ rev.port[$sendnick] = rand(10000) + 8000
+  ^on ^dcc_raw "% % N $rev.port[$sendnick]" {
+    receivefile $rev.fname[$sendnick] $0 $rev.port[$sendnick] $sendnick
+  }
+  echo *** Received reverse DCC SEND request from $0\: $4-
+  echo *** Use /revget $0 $4\ to get this file or /revclose $0 $4\ to cancel
+}
+
+alias revhelp {
+  echo _-^-_-^-_-^-_-^-_-^-_-^-_-^-_-^-_-^-_-^-_-^-_-^-_-^-_-^-_-^-_-^-_-^-_-^-_-^-_
+  echo *** $center($word(0 $geom()) RevDCC.irc by archon v1.0d.epic)
+  echo *** Note: anything in <>'s is required. anything in []'s is optional
+  echo *** REVSEND <nick> <file>
+  echo ***      Sends <file> to <nick>
+  echo *** REVGET <nick> <file>
+  echo ***      Receives <file> from <nick>
+  echo *** REVCLOSE <nick> <file>
+  echo ***      Rejects send of <file> from <nick>
+  echo _-^-_-^-_-^-_-^-_-^-_-^-_-^-_-^-_-^-_-^-_-^-_-^-_-^-_-^-_-^-_-^-_-^-_-^-_-^-_
+}
+
+echo [RevDCC] Reverse DCC v1.0d.epic by archon loaded!  Help: /revhelp
+
+/************************************************************
+to do:
+- flood protection
+- test for file existance (receiver)
+  - rename
+- uudecode from stdin
+************************************************************/

@@ -1,0 +1,54 @@
+/*
+ * KEY BINDINGS, 1993
+ */
+
+/********************* Key Bindings *********************************/
+# the meta characters
+bind ^[ meta1_character
+bind ^d meta2_character
+
+# the cursor keys
+bind meta1-. end_of_line
+bind meta1-, beginning_of_line
+
+# these are set automatically, but this is just in case.
+bind ^? backspace
+bind ^h backward_character
+bind ^b bold
+bind ^c switch_channels
+bind meta1-i toggle_insert_mode
+bind ^w next_window
+
+# erasing bindings
+bind ^U erase_line
+bind meta2-^w delete_next_word
+bind meta2-^p delete_previous_word
+bind meta2-^e erase_to_end_of_line
+bind meta2-^a erase_line
+bind meta2-^y yank_from_cutbuffer
+bind meta2-^d erase_line
+
+# nice stuff to have
+bind meta2-^j parse_command flush
+bind meta1-c clear_screen
+bind meta1-r refresh_screen
+
+bind meta1-l parse_command leave *
+bind meta1-i parse_command join -invite
+
+# vt100-type keys
+bind ^[[ meta2_character
+bind meta2-1 meta3_character
+bind meta2-2 meta5_character
+bind meta2-3 meta6_character
+bind meta2-4 meta7_character
+bind meta2-5 meta8_character
+bind meta2-6 meta9_character
+
+bind meta3-~ beginning_of_line
+bind meta5-~ toggle_insert_mode
+bind meta6-~ delete_character
+bind meta7-~ end_of_line
+bind meta8-~ scroll_backward
+bind meta9-~ scroll_forward
+

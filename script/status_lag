@@ -1,0 +1,64 @@
+# Adds a STATUS_LAG set, following the regular STATUS_* conventions.
+# By default, this will be assigned to %2.
+
+# To change the format of the lag indicator, use /set status_lag.
+# To change how often the lag figure is updated, use /set status_lag_update.
+
+@ status_lag = [\[Lag: %2\]]
+@ status_lag_update = 30
+
+# isnumber() is wc's code.
+# epic4pre1.047 and up has a built in $isnumber().
+#alias isnumber {
+#   ^local isnum 1
+#   if (![$0]) 
+#      { @ isnum = 0 }
+#
+#   fec ($0) ii {
+#      if (!isdigit($ii) && ii != [-]) 
+#         { @ isnum = 0 }
+#   }
+#   @ function_return = isnum
+#}
+
+^on ^set "status_lag *" {
+   if ([$1]) {
+      @ status_lag = [$1-]
+      echo $banner Value of STATUS_LAG set to $1-
+   } else {
+      echo $banner Current value of STATUS_LAG is $(status_lag)
+   }
+}
+
+^on ^set "status_lag_update *" {
+   if ([$1]) {
+      if (isnumber($1)) {
+         @ status_lag_update = [$1]
+         echo $banner Value of STATUS_LAG_UPDATE set to $1
+      } else {
+         echo $banner Value of STATUS_LAG_UPDATE must be a number
+      }
+   } else {
+      echo $banner Current value of STATUS_LAG_UPDATE is $(status_lag_update)
+   }
+}
+
+alias checklag {
+  setstatuslag ??
+  ^on ^raw_irc "$S PONG $S :$N" {
+      ^on ^raw_irc -"$S PONG $S :$N"
+      setstatuslag ${time()-checktime}
+      timer -refnum lag $(status_lag_update) checklag
+   }
+   @ checktime = time()
+   ^quote ping $S
+}
+
+alias setstatuslag {
+  ^set status_user2 $sar(/%2/$[-2]*/$status_lag)
+}
+
+^timer -delete lag
+checklag
+
+#psykotyk- nov 23/97

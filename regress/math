@@ -1,0 +1,243 @@
+#
+# EPIC4 ESL regression tests
+# New math parser test
+# Copyright 1998 Jeremy Nelson, Distribute freely.
+#
+# NOTE: If you find a test that is missing, please let me know so
+# i can add it.  Doubly so if you find a test that exposes a bug!
+#
+
+@ misses = 0
+
+alias clear {
+	if (misses) {@ [$"[RETURN]"];@ misses = 0}
+	//clear
+}
+
+alias assert {
+        local foo
+        eval @ foo = $*
+        echo Test [$[50]*] [$foo]
+#	eval @ foo = $*
+#	if (foo) { echo Test [$[50]{[$*]}] passed }
+#	         { echo Test [$[50]{[$*]}] FAILED! ;@ [$"Failed"];@misses++ }
+}
+
+
+alias foobar {
+#define M_INPAR 	0
+#define M_OUTPAR	1
+assert ()==[]
+assert (1)==1
+assert (1==1)
+assert ((([1])==1))
+
+#define NOT 		2
+assert !1==0
+assert !0==1
+
+#define COMP 		3
+assert ~2==-3
+assert ~0==-1
+
+#define POSTPLUS 	4
+assign booya 3
+assert booya++==3
+assert booya++==4
+
+#define POSTMINUS 	5
+assert booya--==5
+assert booya--==4
+
+#define UPLUS 		6
+assert +3==3
+assert +-3==-3
+
+#define UMINUS 		7
+assert -3==-3
+assert -booya==-3
+
+#define AND 		8
+assert (5&4)==4
+assert (5&2)==0
+assert (5&0)==0
+
+#define XOR 		9
+assert (3^5)==6
+assert (3^3)==0
+assert (3^0)==3
+
+#define OR 		10
+assert (5|4)==5
+assert (3|0)==3
+assert (5|5)==5
+
+#define MUL 		11
+assert 5*4==20
+assert 5*0==0
+assert 0*0==0
+
+#define DIV 		12
+assert 5/4==1
+assert 20/5==4
+assert 5/0==0
+assert 0/0==0
+
+#define MOD 		13
+assert 5%4==1
+assert 20%5==0
+assert 5%0==0
+assert 3%3==0
+
+#define PLUS 		14
+assert 5+4==9
+assert 20+5==25
+assert 20+-5==15
+assert 20+0==[20]
+assert 3+3==6
+
+#define MINUS 		15
+assert 5-4==1
+assert 3-4-5==-6
+assert 20--5==25
+assert 15-4+8==19
+
+#define SHLEFT 		16
+assert 1<<0==1
+assert 1<<1==2
+assert 1<<2==4
+assert 1<<3==8
+assert 1<<4==16
+
+#define SHRIGHT 	17
+assert 16>>0==16
+assert 16>>1==8
+assert 16>>2==4
+assert 16>>3==2
+assert 16>>4==1
+
+#define LES 		18
+assert 3<4==1
+assert 4<3==0
+assert 3<3==0
+
+#define LEQ 		19
+assert 3<=4==1
+assert 4<=3==0
+assert 3<=3==1
+
+#define GRE 		20
+assert 3>4==0
+assert 4>3==1
+assert 3>3==0
+
+#define GEQ 		21
+assert 3>=4==0
+assert 4>=3==1
+assert 3>=3==1
+
+#define DEQ 		22
+assert [1]==1
+assert booya==[3]
+assert booya==3
+assert [$booya]==[3]
+
+#define NEQ 		23
+assert 2!=1
+assert 2!=[1]
+assert [2]!=[1]
+assert booya!=4
+assert booya!=[foobar]
+
+#define DAND 		24
+alias ack {echo ack!;@counter++;@function_return = 1}
+@ counter = 0
+assert (1&&0)==0
+assert (0&&0)==0
+assert (1&&1)==1
+assert ([]&&1)==0
+assert ([booya]&&1)==1
+assert (0&&ack())==0
+assert (ack()&&ack())==1
+assert (ack()&&0)==0
+assert (ack()&&1)==1
+assert counter==4
+
+#define DOR 		25
+@ counter = 0
+assert (1||0)==1
+assert (0||0)==0
+assert (1||1)==1
+assert ([]||1)==1
+assert ([booya]||1)==1
+assert (0||ack())==1
+assert (ack()||ack())==1
+assert (ack()||0)==1
+assert (ack()||1)==1
+assert counter==4
+
+#define DXOR 		26
+#define QUEST 		27
+#define COLON 		28
+#define EQ 		29
+#define PLUSEQ 		30
+#define MINUSEQ 	31
+#define MULEQ 		32
+#define DIVEQ 		33
+#define MODEQ 		34
+#define ANDEQ 		35
+#define XOREQ 		36
+#define OREQ 		37
+#define SHLEFTEQ 	38
+#define SHRIGHTEQ 	39
+#define DANDEQ 		40
+#define DOREQ 		41
+#define DXOREQ 		42
+#define COMMA 		43
+#define PREPLUS 	45
+#define PREMINUS 	46
+#define NUM 		47
+#define POWER 		50
+#define POWEREQ 	52
+#define STRLEN		53	/* Added for epic */
+assert @[foobar]==6
+assert @(booya = [foobar])==6
+#define STRCAT		54	/* Added for epic */
+assert #[This is a test]==4
+assert #(booya = [This is a test])==4
+#define STRCATEQ	55 	/* Added for epic */
+#define WORDC		56	/* Added for epic */
+}
+
+foobar
+#
+# Integer tests
+#
+#set floating_point_math off
+#assert 3+4==7
+#assert 3-4==-1
+#assert 3+4+4==11
+##sigh, yes, this is the right value.
+#assert 3+4-4==3
+#assert (3+4)-4==3
+#
+#assert 3*4==12
+#assert 3/4==0
+#assert 3%4==3
+#assert 4%3==1
+#assert 4/3==1
+#
+#assert 3##4==34
+#assert [3]##4==34
+#assert 3##[4]==34
+
+
+#
+# floating point tests
+#
+#set floating_point_math on
+#assert 3.0+4.3==7.3
+#assert 3.0-4.3==-1.3
+#assert 3.0+4.3+3.4==10.7
+###sigh, yes, this is the right value.
+#assert 3.0+4.3-4.3==3

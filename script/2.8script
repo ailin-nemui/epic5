@@ -1,0 +1,144 @@
+: {
+	This script is intended for use with 2.8 servers on all sites.
+	It handles some formatting options and join options for novice users
+ 
+	This script references some aliases that are in 'basical'.  Both of
+	these scripts should be loaded from 'global', so that should not be
+	a problem.  This script will _not_ work correctly if 'basical' is not
+	loaded from 'global'.  This script is a dependancy for other scripts.
+
+	THIS SCRIPT MUST ALWAYS BE LOADED, OR OTHER SCRIPTS MIGHT NOT WORK!
+	THIS VERSION IS FOR EPIC CLIENTS ONLY (EPIC3.001 or up)
+}
+
+# I dont know why the client cant do this...
+alias join
+{
+	switch ($*)
+	{
+		(*,*)
+		{
+			join $before(, $*)
+			join $after(, $*)
+		}
+		(#*) (&*) (0) (-*) (!*) (+*)
+			{ //join $* }
+		() 
+			{ //join -i }
+		(*) 
+			{ //join #$* }
+	}
+}
+
+alias leave
+{
+	switch ($0)
+	{
+		(*,*)
+		{
+			leave $before(, $0) $1-
+			leave $after(, $0) $1-
+		}
+		(#*) (&*) (0) (-*) (!*) (+*)
+			{ //leave $* }
+		() (\*)
+			{ //leave * $1- }
+		(*)
+			{ //leave #$* }
+	}
+}
+
+alias invite {
+	if ([$1]) 
+		{//invite $0 $1} 
+		{//invite $0 $C}
+}
+
+alias off {
+	on $0 -$1-
+}
+
+: {
+	I broke this, more or less on purpose on epic3.001. 
+	This makes it look like it did before.
+}
+on ^send_public * {if (iscurchan($0)) {echo > $1-} {echo $0> $1-}}
+
+on ^ctcp ^"% % ERRMSG *no such function*"
+on ^dcc_raw ^"% % D %" 
+
+# Trace information
+on ^200 * {
+	unless (tracepath) (tracepath = [$0])
+	xecho -b S:[$[15]0] V:[$[10]2] U:[$[20]4] 
+	@ tracepath #= [!$4]
+}
+on ^201 * xecho -b $1 Class[$2] ==> $3-
+on ^202 * xecho -b $1 Class[$2] ==> $3-
+on ^203 * xecho -b S:[$[15]0] UNKNOWN $3
+on ^204 * xecho -b S:[$[15]0] OPER [$[30]tr(/[/!/$3)
+on ^205 * xecho -b $1 Class[$2] ==> $3-
+on ^206 * {
+        if (tracepath) echo TRACE PATH: $tracepath
+        xecho -b S:[$[15]0] SERV [$[25]5] [$[-4]3] [$[-5]4]
+	(tracepath = [])
+}
+on ^207 * xecho -b $1 Class[$2] ==> $3-
+on ^208 * xecho -b $1 Class[$2] ==> $3-
+on ^209 * xecho -b $1 $2 Entries linked: $3
+
+# Stats information
+ON ^211 * {
+        XECHO -b $1: Sent: ${[$4]/1024}mB Received: ${[$6]/1024}mB SendQ: $2 Connected for: $tdiff2($7) Idle: $8 [$9-]
+}
+
+on ^211 * xecho -b $[40]1 $[10]2 $[10]3 $[10]4 $[10]5 $[12]6 $7-
+on ^212 * xecho -b $[10]1 $2
+on ^213 * xecho -b $1:$2:$3:$4:$5:$6
+on ^214 * xecho -b $1:$2:$3:$4:$5:$6
+on ^215 * xecho -b $1:$2:$3:$4:$5:$6
+
+# K lines
+# efnet version
+: {
+on ^216 * {
+	(astuff = [$*])
+	pop astuff 
+	pop astuff 
+	(k.user = pop(astuff)) 
+	shift astuff
+	shift astuff
+	(k.host = shift(astuff))
+	xecho -b K $lformat(30 [$k.user@$k.host]) [$astuff]
+}
+}
+
+# a2.9 version
+on ^216 * xecho -b $1:$2:$3:$4:$5-
+on ^217 * xecho -b $1:$2:$3:$4:$5:$6
+on ^218 * xecho -b $1:$2:$3:$4:$5:$6
+on ^241 * xecho -b $1:$2:$3:$4:$5:$6
+
+# ef2.9 version
+#on ^218 * xecho -b $1:$2:$3:$4:$5:$6:$7:$8
+# Get da5id's script for handling 278 and 279 numerics.
+
+: {
+   220 is used by .troy versions to return information on
+   host masks being enforced locally.
+}
+on ^220 * xecho -b $1 $[10]2 $3
+
+# Service list:
+on ^231 * xecho -b Service $1 \($0\)
+
+# Ban list:
+on ^367 * xecho -b $[$CHANNEL_NAME_WIDTH]1 $2-
+
+# Compatabiilty with BX
+alias evalserver xeval -server $*
+
+# Compatability with EPIC4pre1.013 through EPIC4pre1.047
+on ^set "CONTROL_C_COLOR ON" set color on
+on ^set "CONTROL_C_COLOR OFF" set color off
+

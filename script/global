@@ -1,0 +1,13 @@
+# This is the global ircrc
+# Please make your installation changes in 'local'
+#
+# These two aliases are used by the scripts 
+alias d- ^set display off
+alias d+ ^set display on
+#
+# The basic setup for ircII
+load basical
+load 2.8script
+# If you want this script, load it in your .ircrc
+#load newaway
+load local

@@ -1,0 +1,63 @@
+/*
+ * FILES script -- complements the new file functions.
+ * Written by Jeremy Nelson -- EPIC project
+ *
+ * These aliases are not anywhere near as fast as /exec'ing the
+ * c programs, but they are here to illustrate the usage of the fns.
+ */
+
+/* dump a file out to the screen w/o using /exec */
+alias cat {
+	@ fd = open($0 R)
+	while (!eof($fd)) { echo $read($fd) }
+	@ close($fd)
+}
+
+/* Search for a string in a group of files */
+/* This is, of course, case insensitive */
+alias grep {
+	fe ($1-) x 
+	{
+		@ fd = open($x R)
+		while (!eof($fd)) 
+		{ 
+			@ line = read($fd)
+			if (match(*$0* $line))
+				{echo $x: $line}
+		}
+		@close($fd)
+	}
+}
+
+/* Write a line to a file w/o using the logging features */
+alias log_it {
+	@ fd = open($0 W)
+	@ write($fd $1-)
+	@ close($fd)
+}
+
+# 
+# Call as /exclude filename pattern
+#
+alias exclude { 
+        @ :reg = regcomp($1-)
+        @ :rd = open($0 R)
+        @ :wd = open($0.new W)
+        
+	@ line = read($rd)
+	do
+        {       
+                if (regexec($reg $line)) {
+                        @ write($wd $line)
+                }
+		@ line = read($rd)
+        } while (!eof($rd))
+
+        @ close($rd)
+        @ close($wd)
+        @ regfree($reg)
+                       
+        @ unlink($0)
+        @ rename($0.new $0)
+}                          
+

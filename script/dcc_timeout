@@ -1,0 +1,25 @@
+@ dcc.inbound.threshhold = 0
+@ dcc.outbound.threshhold = 0
+
+on #-timer -333 * 
+{
+	^stack push on dcc_list
+
+	^on dcc_list * #
+	if (dcc.inbound.threshold) {
+		^on -dcc_list "* * * Offered *" {
+			if (time() - [$4] > dcc.inbound.threshhold) 
+				{ dcc close $0 $2 }
+		}
+	}
+	if (dcc.outbound.threshold) {
+		^on -dcc_list "* * * Waiting *" {
+			if (time() - [$4] > dcc.outbound.threshhold) 
+				{ dcc close $0 $2 }
+		}
+	}
+	^//dcc list
+
+	^stack pop on dcc_list
+}
+#hop'98

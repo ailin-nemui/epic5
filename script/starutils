@@ -1,0 +1,153 @@
+### StarUtils.irc.epic by archon
+### January 1996
+### *** REQUIRES AN IRCII-EPIC CLIENT ***
+/* Submitted by archon on 1/25/96, archon gave me permission to tidy up */
+
+echo [StarUtils] Loading StarUtils v1.2.EPIC by archon - lusers beware -
+echo [StarUtils] Type /starhelp for help!
+
+if (!star.load) 
+{
+	eval ^set client_information $CLIENT_INFORMATION -&- StarUtils v1.2.EPIC by archon : clones beware.
+}
+
+@ star.load++
+alias tkill star.tkill
+alias star.tkill 
+{
+	if ([$1] && (rmatch($0 *@*) == 1)) 
+	{
+		@ star.killrsn = [$*]
+		@ star.killpat = shift(star.killrsn)
+		@ star.killcnt = 0
+		star.setup
+		^on ^205 *
+		{
+			@ star.killhrm = split(\[\] $3)
+			if (#star.killhrm == 2) 
+			{
+				@ star.killnuh = sar(r/ /!/star.killhrm)
+				if (rpattern($star.killnuh $star.killpat)) 
+				{
+					kill $before(! $star.killnuh) $star.killrsn
+					@ star.killcnt++
+				}
+			}
+			{
+				echo [TraceKill] Too many brackets in $1-
+			}
+		}
+		trace
+		wait
+		star.cleanup
+		echo [TraceKill] You just wasted $star.killcnt clients.
+		@ star.killcnt = star.killpat = star.killrsn = star.killhrm = star.killnuh = []
+	}
+	{
+		echo [TraceKill] Usage: /tkill <pattern> <reason>
+	}
+}
+
+alias tfilter star.tfilter
+alias star.tfilter 
+{
+	if (star.pat == [$*]) 
+	{
+		star.setup
+		^on ^205 * 
+		{
+			@ star.hrm = split(\[\] $3)
+			if (#star.hrm == 2) 
+			{
+				@ star.nuh = sar(r/ /!/star.hrm)
+				if (rpattern($star.nuh $star.pat)) 
+				{
+					echo [TraceFilter] $1-
+				}
+			}
+			{
+				echo [TraceFilter] Too many brackets in $1-
+			}
+		}
+		trace
+		wait
+		star.cleanup
+		@ star.pat = star.hrm = star.nuh = []
+	}
+	{
+		echo [TraceFilter] Usage: /tfilter <pattern>
+	}
+}
+
+alias mkill star.mkill
+alias star.mkill 
+{
+	if (match(! $*)) 
+	{
+		@ star.killdo = before(! $*)
+		@ star.killrsn = after(! $*)
+		fe ($star.killdo) x 
+		{
+			kill $x $star.killrsn
+		}
+		@ star.killdo = star.killrsn = []
+	}
+	{
+		echo [MultiKill] Usage: /mkill nick1 nick2 nick3.. ! reason
+	}
+}
+
+alias starhelp star.help
+alias star.help 
+{
+	echo *** TKILL <pattern> <reason>
+	echo ***       Kills all nick!user@hosts on your server matching <pattern>
+	echo *** TFILTER <pattern>
+	echo ***       Returns nick!user@hosts on your server matching <pattern>
+	echo *** MKILL <nick1> <nick2> <nick3>... ! <reason>
+	echo ***       Kills each nick specified before the ! with <reason>
+}
+
+alias star.setup
+{
+	stack push on 203
+	stack push on 204
+	stack push on 205
+	stack push on 206
+	stack push on 209
+	^on ^203 *
+	^on ^204 *
+	^on ^205 *
+	^on ^206 *
+	^on ^209 *
+}
+
+alias star.cleanup
+{
+	stack pop on 203
+	stack pop on 204
+	stack pop on 205
+	stack pop on 206
+	stack pop on 209
+}
+
+alias star.unload 
+{
+	alias_purge star
+	assign_purge star
+	alias -tkill
+	alias -tfilter
+	alias -mkill
+}
+
+# general aliases not specific to this script
+alias alias_purge {
+	foreach -$0 ii {alias_purge $0.$ii}
+	^alias -$0
+}
+alias assign_purge {
+	foreach $0 ii {assign_purge $0.$ii}
+	@ $0 = ii = []
+}
+
+#archon'96

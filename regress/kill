@@ -1,0 +1,16 @@
+on ^server_notice "% % notice -- received kill*" {
+  if (rmatch($10 %.%)) {
+    xecho -window OpView [^BSERVKILL^B] $strip(. $8) by $10 $13- [$star.mytime()]
+  }{
+    local star.int.victim $strip(. $8)
+    local star.int.reason $13-
+    userhost $10 -cmd {
+      bless
+      if (index(. $4) > 0) {
+        xecho -window OpView [^BKILL^B] $star.int.victim by $0 <$3@$4> $star.int.reason [$star.mytime()]
+      }
+    }
+    wait
+  }
+}
+

@@ -1,0 +1,63 @@
+#
+# This script makes an attempt to simulate vi keybindings using the
+# meta4 sticky keybinding.  Who knows how successfull I will be...
+# This is very much a work in progress.  Not every vi keybinding maps
+# nicely to an ircII keybinding.  Some of these new keybindings can just
+# as well be added to epic, some of them may never be.  Suggestions for
+# improvements are always welcome.
+#
+
+bind ^E meta4
+bind meta4-0 BEGINNING_OF_LINE
+bind meta4-$$ END_OF_LINE
+bind meta4-w FORWARD_WORD
+bind meta4-W FORWARD_WORD
+bind meta4-b BACKWARD_WORD
+bind meta4-B BACKWARD_WORD
+#bind meta4-e <end of current word>
+#bind meta4-E <end of current word>
+bind meta4-a parse_command {
+	parsekey FORWARD_CHARACTER
+	parsekey META4
+}
+bind meta4-A parse_command {
+	parsekey END_OF_LINE
+	parsekey META4
+}
+#bind meta4-r <overwrite mode>
+#bind meta4-R <delete line -- overwrite mode -- meta4>
+bind meta4-p YANK_FROM_CUTBUFFER
+bind meta4-x DELETE_CHARACTER
+bind meta4-X BACKSPACE
+
+#bind meta4-y <???>
+#bind meta4-Y <???>
+#bind meta4-i <insert-mode -- meta4>
+#bind meta4-I <start-of-line -- meta4>
+
+bind meta4-h BACKWARD_CHARACTER
+bind meta4-l FORWARD_CHARACTER
+bind meta4-k BACKWARD_HISTORY
+bind meta4-j FORWARD_HISTORY
+
+#bind meta4-u <Undo -- not possible>
+#bind meta4-U <Undo -- not possible>
+
+#bind meta4-cw <delete word -- insert mode>
+#bind meta4-cW <delete word -- insert mode>
+#bind meta4-cb <delete to start-of-word -- insert mode>
+#bind meta4-cB <delete to start-of-word -- insert mode>
+#bind meta4-c$$ <delete to end-of-line -- insert mode>
+#bind meta4-C <delete to end-of-line -- insert mode>
+#bind meta4-c0 <delete to start-of-line -- insert mode
+
+bind meta4-dd ERASE_LINE
+bind meta4-D ERASE_TO_END_OF_LINE
+#bind meta4-dw <delete word>
+#bind meta4-dW <delete word>
+#bind meta4-db <delete to start of word>
+#bind meta4-dB <delete to start of word>
+#bind meta4-d$$ <delete to end of line>
+#bind meta4-d0 <delete to start of line>
+
+#hop'y2k

@@ -1,0 +1,29 @@
+#
+# dns.irc - translates ip->host, host->ip or nick->ip, nick->host.
+# 
+# quick hack by SrfRoG (srfrog@mistik.net)
+#
+
+alias dns.result (adr) {
+        @ :res = convert($adr)
+        echo *** $adr is ${res?res:[Unknown]}
+}
+
+alias dns {
+        if (@) {
+                ^local who $0
+                if (match(*.* $who)) {
+                        dns.result $who
+                }{
+                        userhost $who -cmd if ([$3]!=[<UNKNOWN>]) {
+                                dns.result $4
+                        }{
+                                echo *** $who\: nick not found.
+                        }
+                }
+        }{
+                echo *** usage: /dns < nick | [host | ip address] >
+        }
+}
+
+#srfrog'99

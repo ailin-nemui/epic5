@@ -1,0 +1,707 @@
+#
+# EPIC3 ESL regression tests
+# built in functions test
+# (C) 1995 Jeremy Nelson, Distribute freely.
+#
+# NOTE: If you find a test that is missing, please let me know so
+# i can add it.  Doubly so if you find a test that exposes a bug!
+#
+
+@ misses = 0
+
+alias clear {
+	if (misses) {@ [$"[RETURN]"];@ misses = 0}
+	//clear
+}
+
+alias assert {
+	eval @ foo = $*
+	if (foo == 1) { echo Test [$[60]*] passed }
+		      { echo Test [$[60]*] FAILED! ;@misses++ }
+}
+
+# testing $after()
+clear
+assert after(!)==[]
+assert after(! one)==[]
+assert after(! one!)==[]
+assert after(! one!two)==[two]
+assert after(! one!two!three)==[two!three]
+assert after(1)==[]
+assert after(1 !)==[]
+assert after(1 ! one)==[]
+assert after(1 ! one!)==[]
+assert after(1 ! one!two)==[two]
+assert after(1 ! one!two!three)==[two!three]
+assert after(-1)==[]
+assert after(-1 !)==[]
+assert after(-1 ! one)==[]
+assert after(-1 ! one!)==[]
+assert after(-1 ! one!two!three)==[three]
+assert after(-1 ! one!two)==[two]
+assert after(2 ! one)==[]
+assert after(2 ! one!)==[]
+assert after(2 ! one!two)==[]
+assert after(2 ! one!two!three)==[three]
+assert after(-2 ! one)==[]
+assert after(-2 ! one!)==[]
+assert after(-2 ! one!two)==[]
+assert after(-2 ! one!two!three)==[two!three]
+
+# testing $afterw()
+clear
+assert afterw() == []
+assert afterw(one) == []
+assert afterw(one two) == []
+assert afterw(one two three one four five) == [four five]
+assert afterw(two two three four five two) == [three four five two]
+assert afterw(one one) == []
+assert afterw(one three four five) == []
+
+# testing $ascii() -- see test for $jot()
+
+# testing $before()
+clear
+assert before(!)==[]
+assert before(! one)==[]
+assert before(! one!)==[one]
+assert before(! one!two)==[one]
+assert before(! one!two!three)==[one]
+assert before(1)==[]
+assert before(1 !)==[]
+assert before(1 ! one)==[]
+assert before(1 ! one!)==[one]
+assert before(1 ! one!two)==[one]
+assert before(1 ! one!two!three)==[one]
+assert before(-1)==[]
+assert before(-1 !)==[]
+assert before(-1 ! one)==[]
+assert before(-1 ! one!)==[one]
+assert before(-1 ! one!two)==[one]
+assert before(-1 ! one!two!three)==[one!two]
+assert before(2 ! one)==[]
+assert before(2 ! one!)==[]
+assert before(2 ! one!two)==[]
+assert before(2 ! one!two!three)==[one!two]
+assert before(-2 ! one)==[]
+assert before(-2 ! one!)==[]
+assert before(-2 ! one!two)==[]
+assert before(-2 ! one!two!three)==[one]
+
+# testing $beforew()
+clear
+assert beforew() == []
+assert beforew(one) == []
+assert beforew(one two) == []
+assert beforew(one two three one four five) == [two three]
+assert beforew(two two three four five two) == []
+assert beforew(one one) == []
+assert beforew(one three four five) == []
+
+# testing $center()
+clear
+assert center() == []
+assert center(10) == [     ]
+assert center(10 foo) == [   foo]
+assert center(10 boog) == [   boog]
+
+# testing $chanusers() -- cant be tested right now.
+
+# testing $chngw()
+clear
+assert chngw() == []
+assert chngw(1) == []
+assert chngw(1 one) == [one]
+assert chngw(0 one) == [one]
+assert chngw(0 one two) == [one]
+assert chngw(1 one two) == [two one]
+assert chngw(1 one two three) == [two one]
+assert chngw(2 one two three) == [two three one]
+assert chngw(0 one five four three two one) == [one four three two one]
+
+# testing $chops() -- cant be tested right now.
+# testing $chr() -- see test for $jot()
+# testing $close() -- cant be tested right now
+
+# testing $common()
+clear
+assert common() == []
+assert common(/) == []
+assert common(one/one) == [one]
+assert common(one/two) == []
+assert common(one two / one two) == [one two]
+assert common(one three / one four) == [one]
+assert common(one three / three four one) == [one three]
+assert common(one two / phone foobar) == []
+assert common(one two one / one three) == [one]
+assert common(/one two three) == []
+assert common(one two three/) == []
+
+# testing $connect() -- cant be tested right now
+# testing $convert() -- cant be tested right now
+
+# testing $copattern()
+clear
+@ one = []
+@ two = []
+assert copattern(* one two) == []
+@ one = [foo]
+@ two = [bar]
+assert copattern(* one two) == [bar]
+assert copattern(b* one two) == []
+assert copattern(*o one two) == [bar]
+@ one = [one two three four]
+@ two = [five six seven eight]
+assert copattern(* one two) == [five six seven eight]
+assert copattern(*e one two) == [five seven]
+assert copattern(t* one two) == [six seven]
+@ one = [one two three four]
+@ two = [boo]
+assert copattern(t* one two) == []
+assert copattern(o* one two) == [boo]
+assert copattern(*o* one two) == [boo]
+
+# testing $curpos -- cant be tested right now
+
+# testing $decode() and $encode()
+clear
+assert encode() == []
+assert decode() == []
+assert decode($encode()) == []
+assert decode($encode(foo)) == [foo]
+
+# testing $diff()
+clear
+assert diff() == []
+assert diff(/) == []
+assert diff(one/one) == []
+assert diff(one/two) == [one two]
+assert diff(one two / one two) == []
+assert diff(one three / one four) == [three four]
+assert diff(one three / three four one) == [four]
+assert diff(/one two three) == [one two three]
+assert diff(one two three/) == [one two three]
+
+# testing $eof() -- cant be tested right now
+
+# testing $filter()
+clear
+assert filter() == []
+assert filter(*) == []
+assert filter(* one two) == []
+assert filter(o* one two) == [two]
+assert filter(t* one two) == [one]
+assert filter(r* one two) == [one two]
+assert filter(t* one two three) == [one]
+assert filter(*e one two three) == [two]
+
+# testing $fromw()
+clear
+assert fromw() == []
+assert fromw(one) == []
+assert fromw(one two) == []
+assert fromw(one two three one four five) == [one four five]
+assert fromw(two two three four five two) == [two three four five two]
+assert fromw(one one) == [one]
+assert fromw(one three four five) == []
+
+# testing $index()
+clear
+assert index() == []
+assert index(/ one) == -1
+assert index(/ /one) == 0
+assert index(/ o/ne) == 1
+assert index(/ on/e) == 2
+assert index(/ one/) == 3
+assert index(/ /one/) == 0
+assert index(^/ ///one/) == 3
+assert index(the one) == 2
+assert index(the het) == 0
+assert index(^the the) == -1
+assert index(^the one) == 0
+assert index(^the eon) == 1
+
+# testing $insertw()
+clear
+assert insertw() == []
+assert insertw(-1) == []
+assert insertw(1) == []
+assert insertw(1 one) == [one]
+assert insertw(0 one) == [one]
+assert insertw(0 one two) == [one two]
+assert insertw(1 one two) == [two one]
+assert insertw(1 one two three) == [two one three]
+assert insertw(2 one two three) == [two three one]
+assert insertw(4 one two three) == [two three one]
+assert insertw(-1 one two three) == [one two three]
+
+# testing $iptoname() -- cant be tested right now
+
+# testing $isalpha()
+clear
+assert isalpha() == 0
+assert isalpha(1) == 0
+assert isalpha(x) == 1
+assert isalpha(X) == 1
+assert isalpha(^) == 0
+
+# testing $ischannel()
+clear
+assert ischannel() == 0
+assert ischannel(#) == 1
+assert ischannel(&) == 1
+assert ischannel(L) == 0
+assert ischannel(#foo) == 1
+assert ischannel(&foo) == 1
+
+# testing $ischanop() -- cant be tested right now
+
+# testing $isdigit()
+clear
+assert isdigit() == 0
+assert isdigit(1) == 1
+assert isdigit(x) == 0
+assert isdigit(X) == 0
+assert isdigit(^) == 0
+
+# testing $jot()
+clear
+assert jot() == []
+assert jot(1 3) == [1 2 3]
+assert jot(3 1) == [3 2 1]
+assert jot(-10 10) == [-10 -9 -8 -7 -6 -5 -4 -3 -2 -1 0 1 2 3 4 5 6 7 8 9 10]
+assert jot(-10 10 2) == [-10 -8 -6 -4 -2 0 2 4 6 8 10]
+assert chr($jot($ascii(a) $ascii(z))) == [abcdefghijklmnopqrstuvwxyz]
+assert chr($jot($ascii(a) $ascii(z) 2)) == [acegikmoqsuwy]
+assert chr($jot($ascii(a) $ascii(z))) == reverse($chr($jot($ascii(z) $ascii(a))))
+assert jot(10 -10 2) == [10 8 6 4 2 0 -2 -4 -6 -8 -10]
+assert jot(10 -10 2) == jot(10 -10 -2)
+
+/*
+# testing $key()
+clear
+assert key() == []
+assert key(*) == []
+assert key(#some_channel_that_doesnt_exist) == []
+//join #some_channel_that_doesnt_exist
+//wait
+//mode #some_channel_that_doesnt_exist +k this_is_a_stupid_key
+//wait
+assert key() == [this_is_a_stupid_key]
+assert key(*) == [this_is_a_stupid_key]
+assert key(#some_channel_that_doesnt_exist) == [this_is_a_stupid_key]
+//join #some_stupid_channel_2
+//wait
+//mode #some_stupid_channel_2 +k stupid_key_2
+//wait
+assert key(*) == [stupid_key_2]
+//channel #some_channel_that_doesnt_exist
+assert key(*) == [this_is_a_stupid_key]
+assert key(#some_stupid_channel_2) == [stupid_key_2]
+//join 0
+wait
+*/
+
+# testing $left()
+clear
+assert left(one)==[]
+assert left(1 one)==[o]
+assert left(2 one)==[on]
+assert left(3 one)==[one]
+assert left(4 one)==[one]
+
+# testing $leftw()
+clear
+assert leftw() == []
+assert leftw(0) == []
+assert leftw(0 one) == []
+assert leftw(-1) == []
+assert leftw(-1 one) == []
+assert leftw(1) == []
+assert leftw(1 one) == [one]
+assert leftw(1 one two) == [one]
+assert leftw(2) == []
+assert leftw(2 one) == [one]
+assert leftw(2 one two) == [one two]
+assert leftw(2 one two three) == [one two]
+
+# testing $listen() -- cant be tested right now
+
+# testing $match()
+clear
+assert match() == []
+assert match(one two three) == 0
+assert match(two two three) == 1
+assert match(three two three) == 2
+assert match(*) == 0
+assert match(* one) == 1
+assert match(%) == 0
+assert match(% one) == 1
+assert match(?) == 0
+assert match(? one) == 0
+assert match(? o one) == 1
+assert match(? one o) == 2
+assert match(?? one on) == 2
+assert match(m* marble mantle) == 1
+assert match(m*n* marble mantle) == 2
+assert match(f*o* marble mantle) == 0
+assert match(one* one two) == 1
+assert match(*one one two) == 1
+assert match(*one* one two) == 1
+assert match(** one two) == 1
+assert match(*%* one two) == 1
+
+# testing $mid()
+clear
+assert mid(-1) == []
+assert mid(-1 3) == []
+assert mid(-1 3 one) == []
+assert mid(0 1 one) == [o]
+assert mid(1 1 one) == [n]
+assert mid(2 1 one) == [e]
+assert mid(3 1 one) == []
+assert mid(0 2 one) == [on]
+assert mid(1 2 one) == [ne]
+assert mid(2 2 one) == [e]
+assert mid(3 2 one) == []
+assert mid(0 3 one) == [one]
+assert mid(1 3 one) == [ne]
+assert mid(2 3 one) == [e]
+assert mid(3 3 one)==[]
+assert mid(4 3 one)==[]
+
+# testing $midw()
+clear
+assert midw() == []
+assert midw(0) == []
+assert midw(-1) == []
+assert midw(1) == []
+assert midw(0 0) == []
+assert midw(0 1) == []
+assert midw(1 1) == []
+assert midw(1 -1) == []
+assert midw(-1 1) == []
+assert midw(0 1 one) == [one]
+assert midw(0 1 one two) == [one]
+assert midw(1 1 one two) == [two]
+assert midw(1 2 one two) == [two]
+assert midw(1 -1 one two) == []
+assert midw(1 0 one two) == []
+
+# testing $mychannels() -- cant be tested right now
+# testing $myservers() -- cant be tested right now
+# testing $nametoip() -- cant be tested right now
+# testing $nochops() -- cant be tested right now
+
+# testing $notw()
+clear
+assert notw() == []
+assert notw(1) == []
+assert notw(-1) == []
+assert notw(1 one) == [one]
+assert notw(-1 one) == [one]
+assert notw(-1 one two) == [one two]
+assert notw(1 one two) == [one]
+assert notw(0 one two) == [two]
+assert notw(3 one two) == [one two]
+
+# testing $numonchannel() -- cant be tested right now.
+# testing $onchannel() -- cant be tested right now.
+# testing $open() -- cant be tested right now
+
+# testing $pattern()
+clear
+assert pattern() == []
+assert pattern(*) == []
+assert pattern(* one two) == [one two]
+assert pattern(o* one two) == [one]
+assert pattern(t* one two) == [two]
+assert pattern(r* one two) == []
+assert pattern(t* one two three) == [two three]
+assert pattern(*e one two three) == [one three]
+
+# testing $pid()
+clear
+assert pid() != []
+assert pid(foo) != []
+
+# testing $push() and $shift()
+clear
+@ one = []
+assert push() == []
+assert push(one) == []
+assert push(one one) == [one]
+assert push(one two) == [one two]
+assert push(one three) == [one two three]
+assert push(one four) == [one two three four]
+clear
+assert shift() == []
+assert shift(one) == [one]
+assert shift(one) == [two]
+assert shift(one) == [three]
+assert shift(one) == [four]
+assert shift(one) == []
+assert one == []
+
+# testing $pop(), $unshift()
+clear
+assert unshift() == []
+assert unshift(one) == []
+assert unshift(one one) == [one]
+assert unshift(one two) == [two one]
+assert unshift(one three) == [three two one]
+assert unshift(one four) == [four three two one]
+assert one == [four three two one]
+clear
+assert pop() == []
+assert pop(one) == [one]
+assert pop(one) == [two]
+assert pop(one) == [three]
+assert pop(one) == [four]
+assert pop(one) == []
+
+# testing $ppid()
+clear
+assert ppid() != []
+assert ppid(foo) != []
+
+# testing $rand() -- cant be tested right now
+# testing $read() -- cant be tested right now
+
+# testing $remw()
+clear
+assert remw() == []
+assert remw(one) == []
+assert remw(one one) == []
+assert remw(one two) == [two]
+assert remw(one two one three) == [two three]
+assert remw(one two three one) == [two three]
+assert remw(\\foo foo \\foo \\foo \\foo) == [foo \\foo \\foo]
+
+# testing $rename() -- cant be tested right now.
+
+# testing $restw()
+clear
+assert restw() == []
+assert restw(1) == []
+assert restw(-1) == []
+assert restw(1 one) == []
+assert restw(-1 one) == []
+assert restw(1 one two) == [two]
+assert restw(0 one two) == [one two]
+assert restw(3 one two) == []
+
+# testing $reverse()
+clear
+assert reverse() == []
+assert reverse(madamimadam) == [madamimadam]
+assert reverse(foobar) == [raboof]
+assert reverse(one tiny tubesock) == [kcosebut ynit eno]
+
+# testing $revw()
+clear
+assert revw() == []
+assert revw(1) == [1]
+assert revw(1 2 3) == [3 2 1]
+assert revw("1 2" 3) == [3 "1 2"]
+
+# testing $rfilter()
+clear
+assert rfilter() == []
+assert rfilter(foo) == []
+assert rfilter(*) == []
+assert rfilter(one o* * *e *t*) == [*t*]
+assert rfilter(two o* * *e *t*) == [o* *e]
+assert rfilter(foo o* *e *t*) == [o* *e *t*]
+
+# testing $right()
+clear
+assert right(one) == []
+assert right(1 one) == [e]
+assert right(2 one) == [ne]
+assert right(3 one) == [one]
+assert right(4 one) == [one]
+
+# testing $rightw()
+clear
+assert rightw() == []
+assert rightw(0) == []
+assert rightw(0 one) == []
+assert rightw(-1) == []
+assert rightw(-1 one) == []
+assert rightw(1) == []
+assert rightw(1 one) == [one]
+assert rightw(1 one two) == [two]
+assert rightw(2) == []
+assert rightw(2 one) == [one]
+assert rightw(2 one two) == [one two]
+assert rightw(2 one two three) == [two three]
+
+# testing $rindex()
+clear
+assert rindex() == []
+assert rindex(/ one) == -1
+assert rindex(/ /one) == 0
+assert rindex(/ o/ne) == 1
+assert rindex(/ on/e) == 2
+assert rindex(/ one/) == 3
+assert rindex(/ /one/) == 4
+assert rindex(^/ ///one/) == 5
+assert rindex(the one) == 2
+assert rindex(the het) == 2
+assert rindex(^the the) == -1
+assert rindex(^the one) == 1
+assert rindex(^the eon) == 2
+
+# testing $rmatch()
+clear
+assert rmatch() == []
+assert rmatch(one two three) == 0
+assert rmatch(two two three) == 1
+assert rmatch(three two three) == 2
+assert rmatch(one) == 0
+assert rmatch(*) == 0
+assert rmatch(one *) == 1
+assert rmatch(%) == 0
+assert rmatch(one %) == 1
+assert rmatch(?) == 0
+assert rmatch(o ?) == 1
+assert rmatch(one ?) == 0
+assert rmatch(one ???) == 1
+assert rmatch(marble m* n*) == 1
+assert rmatch(marble *e *r*b*) == 2
+assert rmatch(marble * **) == 1
+
+# testing $rmdir() -- cant be tested right now.
+
+# testing $rpattern()
+clear
+assert rpattern() == []
+assert rpattern(foo) == []
+assert rpattern(*) == []
+assert rpattern(one o* * *e *t*) == [o* * *e]
+assert rpattern(two o* * *e *t*) == [* *t*]
+assert rpattern(foo o* *e *t*) == []
+
+# testing $sar()
+clear
+assert sar() == []
+assert sar(/) == []
+assert sar(//) == []
+assert sar(/one/two/foo one bar) == [foo two bar]
+assert sar(/one/two/foo one bar one) == [foo two bar one]
+assert sar(g/one/two/foo one bar one) == [foo two bar two]
+@ boo = [foo one bar]
+assert sar(r/one/two/boo) == [foo two bar]
+assert boo == [foo two bar]
+@ boo = [foo one bar one]
+assert sar(r/one/two/boo) == [foo two bar one]
+assert boo == [foo two bar one]
+@ boo = [foo one bar one]
+assert sar(rg/one/two/boo) == [foo two bar two]
+assert boo == [foo two bar two]
+
+# testing $splice() 
+clear
+@ boo = [foo one bar one]
+assert splice(boo 1 2 booya booya) == [one bar]
+assert splice(boo 0 3 blah1) == [foo booya booya]
+assert splice(boo 3 0 blah2) == []
+assert splice(boo 4 1 blah3) == []
+assert splice(boo -1 3 blah4) == [blah1 one]
+assert splice(boo 0 0 blah5) == []
+assert boo == [blah5 blah4 blah2 blah3]
+
+# testing $split()
+clear
+assert split() == []
+assert split(#) == []
+assert split(# one) == [one]
+assert split(# one##two) == [one  two]
+assert split(# one##two##) == [one  two  ]
+
+# testing $srand() -- cant be tested right now
+
+# testing $time() and $stime()
+clear
+assert time() != []
+assert time(FOO) != []
+assert stime() == []
+assert stime($time()) != []
+
+# testing $strip()
+clear
+assert strip() == []
+assert strip(~) == []
+assert strip(~ ~) == []
+assert strip(~ ~~) == []
+assert strip(~ ~ ~) == [ ]
+assert strip(~ ~one t~o th~ree) == [one to three]
+assert strip(~ one two three) == [one two three]
+assert strip(~ ~on~ ~tw= thre~==) == [on tw= thre==]
+
+# testing $tdiff()
+clear
+assert tdiff() == []
+assert tdiff(3663) == [1 hour 1 minute 3 seconds]
+assert tdiff(60) == [1 minute]
+assert tdiff(0) == [0 seconds]
+
+# testing $tolower()
+clear
+assert tolower() == []
+assert tolower(one two three) == [one two three]
+assert tolower(ONE TWO THREE) == [one two three]
+assert tolower(oNe TwO tHrEe) == [one two three]
+assert tolower(one @#\$ t\$r!e) == [one @#\$ t\$r!e]
+
+# testing $toupper()
+clear
+assert toupper() == []
+assert toupper(one two three) == [ONE TWO THREE]
+assert toupper(ONE TWO THREE) == [ONE TWO THREE]
+assert toupper(oNe TwO tHrEe) == [ONE TWO THREE]
+assert toupper(one @#\$ t\$r!e) == [ONE @#\$ T\$R!E]
+
+# testing $tow()
+clear
+assert tow() == []
+assert tow(one) == []
+assert tow(one two) == []
+assert tow(one two three one four five) == [two three one]
+assert tow(two two three four five two) == [two]
+assert tow(one one) == [one]
+assert tow(one three four five) == []
+
+# testing $tr()
+clear
+assert tr() == []
+assert tr(/abc/def/Mary had a little lamb) == [Mdry hdd d little ldme]
+assert tr(/abc//Mary had a little lamb) == [Mry hd  little lm]
+assert tr(/abc/d/Mary had a little lamb) == [Mdry hdd d little ldmd]
+
+# testing $trunc()
+#XXX NEEDS TEST
+
+# testing $unlink() -- cant be tested right now
+# testing $userhost() -- cant be tested right now
+# testing $version() -- cant be tested right now
+# testing $which() -- cant be tested right now
+# testing $winnam() -- cant be tested right now
+# testing $winnum() -- cant be tested right now
+
+# testing $word()
+clear
+assert word() == []
+assert word(1) == []
+assert word(0 one) == [one]
+assert word(1 one) == []
+assert word(1  one two) == [two]
+assert word(2  one two three four five) == [three]
+
+# testing $write() -- cant be tested right now.
+
+echo
+echo
+echo
+echo ALL TESTS ARE DONE!

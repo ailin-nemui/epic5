@@ -1,0 +1,98 @@
+/*
+                    ls.irc by archon <archon@tamu.edu>
+                            August 16, 1996
+		    because /exec ls is just too easy!
+	    and i couldn't think of another use for $glob()
+*/
+  
+alias ls {
+  switch ($0) {
+    () {
+      fe ($glob(*)) ii jj kk ll {
+        echo $lformat(15, $ii) $lformat(15, $jj) $lformat(15, $kk) $lformat(15, $ll)
+      }
+    }
+    (-a) {
+      if ([$1]) {
+        if ((match($1 $glob(.* *))) || (match($1/ $glob(.* *)))) {
+	  if (match($1/ $glob(.* *))) {
+	    fe ($pattern($1/ $glob(.* *))) qq {
+	      push tols $qq*
+	    }
+	    fe ($pattern($1 $glob(.* *))) qq {
+	      push tols $qq
+	    }
+	  }{
+	    @ tols = [$1]
+	  }
+	}{
+	  echo ls: $1\: No such file or directory
+	}
+      }{
+        @ tols = [.* *]
+      }
+      fe ($glob($tols)) ii jj kk ll {
+        echo $lformat(10, $ii) $lformat(10, $jj) $lformat(10, $kk) $lformat(10, $ll)
+      }
+    }
+    (-s) {
+      if ([$1]) {
+        if ((match($1 $glob(.* *))) || (match($1/ $glob(.* *)))) {
+	  if (match($1/ $glob(.* *))) {
+	    fe ($pattern($1/ $glob(.* *))) qq {
+	      push tols $qq*
+	    }
+	    fe ($pattern($1 $glob(.* *))) qq {
+	      push tols $qq
+	    }
+	  }{
+	    @ tols = [$1]
+	  }
+	}{
+	  echo ls: $1\: No such file or directory
+	}
+      }{
+        @ tols = [*]
+      }
+      echo $tols
+      fe ($glob($tols)) ii jj kk {
+        echo $lformat(20, $fsize($ii) $ii) $lformat(20, $fsize($jj) $jj)  $lformat(20, $fsize($kk) $kk)
+      }
+    }
+    (*) {
+      if ((match($0 $glob(.* *))) || (match($0/ $glob(.* *)))) {
+        if (match($0/ $glob(.* *))) {
+	  fe ($pattern($0/ $glob(.* *))) qq {
+	    push tols $qq*
+	  }
+	  fe ($pattern($0 $glob(.* *))) qq {
+	    push tols $qq
+	  }
+	}{
+	  @ tols = [$0]
+	}
+        fe ($glob($tols)) ii jj kk ll mm {
+          echo $lformat(10, $ii) $lformat(10, $jj) $lformat(10, $kk) $lformat(10, $ll) $lformat(10, $mm)
+        }
+      }{
+        echo ls: $0\: No such file or directory
+      }
+    }
+  }
+  @ tols = qq = []
+}
+
+
+/* format alias written by someone else */
+
+alias lformat {
+  @ IRCII.word = [$1-]
+  if (@IRCII.word < [$0]) {
+    @ function_return = [$([$0]IRCII.word)]
+  }{
+    @ function_return = [$IRCII.word]
+  }
+  @ ircii.word = []
+}
+
+#archon'96

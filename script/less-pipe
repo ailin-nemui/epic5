@@ -1,0 +1,68 @@
+#
+# Open up a pipe and then page the output.
+# I wrote this in a race with Archon (hop, 1997)
+#
+
+#
+# Usage: 
+#  $0  - name of the pipe
+#  $1- - stuff to run
+#
+alias less_pipe
+{
+	@ line = 0
+
+	if ([$1])
+	{
+		^on ^exec "$0 *" {
+			@ lessline[$line] = [$1-]
+			@ line++
+		}
+		^on ^exec_error "$0 *" {
+			echo *** Error on exec: $*
+		}
+		^on ^exec_exit "$0 *" {
+			on exec -"$0 *"
+			on exec_error -"$0 *"
+			on exec_exit -"$0 *"
+			less_array lessline 0 $line
+		}
+		exec -name $*
+	}
+}
+
+/*
+ * $0 is the array name to use
+ * $1 is the starting line
+ * $2 is the final line
+ */
+alias less_array
+{
+	local line $1
+	local cr 0
+	local rows $winsize()
+
+	while ((line < [$2]) && (cr < rows))
+	{
+		echo $($0[$line])
+		assign -$0[$line]
+		@ line++, cr++
+	}
+
+	if (cr >= rows)
+	{
+		@ aaa.array_name = [$0]
+		@ aaa.next_line = line
+		@ aaa.final_line = [$2]
+
+		input_char "Enter q to quit, or anything else to continue "
+		{
+			if ([$0] != [q])
+			{
+				^less_array $aaa.array_name $aaa.next_line $aaa.final_line
+			}
+		}
+	}
+}
+
+#hop'97

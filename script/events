@@ -1,0 +1,31 @@
+if ( SHOW_WHO_HOPCOUNT == [ON] ) {
+	on ^who * {
+		if ( [$0] == [*] ) {
+			echo $[9]1 [$2$6] $7- \($3@$4)
+		} {
+			echo $[9]1 [$2$6] $7- on $0 \($3@$4)
+		}
+	}
+} {
+	on ^who * {
+		if ( [$0] == [*] ) {
+			echo $[9]1 [$2] $7- \($3@$4)
+		} {
+			echo $[9]1 [$2] $7- on $0 \($3@$4)
+		}
+	}
+}
+on ^who Channel comment
+on ^timer *00 echo *** The time is $0
+on -msg * set status_user - last: $0
+on ^names * echo $[15]0 $1-
+on ^names \* echo * $1-
+on ^list \* echo -- <private> -- $[4]1 $2-
+on ^list * echo $[15]0 $[4]1 $2-
+on ^notify_signon * userhost $* -cmd echo *** $$0 is here [$$3@$$4]
+on ^notify_signoff * set status_user + signoff: $0
+#on ^send_public * {
+#	if ( [$0] == C ) { echo <$N> $1- } { echo -> <$0> $1- }
+#}
+#on ^send_msg * echo -> *$0* $1-
+# lynx92,93

@@ -1,0 +1,10 @@
+alias config {
+        ^window new double off status_format $chr(27)[0m scratch on hide swap last
+        @:oldprompt=input_prompt
+        @:lines=word(1 $geom()) - 2
+        ^set -input_prompt
+        for (@:x=0, x < lines, @x++) {
+                xecho -win $winnum() -line $x echo line: $x
+        }
+        ^set input_prompt $oldprompt
+}

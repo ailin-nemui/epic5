@@ -1,0 +1,42 @@
+# This set of filters was done to replace the
+# 'set MODERN_ART' function which used to be
+# in an ancient ircII shortly before invention
+# of the '/on' command.  :)
+#
+on ^timer "*:00*" echo *** The time is $0
+on #-msg 30 * set status_user - last: $0
+on ^names * echo $[15]0 $1-
+on ^names \* echo * $1-
+on ^who "Channel *" #
+on ^who * {
+	if ( [$0] == [*] ) {
+		echo $[9]1 [$[3]2] [          ] \($3@$4)
+	} {
+		echo $[9]1 [$[3]2] [$[10]0] \($3@$4)
+	}
+        @ who_counter++
+}
+on ^315 * {
+          echo TOTAL NUMBER OF LISTINGS - $who_counter
+          @ who_counter = 0
+}
+on ^list * echo $[15]0 $[4]1 $2-
+on ^list "\* *" echo -- <private> -- $[4]1 $2-
+on #-list 3 "Channel" @ numlists = 0
+on #-list 3 * @ numlists++
+on ^323 * {
+        echo TOTAL CHANNELS  - $numlists
+        @ numlists = 0
+}
+
+on ^send_public * {
+	if ( [$0] == C ) {
+		echo <$N> $1-
+	} {
+		echo -->[$0] $1-
+	}
+}
+/* bans are automatically counted by the client */
+on ^368 * echo Total number of bans - $1
+
+# lynx92/hop'94

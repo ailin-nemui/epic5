@@ -1,0 +1,91 @@
+# This one from Daemon (frechett@spot.Colorado.EDU)
+# He also threw together the patch to allow this sort of thing.
+
+# For use with the recursion abilities of ircII2.2pre5+2 
+# set MAX_RECURSIONS however high you want and still think is safe for you.
+# Or use it as a limit to the number of times an alias will execute.  It will
+# die with an error though.
+
+# /iterate command_word list_of_words
+# will execute the command for each word in order
+^alias iterate
+{
+	if ([$1]) {$0 $1;iterate $0 $2-}
+}
+
+# /conbunch server1 server2 server3
+^alias conbunch
+{
+	if ( [$1] ) 
+		{ conbunch $1- }
+	connect $0
+}
+
+# /kickbunch nick1 nick2 nick3 nick4
+^alias kickbunch
+{
+	if ( [$1] )
+		{ kickbunch $1-}
+	kick $C $0
+}
+
+# you get the point
+^alias squitbunch
+{
+	if ( [$1] )
+		{ squitbunch $1- }
+	squit $0
+}
+
+^alias versbunch
+{
+	if ( [$1] )
+		{ versbunch $1- }
+	version $0
+}
+
+# /opalot + nick1 nick2 nick3     or /opalot - nick1 nick2 nick3  for op or deop
+# It will op in an efficient fashion as well.
+^alias opalot
+{
+	if ( [$4] )
+		{ opalot $0 $4- }
+	mode $C $0ooo $1-3
+}
+
+# /addlist <listname> word1 word2 word3           add to array
+^alias addlist
+{
+	if ( [$2] )
+		{ addlist $0 $2- }
+	assign $0.$%strip(#+\.-\*/\={}[]<>!@$$%^~`,?:|'\" $1) $1
+}
+
+# not related to recursion directly but useful for dealing with arrays.
+# /do <list name> <action for element>
+^alias do foreach $0 ii \{ $1- $$($0[$$ii]) \}
+
+# /clean <structure name>
+# removes all assignments under that name to a single level
+^alias clean foreach $0 ii { assign -$0[$ii] }
+
+# /purge <structure name>
+# removes all assignments under that name recursively.
+^alias purge {
+  foreach $0 ii
+  {
+    purge $0.$ii
+  }
+  ^assign -ii
+  ^assign -$0
+}
+
+# Assuming  you've made a list with addlist of servers.. or people or whatever
+# the following alias should give you some idea of other things to do..
+^alias versall do $0 version
+
+# Yes.. it looks cryptic.. Try /addlist servers h.ece* ucsu* *.unm.edu
+# and then /versall servers
+# or maybe just type /do servers version         ;)
+
+# so much more.. so little time.. 

@@ -1,0 +1,39 @@
+/*
+ * AWAY script -- a minimalist faking of the /AWAY command for when they
+ * take /AWAY away from us.  Only sends the message once per nick per time
+ * you change it.
+ * Requires ircII2.6 or later (Written for EPIC3.001)
+ */
+
+/*
+ * This variable determines how often you send the away message to a 
+ * person, even if theyve already seen it.
+ */
+@ away.recycle_time = 10000
+
+on #-msg -633 * 
+{
+	if (away.msg && (sentaway[$encode($0)] < away.time) || \
+		(sentaway[$encode($0)] + away.recycle_time < time()))
+	{
+		ctcp $0 AWAY $away.msg $away.gonefor()
+		@ sentaway[$encode($0)] = time()
+	}
+}
+
+alias away 
+{
+	if (away.msg = [$*])
+	{
+		echo *** You are now away [$*]
+	}
+	{
+		echo *** You are now back $away.gonefor()
+	}
+	@ away.time = time()
+}
+
+alias away.idle @ function_return = time() - away.time
+alias away.gonefor @ function_return = [\(Away for $tdiff($away.idle())\)]
+
+#hop'96

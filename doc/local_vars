@@ -1,0 +1,75 @@
+ABOUT LOCAL VARIABLES (The EPIC4 goal)
+--------------------------------------
+Im just putting down in writing what i think local variables should
+be all about.  I intend to make the implementation as close to this
+description as possible (obviously).  Feel free to comment on this.
+
+
+The scope of a local variable:
+------------------------------
+A local variable is any variable that has a predetermined lifetime, and
+a scope that is determined syntactically.  This differs from "timed" 
+variables that expire when their lifetime is up -- "timed" variables
+are accessable from any syntax scope.
+
+Generally, the client parses ircII code in a recursive fashion, where
+each new scope results in a call to parse_line().  Each call represents
+one logical code unit.  When that logical code unit is completed, then
+any variables that are local to it are unuseful and should be removed.
+
+The tough question of local variables is scoping.  In a true dynamic
+scope (much like perl 4), a local variable can be accessed by those
+scopes that are desceneded from it call-wise, but not syntax-wise:
+
+	alias foo1
+	{
+		local x
+		foo2
+	}
+
+	alias foo2
+	{
+		eval echo $x		; gets the local x from foo1
+	}
+
+This is almost always a problem, because it then becomes impossible to
+determine whether any specific variable reference will yeild a local
+variable in a scope earlier in the stack, or will yeild the intended
+global variable.  There needs to be a way to "stop" the depth searching
+of variables, at which point the searching will go back to the globals.
+
+It then appears useful to enumerate a list of "atomic scopes", that is,
+scopes that are logically independant of any other scope.  An atomic
+scope is loosely defined as any sequence of ircII commands whose precise
+execution time and ordering is completely arbitrary and unpredictable.
+Usually this is any code whose execution is determined by external events.
+As an exmample, the following are the current list of atomic scopes:
+
+	ALIAS bodies		(can be called any time)
+	ON bodies		(driven by asynchronous events)
+	USERHOST -cmd bodies	(driven by asynchronous events)
+	WAIT -cmd bodies	(driven by asynchronous events)
+	BIND bodies		(driven by asynchronous events)
+	TIMER bodies		(driven by asynchronous events)
+	QUEUE bodies		(can be called any time)
+
+The ircII code executed in one of these contexts is therefore "atomic", and
+any local variables that are declared in a scope below it are not accessable.
+Any local variables defined in one of these contexts is accessable to
+all contexts below it, up to but not including the next atomic context.
+
+This allows all the other commands that execute ircII code (IF, WHILE, etc)
+to have the ability to declare local variables that are local to THEIR
+scope and do not have any effect on any global or local variables in contexts
+below them, and such variables will be removed at the end of their context.
+But they still retain the ability to access and manipulate local variables
+that are in contexts above them, up until the enclosing atomic context.
+
+
+The declaration of a local variable:
+------------------------------------
+A local variable is declared with the 'local' command (as seen above).
+A local variable is accessable throughout its entire lifetime.  You cannot
+access a global variable by the same name as a local variable during the
+lifetime of the local variable.
+

@@ -1,0 +1,85 @@
+How to compile this package:
+
+Its really quite simple -- its about the same difficulty as compiling
+any GNU software (however, this is _not_ GNU software)
+
+  o  !!! IMPORTANT !!! If you are upgrading from a prior version of
+     your operating system, or you have changed operating systems, you
+     must do a 'make distclean' and re-do all of the steps in this file
+     for the new OS, or epic may get confused when it tries to compile 
+     for your old system!  (Especially true for Redhat 5.2 to 6.1)
+
+  o  Run 'configure' by using one (and only one) of the following:
+
+		./configure
+		sh configure
+
+  o  By default, 'configure' sets up the software to be run from
+     /usr/local -- if this is not the case for you (ie, you are not
+     the superuser compiling for the entire system) you can run
+     configure with the "--prefix=/path/to/somewhere" flag, for example:
+
+		./configure --prefix=/usr/home/jnelson
+
+  o  EPIC's build infrastructure fully supports all the bells and whistles
+     that configure provides for compiling in different places and for
+     different systems and all that esoteric stuff only used by package
+     maintainers.  This support was added because Debian asked for it.
+
+  o  There are several options supported by our configure script:
+
+	  --with-termcap     	
+		EPIC will use ONLY termcap, and not look for terminfo.
+		You ought not specify this unless the terminfo support
+		on your system is more broken than your termcap support.
+	  --with-socks[=PATH]
+		EPIC will attempt to use SOCKS4 firewall code when making
+		network connections.  The PATH should specify the directory
+		tree where all of the interesting files can be found.  This
+		is usually something like /usr/local
+	  --with-socks5[=PATH]
+		Same thing as above, but for SOCKS5.
+
+  o  This IRC II client should be able to compile and run on almost
+     any modern unix (A ``modern'' unix is one that supports POSIX
+     system calls and BSD networking in addition to the most commonly
+     accepted non-standard unix extensions, like getpw*() functions.)
+     All i can say is try it and see if it works.  It will definitely
+     work on Solaris, FreeBSD, Linux, Digital Unix, SCO ODT 5, AIX, etc.
+
+  o  To compile ircii, type `make'.  This will compile the `epic' and `wserv'
+     programs that live in the `source' subdirectory.
+
+  o  Once that you are happy with the compilation, you can install them
+     with `make install'.  This will install all the binaries, and scripts
+     into the path specified in the Makefile (or when you ran configure).
+     The help files are available as a seperate package.  They should be
+     available from the same place you got the source code from.
+     This release uses a new layout format for its various parts that differs
+     from the historical ircII defaults.  The binary is called 'epic', the
+     library is put into .../share/epic by default, and the 'wserv'
+     binary ends up as .../libexec/wserv.
+
+  o  You can now delete the object files and binaries if you want to
+     save some space by typing `make clean'.  If you are sure you probably
+     wont have to compile again, but you want to keep the source code
+     around, you can use `make distclean'.  You should `make distclean'
+     before you try to compile again for a different architecture.
+
+  o  Help files are not shipped with the base distribution (because of their
+     size and because they are not updated frequently.)  You should be able
+     to find the help files in the same place you got the source distribution,
+     or you can find them at ftp://ftp.epicsol.org/pub/epic.  To install the
+     help files, you need to put the gzip'd tar file in the irc library as
+     configured into the client.  This is typically either /usr/local/lib/irc
+     or $HOME/lib/irc.  Extract it there (it will create a subdirectory named
+     help).  If you have problems, start up the irc client, and run the command
+     /SET HELP_PATH   -- the output should be the directory where you installed
+     the help files.  If its not, you either need to /SET HELP_PATH to the
+     place where the help files are, or you need to move the help files to 
+     where the client is expecting to find them. ;-)
+
+  o  Bug reports go to list@epicsol.org.  Please see the BUG_FORM file for 
+     information about how to file a bug report.  Please include as much 
+     information as possible.
+

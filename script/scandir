@@ -1,0 +1,18 @@
+/*
+ * scandir -- an interesting way to use $glob() to get all the files
+ * in a [sub]directory.
+ */
+alias scandir
+{
+	^local retval
+	^local last
+
+	fe ($glob($*/*)) x
+	{
+		if (!(last = after(-1 / $x))) \
+			@ last = x
+		push retval $last
+	}
+	@ function_return = retval
+}
+#hop'97

@@ -1,0 +1,13 @@
+# No Kill Path Script II
+
+# converted to 2.2.1 by phone
+# CONVERTED for ircII2.2
+# Version for servers 2.7.1* by Nap@irc <pioch@poly.polytechnique.fr>
+# Original script from YeggMan
+# Simplification by Daemon
+# Super Simplification by hop
+# works with only the new kill format.
+# Now that we have on ^kill in EPIC4, this is ridiculously trivial.
+
+on ^kill "% % %.% *" xecho -level opnotes ### server KILL for $1 by $2
+on ^kill "% % % *" xecho -level opnotes ### KILL for $1 by $2 \($4-\)

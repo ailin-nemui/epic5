@@ -1,0 +1,24 @@
+# The original (hack-around) was written 4/20/93
+# by Mycroft!mycroft@gnu.ai.mit.edu (Charles Hannum)
+# who deserves bonus points for coming up with a clever way
+# to get around stupid limitations in the client
+#
+# This version was written 12/3/95
+# by hop!jnelson@acronet.net (Jeremy Nelson)
+# who hacked the $aliasctl() function into EPIC3pre5-fixit1
+# which allows you to do this cleanly.
+#
+alias edit 
+{
+	^local edit.name $toupper($0)
+	^local edit.stuff $aliasctl(ALIAS GET $edit.name)
+
+	if (edit.stuff)
+	{
+		type ^U
+		xtype -literal /alias $^\edit.name $^\edit.stuff
+	}
+	{
+		xecho -w 0 *** Unknown alias: $edit.name
+	}
+}

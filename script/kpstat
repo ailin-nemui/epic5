@@ -1,0 +1,16 @@
+# No Kill Path Script II (status bar version)
+
+# converted to 2.2.1 by phone
+# CONVERTED for ircII2.2
+# Version for servers 2.7.1* by Nap@irc <pioch@poly.polytechnique.fr>
+# Original script from YeggMan
+# Simplification by Daemon
+# Super Simplification by hop
+# Even more simplification by hop
+
+on ^kill "% % %.% % *" {
+	set status_user ### server KILL for $1 by $2
+}
+on ^kill * {
+	set status_user ### KILL for $1 by $2 \($4-\)
+}

@@ -1,0 +1,83 @@
+/*
+ *   IRC Script Program. For use with ircii-EPIC4 clients.
+ *   Copyright (C) 1999 whitefang (thall@bc1.com)
+ *
+ * ---------------------------------------------------------------------------
+ * All code by whitefang, unless specified.
+ * Thanks SrfRoG for help in optimizing.
+ * ---------------------------------------------------------------------------
+ */
+
+PACKAGE langtrans
+
+ON ^DCC_RAW "% babelfish.altavista.com *" #
+ON ^DCC_RAW "% babelfish.altavista.com D <font %arial, helvetica?>*<%>" #
+ON ^DCC_RAW "% babelfish.altavista.com D <font %arial, helvetica?>*" {
+	@ temp.trans_text = after(> $5-)
+}
+ON ^DCC_RAW "% babelfish.altavista.com C" {
+	IF (temp.trans_text) {
+		XECHO -b Translating text from $temp.trans_desc\...
+		XECHO -b $word(0 $temp.trans_desc)\: $temp.trans_orig
+		XECHO -b $word(2 $temp.trans_desc)\: $temp.trans_text
+		^ASSIGN -temp.trans_text
+	} {
+		xecho -b Translation failed.
+	}
+	^ASSIGN -temp.trans_orig
+	^ASSIGN -temp.trans_desc
+}
+
+^ASSIGN trans.0 en_fr English to French
+^ASSIGN trans.1 en_de English to German
+^ASSIGN trans.2 en_pt English to Portuguese
+^ASSIGN trans.3 en_es English to Spanish
+^ASSIGN trans.4 en_it English to Italian
+^ASSIGN trans.5 fr_en French to English
+^ASSIGN trans.6 de_en German to English
+^ASSIGN trans.7 pt_en Portuguese to English
+^ASSIGN trans.8 es_en Spanish to English
+^ASSIGN trans.9 it_en Italian to English
+
+ALIAS trans {
+	@ :flag = findw($0 -ef -ed -ep -es -ei -fe -de -pe -se -ie --help)
+	IF (flag == 10) {
+		_transhelp
+		RETURN
+	}
+	IF (!strlen($1) || lang == -1) {
+		xecho -b Usage: /TRANS <-flag> <text>
+		RETURN
+	}
+	@ temp.trans_desc = restw(1 $trans[$flag])
+	^ASSIGN temp.trans_orig $1-
+	@ :orig = fnexist(urlencode) ? urlencode($temp.trans_orig) : msar(g/'/%27/`/%60/ /%20/$temp.trans_orig)
+	@ :lang = word(0 $trans[$flag])
+	@ :sock = connect(babelfish.altavista.com 80)
+	//^DCC RAW $sock babelfish.altavista.com GET /cgi-bin/translate\?doit=done\&urltext=$orig\&languagepair=$lang
+}
+
+ALIAS _transhelp {
+	ECHO Usage: TRANS <language flags> <text> 
+	ECHO
+	ECHO Attempts to translate <text> using altavista's babelfish server.
+	ECHO
+	ECHO Language flags:
+	ECHO
+	ECHO  	-ef  English to French        -fe  French to English
+	ECHO  	-ed  English to German        -de  German to English
+	ECHO  	-es  English to Spanish       -se  Spanish to English
+	ECHO  	-ep  English to Portuguese    -pe  Portuguese to English
+	ECHO
+	ECHO Examples:
+	ECHO
+	ECHO  	/TRANS -ep I love whitefang.
+	ECHO  	/TRANS -ie We all love whitefang.
+	ECHO  	/TRANS -de Ich liebe meine EPIC4!
+}
+
+XECHO -b Translation script for EPIC4 by whitefang [thall@bc1.com]
+XECHO -b For help type: /TRANS --help
+XECHO -b To unload: /UNLOAD langtrans
+
+#tjbh/99

@@ -1,0 +1,33 @@
+/*
+ * A simple script to support DCC SOUND as specified by mirc
+ * I got my info directly from Tjerk, so I claim total innocence 
+ * if the implementation is wrong. :P
+ */
+
+on ^ctcp "% % SOUND ?*" 
+{
+	# Do the 'action' part of it
+	switch ($4)
+	{
+		()  {echo *** This sound ($3) courtesy of $0}
+		(*) {echo * $0 $4-}
+	}
+	switch ($3)
+	{
+		(*.wav) {exec -direct ${PLAYWAV} $3}
+		(*)     {exec -direct ${PLAYWAV} $3.wav}
+	}
+}
+
+/*
+ * Usage: /sound <target|*> <wavfile> <action-text>
+ * All the arguments are required, according to the specification.
+ *
+ * The first argument is who to send it to, '*' goes to current target
+ * The second argument is the wav file to be played.  The receiver is
+ *	assumed to have this wav file already..
+ * The rest of the arguments are "action text", ala the /me command.
+ */
+alias sound ctcp $0 SOUND $1-
+
+#hop'96

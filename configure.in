@@ -1,0 +1,439 @@
+dnl ----------------------------------------------------------
+dnl configure.in for ircii, 2.3.  copyright (c) matthew green, 1993,
+dnl except those bits attributed otherwise.
+dnl thanks to the screen 3.3 configure.in for giving me examples to
+dnl work from and steal ;)
+dnl
+dnl @(#)$Id: configure.in,v 1.1 2000/12/05 00:11:56 jnelson Exp $
+
+AC_REVISION($Revision: 1.1 $)dnl
+AC_INIT(source/irc.c)
+AC_CONFIG_HEADER(include/defs.h)
+
+
+
+dnl ----------------------------------------------------------
+dnl
+dnl grok the version number - from source/irc.c
+dnl
+
+VERSION=`sed -n -e 's/";$//' -e '/const char irc_version.. = "/s///p' -e '/const char irc_version/q' < $srcdir/source/irc.c` 
+echo this is ircii version $VERSION
+echo
+AC_SUBST(VERSION)
+
+
+
+
+dnl ----------------------------------------------------------
+dnl
+dnl initial stuff
+dnl
+
+AC_PROG_CC
+AC_PROG_CPP
+AC_ISC_POSIX
+AC_AIX
+
+
+dnl ----------------------------------------------------------
+dnl ----------------------------------------------------------
+dnl
+dnl System specific checks
+dnl
+dnl ----------------------------------------------------------
+dnl ----------------------------------------------------------
+
+
+dnl
+dnl get these once.  check them later
+dnl
+unamer=`uname -r 2> /dev/null`
+unames=`uname -s 2> /dev/null`
+
+
+dnl ----------------------------------------------------------
+dnl
+dnl Checking for qnx
+dnl
+
+AC_MSG_CHECKING(for qnx)
+case "$unames" in
+  QNX*)
+    AC_MSG_RESULT(yes)
+    LDFLAGS=-N64k                  dnl 64k of stack
+    CFLAGS="-w4 -O -g -fi=unix.h"  dnl better compile options
+  ;;
+  *)
+    AC_MSG_RESULT(no)
+esac
+
+
+
+dnl
+dnl checking for svr4's /usr/ccs/lib
+dnl
+if test -d /usr/ccs/lib; then
+	LIBS="-L/usr/ccs/lib $LIBS"
+fi
+
+
+
+dnl ----------------------------------------------------------
+dnl
+dnl Check for libraries before we check for functions!
+dnl
+
+if test -z "$libsocket"; then
+	AC_CHECK_LIB(socket, socket, LIBS="$LIBS -lsocket",)
+fi
+
+dnl this is for isc.  need the nsl_s library as well.
+if test -z "$libinet"; then
+	AC_CHECK_LIB(inet, socket, libnsl=1; LIBS="$LIBS -linet -lnsl_s",)
+fi
+
+if test -z "$libnsl"; then
+	AC_CHECK_LIB(nsl, gethostname, LIBS="$LIBS -lnsl",)
+fi
+
+AC_CHECK_LIB(sun, getpwnam, LIBS="$LIBS -lsun",)
+AC_CHECK_LIB(dgc, inet_addr, LIBS="$LIBS -ldgc",)
+AC_CHECK_LIB(resolv, gethostbyname, LIBS="$LIBS -lresolv",)
+AC_CHECK_LIB(crypt, crypt, LIBS="$LIBS -lcrypt",)
+AC_CHECK_LIB(m, pow, LIBS="$LIBS -lm",)
+
+termcap=0;
+AC_MSG_CHECKING(whether you want to use termcap)
+AC_ARG_WITH(termcap,
+[  --with-termcap     Forcibly refuse to use terminfo/ncurses ],
+[   AC_MSG_RESULT(yes)
+    AC_CHECK_LIB(termcap, tgetent, termcap=1;LIBS="-ltermcap $LIBS",
+      AC_CHECK_LIB(termlib, tgetent, termcap=1;LIBS="-ltermlib $LIBS",
+        AC_CHECK_LIB(curses,  tgetent, termcap=1;LIBS="-lcurses $LIBS",
+          AC_MSG_WARN(I cant find tgetent.  Youll have to help me.))))],
+[   AC_MSG_RESULT(no)
+    AC_CHECK_LIB(ncurses, setupterm, LIBS="-lncurses $LIBS",
+      AC_CHECK_LIB(tinfo,   setupterm, LIBS="-ltinfo $LIBS",
+	  AC_CHECK_LIB(curses, setupterm, LIBS="-lcurses $LIBS",
+	    AC_CHECK_LIB(curses, tgetent, LIBS="-lcurses $LIBS",
+              AC_CHECK_LIB(termlib, tgetent, LIBS="-ltermlib $LIBS",
+                AC_CHECK_LIB(termcap, tgetent, LIBS="-ltermcap $LIBS",
+	          AC_MSG_WARN(I cant find tgetent.  Youll have to help me.)))))))])
+
+dnl ----------------------------------------------------------
+dnl
+dnl Checking for headers, functions, and a type declarations
+dnl
+
+AC_CHECK_HEADERS(fcntl.h netdb.h regex.h sys/fcntl.h sys/file.h sys/select.h sys/syslimits.h sys/un.h sys/time.h termcap.h sys/filio.h)
+
+if test $termcap -eq 0 ; then
+	AC_CHECK_FUNC(setupterm, AC_DEFINE(HAVE_TERMINFO),)
+fi
+AC_CHECK_FUNC(uname, AC_DEFINE(HAVE_UNAME),)
+AC_CHECK_FUNC(setenv, AC_DEFINE(HAVE_SETENV),)
+AC_CHECK_FUNC(killpg, AC_DEFINE(HAVE_KILLPG),)
+AC_CHECK_FUNC(gettimeofday, AC_DEFINE(HAVE_GETTIMEOFDAY),)
+AC_CHECK_FUNC(getpass, AC_DEFINE(HAVE_GETPASS),)
+AC_CHECK_FUNC(strtoul, AC_DEFINE(HAVE_STRTOUL),)
+AC_CHECK_FUNC(vsnprintf, AC_DEFINE(HAVE_VSNPRINTF),)
+AC_CHECK_FUNC(snprintf, AC_DEFINE(HAVE_SNPRINTF),)
+AC_CHECK_FUNC(sysconf, AC_DEFINE(HAVE_SYSCONF),)
+AC_CHECK_FUNC(scandir, AC_DEFINE(HAVE_SCANDIR),)
+AC_CHECK_FUNC(fpathconf, AC_DEFINE(HAVE_FPATHCONF),)
+AC_CHECK_FUNC(strerror, AC_DEFINE(HAVE_STRERROR),)
+AC_CHECK_FUNC(memmove, AC_DEFINE(HAVE_MEMMOVE),)
+AC_CHECK_FUNC(inet_aton, AC_DEFINE(HAVE_INET_ATON),)
+AC_CHECK_FUNC(setsid, AC_DEFINE(HAVE_SETSID),)
+AC_CHECK_FUNC(tparm, AC_DEFINE(HAVE_TPARM),)
+AC_CHECK_FUNC(getlogin, AC_DEFINE(HAVE_GETLOGIN),)
+AC_CHECK_FUNC(fchdir, AC_DEFINE(HAVE_FCHDIR),)
+AC_CHECK_FUNC(realpath, AC_DEFINE(HAVE_REALPATH),)
+AC_CHECK_FUNC(hstrerror, AC_DEFINE(HAVE_HSTRERROR),)
+AC_CHECK_FUNC(strlcpy, AC_DEFINE(HAVE_STRLCPY),)
+AC_CHECK_FUNC(strlcat, AC_DEFINE(HAVE_STRLCAT),)
+AC_CHECK_FUNC(stpcpy, AC_DEFINE(HAVE_STPCPY),)
+AC_MSG_CHECKING(for stpcpy in string.h)
+AC_EGREP_HEADER(stpcpy, string.h, AC_DEFINE(STPCPY_DECLARED)
+	AC_MSG_RESULT(yes), AC_MSG_RESULT(no),)
+
+AC_HEADER_STDC
+AC_HEADER_TIME
+AC_HEADER_DIRENT
+AC_TYPE_SIGNAL
+AC_TYPE_MODE_T
+AC_TYPE_PID_T
+AC_TYPE_SIZE_T
+AC_TYPE_UID_T
+AC_FUNC_ALLOCA
+
+dnl ----------------------------------------------------------
+dnl
+dnl Check to see if we have to include <sys/select.h>
+dnl 
+dnl
+AC_MSG_CHECKING(whether sys/types.h defines fd_set)
+AC_EGREP_HEADER(fd_set, sys/types.h,
+  AC_MSG_RESULT(yes),
+  AC_MSG_RESULT(no)
+  AC_MSG_CHECKING(whether sys/select.h defines fd_set)
+  AC_EGREP_HEADER(fd_set, sys/select.h,
+    AC_MSG_RESULT(yes)
+    AC_DEFINE(NEED_SYS_SELECT_H),
+    AC_MSG_RESULT(no, ugh.))) 
+
+
+dnl ----------------------------------------------------------
+dnl
+dnl check for struct linger
+dnl
+
+AC_MSG_CHECKING(for struct linger)
+AC_EGREP_HEADER([struct( |	)*linger], sys/socket.h, 
+  AC_MSG_RESULT(yes), 
+  AC_DEFINE(NO_STRUCT_LINGER) 
+  AC_MSG_RESULT(no, ugh.))
+
+
+dnl ----------------------------------------------------------
+dnl
+dnl sun_len in <sys/un.h>?
+dnl
+
+AC_MSG_CHECKING(for sun_len in <sys/un.h>)
+AC_EGREP_CPP([sun_len], 
+[
+#include <sys/un.h>
+], AC_DEFINE(HAVE_SUN_LEN) AC_MSG_RESULT(yes), AC_MSG_RESULT(no))
+
+
+dnl ----------------------------------------------------------
+dnl
+dnl svr3's getpgrp() didnt take arguments.  BSD's did.
+dnl POSIX said that there wasnt any usefulness to giving arguments
+dnl to getpgrp(), so that was forbidden.  So svr4 made a new syscall
+dnl getpgid() to fill in this functionality gap (grrrr).  BSD still
+dnl doesnt have any way to do it, even though they were the ones that
+dnl originally wanted to have it around, but svr3 insisted not so. (grrr)
+dnl
+
+AC_CHECK_FUNC(getpgid, AC_DEFINE(HAVE_GETPGID),)
+AC_CHECK_FUNC(getpgrp, AC_FUNC_GETPGRP,)
+
+
+dnl ----------------------------------------------------------
+dnl
+dnl Check for sys_siglist declaration
+dnl
+
+AC_MSG_CHECKING(for sys_siglist declaration)
+AC_TRY_RUN([
+#include <sys/types.h>
+#include <sys/signal.h>
+#include <signal.h>
+main()
+{
+	char *s = sys_siglist[0];
+	exit(0);
+}
+],
+  AC_MSG_RESULT(yes) 
+  sys_siglist="1"
+  AC_DEFINE(SYS_SIGLIST_DECLARED), 
+  AC_MSG_RESULT(no), :)
+
+dnl ----------------------------------------------------------
+dnl
+dnl Generate signal list, from perl4
+dnl
+if test x$sys_siglist != x1
+then
+echo "generating a list of signal names..."
+set X `cat /usr/include/signal.h /usr/include/sys/signal.h /usr/include/linux/signal.h 2>&1 | sed 's/^#[	]*/#/' | awk '
+$1 ~ /^#define$/ && $2 ~ /^SIG[A-Z0-9]*$/ && $3 ~ /^[1-9][0-9]*$/ {
+  [sig[$3] = substr($2,4,20)]
+  if (max < $3 && $3 < 60) {
+	max = $3
+  }
+}
+
+END {
+  for (i=1; i<=max; i++) {
+    [if (sig[i] == "")]
+      printf "%d", i
+    else
+      [printf "%s", sig[i]]
+    if (i < max)
+      printf " "
+  }
+  printf "\n"
+}
+'`
+shift
+case $# in
+0)
+  if test -f /bin/csh; then
+     set X `/bin/csh -cf 'kill -l'`
+     shift
+     case $* in
+     0) 
+       set HUP INT QUIT ILL TRAP ABRT EMT FPE KILL BUS SEGV SYS PIPE ALRM TERM
+       ;;
+    esac
+  fi
+  ;;
+esac
+
+sig_name="ZERO $*"
+if test -f source/sig.inc; then
+  /bin/rm -f source/sig.inc
+fi
+[echo $sig_name | sed -e 's/$/"};/' -e 's/ /", "/g' -e 's/^/char *sys_siglist[] = { "/' >> source/sig.inc]
+fi
+
+
+
+dnl ----------------------------------------------------------
+dnl
+dnl need this for dcc stuff
+dnl
+
+AC_CHECK_SIZEOF(unsigned int, 4)
+if test "$ac_cv_sizeof_unsigned_int" = 4; then
+	AC_DEFINE(UNSIGNED_INT32)
+else
+	AC_CHECK_SIZEOF(unsigned long, 4)
+	if test "$ac_cv_sizeof_unsigned_long" = 4; then
+		AC_DEFINE(UNSIGNED_LONG32)
+	else
+		AC_DEFINE(UNKNOWN_32INT)
+	fi
+fi
+
+
+dnl ----------------------------------------------------------
+dnl
+dnl Socks4 or Socks5 or neither?
+dnl
+
+AC_MSG_CHECKING(whether to support SOCKS)
+AC_ARG_WITH(socks,
+[  --with-socks[=PATH]     Compile with SOCKS firewall traversal support.],
+[ case "$withval" in
+  no)
+	AC_MSG_RESULT(no)
+	;;
+  *)
+	if test "x$withval" != "xyes"; then
+		LIBS="$LIBS -L$withval"
+	fi
+
+	AC_MSG_RESULT(yes)
+	LIBS="$LIBS -lsocks"
+	AC_DEFINE(SOCKS)
+	AC_DEFINE(connect, Rconnect)
+	AC_DEFINE(getsockname, Rgetsockname)
+	AC_DEFINE(bind, Rbind)
+	AC_DEFINE(accept, Raccept)
+	AC_DEFINE(listen, Rlisten)
+	AC_DEFINE(select, Rselect)
+	;;
+  esac ],
+  AC_MSG_RESULT(no)
+)
+
+AC_MSG_CHECKING(whether to support SOCKS5)
+AC_ARG_WITH(socks5,
+[  --with-socks5[=PATH]     Compile with SOCKS5 firewall traversal support.],
+[ case "$withval" in
+  no)
+	AC_MSG_RESULT(no)
+	;;
+  *)
+	if test "x$withval" != "xyes"; then
+		LIBS="$LIBS -L$withval"
+		CFLAGS="$CFLAGS -I$withval/../include/"
+	fi
+
+	AC_MSG_RESULT(yes)
+	LIBS="$LIBS -lsocks5"
+	AC_DEFINE(SOCKS)
+	AC_DEFINE(USE_SOCKS5)
+	;;
+  esac ],
+  AC_MSG_RESULT(no)
+)
+
+dnl ----------------------------------------------------------
+dnl ----------------------------------------------------------
+dnl
+dnl closing stuff
+dnl
+dnl ----------------------------------------------------------
+dnl ----------------------------------------------------------
+
+
+dnl ----------------------------------------------------------
+dnl 
+dnl set some last minute sanity defaults
+dnl
+
+if test -z "$CFLAGS"; then CFLAGS=-g -O; fi
+if test -z "$LDFLAGS"; then LDFLAGS= ; fi
+if test -z "$bindir"; then bindir=\${prefix}/bin; fi
+if test -z "$libdir"; then libdir=\${prefix}/lib; fi
+if test -z "$irclibdir"; then irclibdir=\${libdir}/irc; fi
+if test -z "$libexecdir"; then libexecdir=\${prefix}/libexec; fi
+
+epic=`echo "epic" | sed -e "$program_transform_name"`
+if test "$program_prefix" = "NONE" ; then
+	program_prefix=
+fi
+
+AC_MSG_CHECKING(whether to support bounds checking gcc)
+AC_ARG_WITH(bc,
+[  --with-bc[=PATH_TO_GCC]  You have bounds checking gcc and want to use it.],
+[   case "$withval" in
+   no)
+        AC_MSG_RESULT(no);
+        ;;
+   *)
+        if test "x$withval" != "xyes" ; then
+                CC="$withval"
+        fi
+
+        CFLAGS="$CFLAGS -Wall -fbounds-checking"
+        LDFLAGS="$LDFLAGS -static"
+        AC_MSG_RESULT(yes)
+        ;;
+   esac ],
+   AC_MSG_RESULT(no)
+)
+
+
+AC_SUBST(CFLAGS)
+AC_SUBST(LDFLAGS)
+AC_SUBST(bindir)
+AC_SUBST(irclibdir)
+AC_SUBST(libexecdir)
+AC_SUBST(srcdir)
+AC_SUBST(includedir)
+AC_SUBST(epic)
+AC_SUBST(program_transform_name)
+AC_SUBST(program_prefix)
+AC_SUBST(mandir)
+
+AC_OUTPUT(Makefile source/Makefile source/info.c.sh)
+
+
+dnl ----------------------------------------------------------
+dnl
+dnl Commencement
+dnl
+
+echo
+echo "There you go.  Look at include/config.h for any options that "
+echo "you might want to change before you 'make'.  Don't forget to "
+echo "do a 'make install' before you're done."
+echo 

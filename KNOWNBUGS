@@ -1,0 +1,19 @@
+EPIC4 Projects, Bugs, and other Errata:
+
+KNOWN ERRATA (eg, bugs, or unresolved requests):
+------------------------------------------------
+<none>
+ 
+[See http://www.epicsol.org/PROJECTS for things to come in the future]
+[See http://www.epicsol.org/CHANGELOG for things that changed in the past]
+
+THE CHANGELOG SINCE THE LAST RELEASE:
+-------------------------------------
+* Defer "deleting channels" warning in move_window_channels until needed.
+* Fix null deref when beep happens on some hidden windows.
+* Fix null deref when waiting channel != channel being parted.
+* In 'get_connected()', be more aggressive throwing away closed channels.
+* Fix header of /window list if /set channel_name_width is 0
+* Revamp /on 403 support -- check this over for problems!
+* Nominal support for 402 and 522 numerics for bogus dalnet who requests.
+* Fix after_expando_special to whine if no lval is present where it ought be.

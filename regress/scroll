@@ -1,0 +1,11 @@
+load repeat
+
+#set scroll_lines 15
+
+@ var = 0
+
+on ^hook * {
+	repeat 10 echo #*#* $2 ${var++}
+}
+
+repeat 100 hook one two buckle my shoe

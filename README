@@ -1,0 +1,74 @@
+I guess the time has come to write one of these things.  Here is some basic
+information that will help you get started with using EPIC.
+
+* THE EPIC HOME PAGE IS:	http://www.epicsol.org/
+  THE EPIC MAIN FTP SITE IS:	ftp://ftp.epicsol.org/
+  THE EPIC IRC CHANNEL IS:	#epic on EFNet
+
+* The INSTALL file gives detailed instructions how to install EPIC.  If you
+  are not able to install epic by using these instructions, you will need
+  specific help from a unix wizard.  Please seek out your local unix guy and
+  ask him to help you.  Bribes work well; unix wizards love cookies.
+
+* If you find a bug in EPIC, please see the BUG_FORM file.  Reporting a bug
+  without filling out that file may end up wasting a lot of time and delay
+  your bug being fixed.  Please help us fix your bug quickly by providing
+  all of the neccesary information.
+
+* The COPYRIGHT file contains the EPIC license.  EPIC is licensed under the
+  standard three-clause BSD license except that you are not permitted to 
+  remove the "Redistribution is permitted" clause of the license if you 
+  distribute binaries.
+ 
+* The KNOWNBUGS file contains a list of all of the "issues" that are currently
+  outstanding with this release of EPIC.  Please do not report any of these
+  issues as bugs unless you also provide patches to fix the bug; otherwise 
+  it would be a waste of your time.  You can also find in this file a list of
+  changes since the last release of EPIC.  You can find all of the changes 
+  made in EPIC4 at http://www.epicsol.org/CHANGELOG
+
+* The UPDATES file contains any amendments to the help files since the 
+  last release of EPIC.  You can find all the amendments ever made since
+  the very beginning of EPIC at http://www.epicsol.org/UPDATES
+
+* You can find a list of things that are coming in the future at
+  http://www.epicsol.org/PROJECTS.  Please do not report any of these
+  projects as bugs, as you would only be wasting your time.
+
+* You can look in the 'doc' directory for interesting information:
+  * EPIC_ABOUT - Gives a brief description of what the EPIC project is all
+    about and where it has come from and where it is going.  It also lists
+    a (semi-current) list of EPIC mirrors that you can use.
+  * EPIC_THANKS - The list of people who are responsible for EPIC.  If you
+    are not on this list and you think you should be, send an email to the
+    address found in that file.
+  * EPIC_VERSIONS - The list of all production betas and production releases
+    during the EPIC project's lifetime, including the release date.
+  * IRCII_VERSIONS - The list of all public releases for ircII up through the
+    time that EPIC forked away from ircII.
+  * SILLINESS - The list of all of the "silly" names and the EPIC release 
+    that the names belonged to.  Ask me on irc if you are curious.
+  * TS4 - A partial list of what TS4 (orabidoo's efnet TS patches) features
+    are supported in this version of EPIC.
+  * color.txt - The original mIRC colors document, with explanations how
+    EPIC's implementation differs from mIRC.
+  * colors - The original documentation that came with fireclown's
+    implementation of mIRC color support (for epic4pre1.043).  Some of this
+    information is obsolete, but it is interesting reading.
+  * dccresum.txt - The original mIRC DCC RESUME document.
+  * epic.1 - The manual page for EPIC, sutiable for use with 'man'.
+  * local_vars - The original EPIC document explaning how local variables work.
+  * missing - A list of features present in EPIC3 that have been removed from
+    EPIC4.  Please do not report the absence of any of these features as a bug
+    as you would only be wasting your time.
+  * nicknames - The original EPIC document that details how EPIC keeps track
+    of what your nickname is, and how it tries to prevent being confused.
+  * outputhelp - *** VERY IMPORTANT *** This file gives practical tips how
+    to configure EPIC so you can do various things relating to input and
+    output, such as turning on eight bit characters, and getting colors to
+    appear in GNU Screen, and so on.  Please read this document before
+    reporting any output problems as EPIC bugs.
+  * server_groups - A prototype document explaining how server groups will
+    probably be implemented in EPIC some day.
+
+[End of file]

@@ -1,0 +1,21 @@
+# 23 Feb 1999 - Dracus
+
+alias debug_section {
+        @ logstate = log
+        if (log == [on]) {
+                @ logfile_old = logfile
+                ^set log off
+        }
+        ^set logfile epic.dbg
+        ^set log on
+        ^set debug 7
+        }
+
+alias debug_endsection {
+        set debug 0
+        ^set log off
+        ^set logfile $logfile_old
+        ^set log $logstate
+}
+
+#dracus'99

@@ -1,0 +1,333 @@
+.Dd April 22, 1999
+.Dt EPIC 1
+.Sh NAME
+.Nm epic
+.Nd Internet Relay Chat client for UNIX like systems
+.Sh SYNOPSIS
+.Nm epic
+.Op Ar \-a
+.Op Ar \-b
+.Op Ar \-B
+.Op Ar \-c chan
+.Op Ar \-d 
+.Op Ar \-f 
+.Op Ar \-F 
+.Op Ar \-h 
+.Op Ar \-H hostname
+.Op Ar \-l filename
+.Op Ar \-L filename 
+.Op Ar \-n nickname
+.Op Ar \-p port
+.Op Ar \-q 
+.Op Ar \-v
+.Op Ar \-x
+.Op Ar \-z username
+.Op Ar nickname
+.Op Ar server description list
+.Sh DESCRIPTION
+The
+.Nm ircII/EPIC
+program is a unix-based character oriented user agent ('client') to 
+Internet Relay Chat.  It is a fully functional ircII client with many
+useful extensions.  This version works with all modern irc server classes
+as of early 1999.
+.Pp
+.Sh OPTIONS
+.Bl -tag -width flag
+.It Fl a
+Append the server description list to the default server list.  
+The default behavior is for the server description list to replace the 
+default server list.
+.It Fl b
+Operate in so called
+.Dq bot mode.  
+This implies the 
+.Op Ar \-d
+option.  EPIC will 
+.Xr fork 2
+immediately and the parent process will exit, returning you to your shell.
+Some system administrators do not look kindly to their users running bots, 
+and they have disabled this option.  Even if your administrator has not 
+disabled it, you should not assume this gives you automatic permission to 
+run a bot.  If you do run a bot without permission, your administrator may 
+get very angry with you, and possibly revoke your account.  In addition, most
+IRC operators on public irc networks have very little tolerance for
+people who run bots.  So just a word of caution, make sure that your
+system administrator and your irc administrator have given you permission
+before you run a bot.
+.It Fl B
+Force the startup file to be loaded immediately rather than waiting until
+a connection to a server is established.
+.It Fl c Ar chan
+Join the specified channel the first time you successfully 
+connect to a server.
+.TP 
+.It Fl d
+Operate in 
+.Dq dumb mode.  
+The client will not put up a full screen display, and will read from
+standard input and write to standard output.  This is useful if the output
+normally looks awful (because you are using an incorrect
+.Ev TERM 
+setting, or your terminal description is spectacularly broken), or you just
+don't want to use the pretty interface.  This option will be turned on 
+automatically if your current 
+.Ev TERM
+setting is not capable of a full screen display.
+.It Fl f
+Force use of hardware flow control.  With this option, the control-S and 
+control-Q keys are probably not available to be bound to something else.
+.It Fl F
+Disable use of hardware flow control.  With this option, the control-S
+and control-Q keys are available to be bound to something else.  However,
+you will not have hardware flow control.
+.It Fl h
+Display a moderately concise help message and exit immediately.
+.TP
+.It Fl H Ar hostname
+Use the IP address of the specified hostname as your default IP address.
+This can be used if you have multiple IP addresses on the same machine and
+you want to use an address other than the default address.  You might need
+to use this option when
+.Xr gethostname 3
+does not return a hostname (in some poorly configured NIS environments).
+The use of multiple IP addresses on a single machine is commonly refered to
+as "virtual hosting", and each IP address is a "virtual host".   Please
+understand that an irc client may not tell the irc server what your hostname
+should be:  the server alone determines that.  Servers typically use the
+canonical hostname for an IP address as your hostname.  Because of this, 
+this option will not permit you to use a CNAME (secondary hostname for an 
+IP address), because the server will use the canonical hostname instead.
+This option overrides the 
+.Ev IRCHOST 
+environment variable.
+.It Fl l Ar filename,[filename]
+Use the specified filename(s) as the startup file.  The startup file is 
+loaded the first time you successfully connect to a server, unless you
+specify the
+.Op Ar \-B
+option.  This overrides the
+.Ev IRCRC
+environment variable.  If this option is not specified, and the 
+.Ev IRCRC
+environment variable is not set, then 
+.Pa ~/.ircrc
+is the default startup file.
+.It Fl n Ar nickname
+Use the specified nickname as the default nickname whenever you connect to
+an irc server.  This option overrides the
+.Ev IRCNICK
+environment variable.  This option can be overriden if you specify
+nickname argument in the command line (see below).
+.It Fl p Ar port
+Use the specified port as the default port for new server connections.
+The default port is usually 6667.  Make sure that the servers you want
+to connect to are listening on this port before you try to connect there.
+.It Fl q
+Suppress the loading of any file when you first establish a connection
+to an irc server.
+.It Fl v
+Output version identification (VID) information and exit.
+.It Fl x
+This undocumented feature turns on all of the XDEBUG flags.  Refer to the
+help files for XDEBUG if you want to know what happens if you use this.
+.It Fl z Ar username
+Use the specified username when negotiating a connection to a new irc server.
+This overrides the 
+.Ev IRCUSER
+environment variable.  If this option is not specified, then the user name
+specified in 
+.Pa /etc/passwd
+for your user is used.  This feature was formerly undocumented, but with
+the rise and popularity and use of
+.Xr identd 8
+this option is much less useful than it once was.  Requests to have this
+option removed will probably be ignored.  If you don't want your users
+to spoof their usernames, install identd, and do everyone on IRC a favor.
+.It nickname
+The first bare word found is taken 
+as the default nickname to use.  This overrides all other options, including
+the -n option and the 
+.Ev IRCNICK 
+environment variable.  If all else fails, then
+the client uses your login name as the default nickname.
+.TP
+.It server,[server]
+After the nickname, a list of one or more server specifications can be listed.
+Unless you specify the -a option, this will replace your default server list!
+The -a option forces any servers listed here to be appended to the default 
+server list.
+.IP
+The format for server specifications is:
+.sp
+.Dl hostname:port:password:nick
+.sp
+Any item can be omitted by leaving the field blank, and any trailing
+colons can also be omitted.
+.Sh "DETAILED DESCRIPTION"
+.Ss "The Screen:"
+The screen is split into two parts, separated by an inverse-video
+status line (if supported).
+The upper (larger) part of the screen displays responses from the
+.Xr ircd 8
+server.  The lower part of the screen (a single line) accepts keyboard input.
+.sp
+Some terminals do not support certain features required by
+.Nm epic
+, in which case you receive a message stating this.
+If this occurs, try changing the terminal type or run
+.Nm epic
+with the -d option.
+.Ss "Irc Commands:"
+Any line beginning with the slash character 
+.Dq /
+is regarded as an
+.Nm epic
+command (the command character may be changed).  Any line not beginning
+with this character is treated as a message to be sent to the current
+channel.  The client has a built in help system.  Install the help files
+(they should be available at the same place you got the client) and then type
+.Dq /help
+to open up the help system.
+.Ss "The .ircrc File:"
+When
+.Nm epic
+is executed, it checks the user's home directory for a
+.Pa ~/.ircrc 
+file, executing the commands in the file. Commands in this file do not
+need to have a leading slash character 
+.Dq /
+This allows predefinition of aliases and other features.
+.Sh PRACTICAL EXAMPLES
+Certainly any description of 
+.Nm epic 
+in this man page will be sorely
+inadequate because most of the confusion doesn't even start until after
+you get the client to connect to a server.  But if you really have
+problems getting the client to connect to a server, try some of these:
+.Bl -tag -width "epic"
+.It Nm epic
+Try this first.  This will assume all the defaults.  If the person who
+is maintaining epic at your site has done a halfway decent job, this will
+put you on a server that is somewhat local to you. 
+.It Nm "epic nickname irc.domain.com"
+or something similar will attempt to connect to the irc server running
+on the host "irc.domain.com" (fill in a real irc server here) with the
+nickname of well, "nickname".  This is the most common way to specify
+an alternate server to use.
+.It Nm "epic nickname irc.domain.com:6664"
+Sometimes, some servers are really busy, and it can take them a long time
+to establish a connection with you on the default port (6667).  Most major
+servers on big public networks accept connections on many different ports,
+with the most common being most or all of the ports between 6660 and 6675.
+You can usually connect much faster if you use a port other than 6667, if
+the server you're connecting to supports an alternate port.
+.It Nm "epic nickname irc.efnet.net"
+If you're totaly stumped and trying to get on efnet, try this.
+.It Nm "epic nickname irc.undernet.org"
+If you're totaly stumped and trying to get on undernet, try this.
+.It Nm "epic nickname irc.dal.net"
+If you're totaly stumped and trying to get on dalnet, try this.
+.TP
+.Sh "FILES"
+.Bl -tag -width "/usr/local/share/epic"
+.It Nm /usr/local/bin/epic
+the default location of the binary
+.It Nm ~/.ircrc
+default initialization file
+.It Nm ~/.irc/
+directory you can put your own
+.Nm epic
+scripts into, that can then be loaded with /load
+.It Nm /usr/local/share/epic
+default directory containing message-of-the-day, master initialization, 
+help files and 
+.Nm epic
+scripts
+.Sh "THE HELP FILES"
+Starting up the client is the easy part.  Once you get connected, you'll
+probably find you have no idea what you're doing.  That's where the help files
+come in.  If the person who maintains irc at your site didn't install the
+help files, pester them until they do.  Once the help files are available,
+use the 
+.Dq /help
+command to get started.  There are a bazillion commands and a multitude
+of nuances that will take a few months to get down pat.  But once you do,
+you will be so firmly addicted to irc that your wife will divorce you, your
+kids will leave you, your dog will run away, and you'll flunk all your 
+classes, and be left to sing the blues.
+.Sh "USEFUL WEB RESOURCES"
+.Tp
+.Pp
+.Pa <http://www.epicsol.org/>
+The EPIC home page
+.Tp
+.Pp
+.Pa <http://help.epicsol.org/>
+The Online EPIC Help Pages
+.Tp
+.Pp
+.Pa <http://www.irchelp.org/>
+Lots of great help for new irc users.
+.Sh "SIGNALS"
+.Nm epic
+handles the following signals gracefully
+.Pp
+.Bl -tag -width "IRCSERVER" 
+.It SIGUSR1
+Closes all DCC connections and EXEC'd processes.
+.El
+.Pp
+.Sh "ENVIRONMENT VARIABLES"
+It can be helpful to predefine certain variables in in the
+.Pa ~/.cshrc
+, 
+.Pa ~/.profile
+, or
+.Pa ~/.login
+file:
+.TP
+.Bl -tag -width "IRCSERVER"
+.It Ev IRCNICK    
+The user's default IRC nickname
+.It Ev IRCNAME    
+The user's default IRC realname (otherwise retreieved from 
+.Pa /etc/passwd
+)
+.It Ev IRCSERVER 
+The user's default IRC server list (see server option for details)
+.It Ev HOME     
+Overrides the default home page in
+.Pa /etc/password
+.It Ev TERM     
+The type of terminal emulation to use
+.El
+.Sh "SEE ALSO"
+.Xr ircd 8
+.Sh BUGS
+Any non-trivial piece of software has bugs.  ircII/EPIC is no exception.
+You can refer to the 
+.Pa KNOWNBUGS 
+file that is distributed with the client source
+code for a list of problems that are known to exist and may or may not be
+fixed some day.  If you find a bug that is not listed there, you can
+refer to the 
+.Pa BUG_FORM
+file that is also distributed with the source code.
+It will give you instructions on how to fill out the report and where to
+send it.
+.Sh ERRATA
+The online documentation probably should be in docbook form rather than
+in the current help format.  The entire help system is a hack.
+
+This manual page only describes the options to epic, but doesn't tell
+you what to do once you get connected.
+.Sh AUTHORS
+Program written by Michael Sandrof (ms5n+@andrew.cmu.edu).
+The copyright holder is Matthew Green (mrg@mame.mu.oz.au).
+This software is maintained by Jeremy Nelson (jnelson@acronet.net)
+on behalf of the EPIC project (ircii-epic@concentric.net).
+
+At one time or another, this man page has been edited by Darren Reed,
+R.P.C. Rodgers, the lynX, Matthew Green, and Jeremy Nelson.
+.\" end of man page

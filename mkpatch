@@ -1,0 +1,55 @@
+#!/usr/bin/perl
+#
+# mkpatch -- Written for the EPIC project, 1996.
+# Send bug reports and improvements to jnelson@acronet.net
+#
+# Purpose:  Some people have been unhappy because i roll snapshots without
+# making a patchfile between it and the previous snapshot.  Generally i do
+# this for my own convenience, but also because patchfiles are a pain to
+# double-check, and i dont like having to do it very often. ;-)  I wrote 
+# this script so you can automatically generate your own patchfile between a 
+# current snapshot and whatever previous snapshot you current have installed.
+#
+# Usage:
+#	- Make sure the current snapshot's tarfile is in the directory you
+#	  would extract it if you were extracting (ie, your home directory).
+#	- run this script specifying the tarfile as the sole argument:
+#
+#		./mkpatch e3000.tgz
+#
+#	- Standard output from the script is a context diff between your
+#	  installation and whats in the tarfile.  Standard error outputs
+#	  informational messages for your amusement while it works.
+#
+#	- This script is somewhat slow because it runs 'tar' on the large
+#	  snapshot tarball for each file that differs between the two sets.
+#	  So just be patient when you run this.
+#
+#	- This script probably requires GNU tar to work.  If you dont have
+#	  GNU tar installed, you should. :^)
+#
+# Improvements, new ideas, bug reports are welcome.
+#
+
+print STDERR "diffing from tarfile $ARGV[0]\n";
+$tar = open(TAR, "tar dfz $ARGV[0] |");
+
+while (<TAR>)
+{
+	s/:.*$//;
+	chop;
+	$filename = $_;
+
+	if (!$seen{$filename})
+	{
+		print STDERR "Generating diff for $filename\n";
+		open(DIFF, "tar xOfz $ARGV[0] $filename | diff -c - $filename|");
+		print <DIFF>;
+		close(DIFF);
+		$seen{$filename}++
+	}
+}
+
+close(TAR);
+
+#eof

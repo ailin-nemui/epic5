@@ -1,0 +1,7 @@
+# prefix each message with the channel name 
+on ^public * echo $1 <$0> $2-
+on ^public_other * echo $1 <$0> $2-
+on ^public_msg * echo $1 \($0) $2-
+on ^send_public * echo $C <$N> $1-
+set input_prompt $T> 
+# lynx90

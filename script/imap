@@ -1,0 +1,226 @@
+# imap version 1.0  by Ian Frechette.
+# To give credit where credit is due, this was inspired by Run's
+# ircmap2 script.  I looked at it once and decided it was slow and kludgy to
+# deal with and wrote my own.  All code here is original to me.
+#
+# Currently the only commands  are
+# /initmap [stuff]        - which will create a the data by issuing a /links 
+#                         from the current server.
+#                         - stuff can be whatever.. The map is split up if you
+#                         you try to use stuff.. try   '*.ca *'
+# /gomap [server_name]    - will show the current map of the visible irc
+#                         network.  If a servername is given it'll try to
+#                         recurse outward from that server instead of the
+#                         current server.
+# Note: you may issue the /gomap command as many times as you want after
+# the data has been created.  You may also /initmap at any time to update the
+# data.
+#
+# Note Also.. as of yet hostmasks are not possible, nor would they really
+# make much sense.
+#
+# This script has been modified to work correctly on the EPIC client.
+#
+
+^set novice off
+^set max_recursion 50
+
+@ RCS.imap = [$$Header: /home/cvs/repository/epic5/script/Attic/imap,v 1.1 2000/12/05 00:11:57 jnelson Exp $$]
+eval @ map.mask = encode(*.)
+# @ map.str = [| | | | | | | | | | | | | | | | | | | | | | | ]
+
+#  It starts builds the map data list.   working on args now
+alias initmap {
+	echo *** imap: removing any old map data around
+	purge maplist
+	purge maplist2
+	purge maphublist
+	echo *** imap: building links list to use later
+	echo *** imap: please wait until it's finished .....
+	map.buildlist $*
+}
+
+# This alias may take a server name as an argument or it may 
+# be left blank.
+# gomap tries to display the entire irc map from the point of view of
+# the given server or if no arg is given from the server the list was
+# built on.
+alias gomap {
+	if ([$0] != [])
+		{@ map.toptree = encode($tolower($0))}
+		{@ map.toptree = encode($tolower($map.from))}
+	echo *** Displaying map from $decode($map.toptree)
+	echo 0   $decode($map.toptree)
+	makemap 1 $map.toptree
+	map.restore
+	echo *** imap: done displaying map
+}
+
+# used internally to build the actual map data list.  Takes no args.
+# This also constucts a list of hostmasks to be used by map.cleanmasks
+alias map.buildlist 
+{
+	^on ^364 * {
+		@ map.from = [$0]
+		@ map.srv = [$1]
+		@ map.uplink = [$2]
+		@ map.hops = [$3]
+#		^set status_user2 . 
+		if (left(1 $map.srv) == [*]) {
+			@ mapmasklist[$encode($tolower($map.srv))] = map.srv
+		}
+		@ map.hub = encode($tolower($map.uplink))
+		@ maphublist[$map.hub] = maphublist[$map.hub] + 1
+		@ maplist[$map.hub][$encode($tolower($map.srv))] = map.hops
+#		^set status_user2  .
+	}
+	^on ^365 * {
+		^on 364 -*
+		echo *** imap: Done building links list
+		^set -status_user2
+		^on 365 -*
+		@ map.tmp = encode($tolower($map.from))
+		^assign -maplist[$map.tmp][$map.tmp]
+		@ maphublist[$map.tmp] = maphublist[$map.tmp] - 1
+		map.cleanmasks
+		map.save
+		echo *** imap: you may now issue a /gomap to view irc map
+		^set show_end_of_msgs $map.old_seom
+	}
+	@ map.old_seom = SHOW_END_OF_MSGS
+	^set show_end_of_msgs on
+	//links $*
+}
+
+# called after the initial list is constucted.  no args.
+# This go through the main list of hubs and strips the names down to 
+# the hostmask so..  hub goren.u.washington.edu becomes *.washington.edu
+# the mask are determined from the servername field so this step cannot
+# be done until after the data list is complete
+alias map.cleanmasks {
+	foreach mapmasklist ii {
+		foreach maplist jj {
+			if (match(*$mid(2 100 $ii) $jj))
+			{
+				foreach maplist.$jj kk {
+					@ maplist[$ii][$kk] = maplist[$jj][$kk]
+					^assign -maplist[$jj][$kk]
+				}
+				@ maphublist[$ii] = maphublist[$jj]
+				^assign -maphublist[$jj]
+			}
+		}
+		^assign -mapmasklist[$ii]
+	}
+	echo *** imap: map data masks have been cleaned
+}
+	
+
+# used for debugging only
+# /showmap  will show you a list of the raw data.  Lists all hub servers
+#           sorted alphabetically with leafs of that hub following
+# a servername may be supplied as an argument and this will list only
+# the info for that one hub
+alias showmap {
+	if ([$0] == [])
+	{
+		foreach maplist ii {
+			foreach maplist.$ii jj {
+				echo $decode($ii) links $decode($jj)
+			}
+		}
+	}
+	{
+		foreach maplist.$encode($tolower($0)) ii {
+			foreach maplist.$ii jj {
+				echo $decode($ii) links $decode($jj)
+			}
+		}
+	}
+}
+
+# called with  makemap level server
+# this is the real workhorse.. It's a recursive function.. It starts at
+# recursion level 1 and follows the servers through the data.
+# The following example doesn't use real argument types.
+# e.g.   makemap 1 colorado  looks at colorado's list of links
+#                            displays each one and then recurses into that
+#                            link if it can.  So when it gets to uiuc 
+#                            makemap is  called.   makemap 2 uiuc
+#                            and it follows it's links etc etc..
+# loops in the data are avoided by removing each link from the list entirely
+# as it's used.  map.restore can be called later to restore data
+#             
+alias makemap {
+	@ map.ind[$0] = 0
+	foreach maplist.$1 ii$0 {
+		echo $lformat(3 $0) $map.outmask(1 $0)`-$decode($(ii$0)) $maplist[$1][$(ii$0)]
+		^assign -maplist[$1][$(ii$0)]
+		if ((map.ind[$0] = map.ind[$0] +1) >= maphublist[$1])
+		{@mask[$0] = 0}
+		{@mask[$0] = 1}
+		makemap ${[$0] + 1} $(ii$0)
+		^assign -ii$0
+	}
+}
+
+# called after the data is created and cleaned to keep for future use
+# no args
+alias map.save {
+	foreach maplist ii {
+		foreach maplist.$ii jj {
+			@ maplist2[$ii][$jj] = maplist[$ii][$jj] 
+		}
+	}
+	echo *** imap: Map data saved
+}
+
+
+# called after gomap has run makemap to restore data.
+# makemap destroys the entire list on purpose
+# no args.
+alias map.restore {
+	foreach maplist2 ii {
+		foreach maplist2.$ii jj {
+			@ maplist[$ii][$jj] = maplist2[$ii][$jj] 
+		}
+	}
+	echo *** imap: Map data restored
+}
+
+# no stranger to the default scripts.. repeated here for completeness.
+alias lformat {
+	@ IRCII.word = [$1-]
+	if (@IRCII.word < [$0]) 
+		{ @ function_return = [$([$0]IRCII.word)] } 
+		{ @ function_return = IRCII.word } 
+}
+
+# /purge <structure name>
+# removes all assignments under that name recursively.
+^alias purge {
+  foreach $0 ii
+  {
+    purge $0.$ii
+  }
+  ^assign -ii
+  ^assign -$0
+}
+
+# This special little recursive function scans the mask[]
+# array and generates an output string of the format
+# | |   |   | |  and so on.. depending on whether a mask[x] is
+# turned on or not
+alias map.outmask {
+	if ([$0] < [$1]) 
+	{
+		if (mask[$0])
+			{@ mask.mask = mask.mask ## [| ]}
+			{@ mask.mask = mask.mask ## [  ]}
+		@ function_return = map.outmask(${[$0] + 1} $1)
+	}
+	{
+		@ function_return = mask.mask
+		^assign -mask.mask
+	}
+}

@@ -1,0 +1,39 @@
+Much of the nickname handling in ircII is ad-hoc and prone to confusion.
+Since many people have asked me for a while to fix it, i am writing down
+here the plans i have to fix how nicknames are handled.
+
+The current global variable "nickname" will be retained as a global
+default.  All new server refnums will use this global default as their
+initial nickname.
+
+Each server will maintain three nicknames:
+
+	d_nickname -- This is the "default" for this server.  This is 
+		set ONCE, when then the server is first created.
+		Whenever this server's connection is re-established,
+		this is the nickname that will be used.  It is reset
+		any time the user uses the /NICK command.  It is also
+		reset any time the user's nickname has been established.
+		This member is always set to something.
+
+	s_nickname -- This is the "pending" nickname for the server.
+		This is set when the user attempts to change nickname
+		through the /NICK command, or when a nick collision
+		occurs.  This member is mutually exclusive with the
+		"nickname" member.  Whenever the user recieves a
+		"Invalid Nickname" or "Nickname is in use", if this
+		member is set, it will be used as the basis for any
+		fudging.  If this member is unset, "nickname" will
+		be used as a starting value.  If this member is set,
+		then a NICK command is still pending.
+
+	nickname -- This is the "official" nickname for the server.
+		This is set when we either get a NICK reply back from
+		the server for ourselves, or when we recieve the 004
+		numeric.  This member must *always* remain correct,
+		so that we can determine when the NICK reply comes
+		back.  Otherwise, once the current nick is lost, all
+		hope is gone.  If this member is set, and s_nickname
+		is also set, then that means a NICK command is pending,
+		and we are waiting for the reply.
+

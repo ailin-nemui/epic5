@@ -1,0 +1,46 @@
+Version ID	  Date		Message
+EPICpre1	- 11/15/94	1st ever beta version of EPIC client (+11.1)
+EPIC1 		- 12/01/94 	Original EPIC client.
+EPIC1.001	- 12/07/94 	Fixed bugs in numbers.c found by Nicknac
+				and Primo.
+EPIC1.002	- 12/09/94	Fixed bugs in names.c, alias.c, irc.c found by
+				Kanan, and Nicknac.
+EPIC1.003	- 12/16/94	Fixed bugs in alias.c found by oldpink
+				added new feature /set PAD_CHAR sug. by Primo
+EPIC1.004	- 02/15/95	Fixed bug in alias.c found by sunil
+
+EPIC2pre1	- 03/01/95	Beta Version of EPIC2
+EPIC2pre1.1	- 03/01/95	Fixes bug in DCC and exec -msg (TBA)
+EPIC2pre1.2	- 03/02/95	Fixes bug with /userhost (WintrHawk)
+EPIC2pre1.3	- 03/08/95	Quite a few bug fixes
+EPIC2pre1.4	- 03/09/95	Emptied out the outstanding bug list
+EPIC2pre2	- 03/15/95	2nd Beta Version of EPIC2 - more bugs fixed
+EPIC2pre3	- 03/20/95	3rd Beta Version of EPIC2 - more features
+EPIC2pre4	- 03/29/95	4th Beta Version of EPIC2 - more features
+EPIC2pre5	- 04/03/95	5th+Final Beta Version of EPIC2 - more features
+EPIC2		- 04/10/95	EPIC client V2.0
+EPIC2.001	-		Bug fixes
+EPIC2.002	-		Bug fixes
+EPIC2.003	- (not released)Bug fixes/floating point support
+
+EPIC3pre1	- 05/16/95	Beta version of EPIC3
+EPIC3pre2	- 06/17/95	2nd Beta Version of EPIC3 - more features
+EPIC3pre3	- 09/13/95	3rd Beta Version of EPIC3 - more features
+EPIC3pre3.1	- 09/14/95	Bug fixes
+EPIC3pre3.2	- 09/18/95	Bug fixes
+EPIC3pre3.3	- 10/02/95	Bug fixes
+EPIC3pre4	- 11/20/95	4th Beta version of EPIC3 - Bug fixes
+EPIC3pre5	- 11/27/95	5th+Final Beta version of EPIC3 - bug fixes
+EPIC3pre6	- 12/10/95	6th Beta version (yes, another one) bug fixes
+EPIC3pre7	- 01/16/96	7th Beta version - more features, bug fixes
+EPIC3pre8	- 02/28/96	8th Beta version - more of the same
+EPIC3		- 04/21/96	EPIC client V3.0
+EPIC3.001	- 10/14/96	Major enhancements, efficiency, bugs.
+EPIC3.002	- 11/01/96	Minor enhancements, bug fixes
+EPIC3.003	- 01/13/97	Moderate enhancements, bug fixes
+EPIC3.004	- 01/29/97	Bug fixes
+
+EPIC4pre1	- 07/14/97	Beta version of EPIC4
+EPIC4pre2	- 07/13/98	2nd Beta Version of EPIC4
+EPIC4pre2.002	- 02/22/99	3rd Beta Version of EPIC4
+EPIC4pre2.003	- 02/24/99	Fixes three bugs, found by robohak, alphaa

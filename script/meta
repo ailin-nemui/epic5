@@ -1,0 +1,28 @@
+/*
+	Meta script... binds <F1> to <F5>
+
+	function characters do ^[[1x~
+	where x is the function key
+*/
+
+bind ^[ meta1
+bind meta1-[ meta2
+bind meta2-1 meta3
+
+bind meta3-1 meta5
+bind meta3-2 meta6
+bind meta3-3 meta7
+bind meta3-4 meta8
+bind meta3-5 meta9
+
+bind meta5-~ type f1
+bind meta6-~ type f2
+bind meta7-~ type f3
+bind meta8-~ type f4
+bind meta9-~ type f5
+
+bind meta1-O meta2
+bind meta2-P switch_channels
+bind meta2-Q clear_screen
+bind meta2-R type msg santabot
+bind meta2-S parse_command leave *

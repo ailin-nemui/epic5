@@ -1,0 +1,13 @@
+# This lets you assign aliases for peoples nicknames.
+# For example, of you do: /ASSIGN BC BigCheese
+# Then you can do: /MSG BC Hi there!
+#
+# These dont "link" well with other aliases... should 
+# probably be handled another way.
+#
+alias msg {
+	if ( [$($0)] ) { //msg $($0) $1- } { //msg $0 $1- }
+}
+alias query {
+	if ( [$($0)] ) { //query $($0) } { //query $0- }
+}

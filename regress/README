@@ -1,0 +1,7 @@
+Here are some regression tests I use to check to make sure the features
+of EPIC are up to spec.  I will usually run these tests before i release 
+any new versions, so you can (hopefully) assume that ive already tested 
+this version already.  But i thought i should share with the public how 
+i am testing the client's features.
+
+-jfn

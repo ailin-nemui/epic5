@@ -1,0 +1,51 @@
+alias foobar
+{
+	local a
+	@ a = [$0] - 1
+	echo *** Descending: Now $$a is $a
+	echo *** Global $$a is ${::a}
+	if (a >= 0) 
+	{
+		foobar $a
+	}
+	echo *** Ascending: Now $$a is $a
+}
+
+alias go
+{
+	assign a 31337
+	echo *** Ok.  Lets see. $$a is $a (global)
+	foobar 10
+	echo *** Ok, all done. $$a is $a (global)
+}
+
+alias local2
+{
+	local a.
+	@ a.b = 43
+	echo a.b is $a.b, a.c is $a.c
+	@ a.c = 23
+	echo a.b is $a.b, a.c is $a.c
+}
+alias go2
+{
+	@ a.c = 37
+	echo a.b is $a.b, a.c is $a.c
+	local2
+	echo a.b is $a.b, a.c is $a.c
+}
+
+alias go3
+{
+	local a
+	@ a = 10
+	if (1)
+	{
+		local b
+		@ b = 20
+		echo $$a should be 10, its [$a]
+		echo $$b should be 20, its [$b]
+	}
+	echo $$a should be 10, its [$a]
+	echo $$b should be 20, its [$b]
+}

@@ -1,0 +1,83 @@
+#
+# The point of this is not to test the efficiency of the algorithm,
+# but to see how fast the client can crank out lots and lots and lots
+# of function calls and many many many evaluation switches.
+#
+# The point of fib vs. fibb is to demonstrate how a little bit of
+# care in coding can make a big difference in performance.
+#
+# These functions are considered to be "frozen".  Dont you dare change
+# them under penalty of death, for that will foul up the long term
+# comparisons that we're trying to test!
+#
+# All of the times here are for my 486DX2/66, running FreeBSD 2.2
+#
+
+load utime
+^set max_recur 1000
+
+alias fib {
+	if ([$0]==0) { @ function_return = 0} {
+		if ([$0]==1) { @ function_return = 1} {
+			@ function_return = fib(${[$0]-1}) + fib(${[$0]-2})
+		}
+	}
+}
+
+alias fibb {
+	@function_return=[$0]>1?fibb(${[$0]-1})+fibb(${[$0]-2}):[$0]?1:0
+}
+
+alias fibbb {
+	@ [$0] > 1 ? {
+		@ :x1 = [$0], x1--, :x2 = x1, x2--
+		return fibbb($x1)+fibbb($x2)
+	} : { return $0 }
+}
+
+alias fib2 {
+	@ start = utime()
+	eval echo $fib(20)
+	echo Total time = $utime_sub($utime() $start)
+}
+
+# (epic3.000 - 53 s), (epic3.004 - 45 s), (epic4pre0.020 - 37 s)
+alias fib3 {
+	@ start = utime()
+	eval echo $fibb(20)
+	echo Total time = $utime_sub($utime() $start)
+}
+
+# (epic3.000 - 198 s), (epic3.004 - 180 s), (epic4pre0.020 - 144 s)
+alias fib4 {
+	@ start = utime()
+	eval echo $fib(22)
+	echo Total time = $utime_sub($utime() $start)
+}
+
+alias fib4b {
+	@ start = utime()
+	eval echo $fibbb(22)
+	echo Total time = $utime_sub($utime() $start)
+}
+
+
+# (epic3.000 - 141 s), (epic3.004 - 117 s), (epic4pre0.020 - 96 s)
+alias fib5 {
+	@ start = utime()
+	eval echo $fibb(22)
+	echo Total time = $utime_sub($utime() $start)
+}
+
+alias fib6 {
+	@ start = utime()
+	eval echo $fib(6)
+	echo Total time = $utime_sub($utime() $start)
+}
+
+alias fib7 {
+	@ start = utime()
+	eval echo $fibb(6)
+	echo Total time = $utime_sub($utime() $start)
+}
+

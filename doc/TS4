@@ -1,0 +1,130 @@
+This is the status of the TS4 implementation:
+*) I'm a client coder; what should my client do to support TS4?       
+
+        TS4's new features have been designed to avoid confusing older  
+        clients whenever possible.  ircII, EPIC and sirc all mostly work
+        with TS4 without modifications [someone needs to check the
+        Windows and Mac clients; I can't.]
+
+        Still, there are a number of ways a client (or script) can      
+        explicitly support TS4, to make things easier for the user. 
+
+        1) The very basics, that every client should do:
+
+        .  When parsing mode changes, it's good to know that +h and +e   
+           take an argument.  Clearing channels sets mode +z temporarily
+           (as in "zapped channel"), so the client shoulnd't crash on
+           seeing a mode +z or -z either.
+
+--> The client fully supports the +h <nick> channel mode.
+--> The client fully supports the +z channel mode.
+--> The client ignores any argument for +e, the same as it does for +b.
+
+        .  When parsing NAMES, WHOIS and WHO replies, it's good to know
+           that '%' is a user flag, and that more than one flag can   
+           appear at a time (so you can have things like "@%+nick").     
+
+--> The client fully supports multiple user-modifiers in the NAMES reply.
+--> The client fully supports all three user-modifiers (@, %, and +)
+--> The client may not fully support multiple user-modifiers in WHO replies
+--> The client may not fully support multiple user-modifiers in WHOIS replies.
+
+        .  The "End of Exception List" numeric shouldn't be displayed
+           by default.
+
+--> Without knowing what numeric this is, this is not supported.
+
+        .  Expect to get PRIVMSGs for @#channel, @%#channel and
+           @+#channel, and show them in the same area as the channel's 
+           messages (but marked in some way).  Same with @&channel,    
+           @%&channel and @+&channel for local channels.
+
+--> There is no special support for these targets.  They are handled
+	as any other non-channel target would be handled.
+
+        .  Do NOT ever automatically deop people opped by servers.  This 
+           is the best and easiest way to end up with an opless channel,
+           and it defeats the whole purpose of channel passwords and op
+           recovery.
+
+--> The client does not automatically deop anyone, ever.
+
+        .  If your client kicks people from banned addresses, make sure
+           it also checks against exception lists (mode +e).
+
+--> The client does not automatically kick anyone, ever.
+
+        .  Expect 3 parameters rather than 1 from numeric 329
+           (RPL_CREATIONTIME);  see also the list of changed and added
+           numerics on README.TS4.
+
+--> The client fully supports three arguments to the 329 numeric, if present.
+
+        2) Possible additions:
+
+        .  If the client has ban management functions, the same
+           functions should be offered to manage exception lists.     
+
+--> The client does not have ban management, so no change is required.
+
+        .  There should be a command or button to join a channel using a
+           password, prompting the user for the password without        
+           displaying it on the screen.
+
+--> The client already permits passwords in the /join command, so no change
+	is required.
+
+        .  Even better, a list of known passwords could be saved to a
+           file (readable only by the user); the client would then use
+           the saved password (if there's one), instead of prompting.
+           The user should have a way to add, remove and change elements
+           in the list, from within the client.
+
+--> The client does not manage or store passwords on any permanent medium,
+	and no intention to change this is planned.
+
+        .  Whenever the client sees a "mode +c" on a channel, it could
+           query the server for the password, and remember it.  It
+           should _not_ show it on the screen by default (you don't want
+           passwords shown automatically when there could be someone
+           looking behind the user's shoulder).
+
+--> There is no support for this currently.
+
+        .  Expect to get PART commands for yourself from the server,
+           even if the user has not requested to leave any channels (this
+           happens with recovered nick collisions).  For GUI clients,   
+           you might want to leave the client a chance to read the   
+           channel window contents.
+
+--> As the client does not track when the user PARTs a channel, the client
+	has no way to know whether a recieved PART was initiated by the
+	user.  Thus, no recovery for the channel can be made automatically
+	by the client.  Perhaps the designer of this "feature" ought to have
+	considered sending a numeric before the PARTs come flowing so as not
+	to make it gratuitously difficult to support this.
+
+        .  When you get the "nick lost" numeric (453), prompt the user 
+           for a new nick, and send an ordinary nick change command to
+           the server.  Any commands sent in between can get ignored with
+           "not registered" errors from the server.
+
+--> The 453 numeric handled just like any other non-disruptive nick collision.
+
+        .  Clients should be able to handle reconnection cookies
+           automatically: whenever you connect to a server and get back
+           a cookie (with the numeric 014, "<cookie> :is your  
+           reconnection cookie"), the client should store the cookie,  
+           along with the server name and the current time, in a file. 
+           At that same moment, the client should look if there is a
+           previously saved cookie for that server; if there is one,
+           delete it from the file, and send it to the server, unless it 
+           is more than 10 minutes old.
+
+--> The client will remember cookies from previous connections and will
+	always send the cookie upon the next connection.  The client makes
+	no attempt to determine if the cookie is "too old" to be used.
+	The client makes no attempt to store cookies on a permanent medium
+	for use by a subsequent client.
+
+Last updated, November 17, 1998.

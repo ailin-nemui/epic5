@@ -1,0 +1,6 @@
+on msg * {
+	fe ($1-) x {
+		eval echo ---- $x ----
+	}
+}
+

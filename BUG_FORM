@@ -1,0 +1,76 @@
+
+If you should see what you think to be a bug, please fill out
+this form and send to the following address(es):
+
+		list@epicsol.org
+
+And we will try to get back to you as soon as we can, and will
+correct the bug if it is at all possible.
+
+
+Please remember when reporting a bug that information counts.  Since
+we have not yet mastered the skill of mind-reading, you should not
+assume that we know anything about your situation.  We have seen some 
+things that look absolutely strange to us, but are perfectly normal 
+to the user. It is best for you to take the stance that we dont know 
+that much about your operating system, so you should try to start at 
+the beginning and clue us in.  Thanks a bunch. |8^)
+
+
+Question one:  Please describe your computer system
+	Hardware type?
+	Operating System? (try uname -a for most, or uname -X for SCO)
+	Your compiler (include version, if known)
+	What scripts/script packs you run (phoenix, uus, superpack, etc)
+	Anything else you think might be helpful.
+
+Question two:  Where does your problem occur?
+	[ ]  Configure time (dies while running configure)
+	[ ]  Compiler time (dies when you type 'make')
+	[ ]  Run time (You got a "CRITICAL PROTECTION ERROR")
+	[ ]  Run time (You got a "PANIC" message)
+	[ ]  Run time (non-fatal logic bug)
+
+If it is configure time, please include a cut and paste of everything
+that appears on your screen from the line when you type "./configure"
+until you see your prompt again.  Please do not leave out any
+lines, for any line may contain very important information!
+
+
+If it is at compile time, please include a cut and paste of
+everything that appears on your screen from the line when you 
+type 'make' until you see your prompt again.  Please do not leave
+out any lines, for any line may contain very important information!
+
+
+If it is at run time, please try to describe as best you can what
+you were doing when the client malfunctioned.  Had you just run 
+a command?  Can you duplicate the error?  What seems to cause the
+error in your best judgement?  Have you found anything else
+that independantly causes this same problem?
+
+If you know how to use a debugger, it would be helpful if you 
+can get a stack trace, and cut and paste it here.
+
+
+
+
+Please include any other information that you think we should know about.
+
+
+
+
+
+Thank you for taking the time to fill this out.  We hope that this form
+will make finding and fixing bugs much less of a headache for both
+us and you.  We will reply to you as soon as possible (probably the next
+school day), and we will let you know when we've fixed the problem and
+give you a patch for it.
+
+Author(s): Originally by Michael Sandroff, 
+	   Current copyright holder is Matthew Green
+	   EPIC is developed by EPIC Software Labs for the EPIC project.
+	   "EPIC" and "ESL" are trademarks of the EPIC project.
+Product:  ircII-EPIC4pre2 (see UPDATES) 
+
+<EOF>

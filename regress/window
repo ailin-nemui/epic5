@@ -1,0 +1,41 @@
+alias disptime_one xecho -window $0 [^Btime^O] $strftime(%Y-%m-%d %a %H:%M)
+alias disptime_all {
+    foreach disptime_wins w {
+        if (winvisible($w)==-1) {
+            ^assign -disptime_wins[$w]
+        } elsif (disptime_wins[$w]) {
+            disptime_one $w
+        }
+    }
+}
+on #^timer 431 * disptime_all
+#on #^timer 431 *:30 disptime_all
+alias disptime {
+    @disptime_wins[$winnum()] = [t]
+    xecho -window $winnum() [time] $strftime(%Y-%m-%d %a %H:%M)
+    parsekey refresh_status
+}
+alias disptimeoff {
+    assign -disptime_wins[$winnum()]
+    parsekey refresh_status
+}
+
+alias dtminon {
+    @dt_min[$winnum()] = [m]
+    parsekey refresh_status
+}
+alias dtminoff {
+    ^assign -dt_min[$winnum()]
+    parsekey refresh_status
+}
+on ^window * if (dt_min[$0]) {
+    if (dt_min_last[$0] != [$Z]) {
+        echo $cparse(%r$strftime(%M)%b+%n)$1-
+        @dt_min_last[$0] = Z
+    } else {
+        echo $cparse(%b+++%n)$1-
+    }
+} else {
+    echo $1-
+}
+

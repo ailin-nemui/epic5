@@ -1,0 +1,21 @@
+# columnate some output 
+alias format {
+	assign IRCII.word $1
+	if ( @IRCII.word < [$0] )
+		{ assign function_return $([-$0]1) }
+		{ assign function_return $1 }
+}
+
+on ^public * echo $format(11 <$0>) $2-
+on ^send_public * {
+	if ( C == [$0] )
+		{ echo $format(11 <$N>) $1- }
+		{ echo $format(10 <$N):$0> $1- }
+}
+on ^public_other * echo $format(10 <$0):$1> $2-
+on ^msg * echo $format(11 *$0*) $1-
+on ^send_msg * echo -> $format(8 *$0*) $1-
+on ^notice * echo $format(11 -$(0)-) $1-
+on ^send_notice * echo -> $format(8 -$(0)-) $1-
+on ^wall * echo $format(11 #$0#) $1-
+set continued_line             

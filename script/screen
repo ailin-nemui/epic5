@@ -1,0 +1,46 @@
+# screen - makes ircII like screen.
+# original idea from Avalon (avalon@coombs.anu.edu.au)
+# this script by phone (phone@coombs.anu.edu.au)
+#
+# Lines like
+# 
+# window [new] level NONE hold [off|on] scroll [off|on] chan #some_channel
+# window hide
+#
+# Are useful for setting up these windows, with the first occurance not
+# having a "new" ..and the last not having a "hide".
+#
+# ^X1 - ^X0 swap windows 1 to 10.
+# ^Xa goes to the last window..
+# ^Xc creates a new window
+# ^Xk kills the current window, and swaps it with another.
+# ^Xl lists the windows.
+# ^Xn swaps the next window (in refnumbers)
+# ^Xp swap the previous window (in refnumbers)
+# ^X  (space) swap the next window.
+# ^XC clears all windows visible
+
+alias win.newwin window new hide;window swap last
+
+bind ^X meta3_character
+bind meta3-1 parse_command window swap 1
+bind meta3-2 parse_command window swap 2
+bind meta3-3 parse_command window swap 3
+bind meta3-4 parse_command window swap 4
+bind meta3-5 parse_command window swap 5
+bind meta3-6 parse_command window swap 6
+bind meta3-7 parse_command window swap 7
+bind meta3-8 parse_command window swap 8
+bind meta3-9 parse_command window swap 9
+bind meta3-0 parse_command window swap 10
+bind meta3-a parse_command window swap last
+bind meta3-c parse_command win.newwin
+bind meta3-^c parse_command win.newwin
+bind meta3-k parse_command window killswap
+bind meta3-l parse_command window list
+bind meta3-n swap_next_window
+bind meta3-p swap_previous_window
+bind meta3-^` swap_next_window       # does a space, for some reason.
+bind meta3-C parse_command clear all
+bind meta3-^X parse_command window swap last
+

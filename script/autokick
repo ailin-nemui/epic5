@@ -1,0 +1,34 @@
+/* Autokick and kicknban 1993, 1994 */
+
+load guh
+@ auto.kicks = []
+
+alias autokick {
+	if (is_on($0) == [$0]) {
+		push auto.kicks $uh($0)
+	} {
+		echo *** $0 is not on irc right now
+	}
+}
+alias unkick {
+	if (is_on($0) == [$0]) {
+		@ auto.kicks = remw($uh($0) $auto.kicks)
+	} {
+		echo *** $0 is not on irc right now
+	}
+}
+
+^on #-join -30 '% % \\[$auto.kicks\\]' {
+	kick $1 $0 autokicked
+	echo *** AUTOKICK PROTECTION ACTIVATED AGAINST $0
+	mode $1 +b *!$2
+}
+
+alias kicknban {
+	kick * $0 $1
+	if (onchannel($0 $C)) {
+		mode * +b *!$userhost($0)
+	}
+}
+
+#hop'94

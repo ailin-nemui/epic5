@@ -1,0 +1,93 @@
+/*
+ * Repeat -- a zillion and one ways to do the classic alias...
+ */
+
+/*
+ * REPEAT is now a built in command in EPIC3.003 and up.
+ * That means you dont need this script any more.
+ */
+
+/*
+ * Modern format:
+ * Requires: EPIC4pre0 and up
+ * Method: word-selection
+ * Can be called recursively?  Yes.
+ */
+: alias repeat {
+: 	fe ($jot(1 $0)) aa { $1- }
+: }
+
+/*
+ * Modern format:
+ * Requires: EPIC3pre5 and up
+ * Method: word-selection
+ * Can be called recursively?  Yes.
+ */
+: alias repeat {
+: 	stack push assign aaa.r
+: 	fe ($jot(1 $0)) aaa.r { $1- }
+: 	stack pop assign aaa.r
+: }
+
+
+/*
+ * Modern format:
+ * Requires ircII2.2.9+6 and up.
+ * Method: word-selection
+ * Can be called recursively?  No.
+ */
+: alias repeat fe ($jot(1 $0)) r.x {$1-}
+
+
+/*
+ * Modern format:
+ * Requires ircII2.2.9+5 and up.
+ * Method: iterative
+ * Can be called recursively?  No.
+ */
+: alias repeat for (@rx=0,$rx < [$0],@rx++) {$1-}
+
+
+
+/*
+ * New format:
+ * Requires 2.2pre6 and up
+ * Method: iterative
+ * Can be called recursively?  No.
+ */
+: alias repeat {
+: 	@ rep.cnt = [$0]
+: 	while ( rep.cnt > 0 )
+: 	{
+: 		$1-
+: 		@rep.cnt = rep.cnt - 1
+: 	}
+: 	^assign -rep.cnt
+: }
+
+
+/*
+ * New format:
+ * Requires 2.2pre6 and up
+ * Method: recursion
+ * Can be called recursively? Yes.
+ */
+: alias repeat {
+: 	if ([$0] > 0)
+: 	{
+: 		$1-
+: 		repeat ${[$0]-1} $1-
+: 	}
+: }
+
+
+/*
+ * Old format:
+ * Requires 2.2pre5 or older.
+ * Method: Iterative
+ * Can be called recursively?  No.
+ */
+: alias repeat ^assign repcnt $0;while "$repcnt>$0" "decrement $1-";^assign -repcnt
+: alias decrement $*;^assign repcnt ${$repcnt-1}
+
+#hop'96

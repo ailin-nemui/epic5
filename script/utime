@@ -1,0 +1,53 @@
+#
+# Here's the plan
+# Kanan wants a way to manipulate $utime() values.  Because theyre 
+# thrown about as two words, we cant actually have the math parser
+# handle them automatically (alas), and writing built in functions
+# just to do this seems like overkill.  So i wrote these aliases for
+# his (and your) convenience.  Use this is as a starting point for you
+# own alias needs, or drop me a line if you have more suggestions.
+# (jnelson@acronet.net)
+#
+
+#
+# Add two utimes.
+#
+alias utime_add 
+{
+	local sec,usec
+	@ sec = [$0] + [$2]
+	@ usec = [$1] + [$3]
+	if (usec > 1000000)
+	{
+		@ usec -= 1000000, sec++
+	}
+	@ function_return = sec ## [ ] ## right(6 000000$usec)
+}
+
+#
+# Subtract two utimes.  The LARGER utime (the more recent) should
+# be the first one specified
+#
+alias utime_sub
+{
+	local sec,usec
+	@ sec = [$0] - [$2]
+	@ usec = [$1] - [$3]
+	if (usec < 0)
+	{
+		@ usec += 1000000, sec--
+	}
+	@ function_return = sec ## [ ] ## right(6 000000$usec)
+}
+
+#
+# You pass a utime as $0, $1, and this function will return
+# how many useconds have passed since then.
+#
+alias time_since
+{
+	local now $utime()
+	@ function_return = utime_sub($now $0 $1)
+}
+
+#hop'97

@@ -1,0 +1,7 @@
+# Older implementations of dcc will need this script to handle the
+# new DCC REJECT syntax of EPIC3pre1 and upwards
+#
+on ctcp_reply "% DCC REJECT % *" {
+	dcc close $3 $0
+	echo Closing DCC $3 to $0 at $0's request
+}
