@@ -81,6 +81,7 @@ void 	add_to_server_list (const char *server, int port, const char *password, co
 		s->name = m_strdup(server);
 		s->itsname = (char *) 0;
 		s->password = (char *) 0;
+		s->group = NULL;
 		s->away = (char *) 0;
 		s->version_string = (char *) 0;
 		s->server2_8 = 0;
