@@ -93,6 +93,8 @@ int	connectory (int family, const char *host, const char *port)
 		fd = -1;
 		continue;
 	    }
+	    else
+		break;
 	}
 
 	Freeaddrinfo(results);
