@@ -1,4 +1,4 @@
-/* $EPIC: array.c,v 1.6 2002/08/26 17:20:14 crazyed Exp $ */
+/* $EPIC: array.c,v 1.7 2002/08/30 16:51:25 crazyed Exp $ */
 /*
  * array.c -- Karll's Array Suite
  *
@@ -342,7 +342,6 @@ void		move_index (an_array *array, long oldindex, long newindex)
 long		find_index (an_array *array, long item)
 {
 	long search = 0;
-	long *bs;
 
 	if (array->size >= ARRAY_THRESHOLD)
 	{
@@ -356,7 +355,7 @@ long		find_index (an_array *array, long item)
 		search++;
 
 	if (search < 0 || search >= array->size)
-		say("ERROR in find_index(): ! 0 <= %d < %d", search, array->size);	
+		say("ERROR in find_index(): ! 0 <= %ld < %ld", search, array->size);	
 	return search;
 }
 
@@ -543,8 +542,8 @@ BUILT_IN_FUNCTION((fn), input)                                                \
                                                                               \
 	RETURN_INT(match);                                                    \
 }
-MATCHITEM(function_matchitem, input, array->item[index], 0)
-MATCHITEM(function_rmatchitem, array->item[index], input, 0)
+MATCHITEM(function_matchitem, input, array->item[index], {})
+MATCHITEM(function_rmatchitem, array->item[index], input, {})
 MATCHITEM(function_gettmatch, input, array->item[index], {if (match >= 0) RETURN_STR(array->item[match])})
 #undef MATCHITEM
 
@@ -574,8 +573,8 @@ BUILT_IN_FUNCTION((fn), input)                                                  
                                                                                      \
 	RETURN_MSTR(result);                                                         \
 }
-GET_MATCHES(function_getmatches, input, array->item[index], 0)
-GET_MATCHES(function_getrmatches, array->item[index], input, 0)
+GET_MATCHES(function_getmatches, input, array->item[index], {})
+GET_MATCHES(function_getrmatches, array->item[index], input, {})
 GET_MATCHES(function_igetmatches, input, array->item[array->index[index]], SORT_INDICES(array))
 GET_MATCHES(function_igetrmatches, array->item[array->index[index]], input, SORT_INDICES(array))
 #undef GET_MATCHES
@@ -623,7 +622,7 @@ BUILT_IN_FUNCTION((fn), input)                                               \
 	}                                                                    \
 	RETURN_MSTR(retval);                                                 \
 }
-GETITEM(function_getitem, array->item[item], 0)
+GETITEM(function_getitem, array->item[item], {})
 GETITEM(function_igetitem, array->item[array->index[item]], SORT_INDICES(array))
 #undef GETITEM
 

@@ -1,4 +1,4 @@
-/* $EPIC: functions.c,v 1.80 2002/08/26 17:20:14 crazyed Exp $ */
+/* $EPIC: functions.c,v 1.81 2002/08/30 16:51:25 crazyed Exp $ */
 /*
  * functions.c -- Built-in functions for ircII
  *
@@ -2818,7 +2818,6 @@ BUILT_IN_FUNCTION(function_ascii, word)
 BUILT_IN_FUNCTION(function_which, word)
 {
 	char *file1;
-	FILE *fp;
 
 	GET_STR_ARG(file1, word);
 	file1 = path_search(file1, (word && *word) ? word

@@ -1,4 +1,4 @@
-/* $EPIC: names.c,v 1.30 2002/08/26 17:20:14 crazyed Exp $ */
+/* $EPIC: names.c,v 1.31 2002/08/30 16:51:25 crazyed Exp $ */
 /*
  * names.c: This here is used to maintain a list of all the people currently
  * on your channel.  Seems to work 
@@ -983,7 +983,7 @@ static	char	modemap[256];
 	else if (!prefix != !oprefix || !chanmodes != !ochanmodes);
 	else if (prefix && oprefix && strcmp(prefix, oprefix));
 	else if (chanmodes && ochanmodes && strcmp(chanmodes, ochanmodes));
-	else return modemap[mode];
+	else return modemap[(int)mode];
 	malloc_strcpy(&oprefix, prefix);
 	malloc_strcpy(&ochanmodes, chanmodes);
 
@@ -995,7 +995,7 @@ static	char	modemap[256];
 	if (!prefix || *prefix++ != '(')
 		prefix = "ohv";
 	for (; *prefix && *prefix != ')'; prefix++)
-		modemap[*prefix] = modetype;
+		modemap[(int)*prefix] = modetype;
 	modetype++;
 
 	if (!chanmodes)
@@ -1004,9 +1004,9 @@ static	char	modemap[256];
 		if (*chanmodes == ',')
 			modetype++;
 		else
-			modemap[*chanmodes] = modetype;
+			modemap[(int)*chanmodes] = modetype;
 
-	return modemap[mode];
+	return modemap[(int)mode];
 }
 
 /*
@@ -1015,8 +1015,6 @@ static	char	modemap[256];
  */
 static void	decifer_mode (const char *modes, Channel *chan)
 {
-	char		*limit = 0;
-	const char	*person;
 	int		add = 0;
 	char		*rest;
 	Nick		*nick;
@@ -1040,7 +1038,7 @@ static void	decifer_mode (const char *modes, Channel *chan)
 			case 5:
 				if (!add) break;
 			case 4: case 3: case 2:
-				if (arg = next_arg(rest, &rest))
+				if ((arg = next_arg(rest, &rest)))
 					break;
 				yell("WARNING:  Mode parser or server is BROKE.  Mode=%c%c args: %s"
 						, add?'+':'-', *mode_str, rest);

@@ -1,4 +1,4 @@
-/* $EPIC: parse.c,v 1.24 2002/08/26 17:20:14 crazyed Exp $ */
+/* $EPIC: parse.c,v 1.25 2002/08/30 16:51:25 crazyed Exp $ */
 /*
  * parse.c: handles messages from the server.   Believe it or not.  I
  * certainly wouldn't if I were you. 
@@ -920,7 +920,7 @@ static void strip_modes (char *from, char *channel, char *line)
 				if (mag == '-')
 					break;
 			case 4: case 3: case 2:
-				if (arg = safe_new_next_arg(copy, &copy))
+				if ((arg = safe_new_next_arg(copy, &copy)))
 					break;
 			default:
 				/* We already get a yell from this in decifer_mode() */

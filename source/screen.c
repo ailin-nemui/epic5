@@ -1,4 +1,4 @@
-/* $EPIC: screen.c,v 1.31 2002/08/12 16:41:11 wd Exp $ */
+/* $EPIC: screen.c,v 1.32 2002/08/30 16:51:25 crazyed Exp $ */
 /*
  * screen.c
  *
@@ -771,7 +771,7 @@ u_char *	normalize_string (const u_char *str, int logical)
 	if (!(nds_max	= get_int_var(ND_SPACE_MAX_VAR)))
 		nds_max = -1;
 	if (normalize_permit_all_attributes)	/* XXXX */
-		reverse = bold = blink = underline = altchar = color = allow_c1 = 1;
+		reverse = bold = blink = underline = altchar = color = allow_c1 = boldback = 1;
 	else
 	{
 		reverse 	= get_int_var(INVERSE_VIDEO_VAR);

@@ -1,4 +1,4 @@
-/* $EPIC: server.c,v 1.66 2002/08/09 15:10:16 jnelson Exp $ */
+/* $EPIC: server.c,v 1.67 2002/08/30 16:51:25 crazyed Exp $ */
 /*
  * server.c:  Things dealing with that wacky program we call ircd.
  *
@@ -1851,8 +1851,6 @@ void	register_server (int ssn_index, const char *nickname)
 #ifdef HAVE_SSL
 	char*		cert_issuer;
 	char*		cert_subject;
-	int		alg;
-	int		signed_alg;
 	X509		*server_cert;
 	EVP_PKEY	*server_pkey;
 #endif
