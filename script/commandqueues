@@ -19,17 +19,17 @@ alias scmd xeval -s $0 {$1-}
 # the last time seconds.
 #
 alias 1cmd {
-	@:foo=encode($tolower($1-))
-	@:eserv=encode($tolower($servername()))
-	if ([$0]<=(time()-last[1cmd][$eserv][$foo])) {
-		@last[1cmd][$eserv][$foo]=time()
+	@ :foo = encode($tolower($1-))
+	@ :eserv = encode($tolower($servername()))
+	if (time() - last[1cmd][$eserv][$foo] >= [$0]) {
+		@ last[1cmd][$eserv][$foo] = time()
 		$1-
 	}
-	if ((!rand(10))&&time()!=last[1cmd][$eserv]) {
-		@last[1cmd][$eserv]=time()
+	if ((!rand(10)) && time() != last[1cmd][$eserv]) {
+		@ last[1cmd][$eserv] = time()
 		foreach last[1cmd][$eserv] bar {
-			if (time()>last[1cmd][$eserv][$bar]) {
-				@last[1cmd][$eserv][$bar]=
+			if (last[1cmd][$eserv][$bar] < time()) {
+				@ last[1cmd][$eserv][$bar] = []
 			}
 		}
 	}
@@ -52,30 +52,30 @@ alias 1cmd {
 fe (q push fq unshift) cmd op {
 	alias ${cmd}1cmd unless (match("$2-" $qcmd[$servernum()][$1]))\{1cmd \$0 ${cmd}cmd \$1-\}
 	alias ${cmd}cmd {
-		if (0>servernum()) {
+		if (servernum() < 0) {
 			$1-
-		} elsif (1<#) {
-			@:bar=[$1-]
-			@${op}(qcmd.${servernum()}.$0 \"$msar(gr/\\/\\\\/\"/\\\"/bar)\")
+		} elsif (# > 1) {
+			@ :bar = [$1-]
+			@ ${op}(qcmd.${servernum()}.$0 \"$msar(gr/\\/\\\\/\"/\\\"/bar)\")
 			^timer -ref qcmd.$servernum() 5 qcmd
 		} else {
-			@:eserv=encode($tolower($servername($servernum())))
+			@ :eserv = encode($tolower($servername($servernum())))
 			if (isconnected()) {
-				@:foo=
-				if (1==#) {
-					@foo=[$0]
-				} elsif (0==#) {
+				@ :foo = []
+				if (# == 1) {
+					@ foo = [$0]
+				} elsif (# == 0) {
 					foreach qcmd[$servernum()] bar {
-						@foo=foo?foo:bar
+						@ foo = foo ? foo : bar
 					}
 				}
 				if (@foo) {
 					^timer -ref qcmd.$servernum() 5 qcmd
-					@:bar=shift(qcmd[$servernum()][$foo])
+					@ :bar = shift(qcmd[$servernum()][$foo])
 					eval $msar(gr/\\\\/\\/\\\"/\"/bar)
 				}
 			}
 		}
 	}
-	@aliasctl(alias set ${cmd}cmd $sar(g/\${op}/${op}/$aliasctl(alias get ${cmd}cmd)))
+	@ aliasctl(alias set ${cmd}cmd $sar(g/\${op}/${op}/$aliasctl(alias get ${cmd}cmd)))
 }
