@@ -1407,7 +1407,7 @@ BUILT_IN_FUNCTION(function_servers, input)
 	int count;
 	char *retval = NULL;
 
-	if (input || *input)
+	if (!input || !*input)
 	{
 		retval = create_server_list();
 		RETURN_MSTR(retval);
