@@ -1,4 +1,4 @@
-/* $EPIC: screen.c,v 1.75 2004/03/17 16:50:30 jnelson Exp $ */
+/* $EPIC: screen.c,v 1.76 2004/03/18 01:04:03 jnelson Exp $ */
 /*
  * screen.c
  *
@@ -3021,7 +3021,7 @@ void 	do_screens (int fd)
 			if (dgets(screen->control, buffer, IO_BUFFER_SIZE, 1, NULL) < 0)
 			{
 				kill_screen(screen);
-				yell("Error from remote screen [%d].", dgets-errno);
+				yell("Error from remote screen [%d].", dgets_errno);
 				continue;
 			}
 

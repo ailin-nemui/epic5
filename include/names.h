@@ -41,6 +41,7 @@
 	void	list_channels		(void);
 	void	switch_channels		(char, char *);
 	Char *	window_current_channel	(int, int);
+	char *	window_all_channels	(int, int);
 	int	is_current_channel	(Char *, int);
 	void	destroy_server_channels	(int);
 	Char *	what_channel		(Char *);

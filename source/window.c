@@ -1,4 +1,4 @@
-/* $EPIC: window.c,v 1.107 2004/03/17 15:28:34 jnelson Exp $ */
+/* $EPIC: window.c,v 1.108 2004/03/18 01:04:03 jnelson Exp $ */
 /*
  * window.c: Handles the organzation of the logical viewports (``windows'')
  * for irc.  This includes keeping track of what windows are open, where they
@@ -802,7 +802,7 @@ static void 	remove_window_from_screen (Window *window, int hide)
 void	recalculate_window_positions (Screen *screen)
 {
 	Window	*tmp;
-	int	top;
+	short	top;
 
 	if (!screen)
 		return;		/* Window is hidden.  Dont bother */
@@ -1348,7 +1348,7 @@ static	int	restart;
 	while (traverse_all_windows(&tmp))
 	{
 		if (tmp->cursor > tmp->display_size)
-			panic("uaw: window [%d]'s cursor [%d] is off the display [%d]", tmp->refnum, tmp->cursor, tmp->display_size);
+			panic("uaw: window [%d]'s cursor [%hd] is off the display [%d]", tmp->refnum, tmp->cursor, tmp->display_size);
 	}
 
 	recursion--;
@@ -2412,7 +2412,7 @@ int	unhold_a_window (Window *w)
 	if (!w->holding_top_of_display)
 		return 0;				/* ok, whatever */
 
-	slider = (w->hold_slider * w->display_size) / 100;
+	slider = ((int)w->hold_slider * w->display_size) / 100;
 	for (i = 0; i < slider; i++)
 	{
 		if (w->holding_top_of_display == w->display_ip)
@@ -2522,7 +2522,7 @@ static int 	is_window_name_unique (char *name)
 	return (1);
 }
 
-char	*get_waiting_channels_by_window (Window *win)
+static char	*get_waiting_channels_by_window (Window *win)
 {
 	WNickList *nick = win->waiting_chans;
 	char *stuff = NULL;
@@ -2667,16 +2667,22 @@ static int 	get_number (const char *name, char **args)
  * accordingly.  Returns 0 if all went well, -1 if a bogus or missing value
  * was specified 
  */
-static int 	get_boolean (const char *name, char **args, int *var)
+static int 	get_boolean (const char *name, char **args, short *var)
 {
 	char	*arg;
 	int	newval;
 
 	newval = *var;
-	if (!(arg = next_arg(*args, args)) || do_boolean(arg, &newval))
+	if (!(arg = next_arg(*args, args)))
+	{
+		say("Window %s is %s", name, onoff[newval]);
+		return -1;
+	}
+
+	if (do_boolean(arg, &newval))
 	{
 		say("Value for %s must be ON, OFF, or TOGGLE", name);
-		return (-1);
+		return -1;
 	}
 
 	/* The say() MUST BE DONE BEFORE THE ASSIGNMENT! */
@@ -2789,7 +2795,8 @@ static Window *window_channel (Window *window, char **args)
 {
 	char		*arg;
 	char 		*chans, *passwds;
-	const char 	*chan, *pass;
+	char 		*chan, *pass;
+	const char 	*c;
 	char 		*chans_to_join, *passes_to_use;
 	int		l;
 
@@ -2802,8 +2809,8 @@ static Window *window_channel (Window *window, char **args)
 
 	if (!(passwds = new_next_arg(*args, args)))
 	{
-	    if ((chan = get_echannel_by_refnum(window->refnum)))
-		say("The current channel is %s", chan);
+	    if ((c = get_echannel_by_refnum(window->refnum)))
+		say("The current channel is %s", c);
 	    else
 		say("There are no channels in this window");
 	    return window;
@@ -2817,12 +2824,12 @@ static Window *window_channel (Window *window, char **args)
 
 	if (!my_strnicmp(chans, "-i", 2))
 	{
-		if (!(chan = get_server_invite_channel(window->server)))
+		if (!(c = get_server_invite_channel(window->server)))
 		{
 			say("You have not been invited to a channel!");
 			return window;
 		}
-		chans = LOCAL_COPY(chan);		/* Whatever */
+		chans = LOCAL_COPY(c);		/* Whatever */
 	}
 
 	chans_to_join = passes_to_use = NULL;
@@ -2938,6 +2945,7 @@ static Window *window_delete (Window *window, char **args)
 static Window *window_describe (Window *window, char **args)
 {
 	const char *chan;
+	char *c;
 
 if (window->name)
 	say("Window %s (%u)", 
@@ -2949,7 +2957,7 @@ else
 				window->server, 
 				get_server_name(window->server));
 	say("\tScreen: %p",	window->screen);
-	say("\tGeometry Info: [%d %d %d %d %d %d %d %d]", 
+	say("\tGeometry Info: [%hd %hd %d %d %hd %d %d %d]", 
 				window->top, window->bottom, 
 				0, window->display_size,
 				window->cursor, 
@@ -2961,13 +2969,21 @@ else
 
 	chan = get_echannel_by_refnum(window->refnum);
 	say("\tCurrent channel: %s", chan ? chan : "<None>");
+	c = window_all_channels(window->refnum, window->server);
+	say("\tChannels in this window: %s", c ? c : "<None>");
+	new_free(&c);
 
 	if (window->waiting_chans)
 	{
-		WNickList *tmp;
-		say("\tWaiting channels list:");
-		for (tmp = window->waiting_chans; tmp; tmp = tmp->next)
-			say("\t  %s", tmp->nick);
+	    WNickList *tmp;
+	    size_t clue = 0;
+
+	    c = NULL;
+	    for (tmp = window->waiting_chans; tmp; tmp = tmp->next)
+		malloc_strcat_word_c(&c, space, tmp->nick, &clue);
+
+	    say("\tWaiting channels list: %s", c);
+	    new_free(&c);
 	}
 
 	say("\tQuery User: %s", 
@@ -2975,10 +2991,15 @@ else
 				window->query_nick : "<None>");
 	if (window->nicks)
 	{
-		WNickList *tmp;
-		say("\tName list:");
-		for (tmp = window->nicks; tmp; tmp = tmp->next)
-			say("\t  %s", tmp->nick);
+	    WNickList *tmp;
+	    size_t clue = 0;
+
+	    c = NULL;
+	    for (tmp = window->nicks; tmp; tmp = tmp->next)
+		malloc_strcat_word_c(&c, space, tmp->nick, &clue);
+
+	    say("\tName list: %s", c);
+	    new_free(&c);
 	}
 
 	say("\tPrompt: %s", 
@@ -3010,9 +3031,9 @@ else
 
 	say("\tHold mode is %s", 
 				onoff[window->holding_top_of_display ? 1 : 0]);
-	say("\tHold Slider perecentage is %d",
+	say("\tHold Slider perecentage is %hd",
 				window->hold_slider);
-	say("\tUpdate %H on status bar every %d lines",
+	say("\tUpdate %%H on status bar every %hd lines",
 				window->hold_interval);
 
 	say("\tFixed mode is %s", 
@@ -3218,7 +3239,7 @@ static Window *window_hold_interval (Window *window, char **args)
  */
 static Window *window_hold_mode (Window *window, char **args)
 {
-	int	hold_mode;
+	short	hold_mode;
 	int	slider;
 	int	i;
 
@@ -4099,7 +4120,7 @@ static Window *window_remove (Window *window, char **args)
 /* This is a NO-OP now -- every window is a scratch window */
 static	Window *window_scratch (Window *window, char **args)
 {
-	int scratch = 0;
+	short scratch = 0;
 
 	if (get_boolean("SCRATCH", args, &scratch))
 		return NULL;
@@ -4110,7 +4131,7 @@ static	Window *window_scratch (Window *window, char **args)
 /* XXX - Need to come back and fix this... */
 Window *window_scroll (Window *window, char **args)
 {
-	int 	scroll = 0;
+	short 	scroll = 0;
 
 	if (get_boolean("SCROLL", args, &scroll))
 		return NULL;

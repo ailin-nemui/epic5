@@ -1,4 +1,4 @@
-/* $EPIC: status.c,v 1.39 2004/03/15 03:24:52 jnelson Exp $ */
+/* $EPIC: status.c,v 1.40 2004/03/18 01:04:03 jnelson Exp $ */
 /*
  * status.c: handles the status line updating, etc for IRCII 
  *
@@ -63,7 +63,7 @@
  * Maximum number of "%" expressions in a status line format.  If you change
  * this number, you must manually change the snprintf() in make_status 
  */
-#define STATUS_FUNCTION(x) Char * x (Window *window, int map, int key)
+#define STATUS_FUNCTION(x) Char * x (Window *window, short map, char key)
 #define MAX_FUNCTIONS 40
 #define MAX_STATUS_USER 39
 
@@ -133,9 +133,9 @@ int     status_updates_permitted = 0;
  * specifying the map.
  */
 struct status_formats {
-	int	map;
+	short	map;
 	char 	key;
-	Char	*(*callback_function)(Window *, int, int);
+	Char	*(*callback_function)(Window *, short, char);
 	char	**format_var;
 	int	format_set;
 };
@@ -289,7 +289,7 @@ static void	build_status_format (Status *s, int k)
 {
 	char	buffer[BIG_BUFFER_SIZE + 1];
 	int	cp;
-	int	map;
+	short	map;
 	char	key;
 	unsigned	i;
 	Char	*raw = s->line[k].raw;
@@ -1299,7 +1299,7 @@ STATUS_FUNCTION(status_user)
 
 	/* XXX Ick.  Oh well. */
 	struct dummystruct {
-		int		map;
+		short		map;
 		char		key;
 		enum VAR_TYPES	var;
 	} lookup[] = {

@@ -234,6 +234,7 @@ enum VAR_TYPES {
 	BUILT_IN_COMMAND(setcmd);
 
 	int	do_boolean 		(char *, int *);
+	int	do_short_boolean 	(char *, short *);
 	int	get_int_var 		(enum VAR_TYPES);
 	char *	get_string_var 		(enum VAR_TYPES);
 	double	get_float_var		(enum VAR_TYPES);

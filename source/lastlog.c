@@ -1,4 +1,4 @@
-/* $EPIC: lastlog.c,v 1.37 2004/03/16 00:24:33 jnelson Exp $ */
+/* $EPIC: lastlog.c,v 1.38 2004/03/18 01:04:03 jnelson Exp $ */
 /*
  * lastlog.c: handles the lastlog features of irc. 
  *
@@ -45,6 +45,15 @@
 #include "numbers.h"
 #include "functions.h"
 #include <regex.h>
+
+typedef struct	lastlog_stru
+{
+	int	level;
+	char	*target;
+	char	*msg;
+	struct	lastlog_stru	*older;
+	struct	lastlog_stru	*newer;
+}	Lastlog;
 
 static int	show_lastlog (Lastlog **l, int *skip, int *number, Mask *level_mask, char *match, regex_t *reg, int *max, const char *target);
 

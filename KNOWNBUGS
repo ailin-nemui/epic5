@@ -180,3 +180,12 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Revamp /window describe so it includes a lot more useful info.
 * Wrap send_ctcp in message_from()s to send to the right window.
 * Add /xecho -f, which suppersses widnow notify events (%F)
+* Move Lastlog definition to lastlog.c, leave stub behind for window.h
+* Add window_all_channels(), return all windows for channel from names.c
+* Change boolean vartype for windows and status: int -> short.
+* Add do_short_boolean(), like do_boolean(), but it takes a short.
+* Make the default server quit message "Leaving"
+* Have /window describe show all the channels in a window.
+* Have /window describe show nicks, channels in flat list, not one per line.
+* Make sure to use the server's default quit message when closing it.
+* Create a prototype of atoll() for compat systems.

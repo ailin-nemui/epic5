@@ -16,16 +16,16 @@ struct 	WindowStru;
 typedef struct  status_line {
         char *		raw;
         char *		format;
-        const char *	(*func[MAX_FUNCTIONS]) (struct WindowStru *, int, int);
-	int		map[MAX_FUNCTIONS];
-	int		key[MAX_FUNCTIONS];
+        const char *	(*func[MAX_FUNCTIONS]) (struct WindowStru *, short, char);
+	short		map[MAX_FUNCTIONS];
+	char		key[MAX_FUNCTIONS];
         int   		count;
         char *		result;
 } Status_line;
 
 typedef struct  status_stuff {          
         Status_line     line[3];
-        int             double_status;
+        short           double_status;
         char            *special;
 } Status;
 

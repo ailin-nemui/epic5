@@ -50,4 +50,25 @@ int	unsetenv (const char *);
 char *	my_realpath (const char *, char x[MAXPATHLEN]);
 #endif
 
+#ifndef HAVE_ATOLL
+# ifdef HAVE_LONG_LONG
+#  ifdef HAVE_STRTOLL
+#   define HAVE_ATOLL_REPLACEMENT
+long long       atoll (const char *str);
+#  else
+#   ifdef HAVE_ATOQ
+#    define HAVE_ATOLL_REPLACEMENT
+long long       atoll (const char *str);
+#   endif
+#  endif
+# endif
+# ifndef HAVE_ATOLL_REPLACEMENT
+#  ifdef HAVE_LONG_LONG
+long long       atoll (const char *str);
+#  else
+long    atoll (const char *str);
+#  endif
+# endif
+#endif
+
 #endif

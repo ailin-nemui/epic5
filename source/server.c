@@ -1,4 +1,4 @@
-/* $EPIC: server.c,v 1.129 2004/03/17 03:51:53 jnelson Exp $ */
+/* $EPIC: server.c,v 1.130 2004/03/18 01:04:03 jnelson Exp $ */
 /*
  * server.c:  Things dealing with that wacky program we call ircd.
  *
@@ -725,7 +725,7 @@ int 	server_list_size (void)
  * Direction is 1 to go forward, -1 to go backward. 
  * Other values will lose.
  */
-int	next_server_in_group (int oldserv, int direction)
+static int	next_server_in_group (int oldserv, int direction)
 {
 	int	newserv;
 	int	counter;
@@ -1167,7 +1167,7 @@ void	flush_server (int servnum)
  * 	the results when they're done using the data (usually when we 
  *	successfully connect, or when we run out of addrs)
  */
-int	grab_server_address (int server)
+static int	grab_server_address (int server)
 {
 	Server *s;
 	AI	hints, *results;
@@ -1224,10 +1224,10 @@ int	grab_server_address (int server)
  * through getaddrinfo() results, possibly on multiple asynchronous
  * occasions.  So what we do is restart from where we left off before.
  */
-int	connect_next_server_address (int server)
+static int	connect_next_server_address (int server)
 {
 	Server *s;
-	int	err, fd;
+	int	err = -1, fd = -1;
 	SS	localaddr;
 	socklen_t locallen;
 	const AI *	ai;
@@ -1426,6 +1426,10 @@ void	close_server (int refnum, const char *message)
 		return;
 	}
 
+	if (!message)
+		if (!(message = get_server_quit_message(refnum)))
+			message = "Leaving";
+
 	was_registered = is_server_registered(refnum);
 
 	set_server_status(refnum, SERVER_CLOSING);
@@ -1550,7 +1554,7 @@ const char *	get_umode (int refnum)
 	return retval;		/* Eliminates a specious warning from gcc. */
 }
 
-void	add_user_mode (int refnum, int mode)
+static void	add_user_mode (int refnum, int mode)
 {
 	Server *s;
 	char c, *p, *o;
@@ -1592,7 +1596,7 @@ void	add_user_mode (int refnum, int mode)
 	strlcpy(s->umode, new_umodes, 54);
 }
 
-void	remove_user_mode (int refnum, int mode)
+static void	remove_user_mode (int refnum, int mode)
 {
 	Server *s;
 	char c, *o, *p;
@@ -2443,7 +2447,7 @@ SACCESSOR(nick, sent_nick, NULL)
 SACCESSOR(text, sent_body, NULL)
 SACCESSOR(nick, redirect, NULL)
 SACCESSOR(group, group, "<default>")
-SACCESSOR(message, quit_message, "get_server_quit_message")
+SACCESSOR(message, quit_message, get_string_var(QUIT_MESSAGE_VAR))
 SACCESSOR(cookie, cookie, NULL)
 SACCESSOR(ver, version_string, NULL)
 
@@ -2843,7 +2847,8 @@ char 	*serverctl 	(char *input)
 			num = get_server_port(refnum);
 			RETURN_INT(num);
 		} else if (!my_strnicmp(listc, "QUIT_MESSAGE", len)) {
-			ret = get_server_quit_message(refnum);
+			if (!(ret = get_server_quit_message(refnum)))
+				ret = empty_string;
 			RETURN_STR(ret);
 		} else if (!my_strnicmp(listc, "SSL", len)) {
 			num = get_server_try_ssl(refnum);

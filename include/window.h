@@ -55,30 +55,30 @@ typedef	struct	WindowStru
 	int	server;			/* Server that win is connected to */
 	int	last_server;		/* Last server connected to */
 	int	priority;		/* "Current window Priority" */
-	int	top;			/* SCREEN line for top of window */
-	int	bottom;			/* SCREEN line for bottom of window */
-	int	cursor;			/* WINDOW line where the cursor is */
-	int	noscrollcursor;		/* Where the next line goes */
-	int	absolute_size;		/* True if window doesnt rebalance */
-	int	scroll;			/* True if the window scrolls */
-	int	change_line;		/* True if this is a scratch window */
-	int	old_size;		/* 
+	short	top;			/* SCREEN line for top of window */
+	short	bottom;			/* SCREEN line for bottom of window */
+	short	cursor;			/* WINDOW line where the cursor is */
+	short	noscrollcursor;		/* Where the next line goes */
+	short	absolute_size;		/* True if window doesnt rebalance */
+	short	scroll;			/* True if the window scrolls */
+	short	change_line;		/* True if this is a scratch window */
+	short	old_size;		/* 
 					 * Usu. same as display_size except
 					 * right after a screen resize, and
 					 * is used as a flag for resize_display
 					 */
-	int	update;			/* True if window display is dirty */
-	unsigned miscflags;		/* Miscellaneous flags. */
-	int	beep_always;		/* True if a beep to win always beeps */
+	short	update;			/* True if window display is dirty */
+	short   miscflags;		/* Miscellaneous flags. */
+	short	beep_always;		/* True if a beep to win always beeps */
 	Mask	notify_mask;		/* the notify mask.. */
 	Mask	window_mask;		/* Lastlog level for the window */
-	int	skip;			/* Whether window should be skipped */
-	int	columns;		/* How wide we are when hidden */
-	int	swappable;		/* Can it be swapped in or out? */
-	int	scrolladj;		/* Push back top-of-win on grow? */
+	short	skip;			/* Whether window should be skipped */
+	short	columns;		/* How wide we are when hidden */
+	short	swappable;		/* Can it be swapped in or out? */
+	short	scrolladj;		/* Push back top-of-win on grow? */
 
 	/* Input and Status stuff */
-	char	*prompt;		/* Current EXEC prompt for window */
+	char *	prompt;			/* Current EXEC prompt for window */
 	Status	status;			/* Current status line info */
 
 	/* Display stuff */
@@ -105,7 +105,7 @@ typedef	struct	WindowStru
 	Display *display_ip;		/* End of the scrollback buffer */
 	int	display_buffer_size;	/* How big the scrollback buffer is */
 	int	display_buffer_max;	/* How big its supposed to be */
-	int	display_size;		/* How big the window is - status */
+	short	display_size;		/* How big the window is - status */
 
 	Display *scrolling_top_of_display;
 	int	scrolling_distance_from_display_ip;
@@ -117,21 +117,9 @@ typedef	struct	WindowStru
 	int	scrollback_distance_from_display_ip;
 
 	int	display_counter;
-	int	hold_slider;
+	short	hold_slider;
 
-#if 0
-		*top_of_display, 	/* Where the viewport starts */
-		*display_ip,		/* Where next line goes in rite() */
-		*scrollback_point;	/* Where we went into scrollback */
-
-	int	hold_mode;		/* True if we want to hold stuff */
-	int	autohold;		/* True if we are in temp hold mode */
-
-	int	lines_held;		/* Lines currently being held */
-	int	distance_from_display_ip; /* How far t_o_d is from d_ip */
-#endif
-
-	int	hold_interval;		/* How often to update status bar */
+	short	hold_interval;		/* How often to update status bar */
 	int	last_lines_held;	/* Last time we updated "lines held" */
 
 	/* Channel stuff */
@@ -145,8 +133,8 @@ typedef	struct	WindowStru
 
 
 	/* /LASTLOG stuff */
-	Lastlog	*lastlog_newest;	/* pointer to top of lastlog list */
-	Lastlog	*lastlog_oldest;	/* pointer to bottom of lastlog list */
+struct lastlog_stru *lastlog_newest;	/* pointer to top of lastlog list */
+struct lastlog_stru *lastlog_oldest;	/* pointer to bottom of lastlog list */
 	Mask	lastlog_mask;		/* The LASTLOG_LEVEL, determines what
 					 * messages go to lastlog */
 	int	lastlog_size;		/* number of messages in lastlog. */
@@ -154,7 +142,7 @@ typedef	struct	WindowStru
 
 
 	/* /WINDOW LOG stuff */
-	int	log;			/* True if file logging is on */
+	short	log;			/* True if file logging is on */
 	char	*logfile;		/* window's logfile name */
 	FILE	*log_fp;		/* file pointer for the log file */
 
@@ -166,7 +154,7 @@ struct	WindowStru	*prev;		/* Window above us on screen */
 	/* XXX - Help stuff */
 struct	HelpStru	*helper;	/* Info about current /help */
 
-	int		deceased;	/* Set when the window is killed */
+	short		deceased;	/* Set when the window is killed */
 }	Window;
 
 /*

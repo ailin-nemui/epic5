@@ -11,20 +11,12 @@
 
 #include "levels.h"
 
-typedef struct	lastlog_stru
-{
-	int	level;
-	char	*target;
-	char	*msg;
-	struct	lastlog_stru	*older;
-	struct	lastlog_stru	*newer;
-}	Lastlog;
-
 /* 
  * Window and Lastlog are mutually referential.  So we cant include
  * window.h here. so to break the loop we forward declare Window here.
  */
 struct WindowStru;
+struct lastlog_stru;
 
 extern	Mask	current_window_mask;
 extern	Mask	new_server_lastlog_mask;

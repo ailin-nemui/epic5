@@ -1,4 +1,4 @@
-/* $EPIC: network.c,v 1.55 2004/03/16 16:24:23 jnelson Exp $ */
+/* $EPIC: network.c,v 1.56 2004/03/18 01:04:03 jnelson Exp $ */
 /*
  * network.c -- handles stuff dealing with connecting and name resolving
  *
@@ -89,8 +89,6 @@ int	client_connect (SA *l, socklen_t ll, SA *r, socklen_t rl)
 	int	fd = -1;
 	int	family = AF_UNSPEC;
 	int	err;
-	fd_set	set;
-	Timeval	to;
 
 	if (ll == 0)
 		l = NULL;
