@@ -71,7 +71,7 @@
 
 
 /*
- * This function is sued to save all the current aliases to a global
+ * This function is used to save all the current aliases to a global
  * file.  This is used by /SAVE and /ABORT.
  */
 	void	save_assigns		(FILE *, int);
