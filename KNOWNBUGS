@@ -566,3 +566,4 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Remove some #define's from config.h that are not referenced any longer.
 * Remove #define QUIT_ON_OPERATOR_KILL because 1 line of script defeats it.
 * Add some debugging stuff, try to trap lost dcc filedescs.
+* Release EPIC5-0.0.4 (Scurrilous)
