@@ -310,7 +310,7 @@ static	void	show_timer (const char *command)
 	say("%-10s %-10s %-7s %s", "Timer", "Seconds", "Events", "Command");
 	for (tmp = PendingTimers; tmp && (tmp->callback == NULL); tmp = tmp->next)
 	{
-		time_left = time_diff(tmp->time, current);
+		time_left = time_diff(current, tmp->time);
 		if (time_left < 0)
 			time_left = 0;
 		say("%-10s %-8.2f %-7ld %s", tmp->ref, time_left, tmp->events, (char *)tmp->command);
