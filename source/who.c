@@ -1,4 +1,4 @@
-/* $EPIC: who.c,v 1.38 2004/10/04 23:56:20 jnelson Exp $ */
+/* $EPIC: who.c,v 1.39 2004/10/05 00:00:21 jnelson Exp $ */
 /*
  * who.c -- The WHO queue.  The ISON queue.  The USERHOST queue.
  *
@@ -282,6 +282,8 @@ static void who_queue_pop (int refnum)
 	}
 	while (piggyback);
 
+	if (s->who_queue == NULL)
+		WHO_DEBUG("WHO QUEUE for server [%d] is now empty", refnum);
 	return;
 }
 
@@ -1702,7 +1704,6 @@ static int	who_queue_debug (void *unused)
 	double d;
 static	int	last_refnum_checked = 0;
 
-yell("Who timer");
 	for (refnum = 0; refnum < number_of_servers; refnum++)
 	{
 	    if (!(s = get_server(refnum)))
