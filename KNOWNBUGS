@@ -233,3 +233,7 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * I'd like to have other things use this, like maybe /xeval -s.
 * Fix a bug with /dcc chat nick -6
 * Hook up /dcc send nick -6 [filenames] 
+* Allow $fexist/$fsize/$stat("" <anything>) to work. (ce)
+* Fix tabkey.ce to take commands that have commands as args, like /eval.
+* Fix bug with userhost caching.
+* epic4-1.1.11 (vacuous)

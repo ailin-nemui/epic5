@@ -1,4 +1,4 @@
-/* $EPIC: numbers.c,v 1.46 2003/03/24 04:21:14 jnelson Exp $ */
+/* $EPIC: numbers.c,v 1.47 2003/03/26 07:26:07 jnelson Exp $ */
 /*
  * numbers.c: handles all those strange numeric response dished out by that
  * wacky, nutty program we call ircd 
@@ -455,6 +455,9 @@ void 	numbered_command (const char *from, const char *comm, char const **ArgList
 			else
 			    channel_not_waiting(copy, from_server);
 		    }
+		    else
+			    whobase(from_server, copy, add_user_who, 
+						add_user_end);
 #if 0
 		    goto END;
 #endif

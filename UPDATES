@@ -1,5 +1,16 @@
 EPIC4-1.2.0
 
+*** News 03/26/2002 -- Enhancements to $fsize(), $fexist(), $stat()
+	If the first word passed to any of these three functions is 
+	the empty string, then the rest of the argument list ($1-) is
+	taken as a single filename without any funny business from epic.
+	This might be useful if you want to work with a file that has
+	a space in it.
+
+	Example:
+		$fexist("" This song has spaces.mp3)
+		$fsize("" one two three.jpg)
+
 *** News 03/23/2002 -- /DEFER now server sensitive
 	When you do /DEFER <commands>, it will remember the current server
 	and it will restore to that server when the commands are executed.
