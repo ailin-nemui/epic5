@@ -1,4 +1,4 @@
-/* $EPIC: commands.c,v 1.96 2004/06/27 14:33:36 jnelson Exp $ */
+/* $EPIC: commands.c,v 1.97 2004/06/27 17:19:37 jnelson Exp $ */
 /*
  * commands.c -- Stuff needed to execute commands in ircII.
  *		 Includes the bulk of the built in commands for ircII.
@@ -363,7 +363,7 @@ void	init_commands (void)
 {
 	int	i;
 
-	for (i = 0; i < NUMBER_OF_COMMANDS; i++)
+	for (i = 0; irc_command[i].name; i++)
 	    add_builtin_cmd_alias(irc_command[i].name, irc_command[i].func);
 }
 

@@ -1,4 +1,4 @@
-/* $EPIC: functions.c,v 1.169 2004/06/27 15:14:18 jnelson Exp $ */
+/* $EPIC: functions.c,v 1.170 2004/06/27 17:19:37 jnelson Exp $ */
 /*
  * functions.c -- Built-in functions for ircII
  *
@@ -767,7 +767,7 @@ void	init_functions (void)
 {
 	int	i;
 
-	for (i = 0; i < NUMBER_OF_FUNCTIONS; i++)
+	for (i = 0; built_in_functions[i].name; i++)
 		add_builtin_func_alias(built_in_functions[i].name, built_in_functions[i].func);
 }
 
