@@ -35,6 +35,8 @@ KNOWN ERRATA (eg, bugs, or unresolved requests):
 * IPV6-over-dcc, i promised morty i would.
 * Add a script to implement /set suppress_server_motd.  Someone missed it. doh!
 * ON WHO hook not thrown in correct window.
+* $glob() and $globi() tend to choke on wierdly named filenames, or rather, on
+  wierd masks.
 
 [See http://www.epicsol.org/PROJECTS for things to come in the future]
 [See http://www.epicsol.org/CHANGELOG for things that changed in the past]
@@ -121,3 +123,8 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Add /LOG <refnum> ACTIVITY which updates activity timer w/o writing to log.
 * Add $logctl([GET|SET] <refnum> ACTIVITY) to get or set the activity timer. 
 * Add new script, "suppressmotd" to implemenet /set suppress_server_motd
+* Tentative change to $glob*() making them "dequote" the glob before looking
+  for it.  This probably isn't a real answer.  I get the feeling that a new
+  pair of functions that make just one search as keerf suggested is probably
+  the answer.
+* Fix for a leak (and an occasional coredump) in /list.

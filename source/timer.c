@@ -1,4 +1,4 @@
-/* $EPIC: timer.c,v 1.20 2003/01/12 21:23:04 jnelson Exp $ */
+/* $EPIC: timer.c,v 1.21 2003/02/05 21:48:12 crazyed Exp $ */
 /*
  * timer.c -- handles timers in ircII
  *
@@ -691,57 +691,60 @@ char *	timerctl (char *input)
 	char *	refstr;
 	char *	listc;
 	Timer *	t;
+	int	len;
 
-	GET_STR_ARG(listc, input)
-	if (!my_strnicmp(listc, "REFNUMS", 6)) {
+	GET_STR_ARG(listc, input);
+	len = strlen(input);
+	if (!my_strnicmp(listc, "REFNUM", len)) {
+		GET_STR_ARG(refstr, input);
+		if (!(t = get_timer(refstr)))
+			RETURN_EMPTY;
+		RETURN_STR(t->ref);
+	} else if (!my_strnicmp(listc, "REFNUMS", len)) {
 		char *	retval = NULL;
 		size_t	clue = 0;
 
 		for (t = PendingTimers; t; t = t->next)
 			m_sc3cat(&retval, space, t->ref, &clue);
 		RETURN_MSTR(retval);
-	} else if (!my_strnicmp(listc, "REFNUM", 5)) {
-		GET_STR_ARG(refstr, input);
-		if (!(t = get_timer(refstr)))
-			RETURN_EMPTY;
-		RETURN_STR(t->ref);
-	} else if (!my_strnicmp(listc, "ADD", 2)) {
+	} else if (!my_strnicmp(listc, "ADD", len)) {
 		RETURN_EMPTY;		/* XXX - Not implemented yet. */
-	} else if (!my_strnicmp(listc, "DELETE", 2)) {
+	} else if (!my_strnicmp(listc, "DELETE", len)) {
 		GET_STR_ARG(refstr, input);
 		if (!(t = get_timer(refstr)))
 			RETURN_EMPTY;
 		if (t->command)
 			RETURN_EMPTY;
 		RETURN_INT(remove_timer(refstr));
-	} else if (!my_strnicmp(listc, "GET", 2)) {
+	} else if (!my_strnicmp(listc, "GET", len)) {
 		GET_STR_ARG(refstr, input);
 		if (!(t = get_timer(refstr)))
 			RETURN_EMPTY;
 
 		GET_STR_ARG(listc, input);
-		if (!my_strnicmp(listc, "TIMEOUT", 1)) {
+		len = strlen(listc);
+		if (!my_strnicmp(listc, "TIMEOUT", len)) {
 			return m_sprintf("%ld %ld", (long) t->time.tv_sec,
 						    (long) t->time.tv_usec);
-		} else if (!my_strnicmp(listc, "COMMAND", 1)) {
+		} else if (!my_strnicmp(listc, "COMMAND", len)) {
 			if (t->command)
 				RETURN_EMPTY;
 			RETURN_STR(t->command);
-		} else if (!my_strnicmp(listc, "SUBARGS", 1)) {
+		} else if (!my_strnicmp(listc, "SUBARGS", len)) {
 			if (t->command)
 				RETURN_EMPTY;
 			RETURN_STR(t->subargs);
-		} else if (!my_strnicmp(listc, "REPEATS", 1)) {
+		} else if (!my_strnicmp(listc, "REPEATS", len)) {
 			RETURN_INT(t->events);
-		} else if (!my_strnicmp(listc, "INTERVAL", 1)) {
+		} else if (!my_strnicmp(listc, "INTERVAL", len)) {
 			return m_sprintf("%ld %ld", (long) t->interval.tv_sec,
 						    (long) t->interval.tv_usec);
-		} else if (!my_strnicmp(listc, "SERVER", 1)) {
+		} else if (!my_strnicmp(listc, "SERVER", len)) {
 			RETURN_INT(t->server);
-		} else if (!my_strnicmp(listc, "WINDOW", 1)) {
+		} else if (!my_strnicmp(listc, "WINDOW", len)) {
 			RETURN_INT(t->window);
 		}
-	} else if (!my_strnicmp(listc, "SET", 2)) {
+	} else if (!my_strnicmp(listc, "SET", len)) {
 		GET_STR_ARG(refstr, input);
 		if (!(t = get_timer(refstr)))
 			RETURN_EMPTY;
@@ -751,7 +754,8 @@ char *	timerctl (char *input)
 			RETURN_EMPTY;
 
 		GET_STR_ARG(listc, input);
-		if (!my_strnicmp(listc, "TIMEOUT", 1)) {
+		len = strlen(listc);
+		if (!my_strnicmp(listc, "TIMEOUT", len)) {
 			time_t	tv_sec;
 			long	tv_usec;
 
@@ -759,16 +763,16 @@ char *	timerctl (char *input)
 			GET_INT_ARG(tv_usec, input);
 			t->time.tv_sec = tv_sec;
 			t->time.tv_usec = tv_usec;
-		} else if (!my_strnicmp(listc, "COMMAND", 1)) {
+		} else if (!my_strnicmp(listc, "COMMAND", len)) {
 			malloc_strcpy((char **)&t->command, input);
-		} else if (!my_strnicmp(listc, "SUBARGS", 1)) {
+		} else if (!my_strnicmp(listc, "SUBARGS", len)) {
 			malloc_strcpy(&t->subargs, input);
-		} else if (!my_strnicmp(listc, "REPEATS", 1)) {
+		} else if (!my_strnicmp(listc, "REPEATS", len)) {
 			long	repeats;
 
 			GET_INT_ARG(repeats, input);
 			t->events = repeats;
-		} else if (!my_strnicmp(listc, "INTERVAL", 1)) {
+		} else if (!my_strnicmp(listc, "INTERVAL", len)) {
 			time_t	tv_sec;
 			long	tv_usec;
 
@@ -776,12 +780,12 @@ char *	timerctl (char *input)
 			GET_INT_ARG(tv_usec, input);
 			t->interval.tv_sec = tv_sec;
 			t->interval.tv_usec = tv_usec;
-		} else if (!my_strnicmp(listc, "SERVER", 1)) {
+		} else if (!my_strnicmp(listc, "SERVER", len)) {
 			int	refnum;
 
 			GET_INT_ARG(refnum, input);
 			t->server = refnum;
-		} else if (!my_strnicmp(listc, "WINDOW", 1)) {
+		} else if (!my_strnicmp(listc, "WINDOW", len)) {
 			int	winref;
 
 			GET_INT_ARG(winref, input);

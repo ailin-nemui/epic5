@@ -25,8 +25,8 @@ alias unban uniban $0!$uh($0)
 # remove all bans matching or matched by pattern
 alias uniban 
 {
-	local unbanlist
-	local p $0
+	^local unbanlist
+	^local p $0
 
 	stack push on 367
 	stack push on 368

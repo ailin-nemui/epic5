@@ -1,5 +1,27 @@
 EPIC4-1.2.0
 
+*** News 02/06/2003 -- New functions in script/functions
+	Did to $timerctl() what was done to $serverctl() a few pages down.
+	As with that command, this will change the way that subcommands
+	are selected in ambiguous cases.
+
+*** News 02/06/2003 -- New functions in script/functions
+	$min() and $max() (implemented elsewhere)
+	$regpattern() simulates $pattern() with regexes.
+	$regfilter() simulates $filter() with regexes.
+	$index2wword() simulates $index2word() but ignores quotes.
+	$jotm() for $jot()ing multiple ranges.
+	$jotc() for $jot()ing character ranges.
+	$maskm() simulates $mask() with multiple n!u@h args.
+	$randn() returns multiple random numbers.
+	$replace(xy y 1 2 3) returns "x1 x2 x3".
+	$shuffle*() returns all arguments shuffled randomly.
+	$uniqd() simulates the shell command "uniq -d".
+	$wordn() emulates $word() but permits multiple word specs.
+	$cut() simulates the "cut" shell command".
+	$chvoices() returns voiced nicks on a channel.
+	$chnovoices() returns unvoiced nicks on a channel.
+
 *** News 02/03/2003 -- Implement /SET SUPPRESS_SERVER_MOTD in script
 	If you were a previous user of /SET SUPPRESS_SERVER_MOTD ON,
 	then you will want to add 

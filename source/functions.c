@@ -1,4 +1,4 @@
-/* $EPIC: functions.c,v 1.99 2003/01/31 23:50:18 jnelson Exp $ */
+/* $EPIC: functions.c,v 1.100 2003/02/05 21:48:12 crazyed Exp $ */
 /*
  * functions.c -- Built-in functions for ircII
  *
@@ -3702,7 +3702,11 @@ BUILT_IN_FUNCTION(function_glob, word)
 	memset(&globbers, 0, sizeof(glob_t));
 	while (word && *word)
 	{
+		size_t	len;
+
 		GET_STR_ARG(path, word);
+		len = strlen(path);
+		path = dequote_it(path,&len);
 		expand_twiddle(path, path2);
 
 		if ((numglobs = glob(path2, GLOB_MARK, NULL, &globbers)) < 0)
@@ -3720,6 +3724,7 @@ BUILT_IN_FUNCTION(function_glob, word)
 				m_sc3cat(&retval, space, globbers.gl_pathv[i], &rvclue);
 		}
 		globfree(&globbers);
+		new_free(&path);
 	}
 
 	RETURN_IF_EMPTY(retval);
@@ -3738,7 +3743,11 @@ BUILT_IN_FUNCTION(function_globi, word)
 	memset(&globbers, 0, sizeof(glob_t));
 	while (word && *word)
 	{
+		size_t	len;
+
 		GET_STR_ARG(path, word);
+		len = strlen(path);
+		path = dequote_it(path,&len);
 		expand_twiddle(path, path2);
 
 		if ((numglobs = bsd_glob(path2, GLOB_MARK | GLOB_INSENSITIVE, 
@@ -3757,6 +3766,7 @@ BUILT_IN_FUNCTION(function_globi, word)
 				m_sc3cat(&retval, space, globbers.gl_pathv[i], &rvclue);
 		}
 		bsd_globfree(&globbers);
+		new_free(&path);
 	}
 
 	RETURN_IF_EMPTY(retval);

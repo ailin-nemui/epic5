@@ -153,7 +153,7 @@ alias alias.foo alias $*;alias $sar(g/globi/glob/$sar(g/filei/file/$*))
 alias.foo tabkey.method.filei (args) {
 	@ :f0 = :f1 = globi("$shift(args)*")
 	while (numwords($f0) == 1 && f0 =~ [*/]) {
-		@ f0 = globi($f0*)
+		@ f0 = globi("$f0*")
 	}
 	return ${f0 ? f0 : f1}
 }

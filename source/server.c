@@ -1,4 +1,4 @@
-/* $EPIC: server.c,v 1.89 2003/01/31 23:50:18 jnelson Exp $ */
+/* $EPIC: server.c,v 1.90 2003/02/05 21:48:12 crazyed Exp $ */
 /*
  * server.c:  Things dealing with that wacky program we call ircd.
  *
@@ -177,6 +177,8 @@ void 	add_to_server_list (const char *server, int port, const char *password, co
 		s->sent_nick = NULL;
 		s->sent_body = NULL;
 
+		s->funny_match = NULL;
+
 		s->ssl_enabled = FALSE;
 		s->ssl_fd = NULL;
 
@@ -265,6 +267,7 @@ static 	void 	remove_from_server_list (int i)
 	new_free(&s->recv_nick);
 	new_free(&s->sent_nick);
 	new_free(&s->sent_body);
+	new_free(&s->funny_match);
 	destroy_notify_list(i);
 	destroy_005(i);
 
