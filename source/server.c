@@ -1,4 +1,4 @@
-/* $EPIC: server.c,v 1.107 2003/11/21 04:38:40 jnelson Exp $ */
+/* $EPIC: server.c,v 1.108 2003/11/21 05:57:38 jnelson Exp $ */
 /*
  * server.c:  Things dealing with that wacky program we call ircd.
  *
@@ -871,7 +871,7 @@ BUILT_IN_COMMAND(servercmd)
 				set_server_ssl_enabled(i, TRUE);
 
 			server_reconnects_to(j, i);
-			reconnect(j, 0);
+			reconnect(j, 1);
 			window_check_servers();
 		}
 		else
@@ -1444,8 +1444,8 @@ int	reconnect (int oldserv, int samegroup)
 		j = (i + newserv) % number_of_servers;
 		if (!(s = get_server(j)))
 			continue;
-		if (samegroup && oldserv != NOSERV &&
-			my_stricmp(get_server_group(oldserv), 
+		if (samegroup && newserv != NOSERV &&
+			my_stricmp(get_server_group(newserv), 
 				   get_server_group(j)))
 			continue;
 		if (newserv != oldserv && j == oldserv)

@@ -22,3 +22,5 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Enclose a few more dcc outputs in the target nick context.
 * Fix panic when you did /clear + <scrollback> + full page of output.
 * Fix typo that broke /notify on servers other than refnum 0
+* Make /server <host> honor server groups if can't connect to <host>
+* Make reconnects use the server group of NEW server not OLD server.
