@@ -1,4 +1,4 @@
-/* $EPIC: vars.c,v 1.15 2002/07/17 22:52:53 jnelson Exp $ */
+/* $EPIC: vars.c,v 1.16 2002/07/29 22:27:05 jnelson Exp $ */
 /*
  * vars.c: All the dealing of the irc variables are handled here. 
  *
@@ -201,7 +201,6 @@ static	IrcVariable irc_variable[] =
 	{ "OUTPUT_REWRITE",		STR_TYPE_VAR,	0, NULL, NULL, 0, 0 },
 	{ "PAD_CHAR",			CHAR_TYPE_VAR,	DEFAULT_PAD_CHAR, NULL, NULL, 0, 0 },
 	{ "QUIT_MESSAGE",		STR_TYPE_VAR,   0, NULL, NULL, 0, 0 },
-	{ "RANDOM_LOCAL_PORTS",		BOOL_TYPE_VAR,	DEFAULT_RANDOM_LOCAL_PORTS, NULL, NULL, 0, 0 },
 	{ "RANDOM_SOURCE",		INT_TYPE_VAR,	DEFAULT_RANDOM_SOURCE, NULL, NULL, 0, 0 },
 	{ "REALNAME",			STR_TYPE_VAR,	0, NULL, set_realname, 0, 0 },
 	{ "REVERSE_STATUS_LINE",	BOOL_TYPE_VAR,	DEFAULT_REVERSE_STATUS_LINE, NULL, update_all_status, 0, 0 },

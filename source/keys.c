@@ -1,4 +1,4 @@
-/* $EPIC: keys.c,v 1.4 2002/07/17 22:52:52 jnelson Exp $ */
+/* $EPIC: keys.c,v 1.5 2002/07/29 22:27:05 jnelson Exp $ */
 /*
  * keys.c:  Keeps track of what happens whe you press a key.
  *
@@ -1424,7 +1424,7 @@ void	do_stack_bind (int type, char *arg)
 	{
 		/* determine what is to be popped, and see if we can find it.
 		 * if we can't, gripe. */
-		BindStack *bsp, *bsptmp;
+		BindStack *bsp, *bsptmp = NULL;
 
 		if ((meta = parse_key(arg, &key)) == -1) {
 		    yell("could not parse key %s", arg);
@@ -1436,7 +1436,7 @@ void	do_stack_bind (int type, char *arg)
 		    return;
 		}
 
-		for (bsp = bind_stack;bsp;bsptmp = bsp, bsp = bsp->next) {
+		for (bsp = bind_stack; bsp; bsptmp = bsp, bsp = bsp->next) {
 			if (bsp->meta == meta && bsp->key == key) {
 				/* a winner */
 				if (KEY(meta, key) == NULL) {

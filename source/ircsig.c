@@ -1,4 +1,4 @@
-/* $EPIC: ircsig.c,v 1.3 2002/07/17 22:52:52 jnelson Exp $ */
+/* $EPIC: ircsig.c,v 1.4 2002/07/29 22:27:05 jnelson Exp $ */
 /*
  * ircsig.c: has a `my_signal()' that uses sigaction().
  *
@@ -27,7 +27,7 @@
  * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
  * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
-
+ */
 /*
  * written by matthew green, 1993.
  *

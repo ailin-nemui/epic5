@@ -4,9 +4,9 @@ dnl except those bits attributed otherwise.
 dnl thanks to the screen 3.3 configure.in for giving me examples to
 dnl work from and steal ;)
 dnl
-dnl @(#)$Id: configure.in,v 1.18 2002/07/26 17:10:07 jnelson Exp $
+dnl @(#)$Id: configure.in,v 1.19 2002/07/29 22:27:04 jnelson Exp $
 
-AC_REVISION($Revision: 1.18 $)dnl
+AC_REVISION($Revision: 1.19 $)dnl
 AC_INIT(source/irc.c)
 AC_CONFIG_HEADER(include/defs.h)
 
@@ -206,6 +206,7 @@ AC_CHECK_FUNC(strlcpy, AC_DEFINE(HAVE_STRLCPY),)
 AC_CHECK_FUNC(strlcat, AC_DEFINE(HAVE_STRLCAT),)
 AC_CHECK_FUNC(stpcpy, AC_DEFINE(HAVE_STPCPY),)
 AC_CHECK_FUNC(sysctlbyname, AC_DEFINE(HAVE_SYSCTLBYNAME),)
+AC_CHECK_FUNC(getservbyport, AC_DEFINE(HAVE_GETSERVBYPORT),)
 AC_MSG_CHECKING(for stpcpy in string.h)
 AC_EGREP_HEADER(stpcpy, string.h, AC_DEFINE(STPCPY_DECLARED)
 	AC_MSG_RESULT(yes), AC_MSG_RESULT(no),)

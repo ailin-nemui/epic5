@@ -1,4 +1,4 @@
-/* $EPIC: network.c,v 1.39 2002/07/26 17:36:39 jnelson Exp $ */
+/* $EPIC: network.c,v 1.40 2002/07/29 22:27:05 jnelson Exp $ */
 /*
  * network.c -- handles stuff dealing with connecting and name resolving
  *
@@ -248,8 +248,7 @@ int	client_connect (SA *l, socklen_t ll, SA *r, socklen_t rl)
  * USAGE: Establish a local passive (listening) socket at the given port.
  * ARGS: family - AF_INET is the only supported argument.
  *       port - The port to establish the connection upon.  May be 0, 
- *		which requests any open port.  /SET RANDOM_LOCAL_PORTS
- *		is honored only if port is 0.
+ *		which requests any open port.
  *	 storage - Pointer to a sockaddr structure big enough for the
  *		   specified family.  Upon success, it will be filled with
  *		   the local sockaddr of the new connection.

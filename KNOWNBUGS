@@ -10,19 +10,17 @@ KNOWN ERRATA (eg, bugs, or unresolved requests):
 * The mangler might expand things more than 3 times -- possible
   interference from the attribute parser?  caused by many ^v's.
 * Add /timer -delete_for_window or something to avoid window switch warnings?
-* Conditionalize on AF_INET6 support for those who don't have it.
-* Need an AI_NUMERICHOST
-* Need to #define addrinfo addrinfo__compat
-* Check for uses of ISA6 
 * After calling connectory(), try to output meaningful error messages, not 
   just blindly calling my_strerror(errno).
+* scrollback/scrollforward/scrollend should be controlled by /window verbs
+  and not solely by keybindings.
+* Plus something that scrolls back to a certain word in scrollback, for adm.
  
 [See http://www.epicsol.org/PROJECTS for things to come in the future]
 [See http://www.epicsol.org/CHANGELOG for things that changed in the past]
 
 THE CHANGELOG SINCE THE LAST RELEASE:
 -------------------------------------
-* Added /stack (push|pop|list) bind (wd)
 * Add $killpid() as a favor for Liandrin.
 * Really fix wserv this time.
 * Add GETADDR_DOES_NOT_DO_AF_UNIX for KAME, which doesn't do AF_UNIX
@@ -110,3 +108,22 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Fixed NULL deref if you did /FE with no arguments
 * Some minor cleanup work in dcc.c, restructure of dcc_open.
 * Don't outright restrict DCC handshakes to only IPv4.  Getting closer!
+* Fixes to /fe (ce)
+* Fix new_next_arg() not to throw away arguments after "" empty argument. (ce)
+* Add malloc_strcat_c and m_strcat_ues_c, "clued" versions of base funcs. (ce)
+* Fix the variable expansion routines to use the "clued" versions above. (ce)
+* Fix "commandqueues" script, move last.qcmd.* -> 1cmd.* (ce)
+* Add command completion to 'tabkey.ce' (ce)
+* Add /stack [push|pop|list] bind. (wd)
+* Trying to get the copyright notices under control now...
+* Add support for +D channel mode (rb srgeeo)
+* Fix /defer to pass commands to parse_line() instead of parse_command().
+* Add support for $* to travel along with /defer
+* This permits /defer {command;command;...} to work
+* Add "gailib", a "get(addr|name)info" implementation from the WIDE project
+* This permits linking on ipv4-only systems. Huzzah!
+* Fix a bunch of places where ipv4 systems failed to compile
+* Fix compat setenv() so it doesn't depend on m_sprintf().
+* Add check for getservbyname() to configure stuff.
+* Remove /SET RANDOM_LOCAL_PORTS now that it's gone away.
+* Fix some compile issues in gailib.c, ircsig.c, and keys.c

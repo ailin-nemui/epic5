@@ -1,5 +1,5 @@
 /*
- * @(#)$Id: acconfig.h,v 1.14 2002/07/26 17:10:07 jnelson Exp $
+ * @(#)$Id: acconfig.h,v 1.15 2002/07/29 22:27:04 jnelson Exp $
  */
 
 /*
@@ -280,4 +280,7 @@
 
 /* Define this if you have struct sockaddr_in6 */
 #undef HAVE_STRUCT_SOCKADDR_IN6
+
+/* Define this if you have getservbyport() */
+#undef HAVE_GETSERVBYPORT
 

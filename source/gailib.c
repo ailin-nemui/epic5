@@ -28,6 +28,7 @@
  */
 #include "irc_std.h"
 
+#undef INET6
 #ifndef INET6
 
 /*
@@ -65,11 +66,8 @@ static struct afd {
 
 #define PTON_MAX	4
 
-static int get_name (const char *, struct afd *,
-			  AI **, char *, AI *,
-			  int);
-static int get_addr (const char *, int, AI **,
-			AI *, int);
+static int get_name (const char *, struct afd *, AI **, char *, AI *, int);
+static int get_addr (const char *, int, AI **, AI *, int);
 static int str_isnumber (const char *);
 	
 static char *ai_errlist[] = {
@@ -102,8 +100,7 @@ if (pai->ai_flags & AI_CANONNAME) {\
 
 #define GET_AI(ai, afd, addr, port) {\
 	char *p;\
-	if (((ai) = (AI *)malloc(sizeof(AI) + ((afd)->a_socklen)))\
-	    == NULL) {\
+	if (((ai) = (AI *)malloc(sizeof(AI) + ((afd)->a_socklen))) == NULL) {\
 		error = EAI_MEMORY;\
 		goto free;\
 	}\
@@ -119,10 +116,7 @@ if (pai->ai_flags & AI_CANONNAME) {\
 
 #define ERR(err) { error = (err); goto bad; }
 
-static int inet_pton__compat (af, hostname, pton)
-	int af;
-	const char *hostname;
-	void *pton;
+static int inet_pton__compat (int af, const char *hostname, void *pton)
 {
 	struct in_addr in;
 	int d1, d2, d3, d4;
@@ -142,11 +136,7 @@ static int inet_pton__compat (af, hostname, pton)
 	return 1;
 }
 
-static const char * inet_ntop__compat (af, addr, numaddr, numaddr_len)
-	int af;
-	const void *addr;
-	char *numaddr;
-	size_t numaddr_len;
+static const char * inet_ntop__compat (int af, const void *addr, char *numaddr, size_t numaddr_len)
 {
 	unsigned long x = ntohl(*(unsigned long*)addr);
 	snprintf(numaddr, numaddr_len, "%d.%d.%d.%d",
@@ -156,16 +146,14 @@ static const char * inet_ntop__compat (af, addr, numaddr, numaddr_len)
 }
 
 
-const char * gai_strerror(ecode)
-	int ecode;
+const char * gai_strerror__compat (int ecode)
 {
 	if (ecode < 0 || ecode > EAI_MAX)
 		ecode = EAI_MAX;
 	return ai_errlist[ecode];
 }
 
-void freeaddrinfo(ai)
-	AI *ai;
+void freeaddrinfo__compat (AI *ai)
 {
 	AI *next;
 
@@ -178,8 +166,7 @@ void freeaddrinfo(ai)
 	} while ((ai = next) != NULL);
 }
 
-static int str_isnumber(p)
-	const char *p;
+static int str_isnumber (const char *p)
 {
 	char *q = (char *)p;
 	while (*q) {
@@ -192,10 +179,7 @@ static int str_isnumber(p)
 
 
 /***************************************************************************/
-int getaddrinfo(hostname, servname, hints, res)
-	const char *hostname, *servname;
-	const AI *hints;
-	AI **res;
+int getaddrinfo__compat (const char *hostname, const char *servname, const AI *hints, AI **res)
 {
 	AI sentinel;
 	AI *top = NULL;
@@ -428,13 +412,7 @@ int getaddrinfo(hostname, servname, hints, res)
 	return error;
 }
 
-static int get_name(addr, afd, res, numaddr, pai, port0)
-	const char *addr;
-	struct afd *afd;
-	AI **res;
-	char *numaddr;
-	AI *pai;
-	int port0;
+static int get_name (const char *addr, struct afd *afd, AI **res, char *numaddr, AI *pai, int port0)
 {
 	u_short port = port0 & 0xffff;
 	struct hostent *hp;
@@ -458,12 +436,7 @@ static int get_name(addr, afd, res, numaddr, pai, port0)
 	return error;
 }
 
-static int get_addr(hostname, af, res, pai, port0)
-	const char *hostname;
-	int af;
-	AI **res;
-	AI *pai;
-	int port0;
+static int get_addr (const char *hostname, int af, AI **res, AI *pai, int port0)
 {
 	u_short port = port0 & 0xffff;
 	AI sentinel;
@@ -540,17 +513,12 @@ static int get_addr(hostname, af, res, pai, port0)
 
 
 
-int getnameinfo(sa, salen, host, hostlen, serv, servlen, flags)
-	const struct sockaddr *sa;
-	size_t salen;
-	char *host;
-	size_t hostlen;
-	char *serv;
-	size_t servlen;
-	int flags;
+int getnameinfo__compat (const struct sockaddr *sa, size_t salen, char *host, size_t hostlen, char *serv, size_t servlen, int flags)
 {
 	struct afd *afd;
+#if defined(HAVE_GETSERVBYPORT)
 	struct servent *sp;
+#endif
 	struct hostent *hp;
 	u_short port;
 	int family, len, i;
