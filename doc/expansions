@@ -1,0 +1,385 @@
+$EPIC: expansions,v 1.1 2003/05/29 23:09:03 jnelson Exp $
+
+		$-expansion and Quoting Hell
+
+Whenever you give epic a string of text, epic will usually run it through 
+the "expander" before it uses it.  The expander has four main jobs:
+
+	1) Substitute $-expandos with whatever they evaluate to
+	2) Remove any \c sequences (c is any character) (**** SEE BELOW ****)
+	3) Find the start of the "next" command in a command set.
+	4) Determine if a numeric expando is used in the text.
+
+The following places use the expander:
+
+* alias.c		prepare_alias_call
+	* To expand "default" values in argument list, eg
+		/alias oof (var1 default "$ooga") {...}
+
+* commands.c		parse_line		(**** SEE BELOW ****)
+	* To extract and expand the first command from a block of commands
+	  prior to execution; to determine if the command uses a numeric
+	  expando and to append $* if it does not, eg
+		/alias oof {echo $ooga;echo hi}
+		/alias booya msg
+
+* expr.c		next_unit	(SETUP_IMPLIED)
+	* To expand the variable name on the left hand side of an 
+	  implied assignment, eg
+		@ $ooga += 3
+
+* expr.c		next_unit	([...] handling)
+	* To expand the inside of [...] operator in an expression which 
+	  starts with $ but is not a numeric expando, eg
+		@ var = [$ooga]
+
+* expr.c		next_unit	([...] handling)
+	* To expand the inside of [...] operator that contains a $ or \
+	  character, eg
+		@ var = [one two $ooga my shoe]
+		@ var = [one two \three four]
+
+* expr.c		next_unit	(pre/post in/decrement operator)
+	* To expand the variable name operand of the pre or post increment
+	  or decrement operators, eg
+		@ $ooga++
+		@ --$ooga
+
+* expr.c		next_unit	(= operator handling)
+	* To expand the variable name on the left hand side of a straight
+	  assignment, eg
+		@ $ooga = 3
+
+* expr.c		alias_special_char
+	* To expand the inside of the width qualifier following a $, eg
+		$[$ooga]var1
+
+* expr.c		alias_special_char
+	* To expand the inside of $(...) (``indirect'') expando, eg
+		$($ooga)
+
+* expr2.c		get_raw_token		(NEW MATH PARSER)
+	* To convert an operand that is available as an "LVAL" when it is
+	  needed to be used in a "RAW" context, eg
+		@ var1 = $ooga
+
+* expr2.c		get_token_expanded	(NEW MATH PARSER)
+	* To convert an operand that is available as a "RAW" value when it
+	  is needed to be used in an "EXPANDED" context, eg
+		@ var1 = [$ooga]
+
+* functions.c		call_function
+	* To expand the argument list contained within parenthesis to a 
+	  function being called, eg
+		@ func($ooga)
+
+* functions.c		function_cparse		($cparse())
+	* To expand the resulting string after the cparse substitutions, 
+	  for BitchX compatability, eg
+		/echo $cparse("one two" buckle my $1 shoes $ooga)
+
+* hook.c		do_hook
+	* To expand the inside of a flexible hook before pattern matching, eg
+		/on msg '$ooga *' {...}
+
+* if.c			fe
+	* To expand the word list argument to the /FE command, eg
+		/fe ($ooga) {...}
+
+* if.c			for_fe_cmd
+	* To expand the word list argument to the /FOR I IN (...) command, eg
+		/for i in ($ooga) {...}
+
+* if.c			switchcmd
+	* To expand the control string argument to the /SWITCH command, eg
+		/switch ($ooga) {....}
+
+* if.c			switcmd
+	* To expand the matching string argument to the /SWITCH command, eg
+		/switch ($*) {($ooga) {...}}
+
+* if.c			repeatcmd
+	* To expand the number-iterations argument to the /REPEAT command, eg
+		/repeat $ooga ....
+
+* input.c		update_input
+	* To expand the value of /set input_prompt prior to display, eg
+		/set input_prompt ${ooga}>
+
+* ircaux.c		remove_brackets
+	* To expand the inside of a variable array qualifier, eg
+		$var1[$ooga]
+
+* log.c			add_to_log
+	* To rewrite text sent to a log before writing it, eg
+		/set log_rewrite $ooga $1-
+		/log new rewrite "$ooga $1-"
+
+* numbers.c		banner
+	* To expand /set banner prior to display when /set banner_expand on, eg
+		/set banner $ooga
+		/set banner_expand on
+
+* output.c		vsay
+	* To expand /set banner prior to display when /set banner_expand on, eg
+		/set banner $ooga
+		/set banner_expand on
+
+* queue.c		queuecmd
+	* To expand the command bodies at registration time if -expand_now
+	  is used, eg
+		/queue -expand_now {$ooga}
+
+* screen.c		add_to_window
+	* To rewrite text sent to a window before displaying it, eg
+		/set output_rewrite $ooga $1-
+
+* status.c		make_status
+	* To expand the status bar after substitution but before displaying 
+	  it when /set status_does_expandos on, eg
+		/set status_user1 $ooga
+		/set status_does_expandos on
+
+==============================================================================
+The "dequoter" is the function that removes \'s from a text string.  It is the
+place that most commonly causes ``quoting hell''.  Each time a function is 
+passed through the "dequoter", another level of \'s are removed.
+
+The "dequoter" is malloc_strcat_ues_c, and it is called by the following:
+
+* expr.c		expand_alias
+	* To copy portions of the original string that are not part of 
+	  a $-expando, contained withing parenthesis, or braces, 
+
+* window.c		window_channel
+	* To convert \" to " from the argument to /window channel so you
+	  may join channels with quotes in them, eg
+		/window channel "#one\"two"
+		/window channel #foobar "key\"withquote"
+
+==============================================================================
+The "Evaluator" is the function that runs a block of commands that you give it.
+It is the basis of the /eval command and every command you run in the language
+goes through it at least once.  The evaluator may pass the commands through
+expand_alias, which means support for {}s, semicolons between commands, and
+$-expansion.  The evaluator may just treat the entire thing as one big command
+however.  The caller sets a flag to decide this
+
+The "evaluator" is parse_line, and it is called by the following:
+
+* alias.c		parse_line_alias_special
+	* To run a command alias's block of commands.
+	* Full expansion handling 
+	* $* is passed in from above
+
+* commands.c		do_defered_commands
+	* To run commands that were /DEFERed previously
+	* Full expansion handling 
+	* $* is saved from when /DEFER was registered
+
+* commands.c		xevalcmd
+	* To run a command through the evaluator a second time, possibly
+	  in a different window or server context.
+	* Full expansion handling (could result in double expansion)
+	* $* is passed in from above
+
+* commands.c		evalcmd
+	* To run a command through the evaluator a second time
+	* Full expansion handling (could result in double expansion)
+	* $* is passed in from above
+
+* commands.c		loader_std
+	* To run one command from within a /LOADed script
+	* Full expansion if /SET INPUT_ALIASES is ON (usually not though)
+	* Full expansion if  /LOAD -ARGS filename ... was used
+	* $* is [] if /LOAD -ARGS is not used.
+
+* commands.c		loader_pf
+	* To run an entire pre-formatted block of commands within a script
+	* Full expansion handling
+	* $* is [] if /LOAD -ARGS is not used.
+
+* commands.c		redirect
+	* To run commands to watch for data sent to server
+	* Full expansion handling (could result in double expansion)
+	* $* is passed in from above.
+
+* commands.c		sendlinecmd
+	* To run commands unconditionally as if from the command line
+	* Full expansion if /SET INPUT_ALIASES is ON (usually not though)
+	* $* is [] in all cases.
+
+* commands.c		waitcmd		(/WAIT FOR ....)
+	* To run commands to watch for data sent to server in 
+	* Full expansion handling (could result in double expansion)
+	* $* is passed in from above
+
+* commands.c		send_text
+	* To run the "AWAY" command or alias when sending a message from 
+	  the input line and when away and when /SET AUTO_UNMARK_AWAY is on.
+	* Full expansion handling (nothing to expand, however)
+	* $* is [] in all cases
+
+* commands.c		eval_inputlist
+	* To run commands passed to /INPUT "prompt" <commands>
+	* Full expansion handling (could result in double expansion)
+	* $* is saved from when the /input prompt was registered
+
+* commands.c		parse_line
+	* To run the insides of {...} blocks passed to parse_line.
+	* Full expansion ({...} are protected; no double expansion)
+	* $* is passed in from above.
+
+* exec.c		handle_fieldesc
+	* To run the commands of /exec -line, -error, -linepart, -errorpart,
+	  or /exec -end.
+	* Full expansion (syntax forces use of {}s, so no double expansion)
+	* $* is provided on the fly.
+
+* exec.c		cleanup_dead_processes
+	* To run the commands of /wait %proc -cmd {...}
+	* Full expansion (could result in double expansion)
+	* $* is provided on the fly.
+
+* expr.c		next_unit
+	* To run the inside of the {...} operator as a function.
+	* Full expansion ({} is protected; no double expansion)
+	* $* is passed in from above.
+
+* hook.c		do_hook
+	* To run the hook command body
+	* Full expansion (could result in double expansion)
+	* $* is provided on the fly.
+
+* if.c			ifcmd
+	* To run commands in an /IF decision block
+	* Full expansion (syntax usually requires {}, so no double expansion)
+	* $* is passed in from above
+
+* if.c			docmd
+	* To run commands in a /DO {...} (...) loop block
+	* Full expansion (syntax requires {}, so no double expansion)
+	* $* is passed in from above
+
+* if.c			docmd
+	* To run commands in a /DO .... command block
+	* Full expansion (double expansion if {}s are not used)
+	* $* is passed in from above
+
+* if.c			whilecmd
+	* To run commands in a /WHILE (...) loop block
+	* Full expansion (double expansion if {}s are not used)
+	* $* is passed in from above
+
+* if.c			foreach
+	* To run commands in a /FOREACH head var {...} loop block
+	* Full expansion (syntax requires {}, so no double expansion)
+	* $* is passed in from above
+
+* if.c			fe
+	* To run commands in a /FE loop block
+	* Full expansion (syntax requires {}, so no double expansion)
+	* $* is passed in from above
+
+* if.c			for_next_cmd
+	* To run commands in a /FOR var FROM start TO end {...} loop block
+	* Full expansion (syntax requires {}, so no double expansion)
+	* $* is passed in from above
+
+* if.c			for_fe_cmd
+	* To run commands in a /FOR var IN (list) {...} loop block
+	* Full expansion (syntax requires {}, so no double expansion)
+	* $* is passed in from above
+
+* if.c			forcmd
+	* To run commands in a /FOR (...,<expr>,...) {...} loop block
+	* To run prelim and loop iteration commands in above.
+	* Full expansion (syntax requires a {}, so no double expansion)
+	* $* is passed in from above
+
+* if.c			switchmd
+	* To run commands in a /SWITCH body
+	* Full expansion (syntax requires {} so no double expansion)
+	* $* is passed in from above
+
+* if.c			repeatcmd
+	* To run commands to /REPEAT
+	* Full expansion (Double expansion if {} is not used)
+	* $* is passed in from above
+
+* input.c		send_line	(key binding) 
+	* To run the command in the input prompt
+	* Full expansion depends on /SET INPUT_ALIASES (normally off)
+	* $* is [] in all cases
+
+* input.c		parse_text	(key binding)
+	* Runs the command argument to the binding, eg
+		/bind ^X parse_command CMD ooga booga
+	* Full expansion (double expansion if {} is not used argument cmds)
+	* $* is [] in all cases
+
+* keys.c		key_exec
+	* Runs an alias that is associated with a key binding
+	* Full expansion (double expansion if {} was not used to create bind)
+	* $* is [] in all cases.
+
+* perl.c		XS_cmd
+	* Runs a command passed in from perl as if it were executed at
+	  the input prompt with /SET INPUT_ALIASES OFF
+	* No expansion (naturally)
+	* $* is irrelevant.
+
+* perl.c		XS_eval
+	* Runs a command passed in from perl as if it were executed at
+	  the input prompt with /SET INPUT_ALIASES ON
+	* Full expansion
+	* $* is [] in every case
+
+* queue.c		run_queue
+	* Runs a queued command when the queue itself is run
+	* Full expansion (may have previously been expanded!)
+	* $* is saved from when the command was put into the queue.
+
+* screen.c		do_screens
+	* Runs a command from standard input when in "dumb mode"
+	* Expansion depends on /SET INPUT_ALIASES (usually off)
+	* $* is [] in every case
+
+* server.c		check_server_wait
+	* Runs a command registered with /WAIT -cmd ...
+	* Full expansion (double expansion if {} is not used)
+	* $* is [] in every case
+
+* tcl.c			Tcl_epicCmd
+	* Runs a command passed in from the tcl commands "cmd" or "eval"
+	  as in the perl case.
+	* Expansion depends on the command (see perl case)
+	* $* is [] in every case
+
+* timer.c		ExecuteTimers
+	* Runs commands scheduled for later execution with /TIMER time ...
+	* Full expansion (double expansion if {} is not used)
+	* $* is saved from when the command was scheduled
+
+* who.c			whoreply
+	* Runs commands from /WHO -LINE {....}
+	* Full expansion (syntax requires {}, so no double expansion)
+	* $* is provided on the fly.
+
+* who.c			whoend
+	* Runs commands from /WHO -END {....}
+	* Full expansion (syntax requires {}, so no double expansion)
+	* $* is provided on the fly.
+
+* who.c			fake_who_end
+	* Runs commands from /WHO -END {....}
+	* Full expansion (syntax requires {}, so no double expansion)
+	* $* is provided on the fly.
+
+* who.c			userhost_cmd_returned
+	* Runs commands from /USERHOST <nicks> -CMD ....
+	* Full expansion (double expansion if {} is not used)
+	* $* is provided on the fly.
+
+
+#end of file
