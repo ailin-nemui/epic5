@@ -1,9 +1,9 @@
-/* $EPIC: mail.c,v 1.9 2003/07/16 01:20:40 jnelson Exp $ */
+/* $EPIC: mail.c,v 1.10 2003/07/16 23:23:31 jnelson Exp $ */
 /*
  * mail.c -- a gross simplification of mail checking.
- * Only unix maildrops are supported.
+ * Only unix maildrops (``mbox'') are supported.
  *
- * Copyright © 1996, 2002 EPIC Software Labs.
+ * Copyright © 1996, 2003 EPIC Software Labs.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -48,16 +48,96 @@
 #endif
 #include <utime.h>
 
-static	char	*mail_path = (char *) 0;
+static	int	mail_last_count = -1;
+static	char *	mail_last_count_str = NULL;
+static	int	mail_latch = 0;
+
+/************************************************************************/
+/*				MBOX SUPPORT				*/
+/************************************************************************/
+static	char *	mbox_path = (char *) 0;
+static	time_t	mbox_last_changed = 0;
+static	off_t	mbox_last_size = 0;
+
 
 /*
- * Returns 0 if there is no mail.
- * Returns 1 if the status of the mailbox hasnt changed since last time.
- * Returns 2 if the status of the mailbox has changed since last time.
+ * init_mbox_checking:  Look for the user's mbox
+ *
+ * Look for an mbox-style mailbox.  If the user sets the MAIL environment
+ * variable, we use that.  Otherwise, we look for a file by the user's name
+ * in the usual directories (/var/spool/mail, /usr/spool/mail, /var/mail, 
+ * and /usr/mail).  If we cannot find an mbox anywhere, we forcibly turn off
+ * mail checking.  This will defeat the mail timer and save the user trouble.
+ *
+ * Return value:
+ *	1 if an mbox was found.
+ *	0 if an mbox was not found.
  */
-int	check_mail_status (void *ptr)
+static int	init_mbox_checking (void)
 {
-static	time_t	old_stat = 0;
+	const char *mbox_path_list = "/var/spool/mail:/usr/spool/mail:"
+					"/var/mail:/usr/mail";
+	Filename tmp_mbox_path;
+
+	if (getenv("MAIL") && file_exists(getenv("MAIL")))
+		mbox_path = malloc_strdup(getenv("MAIL"));
+	else if (!path_search(username, mbox_path_list, tmp_mbox_path))
+		mbox_path = malloc_strdup(tmp_mbox_path);
+	else
+	{
+		say("I can't find your mailbox.");
+		set_int_var(MAIL_VAR, 0);
+		return 0;
+	}
+
+	return 1;
+}
+
+static int	deinit_mbox_checking (void)
+{
+	new_free(&mbox_path);
+	mbox_last_changed = -1;
+	mbox_last_size = 0;
+	return 0;
+}
+
+/*
+ * mbox_count -- return the number of emails in an mbox.
+ * Ok.  This is lame, but so what?
+ *
+ * Return value:
+ *  The number of emails in an mbox, done by counting the lines that start 
+ *  with "From".  This probably wouldn't work on Content-length mboxes or 
+ *  mboxes that don't put a > before lines that start with "From".
+ */
+static int	mbox_count (void)
+{
+	int	count = 0;
+	FILE *	mail;
+	char	buffer[256];
+
+	if (!(mail = fopen(mbox_path, "r")))
+		return 0;
+
+	while (fgets(buffer, sizeof buffer, mail))
+		if (!strncmp("From ", buffer, 5))
+			count++;
+
+	fclose(mail);
+	return count;
+}
+
+/*
+ * poll_mbox_status -- See if an mbox has changed since last time.
+ *
+ * There are a couple of global
+
+ * Returns 0 if there is no mail.
+ * Returns 1 if there is mail but the mbox hasn't changed.
+ * Returns 2 if there is mail and the mbox has changed (need to recount)
+ */
+static int	poll_mbox_status (void *ptr)
+{
 	Stat	sb;
 	Stat *	stat_buf;
 
@@ -66,180 +146,202 @@ static	time_t	old_stat = 0;
 	else
 		stat_buf = &sb;
 
-	if (!get_int_var(MAIL_VAR))
-	{
-		old_stat = 0;
-		return 0;
-	}
-
-	if (!mail_path)
-	{
-		const char *mail_path_list = "/var/spool/mail:/usr/spool/mail:/var/mail:/usr/mail";
-		Filename tmp_mail_path;
-
-		if (getenv("MAIL"))
-			mail_path = malloc_strdup(getenv("MAIL"));
-		else if (path_search(username, mail_path_list, tmp_mail_path))
-			mail_path = malloc_strdup(tmp_mail_path);
-		else
-			mail_path = malloc_strdup("<unknown>");
-	}
+	if (!mbox_path)
+		if (!init_mbox_checking())
+			return 0;		/* Can't find mbox */
 
 	/* If there is no mailbox, there is no mail! */
-	if (stat(mail_path, stat_buf) == -1)
+	if (stat(mbox_path, stat_buf) == -1)
+		return 0;
+
+	/* There is no mail. */
+	if (stat_buf->st_size == 0)
 		return 0;
 
 	/* 
 	 * If the mailbox has been written to (either because new
 	 * mail has been appended or old mail has been disposed of
 	 */
-	if (stat_buf->st_ctime > old_stat)
-	{
-		/* 
-		 * If ptr == NULL, this is only a poll -- do not 
-		 * actually reset the mail status.
-		 */
-		if (ptr)
-			old_stat = stat_buf->st_ctime;
+	if (stat_buf->st_ctime > mbox_last_changed)
+		return 2;
 
-		if (stat_buf->st_size)
-			return 2;
-	}
-
-	/*
-	 * If there is something in the mailbox
-	 */
-	if (stat_buf->st_size)
-		return 1;
-
-	/*
-	 * The mailbox is empty.
-	 */
-	return 0;
+	/* There is mail, but it's not new. */
+	return 1;
 }
 
-
-/*
- * check_mail:  report on status of inbox.
- *
- * If /SET MAIL is 0:
- *	return NULL
- *
- * If /SET MAIL is 1, and your inbox is:
- *	empty -- returns NULL
- *	not empty -- returns the empty string
- * If mailbox is larger than it was last time we checked,
- *	throw an /ON MAIL event.
- *
- * If /SET MAIL is 2, and your inbox is:
- *	empty -- returns NULL
- *	not empty -- returns ": <no emails in inbox>"
- * If mailbox has more emails than it did last time we checked,
- *	throw an /ON MAIL event.
- */
-char *	check_mail (void)
+static void	update_mail_level1_mbox (void)
 {
-	Stat 	stat_buf;
-	int	state;
+	Stat	stat_buf;
+	int	status;
 
-	switch ((state = get_int_var(MAIL_VAR)))
+	status = poll_mbox_status(&stat_buf);
+
+	/* There is no mail */
+	if (status == 0)
 	{
-		case 0:
-			return NULL;
-		case 1:
-		{
-			static	int	mail_latch = 0;
-
-			if (check_mail_status(&stat_buf))
-			{
-			    if (!mail_latch)
-			    {
-				mail_latch = 1;
-				if (do_hook(MAIL_LIST, "You have new email"))
-				{
-				    int lastlog_level = 
-					set_lastlog_msg_level(LOG_CRAP);
-				    say("You have new email.");
-				    set_lastlog_msg_level(lastlog_level);
-				}
-			    }
-			    return empty_string;
-			}
-
-			if (mail_latch)
-				mail_latch = 0;
-
-			return NULL;
-		}
-		case 2:
-		case 3:
-		{
-			FILE *	mail;
-			char 	buffer[255];
-			int 	count = 0;
-		static 	int 	old_count = 0;
-		static	char 	ret_str[12];
-		struct utimbuf	ts;
-
-			switch (check_mail_status(&stat_buf))
-			{
-			  case 2:
-			  {
-			    if (!(mail = fopen(mail_path, "r")))
-				return NULL;
-
-			    while (fgets(buffer, 254, mail))
-				if (!strncmp("From ", buffer, 5))
-					count++;
-
-			    fclose(mail);
-
-			    if (state == 3)
-			    {
-				/* XXX Ew.  Evil. Gross. */
-				ts.actime = stat_buf.st_atime;
-				ts.modtime = stat_buf.st_mtime;
-				utime(mail_path, &ts);	/* XXX Ick. Gross */
-			    }
-
-			    if (count > old_count)
-			    {
-				if (do_hook(MAIL_LIST, "%d %d", 
-					count - old_count, count))
-				{
-				    int lastlog_level = 
-					set_lastlog_msg_level(LOG_CRAP);
-				    say("You have new email.");
-				    set_lastlog_msg_level(lastlog_level);
-				}
-			    }
-
-			    old_count = count;
-			    snprintf(ret_str, sizeof ret_str, "%d", old_count);
-			    /* FALLTHROUGH */
-			  }
-
-			  case 1:
-				return ret_str;
-
-			  default:
-				old_count = 0;
-				return NULL;
-			}
-		}
+		if (mail_last_count_str)
+			new_free(&mail_last_count_str);
 	}
-	return NULL;
+	/* Mailbox changed. */
+	else if (status == 2)
+	{
+	    /* If the mbox grew in size, new mail! */
+	    if (stat_buf.st_size > mbox_last_size)
+	    {
+		/* Tell the user that they have new mail. */
+		if (!mail_latch)
+		{
+			mail_latch++;
+			if (do_hook(MAIL_LIST, "You have new email"))
+			{
+				int lastlog_level = 
+				set_lastlog_msg_level(LOG_CRAP);
+				say("You have new email.");
+				set_lastlog_msg_level(lastlog_level);
+			}
+			mail_latch--;
+		}
+
+	        malloc_strcpy(&mail_last_count_str, empty_string);
+	    }
+
+	    /* 
+	     * Mark the last time we checked mail, and revoke the
+	     * "count", so it must be regened by /set mail 2.
+	     */
+	    mbox_last_changed = stat_buf.st_ctime;
+	    mbox_last_size = stat_buf.st_size;
+	    mail_last_count = -1;
+	}
+}
+
+static void	update_mail_level2_mbox (void)
+{
+	Stat	stat_buf;
+	int	status;
+	int	count;
+
+	status = poll_mbox_status(&stat_buf);
+
+	/* There is no mail */
+	if (status == 0)
+	{
+		mail_last_count = 0;
+		if (mail_last_count_str)
+			new_free(&mail_last_count_str);
+	}
+
+	/* If our count is invalid or there is new mail, recount mail */
+	else if (mail_last_count == -1 || status == 2)
+	{
+	    /* So go ahead and recount the mails in mbox */
+	    count = mbox_count();
+
+	    if (count == 0)
+		new_free(&mail_last_count_str);
+	    else
+	    {
+		malloc_sprintf(&mail_last_count_str, "%d", count);
+
+		/* 
+		 * If there is new mail, or if we're switching to 
+		 * /set mail 2, tell the user how many emails there are.
+		 */
+		if (count > mail_last_count)
+		{
+		    /* This is to avoid $0 in /on mail being wrong. */
+		    if (mail_last_count < 0)
+			mail_last_count = 0;
+
+		    if (!mail_latch)
+		    {
+			mail_latch++;
+			if (do_hook(MAIL_LIST, "%d %d", 
+					count - mail_last_count, count))
+			{
+			    int lastlog_level = 
+					set_lastlog_msg_level(LOG_CRAP);
+			    say("You have new email.");
+			    set_lastlog_msg_level(lastlog_level);
+			}
+			mail_latch--;
+		    }
+		}
+
+		mbox_last_changed = stat_buf.st_ctime;
+	        mbox_last_size = stat_buf.st_size;
+		mail_last_count = count;
+	    }
+	}
+}
+
+static void	update_mail_level3_mbox (void)
+{
+	struct utimbuf	ts;
+	Stat	stat_buf;
+	int	status;
+
+	status = poll_mbox_status(&stat_buf);
+
+	update_mail_level2_mbox();
+	if (status == 2)
+	{
+		/* XXX Ew.  Evil. Gross. */
+		ts.actime = stat_buf.st_atime;
+		ts.modtime = stat_buf.st_mtime;
+		utime(mbox_path, &ts);	/* XXX Ick. Gross */
+	}
+}
+
+/**************************************************************************/
+struct mail_checker {
+	const char *	name;
+	int	(*init) (void);
+	void	(*level1) (void);
+	void	(*level2) (void);
+	void	(*level3) (void);
+	int	(*deinit) (void);
+};
+
+struct mail_checker mail_types[] = {
+	{ "MBOX",	init_mbox_checking, 
+			update_mail_level1_mbox,
+			update_mail_level2_mbox,
+			update_mail_level3_mbox,
+			deinit_mbox_checking },
+	{ NULL,		NULL, NULL, NULL, NULL, NULL }
+};
+struct mail_checker *checkmail = &mail_types[0];
+
+/**************************************************************************/
+const char *	check_mail (void)
+{
+	return mail_last_count_str;
 }
 
 char 	mail_timeref[] = "MAILTIM";
 
 void	mail_systimer (void)
 {
-	if (check_mail_status(NULL))
+	int	x;
+
+	switch ((x = get_int_var(MAIL_VAR)))
 	{
-		update_all_status();
-		cursor_to_input();
+		case 1:
+			checkmail->level1();
+			break;
+		case 2:
+			checkmail->level2();
+			break;
+		case 3:
+			checkmail->level3();
+			break;
+		default:
+			panic("mail_systimer called with set mail %d", x);
 	}
+
+	update_all_status();
+	cursor_to_input();
 	return;
 }
 
@@ -261,8 +363,21 @@ void	set_mail (int value)
 		return;
 	}
 	else if (value == 0)
+	{
 		stop_system_timer(mail_timeref);
+		/* Force the status bar to be redrawn to get rid of (Mail: ) */
+		update_all_status();
+		cursor_to_input();
+		checkmail->deinit();
+	}
 	else
-		start_system_timer(mail_timeref);
+	{
+		if (checkmail->init())
+		{
+			start_system_timer(mail_timeref);
+			update_all_status();
+			cursor_to_input();
+		}
+	}
 }
 

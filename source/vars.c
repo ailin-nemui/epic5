@@ -1,4 +1,4 @@
-/* $EPIC: vars.c,v 1.36 2003/07/16 00:56:43 jnelson Exp $ */
+/* $EPIC: vars.c,v 1.37 2003/07/16 23:23:31 jnelson Exp $ */
 /*
  * vars.c: All the dealing of the irc variables are handled here. 
  *
@@ -186,7 +186,7 @@ static	IrcVariable irc_variable[] =
 	{ "LOG",			BOOL_TYPE_VAR,	DEFAULT_LOG, NULL, logger, 0, 0 },
 	{ "LOGFILE",			STR_TYPE_VAR,	0, NULL, NULL, 0, 0 },
 	{ "LOG_REWRITE",		STR_TYPE_VAR,	0, NULL, NULL, 0, 0 },
-	{ "MAIL",			INT_TYPE_VAR,	DEFAULT_MAIL, NULL, update_all_status_wrapper, 0, 0 },
+	{ "MAIL",			INT_TYPE_VAR,	DEFAULT_MAIL, NULL, set_mail, 0, 0 },
 	{ "MAIL_INTERVAL",		INT_TYPE_VAR,	DEFAULT_MAIL_INTERVAL, NULL, set_mail_interval, 0, 0 },
 	{ "MANGLE_INBOUND",		STR_TYPE_VAR,	0, NULL, set_mangle_inbound, 0, 0 },
 	{ "MANGLE_LOGFILES",		STR_TYPE_VAR,	0, NULL, set_mangle_logfiles, 0, 0 },

@@ -131,3 +131,8 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Add code to bootstrap notify handling with /set notify_interval.
 * Start enforcing "NOTIFY_INTERVAL" again in do_notify() to avoid excess flood.
 * Maybe I fixed the "(Mail: )" bug?  Maybe not.
+* Don't allow user to /window number in a window with a channel (avoid panic)
+* Make check_mail return a (const char *), fix status_mail().
+* Modularize/reorganize mail checking, with mbox reference implementation.
+* Automatically /set mail 0 if the user's mbox can't be found.
+

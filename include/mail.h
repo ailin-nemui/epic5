@@ -11,9 +11,9 @@
 
 extern	char	mail_timeref[];
 
-	char	*check_mail 		(void);
-	int	check_mail_status 	(void *);
+	const char *	check_mail	(void);
 	void	mail_systimer		(void);
 	void	set_mail_interval	(int);
+	void	set_mail		(int);
 
 #endif /* _MAIL_H_ */

@@ -1,4 +1,4 @@
-/* $EPIC: status.c,v 1.30 2003/07/16 00:56:43 jnelson Exp $ */
+/* $EPIC: status.c,v 1.31 2003/07/16 23:23:31 jnelson Exp $ */
 /*
  * status.c: handles the status line updating, etc for IRCII 
  *
@@ -1208,7 +1208,7 @@ STATUS_FUNCTION(status_voice)
  */
 STATUS_FUNCTION(status_mail)
 {
-	char	*number;
+	const char *	number;
 static	char	my_buffer[81];
 
 	/*

@@ -361,4 +361,3 @@ void	reset_system_timers (void)
 	cpu_saver_timer(NULL);
 }
 
-

@@ -1,4 +1,4 @@
-/* $EPIC: window.c,v 1.65 2003/07/10 13:08:57 jnelson Exp $ */
+/* $EPIC: window.c,v 1.66 2003/07/16 23:23:31 jnelson Exp $ */
 /*
  * window.c: Handles the organzation of the logical viewports (``windows'')
  * for irc.  This includes keeping track of what windows are open, where they
@@ -3557,6 +3557,12 @@ static Window *window_number (Window *window, char **args)
 
 	if ((arg = next_arg(*args, args)))
 	{
+		if (window_current_channel(window->refnum, window->server))
+		{
+			say("You cannot change the number of a window with a channel");
+			return window;
+		}
+
 		if ((i = my_atol(arg)) > 0)
 		{
 			if ((tmp = get_window_by_refnum(i)))
