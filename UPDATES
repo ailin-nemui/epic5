@@ -1,5 +1,136 @@
 EPIC4-1.2.0
 
+*** News 03/11/2002 -- New built in function, $serverctl()
+	The $serverctl() function is a low-level interface to the server
+	list and server objects.  With this function you can retrieve 
+	and reset specific information about a server refnum.
+
+	$serverctl(REFNUM host:port:pass:nick:...)
+	$serverctl(REFNUM host port pass nick ...)
+	  This function looks up the server description given and returns
+	  that server's refnum.  If the description you give is not in the
+	  list, then it is added to the list (ala /SERVER -ADD) and its
+	  new refnum is returned.
+
+	$serverctl(REFNUM number)
+	  If "number" refers to a valid server refnum, then it will return
+	  "number".  If "number" is not valid, it returns the empty string.
+
+	$serverctl(GET <refnum> AWAY)
+	  Get server <refnum>'s away message, if applicable.
+
+	$serverctl(GET <refnum> CONNECTED)
+	  Returns 1 if you are connected and registered to server <refnum>
+	  and 0 if you are not.
+
+	$serverctl(GET <refnum> COOKIE)
+	  Returns the TS/4 "cookie" for our connection, if we have one.
+
+	$serverctl(GET <refnum> GROUP)
+	  Returns the server group affiliation.
+
+	$serverctl(GET <refnum> ITSNAME)
+	  Returns the server's notion of its own name. (This is specified
+	  by the server's administrator in the ircd.conf file and reflects
+	  the server's logical target name on irc.)
+
+	$serverctl(GET <refnum> NAME)
+	  Returns our notion of the server's name (this is what you provided
+	  as the "host" field in the server description, and represents the
+	  internet hostname that we use to connect to the server.)
+
+	$serverctl(GET <refnum> NICKNAME)
+	  Returns your current authoritative nickname.
+
+	$serverctl(GET <refnum> PASSWORD)
+	  Returns the password that we use to connect to the server.
+
+	$serverctl(GET <refnum> PORT)
+	  Returns the port number we use to connect to the server.
+
+	$serverctl(GET <refnum> QUIT_MESSAGE)
+	  Returns the default QUIT message for this server, if any.
+
+	$serverctl(GET <refnum> SSL)
+	  Returns 1 if this server tries to establish an SSL connection
+	  to the server, and 0 if it does not.
+
+	$serverctl(GET <refnum> UMODE)
+	  Returns your "user mode" on the server.
+
+	$serverctl(GET <refnum> USERHOST)
+	  Returns what the server thinks your userhost is.
+
+	$serverctl(GET <refnum> VERSION)
+	  Returns the server's raw version id string (eg. "2.8/hybrid-5.3p8")
+
+
+	$serverctl(SET <refnum> AWAY <message>)
+	  Sets server <refnum>'s away message.  Takes effect immediately.
+	  Returns 1 to indicate success.
+
+	$serverctl(SET <refnum> CONNECTED <ignored>)
+	  You cannot change the CONNECTED status; always fails.
+
+	$serverctl(SET <refnum> COOKIE <cookie>)
+	  Sets server <refnum>'s TS/4 cookie. DANGER!  Changing the cookie
+	  may result in revocation of saved priveleges.  Use with caution.
+	  Returns 1 to indicate success.
+
+	$serverctl(SET <refnum> GROUP <groupname>)
+	  Sets server <refnum>'s server group affiliation.  Returns 1 to
+	  indicate success.
+
+	$serverctl(SET <refnum> ITSNAME <servername>)
+	  Sets our notion of the server's own name. !!!DANGER!!! Changing
+	  this value will result in undefined behavior; at the very least
+	  EPIC will most certainly malfunction when connected to a real 
+	  irc server.  Use with EXTREME caution.  Returns 1 to indicate
+	  success.
+	 
+	$serverctl(SET <refnum> NAME <hostname>)
+	  Sets the hostname that we use to connect to the server.  This does
+	  not take effect until you reconnect.  Returns 1 to indicate success.
+
+	$serverctl(SET <refnum> NICKNAME <nickname>)
+	  Changes your nickname to <nickname>.  This takes effect immediately.
+	  Returns 1 to indicate success.
+
+	$serverctl(SET <refnum> PASSWORD)
+	  Changes the password used to connect to the server.  This does not
+	  take effect until you reconnect.  Returns 1 to indicate success.
+
+	$serverctl(SET <refnum> PORT)
+	  Changes the port number we use to connect to the server.  This does
+	  not take effect until you reconnect.  Returns 1 to indicate success.
+
+	$serverctl(SET <refnum> QUIT_MESSAGE)
+	  Sets the default QUIT message for this server.
+
+	$serverctl(SET <refnum> SSL)
+	  Set the "SSL enable" flag; if set to 1, epic treats this server
+	  as an SSL server and tries to connect to it with an SSL connection.
+	  If 0, then it treats it as a normal irc server.  Returns 1 to 
+	  indicate success.
+
+	$serverctl(SET <refnum> UMODE)
+	  You cannot change your user mode using this just yet.  Always
+	  returns the empty string to indicate failure.
+
+	$serverctl(SET <refnum> USERHOST)
+	  Changes epic's notion of what the server thinks your userhost is.
+	  This is the value used if /SET DCC_USE_GATEWAY_ADDR is set to ON.
+	  !!!CAUTION!!! Changing this value could totaly break your ability 
+	  to use /DCC if /SET DCC_USE_GATEWAY_ADDR is ON.  Use with caution.
+
+	$serverctl(SET <refnum> VERSION)
+	  Sets epic's notion of what the server's raw version id string is.
+	  Returns the server's raw version id string (eg. "2.8/hybrid-5.3p8")
+
+	$serverctl(GMATCH <group name>)
+	  "Group match" -- Returns a space separated list of all server 
+	  refnums that belong to the server group <group name>.
+
 *** News 02/13/2002 -- Completely redesigned /QUEUE command
 	The /QUEUE command has been completely revamped and redesigned.
 	The old quirky bugs and mis-features and poor design have been
