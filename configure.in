@@ -4,9 +4,9 @@ dnl except those bits attributed otherwise.
 dnl thanks to the screen 3.3 configure.in for giving me examples to
 dnl work from and steal ;)
 dnl
-dnl @(#)$Id: configure.in,v 1.23 2002/12/11 19:20:23 crazyed Exp $
+dnl @(#)$Id: configure.in,v 1.24 2002/12/27 08:25:54 crazyed Exp $
 
-AC_REVISION($Revision: 1.23 $)dnl
+AC_REVISION($Revision: 1.24 $)dnl
 AC_INIT(source/irc.c)
 AC_CONFIG_HEADER(include/defs.h)
 
@@ -589,23 +589,18 @@ dnl
 AC_MSG_CHECKING(whether to support Perl)
 AC_ARG_WITH(perl,
 [  --with-perl[=PATH]       Compile with perl support.],
-[ case "$withval" in
-  no)
-	AC_MSG_RESULT(no)
-	;;
-  *)
-	if test "x$withval" != "xyes"; then
-		LIBS="$LIBS -L$withval"
-	fi
-
+[ test -z "$withval" && withval=yes ],
+)
+test "xno" != "x$withval" && for base in $withval /usr/local /usr
+do
+	test -r $base/lib/libperl.so || continue
 	AC_MSG_RESULT(yes)
 	LIBS="$LIBS `perl -MExtUtils::Embed -e ldopts`"
 	PERLDOTOH="perl.o"
 	AC_DEFINE(PERL)
-	;;
-  esac ],
-  AC_MSG_RESULT(no)
-)
+	break
+done
+test -z "$PERLDOTOH" && AC_MSG_RESULT(no)
 
 dnl ----------------------------------------------------------
 dnl
@@ -615,23 +610,24 @@ dnl
 AC_MSG_CHECKING(whether to support Tcl)
 AC_ARG_WITH(tcl,
 [  --with-tcl[=PATH]        Compile with tcl support.],
-[ case "$withval" in
-  no)
-	AC_MSG_RESULT(no)
-	;;
-  *)
-	if test "x$withval" != "xyes"; then
-		LIBS="$LIBS -L$withval"
-	fi
-
-	AC_MSG_RESULT(yes)
-	LIBS="$LIBS -ltcl8.3"
-	TCLDOTOH="tcl.o"
-	AC_DEFINE(TCL)
-	;;
-  esac ],
-  AC_MSG_RESULT(no)
+[ test -z "$withval" && withval=yes ],
 )
+test "xno" != "x$withval" && for base in $withval /usr/local /usr
+do
+	for ver in 8.3 83 8.2 82 8.1 81 8.0 80
+	do
+		incdir="$base/include/tcl$ver"
+		test -r $incdir/tcl.h || continue
+		test -r $base/lib/libtcl$ver.so || continue
+		AC_MSG_RESULT(yes)
+		CFLAGS="$CFLAGS -I $incdir"
+		LIBS="$LIBS -L$base/lib -ltcl$ver"
+		TCLDOTOH="tcl.o"
+		AC_DEFINE(TCL)
+		break 2
+	done
+done
+test -z "$TCLDOTOH" && AC_MSG_RESULT(no)
 
 dnl ----------------------------------------------------------
 dnl ----------------------------------------------------------

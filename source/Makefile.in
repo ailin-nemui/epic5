@@ -73,9 +73,6 @@ vars.o: Makefile ../Makefile
 perl.o: perl.c Makefile ../Makefile
 	$(CC) $(CFLAGS) $(ansiflags) $(INCLUDES) -c perl.c `perl -MExtUtils::Embed -e ccopts`
 
-tcl.o: tcl.c Makefile ../Makefile
-	$(CC) $(CFLAGS) $(ansiflags) $(INCLUDES) -c tcl.c -I/usr/include/tcl8.3
-
 
 #
 # dependencies
