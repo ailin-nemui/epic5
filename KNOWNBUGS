@@ -28,10 +28,14 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Add /who -operspy for hybrid opers.
 * Cleaned data_array and data_struct code and structure up a bit.
 * Added more hook protection to the debug.irc script.
-* Fixed a bug in tabkey.ce where recursion wouldn't work in the middle of a line.
+* Fixed bug in tabkey.ce where recursion wouldn't work in the middle of a line.
 * Also made it possible to tab complete /help without having to tab complete
   any of the previous words.  This _may_ not work on all operating systems.
 * Added the INTFUNC define alongside INTTYPE in expr2.c.
 * Made setting notify_interval and mail_interval update the system timer.  I
   needed the first one, and did the second one for completeness.
 * Fixed "/exec -line {} %pid" so that the exec hooks are called again.
+* Fix panic with $joinstr()
+* Fix compiler warning comparing pointer against integer
+* Fix word appender to NOT USE DOUBLE QUOTES if /xdebug extractw is off!
+* Fix the word appender so it actually works right.

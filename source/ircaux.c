@@ -1,4 +1,4 @@
-/* $EPIC: ircaux.c,v 1.97 2003/10/31 08:19:24 crazyed Exp $ */
+/* $EPIC: ircaux.c,v 1.98 2003/10/31 16:10:25 jnelson Exp $ */
 /*
  * ircaux.c: some extra routines... not specific to irc... that I needed 
  *
@@ -3258,7 +3258,7 @@ char *	urlencode (const char *s)
 
 	for (p1 = s, p2 = retval; *p1; p1++)
 	{
-		if (unsafe <= 0x20 || strchr(unsafe, *p1))
+		if (unsafe <= (const char *)0x20 || strchr(unsafe, *p1))
 		{
 			unsigned c = (unsigned) *p1;
 
@@ -4098,6 +4098,10 @@ char *	malloc_strcat_wordlist_c (char **ptr, const char *word_delim, const char 
 
 char *	malloc_strcat_word_c (char **ptr, const char *word_delim, const char *word, size_t *clue)
 {
+	/* You MUST turn on extractw to get double quoted words */
+	if (!x_debug & DEBUG_EXTRACTW)
+		return malloc_strcat_wordlist_c(ptr, word_delim, word, clue);
+
 	if (word && *word)
 	{
 		int quote_word = strpbrk(word, word_delim) ? 1 : 0;
@@ -4106,22 +4110,13 @@ char *	malloc_strcat_word_c (char **ptr, const char *word_delim, const char *wor
 			malloc_strcpy_c(ptr, empty_string, clue);
 #endif
 
-		if (quote_word)
-		{
-		    if (*ptr && **ptr)
-			malloc_strcat2_c(ptr, word_delim, "\"", clue);
-		    else
-			malloc_strcpy_c(ptr, word, clue);
-		}
-
 		if (*ptr && **ptr)
-		    malloc_strcat2_c(ptr, word_delim, word, clue);
-		else
-		    malloc_strcpy_c(ptr, word, clue);
-
-		/* I know 'ptr' has something in it here. */
+			malloc_strcat_c(ptr, word_delim, clue);
 		if (quote_word)
-			malloc_strcat2_c(ptr, word_delim, "\"", clue);
+			malloc_strcat_c(ptr, "\"", clue);
+		malloc_strcat_c(ptr, word, clue);
+		if (quote_word)
+			malloc_strcat_c(ptr, "\"", clue);
 	}
 
 	return *ptr;
