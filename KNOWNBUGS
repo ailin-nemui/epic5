@@ -257,3 +257,4 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Load this script from global.  Don't forget to alarm users.
 * Fix up parse_command() to get aliases and built in commands from aliases.
 * This unifies commands and alias name spaces. HUZZAH!
+* Optimize some stuff now that I've finished this.

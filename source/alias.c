@@ -1,4 +1,4 @@
-/* $EPIC: alias.c,v 1.44 2004/06/27 04:30:17 jnelson Exp $ */
+/* $EPIC: alias.c,v 1.45 2004/06/27 14:33:36 jnelson Exp $ */
 /*
  * alias.c -- Handles the whole kit and caboodle for aliases.
  *
@@ -250,8 +250,7 @@ extern	char ** glob_cmd_alias          (Char *name, int *howmany, int maxret, in
 extern	char ** glob_assign_alias	(Char *name, int *howmany, int maxret, int start, int rev);
 extern	char ** pmatch_cmd_alias        (Char *name, int *howmany, int maxret, int start, int rev);
 extern	char ** pmatch_assign_alias	(Char *name, int *howmany, int maxret, int start, int rev);
-extern	char *  get_cmd_alias           (Char *name, int *howmany, 
-					 char **complete_name, void **args, 
+extern	char *  get_cmd_alias           (Char *name, void **args, 
 					 void (**func) (const char *, char *, 
 					                const char *));
 extern	char ** get_subarray_elements   (Char *root, int *howmany, int type);
@@ -1431,7 +1430,7 @@ static Alias *	find_cmd_alias (const char *name, int *cnt)
 			cmd_cache_passes++;
 	}
 
-	if (*cnt < 0)		/*  || *cnt == 1) */
+	if (*cnt < 0	/*  || *cnt == 1 */ )
 	{
 		if (cmd_alias.cache[cache])
 			cmd_alias.cache[cache]->cache_revoked = 
@@ -1919,14 +1918,13 @@ char	*get_variable_with_args (const char *str, const char *args)
 	return (copy ? malloc_strdup(ret) : ret);
 }
 
-char *	get_cmd_alias (const char *name, int *howmany, char **complete_name, void **args, void (**func) (const char *, char *, const char *))
+char *	get_cmd_alias (const char *name, void **args, void (**func) (const char *, char *, const char *))
 {
 	Alias *item;
+	int	howmany;
 
-	if ((item = find_cmd_alias(name, howmany)))
+	if ((item = find_cmd_alias(name, &howmany)))
 	{
-		if (complete_name)
-			malloc_strcpy(complete_name, item->name);
 		if (args)
 			*args = (void *)item->arglist;
 		*func = item->builtin_command;
@@ -2260,12 +2258,11 @@ char 	*call_user_function	(const char *alias_name, char *args)
 {
 	char 	*result = NULL;
 	char 	*sub_buffer;
-	int 	cnt;
 	void	*arglist = NULL;
 	void	(*dummy) (const char *, char *, const char *);
 
-	sub_buffer = get_cmd_alias(alias_name, &cnt, NULL, &arglist, &dummy);
-	if (cnt < 0)
+	sub_buffer = get_cmd_alias(alias_name, &arglist, &dummy);
+	if (sub_buffer)
 		result = parse_line_alias_special(alias_name, sub_buffer, 
 						args, 0, 1, arglist, 1);
 	else if (x_debug & DEBUG_UNKNOWN)
