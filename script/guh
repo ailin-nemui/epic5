@@ -35,18 +35,14 @@ alias is_on
 
 alias uh 
 {
-	^local foo $*
-	^local blah $userhost($*)
-	^local unknown $userhost(,)
-	if (0 > findw($unknown $blah)) { return $blah }
+	^local blahblah
 	wait for {
-		^userhost $copattern($unknown blah foo) -cmd {
+		^userhost $* -cmd {
 			bless
-			@ splice(blah $findw($unknown $blah) 1 $3@,@$4)
+			push blahblah $3@$4
 		}
 	}
-	@ sar(gr/@,@/@/blah)
-	return $blah
+	return $blahblah
 }
 
 alias inc 
