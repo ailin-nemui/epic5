@@ -1,4 +1,4 @@
-/* $EPIC: numbers.c,v 1.37 2003/02/02 07:54:30 crazyed Exp $ */
+/* $EPIC: numbers.c,v 1.38 2003/02/04 00:14:05 jnelson Exp $ */
 /*
  * numbers.c: handles all those strange numeric response dished out by that
  * wacky, nutty program we call ircd 
@@ -484,11 +484,7 @@ void 	numbered_command (const char *from, const char *comm, char const **ArgList
 								0, 0, 0, 0);
 		    }
 
-		    /* If the user bites on /ON NAMES, then skip the rest */
-		    message_from(channel, LOG_CRAP);
-		    if (!do_hook(NAMES_LIST, "%s %s", channel, line))
-			goto END;
-		    message_from(NULL, LOG_CURRENT);
+		    break;
 		}
 		else
 		{
@@ -524,7 +520,7 @@ void 	numbered_command (const char *from, const char *comm, char const **ArgList
 		    if (funny_match && wild_match(funny_match, channel) == 0)
 			goto END;
 
-                    if (do_hook(NAMES_LIST, "%s %s", channel, line))
+                    if (!do_hook(NAMES_LIST, "%s %s", channel, line))
                         goto END;
 		}
 
@@ -966,12 +962,14 @@ DISPLAY:
 
 	case 312:		/* #define RPL_WHOISSERVER      312 */
 	{
-		const char *server, *pithy;
+		const char *nick, *server, *pithy;
 
-		PasteArgs(ArgList, 1);
-		if (!(server = ArgList[0]))
+		PasteArgs(ArgList, 2);
+		if (!(nick = ArgList[0]))
 			{ rfc1459_odd(from, comm, ArgList); goto END; }
-		if (!(pithy = ArgList[1]))
+		if (!(server = ArgList[1]))
+			{ rfc1459_odd(from, comm, ArgList); goto END; }
+		if (!(pithy = ArgList[2]))
 			{ rfc1459_odd(from, comm, ArgList); goto END; }
 
 		put_it("%s on irc via server %s (%s)", banner(), server, pithy);
@@ -1030,7 +1028,7 @@ DISPLAY:
 			unit = "second";
 
 		put_it ("%s %s has been idle %d %ss%s",
-			banner(), nick, idle, unit, startup_str);
+			banner(), nick, idle, unit, startup_ctime);
 		break;
 	}
 
@@ -1217,6 +1215,23 @@ DISPLAY:
 		if (!(line = ArgList[2]))
 			{ rfc1459_odd(from, comm, ArgList); return; }
 
+		/* This is only for when the user joined the channel */
+		if (channel_is_syncing(channel, from_server))
+		{
+			/* If the user bites on /ON NAMES, then skip the rest */
+			message_from(channel, LOG_CRAP);
+			if (do_hook(NAMES_LIST, "%s %s", channel, line))
+			    if (get_int_var(SHOW_CHANNEL_NAMES_VAR))
+				say("Users on %s: %s",
+					check_channel_type(channel), line);
+			break;
+		}
+
+		/* If the user grabs /ON NAMES then just stop right here */
+		if (!do_hook(NAMES_LIST, "%s %s", channel, line))
+			break;
+
+		/* This all is for when the user has not just joined channel */
 		if (last_width != get_int_var(CHANNEL_NAME_WIDTH_VAR))
 		{
 			if ((last_width = get_int_var(CHANNEL_NAME_WIDTH_VAR)))
