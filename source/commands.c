@@ -1,4 +1,4 @@
-/* $EPIC: commands.c,v 1.41 2002/11/08 03:06:47 jnelson Exp $ */
+/* $EPIC: commands.c,v 1.42 2002/11/08 03:12:10 jnelson Exp $ */
 /*
  * commands.c -- Stuff needed to execute commands in ircII.
  *		 Includes the bulk of the built in commands for ircII.
@@ -964,13 +964,13 @@ BUILT_IN_COMMAND(xechocmd)
 
 		case 'W':	/* WINDOW (output to specified window) */
 		{
-			flag_arg = next_arg(args, &args);
+			next_arg(args, &args);
+
 			if (!(flag_arg = next_arg(args, &args)))
 				break;
-			if (isdigit(*flag_arg))
-				to_window = get_window_by_refnum(my_atol(flag_arg));
-			else
-				to_window = get_window_by_name(flag_arg);
+
+			if (!(to_window = get_window_by_desc(flag_arg)))
+				to_window = get_channel_window(flag_arg, from_server);
 			break;
 		}
 
