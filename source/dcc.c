@@ -1,4 +1,4 @@
-/* $EPIC: dcc.c,v 1.37 2002/10/20 19:28:08 crazyed Exp $ */
+/* $EPIC: dcc.c,v 1.38 2002/10/21 16:52:45 crazyed Exp $ */
 /*
  * dcc.c: Things dealing client to client connections. 
  *
@@ -1601,6 +1601,7 @@ static	void	dcc_filesend (char *args)
 		}
 
 		/* XXXXX filesize is a global XXXXX */
+		stat(fullname, &stat_buf);
 		filesize = stat_buf.st_size;
 		Client = dcc_searchlist(fullname, user, DCC_FILEOFFER, 
 					1, this_arg, -1);
