@@ -8,7 +8,7 @@
  */
 
 #if 0
-static	char	rcsid[] = "@(#)$Id: ircaux.c,v 1.8 2001/09/25 17:28:05 jnelson Exp $";
+static	char	rcsid[] = "@(#)$Id: ircaux.c,v 1.9 2001/09/25 17:52:24 jnelson Exp $";
 #endif
 
 #include "irc.h"
@@ -2095,6 +2095,10 @@ int	split_args (char *str, char **to, size_t maxargs)
 		}
 		else
 			to[counter] = new_next_arg(ptr, &ptr);
+
+		/* Syntax error? abort immediately. */
+		if (to[counter] == NULL)
+			break;
 	}
 	to[counter] = NULL;
 	return counter;
