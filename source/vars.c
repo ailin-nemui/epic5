@@ -1,4 +1,4 @@
-/* $EPIC: vars.c,v 1.54 2004/07/24 00:26:46 jnelson Exp $ */
+/* $EPIC: vars.c,v 1.55 2004/07/24 00:51:07 jnelson Exp $ */
 /*
  * vars.c: All the dealing of the irc variables are handled here. 
  *
@@ -317,35 +317,6 @@ VARPROTO(NULL,				0,	  0)
 };
 
 /*
- * init_variables: initializes the string variables that can't really be
- * initialized properly above 
- */
-void 	init_variables_stage1 (void)
-{
-	int 	i;
-
-	for (i = 1; i < NUMBER_OF_VARIABLES - 1; i++)
-		if (strcmp(irc_variable[i-1].name, irc_variable[i].name) >= 0)
-			panic("Variable [%d] (%s) is out of order.", i, irc_variable[i].name);
-
-	for (i = 0; i < NUMBER_OF_VARIABLES; i++)
-	{
-	    irc_variable[i].data = new_malloc(sizeof(union builtin_variable));
-	    switch (irc_variable[i].type) {
-		case BOOL_VAR:
-		case CHAR_VAR:
-		case INT_VAR:
-			irc_variable[i].data->integer = 0;
-			break;
-		case STR_VAR:
-			irc_variable[i].data->string = NULL;
-			break;
-	    }
-	}
-
-}
-
-/*
  * set_string_var: sets the string variable given as an index into the
  * variable table to the given string.  If string is null, the current value
  * of the string variable is freed and set to null 
@@ -367,10 +338,33 @@ static void 	set_int_var (enum VAR_TYPES var, int value)
 }
 
 
-void 	init_variables_stage2 (void)
+/*
+ * init_variables: initializes the string variables that can't really be
+ * initialized properly above 
+ */
+void 	init_variables_stage1 (void)
 {
-	char 	*s;
 	int 	i;
+	char 	*s;
+
+	for (i = 1; i < NUMBER_OF_VARIABLES - 1; i++)
+		if (strcmp(irc_variable[i-1].name, irc_variable[i].name) >= 0)
+			panic("Variable [%d] (%s) is out of order.", i, irc_variable[i].name);
+
+	for (i = 0; i < NUMBER_OF_VARIABLES; i++)
+	{
+	    irc_variable[i].data = new_malloc(sizeof(union builtin_variable));
+	    switch (irc_variable[i].type) {
+		case BOOL_VAR:
+		case CHAR_VAR:
+		case INT_VAR:
+			irc_variable[i].data->integer = 0;
+			break;
+		case STR_VAR:
+			irc_variable[i].data->string = NULL;
+			break;
+	    }
+	}
 
 	set_int_var(ALLOW_C1_CHARS_VAR,		DEFAULT_ALLOW_C1_CHARS);
 	set_int_var(ALT_CHARSET_VAR, 		DEFAULT_ALT_CHARSET);
@@ -471,7 +465,6 @@ void 	init_variables_stage2 (void)
 	set_int_var(TERM_DOES_BRIGHT_BLINK_VAR,	DEFAULT_TERM_DOES_BRIGHT_BLINK);
 	set_int_var(UNDERLINE_VIDEO_VAR,	DEFAULT_UNDERLINE_VIDEO);
 	set_int_var(VERBOSE_CTCP_VAR,		DEFAULT_VERBOSE_CTCP);
-
 
 	set_string_var(BANNER_VAR, DEFAULT_BANNER);
 	set_string_var(CMDCHARS_VAR, DEFAULT_CMDCHARS);
@@ -581,6 +574,11 @@ void 	init_variables_stage2 (void)
 	malloc_strcat(&s, "/help");
 	set_string_var(HELP_PATH_VAR, s);
 	new_free(&s);
+}
+
+void 	init_variables_stage2 (void)
+{
+	int 	i;
 
 	/*
 	 * Forcibly init all the variables

@@ -308,3 +308,4 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Don't limit the size of /set continued_line, this will be revisited soon.
 * Quick and dirty hack to work around adm's bug, will fix this later.
 * Fix bogon in make_string_var().
+* Fix bogon with /set variables not being initialized early enough.
