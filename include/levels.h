@@ -43,6 +43,7 @@
 #define LEVEL_ALL       0x7FFFFFFF
 #define NUMBER_OF_LEVELS	30
 
+#ifdef WANT_LEVEL_NAMES
 static  const char *level_types[NUMBER_OF_LEVELS] =
 {
         "NONE",
@@ -76,6 +77,7 @@ static  const char *level_types[NUMBER_OF_LEVELS] =
         "USER9",
         "USER10",
 };
+#endif
 
 /*-
  * Copyright (c) 1982, 1986, 1989, 1991, 1993

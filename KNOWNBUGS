@@ -346,3 +346,8 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Allow the user's scriptback to call /set to override the user's value.
 * Tell the user that they created a new /set.
 * Support +I from ratbox, for adm.
+* Make $getsets() work again.
+* Fix alloca() warning for freebsd-current
+* Fix warnings about static variables not used
+* Fix /set notify_level, which is supposed to cascade to /window notify_level
+* Fix /set lastlog_level, same thing.

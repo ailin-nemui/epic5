@@ -1,4 +1,4 @@
-/* $EPIC: lastlog.c,v 1.42 2004/07/23 00:49:46 jnelson Exp $ */
+/* $EPIC: lastlog.c,v 1.43 2004/07/29 16:59:03 jnelson Exp $ */
 /*
  * lastlog.c: handles the lastlog features of irc. 
  *
@@ -33,7 +33,7 @@
  * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
  */
-
+#define WANT_LEVEL_NAMES
 #include "irc.h"
 #include "levels.h"
 #include "lastlog.h"
@@ -224,6 +224,8 @@ void	set_lastlog_mask (const void *stuff)
 
 	str_to_mask(&lastlog_mask, str);
 	malloc_strcpy(&v->string, mask_to_str(&lastlog_mask));
+
+	current_window->lastlog_mask = lastlog_mask;
 }
 
 void	set_new_server_lastlog_mask (const void *stuff)
@@ -909,6 +911,8 @@ void	set_notify_mask (const void *stuff)
 
 	str_to_mask(&notify_mask, str);
 	malloc_strcpy(&v->string, mask_to_str(&notify_mask));
+
+	current_window->notify_mask = notify_mask;
 }
 
 void	set_current_window_mask (const void *stuff)

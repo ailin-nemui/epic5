@@ -1,4 +1,4 @@
-/* $EPIC: window.c,v 1.116 2004/07/23 00:49:46 jnelson Exp $ */
+/* $EPIC: window.c,v 1.117 2004/07/29 16:59:03 jnelson Exp $ */
 /*
  * window.c: Handles the organzation of the logical viewports (``windows'')
  * for irc.  This includes keeping track of what windows are open, where they
@@ -4720,7 +4720,6 @@ BUILT_IN_COMMAND(windowcmd)
  * normal way.
  */
 static Display *recycle = NULL;
-static size_t	display_line_count = 1;
 
 static void 	delete_display_line (Display *stuff)
 {
