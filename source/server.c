@@ -1,4 +1,4 @@
-/* $EPIC: server.c,v 1.127 2004/03/15 03:24:52 jnelson Exp $ */
+/* $EPIC: server.c,v 1.128 2004/03/16 16:24:23 jnelson Exp $ */
 /*
  * server.c:  Things dealing with that wacky program we call ircd.
  *
@@ -1258,7 +1258,7 @@ int	connect_next_server_address (int server)
 	    }
 
 	    fd = client_connect((SA *)&localaddr, locallen, 
-					ai->ai_addr, ai->ai_addrlen, 0);
+					ai->ai_addr, ai->ai_addrlen);
 	    if (fd < 0)
 	    {
 	        if (x_debug & DEBUG_SERVER_CONNECT)

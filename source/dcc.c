@@ -1,4 +1,4 @@
-/* $EPIC: dcc.c,v 1.95 2004/03/16 15:51:15 jnelson Exp $ */
+/* $EPIC: dcc.c,v 1.96 2004/03/16 16:24:23 jnelson Exp $ */
 /*
  * dcc.c: Things dealing client to client connections. 
  *
@@ -797,13 +797,17 @@ static	int	dcc_connect (DCC_list *dcc)
 		break;
 	}
 
+	/* inet_vhostsockaddr doesn't ever return an error */
 	if (inet_vhostsockaddr(FAMILY(dcc->offer), -1, &local, &locallen) < 0)
-	    dcc->socket = client_connect(NULL, 0, (SA *)&dcc->offer,
-						sizeof(dcc->offer), 0);
-	else
-	    dcc->socket = client_connect((SA *)&local, locallen, 
-						(SA *)&dcc->offer, 
-						sizeof(dcc->offer), 0);
+	{
+		say("Can't figure out your virtual host.  "
+		    "Use /HOSTNAME to reset it and try again.");
+		retval = -1;
+		break;
+	}
+
+	dcc->socket = client_connect((SA *)&local, locallen, 
+					(SA *)&dcc->offer, sizeof(dcc->offer));
 
 	if (dcc->socket < 0)
 	{
@@ -823,7 +827,6 @@ static	int	dcc_connect (DCC_list *dcc)
 			new_free(&encoded_description);
 
 		dcc->flags |= DCC_DELETE;
-		unlock_dcc(dcc);
 		retval = -1;
 		break;
 	}

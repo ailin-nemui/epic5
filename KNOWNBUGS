@@ -171,3 +171,4 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Add $startupfile(), which returns the epicrc/ircrc file that was loaded
 * Offer unknown ctcp requests through /on ctcp_request before /on ctcp.
 * Fix /DCC RESUME so it works with nonblocking connects.
+* GC all of the blocking connect code.  EPIC is fully nonblocking connect!

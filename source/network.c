@@ -1,4 +1,4 @@
-/* $EPIC: network.c,v 1.54 2004/01/08 02:44:35 jnelson Exp $ */
+/* $EPIC: network.c,v 1.55 2004/03/16 16:24:23 jnelson Exp $ */
 /*
  * network.c -- handles stuff dealing with connecting and name resolving
  *
@@ -72,63 +72,6 @@ static int	Getnameinfo(const SA *sa, socklen_t salen, char *host, size_t hostlen
 
 /*****************************************************************************/
 /*
- * NAME: connectory
- * USAGE: Connect to a given "host" and "port" with the given "family"
- * ARGS: family - AF_INET is the only supported argument.
- *       host - A hostname or "dotted quad" (or equivalent).
- *       port - The remote port to connect to in *HOST ORDER*.
- *
- * XXX - This so violates everything I really wanted this function to be,
- * but I changed it to call getaddrinfo() directly instead of calling
- * inet_vhostsockaddr() because I wanted it to be able to take advantage
- * of connecting to multiple protocols and multiple ip addresses (for things
- * like ``us.undernet.org'') without having to do multiple calls to
- * getaddrinfo() which could be quite costly.
- */
-int	connectory (int family, const char *host, const char *port)
-{
-	AI	hints, *results, *ai;
-	int	err;
-	int	fd;
-	SS	  localaddr;
-	socklen_t locallen;
-
-	memset(&hints, 0, sizeof(hints));
-	hints.ai_family = family;
-	hints.ai_socktype = SOCK_STREAM;
-	if ((err = Getaddrinfo(host, port, &hints, &results)))
-	{
-		yell("Hostname lookup for [%s:%s] failed: %s (%d)", host, port, gai_strerror(err), err);
-		return -5;
-	}
-
-	fd = -1;
-	for (ai = results; ai; ai = ai->ai_next) 
-	{
-	    /* First, look up the virtual host we use for this protocol. */
-	    err = inet_vhostsockaddr(ai->ai_family, -1, &localaddr, &locallen);
-	    if (err < 0)
-		continue;
-
-	    /* Now try to do the connection. */
-	    fd = client_connect((SA *)&localaddr, locallen, ai->ai_addr, ai->ai_addrlen, 1);
-	    if (fd < 0)
-	    {
-		err = fd;
-		fd = -1;
-		continue;
-	    }
-	    else
-		break;
-	}
-
-	Freeaddrinfo(results);
-	if (fd < 0)
-		return err;
-	return fd;
-}
-
-/*
  * NAME: client_connect
  * USAGE: Create a new socket and establish both endpoints with the 
  *        arguments given.
@@ -141,7 +84,7 @@ int	connectory (int family, const char *host, const char *port)
  *       rl - The sizeof(r) -- if 0, then 'r' is treated as a NULL value.
  *            Therefore, 0 is not permitted.
  */
-int	client_connect (SA *l, socklen_t ll, SA *r, socklen_t rl, int blocking)
+int	client_connect (SA *l, socklen_t ll, SA *r, socklen_t rl)
 {
 	int	fd = -1;
 	int	family = AF_UNSPEC;
@@ -211,37 +154,6 @@ int	client_connect (SA *l, socklen_t ll, SA *r, socklen_t rl, int blocking)
 		if (err < 0 && errno != EAGAIN && errno != EINPROGRESS)
 			return close(fd), -11;
 		set_blocking(fd);
-
-		if (blocking)
-		{
-		    if (x_debug & DEBUG_SERVER_CONNECT)
-			yell("Starting a blocking connect for des [%d]...", fd);
-		    /* Now stall for a while until it succeeds or times out. */
-		    errno = 0;
-		    FD_ZERO(&set);
-		    FD_SET(fd, &set);
-		    to.tv_sec = get_int_var(CONNECT_TIMEOUT_VAR);
-		    to.tv_usec = 0;
-		    switch (select(fd + 1, NULL, &set, NULL, &to))
-		    {
-			case 0:
-				errno = ECONNABORTED;
-				/* FALLTHROUGH */
-			case -1:
-				return close(fd), -9;
-			default:
-			{
-				SS	peer;
-				int	peerlen;
-
-				peerlen = sizeof(peer);
-				if (getpeername(fd, (SA *)&peer, &peerlen))
-					return close(fd), -12;
-			}
-		    }
-		    if (x_debug & DEBUG_SERVER_CONNECT)
-			yell("Ending blocking connect for des [%d]...", fd);
-		}
 	}
 	else
 		return -2;
