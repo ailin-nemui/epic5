@@ -1,4 +1,4 @@
-/* $EPIC: functions.c,v 1.109 2003/03/23 22:47:50 jnelson Exp $ */
+/* $EPIC: functions.c,v 1.110 2003/03/26 07:16:27 crazyed Exp $ */
 /*
  * functions.c -- Built-in functions for ircII
  *
@@ -3442,12 +3442,11 @@ BUILT_IN_FUNCTION(function_fexist, words)
         Filename expanded;
 	char	*filename;
 
-#if 1
-	filename = words;
-#else
 	if (!(filename = new_next_arg(words, &words)))
+		filename = words;
+
+	if (!filename || !*filename)
 		RETURN_INT(-1);
-#endif
 
 	if (normalize_filename(filename, expanded))
 		RETURN_INT(-1);
@@ -3463,12 +3462,10 @@ BUILT_IN_FUNCTION(function_fsize, words)
 	Filename expanded;
 	char *	filename;
 
-#if 1
-	filename = words;
-#else
-	filename = new_next_arg(words, &words);
-#endif
-	if (!filename)
+	if (!(filename = new_next_arg(words, &words)))
+		filename = words;
+
+	if (!filename || !*filename)
 		RETURN_INT(-1);
 
 	if (normalize_filename(filename, expanded))
@@ -6019,13 +6016,23 @@ BUILT_IN_FUNCTION(function_urldecode, input)
 	RETURN_STR(retval);
 }
 
-BUILT_IN_FUNCTION(function_stat, input)
+BUILT_IN_FUNCTION(function_stat, words)
 {
+	Filename expanded;
 	char *	filename;
 	char 	retval[BIG_BUFFER_SIZE];
 	Stat	sb;
 
-	GET_STR_ARG(filename, input);
+
+	if (!(filename = new_next_arg(words, &words)))
+		filename = words;
+
+	if (!filename || !*filename)
+		RETURN_INT(-1);
+
+	if (normalize_filename(filename, expanded))
+		RETURN_INT(-1);
+
 	if (stat(filename, &sb) < 0)
 		RETURN_EMPTY;
 

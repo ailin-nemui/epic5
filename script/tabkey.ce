@@ -51,6 +51,8 @@
 # NOTE:  The "first argument" description above is no longer true.  The
 #        functions argument list is to be treated as a single argument.
 #
+# Remaining known issues:
+#   Doesn't work (very well) with commands with dots in them.
 
 package tabkey.ce
 bind ^i parse_command tabkey.main
@@ -61,6 +63,7 @@ alias tabkey.main {
 	xdebug extractw
 	@ :curword = indextoword($curpos() $L )
 	@ :wordind = wordtoindex($curword $L)
+	@ :cmdind = 0
 	if (32 >= (127 & ascii($mid(${curpos()-1} 1 $L )))) {
 		@ curword++
 		@ wordind = curpos()
@@ -95,7 +98,8 @@ alias tabkey.cmd {
 	@ :pass = chr($jot($ascii(AZ)))
 	@ :pass#= chr($jot($ascii(az)))
 	@ :pass#= chr($jot($ascii(09)))
-	@ :args = mid(0 $curpos() $L)
+	@ :args = wordtoindex($cmdind $L)
+	@ :args = mid($args $curpos() $L)
 	@ :args = unsplit(. $args)
 	@ :args = pass(._$pass $args)
 	if (!curword) {
@@ -113,6 +117,7 @@ alias tabkey.cmd {
 			break
 		}
 		@ args = before(-1 . $args)
+		@ argind--
 	}
 	if (args) {
 		wait for @ ret = ${args}($*)
@@ -123,7 +128,22 @@ alias tabkey.cmd {
 	return $ret
 }
 
+# Used for things like /eval and /repeat where what you are repeating
+# is another command.  depth is the arg number where the command begins.
+# This is not well cpu optimised.  See examples below.
+alias tabkey.recurse (depth,...) {
+	bless
+	@ :cmdind += depth
+	@ :curword -= depth
+	@ function_return = 0 > curword ? [] : tabkey.cmd($*)
+	@ :curword += depth
+	@ :cmdind -= depth
+}
+
 # Context sensitive completion goes here.
+
+alias tabkey.cmd.eval tabkey.recurse 1
+alias tabkey.cmd.repeat tabkey.recurse 2
 
 alias tabkey.cmd.dcc (args) {
 	bless
