@@ -5283,6 +5283,7 @@ BUILT_IN_FUNCTION(function_getsets, input)
 extern 	char 	*get_set (char *);
 	char 	*s = NULL;
 	char	*ret = NULL;
+	size_t	clue = 0;
 
 	if (!input || !*input)
 		return get_set(NULL);
@@ -5290,7 +5291,7 @@ extern 	char 	*get_set (char *);
 	while ((s = next_arg(input, &input)))
 	{
 		char *s2 = get_set(s);
-		malloc_strcat(&ret, s2);
+		m_sc3cat(&ret, space, s2, &clue);
 		new_free(&s2);
 	}
 
@@ -5299,8 +5300,9 @@ extern 	char 	*get_set (char *);
 
 BUILT_IN_FUNCTION(function_getcommands, input)
 {
-	char *s = NULL;
-	char *ret = NULL;
+	char	*s = NULL;
+	char	*ret = NULL;
+	size_t	clue = 0;
 
 	if (!input || !*input)
 		return get_command(NULL);
@@ -5308,7 +5310,7 @@ BUILT_IN_FUNCTION(function_getcommands, input)
 	while ((s = next_arg(input, &input)))
 	{
 		char *s2 = get_command(s);
-		malloc_strcat(&ret, s2);
+		m_sc3cat(&ret, space, s2, &clue);
 		new_free(&s2);
 	}
 
