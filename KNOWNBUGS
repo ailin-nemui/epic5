@@ -65,4 +65,19 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * General cleanups in if.c.
 * Fix /timer -list acting all wacky.
 * Fix compilation warnings, you know the deal...
-
+* Convert m_[s]c3cat[_s]() to malloc_strcat_wordlist_c()
+* Nix m_e3cat(), m_s3cat(), m_s3cat_s(), m_3cat()
+* Nix m_ec3cat(), m_sc3cat(), m_sc3cat_s(), m_c3cat().
+* Convert m_dupchar() to malloc_dupchar().
+* Convert m_strndup() to malloc_strndup().
+* Make malloc_strcpy/malloc_strcat/malloc_strcat2/malloc_strcat_wordlist macros
+* Convert m_2dup() to malloc_strdup2().
+* Convert m_3cat() to malloc_strcat2[_c]().
+* Convert m_3dup() to malloc_strdup3().
+* Convert m_ec3cat() to malloc_strcat2_c()
+* Use strlcat_c() in $repeat() instead of strlcpy(). whee!
+* Sanity check first arg to $regcomp(), to avoid crashes.
+* Don't pass NULL to bsearch(), even if 'nmem' is 0 [$remws()]
+* Nix the original malloc_strcpy (supplanted by malloc_strcpy_c)
+* Comment out all the deprecated functions
+* Nix include/crypt.h and do another make depend.
