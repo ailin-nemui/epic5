@@ -1,4 +1,4 @@
-/* $EPIC: server.c,v 1.98 2003/04/24 21:49:25 jnelson Exp $ */
+/* $EPIC: server.c,v 1.99 2003/05/01 12:04:23 crazyed Exp $ */
 /*
  * server.c:  Things dealing with that wacky program we call ircd.
  *
@@ -2400,7 +2400,7 @@ const	char	*nicklen_005;
 	 */
 	nicklen_005 = get_server_005(refnum, "NICKLEN");
 	nicklen = nicklen_005 ? atol(nicklen_005) : 9;
-	nicklen = nicklen > 0 ? nicklen : 9;
+	nicklen = nicklen >= 0 ? nicklen : 9;
 
 	if (strlen(l_nickname) < nicklen)
 		strlcat(l_nickname, "_", sizeof l_nickname);

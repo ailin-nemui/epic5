@@ -463,6 +463,11 @@ clear
 assert ppid() != []
 assert ppid(foo) != []
 
+# testing $prefix()
+assert prefix(12345 12340 1234) == [1234]
+assert prefix(asdfg asdfx asdf) == [asdf]
+assert prefix(ASDFG asdfx asdf) == [ASDF]
+
 # testing $rand() -- cant be tested right now
 
 # testing $remw()

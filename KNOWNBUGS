@@ -73,3 +73,7 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Convert all uses of stpcpy() to strlcat() and strlopencat().
 * Nix checks for stpcpy() in configure -- regen configure.
 * Include strlcpy() in wserv.c for use by gailib.c.
+* Fixed $prefix() to not return one more char than it should.
+* Added a $prefix() regression test.
+* Aesthetic change to /exec pipe cleanups.
+* Changed nick rolling at 9/NICKLEN chars to distinguish the two more sensibly.

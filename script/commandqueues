@@ -40,6 +40,21 @@
 package qcmd
 
 #
+# Synonym for /timer, but which doesn't expand args.
+#
+# This is less than perfect and will break if numbers are used for commands.
+#
+alias timer.ue (args) {
+	while (word(0 $args) =~ [-*]) {
+		push :pre $shift(args)
+		if (isnumber(b10 $word(1 $args))) {
+			push :pre $shift(args)
+		}
+	}
+	timer $pre $shift(args) \$decode\($encode($args)\)
+}
+
+#
 # Usage:
 #  scmd [server [command]]
 #
@@ -85,9 +100,22 @@ alias 1cmd {
 # The same as "1cmd {time} qcmd {queue} {command}", only, the command also
 # won't be scheduled if the same command is already scheduled.
 #
+stack push alias alias.tt
+alias alias.tt (cmd,op,args) {
+	@ sar(gr/\${cmd}/${cmd}/args)
+	@ sar(gr/\${op}/${op}/args)
+	alias $args
+}
 fe (q push fq unshift) cmd op {
-	alias ${cmd}1cmd unless (match("$2-" $qcmd[$servernum()][$1]))\{1cmd \$0 ${cmd}cmd \$1-\}
-	alias ${cmd}cmd {
+	alias.tt $cmd $op ${cmd}1cmd (qo,qc,args) {
+		@ :argz = args
+		@ sar(gr/\\/\\\\/argz)
+		@ sar(gr/\"/\\\"/argz)
+		if (0 > findw("$argz" $qcmd[$servernum()][$qc])) {
+			1cmd $qo ${cmd}cmd $qc $args
+		}
+	}
+	alias.tt $cmd $op ${cmd}cmd {
 		if (servernum() < 0) {
 			$1-
 			return
@@ -111,5 +139,5 @@ fe (q push fq unshift) cmd op {
 		}
 		if (@bar) ^timer -ref qcmd.$servernum() 5 qcmd
 	}
-	@ aliasctl(alias set ${cmd}cmd $sar(g/\${op}/${op}/$aliasctl(alias get ${cmd}cmd)))
 }
+stack pop alias alias.tt

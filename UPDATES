@@ -1,5 +1,12 @@
 EPIC4-1.2.0
 
+*** News 05/01/2003 -- New command in commandqueues, /timer.ue
+	This functions the same as /timer, but won't expand the command
+	when it is executed.  It's not quite 100% clean yet.  Don't try
+	to execute numbers as commands.
+
+	Also cleaned up /q1cmd to work properly with any input.
+
 *** News 04/10/2003 -- New status expando, %{1}+
 	The %+ status expandos returns the empty string (ie, it ignores
 	the /set status_mode value) if a channel does not have a mode.
