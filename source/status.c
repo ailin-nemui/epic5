@@ -1,4 +1,4 @@
-/* $EPIC: status.c,v 1.18 2003/01/23 06:27:22 jnelson Exp $ */
+/* $EPIC: status.c,v 1.19 2003/02/25 23:56:52 crazyed Exp $ */
 /*
  * status.c: handles the status line updating, etc for IRCII 
  *
@@ -81,6 +81,7 @@ STATUS_FUNCTION(status_away);
 STATUS_FUNCTION(status_oper);
 STATUS_FUNCTION(status_user);
 STATUS_FUNCTION(status_dcc);
+STATUS_FUNCTION(status_dcc_all);
 STATUS_FUNCTION(status_hold);
 STATUS_FUNCTION(status_version);
 STATUS_FUNCTION(status_clock);
@@ -189,6 +190,7 @@ struct status_formats status_expandos[] = {
 { 1, '7', status_user,		NULL, 			-1 },
 { 1, '8', status_user,		NULL, 			-1 },
 { 1, '9', status_user,		NULL, 			-1 },
+{ 1, 'D', status_dcc_all,	NULL, 			-1 },
 { 1, 'F', status_notify_windows,&notify_format,		STATUS_NOTIFY_VAR },
 { 1, 'K', status_scroll_info,	NULL,			-1 },
 { 1, 'R', status_refnum_real,   NULL, 			-1 },
@@ -1375,6 +1377,14 @@ STATUS_FUNCTION(status_dcc)
 		return DCC_get_current_transfer();
 
 	return empty_string;
+}
+
+/*
+ * As above, but always return the indicator.
+ */
+STATUS_FUNCTION(status_dcc_all)
+{
+	return DCC_get_current_transfer();
 }
 
 /*

@@ -190,3 +190,8 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Tuned the autoget script to deal with url quoted dcc requests gracefully.
 * Got rid of the reference to word_count() in /fe and /fec.
 * Diked safe_new_next_arg() out and made it use new_next_arg() instead.
+* Fixed a problem that broke ctcp-over-dcc, reported by NSX.
+* Fixed a problem that broke unix socket detection, reported by Q_ (unconfirmed).
+* Changed the default FLOOD_IGNORE setting to off.
+* Fixed a bug in the commandqueues script.
+* Altered 324 processing so that the hook is called when joining a channel.

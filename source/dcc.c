@@ -1,4 +1,4 @@
-/* $EPIC: dcc.c,v 1.46 2003/02/17 23:48:48 crazyed Exp $ */
+/* $EPIC: dcc.c,v 1.47 2003/02/25 23:56:52 crazyed Exp $ */
 /*
  * dcc.c: Things dealing client to client connections. 
  *
@@ -75,6 +75,7 @@ typedef	struct	DCC_struct
 	int		locked;		/* XXX - Sigh */
 	int		socket;
 	int		file;
+	int		held;
 	long		refnum;
 	u_32int_t	filesize;
 	char *		description;
@@ -368,6 +369,36 @@ void 	close_all_dcc (void)
 	}
 }
 
+/*
+ * Place the dcc on hold.  Return 1
+ * (fail) if * it was already on hold.
+ */
+int	dcc_hold (DCC_list *dcc)
+{
+	new_hold_fd(dcc->socket);
+	if (dcc->held)
+		return 1;
+	else {
+		dcc->held = 1;
+		return 0;
+	}
+}
+
+/*
+ * Remove the hold.  Return 1
+ * (fail) if it was already unheld.
+ */
+int	dcc_unhold (DCC_list *dcc)
+{
+	new_unhold_fd(dcc->socket);
+	if (!dcc->held)
+		return 1;
+	else {
+		dcc->held = 0;
+		return 0;
+	}
+}
+
 
 
 
@@ -528,6 +559,7 @@ static	DCC_list *dcc_searchlist (
 	new_client->socket 		= -1;
 	new_client->file 		= -1;
 	new_client->filesize 		= filesize;
+	new_client->held		= 0;
 	new_client->filename 		= NULL;
 	new_client->packets_total 	= filesize ? 
 					  (filesize / DCC_BLOCK_SIZE + 1) : 0;
@@ -2224,7 +2256,9 @@ static	char *	process_dcc_chat_ctcps (DCC_list *Client, char *tmp)
 
 	if (*tmp == CTCP_DELIM_CHAR)
 	{
+#if 0
 		ov_strcpy(tmp, tmp + 1);
+#endif
 		ctcp_request = 1;
 	}
 	else if (!strncmp(tmp, CTCP_MESSAGE, strlen(CTCP_MESSAGE)))
@@ -2306,7 +2340,7 @@ static	void	process_dcc_chat_data (DCC_list *Client)
 	tmp = process_dcc_chat_ctcps(Client, tmp);
 
 	/* If the message is empty, ignore it... */
-	if (!*tmp)
+	if (!tmp || !*tmp)
 		return;
 
 	/* Otherwise throw the message to the user. */
@@ -3085,6 +3119,8 @@ char 	*dccctl 	(char *input)
 			RETURN_INT(client->server);
 		} else if (!my_strnicmp(listc, "LOCKED", len)) {
 			RETURN_INT(client->locked);
+		} else if (!my_strnicmp(listc, "HELD", len)) {
+			RETURN_INT(client->held);
 		} else if (!my_strnicmp(listc, "LASTTIME", len)) {
 			m_sc3cat_s(&retval, space, ltoa(client->lasttime.tv_sec), &clue);
 			m_sc3cat_s(&retval, space, ltoa(client->lasttime.tv_usec), &clue);
@@ -3126,6 +3162,16 @@ char 	*dccctl 	(char *input)
 			client->refnum = newref;
 
 			RETURN_INT(1);
+		} else if (!my_strnicmp(listc, "HELD", len)) {
+			long	hold, held;
+
+			GET_INT_ARG(hold, input);
+			if (hold)
+				held = dcc_hold(client);
+			else
+				held = dcc_unhold(client);
+
+			RETURN_INT(held);
 		}
 	} else if (!my_strnicmp(listc, "TYPEMATCH", len)) {
 		for (client = ClientList; client; client = client->next)

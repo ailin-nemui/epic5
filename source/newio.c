@@ -1,4 +1,4 @@
-/* $EPIC: newio.c,v 1.11 2002/12/26 16:40:31 jnelson Exp $ */
+/* $EPIC: newio.c,v 1.12 2003/02/25 23:56:52 crazyed Exp $ */
 /*
  * newio.c: This is some handy stuff to deal with file descriptors in a way
  * much like stdio's FILE pointers 
@@ -395,6 +395,41 @@ int 	new_open_for_writing (int des)
 	 */
 	if (des > global_max_fd)
 		global_max_fd = des;
+
+	return des;
+}
+
+/*
+ * This isn't really new, but what the hey..
+ *
+ * Remove the fd from the select fd sets so
+ * that it won't bother us until we unhold it.
+ */
+int	new_hold_fd (int des)
+{
+	if (des < 0)
+		return des;		/* Invalid */
+	if (des > global_max_fd)
+		return des;		/* Invalid */
+
+	if (FD_ISSET(des, &readables))
+		FD_CLR(des, &readables);
+
+	return des;
+}
+
+/*
+ * Add the fd again.
+ */
+int	new_unhold_fd (int des)
+{
+	if (des < 0)
+		return des;		/* Invalid */
+	if (des > global_max_fd)
+		return des;		/* Invalid */
+
+	if (!FD_ISSET(des, &readables))
+		FD_SET(des, &readables);
 
 	return des;
 }

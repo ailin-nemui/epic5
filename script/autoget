@@ -28,11 +28,13 @@
 #       to turn this feature off and make other flood protection
 #       arrangements.
 #
+
 package autoget
-# These clobber the current settings on reload.
-#@ autoget.getpatterns = [ ]
-#@ autoget.regetpatterns = [ ]
-#@ autoget.regettype = [resume]
+
+# Take possession of these variables while not clobbering them.
+fe (getpatterns * regetpatterns * regettype resume) var val {
+	@ autoget[$var] = autoget[$var] ? autoget[$var] : [$val]
+}
 
 on #-dcc_request 414 "% SEND *" {
 	@ :path = [$getset(dcc_store_path)/$urldecode($2)]

@@ -49,7 +49,7 @@
 #   of the work should be done by the methods.
 #
 # NOTE:  The "first argument" description above is no longer true.  The
-#        fucntions argument list is to be treated as a single argument.
+#        functions argument list is to be treated as a single argument.
 #
 
 package tabkey.ce
@@ -82,8 +82,9 @@ alias tabkey.main {
 		echo Completions for \"$word\": $matches
 	} elsif (#matches && strlen($word) <= strlen($prefix)) {
 		@ :prefix = 0 > index("$chr($jot(32 1))" $prefix) ? prefix : ["$prefix"]
-		repeat ${curpos()-wordind} parsekey backspace
-		xtype -l $prefix${1<#matches?[]:[ ]}
+		@ :line = mid(0 $wordind $L)
+		parsekey erase_line
+		xtype -l $line$prefix${1<#matches?[]:[ ]}
 	}
 	xdebug $oxd
 }

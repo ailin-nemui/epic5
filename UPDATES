@@ -1,5 +1,17 @@
 EPIC4-1.2.0
 
+*** News 02/25/2003 -- Added %{1}D status variable.
+	This acts exactly like %D, but is present on all windows where
+	%D is present only on the window that has the DCC lastlog level.
+
+*** News 02/25/2003 -- Added DCC hold mode.
+	$dccctl(set [ref] held 1) puts a dcc session on hold.
+	$dccctl(set [ref] held 0) releases the hold.
+
+	When a dcc session is on hold, no data is sent to it or received
+	from it until the hold is released.  This might be useful for
+	bandwidth control or for granting priority to other unheld dccs.
+
 *** News 02/17/2003 -- New function $findws().
 	Similar to $findw() but returns _all_ matching words.
 
