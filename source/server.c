@@ -1,4 +1,4 @@
-/* $EPIC: server.c,v 1.144 2005/01/23 21:41:28 jnelson Exp $ */
+/* $EPIC: server.c,v 1.145 2005/02/03 01:33:39 jnelson Exp $ */
 /*
  * server.c:  Things dealing with that wacky program we call ircd.
  *
@@ -86,6 +86,7 @@ static	void	free_serverinfo (ServerInfo *s);
 static	int	serverinfo_to_servref (ServerInfo *s);
 static	int	serverinfo_to_newserv (ServerInfo *s);
 static 	void 	remove_from_server_list (int i);
+static	char *	shortname (const char *oname);
 
 
 static	int	str_to_serverinfo (const char *str, ServerInfo *s)
@@ -259,6 +260,7 @@ static	int	serverinfo_to_newserv (ServerInfo *si)
 	s->password = (char *) 0;
 	s->group = NULL;
 	s->altnames = new_bucket();
+	add_to_bucket(s->altnames, shortname(s->name), NULL);
 	s->away = (char *) 0;
 	s->version_string = (char *) 0;
 	s->server2_8 = 0;
@@ -2933,6 +2935,8 @@ char 	*serverctl 	(char *input)
 				RETURN_STR("unix");
 			else
 				RETURN_STR("unknown");
+		} else if (!my_strnicmp(listc, "PROTOCOL", len)) {
+			RETURN_STR(get_server_type(refnum));
 		}
 	} else if (!my_strnicmp(listc, "SET", len)) {
 		GET_INT_ARG(refnum, input);
@@ -3074,4 +3078,51 @@ int	server_more_addrs (int refnum)
 	else
 		return 0;
 }
+
+/* Returns malloced string */
+static char *	shortname (const char *oname)
+{
+	char *name, *p, *next, *rest;
+	ssize_t	len;
+
+	name = malloc_strdup(oname);
+
+	/* If it's an IP address, just use it. */
+	if (strtoul(name, &next, 10) && *next == '.')
+		return name;
+
+	/* If it doesn't have a dot, just use it. */
+	if (!(rest = strchr(name, '.')))
+		return name;
+
+	/* If it starts with 'irc', skip that. */
+	if (!strncmp(name, "irc", 3))
+	{
+		ov_strcpy(name, rest + 1);
+		if (!(rest = strchr(name + 1, '.')))
+			rest = name + strlen(name);
+	}
+
+	/* Truncate at 60 chars */
+	if ((len = rest - name) > 60)
+		len = 60;
+
+	name[len] = 0;
+	return name;
+}
+
+char *	get_server_altname (int refnum, int which)
+{
+	Server	*s;
+	int	j;
+
+	if (!(s = get_server(refnum)))
+		return NULL;
+
+	if (which < 0 || which > s->altnames->numitems - 1)
+		return NULL;
+
+	return s->altnames->list[which].name;
+}
+
 

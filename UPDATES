@@ -1,5 +1,32 @@
 EPIC5-0.1
 
+*** News 02/02/2005 -- New $serverctl() attribute, "PROTOCOL"
+	$serverctl(GET <refnum> PROTOCOL) now either returns "IRC" or 
+	"IRC-SSL" depending on whether you're doing a regular irc, or an 
+	ssl-enabled irc connection, eh!
+
+*** News 02/02/2005 -- Automatic creation of ALTNAME for servers, %S changes.
+	When you create a new server (with /server or /server -add or 
+	/window server), the server will automatically be given its first
+	"altname" (see "Alternate server names" below).  
+
+	If the server name is an IP address, the whole name, Otherwise, the 
+	first dot-seperated section that does start with "irc".
+
+	This is the value you have historically seen at %S on your status
+	bar.  This value is now automatically created as your server's
+	first altname, and you can change it!
+
+		@serverctl(SET <refnum> ALTNAMES <whatever>)
+
+	%S, and %{1}S have been changed to use the "first altname" for 
+	the server, whatever you choose that to be.
+
+	Please note:  If you clear your server's altname list, then %S and
+	%{1}S will have no choice but to show the server's full name.  This
+	is intentional and not a bug.  %{2}S will continue to show your
+	server's full name all the time.
+
 *** News 01/27/2005 -- New status expando, %{3}S
 	%{3}S is just like %{2}S, but instead it shows the server's group
 	instead of the server's name.

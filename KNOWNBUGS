@@ -443,3 +443,9 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Add %{3}S, showing the server's group instead of its name.
 * Fix compile bugs for non-ipv6 users with the dual-vhost stuff.
 * Fix null deref with /window flush when not in hold mode.
+* Fix $symbolctl(pmatch <incorrect> *) crash
+* Auto-create server's first altname, make %S and %{1}S use it.
+* Don't add mode types 2, 3, or 4 (takes-args) to the channel mode string.
+* This makes ircnet's +R not show up on the status bar.
+* Fix /dmsg =<ircnet-numeric-nick>, for Q.
+* Add $serverctl(GET <refnum> PROTOCOL), returns IRC or IRC-SSL

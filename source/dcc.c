@@ -1,4 +1,4 @@
-/* $EPIC: dcc.c,v 1.104 2004/09/13 18:29:57 crazyed Exp $ */
+/* $EPIC: dcc.c,v 1.105 2005/02/03 01:33:39 jnelson Exp $ */
 /*
  * dcc.c: Things dealing client to client connections. 
  *
@@ -1209,7 +1209,7 @@ void	dcc_chat_transmit (char *user, char *text, const char *orig, const char *ty
 	 * its local port is (which is what we think the nickname is).
 	 * Its just a 15 minute hack. dont read too much into it.
 	 */
-	if ((fd = atol(user)))
+	if (is_number(user) && (fd = atol(user)))
 	{
 		DCC_list *	dcc;
 		if (!(dcc = get_dcc_by_filedesc(fd)))
@@ -3567,18 +3567,17 @@ int	wait_for_dcc (const char *descriptor)
 	char		reason[1024];
 	int		fd;
 
-	if (!(fd = atol(descriptor)))
+	if (!is_number(descriptor))
 	{
 		yell("File descriptor (%s) should be a number", descriptor);
 		return -1;
 	}
 
 	if (!(dcc = get_dcc_by_filedesc(fd)))
-	return -1;
-
+		return -1;
 
 	if (!(dcc->flags & DCC_CONNECTING))
-	return 0;
+		return 0;
 
 	snprintf(reason, 1024, "WAIT on DCC %s", descriptor);
 	lock_stack_frame();

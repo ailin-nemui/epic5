@@ -1,4 +1,4 @@
-/* $EPIC: status.c,v 1.50 2005/01/28 05:16:30 jnelson Exp $ */
+/* $EPIC: status.c,v 1.51 2005/02/03 01:33:39 jnelson Exp $ */
 /*
  * status.c: handles the status line updating, etc for IRCII 
  *
@@ -843,12 +843,8 @@ static	char	my_buffer[64];
  */
 STATUS_FUNCTION(status_server)
 {
-	char	*rest;
-const	char	*n;
-	char	*name;
-	char	*next;
+const	char	*n = NULL;
 static	char	my_buffer[64];
-	size_t	len;
 
 #ifdef OLD_STATUS_S_EXPANDO_BEHAVIOR
 	/*
@@ -871,61 +867,21 @@ static	char	my_buffer[64];
 	if (!server_format)
 		return empty_string;
 
-	/* Figure out what server this window is on */
-	if (map == 3)
+	/* Map 0 uses the shortname, shown when multi-connected */
+	/* Map 1 uses the shortname, shown at all times */
+	/* Map 2 uses the full name, shown at all times */
+	/* Map 3 uses the groupname, shown at all times */
+	if (map == 0 || map == 1) 
+		n = get_server_altname(window->server, 0);
+	else if (map == 3)
 		n = get_server_group(window->server);
-	else
+
+	if (!n)
 		n = get_server_name(window->server);
+	if (!n)
+		return "Unknown";
 
-	if (map == 2 || map == 3)
-	{
-		snprintf(my_buffer, sizeof my_buffer, server_format, n);
-		return my_buffer;
-	}
-
-	name = LOCAL_COPY(n);
-
-	/*
-	 * If the first segment before the first dot is a number,
-	 * then its an ip address, and use the whole thing.
-	 */
-	if (strtoul(name, &next, 10) && *next == '.')
-	{
-		snprintf(my_buffer, sizeof my_buffer, server_format, name);
-		return my_buffer;
-	}
-
-	/*
-	 * Get the stuff to the left of the first dot.
-	 */
-	if (!(rest = strchr(name, '.')))
-	{
-		snprintf(my_buffer, sizeof my_buffer, server_format, name);
-		return my_buffer;
-	}
-
-	/*
-	 * If the first segment is 'irc', thats not terribly
-	 * helpful, so get the next segment.
-	 */
-	if (!strncmp(name, "irc", 3))
-	{
-		name = rest + 1;
-		if (!(rest = strchr(name + 1, '.')))
-			rest = name + strlen(name);
-	}
-
-	/*
-	 * If the name of the server is > 60 chars, crop it back to 60.
-	 */
-	if ((len = rest - name) > 60)
-		len = 60;
-
-	/*
-	 * Plop the server into the server_format and return it.
-	 */
-	name[len] = 0;
-	snprintf(my_buffer, sizeof my_buffer, server_format, name);
+	snprintf(my_buffer, sizeof my_buffer, server_format, n);
 	return my_buffer;
 }
 

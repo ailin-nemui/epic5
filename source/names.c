@@ -1,4 +1,4 @@
-/* $EPIC: names.c,v 1.63 2004/07/29 14:47:06 jnelson Exp $ */
+/* $EPIC: names.c,v 1.64 2005/02/03 01:33:39 jnelson Exp $ */
 /*
  * names.c: This here is used to maintain a list of all the people currently
  * on your channel.  Seems to work 
@@ -782,6 +782,7 @@ static void	decifer_mode (const char *modes, Channel *chan)
 	Nick *	nick;
 	char *	mode_str;
 	char	local_buffer[BIG_BUFFER_SIZE];
+	int	type;
 
 	/* Make a copy of it.*/
 	mode_str = LOCAL_COPY(modes);
@@ -796,7 +797,8 @@ static void	decifer_mode (const char *modes, Channel *chan)
 	    const char *arg = NULL;
 
 	    /* Grab an argument if this mode takes one */
-	    switch (chanmodetype(*mode_str))
+	    type = chanmodetype(*mode_str);
+	    switch (type)
 	    {
 		case 6: case 1:
 			break;
@@ -910,13 +912,11 @@ static void	decifer_mode (const char *modes, Channel *chan)
 			continue;
 		}
 
-		case 'b':
-		case 'e':
-		case 'I':
-			continue;	/* Just skip 'em. */
-
 		default:
 		{
+		    if (type == 2 || type == 3 || type == 4)
+			continue;	/* Skip modes with args */
+
 		    if (add)
 			add_mode_to_str(chan->base_modes, 54, *mode_str);
 		    else

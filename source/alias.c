@@ -1,4 +1,4 @@
-/* $EPIC: alias.c,v 1.67 2005/01/26 00:32:40 jnelson Exp $ */
+/* $EPIC: alias.c,v 1.68 2005/02/03 01:33:39 jnelson Exp $ */
 /*
  * alias.c -- Handles the whole kit and caboodle for aliases.
  *
@@ -3353,7 +3353,9 @@ char    *symbolctl      (char *input)
 		names = pmatch_builtin_variables(pattern, &num, maxret, start, rev);
 	    } else if (!my_stricmp(type, "*")) {
 		names = pmatch_any_symbol(pattern, &num, maxret, start, rev);
-	    }
+	    } else
+		RETURN_EMPTY;
+
 	    for (i = 0; i < num; i++)
 		malloc_strcat_word_c(&ret, space, names[i], &clue);
 	    new_free((char **)&names);
@@ -3649,5 +3651,4 @@ char    *symbolctl      (char *input)
 	} else
 	    RETURN_EMPTY;
 }
-
 
