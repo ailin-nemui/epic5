@@ -1,4 +1,4 @@
-/* $EPIC: server.c,v 1.131 2004/04/13 00:19:48 jnelson Exp $ */
+/* $EPIC: server.c,v 1.132 2004/06/01 01:57:14 jnelson Exp $ */
 /*
  * server.c:  Things dealing with that wacky program we call ircd.
  *
@@ -2875,6 +2875,8 @@ char 	*serverctl 	(char *input)
 			retval = get_server_005s(input);
 			from_server = ofs;
 			RETURN_MSTR(retval);
+		} else if (!my_strnicmp(listc, "STATUS", len)) {
+			RETURN_STR(server_states[get_server_status(refnum)]);
 		}
 	} else if (!my_strnicmp(listc, "SET", len)) {
 		GET_INT_ARG(refnum, input);

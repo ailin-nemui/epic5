@@ -240,3 +240,4 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Fix a bug with hook pattern counting found by hsoc and adm.
 * Update to newest help script from howl
 * Add a "slowcat" script I wrote for larne.
+* Add $serverctl(GET * STATUS) for ce.
