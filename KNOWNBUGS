@@ -221,3 +221,4 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Use a bunch of macros, to handle with getting and setting server attrs.
 * Make as much as possible use refnums as params and not from_server.
 * Fix bugs with send_to_aserver(). doh!
+* Fix /CLEAR so it does an update_all_windows() to actually do the clear!

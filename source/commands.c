@@ -1,4 +1,4 @@
-/* $EPIC: commands.c,v 1.47 2002/12/19 03:22:58 jnelson Exp $ */
+/* $EPIC: commands.c,v 1.48 2002/12/20 01:38:50 jnelson Exp $ */
 /*
  * commands.c -- Stuff needed to execute commands in ircII.
  *		 Includes the bulk of the built in commands for ircII.
@@ -501,6 +501,8 @@ BUILT_IN_COMMAND(e_clear)
 		else
 			unclear_window_by_refnum(0, unhold);
 	}
+
+	update_all_windows();
 }
 
 /* comment: does the /COMMENT command, useful in .ircrc */
