@@ -1,4 +1,4 @@
-/* $EPIC: names.c,v 1.65 2005/03/04 00:57:44 jnelson Exp $ */
+/* $EPIC: names.c,v 1.66 2005/03/08 13:45:44 jnelson Exp $ */
 /*
  * names.c: This here is used to maintain a list of all the people currently
  * on your channel.  Seems to work 
@@ -1663,6 +1663,7 @@ void	channel_check_windows (void)
 			continue;			/* This is OK. */
 
 		if (tmp->server != get_window_server(tmp->winref))
+		    if (get_server_status(tmp->server) != SERVER_CLOSING)
 			panic("Referential integrity failure: "
 			      "Channel [%s] on server [%d] is connected "
 			      "to window [%d] on server [%d]",
@@ -1678,6 +1679,7 @@ void	channel_check_windows (void)
 			panic("I thought we just checked for this! [2]");
 
 		if (!get_window_by_refnum(tmp->winref))
+		    if (get_server_status(tmp->server) != SERVER_CLOSING)
 			panic("Referential integrity failure: "
 			      "Channel [%s] on server [%d] is connected "
 			      "to window [%d] "
