@@ -1,4 +1,4 @@
-/* $EPIC: numbers.c,v 1.28 2002/08/26 18:10:55 crazyed Exp $ */
+/* $EPIC: numbers.c,v 1.29 2002/08/27 15:14:32 crazyed Exp $ */
 /*
  * numbers.c: handles all those strange numeric response dished out by that
  * wacky, nutty program we call ircd 
@@ -290,11 +290,8 @@ void 	numbered_command (char *from, int comm, char **ArgList)
 	}
 
 	case 307:		/* #define RPL_USERIP           307 */
-		if (!get_server_005(from_server, "USERIP")) {
-                	PasteArgs(ArgList, 0);
-                	do_hook(current_numeric, "%s %s", from, ArgList[0]);
-			break;
-		}
+		if (!get_server_005(from_server, "USERIP"))
+			goto DEFAULT;
 	case 302:		/* #define RPL_USERHOST         302 */
 		userhost_returned(from, ArgList);
 		break;
@@ -1060,6 +1057,7 @@ void 	numbered_command (char *from, int comm, char **ArgList)
 	 * PasteArgs here because we still need the arguments
 	 * separated for use elsewhere.
 	 */
+	DEFAULT:
 	default:
 	{
 		char	*ArgSpace = (char *) 0;
