@@ -1,4 +1,4 @@
-/* $EPIC: status.c,v 1.33 2003/10/10 06:09:01 jnelson Exp $ */
+/* $EPIC: status.c,v 1.34 2003/12/03 22:17:40 jnelson Exp $ */
 /*
  * status.c: handles the status line updating, etc for IRCII 
  *
@@ -101,6 +101,7 @@ STATUS_FUNCTION(status_scroll_info);
 STATUS_FUNCTION(status_windowspec);
 STATUS_FUNCTION(status_percent);
 STATUS_FUNCTION(status_test);
+STATUS_FUNCTION(status_swappable);
 
 /* These are used as placeholders for some expandos */
 static	char	*mode_format 		= (char *) 0;
@@ -197,6 +198,7 @@ struct status_formats status_expandos[] = {
 { 1, 'R', status_refnum_real,   NULL, 			-1 },
 { 1, 'S', status_server,        &server_format,     	STATUS_SERVER_VAR },
 { 1, 'T', status_test,		NULL,			-1 },
+{ 1, 'W', status_swappable,	NULL,			-1 },
 { 1, '+', status_mode,		&mode_format,       	STATUS_MODE_VAR },
 { 2, '0', status_user,	 	NULL, 			-1 },
 { 2, '1', status_user,	 	NULL, 			-1 },
@@ -1519,4 +1521,20 @@ STATUS_FUNCTION(status_test)
 	static	char	retval[] = "TEST";
 	return retval;
 }
+
+/*
+ * This returns something if this window is currently in scrollback mode.
+ * Useful if you sometimes forget!
+ */
+STATUS_FUNCTION(status_swappable)
+{
+	char *stuff;
+
+	if (!window->swappable && 
+	    (stuff = get_string_var(STATUS_NOSWAP_VAR)))
+		return stuff;
+	else
+		return empty_string;
+}
+
 

@@ -1,4 +1,4 @@
-/* $EPIC: term.c,v 1.11 2003/07/22 21:12:54 jnelson Exp $ */
+/* $EPIC: term.c,v 1.12 2003/12/03 22:17:40 jnelson Exp $ */
 /*
  * term.c -- termios and (termcap || terminfo) handlers
  *
@@ -1036,6 +1036,13 @@ int 	term_init (void)
 
 	newb = oldb;
 	newb.c_lflag &= ~(ICANON | ECHO); /* set equ. of CBREAK, no ECHO */
+#ifdef IEXTEN
+	if (use_iexten == 1)
+		newb.c_lflag |= IEXTEN;	    /* Turn off DISCARD/LNEXT */
+	else if (use_iexten == 0)
+		newb.c_lflag &= ~(IEXTEN);  /* Turn off DISCARD/LNEXT */
+#endif
+
 	newb.c_cc[VMIN] = 1;	          /* read() satified after 1 char */
 	newb.c_cc[VTIME] = 0;	          /* No timer */
 
@@ -1047,6 +1054,10 @@ int 	term_init (void)
 #               endif
 #       endif
 
+	/* 
+	 * We can't just turn off ISIG since we want ^C to send SIGINT,
+	 * so we turn off all of the other signal-generating keys
+	 */
 	newb.c_cc[VQUIT] = _POSIX_VDISABLE;
 #	ifdef VDSUSP
 		newb.c_cc[VDSUSP] = _POSIX_VDISABLE;

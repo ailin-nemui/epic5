@@ -74,6 +74,7 @@ typedef	struct	WindowStru
 	int	window_level;		/* Lastlog level for the window */
 	int	skip;			/* Whether window should be skipped */
 	int	columns;		/* How wide we are when hidden */
+	int	swappable;		/* Can it be swapped in or out? */
 
 	/* Input and Status stuff */
 	char	*prompt;		/* Current EXEC prompt for window */

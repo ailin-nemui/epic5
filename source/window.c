@@ -1,4 +1,4 @@
-/* $EPIC: window.c,v 1.84 2003/12/02 21:02:11 jnelson Exp $ */
+/* $EPIC: window.c,v 1.85 2003/12/03 22:17:40 jnelson Exp $ */
 /*
  * window.c: Handles the organzation of the logical viewports (``windows'')
  * for irc.  This includes keeping track of what windows are open, where they
@@ -192,6 +192,7 @@ Window	*new_window (Screen *screen)
 	new_w->change_line = -1;
 	new_w->scroll = 1;
 	new_w->skip = 0;
+	new_w->swappable = 1;
 	new_w->notify_level = real_notify_level();
 	if (!current_window)		/* First window ever */
 		new_w->window_level = LOG_ALL;
@@ -406,7 +407,10 @@ void 	delete_window (Window *window)
 	else if (fixed || !invisible_list)
 		remove_window_from_screen(window, 0);
 	else if (invisible_list)
-		swap_window(window, invisible_list);
+	{
+		window->swappable = 1;
+		swap_window(window, NULL);
+	}
 	else
 	{
 		yell("I don't know how to kill window [%d]", window->refnum);
@@ -820,11 +824,25 @@ void	recalculate_window_positions (Screen *screen)
  */
 static void 	swap_window (Window *v_window, Window *window)
 {
+	int	check_hidden = 1;
+
 	/*
 	 * v_window -- window to be swapped out
 	 * window -- window to be swapped in
 	 */
 
+	/* Find any invisible window to swap in.  Prefer swappable ones */
+	if (!window)
+	{
+		for (window = invisible_list; window; window = window->next)
+			if (window->swappable)
+				break;
+	}
+	if (!window && invisible_list)
+	{
+		check_hidden = 0;
+		window = invisible_list;
+	}
 	if (!window)
 	{
 		say("The window to be swapped in does not exist.");
@@ -836,6 +854,24 @@ static void 	swap_window (Window *v_window, Window *window)
 		say("You can only SWAP a hidden window with a visible window.");
 		return;
 	}
+
+	if (!v_window->swappable)
+	{
+		if (v_window->name)
+			say("Window %s is not swappable", v_window->name);
+		else
+			say("Window %d is not swappable", v_window->refnum);
+		return;
+	}
+	if (check_hidden && !window->swappable)
+	{
+		if (window->name)
+			say("Window %s is not swappable", window->name);
+		else
+			say("Window %d is not swappable", window->refnum);
+		return;
+	}
+
 
 	/*
 	 * Put v_window on invisible list
@@ -1460,7 +1496,18 @@ void 	hide_window (Window *window)
 {
 	if (!window->screen)
 	{
-		say("You can't hide an invisible window.");
+		if (window->name)
+			say("Window %s is already hidden", window->name);
+		else
+			say("Window %d is already hidden", window->refnum);
+		return;
+	}
+	if (!window->swappable)
+	{
+		if (window->name)
+			say("Window %s can't be hidden", window->name);
+		else
+			say("Window %d can't be hidden", window->refnum);
 		return;
 	}
 	if (window->screen->visible_windows - 
@@ -1554,6 +1601,15 @@ void 	swap_previous_window (char dumb, char *dumber)
 /* show_window: This makes the given window visible.  */
 static void 	show_window (Window *window)
 {
+	if (!window->swappable)
+	{
+		if (window->name)
+			say("Window %s can't be made visible", window->name);
+		else
+			say("Window %d can't be made visible", window->refnum);
+		return;
+	}
+
 	if (!window->screen)
 	{
 		remove_from_invisible_list(window);
@@ -2546,7 +2602,9 @@ static Window *get_invisible_window (const char *name, char **args)
 		if ((tmp = get_window(name, &arg)) != NULL)
 		{
 			if (!tmp->screen)
+			{
 				return (tmp);
+			}
 			else
 			{
 				if (tmp->name)
@@ -4564,6 +4622,15 @@ static Window *window_swap (Window *window, char **args)
 	return current_window;
 }
 
+static Window *window_swappable (Window *window, char **args)
+{
+	if (get_boolean("SWAPPABLE", args, &window->swappable))
+		return NULL;
+
+	window_statusbar_needs_update(window);
+	return window;
+}
+
 static Window *window_unbind (Window *window, char **args)
 {
 	char *arg;
@@ -4671,6 +4738,7 @@ static const window_ops options [] = {
 	{ "STATUS_FORMAT2",	window_status_format2	},
 	{ "STATUS_SPECIAL",	window_status_special	},
 	{ "SWAP",		window_swap 		},
+	{ "SWAPPABLE",		window_swappable	},
 	{ "UNBIND",		window_unbind 		},
 	{ NULL,			NULL 			}
 };
@@ -5598,6 +5666,8 @@ char 	*windowctl 	(char *input)
 		RETURN_INT(w->log);
 	    } else if (!my_strnicmp(listc, "LOGFILE", len)) {
 		RETURN_STR(w->logfile);
+	    } else if (!my_strnicmp(listc, "SWAPPABLE", len)) {
+		RETURN_INT(w->swappable);
 	    } else if (!my_strnicmp(listc, "DECEASED", len)) {
 		RETURN_INT(w->deceased);
 	    }
@@ -5657,6 +5727,7 @@ char 	*windowctl 	(char *input)
 	    } else if (!my_strnicmp(listc, "LASTLOG_MAX", len)) {
 	    } else if (!my_strnicmp(listc, "LOGGING", len)) {
 	    } else if (!my_strnicmp(listc, "LOGFILE", len)) {
+	    } else if (!my_strnicmp(listc, "SWAPPABLE", len)) {
 	    } else if (!my_strnicmp(listc, "DECEASED", len)) {
 	    }
 #endif

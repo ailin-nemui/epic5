@@ -1,4 +1,4 @@
-/* $EPIC: irc.c,v 1.647 2003/12/03 05:21:11 jnelson Exp $ */
+/* $EPIC: irc.c,v 1.648 2003/12/03 22:17:40 jnelson Exp $ */
 /*
  * ircII: a new irc client.  I like it.  I hope you will too!
  *
@@ -52,7 +52,7 @@ const char internal_version[] = "20031202";
 /*
  * In theory, this number is incremented for every commit.
  */
-const unsigned long	commit_id = 652;
+const unsigned long	commit_id = 653;
 
 /*
  * As a way to poke fun at the current rage of naming releases after
@@ -101,6 +101,9 @@ int		irc_port = IRC_PORT;
 
 /* Set if ircII should usurp flow control, unset if not.  Probably bogus. */
 int		use_flow_control = 1;
+
+/* Set if ircII should turn on IEXTEN, unset to suppress */
+int		use_iexten = -1;
 
 /* 
  * When a numeric is being processed, this holds the negative value
@@ -243,8 +246,10 @@ static		char	switch_help[] =
 #endif
 "      -B\tLoads your .ircrc file before you connect to a server.      \n\
       -d\tThe program should run in ``dumb mode'' (no fancy screen)   \n\
-      -f\tThe program wont mess with your flow control                \n\
+      -f\tThe program won't mess with your flow control                \n\
       -F\tThe program will mess with your flow control                \n\
+      -o\tThe program wll turn on IEXTEN terminal setting (^V/^O)     \n\
+      -O\tThe program will turn off IEXTEN (so you can bind ^V/^O)    \n\
       -h\tPrint this help message                                     \n\
       -q\tThe program will not load your .ircrc file                  \n\
       -s\tThe program will not connect to a server upon startup       \n\
@@ -655,6 +660,14 @@ static	void	parse_args (int argc, char **argv)
 
 			case 'F': /* dont use flow control */
 				use_flow_control = 0;
+				break;
+
+			case 'o': /* Use IEXTEN */
+				use_iexten = 1;
+				break;
+
+			case 'O': /* dont use IEXTEN */
+				use_iexten = 0;
 				break;
 
 			case 'd': /* use dumb mode */

@@ -1,4 +1,4 @@
-/* $EPIC: vars.c,v 1.43 2003/10/28 05:53:57 jnelson Exp $ */
+/* $EPIC: vars.c,v 1.44 2003/12/03 22:17:40 jnelson Exp $ */
 /*
  * vars.c: All the dealing of the irc variables are handled here. 
  *
@@ -250,6 +250,7 @@ static	IrcVariable irc_variable[] =
 	{ "STATUS_MAIL",		STR_TYPE_VAR,	0, 0, NULL, build_status, 0, 0 },
 	{ "STATUS_MODE",		STR_TYPE_VAR,	0, 0, NULL, build_status, 0, 0 },
 	{ "STATUS_NICKNAME",		STR_TYPE_VAR,	0, 0, NULL, build_status, 0, 0 },
+	{ "STATUS_NOSWAP",		STR_TYPE_VAR,	0, 0, NULL, build_status, 0, 0 },
 	{ "STATUS_NOTIFY",		STR_TYPE_VAR,	0, 0, NULL, build_status, 0, 0 },
         { "STATUS_NO_REPEAT",           BOOL_TYPE_VAR,  DEFAULT_STATUS_NO_REPEAT, 0, NULL, build_status, 0, 0 },
 	{ "STATUS_OPER",		STR_TYPE_VAR,	0, 0, NULL, build_status, 0, 0 },
@@ -376,6 +377,7 @@ void 	init_variables (void)
 	set_string_var(STATUS_MAIL_VAR, DEFAULT_STATUS_MAIL);
 	set_string_var(STATUS_MODE_VAR, DEFAULT_STATUS_MODE);
 	set_string_var(STATUS_NICK_VAR, DEFAULT_STATUS_NICK);
+	set_string_var(STATUS_NOSWAP_VAR, DEFAULT_STATUS_NOSWAP);
 	set_string_var(STATUS_OPER_VAR, DEFAULT_STATUS_OPER);
 	set_string_var(STATUS_OVERWRITE_VAR, DEFAULT_STATUS_OVERWRITE);
 	set_string_var(STATUS_QUERY_VAR, DEFAULT_STATUS_QUERY);

@@ -2,7 +2,8 @@ EPIC4 Projects, Bugs, and other Errata:
 
 KNOWN ERRATA (eg, bugs, or unresolved requests):
 ------------------------------------------------
-<none>
+* Need to document -o, -O, and "swappable" stuff.
+
 
 [See http://www.epicsol.org/PROJECTS for things to come in the future]
 [See http://www.epicsol.org/CHANGELOG for things that changed in the past]
@@ -41,3 +42,12 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * More script changes from nsx.  Gotta ask him to stop this. :d
 * Another round of minor compiler nits.  Nothing worth fretting over.
 * Fix a couple of minor compiler nits.
+* Add /SET STATUS_NOSWAP
+* Fix #define DEBUG_EXTRACTW_DEBUG/LASTLOG
+* Add -o and -O command line options to turn off IEXTEN termio() options
+* Add /WINDOW SWAPPABLE (defaults to on)
+* Add %{1}W status expando, expands to /SET STATUS_NOSWAP if SWAPPABLE OFF
+* Don't allow windows to be swapped in or out if SWAPPABLE OFF
+* Don't allow windows to be shown or hidden if SWAPPABLE OFF
+* Do allow windows to be swapped in with WINDOW KILL even if SWAPPABLE OFF
+* Add $windowctl(GET <refnum> SWAPPABLE)
