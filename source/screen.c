@@ -2317,7 +2317,7 @@ static void    window_disp (Window *window, const unsigned char *str, const unsi
 {
         u_char **       lines;
         int             cols;
-	int		numl;
+	int		numl = 0;
 
 	add_to_log(window->log_fp, window->refnum, orig_str);
 	add_to_lastlog(window, orig_str);
