@@ -1500,6 +1500,94 @@ void	unset_window_current_channel (Window *old_w, Window *new_w)
 }
 
 /*
+ * This moves "chan" from "old_w" to "new_w", safely -- this replaces the old
+ * way of "unset_window_current_channel" and "reset_window_current_channel".
+ * This was written by Robohak in January 2001.
+ */
+void   move_channel_to_window (const char *chan, Window *old_w, Window *new_w)
+{
+	Channel *tmp = NULL;
+	char *	old_chan = NULL;
+	int	reset_old_w = 0;
+	int	found = 0;
+
+	if (!old_w || old_w->server < 0 || !chan || !strcmp(chan, zero))
+	       return;
+
+	while (traverse_all_channels(&tmp, old_w->server))
+	{
+	    if (tmp->window == old_w && !my_stricmp(chan, tmp->channel))
+	    {
+		if (!my_stricmp(chan, old_w->current_channel))
+		{
+			new_free(&old_w->current_channel);
+			old_w->update |= UPDATE_STATUS;
+
+			if (new_w)
+			{
+			    if (new_w->current_channel)
+				old_chan = m_strdup(new_w->current_channel);
+			    else
+				old_chan = NULL;
+
+			    malloc_strcpy(&new_w->current_channel, chan);
+
+			    /* 
+			     * Remove "waiting_channel" if we're waiting for 
+			     * this channel. ;-) 
+			     */
+			    if (new_w->waiting_channel && 
+				!my_stricmp(chan, new_w->waiting_channel))
+				    new_free(&new_w->waiting_channel);
+
+			    new_w->update |= UPDATE_STATUS;
+			    set_channel_window(new_w, new_w->current_channel);
+			}
+
+			reset_old_w = 1;
+			break;
+		}
+	    }
+	}
+
+	if (reset_old_w)
+	{
+	    while (traverse_all_channels(&tmp, old_w->server))
+	    {
+		if (tmp->window == old_w)
+		{
+		    malloc_strcpy(&old_w->current_channel, tmp->channel);
+
+		    /* 
+		     * Remove "waiting_channel" if we're waiting for this 
+		     * channel. ;-) 
+		     */
+		    if (old_w->waiting_channel && !my_stricmp(tmp->channel, 
+							old_w->waiting_channel))
+			new_free(&old_w->waiting_channel);
+
+		    old_w->update |= UPDATE_STATUS;
+		    set_channel_window(old_w, old_w->current_channel);
+		    found = 1;
+		    break;
+		}
+	    }
+
+	    do_hook(SWITCH_CHANNELS_LIST, "%d %s %s", 
+			old_w->refnum, chan, zero);
+	    if (new_w)
+		    do_hook(SWITCH_CHANNELS_LIST, "%d %s %s", 
+			new_w->refnum, old_chan ? old_chan : zero, chan);
+	    if (found)
+		do_hook(SWITCH_CHANNELS_LIST, "%d %s %s", old_w->refnum, zero,
+		       old_w->current_channel ? old_w->current_channel : zero);
+
+	    new_free(&old_chan);
+	}
+}
+
+
+/*
  * This attempts to find another current channel for a window when the 
  * current channel for a window is 'stolen' by another window.
  */

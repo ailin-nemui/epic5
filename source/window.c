@@ -1917,20 +1917,13 @@ int	channel_going_away (Window *window, const char *channel)
 
 	if (!my_stricmp(window->current_channel, channel))
 	{
-		/* 
-		 * Tell the client that they are attached to window NULL,
-		 * and wipe our notion of this being our current channel.
-		 */
-		unset_window_current_channel(window, NULL);
-
 		/*
 		 * If the user wants a new current channel, then grab any
 		 * convenient channel that is currently attached to us.
-		 * Otherwise, we have already divorced ourselves from the
-		 * old current channel, and we are done.
+		 * Otherwise, remove the channel from the window.
 		 */
 		if (get_int_var(SWITCH_CHANNEL_ON_PART_VAR))
-			reset_window_current_channel(window);
+			move_channel_to_window(channel, window, NULL);
 		else 		/* Eh, better safe than sorry. */
 			set_channel_by_refnum(window->refnum, NULL);
 
@@ -2798,8 +2791,7 @@ static Window *window_bind (Window *window, char **args)
 			    !my_stricmp(w->current_channel, arg) &&
 			    w->server == window->server)
 			{
-				unset_window_current_channel(w, window);
-				reset_window_current_channel(w);
+				move_channel_to_window(arg, w, window);
 				w->update |= UPDATE_STATUS;
 			}
 		}
@@ -2905,8 +2897,7 @@ Window *window_channel (Window *window, char **args)
 			if (w->current_channel &&
 				!my_stricmp(arg, w->current_channel))
 			{
-			    unset_window_current_channel(w, window);
-			    reset_window_current_channel(w);
+			    move_channel_to_window(arg, w, window);
 			    w->update |= UPDATE_STATUS;
 			}
 		}

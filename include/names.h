@@ -53,6 +53,7 @@ struct WindowStru *get_channel_window	(Char *, int);
 	int	auto_rejoin_callback	(void *);
 	void	swap_channel_win_ptr	(struct WindowStru *, struct WindowStru *);
 	void	reassign_window_channels	(struct WindowStru *);
+	void	move_channel_to_window	(const char *, struct WindowStru *, struct WindowStru *);
 	void	unset_window_current_channel (struct WindowStru *, 
 						struct WindowStru *);
 	void	reset_window_current_channel (struct WindowStru *);
