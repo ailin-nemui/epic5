@@ -1,12 +1,147 @@
 EPIC5-0.1
 
+*** News 03/19/2004 -- New key binding, SWITCH_QUERY
+	Whenever a window has multple nicknames in its nickname list,
+	and one of those nicknames is active as the window's query, it
+	is possible to use this binding to switch between all of the 
+	nicks in the nick list, just in the same way you can switch
+	between channels using SWITCH_CHANNELS.  If the window does not
+	have an active query, this key binding will have no effect, even
+	if the window has nicks in its nicklist!
+
+*** News 03/19/2004 -- Unification of /WINDOW QUERY and /WINDOW ADD
+	Historically, when you /WINDOW QUERY (or just /QUERY) <NICK>, then
+	it would add <NICK> to the window's "NICK LIST".  The "NICK LIST" 
+	is a list of nicknames for which output goes to that window, just
+	like output to channels go to windows.  Output to or from a nick
+	that is not on any window's "nick list" goes to the LEVEL_MSG level.
+	When you used /WINDOW QUERY <NICK2> to change the query, it would
+	remove the old query from the nick list, and messages to and from
+	the original query went back to LEVEL_MSG.
+
+	Well, this has been unified somewhat.  Now the following rules apply:
+	1) When you /WINDOW QUERY <NICK>, then <NICK> is added to the 
+	   window's nick list.
+	2) If the window already has a query, then the old query nickname
+	   is NO LONGER REMOVED from the window's nick list.  Output to 
+	   that nick will continue to go to the window as it had before.
+	3) When you use /WINDOW QUERY to cancel a query, then the current
+	   query IS STILL REMOVED from the window's nick list, and output
+	   to or from that nick will go to LEVEL_MSGS.
+
+	It is no longer possible to have a window query that is not on the
+	window's nicklist, because the query is selected from the members of
+	the window's nicklist, rather than being a separate thing.
+
+*** News 03/17/2004 -- Change to how /SET INDENT behaves
+	Historically, if you have /SET INDENT ON, and the first word of the
+	first line of output is wider than 1/3 of your screen, then the
+	second (and subsequent) line(s) of output are NOT INDENTED.  This 
+	has been changed so subsequent lines are indented 1/3 of the window's
+	width.  To understand this change, think about how /set indent usually
+	works, and if it would indent more than 1/3 of your screen, then it 
+	will indent 1/3 instead of not at all.
+
+*** News 03/17/2004 -- New flag to /XECHO , /XECHO -F
+	If you use the /XECHO -F flag, "hidden window output notification"
+	will not occur for any hidden windows that receive the output. 
+	
+*** News 03/16/2004 -- You can now bind the 255 character (ÿ)
+	There has been a problem with the new key binding system that
+	made it difficult for Russian language speakers to bind the 255
+	character which is in their alphabet.  This should be fixed now.
+
+*** News 03/16/2004 -- Can now join channels simultaneously per window
+	Previously, if you attempted to join multiple channels in the same
+	window simultaneously, you were not assured that all of the channels
+	would go to that window.  Now you can be assured of this.  This should
+	make reconnection/rejoin scripts much more sane.
+
+*** News 03/16/2004 -- New built in function, $startupfile()
+	This expands to the file that the client loaded at startup as your
+	"startup file".  Usually this is ~/.ircrc or ~/.epicrc or whatever
+	you specified as the IRCRC environment variable or the argument to
+	-l or -L on the command line.
+
+*** News 03/16/2004 -- Unknown CTCP requests offered via /ON CTCP_REQUEST
+	It was pointed out that unknown/unhandled CTCP requests were only
+	being hooked through /on ctcp, so it wasn't possible to use 
+	/on ctcp_request to handle EVERY request.  Well, now unhandled CTCPs
+	are hooked through both /on's just like handled CTCPs are.
+
+*** News 03/16/2004 -- Semantic changes to $connect()
+	You used to be able to depend on /ON DCC_RAW "% % E %" or 
+	/ON DCC_RAW "% % C" hooking before $connect() returned.  Now that
+	$connect() is nonblocking, YOU CAN NO LONGER DEPEND ON THIS.  You
+	must set up your script to assume that /ON DCC_RAW will be hooked
+	asynchronously, after at least the next sequence point.  Think of 
+	it as being like not being able to depend on /WHOIS returning the
+	numerics.  I'll probably add a way to /wait for a connection in the
+	future.  Stay tuned.
+
+*** News 03/16/2004 -- DCC connections are now nonblocking
+	All connect()ions for DCC, including /DCC GET, /DCC CHAT, /DCC RESUME
+	and $connect() are all fully nonblocking.  This means all connects
+	in EPIC are now fully nonblocking! HUZZAH!
+
+*** News 03/15/2004 -- /HELP command now handled by script
+	The built in /HELP command has been replaced by a script that
+	was written by howl for our use.  Much thanks to him!
+
+*** News 03/14/2004 -- Six new USER lastlog levels
+	You may now use USER5, USER6, USER7, USER8, USER9, and USER10
+	as levels with your window, lastlog, flood, and ignore.  Just 
+	use /xecho -l USER5 for example to send to your USER5 window.
+
+*** News 01/20/2004 -- kqueue() support
+	You can uncomment #define USE_FREEBSD_KQUEUE in newio.h if you
+	want to play around with this experimental feature.
+
+*** News 01/15/2004 -- /WINDOW DISCON and /WINDOW NOSERV now the same
+	There was a subtle semantic difference between /WINDOW DISCON 
+	and /WINDOW NOSERV that had to do with the window's "last server"
+	that was used for reconnects.  Because the client no longer does
+	reconnections, this difference is moot.  These two commands now 
+	always do the same thing, which is to disassociate the window
+	with any server.  The window becomes "server-less".
+
+*** News 01/15/2004 -- Changes to /SERVER command
+	/SERVER
+	     Show the server list.
+	/SERVER -DELETE <refnum|desc>
+	     Remove server <refnum> (or <desc>) from server list.
+	     Fails if you do not give it a refnum or desc.
+	     Fails if server does not exist.
+	     Fails if server is open.
+	/SERVER -ADD <desc>
+	     Add server <desc> to server list.
+	     Fails if you do not give it a <desc>
+	/SERVER +<refnum|desc>
+	     If the server's state is "CLOSED", change it to "RECONNECT".  
+	     This allows the server to reconnect if windows are pointed to it.
+	     Note: server reconnection is asynchronous
+	/SERVER -<refnum|desc>
+	     Unconditionally close a server connection
+	     Note: server disconnection is synchronous!
+	/SERVER +
+	     Switch windows from current server to next server in same group
+	/SERVER -
+	     Switch windows from current server to previous server in same group
+	/SERVER <refnum|desc>
+	     Switch windows from current server to another server.
+
+*** News 01/08/2004 -- /ON WIDELIST went away here
+	This /ON hasn't been hooked in many a year, and here it officially
+	passed into the void.
+
 *** News 01/07/2004 -- Removal of WINDOW BIND feature
 	As part of the larger project to decouple windows from channels,
 	the "window bind" feature has been removed.  This means you can 
 	no longer /WINDOW BIND, /WINDOW REBIND, /WINDOW UNBIND, and you 
-	cannot use $windowctl(* BIND_CHANNEL *).  It is expected that 
-	eventually scripts will take over the job of routing channels to 
-	the appropriate windows and EPIC will stay entirely out of the way.
+	cannot use $windowctl(* BIND_CHANNEL *) or $winbound().  It is 
+	expected that eventually scripts will take over the job of routing 
+	channels to the appropriate windows and EPIC will stay entirely 
+	out of the way.
 
 *** News 01/07/2004 -- New /ON, /ON SERVER_STATUS
 	This /ON is thrown every time a server changes its "state".
@@ -23,7 +158,33 @@ EPIC5-0.1
 	I doubt anyone will notice this, and if you do, bummer.
 
 *** News 01/07/2004 -- Server states
-	<This is a big deal to document this properly.   Stay tuned>
+	Servers now exist in one of several "states" each time it connects
+	to the server.  It moves through each of the states from start to
+	end, and stays at the end until manually reset by the user (or script)
+
+	RECONNECT	As soon as a window is attached to the server, the 
+			server should be connected to.
+	CONNECTING	A connection to the server is in progress.  The server 
+			is not ready to be used.
+	REGISTERING	We are attempting protocol registration (NICK/USER) 
+			with the server.  The server is open, but we cannot 
+			really use it yet.
+	SYNCING		Our registration has been accepted and we're doing 
+			whatever meta-tasks are needed to get the connection 
+			fully active
+	ACTIVE		The connection is fully ready for all use.
+	EOF		An End Of File (EOF) has been detected from the server.
+			The connection was closed by the server and cannot be 
+			used any longer.
+	CLOSING		The connection to the server is being shut down.  If 
+			the previous state was "ACTIVE" then you can still 
+			send something to the server.  If the previous state
+			was "EOF" then it's too late.  You cannot stop the
+			closing of a server.
+	CLOSED		The server is disconnected and cannot be used.  The
+			server (and any windows connected to this server) stay
+			in this state until the user resets the state to 
+			RECONNECT.
 
 *** News 01/07/2004 -- Channels are not tracked across disconnects
 	When you are disconnected from a server for *any* reason, EPIC
