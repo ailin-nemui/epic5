@@ -1,4 +1,4 @@
-/* $EPIC: dcc.c,v 1.113 2005/03/11 05:02:22 jnelson Exp $ */
+/* $EPIC: dcc.c,v 1.114 2005/03/16 00:35:22 jnelson Exp $ */
 /*
  * dcc.c: Things dealing client to client connections. 
  *
@@ -237,6 +237,9 @@ static void	dcc_remove_from_list (DCC_list *erased)
 {
 	DCC_list *prev = NULL;
 
+	if (x_debug & DEBUG_DCC_XMIT)
+		yell("Removing %#p from dcc list", erased);
+
 	if (erased != ClientList)
 	{
 		for (prev = ClientList; prev; prev = prev->next)
@@ -266,7 +269,11 @@ static void 	dcc_garbage_collect (void)
 	int	need_update = 0;
 
 	if (dcc_global_lock)		/* XXX Yea, yea, yea */
+	{
+		if (x_debug & DEBUG_DCC_XMIT)
+			yell("Garbage collection waiting for global lock");
 		return;
+	}
 
 	dcc = ClientList;
 	while (dcc)
@@ -277,6 +284,8 @@ static void 	dcc_garbage_collect (void)
 			    (dcc->flags & DCC_TYPES) == DCC_FILEREAD)
 				need_update = 1;
 
+			if (x_debug & DEBUG_DCC_XMIT)
+				yell("DCC %#p being GC'd", dcc);
 			dcc_erase(dcc);
 			dcc = ClientList;	/* Start over */
 		}
@@ -299,6 +308,9 @@ static void 	dcc_garbage_collect (void)
  */
 static 	void		dcc_erase (DCC_list *erased)
 {
+	if (x_debug & DEBUG_DCC_XMIT)
+		yell("DCC %#p being erased", erased);
+
 	dcc_remove_from_list(erased);
 
 	/*
@@ -362,6 +374,9 @@ static 	void		dcc_erase (DCC_list *erased)
 	new_free(&erased->user);
 	new_free(&erased->othername);
 	new_free((char **)&erased);
+
+	if (x_debug & DEBUG_DCC_XMIT)
+		yell("DCC erased");
 }
 
 /*
@@ -427,6 +442,9 @@ static int	dcc_unhold (DCC_list *dcc)
 
 static int	lock_dcc (DCC_list *dcc)
 {
+	if (x_debug & DEBUG_DCC_XMIT)
+		yell("DCC %#p being locked", dcc);
+
 	if (dcc)
 		dcc->locked++;
 	dcc_global_lock++;
@@ -435,6 +453,9 @@ static int	lock_dcc (DCC_list *dcc)
 
 static int	unlock_dcc (DCC_list *dcc)
 {
+	if (x_debug & DEBUG_DCC_XMIT)
+		yell("DCC %#p being unlocked", dcc);
+
 	if (dcc)
 		dcc->locked--;
 	dcc_global_lock--;
@@ -502,6 +523,8 @@ static	DCC_list *dcc_create (
 	new_client->server		= from_server;
 	get_time(&new_client->lasttime);
 
+	if (x_debug & DEBUG_DCC_XMIT)
+		yell("DCC %#p created", new_client);
 	ClientList = new_client;
 	return new_client;
 }
@@ -2505,6 +2528,7 @@ void	do_dcc (int fd)
 	int		previous_server;
 	char		*encoded_description = NULL;
 	int		l;
+	int		found_it = 0;
 
 	/* Sanity */
 	if (fd < 0)
@@ -2515,19 +2539,20 @@ void	do_dcc (int fd)
 
 	for (Client = ClientList; Client; Client = Client->next)
 	{
-	    /*
-	     * Ignore anything that is pending-delete.
-	     */
-	    if (Client->flags & DCC_DELETE)
-		continue;
-
-	    if (fd >= 0 && Client->socket != -1 && fd == Client->socket)
+	    if (Client->socket == fd)
 	    {
+		found_it = 1;
 		previous_server = from_server;
 		from_server = FROMSERV;
 
 	        l = message_from(NULL, LEVEL_DCC);
-		switch (Client->flags & DCC_TYPES)
+
+		if (Client->flags & DCC_DELETE)
+		{
+		    say("DCC fd %d is ready, client is deleted.  Closing.");
+		    Client->socket = new_close(Client->socket);
+		}
+		else switch (Client->flags & DCC_TYPES)
 		{
 		    case DCC_CHAT:
 			process_dcc_chat(Client);
@@ -2549,10 +2574,13 @@ void	do_dcc (int fd)
 
 		from_server = previous_server;
 	    }
+
 	    /*
 	     * Don't time out raw_listen sockets.
 	     */
-	    else if ((Client->flags & DCC_TYPES) == DCC_RAW_LISTEN) /* nothing */;
+	    else if ((Client->flags & DCC_TYPES) == DCC_RAW_LISTEN) 
+		/* nothing */;
+
 	    /*
 	     * Enforce any timeouts
 	     */
@@ -2601,6 +2629,13 @@ void	do_dcc (int fd)
 	     */
 	    if (!Client)
 		break;
+	}
+
+	if (!found_it)
+	{
+	   yell("DCC callback for fd %d but it doesn't exist any more! "
+			"Closing it.  Wish me luck!", fd);
+	   new_close(fd);
 	}
 
 	unlock_dcc(NULL);
