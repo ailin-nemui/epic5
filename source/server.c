@@ -1,4 +1,4 @@
-/* $EPIC: server.c,v 1.94 2003/03/24 01:23:37 jnelson Exp $ */
+/* $EPIC: server.c,v 1.95 2003/03/24 03:03:19 jnelson Exp $ */
 /*
  * server.c:  Things dealing with that wacky program we call ircd.
  *
@@ -144,6 +144,7 @@ void 	add_to_server_list (const char *server, int port, const char *password, co
 		s->eof = 0;
 		s->port = port;
 		s->line_length = IRCD_BUFFER_SIZE;
+		s->max_cached_chan_size = -1;
 		s->who_queue = NULL;
 		s->ison_queue = NULL;
 		s->userhost_queue = NULL;
@@ -2598,6 +2599,7 @@ IACCESSOR(v, sent)
 IACCESSOR(v, version)
 IACCESSOR(v, save_channels)
 IACCESSOR(v, line_length)
+IACCESSOR(v, max_cached_chan_size)
 SACCESSOR(chan, invite_channel, NULL)
 SACCESSOR(nick, last_notify_nick, NULL)
 SACCESSOR(nick, joined_nick, NULL)
@@ -2953,6 +2955,9 @@ char 	*serverctl 	(char *input)
 		if (!my_strnicmp(listc, "AWAY", len)) {
 			ret = get_server_away(refnum);
 			RETURN_STR(ret);
+		} else if (!my_strnicmp(listc, "MAXCACHESIZE", len)) {
+			num = get_server_max_cached_chan_size(refnum);
+			RETURN_INT(num);
 		} else if (!my_strnicmp(listc, "CONNECTED", len)) {
 			num = is_server_registered(refnum);
 			RETURN_INT(num);
@@ -3016,6 +3021,11 @@ char 	*serverctl 	(char *input)
 		len = strlen(listc);
 		if (!my_strnicmp(listc, "AWAY", len)) {
 			set_server_away(refnum, input);
+			RETURN_INT(1);
+		} else if (!my_strnicmp(listc, "MAXCACHESIZE", len)) {
+			int	size;
+			GET_INT_ARG(size, input);
+			set_server_max_cached_chan_size(refnum, size);
 			RETURN_INT(1);
 		} else if (!my_strnicmp(listc, "CONNECTED", len)) {
 			RETURN_EMPTY;		/* Read only. */

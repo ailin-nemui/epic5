@@ -232,3 +232,8 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Implement the "PF" (preformatted) loader.  /LOAD -PF <filename>
 * Set the "loader type" within each /LOADer
 * Add proof-of-concept code for /DCC CHAT nick -6 to do ipv6 dcc chat's.
+* Move add_user_who, add_user_end from parse.c to numbers.c
+* Add (set|get)_server_max_cached_chan_size(), max chan size for u@h caching.
+* Add $serverctl(SET|GET <refnum> MAXCACHESIZE), largest channel we do WHO for.
+* Move 'whobase' call from /on join to /on 324.
+* Don't call 'whobase' (userhost caching) if too many users on channel.

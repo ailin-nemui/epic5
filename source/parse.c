@@ -1,4 +1,4 @@
-/* $EPIC: parse.c,v 1.35 2003/02/12 03:44:19 jnelson Exp $ */
+/* $EPIC: parse.c,v 1.36 2003/03/24 03:03:19 jnelson Exp $ */
 /*
  * parse.c: handles messages from the server.   Believe it or not.  I
  * certainly wouldn't if I were you. 
@@ -560,6 +560,7 @@ static void	p_error (const char *from, const char *comm, const char **ArgList)
 		say("%s %s", from, error);
 }
 
+#if 0
 static void	add_user_who (int refnum, const char *from, const char *comm, const char **ArgList)
 {
 	const char 	*channel, *user, *host, *server, *nick;
@@ -594,6 +595,7 @@ static void	add_user_end (int refnum, const char *from, const char *comm, const 
 	channel = next_arg(copy, &copy);
 	channel_not_waiting(channel, refnum);
 }
+#endif
 
 static void	p_channel (const char *from, const char *comm, const char **ArgList)
 {
@@ -623,11 +625,15 @@ static void	p_channel (const char *from, const char *comm, const char **ArgList)
 
 	if (is_me(from_server, from))
 	{
+#if 0
 		char *copy = LOCAL_COPY(channel);
+#endif
 
 		add_channel(channel, from_server);
 		send_to_server("MODE %s", channel);
+#if 0
 		whobase(from_server, copy, add_user_who, add_user_end);
+#endif
 	}
 	else
 	{
