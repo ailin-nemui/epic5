@@ -4891,10 +4891,13 @@ void 	flush_everything_being_held (Window *window)
 	else
 		ptr = window->top_of_display;
 
+	/* Save one screenfull of stuff. */
 	while (--count > 0)
 	{
 		ptr = ptr->next;
-		if (ptr == window->display_ip)
+
+		/* XXX - ptr can be NULL if the screen is blank. */
+		if (!ptr || ptr == window->display_ip)
 			return;		/* Nothing to flush */
 	}
 
