@@ -9,7 +9,7 @@
  */
 
 #if 0
-static	char	rcsid[] = "@(#)$Id: lastlog.c,v 1.9 2001/10/29 16:22:32 crazyed Exp $";
+static	char	rcsid[] = "@(#)$Id: lastlog.c,v 1.10 2001/11/15 22:27:54 jnelson Exp $";
 #endif
 
 #include "irc.h"
@@ -743,28 +743,21 @@ void 	add_to_lastlog (Window *window, const char *line)
 
 	if (window->lastlog_level & msg_level)
 	{
-/* This is probably bogus. */
-#if 0
-		/* no nulls or empty lines (they contain "> ") */
-		if (line && (strlen(line) > 2))
-#endif
-		{
-			new_l = (Lastlog *)new_malloc(sizeof(Lastlog));
-			new_l->older = window->lastlog_newest;
-			new_l->newer = NULL;
-			new_l->level = msg_level;
-			new_l->msg = m_strdup(line);
+		new_l = (Lastlog *)new_malloc(sizeof(Lastlog));
+		new_l->older = window->lastlog_newest;
+		new_l->newer = NULL;
+		new_l->level = msg_level;
+		new_l->msg = m_strdup(line);
 
-			if (window->lastlog_newest)
-				window->lastlog_newest->newer = new_l;
-			window->lastlog_newest = new_l;
+		if (window->lastlog_newest)
+			window->lastlog_newest->newer = new_l;
+		window->lastlog_newest = new_l;
 
-			if (!window->lastlog_oldest)
-				window->lastlog_oldest = window->lastlog_newest;
+		if (!window->lastlog_oldest)
+			window->lastlog_oldest = window->lastlog_newest;
 
-			if (window->lastlog_size++ >= window->lastlog_max)
-				remove_from_lastlog(window);
-		}
+		if (window->lastlog_size++ >= window->lastlog_max)
+			remove_from_lastlog(window);
 	}
 }
 

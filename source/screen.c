@@ -136,7 +136,7 @@
 static int 	rite 		    (Window *window, const unsigned char *str);
 static void 	scroll_window 	    (Window *window);
 void 	add_to_window (Window *window, const unsigned char *str);
-void    window_disp (Window *window, const unsigned char *str);
+void    window_disp (Window *window, const unsigned char *str, const unsigned char *orig_str);
 static int 	add_to_display_list (Window *window, const unsigned char *str);
 
 /*
@@ -2244,7 +2244,7 @@ void 	add_to_window (Window *window, const unsigned char *str)
 	strval = normalize_string(str, 0);
 
 	/* Pass it off to the window */
-	window_disp(window, strval);
+	window_disp(window, strval, str);
 	new_free(&strval);
 
 	/*
@@ -2311,14 +2311,14 @@ void 	add_to_window (Window *window, const unsigned char *str)
  * chunks, suitable for putting onto the display.  We then call our back end
  * function to do the actual physical output.
  */
-void    window_disp (Window *window, const unsigned char *str)
+void    window_disp (Window *window, const unsigned char *str, const unsigned char *orig_str)
 {
         u_char **       lines;
         int             cols;
 	int		numl;
 
-	add_to_log(window->log_fp, window->refnum, str);
-	add_to_lastlog(window, str);
+	add_to_log(window->log_fp, window->refnum, orig_str);
+	add_to_lastlog(window, orig_str);
 
 	if (window->screen)
 		cols = window->screen->co - 1;	/* XXX HERE XXX */

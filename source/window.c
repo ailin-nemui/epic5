@@ -1664,12 +1664,12 @@ char *	get_status_by_refnum(unsigned refnum, int line)
 	if ((the_window = get_window_by_refnum(refnum)))
 	{
 		if (line > the_window->status.double_status)
-			return empty_string;
+			return NULL;
 
-		return the_window->status.line[line].result;
+		return denormalize_string(the_window->status.line[line].result);
 	}
 	else
-		return empty_string;
+		return NULL;
 }
 
 
