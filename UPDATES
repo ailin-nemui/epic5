@@ -1,5 +1,17 @@
 EPIC5-0.1
 
+*** News 09/10/2004 -- Command line option changes.
+	-L now causes epic to interpret the arg list as the first of the
+	following forms rather than the second:
+		form 1: file nick serv serv ..
+		form 2: nick serv serv ..
+
+	-S <server-specification> will cause the argument to be added to the
+	server list.
+
+	These changes are an attempt to make epic5 more "shebang" friendly, and
+	they may be changed at some point in the future.
+
 *** News 08/25/2004 -- New target syntax, -<serverdesc>/<target>
 	You can now send messages to the special message type:
 		-<serverdesc>/<target>

@@ -1,4 +1,4 @@
-/* $EPIC: irc.c,v 1.780 2004/09/06 19:41:13 jnelson Exp $ */
+/* $EPIC: irc.c,v 1.781 2004/09/09 16:06:36 crazyed Exp $ */
 /*
  * ircII: a new irc client.  I like it.  I hope you will too!
  *
@@ -52,7 +52,7 @@ const char internal_version[] = "20040319";
 /*
  * In theory, this number is incremented for every commit.
  */
-const unsigned long	commit_id = 1112;
+const unsigned long	commit_id = 1113;
 
 /*
  * As a way to poke fun at the current rage of naming releases after
@@ -256,8 +256,9 @@ static		char	switch_help[] =
       -c <chan>\tJoin <chan> after first connection to a server       \n\
       -H <host>\tUse a virtual host instead of default hostname	      \n\
       -l <file>\tLoads <file> instead of your .ircrc file             \n\
-      -L <file>\tLoads <file> instead of your .ircrc file             \n\
+      -L <file>\tLoads the first arg instead of your .ircrc file      \n\
       -n <nick>\tThe program will use <nick> as your default nickname \n\
+      -S <serv>\tThe program will add <serv> to the server list       \n\
       -p <port>\tThe program will use <port> as the default portnum   \n\
       -z <user>\tThe program will use <user> as your default username \n";
 
@@ -643,7 +644,7 @@ static	void	parse_args (int argc, char **argv)
 	/*
 	 * Parse the command line arguments.
 	 */
-	while ((ch = getopt(argc, argv, "aBbc:dfFhH:l:L:n:oOp:qsvxz:")) != EOF)
+	while ((ch = getopt(argc, argv, "aBbc:dfFhH:l:L:n:oOp:qsS:vxz:")) != EOF)
 	{
 		switch (ch)
 		{
@@ -676,12 +677,19 @@ static	void	parse_args (int argc, char **argv)
 				break;
 
 			case 'l': /* Load some file instead of ~/.ircrc */
-			case 'L': /* Same as above. Doesnt work like before */
 				malloc_strcpy(&epicrc_file, optarg);
+				break;
+
+			case 'L': /* Interpret the first non-option arg as a load file. */
+				malloc_strcpy(&epicrc_file, empty_string);
 				break;
 
 			case 'a': /* append server, not replace */
 				append_servers = 1;
+				break;
+
+			case 'S': /* add a new server */
+				add_servers(optarg, NULL);
 				break;
 
 			case 'q': /* quick startup -- no .ircrc */
@@ -738,6 +746,13 @@ static	void	parse_args (int argc, char **argv)
 	}
 	argc -= optind;
 	argv += optind;
+
+	if (epicrc_file && !*epicrc_file)
+	{
+		malloc_strcpy(&epicrc_file, *argv);
+		argc--;
+		argv++;
+	}
 
 	if (argc && **argv && !strchr(*argv, '.'))
 		strlcpy(nickname, *argv++, sizeof nickname), argc--;
