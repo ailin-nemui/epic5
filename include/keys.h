@@ -36,6 +36,7 @@ struct Key {
     unsigned char changed; /* set if this binding was changed post-startup */
     struct Binding *bound; /* the function we're bound to. */
     struct Key *map;    /* a map of subkeys (may be NULL) */
+    struct Key *owner;	/* the key which contains the map we're in. */
     char    *stuff;     /* 'stuff' associated with our binding */
     char    *filename;  /* the package which added this binding */
 };
