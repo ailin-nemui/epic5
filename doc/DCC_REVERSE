@@ -1,6 +1,6 @@
 A treatise on DCC REVERSE
 Prepared on May 9, 2002
-$EPIC: DCC_REVERSE,v 1.3 2002/05/10 05:05:50 jnelson Exp $
+$EPIC: DCC_REVERSE,v 1.4 2002/05/13 21:45:42 jnelson Exp $
 -------------------------------------------------------------------------------
 
 Prologue
@@ -82,6 +82,8 @@ Where the symbolic tags have the following meaning:
 <port>   - The port where the reciepient is listening for a connection.  This
 	   must be as ascii digits, in host order ("human readable").
 
+Please see APPENDIX 1 for information how to parse this data.
+
 STAGE THREE: The connection
 ---------------------------
 It is acceptable for the sender's client to immediately begin the transmission
@@ -134,5 +136,60 @@ Clients are under no obligation to accept or present unrequested reverse
 transfers or to their user.  They may silently ignore them.  Sending back
 a DCC REJECT is not encouraged unless it is rate-throttled, to prevent
 floodnet attacks.
+
+APPENDIX 1: PARSING DCC REVERSE HANDSHAKES
+------------------------------------------
+The DCC REVERSE affirmation has the following form:
+
+	NOTICE sender :^ADCC REVERSE <key> <start> <p-addr> <port>^A\r\n
+
+You may save the <p-addr> and <port> data by using the following code:
+(This code is placed into the public domain and may be used for any purpose)
+
+	int retcode;
+	struct addrinfo hints;
+	struct addrinfo *ai;
+	struct sockaddr_storage ss;
+	int sslen;
+
+	/* AI_NUMERICHOST means that we are giving it a p-addr */
+	/* PF_UNSPEC means we don't care if it's IPv4 or IPv6 */
+	memset(&hints, 0, sizeof(hints));
+	hints.ai_flags = AI_NUMERICHOST;
+	hints.ai_family = PF_UNSPEC;
+	hints.ai_socktype = SOCK_STREAM;
+	hints.ai_protocol = 0;
+
+	if ((retval = getaddrinfo(p_addr, port, &hints, &ai))) {
+		/* Error is in gai_strerror(error) */
+	}
+
+	/* 
+	 * Save the (struct sockaddr *) by copying it into a 
+	 * (struct sockaddr_storage), which we will use later in connect().
+	 * And no, I don't believe in using memcpy() for this.
+	 */
+	ss = *(struct sockaddr_storage *)ai->ai_addr;
+
+	/*
+	 * connect() double checks to make sure that the address family 
+	 * in the sockaddr agrees with this length.  Save this value or
+	 * otherwise we'll have to figure out again later.
+	 */
+	sslen = ai->ai_addrlen;
+
+	freeaddrinfo(ai);
+
+You may then later go back and connect to the receiver with:
+
+	struct sockaddr *sa;
+
+	sa = (struct sockaddr *)&ss;
+	if ((fd = socket(sa->sa_family, SOCK_STREAM, 0))) {
+		/* Socket failed */
+	}
+	if (connect(fd, sa, sslen)) {
+		/* Connect failed */
+	}
 
 #End of document
