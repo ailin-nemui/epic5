@@ -1,4 +1,4 @@
-/* $EPIC: parse.c,v 1.33 2003/01/29 21:56:01 crazyed Exp $ */
+/* $EPIC: parse.c,v 1.34 2003/01/31 23:50:18 jnelson Exp $ */
 /*
  * parse.c: handles messages from the server.   Believe it or not.  I
  * certainly wouldn't if I were you. 
@@ -45,7 +45,6 @@
 #include "ignore.h"
 #include "lastlog.h"
 #include "ircaux.h"
-#include "funny.h"
 #include "crypt.h"
 #include "term.h"
 #include "flood.h"
@@ -92,9 +91,10 @@ int 	is_channel (const char *to)
 }
 
 
-char *	PasteArgs (char **arg_list, int paste_point)
+const char *	PasteArgs (const char **arg_list, int paste_point)
 {
 	int	i;
+	char	*ptr;
 
 	/*
 	 * Make sure there are enough args to parse...
@@ -104,7 +104,10 @@ char *	PasteArgs (char **arg_list, int paste_point)
 			return NULL;		/* Not enough args */
 
 	for (i = paste_point; arg_list[i] && arg_list[i + 1]; i++)
-		arg_list[i][strlen(arg_list[i])] = ' ';
+	{
+		ptr = (char *)arg_list[i];
+		ptr[strlen(ptr)] = ' ';
+	}
 	arg_list[paste_point + 1] = NULL;
 	return arg_list[paste_point];
 }
@@ -117,7 +120,7 @@ char *	PasteArgs (char **arg_list, int paste_point)
  *
  * This doesnt strip out extraneous spaces any more.
  */
-void 	BreakArgs (char *Input, char **Sender, char **OutPut)
+void 	BreakArgs (char *Input, char **Sender, const char **OutPut)
 {
 	int	ArgCount;
 	char	*fuh;
@@ -192,7 +195,7 @@ void 	BreakArgs (char *Input, char **Sender, char **OutPut)
 }
 
 /* in response to a TOPIC message from the server */
-static void	p_topic (const char *from, const char *comm, char **ArgList)
+static void	p_topic (const char *from, const char *comm, const char **ArgList)
 {
 	const char 	*high, *channel, *new_topic;
 
@@ -224,7 +227,7 @@ static void	p_topic (const char *from, const char *comm, char **ArgList)
 	message_from(NULL, LOG_CURRENT);
 }
 
-static void	p_wallops (const char *from, const char *comm, char **ArgList)
+static void	p_wallops (const char *from, const char *comm, const char **ArgList)
 {
 	const char 	*message;
 	int 	server_wallop;
@@ -274,7 +277,7 @@ static void	p_wallops (const char *from, const char *comm, char **ArgList)
 	message_from(NULL, LOG_CURRENT);
 }
 
-static void	p_privmsg (const char *from, const char *comm, char **ArgList)
+static void	p_privmsg (const char *from, const char *comm, const char **ArgList)
 {
 	const char	*target, *message;
 	int		level,
@@ -286,6 +289,7 @@ static void	p_privmsg (const char *from, const char *comm, char **ArgList)
 	unsigned char	ignore_type;
 	char		*high;
 
+	PasteArgs(ArgList, 1);
 	if (!(target = ArgList[0]))
 		{ rfc1459_odd(from, comm, ArgList); return; }
 	if (!(message = ArgList[1]))
@@ -438,11 +442,13 @@ static void	p_privmsg (const char *from, const char *comm, char **ArgList)
 	/* Clean up and go home. */
 	set_lastlog_msg_level(level);
 	message_from(NULL, LOG_CURRENT);
-
 	set_server_doing_privmsg(from_server, 0);
+
+	/* Alas, this is not protected by protocol enforcement. :( */
+	notify_mark(from_server, from, 1, 0);
 }
 
-static void	p_quit (const char *from, const char *comm, char **ArgList)
+static void	p_quit (const char *from, const char *comm, const char **ArgList)
 {
 	const char *	quit_message;
 	int		one_prints = 1;
@@ -503,7 +509,7 @@ static void	p_quit (const char *from, const char *comm, char **ArgList)
 	remove_from_channel(NULL, from, from_server);
 }
 
-static void	p_pong (const char *from, const char *comm, char **ArgList)
+static void	p_pong (const char *from, const char *comm, const char **ArgList)
 {
 	const char *	pong_server, *pong_message;
 	int	server_pong = 0;
@@ -539,7 +545,7 @@ static void	p_pong (const char *from, const char *comm, char **ArgList)
 							from, pong_message);
 }
 
-static void	p_error (const char *from, const char *comm, char **ArgList)
+static void	p_error (const char *from, const char *comm, const char **ArgList)
 {
 	const char *	error;
 
@@ -554,7 +560,7 @@ static void	p_error (const char *from, const char *comm, char **ArgList)
 		say("%s %s", from, error);
 }
 
-static void	add_user_who (int refnum, const char *from, const char *comm, char **ArgList)
+static void	add_user_who (int refnum, const char *from, const char *comm, const char **ArgList)
 {
 	const char 	*channel, *user, *host, *server, *nick;
 	char 	*userhost;
@@ -576,7 +582,7 @@ static void	add_user_who (int refnum, const char *from, const char *comm, char *
 	add_userhost_to_channel(channel, nick, refnum, userhost);
 }
 
-static void	add_user_end (int refnum, const char *from, const char *comm, char **ArgList)
+static void	add_user_end (int refnum, const char *from, const char *comm, const char **ArgList)
 {
 	char *	copy;
 	char *	channel;
@@ -589,7 +595,7 @@ static void	add_user_end (int refnum, const char *from, const char *comm, char *
 	channel_not_waiting(channel, refnum);
 }
 
-static void	p_channel (const char *from, const char *comm, char **ArgList)
+static void	p_channel (const char *from, const char *comm, const char **ArgList)
 {
 	const char	*channel;
 	char 	*c;
@@ -674,7 +680,7 @@ static void	p_channel (const char *from, const char *comm, char **ArgList)
 	notify_mark(from_server, from, 1, 0);
 }
 
-static void 	p_invite (const char *from, const char *comm, char **ArgList)
+static void 	p_invite (const char *from, const char *comm, const char **ArgList)
 {
 	const char	*invitee, *invited_to;
 	char	*high;
@@ -726,7 +732,7 @@ static void 	p_invite (const char *from, const char *comm, char **ArgList)
  * NOTE: If you want to change it, you *will* have to do it yourself.
  * Im quite serious.  Im not going to change this.
  */
-static void	p_kill (const char *from, const char *comm, char **ArgList)
+static void	p_kill (const char *from, const char *comm, const char **ArgList)
 {
 	const char 	*victim, *reason;
 	int 	hooked;
@@ -809,7 +815,7 @@ static void	p_kill (const char *from, const char *comm, char **ArgList)
 	server_reconnects_to(from_server, NOSERV);
 }
 
-static void	p_ping (const char *from, const char *comm, char **ArgList)
+static void	p_ping (const char *from, const char *comm, const char **ArgList)
 {
 	const char *	message;
 
@@ -820,7 +826,7 @@ static void	p_ping (const char *from, const char *comm, char **ArgList)
 	send_to_server("PONG %s", message);
 }
 
-static void	p_silence (const char *from, const char *comm, char **ArgList)
+static void	p_silence (const char *from, const char *comm, const char **ArgList)
 {
 	const char *target;
 	char mag;
@@ -840,7 +846,7 @@ static void	p_silence (const char *from, const char *comm, char **ArgList)
 	}
 }
 
-static void	p_nick (const char *from, const char *comm, char **ArgList)
+static void	p_nick (const char *from, const char *comm, const char **ArgList)
 {
 	const char	*new_nick;
 	int		been_hooked = 0,
@@ -908,7 +914,7 @@ do_rename:
 	notify_mark(from_server, new_nick, 1, 0);
 }
 
-static void	p_mode (const char *from, const char *comm, char **ArgList)
+static void	p_mode (const char *from, const char *comm, const char **ArgList)
 {
 	const char	*target, *changes;
 	const char	*m_target;
@@ -1042,7 +1048,7 @@ static void strip_modes (const char *from, const char *channel, const char *line
 
 }
 
-static void	p_kick (const char *from, const char *comm, char **ArgList)
+static void	p_kick (const char *from, const char *comm, const char **ArgList)
 {
 	const char	*channel, *victim, *comment;
 
@@ -1140,7 +1146,7 @@ static void	p_kick (const char *from, const char *comm, char **ArgList)
 	remove_from_channel(channel, victim, from_server);
 }
 
-static void	p_part (const char *from, const char *comm, char **ArgList)
+static void	p_part (const char *from, const char *comm, const char **ArgList)
 {
 	const char	*channel, *reason;
 
@@ -1179,7 +1185,7 @@ static void	p_part (const char *from, const char *comm, char **ArgList)
 /*
  * Egads. i hope this is right.
  */
-static void	p_rpong (const char *from, const char *comm, char **ArgList)
+static void	p_rpong (const char *from, const char *comm, const char **ArgList)
 {
 	const char *	nick, *target_server, *millisecs, *orig_time;
 	time_t delay;
@@ -1208,7 +1214,7 @@ static void	p_rpong (const char *from, const char *comm, char **ArgList)
 }
 
 
-void	rfc1459_odd (const char *from, const char *comm, char **ArgList)
+void	rfc1459_odd (const char *from, const char *comm, const char **ArgList)
 {
 	const char *	stuff;
 
@@ -1242,7 +1248,7 @@ protocol_command rfc1459[] = {
 {	"MODE",		p_mode,		NULL,		0		},
 {	"NAMES",	NULL,		NULL,		0		},
 {	"NICK",		p_nick,		NULL,		PROTO_NOQUOTE	},
-{	"NOTICE",	parse_notice,	NULL,		0		},
+{	"NOTICE",	p_notice,	NULL,		0		},
 {	"OPER",		NULL,		NULL,		0		},
 {	"PART",		p_part,		NULL,		0		},
 {	"PASS",		NULL,		NULL,		0 		},
@@ -1280,10 +1286,10 @@ int 	num_protocol_cmds = -1;
  */
 void 	parse_server (const char *orig_line)
 {
-	char	*from,
-		*comm;
-	char	**ArgList;
-	char	*TrueArgs[MAXPARA + 1];
+	char	*from;
+	const char	*comm;
+	const char	**ArgList;
+	const char	*TrueArgs[MAXPARA + 1];
 	protocol_command *retval;
 	int	loc;
 	int	cnt;

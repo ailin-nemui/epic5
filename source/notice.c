@@ -1,4 +1,4 @@
-/* $EPIC: notice.c,v 1.16 2003/01/26 03:25:38 jnelson Exp $ */
+/* $EPIC: notice.c,v 1.17 2003/01/31 23:50:18 jnelson Exp $ */
 /*
  * notice.c: special stuff for parsing NOTICEs
  *
@@ -44,7 +44,6 @@
 #include "hook.h"
 #include "ignore.h"
 #include "server.h"
-#include "funny.h"
 #include "output.h"
 #include "names.h"
 #include "parse.h"
@@ -53,7 +52,7 @@
 #include "commands.h"
 
 static	time_t 	convert_note_time_to_real_time (char *stuff);
-static	int 	kill_message (const char *from, char *line);
+static	int 	kill_message (const char *from, const char *line);
 static	int	never_connected = 1;
 
 
@@ -143,7 +142,7 @@ static time_t	convert_note_time_to_real_time(char *stuff)
  * This parses NOTICEs that are sent from that wacky ircd we are connected
  * to, and 'to' is guaranteed not to be a channel.
  */
-static 	void 	parse_local_server_notice (const char *from, char *to, char *line)
+static 	void 	parse_local_server_notice (const char *from, const char *to, const char *line)
 {
 	int	lastlog_level;
 	const char *	f;
@@ -170,18 +169,21 @@ static 	void 	parse_local_server_notice (const char *from, char *to, char *line)
 	else if (!strncmp(line, "Note", 4))
 	{
 		char *note_from = NULL;
+		char *point = NULL;
+
 		if (strlen(line) > 10)
 		{
-			line += 10; /* skip the "Note from" part */
-			note_from = line;
-			if ((line = strchr(note_from, '!')))
+			/* Skip the "Note From" part */
+			note_from = LOCAL_COPY(line + 10); 
+
+			if ((point = strchr(note_from, '!')))
 			{
-				*line++ = 0;
+				*point++ = 0;
 				FromUserHost = line;
-				if ((line = strchr(FromUserHost, ' ')))
+				if ((point = strchr(FromUserHost, ' ')))
 				{
-					*line++ = 0;
-					parse_note(note_from, line);
+					*point++ = 0;
+					parse_note(note_from, point);
 				}
 				FromUserHost = empty_string;
 			}
@@ -214,41 +216,42 @@ static 	void 	parse_local_server_notice (const char *from, char *to, char *line)
 
 /*
  * The main handler for those wacky NOTICE commands...
+ * This is as much like p_privmsg as i can get away with.
  */
-void 	parse_notice (const char *from, const char *orig, char **Args)
+void 	p_notice (const char *from, const char *comm, const char **ArgList)
 {
-	int	level,
-		type;
-	char	*to;
-	int	no_flooding;
-	char	*high;
-	char	*line;
+	const char 	*target, *message;
+	int		level,
+			hook_type;
+	const char *	flood_channel = NULL;
+	char *		high;
 
-	PasteArgs(Args, 1);
-	to   = Args[0];
-	line = Args[1];
-	if (!to || !line)
-		return;
+	PasteArgs(ArgList, 1);
+	if (!(target = ArgList[0]))
+		{ rfc1459_odd(from, comm, ArgList); return; }
+	if (!(message = ArgList[1]))
+		{ rfc1459_odd(from, comm, ArgList); return; }
 
-	/* 
-	 * If 'to' is empty (present, but zero length), this is a
-	 * seriously mal-formed NOTICE.  I think this test is here 
-	 * only to save a coredump -- this shouldn't happen with any
-	 * real irc server.
-	 */
-	if (!*to)
-	{
-		if (line && *line)
-			put_it("[obsolete server notice] %s", line + 1);
+	set_server_doing_notice(from_server, 1);
+	sed = 0;
+
+	/* Do normal /CTCP reply handling */
+	message = do_notice_ctcp(from, target, (char *)message);
+	if (!*message) {
+		set_server_doing_notice(from_server, 0);
 		return;
 	}
 
-	/*
-	 * Suppress the sending of PRIVMSGs or NOTICEs until this
-	 * global variable is reset.
-	 */
-	set_server_doing_notice(from_server, 1);
-	sed = 0;
+	/* Check to see if it is a "Server Notice" */
+	if ((!from || !*from) || !strcmp(get_server_itsname(from_server), from))
+	{
+		parse_local_server_notice(from, target, message);
+		set_server_doing_notice(from_server, 0);
+		return;
+	}
+	/* For pesky prefix-less NOTICEs substitute the server's name */
+	if (!from || !*from)
+		from = get_server_name(from_server);
 
 	/*
 	 * Note that NOTICEs from servers are not "server notices" unless
@@ -256,37 +259,26 @@ void 	parse_notice (const char *from, const char *orig, char **Args)
 	 * that is sent to a channel is a normal NOTICE, notwithstanding
 	 * _who_ sent it.
 	 */
-	if (is_channel(to))
+	if (is_channel(target) && im_on_channel(target, from_server))
 	{
-		message_from(to, LOG_NOTICE);
-		type = PUBLIC_NOTICE_LIST;
-	}
-
-	/* Check to see if it is a "Server Notice" */
-	else if (!from || !*from || 
-		!strcmp(get_server_itsname(from_server), from))
-	{
-		parse_local_server_notice(from, to, line);
-		set_server_doing_notice(from_server, 0);
-		return;
+		flood_channel = target;
+		hook_type = PUBLIC_NOTICE_LIST;
 	}
 
 	/* It is a notice from someone else, possibly remote server */
 	else
 	{
-		message_from(from, LOG_NOTICE);
-		type = NOTICE_LIST;
+		flood_channel = NULL;
+		hook_type = NOTICE_LIST;
+		target = from;
 	}
 
-
-	/* Set the default output target level */
-	level = set_lastlog_msg_level(LOG_NOTICE);
-
 	/* Check for /ignore's */
-	switch (check_ignore_channel(from, FromUserHost, to, IGNORE_NOTICES))
+	switch (check_ignore_channel(from, FromUserHost, target, IGNORE_NOTICES))
 	{
 		case IGNORED:
-			goto the_end;
+			set_server_doing_notice(from_server, 0);
+			return;
 		case HIGHLIGHTED:
 			high = highlight_char;
 			break; /* oops! */
@@ -294,52 +286,66 @@ void 	parse_notice (const char *from, const char *orig, char **Args)
 			high = empty_string;
 	}
 
-	/* Check for /notify's */
-	notify_mark(from_server, from, 1, 0);
-
-	/* Do normal /CTCP reply handling */
-	line = do_notice_ctcp(from, to, line);
-	if (!*line)
-		goto the_end;
-
-	/* Check for flooding */
-	no_flooding = check_flooding(from, FromUserHost, NOTICE_FLOOD, line);
-
 	/* Let the user know if it is an encrypted notice */
 	/* Note that this is always hooked, even during a flood */
-	if (sed != 0 && !do_hook(ENCRYPTED_NOTICE_LIST, "%s %s %s", 
-			from, to, sed == 1 ? line : empty_string))
+	if (sed)
 	{
+		int	do_return = 1;
+
 		sed = 0;
-		goto the_end;
+		level = set_lastlog_msg_level(LOG_NOTICE);
+		message_from(target, LOG_NOTICE);
+
+		if (do_hook(ENCRYPTED_NOTICE_LIST, "%s %s %s", 
+				from, target, sed == 1 ? message : empty_string))
+			do_return = 0;
+
+		set_lastlog_msg_level(level);
+		message_from(NULL, LOG_CURRENT);
+
+		if (do_return) {
+			set_server_doing_notice(from_server, 0);
+			return;
+		}
 	}
 
-	/* Do not parse the notice if we are being flooded */
-	if (no_flooding)
-		goto the_end;
-
-	/* Offer the notice to the user and do output */
-	if (do_hook(GENERAL_NOTICE_LIST, "%s %s %s", from, to, line))
-	{
-	    if (type == NOTICE_LIST)
-	    {
-		if (do_hook(type, "%s %s", from, line))
-			put_it("%s-%s-%s %s", high, from, high, line);
-	    }
-	    else
-	    {
-		if (do_hook(type, "%s %s %s", from, to, line))
-			put_it("%s-%s:%s-%s %s", high, from, to, high, line);
-	    }
+	if (new_check_flooding(from, FromUserHost, flood_channel, 
+					message, NOTICE_FLOOD)) {
+		set_server_doing_privmsg(from_server, 0);
+		return;
 	}
+
+
+	/* Beep the user if they asked us to */
 	if (beep_on_level & LOG_NOTICE)
 		beep_em(1);
 
-the_end:
+	/* Go ahead and throw it to the user */
+	level = set_lastlog_msg_level(LOG_NOTICE);
+	message_from(target, LOG_NOTICE);
+
+	if (do_hook(GENERAL_NOTICE_LIST, "%s %s %s", from, target, message))
+	{
+	    if (hook_type == NOTICE_LIST)
+	    {
+		if (do_hook(hook_type, "%s %s", from, message))
+			put_it("%s-%s-%s %s", high, from, high, message);
+	    }
+	    else
+	    {
+		if (do_hook(hook_type, "%s %s %s", from, target, message))
+			put_it("%s-%s:%s-%s %s", high, from, target, high, 
+							message);
+	    }
+	}
+
 	/* Clean up and go home. */
 	set_lastlog_msg_level(level);
-	message_from(NULL, level);
+	message_from(NULL, LOG_CURRENT);
 	set_server_doing_notice(from_server, 0);
+
+	/* Alas, this is not protected by protocol enforcement. :( */
+	notify_mark(from_server, from, 1, 0);
 }
 
 /*
@@ -414,7 +420,7 @@ void 	got_initial_version_28 (const char *server, const char *version, const cha
 	window_check_channels();
 }
 
-int 	kill_message (const char *from, char *cline)
+int 	kill_message (const char *from, const char *cline)
 {
 	char *poor_sap;
 	char *bastard;

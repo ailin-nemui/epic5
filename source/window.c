@@ -1,4 +1,4 @@
-/* $EPIC: window.c,v 1.53 2003/01/11 04:26:52 jnelson Exp $ */
+/* $EPIC: window.c,v 1.54 2003/01/31 23:50:18 jnelson Exp $ */
 /*
  * window.c: Handles the organzation of the logical viewports (``windows'')
  * for irc.  This includes keeping track of what windows are open, where they
@@ -278,6 +278,7 @@ Window	*new_window (Screen *screen)
 void 	delete_window (Window *window)
 {
 	char 	buffer[BIG_BUFFER_SIZE + 1];
+	int	oldref;
 	int	i;
 	int	invisible = 0;
 
@@ -410,6 +411,7 @@ delete_window_contents:
 		strmcpy(buffer, window->name, BIG_BUFFER_SIZE);
 	else
 		strmcpy(buffer, ltoa(window->refnum), BIG_BUFFER_SIZE);
+	oldref = window->refnum;
 
 
 	/*
@@ -479,7 +481,7 @@ delete_window_contents:
 #endif
 	if (dead == 0)
 		window_check_servers();
-	do_hook(WINDOW_KILL_LIST, "%s", buffer);
+	do_hook(WINDOW_KILL_LIST, "%d %s", oldref, buffer);
 }
 
 /*
@@ -4006,10 +4008,7 @@ static Window *window_refnum (Window *window, char **args)
 		}
 	}
 	else
-	{
-		say("No such window!");
 		window = NULL;
-	}
 	return window;
 }
 
@@ -4018,10 +4017,7 @@ static Window *window_refnum_or_swap (Window *window, char **args)
 	Window  *tmp;
 
 	if (!(tmp = get_window("REFNUM_OR_SWAP", args)))
-	{
-		say("No such window!");
 		return NULL;
-	}
 
 	if (tmp->screen)
 	{

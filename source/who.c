@@ -1,4 +1,4 @@
-/* $EPIC: who.c,v 1.16 2003/01/27 06:56:13 jnelson Exp $ */
+/* $EPIC: who.c,v 1.17 2003/01/31 23:50:18 jnelson Exp $ */
 /*
  * who.c -- The WHO queue.  The ISON queue.  The USERHOST queue.
  *
@@ -241,7 +241,7 @@ BUILT_IN_COMMAND(whocmd)
 /*
  * whobase: What does all the work.
  */
-void 	whobase (int refnum, char *args, void (*line) (int, const char *, const char *, char **), void (*end) (int, const char *, const char *, char **))
+void 	whobase (int refnum, char *args, void (*line) (int, const char *, const char *, const char **), void (*end) (int, const char *, const char *, const char **))
 {
 	char	*arg,
 		*channel = NULL;
@@ -471,18 +471,18 @@ void 	whobase (int refnum, char *args, void (*line) (int, const char *, const ch
 
 static int who_whine = 0;
 
-void	whoreply (int refnum, const char *from, const char *comm, char **ArgList)
+void	whoreply (int refnum, const char *from, const char *comm, const char **ArgList)
 {
 static	char	format[40];
 static	int	last_width = -1;
 	int	ok = 1;
-	char	*channel,
-		*user,
-		*host,
-		*server,
-		*nick,
-		*stat,
-		*name;
+	const char	*channel,
+			*user,
+			*host,
+			*server,
+			*nick,
+			*stat;
+	char 	*name;
 	WhoEntry *new_w = who_queue_top(refnum);
 
 	if (!ArgList[5])
@@ -539,7 +539,7 @@ do
 	nick    = ArgList[4];
 	stat    = ArgList[5];
 	PasteArgs(ArgList, 6);
-	name    = ArgList[6];
+	name    = LOCAL_COPY(ArgList[6]);
 
 	if (*stat == 'S')	/* this only true for the header WHOREPLY */
 	{
@@ -613,7 +613,7 @@ while (new_w->piggyback && (new_w = new_w->next));
 }
 
 /* Undernet's 354 numeric reply. */
-void	xwhoreply (int refnum, const char *from, const char *comm, char **ArgList)
+void	xwhoreply (int refnum, const char *from, const char *comm, const char **ArgList)
 {
 	WhoEntry *new_w = who_queue_top(refnum);
 
@@ -636,11 +636,11 @@ void	xwhoreply (int refnum, const char *from, const char *comm, char **ArgList)
 
 	PasteArgs(ArgList, 0);
 	if (do_hook(current_numeric, "%s", ArgList[0]))
-		put_it("%s %s", numeric_banner(), ArgList[0]);
+		put_it("%s %s", banner(), ArgList[0]);
 }
 
 
-void	who_end (int refnum, const char *from, const char *comm, char **ArgList)
+void	who_end (int refnum, const char *from, const char *comm, const char **ArgList)
 {
 	WhoEntry 	*new_w = who_queue_top(refnum);
 	char 		buffer[1025];
@@ -666,7 +666,7 @@ void	who_end (int refnum, const char *from, const char *comm, char **ArgList)
 
 			else if (get_int_var(SHOW_END_OF_MSGS_VAR))
 			    if (do_hook(current_numeric, "%s", buffer))
-				put_it("%s %s", numeric_banner(), buffer);
+				put_it("%s %s", banner(), buffer);
 		}
 	} 
 	while (new_w->piggyback && (new_w = new_w->next));
@@ -724,7 +724,7 @@ int	fake_who_end (int refnum, const char *from, const char *comm, const char *wh
 		/* Defer to another function, if neccesary.  */
 		if (new_w->end)
 		{
-			char *fake_ArgList[3];
+			const char *fake_ArgList[3];
 
 			/* Fabricate a fake argument list */
 			fake_ArgList[0] = new_w->who_target;
@@ -892,7 +892,7 @@ void isonbase (int refnum, char *args, void (*line) (int, char *, char *))
  * Although we will check first that the top element expected is
  * actually an ISON.
  */
-void	ison_returned (int refnum, const char *from, const char *comm, char **ArgList)
+void	ison_returned (int refnum, const char *from, const char *comm, const char **ArgList)
 {
 	IsonEntry *new_i = ison_queue_top(refnum);
 
@@ -903,12 +903,15 @@ void	ison_returned (int refnum, const char *from, const char *comm, char **ArgLi
 	}
 
 	PasteArgs(ArgList, 0);
-	if (new_i->line)
-		new_i->line(refnum, new_i->ison_asked, ArgList[0]);
+	if (new_i->line) 
+	{
+		char *ison_returned = LOCAL_COPY(ArgList[0]);
+		new_i->line(refnum, new_i->ison_asked, ison_returned);
+	}
 	else
 	{
 		if (do_hook(current_numeric, "%s", ArgList[0]))
-			put_it("%s Currently online: %s", numeric_banner(), ArgList[0]);
+			put_it("%s Currently online: %s", banner(), ArgList[0]);
 	}
 
 	ison_queue_pop(refnum);
@@ -1138,10 +1141,11 @@ void userhostbase (int refnum, char *args, void (*line) (int, UserhostItem *, co
  * through this queue will cause it to be corrupted and the client will
  * go higgledy-piggledy.
  */
-void	userhost_returned (int refnum, const char *from, const char *comm, char **ArgList)
+void	userhost_returned (int refnum, const char *from, const char *comm, const char **ArgList)
 {
 	UserhostEntry *top = userhost_queue_top(refnum);
 	char *ptr;
+	char *results;
 
 	if (!top)
 	{
@@ -1149,6 +1153,8 @@ void	userhost_returned (int refnum, const char *from, const char *comm, char **A
 		return;
 	}
 
+	PasteArgs(ArgList, 0);
+	results = LOCAL_COPY(ArgList[0]);
 	ptr = top->userhost_asked;
 
 	/*
@@ -1168,19 +1174,19 @@ void	userhost_returned (int refnum, const char *from, const char *comm, char **A
 		 * part of ArgList, and the following char will
 		 * either be a * or an = (eg, nick*= or nick=)
 		 */
-		if (ArgList && *ArgList && (!my_strnicmp(cnick, *ArgList, len)
-	            && ((*ArgList)[len] == '*' || (*ArgList)[len] == '=')))
+		if (results && (!my_strnicmp(cnick, results, len)
+	            && (results[len] == '*' || results[len] == '=')))
 		{
 			UserhostItem item;
 
 			/* Extract all the interesting info */
 			item.connected = 1;
-			item.nick = next_arg(*ArgList, ArgList);
+			item.nick = next_arg(results, &results);
 			item.user = strchr(item.nick, '=');
 			if (!item.user)
 			{
 				yell("Can't parse useless USERHOST reply [%s]", 
-						*ArgList);
+						ArgList[0]);
 				userhost_queue_pop(refnum);
 			}
 
@@ -1204,7 +1210,7 @@ void	userhost_returned (int refnum, const char *from, const char *comm, char **A
 			if (!item.host)
 			{
 				yell("Can't parse useless USERHOST reply [%s]", 
-						*ArgList);
+						ArgList[0]);
 				userhost_queue_pop(refnum);
 				return;
 			}
@@ -1228,7 +1234,7 @@ void	userhost_returned (int refnum, const char *from, const char *comm, char **A
 						item.oper ? "+" : "-", 
 						item.away ? "-" : "+", 
 						item.user, item.host))
-				put_it("%s %s is %s@%s%s%s", numeric_banner(),
+				put_it("%s %s is %s@%s%s%s", banner(),
 						item.nick, item.user, item.host, 
 						item.oper ?  " (Is an IRC operator)" : empty_string,
 						item.away ? " (away)" : empty_string);

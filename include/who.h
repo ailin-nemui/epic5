@@ -29,18 +29,18 @@ typedef struct WhoEntryT
 	char *who_stuff;
 	char *who_end;
         struct WhoEntryT *next;
-	void (*line) (int, const char *, const char *, char **);
-	void (*end) (int, const char *, const char *, char **);
+	void (*line) (int, const char *, const char *, const char **);
+	void (*end) (int, const char *, const char *, const char **);
 
 } WhoEntry;
 
 	BUILT_IN_COMMAND(whocmd);
 	void 	whobase (int, char *, 
-			   void (*)(int, const char *, const char *, char **), 
-			   void (*)(int, const char *, const char *, char **));
-	void 	whoreply (int, const char *, const char *, char **);
-	void 	xwhoreply (int, const char *, const char *, char **);
-	void 	who_end (int, const char *, const char *, char **);
+		   void (*)(int, const char *, const char *, const char **), 
+		   void (*)(int, const char *, const char *, const char **));
+	void 	whoreply (int, const char *, const char *, const char **);
+	void 	xwhoreply (int, const char *, const char *, const char **);
+	void 	who_end (int, const char *, const char *, const char **);
 	int 	fake_who_end (int, const char *, const char *, const char *);
 
 
@@ -57,7 +57,7 @@ typedef struct IsonEntryT
 
 	BUILT_IN_COMMAND(isoncmd);
 	void 	isonbase 	(int refnum, char *args, void (*line) (int, char *, char *));
-	void 	ison_returned 	(int, const char *, const char *, char **);
+	void 	ison_returned 	(int, const char *, const char *, const char **);
 
 
 
@@ -87,7 +87,7 @@ typedef struct UserhostEntryT
 	void 	userhostbase 		(int refnum, char *arg, 
 					void (*line) (int, UserhostItem *, 
 						const char *, const char *), int);
-	void 	userhost_returned 	(int, const char *, const char *, char **);
+	void 	userhost_returned 	(int, const char *, const char *, const char **);
 	void 	userhost_cmd_returned 	(int, UserhostItem *, const char *, const char *);
 
 #endif 

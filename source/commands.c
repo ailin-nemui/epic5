@@ -1,4 +1,4 @@
-/* $EPIC: commands.c,v 1.54 2003/01/29 21:56:01 crazyed Exp $ */
+/* $EPIC: commands.c,v 1.55 2003/01/31 23:50:18 jnelson Exp $ */
 /*
  * commands.c -- Stuff needed to execute commands in ircII.
  *		 Includes the bulk of the built in commands for ircII.
@@ -50,7 +50,6 @@
 #include "commands.h"
 #include "exec.h"
 #include "files.h"
-#include "funny.h"
 #include "help.h"
 #include "history.h"
 #include "hook.h"
@@ -862,7 +861,7 @@ BUILT_IN_COMMAND(xechocmd)
 	int	temp;
 	Window *old_to_window;
 	int	all_windows = 0;
-	int	banner = 0;
+	int	want_banner = 0;
 	char	*stuff = NULL;
 	int	nolog = 0;
 	int	more = 1;
@@ -968,7 +967,7 @@ BUILT_IN_COMMAND(xechocmd)
 		case 'B':	/* WITH BANNER */
 		{
 			next_arg(args, &args);
-			banner = 1;
+			want_banner = 1;
 			break;
 		}
 
@@ -1061,16 +1060,16 @@ BUILT_IN_COMMAND(xechocmd)
 	if (nolog)
 		inhibit_logging = 1;
 
-	if (banner == 1)
+	if (want_banner == 1)
 	{
-		malloc_strcpy(&stuff, numeric_banner());
+		malloc_strcpy(&stuff, banner());
 		if (*stuff)
 		{
 			m_3cat(&stuff, space, args);
 			args = stuff;
 		}
 	}
-	else if (banner != 0)
+	else if (want_banner != 0)
 		abort();
 
 	if (all_windows == 1)
@@ -1225,7 +1224,7 @@ BUILT_IN_COMMAND(funny_stuff)
 	/* Channel names can contain stars! */
 	if (strchr(stuff, '*') && !im_on_channel(stuff, from_server))
 	{
-		set_funny_flags(min, max, flags, stuff);
+		set_server_funny_stuff(from_server, min, max, flags, stuff);
 
 		if (min && ircu)
 		{
@@ -1241,7 +1240,7 @@ BUILT_IN_COMMAND(funny_stuff)
 	}
 	else
 	{
-		set_funny_flags(min, max, flags, NULL);
+		set_server_funny_stuff(from_server, min, max, flags, NULL);
 
 		if (min && ircu)
 		{

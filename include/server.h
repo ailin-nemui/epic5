@@ -85,6 +85,11 @@ typedef	struct
 	char	*quit_message;		/* Where we stash a quit message */
 	A005	a005;			/* 005 settings kept kere. */
 
+	int	funny_min;		/* Funny stuff */
+	int	funny_max;
+	int	funny_flags;
+	char *	funny_match;
+
 #ifdef HAVE_SSL
 	SSL_CTX*	ctx;
 	SSL_METHOD*	meth;
@@ -167,6 +172,13 @@ static __inline__ Server *	get_server (int server)
 #define Server_u2_9	5
 #define Server_u2_10	6
 #define Server_u3_0	7
+
+/* Funny stuff */
+#define FUNNY_PUBLIC            1 << 0
+#define FUNNY_PRIVATE           1 << 1
+#define FUNNY_TOPIC             1 << 2
+#define FUNNY_USERS             1 << 4
+#define FUNNY_NAME              1 << 5
 
 
 
@@ -315,6 +327,15 @@ const char *    get_server_sent_body            (int);
 const char *    get_server_quit_message		(int);
 	void	set_server_cookie		(int, const char *);
 const char *	get_server_cookie         	(int);
+	void	set_server_funny_min         	(int, int);
+	int	get_server_funny_min         	(int);
+	void	set_server_funny_max         	(int, int);
+	int	get_server_funny_max         	(int);
+	void	set_server_funny_flags         	(int, int);
+	int	get_server_funny_flags         	(int);
+	void	set_server_funny_match		(int, const char *);
+const char *	get_server_funny_match         	(int);
+	void	set_server_funny_stuff		(int, int, int, int, const char *);
 
         void    set_server_window_count         (int, int);
         int     get_server_window_count         (int);

@@ -1,4 +1,4 @@
-/* $EPIC: server.c,v 1.88 2003/01/31 09:43:36 crazyed Exp $ */
+/* $EPIC: server.c,v 1.89 2003/01/31 23:50:18 jnelson Exp $ */
 /*
  * server.c:  Things dealing with that wacky program we call ircd.
  *
@@ -2784,6 +2784,19 @@ int	check_server_wait (int refnum, const char *nick)
 	return 0;
 }
 
+/****** FUNNY STUFF ******/
+IACCESSOR(v, funny_min)
+IACCESSOR(v, funny_max)
+IACCESSOR(v, funny_flags)
+SACCESSOR(match, funny_match, NULL);
+
+void	set_server_funny_stuff (int refnum, int min, int max, int flags, const char *stuff)
+{
+	set_server_funny_min(refnum, min);
+	set_server_funny_max(refnum, max);
+	set_server_funny_flags(refnum, flags);
+	set_server_funny_match(refnum, stuff);
+}
 
 /*****************************************************************************/
 

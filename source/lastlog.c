@@ -1,4 +1,4 @@
-/* $EPIC: lastlog.c,v 1.16 2003/01/11 04:26:52 jnelson Exp $ */
+/* $EPIC: lastlog.c,v 1.17 2003/01/31 23:50:18 jnelson Exp $ */
 /*
  * lastlog.c: handles the lastlog features of irc. 
  *
@@ -578,7 +578,7 @@ BUILT_IN_COMMAND(lastlog)
 
 	/* Iterate over the lastlog here */
 	if (header)
-		file_put_it(outfp, "%s Lastlog:", numeric_banner());
+		file_put_it(outfp, "%s Lastlog:", banner());
 
 	/*
 	 * Ugh.  This is way too complicated for its own good.  Let's
@@ -732,7 +732,7 @@ BUILT_IN_COMMAND(lastlog)
 	    }
 	}
 	if (header)
-		file_put_it(outfp, "%s End of Lastlog", numeric_banner());
+		file_put_it(outfp, "%s End of Lastlog", banner());
 bail:
 	if (outfp)
 		fclose(outfp);

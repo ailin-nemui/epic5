@@ -22,7 +22,6 @@ KNOWN ERRATA (eg, bugs, or unresolved requests):
 * Input cursor wigs out if 2ndary window is < 32 columns wide...
 * ^C,,, eats up all commas, not just the first one.
 * Join #foo, then join #foobar, doesn't WHO for #foobar (maxxx)
-* Handle all filesizes in dcc uniformly as 64 bit off_t's.
 * Built in functions need to call 'parse_server_index'!
 * Study update_input() and update_all_windows() and determine if used properly
 * Change AC_ARG_WITH(ipv6, to AC_ARG_USING(ipv6,
@@ -33,9 +32,9 @@ KNOWN ERRATA (eg, bugs, or unresolved requests):
 <larne> [ protocols=$defaultprots ]) 
 * DCC send yourself a file and then DCC get it leads to wackiness
 * New function, you give it a window level, it gives you the window refnum
+* IPV6-over-dcc, i promised morty i would.
+* Add a script to implement /set suppress_server_motd.  Someone missed it. doh!
 * ON WHO hook not thrown in correct window.
-
----
 
 [See http://www.epicsol.org/PROJECTS for things to come in the future]
 [See http://www.epicsol.org/CHANGELOG for things that changed in the past]
@@ -96,3 +95,17 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Fixed ERROR hook to display a star when not connected to a server.
 * Tuned internal array consistency checking in regression tests.
 * Added some debugging notices to autoget to warn of common problems.
+* Uniformly use 32 bit file sizes in dcc.  That's the way it has to be.
+* Split process_incoming_chat into modular functions.  It's an experiment.
+* Remove the old, #if 0'd dcc_getfile_resume.
+* Remove the second, redundant warning from /window refnum(_or_swap).
+* Make the ArgList portion of server messages const.  All const!  Huzzah!
+* Roll /names, /list, and /mode numeric handlers into numbers.c
+* Roll "funny" global variables into server-specific variables
+* Nuke funny.c and funny.h -- huzzah!
+* /on window_kill provides two args now, $0 is refnum, $1 is name/refnum.
+* Rename "numeric_banner" to "banner"
+* Rename "parse_notice" to "p_notice"
+* In /xecho, rename 'banner' local var to 'want_banner'.
+* Revamp p_notice to look like and act like p_privmsg as much as possible.
+* Finish the rest of the larnifications.  Done with phase 1.  Huzzah!
