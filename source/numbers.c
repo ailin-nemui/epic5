@@ -1,4 +1,4 @@
-/* $EPIC: numbers.c,v 1.34 2003/01/26 03:25:38 jnelson Exp $ */
+/* $EPIC: numbers.c,v 1.35 2003/01/29 05:11:29 jnelson Exp $ */
 /*
  * numbers.c: handles all those strange numeric response dished out by that
  * wacky, nutty program we call ircd 
@@ -359,7 +359,7 @@ void 	numbered_command (const char *from, const char *orig_comm, char **ArgList)
 
 	case 368:		/* #define END_OF_BANLIST */
 	{
-		if (get_int_var(SHOW_END_OF_MSGS_VAR))
+		if (!get_int_var(SHOW_END_OF_MSGS_VAR))
 			goto END;
 
 #ifdef IRCII_LIKE_BAN_SUMMARY

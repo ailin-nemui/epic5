@@ -33,6 +33,7 @@ KNOWN ERRATA (eg, bugs, or unresolved requests):
 <larne> [ protocols=$defaultprots ]) 
 * DCC send yourself a file and then DCC get it leads to wackiness
 * New function, you give it a window level, it gives you the window refnum
+* ON WHO hook not thrown in correct window.
 
 ---
 
