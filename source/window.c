@@ -1,4 +1,4 @@
-/* $EPIC: window.c,v 1.108 2004/03/18 01:04:03 jnelson Exp $ */
+/* $EPIC: window.c,v 1.109 2004/03/19 01:02:02 jnelson Exp $ */
 /*
  * window.c: Handles the organzation of the logical viewports (``windows'')
  * for irc.  This includes keeping track of what windows are open, where they
@@ -116,6 +116,12 @@ const	char	*who_from = (char *) 0;
  */
 	unsigned current_window_priority = 1;
 
+/*
+ * Ditto for queries
+ */
+static  int     current_query_counter = 0;
+
+
 static 	void 	remove_from_invisible_list 	(Window *);
 static 	void 	swap_window 			(Window *, Window *);
 static	Window	*get_next_window  		(Window *);
@@ -231,7 +237,6 @@ Window	*new_window (Screen *screen)
 	new_w->hold_slider = get_int_var(HOLD_SLIDER_VAR);
 
 	new_w->waiting_chans = NULL;
-	new_w->query_nick = NULL;
 	new_w->nicks = NULL;
 
 	new_w->lastlog_oldest = NULL;
@@ -475,7 +480,6 @@ delete_window_contents:
 	}
 
 	/* Various things... */
-	new_free(&window->query_nick);
 	new_free(&window->logfile);
 	new_free(&window->name);
 
@@ -1878,8 +1882,8 @@ const char 	*get_target_by_refnum (unsigned refnum)
 		if (!(tmp = last_input_screen->current_window))
 			return NULL;
 
-	if (tmp->query_nick)
-		return tmp->query_nick;
+	if ((cc = get_equery_by_refnum(refnum)))
+		return cc;
 	if ((cc = get_echannel_by_refnum(refnum)))
 		return cc;
 	return NULL;
@@ -1888,8 +1892,59 @@ const char 	*get_target_by_refnum (unsigned refnum)
 /* query_nick: Returns the query nick for the current channel */
 const char	*query_nick (void)
 {
-	return current_window->query_nick;
+	return get_equery_by_refnum(0);
 }
+
+const char *	get_equery_by_refnum (int refnum)
+{
+	WNickList *nick;
+	Window *win;
+
+	win = get_window_by_refnum(refnum);
+	for (nick = win->nicks; nick; nick = nick->next)
+	{
+		if (nick->counter == win->query_counter)
+			return nick->nick;
+	}
+
+	return NULL;
+}
+
+void	switch_query (char dumb, char *dumber)
+{
+        int     lowcount;
+	int	highcount = -1;
+        WNickList *winner = NULL,
+		  *nick;
+	Window  *win;
+
+	win = get_window_by_refnum(0);
+	lowcount = win->query_counter;
+
+	for (nick = win->nicks; nick; nick = nick->next)
+	{
+		if (nick->counter > highcount)
+			highcount = nick->counter;
+		if (nick->counter < lowcount)
+		{
+			lowcount = nick->counter;
+			winner = nick;
+		}
+	}
+
+        /*
+         * If there are no channels on this window, punt.
+         * If there is only one channel on this window, punt.
+         */
+        if (winner == NULL || highcount == -1 || highcount == lowcount)
+                return;
+
+	/* Make the oldest query the newest. */
+	winner->counter = current_query_counter++;
+	win->query_counter = winner->counter;
+	window_statusbar_needs_update(win);
+}
+
 
 
 /* * * * * * * * * * * * * * CHANNELS * * * * * * * * * * * * * * * * * */
@@ -2557,6 +2612,7 @@ static void 	list_a_window (Window *window, int len)
 {
 	int	cnw = get_int_var(CHANNEL_NAME_WIDTH_VAR);
 	const char *chan = get_echannel_by_refnum(window->refnum);
+	const char *q = get_equery_by_refnum(window->refnum);
 
 	if (cnw == 0)
 		cnw = 12;	/* Whatever */
@@ -2565,7 +2621,7 @@ static void 	list_a_window (Window *window, int len)
 		      12, 12,   get_server_nickname(window->server),
 		      len, len, window->name ? window->name : "<None>",
 		      cnw, cnw, chan ? chan : "<None>",
-		                window->query_nick ? window->query_nick : "<None>",
+		                q ? q : "<None>",
 		                get_server_itsname(window->server),
 		                mask_to_str(&window->window_mask),
 		                window->screen ? empty_string : " Hidden");
@@ -2715,6 +2771,7 @@ static Window *window_add (Window *window, char **args)
 			say("Added %s to window name list", arg);
 			new_w = (WNickList *)new_malloc(sizeof(WNickList));
 			new_w->nick = malloc_strdup(arg);
+			new_w->counter = 0;
 			add_to_list((List **)&(window->nicks), (List *)new_w);
 		}
 		else
@@ -2986,9 +3043,9 @@ else
 	    new_free(&c);
 	}
 
-	say("\tQuery User: %s", 
-				window->query_nick ? 
-				window->query_nick : "<None>");
+	chan = get_equery_by_refnum(window->refnum);
+	say("\tQuery User: %s", chan ? chan : "<None>");
+
 	if (window->nicks)
 	{
 	    WNickList *tmp;
@@ -3031,9 +3088,9 @@ else
 
 	say("\tHold mode is %s", 
 				onoff[window->holding_top_of_display ? 1 : 0]);
-	say("\tHold Slider perecentage is %hd",
+	say("\tHold Slider percentage is %hd",
 				window->hold_slider);
-	say("\tUpdate %%H on status bar every %hd lines",
+	say("\tUpdate %%B on status bar every %hd lines",
 				window->hold_interval);
 
 	say("\tFixed mode is %s", 
@@ -3526,7 +3583,7 @@ static Window *window_log (Window *window, char **args)
 		strlcat(buffer, ".", sizeof buffer);
 		if ((title = get_echannel_by_refnum(window->refnum)))
 			strlcat(buffer, title, sizeof buffer);
-		else if ((title = window->query_nick))
+		else if ((title = get_equery_by_refnum(window->refnum)))
 			strlcat(buffer, title, sizeof buffer);
 		else
 		{
@@ -3813,78 +3870,92 @@ static Window *window_push (Window *window, char **args)
 Window *window_query (Window *window, char **args)
 {
 	WNickList *tmp;
-	const char	  *nick;
+	const char *oldnick, *nick;
 	char	  *a;
 	Window	  *sw;
+
+	nick = new_next_arg(*args, args);
 
 	/*
 	 * Nuke the old query list
 	 */
-	if ((nick = window->query_nick))
+	if ((oldnick = get_equery_by_refnum(window->refnum)))
 	{
-		say("Ending conversation with %s", window->query_nick);
-		window_statusbar_needs_update(window);
+	    sw = to_window;
+	    to_window = window;
+	    say("Ending conversation with %s", oldnick);
+	    to_window = sw;
 
-		a = LOCAL_COPY(nick);
+	    /* Only remove from nick lists if canceling the query */
+	    if (!nick)
+	    {
+		a = LOCAL_COPY(oldnick);
 		while (a && *a)
 		{
-			nick = next_in_comma_list(a, &a);
+			oldnick = next_in_comma_list(a, &a);
 			if ((tmp = (WNickList *)remove_from_list(
-					(List **)&window->nicks, nick)))
+					(List **)&window->nicks, oldnick)))
 			{
 				new_free(&tmp->nick);
 				new_free((char **)&tmp);
 			}
 		}
-		new_free(&window->query_nick);
+	    }
+
+	    window_statusbar_needs_update(window);
 	}
 
-	if ((nick = new_next_arg(*args, args)))
+	/* If we're not assigning a new query, then just punt here. */
+	if (!nick)
+		return window;
+
+	if (!strcmp(nick, "."))
 	{
-		if (!strcmp(nick, "."))
-		{
-			if (!(nick = get_server_sent_nick(window->server)))
-				say("You have not messaged anyone yet");
-		}
-		else if (!strcmp(nick, ","))
-		{
-			if (!(nick = get_server_recv_nick(window->server)))
-				say("You have not recieved a message yet");
-		}
-		else if (!strcmp(nick, "*") && 
-			!(nick = get_echannel_by_refnum(0)))
-		{
-			say("You are not on a channel");
-		}
-		else if (*nick == '%')
-		{
-			if (!is_valid_process(nick))
-				nick = NULL;
-		}
+		if (!(nick = get_server_sent_nick(window->server)))
+			say("You have not messaged anyone yet");
+	}
+	else if (!strcmp(nick, ","))
+	{
+		if (!(nick = get_server_recv_nick(window->server)))
+			say("You have not recieved a message yet");
+	}
+	else if (!strcmp(nick, "*") && 
+		!(nick = get_echannel_by_refnum(0)))
+	{
+		say("You are not on a channel");
+	}
+	else if (*nick == '%')
+	{
+		if (!is_valid_process(nick))
+			nick = NULL;
+	}
 
-		if (!nick)
-			return window;
+	if (!nick)
+		return window;
 
-		/*
-		 * Create the new query list
-		 * Ugh.  Make sure this goes to the RIGHT WINDOW!
-		 */
-		sw = to_window;
-		to_window = window;
-		say("Starting conversation with %s", nick);
-		to_window = sw;
-
-		malloc_strcpy(&window->query_nick, nick);
-		window_statusbar_needs_update(window);
-		a = LOCAL_COPY(nick);
-		while (a && *a)
+	/*
+	 * Create the new query list
+	 * Ugh.  Make sure this goes to the RIGHT WINDOW!
+	 */
+	window_statusbar_needs_update(window);
+	a = LOCAL_COPY(nick);
+	while (a && *a)
+	{
+		nick = next_in_comma_list(a, &a);
+		if (!(tmp = (WNickList *)remove_from_list((List **)&window->nicks, nick)))
 		{
-			nick = next_in_comma_list(a, &a);
 			tmp = (WNickList *)new_malloc(sizeof(WNickList));
 			tmp->nick = malloc_strdup(nick);
-			add_to_list((List **)&window->nicks, (List *)tmp);
 		}
+		tmp->counter = current_query_counter++;
+		add_to_list((List **)&window->nicks, (List *)tmp);
+		window->query_counter = tmp->counter;
 	}
+
+	sw = to_window;
+	to_window = window;
+	say("Starting conversation with %s", nick);
+	to_window = sw;
 
 	return window;
 }
@@ -4744,7 +4815,7 @@ static int	add_to_display (Window *window, const unsigned char *str)
 
 	/* 
  	 * Handle overflow in the held view -- If the held view has
-	 * overflowed update the status bar in case %H changes.
+	 * overflowed update the status bar in case %B changes.
 	 */
 	if (window->holding_top_of_display)
 	{
@@ -5559,7 +5630,7 @@ char 	*windowctl 	(char *input)
 	    } else if (!my_strnicmp(listc, "BIND_CHANNEL", len)) {
 		RETURN_STR(empty_string);
 	    } else if (!my_strnicmp(listc, "QUERY_NICK", len)) {
-		RETURN_STR(w->query_nick);
+		RETURN_STR(empty_string);
 	    } else if (!my_strnicmp(listc, "NICKLIST", len)) {
 		RETURN_MSTR(get_nicklist_by_window(w));
 	    } else if (!my_strnicmp(listc, "LASTLOG_LEVEL", len)) {

@@ -45,6 +45,7 @@ typedef struct	WNickListStru
 {
 struct WNickListStru	*next;
 	char		*nick;
+	int		counter;
 } WNickList;
 
 
@@ -128,9 +129,8 @@ typedef	struct	WindowStru
 					 * is set, a JOIN to that channel will
 					 * put that channel into this win.
 					 */
-	char	*query_nick;		/* Current default target for win */
 	WNickList *nicks;		/* List of nick-queries for this win */
-
+	int	query_counter;		/* Is there a query anyways? */
 
 	/* /LASTLOG stuff */
 struct lastlog_stru *lastlog_newest;	/* pointer to top of lastlog list */
@@ -217,8 +217,9 @@ extern	unsigned current_window_priority;
 	void	set_prompt_by_refnum		(unsigned, const char *);
 const	char 	*get_prompt_by_refnum		(unsigned);
 const	char	*get_target_by_refnum		(unsigned);
-const char	*query_nick			(void);
-	void	set_query_nick			(char *);
+const 	char	*query_nick			(void);
+const 	char *	get_equery_by_refnum		(int);
+	void	switch_query			(char, char *);
 	int	is_current_channel		(const char *, int);
 const 	char *	set_channel_by_refnum		(unsigned, const char *);
 const	char	*get_echannel_by_refnum		(unsigned);

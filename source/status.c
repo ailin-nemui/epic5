@@ -1,4 +1,4 @@
-/* $EPIC: status.c,v 1.40 2004/03/18 01:04:03 jnelson Exp $ */
+/* $EPIC: status.c,v 1.41 2004/03/19 01:02:02 jnelson Exp $ */
 /*
  * status.c: handles the status line updating, etc for IRCII 
  *
@@ -929,11 +929,12 @@ static	char	my_buffer[64];
 STATUS_FUNCTION(status_query_nick)
 {
 	static char my_buffer[BIG_BUFFER_SIZE + 1];
+	const char *q;
 
-	if (window->query_nick && query_format)
+	q = get_equery_by_refnum(window->refnum);
+	if (q && query_format)
 	{
-		snprintf(my_buffer, BIG_BUFFER_SIZE, 
-				query_format, window->query_nick);
+		snprintf(my_buffer, BIG_BUFFER_SIZE, query_format, q);
 		return my_buffer;
 	}
 

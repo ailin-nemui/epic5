@@ -1,4 +1,4 @@
-/* $EPIC: screen.c,v 1.77 2004/03/18 04:57:56 jnelson Exp $ */
+/* $EPIC: screen.c,v 1.78 2004/03/19 01:02:02 jnelson Exp $ */
 /*
  * screen.c
  *
@@ -2122,12 +2122,9 @@ void 	add_to_screen (const unsigned char *buffer)
 	}
 
 	/*
-	 * The next priority is "LEVEL(CURRENT)" which is the "default"
-	 * level for all non-routed output.  That is meant to ensure that
-	 * any extraneous error messages goes to a window where the user
-	 * will see it.  All specific output (e.g. incoming server stuff) 
-	 * is routed through one of the LEVEL(*) levels, which is handled
-	 * below.
+	 * The next priority is "LEVEL_CURRENT)" which is only ever
+	 * used by the /WINDOW command, but I'm not even sure it's very
+	 * useful.  Maybe I'll think about this again later.
 	 */
 	else if ((who_level == LEVEL_CURRENT) && 
 	        ((winref = get_winref_by_servref(from_server)) > -1) && 
@@ -2139,79 +2136,41 @@ void 	add_to_screen (const unsigned char *buffer)
 
 	/*
 	 * Next priority is if the output is targeted at a certain
-	 * user or channel (used for /window bind or /window nick targets)
+	 * user or channel (used for /window channel or /window add targets)
 	 */
 	else if (who_from)
 	{
-		tmp = NULL;
-		while (traverse_all_windows(&tmp))
+	    if (is_channel(who_from))
+	    {
+		if (from_server == NOSERV)
+		    panic("Output to channel [%s:NOSERV]: %s",
+				who_from, buffer);
+
+	        if ((tmp = get_window_by_refnum(
+				get_channel_winref(who_from, from_server))))
 		{
-			const char *chan = get_echannel_by_refnum(tmp->refnum);
-
-			/*
-			 * Check for /WINDOW CHANNELs that apply.
-			 * (Any current channel will do)
-			 */
-			if (chan && !my_stricmp(who_from, chan))
-			{
-				if (tmp->server == from_server)
-				{
-					add_to_window(tmp, buffer);
-					return;
-				}
-			}
-
-#define NORMAL_MASK (LEVEL_MSG | LEVEL_NOTICE | LEVEL_DCC | LEVEL_CTCP | LEVEL_ACTION)
-#define DCC_MASK (LEVEL_DCC | LEVEL_CTCP | LEVEL_ACTION)
-
-			/*
-			 * Check for /WINDOW QUERYs that apply.
-			 */
-			if (tmp->query_nick &&
-			    (   (  who_level & NORMAL_MASK
-				&& !my_stricmp(who_from, tmp->query_nick)
-				&& from_server == tmp->server ) 
-                            ||  (  who_level & DCC_MASK
-				&& *tmp->query_nick == '='
-				&& !my_stricmp(who_from, tmp->query_nick + 1))
-			    ||  (  who_level & DCC_MASK
-				&& *tmp->query_nick == '='
-				&& !my_stricmp(who_from, tmp->query_nick)) ) )
-			{
-				add_to_window(tmp, buffer);
-				return;
-			}
+		    add_to_window(tmp, buffer);
+		    return;
 		}
-
+	    }
+	    else
+	    {
 		tmp = NULL;
 		while (traverse_all_windows(&tmp))
 		{
-			/*
-			 * Check for /WINDOW NICKs that apply
-			 */
-			if (from_server == tmp->server)
-			{
-				if (find_in_list((List **)&(tmp->nicks), 
+		    /* Must be for our server */
+		    if (tmp->server != from_server)
+			continue;
+
+		    /* Must be on the nick list */
+		    if (!find_in_list((List **)&(tmp->nicks), 
 					who_from, !USE_WILDCARDS))
-				{
-					add_to_window(tmp, buffer);
-					return;
-				}
-			}
-		}
+			continue;
 
-		/*
-		 * we'd better check to see if this should go to a
-		 * specific window (i dont agree with this, though)
-		 */
-		if (from_server != NOSERV && is_channel(who_from))
-		{
-			if ((tmp = get_window_by_refnum(get_channel_winref(who_from, from_server))))
-			{
-				add_to_window(tmp, buffer);
-				return;
-			}
+		    add_to_window(tmp, buffer);
+		    return;
 		}
+	    }
 	}
 
 	/*
@@ -2252,7 +2211,7 @@ void 	add_to_screen (const unsigned char *buffer)
 	 * If all else fails, if the current window is connected to the
 	 * given server, use the current window.
 	 */
-	if (from_server == current_window->server)
+	if (current_window->server == from_server)
 	{
 		add_to_window(current_window, buffer);
 		return;
@@ -2265,11 +2224,11 @@ void 	add_to_screen (const unsigned char *buffer)
 	tmp = NULL;
 	while (traverse_all_windows(&tmp))
 	{
-		if (tmp->server == from_server)
-		{
-			add_to_window(tmp, buffer);
-			return;
-		}
+		if (tmp->server != from_server)
+			continue;
+
+		add_to_window(tmp, buffer);
+		return;
 	}
 
 	/*

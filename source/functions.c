@@ -1,4 +1,4 @@
-/* $EPIC: functions.c,v 1.160 2004/03/17 03:51:53 jnelson Exp $ */
+/* $EPIC: functions.c,v 1.161 2004/03/19 01:02:02 jnelson Exp $ */
 /*
  * functions.c -- Built-in functions for ircII
  *
@@ -5083,15 +5083,19 @@ BUILT_IN_FUNCTION(function_querywin, args)
 	Window *w = NULL;
 	char *	nick = NULL;
 	int	servref = -1;
+	const char *q;
 
 	GET_STR_ARG(nick, args);
 	if (args && *args)
 		GET_INT_ARG(servref, args);
 
 	while (traverse_all_windows(&w))
-	    if (w->query_nick && !my_stricmp(w->query_nick, nick))
+	{
+	    q = get_equery_by_refnum(w->refnum);
+	    if (q && !my_stricmp(q, nick))
 		if (servref < 0 || servref == w->server)
 			RETURN_INT(w->refnum);
+	}
 
 	RETURN_INT(-1);
 }
