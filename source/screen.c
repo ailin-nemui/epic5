@@ -1,4 +1,4 @@
-/* $EPIC: screen.c,v 1.95 2005/03/03 02:10:40 jnelson Exp $ */
+/* $EPIC: screen.c,v 1.96 2005/03/18 02:42:31 jnelson Exp $ */
 /*
  * screen.c
  *
@@ -3184,6 +3184,12 @@ void 	add_wait_prompt (const char *prompt, void (*func)(char *, char *), const c
 {
 	WaitPrompt **AddLoc,
 		   *New;
+	Screen *	s;
+
+	if (current_window->screen)
+		s = current_window->screen;
+	else
+		s = main_screen;
 
 	New = (WaitPrompt *) new_malloc(sizeof(WaitPrompt));
 	New->prompt = malloc_strdup(prompt);
@@ -3192,10 +3198,11 @@ void 	add_wait_prompt (const char *prompt, void (*func)(char *, char *), const c
 	New->echo = echo;
 	New->func = func;
 	New->next = NULL;
-	for (AddLoc = &current_window->screen->promptlist; *AddLoc;
-			AddLoc = &(*AddLoc)->next);
+
+	for (AddLoc = &s->promptlist; *AddLoc; AddLoc = &(*AddLoc)->next)
+		/* nothing */;
 	*AddLoc = New;
-	if (AddLoc == &current_window->screen->promptlist)
+	if (AddLoc == &s->promptlist)
 		change_input_prompt(1);
 }
 

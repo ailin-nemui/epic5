@@ -1,4 +1,4 @@
-/* $EPIC: commands.c,v 1.116 2005/03/11 05:02:22 jnelson Exp $ */
+/* $EPIC: commands.c,v 1.117 2005/03/18 02:42:31 jnelson Exp $ */
 /*
  * commands.c -- Stuff needed to execute commands in ircII.
  *		 Includes the bulk of the built in commands for ircII.
@@ -940,13 +940,18 @@ BUILT_IN_COMMAND(xechocmd)
 			/* Chew up the argument. */
 			flag_arg = next_arg(args, &args);
 
-			while ((traverse_all_windows(&win)))
+			if (current_window->screen)
+			    to_window = current_window;
+			else
 			{
+			    while ((traverse_all_windows(&win)))
+			    {
 				if (win->screen)
 				{
 					to_window = win;
 					break;
 				}
+			    }
 			}
 			break;
 		}

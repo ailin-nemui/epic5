@@ -2,7 +2,7 @@ EPIC5 Projects, Bugs, and other Errata:
 
 KNOWN ERRATA (eg, bugs, or unresolved requests):
 ------------------------------------------------
-<none>
+* Make sure lost dcc's are handle graciously
 
 [See http://www.epicsol.org/PROJECTS for things to come in the future]
 [See http://www.epicsol.org/CHANGELOG5 for things that changed in the past]
@@ -567,3 +567,7 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Remove #define QUIT_ON_OPERATOR_KILL because 1 line of script defeats it.
 * Add some debugging stuff, try to trap lost dcc filedescs.
 * Release EPIC5-0.0.4 (Scurrilous)
+* Make /xecho -v output to current window if it's visible.
+* Permit status updates right away, instead of after first connection.
+* If /input is done in hidden window, switch to the main window.
+* Make arglists look a little less odd for fudd.
