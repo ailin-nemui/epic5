@@ -1,4 +1,4 @@
-/* $EPIC: dcc.c,v 1.116 2005/03/20 03:20:51 jnelson Exp $ */
+/* $EPIC: dcc.c,v 1.117 2005/03/28 23:50:07 jnelson Exp $ */
 /*
  * dcc.c: Things dealing client to client connections. 
  *
@@ -116,7 +116,9 @@ struct	DCC_struct *	next;
 
 static	DCC_list *	ClientList = NULL;
 static	char		DCC_current_transfer_buffer[256];
+#if 0
 	time_t		dcc_timeout = 600;		/* Backed by a /set */
+#endif
 static	int		dcc_global_lock = 0;
 static	int		dccs_rejected = 0;
 static	int		dcc_refnum = 0;
@@ -2581,6 +2583,7 @@ void	do_dcc (int fd)
 	    else if ((Client->flags & DCC_TYPES) == DCC_RAW_LISTEN) 
 		/* nothing */;
 
+#if 0
 	    /*
 	     * Enforce any timeouts
 	     */
@@ -2621,7 +2624,7 @@ void	do_dcc (int fd)
 		pop_message_from(l);
 		unlock_dcc(Client);
 	    }
-
+#endif
 
 	    /*
 	     * This shouldnt be neccesary any more, but what the hey,

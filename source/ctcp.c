@@ -1,4 +1,4 @@
-/* $EPIC: ctcp.c,v 1.43 2005/03/11 05:02:22 jnelson Exp $ */
+/* $EPIC: ctcp.c,v 1.44 2005/03/28 23:50:07 jnelson Exp $ */
 /*
  * ctcp.c:handles the client-to-client protocol(ctcp). 
  *
@@ -718,7 +718,9 @@ static	time_t	last_ctcp_parsed = 0;
 			    if (do_hook(CTCP_LIST, "%s %s %s %s", from, to, 
 						ctcp_command, ctcp_argument))
 			    {
+#if 0
 				if (get_int_var(VERBOSE_CTCP_VAR))
+#endif
 				    say("Unknown CTCP %s from %s to %s: %s%s",
 					ctcp_command, from, to, 
 					*ctcp_argument ? ": " : empty_string, 
@@ -776,7 +778,9 @@ static	time_t	last_ctcp_parsed = 0;
 		    if (do_hook(CTCP_LIST, "%s %s %s %s", 
 				from, to, ctcp_command, ctcp_argument))
 		    {
+#if 0
 			if (get_int_var(VERBOSE_CTCP_VAR)) 
+#endif
 			{
 			    if (is_me(from_server, to))
 				say("CTCP %s from %s%s%s", 

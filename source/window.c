@@ -1,4 +1,4 @@
-/* $EPIC: window.c,v 1.137 2005/03/03 02:10:40 jnelson Exp $ */
+/* $EPIC: window.c,v 1.138 2005/03/28 23:50:07 jnelson Exp $ */
 /*
  * window.c: Handles the organzation of the logical viewports (``windows'')
  * for irc.  This includes keeping track of what windows are open, where they
@@ -5929,6 +5929,7 @@ static int	count_fixed_windows (Screen *s)
 	return count;
 }
 
+#if 0
 /* 
  * Im sure this doesnt belong here, but im not sure where it does belong.
  */
@@ -5951,3 +5952,4 @@ int 	auto_rejoin_callback (void *d)
 
 	return 0;
 }
+#endif

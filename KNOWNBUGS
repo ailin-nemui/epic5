@@ -2,7 +2,7 @@ EPIC5 Projects, Bugs, and other Errata:
 
 KNOWN ERRATA (eg, bugs, or unresolved requests):
 ------------------------------------------------
-* Make sure lost dcc's are handle graciously
+<none>
 
 [See http://www.epicsol.org/PROJECTS for things to come in the future]
 [See http://www.epicsol.org/CHANGELOG5 for things that changed in the past]
@@ -579,3 +579,5 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Fix file descriptor leak, alerted by ce.
 * Add Blackjac's 'history' script.  Into the Abyss!
 * Comment out all of the history code.  It compiles.  Will GC it later.
+* Round one of blackjac's 'builtins' script.
+* Comment out a ton of now-scripted sets.  Will GC it later.

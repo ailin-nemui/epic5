@@ -1,4 +1,4 @@
-/* $EPIC: vars.c,v 1.69 2005/03/21 03:16:28 jnelson Exp $ */
+/* $EPIC: vars.c,v 1.70 2005/03/28 23:50:07 jnelson Exp $ */
 /*
  * vars.c: All the dealing of the irc variables are handled here. 
  *
@@ -79,7 +79,9 @@ const char	*var_settings[] =
 
 static	void	eight_bit_characters 	(void *);
 static 	void 	set_display_pc_characters (void *);
+/*
 static 	void	set_dcc_timeout 	(void *);
+*/
 static	void	set_mangle_inbound 	(void *);
 static	void	set_mangle_outbound 	(void *);
 static	void	set_mangle_logfiles 	(void *);
@@ -153,11 +155,15 @@ void 	init_variables_stage1 (void)
 	VAR(AUTO_NEW_NICK,		BOOL, NULL)
 	VAR(AUTO_RECONNECT, 		BOOL, NULL)
 	VAR(AUTO_RECONNECT_DELAY, 	INT,  NULL)
+/*
 	VAR(AUTO_REJOIN, 		BOOL, NULL)
+*/
 	VAR(AUTO_REJOIN_CONNECT, 	BOOL, NULL)
+/*
 	VAR(AUTO_REJOIN_DELAY, 		INT,  NULL)
 	VAR(AUTO_UNMARK_AWAY, 		BOOL, NULL)
 	VAR(AUTO_WHOWAS, 		BOOL, NULL)
+*/
 	VAR(BAD_STYLE, 			BOOL, NULL)
 	VAR(BANNER, 			STR,  NULL)
 #define DEFAULT_BANNER_EXPAND 0
@@ -175,7 +181,9 @@ void 	init_variables_stage1 (void)
 	VAR(CLOCK_INTERVAL, 		INT,  set_clock_interval);
 	VAR(CMDCHARS, 			STR,  NULL);
 	VAR(COLOR, BOOL, NULL);
+/*
 	VAR(COMMAND_MODE, BOOL, NULL);
+*/
 	VAR(COMMENT_HACK, BOOL, NULL);
 	VAR(CONNECT_TIMEOUT, INT,  NULL);
 	VAR(CONTINUED_LINE, STR,  NULL);
@@ -188,7 +196,9 @@ void 	init_variables_stage1 (void)
 	VAR(DCC_SLIDING_WINDOW, INT,  NULL);
 #define DEFAULT_DCC_STORE_PATH NULL
 	VAR(DCC_STORE_PATH, STR,  NULL);
+/*
 	VAR(DCC_TIMEOUT, INT,  set_dcc_timeout);
+*/
 #define DEFAULT_DCC_USE_GATEWAY_ADDR 0
 	VAR(DCC_USE_GATEWAY_ADDR, BOOL, NULL)
 #define DEFAULT_DEBUG 0
@@ -208,7 +218,9 @@ void 	init_variables_stage1 (void)
 	VAR(FLOOD_RATE_PER, INT,  NULL);
 	VAR(FLOOD_USERS, INT,  NULL);
 	VAR(FLOOD_WARNING, BOOL, NULL);
+/*
 	VAR(FULL_STATUS_LINE, BOOL, update_all_status_wrapper);
+*/
 	VAR(HELP_PAGER, BOOL, NULL);
 	/*
 	 * Construct the default help path
@@ -264,7 +276,9 @@ void 	init_variables_stage1 (void)
 	VAR(NO_CONTROL_LOG, BOOL, NULL);
 	VAR(NO_CTCP_FLOOD, BOOL, NULL);
 	VAR(NO_FAIL_DISCONNECT, BOOL, NULL);
+/*
 	VAR(NUM_OF_WHOWAS, INT,  NULL);
+*/
 	VAR(OLD_SERVER_LASTLOG_LEVEL, STR,  set_old_server_lastlog_mask);
 #define DEFAULT_OUTPUT_REWRITE NULL
 	VAR(OUTPUT_REWRITE, STR,  NULL);
@@ -273,7 +287,9 @@ void 	init_variables_stage1 (void)
 	VAR(RANDOM_SOURCE, INT,  NULL);
 #define DEFAULT_REALNAME NULL
 	VAR(REALNAME, STR,  NULL);
+/*
 	VAR(REVERSE_STATUS_LINE, BOOL, update_all_status_wrapper);
+*/
 #define DEFAULT_SCREEN_OPTIONS NULL
 	VAR(SCREEN_OPTIONS, STR,  NULL);
 	VAR(SCROLLBACK, INT,  set_scrollback_size);
@@ -283,11 +299,15 @@ void 	init_variables_stage1 (void)
 	VAR(SHELL, STR,  NULL);
 	VAR(SHELL_FLAGS, STR,  NULL);
 	VAR(SHELL_LIMIT, INT,  NULL);
+/*
 	VAR(SHOW_CHANNEL_NAMES, BOOL, NULL);
 	VAR(SHOW_END_OF_MSGS, BOOL, NULL);
+*/
 	VAR(SHOW_NUMERICS, BOOL, NULL);
 	VAR(SHOW_STATUS_ALL, BOOL, update_all_status_wrapper);
+/*
 	VAR(SHOW_WHO_HOPCOUNT, BOOL, NULL);
+*/
 #define DEFAULT_SSL_CERTFILE NULL
 	VAR(SSL_CERTFILE, STR,  NULL);
 #define DEFAULT_SSL_KEYFILE NULL
@@ -378,7 +398,9 @@ void 	init_variables_stage1 (void)
 	VAR(TRANSLATION_PATH, STR,  NULL);
 	VAR(UNDERLINE_VIDEO, BOOL, NULL);
 	VAR(USER_INFORMATION, STR,  NULL);
+/*
 	VAR(VERBOSE_CTCP, BOOL, NULL);
+*/
 	VAR(WORD_BREAK, STR,  NULL);
 #define DEFAULT_WSERV_PATH WSERV_PATH
 	VAR(WSERV_PATH, STR,  NULL);
@@ -884,6 +906,7 @@ static void 	set_display_pc_characters (void *stuff)
 	}
 }
 
+/*
 static void	set_dcc_timeout (void *stuff)
 {
 	VARIABLE *v;
@@ -897,6 +920,7 @@ static void	set_dcc_timeout (void *stuff)
 	else
 		dcc_timeout = value;
 }
+*/
 
 int	parse_mangle (const char *value, int nvalue, char **rv)
 {

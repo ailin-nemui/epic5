@@ -1,4 +1,4 @@
-/* $EPIC: commands.c,v 1.119 2005/03/21 02:59:16 jnelson Exp $ */
+/* $EPIC: commands.c,v 1.120 2005/03/28 23:50:07 jnelson Exp $ */
 /*
  * commands.c -- Stuff needed to execute commands in ircII.
  *		 Includes the bulk of the built in commands for ircII.
@@ -2783,9 +2783,9 @@ BUILT_IN_COMMAND(whois)
 		if (args && *args)
 			malloc_sprintf(&stuff, "%s %s", word_one, args);
 		else if (word_one && *word_one)
-			malloc_sprintf(&stuff, "%s %d", word_one, get_int_var(NUM_OF_WHOWAS_VAR));
+			malloc_sprintf(&stuff, "%s", word_one);
 		else
-			malloc_sprintf(&stuff, "%s %d", get_server_nickname(from_server), get_int_var(NUM_OF_WHOWAS_VAR));
+			malloc_sprintf(&stuff, "%s", get_server_nickname(from_server));
 
 		send_to_server("WHOWAS %s", stuff);
 		new_free(&stuff);
@@ -3136,6 +3136,7 @@ struct target_type target[4] =
 		pop_message_from(l);
 	}
 
+#if 0
 	/*
 	 * If the user didnt explicitly send the text (hook == 1), then 
 	 * it makes no sense to presume that theyre not still /AWAY.
@@ -3144,6 +3145,7 @@ struct target_type target[4] =
 	 */
 	if (hook && get_server_away(from_server) && get_int_var(AUTO_UNMARK_AWAY_VAR))
 		runcmds("AWAY", empty_string);
+#endif
 
 	window_display = old_window_display;
 	from_server = old_from_server;
@@ -3618,7 +3620,7 @@ static	unsigned 	level = 0;
 	 * always consider input a command unless we are in interactive mode
 	 * and command_mode is off.   -lynx
 	 */
-	if (hist_flag && !cmdchar_used && !get_int_var(COMMAND_MODE_VAR))
+	if (hist_flag && !cmdchar_used /* && !get_int_var(COMMAND_MODE_VAR) */)
 	{
 		send_text(from_server, get_target_by_refnum(0), line, NULL, 1);
 #if 0
@@ -3627,14 +3629,14 @@ static	unsigned 	level = 0;
 #endif
 		/* Special handling for ' and : */
 	}
+#if 0
 	else if (*com == '\'' && get_int_var(COMMAND_MODE_VAR))
 	{
 		send_text(from_server, get_target_by_refnum(0), line + 1, NULL, 1);
-#if 0
 		if (hist_flag && add_to_hist)
 			add_to_history(this_cmd);
-#endif
 	}
+#endif
 	else if ((*com == '@') || (*com == '('))
 	{
 		/* This kludge fixes a memory leak */

@@ -1,4 +1,4 @@
-/* $EPIC: numbers.c,v 1.83 2005/03/19 03:55:55 jnelson Exp $ */
+/* $EPIC: numbers.c,v 1.84 2005/03/28 23:50:07 jnelson Exp $ */
 /*
  * numbers.c: handles all those strange numeric response dished out by that
  * wacky, nutty program we call ircd 
@@ -579,8 +579,10 @@ void 	numbered_command (const char *from, const char *comm, char const **ArgList
 	{
 		const char	*channel;
 
+#if 0
 		if (!get_int_var(SHOW_END_OF_MSGS_VAR))
 			goto END;
+#endif
 
 		if (!(channel = ArgList[0]))
 			{ rfc1459_odd(from, comm, ArgList); goto END; }
@@ -620,6 +622,7 @@ void 	numbered_command (const char *from, const char *comm, char const **ArgList
 		if (!is_channel(nick))
 		{
 		    notify_mark(from_server, nick, 0, 0);
+#if 0
 		    if (get_int_var(AUTO_WHOWAS_VAR))
 		    {
 			int foo = get_int_var(NUM_OF_WHOWAS_VAR);
@@ -629,6 +632,7 @@ void 	numbered_command (const char *from, const char *comm, char const **ArgList
 			else
 				send_to_server("WHOWAS %s", nick);
 		    }
+#endif
 		}
 
 		break;
@@ -1056,7 +1060,9 @@ DISPLAY:
 	case 318:		/* #define RPL_ENDOFWHOIS       318 */
 	{
 		PasteArgs(ArgList, 0);
+#if 0
 		if (get_int_var(SHOW_END_OF_MSGS_VAR))
+#endif
 			display_msg(from, comm, ArgList);
 		break;
 	}
@@ -1278,9 +1284,11 @@ DISPLAY:
 			pop_message_from(l);
 			l = message_from(channel, LEVEL_CRAP);
 			if (do_hook(NAMES_LIST, "%s %s", channel, line))
+#if 0
 			    if (get_int_var(SHOW_CHANNEL_NAMES_VAR))
 				say("Users on %s: %s",
 					check_channel_type(channel), line);
+#endif
 			break;
 		}
 
@@ -1346,8 +1354,10 @@ DISPLAY:
 	{
 		const char	*channel;
 
+#if 0
 		if (!get_int_var(SHOW_END_OF_MSGS_VAR))
 			break;
+#endif
 
 		if (!(channel = ArgList[0]))
 			{ rfc1459_odd(from, comm, ArgList); goto END; }
@@ -1406,7 +1416,9 @@ DISPLAY:
 	case 394:		/* #define RPL_ENDOFUSERS       394 */
 	{
 		PasteArgs(ArgList, 0);
+#if 0
 		if (get_int_var(SHOW_END_OF_MSGS_VAR))
+#endif
 			display_msg(from, comm, ArgList);
 		break;
 	}

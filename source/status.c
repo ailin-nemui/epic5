@@ -1,4 +1,4 @@
-/* $EPIC: status.c,v 1.54 2005/03/19 03:55:56 jnelson Exp $ */
+/* $EPIC: status.c,v 1.55 2005/03/28 23:50:07 jnelson Exp $ */
 /*
  * status.c: handles the status line updating, etc for IRCII 
  *
@@ -581,6 +581,7 @@ int	make_status (Window *window, int must_redraw)
 				 window->status.line[line].key[i]);
 		}
 
+#if 0
 		/*
 		 * If the REVERSE_STATUS_LINE var is on, then put a reverse
 		 * character in the first position (itll get translated to
@@ -589,6 +590,7 @@ int	make_status (Window *window, int must_redraw)
 		if (get_int_var(REVERSE_STATUS_LINE_VAR))
 			*buffer = REV_TOG , str = buffer + 1;
 		else
+#endif
 			str = buffer;
 
 		/*
@@ -739,6 +741,7 @@ int	make_status (Window *window, int must_redraw)
 						sizeof lhs_buffer);
 		}
 
+#if 0
 		/*
 		 * No rhs?  If the user wants us to pad it out, do so.
 		 */
@@ -750,6 +753,7 @@ int	make_status (Window *window, int must_redraw)
 				strlcat(lhs_buffer, lhs_fillchar, 
 						sizeof lhs_buffer);
 		}
+#endif
 
 		save_size = strlen(all_off());
 		strlcpy(buffer, lhs_buffer, sizeof buffer - save_size);
