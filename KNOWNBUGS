@@ -9,9 +9,7 @@ KNOWN ERRATA (eg, bugs, or unresolved requests):
 * /TYPE honors keybindings, and calls edit_char(), but /XTYPE -L does not 
   honor key bindings because it calls input_add_character().
 * Study update_input() and update_all_windows() and determine if used properly
-* New function, you give it a window level, it gives you the window refnum
 * Shall remove_trailing_spaces honor a \ before a space trailing?
-* New built in function to get who_from and who_level
 * Some way to color the input prompt?
 
 [See http://www.epicsol.org/PROJECTS for things to come in the future]
@@ -98,4 +96,6 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Reorganize process_outgoing_file() into sub-functions.
 * Don't call "dcc_dead" or "dcc_check" in main io() looper.
 * Fix new_next_arg_count() to use real_move_to_abs_word() to emulate $1 usage
-
+* Fix infinite recursion bug when a channel key contains unmatched (
+* Add $outputinfo() which outputs "level" and "target".
+* Add $levelwindow() which returns window refnum for a given level.

@@ -1,4 +1,4 @@
-/* $EPIC: functions.c,v 1.115 2003/05/05 03:37:52 jnelson Exp $ */
+/* $EPIC: functions.c,v 1.116 2003/05/05 03:55:01 jnelson Exp $ */
 /*
  * functions.c -- Built-in functions for ircII
  *
@@ -282,6 +282,7 @@ static	char
 	*function_lastserver	(char *),
 	*function_leftpc	(char *),
 	*function_leftw 	(char *),
+	*function_levelwindow	(char *),
 	*function_loadinfo	(char *),
 	*function_log		(char *),
 	*function_log10		(char *),
@@ -567,6 +568,7 @@ static BuiltInFunctions	built_in_functions[] =
 	{ "LEFT",		function_left 		},
 	{ "LEFTPC",		function_leftpc		},
 	{ "LEFTW",              function_leftw 		},
+	{ "LEVELWINDOW",	function_levelwindow	},
 	{ "LINE",		function_line		}, /* lastlog.h */
 	{ "LISTARRAY",		function_listarray	},
 	{ "LISTEN",		function_listen 	},
@@ -6677,5 +6679,21 @@ BUILT_IN_FUNCTION(function_outputinfo, input)
 						who_from);
 	else
 		return m_strdup(bits_to_lastlog_level(who_level));
+}
+
+BUILT_IN_FUNCTION(function_levelwindow, input)
+{
+	int	levels;
+	Window	*w = NULL;
+
+	levels = parse_lastlog_level(input);
+	while (traverse_all_windows(&w))
+	{
+		if ((w->window_level & LOG_DCC) && (levels & LOG_DCC))
+			RETURN_INT(w->refnum);
+		if ((w->server == from_server) && (w->window_level & levels))
+			RETURN_INT(w->refnum);
+	}
+	RETURN_INT(-1);
 }
 

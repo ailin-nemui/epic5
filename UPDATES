@@ -1,5 +1,15 @@
 EPIC4-1.2.0
 
+*** News 05/04/2003 -- Change default of /set new_server_lastlog_level
+	The new default for /SET NEW_SERVER_LASTLOG_LEVEL is now ALL,-DCC.
+
+*** News 05/04/2003 -- New built in function: $levelwindow()
+	Given a lastlog level description, it returns a window for the
+	current server that claims any of the specified levels.  If no
+	windows for the current server claim the level, -1 is returned.
+	Since the DCC level is global to the entire client, that is handled
+	specially.
+
 *** News 05/04/2003 -- New built in function: $outputinfo()
 	The $outputinfo() function returns either one or two words:
 		$0	Current output window level
