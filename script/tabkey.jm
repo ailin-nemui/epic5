@@ -302,7 +302,7 @@ alias do_tabkey (cycle_direction) {
 		(/notify -%) {
 			@:fragment = rest($fragment)
 			@:fraglen--
-			@:matches = match_nick($fragment)
+			@:matches = match_notify($fragment)
 
 			if (#matches == 1) {
 				@:padding = [ ]
@@ -583,13 +583,11 @@ alias match_nick (fragment) {
 	if (nick_matches == []) {
 		@:nick_list = []
 
-		fe ($remw($C $mychannels())) nickname {
-			@push(nick_list $onchannel($nickname))
+		fe ($remw($C $mychannels())) chan {
+			@push(nick_list $onchannel($chan))
 		}
 
-		fe ($notify(on)) nickname {
-			@push(nick_list $nickname)
-		}
+		@push(nick_list $notify(on))
 
 		@:nick_matches = pattern(${fragment}* $nick_list)
 	}
@@ -604,6 +602,13 @@ alias match_nick (fragment) {
 	}
 
 	@:matches = uniq($matches)
+	@match_cycle_list = matches
+
+	return $matches
+}
+
+alias match_notify (fragment) {
+	@:matches = pattern(${fragment}* $notify())
 	@match_cycle_list = matches
 
 	return $matches
