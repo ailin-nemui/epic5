@@ -52,7 +52,6 @@
 #endif
 #include <math.h>
 
-
 static	char	
 	*alias_detected 	(void), *alias_sent_nick 	(void),
 	*alias_recv_nick 	(void), *alias_msg_body 	(void),
@@ -6371,6 +6370,12 @@ BUILT_IN_FUNCTION(function_serverctl, input)
 	extern char *serverctl (char *);
 	return serverctl(input);
 }
+
+
+/* Must include this if we use sys_siglist. */
+#ifndef SYS_SIGLIST_DECLARED
+#include "sig.inc"
+#endif
 
 BUILT_IN_FUNCTION(function_killpid, input)
 {
