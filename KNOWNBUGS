@@ -122,4 +122,9 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Change /set notify_interval 0 to turn off notify entirely. (ce)
 * Add send_to_server_raw() internal function (ce)
 * Add /window notified, turns on the "window notified" flag (ce)
-
+* Add support for /msg'ing 0 -- this is a "sink"
+* /redirect 0 now uses the '/msg 0 sink'
+* Add support for /msg'ing @<filedesc> -- to write to an $open() file.
+* This adds support for /msg'ing @w<winref> -- to write to a window logfile
+* When /redirect'ing to 0 or @<filedesc>, don't output result to screen.
+* Fix null deref when msg'ing a window's logfile that doesn't exist.
