@@ -492,3 +492,4 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Remove restrictions on /QUOTE, so there!
 * Add pthread support to newio for larne. HUZZAH!
 * I'm sure a zillion things are broken, so it's time to test!
+* Remove a panic that broke /wait.

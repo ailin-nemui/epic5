@@ -1,4 +1,4 @@
-/* $EPIC: newio.c,v 1.34 2005/02/19 05:15:15 jnelson Exp $ */
+/* $EPIC: newio.c,v 1.35 2005/02/19 14:25:08 jnelson Exp $ */
 /*
  * newio.c:  Passive, callback-driven IO handling for sockets-n-stuff.
  *
@@ -393,13 +393,15 @@ static	int	polls = 0;
 	}
 
 	/* 
-	 * Sanity check -- In the new world order, we're not allowed to call
-	 * do_wait() until we've cleaned all of the fd's.  To ensure there
-	 * are no bugs in that code, we double check.
+	 * It is possible that as a result of the previous I/O run, we are
+	 * running recursively in io(). (/WAIT, /REDIRECT, etc).  This will
+	 * obviously result in the IO buffers not being cleaned yet.  So we
+	 * check for whether there are any dirty buffers, and if there are,
+	 * we shall just return and allow them to be cleaned.
 	 */
 	for (vfd = 0; vfd <= global_max_vfd; vfd++)
 		if (io_rec[vfd] && !io_rec[vfd]->clean)
-			panic("vfd [%d] is not clean", vfd);
+			return 1;
 
 	/*
 	 * Now we go to sleep!  kdoit() doesn't return until either
