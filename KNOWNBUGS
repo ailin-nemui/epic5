@@ -21,3 +21,21 @@ KNOWN ERRATA (eg, bugs, or unresolved requests):
 
 THE CHANGELOG SINCE THE LAST RELEASE:
 -------------------------------------
+* New /set, /SET SWITCH_CHANNELS_BETWEEN_WINDOWS
+* C language issues (const correctness, integer size correctness)
+* Revamp channel structure to hold window refnum and not window pointer
+* Add "current channel counter" to channel structure.
+* Determine "current channel" by election.
+* Garbage collect a lot of now unnecessary code.
+* Add get_echannel_by_refnum(), returns window's "elected" current channel
+* Add internal function is_waiting_for_channel()
+* Add internal function move_waiting_channel()
+* Add internal function get_winref_by_bound_channel()
+* Add internal function get_bound_channel_by_refnum()
+* Convert uses of get_channel_by_refnum() to get_echannel_by_refnum()
+* Fix $winbound() to work when given a window refnum
+* Fix valgrind issue with $regcomp()
+* Remove sanity checks from traverse_all_channels(); handled elsewhere now
+* Change traverse_all_channels() with "this server" or "not this server" arg
+* Nuke (Window *)->current_channel.  Handled by channels now.  HUZZAH!
+* Implement /ON SWITCH_WINDOWS again.

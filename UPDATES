@@ -1,3 +1,13 @@
 EPIC4-1.2.0
 
+*** News 03/29/2003 -- New /SET, /SET SWITCH_CHANNELS_BETWEEN_WINDOWS
+	When this set is ON (default) the SWITCH_CHANNELS key binding
+	will have its traditional (legacy) behavior, and will allow you 
+	to switch a window's current channel between all of the non-current
+	channel windows in all windows connected to the same server.
+
+	When this set is OFF, the SWITCH_CHANNELS key binding will have
+	more sensible behavior, allowing you to switch between a window's
+	channel list, but without grabbing channels from other windows.
+
 # End of file
