@@ -41,6 +41,7 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Add 'creation', 'last_used' time and usage counter to ignores
 * Add support to $ignorectl() to get/set three above values.
 * Don't do WHOWAS on channels in 401.
+* Fix $levelwindow() to take a server refnum as the first arg.
 * Add $dccctl([GET|SET] <refnum> OFFERADDR), the address in the handshake.
 * Add metric time support -- measured in millidays
 * Add $metric_time(), which returns <days> <millidays> since epoch.
@@ -153,6 +154,7 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Add shell of $windowctl() which will be filled in going forward.
 * Add a more sensible 'make installhelp' rule, courtesy of Steven Plunkett
 * Don't prohibit universal_next_arg_count() from returning empty_string.
+* Add /set notify, to control whether to do notify or not.
 * Rework the bug report form to point people to the bugs website
 * Add /lastlog -target.
 * Protect against panic if you do dcc while not connected to server
@@ -186,12 +188,15 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Change word handling for eg, [foo   ] so $0 is [foo] and $1 is [  ].
 * Include <stdint.h> or <inttypes.h> if they exist.
 * Reorganised, documented and generally screwed around with data_array/struct.
+* Swap <home> and <end> auto-keybindings (wd)
 * Very minor syntax changes to script/functions and script/deban.
 * Fix buffer overrun crash with CTCP UTC.
 * Fix /dcc chat nick -p 4444
 * Return empty string if you do $aliasctl(pmatch <bogus> <whatever>)
 * Update some copyright notices.
 * Fix panic from $push(:foo )
+* Fix /ON ENCRYPTED_[PRIVMSG|NOTICE] (ce, rb hsoc)
+* Start checking umodes against 004, from $serverctl([gs]et <ref> umodes) (ce)
 * Revert all uses of LOG_CURRENT to LOG_CRAP
 * Change all uses of message_to(0) to message_to(-1)
 * Fix show_help() to not change to_window, it doesn't need to care about that.
@@ -211,7 +216,7 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Fix @ {<command>} to not infinite loop looking for $FUNCTION_RETURN.
 * Fix it so you can compile on systems without (intptr_t) again.
 * Add $servernick(<global>) to return the client's global nickname
-* Update tabkey.jm to latest version
+* Fix /set mangle_inbound, $servernick()
 * Add new ircII-compatable /window hold_mode thingee.
 * Add /set hold_slider, /window hold_slider
 * Add 'hold_mode' script, implements ircII-like /set hold_mode[_interval]
@@ -220,5 +225,7 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Implement "priveleged yells" which lets you do /set debug 7 again.
 * Fix UNSTOP_ALL_WINDOWS keybinding, reported by ce.
 * When sending a /dcc chat message, make sure to call message_from properly.
+* Make the int type in the new math parser a typedef so ce can change it.
 * Set the window's waiting channel before sending out the JOIN
 * Let <pagedown> and <end> work on hold mode as well as scrollback.
+* Release 1.1.13

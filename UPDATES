@@ -1,6 +1,10 @@
 EPIC4-1.2.0
 
-*** News 10/10/2003 -- /XEVAL -- now ends option processing
+*** News 10/19/2003 -- You can now /SET DEBUG 7 and /SET OUTPUT_REWRITE
+        at the same time.  I fixed it with a technical workaround the details
+        of which would probably bore you. ;-)
+
+*** News 10/19/2003 -- /XEVAL -- now ends option processing
 	If you do /XEVAL -- <whatever> then <whatever> will be executed
 	as a command and no further options will be parsed.  This came up
 	becuase /XECHO -- does this, and someone figured out that '/' was
@@ -53,6 +57,45 @@ EPIC4-1.2.0
 	a lot of people hated this so I "fixed" it as part of the hold_mode
 	stuff.
 
+*** News 10/10/2003 -- Per-DCC store paths (sort of)
+	You can now /DCC RENAME <nick> <file> <absolute path> to override
+	the /SET DCC_STORE_PATH for a particular DCC.  For example:
+		/SET DCC_STORE_PATH ~/downloads/
+		/DCC RENAME hop myfile.txt /tmp/myfile.txt
+		/DCC GET hop
+	Before this change, the file would be saved as:
+		~/downloads/_tmp_myfile.txt
+	but now it will be properly saved to
+		/tmp/myfile.txt
+
+*** News 10/10/2003 -- Servers now track their own current windows
+	As you probably know, EPIC has a "global current window" and each of
+	your screens has its own "current window".  Now each server will 
+	track its "current window".  Each time you set a new current window
+	in one of your screens, that window will become its server's current
+	window.  This information will be used for /SET CURRENT_WINDOW_LEVEL.
+	This means that when output to a level in /SET CURRENT_WINDOW_LEVEL
+	occurs from servers that are not the current window's server, it will 
+	now go to that server's "current window" instead of being ignored 
+	like it has up until now.
+
+*** News 10/10/2003 -- EPIC now uses 004 and 005 numeric values
+	There are many different networks out there who use usermodes and 
+	channel modes for different things.  Sometimes, a mode may take an 
+	argument on one server but not on another server.  In order to allow 
+	clients to do the sensible thing, servers are supposed to send right
+	and proper values in the 004 and 005 numerics to tell the client what
+	modes are available and whether they take an argument or not.  EPIC
+	now will use these values.  Occasionally, a server will be in error
+	and fail to report a usermode it supports, or will falsely report it
+	as taking an argument when it doesn't, or vice versa.  Whenever a 
+	problem like this occurs, EPIC will output a warning message telling
+	you that it had to assume something about your server that the server
+	did not relay correctly to EPIC.  These messages are harmless and 
+	you can usually ignore them, but if you get a message and EPIC does
+	do something weird, the mode change may be at fault.  You can talk
+	to your friendly server administrator about the problem.
+
 *** News 09/25/2003 -- $servernick(<global>) now returns global nickname
 	I just know I'm going to regret this...  If you want to get the
 	client's global current nickname (which is used for new servers
@@ -77,6 +120,52 @@ EPIC4-1.2.0
 	keeps failing. "/autoclobber resume close" (the default) means that if
 	the request is for a file larger than the one you have, the transfer
 	will resume, otherwise the request will be rejected.
+
+*** News 08/20/2003 -- You cannot do /TIMER -REPEAT -1 0
+	Because this would busy loop.  You need *some* sort of interval, 
+	even if it is very small.
+
+*** News 08/20/2003 -- You can no longer do /WINDOW NUMBER on channel windows
+	Windows have traditionally tracked their current channel by holding
+	the current channel name as a string.  This has been a huge hassle
+	since it's possible for the window to think its current channel is
+	a channel you're not on, and there was no way to fix that short of
+	doing brute force sanity checks.  Now EPIC tracks your current
+	channels by having each channel hold a "priority" number, and the
+	refnum of its window.  Whenever you remove a channel from its window
+	by whatever reason, the channel that has the next highest priority
+	is made the current channel.  This means EPIC can remember all of
+	your previous current channels and unwind them sensibly.  But this
+	all comes with a price.  Because channels track their windows by 
+	refnum now, you can no longer change a window's refnum if it has 
+	channels in it.  If you try, EPIC will refuse to comply.
+
+*** News 08/15/2003 -- You can now /RETURN from a /LOADing script
+	If you /RETURN from within a /LOADing script, the /LOAD will end.
+	This can be useful if you want to protect against /LOADing a script
+	twice, or if it's a pre-formatted script and you don't want it to 
+	be /LOADed by the standard loader.
+
+*** News 08/15/2003 -- Improvements to how EPIC handles words
+	Up until this point, EPIC's word handling was more "ad hoc" than
+	anything.  Some places honored double quoted words, other places did 
+	not, and even then not every place did the same thing with double 
+	quoted words.  In some places, words would include leading spaces, 
+	and in others they would not.  Same thing with trailing spaces.  It 
+	was just a total mess.  We made a concerted effort to clean up all of 
+	this so that there is only one set of rules for all words in EPIC.  
+	I would document the new set of rules, except I don't want to hold 
+	up this release by writing a big old document.  Stay tuned.  Basically
+	the point is everything should be sensible and consistent now.
+
+*** News 08/15/2003 -- Improvements to EPIC's source code
+	At or around this timeframe, EPIC's source code was audited and
+	fixed so that no "unsafe" C functions are used.  This was used to 
+	satisfy the pedants who worry that any use of an unsafe C function,
+	even if it is carefully checked, is a security risk.  Also, EPIC
+	was compiled with some of the stricter FreeBSD "WARNS" compiler
+	flags, and many hundreds of changes were made to improve the 
+	quality and conformance of EPIC's source code.
 
 *** News 07/19/2003 -- New argument to /LASTLOG, /LASTLOG -TARGET
 	Items are stored in your lastlog along with the "display target".
