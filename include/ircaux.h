@@ -7,7 +7,7 @@
  *
  * See the COPYRIGHT file, or do a HELP IRCII COPYRIGHT 
  *
- * @(#)$Id: ircaux.h,v 1.12 2002/02/14 16:33:25 jnelson Exp $
+ * @(#)$Id: ircaux.h,v 1.13 2002/04/01 18:57:00 jnelson Exp $
  */
 
 #ifndef _IRCAUX_H_
@@ -24,7 +24,14 @@ typedef int 	comp_func 		(char *, char *);
 #define MUST_BE_MALLOCED(x, y) \
 		fatal_malloc_check ((void *)(x), (y), __FILE__, __LINE__)
 #define RESIZE(x, y, z) new_realloc	((void **)& (x), sizeof(y) * (z))
+
+/*
+ * It's really really important that you never use LOCAL_COPY in the actual
+ * argument list of a function call, because bad things can happen.  Always
+ * do your LOCAL_COPY as a separate step before you call a function.
+ */
 #define LOCAL_COPY(y) strcpy(alloca(strlen((y)) + 1), y)
+
 #define m_e3cat(x,y,z) m_ec3cat((x),(y),(z),NULL)
 #define m_s3cat(x,y,z) m_sc3cat((x),(y),(z),NULL)
 #define m_s3cat_s(x,y,z) m_sc3cat_s((x),(y),(z),NULL)
