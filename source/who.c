@@ -628,9 +628,6 @@ int	fake_who_end (char *from, char *who_target)
 {
 	WhoEntry 	*new_w = who_queue_top();
 
-	while (last_char(who_target) == ' ')
-		chop(who_target, 1);
-
 	if (who_whine)
 		who_whine = 0;
 	if (!new_w)
@@ -642,6 +639,9 @@ int	fake_who_end (char *from, char *who_target)
 
 	if (who_target != NULL)
 	{
+		while (last_char(who_target) == ' ')
+			chop(who_target, 1);
+
 		/*
 		 * So 'who_target' isn't NULL here.  Make sure it's a 
 		 * legitimate match to our current top of who request.
