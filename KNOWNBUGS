@@ -156,3 +156,9 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Add a searchbuf() 8 bit clean byte-finder for future use.
 * Convert flood checking, ignore checking, lastlog, logfiles to int masks.
 * Convert message_from to int masks.
+* Undo that lame damage -- convert all level handling to "signal-like"
+* Each level is individual, and masks are stored in types like (sigset_t).
+* Comparing one mask against each other requires O(N^2) operation. bummer.
+* But now levels are officially stored in opaque data type!
+* And that data type is not limited to 32 bits! HUZZAH!
+* Add 6 new lastlog levels (USER5-USER10) to celebrate.

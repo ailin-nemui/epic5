@@ -34,9 +34,14 @@
 #define LEVEL_USER2	21
 #define LEVEL_USER3	22
 #define LEVEL_USER4	23
-#define LEVEL_HELP	24
+#define LEVEL_USER5	24
+#define LEVEL_USER6	25
+#define LEVEL_USER7	26
+#define LEVEL_USER8	27
+#define LEVEL_USER9	28
+#define LEVEL_USER10	29
 #define LEVEL_ALL       0x7FFFFFFF
-#define NUMBER_OF_LEVELS	25
+#define NUMBER_OF_LEVELS	30
 
 static  const char *level_types[NUMBER_OF_LEVELS] =
 {
@@ -64,7 +69,12 @@ static  const char *level_types[NUMBER_OF_LEVELS] =
         "USER2",
         "USER3",
         "USER4",
-        "HELP"
+        "USER5",
+        "USER6",
+        "USER7",
+        "USER8",
+        "USER9",
+        "USER10",
 };
 
 /*-

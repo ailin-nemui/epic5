@@ -1,4 +1,4 @@
-/* $EPIC: help.c,v 1.16 2004/03/15 03:24:51 jnelson Exp $ */
+/* $EPIC: help.c,v 1.17 2004/03/15 04:42:25 jnelson Exp $ */
 /*
  * help.c: handles the help stuff for irc 
  *
@@ -731,8 +731,6 @@ static	void create_help_window (void)
 		use_help_window = 1;
 		help_window->holding_top_of_display = NULL;
 		recalculate_window_cursor_and_display_ip(help_window);
-		mask_unsetall(&help_window->window_mask);
-		mask_set(&help_window->window_mask, LEVEL_HELP);
 		update_all_windows();
 	}
 	else
