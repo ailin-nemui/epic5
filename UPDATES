@@ -1,5 +1,12 @@
 EPIC4-1.2.0
 
+*** News -- 12/13/2003 -- Default of AUTO_REJOIN is now OFF
+	Per the poll taken on the epic mailing list, the preponderance of
+	opinion being in favor of changing the default value of AUTO_REJOIN
+	to OFF, as of commit 672, the default value is changed.  You will
+	want to put /SET AUTO_REJOIN ON in your ~/.epicrc to get the old
+	value.
+
 *** News -- 12/11/2003 -- Command parser ignores spaces after semicolons
 	Since the dawn of the modern ircII syntax, the following syntax
 	has caused consternation with scripters:
