@@ -1,4 +1,4 @@
-/* $EPIC: commands.c,v 1.35 2002/09/26 22:41:43 jnelson Exp $ */
+/* $EPIC: commands.c,v 1.36 2002/09/30 23:15:38 jnelson Exp $ */
 /*
  * commands.c -- Stuff needed to execute commands in ircII.
  *		 Includes the bulk of the built in commands for ircII.
@@ -1287,8 +1287,12 @@ BUILT_IN_COMMAND(e_hostname)
 {
 	if (args && *args)
 	{
-		const char *s = switch_hostname(args);
-		say("%s\n", s);
+		const char *s;
+
+		if (!strcmp(args, "-"))
+			args = NULL;
+		s = switch_hostname(args);
+		say("%s", s);
 		new_free(&s);
 	}
 	else
