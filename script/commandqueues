@@ -1,6 +1,8 @@
 # All these aliases take commands as arguments and have the property that
 # they will not exand those commands prior to execution, making them safe.
 
+package qcmd
+
 #
 # Usage:
 #  scmd [server [command]]
@@ -11,15 +13,15 @@ alias scmd xeval -s $0 {$1-}
 
 #
 # Usage:
-#  1cmd [time [command [args]]]
+#  1cmd [time [command]]
 #
 # command will not be executed if the same command has been executed in
 # the last time seconds.
 #
 alias 1cmd {
-	@:foo=encodel($1-)
-	@:eserv=encodel($servername())
-	if ([$0]<=(time()-last[1cmd][$eserv][$foo])&&60>(utimen()-last[pingorpong][$eserv])) {
+	@:foo=encode($tolower($1-))
+	@:eserv=encode($tolower($servername()))
+	if ([$0]<=(time()-last[1cmd][$eserv][$foo])) {
 		@last[1cmd][$eserv][$foo]=time()
 		$1-
 	}
@@ -35,14 +37,14 @@ alias 1cmd {
 
 #
 # Usage:
-#  qcmd [queue [command [args]]]
-#  fqcmd [queue [command [args]]]
+#  qcmd [queue [command]]
+#  fqcmd [queue [command]]
 #
 # Queue command, and schedule a timer for later execution.  Prevents flooding.
 # fqcmd adds the command to the beginning of the queue instead of the end.
 #
-#  q1cmd [time [queue [command [args]]]]
-#  fq1cmd [time [queue [command [args]]]]
+#  q1cmd [time [queue [command]]]
+#  fq1cmd [time [queue [command]]]
 #
 # The same as "1cmd {time} qcmd {queue} {command}", only, the command also
 # won't be scheduled if the same command is already scheduled.
@@ -57,7 +59,7 @@ fe (q push fq unshift) cmd op {
 			@${op}(qcmd.${servernum()}.$0 \"$msar(gr/\\/\\\\/\"/\\\"/bar)\")
 			^timer -ref qcmd.$servernum() 5 qcmd
 		} else {
-			@:eserv=encodel($servername($servernum()))
+			@:eserv=encode($tolower($servername($servernum())))
 			if (isconnected()) {
 				@:foo=
 				if (1==#) {
@@ -69,10 +71,8 @@ fe (q push fq unshift) cmd op {
 				}
 				if (@foo) {
 					^timer -ref qcmd.$servernum() 5 qcmd
-					if (60>utimen()-last[pingorpong][$eserv]) {
-						@:bar=shift(qcmd[$servernum()][$foo])
-						eval $msar(gr/\\\\/\\/\\\"/\"/bar)
-					}
+					@:bar=shift(qcmd[$servernum()][$foo])
+					eval $msar(gr/\\\\/\\/\\\"/\"/bar)
 				}
 			}
 		}
