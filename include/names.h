@@ -39,7 +39,7 @@
 	int	is_channel_nomsgs	(Char *, int);
 	char *	scan_channel		(char *);
 	void	list_channels		(void);
-	void	switch_channels		(char, char *);
+	BUILT_IN_KEYBINDING(switch_channels);
 	Char *	window_current_channel	(int, int);
 	char *	window_all_channels	(int, int);
 	int	is_current_channel	(Char *, int);

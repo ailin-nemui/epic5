@@ -1,4 +1,4 @@
-/* $EPIC: commands.c,v 1.92 2004/03/20 03:29:40 jnelson Exp $ */
+/* $EPIC: commands.c,v 1.93 2004/04/13 00:19:48 jnelson Exp $ */
 /*
  * commands.c -- Stuff needed to execute commands in ircII.
  *		 Includes the bulk of the built in commands for ircII.
@@ -76,6 +76,7 @@
 #include "who.h"
 #include "newio.h"
 #include "words.h"
+#include "reg.h"
 
 /* 
  * defined to 1 if we are parsing something interactive from the user,
@@ -99,6 +100,15 @@
 
 /* The maximum number of recursive LOAD levels allowed */
 #define MAX_LOAD_DEPTH 10
+
+/* flags used by e_away */
+#define AWAY_ONE                        0
+#define AWAY_ALL                        1
+
+/* flags used by parse_line */
+#define SECURITY_NO_VARIABLE_COMMAND    1
+#define SECURITY_NO_NONINTERACTIVE_EXEC 2
+#define SECURITY_NO_NONINTERACTIVE_SET  4
 
 /* Used to handle and catch breaks and continues */
 	int	will_catch_break_exceptions = 0;
@@ -2789,6 +2799,11 @@ BUILT_IN_COMMAND(waitcmd)
 			}
 		}
 	}
+	else if (ctl_arg && *ctl_arg == '=')
+	{
+		ctl_arg++;
+		wait_for_dcc(ctl_arg);
+	}
 	else if (ctl_arg)
 		yell("Unknown argument to /WAIT");
 	else
@@ -3195,7 +3210,7 @@ GET_FIXED_ARRAY_NAMES_FUNCTION(get_command, irc_command)
  * command_completion: builds lists of commands and aliases that match the
  * given command and displays them for the user's lookseeing 
  */
-void 	command_completion (char unused, char *not_used)
+BUILT_IN_BINDING(command_completion)
 {
 	int		do_aliases = 1;
 	int		cmd_cnt,

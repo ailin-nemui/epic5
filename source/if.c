@@ -1,4 +1,4 @@
-/* $EPIC: if.c,v 1.29 2004/03/19 06:05:13 jnelson Exp $ */
+/* $EPIC: if.c,v 1.30 2004/04/13 00:19:48 jnelson Exp $ */
 /*
  * if.c: the IF, WHILE, FOREACH, DO, FE, FEC, and FOR commands for IRCII 
  *
@@ -42,7 +42,7 @@
 #include "vars.h"
 #include "commands.h"
 #include "window.h"
-
+#include "reg.h"
 
 /*
  * next_expr finds the next expression delimited by brackets. The type

@@ -3,8 +3,7 @@ EPIC5 Projects, Bugs, and other Errata:
 KNOWN ERRATA (eg, bugs, or unresolved requests):
 ------------------------------------------------
 * Some way to hook incomplete lines via dcc raw
-* Email zlonix (xakep@onet.ru) when i figure out why i can't input char 255.
-* /LIST *foo* goes into a polling loop (adm)
+* Deleting an /on from a lower numbered serial number is a bad idea.
 
 [See http://www.epicsol.org/PROJECTS for things to come in the future]
 [See http://www.epicsol.org/CHANGELOG5 for things that changed in the past]
@@ -212,3 +211,12 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Fix /window channel.  Ooops!
 * Add a timer list dump for when a polling loop is detected.
 * Prefer timers over i/o to avoid the polling loop bug. ick.
+* Move some defines from comands.h to where they belong
+* Add and remove func decls in header files as necessary.
+* Add /wait =<fd> which returns when a nonblocking dcc connection finishes
+* Make all keybinding funcs/decls use the BUILT_IN_KEYBINDING macro.
+* Make the BUILT_IN_KEYBINDING macro use unsigned chars.
+* Hide (struct Key) inside keys.c, and use (void *) to hold state.
+* Make the input line use (unsigned char), not (char), huzzah!
+* Make the "othername" ($3 in /on dcc_raw "E") the port number.
+* Avoid a NULL deref with "parse_command" keybinding.

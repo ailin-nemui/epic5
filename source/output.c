@@ -1,4 +1,4 @@
-/* $EPIC: output.c,v 1.12 2004/01/20 16:11:54 jnelson Exp $ */
+/* $EPIC: output.c,v 1.13 2004/04/13 00:19:48 jnelson Exp $ */
 /*
  * output.c: handles a variety of tasks dealing with the output from the irc
  * program 
@@ -48,6 +48,7 @@
 #include "log.h"
 #include "ircaux.h"
 #include "alias.h"
+#include "commands.h"
 
 /* make this buffer *much* bigger than needed */
 #define OBNOXIOUS_BUFFER_SIZE BIG_BUFFER_SIZE * 10
@@ -78,7 +79,7 @@ SIGNAL_HANDLER(sig_refresh_screen)
  * refresh_screen: Whenever the REFRESH_SCREEN function is activated, this
  * swoops into effect 
  */
-void	refresh_screen (char dumb, char *dumber)
+BUILT_IN_KEYBINDING(refresh_screen)
 {
 	need_redraw = 1;
 }

@@ -1,4 +1,4 @@
-/* $EPIC: input.c,v 1.21 2004/03/12 22:22:00 jnelson Exp $ */
+/* $EPIC: input.c,v 1.22 2004/04/13 00:19:48 jnelson Exp $ */
 /*
  * input.c: does the actual input line stuff... keeps the appropriate stuff
  * on the input line, handles insert/delete of characters/words... the whole
@@ -780,7 +780,7 @@ static void	cut_input (int anchor)
 		size = THIS_POS - anchor;
 		buffer = alloca(size + 1);
 		strlcpy(buffer, &INPUT_BUFFER[anchor], size + 1);
-		malloc_strcpy(&cut_buffer, buffer);
+		malloc_strcpy((char **)&cut_buffer, buffer);
 
 		buffer = LOCAL_COPY(&THIS_CHAR);
 		INPUT_BUFFER[anchor] = 0;
@@ -792,7 +792,7 @@ static void	cut_input (int anchor)
 		size = anchor - THIS_POS;
 		buffer = alloca(size + 1);
 		strlcpy(buffer, &THIS_CHAR, size + 1);
-		malloc_strcpy(&cut_buffer, buffer);
+		malloc_strcpy((char **)&cut_buffer, buffer);
 
 		buffer = LOCAL_COPY(&INPUT_BUFFER[anchor]);
 		THIS_CHAR = 0;
@@ -951,7 +951,7 @@ BUILT_IN_BINDING(input_clear_to_eol)
 {
 	/* This doesnt really speak to the implementation, but it works.  */
 	cursor_to_input();
-	malloc_strcpy(&cut_buffer, &THIS_CHAR);
+	malloc_strcpy((char **)&cut_buffer, &THIS_CHAR);
 	THIS_CHAR = 0;
 	term_clear_to_eol();
 	update_input(NO_UPDATE);
@@ -968,7 +968,7 @@ BUILT_IN_BINDING(input_clear_to_bol)
 	cursor_to_input();
 
 	THIS_CHAR = 0;
-	malloc_strcpy(&cut_buffer, &MIN_CHAR);
+	malloc_strcpy((char **)&cut_buffer, &MIN_CHAR);
 	THIS_CHAR = c;
 
 	set_input(LOCAL_COPY(&THIS_CHAR));
@@ -988,7 +988,7 @@ BUILT_IN_BINDING(input_clear_line)
 
 	/* Only copy if there is input. -wd */
 	if (MIN_CHAR)
-		malloc_strcpy(&cut_buffer, INPUT_BUFFER + MIN_POS);
+		malloc_strcpy((char **)&cut_buffer, INPUT_BUFFER + MIN_POS);
 
 	MIN_CHAR = 0;
 	THIS_POS = MIN_POS;
@@ -1261,7 +1261,9 @@ BUILT_IN_BINDING(input_unclear_screen)
 BUILT_IN_BINDING(parse_text)
 {
 	int	old = system_exception;
-	parse_line(NULL, string, empty_string, 0, 0);
+
+	if (string)
+		parse_line(NULL, string, empty_string, 0, 0);
 	system_exception = old;
 }
 

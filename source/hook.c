@@ -1,4 +1,4 @@
-/* $EPIC: hook.c,v 1.34 2004/01/08 02:44:35 jnelson Exp $ */
+/* $EPIC: hook.c,v 1.35 2004/04/13 00:19:48 jnelson Exp $ */
 /*
  * hook.c: Does those naughty hook functions. 
  *
@@ -43,6 +43,7 @@
 #include "commands.h"
 #include "if.h"
 #include "stack.h"
+#include "reg.h"
 
 /*
  * The various ON levels: SILENT means the DISPLAY will be OFF and it will

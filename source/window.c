@@ -1,4 +1,4 @@
-/* $EPIC: window.c,v 1.112 2004/03/20 17:41:17 jnelson Exp $ */
+/* $EPIC: window.c,v 1.113 2004/04/13 00:19:49 jnelson Exp $ */
 /*
  * window.c: Handles the organzation of the logical viewports (``windows'')
  * for irc.  This includes keeping track of what windows are open, where they
@@ -57,6 +57,7 @@
 #include "commands.h"
 #include "exec.h"
 #include "functions.h"
+#include "reg.h"
 
 static const char *onoff[] = { "OFF", "ON" };
 
@@ -1551,7 +1552,7 @@ void 	hide_window (Window *window)
  * that was hidden.
  * This is a keybinding.
  */
-void 	swap_last_window (char dumb, char *dumber)
+BUILT_IN_KEYBINDING(swap_last_window)
 {
 	if (!invisible_list || !current_window->screen)
 		return;
@@ -1564,7 +1565,7 @@ void 	swap_last_window (char dumb, char *dumber)
  * next_window: This switches the current window to the next visible window 
  * This is a keybinding.
  */
-void 	next_window (char dumb, char *dumber)
+BUILT_IN_KEYBINDING(next_window)
 {
 	Window *w;
 
@@ -1585,7 +1586,7 @@ void 	next_window (char dumb, char *dumber)
  * window.
  * This is a keybinding.
  */
-void 	swap_next_window (char dumb, char *dumber)
+BUILT_IN_KEYBINDING(swap_next_window)
 {
 	window_next(current_window, NULL);
 	update_all_windows();
@@ -1596,7 +1597,7 @@ void 	swap_next_window (char dumb, char *dumber)
  * window 
  * This is a keybinding
  */
-void 	previous_window (char dumb, char *dumber)
+BUILT_IN_KEYBINDING(previous_window)
 {
 	Window *w;
 
@@ -1617,7 +1618,7 @@ void 	previous_window (char dumb, char *dumber)
  * hidden window.
  * This is a keybinding
  */
-void 	swap_previous_window (char dumb, char *dumber)
+BUILT_IN_KEYBINDING(swap_previous_window)
 {
 	window_previous(current_window, NULL);
 	update_all_windows();
@@ -1911,7 +1912,7 @@ const char *	get_equery_by_refnum (int refnum)
 	return NULL;
 }
 
-void	switch_query (char dumb, char *dumber)
+BUILT_IN_KEYBINDING(switch_query)
 {
         int     lowcount;
 	int	highcount = -1;
@@ -5164,22 +5165,22 @@ static void	window_scrollback_backward (Window *window)
 	window_scrollback_backwards_lines(current_window, lines);
 }
 
-void 	scrollback_forwards (char dumb, char *dumber)
+BUILT_IN_KEYBINDING(scrollback_forwards)
 {
 	window_scrollback_forward(current_window);
 }
 
-void 	scrollback_backwards (char dumb, char *dumber)
+BUILT_IN_KEYBINDING(scrollback_backwards)
 {
 	window_scrollback_backward(current_window);
 }
 
-void 	scrollback_end (char dumb, char *dumber)
+BUILT_IN_KEYBINDING(scrollback_end)
 {
 	window_scrollback_end(current_window);
 }
 
-void 	scrollback_start (char dumb, char *dumber)
+BUILT_IN_KEYBINDING(scrollback_start)
 {
 	window_scrollback_start(current_window);
 }
@@ -5187,7 +5188,7 @@ void 	scrollback_start (char dumb, char *dumber)
 
 
 /* HOLD MODE STUFF */
-void 	unstop_all_windows (char dumb, char *dumber)
+BUILT_IN_KEYBINDING(unstop_all_windows)
 {
 	Window	*tmp = NULL;
 	char	my_off[4];
@@ -5203,7 +5204,7 @@ void 	unstop_all_windows (char dumb, char *dumber)
 }
 
 /* toggle_stop_screen: the BIND function TOGGLE_STOP_SCREEN */
-void 	toggle_stop_screen (char unused, char *not_used)
+BUILT_IN_KEYBINDING(toggle_stop_screen)
 {
 	char toggle[7], *p = toggle;
 

@@ -1,4 +1,4 @@
-/* $EPIC: irc.c,v 1.718 2004/03/28 16:26:08 jnelson Exp $ */
+/* $EPIC: irc.c,v 1.719 2004/04/13 00:19:48 jnelson Exp $ */
 /*
  * ircII: a new irc client.  I like it.  I hope you will too!
  *
@@ -52,7 +52,7 @@ const char internal_version[] = "20040319";
 /*
  * In theory, this number is incremented for every commit.
  */
-const unsigned long	commit_id = 1051;
+const unsigned long	commit_id = 1052;
 
 /*
  * As a way to poke fun at the current rage of naming releases after
@@ -147,9 +147,6 @@ Timeval		start_time;
 /* The number of child processes still unreaped. */
 int		child_dead = 0;
 
-/* Set if the current output is from a trusted source */
-int		trusted_output = 1;
-
 /* Set to 0 when you want to suppress all beeps (such as window repaints) */
 int		global_beep_ok = 1;
 
@@ -231,7 +228,7 @@ const char	empty_string[] = "",		/* just an empty string */
 		star[] = "*",
 		dot[] = ".",
 		comma[] = ",";
-	char	*cut_buffer = (char *) 0;	/* global cut_buffer */
+unsigned char	*cut_buffer = (char *) 0;	/* global cut_buffer */
 
 fd_set		readables, held_readables;
 fd_set		writables, held_writables;
@@ -442,7 +439,7 @@ static void quit_response (char *dummy, char *ptr)
 }
 
 /* irc_quit: prompts the user if they wish to exit, then does the right thing */
-void irc_quit (char unused, char *not_used)
+BUILT_IN_KEYBINDING(irc_quit)
 {
 	static	int in_it = 0;
 

@@ -1,4 +1,4 @@
-/* $EPIC: debug.c,v 1.15 2004/01/05 16:24:40 jnelson Exp $ */
+/* $EPIC: debug.c,v 1.16 2004/04/13 00:19:48 jnelson Exp $ */
 /*
  * debug.c -- controll the values of x_debug.
  *
@@ -34,6 +34,7 @@
 #include "irc.h"
 #include "ircaux.h"
 #include "output.h"
+#include "reg.h"
 
 unsigned long x_debug = DEBUG_SERVER_CONNECT;
 

@@ -1,4 +1,4 @@
-/* $EPIC: dcc.c,v 1.97 2004/03/19 06:05:13 jnelson Exp $ */
+/* $EPIC: dcc.c,v 1.98 2004/04/13 00:19:48 jnelson Exp $ */
 /*
  * dcc.c: Things dealing client to client connections. 
  *
@@ -49,6 +49,7 @@
 #include "vars.h"
 #include "window.h"
 #include "term.h"
+#include "reg.h"
 
 #define DCC_BLOCK_SIZE (1<<11)
 
@@ -2044,9 +2045,10 @@ char	*dcc_raw_connect (const char *host, const char *port, int family)
 {
 	DCC_list *	Client = NULL;
 	SS		my_sockaddr;
-	const char *	retval = empty_string;
+	char 		retval[12];
 	int		l;
 
+	*retval = 0;
 	lock_dcc(NULL);
 	l = message_from(NULL, LEVEL_DCC);
 
@@ -2080,8 +2082,7 @@ char	*dcc_raw_connect (const char *host, const char *port, int family)
 		break;
 	}
 	unlock_dcc(Client);
-	retval = LOCAL_COPY(Client->user);
-
+	snprintf(retval, sizeof retval, "%d", Client->socket);
     }
     while (0);
 
@@ -2929,6 +2930,15 @@ static void	process_dcc_raw_connected (DCC_list *dcc)
 	    return;
 	}
 
+	if (((SA *)&name)->sa_family == AF_INET)
+		malloc_strcpy(&dcc->othername, 
+				ltoa(ntohs(V4PORT(name))));
+	else if (((SA *)&name)->sa_family == AF_INET6)
+		malloc_strcpy(&dcc->othername, 
+				ltoa(ntohs(V6PORT(name))));
+	else
+		malloc_strcpy(&dcc->othername, "<any>");
+
 	dcc->user = malloc_strdup(ltoa(dcc->socket));
 	if (do_hook(DCC_RAW_LIST, "%s %s E %s", dcc->user, dcc->description, dcc->othername))
             if (do_hook(DCC_CONNECT_LIST,"%s RAW %s %s", 
@@ -3529,6 +3539,33 @@ static	char *	dcc_urldecode (const char *s)
 	}
 
 	return str;
+}
+
+int	wait_for_dcc (const char *descriptor)
+{
+	DCC_list	*dcc;
+	char		reason[1024];
+	int		fd;
+
+	if (!(fd = atol(descriptor)))
+	{
+		yell("File descriptor (%s) should be a number", descriptor);
+		return -1;
+	}
+
+	if (!(dcc = get_dcc_by_filedesc(fd)))
+	return -1;
+
+
+	if (!(dcc->flags & DCC_CONNECTING))
+	return 0;
+
+	snprintf(reason, 1024, "WAIT on DCC %s", descriptor);
+	lock_stack_frame();
+	while (dcc->flags & DCC_CONNECTING)
+		io(reason);
+	unlock_stack_frame();
+	return 0;
 }
 
 /*

@@ -1,4 +1,4 @@
-/* $EPIC: array.c,v 1.18 2003/12/18 02:22:31 jnelson Exp $ */
+/* $EPIC: array.c,v 1.19 2004/04/13 00:19:48 jnelson Exp $ */
 /*
  * array.c -- Karll's Array Suite
  *
@@ -200,6 +200,7 @@ Karll on IRC
 #include "output.h"
 #include "functions.h"
 #include "words.h"
+#include "reg.h"
 #undef BUILT_IN_FUNCTION
 #define BUILT_IN_FUNCTION(x, y) char * x (char * y)
 #undef index			/* doh! */

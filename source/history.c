@@ -1,4 +1,4 @@
-/* $EPIC: history.c,v 1.13 2004/03/12 22:22:00 jnelson Exp $ */
+/* $EPIC: history.c,v 1.14 2004/04/13 00:19:48 jnelson Exp $ */
 /*
  * history.c: stuff to handle command line history 
  *
@@ -41,6 +41,7 @@
 #include "output.h"
 #include "input.h"
 #include "screen.h"
+#include "reg.h"
 
 typedef struct	HistoryStru
 {
@@ -105,10 +106,10 @@ void	set_history_size (const void *stuff)
  * else quick for just a second, and you dont want to have to retype
  * everything all over again
  */
-void	shove_to_history (char unused, char *not_used)
+BUILT_IN_KEYBINDING(shove_to_history)
 {
 	add_to_history(get_input());
-	input_clear_line(unused, not_used);
+	input_clear_line(key, string);
 }
 
 /*

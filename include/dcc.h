@@ -21,6 +21,7 @@
 	void	register_dcc_offer 	(const char *, char *, char *, char *, 
 					 char *, char *, char *, char *);
 	char *	DCC_get_current_transfer (void);
+	int     wait_for_dcc 		(const char *);
 
 	char	*dccctl			(char *input);
 

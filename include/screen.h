@@ -49,7 +49,7 @@ struct	ScreenStru *next;		/* Previous screen in list */
 	int	wserv_version;		/* The version of wserv talking to */
 
 	/* Input line and prompt stuff */
-	char	input_buffer[INPUT_BUFFER_SIZE+1];
+	unsigned char	input_buffer[INPUT_BUFFER_SIZE+1];
 					/* Current user input for us */
 	int	buffer_pos;		/* Where on input line cursor is */
 	int	buffer_min_pos;		/* First position after prompt */
@@ -58,12 +58,12 @@ struct	ScreenStru *next;		/* Previous screen in list */
 	int	input_zone_len;
 	int	input_start_zone;
 	int	input_end_zone;
-	char	*input_prompt;
+	unsigned char	*input_prompt;
 	int	input_prompt_len;
 	int	input_prompt_malloc;
 	int	input_line;
 
-	char	saved_input_buffer[INPUT_BUFFER_SIZE+1];
+	unsigned char	saved_input_buffer[INPUT_BUFFER_SIZE+1];
 	int	saved_buffer_pos;
 	int	saved_min_buffer_pos;
 
@@ -71,10 +71,10 @@ struct	ScreenStru *next;		/* Previous screen in list */
 
 	/* Key qualifier stuff */
 	int	quote_hit;		/* True after QUOTE_CHARACTER hit */
-	struct timeval last_press;	/* The last time a key was pressed.
+	Timeval last_press;		/* The last time a key was pressed.
 					   Used to determine
 					   key-independence. */
-	struct Key *last_key;		/* The last Key pressed. */
+	void *	last_key;		/* The last Key pressed. */
 
 	char	*tty_name;
 	int	co;

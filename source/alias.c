@@ -1,4 +1,4 @@
-/* $EPIC: alias.c,v 1.41 2004/03/19 06:05:13 jnelson Exp $ */
+/* $EPIC: alias.c,v 1.42 2004/04/13 00:19:48 jnelson Exp $ */
 /*
  * alias.c -- Handles the whole kit and caboodle for aliases.
  *
@@ -55,6 +55,7 @@
 #include "keys.h"
 #include "functions.h"
 #include "words.h"
+#include "reg.h"
 
 #define LEFT_BRACE '{'
 #define RIGHT_BRACE '}'

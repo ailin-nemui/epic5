@@ -81,7 +81,6 @@
 #define PATH_LEN 1024
 
 /* irc.c's global variables */
-extern		int	away_set;
 extern		int	background;
 extern		int	current_numeric;
 extern		int	dead;
@@ -96,16 +95,13 @@ extern		int	loading_global;
 extern		int	oper_command;
 extern		int	privileged_output;
 extern		int	quick_startup;
-extern		int	trusted_output;
 extern		int	use_flow_control;
 extern		int	use_iexten;
 extern		int	use_input;
 extern		int	waiting_out;
 extern		int	waiting_in;
-extern		char *	args_str;
-extern		char *	cannot_open;
 extern const	char *	compile_info;
-extern		char *	cut_buffer;
+extern		unsigned char *	cut_buffer;
 extern		char *	default_channel;
 extern	const	char 	empty_string[];
 extern	const	char	space[];
@@ -148,19 +144,10 @@ extern struct timeval	now;
 extern struct timeval	input_timeout;
 
 /* irc.c's extern functions */
-	char	get_a_char 		(void);
-	void	get_line_return 	(char, char *);
-	void	get_line 		(char *, int, void (*) (char, char *));
 	void	io 			(const char *);
 	void	irc_exit 		(int, const char *, ...) /*__A(2)*/ __N;
-	void	irc_quit 		(char, char *);
+	BUILT_IN_KEYBINDING(irc_quit);
 
-        void    load_ircrc              (void);	/* XXX parse.c */
+        void    load_ircrc              (void);
 
-#include "reg.h"
-	void	dump_load_stack		(int);	 /* XXX command.c */
-const	char *	current_filename	(void);  /* XXX command.c */
-const	char *	current_loader		(void);	 /* XXX command.c */
-	int	current_line		(void);	 /* XXX command.c */
-const	char *	current_package		(void);  /* XXX command.c */
 #endif /* __irc_h */

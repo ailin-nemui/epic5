@@ -1,4 +1,4 @@
-/* $EPIC: numbers.c,v 1.69 2004/03/19 06:05:13 jnelson Exp $ */
+/* $EPIC: numbers.c,v 1.70 2004/04/13 00:19:48 jnelson Exp $ */
 /*
  * numbers.c: handles all those strange numeric response dished out by that
  * wacky, nutty program we call ircd 
@@ -53,6 +53,7 @@
 #include "vars.h"
 #include "who.h"
 #include "alias.h"
+#include "reg.h"
 
 static void	add_user_who (int refnum, const char *from, const char *comm, const char **ArgList);
 static void	add_user_end (int refnum, const char *from, const char *comm, const char **ArgList);

@@ -14,7 +14,7 @@
 	void	add_to_history 		(char *);
 	void	get_history 		(int);
 	char *	do_history 		(const char *, const char *);
-	void	shove_to_history 	(char, char *);
+	BUILT_IN_KEYBINDING(shove_to_history);
 	void    abort_history_browsing	(int);
 
 /* used by get_history */

@@ -24,44 +24,45 @@
 	void	update_input 			(int);
 
 /* keybinding functions */
-	void 	backward_character 		(char, char *);
-	void 	backward_history 		(char, char *);
-	void 	clear_screen 			(char, char *);
-	void	command_completion 		(char, char *);
-	void	cpu_saver_on			(char, char *);
-	void 	forward_character		(char, char *);
-	void 	forward_history 		(char, char *);
-	void	highlight_off 			(char, char *);
-	void	input_add_character 		(char, char *);
-	void	input_backspace 		(char, char *);
-	void	input_backward_word 		(char, char *);
-	void	input_beginning_of_line 	(char, char *);
-	void	input_clear_line 		(char, char *);
-	void	input_clear_to_bol 		(char, char *);
-	void	input_clear_to_eol 		(char, char *);
-	void	input_delete_character 		(char, char *);
-	void	input_delete_next_word		(char, char *);
-	void	input_delete_previous_word	(char, char *);
-	void	input_delete_to_previous_space	(char, char *);
-	void	input_end_of_line		(char, char *);
-	void	input_forward_word		(char, char *);
-	void	input_transpose_characters	(char, char *);
-	void	input_unclear_screen		(char, char *);
-	void	input_yank_cut_buffer		(char, char *);
-	void	insert_altcharset		(char, char *);
-	void	insert_blink			(char, char *);
-	void	insert_bold 			(char, char *);
-	void	insert_reverse 			(char, char *);
-	void	insert_underline 		(char, char *);
-	void 	parse_text 			(char, char *);
-	void 	quote_char 			(char, char *);
-	void	refresh_inputline 		(char, char *);
-	void 	send_line 			(char, char *);
-	void 	toggle_insert_mode 		(char, char *);
-	void 	type_text 			(char, char *);
+	BUILT_IN_KEYBINDING(backward_character);
+	BUILT_IN_KEYBINDING(backward_history);
+	BUILT_IN_KEYBINDING(clear_screen);
+	BUILT_IN_KEYBINDING(command_completion);
+	BUILT_IN_KEYBINDING(cpu_saver_on);
+	BUILT_IN_KEYBINDING(forward_character);
+	BUILT_IN_KEYBINDING(forward_history);
+	BUILT_IN_KEYBINDING(highlight_off);
+	BUILT_IN_KEYBINDING(input_add_character);
+	BUILT_IN_KEYBINDING(input_backspace);
+	BUILT_IN_KEYBINDING(input_backward_word);
+	BUILT_IN_KEYBINDING(input_beginning_of_line);
+	BUILT_IN_KEYBINDING(input_clear_line);
+	BUILT_IN_KEYBINDING(input_clear_to_bol);
+	BUILT_IN_KEYBINDING(input_clear_to_eol);
+	BUILT_IN_KEYBINDING(input_delete_character);
+	BUILT_IN_KEYBINDING(input_delete_next_word);
+	BUILT_IN_KEYBINDING(input_delete_previous_word);
+	BUILT_IN_KEYBINDING(input_delete_to_previous_space);
+	BUILT_IN_KEYBINDING(input_end_of_line);
+	BUILT_IN_KEYBINDING(input_forward_word);
+	BUILT_IN_KEYBINDING(input_transpose_characters);
+	BUILT_IN_KEYBINDING(input_unclear_screen);
+	BUILT_IN_KEYBINDING(input_yank_cut_buffer);
+	BUILT_IN_KEYBINDING(insert_altcharset);
+	BUILT_IN_KEYBINDING(insert_blink);
+	BUILT_IN_KEYBINDING(insert_bold);
+	BUILT_IN_KEYBINDING(insert_reverse);
+	BUILT_IN_KEYBINDING(insert_underline);
+	BUILT_IN_KEYBINDING(parse_text);
+	BUILT_IN_KEYBINDING(quote_char);
+	BUILT_IN_KEYBINDING(refresh_inputline);
+	BUILT_IN_KEYBINDING(send_line);
+	BUILT_IN_KEYBINDING(toggle_insert_mode);
+	BUILT_IN_KEYBINDING(type_text);
 
 /* this was in keys.h, but it lives in input.c, so. */
 	BUILT_IN_COMMAND(typecmd);
+
 /* used by update_input */
 #define NO_UPDATE 0
 #define UPDATE_ALL 1

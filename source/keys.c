@@ -1,4 +1,4 @@
-/* $EPIC: keys.c,v 1.33 2004/03/19 01:02:02 jnelson Exp $ */
+/* $EPIC: keys.c,v 1.34 2004/04/13 00:19:48 jnelson Exp $ */
 /*
  * keys.c:  Keeps track of what happens whe you press a key.
  *
@@ -48,6 +48,40 @@
 #include "vars.h"
 #include "window.h"
 #include "timer.h"
+#include "reg.h"
+
+/* This is a typedef for a function used with the /BIND system.  The
+ * functions all live in input.c.  Following it is a macro to quickly define
+ * functions to handle keybindings. */
+typedef void (*BindFunction) (unsigned char, unsigned char *);
+
+/* This is the structure used to hold binding functions. */
+struct Binding {
+    struct Binding *next;   /* linked-list stuff. :) */
+
+    char    *name;          /* the name of this binding */
+    BindFunction func;      /* function to use ... */
+    char    *alias;         /* OR alias to call.  one or the other. */
+    char    *filename;      /* the package which added this binding */
+};
+extern struct Binding *binding_list; /* list head for keybindings */
+
+struct Binding  *add_binding    (const char *, BindFunction, char *);
+void            remove_binding  (char *);
+struct Binding *find_binding    (const char *);
+
+#define KEYMAP_SIZE 256
+struct Key {
+    unsigned char val;  /* the key value */
+    unsigned char changed; /* set if this binding was changed post-startup */
+    struct Binding *bound; /* the function we're bound to. */
+    struct Key *map;    /* a map of subkeys (may be NULL) */
+    struct Key *owner;  /* the key which contains the map we're in. */
+    char    *stuff;     /* 'stuff' associated with our binding */
+    char    *filename;  /* the package which added this binding */
+};
+
+extern struct Key *head_keymap; /* the head keymap.  the root of the keys.  */
 
 /* This file is split into two pieces.  The first piece represents bindings.
  * Bindings are now held in a linked list, allowing the user to add new ones
@@ -307,11 +341,11 @@ void key_exec_bt (struct Key *key) {
  * previous key's action (if there has been a timeout).  The timeout factor
  * is set in milliseconds by the KEY_INTERVAL variable.  See further for
  * instructions. :) */
-struct Key *handle_keypress (struct Key *last, Timeval pressed, unsigned char key) {
-    struct Key *kp;
-    
+void *	handle_keypress (void *lastp, Timeval pressed, unsigned char key) {
+    struct Key *kp, *last;
+
     /* we call the timeout code here, too, just to be safe. */
-    last = timeout_keypress(last, pressed);
+    last = timeout_keypress(lastp, pressed);
 
     /* if last is NULL (meaning we're in a fresh state), pull from the head
      * keymap.  if last has a map, pull from that map.  if last has no map,
@@ -334,23 +368,25 @@ struct Key *handle_keypress (struct Key *last, Timeval pressed, unsigned char ke
     /* if the key has a map associated, we can't automatically execute the
      * action.  return kp and wait quietly. */
     if (kp->map != NULL)
-	return kp;
+	return (void *)kp;
 
     /* otherwise, we can just exec our key and return nothing. */
     key_exec(kp);
     return NULL;
 }
 
-struct Key *timeout_keypress (struct Key *last, Timeval pressed) {
+void *	timeout_keypress (void *lastp, Timeval pressed) {
     int mpress = 0; /* ms count since last pressing */
     Timeval tv;
     Timeval right_now;
+    struct Key *last;
 
-    if (last == NULL)
+    if (lastp == NULL)
 	return NULL; /* fresh state, we need not worry about timeouts */
 
+    last = (struct Key *)lastp;
     if (last->bound == NULL)
-	return last; /* wait unconditionally if this key is unbound. */
+	return (void *)last; /* wait unconditionally if this key is unbound. */
 
     get_time(&right_now);
     tv = time_subtract(pressed, right_now);
@@ -363,7 +399,7 @@ struct Key *timeout_keypress (struct Key *last, Timeval pressed) {
 	key_exec(last);
 	return NULL; /* we're no longer waiting on this key's map */
     }
-    return last; /* still waiting.. */
+    return (void *)last; /* still waiting.. */
 }
 
 struct Key *construct_keymap (struct Key *owner) {

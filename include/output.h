@@ -7,7 +7,7 @@
  *
  * See the COPYRIGHT file, or do a HELP IRCII COPYRIGHT 
  *
- * @(#)$Id: output.h,v 1.5 2004/01/20 16:11:54 jnelson Exp $
+ * @(#)$Id: output.h,v 1.6 2004/04/13 00:19:48 jnelson Exp $
  */
 
 #ifndef __output_h__
@@ -26,7 +26,7 @@ struct ScreenStru;
 	void	error			(const char *, ...) __A(1);
 	SIGNAL_HANDLER(sig_refresh_screen);
 	void	redraw_all_screens 	(void);
-	void	refresh_screen 		(char, char *);
+	BUILT_IN_KEYBINDING(refresh_screen);
 	int	init_screen 		(void);
 	void   	file_put_it 		(FILE *fp, const char *format, ...);
 #endif /* _OUTPUT_H_ */

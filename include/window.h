@@ -100,6 +100,7 @@ typedef	struct	WindowStru
 	 */
 	Display *top_of_scrollback;	/* Start of the scrollback buffer */
 	Display *display_ip;		/* End of the scrollback buffer */
+	Display *scroll_marker;		/* Set to display_ip when sb'ing */
 	int	display_buffer_size;	/* How big the scrollback buffer is */
 	int	display_buffer_max;	/* How big its supposed to be */
 	short	display_size;		/* How big the window is - status */
@@ -190,11 +191,11 @@ extern	unsigned current_window_priority;
 	void	update_all_windows		(void);
 	void	set_current_window		(Window *);
 	void	hide_window			(Window *);
-	void	swap_last_window		(char, char *);
-	void	next_window			(char, char *);
-	void	swap_next_window		(char, char *);
-	void	previous_window			(char, char *);
-	void	swap_previous_window		(char, char *);
+	BUILT_IN_KEYBINDING(swap_last_window);
+	BUILT_IN_KEYBINDING(next_window);
+	BUILT_IN_KEYBINDING(swap_next_window);
+	BUILT_IN_KEYBINDING(previous_window);
+	BUILT_IN_KEYBINDING(swap_previous_window);
 	void	back_window			(void);
 	Window 	*get_window_by_refnum		(unsigned);
 	Window	*get_window_by_name		(const char *);
@@ -208,7 +209,7 @@ const	char 	*get_prompt_by_refnum		(unsigned);
 const	char	*get_target_by_refnum		(unsigned);
 const 	char	*query_nick			(void);
 const 	char *	get_equery_by_refnum		(int);
-	void	switch_query			(char, char *);
+	BUILT_IN_KEYBINDING(switch_query);
 	int	is_current_channel		(const char *, int);
 const 	char *	set_channel_by_refnum		(unsigned, const char *);
 const	char	*get_echannel_by_refnum		(unsigned);
@@ -242,12 +243,12 @@ const	char	*get_echannel_by_refnum		(unsigned);
 	int	add_to_scrollback		(Window *, const unsigned char *);
 	int	trim_scrollback			(Window *);
 	int	flush_scrollback_after		(Window *);
-	void	scrollback_backwards		(char, char *);
-	void	scrollback_forwards		(char, char *);
-	void	scrollback_end			(char, char *);
-	void	scrollback_start		(char, char *);
-	void	unstop_all_windows		(char, char *);
-	void	toggle_stop_screen		(char, char *);
+	BUILT_IN_KEYBINDING(scrollback_backwards);
+	BUILT_IN_KEYBINDING(scrollback_forwards);
+	BUILT_IN_KEYBINDING(scrollback_end);
+	BUILT_IN_KEYBINDING(scrollback_start);
+	BUILT_IN_KEYBINDING(unstop_all_windows);
+	BUILT_IN_KEYBINDING(toggle_stop_screen);
 	int	window_is_holding		(Window *);
 	int	unhold_a_window			(Window *);
 	void	recalculate_window_cursor_and_display_ip	(Window *);

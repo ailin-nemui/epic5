@@ -1,4 +1,4 @@
-/* $EPIC: term.c,v 1.12 2003/12/03 22:17:40 jnelson Exp $ */
+/* $EPIC: term.c,v 1.13 2004/04/13 00:19:49 jnelson Exp $ */
 /*
  * term.c -- termios and (termcap || terminfo) handlers
  *
@@ -745,7 +745,7 @@ SIGNAL_HANDLER(term_cont)
 /*
  * term_pause: sets terminal back to pre-program days, then SIGSTOPs itself. 
  */
-void 	term_pause (char unused, char *not_used)
+BUILT_IN_KEYBINDING(term_pause)
 {
 	term_reset();
 	kill(getpid(), SIGSTOP);
