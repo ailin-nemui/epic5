@@ -1,4 +1,4 @@
-/* $EPIC: dcc.c,v 1.82 2003/12/03 05:21:11 jnelson Exp $ */
+/* $EPIC: dcc.c,v 1.83 2003/12/06 14:34:33 crazyed Exp $ */
 /*
  * dcc.c: Things dealing client to client connections. 
  *
@@ -2446,7 +2446,7 @@ void	dcc_check (fd_set *Readables, fd_set *Writables)
 	    {
 		FD_CLR(Client->socket, Readables);	/* No more! */
 		previous_server = from_server;
-		from_server = NOSERV;
+		from_server = FROMSERV;
 
 		switch (Client->flags & DCC_TYPES)
 		{

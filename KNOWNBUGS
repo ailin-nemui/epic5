@@ -59,3 +59,8 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * The last argument to open_file_for_write() needs to be lowercase.
 * Add $numlines() from fudd.
 * Fix some issues with $numlines()
+* Fix DCC events so that they occur in the context of "no server" (FROMSERV)
+  rather than the "current server" (NOSERV).  This can fix or completely break
+  certain intermittent scripting problems.
+* Fixed {f,}q1cmd in commandqueues so that it works properly in the "no server"
+  context.

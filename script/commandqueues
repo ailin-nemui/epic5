@@ -112,12 +112,14 @@ alias alias.tt (cmd,op,args) {
 }
 fe (q push fq unshift) cmd op {
 	alias.tt $cmd $op ${cmd}1cmd (qo,qc,args) {
+		@ :sn = servernum()
+		@ :sn = sn < 0 ? [_] : sn
 		@ :argz = args
 		@ sar(gr/\\/\\\\/argz)
 		@ sar(gr/\"/\\\"/argz)
 		@ :qc = split(, $qc)
 		fe ($qc) qqcc {
-			if (0 <= findw("$argz" $qcmd[$servernum()][$qqcc])) {
+			if (0 <= findw("$argz" $qcmd[$sn][$qqcc])) {
 				return
 			}
 		}
