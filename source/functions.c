@@ -1,4 +1,4 @@
-/* $EPIC: functions.c,v 1.120 2003/06/30 18:02:41 jnelson Exp $ */
+/* $EPIC: functions.c,v 1.121 2003/07/07 04:12:28 jnelson Exp $ */
 /*
  * functions.c -- Built-in functions for ircII
  *
@@ -6738,7 +6738,9 @@ BUILT_IN_FUNCTION(function_levelwindow, input)
 {
 	int	levels;
 	Window	*w = NULL;
+	int	server;
 
+	GET_INT_ARG(server, input);
 	levels = parse_lastlog_level(input);
 	while (traverse_all_windows(&w))
 	{
