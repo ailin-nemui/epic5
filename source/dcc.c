@@ -1,4 +1,4 @@
-/* $EPIC: dcc.c,v 1.38 2002/10/21 16:52:45 crazyed Exp $ */
+/* $EPIC: dcc.c,v 1.39 2002/10/22 16:31:14 crazyed Exp $ */
 /*
  * dcc.c: Things dealing client to client connections. 
  *
@@ -114,7 +114,7 @@ static	void 		dcc_close 		(char *);
 static	void		dcc_closeall		(char *);
 static	void		dcc_erase 		(DCC_list *);
 static	void		dcc_filesend 		(char *);
-static	void		dcc_getfile 		(char *);
+static	void		dcc_getfile_get 	(char *);
 static	int		dcc_open 		(DCC_list *);
 static	int		dcc_opened		(int, int);
 static	void 		dcc_really_erase 	(void);
@@ -152,7 +152,7 @@ struct
 {
 	{ "CHAT",	dcc_chat 		},	/* DCC_CHAT */
 	{ "SEND",	dcc_filesend 		},	/* DCC_FILEOFFER */
-	{ "GET",	dcc_getfile 		},	/* DCC_FILEREAD */
+	{ "GET",	dcc_getfile_get 	},	/* DCC_FILEREAD */
 	{ "RAW",	dcc_send_raw 		},	/* DCC_RAW */
 
 	{ "CLOSE",	dcc_close 		},
@@ -1171,16 +1171,19 @@ static void	dcc_closeall (char *args)
  * Usage: /DCC GET <nick> [file|*]
  * The '*' file gets all offered files.
  */
-static	void	dcc_getfile (char *args)
+static	void	dcc_getfile (char *args, int resume)
 {
 	char		*user;
 	char		*filename = NULL;
 	DCC_list	*dcc;
 	Filename	fullname;
 	Filename	pathname;
+	int		file;
 	char 		*realname = NULL;
 	int		get_all = 0;
 	int		count = 0;
+	Stat		sb;
+	int		old_dp, old_dn, old_dc;
 
 	if (!(user = next_arg(args, &args)))
 	{
@@ -1209,16 +1212,6 @@ static	void	dcc_getfile (char *args)
 			return;
 		}
 
-		dcc->flags |= DCC_TWOCLIENTS;
-		dcc->open_callback = NULL;
-		if (dcc_open(dcc))
-		{
-			if (get_all)
-				continue;
-			else
-				return;
-		}
-
 		*pathname = 0;
 		if (get_string_var(DCC_STORE_PATH_VAR))
 		{
@@ -1229,7 +1222,7 @@ static	void	dcc_getfile (char *args)
 		if (normalize_filename(pathname, fullname))
 		{
 			say("%s is not a valid directory", fullname);
-			continue;
+			return;
 		}
 
 		if (fullname && *fullname)
@@ -1239,16 +1232,61 @@ static	void	dcc_getfile (char *args)
 		strlcat(fullname, realname, sizeof(pathname));
 		new_free(&realname);
 
-		dcc->filename = m_strdup(fullname);
-		if ((dcc->file = open(fullname, 
+#ifdef MIRC_BROKEN_DCC_RESUME
+		if (resume && get_int_var(MIRC_BROKEN_DCC_RESUME_VAR) && stat(fullname, &sb) != -1) {
+			dcc->bytes_sent = 0L;
+			dcc->bytes_read = dcc->resume_size = sb.st_size;
+		
+			if (((SA *)&dcc->offer)->sa_family == AF_INET)
+				malloc_strcpy(&dcc->othername, 
+						ltoa(ntohs(V4PORT(dcc->offer))));
+		
+			if (x_debug & DEBUG_DCC_XMIT)
+				yell("SENDING DCC RESUME to [%s] [%s|%s|%ld]", user, filename, dcc->othername, (long)sb.st_size);
+		
+			/* Just in case we have to fool the protocol enforcement. */
+			old_dp = doing_privmsg;
+			old_dn = doing_notice;
+			old_dc = in_ctcp_flag;
+		
+			doing_privmsg = doing_notice = in_ctcp_flag = 0;
+			send_ctcp(CTCP_PRIVMSG, user, CTCP_DCC, "RESUME %s %s %ld", 
+				dcc->description, dcc->othername, (long)sb.st_size);
+		
+			doing_privmsg = old_dp;
+			doing_notice = old_dn;
+			in_ctcp_flag = old_dc;
+
+			/*
+			 * Warning:  It seems to be for the best to _not_ loop
+			 *           at this point.
+			 */
+			return;
+		}
+#endif
+		
+		if ((file = open(fullname, 
 				O_WRONLY|O_TRUNC|O_CREAT, 0644)) == -1)
 		{
-			dcc->flags |= DCC_DELETE;
 			say("Unable to open %s: %s", 
 				fullname, errno ? 
 					strerror(errno) : 
 					"<No Error>");
+			return;
 		}
+
+		dcc->filename = m_strdup(fullname);
+		dcc->file = file;
+		dcc->flags |= DCC_TWOCLIENTS;
+		dcc->open_callback = NULL;
+		if (dcc_open(dcc))
+		{
+			if (get_all)
+				continue;
+			else
+				return;
+		}
+
 		if (!get_all)
 			break;
 	}
@@ -1263,6 +1301,10 @@ static	void	dcc_getfile (char *args)
 		return;
 	}
 }
+static void dcc_getfile_get	(char *args) { return dcc_getfile(args, 0); }
+#ifdef MIRC_BROKEN_DCC_RESUME
+static void dcc_getfile_resume	(char *args) { return dcc_getfile(args, 1); }
+#endif
 
 /*
  * Calculates transfer speed based on size, start time, and current time.
@@ -2370,7 +2412,9 @@ static void		process_outgoing_file (DCC_list *Client)
 	int		old_from_server = from_server;
 	int		maxpackets;
 	fd_set		fd;
+#ifdef HAVE_SO_SNDLOWAT
 	int		size;
+#endif
 	Timeval		to;
 	int		new_fd;
 	char		p_addr[256];
@@ -2795,7 +2839,7 @@ static void 	update_transfer_buffer (char *format, ...)
 static	char *	dcc_urlencode (const char *s)
 {
 	const char *p1;
-	char *str, *p2;
+	char *str, *p2, *ret;
 
 	str = m_strdup(s);
 
@@ -2807,7 +2851,9 @@ static	char *	dcc_urlencode (const char *s)
 	}
 
 	*p2 = 0;
-	return urlencode(str);
+	ret = urlencode(str);
+	new_free(&str);
+	return ret;
 }
 
 static	char *	dcc_urldecode (const char *s)
@@ -2844,6 +2890,7 @@ static	char *	dcc_urldecode (const char *s)
  *
  * XXX - This function is not really protocol independant.
  */
+#if 0
 static	void	dcc_getfile_resume (char *args)
 {
 	char		*user;
@@ -2930,6 +2977,7 @@ static	void	dcc_getfile_resume (char *args)
 
 	/* Then we just sit back and wait for the reply. */
 }
+#endif
 
 /*
  * When the peer demands DCC RESUME
@@ -2986,7 +3034,8 @@ static void dcc_getfile_resume_demanded (char *user, char *filename, char *port,
 static	void	dcc_getfile_resume_start (char *nick, char *filename, char *port, char *offset)
 {
 	DCC_list	*Client;
-	Filename	fullname;
+	Filename	fullname, pathname;
+	char		*realname = NULL;
 
 	if (!get_int_var(MIRC_BROKEN_DCC_RESUME_VAR))
 		return;
@@ -3004,12 +3053,26 @@ static	void	dcc_getfile_resume_start (char *nick, char *filename, char *port, ch
 	if (dcc_open(Client))
 		return;
 
-	if (normalize_filename(Client->description, fullname))
+	*pathname = 0;
+	if (get_string_var(DCC_STORE_PATH_VAR))
+	{
+		strlcpy(pathname, get_string_var(DCC_STORE_PATH_VAR), 
+					sizeof(pathname));
+	}
+
+	if (normalize_filename(pathname, fullname))
 	{
 		say("%s is not a valid directory", fullname);
 		Client->flags |= DCC_DELETE;
 		return;
 	}
+
+	if (fullname && *fullname)
+		strlcat(fullname, "/", sizeof(fullname));
+
+	realname = dcc_urldecode(Client->description);
+	strlcat(fullname, realname, sizeof(pathname));
+	new_free(&realname);
 
 	if (!(Client->file = open(fullname, O_WRONLY | O_APPEND, 0644)))
 	{
