@@ -394,6 +394,15 @@ void	parse_server_info (char *name, char **port, char **password, char **nick, c
 		ptr = name;
 		if (*ptr == '"')
 			name = new_next_arg(ptr, &ptr);
+		else if (*ptr == '[')
+		{
+		    name = ptr + 1;
+		    if ((ptr = MatchingBracket(ptr, '[', ']')))
+			*ptr++ = 0;
+		    else
+			break;
+		}
+
 		ptr = strchr(ptr, ':');
 		if (!ptr)
 			break;
