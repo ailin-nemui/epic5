@@ -68,6 +68,7 @@ typedef	struct
 	int	save_channels;		/* True if abnormal connection */
 	int	closing;		/* True if close_server called */
 	int	reconnect_to;		/* Server to connect to on EOF */
+	char	*quit_message;		/* Where we stash a quit message */
 }	Server;
 extern	Server	*server_list;
 #endif	/* NEED_SERVER_LIST */
@@ -188,5 +189,8 @@ const	char *	get_server_redirect		(int);
 
 	void	server_did_rejoin_channels	(int);
 	int	did_server_rejoin_channels	(int);
+	int     set_server_quit_message 	(int, const char *message);
+const char *    get_server_quit_message		(int);
+
 
 #endif /* _SERVER_H_ */
