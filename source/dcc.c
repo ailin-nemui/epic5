@@ -9,7 +9,7 @@
  */
 
 #if 0
-static	char	rcsid[] = "@(#)$Id: dcc.c,v 1.20 2002/05/09 06:48:52 jnelson Exp $";
+static	char	rcsid[] = "@(#)$Id: dcc.c,v 1.21 2002/05/10 18:41:20 jnelson Exp $";
 #endif
 
 #include "irc.h"
@@ -1628,8 +1628,9 @@ char	*dcc_raw_listen (unsigned short port)
 	}
 
 	Client->want_port = port;
-	if ((Client->socket = ip_bindery(AF_INET, Client->want_port,
-					(SS *)&Client->local_sockaddr)))
+	Client->socket = ip_bindery(AF_INET, Client->want_port, 
+				 &Client->local_sockaddr);
+	if (Client->socket < 0)
 	{
 		Client->flags |= DCC_DELETE; 
 		say("Couldnt establish listening socket: [%d] %s", 
