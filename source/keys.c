@@ -1,4 +1,4 @@
-/* $EPIC: keys.c,v 1.9 2002/08/13 04:27:01 wd Exp $ */
+/* $EPIC: keys.c,v 1.10 2002/08/13 05:05:21 wd Exp $ */
 /*
  * keys.c:  Keeps track of what happens whe you press a key.
  *
@@ -218,11 +218,12 @@ void key_exec(struct Key *key) {
 	return; /* nothing to do. */
     }
 
-    /* if the key isn't bound to anything, assume we got a premature
-     * terminator for a key sequence.  walk backwards along our path, and
-     * execute each key indepdently.  see below. :) */
+    /* if the key isn't bound to anything, and it has an owner, assume we
+     * got a premature terminator for a key sequence.  walk backwards along
+     * our path, and execute each key independently. */
     if (key->bound == NULL) {
-	key_exec_bt(key);
+	if (key->owner != NULL)
+	    key_exec_bt(key);
 	return;
     }
 
@@ -245,7 +246,7 @@ void key_exec(struct Key *key) {
  * back on that, then executes the 'value' of the key itself. */
 void key_exec_bt(struct Key *key) {
 
-    /* key.owner should point back to the owning key, if it is not NULL. */
+    /* key->owner should point back to the owning key, if it is not NULL. */
     if (key->owner != NULL)
 	key_exec_bt(key->owner);
 
@@ -293,6 +294,9 @@ struct Key *timeout_keypress(struct Key *last, struct timeval pressed) {
 
     if (last == NULL)
 	return NULL; /* fresh state, we need not worry about timeouts */
+
+    if (last->bound == NULL)
+	return last; /* wait unconditionally if this key is unbound. */
 
     tv = time_subtract(pressed, now);
     mpress = tv.tv_sec * 1000;
