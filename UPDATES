@@ -1,5 +1,24 @@
 EPIC4-1.2.0
 
+*** News 12/23/2002 -- Document /SET KEY_INTERVAL
+	This hadn't been documented anywhere yet.  Whoops.
+
+	When you have two competing key bindings, 
+		/bind ^H backspace
+		/bind ^H^H parse_command {echo hi!}
+	Then when you press ^H, epic does not know whether you want
+	to do the backspace, or if you will be pressing ^H again to
+	get the parse_command.  So EPIC waits for /SET KEY_INTERVAL
+	milliseconds to see what you do.  If you press ^H again within
+	the timeout, it does the parse_command.  If you do not press
+	any key before the timeout, it does the backspace.  If you press
+	any other key than ^H (which would yield an unbound sequence),
+	then epic immediately does the backspace and treats the second
+	character as the start of a new sequence.
+
+	Do not set this value too low, or you will have problems with 
+	your cursor keys on low telnet links.
+
 *** News 12/18/2002 -- New function $timerctl() - control /TIMERs
 	Usage:
 	------
