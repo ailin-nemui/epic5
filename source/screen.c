@@ -1,4 +1,4 @@
-/* $EPIC: screen.c,v 1.82 2004/05/05 16:43:27 jnelson Exp $ */
+/* $EPIC: screen.c,v 1.83 2004/05/05 16:46:43 jnelson Exp $ */
 /*
  * screen.c
  *
@@ -1650,9 +1650,7 @@ const	u_char	*cont_ptr;
 				 * attributes we will need to start the next
 				 * line.  This fixes an abort().
 				 */
-#if 0
 				if (word_break == 0)
-#endif
 					saved_a = a;
 
                                 continue;          /* Skip the column check */
