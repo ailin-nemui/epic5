@@ -1,0 +1,35 @@
+#
+# Autoget!  Because people keep asking me for this.
+# Ok.  Here's the plan.
+# /autoget <pattern> [<pattern> ....] will auto-get any file that matches
+#	any of the patterns.
+# /autoget -<pattern>  will stop autogetting any file that matches this
+#	pattern.
+# You can mix and match <pattern>s and -<pattern>s.
+#
+package autoget
+
+on #-dcc_request 414 "% SEND *" {
+	if (rmatch($2 $autoget_patterns)) {
+		dcc get $0 $2
+	}
+}
+
+alias autoget {
+	fe ($*) x {
+		if (left(1 $x) == [-]) {
+			@ x = rest(1 $x)
+			@ autoget_patterns = remw($x $autoget_patterns)
+		} {
+			push autoget_patterns $x
+		}
+	}
+}
+ 
+on ^unload "autoget" {
+	^assign -autoget_patterns
+	^alias -autoget
+	^on #dcc_request 414 -"% SEND *"
+}
+
+#hop'y2k+1
