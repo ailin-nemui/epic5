@@ -1,4 +1,4 @@
-/* $EPIC: words.c,v 1.9 2003/07/10 23:56:01 jnelson Exp $ */
+/* $EPIC: words.c,v 1.10 2003/07/14 05:58:27 jnelson Exp $ */
 /*
  * words.c -- right now it just holds the stuff i wrote to replace
  * that beastie arg_number().  Eventually, i may move all of the
@@ -233,72 +233,143 @@ static const char *	find_backward_quote (const char *input, const char *start, c
 	return input;		/* Wherever we are is fine. */
 }
 
+/*
+ * This is a little bit different -- If you want to grab the previous word
+ * you need to move to the space that ends it.
+ */
 static int	move_to_prev_word (const char **str, const char *start, int extended, const char *delims)
 {
 	char	what;
 	int	simple;
+	const char	*pos;
 
-	if (!str || !*str)
+	if (!str || *str <= start)
 		return 0;
 
-	if (delims && delims[0] && delims[1] == 0)
-	{
+	/* Overhead -- work out if "" support will be cheap or expensive */
+	if (delims && delims[0] && delims[1] == 0) {
+		if (x_debug & DEBUG_EXTRACTW_DEBUG)
+			yell(".... move_to_prev_word: Simple processing");
 		simple = 1;
 		what = delims[0];
-	}
-	else
-	{
+	} else {
+		if (x_debug & DEBUG_EXTRACTW_DEBUG)
+			yell(".... move_to_prev_word: Expensive processing");
 		simple = 0;
 		what = 255;
 	}
 
+	/* Overhead -- work out if we're doing "" support or not. */
 	CHECK_EXTENDED_SUPPORT
 
-	while ((*str) >= start && my_isspace(**str))
-		(*str)--;
+	/* Start at the mark the user provided us */
+	pos = *str;
 
-	if ((*str) > start && extended == DWORD_YES && 
-	     ( (simple == 1 && **str == what) ||
-	       (simple == 0 && strchr(delims, **str)) ) )
+	if (x_debug & DEBUG_EXTRACTW_DEBUG)
+		yell(".... move_to_prev_word: Starting at [%s] (in [%s])", pos, start);
+
+	/*
+	 * XXX This is a hack, but what do i care?
+	 * If we are pointing at the start of a string, then
+	 * we want to go to the PREVIOUS word, so cheat by 
+	 * stepping off the word.  This means if you want the
+	 * last word, you need to point to the nul, not the last
+	 * character before the nul!
+	 */
+	if (pos > start && isspace(pos[-1]))
+		pos--;
+
+	/*
+	 * Skip over whitespace
+	 */
+	while (pos >= start && ((*pos == 0) || my_isspace(*pos)))
+		pos--;
+
+	/*
+	 * In the above 'mark1' case (the normal case), we would be pointing
+	 * at the last character in 'two'.  If this were a double quoted word
+	 * then this would be a double quote of some sort, and this code
+	 * checks for that.  If it finds a double quote, then it moves to the
+	 * "matching" double quote.
+	 */
+	if (pos > start && extended == DWORD_YES && 
+	     ( (simple == 1 && *pos == what) ||
+	       (simple == 0 && strchr(delims, *pos)) ) )
 	{
 		const char *	before;
 
-		if (!(before = find_backward_quote(*str, start, delims)))
+		if (x_debug & DEBUG_EXTRACTW_DEBUG)
+			yell(".... move_to_prev_word: Handling extended word.");
+
+		if (!(before = find_backward_quote(pos, start, delims)))
 			panic("find_backward returned NULL [2]");
+
+		if (x_debug & DEBUG_EXTRACTW_DEBUG)
+			yell(".... move_to_prev_word: Extended word begins at [%s] (of [%s])", before, start);
+
+		/*
+		 * "Before" either points at a double quote or it points
+		 * at the start of the string.  If it points at a double
+		 * quote, move back one position so it points at a space.
+		 */
 		if (before > start)
 			before--;
-		*str = before;
+
+		/* So our new mark is the space before the double quoted word */
+		pos = before;
+
+		if (x_debug & DEBUG_EXTRACTW_DEBUG)
+			yell(".... move_to_prev_word: So the position before the extended word is [%s] (of [%s])", pos, start);
 	}
-	else
-	    while ((*str) >= start && !my_isspace(**str))
-		(*str)--;
 
 	/* 
-	 * This hack sucks, but it's necessary because we're doing
-	 * something very dodgy by working our way backwards towards
-	 * the front of a C string.  That's the way it goes.
-	 *
-	 * Basically, if we stop here, it's because we've hit the
-	 * front of the string while we were in the middle of a 
-	 * word.  So the start of the word is right here at the
-	 * beginning of the string (no adjustment necessary)
+	 * If this is not a double quoted word, keep moving backwards until
+	 * we find a space -- so our new mark is the space before the start
+	 * of the word.
 	 */
-	if ((*str) <= start)
+	else
 	{
-		(*str) = start;
+	    if (x_debug & DEBUG_EXTRACTW_DEBUG)
+		yell(".... move_to_prev_word: Handling simple word.");
+
+	    while (pos >= start && !my_isspace(*pos))
+		pos--;
+
+	    if (x_debug & DEBUG_EXTRACTW_DEBUG)
+		yell(".... move_to_prev_word: So the position before the simple word is [%s] (of [%s])", pos, start);
+	}
+
+	/*
+	 * If we hit the front of the string (*gulp*), set the return value
+	 * (*str) to the start of the string and just punt right here.
+	 */
+	if (pos <= start)
+	{
+		if (x_debug & DEBUG_EXTRACTW_DEBUG)
+			yell(".... move_to_prev_word: Ooops. we hit the start "
+				"of the string.  Stopping here.");
+
+		*str = start;
 		return 1;
 	}
 
 	/*
-	 * We're not at the start of the string, so the start of 
-	 * this word is at the next position.  Mark it and then
-	 * go looking for the end of the previous word.
+	 * Slurp up spaces.
 	 */
-	while ((*str) > start && my_isspace(**str)) 
-	    (*str)--;
+	else
+	{
+		while (*pos && isspace(*pos))
+			pos++;
 
-	if ((*str) >= start && !my_isspace(**str))
-		(*str)++;
+		while (pos > start && isspace(pos[0]) && isspace(pos[-1]))
+			pos--;
+	}
+	
+	if (x_debug & DEBUG_EXTRACTW_DEBUG)
+		yell(".... move_to_prev_word: And after we're done, [%s] is "
+			"the start of the previous word!", pos);
+
+	*str = pos;
 	return 1;
 }
 
@@ -306,13 +377,25 @@ static int	move_to_next_word (const char **str, const char *start, int extended,
 {
 	char	what;
 	int	simple;
+	const char *	mark2;
+	const char *	pos;
 
+	/*
+	 * If there is not a word, then just stop right here.
+	 */
 	if (!str || !*str)
 		return 0;
 
 	if (x_debug & DEBUG_EXTRACTW_DEBUG)
-		yell(">>>> move_to_next_word: mark [%s], start [%s], extended [%d], delims [%s]", *str, start, extended, delims);
+		yell(">>>> move_to_next_word: mark [%s], start [%s], "
+			"extended [%d], delims [%s]", *str, start, 
+							extended, delims);
 
+	/*
+	 * If "delims" has only one character, then we can do the double
+	 * quote support simply (by comapring characters), otherwise we have
+	 * to do it by calling strchr() for each character.  Ick.
+	 */
 	if (delims && delims[0] && delims[1] == 0)
 	{
 		if (x_debug & DEBUG_EXTRACTW_DEBUG)
@@ -328,6 +411,10 @@ static int	move_to_next_word (const char **str, const char *start, int extended,
 		what = 255;
 	}
 
+	/*
+	 * Here we check to see if we even want to do extended word support.
+	 * The user can always have the option to turn it off.
+	 */
 	CHECK_EXTENDED_SUPPORT
 
 	if (x_debug & DEBUG_EXTRACTW_DEBUG)
@@ -337,25 +424,91 @@ static int	move_to_next_word (const char **str, const char *start, int extended,
 		yell(".... move_to_next_word: Extended word support for complex case valid [%d]", simple == 0 && strchr(delims, **str));
 	}
 
+	/* Start at where the user asked, eh? */
+	pos = *str;
+
+	if (x_debug & DEBUG_EXTRACTW_DEBUG)
+	    yell(".... move_to_next_word: starting at [%s]", pos);
+
+	/*
+	 * Always skip leading spaces
+	 */
+	while (pos && isspace(*pos))
+		pos++;
+
+	if (x_debug & DEBUG_EXTRACTW_DEBUG)
+	    yell(".... move_to_next_word: after skipping spaces, [%s]", pos);
+
+	/*
+	 * Now check to see if this is an extended word.  If it is an 
+	 * extended word, move to the "end" of the word, which is the 
+	 * matching puncutation mark.
+	 */
 	if (extended == DWORD_YES && 
-	     ( (simple == 1 && **str == what) ||
-	       (simple == 0 && strchr(delims, **str)) ) )
+	     ( (simple == 1 && *pos == what) ||
+	       (simple == 0 && strchr(delims, *pos)) ) )
 	{
 		const char *	after;
 
-		if (!(after = find_forward_character(*str, start, delims)))
+		if (x_debug & DEBUG_EXTRACTW_DEBUG)
+		    yell(".... move_to_next_word: handling extended word");
+
+		if (!(after = find_forward_character(pos, start, delims)))
 			panic("find_forward returned NULL [1]");
 		if (*after)
 			after++;
-		*str = after;
+		pos = after;
+
+		if (x_debug & DEBUG_EXTRACTW_DEBUG)
+		    yell(".... move_to_next_word: after extended word [%s]", pos);
 	}
+	/*
+	 * If this is not an extended word, just skip to the next space.
+	 */
 	else
-		while (**str && !my_isspace(**str))
-			(*str)++;
+	{
+		if (x_debug & DEBUG_EXTRACTW_DEBUG)
+		    yell(".... move_to_next_word: handling simple word", pos);
 
-	while (**str && my_isspace(**str))
-		(*str)++;
+		while (*pos && !my_isspace(*pos))
+			pos++;
 
+		if (x_debug & DEBUG_EXTRACTW_DEBUG)
+		    yell(".... move_to_next_word: at next space: [%s]", pos);
+	}
+
+	/*
+	 * 'pos' now points at the space just after the end of the word;
+	 * This space belongs to us, but any further spaces do not long
+	 * belong to us, unless there are no more words after us!  So we
+	 * need to check this.
+	 */
+	/* -- Is the rest of a string just spaces?  -- */
+	if (x_debug & DEBUG_EXTRACTW_DEBUG)
+	    yell("... move_to_next_word: looking for another word...");
+
+	mark2 = pos;
+	while (*mark2 && my_isspace(*mark2))
+		mark2++;
+
+	if (!*mark2)		/* Only spaces after this.  Ok. */
+	{
+		if (x_debug & DEBUG_EXTRACTW_DEBUG)
+		    yell("... move_to_next_word: didn't find one.");
+		pos = mark2;
+	}
+	/* The start of the next word is after our space. */
+	else
+	{
+		if (x_debug & DEBUG_EXTRACTW_DEBUG)
+		    yell("... move_to_next_word: there's another word.");
+		pos++;
+	}
+
+	if (x_debug & DEBUG_EXTRACTW_DEBUG)
+	    yell("... move_to_next_word: next word starts with [%s]", pos);
+
+	*str = pos;
 	return 1;
 }
 
@@ -370,12 +523,6 @@ const char *	real_move_to_abs_word (const char *start, const char **mark, int wo
 
 	if (x_debug & DEBUG_EXTRACTW_DEBUG)
 		yell(">>>> real_move_to_abs_word: start [%s], count [%d], extended [%d], quotes [%s]", start, word, extended, quotes);
-
-	while (*pointer && my_isspace(*pointer))
-		pointer++;
-
-	if (x_debug & DEBUG_EXTRACTW_DEBUG)
-		yell(".... real_move_to_abs_word: pointer [%s]", pointer);
 
 	for (; counter > 0 && *pointer; counter--)
 		move_to_next_word(&pointer, start, extended, quotes);
@@ -442,13 +589,6 @@ ssize_t	move_word_rel (const char *start, const char **mark, int word, int exten
  * that 'firstword' get special treatment if it is negative (specifically,
  * that it refer to the "firstword"th word from the END).  This is used
  * basically by the ${n}{-m} expandos and by function_rightw(). 
- *
- * Note that because of a lot of flak, if you do an expando that is
- * a "range" of words, unless you #define STRIP_EXTRANEOUS_SPACES,
- * the "n"th word will be backed up to the first character after the
- * first space after the "n-1"th word.  That apparantly is what everyone
- * wants, so thats whatll be the default.  Those of us who may not like
- * that behavior or are at ambivelent can just #define it.
  */
 char *	real_extract2 (const char *start, int firstword, int lastword, int extended)
 {
@@ -458,36 +598,36 @@ char *	real_extract2 (const char *start, int firstword, int lastword, int extend
 	 */
 	const char *	mark;
 	const char *	mark2;
-	char *		booya = NULL;
 
-	/* If firstword is EOS, then the user wants the last word */
+	/*
+	 * 'firstword == EOS' means we should return the last word
+	 * This is used for $~.  Handle the whole shebang here.
+	 */
 	if (firstword == EOS)
 	{
+		/* Mark to the end of the string... */
 		mark = start + strlen(start);
+
+		/* And move to the start of that word */
 		move_word_rel(start, &mark, -1, extended, "\"");
-#ifndef NO_CHEATING
-		/* 
-		 * Really. the only case where firstword == EOS is
-		 * when the user wants $~, in which case we really
-		 * dont need to do all the following crud.  Of
-		 * course, if there ever comes a time that the
-		 * user would want to start from the EOS (when?)
-		 * we couldnt make this assumption.
-		 */
+
 		return malloc_strdup(mark);
-#endif
 	}
 
 	/*
-	 * SOS is used when the user does $-n, all leading spaces
-	 * are retained
+	 * 'firstword == SOS' means the user did $-<num>.
+	 * The start of retval is start of string.
 	 */
 	else if (firstword == SOS)
 		mark = start;
 
-	/* If the firstword is positive, move to that word */
-	/* Special treatment for $X-, where X is out of range
-	 * added by Colten Edwards, fixes the $1- bug.. */
+	/*
+	 * 'firstword is not negative' means user wants to start at
+	 * the <firstword>th word.  Move the mark to that position.
+	 *
+	 * If the mark does not exist (ie, $10- when there are not
+	 * 10 words), fail by returning the empty string.
+	 */
 	else if (firstword >= 0)
 	{
 		real_move_to_abs_word(start, &mark, firstword, extended, "\"");
@@ -495,73 +635,70 @@ char *	real_extract2 (const char *start, int firstword, int lastword, int extend
 			return malloc_strdup(empty_string);
 	}
 
-	/* Otherwise, move to the firstwords from the end */
+	/*
+	 * 'firstword is negative' means user wants to start at the
+	 * <firstword>th word from the end.  Move the mark to that
+	 * position.  This is used for $rightw() and stuff.
+	 */
 	else
 	{
 		mark = start + strlen(start);
 		move_word_rel(start, &mark, firstword, extended, "\"");
 	}
 
-#ifndef STRIP_EXTRANEOUS_SPACES
-	/* IF the user did something like this:
-	 *	$n-  $n-m
-	 * then include any leading spaces on the 'n'th word.
-	 * this is the "old" behavior that we are attempting
-	 * to emulate here.
+	/*****************************************************************/
+	/*
+	 * So now 'mark' points at the start of the string we want to
+	 * return; this should include the spaces that lead up to the word.  
+	 *
+	 * Now we need to find the end of the string to return.
 	 */
-#ifndef NO_CHEATING
-	if (lastword == EOS || (lastword > firstword))
-#else
-	if (((lastword == EOS) && (firstword != EOS)) || (lastword > firstword))
-#endif
-	{
-		while (mark > start && my_isspace(mark[-1]))
-			mark--;
-		if (mark > start)
-			mark++;
-	}
-#endif
 
 	/* 
-	 * When we find the last word, we need to move to the 
-         * END of the word, so that word 3 to 3, would include
-	 * all of word 3, so we sindex to the space after the word
+	 * 'lastword is EOS' means the user did $<num>-, so cheat by 
+	 * just returning the mark
 	 */
 	if (lastword == EOS)
-		mark2 = mark + strlen(mark);
+	    return malloc_strdup(mark);
 
-	else 
+	/*
+	 * 'lastword is nonnegative' means the user did $<num1>-<num2>,
+	 * so we need to move to the start of the <num2 + 1> and go back
+	 * one position -- easy, eh?
+	 */
+	else if (lastword >= 0)
+	    real_move_to_abs_word(start, &mark2, lastword + 1, extended, "\"");
+
+	/*
+	 * 'lastword is negative' means the user wants all but the last
+ 	 * <num> words, so we move to the start of the <num>th word from 
+	 * the end, and go back one character!
+	 */
+	else
 	{
-		if (lastword >= 0)
-			real_move_to_abs_word(start, &mark2, lastword+1, extended, "\"");
-		else
-		{
-			mark2 = start + strlen(start);
-			move_word_rel(start, &mark2, lastword, extended, "\"");
-		}
-
-		while (mark2 > start && my_isspace(mark2[-1]))
-			mark2--;
+	    mark2 = start + strlen(start);
+	    move_word_rel(start, &mark2, lastword, extended, "\"");
 	}
+
+	/*
+	 * move back one position, because we are the start of the NEXT word.
+	 */
+	if (mark2 > start)
+		mark2--;
 
 	/* 
 	 * If the end is before the string, then there is nothing
 	 * to extract (this is perfectly legal, btw)
          */
 	if (mark2 < mark)
-		booya = malloc_strdup(empty_string);
+		return malloc_strdup(empty_string);
 
-	else
-	{
-		/*
-		 * This is kind of tricky, because the string we are
-		 * copying out of is const.  So we cant just null off
-		 * the trailing character and malloc_strdup it.
-		 */
-		booya = strext(mark, mark2);
-	}
-
-	return booya;
+	/*
+	 * This is kind of tricky, because the string we are
+	 * copying out of is const.  So we cant just null off
+	 * the trailing character and malloc_strdup it.
+	 */
+	return strext(mark, mark2);
 }
 
 /*
@@ -606,7 +743,8 @@ char *	real_extract (char *start, int firstword, int lastword, int extended)
 
 	/* If the firstword is positive, move to that word */
 	else if (firstword >= 0)
-		real_move_to_abs_word(start, (const char **)&mark, firstword, extended, "\"");
+		real_move_to_abs_word(start, (const char **)&mark, 
+					firstword, extended, "\"");
 
 	/* Its negative.  Hold off right now. */
 	else
@@ -624,7 +762,8 @@ char *	real_extract (char *start, int firstword, int lastword, int extended)
 	else 
 	{
 		if (lastword >= 0)
-			real_move_to_abs_word(start, (const char **)&mark2, lastword+1, extended, "\"");
+			real_move_to_abs_word(start, (const char **)&mark2, 
+						lastword+1, extended, "\"");
 		else
 			/* its negative -- thats not valid */
 			return malloc_strdup(empty_string);

@@ -1,4 +1,4 @@
-/* $EPIC: functions.c,v 1.128 2003/07/10 13:08:56 jnelson Exp $ */
+/* $EPIC: functions.c,v 1.129 2003/07/14 05:58:27 jnelson Exp $ */
 /*
  * functions.c -- Built-in functions for ircII
  *
@@ -3275,24 +3275,24 @@ BUILT_IN_FUNCTION(function_tdiff2, input)
 
 	if (days)
 	{
-		snprintf(tstr, size, "%ldd ", days);
+		snprintf(tstr, size, "%ldd ", (long)days);
 		size -= strlen(tstr);
 		tstr += strlen(tstr);
 	}
 	if (hours)
 	{
-		snprintf(tstr, size, "%ldh ", hours);
+		snprintf(tstr, size, "%ldh ", (long)hours);
 		size -= strlen(tstr);
 		tstr += strlen(tstr);
 	}
 	if (minutes)
 	{
-		snprintf(tstr, size, "%ldm ", minutes);
+		snprintf(tstr, size, "%ldm ", (long)minutes);
 		size -= strlen(tstr);
 		tstr += strlen(tstr);
 	}
 	if (seconds || (!days && !hours && !minutes))
-		snprintf(tstr, size, "%lds", seconds);
+		snprintf(tstr, size, "%lds", (long)seconds);
 	else
 		*--tstr = 0;	/* chop off that space! */
 

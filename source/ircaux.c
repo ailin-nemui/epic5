@@ -1,4 +1,4 @@
-/* $EPIC: ircaux.c,v 1.88 2003/07/10 23:56:01 jnelson Exp $ */
+/* $EPIC: ircaux.c,v 1.89 2003/07/14 05:58:27 jnelson Exp $ */
 /*
  * ircaux.c: some extra routines... not specific to irc... that I needed 
  *
@@ -4799,7 +4799,7 @@ char *	universal_next_arg_count (char *str, char **new_ptr, int count, int exten
 		yell(">>>> universal_next_arg_count: Start: [%s], count [%d], extended [%d], dequote [%d], delims [%s]", str, count, extended, dequote, delims);
 
 	real_move_to_abs_word(str, (const char **)new_ptr, count, extended, delims);
-	if ((*new_ptr)[0] && *new_ptr > str)
+	if (**new_ptr && *new_ptr > str)
 		(*new_ptr)[-1] = 0;
 
 	clue = (*new_ptr) - str - 1;
@@ -4972,13 +4972,13 @@ char *	last_arg (char **src, size_t *cluep)
 
 	start = *src;
 	end = start + *cluep;
-	mark = end + strlen(end) - 1;
+	mark = end + strlen(end);
 	/* Always support double-quoted words. */
 	move_word_rel(start, (const char **)&mark, -1, DWORD_ALWAYS, "\"");
-	*cluep = (mark - *src);
+	*cluep = (mark - *src - 1);
 
 	if (mark > start)
-		*mark++ = 0;
+		mark[-1] = 0;
 	else
 		*src = NULL;		/* We're done, natch! */
 

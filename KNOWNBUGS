@@ -88,4 +88,11 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Convert dequote() to dequoter().
 * Convert new_new_next_arg() into new_new_next_arg_count().
 * Comment out deprecated functions in ircaux.c -- will be deleted later.
+* Fix a couple of compiler warnings from freebsd-5
+* Revamp move_to_prev_word() so its behavior isn't stinky
+* Same thing with move_to_next_word(), and they need to be commented.
+* Now move_to_abs_word() doesn't need to skip leading spaces.
+* Remove now pointless "strip extraneous spaces" feature.
+* Don't worry about cheating in real_extractw
+* Fix last_arg() per all of the above
 
