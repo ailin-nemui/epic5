@@ -8,7 +8,7 @@
  */
 
 #if 0
-static	char	rcsid[] = "@(#)$Id: ircaux.c,v 1.2 2001/01/20 00:36:30 jnelson Exp $";
+static	char	rcsid[] = "@(#)$Id: ircaux.c,v 1.3 2001/01/20 00:56:55 jnelson Exp $";
 #endif
 
 #include "irc.h"
@@ -152,13 +152,17 @@ void	do_delayed_frees (void)
 static void	delay_free (void *ptr)
 {
 	need_delayed_free = 1;
-	if (delayed_frees >= delayed_free_table_size)
+	if (delayed_frees >= delayed_free_table_size - 2)
 	{
+		int	i = delayed_free_table_size;
+
 		if (delayed_free_table_size)
 			delayed_free_table_size *= 2;
 		else
 			delayed_free_table_size = 128;
 		RESIZE(delayed_free_table, void *, delayed_free_table_size);
+		for (; i < delayed_free_table_size; i++)
+			delayed_free_table[i] = NULL;
 	}
 	delayed_free_table[delayed_frees++] = ptr;
 }
