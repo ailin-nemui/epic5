@@ -1,4 +1,4 @@
-/* $EPIC: keys.c,v 1.39 2005/03/21 02:59:16 jnelson Exp $ */
+/* $EPIC: keys.c,v 1.40 2005/03/21 03:01:12 jnelson Exp $ */
 /*
  * keys.c:  Keeps track of what happens whe you press a key.
  *
@@ -705,7 +705,9 @@ void init_keys (void) {
     BIND("^M", "SEND_LINE");
     BIND("^N", "FORWARD_HISTORY");
     BIND("^O", "HIGHLIGHT_OFF");
+#if 0
     BIND("^P", "BACKWARD_HISTORY");
+#endif
     BIND("^Q", "QUOTE_CHARACTER");
     /* ^R */
     BIND("^S", "TOGGLE_STOP_SCREEN");
@@ -718,7 +720,9 @@ void init_keys (void) {
     BIND("^Z", "STOP_IRC");
     /* ^[ (was META1_CHARACTER) */
     /* ^\ */
+#if 0
     BIND("^]", "SHOVE_TO_HISTORY");
+#endif
     /* ^^ */
     BIND("^_", "UNDERLINE");
     /* mind the gap .. */
@@ -752,10 +756,12 @@ void init_keys (void) {
     /* meta2 stuff. */
     BIND("^[O^Z", "STOP_IRC");
     BIND("^[[^Z", "STOP_IRC");
+#if 0
     BIND("^[OA", "BACKWARD_HISTORY");
     BIND("^[[A", "BACKWARD_HISTORY");
     BIND("^[OB", "FORWARD_HISTORY");
     BIND("^[[B", "FORWARD_HISTORY");
+#endif
     BIND("^[OC", "FORWARD_CHARACTER");
     BIND("^[[C", "FORWARD_CHARACTER");
     BIND("^[OD", "BACKWARD_CHARACTER");
@@ -797,10 +803,12 @@ void init_termkeys (void) {
 }
 
     bind_post_init = 0;
+#if 0
     TBIND(key_up, BACKWARD_HISTORY);
     TBIND(key_down, FORWARD_HISTORY);
     TBIND(key_left, BACKWARD_CHARACTER);
     TBIND(key_right, FORWARD_CHARACTER);
+#endif
     TBIND(key_ppage, SCROLL_BACKWARD);
     TBIND(key_npage, SCROLL_FORWARD);
     TBIND(key_home, SCROLL_START);
