@@ -1,4 +1,4 @@
-/* $EPIC: newio.c,v 1.28 2005/01/12 00:12:20 jnelson Exp $ */
+/* $EPIC: newio.c,v 1.29 2005/02/05 00:08:11 jnelson Exp $ */
 /*
  * newio.c: This is some handy stuff to deal with file descriptors in a way
  * much like stdio's FILE pointers 
@@ -203,9 +203,11 @@ static int	unix_read (int fd, char **buffer, size_t *buffer_size, size_t *start)
  */
 ssize_t	dgets (int des, char *buf, size_t buflen, int buffer, int (*reader) (int, char **, size_t *, size_t *))
 {
-	ssize_t	cnt = 0;
+	size_t	cnt = 0;
 	int	c = 0;		/* gcc can die. */
 	MyIO	*ioe;
+	size_t	consumed = 0;
+	char	h = 0;
 
 	if (!io_rec)
 		init_io();
@@ -236,8 +238,23 @@ ssize_t	dgets (int des, char *buf, size_t buflen, int buffer, int (*reader) (int
 		ioe->segments = 0;
 	}
 
+	/* 
+	 * If there is not a complete line of data already buffered,
+	 * and the user provided a callback, call it to get more data.
+	 * This means you can pass 'reader == NULL' to do a nonblocking
+	 * flush of the buffer.
+	 */
 	if (!strchr(ioe->buffer + ioe->read_pos, '\n'))
 	{
+	    if (ioe->segments > MAX_SEGMENTS)
+	    {
+		yell("***XXX*** Too many read()s on des [%d] without a "
+				"newline! ***XXX***", des);
+		*buf = 0;
+		dgets_errno = ECONNABORTED;
+		return -1;
+	    }
+
 	    if (ioe->read_pos)
 	    {
 		ov_strcpy(ioe->buffer, ioe->buffer + ioe->read_pos);
@@ -257,7 +274,7 @@ ssize_t	dgets (int des, char *buf, size_t buflen, int buffer, int (*reader) (int
 	    }
 
 	    if (!reader)
-		reader = unix_read;		/* Change for other systems */
+		reader = unix_read;
 
 	    c = reader(des, &ioe->buffer, &ioe->buffer_size, &ioe->write_pos);
 
@@ -278,32 +295,29 @@ ssize_t	dgets (int des, char *buf, size_t buflen, int buffer, int (*reader) (int
 	dgets_errno = 0;
 
 	/*
-	 * If the caller wants us to force line buffering, and if there
-	 * is no complete line, just stop right here.
+	 * So the buffer probably has changed now, because we just read
+	 * in more data.  Check again to see if there is a newline.  If
+	 * there is not, and the caller wants a complete line, just punt.
 	 */
 	if (buffer && !strchr(ioe->buffer + ioe->read_pos, '\n'))
-	{
-	    if (ioe->segments > MAX_SEGMENTS)
-	    {
-		yell("***XXX*** Too many read()s on des [%d] without a newline! ***XXX***", des);
-		*buf = 0;
-		dgets_errno = ECONNABORTED;
-		return -1;
-	    }
 	    return 0;
-	}
 
 	/*
-	 * Slurp up the data that is available into 'buf'. 
+	 * AT THIS POINT WE'VE COMMITED TO RETURNING WHATEVER WE HAVE.
 	 */
+
+	consumed = 0;
 	while (ioe->read_pos < ioe->write_pos)
 	{
-	    if (((buf[cnt] = ioe->buffer[ioe->read_pos++])) == '\n')
+	    h = ioe->buffer[ioe->read_pos++];
+	    consumed++;
+
+	    if (cnt <= buflen - 1)
+		buf[cnt++] = h;
+	    if (h == '\n')
 		break;
-	    cnt++;
 	}
 
-	/* If the line is too long, truncate it. */
 	/* 
 	 * Before anyone whines about this, a lot of code in epic 
 	 * silently assumes that incoming lines from the server don't
@@ -311,21 +325,24 @@ ssize_t	dgets (int des, char *buf, size_t buflen, int buffer, int (*reader) (int
 	 * better to truncate excessively long lines than to let them
 	 * overflow buffers!
 	 */
-	if (cnt > (ssize_t)(buflen - 1))
+	if (cnt < consumed)
 	{
 		if (x_debug & DEBUG_INBOUND) 
-			yell("FD [%d], Too long (did [%d], max [%d])", des, cnt, buflen);
+			yell("FD [%d], Too long (did [%d], max [%d])", 
+					des, consumed, cnt);
 
-		/* Remember that 'buf' must be 'buflen + 1' bytes big! */
-		if (buf[cnt] == '\n')
-			buf[buflen - 1] = '\n';
-		cnt = buflen - 1;
+		/* If the line had a newline, then put the newline in. */
+		if (h == '\n')
+		{
+			cnt = buflen - 2;
+			buf[cnt++] = '\n';
+		}
 	}
 
 	/*
 	 * Terminate it
 	 */
-	buf[cnt + 1] = 0;
+	buf[cnt] = 0;
 
 	/*
 	 * If we end in a newline, then all is well.
@@ -333,7 +350,7 @@ ssize_t	dgets (int des, char *buf, size_t buflen, int buffer, int (*reader) (int
 	 * The caller then would need to do a strlen() to get
  	 * the amount of data.
 	 */
-	if (buf[cnt] == '\n')
+	if (cnt > 0 && buf[cnt - 1] == '\n')
 	    return cnt;
 	else
 	    return 0;

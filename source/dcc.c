@@ -1,4 +1,4 @@
-/* $EPIC: dcc.c,v 1.105 2005/02/03 01:33:39 jnelson Exp $ */
+/* $EPIC: dcc.c,v 1.106 2005/02/05 00:08:11 jnelson Exp $ */
 /*
  * dcc.c: Things dealing client to client connections. 
  *
@@ -2884,6 +2884,7 @@ static	void		process_dcc_raw_data (DCC_list *Client)
 		bytesread = read(Client->socket, bufptr, IO_BUFFER_SIZE);
 	else
 		bytesread = dgets(Client->socket, bufptr, IO_BUFFER_SIZE, 0, NULL);
+
 	switch (bytesread)
 	{
 	    CLOSE:
@@ -3573,6 +3574,7 @@ int	wait_for_dcc (const char *descriptor)
 		return -1;
 	}
 
+	fd = atol(descriptor);
 	if (!(dcc = get_dcc_by_filedesc(fd)))
 		return -1;
 

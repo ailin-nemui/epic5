@@ -449,3 +449,6 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * This makes ircnet's +R not show up on the status bar.
 * Fix /dmsg =<ircnet-numeric-nick>, for Q.
 * Add $serverctl(GET <refnum> PROTOCOL), returns IRC or IRC-SSL
+* Fix /dmsg =<numeric> again, fix compiler warnings.
+* Whack dgets() into submission regarding incomplete unbuffered lines.
+* Revamp how partial lines from an /exec process are handled.

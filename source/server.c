@@ -1,4 +1,4 @@
-/* $EPIC: server.c,v 1.145 2005/02/03 01:33:39 jnelson Exp $ */
+/* $EPIC: server.c,v 1.146 2005/02/05 00:08:11 jnelson Exp $ */
 /*
  * server.c:  Things dealing with that wacky program we call ircd.
  *
@@ -3111,7 +3111,7 @@ static char *	shortname (const char *oname)
 	return name;
 }
 
-char *	get_server_altname (int refnum, int which)
+const char *	get_server_altname (int refnum, int which)
 {
 	Server	*s;
 	int	j;

@@ -1,4 +1,4 @@
-/* $EPIC: exec.c,v 1.29 2005/01/13 15:38:18 jnelson Exp $ */
+/* $EPIC: exec.c,v 1.30 2005/02/05 00:08:11 jnelson Exp $ */
 /*
  * exec.c: handles exec'd process for IRCII 
  *
@@ -737,88 +737,98 @@ static void 	handle_filedesc (Process *proc, int *fd, int hook_nonl, int hook_nl
 {
 	char 	exec_buffer[IO_BUFFER_SIZE + 1];
 	ssize_t	len;
+	int	ofs;
+	const char *callback = NULL;
+	int	hook = -1;
 
-	switch ((len = dgets(*fd, exec_buffer, IO_BUFFER_SIZE, 0, NULL))) /* No buffering! */
+	/* No buffering! */
+	switch ((len = dgets(*fd, exec_buffer, IO_BUFFER_SIZE, 0, NULL))) 
 	{
-		case -1:	/* Something died */
+	    case -1:		/* Something died */
+	    {
+		*fd = new_close(*fd);
+		if (proc->p_stdout == -1 && proc->p_stderr == -1)
+			proc->dumb = 1;
+		return;				/* PUNT! */
+	    }
+
+	    case 0:		/* We didnt get a full line */
+	    {
+		/* 
+		 * XXX This is a hack.  dgets() can return 0 for a line
+		 * containing solely a newline, as well as a line that didn't
+		 * have a newline.  So we have to check to see if the line 
+		 * contains only a newline!
+		 */
+		if (exec_buffer[0] != '\n')
 		{
-			*fd = new_close(*fd);
-			if (proc->p_stdout == -1 && proc->p_stderr == -1)
-				proc->dumb = 1;
-			break;
+		    if (hook_nl == EXEC_LIST)
+		    {
+			if (proc->stdoutpc && *proc->stdoutpc)
+			    callback = proc->stdoutpc;
+		    }
+		    else if (hook_nl == EXEC_ERRORS_LIST)
+		    {
+			if (proc->stderrpc && *proc->stderrpc)
+			    callback = proc->stderrpc;
+		    }
+		    hook = hook_nonl;
+		    break;
 		}
-		case 0:		/* We didnt get a full line */
+
+		/* XXX HACK -- Line contains only a newline.  */
+		*exec_buffer = 0;
+		/* FALLTHROUGH */
+	    }
+
+	    default:		/* We got a full line */
+	    {
+		if (hook_nl == EXEC_LIST)
 		{
-			/* 
-			 * XXX XXX Major, world class hack here XXX XXX 
-			 * Since this problem has been addressed already
-			 * by newio2.c, it doesn't matter if we just fix the
-			 * symptom here since this code is all obsolete.
-			 */
-			if (exec_buffer[0] == '\n')
-			{
-				exec_buffer[0] = 0;
-				goto this_sucks;
-			}
-
-			     if (hook_nl == EXEC_LIST && proc->stdoutpc && *proc->stdoutpc)
-				call_lambda_command("EXEC", proc->stdoutpc, exec_buffer);
-			else if (hook_nl == EXEC_ERRORS_LIST && proc->stderrpc && *proc->stderrpc)
-				call_lambda_command("EXEC", proc->stderrpc, exec_buffer);
-			else if (proc->logical)
-				do_hook(hook_nonl, "%s %s", 
-					proc->logical, exec_buffer);
-			else
-				do_hook(hook_nonl, "%d %s", 
-					proc->index, exec_buffer);
-
-			set_prompt_by_refnum(proc->refnum, exec_buffer);
-			break;
+		    if (proc->stdoutc && *proc->stdoutc)
+			callback = proc->stdoutc;
 		}
-		default:	/* We got a full line */
-this_sucks:
+		else if (hook_nl == EXEC_ERRORS_LIST)
 		{
-			int ofs;
-
-			ofs = from_server;
-			if (proc->refnum)
-				from_server = proc->server;
-			message_to(proc->refnum);
-			proc->counter++;
-
-			while (len > 0 && (exec_buffer[len] == '\n' ||
-					   exec_buffer[len] == '\r'))
-			{
-				exec_buffer[len--] = 0;
-			}
-
-			if (proc->redirect) 
-				redirect_text(proc->server, proc->who, 
-					exec_buffer, proc->redirect, 1);
-
-			if (hook_nl == EXEC_LIST && proc->stdoutc && *proc->stdoutc)
-				call_lambda_command("EXEC", proc->stdoutc, exec_buffer);
-			else if (hook_nl == EXEC_ERRORS_LIST && proc->stderrc && *proc->stderrc)
-				call_lambda_command("EXEC", proc->stderrc, exec_buffer);
-			else if (proc->logical)
-			{
-				if ((do_hook(hook_nl, "%s %s", 
-						proc->logical, exec_buffer)))
-					if (!proc->redirect)
-						put_it("%s", exec_buffer);
-			}
-			else
-			{
-				if ((do_hook(hook_nl, "%d %s", 
-						proc->index, exec_buffer)))
-					if (!proc->redirect)
-						put_it("%s", exec_buffer);
-			}
-
-			message_to(-1);
-			from_server = ofs;
+		    if (proc->stderrc && *proc->stderrc)
+			callback = proc->stderrc;
 		}
+		hook = hook_nl;
+		break;
+	    }
 	}
+
+	ofs = from_server;
+	if (proc->refnum)
+		from_server = proc->server;
+	message_to(proc->refnum);
+	proc->counter++;
+
+	while (len > 0 && (exec_buffer[len] == '\n' ||
+			   exec_buffer[len] == '\r'))
+	     exec_buffer[len--] = 0;
+
+	if (proc->redirect) 
+	     redirect_text(proc->server, proc->who, 
+				exec_buffer, proc->redirect, 1);
+
+	if (callback)
+	    call_lambda_command("EXEC", callback, exec_buffer);
+	else if (proc->logical)
+	{
+	     if ((do_hook(hook, "%s %s", proc->logical, exec_buffer)))
+		if (!proc->redirect)
+		    put_it("%s", exec_buffer);
+	}
+	else
+	{
+	    if ((do_hook(hook, "%d %s", proc->index, exec_buffer)))
+		if (!proc->redirect)
+		    put_it("%s", exec_buffer);
+	}
+
+	message_to(-1);
+	from_server = ofs;
 }
 
 /*

@@ -1,5 +1,33 @@
 EPIC5-0.1
 
+*** News 02/04/2005 -- Clarification on /EXEC process output.
+	Until this time, partial lines of output from /EXEC processes
+	were silently ignored, could not be redirected, and callbacks
+	and /on's were not executed in the correct window.  Now the
+	partial-line and full-line handler for /exec processes has been
+	unified, and they both work like this:
+
+	1) Set up the correct server and window
+	   Note: Yes, I am aware this may need further refactoring.
+	2) Increment the line output
+	   Note: Partial lines now count as a line of output for the
+		 -LIMIT counter.
+	3) If you used -MSG or -NOTICE or -OUT, send the the text to 
+	   the target.
+	   Note: This usually hooks an /ON SEND_* hook (see below)
+	4) If you used -LINE or -LINEPART or -ERROR or -ERRORPART, call
+	   the appropriate callback
+	-or-
+	4a) If you didn't use them, hook the appropriate /ON.
+	4b) If you didn't hook the /ON, and you aren't redirecting the
+	    output to another target, output it to the screen.
+
+	Note that (4b) and (3) work in complement to each other.  If you do
+		/EXEC -MSG hop w
+	then the output will be handled through /ON SEND_MSG (either from
+	your own on, or from the default output).  If you do not, then the 
+	output will be handled by /ON EXEC. 
+
 *** News 02/02/2005 -- New $serverctl() attribute, "PROTOCOL"
 	$serverctl(GET <refnum> PROTOCOL) now either returns "IRC" or 
 	"IRC-SSL" depending on whether you're doing a regular irc, or an 
