@@ -46,7 +46,7 @@ static void	clear_reconnect_counts (void);
 						 * is made */
 	int	connected_to_server = 0;	/* true when connection is
 						 * confirmed */
-	int	reconnects_to_hint = -1;	/* XXX Hack.  Don't remind me */
+	int	reconnects_to_hint = 0;		/* XXX Hack.  Don't remind me */
 
 
 /************************ SERVERLIST STUFF ***************************/
@@ -656,7 +656,12 @@ BUILT_IN_COMMAND(servercmd)
 		{
 			set_server_quit_message(from_server, 
 					"Changing servers");
-			server_reconnects_to(from_server, from_server - 1);
+			if (from_server == 0)
+				server_reconnects_to(from_server, 
+							number_of_servers - 1);
+			else
+				server_reconnects_to(from_server, 
+							from_server - 1);
 			reconnect(from_server);
 		}
 
@@ -684,7 +689,7 @@ BUILT_IN_COMMAND(servercmd)
  * do_server: check the given fd_set against the currently open servers in
  * the server list.  If one have information available to be read, it is read
  * and and parsed appropriately.  If an EOF is detected from an open server,
- * we call get_connected() to try to keep that server connection alive.
+ * we call reconnect() to try to keep that server connection alive.
  */
 void	do_server (fd_set *rd)
 {
@@ -709,6 +714,7 @@ void	do_server (fd_set *rd)
 
 			case -1:	/* EOF or other error */
 			{
+				server_is_connected(i, 0);
 				say("Connection closed from %s: %s", 
 					server_list[i].name,
 					(dgets_errno == -1) ? 
@@ -860,6 +866,7 @@ static void 	vsend_to_server (const char *format, va_list args)
 		    {
 			if (server_list[server].connected)
 			{
+			    server_is_connected(des, 0);
 			    say("Write to server failed.  Closing connection.");
 			    reconnect(server);
 			}
@@ -1129,56 +1136,33 @@ int 	connect_to_new_server (int new_server, int old_server, int new_conn)
 }
 
 /*
- * This function is a front end to the "get_connected" function; the purpose
- * of this function is to make it easier for us to drop a note that we need
- * to reconnect to a different server (such as if we recieve an 010 or a 465
- * numeric), but want to wait until we actually recieve the EOF to reconnect.
- * Thus, anyone can call "server_reconnects_to" to set what server we should
- * reconnect to when we get an EOF.
+ * This function supplants the "get_connected" function; it started out life
+ * as a front end to get_connected(), but it ended up being more flexible
+ * than get_connected() and everyone was calling reconnect() instead, so I 
+ * just rolled the two of them together and here we are.
  *
- * XXX Closing 'refnum' before calling 'get_connected' flies in the face of
- * all of the work that 'connect_to_new_server' does.  I am aware of this;
- * there is no point in reminding me.
- */
-int	reconnect (int refnum)
-{
-	int	new_server;
-
-	if (refnum >= 0 && server_list[refnum].reconnect_to != -1)
-		save_server_channels(refnum);
-	if (refnum >= 0 && refnum < number_of_servers)
-	{
-		close_server(refnum, get_server_quit_message(refnum));
-		new_server = server_list[refnum].reconnect_to;
-	}
-	else
-		new_server = reconnects_to_hint;
-
-	if (new_server != -1)
-		return get_connected(new_server, refnum);
-	return -1;
-}
-
-/*
- * 'get_connected' is a front end to 'connect_to_new_server' that repeatedly
- * tries as many servers as it takes to get a new server connection going.
- * If all else fails, it reverts back to the original connection, provided
- * that the original connection existed. ;-)
+ * The purpose of this function is to make it easier to handle dropped
+ * server connections.  If we recieve a Notice Of Termination (such as an
+ * 010 or 465 numerics, or a KILL or such), we may not want to actually 
+ * terminate the connection before the server does as it may send us more
+ * important information.  Instead of closing the connection, we instead
+ * drop a "hint" to the server what it should do when it sees an EOF.  For
+ * most circumstances, the "hint" is "reconnect to yourself again".  However,
+ * sometimes we want to reconnect to a different server.  For all of these
+ * circumstances, this function is called to figure out what to do.
  *
- * This is the lynchpin through which all of the auto-reconnect madness 
- * happens.  Because it is recursive, bad things can happen if a server
- * connection behaves in a way that we are not prepared to handle.  Therefore
- * the impetus is on this function to refuse to act and disconnect the user
- * and force manual intervention if it appears we are spinning out of control.
- * Because recursive autoreconnects can occur, we use the "reconnects" member
- * of the server structure to throttle unsuccessfull reconnection attempts 
- * here.  The number of unsuccessfull (defined as not completing registration)
- * attempts is controlled by /set max_reconnect_attempts.
+ * Use the function "server_reconnects_to" to control how this function
+ * behaves.  Setting the reconnecting server to -1 inhibits any connection
+ * from occuring upon EOF.  Setting the reconnecting server to itself causes
+ * a normal reconnect act.  Setting the reconnecting server to another refnum
+ * causes the server connection to be migrated to that refnum.  The original
+ * connection is closed only if the new refnum is successfully opened.
  */
-int 	get_connected (int new, int old)
+int	reconnect (int oldserv)
 {
-	int	i;
-	int	j;
+	int	newserv;
+	int	i, j;
+	int	was_connected = 0;
 	int	connected;
 	int	max_reconnects = get_int_var(MAX_RECONNECTS_VAR);
 
@@ -1189,23 +1173,59 @@ int 	get_connected (int new, int old)
 		return -1;
 	}
 
-	if (new < 0)
-		new = number_of_servers - 1;		/* Sanity check */
+	if (oldserv >= 0 && oldserv < number_of_servers)
+	{
+		was_connected = is_server_connected(oldserv);
+		newserv = server_list[oldserv].reconnect_to;
 
-	connected = is_server_connected(old);
+		/*
+		 * Inhibit automatic reconnections.
+		 */
+		if (!was_connected && newserv == oldserv &&
+				get_int_var(AUTO_RECONNECT_VAR) == 0)
+			newserv = -1;
+
+		if (newserv != -1)
+			save_server_channels(oldserv);
+		if (newserv == oldserv || newserv == -1)
+			close_server(oldserv, get_server_quit_message(oldserv));
+		connected = is_server_connected(oldserv);
+	}
+	else
+	{
+		newserv = reconnects_to_hint;
+		connected = 0;
+	}
+
+	if (newserv < 0)
+		return -1;		/* User wants to disconnect */
 
 	/* Try all of the other servers, stop when one of them works. */
 	for (i = 0; i < number_of_servers; i++)
 	{
-		j = (i + new) % number_of_servers;
-		if (new != old && j == old)
+		j = (i + newserv) % number_of_servers;
+		if (newserv != oldserv && j == oldserv)
 			continue;
 		if ((server_list[j].reconnects++) > max_reconnects) {
 			say("Auto-reconnect has been throttled because too many unsuccessfull attempts to connect to server %d have been performed.", j);
 			break;
 		}
-		if (connect_to_new_server(j, old, 0) == 0)
+		if (connect_to_new_server(j, oldserv, 0) == 0)
 			return j;
+
+		/*
+		 * Because of the new way we handle things, if the old
+		 * server was connected, then this was because the user 
+		 * was trying to change to a new server; if the connection
+		 * to the new server failed, then we want to resume the old
+		 * connection.  But if the server was not connected, then 
+		 * that means we already saw an EOF on either the read or
+		 * write end, and so there is no connection to resume!  In
+		 * which case we just keep cycling our servers until we find
+		 * some place we like.
+		 */
+		if (connected)
+			break;
 	}
 
 	/* If we reach this point, we have failed.  Time to punt */
@@ -1214,21 +1234,20 @@ int 	get_connected (int new, int old)
 	 * If our prior state was connected, revert back to the prior
 	 * connected server.
 	 */
-	if (connected && new != old)
+	if (connected && newserv != oldserv)
 	{
-		say("All attempts to establish a new server connection "
-			"have failed.");
+		say("A new server connection could not be established.");
 		say("Your previous server connection will be resumed.");
-		from_server = old;
+		from_server = oldserv;
 		return -1;
 	}
 
 	/*
-	 * In any situation, if 'old' is not connected at this point, then
-	 * we need to throw away it's channels.
+	 * In any situation, if 'oldserv' is not connected at this point, 
+	 * then we need to throw away it's channels.
 	 */
-	if (!is_server_connected(old))
-		destroy_server_channels(old);
+	if (!is_server_connected(oldserv))
+		destroy_server_channels(oldserv);
 
 	/*
 	 * Our prior state was unconnected.  Tell the user

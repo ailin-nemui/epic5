@@ -136,7 +136,7 @@ Window	*new_window (Screen *screen)
 	if (current_window)
 		new_w->server = current_window->server;
 	else
-		new_w->server = primary_server;
+		new_w->server = -1;
 	new_w->last_server = -1;
 
 	new_w->top = 0;			/* Filled in later */

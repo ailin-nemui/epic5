@@ -120,7 +120,6 @@ extern	int	parsing_server_index;
 	int	sent_to_server			(int);
 
 	int	connect_to_new_server		(int, int, int);
-	int	get_connected 			(int, int);
 	int	close_all_servers		(const char *);
 	void	close_server			(int, const char *);
 	void	save_server_channels		(int);
