@@ -1,4 +1,4 @@
-/* $EPIC: functions.c,v 1.74 2002/07/17 22:52:52 jnelson Exp $ */
+/* $EPIC: functions.c,v 1.75 2002/07/26 17:36:39 jnelson Exp $ */
 /*
  * functions.c -- Built-in functions for ircII
  *
@@ -1452,8 +1452,10 @@ BUILT_IN_FUNCTION(function_connect, input)
 			v++;
 		if (*v == '4')
 			family = AF_INET;
+#ifdef INET6
 		else if (*v == '6')
 			family = AF_INET6;
+#endif
 		else if (*v == 'u' || *v == 'U')
 			family = AF_UNSPEC;
 	}
@@ -1487,8 +1489,10 @@ BUILT_IN_FUNCTION(function_listen, input)
 				v++;
 			if (*v == '4')
 				family = AF_INET;
+#ifdef INET6
 			else if (*v == '6')
 				family = AF_INET6;
+#endif
 			else if (*v == 'u' || *v == 'U')
 				family = AF_UNSPEC;
 		}

@@ -1,4 +1,4 @@
-/* $EPIC: network.c,v 1.38 2002/07/26 17:10:07 jnelson Exp $ */
+/* $EPIC: network.c,v 1.39 2002/07/26 17:36:39 jnelson Exp $ */
 /*
  * network.c -- handles stuff dealing with connecting and name resolving
  *
@@ -180,7 +180,11 @@ int	client_connect (SA *l, socklen_t ll, SA *r, socklen_t rl)
 		}
 		alarm(0);
 	}
-	else if (family == AF_INET || family == AF_INET6)
+	else if (family == AF_INET 
+#ifdef INET6
+				   || family == AF_INET6
+#endif
+							 )
 	{
 		if (l && bind(fd, l, ll))
 		{
