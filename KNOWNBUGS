@@ -74,3 +74,4 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Fix /window channel to use send_to_aserver().
 * When killing a window, move channels before swapping, avoids ref int panic.
 * Add /set auto_rejoin_connect, idea from David Buckley.
+* Add support for dalnet channel mode +M, from adm.
