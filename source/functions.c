@@ -6009,6 +6009,7 @@ BUILT_IN_FUNCTION(function_cosh, word)
 		return m_strdup("DOM");
 	if (errno == ERANGE)
 		return m_strdup("RANGE");
+	return m_strdup("");
 }
 
 BUILT_IN_FUNCTION(function_sinh, word)
