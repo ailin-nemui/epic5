@@ -1,5 +1,42 @@
 EPIC4-1.2.0
 
+*** News 03/12/2002 -- New built in function, $servertype(<refnum>)
+	This returns the protocol being used to talk to server <refnum>.
+	It's generally either "IRC" or "IRC-SSL".
+
+*** News 03/12/2002 -- The -SSL option removed from /server and /window server
+	Don't use this flag any more: specific ssl connections in the
+	server-spec or use $serverctl(SET <refnum> SSL 1) (see below)
+
+*** News 03/12/2002 -- New built in function, $getcommands()
+	This function works just like $getsets(), except that it returns
+	built in command names instead of set names. ;-)
+
+*** News 03/12/2002 -- The -p flag to /DCC is working again.
+	If you've noticed things like /DCC SEND nick -p <port> file
+	haven't worked, this is just a heads-up to let you know that
+	(I think) we fixed that.
+
+*** News 03/12/2002 -- /IGNORE #channel CRAP now ignores QUITs
+	This seems pretty straightforward, no?
+
+*** News 03/12/2002 -- "Server-spec" changed, expanded:
+	Review: "server-spec" is host:port:pass:nick:group:protocol,
+	and everything but 'host' is optional.  Fields are separated
+	by colons.
+
+	The "protocol" field has been added.  For now, the only supported
+	protocols are "irc" for normal irc connections, and "irc-ssl" for
+	SSL-enabled irc connections.
+
+	If one of your fields contains a colon (like the host field, for
+	IPv6 addresses, or maybe the password field), you can surround
+	that field with double quotes, and the colons inside will not
+	be considered the end-of-field.
+
+	Example:
+		/server -add irc.epicsol.org:6667:"my:pass":hop
+
 *** News 03/11/2002 -- New built in function, $serverctl()
 	The $serverctl() function is a low-level interface to the server
 	list and server objects.  With this function you can retrieve 
