@@ -1,5 +1,5 @@
 /*
- * @(#)$Id: acconfig.h,v 1.20 2003/07/09 05:14:12 jnelson Exp $
+ * @(#)$Id: acconfig.h,v 1.21 2003/08/01 01:08:51 jnelson Exp $
  */
 
 /*
@@ -302,3 +302,5 @@
 /* Define this if you have clock_gettime() */
 #undef HAVE_CLOCK_GETTIME
 
+/* Define this if you have <inntypes.h> */
+#undef HAVE_INTTYPES_H

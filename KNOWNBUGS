@@ -177,3 +177,5 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Add nsx's 'tabkey.jm' script.
 * Fix some compile warnings, use (intptr_t) -- i hope this doesn't bite me.
 * Fix $push(:foo   ) and $unshift() too, (bugref 5)
+* Change word handling for eg, [foo   ] so $0 is [foo] and $1 is [  ].
+* Include <stdint.h> or <inttypes.h> if they exist.

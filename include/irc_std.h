@@ -28,6 +28,12 @@
 #include <stdlib.h>
 #include <ctype.h>
 #include <stdarg.h>
+#ifdef HAVE_STDINT_H
+#include <stdint.h>
+#endif
+#ifdef HAVE_INTTYPES_H
+#include <inttypes.h>
+#endif
 
 /*
  * Everybody needs these POSIX headers...
