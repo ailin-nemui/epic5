@@ -1367,9 +1367,9 @@ u_char *	normalize_string (const u_char *str, int logical)
 				output[pos++] = 'R';
 				a.reverse = !a.reverse;
 				pos += attrout(output + pos, &a);
+				next_char();
 			}
 			pc++;
-			next_char();
 			break;
 		}
 
