@@ -1,4 +1,4 @@
-/* $EPIC: newio.c,v 1.26 2004/05/05 16:43:27 jnelson Exp $ */
+/* $EPIC: newio.c,v 1.27 2005/01/07 07:09:46 jnelson Exp $ */
 /*
  * newio.c: This is some handy stuff to deal with file descriptors in a way
  * much like stdio's FILE pointers 
@@ -614,9 +614,23 @@ void	select__do_filedesc (void)
 	{
 	    if (FD_ISSET(i, &rd) || FD_ISSET(i, &wd))
 	    {
-		if (!io_rec[i])
-			panic("File descriptor [%d] got a callback but it's not set up", i);
-		io_rec[i]->callback(i);
+		if (io_rec[i])
+			io_rec[i]->callback(i);
+		else
+		{
+		    /* 
+		     * Only panic if the fd is still open!
+		     * (It's possible it got new_close()d on us when we 
+		     * processed a previous fd during this run.)
+		     */
+		    if (FD_ISSET(i, &readables) ||
+			FD_ISSET(i, &held_readables) ||
+			FD_ISSET(i, &writables) ||
+			FD_ISSET(i, &held_writables))
+			    panic("File descriptor [%d] got a callback but "
+					"it's not set up", i);
+		}
+
 		FD_CLR(i, &rd);
 		FD_CLR(i, &wd);
 	    }
@@ -891,8 +905,13 @@ void	kqueue__do_filedesc (void)
 	int	i;
 
 	i = event.ident;
+
+	/* 
+	 * It's not possible to sanity check this, so just downgrade it
+	 * to a yell().  It's not ilke anyone uses this anyways...
+	 */
 	if (!io_rec[i])
-		panic("File descriptor [%d] got a callback but it's not set up", i);
+		yell("File descriptor [%d] got a callback but it's not set up", i);
 	io_rec[i]->callback(i);
 }
 

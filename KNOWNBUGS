@@ -9,7 +9,6 @@ KNOWN ERRATA (eg, bugs, or unresolved requests):
 * Implement $symbolctl(), to supercede $aliasctl().
 * Need some way to fetch your hook info
 * /query targets with nicks crossing with dcc nicks don't match.
-* If 2 fd's are ready, and you close both in the 1st handler, panic.
 
 [See http://www.epicsol.org/PROJECTS for things to come in the future]
 [See http://www.epicsol.org/CHANGELOG5 for things that changed in the past]
@@ -420,3 +419,4 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Fix for notify_signon default handler, from larne. thanks!
 * Add $serverctl(GET <num> ADDRFAMILY), returns "ipv4", "ipv6" or "unix"
 * Allow /hostname <ipv4>/<ipv6>, separately set v4/v6 vhosts! (see UPDATES)
+* Don't always panic if a fd isn't ready, it might have been new_close()d.
