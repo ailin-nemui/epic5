@@ -1,4 +1,4 @@
-/* $EPIC: server.c,v 1.80 2002/12/23 15:11:27 jnelson Exp $ */
+/* $EPIC: server.c,v 1.81 2002/12/23 18:37:15 jnelson Exp $ */
 /*
  * server.c:  Things dealing with that wacky program we call ircd.
  *
@@ -1025,7 +1025,7 @@ static void 	vsend_to_aserver (int refnum, const char *format, va_list args)
 void	send_to_aserver_raw (int refnum, size_t len, const char *buffer)
 {
 	Server *s;
-	int des, server;
+	int des;
 	int err = 0;
 
 	if (!(s = get_server(refnum)))
@@ -1067,7 +1067,7 @@ void	send_to_aserver_raw (int refnum, size_t len, const char *buffer)
 #else
 				SSL_shutdown((SSL *)s->ssl_fd);
 #endif
-			reconnect(server, 1);
+			reconnect(refnum, 1);
 		}
 	    }
 	}

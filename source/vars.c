@@ -1,4 +1,4 @@
-/* $EPIC: vars.c,v 1.20 2002/12/11 19:20:24 crazyed Exp $ */
+/* $EPIC: vars.c,v 1.21 2002/12/23 18:37:15 jnelson Exp $ */
 /*
  * vars.c: All the dealing of the irc variables are handled here. 
  *
@@ -480,6 +480,25 @@ int 	do_boolean (char *str, int *value)
 }
 
 /*
+ * get_variable_index: converts a string into an offset into the set table.
+ * Returns NUMBER_OF_VARIABLES if varname doesn't exist.
+ */
+enum VAR_TYPES get_variable_index (const char *varname)
+{
+	enum VAR_TYPES	retval;
+	int	cnt;
+
+	find_fixed_array_item(irc_variable, sizeof(IrcVariable), 
+				NUMBER_OF_VARIABLES, varname, &cnt, 
+				(int *)&retval);
+
+	if (cnt < 0 || cnt == 1)
+		return retval;
+
+	return NUMBER_OF_VARIABLES;
+}
+
+/*
  * set_var_value: Given the variable structure and the string representation
  * of the value, this sets the value in the most verbose and error checking
  * of manors.  It displays the results of the set and executes the function
@@ -802,17 +821,15 @@ void 	save_variables (FILE *fp, int do_all)
 
 char 	*make_string_var (const char *var_name)
 {
-	int	cnt,
-		msv_index;
+	enum VAR_TYPES	msv_index;
 	char	*ret = (char *) 0;
 	char	*copy;
 
 	copy = LOCAL_COPY(var_name);
 	upper(copy);
 
-	if (find_fixed_array_item (irc_variable, sizeof(IrcVariable), NUMBER_OF_VARIABLES, copy, &cnt, &msv_index) == NULL)
-		return NULL;
-	if (cnt >= 0)
+	msv_index = get_variable_index(var_name);
+	if (msv_index == NUMBER_OF_VARIABLES)
 		return NULL;
 
 	switch (irc_variable[msv_index].type)
@@ -1027,103 +1044,89 @@ static	void	set_scroll (int value)
 /*******/
 typedef struct	varstacklist
 {
-	int 		which;
-	IrcVariable 	*set;
-	char		*name;
-	int		var_index;
+	char *	varname;
+	char *	value;
 	struct varstacklist *next;
 }	VarStack;
 
 VarStack *set_stack = NULL;
 
-void do_stack_set(int type, char *args)
+void	do_stack_set (int type, char *args)
 {
-	VarStack *aptr = set_stack;
-	VarStack **aptrptr = &set_stack;
+	VarStack *item;
+	char *varname = NULL;
 
-	if (!*aptrptr && (type == STACK_POP || type == STACK_LIST))
+	if (set_stack == NULL && (type == STACK_POP || type == STACK_LIST))
 	{
 		say("Set stack is empty!");
 		return;
 	}
 
+	if (!args)
+	{
+		say("Must specify a variable name to stack");
+		return;
+	}
+
+	varname = next_arg(args, &args);
+	upper(varname);
+
 	if (STACK_PUSH == type)
 	{
-		enum VAR_TYPES var_index;
-		int cnt = 0;
+		item = (VarStack *)new_malloc(sizeof(VarStack));
+		item->varname = m_strdup(varname);
+		item->value = make_string_var(varname);
 
-		upper(args);
-		find_fixed_array_item (irc_variable, sizeof(IrcVariable), NUMBER_OF_VARIABLES, args, &cnt, (int *)&var_index);
+		item->next = set_stack;
+		set_stack = item;
+		return;
+	}
 
-		if (cnt < 0 || cnt == 1)
-		{
-			aptr = (VarStack *)new_malloc(sizeof(VarStack));
-			aptr->next = aptrptr ? *aptrptr : NULL;
-			*aptrptr = aptr;
-			aptr->set = (IrcVariable *) new_malloc(sizeof(IrcVariable));
-			*aptr->set = irc_variable[var_index];
-			aptr->name = m_strdup(irc_variable[var_index].name);
-			aptr->set->string = (irc_variable[var_index].string) ? m_strdup(irc_variable[var_index].string) : NULL;
-			aptr->var_index = var_index;
-		}
+	else if (STACK_POP == type)
+	{
+	    VarStack *prev = NULL;
+	    enum VAR_TYPES var_index;
+	    int	owd = window_display;
+
+	    for (item = set_stack; item; prev = item, item = item->next)
+	    {
+		/* If this is not it, go to the next one */
+		if (my_stricmp(varname, item->varname))
+			continue;
+
+		/* remove it from the list */
+		if (prev == NULL)
+			set_stack = item->next;
 		else
-			say("No such Set [%s]", args);
+			prev->next = item->next;
 
+		window_display = 0; 
+		var_index = get_variable_index(item->varname);
+		if (var_index == NUMBER_OF_VARIABLES)
+			return;		/* Do nothing */
+		set_var_value(var_index, item->value);
+		window_display = owd; 
+
+		new_free(&item->varname);
+		new_free(&item->value);
 		return;
+	    }
+
+	    say("%s is not on the Set stack!", varname);
+	    return;
 	}
 
-	if (STACK_POP == type)
+	else if (STACK_LIST == type)
 	{
-		VarStack *prev = NULL;
-		for (aptr = *aptrptr; aptr; prev = aptr, aptr = aptr->next)
-		{
-			/* have we found it on the stack? */
-			if (!my_stricmp(args, aptr->name))
-			{
-				/* remove it from the list */
-				if (prev == NULL)
-					*aptrptr = aptr->next;
-				else
-					prev->next = aptr->next;
+	    VarStack *prev = NULL;
 
-				new_free(&(irc_variable[aptr->var_index].string));
-				irc_variable[aptr->var_index] = *aptr->set;
+	    for (item = set_stack; item; prev = item, item = item->next)
+		say("Variable [%s] = %s", item->varname, item->value);
 
-				/* free it */
-				new_free((char **)&aptr->name);
-				new_free((char **)&aptr->set);
-				new_free((char **)&aptr);
-				return;
-			}
-		}
-		say("%s is not on the %s stack!", args, "Set");
-		return;
+	    return;
 	}
-	if (STACK_LIST == type)
-	{
-		VarStack *prev = NULL;
-		for (aptr = *aptrptr; aptr; prev = aptr, aptr = aptr->next)
-		{
-			switch(aptr->set->type)
-			{
-				case BOOL_TYPE_VAR:
-					say("Variable [%s] = %s", aptr->set->name, var_settings[aptr->set->integer]);
-					break;
-				case INT_TYPE_VAR:
-					say("Variable [%s] = %d", aptr->set->name, aptr->set->integer);
-					break;
-				case CHAR_TYPE_VAR:
-					say("Variable [%s] = %c", aptr->set->name, aptr->set->integer);
-					break;
-				case STR_TYPE_VAR:
-					say("Variable [%s] = %s", aptr->set->name, aptr->set->string?aptr->set->string:"<Empty String>");
-					break;
-				default:
-					say("Error in do_stack_set: unknown set type");
-			}
-		}
-		return;
-	}
-	say("Unknown STACK type ??");
+
+	else
+		say("Unknown STACK type ??");
 }
 

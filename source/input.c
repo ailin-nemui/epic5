@@ -1,4 +1,4 @@
-/* $EPIC: input.c,v 1.8 2002/11/26 23:03:13 jnelson Exp $ */
+/* $EPIC: input.c,v 1.9 2002/12/23 18:37:15 jnelson Exp $ */
 /*
  * input.c: does the actual input line stuff... keeps the appropriate stuff
  * on the input line, handles insert/delete of characters/words... the whole
@@ -1320,8 +1320,7 @@ void	edit_char (u_char key)
 		last_input_screen->last_key = handle_keypress(
 			last_input_screen->last_key,
 			last_input_screen->last_press, key);
-		last_input_screen->last_press.tv_sec = now.tv_sec;
-		last_input_screen->last_press.tv_usec = now.tv_usec;
+		get_time(&last_input_screen->last_press);
 	}
 }
 

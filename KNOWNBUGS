@@ -233,4 +233,7 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * panic if ssl op attempted on non-ssl connection.
 * Don't call functions in RETURN_* macros. (they're evaled twice)
 * Nuke #ifdef 0'd uses of 'ceiling_of_display'
-
+* Fix minor bug with /xquote
+* Fix minor bug with reconnecting after server write failed.
+* Set input idle timer better.
+* Rewrite /stack (push|pop) set so they actually work now.

@@ -1,4 +1,4 @@
-/* $EPIC: commands.c,v 1.48 2002/12/20 01:38:50 jnelson Exp $ */
+/* $EPIC: commands.c,v 1.49 2002/12/23 18:37:15 jnelson Exp $ */
 /*
  * commands.c -- Stuff needed to execute commands in ircII.
  *		 Includes the bulk of the built in commands for ircII.
@@ -2045,7 +2045,7 @@ BUILT_IN_COMMAND(quotecmd)
 			sval = parse_server_index(next_arg(args, &args), 1);
 			if (!is_server_open(sval))
 			{
-			   say("XQUOTE: Server %s is not connected", sval);
+			   say("XQUOTE: Server %d is not connected", sval);
 			   return;
 			}
 			refnum = sval;
