@@ -1,0 +1,90 @@
+Sometimes people ask me what certain files do, or where to find something.
+
+Files regarding epic's main event looper
+========================================
+irc.c		The startup and shutdown routines and the main looper
+network.c	Hostnames and addresses and sockets, oh my!
+newio.c		Active polling-driven event looper and line bufferer
+ssl.c		Secure Socket Layer stuff
+timer.c		Scheduling events to happen later
+translat.c	Character set remapping
+
+Files regarding talking to rfc1459 (irc) server
+===============================================
+server.c	Server lists and sending stuff to the server
+
+Files regarding parsing of rfc1459 (irc) protocol
+=================================================
+parse.c		Everything the server sends us that isn't a numeric reply
+numbers.c	Numeric replies
+who.c		WHO, ISON, and USERHOST numeric reply handlers
+
+Files that implement extensions and applications of rfc1459 (irc) protocol
+==========================================================================
+crypt.c		Simple bit-twiddling for irc messages
+ctcp.c		Client To Client Protocol (Inquiry/Response protocol)
+dcc.c		Direct Client Connections (p2p, uses CTCP as transport)
+flood.c		Flood (too much crap too quickly) detection
+ignore.c	A polite way to pay someone no mind
+names.c		Channels, nicknames, modes, and userhosts.
+notify.c	Polling for the existance of other users on irc
+
+Files that have some knowledge of rfc1459 (irc) concepts
+========================================================
+commands.c	Many irc commands have front end commands
+functions.c	Many interfaces to irc stuff have functions to query info.
+hook.c		Many event callbacks are irc related
+vars.c		Many built in configurables are irc related
+
+Files that regard the ircII programming language
+================================================
+alias.c		User-defined macro-commands and macro-variables
+clock.c		Automatic system timers (notify, clock, and mail)
+expr.c		Expression parsing and macro expanders
+expr2.c		A better expression parser
+if.c		Loop control commands
+reg.c		Wildcard pattern matching
+words.c		Finding and extracting words from a flat string
+
+Files that implement features of the ircII programming language
+===============================================================
+array.c		Karll Arrays, faster data storage in unique namespace
+commands.c	The commands of the ircII language
+exec.c		The /EXEC command
+files.c		The $open() function and friends.
+functions.c	The functions of the ircII language
+glob.c		The $glob() function
+hook.c		The /ON command
+perl.c		The $perl() function
+queue.c		The /QUEUE command
+tcl.c		The $tcl() function
+vars.c		The /SET command (runtime configurables)
+
+Files that regard the user interface
+====================================
+help.c		Interactive user documentation browser
+history.c	Multi-line history recall
+input.c		Logical interactive input processing
+keys.c		Turning key presses into logical input-line actions
+lastlog.c	Saving a copy of what has appeared on your window
+log.c		Writing what apears on your screen to a file
+logfiles.c	General purpose logging of all manner and sorts
+output.c	Entry functions for all screen output.
+screen.c	Back end display (wrapping/breaking/color/etc)
+status.c	Summary information (at the bottom of) a window.
+term.c		Low level display (termcap/terminfo)
+window.c	Logical visual portals into a server.
+wserv.c		Multiple physical screen support
+
+Files that support other things without being directly related
+==============================================================
+alist.c		Resizable binary-searchable sorted arrays
+alloca.c	Heap emulation of dynamic stackallocation
+compat.c	Functions that we use that some systems do not have
+debug.c		Output extra info to help diagnose problems
+gailib.c	Emulate get(addr|name)info on IPv4-only systems
+ircaux.c	Auxilliary functions for various purposes
+ircsig.c	Signal handling
+list.c		General purpose doubly-linked lists
+mail.c		Mail checking
+
