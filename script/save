@@ -1,0 +1,86 @@
+if (word(2 $loadinfo()) != [pf]) {
+	load -pf $word(1 $loadinfo());
+	return;
+};
+
+# $EPIC: save,v 1.1 2005/03/12 01:50:51 jnelson Exp $
+#	Copyright (c) 2005 David B. Kratter (BlackJac@EFNet)
+#
+#	Version: 1.0.2005.03.06.1
+#
+#	This script simulates the save command of epic4 for epic5. The
+#	behavior should be nearly identical to the original.
+
+package save;
+
+alias save (args) {
+	@ :choice = shift(args);
+	@ :append = word(0 $args) == [-append] ? shift(args) : [];
+	if (findw($choice -alias -all -assign -bind -notify -on -server -set) > -1 && @args) {
+		if (!append) {
+			@ unlink("$args");
+		};
+		if ((save.fd = open("$args" W)) > -1) {
+			save.$after(- $choice);
+			xecho -b -c Settings saved to $args;
+			@ close($save.fd);
+			@ save.fd = [];
+		};
+	} else {
+		xecho -b -c Usage: SAVE [-ALIAS|-ALL|-ASSIGN|-BIND|-NOTIFY|-ON|-SERVER|-SET] [-APPEND] [path];
+	};
+};
+
+alias save.alias (void) {
+	fe ($aliasctl(alias pmatch *)) ss {
+		@ write($save.fd ALIAS $ss \{$aliasctl(alias get $ss)\});
+	};
+};
+
+alias save.all (void) {
+	fe (alias assign bind notify on server set) ss {
+		save.$ss;
+	};
+};
+
+alias save.assign (void) {
+	fe ($remw(save.fd $symbolctl(pmatch assign *))) ss {
+		@ write($save.fd ASSIGN $ss $($ss));
+	};
+};
+
+alias save.bind (void) {
+	fe ($^"bindctl(map)) ss {
+		if ((:bind = bindctl(sequence $ss get)) != [self_insert]) {
+			@ write($save.fd BIND $ss $bind);
+		};
+	};
+};
+
+alias save.notify (void) {
+	fe ($notify()) ss {
+		@ write($save.fd NOTIFY $ss);
+	};
+};
+
+alias save.on (void) {
+	fe ($hookctl(list populated_lists)) ss {
+		fe ($hookctl(list hooks $ss)) tt {
+			@ write($save.fd $hookctl(get hook $tt string));
+		};
+	};
+};
+
+alias save.server (void) {
+	fe ($serverctl(omatch *)) ss {
+		@ write($save.fd SERVER -ADD $serverctl(get $ss itsname):$serverctl(get $ss port):$serverctl(get $ss password):$serverctl(get $ss nickname):$serverctl(get $ss group):$serverctl(get $ss protocol));
+	};
+};
+
+alias save.set (void) {
+	fe ($symbolctl(pmatch builtin_variable *)) ss {
+		@ write($save.fd SET $ss $($ss));
+	};
+};
+
+#end of file

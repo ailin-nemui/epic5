@@ -1,4 +1,4 @@
-/* $EPIC: irc.c,v 1.846 2005/03/12 01:40:22 jnelson Exp $ */
+/* $EPIC: irc.c,v 1.847 2005/03/12 01:50:51 jnelson Exp $ */
 /*
  * ircII: a new irc client.  I like it.  I hope you will too!
  *
@@ -52,7 +52,7 @@ const char internal_version[] = "20050126";
 /*
  * In theory, this number is incremented for every commit.
  */
-const unsigned long	commit_id = 1176;
+const unsigned long	commit_id = 1177;
 
 /*
  * As a way to poke fun at the current rage of naming releases after
