@@ -1,17 +1,25 @@
 EPIC4-1.2.0
 
-*** News 12/19/2001 -- New /SET, /SET ROM_CHAR
-	For whatever reason, I forgot to add this /SET years ago.  This set
-	controls whether or not EPIC will honor "ROM_CHARs", which are 
-	basically the character ^R (ascii 18) followed by three literal
-	characters holding digits.  The ROM_CHAR sequence is replaced with
-	the ascii character described in the sequence.  This is useful for
-	people who have access to VGA consoles and want to be able to output
-	the smiley-face type stuff in the low ascii characters.  It's also
-	good for malicious outside users who want to send you ^R027 which 
-	would be output as an escape character.  This is bad.  This /SET
-	defaults to OFF for what I hope are obvious reasons.  Turn it on
-	only at your own peril!
+*** News 12/19/2001 -- New /SET, /SET ALLOW_C1_CHARS (defaults to OFF)
+	The ascii characters 128 to 159 on many terminal emulators
+	(especially GNU Screen and XTerm) have special control meanings
+	which can be disasterous for users.  EPIC has traditionally allowed
+	you to output characters in this range without question.  However,
+	due to many requests, a /SET has been added.  Characters in this
+	range will be stripped out if this /SET is off.  Otherwise, the
+	traditional behavior will be retained.  This is a deviation from 
+	traditional practice, but it is an important deviation, as it will
+	protect most users from rogue users.
+
+*** News 12/19/2001 -- ROM_CHAR functionality removed
+	A little known feature of EPIC, the ^R attribute, could be followed
+	by three ascii digits, and the decimal number following the ^R
+	attribute would be inserted into the output at that point.  It was
+	vulnerable to exploitation by outside attackers, and is very 
+	difficult to secure against exploitation.  For this reason, the
+	feature has been removed until we can figure out how to properly
+	implement it.  If you used this feature, I apologize, but it is for
+	the greater good that we must remove this feature for now.
 
 *** News 11/14/2001 -- Support for ~/.epicrc file
 	LET ME JUST START BY SAYING THIS IS NOT MODELED AFTER BX.

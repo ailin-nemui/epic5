@@ -311,6 +311,7 @@
  * remove them.  They are default values for variables and are required for
  * proper compilation.
  */
+#define DEFAULT_ALLOW_C1_CHARS 0
 #define DEFAULT_ALT_CHARSET 1
 #define DEFAULT_ALWAYS_SPLIT_BIGGEST 1
 #define DEFAULT_AUTO_NEW_NICK 1
@@ -398,7 +399,6 @@
 #define DEFAULT_RANDOM_LOCAL_PORTS 0
 #define DEFAULT_RANDOM_SOURCE 0
 #define DEFAULT_REVERSE_STATUS_LINE 1
-#define DEFAULT_ROM_CHAR 0
 #define DEFAULT_SCROLLBACK 256
 #define DEFAULT_SCROLLBACK_RATIO 50
 #define DEFAULT_SCROLL_LINES 1

@@ -625,7 +625,7 @@ static	u_char	gcxlate[256] = {
  * State 2 is an "escape character" (\033)
  * State 3 is a "color code character" (\003)
  * State 4 is an "attribute change character"
- * State 5 is a "ROM character" (\022)
+ * State 5 is a "suppressed character" (always stripped)
  * State 6 is a "character that is never printable."
  * State 7 is a "beep"
  * State 8 is a "tab"
@@ -637,7 +637,7 @@ static	u_char	ansi_state[256] = {
 /*	^H	^I	^J	^K	^L	^M	^N	^O */
 	6,	8,	0,	6,	0,	6,	6,	4,  /* 010 */
 /*	^P	^Q	^R	^S	^T	^U	^V	^W */
-	6,	6,	5,	9,	4,	6,	4,	6,  /* 020 */
+	6,	6,	6,	9,	4,	6,	4,	6,  /* 020 */
 /*	^X	^Y	^Z	^[	^\	^]	^^	^_ */
 	6,	6,	6,	2,	6,	6,	6,	4,  /* 030 */
 	0,	0,	0,	0,	0,	0,	0,	0,  /* 040 */
@@ -716,7 +716,7 @@ u_char *	normalize_string (const u_char *str, int logical)
 	int		tab_max, tab_cnt = 0;
 	int		nds_max, nds_cnt = 0;
 	int		pc = 0;
-	int		reverse, bold, blink, underline, altchar, color, rom_char;
+	int		reverse, bold, blink, underline, altchar, color, allow_c1;
 	size_t		(*attrout) (u_char *, Attribute *);
 
 	/* Figure out how many beeps/tabs/nds's we can handle */
@@ -729,7 +729,7 @@ u_char *	normalize_string (const u_char *str, int logical)
 	if (!(nds_max	= get_int_var(ND_SPACE_MAX_VAR)))
 		nds_max = -1;
 	if (normalize_permit_all_attributes)	/* XXXX */
-		reverse = bold = blink = underline = altchar = color = rom_char = 1;
+		reverse = bold = blink = underline = altchar = color = 1;
 	else
 	{
 		reverse 	= get_int_var(INVERSE_VIDEO_VAR);
@@ -738,7 +738,7 @@ u_char *	normalize_string (const u_char *str, int logical)
 		underline 	= get_int_var(UNDERLINE_VIDEO_VAR);
 		altchar 	= get_int_var(ALT_CHARSET_VAR);
 		color 		= get_int_var(COLOR_VAR);
-		rom_char	= get_int_var(ROM_CHAR_VAR);
+		allow_c1	= get_int_var(ALLOW_C1_CHARS_VAR);
 	}
 	if (logical == 0)
 		attrout = display_attributes;	/* prep for screen output */
@@ -788,16 +788,20 @@ u_char *	normalize_string (const u_char *str, int logical)
 		 * unprintable (gcmode is forced to be 1)
 		 */
 		case 1:
+		case 5:
 		case 6:
 		{
 			int my_gcmode = gcmode;
 
 			/*
 			 * This is a very paranoid check to make sure that
-			 * the 8-bit escape code doesnt elude us.
+			 * the 8-bit escape codes dont elude us.
 			 */
-			if (chr == 27 + 128)
-				chr = '[';
+			if (allow_c1 == 0 && chr >= 128 && chr <= 159)
+				my_gcmode = 0;
+
+			if (ansi_state[chr] == 5)
+				my_gcmode = 0;
 
 			if (ansi_state[chr] == 6)
 				my_gcmode = 1;
@@ -1347,34 +1351,6 @@ u_char *	normalize_string (const u_char *str, int logical)
 
 			pos += attrout(output + pos, &a);
 			next_char();
-			break;
-		}
-
-		case 5:
-		{
-			put_back();
-			if (str[0] && str[1] && str[2] && str[3] && rom_char)
-			{
-				u_char	val = 0;
-
-				next_char();
-				val += next_char() - '0';
-				val *= 10;
-				val += next_char() - '0';
-				val *= 10;
-				val += next_char() - '0';
-				output[pos++] = val;
-			}
-			else 
-			{
-				a.reverse = !a.reverse;
-				pos += attrout(output + pos, &a);
-				output[pos++] = 'R';
-				a.reverse = !a.reverse;
-				pos += attrout(output + pos, &a);
-				next_char();
-			}
-			pc++;
 			break;
 		}
 

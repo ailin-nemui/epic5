@@ -74,3 +74,5 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Disabled ROM characters.  Many thanks to zinx for figuring it all out.
 * Add /SET ROM_CHAR, which controls parsing of ^R codes, default is OFF.
 * Re-enabled ROM characters, now that they can be /SET off.
+* Remove /SET ROM_CHAR, and the rom_char handling stuff entirely.
+* Add /SET ALLOW_C1_CHAR which defaults to off, to [dis]allow ascii 128-159.
