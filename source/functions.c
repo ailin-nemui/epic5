@@ -1,4 +1,4 @@
-/* $EPIC: functions.c,v 1.72 2002/07/06 03:50:11 jnelson Exp $ */
+/* $EPIC: functions.c,v 1.73 2002/07/15 18:11:22 crazyed Exp $ */
 /*
  * functions.c -- Built-in functions for ircII
  *
@@ -1006,12 +1006,18 @@ BUILT_IN_FUNCTION(function_mid, word)
  */
 BUILT_IN_FUNCTION(function_rand, word)
 {
-	long	tempin;
+	unsigned long	tempin, ret;
+static	unsigned long	rn = 0;
 
 	GET_INT_ARG(tempin, word);
 	if (tempin == 0)
-		tempin = (unsigned long) -1;	/* This is cheating. :P */
-	RETURN_INT(random_number(0) % tempin);
+		RETURN_INT(random_number(0));
+	else {
+		if (rn < tempin) rn ^= random_number(0);
+		ret = rn % tempin;
+		rn /= tempin;
+		RETURN_INT(ret);
+	}
 }
 
 /*
@@ -2244,6 +2250,7 @@ BUILT_IN_FUNCTION(function_splice, word)
 	char	*old_value = NULL;
 	char	*new_value = NULL;
 	int	num_words;
+	size_t	clue = 0;
 
 	GET_STR_ARG(variable, word);
 	GET_INT_ARG(start, word);
@@ -2281,15 +2288,12 @@ BUILT_IN_FUNCTION(function_splice, word)
 	}
 
 	new_value = NULL;
-	malloc_strcpy(&new_value, left_part);
-	if (new_value && *new_value && word && *word)
-		malloc_strcat(&new_value, space);
+	if (left_part && *left_part)
+		malloc_strcat_c(&new_value, left_part, &clue);
 	if (word && *word)
-		malloc_strcat(&new_value, word);
-	if (new_value && *new_value && *right_part && *right_part)
-		malloc_strcat(&new_value, space);
+		m_sc3cat(&new_value, space, word, &clue);
 	if (right_part && *right_part)
-		malloc_strcat(&new_value, right_part);
+		m_sc3cat(&new_value, space, right_part, &clue);
 
 	add_var_alias(variable, new_value, 0);
 

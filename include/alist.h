@@ -101,16 +101,18 @@ void *		find_fixed_array_item 	(void *, size_t, int, const char *,
 
 /* Written by panasync */
 /* Re-written by CE */
-#define GET_FIXED_ARRAY_NAMES_FUNCTION(fn, array)                                    \
+#define GET_SOME_ARRAY_NAMES_FUNCTION(fn, array, test)                               \
 char *(fn)(const char *str)                                                          \
 {                                                                                    \
 	int i;                                                                       \
 	char *ret = NULL;                                                            \
 	size_t rclue = 0;                                                            \
-	for (i = 0; (array)[i].name; ++i)                                            \
-		if (!str || !*str || wild_match(str, (array)[i].name))               \
-			m_sc3cat(&ret, space, (array)[i].name, &rclue);              \
+	for (i = 0; (test); ++i)                                                     \
+		if (!str || !*str || wild_match(str, (array)))                       \
+			m_sc3cat(&ret, space, (array), &rclue);                      \
 	return ret ? ret : m_strdup(empty_string);                                   \
 }
+#define GET_FIXED_ARRAY_NAMES_FUNCTION(fn, array) GET_SOME_ARRAY_NAMES_FUNCTION((fn), ((array)[i].name), ((array)[i].name))
+#define GET_ARRAY_NAMES_FUNCTION(fn, array) GET_SOME_ARRAY_NAMES_FUNCTION((fn), ((array.list)[i]->name), (i < (array).max))
 
 #endif

@@ -17,6 +17,7 @@
 #include "names.h"
 #include "hook.h"
 #include "notify.h"
+#include "alist.h"
 #include "screen.h"
 #include "status.h"
 #include "vars.h"
@@ -141,6 +142,7 @@ void 	add_to_server_list (const char *server, int port, const char *password, co
 
 		make_notify_list(from_server);
 		do_umode(from_server);
+		make_005(from_server);
 	}
 	else
 	{
@@ -203,6 +205,7 @@ static 	void 	remove_from_server_list (int i)
 	new_free(&s->ison_queue);
 	new_free(&s->who_queue);
 	destroy_notify_list(i);
+	destroy_005(i);
 
 #ifdef HAVE_SSL
 	if (server_list[i].ssl_enabled == TRUE)
@@ -1971,6 +1974,7 @@ void 	server_is_connected (int sic_index, int value)
 		server_list[sic_index].reconnect_to = sic_index;
 		server_list[sic_index].eof = 0;
 		clear_reconnect_counts();
+		destroy_005(sic_index);
 	}
 }
 
@@ -2543,13 +2547,83 @@ const char *get_server_type (int refnum)
 		return "IRC";
 }
 
+/* 005 STUFF */
+
+void make_005 (int refnum)
+{
+	server_list[refnum].a005.list = NULL;
+	server_list[refnum].a005.max = 0;
+	server_list[refnum].a005.total_max = 0;
+	server_list[refnum].a005.func = (alist_func)strncmp;
+	server_list[refnum].a005.hash = HASH_SENSITIVE; /* One way to deal with rfc2812 */
+}
+
+void destroy_a_005 (A005_item *item)
+{
+	if (item) {
+		new_free(&((*item).name));
+		new_free(&((*item).value));
+		new_free(&item);
+	}
+}
+
+void destroy_005 (int refnum)
+{
+	A005_item *new_i;
+
+	while ((new_i = (A005_item*)array_pop((array*)(&server_list[refnum].a005), 0)))
+		destroy_a_005(new_i);
+}
+
+GET_ARRAY_NAMES_FUNCTION(get_server_005s, (server_list[from_server].a005))
+
+const char* get_server_005 (int refnum, char *setting)
+{
+	A005_item *item;
+	int cnt, loc;
+
+	if (0 > refnum || refnum >= number_of_servers)
+		return empty_string;
+	item = (A005_item*)find_array_item((array*)(&server_list[refnum].a005), setting, &cnt, &loc);
+	if (0 > cnt)
+		return ((*item).value);
+	else
+		return NULL;
+}
+
+/* value should be null pointer or empty to clear. */
+void set_server_005 (int refnum, char *setting, char *value)
+{
+	A005_item *new_005;
+	int	destroy = (!value || !*value);
+
+	if (0 > refnum || refnum >= number_of_servers)
+		return;
+
+	new_005 = (A005_item*)array_lookup((array*)(&server_list[refnum].a005), setting, 0, destroy);
+
+	if (destroy) {
+		if (new_005 && !strcmp(setting, (*new_005).name))
+			destroy_a_005(new_005);
+	} else if (new_005 && !strcmp(setting, (*new_005).name)) {
+		malloc_strcpy(&((*new_005).value), value);
+	} else {
+		new_005 = (A005_item *)new_malloc(sizeof(A005_item));
+		(*new_005).name = m_strdup(setting);
+		(*new_005).value = m_strdup(value);
+		add_to_array((array*)(&server_list[refnum].a005), (array_item*)new_005);
+	}
+}
+
 
 #define EMPTY empty_string
+#define EMPTY_STRING m_strdup(EMPTY)
 #define RETURN_EMPTY return m_strdup(EMPTY)
 #define RETURN_IF_EMPTY(x) if (empty( x )) RETURN_EMPTY
 #define GET_INT_ARG(x, y) {RETURN_IF_EMPTY(y); x = my_atol(safe_new_next_arg(y, &y));}
 #define GET_FLOAT_ARG(x, y) {RETURN_IF_EMPTY(y); x = atof(safe_new_next_arg(y, &y));}
 #define GET_STR_ARG(x, y) {RETURN_IF_EMPTY(y); x = new_next_arg(y, &y);RETURN_IF_EMPTY(x);}
+#define RETURN_MSTR(x) return ((x) ? (x) : EMPTY_STRING);
 #define RETURN_STR(x) return m_strdup((x) ? (x) : EMPTY)
 #define RETURN_INT(x) return m_strdup(ltoa((x)))
 
@@ -2581,7 +2655,7 @@ const char *get_server_type (int refnum)
 char 	*serverctl 	(char *input)
 {
 	int	refnum;
-	char *	listc;
+	char	*listc, *listc1;
 
 	GET_STR_ARG(listc, input);
 	if (!my_strnicmp(listc, "REFNUM", 1)) {
@@ -2632,6 +2706,16 @@ char 	*serverctl 	(char *input)
 			RETURN_STR(get_server_userhost(refnum));
 		} else if (!my_strnicmp(listc, "VERSION", 1)) {
 			RETURN_STR(get_server_version_string(refnum));
+		} else if (!my_strnicmp(listc, "005s", 4)) {
+			int ofs = from_server;
+			char *ret;
+			from_server = refnum;
+			ret = get_server_005s(input);
+			from_server = ofs;
+			RETURN_MSTR(ret);
+		} else if (!my_strnicmp(listc, "005", 3)) {
+			GET_STR_ARG(listc1, input);
+			RETURN_STR(get_server_005(refnum, listc1));
 		}
 	} else if (!my_strnicmp(listc, "SET", 1)) {
 		GET_INT_ARG(refnum, input);
@@ -2685,6 +2769,10 @@ char 	*serverctl 	(char *input)
 			set_server_userhost(refnum, input);
 		} else if (!my_strnicmp(listc, "VERSION", 1)) {
 			set_server_version_string(refnum, input);
+		} else if (!my_strnicmp(listc, "005", 3)) {
+			GET_STR_ARG(listc1, input);
+			set_server_005(refnum, listc1, input);
+			RETURN_INT(!!*input);
 		}
 	} else if (!my_strnicmp(listc, "MATCH", 1)) {
 		RETURN_EMPTY;		/* Not implemented for now. */

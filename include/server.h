@@ -16,6 +16,7 @@
 #ifdef NEED_SERVER_LIST
 /* To get definition of Notify */
 #include "notify.h"
+#include "alist.h"
 
 #ifdef HAVE_SSL
 #include "ssl.h"
@@ -23,6 +24,14 @@
 
 /* XXXX Ick.  Gross.  Bad. XXX */
 struct notify_stru;
+
+typedef array A005;
+typedef struct
+{
+	char	*name;
+	u_32int_t hash;
+	char	*value;
+} A005_item;
 
 /* Server: a structure for the server_list */
 typedef	struct
@@ -73,6 +82,7 @@ typedef	struct
 	int	closing;		/* True if close_server called */
 	int	reconnect_to;		/* Server to connect to on EOF */
 	char	*quit_message;		/* Where we stash a quit message */
+	A005	a005;			/* 005 settings kept kere. */
 #ifdef HAVE_SSL
 	SSL_CTX*	ctx;
 	SSL_METHOD*	meth;
@@ -213,4 +223,9 @@ const char *    get_server_quit_message		(int);
 
 	int	get_server_enable_ssl 		(int);
 	void   	set_server_enable_ssl 		(int, int);
+
+	void	make_005			(int);
+	void	destroy_005			(int);
+const	char*	get_server_005			(int, char*);
+	void	set_server_005			(int, char*, char*);
 #endif /* _SERVER_H_ */

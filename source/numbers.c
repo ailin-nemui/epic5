@@ -10,7 +10,7 @@
  */
 
 #if 0
-static	char	rcsid[] = "$Id: numbers.c,v 1.23 2002/06/13 12:47:47 jnelson Exp $";
+static	char	rcsid[] = "$Id: numbers.c,v 1.24 2002/07/15 18:11:22 crazyed Exp $";
 #endif
 
 #include "irc.h"
@@ -202,6 +202,24 @@ void 	numbered_command (char *from, int comm, char **ArgList)
 	case 004:	/* #define RPL_MYINFO           004 */
 	{
 		got_initial_version_28(ArgList);
+		PasteArgs(ArgList, 0);
+		if (do_hook(current_numeric, "%s %s", from, *ArgList))
+			display_msg(from, ArgList);
+		break;
+	}
+
+	case 005:
+	{
+		int	arg;
+		char	*set, *value;
+		for (arg = 0; ArgList[arg] && !strchr(ArgList[arg], ' '); arg++) {
+			set = m_strdup(ArgList[arg]);
+			value = strchr(set, '=');
+			if (value && *value) 
+				*(value++) = '\0';
+			set_server_005(from_server, set, value?value:space);
+			new_free(&set);
+		}
 		PasteArgs(ArgList, 0);
 		if (do_hook(current_numeric, "%s %s", from, *ArgList))
 			display_msg(from, ArgList);
