@@ -1829,7 +1829,7 @@ const char *set_channel_by_refnum (unsigned int refnum, const char *channel)
 
 	if ((tmp = get_window_by_refnum(refnum)) == (Window *) 0)
 		panic("Invalid window refnum [%d] passed to set_channel_by_refnum", refnum);
-	if (!im_on_channel(channel, tmp->server))
+	if (channel && strcmp(channel, zero) && !im_on_channel(channel, tmp->server))
 		panic("Tried to make [%s:%d] the current channel of window [%d], but I'm not on that channel!", channel, tmp->server, refnum);
 
 	oldc = tmp->current_channel;

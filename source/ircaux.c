@@ -8,7 +8,7 @@
  */
 
 #if 0
-static	char	rcsid[] = "@(#)$Id: ircaux.c,v 1.32 2002/02/14 16:33:25 jnelson Exp $";
+static	char	rcsid[] = "@(#)$Id: ircaux.c,v 1.33 2002/02/21 03:10:26 jnelson Exp $";
 #endif
 
 #include "irc.h"
@@ -3228,7 +3228,7 @@ size_t	mangle_line	(char *incoming, int how, size_t how_much)
 		if (strlcpy(incoming, output, how_much) > how_much)
 			say("Mangle_line truncating results. #1 -- "
 				"Email jnelson@acronet.net [%d] [%d]",
-				strlen(buffer), how_much);
+				strlen(output), how_much);
 		new_free(&output);
 	}
 
