@@ -1,7 +1,21 @@
 #!/bin/bash
+#
+# This script demonstrates ascii armoring.  It is rather complicated
+# because it uses the ascii armoring present in gpg, which wraps in
+# a way that is unusable for irc.  One of the things that can be
+# done is to join all the cyphertext lines together, and reformat
+# them into a valid gpg message again at the other end.
+#
+# Decryption is a little tricky.  What we do is create a token ascii
+# armored gpg message, strip it of the message content, fill it in
+# with the reformatted message and pipe it back into gpg for
+# decryption.
+#
+# Since the plaintext and cyphertext are read in non-newline binary
+# mode, echo -e is used.
 
 function encrypt {
-	gpg -ca --batch --passphrase-fd 0 | (
+	(echo ${parms[0]} ; cat ) | gpg -ca --batch --passphrase-fd 0 | (
 		while read && [ -n "$REPLY" ] ; do : ; done
 		while read && [ -n "$REPLY" ] ; do
 			[ -n "$LAST" ] && echo -n "$LAST " ;
@@ -11,7 +25,6 @@ function encrypt {
 }
 
 function decrypt {
-	read key
 	read -a input
 	( echo x | gpg -ca --batch --passphrase-fd 0 | (
 		while read && [ -n "$REPLY" ] ; do echo "$REPLY" ; done
@@ -19,11 +32,13 @@ function decrypt {
 		echo
 		for foo in "${input[@]}" ; do echo "$foo" ; done
 		echo "$LAST"
-	) ) | ( echo "$key" ; cat ) | gpg -a --batch --passphrase-fd 0
+	) ) | ( echo "${parms[0]}" ; cat ) | gpg -a --batch --passphrase-fd 0
 }
 
 proto="$1"
 shift 1
+
+read -a parms
 
 case "$proto" in
 encrypt) encrypt "$@" ;;
