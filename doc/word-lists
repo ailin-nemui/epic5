@@ -17,6 +17,7 @@ Does not double quote words with spaces
 	double quotes via $unsplit(" " $*)
 * $bindctl(SEQUENCE)
 * $tcl()
+* /FE's variable-rewriting
 
 Double quotes words with spaces
 ===============================
@@ -39,7 +40,6 @@ Double quotes words with spaces
 * $notifywindows()
 * $encryptparm()
 * $exec()
-* /FE's variable-rewriting
 * $igmask()/$rigmask()/$igpattern()/$rigpattern()/$igtype()/$ignorectl()
 * EPIC's internal "unsplitw()" function
 * $bindctl(FUNCTION [P]MATCH)
