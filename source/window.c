@@ -4027,7 +4027,9 @@ Window *window_rejoin (Window *window, char **args)
 			malloc_strcpy(&owner->waiting_channel, chan);
 			m_s3cat(&newchan, ",", chan);
 		}
-
+	}
+	if (newchan)
+	{
 		send_to_aserver(from_server, "JOIN %s %s", newchan, keys);
 		new_free(&newchan);
 	}
