@@ -137,7 +137,7 @@ int	client_connect (SA *l, socklen_t ll, SA *r, socklen_t rl)
 		}
 		alarm(0);
 	}
-	else if (family == AF_INET)
+	else if (family == AF_INET || family == AF_INET6)
 	{
 		if (l && bind(fd, l, ll))
 		{
@@ -177,7 +177,7 @@ int	client_connect (SA *l, socklen_t ll, SA *r, socklen_t rl)
 				return close(fd), -9;
 			default:
 			{
-				ISA	peer;
+				SS	peer;
 				int	peerlen;
 
 				peerlen = sizeof(peer);
@@ -559,8 +559,8 @@ char *	inet_ptohn (int family, const char *ip, char *retval, int size)
 /* NOTES: This function is protocol independant */
 char *	one_to_another (int family, const char *what, char *retval, int size)
 {
-	if ((retval = inet_ptohn(family, what, retval, size)) == empty_string)
-		retval = inet_hntop(family, what, retval, size);
+	if (inet_ptohn(family, what, retval, size) == empty_string)
+		inet_hntop(family, what, retval, size);
 	return retval;
 }
 

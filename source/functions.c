@@ -6147,7 +6147,7 @@ BUILT_IN_FUNCTION(function_iptolong, word)
 	ISA	addr;
 
 	GET_STR_ARG(dotted_quad, word);
-	if (inet_aton(dotted_quad, &addr.sin_addr))
+	if (inet_pton(AF_INET, dotted_quad, &addr.sin_addr))
 		return m_sprintf("%lu", (unsigned long)ntohl(addr.sin_addr.s_addr));
 	RETURN_EMPTY;
 }
@@ -6156,10 +6156,13 @@ BUILT_IN_FUNCTION(function_longtoip, word)
 {
 	char *	ip32;
 	ISA	addr;
+	char	retval[256];
 
 	GET_STR_ARG(ip32, word);
 	addr.sin_addr.s_addr = (unsigned long)ntohl(strtoul(ip32, NULL, 10));
-	RETURN_STR(inet_ntoa(addr.sin_addr));
+	if (inet_ntop(AF_INET, (void *)&addr.sin_addr, retval, 256) == 0)
+		RETURN_EMPTY;
+	RETURN_STR(retval);
 }
 
 BUILT_IN_FUNCTION(function_isencrypted, input)

@@ -53,3 +53,6 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Convert /server and wserv over to "connectory"
 * Nuke "connect_by_number", huzzah!
 * Reorder functions in network.c
+* Convert more (last?) inet_ntoa to inet_ntop, and inet_aton to inet_pton.
+* Fix bug with $convert() (one_to_another)
+* Try to make /window create only bind to 127.0.0.1.

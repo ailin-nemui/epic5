@@ -2860,7 +2860,11 @@ Window	*create_additional_screen (void)
                 screen_type == ST_SCREEN ? "screen" :
                                            "wound" );
 
-	if ((new_cmd = ip_bindery(AF_INET, 0, (SS *)&local_sockaddr)) < 0)
+	local_sockaddr.sin_family = AF_INET;
+	local_sockaddr.sin_addr.s_addr = htonl((127 << 24) + 1);
+	local_sockaddr.sin_port = 0;
+
+	if ((new_cmd = client_bind((SA *)&local_sockaddr, sizeof(local_sockaddr))) < 0)
 	{
 		yell("Couldnt establish server side -- error [%d] [%s]", 
 				new_cmd, my_strerror(errno));
