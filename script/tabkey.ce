@@ -51,35 +51,63 @@ bind ^i parse_command tabkey
 alias tabkey.default tabkey.method.nickchan
 
 alias tabkey {
-	@:curword=indextoword($curpos() $L )
-	@:wordind=wordtoindex($curword $L)
-	if (32>=(127&ascii($mid(${curpos()-1} 1 $L )))) {
-		@curword++
-		@wordind=curpos()
+	@ :curword = indextoword($curpos() $L )
+	@ :wordind = wordtoindex($curword $L)
+	if (32 >= (127 & ascii($mid(${curpos()-1} 1 $L )))) {
+		@ curword++
+		@ wordind = curpos()
 	}
-	@:word=mid($wordind ${curpos()-wordind} $L)
-	@:matches=[]
+	@ :word = mid($wordind ${curpos()-wordind} $L)
+	@ :matches = []
 	if (!index($cmdchars $L)) {
 		if (!curword) {
 			parsekey command_completion
 		} else {
-			wait for @matches=tabkey.cmd($word)
+			wait for @ matches = tabkey.cmd($word)
 		}
 	} else {
-		wait for @:matches=tabkey.default($word)
+		wait for @ :matches = tabkey.default($word)
 	}
-	@:prefix=prefix($matches)
-	if (1<numwords($matches)&&word==prefix) {
-		xecho -banner -nolog -- Completions for \"$word\": $matches
-	} elsif (#matches&&strlen($word)<=strlen($prefix)) {
+	@ :prefix = prefix($matches)
+	if (1 < numwords($matches) && word == prefix) {
+		echo Completions for \"$word\": $matches
+	} elsif (#matches && strlen($word) <= strlen($prefix)) {
 		repeat ${curpos()-wordind} parsekey backspace
 		type $prefix${1<#matches?:[ ]}
 	}
 }
 
-alias tabkey.method.chan {
-	return $pattern($0* $mychannels());
+alias tabkey.cmd {
+	bless
+	@ :ret = []
+	@ :cmd = word(0 $L)
+	until (index($cmdchars $cmd)) {@ cmd = rest(1 $cmd)}
+	if (aliasctl(alias exists tabkey.cmd.$cmd)) {
+		wait for @ ret = tabkey[cmd][$cmd]($*)
+	}
+	unless (strlen($ret)) {
+		wait for @ ret = tabkey.default($*)
+	}
+	return $ret
 }
+
+# Context sensitive completion goes here.
+
+alias tabkey.cmd.help {
+	bless
+	@ :matches = []
+	@ :path = restw(1 $left($curpos() $L))
+	if (wordind == curpos()) {@ push(path *)}
+	@ matches = globi($unsplit(/ $getset(HELP_PATH) $path*))
+	repeat $#matches @ push(matches $rightw(1 $remws(/ $split(/ $shift(matches)))))
+	return $matches
+}
+
+# Methods.
+
+alias tabkey.method.chan { return $pattern($0* $mychannels()); }
+alias tabkey.method.file { return $glob($0*); }
+alias tabkey.method.filei { return $globi($0*); }
 
 alias tabkey.method.nick {
 	if (pattern($0* $chanusers())) {
@@ -87,7 +115,7 @@ alias tabkey.method.nick {
 	} else {
 		@ :chanusers = []
 		fe ($mychannels()) chan {
-			@push(chanusers $chanusers($chan))
+			@ push(chanusers $chanusers($chan))
 		}
 		return $pattern($0* $sort($uniq($chanusers)));
 	}
@@ -95,28 +123,4 @@ alias tabkey.method.nick {
 
 alias tabkey.method.nickchan {
 	return $remws(/ $tabkey.method.chan($*) $tabkey.method.nick($*))
-}
-
-alias tabkey.cmd {
-	bless
-	@:ret=[]
-	@:cmd=word(0 $L)
-	until (index($cmdchars $cmd)) {@cmd=rest(1 $cmd)}
-	if (aliasctl(alias exists tabkey.cmd.$cmd)) {
-		wait for @ret=tabkey[cmd][$cmd]($*)
-	}
-	unless (strlen($ret)) {
-		wait for @ret=tabkey.default($*)
-	}
-	return $ret
-}
-
-alias tabkey.cmd.help {
-	bless
-	@:matches=[]
-	@:path=restw(1 $left($curpos() $L))
-	if (wordind==curpos()) {@push(path *)}
-	@matches=globi($unsplit(/ $getset(HELP_PATH) $path*))
-	repeat $#matches @push(matches $rightw(1 $remws(/ $split(/ $shift(matches)))))
-	return $matches
 }

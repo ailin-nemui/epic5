@@ -41,5 +41,7 @@ extern	int	need_defered_commands;
 	int	command_exist		(char *);
 	BUILT_IN_COMMAND(e_channel);
 	void	do_defered_commands	(void);
+	char	*get_all_commands	(void);
+	char	*get_command		(const char *);
 
 #endif /* __commands_h__ */

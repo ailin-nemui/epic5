@@ -46,6 +46,7 @@ struct WindowStru;
 	Char *	fetch_userhost		(int, Char *);
 	int	get_channel_oper	(Char *, int);
 	int	get_channel_voice	(Char *, int);
+	int     get_channel_halfop	(Char *, int);
 struct WindowStru *get_channel_window	(Char *, int);
 	void	set_channel_window	(struct WindowStru *, Char *);
 	char *	create_channel_list	(int);

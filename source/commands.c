@@ -3023,6 +3023,35 @@ static void	eval_inputlist (char *args, char *line)
 	parse_line(NULL, args, line ? line : empty_string, 0, 0);
 }
 
+/*
+ * hrmm, these are remarkable similar to get_all_sets() and get_set() :)
+ */
+char *get_all_commands(void)
+{
+	int i;
+	char *ret = NULL;
+	size_t rclue = 0;
+
+	for (i = 0; irc_command[i].name; ++i)
+		m_sc3cat(&ret, space, irc_command[i].name, &rclue);
+	return ret;
+}
+
+char *get_command(const char *str)
+{
+	int i;
+	char *ret = NULL;
+	size_t rclue = 0;
+
+	if (!str || !*str)
+		return get_all_commands();
+	
+	for (i = 0; irc_command[i].name; ++i)
+		if (wild_match(str, irc_command[i].name))
+			m_sc3cat(&ret, space, irc_command[i].name, &rclue);
+
+	return ret ? ret : m_strdup(empty_string);
+}
 
 
 /* 

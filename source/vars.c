@@ -9,7 +9,7 @@
  */
 
 #if 0
-static	char	rcsid[] = "$Id: vars.c,v 1.10 2002/01/25 21:57:10 crazyed Exp $";
+static	char	rcsid[] = "$Id: vars.c,v 1.11 2002/02/17 22:40:29 crazyed Exp $";
 #endif
 
 #include "irc.h"
@@ -209,6 +209,7 @@ static	IrcVariable irc_variable[] =
 	{ "STATUS_FORMAT",		STR_TYPE_VAR,	0, NULL, build_status, 0, 0 },
 	{ "STATUS_FORMAT1",		STR_TYPE_VAR,	0, NULL, build_status, 0, 0 },
 	{ "STATUS_FORMAT2",		STR_TYPE_VAR,	0, NULL, build_status, 0, 0 },
+	{ "STATUS_HALFOP",		STR_TYPE_VAR,	0, NULL, build_status, 0, 0 },
 	{ "STATUS_HOLD",		STR_TYPE_VAR,	0, NULL, build_status, 0, 0 },
 	{ "STATUS_HOLD_LINES",		STR_TYPE_VAR,	0, NULL, build_status, 0, 0 },
 	{ "STATUS_INSERT",		STR_TYPE_VAR,	0, NULL, build_status, 0, 0 },
@@ -329,6 +330,7 @@ void 	init_variables (void)
 	set_string_var(STATUS_AWAY_VAR, DEFAULT_STATUS_AWAY);
 	set_string_var(STATUS_CHANNEL_VAR, DEFAULT_STATUS_CHANNEL);
 	set_string_var(STATUS_CHANOP_VAR, DEFAULT_STATUS_CHANOP);
+	set_string_var(STATUS_HALFOP_VAR, DEFAULT_STATUS_HALFOP);
 	set_string_var(STATUS_SSL_ON_VAR, DEFAULT_STATUS_SSL_ON);
 	set_string_var(STATUS_SSL_OFF_VAR, DEFAULT_STATUS_SSL_OFF);
 	set_string_var(STATUS_CLOCK_VAR, DEFAULT_STATUS_CLOCK);

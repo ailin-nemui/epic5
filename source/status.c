@@ -1007,10 +1007,16 @@ STATUS_FUNCTION(status_chanop)
 {
 	char	*text;
 
-	if (window->current_channel && window->server != -1 &&
-	    get_channel_oper(window->current_channel, window->server) &&
-	    (text = get_string_var(STATUS_CHANOP_VAR)))
-		return text;
+	if (!window->current_channel && window->server == -1)
+		return empty_string;
+	
+	if (get_channel_oper(window->current_channel, window->server) &&
+		(text = get_string_var(STATUS_CHANOP_VAR)))
+			return text;
+
+	if (get_channel_halfop(window->current_channel, window->server) &&
+		(text = get_string_var(STATUS_HALFOP_VAR)))
+			return text;
 
 	return empty_string;
 }

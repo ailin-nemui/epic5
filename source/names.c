@@ -1517,6 +1517,16 @@ int 	get_channel_oper (const char *channel, int server)
 		return 0;
 }
 
+int	get_channel_halfop (const char *channel, int server)
+{
+	Channel *chan;
+
+	if ((chan = find_channel(channel, server)))
+		return chan->half_assed;
+	else
+		return 0;
+}
+
 int 	get_channel_voice (const char *channel, int server)
 {
 	Channel *chan;

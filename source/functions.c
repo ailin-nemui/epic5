@@ -204,6 +204,7 @@ static	char
 	*function_functioncall	(char *),
 	*function_geom		(char *),
 	*function_getcap	(char *),
+	*function_getcommands	(char *),
 	*function_getenv	(char *),
 	*function_getgid	(char *),
 	*function_getlogin	(char *),
@@ -444,6 +445,7 @@ static BuiltInFunctions	built_in_functions[] =
 	{ "GEOM",		function_geom		},
 	{ "GETARRAYS",          function_getarrays 	},
 	{ "GETCAP",		function_getcap		},
+	{ "GETCOMMANDS",	function_getcommands	},
 	{ "GETENV",		function_getenv		},
 	{ "GETGID",		function_getgid		},
 	{ "GETITEM",            function_getitem 	},
@@ -5288,6 +5290,24 @@ extern 	char 	*get_set (char *);
 	while ((s = next_arg(input, &input)))
 	{
 		char *s2 = get_set(s);
+		malloc_strcat(&ret, s2);
+		new_free(&s2);
+	}
+
+	RETURN_MSTR(ret);
+}
+
+BUILT_IN_FUNCTION(function_getcommands, input)
+{
+	char *s = NULL;
+	char *ret = NULL;
+
+	if (!input || !*input)
+		return get_command(NULL);
+
+	while ((s = next_arg(input, &input)))
+	{
+		char *s2 = get_command(s);
 		malloc_strcat(&ret, s2);
 		new_free(&s2);
 	}
