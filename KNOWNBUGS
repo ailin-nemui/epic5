@@ -18,6 +18,7 @@ KNOWN ERRATA (eg, bugs, or unresolved requests):
 * Allow server groups anywhere a "server desc" is wanted
 * Allow /msg -<server desc>, including the group.
 * Some /set's need to be initialized before creating the first window!
+* Calling dcc_connected(<fd>, 0) is always bogus. fix this.
 
 [See http://www.epicsol.org/PROJECTS for things to come in the future]
 [See http://www.epicsol.org/CHANGELOG5 for things that changed in the past]
@@ -351,3 +352,4 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Fix warnings about static variables not used
 * Fix /set notify_level, which is supposed to cascade to /window notify_level
 * Fix /set lastlog_level, same thing.
+* Implement /window notify_name for %{1}F, for howl (irssi-like status notify)

@@ -66,6 +66,7 @@ typedef	struct	WindowStru
 	short	update;			/* True if window display is dirty */
 	short	notify_when_hidden;	/* True to notify for hidden output */
 	short	notified;		/* True if we have notified */
+	char *	notify_name;		/* The name for %{1}F */
 	short	beep_always;		/* True if a beep to win always beeps */
 	Mask	notify_mask;		/* the notify mask.. */
 	Mask	window_mask;		/* Lastlog level for the window */

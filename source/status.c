@@ -1,4 +1,4 @@
-/* $EPIC: status.c,v 1.45 2004/07/26 23:35:20 jnelson Exp $ */
+/* $EPIC: status.c,v 1.46 2004/08/05 00:38:57 jnelson Exp $ */
 /*
  * status.c: handles the status line updating, etc for IRCII 
  *
@@ -984,10 +984,16 @@ static	char	my_buffer[81];
 	{
 		if (window->notified)
 		{
+			char *s = NULL;
+
+			if (window->notify_name)
+				s = window->notify_name;
+			else if (window->name)
+				s = window->name;
+
 			if (doneone++)
 				strlcat(buf2, ",", sizeof buf2);
-			strlcat(buf2, (map == 1 && window->name) ? 
-					window->name :
+			strlcat(buf2, (map == 1 && s) ? s :
 					ltoa(window->refnum), sizeof buf2);
 		}
 	}

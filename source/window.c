@@ -1,4 +1,4 @@
-/* $EPIC: window.c,v 1.117 2004/07/29 16:59:03 jnelson Exp $ */
+/* $EPIC: window.c,v 1.118 2004/08/05 00:38:57 jnelson Exp $ */
 /*
  * window.c: Handles the organzation of the logical viewports (``windows'')
  * for irc.  This includes keeping track of what windows are open, where they
@@ -204,6 +204,7 @@ Window	*new_window (Screen *screen)
 	new_w->swappable = 1;
 	new_w->scrolladj = 1;
 	new_w->notify_mask = real_notify_mask();
+	new_w->notify_name = NULL;
 	if (!current_window)		/* First window ever */
 		mask_setall(&new_w->window_mask);
 	else
@@ -3772,6 +3773,34 @@ static Window *window_notify_mask (Window *window, char **args)
 	return window;
 }
 
+static Window *window_notify_name (Window *window, char **args)
+{
+	char *arg;
+
+	if ((arg = new_next_arg(*args, args)))
+	{
+		/* /window name -  unsets the window name */
+		if (!strcmp(arg, "-"))
+			new_free(&window->notify_name);
+
+		/* /window name to existing name -- ignore this. */
+		else if (window->notify_name && (my_stricmp(window->notify_name, arg) == 0))
+		{
+			say("Window NOTIFY NAME is %s", window->notify_name);
+			return window;
+		}
+
+		malloc_strcpy(&window->notify_name, arg);
+		window_statusbar_needs_update(window);
+		say("Window NOTIFY NAME changed to %s", window->notify_name);
+	}
+	else
+		say("Window NOTIFY NAME is %s", window->notify_name);
+
+	return window;
+}
+
+
 static Window *window_number (Window *window, char **args)
 {
 	Window 	*tmp;
@@ -4613,6 +4642,7 @@ static const window_ops options [] = {
 	{ "NOTIFIED",		window_notify_list 	},
 	{ "NOTIFY",		window_notify 		},
 	{ "NOTIFY_LEVEL",	window_notify_mask 	},
+	{ "NOTIFY_NAME",	window_notify_name 	},
 	{ "NUMBER",		window_number 		},
 	{ "POP",		window_pop 		},
 	{ "PREVIOUS",		window_previous 	},
@@ -5600,6 +5630,8 @@ char 	*windowctl 	(char *input)
 		RETURN_INT(0);
 	    } else if (!my_strnicmp(listc, "NOTIFY", len)) {
 		RETURN_INT(w->notify_when_hidden);
+	    } else if (!my_strnicmp(listc, "NOTIFY_NAME", len)) {
+		RETURN_STR(w->notify_name);
 	    } else if (!my_strnicmp(listc, "NOTIFIED", len)) {
 		RETURN_INT(w->notified);
 	    } else if (!my_strnicmp(listc, "BEEP_ALWAYS", len)) {
