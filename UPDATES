@@ -1,5 +1,11 @@
 EPIC4-1.2.0
 
+*** News 09/25/2003 -- $servernick(<global>) now returns global nickname
+	I just know I'm going to regret this...  If you want to get the
+	client's global current nickname (which is used for new servers
+	added to your server list), you can pass the literal string <global>
+	to the $servernick() function to get it.
+
 *** News 08/30/2003 -- New function $randomread() in the files script.
 	It works much like the $randread() builtin, but it avoids certain
 	potential bugs, and will return one line from each specified file.

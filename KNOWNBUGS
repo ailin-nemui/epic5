@@ -14,9 +14,7 @@ KNOWN ERRATA (eg, bugs, or unresolved requests):
 * The way the pattern matcher handles ?'s after *'s is really lame.
 * /window disconnect (server -> -2) + /server 0 reconnects to previous server.
 * New math parser can't handle  @ foo[bar].baz = 0
-* Some way to get the client's global default nickname?
 * /window flush should NOT turn hold mode off!
-* Make some provision for systems without intptr_t.
 * Something for %D to make it customizable?
 * [7] <- [:aussie.sydney.oz.org 330 complexnes Veneficus Veneficus
                 :is logged in as]
@@ -210,3 +208,5 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Fix /set mail 3 so it doesn't panic, fix /set mail 4 so it doesn't panic.
 * Don't allow the user to /server -delete the last server entry.
 * Fix @ {<command>} to not infinite loop looking for $FUNCTION_RETURN.
+* Fix it so you can compile on systems without (intptr_t) again.
+* Add $servernick(<global>) to return the client's global nickname
