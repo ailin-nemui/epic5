@@ -1,4 +1,4 @@
-/* $EPIC: window.c,v 1.74 2003/10/17 23:34:47 jnelson Exp $ */
+/* $EPIC: window.c,v 1.75 2003/10/20 15:39:58 jnelson Exp $ */
 /*
  * window.c: Handles the organzation of the logical viewports (``windows'')
  * for irc.  This includes keeping track of what windows are open, where they
@@ -4199,9 +4199,7 @@ static	Window *window_scrollback (Window *window, char **args)
 	{
 		val = get_number("SCROLLBACK", args);
 
-		if (val == 0)
-			flush_scrollback_after(window);
-		else if (val < window->display_size * 2)
+		if (val < window->display_size * 2)
 			window->display_buffer_max = window->display_size * 2;
 		else
 			window->display_buffer_max = val;
