@@ -1,4 +1,4 @@
-/* $EPIC: alias.c,v 1.66 2005/01/25 23:45:39 jnelson Exp $ */
+/* $EPIC: alias.c,v 1.67 2005/01/26 00:32:40 jnelson Exp $ */
 /*
  * alias.c -- Handles the whole kit and caboodle for aliases.
  *
@@ -3362,7 +3362,8 @@ char    *symbolctl      (char *input)
         } else if (!my_strnicmp(listc, "CREATE", len)) {
             GET_STR_ARG(symbol, input);
 	    upper(symbol);
-	    if (!(s = (Symbol *)find_array_item((array *)&globals, symbol, &cnt, &l)))
+	    s = (Symbol *)find_array_item((array *)&globals, symbol, &cnt, &l);
+	    if (!s || cnt >= 0)
 	    {
 		s = make_new_Symbol(symbol);
 		add_to_array((array *)&globals, (array_item *)s);
@@ -3418,7 +3419,8 @@ char    *symbolctl      (char *input)
 
             GET_STR_ARG(symbol, input);
 	    upper(symbol);
-	    if (!(s = (Symbol *)find_array_item((array *)&globals, symbol, &cnt, &l)))
+	    s = (Symbol *)find_array_item((array *)&globals, symbol, &cnt, &l);
+	    if (!s || cnt >= 0)
                 RETURN_EMPTY;
 
 	    GET_STR_ARG(x, input)
@@ -3512,7 +3514,8 @@ char    *symbolctl      (char *input)
 
             GET_STR_ARG(symbol, input);
 	    upper(symbol);
-	    if (!(s = (Symbol *)find_array_item((array *)&globals, symbol, &cnt, &l)))
+	    s = (Symbol *)find_array_item((array *)&globals, symbol, &cnt, &l);
+	    if (!s || cnt >= 0)
                 RETURN_EMPTY;
 
 	    GET_STR_ARG(x, input)

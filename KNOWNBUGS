@@ -3,6 +3,7 @@ EPIC5 Projects, Bugs, and other Errata:
 KNOWN ERRATA (eg, bugs, or unresolved requests):
 ------------------------------------------------
 * Some way to hook incomplete lines via dcc raw
+* /set doesn't show sets created with symbolctl.
 
 [See http://www.epicsol.org/PROJECTS for things to come in the future]
 [See http://www.epicsol.org/CHANGELOG5 for things that changed in the past]
@@ -438,3 +439,4 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Fix /away -all which sends a bogus string to the server. (rb rain)
 * Fix /dump. doh.
 * Add $symbolctl().  See UPDATES.
+* Fix auto-completion bogosity with $symbolctl().
