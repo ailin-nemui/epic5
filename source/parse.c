@@ -806,6 +806,20 @@ static void p_mode (char *from, char **ArgList)
 	PasteArgs(ArgList, 1);
 	channel = ArgList[0];
 	line = ArgList[1];
+
+	/* 
+	 * Stupid lame broken pathetic UnrealIRCD server sends a bloody
+	 * VOID MODE CHANGE when you connect.  How totaly useless and
+	 * pointless a change.  What possesses people to make these kinds
+	 * of blithering idiot modifications in the first place?
+	 */
+	if (!line && !*line)
+	{
+		yell("This pathetic excuse of a server just sent you a "
+			"void MODE change.  Ignoring it.");
+		return;
+	}
+
 	flag = check_ignore_channel(from, FromUserHost, channel, IGNORE_CRAP);
 	message_from(channel, LOG_CRAP);
 	if (channel && line)
