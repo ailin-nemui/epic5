@@ -1,4 +1,4 @@
-/* $EPIC: expr.c,v 1.12 2003/05/09 04:29:52 jnelson Exp $ */
+/* $EPIC: expr.c,v 1.13 2003/05/30 01:05:30 jnelson Exp $ */
 /*
  * expr.c -- The expression mode parser and the textual mode parser
  * #included by alias.c -- DO NOT DELETE
@@ -468,28 +468,41 @@ static	char	*next_unit (char *str, const char *args, int *arg_flag, int stage)
 		{
 			ssize_t	span;
 
+			/* If we are not parsing this yet, skip it */
 			if (stage != NU_UNIT)
 			{
-			    if ((span = MatchingBracket(ptr + 1, '[', ']')) < 0)
-				ptr += strlen(ptr) - 1;
-			    else
-				ptr += span;
+			    char *p;
+
+			    if ((span = MatchingBracket(ptr+1, '[', ']')) >= 0)
+				p = ptr + 1 + span;
+			    else if ((p = strchr(ptr + 1, ']')) == NULL)
+				p = ptr + strlen(ptr) - 1;
+
+			    ptr = p;
 			    break;
 			}
 
-			/* ptr points right after the [] set */
+			/*
+			 * 'ptr' points to the opening [.
+			 * We want 'right' to point to the first character
+			 * inside the [...] set.
+			 */
 			*ptr++ = 0;
 			right = ptr;
 	
 			/*
-			 * At this point, we check to see if it really is a
-			 * '[', and if it is, we skip over it.
+			 * Now we look for the matching ']'.  If we don't
+			 * find it, then look for the first ']'.  If we don't
+			 * find *that*, then (ptr == NULL) will slurp up the
+			 * whole rest of the expression, so there.
 			 */
 			if ((span = MatchingBracket(right, '[', ']')) >= 0)
-			{
 				ptr = right + span;
+			else 
+				ptr = strchr(right, ']');
+
+			if (ptr && *ptr)
 				*ptr++ = 0;
-			}
 
 #ifndef NO_CHEATING
 			/*
