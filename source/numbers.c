@@ -10,7 +10,7 @@
  */
 
 #if 0
-static	char	rcsid[] = "$Id: numbers.c,v 1.8 2001/03/21 16:57:36 jnelson Exp $";
+static	char	rcsid[] = "$Id: numbers.c,v 1.9 2001/03/21 18:49:10 jnelson Exp $";
 #endif
 
 #include "irc.h"
@@ -161,7 +161,7 @@ void 	numbered_command (char *from, int comm, char **ArgList)
 	user = (*ArgList[0]) ? ArgList[0] : NULL;
 
 	lastlog_level = set_lastlog_msg_level(LOG_CRAP);
-	message_from((char *) 0, LOG_CRAP);
+	message_from(NULL, LOG_CRAP);
 	ArgList++;
 	current_numeric = -comm;	/* must be negative of numeric! */
 
@@ -214,13 +214,14 @@ void 	numbered_command (char *from, int comm, char **ArgList)
 		new_port = atoi(ArgList[1]);
 		PasteArgs(ArgList, 2);
 
-		if (do_hook(current_numeric, "%s %s %d %s", from, 
-				new_server, new_port, ArgList[2]))
-			display_msg(from, ArgList);
-
+		/* Must do these things before calling "display_msg" */
 		add_to_server_list(new_server, new_port, NULL, NULL, 0);
 		server_reconnects_to(old_server, from_server);
 		from_server = old_server;
+
+		if (do_hook(current_numeric, "%s %s %d %s", from, 
+				new_server, new_port, ArgList[2]))
+			display_msg(from, ArgList);
 		break;
 	}
 
