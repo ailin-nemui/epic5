@@ -1,5 +1,41 @@
 # All these aliases take commands as arguments and have the property that
 # they will not exand those commands prior to execution, making them safe.
+#
+# This may require some explanation:
+#
+# The ircii language has the concept of "expansion", whereby variable
+# references are replaced with the variable values and escaped characters
+# are unescaped.  This is one of the side effects of an eval.  In the
+# following two commands, if entered from the command line, the first will
+# whois the nick "\\`anderer", and the second will whois "\`anderer",
+# because the eval will unescape it.
+#
+#  /whois \\`anderer
+#  /eval whois \\`anderer
+#
+# This is from the command line.  If these commands are executed from an
+# alias, the first command will whois "\`anderer", and the second will
+# whois "`anderer".  This is because commands within an alias are always
+# expanded prior to execution.  There is no way to stop this, but you can
+# control it by passing a variable to the whois command instead of the raw
+# text.  Since expansion only occurs once, the variables expansion will
+# "shelter" the text from being expanded.
+#
+# If you wish to add more levels of expansion, you use more evals.  If you
+# wish to have _no_ expansion, you keep all your text in variables, and
+# avoid using eval.
+#
+# It is easy to see that there may be occasions where you may want to whois
+# someone from within a hook without having to worry about expansion.  This
+# is easy enough.  /whois does not expand its arguments, however, hooks can
+# generate floods, so you put the whois in a timer say.  The problem with
+# this is that /timer _does_ expand its arguments, so you end up with two
+# levels of expansion to deal with.
+#
+# These aliases solve these problems.  Commands are given as arguments and
+# are normally not expanded, just as if they had been given from the
+# command line.  If you wish to have them expanded when they are run,
+# precede them with /eval.
 
 package qcmd
 
@@ -71,7 +107,7 @@ fe (q push fq unshift) cmd op {
 				if (@foo) {
 					^timer -ref qcmd.$servernum() 5 qcmd
 					@ :bar = shift(qcmd[$servernum()][$foo])
-					eval $msar(gr/\\\\/\\/\\\"/\"/bar)
+					$msar(gr/\\\\/\\/\\\"/\"/bar)
 				}
 			}
 		}
