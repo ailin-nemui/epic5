@@ -1,4 +1,4 @@
-/* $EPIC: mail.c,v 1.8 2003/07/16 00:56:43 jnelson Exp $ */
+/* $EPIC: mail.c,v 1.9 2003/07/16 01:20:40 jnelson Exp $ */
 /*
  * mail.c -- a gross simplification of mail checking.
  * Only unix maildrops are supported.
@@ -95,7 +95,13 @@ static	time_t	old_stat = 0;
 	 */
 	if (stat_buf->st_ctime > old_stat)
 	{
-		old_stat = stat_buf->st_ctime;
+		/* 
+		 * If ptr == NULL, this is only a poll -- do not 
+		 * actually reset the mail status.
+		 */
+		if (ptr)
+			old_stat = stat_buf->st_ctime;
+
 		if (stat_buf->st_size)
 			return 2;
 	}

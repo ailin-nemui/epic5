@@ -130,4 +130,4 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Add code to bootstrap clock generation with /set clock
 * Add code to bootstrap notify handling with /set notify_interval.
 * Start enforcing "NOTIFY_INTERVAL" again in do_notify() to avoid excess flood.
-
+* Maybe I fixed the "(Mail: )" bug?  Maybe not.
