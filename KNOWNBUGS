@@ -584,3 +584,4 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Take a new arg to new_open() to control whether INFO -- errors are output.
 * Don't output the "INFO --" things for dcc or execs
 * Fix how i nixed /set reverse_status_bar, i totaly botched this.
+* Ok.  I botched /set full_status_line too.

@@ -1,4 +1,4 @@
-/* $EPIC: status.c,v 1.56 2005/03/29 00:39:01 jnelson Exp $ */
+/* $EPIC: status.c,v 1.57 2005/03/29 00:41:22 jnelson Exp $ */
 /*
  * status.c: handles the status line updating, etc for IRCII 
  *
@@ -743,11 +743,12 @@ int	make_status (Window *window, int must_redraw)
 						sizeof lhs_buffer);
 		}
 
-#if 0
 		/*
 		 * No rhs?  If the user wants us to pad it out, do so.
 		 */
+#if 0
 		else if (get_int_var(FULL_STATUS_LINE_VAR))
+#endif
 		{
 			int chars = window->screen->co - pr_lhs - 1;
 
@@ -755,7 +756,6 @@ int	make_status (Window *window, int must_redraw)
 				strlcat(lhs_buffer, lhs_fillchar, 
 						sizeof lhs_buffer);
 		}
-#endif
 
 		save_size = strlen(all_off());
 		strlcpy(buffer, lhs_buffer, sizeof buffer - save_size);
