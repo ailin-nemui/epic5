@@ -1,4 +1,4 @@
-/* $EPIC: compat.c,v 1.11 2002/07/06 03:50:10 jnelson Exp $ */
+/* $EPIC: compat.c,v 1.12 2002/07/26 17:48:26 jnelson Exp $ */
 /*
  * Everything that im not directly responsible for I put in here.  Almost
  * all of this stuff is either borrowed from somewhere else (for you poor
@@ -1032,13 +1032,16 @@ int	setenv (const char *name, const char *value, int overwrite)
 {
 	static int warning = 0;
 	char *envvalue;
+	size_t	len;
 
 	if (warning == 0) {
 		yell("Warning: Your system does not have setenv(3).  Setting the same environment variable multiple times will result in memory leakage.  This is unavoidable and does not represent a bug in EPIC.");
 		warning = 1;
 	}
 
-	envvalue = m_sprintf("%s=%s", name, value);
+	len = strlen(name) + strlen(value) + 2;
+	envvalue = (char *)malloc(len);
+	snprintf(envvalue, len, "%s=%s", name, value);
 	putenv(envvalue);
 	return 0;
 }
