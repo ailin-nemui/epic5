@@ -93,14 +93,14 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Fix the "redirect sink" so it hooks /on redirect, but suppresses output.
 * Whack up figure_out_address to cope with networks that present hostnames
   without dots in them. (wd)
-* Fix $uh(), $mask(), and /ignore per above (wd)
+* Fix $uhc(), $mask(), and /ignore per above (wd)
 * New script, 'commandqueues' (ce)
 * New supplement scripts 'epic-crypt-pgp' and 'epic-crypt-pgp-aa' (ce)
 * Various Bugs fixed and memory leaks found (ce)
 * Algorithm improvements, replacements, and enhancements (ce)
 * Malloc debug tracking -- #define ALLOC_DEBUG (ce)
 * New command, /ALLOCDUMP, dumps stats about malloc use, per above (ce)
-* New flag to /QUOTE, /QUOTE -U takes a url encoded string, dequotes it and
+* New flag to /XWUOTE, /XQUOTE -U takes a url encoded string, dequotes it and
   sends it to the server -- useful for sending odd characters. (ce)
 * /ON CTCP_REPLY changed!  $0 = from; $1 = to; $2 = command; $3- = args
 * Add ftoa(), which is used for the math parser to format decmial values. (ce)

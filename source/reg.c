@@ -564,3 +564,120 @@ int wild_match (const char *p, const char *str)
 	}
 }
 
+
+/*
+ * Hrm.  Here's the plan -- can we convert ircII patterns to normal
+ * regexes?  Well, the syntax should be pretty simple, right?
+ *
+ * 	ircII Char:			regex char:
+ *	-----------			-----------
+ *	    ?				    .
+ *	    %				    [^ \r\n\t]*
+ *	    *				    .*
+ *	    \[a b\]			    (a|b)
+ */
+
+int	pattern_regcomp (regex_t *preg, const char *pattern, int cflags)
+{
+	char *	regex;
+	int	retval;
+	int	weight;
+
+	regex = pattern2regex(pattern, &weight);
+	retval = regcomp(preg, regex, cflags);
+	new_free(&regex);
+	if (retval < 0)
+		return -1;
+	return weight;
+}
+
+char *	pattern2regex (const char *pattern, int *weight)
+{
+	char *	retval = NULL;
+	const char *	pat;
+	size_t	retsize;
+
+	retsize = strlen(pattern) * 11 + 2;	/* big enough? */
+	retval = new_malloc(retsize);
+	*retval = 0;
+	*weight = 0;
+
+	for (pat = pattern; *pat; pat++)
+	{
+	    switch (*pat)
+	    {
+		case '?' :
+			strextend(retval, '.', 1);
+			break;
+		case '%' :
+			strcat(retval, "[^ \t]*");
+			break;
+		case '*' :
+			strcat(retval, ".*");
+			break;
+		case '\\' :
+			if (pat[1] != '[')
+				goto end;
+		{
+			char *patc, *ptr, *ptr2, *arg, *placeholder;
+			int nest = 1;
+
+			patc = LOCAL_COPY(pat);
+			placeholder = ptr = ptr2 = strstr(pattern, "\\[");
+			do
+			{
+				switch (ptr[1]) 
+				{
+					/* step over it and add to nest */
+					case '[' :  ptr2 = ptr + 2 ;
+					    nest++;
+					    break;
+					/* step over it and remove nest */
+					case ']' :  ptr2 = ptr + 2;
+					    nest--;
+					    break;
+					default:
+					    ptr2 = ptr + 2;
+					    break;
+				}
+			}
+			while (nest && (ptr = strchr(ptr2, '\\')));
+
+			if (!ptr)
+				goto end;
+
+			*ptr = 0;
+			ptr += 2;
+			*placeholder = 0;
+			placeholder += 2;
+
+			arg = new_next_arg(placeholder, &placeholder);
+			strcat(retval, "(");
+			strcat(retval, arg);
+
+			while ((arg = new_next_arg(placeholder, &placeholder)))
+			{
+				strcat(retval, "|");
+				strcat(retval, arg);
+			}
+			strcat(retval, ")");
+			break;
+		   }
+		   end:
+			strextend(retval, *pat++, 1);
+			if (*pat)
+				strextend(retval, *pat, 1);
+			break;
+		default :
+			strextend(retval, *pat, 1);
+			(*weight)++;
+			break;
+	    }
+	}
+
+#if 0
+	yell("[%s] -> [%s]", pattern, retval);
+#endif
+	return retval;
+}
+

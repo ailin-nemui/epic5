@@ -155,8 +155,7 @@ extern struct timeval	now;
 	void	io 			(const char *);
 	void	irc_exit 		(int, char *, ...) /*__A(2)*/ __N;
 	void	irc_quit 		(char, char *);
-	int	wild_match 		(const char *, const char *); 
-							 /* XXX reg.c */
+#include "reg.h"
 	void	dump_load_stack		(int);	 /* XXX command.c */
 const	char *	current_filename	(void);  /* XXX command.c */
 	int	current_line		(void);	 /* XXX command.c */

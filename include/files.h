@@ -12,7 +12,8 @@
 
 	int	open_file_for_read 	(char *);
 	int	open_file_for_write 	(char *);
-	int	file_write 		(int, int, char *);
+	int	target_file_write	(const char *, const char *);
+	int	file_write 		(int, int, const char *);
 	int	file_writeb 		(int, int, char *);
 	char *	file_read 		(int);
 	char *	file_readb 		(int, int);

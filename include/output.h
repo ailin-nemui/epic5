@@ -7,7 +7,7 @@
  *
  * See the COPYRIGHT file, or do a HELP IRCII COPYRIGHT 
  *
- * @(#)$Id: output.h,v 1.2 2001/11/13 22:12:26 jnelson Exp $
+ * @(#)$Id: output.h,v 1.3 2002/02/01 23:04:28 jnelson Exp $
  */
 
 #ifndef __output_h__
@@ -26,5 +26,5 @@ struct ScreenStru;
 	void	refresh_a_screen 	(struct ScreenStru *);
 	void	refresh_screen 		(char, char *);
 	int	init_screen 		(void);
-
+	void   	file_put_it 		(FILE *fp, const char *format, ...);
 #endif /* _OUTPUT_H_ */

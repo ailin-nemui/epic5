@@ -21,6 +21,7 @@
 #include "dcc.h"
 #include "commands.h"
 #include "exec.h"
+#include "files.h"
 #include "funny.h"
 #include "help.h"
 #include "history.h"
@@ -2758,17 +2759,17 @@ static	int 	recursion = 0;
 	if (recursion++ == 0)
 		allow = do_hook(REDIRECT_LIST, "%s %s", nick_list, text);
 
-	if (strcmp(nick_list, "0"))	/* This is not to the redirect sink */
-	{
-		/* 
-		 * Dont hook /ON REDIRECT if we're being called recursively
-		 */
-		if (allow)
-			send_text(nick_list, text, command, hook);
-		retval = 0;
-	}
-	else 
+	/* Suppress output */
+	if (strcmp(nick_list, "0") == 0 || *nick_list == '@') 
 		retval = 1;
+	else
+		retval = 0;
+
+	/* 
+	 * Dont hook /ON REDIRECT if we're being called recursively
+	 */
+	if (allow)
+		send_text(nick_list, text, command, hook);
 
 	recursion--;
 	from_server = old_from_server;
@@ -2875,13 +2876,25 @@ struct target_type target[4] =
 	     */
 	    else if (!text || !*text)
 		;
-#if 0
-	    /* This warning is useless now. */
+
+	    /*
+	     * Target 0 (an invalid irc target) is the "sink": messages
+	     * go in but they don't go out.
+	     */
+	    else if (!strcmp(current_nick, "0"))
+		;
+
+	    /*
+	     * Targets that start with @ are numbers that refer to 
+	     * $open() files.  This used to be used for DCC TALK but
+	     * we haven't supported that for 5 years.
+	     */
 	    else if (*current_nick == '@')
-		say("DCC TALK not supported.");
-#endif
+		target_file_write(current_nick + 1, text);
+
 	    else if (*current_nick == '"')
 		send_to_server("%s", text);
+
 	    else if (*current_nick == '/')
 	    {
 		line = m_opendup(current_nick, " ", text, NULL);

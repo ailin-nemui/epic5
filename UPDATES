@@ -1,5 +1,72 @@
 EPIC4-1.2.0
 
+*** News 02/01/2002 -- New /WINDOW verb, /WINDOW NOTIFIED
+	This window action manually toggles a window's "notified" state.
+	A window that is "notified" shows up in the %F status line expando.
+	Normally, the "notified" state is set and reset automatically by
+	EPIC, but you can change it manually now with this if you wish.
+
+*** News 02/01/2002 -- /SET NOTIFY_INTERVAL 0 now suspends notify.
+	If you want to turn off NOTIFY for a while, but you don't want
+	to clear your notify list, you can /SET NOTIFY_INTERVAL 0 and
+	no NOTIFY activity will occur until you /SET NOTIFY_INTERVAL 
+	to some non-zero value.  Remember that the value is in seconds
+	and the default is 60 (every minute).
+
+*** News 02/01/2002 -- $channel() value now includes half-op information
+	If a user is known to be a half-op, then the 'h' character will
+	be present in the first position before their nick.  This is the
+	position where you would normally see a @ for a channel operator.
+	Example:
+		$channel() might return		h.NICKNAME
+	if "NICKNAME" were a half-op on your current channel.
+
+*** News 02/01/2002 -- New flag to /LASTLOG, /LASTLOG -FILE
+	If you want to dump the results of the /LASTLOG command to a 
+	file, you can now specify a filename with the -FILE flag. 
+	Example:
+		/LASTLOG -FILE myfile booya
+	will output all lines in your lastlog matching "booya" to the
+	file "myfile"
+
+	Note that in general, you do not have to ask for a -file argument
+	to a command to send that command's output to a file.  This will
+	work just fine:
+
+		@fd = open(myfile W)
+		redirect 
+*** News 02/01/2002 -- /IF command supports "elif" and "else if" clauses
+
+*** News 02/01/2002 -- New built in functions, $serverourname()
+
+*** News 02/01/2002 -- New built in functions, $servergroup()
+
+*** News 02/01/2002 -- New built in function, $regmatches()
+
+*** News 02/01/2002 -- New built in function, $corpattern()
+
+*** News 02/01/2002 -- /ON CTCP_REPLY HAS CHANGED! VERY IMPORTANT!
+
+*** News 02/01/2002 -- New flag to /XQUOTE, /XQUOTE -U
+
+*** News 02/01/2002 -- New built in script, 'commandqueues'
+
+*** News 02/01/2002 -- $uhc(), $mask(), and /ignore handle userhosts different
+
+*** News 02/01/2002 -- SSL support merged from the EPIC4-SSL project
+
+*** News 02/01/2002 -- /QUEUE doesn't double-eval your code any longer.
+
+*** News 02/01/2002 -- Improved CRYPT support 
+
+*** News 02/01/2002 -- Change to $trunc(... 0) : it now returns an integer
+
+*** News 02/01/2002 -- New math built in functions $ceil(), $floor(), $abs().
+
+*** News 02/01/2002 -- Ability to use $write(), $writeb() to logfiles
+
+*** News 02/01/2002 -- New /ON's, /ON GENERAL_PRIVMSG, /ON GENERAL_NOTICE
+
 *** News 12/19/2001 -- New /SET, /SET ALLOW_C1_CHARS (defaults to OFF)
 	The ascii characters 128 to 159 on many terminal emulators
 	(especially GNU Screen and XTerm) have special control meanings
@@ -20,6 +87,19 @@ EPIC4-1.2.0
 	feature has been removed until we can figure out how to properly
 	implement it.  If you used this feature, I apologize, but it is for
 	the greater good that we must remove this feature for now.
+
+*** News 12/19/2001 -- New option to $info(), $info(i)
+	The $info(i) built in function will return the "commit_id" value
+	for the version of epic you're using, which is a monotonically
+	increasing integer value which changes every time a changes is
+	made to epic's source.  This value is important whenever you 
+	report a bug about epic.
+
+*** News 11/14/2001 -- Final conversion to the new epic mailing list
+	For a while now we have been using list@epicsol.org, but
+	the epic sources still refered to ircii-epic@concentric.net.
+	That old list is now officially deceased and is no longer in
+	operation and should not be used.  Eventually it will go away.
 
 *** News 11/14/2001 -- Support for ~/.epicrc file
 	LET ME JUST START BY SAYING THIS IS NOT MODELED AFTER BX.
@@ -55,14 +135,18 @@ EPIC4-1.2.0
 	turn off color, you will still have reverse!  Hopefully this will
 	make everything much more sane and clean.
 
-*** News 11/13/2001 -- Resizable wserv support (wserv4)
+*** News 11/13/2001 -- Resizable wserv support (wserv4), /SET WSERV_PATH
 	I backported the implementation of wserv4 from EPIC5.  The main
 	features of wserv4 are that it uses two channels of communication
 	to talk to epic, and it can support independant resizing of each
 	screen.  Until now, all of your /window create screens had to be 
 	exactly the same size as your main screen or they wouldn't work.  
 	That restriction has now been removed.  All of your screens can be
-	of whatever size you wish and you can resize them at will.
+	of whatever size you wish and you can resize them at will.  There
+	is a new /SET available,  /SET WSERV_PATH which points to whatever
+	wserv you want to use.  By default it points to epic's wserv, but
+	just in case your sysadmin didn't install wserv4, you could 
+	compile it yourself and /SET WSERV_PATH to it.
 
 *** News 11/13/2001 -- /FLUSH now uses the "redirect sink"
 	Until now, /FLUSH worked by actually throwing away all data from
@@ -96,6 +180,17 @@ EPIC4-1.2.0
 	user's screen will redirect their output to the "sink", ie, it will
 	not be displayed.  This should make it much easier to script whois
 	replies.
+
+*** News 11/12/2001 -- /TIMER, /PAUSE now have sub-second resolution
+	Previously, /TIMER and /PAUSE have had whole-second granularity.
+	This means that when you asked for a timer to go off in N seconds,
+	the timer would actually go off in N seconds, give or take one second
+	(the resolution).  This was because the I/O looper in EPIC only worked
+	on whole-second granularity.  The I/O looper has been rewritten to
+	use microsecond resolution, so now /TIMER and /PAUSE will go off in
+	N seconds, give or take a microsecond.  This also allows you to 
+	specify sub-second resolution:  You can do /timer 1.5 ... and your
+	timer will go off in 1.5 seconds, not 1 second, not 2 seconds.
 
 *** News 11/12/2001 -- Changes to /SETENV let you unset environment variables
 	You may now unset environment variables with the /SETENV command by

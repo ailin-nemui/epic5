@@ -1,7 +1,7 @@
 #include "irc.h"
+#include "ircaux.h"
 
 #ifdef HAVE_SSL
-
 #include "ssl.h"
 
 // struct	cipher_info	cipher_info;
@@ -24,7 +24,7 @@ SSL *SSL_FD_init (SSL_CTX *ctx, int des)
 	SSL	*ssl;
 	if (!(ssl = SSL_new(ctx)))
 	{
-		return;
+		return NULL;
 		panic("SSL_FD_init critical error in SSL_new");
 	}
 	SSL_set_fd(ssl, des);

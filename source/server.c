@@ -904,9 +904,6 @@ static void 	vsend_to_server (const char *format, va_list args)
 	int	len,
 		des;
 	int	server;
-#ifdef HAVE_SSL
-	int	isssl;
-#endif
 
 	if ((server = from_server) == -1)
 		server = primary_server;
@@ -1769,7 +1766,6 @@ int	get_server_isssl (int gsn_index)
 void	register_server (int ssn_index, const char *nickname)
 {
 #ifdef HAVE_SSL
-	int		err;
 	int		alg;
 	int		sign_alg;
 	X509		*server_cert;
@@ -1831,7 +1827,7 @@ void	register_server (int ssn_index, const char *nickname)
 			/* No server certificate found */
 			do_hook(SSL_SERVER_CERT_LIST, "%s %s %s",
 				server_list[ssn_index].name,
-				NULL, NULL);
+				empty_string, empty_string);
 		}
 		X509_free(server_cert);
 	}

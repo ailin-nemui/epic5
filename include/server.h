@@ -209,4 +209,5 @@ const char *    get_server_quit_message		(int);
 
 	void	clear_reconnect_counts		(void);
 
+	void   	set_server_enable_ssl 		(int, int);
 #endif /* _SERVER_H_ */

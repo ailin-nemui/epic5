@@ -149,8 +149,17 @@ static File *lookup_logfile (int fd)
 	return &retval;
 }
 
+int 	target_file_write (const char *fd, const char *stuff)
+{
+	if (*fd == 'w' && is_number(fd + 1))
+		return file_write(1, my_atol(fd + 1), stuff);
+	else if (is_number(fd))
+		return file_write(0, my_atol(fd), stuff);
+	else
+		return -1;
+}
 
-int file_write (int window, int fd, char *stuff)
+int file_write (int window, int fd, const char *stuff)
 {
 	File 	*ptr;
 	int	retval;
