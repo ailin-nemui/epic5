@@ -9,7 +9,7 @@
  */
 
 #if 0
-static	char	rcsid[] = "@(#)$Id: crypt.c,v 1.3 2001/11/27 00:09:28 crazyed Exp $";
+static	char	rcsid[] = "@(#)$Id: crypt.c,v 1.4 2001/11/28 15:07:25 crazyed Exp $";
 #endif
 
 #include "irc.h"
@@ -106,7 +106,8 @@ BUILT_IN_COMMAND(encrypt_cmd)
 		{
 			prog = next_arg(args, &args);
 			add_to_crypt(nick, key, prog);
-			say("%s added to the crypt with key %s", nick, key);
+			say("%s added to the crypt with key %s and program %s",
+					nick, key, prog?prog:"[none]");
 		}
 		else
 		{
@@ -124,8 +125,8 @@ BUILT_IN_COMMAND(encrypt_cmd)
 
 			say("The crypt:");
 			for (tmp = crypt_list; tmp; tmp = tmp->next)
-				put_it("%s with key %s, prog %s",
-					tmp->nick, tmp->key, tmp->prog);
+				put_it("%s with key %s and program %s",
+					tmp->nick, tmp->key, tmp->prog?tmp->prog:"[none]");
 		}
 		else
 			say("The crypt is empty");
@@ -240,6 +241,10 @@ char 	*crypt_msg (char *str, Crypt *key)
 	*buffer = 0;
 	if ((ptr = do_crypt(str, key, 1)))
 	{
+		if (!*ptr) {
+			yell("WARNING: Empty encrypted message, but message "
+			     "sent anyway.  Bug?");
+		}
 		strmcat(buffer, thing, CRYPT_BUFFER_SIZE);
 		strmcat(buffer, ptr, CRYPT_BUFFER_SIZE);
 		strmcat(buffer, CTCP_DELIM_STR, CRYPT_BUFFER_SIZE);
