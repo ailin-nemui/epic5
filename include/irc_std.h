@@ -256,8 +256,12 @@ sigfunc *my_signal (int, sigfunc *);
  */
 #ifndef HAVE_STRUCT_SOCKADDR_STORAGE
 struct sockaddr_storage {
+#ifdef HAVE_SA_LEN
 	u_char ss_len;
 	u_char ss_family;
+#else
+	u_short ss_family;
+#endif
 	u_char padding[128 - 2];
 };
 #endif

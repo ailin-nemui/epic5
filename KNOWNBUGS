@@ -5,8 +5,6 @@ KNOWN ERRATA (eg, bugs, or unresolved requests):
 * A missing 'else' in create_additional_screen causes gnu screen to be
   prefered over X windows.  Should this be fixed, or at least made an option?
   Maybe try X, fall back to gnu screen on failure?
-* If you create a new query window in /on #msg -33, then the message does
-  not go to that query window!
 * Should /set beep off suppress stripping of beeps?
  
 [See http://www.epicsol.org/PROJECTS for things to come in the future]
@@ -17,3 +15,4 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Fix compile bugs if you #undef WINDOW_CREATE
 * Fix bug with unitialized local var passed to prepare_display (rb da5id)
 * Fix bug with kb/s not showing up for /DCC GETs
+* Add a check in configure for sa_len in (struct sockaddr), for linux.

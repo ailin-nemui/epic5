@@ -79,7 +79,7 @@ int	connect_by_number (char *hostn, unsigned short *portnum, int service, int pr
 		memset(&name, 0, sizeof(struct sockaddr_un));
 		name.sun_family = AF_UNIX;
 		strlcpy(name.sun_path, hostn, sizeof(name.sun_path));
-#ifdef HAVE_SUN_LEN
+#ifdef HAVE_SA_LEN
 # ifdef SUN_LEN
 		name.sun_len = SUN_LEN(&name);
 # else

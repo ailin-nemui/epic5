@@ -1,5 +1,5 @@
 /*
- * @(#)$Id: acconfig.h,v 1.9 2002/04/17 06:56:39 jnelson Exp $
+ * @(#)$Id: acconfig.h,v 1.10 2002/04/21 06:03:21 jnelson Exp $
  */
 
 /*
@@ -253,4 +253,7 @@
 
 /* Define this if you have struct sockaddr_storage */
 #undef HAVE_STRUCT_SOCKADDR_STORAGE
+
+/* Define this if your system has SA_LEN in its sockaddrs */
+#undef HAVE_SA_LEN
 
