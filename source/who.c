@@ -1,4 +1,4 @@
-/* $EPIC: who.c,v 1.23 2003/05/27 17:24:55 jnelson Exp $ */
+/* $EPIC: who.c,v 1.24 2003/07/08 22:36:52 jnelson Exp $ */
 /*
  * who.c -- The WHO queue.  The ISON queue.  The USERHOST queue.
  *
@@ -46,7 +46,7 @@
 #include "parse.h"
 #include "if.h"
 #include "names.h"
-
+#include "words.h"
 
 /*
  *

@@ -1,4 +1,4 @@
-/* $EPIC: words.c,v 1.6 2003/05/09 04:29:52 jnelson Exp $ */
+/* $EPIC: words.c,v 1.7 2003/07/08 22:36:52 jnelson Exp $ */
 /*
  * words.c -- right now it just holds the stuff i wrote to replace
  * that beastie arg_number().  Eventually, i may move all of the
@@ -36,11 +36,28 @@
 
 #include "irc.h"
 #include "ircaux.h"
+#include "words.h"
+#include "output.h"
 
+/* 
+ * If "extended" is 1, then honor /xdebug extractw.
+ * If "extended" is other than 1 but not zero, imply /xdebug extractw.
+ */
+#define CHECK_EXTENDED_SUPPORT					\
+	if (extended == DWORD_YES && 				\
+			((x_debug & DEBUG_EXTRACTW) == 0))	\
+		extended = DWORD_NEVER;				\
+        else if (extended == DWORD_ALWAYS)			\
+		extended = DWORD_YES;				\
+
+
+
+#define risspace(c) (c == ' ')
+ 
 /*
  * search() looks for a character forward or backward from mark 
  */
-char	*search (char *start, char **mark, char *chars, int how)
+char *	search_for (char *start, char **mark, char *chars, int how)
 {
         if (!mark || !*mark)
                 *mark = start;
@@ -62,55 +79,310 @@ char	*search (char *start, char **mark, char *chars, int how)
 	return *mark;
 }
 
-/* 
- * If "extended" is 1, then honor /xdebug extractw.
- * If "extended" is other than 1 but not zero, imply /xdebug extractw.
+/*
+ * A "forward quote" is the first double quote we find that has a space
+ * or the end of string after it; or the end of the string.
  */
-#define CHECK_EXTENDED_SUPPORT					\
-	if (extended == 1 && ((x_debug & DEBUG_EXTRACTW) == 0))	\
-		extended = 0;					\
-        else if (extended)					\
-		extended = 1;					\
+static const char *	find_forward_character (const char *input, const char *start, const char *whats)
+{
+	int	simple;
+	char	what;
 
+	if (whats && whats[0] && whats[1] == 0)
+	{
+		simple = 1;
+		what = whats[0];
+	}
+	else
+	{
+		simple = 0;
+		what = 255;
+	}
+
+	/*
+	 * An "extended word" is defined as:
+	 *	<SPACE> <QUOTE> <ANY>* <QUOTE> <SPACE>
+	 * <SPACE> := <WORD START> | <WORD END> | <" "> | <"\t"> | <"\n">
+	 * <QUOTE> :- <'"'>	(from quotechar)
+	 * <ANY>   := ANY ASCII CHAR 0 .. 256
+	 */
+	/* Make sure we are actually looking at a double-quote */
+	if ( (simple == 1 && *input != what) ||
+	     (simple == 0 && strchr(whats, *input) == NULL) )
+		return NULL;
+
+	/* 
+	 * Make sure that the character before is the start of the
+	 * string or that it is a space.
+	 */
+	if (input > start && !risspace(input[-1]))
+		return NULL;
+
+	/*
+	 * Walk the string looking for a double quote.  Yes, we do 
+	 * really have to check for \'s, still, because the following
+	 * still is one word:
+	 *			"one\" two"
+	 * Once we find a double quote, then it must be followed by 
+	 * either the end of string (chr 0) or a space.  If we find 
+	 * that, return the position of the double-quote.
+	 */
+	for (input++; *input; input++)
+	{
+		if (input[0] == '\\' && input[1])
+			input++;
+		else if ( (simple == 1 && input[0] == what) ||
+			  (simple == 0 && strchr(whats, *input)) )
+		{
+			if (input[1] == 0 || risspace(input[1]))
+				return input;
+		}
+	}
+
+	/*
+	 * If we get all the way to the end of the string w/o finding 
+	 * a matching double-quote, return the position of the (chr 0), 
+	 * which is a special meaning to the caller. 
+	 */
+	return input;		/* Bumped the end of string. doh! */
+}
+
+/*
+ * A "backward quote" is the first double quote we find, going backward,
+ * that has a space or the start of string after it; or the start of 
+ * the string.
+ */
+static const char *	find_backward_quote (const char *input, const char *start, const char *whats)
+{
+	const char *	saved_input = input;
+	char		what;
+	int		simple;
+
+	if (whats && whats[0] && whats[1] == 0)
+	{
+		simple = 1;
+		what = whats[0];
+	}
+	else
+	{
+		simple = 0;
+		what = 255;
+	}
+
+	/*
+	 * An "extended word" is defined as:
+	 *	<SPACE> <QUOTE> <ANY>* <QUOTE> <SPACE>
+	 * <SPACE> := <WORD START> | <WORD END> | <" "> | <"\t"> | <"\n">
+	 * <QUOTE> :- <'"'>	(from quotechar)
+	 * <ANY>   := ANY ASCII CHAR 0 .. 256
+	 */
+	/* Make sure we are actually looking at a double-quote */
+	if ( (simple == 1 && *input != what) ||
+	     (simple == 0 && strchr(whats, *input) == NULL) )
+		return NULL;
+
+
+	/* 
+	 * Make sure that the character after is either the end of the
+	 * string, or that it is a space.
+	 */
+	if (input[1] && !risspace(input[1]))
+		return NULL;
+
+	/*
+	 * Walk the string looking for a double quote.  Yes, we do 
+	 * really have to check for \'s, still, because the following
+	 * still is one word:
+	 *			"one\" two"
+	 * Once we find a double quote, then it must be followed by 
+	 * either the end of string (chr 0) or a space.  If we find 
+	 * that, return the position of the double-quote.
+	 */
+	for (input--; input >= start; input--)
+	{
+		if ( (simple == 1 && *input == what && 
+				(input > start && input[-1] == '\\')) ||
+		     (simple == 0 && strchr(whats, *input) &&
+				(input > start && input[-1] == '\\')) )
+		{
+			input--;
+		}
+		else if ( (simple == 1 && input[0] == what) ||
+			  (simple == 0 && strchr(whats, *input)) )
+		{
+			if (input == start || risspace(input[-1]))
+				return input;
+		}
+		else if (input == start)
+			break;			/* Stop right here */
+	}
+
+	/*
+	 * If we get all the way to the start of the string w/o finding 
+	 * a matching double-quote, then THIS IS NOT AN EXTENDED WORD!
+	 * We need to re-do this word entirely by starting over and looking
+	 * for a normal word.
+	 */
+	input = saved_input;
+	while (input > start && !risspace(input[0]))
+		input--;
+
+	if (risspace(input[0]))
+		input++;		/* Just in case we've gone too far */
+
+	return input;		/* Wherever we are is fine. */
+}
+
+
+static int	move_to_prev_word (const char **str, const char *start, int extended, const char *delims)
+{
+	char	what;
+	int	simple;
+
+	if (!str || !*str)
+		return 0;
+
+	if (delims && delims[0] && delims[1] == 0)
+	{
+		simple = 1;
+		what = delims[0];
+	}
+	else
+	{
+		simple = 0;
+		what = 255;
+	}
+
+	CHECK_EXTENDED_SUPPORT
+
+	while ((*str) >= start && my_isspace(**str))
+		(*str)--;
+
+	if ((*str) > start && extended == DWORD_YES && 
+	     ( (simple == 1 && **str == what) ||
+	       (simple == 0 && strchr(delims, **str)) ) )
+	{
+		const char *	before;
+
+		if (!(before = find_backward_quote(*str, start, delims)))
+			panic("find_backward returned NULL [2]");
+		if (before > start)
+			before--;
+		*str = before;
+	}
+	else
+	    while ((*str) >= start && !my_isspace(**str))
+		(*str)--;
+
+	/* 
+	 * This hack sucks, but it's necessary because we're doing
+	 * something very dodgy by working our way backwards towards
+	 * the front of a C string.  That's the way it goes.
+	 *
+	 * Basically, if we stop here, it's because we've hit the
+	 * front of the string while we were in the middle of a 
+	 * word.  So the start of the word is right here at the
+	 * beginning of the string (no adjustment necessary)
+	 */
+	if ((*str) <= start)
+	{
+		(*str) = start;
+		return 1;
+	}
+
+	/*
+	 * We're not at the start of the string, so the start of 
+	 * this word is at the next position.  Mark it and then
+	 * go looking for the end of the previous word.
+	 */
+	while ((*str) > start && my_isspace(**str)) 
+	    (*str)--;
+
+	if ((*str) >= start && !my_isspace(**str))
+		(*str)++;
+	return 1;
+}
+
+static int	move_to_next_word (const char **str, const char *start, int extended, const char *delims)
+{
+	char	what;
+	int	simple;
+
+	if (!str || !*str)
+		return 0;
+
+	if (x_debug & DEBUG_EXTRACTW_DEBUG)
+		yell(">>>> move_to_next_word: mark [%s], start [%s], extended [%d], delims [%s]", *str, start, extended, delims);
+
+	if (delims && delims[0] && delims[1] == 0)
+	{
+		if (x_debug & DEBUG_EXTRACTW_DEBUG)
+			yell(".... move_to_next_word: Simple processing");
+		simple = 1;
+		what = delims[0];
+	}
+	else
+	{
+		if (x_debug & DEBUG_EXTRACTW_DEBUG)
+			yell(".... move_to_next_word: Expensive processing");
+		simple = 0;
+		what = 255;
+	}
+
+	CHECK_EXTENDED_SUPPORT
+
+	if (x_debug & DEBUG_EXTRACTW_DEBUG)
+	{
+		yell(".... move_to_next_word: Extended word support requested [%d]", extended == DWORD_YES);
+		yell(".... move_to_next_word: Extended word support for simple case valid [%d]", simple == 1 && **str == what);
+		yell(".... move_to_next_word: Extended word support for complex case valid [%d]", simple == 0 && strchr(delims, **str));
+	}
+
+	if (extended == DWORD_YES && 
+	     ( (simple == 1 && **str == what) ||
+	       (simple == 0 && strchr(delims, **str)) ) )
+	{
+		const char *	after;
+
+		if (!(after = find_forward_character(*str, start, delims)))
+			panic("find_forward returned NULL [1]");
+		if (*after)
+			after++;
+		*str = after;
+	}
+	else
+		while (**str && !my_isspace(**str))
+			(*str)++;
+
+	while (**str && my_isspace(**str))
+		(*str)++;
+
+	return 1;
+}
 
 /* 
  * Move to an absolute word number from start
  * First word is always numbered zero.
  */
-const char *	real_move_to_abs_word (const char *start, const char **mark, int word, int extended)
+const char *	real_move_to_abs_word (const char *start, const char **mark, int word, int extended, const char *quotes)
 {
 	const char *	pointer = start;
 	int 		counter = word;
 
-	CHECK_EXTENDED_SUPPORT
+	if (x_debug & DEBUG_EXTRACTW_DEBUG)
+		yell(">>>> real_move_to_abs_word: start [%s], count [%d], extended [%d], quotes [%s]", start, word, extended, quotes);
 
-	/* 
-	 * This fixes a bug that counted leading spaces as
-	 * a word, when theyre really not a word.... 
-	 * (found by Genesis K.)
-	 */
 	while (*pointer && my_isspace(*pointer))
 		pointer++;
 
-	for (;counter > 0 && *pointer;counter--)
-	{
-		if (extended && *pointer == '"')
-		{
-			const char *	after;
+	if (x_debug & DEBUG_EXTRACTW_DEBUG)
+		yell(".... real_move_to_abs_word: pointer [%s]", pointer);
 
-			if (!(after = find_forward_quote(pointer, start)))
-				panic("find_forward returned NULL [1]");
-			if (*after)
-				after++;
-			pointer = after;
-		}
-		else
-			while (*pointer && !my_isspace(*pointer))
-				pointer++;
+	for (; counter > 0 && *pointer; counter--)
+		move_to_next_word(&pointer, start, extended, quotes);
 
-		while (*pointer && my_isspace(*pointer))
-			pointer++;
-	}
+	if (x_debug & DEBUG_EXTRACTW_DEBUG)
+		yell("<<<< real_move_to_abs_word: pointer [%s]", pointer);
 
 	if (mark)
 		*mark = pointer;
@@ -118,12 +390,27 @@ const char *	real_move_to_abs_word (const char *start, const char **mark, int wo
 }
 
 /* 
+ * Return the number of words in 'str' as defined by 'real_move_to_abs_word'
+ */
+int	count_words (const char *str, int extended, const char *quotes)
+{
+	const char *	pointer = str;
+	int		counter = 0;
+
+	while (*pointer && my_isspace(*pointer))
+		pointer++;
+
+	for (; *pointer; counter++)
+		move_to_next_word(&pointer, str, extended, quotes);
+
+	return counter;
+}
+
+
+/* 
  * Move a relative number of words from the present mark 
  */
-static ssize_t	move_word_rel (const char *start, const char **mark, int word, int extended)
-/*
-static char *	move_word_rel (const char *start, const char **mark, int word, int extended)
-*/
+ssize_t	move_word_rel (const char *start, const char **mark, int word, int extended, const char *quotes)
 {
 	int 		counter = word;
 	const char *	pointer = *mark;
@@ -132,54 +419,17 @@ static char *	move_word_rel (const char *start, const char **mark, int word, int
 	if (end == start) 	/* null string, return it */
 		return 0;
 
-	CHECK_EXTENDED_SUPPORT
 	if (counter > 0)
 	{
-	    for (;counter > 0 && pointer;counter--)
-	    {
-		if (extended && *pointer == '"')
-		{
-			const char *	after;
-
-			if (!(after = find_forward_quote(pointer, start)))
-				panic("find_forward returned NULL [2]");
-			if (*after)
-				after++;
-			pointer = after;
-		}
-		else
-			while (*pointer && !my_isspace(*pointer))
-				pointer++;
-
-		while (*pointer && my_isspace(*pointer)) 
-			pointer++;
-	    }
+	    for (;counter > 0 && *pointer;counter--)
+		move_to_next_word(&pointer, start, extended, quotes);
 	}
 	else if (counter == 0)
 		pointer = *mark;
 	else /* counter < 0 */
 	{
 	    for (; counter < 0 && pointer > start; counter++)
-	    {
-		if (extended && *pointer == '"')
-		{
-			const char *	before;
-
-			if (!(before = find_backward_quote(pointer, start)))
-				panic("find_backward returned NULL [2]");
-			if (before > start)
-				before--;
-			pointer = before;
-		}
-		else
-		    while (pointer >= start && !my_isspace(*pointer))
-			pointer--;
-
-		while (pointer > start && my_isspace(*pointer)) 
-		    pointer--;
-	    }
-
-	    pointer++; /* bump up to the word we just passed */
+		move_to_prev_word(&pointer, start, extended, quotes);
 	}
 
 	if (mark)
@@ -211,12 +461,11 @@ char *	real_extract2 (const char *start, int firstword, int lastword, int extend
 	const char *	mark2;
 	char *		booya = NULL;
 
-	CHECK_EXTENDED_SUPPORT
 	/* If firstword is EOS, then the user wants the last word */
 	if (firstword == EOS)
 	{
 		mark = start + strlen(start);
-		move_word_rel(start, &mark, -1, extended);
+		move_word_rel(start, &mark, -1, extended, "\"");
 #ifndef NO_CHEATING
 		/* 
 		 * Really. the only case where firstword == EOS is
@@ -242,7 +491,7 @@ char *	real_extract2 (const char *start, int firstword, int lastword, int extend
 	 * added by Colten Edwards, fixes the $1- bug.. */
 	else if (firstword >= 0)
 	{
-		real_move_to_abs_word(start, &mark, firstword, extended);
+		real_move_to_abs_word(start, &mark, firstword, extended, "\"");
 		if (!*mark)
 			return m_strdup(empty_string);
 	}
@@ -251,7 +500,7 @@ char *	real_extract2 (const char *start, int firstword, int lastword, int extend
 	else
 	{
 		mark = start + strlen(start);
-		move_word_rel(start, &mark, firstword, extended);
+		move_word_rel(start, &mark, firstword, extended, "\"");
 	}
 
 #ifndef STRIP_EXTRANEOUS_SPACES
@@ -285,11 +534,11 @@ char *	real_extract2 (const char *start, int firstword, int lastword, int extend
 	else 
 	{
 		if (lastword >= 0)
-			real_move_to_abs_word(start, &mark2, lastword+1, extended);
+			real_move_to_abs_word(start, &mark2, lastword+1, extended, "\"");
 		else
 		{
 			mark2 = start + strlen(start);
-			move_word_rel(start, &mark2, lastword, extended);
+			move_word_rel(start, &mark2, lastword, extended, "\"");
 		}
 
 		while (mark2 > start && my_isspace(mark2[-1]))
@@ -353,12 +602,12 @@ char *	real_extract (char *start, int firstword, int lastword, int extended)
 	if (firstword == EOS)
 	{
 		mark = start + strlen(start);
-		move_word_rel(start, (const char **)&mark, -1, extended);
+		move_word_rel(start, (const char **)&mark, -1, extended, "\"");
 	}
 
 	/* If the firstword is positive, move to that word */
 	else if (firstword >= 0)
-		real_move_to_abs_word(start, (const char **)&mark, firstword, extended);
+		real_move_to_abs_word(start, (const char **)&mark, firstword, extended, "\"");
 
 	/* Its negative.  Hold off right now. */
 	else
@@ -376,7 +625,7 @@ char *	real_extract (char *start, int firstword, int lastword, int extended)
 	else 
 	{
 		if (lastword >= 0)
-			real_move_to_abs_word(start, (const char **)&mark2, lastword+1, extended);
+			real_move_to_abs_word(start, (const char **)&mark2, lastword+1, extended, "\"");
 		else
 			/* its negative -- thats not valid */
 			return m_strdup(empty_string);

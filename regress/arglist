@@ -1,0 +1,291 @@
+@ misses = 0
+
+alias clear {
+        if (misses) {@ [$"[RETURN]"];@ misses = 0}
+        //clear
+}
+
+alias assert {
+        eval @ foo = $*
+        if (foo == 1) { echo Test [$[60]*] passed }
+                      { echo Test [$[60]*] FAILED! ;@misses++ }
+}
+
+alias t100 (arg1) {return $arg1}
+alias t101 (arg1) {return $*}
+alias t110 (arg1, arg2) {return $arg1}
+alias t111 (arg1, arg2) {return $arg2}
+alias t112 (arg1, arg2) {return $*}
+alias t120 (arg1 default "one", arg2 default "two") {return $arg1}
+alias t121 (arg1 default "one", arg2 default "two") {return $arg2}
+alias t122 (arg1 default "one", arg2 default "two") {return $*}
+alias t200 (arg1, arg2, ...) {return $arg1$()}
+alias t201 (arg1, arg2, ...) {return $arg2$()}
+alias t202 (arg1, arg2, ...) {return $*}
+alias t210 (arg1, arg2, void) {return $arg1$()}
+alias t211 (arg1, arg2, void) {return $arg2$()}
+alias t212 (arg1, arg2, void) {return $*}
+alias t300 (arg1 words 1, arg2, ...) {return $arg1$()}
+alias t301 (arg1 words 1, arg2, ...) {return $arg2$()}
+alias t302 (arg1 words 1, arg2, ...) {return $*}
+alias t310 (arg1 words 2, arg2, ...) {return $arg1$()}
+alias t311 (arg1 words 2, arg2, ...) {return $arg2$()}
+alias t312 (arg1 words 2, arg2, ...) {return $*}
+alias t320 (arg1 uwords 1, arg2, ...) {return $arg1$()}
+alias t321 (arg1 uwords 1, arg2, ...) {return $arg2$()}
+alias t322 (arg1 uwords 1, arg2, ...) {return $*}
+alias t330 (arg1 uwords 2, arg2, ...) {return $arg1$()}
+alias t331 (arg1 uwords 2, arg2, ...) {return $arg2$()}
+alias t332 (arg1 uwords 2, arg2, ...) {return $*}
+alias t340 (arg1 uwords 2, arg2 qwords 1, ...) {return $arg1$()}
+alias t341 (arg1 uwords 2, arg2 qwords 1, ...) {return $arg2$()}
+alias t342 (arg1 uwords 2, arg2 qwords 1, ...) {return $*}
+alias t350 (arg1 words 2, arg2 qwords 2 default "zoot", ...) {return $arg1$()}
+alias t351 (arg1 words 2, arg2 qwords 2 default "zoot", ...) {return $arg2$()}
+alias t352 (arg1 words 2, arg2 qwords 2 default "zoot", ...) {return $*}
+alias t360 (arg1 uwords 2, arg2 dwords 1, ...) {return $arg1$()}
+alias t361 (arg1 uwords 2, arg2 dwords 1, ...) {return $arg2$()}
+alias t362 (arg1 uwords 2, arg2 dwords 1, ...) {return $*}
+alias t370 (arg1 words 2, arg2 dwords 2 default "zoot", ...) {return $arg1$()}
+alias t371 (arg1 words 2, arg2 dwords 2 default "zoot", ...) {return $arg2$()}
+alias t372 (arg1 words 2, arg2 dwords 2 default "zoot", ...) {return $*}
+
+
+# Test #1.0 -- Simple Arg List -- One Arguments
+clear
+xdebug -extractw
+assert t100(one two three)==[one two three]
+assert t101(one two three)==[]
+assert t100("one two" three)==["one two" three]
+assert t101("one two" three)==[]
+
+# Test #1.1 -- Simple Arg List -- Two Arguments
+assert t110(one two three)==[one]
+assert t111(one two three)==[two three]
+assert t112(one two three)==[]
+assert t110("one two" three)==["one]
+assert t111("one two" three)==[two" three]
+assert t112("one two" three)==[]
+
+# Test #1.2 -- Simple Arg List -- Two Arguments With Defaults
+assert t120()==[one]
+assert t121()==[two]
+assert t122()==[]
+assert t120(boom)==[boom]
+assert t121(boom)==[two]
+assert t122(boom)==[]
+assert t120(boom bam)==[boom]
+assert t121(boom bam)==[bam]
+assert t122(boom bam)==[]
+assert t120(boom bam booya)==[boom]
+assert t121(boom bam booya)==[bam booya]
+assert t122(boom bam booya)==[]
+assert t120("boom")==["boom"]
+assert t121("boom")==[two]
+assert t122("boom")==[]
+assert t120("boom bam")==["boom]
+assert t121("boom bam")==[bam"]
+assert t122("boom bam")==[]
+assert t120("boom bam" booya)==["boom]
+assert t121("boom bam" booya)==[bam" booya]
+assert t122("boom bam" booya)==[]
+
+
+#############################################################################
+# Test #2.0 -- Arg List With Elipses
+clear
+assert t200(one two three)==[one]
+assert t201(one two three)==[two]
+assert t202(one two three)==[three]
+assert t200("one two" three four)==["one]
+assert t201("one two" three four)==[two"]
+assert t202("one two" three four)==[three four]
+assert t200(one "two three" four)==[one]
+assert t201(one "two three" four)==["two]
+assert t202(one "two three" four)==[three" four]
+
+# Test #2.1 -- Arg List With Void
+assert t210(one two three)==[one]
+assert t211(one two three)==[two]
+assert t212(one two three)==[]
+assert t210("one two" three)==["one]
+assert t211("one two" three)==[two"]
+assert t212("one two" three)==[]
+
+##############################################################################
+# Test #3.0 -- Arg List with 1 Word Count and Elipses
+clear
+assert t300(one two three four)==[one]
+assert t301(one two three four)==[two]
+assert t302(one two three four)==[three four]
+assert t300("one two" three four)==["one]
+assert t301("one two" three four)==[two"]
+assert t302("one two" three four)==[three four]
+xdebug extractw
+assert t300("one two" three four)==[one two]
+assert t301("one two" three four)==[three]
+assert t302("one two" three four)==[four]
+assert t300("one two" "three four")==[one two]
+assert t301("one two" "three four")==[three four]
+assert t302("one two" "three four")==[]
+xdebug -extractw
+
+# Test #3.1 -- Arg List with 2 Word Count and Elipses
+clear
+assert t310(one two three four)==[one two]
+assert t311(one two three four)==[three]
+assert t312(one two three four)==[four]
+assert t310("one two" three four)==["one two"]
+assert t311("one two" three four)==[three]
+assert t312("one two" three four)==[four]
+xdebug extractw
+assert t310("one two" three four)==[one two three]
+assert t311("one two" three four)==[four]
+assert t312("one two" three four)==[]
+assert t310("one two" "three four")==[one two three four]
+assert t311("one two" "three four")==[]
+assert t312("one two" "three four")==[]
+xdebug -extractw
+
+# Test #3.2 -- Arg List with 1 UWord (no double quotes) Count and Elipses
+clear
+assert t320(one two three four)==[one]
+assert t321(one two three four)==[two]
+assert t322(one two three four)==[three four]
+assert t320("one two" three four)==["one]
+assert t321("one two" three four)==[two"]
+assert t322("one two" three four)==[three four]
+xdebug extractw
+assert t320("one two" three four)==["one]
+assert t321("one two" three four)==[two"]
+assert t322("one two" three four)==[three four]
+assert t320("one two" "three four")==["one]
+assert t321("one two" "three four")==[two"]
+assert t322("one two" "three four")==["three four"]
+xdebug -extractw
+
+# Test #3.3 -- Arg List with 2 UWord Count (no double quotes) and Elipses
+clear
+assert t330(one two three four)==[one two]
+assert t331(one two three four)==[three]
+assert t332(one two three four)==[four]
+assert t330("one two" three four)==["one two"]
+assert t331("one two" three four)==[three]
+assert t332("one two" three four)==[four]
+xdebug extractw
+assert t330("one two" three four)==["one two"]
+assert t331("one two" three four)==[three]
+assert t332("one two" three four)==[four]
+assert t330("one two" "three four")==["one two"]
+assert t331("one two" "three four")==[three four]
+assert t332("one two" "three four")==[]
+xdebug -extractw
+
+# Test #3.4 -- Arg List with 2 UWord Count (no double quotes) 
+#              and 1 Word Count (double quotes) and Elipses
+clear
+assert t340(one two three four)==[one two]
+assert t341(one two three four)==[three]
+assert t342(one two three four)==[four]
+assert t340("one two" three four)==["one two"]
+assert t341("one two" three four)==[three]
+assert t342("one two" three four)==[four]
+assert t340("one two" "three four")==["one two"]
+assert t341("one two" "three four")==["three four"]
+assert t342("one two" "three four")==[]
+xdebug extractw
+assert t340("one two" three four)==["one two"]
+assert t341("one two" three four)==[three]
+assert t342("one two" three four)==[four]
+assert t340("one two" "three four")==["one two"]
+assert t341("one two" "three four")==["three four"]
+assert t342("one two" "three four")==[]
+xdebug -extractw
+
+# Test #3.5 -- Arg List with 2 Word Count (no double quotes) 
+#              and 2 QWord Count (double quotes) with default and Elipses
+clear
+assert t350()==[]
+assert t351()==[zoot]
+assert t352()==[]
+assert t350(one two)==[one two]
+assert t351(one two)==[zoot]
+assert t352(one two)==[]
+assert t350(one two three)==[one two]
+assert t351(one two three)==[three]
+assert t352(one two three)==[]
+assert t350(one two three four)==[one two]
+assert t351(one two three four)==[three four]
+assert t352(one two three four)==[]
+assert t350("one two" three four)==["one two"]
+assert t351("one two" three four)==[three four]
+assert t352("one two" three four)==[]
+assert t350("one two" "three four")==["one two"]
+assert t351("one two" "three four")==["three four"]
+assert t352("one two" "three four")==[]
+xdebug extractw
+assert t350("one two" three four)==[one two three]
+assert t351("one two" three four)==[four]
+assert t352("one two" three four)==[]
+assert t350("one two" "three four" "five six" 7 8)==[one two three four]
+assert t351("one two" "three four" "five six" 7 8)==["five six" 7]
+assert t352("one two" "three four" "five six" 7 8)==[8]
+xdebug -extractw
+
+# Test #3.6 -- Arg List with 2 UWord Count (no double-quoted word support)
+#              and 1 DWord Count (no double quotes) and Elipses
+clear
+assert t360(one two three four)==[one two]
+assert t361(one two three four)==[three]
+assert t362(one two three four)==[four]
+assert t360("one two" three four)==["one two"]
+assert t361("one two" three four)==[three]
+assert t362("one two" three four)==[four]
+assert t360("one two" "three four")==["one two"]
+assert t361("one two" "three four")==[three four]
+assert t362("one two" "three four")==[]
+xdebug extractw
+assert t360("one two" three four)==["one two"]
+assert t361("one two" three four)==[three]
+assert t362("one two" three four)==[four]
+assert t360("one two" "three four")==["one two"]
+assert t361("one two" "three four")==[three four]
+assert t362("one two" "three four")==[]
+xdebug -extractw
+
+# Test #3.7 -- Arg List with 2 Word Count (no double quotes) 
+#              and 2 DWord Count (no double quotes) with default and Elipses
+clear
+assert t370()==[]
+assert t371()==[zoot]
+assert t372()==[]
+assert t370(one two)==[one two]
+assert t371(one two)==[zoot]
+assert t372(one two)==[]
+assert t370(one two three)==[one two]
+assert t371(one two three)==[three]
+assert t372(one two three)==[]
+assert t370(one two three four)==[one two]
+assert t371(one two three four)==[three four]
+assert t372(one two three four)==[]
+assert t370("one two" three four)==["one two"]
+assert t371("one two" three four)==[three four]
+assert t372("one two" three four)==[]
+assert t370("one two" "three four")==["one two"]
+assert t371("one two" "three four")==[three four]
+assert t372("one two" "three four")==[]
+xdebug extractw
+assert t370("one two" three four)==[one two three]
+assert t371("one two" three four)==[four]
+assert t372("one two" three four)==[]
+assert t370("one two" "three four" "five six" 7 8)==[one two three four]
+assert t371("one two" "three four" "five six" 7 8)==[five six 7]
+assert t372("one two" "three four" "five six" 7 8)==[8]
+xdebug -extractw
+
+
+echo
+echo
+echo
+echo ALL TESTS ARE DONE!
+

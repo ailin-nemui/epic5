@@ -1,4 +1,4 @@
-/* $EPIC: functions.c,v 1.122 2003/07/07 22:10:56 jnelson Exp $ */
+/* $EPIC: functions.c,v 1.123 2003/07/08 22:36:51 jnelson Exp $ */
 /*
  * functions.c -- Built-in functions for ircII
  *
@@ -71,6 +71,7 @@
 #include "timer.h"
 #include "functions.h"
 #include "options"
+#include "words.h"
 
 #ifdef HAVE_REGEX_H
 # include <regex.h>
@@ -1677,7 +1678,7 @@ BUILT_IN_FUNCTION(function_before, word)
 	if (numint < 0 && strlen(word))
 		pointer = word + strlen(word) - 1;
 
-	pointer = search(word, &pointer, chars, numint);
+	pointer = search_for(word, &pointer, chars, numint);
 
 	if (!pointer)
 		RETURN_EMPTY;
@@ -1712,7 +1713,7 @@ BUILT_IN_FUNCTION(function_after, word)
 	if (numint < 0 && strlen(word))
 		pointer = word + strlen(word) - 1;
 
-	pointer = search(word, &pointer, chars, numint);
+	pointer = search_for(word, &pointer, chars, numint);
 
 	if (!pointer || !*pointer)
 		RETURN_EMPTY;

@@ -219,6 +219,13 @@ sigfunc *my_signal (int, sigfunc *);
 
 typedef char Filename[MAXPATHLEN + 1];
 
+/*
+ * It's really really important that you never use LOCAL_COPY in the actual
+ * argument list of a function call, because bad things can happen.  Always
+ * do your LOCAL_COPY as a separate step before you call a function.
+ */
+#define LOCAL_COPY(y) strcpy(alloca(strlen((y)) + 1), y)
+#define SAFE(x) (((x) && *(x)) ? (x) : empty_string)
 
 /*
  * Deal with our brokenness wrt ANSI.  Sigh.

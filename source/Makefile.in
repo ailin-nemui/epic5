@@ -96,7 +96,7 @@ alias.o: alias.c ../include/irc.h ../include/defs.h \
  ../include/input.h ../include/output.h ../include/screen.h \
  ../include/window.h ../include/lastlog.h ../include/status.h \
  ../include/stack.h ../include/vars.h ../include/keys.h \
- ../include/functions.h expr2.c expr.c
+ ../include/functions.h ../include/words.h expr2.c expr.c
 alist.o: alist.c ../include/irc.h ../include/defs.h \
  ../include/config.h ../include/irc_std.h ../include/debug.h \
  ../include/reg.h ../include/alist.h ../include/ircaux.h \
@@ -181,7 +181,7 @@ functions.o: functions.c ../include/irc.h ../include/defs.h \
  ../include/who.h ../include/vars.h ../include/term.h \
  ../include/notify.h ../include/numbers.h ../include/sedcrypt.h \
  ../include/timer.h ../include/functions.h ../include/options \
- ../include/glob.h ../include/hook.h
+ ../include/words.h ../include/glob.h ../include/hook.h
 gailib.o: gailib.c ../include/irc_std.h ../include/defs.h \
  ../include/gailib.h
 glob.o: glob.c ../include/config.h ../include/glob.h ../include/irc.h \
@@ -216,7 +216,8 @@ ignore.o: ignore.c ../include/irc.h ../include/defs.h \
  ../include/config.h ../include/irc_std.h ../include/debug.h \
  ../include/reg.h ../include/ignore.h ../include/ircaux.h \
  ../include/list.h ../include/vars.h ../include/output.h \
- ../include/parse.h
+ ../include/parse.h ../include/timer.h ../include/functions.h \
+ ../include/window.h ../include/lastlog.h ../include/status.h
 input.o: input.c ../include/irc.h ../include/defs.h \
  ../include/config.h ../include/irc_std.h ../include/debug.h \
  ../include/reg.h ../include/alias.h ../include/commands.h \
@@ -241,7 +242,7 @@ ircaux.o: ircaux.c ../include/irc.h ../include/defs.h \
  ../include/reg.h ../include/screen.h ../include/window.h \
  ../include/lastlog.h ../include/status.h ../include/ircaux.h \
  ../include/output.h ../include/term.h ../include/vars.h \
- ../include/alias.h ../include/if.h
+ ../include/alias.h ../include/if.h ../include/words.h
 ircsig.o: ircsig.c ../include/irc.h ../include/defs.h \
  ../include/config.h ../include/irc_std.h ../include/debug.h \
  ../include/reg.h
@@ -413,7 +414,7 @@ who.o: who.c ../include/irc.h ../include/defs.h ../include/config.h \
  ../include/alist.h ../include/window.h ../include/lastlog.h \
  ../include/status.h ../include/vars.h ../include/hook.h \
  ../include/output.h ../include/numbers.h ../include/parse.h \
- ../include/if.h ../include/names.h
+ ../include/if.h ../include/names.h ../include/words.h
 window.o: window.c ../include/irc.h ../include/defs.h \
  ../include/config.h ../include/irc_std.h ../include/debug.h \
  ../include/reg.h ../include/screen.h ../include/window.h \
@@ -425,6 +426,7 @@ window.o: window.c ../include/irc.h ../include/defs.h \
  ../include/exec.h
 words.o: words.c ../include/irc.h ../include/defs.h \
  ../include/config.h ../include/irc_std.h ../include/debug.h \
- ../include/reg.h ../include/ircaux.h
+ ../include/reg.h ../include/ircaux.h ../include/words.h \
+ ../include/output.h
 wserv.o: wserv.c ../include/defs.h ../include/config.h \
  ../include/irc_std.h

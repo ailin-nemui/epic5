@@ -27,6 +27,12 @@
 #define CTCP_CUSTOM		12
 #define NUMBER_OF_CTCPS		CTCP_CUSTOM
 
+#define CTCP_DELIM_CHAR         '\001' 
+#define CTCP_DELIM_STR          "\001" 
+#define CTCP_QUOTE_CHAR         '\\'
+#define CTCP_QUOTE_STR          "\\"
+#define CTCP_QUOTE_EM           "\r\n\001\\"
+
 extern	int	sed;
 extern	int	in_ctcp_flag;
 

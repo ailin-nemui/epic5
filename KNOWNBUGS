@@ -38,3 +38,15 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Add $metric_time(), which returns <days> <millidays> since epoch.
 * Add /set metric_time, which makes epic's clock go metric! (default off)
 * Break update_clock() into three clocks; standard, metric, and broken
+* Move #define CTCP_* into ctcp.h
+* Add /xdebug extractw_debug
+* Move #define LOCAL_COPY and SAFE into irc_std.h
+* Create compat.h, move all the compat.c decls into there (from ircaux.h)
+* Create network.h, move all the network.c decls into there (from ircaux.h)
+* Create words.h, move all the words.c decls into there (from ircaux.h)
+* Include "compat.h" and "network.h" in ircaux.h
+* Do another round of make depends
+* Rename 'search' to 'search_for'.
+* Fix the metric clock hooking /on timer too much.
+* Revamp words.c, to support passing word quoter (' or ") as an argument.
+

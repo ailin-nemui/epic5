@@ -1,4 +1,4 @@
-/* $EPIC: ircaux.c,v 1.80 2003/07/07 22:10:57 jnelson Exp $ */
+/* $EPIC: ircaux.c,v 1.81 2003/07/08 22:36:52 jnelson Exp $ */
 /*
  * ircaux.c: some extra routines... not specific to irc... that I needed 
  *
@@ -46,6 +46,8 @@
 #include "vars.h"
 #include "alias.h"
 #include "if.h"
+#include "words.h"
+#include "ctcp.h"
 
 /*
  * This is the basic overhead for every malloc allocation (8 bytes).
@@ -844,7 +846,7 @@ noquotedword:
  */
 char *	new_next_arg_count (char *str, char **new_ptr, int count)
 {
-	real_move_to_abs_word(str, (const char **)new_ptr, count, 2);
+	real_move_to_abs_word(str, (const char **)new_ptr, count, 2, "\"");
 	if ((*new_ptr)[0] && *new_ptr > str)
 		(*new_ptr)[-1] = 0;
 	return str;

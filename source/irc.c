@@ -1,4 +1,4 @@
-/* $EPIC: irc.c,v 1.535 2003/07/08 22:21:59 jnelson Exp $ */
+/* $EPIC: irc.c,v 1.536 2003/07/08 22:36:52 jnelson Exp $ */
 /*
  * ircII: a new irc client.  I like it.  I hope you will too!
  *
@@ -52,7 +52,7 @@ const char internal_version[] = "20030613";
 /*
  * In theory, this number is incremented for every commit.
  */
-const unsigned long	commit_id = 540;
+const unsigned long	commit_id = 541;
 
 /*
  * As a way to poke fun at the current rage of naming releases after
@@ -1185,7 +1185,6 @@ static		int	hour = -1;
 static 	struct 	tm	time_val;
 static		time_t	last_minute = -1;
 		time_t	hideous;
-		int	new_minute = 0;
 
 	/*
 	 * This is cheating because we only call localtime() once per minute.
@@ -1241,7 +1240,6 @@ static	char	time_str[61];
 static	long	last_milliday;
 	double	metric_time;
 	long	current_milliday;
-	int	reset = 0;
 
 	get_metric_time(&metric_time);
 	current_milliday = (long)metric_time;
@@ -1261,14 +1259,8 @@ static	long	last_milliday;
 			do_hook(IDLE_LIST, "%ld", 
 				(long)(idle_milliday - current_milliday));
 			from_server = old_server;
-			current_milliday = last_milliday;
-			flag = GET_TIME;
+			last_milliday = current_milliday;
 		}
-
-		if (flag != RESET_TIME)
-			return time_str;
-		else
-			return NULL;
 	}
 
 	if (flag == GET_TIME)

@@ -7,18 +7,19 @@
  *
  * See the COPYRIGHT file, or do a HELP IRCII COPYRIGHT 
  *
- * @(#)$Id: ircaux.h,v 1.49 2003/07/07 22:10:56 jnelson Exp $
+ * @(#)$Id: ircaux.h,v 1.50 2003/07/08 22:36:51 jnelson Exp $
  */
 
 #ifndef _IRCAUX_H_
 #define _IRCAUX_H_
 
+#include "compat.h"
+#include "network.h"
+
 struct metric_time {
 	long mt_days;
 	double mt_mdays;
 };
-
-#define SAFE(x) (((x) && *(x)) ? (x) : empty_string)
 
 typedef int 	comp_len_func 		(char *, char *, int);
 typedef int 	comp_func 		(char *, char *);
@@ -29,13 +30,6 @@ typedef int 	comp_func 		(char *, char *);
 #define MUST_BE_MALLOCED(x, y) \
 		fatal_malloc_check ((void *)(x), (y), __FILE__, __LINE__)
 #define RESIZE(x, y, z) new_realloc	((void **)& (x), sizeof(y) * (z))
-
-/*
- * It's really really important that you never use LOCAL_COPY in the actual
- * argument list of a function call, because bad things can happen.  Always
- * do your LOCAL_COPY as a separate step before you call a function.
- */
-#define LOCAL_COPY(y) strcpy(alloca(strlen((y)) + 1), y)
 
 #define m_e3cat(x,y,z) m_ec3cat((x),(y),(z),NULL)
 #define m_s3cat(x,y,z) m_sc3cat((x),(y),(z),NULL)
@@ -107,12 +101,12 @@ int	fw_strcmp 		(comp_len_func *, char *, char *);
 int	lw_strcmp 		(comp_func *, char *, char *);
 int	open_to 		(char *, int, int);
 struct metric_time get_metric_time	(double *);
-struct metric_time timeval_to_metric	(struct timeval *);
-struct timeval get_time 	(struct timeval *);
-double 	time_diff 		(struct timeval, struct timeval);
-struct timeval time_add		(struct timeval, struct timeval);
-struct timeval time_subtract	(struct timeval, struct timeval);
-struct timeval double_to_timeval (double);
+struct metric_time timeval_to_metric	(Timeval *);
+Timeval get_time		(Timeval *);
+double 	time_diff 		(Timeval, Timeval);
+Timeval time_add		(Timeval, Timeval);
+Timeval time_subtract		(Timeval, Timeval);
+Timeval double_to_timeval 	(double);
 const char *	plural 		(int);
 double	time_to_next_minute 	(void);
 char *	remove_trailing_spaces 	(char *, size_t *cluep);
@@ -147,12 +141,6 @@ char *	prntdump		(const char *, size_t);
 char *	ov_strcpy		(char *, const char *);
 size_t	ccspan			(const char *, int);
 int	last_char		(const char *);
-#ifndef HAVE_VSNPRINTF
-int	vsnprintf 		(char *, size_t, const char *, va_list);
-#endif
-#ifndef HAVE_SNPRINTF
-int	snprintf 		(char *, size_t, const char *, ...) __A(3);
-#endif
 char *	next_in_comma_list	(char *, char **);
 char *	next_in_div_list	(char *, char **, char);
 char *	get_userhost		(void);
@@ -177,55 +165,13 @@ char *	urlencode		(const char *);
 char *	urldecode		(char *, size_t *);
 char *	enquote_it		(char *str, size_t len);
 char *	dequote_it		(char *str, size_t *len);
-const char *	find_forward_quote	(const char *, const char *);
-const char *	find_backward_quote	(const char *, const char *);
 const char *	my_strerror	(int, int);
 int	slurp_file		(char **buffer, char *filename);
 
-/* From words.c */
-#define SOS 		-32767
-#define EOS 		 32767
-char *		search 			(char *, char **, char *, int);
-const char *	real_move_to_abs_word 	(const char *, const char **, int, int);
-char *		real_extract 		(char *, int, int, int);
-char *		real_extract2 		(const char *, int, int, int);
-#define move_to_abs_word(a, b, c)	real_move_to_abs_word(a, b, c, 1);
-#define extract(a, b, c)		real_extract(a, b, c, 0)
-#define extract2(a, b, c)		real_extract2(a, b, c, 0)
-#define extractw(a, b, c)		real_extract(a, b, c, 1)
-#define extractw2(a, b, c)		real_extract2(a, b, c, 1)
-
-/* Used for connect_by_number */
-#define SERVICE_SERVER 	0
-#define SERVICE_CLIENT 	1
-
-/* Used from network.c */
-#define V0(x) ((SA *)&(x))
-#define FAMILY(x) (V0(x)->sa_family)
-
-#define V4(x) ((ISA *)&(x))
-#define V4FAM(x) (V4(x)->sin_family)
-#define V4ADDR(x) (V4(x)->sin_addr)
-#define V4PORT(x) (V4(x)->sin_port)
-
-#define V6(x) ((ISA6 *)&(x))
-#define V6FAM(x) (V6(x)->sin6_family)
-#define V6ADDR(x) (V6(x)->sin6_addr)
-#define V6PORT(x) (V6(x)->sin6_port)
-
-
-int	inet_strton		(const char *, const char *, SA *, int);
-int	inet_ntostr		(SA *, char *, int, char *, int, int);
-char 	*inet_hntop 		(int, const char *, char *, int);
-char 	*inet_ptohn 		(int, const char *, char *, int);
-char 	*one_to_another 	(int, const char *, char *, int);
-int	Accept			(int, SA *, int *);
-char 	*switch_hostname	(const char *);
-int	ip_bindery		(int family, u_short port, SS *storage);
-int	client_bind		(SA *, socklen_t);
-int	client_connect		(SA *, socklen_t, SA *, socklen_t);
-int	connectory		(int, const char *, const char *);
-#define GNI_INTEGER 0x4000
+size_t	strlcpy_c		(char *, const char *, size_t, size_t *);
+size_t	strlcat_c		(char *, const char *, size_t, size_t *);
+char *  strlopencat_c		(char *dest, size_t maxlen, size_t *cluep, ...);
+int     is_string_empty 	(const char *str);
 
 extern	unsigned char isspace_table[256];
 #define my_isspace(x) isspace_table[(unsigned)(unsigned char)(x)]
@@ -250,49 +196,5 @@ extern	int	outbound_line_mangler;
 extern	int	inbound_line_mangler;
 extern	int	logfile_line_mangler;
 size_t	mangle_line		(char *, int, size_t);
-
-/* Used from compat.c */
-#ifndef HAVE_TPARM
-char 	*tparm (const char *, ...);
-#endif
-#ifndef HAVE_STRTOUL
-unsigned long 	strtoul (const char *, char **, int);
-#endif
-
-char *	bsd_getenv (const char *);
-int	bsd_putenv (const char *);
-int	bsd_setenv (const char *, const char *, int);
-void	bsd_unsetenv (const char *);
-
-void		bsd_arc4random_stir (void);
-void		bsd_arc4random_addrandom (u_char *, int);
-u_32int_t	bsd_arc4random (void);
-
-#ifndef HAVE_STRLCPY
-size_t	strlcpy (char *, const char *, size_t);
-#endif
-#ifndef HAVE_STRLCAT
-size_t	strlcat (char *, const char *, size_t);
-#endif
-#ifndef HAVE_VSNPRINTF
-int	vsnprintf (char *, size_t, const char *, va_list);
-#endif
-#ifndef HAVE_SNPRINTF
-int	snprintf (char *, size_t, const char *, ...);
-#endif
-#ifndef HAVE_SETSID
-int	setsid (void);
-#endif
-char *	my_realpath (const char *pathname, char resolved_path[]);
-size_t	strlcpy_c (char *, const char *, size_t, size_t *);
-size_t	strlcat_c (char *, const char *, size_t, size_t *);
-char *  strlopencat_c (char *dest, size_t maxlen, size_t *cluep, ...);
-int     is_string_empty (const char *str);
-
-#define CTCP_DELIM_CHAR 	'\001'
-#define CTCP_DELIM_STR 		"\001"
-#define CTCP_QUOTE_CHAR 	'\\'
-#define CTCP_QUOTE_STR 		"\\"
-#define CTCP_QUOTE_EM 		"\r\n\001\\"
 
 #endif /* _IRCAUX_H_ */
