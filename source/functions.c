@@ -3687,6 +3687,9 @@ BUILT_IN_FUNCTION(function_uniq, word)
 
 #if 1
 	/*
+	 * This was originally conceved by wd, although his code
+	 * never made it into the distribution.
+	 *
 	 * Sort followed up with a remove duplicates.  Standard stuff,
 	 * only, the whacky way we go about it is due to compatibility.
 	 *
