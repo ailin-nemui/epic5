@@ -1,4 +1,4 @@
-/* $EPIC: numbers.c,v 1.49 2003/05/09 04:29:52 jnelson Exp $ */
+/* $EPIC: numbers.c,v 1.50 2003/07/04 17:27:55 jnelson Exp $ */
 /*
  * numbers.c: handles all those strange numeric response dished out by that
  * wacky, nutty program we call ircd 
@@ -588,15 +588,18 @@ void 	numbered_command (const char *from, const char *comm, char const **ArgList
 		if (!(nick = ArgList[0]))
 			{ rfc1459_odd(from, comm, ArgList); return; }
 
-		notify_mark(from_server, nick, 0, 0);
-		if (get_int_var(AUTO_WHOWAS_VAR))
+		if (!is_channel(nick))
 		{
+		    notify_mark(from_server, nick, 0, 0);
+		    if (get_int_var(AUTO_WHOWAS_VAR))
+		    {
 			int foo = get_int_var(NUM_OF_WHOWAS_VAR);
 
 			if (foo > -1)
 				send_to_server("WHOWAS %s %d", nick, foo);
 			else
 				send_to_server("WHOWAS %s", nick);
+		    }
 		}
 
 		break;
