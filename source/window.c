@@ -1,4 +1,4 @@
-/* $EPIC: window.c,v 1.104 2004/03/15 17:00:14 jnelson Exp $ */
+/* $EPIC: window.c,v 1.105 2004/03/16 00:24:33 jnelson Exp $ */
 /*
  * window.c: Handles the organzation of the logical viewports (``windows'')
  * for irc.  This includes keeping track of what windows are open, where they
@@ -2154,7 +2154,7 @@ static void 	revamp_window_masks (Window *window)
 	Window	*tmp = NULL;
 	int	i;
 
-	for (i = 0; i < NUMBER_OF_LEVELS; i++)
+	for (i = 1; i < NUMBER_OF_LEVELS; i++)
 	{
 	    if (!mask_isset(&window->window_mask, i))
 		continue;
@@ -3317,15 +3317,14 @@ static Window *window_level (Window *window, char **args)
 		add = 1;
 	    }
 
-	    for (i = 0; i < NUMBER_OF_LEVELS; i++)
+	    for (i = 1; i < NUMBER_OF_LEVELS; i++)
 	    {
 		if (add == 1 && mask_isset(&mask, i))
 			mask_set(&window->window_mask, i);
 		if (add == -1 && mask_isset(&mask, i))
 			mask_unset(&window->window_mask, i);
-
-		revamp_window_masks(window);
 	    }
+	    revamp_window_masks(window);
 	}
 	say("Window level is %s", mask_to_str(&window->window_mask));
 	return window;
@@ -3504,7 +3503,7 @@ static Window *window_next (Window *window, char **args)
 	smallest = window;
 	for (tmp = invisible_list; tmp; tmp = tmp->next)
 	{
-		if (!tmp->swappable)
+		if (!tmp->swappable || tmp->skip)
 			continue;
 		if (tmp->refnum < smallest->refnum)
 			smallest = tmp;
@@ -3634,7 +3633,7 @@ static Window *window_previous (Window *window, char **args)
 	largest = window;
 	for (tmp = invisible_list; tmp; tmp = tmp->next)
 	{
-		if (!tmp->swappable)
+		if (!tmp->swappable || tmp->skip)
 			continue;
 		if (tmp->refnum > largest->refnum)
 			largest = tmp;

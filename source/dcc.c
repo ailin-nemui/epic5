@@ -1,4 +1,4 @@
-/* $EPIC: dcc.c,v 1.93 2004/03/15 03:24:51 jnelson Exp $ */
+/* $EPIC: dcc.c,v 1.94 2004/03/16 00:24:33 jnelson Exp $ */
 /*
  * dcc.c: Things dealing client to client connections. 
  *
@@ -73,6 +73,7 @@
 #define DCC_TWOCLIENTS	((unsigned) 0x0100)
 #define DCC_REJECTED	((unsigned) 0x0200)
 #define DCC_QUOTED	((unsigned) 0x0400)
+#define DCC_CONNECTING	((unsigned) 0x0800)
 #define DCC_STATES	((unsigned) 0xfff0)
 
 typedef	struct	DCC_struct
@@ -126,11 +127,14 @@ static	void		dcc_chat 		(char *);
 static	void 		dcc_close 		(char *);
 static	void		dcc_closeall		(char *);
 static	void		dcc_erase 		(DCC_list *);
+static	void 		dcc_garbage_collect 	(void);
+static	int		dcc_connected		(int, int);
+static	int		dcc_connect 		(DCC_list *);
+static	int		dcc_listen		(DCC_list *);
+static 	void		dcc_send_booster_ctcp 	(DCC_list *dcc);
+
 static	void		dcc_filesend 		(char *);
 static	void		dcc_getfile_get 	(char *);
-static	int		dcc_open 		(DCC_list *);
-static	int		dcc_connected		(int, int);
-static	void 		dcc_garbage_collect 	(void);
 static	void		dcc_rename 		(char *);
 static	DCC_list *	dcc_searchlist 		(unsigned, const char *, const char *, const char *, int);
 static	void		dcc_send_raw 		(char *);
@@ -142,7 +146,6 @@ static	void		process_dcc_send 	(DCC_list *);
 static	void		process_incoming_file 	(DCC_list *);
 static	void		DCC_close_filesend 	(DCC_list *, const char *, const char *);
 static	void		update_transfer_buffer 	(long refnum, const char *format, ...);
-static 	void		dcc_send_booster_ctcp 	(DCC_list *dcc);
 static	char *		dcc_urlencode		(const char *);
 static	char *		dcc_urldecode		(const char *);
 static	void		dcc_list 		(char *args);
@@ -228,6 +231,7 @@ static DCC_list *	get_dcc_by_refnum (int refnum)
 }
 
 
+/************************************************************************/
 /*
  * remove_from_dcc_list: What do you think it does?
  */
@@ -449,6 +453,7 @@ static int	unlock_dcc (DCC_list *dcc)
 
 
 
+/************************************************************************/
 /*
  * These functions handle important DCC jobs.
  */
@@ -666,6 +671,7 @@ int	dcc_chat_active (const char *user)
 }
 
 
+/************************************************************************/
 /*
  * This is called when a client connection completes (either through
  * success or failure, which is indicated in 'result')
@@ -767,13 +773,12 @@ static int	dcc_connected (int fd, int result)
  * Whenever a DCC changes state from WAITING->ACTIVE, it calls this function
  * to initiate the internet connection for the transaction.
  */
-static	int	dcc_open (DCC_list *dcc)
+static	int	dcc_connect (DCC_list *dcc)
 {
 	int	old_server = from_server;
-	char	p_port[12];
 	int	retval = 0;
-	SS	  local;
-	socklen_t locallen;
+	SS	local;
+	socklen_t	locallen;
 
 	/*
 	 * Initialize our idea of what is going on.
@@ -781,103 +786,132 @@ static	int	dcc_open (DCC_list *dcc)
 	if (from_server == NOSERV)
 		from_server = get_window_server(0);
 
-	do
+	lock_dcc(dcc);
+    do
+    {
+	if (!(dcc->flags & DCC_THEIR_OFFER))
 	{
-	    /*
-	     * DCC GET or DCC CHAT -- accept someone else's offer.
-	     */
-	    if (dcc->flags & DCC_THEIR_OFFER)
-	    {
-		lock_dcc(dcc);
-		if (inet_vhostsockaddr(FAMILY(dcc->offer), -1, 
-					&local, &locallen) < 0)
-		    dcc->socket = client_connect(NULL, 0, (SA *)&dcc->offer,
-							sizeof(dcc->offer), 1);
-		else
-		    dcc->socket = client_connect((SA *)&local, locallen, 
-							(SA *)&dcc->offer, 
-							sizeof(dcc->offer), 1);
-
-		if (dcc->socket < 0)
-		{
-			char *encoded_description = dcc_urlencode(dcc->description);
-
-			/* XXX Error message may need to be tuned here. */
-			if (do_hook(DCC_LOST_LIST,"%s %s %s %s",
-					dcc->user,
-					dcc_types[dcc->flags&DCC_TYPES],
-					encoded_description ? encoded_description : "<any>",
-					my_strerror(dcc->socket, errno)))
-				say("Unable to create connection: (%d) [%d] %s", 
-					dcc->socket, errno, 
-					my_strerror(dcc->socket, errno));
-
-			if (encoded_description)
-				new_free(&encoded_description);
-
-			dcc->flags |= DCC_DELETE;
-			unlock_dcc(dcc);
-			retval = -1;
-			break;
-		}
-		unlock_dcc(dcc);
-
-		dcc_connected(dcc->socket, 0);
-		from_server = old_server;
+		say("Can't connect on a dcc that was not offered [%s]", dcc->user);
+		dcc->flags |= DCC_DELETE;
+		retval = -1;
 		break;
-	    }
+	}
 
-	    /*
-	     * DCC SEND or DCC CHAT -- make someone an offer they can't refuse.
-	     */
-	    else
-	    {
-		/*
-		 * Mark that we're waiting for the remote peer to answer,
-		 * and then open up a listen()ing socket for them.  If our
-		 * first choice of port fails, try another one.  If both
-		 * fail, then we give up.  If the user insists on doing
-		 * random ports, then we will fallback to asking the system
-		 * for a port if our random port isnt available.
-		 */
-		dcc->flags |= DCC_MY_OFFER;
-		if ((dcc->socket = ip_bindery(dcc->family, dcc->want_port, 
-					      &dcc->local_sockaddr)) < 0)
-		{
-			dcc->flags |= DCC_DELETE;
-			say("Unable to create connection [%d]: %s", 
-				dcc->socket, 
+	if (inet_vhostsockaddr(FAMILY(dcc->offer), -1, &local, &locallen) < 0)
+	    dcc->socket = client_connect(NULL, 0, (SA *)&dcc->offer,
+						sizeof(dcc->offer), 0);
+	else
+	    dcc->socket = client_connect((SA *)&local, locallen, 
+						(SA *)&dcc->offer, 
+						sizeof(dcc->offer), 0);
+
+	if (dcc->socket < 0)
+	{
+		char *encoded_description = dcc_urlencode(dcc->description);
+
+		/* XXX Error message may need to be tuned here. */
+		if (do_hook(DCC_LOST_LIST,"%s %s %s %s",
+				dcc->user,
+				dcc_types[dcc->flags&DCC_TYPES],
+				encoded_description ? encoded_description : "<any>",
+				my_strerror(dcc->socket, errno)))
+			say("Unable to create connection: (%d) [%d] %s", 
+				dcc->socket, errno, 
 				my_strerror(dcc->socket, errno));
-			retval = -1;
-			break;
-		}
+
+		if (encoded_description)
+			new_free(&encoded_description);
+
+		dcc->flags |= DCC_DELETE;
+		unlock_dcc(dcc);
+		retval = -1;
+		break;
+	}
+
+	dcc->flags |= DCC_CONNECTING;
+	new_open_for_writing(dcc->socket, do_dcc);
+	from_server = old_server;
+	break;
+    }
+    while (0);
+
+	unlock_dcc(dcc);
+	from_server = old_server;
+	return retval;
+}
+
+
+/*
+ * Make an offer to another peer that they can't refuse.
+ */
+static	int	dcc_listen (DCC_list *dcc)
+{
+	int	old_server = from_server;
+	char	p_port[12];
+	int	retval = 0;
+
+	/*
+	 * Initialize our idea of what is going on.
+	 */
+	if (from_server == NOSERV)
+		from_server = get_window_server(0);
+
+    do
+    {
+	if (dcc->flags & DCC_THEIR_OFFER)
+	{
+		dcc->flags |= DCC_DELETE;
+		say("Mixup: dcc_offer on a remote offer [%d]", dcc->socket);
+		retval = -1;
+		break;
+	}
+
+	/*
+	 * Mark that we're waiting for the remote peer to answer,
+	 * and then open up a listen()ing socket for them.  If our
+	 * first choice of port fails, try another one.  If both
+	 * fail, then we give up.  If the user insists on doing
+	 * random ports, then we will fallback to asking the system
+	 * for a port if our random port isnt available.
+	 */
+	dcc->flags |= DCC_MY_OFFER;
+	if ((dcc->socket = ip_bindery(dcc->family, dcc->want_port, 
+				      &dcc->local_sockaddr)) < 0)
+	{
+		dcc->flags |= DCC_DELETE;
+		say("Unable to create connection [%d]: %s", 
+			dcc->socket, 
+			my_strerror(dcc->socket, errno));
+		retval = -1;
+		break;
+	}
 
 #ifdef MIRC_BROKEN_DCC_RESUME
-		/*
-		 * For stupid MIRC dcc resumes, we need to stash the
-		 * local port number, because the remote client will send
-		 * back that port number as its ID of what file it wants
-		 * to resume (rather than the filename. ick.)
-		 */
-		inet_ntostr((SA *)&dcc->local_sockaddr, NULL, 0, p_port, 12, 0);
-		malloc_strcpy(&dcc->othername, p_port);
+	/*
+	 * For stupid MIRC dcc resumes, we need to stash the
+	 * local port number, because the remote client will send
+	 * back that port number as its ID of what file it wants
+	 * to resume (rather than the filename. ick.)
+	 */
+	inet_ntostr((SA *)&dcc->local_sockaddr, NULL, 0, p_port, 12, 0);
+	malloc_strcpy(&dcc->othername, p_port);
 #endif
-		new_open(dcc->socket, do_dcc);
+	new_open(dcc->socket, do_dcc);
 
-		/*
-		 * If this is to be a 2-peer connection, then we need to
-		 * send the remote peer a CTCP request.  I suppose we should
-		 * do an ISON request first, but thats another project.
-		 */
-		if (dcc->flags & DCC_TWOCLIENTS)
-			dcc_send_booster_ctcp(dcc);
-	    }
-	}
-	while (0);
+	/*
+	 * If this is to be a 2-peer connection, then we need to
+	 * send the remote peer a CTCP request.  I suppose we should
+	 * do an ISON request first, but thats another project.
+	 */
+	if (dcc->flags & DCC_TWOCLIENTS)
+		dcc_send_booster_ctcp(dcc);
+    }
+    while (0);
 
 	from_server = old_server;
 	return retval;
 }
+
 
 /*
  * send_booster_ctcp: This is called by dcc_open and also by dcc_filesend
@@ -1037,6 +1071,7 @@ static void	dcc_send_booster_ctcp (DCC_list *dcc)
 }
 
 
+/************************************************************************/
 /*
  * This allows you to send (via /msg or /query) a message to a remote 
  * dcc target.  The two types of targets you may send to are a DCC CHAT
@@ -1297,7 +1332,11 @@ static void	dcc_chat (char *args)
 
 	dcc->flags |= DCC_TWOCLIENTS;
 	dcc->want_port = portnum;
-	dcc_open(dcc);
+
+	if (dcc->flags & DCC_THEIR_OFFER)
+		dcc_connect(dcc);
+	else
+		dcc_listen(dcc);	
 }
 
 /*
@@ -1520,7 +1559,7 @@ static	void	dcc_getfile (char *args, int resume)
 		dcc->file = file;
 		dcc->flags |= DCC_TWOCLIENTS;
 		dcc->open_callback = NULL;
-		if (dcc_open(dcc))
+		if (dcc_connect(dcc))	/* Nonblocking should be ok here */
 		{
 			if (get_all)
 				continue;
@@ -1932,7 +1971,7 @@ static	void	dcc_filesend (char *args)
 
 		Client->flags |= DCC_TWOCLIENTS;
 		Client->want_port = portnum;
-		dcc_open(Client);
+		dcc_listen(Client);
 	    } /* The WHILE */
 	} /* The IF */
 
@@ -1978,7 +2017,7 @@ char	*dcc_raw_listen (int family, unsigned short port)
 
 	lock_dcc(Client);
 	Client->want_port = port;
-	if (dcc_open(Client))
+	if (dcc_listen(Client))		/* Not a connect(). */
 		break;
 
 	get_time(&Client->starttime);
@@ -1993,7 +2032,6 @@ char	*dcc_raw_listen (int family, unsigned short port)
 	pop_message_from(l);
 	return malloc_strdup(PortName);
 }
-
 
 /*
  * Usage: $connect(<hostname> <portnum> <family>)
@@ -2032,20 +2070,14 @@ char	*dcc_raw_connect (const char *host, const char *port, int family)
 	lock_dcc(Client);
 	Client->offer = my_sockaddr;
 	Client->flags = DCC_THEIR_OFFER | DCC_RAW;
-	if (dcc_open(Client))
+	if (dcc_connect(Client))	/* Nonblocking from here */
 	{
 		unlock_dcc(Client);
 		break;
 	}
-
-	Client->user = malloc_strdup(ltoa(Client->socket));
-	if (do_hook(DCC_RAW_LIST, "%s %s E %s", Client->user, host, port))
-            if (do_hook(DCC_CONNECT_LIST,"%s RAW %s %s", 
-				Client->user, host, port))
-		say("DCC RAW connection to %s on %s via %s established", 
-				host, Client->user, port);
-	retval = LOCAL_COPY(Client->user);
 	unlock_dcc(Client);
+	retval = LOCAL_COPY(Client->user);
+
     }
     while (0);
 
@@ -2715,10 +2747,38 @@ static	void	process_dcc_chat_data (DCC_list *Client)
 	pop_message_from(l);
 }
 
+static void	process_dcc_chat_connected (DCC_list *dcc)
+{
+	SS name;
+	socklen_t len;
+
+	lock_dcc(dcc);
+	if (x_debug & DEBUG_SERVER_CONNECT)
+	    yell("process_dcc_chat_connected: dcc [%s] now ready to write", 
+			dcc->user);
+
+	len = sizeof(name);
+	if (getpeername(dcc->socket, (SA *)&name, &len))
+	{
+	    if (do_hook(DCC_LOST_LIST, "%s CHAT connection failed", dcc->user))
+		say("DCC CHAT connection to %s lost [connection failed]", 
+							dcc->user);
+	    dcc->flags |= DCC_DELETE;
+	    unlock_dcc(dcc);
+	    return;
+	}
+
+	dcc_connected(dcc->socket, 1);
+	dcc->flags &= ~DCC_CONNECTING;
+	unlock_dcc(dcc);
+}
+
 static	void	process_dcc_chat (DCC_list *Client)
 {
 	if (Client->flags & DCC_MY_OFFER)
 		process_dcc_chat_connection(Client);
+	else if (Client->flags & DCC_CONNECTING)
+		process_dcc_chat_connected(Client);
 	else
 		process_dcc_chat_data(Client);
 }
@@ -2788,7 +2848,7 @@ static	void		process_incoming_listen (DCC_list *Client)
  * This handles when someone sends you a line of info over a DCC RAW
  * connection (that was established with a $listen().
  */
-static	void		process_incoming_raw (DCC_list *Client)
+static	void		process_dcc_raw_data (DCC_list *Client)
 {
 	char	tmp[IO_BUFFER_SIZE + 1];
 	char 	*bufptr;
@@ -2843,6 +2903,47 @@ static	void		process_incoming_raw (DCC_list *Client)
 	return;
 }
 
+static void	process_dcc_raw_connected (DCC_list *dcc)
+{
+	SS name;
+	socklen_t len;
+
+	lock_dcc(dcc);
+	dcc_connected(dcc->socket, 0);
+	if (x_debug & DEBUG_SERVER_CONNECT)
+	    yell("process_dcc_raw_connected: dcc [%s] now ready to write", 
+			dcc->user);
+
+	len = sizeof(name);
+	if (getpeername(dcc->socket, (SA *)&name, &len))
+	{
+	    if (do_hook(DCC_LOST_LIST, "%s RAW connection failed", dcc->user))
+		say("DCC RAW connection to %s lost [connection failed]", 
+							dcc->user);
+	    dcc->flags |= DCC_DELETE;
+	    unlock_dcc(dcc);
+	    return;
+	}
+
+	dcc->user = malloc_strdup(ltoa(dcc->socket));
+	if (do_hook(DCC_RAW_LIST, "%s %s E %s", dcc->user, dcc->description, dcc->othername))
+            if (do_hook(DCC_CONNECT_LIST,"%s RAW %s %s", 
+				dcc->user, dcc->description, dcc->othername))
+		say("DCC RAW connection to %s on %s via %s established.", 
+				dcc->description, dcc->user, dcc->othername);
+
+	dcc->flags &= ~DCC_CONNECTING;
+	unlock_dcc(dcc);
+}
+
+
+static	void		process_incoming_raw (DCC_list *Client)
+{
+	if (Client->flags & DCC_CONNECTING)
+		process_dcc_raw_connected(Client);
+	else
+		process_dcc_raw_data(Client);
+}
 
 /****************************** DCC SEND ************************************/
 /*
@@ -3126,7 +3227,7 @@ static	void	process_dcc_send (DCC_list *dcc)
  * It's probably more polite to hold back on clobbering the sender with
  * redundant useless acks too.
  */
-static	void		process_incoming_file (DCC_list *dcc)
+static	void		process_dcc_get_data (DCC_list *dcc)
 {
 	char		tmp[DCC_RCV_BLOCK_SIZE+1];
 	u_32int_t	bytestemp;
@@ -3192,6 +3293,41 @@ static	void		process_incoming_file (DCC_list *dcc)
 				(long)(dcc->bytes_read / 1024));
 		update_all_status();
 	}
+}
+
+static void	process_dcc_get_connected (DCC_list *dcc)
+{
+	SS name;
+	socklen_t len;
+
+	lock_dcc(dcc);
+	dcc_connected(dcc->socket, 0);
+	if (x_debug & DEBUG_SERVER_CONNECT)
+	    yell("process_dcc_get_connected: dcc [%s] now ready to write", 
+			dcc->user);
+
+	len = sizeof(name);
+	if (getpeername(dcc->socket, (SA *)&name, &len))
+	{
+	    if (do_hook(DCC_LOST_LIST, "%s GET connection failed", dcc->user))
+		say("DCC GET connection to %s lost [connection failed]", 
+							dcc->user);
+	    dcc->flags |= DCC_DELETE;
+	    unlock_dcc(dcc);
+	    return;
+	}
+
+	dcc_connected(dcc->socket, 1);
+	dcc->flags &= ~DCC_CONNECTING;
+	unlock_dcc(dcc);
+}
+
+static	void		process_incoming_file (DCC_list *dcc)
+{
+	if (dcc->flags & DCC_CONNECTING)
+		process_dcc_get_connected(dcc);
+	else
+		process_dcc_get_data(dcc);
 }
 
 
@@ -3472,7 +3608,7 @@ static	void	dcc_getfile_resume_start (const char *nick, char *filename, char *po
 		return;		/* Its fake. */
 
 	Client->flags |= DCC_TWOCLIENTS;
-	if (dcc_open(Client))
+	if (dcc_connect(Client))		/* XXX Need support for nonblock */
 		return;
 
 

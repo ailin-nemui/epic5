@@ -1,4 +1,4 @@
-/* $EPIC: irc.c,v 1.701 2004/03/15 17:00:14 jnelson Exp $ */
+/* $EPIC: irc.c,v 1.702 2004/03/16 00:24:33 jnelson Exp $ */
 /*
  * ircII: a new irc client.  I like it.  I hope you will too!
  *
@@ -52,7 +52,7 @@ const char internal_version[] = "20031217";
 /*
  * In theory, this number is incremented for every commit.
  */
-const unsigned long	commit_id = 1034;
+const unsigned long	commit_id = 1035;
 
 /*
  * As a way to poke fun at the current rage of naming releases after
@@ -206,8 +206,9 @@ ISA6 *		LocalIPv6Addr = NULL;
 int		inbound_line_mangler = 0,
 		outbound_line_mangler = 0;
 
-char		*epicrc_file = NULL,		/* full path .epicrc file */
-		*ircrc_file = NULL,		/* full path .ircrc file */
+static char	*epicrc_file = NULL,		/* full path .epicrc file */
+		*ircrc_file = NULL;		/* full path .ircrc file */
+char		*startup_file = NULL,		/* Set when epicrc loaded */
 		*my_path = (char *) 0,		/* path to users home dir */
 		*irc_lib = (char *) 0,		/* path to the ircII library */
 		*default_channel = NULL,	/* Channel to join on connect */
@@ -1100,15 +1101,23 @@ void    load_ircrc (void)
         char buffer[7];
         strlcpy(buffer, "global", sizeof buffer);
 
+	if (ircrc_loaded)
+		return;
+
         loading_global = 1;
         load("LOAD", buffer, empty_string);
         loading_global = 0;
 
-        /* read the startup file */
-        if (access(epicrc_file, R_OK) == 0 && !quick_startup)
-                load("LOAD", epicrc_file, empty_string);
-        else if (access(ircrc_file, R_OK) == 0 && !quick_startup)
-                load("LOAD", ircrc_file, empty_string);
+	if (!quick_startup)
+	{
+	    if (access(epicrc_file, R_OK) == 0)
+		startup_file = malloc_strdup(epicrc_file);
+	    else if (access(ircrc_file, R_OK) == 0)
+		startup_file = malloc_strdup(ircrc_file);
+	}
+
+	if (startup_file)
+                load("LOAD", startup_file, empty_string);
 
         ircrc_loaded = 1;
 }

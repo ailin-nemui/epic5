@@ -166,3 +166,7 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Add turn_on_level() and turn_off_level(), for reasons that escape me.
 * Nix the /help command, make howl's scripted replacement the default.
 * Add $cofilter() entry so you can use it (it was already written)
+* Make dcc connections ($connect, /dcc get, /dcc chat) nonblocking
+* /DCC RESUME is totaly broken by this.  Will fix later, maybe ;-)
+* Add $startupfile(), which returns the epicrc/ircrc file that was loaded
+* Offer unknown ctcp requests through /on ctcp_request before /on ctcp.

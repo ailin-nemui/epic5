@@ -1,4 +1,4 @@
-/* $EPIC: lastlog.c,v 1.36 2004/03/15 17:00:14 jnelson Exp $ */
+/* $EPIC: lastlog.c,v 1.37 2004/03/16 00:24:33 jnelson Exp $ */
 /*
  * lastlog.c: handles the lastlog features of irc. 
  *
@@ -66,7 +66,7 @@ static void	warn_lastlog_levels (void)
 	int i;
 
 	strlcpy(buffer, "Valid levels: ", sizeof buffer);
-	for (i = 0; i < NUMBER_OF_LEVELS; i++)
+	for (i = 1; i < NUMBER_OF_LEVELS; i++)
 	{
 		strlcat(buffer, level_types[i], sizeof buffer);
 		strlcat(buffer, " ", sizeof buffer);
@@ -90,7 +90,7 @@ char	*mask_to_str (const Mask *mask)
 	else
 	{
 		*buffer = 0;
-		for (i = 0; i < NUMBER_OF_LEVELS; i++)
+		for (i = 1; i < NUMBER_OF_LEVELS; i++)
 		{
 		    if (mask_isset(mask, i))
 		    {
@@ -141,7 +141,7 @@ int	str_to_mask (Mask *mask, const char *orig)
 			    else
 				neg = 0;
 
-			    for (i = 0; i < NUMBER_OF_LEVELS; i++)
+			    for (i = 1; i < NUMBER_OF_LEVELS; i++)
 			    {
 				if (!my_strnicmp(str, level_types[i], len))
 				{
@@ -179,7 +179,7 @@ int	str_to_level (const char *orig)
 	int	i, len;
 
 	len = strlen(orig);
-	for (i = 0; i < NUMBER_OF_LEVELS; i++)
+	for (i = 1; i < NUMBER_OF_LEVELS; i++)
 		if (!my_strnicmp(orig, level_types[i], len))
 			return i;
 
@@ -480,7 +480,7 @@ BUILT_IN_COMMAND(lastlog)
 	    else if (!my_strnicmp(arg, "--", 2))
 	    {
 		int	i;
-		for (i = 0; i < NUMBER_OF_LEVELS; i++)
+		for (i = 1; i < NUMBER_OF_LEVELS; i++)
 		{
 		    if (!my_strnicmp(level_types[i], arg+2, len-2))
 		    {
@@ -497,7 +497,7 @@ BUILT_IN_COMMAND(lastlog)
 	    else if (!my_strnicmp(arg, "-", 1))
 	    {
 		int	i;
-		for (i = 0; i < NUMBER_OF_LEVELS; i++)
+		for (i = 1; i < NUMBER_OF_LEVELS; i++)
 		{
 		    if (!my_strnicmp(level_types[i], arg+1, len-1))
 		    {

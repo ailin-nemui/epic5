@@ -1,4 +1,4 @@
-/* $EPIC: ignore.c,v 1.20 2004/03/15 03:24:51 jnelson Exp $ */
+/* $EPIC: ignore.c,v 1.21 2004/03/16 00:24:33 jnelson Exp $ */
 /*
  * ignore.c: handles the ingore command for irc 
  *
@@ -548,7 +548,7 @@ static int	change_ignore_mask_by_desc (const char *type, Mask *do_mask, Mask *do
 			bit = LEVEL_ALL;
 		else
 		{
-		    for (i = 0; i < NUMBER_OF_LEVELS; i++)
+		    for (i = 1; i < NUMBER_OF_LEVELS; i++)
 		    {
 			if (!my_strnicmp(l2, level_types[i], len))
 			{
@@ -984,7 +984,7 @@ char	*get_ignore_patterns_by_type (char *ctype)
 	     * levels than what the user asked for, but it can't have 
 	     * levels with different dispositions.
 	     */
-	    for (i = 0; i < NUMBER_OF_LEVELS; i++)
+	    for (i = 1; i < NUMBER_OF_LEVELS; i++)
 	    {
 		if (mask_isset(&dont_mask, i) && !mask_isset(&tmp->dont, i))
 			goto bail;

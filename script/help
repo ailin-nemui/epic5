@@ -123,7 +123,7 @@ alias help.help {
 				if (fexist($tmp2/$tmp) == 1) {
 					@ root = tmp2
 					@ realroot = tmp2
-				} elif (0 < numwords($glob($tmp2/$tmp*))) {
+				} elif (0 < numwords($globi($tmp2/$tmp*))) {
 					@ root = tmp2
 					@ realroot = tmp2
 				} else {
@@ -139,9 +139,9 @@ alias help.help {
 		}
 		if (fexist($root/$tmp) == 1) {
 			@ tmp2 = [$root/$tmp]
-		} elif (numwords($glob($root/$tmp*)) == 1) {
-			@ tmp2 = glob($root/$tmp*)
-		} elif (numwords($glob($root/$tmp*)) == 0) {
+		} elif (numwords($globi($root/$tmp*)) == 1) {
+			@ tmp2 = globi($root/$tmp*)
+		} elif (numwords($globi($root/$tmp*)) == 0) {
 			@ break = 1
 			@ nohelp = 1
 			xecho -w ${win == [] ? 0 : win} -b -- No help available on $tmp: Use ? for list of topics.
@@ -246,7 +246,7 @@ alias help.help {
 		}
 		if (fp == [] && dir != []) {
 			if (dp == []) xecho -b -w $win -- ${name ? [$name choices] : [Choices]} \($match\)
-			@ tmp = stripcrap(ALL $glob("$dir/$match"))
+			@ tmp = stripcrap(ALL $globi("$dir/$match"))
 			@ tmp1 = strlen($dir/)
 			@ tmp2 = maxlen($tmp) - strlen($dir/)
 			@ tmp3 = []

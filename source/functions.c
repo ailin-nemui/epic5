@@ -1,4 +1,4 @@
-/* $EPIC: functions.c,v 1.158 2004/03/15 17:00:14 jnelson Exp $ */
+/* $EPIC: functions.c,v 1.159 2004/03/16 00:24:33 jnelson Exp $ */
 /*
  * functions.c -- Built-in functions for ircII
  *
@@ -371,6 +371,7 @@ static	char
 	*function_split 	(char *),
 	*function_splice 	(char *),
 	*function_ssl		(char *),
+	*function_startupfile	(char *),
 	*function_stat		(char *),
 	*function_status	(char *),
 	*function_stripansi	(char *),
@@ -474,7 +475,6 @@ static BuiltInFunctions	built_in_functions[] =
 	{ "CIPHER",		function_cipher		},
 	{ "CLOSE",		function_close 		},
 	{ "COFILTER",		function_cofilter	},
-	{ "CORFILTER",		function_corfilter	},
 	{ "COMMON",             function_common 	},
 	{ "CONNECT",		function_connect 	},
 	{ "CONVERT",		function_convert 	},
@@ -686,6 +686,7 @@ static BuiltInFunctions	built_in_functions[] =
 	{ "SPLIT",		function_split 		},
 	{ "SRAND",		function_srand 		},
 	{ "SSL",		function_ssl		},
+	{ "STARTUPFILE",	function_startupfile	},
 	{ "STAT",		function_stat		},
 	{ "STATUS",		function_status		},
 	{ "STIME",		function_stime 		},
@@ -6892,7 +6893,7 @@ BUILT_IN_FUNCTION(function_levelwindow, input)
 		mask_isset(&w->window_mask, LEVEL_DCC))
 		RETURN_INT(w->refnum);
 
-	    for (i = 0; i < NUMBER_OF_LEVELS; i++)
+	    for (i = 1; i < NUMBER_OF_LEVELS; i++)
 		if (mask_isset(&mask, i) &&
 		    mask_isset(&w->window_mask, i))
 			RETURN_INT(w->refnum);
@@ -6953,3 +6954,9 @@ BUILT_IN_FUNCTION(function_numlines, input)
 	RETURN_INT(numl+1);
 }
 
+BUILT_IN_FUNCTION(function_startupfile, input)
+{
+	if (startup_file)
+		RETURN_STR(startup_file);
+	RETURN_EMPTY;
+}
