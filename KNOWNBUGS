@@ -40,6 +40,8 @@ KNOWN ERRATA (eg, bugs, or unresolved requests):
 * The "Select() failed" bug
 * $glob() and $globi() tend to choke on wierdly named filenames, or rather, on
   wierd masks.
+* $isnumber() will cause internal damage to the client when fed numbers that
+  are too large for some unknown reason.
 
 [See http://www.epicsol.org/PROJECTS for things to come in the future]
 [See http://www.epicsol.org/CHANGELOG for things that changed in the past]
@@ -166,3 +168,25 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Fix null deref with /LOG KILL
 * Ignore KICKS based on the victim as well as the kicker.
 * Don't clobber 'target' in /on general_notice; pass the original target.
+* Altered the way the "word philosophy" is interpreted by new_next_args() and
+  word_count().  This basically equates to two things..  Quoted words must be
+  seperated by spaces, and the final quote must be present.  Stuff started
+  breaking when I added the second one, so I #if'd it out.
+* Fixed a leak with "/alias (args) {}".
+* Flood checking seems to have failed somehow in the last few weeks.  Tracked
+  it down to an inverted FLOOD hook and the fact that a matching flood now
+  causes the message to be ignored, which never used to happen.  Fixed the
+  last one by adding /set FLOOD_IGNORE on/off.
+* Found a good answer to $glob*()..  Giving them a null argument will now
+  cause them to read the rest of the arg list as a single argument.
+  eg, $glob(""  my "lovely" filename with spaces and quotes.jpg )
+  (note the spaces at the beginning and end which are part of the filename)
+* Turned a few extra options on in the $glob*() glob() call.  Now glob
+  characters can be escaped by preceeding them with slashes, and brace chars
+  can be used in this fashion:  file{1,2,33} matches file1, file2 and file33.
+* Cleaned tabkey.ce up to deal with violently evil filenames more gracefully
+  and the changes to the word philosophy and $glob().
+* Added $open(), $read(), $write(), $close() regression tests.
+* Tuned the autoget script to deal with url quoted dcc requests gracefully.
+* Got rid of the reference to word_count() in /fe and /fec.
+* Diked safe_new_next_arg() out and made it use new_next_arg() instead.

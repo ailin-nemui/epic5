@@ -121,7 +121,6 @@ assert chngw(0 one five four three two one) == [one four three two one]
 
 # testing $chops() -- cant be tested right now.
 # testing $chr() -- see test for $jot()
-# testing $close() -- cant be tested right now
 
 # testing $common()
 clear
@@ -407,7 +406,6 @@ assert notw(3 one two) == [one two]
 
 # testing $numonchannel() -- cant be tested right now.
 # testing $onchannel() -- cant be tested right now.
-# testing $open() -- cant be tested right now
 
 # testing $pattern()
 clear
@@ -466,7 +464,6 @@ assert ppid() != []
 assert ppid(foo) != []
 
 # testing $rand() -- cant be tested right now
-# testing $read() -- cant be tested right now
 
 # testing $remw()
 clear
@@ -699,7 +696,15 @@ assert word(1 one) == []
 assert word(1  one two) == [two]
 assert word(2  one two three four five) == [three]
 
-# testing $write() -- cant be tested right now.
+# testing $open(), $read() $write() $close()
+assert (::rfd = open(/dev/zero r)) >= 3
+assert (::wfd = open(/dev/zero w)) >= 4
+assert writeb($wfd $read($rfd 100000)) == 100000
+assert write($wfd $read($rfd 100000)) == 200001
+assert close($rfd) == 0
+assert close($rfd) == -1
+assert close($wfd) == 0
+assert close($wfd) == -1
 
 # Testing Karll Arrays.
 #XXX Incomplete.

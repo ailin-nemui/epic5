@@ -379,14 +379,16 @@ alias words return $remws(/ $*)
 # $chvoices() returns the  voiced users on a channel.
 # $chnovoices() is the compliment.
 stack push alias alias
-alias alias (args) fe (chvoices 1 chnovoices 0) cmd val {
-	//alias $msar(gr/\$cmd/$cmd/\$val/$val/args)
+alias alias (args) {
+	fe (chhops 1 ishalfop nochhops 0 ishalfop chvoices 1 ischanvoice chnovoices 0 ischanvoice) cmd val fn {
+		//alias $msar(gr/\$cmd/$cmd/\$val/$val/\$fn/$fn/args)
+	}
 }
 alias $cmd (args) {
 	@ :chan = shift(args)
 	@ :ret = chanusers($chan)
 	fe ret user {
-		@ user = $val == ischanvoice($user $chan) ? user : []
+		@ user = $val == $fn($user $chan) ? user : []
 	}
 	return $ret
 }

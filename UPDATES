@@ -1,5 +1,60 @@
 EPIC4-1.2.0
 
+*** News 02/17/2003 -- New function $findws().
+	Similar to $findw() but returns _all_ matching words.
+
+*** News 02/17/2003 -- New functions ${no}chhops() in the functions script.
+	Returns halfops in a channel (or not) like $chops() and $nochops().
+
+*** News 02/17/2003 -- New functions $finditems() and $ifinditems()
+	These functions work much like $finditem() and $ifinditem() but
+	they perform substring searches.  If the substring is found in the
+	Karll array, then _a_ matching item/index number is returned.  If
+	the substring is not found, the twos compliment (negative minus 1)
+	of the (index) insertion point is returned.
+
+*** News 02/17/2003 -- New function $dccctl()
+	Introducing the newest member of our nice little family of
+	bolt-ons, $dccctl(), which does many of the things related to DCC
+	that are otherwise extremely difficult.
+
+	$dccctl(refnums)	returns all open DCCs.
+	$dccctl(get [refnum] [element])
+	$dccctl(set [refnum] [element])
+	$dccctl(descmatch [pattern])
+	$dccctl(filematch [pattern])
+	$dccctl(usermatch [pattern])
+	$dccctl(othermatch [pattern])
+	$dccctl(locked)		returns all locked dccs.
+
+	[element] can be one of:
+	refnum        $dccctl() reference number
+	type           (get only)
+	description    (get only)
+	filename       (get only)
+	user           (get only)
+	othername      (get only)
+	encrypt        (get only) (unused)
+	filesize      size of the transfer (get only)
+	resumesize    size that the transfer was resumed at (get only)
+	readbytes     number of bytes xfered (get only)
+	sentbytes     number of bytes xfered (get only)
+	server        from which the dcc was triggered (get only)
+	locked         (get only) (see below)
+	remaddr       remote address (get only)
+	locaddr       local address  (get only)
+	starttime     of the transfer (get only)
+	lasttime      ? (get only)
+
+	Note that the refnum concept is new to DCC and applies only to
+	$dccctl().  This is necessary to nail down exactly which DCC is
+	being refered to, but it is no help trying to find the current
+	dcc in a DCC_LIST hook for eg.  The best way to work with this is
+	to use the "locked" keyword since epic locks a dcc before calling
+	any hook refering to it.
+
+	The *match sub-functions return the refnums of all matching DCCs.
+
 *** News 02/06/2003 -- New functions in script/functions
 	Did to $timerctl() what was done to $serverctl() a few pages down.
 	As with that command, this will change the way that subcommands

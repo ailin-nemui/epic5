@@ -1,4 +1,4 @@
-/* $EPIC: ircaux.c,v 1.63 2003/02/10 21:41:15 jnelson Exp $ */
+/* $EPIC: ircaux.c,v 1.64 2003/02/17 23:48:48 crazyed Exp $ */
 /*
  * ircaux.c: some extra routines... not specific to irc... that I needed 
  *
@@ -746,6 +746,10 @@ char *	last_arg (char **src, size_t *cluep)
 
 #define risspace(c) (c == ' ')
 
+/*
+ * We seriously need to merge the complexity in this function with
+ * that of word_count().
+ */
 char *	new_next_arg (char *str, char **new_ptr)
 {
 	char	*ptr;
@@ -763,6 +767,8 @@ char *	new_next_arg (char *str, char **new_ptr)
 		{
 			if (*str == '\\' && str[1])
 				str++;
+			else if (str[1] && !risspace(str[1]))
+			{}
 			else if (*str == '"')
 			{
 				*str++ = 0;
@@ -770,10 +776,19 @@ char *	new_next_arg (char *str, char **new_ptr)
 					str++;
 				break;
 			}
+
+#if 0
+			if (!str[1])
+			{
+				ptr--;
+				goto noquotedword;
+			}
+#endif
 		}
 	}
 	else
 	{
+noquotedword:
 		str = ptr;
 		while (*str && !risspace(*str))
 			str++;
@@ -826,6 +841,7 @@ char * next_quoted_args (char *str, char **new_ptr, int count)
 	return NULL;
 }
 
+#if 0
 /*
  * This function is "safe" because it doesnt ever return NULL.
  * XXX - this is an ugly kludge that needs to go away
@@ -882,6 +898,19 @@ char *	safe_new_next_arg (char *str, char **new_ptr)
 	return ptr;
 }
 
+#else
+
+/*
+ * Note that the old version is now out of sync with epics word philosophy.
+ */
+char *	safe_new_next_arg (char *str, char **new_ptr)
+{
+	char * ret = new_next_arg(str, new_ptr);
+
+	return ret ? ret : empty_string;
+}
+
+#endif
 
 char *	new_new_next_arg (char *str, char **new_ptr, char *type)
 {
@@ -3992,6 +4021,8 @@ int	word_count (const char *ptr)
 			{
 				if (*ptr == '\\' && ptr[1])
 					ptr++;
+				else if (ptr[1] && !risspace(ptr[1]))
+				{}
 				else if (*ptr == '"')
 				{
 					ptr++;

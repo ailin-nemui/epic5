@@ -1,4 +1,4 @@
-/* $EPIC: functions.c,v 1.104 2003/02/14 05:26:25 jnelson Exp $ */
+/* $EPIC: functions.c,v 1.105 2003/02/17 23:48:48 crazyed Exp $ */
 /*
  * functions.c -- Built-in functions for ircII
  *
@@ -217,6 +217,7 @@ static	char
 	*function_cparse	(char *),
 	*function_crypt 	(char *),
 	*function_currchans	(char *),
+	*function_dccctl	(char *),
 	*function_deuhc		(char *),
 	*function_diff 		(char *),
 	*function_encryptparm 	(char *),
@@ -229,6 +230,7 @@ static	char
 	*function_fexist 	(char *),
 	*function_filter 	(char *),
 	*function_findw		(char *),
+	*function_findws	(char *),
 	*function_floor		(char *),
 	*function_fromw 	(char *),
 	*function_fsize	 	(char *),
@@ -467,6 +469,7 @@ static BuiltInFunctions	built_in_functions[] =
 	{ "CRYPT",		function_crypt		},
 	{ "CURPOS",		function_curpos 	},
 	{ "CURRCHANS",		function_currchans	},
+	{ "DCCCTL",		function_dccctl		},
 	{ "DECODE",	  (bf *)function_decode 	},
 	{ "DELARRAY",           function_delarray 	},
 	{ "DELITEM",            function_delitem	},
@@ -483,10 +486,11 @@ static BuiltInFunctions	built_in_functions[] =
 	{ "FEXIST",             function_fexist 	},
 	{ "FILTER",             function_filter 	},
 	{ "FINDITEM",		function_finditem 	},
-#if 0
+#if 1
 	{ "FINDITEMS",		function_finditems 	},
 #endif
 	{ "FINDW",		function_findw		},
+	{ "FINDWS",		function_findws		},
 	{ "FLOODINFO",		function_floodinfo	},
 	{ "FLOOR",		function_floor		},
 	{ "FNEXIST",		function_fnexist	},
@@ -520,10 +524,10 @@ static BuiltInFunctions	built_in_functions[] =
 	{ "HASH_32BIT",		function_hash_32bit	},
 	{ "IDLE",		function_idle		},
 	{ "IFINDFIRST",		function_ifindfirst 	},
-#if 0
 	{ "IFINDITEM",		function_ifinditem	},
-#endif
+#if 1
 	{ "IFINDITEMS",		function_ifinditems	},
+#endif
 	{ "IGETITEM",           function_igetitem 	},
 	{ "IGETMATCHES",	function_igetmatches	},
 	{ "IGETRMATCHES",	function_igetrmatches	},
@@ -3720,19 +3724,25 @@ BUILT_IN_FUNCTION(function_glob, word)
 	memset(&globbers, 0, sizeof(glob_t));
 	while (word && *word)
 	{
-		size_t	len;
+		char	*freepath = NULL;
 
 		GET_STR_ARG(path, word);
-		len = strlen(path);
-		path = dequote_it(path,&len);
+		if (!path || !*path)
+			path = word, word = NULL;
+		else
+		{
+			size_t	len = strlen(path);
+			freepath = path = dequote_it(path,&len);
+		}
 		expand_twiddle(path, path2);
 
-		if ((numglobs = glob(path2, GLOB_MARK, NULL, &globbers)) < 0)
+		if ((numglobs = glob(path2, GLOB_MARK | GLOB_QUOTE | GLOB_BRACE,
+						NULL, &globbers)) < 0)
 			RETURN_INT(numglobs);
 
 		for (i = 0; i < globbers.gl_pathc; i++)
 		{
-			if (strchr(globbers.gl_pathv[i], ' '))
+			if (strspn(globbers.gl_pathv[i], " \""))
 			{
 				char *b = alloca(strlen(globbers.gl_pathv[i]) + 4);
 				sprintf(b, "\"%s\"", globbers.gl_pathv[i]);
@@ -3742,11 +3752,10 @@ BUILT_IN_FUNCTION(function_glob, word)
 				m_sc3cat(&retval, space, globbers.gl_pathv[i], &rvclue);
 		}
 		globfree(&globbers);
-		new_free(&path);
+		new_free(&freepath);
 	}
 
-	RETURN_IF_EMPTY(retval);
-	return retval;
+	RETURN_MSTR(retval);
 }
 
 BUILT_IN_FUNCTION(function_globi, word)
@@ -3761,20 +3770,26 @@ BUILT_IN_FUNCTION(function_globi, word)
 	memset(&globbers, 0, sizeof(glob_t));
 	while (word && *word)
 	{
-		size_t	len;
+		char	*freepath = NULL;
 
 		GET_STR_ARG(path, word);
-		len = strlen(path);
-		path = dequote_it(path,&len);
+		if (!path || !*path)
+			path = word, word = NULL;
+		else
+		{
+			size_t	len = strlen(path);
+			freepath = dequote_it(path,&len);
+		}
 		expand_twiddle(path, path2);
 
-		if ((numglobs = bsd_glob(path2, GLOB_MARK | GLOB_INSENSITIVE, 
-					NULL, &globbers)) < 0)
+		if ((numglobs = bsd_glob(path2,
+				GLOB_MARK | GLOB_INSENSITIVE | GLOB_QUOTE | GLOB_BRACE, 
+				NULL, &globbers)) < 0)
 			RETURN_INT(numglobs);
 
 		for (i = 0; i < globbers.gl_pathc; i++)
 		{
-			if (strchr(globbers.gl_pathv[i], ' '))
+			if (strspn(globbers.gl_pathv[i], " \""))
 			{
 				char *b = alloca(strlen(globbers.gl_pathv[i]) + 4);
 				sprintf(b, "\"%s\"", globbers.gl_pathv[i]);
@@ -3784,11 +3799,10 @@ BUILT_IN_FUNCTION(function_globi, word)
 				m_sc3cat(&retval, space, globbers.gl_pathv[i], &rvclue);
 		}
 		bsd_globfree(&globbers);
-		new_free(&path);
+		new_free(&freepath);
 	}
 
-	RETURN_IF_EMPTY(retval);
-	return retval;
+	RETURN_MSTR(retval);
 }
 
 
@@ -4042,6 +4056,25 @@ BUILT_IN_FUNCTION(function_findw, input)
 	}
 
 	RETURN_INT(-1);
+}
+
+BUILT_IN_FUNCTION(function_findws, input)
+{
+	char	*word, *this_word;
+	int	word_cnt;
+	char	*ret = NULL;
+	size_t	clue = 0;
+
+	GET_STR_ARG(word, input);
+
+	for (word_cnt = 0; input && *input; word_cnt++)
+	{
+		GET_STR_ARG(this_word, input);
+		if (!my_stricmp(this_word, word))
+			m_sc3cat_s(&ret, space, ltoa(word_cnt), &clue);
+	}
+
+	RETURN_MSTR(ret);
 }
 
 
@@ -6601,5 +6634,10 @@ BUILT_IN_FUNCTION(function_getserial, input) {
 BUILT_IN_FUNCTION(function_timerctl, input)
 {
 	return timerctl(input);
+}
+
+BUILT_IN_FUNCTION(function_dccctl, input)
+{
+	return dccctl(input);
 }
 

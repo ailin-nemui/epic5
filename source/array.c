@@ -1,4 +1,4 @@
-/* $EPIC: array.c,v 1.9 2002/12/25 06:26:45 crazyed Exp $ */
+/* $EPIC: array.c,v 1.10 2003/02/17 23:48:48 crazyed Exp $ */
 /*
  * array.c -- Karll's Array Suite
  *
@@ -262,30 +262,35 @@ void sort_indices (an_array *array)
  * to insert the given string in the array.  The intent is to cause the
  * indices to be sorted by name then item.
  */
-long		find_item (an_array *array, char *find, long item)
-{
-	long top, bottom, key, cmp;
-
-	top = array->size - 1;
-	bottom = 0;
-
-	SORT_INDICES(array);
-
-	while (top >= bottom)
-	{
-		key = (top + bottom) / 2;
-		cmp = strcmp(find, array->item[array->index[key]]);
-		if (cmp == 0)
-			cmp = item < 0 ? cmp : item - array->index[key];
-		if (cmp == 0)
-			return key;
-		if (cmp < 0)
-			top = key - 1;
-		else
-			bottom = key + 1;
-	} 
-	return -bottom - 1;
+#define FINDIT(fn, test, pre)                                            \
+long		(fn) (an_array *array, char *find, long item)            \
+{                                                                        \
+	long top, bottom, key, cmp;                                      \
+	int len = (pre);                                                 \
+                                                                         \
+	top = array->size - 1;                                           \
+	bottom = 0;                                                      \
+                                                                         \
+	SORT_INDICES(array);                                             \
+                                                                         \
+	while (top >= bottom)                                            \
+	{                                                                \
+		key = (top + bottom) / 2;                                \
+		cmp = (test);                                            \
+		if (cmp == 0)                                            \
+			cmp = item < 0 ? cmp : item - array->index[key]; \
+		if (cmp == 0)                                            \
+			return key;                                      \
+		if (cmp < 0)                                             \
+			top = key - 1;                                   \
+		else                                                     \
+			bottom = key + 1;                                \
+	}                                                                \
+	return ~bottom;                                                  \
 }
+FINDIT(find_item, strcmp(find, array->item[array->index[key]]), 0)
+FINDIT(find_items, strncmp(find, array->item[array->index[key]], len), strlen(find))
+#undef FINDIT
 
 /*
  * insert_index() takes a valid index (newIndex) and inserts it into the array
@@ -687,7 +692,7 @@ BUILT_IN_FUNCTION(function_numarrays, input)
  * the string that exactly matches the string searched for, or it returns
  * -1 if unable to find the array, or -2 if unable to find the item.
  */
-#define FINDI(func, trans1, trans2)                                         \
+#define FINDI(func, search, trans1, trans2)                                 \
 BUILT_IN_FUNCTION((func), input)                                            \
 {                                                                           \
         char    *name = (char *) 0;                                         \
@@ -698,16 +703,16 @@ BUILT_IN_FUNCTION((func), input)                                            \
         {                                                                   \
 		if (input)                                                  \
 		{                                                           \
-			item = find_item(array, input, -1);                 \
+			item = (search)(array, input, -1);                  \
 			item = (item >= 0) ? (trans1) : (trans2);           \
 		}                                                           \
         }                                                                   \
 	RETURN_INT(item);                                                   \
 }
-FINDI(function_finditem, array->index[item], -2)
-FINDI(function_ifinditem, item, -2)
-FINDI(function_finditems, array->index[item], array->index[~item])
-FINDI(function_ifinditems, item, ~item)
+FINDI(function_finditem, find_item, array->index[item], -2)
+FINDI(function_ifinditem, find_item, item, -2)
+FINDI(function_finditems, find_items, array->index[item], ~(array->index[~item]))
+FINDI(function_ifinditems, find_items, item, item)
 #undef FINDI
 
 /*

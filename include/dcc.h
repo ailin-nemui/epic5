@@ -24,6 +24,8 @@
 	char *	DCC_get_current_transfer (void);
 	int	dcc_dead		(void);
 
+	char	*dccctl			(char *input);
+
 extern	time_t	dcc_timeout;
 
 #endif /* _DCC_H_ */

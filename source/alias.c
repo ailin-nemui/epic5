@@ -1,4 +1,4 @@
-/* $EPIC: alias.c,v 1.14 2003/01/11 04:26:52 jnelson Exp $ */
+/* $EPIC: alias.c,v 1.15 2003/02/17 23:48:48 crazyed Exp $ */
 /*
  * alias.c -- Handles the whole kit and caboodle for aliases.
  *
@@ -1115,6 +1115,7 @@ void	add_cmd_alias	(char *name, ArgList *arglist, char *stuff)
 	malloc_strcpy(&(tmp->stuff), stuff);
 	new_free(&tmp->stub);
 	tmp->global = loading_global;
+	destroy_arglist(tmp->arglist);
 	tmp->arglist = arglist;
 
 	alias_total_allocated++;

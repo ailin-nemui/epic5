@@ -24,7 +24,8 @@
 #define RETURN_IF_EMPTY(x) if (empty( (x) )) RETURN_EMPTY
 #define GET_INT_ARG(x, y) {RETURN_IF_EMPTY((y)); x = my_atol(safe_new_next_arg((y), &(y)));}
 #define GET_FLOAT_ARG(x, y) {RETURN_IF_EMPTY((y)); x = atof(safe_new_next_arg((y), &(y)));}
-#define GET_STR_ARG(x, y) {RETURN_IF_EMPTY((y)); x = new_next_arg((y), &(y));RETURN_IF_EMPTY((x));}
+#define GET_STR_ARG(x, y) {RETURN_IF_EMPTY((y)); x = new_next_arg((y), &(y));}
+#define GET_A_STR_ARG(x, y) {GET_STR_ARG((x), (y));RETURN_IF_EMPTY((x));}
 #define RETURN_MSTR(x) return ((x) ? (x) : EMPTY_STRING)
 #define RETURN_STR(x) return m_strdup((x) ? (x) : EMPTY)
 #define RETURN_INT(x) return m_strdup(ltoa((x)))

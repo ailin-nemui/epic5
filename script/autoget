@@ -29,16 +29,17 @@
 #       arrangements.
 #
 package autoget
-@ autoget.getpatterns = [ ]
-@ autoget.regetpatterns = [ ]
-@ autoget.regettype = [resume]
+# These clobber the current settings on reload.
+#@ autoget.getpatterns = [ ]
+#@ autoget.regetpatterns = [ ]
+#@ autoget.regettype = [resume]
 
 on #-dcc_request 414 "% SEND *" {
-	@ :path = [$getset(dcc_store_path)/$2]
-	if ([$6] <= fsize($path)) {
+	@ :path = [$getset(dcc_store_path)/$urldecode($2)]
+	if ([$6] <= fsize("$path")) {
 		@ :patterns = autoget.regetpatterns
 		@ :action = [rename]
-	} elsif (0 < fexist($path)) {
+	} elsif (0 < fsize("$path")) {
 		@ :patterns = autoget.regetpatterns
 		@ :action = autoget.regettype
 	} else {
@@ -52,8 +53,8 @@ on #-dcc_request 414 "% SEND *" {
 			@ :extra = 0
 			do {
 				@ extra += rand(10)
-			} while (0 < fexist($path~$extra))
-			@ rename($path $path~$extra)
+			} while (0 < fexist("$path~$extra"))
+			@ rename("$path" "$path~$extra")
 			@ action = [get]
 		}
 		dcc $action $0 $2

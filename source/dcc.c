@@ -1,4 +1,4 @@
-/* $EPIC: dcc.c,v 1.45 2003/01/31 23:50:18 jnelson Exp $ */
+/* $EPIC: dcc.c,v 1.46 2003/02/17 23:48:48 crazyed Exp $ */
 /*
  * dcc.c: Things dealing client to client connections. 
  *
@@ -37,6 +37,7 @@
 #include "crypt.h"
 #include "ctcp.h"
 #include "dcc.h"
+#include "functions.h"
 #include "hook.h"
 #include "ircaux.h"
 #include "lastlog.h"
@@ -74,6 +75,7 @@ typedef	struct	DCC_struct
 	int		locked;		/* XXX - Sigh */
 	int		socket;
 	int		file;
+	long		refnum;
 	u_32int_t	filesize;
 	char *		description;
 	char *		filename;
@@ -394,6 +396,7 @@ static	DCC_list *dcc_searchlist (
 	DCC_list 	*client, 
 			*new_client;
 	const char 	*last = NULL;
+	long		maxref = 0;
 
 	if (x_debug & DEBUG_DCC_SEARCH)
 		yell("entering dcc_sl.  desc (%s) user (%s) type (%d) "
@@ -420,6 +423,14 @@ static	DCC_list *dcc_searchlist (
 				client->flags & DCC_ACTIVE);
 		}
 
+		/*
+		 * Find the largest refnum in case we have to add a new dcc.
+		 * Conceivably this will eventually overflow and minor damage
+		 * will ensue if the user perpetually adds new dccs before the
+		 * largest refnum closes.
+		 */
+		if (client->refnum >= maxref)
+			maxref = client->refnum + 1;
 
 		/*
 		 * Ok. first of all, it has to be the right type.
@@ -537,6 +548,7 @@ static	DCC_list *dcc_searchlist (
 	new_client->encrypt 		= NULL;
 	new_client->resume_size		= 0;
 	new_client->open_callback	= NULL;
+	new_client->refnum		= maxref;
 	get_time(&new_client->lasttime);
 
 	ClientList = new_client;
@@ -3021,3 +3033,126 @@ static	void	dcc_getfile_resume_start (const char *nick, char *filename, char *po
 }
 
 #endif
+
+char 	*dccctl 	(char *input)
+{
+	long	ref;
+	char	*listc;
+	int	len;
+	DCC_list	*client;
+	char	*retval = NULL;
+	size_t	clue = 0;
+
+	GET_STR_ARG(listc, input);
+	len = strlen(listc);
+	if (!my_strnicmp(listc, "REFNUMS", len)) {
+		for (client = ClientList; client; client = client->next)
+			m_sc3cat_s(&retval, space, ltoa(client->refnum), &clue);
+	} else if (!my_strnicmp(listc, "GET", len)) {
+		GET_INT_ARG(ref, input);
+
+		for (client = ClientList; client; client = client->next)
+			if (client->refnum == ref)
+				break;
+		if (!client)
+			RETURN_EMPTY;
+
+		GET_STR_ARG(listc, input);
+		len = strlen(listc);
+		if (!my_strnicmp(listc, "REFNUM", len)) {
+			RETURN_INT(client->refnum);
+		} else if (!my_strnicmp(listc, "TYPE", len)) {
+			RETURN_STR(dcc_types[client->flags & DCC_TYPES]);
+		} else if (!my_strnicmp(listc, "DESCRIPTION", len)) {
+			RETURN_STR(client->description);
+		} else if (!my_strnicmp(listc, "FILENAME", len)) {
+			RETURN_STR(client->filename);
+		} else if (!my_strnicmp(listc, "USER", len)) {
+			RETURN_STR(client->user);
+		} else if (!my_strnicmp(listc, "OTHERNAME", len)) {
+			RETURN_STR(client->othername);
+		} else if (!my_strnicmp(listc, "ENCRYPT", len)) {
+			RETURN_STR(client->encrypt);
+		} else if (!my_strnicmp(listc, "FILESIZE", len)) {
+			RETURN_INT(client->filesize);
+		} else if (!my_strnicmp(listc, "RESUMESIZE", len)) {
+			RETURN_INT(client->resume_size);
+		} else if (!my_strnicmp(listc, "READBYTES", len)) {
+			RETURN_INT(client->bytes_read);
+		} else if (!my_strnicmp(listc, "SENTBYTES", len)) {
+			RETURN_INT(client->bytes_sent);
+		} else if (!my_strnicmp(listc, "SERVER", len)) {
+			RETURN_INT(client->server);
+		} else if (!my_strnicmp(listc, "LOCKED", len)) {
+			RETURN_INT(client->locked);
+		} else if (!my_strnicmp(listc, "LASTTIME", len)) {
+			m_sc3cat_s(&retval, space, ltoa(client->lasttime.tv_sec), &clue);
+			m_sc3cat_s(&retval, space, ltoa(client->lasttime.tv_usec), &clue);
+		} else if (!my_strnicmp(listc, "STARTTIME", len)) {
+			m_sc3cat_s(&retval, space, ltoa(client->starttime.tv_sec), &clue);
+			m_sc3cat_s(&retval, space, ltoa(client->starttime.tv_usec), &clue);
+		} else if (!my_strnicmp(listc, "REMADDR", len)) {
+			char	host[1025], port[25];
+			if (inet_ntostr((SA *)&client->peer_sockaddr,
+						host, sizeof(host),
+						port, sizeof(port), 0))
+				RETURN_EMPTY;
+			m_sc3cat_s(&retval, space, host, &clue);
+			m_sc3cat_s(&retval, space, port, &clue);
+		} else if (!my_strnicmp(listc, "LOCADDR", len)) {
+			char	host[1025], port[25];
+			if (inet_ntostr((SA *)&client->local_sockaddr,
+						host, sizeof(host),
+						port, sizeof(port), 0))
+				RETURN_EMPTY;
+			m_sc3cat_s(&retval, space, host, &clue);
+			m_sc3cat_s(&retval, space, port, &clue);
+		}
+	} else if (!my_strnicmp(listc, "SET", len)) {
+		GET_INT_ARG(ref, input);
+
+		for (client = ClientList; client; client = client->next)
+			if (client->refnum == ref)
+				break;
+		if (!client)
+			RETURN_EMPTY;
+
+		GET_STR_ARG(listc, input);
+		len = strlen(listc);
+		if (!my_strnicmp(listc, "REFNUM", len)) {
+			long	newref;
+
+			GET_INT_ARG(newref, input);
+			client->refnum = newref;
+
+			RETURN_INT(1);
+		}
+	} else if (!my_strnicmp(listc, "TYPEMATCH", len)) {
+		for (client = ClientList; client; client = client->next)
+			if (wild_match(input, dcc_types[client->flags & DCC_TYPES]))
+				m_sc3cat_s(&retval, space, ltoa(client->refnum), &clue);
+	} else if (!my_strnicmp(listc, "DESCMATCH", len)) {
+		for (client = ClientList; client; client = client->next)
+			if (wild_match(input, client->description ? client->description : EMPTY))
+				m_sc3cat_s(&retval, space, ltoa(client->refnum), &clue);
+	} else if (!my_strnicmp(listc, "FILEMATCH", len)) {
+		for (client = ClientList; client; client = client->next)
+			if (wild_match(input, client->filename ? client->filename : EMPTY))
+				m_sc3cat_s(&retval, space, ltoa(client->refnum), &clue);
+	} else if (!my_strnicmp(listc, "USERMATCH", len)) {
+		for (client = ClientList; client; client = client->next)
+			if (wild_match(input, client->user ? client->user : EMPTY))
+				m_sc3cat_s(&retval, space, ltoa(client->refnum), &clue);
+	} else if (!my_strnicmp(listc, "OTHERMATCH", len)) {
+		for (client = ClientList; client; client = client->next)
+			if (wild_match(input, client->othername ? client->othername : EMPTY))
+				m_sc3cat_s(&retval, space, ltoa(client->refnum), &clue);
+	} else if (!my_strnicmp(listc, "LOCKED", len)) {
+		for (client = ClientList; client; client = client->next)
+			if (client->locked)
+				m_sc3cat_s(&retval, space, ltoa(client->refnum), &clue);
+	} else
+		RETURN_EMPTY;
+
+	RETURN_MSTR(retval);
+}

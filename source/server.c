@@ -1,4 +1,4 @@
-/* $EPIC: server.c,v 1.90 2003/02/05 21:48:12 crazyed Exp $ */
+/* $EPIC: server.c,v 1.91 2003/02/17 23:48:48 crazyed Exp $ */
 /*
  * server.c:  Things dealing with that wacky program we call ircd.
  *
@@ -3061,27 +3061,30 @@ char 	*serverctl 	(char *input)
 		}
 	} else if (!my_strnicmp(listc, "OMATCH", len)) {
 		int	i;
+		size_t	clue = 0;
 		char *retval = NULL;
 
 		for (i = 0; i < number_of_servers; i++)
 			if (wild_match(input, get_server_name(i)))
-				m_s3cat(&retval, space, ltoa(i));
+				m_sc3cat_s(&retval, space, ltoa(i), &clue);
 		RETURN_MSTR(retval);
 	} else if (!my_strnicmp(listc, "IMATCH", len)) {
 		int	i;
+		size_t	clue = 0;
 		char *retval = NULL;
 
 		for (i = 0; i < number_of_servers; i++)
 			if (wild_match(input, get_server_itsname(i)))
-				m_s3cat(&retval, space, ltoa(i));
+				m_sc3cat_s(&retval, space, ltoa(i), &clue);
 		RETURN_MSTR(retval);
 	} else if (!my_strnicmp(listc, "GMATCH", len)) {
 		int	i;
+		size_t	clue = 0;
 		char *retval = NULL;
 
 		for (i = 0; i < number_of_servers; i++)
 			if (wild_match(input, get_server_group(i)))
-				m_s3cat(&retval, space, ltoa(i));
+				m_sc3cat_s(&retval, space, ltoa(i), &clue);
 		RETURN_MSTR(retval);
 	} else if (!my_strnicmp(listc, "MAX", len)) {
 		RETURN_INT(number_of_servers);

@@ -48,12 +48,15 @@
 #   Context sensitive functions should be as simple as possible and the bulk
 #   of the work should be done by the methods.
 #
+# NOTE:  The "first argument" description above is no longer true.  The
+#        fucntions argument list is to be treated as a single argument.
+#
 
 package tabkey.ce
-bind ^i parse_command tabkey
+bind ^i parse_command tabkey.main
 alias tabkey.default tabkey.method.nickchan
 
-alias tabkey {
+alias tabkey.main {
 	@ :curword = indextoword($curpos() $L )
 	@ :wordind = wordtoindex($curword $L)
 	if (32 >= (127 & ascii($mid(${curpos()-1} 1 $L )))) {
@@ -61,17 +64,22 @@ alias tabkey {
 		@ wordind = curpos()
 	}
 	@ :word = mid($wordind ${curpos()-wordind} $L)
-	@ :matches = []
+	if (word=~["*"]) {
+		@ :word = shift(word)
+	} elsif (word=~["*]) {
+		@ :word#=["]
+		@ :word = shift(word)
+	}
 	if (!index($cmdchars $L)) {
 		wait for @ :matches = tabkey.cmd($word)
 	} else {
 		wait for @ :matches = tabkey.default($word)
 	}
 	@ :prefix = prefix($matches)
-	@ :prefix = 0 > index("$chr($jot(32 1))" $prefix) ? prefix : ["$prefix"]
 	if (1 < numwords($matches) && word == prefix) {
 		echo Completions for \"$word\": $matches
 	} elsif (#matches && strlen($word) <= strlen($prefix)) {
+		@ :prefix = 0 > index("$chr($jot(32 1))" $prefix) ? prefix : ["$prefix"]
 		repeat ${curpos()-wordind} parsekey backspace
 		xtype -l $prefix${1<#matches?[]:[ ]}
 	}
@@ -116,7 +124,7 @@ alias tabkey.cmd {
 alias tabkey.cmd.dcc (args) {
 	bless
 	switch ($curword) {
-		(1) {return $pattern("$shift(args)*" CHAT CLOSE CLOSEALL GET LIST RAW RENAME RESUME SEND)}
+		(1) {return $pattern("$args*" CHAT CLOSE CLOSEALL GET LIST RAW RENAME RESUME SEND)}
 	}
 }
 alias tabkey.cmd.dcc.resume tabkey.cmd.dcc.send
@@ -146,21 +154,25 @@ alias tabkey.method.commands {
 	return $ret
 }
 
-alias tabkey.method.chan (args) { return $pattern("$shift(args)*" $mychannels()); }
-alias tabkey.method.notify (args) { return $pattern("$shift(args)*" $notify(on)); }
+alias tabkey.method.chan (args) { return $pattern("$args*" $mychannels()); }
+alias tabkey.method.notify (args) { return $pattern("$args*" $notify(on)); }
 
 alias alias.foo alias $*;alias $sar(g/globi/glob/$sar(g/filei/file/$*))
-alias.foo tabkey.method.filei (args) {
-	@ :f0 = :f1 = globi("$shift(args)*")
+alias.foo tabkey.method.filei (f0) {
+	@ :f0 = sar(gr/\\/\\\\/f0)
+	@ :f0 = sar(gr/*/\\*/f0)
+	@ :f0 = sar(gr/?/\\?/f0)
+	@ :f0 = sar(gr/[/\\[/f0)
+	@ :f0 = sar(gr/]/\\]/f0)
+	@ :f0 = :f1 = globi("" $f0*)
 	while (numwords($f0) == 1 && f0 =~ [*/]) {
-		@ f0 = globi("$f0*")
+		@ f0 = globi("" $f0*)
 	}
 	return ${f0 ? f0 : f1}
 }
 alias -alias.foo
 
 alias tabkey.method.nick (args) {
-	@ :args = shift(args)
 	if (match("$args*" $chanusers())) {
 		return $pattern("$args*" $chanusers());
 	} else {
