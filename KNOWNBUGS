@@ -146,3 +146,11 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Unhold_window()s only if both hold_mode and autohold are off!
 * unhold_window()s instead of doing scrollback_end for robustness.
 * Attempt to recover from the "output is below bottom of window" bug, whine.
+* Update copyright notices. erf.
+* Fix short circuiting in new math parser not to spuriously error
+* #ifdef out all uses of bogus 'ceiling_of_display' for now.
+* Pull "initial" part of resize_window_display() into new_window()
+* Then forcibly call resize_window_display() to update old_display_size.
+* And then call make_window_current() last to make sure window updates there.
+* But I think that calling recalc_win_curs_and_disp_ip might be bogus there.
+* Make notes that calling make_window_current() can kill the window.

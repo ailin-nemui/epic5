@@ -1,4 +1,4 @@
-/* $EPIC: window.c,v 1.43 2002/10/25 17:10:04 jnelson Exp $ */
+/* $EPIC: window.c,v 1.44 2002/11/07 05:48:37 jnelson Exp $ */
 /*
  * window.c: Handles the organzation of the logical viewports (``windows'')
  * for irc.  This includes keeping track of what windows are open, where they
@@ -210,7 +210,9 @@ Window	*new_window (Screen *screen)
 
 	new_w->top_of_scrollback = NULL;	/* Filled in later */
 	new_w->top_of_display = NULL;		/* Filled in later */
+#if 0
 	new_w->ceiling_of_display = NULL;	/* Filled in later */
+#endif
 	new_w->display_ip = NULL;		/* Filled in later */
 	new_w->display_buffer_size = 0;
 	new_w->display_buffer_max = get_int_var(SCROLLBACK_VAR);
@@ -242,12 +244,17 @@ Window	*new_window (Screen *screen)
 
 	new_w->deceased = 0;
 
-	/* Moved here from below the if. */
-	/*
-	 * We have to know how big the window is before we can fill in 
-	 * the display...
-	 */
-	resize_window_display(new_w);
+	/* Initialize the scrollback */
+	new_w->top_of_scrollback = new_display_line(NULL);
+	new_w->top_of_scrollback->line = NULL;
+	new_w->top_of_scrollback->next = NULL;
+	new_w->display_buffer_size = 1;
+	new_w->display_ip = new_w->top_of_scrollback;
+	new_w->top_of_display = new_w->top_of_scrollback;
+#if 0
+	new_w->ceiling_of_display = new_w->top_of_display;
+#endif
+	new_w->old_size = 1;
 
 	if (screen)
 	{
@@ -265,6 +272,7 @@ Window	*new_window (Screen *screen)
 	else
 		add_to_invisible_list(new_w);
 
+	resize_window_display(new_w);
 
 	/*
 	 * Offer it to the user.  I dont know if this will break stuff
@@ -853,11 +861,8 @@ static void 	swap_window (Window *v_window, Window *window)
 	if (!v_window->deceased)
 		add_to_invisible_list(v_window);
 
-	/*
-	 * Transfer current_window if the current window is being swapped out
-	 */
-	if (v_window == current_window)
-		make_window_current(window);
+	recalculate_window_cursor_and_display_ip(window);
+	resize_window_display(window);
 
 	/*
 	 * And recalculate the window's positions.
@@ -866,6 +871,12 @@ static void 	swap_window (Window *v_window, Window *window)
 	window_statusbar_needs_redraw(window);
 	window->miscflags &= ~WINDOW_NOTIFIED;
 	update_input(UPDATE_ALL);
+
+	/*
+	 * Transfer current_window if the current window is being swapped out
+	 */
+	if (v_window == current_window)
+		make_window_current(window);
 }
 
 /*
@@ -1083,30 +1094,9 @@ void	resize_window_display (Window *window)
 		return;
 
 	/*
-	 * This is called in new_window to initialize the
-	 * display the first time
-	 *
-	 * XXX - But not from where you'd expect.  This gets called
-	 * by update_all_windows() by way of set_screens_current_window()
-	 * by way of new_window(), but if the window is invisible, then
-	 * resize_window_display() only gets called once, not twice.
-	 *
-	 * XXX - And why does this have to be HERE?
+	 * We don't ever adjust the top of the window if it's being held.
 	 */
-	if (!window->top_of_scrollback)
-	{
-		window->top_of_scrollback = new_display_line(NULL);
-		window->top_of_scrollback->line = NULL;
-		window->top_of_scrollback->next = NULL;
-		window->display_buffer_size = 1;
-		window->display_ip = window->top_of_scrollback;
-		window->top_of_display = window->top_of_scrollback;
-		window->ceiling_of_display = window->top_of_display;
-		window->old_size = 1;
-	}
-	else if (window->hold_mode || window->autohold)
-		;
-	else
+	if (!window->hold_mode && !window->autohold)
 	{
 		/*
 		 * Find out how much the window has changed by
@@ -1121,8 +1111,11 @@ void	resize_window_display (Window *window)
 		{
 			for (i = 0; i < cnt; i++)
 			{
-				if (!tmp || !tmp->prev || 
-				    tmp == window->ceiling_of_display)
+				if (!tmp || !tmp->prev
+#if 0
+				    || tmp == window->ceiling_of_display
+#endif
+								)
 					break;
 				tmp = tmp->prev;
 			}
@@ -1458,6 +1451,7 @@ void 	next_window (char dumb, char *dumber)
 
 	w = get_next_window(last_input_screen->current_window);
 	make_window_current(w);
+	/* XXX This is dangerous -- 'make_window_current' might nuke 'w'! */
 	set_screens_current_window(last_input_screen, w);
 	update_all_windows();
 }
@@ -1489,6 +1483,7 @@ void 	previous_window (char dumb, char *dumber)
 
 	w = get_previous_window(last_input_screen->current_window);
 	make_window_current(w);
+	/* XXX This is dangerous -- 'make_window_current' might nuke 'w'! */
 	set_screens_current_window(last_input_screen, w);
 	update_all_windows();
 }
@@ -1521,6 +1516,7 @@ static void 	show_window (Window *window)
 	}
 
 	make_window_current(window);
+	/* XXX This is dangerous -- 'make_window_current' might nuke 'w'! */
 	set_screens_current_window(window->screen, window);
 	return;
 }
@@ -2229,7 +2225,9 @@ static void 	clear_window (Window *window)
 		return;
 
 	window->top_of_display = window->display_ip;
+#if 0
 	window->ceiling_of_display = window->top_of_display;
+#endif
 	if (window->miscflags & WINDOW_NOTIFIED)
 		window->miscflags &= ~WINDOW_NOTIFIED;
 	recalculate_window_cursor_and_display_ip(window);
@@ -2284,7 +2282,9 @@ static void	unclear_window (Window *window)
 			break;
 		window->top_of_display = window->top_of_display->prev;
 	}
+#if 0
 	window->ceiling_of_display = window->top_of_display;
+#endif
 
 	recalculate_window_cursor_and_display_ip(window);
 	window_body_needs_redraw(window);
@@ -2597,6 +2597,7 @@ static Window *window_back (Window *window, char **args)
 		tmp = last_input_screen->window_list;
 
 	make_window_current(tmp);
+	/* XXX This is dangerous, 'make_window_current' might nuke 'tmp' */
 	if (tmp->screen)
 		set_screens_current_window(tmp->screen, tmp);
 	else
@@ -3477,6 +3478,7 @@ static Window *window_new (Window *window, char **args)
 		window = tmp;
 
 	make_window_current(window);
+	/* XXX This is dangerous -- 'make_window_current' might nuke 'window' */
 	return window;
 }
 
@@ -4014,6 +4016,7 @@ static Window *window_refnum (Window *window, char **args)
 	{
 		window = tmp;
 		make_window_current(tmp);
+	/* XXX This is dangerous -- 'make_window_current' might nuke 'tmp' */
 		if (tmp->screen)
 		{
 			set_screens_current_window(tmp->screen, tmp);
@@ -4041,6 +4044,7 @@ static Window *window_refnum_or_swap (Window *window, char **args)
 	if (tmp->screen)
 	{
 		make_window_current(tmp);
+	/* XXX This is dangerous -- 'make_window_current' might nuke 'tmp' */
 		set_screens_current_window(tmp->screen, tmp);
 	}
 	else

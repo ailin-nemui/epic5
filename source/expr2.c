@@ -1,4 +1,4 @@
-/* $EPIC: expr2.c,v 1.3 2002/10/28 23:45:39 jnelson Exp $ */
+/* $EPIC: expr2.c,v 1.4 2002/11/07 05:48:37 jnelson Exp $ */
 /*
  * Zsh: math.c,v 3.1.2.1 1997/06/01 06:13:15 hzoli Exp 
  * math.c - mathematical expression evaluation
@@ -1008,10 +1008,21 @@ static void	op (expr_info *cx, int what)
 	if (cx->errflag)
 		return;		/* Dont parse on an error */
 
+/* Check to see if we are evaluating the expression at this point. */
+#define CHECK_NOEVAL							\
+	if (cx->noeval)							\
+	{								\
+		if (x_debug & DEBUG_NEW_MATH_DEBUG)			\
+			yell("O: Operation short-circuited");		\
+		push_token(cx, 0);					\
+		break;							\
+	}
+
 /* Perform an ordinary garden variety floating point binary operation. */
 #define BINARY_FLOAT(floatop)						\
 	{ 								\
 		pop_2_floats(cx, &a, &b); 				\
+		CHECK_NOEVAL						\
 		push_float(cx, (floatop));				\
 		if (x_debug & DEBUG_NEW_MATH_DEBUG) 			\
 			yell("O: %s (%f %f) -> %f", 			\
@@ -1023,6 +1034,7 @@ static void	op (expr_info *cx, int what)
 #define BINARY_INTEGER(intop)						\
 	{ 								\
 		pop_2_integers(cx, &i, &j); 				\
+		CHECK_NOEVAL						\
 		push_integer(cx, (intop)); 				\
 		if (x_debug & DEBUG_NEW_MATH_DEBUG) 			\
 			yell("O: %s (%ld %ld) -> %ld", 			\
@@ -1034,6 +1046,7 @@ static void	op (expr_info *cx, int what)
 #define BINARY_BOOLEAN(boolop) 						\
 	{ 								\
 		pop_2_booleans(cx, &c, &d); 				\
+		CHECK_NOEVAL						\
 		push_boolean(cx, (boolop)); 				\
 		if (x_debug & DEBUG_NEW_MATH_DEBUG) 			\
 			yell("O: %s (%d %d) -> %d", 			\
@@ -1045,6 +1058,7 @@ static void	op (expr_info *cx, int what)
 #define BINARY_FLOAT_NOZERO(floatop)					\
 	{ 								\
 		pop_2_floats(cx, &a, &b); 				\
+		CHECK_NOEVAL						\
 		if (b == 0.0) 						\
 		{ 							\
 			if (x_debug & DEBUG_NEW_MATH_DEBUG) 		\
@@ -1067,6 +1081,7 @@ static void	op (expr_info *cx, int what)
 #define BINARY_INTEGER_NOZERO(intop)					\
 	{ 								\
 		pop_2_integers(cx, &i, &j); 				\
+		CHECK_NOEVAL						\
 		if (j == 0) 						\
 		{ 							\
 			if (x_debug & DEBUG_NEW_MATH_DEBUG) 		\
@@ -1099,6 +1114,7 @@ static void	op (expr_info *cx, int what)
 #define IMPLIED_INTEGER(intop) 						\
 	{ 								\
 		GET_LVAL_RVAL						\
+		CHECK_NOEVAL						\
 		i = get_token_integer(cx, v);				\
 		j = get_token_integer(cx, w);				\
 									\
@@ -1117,6 +1133,7 @@ static void	op (expr_info *cx, int what)
 #define IMPLIED_FLOAT(floatop) 						\
 	{ 								\
 		GET_LVAL_RVAL						\
+		CHECK_NOEVAL						\
 		a = get_token_float(cx, v);				\
 		b = get_token_float(cx, w);				\
 									\
@@ -1135,6 +1152,7 @@ static void	op (expr_info *cx, int what)
 #define IMPLIED_BOOLEAN(boolop) 					\
 	{ 								\
 		GET_LVAL_RVAL						\
+		CHECK_NOEVAL						\
 		c = get_token_boolean(cx, v);				\
 		d = get_token_boolean(cx, w);				\
 									\
@@ -1157,6 +1175,7 @@ static void	op (expr_info *cx, int what)
 #define IMPLIED_FLOAT_NOZERO(floatop) 					\
 	{ 								\
 		GET_LVAL_RVAL						\
+		CHECK_NOEVAL						\
 		a = get_token_float(cx, v);				\
 		b = get_token_float(cx, w);				\
 									\
@@ -1189,6 +1208,7 @@ static void	op (expr_info *cx, int what)
 #define IMPLIED_INTEGER_NOZERO(intop) 					\
 	{ 								\
 		GET_LVAL_RVAL						\
+		CHECK_NOEVAL						\
 		i = get_token_float(cx, v);				\
 		j = get_token_float(cx, w);				\
 									\
@@ -1227,6 +1247,7 @@ static void	op (expr_info *cx, int what)
 			push_token(cx, 0);				\
 			break;						\
 		}							\
+		CHECK_NOEVAL						\
 									\
 		j = get_token_integer(cx, v);				\
 		if (x_debug & DEBUG_NEW_MATH_DEBUG) 			\
@@ -1255,6 +1276,7 @@ static void	op (expr_info *cx, int what)
 #define COMPARE(x, y) 							\
 	{ 								\
 		pop_2_strings(cx, &s, &t);				\
+		CHECK_NOEVAL						\
 		if (is_real_number(s) && is_real_number(t))		\
 		{							\
 			a = atof(s), b = atof(t);			\
@@ -1279,30 +1301,35 @@ static void	op (expr_info *cx, int what)
 		/* Simple unary prefix operators */
 		case NOT:
 			c = pop_boolean(cx);
+			CHECK_NOEVAL
 			if (x_debug & DEBUG_NEW_MATH_DEBUG)
 				yell("O: !%d -> %d", c, !c);
 			push_boolean(cx, !c);
 			break;
 		case COMP:
 			i = pop_integer(cx);
+			CHECK_NOEVAL
 			if (x_debug & DEBUG_NEW_MATH_DEBUG)
 				yell(": ~%ld -> %ld", i, ~i);
 			push_integer(cx, ~i);
 			break;
 		case UPLUS:
 			a = pop_float(cx);
+			CHECK_NOEVAL
 			if (x_debug & DEBUG_NEW_MATH_DEBUG)
 				yell("O: +%f -> %f", a, a);
 			push_float(cx, a);
 			break;
 		case UMINUS:
 			a = pop_float(cx);
+			CHECK_NOEVAL
 			if (x_debug & DEBUG_NEW_MATH_DEBUG)
 				yell("O: -%f -> %f", a, -a);
 			push_float(cx, -a);
 			break;
 		case STRLEN:
 			s = pop_expanded(cx);
+			CHECK_NOEVAL
 			i = strlen(s);
 			if (x_debug & DEBUG_NEW_MATH_DEBUG)
 				yell("O: @(%s) -> %ld", s, i);
@@ -1310,6 +1337,7 @@ static void	op (expr_info *cx, int what)
 			break;
 		case WORDC:
 			s = pop_expanded(cx);
+			CHECK_NOEVAL
 			i = word_count(s);
 			if (x_debug & DEBUG_NEW_MATH_DEBUG)
 				yell("O: #(%s) -> %ld", s, i);
@@ -1317,6 +1345,7 @@ static void	op (expr_info *cx, int what)
 			break;
 		case DEREF:
 		{
+			CHECK_NOEVAL
 			if (top(cx) == MAGIC_TOKEN)
 				break;		/* Dont do anything */
 
@@ -1351,6 +1380,7 @@ static void	op (expr_info *cx, int what)
 			char *	myval;
 
 			pop_2_strings(cx, &s, &t);
+			CHECK_NOEVAL
 			if (x_debug & DEBUG_NEW_MATH_DEBUG)
 				yell("O: (%s) ## (%s) -> %s%s", s, t, s, t);
 
@@ -1379,6 +1409,7 @@ static void	op (expr_info *cx, int what)
 			char *	myval;
 
 			GET_LVAL_RVAL
+			CHECK_NOEVAL
 			myval = m_strdup(get_token_expanded(cx, v));
 			t = get_token_expanded(cx, w);
 
@@ -1397,6 +1428,7 @@ static void	op (expr_info *cx, int what)
 			char *	myval;
 
 			GET_LVAL_RVAL
+			CHECK_NOEVAL
 			myval = m_strdup(get_token_expanded(cx, w));
 			t = get_token_expanded(cx, v);
 
@@ -1413,6 +1445,7 @@ static void	op (expr_info *cx, int what)
 		case EQ:
 		{
 			GET_LVAL_RVAL
+			CHECK_NOEVAL
 			t = get_token_expanded(cx, w);
 
 			if (x_debug & DEBUG_NEW_MATH_DEBUG)
@@ -1427,6 +1460,7 @@ static void	op (expr_info *cx, int what)
 			char *sval, *tval;
 
 			pop_2_tokens(cx, &v, &w);
+			CHECK_NOEVAL
 			if (!(s = get_token_lval(cx, v)))
 			{
 				push_token(cx, 0);
@@ -1453,6 +1487,7 @@ static void	op (expr_info *cx, int what)
 		case DEQ:
 		{
 			pop_2_strings(cx, &s, &t);
+			CHECK_NOEVAL
 			c = my_stricmp(s, t) ? 0 : 1;
 
 			if (x_debug & DEBUG_NEW_MATH_DEBUG)
@@ -1464,6 +1499,7 @@ static void	op (expr_info *cx, int what)
 		case NEQ:
 		{
 			pop_2_strings(cx, &s, &t);
+			CHECK_NOEVAL
 			c = my_stricmp(s, t) ? 1 : 0;
 
 			if (x_debug & DEBUG_NEW_MATH_DEBUG)
@@ -1475,6 +1511,7 @@ static void	op (expr_info *cx, int what)
 		case MATCH:
 		{
 			pop_2_strings(cx, &s, &t);
+			CHECK_NOEVAL
 			c = wild_match(t, s) ? 1 : 0;
 			
 			if (x_debug & DEBUG_NEW_MATH_DEBUG)
@@ -1486,6 +1523,7 @@ static void	op (expr_info *cx, int what)
 		case NOMATCH:
 		{
 			pop_2_strings(cx, &s, &t);
+			CHECK_NOEVAL
 			c = wild_match(t, s) ? 0 : 1;
 			
 			if (x_debug & DEBUG_NEW_MATH_DEBUG)
@@ -1504,6 +1542,7 @@ static void	op (expr_info *cx, int what)
 		case QUEST:
 		{
 			pop_3_tokens(cx, &c, &v, &w);
+			CHECK_NOEVAL
 			if (x_debug & DEBUG_NEW_MATH_DEBUG)
 			{
 				yell("O: %d ? %s : %s -> %s", c,
@@ -1521,6 +1560,7 @@ static void	op (expr_info *cx, int what)
 		case COMMA:
 		{
 			pop_2_tokens(cx, &v, &w);
+			CHECK_NOEVAL
 
 			if (x_debug & DEBUG_NEW_MATH_DEBUG)
 				yell("O: %s , %s -> %s", 

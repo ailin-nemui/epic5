@@ -1,4 +1,4 @@
-/* $EPIC: commands.c,v 1.39 2002/10/30 16:37:59 jnelson Exp $ */
+/* $EPIC: commands.c,v 1.40 2002/11/07 05:48:37 jnelson Exp $ */
 /*
  * commands.c -- Stuff needed to execute commands in ircII.
  *		 Includes the bulk of the built in commands for ircII.
@@ -1417,8 +1417,7 @@ BUILT_IN_COMMAND(license)
  	yell("Copyright (c) 1992-1996 Matthew Green.");
  	yell("Copyright © 1993, 1997 Jeremy Nelson.");
 	yell("Copyright © 1994 Jake Khuon.");
-	yell("Coypright © 1995, 2000 Jeremy Nelson and others ");
-	yell("                       (\"EPIC Software Labs\").");
+	yell("Coypright © 1995, 2002 EPIC Software Labs.");
 	yell("All rights reserved");
 	yell(" ");
 	yell("Redistribution and use in source and binary forms, with or");
