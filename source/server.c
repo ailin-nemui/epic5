@@ -2089,7 +2089,7 @@ int	get_server_port (int gsp_index)
 	else if (gsp_index >= number_of_servers)
 		return 0;
 
-	if (inet_ntostr((SA *)&server_list[gsp_index].remote_sockname, 
+	if (!inet_ntostr((SA *)&server_list[gsp_index].remote_sockname, 
 			NULL, 0, p_port, 12, 0))
 		return atol(p_port);
 
@@ -2105,7 +2105,7 @@ int	get_server_local_port (int gsp_index)
 	else if (gsp_index >= number_of_servers)
 		return 0;
 
-	if (inet_ntostr((SA *)&server_list[gsp_index].remote_sockname, 
+	if (!inet_ntostr((SA *)&server_list[gsp_index].remote_sockname, 
 			NULL, 0, p_port, 12, 0))
 		return atol(p_port);
 

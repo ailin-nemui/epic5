@@ -93,3 +93,8 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Fix decl for 'need_redraw' which is a volatile.
 * Fix NULL deref if you did /window flush in an empty window (rb adm)
 * Unbreak larneproofing for /on 367 which was too strict for ircnet. 
+* Add Getnameinfo(), front end to getnameinfo() takes GNI_INTEGER for DCC use
+* Fix inet_ntostr() to use Getnameinfo() instead of getnameinfo() directly.
+* Fix inet_ntostr() to return int for success/failure, not hostname.
+* Fix the DCC handshake generator to use inet_ntostr().
+* Fix callers of inet_ntostr() to handle integer return values.

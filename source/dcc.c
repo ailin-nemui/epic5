@@ -9,7 +9,7 @@
  */
 
 #if 0
-static	char	rcsid[] = "@(#)$Id: dcc.c,v 1.29 2002/06/06 13:13:43 jnelson Exp $";
+static	char	rcsid[] = "@(#)$Id: dcc.c,v 1.30 2002/06/16 04:09:58 jnelson Exp $";
 #endif
 
 #include "irc.h"
@@ -574,7 +574,9 @@ int	dcc_opened (int fd, int result)
 		char p_port[24];
 		SA *addr = (SA *)&dcc->peer_sockaddr;
 
-		inet_ntostr(addr, p_addr, 256, p_port, 24, NI_NUMERICHOST);
+		if (inet_ntostr(addr, p_addr, 256, p_port, 24, NI_NUMERICHOST))
+			yell("Couldn't get host/port for this connection.");
+
 
 		/* 
 		 * It would be nice if SEND also showed the filename
@@ -733,9 +735,11 @@ static	int	dcc_open (DCC_list *dcc)
  */
 static void	dcc_send_booster_ctcp (DCC_list *dcc)
 {
+	SS	my_sockaddr;
+	char	p_host[128];
+	char	p_port[24];
 	char *	nopath;
 	char *	type = dcc_types[dcc->flags & DCC_TYPES];
-	SS	my_sockaddr;
 	int	family;
 
 	family = FAMILY(dcc->local_sockaddr);
@@ -749,6 +753,11 @@ static void	dcc_send_booster_ctcp (DCC_list *dcc)
 
 	if (family == AF_INET)
 		V4PORT(my_sockaddr) = V4PORT(dcc->local_sockaddr);
+
+	if (inet_ntostr((SA *)&my_sockaddr, p_host, 128, p_port, 24, GNI_INTEGER | NI_NUMERICHOST)) {
+		yell("Couldn't get host/port for address!");
+		return;
+	}
 
 	/*
 	 * If this is to be a 2-peer connection, then we need to
@@ -781,10 +790,8 @@ static void	dcc_send_booster_ctcp (DCC_list *dcc)
 			 * Dont bother with the checksum.
 			 */
 			send_ctcp(CTCP_PRIVMSG, dcc->user, CTCP_DCC,
-				 "%s %s %lu %hu %ld",
-				 type, url_name,
-				 (u_long)ntohl(V4ADDR(my_sockaddr).s_addr),
-				 ntohs(V4PORT(my_sockaddr)),
+				 "%s %s %s %s %ld",
+				 type, url_name, p_host, p_port,
 				 dcc->filesize);
 		}
 
@@ -812,10 +819,8 @@ static void	dcc_send_booster_ctcp (DCC_list *dcc)
 			 * Send out the handshake
 			 */
 			send_ctcp(CTCP_PRIVMSG, dcc->user, CTCP_DCC,
-				 "%s %s %lu %u", 
-				 type, nopath,
-				 (u_long)ntohl(V4ADDR(my_sockaddr).s_addr),
-				 ntohs(V4PORT(my_sockaddr)));
+				 "%s %s %s %s", 
+				 type, nopath, p_host, p_port);
 		}
 
 		/*
@@ -1855,7 +1860,7 @@ void	register_dcc_offer (char *user, char *type, char *description, char *addres
 	/*
 	 * Convert the sockaddr back to a name that we can print.
 	 */
-	if (!inet_ntostr((SA *)&Client->offer, p_addr, 256, NULL, 0, NI_NUMERICHOST))
+	if (inet_ntostr((SA *)&Client->offer, p_addr, 256, NULL, 0, NI_NUMERICHOST))
 	{
 		say("DCC %s (%s) request from %s could not be converted back "
 		    "into a p-addr [%s] [%s]", 

@@ -26,6 +26,7 @@ static int	Connect (int fd, SA *addr);
 static int	Getaddrinfo (const char *nodename, const char *servname, const AI *hints, AI **res);
 static void	Freeaddrinfo (AI *ai);
 static socklen_t	socklen (SA *sockaddr);
+static int	Getnameinfo(const SA *sa, socklen_t salen, char *host, size_t hostlen, char *serv, size_t servlen, int flags);
 
 /*
    Retval    Meaning
@@ -457,18 +458,18 @@ int	inet_strton (const char *host, const char *port, SA *storage, int flags)
  * NOTES: 'flags' should be set to NI_NAMEREQD if you don't want the remote
  *        host's p-addr if it does not have a DNS hostname.
  */
-char *	inet_ntostr (SA *name, char *host, int hsize, char *port, int psize, int flags)
+int	inet_ntostr (SA *name, char *host, int hsize, char *port, int psize, int flags)
 {
 	int	retval;
 	socklen_t len;
 
 	len = socklen(name);
-	if ((retval = getnameinfo(name, len, host, hsize, port, psize, flags))) {
-		yell("getnameinfo(%s): %s", host, gai_strerror(retval));
-		return NULL;
+	if ((retval = Getnameinfo(name, len, host, hsize, port, psize, flags))) {
+		yell("Getnameinfo(%s): %s", host, gai_strerror(retval));
+		return retval;
 	}
 
-	return host;
+	return 0;
 }
 
 /* * * * * * * * * */
@@ -492,7 +493,7 @@ char *	inet_hntop (int family, const char *host, char *retval, int size)
 	if ((err = inet_strton(host, NULL, (SA *)&buffer, 0)))
 		return empty_string;
 
-	if (!inet_ntostr((SA *)&buffer, retval, size, NULL, 0, NI_NUMERICHOST))
+	if (inet_ntostr((SA *)&buffer, retval, size, NULL, 0, NI_NUMERICHOST))
 		return empty_string;
 
 	return retval;
@@ -518,7 +519,7 @@ char *	inet_ptohn (int family, const char *ip, char *retval, int size)
 	if ((err = inet_strton(ip, NULL, (SA *)&buffer, AI_NUMERICHOST)))
 		return empty_string;
 
-	if (!inet_ntostr((SA *)&buffer, retval, size, NULL, 0, NI_NAMEREQD))
+	if (inet_ntostr((SA *)&buffer, retval, size, NULL, 0, NI_NAMEREQD))
 		return empty_string;
 
 	return retval;
@@ -681,6 +682,18 @@ static void	Freeaddrinfo (AI *ai)
 #endif
 
 	freeaddrinfo(ai);
+}
+
+static int	Getnameinfo(const SA *sa, socklen_t salen, char *host, size_t hostlen, char *serv, size_t servlen, int flags)
+{
+	if ((flags & GNI_INTEGER) && sa->sa_family == AF_INET) {
+		snprintf(host, hostlen, "%lu", 
+			(unsigned long)ntohl(((ISA *)sa)->sin_addr.s_addr));
+		host = NULL;
+		hostlen = 0;
+	}
+	flags = flags & ~(GNI_INTEGER);
+	return getnameinfo(sa, salen, host, hostlen, serv, servlen, flags);
 }
 
 static socklen_t	socklen (SA *sockaddr)
