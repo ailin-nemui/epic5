@@ -603,7 +603,9 @@ BUILT_IN_COMMAND(loopcmd)
 		for_next_cmd(argc, argv, subargs);
 	else if (!my_stricmp(argv[1], "in"))
 	{
-		if (*argv[2] == '(')
+		if (argc < 4)
+			error("%s: syntax error", command);
+		else if (*argv[2] == '(')
 			for_fe_cmd(argc, argv, subargs);
 		else
 			for_pattern_cmd(argc, argv, subargs);

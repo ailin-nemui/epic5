@@ -3017,7 +3017,7 @@ void 	command_completion (char unused, char *not_used)
 	char		buffer[BIG_BUFFER_SIZE + 1];
 
 	malloc_strcpy(&line, get_input());
-	if ((com = next_arg(line, &rest)) != NULL)
+	if (((com = next_arg(line, &rest)) != NULL) && *com)
 	{
 		if (!(cmdchars = get_string_var(CMDCHARS_VAR)))
 			cmdchars = DEFAULT_CMDCHARS;

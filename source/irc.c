@@ -20,12 +20,12 @@ const char useful_info[] = "epic4 1 0 1";
  * internal_version is what $V returns, its the integer-id for the
  * version, and corresponds to the date of release, YYYYMMDD.
  */ 
-const char internal_version[] = "20010622";
+const char internal_version[] = "20010730";
 
 /*
  * In theory, this number is incremented for every commit.
  */
-const unsigned long	commit_id = 75;
+const unsigned long	commit_id = 76;
 
 /*
  * As a way to poke fun at the current rage of naming releases after
