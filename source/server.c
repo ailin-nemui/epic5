@@ -111,6 +111,7 @@ void 	add_to_server_list (const char *server, int port, const char *password, co
 		s->resetting_nickname = 0;
 		s->reconnects = 0;
 		s->quit_message = NULL;
+		s->save_channels = 0;
 
 		if (password && *password)
 			malloc_strcpy(&s->password, password);
