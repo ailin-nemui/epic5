@@ -3556,8 +3556,10 @@ static int num_sort_it (const void *one, const void *two)
 	{
 		while (*oneptr && *twoptr && !(my_isdigit(oneptr)) && !(my_isdigit(twoptr)))
 		{
-			if (*oneptr != *twoptr)
-				return (*oneptr - *twoptr);
+			char one = tolower(*oneptr);
+			char two = tolower(*twoptr);
+			if (one != two)
+				return (one - two);
 			oneptr++, twoptr++;
 		}
 

@@ -402,8 +402,10 @@ BUILT_IN_COMMAND(fe)
 	char	*map = (char *) 0;
 	size_t	mapclue = 0;
 
-	for (x = 0; x <= 254; var[x++] = (char *) 0)
+#if 0
+	for (x = 0; x <= (sizeof(var) / sizeof(*var)); var[x++] = (char *) 0)
 		;
+#endif
 
 	if (!subargs)
 		subargs = empty_string;
@@ -437,7 +439,7 @@ BUILT_IN_COMMAND(fe)
 
 	while ((var[ind++] = next_arg(vars, &vars)))
 	{
-		if (ind == 255)
+		if (ind > (sizeof(var) / sizeof(*var)))
 		{
 			error("%s: Too many variables", command);
 			new_free(&templist);

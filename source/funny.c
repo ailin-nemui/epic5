@@ -8,7 +8,7 @@
  */
 
 #if 0
-static	char	rcsid[] = "@(#)$Id: funny.c,v 1.3 2002/05/09 23:32:21 jnelson Exp $";
+static	char	rcsid[] = "@(#)$Id: funny.c,v 1.4 2002/05/26 00:01:57 crazyed Exp $";
 #endif
 
 #include "irc.h"
@@ -382,8 +382,10 @@ void	update_user_mode (char *modes)
 
 			idx = ccspan(p_umodes, c);
 			if (p_umodes[idx] == 0)
-				panic("Invalid user mode referenced");
-			set_server_flag(from_server, idx, onoff);
+				yell("WARNING: Invalid user mode %c referenced on server %d",
+						*modes, last_server);
+			else
+				set_server_flag(from_server, idx, onoff);
 
 			if (c == 'o')
 				set_server_operator(from_server, onoff);
