@@ -1,4 +1,4 @@
-/* $EPIC: window.c,v 1.125 2004/08/29 02:41:04 jnelson Exp $ */
+/* $EPIC: window.c,v 1.126 2004/08/29 21:00:26 jnelson Exp $ */
 /*
  * window.c: Handles the organzation of the logical viewports (``windows'')
  * for irc.  This includes keeping track of what windows are open, where they
@@ -5806,6 +5806,12 @@ char 	*windowctl 	(char *input)
 		RETURN_INT(w->swappable);
 	    } else if (!my_strnicmp(listc, "DECEASED", len)) {
 		RETURN_INT(w->deceased);
+	    } else if (!my_strnicmp(listc, "TOPLINE", len)) {
+		int	i;
+		GET_INT_ARG(i, input);
+		RETURN_STR(w->topline[i]);
+	    } else if (!my_strnicmp(listc, "TOPLINES", len)) {
+		RETURN_INT(w->saved);
 	    }
 	} else if (!my_strnicmp(listc, "SET", len)) {
 	    GET_INT_ARG(refnum, input);

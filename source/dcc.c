@@ -1,4 +1,4 @@
-/* $EPIC: dcc.c,v 1.102 2004/08/24 23:27:23 jnelson Exp $ */
+/* $EPIC: dcc.c,v 1.103 2004/08/29 21:00:26 jnelson Exp $ */
 /*
  * dcc.c: Things dealing client to client connections. 
  *
@@ -2951,9 +2951,11 @@ static void	process_dcc_raw_connected (DCC_list *dcc)
 	if (((SA *)&name)->sa_family == AF_INET)
 		malloc_strcpy(&dcc->othername, 
 				ltoa(ntohs(V4PORT(name))));
+#ifdef INET6
 	else if (((SA *)&name)->sa_family == AF_INET6)
 		malloc_strcpy(&dcc->othername, 
 				ltoa(ntohs(V6PORT(name))));
+#endif
 	else
 		malloc_strcpy(&dcc->othername, "<any>");
 

@@ -388,3 +388,5 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Add /window topline <N> "<str>" change the Nth topline to <str>
 * You can have 1 to 9 toplines.
 * Don't allow /window toplines to be a negative number!
+* Fix dcc compile error with --without-ipv6
+* Add $windowctl(GET ref TOPLINE num) and $windowctl(GET ref TOPLINES)
