@@ -4134,15 +4134,56 @@ else
 fi
 
 
-
-
-echo $ac_n "checking for sys_siglist declaration""... $ac_c" 1>&6
-echo "configure:4141: checking for sys_siglist declaration" >&5
+echo $ac_n "checking for useful SO_SNDLOWAT""... $ac_c" 1>&6
+echo "configure:4139: checking for useful SO_SNDLOWAT" >&5
 if test "$cross_compiling" = yes; then
   :
 else
   cat > conftest.$ac_ext <<EOF
-#line 4146 "configure"
+#line 4144 "configure"
+#include "confdefs.h"
+
+#include <sys/types.h>
+#include <sys/socket.h>
+main ()
+{
+#ifndef SO_SNDLOWAT
+        exit(1);
+#else
+        int d = socket(AF_INET, SOCK_STREAM, 0);
+        int size = 256;
+        if (setsockopt(d, SOL_SOCKET, SO_SNDLOWAT, &size, sizeof(size)) < 0)
+                exit(1);
+        exit (0);
+#endif
+}
+
+EOF
+if { (eval echo configure:4163: \"$ac_link\") 1>&5; (eval $ac_link) 2>&5; } && test -s conftest${ac_exeext} && (./conftest; exit) 2>/dev/null
+then
+  echo "$ac_t""yes" 1>&6
+  cat >> confdefs.h <<\EOF
+#define HAVE_SO_SNDLOWAT 1
+EOF
+
+else
+  echo "configure: failed program was:" >&5
+  cat conftest.$ac_ext >&5
+  rm -fr conftest*
+  echo "$ac_t""no" 1>&6
+fi
+rm -fr conftest*
+fi
+
+
+
+echo $ac_n "checking for sys_siglist declaration""... $ac_c" 1>&6
+echo "configure:4182: checking for sys_siglist declaration" >&5
+if test "$cross_compiling" = yes; then
+  :
+else
+  cat > conftest.$ac_ext <<EOF
+#line 4187 "configure"
 #include "confdefs.h"
 
 #include <sys/types.h>
@@ -4155,7 +4196,7 @@ main()
 }
 
 EOF
-if { (eval echo configure:4159: \"$ac_link\") 1>&5; (eval $ac_link) 2>&5; } && test -s conftest${ac_exeext} && (./conftest; exit) 2>/dev/null
+if { (eval echo configure:4200: \"$ac_link\") 1>&5; (eval $ac_link) 2>&5; } && test -s conftest${ac_exeext} && (./conftest; exit) 2>/dev/null
 then
   echo "$ac_t""yes" 1>&6 
   sys_siglist="1"
@@ -4222,7 +4263,7 @@ fi
 
 
 echo $ac_n "checking size of unsigned int""... $ac_c" 1>&6
-echo "configure:4226: checking size of unsigned int" >&5
+echo "configure:4267: checking size of unsigned int" >&5
 if eval "test \"`echo '$''{'ac_cv_sizeof_unsigned_int'+set}'`\" = set"; then
   echo $ac_n "(cached) $ac_c" 1>&6
 else
@@ -4230,7 +4271,7 @@ else
   ac_cv_sizeof_unsigned_int=4
 else
   cat > conftest.$ac_ext <<EOF
-#line 4234 "configure"
+#line 4275 "configure"
 #include "confdefs.h"
 #include <stdio.h>
 main()
@@ -4241,7 +4282,7 @@ main()
   exit(0);
 }
 EOF
-if { (eval echo configure:4245: \"$ac_link\") 1>&5; (eval $ac_link) 2>&5; } && test -s conftest${ac_exeext} && (./conftest; exit) 2>/dev/null
+if { (eval echo configure:4286: \"$ac_link\") 1>&5; (eval $ac_link) 2>&5; } && test -s conftest${ac_exeext} && (./conftest; exit) 2>/dev/null
 then
   ac_cv_sizeof_unsigned_int=`cat conftestval`
 else
@@ -4267,7 +4308,7 @@ EOF
 
 else
 	echo $ac_n "checking size of unsigned long""... $ac_c" 1>&6
-echo "configure:4271: checking size of unsigned long" >&5
+echo "configure:4312: checking size of unsigned long" >&5
 if eval "test \"`echo '$''{'ac_cv_sizeof_unsigned_long'+set}'`\" = set"; then
   echo $ac_n "(cached) $ac_c" 1>&6
 else
@@ -4275,7 +4316,7 @@ else
   ac_cv_sizeof_unsigned_long=4
 else
   cat > conftest.$ac_ext <<EOF
-#line 4279 "configure"
+#line 4320 "configure"
 #include "confdefs.h"
 #include <stdio.h>
 main()
@@ -4286,7 +4327,7 @@ main()
   exit(0);
 }
 EOF
-if { (eval echo configure:4290: \"$ac_link\") 1>&5; (eval $ac_link) 2>&5; } && test -s conftest${ac_exeext} && (./conftest; exit) 2>/dev/null
+if { (eval echo configure:4331: \"$ac_link\") 1>&5; (eval $ac_link) 2>&5; } && test -s conftest${ac_exeext} && (./conftest; exit) 2>/dev/null
 then
   ac_cv_sizeof_unsigned_long=`cat conftestval`
 else
@@ -4321,7 +4362,7 @@ fi
 
 
 echo $ac_n "checking whether to support SOCKS""... $ac_c" 1>&6
-echo "configure:4325: checking whether to support SOCKS" >&5
+echo "configure:4366: checking whether to support SOCKS" >&5
 # Check whether --with-socks or --without-socks was given.
 if test "${with_socks+set}" = set; then
   withval="$with_socks"
@@ -4373,7 +4414,7 @@ fi
 
 
 echo $ac_n "checking whether to support SOCKS5""... $ac_c" 1>&6
-echo "configure:4377: checking whether to support SOCKS5" >&5
+echo "configure:4418: checking whether to support SOCKS5" >&5
 # Check whether --with-socks5 or --without-socks5 was given.
 if test "${with_socks5+set}" = set; then
   withval="$with_socks5"
@@ -4407,7 +4448,7 @@ fi
 
 
 echo $ac_n "checking whether to support Perl""... $ac_c" 1>&6
-echo "configure:4411: checking whether to support Perl" >&5
+echo "configure:4452: checking whether to support Perl" >&5
 # Check whether --with-perl or --without-perl was given.
 if test "${with_perl+set}" = set; then
   withval="$with_perl"
@@ -4452,7 +4493,7 @@ if test "$program_prefix" = "NONE" ; then
 fi
 
 echo $ac_n "checking whether to support bounds checking gcc""... $ac_c" 1>&6
-echo "configure:4456: checking whether to support bounds checking gcc" >&5
+echo "configure:4497: checking whether to support bounds checking gcc" >&5
 # Check whether --with-bc or --without-bc was given.
 if test "${with_bc+set}" = set; then
   withval="$with_bc"

@@ -4,9 +4,9 @@ dnl except those bits attributed otherwise.
 dnl thanks to the screen 3.3 configure.in for giving me examples to
 dnl work from and steal ;)
 dnl
-dnl @(#)$Id: configure.in,v 1.5 2002/01/25 21:57:09 crazyed Exp $
+dnl @(#)$Id: configure.in,v 1.6 2002/04/10 16:04:31 jnelson Exp $
 
-AC_REVISION($Revision: 1.5 $)dnl
+AC_REVISION($Revision: 1.6 $)dnl
 AC_INIT(source/irc.c)
 AC_CONFIG_HEADER(include/defs.h)
 
@@ -288,6 +288,33 @@ dnl
 AC_CHECK_FUNC(getpgid, AC_DEFINE(HAVE_GETPGID),)
 AC_CHECK_FUNC(getpgrp, AC_FUNC_GETPGRP,)
 
+dnl ---------------------------------------------------------
+dnl
+dnl Check for a useful SO_SNDLOWAT.
+dnl Some systems (eg, linux) can be bothered to #define SO_SNDLOWAT
+dnl but can't be bothered to implement it, instead returning an error.
+dnl How completely bogus.  Don't #define it if you don't support it!
+dnl
+AC_MSG_CHECKING(for useful SO_SNDLOWAT)
+AC_TRY_RUN([
+#include <sys/types.h>
+#include <sys/socket.h>
+main ()
+{
+#ifndef SO_SNDLOWAT
+        exit(1);
+#else
+        int d = socket(AF_INET, SOCK_STREAM, 0);
+        int size = 256;
+        if (setsockopt(d, SOL_SOCKET, SO_SNDLOWAT, &size, sizeof(size)) < 0)
+                exit(1);
+        exit (0);
+#endif
+}
+],
+  AC_MSG_RESULT(yes, your SO_SNDLOWAT is useful)
+  AC_DEFINE(HAVE_SO_SNDLOWAT),
+  AC_MSG_RESULT(no, your SO_SNDLOWAT is broken and/or worthless), :)
 
 dnl ----------------------------------------------------------
 dnl

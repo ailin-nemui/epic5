@@ -9,7 +9,7 @@
  */
 
 #if 0
-static	char	rcsid[] = "@(#)$Id: dcc.c,v 1.10 2002/03/31 03:57:19 jnelson Exp $";
+static	char	rcsid[] = "@(#)$Id: dcc.c,v 1.11 2002/04/10 16:04:31 jnelson Exp $";
 #endif
 
 #include "irc.h"
@@ -2359,7 +2359,7 @@ static void		process_outgoing_file (DCC_list *Client)
 		Client->flags |= DCC_ACTIVE;
 		get_time(&Client->starttime);
 
-#ifdef SO_SNDLOWAT
+#ifdef HAVE_SO_SNDLOWAT
 		/*
 		 * Give a hint to the OS how many bytes we need to send
 		 * for each write()
