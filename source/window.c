@@ -1,4 +1,4 @@
-/* $EPIC: window.c,v 1.118 2004/08/05 00:38:57 jnelson Exp $ */
+/* $EPIC: window.c,v 1.119 2004/08/05 01:00:31 jnelson Exp $ */
 /*
  * window.c: Handles the organzation of the logical viewports (``windows'')
  * for irc.  This includes keeping track of what windows are open, where they
@@ -3781,7 +3781,12 @@ static Window *window_notify_name (Window *window, char **args)
 	{
 		/* /window name -  unsets the window name */
 		if (!strcmp(arg, "-"))
+		{
 			new_free(&window->notify_name);
+			window_statusbar_needs_update(window);
+			say("Window NOTIFY NAME unset");
+			return window;
+		}
 
 		/* /window name to existing name -- ignore this. */
 		else if (window->notify_name && (my_stricmp(window->notify_name, arg) == 0))
@@ -3790,9 +3795,14 @@ static Window *window_notify_name (Window *window, char **args)
 			return window;
 		}
 
-		malloc_strcpy(&window->notify_name, arg);
-		window_statusbar_needs_update(window);
-		say("Window NOTIFY NAME changed to %s", window->notify_name);
+		else
+		{
+			malloc_strcpy(&window->notify_name, arg);
+			window_statusbar_needs_update(window);
+			say("Window NOTIFY NAME changed to %s", 
+					window->notify_name);
+			return window;
+		}
 	}
 	else
 		say("Window NOTIFY NAME is %s", window->notify_name);
