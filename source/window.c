@@ -3595,6 +3595,14 @@ static Window *window_notify (Window *window, char **args)
 	return window;
 }
 
+static Window *window_notify_list (Window *window, char **args)
+{
+	window->miscflags ^= WINDOW_NOTIFIED;
+	say("Notify list status set to %s",
+		window->miscflags & WINDOW_NOTIFIED ? on : off);
+	return window;
+}
+
 static Window *window_notify_level (Window *window, char **args)
 {
 	char *arg;
@@ -4496,6 +4504,7 @@ const static window_ops options [] = {
 	{ "NEW_HIDE",		window_new_hide		}, /* * */
 	{ "NEXT",		window_next 		},
 	{ "NOSERV",		window_noserv		},
+	{ "NOTIFIED",		window_notify_list 	},
 	{ "NOTIFY",		window_notify 		},
 	{ "NOTIFY_LEVEL",	window_notify_level 	},
 	{ "NUMBER",		window_number 		},
