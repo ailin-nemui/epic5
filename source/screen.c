@@ -2130,6 +2130,8 @@ void 	do_screens (fd_set *rd)
 
 		if (FD_ISSET(screen->fdin, rd))
 		{
+			FD_CLR(screen->fdin, rd);	/* No more! */
+
 			/*
 			 * This section of code handles all in put from 
 			 * the terminal(s) connected to ircII.  Perhaps the 

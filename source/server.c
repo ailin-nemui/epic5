@@ -713,6 +713,7 @@ void	do_server (fd_set *rd)
 		des = server_list[i].des;
 		if (des == -1 || !FD_ISSET(des, rd))
 			continue;
+		FD_CLR(des, rd);	/* Make sure it never comes up again */
 
 		last_server = from_server = i;
 		switch ((junk = dgets(bufptr, des, 1)))
@@ -800,6 +801,7 @@ void 	flush_server (void)
 			{
 				if (FD_ISSET(des, &rd))
 				{
+					FD_CLR(des, &rd);
 					if (dgets(buffer, des, 0) == 0)
 						flushing = 0;
 				}

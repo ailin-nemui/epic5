@@ -660,12 +660,18 @@ void 		do_processes (fd_set *rd)
 			continue;
 
 		if (proc->p_stdout != -1 && FD_ISSET(proc->p_stdout, rd))
+		{
+			FD_CLR(proc->p_stdout, rd);
 			handle_filedesc(proc, &proc->p_stdout, 
 					EXEC_PROMPT_LIST, EXEC_LIST);
+		}
 
 		if (proc->p_stderr != -1 && FD_ISSET(proc->p_stderr, rd))
+		{
+			FD_CLR(proc->p_stderr, rd);
 			handle_filedesc(proc, &proc->p_stderr,
 					EXEC_PROMPT_LIST, EXEC_ERRORS_LIST);
+		}
 
 		if (limit && proc->counter >= limit)
 			ignore_process(proc->index);

@@ -9,7 +9,7 @@
  */
 
 #if 0
-static	char	rcsid[] = "@(#)$Id: dcc.c,v 1.2 2000/12/07 18:24:43 jnelson Exp $";
+static	char	rcsid[] = "@(#)$Id: dcc.c,v 1.3 2001/03/21 21:12:36 jnelson Exp $";
 #endif
 
 #include "irc.h"
@@ -2007,6 +2007,7 @@ void	dcc_check (fd_set *Readables)
 
 		if (Readables && Client->read != -1 && FD_ISSET(Client->read, Readables))
 		{
+			FD_CLR(Client->read, Readables);	/* No more! */
 			previous_server = from_server;
 			from_server = -1;
 			message_from(NULL, LOG_DCC);
