@@ -823,7 +823,7 @@ static	char	*alias_cmdchar 		(void)
 static	char	*alias_chanop 		(void)
 {
 	char	*tmp;
-	return m_strdup(((tmp = get_channel_by_refnum(0)) && get_channel_oper(tmp, from_server)) ?
+	return m_strdup(((tmp = get_channel_by_refnum(0)) && get_channel_oper(tmp, get_window_server(0))) ?
 		"@" : empty_string);
 }
 
@@ -831,7 +831,7 @@ static	char	*alias_modes 		(void)
 {
 	char	*tmp;
 	return m_strdup((tmp = get_channel_by_refnum(0)) ?
-		get_channel_mode(tmp, from_server) : empty_string);
+		get_channel_mode(tmp, get_window_server(0)) : empty_string);
 }
 
 static	char	*alias_server_version  (void)
