@@ -1,5 +1,199 @@
 EPIC5-0.1
 
+*** News 08/25/2004 -- New target syntax, -<serverdesc>/<target>
+	You can now send messages to the special message type:
+		-<serverdesc>/<target>
+	where <serverdesc> is a server description (see below) and <target>
+	is obviously a nick or channel on that server.  This allows you to
+	send a message to a nickname on a server other than your current
+	window's server.  For example:
+		@serverctl(SET 0 ALTNAME booya)		(set an altname)
+		/msg -booya/hop hi there!
+	Will send the message to "hop" on server 0.
+
+*** News 08/25/2004 -- "Server descriptions"
+	Anywhere EPIC expects you to give it a server, it now expects a 
+	"server description" which is one of the following (in this order)
+
+		1) A number, which is taken as a server refnum
+
+		2) An "ourname" of an open server
+		3) An "itsname" of an open server
+		4) A "group" of an open server
+		5) An "alternate name" of an open server
+
+		6) An "ourname" of a closed server
+		7) An "itsname" of a closed server
+		8) A "group" of a closed server
+		9) An "alternate name" of a closed server
+
+	The server description may be a wildcard!  The first server 
+	(starting with server 0) that matches is used.
+
+	This means you can do something like this:
+		@serverctl(SET 0 ALTNAME booya)		(set an altname)
+		/server -0				(disconnect from 0)
+		/server +booya				(reconnect to "booya")
+	and it will connect to server 0, because server 0 has the alternate
+	name of "booya"!
+
+*** News 08/25/2004 -- Alternate server names
+	You may now give a server a list of "alternate names".  There is no
+	limit.  You add a new alternate name with:
+		$serverctl(SET <refnum> ALTNAME <name>)
+	You can totaly replace the list with:
+		$serverctl(SET <refnum> ALTNAMES <names>)
+	<name> and <names> should be space-separated list of words.
+
+	You can get the list of alternate names with
+		$serverctl(GET <refnum> ALTNAMES)
+
+*** News 08/25/2004 -- Aliases now shown with their argument lists
+	When you do /alias, you now see the argument list along with all
+	of the other stuff.
+
+*** News 08/25/2004 -- Mangling now supports "ALT_CHAR"
+	How did this ever get missed?
+
+*** News 08/25/2004 -- New function, $mktime()
+	Usage: $mktime(year month day hour minute second DST)
+	The first six arguments are required.  Returns -1 on error.
+	Returns whatever mktime(3) on your system would return, usually
+	the number of seconds since the epoch represented by the arguments.
+
+*** News 08/25/2004 -- Support for ircnet's "unique id" nicknames
+	You can now always use your "unique id" as your nickname, and also
+	the "0" shortcut nickname, on ircnet.
+
+*** News 08/25/2004 -- New status expando, %{1}F
+	This is just like %F, it displays all of the "notified" windows,
+	except it uses the window's "notify_name" instead of its refnum.
+
+*** News 08/25/2004 -- New window command, /WINDOW NOTIFY_NAME
+	If you change the /WINDOW NOTIFY_NAME, and use the %{1}F status
+	expando, then the notify_name, and not the window's refnum, will
+	show up.  Howl wanted to colorize the refnum up, and this is how
+	you should do it.
+
+*** News 08/25/2004 -- Support for +I channel mode (ratbox)
+	Because adm asked me to
+
+*** News 08/25/2004 -- User-created /SETs, /SET -CREATE   -- WARNING
+	You can create your own /set's for now with 
+		/SET -CREATE <name> <type> {<code>}
+	where <type> is one of BOOL, STR, or INT.  <code> is code that 
+	will be run any time the user does /SET <name> <newval>.  You can
+	/SET the value within <code> to override the user's value.  
+
+	*** WARNING *** This interface is temporary and will go away in 
+	the future.  It will be replaced by $symbolctl() which has not
+	yet been written, so stay tuned for more information!
+
+*** News 08/25/2004 -- Unification of symbol namespaces
+	There is now one big table that holds all of the symbol names for
+	aliases, assigns, built in commands, built in functions, sets, and
+	inline expandos.  You should not notice any changes at all, except
+	maybe epic runs faster.  This was done to pave the path towards
+	plugins, which will need to be able to add their own commands and
+	functions on the fly!
+
+*** News 08/25/2004 -- The /IRCNAME and /REALNAME commands removed here...
+	because they are duplicates of /SET REALNAME.  Use the /SET now.
+
+*** News 08/25/2004 -- $stripcrap(ALL) no longer strips "ALL_OFF"...
+	because the crap-mangler makes liberal use of ALL_OFFs and it is of
+	no harm to leave them in there, and it does great harm to take them
+	out. ;-)  If you want to remove them, do $stripcrap(ALL,ALL_OFF)
+
+*** News 08/25/2004 -- New script 'builtins' loaded from global
+	Some things are starting to migrate from hardcoded builtins to 
+	script features.  They are not "being removed", their implementation
+	is just changing.  This script will contain backwards compatability
+	stuff for epic4.  You really do need this script!  Do 'make install'!
+
+*** News 08/25/2004 -- Automatic command completion removed
+	You can no longer do /whoi as a replacement for /whois.  You'll have
+	to spell out the command name in full now.
+
+*** News 08/25/2004 -- Using your nickname as a command removed here
+	You can no longer do /<mynick> as an alias for /me.  Just use /me.
+
+*** News 08/25/2004 -- The COMMAND_COMPLETION keybinding removed here
+	A new script replacement is forthcoming -- stand by!
+
+*** News 08/25/2004 -- New serverctl, $serverctl(GET <refnum> STATUS)
+	This returns the server's current status, which is described below
+	in the /on server_status stuff.
+
+*** News 08/25/2004 -- New script, 'slowcat'
+	This script cats a file to your current target, 2 lines per second
+	to avoid triggering flood control.  
+		/load slowcat
+		/slowcat filename
+
+*** News 08/25/2004 -- New status expando, %{2}W
+	This acts just like %W, but it shows in every window, and not just 
+	the current window.
+
+*** News 08/25/2004 -- New /SET, /SET OLD_SERVER_LASTLOG_LEVEL
+	When you /WINDOW SERVER to move a window to a server that is already
+	connected, the window's level will be set to this /set value.  This
+	is important, because of the following situation:
+		Window 1, server 0, level ALL
+		Window 2, server 1, level ALL
+	If you do /window 1 server 1  then you have two servers connected
+	to server 1 with level "ALL".  Who wins?  Not you. ;-)  This defaults
+	to NONE, which is probably the only sensible value.
+
+*** News 08/25/2004 -- /WINDOW KILL_ALL_HIDDEN kills your hidden windows.
+	After you run this, you will be left with only your visible windows.
+
+*** News 08/25/2004 -- /ON TYPE !"PATTERN" acts as an exception.
+	If you use this syntax, then the default action will occurs whenever
+	the pattern is matched.  This is how ircII's /ON TYPE ^PATTERN works.
+	For example:
+			on ^msg * echo msg from $0: $1-
+			on ^msg !"hop" 
+	In this case, if anyone but hop sends you a msg, it is echoed as
+	in the first /on.  But if hop sends you a message, it will be
+	displayed in the "default" way by epic, as though you did not have
+	an on at all.
+
+*** News 08/25/2004 -- It is now always safe to delete ONs from within ONs
+	Up until now, you needed to /defer the removal of any /ONs from
+	within other /ONs, or you risked crashing epic.  This meant you 
+	could not safely stop an /ON with a higher serial number from
+	running by deleting it.  All of this has been fixed now.  You can
+	delete /ONs without restriction and the change takes place 
+	immediately.
+
+*** News 08/25/2004 -- ONs no longer compile patterns to regexes
+	This was fraught with peril, so ONs no longer compile their
+	patterns to regexes, and now we do things like we have always
+	done with ONs
+
+*** News 08/25/2004 -- In /ON DCC_RAW "* E *", $3 is the port number
+	Previously it held the "othername", which wasn't terribly useful.
+
+*** News 08/25/2004 -- /WAIT =<fd> waits for a dcc connection to complete
+	If you do $connect(), it is nonblocking and returns before the
+	connection is ready to be used.  If you need to wait until the
+	connection completes, like it did in epic4, do this:
+			@fd = connect(host port)
+			wait =$fd
+	and it's pretty much the same.  This wait is of course recursive
+	(and does not block the client)
+
+*** News 08/25/2004 -- Level names are always plural, except for CRAP
+	The levels have these names now, and they're gonna stay this way:
+
+		CRAP	PUBLICS	MSGS	NOTICES	WALLS	WALLOPS
+		OPNOTES	SNOTES	ACTIONS	DCCS	CTCPS
+		INVITES	JOINS	NICKS	TOPICS	PARTS	QUITS
+		KICKS	MODES	USER1	USER2	USER3	USER4
+		USER5	USER6	USER7	USER8	USER9	USER10
+		ALL (special)	NONE (special)
+
 *** News 08/18/2004 -- Overloadable function aliases.
 	When an alias name "collides" with a built in function, the built in
 	function has traditionally been called.  This update changes this

@@ -378,8 +378,8 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Add a "alternate names" bucket to server data.
 * Create a whole new api for querying and creating server refnums.
 * Fix crash with /dump on (/dump all)
-* Add $serverctl(GET|SET <refnum> ALIAS) get and set server alternate desigs
-* Add $serverctl(GET|SET <refnum> ALIASES) get and set entire list.
+* Add $serverctl(GET|SET <refnum> ALTNAME) get and set server alternate desigs
+* Add $serverctl(GET|SET <refnum> ALTNAMES) get and set entire list.
 * Fix memory leak with /on set
 * Fix memory leak with /timer
 * Fix $server*() functions, when passed no arguments.
