@@ -1814,7 +1814,7 @@ int 	is_current_channel (const char *channel, char remove)
 /*
  * set_channel_by_refnum: This sets the current channel for the current
  * window. It returns the current channel as it's value.  If channel is null,
- * the * current channel is not changed, but simply reported by the function
+ * the current channel is not changed, but simply reported by the function
  * result.  This treats as a special case setting the current channel to
  * channel "0".  This frees the current_channel for the
  * current_screen->current_window, * setting it to null 
@@ -1825,7 +1825,9 @@ const char *set_channel_by_refnum (unsigned int refnum, const char *channel)
 	char	*oldc;
 
 	if ((tmp = get_window_by_refnum(refnum)) == (Window *) 0)
-		tmp = current_window;
+		panic("Invalid window refnum [%d] passed to set_channel_by_refnum", refnum);
+	if (!im_on_channel(channel, tmp->server))
+		panic("Tried to make [%s:%d] the current channel of window [%d], but I'm not on that channel!", channel, tmp->server, refnum);
 
 	oldc = tmp->current_channel;
 	if (!channel || (channel && !strcmp(channel, zero)))
