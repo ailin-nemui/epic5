@@ -46,7 +46,7 @@ static	Ignore *ignored_nicks = NULL;
 
 /*
  * ignore_nickname: adds nick to the ignore list, using type as the type of
- * ignorance to take place.  
+ * ignorance to take place.
  */
 static void 	ignore_nickname (const char *nicklist, int type, int flag)
 {

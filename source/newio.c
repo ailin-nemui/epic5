@@ -571,7 +571,7 @@ static	int global_max_fd = -1;
 
 /*
  * new_select: works just like select(), execpt I trimmed out the excess
- * parameters I didn't need.  
+ * parameters I didn't need.
  */
 int 	new_select (fd_set *rd, fd_set *wd, struct timeval *timeout)
 {

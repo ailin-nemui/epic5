@@ -194,9 +194,9 @@ char *	real_extract2 (const char *start, int firstword, int lastword, int extend
 #endif
 	}
 
-	/* 
-	 * SOS is used when the user does $-n, all leading spaces 
-	 * are retained  
+	/*
+	 * SOS is used when the user does $-n, all leading spaces
+	 * are retained
 	 */
 	else if (firstword == SOS)
 		mark = start;

@@ -1541,7 +1541,7 @@ Window *get_window_by_desc (char *stuff)
  * pointer to that window if a window exists with that refnum, null is
  * returned otherwise.  The "safe" way to reference a window is throught the
  * refnum, since a window might be delete behind your back and and Window
- * pointers might become invalid.  
+ * pointers might become invalid.
  */
 Window *get_window_by_refnum (unsigned refnum)
 {
@@ -2231,7 +2231,7 @@ void 	restore_message_from (const char *saved_who_from, int saved_who_level)
 /*
  * message_from: With this you can set the who_from variable and the 
  * who_level variable, used by the display routines to decide which 
- * window messages should go to.  
+ * window messages should go to.
  */
 void 	message_from (const char *who, int level)
 {
@@ -4607,7 +4607,7 @@ BUILT_IN_COMMAND(windowcmd)
  * immediately by a new_display_line().  So most of the time we just
  * cache that one item and re-use it.  That saves us thousands of
  * malloc()s.  In the cases where its not, then we just do things the
- * normal way.  
+ * normal way.
  */
 static Display *recycle = NULL;
 
@@ -4785,7 +4785,7 @@ void 	scrollback_start (char dumb, char *dumber)
 /*
  * hold_mode: sets the "hold mode".  Really.  If the update flag is true,
  * this will also update the status line, if needed, to display the hold mode
- * state.  If update is false, only the internal flag is set.  
+ * state.  If update is false, only the internal flag is set.
  * -- Note: update is always 1. --
  */
 void	hold_mode (Window *window, int flag, int update)

@@ -9,7 +9,7 @@
  */
 
 #if 0
-static	char	rcsid[] = "@(#)$Id: list.c,v 1.1 2000/12/05 00:11:57 jnelson Exp $";
+static	char	rcsid[] = "@(#)$Id: list.c,v 1.2 2002/05/23 03:35:17 jnelson Exp $";
 #endif
 
 #include "irc.h"
@@ -41,7 +41,7 @@ __inline__ int	list_match (List *item1, const char *str)
  * struct my_list{ struct my_list *next; char *name; <whatever else you want>}; 
  *
  * The parameters are:  "list" which is a pointer to the head of the list. "add"
- * which is a pre-allocated element to be added to the list.  
+ * which is a pre-allocated element to be added to the list.
  */
 void 	add_to_list (List **list, List *add)
 {

@@ -519,7 +519,7 @@ void    flush_on_hooks (void)
 {
         int x;
         int old_display = window_display;
-        
+
         window_display = 0;
         for (x = 1; x < 999; x++)
 		remove_numeric_hook(x, NULL, x, 1);
@@ -968,7 +968,7 @@ BUILT_IN_COMMAND(shookcmd)
  * integer number, and is used for the serial number for this event.
  *
  * The "verbosity" of the event may also be modified by specifying at most
- * one of the following characters:  
+ * one of the following characters:
  *	A caret (^) is the SILENT level, and indicates that the event is to
  *		be executed with no output (window_display is turned off),
  *		and the "default action" (whatever that is) for the event is

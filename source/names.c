@@ -1398,7 +1398,7 @@ void 	destroy_server_channels (int server)
  * list for the current server (which at this point are just acting as 
  * placeholders), and makes sure that all the windows are all happy with 
  * their current channels, and then spits out a JOIN for all of the 
- * channels, and then trashcans the channels.  
+ * channels, and then trashcans the channels.
  *
  * This probably never works quite like people expect.
  */

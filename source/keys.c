@@ -41,7 +41,7 @@ static	int	parse_key	(const uc *sequence, uc *term);
  * its the second to last time, as we've made the entire things independant
  * of the number of meta keymaps that are available (it can change.)  The
  * only thing i see left to be done is to encapsulate all this data inside
- * a class so that different contexts can have different bindings sets.  
+ * a class so that different contexts can have different bindings sets.
  * I'm sure that will come up some day.  But anyhow, on to the details!
  */
 
@@ -80,7 +80,7 @@ static	int	parse_key	(const uc *sequence, uc *term);
  * But since most of the meta maps are either sparse or empty, it makes very 
  * little sense to actually allocate 4k (16 * 256) for each of the maps only 
  * to have them unused.  So instead the meta map is just 256 pointers to 
- * these objects, which then are allocated dynamically.  
+ * these objects, which then are allocated dynamically.
  *
  *	typedef KeyMap *MetaMap[256];		(better)
  *
@@ -101,7 +101,7 @@ static	int	parse_key	(const uc *sequence, uc *term);
  *	typedef	MetaMap	*KeyTable[MAX_META];	(better)
  *
  * Which is what we had before.  This works out fine, except, that the
- * number of meta maps is hardcoded into the client at compile time.  
+ * number of meta maps is hardcoded into the client at compile time.
  * Wouldn't it be nice to be able to determine at runtime how many maps
  * we want and be able to change them as neccesary?  We can do this by
  * having a pointer to the set of pointers of MetaMaps...
@@ -1069,7 +1069,7 @@ BUILT_IN_COMMAND(bindcmd)
  * BACKSPACE or SELF_INSERT) over to its offset in the binding lookup table,
  * you must call this function to retreive that offset.  The first argument
  * is the name you want to look up, and the second argument is where the
- * offset is to be stored.  
+ * offset is to be stored.
  *
  * Return value: (its tricky)
  *	-1	  -- The name is a META binding that is invalid.

@@ -433,9 +433,9 @@ const u_char *read_color_seq (const u_char *start, void *d)
 		return ptr;
 
 	/*
-	 * This is a one-or-two-time-through loop.  We find the maximum 
-	 * span that can compose a legit ^C sequence, then if the first 
-	 * nonvalid character is a comma, we grab the rhs of the code.  
+	 * This is a one-or-two-time-through loop.  We find the maximum
+	 * span that can compose a legit ^C sequence, then if the first
+	 * nonvalid character is a comma, we grab the rhs of the code.
 	 */
 	for (fg = 1; ; fg = 0)
 	{
@@ -1106,7 +1106,7 @@ u_char *	normalize_string (const u_char *str, int logical)
 
 
 	/*
-	 * The 'm' command is the only one that we honor.  
+	 * The 'm' command is the only one that we honor.
 	 * All others are dumped.
 	 */
 	if (next_char() != 'm')
@@ -1319,11 +1319,11 @@ u_char *	normalize_string (const u_char *str, int logical)
 			put_back();
 			switch (this_char())
 			{
-				case REV_TOG:   
+				case REV_TOG:
 					if (reverse)
 						a.reverse = !a.reverse;
 					break;
-				case BOLD_TOG:  
+				case BOLD_TOG:
 					if (bold)
 						a.bold = !a.bold;
 					break;
@@ -1671,7 +1671,7 @@ const 	u_char	*ptr;
 			 * big word down to the second line.  Only problem is 
 			 * that the (now) second line needs to be broken right 
 			 * there, and we chew up (and lose) a character going 
-			 * through the parsing loop before we notice this.  
+			 * through the parsing loop before we notice this.
 			 * Not good.  It seems that in this very rare case, 
 			 * people would rather not have the really long word 
 			 * be sent to the second line, but rather included on 
@@ -3143,7 +3143,7 @@ void 	do_screens (fd_set *rd)
 				int     version;
 				version = atoi(buffer + 8);
 				if (version != CURRENT_WSERV_VERSION)
-				{   
+				{
 				    yell("WSERV version %d is incompatable with this binary",
 						version);
 				    kill_screen(screen);
@@ -3314,7 +3314,7 @@ const 	u_char 	*after = start;
 	/*
 	 * This is a one-or-two-time-through loop.  We find the  maximum 
 	 * span that can compose a legit ^C sequence, then if the first 
-	 * nonvalid character is a comma, we grab the rhs of the code.  
+	 * nonvalid character is a comma, we grab the rhs of the code.
 	 */
 	val = lhs;
 	for (;;)

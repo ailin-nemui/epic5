@@ -1,4 +1,4 @@
-/* $EPIC: expr2.c,v 1.1 2000/12/05 00:11:57 jnelson Exp $ */
+/* $EPIC: expr2.c,v 1.2 2002/05/23 03:35:17 jnelson Exp $ */
 /*
  * Zsh: math.c,v 3.1.2.1 1997/06/01 06:13:15 hzoli Exp 
  * math.c - mathematical expression evaluation
@@ -38,7 +38,7 @@
  *
  * You may distribute this file under the same terms as the above, by 
  * including the parties "Jeremy Nelson" and "EPIC Software Labs" to the 
- * limitations of liability and the express disclaimer of all warranties.  
+ * limitations of liability and the express disclaimer of all warranties.
  * This software is provided "AS IS".
  */
 #include <math.h>
@@ -83,7 +83,7 @@
 /*
  * Question:  Why is everything stored in a struct?
  * 
- * Answer: All the information for each expression is stored in a struct.  
+ * Answer: All the information for each expression is stored in a struct.
  * This is done so that there are no global variables in use (they're all 
  * collected making them easier to handle), and makes re-entrancy possible
  * since you don't have to worry about whether or not all of the state
@@ -97,7 +97,7 @@
  * a clean way to clean up after an expression (no memory leaks), and
  * permit a reference to any operator to persist for the entire lifetime
  * of the expression, without having to worry about who might be holding
- * a reference to an operand (tokens never change over their lifetime).  
+ * a reference to an operand (tokens never change over their lifetime).
  * By refering to each token through an integer, rather than a pointer, 
  * we can also prevent stale pointers, which can cause crashes.
  * 
@@ -224,7 +224,7 @@ typedef struct
 } expr_info;
 
 /* 
- * Useful macro to get at a specific token.  
+ * Useful macro to get at a specific token.
  * 'c' is the expression context, 'v' is the token handle.
  */
 #define TOK(c, v) 	c->tokens[v]
@@ -1911,7 +1911,7 @@ static int	zzlex (expr_info *c)
 		 * This is an UNEXPANDED-STRING operand type.
 		 * Extract everything inside the [...]'s, and then
 		 * tokenize that as a "raw" token.  It will be expanded
-		 * on an as-needed basis.  
+		 * on an as-needed basis.
 		 *
 		 * If we are in the no-eval section of a short-circuit, 
 		 * then we throw away this token entirely.

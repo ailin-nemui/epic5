@@ -1183,7 +1183,7 @@ STATUS_FUNCTION(status_away)
 
 
 /*
- * This is a generic status_userX variable.  
+ * This is a generic status_userX variable.
  */
 STATUS_FUNCTION(status_user)
 {

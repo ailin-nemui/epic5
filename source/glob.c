@@ -34,7 +34,7 @@
  */
 
 /* from: static char sccsid[] = "@(#)glob.c	8.3 (Berkeley) 10/13/93"; */
-/* $Id: glob.c,v 1.2 2001/09/26 16:37:10 jnelson Exp $ */
+/* $Id: glob.c,v 1.3 2002/05/23 03:35:17 jnelson Exp $ */
 
 /*
  * glob(3) -- a superset of the one defined in POSIX 1003.2.
@@ -589,8 +589,8 @@ static int glob3		(	Char *pathbuf,
 
 	*pathend = EOS;
 	errno = 0;
-	    
-	if ((dirp = g_opendir(pathbuf, pglob)) == NULL) 
+
+	if ((dirp = g_opendir(pathbuf, pglob)) == NULL)
 	{
 		/* TODO: don't call for ENOENT or ENOTDIR? */
 		if (pglob->gl_errfunc) 

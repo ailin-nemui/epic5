@@ -221,7 +221,7 @@ int new_match (const unsigned char *pattern, const unsigned char *string)
 				percent = 0;
 				last_percent_point = NULL;
 			}
-   
+
 			/*
 			 * If this is not the char we're looking for, then
 			 * keep looking.

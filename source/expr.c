@@ -302,7 +302,7 @@ static	char	*next_unit (char *str, const char *args, int *arg_flag, int stage)
 		}
 
 		/*
-		 * Parentheses have two contexts:  
+		 * Parentheses have two contexts:
 		 * 1) (text) is a unary precedence operator.  It is nonassoc,
 		 *	and simply parses the insides immediately.
 		 * 2) text(text) is the function operator.  It calls the
@@ -1574,7 +1574,7 @@ static	char	*alias_special_char(char **buffer, char *ptr, const char *args, char
 			char	*ph = ptr + 1;
 
 			/* 
-			 * BLAH. This didnt allow for nesting before.  
+			 * BLAH. This didnt allow for nesting before.
 			 * How lame.
 			 */
 			if ((ptr = MatchingBracket(ph, '{', '}')) ||
@@ -1823,7 +1823,7 @@ static	char	*alias_special_char(char **buffer, char *ptr, const char *args, char
 
 /*
  * TruncateAndQuote: This handles string width formatting and quoting for irc 
- * variables when [] or ^x is specified.  
+ * variables when [] or ^x is specified.
  */
 static	void	TruncateAndQuote(char **buff, const char *add, int length, const char *quote_em)
 {

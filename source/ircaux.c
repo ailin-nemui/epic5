@@ -8,7 +8,7 @@
  */
 
 #if 0
-static	char	rcsid[] = "@(#)$Id: ircaux.c,v 1.35 2002/05/07 00:05:45 jnelson Exp $";
+static	char	rcsid[] = "@(#)$Id: ircaux.c,v 1.36 2002/05/23 03:35:17 jnelson Exp $";
 #endif
 
 #include "irc.h"
@@ -3167,8 +3167,8 @@ u_char *strcpy_nocolorcodes (u_char *dest, const u_char *source)
 
 /*
  * This mangles up 'incoming' corresponding to the current values of
- * /set mangle_inbound or /set mangle_outbound.  
- * 'incoming' needs to be at _least_ thrice as big as neccesary 
+ * /set mangle_inbound or /set mangle_outbound.
+ * 'incoming' needs to be at _least_ thrice as big as neccesary
  * (ie, sizeof(incoming) >= strlen(incoming) * 3 + 1)
  */
 size_t	mangle_line	(char *incoming, int how, size_t how_much)
@@ -3689,7 +3689,7 @@ const char *	find_forward_quote (const char *input, const char *start)
 	 *			"one\" two"
 	 * Once we find a double quote, then it must be followed by 
 	 * either the end of string (chr 0) or a space.  If we find 
-	 * that, return the position of the double-quote.  
+	 * that, return the position of the double-quote.
 	 */
 	for (input++; *input; input++)
 	{
@@ -3746,7 +3746,7 @@ const char *	find_backward_quote (const char *input, const char *start)
 	 *			"one\" two"
 	 * Once we find a double quote, then it must be followed by 
 	 * either the end of string (chr 0) or a space.  If we find 
-	 * that, return the position of the double-quote.  
+	 * that, return the position of the double-quote.
 	 */
 	for (input--; input > start; input--)
 	{

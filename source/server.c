@@ -1128,7 +1128,7 @@ static int 	connect_to_server (int new_server)
 
 /*
  * This attempts to substitute a new connection to server 'new_server'
- * for the server connection 'old_server'.  
+ * for the server connection 'old_server'.
  * If 'old_server' is -1, then this is the first connection for the entire
  * 	client.  We have to handle this differently because no windows exist
  *	at this point and we have to be careful not to call 
@@ -2156,7 +2156,7 @@ int	get_server_operator (int gso_index)
 
 /*
  * set_server_operator: If flag is non-zero, marks the user as having op
- * privs on the given server.  
+ * privs on the given server.
  */
 void	set_server_operator (int sso_index, int flag)
 {

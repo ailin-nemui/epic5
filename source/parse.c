@@ -441,7 +441,7 @@ static void p_quit (char *from, char **ArgList)
 		{
 			if (check_ignore_channel(from, FromUserHost, chan,
 							IGNORE_CRAP) == IGNORED)
-			{       
+			{
 				one_prints = 0;
 				continue;
 			}

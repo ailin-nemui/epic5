@@ -775,7 +775,7 @@ this_sucks:
  * get_child_exit: This looks for dead child processes of the client.
  * There are two main sources of dead children:  Either an /exec'd process
  * has exited, or the client has attempted to fork() off a helper process
- * (such as wserv or gzip) and that process has choked on itself.  
+ * (such as wserv or gzip) and that process has choked on itself.
  *
  * When SIGCHLD is recieved, the global variable 'dead_children_processes'
  * is incremented.  When this function is called, we go through and call
@@ -808,9 +808,9 @@ int 		get_child_exit (pid_t wanted)
 		 */
 		if (wanted != -1 && pid == wanted)
 		{
-			if (WIFEXITED(status))   
+			if (WIFEXITED(status))
 				return WEXITSTATUS(status);
-			if (WIFSTOPPED(status))  
+			if (WIFSTOPPED(status))
 				return -(WSTOPSIG(status));
 			if (WIFSIGNALED(status)) 
 				return -(WTERMSIG(status));

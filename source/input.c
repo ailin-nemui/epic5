@@ -1275,10 +1275,10 @@ void	edit_char (u_char key)
 
 /*
  * type: The TYPE command.  This parses the given string and treats each
- * character as though it were typed in by the user.  Thus key bindings 
- * are used for each character parsed.  Special case characters are control 
- * character sequences, specified by a ^ follow by a legal control key.  
- * Thus doing "/TYPE ^B" will be as tho ^B were hit at the keyboard, 
+ * character as though it were typed in by the user.  Thus key bindings
+ * are used for each character parsed.  Special case characters are control
+ * character sequences, specified by a ^ follow by a legal control key.
+ * Thus doing "/TYPE ^B" will be as tho ^B were hit at the keyboard,
  * probably moving the cursor backward one character.
  *
  * This was moved from keys.c, because it certainly does not belong there,

@@ -1,4 +1,4 @@
-/* $EPIC: history.c,v 1.4 2001/10/02 17:53:34 crazyed Exp $ */
+/* $EPIC: history.c,v 1.5 2002/05/23 03:35:17 jnelson Exp $ */
 /*
  * history.c: stuff to handle command line history 
  *
@@ -192,7 +192,7 @@ BUILT_IN_COMMAND(history)
  * do_history: This finds the given history entry in either the history file,
  * or the in memory history buffer (if no history file is given). It then
  * returns the found entry as its function value, or null if the entry is not
- * found for some reason.  Note that this routine mallocs the string returned  
+ * found for some reason.  Note that this routine mallocs the string returned
  */
 char *	do_history (char *com, char *rest)
 {

@@ -10,7 +10,7 @@
  */
 
 #if 0
-static	char	rcsid[] = "@(#)$Id: ctcp.c,v 1.12 2002/05/16 20:51:03 jnelson Exp $";
+static	char	rcsid[] = "@(#)$Id: ctcp.c,v 1.13 2002/05/23 03:35:17 jnelson Exp $";
 #endif
 
 #include "irc.h"
@@ -639,7 +639,7 @@ static	time_t	last_ctcp_parsed = 0;
 
 
 		/*
-		 * Now its ok to parse the CTCP.  
+		 * Now its ok to parse the CTCP.
 		 * First we remove the argument.
 		 */
 		ctcp_command = the_ctcp;
@@ -952,7 +952,7 @@ void	send_ctcp (int type, char *to, int datatag, char *format, ...)
  * quote_it: This quotes the given string making it sendable via irc.  A
  * pointer to the length of the data is required and the data need not be
  * null terminated (it can contain nulls).  Returned is a malloced, null
- * terminated string.   
+ * terminated string.
  */
 char	*ctcp_quote_it (char *str, int len)
 {

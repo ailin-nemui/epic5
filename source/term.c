@@ -1,4 +1,4 @@
-/* $EPIC: term.c,v 1.5 2002/05/13 21:53:15 jnelson Exp $ */
+/* $EPIC: term.c,v 1.6 2002/05/23 03:35:17 jnelson Exp $ */
 /*
  * term.c -- termios and (termcap || terminfo) handlers
  *
@@ -869,7 +869,7 @@ int 	term_init (void)
 
 
 	/*
-	 * Finally set up the current_term->TI_sgrstrs array.  
+	 * Finally set up the current_term->TI_sgrstrs array.
 	 * Clean it out first...
 	 */
 	for (i = 0; i < TERM_SGR_MAXVAL; i++)
@@ -1023,7 +1023,7 @@ int 	term_init (void)
 
 		current_term->TI_backcolors[i] = m_strdup(cbuf);
 	}
-            
+
 /* Set up the terminal discipline */
 	tty_des = 0;			/* Has to be. */
 	tcgetattr(tty_des, &oldb);
