@@ -4227,7 +4227,7 @@ Window *window_server (Window *window, char **args)
 #endif
 		int i = find_server_refnum(arg, NULL);
 #ifdef HAVE_SSL
-		server_list[i].enable_ssl=withSSL;
+		set_server_enable_ssl(i, withSSL);
 #endif
 
 		if (windows_connected_to_server(window->server) > 1)

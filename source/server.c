@@ -1728,6 +1728,12 @@ const char *	get_server_version_string (int servnum)
 }
 
 #ifdef HAVE_SSL
+
+void	set_server_enable_ssl (int gsn_index, int value)
+{
+	server_list[gsn_index].enable_ssl = value;
+}
+
 /* get_server_isssl: returns 1 if the server is using SSL connection */
 int	get_server_isssl (int gsn_index)
 {
