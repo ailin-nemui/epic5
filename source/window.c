@@ -1,4 +1,4 @@
-/* $EPIC: window.c,v 1.55 2003/02/10 21:41:15 jnelson Exp $ */
+/* $EPIC: window.c,v 1.56 2003/02/20 06:46:36 jnelson Exp $ */
 /*
  * window.c: Handles the organzation of the logical viewports (``windows'')
  * for irc.  This includes keeping track of what windows are open, where they
@@ -1351,6 +1351,8 @@ void 	recalculate_windows (Screen *screen)
 			if (tmp->display_size < 0)
 				tmp->display_size = 1;
 			excess_li -= offset;
+			resize_window_display(tmp);
+			recalculate_window_cursor_and_display_ip(tmp);
 		}
 	}
 
