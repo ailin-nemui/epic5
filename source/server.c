@@ -132,8 +132,10 @@ void 	add_to_server_list (const char *server, int port, const char *password, co
 			malloc_strcpy(&s->d_nickname, nickname);
 		if (group && *group)
 			malloc_strcpy(&s->group, group);
+#ifdef HAVE_SSL
 		if (server_type && *server_type)
 			s->enable_ssl = my_stricmp(server_type, "IRC-SSL") ? 0 : 1;
+#endif
 		malloc_strcpy(&s->umodes, umodes);
 
 		make_notify_list(from_server);
@@ -1807,7 +1809,7 @@ void	register_server (int ssn_index, const char *nickname)
 	int		sign_alg;
 	X509		*server_cert;
 	EVP_PKEY	*server_pkey;
-#endif;
+#endif
 	if (server_list[ssn_index].registration_pending)
 		return;		/* Whatever */
 
@@ -2521,10 +2523,11 @@ const char *get_server_type (int refnum)
 
 	if (refnum >= number_of_servers || refnum < 0)
 		return 0;
-
+#ifdef HAVE_SSL
 	if (server_list[refnum].enable_ssl)
 		return "IRC-SSL";
 	else
+#endif
 		return "IRC";
 }
 
@@ -2607,8 +2610,10 @@ char 	*serverctl 	(char *input)
 			RETURN_INT(get_server_port(refnum));
 		} else if (!my_strnicmp(listc, "QUIT_MESSAGE", 1)) {
 			RETURN_STR(get_server_quit_message(refnum));
+#ifdef HAVE_SSL
 		} else if (!my_strnicmp(listc, "SSL", 1)) {
 			RETURN_INT(get_server_enable_ssl(refnum));
+#endif
 		} else if (!my_strnicmp(listc, "UMODE", 2)) {
 			RETURN_STR(get_umode(refnum));
 		} else if (!my_strnicmp(listc, "USERHOST", 2)) {
@@ -2654,12 +2659,14 @@ char 	*serverctl 	(char *input)
 		} else if (!my_strnicmp(listc, "QUIT_MESSAGE", 1)) {
 			set_server_quit_message(refnum, input);
 			RETURN_INT(1);
+#ifdef HAVE_SSL
 		} else if (!my_strnicmp(listc, "SSL", 1)) {
 			int value;
 
 			GET_INT_ARG(value, input);
 			set_server_enable_ssl(refnum, value);
 			RETURN_INT(1);
+#endif
 		} else if (!my_strnicmp(listc, "UMODE", 2)) {
 			RETURN_EMPTY;		/* Read only for now */
 		} else if (!my_strnicmp(listc, "USERHOST", 2)) {

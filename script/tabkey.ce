@@ -21,6 +21,9 @@
 #   space, but this is discouraged.
 # * tabkey.default is also called by $tabkey.cmd() if it cannot find an
 #   appropriate command handler.
+# * $tabkey.cmd() will search for an appropriate function by joining the
+#   command and all its arguments together with dots and progressively
+#   removing those arguments until a function is found.
 #
 # tabkey "exports" a number of local variables that the functions may use
 #   or alter after using "bless":
@@ -73,17 +76,30 @@ alias tabkey {
 		echo Completions for \"$word\": $matches
 	} elsif (#matches && strlen($word) <= strlen($prefix)) {
 		repeat ${curpos()-wordind} parsekey backspace
-		type $prefix${1<#matches?:[ ]}
+		xtype -l $prefix${1<#matches?:[ ]}
 	}
 }
 
 alias tabkey.cmd {
 	bless
-	@ :ret = []
-	@ :cmd = word(0 $L)
-	until (index($cmdchars $cmd)) {@ cmd = rest(1 $cmd)}
-	if (aliasctl(alias exists tabkey.cmd.$cmd)) {
-		wait for @ ret = tabkey[cmd][$cmd]($*)
+	@ :ret = :cmd = []
+	@ :pass = chr($jot($ascii(AZ)))
+	@ :pass#= chr($jot($ascii(az)))
+	@ :pass#= chr($jot($ascii(09)))
+	@ :args = mid(0 $curpos() $L)
+	@ :args = unsplit(. $args)
+	@ :args = pass(._$pass $args)
+	while (args) {
+		@ :matches = aliasctl(alias pmatch tabkey.cmd.$args*)
+		@ :matches = prefix($matches)
+		if (aliasctl(alias exists $matches) && matches == [tabkey.cmd.$args]) {
+			@ args = matches
+			break
+		}
+		@ args = before(-1 . $args)
+	}
+	if (args && args != [tabkey.cmd]) {
+		wait for @ ret = ${args}($*)
 	}
 	unless (strlen($ret)) {
 		wait for @ ret = tabkey.default($*)
@@ -92,6 +108,18 @@ alias tabkey.cmd {
 }
 
 # Context sensitive completion goes here.
+
+alias tabkey.cmd.dcc {return $pattern("$0*" CHAT CLOSE CLOSEALL GET LIST RAW RENAME RESUME SEND)}
+alias tabkey.cmd.dcc.resume tabkey.cmd.dcc.send
+alias tabkey.cmd.dcc.send {
+	bless
+	switch ($curword) {
+		(0) {echo This should never happen.;call}
+		(1) {echo This should never happen.;call}
+		(2) {return $tabkey.method.nick($*)}
+		(*) {return $tabkey.method.filei($*)}
+	}
+}
 
 alias tabkey.cmd.help {
 	bless
@@ -105,9 +133,18 @@ alias tabkey.cmd.help {
 
 # Methods.
 
-alias tabkey.method.chan { return $pattern($0* $mychannels()); }
-alias tabkey.method.file { return $glob($0*); }
-alias tabkey.method.filei { return $globi($0*); }
+alias tabkey.method.chan { return $pattern("$0*" $mychannels()); }
+alias tabkey.method.notify { return $pattern("$0*" $notify(on)); }
+
+alias alias.foo alias $*;alias $sar(g/globi/glob/$sar(g/filei/file/$*))
+alias.foo tabkey.method.filei {
+	@ :f0 = :f1 = globi("$0*")
+	while (numwords($f0) == 1 && f0 =~ [*/]) {
+		@ f0 = globi($f0*)
+	}
+	return ${f0 ? f0 : f1}
+}
+alias -alias.foo
 
 alias tabkey.method.nick {
 	if (pattern($0* $chanusers())) {
