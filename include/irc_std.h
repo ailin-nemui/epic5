@@ -184,6 +184,8 @@ extern	char	*sys_errlist[];
  * Define generic macros for signal handlers and built in commands.
  */
 typedef RETSIGTYPE sigfunc (int);
+int	block_signal (int);
+int	unblock_signal (int);
 sigfunc *my_signal (int, sigfunc *);
 #define SIGNAL_HANDLER(x) \
 	RETSIGTYPE x (int unused)

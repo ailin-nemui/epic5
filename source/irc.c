@@ -25,7 +25,7 @@ const char internal_version[] = "20011203";
 /*
  * In theory, this number is incremented for every commit.
  */
-const unsigned long	commit_id = 210;
+const unsigned long	commit_id = 211;
 
 /*
  * As a way to poke fun at the current rage of naming releases after
@@ -327,7 +327,7 @@ volatile int	dead_children_processes;
  */
 SIGNAL_HANDLER(child_reap)
 {
-	dead_children_processes++;
+	dead_children_processes = 1;
 }
 
 volatile int	segv_recurse = 0;

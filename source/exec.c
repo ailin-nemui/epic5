@@ -797,13 +797,10 @@ int 		get_child_exit (pid_t wanted)
 	 * or we've found the one asked for.
 	 */
 	if (dead_children_processes)
-	while ((pid = waitpid(wanted, &status, WNOHANG)) > 0)
 	{
-		/*
-		 * Ideally, this should never be < 0.
-		 */
-		dead_children_processes--;
-
+	    block_signal(SIGCHLD);
+	    while ((pid = waitpid(wanted, &status, WNOHANG)) > 0)
+	    {
 		/*
 		 * First thing we do is look to see if the process we're
 		 * working on is the one that was asked for.  If it is,
@@ -838,6 +835,9 @@ int 		get_child_exit (pid_t wanted)
 				}
 			}
 		}
+	    }
+	    dead_children_processes = 0;
+	    unblock_signal(SIGCHLD);
 	}
 
 	/*

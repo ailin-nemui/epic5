@@ -8,11 +8,29 @@
  */
 
 #if 0
-static	char	rcsid[] = "@(#)$Id: ircsig.c,v 1.1 2000/12/05 00:11:57 jnelson Exp $";
+static	char	rcsid[] = "@(#)$Id: ircsig.c,v 1.2 2002/02/14 01:46:06 jnelson Exp $";
 #endif
 
 #include "irc.h"
 #include "irc_std.h"
+
+int	block_signal (int sig_no)
+{
+	sigset_t set;
+
+	sigemptyset(&set);
+	sigaddset(&set, sig_no);
+	return sigprocmask(SIG_BLOCK, &set, NULL);
+}
+
+int	unblock_signal (int sig_no)
+{
+	sigset_t set;
+
+	sigemptyset(&set);
+	sigaddset(&set, sig_no);
+	return sigprocmask(SIG_UNBLOCK, &set, NULL);
+}
 
 sigfunc *my_signal (int sig_no, sigfunc *sig_handler)
 {
