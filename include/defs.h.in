@@ -249,6 +249,12 @@
 /* Define this if you have getservbyport() */
 #undef HAVE_GETSERVBYPORT
 
+/* Define this if you have getaddrinfo */
+#undef HAVE_GETADDRINFO
+
+/* Define this if you have getnameinfo */
+#undef HAVE_GETNAMEINFO
+
 /* The number of bytes in a unsigned int.  */
 #undef SIZEOF_UNSIGNED_INT
 

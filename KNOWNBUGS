@@ -15,7 +15,9 @@ KNOWN ERRATA (eg, bugs, or unresolved requests):
 * scrollback/scrollforward/scrollend should be controlled by /window verbs
   and not solely by keybindings.
 * Plus something that scrolls back to a certain word in scrollback, for adm.
- 
+* /TYPE honors keybindings, and calls edit_char(), but /XTYPE does not honor
+  key bindings because it calls 
+
 [See http://www.epicsol.org/PROJECTS for things to come in the future]
 [See http://www.epicsol.org/CHANGELOG for things that changed in the past]
 

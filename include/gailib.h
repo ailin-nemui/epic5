@@ -27,6 +27,9 @@
  * SUCH DAMAGE.
  */
 
+#ifndef __gailib_h__
+#define __gailib_h__
+
 /* special compatibility hack */
 #undef EAI_ADDRFAMILY
 #undef EAI_AGAIN
@@ -136,7 +139,7 @@ Standard C system should have one. */
   sockport.h -
 
   $Author: jnelson $
-  $Date: 2002/07/30 05:30:23 $
+  $Date: 2002/08/06 03:45:52 $
   created at: Fri Apr 30 23:19:34 JST 1999
 
 ************************************************/
@@ -203,3 +206,4 @@ Standard C system should have one. */
 extern int h_errno;
 #endif
 
+#endif

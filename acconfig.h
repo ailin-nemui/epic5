@@ -1,5 +1,5 @@
 /*
- * @(#)$Id: acconfig.h,v 1.15 2002/07/29 22:27:04 jnelson Exp $
+ * @(#)$Id: acconfig.h,v 1.16 2002/08/06 03:45:48 jnelson Exp $
  */
 
 /*
@@ -283,4 +283,10 @@
 
 /* Define this if you have getservbyport() */
 #undef HAVE_GETSERVBYPORT
+
+/* Define this if you have getaddrinfo */
+#undef HAVE_GETADDRINFO
+
+/* Define this if you have getnameinfo */
+#undef HAVE_GETNAMEINFO
 

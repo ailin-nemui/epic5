@@ -1,4 +1,4 @@
-/* $EPIC: network.c,v 1.40 2002/07/29 22:27:05 jnelson Exp $ */
+/* $EPIC: network.c,v 1.41 2002/08/06 03:45:52 jnelson Exp $ */
 /*
  * network.c -- handles stuff dealing with connecting and name resolving
  *
@@ -99,7 +99,10 @@ int	connectory (int family, const char *host, const char *port)
 	hints.ai_family = family;
 	hints.ai_socktype = SOCK_STREAM;
 	if ((err = Getaddrinfo(host, port, &hints, &results)))
+	{
+		yell("gai_strerror: [%d:%s]", err, gai_strerror(err));
 		return -5;
+	}
 
 	fd = -1;
 	for (ai = results; ai; ai = ai->ai_next) 
