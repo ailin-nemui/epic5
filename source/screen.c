@@ -419,6 +419,10 @@ const u_char *read_color_seq (const u_char *start, void *d)
 		int		val;
 		int		noval;
 
+        /* Reset all attributes to zero */
+        ad.bold = ad.underline = ad.reverse = ad.blink = ad.altchar = 0;
+        ad.color_fg = ad.color_bg = ad.fg_color = ad.bg_color = 0;
+
 	/* Copy the inward attributes, if provided */
 	a = (d) ? (Attribute *)d : &ad;
 
@@ -1463,6 +1467,10 @@ u_char *	denormalize_string (const u_char *str)
 	size_t		span;
 	int		pos;
 
+        /* Reset all attributes to zero */
+        a.bold = a.underline = a.reverse = a.blink = a.altchar = 0;
+        a.color_fg = a.color_bg = a.fg_color = a.bg_color = 0;
+
 	/* 
 	 * The output string has a few extra chars on the end just 
 	 * in case you need to tack something else onto it.
@@ -1544,11 +1552,15 @@ const 	u_char	*ptr;
 		c,
 		*words,
 		*pos_copy;
-	Attribute	a = {0};
+	Attribute	a;
 
 	if (recursion)
 		panic("prepare_display() called recursively");
 	recursion++;
+
+        /* Reset all attributes to zero */
+        a.bold = a.underline = a.reverse = a.blink = a.altchar = 0;
+        a.color_fg = a.color_bg = a.fg_color = a.bg_color = 0;
 
 	do_indent = get_int_var(INDENT_VAR);
 	if (!(words = get_string_var(WORD_BREAK_VAR)))
@@ -1921,6 +1933,10 @@ int 	output_with_count (const unsigned char *str1, int clreol, int output)
 			out = 0;
 	Attribute	a;
 	const unsigned char *str;
+
+        /* Reset all attributes to zero */
+        a.bold = a.underline = a.reverse = a.blink = a.altchar = 0;
+        a.color_fg = a.color_bg = a.fg_color = a.bg_color = 0;
 
 	for (str = str1; str && *str; str++)
 	{
