@@ -1,4 +1,4 @@
-/* $EPIC: expr2.c,v 1.11 2003/07/10 10:30:45 jnelson Exp $ */
+/* $EPIC: expr2.c,v 1.12 2003/07/10 13:08:56 jnelson Exp $ */
 /*
  * Zsh: math.c,v 3.1.2.1 1997/06/01 06:13:15 hzoli Exp 
  * math.c - mathematical expression evaluation
@@ -1391,7 +1391,7 @@ static void	reduce (expr_info *cx, int what)
 			if (x_debug & DEBUG_NEW_MATH_DEBUG)
 				yell("O: (%s) ## (%s) -> %s%s", s, t, s, t);
 
-			myval = m_2dup(s, t);
+			myval = malloc_strdup2(s, t);
 			push_string(cx, myval);
 			new_free(&myval);
 			break;

@@ -1,4 +1,4 @@
-/* $EPIC: irc.c,v 1.543 2003/07/10 10:30:45 jnelson Exp $ */
+/* $EPIC: irc.c,v 1.544 2003/07/10 13:08:57 jnelson Exp $ */
 /*
  * ircII: a new irc client.  I like it.  I hope you will too!
  *
@@ -52,7 +52,7 @@ const char internal_version[] = "20030613";
 /*
  * In theory, this number is incremented for every commit.
  */
-const unsigned long	commit_id = 548;
+const unsigned long	commit_id = 549;
 
 /*
  * As a way to poke fun at the current rage of naming releases after
@@ -598,15 +598,15 @@ static	void	parse_args (int argc, char **argv)
 	if ((ptr = getenv("EPICRC")))
 		epicrc_file = malloc_strdup(ptr);
 	else
-		epicrc_file = m_2dup(my_path, EPICRC_NAME);
+		epicrc_file = malloc_strdup2(my_path, EPICRC_NAME);
 
 	if ((ptr = getenv("IRCRC")))
 		ircrc_file = malloc_strdup(ptr);
 	else
-		ircrc_file = m_2dup(my_path, IRCRC_NAME);
+		ircrc_file = malloc_strdup2(my_path, IRCRC_NAME);
 
 	if ((ptr = getenv("IRCLIB")))
-		irc_lib = m_2dup(ptr, "/");
+		irc_lib = malloc_strdup2(ptr, "/");
 	else
 		irc_lib = malloc_strdup(IRCLIB);
 
@@ -627,7 +627,7 @@ static	void	parse_args (int argc, char **argv)
 	if ((ptr = getenv("IRCTRANSLATIONPATH")))
 		translation_path = malloc_strdup(ptr);
 	else
-		translation_path = m_2dup(IRCLIB, "/translation/");
+		translation_path = malloc_strdup2(IRCLIB, "/translation/");
 
 	set_string_var(TRANSLATION_PATH_VAR, translation_path);
 	new_free(&translation_path);

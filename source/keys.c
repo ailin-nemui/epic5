@@ -1,4 +1,4 @@
-/* $EPIC: keys.c,v 1.25 2003/07/09 21:10:25 jnelson Exp $ */
+/* $EPIC: keys.c,v 1.26 2003/07/10 13:08:57 jnelson Exp $ */
 /*
  * keys.c:  Keeps track of what happens whe you press a key.
  *
@@ -235,7 +235,7 @@ static void key_exec (struct Key *key) {
 	/* I don't know if this is right ... */
 	char *exec = malloc_strdup(key->bound->alias);
 	if (key->stuff)
-	    m_s3cat(&exec, " ", key->stuff);
+	    malloc_strcat_wordlist(&exec, " ", key->stuff);
 	parse_line(NULL, exec, empty_string, 0, 0);
 	new_free(&exec);
     } else if (key->bound->func != NULL)
@@ -1276,7 +1276,7 @@ char *bindctl (char *input)
 	    else if (bp->func)
 		malloc_sprintf(&retval, "internal %p", bp->func);
 	    else
-		m_s3cat(&retval, "alias ", bp->alias);
+		malloc_sprintf(&retval, "alias %s", bp->alias);
 
 	    RETURN_STR(retval);
 	} else if (!my_strnicmp(listc, "MATCH", 1)) {
@@ -1284,14 +1284,14 @@ char *bindctl (char *input)
 	    len = strlen(func);
 	    for (bp = binding_list;bp;bp = bp->next) {
 		if (!my_strnicmp(bp->name, func, len))
-		    m_s3cat(&retval, " ", bp->name);
+		    malloc_strcat_wordlist(&retval, space, bp->name);
 	    }
 
 	    RETURN_STR(retval);
 	} else if (!my_strnicmp(listc, "PMATCH", 1)) {
 	    for (bp = binding_list;bp;bp = bp->next) {
 		if (wild_match(func, bp->name))
-		    m_s3cat(&retval, " ", bp->name);
+		    malloc_strcat_wordlist(&retval, space, bp->name);
 	    }
 
 	    RETURN_STR(retval);
@@ -1319,7 +1319,7 @@ char *bindctl (char *input)
 
 	    retval = malloc_strdup(key->bound->name);
 	    if (key->stuff)
-		m_s3cat(&retval, " ", key->stuff);
+		malloc_strcat_wordlist(&retval, " ", key->stuff);
 	    RETURN_STR(retval);
 	} else if (!my_stricmp(listc, "SET")) {
 	    GET_STR_ARG(listc, input);
@@ -1387,7 +1387,7 @@ void bindctl_getmap (struct Key *map, const unsigned char *str, int len, char **
     for (c = 1; c < KEYMAP_SIZE - 1;c++) {
 	newstr[len] = c;
 	if (map[c].bound)
-	    m_s3cat(ret, " ", bind_string_decompress(decomp, newstr, len + 1));
+	    malloc_strcat_wordlist(ret, " ", bind_string_decompress(decomp, newstr, len + 1));
 	if (map[c].map)
 	    bindctl_getmap(map[c].map, newstr, len + 1, ret);
     }

@@ -1,4 +1,4 @@
-/* $EPIC: history.c,v 1.9 2003/07/09 21:10:25 jnelson Exp $ */
+/* $EPIC: history.c,v 1.10 2003/07/10 13:08:57 jnelson Exp $ */
 /*
  * history.c: stuff to handle command line history 
  *
@@ -220,7 +220,7 @@ static	char	*last_com = NULL;
 		if (!end_strcmp(com, "*", 1))
 			match_str = malloc_strdup(com);
 		else
-			match_str = m_2dup(com, "*");
+			match_str = malloc_strdup2(com, "*");
 
 		if (get_int_var(HISTORY_VAR))
 		{
@@ -240,7 +240,7 @@ static	char	*last_com = NULL;
 					last_dir = OLDER;
 					new_free(&match_str);
 					malloc_strcpy(&ret, tmp->stuff);
-					m_s3cat_s(&ret, " ", rest);
+					malloc_strcat_wordlist(&ret, space, rest);
 					return (ret);
 				}
 			}
@@ -260,7 +260,7 @@ static	char	*last_com = NULL;
 				if (tmp->number == hist_num)
 				{
 					malloc_strcpy(&ret, tmp->stuff);
-					m_s3cat_s(&ret, " ", rest);
+					malloc_strcat_wordlist(&ret, space, rest);
 					return (ret);
 				}
 			}
@@ -274,7 +274,7 @@ static	char	*last_com = NULL;
 			if (tmp)
 			{
 				malloc_strcpy(&ret, tmp->stuff);
-				m_s3cat_s(&ret, " ", rest);
+				malloc_strcat_wordlist(&ret, space, rest);
 				return (ret);
 			}
 		}

@@ -1,4 +1,4 @@
-/* $EPIC: commands.c,v 1.65 2003/07/09 21:10:24 jnelson Exp $ */
+/* $EPIC: commands.c,v 1.66 2003/07/10 13:08:56 jnelson Exp $ */
 /*
  * commands.c -- Stuff needed to execute commands in ircII.
  *		 Includes the bulk of the built in commands for ircII.
@@ -1071,7 +1071,7 @@ BUILT_IN_COMMAND(xechocmd)
 		malloc_strcpy(&stuff, banner());
 		if (*stuff)
 		{
-			m_3cat(&stuff, space, args);
+			malloc_strcat2_c(&stuff, space, args, NULL);
 			args = stuff;
 		}
 	}
@@ -3014,7 +3014,7 @@ struct target_type target[4] =
 
 	    else if (*current_nick == '/')
 	    {
-		line = m_3dup(current_nick, space, text);
+		line = malloc_strdup3(current_nick, space, text);
 		parse_command(line, 0, empty_string);
 		new_free(&line);
 	    }
@@ -3438,7 +3438,7 @@ void	parse_line (const char *name, const char *org_line, const char *args, int h
 		 */
 		stuff = expand_alias(line, args, &args_flag, &span);
 		if (span < 0 && append_flag && !args_flag && args && *args)
-			m_3cat(&stuff, " ", args);
+			malloc_strcat2_c(&stuff, " ", args, NULL);
 
 		if (span < 0)
 			line = NULL;

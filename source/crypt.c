@@ -1,4 +1,4 @@
-/* $EPIC: crypt.c,v 1.14 2003/07/09 21:10:24 jnelson Exp $ */
+/* $EPIC: crypt.c,v 1.15 2003/07/10 13:08:56 jnelson Exp $ */
 /*
  * crypt.c: handles some encryption of messages stuff. 
  *
@@ -215,7 +215,7 @@ static char * 	prog_crypt (char *str, size_t *len, Crypt *key, int flag)
 	args[1] = malloc_strdup(flag ? "encrypt" : "decrypt");
 	args[2] = NULL;
 
-	input = m_2dup(key->key, "\n");
+	input = malloc_strdup2(key->key, "\n");
 	iplen = strlen(input);
 	new_realloc((void**)&input, *len + iplen);
 	memmove(input + iplen, str, *len);

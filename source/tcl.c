@@ -1,4 +1,4 @@
-/* $EPIC: tcl.c,v 1.3 2003/07/09 21:10:25 jnelson Exp $ */
+/* $EPIC: tcl.c,v 1.4 2003/07/10 13:08:57 jnelson Exp $ */
 /*
  * tcl.c -- The tcl interfacing routines.
  *
@@ -56,7 +56,7 @@ int Tcl_echoCmd (clientData, interp, objc, objv)
 	size_t	clue = 0;
 	char	*msg = NULL;
 	for (i = 1; i < objc; i++)
-		m_sc3cat_s(&msg, space, objv[i], &clue);
+		malloc_strcat_wordlist_c(&msg, space, objv[i], &clue);
 	say("%s", msg);
 	new_free(&msg);
 	return TCL_OK;

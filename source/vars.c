@@ -1,4 +1,4 @@
-/* $EPIC: vars.c,v 1.33 2003/07/09 21:10:25 jnelson Exp $ */
+/* $EPIC: vars.c,v 1.34 2003/07/10 13:08:57 jnelson Exp $ */
 /*
  * vars.c: All the dealing of the irc variables are handled here. 
  *
@@ -851,7 +851,7 @@ char 	*make_string_var (const char *var_name)
 			ret = malloc_strdup(var_settings[irc_variable[msv_index].integer]);
 			break;
 		case CHAR_TYPE_VAR:
-			ret = m_dupchar(irc_variable[msv_index].integer);
+			ret = malloc_dupchar(irc_variable[msv_index].integer);
 			break;
 	}
 	return (ret);
@@ -982,27 +982,27 @@ int	parse_mangle (char *value, int nvalue, char **rv)
 	if (rv)
 	{
 		if (nvalue & MANGLE_ESCAPES)
-			m_s3cat(&nv, comma, "ESCAPE");
+			malloc_strcat_wordlist(&nv, comma, "ESCAPE");
 		if (nvalue & MANGLE_ANSI_CODES)
-			m_s3cat(&nv, comma, "ANSI");
+			malloc_strcat_wordlist(&nv, comma, "ANSI");
 		if (nvalue & STRIP_COLOR)
-			m_s3cat(&nv, comma, "COLOR");
+			malloc_strcat_wordlist(&nv, comma, "COLOR");
 		if (nvalue & STRIP_REVERSE)
-			m_s3cat(&nv, comma, "REVERSE");
+			malloc_strcat_wordlist(&nv, comma, "REVERSE");
 		if (nvalue & STRIP_UNDERLINE)
-			m_s3cat(&nv, comma, "UNDERLINE");
+			malloc_strcat_wordlist(&nv, comma, "UNDERLINE");
 		if (nvalue & STRIP_BOLD)
-			m_s3cat(&nv, comma, "BOLD");
+			malloc_strcat_wordlist(&nv, comma, "BOLD");
 		if (nvalue & STRIP_BLINK)
-			m_s3cat(&nv, comma, "BLINK");
+			malloc_strcat_wordlist(&nv, comma, "BLINK");
 		if (nvalue & STRIP_ROM_CHAR)
-			m_s3cat(&nv, comma, "ROM_CHAR");
+			malloc_strcat_wordlist(&nv, comma, "ROM_CHAR");
 		if (nvalue & STRIP_ND_SPACE)
-			m_s3cat(&nv, comma, "ND_SPACE");
+			malloc_strcat_wordlist(&nv, comma, "ND_SPACE");
 		if (nvalue & STRIP_ALL_OFF)
-			m_s3cat(&nv, comma, "ALL_OFF");
+			malloc_strcat_wordlist(&nv, comma, "ALL_OFF");
 		if (nvalue & STRIP_OTHER)
-			m_s3cat(&nv, comma, "OTHER");
+			malloc_strcat_wordlist(&nv, comma, "OTHER");
 
 		*rv = nv;
 	}

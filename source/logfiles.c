@@ -1,4 +1,4 @@
-/* $EPIC: logfiles.c,v 1.19 2003/07/09 21:10:25 jnelson Exp $ */
+/* $EPIC: logfiles.c,v 1.20 2003/07/10 13:08:57 jnelson Exp $ */
 /*
  * logfiles.c - General purpose log files
  *
@@ -192,13 +192,13 @@ static char *logfile_get_targets (Logfile *log)
 	if (log->type == LOG_TARGETS)
 	{
 		for (tmp = log->targets; tmp; tmp = tmp->next)
-			m_s3cat(&nicks, ",", tmp->nick);
+			malloc_strcat_wordlist(&nicks, ",", tmp->nick);
 	}
 	else if (log->type == LOG_SERVERS || log->type == LOG_WINDOWS)
 	{
 		for (i = 0; i < MAX_TARGETS; i++)
 			if (log->refnums[i] != -1)
-				m_s3cat(&nicks, ",", ltoa(log->refnums[i]));
+				malloc_strcat_wordlist(&nicks, ",", ltoa(log->refnums[i]));
 	}
 
 	return nicks;
@@ -786,7 +786,7 @@ char *logctl	(char *input)
 		{
 			if (active != -1 && active != log->active)
 				continue;
-			m_s3cat_s(&retval, space, ltoa(log->refnum));
+			malloc_strcat_wordlist(&retval, space, ltoa(log->refnum));
 		}
 		RETURN_MSTR(retval);
         } else if (!my_strnicmp(listc, "REFNUM", 6)) {

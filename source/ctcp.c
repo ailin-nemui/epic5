@@ -1,4 +1,4 @@
-/* $EPIC: ctcp.c,v 1.26 2003/07/09 21:10:24 jnelson Exp $ */
+/* $EPIC: ctcp.c,v 1.27 2003/07/10 13:08:56 jnelson Exp $ */
 /*
  * ctcp.c:handles the client-to-client protocol(ctcp). 
  *
@@ -193,8 +193,8 @@ CTCP_HANDLER(do_sed)
 	else
 		crypt_who = to;
 
-	tofrom = m_3dup(to, ",", from);
-	m_3cat(&tofrom, "!", FromUserHost);
+	tofrom = malloc_strdup3(to, ",", from);
+	malloc_strcat2_c(&tofrom, "!", FromUserHost, NULL);
 
 	if ((key = is_crypted(tofrom)) ||
 	    (key = is_crypted(crypt_who)))

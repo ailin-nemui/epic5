@@ -1,4 +1,4 @@
-/* $EPIC: ignore.c,v 1.12 2003/07/09 21:10:25 jnelson Exp $ */
+/* $EPIC: ignore.c,v 1.13 2003/07/10 13:08:57 jnelson Exp $ */
 /*
  * ignore.c: handles the ingore command for irc 
  *
@@ -904,7 +904,7 @@ char 	*get_ignores_by_pattern (char *patterns, int covered)
 		{
 			if (covered ? wild_match(tmp->nick, pattern)
 				    : wild_match(pattern, tmp->nick))
-				m_sc3cat(&retval, space, tmp->nick, &clue);
+				malloc_strcat_wordlist_c(&retval, space, tmp->nick, &clue);
 		}
 	}
 
@@ -989,7 +989,7 @@ char	*get_ignore_patterns_by_type (char *ctype)
 			continue;
 
 		/* Add it to the fray */
-		m_sc3cat(&result, space, tmp->nick, &clue);
+		malloc_strcat_wordlist_c(&result, space, tmp->nick, &clue);
 	}
 
 	return result;
@@ -1039,7 +1039,7 @@ char *	ignorectl (char *input)
 		size_t	clue = 0;
 
 		for (i = ignored_nicks; i; i = i->next)
-			m_sc3cat(&retval, space, 
+			malloc_strcat_wordlist_c(&retval, space, 
 						ltoa(i->refnum), &clue);
 		RETURN_MSTR(retval);
 	} else if (!my_strnicmp(listc, "ADD", len)) {

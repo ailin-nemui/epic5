@@ -1,4 +1,4 @@
-/* $EPIC: alias.c,v 1.26 2003/07/10 10:30:45 jnelson Exp $ */
+/* $EPIC: alias.c,v 1.27 2003/07/10 13:08:56 jnelson Exp $ */
 /*
  * alias.c -- Handles the whole kit and caboodle for aliases.
  *
@@ -2075,7 +2075,7 @@ char **	get_subarray_elements (const char *orig_root, int *howmany, int type)
 		as = &cmd_alias;
 	else
 		as = &var_alias;
-	root = m_2dup(orig_root, ".");
+	root = malloc_strdup2(orig_root, ".");
 	find_array_item((array*)as, root, &max, &pos);
 
 	if (0 > max) 
@@ -2094,7 +2094,7 @@ char **	get_subarray_elements (const char *orig_root, int *howmany, int type)
 			matches_size = *howmany + 5;
 			RESIZE(matches, char *, matches_size + 1);
 		}
-		matches[*howmany] = m_strndup(ARRAY_ITEM(as, pos)->name, cmp + end);
+		matches[*howmany] = malloc_strndup(ARRAY_ITEM(as, pos)->name, cmp + end);
 		last = matches[*howmany];
 		*howmany += 1;
 	}
@@ -2541,7 +2541,7 @@ char 	*aliasctl 	(char *input)
 
 			for (ctr = 0; ctr < num; ctr++)
 			{
-				m_sc3cat(&mylist, space, mlist[ctr], &mylistclue);
+				malloc_strcat_wordlist_c(&mylist, space, mlist[ctr], &mylistclue);
 				new_free((char **)&mlist[ctr]);
 			}
 			new_free((char **)&mlist);
@@ -2564,7 +2564,7 @@ char 	*aliasctl 	(char *input)
 
 			for (ctr = 0; ctr < num; ctr++)
 			{
-				m_sc3cat(&mylist, space, mlist[ctr], &mylistclue);
+				malloc_strcat_wordlist_c(&mylist, space, mlist[ctr], &mylistclue);
 				new_free((char **)&mlist[ctr]);
 			}
 			new_free((char **)&mlist);

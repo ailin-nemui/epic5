@@ -1,4 +1,4 @@
-/* $EPIC: ircaux.c,v 1.86 2003/07/09 21:10:25 jnelson Exp $ */
+/* $EPIC: ircaux.c,v 1.87 2003/07/10 13:08:57 jnelson Exp $ */
 /*
  * ircaux.c: some extra routines... not specific to irc... that I needed 
  *
@@ -333,45 +333,6 @@ void malloc_dump (const char *file) {
 #endif
 }
 
-/*
- * malloc_strcpy:  Mallocs enough space for src to be copied in to where
- * ptr points to.
- *
- * Never call this with ptr pointinng to an uninitialised string, as the
- * call to new_free() might crash the client... - phone, jan, 1993.
- */
-char *	malloc_strcpy (char **ptr, const char *src)
-{
-	size_t	size;
-
-	if (!src)
-		return new_free(ptr);	/* shrug */
-
-	if (*ptr)
-	{
-		size = alloc_size(*ptr);
-		if (size == (size_t) FREED_VAL)
-			panic("free()d pointer passed to malloc_strcpy");
-
-		/* No copy neccesary! */
-		if (*ptr == src)
-			return *ptr;
-
-		if (size > strlen(src))
-		{
-			strlcpy(*ptr, src, size);
-			return *ptr;
-		}
-
-		new_free(ptr);
-	}
-
-	size = strlen(src) + 1;
-	*ptr = new_malloc(size);
-	strlcpy(*ptr, src, size);
-	return *ptr;
-}
-
 char *	malloc_str2cpy(char **ptr, const char *src1, const char *src2)
 {
 	size_t	size;
@@ -405,6 +366,7 @@ char *	malloc_str2cpy(char **ptr, const char *src1, const char *src2)
 }
 
 
+#if 0
 char *	m_2dup (const char *str1, const char *str2)
 {
 	size_t msize = strlen(str1) + strlen(str2) + 1;
@@ -483,6 +445,7 @@ char *	m_c3cat(char **val1, const char *two, const char *three, size_t *clue)
 
 	return *val1;
 }
+#endif
 
 char *	upper (char *str)
 {
@@ -2601,7 +2564,8 @@ char *	unsplitw (char ***container, int howmany)
 
 	while (howmany)
 	{
-		if (*str && **str) m_sc3cat(&retval, " ", *str, &clue);
+		if (*str && **str)
+			malloc_strcat_wordlist_c(&retval, space, *str, &clue);
 		str++, howmany--;
 	}
 
@@ -2697,7 +2661,7 @@ char *	remove_brackets (const char *name, const char *args, int *arg_flag)
 		else
 			result1 = right;
 
-		retval = m_3dup(rptr, ".", result1);
+		retval = malloc_strdup3(rptr, ".", result1);
 		if (ptr)
 			malloc_strcat(&retval, ptr);
 
@@ -2718,7 +2682,7 @@ long	my_atol (const char *str)
 		return 0L;
 }
 
-char *	m_dupchar (int i)
+char *	malloc_dupchar (int i)
 {
 	char 	c = (char) i;	/* blah */
 	char *	ret = (char *)new_malloc(2);
@@ -2774,7 +2738,7 @@ size_t 	streq (const char *str1, const char *str2)
 	return cnt;
 }
 
-char *	m_strndup (const char *str, size_t len)
+char *	malloc_strndup (const char *str, size_t len)
 {
 	char *retval = (char *)new_malloc(len + 1);
 	strlcpy(retval, str, len + 1);

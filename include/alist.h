@@ -114,7 +114,7 @@ char *(fn)(const char *str)                                                     
 	size_t rclue = 0;                                                            \
 	for (i = 0; (test); ++i)                                                     \
 		if (!str || !*str || wild_match(str, (array)))                       \
-			m_sc3cat(&ret, space, (array), &rclue);                      \
+			malloc_strcat_wordlist_c(&ret, space, (array), &rclue);      \
 	return ret ? ret : malloc_strdup(empty_string);                              \
 }
 #define GET_FIXED_ARRAY_NAMES_FUNCTION(fn, array) GET_SOME_ARRAY_NAMES_FUNCTION((fn), ((array)[i].name), ((array)[i].name))

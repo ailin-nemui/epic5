@@ -1,4 +1,4 @@
-/* $EPIC: debug.c,v 1.11 2003/07/08 22:36:51 jnelson Exp $ */
+/* $EPIC: debug.c,v 1.12 2003/07/10 13:08:56 jnelson Exp $ */
 /*
  * debug.c -- controll the values of x_debug.
  *
@@ -142,9 +142,9 @@ char *	function_xdebug (char *word)
 		} else if (!wild_match(mask,opts[cnt].command)) {
 			continue;
 		} else if (x_debug & opts[cnt].flag) {
-			m_sc3cat_s(&ret, space, "+", &clue);
+			malloc_strcat_wordlist_c(&ret, space, "+", &clue);
 		} else {
-			m_sc3cat_s(&ret, space, "-", &clue);
+			malloc_strcat_wordlist_c(&ret, space, "-", &clue);
 		}
 		malloc_strcat_c(&ret, opts[cnt].command, &clue);
 	}

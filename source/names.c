@@ -1,4 +1,4 @@
-/* $EPIC: names.c,v 1.44 2003/07/10 10:30:45 jnelson Exp $ */
+/* $EPIC: names.c,v 1.45 2003/07/10 13:08:57 jnelson Exp $ */
 /*
  * names.c: This here is used to maintain a list of all the people currently
  * on your channel.  Seems to work 
@@ -737,7 +737,7 @@ char	*create_nick_list (const char *name, int server)
 		return NULL;
 
 	for (i = 0; i < channel->nicks.max; i++)
-		m_sc3cat(&str, space, channel->nicks.list[i]->nick, &clue);
+		malloc_strcat_wordlist_c(&str, space, channel->nicks.list[i]->nick, &clue);
 
 	return str;
 }
@@ -754,7 +754,7 @@ char	*create_chops_list (const char *name, int server)
 
 	for (i = 0; i < channel->nicks.max; i++)
 	    if (channel->nicks.list[i]->chanop)
-		m_sc3cat(&str, space, channel->nicks.list[i]->nick, &clue);
+		malloc_strcat_wordlist_c(&str, space, channel->nicks.list[i]->nick, &clue);
 
 	if (!str)
 		return malloc_strdup(empty_string);
@@ -773,7 +773,7 @@ char	*create_nochops_list (const char *name, int server)
 
 	for (i = 0; i < channel->nicks.max; i++)
 	    if (!channel->nicks.list[i]->chanop)
-		m_sc3cat(&str, space, channel->nicks.list[i]->nick, &clue);
+		malloc_strcat_wordlist_c(&str, space, channel->nicks.list[i]->nick, &clue);
 
 	if (!str)
 		return malloc_strdup(empty_string);
@@ -1229,7 +1229,7 @@ char	*scan_channel (char *cname)
 			buffer[1] = '.';
 
 		strlcpy(buffer + 2, nicks->list[i]->nick, sizeof(buffer) - 2);
-		m_sc3cat(&retval, space, buffer, &clue);
+		malloc_strcat_wordlist_c(&retval, space, buffer, &clue);
 	}
 
 	if (retval == NULL)
@@ -1460,11 +1460,11 @@ void 	reconnect_all_channels (void)
 
 		if (tmp->key)
 		{
-			m_sc3cat(&keyed_channels, ",", tmp->channel, &kc_clue);
-			m_sc3cat(&keys, ",", tmp->key, &key_clue);
+			malloc_strcat_wordlist_c(&keyed_channels, ",", tmp->channel, &kc_clue);
+			malloc_strcat_wordlist_c(&keys, ",", tmp->key, &key_clue);
 		}
 		else
-			m_sc3cat(&channels, ",", tmp->channel, &chan_clue);
+			malloc_strcat_wordlist_c(&channels, ",", tmp->channel, &chan_clue);
 
 		clear_channel(tmp);
 	}
@@ -1770,7 +1770,7 @@ char *	create_channel_list (int server)
 	if (server >= 0)
 	{
 		while (traverse_all_channels(&tmp, server, 1))
-			m_sc3cat(&retval, space, tmp->channel, &clue);
+			malloc_strcat_wordlist_c(&retval, space, tmp->channel, &clue);
 	}
 
 	return retval ? retval : malloc_strdup(empty_string);

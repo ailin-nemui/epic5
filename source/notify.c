@@ -1,4 +1,4 @@
-/* $EPIC: notify.c,v 1.17 2003/07/09 21:10:25 jnelson Exp $ */
+/* $EPIC: notify.c,v 1.18 2003/07/10 13:08:57 jnelson Exp $ */
 /*
  * notify.c: a few handy routines to notify you when people enter and leave irc 
  *
@@ -99,7 +99,7 @@ static void	show_notify_list (int all)
 	for (i = 0, clue = 0; i < NOTIFY_MAX(s); i++)
 	{
 		if (NOTIFY_ITEM(s, i)->flag)
-		    m_sc3cat(&list, space, NOTIFY_ITEM(s, i)->nick, &clue);
+		    malloc_strcat_wordlist_c(&list, space, NOTIFY_ITEM(s, i)->nick, &clue);
 	}
 
 	if (list)
@@ -111,7 +111,7 @@ static void	show_notify_list (int all)
 		for (i = 0, clue = 0; i < NOTIFY_MAX(s); i++)
 		{
 			if (!NOTIFY_ITEM(s, i)->flag)
-			    m_sc3cat(&list, space, NOTIFY_ITEM(s, i)->nick, &clue);
+			    malloc_strcat_wordlist_c(&list, space, NOTIFY_ITEM(s, i)->nick, &clue);
 		}
 		if (list) 
 			say("Currently absent: %s", list);
@@ -144,7 +144,7 @@ static void	rebuild_notify_ison (int refnum)
 
 	for (i = 0; i < NOTIFY_MAX(s); i++)
 	{
-		m_sc3cat(&(NOTIFY_LIST(s)->ison),
+		malloc_strcat_wordlist_c(&(NOTIFY_LIST(s)->ison),
 			space, NOTIFY_ITEM(s, i)->nick, &clue);
 	}
 }
@@ -262,7 +262,7 @@ BUILT_IN_COMMAND(notify)
 
 		    if (added)
 		    {
-			m_sc3cat(&list, space, new_n->nick, &clue);
+			malloc_strcat_wordlist_c(&list, space, new_n->nick, &clue);
 			do_ison = 1;
 		    }
 
@@ -465,7 +465,7 @@ static int 	batched_notifies = 0;
 
 void 	batch_notify_userhost (const char *nick)
 {
-	m_s3cat(&batched_notify_userhosts, space, nick);
+	malloc_strcat_wordlist(&batched_notify_userhosts, space, nick);
 	batched_notifies++;
 }
 
@@ -568,7 +568,7 @@ void 	make_notify_list (int refnum)
 		tmp->flag = 0;
 
 		add_to_array ((array *)NOTIFY_LIST(s), (array_item *)tmp);
-		m_sc3cat(&list, space, tmp->nick, &clue);
+		malloc_strcat_wordlist_c(&list, space, tmp->nick, &clue);
 	}
 
 	if (list)
@@ -610,7 +610,7 @@ char *	get_notify_nicks (int refnum, int showon)
 	for (i = 0; i < NOTIFY_MAX(s); i++)
 	{
 		if (showon == -1 || showon == NOTIFY_ITEM(s, i)->flag)
-			m_sc3cat(&list, space, NOTIFY_ITEM(s, i)->nick, &rvclue);
+			malloc_strcat_wordlist_c(&list, space, NOTIFY_ITEM(s, i)->nick, &rvclue);
 	}
 
 	return (list ? list : malloc_strdup(empty_string));

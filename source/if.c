@@ -1,4 +1,4 @@
-/* $EPIC: if.c,v 1.20 2003/07/10 10:30:45 jnelson Exp $ */
+/* $EPIC: if.c,v 1.21 2003/07/10 13:08:57 jnelson Exp $ */
 /*
  * if.c: the IF, WHILE, FOREACH, DO, FE, FEC, and FOR commands for IRCII 
  *
@@ -524,7 +524,7 @@ BUILT_IN_COMMAND(fe)
 		if (mapvar)
 			for ( y = 0 ; y < ind ; y++ ) {
 				char *foo = get_variable(var[y]);
-				m_sc3cat_s(&map, mapsep, foo, &mapclue);
+				malloc_strcat_wordlist_c(&map, mapsep, foo, &mapclue);
 				new_free(&foo);
 			}
 

@@ -7,7 +7,7 @@
  *
  * See the COPYRIGHT file, or do a HELP IRCII COPYRIGHT 
  *
- * @(#)$Id: ircaux.h,v 1.53 2003/07/09 21:10:24 jnelson Exp $
+ * @(#)$Id: ircaux.h,v 1.54 2003/07/10 13:08:56 jnelson Exp $
  */
 
 #ifndef _IRCAUX_H_
@@ -31,10 +31,13 @@ typedef int 	comp_func 		(char *, char *);
 		fatal_malloc_check ((void *)(x), (y), __FILE__, __LINE__)
 #define RESIZE(x, y, z) new_realloc	((void **)& (x), sizeof(y) * (z))
 
+#if 0
 #define m_e3cat(x,y,z) m_ec3cat((x),(y),(z),NULL)
 #define m_s3cat(x,y,z) m_sc3cat((x),(y),(z),NULL)
 #define m_s3cat_s(x,y,z) m_sc3cat_s((x),(y),(z),NULL)
 #define m_3cat(x,y,z) m_c3cat((x),(y),(z),NULL)
+#endif
+
 #define malloc_strcat(x,y) malloc_strcat_c((x),(y),NULL)
 #define malloc_strcat_ues(x,y,z) malloc_strcat_ues_c((x),(y),(z),NULL)
 
@@ -65,6 +68,7 @@ char *	double_quote 		(const char *, const char *, char *);
 char *	malloc_strcpy 		(char **, const char *);
 char *	malloc_strcat_c		(char **, const char *, size_t *);
 char *	malloc_str2cpy		(char **, const char *, const char *);
+#if 0
 char *	m_sc3cat_s 		(char **, const char *, const char *, size_t *clue);
 char *	m_sc3cat 		(char **, const char *, const char *, size_t *clue);
 char *	m_c3cat			(char **, const char *, const char *, size_t *clue);
@@ -72,6 +76,7 @@ char *	m_ec3cat 		(char **, const char *, const char *, size_t *clue);
 char *	m_2dup 			(const char *, const char *);
 char *	m_3dup 			(const char *, const char *, const char *);
 char *	m_opendup 		(const char *, ...) __A(1);
+#endif
 void	wait_new_free 		(char **);
 char *	malloc_sprintf 		(char **, const char *, ...) __A(2);
 int	is_number 		(const char *);
@@ -128,13 +133,13 @@ int	parse_number 		(char **);
 char *	remove_brackets 	(const char *, const char *, int *);
 long	my_atol 		(const char *);
 u_long	hashpjw 		(char *, u_long);
-char *	m_dupchar 		(int);
+char *	malloc_dupchar 		(int);
 off_t	file_size		(const char *);
 int	file_exists		(const char *);
 int	isdir			(const char *);
 int	is_root			(const char *, const char *, int);
 size_t	streq			(const char *, const char *);
-char *	m_strndup		(const char *, size_t);
+char *	malloc_strndup		(const char *, size_t);
 char *	prntdump		(const char *, size_t);
 char *	ov_strcpy		(char *, const char *);
 size_t	ccspan			(const char *, int);
@@ -180,13 +185,10 @@ char *	malloc_strcat2_c	(char **, const char *, const char *, size_t *);
 char *	malloc_strcat_wordlist_c (char **, const char *, const char *,size_t *);
 char *	malloc_sprintf 		(char **, const char *, ...) __A(2);
 
-#if notyet
 #define malloc_strcpy(x,y) malloc_strcpy_c((x),(y),NULL)
 #define malloc_strcat(x,y) malloc_strcat_c((x),(y),NULL)
-#define m_strdup malloc_strdup
 #define malloc_strcat2(x,y,z) malloc_strcat2_c((x),(y),(z),NULL)
 #define malloc_strcat_wordlist(x,y,z) malloc_strcat_wordlist_c((x),(y),(z),NULL)
-#endif
 
 extern	unsigned char isspace_table[256];
 #define my_isspace(x) isspace_table[(unsigned)(unsigned char)(x)]

@@ -1,4 +1,4 @@
-/* $EPIC: server.c,v 1.102 2003/07/09 21:10:25 jnelson Exp $ */
+/* $EPIC: server.c,v 1.103 2003/07/10 13:08:57 jnelson Exp $ */
 /*
  * server.c:  Things dealing with that wacky program we call ircd.
  *
@@ -707,7 +707,7 @@ char *	create_server_list (void)
 			continue;
 
 		if (s->des != -1)
-		    m_sc3cat(&buffer, space, get_server_itsname(i), &bufclue);
+		    malloc_strcat_wordlist_c(&buffer, space, get_server_itsname(i), &bufclue);
 	}
 
 	return buffer ? buffer : malloc_strdup(empty_string);
@@ -3092,7 +3092,7 @@ char 	*serverctl 	(char *input)
 
 		for (i = 0; i < number_of_servers; i++)
 			if (wild_match(input, get_server_name(i)))
-				m_sc3cat_s(&retval, space, ltoa(i), &clue);
+				malloc_strcat_wordlist_c(&retval, space, ltoa(i), &clue);
 		RETURN_MSTR(retval);
 	} else if (!my_strnicmp(listc, "IMATCH", len)) {
 		int	i;
@@ -3101,7 +3101,7 @@ char 	*serverctl 	(char *input)
 
 		for (i = 0; i < number_of_servers; i++)
 			if (wild_match(input, get_server_itsname(i)))
-				m_sc3cat_s(&retval, space, ltoa(i), &clue);
+				malloc_strcat_wordlist_c(&retval, space, ltoa(i), &clue);
 		RETURN_MSTR(retval);
 	} else if (!my_strnicmp(listc, "GMATCH", len)) {
 		int	i;
@@ -3110,7 +3110,7 @@ char 	*serverctl 	(char *input)
 
 		for (i = 0; i < number_of_servers; i++)
 			if (wild_match(input, get_server_group(i)))
-				m_sc3cat_s(&retval, space, ltoa(i), &clue);
+				malloc_strcat_wordlist_c(&retval, space, ltoa(i), &clue);
 		RETURN_MSTR(retval);
 	} else if (!my_strnicmp(listc, "MAX", len)) {
 		RETURN_INT(number_of_servers);
@@ -3128,7 +3128,7 @@ void 	got_my_userhost (int refnum, UserhostItem *item, const char *nick, const c
 {
 	char *freeme;
 
-	freeme = m_3dup(item->user, "@", item->host);
+	freeme = malloc_strdup3(item->user, "@", item->host);
 	set_server_userhost(refnum, freeme);
 	new_free(&freeme);
 }

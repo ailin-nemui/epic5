@@ -1,4 +1,4 @@
-/* $EPIC: flood.c,v 1.12 2003/05/09 04:29:52 jnelson Exp $ */
+/* $EPIC: flood.c,v 1.13 2003/07/10 13:08:56 jnelson Exp $ */
 /*
  * flood.c: handle channel flooding.
  *
@@ -316,14 +316,14 @@ char *	function_floodinfo (char *args)
 			arg = normalize_nuh(arg);
 		for (i = 0; i < users; i++) {
 			if (flood[i].nuh && wild_match(arg, flood[i].nuh)) {
-				m_sc3cat_s(&ret, space, "\"", &clue);
-				m_sc3cat_s(&ret, empty_string, flood[i].nuh, &clue);
-				m_sc3cat_s(&ret, space, flood[i].channel ? flood[i].channel : star, &clue);
-				m_sc3cat_s(&ret, space, ignore_types[flood[i].type], &clue);
-				m_sc3cat_s(&ret, space, ltoa(flood[i].server), &clue);
-				m_sc3cat_s(&ret, space, ltoa(flood[i].cnt), &clue);
-				m_sc3cat_s(&ret, space, ftoa(time_diff(flood[i].start, right_now)), &clue);
-				m_sc3cat_s(&ret, empty_string, "\"", &clue);
+				malloc_strcat_wordlist_c(&ret, space, "\"", &clue);
+				malloc_strcat_wordlist_c(&ret, empty_string, flood[i].nuh, &clue);
+				malloc_strcat_wordlist_c(&ret, space, flood[i].channel ? flood[i].channel : star, &clue);
+				malloc_strcat_wordlist_c(&ret, space, ignore_types[flood[i].type], &clue);
+				malloc_strcat_wordlist_c(&ret, space, ltoa(flood[i].server), &clue);
+				malloc_strcat_wordlist_c(&ret, space, ltoa(flood[i].cnt), &clue);
+				malloc_strcat_wordlist_c(&ret, space, ftoa(time_diff(flood[i].start, right_now)), &clue);
+				malloc_strcat_wordlist_c(&ret, empty_string, "\"", &clue);
 			}
 		}
 	}

@@ -1,4 +1,4 @@
-/* $EPIC: dcc.c,v 1.68 2003/07/09 21:10:24 jnelson Exp $ */
+/* $EPIC: dcc.c,v 1.69 2003/07/10 13:08:56 jnelson Exp $ */
 /*
  * dcc.c: Things dealing client to client connections. 
  *
@@ -3356,7 +3356,7 @@ char *	dccctl (char *input)
 	len = strlen(listc);
 	if (!my_strnicmp(listc, "REFNUMS", len)) {
 		for (client = ClientList; client; client = client->next)
-			m_sc3cat_s(&retval, space, ltoa(client->refnum), &clue);
+			malloc_strcat_wordlist_c(&retval, space, ltoa(client->refnum), &clue);
 	} else if (!my_strnicmp(listc, "GET", len)) {
 		GET_INT_ARG(ref, input);
 
@@ -3401,22 +3401,22 @@ char *	dccctl (char *input)
 			/* This is pretty much a crock. */
 			RETURN_INT(client->flags);
 		} else if (!my_strnicmp(listc, "LASTTIME", len)) {
-			m_sc3cat_s(&retval, space, ltoa(client->lasttime.tv_sec), &clue);
-			m_sc3cat_s(&retval, space, ltoa(client->lasttime.tv_usec), &clue);
+			malloc_strcat_wordlist_c(&retval, space, ltoa(client->lasttime.tv_sec), &clue);
+			malloc_strcat_wordlist_c(&retval, space, ltoa(client->lasttime.tv_usec), &clue);
 		} else if (!my_strnicmp(listc, "STARTTIME", len)) {
-			m_sc3cat_s(&retval, space, ltoa(client->starttime.tv_sec), &clue);
-			m_sc3cat_s(&retval, space, ltoa(client->starttime.tv_usec), &clue);
+			malloc_strcat_wordlist_c(&retval, space, ltoa(client->starttime.tv_sec), &clue);
+			malloc_strcat_wordlist_c(&retval, space, ltoa(client->starttime.tv_usec), &clue);
 		} else if (!my_strnicmp(listc, "HOLDTIME", len)) {
-			m_sc3cat_s(&retval, space, ltoa(client->holdtime.tv_sec), &clue);
-			m_sc3cat_s(&retval, space, ltoa(client->holdtime.tv_usec), &clue);
+			malloc_strcat_wordlist_c(&retval, space, ltoa(client->holdtime.tv_sec), &clue);
+			malloc_strcat_wordlist_c(&retval, space, ltoa(client->holdtime.tv_usec), &clue);
 		} else if (!my_strnicmp(listc, "OFFERADDR", len)) {
 			char	host[1025], port[25];
 			if (inet_ntostr((SA *)&client->offer,
 					host, sizeof(host),
 					port, sizeof(port), NI_NUMERICHOST))
 				RETURN_EMPTY;
-			m_sc3cat_s(&retval, space, host, &clue);
-			m_sc3cat_s(&retval, space, port, &clue);
+			malloc_strcat_wordlist_c(&retval, space, host, &clue);
+			malloc_strcat_wordlist_c(&retval, space, port, &clue);
 		} else if (!my_strnicmp(listc, "REMADDR", len)) {
 			char	host[1025], port[25];
 			if (!(client->flags & DCC_ACTIVE) ||
@@ -3424,8 +3424,8 @@ char *	dccctl (char *input)
 					host, sizeof(host),
 					port, sizeof(port), NI_NUMERICHOST))
 				RETURN_EMPTY;
-			m_sc3cat_s(&retval, space, host, &clue);
-			m_sc3cat_s(&retval, space, port, &clue);
+			malloc_strcat_wordlist_c(&retval, space, host, &clue);
+			malloc_strcat_wordlist_c(&retval, space, port, &clue);
 		} else if (!my_strnicmp(listc, "LOCADDR", len)) {
 			char	host[1025], port[25];
 			if (!(client->flags & DCC_ACTIVE) ||
@@ -3433,8 +3433,8 @@ char *	dccctl (char *input)
 					host, sizeof(host),
 					port, sizeof(port), NI_NUMERICHOST))
 				RETURN_EMPTY;
-			m_sc3cat_s(&retval, space, host, &clue);
-			m_sc3cat_s(&retval, space, port, &clue);
+			malloc_strcat_wordlist_c(&retval, space, host, &clue);
+			malloc_strcat_wordlist_c(&retval, space, port, &clue);
 		} else {
 			RETURN_EMPTY;
 		}
@@ -3494,39 +3494,39 @@ char *	dccctl (char *input)
 	} else if (!my_strnicmp(listc, "TYPEMATCH", len)) {
 		for (client = ClientList; client; client = client->next)
 			if (wild_match(input, dcc_types[client->flags & DCC_TYPES]))
-				m_sc3cat_s(&retval, space, ltoa(client->refnum), &clue);
+				malloc_strcat_wordlist_c(&retval, space, ltoa(client->refnum), &clue);
 	} else if (!my_strnicmp(listc, "DESCMATCH", len)) {
 		for (client = ClientList; client; client = client->next)
 			if (wild_match(input, client->description ? client->description : EMPTY))
-				m_sc3cat_s(&retval, space, ltoa(client->refnum), &clue);
+				malloc_strcat_wordlist_c(&retval, space, ltoa(client->refnum), &clue);
 	} else if (!my_strnicmp(listc, "FILEMATCH", len)) {
 		for (client = ClientList; client; client = client->next)
 			if (wild_match(input, client->filename ? client->filename : EMPTY))
-				m_sc3cat_s(&retval, space, ltoa(client->refnum), &clue);
+				malloc_strcat_wordlist_c(&retval, space, ltoa(client->refnum), &clue);
 	} else if (!my_strnicmp(listc, "USERMATCH", len)) {
 		for (client = ClientList; client; client = client->next)
 			if (wild_match(input, client->user ? client->user : EMPTY))
-				m_sc3cat_s(&retval, space, ltoa(client->refnum), &clue);
+				malloc_strcat_wordlist_c(&retval, space, ltoa(client->refnum), &clue);
 	} else if (!my_strnicmp(listc, "USERHOSTMATCH", len)) {
 		for (client = ClientList; client; client = client->next)
 			if (wild_match(input, client->userhost ? client->userhost : EMPTY))
-				m_sc3cat_s(&retval, space, ltoa(client->refnum), &clue);
+				malloc_strcat_wordlist_c(&retval, space, ltoa(client->refnum), &clue);
 	} else if (!my_strnicmp(listc, "OTHERMATCH", len)) {
 		for (client = ClientList; client; client = client->next)
 			if (wild_match(input, client->othername ? client->othername : EMPTY))
-				m_sc3cat_s(&retval, space, ltoa(client->refnum), &clue);
+				malloc_strcat_wordlist_c(&retval, space, ltoa(client->refnum), &clue);
 	} else if (!my_strnicmp(listc, "LOCKED", len)) {
 		for (client = ClientList; client; client = client->next)
 			if (client->locked)
-				m_sc3cat_s(&retval, space, ltoa(client->refnum), &clue);
+				malloc_strcat_wordlist_c(&retval, space, ltoa(client->refnum), &clue);
 	} else if (!my_strnicmp(listc, "HELD", len)) {
 		for (client = ClientList; client; client = client->next)
 			if (client->held)
-				m_sc3cat_s(&retval, space, ltoa(client->refnum), &clue);
+				malloc_strcat_wordlist_c(&retval, space, ltoa(client->refnum), &clue);
 	} else if (!my_strnicmp(listc, "UNHELD", len)) {
 		for (client = ClientList; client; client = client->next)
 			if (!client->held)
-				m_sc3cat_s(&retval, space, ltoa(client->refnum), &clue);
+				malloc_strcat_wordlist_c(&retval, space, ltoa(client->refnum), &clue);
 	} else
 		RETURN_EMPTY;
 
