@@ -1,6 +1,41 @@
 EPIC4-1.2.0
 
-** News -- 10/19/2003 -- $serverctl(SET <refnum> UMODES) now supported
+*** News -- 10/28/2003 -- New /ON, /ON DCC_ACTIVITY
+	This hook is activated each time some activity occurs on a 
+	/DCC GET or /DCC SEND, particularly whenever the %D status bar
+	expando is updated.  The idea is that scripters can stop using %D
+	and use the /SET STATUS_USER* expandos to craft their own custom
+	%D-like expandos.  The value of $* is the refnum of the dcc that
+	had the activity.  You can use this value with $dccctl().  When
+	a DCC closes, it throws /on dcc_lost, and then /on dcc_activity
+	will be thrown with the -1 refnum.
+
+*** News -- 10/28/2003 -- Everything should support /xdebug extractw now
+	If you turn on the experimental feature /xdebug extractw, then
+	everything in epic that works on word lists should start supporting
+	extended ("double quoted") words.  This includes numeric expandos,
+	built in functions, and so on.  Furthermore, anything that outputs
+	a word list should surround words with double quotes if they have
+	space in them.  Since double quoted words are not honored unless
+	you have /xdebug extractw, this is an all-or-nothing thing.  
+
+	This will break some scripts becase of changes like this:
+		Old:	$sort(one "two three" four)  -> [four one two three]
+		New:	$sort(one "two three" four)  -> [four one "two three"]
+
+	See the doc/word-lists file in the epic source for a very detailed
+	list of exactly what does and does not output double-quoted words.
+
+*** News -- 10/28/2003 -- New /SET, /SET WSERV_TYPE [XTERM|SCREEN]
+	When you are running EPIC under both screen and X at the same
+	time and you do /window create, some people want epic to start
+	up a new xterm and some people want epic to start up a new 
+	screen window.  The previous default has been a screen window.
+	Now you can either /SET WSERV_TYPE XTERM or /SET WSERV_TYPE SCREEN
+	to explicitly state your preference, if you have one.  Obviously
+	this only matters when you're running epic under BOTH.
+
+*** News -- 10/19/2003 -- $serverctl(SET <refnum> UMODES) now supported
 	To work around an unfortunate problem with ratbox, you are now 
 	permitted to change the "valid user modes" for a particular server.
 	You may want to set this in an /on 005 or some such thing.

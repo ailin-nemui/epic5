@@ -1,4 +1,4 @@
-/* $EPIC: dcc.c,v 1.76 2003/10/28 05:53:57 jnelson Exp $ */
+/* $EPIC: dcc.c,v 1.77 2003/10/29 05:26:05 jnelson Exp $ */
 /*
  * dcc.c: Things dealing client to client connections. 
  *
@@ -134,7 +134,7 @@ static	void		process_incoming_raw 	(DCC_list *);
 static	void		process_dcc_send 	(DCC_list *);
 static	void		process_incoming_file 	(DCC_list *);
 static	void		DCC_close_filesend 	(DCC_list *, const char *);
-static	void		update_transfer_buffer 	(const char *format, ...);
+static	void		update_transfer_buffer 	(long refnum, const char *format, ...);
 static 	void		dcc_send_booster_ctcp 	(DCC_list *dcc);
 static	char *		dcc_urlencode		(const char *);
 static	char *		dcc_urldecode		(const char *);
@@ -263,7 +263,10 @@ static void 	dcc_garbage_collect (void)
 	{
 		if ((dcc->flags & DCC_DELETE) && dcc->locked == 0)
 		{
-			need_update = 1;
+			if ((dcc->flags & DCC_TYPES) == DCC_FILEOFFER ||
+			    (dcc->flags & DCC_TYPES) == DCC_FILEREAD)
+				need_update = 1;
+
 			dcc_erase(dcc);
 			dcc = ClientList;	/* Start over */
 		}
@@ -273,7 +276,7 @@ static void 	dcc_garbage_collect (void)
 
 	if (need_update)
 	{
-		update_transfer_buffer(NULL);	/* Whatever */
+		update_transfer_buffer(-1, NULL);	/* Whatever */
 		update_all_status();
 	}
 }
@@ -2972,7 +2975,8 @@ static void	process_dcc_send_data (DCC_list *dcc)
 		 */
 		if (dcc->filesize)
 		{
-		    update_transfer_buffer("(to %10s: %d of %d: %d%%)",
+		    update_transfer_buffer(dcc->refnum, 
+				"(to %10s: %d of %d: %d%%)",
 			dcc->user, 
 			(int)dcc->packets_transfer, 
 			(int)dcc->packets_total, 
@@ -2980,7 +2984,8 @@ static void	process_dcc_send_data (DCC_list *dcc)
 		}
 		else
 		{
-		    update_transfer_buffer("(to %10s: %ld kbytes     )",
+		    update_transfer_buffer(dcc->refnum, 
+			"(to %10s: %ld kbytes     )",
 			dcc->user, 
 			(long)(dcc->bytes_sent / 1024));
 		}
@@ -3051,12 +3056,14 @@ static	void		process_incoming_file (DCC_list *dcc)
 	     ((dcc->flags & DCC_TYPES) == DCC_FILEREAD))
 	{
 		if (dcc->filesize)
-			update_transfer_buffer("(%10s: %d of %d: %d%%)", 
+			update_transfer_buffer(dcc->refnum,
+				"(%10s: %d of %d: %d%%)", 
 				dcc->user, (int)dcc->packets_transfer,
 				(int)dcc->packets_total, 
 				(int)(dcc->bytes_read * 100.0 / dcc->filesize));
 		else
-			update_transfer_buffer("(%10s %d packets: %ldK)", 
+			update_transfer_buffer(dcc->refnum,
+				"(%10s %d packets: %ldK)", 
 				dcc->user, (int)dcc->packets_transfer, 
 				(long)(dcc->bytes_read / 1024));
 		update_all_status();
@@ -3202,7 +3209,7 @@ char *	DCC_get_current_transfer (void)
 }
 
 
-static void 	update_transfer_buffer (const char *format, ...)
+static void 	update_transfer_buffer (long refnum, const char *format, ...)
 {
 	if (format)
 	{
@@ -3216,6 +3223,7 @@ static void 	update_transfer_buffer (const char *format, ...)
 	else
 		*DCC_current_transfer_buffer = 0;
 
+	do_hook(DCC_ACTIVITY_LIST, "%d", refnum);
 }
 
 

@@ -2,11 +2,9 @@ EPIC4 Projects, Bugs, and other Errata:
 
 KNOWN ERRATA (eg, bugs, or unresolved requests):
 ------------------------------------------------
-* Something for %D to make it customizable?
 * /dcc chat hop from an ipv6 server connection will default to ipv4 bind(),
   but send out an ipv6 address in the handshake. (send_booster_ctcp doesn't
   check what protocol get_server_local_address() returns.)
-* We should look at using count_words() instead of word_count().
 
 [See http://www.epicsol.org/PROJECTS for things to come in the future]
 [See http://www.epicsol.org/CHANGELOG for things that changed in the past]
@@ -26,3 +24,4 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Add malloc_strcat_word_c, add a single word to word list, with "" support
 * Convert a bunch of stuff to use malloc_strcat_word_c to honor ""s right.
 * GC a bunch of unused code.
+* Add /on dcc_activity, to allow scripters a way around %D.
