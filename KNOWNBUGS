@@ -147,3 +147,5 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Don't prohibit universal_next_arg_count() from returning empty_string.
 * Rework the bug report form to point people to the bugs website
 * Add /lastlog -target.
+* Protect against panic if you do dcc while not connected to server
+* Protect against panic if /set mail 0 is off by default

@@ -35,5 +35,6 @@ extern	char	notify_timeref[];
 
 	void	notify_systimer		(void);
 	void	set_notify_interval	(int);
+	void	set_notify		(int);
 
 #endif /* _NOTIFY_H_ */

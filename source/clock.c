@@ -259,15 +259,20 @@ void	set_cpu_saver_every (int value)
 struct system_timer {
 	char *	name;
 	int	honors_cpu_saver;
-	int	set_variable;
+	int	interval_variable;
+	int	toggle_variable;
 	void	(*callback) (void);
 };
 
 struct system_timer system_timers[] = {
-	{ clock_timeref, 	1, CLOCK_INTERVAL_VAR, 	clock_systimer 	},
-	{ notify_timeref, 	1, NOTIFY_INTERVAL_VAR, notify_systimer	},
-	{ mail_timeref, 	1, MAIL_INTERVAL_VAR, 	mail_systimer 	},
-	{ NULL,			0, 0,			NULL 		}
+	{ clock_timeref, 	1, 
+	  CLOCK_INTERVAL_VAR, 	CLOCK_VAR, 	clock_systimer 	},
+	{ notify_timeref, 	1, 
+	  NOTIFY_INTERVAL_VAR,  NOTIFY_VAR, 	notify_systimer	},
+	{ mail_timeref, 	1, 
+	  MAIL_INTERVAL_VAR, 	MAIL_VAR, 	mail_systimer 	},
+	{ NULL,			0, 
+	  0,			0,		NULL 		}
 };
 
 int	system_timer (void *entry)
@@ -282,7 +287,7 @@ int	system_timer (void *entry)
 	    timeout = get_int_var(CPU_SAVER_EVERY_VAR);
 	else
 	{
-	    nominal_timeout = get_int_var(item->set_variable);
+	    nominal_timeout = get_int_var(item->interval_variable);
 	    timeout = time_to_next_interval(nominal_timeout);
 	}
 
@@ -307,12 +312,18 @@ int	start_system_timer (const char *entry)
 
 	for (i = 0; system_timers[i].name; i++)
 	{
-		if (all == 1 || !strcmp(system_timers[i].name, entry))
-		{
+	    if (all == 1 || !strcmp(system_timers[i].name, entry))
+	    {
+		/* 
+		 * If this one was asked for particularly, OR we're
+		 * starting all of them AND the boolean set for this
+		 * toggle is on...
+		 */
+		if (get_int_var(system_timers[i].toggle_variable))
 			system_timer(&system_timers[i]);
-			if (all == 0)
-				return 0;
-		}
+		if (all == 0)
+			return 0;
+	    }
 	}
 
 	if (all == 1)

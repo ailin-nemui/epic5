@@ -1,4 +1,4 @@
-/* $EPIC: vars.c,v 1.38 2003/07/18 01:36:35 jnelson Exp $ */
+/* $EPIC: vars.c,v 1.39 2003/07/20 15:56:02 jnelson Exp $ */
 /*
  * vars.c: All the dealing of the irc variables are handled here. 
  *
@@ -197,6 +197,7 @@ static	IrcVariable irc_variable[] =
         { "MODE_STRIPPER",              BOOL_TYPE_VAR,  DEFAULT_MODE_STRIPPER, NULL, NULL, 0, 0 },
 	{ "ND_SPACE_MAX",		INT_TYPE_VAR,	DEFAULT_ND_SPACE_MAX, NULL, NULL, 0, 0 },
 	{ "NEW_SERVER_LASTLOG_LEVEL",	STR_TYPE_VAR,	0, NULL, set_new_server_lastlog_level, 0, 0 },
+	{ "NOTIFY",			BOOL_TYPE_VAR,	DEFAULT_NOTIFY, NULL, set_notify, 0, 0 },
 	{ "NOTIFY_INTERVAL",		INT_TYPE_VAR,	DEFAULT_NOTIFY_INTERVAL, NULL, set_notify_interval, 0, 0 },
 	{ "NOTIFY_LEVEL",		STR_TYPE_VAR,	0, NULL, set_notify_level, 0, 0 },
 	{ "NOTIFY_ON_TERMINATION",	BOOL_TYPE_VAR,	DEFAULT_NOTIFY_ON_TERMINATION, NULL, NULL, 0, 0 },
