@@ -102,18 +102,18 @@ static void	rebuild_notify_ison (int server)
 	int i;
 	size_t clue = 0;
 
-	if (from_server == -1)
+	if (server < 0 || server > number_of_servers)
 		return;		/* No server, no go */
 
-	stuff = NOTIFY_LIST(from_server)->ison;
+	stuff = NOTIFY_LIST(server)->ison;
 
-	if (NOTIFY_LIST(from_server)->ison)
-		NOTIFY_LIST(from_server)->ison[0] = 0;
+	if (NOTIFY_LIST(server)->ison)
+		NOTIFY_LIST(server)->ison[0] = 0;
 
-	for (i = 0; i < NOTIFY_MAX(from_server); i++)
+	for (i = 0; i < NOTIFY_MAX(server); i++)
 	{
-		m_sc3cat(&(NOTIFY_LIST(from_server)->ison),
-			space, NOTIFY_ITEM(from_server, i)->nick, &clue);
+		m_sc3cat(&(NOTIFY_LIST(server)->ison),
+			space, NOTIFY_ITEM(server, i)->nick, &clue);
 	}
 }
 
@@ -310,7 +310,7 @@ static	time_t		last_notify = 0;
 
 	if (time(NULL) < last_notify)
 		last_notify = time(NULL);
-	else if (interval > (time(NULL) - last_notify))
+	else if (!interval || interval > (time(NULL) - last_notify))
 	{
 		if (x_debug & DEBUG_NOTIFY)
 			yell("Not time for notify yet [%ld] [%ld]",
