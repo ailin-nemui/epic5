@@ -233,3 +233,10 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Now load() is "interpretation-free", and load1() can be replaced.
 * Fix various minor compile-time issues.
 * Change %P status line expando to give more useful information.
+* Make /LOAD locate and open file arguments; and a generic handler
+* Create loader_which() which a /LOAD handler for /WHICH command
+* The standard loader is now called "loader_std"
+* Add an empty next-generation loader called "loader_pf"
+* Add "loader" info to "load_level" data; It's $2 in $loadinfo().
+* /LOAD now takes -std and -pf arguments to specify which loader you want.
+

@@ -159,6 +159,7 @@ extern struct timeval	input_timeout;
 #include "reg.h"
 	void	dump_load_stack		(int);	 /* XXX command.c */
 const	char *	current_filename	(void);  /* XXX command.c */
+const	char *	current_loader		(void);	 /* XXX command.c */
 	int	current_line		(void);	 /* XXX command.c */
 	char *	current_package		(void);  /* XXX command.c */
 #endif /* __irc_h */

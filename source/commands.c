@@ -1,4 +1,4 @@
-/* $EPIC: commands.c,v 1.56 2003/03/23 19:44:17 jnelson Exp $ */
+/* $EPIC: commands.c,v 1.57 2003/03/23 22:47:50 jnelson Exp $ */
 /*
  * commands.c -- Stuff needed to execute commands in ircII.
  *		 Includes the bulk of the built in commands for ircII.
@@ -1443,6 +1443,7 @@ struct load_info
 {
 	char 	*filename;
 	char	*package;
+	char	*loader;
 	int	package_set_here;
 	int	line;
 	int	start_line;
@@ -1481,6 +1482,16 @@ const char *current_filename (void)
 		return empty_string;
 }
 
+const char *current_loader (void) 
+{ 
+	if (load_depth == -1)
+		return empty_string;
+	else if (load_level[load_depth].loader)
+		return load_level[load_depth].loader;
+	else
+		return empty_string;
+}
+
 int	current_line (void)
 { 
 	if (load_depth == -1)
@@ -1507,7 +1518,9 @@ BUILT_IN_COMMAND(packagecmd)
 		malloc_strcpy(&load_level[load_depth].package, args);
 }
 
-static void	load1 (int which, const char *filename, char *args);
+static void	loader_which (FILE *fp, const char *filename, char *args, struct load_info *);
+static void	loader_std (FILE *fp, const char *filename, char *args, struct load_info *);
+static void	loader_pf  (FILE *fp, const char *filename, char *args, struct load_info *);
 /*
  * load: the /LOAD command.  Reads the named file, parsing each line as
  * though it were typed in (passes each line to parse_line). 
@@ -1516,10 +1529,13 @@ static void	load1 (int which, const char *filename, char *args);
 BUILT_IN_COMMAND(load)
 {
 	char *	filename;
-	int	display;
-	int	which;
 	char *	sargs;
+	char *	irc_path;
+	char *	expanded;
+	FILE *	fp;
+	int	display;
 	int	do_one_more = 0;
+	void	(*loader) (FILE *, const char *, char *, struct load_info *);
 
 	if (++load_depth == MAX_LOAD_DEPTH)
 	{
@@ -1534,12 +1550,12 @@ BUILT_IN_COMMAND(load)
 	permit_status_update(0);	/* No updates to the status bar! */
 
 	/*
-	 * Is it the "WHICH" command?
+	 * Defult loader: "std" for /load, "which" for /which
 	 */
 	if (command && *command == 'W')
-		which = 1;
+	    loader = loader_which;
 	else
-		which = 0;
+	    loader = loader_std;
 
 	/* 
 	 * We iterate over the whole list -- if we use the -args flag, the
@@ -1548,12 +1564,27 @@ BUILT_IN_COMMAND(load)
 	 */
 	while (args && *args && (filename = next_arg(args, &args)))
 	{
+	    if (do_one_more)
+	    {
+		sargs = args;
+		args = NULL;
+	    }
+	    else if (my_strnicmp(filename, "-pf", strlen(filename)) == 0)
+	    {
+		loader = loader_pf;
+		continue;
+	    }
+	    else if (my_strnicmp(filename, "-std", strlen(filename)) == 0)
+	    {
+		loader = loader_std;
+		continue;
+	    }
 	    /* 
 	     * If we use the args flag, then we will get the next
 	     * filename (via continue) but at the bottom of the loop
 	     * we will exit the loop 
 	     */
-	    if (my_strnicmp(filename, "-args", strlen(filename)) == 0)
+	    else if (my_strnicmp(filename, "-args", strlen(filename)) == 0)
 	    {
 		do_one_more = 1;
 		continue;		/* Pick up the filename */
@@ -1561,13 +1592,32 @@ BUILT_IN_COMMAND(load)
 	    else
 		sargs = NULL;
 
-	    if (do_one_more)
+	    /* Locate the file */
+	    if (!(irc_path = get_string_var(LOAD_PATH_VAR)))
 	    {
-		sargs = args;
-		args = NULL;
+		say("LOAD_PATH has not been set");
+		continue;
 	    }
 
-	    load1(which, filename, sargs);
+	    /*
+	     * uzfopen emits an error if the file is not found, so we dont.
+	     * uzfopen() also frees 'expanded' for us on error.
+	     */
+	    expanded = m_strdup(filename);
+	    if (!(fp = uzfopen(&expanded, irc_path, 1)))
+		continue;
+
+	    load_level[load_depth].filename = expanded;
+	    load_level[load_depth].line = 1;
+	    if (load_depth > 0 && load_level[load_depth - 1].package)
+	        malloc_strcpy(&load_level[load_depth].package,
+				load_level[load_depth-1].package);
+
+	    loader(fp, expanded, sargs, &load_level[load_depth]);
+
+	    new_free(&load_level[load_depth].filename);
+	    new_free(&load_level[load_depth].package);
+	    fclose(fp);
 	}
 
 	/*
@@ -1578,64 +1628,33 @@ BUILT_IN_COMMAND(load)
 	permit_status_update(1);
 	update_all_status();
 
-	new_free(&load_level[load_depth].package);
 	load_depth--;
 }
 
-static void	load1 (int which, const char *filename, char *subargs)
+static void	loader_which (FILE *fp, const char *filename, char *subargs, struct load_info *loadinfo)
 {
-	FILE	*fp;
-	char *	irc_path;
-	int	in_comment, comment_line, paste_line;
-	char *	real_start;
-        int     paste_level = 0;
-	char	*start,
-		*current_row = NULL,
+	yell("%s", filename);
+	return;
+}
+
+static void	loader_std (FILE *fp, const char *filename, char *subargs, struct load_info *loadinfo)
+{
+	int	in_comment, comment_line, no_semicolon;
+	int	paste_level, paste_line;
+	char 	*start, *real_start, *current_row;
 #define MAX_LINE_SIZE BIG_BUFFER_SIZE * 5
-		buffer[MAX_LINE_SIZE * 2 + 1];
-	int	no_semicolon = 1;
-	char	*expanded = NULL;
+	char	buffer[MAX_LINE_SIZE * 2 + 1];
 	char	*defargs;
 
-	if (!(irc_path = get_string_var(LOAD_PATH_VAR)))
-	{
-	    say("LOAD_PATH has not been set");
-	    return;
-	}
-
-	/*
-	 * uzfopen emits an error if the file is not found, so we dont.
-	 * uzfopen() also frees 'expanded' for us on error.
-	 */
-	expanded = m_strdup(filename);
-	if (!(fp = uzfopen(&expanded, irc_path, 1)))
-	    return;
-
-	if (which)
-	{
-	    yell("%s", expanded);	/* window_display is 0 here. */
-	    if (fp)
-		fclose (fp);
-	    new_free(&expanded);
-	    return;
-	}
-
-	/*
-	 * No, it is the "LOAD" command. so load it.
-	 */
 	in_comment = 0;
 	comment_line = -1;
+	paste_level = 0;
 	paste_line = -1;
+	no_semicolon = 1;
 	real_start = NULL;
 	current_row = NULL;
 
-	load_level[load_depth].filename = expanded;
-	load_level[load_depth].line = 1;
-	if (load_depth > 0 && load_level[load_depth - 1].package)
-	    malloc_strcpy(&load_level[load_depth].package,
-				load_level[load_depth-1].package);
-
-	for (;;load_level[load_depth].line++)
+	for (;;loadinfo->line++)
 	{
 	    int     len;
 	    char    *ptr;
@@ -1679,7 +1698,7 @@ static void	load1 (int which, const char *filename, char *subargs)
 			(fgets(&(start[len-2]), MAX_LINE_SIZE - len, fp)))
 	    {
 		len = strlen(start);
-		load_level[load_depth].line++;
+		loadinfo->line++;
 	    }
 
 	    if (start[len-1] == '\n')
@@ -1769,7 +1788,7 @@ static void	load1 (int which, const char *filename, char *subargs)
 			{
 			    /* Yep. its the start of a comment. */
 			    in_comment = 1;
-			    comment_line = load_level[load_depth].line;
+			    comment_line = loadinfo->line;
 			}
 			else
 			{
@@ -1841,7 +1860,7 @@ static void	load1 (int which, const char *filename, char *subargs)
 			     * remember the line
 			     */
 			    if (!paste_level)
-				paste_line = load_level[load_depth].line;
+				paste_line = loadinfo->line;
 
 			    paste_level++;
 			    if (ptr == start)
@@ -1877,7 +1896,7 @@ static void	load1 (int which, const char *filename, char *subargs)
 			    if (!paste_level)
 			    {
 				error("Unexpected } in %s, line %d",
-					expanded, load_level[load_depth].line);
+					filename, loadinfo->line);
 				break;
 			    }
 
@@ -1949,13 +1968,13 @@ static void	load1 (int which, const char *filename, char *subargs)
 
 	if (in_comment)
 	    error("File %s ended with an unterminated comment in line %d",
-			expanded, comment_line);
+			filename, comment_line);
 
 	if (current_row)
 	{
 	    if (paste_level)
-		error("Unexpected EOF in %s trying to match '{' "
-				"at line %d", expanded, paste_line);
+		error("Unexpected EOF in %s trying to match '{' at line %d",
+				filename, paste_line);
 	    else
 	    {
 		if (subargs)
@@ -1970,11 +1989,11 @@ static void	load1 (int which, const char *filename, char *subargs)
 
 	    new_free(&current_row);
 	}
-
-	new_free(&expanded);
-	fclose(fp);
 }
 
+static void	loader_pf (FILE *fp, const char *filename, char *args, struct load_info *loadinfo)
+{
+}
 
 /*
  * The /me command.  Does CTCP ACTION.  Dont ask me why this isnt the
