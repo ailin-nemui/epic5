@@ -1,4 +1,4 @@
-/* $EPIC: expr.c,v 1.8 2002/07/17 22:52:52 jnelson Exp $ */
+/* $EPIC: expr.c,v 1.9 2002/10/28 23:45:39 jnelson Exp $ */
 /*
  * expr.c -- The expression mode parser and the textual mode parser
  * #included by alias.c -- DO NOT DELETE
@@ -47,7 +47,7 @@ char *alias_string = NULL;
 /************************** EXPRESSION MODE PARSER ***********************/
 /* canon_number: canonicalizes number to something relevant */
 /* If FLOATING_POINT_MATH isnt set, it truncates it to an integer */
-static char *canon_number (char *input)
+char *canon_number (char *input)
 {
 	int end = strlen(input);
 

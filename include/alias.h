@@ -132,5 +132,6 @@
  * Truly bogus. =)
  */
 	char	*parse_line_with_return (char *, char *, char *, int, int);
+	char 	*canon_number (char *input);
 
 #endif /* _ALIAS_H_ */

@@ -1,4 +1,4 @@
-/* $EPIC: functions.c,v 1.86 2002/10/22 23:18:44 jnelson Exp $ */
+/* $EPIC: functions.c,v 1.87 2002/10/28 23:45:39 jnelson Exp $ */
 /*
  * functions.c -- Built-in functions for ircII
  *
@@ -267,6 +267,7 @@ static	char
 	*function_ishalfop	(char *),
 	*function_isnumber	(char *),
 	*function_jn		(char *),
+	*function_joinstr	(char *),
 	*function_jot 		(char *),
 	*function_key 		(char *),
 	*function_logctl	(char *),
@@ -530,6 +531,7 @@ static BuiltInFunctions	built_in_functions[] =
 	{ "ISNUMBER",		function_isnumber	},
 	{ "ITEMTOINDEX",        function_itemtoindex 	},
 	{ "JN",			function_jn		},
+	{ "JOINSTR",		function_joinstr	},
 	{ "JOT",                function_jot 		},
 	{ "KEY",                function_key 		},
 	{ "KILLPID",		function_killpid	},
@@ -2447,19 +2449,20 @@ BUILT_IN_FUNCTION(function_reverse, words)
  */
 BUILT_IN_FUNCTION(function_jot, input)
 {
-	int     start 	= 0;
-	int     stop 	= 0;
-	int     interval = 1;
-	int     counter;
+	double  start 	= 0;
+	double  stop 	= 0;
+	double  interval = 1;
+	double  counter;
 	char	*booya 	= NULL;
 	size_t	clue = 0;
+	char	ugh[100];
 
-        GET_INT_ARG(start,input)
-        GET_INT_ARG(stop, input)
+        GET_FLOAT_ARG(start,input)
+        GET_FLOAT_ARG(stop, input)
         if (input && *input)
-                GET_INT_ARG(interval, input)
+                GET_FLOAT_ARG(interval, input)
         else
-                interval = 1;
+                interval = 1.0;
 
 	if (interval == 0)
 		RETURN_EMPTY;
@@ -2472,7 +2475,9 @@ BUILT_IN_FUNCTION(function_jot, input)
 		     counter <= stop; 
 		     counter += interval)
 		{
-			m_sc3cat(&booya, space, ltoa(counter), &clue);
+			snprintf(ugh, 99, "%f", counter);
+			canon_number(ugh);
+			m_sc3cat(&booya, space, ugh, &clue);
 		}
 	}
         else
@@ -2481,7 +2486,9 @@ BUILT_IN_FUNCTION(function_jot, input)
 		     counter >= stop; 
 		     counter -= interval)
 		{
-			m_sc3cat(&booya, space, ltoa(counter), &clue);
+			snprintf(ugh, 99, "%f", counter);
+			canon_number(ugh);
+			m_sc3cat(&booya, space, ugh, &clue);
 		}
 	}
 
@@ -6404,3 +6411,37 @@ BUILT_IN_FUNCTION(function_logctl, input)
 	return logctl(input);
 }
 
+/*
+ * Joins the word lists in two different variables together with an
+ * optional seperator string.
+ * Usage:  $joinstr(seperator var1 var2)
+ */
+BUILT_IN_FUNCTION(function_joinstr, input)
+{
+	char	*sep;
+	char	*var1, *val1, *word1;
+	char	*var2, *val2, *word2;
+	char	*retval = NULL;
+	size_t  clue=0;
+
+	GET_STR_ARG(sep, input)
+	GET_STR_ARG(var1, input)
+	GET_STR_ARG(var2, input)
+
+	word1 = get_variable(var1);
+	word2 = get_variable(var2);
+	val1 = LOCAL_COPY(word1);
+	val2 = LOCAL_COPY(word2);
+	new_free(&word1);
+	new_free(&word2);
+
+	while (*val1 || *val2)
+	{
+		word1 = safe_new_next_arg(val1, &val1);
+		word2 = safe_new_next_arg(val2, &val2);
+		m_c3cat(&retval, word1, sep, &clue);
+		m_c3cat(&retval, word2, space, &clue);
+	}
+
+	return retval;
+}

@@ -1,4 +1,4 @@
-/* $EPIC: expr2.c,v 1.2 2002/05/23 03:35:17 jnelson Exp $ */
+/* $EPIC: expr2.c,v 1.3 2002/10/28 23:45:39 jnelson Exp $ */
 /*
  * Zsh: math.c,v 3.1.2.1 1997/06/01 06:13:15 hzoli Exp 
  * math.c - mathematical expression evaluation
@@ -232,7 +232,6 @@ typedef struct
 /* Forward function references */
 __inline static	TOKEN	tokenize_raw (expr_info *c, char *t);
 	static	char *	after_expando_special (expr_info *c);
-	static	char *	canon_number (char *input);
 	static	char *	alias_special_char (char **buffer, char *ptr, 
 					const char *args, char *quote_em, 
 					int *args_flag);
