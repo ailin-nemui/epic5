@@ -1,4 +1,4 @@
-/* $EPIC: dcc.c,v 1.79 2003/10/31 08:19:24 crazyed Exp $ */
+/* $EPIC: dcc.c,v 1.80 2003/11/18 05:36:10 jnelson Exp $ */
 /*
  * dcc.c: Things dealing client to client connections. 
  *
@@ -657,7 +657,7 @@ int	dcc_chat_active (const char *user)
 {
 	int	retval;
 
-	message_from(NULL, LOG_DCC);
+	message_from(user, LOG_DCC);
 	retval = dcc_searchlist(DCC_CHAT, user, NULL, NULL, 1) ? 1 : 0;
 	message_from(NULL, LOG_CRAP);
 	return retval;
@@ -3225,7 +3225,7 @@ void 	dcc_reject (const char *from, char *type, char *args)
 	if (!dcc_types[CType])
 		return;
 
-	message_from(NULL, LOG_DCC);
+	message_from(from, LOG_DCC);
 	description = next_arg(args, &args);
 
 	if ((Client = dcc_searchlist(CType, from, description,

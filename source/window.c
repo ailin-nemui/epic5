@@ -1,4 +1,4 @@
-/* $EPIC: window.c,v 1.77 2003/11/07 03:55:57 jnelson Exp $ */
+/* $EPIC: window.c,v 1.78 2003/11/18 05:36:10 jnelson Exp $ */
 /*
  * window.c: Handles the organzation of the logical viewports (``windows'')
  * for irc.  This includes keeping track of what windows are open, where they
@@ -5438,12 +5438,16 @@ char 	*windowctl 	(char *input)
 {
 	int	refnum, num, len;
 	char	*listc, *listc1;
-	const char *ret;
+	char 	*ret = NULL;
 	Window	*w;
 
 	GET_STR_ARG(listc, input);
 	len = strlen(listc);
 	if (!my_strnicmp(listc, "REFNUMS", len)) {
+		w = NULL;
+		while (traverse_all_windows(&w))
+		    malloc_strcat_wordlist(&ret, space, ltoa(w->refnum));
+		RETURN_MSTR(ret);
 	} else if (!my_strnicmp(listc, "NEW", len)) {
 	} else if (!my_strnicmp(listc, "REFNUM", len)) {
 	    char *windesc;
@@ -5561,6 +5565,7 @@ char 	*windowctl 	(char *input)
 	    GET_STR_ARG(listc, input);
 	    len = strlen(listc);
 
+#if 0
 	    if (!my_strnicmp(listc, "REFNUM", len)) {
 	    } else if (!my_strnicmp(listc, "NAME", len)) {
 	    } else if (!my_strnicmp(listc, "SERVER", len)) {
@@ -5610,8 +5615,11 @@ char 	*windowctl 	(char *input)
 	    } else if (!my_strnicmp(listc, "LOGFILE", len)) {
 	    } else if (!my_strnicmp(listc, "DECEASED", len)) {
 	    }
+#endif
 	} else
 		RETURN_EMPTY;
 
+	update_all_status();
+	update_all_windows();
 	RETURN_EMPTY;
 }

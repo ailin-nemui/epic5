@@ -1,4 +1,4 @@
-/* $EPIC: functions.c,v 1.145 2003/11/14 21:23:40 jnelson Exp $ */
+/* $EPIC: functions.c,v 1.146 2003/11/18 05:36:10 jnelson Exp $ */
 /*
  * functions.c -- Built-in functions for ircII
  *
@@ -401,6 +401,7 @@ static	char
 	*function_which 	(char *),
 	*function_winchan	(char *),
 	*function_wincurline	(char *),
+	*function_windowctl	(char *),
 	*function_winlevel	(char *),
 	*function_winline	(char *),
 	*function_winnames	(char *),
@@ -723,6 +724,7 @@ static BuiltInFunctions	built_in_functions[] =
 	{ "WINBOUND",		function_winbound	},
 	{ "WINCHAN",		function_winchan	},
 	{ "WINCURSORLINE",	function_wincurline	},
+	{ "WINDOWCTL",		function_windowctl	},
 	{ "WINLEVEL",		function_winlevel	},
 	{ "WINLINE",		function_winline	},
 	{ "WINNAM",		function_winnam 	},
@@ -6900,5 +6902,10 @@ BUILT_IN_FUNCTION(function_metric_time, input)
 
 	right_now = get_metric_time(NULL);
 	return malloc_sprintf(NULL, "%ld %9.6f", right_now.mt_days, right_now.mt_mdays);
+}
+
+BUILT_IN_FUNCTION(function_windowctl, input)
+{
+        return windowctl(input);
 }
 
