@@ -813,10 +813,9 @@ static void p_mode (char *from, char **ArgList)
 	 * pointless a change.  What possesses people to make these kinds
 	 * of blithering idiot modifications in the first place?
 	 */
-	if (!line && !*line)
+	if (!line || !*line)
 	{
-		yell("This pathetic excuse of a server just sent you a "
-			"void MODE change.  Ignoring it.");
+		say("Server sent an empty MODE change; ignoring it.");
 		return;
 	}
 
