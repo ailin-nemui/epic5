@@ -1,4 +1,4 @@
-/* $EPIC: logfiles.c,v 1.3 2002/09/03 12:45:07 jnelson Exp $ */
+/* $EPIC: logfiles.c,v 1.4 2002/09/03 13:31:31 jnelson Exp $ */
 /*
  * logfiles.c - General purpose log files
  *
@@ -86,6 +86,7 @@ Logfile *	new_logfile (void)
 	log->targets = NULL;
 	for (i = 0; i < 32; i++)
 		log->refnums[i] = -1;
+	log->level = LOG_ALL;
 	log->rewrite = NULL;
 	log->mangler = 0;
 	log->mangle_desc = NULL;
