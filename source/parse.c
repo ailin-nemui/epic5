@@ -1,4 +1,4 @@
-/* $EPIC: parse.c,v 1.43 2003/08/31 01:33:48 jnelson Exp $ */
+/* $EPIC: parse.c,v 1.44 2003/09/12 18:58:34 crazyed Exp $ */
 /*
  * parse.c: handles messages from the server.   Believe it or not.  I
  * certainly wouldn't if I were you. 
@@ -377,7 +377,7 @@ static void	p_privmsg (const char *from, const char *comm, const char **ArgList)
 		message_from(target, log_type);
 
 		if (do_hook(ENCRYPTED_PRIVMSG_LIST, "%s %s %s", from, target,
-				sed == 1 ? message : empty_string))
+				message))
 			do_return = 0;
 
 		set_lastlog_msg_level(level);

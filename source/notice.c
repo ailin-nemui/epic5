@@ -1,4 +1,4 @@
-/* $EPIC: notice.c,v 1.23 2003/07/31 06:29:37 jnelson Exp $ */
+/* $EPIC: notice.c,v 1.24 2003/09/12 18:58:34 crazyed Exp $ */
 /*
  * notice.c: special stuff for parsing NOTICEs
  *
@@ -301,7 +301,7 @@ void 	p_notice (const char *from, const char *comm, const char **ArgList)
 		message_from(target, LOG_NOTICE);
 
 		if (do_hook(ENCRYPTED_NOTICE_LIST, "%s %s %s", 
-				from, target, sed == 1 ? message : empty_string))
+				from, target, message))
 			do_return = 0;
 
 		set_lastlog_msg_level(level);
@@ -393,7 +393,7 @@ void 	got_initial_version_28 (const char *server, const char *version, const cha
 
 		set_server_version_string(from_server, version);
 		set_server_itsname(from_server, server);
-		/* set_possible_umodes(from_server, umodes); */
+		set_possible_umodes(from_server, umodes);
 	}
 
 	reconnect_all_channels();
