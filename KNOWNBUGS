@@ -603,3 +603,4 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Fix various things for fudd's loadformats script.
 * Add $serverctl(LAST_SERVER) and $serverctl(FROM_SERVER) for blackjac.
 * Comment out the round 2 $win*() functions.
+* Make //ignore output less visually jarring (change a tab to a space)
