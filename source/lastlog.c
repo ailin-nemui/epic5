@@ -1,4 +1,4 @@
-/* $EPIC: lastlog.c,v 1.33 2004/03/12 22:22:00 jnelson Exp $ */
+/* $EPIC: lastlog.c,v 1.34 2004/03/13 17:57:01 jnelson Exp $ */
 /*
  * lastlog.c: handles the lastlog features of irc. 
  *
@@ -82,16 +82,16 @@ char	*mask_to_str (Mask mask)
 	static	char	buffer[256]; /* this *should* be enough for this */
 	int	i;
 
-	if (mask.mask == LEVEL(ALL))
+	if (mask_isall(&mask))
 		strlcpy(buffer, "ALL", sizeof buffer);
-	else if (mask.mask == LEVEL(NONE))
+	else if (mask_isempty(&mask))
 		strlcpy(buffer, "NONE", sizeof buffer);
 	else
 	{
 		*buffer = 0;
 		for (i = 0; i < NUMBER_OF_LEVELS; i++)
 		{
-		    if (mask.mask & LEVELMASK(i))
+		    if (mask_haslevel(&mask, i))
 		    {
 			if (*buffer)
 				strlcat(buffer, " ", sizeof buffer);
@@ -113,14 +113,12 @@ Mask	str_to_mask (const char *orig)
 	char *	str;
 	Mask	level;
 
+	mask_none(&level);
+
 	if (!orig)
-	{
-		level.mask = LEVEL(NONE);
 		return level;		/* Whatever */
-	}
 
 	str = LOCAL_COPY(orig);
-	level.mask = LEVEL(NONE);
 	while ((str = next_arg(str, &rest)) != NULL)
 	{
 	    while (str)
@@ -130,9 +128,9 @@ Mask	str_to_mask (const char *orig)
 		if ((len = strlen(str)) != 0)
 		{
 			if (my_strnicmp(str, "ALL", len) == 0)
-				level.mask = LEVEL(ALL);
+				mask_all(&level);
 			else if (my_strnicmp(str, "NONE", len) == 0)
-				level.mask = LEVEL(NONE);
+				mask_none(&level);
 			else
 			{
 			    if (*str == '-')
@@ -148,9 +146,9 @@ Mask	str_to_mask (const char *orig)
 				if (!my_strnicmp(str, level_types[i], len))
 				{
 					if (neg)
-						level.mask &= ~(LEVELMASK(i));
+					    mask_unset(&level, i);
 					else
-						level.mask |= LEVELMASK(i);
+					    mask_set(&level, i);
 					break;
 				}
 			    }
@@ -183,6 +181,14 @@ int	str_to_level (const char *orig)
 			return i;
 
 	return -1;
+}
+
+const char *	level_to_str (const char *orig)
+{
+	if (i >= 0 && i < NUMBER_OF_LEVELS)
+		return level_types[i];
+	else
+		return empty_string;
 }
 
 /*
@@ -315,7 +321,7 @@ void	set_lastlog_size (const void *stuff)
 BUILT_IN_COMMAND(lastlog)
 {
 	int		reverse = 0;
-	int		level_mask = 0;
+	Mask		level_mask;
 	int		skip = -1;
 	int		number = INT_MAX;
 	int		max = -1;
@@ -343,7 +349,8 @@ BUILT_IN_COMMAND(lastlog)
 	message_to(0);
 	cnt = current_window->lastlog_size;
 	save_mask = current_window->lastlog_mask;
-	current_window->lastlog_mask.mask = LEVEL(NONE);
+	mask_none(&current_window->lastlog_mask.mask);
+	mask_none(&level_mask);
 
 	while ((arg = new_next_arg(args, &args)) != NULL)
 	{
@@ -459,9 +466,9 @@ BUILT_IN_COMMAND(lastlog)
 	    else if (!my_strnicmp(arg, "-REVERSE", len))
 		reverse = 1;
 	    else if (!my_strnicmp(arg, "-ALL", len))
-		level_mask = LEVEL(ALL);
+		mask_all(&level_mask);
 	    else if (!my_strnicmp(arg, "--ALL", len))
-		level_mask = LEVEL(NONE);
+		mask_none(&level_mask);
 	    else if (!my_strnicmp(arg, "--", 2))
 	    {
 		int	i;
@@ -469,7 +476,7 @@ BUILT_IN_COMMAND(lastlog)
 		{
 		    if (!my_strnicmp(level_types[i], arg+2, len-2))
 		    {
-			level_mask &= ~(LEVELMASK(i));
+			mask_unset(i);
 			break;
 		    }
 		}
@@ -486,7 +493,7 @@ BUILT_IN_COMMAND(lastlog)
 		{
 		    if (!my_strnicmp(level_types[i], arg+1, len-1))
 		    {
-			level_mask |= LEVELMASK(i);
+			mask_set(i);
 			break;
 		    }
 		}
@@ -571,7 +578,7 @@ BUILT_IN_COMMAND(lastlog)
 		yell("Skip: %d", skip);
 		yell("Number: %d", number);
 		yell("Max: %d", max);
-		yell("Mask: %d", level_mask);
+		yell("Mask: %s", mask_to_str(level_mask));
 	}
 
 	if (outfile)
@@ -616,7 +623,7 @@ BUILT_IN_COMMAND(lastlog)
 	    start = end;
 	    for (i = 0; start != current_window->lastlog_oldest; )
 	    {
-		if (!level_mask || (level_mask & start->level.mask))
+		if (mask_isnone(&level_mask) || (mask_isset(&level_mask, start->level)))
 			i++;
 		if (i == number)
 			break;
@@ -626,7 +633,7 @@ BUILT_IN_COMMAND(lastlog)
 	    lastshown = NULL;
 	    for (l = start; l; (void)(l && (l = l->newer)))
 	    {
-		if (show_lastlog(&l, &skip, &number, level_mask, 
+		if (show_lastlog(&l, &skip, &number, &level_mask, 
 				match, reg, &max, target))
 		{
 		    if (counter == 0 && before > 0)
@@ -682,7 +689,7 @@ BUILT_IN_COMMAND(lastlog)
 	    end = start;
 	    for (i = 0; end != current_window->lastlog_oldest; )
 	    {
-		if (!level_mask || (level_mask & start->level.mask))
+		if (mask_isnone(&level_mask) || (mask_isset(&level_mask, start->level)))
 			i++;
 		if (i == number)
 			break;
@@ -692,7 +699,7 @@ BUILT_IN_COMMAND(lastlog)
 	    lastshown = NULL;
 	    for (l = start; l; (void)(l && (l = l->older)))
 	    {
-		if (show_lastlog(&l, &skip, &number, level_mask, 
+		if (show_lastlog(&l, &skip, &number, &level_mask, 
 				match, reg, &max, target))
 		{
 		    if (counter == 0 && before > 0)
@@ -754,7 +761,7 @@ bail:
  * This returns 1 if the current item pointed to by 'l' is something that
  * should be displayed based on the criteron provided.
  */
-static int	show_lastlog (Lastlog **l, int *skip, int *number, int level_mask, char *match, regex_t *reg, int *max, const char *target)
+static int	show_lastlog (Lastlog **l, int *skip, int *number, Mask *level_mask, char *match, regex_t *reg, int *max, const char *target)
 {
 	if (*skip > 0)
 	{
@@ -775,11 +782,11 @@ static int	show_lastlog (Lastlog **l, int *skip, int *number, int level_mask, ch
 		(*number)--;	/* Have not yet iterated over max records */
 #endif
 
-	if (level_mask && ((*l)->level.mask & level_mask) == 0)
+	if (!mask_isnone(level_mask) && !mask_isset(level_mask, (*l)->level))
 	{
 		if (x_debug & DEBUG_LASTLOG)
-			yell("Level_mask != level ([%d] [%d])",
-				level_mask, (*l)->level.mask);
+			yell("Level_mask != level ([%s] [%s])",
+				mask_to_str(level_mask), level_to_str((*l)->level.mask));
 		return 0;			/* Not of proper level */
 	}
 	if (match && !wild_match(match, (*l)->msg))
@@ -832,7 +839,7 @@ void 	add_to_lastlog (Window *window, const char *line)
 		new_l = (Lastlog *)new_malloc(sizeof(Lastlog));
 		new_l->older = window->lastlog_newest;
 		new_l->newer = NULL;
-		new_l->level = who_mask;
+		new_l->level = who_level;
 		new_l->msg = malloc_strdup(line);
 		if (who_from)
 			new_l->target = malloc_strdup(who_from);
@@ -936,7 +943,7 @@ char 	*function_line (char *word)
 
 	if (do_level)
 		return malloc_sprintf(NULL, "%s %s", start_pos->msg, 
-					mask_to_str(start_pos->level));
+					level_to_str(start_pos->level));
 	else
 		RETURN_STR(start_pos->msg);
 }
@@ -969,7 +976,7 @@ char *function_lastlog (char *word)
 
 	for (iter = win->lastlog_newest; iter; iter = iter->older, line++)
 	{
-		if (iter->level.mask & lastlog_levels.mask)
+		if (mask_isset(&lastlog_levels, iter->level))
 			if (wild_match(pattern, iter->msg))
 				malloc_strcat_word_c(&retval, space, ltoa(line), &rvclue);
 	}

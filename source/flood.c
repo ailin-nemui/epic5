@@ -1,4 +1,4 @@
-/* $EPIC: flood.c,v 1.18 2004/03/12 22:22:00 jnelson Exp $ */
+/* $EPIC: flood.c,v 1.19 2004/03/13 17:57:01 jnelson Exp $ */
 /*
  * flood.c: handle channel flooding.
  *
@@ -57,7 +57,7 @@ typedef struct flood_stru
 	char		*channel;
 	int		server;
 
-	Mask		type;
+	int		level;
 	long		cnt;
 	Timeval		start;
 	int		floods;
@@ -95,7 +95,7 @@ static const char *	normalize_nuh (const char *nuh)
  * person.  It will return 1 if flooding is being check for someone and an ON
  * FLOOD is activated.
  */
-int	new_check_flooding (const char *nick, const char *nuh, const char *chan, const char *line, int mask)
+int	new_check_flooding (const char *nick, const char *nuh, const char *chan, const char *line, int level)
 {
 static	int	 pos = 0;
 	int	 i,
@@ -130,7 +130,7 @@ static	int	 pos = 0;
 			flood[i].nuh = NULL;
 			flood[i].channel = NULL;
 			flood[i].server = NOSERV;
-			flood[i].type.mask = LEVEL(NONE);
+			flood[i].level = LEVEL_NONE;
 			flood[i].cnt = 0;
 			get_time(&(flood[i].start));
 			flood[i].floods = 0;
@@ -176,7 +176,7 @@ static	int	 pos = 0;
 		/*
 		 * Do some inexpensive tests first
 		 */
-		if (flood[i].type.mask == mask)
+		if (flood[i].level == level)
 			continue;
 		if (server != flood[i].server)
 			continue;
@@ -230,7 +230,7 @@ static	int	 pos = 0;
 			new_free(&tmp->channel);
 
 		tmp->server = server;
-		tmp->type.mask = mask;
+		tmp->level = level;
 		tmp->cnt = 0;
 		tmp->start = right_now;
 
@@ -251,14 +251,14 @@ static	int	 pos = 0;
 
 		if ((diff == 0.0 || tmp->cnt / diff >= rate) &&
 				(retval = do_hook(FLOOD_LIST, "%s %s %s %s",
-				nick, mask_to_str(tmp->type),
+				nick, level_to_str(tmp->level),
 				chan ? chan : "*", line)))
 		{
 			tmp->floods++;
 			l = message_from(chan, LEVEL(CRAP));
 			if (get_int_var(FLOOD_WARNING_VAR))
 				say("FLOOD: %ld %s detected from %s in %f seconds",
-					tmp->cnt+1, mask_to_str(tmp->type), nick, diff);
+					tmp->cnt+1, level_to_str(tmp->level), nick, diff);
 			pop_message_from(l);
 		}
 		else
@@ -304,7 +304,7 @@ char *	function_floodinfo (char *args)
 				malloc_strcat_wordlist_c(&ret, space, "\"", &clue);
 				malloc_strcat_wordlist_c(&ret, empty_string, flood[i].nuh, &clue);
 				malloc_strcat_wordlist_c(&ret, space, flood[i].channel ? flood[i].channel : star, &clue);
-				malloc_strcat_wordlist_c(&ret, space, mask_to_str(flood[i].type), &clue);
+				malloc_strcat_wordlist_c(&ret, space, level_to_str(flood[i].level), &clue);
 				malloc_strcat_wordlist_c(&ret, space, ltoa(flood[i].server), &clue);
 				malloc_strcat_wordlist_c(&ret, space, ltoa(flood[i].cnt), &clue);
 				malloc_strcat_wordlist_c(&ret, space, ftoa(time_diff(flood[i].start, right_now)), &clue);

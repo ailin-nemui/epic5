@@ -36,6 +36,7 @@ extern	Mask	new_server_lastlog_mask;
 	void	set_lastlog_mask 		(const void *);
 	void	set_lastlog_size 		(const void *);
 	void	set_notify_mask 		(const void *);
+	const char *	level_to_str 		(int);
 	char *	mask_to_str 			(Mask);
 	Mask	str_to_mask	 		(const char *);
 	int	str_to_level			(const char *);
