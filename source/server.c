@@ -109,6 +109,7 @@ void 	add_to_server_list (const char *server, int port, const char *password, co
 		s->fudge_factor = 0;
 		s->registration_pending = 0;
 		s->resetting_nickname = 0;
+		s->reconnects = 0;
 
 		if (password && *password)
 			malloc_strcpy(&s->password, password);
@@ -1140,7 +1141,7 @@ int	reconnect (int refnum)
 		new_server = reconnects_to_hint;
 
 	if (new_server != -1)
-		return get_connected(refnum, new_server);
+		return get_connected(new_server, refnum);
 	return -1;
 }
 
