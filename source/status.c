@@ -703,6 +703,7 @@ void	make_status (Window *window)
 				output_screen = window->screen;
 				term_move_cursor(0, window->bottom + status_line);
 				output_with_count(buffer, 1, 1);
+				cursor_in_display(window);
 			}
 		}
 	}

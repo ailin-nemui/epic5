@@ -3717,6 +3717,7 @@ Window *window_query (Window *window, char **args)
 	WNickList *tmp;
 	char	  *nick;
 	char	  *a;
+	Window	  *sw;
 
 	/*
 	 * Nuke the old query list
@@ -3768,8 +3769,13 @@ Window *window_query (Window *window, char **args)
 
 		/*
 		 * Create the new query list
+		 * Ugh.  Make sure this goes to the RIGHT WINDOW!
 		 */
+		sw = to_window;
+		to_window = window;
 		say("Starting conversation with %s", nick);
+		to_window = sw;
+
 		malloc_strcpy(&window->query_nick, nick);
 		window->update |= UPDATE_STATUS;
 		a = nick;
