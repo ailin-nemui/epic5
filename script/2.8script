@@ -64,6 +64,20 @@ alias off {
 }
 on ^send_public * {if (iscurchan($0)) {echo > $1-} {echo $0> $1-}}
 
+# Ban list:
+on ^367 * xecho -b $[$CHANNEL_NAME_WIDTH]1 $2-
+
+# Compatibility with BX
+alias evalserver xeval -server $*
+
+# Compatibility with EPIC4pre1.013 through EPIC4pre1.047
+on %set "CONTROL_C_COLOR ON" set color on
+on %set "CONTROL_C_COLOR OFF" set color off
+
+#
+# Comment out stuff for opers, due to repeated requests.
+# 
+: {
 on ^ctcp ^"% % ERRMSG *no such function*"
 on ^dcc_raw ^"% % D %" 
 
@@ -131,14 +145,5 @@ on ^220 * xecho -b $1 $[10]2 $3
 
 # Service list:
 on ^231 * xecho -b Service $1 \($0\)
-
-# Ban list:
-on ^367 * xecho -b $[$CHANNEL_NAME_WIDTH]1 $2-
-
-# Compatibility with BX
-alias evalserver xeval -server $*
-
-# Compatibility with EPIC4pre1.013 through EPIC4pre1.047
-on %set "CONTROL_C_COLOR ON" set color on
-on %set "CONTROL_C_COLOR OFF" set color off
+}
 

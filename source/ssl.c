@@ -1,4 +1,4 @@
-/* $EPIC: ssl.c,v 1.11 2005/02/22 00:28:35 jnelson Exp $ */
+/* $EPIC: ssl.c,v 1.12 2005/02/28 14:23:30 jnelson Exp $ */
 /*
  * ssl.c: SSL connection functions
  *
@@ -6,7 +6,7 @@
  * Modified by B. Thomas Frazier
  *
  * Copyright © 2000 Juraj Bednar.
- * Copyright © 2000, 2002 EPIC Software Labs.
+ * Copyright © 2000, 2005 EPIC Software Labs.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without

@@ -504,3 +504,4 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Fix the second lamest bug ever. DO NOT DO CONTNIUE WITHIN WHILE (0) DUMMY.
 * Fix accept() with pthreads.  Nonblocking + pthreads == Bad.
 * Throw away all unused addrs when we are registered, to ensure no reconnects.
+* Comment out a bunch of oper-only stuff in 2.8script which opers seem to hate.
