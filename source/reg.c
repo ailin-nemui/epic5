@@ -1,4 +1,4 @@
-/* $EPIC: reg.c,v 1.16 2005/01/12 00:12:21 jnelson Exp $ */
+/* $EPIC: reg.c,v 1.17 2005/02/13 22:58:28 jnelson Exp $ */
 /*
  * reg.c - "glob"-like wildcard pattern matching (not regexes)
  *
@@ -264,9 +264,9 @@ static int new_match (const unsigned char *pattern, const unsigned char *string)
                                   privileged_yell("It matches!  Releasing the backslash");
 
                                pattern++;
-                               asterisk = 0;
-                               last_asterisk_point = string;
-                               last_asterisk_count = count;
+                               percent = 0;
+                               last_percent_point = string;
+                               last_percent_count = count;
 
                                pattern++;
                                string++;

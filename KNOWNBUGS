@@ -2,6 +2,7 @@ EPIC5 Projects, Bugs, and other Errata:
 
 KNOWN ERRATA (eg, bugs, or unresolved requests):
 ------------------------------------------------
+* +k mode on status bar w/o the channel key
 * Check to see if we can hook incomplete lines via dcc now
 * Debug everything -- check to make sure dcc and ssl works
 * Figure out who is supposed to call shutdown_ssl().
@@ -479,3 +480,4 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Fix do_filedesc() to repeatedly call callback until buffer is clean
 * Move set_socket_options() to network.c, make do_filedesc() global func
 * No longer null terminate the read()s, unnecessary now.
+* Fix pattern matching of "\<char>%" so [H*] is matched by [%\*%].
