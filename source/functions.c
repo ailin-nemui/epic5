@@ -1,4 +1,4 @@
-/* $EPIC: functions.c,v 1.142 2003/10/31 16:10:25 jnelson Exp $ */
+/* $EPIC: functions.c,v 1.143 2003/11/03 18:30:44 jnelson Exp $ */
 /*
  * functions.c -- Built-in functions for ircII
  *
@@ -6067,7 +6067,7 @@ BUILT_IN_FUNCTION(function_hash_32bit, input)
 
 	word = new_next_arg(input, &input);
 	len = my_atol(safe_new_next_arg(input, &input));
-	if (!*word)
+	if (!word || !*word)
 		word = input;
 
 	if (len <= 0 || len > 64)
