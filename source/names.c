@@ -1,4 +1,4 @@
-/* $EPIC: names.c,v 1.59 2004/03/19 06:05:13 jnelson Exp $ */
+/* $EPIC: names.c,v 1.60 2004/03/19 06:12:56 jnelson Exp $ */
 /*
  * names.c: This here is used to maintain a list of all the people currently
  * on your channel.  Seems to work 
@@ -907,6 +907,11 @@ static void	decifer_mode (const char *modes, Channel *chan)
 				nick->half_assed = add;
 			continue;
 		}
+
+		case 'b':
+		case 'e':
+			continue;	/* Just skip 'em. */
+
 		default:
 		{
 		    if (add)
