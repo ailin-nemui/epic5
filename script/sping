@@ -31,7 +31,7 @@ alias sping (server) {
 	push sping_list $sping_data
 	^eval timer -refnum $ping_id $sping_timeout @timeout_sping\($ping_id $server\)
 
-	^eval xecho -w $serv_win() -- $sping_sent_format
+	xecho -b -w $serv_win() -- Sent PING to $server
 }
 
 alias vping (server) {
@@ -48,7 +48,7 @@ alias vping (server) {
 		@:serv = word($i $vping_list)
 
 		if (serv == server) {
-			^eval xecho -w $serv_win() -- $vping_waiting_format
+			xecho -b -w $serv_win() -- Waiting for reply to previous VPING to $server
 			return
 		}
 	}
@@ -86,7 +86,7 @@ alias vping (server) {
 		^on ^263 -"$0 VERSION *"
 	}
 
-	^eval xecho -w $serv_win() -- $vping_sent_format
+	xecho -b -w $serv_win() -- Sent VPING to $server
 }
 
 
@@ -124,7 +124,7 @@ alias clear_pings {
 
 	fe ($myservers()) server_name {
 		@:refnum = servernum($server_name)
-		@vpings_$(refnum) = []
+		@vpings[$refnum] = []
 	}
 }
 
@@ -159,14 +159,14 @@ alias handle_pong (server_name, now) {
 
 			^eval timer -del $ping_id
 
-			^eval xecho -w $serv_win() -- $sping_receive_reply_format
+			xecho -b -w $serv_win() -- PONG received from $server_name in $reply_msg
 			xecho -w $serv_win()
 
 			return
 		}
 	}
 
-	^eval xecho -w $serv_win() -- $server_pong_format
+	xecho -b -w $serv_win() -- Received PONG from $server_name
 }
 
 alias handle_version (server_name, now) {
@@ -196,7 +196,7 @@ alias handle_version (server_name, now) {
 			@vpings[$refnum] = vping_list
 			^eval timer -del $ping_id
 
-			^eval xecho -w $serv_win() -- $vping_receive_reply_format
+			xecho -b -w $serv_win() -- VPING reply received from $server_name in $reply_msg
 			xecho -w $serv_win()
 
 			return 0
@@ -271,7 +271,7 @@ alias timeout_sping (ping_id, server) {
 
 	@sping_list = remove_ping_list_entry(0 $ping_id 5 $sping_list)
 
-	^eval xecho -w $serv_win() -- $sping_timeout_format
+	xecho -b -w $serv_win() -- PING to $server timed out
 }
 
 alias timeout_vping (ping_id, server) {
@@ -283,9 +283,9 @@ alias timeout_vping (ping_id, server) {
 	}
 
 	@:vping_list = remove_ping_list_entry(0 $ping_id 4 $vping_list)
-	@vpings_[$refnum] = vping_list
+	@vpings[$refnum] = vping_list
 
-	^eval xecho -w $serv_win() -- $vping_timeout_format
+	xecho -b -w $serv_win() -- VPING to $server timed out
 }
 
 
@@ -325,6 +325,20 @@ on #^402 105 "*" {
 	fe ($myservers()) server_name {
 		@:refnum = servernum($server_name)
 		vpings[$refnum] = remove_ping_list_entry(3 $1 4 $vpings[$refnum])
+	}
+}
+
+on ^set "SPING_TIMEOUT *" {
+	if ([$1] == []) {
+		xecho -b Current value of SPING_TIMEOUT is: $sping_timeout
+	} elsif (!isnumber($1)) {
+		xecho -b Value of SPING_TIMEOUT must be numeric!
+	} elsif ([$1] < 1) {
+		xecho -b Value of SPING_TIMEOUT must be greater than or equal
+to 1
+	} else {
+		@sping_timeout = [$1]
+		xecho -b Value of SPING_TIMEOUT set to $sping_timeout
 	}
 }
 
