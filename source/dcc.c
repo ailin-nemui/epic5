@@ -1,4 +1,4 @@
-/* $EPIC: dcc.c,v 1.61 2003/05/13 13:09:34 crazyed Exp $ */
+/* $EPIC: dcc.c,v 1.62 2003/05/17 18:30:21 crazyed Exp $ */
 /*
  * dcc.c: Things dealing client to client connections. 
  *
@@ -34,7 +34,7 @@
  */
 
 #include "irc.h"
-#include "crypt.h"
+#include "sedcrypt.h"
 #include "ctcp.h"
 #include "dcc.h"
 #include "functions.h"
@@ -514,16 +514,21 @@ static	DCC_list *dcc_searchlist (
 {
 	DCC_list 	*client;
 	const char 	*last = NULL;
+	char		*decoded_description;
+
+	decoded_description = description ? dcc_urldecode(description) : NULL;
 
 	if (x_debug & DEBUG_DCC_SEARCH)
-		yell("entering dcc_sl.  desc (%s) user (%s) type (%d) "
-		     "other (%s) active (%d)", 
-			description, user, type, othername, active);
+		yell("entering dcc_sl.  desc (%s) decdesc (%s) user (%s) "
+		     "type(%d) other (%s) active (%d)", 
+			description, decoded_description, user, type,
+			othername, active);
 
 	/*
 	 * Walk all of the DCC connections that we know about.
 	 */
 	lock_dcc(NULL);
+
 	for (client = ClientList; client ; client = client->next)
 	{
 		/* Never return deleted entries */
@@ -570,8 +575,10 @@ static	DCC_list *dcc_searchlist (
 		 * Otherwise, "othername" must exist and be the same.
 		 * In all other cases, reject this entry.
 		 */
+		
 		if (description && client->description && 
-			my_stricmp(description, client->description))
+			my_stricmp(description, client->description) &&
+			my_stricmp(decoded_description, client->description))
 		{
 			/*
 			 * OK.  well, 'name' isnt 'description', try looking
@@ -584,7 +591,7 @@ static	DCC_list *dcc_searchlist (
 			 * If 'name' isnt 'last' then we'll have to look at
 			 * 'othername' to see if that matches.
 			 */
-			if (my_stricmp(description, last + 1))
+			if (my_stricmp(description, last + 1) && my_stricmp(decoded_description, last + 1))
 			{
 				if (!othername || !client->othername)
 					continue;
@@ -624,6 +631,7 @@ static	DCC_list *dcc_searchlist (
 		unlock_dcc(NULL);
 		return client;
 	}
+	new_free(&decoded_description);
 	unlock_dcc(NULL);
 
 	return NULL;
@@ -683,11 +691,13 @@ static int	dcc_connected (int fd, int result)
 	{
 		char p_addr[256];
 		char p_port[24];
+		char *encoded_description;
 		SA *addr = (SA *)&dcc->peer_sockaddr;
 
 		if (inet_ntostr(addr, p_addr, 256, p_port, 24, NI_NUMERICHOST))
 			yell("Couldn't get host/port for this connection.");
 
+		encoded_description = dcc_urlencode(dcc->description);
 
 		/* 
 		 * It would be nice if SEND also showed the filename
@@ -702,7 +712,7 @@ static int	dcc_connected (int fd, int result)
 		    if ((jvs_blah = do_hook(DCC_CONNECT_LIST,
 					"%s %s %s %s %s %s", 
 					dcc->user, type, p_addr, p_port,
-					dcc->description,
+					encoded_description,
 					ltoa(dcc->filesize))))
 			    /*
 			     * Compatability with bitchx
@@ -710,7 +720,7 @@ static int	dcc_connected (int fd, int result)
 			jvs_blah = do_hook(DCC_CONNECT_LIST,
 					"%s GET %s %s %s %s", 
 					dcc->user, p_addr, p_port,
-					dcc->description,
+					encoded_description,
 					ltoa(dcc->filesize));
 		}
 		else
@@ -725,6 +735,7 @@ static int	dcc_connected (int fd, int result)
 		    say("DCC %s connection with %s[%s:%s] established",
 				type, dcc->user, p_addr, p_port);
 		}
+		new_free(&encoded_description);
 	}
 	unlock_dcc(dcc);
 
@@ -892,7 +903,7 @@ static void	dcc_send_booster_ctcp (DCC_list *dcc)
 	get_time(&dcc->starttime);
 	get_time(&dcc->lasttime);
 
-	if ((dcc->flags & DCC_FILEOFFER) && 
+	if (((dcc->flags & DCC_TYPES) == DCC_FILEOFFER) && 
 		  (nopath = strrchr(dcc->description, '/')))
 		nopath++;
 	else
@@ -902,7 +913,7 @@ static void	dcc_send_booster_ctcp (DCC_list *dcc)
 	 * If this is a DCC SEND...
 	 */
 	lock_dcc(dcc);
-	if (dcc->flags & DCC_FILEOFFER)
+	if ((dcc->flags & DCC_TYPES) == DCC_FILEOFFER)
 	{
 		char *	url_name = dcc_urlencode(nopath);
 
@@ -1200,6 +1211,7 @@ static	void 	dcc_close (char *args)
 	char		*type;
 	char		*user;
 	char		*file;
+	char		*encoded_description = NULL;
 	int		any_type = 0;
 	int		any_user = 0;
 	int		i;
@@ -1207,7 +1219,7 @@ static	void 	dcc_close (char *args)
 
 	type = next_arg(args, &args);
 	user = next_arg(args, &args);
-	file = next_arg(args, &args);
+	file = new_next_arg(args, &args);
 
 	if (type && (!my_stricmp(type, "-all") || !my_stricmp(type, "*")))
 		any_type = 1;
@@ -1246,14 +1258,27 @@ static	void 	dcc_close (char *args)
 		dcc->flags |= DCC_DELETE;
 
 		lock_dcc(dcc);
+		
+		if (dcc->description) {
+			if (my_type == DCC_FILEOFFER)
+				encoded_description = dcc_urlencode(dcc->description);
+			else
+				/* assume the other end encoded the filename */
+				encoded_description = m_strdup(dcc->description);
+		}
+		
                 if (do_hook(DCC_LOST_LIST,"%s %s %s USER ABORTED CONNECTION",
 			dcc->user, 
 			dcc_types[my_type],
-                        dcc->description ? dcc->description : "<any>"))
+                        encoded_description ? encoded_description : "<any>"))
 		    say("DCC %s:%s to %s closed", 
 			dcc_types[my_type],
 			file ? file : "<any>", 
 			dcc->user);
+		
+		if (encoded_description)
+			new_free(&encoded_description);
+			
 		unlock_dcc(dcc);
 	}
 
@@ -1324,7 +1349,8 @@ static	void	dcc_getfile (char *args, int resume)
 		{
 			strlcpy(pathname, get_string_var(DCC_STORE_PATH_VAR), 
 						sizeof(pathname));
-		}
+		} else /* SUSv2 doesn't specify realpath() behavior for "" */
+			strcpy(pathname, "./");
 
 		if (*pathname && normalize_filename(pathname, fullname))
 		{
@@ -1355,7 +1381,12 @@ static	void	dcc_getfile (char *args, int resume)
 			proto = get_server_protocol_state(from_server);
 			set_server_protocol_state(from_server, 0);
 			send_ctcp(CTCP_PRIVMSG, user, CTCP_DCC, "RESUME %s %s %ld", 
-				dcc->description, dcc->othername, (long)sb.st_size);
+#if 1
+				dcc->description,
+#else
+				"file.ext",  /* This is just for testing. */
+#endif
+				dcc->othername, (long)sb.st_size);
 			set_server_protocol_state(from_server, proto);
 
 			/*
@@ -1452,6 +1483,7 @@ static void	dcc_list (char *args)
 	DCC_list	*next;
 static	const char	*format =
 		"%-7.7s%-3.3s %-9.9s %-9.9s %-20.20s %-6.6s %-5.5s %-6.6s %s";
+	char		*encoded_description;
 
 	if (do_hook(DCC_LIST_LIST, "Start * * * * * * *"))
 	{
@@ -1466,6 +1498,13 @@ static	const char	*format =
 
 	    next = dcc->next;
 	    lock_dcc(dcc);
+
+	    if ((flags & DCC_TYPES) == DCC_FILEOFFER)
+		encoded_description = dcc_urlencode(dcc->description);
+	    else
+		/* assume the other end encoded the filename */
+		encoded_description = m_strdup(dcc->description);
+
 	    if (do_hook(DCC_LIST_LIST, "%s %s %s %s %ld %ld %ld %s",
 				dcc_types[flags & DCC_TYPES],
 				zero,			/* No encryption */
@@ -1479,7 +1518,7 @@ static	const char	*format =
 			  (long)dcc->filesize,
 				dcc->bytes_sent ? (unsigned long)dcc->bytes_sent
 						   : (unsigned long)dcc->bytes_read,
-				dcc->description))
+				encoded_description))
 	    {
 		char *	filename = strrchr(dcc->description, '/');
 		char	completed[9];
@@ -1578,6 +1617,8 @@ static	const char	*format =
 						  "Unknown",
 			time_f, size, completed, speed, filename);
 	    }
+	    if (encoded_description)
+		    new_free(&encoded_description);
 	    unlock_dcc(dcc);
 	}
 	unlock_dcc(NULL);
@@ -2282,7 +2323,8 @@ void	dcc_check (fd_set *Readables, fd_set *Writables)
 {
 	DCC_list	*Client;
 	int		previous_server;
-
+	char		*encoded_description = NULL;
+	
 	/* Sanity */
 	if (!Readables)
 		return;
@@ -2335,11 +2377,20 @@ void	dcc_check (fd_set *Readables, fd_set *Writables)
 		 time_diff(Client->lasttime, now) > dcc_timeout)
 	    {
 		lock_dcc(Client);
+
+		if (Client->description) {
+			if ((Client->flags & DCC_TYPES) == DCC_FILEOFFER)
+				encoded_description = dcc_urlencode(Client->description);
+			else
+				/* assume the other end encoded the filename */
+				encoded_description = m_strdup(Client->description);
+		}
+
 		if (do_hook(DCC_LOST_LIST,"%s %s %s IDLE TIME EXCEEDED",
 			Client->user, 
 			dcc_types[Client->flags & DCC_TYPES],
-			Client->description ? 
-			 Client->description : "<any>"))
+			encoded_description ? 
+			 encoded_description : "<any>"))
 		    say("Auto-rejecting a dcc after [%ld] seconds", 
 			(long)time_diff(Client->lasttime, now));
 
@@ -2350,6 +2401,10 @@ void	dcc_check (fd_set *Readables, fd_set *Writables)
 		 * good reason not to let them.
 		 */
 		Client->flags |= DCC_DELETE;
+
+		if (encoded_description)
+			new_free(&encoded_description);
+
 		unlock_dcc(Client);
 	    }
 
@@ -2661,6 +2716,7 @@ static void	process_dcc_send_connection (DCC_list *dcc)
 	SA *		addr;
 	char		p_addr[256];
 	char		p_port[24];
+	char		*encoded_description;
 
 	/*
 	 * Open up the network connection
@@ -2697,12 +2753,15 @@ static void	process_dcc_send_connection (DCC_list *dcc)
 	 * Tell the user
 	 */
 	lock_dcc(dcc);
+	encoded_description = dcc_urlencode(dcc->description);
 	if (do_hook(DCC_CONNECT_LIST, "%s SEND %s %s %s %s",
 			dcc->user, p_addr, p_port,
 			dcc->description, ltoa(dcc->filesize)))
 	    say("DCC SEND connection to %s[%s:%s] established", 
 			dcc->user, p_addr, p_port);
+	new_free(&encoded_description);
 	unlock_dcc(dcc);
+
 
 	/*
 	 * Open up the file to be sent
@@ -2729,6 +2788,7 @@ static void	process_dcc_send_connection (DCC_list *dcc)
 
 static void	process_dcc_send_handle_ack (DCC_list *dcc)
 {
+	char		*encoded_description;
 	u_32int_t	bytesrecvd;
 
 	if (x_debug & DEBUG_DCC_XMIT)
@@ -2747,10 +2807,12 @@ static void	process_dcc_send_handle_ack (DCC_list *dcc)
 		dcc->flags |= DCC_DELETE;
 
 		lock_dcc(dcc);
+		encoded_description = dcc_urlencode(dcc->description);
 		if (do_hook(DCC_LOST_LIST,"%s SEND %s CONNECTION LOST",
-			dcc->user, dcc->description))
+			dcc->user, encoded_description))
 		    say("DCC SEND:%s connection to %s lost",
 			dcc->description, dcc->user);
+		new_free(&encoded_description);
 		unlock_dcc(dcc);
 		return;
 	}
@@ -3061,6 +3123,7 @@ static void	DCC_close_filesend (DCC_list *Client, const char *info)
 	char	lame_ultrix2[10];
 	char	lame_ultrix3[10];
 	double 	xtime, xfer;
+	char	*encoded_description;
 
 	xtime = time_diff(Client->starttime, get_time(NULL));
 	xtime -= Client->heldtime;
@@ -3082,11 +3145,20 @@ static void	DCC_close_filesend (DCC_list *Client, const char *info)
 
 	lock_dcc(Client);
 	Client->flags |= DCC_DELETE;
+	
+	if ((Client->flags & DCC_TYPES) == DCC_FILEOFFER)
+		encoded_description = dcc_urlencode(Client->description);
+	else
+		/* assume the other end encoded the filename */
+		encoded_description = m_strdup(Client->description);
+
 	if (do_hook(DCC_LOST_LIST,"%s %s %s %s TRANSFER COMPLETE",
-		Client->user, info, Client->description, lame_ultrix))
+		Client->user, info, encoded_description, lame_ultrix))
 	     say("DCC %s:%s [%skb] with %s completed in %s sec (%s kb/sec)",
 		info, Client->description, lame_ultrix2, Client->user, 
 		lame_ultrix3, lame_ultrix);
+
+	new_free(&encoded_description);
 	unlock_dcc(Client);
 }
 
@@ -3176,6 +3248,7 @@ static void dcc_getfile_resume_demanded (const char *user, char *filename, char 
 {
 	DCC_list	*Client;
 	int		proto;
+	char 		*realfilename = filename;
 
 	if (!get_int_var(MIRC_BROKEN_DCC_RESUME_VAR))
 		return;
@@ -3204,7 +3277,7 @@ static void dcc_getfile_resume_demanded (const char *user, char *filename, char 
 	set_server_protocol_state(from_server, 0);
 
 	send_ctcp(CTCP_PRIVMSG, user, CTCP_DCC, "ACCEPT %s %s %s",
-		filename, port, offset);
+		realfilename, port, offset);
 
 	set_server_protocol_state(from_server, proto);
 	/* Wait for them to open the connection */
@@ -3237,12 +3310,14 @@ static	void	dcc_getfile_resume_start (const char *nick, char *filename, char *po
 	if (dcc_open(Client))
 		return;
 
-	*pathname = 0;
+
 	if (get_string_var(DCC_STORE_PATH_VAR))
 	{
 		strlcpy(pathname, get_string_var(DCC_STORE_PATH_VAR), 
 					sizeof(pathname));
-	}
+	} else /* SUSv2 doesn't specify realpath() behavior for "" */
+		strcpy(pathname, "./");
+
 
 	if (normalize_filename(pathname, fullname))
 	{

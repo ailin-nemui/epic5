@@ -1,4 +1,4 @@
-/* $EPIC: ircaux.c,v 1.74 2003/05/09 04:29:52 jnelson Exp $ */
+/* $EPIC: ircaux.c,v 1.75 2003/05/17 18:30:21 crazyed Exp $ */
 /*
  * ircaux.c: some extra routines... not specific to irc... that I needed 
  *
@@ -3830,7 +3830,7 @@ int     word_count (const char *str)
 
 /* 
  * XXX XXX XXX -- This is expensive, and ugly, but it counts words
- * in the same way as new_next_word, and that is all that counts for now.
+ * in the same way as new_next_arg, and that is all that counts for now.
  */
 int	word_count (const char *ptr)
 {
@@ -3843,7 +3843,7 @@ int	word_count (const char *ptr)
 	while (*ptr && risspace(*ptr))
 		ptr++;
 
-	while (ptr && *ptr)
+	while (*ptr)
 	{
 		/* Always pre-count words */
 		count++;

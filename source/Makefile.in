@@ -109,7 +109,7 @@ array.o: array.c ../include/irc.h ../include/defs.h \
 commands.o: commands.c ../include/irc.h ../include/defs.h \
  ../include/config.h ../include/irc_std.h ../include/debug.h \
  ../include/reg.h ../include/alias.h ../include/alist.h \
- ../include/ircaux.h ../include/crypt.h ../include/ctcp.h \
+ ../include/ircaux.h ../include/sedcrypt.h ../include/ctcp.h \
  ../include/dcc.h ../include/commands.h ../include/exec.h \
  ../include/files.h ../include/help.h ../include/history.h \
  ../include/hook.h ../include/server.h ../include/who.h \
@@ -120,15 +120,16 @@ commands.o: commands.c ../include/irc.h ../include/defs.h \
  ../include/queue.h ../include/screen.h ../include/window.h \
  ../include/status.h ../include/stack.h ../include/term.h \
  ../include/timer.h ../include/vars.h ../include/newio.h
-compat.o: compat.c ../include/defs.h ../include/irc_std.h
+compat.o: compat.c ../include/defs.h ../include/irc_std.h \
+ ../include/ircaux.h
 crypt.o: crypt.c ../include/irc.h ../include/defs.h \
  ../include/config.h ../include/irc_std.h ../include/debug.h \
- ../include/reg.h ../include/crypt.h ../include/ctcp.h \
+ ../include/reg.h ../include/sedcrypt.h ../include/ctcp.h \
  ../include/ircaux.h ../include/list.h ../include/output.h \
  ../include/vars.h
 ctcp.o: ctcp.c ../include/irc.h ../include/defs.h ../include/config.h \
  ../include/irc_std.h ../include/debug.h ../include/reg.h \
- ../include/crypt.h ../include/ctcp.h ../include/dcc.h \
+ ../include/sedcrypt.h ../include/ctcp.h ../include/dcc.h \
  ../include/commands.h ../include/hook.h ../include/ignore.h \
  ../include/ircaux.h ../include/lastlog.h ../include/names.h \
  ../include/output.h ../include/parse.h ../include/server.h \
@@ -137,12 +138,12 @@ ctcp.o: ctcp.c ../include/irc.h ../include/defs.h ../include/config.h \
  ../include/notice.h
 dcc.o: dcc.c ../include/irc.h ../include/defs.h ../include/config.h \
  ../include/irc_std.h ../include/debug.h ../include/reg.h \
- ../include/crypt.h ../include/ctcp.h ../include/dcc.h \
- ../include/hook.h ../include/ircaux.h ../include/lastlog.h \
- ../include/newio.h ../include/output.h ../include/parse.h \
- ../include/server.h ../include/who.h ../include/status.h \
- ../include/vars.h ../include/window.h ../include/term.h \
- ../include/screen.h ../include/notice.h
+ ../include/sedcrypt.h ../include/ctcp.h ../include/dcc.h \
+ ../include/functions.h ../include/hook.h ../include/ircaux.h \
+ ../include/lastlog.h ../include/newio.h ../include/output.h \
+ ../include/parse.h ../include/server.h ../include/who.h \
+ ../include/status.h ../include/vars.h ../include/window.h \
+ ../include/term.h ../include/screen.h ../include/notice.h
 debug.o: debug.c ../include/irc.h ../include/defs.h \
  ../include/config.h ../include/irc_std.h ../include/debug.h \
  ../include/reg.h ../include/ircaux.h ../include/output.h
@@ -166,17 +167,19 @@ flood.o: flood.c ../include/irc.h ../include/defs.h \
  ../include/reg.h ../include/flood.h ../include/hook.h \
  ../include/ignore.h ../include/ircaux.h ../include/output.h \
  ../include/server.h ../include/who.h ../include/vars.h \
- ../include/functions.h
+ ../include/functions.h ../include/lastlog.h ../include/window.h \
+ ../include/status.h
 functions.o: functions.c ../include/irc.h ../include/defs.h \
  ../include/config.h ../include/irc_std.h ../include/debug.h \
  ../include/reg.h ../include/alias.h ../include/alist.h \
  ../include/ircaux.h ../include/array.h ../include/dcc.h \
- ../include/commands.h ../include/files.h ../include/ignore.h \
- ../include/input.h ../include/names.h ../include/output.h \
+ ../include/commands.h ../include/files.h ../include/flood.h \
+ ../include/ignore.h ../include/input.h ../include/keys.h \
+ ../include/log.h ../include/names.h ../include/output.h \
  ../include/parse.h ../include/screen.h ../include/window.h \
  ../include/lastlog.h ../include/status.h ../include/server.h \
  ../include/who.h ../include/vars.h ../include/term.h \
- ../include/notify.h ../include/numbers.h ../include/crypt.h \
+ ../include/notify.h ../include/numbers.h ../include/sedcrypt.h \
  ../include/timer.h ../include/functions.h ../include/options \
  ../include/glob.h ../include/hook.h
 gailib.o: gailib.c ../include/irc_std.h ../include/defs.h \
@@ -325,7 +328,7 @@ parse.o: parse.c ../include/irc.h ../include/defs.h \
  ../include/reg.h ../include/server.h ../include/who.h \
  ../include/names.h ../include/vars.h ../include/ctcp.h \
  ../include/hook.h ../include/commands.h ../include/ignore.h \
- ../include/lastlog.h ../include/ircaux.h ../include/crypt.h \
+ ../include/lastlog.h ../include/ircaux.h ../include/sedcrypt.h \
  ../include/term.h ../include/screen.h ../include/window.h \
  ../include/status.h ../include/flood.h ../include/output.h \
  ../include/numbers.h ../include/parse.h ../include/notify.h \
@@ -398,7 +401,7 @@ vars.o: vars.c ../include/irc.h ../include/defs.h ../include/config.h \
  ../include/irc_std.h ../include/debug.h ../include/reg.h \
  ../include/alist.h ../include/ircaux.h ../include/status.h \
  ../include/window.h ../include/lastlog.h ../include/log.h \
- ../include/hook.h ../include/crypt.h ../include/history.h \
+ ../include/hook.h ../include/sedcrypt.h ../include/history.h \
  ../include/notify.h ../include/vars.h ../include/input.h \
  ../include/term.h ../include/screen.h ../include/output.h \
  ../include/stack.h ../include/dcc.h ../include/keys.h \

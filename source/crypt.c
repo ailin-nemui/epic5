@@ -1,4 +1,4 @@
-/* $EPIC: crypt.c,v 1.12 2003/05/09 04:29:52 jnelson Exp $ */
+/* $EPIC: crypt.c,v 1.13 2003/05/17 18:30:21 crazyed Exp $ */
 /*
  * crypt.c: handles some encryption of messages stuff. 
  *
@@ -35,7 +35,7 @@
  */
 
 #include "irc.h"
-#include "crypt.h"
+#include "sedcrypt.h"
 #include "ctcp.h"
 #include "ircaux.h"
 #include "list.h"

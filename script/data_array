@@ -81,12 +81,12 @@ alias array.stat {
 #   .write/.iwrite inverse of .read, differing in the order in which lines are written.
 #   .flush/.iflush write and delete the arrays.
 #
-fe (dump " -banner" "\$array [\$item,\$#content,\$@content] " grep " -nobanner" "") cmd banner fnord {
+fe (dump " -banner" "\$array [\$[-4]item \$[-2]#content \$[-3]@content] " grep " -nobanner" "") cmd banner fnord {
 	fe (i$cmd igetitem igetmatches $cmd getitem getmatches) foo bar baz {
 		alias array.$foo (arrays default *, mask default *) fe ($getarrays($arrays)) array \{fe \(\$${baz}($array $mask)\) item \{@:content=${bar}($array $item)\;echo $fnord\$content\}\}
 	}
 }
-fe (dump "\$array [\$item,\$#content,\$@content] " grep "") cmd fnord {
+fe (dump "\$array [\$[-4]item \$[-2]#content \$[-3]@content] " grep "") cmd fnord {
 	fe (coi$cmd "indextoitem($array $igetmatches" ")" co$cmd getmatches "") foo bar baz {
 		alias array.$foo @:array=[\$0]\;@:mk=[\$1]\;@:ar=beforew($mk $2-)\;fe \(\$${bar}($array $afterw($mk $2-))$baz\) item \{@:content=\;fe ($ar) foo {@push(content $getitem($foo $item))}\;echo $fnord\$content\}
 	}

@@ -1,4 +1,4 @@
-/* $EPIC: parse.c,v 1.39 2003/05/09 04:29:52 jnelson Exp $ */
+/* $EPIC: parse.c,v 1.40 2003/05/17 18:30:21 crazyed Exp $ */
 /*
  * parse.c: handles messages from the server.   Believe it or not.  I
  * certainly wouldn't if I were you. 
@@ -45,7 +45,7 @@
 #include "ignore.h"
 #include "lastlog.h"
 #include "ircaux.h"
-#include "crypt.h"
+#include "sedcrypt.h"
 #include "term.h"
 #include "flood.h"
 #include "window.h"

@@ -1,4 +1,4 @@
-/* $EPIC: ctcp.c,v 1.23 2003/05/09 22:31:14 jnelson Exp $ */
+/* $EPIC: ctcp.c,v 1.24 2003/05/17 18:30:21 crazyed Exp $ */
 /*
  * ctcp.c:handles the client-to-client protocol(ctcp). 
  *
@@ -38,7 +38,7 @@
  */
 
 #include "irc.h"
-#include "crypt.h"
+#include "sedcrypt.h"
 #include "ctcp.h"
 #include "dcc.h"
 #include "commands.h"

@@ -117,4 +117,8 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * - Ensure every function is either 'static' or has a prototype.
 * - Eliminate (unsigned) < (signed) type comparisons.
 * Hopefully you should not notice any changes!
-
+* Fix for $remw() and a corresponding new regression test.
+* Applied three patches from |rain| to fix perl, dcc and $chr().
+* The perl one apparently makes it possible to compile for perl 5.8.0.
+* Made /dcc close use new_next_arg for filenames to make it consistent.
+* Fixed dcc send resume so that it will resume with mirc.

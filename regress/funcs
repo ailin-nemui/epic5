@@ -479,6 +479,8 @@ assert remw(one two) == [two]
 assert remw(one two one three) == [two three]
 assert remw(one two three one) == [two three]
 assert remw(\\foo foo \\foo \\foo \\foo) == [foo \\foo \\foo]
+# remw() tests that failed previously
+assert remw(1 11 1) == [11]
 
 # testing $rename() -- cant be tested right now.
 

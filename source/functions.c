@@ -1,4 +1,4 @@
-/* $EPIC: functions.c,v 1.117 2003/05/09 04:29:52 jnelson Exp $ */
+/* $EPIC: functions.c,v 1.118 2003/05/17 18:30:21 crazyed Exp $ */
 /*
  * functions.c -- Built-in functions for ircII
  *
@@ -67,7 +67,7 @@
 #include "term.h"
 #include "notify.h"
 #include "numbers.h"
-#include "crypt.h"
+#include "sedcrypt.h"
 #include "timer.h"
 #include "functions.h"
 #include "options"
@@ -1852,7 +1852,7 @@ BUILT_IN_FUNCTION(function_remw, word)
 		}
 		if ((span = stristr(str + 1, word_to_remove)) < 0)
 			break; 
-		str += span;
+		str += span + 1;
 	    }
 	}
 
@@ -2839,8 +2839,8 @@ BUILT_IN_FUNCTION(function_chr, word)
 
 	aboo = new_malloc(word_count(word) + 1);
 	ack = aboo;
-	
-	while ((blah = next_arg(word, &word)))
+
+	while ((blah = new_next_arg(word, &word)))
 		*ack++ = (char)my_atol(blah);
 
 	*ack = '\0';
