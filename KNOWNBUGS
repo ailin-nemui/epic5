@@ -47,3 +47,4 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Fix $stat() so that it expands ~ correctly.
 * Fix ctcp over dcc to not coredump.
 * Fix dcc over dcc to not coredump.  (different issue)
+* Add %{1}+ as a special favor to howl.

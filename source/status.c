@@ -1,4 +1,4 @@
-/* $EPIC: status.c,v 1.23 2003/04/04 17:56:50 jnelson Exp $ */
+/* $EPIC: status.c,v 1.24 2003/04/10 23:14:56 jnelson Exp $ */
 /*
  * status.c: handles the status line updating, etc for IRCII 
  *
@@ -196,6 +196,7 @@ struct status_formats status_expandos[] = {
 { 1, 'R', status_refnum_real,   NULL, 			-1 },
 { 1, 'S', status_server,        &server_format,     	STATUS_SERVER_VAR },
 { 1, 'T', status_test,		NULL,			-1 },
+{ 1, '+', status_mode,		&mode_format,       	STATUS_MODE_VAR },
 { 2, '0', status_user,	 	NULL, 			-1 },
 { 2, '1', status_user,	 	NULL, 			-1 },
 { 2, '2', status_user,	 	NULL, 			-1 },
@@ -1011,32 +1012,43 @@ STATUS_FUNCTION(status_clock)
  */
 STATUS_FUNCTION(status_mode)
 {
-	char	*mode = (char *) 0;
-const char *	chan;
-static  char    my_buffer[81];
+	const char *	mode = NULL;
+	const char *	chan = NULL;
+static  char    	my_buffer[81];
 
+	/* If anything goes wrong, we return an empty string */
 	*my_buffer = 0;
-	if (window->server != NOSERV && 
-           (chan = get_echannel_by_refnum(window->refnum)))
-	{
-                mode = get_channel_mode(chan, window->server);
-		if (mode && *mode && mode_format)
-		{
-			/*
-			 * This gross hack is required to make sure that the 
-			 * channel key doesnt accidentally contain anything 
-			 * dangerous...
-			 */
-			if (get_int_var(STATUS_DOES_EXPANDOS_VAR))
-			{
-				char *mode2 = alloca(strlen(mode) * 2 + 1);
-				double_quote(mode, "$", mode2);
-				mode = mode2;
-			}
 
-			snprintf(my_buffer, 80, mode_format, mode);
-		}
+	/* If the user has no mode format, or we're not connected, punt. */
+        if (!mode_format || window->server == NOSERV)
+		return my_buffer;
+
+	/* If there is a current channel, get it's mode */
+	if ((chan = get_echannel_by_refnum(window->refnum)))
+		mode = get_channel_mode(chan, window->server);
+
+	/* If this is %+, and there is not a mode, punt. */
+	if (mode == 0 && (!mode || !*mode))
+		return my_buffer;
+
+	/* If this is %{1}+, and there is not a mode, use empty string */
+	if (!mode)
+		mode = empty_string;
+
+	/*
+	 * This gross hack is required to make sure that the 
+	 * channel key doesnt accidentally contain anything 
+	 * dangerous...
+	 */
+	if (get_int_var(STATUS_DOES_EXPANDOS_VAR))
+	{
+		char *mode2 = alloca(strlen(mode) * 2 + 1);
+		double_quote(mode, "$", mode2);
+		mode = mode2;
 	}
+
+	/* Press the mode into the status format. */
+	snprintf(my_buffer, 80, mode_format, mode);
 	return my_buffer;
 }
 

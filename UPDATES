@@ -1,5 +1,17 @@
 EPIC4-1.2.0
 
+*** News 04/10/2003 -- New status expando, %{1}+
+	The %+ status expandos returns the empty string (ie, it ignores
+	the /set status_mode value) if a channel does not have a mode.
+	The %{1}+ status expando will honor /set status_mode, and will
+	substitute the empty string for %+.
+
+	Example:  Current channel is #epic, it does not have a mode
+		/set status_channel [%C 
+		/set status_mode  +%+]
+	Then using %C%+ yeilds	[#epic
+	And %C%{1}+ yields	[#epic +]
+
 *** News 03/29/2003 -- New /SET, /SET SWITCH_CHANNELS_BETWEEN_WINDOWS
 	When this set is ON (default) the SWITCH_CHANNELS key binding
 	will have its traditional (legacy) behavior, and will allow you 
