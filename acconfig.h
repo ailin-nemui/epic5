@@ -1,5 +1,5 @@
 /*
- * @(#)$Id: acconfig.h,v 1.4 2001/09/26 18:32:03 jnelson Exp $
+ * @(#)$Id: acconfig.h,v 1.5 2001/11/28 22:58:02 jnelson Exp $
  */
 
 /*
@@ -32,6 +32,9 @@
 
 /* define this if you have setenv(3) */
 #undef HAVE_SETENV
+
+/* define this if you have unsetenv(3) */
+#undef HAVE_UNSETENV
 
 /* define this if you have setsid(2) */
 #undef HAVE_SETSID

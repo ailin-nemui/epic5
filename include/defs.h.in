@@ -101,6 +101,9 @@
 /* define this if you have setenv(3) */
 #undef HAVE_SETENV
 
+/* define this if you have unsetenv(3) */
+#undef HAVE_UNSETENV
+
 /* define this if you have setsid(2) */
 #undef HAVE_SETSID
 

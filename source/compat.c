@@ -1134,5 +1134,32 @@ char *	stpcpy (char *to, const char *from)
 	return to;
 }
 #endif
+
+#ifndef HAVE_SETENV
+int	setenv (const char *name, const char *value, int overwrite)
+{
+	static int warning = 0;
+	char *value;
+
+	if (warning == 0) {
+		yell("Warning: Your system does not have setenv(3).  Setting the same environment variable multiple times will result in memory leakage.  This is unavoidable and does not represent a bug in EPIC.");
+		warning = 1;
+	}
+
+	value = m_sprintf("%s=%s", name, value);
+	putenv(value);
+	return 0;
+}
+#endif
+
+#ifndef HAVE_UNSETENV
+int	unsetenv (const char *name)
+{
+	yell("Warning: Your system does not have unsetenv(3) and so it is not possible to unset the [%s] environment variable.", name);
+	return -1;
+}
+#endif
+
+
 /* --- end of misc stuff --- */
 
