@@ -650,7 +650,7 @@ static	char	*next_unit (char *str, const char *args, int *arg_flag, int stage)
 			else
 				dvalue3 = dvalue1 + dvalue2;
 
-			tmp = m_sprintf("%f", dvalue3);
+			tmp = m_sprintf("%.999g", dvalue3);
 			canon_number(tmp);
 #else
 			SETUP_INTEGER_OPERATION(NU_ADD)
@@ -691,7 +691,7 @@ static	char	*next_unit (char *str, const char *args, int *arg_flag, int stage)
 			{
 				*ptr++ = '\0';
 				SETUP_BINARY(dvalue1, dvalue2, atof)
-				return m_sprintf("%f", pow(dvalue1, dvalue2));
+				return m_sprintf("%.999g", pow(dvalue1, dvalue2));
 			}
 
 			SETUP_FLOAT_OPERATION(NU_MULT)
@@ -709,7 +709,7 @@ static	char	*next_unit (char *str, const char *args, int *arg_flag, int stage)
 					dvalue3 = (int)dvalue1 % (int)dvalue2;
 			}
 
-			tmp = m_sprintf("%f", dvalue3);
+			tmp = m_sprintf("%.999g", dvalue3);
 			canon_number(tmp);
 			CLEANUP_IMPLIED()
 			return tmp;

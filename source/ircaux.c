@@ -8,7 +8,7 @@
  */
 
 #if 0
-static	char	rcsid[] = "@(#)$Id: ircaux.c,v 1.15 2001/11/19 16:03:58 jnelson Exp $";
+static	char	rcsid[] = "@(#)$Id: ircaux.c,v 1.16 2001/11/19 16:52:47 crazyed Exp $";
 #endif
 
 #include "irc.h"
@@ -2012,7 +2012,7 @@ char *	ftoa (double foo)
 {
 	static char buffer [BIG_BUFFER_SIZE + 1];
 
-	sprintf(buffer, "%f", foo);
+	sprintf(buffer, "%.999g", foo);
 	return buffer;
 }
 

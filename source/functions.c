@@ -855,7 +855,7 @@ static	char	*alias_server_version  (void)
 #define RETURN_MSTR(x) return ((x) ? (x) : EMPTY_STRING);
 #define RETURN_STR(x) return m_strdup((x) ? (x) : EMPTY)
 #define RETURN_INT(x) return m_strdup(ltoa((x)))
-#define RETURN_FLOAT(x) return m_sprintf("%f", (double) (x))
+#define RETURN_FLOAT(x) return m_sprintf("%.999g", (double) (x))
 
 /*
  * XXXX REALLY REALLY REALLY REALLY REALLY REALLY REALLY IMPORTANT! XXXX
