@@ -1,4 +1,4 @@
-/* $EPIC: functions.c,v 1.188 2005/02/19 04:22:26 jnelson Exp $ */
+/* $EPIC: functions.c,v 1.189 2005/02/19 22:28:59 jnelson Exp $ */
 /*
  * functions.c -- Built-in functions for ircII
  *
@@ -2709,7 +2709,7 @@ BUILT_IN_FUNCTION(function_sar, input)
 	char *	last_segment;
 	char *	text;
 	char *	after;
-	char *	workbuf;
+	char *	workbuf = NULL;
 	size_t	clue = 0;
 	size_t	searchlen;
 	char *	search;
@@ -2807,7 +2807,7 @@ BUILT_IN_FUNCTION(function_sar, input)
 		       yell("$sar(/%s/%s/%80.80s...) suffers too many "
 				"substitutions", search, replace, text);
 		    else
-		       yell("$msar(/%s/%s/%s) suffers too many substitutions",
+		       yell("$sar(/%s/%s/%s) suffers too many substitutions",
 				search, replace, text);
 		    break;
 		}
@@ -4656,7 +4656,7 @@ BUILT_IN_FUNCTION(function_msar, input)
 	char *	last_segment;
 	char *	text;
 	char *	after;
-	char *	workbuf;
+	char *	workbuf = NULL;
 	size_t	clue = 0;
 	size_t	searchlen;
 	char *	search;
