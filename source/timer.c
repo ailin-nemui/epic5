@@ -1,4 +1,4 @@
-/* $EPIC: timer.c,v 1.8 2002/08/12 16:41:11 wd Exp $ */
+/* $EPIC: timer.c,v 1.9 2002/09/04 22:48:18 wd Exp $ */
 /*
  * timer.c -- handles timers in ircII
  *
@@ -609,11 +609,18 @@ struct timeval TimerTimeout (void)
 	 */
         if (waiting_out > waiting_in || parsingtimer || !PendingTimers)
                 return input_timeout;
-	if (!PendingTimers)
-		return input_timeout;	/* Absurdly large. */
 
 	get_time(&current);
 	timeout_in = time_subtract(current, PendingTimers->time);
-	return (timeout_in.tv_sec < 0) ? none : timeout_in;
+
+	/* if 'timeout_in' is further away than 'input_timeout' we need to
+	 * return input_timeout. */
+	if (timeout_in.tv_sec > input_timeout.tv_sec)
+		timeout_in = input_timeout;
+	else if (timeout_in.tv_sec == input_timeout.tv_sec &&
+		 timeout_in.tv_usec > input_timeout.tv_usec)
+		timeout_in = input_timeout;
+
+	return timeout_in;
 }
 
