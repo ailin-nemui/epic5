@@ -1,4 +1,4 @@
-/* $EPIC: window.c,v 1.85 2003/12/03 22:17:40 jnelson Exp $ */
+/* $EPIC: window.c,v 1.86 2003/12/03 23:21:22 jnelson Exp $ */
 /*
  * window.c: Handles the organzation of the logical viewports (``windows'')
  * for irc.  This includes keeping track of what windows are open, where they
@@ -3669,15 +3669,11 @@ static Window *window_next (Window *window, char **args)
 	Window	*next = NULL;
 	Window	*smallest = NULL;
 
-	if (!invisible_list)
-	{
-		say("There are no hidden windows");
-		return NULL;
-	}
-
 	smallest = window;
 	for (tmp = invisible_list; tmp; tmp = tmp->next)
 	{
+		if (!tmp->swappable)
+			continue;
 		if (tmp->refnum < smallest->refnum)
 			smallest = tmp;
 		if ((tmp->refnum > window->refnum)
@@ -3687,6 +3683,12 @@ static Window *window_next (Window *window, char **args)
 
 	if (!next)
 		next = smallest;
+
+	if (next == NULL || next == window)
+	{
+		say("There are no hidden windows");
+		return NULL;
+	}
 
 	swap_window(window, next);
 	message_from((char *) 0, LOG_CRAP);
@@ -3801,15 +3803,11 @@ static Window *window_previous (Window *window, char **args)
 	Window	*tmp;
 	Window	*previous = NULL, *largest;
 
-	if (!invisible_list)
-	{
-		say("There are no hidden windows");
-		return NULL;
-	}
-
 	largest = window;
 	for (tmp = invisible_list; tmp; tmp = tmp->next)
 	{
+		if (!tmp->swappable)
+			continue;
 		if (tmp->refnum > largest->refnum)
 			largest = tmp;
 		if ((tmp->refnum < window->refnum)
@@ -3819,6 +3817,12 @@ static Window *window_previous (Window *window, char **args)
 
 	if (!previous)
 		previous = largest;
+
+	if (previous == NULL || previous == window)
+	{
+		say("There are no hidden windows to swap in");
+		return NULL;
+	}
 
 	swap_window(window, previous);
 	message_from((char *) 0, LOG_CRAP);

@@ -3,7 +3,7 @@ EPIC4 Projects, Bugs, and other Errata:
 KNOWN ERRATA (eg, bugs, or unresolved requests):
 ------------------------------------------------
 * Need to document -o, -O, and "swappable" stuff.
-
+* Servers can send NOTICEs to channels on ircnet; do the right message_from().
 
 [See http://www.epicsol.org/PROJECTS for things to come in the future]
 [See http://www.epicsol.org/CHANGELOG for things that changed in the past]
@@ -51,3 +51,5 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Don't allow windows to be shown or hidden if SWAPPABLE OFF
 * Do allow windows to be swapped in with WINDOW KILL even if SWAPPABLE OFF
 * Add $windowctl(GET <refnum> SWAPPABLE)
+* Fix /window next, /window prev (SWAP_NEXT_WINDOW/SWAP_PREV_WINDOW) to 
+  skip non-swappable windows.
