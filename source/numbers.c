@@ -1,4 +1,4 @@
-/* $EPIC: numbers.c,v 1.41 2003/02/04 03:50:23 jnelson Exp $ */
+/* $EPIC: numbers.c,v 1.42 2003/02/08 06:38:30 jnelson Exp $ */
 /*
  * numbers.c: handles all those strange numeric response dished out by that
  * wacky, nutty program we call ircd 
@@ -484,6 +484,7 @@ void 	numbered_command (const char *from, const char *comm, char const **ArgList
 								0, 0, 0, 0);
 		    }
 
+		    message_from(channel, LOG_CRAP);
 		    break;
 		}
 		else
@@ -975,6 +976,20 @@ DISPLAY:
 		break;
 	}
 
+	case 313:		/* #define RPL_WHOISOPERATOR    313 */
+	{
+		const char *nick, *message;
+
+		PasteArgs(ArgList, 1);
+		if (!(nick = ArgList[0]))
+			{ rfc1459_odd(from, comm, ArgList); goto END; }
+		if (!(message = ArgList[1]))
+			{ rfc1459_odd(from, comm, ArgList); goto END; }
+
+		put_it("%s %s %s", banner(), ArgList[0], ArgList[1]);
+		break;
+	}
+
 	case 314:		/* #define RPL_WHOWASUSER       314 */
 	{
 		const char *nick, *user, *host, *unused, *name;
@@ -998,7 +1013,7 @@ DISPLAY:
 	case 317:		/* #define RPL_WHOISIDLE        317 */
 	{
 		const char *nick, *idle_str, *startup_str;
-		char		idle;
+		int		idle;
 		const char *	unit;
 		char 	startup_ctime[128];
 

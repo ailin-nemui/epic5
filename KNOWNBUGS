@@ -128,3 +128,4 @@ THE CHANGELOG SINCE THE LAST RELEASE:
   pair of functions that make just one search as keerf suggested is probably
   the answer.
 * Fix for a leak (and an occasional coredump) in /list.
+* Fix numeric handlers for 313, 317.
