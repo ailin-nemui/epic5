@@ -1,4 +1,4 @@
-/* $EPIC: server.c,v 1.151 2005/02/23 03:41:36 jnelson Exp $ */
+/* $EPIC: server.c,v 1.152 2005/02/25 05:50:40 jnelson Exp $ */
 /*
  * server.c:  Things dealing with that wacky program we call ircd.
  *
@@ -879,7 +879,7 @@ void	do_server (int fd)
 			goto something_broke;
 
 		    /* XXX - I don't care if this is abusive.  */
-		    while (0)
+		    if (0)
 		    {
 something_broke:
 			if (x_debug & DEBUG_SERVER_CONNECT)
