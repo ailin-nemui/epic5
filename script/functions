@@ -42,7 +42,7 @@ alias remove @ function_return = remw($*)
 
 /*
  * All of these functions have been obsoleted by built in functions
- * in ircII-EPIC.  Some of them were obsoleted by comporable functions,
+ * in ircII-EPIC.  Some of them were obsoleted by comparable functions,
  * and several of them were re-implemented as built-in functions for no
  * reason other than to provide a faster alternative to these functions.
  */
@@ -78,7 +78,7 @@ alias reverse
 #
 # Center text within a given width.   center(width text)
 # "$center(10 one)"   returns "   one"
-# this might not make sense at first, but it saves alot of cursor travel
+# this might not make sense at first, but it saves a lot of cursor travel
 # not writing all the spaces on the right side.
 #
 # Obsoleted by the built-in $center().
@@ -94,11 +94,11 @@ alias center
 }
 
 #
-# This is the huge beastly CPU expensive search and replace funnction 
+# This is the huge beastly CPU expensive search and replace function 
 # written entirely in ircII script language.
 # $sandr(search pat/replace pat/words)
 # the search and replace patterns can contain spaces or any other chars
-# with the exeption of '/'.
+# with the exception of '/'.
 #
 # Obsoleted by the built-in $sar(), which has more features, allows
 # more flexibility, and is orders of magnitude faster.
@@ -182,7 +182,7 @@ alias notword
 # this only takes the name of the list instead of the variable itself. 
 # examples.
 # /push list Item
-# or     if (push(list Item)) { echo push sucessful } { echo push failed }
+# or     if (push(list Item)) { echo push successful } { echo push failed }
 # echo $list returns 'Item'
 #
 # Obsoleted by the built-in $push() function, and built-in PUSH command.
@@ -219,7 +219,7 @@ alias remove {
 }
 
 
-# This alias sorts flat lists case insenstive
+# This alias sorts flat lists case insensitive
 # IT can be easily changed to sort case sensitive by removing the
 # $toupper() call.
 # operation..    $sort(list or words here)   will return a string with
@@ -237,7 +237,7 @@ alias sort {
 	foreach sort.str ii {
 		# sort ascending
 		@ sort.tmp = sort.tmp ## sort.sep ## sort.str[$ii]
-		# sort decending
+		# sort descending
 		# push sort.tmp sort.str[$ii]
 		^assign -sort.str[$ii]
 		@ sort.sep = [ ]

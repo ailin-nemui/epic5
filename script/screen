@@ -7,7 +7,7 @@
 # window [new] level NONE hold [off|on] scroll [off|on] chan #some_channel
 # window hide
 #
-# Are useful for setting up these windows, with the first occurance not
+# Are useful for setting up these windows, with the first occurrence not
 # having a "new" ..and the last not having a "hide".
 #
 # ^X1 - ^X0 swap windows 1 to 10.

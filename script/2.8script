@@ -5,7 +5,7 @@
 	This script references some aliases that are in 'basical'.  Both of
 	these scripts should be loaded from 'global', so that should not be
 	a problem.  This script will _not_ work correctly if 'basical' is not
-	loaded from 'global'.  This script is a dependancy for other scripts.
+	loaded from 'global'.  This script is a dependency for other scripts.
 
 	THIS SCRIPT MUST ALWAYS BE LOADED, OR OTHER SCRIPTS MIGHT NOT WORK!
 	THIS VERSION IS FOR EPIC CLIENTS ONLY (EPIC3.001 or up)
@@ -135,10 +135,10 @@ on ^231 * xecho -b Service $1 \($0\)
 # Ban list:
 on ^367 * xecho -b $[$CHANNEL_NAME_WIDTH]1 $2-
 
-# Compatabiilty with BX
+# Compatibility with BX
 alias evalserver xeval -server $*
 
-# Compatability with EPIC4pre1.013 through EPIC4pre1.047
+# Compatibility with EPIC4pre1.013 through EPIC4pre1.047
 on ^set "CONTROL_C_COLOR ON" set color on
 on ^set "CONTROL_C_COLOR OFF" set color off
 

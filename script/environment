@@ -2,7 +2,7 @@
 # A NEW ENVIRONMENT (C) 1993
 # Written by Jeremy Nelson (jnelson@acronet.net)
 #
-# **************** New enviornment ***************************
+# **************** New environment ***************************
 alias howlong @ function_return = tdiff(${time()-[$0]})
 alias now @ function_return = strftime(%T)
 alias tia @ function_return = A?[<$now()>]:[]
@@ -55,7 +55,7 @@ on ^action * {
 on ^send_action * echo :Action: \($0\) $N $1-
 on ^ctcp_reply * echo CTCP from $0. $1: $2- $tia()
 on -ctcp_reply "% PING *" comment
-on ^invite * echo *** Invitation to $1 recieved from $0 $now().
+on ^invite * echo *** Invitation to $1 received from $0 $now().
 on ^topic * echo *** topic The topic on $1 is now $2- \($0\) $now()
 on ^notify_signoff * echo NOTIFY $0 signed OFF [$now()]
 set notify_userhost_automatic on

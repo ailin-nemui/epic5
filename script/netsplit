@@ -108,7 +108,7 @@
   purge signoffs
 }
 
-# If you want to supress mode changes by servers.. (ussually after a split)
+# If you want to suppress mode changes by servers.. (usually after a split)
 # then uncomment next line
 # ^on ^mode "%.%" #
 

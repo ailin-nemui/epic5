@@ -80,7 +80,7 @@ This can be used if you have multiple IP addresses on the same machine and you w
 You might need to use this option when
 .Xr gethostname 3
 does not return a hostname (in some poorly configured NIS environments).
-The use of multiple IP addresses on a single machine is commonly refered to as "virtual hosting", and each IP address is a "virtual host".   
+The use of multiple IP addresses on a single machine is commonly referred to as "virtual hosting", and each IP address is a "virtual host".   
 Please understand that an irc client may not tell the irc server what your hostname should be:  the server alone determines that.  
 Servers typically use the canonical hostname for an IP address as your hostname.
 Because of this, this option will not permit you to use a CNAME (secondary hostname for an IP address), because the server will use the canonical hostname instead.
@@ -105,7 +105,7 @@ Use the specified nickname as the default nickname whenever you connect to an ir
 This option overrides the
 .Ev IRCNICK
 environment variable.  
-This option can be overriden if you specify nickname argument in the command line (see below).
+This option can be overridden if you specify nickname argument in the command line (see below).
 .It Fl p Ar port
 Use the specified port as the default port for new server connections.
 The default port is usually 6667.  
@@ -197,11 +197,11 @@ Sometimes, some servers are really busy, and it can take them a long time to est
 Most major servers on big public networks accept connections on many different ports, with the most common being most or all of the ports between 6660 and 6675.
 You can usually connect much faster if you use a port other than 6667, if the server you're connecting to supports an alternate port.
 .It Nm "epic nickname irc.efnet.net"
-If you're totaly stumped and trying to get on efnet, try this.
+If you're totally stumped and trying to get on efnet, try this.
 .It Nm "epic nickname irc.undernet.org"
-If you're totaly stumped and trying to get on undernet, try this.
+If you're totally stumped and trying to get on undernet, try this.
 .It Nm "epic nickname irc.dal.net"
-If you're totaly stumped and trying to get on dalnet, try this.
+If you're totally stumped and trying to get on dalnet, try this.
 .Sh "FILES"
 .Bl -tag -width "/usr/local/share/epic"
 .It Nm /usr/local/bin/epic
@@ -261,7 +261,7 @@ file:
 .It Ev IRCNICK    
 The user's default IRC nickname
 .It Ev IRCNAME    
-The user's default IRC realname (otherwise retreieved from 
+The user's default IRC realname (otherwise retrieved from 
 .Pa /etc/passwd
 )
 .It Ev IRCSERVER 

@@ -31,10 +31,10 @@
 
 		/country <flags> <arg>
 
-		Supported for backwards compatability are the ability
+		Supported for backwards compatibility are the ability
 		to specify flags.  All flags (except for -n, which is
 		strictly ignored) have the same effect, and that is
-		to circimvent the userhost lookup and do a direct
+		to circumvent the userhost lookup and do a direct
 		lookup on the argument.  The previous meanings of the
 		flags are no longer supported as they make no sense now.
 

@@ -1,6 +1,6 @@
 #
 # This script makes an attempt to simulate vi keybindings using the
-# meta4 sticky keybinding.  Who knows how successfull I will be...
+# meta4 sticky keybinding.  Who knows how successful I will be...
 # This is very much a work in progress.  Not every vi keybinding maps
 # nicely to an ircII keybinding.  Some of these new keybindings can just
 # as well be added to epic, some of them may never be.  Suggestions for

@@ -5,7 +5,7 @@
  * be substituted for ``DCC'' as a CTCP.
  *
  * The sender randomly picks a word off that list and uses it.
- * The reciever then reparses the handshake if its on his list.
+ * The receiver then reparses the handshake if its on his list.
  *
  * Don't be fooled.  This script is not nearly as useful as it
  * might be made to be.  Its just a contrived example.
@@ -21,7 +21,7 @@ on ^send_to_server "% % % PRIVMSG % :$chr(1)DCC*" {
 }
 
 /*
- * Reciever's side
+ * Receiver's side
  */
 on ^raw_irc "% PRIVMSG % :$chr(1)\\[$fake_dcc\\]*" {
 	pretend $0 $1 $2 :$chr(1)DCC $4-

@@ -1,5 +1,5 @@
 # AutoOp   by Ian Frechette 12-10-92 
-# EPIC modifications as neccesary by Jeremy Nelson
+# EPIC modifications as necessary by Jeremy Nelson
 
 # the people you want to be opped by default.  Wildcards are allowed.
 # the patterns must be of the form user@host

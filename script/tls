@@ -16,7 +16,7 @@
  * server or not:  <ESC>-t turns this option on and off.
  * 
  * It also effects the output of /STAT L
- * SEEING USERS ON A SERVER IS AN OPERATOR PRIVILEDGE. :p
+ * SEEING USERS ON A SERVER IS AN OPERATOR PRIVILEGE. :p
  *
  */
 /* These special formatting aliases are courtesy of SIO and hop */

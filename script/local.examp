@@ -7,7 +7,7 @@ echo ***
 eval echo *** You are running ircII version $J
 echo ***
 echo *** If you see anything you suspect to be a bug, please
-echo *** notify ircii-epic@concentric.net immediately for correction.
+echo *** notify list@epicsol.org immediately for correction.
 echo ***
 echo *** End of Message.
 

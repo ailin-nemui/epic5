@@ -47,7 +47,7 @@ bind ^r type 
 window name ircII
 
 #
-# These functions are _absolutely_ neccesary for other scripts to work
+# These functions are _absolutely_ necessary for other scripts to work
 # correctly.  That means that loading this script from global is _not_
 # optional.
 #

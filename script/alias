@@ -5,7 +5,7 @@ alias ma msg $. $*
 alias wa whois $.
 alias ia invite $. $C
 #
-# command collision cludges
+# command collision kludges
 alias no notice
 alias nf notify
 alias la lastlog

@@ -15,7 +15,7 @@ alias commamake {@ function_return = tr(/ /,/$*)}
 # Somewhat kludge function here. This function finds the parent domain
 # to given host, rather than using a assumed approach
 # e.g. Many would view www.syd.lucid.net.au as being from the domain
-# lucid.net.au - when it's parent domain is infact syd.lucid.net.au
+# lucid.net.au - when it's parent domain is in fact syd.lucid.net.au
 # This function has it's uses, to some more than others.
 # requires hop's pipe function, as well as the "dig" program.
 # $digdomain(squishycow.syd.lucid.net.au) returns "syd.lucid.net.au"

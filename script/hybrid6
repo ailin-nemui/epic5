@@ -1,6 +1,6 @@
 ###############################################################################
 # hybrid-6 script (c) 2000 Edward Brocklesby
-# includes modified code rfrom da5id's newons.irc
+# includes modified code from da5id's newons.irc
 #
 # usage: (stuff in [] is optional)
 #   /kline [time] <nick or user@host> [reason]   (add a tkline, defaults to 60)

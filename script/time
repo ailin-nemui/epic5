@@ -1,5 +1,5 @@
 # This will put the current time, date, etc according to your server
-# in the approriate variables
+# in the appropriate variables
 alias servertime {
 	stack push on 391
 	^on ^391 * {

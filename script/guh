@@ -5,7 +5,7 @@
  * Written by Jeremy Nelson (jnelson@acronet.net)
  * Requires ircII-EPIC
  *
- * General aliases that are usefull for tracking
+ * General aliases that are useful for tracking
  *  "whatchan" - returns all the channels a person is on
  *  "is_on" - returns the nickname of a user if s/he is on.
  *  "uh" - takes a list of names and returns a list of userhosts

@@ -1,7 +1,7 @@
 # showlist <list of items>
 #
 # Comments:
-# This is apparantly an intellectual exercise, as this is most certainly
+# This is apparently an intellectual exercise, as this is most certainly
 # not the "best" way to do this, by any modern measure.  However, it does
 # demonstrate that it is possible to use a counter to iterate through the
 # argument list in a useful manner without using recursion of any kind.

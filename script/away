@@ -7,7 +7,7 @@
 
 /*
  * This variable determines how often you send the away message to a 
- * person, even if theyve already seen it.
+ * person, even if they've already seen it.
  */
 @ away.recycle_time = 10000
 
