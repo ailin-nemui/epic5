@@ -10,7 +10,7 @@
  */
 
 #if 0
-static	char	rcsid[] = "@(#)$Id: ctcp.c,v 1.5 2001/11/16 06:42:28 crazyed Exp $";
+static	char	rcsid[] = "@(#)$Id: ctcp.c,v 1.6 2001/11/26 18:35:36 crazyed Exp $";
 #endif
 
 #include "irc.h"
@@ -156,8 +156,9 @@ int	in_ctcp_flag = 0;
  */
 CTCP_HANDLER(do_sed)
 {
-	char	*key = NULL,
-		*crypt_who;
+	Crypt	*key = NULL;
+	char	*crypt_who,
+		*tofrom;
 	char	*ret = NULL, *ret2 = NULL;
 
 	if (*from == '=')		/* DCC CHAT message */
@@ -167,8 +168,14 @@ CTCP_HANDLER(do_sed)
 	else
 		crypt_who = to;
 
-	if ((key = is_crypted(crypt_who)))
+	tofrom = m_3dup(to, ",", from);
+	m_3cat(&tofrom, "!", FromUserHost);
+
+	if ((key = is_crypted(tofrom)) ||
+	    (key = is_crypted(crypt_who)))
 		ret = decrypt_msg(cmd, key);
+
+	new_free(&tofrom);
 
 	if (!key || !ret)
 		malloc_strcpy(&ret2, "[ENCRYPTED MESSAGE]");

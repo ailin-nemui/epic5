@@ -9,7 +9,7 @@
  */
 
 #if 0
-static	char	rcsid[] = "@(#)$Id: crypt.c,v 1.1 2000/12/05 00:11:56 jnelson Exp $";
+static	char	rcsid[] = "@(#)$Id: crypt.c,v 1.2 2001/11/26 18:35:36 crazyed Exp $";
 #endif
 
 #include "irc.h"
@@ -24,18 +24,6 @@ static	char	rcsid[] = "@(#)$Id: crypt.c,v 1.1 2000/12/05 00:11:56 jnelson Exp $"
 							 * the transmittable
 							 * buffer */
 
-/*
- * Crypt: the crypt list structure,  consists of the nickname, and the
- * encryption key 
- */
-typedef struct	CryptStru
-{
-	struct	CryptStru *next;
-	char	*nick;
-	char	*key;
-	int	filename;
-}	Crypt;
-
 /* crypt_list: the list of nicknames and encryption keys */
 static	Crypt	*crypt_list = (Crypt *) 0;
 
@@ -44,7 +32,7 @@ static	Crypt	*crypt_list = (Crypt *) 0;
  * nickname is already in the list, then the key is changed the the supplied
  * key. 
  */
-static	void	add_to_crypt(char *nick, char *key)
+static	void	add_to_crypt(char *nick, char *key, char* prog)
 {
 	Crypt	*new_crypt;
 
@@ -52,14 +40,17 @@ static	void	add_to_crypt(char *nick, char *key)
 	{
 		new_free((char **)&(new_crypt->nick));
 		new_free((char **)&(new_crypt->key));
+		new_free((char **)&(new_crypt->prog));
 		new_free((char **)&new_crypt);
 	}
 	new_crypt = (Crypt *) new_malloc(sizeof(Crypt));
 	new_crypt->nick = (char *) 0;
 	new_crypt->key = (char *) 0;
+	new_crypt->prog = (char *) 0;
 
 	malloc_strcpy(&(new_crypt->nick), nick);
 	malloc_strcpy(&(new_crypt->key), key);
+	if (prog && *prog) malloc_strcpy(&(new_crypt->prog), prog);
 	add_to_list((List **)&crypt_list, (List *)new_crypt);
 }
 
@@ -76,6 +67,7 @@ static	int	remove_crypt (char *nick)
 	{
 		new_free((char **)&(tmp->nick));
 		new_free((char **)&(tmp->key));
+		new_free((char **)&(tmp->prog));
 		new_free((char **)&tmp);
 		return (0);
 	}
@@ -86,16 +78,18 @@ static	int	remove_crypt (char *nick)
  * is_crypted: looks up nick in the crypt_list and returns the encryption key
  * if found in the list.  If not found in the crypt_list, null is returned. 
  */
-char	*is_crypted (char *nick)
+Crypt	*is_crypted (char *nick)
 {
 	Crypt	*tmp;
 
 	if (!crypt_list)
 		return NULL;
 	if ((tmp = (Crypt *) list_lookup((List **)&crypt_list, nick,
-			!USE_WILDCARDS, !REMOVE_FROM_LIST)) != NULL)
-		return (tmp->key);
-	return NULL;
+			USE_WILDCARDS, !REMOVE_FROM_LIST)) != NULL) {
+		return tmp;
+	} else {
+		return NULL;
+	}
 }
 
 /*
@@ -104,14 +98,14 @@ char	*is_crypted (char *nick)
  */
 BUILT_IN_COMMAND(encrypt_cmd)
 {
-	char	*nick,
-	*key;
+	char	*nick, *key, *prog;
 
 	if ((nick = next_arg(args, &args)) != NULL)
 	{
 		if ((key = next_arg(args, &args)) != NULL)
 		{
-			add_to_crypt(nick, key);
+			prog = next_arg(args, &args);
+			add_to_crypt(nick, key, prog);
 			say("%s added to the crypt with key %s", nick, key);
 		}
 		else
@@ -130,7 +124,8 @@ BUILT_IN_COMMAND(encrypt_cmd)
 
 			say("The crypt:");
 			for (tmp = crypt_list; tmp; tmp = tmp->next)
-				put_it("%s with key %s", tmp->nick, tmp->key);
+				put_it("%s with key %s, prog %s",
+					tmp->nick, tmp->key, tmp->prog);
 		}
 		else
 			say("The crypt is empty");
@@ -187,30 +182,53 @@ void 	my_decrypt (char *str, int len, char *key)
 	str[i] = (char) 0;
 }
 
-static 	char *do_crypt (char *str, char *key, int flag)
+char* 	prog_crypt (char *str, int *len, Crypt *key, int flag)
+{
+	char	*ret = NULL, *input;
+	char	*args[] = { key->prog, flag ? "encrypt" : "decrypt" , NULL };
+	int	iplen;
+
+	input = m_2dup(key->key, "\n");
+	iplen = strlen(input);
+	new_realloc((void**)&input, *len + iplen);
+	memmove(input + iplen, str, *len);
+	*len += iplen;
+	ret = exec_pipe(key->prog, input, len, args);
+	new_free((char**)&input);
+	return ret;
+}
+
+static 	char *do_crypt (char *str, Crypt *key, int flag)
 {
 	int	c;
-	char	*ptr;
+	char	*free = NULL;
 
 	c = strlen(str);
 	if (flag)
 	{
-		my_encrypt(str, c, key);
-		ptr = ctcp_quote_it(str, c);
+		if (key->prog)
+			free = str = (char*)prog_crypt(str, &c, key, flag);
+		else
+			my_encrypt(str, c, key->key);
+		str = ctcp_quote_it(str, c);
 	}
 	else
 	{
-		ptr = ctcp_unquote_it(str, &c);
-		my_decrypt(ptr, c, key);
+		str = ctcp_unquote_it(str, &c);
+		if (key->prog)
+			str = (char*)prog_crypt(free = str, &c, key, flag);
+		else
+			my_decrypt(str, c, key->key);
 	}
-	return (ptr);
+	new_free(&free);
+	return (str);
 }
 
 /*
  * crypt_msg: Given plaintext 'str', constructs a body suitable for sending
  * via PRIVMSG or DCC CHAT.
  */
-char 	*crypt_msg (char *str, char *key)
+char 	*crypt_msg (char *str, Crypt *key)
 {
 	char	buffer[CRYPT_BUFFER_SIZE + 1];
 	char	thing[6];
@@ -241,7 +259,7 @@ char 	*crypt_msg (char *str, char *key)
  * a big buffer to scratch around (The decrypted text could be a CTCP UTC
  * which could expand to a larger string of text.)
  */ 
-char 	*decrypt_msg (char *str, char *key)
+char 	*decrypt_msg (char *str, Crypt *key)
 {
 	char	*buffer = (char *)new_malloc(BIG_BUFFER_SIZE + 1);
 	char	*ptr;

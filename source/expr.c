@@ -650,8 +650,12 @@ static	char	*next_unit (char *str, const char *args, int *arg_flag, int stage)
 			else
 				dvalue3 = dvalue1 + dvalue2;
 
+#if 0
 			tmp = m_sprintf("%.50g", dvalue3);
 			canon_number(tmp);
+#else
+			tmp = m_strdup(ftoa(dvalue3));
+#endif
 #else
 			SETUP_INTEGER_OPERATION(NU_ADD)
 
@@ -691,7 +695,11 @@ static	char	*next_unit (char *str, const char *args, int *arg_flag, int stage)
 			{
 				*ptr++ = '\0';
 				SETUP_BINARY(dvalue1, dvalue2, atof)
+#if 0
 				return m_sprintf("%.50g", pow(dvalue1, dvalue2));
+#else
+				return m_strdup(ftoa(pow(dvalue1, dvalue2)));
+#endif
 			}
 
 			SETUP_FLOAT_OPERATION(NU_MULT)
@@ -709,8 +717,12 @@ static	char	*next_unit (char *str, const char *args, int *arg_flag, int stage)
 					dvalue3 = (int)dvalue1 % (int)dvalue2;
 			}
 
+#if 0
 			tmp = m_sprintf("%.50g", dvalue3);
 			canon_number(tmp);
+#else
+			tmp = m_strdup(ftoa(dvalue3));
+#endif
 			CLEANUP_IMPLIED()
 			return tmp;
 		}

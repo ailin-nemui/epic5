@@ -2799,8 +2799,8 @@ void 	send_text (const char *nick_list, const char *text, const char *command, i
 		lastlog_level;
 	char 	*current_nick,
 		*next_nick,
-		*line,
-		*key;
+		*line;
+	Crypt	*key;
 	int	old_window_display = window_display;
 static	int	recursion = 0;
 
