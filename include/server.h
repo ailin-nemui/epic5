@@ -173,8 +173,8 @@ const	char *	get_server_cipher		(int);
 
 	int	get_server_port			(int);
 	int	get_server_local_port		(int);
-	IA	get_server_local_addr		(int);
-	IA	get_server_uh_addr		(int);
+	SS	get_server_local_addr		(int);
+	SS	get_server_uh_addr		(int);
 
 const	char *	get_server_userhost		(int);
 	void 	got_my_userhost 		(UserhostItem *, char *, 

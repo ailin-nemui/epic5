@@ -558,6 +558,24 @@ char *	inet_ptohn (int family, const char *ip, char *retval, int size)
 	return retval;
 }
 
+/* NOTES: This function is protocol independant but lacks IPv6 support. */
+char *	inet_ntohn (SA *name, char *retval, int size)
+{
+	if (FAMILY(name) == AF_INET)
+	{
+		Hostent *hep;
+
+		if ((hep = gethostbyaddr((char *)&V4ADDR(name), 4, AF_INET)))
+			strlcpy(retval, hep->h_name, size);
+		else
+			inet_ntop(AF_INET, &V4ADDR(name), retval, size);
+
+		return retval;
+	}
+
+	return NULL;
+}
+
 /* NOTES: This function is protocol independant */
 char *	one_to_another (int family, const char *what, char *retval, int size)
 {

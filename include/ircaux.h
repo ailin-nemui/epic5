@@ -7,7 +7,7 @@
  *
  * See the COPYRIGHT file, or do a HELP IRCII COPYRIGHT 
  *
- * @(#)$Id: ircaux.h,v 1.19 2002/05/09 05:50:07 jnelson Exp $
+ * @(#)$Id: ircaux.h,v 1.20 2002/05/09 06:48:52 jnelson Exp $
  */
 
 #ifndef _IRCAUX_H_
@@ -205,6 +205,7 @@ int	ip_bindery		(int family, u_short port, SS *storage);
 int	client_bind		(SA *, socklen_t);
 int	client_connect		(SA *, socklen_t, SA *, socklen_t);
 int	connectory		(int, const char *, u_short);
+char *	inet_ntohn		(SA *, char *, int);
 
 extern	unsigned char isspace_table[256];
 #define my_isspace(x) isspace_table[(unsigned)(unsigned char)(x)]

@@ -2082,14 +2082,14 @@ int	get_server_local_port (int gsp_index)
 	return 0;
 }
 
-IA	get_server_local_addr (int servnum)
+SS	get_server_local_addr (int servnum)
 {
-	return V4ADDR(server_list[servnum].local_sockname);
+	return server_list[servnum].local_sockname;
 }
 
-IA	get_server_uh_addr (int servnum)
+SS	get_server_uh_addr (int servnum)
 {
-	return V4ADDR(server_list[servnum].uh_addr);
+	return server_list[servnum].uh_addr;
 }
 
 /* USERHOST */

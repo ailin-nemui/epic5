@@ -9,7 +9,7 @@
  */
 
 #if 0
-static	char	rcsid[] = "@(#)$Id: dcc.c,v 1.19 2002/05/09 05:50:07 jnelson Exp $";
+static	char	rcsid[] = "@(#)$Id: dcc.c,v 1.20 2002/05/09 06:48:52 jnelson Exp $";
 #endif
 
 #include "irc.h"
@@ -62,8 +62,8 @@ typedef	struct	DCC_struct
 	struct	DCC_struct *	next;
 
 		SS		offer;			/* Their offer */
-		ISA		peer_sockaddr;		/* Their saddr */
-		ISA		local_sockaddr;		/* Our saddr */
+		SS		peer_sockaddr;		/* Their saddr */
+		SS		local_sockaddr;		/* Our saddr */
 		u_short		want_port;		/* HOST ORDER */
 
 		off_t		bytes_read;
@@ -586,6 +586,15 @@ static	int	dcc_open (DCC_list *dcc)
 		dcc->locked++;
 		if ((dcc->flags & DCC_TYPES) != DCC_RAW)
 		{
+			char p_addr[256];
+			char p_port[24];
+
+			if (FAMILY(dcc->peer_sockaddr) == AF_INET)
+			{
+				inet_ntop(AF_INET, &V4ADDR(dcc->peer_sockaddr), p_addr, 256);
+				snprintf(p_port, 24, "%hu", ntohs(V4PORT(dcc->peer_sockaddr)));
+			}
+
                         /* 
 			 * It would be nice if SEND also showed the filename
                          * and size (since it's possible to have multiple
@@ -597,10 +606,8 @@ static	int	dcc_open (DCC_list *dcc)
 			if (!strcmp(type, "SEND"))
 			{
                             jvs_blah = do_hook(DCC_CONNECT_LIST,
-					"%s %s %s %hu %s %ld", 
-					user, type,
-					inet_ntoa(dcc->peer_sockaddr.sin_addr),
-					ntohs(dcc->peer_sockaddr.sin_port),
+					"%s %s %s %s %s %ld", 
+					user, type, p_addr, p_port,
 					dcc->description,
 					dcc->filesize);
 
@@ -609,29 +616,23 @@ static	int	dcc_open (DCC_list *dcc)
 			     */
 			    if (jvs_blah)
                                 jvs_blah = do_hook(DCC_CONNECT_LIST,
-					"%s GET %s %hu %s %ld", 
-					user, 
-					inet_ntoa(dcc->peer_sockaddr.sin_addr),
-					ntohs(dcc->peer_sockaddr.sin_port),
+					"%s GET %s %s %s %ld", 
+					user, p_addr, p_port,
 					dcc->description,
 					dcc->filesize);
 			}
                         else
 			{
                             jvs_blah = do_hook(DCC_CONNECT_LIST,
-					"%s %s %s %hu", 
-					user, type,
-					inet_ntoa(dcc->peer_sockaddr.sin_addr),
-					ntohs(dcc->peer_sockaddr.sin_port));
+					"%s %s %s %s", 
+					user, type, p_addr, p_port);
 			}
 
                         if (jvs_blah)
 			{
 			    message_from(NULL, LOG_DCC);
-			    say("DCC %s connection with %s[%s:%hu] established",
-					type, user, 
-					inet_ntoa(dcc->peer_sockaddr.sin_addr),
-					ntohs(dcc->peer_sockaddr.sin_port));
+			    say("DCC %s connection with %s[%s:%s] established",
+					type, user, p_addr, p_port);
 			    message_from(NULL, LOG_CURRENT);
 			}
 		}
@@ -661,7 +662,7 @@ static	int	dcc_open (DCC_list *dcc)
 		 */
 		dcc->flags |= DCC_MY_OFFER;
 		dcc->socket = ip_bindery(AF_INET, dcc->want_port, 
-					(SS *)&dcc->local_sockaddr);
+					 &dcc->local_sockaddr);
 		if (dcc->socket < 0)
 		{
 			dcc->flags |= DCC_DELETE;
@@ -680,7 +681,8 @@ static	int	dcc_open (DCC_list *dcc)
 		 * back that port number as its ID of what file it wants
 		 * to resume (rather than the filename. ick.)
 		 */
-		malloc_strcpy(&dcc->othername, ltoa((long)ntohs(dcc->local_sockaddr.sin_port)));
+		if (FAMILY(dcc->local_sockaddr) == AF_INET)
+			malloc_strcpy(&dcc->othername, ltoa((long)ntohs(V4PORT(dcc->local_sockaddr))));
 #endif
 		new_open(dcc->socket);
 
@@ -705,17 +707,22 @@ static	int	dcc_open (DCC_list *dcc)
  */
 static void	dcc_send_booster_ctcp (DCC_list *dcc)
 {
-	char		*nopath;
-	char		*type = dcc_types[dcc->flags & DCC_TYPES];
-	ISA		my_sockaddr;
+	char *	nopath;
+	char *	type = dcc_types[dcc->flags & DCC_TYPES];
+	SS	my_sockaddr;
+	int	family;
+
+	family = FAMILY(dcc->local_sockaddr);
 
 	if (get_int_var(DCC_USE_GATEWAY_ADDR_VAR))
-		my_sockaddr.sin_addr = get_server_uh_addr(from_server);
-	else if (dcc->local_sockaddr.sin_addr.s_addr == htonl(INADDR_ANY))
-		my_sockaddr.sin_addr = get_server_local_addr(from_server);
+		my_sockaddr = get_server_uh_addr(from_server);
+	else if (family == AF_INET && V4ADDR(dcc->local_sockaddr).s_addr == htonl(INADDR_ANY))
+		my_sockaddr = get_server_local_addr(from_server);
 	else
-		my_sockaddr.sin_addr = dcc->local_sockaddr.sin_addr;
-	my_sockaddr.sin_port = dcc->local_sockaddr.sin_port;
+		my_sockaddr = dcc->local_sockaddr;
+
+	if (family == AF_INET)
+		V4PORT(my_sockaddr) = V4PORT(dcc->local_sockaddr);
 
 	/*
 	 * If this is to be a 2-peer connection, then we need to
@@ -742,15 +749,18 @@ static void	dcc_send_booster_ctcp (DCC_list *dcc)
 	{
 		char *	url_name = dcc_urlencode(nopath);
 
-		/*
-		 * Dont bother with the checksum.
-		 */
-		send_ctcp(CTCP_PRIVMSG, dcc->user, CTCP_DCC,
-			 "%s %s %lu %hu %ld",
-			 type, url_name,
-			 (u_long)ntohl(my_sockaddr.sin_addr.s_addr),
-			 ntohs(my_sockaddr.sin_port),
-			 dcc->filesize);
+		if (family == AF_INET)
+		{
+			/*
+			 * Dont bother with the checksum.
+			 */
+			send_ctcp(CTCP_PRIVMSG, dcc->user, CTCP_DCC,
+				 "%s %s %lu %hu %ld",
+				 type, url_name,
+				 (u_long)ntohl(V4ADDR(my_sockaddr).s_addr),
+				 ntohs(V4PORT(my_sockaddr)),
+				 dcc->filesize);
+		}
 
 		/*
 		 * Tell the user we sent out the request
@@ -770,23 +780,24 @@ static void	dcc_send_booster_ctcp (DCC_list *dcc)
 	 */
 	else
 	{
-		/*
-		 * Send out the handshake
-		 */
-		send_ctcp(CTCP_PRIVMSG, dcc->user, CTCP_DCC,
-			 "%s %s %lu %u", 
-			 type, nopath,
-			 (u_long)ntohl(my_sockaddr.sin_addr.s_addr),
-			 ntohs(my_sockaddr.sin_port));
+		if (family == AF_INET)
+		{
+			/*
+			 * Send out the handshake
+			 */
+			send_ctcp(CTCP_PRIVMSG, dcc->user, CTCP_DCC,
+				 "%s %s %lu %u", 
+				 type, nopath,
+				 (u_long)ntohl(V4ADDR(my_sockaddr).s_addr),
+				 ntohs(V4PORT(my_sockaddr)));
+		}
 
 		/*
 		 * And tell the user
 		 */
 		message_from(NULL, LOG_DCC);
-		if (do_hook(DCC_OFFER_LIST, "%s %s", 
-				dcc->user, type))
-		    say("Sent DCC %s request to %s", 
-				type, dcc->user);
+		if (do_hook(DCC_OFFER_LIST, "%s %s", dcc->user, type))
+		    say("Sent DCC %s request to %s", type, dcc->user);
 		message_from(NULL, LOG_CURRENT);
 	}
 	dcc->locked--;
@@ -1651,14 +1662,14 @@ char	*dcc_raw_connect(char *host, u_short port, int family)
 	message_from(NULL, LOG_DCC);
 	if (family == AF_INET)
 	{
-		((ISA *)&my_sockaddr)->sin_family = AF_INET;
+		FAMILY(my_sockaddr) = AF_INET;
 		if (inet_anyton(host, (SA *)&my_sockaddr))
 		{
 			say("Unknown host: %s", host);
 			message_from(NULL, LOG_CURRENT);
 			return m_strdup(empty_string);
 		}
-		((ISA *)&my_sockaddr)->sin_port = htons(port);
+		V4PORT(my_sockaddr) = htons(port);
 	}
 
 	bogus = LOCAL_COPY(ltoa(port));
@@ -2079,8 +2090,6 @@ void	dcc_check (fd_set *Readables)
  */
 static	void	process_incoming_chat (DCC_list *Client)
 {
-	ISA	remaddr;
-	int	sra;
 	char	tmp[IO_BUFFER_SIZE + 1];
 	char	tmp2[IO_BUFFER_SIZE + 1];
 	char	*bufptr;
@@ -2089,8 +2098,13 @@ static	void	process_incoming_chat (DCC_list *Client)
 
 	if (Client->flags & DCC_MY_OFFER)
 	{
+		SS	remaddr;
+		int	sra;
+		char	p_addr[256];
+		char	p_port[24];
+
 		sra = sizeof(remaddr);
-		fd = my_accept(Client->socket, (SA *) &remaddr, &sra);
+		fd = my_accept(Client->socket, (SA *)&Client->peer_sockaddr, &sra);
 		Client->socket = new_close(Client->socket);
 		if ((Client->socket = fd) > 0)
 			new_open(Client->socket);
@@ -2103,14 +2117,22 @@ static	void	process_incoming_chat (DCC_list *Client)
 
 		Client->flags &= ~DCC_MY_OFFER;
 		Client->flags |= DCC_ACTIVE;
+
+		if (FAMILY(Client->peer_sockaddr) == AF_INET)
+		{
+			inet_ntop(AF_INET, &V4ADDR(Client->peer_sockaddr), p_addr, 256);
+			snprintf(p_port, 24, "%hu", ntohs(V4PORT(Client->peer_sockaddr)));
+		}
+
+
 		Client->locked++;
-                if (do_hook(DCC_CONNECT_LIST, "%s CHAT %s %d", Client->user,
-                         inet_ntoa(remaddr.sin_addr), ntohs(remaddr.sin_port)))
-		say("DCC chat connection to %s[%s:%d] established", 
-			Client->user, inet_ntoa(remaddr.sin_addr), 
-			ntohs(remaddr.sin_port));
-		get_time(&Client->starttime);
+                if (do_hook(DCC_CONNECT_LIST, "%s CHAT %s %s", 
+					Client->user, p_addr, p_port))
+		    say("DCC chat connection to %s[%s:%s] established", 
+					Client->user, p_addr, p_port);
 		Client->locked--;
+
+		get_time(&Client->starttime);
 		return;
 	}
 
@@ -2140,6 +2162,7 @@ static	void	process_incoming_chat (DCC_list *Client)
 	{
 		char 	uh[80];
 		char 	equal_nickname[80];
+		char	p_addr[256];
 
 		chomp(tmp);
 		my_decrypt(tmp, strlen(tmp), Client->encrypt);
@@ -2149,6 +2172,10 @@ static	void	process_incoming_chat (DCC_list *Client)
 		if (x_debug & DEBUG_INBOUND) 
 			yell("%s", tmp);
 
+		if (FAMILY(Client->peer_sockaddr) == AF_INET)
+			inet_ntop(AF_INET, &V4ADDR(Client->peer_sockaddr), p_addr, 256);
+
+
 #define CTCP_MESSAGE "CTCP_MESSAGE "
 #define CTCP_MESSAGE_LEN strlen(CTCP_MESSAGE)
 #define CTCP_REPLY "CTCP_REPLY "
@@ -2156,8 +2183,7 @@ static	void	process_incoming_chat (DCC_list *Client)
 
 		if (*tmp == CTCP_DELIM_CHAR)
 		{
-			snprintf(uh, 80, "Unknown@%s",
-				inet_ntoa(remaddr.sin_addr));
+			snprintf(uh, 80, "Unknown@%s", p_addr);
 			FromUserHost = uh;
 			snprintf(equal_nickname, 80, "=%s", Client->user);
 
@@ -2176,8 +2202,7 @@ static	void	process_incoming_chat (DCC_list *Client)
 		}
 		if (!strncmp(tmp, CTCP_MESSAGE, CTCP_MESSAGE_LEN))
 		{
-			snprintf(uh, 80, "Unknown@%s",
-				inet_ntoa(remaddr.sin_addr));
+			snprintf(uh, 80, "Unknown@%s", p_addr);
 			FromUserHost = uh;
 			snprintf(equal_nickname, 80, "=%s", Client->user);
 
@@ -2189,8 +2214,7 @@ static	void	process_incoming_chat (DCC_list *Client)
 		}
 		else if (!strncmp(tmp, CTCP_REPLY, CTCP_REPLY_LEN) || *tmp == CTCP_DELIM_CHAR)
 		{
-			snprintf(uh, 80, "Unknown@%s",
-				inet_ntoa(remaddr.sin_addr));
+			snprintf(uh, 80, "Unknown@%s", p_addr);
 			FromUserHost = uh;
 			snprintf(equal_nickname, 80, "=%s", Client->user);
 
@@ -2230,14 +2254,14 @@ static	void	process_incoming_chat (DCC_list *Client)
  */
 static	void		process_incoming_listen (DCC_list *Client)
 {
-	ISA		remaddr;
+	SS		remaddr;
 	int		sra;
-	char		FdName[10];
+	char		fdstr[10];
 	DCC_list	*NewClient;
 	int		new_socket;
-struct	hostent		*hp;
-	const char	*Name;
+	char		hostname[256];
 	int		len;
+	char		p_port[24];
 
 	sra = sizeof(remaddr);
 	new_socket = my_accept(Client->socket, (SA *) &remaddr, &sra);
@@ -2247,18 +2271,15 @@ struct	hostent		*hp;
 		return;
 	}
 
-	if ((hp = gethostbyaddr((char *)&remaddr.sin_addr,
-			    sizeof(remaddr.sin_addr), remaddr.sin_family)))
-		Name = hp->h_name;
-	else
-		Name = inet_ntoa(remaddr.sin_addr);
+	*hostname = 0;
+	inet_ntohn((SA *)&remaddr, hostname, sizeof(hostname));
 
-	strlcpy(FdName, ltoa(new_socket), 10);
-	NewClient = dcc_searchlist(Name, FdName, DCC_RAW, 1, NULL, 0);
+	strlcpy(fdstr, ltoa(new_socket), 10);
+	NewClient = dcc_searchlist(hostname, fdstr, DCC_RAW, 1, NULL, 0);
 	NewClient->socket = new_socket;
 
 	NewClient->peer_sockaddr = remaddr;
-	NewClient->offer = *(SS *)&remaddr;
+	NewClient->offer = remaddr;
 
 	len = sizeof(NewClient->local_sockaddr);
 	getsockname(NewClient->socket, (SA *)&NewClient->local_sockaddr, &len);
@@ -2268,16 +2289,16 @@ struct	hostent		*hp;
 	get_time(&NewClient->starttime);
 	new_open(NewClient->socket);
 
+	if (FAMILY(NewClient->local_sockaddr) == AF_INET)
+		snprintf(p_port, 24, "%hu", ntohs(V4PORT(NewClient->local_sockaddr)));
+
 	Client->locked++;
-	if (do_hook(DCC_RAW_LIST, "%s %s N %hu", 
-			NewClient->user, NewClient->description,
-			ntohs(NewClient->local_sockaddr.sin_port)))
-            if (do_hook(DCC_CONNECT_LIST,"%s RAW %s %d", 
-			NewClient->user, NewClient->description,
-			ntohs(NewClient->local_sockaddr.sin_port)))
-		say ("DCC RAW connection to %s on %s via %d established",
-			NewClient->description, NewClient->user,
-			ntohs(NewClient->local_sockaddr.sin_port));
+	if (do_hook(DCC_RAW_LIST, "%s %s N %s", 
+			NewClient->user, NewClient->description, p_port))
+            if (do_hook(DCC_CONNECT_LIST,"%s RAW %s %s", 
+			NewClient->user, NewClient->description, p_port))
+		say("DCC RAW connection to %s on %s via %s established",
+			NewClient->description, NewClient->user, p_port);
 	Client->locked--;
 }
 
@@ -2334,7 +2355,7 @@ static	void		process_incoming_raw (DCC_list *Client)
  */
 static void		process_outgoing_file (DCC_list *Client)
 {
-	ISA		remaddr;
+	SS		remaddr;
 	int		sra;
 	char		tmp[DCC_BLOCK_SIZE+1];
 	u_32int_t	bytesrecvd;
@@ -2345,6 +2366,8 @@ static void		process_outgoing_file (DCC_list *Client)
 	int		size;
 	Timeval		to;
 	int		new_fd;
+	char		p_addr[256];
+	char		p_port[24];
 
 	/*
 	 * The remote user has accepted the file offer
@@ -2355,7 +2378,7 @@ static void		process_outgoing_file (DCC_list *Client)
 		 * Open up the network connection
 		 */
 		sra = sizeof(remaddr);
-		new_fd = my_accept(Client->socket, (SA *) &remaddr, &sra);
+		new_fd = my_accept(Client->socket, (SA *)&Client->peer_sockaddr, &sra);
 		Client->socket = new_close(Client->socket);
 		if ((Client->socket = new_fd) < 0)
 		{
@@ -2379,17 +2402,21 @@ static void		process_outgoing_file (DCC_list *Client)
 			say("setsockopt failed: %s", strerror(errno));
 #endif
 
+		if (FAMILY(Client->peer_sockaddr) == AF_INET)
+		{
+			inet_ntop(AF_INET, &V4ADDR(Client->peer_sockaddr), p_addr, 256);
+			snprintf(p_port, 24, "%hu", ntohs(V4PORT(Client->peer_sockaddr)));
+		}
+
 		/*
 		 * Tell the user
 		 */
 		Client->locked++;
-                if (do_hook(DCC_CONNECT_LIST, "%s SEND %s %d %s %ld",
-                        Client->user, inet_ntoa(remaddr.sin_addr),
-                        ntohs(remaddr.sin_port), Client->description,
-                        Client->filesize))
-		    say("DCC SEND connection to %s[%s:%d] established", 
-			Client->user, inet_ntoa(remaddr.sin_addr), 
-			ntohs(remaddr.sin_port));
+                if (do_hook(DCC_CONNECT_LIST, "%s SEND %s %s %s %ld",
+				Client->user, p_addr, p_port,
+				Client->description, Client->filesize))
+		    say("DCC SEND connection to %s[%s:%s] established", 
+				Client->user, p_addr, p_port);
 		Client->locked--;
 
 		/*
@@ -2398,7 +2425,7 @@ static void		process_outgoing_file (DCC_list *Client)
 		if ((Client->file = open(Client->description, O_RDONLY)) == -1)
 		{
 			Client->flags |= DCC_DELETE;
-			say("Unable to open %s: %s\n", Client->description,
+			say("Unable to open %s: %s", Client->description,
 				errno ? strerror(errno) : "Unknown Host");
 			return;
 		}
@@ -2876,7 +2903,7 @@ static	void	dcc_getfile_resume (char *args)
 
 	if (((SA *)&Client->offer)->sa_family == AF_INET)
 		malloc_strcpy(&Client->othername, 
-			ltoa((long)ntohs(((ISA *)&Client->offer)->sin_port)));
+				ltoa(ntohs(V4PORT(Client->offer))));
 
 	if (x_debug & DEBUG_DCC_XMIT)
 		yell("SENDING DCC RESUME to [%s] [%s|%s|%ld]", user, filename, Client->othername, (long)sb.st_size);
