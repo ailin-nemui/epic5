@@ -732,7 +732,6 @@ static IsonEntry *get_new_ison_entry (void)
 	return new_w;
 }
 
-#if 0
 static void ison_queue_list (void)
 {
 	IsonEntry *item = server_list[from_server].ison_queue;
@@ -740,17 +739,31 @@ static void ison_queue_list (void)
 
 	while (item)
 	{
-		yell("[%d] [%s] [%#x]", count, ison_asked, line);
+		yell("[%d] [%s] [%#x]", count, item->ison_asked, 
+				(unsigned)item->line);
 		count++;
 		item = item->next;
 	}
 }
-#endif
 
 BUILT_IN_COMMAND(isoncmd)
 {
 	if (!args || !*args)
 		args = LOCAL_COPY(get_server_nickname(from_server));
+
+#if 1
+	if (!my_stricmp(args, "-d"))
+	{
+		ison_queue_list();
+		return;
+	}
+	if (!my_stricmp(args, "-f"))
+	{
+		while (ison_queue_top())
+			ison_queue_pop();
+		return;
+	}
+#endif
 
 	isonbase(args, NULL);
 }
