@@ -546,4 +546,4 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Fix SSL with pthreads -- need to establish SSL before calling SSL_read!
 * Fix compiling with kqueue, call it --with-multiplex=freebsd-kqueue
 * Hide SSL capability behind "client_ssl_enabled()", nix all #ifdef HAVE_SSL
-
+* Fix up the configure script so ./configure --help lines up all nice.
