@@ -1,13 +1,11 @@
 The following features have been removed.  They are not "missing".
 Please do not report their absence as a bug.
 
-* Translation tables (digraphs)
 * Menus
 * External history file support
 * ircserv (ircio)
 * ircflush
 * Mail support giving you From and Subject lines of each email
-* External encryption program support
 * DAEMON_UID and anonymous telnet client support
 * DCC TALK
 * Support for crufty old SVR2 and 4.3BSD systems (HPUX7/8/9, ESIX, RT, etc)
