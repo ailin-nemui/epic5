@@ -1,4 +1,4 @@
-/* $EPIC: exec.c,v 1.32 2005/02/21 14:07:43 jnelson Exp $ */
+/* $EPIC: exec.c,v 1.33 2005/02/23 03:41:36 jnelson Exp $ */
 /*
  * exec.c: handles exec'd process for IRCII 
  *
@@ -804,9 +804,9 @@ static void 	handle_filedesc (Process *proc, int *fd, int hook_nonl, int hook_nl
 	message_to(proc->refnum);
 	proc->counter++;
 
-	while (len > 0 && (exec_buffer[len] == '\n' ||
-			   exec_buffer[len] == '\r'))
-	     exec_buffer[len--] = 0;
+	while (len > 0 && (exec_buffer[len - 1] == '\n' ||
+			   exec_buffer[len - 1] == '\r'))
+	     exec_buffer[--len] = 0;
 
 	if (proc->redirect) 
 	     redirect_text(proc->server, proc->who, 

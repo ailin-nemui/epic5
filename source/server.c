@@ -1,4 +1,4 @@
-/* $EPIC: server.c,v 1.150 2005/02/22 00:28:35 jnelson Exp $ */
+/* $EPIC: server.c,v 1.151 2005/02/23 03:41:36 jnelson Exp $ */
 /*
  * server.c:  Things dealing with that wacky program we call ircd.
  *
@@ -2835,8 +2835,10 @@ char 	*serverctl 	(char *input)
 			x = (SA *)&a;
 			if (x->sa_family == AF_INET)
 				RETURN_STR("ipv4");
+#ifdef INET6
 			else if (x->sa_family == AF_INET6)
 				RETURN_STR("ipv6");
+#endif
 			else if (x->sa_family == AF_UNIX)
 				RETURN_STR("unix");
 			else
