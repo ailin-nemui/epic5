@@ -12,7 +12,6 @@ KNOWN ERRATA (eg, bugs, or unresolved requests):
 * Shall remove_trailing_spaces honor a \ before a space trailing?
 * Some way to color the input prompt?  (Probably not)
 * The way the pattern matcher handles ?'s after *'s is really lame.
-* $rmatch("" *foo*) is broken
 
 [See http://www.epicsol.org/PROJECTS for things to come in the future]
 [See http://www.epicsol.org/CHANGELOG for things that changed in the past]
@@ -144,3 +143,6 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Dont allow /timer -repeat -1 0 because that busy-loops.
 * Add shell of $windowctl() which will be filled in going forward.
 * Add a more sensible 'make installhelp' rule, courtesy of Steven Plunkett
+* Don't prohibit universal_next_arg_count() from returning empty_string.
+* Rework the bug report form to point people to the bugs website
+* Add /lastlog -target.

@@ -1,4 +1,4 @@
-/* $EPIC: lastlog.c,v 1.22 2003/07/10 13:08:57 jnelson Exp $ */
+/* $EPIC: lastlog.c,v 1.23 2003/07/19 21:47:55 jnelson Exp $ */
 /*
  * lastlog.c: handles the lastlog features of irc. 
  *
@@ -45,7 +45,7 @@
 #include "functions.h"
 #include <regex.h>
 
-static int	show_lastlog (Lastlog **l, int *skip, int *number, int, char *match, regex_t *reg, int *max);
+static int	show_lastlog (Lastlog **l, int *skip, int *number, int, char *match, regex_t *reg, int *max, const char *target);
 
 /*
  * lastlog_level: current bitmap setting of which things should be stored in
@@ -220,7 +220,8 @@ void 	remove_from_lastlog (Window *window)
 		else
 			window->lastlog_newest = NULL;
 		window->lastlog_size--;
-		new_free((char **)&(being_removed->msg));
+		new_free((char **)&being_removed->msg);
+		new_free((char **)&being_removed->target);
 		new_free((char **)&being_removed);
 	}
 	else
@@ -327,6 +328,7 @@ BUILT_IN_COMMAND(lastlog)
 	int		number = INT_MAX;
 	int		max = -1;
 	char *		match = NULL;
+	char *		target = NULL;
 	char *		regex = NULL;
 	Lastlog *	start;
 	Lastlog *	end;
@@ -370,6 +372,14 @@ BUILT_IN_COMMAND(lastlog)
 		if (!(regex = new_next_arg(args, &args)))
 		{
 			yell("LASTLOG -REGEX requires an argument.");
+			goto bail;
+		}
+	    }
+	    else if (!my_strnicmp(arg, "-TARGET", len))
+	    {
+		if (!(target = new_next_arg(args, &args)))
+		{
+			yell("LASTLOG -TARGET requires an argument.");
 			goto bail;
 		}
 	    }
@@ -563,6 +573,7 @@ BUILT_IN_COMMAND(lastlog)
 		yell("Lastlog summary status:");
 		yell("Pattern: [%s]", match);
 		yell("Regex: [%s]", regex);
+		yell("Target: [%s]", target);
 		yell("Header: %d", header);
 		yell("Reverse: %d", reverse);
 		yell("Skip: %d", skip);
@@ -622,7 +633,7 @@ BUILT_IN_COMMAND(lastlog)
 	    for (l = start; l; (void)(l && (l = l->newer)))
 	    {
 		if (show_lastlog(&l, &skip, &number, level_mask, 
-				match, reg, &max))
+				match, reg, &max, target))
 		{
 		    if (counter == 0 && before > 0)
 		    {
@@ -686,7 +697,7 @@ BUILT_IN_COMMAND(lastlog)
 	    for (l = start; l; (void)(l && (l = l->older)))
 	    {
 		if (show_lastlog(&l, &skip, &number, level_mask, 
-				match, reg, &max))
+				match, reg, &max, target))
 		{
 		    if (counter == 0 && before > 0)
 		    {
@@ -748,7 +759,7 @@ bail:
  * This returns 1 if the current item pointed to by 'l' is something that
  * should be displayed based on the criteron provided.
  */
-static int	show_lastlog (Lastlog **l, int *skip, int *number, int level_mask, char *match, regex_t *reg, int *max)
+static int	show_lastlog (Lastlog **l, int *skip, int *number, int level_mask, char *match, regex_t *reg, int *max, const char *target)
 {
 	if (*skip > 0)
 	{
@@ -788,6 +799,13 @@ static int	show_lastlog (Lastlog **l, int *skip, int *number, int level_mask, ch
 			yell("Line [%s] not regexed", (*l)->msg);
 		return 0;			/* Regex match failed */
 	}
+	if (target && (!(*l)->target || !wild_match(target, (*l)->target)))
+	{
+		if (x_debug & DEBUG_LASTLOG)
+			yell("Target [%s] not matched [%s]", 
+					(*l)->target, target);
+		return 0;			/* Target match failed */
+	}
 	if (*max == 0)
 	{
 		if (x_debug & DEBUG_LASTLOG)
@@ -821,6 +839,10 @@ void 	add_to_lastlog (Window *window, const char *line)
 		new_l->newer = NULL;
 		new_l->level = msg_level;
 		new_l->msg = malloc_strdup(line);
+		if (who_from)
+			new_l->target = malloc_strdup(who_from);
+		else
+			new_l->target = NULL;
 
 		if (window->lastlog_newest)
 			window->lastlog_newest->newer = new_l;

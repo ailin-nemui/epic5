@@ -12,6 +12,7 @@
 typedef struct	lastlog_stru
 {
 	int	level;
+	char	*target;
 	char	*msg;
 	struct	lastlog_stru	*older;
 	struct	lastlog_stru	*newer;

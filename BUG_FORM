@@ -1,12 +1,6 @@
 
-If you should see what you think to be a bug, please fill out
-this form and send to the following address(es):
-
-		list@epicsol.org
-
-And we will try to get back to you as soon as we can, and will
-correct the bug if it is at all possible.
-
+If you should see what you think to be a bug, please visit 
+		http://prbh.org/bugs/
 
 Please remember when reporting a bug that information counts.  Since
 we have not yet mastered the skill of mind-reading, you should not
@@ -16,61 +10,63 @@ to the user. It is best for you to take the stance that we dont know
 that much about your operating system, so you should try to start at 
 the beginning and clue us in.  Thanks a bunch. |8^)
 
+Please include as much as possible of the following information in your
+bug report.  Bug reports with insufficient information are frustrating
+for everybody involved.  This list was compiled to help you help us the
+most effectively:
 
-Question one:  Please describe your computer system
+Describe your computer:
 	Hardware type?
-	Operating System? (try uname -a for most, or uname -X for SCO)
-	Your compiler (include version, if known)
-	What scripts/script packs you run (phoenix, uus, superpack, etc)
+	Operating System? (try uname -a)
+	Your compiler (if gcc, include version)
+	What scripts/script packs you run (lice, darkstar, obv, etc)
 	Anything else you think might be helpful.
 
-Question two:  Where does your problem occur?
-	[ ]  Configure time (dies while running configure)
-	[ ]  Compiler time (dies when you type 'make')
-	[ ]  Run time (You got a "CRITICAL PROTECTION ERROR")
-	[ ]  Run time (You got a "PANIC" message)
-	[ ]  Run time (non-fatal logic bug)
+When did the problem occur?
+	* Configure time (dies while running configure)
+    If it is configure time, please include a cut and paste of everything
+    that appears on your screen from the line when you type "./configure"
+    until you see your prompt again.  Please do not leave out any
+    lines, for any line may contain very important information!
 
-If it is configure time, please include a cut and paste of everything
-that appears on your screen from the line when you type "./configure"
-until you see your prompt again.  Please do not leave out any
-lines, for any line may contain very important information!
+	* Compiler time (dies when you type 'make')
+    If it is at compile time, please include a cut and paste of
+    everything that appears on your screen from the line when you 
+    type 'make' until you see your prompt again.  Please do not leave
+    out any lines, for any line may contain very important information!
+
+	* Run time (You got a "CRITICAL PROTECTION ERROR")
+	* Run time (You got a "PANIC" message)
+	* Run time (non-fatal logic bug)
+    If it is at run time, please try to describe as best you can what
+    you were doing when the client malfunctioned.  Had you just run 
+    a command?  Can you duplicate the error?  What seems to cause the
+    error in your best judgement?  Have you found anything else
+    that independantly causes this same problem?  Bugs that can be 
+    reproduced are the easiest bugs to fix.
+
+Can you get a stack trace?
+    If EPIC crashed, and you can recreate the crash, run EPIC under a debugger
+    (such as gdb) and get a stack trace and include that in your bug report.
+    Under normal circumstances, EPIC will not create a corefile, so you must 
+    run EPIC under a debugger in order to get a stack trace.
+
+    When a "PANIC" or "CRITICAL PROTECTION ERROR" occurs, sometimes EPIC will
+    be able to tell you what ircII commands were executing at the time of the
+    crash.  If you see any message that says "INCLUDE THE ABOVE IMPORTANT
+    INFORMATION" or "stack trace", please include that in your bug report.
+
+Is there anything else you think would be helpful?
 
 
-If it is at compile time, please include a cut and paste of
-everything that appears on your screen from the line when you 
-type 'make' until you see your prompt again.  Please do not leave
-out any lines, for any line may contain very important information!
+-----------------------------------------------------------------------------
+About the software:  EPIC is a fork of ircII-2.8.2.  ircII was originally 
+written by Michael Sandroff, and then later developed by Troy Rollo and 
+Matthew Green.  This distribution came from EPIC Software Labs (epicsol.org)
+who maintains it in stewardship of The EPIC Project.
 
-
-If it is at run time, please try to describe as best you can what
-you were doing when the client malfunctioned.  Had you just run 
-a command?  Can you duplicate the error?  What seems to cause the
-error in your best judgement?  Have you found anything else
-that independantly causes this same problem?
-
-If you know how to use a debugger, it would be helpful if you 
-can get a stack trace, and cut and paste it here.
-
-
-
-
-Please include any other information that you think we should know about.
-
-
-
-
-
-Thank you for taking the time to fill this out.  We hope that this form
-will make finding and fixing bugs much less of a headache for both
-us and you.  We will reply to you as soon as possible (probably the next
-school day), and we will let you know when we've fixed the problem and
-give you a patch for it.
-
-Author(s): Originally by Michael Sandroff, 
-	   Current copyright holder is Matthew Green
-	   EPIC is developed by EPIC Software Labs for the EPIC project.
-	   "EPIC" and "ESL" are trademarks of the EPIC project.
-Product:  (ircII) EPIC4-1.1.* (see UPDATES) 
+"EPIC" is an unregistered trademark of The EPIC Project
+"ESL" and "EPICSOL" are unregistered trademarks of EPIC Software Labs
+This product is (ircII) EPIC4-1.1.* 
 
 <EOF>

@@ -1,5 +1,14 @@
 EPIC4-1.2.0
 
+*** News 07/19/2003 -- New argument to /LASTLOG, /LASTLOG -TARGET
+	Items are stored in your lastlog along with the "display target".
+	If the message has anything to do with a channel, the target is
+	that channel.  If it is a msg, notice, or dcc you sent, or someone
+	sent to you, then the target is the other nick.  You can select
+	only output pertaining to certain targets with /LASTLOG -TARGET.
+	For example, to see only public messages to #epic,
+		/LASTLOG -TARGET #epic -PUBLIC
+
 *** News 07/14/2003 -- New /SET, /SET MAIL_INTERVAL
 	Before now, the client checked your mbox from an internal timer
 	that went off at the top of every minute.  Now the duty to check 
