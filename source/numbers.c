@@ -10,7 +10,7 @@
  */
 
 #if 0
-static	char	rcsid[] = "$Id: numbers.c,v 1.22 2002/05/09 23:32:21 jnelson Exp $";
+static	char	rcsid[] = "$Id: numbers.c,v 1.23 2002/06/13 12:47:47 jnelson Exp $";
 #endif
 
 #include "irc.h"
@@ -502,11 +502,11 @@ void 	numbered_command (char *from, int comm, char **ArgList)
 
 	case 367:		/* #define RPL_BANLIST */
 	{
-		if (!ArgList[0] || !ArgList[1] || !ArgList[2])
+		if (!ArgList[0] || !ArgList[1])
 			return;		/* Larneproofing */
 
 		number_of_bans++;
-		if (ArgList[2])
+		if (ArgList[2] && ArgList[3])
 		{
 			time_t tme = (time_t) strtoul(ArgList[3], NULL, 10);
 			if (do_hook(current_numeric, "%s %s %s %s %s", 
