@@ -309,3 +309,27 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Quick and dirty hack to work around adm's bug, will fix this later.
 * Fix bogon in make_string_var().
 * Fix bogon with /set variables not being initialized early enough.
+* Add the rest of funcs to do builtin var support in unified symbol table.
+* Change the unified data type for builtin funcs to (IrcVariable *).
+* Implement "buckets", for O(N) scans of the unified symbol table.
+* Change DEFAULT_USERINFO to DEFAULT_USER_INFORMATION to match the /set.
+* Make the *_VAR stuff in vars.h 'int's.
+* Change USER_INFO_VAR to USER_INFORMATION_VAR to match the /set.
+* Change CLIENTINFO_VAR to CLIENT_INFORMATION_VAR to match the /set.
+* Change STATUS_NICK_VAR to STATUS_NICKNAME_VAR to match the set.
+* Put the defn of (struct IrcVariable) in vars.h, to expose to unified table.
+* Convert all uses of now defunct (enum VAR_TYPES) to (int)
+* Create "make_string_var_bydata", converts (IrcVariable *) to malloc string
+* Change get_var_alias() to return (IrcVariable *)
+* In that function that outputs set values, use make_string_var_bydata().
+* Change hardcoded *_VAR uses into pointers to *_VAR, for deref at runtime.
+* Major revamp of vars.c, to wholly create built in vars at runtime.
+* Built in variables are stored in unified symbol table and vars.c xref array.
+* *_VAR values now point through xref array to the actual variable data.
+* Nix the now unnecessary get_variable_index().
+* Add create_user_set(), backend for /SET -CREATE
+* Add /SET -CREATE <name> <type> [{<code>}]
+* Need to go back and implement the {<code>} thing.
+* Revamp how /set works, using buckets, to implement auto-completion.
+* $getsets() is not implemented yet, do that too. 
+* When looking up $<setname>, use the unified symbol table. HUZZAH!
