@@ -211,3 +211,4 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Fix @ {<command>} to not infinite loop looking for $FUNCTION_RETURN.
 * Fix it so you can compile on systems without (intptr_t) again.
 * Add $servernick(<global>) to return the client's global nickname
+* Fix $servernick()
