@@ -52,7 +52,7 @@
  *   of the commands (after the first semicolon, or the null).  If NULL,
  *   then the entire text will be expanded.
  */
-	char *	expand_alias 		(const char *, const char *, int *, ssize_t *);
+	char *	expand_alias 		(const char *, const char *, ssize_t *);
 
 /*
  * This is the interface to the "expression parser"
@@ -60,7 +60,7 @@
  * The second argument is the command line expandoes ($0, $1, etc)
  * The third argument will be set if the command line expandoes are used.
  */
-	char *	parse_inline 		(char *, const char *, int *);
+	char *	parse_inline 		(char *, const char *);
 
 /*
  * This function is used to call a user-defined function.
@@ -112,7 +112,7 @@
  * This is only used by next_unit and expand_alias to call built in functions.
  * Noone should call this function directly.
  */
-	char *	call_function		(char *, const char *, int *);
+	char *	call_function		(char *, const char *);
 
 
 

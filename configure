@@ -553,8 +553,8 @@ fi
 
 
 
-VERSION=`sed -n -e 's/";$//' -e '/const char irc_version.. = "/s///p' -e '/const char irc_version/q' < $srcdir/source/irc.c` 
-echo this is ircii version $VERSION
+VERSION=`sed -n -e 's/";$//' -e '/const char irc_version.. = .EPIC.-/s///p' -e '/const char irc_version/q' < $srcdir/source/irc.c` 
+echo this is EPIC5 version $VERSION
 echo
 
 
@@ -4938,7 +4938,7 @@ if test -z "$libdir"; then libdir=\${prefix}/lib; fi
 if test -z "$irclibdir"; then irclibdir=\${libdir}/irc; fi
 if test -z "$libexecdir"; then libexecdir=\${prefix}/libexec; fi
 
-epic=`echo "epic" | sed -e "$program_transform_name"`
+epic5=`echo "epic5" | sed -e "$program_transform_name"`
 if test "$program_prefix" = "NONE" ; then
 	program_prefix=
 fi
@@ -5146,7 +5146,7 @@ s%@PERLDOTOH@%$PERLDOTOH%g
 s%@TCLDOTOH@%$TCLDOTOH%g
 s%@irclibdir@%$irclibdir%g
 s%@srcdir@%$srcdir%g
-s%@epic@%$epic%g
+s%@epic5@%$epic5%g
 s%@program_prefix@%$program_prefix%g
 
 CEOF

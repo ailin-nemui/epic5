@@ -1,4 +1,4 @@
-/* $EPIC: hook.c,v 1.25 2003/12/09 04:37:52 jnelson Exp $ */
+/* $EPIC: hook.c,v 1.26 2003/12/14 20:04:09 jnelson Exp $ */
 /*
  * hook.c: Does those naughty hook functions. 
  *
@@ -804,7 +804,7 @@ int 	do_hook (int which, const char *format, ...)
 				 * with current_window, but ick, how?
 				 */
 				tmpnick = expand_alias(tmp->nick, empty_string,
-							 &sa, NULL);
+							 NULL);
 			else
 				tmpnick = tmp->nick;
 

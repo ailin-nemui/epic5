@@ -1,4 +1,4 @@
-# $EPIC: screen,v 1.3 2002/08/12 16:59:49 jnelson Exp $
+# $EPIC: screen,v 1.4 2003/12/14 20:04:09 jnelson Exp $
 # screen - makes ircII like screen.
 # original idea from Avalon (avalon@coombs.anu.edu.au)
 # this script by phone (phone@coombs.anu.edu.au)
@@ -21,7 +21,7 @@
 # ^X  (space) swap the next window.
 # ^XC clears all windows visible
 
-alias win.newwin window new hide;window swap last
+alias win.newwin {window new hide;window swap last}
 
 bind ^X1 parse_command window swap 1
 bind ^X2 parse_command window swap 2

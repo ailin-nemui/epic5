@@ -1,4 +1,4 @@
-/* $EPIC: expr2.c,v 1.18 2003/12/03 05:21:11 jnelson Exp $ */
+/* $EPIC: expr2.c,v 1.19 2003/12/14 20:04:09 jnelson Exp $ */
 /*
  * Zsh: math.c,v 3.1.2.1 1997/06/01 06:13:15 hzoli Exp 
  * math.c - mathematical expression evaluation
@@ -237,7 +237,6 @@ typedef struct
 	TOKEN	last_token;
 
 	const char	*args;
-	int	*args_flag;
 } expr_info;
 
 /* 
@@ -250,8 +249,7 @@ typedef struct
 __inline static	TOKEN	tokenize_raw (expr_info *c, char *t);
 	static	char *	after_expando_special (expr_info *c);
 	static	char *	alias_special_char (char **buffer, char *ptr, 
-					const char *args, char *quote_em, 
-					int *args_flag);
+					const char *args, char *quote_em);
 
 
 /******************** EXPRESSION CONSTRUCTOR AND DESTRUCTOR ****************/
@@ -644,7 +642,7 @@ __inline static	const char *	get_token_raw (expr_info *c, TOKEN v)
 					v, TOK(c, v).lval);
 
 			TOK(c, v).raw_value = expand_alias(TOK(c, v).lval, 
-					c->args, c->args_flag, NULL);
+					c->args, NULL);
 
 			if (x_debug & DEBUG_NEW_MATH_DEBUG)
 				yell(">>> Expanded var name [%d]: [%s] to [%s]",
@@ -745,7 +743,7 @@ __inline static	const char *	get_token_expanded (expr_info *c, TOKEN v)
 					v, myval);
 
 			alias_special_char(&buffer, myval, c->args, 
-					NULL, c->args_flag);
+					NULL);
 			if (!buffer)
 				buffer = malloc_strdup(empty_string);
 			TOK(c, v).expanded_value = buffer;
@@ -769,7 +767,7 @@ __inline static	const char *	get_token_expanded (expr_info *c, TOKEN v)
 			TOK(c, v).used |= USED_EXPANDED;
 			TOK(c, v).expanded_value = 
 				expand_alias(myval, c->args, 
-						c->args_flag, NULL);
+						NULL);
 
 			if (x_debug & DEBUG_NEW_MATH_DEBUG)
 				yell("<<< Expanded token [%d]: [%s] to: [%s]", 
@@ -1371,7 +1369,6 @@ static void	reduce (expr_info *cx, int what)
 			 * to ensure this defeats auto-append.  Ick.
 			 */
 			s = pop_expanded(cx);
-			*cx->args_flag = 1;
 
 			CHECK_NOEVAL
 			push_lval(cx, s);
@@ -1632,7 +1629,6 @@ static __inline int	check_implied_arg (expr_info *c)
 	{
 		push_token(c, MAGIC_TOKEN);	/* XXXX Bleh */
 		c->operand = 0;
-		*c->args_flag = 1;
 		return 0;
 	}
 
@@ -2303,7 +2299,7 @@ static void	mathparse (expr_info *c, int pc)
  * of state information stored in global variables.  Therefore, this math
  * parser is re-entrant safe.
  */
-static char *	matheval (char *s, const char *args, int *args_flag)
+static char *	matheval (char *s, const char *args)
 {
 	expr_info	context;
 	char *		ret = NULL;
@@ -2316,7 +2312,6 @@ static char *	matheval (char *s, const char *args, int *args_flag)
 	setup_expr_info(&context);
 	context.ptr = s;
 	context.args = args;
-	context.args_flag = args_flag;
 
 	/* Actually do the parsing */
 	mathparse(&context, TOPPREC);

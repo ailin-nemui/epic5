@@ -7,7 +7,7 @@
  *
  * See the COPYRIGHT file, or do a HELP IRCII COPYRIGHT 
  *
- * @(#)$Id: ircaux.h,v 1.59 2003/11/07 03:55:57 jnelson Exp $
+ * @(#)$Id: ircaux.h,v 1.60 2003/12/14 20:04:09 jnelson Exp $
  */
 
 #ifndef _IRCAUX_H_
@@ -134,7 +134,7 @@ char *	safe_new_next_arg	(char *, char **);
 ssize_t	MatchingBracket 	(const char *, char, char);
 int	word_count 		(const char *);
 int	parse_number 		(char **);
-char *	remove_brackets 	(const char *, const char *, int *);
+char *	remove_brackets 	(const char *, const char *);
 long	my_atol 		(const char *);
 u_long	hashpjw 		(char *, u_long);
 char *	malloc_dupchar 		(int);

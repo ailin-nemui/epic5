@@ -1,4 +1,4 @@
-/* $EPIC: input.c,v 1.18 2003/11/07 23:43:47 jnelson Exp $ */
+/* $EPIC: input.c,v 1.19 2003/12/14 20:04:09 jnelson Exp $ */
 /*
  * input.c: does the actual input line stuff... keeps the appropriate stuff
  * on the input line, handles insert/delete of characters/words... the whole
@@ -237,8 +237,6 @@ void	update_input (int update)
 	 */
 	if (prompt && update != NO_UPDATE)
 	{
-		int	af;
-
 		/*
 		 * If the current window is query'ing an exec'd process,
 		 * then we just get the current prompt for that process.
@@ -252,7 +250,7 @@ void	update_input (int update)
 		 */
 		else
 		{
-			ptr = expand_alias(prompt, empty_string, &af, NULL);
+			ptr = expand_alias(prompt, empty_string, NULL);
 			free_it = 1;
 		}
 

@@ -1,4 +1,4 @@
-/* $EPIC: functions.c,v 1.149 2003/12/09 04:37:52 jnelson Exp $ */
+/* $EPIC: functions.c,v 1.150 2003/12/14 20:04:09 jnelson Exp $ */
 /*
  * functions.c -- Built-in functions for ircII
  *
@@ -778,7 +778,7 @@ char	*built_in_alias (char c, int *returnval)
  * the callers, since there are a bunch of them and all of them seperately
  * handling extracting the args is just a pain in the butt.
  */
-char	*call_function (char *name, const char *args, int *args_flag)
+char	*call_function (char *name, const char *args)
 {
 	char	*tmp;
 	char	*result = (char *) 0;
@@ -805,7 +805,7 @@ char	*call_function (char *name, const char *args, int *args_flag)
 	else
 		lparen = empty_string;
 
-	tmp = expand_alias(lparen, args, args_flag, NULL);
+	tmp = expand_alias(lparen, args, NULL);
 	debug_copy = LOCAL_COPY(tmp);
 
 	upper(name);
@@ -5033,8 +5033,7 @@ BUILT_IN_FUNCTION(function_cparse, input)
 
 	if (expand)
 	{
-		int	af;
-		stuff = expand_alias(output, input, &af, NULL);
+		stuff = expand_alias(output, input, NULL);
 		RETURN_MSTR(stuff);
 	}
 

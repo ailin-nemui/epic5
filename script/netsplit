@@ -27,7 +27,7 @@
 
 # Add patterns.. like /boguspat *bonk* *thud* *haha*
 # that will NOT be treated as server names..
-^alias boguspat ^assign isbogus.pats $isbogus.pats $0-;echo $0- added
+^alias boguspat ^assign isbogus.pats $isbogus.pats $*;echo $* added
 
 # Next two are pretty obvious
 ^alias boguslist echo Pats: $isbogus.pats

@@ -1,4 +1,4 @@
-/* $EPIC: commands.c,v 1.78 2003/12/09 05:12:37 jnelson Exp $ */
+/* $EPIC: commands.c,v 1.79 2003/12/14 20:04:09 jnelson Exp $ */
 /*
  * commands.c -- Stuff needed to execute commands in ircII.
  *		 Includes the bulk of the built in commands for ircII.
@@ -3366,7 +3366,6 @@ void	parse_line (const char *name, const char *org_line, const char *args, int h
 	char 	*stuff,
 		*s,
 		*t;
-	int	args_flag = 0;
 	int	die = 0;
 	ssize_t	span;
 
@@ -3494,9 +3493,7 @@ void	parse_line (const char *name, const char *org_line, const char *args, int h
 		 *	/alias m msg
 		 * to work as expected.
 		 */
-		stuff = expand_alias(line, args, &args_flag, &span);
-		if (span < 0 && append_flag && !args_flag && args && *args)
-			malloc_strcat2_c(&stuff, " ", args, NULL);
+		stuff = expand_alias(line, args, &span);
 
 		if (span < 0)
 			line = NULL;
@@ -3621,8 +3618,7 @@ static	unsigned 	level = 0;
 	int		old_display_var;
 	const char *	cmdchars;
 	const char *	com;
-	int		args_flag,
-			add_to_hist,
+	int		add_to_hist,
 			cmdchar_used = 0;
 	int		noisy = 1;
 	char *		this_cmd = NULL;
@@ -3712,7 +3708,7 @@ static	unsigned 	level = 0;
 			my_line[1 + span] = 0;
 		}
 
-		if ((tmp = parse_inline(my_line + 1, sub_args, &args_flag)))
+		if ((tmp = parse_inline(my_line + 1, sub_args)))
 			new_free(&tmp);
 
 		if (hist_flag && add_to_hist)

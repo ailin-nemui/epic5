@@ -1,4 +1,4 @@
-/* $EPIC: output.c,v 1.10 2003/10/10 06:22:39 jnelson Exp $ */
+/* $EPIC: output.c,v 1.11 2003/12/14 20:04:10 jnelson Exp $ */
 /*
  * output.c: handles a variety of tasks dealing with the output from the irc
  * program 
@@ -246,10 +246,9 @@ static void 	vsay (const char *format, va_list args)
 		{
 			if (get_int_var(BANNER_EXPAND_VAR))
 			{
-			    int af;
 			    char *foo;
 
-			    foo = expand_alias(str, empty_string, &af, NULL);
+			    foo = expand_alias(str, empty_string, NULL);
 			    strlcpy(putbuf, foo, sizeof putbuf);
 			    new_free(&foo);
 			}

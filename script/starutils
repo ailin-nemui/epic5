@@ -12,7 +12,7 @@ if (!star.load)
 }
 
 @ star.load++
-alias tkill star.tkill
+alias tkill star.tkill $*
 alias star.tkill 
 {
 	if ([$1] && (rmatch($0 *@*) == 1)) 
@@ -48,7 +48,7 @@ alias star.tkill
 	}
 }
 
-alias tfilter star.tfilter
+alias tfilter star.tfilter $*
 alias star.tfilter 
 {
 	if (star.pat == [$*]) 
@@ -79,7 +79,7 @@ alias star.tfilter
 	}
 }
 
-alias mkill star.mkill
+alias mkill star.mkill $*
 alias star.mkill 
 {
 	if (match(! $*)) 
@@ -97,7 +97,7 @@ alias star.mkill
 	}
 }
 
-alias starhelp star.help
+alias starhelp star.help $*
 alias star.help 
 {
 	echo *** TKILL <pattern> <reason>

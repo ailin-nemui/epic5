@@ -1,4 +1,4 @@
-/* $EPIC: alias.c,v 1.38 2003/12/07 21:26:29 jnelson Exp $ */
+/* $EPIC: alias.c,v 1.39 2003/12/14 20:04:09 jnelson Exp $ */
 /*
  * alias.c -- Handles the whole kit and caboodle for aliases.
  *
@@ -254,7 +254,7 @@ extern	char *  get_cmd_alias           (const char *name, int *howmany,
 extern	char ** get_subarray_elements   (const char *root, int *howmany, int type);
 
 
-static	char *	get_variable_with_args (const char *str, const char *args, int *args_flag);
+static	char *	get_variable_with_args (const char *str, const char *args);
 static	void show_alias_caches(void);
 
 /************************** HIGH LEVEL INTERFACE ***********************/
@@ -320,7 +320,7 @@ extern u_32int_t       char_searches;
 	/*
 	 * Canonicalize the alias name
 	 */
-	real_name = remove_brackets(name, NULL, NULL);
+	real_name = remove_brackets(name, NULL);
 
 	/*
 	 * Find the argument body
@@ -447,7 +447,7 @@ BUILT_IN_COMMAND(assigncmd)
 	/*
 	 * Canonicalize the variable name
 	 */
-	real_name = remove_brackets(name, NULL, NULL);
+	real_name = remove_brackets(name, NULL);
 
 	/*
 	 * Find the stuff to assign to the variable
@@ -565,7 +565,7 @@ const 	char 	*usage = "Usage: %s (alias|assign) <name> <file> [<file> ...]";
 		if ((next_name = strchr(name, ',')))
 			*next_name++ = 0;
 
-		real_name = remove_brackets(name, NULL, NULL);
+		real_name = remove_brackets(name, NULL);
 		if (type == COMMAND_ALIAS)
 			add_cmd_stub_alias(real_name, args);
 		else
@@ -606,7 +606,7 @@ BUILT_IN_COMMAND(localcmd)
 		if ((next_name = strchr(name, ',')))
 			*next_name++ = 0;
 
-		real_name = remove_brackets(name, NULL, NULL);
+		real_name = remove_brackets(name, NULL);
 		add_local_alias(real_name, args, 1);
 		new_free(&real_name);
 		name = next_name;
@@ -822,7 +822,7 @@ void	prepare_alias_call (void *al, char **stuff)
 	{
 		char	*next_val;
 		char	*expanded = NULL;
-		int	af, type = 0, do_dequote_it;
+		int	type = 0, do_dequote_it;
 
 		switch (args->types[i])
 		{
@@ -877,7 +877,7 @@ void	prepare_alias_call (void *al, char **stuff)
 		if (!next_val || !*next_val)
 		{
 			if ((next_val = args->defaults[i]))
-				next_val = expanded = expand_alias(next_val, *stuff, &af, NULL);
+				next_val = expanded = expand_alias(next_val, *stuff, NULL);
 			else
 				next_val = empty_string;
 		}
@@ -1028,11 +1028,10 @@ void	add_var_alias	(const char *orig_name, const char *stuff, int noisy)
 {
 	const char 	*ptr;
 	Alias 	*tmp = NULL;
-	int 	af;
 	int	local = 0;
 	char	*save, *name;
 
-	save = name = remove_brackets(orig_name, NULL, &af);
+	save = name = remove_brackets(orig_name, NULL);
 	if (*name == ':')
 	{
 		name++, local = 1;
@@ -1105,10 +1104,9 @@ void	add_local_alias	(const char *orig_name, const char *stuff, int noisy)
 	const char 	*ptr;
 	Alias 	*tmp = NULL;
 	AliasSet *list = NULL;
-	int 	af;
 	char *	name;
 
-	name = remove_brackets(orig_name, NULL, &af);
+	name = remove_brackets(orig_name, NULL);
 
 	/*
 	 * Weed out invalid variable names
@@ -1155,10 +1153,10 @@ void	add_local_alias	(const char *orig_name, const char *stuff, int noisy)
 void	add_cmd_alias	(const char *orig_name, ArgList *arglist, const char *stuff)
 {
 	Alias *tmp = NULL;
-	int cnt, af, loc;
+	int cnt, loc;
 	char *name;
 
-	name = remove_brackets(orig_name, NULL, &af);
+	name = remove_brackets(orig_name, NULL);
 
 	tmp = (Alias *) find_array_item ((array *)&cmd_alias, name, &cnt, &loc);
 	if (!tmp || cnt >= 0)
@@ -1187,10 +1185,9 @@ void	add_var_stub_alias  (const char *orig_name, const char *stuff)
 {
 	Alias *tmp = NULL;
 	const char *ptr;
-	int af;
 	char *name;
 
-	name = remove_brackets(orig_name, NULL, &af);
+	name = remove_brackets(orig_name, NULL);
 
 	ptr = after_expando(name, 1, NULL);
 	if (*ptr)
@@ -1229,10 +1226,10 @@ void	add_var_stub_alias  (const char *orig_name, const char *stuff)
 void	add_cmd_stub_alias  (const char *orig_name, const char *stuff)
 {
 	Alias *tmp = NULL;
-	int cnt, af;
+	int cnt;
 	char *name;
 
-	name = remove_brackets(orig_name, NULL, &af);
+	name = remove_brackets(orig_name, NULL);
 	if (!(tmp = find_cmd_alias(name, &cnt)) || cnt >= 0)
 	{
 		tmp = make_new_Alias(name);
@@ -1464,14 +1461,13 @@ static Alias *	find_local_alias (const char *orig_name, AliasSet **list)
 	char 	*ptr;
 	int 	implicit = -1;
 	int	function_return = 0;
-	int	af;
 	char *	name;
 
 	/* No name is an error */
 	if (!orig_name)
 		return NULL;
 
-	name = remove_brackets(orig_name, NULL, &af);
+	name = remove_brackets(orig_name, NULL);
 	upper(name);
 
 	ptr = after_expando(name, 1, NULL);
@@ -1595,10 +1591,10 @@ static
 void	delete_var_alias (const char *orig_name, int noisy)
 {
 	Alias *item;
-	int i, af;
+	int i;
 	char *	name;
 
-	name = remove_brackets(orig_name, NULL, &af);
+	name = remove_brackets(orig_name, NULL);
 	upper(name);
 	if ((item = (Alias *)remove_from_array ((array *)&var_alias, name)))
 	{
@@ -1625,10 +1621,10 @@ static
 void	delete_cmd_alias (const char *orig_name, int noisy)
 {
 	Alias *item;
-	int i, af;
+	int i;
 	char *name;
 
-	name = remove_brackets(orig_name, NULL, &af);
+	name = remove_brackets(orig_name, NULL);
 	upper(name);
 	if ((item = (Alias *)remove_from_array ((array *)&cmd_alias, name)))
 	{
@@ -1659,7 +1655,7 @@ void	delete_cmd_alias (const char *orig_name, int noisy)
 static void	list_local_alias (const char *orig_name)
 {
 	size_t len = 0;
-	int cnt, af;
+	int cnt;
 	int DotLoc, LastDotLoc = 0;
 	char *LastStructName = NULL;
 	char *s;
@@ -1668,7 +1664,7 @@ static void	list_local_alias (const char *orig_name)
 	say("Visible Local Assigns:");
 	if (orig_name)
 	{
-		name = remove_brackets(orig_name, NULL, &af);
+		name = remove_brackets(orig_name, NULL);
 		len = strlen(upper(name));
 	}
 
@@ -1708,7 +1704,7 @@ void	list_var_alias (const char *orig_name)
 	int	DotLoc,
 		LastDotLoc = 0;
 	char	*LastStructName = NULL;
-	int	cnt, af;
+	int	cnt;
 	char	*s;
 	const char *script;
 	char *name = NULL;
@@ -1717,7 +1713,7 @@ void	list_var_alias (const char *orig_name)
 
 	if (orig_name)
 	{
-		name = remove_brackets(orig_name, NULL, &af);
+		name = remove_brackets(orig_name, NULL);
 		len = strlen(upper(name));
 	}
 
@@ -1760,7 +1756,7 @@ void	list_cmd_alias (const char *orig_name)
 	int	DotLoc,
 		LastDotLoc = 0;
 	char	*LastStructName = NULL;
-	int	cnt, af;
+	int	cnt;
 	char	*s;
 	const char *script;
 	char *name = NULL;
@@ -1769,7 +1765,7 @@ void	list_cmd_alias (const char *orig_name)
 
 	if (orig_name)
 	{
-		name = remove_brackets(orig_name, NULL, &af);
+		name = remove_brackets(orig_name, NULL);
 		len = strlen(upper(name));
 	}
 
@@ -1840,13 +1836,12 @@ static void	unload_var_alias (const char *filename)
  */
 char 	*get_variable 	(const char *str)
 {
-	int af;
-	return get_variable_with_args(str, NULL, &af);
+	return get_variable_with_args(str, NULL);
 }
 
 
 static 
-char	*get_variable_with_args (const char *str, const char *args, int *args_flag)
+char	*get_variable_with_args (const char *str, const char *args)
 {
 	Alias	*alias = NULL;
 	char	*ret = NULL;
@@ -1855,7 +1850,7 @@ char	*get_variable_with_args (const char *str, const char *args, int *args_flag)
 	int	copy = 0;
 	int	local = 0;
 
-	freep = name = remove_brackets(str, args, args_flag);
+	freep = name = remove_brackets(str, args);
 
 	/*
 	 * Support $:var to mean local variable ONLY (no globals)

@@ -4,12 +4,10 @@
 # -------------------------------------------------------------------
 # The aim of this file is to shorten all useful commands to 1 letter.
 
-^set DISPLAY off
-set NOVICE off
 set INPUT_ALIASES off
 set AUTO_WHOWAS on
 set SHOW_CHANNEL_NAMES on
-set SHOW_AWAY_ONCE on
+load newaway
 
 
 # Speeds up ircII display 2 times
@@ -42,12 +40,12 @@ on ^msg * echo *$0!$userdomain($userhost())* $1-
 # /r <text>                              reply to last message I got
 # /a <text>                              followup on my last message
 
-alias w whois
-alias q query
-alias m msg
-alias n notice
-alias r msg $,
-alias a msg $.
+alias w whois $*
+alias q query $*
+alias m msg $*
+alias n notice $*
+alias r msg $, $*
+alias a msg $. $*
 
 # /j <channel>                           join a channel
 # /l <channel>                           list people in a channel
@@ -55,11 +53,11 @@ alias a msg $.
 # /i <nickname> [<channel>]              invite someone
 # /hop                                   leave the current channel
 
-alias j join
-alias l who
-alias ll who *
-alias i invite
-alias hop part *
+alias j join $*
+alias l who $*
+alias ll who * $*
+alias i invite $*
+alias hop part * $*
 
 # /o <nickname> [<nickname> <nickname>]  give channel op status
 # /d <nickname> [<nickname> <nickname>]  remove channel op status
@@ -69,7 +67,7 @@ alias hop part *
 alias o fe ($*) x y z {mode * +ooo $x $y $z}
 alias d fe ($*) x y z {mode * -ooo $x $y $z}
 alias k for x in ($*) {kick * $x}
-alias mo mode *
+alias mo mode * $*
 
 # the "wrong person" alias! /oops <nickname> to resend message to
 alias oops {
@@ -80,6 +78,5 @@ alias oops {
 
 alias unset set -$*
 alias unalias alias -$*
-^set DISPLAY on
 
 # -------------------------------------------------------------------

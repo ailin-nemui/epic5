@@ -25,7 +25,7 @@ default:
 	(cd ..;$(MAKE))
 
 VPATH=@srcdir@
-all: epic
+all: epic5
 
 .c.o:
 	$(CC) $(CFLAGS) $(ANSIFLAGS) $(INCLUDES) -c $<
@@ -34,14 +34,14 @@ all: epic
 # The executables
 #
 
-# epic (irc)
-epic: $(OBJECTS)
+# epic5 (irc)
+epic5: $(OBJECTS)
 	sh info.c.sh
 	$(CC) $(CFLAGS) $(INCLUDES) -c info.c
-	$(CC) $(CFLAGS) $(LDFLAGS) -o epic $(OBJECTS) info.o $(LIBS)
+	$(CC) $(CFLAGS) $(LDFLAGS) -o epic5 $(OBJECTS) info.o $(LIBS)
 	$(RM) info.c info.o
 clean::
-	$(RM) epic $(OBJECTS)
+	$(RM) epic5 $(OBJECTS)
 
 # wserv
 wserv4: wserv.o ircsig.o gailib.o
@@ -52,7 +52,7 @@ clean::
 
 
 # 'make install'
-install: epic
+install: epic5
 	(cd ..; $(MAKE) install)
 
 clean::

@@ -1,4 +1,4 @@
-/* $EPIC: expr.c,v 1.22 2003/10/28 05:53:57 jnelson Exp $ */
+/* $EPIC: expr.c,v 1.23 2003/12/14 20:04:09 jnelson Exp $ */
 /*
  * expr.c -- The expression mode parser and the textual mode parser
  * #included by alias.c -- DO NOT DELETE
@@ -39,7 +39,7 @@
 
 /* Function decls */
 static	void	TruncateAndQuote (char **, const char *, ssize_t, const char *);
-static	char	*alias_special_char(char **, char *, const char *, char *, int *);
+static	char	*alias_special_char(char **, char *, const char *, char *);
 static	void	do_alias_string (char *, char *);
 
 char *alias_string = NULL;
@@ -127,12 +127,11 @@ static char	*lastop (char *ptr)
  * Backslash quotes any character not within [] or (),
  * which have their own quoting rules (*sigh*)
  */ 
-static	char	*next_unit (char *str, const char *args, int *arg_flag, int stage)
+static	char	*next_unit (char *str, const char *args, int stage)
 #if 0
 	char	*str,			/* start of token */
 		*args;			/* the values of $0, $1, etc */
-	int	*arg_flag,		/* whether we use $0, $1, etc */
-		stage;			/* What parsing level were at */
+	int	stage;			/* What parsing level were at */
 #endif
 {
 	char	*ptr,			/* pointer to the current op */
@@ -173,7 +172,7 @@ static	char	*next_unit (char *str, const char *args, int *arg_flag, int stage)
 	ptr++;								\
 									\
 	/* Figure out the variable name were working on */		\
-	varname = expand_alias(str, args, arg_flag, NULL);		\
+	varname = expand_alias(str, args, NULL);		\
 	lastc = varname + strlen(varname) - 1;				\
 	while (lastc > varname && *lastc == ' ')			\
 		*lastc-- = '\0';					\
@@ -186,7 +185,7 @@ static	char	*next_unit (char *str, const char *args, int *arg_flag, int stage)
 	new_free(&result1);						\
 									\
 	/* Get the value of the explicit argument */			\
-	result2 = next_unit(ptr, args, arg_flag, stage);		\
+	result2 = next_unit(ptr, args, stage);		\
 	var2 = func (result2);						\
 	new_free(&result2);						\
 }
@@ -222,8 +221,8 @@ static	char	*next_unit (char *str, const char *args, int *arg_flag, int stage)
 	*ptr++ = '\0';							\
 									\
 	/* Get the two explicit operands */				\
-	result1 = next_unit(str, args, arg_flag, stage);		\
-	result2 = next_unit(ptr, args, arg_flag, stage);		\
+	result1 = next_unit(str, args, stage);		\
+	result2 = next_unit(ptr, args, stage);		\
 									\
 	/* Convert them with the specified function */			\
 	var1 = func (result1);						\
@@ -293,7 +292,7 @@ static	char	*next_unit (char *str, const char *args, int *arg_flag, int stage)
 	if (stage == NU_UNIT && *lastc == ')' && *str == '(')
 	{
 		str++, *lastc-- = '\0';
-		return next_unit(str, args, arg_flag, NU_EXPR);
+		return next_unit(str, args, NU_EXPR);
 	}
 
 
@@ -374,7 +373,7 @@ static	char	*next_unit (char *str, const char *args, int *arg_flag, int stage)
 			else
 				ptr2 = NULL;
 
-			result1 = call_function(str, args, arg_flag);
+			result1 = call_function(str, args);
 
 			if (ptr2 && savec)
 				*ptr2 = savec;
@@ -398,7 +397,7 @@ static	char	*next_unit (char *str, const char *args, int *arg_flag, int stage)
 			if (ptr && *ptr)
 			{
 				malloc_strcat(&result1, ptr);
-				result2 = next_unit(result1, args, arg_flag, stage);
+				result2 = next_unit(result1, args, stage);
 				new_free(&result1);
 				result1 = result2;
 			}
@@ -504,7 +503,6 @@ static	char	*next_unit (char *str, const char *args, int *arg_flag, int stage)
 			    if (right[1] == '*' && right[2] == 0)
 			    {
 				result1 = malloc_strdup(args);
-				*arg_flag = 1;
 			    }
 			    else
 			    {
@@ -519,12 +517,6 @@ static	char	*next_unit (char *str, const char *args, int *arg_flag, int stage)
 					else
 						result1 = extractw2(args, j, j);
 
-					/* 
-					 * Oops. this would have been set by
-					 * expand alias, so we have to do it
-					 * explicitly here!
-					 */
-					*arg_flag = 1;
 				}
 
 				/*
@@ -533,17 +525,16 @@ static	char	*next_unit (char *str, const char *args, int *arg_flag, int stage)
 				else if (*end == '-' && !end[1])
 				{
 					result1 = extractw2(args, j, EOS);
-					*arg_flag = 1;
 				}
 				else
-					result1 = expand_alias(right, args, arg_flag, NULL);
+					result1 = expand_alias(right, args, NULL);
 			    }
 			}
 			else if (!strchr(right, '$') && !strchr(right, '\\'))
 				result1 = malloc_strdup(right);
 			else
 #endif
-				result1 = expand_alias(right, args, arg_flag, NULL);
+				result1 = expand_alias(right, args, NULL);
 
 			/*
 			 * You need to look closely at this, as this test 
@@ -578,7 +569,7 @@ static	char	*next_unit (char *str, const char *args, int *arg_flag, int stage)
 				if (ptr && *ptr)
 				{
 					strlcat(result2, ptr, size);
-					result1 = next_unit(result2, args, arg_flag, stage);
+					result1 = next_unit(result2, args, stage);
 				}
 				else
 				{
@@ -597,7 +588,7 @@ static	char	*next_unit (char *str, const char *args, int *arg_flag, int stage)
 			else if (ptr && *ptr)
 			{
 				malloc_strcat(&result1, ptr);
-				result2 = next_unit(result1, args, arg_flag, stage);
+				result2 = next_unit(result1, args, stage);
 				new_free(&result1);
 				result1 = result2;
 			}
@@ -650,7 +641,7 @@ static	char	*next_unit (char *str, const char *args, int *arg_flag, int stage)
 				else			/* postfix */
 					prefix = 0, ptr2 = str, *ptr++ = 0;
 
-				varname = expand_alias(ptr2, args, arg_flag, NULL);
+				varname = expand_alias(ptr2, args, NULL);
 				upper(varname);
 
 				if (!(result1 = get_variable(varname)))
@@ -775,8 +766,8 @@ static	char	*next_unit (char *str, const char *args, int *arg_flag, int stage)
 			{
 				*ptr++ = '\0';
 				ptr++;
-				result1 = next_unit(str, args, arg_flag, stage);
-				result2 = next_unit(ptr, args, arg_flag, stage);
+				result1 = next_unit(str, args, stage);
+				result2 = next_unit(ptr, args, stage);
 				malloc_strcat(&result1, result2);
 				new_free(&result2);
 				return result1;
@@ -831,10 +822,10 @@ static	char	*next_unit (char *str, const char *args, int *arg_flag, int stage)
 				*ptr++ = '\0';
 				ptr++;
 
-				result1 = next_unit(str, args, arg_flag, stage);
+				result1 = next_unit(str, args, stage);
 				if (check_val(result1))
 				{
-					result2 = next_unit(ptr, args, arg_flag, stage);
+					result2 = next_unit(ptr, args, stage);
 					value3 = check_val(result2);
 				}
 				else
@@ -878,10 +869,10 @@ static	char	*next_unit (char *str, const char *args, int *arg_flag, int stage)
 				*ptr++ = '\0';
 				ptr++;
 
-				result1 = next_unit(str, args, arg_flag, stage);
+				result1 = next_unit(str, args, stage);
 				if (!check_val(result1))
 				{
-					result2 = next_unit(ptr, args, arg_flag, stage);
+					result2 = next_unit(ptr, args, stage);
 					value3 = check_val(result2);
 				}
 				else
@@ -924,8 +915,8 @@ static	char	*next_unit (char *str, const char *args, int *arg_flag, int stage)
 				*ptr++ = '\0';
 				ptr++;
 
-				value1 = check_val((result1 = next_unit(str, args, arg_flag, stage)));
-				value2 = check_val((result2 = next_unit(ptr, args, arg_flag, stage)));
+				value1 = check_val((result1 = next_unit(str, args, stage)));
+				value2 = check_val((result2 = next_unit(ptr, args, stage)));
 				new_free(&result1);
 				new_free(&result2);
 
@@ -967,7 +958,7 @@ static	char	*next_unit (char *str, const char *args, int *arg_flag, int stage)
 			ssize_t span;
 
 			*ptr++ = 0;
-			result1 = next_unit(str, args, arg_flag, stage);
+			result1 = next_unit(str, args, stage);
 			span = MatchingBracket(ptr, '?', ':');
 
 			/* Unbalanced :, or possibly missing */
@@ -981,9 +972,9 @@ static	char	*next_unit (char *str, const char *args, int *arg_flag, int stage)
 			*ptr2++ = 0;
 
 			if ( check_val(result1) )
-				result2 = next_unit(ptr, args, arg_flag, stage);
+				result2 = next_unit(ptr, args, stage);
 			else
-				result2 = next_unit(ptr2, args, arg_flag, stage);
+				result2 = next_unit(ptr2, args, stage);
 
 			/* XXXX - needed? */
 			ptr2[-1] = ':';
@@ -1009,8 +1000,8 @@ static	char	*next_unit (char *str, const char *args, int *arg_flag, int stage)
 			{
 				*ptr++ = 0;
 				ptr++;
-				result1 = next_unit(str, args, arg_flag, stage);
-				result2 = next_unit(ptr, args, arg_flag, stage);
+				result1 = next_unit(str, args, stage);
+				result2 = next_unit(ptr, args, stage);
 				if (wild_match(result2, result1))
 					malloc_strcpy(&result1, one);
 				else
@@ -1023,8 +1014,8 @@ static	char	*next_unit (char *str, const char *args, int *arg_flag, int stage)
 			{
 				*ptr++ = '\0';
 				upper(str);
-				result1 = expand_alias(str, args, arg_flag, NULL);
-				result2 = next_unit(ptr, args, arg_flag, stage);
+				result1 = expand_alias(str, args, NULL);
+				result2 = next_unit(ptr, args, stage);
 
 				lastc = result1 + strlen(result1) - 1;
 				while (lastc > result1 && *lastc == ' ')
@@ -1047,8 +1038,8 @@ static	char	*next_unit (char *str, const char *args, int *arg_flag, int stage)
 			{
 				*ptr++ = '\0';
 				ptr++;
-				result1 = next_unit(str, args, arg_flag, stage);
-				result2 = next_unit(ptr, args, arg_flag, stage);
+				result1 = next_unit(str, args, stage);
+				result2 = next_unit(ptr, args, stage);
 				if (!my_stricmp(result1, result2))
 					malloc_strcpy(&result1, one);
 				else
@@ -1077,8 +1068,8 @@ static	char	*next_unit (char *str, const char *args, int *arg_flag, int stage)
 				*ptr++ = 0;
 				ptr++;
 
-				result1 = next_unit(str, args, arg_flag, stage);
-				result2 = next_unit(ptr, args, arg_flag, stage);
+				result1 = next_unit(str, args, stage);
+				result2 = next_unit(ptr, args, stage);
 				value1 = my_atol(result1);
 				value2 = my_atol(result2);
 				if (op == '<')
@@ -1100,8 +1091,8 @@ static	char	*next_unit (char *str, const char *args, int *arg_flag, int stage)
 					value3 = 0;
 
 				*ptr++ = '\0';
-				result1 = next_unit(str, args, arg_flag, stage);
-				result2 = next_unit(ptr, args, arg_flag, stage);
+				result1 = next_unit(str, args, stage);
+				result2 = next_unit(ptr, args, stage);
 
 				if ((my_isdigit(result1)) && (my_isdigit(result2)))
 				{
@@ -1140,7 +1131,7 @@ static	char	*next_unit (char *str, const char *args, int *arg_flag, int stage)
 		{
 			if (ptr == str && stage == NU_UNIT)
 			{
-				result1 = next_unit(str+1, args, arg_flag, stage);
+				result1 = next_unit(str+1, args, stage);
 				if (isdigit(*result1))
 					value1 = ~my_atol(result1);
 				else
@@ -1164,7 +1155,7 @@ static	char	*next_unit (char *str, const char *args, int *arg_flag, int stage)
 		{
 			if (ptr == str && stage == NU_UNIT)
 			{
-				result1 = next_unit(str+1, args, arg_flag, stage);
+				result1 = next_unit(str+1, args, stage);
 
 				if (my_isdigit(result1))
 				{
@@ -1183,8 +1174,8 @@ static	char	*next_unit (char *str, const char *args, int *arg_flag, int stage)
 				*ptr++ = 0;
 				ptr++;
 
-				result1 = next_unit(str, args, arg_flag, stage);
-				result2 = next_unit(ptr, args, arg_flag, stage);
+				result1 = next_unit(str, args, stage);
+				result2 = next_unit(ptr, args, stage);
 
 				if (!wild_match(result2, result1))
 					malloc_strcpy(&result1, one);
@@ -1200,8 +1191,8 @@ static	char	*next_unit (char *str, const char *args, int *arg_flag, int stage)
 				*ptr++ = '\0';
 				ptr++;
 
-				result1 = next_unit(str, args, arg_flag, stage);
-				result2 = next_unit(ptr, args, arg_flag, stage);
+				result1 = next_unit(str, args, stage);
+				result2 = next_unit(ptr, args, stage);
 
 				if (!my_stricmp(result1, result2))
 					malloc_strcpy(&result1, zero);
@@ -1228,8 +1219,8 @@ static	char	*next_unit (char *str, const char *args, int *arg_flag, int stage)
 			if (stage == NU_EXPR)
 			{
 				*ptr++ = '\0';
-				result1 = next_unit(str, args, arg_flag, stage);
-				result2 = next_unit(ptr, args, arg_flag, stage);
+				result1 = next_unit(str, args, stage);
+				result2 = next_unit(ptr, args, stage);
 				new_free(&result1);
 				return result2;
 			}
@@ -1248,7 +1239,7 @@ static	char	*next_unit (char *str, const char *args, int *arg_flag, int stage)
 	 * If were not done parsing, parse it again.
 	 */
 	if (stage != NU_UNIT)
-		return next_unit(str, args, arg_flag, stage + 1);
+		return next_unit(str, args, stage + 1);
 
 	/*
 	 * If the result is a number, return it.
@@ -1297,12 +1288,12 @@ static	char	*next_unit (char *str, const char *args, int *arg_flag, int stage)
  * about this at some future date. The ^ function and some fixes by
  * troy@cbme.unsw.EDU.AU (Troy Rollo) 
  */
-char	*parse_inline (char *str, const char *args, int *args_flag)
+char	*parse_inline (char *str, const char *args)
 {
 	if (x_debug & DEBUG_NEW_MATH)
-		return matheval(str, args, args_flag);
+		return matheval(str, args);
 	else
-		return next_unit(str, args, args_flag, NU_EXPR);
+		return next_unit(str, args, NU_EXPR);
 }
 
 
@@ -1321,7 +1312,7 @@ char	*parse_inline (char *str, const char *args, int *args_flag)
  *		portion is written back into more_text.
  *	Backslash escapes are unescaped.
  */
-char	*expand_alias	(const char *string, const char *args, int *args_flag, ssize_t *more_text)
+char	*expand_alias	(const char *string, const char *args, ssize_t *more_text)
 {
 	char	*buffer = NULL,
 		*ptr,
@@ -1340,7 +1331,6 @@ char	*expand_alias	(const char *string, const char *args, int *args_flag, ssize_
 	if (*string == '@' && more_text)
 	{
 		unescape = NULL;
-		*args_flag = 1; /* Stop the @ command from auto appending */
 	}
 	quote_temp[1] = 0;
 
@@ -1392,7 +1382,7 @@ char	*expand_alias	(const char *string, const char *args, int *args_flag, ssize_
 				quote_temp[0] = *ptr;
 				malloc_strcat(&quote_str, quote_temp);
 			}
-			stuff = alias_special_char(&buffer1, ptr, args, quote_str, args_flag);
+			stuff = alias_special_char(&buffer1, ptr, args, quote_str);
 			malloc_strcat_c(&buffer, buffer1, &buffclue);
 			new_free(&buffer1);
 			if (quote_str)		/* Why ``stuff''? */
@@ -1423,7 +1413,6 @@ char	*expand_alias	(const char *string, const char *args, int *args_flag, ssize_
 			malloc_strcat_ues_c(&buffer, stuff, unescape, &buffclue);
 			stuff = ptr;
 
-			*args_flag = 1;
 			if ((span = MatchingBracket(stuff + 1, ch, 
 					(ch == LEFT_PAREN) ?
 					RIGHT_PAREN : RIGHT_BRACE)) < 0)
@@ -1478,11 +1467,8 @@ char	*expand_alias	(const char *string, const char *args, int *args_flag, ssize_
  * character), the args to the alias, and a character indication what
  * characters in the string should be quoted with a backslash.  It returns a
  * pointer to the character right after the converted alias.
- * 
- * The args_flag is set to 1 if any of the $n, $n-, $n-m, $-m, $*, or $() 
- * is used in the alias.  Otherwise it is left unchanged.
  */
-static	char	*alias_special_char (char **buffer, char *ptr, const char *args, char *quote_em, int *args_flag)
+static	char	*alias_special_char (char **buffer, char *ptr, const char *args, char *quote_em)
 {
 	char	*tmp,
 		c;
@@ -1502,7 +1488,7 @@ static	char	*alias_special_char (char **buffer, char *ptr, const char *args, cha
 			if (*ptr == '$')
 			{
 				char *	str;
-				str = expand_alias(ptr, args, args_flag, NULL);
+				str = expand_alias(ptr, args, NULL);
 				length = my_atol(str);
 				new_free(&str);
 			}
@@ -1578,7 +1564,7 @@ static	char	*alias_special_char (char **buffer, char *ptr, const char *args, cha
 			 */
 			do
 			{
-				tmp2 = expand_alias(tmp, args, args_flag, NULL);
+				tmp2 = expand_alias(tmp, args, NULL);
 				if (tmpsav)
 					new_free(&tmpsav);
 				tmpsav = tmp = tmp2;
@@ -1586,7 +1572,7 @@ static	char	*alias_special_char (char **buffer, char *ptr, const char *args, cha
 			while (tmp && *tmp == '$');
 
 			alias_special_char(&sub_buffer, tmp, args, 
-						quote_em, args_flag);
+						quote_em);
 
 			/* Some kind of bogus expando */
 			if (sub_buffer == NULL)
@@ -1598,7 +1584,6 @@ static	char	*alias_special_char (char **buffer, char *ptr, const char *args, cha
 
 			new_free(&sub_buffer);
 			new_free(&tmpsav);
-			*args_flag = 1;
 			return (ptr);
 		}
 
@@ -1643,7 +1628,7 @@ static	char	*alias_special_char (char **buffer, char *ptr, const char *args, cha
 			else
 				yell("Unmatched { (continuing anyways)");
 
-			if ((tmp = parse_inline(tmp, args, args_flag)) != NULL)
+			if ((tmp = parse_inline(tmp, args)) != NULL)
 			{
 				TruncateAndQuote(buffer, tmp, length, quote_em);
 				new_free(&tmp);
@@ -1694,7 +1679,6 @@ static	char	*alias_special_char (char **buffer, char *ptr, const char *args, cha
 		case '*':
 		{
 			TruncateAndQuote(buffer, args, length, quote_em);
-			*args_flag = 1;
 			return (ptr + 1);
 		}
 
@@ -1718,14 +1702,13 @@ static	char	*alias_special_char (char **buffer, char *ptr, const char *args, cha
 			if (rest == ptr + 1)
 			{
 			    sub_buffer = malloc_strdup(args);
-			    *args_flag = 1;
 			}
 			else
 			{
 			    c2 = *rest;
 			    *rest = 0;
 			    alias_special_char(&sub_buffer, ptr + 1, 
-						args, quote_em, args_flag);
+						args, quote_em);
 			    *rest = c2;
 			}
 
@@ -1769,8 +1752,6 @@ static	char	*alias_special_char (char **buffer, char *ptr, const char *args, cha
 			if (isdigit(c) || (c == '-') || c == '~')
 			{
 			    char *tmp2;
-
-			    *args_flag = 1;
 
 			    /*
 			     * Handle $~.  EOS especially handles this
@@ -1856,9 +1837,9 @@ static	char	*alias_special_char (char **buffer, char *ptr, const char *args, cha
 			    }
 
 			    if (function_call)
-				tmp = call_function(ptr, args, args_flag);
+				tmp = call_function(ptr, args);
 			    else
-				tmp = get_variable_with_args(ptr, args, args_flag);
+				tmp = get_variable_with_args(ptr, args);
 
 			    if (!tmp)
 				tmp = malloc_strdup(empty_string);

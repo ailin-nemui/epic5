@@ -107,8 +107,8 @@ alias country.lookup
 	echo *** DONE !
 }
 
-alias lcountry country -c
-alias lcode country -i
+alias lcountry country -c $*
+alias lcode country -i $*
 
 ############ THE ACTUAL DATABASE:
 

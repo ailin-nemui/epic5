@@ -74,7 +74,7 @@ on #-msg -420 * proc.add_tabkey $0
 on #-send_dcc_chat -420 * proc.add_tabkey =$0
 on #-send_msg -420 * proc.add_tabkey $0
 
-alias m msg
+alias m msg $*
 alias msg
 {
         //msg $*

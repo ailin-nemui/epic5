@@ -7,30 +7,30 @@
 # Standard ircI-like abbreviations
 # No irc client can call itself irc client if its not ircI-compatible!
 #
-alias a away
-alias c channel
-alias ch channel
-alias e exit
-alias h help
-alias i invite
-alias j join
-alias l leave
-#alias log set log
-alias m msg
-alias n names
-alias s signoff
-alias t topic
-alias w whois
+alias a away $*
+alias c channel $*
+alias ch channel $*
+alias e exit $*
+alias h help $*
+alias i invite $*
+alias j join $*
+alias l leave $*
+#alias log set log $*
+alias m msg $*
+alias n names $*
+alias s signoff $*
+alias t topic $*
+alias w whois $*
 
 # Standard ircII aliases..
 #
-alias chop mo +o
+alias chop mo +ooo $*
 alias unchop mo -o $*
 alias mo mode $C $*
-alias k kick $C
+alias k kick $C $*
 alias wdetected whois $D
-alias show exec -msg $T
-alias umode mode $N
+alias show exec -msg $T $*
+alias umode mode $N $*
 
 #
 # Because of a logic error, /DMSG and /DQUERY have new aliases.
@@ -51,7 +51,7 @@ window name ircII
 # correctly.  That means that loading this script from global is _not_
 # optional.
 #
-alias mode3 modethree
+alias mode3 modethree $*
 alias modethree fe ($2-) x y z {mode $0 $1 $x $y $z}
 alias cinfo echo $info(c)
 alias o.b @ function_return = (SHOW_NUMERICS==[ON]) ? H : [***]

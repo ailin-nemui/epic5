@@ -15,10 +15,6 @@
 # If a nickname which has 'never' existed is messaged, it will not be added to
 # the list.
 
-#echo ***
-#echo *** Just try ''TC''!
-#echo ***
-
 # searches thru list forwards (tab) or backwards (ctrl R)
 bind ^I parse_command ^tk.getmsg 1 $tk.msglist
 bind ^R parse_command ^tk.getmsg -1 $tk.msglist

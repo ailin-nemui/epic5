@@ -17,7 +17,7 @@ alias deban_mode
 }
 
 # remove all bans on current channel
-alias deban uniban *
+alias deban uniban * $*
 
 # remove all bans that could cover nickname
 alias unban uniban $0!$uh($0)

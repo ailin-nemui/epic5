@@ -3,8 +3,8 @@
 #
 
 package help
-alias h help.help
-alias help help.help
+alias h help.help $*
+alias help help.help $*
 
 # help.isdir is stolen more or less from nsx's tabkey script. Thanks nsx!
 alias help.isdir (dir) {

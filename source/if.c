@@ -1,4 +1,4 @@
-/* $EPIC: if.c,v 1.24 2003/10/28 06:30:13 jnelson Exp $ */
+/* $EPIC: if.c,v 1.25 2003/12/14 20:04:09 jnelson Exp $ */
 /*
  * if.c: the IF, WHILE, FOREACH, DO, FE, FEC, and FOR commands for IRCII 
  *
@@ -156,7 +156,7 @@ BUILT_IN_COMMAND(ifcmd)
 			error("IF: Missing expression");
 			return;
 		}
-		current_expr_val = parse_inline(current_expr, subargs, &flag);
+		current_expr_val = parse_inline(current_expr, subargs);
 		if (get_int_var(DEBUG_VAR) & DEBUG_EXPANSIONS)
 			privileged_yell("%s expression expands to: (%s)", command, current_expr_val);
 
@@ -257,7 +257,7 @@ BUILT_IN_COMMAND(docmd)
 
 				/* Alas, too bad the malloc is neccesary */
 				malloc_strcpy(&newexp, expr);
-				ptr = parse_inline(newexp, subargs, &args_used);
+				ptr = parse_inline(newexp, subargs);
 				result = check_val(ptr);
 				new_free(&ptr);
 				if (!result)
@@ -304,7 +304,7 @@ BUILT_IN_COMMAND(whilecmd)
 	while (1)
 	{
 		newexp = LOCAL_COPY(exp);
-		ptr = parse_inline(newexp, subargs, &args_used);
+		ptr = parse_inline(newexp, subargs);
 		if (check_val(ptr) != whileval)
 			break;
 
@@ -341,7 +341,6 @@ BUILT_IN_COMMAND(foreach)
 	int	slen;
 	int	old_display;
 	int	list = VAR_ALIAS;
-	int	af;
 
 	if (!subargs)
 		subargs = empty_string;
@@ -358,7 +357,7 @@ BUILT_IN_COMMAND(foreach)
 		return;
 	}
 
-	struc = upper(remove_brackets(ptr, subargs, &af));
+	struc = upper(remove_brackets(ptr, subargs));
 
 	if (!(var = next_arg(args, &args)))
 	{
@@ -431,7 +430,6 @@ BUILT_IN_COMMAND(fe)
 		*todo = NULL,
 		fec_buffer[2];
 	unsigned	ind, x, y;
-	int     args_flag;
 	int     old_display;
 	int	doing_fe = !strcmp(command, "FE");
 	char	*mapvar = NULL;
@@ -451,7 +449,7 @@ BUILT_IN_COMMAND(fe)
 		mapvar = next_arg(args, &args);
 		templist = get_variable(mapvar);
 	} else if ((list = next_expr(&args, '('))) {
-		templist = expand_alias(list, subargs, &args_flag, NULL);
+		templist = expand_alias(list, subargs, NULL);
 	} else {
 		error("%s: Missing List for /%s", command, command);
 		return;
@@ -612,7 +610,6 @@ static void	for_fe_cmd (int argc, char **argv, const char *subargs)
 {
 	char 	*var, *list, *cmds;
 	char	*next, *real_list, *x;
-	int	args_flag = 0;
 
 	if (!subargs)
 		subargs = empty_string;
@@ -630,7 +627,7 @@ static void	for_fe_cmd (int argc, char **argv, const char *subargs)
 		cmds++;
 	if (*list == '(')
 		list++;
-	x = real_list = expand_alias(list, subargs, &args_flag, NULL);
+	x = real_list = expand_alias(list, subargs, NULL);
 	will_catch_break_exceptions++;
 	will_catch_continue_exceptions++;
 	while (real_list && *real_list)
@@ -759,7 +756,7 @@ BUILT_IN_COMMAND(forcmd)
 	{
 		lameeval = LOCAL_COPY(evaluation);
 
-		blah = parse_inline(lameeval, subargs, &argsused);
+		blah = parse_inline(lameeval, subargs);
 		if (!check_val(blah))
 		{
 			new_free(&blah);
@@ -828,7 +825,6 @@ BUILT_IN_COMMAND(switchcmd)
 		*body, 
 		*header, 
 		*commands;
-	int 	af;
 
 	if (!subargs)
 		subargs = empty_string;
@@ -839,7 +835,7 @@ BUILT_IN_COMMAND(switchcmd)
 		return;
 	}
 
-	control = expand_alias(control, subargs, &af, NULL);
+	control = expand_alias(control, subargs, NULL);
 	if (get_int_var(DEBUG_VAR) & DEBUG_EXPANSIONS)
 		privileged_yell("%s expression expands to: (%s)", command, control);
 
@@ -864,7 +860,7 @@ BUILT_IN_COMMAND(switchcmd)
 				new_free(&control);
 				return;
 			}
-			header = expand_alias(header, subargs, &af, NULL);
+			header = expand_alias(header, subargs, NULL);
 			if (get_int_var(DEBUG_VAR) & DEBUG_EXPANSIONS)
 				privileged_yell("%s expression expands to: (%s)", command, header);
 			if (wild_match(header, control))
@@ -916,7 +912,7 @@ BUILT_IN_COMMAND(repeatcmd)
 
 		num_expr = next_expr(&args, '(');
 		dumb_copy = LOCAL_COPY(num_expr);
-		tmp_val = parse_inline(dumb_copy, subargs, &argsused);
+		tmp_val = parse_inline(dumb_copy, subargs);
 	}
 	else
 	{

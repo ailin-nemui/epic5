@@ -1,4 +1,4 @@
-/* $EPIC: perl.c,v 1.11 2003/07/09 21:10:25 jnelson Exp $ */
+/* $EPIC: perl.c,v 1.12 2003/12/14 20:04:10 jnelson Exp $ */
 /*
  * perl.c -- The perl interfacing routines.
  *
@@ -79,7 +79,7 @@ static XS (XS_expr) {
 	dXSARGS;
 	for (foo=0; foo<items; foo++) {
 		arg = malloc_strdup((char*)SvPV_nolen(ST(foo)));
-		retval = (char*)parse_inline(arg, "", &food);
+		retval = (char*)parse_inline(arg, "");
 		XST_mPV(foo, retval);
 		new_free(&arg);
 		new_free(&retval);
@@ -94,7 +94,7 @@ static XS (XS_call) {
 	dXSARGS;
 	for (foo=0; foo<items; foo++) {
 		arg = malloc_strdup((char*)SvPV_nolen(ST(foo)));
-		retval = (char*)call_function(arg, "", &food);
+		retval = (char*)call_function(arg, "");
 		XST_mPV(foo, retval);
 		new_free(&arg);
 		new_free(&retval);

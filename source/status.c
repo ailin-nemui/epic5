@@ -1,4 +1,4 @@
-/* $EPIC: status.c,v 1.35 2003/12/07 20:16:52 jnelson Exp $ */
+/* $EPIC: status.c,v 1.36 2003/12/14 20:04:10 jnelson Exp $ */
 /*
  * status.c: handles the status line updating, etc for IRCII 
  *
@@ -613,7 +613,6 @@ int	make_status (Window *window, int must_redraw)
 		 */
 		if (get_int_var(STATUS_DOES_EXPANDOS_VAR))
 		{
-			int  af = 0;
 			int  old_fs = from_server;
 			Window *old = current_window;
 			int	owd = window_display;
@@ -621,7 +620,7 @@ int	make_status (Window *window, int must_redraw)
 			current_window = window;
 			from_server = current_window->server;
 			window_display = 0;
-			str = expand_alias(buffer, empty_string, &af, NULL);
+			str = expand_alias(buffer, empty_string, NULL);
 			window_display = owd;
 			from_server = old_fs;
 			current_window = old;

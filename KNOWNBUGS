@@ -1,87 +1,14 @@
-EPIC4 Projects, Bugs, and other Errata:
+EPIC5 Projects, Bugs, and other Errata:
 
 KNOWN ERRATA (eg, bugs, or unresolved requests):
 ------------------------------------------------
 <none>
 
 [See http://www.epicsol.org/PROJECTS for things to come in the future]
-[See http://www.epicsol.org/CHANGELOG for things that changed in the past]
+[See http://www.epicsol.org/CHANGELOG5 for things that changed in the past]
 
 THE CHANGELOG SINCE THE LAST RELEASE:
 -------------------------------------
-* Make /server <host> honor server groups if can't connect to <host>
-* Make reconnects use the server group of NEW server not OLD server.
-* Add checks in configure for (long long)
-* Make support for (long long) unconditional in new math parser
-* Make 'l' appear in $info(o) if (long long) is being used in new math parser.
-* Make wrapper for atoll() for freebsd-stable and stuff.
-* Make a more complicated wrapper for atoll() for libc5 and stuff.
-* Fix panics when changing hidden window's double status bar status.
-* Fix /lastlog <number> for kanan. 
-* Add /ON WINDOW_COMMAND, hooked after every /window command, $* is refnum.
-* Add concept of "fixed" or "frozen" windows when you SKIP ON FIXED ON
-* Fix /window kill to not kill the last "non-fixed" window
-* Fix /window hide to not hide the last "non-fixed" window
-* Allow /window kill to kill a "fixed" window, but not the last window.
-* (*gulp*) I hope all of the above works!
-* Fix $windowctl(REFNUM ...) it was out of order with REFNUMS
-* Make /xecho -l override the "who_from" target and always send to the level
-* Fix raw listen DCCs not obey /SET DCC_TIMEOUT.
-* Added outputting of long long ints to new math parser.
-* Add $windowctl(GET <refnum> DOUBLE) 
-* Support inbound double quoted filenames in dcc handshakes. bleh.
-* Fix NULL deref when you kill hidden windows (ie, /window killswap)
-* Update tabkey.jm one last time
-* Add 'notify' script, a replacement for the notify command.
-* Fix $windowctl(GET <refnum> DOUBLE)
-* Make /on window_command give two refnums, the before and after refnums.
-* Fix the larneproofing in numeric_handler(), it was defective all over.
-* Fix a NULL deref if you do /window when there is no current window (!)
-* Update notify script from nsx, add sping script from nsx.
-* More script changes from nsx.  Gotta ask him to stop this. :d
-* Another round of minor compiler nits.  Nothing worth fretting over.
-* Fix a couple of minor compiler nits.
-* Add /SET STATUS_NOSWAP
-* Fix #define DEBUG_EXTRACTW_DEBUG/LASTLOG
-* Add -o and -O command line options to turn off IEXTEN termio() options
-* Add /WINDOW SWAPPABLE (defaults to on)
-* Add %{1}W status expando, expands to /SET STATUS_NOSWAP if SWAPPABLE OFF
-* Don't allow windows to be swapped in or out if SWAPPABLE OFF
-* Don't allow windows to be shown or hidden if SWAPPABLE OFF
-* Do allow windows to be swapped in with WINDOW KILL even if SWAPPABLE OFF
-* Add $windowctl(GET <refnum> SWAPPABLE)
-* Fix /window next, /window prev (SWAP_NEXT_WINDOW/SWAP_PREV_WINDOW) to 
-  skip non-swappable windows.
-* Fix /window kill so it doesn't swap in a window too early.
-* Make NOTICEs from servers to channels (on ircnet) go to that channel's win.
-* Tell getopt about -o and -O
-* Fix bounds error in /exec -direct
-* The last argument to open_file_for_write() needs to be lowercase.
-* Add $numlines() from fudd.
-* Fix some issues with $numlines()
-* Fix DCC events so that they occur in the context of "no server" (FROMSERV)
-  rather than the "current server" (NOSERV).  This can fix or completely break
-  certain intermittent scripting problems.
-* Fixed {f,}q1cmd in commandqueues so that it works properly in the "no server"
-  context.
-* Make the output-window-searcher ignore from_server for LOG_DCC
-* Make status_hold and status_hold_lines use scrollback numbers too.
-* Make add_to_scrollback() redraw status bar if output while scrollbacking.
-* Do not increment arg_count when ignoring an empty argument in arglists.
-* Add /ON WINDOW_BEFOREKILL
-* Another iteration of the 'notify' script, hooks the system's /ONs now! =)
-* Put a space in place of a newline in the PF loader.
-* Always ignore spaces after semicolons in parse_line (the {} parser).
-* Some compiler warning fixes from rain.
-* Fix defects and a memory leak in the pf loader.
-* Fixes to 'less' script from howl
-* New 'help' script from howl
-* Add /WINDOW SCROLLADJ.
-* Make inet_vhostsockaddr() extern so dcc can use it
-* Make dcc_open() use inet_vhostsockaddr() to bind /hostname to dcc conns
-* Don't allow -b and -q, or -b -and -s, as they cause deadlocks/panics
-* Fix casting error that caused $urlencode() of high bit chars to segfault
-* If swapping in a window that has no room for double status, recalculate all
-* If double-on in a window that has no room for it, recalculate all
-* Fix for rain's meta-compat script
-* Change default of /SET AUTO_REJOIN to OFF.
+* Nix auto-append-of-$* feature (args_flag to expand_alias/parse_inline)
+* Fix provided scripts to add $* when necessary.
+* Fix up Makefile, configure, et al, to use epic5/ directories.

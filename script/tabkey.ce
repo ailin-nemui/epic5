@@ -56,7 +56,7 @@
 
 package tabkey.ce
 bind ^i parse_command tabkey.main
-alias tabkey.default tabkey.method.nickchan
+alias tabkey.default tabkey.method.nickchan $*
 
 alias tabkey.main {
 	@ :oxd = xdebug(extractw)
@@ -146,8 +146,8 @@ alias tabkey.recurse (depth,...) {
 
 # Context sensitive completion goes here.
 
-alias tabkey.cmd.eval tabkey.recurse 1
-alias tabkey.cmd.repeat tabkey.recurse 2
+alias tabkey.cmd.eval tabkey.recurse 1 $*
+alias tabkey.cmd.repeat tabkey.recurse 2 $*
 
 alias tabkey.cmd.dcc (args) {
 	bless
@@ -155,7 +155,7 @@ alias tabkey.cmd.dcc (args) {
 		(1) {return $pattern("$args*" CHAT CLOSE CLOSEALL GET LIST RAW RENAME RESUME SEND)}
 	}
 }
-alias tabkey.cmd.dcc.resume tabkey.cmd.dcc.send
+alias tabkey.cmd.dcc.resume tabkey.cmd.dcc.send $*
 alias tabkey.cmd.dcc.send {
 	bless
 	switch ($curword) {

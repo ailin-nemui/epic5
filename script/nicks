@@ -9,5 +9,5 @@ alias msg {
 	if ( [$($0)] ) { //msg $($0) $1- } { //msg $0 $1- }
 }
 alias query {
-	if ( [$($0)] ) { //query $($0) } { //query $0- }
+	if ( [$($0)] ) { //query $($0) } { //query $* }
 }

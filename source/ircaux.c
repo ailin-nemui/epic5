@@ -1,4 +1,4 @@
-/* $EPIC: ircaux.c,v 1.104 2003/12/13 17:25:58 jnelson Exp $ */
+/* $EPIC: ircaux.c,v 1.105 2003/12/14 20:04:10 jnelson Exp $ */
 /*
  * ircaux.c: some extra routines... not specific to irc... that I needed 
  *
@@ -2218,7 +2218,7 @@ int 	empty (const char *str)
 
 
 /* makes foo[one][two] look like tmp.one.two -- got it? */
-char *	remove_brackets (const char *name, const char *args, int *arg_flag)
+char *	remove_brackets (const char *name, const char *args)
 {
 	char 	*ptr, 
 		*right, 
@@ -2243,7 +2243,7 @@ char *	remove_brackets (const char *name, const char *args, int *arg_flag)
 			ptr = NULL;
 
 		if (args)
-			result1 = expand_alias(right, args, arg_flag, NULL);
+			result1 = expand_alias(right, args, NULL);
 		else
 			result1 = right;
 

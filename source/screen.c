@@ -1,4 +1,4 @@
-/* $EPIC: screen.c,v 1.65 2003/12/07 20:16:52 jnelson Exp $ */
+/* $EPIC: screen.c,v 1.66 2003/12/14 20:04:10 jnelson Exp $ */
 /*
  * screen.c
  *
@@ -2310,7 +2310,6 @@ static void 	add_to_window (Window *window, const unsigned char *str)
 	   {
 		char	*prepend_exp;
 		char	argstuff[10240];
-		int	args_flag;
 
 		/* First, create the $* list for the expando */
 		snprintf(argstuff, 10240, "%u %s", 
@@ -2318,7 +2317,7 @@ static void 	add_to_window (Window *window, const unsigned char *str)
 
 		/* Now expand the expando with the above $* */
 		prepend_exp = expand_alias(pend, argstuff,
-					   &args_flag, NULL);
+					   NULL);
 
 		str = prepend_exp;
 		free_me = prepend_exp;
