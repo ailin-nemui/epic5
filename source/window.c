@@ -1,4 +1,4 @@
-/* $EPIC: window.c,v 1.68 2003/07/22 21:12:54 jnelson Exp $ */
+/* $EPIC: window.c,v 1.69 2003/08/11 22:09:20 jnelson Exp $ */
 /*
  * window.c: Handles the organzation of the logical viewports (``windows'')
  * for irc.  This includes keeping track of what windows are open, where they
@@ -2841,8 +2841,11 @@ static Window *window_channel (Window *window, char **args)
 #endif
 		else
 		{
+		    if (sarg)
 			send_to_aserver(window->server,"JOIN %s %s", arg, sarg);
-			malloc_strcpy(&window->waiting_channel, arg);
+		    else
+			send_to_aserver(window->server,"JOIN %s", arg);
+		    malloc_strcpy(&window->waiting_channel, arg);
 		}
 
 		new_free(&arg2);
