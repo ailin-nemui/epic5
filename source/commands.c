@@ -918,6 +918,10 @@ BUILT_IN_COMMAND(echocmd)
 		    {
 			/* There is always at least one visible window! */
 			Window *win = NULL;
+
+			/* Chew up the argument. */
+			flag_arg = next_arg(args, &args);
+
 			while ((traverse_all_windows(&win)))
 			{
 				if (win->visible)
