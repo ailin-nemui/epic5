@@ -7,7 +7,7 @@
  *
  * See the COPYRIGHT file, or do a HELP IRCII COPYRIGHT 
  *
- * @(#)$Id: ircaux.h,v 1.28 2002/06/16 04:09:57 jnelson Exp $
+ * @(#)$Id: ircaux.h,v 1.29 2002/06/21 23:37:31 crazyed Exp $
  */
 
 #ifndef _IRCAUX_H_
@@ -36,6 +36,8 @@ typedef int 	comp_func 		(char *, char *);
 #define m_s3cat(x,y,z) m_sc3cat((x),(y),(z),NULL)
 #define m_s3cat_s(x,y,z) m_sc3cat_s((x),(y),(z),NULL)
 #define m_3cat(x,y,z) m_c3cat((x),(y),(z),NULL)
+#define malloc_strcat(x,y) malloc_strcat_c((x),(y),NULL)
+#define m_strcat_ues(x,y,z) m_strcat_ues_c((x),(y),(z),NULL)
 
 extern	int	need_delayed_free;
 void	fatal_malloc_check	(void *, const char *, char *, int);
@@ -59,7 +61,7 @@ char *	rsindex 		(char *, char *, char *, int);
 char *	path_search 		(char *, char *);
 char *	double_quote 		(const char *, const char *, char *);
 char *	malloc_strcpy 		(char **, const char *);
-char *	malloc_strcat 		(char **, const char *);
+char *	malloc_strcat_c		(char **, const char *, size_t *);
 char *	malloc_str2cpy		(char **, const char *, const char *);
 char *	m_sc3cat_s 		(char **, const char *, const char *, size_t *clue);
 char *	m_sc3cat 		(char **, const char *, const char *, size_t *clue);
@@ -84,7 +86,7 @@ char *	chop 			(char *, size_t);
 char *	strmcpy 		(char *, const char *, int);
 char *	strmcat 		(char *, const char *, int);
 char *	strmcat_ue 		(char *, const char *, int);
-char *	m_strcat_ues 		(char **, char *, int);
+char *	m_strcat_ues_c 		(char **, char *, int, size_t *);
 char *	strmopencat		(char *, int, ...);
 char *	stristr 		(const char *, const char *);
 char *	rstristr 		(const char *, const char *);

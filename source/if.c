@@ -410,10 +410,11 @@ BUILT_IN_COMMAND(fe)
 	if (!subargs)
 		subargs = empty_string;
 
-	if (*args == '(' && (list = next_expr(&args, '('))) {
-		templist = expand_alias(list, subargs, &args_flag, NULL);
-	} else if ((mapvar = next_arg(args, &args))) {
+	if (isalnum(*args)) {
+		mapvar = next_arg(args, &args);
 		templist = get_variable(mapvar);
+	} else if ((list = next_expr(&args, '('))) {
+		templist = expand_alias(list, subargs, &args_flag, NULL);
 	} else {
 		error("%s: Missing List for /%s", command, command);
 		return;

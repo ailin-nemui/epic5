@@ -63,11 +63,7 @@ alias tabkey {
 	@ :word = mid($wordind ${curpos()-wordind} $L)
 	@ :matches = []
 	if (!index($cmdchars $L)) {
-		if (!curword) {
-			parsekey command_completion
-		} else {
-			wait for @ matches = tabkey.cmd($word)
-		}
+		wait for @ matches = tabkey.cmd($word)
 	} else {
 		wait for @ :matches = tabkey.default($word)
 	}
@@ -89,6 +85,11 @@ alias tabkey.cmd {
 	@ :args = mid(0 $curpos() $L)
 	@ :args = unsplit(. $args)
 	@ :args = pass(._$pass $args)
+	if (!curword) {
+		@ ret = tabkey.method.commands($args)
+		repeat $#ret {push ret /$shift(ret)}
+		return $ret
+	}
 	while (args) {
 		@ :matches = aliasctl(alias pmatch tabkey.cmd.$args*)
 		@ :matches = prefix($matches)
@@ -98,7 +99,7 @@ alias tabkey.cmd {
 		}
 		@ args = before(-1 . $args)
 	}
-	if (args && args != [tabkey.cmd]) {
+	if (args) {
 		wait for @ ret = ${args}($*)
 	}
 	unless (strlen($ret)) {
@@ -132,6 +133,11 @@ alias tabkey.cmd.help {
 }
 
 # Methods.
+
+alias tabkey.method.commands {
+	@ :ret = sort($uniq($getcommands($**) $aliasctl(alias match $*) $aliasctl(alias match $**)))
+	return $ret
+}
 
 alias tabkey.method.chan { return $pattern("$0*" $mychannels()); }
 alias tabkey.method.notify { return $pattern("$0*" $notify(on)); }

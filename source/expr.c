@@ -1292,6 +1292,7 @@ char	*expand_alias	(const char *string, const char *args, int *args_flag, char *
 	char	ch;
 	int	is_quote = 0;
 	int	unescape = 1;
+	size_t	buffclue = 0;
 
 	if (!string || !*string)
 		return m_strdup(empty_string);
@@ -1323,6 +1324,7 @@ char	*expand_alias	(const char *string, const char *args, int *args_flag, char *
 		{
 		    case '$':
 		    {
+			char *buffer1 = NULL;
 			/*
 			 * The test here ensures that if we are in the 
 			 * expression evaluation command, we don't expand $. 
@@ -1340,7 +1342,7 @@ char	*expand_alias	(const char *string, const char *args, int *args_flag, char *
 			if (!*ptr)
 				break;		/* Hrm. */
 
-			m_strcat_ues(&buffer, stuff, unescape);
+			m_strcat_ues_c(&buffer, stuff, unescape, &buffclue);
 
 			for (; *ptr == '^'; ptr++)
 			{
@@ -1350,7 +1352,9 @@ char	*expand_alias	(const char *string, const char *args, int *args_flag, char *
 				quote_temp[0] = *ptr;
 				malloc_strcat(&quote_str, quote_temp);
 			}
-			stuff = alias_special_char(&buffer, ptr, args, quote_str, args_flag);
+			stuff = alias_special_char(&buffer1, ptr, args, quote_str, args_flag);
+			malloc_strcat_c(&buffer, buffer1, &buffclue);
+			new_free(&buffer1);
 			if (quote_str)		/* Why ``stuff''? */
 				new_free(&quote_str);
 			ptr = stuff;
@@ -1374,7 +1378,7 @@ char	*expand_alias	(const char *string, const char *args, int *args_flag, char *
 		    {
 			ch = *ptr;
 			*ptr = '\0';
-			m_strcat_ues(&buffer, stuff, unescape);
+			m_strcat_ues_c(&buffer, stuff, unescape, &buffclue);
 			stuff = ptr;
 			*args_flag = 1;
 			if (!(ptr = MatchingBracket(stuff + 1, ch,
@@ -1390,7 +1394,7 @@ char	*expand_alias	(const char *string, const char *args, int *args_flag, char *
 			*stuff = ch;
 			ch = *ptr;
 			*ptr = '\0';
-			malloc_strcat(&buffer, stuff);
+			malloc_strcat_c(&buffer, stuff, &buffclue);
 			stuff = ptr;
 			*ptr = ch;
 			break;
@@ -1410,7 +1414,7 @@ char	*expand_alias	(const char *string, const char *args, int *args_flag, char *
 	}
 
 	if (stuff)
-		m_strcat_ues(&buffer, stuff, unescape);
+		m_strcat_ues_c(&buffer, stuff, unescape, &buffclue);
 
 	if (get_int_var(DEBUG_VAR) & DEBUG_EXPANSIONS)
 		yell("Expanded [%s] to [%s]", string, buffer);

@@ -2462,9 +2462,6 @@ char *function_shift (char *word)
 
 	value = get_variable(var);
 
-	if (!value && !*value)
-		RETURN_EMPTY;
-
 	placeholder = value;
 	booya = m_strdup(new_next_arg(value, &value));
 	if (var)

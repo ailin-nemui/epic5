@@ -8,7 +8,7 @@
  */
 
 #if 0
-static	char	rcsid[] = "@(#)$Id: ircaux.c,v 1.44 2002/06/06 23:28:58 crazyed Exp $";
+static	char	rcsid[] = "@(#)$Id: ircaux.c,v 1.45 2002/06/21 23:37:31 crazyed Exp $";
 #endif
 
 #include "irc.h"
@@ -332,10 +332,12 @@ char *	malloc_strcpy (char **ptr, const char *src)
 }
 
 /* malloc_strcat: Yeah, right */
-char *	malloc_strcat (char **ptr, const char *src)
+char *	malloc_strcat_c (char **ptr, const char *src, size_t *cluep)
 {
 	size_t  msize;
 	size_t  psize;
+	size_t  ssize;
+	size_t	clue = cluep ? *cluep : 0;
 
 	if (*ptr)
 	{
@@ -345,8 +347,9 @@ char *	malloc_strcat (char **ptr, const char *src)
 		if (!src)
 			return *ptr;
 
-		msize = (psize=strlen(*ptr)) + strlen(src) + 1;
+		msize = (psize = clue + strlen(clue + *ptr)) + (ssize = strlen(src)) + 1;
 		RESIZE(*ptr, char, msize);
+		if (cluep) *cluep = psize + ssize;
 		return strcat(psize+*ptr, src)-psize;
 	}
 
@@ -707,8 +710,7 @@ char *	last_arg (char **src, size_t *cluep)
 
 char *	new_next_arg (char *str, char **new_ptr)
 {
-	char	*ptr,
-		*start;
+	char	*ptr;
 
 	if (!str || !*str)
 		return NULL;
@@ -719,8 +721,7 @@ char *	new_next_arg (char *str, char **new_ptr)
 
 	if (*ptr == '"')
 	{
-		start = ++ptr;
-		for (str = start; *str; str++)
+		for (str = ++ptr; *str; str++)
 		{
 			if (*str == '\\' && str[1])
 				str++;
@@ -742,7 +743,7 @@ char *	new_next_arg (char *str, char **new_ptr)
 			*str++ = 0;
 	}
 
-	if (!*str || !*ptr)
+	if (!*str)
 		str = empty_string;
 
 	if (new_ptr)
@@ -1098,20 +1099,21 @@ char *	strmcat_ue (char *dest, const char *src, int maxlen)
  * This uses a cheating, "not-as-efficient-as-possible" algorithm,
  * And boy do we pay for it.
  */
-char *	m_strcat_ues (char **dest, char *src, int unescape)
+char *	m_strcat_ues_c (char **dest, char *src, int unescape, size_t *cluep)
 {
 	int 	total_length;
 	char *	ptr;
 	char *	ptr2;
 	int	z;
+	size_t	clue = cluep ? *cluep : 0;
 
 	if (!unescape)
 	{
-		malloc_strcat(dest, src);
+		malloc_strcat_c(dest, src, cluep);
 		return *dest;
 	}
 
-	z = total_length = (*dest) ? strlen(*dest) : 0;
+	z = total_length = (*dest) ? clue + strlen(clue + *dest) : 0;
 	total_length += strlen(src);
 
 	RESIZE(*dest, char, total_length + 1);
@@ -1142,6 +1144,7 @@ char *	m_strcat_ues (char **dest, char *src, int unescape)
 		if (!*ptr)
 			break;
 	}
+	if (cluep) *cluep = ptr2 - *dest - 1;
 	return *dest;
 }
 
