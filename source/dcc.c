@@ -1,4 +1,4 @@
-/* $EPIC: dcc.c,v 1.94 2004/03/16 00:24:33 jnelson Exp $ */
+/* $EPIC: dcc.c,v 1.95 2004/03/16 15:51:15 jnelson Exp $ */
 /*
  * dcc.c: Things dealing client to client connections. 
  *
@@ -1508,12 +1508,25 @@ static	void	dcc_getfile (char *args, int resume)
 		else
 			strlcat(fullname, realfilename, sizeof(fullname));
 		new_free(&realfilename);
+		dcc->filename = malloc_strdup(fullname);
+		dcc->open_callback = NULL;
 
 #ifdef MIRC_BROKEN_DCC_RESUME
 		if (resume && get_int_var(MIRC_BROKEN_DCC_RESUME_VAR) && stat(fullname, &sb) != -1) {
 			dcc->bytes_sent = 0;
 			dcc->bytes_read = dcc->resume_size = sb.st_size;
-		
+
+			if ((file = open(dcc->filename,
+					O_WRONLY|O_CREAT, 0644)) == -1)
+			{
+				say("Unable to open %s: %s", 
+					fullname, errno ? 
+						strerror(errno) : 
+						"<No Error>");
+				return;
+			}
+			dcc->file = file;
+	
 			if (((SA *)&dcc->offer)->sa_family == AF_INET)
 				malloc_strcpy(&dcc->othername, 
 						ltoa(ntohs(V4PORT(dcc->offer))));
@@ -1544,7 +1557,7 @@ static	void	dcc_getfile (char *args, int resume)
 			return;
 		}
 #endif
-		
+
 		if ((file = open(fullname, 
 				O_WRONLY|O_TRUNC|O_CREAT, 0644)) == -1)
 		{
@@ -1555,10 +1568,8 @@ static	void	dcc_getfile (char *args, int resume)
 			return;
 		}
 
-		dcc->filename = malloc_strdup(fullname);
 		dcc->file = file;
 		dcc->flags |= DCC_TWOCLIENTS;
-		dcc->open_callback = NULL;
 		if (dcc_connect(dcc))	/* Nonblocking should be ok here */
 		{
 			if (get_all)
@@ -3592,8 +3603,6 @@ static void dcc_getfile_resume_demanded (const char *user, char *filename, char 
 static	void	dcc_getfile_resume_start (const char *nick, char *filename, char *port, char *offset)
 {
 	DCC_list	*Client;
-	Filename	fullname, pathname;
-	char		*realfilename = NULL;
 
 	if (!get_int_var(MIRC_BROKEN_DCC_RESUME_VAR))
 		return;
@@ -3608,41 +3617,7 @@ static	void	dcc_getfile_resume_start (const char *nick, char *filename, char *po
 		return;		/* Its fake. */
 
 	Client->flags |= DCC_TWOCLIENTS;
-	if (dcc_connect(Client))		/* XXX Need support for nonblock */
-		return;
-
-
-	if (get_string_var(DCC_STORE_PATH_VAR))
-	{
-		strlcpy(pathname, get_string_var(DCC_STORE_PATH_VAR), 
-					sizeof(pathname));
-	} else /* SUSv2 doesn't specify realpath() behavior for "" */
-		strcpy(pathname, "./");
-
-
-	if (normalize_filename(pathname, fullname))
-	{
-		say("%s is not a valid directory", fullname);
-		Client->flags |= DCC_DELETE;
-		return;
-	}
-
-	if (fullname && *fullname)
-		strlcat(fullname, "/", sizeof(fullname));
-
-	realfilename = dcc_urldecode(Client->description);
-	if (*realfilename == '/')
-		strlcpy(fullname, realfilename, sizeof(fullname));
-	else
-		strlcat(fullname, realfilename, sizeof(fullname));
-
-	new_free(&realfilename);
-
-	if (!(Client->file = open(fullname, O_WRONLY | O_APPEND, 0644)))
-	{
-		Client->flags |= DCC_DELETE;
-		say("Unable to open %s: %s", fullname, errno ? strerror(errno) : "<No Error>");
-	}
+	dcc_connect(Client);
 }
 
 #endif
