@@ -1,4 +1,4 @@
-/* $EPIC: timer.c,v 1.42 2004/05/05 16:43:28 jnelson Exp $ */
+/* $EPIC: timer.c,v 1.43 2004/06/28 23:48:15 jnelson Exp $ */
 /*
  * timer.c -- handles timers in ircII
  *
@@ -745,17 +745,15 @@ void 	ExecuteTimers (void)
 		/* 
 		 * If a callback function was registered, then
 		 * we use it.  If no callback function was registered,
-		 * then we use ''parse_line''.
+		 * then we call the lambda function.
 		 */
 		get_time(&right_now);
 		now = right_now;
 		if (current->callback)
 			(*current->callback)(current->callback_data);
 		else
-			parse_line("TIMER", current->command, 
-						current->subargs ? 
-						  current->subargs : 
-						  empty_string, 0,0);
+			call_lambda_command("TIMER", current->command,
+							current->subargs);
 
 		from_server = old_from_server;
 		make_window_current_by_refnum(old_refnum);

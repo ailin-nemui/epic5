@@ -1,4 +1,4 @@
-/* $EPIC: functions.c,v 1.170 2004/06/27 17:19:37 jnelson Exp $ */
+/* $EPIC: functions.c,v 1.171 2004/06/28 23:48:15 jnelson Exp $ */
 /*
  * functions.c -- Built-in functions for ircII
  *
@@ -108,43 +108,43 @@ static	char
 
 typedef struct
 {
-	char	name;
+	char	*name;
 	char	*(*func) (void);
 }	BuiltIns;
 
 static	BuiltIns built_in[] =
 {
-	{ '.',		alias_sent_nick 	},
-	{ ',',		alias_recv_nick 	},
-	{ ':',		alias_joined_nick 	},
-	{ ';',		alias_public_nick 	},
-	{ '$',		alias_dollar 		},
-	{ 'A',		alias_away 		},
-	{ 'B',		alias_msg_body 		},
-	{ 'C',		alias_channel 		},
-	{ 'D',		alias_detected 		},
-	{ 'E',		alias_idle 		},
-	{ 'F',		alias_online 		},
-	{ 'G',		alias_banner		},
-	{ 'H', 		alias_current_numeric 	},
-	{ 'I',		alias_invite 		},
-	{ 'J',		alias_version_str 	},
-	{ 'K',		alias_cmdchar 		},
-	{ 'L',		alias_line 		},
-	{ 'M',		alias_modes 		},
-	{ 'N',		alias_nick 		},
-	{ 'O',		alias_oper 		},
-	{ 'P',		alias_chanop 		},
-	{ 'Q',		alias_query_nick 	},
-	{ 'R',		alias_server_version 	},
-	{ 'S',		alias_server 		},
-	{ 'T',		alias_target 		},
-	{ 'U',		alias_buffer 		},
-	{ 'V',		alias_version 		},
-	{ 'W',		alias_currdir 		},
-	{ 'X',		alias_show_userhost 	},
-	{ 'Y',		alias_show_realname 	},
-	{ 'Z',		alias_time 		},
+	{ ".",		alias_sent_nick 	},
+	{ ",",		alias_recv_nick 	},
+	{ ":",		alias_joined_nick 	},
+	{ ";",		alias_public_nick 	},
+	{ "$",		alias_dollar 		},
+	{ "A",		alias_away 		},
+	{ "B",		alias_msg_body 		},
+	{ "C",		alias_channel 		},
+	{ "D",		alias_detected 		},
+	{ "E",		alias_idle 		},
+	{ "F",		alias_online 		},
+	{ "G",		alias_banner		},
+	{ "H", 		alias_current_numeric 	},
+	{ "I",		alias_invite 		},
+	{ "J",		alias_version_str 	},
+	{ "K",		alias_cmdchar 		},
+	{ "L",		alias_line 		},
+	{ "M",		alias_modes 		},
+	{ "N",		alias_nick 		},
+	{ "O",		alias_oper 		},
+	{ "P",		alias_chanop 		},
+	{ "Q",		alias_query_nick 	},
+	{ "R",		alias_server_version 	},
+	{ "S",		alias_server 		},
+	{ "T",		alias_target 		},
+	{ "U",		alias_buffer 		},
+	{ "V",		alias_version 		},
+	{ "W",		alias_currdir 		},
+	{ "X",		alias_show_userhost 	},
+	{ "Y",		alias_show_realname 	},
+	{ "Z",		alias_time 		},
 	{ 0,	 	NULL 			}
 };
 
@@ -761,7 +761,13 @@ static BuiltInFunctions	built_in_functions[] =
 	{ (char *) 0,		NULL }
 };
 
-#define	NUMBER_OF_FUNCTIONS (sizeof(built_in_functions) / sizeof(BuiltInFunctions)) - 2
+void	init_expandos (void)
+{
+	int	i;
+
+	for (i = 0; built_in[i].name; i++)
+		add_builtin_expando(built_in[i].name, built_in[i].func);
+}
 
 void	init_functions (void)
 {
@@ -769,27 +775,6 @@ void	init_functions (void)
 
 	for (i = 0; built_in_functions[i].name; i++)
 		add_builtin_func_alias(built_in_functions[i].name, built_in_functions[i].func);
-}
-
-
-char	*built_in_alias (char c, int *returnval)
-{
-	BuiltIns	*tmp;
-
-	for (tmp = built_in;tmp->name;tmp++)
-	{
-		if (c == tmp->name)
-		{
-			if (returnval)
-			{
-				*returnval = 1;
-				return NULL;
-			}
-			else
-				return tmp->func();
-		}
-	}
-	return NULL;		/* Pretty sure this should be NULL */
 }
 
 
@@ -846,8 +831,7 @@ char	*call_function (char *name, const char *args)
 	if (func)
 		result = func(tmp);
 	else if (alias)
-		result = parse_line_alias_special(name, alias, tmp, 
-						  0, 1, arglist, 1);
+		result = call_user_function(name, alias, tmp, arglist);
 
 	size = strlen(name) + strlen(debug_copy) + 15;
 	buf = (char *)alloca(size);
@@ -862,20 +846,21 @@ char	*call_function (char *name, const char *args)
 	return result;
 }
 
-static int	func_exist (char *name)
+static int	func_exist (char *command)
 {
-	int 	cnt, 
-		pos;
-	char *	tmp;
+	char *	name;
+	char *	(*func) (char *);
 
-	tmp = LOCAL_COPY(name);
-	upper(tmp);
+	if (!command || !*command)
+		return 0;
 
-	find_fixed_array_item(built_in_functions, sizeof(BuiltInFunctions), NUMBER_OF_FUNCTIONS + 1, tmp, &cnt, &pos);
-	if (cnt < 0)
-		return 1;
+	name = LOCAL_COPY(command);
+	upper(name);
 
-	return 0;
+	get_func_alias(name, NULL, &func);
+	if (func == NULL)
+		return 0;
+	return 1;
 }
 
 
@@ -2587,7 +2572,7 @@ char *function_unshift (char *word)
 	if (isspace(*word))
 		*word++ = 0;
 	/* If the variable has an illegal character, punt */
-	else if (*word)
+	else if (!*var || *word)
 		RETURN_EMPTY;
 
 	value = get_variable(var);
@@ -2599,7 +2584,7 @@ char *function_unshift (char *word)
 
 	add_var_alias(var, booya, 0);
 	new_free(&value);
-	return booya;
+	RETURN_MSTR(booya);
 }
 
 /*
@@ -6271,8 +6256,13 @@ BUILT_IN_FUNCTION(function_getset, input)
 
 BUILT_IN_FUNCTION(function_builtin, input)
 {
-	char *retval = built_in_alias(*input, NULL);
-	RETURN_MSTR(retval);
+	char *(*efunc) (void) = NULL;
+	void (*sfunc) (const void *) = NULL;
+
+	get_var_alias(input, &efunc, &sfunc);
+	if (efunc == NULL)
+		RETURN_EMPTY;
+	return efunc();
 }
 
 /*

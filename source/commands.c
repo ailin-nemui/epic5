@@ -1,4 +1,4 @@
-/* $EPIC: commands.c,v 1.97 2004/06/27 17:19:37 jnelson Exp $ */
+/* $EPIC: commands.c,v 1.98 2004/06/28 23:48:15 jnelson Exp $ */
 /*
  * commands.c -- Stuff needed to execute commands in ircII.
  *		 Includes the bulk of the built in commands for ircII.
@@ -572,8 +572,8 @@ void	do_defered_commands (void)
 		from_server = defer_list[i].servref;
 		make_window_current_by_refnum(get_winref_by_servref(from_server));
 
-		parse_line("deferred", defer_list[i].cmds, 
-				       defer_list[i].subargs, 0, 0);
+		call_lambda_command("deferred", defer_list[i].cmds,
+						defer_list[i].subargs);
 		new_free(&defer_list[i].cmds);
 		new_free(&defer_list[i].subargs);
 	    }
@@ -1171,7 +1171,7 @@ BUILT_IN_COMMAND(xevalcmd)
 		}
 	}
 
-	parse_line(NULL, args, subargs ? subargs : empty_string, 0, 0);
+	runcmds(args, subargs);
 
 	to_window = old_to_window;
 	make_window_current_by_refnum(old_refnum);
@@ -1180,7 +1180,7 @@ BUILT_IN_COMMAND(xevalcmd)
 
 BUILT_IN_COMMAND(evalcmd)
 {
-	parse_line(NULL, args, subargs ? subargs : empty_string, 0, 0);
+	runcmds(args, subargs);
 }
 
 /* flush: flushes all pending stuff coming from the server */
@@ -1765,7 +1765,7 @@ const	char	*defargs;
 			else
 			    defargs = NULL;
 
-			parse_line(NULL, current_row, defargs, 0, 0);
+			parse_line(NULL, current_row, defargs, 0);
 			new_free(&current_row);
 
 			if (return_exception)
@@ -1842,7 +1842,7 @@ const	char	*defargs;
 				    else
 					defargs = NULL;
 
-				    parse_line(NULL, current_row, defargs, 0,0);
+				    parse_line(NULL, current_row, defargs, 0);
 				    new_free(&current_row);
 				    if (return_exception)
 					return;
@@ -1979,7 +1979,7 @@ const	char	*defargs;
 			    else
 				defargs = NULL;
 			
-			    parse_line(NULL, current_row, defargs, 0, 0);
+			    parse_line(NULL, current_row, defargs, 0);
 			    new_free(&current_row);
 			    if (return_exception)
 				return;
@@ -2025,7 +2025,7 @@ const	char	*defargs;
 		else
 		    defargs = NULL;
 
-		parse_line(NULL, current_row, defargs, 0, 0);
+		parse_line(NULL, current_row, defargs, 0);
 	        new_free(&current_row);
 
 	        if (return_exception)
@@ -2095,9 +2095,7 @@ static void	loader_pf (FILE *fp, const char *filename, const char *subargs, stru
 	}
 
 	buffer[pos] = 0;
-	if (subargs == NULL)
-	    subargs = empty_string;
-	parse_line(NULL, buffer, subargs, 0, 0);
+	runcmds(buffer, subargs);
 	new_free(&buffer);
 }
 
@@ -2375,7 +2373,7 @@ BUILT_IN_COMMAND(redirect)
 	 */
 	set_server_redirect(from_server, who);
 	set_server_sent(from_server, 0);
-	parse_line(NULL, args, subargs ? subargs : NULL, 0, 0);
+	runcmds(args, subargs);
 
 	/*
 	 * If we've queried the server, then we wait for it to
@@ -2599,7 +2597,7 @@ BUILT_IN_COMMAND(sendlinecmd)
 	server = from_server;
 	display = window_display;
 	window_display = 1;
-	parse_line(NULL, args, get_int_var(INPUT_ALIASES_VAR) ? empty_string : NULL, 1, 0);
+	parse_line(NULL, args, get_int_var(INPUT_ALIASES_VAR) ? empty_string : NULL, 1);
 	update_input(UPDATE_ALL);
 	window_display = display;
 	from_server = server;
@@ -2773,7 +2771,7 @@ BUILT_IN_COMMAND(waitcmd)
 	{
 		set_server_sent(from_server, 0);
 		lock_stack_frame();
-		parse_line(NULL, args, subargs, 0, 0);
+		runcmds(args, subargs);
 		unlock_stack_frame();
 		if (get_server_sent(from_server))
 			server_hard_wait(from_server);
@@ -3162,7 +3160,7 @@ struct target_type target[4] =
 	 * get munched if window_display is 0.
 	 */
 	if (hook && get_server_away(from_server) && get_int_var(AUTO_UNMARK_AWAY_VAR))
-		parse_line(NULL, "AWAY", empty_string, 0, 0);
+		runcmds("AWAY", empty_string);
 
 	window_display = old_window_display;
 	recursion--;
@@ -3176,7 +3174,7 @@ struct target_type target[4] =
  */
 static void	eval_inputlist (char *args, char *line)
 {
-	parse_line(NULL, args, line ? line : empty_string, 0, 0);
+	runcmds(args, line);
 }
 
 GET_FIXED_ARRAY_NAMES_FUNCTION(get_command, irc_command)
@@ -3186,7 +3184,121 @@ BUILT_IN_COMMAND(e_call)
 	dump_call_stack();
 }
 
+/***************************************************************************/
+static char *	parse_line_alias_special (const char *name, const char *what, char *args, void *arglist, int function);
 
+/* 
+ * Execute a block of ircII code (``what'') as a lambda function.
+ * The block will be run in its own private local name space, and will be
+ * given its own $FUNCTION_RETURN variable, which it will return.
+ * 
+ *      name - If name is not NULL, this lambda function will be treated as
+ *              an atomic scope, and will not be able to change the enclosing
+ *              scope's local variables.  If name is NULL, it will have access
+ *              to the enclosing local variables.
+ *      what - The lambda function itself; a block of ircII code.
+ *      args - The value of $* for the lambda function
+ */   
+char *  call_lambda_function (const char *name, const char *what, const char *args)
+{
+	/* 
+	 * Explanation for why 'args' is (const char *) and not (char *).
+	 * 'args' is $*, and is passed in from above.  $* might be changed
+	 * if we were executing an alias that had a parameter list, and so
+	 * parse_line_alias_special must take a (char *).  But the only time
+	 * that ``args'' would be changed is if the ``arglist'' param was 
+	 * not NULL.  Since we hardcode ``arglist == NULL'' it is absolutely
+	 * guaranteed that ``args'' will not be touched, and so, it can safely
+	 * be treated as (const char *) by whoever called us.  Unfortunately,
+	 * C does not allow you to treat a pointer as conditionally const, so
+	 * we just use the cast to hide that.  This is absolutely safe.
+	 */
+	return parse_line_alias_special(name, what, (char *)
+#ifdef HAVE_INTPTR_T
+	 					    (intptr_t)
+#endif
+							args, NULL, 1);
+}
+
+/*
+ * Execute a block of ircII code as a lambda command, but do not set up a 
+ * new FUNCTION_RETURN value and do not return that value.
+ */
+void	call_lambda_command (const char *name, const char *what, const char *args)
+{
+	parse_line_alias_special(name, what, (char *)
+#ifdef HAVE_INTPTR_T
+	 					    (intptr_t)
+#endif
+							args, NULL, 0);
+}
+
+/************************************************************************/
+/*
+ * Execute a named user alias block of ircII code as a function.  Set up a
+ * new FUNCTION_RETURN value and return it.
+ */
+char 	*call_user_function	(const char *alias_name, const char *alias_stuff, char *args, void *arglist)
+{
+	return parse_line_alias_special(alias_name, alias_stuff, args, 
+						arglist, 1);
+}
+
+/*
+ * Execute a named user alias block of ircII code as a command.  Do not set
+ * up a new FUNCTION_RETURN and do not return that value.
+ */
+void	call_user_command (const char *alias_name, const char *alias_stuff, char *args, void *arglist)
+{
+	parse_line_alias_special(alias_name, alias_stuff, args, 
+					arglist, 0);
+}
+
+static char *	parse_line_alias_special (const char *name, const char *what, char *args, void *arglist, int function)
+{
+	int	old_window_display = window_display;
+	int	old_last_function_call_level = last_function_call_level;
+	char	*result = NULL;
+	int	localvars = name ? 1 : 0;
+
+	window_display = 0;
+	if (!args)
+		args = LOCAL_COPY(empty_string);
+	if (localvars && !make_local_stack(name))
+	{
+		yell("Could not run (%s) [%s]; too much recursion", 
+				name ? name : "<unnamed>", what);
+		return malloc_strdup(empty_string);
+	}
+	if (arglist)
+		prepare_alias_call(arglist, &args);
+	if (function)
+	{
+		last_function_call_level = wind_index;
+		add_local_alias("FUNCTION_RETURN", empty_string, 0);
+	}
+	window_display = old_window_display;
+
+	will_catch_return_exceptions++;
+	runcmds(what, args);
+	will_catch_return_exceptions--;
+	return_exception = 0;
+
+	if (function)
+	{
+		result = get_variable("FUNCTION_RETURN");
+		last_function_call_level = old_last_function_call_level;
+	}
+	if (localvars)
+		destroy_local_stack();
+
+	return result;
+}
+
+void	runcmds (const char *what, const char *subargs)
+{
+	parse_line(NULL, what, subargs ? subargs : empty_string, 0);
+}
 
 /* 
  * parse_line: This is the main parsing routine.  It should be called in
@@ -3212,7 +3324,7 @@ BUILT_IN_COMMAND(e_call)
  * Im sure that i did a hideously bletcherous job that needs to be cleaned up.
  * So just be forewarned about the damage.
  */
-void	parse_line (const char *name, const char *org_line, const char *args, int hist_flag, int append_flag)
+void	parse_line (const char *name, const char *org_line, const char *args, int hist_flag)
 {
 	char	*line = NULL;
 	char 	*stuff,
@@ -3283,7 +3395,7 @@ void	parse_line (const char *name, const char *org_line, const char *args, int h
 		    }
 
 		    /* I'm fairly sure the first arg ought not be 'name' */
-		    parse_line(NULL, stuff, args, hist_flag, append_flag);
+		    parse_line(NULL, stuff, args, hist_flag);
 
 		    /*
 		     * Check to see if an exception has been thrown.  If it
@@ -3615,7 +3727,7 @@ static	unsigned 	level = 0;
 			add_to_history(this_cmd);
 
 		if (alias)
-			call_user_alias(cline, alias, rest, arglist);
+			call_user_command(cline, alias, rest, arglist);
 		else if (cmd)
 			cmd(cline, rest, sub_args);
 		else if (get_int_var(DISPATCH_UNKNOWN_COMMANDS_VAR))

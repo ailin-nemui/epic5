@@ -1,4 +1,4 @@
-/* $EPIC: ircaux.c,v 1.111 2004/03/19 06:05:13 jnelson Exp $ */
+/* $EPIC: ircaux.c,v 1.112 2004/06/28 23:48:15 jnelson Exp $ */
 /*
  * ircaux.c: some extra routines... not specific to irc... that I needed 
  *
@@ -4569,5 +4569,113 @@ ssize_t	searchbuf (const u_char *str, size_t start, size_t end, int find)
 	}
 
 	return -1;		/* Eh, whatever */
+}
+
+/*
+ * after_expando: This replaces some much more complicated logic strewn
+ * here and there that attempted to figure out just how long an expando 
+ * name was supposed to be.  Well, now this changes that.  This will slurp
+ * up everything in 'start' that could possibly be put after a $ that could
+ * result in a syntactically valid expando.  All you need to do is tell it
+ * if the expando is an rvalue or an lvalue (it *does* make a difference)
+ */
+static 	const char *lval[] = { "rvalue", "lvalue" };
+char *	after_expando (char *start, int lvalue, int *call)
+{
+	char	*rest;
+	char	*str;
+
+	if (!*start)
+		return start;
+
+	/*
+	 * One or two leading colons are allowed
+	 */
+	str = start;
+	if (*str == ':')
+		if (*++str == ':')
+			++str;
+
+	/*
+	 * This handles 99.99% of the cases
+	 */
+	while (*str && (isalpha(*str) || isdigit(*str) || 
+				*str == '_' || *str == '.'))
+		str++;
+
+	/*
+	 * This handles any places where a var[var] could sneak in on
+	 * us.  Supposedly this should never happen, but who can tell?
+	 */
+	while (*str == '[')
+	{
+		ssize_t span;
+
+		if ((span = MatchingBracket(str + 1, '[', ']')) < 0)
+		{
+			if (!(rest = strchr(str, ']')))
+			{
+				yell("Unmatched bracket in %s (%s)", 
+						lval[lvalue], start);
+				return endstr(str);
+			}
+		}
+		else
+			rest = str + 1 + span;
+
+		str = rest + 1;
+	}
+
+	/*
+	 * Rvalues may include a function call, slurp up the argument list.
+	 */
+	if (!lvalue && *str == '(')
+	{
+		ssize_t span;
+
+		if ((span = MatchingBracket(str + 1, '(', ')')) < 0)
+		{
+			if (!(rest = strchr(str, ')')))
+			{
+				yell("Unmatched paren in %s (%s)", 
+						lval[lvalue], start);
+				return endstr(str);
+			}
+		}
+		else
+			rest = str + 1 + span;
+
+		*call = 1;
+		str = rest + 1;
+	}
+
+	/*
+	 * If the entire thing looks to be invalid, perhaps its a 
+	 * special built-in expando.  Check to see if it is, and if it
+	 * is, then slurp up the first character as valid.
+	 * Also note that $: by itself must be valid, which requires
+	 * some shenanigans to handle correctly.  Ick.
+	 */
+	if (str == start || (str == start + 1 && *start == ':'))
+	{
+	    int	is_builtin = 0;
+
+	    if (!lvalue)
+	    {
+		/* XXX Hardcoding these is a hack. XXX */
+		if (*start == '.' || *start == ',' || *start == ':' ||
+		    *start == ';' || *start == '$')
+			is_builtin = 1;
+
+		if (is_builtin && (str == start))
+			str++;
+	    }
+	}
+
+
+	/*
+	 * All done!
+	 */
+	return str;
 }
 

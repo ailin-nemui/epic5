@@ -259,3 +259,13 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * This unifies commands and alias name spaces. HUZZAH!
 * Optimize some stuff now that I've finished this.
 * Unify the built in functions with the command/alias list. HUZZAH!
+* Begin massive refactorization of alias.c, redefining "Alias" as "Symbol"
+* Refactor parse_line() with a bunch of front end call_* functions.
+* And a general parse_line() front end, "runcmds()".
+* Roll builtin expandos in with the user variables
+* Roll variables and commands together into one name space. HUZZAH!
+* Nix the caches for the global name space, for now.
+* I definitely broke /stack alias|assign here.  I'll fix it later.
+* Inline expandos are now officially strings instead of a single char.
+* Fix bug with $unshift() that popped up.
+* Move after_expando() to ircaux.c.  I think it belongs there more.

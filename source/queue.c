@@ -1,4 +1,4 @@
-/* $EPIC: queue.c,v 1.11 2003/12/14 20:04:10 jnelson Exp $ */
+/* $EPIC: queue.c,v 1.12 2004/06/28 23:48:15 jnelson Exp $ */
 /*
  *  queue.c - The queue command
  *
@@ -345,10 +345,8 @@ static void	run_queue (Queue **list, const char *name)
 	}
 
 	for (c = q->first; c; c = c->next)
-	{
 	    if (c->what)
-		parse_line("QUEUE", c->what, c->subargs, 0, 0);
-	}
+		call_lambda_command("QUEUE", c->what, c->subargs);
 }
 
 static int	add_to_queue (Queue **list, const char *name, const char *what, const char *subargs)

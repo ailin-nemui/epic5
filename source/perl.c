@@ -1,4 +1,4 @@
-/* $EPIC: perl.c,v 1.12 2003/12/14 20:04:10 jnelson Exp $ */
+/* $EPIC: perl.c,v 1.13 2004/06/28 23:48:15 jnelson Exp $ */
 /*
  * perl.c -- The perl interfacing routines.
  *
@@ -58,7 +58,7 @@ static XS (XS_cmd) {
 	unsigned foo;
 	dXSARGS;
 	for (foo=0; foo<items; foo++) {
-		parse_line(NULL, "$*", SvPV_nolen(ST(foo)), 0, 0);
+		runcmds("$*", SvPV_nolen(ST(foo)));
 	}
 	XSRETURN(0);
 }
@@ -67,7 +67,7 @@ static XS (XS_eval) {
 	unsigned foo;
 	dXSARGS;
 	for (foo=0; foo<items; foo++) {
-		parse_line(NULL, SvPV_nolen(ST(foo)), "", 0, 0);
+		runcmds(SvPV_nolen(ST(foo)), "");
 	}
 	XSRETURN(0);
 }

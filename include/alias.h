@@ -21,6 +21,9 @@
 #endif
 #define Char const char
 
+	extern	int	wind_index;
+	extern	int	last_function_call_level;
+
 /*
  * These are the user commands.  Dont call these directly.
  */
@@ -31,25 +34,77 @@
 	BUILT_IN_COMMAND(dumpcmd);
 	BUILT_IN_COMMAND(unloadcmd);
 
+
+/*
+ * An "alias" is a symbol entry which can contain the following data types:
+ *
+ * 	A user macro command (/ALIAS items)
+ *	A user macro expando (/ASSIGN and /LOCAL items)
+ *	A built in command (ie, /MSG)
+ *	A built in function (ie, $leftw())
+ *	A built in expando (ie, $C or $N)
+ *	A built in variable (/SET items)
+ *
+ * Not every alias will use every type.  Null values shall be used to indicate
+ * an unused type in an alias.
+ *
+ * The following operations are generally supported for each type:
+ *
+ *	Adding (setting) the value
+ *	Stubbing the value to a file loaded on demand
+ *	Getting the value
+ *	Deleting the value
+ *	Globbing names of types with values
+ *	Subarray expansion of types with values
+ *	Deleting all items
+ *	Deleting items by package name
+ *
+ * Not every operation will be implemented for every type, but they will be
+ * implemented if they are needed.
+ *
+ * Aliases broadly apply to one of three "namespace domains" -- 
+ *
+ *	Commands	/COMMAND
+ *		Macro commands
+ *		Built in commands
+ *	Functions	$FUNCTION()
+ *		Macro commands
+ *		Built in functions
+ *	Variables	$VARIABLE
+ *		Macro expandos
+ *		Built in expandos
+ *		Built in variables
+ */
+
 	void 	add_var_alias      	(Char *name, Char *stuff, int noisy);
 	void 	add_local_alias    	(Char *name, Char *stuff, int noisy);
 #if 0	/* Internal now */
 	void 	add_cmd_alias 	   	(void);
 #endif
 	void	add_builtin_cmd_alias	(Char *name, void (*func) (Char *, char *, Char *));
-	void    add_builtin_func_alias  (const char *name, char * (*func) (char *));
+	void    add_builtin_func_alias  (Char *name, char *(*func) (char *));
+	void    add_builtin_expando     (Char *name, char *(*func) (void));
 
 	void 	add_var_stub_alias 	(Char *name, Char *stuff);
 	void 	add_cmd_stub_alias 	(Char *name, Char *stuff);
 
+	void	delete_builtin_command	(Char *);
+	void	delete_builtin_function	(Char *);
+	void	delete_builtin_expando	(Char *);
+
 	char *	get_variable		(Char *name);
 	char **	glob_cmd_alias		(Char *name, int *howmany, 
 					 int maxret, int start, int rev);
+
 	char *	get_cmd_alias   	(Char *name, void **args,
                                          void (**func) (const char *, char *, 
                                                         const char *));
 	char *  get_func_alias		(const char *name, void **args, 
 					 char * (**func) (char *));
+	char *  get_var_alias		(const char *name, 
+					 char *(**efunc)(void), 
+					 void (**sfunc)(const void *));
+
 	char **	get_subarray_elements 	(Char *root, int *howmany, int type);
 
 
@@ -75,40 +130,11 @@
 	char *	parse_inline 		(char *, Char *);
 
 /*
- * This function is used to call a user-defined function.
- * Noone should be calling this directly except for call_function.
- */
-	char *	call_user_function 	(Char *, char *);
-	void	call_user_alias		(Char *, char *, char *, void *);
-
-/*
- * This function is used to call a lambda (``anonymous'') function.
- * You provide the lambda function name, its contents, and $*, and
- * it returns you $FUNCTION_RETURN.
- */
-	char *  call_lambda_function    (Char *, Char *, Char *);
-
-/* XXX Hrm. */
-	char *  parse_line_alias_special (const char *name, const char *what, char *args, int d1, int d2, void *arglist, int function);
-
-
-/*
  * This function is used to save all the current aliases to a global
  * file.  This is used by /SAVE and /ABORT.
  */
 	void	save_assigns		(FILE *, int);
 	void	save_aliases 		(FILE *, int);
-
-/*
- * This function is in functions.c
- * This function allows you to execute a primitive "BUILT IN" expando.
- * These are the $A, $B, $C, etc expandoes.
- * The argument is the character of the expando (eg, 'A', 'B', etc)
- *
- * This is in functions.c
- */
-	char *	built_in_alias		(char, int *);
-
 
 
 /* BOGUS */
@@ -129,7 +155,7 @@
  */
 	char *	call_function		(char *, Char *);
 	void	init_functions		(void);
-
+	void	init_expandos		(void);
 
 /*
  * These are the two primitives for runtime stacks.

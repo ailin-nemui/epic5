@@ -1,4 +1,4 @@
-/* $EPIC: hook.c,v 1.39 2004/05/05 17:05:56 jnelson Exp $ */
+/* $EPIC: hook.c,v 1.40 2004/06/28 23:48:15 jnelson Exp $ */
 /*
  * hook.c: Does those naughty hook functions. 
  *
@@ -705,10 +705,7 @@ int 	do_hook (int which, const char *format, ...)
 			 * so it is absolutely forbidden to reference "tmp" 
 			 * after this point.
 			 */
-			will_catch_return_exceptions++;
-			parse_line(name, stuff_copy, buffer, 0, 0);
-			will_catch_return_exceptions--;
-			return_exception = 0;
+			call_lambda_command(name, stuff_copy, buffer);
 		}
 
 		/*

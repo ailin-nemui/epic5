@@ -1,4 +1,4 @@
-/* $EPIC: server.c,v 1.132 2004/06/01 01:57:14 jnelson Exp $ */
+/* $EPIC: server.c,v 1.133 2004/06/28 23:48:15 jnelson Exp $ */
 /*
  * server.c:  Things dealing with that wacky program we call ircd.
  *
@@ -2653,7 +2653,7 @@ int	check_server_wait (int refnum, const char *nick)
 		s->start_wait_list = old->next;
 		if (old->stuff)
 		{
-			parse_line("WAIT", old->stuff, empty_string, 0, 0);
+			call_lambda_command("WAIT", old->stuff, empty_string);
 			new_free(&old->stuff);
 		}
 		if (s->end_wait_list == old)

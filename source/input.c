@@ -1,4 +1,4 @@
-/* $EPIC: input.c,v 1.22 2004/04/13 00:19:48 jnelson Exp $ */
+/* $EPIC: input.c,v 1.23 2004/06/28 23:48:15 jnelson Exp $ */
 /*
  * input.c: does the actual input line stuff... keeps the appropriate stuff
  * on the input line, handles insert/delete of characters/words... the whole
@@ -1173,9 +1173,9 @@ BUILT_IN_BINDING(send_line)
 		if (do_hook(INPUT_LIST, "%s", line))
 		{
 			if (get_int_var(INPUT_ALIASES_VAR))
-				parse_line(NULL, line, empty_string, 1, 0);
+				parse_line(NULL, line, empty_string, 1);
 			else
-				parse_line(NULL, line, NULL, 1, 0);
+				parse_line(NULL, line, NULL, 1);
 		}
 
 		system_exception = old;
@@ -1263,7 +1263,7 @@ BUILT_IN_BINDING(parse_text)
 	int	old = system_exception;
 
 	if (string)
-		parse_line(NULL, string, empty_string, 0, 0);
+		parse_line(NULL, string, empty_string, 0);
 	system_exception = old;
 }
 

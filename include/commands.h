@@ -10,6 +10,11 @@
 #ifndef __commands_h__
 #define __commands_h__
 
+#ifdef Char
+#undef Char
+#endif
+#define Char const char
+
 extern	int	will_catch_break_exceptions;
 extern	int	will_catch_continue_exceptions;
 extern	int	will_catch_return_exceptions;
@@ -21,7 +26,14 @@ extern	int	system_exception;
 extern	int	need_defered_commands;
 
 	void	init_commands		(void);
-	void	parse_line 		(const char *, const char *, const char *, int, int);
+
+        char *  call_lambda_function    (Char *, Char *, Char *);
+        void    call_lambda_command     (Char *, Char *, Char *);
+        char *  call_user_function      (Char *, Char *, char *, void *);
+        void    call_user_command       (Char *, Char *, char *, void *);
+	void	runcmds			(Char *, Char *);
+
+	void	parse_line 		(const char *, const char *, const char *, int);
 	BUILT_IN_COMMAND(load);
 	void	send_text	 	(const char *, const char *, const char *, int);
 	int	redirect_text		(int, const char *, const char *, char *, int);

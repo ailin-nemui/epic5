@@ -1,4 +1,4 @@
-/* $EPIC: keys.c,v 1.35 2004/06/25 22:01:17 jnelson Exp $ */
+/* $EPIC: keys.c,v 1.36 2004/06/28 23:48:15 jnelson Exp $ */
 /*
  * keys.c:  Keeps track of what happens whe you press a key.
  *
@@ -270,7 +270,7 @@ static void key_exec (struct Key *key) {
 	char *exec = malloc_strdup(key->bound->alias);
 	if (key->stuff)
 	    malloc_strcat_wordlist(&exec, " ", key->stuff);
-	parse_line(NULL, exec, empty_string, 0, 0);
+	runcmds(exec, empty_string);
 	new_free(&exec);
     } else if (key->bound->func != NULL)
 	key->bound->func(key->val, key->stuff);

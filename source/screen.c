@@ -1,4 +1,4 @@
-/* $EPIC: screen.c,v 1.83 2004/05/05 16:46:43 jnelson Exp $ */
+/* $EPIC: screen.c,v 1.84 2004/06/28 23:48:15 jnelson Exp $ */
 /*
  * screen.c
  *
@@ -3065,9 +3065,9 @@ void 	do_screens (int fd)
 				if (strlen(buffer))
 					buffer[strlen(buffer) - 1] = 0;
 				if (get_int_var(INPUT_ALIASES_VAR))
-					parse_line(NULL, buffer, empty_string, 1, 0);
+					parse_line(NULL, buffer, empty_string, 1);
 				else
-					parse_line(NULL, buffer, NULL, 1, 0);
+					parse_line(NULL, buffer, NULL, 1);
 			}
 			else
 			{

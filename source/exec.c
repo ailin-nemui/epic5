@@ -1,4 +1,4 @@
-/* $EPIC: exec.c,v 1.27 2004/05/30 02:13:32 jnelson Exp $ */
+/* $EPIC: exec.c,v 1.28 2004/06/28 23:48:15 jnelson Exp $ */
 /*
  * exec.c: handles exec'd process for IRCII 
  *
@@ -756,11 +756,9 @@ static void 	handle_filedesc (Process *proc, int *fd, int hook_nonl, int hook_nl
 			}
 
 			     if (hook_nl == EXEC_LIST && proc->stdoutpc && *proc->stdoutpc)
-				parse_line("EXEC", proc->stdoutpc, 
-						exec_buffer, 0, 0);
+				call_lambda_command("EXEC", proc->stdoutpc, exec_buffer);
 			else if (hook_nl == EXEC_ERRORS_LIST && proc->stderrpc && *proc->stderrpc)
-				parse_line("EXEC", proc->stderrpc, 
-						exec_buffer, 0, 0);
+				call_lambda_command("EXEC", proc->stderrpc, exec_buffer);
 			else if (proc->logical)
 				do_hook(hook_nonl, "%s %s", 
 					proc->logical, exec_buffer);
@@ -793,11 +791,9 @@ this_sucks:
 					exec_buffer, proc->redirect, 1);
 
 			if (hook_nl == EXEC_LIST && proc->stdoutc && *proc->stdoutc)
-				parse_line("EXEC", proc->stdoutc, 
-						exec_buffer, 0, 0);
+				call_lambda_command("EXEC", proc->stdoutc, exec_buffer);
 			else if (hook_nl == EXEC_ERRORS_LIST && proc->stderrc && *proc->stderrc)
-				parse_line("EXEC", proc->stderrc, 
-						exec_buffer, 0, 0);
+				call_lambda_command("EXEC", proc->stderrc, exec_buffer);
 			else if (proc->logical)
 			{
 				if ((do_hook(hook_nl, "%s %s", 
@@ -1063,7 +1059,7 @@ static void 	cleanup_dead_processes (void)
 		while ((cmd = next))
 		{
 			next = cmd->next;
-			parse_line(NULL, cmd->name, exit_info, 0, 0);
+			call_lambda_command("WAITPROC", cmd->name, exit_info);
 			new_free(&cmd->name);
 			new_free((char **)&cmd);
 		}

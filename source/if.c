@@ -1,4 +1,4 @@
-/* $EPIC: if.c,v 1.30 2004/04/13 00:19:48 jnelson Exp $ */
+/* $EPIC: if.c,v 1.31 2004/06/28 23:48:15 jnelson Exp $ */
 /*
  * if.c: the IF, WHILE, FOREACH, DO, FE, FEC, and FOR commands for IRCII 
  *
@@ -204,7 +204,7 @@ BUILT_IN_COMMAND(ifcmd)
 		}
 
 		if (stuff)
-			parse_line(NULL, stuff, subargs, 0, 0);
+			runcmds(stuff, subargs);
 
 		break;
 	}
@@ -239,7 +239,7 @@ BUILT_IN_COMMAND(docmd)
 			will_catch_continue_exceptions++;
 			while (1)
 			{
-				parse_line(NULL, body, subargs, 0, 0);
+				runcmds(body, subargs);
 				if (break_exception)
 				{
 					break_exception = 0;
@@ -267,10 +267,10 @@ BUILT_IN_COMMAND(docmd)
 			return;
 		}
 		/* falls through to here if its /do {...} */
-		parse_line(NULL, body, subargs, 0, 0);
+		runcmds(body, subargs);
 	}
 	/* falls through to here if it its /do ... */
-	parse_line(NULL, args, subargs, 0, 0);
+	runcmds(args, subargs);
 }
 
 BUILT_IN_COMMAND(whilecmd)
@@ -306,7 +306,7 @@ BUILT_IN_COMMAND(whilecmd)
 
 		new_free(&ptr);
 
-		parse_line(NULL, body, subargs, 0, 0);
+		runcmds(body, subargs);
 		if (continue_exception)
 		{
 			continue_exception = 0;
@@ -387,7 +387,7 @@ BUILT_IN_COMMAND(foreach)
 		add_local_alias(var, sublist[i] + slen + 1, 0);
 		new_free(&sublist[i]);
 
-		parse_line(NULL, body, subargs, 0, 0);
+		runcmds(body, subargs);
 	
 		if (continue_exception)
 		{
@@ -509,7 +509,7 @@ BUILT_IN_COMMAND(fe)
 			add_local_alias(var[y], word, 0);
 		}
 		x += ind;
-		parse_line(NULL, todo, subargs, 0, 0);
+		runcmds(todo, subargs);
 
 		if (mapvar)
 			for ( y = 0 ; y < ind ; y++ ) {
@@ -581,7 +581,7 @@ static void	for_next_cmd (int argc, char **argv, const char *subargs)
 	{
 		snprintf(istr, 255, "%d", i);
 		add_local_alias(var, istr, 0);
-		parse_line(NULL, cmds, subargs, 0, 0);
+		runcmds(cmds, subargs);
 
 		if (break_exception)
 		{
@@ -625,7 +625,7 @@ static void	for_fe_cmd (int argc, char **argv, const char *subargs)
 	{
 		next = new_next_arg(real_list, &real_list);
 		add_local_alias(var, next, 0);
-		parse_line(NULL, cmds, subargs, 0, 0);
+		runcmds(cmds, subargs);
 
 		if (break_exception) {
 			break_exception = 0;
@@ -738,7 +738,7 @@ BUILT_IN_COMMAND(forcmd)
 	}
 	commands = LOCAL_COPY(working);
 
-	parse_line(NULL, commence, subargs, 0, 0);
+	runcmds(commence, subargs);
 
 	will_catch_break_exceptions++;
 	will_catch_continue_exceptions++;
@@ -754,7 +754,7 @@ BUILT_IN_COMMAND(forcmd)
 		}
 
 		new_free(&blah);
-		parse_line(NULL, commands, subargs, 0, 0);
+		runcmds(commands, subargs);
 		if (break_exception)
 		{
 			break_exception = 0;
@@ -765,7 +765,7 @@ BUILT_IN_COMMAND(forcmd)
 		if (return_exception)
 			break;
 
-		parse_line(NULL, iteration, subargs, 0, 0);
+		runcmds(iteration, subargs);
 	}
 	will_catch_break_exceptions--;
 	will_catch_continue_exceptions--;
@@ -863,7 +863,7 @@ BUILT_IN_COMMAND(switchcmd)
 		if (hooked)
 		{
 			will_catch_break_exceptions++;
-			parse_line(NULL, commands, subargs, 0, 0);
+			runcmds(commands, subargs);
 			if (break_exception)
 				break_exception = 0;
 			will_catch_break_exceptions--;
@@ -911,7 +911,7 @@ BUILT_IN_COMMAND(repeatcmd)
 
 	/* Probably want to catch break and continue here */
 	while (value--)
-		parse_line(NULL, args, subargs, 0, 0);
+		runcmds(args, subargs);
 
 	return;
 }
