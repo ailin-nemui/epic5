@@ -9,7 +9,7 @@
  */
 
 #if 0
-static	char	rcsid[] = "@(#)$Id: lastlog.c,v 1.2 2001/06/22 22:34:35 jnelson Exp $";
+static	char	rcsid[] = "@(#)$Id: lastlog.c,v 1.3 2001/08/28 00:44:28 jnelson Exp $";
 #endif
 
 #include "irc.h"
@@ -312,6 +312,11 @@ BUILT_IN_COMMAND(lastlog)
 	char *		arg;
 	int		header = 1;
 	int		save_level;
+	int		before = -1;
+	int		after = 0;
+	int		counter = 0;
+	int		show_separator = 0;
+	char *		separator = "----";
 
 	message_from(NULL, LOG_CURRENT);
 	cnt = current_window->lastlog_size;
@@ -384,6 +389,38 @@ BUILT_IN_COMMAND(lastlog)
 					"a positive number.");
 			goto bail;
 		}
+	    }
+	    else if (!my_strnicmp(arg, "-CONTEXT", len))
+	    {
+		char *x, *before_str, *after_str;
+
+		x = new_next_arg(args, &args);
+		before_str = x;
+		if ((after_str = strchr(x, ',')))
+			*after_str++ = 0;
+
+		if (!is_number(before_str))
+		{
+			yell("LASTLOG -CONTEXT requires a numeric argument.");
+			goto bail;
+		}
+		if ((before = my_atol(x)) < 0)
+			before = 0;
+
+		if (!after_str)
+			after = before;
+		else
+			after = my_atol(after_str);
+		if (after < 0)
+			after = 0;
+	    }
+	    else if (!my_strnicmp(arg, "-SEPARATOR", len))
+	    {
+		char *x;
+		if ((x = new_next_arg(args, &args)))
+			separator = x;
+		else
+			separator = NULL;
 	    }
 	    else if (!my_strnicmp(arg, "-REVERSE", len))
 		reverse = 1;
@@ -501,6 +538,27 @@ BUILT_IN_COMMAND(lastlog)
 	if (header)
 		say("Lastlog:");
 
+	/*
+	 * Ugh.  This is way too complicated for its own good.  Let's
+	 * take this one step at a time.  We can either go forwards or
+	 * in reverse.  Let's consider this generically:
+	 *
+	 * ALWAYS BEFORE WE "GO TO THE NEXT ITEM" if "counter" 
+	 * is greater than one we print the current item.
+	 *
+	 *	If 'counter' is greater than 0, decrease it by one.
+	 *	If we haven't skipped 'skip' items, go to the next item.
+	 *	If we have seen 'number' items already, then stop.
+	 *	If this item isn't of a level in 'level_mask' go to next item.
+	 *	If this item isn't matched by 'match' go to next item.
+	 *	If this item isn't regexed by 'reg' go to next item.
+	 *	-- At this point, the item "matches" and should be displayed.
+	 *	If "counter" is 0, then this is a new match on its own.
+	 *	   Go back "context" items, and set "counter" to "distance".
+	 *	Otherwise, if "counter" is not 0, then we are in the middle
+	 *	   of a previous match.  Do not go back, but set "counter"
+	 *	   to "distance" (to make sure we keep outputting).
+	 */
 	if (reverse == 0)
 	{
 	    start = current_window->lastlog_oldest;
@@ -510,7 +568,35 @@ BUILT_IN_COMMAND(lastlog)
 	    {
 		if (show_lastlog(&l, &skip, &number, level_mask, 
 				match, reg, &max))
+		{
+		    if (show_separator)
+		    {
+			put_it("%s", separator);
+			show_separator = 0;
+		    }
+
+		    if (counter == 0 && before > 0)
+		    {
+			int i;
+
+			for (i = 0; i < before; i++)
+			     if (l && l->older)
+				l = l->older;
+			counter = before + 1;
+
+		    }
+		    else if (after != -1)
+			counter = after + 1;
+		    else
+			counter = 1;
+		}
+		if (counter)
+		{
 			put_it("%s", l->msg);
+			counter--;
+			if (counter == 0 && before != -1 && separator)
+				show_separator = 1;
+		}
 	    }
 	}
 	else
@@ -522,7 +608,33 @@ BUILT_IN_COMMAND(lastlog)
 	    {
 		if (show_lastlog(&l, &skip, &number, level_mask, 
 				match, reg, &max))
+		{
+		    if (show_separator)
+		    {
+			put_it("%s", separator);
+			show_separator = 0;
+		    }
+
+		    if (counter == 0 && before > 0)
+		    {
+			int i;
+			for (i = 0; i < before; i++)
+			     if (l && l->newer)
+				l = l->newer;
+			counter = before + 1;
+		    }
+		    else if (after != -1)
+			counter = after + 1;
+		    else
+			counter = 1;
+		}
+		if (counter)
+		{
 			put_it("%s", l->msg);
+			counter--;
+			if (counter == 0 && before != -1 && separator)
+				show_separator = 1;
+		}
 	    }
 	}
 	if (header)
@@ -536,6 +648,10 @@ bail:
 	return;
 }
 
+/*
+ * This returns 1 if the current item pointed to by 'l' is something that
+ * should be displayed based on the criteron provided.
+ */
 static int	show_lastlog (Lastlog **l, int *skip, int *number, int level_mask, char *match, regex_t *reg, int *max)
 {
 	if (*skip > 0)
