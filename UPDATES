@@ -1,5 +1,22 @@
 EPIC4-1.2.0
 
+*** News 05/20/2002 -- New functionality to /FE and /FEC
+	CrazyEddy needs to document this. =)  Keep a look out in the future
+	for updates to this item.
+
+*** News 05/20/2002 -- Clarify distinction between /WINDOW NOSERV and DISCON
+	If you do /WINDOW NOSERV, the window is not connected to a server
+	and will not be considered connected to a server if you later
+	reconnect.  This window should (hopefully) never try to reconnect
+	to a server.  If you a /WINDOW DISCON then the window is not connected
+	to a server, but it is considered to be disconnected from the server
+	so if you later do a reconnect for that server, the window will be
+	picked up and re-attached to that server.
+
+*** News 05/20/2002 -- EPIC beginning to move towards protocol independance
+	At some point very soon EPIC will start supporting IPv6.  A great
+	deal of networking code has been cleaned up in anticipation of this.
+
 *** News 03/12/2002 -- New built in function, $servertype(<refnum>)
 	This returns the protocol being used to talk to server <refnum>.
 	It's generally either "IRC" or "IRC-SSL".

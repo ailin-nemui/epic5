@@ -9,7 +9,6 @@ KNOWN ERRATA (eg, bugs, or unresolved requests):
 * Allegedly 464 numeric shouldn't force a reconnect if we're registered.
 * The mangler might expand things more than 3 times -- possible
   interference from the attribute parser?  caused by many ^v's.
-* Start supporting [<p-addr>] for "presentation" notation addresses.
  
 [See http://www.epicsol.org/PROJECTS for things to come in the future]
 [See http://www.epicsol.org/CHANGELOG for things that changed in the past]
@@ -62,3 +61,14 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * This makes dcc_open protocol independant (in theory)
 * Use INADDR_LOOPBACK, if possible, for /window create.
 * Write a connect() wrapper because connect() requires 3rd arg to be correct.
+* Differentiate between /window noserv and /window discon
+* Add some larneproofing (protecting against maliciously formatted numerics)
+* Start pondering a possible DCC REVERSE protocol
+* Fix $listen() (rb fudd)
+* Remove some bogus uses of memcpy().  Death to memcpy()!
+* Half-heartedly add a callback to /DCC stuff, unused for now.
+* Re-add support for connecting to unix domain sockets.
+* Better SSL detection (Q)
+* New functionality for /FE and /FEC -- See UPDATES.
+* Several more bug fixes.
+* Release EPIC4-1.1.4
