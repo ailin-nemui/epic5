@@ -1,4 +1,4 @@
-/* $EPIC: server.c,v 1.64 2002/07/30 16:12:59 crazyed Exp $ */
+/* $EPIC: server.c,v 1.65 2002/08/06 15:21:13 wd Exp $ */
 /*
  * server.c:  Things dealing with that wacky program we call ircd.
  *
@@ -2666,7 +2666,7 @@ void set_server_005 (int refnum, char *setting, char *value)
 #define RETURN_STR(x) return m_strdup((x) ? (x) : EMPTY)
 #define RETURN_INT(x) return m_strdup(ltoa((x)))
 
-/* Used by function_aliasctl */
+/* Used by function_serverctl */
 /*
  * $serverctl(REFNUM server-desc)
  * $serverctl(GET 0 [LIST])
