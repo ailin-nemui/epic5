@@ -40,6 +40,9 @@ KNOWN ERRATA (eg, bugs, or unresolved requests):
 * The "Select() failed" bug
 * $glob() and $globi() tend to choke on wierdly named filenames, or rather, on
   wierd masks.
+* msg from drogoh!~drogoh@216.249.173.230: ./Data/popups.ini:n288=..Send
+  Flood:/timer 30 1 /raw -q privmsg $$1 :DCC SEND %logo 3353362454 20
+  $rand(200,1999)  | echo 10 Send flooding $$1 for next 30 secs 
 * $isnumber() will cause internal damage to the client when fed numbers that
   are too large for some unknown reason.
 
@@ -173,10 +176,8 @@ THE CHANGELOG SINCE THE LAST RELEASE:
   seperated by spaces, and the final quote must be present.  Stuff started
   breaking when I added the second one, so I #if'd it out.
 * Fixed a leak with "/alias (args) {}".
-* Flood checking seems to have failed somehow in the last few weeks.  Tracked
-  it down to an inverted FLOOD hook and the fact that a matching flood now
-  causes the message to be ignored, which never used to happen.  Fixed the
-  last one by adding /set FLOOD_IGNORE on/off.
+* Fix bogus inverted flood check which broke flood checking.
+* Add /set flood_ignore (on|off) 
 * Found a good answer to $glob*()..  Giving them a null argument will now
   cause them to read the rest of the arg list as a single argument.
   eg, $glob(""  my "lovely" filename with spaces and quotes.jpg )
@@ -190,29 +191,28 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Tuned the autoget script to deal with url quoted dcc requests gracefully.
 * Got rid of the reference to word_count() in /fe and /fec.
 * Diked safe_new_next_arg() out and made it use new_next_arg() instead.
-* Fixed a problem that broke ctcp-over-dcc, reported by NSX.
-* Fixed a problem that broke unix socket detection, reported by Q_ (unconfirmed).
+* Fixed problem that broke ctcp-over-dcc, reported by NSX.
+* Fixed problem that broke unix socket detection, reported by Q_ (unconfirmed).
 * Changed the default FLOOD_IGNORE setting to off.
 * Fixed a bug in the commandqueues script.
 * Altered 324 processing so that the hook is called when joining a channel.
 * tabkey.ce alteratered to make input line modification smoother.
-
-* Fix for a serious problem in the language parser that causes script logic
-  to fail, perhaps requiring a restart.  This is *REMOTELY TRIGGERABLE*.
-  This bug appeared in the 1.1.* tree and isn't present in 1.0.1 which is the
-  latest release.  If you are running 1.1.* (commit id 470 or below), people
-  may be able to knock you off the irc server with specially crafted
-  messages.  I might release the details later to give people time to upgrade.
-
+* Make sure to reset errno before calling strtod() in check_val().
+  -- This bug, present from epic4-1.1.1 to commit 470, causes epic to 
+     malfunction for a time and can be induced by a remote user.  Be careful.
 * Ran "Valgrind" over epic which turned up a handful of potential bugs.
-* Fixed DCC "hold" mode.  Unfortunately epic was using the state of the fd
-  sets to determine whether to wind back the number of open fds, so putting
-  a dcc on hold made it possible for it to get lost.
+* Keep two sets of "interesting" fd's, a physical set and a logical set.
+* This helps us keep track of ``held'' fd's more reasonably.
 * More minor $dccctl() cleanups.
 * Changed the log level for when a flood is triggered to CRAP.
-* Altered $fsize() and $fexists() (temporarily) to take the whole arg list
-  as a file name.  I will probably change the file functions to use $glob()s
-  null argument trick at some point.
+* Fix $fsize(),$fexists() (for now) to take arg list as filename
+* In future, will probably use $glob()s null arg trick for $fsize/fexists().
 * Fix for an arbitrary select() loop yell from hop and nsx.
 * Fix for a window bug from hop.
-* Bug fix from cras [details withheld].
+* More larnifications from rogue servers, reported by cras.
+* Add extra slop for logically attributed denormalized display strings
+* Const-ify a few Timevals, just for good measure.
+* Don't hardcode use of AF_INET in dcc.c, rather use a global variable for it.
+* Use "global_family" var to pass hint what socket fam to use.  AF_INET for now.
+* Add extra sanity check just in case window->screen goes NULL in status redraw
+* Fix several benign compile-time issues.

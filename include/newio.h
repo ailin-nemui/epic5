@@ -17,6 +17,8 @@ extern 	int 	dgets_errno;
 	int 	new_close 		(int);
 	void 	set_socket_options 	(int);
 	size_t	get_pending_bytes	(int);
+	int	new_hold_fd		(int);
+	int	new_unhold_fd		(int);
 
 #define IO_BUFFER_SIZE 8192
 

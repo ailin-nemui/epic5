@@ -1,4 +1,4 @@
-/* $EPIC: functions.c,v 1.107 2003/03/17 19:39:39 crazyed Exp $ */
+/* $EPIC: functions.c,v 1.108 2003/03/21 07:46:58 jnelson Exp $ */
 /*
  * functions.c -- Built-in functions for ircII
  *
@@ -1556,7 +1556,7 @@ BUILT_IN_FUNCTION(function_channels, input)
  		if ((window = get_window_by_desc(input)))
 			server = window->server;
 		else if (*input == '#')
-			if (window = get_window_by_desc(input + 1))
+			if ((window = get_window_by_desc(input + 1)))
 				server = window->server;
 	}
 

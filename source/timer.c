@@ -1,4 +1,4 @@
-/* $EPIC: timer.c,v 1.22 2003/02/21 21:41:23 crazyed Exp $ */
+/* $EPIC: timer.c,v 1.23 2003/03/21 07:46:58 jnelson Exp $ */
 /*
  * timer.c -- handles timers in ircII
  *
@@ -583,7 +583,7 @@ char *add_timer (int update, const char *refnum_want, double interval, long even
  * TimerTimeout:  Called from irc_io to help create the timeout
  * part of the call to select.
  */
-Timeval	TimerTimeout (void)
+const Timeval	TimerTimeout (void)
 {
 	Timeval	forever = {9999, 0};
 	Timeval right_away = {0, 0};

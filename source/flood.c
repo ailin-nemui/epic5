@@ -1,4 +1,4 @@
-/* $EPIC: flood.c,v 1.10 2003/03/17 19:39:39 crazyed Exp $ */
+/* $EPIC: flood.c,v 1.11 2003/03/21 07:46:58 jnelson Exp $ */
 /*
  * flood.c: handle channel flooding.
  *
@@ -49,6 +49,7 @@
 #include "vars.h"
 #include "functions.h"
 #include "lastlog.h"
+#include "window.h"
 
 static	char	*ignore_types[NUMBER_OF_FLOODS] =
 {

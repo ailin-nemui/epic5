@@ -1,4 +1,4 @@
-/* $EPIC: dcc.c,v 1.48 2003/03/17 19:39:39 crazyed Exp $ */
+/* $EPIC: dcc.c,v 1.49 2003/03/21 07:46:58 jnelson Exp $ */
 /*
  * dcc.c: Things dealing client to client connections. 
  *
@@ -113,6 +113,7 @@ static	long		filesize = 0;
 static	DCC_list *	ClientList = NULL;
 static	char		DCC_current_transfer_buffer[256];
 	time_t		dcc_timeout = 600;		/* Backed by a /set */
+static	int		global_family = AF_INET;
 
 static	void 		dcc_add_deadclient 	(DCC_list *);
 static	void		dcc_chat 		(char *);
@@ -563,7 +564,7 @@ static	DCC_list *dcc_searchlist (
 
 	new_client 			= new_malloc(sizeof(DCC_list));
 	new_client->flags 		= type;
-	new_client->family		= AF_INET;
+	new_client->family		= global_family;	/* AF_INET; */
 	new_client->locked		= 0;
 	new_client->socket 		= -1;
 	new_client->file 		= -1;
@@ -828,6 +829,10 @@ static void	dcc_send_booster_ctcp (DCC_list *dcc)
 		my_sockaddr = get_server_uh_addr(from_server);
 	else if (family == AF_INET && V4ADDR(dcc->local_sockaddr).s_addr == htonl(INADDR_ANY))
 		my_sockaddr = get_server_local_addr(from_server);
+#ifdef INET6
+	else if (family == AF_INET6 && memcmp(&V6ADDR(dcc->local_sockaddr), &in6addr_any, sizeof(in6addr_any)) == 0)
+		my_sockaddr = get_server_local_addr(from_server);
+#endif
 	else
 		my_sockaddr = dcc->local_sockaddr;
 
@@ -1136,6 +1141,7 @@ static void	dcc_chat (char *args)
 		}
 	}
 
+	global_family = AF_INET;
 	dcc = dcc_searchlist("chat", user, DCC_CHAT, 1, NULL, -1);
 	if ((dcc->flags & DCC_ACTIVE) || (dcc->flags & DCC_MY_OFFER))
 	{
@@ -1195,6 +1201,7 @@ static	void 	dcc_close (char *args)
 	if (any_user)		/* User did specify "-all" user */
 		user = NULL;
 
+	global_family = AF_INET;
 	while ((dcc = dcc_searchlist(file, user, i, 0, file, -1)))
 	{
 		unsigned	my_type = dcc->flags & DCC_TYPES;
@@ -1704,6 +1711,7 @@ static	void	dcc_filesend (char *args)
 		/* XXXXX filesize is a global XXXXX */
 		stat(fullname, &stat_buf);
 		filesize = stat_buf.st_size;
+		global_family = AF_INET;
 		Client = dcc_searchlist(fullname, user, DCC_FILEOFFER, 
 					1, this_arg, -1);
 		filesize = 0;
@@ -1744,6 +1752,7 @@ char	*dcc_raw_listen (int family, unsigned short port)
 		return m_strdup(empty_string);
 	}
 	PortName = LOCAL_COPY(ltoa(port));
+	global_family = AF_INET;
 	Client = dcc_searchlist("raw_listen", PortName, 
 					DCC_RAW_LISTEN, 1, NULL, -1);
 
@@ -1795,6 +1804,7 @@ char	*dcc_raw_connect (const char *host, const char *port, int family)
 		return m_strdup(empty_string);
 	}
 
+	global_family = family;
 	Client = dcc_searchlist(host, port, DCC_RAW, 1, NULL, -1);
 	if (Client->flags & DCC_ACTIVE)
 	{
@@ -2261,19 +2271,13 @@ static	void	process_dcc_chat_error (DCC_list *Client)
 static	char *	process_dcc_chat_ctcps (DCC_list *Client, char *tmp)
 {
 	char 	equal_nickname[80];
-	char 	uh[80];
 	int	ctcp_request = 0, ctcp_reply = 0;
 
 #define CTCP_MESSAGE "CTCP_MESSAGE "
 #define CTCP_REPLY "CTCP_REPLY "
 
 	if (*tmp == CTCP_DELIM_CHAR)
-	{
-#if 0
-		ov_strcpy(tmp, tmp + 1);
-#endif
 		ctcp_request = 1;
-	}
 	else if (!strncmp(tmp, CTCP_MESSAGE, strlen(CTCP_MESSAGE)))
 	{
 		ov_strcpy(tmp, tmp + strlen(CTCP_MESSAGE));
