@@ -267,7 +267,7 @@ const 	char *	set_channel_by_refnum		(unsigned, const char *);
 	void	make_window_current_by_refnum	(int);
 	void	make_window_current		(Window *);
 	Window  *window_query			(Window *, char **);
-	Window	*window_channel			(Window *, char **);
+	Window	*window_rejoin			(Window *, char **);
 	Window	*window_scroll			(Window *, char **);
 	Window *window_server			(Window *, char **);
 	int	unhold_windows			(void);

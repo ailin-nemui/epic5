@@ -24,3 +24,8 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Fixes to make dcc-over-ctcp-over-dcc work again (|Rain|)
 * Fix $querywin() so it can take a second argument, a server ref (for scromp)
 * Add $halfop(), returns +h status (1, 0, -1) (Ay-ar)
+* Add the 'autoget' script, for autogetting files via dcc chat.
+* Add /window rebind, which moves a channel binding forcibly to a new window
+* Add /window rejoin, which joins a channel in the window you want it to go.
+* Make /join use /window rejoin, you can use it in an /on now! Huzzah!
+* Fix move_channel_to_window to revoke /window bind when a chan moves away.

@@ -633,26 +633,7 @@ BUILT_IN_COMMAND(e_channel)
 {
 	if (args && *args)
 	{
-		char *blah = (char *)alloca(strlen(args) * 2 + 4);
-
-		/* XXX Oh well. */
-		if (args[0] == '0' && args[1] == 0)
-		{
-			send_to_server("JOIN 0");
-			return;
-		}
-
-		/*
-		 * This gross hack is neccesary to make sure that if the
-		 * channel name or channel key contain double-quotes (which
-		 * is perfectly legal), that /window channel doesn't choke
-		 * all over them.
-		 */
-		*blah = '"';
-		double_quote(args, "\"", blah + 1);
-		strcpy(blah + strlen(blah), "\"");	/* Shoot me. */
-
-		window_channel(current_window, &blah);
+		window_rejoin(current_window, &args);
 		update_all_status();
 	}
 	else

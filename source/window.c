@@ -1911,28 +1911,6 @@ char 	*get_bound_channel (Window *window)
 	return window->bind_channel;
 }
 
-int	channel_going_away (Window *window, const char *channel)
-{
-	if (!window->current_channel)
-		return 0;		/* Whatever, I don't care. */
-
-	if (!my_stricmp(window->current_channel, channel))
-	{
-		/*
-		 * If the user wants a new current channel, then grab any
-		 * convenient channel that is currently attached to us.
-		 * Otherwise, remove the channel from the window.
-		 */
-		if (get_int_var(SWITCH_CHANNEL_ON_PART_VAR))
-			move_channel_to_window(channel, window, NULL);
-		else 		/* Eh, better safe than sorry. */
-			set_channel_by_refnum(window->refnum, NULL);
-
-		return 1;
-	}
-	return 0;
-}
-
 /* * * * * * * * * * * * * * * * * * SERVERS * * * * * * * * * * * * * */
 /*
  * get_window_server: returns the server index for the window with the given
@@ -2782,21 +2760,10 @@ static Window *window_bind (Window *window, char **args)
 		{
 			/*
 			 * If we have found a window where this channel
-			 * is currently bound, then we unbind it from
-			 * that other window and bind it here.
-			 */
-			if (w->bind_channel && 
-			    !my_stricmp(w->bind_channel, arg) && 
-			    w->server == window->server)
-			{
-				window->bind_channel = w->bind_channel;
-				w->bind_channel = NULL;
-			}
-
-			/*
-			 * If we have found a window where this channel
 			 * is the current channel, then we make it so that
 			 * it is the current channel here.
+			 * Also, move_channel_to_window transfer cancels the
+			 * channels' bound status on the old window.
 			 */
 			if (w->current_channel &&
 			    !my_stricmp(w->current_channel, arg) &&
@@ -2924,11 +2891,8 @@ Window *window_channel (Window *window, char **args)
 			set_channel_by_refnum(window->refnum, NULL);
 		else
 		{
-			int server = from_server;
-			from_server = window->server;
-			send_to_server("JOIN %s %s", arg, sarg);
+			send_to_aserver(window->server,"JOIN %s %s", arg, sarg);
 			malloc_strcpy(&window->waiting_channel, arg);
-			from_server = server;
 		}
 
 		new_free(&arg2);
@@ -3162,6 +3126,7 @@ static Window *window_goto (Window *window, char **args)
 	from_server = get_window_server(0);
 	return current_window;
 }
+
 
 /*
  * /WINDOW GROW lines
@@ -3810,6 +3775,260 @@ Window *window_query (Window *window, char **args)
 	return window;
 }
 
+/*
+ * /WINDOW REBIND <#channel>
+ * The channel will be "bound" to this window unconditionally.  This is
+ * the same as /window bind, except that <#channel> does not need to be
+ * the current channel of this window.  It may be bound elsewhere, for
+ * example.  This function will handle all of that for you.  This function
+ * will not fail unless you goof up the argument.
+ *
+ * Note: This operation is intentionally silent -- Please do not add a 
+ * whole bunch of says and yells in here.  The primary purpose of this 
+ * function is to be used in things like /on connect where all the output
+ * just gets in the way and gives the user no useful information.
+ */
+static Window *window_rebind (Window *window, char **args)
+{
+	char *arg;
+	Window *w = NULL;
+
+	if (!(arg = next_arg(*args, args)))
+	{
+		say("REBIND: requires a channel argument");
+		return NULL;
+	}
+
+	if (!is_channel(arg))
+	{
+		say("REBIND: %s is not a valid channel name", arg);
+		return NULL;
+	}
+
+	/*
+	 * If its already bound, just accept it and stop here.
+	 */
+	if (window->bind_channel && !my_stricmp(window->bind_channel, arg))
+		return window;
+
+	/*
+	 * Unbind whatever is currently bound to the window...
+	 */
+	if (window->bind_channel)
+		new_free(&window->bind_channel);
+
+	/*
+	 * Go a-hunting to see if any other window claims this channel.
+	 * If they do, forcibly take it from them.
+	 */
+	while (traverse_all_windows(&w))
+	{
+		/*
+		 * If we have found a window where this channel
+		 * is the current channel, then we make it so that
+		 * it is the current channel here.  This informs
+		 * the channel that it now belongs to us.
+		 * This also unbinds it from the old window.
+		 */
+		if (w->current_channel &&
+		    !my_stricmp(w->current_channel, arg) &&
+		    w->server == window->server)
+		{
+			move_channel_to_window(arg, w, window);
+			w->update |= UPDATE_STATUS;
+		}
+	}
+
+	/*
+	 * Now lay claim to the channel as belonging to us.
+	 * and as being our current channel.  Tell ourselves
+	 * (and the user) that we own this channel now.
+	 */
+	malloc_strcpy(&window->bind_channel, arg);
+	if (im_on_channel(arg, window->server))
+		set_channel_by_refnum(window->refnum, arg);
+
+	return window;
+}
+
+/*
+ * /WINDOW REJOIN <#channel>[,<#channel>]
+ * Here's the plan:
+ *
+ * For each channel, assuming from_server:
+ * - If we are already on the channel:
+ *   - If the current window is connected to from_server:
+ *     -> Move the channel to the current window.
+ *   - If the current window is NOT connected to from_server:
+ *     -> Do nothing.
+ * - If we are NOT already on the channel:
+ *   - If there is a window that looks like it owns this channel:
+ *     -> Join the channel in that window.
+ *   - If there is NOT a window that looks like it owns this channel:
+ *     - If the current window is connected to from_server:
+ *       -> Join the channel in the current window
+ *     - If the current window is NOT connected to from_server:
+ *       -> Find a window connected to from_server and join channel there.
+ * -endif
+ *
+ * /WINDOW REJOIN is a terminal verb: it always slurps up all of the rest
+ * of the command as it's arguments and returns NULL and you cannot do any
+ * more operations after it is finished.
+ *
+ * If this function looks insane, it's because I wrote it after a long
+ * day of coding in java, and so I am, in fact, commitable right now.
+ */
+Window *window_rejoin (Window *window, char **args)
+{
+	char *	arg_copy;
+	char *	channels;
+	char *	chan;
+	char *	keys;
+	char *	newchan = NULL;
+
+	/* First off, we have to be connected to join */
+	if (from_server == -1)
+	{
+		say("You are not connected to a server.");
+		return window;
+	}
+
+	/* And the user must want to join something */
+	/* Get the channels, and the keys. */
+	arg_copy = LOCAL_COPY(*args);
+	if (!(channels = new_next_arg(arg_copy, &arg_copy)))
+	{
+		say("REJOIN: Must provide a channel argument");
+		return window;
+	}
+	keys = new_next_arg(arg_copy, &arg_copy);
+
+
+	/* Iterate over each channel name in the list. */
+	while (*channels && (chan = next_in_comma_list(channels, &channels)))
+	{
+		/* Handle /join -i, which joins last invited channel */
+		if (!my_strnicmp(chan, "-i", 2))
+                {
+                        if (invite_channel)
+                                chan = invite_channel;
+                        else
+			{
+                                say("You have not been invited to a channel!");
+				continue;
+			}
+                }
+
+		/* Handle /join 0, which parts all current channels */
+		if (!strcmp(chan, "0"))
+		{
+			send_to_server("JOIN 0");
+			continue;
+		}
+
+		/* Sanity check the channel for the user */
+                if (!is_channel(chan))
+		{
+                        say("CHANNEL: %s is not a valid channel name", chan);
+			continue;
+		}
+
+		/*
+		 * Now comes all the fun!  THere are a whole bunch of 
+		 * cases we could deal with right now -- see the comment
+		 * block above the function for the particulars, but 
+		 * basically if we are ON the channel, we want to move it
+		 * to the current window for the user.  This lets /join
+		 * act like /window channel.  But if we are NOT on the
+		 * channel, then we want to find if there is any window 
+		 * that thinks it owns it -- this lets the user do a /join
+		 * in /on connect, and have everything go to the right window.
+		 * If nobody owns the channel, then we take it.  If we can't
+		 * take it (wrong server) then we find somebody else to take
+		 * it.  If we can't find somebody else, then we're screwed.
+		 */
+
+		/* If we're on the channel... */
+		if (im_on_channel(chan, from_server))
+		{
+			/* And i'm on the right server, grab the channel */
+			if (window->server == from_server)
+			{
+				Window *other;
+				/* 
+				 * XXX - Using get_channel_window() for
+				 * this is cheating. 
+				 */
+				other = get_channel_window(chan, from_server);
+				move_channel_to_window(chan, other, window);
+				set_channel_by_refnum(from_server, chan);
+				say("You are now talking to channel %s", 
+					check_channel_type(chan));
+			}
+			/* Otherwise, Do not move the channel */
+		}
+
+		/* I am NOT on the channel. */
+		else
+		{
+			Window *owner = NULL;
+			Window *w = NULL;
+			Window *anybody = NULL;
+
+			/* Go hunt for the owner. */
+			while (traverse_all_windows(&w))
+			{
+			    if (w->server != from_server)
+				continue;
+			    if (w->current_channel &&
+			        !my_stricmp(w->current_channel, chan))
+			    {
+				owner = w;
+				break;
+			    }
+			    if (w->bind_channel &&
+			        !my_stricmp(w->bind_channel, chan))
+			    {
+				owner = w;
+				break;
+			    }
+			    if (w->waiting_channel &&
+			        !my_stricmp(w->waiting_channel, chan))
+			    {
+				owner = w;
+				break;
+			    }
+
+			    /* Take anybody on this server... */
+			    if (anybody == NULL)
+				anybody = w;
+			}
+
+			/* If there is no owner, then we get first crack. */
+			if (!owner && window->server == from_server)
+				owner = window;
+
+			/* If there is still no owner, take anybody. */
+			if (!owner && anybody)
+				owner = anybody;
+
+			/* If there is still no owner, we messed up. */
+			if (!owner)
+				panic("There are no windows for this server, "
+				      "and there should be.");
+
+			malloc_strcpy(&owner->waiting_channel, chan);
+			m_s3cat_s(&newchan, ",", chan);
+		}
+
+		send_to_aserver(from_server, "JOIN %s %s", newchan, keys);
+		new_free(&newchan);
+	}
+
+	message_from(NULL, LOG_CRAP);
+	return window;
+}
+
 static Window *window_refnum (Window *window, char **args)
 {
 	Window *tmp;
@@ -4242,9 +4461,11 @@ const static window_ops options [] = {
 	{ "PROMPT",		window_prompt 		},
 	{ "PUSH",		window_push 		},
 	{ "QUERY",		window_query		},
+	{ "REBIND",		window_rebind		},
 	{ "REFNUM",		window_refnum 		},
 	{ "REFNUM_OR_SWAP",	window_refnum_or_swap	},
 	{ "REFRESH",		window_refresh		},
+	{ "REJOIN",		window_rejoin		},
 	{ "REMOVE",		window_remove 		},
 	{ "SCRATCH",		window_scratch		},
 	{ "SCROLL",		window_scroll		},

@@ -1586,29 +1586,36 @@ void   move_channel_to_window (const char *chan, Window *old_w, Window *new_w)
 	{
 	    if (tmp->window == old_w && !my_stricmp(chan, tmp->channel))
 	    {
+		/*
+		 * First off, if this channel is bound to this window,
+		 * we gotta unbind it or there's going to be trouble
+		 * later on...
+		 */
+		if (!my_stricmp(chan, old_w->bind_channel))
+			new_free(&old_w->bind_channel);
+
 		if (!my_stricmp(chan, old_w->current_channel))
 		{
 			new_free(&old_w->current_channel);
 			old_w->update |= UPDATE_STATUS;
 
-			    if (new_w->current_channel)
+			if (new_w->current_channel)
 				old_chan = m_strdup(new_w->current_channel);
-			    else
+			else
 				old_chan = NULL;
 
-			    malloc_strcpy(&new_w->current_channel, chan);
+			malloc_strcpy(&new_w->current_channel, chan);
 
-			    /* 
-			     * Remove "waiting_channel" if we're waiting for 
-			     * this channel. ;-) 
-			     */
-			    if (new_w->waiting_channel && 
-				!my_stricmp(chan, new_w->waiting_channel))
+			/* 
+			 * Remove "waiting_channel" if we're waiting for 
+			 * this channel. ;-) 
+			 */
+			if (new_w->waiting_channel && 
+			    !my_stricmp(chan, new_w->waiting_channel))
 				    new_free(&new_w->waiting_channel);
 
-			    new_w->update |= UPDATE_STATUS;
-			    set_channel_window(new_w, new_w->current_channel);
-
+			new_w->update |= UPDATE_STATUS;
+			set_channel_window(new_w, new_w->current_channel);
 			reset_old_w = 1;
 			break;
 		}
