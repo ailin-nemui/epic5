@@ -1,0 +1,122 @@
+#
+# OK, here's the plan:
+#
+# Tabkey cuts the input line up into edible chunks, and selects a function
+# to do the actual completion.  The function will receive a single word as
+# its argument, and return a list of potential matches.  The word is whatever
+# is under the cursor, up to the insertion point at the current time.  The
+# word may be empty and the function should be able to cope with this.
+#
+# The exact function chosen works like this:
+# * If the current _word_ is a command (first word, begins with $cmdchars),
+#   call command_completion by way of parsekey (don't call any aliases).
+# * Or, if the current line is a command, it gets handed to $tabkey.cmd().
+# * Otherwise, call tabkey.default, which is a stub that can be changed
+#   to suit your preferences.  The default tabkey.default calls
+#   tabkey.nickchan which matches against all channels you're currently on
+#   and either the nicks in your current channel, or failing that, the
+#   nicks in all channels.
+# * tabkey.default is also called if tabkey.cmd() returns nothing.  If
+#   necessary, the function can prevent this behaviour by returning a single
+#   space, but this is discouraged.
+# * tabkey.default is also called by $tabkey.cmd() if it cannot find an
+#   appropriate command handler.
+#
+# tabkey "exports" a number of local variables that the functions may use
+#   or alter after using "bless":
+# * $curword is what tabkey believes the current word is.  The function
+#   may make use of this for context sensitivity.  I say believes because
+#   this may be open to different interpretations.
+# * $wordind is the character index of the _beginning_ of the word that is
+#   being completed.  If it is equal to $curpos(), then the first argument
+#   will be empty and the user has hit tab at the beginning of the word or
+#   in between words and the function should return all possible matches.
+#   The reason you may need to use it is if the function is designed to
+#   complete something that is not a single word.  It, and the current
+#   cursor position may be altered to cause tabkey to replace the chosen
+#   part of the string instead of just the word.
+#
+# The organisation of the supporting functions goes like this:
+# * "Context sensitive" functions are to be named with "tabkey.cmd." as a
+#   prefix followed by the name of the command that they are used to
+#   complete.  This is where tabkey.cmd will look for them.
+# * Generally, completion "methods" should be placed under tabkey.method
+#   and shouldn't rely on the exported variables being available, as user
+#   supplied functions may forget to re-export them.  Context sensitive
+#   functions should be as simple as possible.
+#
+
+package tabkey.ce
+bind ^i parse_command tabkey
+alias tabkey.default tabkey.method.nickchan
+
+alias tabkey {
+	@:curword=indextoword($curpos() $L )
+	@:wordind=wordtoindex($curword $L)
+	if (32>=(127&ascii($mid(${curpos()-1} 1 $L )))) {
+		@curword++
+		@wordind=curpos()
+	}
+	@:word=mid($wordind ${curpos()-wordind} $L)
+	@:matches=[]
+	if (!index($cmdchars $L)) {
+		if (!curword) {
+			parsekey command_completion
+		} else {
+			wait for @matches=tabkey.cmd($word)
+		}
+	} else {
+		wait for @:matches=tabkey.default($word)
+	}
+	@:prefix=prefix($matches)
+	if (1<numwords($matches)&&word==prefix) {
+		xecho -banner -nolog -- Completions for \"$word\": $matches
+	} elsif (#matches&&strlen($word)<=strlen($prefix)) {
+		repeat ${curpos()-wordind} parsekey backspace
+		type $prefix${1<#matches?:[ ]}
+	}
+}
+
+alias tabkey.method.chan {
+	return $pattern($0* $mychannels());
+}
+
+alias tabkey.method.nick {
+	if (pattern($0* $chanusers())) {
+		return $pattern($0* $chanusers());
+	} else {
+		@ :chanusers = []
+		fe ($mychannels()) chan {
+			@push(chanusers $chanusers($chan))
+		}
+		return $pattern($0* $sort($uniq($chanusers)));
+	}
+}
+
+alias tabkey.method.nickchan {
+	return $remws(/ $tabkey.method.chan($*) $tabkey.method.nick($*))
+}
+
+alias tabkey.cmd {
+	bless
+	@:ret=[]
+	@:cmd=word(0 $L)
+	until (index($cmdchars $cmd)) {@cmd=rest(1 $cmd)}
+	if (aliasctl(alias exists tabkey.cmd.$cmd)) {
+		wait for @ret=tabkey[cmd][$cmd]($*)
+	}
+	unless (strlen($ret)) {
+		wait for @ret=tabkey.default($*)
+	}
+	return $ret
+}
+
+alias tabkey.cmd.help {
+	bless
+	@:matches=[]
+	@:path=restw(1 $left($curpos() $L))
+	if (wordind==curpos()) {@push(path *)}
+	@matches=globi($unsplit(/ $getset(HELP_PATH) $path*))
+	repeat $#matches @push(matches $rightw(1 $remws(/ $split(/ $shift(matches)))))
+	return $matches
+}
