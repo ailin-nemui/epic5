@@ -2911,8 +2911,8 @@ Window *window_channel (Window *window, char **args)
 
 		new_free(&arg2);
 	}
-	else
-		set_channel_by_refnum(window->refnum, zero);
+	/* else
+		set_channel_by_refnum(window->refnum, zero); */
 
 	message_from(NULL, LOG_CRAP);
 	return window;
