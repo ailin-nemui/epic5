@@ -54,17 +54,16 @@ fe (q push fq unshift) cmd op {
 	alias ${cmd}cmd {
 		if (servernum() < 0) {
 			$1-
-		} elsif (# > 1) {
+		} elsif (1 < #) {
 			@ :bar = [$1-]
 			@ ${op}(qcmd.${servernum()}.$0 \"$msar(gr/\\/\\\\/\"/\\\"/bar)\")
 			^timer -ref qcmd.$servernum() 5 qcmd
 		} else {
-			@ :eserv = encode($tolower($servername($servernum())))
 			if (isconnected()) {
 				@ :foo = []
-				if (# == 1) {
+				if (1 == #) {
 					@ foo = [$0]
-				} elsif (# == 0) {
+				} elsif (0 == #) {
 					foreach qcmd[$servernum()] bar {
 						@ foo = foo ? foo : bar
 					}
