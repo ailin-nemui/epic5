@@ -1103,7 +1103,10 @@ int 	connect_to_new_server (int new_server, int old_server, int new_conn)
 		 * establishing a brand new connection, we 
 		 */
 		if (x == -2)
+		{
+			destroy_waiting_channels(old_server);
 			destroy_server_channels(old_server);
+		}
 	
 		/*
 		 * If we are /server'ing to a server that was not already 
@@ -1265,7 +1268,10 @@ int	reconnect (int oldserv)
 	 * then we need to throw away it's channels.
 	 */
 	if (!is_server_connected(oldserv))
+	{
+		destroy_waiting_channels(oldserv);
 		destroy_server_channels(oldserv);
+	}
 
 	/*
 	 * Our prior state was unconnected.  Tell the user
@@ -1311,9 +1317,6 @@ void	close_server (int old, const char *message)
 		return;
 	}
 
-	if (server_list[old].des == -1)
-		return;			/* Can't close server that isn't open */
-
 	was_connected = server_list[old].connected;
 
 	clean_server_queues(old);
@@ -1323,7 +1326,10 @@ void	close_server (int old, const char *message)
 	if (server_list[old].save_channels == 1)
 		save_channels(old);
 	else if (server_list[old].save_channels == 0)
+	{
+		destroy_waiting_channels(old);
 		destroy_server_channels(old);
+	}
 	else
 		panic("Somebody forgot to set "
 			"server_list[%d].save_channels!", old);
