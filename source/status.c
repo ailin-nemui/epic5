@@ -1,4 +1,4 @@
-/* $EPIC: status.c,v 1.22 2003/03/29 08:10:22 jnelson Exp $ */
+/* $EPIC: status.c,v 1.23 2003/04/04 17:56:50 jnelson Exp $ */
 /*
  * status.c: handles the status line updating, etc for IRCII 
  *
@@ -1174,7 +1174,7 @@ STATUS_FUNCTION(status_voice)
 	const char *chan;
 
 	if (window->server == NOSERV ||
-           (chan = get_echannel_by_refnum(window->refnum)))
+           (chan = get_echannel_by_refnum(window->refnum)) == NULL)
 		return empty_string;
 
 	if (get_channel_voice(chan, window->server) &&
