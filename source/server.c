@@ -1,4 +1,4 @@
-/* $EPIC: server.c,v 1.62 2002/07/17 22:52:53 jnelson Exp $ */
+/* $EPIC: server.c,v 1.63 2002/07/27 05:16:29 wd Exp $ */
 /*
  * server.c:  Things dealing with that wacky program we call ircd.
  *
@@ -2680,6 +2680,8 @@ void set_server_005 (int refnum, char *setting, char *value)
  *	COOKIE		Our TS/4 cookie
  *	QUIT_MESSAGE	The quit message we will use next.
  *	SSL		Whether this server is SSL-enabled or not.
+ *      005             Individual PROTOCTL elements.
+ *      005s            The full list of PROTOCTL elements.
  */
 char 	*serverctl 	(char *input)
 {
