@@ -2,7 +2,6 @@ EPIC4 Projects, Bugs, and other Errata:
 
 KNOWN ERRATA (eg, bugs, or unresolved requests):
 ------------------------------------------------
-* Q is having problems with reconnections throwing away his channels
 * Q says that the 010 numeric doesn't work properly on ircnet just yet.
 * Figure out what to do with wd's patch for package stuff in epic4.
  
@@ -11,25 +10,4 @@ KNOWN ERRATA (eg, bugs, or unresolved requests):
 
 THE CHANGELOG SINCE THE LAST RELEASE:
 -------------------------------------
-* Add $ssl() built in function for lateral compatability with epic-ssl
-* Whack over my_next_expr().
-* Add "next_expr_with_type" for use with 'break_args'
-* Add 'break_args', experimental command-argument tokenizer.
-* Add /for <var> in (<list>) {<commands>} command
-* Add /for <var> from <min> to <max> {<commands>} command
-* Doodle around a bit with /fe, just for yucks.
-* Change 'autoop', 'fe', 'files', 'ip-to-int', 'ircprimer', 'repeat', 
-	'scandir', 'tc' scripts to use two new /for formats.
-* Add support for 477 numeric (can't join channel) from dalnet. (adm)
-* Add /xecho -v (output to a visible window)
-* Fix /reconnect to supply default quit message ("Reconnecting")
-* Add $cos(), $sin(), $tan() functions, to do math things
-* Fix bug in $serverlist() which caused it to always return server list.
-* Fix history stuff so it doesn't insert duplicate entries (robohak)
-* Add 'skip_spaces' function, which skips leading spaces in a string.
-* Change logfile header to output local time and not UTC time.
-* Fix /window server to clear reconnect counts, thwart throttling.
-* Change "server_list[%d].itsname is null and it shouldn't be" error message
-* Change it to "I don't have %d's real name yet -- using the hostname..."
-* Fix /server N to not reconnect to N if it's already connected.
-* Add /ison -d and /ison -f (debug, and flush) for debugging purposes.
+* When the server terminates a connection, save channels for reconnect.
