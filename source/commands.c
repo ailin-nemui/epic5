@@ -2752,23 +2752,27 @@ int	redirect_text (int to_server, const char *nick_list, const char *text, char 
 static	int 	recursion = 0;
 	int 	old_from_server = from_server;
 	int	allow = 0;
-
-	if (!strcmp(nick_list, "0"))		/* This is the redirect sink */
-		return 1;
+	int	retval;
 
 	from_server = to_server;
 	if (recursion++ == 0)
 		allow = do_hook(REDIRECT_LIST, "%s %s", nick_list, text);
 
-	/* 
-	 * Dont hook /ON REDIRECT if we're being called recursively
-	 */
-	if (allow)
-		send_text(nick_list, text, command, hook);
+	if (strcmp(nick_list, "0"))	/* This is not to the redirect sink */
+	{
+		/* 
+		 * Dont hook /ON REDIRECT if we're being called recursively
+		 */
+		if (allow)
+			send_text(nick_list, text, command, hook);
+		retval = 0;
+	}
+	else 
+		retval = 1;
 
 	recursion--;
 	from_server = old_from_server;
-	return 0;
+	return retval;
 }
 
 
