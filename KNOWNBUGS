@@ -594,3 +594,4 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Allow current_package() to return NULL, handle that as special case.
 * Refactor the startup loading stuff
 * Move a couple of loads out of basical and into global.
+* Round two of blackjac's builtins script.

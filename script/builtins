@@ -5,38 +5,41 @@ if (word(2 $loadinfo()) != [pf]) {
 
 #	Copyright (c) 2005 David B. Kratter (BlackJac@EFNet)
 #
-#	Version: 1.0.2005.03.28.3
+#	Version: 1.1.2005.03.29.1
 #
 #	This script ensures backward-compatibility with epic4-2.2 by adding the
-#	following ALIASes and SETs that have been removed from epic5:
+#	following commands, functions and sets that have been removed from epic5.
+#	In places where exact duplication of the behavior of epic4-2.2 is not
+#	possible or practical, a close approximation of the original behavior has
+#	been made.
 #
-#	ALIASES:
+#	COMMANDS:
 #		BYE, DATE, EXIT, HOST, IRCHOST, IRCNAME, LEAVE, REALNAME, SAVE,
 #		SIGNOFF, WHOWAS
+#
+#	FUNCTIONS:
+#		WINBOUND, WINCURSORLINE, WINLEVEL, WINNAM, WINNICKLIST, WINNUM,
+#		WINQUERY, WINREFS, WINSCROLLBACKSIZE, WINSERV, WINSTATSIZE,
+#		WINVISIBLE
+#
 #	SETS:
 #		AUTO_REJOIN, AUTO_REJOIN_DELAY, AUTO_UNMARK_AWAY, AUTO_WHOWAS,
 #		BEEP_ON_MSG, COMMAND_MODE, DCC_TIMEOUT, FULL_STATUS_LINE,
 #		NUM_OF_WHOWAS, REVERSE_STATUS_LINE, SHOW_END_OF_MSGS,
 #		SHOW_WHO_HOPCOUNT, VERBOSE_CTCP
 #
-#	In places where exact duplication of the behavior of epic4-2.2 is not
-#	possible or practical, a close approximation of the original behavior
-#	has been made.
+#	The following new commands and functions have been added for additional
+#	functionality:
 #
-#	The following ALIASes have been added for additional functionality:
-#
-#	ALIASES:
+#	COMMANDS:
 #		ADDSET - an interface to $symbolctl() to create your own /SETs
 #			 example: addset <name> <type> [<script>]
 #		DELSET - an interface to $symbolctl() to delete your own /SETs
 #			 example: delset <name>
-#		SERVERHOST - a function to return what the server thinks is your
-#			     current userhost
-#			     example: $serverhost() or $serverhost($servernum())
 
 package builtins;
 
-# ALIASES
+# COMMANDS
 
 alias addset (name, type, args) {
 	if (@name && type) {
@@ -88,10 +91,6 @@ alias realname (...) {
 
 stub alias save -pf save;
 
-alias serverhost (server default "$servernum()", void) {
-	return $getitem(array.hostname $server);
-};
-
 alias signoff (...) {
 	//quit $*;
 };
@@ -100,16 +99,72 @@ alias whowas (nick, number default "$num_of_whowas", void) {
 	//whowas $nick $number;
 };
 
-# HOOKS
+# FUNCTIONS
 
-^on #-connect 1 "*" {
-	userhost $servernick() -direct -cmd {
-		@ serverctl(set $servernum() userhost $3@$4);
-	};
-	who $servernick() -line {
-		@ setitem(array.hostname $servernum() $3@$4);
-	} -end {};
+alias winbound (winnum default 0, void) {
+	return $windowctl(get $windowctl(refnum $winnum) bind_channel);
 };
+
+alias wincursorline (winnum default 0, void) {
+	if ((:cursorline = windowctl(get $windowctl(refnum $winnum) cursor)) > -1) {
+		return $cursorline;
+	};
+	return -1;
+};
+
+alias winlevel (winnum default 0, void) {
+	return $windowctl(get $windowctl(refnum $winnum) window_level);
+};
+
+alias winnam (winnum default 0, void) {
+	return $windowctl(get $windowctl(refnum $winnum) name);
+};
+
+alias winnicklist (winnum default 0, void) {
+	return $windowctl(get $windowctl(refnum $winnum) nicklist);
+};
+
+alias winnum (winnum default 0, void) {
+	return $windowctl(get $windowctl(refnum $winnum) refnum);
+};
+
+alias winquery (winnum default 0, void) {
+	return $windowctl(get $windowctl(refnum $winnum) query);
+};
+
+alias winrefs (void) {
+	return $windowctl(refnums);
+};
+
+alias winscrollbacksize (winnum default 0, void) {
+	if ((:scrollbacksize = windowctl(get $windowctl(refnum $winnum) display_buffer_size)) > -1) {
+		return $scrollbacksize;
+	};
+	return -1;
+};
+
+alias winserv (winnum default 0, void) {
+	if ((:serv = windowctl(get $windowctl(refnum $winnum) server)) > -3) {
+		return $serv;
+	};
+	return -1;
+};
+
+alias winstatsize (winnum default 0, void) {
+	if ((:statsize = windowctl(get $windowctl(refnum $winnum) double)) > -1) {
+		return ${statsize + 1};
+	};
+	return -1;
+};
+
+alias winvisible (winnum default 0, void) {
+	if ((:visible = windowctl(get $windowctl(refnum $winnum) visible)) > -1) {
+		return $visible;
+	};
+	return -1;
+};
+
+# HOOKS
 
 ^on ^send_public "*" {
 	echo ${!iscurchan($0) ? [$0] : []}> $1-;
