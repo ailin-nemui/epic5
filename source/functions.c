@@ -1,4 +1,4 @@
-/* $EPIC: functions.c,v 1.84 2002/10/18 21:10:22 jnelson Exp $ */
+/* $EPIC: functions.c,v 1.85 2002/10/18 22:13:16 jnelson Exp $ */
 /*
  * functions.c -- Built-in functions for ircII
  *
@@ -5834,6 +5834,11 @@ BUILT_IN_FUNCTION(function_hash_32bit, input)
  * the latter intentionally.  If you really want to calculate from the end of
  * your string, then just add your negative value to $strlen(string) and
  * pass that.
+ *
+ * 10/01/02 At the suggestion of fudd and rain, if pos == len, then return
+ * the number of words in 'input' because if the cursor is at the end of the
+ * input prompt and you do $indextoword($curpos() $L), right now it would
+ * return EMPTY but it should return the word number right before the cursor.
  */
 BUILT_IN_FUNCTION(function_indextoword, input)
 {
@@ -5844,7 +5849,7 @@ BUILT_IN_FUNCTION(function_indextoword, input)
 	if (pos < 0)
 		RETURN_EMPTY;
 	len = strlen(input);
-	if (pos < 0 || pos >= len)
+	if (pos < 0 || pos > len)
 		RETURN_EMPTY;
 
 	/* 
@@ -5854,8 +5859,10 @@ BUILT_IN_FUNCTION(function_indextoword, input)
 	 * to bicker with me about it?
 	 */
 	/* Truncate the string if neccesary */
-	if (pos + 1 < len)
+	if (pos + 1 < len) {
+		input[pos] = 'x';
 		input[pos + 1] = 0;
+	}
 	RETURN_INT(word_count(input) - 1);
 }
 

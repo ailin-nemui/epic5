@@ -127,3 +127,4 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Fix bug with /QUEUE -delete
 * Remove unused variable in window_scroll().
 * #include <unistd.h> for configure check for sys_siglist[] for netbsd.
+* Experimental fix for $indextoword(), worked out with fudd.
