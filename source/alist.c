@@ -350,7 +350,7 @@ find_array_item (array *set, const char *name, int *cnt, int *loc)
 	 * exact match, its sitting under item 'min'.  So we check
 	 * for that and whack the count appropriately.
 	 */
-	if (strlen(ARRAY_ITEM(set, min)->name) == len)
+	if (0 == (ARRAY_ITEM(set, min)->name)[len])
 		*cnt *= -1;
 
 	/*

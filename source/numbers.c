@@ -10,7 +10,7 @@
  */
 
 #if 0
-static	char	rcsid[] = "$Id: numbers.c,v 1.16 2001/09/25 18:57:26 jnelson Exp $";
+static	char	rcsid[] = "$Id: numbers.c,v 1.17 2001/10/10 22:47:17 crazyed Exp $";
 #endif
 
 #include "irc.h"
@@ -646,7 +646,9 @@ void 	numbered_command (char *from, int comm, char **ArgList)
 	}
 	case 432:		/* #define ERR_ERRONEUSNICKNAME 432 */
 	{
-		if (get_int_var(AUTO_NEW_NICK_VAR))
+		if (!my_stricmp(user, ArgList[0]))
+			yell("WARNING:  Strange invalid nick message received.  You are probably lagged.");
+		else if (get_int_var(AUTO_NEW_NICK_VAR))
 			fudge_nickname(from_server);
 		else
 			reset_nickname(from_server);
@@ -750,7 +752,10 @@ void 	numbered_command (char *from, int comm, char **ArgList)
 	case 438:		/* EFnet/TS4 "nick collision" numeric 438 */
 	case 453:		/* EFnet/TS4 "nickname lost" numeric 453 */
 	{
-		if (get_int_var(AUTO_NEW_NICK_VAR))
+		if (!my_stricmp(user, ArgList[0]))
+			/* This should stop the "rolling nicks" in their tracks. */
+			yell("WARNING:  Strange invalid nick message received.  You are probably lagged.");
+		else if (get_int_var(AUTO_NEW_NICK_VAR))
 			fudge_nickname(from_server);
 		else
 			reset_nickname(from_server);
