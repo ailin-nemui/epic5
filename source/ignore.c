@@ -1,4 +1,4 @@
-/* $EPIC: ignore.c,v 1.22 2004/04/13 00:19:48 jnelson Exp $ */
+/* $EPIC: ignore.c,v 1.23 2004/05/11 02:43:14 jnelson Exp $ */
 /*
  * ignore.c: handles the ingore command for irc 
  *
@@ -127,6 +127,7 @@ typedef struct	IgnoreStru
 	Timeval	last_used;		/* When it was last ``triggered'' */
 	Timeval	expiration;		/* When this ignore expires */
 	char	*reason;
+	int	enabled;
 }	Ignore;
 
 /* ignored_nicks: pointer to the head of the ignore list */
@@ -162,6 +163,7 @@ static Ignore *new_ignore (const char *new_nick)
 	item->last_used.tv_usec = 0;
 	item->expiration.tv_sec = 0;
 	item->expiration.tv_usec = 0;
+	item->enabled = 1;
 	add_to_list((List **)&ignored_nicks, (List *)item);
 	return item;
 }
@@ -1126,6 +1128,8 @@ char *	ignorectl (char *input)
 			return malloc_sprintf(&ptr, "%ld %ld", 
 				(long) i->last_used.tv_sec,
 				(long) i->last_used.tv_usec);
+		} else if (!my_strnicmp(listc, "ENABLED", len)) {
+			RETURN_INT(i->enabled);
 		}
 	} else if (!my_strnicmp(listc, "SET", len)) {
 		int	refnum;
@@ -1187,6 +1191,9 @@ char *	ignorectl (char *input)
 		} else if (!my_strnicmp(listc, "COUNTER", len)) {
 			GET_INT_ARG(i->counter, input);
 			RETURN_INT(i->refnum);
+		} else if (!my_strnicmp(listc, "ENABLED", len)) {
+			GET_INT_ARG(i->enabled, input);
+			RETURN_INT(i->refnum);
 		}
 	}
 
@@ -1234,6 +1241,9 @@ int	check_ignore_channel (const char *nick, const char *uh, const char *channel,
 
 	for (tmp = ignored_nicks; tmp; tmp = tmp->next)
 	{
+		if (!tmp->enabled)
+			continue;
+
 		/*
 		 * Always check for exact matches first...
 		 */
