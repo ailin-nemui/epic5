@@ -8,7 +8,7 @@
  */
 
 #if 0
-static	char	rcsid[] = "@(#)$Id: funny.c,v 1.2 2002/05/09 23:17:04 jnelson Exp $";
+static	char	rcsid[] = "@(#)$Id: funny.c,v 1.3 2002/05/09 23:32:21 jnelson Exp $";
 #endif
 
 #include "irc.h"
@@ -324,7 +324,7 @@ void	funny_mode (char *from, char **ArgList)
 {
 	char	*mode, *channel;
 
-	if (!ArgList[0]) 
+	if (!ArgList[0] || !ArgList[1])
 		return;
 
 	channel = ArgList[0];

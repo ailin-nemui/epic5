@@ -10,7 +10,7 @@
  */
 
 #if 0
-static	char	rcsid[] = "$Id: numbers.c,v 1.21 2002/05/09 23:17:04 jnelson Exp $";
+static	char	rcsid[] = "$Id: numbers.c,v 1.22 2002/05/09 23:32:21 jnelson Exp $";
 #endif
 
 #include "irc.h"
@@ -239,6 +239,9 @@ void 	numbered_command (char *from, int comm, char **ArgList)
 	/* XXX Doesn't belong here */
 	case 301:		/* #define RPL_AWAY             301 */
         {
+		if (!ArgList[0] || !ArgList[1])
+			break;		/* Not what i'm expecting */
+
                 PasteArgs(ArgList, 1);
                 if (do_hook(current_numeric, "%s %s", ArgList[0], ArgList[1]))
                         put_it("%s %s is away: %s", numeric_banner(),
@@ -257,6 +260,9 @@ void 	numbered_command (char *from, int comm, char **ArgList)
 	/* XXX Doesn't belong here */
 	case 311:		/* #define RPL_WHOISUSER        311 */
         {
+		if (!ArgList[0] || !ArgList[1] || !ArgList[2] || !ArgList[3] || !ArgList[4])
+			return;		/* Larneproofing */
+
                 PasteArgs(ArgList, 4);
                 message_from(NULL, LOG_CRAP);
                 if (do_hook(current_numeric, "%s %s %s %s %s %s",
@@ -270,6 +276,9 @@ void 	numbered_command (char *from, int comm, char **ArgList)
 	/* XXX Doesn't belong here */
 	case 312:		/* #define RPL_WHOISSERVER      312 */
 	{
+		if (!ArgList[0] || !ArgList[1] || !ArgList[2])
+			return;		/* Larneproofing */
+
 		if (do_hook(current_numeric, "%s %s %s %s", from, ArgList[0], ArgList[1], ArgList[2]))
 			put_it("%s on irc via server %s (%s)", numeric_banner(),
 				ArgList[1], ArgList[2]);
@@ -291,6 +300,9 @@ void 	numbered_command (char *from, int comm, char **ArgList)
 	/* XXX Doesn't belong here */
 	case 314:		/* #define RPL_WHOWASUSER       314 */
 	{
+		if (!ArgList[0] || !ArgList[1] || !ArgList[2] || !ArgList[3] || !ArgList[4])
+			return;		/* Larneproofing */
+
 		PasteArgs(ArgList, 4);
 		message_from(NULL, LOG_CRAP);
 		if (do_hook(current_numeric, "%s %s %s %s %s %s",
@@ -323,6 +335,9 @@ void 	numbered_command (char *from, int comm, char **ArgList)
 		char	flag, *nick, *idle_str, *startup_str;
 		int	idle;
 		time_t	startup;
+
+		if (!ArgList[0] || !ArgList[1] || !ArgList[2])
+			return;		/* Larneproofing */
 
 		nick = ArgList[0];
 		idle_str = ArgList[1];
@@ -388,6 +403,9 @@ void 	numbered_command (char *from, int comm, char **ArgList)
 	/* XXX Doesn't belong here */
 	case 319:		/* #define RPL_WHOISCHANNELS    319 */
 	{
+		if (!ArgList[0] || !ArgList[1])
+			return;		/* Larneproofing */
+
 		PasteArgs(ArgList, 1);
 		if (do_hook(current_numeric, "%s %s %s", from, ArgList[0], ArgList[1]))
 			put_it("%s on channels: %s", numeric_banner(), ArgList[1]);
@@ -420,6 +438,9 @@ void 	numbered_command (char *from, int comm, char **ArgList)
 	 */
 	case 340:		/* #define RPL_INVITING_OTHER	340 */
 	{
+		if (!ArgList[0] || !ArgList[1] || !ArgList[2])
+			return;		/* Larneproofing */
+
 		if (ArgList[2])
 		{
 			message_from(ArgList[0], LOG_CRAP);
@@ -433,6 +454,9 @@ void 	numbered_command (char *from, int comm, char **ArgList)
 	/* XXX Doesn't belong here */
 	case 341:		/* #define RPL_INVITING         341 */
 	{
+		if (!ArgList[0] || !ArgList[1])
+			return;		/* Larneproofing */
+
 		if (ArgList[1])
 		{
 			message_from(ArgList[1], LOG_CRAP);
@@ -478,6 +502,9 @@ void 	numbered_command (char *from, int comm, char **ArgList)
 
 	case 367:		/* #define RPL_BANLIST */
 	{
+		if (!ArgList[0] || !ArgList[1] || !ArgList[2])
+			return;		/* Larneproofing */
+
 		number_of_bans++;
 		if (ArgList[2])
 		{
@@ -568,6 +595,9 @@ void 	numbered_command (char *from, int comm, char **ArgList)
         /* ":%s 401 %s %s :No such nick/channel" */
 	case 401:		/* #define ERR_NOSUCHNICK       401 */
 	{
+		if (!ArgList[0] || !ArgList[1])
+			return;		/* Larneproofing */
+
 		PasteArgs(ArgList, 1);
 		if (do_hook(current_numeric, "%s %s %s", from, 
 						ArgList[0], ArgList[1]))
@@ -591,6 +621,9 @@ void 	numbered_command (char *from, int comm, char **ArgList)
         /* ":%s 402 %s %s :No such server" */
 	case 402:
 	{
+		if (!ArgList[0] || !ArgList[1])
+			return;		/* Larneproofing */
+
 		PasteArgs(ArgList, 1);
 		/* 
 		 * Some servers BBC by sending this instead of
@@ -626,6 +659,9 @@ void 	numbered_command (char *from, int comm, char **ArgList)
 	case 403:		/* #define ERR_NOSUCHCHANNEL    403 */
 	{
 		const char	*s;
+
+		if (!ArgList[0] || !ArgList[1])
+			return;		/* Larneproofing */
 
 		PasteArgs(ArgList, 1);
 
@@ -1034,7 +1070,7 @@ void 	numbered_command (char *from, int comm, char **ArgList)
 		case 329:		/* #define CREATION_TIME	329 */
 		{
 			/* Erf/TS4 support */
-			if (ArgList[3])
+			if (ArgList[1] && ArgList[2] && ArgList[3])
 			{
 				time_t tme1 = (time_t)my_atol(ArgList[1]);
 				time_t tme2 = (time_t)my_atol(ArgList[2]);
@@ -1044,7 +1080,7 @@ void 	numbered_command (char *from, int comm, char **ArgList)
 				put_it("%s Channel %s was created at %ld, +c was last set at %ld, and has been opless since %ld", numeric_banner(), ArgList[0], tme1, tme2, tme3);
 				message_from((char *) 0, LOG_CURRENT);
 			}
-			if (ArgList[1])
+			else if (ArgList[1])
 			{
 				time_t tme = (time_t)my_atol(ArgList[1]);
 
