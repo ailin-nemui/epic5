@@ -1,4 +1,4 @@
-/* $EPIC: window.c,v 1.91 2003/12/11 23:07:16 jnelson Exp $ */
+/* $EPIC: window.c,v 1.92 2003/12/13 17:25:58 jnelson Exp $ */
 /*
  * window.c: Handles the organzation of the logical viewports (``windows'')
  * for irc.  This includes keeping track of what windows are open, where they
@@ -830,6 +830,7 @@ void	recalculate_window_positions (Screen *screen)
 static void 	swap_window (Window *v_window, Window *window)
 {
 	int	check_hidden = 1;
+	int	recalculate_everything = 0;
 
 	/*
 	 * v_window -- window to be swapped out
@@ -900,6 +901,13 @@ static void 	swap_window (Window *v_window, Window *window)
 				window->status.double_status;
 	window->bottom = window->top + window->display_size;
 	window->screen = v_window->screen;
+
+	if (window->display_size < 0)
+	{
+		window->display_size = 0;
+		recalculate_everything = 1;
+	}
+
 	if (v_window->screen->current_window == v_window)
 	{
 		v_window->screen->current_window = window;
@@ -926,6 +934,8 @@ static void 	swap_window (Window *v_window, Window *window)
 	if (!v_window->deceased)
 		add_to_invisible_list(v_window);
 
+	if (recalculate_everything)
+		recalculate_windows(window->screen);
 	recalculate_window_cursor_and_display_ip(window);
 	resize_window_display(window);
 
@@ -3145,6 +3155,12 @@ static Window *window_double (Window *window, char **args)
 		return NULL;
 
 	window->display_size += current - window->status.double_status;
+	if (window->display_size < 0)
+	{
+		window->display_size = 0;
+		if (window->screen)
+			recalculate_windows(window->screen);
+	}
 	recalculate_window_positions(window->screen);
 	return window;
 }

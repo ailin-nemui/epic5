@@ -1,4 +1,4 @@
-/* $EPIC: irc.c,v 1.663 2003/12/11 23:40:55 jnelson Exp $ */
+/* $EPIC: irc.c,v 1.664 2003/12/13 17:25:58 jnelson Exp $ */
 /*
  * ircII: a new irc client.  I like it.  I hope you will too!
  *
@@ -52,7 +52,7 @@ const char internal_version[] = "20031207";
 /*
  * In theory, this number is incremented for every commit.
  */
-const unsigned long	commit_id = 669;
+const unsigned long	commit_id = 670;
 
 /*
  * As a way to poke fun at the current rage of naming releases after
@@ -752,7 +752,16 @@ static	void	parse_args (int argc, char **argv)
 		if (**argv)
 			build_server_list(*argv, NULL);
 
-
+	if (!use_input && quick_startup)
+	{
+		fprintf(stderr, "Cannot use -b and -q at the same time\n");
+		exit(1);
+	}
+	if (!use_input && dont_connect)
+	{
+		fprintf(stderr, "Cannot use -b and -s at the same time\n");
+		exit(1);
+	}
 
 	if (!check_nickname(nickname, 1))
 	{

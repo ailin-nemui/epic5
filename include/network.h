@@ -60,6 +60,8 @@ int     ip_bindery              (int family, u_short port, SS *storage);
 int     client_bind             (SA *, socklen_t);
 int     client_connect          (SA *, socklen_t, SA *, socklen_t);
 int     connectory              (int, const char *, const char *);
+int     inet_vhostsockaddr 	(int, int, SS *, socklen_t *);
+
 #define GNI_INTEGER 0x4000
 
 #endif

@@ -1,4 +1,4 @@
-/* $EPIC: dcc.c,v 1.83 2003/12/06 14:34:33 crazyed Exp $ */
+/* $EPIC: dcc.c,v 1.84 2003/12/13 17:25:58 jnelson Exp $ */
 /*
  * dcc.c: Things dealing client to client connections. 
  *
@@ -770,6 +770,8 @@ static	int	dcc_open (DCC_list *dcc)
 	int	old_server = from_server;
 	char	p_port[12];
 	int	retval = 0;
+	SS	  local;
+	socklen_t locallen;
 
 	/*
 	 * Initialize our idea of what is going on.
@@ -785,8 +787,16 @@ static	int	dcc_open (DCC_list *dcc)
 	    if (dcc->flags & DCC_THEIR_OFFER)
 	    {
 		lock_dcc(dcc);
-		if ((dcc->socket = client_connect(NULL, 0, (SA *)&dcc->offer, 
-						  sizeof(dcc->offer))) < 0)
+		if (inet_vhostsockaddr(FAMILY(dcc->offer), -1, 
+					&local, &locallen) < 0)
+		    dcc->socket = client_connect(NULL, 0, (SA *)&dcc->offer,
+							sizeof(dcc->offer));
+		else
+		    dcc->socket = client_connect((SA *)&local, locallen, 
+							(SA *)&dcc->offer, 
+							sizeof(dcc->offer));
+
+		if (dcc->socket < 0)
 		{
 			char *encoded_description = dcc_urlencode(dcc->description);
 

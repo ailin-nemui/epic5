@@ -1,4 +1,4 @@
-/* $EPIC: network.c,v 1.50 2003/12/03 05:21:11 jnelson Exp $ */
+/* $EPIC: network.c,v 1.51 2003/12/13 17:25:58 jnelson Exp $ */
 /*
  * network.c -- handles stuff dealing with connecting and name resolving
  *
@@ -46,7 +46,7 @@ typedef struct sockaddr_un USA;
 static int	set_non_blocking (int fd);
 static int	set_blocking (int fd);
 static int	inet_remotesockaddr (int family, const char *host, const char *port, SS *storage, socklen_t *len);
-static int	inet_vhostsockaddr (int family, int port, SS *storage, socklen_t *len);
+int	inet_vhostsockaddr (int family, int port, SS *storage, socklen_t *len);
 static int	Connect (int fd, SA *addr);
 static int	Getaddrinfo (const char *nodename, const char *servname, const AI *hints, AI **res);
 static void	Freeaddrinfo (AI *ai);
@@ -354,7 +354,7 @@ int	client_bind (SA *local, socklen_t local_len)
  *             the given family.
  * NOTES: If "len" is set to 0, do not attempt to bind() 'storage'!
  */
-static int	inet_vhostsockaddr (int family, int port, SS *storage, socklen_t *len)
+int	inet_vhostsockaddr (int family, int port, SS *storage, socklen_t *len)
 {
 	char	p_port[12];
 	char	*p = NULL;

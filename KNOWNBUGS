@@ -77,3 +77,10 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Fixes to 'less' script from howl
 * New 'help' script from howl
 * Add /WINDOW SCROLLADJ.
+* Make inet_vhostsockaddr() extern so dcc can use it
+* Make dcc_open() use inet_vhostsockaddr() to bind /hostname to dcc conns
+* Don't allow -b and -q, or -b -and -s, as they cause deadlocks/panics
+* Fix casting error that caused $urlencode() of high bit chars to segfault
+* If swapping in a window that has no room for double status, recalculate all
+* If double-on in a window that has no room for it, recalculate all
+
