@@ -8,7 +8,7 @@
  */
 
 #if 0
-static	char	rcsid[] = "@(#)$Id: ircaux.c,v 1.11 2001/10/02 17:53:34 crazyed Exp $";
+static	char	rcsid[] = "@(#)$Id: ircaux.c,v 1.12 2001/11/12 21:46:45 jnelson Exp $";
 #endif
 
 #include "irc.h"
@@ -1834,7 +1834,7 @@ int	file_exists (const char *filename)
 }
 
 /* Gets the time in second/usecond if you can,  second/0 if you cant. */
-struct timeval 	get_time(struct timeval *timer)
+struct timeval 	get_time (struct timeval *timer)
 {
 	static struct timeval timer2;
 
@@ -1875,6 +1875,57 @@ double 	time_diff (struct timeval one, struct timeval two)
 
 	return (double)td.tv_sec + ((double)td.tv_usec / 1000000.0);
 }
+
+struct timeval double_to_timeval (double x)
+{
+	struct timeval td;
+	time_t	s;
+
+	s = (time_t) x;
+	x = x - s;
+	x = x * 1000000;
+
+	td.tv_sec = s;
+	td.tv_usec = (long) x;
+	return td;
+}
+
+/* 
+ * calculates the time elapsed between 'one' and 'two' where they were
+ * gotten probably with a call to get_time.  'one' should be the older
+ * timer and 'two' should be the most recent timer.
+ */
+struct timeval 	time_subtract (struct timeval one, struct timeval two)
+{
+	struct timeval td;
+
+	td.tv_sec = two.tv_sec - one.tv_sec;
+	td.tv_usec = two.tv_usec - one.tv_usec;
+	if (td.tv_usec < 0)
+	{
+		td.tv_usec += 1000000;
+		td.tv_sec--;
+	}
+	return td;
+}
+
+/* 
+ * Adds the interval "two" to the base time "one" and returns it.
+ */
+struct timeval 	time_add (struct timeval one, struct timeval two)
+{
+	struct timeval td;
+
+	td.tv_usec = one.tv_usec + two.tv_usec;
+	td.tv_sec = one.tv_sec + two.tv_sec;
+	if (td.tv_usec > 1000000)
+	{
+		td.tv_usec -= 1000000;
+		td.tv_sec++;
+	}
+	return td;
+}
+
 
 char *	plural (int number)
 {
@@ -2388,27 +2439,42 @@ char *	get_userhost (void)
 }
 
 
-int 	time_to_next_minute (void)
+/* Fancy attempt to compensate for broken time_t's */
+struct timeval 	time_to_next_minute (void)
 {
 	static	int 	which = 0;
-	time_t 		now   = time(NULL);
+	struct timeval	now, then;
 
-	if (which == 1)
-		return 60 - now % 60;
-	else 
+	get_time(&now);
+
+	/* 
+	 * The first time called, try to determine if the system clock
+	 * is an exact multiple of 60 at the top of every minute.  If it
+	 * is, then we will use the "60 trick" to optimize calculations.
+	 * If it is not, then we will do it the hard time every time.
+	 */
+	if (which == 0)
 	{
-		struct tm *now_tm = gmtime(&now);
+		struct tm *now_tm = gmtime(&now.tv_sec);
 
 		if (!which)
 		{
-			if (now_tm->tm_sec == now % 60)
+			if (now_tm->tm_sec == now.tv_sec % 60)
 				which = 1;
 			else
 				which = 2;
 		}
-
-		return 60 - now_tm->tm_sec;
 	}
+
+	then.tv_usec = 1000000 - now.tv_usec;
+	if (which == 1)
+		then.tv_sec = 60 - (now.tv_sec + 1) % 60;
+	else 	/* which == 2 */
+	{
+		struct tm *now_tm = gmtime(&now.tv_sec);
+		then.tv_sec = 60 - (now_tm->tm_sec + 1) % 60;
+	}
+	return then;
 }
 
 /*

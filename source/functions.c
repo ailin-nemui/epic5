@@ -747,8 +747,8 @@ static	char	*alias_invite 		(void) { return m_strdup((invite_channel) ? invite_c
 static	char	*alias_oper 		(void) { return m_strdup((from_server != -1) ? get_server_operator(from_server) ?  get_string_var(STATUS_OPER_VAR) : empty_string : empty_string); }
 static	char	*alias_version 		(void) { return m_strdup(internal_version); }
 static  char    *alias_show_userhost 	(void) { return m_strdup(get_server_userhost(from_server)); }
-static  char    *alias_online 		(void) { return m_sprintf("%ld",(long)start_time); }
-static  char    *alias_idle 		(void) { return m_sprintf("%ld",time(NULL)-idle_time); }
+static  char    *alias_online 		(void) { return m_sprintf("%ld",(long)start_time.tv_sec); }
+static  char    *alias_idle 		(void) { return m_sprintf("%ld",time(NULL)-idle_time.tv_sec); }
 static	char	*alias_current_numeric	(void) { return m_sprintf("%03d", -current_numeric); }
 static	char	*alias_banner		(void) { return m_strdup(numeric_banner()); }
 

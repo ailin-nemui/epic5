@@ -7,7 +7,7 @@
  *
  * See the COPYRIGHT file, or do a HELP IRCII COPYRIGHT 
  *
- * @(#)$Id: ircaux.h,v 1.6 2001/10/02 17:53:34 crazyed Exp $
+ * @(#)$Id: ircaux.h,v 1.7 2001/11/12 21:46:45 jnelson Exp $
  */
 
 #ifndef _IRCAUX_H_
@@ -90,8 +90,11 @@ int	lw_strcmp 		(comp_func *, char *, char *);
 int	open_to 		(char *, int, int);
 struct timeval get_time 	(struct timeval *);
 double 	time_diff 		(struct timeval, struct timeval);
+struct timeval time_add		(struct timeval, struct timeval);
+struct timeval time_subtract	(struct timeval, struct timeval);
+struct timeval double_to_timeval (double);
 char *	plural 			(int);
-int	time_to_next_minute 	(void);
+struct timeval	time_to_next_minute 	(void);
 char *	remove_trailing_spaces 	(char *, size_t *cluep);
 char *	ltoa 			(long);
 char *	ftoa			(double);

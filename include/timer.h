@@ -11,10 +11,10 @@
 	BUILT_IN_COMMAND(timercmd);
 
 	void	ExecuteTimers 	(void);
-	char *	add_timer	(int, char *, long, long, int (*) (void *), 
+	char *	add_timer	(int, char *, double, long, int (*) (void *), 
 					char *, const char *, Window *);
 	int	delete_timer 	(char *);
-	time_t	TimerTimeout 	(void);
+	struct timeval	TimerTimeout 	(void);
 	int	timer_exists	(const char *);
 
 #endif /* _TIMER_H_ */

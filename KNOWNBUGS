@@ -16,3 +16,8 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Start using getenv() and setenv() like normal programs do.
 * Fix /setenv so you can unset env variables with /setenv -VARNAME
 * "Ooops"  I didn't sort fskip/fseek/frewind/ferror in the functions list.
+* Migrate the io() looper to using 'struct timeval's instead of time_t's
+* Migrate /timer to use 'struct timeval's instead of time_t's
+* Make 'start_time' and 'idle_time' struct timeval's, for future use.
+* Add some functions to ircaux.c to make manipulating timevals easier.
+* Migrate calc_speed in dcc.c to using 'struct timeval's instead of time_t's

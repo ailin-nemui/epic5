@@ -10,7 +10,7 @@
  */
 
 #if 0
-static	char	rcsid[] = "@(#)$Id: ctcp.c,v 1.2 2001/09/26 16:37:10 jnelson Exp $";
+static	char	rcsid[] = "@(#)$Id: ctcp.c,v 1.3 2001/11/12 21:46:45 jnelson Exp $";
 #endif
 
 #include "irc.h"
@@ -405,7 +405,7 @@ CTCP_HANDLER(do_finger)
 	else
 		my_host = hostname;
 
-	diff = time(NULL) - idle_time;
+	diff = time(NULL) - idle_time.tv_sec;
 
 	if (!(pwd = getpwuid(getuid())))
 		return NULL;
@@ -473,7 +473,7 @@ CTCP_HANDLER(do_ping_reply)
 	get_time(&t);
 
 	/* Reply must be between time we started and right now */
-	if (orig < start_time || orig > t.tv_sec)
+	if (orig < start_time.tv_sec || orig > t.tv_sec)
 	{
 		say("Invalid CTCP PING reply [%s] dropped.", cmd);
 		return NULL;

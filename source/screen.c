@@ -2138,7 +2138,7 @@ void 	do_screens (fd_set *rd)
 			 * idle time *shouldn't* be reset unless its not a 
 			 * screen-fd that was closed..
 			 */
-			time(&idle_time);
+			get_time(&idle_time);
 			if (cpu_saver)
 			{
 				cpu_saver = 0;

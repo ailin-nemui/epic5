@@ -35,7 +35,7 @@ BUILT_IN_COMMAND(timercmd)
 		*flag;
 	char	*want = empty_string;
 	char	*ptr;
-	time_t	interval;
+	double	interval;
 	long	events = -2;
 	int	update = 0;
 	Window	*win = current_window;
@@ -144,7 +144,7 @@ BUILT_IN_COMMAND(timercmd)
 		if (!waittime)
 			interval = -1;
 		else
-			interval = my_atol(waittime);
+			interval = atof(waittime);
 
 		if (!update && events == -2)
 			events = 1;
@@ -167,13 +167,13 @@ BUILT_IN_COMMAND(timercmd)
 typedef struct  timerlist_stru
 {
 	char	ref[REFNUM_MAX + 1];
-        time_t  time;
+        struct timeval time;
 	int	(*callback) (void *);
         void    *command;
 	char	*subargs;
         struct  timerlist_stru *next;
 	long	events;
-	time_t	interval;
+	struct timeval	interval;
 	int	server;
 	int	window;
 }       TimerList;
@@ -195,7 +195,7 @@ static	int 		parsingtimer = 0;
  */
 void 	ExecuteTimers (void)
 {
-	time_t		now;
+	struct timeval	now;
 	TimerList *	current;
 	int		old_from_server = from_server;
 
@@ -208,9 +208,15 @@ void 	ExecuteTimers (void)
                 return;
 
         parsingtimer = 1;
-	time(&now);
+	get_time(&now);
 
-	while (PendingTimers && PendingTimers->time <= now)
+/*
+yell("PendingTimers->time is [%ld/%ld]", PendingTimers->time.tv_sec, PendingTimers->time.tv_usec);
+yell("now is [%ld/%ld]", now.tv_sec, now.tv_usec);
+yell("Difference is [%f]", time_diff(PendingTimers->time, now));
+*/
+
+	while (PendingTimers && time_diff(now, PendingTimers->time) < 0)
 	{
 		int	old_refnum = current_window->refnum;
 
@@ -258,7 +264,16 @@ void 	ExecuteTimers (void)
 		{
 			if (current->events != -1)
 				current->events--;
-			current->time += current->interval;
+/*
+yell("Rescheduling...");
+yell("current->time is [%ld/%ld]", current->time.tv_sec, current->time.tv_usec);
+yell("interval is [%ld/%ld]", current->interval.tv_sec, current->interval.tv_usec);
+*/
+			current->time = time_add(current->time, current->interval);
+/*
+yell("new time is [%ld/%ld]", current->time.tv_sec, current->time.tv_usec);
+*/
+
 			schedule_timer(current);
 		}
 		else
@@ -281,8 +296,8 @@ void 	ExecuteTimers (void)
 static	void	show_timer (const char *command)
 {
 	TimerList	*tmp;
-	time_t		current,
-			time_left;
+	struct timeval	current;
+	double		time_left;
 
 	if (!PendingTimers)
 	{
@@ -290,15 +305,15 @@ static	void	show_timer (const char *command)
 		return;
 	}
 
-	time(&current);
+	get_time(&current);
 
 	say("%-10s %-10s %-7s %s", "Timer", "Seconds", "Events", "Command");
 	for (tmp = PendingTimers; tmp && (tmp->callback == NULL); tmp = tmp->next)
 	{
-		time_left = tmp->time - current;
+		time_left = time_diff(tmp->time, current);
 		if (time_left < 0)
 			time_left = 0;
-		say("%-10s %-10ld %-7ld %s", tmp->ref, time_left, tmp->events, (char *)tmp->command);
+		say("%-10s %-8.2f %-7ld %s", tmp->ref, time_left, tmp->events, (char *)tmp->command);
 	}
 }
 
@@ -459,14 +474,14 @@ static	TimerList *get_timer (const char *ref)
  *		 know anything of the nature of the argument.
  * subargs:	 should be NULL, its ignored anyhow.
  */
-char *add_timer (int update, char *refnum_want, long when, long events, int (callback) (void *), char *what, const char *subargs, Window *w)
+char *add_timer (int update, char *refnum_want, double when, long events, int (callback) (void *), char *what, const char *subargs, Window *w)
 {
 	TimerList	*ntimer, *otimer = NULL;
 	char		refnum_got[REFNUM_MAX + 1];
 
 	ntimer = (TimerList *) new_malloc(sizeof(TimerList));
-	ntimer->time = time(NULL) + when;
-	ntimer->interval = when;
+	ntimer->interval = double_to_timeval(when);
+	ntimer->time = time_add(get_time(NULL), ntimer->interval);
 	ntimer->events = events;
 	ntimer->server = from_server;
 	ntimer->window = w ? w->refnum : -1;
@@ -532,7 +547,7 @@ static char *schedule_timer (TimerList *ntimer)
 	/* we've created it, now put it in order */
 	for (slot = &PendingTimers; *slot; slot = &(*slot)->next)
 	{
-		if ((*slot)->time > ntimer->time)
+		if (time_diff((*slot)->time, ntimer->time) < 0)
 			break;
 	}
 	ntimer->next = *slot;
@@ -544,20 +559,24 @@ static char *schedule_timer (TimerList *ntimer)
  * TimerTimeout:  Called from irc_io to help create the timeout
  * part of the call to select.
  */
-time_t TimerTimeout (void)
+static struct timeval forever = { 100000, 0 };
+static struct timeval none = { 0, 0 };
+struct timeval TimerTimeout (void)
 {
-	time_t	current;
-	time_t	timeout_in;
+	struct timeval	current;
+	struct timeval	timeout_in;
 
 	/* 
 	 * If executing ExecuteTimers here would be invalid, then
 	 * do not bother telling the caller we are ready.
 	 */
         if (waiting_out > waiting_in || parsingtimer || !PendingTimers)
-                return 100000;
+                return forever;
 	if (!PendingTimers)
-		return 100000;	/* Absurdly large. */
-	time(&current);
-	timeout_in = PendingTimers->time - current;
-	return (timeout_in < 0) ? 0 : timeout_in;
+		return forever;	/* Absurdly large. */
+
+	get_time(&current);
+	timeout_in = time_subtract(current, PendingTimers->time);
+	return (timeout_in.tv_sec < 0) ? none : timeout_in;
 }
+

@@ -25,7 +25,7 @@ const char internal_version[] = "20011112";
 /*
  * In theory, this number is incremented for every commit.
  */
-const unsigned long	commit_id = 127;
+const unsigned long	commit_id = 128;
 
 /*
  * As a way to poke fun at the current rage of naming releases after
@@ -109,10 +109,10 @@ int		quick_startup = 0;
 int		dont_connect = 0;
 
 /* Set to the current time, each time you press a key. */
-time_t		idle_time = 0;
+struct timeval	idle_time = { 0, 0 };
 
 /* Set to the time the client booted up */
-time_t		start_time;
+struct timeval	start_time;
 
 /* The number of child processes still unreaped. */
 int		child_dead = 0;
@@ -151,7 +151,7 @@ int		inhibit_logging = 0;
 int		loading_global = 0;
 
 /* This is reset every time io() is called.  Use this to save calls to time */
-time_t		now = 0;
+struct timeval	now = {0, 0};
 
 /*
  * If set, outbound connections will be bind()ed to the address
@@ -780,7 +780,7 @@ static	struct	timeval	clock_timeout,
 	static	int	last_warn = 0;
 
 	level++;
-	now = time(NULL);
+	get_time(&now);
 
 	/* Don't let this accumulate behind the user's back. */
 	cntl_c_hit = 0;
@@ -835,20 +835,20 @@ static	struct	timeval	clock_timeout,
 
 	/* CHECK FOR CPU SAVER MODE */
 	if (!cpu_saver && get_int_var(CPU_SAVER_AFTER_VAR))
-		if (now - idle_time > get_int_var(CPU_SAVER_AFTER_VAR) * 60)
+		if (now.tv_sec - idle_time.tv_sec > get_int_var(CPU_SAVER_AFTER_VAR) * 60)
 			cpu_saver_on(0, NULL);
 
 	/* SET UP FD SETS */
 	rd = readables;
 
-	clock_timeout.tv_sec = 60 - now % 60;
+	clock_timeout = time_to_next_minute();
 	if (cpu_saver && get_int_var(CPU_SAVER_EVERY_VAR))
 		clock_timeout.tv_sec += (get_int_var(CPU_SAVER_EVERY_VAR) - 1) * 60;
 
 	if (!timeptr)
 		timeptr = &clock_timeout;
-	timer.tv_sec = TimerTimeout();
-	if (timer.tv_sec <= timeptr->tv_sec)
+	timer = TimerTimeout();
+	if (time_diff(*timeptr, timer) < 0)
 		timeptr = &timer;
 
 	if ((hold_over = unhold_windows()))
@@ -1153,7 +1153,7 @@ static		time_t	last_minute = -1;
 
 			from_server = primary_server;
 			do_hook(TIMER_LIST, "%02d:%02d", hour, min);
-			do_hook(IDLE_LIST, "%ld", (tv.tv_sec - idle_time) / 60);
+			do_hook(IDLE_LIST, "%ld", tv.tv_sec - idle_time.tv_sec / 60);
 			from_server = old_server;
 		}
 
@@ -1181,7 +1181,7 @@ int 	main (int argc, char *argv[])
 #ifdef SOCKS
 	SOCKSinit(argv[0]);
 #endif
-        start_time = time(NULL);
+        get_time(&start_time);
 	check_password();
 	check_valid_user();
 	check_invalid_host();
@@ -1268,7 +1268,7 @@ int 	main (int argc, char *argv[])
 	else
 		reconnect(-1, 0);		/* Connect to default server */
 
-	time(&idle_time);
+	get_time(&idle_time);
 	set_input(empty_string);
 	set_input_prompt(get_string_var(INPUT_PROMPT_VAR));
 	for (;;)

@@ -9,7 +9,7 @@
  */
 
 #if 0
-static	char	rcsid[] = "@(#)$Id: dcc.c,v 1.5 2001/09/26 18:32:03 jnelson Exp $";
+static	char	rcsid[] = "@(#)$Id: dcc.c,v 1.6 2001/11/12 21:46:45 jnelson Exp $";
 #endif
 
 #include "irc.h"
@@ -1213,15 +1213,15 @@ static	void	dcc_getfile (char *args)
 /*
  * Calculates transfer speed based on size, start time, and current time.
  */
-static char *	calc_speed (off_t sofar, time_t sta, time_t cur)
+static char *	calc_speed (off_t sofar, struct timeval sta, struct timeval cur)
 {
 	static char	buf[7];
+	double		tdiff = time_diff(sta, cur);
 
-	if (sofar == 0 || (cur - sta) <= 0)
+	if (sofar == 0 || tdiff <= 0.0)
 		snprintf(buf, 7, "N/A");
 	else
-		snprintf(buf, 7, "%4.1f", 
-			(double)((double)sofar / (cur - sta) / 1024.0));
+		snprintf(buf, 7, "%4.1f", (double)sofar / tdiff / 1024.0);
 	return buf;
 }
 
@@ -1358,7 +1358,7 @@ static	char		*format =
 		if (Client->bytes_sent)
 		{
 			strlcpy(speed, calc_speed(act_sent, 
-				Client->starttime.tv_sec, time(NULL)), 9);
+				Client->starttime, get_time(NULL)), 9);
 		}
 		else
 			*speed = 0;
@@ -2027,8 +2027,8 @@ void	dcc_check (fd_set *Readables)
 		 * Enforce any timeouts
 		 */
 		else if (Client->flags & (DCC_MY_OFFER | DCC_THEIR_OFFER) &&
-				dcc_timeout >= 0 &&
-				(now - Client->lasttime.tv_sec > dcc_timeout))
+			 dcc_timeout >= 0 &&
+			 time_diff(Client->lasttime, now) > dcc_timeout)
 		{
 			Client->locked++;
 			if (do_hook(DCC_LOST_LIST,"%s %s %s IDLE TIME EXCEEDED",
@@ -2037,7 +2037,7 @@ void	dcc_check (fd_set *Readables)
 				Client->description ? 
 				 Client->description : "<any>"))
 			    say("Auto-rejecting a dcc after [%ld] seconds", 
-				now - Client->lasttime.tv_sec);
+				(long)time_diff(Client->lasttime, now));
 
 			/* 
 			 * This is safe to do after, since the connection

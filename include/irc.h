@@ -140,9 +140,9 @@ extern		char	comma[];
 
 extern struct	in_addr	LocalHostAddr;
 extern		fd_set  readables;
-extern		time_t	start_time;
-extern		time_t	idle_time;
-extern		time_t	now;
+extern struct timeval 	start_time;
+extern struct timeval	idle_time;
+extern struct timeval	now;
 
 /* irc.c's extern functions */
 	char	get_a_char 		(void);
