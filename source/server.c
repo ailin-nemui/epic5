@@ -1,4 +1,4 @@
-/* $EPIC: server.c,v 1.87 2003/01/29 21:56:01 crazyed Exp $ */
+/* $EPIC: server.c,v 1.88 2003/01/31 09:43:36 crazyed Exp $ */
 /*
  * server.c:  Things dealing with that wacky program we call ircd.
  *
@@ -2958,11 +2958,11 @@ char 	*serverctl 	(char *input)
 		} else if (!my_strnicmp(listc, "SSL", len)) {
 			num = get_server_try_ssl(refnum);
 			RETURN_INT(num);
-		} else if (!my_strnicmp(listc, "UMODES", len)) {
-			ret = get_possible_umodes(refnum);
-			RETURN_STR(ret);
 		} else if (!my_strnicmp(listc, "UMODE", len)) {
 			ret = get_umode(refnum);
+			RETURN_STR(ret);
+		} else if (!my_strnicmp(listc, "UMODES", len)) {
+			ret = get_possible_umodes(refnum);
 			RETURN_STR(ret);
 		} else if (!my_strnicmp(listc, "USERHOST", len)) {
 			ret = get_server_userhost(refnum);
@@ -3030,9 +3030,9 @@ char 	*serverctl 	(char *input)
 			GET_INT_ARG(value, input);
 			set_server_try_ssl(refnum, value);
 			RETURN_INT(1);
-		} else if (!my_strnicmp(listc, "UMODES", len)) {
-			RETURN_EMPTY;		/* Read only for now */
 		} else if (!my_strnicmp(listc, "UMODE", len)) {
+			RETURN_EMPTY;		/* Read only for now */
+		} else if (!my_strnicmp(listc, "UMODES", len)) {
 			RETURN_EMPTY;		/* Read only for now */
 		} else if (!my_strnicmp(listc, "USERHOST", len)) {
 			set_server_userhost(refnum, input);
