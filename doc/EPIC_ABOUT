@@ -13,59 +13,20 @@ Nelson and all of the modifications in the "mod" clients by Jake Khuon.
 EPIC is currently maintained by EPIC Software Labs (ESL), comprised of 
 Jeremy Nelson, Jake Kuhon, Robert Chady, and a cast of a dozen others.
 
-If you're interested in a list of pertinent links, try
-	http://links.epicsol.org/
+A lot of information about EPIC can be gotten at the EPIC Software Labs
+home page at <http://www.epicsol.org/>
 
-You can get a copy of the EPIC client via ftp from these mirrors:
-Not all sites will be always up to date, but many of them try.
-(Last updated on November 10, 1998)
+The more or less official list of sites that mirror the EPIC source code
+is at <http://www.epicsol.org/ftp.phtml>
 
-Site			Directory				Maintainer
------------------	------------------------------------	------------
-	--- More recent documented mirrors ---
-epicsol.org	 [1]	/pub/ircii				hop
-ftp.epicsol.org  [1]	/pub/ircii				hop
-ftp.magenet.net		/pub/epic				bruns
-ftp.freenet.de		/pub/ftp.epicsol.org/pub		Michael Haardt
-ftp.leguin.org.uk	/pub/mirrors/ftp.epicsol.org/		is
-ftp.burken.nu		/pub/irc/clients/epic			SpaceDump
+If you want to mirror EPIC on your ftp site, please visit the above URL
+and contact the Mirror List Maintainer for more details.  You do not need
+specific permission to mirror EPIC, but we would like to know if you are
+mirroring, so we can put you on the list!
 
-	--- Older mirrors, may not exist any more ---
-broken.com		/pub/epic				da5id
-mud.pl			/pub/epic				Marcin
-ftp.linuxberg.com	???					Rob
-ftp.mirror.uk.uu.net	/pub/epic				Ben Hutchinson
-ftp.chillin.org		/pub/epic				mdmbkr
-http://www.snafu.de/~kl/epic/					Kasi
-ftp.sanyusan.se		/pub/epic				synker
-ftp.bitchx.com		/pub/epic				Mhacker
-totem.fix.no 		/pub/mirrors/epic			nickerne
-http://www.ircii.org	/ircii/clients/epic
-mirror.pipex.net	/pub/epic				Ben
-ftp.levitate.net	/pub/epic				Chord
-ftp.nut-shell.com	/pub/mirrors/epic			Psycho
-ftp.parodius.com	/pub/mirrors/epic			Koitsu
-pubftp.abyss.net	/mirror/epic				edgewise
-http://www.min.net/~douglas/ircii				strobe
-ftp.funet.fi		/pub/unix/networking/irc/ircII/epic	Vesa
-clients.undernet.org	/pub/irc/clients/unix/ircii		Mmmm
-cupid.suninternet.com	/pub/ircii				Joe Ottinger
-ftp.sergei.cc		/pub/irc/epic			Mattias Karlsson
-ftp.unixpower.org	/pub/epic				Alan P.
 
-[1] This is the master site for all EPIC releases.  All mirrors are advised
-    to mirror ftp.epicsol.org if they want to have all current releases.
-[2] This is the master site for all production EPIC releases.  All mirrors
-    are advised to mirror ftp.neato.org if they only want to mirror current
-    production releases.
-
-If you want to mirror the EPIC client, please drop an email to Jeremy
-Nelson (jnelson@acronet.net) telling him the host and directory where we
-can count on you to keep a copy of the current version of the EPIC client.
-The EPIC client takes about 500k, the help files take about 150k, and
-from time to time there are other patches that range from 5k to 30k in size.
-A good, complete mirror of the EPIC FTP site will be about 15 megs.
-
+WHAT EPIC IS AND IS NOT:
+-----------------------
 EPIC is completely safe:  There are no hidden trap doors.  We value your 
 trust, and will not do anything to abuse it.
 
@@ -100,7 +61,7 @@ cycles.  While these may appear to be conflicting goals, the whole point
 of the EPIC project is to provide the best client that runs as well as 
 can be managed.
 
-The EPIC mailing list is ircii-epic@concentric.net.  Its run by a majordomo.
-The list should be considered *low traffic*, and is used primarily for
-product release announcements and public bug reports.  Everything else 
-should be taken to private email.
+The EPIC mailing list is list@epicsol.org.  It is run by MailMan.  The list 
+should be considered *low traffic*, and is used primarily for product release 
+announcements and public bug reports.  Everything else should be taken to 
+private email.

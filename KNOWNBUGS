@@ -128,3 +128,11 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * This adds support for /msg'ing @w<winref> -- to write to a window logfile
 * When /redirect'ing to 0 or @<filedesc>, don't output result to screen.
 * Fix null deref when msg'ing a window's logfile that doesn't exist.
+* Stop doing special support for numerics 316 and 340 as a favor to kev.
+* New script, "tabkey.ce" (crazyeddy)
+* Fix bug in compat stuff for /SETENV (rb da5id)
+* Remove "scanstr" internal function
+* Total rewrite of queue.c, and /QUEUE commands.  See UDPATES for details.
+* Change $channel() indicator for +h users to use '%' insteazd of 'h'
+* Do repo-direct work: Move the README.SSL file to doc/
+* Start fixing up some of the documentation for the 1.1.3 release!
