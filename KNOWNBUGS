@@ -24,7 +24,6 @@ KNOWN ERRATA (eg, bugs, or unresolved requests):
 * Join #foo, then join #foobar, doesn't WHO for #foobar (maxxx)
 * Handle all filesizes in dcc uniformly as 64 bit off_t's.
 * Built in functions need to call 'parse_server_index'!
-* /server [already connected to] when channels are joined causes a panic.
 * Study update_input() and update_all_windows() and determine if used properly
 ---
 
@@ -62,3 +61,6 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Nuke the now unecessary "in_window_command" global variable.
 * Fix bug where <scrollback> + <scrollforward> left you in scrollback mode.
 * Force init of Window->lines_held = 0 even though that shouldnt be needed.
+* Fix $timerctl() so it actually works (REFNUM/DELETE/GET/SET were broken)
+* Fix /TIMER -UPDATE so it doesn't reset events to -1 automatically.
+* Fix panic when you /server over from and to a connected server with chans

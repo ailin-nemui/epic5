@@ -1,4 +1,4 @@
-/* $EPIC: server.c,v 1.83 2002/12/26 16:40:31 jnelson Exp $ */
+/* $EPIC: server.c,v 1.84 2003/01/13 04:44:35 jnelson Exp $ */
 /*
  * server.c:  Things dealing with that wacky program we call ircd.
  *
@@ -1283,7 +1283,7 @@ int 	connect_to_new_server (int new_server, int old_server, int new_conn)
 		 * phantom channels in the future.  Otherwise, if we are
 		 * establishing a brand new connection, we 
 		 */
-		if (x == NOSERV)
+		if (x == -3)
 		{
 			destroy_waiting_channels(old_server);
 			destroy_server_channels(old_server);
