@@ -1,4 +1,4 @@
-/* $EPIC: debug.c,v 1.16 2004/04/13 00:19:48 jnelson Exp $ */
+/* $EPIC: debug.c,v 1.17 2004/07/03 06:31:18 crazyed Exp $ */
 /*
  * debug.c -- controll the values of x_debug.
  *
@@ -151,5 +151,6 @@ char *	function_xdebug (char *word)
 		malloc_strcat_c(&ret, opts[cnt].command, &clue);
 	}
 
+	malloc_strcat_c(&ret, "", &clue);
 	return ret;
 }

@@ -1,4 +1,4 @@
-/* $EPIC: alias.c,v 1.50 2004/07/02 22:29:21 jnelson Exp $ */
+/* $EPIC: alias.c,v 1.51 2004/07/03 06:31:18 crazyed Exp $ */
 /*
  * alias.c -- Handles the whole kit and caboodle for aliases.
  *
@@ -1730,7 +1730,7 @@ static void	unload_var_alias (const char *package)
 	int 	cnt;
 	Symbol	*item;
 
-	for (cnt = 0; cnt < globals.max;)
+	for (cnt = 0; cnt < globals.max; cnt++)
 	{
 	    item = globals.list[cnt];
 
