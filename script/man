@@ -8,6 +8,7 @@ alias man
 			{
 				help $man.type $*
 				help -wait
+				break
 			}
 		}
 	}
