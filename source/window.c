@@ -1,4 +1,4 @@
-/* $EPIC: window.c,v 1.121 2004/08/12 16:48:01 jnelson Exp $ */
+/* $EPIC: window.c,v 1.122 2004/08/24 23:27:24 jnelson Exp $ */
 /*
  * window.c: Handles the organzation of the logical viewports (``windows'')
  * for irc.  This includes keeping track of what windows are open, where they
@@ -4432,8 +4432,11 @@ Window *window_server (Window *window, char **args)
 
 	if ((arg = next_arg(*args, args)))
 	{
-		int i = find_server_refnum(arg, NULL);
+		int i;
 		int status;
+
+		if ((i = str_to_servref(arg)) == NOSERV)
+			i = str_to_newserv(arg);
 
 		/*
 		 * Lose our channels
@@ -5806,7 +5809,7 @@ int 	auto_rejoin_callback (void *d)
 {
 	char *	data    = (char *) d;
 	char *	channel	= next_arg(data, &data);
-	int 	server	= parse_server_index(next_arg(data, &data), 0);
+	int 	server	= str_to_servref(next_arg(data, &data));
 	Window *window 	= get_window_by_refnum(my_atol(next_arg(data, &data)));
 	char *	key    	= next_arg(data, &data);
 

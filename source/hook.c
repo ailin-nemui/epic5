@@ -1,4 +1,4 @@
-/* $EPIC: hook.c,v 1.42 2004/08/17 16:09:46 crazyed Exp $ */
+/* $EPIC: hook.c,v 1.43 2004/08/24 23:27:24 jnelson Exp $ */
 /*
  * hook.c: Does those naughty hook functions. 
  *
@@ -221,7 +221,7 @@ static void	initialize_hook_functions (void)
 	hook_functions = malloc(NUMBER_OF_LISTS * sizeof(Hookables));
 	p = buffer = malloc(4050);
 
-	for (i = 0; i < 999; i++, p += 4)
+	for (i = 0; i < FIRST_NAMED_HOOK; i++, p += 4)
 	{
 		snprintf(p, 4, "%03d", i);
 		hook_functions[i].name = p;
@@ -231,7 +231,7 @@ static void	initialize_hook_functions (void)
 		hook_functions[i].flags = 0;
 	}
 
-	for (b = 0, i = ACTION_LIST; i < NUMBER_OF_LISTS; b++, i++)
+	for (b = 0, i = FIRST_NAMED_HOOK; i < NUMBER_OF_LISTS; b++, i++)
 	{
 		hook_functions[i].name = hook_function_templates[b].name;
 		hook_functions[i].list = hook_function_templates[b].list;
@@ -329,9 +329,9 @@ static int 	find_hook (char *name, int *first)
 		{
 			which = atol(name);
 
-			if ((which < 0) || (which > 999))
+			if ((which < 0) || (which >= FIRST_NAMED_HOOK))
 			{
-				say("Numerics must be between 001 and 999");
+				say("Numerics must be between 001 and %3d", FIRST_NAMED_HOOK - 1);
 				return INVALID_HOOKNUM;
 			}
 		}

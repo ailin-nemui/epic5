@@ -1,4 +1,4 @@
-/* $EPIC: vars.c,v 1.62 2004/08/13 02:21:19 jnelson Exp $ */
+/* $EPIC: vars.c,v 1.63 2004/08/24 23:27:24 jnelson Exp $ */
 /*
  * vars.c: All the dealing of the irc variables are handled here. 
  *
@@ -664,7 +664,7 @@ BUILT_IN_COMMAND(setcmd)
 	IrcVariable *thevar;
 	const char *name;
 	int	i;
-	Bucket	*b;
+	Bucket	*b = NULL;
 
 	/*
 	 * XXX Ugh.  This is a hideous offense of good taste which is
@@ -719,13 +719,19 @@ BUILT_IN_COMMAND(setcmd)
 
 			if (!do_hook(SET_LIST, "%s %s", 
 					var, args ? args : "<unset>"))
+			{
+				free_bucket(&b);
 				return;		/* Grabed -- stop. */
+			}
 
 			if (name)
 			{
 			    if (!do_hook(SET_LIST, "%s %s",
 					name, args ? args : "<unset>"))
+			    {
+				free_bucket(&b);
 				return;		/* Grabed -- stop. */
+			    }
 			}
 
 			if (thevar)
@@ -739,6 +745,7 @@ BUILT_IN_COMMAND(setcmd)
 				show_var_value(name, thevar, 0);
 			else
 				set_variable(name, thevar, args, 1);
+			free_bucket(&b);
 			return;
 		}
 
@@ -747,6 +754,7 @@ BUILT_IN_COMMAND(setcmd)
 		    if (do_hook(SET_LIST, "set-error No such variable \"%s\"", 
 					var))
 			say("No such variable \"%s\"", var);
+		    free_bucket(&b);
 		    return;
 		}
 

@@ -1,4 +1,4 @@
-/* $EPIC: logfiles.c,v 1.26 2004/06/23 17:57:02 jnelson Exp $ */
+/* $EPIC: logfiles.c,v 1.27 2004/08/24 23:27:24 jnelson Exp $ */
 /*
  * logfiles.c - General purpose log files
  *
@@ -587,7 +587,7 @@ static Logfile *	logfile_server (Logfile *log, char **args)
 	if (!is_number(arg))
 		say("SERVER: The log's server needs to be a number");
 	else
-		log->servref = parse_server_index(arg, 1);
+		log->servref = str_to_servref(arg);
 
 	return log;
 }

@@ -1,4 +1,4 @@
-/* $EPIC: server.c,v 1.138 2004/08/17 16:09:46 crazyed Exp $ */
+/* $EPIC: server.c,v 1.139 2004/08/24 23:27:24 jnelson Exp $ */
 /*
  * server.c:  Things dealing with that wacky program we call ircd.
  *
@@ -58,25 +58,6 @@
 #include "translat.h"
 #include "reg.h"
 
-static 	void 	remove_from_server_list (int i, int override);
-	void 	reset_nickname (int);
-	const char *get_server_group (int refnum);
-	const char *get_server_type (int refnum);
-	void	server_is_unregistered (int refnum);
-
-	int	connected_to_server = 0;	/* true when connection is
-						 * confirmed */
-
-static	char    lame_wait_nick[] = "***LW***";
-static	char    wait_nick[] = "***W***";
-static	int	never_connected = 1;
-
-const char *server_states[8] = {
-	"RECONNECT",		"CONNECTING",		"REGISTERING",
-	"SYNCING",		"ACTIVE",		"EOF",
-	"CLOSING",		"CLOSED"
-};
-
 /************************ SERVERLIST STUFF ***************************/
 
 	Server **server_list = (Server **) 0;
@@ -88,140 +69,304 @@ const char *server_states[8] = {
 	int	last_server = NOSERV;
 
 
-/*
- * add_to_server_list: adds the given server to the server_list.  If the
- * server is already in the server list it is not re-added... however, if the
- * overwrite flag is true, the port and passwords are updated to the values
- * passes.  If the server is not on the list, it is added to the end. In
- * either case, the server is made the current server. 
- */
-void 	add_to_server_list (const char *server, int port, const char *password, const char *nick, const char *group, const char *server_type, int overwrite)
+/************************************************************************/
+typedef struct ServerInfo {
+	char *	freestr;
+	int	refnum;
+	char *	host;
+	int	port;
+	char *	password;
+	char *	nick;
+	char *	group;
+	char *	server_type;
+} ServerInfo;
+
+static	int	str_to_serverinfo (const char *str, ServerInfo *s);
+static	void	free_serverinfo (ServerInfo *s);
+static	int	serverinfo_to_servref (ServerInfo *s);
+static	int	serverinfo_to_newserv (ServerInfo *s);
+static 	void 	remove_from_server_list (int i);
+
+
+static	int	str_to_serverinfo (const char *str, ServerInfo *s)
 {
-	Server *s;
-	int	i;
+	char *ptr;
+	ssize_t span;
+	char *after;
 
-	if ((from_server = find_in_server_list(server, port)) == NOSERV)
+	s->refnum = NOSERV;
+	s->host = NULL;
+	s->port = 0;
+	s->password = NULL;
+	s->nick = NULL;
+	s->group = NULL;
+	s->server_type = NULL;
+
+	ptr = s->freestr = malloc_strdup(str);
+	if (ptr && is_number(ptr))
 	{
-		for (i = 0; i < number_of_servers; i++)
-			if (server_list[i] == NULL)
-				break;
+		int	i;
 
-		if (i == number_of_servers)
+		i = strtol(ptr, &after, 10);
+		if ((!after || !*after) && get_server(i))
 		{
-			from_server = number_of_servers++;
-			RESIZE(server_list, Server *, number_of_servers);
+			s->refnum = i;
+			return 0;
+		}
+	}
+
+	do
+	{
+		if (*ptr == '[')
+		{
+		    s->host = ptr + 1;
+		    if ((span = MatchingBracket(ptr + 1, '[', ']')) >= 0)
+		    {
+			ptr = ptr + 1 + span;
+			*ptr++ = 0;
+		    }
+		    else
+			break;
 		}
 		else
-			from_server = i;
+		    s->host = ptr;
 
-		s = server_list[from_server] = new_malloc(sizeof(Server));
-		s->name = malloc_strdup(server);
-		s->itsname = (char *) 0;
-		s->password = (char *) 0;
-		s->group = NULL;
-		s->away = (char *) 0;
-		s->version_string = (char *) 0;
-		s->server2_8 = 0;
-		s->operator = 0;
-		s->des = -1;
-		s->version = 0;
-		s->status = SERVER_RECONNECT;
-		s->nickname = (char *) 0;
-		s->s_nickname = (char *) 0;
-		s->d_nickname = (char *) 0;
-		s->unique_id = (char *) 0;
-		s->userhost = (char *) 0;
-		s->port = port;
-		s->line_length = IRCD_BUFFER_SIZE;
-		s->max_cached_chan_size = -1;
-		s->who_queue = NULL;
-		s->ison_max = 1;
-		s->ison_queue = NULL;
-		s->ison_wait = NULL;
-		s->userhost_max = 1;
-		s->userhost_queue = NULL;
-		s->userhost_wait = NULL;
-		memset(&s->uh_addr, 0, sizeof(s->uh_addr));
-		memset(&s->local_sockname, 0, sizeof(s->local_sockname));
-		memset(&s->remote_sockname, 0, sizeof(s->remote_sockname));
-		s->redirect = NULL;
-		s->cookie = NULL;
-		s->closing = 0;
-		s->nickname_pending = 0;
-		s->fudge_factor = 0;
-		s->resetting_nickname = 0;
-		s->quit_message = NULL;
-		s->umode[0] = 0;
-		s->addrs = NULL;
-		s->next_addr = NULL;
+		if (!(ptr = strchr(ptr, ':')))
+			break;
+		*ptr++ = 0;
+		if (!*ptr)
+			break;
+		s->port = atol(ptr);
 
-		s->doing_privmsg = 0;
-		s->doing_notice = 0;
-		s->doing_ctcp = 0;
-		s->waiting_in = 0;
-		s->waiting_out = 0;
-		s->start_wait_list = NULL;
-		s->end_wait_list = NULL;
+		if (!(ptr = strchr(ptr, ':')))
+			break;
+		*ptr++ = 0;
+		if (!*ptr)
+			break;
+		s->password = ptr;
 
-		s->invite_channel = NULL;
-		s->last_notify_nick = NULL;
-		s->joined_nick = NULL;
-		s->public_nick = NULL;
-		s->recv_nick = NULL;
-		s->sent_nick = NULL;
-		s->sent_body = NULL;
+		if (!(ptr = strchr(ptr, ':')))
+			break;
+		*ptr++ = 0;
+		if (!*ptr)
+			break;
+		s->nick = ptr;
 
-		s->funny_match = NULL;
+		if (!(ptr = strchr(ptr, ':')))
+			break;
+		*ptr++ = 0;
+		if (!*ptr)
+			break;
+		s->group = ptr;
 
-		s->try_ssl = FALSE;
-		s->ssl_enabled = FALSE;
-		s->ssl_fd = NULL;
+		if (!(ptr = strchr(ptr, ':')))
+			break;
+		*ptr++ = 0;
+		if (!*ptr)
+			break;
+		s->server_type = ptr;
 
-		if (password && *password)
-			malloc_strcpy(&s->password, password);
-		if (nick && *nick)
-			malloc_strcpy(&s->d_nickname, nick);
-		else if (!s->d_nickname)
-			malloc_strcpy(&s->d_nickname, nickname);
-		if (group && *group)
-			malloc_strcpy(&s->group, group);
-		if (server_type && *server_type)
-		{
-		    if (my_stricmp(server_type, "IRC-SSL") == 0)
-			set_server_try_ssl(from_server, TRUE);
-		    else
-			set_server_try_ssl(from_server, FALSE);
-		}
-
-		make_notify_list(from_server);
-		make_005(from_server);
+		if (!(ptr = strchr(ptr, ':')))
+			break;
+		else
+			*ptr++ = 0;
 	}
-	else
+	while (0);
+
+	if (s->port == 0)
+		s->port = irc_port;
+
+	return 0;
+}
+
+static	void	free_serverinfo (ServerInfo *si)
+{
+	new_free(&si->freestr);
+	si->refnum = NOSERV;
+	si->host = si->password = si->nick = NULL;
+	si->group = si->server_type = NULL;
+	si->port = 0;
+}
+
+static	int	serverinfo_to_servref (ServerInfo *si)
+{
+	int	i, j, opened;
+	Server *s;
+
+	if (si->refnum != NOSERV && get_server(si->refnum))
+		return si->refnum;
+
+	if (!si->host)
+		return NOSERV;
+
+	for (opened = 1; opened >= 0; opened--)
 	{
-		s = server_list[from_server];
+	    for (i = 0; i < number_of_servers; i++)
+	    {
+		if (!(s = get_server(i)))
+			continue;
 
-		if (overwrite)
+		if (!s->name)
+			continue;
+
+		if (opened == 1 && s->des < 0)
+			continue;
+
+		if (si->port != 0 && si->port != s->port)
+			continue;
+
+		if (s->name && wild_match(si->host, s->name))
+			return i;
+
+		if (s->itsname && wild_match(si->host, s->itsname))
+			return i;
+
+		if (s->group && wild_match(si->host, s->group))
+			return i;
+
+		for (j = 0; j < s->altnames->numitems; j++)
 		{
-			s->port = port;
-			if (password || !s->password)
-			{
-				if (password && *password)
-					malloc_strcpy(&s->password, password);
-				else
-					new_free(&s->password);
-			}
-			if (nick || !s->d_nickname)
-			{
-				if (nick && *nick)
-					malloc_strcpy(&s->d_nickname, nick);
-				else
-					new_free(&s->d_nickname);
-			}
-		}
+			if (!s->altnames->list[j].name)
+				continue;
 
-		if (strlen(server) > strlen(s->name))
-			malloc_strcpy(&s->name, server);
+			if (wild_match(si->host, s->altnames->list[j].name))
+				return i;
+		}
+	    }
 	}
+
+	return NOSERV;
+}
+
+static	int	serverinfo_to_newserv (ServerInfo *si)
+{
+	int	i;
+	Server *s;
+
+	for (i = 0; i < number_of_servers; i++)
+		if (server_list[i] == NULL)
+			break;
+
+	if (i == number_of_servers)
+	{
+		number_of_servers++;
+		RESIZE(server_list, Server *, number_of_servers);
+	}
+
+	s = server_list[i] = new_malloc(sizeof(Server));
+	s->name = malloc_strdup(si->host);
+	s->itsname = (char *) 0;
+	s->password = (char *) 0;
+	s->group = NULL;
+	s->altnames = new_bucket();
+	s->away = (char *) 0;
+	s->version_string = (char *) 0;
+	s->server2_8 = 0;
+	s->operator = 0;
+	s->des = -1;
+	s->version = 0;
+	s->status = SERVER_RECONNECT;
+	s->nickname = (char *) 0;
+	s->s_nickname = (char *) 0;
+	s->d_nickname = (char *) 0;
+	s->unique_id = (char *) 0;
+	s->userhost = (char *) 0;
+	s->port = si->port;
+	s->line_length = IRCD_BUFFER_SIZE;
+	s->max_cached_chan_size = -1;
+	s->who_queue = NULL;
+	s->ison_max = 1;
+	s->ison_queue = NULL;
+	s->ison_wait = NULL;
+	s->userhost_max = 1;
+	s->userhost_queue = NULL;
+	s->userhost_wait = NULL;
+	memset(&s->uh_addr, 0, sizeof(s->uh_addr));
+	memset(&s->local_sockname, 0, sizeof(s->local_sockname));
+	memset(&s->remote_sockname, 0, sizeof(s->remote_sockname));
+	s->redirect = NULL;
+	s->cookie = NULL;
+	s->closing = 0;
+	s->nickname_pending = 0;
+	s->fudge_factor = 0;
+	s->resetting_nickname = 0;
+	s->quit_message = NULL;
+	s->umode[0] = 0;
+	s->addrs = NULL;
+	s->next_addr = NULL;
+
+	s->doing_privmsg = 0;
+	s->doing_notice = 0;
+	s->doing_ctcp = 0;
+	s->waiting_in = 0;
+	s->waiting_out = 0;
+	s->start_wait_list = NULL;
+	s->end_wait_list = NULL;
+
+	s->invite_channel = NULL;
+	s->last_notify_nick = NULL;
+	s->joined_nick = NULL;
+	s->public_nick = NULL;
+	s->recv_nick = NULL;
+	s->sent_nick = NULL;
+	s->sent_body = NULL;
+
+	s->funny_match = NULL;
+
+	s->try_ssl = FALSE;
+	s->ssl_enabled = FALSE;
+	s->ssl_fd = NULL;
+
+	if (si->password && *si->password)
+		malloc_strcpy(&s->password, si->password);
+	if (si->nick && *si->nick)
+		malloc_strcpy(&s->d_nickname, si->nick);
+	else if (!s->d_nickname)
+		malloc_strcpy(&s->d_nickname, nickname);
+	if (si->group && *si->group)
+		malloc_strcpy(&s->group, si->group);
+	if (si->server_type && *si->server_type)
+	{
+	    if (my_stricmp(si->server_type, "IRC-SSL") == 0)
+		set_server_try_ssl(i, TRUE);
+	    else
+		set_server_try_ssl(i, FALSE);
+	}
+
+	make_notify_list(i);
+	make_005(i);
+	return i;
+}
+
+/***************************************************************************/
+int	str_to_servref (const char *desc)
+{
+	char *	ptr;
+	ServerInfo si;
+	int	retval;
+
+	ptr = LOCAL_COPY(desc);
+	if (str_to_serverinfo(ptr, &si))
+		return NOSERV;
+
+	retval = serverinfo_to_servref(&si);
+	free_serverinfo(&si);
+	return retval;
+}
+
+int	str_to_newserv (const char *desc)
+{
+	char *	ptr;
+	ServerInfo si;
+	int	retval;
+
+	ptr = LOCAL_COPY(desc);
+	if (str_to_serverinfo(ptr, &si))
+		return NOSERV;
+
+	retval = serverinfo_to_newserv(&si);
+	free_serverinfo(&si);
+	return retval;
 }
 
 void	destroy_server_list (void)
@@ -229,11 +374,11 @@ void	destroy_server_list (void)
 	int	i;
 
 	for (i = 0; i < number_of_servers; i++)
-		remove_from_server_list(i, 1);
+		remove_from_server_list(i);
 	new_free((char **)&server_list);
 }
 
-static 	void 	remove_from_server_list (int i, int override)
+static 	void 	remove_from_server_list (int i)
 {
 	Server  *s;
 	int	count, j;
@@ -246,7 +391,7 @@ static 	void 	remove_from_server_list (int i, int override)
 		if (get_server(j))
 			count++;
 
-	if (count == 1)
+	if (count == 1 && !dead)
 	{
 		say("You can't delete the last server!");
 		return;
@@ -295,316 +440,34 @@ static 	void 	remove_from_server_list (int i, int override)
 }
 
 
-
+/*****************************************************************************/
 /*
- * Given a hostname and a port number, this function returns the server_list
- * index for that server.  If the specified server is not in the server_list,
- * then NOSERV is returned.  This function makes an attempt to do smart name
- * completion so that if you ask for "irc", it returns the first server that
- * has the leading prefix of "irc" in it.
+ * add_servers: Add a space-separated list of server descs to the server list.
+ *	If the server description does not set a port, use the default port.
+ *	If the server description does not set a group, use the provided group.
+ *  This function modifies "servers".
  */
-int	find_in_server_list (const char *server, int port)
+void	add_servers (char *servers, const char *group)
 {
-	Server *s;
-	int	i;
-	int	first_idx = NOSERV;
-
-	for (i = 0; i < number_of_servers; i++)
-	{
-		if (!(s = get_server(i)))
-			continue;
-
-		/* Check the port first.  This is a cheap, easy check */
-		if (port && s->port && port != s->port && port != -1)
-			continue;
-
-#define MATCH_WITH_COMPLETION(n1, n2) 				\
-{								\
-	/* Length of the user's input */			\
-	size_t l1 = strlen(n1);					\
-								\
-	/* Length of the server's real name */			\
-	size_t l2 = strlen(n2);					\
-								\
-	/* 							\
-	 * Compare what the user wants to what this server 	\
-	 * name is.  If the server's name is shorter than what	\
-	 * the user specified, then don't bother doing the	\
-	 * compare.  If the two strings match exactly, then 	\
-	 * this is the server we're looking for.		\
-	 */							\
-	if (l2 >= l1 && !my_strnicmp(n1, n2, l1))		\
-	{							\
-		if (l2 == l1)					\
-			return i;				\
-		if (first_idx == NOSERV)			\
-			first_idx = i;				\
-	}							\
-}
-
-		MATCH_WITH_COMPLETION(server, s->name)
-		if (!s->itsname)
-			continue;
-		MATCH_WITH_COMPLETION(server, s->itsname)
-	}
-
-	return first_idx;	/* NOSERV if server was not found. */
-}
-
-/*
- * Given a string that (in all likelihood) contains a server description
- * of the form:
- *
- *		refnum	 (where refnum is an integer for an existing server)
- * or
- *		hostname:port:password:nickname:group:type
- * or
- *		hostname port password nickname group type
- *
- * This extracts the salient information from the string and returns the
- * server_list index for that server.  If the information describes a server
- * that is not in the server_list, that information is *automatically added*
- * to the server_list and a new index is returned.  Double-quoted words are
- * supported as long as you use them reasonably.  Double-quoted words protect
- * any colons on the inside from inadvertant mis-parsing.
- *
- * This function always succeeds.
- */
-int 	find_server_refnum (char *server, char **rest)
-{
-	int 	refnum;
-	int	port = irc_port;
-	char 	*cport = NULL, 
-		*password = NULL,
-		*nick = NULL,
-		*group = NULL,
-		*server_type = NULL;
-
-	/*
-	 * First of all, check for an existing server refnum
-	 */
-	if ((refnum = parse_server_index(server, 0)) != NOSERV)
-		return refnum;
-
-	/*
-	 * Next check to see if its a "server:port:password:nick"
-	 */
-	else if (strchr(server, ':'))
-		parse_server_info(&server, &cport, &password, &nick, &group, &server_type);
-
-	/*
-	 * Next check to see if its "server port password nick"
-	 */
-	else if (rest && *rest)
-	{
-		cport = new_next_arg(*rest, rest);
-		password = new_next_arg(*rest, rest);
-		nick = new_next_arg(*rest, rest);
-		group = new_next_arg(*rest, rest);
-		server_type = new_next_arg(*rest, rest);
-	}
-
-	if (cport && *cport)
-		port = my_atol(cport);
-
-	/*
-	 * Add to the server list (this will update the port
-	 * and password fields).
-	 */
-	add_to_server_list(server, port, password, nick, group, server_type, 1);
-	return from_server;
-}
-
-
-/*
- * Parse_server_index:  "Canonicalize" a string that should contain a server
- * refnum into a server refnum integer that represents said refnum.  
- *
- * So if 'str' contains a valid server refnum, return that refnum integer
- * Otherwise, 'str' is invalid, and return NOSERV, the invalid server refnum.
- *
- * However, if 'wantprim' is 1 and 'str' is empty, then return -1, which 
- * always refers to the from server.  'Wantprim' should be 0 except for
- * a few special cases.
- *
- * You should always and only use this function to convert a string into 
- * a server refnum.  Fail to do so at your own peril.
- */
-int	parse_server_index (const char *str, int wantprim)
-{
-	int	i;
-	char	*after = NULL;
-
-	if (wantprim && (str == NULL || *str == 0))
-		return -1;
-
-	if (str && is_number(str))
-	{
-		i = strtol(str, &after, 10);
-		if (after && *after)
-			return NOSERV;		/* Not a number, sorry. */
-		if (get_server(i))
-			return i;
-	}
-	return NOSERV;
-}
-
-
-
-
-/*
- * parse_server_info:  This parses a single string of the form
- * "server:portnum:password:nickname".  It the points port to the portnum
- * portion and password to the password portion.  This chews up the original
- * string, so * upon return, name will only point the the name.  If portnum
- * or password are missing or empty,  their respective returned value will
- * point to null. 
- *
- * "*group" must be set to something (even if it is NULL) before calling this!
- * Colons can be backslashed.
- */
-void	parse_server_info (char **host, char **port, char **password, char **nick, char **group, char **server_type)
-{
-	char *ptr;
-	char *name = *host;
-	ssize_t span;
-
-	*host = *port = *password = *nick = *server_type = NULL;
-
-	do
-	{
-		ptr = name;
-		if (*ptr == '"')
-			*host = new_next_arg(ptr, &ptr);
-		else if (*ptr == '[')
-		{
-		    *host = ptr + 1;
-		    if ((span = MatchingBracket(ptr + 1, '[', ']')) >= 0)
-		    {
-			ptr = ptr + 1 + span;
-			*ptr++ = 0;
-		    }
-		    else
-			break;
-		}
-		else
-		    *host = ptr;
-
-		ptr = strchr(ptr, ':');
-		if (!ptr)
-			break;
-		*ptr++ = 0;
-		if (!*ptr)
-			break;
-		*port = ptr;
-
-		if (*ptr == '"')
-			*port = new_next_arg(ptr, &ptr);
-		ptr = strchr(ptr, ':');
-		if (!ptr)
-			break;
-		*ptr++ = 0;
-		if (!*ptr)
-			break;
-		*password = ptr;
-
-		if (*ptr == '"')
-			*password = new_next_arg(ptr, &ptr);
-		ptr = strchr(ptr, ':');
-		if (!ptr)
-			break;
-		*ptr++ = 0;
-		if (!*ptr)
-			break;
-		*nick = ptr;
-
-		if (*ptr == '"')
-			*nick = new_next_arg(ptr, &ptr);
-		ptr = strchr(ptr, ':');
-		if (!ptr)
-			break;
-		*ptr++ = 0;
-		if (!*ptr)
-			break;
-		*group = ptr;
-
-		if (*ptr == '"')
-			*group = new_next_arg(ptr, &ptr);
-		ptr = strchr(ptr, ':');
-		if (!ptr)
-			break;
-		*ptr++ = 0;
-		if (!*ptr)
-			break;
-		*server_type = ptr;
-
-		if (*ptr == '"')
-			*server_type = new_next_arg(ptr, &ptr);
-		ptr = strchr(ptr, ':');
-		if (!ptr)
-			break;
-		else
-			*ptr++ = 0;
-	}
-	while (0);
-}
-
-/*
- * build_server_list: given a whitespace separated list of server names this
- * builds a list of those servers using add_to_server_list().  Since
- * add_to_server_list() is used to added each server specification, this can
- * be called many many times to add more servers to the server list.  Each
- * element in the server list case have one of the following forms: 
- *
- * servername 
- *
- * servername:port 
- *
- * servername:port:password 
- *
- * servername::password 
- *
- * servername::password:servergroup
- *
- *
- * Note also that this routine mucks around with the server string passed to it,
- * so make sure this is ok 
- */
-void	build_server_list (char *servers, char *group)
-{
-	char	*host,
-		*rest,
-		*password = (char *) 0,
-		*port = (char *) 0,
-		*nick = (char *) 0,
-		*server_type = (char *) 0;
-	int	port_num;
+	char	*host;
+	ServerInfo si;
 
 	if (!servers)
 		return;
 
-	while (servers)
+	while ((host = next_arg(servers, &servers)))
 	{
-		if ((rest = strchr(servers, '\n')))
-			*rest++ = 0;
-
-		while ((host = next_arg(servers, &servers)))
-		{
-			parse_server_info(&host, &port, &password, &nick, &group, &server_type);
-                        if (port && *port && (port_num = my_atol(port)))
-				;
-			else
-				port_num = irc_port;
-
-			add_to_server_list(host, port_num, password, nick, group, server_type, 0);
-		}
-		servers = rest;
+		str_to_serverinfo(host, &si);
+		if (group && si.group == NULL)
+			malloc_strcpy(&si.group, group);
+		if (serverinfo_to_servref(&si) == NOSERV)
+			serverinfo_to_newserv(&si);
+		free_serverinfo(&si);
 	}
 }
 
 /*
- * read_server_file: reads hostname:portnum:password server information from
- * a file and adds this stuff to the server list.  See build_server_list()/ 
+ * read_server_file: Add servers from "SERVERS FILE" to the server list.
  */
 int 	read_server_file (void)
 {
@@ -649,7 +512,7 @@ int 	read_server_file (void)
 		else if (*buffer == 0)
 			continue;
 		else
-			build_server_list(buffer, defaultgroup);
+			add_servers(buffer, defaultgroup);
 	}
 
 	fclose(fp);
@@ -716,16 +579,17 @@ char *	create_server_list (void)
 			continue;
 
 		if (s->des != -1)
-		    malloc_strcat_wordlist_c(&buffer, space, get_server_itsname(i), &bufclue);
+		    malloc_strcat_wordlist_c(&buffer, space, 
+					get_server_itsname(i), &bufclue);
 	}
 
-	return buffer ? buffer : malloc_strdup(empty_string);
+	RETURN_MSTR(buffer);
 }
 
 /* server_list_size: returns the number of servers in the server list */
 int 	server_list_size (void)
 {
-	return (number_of_servers);
+	return number_of_servers;
 }
 
 /* 
@@ -762,6 +626,24 @@ static int	next_server_in_group (int oldserv, int direction)
 	return oldserv;		/* Couldn't find one. */
 }
 
+/*****************************************************************************/
+/*****************************************************************************/
+/*****************************************************************************/
+static	void	server_is_unregistered (int refnum);
+
+	int	connected_to_server = 0;	/* How many active server 
+						   connections are open */
+static	char    lame_wait_nick[] = "***LW***";
+static	char    wait_nick[] = "***W***";
+static	int	never_connected = 1;
+
+const char *server_states[8] = {
+	"RECONNECT",		"CONNECTING",		"REGISTERING",
+	"SYNCING",		"ACTIVE",		"EOF",
+	"CLOSING",		"CLOSED"
+};
+
+
 
 /*************************** SERVER STUFF *************************/
 /*
@@ -795,9 +677,18 @@ BUILT_IN_COMMAND(servercmd)
 	char	*server = NULL;
 	int	i;
 	int	olds, news;
+	char *	shadow;
 	size_t	slen;
 
-	if ((server = next_arg(args, &args)) == NULL)
+	olds = from_server;
+	news = NOSERV;
+
+	/*
+	 * This is a new trick I'm testing out to see if it works
+	 * better than the hack I was using.
+	 */
+	shadow = LOCAL_COPY(args);
+	if ((server = next_arg(shadow, &shadow)) == NULL)
 	{
 		display_server_list();
 		return;
@@ -805,70 +696,96 @@ BUILT_IN_COMMAND(servercmd)
 	slen = strlen(server);
 
 	/*
-	 * /SERVER -DELETE <refnum>		Delete a server from list
+	 * /SERVER -DELETE <refnum>             Delete a server from list
 	 */
 	if (slen > 1 && !my_strnicmp(server, "-DELETE", slen))
 	{
-		if ((server = next_arg(args, &args)) == NULL)
+		next_arg(args, &args);		/* Skip -DELETE */
+		if (!(server = new_next_arg(args, &args)))
 		{
-			say("Need server number for -DELETE");
+			say("Need argument to /SERVER -DELETE");
 			return;
 		}
 
-		if ((i = parse_server_index(server, 0)) == NOSERV &&
-		    (i = find_in_server_list(server, 0)) == NOSERV)
+		if ((i = str_to_servref(server)) == NOSERV)
 		{
-			say("No such server in list");
+			say("No such server [%s] in list", server);
 			return;
 		}
 
 		if (is_server_open(i))
 		{
-			say("Can not delete server that is open");
+			say("Can not delete server %d because it is open", i);
 			return;
 		}
 
-		remove_from_server_list(i, 0);
+		remove_from_server_list(i);
 		return;
 	}
 
 	/*
-	 * SERVER -ADD <host>			Add a server to list
+	 * SERVER -ADD <host>                   Add a server to list
 	 */
 	if (slen > 1 && !my_strnicmp(server, "-ADD", slen))
 	{
+		next_arg(args, &args);		/* Skip -ADD */
 		if (!(server = new_next_arg(args, &args)))
 		{
-			say("Need server info for -ADD");
+			say("Need argument to /SERVER -ADD");
 			return;
 		}
 
-		find_server_refnum(server, &args);
+		if ((i = str_to_servref(server)) != NOSERV)
+		{
+			say("Server [%s] already exists as server %d", 
+					server, i);
+			return;
+		}
+
+		i = str_to_newserv(server);
+		say("Server [%s] added as server %d", server, i);
 		return;
 	}
 
 	/*
-	 * /server +host.com			Allow server to reconnect
+	 * /server +host.com                    Allow server to reconnect
 	 */
 	if (slen > 1 && *server == '+')
 	{
-		i = find_server_refnum(server, &args);
+		args++;			/* Skip the + */
+		server = new_next_arg(args, &args);
+
+		if ((i = str_to_servref(server)) == NOSERV)
+		{
+			say("No such server [%s] in list", server);
+			return;
+		}
+
 		if (get_server_status(i) == SERVER_CLOSED)
 			set_server_status(i, SERVER_RECONNECT);
 		return;
 	}
 
 	/*
-	 * /server -host.com			Force server to disconnect
+	 * /server -host.com                    Force server to disconnect
 	 */
 	if (slen > 1 && *server == '-')
 	{
-		i = find_server_refnum(server, &args);
+		args++;			/* Skip the + */
+		server = new_next_arg(args, &args);
+
+		if ((i = str_to_servref(server)) == NOSERV)
+		{
+			say("No such server [%s] in list", server);
+			return;
+		}
+
 		set_server_quit_message(from_server, 
 				"Disconnected at user request");
 		close_server(i, NULL);
 		return;
 	}
+
 
 	/* * * * The rest of these actually move windows around * * * */
 	olds = from_server;
@@ -878,7 +795,20 @@ BUILT_IN_COMMAND(servercmd)
 	else if (*server == '-')
 		news = next_server_in_group(olds, -1);
 	else
-		news = find_server_refnum(server, &args);
+	{
+		if ((news = str_to_servref(server)) == NOSERV)
+		{
+		    if ((news = str_to_newserv(server)) == NOSERV)
+		    {
+			say("I can't parse server description [%s]", server);
+			return;
+		    }
+		}
+	}
+
+	/* Always unconditionally allow new server to auto-reconnect */
+	if (get_server_status(news) == SERVER_CLOSED)
+		set_server_status(news, SERVER_RECONNECT);
 
 	/* If the user is not actually changing server, just reassure them */
 	if (olds == news)
@@ -896,10 +826,6 @@ BUILT_IN_COMMAND(servercmd)
 		set_server_ssl_enabled(news, TRUE);
 
 	change_window_server(olds, news);
-
-	/* Allow this server to auto-reconnect */
-	if (get_server_status(news) == SERVER_CLOSED)
-		set_server_status(news, SERVER_RECONNECT);
 }
 
 
@@ -1390,7 +1316,9 @@ int 	connect_to_server (int new_server, int restart)
 	 * Initialize all of the server_list data items
 	 * XXX - Calling add_to_server_list is a hack.
 	 */
+#if 0
 	add_to_server_list(s->name, s->port, NULL, NULL, NULL, NULL, 1);
+#endif
 	s->des = des;
 	s->operator = 0;
 	if (!s->d_nickname)
@@ -1819,7 +1747,7 @@ void 	password_sendline (char *data, char *line)
 	if (!line || !*line)
 		return;
 
-	new_server = parse_server_index(data, 0);
+	new_server = str_to_servref(data);
 	set_server_password(new_server, line);
 	close_server(new_server, NULL);
 	set_server_status(new_server, SERVER_RECONNECT);
@@ -1963,7 +1891,7 @@ BUILT_IN_COMMAND(disconnectcmd)
 		i = get_window_server(0);
 	else
 	{
-		if ((i = parse_server_index(server, 0)) == NOSERV)
+		if ((i = str_to_servref(server)) == NOSERV)
 		{
 			say("No such server!");
 			return;
@@ -2298,7 +2226,7 @@ void 	nickname_sendline (char *data, char *nick)
 {
 	int	new_server;
 
-	new_server = parse_server_index(data, 0);
+	new_server = str_to_servref(data);
 	change_server_nickname(new_server, nick);
 }
 
@@ -2667,6 +2595,53 @@ void	set_server_funny_stuff (int refnum, int min, int max, int flags, const char
 }
 
 /*****************************************************************************/
+static void	add_server_altname (int refnum, char *altname)
+{
+	Server *s;
+	char *v;
+
+	if (!(s = get_server(refnum)))
+		return;
+
+	v = malloc_strdup(altname);
+	add_to_bucket(s->altnames, v, NULL);
+}
+
+static void	reset_server_altnames (int refnum, char *new_altnames)
+{
+	Server *s;
+	int	i;
+	char *	value;
+
+	if (!(s = get_server(refnum)))
+		return;
+
+	for (i = 0; i < s->altnames->numitems; i++)
+		new_free(&s->altnames->list[i].name);
+
+	s->altnames->numitems = 0;
+
+	while ((value = new_next_arg(new_altnames, &new_altnames)))
+		add_server_altname(refnum, value);
+}
+
+static char *	get_server_altnames (int refnum)
+{
+	Server *s;
+	char *	retval = NULL;
+	size_t	clue = 0;
+	int	i;
+
+	if (!(s = get_server(refnum)))
+		return NULL;
+
+	for (i = 0; i < s->altnames->numitems; i++)
+		malloc_strcat_word_c(&retval, space, s->altnames->list[i].name, &clue);
+
+	return retval;
+}
+
+/*****************************************************************************/
 
 /* 005 STUFF */
 
@@ -2778,6 +2753,11 @@ void set_server_005 (int refnum, char *setting, const char *value)
  *	SSL		Whether this server is SSL-enabled or not.
  *      005             Individual PROTOCTL elements.
  *      005s            The full list of PROTOCTL elements.
+ *	ALIAS		An alternate server designation
+ *			(SETting ALIAS adds a new alternate designation) 
+ *	ALIASES		All of the alternate server designations
+ *			(SETting ALIASES replaces all alternate designations)
+ *			(This is the only way to delete a designation)
  */
 char 	*serverctl 	(char *input)
 {
@@ -2787,17 +2767,16 @@ char 	*serverctl 	(char *input)
 
 	GET_STR_ARG(listc, input);
 	len = strlen(listc);
-	if (!my_strnicmp(listc, "REFNUM", len)) {
+	if (!my_strnicmp(listc, "ADD", len)) {
+	} else if (!my_strnicmp(listc, "DELETE", len)) {
+	} else if (!my_strnicmp(listc, "REFNUM", len)) {
 		char *server;
 
 		GET_STR_ARG(server, input);
-		if (is_number(server)) {
-			refnum = parse_server_index(server, 1);
-			if (refnum != NOSERV)
-				RETURN_STR(server);
-			RETURN_EMPTY;
-		}
-		RETURN_INT(find_server_refnum(server, &input));
+		refnum = str_to_servref(server);
+		if (refnum != NOSERV)
+			RETURN_STR(server);
+		RETURN_EMPTY;
 	} else if (!my_strnicmp(listc, "GET", len)) {
 		GET_INT_ARG(refnum, input);
 		if (!get_server(refnum))
@@ -2874,6 +2853,10 @@ char 	*serverctl 	(char *input)
 			RETURN_MSTR(retval);
 		} else if (!my_strnicmp(listc, "STATUS", len)) {
 			RETURN_STR(server_states[get_server_status(refnum)]);
+		} else if (!my_strnicmp(listc, "ALTNAME", len)) {
+			RETURN_MSTR(get_server_altnames(refnum));
+		} else if (!my_strnicmp(listc, "ALTNAMES", len)) {
+			RETURN_MSTR(get_server_altnames(refnum));
 		}
 	} else if (!my_strnicmp(listc, "SET", len)) {
 		GET_INT_ARG(refnum, input);
@@ -2950,6 +2933,10 @@ char 	*serverctl 	(char *input)
 			GET_STR_ARG(listc1, input);
 			set_server_005(refnum, listc1, input);
 			RETURN_INT(!!*input);
+		} else if (!my_strnicmp(listc, "ALTNAME", len)) {
+			add_server_altname(refnum, input);
+		} else if (!my_strnicmp(listc, "ALTNAMES", len)) {
+			reset_server_altnames(refnum, input);
 		}
 	} else if (!my_strnicmp(listc, "OMATCH", len)) {
 		int	i;

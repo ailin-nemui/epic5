@@ -1,4 +1,4 @@
-/* $EPIC: numbers.c,v 1.74 2004/08/15 03:25:11 jnelson Exp $ */
+/* $EPIC: numbers.c,v 1.75 2004/08/24 23:27:24 jnelson Exp $ */
 /*
  * numbers.c: handles all those strange numeric response dished out by that
  * wacky, nutty program we call ircd 
@@ -278,6 +278,8 @@ void 	numbered_command (const char *from, const char *comm, char const **ArgList
 	{
 		const char *new_server, *new_port_s, *message;
 		int	new_port, old_server;
+		char *	str;
+		int	new_servref;
 
 		PasteArgs(ArgList, 2);
 		if (!(new_server = ArgList[0]))
@@ -290,11 +292,12 @@ void 	numbered_command (const char *from, const char *comm, char const **ArgList
 
 		/* Must do these things before calling "display_msg" */
 		old_server = from_server;
-		add_to_server_list(new_server, new_port, NULL, NULL,
-				get_server_group(from_server), NULL, 0);
-		change_window_server(old_server, from_server);
+		malloc_sprintf(&str, "%s:%s:::%s:", new_server, new_port, 
+					get_server_group(from_server));
+		if (!str_to_servref(str))
+			new_servref = str_to_newserv(str);
+		change_window_server(old_server, new_servref);
 		from_server = old_server;
-
 		break;
 	}
 

@@ -1,4 +1,4 @@
-/* $EPIC: commands.c,v 1.103 2004/08/17 16:09:46 crazyed Exp $ */
+/* $EPIC: commands.c,v 1.104 2004/08/24 23:27:23 jnelson Exp $ */
 /*
  * commands.c -- Stuff needed to execute commands in ircII.
  *		 Includes the bulk of the built in commands for ircII.
@@ -1146,7 +1146,11 @@ BUILT_IN_COMMAND(xevalcmd)
 
 		if (!my_strnicmp(flag + 1, "S", 1)) /* SERVER */
 		{
-			int val = parse_server_index(next_arg(args, &args), 1);
+			char *s;
+			int val;
+
+			s = next_arg(args, &args);
+			val = str_to_servref(s);
 			if (is_server_registered(val))
 				from_server = val;
 		}
@@ -2204,9 +2208,11 @@ BUILT_IN_COMMAND(quotecmd)
 
 		if (!my_strnicmp(flag + 1, "S", 1)) /* SERVER */
 		{
+			char *s;
 			int sval;
 
-			sval = parse_server_index(next_arg(args, &args), 1);
+			s = next_arg(args, &args);
+			sval = str_to_servref(s);
 			if (!is_server_open(sval))
 			{
 			   say("XQUOTE: Server %d is not connected", sval);

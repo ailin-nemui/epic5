@@ -42,7 +42,7 @@ const	AI	*next_addr;		/* The next one to try upon failure */
 	char	*password;		/* password for that server */
 	int	port;			/* port number on that server */
 	char	*group;			/* Server group it belongs to */
-
+	Bucket	*altnames;		/* Alternate handles for the server */
 	char	*nickname;		/* Authoritative nickname for us */
 	char	*s_nickname;		/* last NICK command sent */
 	char	*d_nickname;		/* Default nickname to use */
@@ -187,21 +187,14 @@ extern	const char *server_states[8];
 	BUILT_IN_COMMAND(servercmd);
 	BUILT_IN_COMMAND(disconnectcmd);
 
-	void	add_to_server_list 		(const char *, int, 
-						 const char *, const char *, 
-						 const char *, const char *,
-						 int);
-	int	find_in_server_list		(const char *, int);
-	void	destroy_server_list		(void);
-	int	find_server_refnum		(char *, char **rest);
-	int	parse_server_index		(const char *, int);
-	void	parse_server_info		(char **, char **, char **,
-						 char **, char **, char **);
-	void	build_server_list		(char *, char *);
-	int	read_server_file		(void);
-	void	display_server_list		(void);
-	char *	create_server_list		(void);	/* MALLOC */
-	int	server_list_size		(void);
+	int	str_to_servref		(Char *);
+	int	str_to_newserv		(Char *);
+	void	destroy_server_list	(void);
+	void	add_servers		(char *, Char *);
+	int	read_server_file	(void);
+	void	display_server_list	(void);
+	char *	create_server_list	(void);	/* MALLOC */
+	int	server_list_size	(void);
 
 	void	flush_server			(int);
 	void	send_to_server			(const char *, ...) __A(1);
@@ -366,4 +359,6 @@ const char *	get_server_funny_match         	(int);
 	char *	serverctl			(char *);
 
 	int	server_more_addrs		(int);
+	int	get_server_by_desc		(const char *, int);
+
 #endif /* _SERVER_H_ */

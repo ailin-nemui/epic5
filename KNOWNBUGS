@@ -8,18 +8,9 @@ KNOWN ERRATA (eg, bugs, or unresolved requests):
   -- Make reset_nickname() call an /on before forcing user to select new nick.
 * Changing attribute in the middle of a word that totaly wraps does not
   "bleed" to subsequent lines (ie, ^C34<40 a's> <40a's>^C35<100 a's>
-* queue test {echo1};queue test {echo 2};queue -del test 1;queue -del test 2
-* Problem with mangling "^B^B^Btesting" -- first ^B gets eaten.
-* Doing /server on disconnected window; where multiple disconnected windows
-  are connected to the same server causes all of the windows to think they
-  are bringing up the server, and grab /set new_server_lastlog_level.
-  -- This is caused because connect_to_server() changes the server's state,
-     but we don't take that into account when running through the windows.
-* Need a way to decompile alias arglists back into strings for output.
-* Allow server groups anywhere a "server desc" is wanted
+* check_window_servers() should not change window_mask on connect, really.
+* Implement $symbolctl(), to supercede $aliasctl().
 * Allow /msg -<server desc>, including the group.
-* Calling dcc_connected(<fd>, 0) is always bogus. fix this.
-* It's possible to overflow the %F buffer with lots of ^C's and stuff.
 * Need some way to fetch your hook info
 
 [See http://www.epicsol.org/PROJECTS for things to come in the future]
@@ -380,3 +371,14 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Better handling of damaged /who x,y responses from some servers.
 * Make $function() call builtin, and $:function() call alias
 * I need to make sure to add an /xdebug to make $function() call alias!
+* Nix calls to dcc_connected(<fd>, 0) which were always bogus.
+* Create print_arglist() for printing alias arglists, natch.
+* Fix crash from /queue -del <name> <num> for <num> = <items> + 1 (rb black)
+* Show arglist when creating and listing aliases.
+* Fix memory leaks of buckets when user grabs /on set.
+* Add a "alternate names" bucket to server data.
+* Create a whole new api for querying and creating server refnums.
+* Fix crash with /dump on (/dump all)
+* Add $serverctl(GET|SET <refnum> ALIAS) get and set server alternate desigs
+* Add $serverctl(GET|SET <refnum> ALIASES) get and set entire list.
+* Fix memory leak with /on set

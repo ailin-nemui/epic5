@@ -1,4 +1,4 @@
-/* $EPIC: alias.c,v 1.57 2004/08/17 16:09:46 crazyed Exp $ */
+/* $EPIC: alias.c,v 1.58 2004/08/24 23:27:23 jnelson Exp $ */
 /*
  * alias.c -- Handles the whole kit and caboodle for aliases.
  *
@@ -878,8 +878,57 @@ void	prepare_alias_call (void *al, char **stuff)
 		*stuff = endstr(*stuff);
 }
 
-#undef ew_next_arg
+static char *	print_arglist (ArgList *args)
+{
+	char *	retval = NULL;
+	size_t	cluep = 0;
+	int	i;
 
+	if (!args)
+		return NULL;
+
+	for (i = 0; args->vars[i]; i++)
+	{
+	    if (i > 0)
+		malloc_strcat_c(&retval, ", ", &cluep);
+
+	    malloc_strcat_c(&retval, args->vars[i], &cluep);
+
+	    switch (args->types[i])
+	    {
+		case WORD:
+		    malloc_strcat_c(&retval, " words ", &cluep);
+		    break;
+		case UWORD:
+		    malloc_strcat_c(&retval, " uwords ", &cluep);
+		    break;
+		case QWORD:
+		    malloc_strcat_c(&retval, " qwords ", &cluep);
+		    break;
+		case DWORD:
+		    malloc_strcat_c(&retval, " dwords ", &cluep);
+		    break;
+	    }
+	    malloc_strcat_c(&retval, ltoa(args->words[i]), &cluep);
+
+	    if (args->defaults[i])
+	    {
+		malloc_strcat_c(&retval, " default ", &cluep);
+		malloc_strcat_c(&retval, args->defaults[i], &cluep);
+	    }
+	}
+
+	if (args->void_flag)
+	    malloc_strcat_c(&retval, ", void", &cluep);
+	else if (args->dot_flag)
+	    malloc_strcat_c(&retval, ", ...", &cluep);
+
+	return retval;
+}
+
+
+#undef ew_next_arg
+/***************************************************************************/
 
 static Symbol *make_new_Symbol (const char *name)
 {
@@ -1110,6 +1159,7 @@ void	add_cmd_alias	(const char *orig_name, ArgList *arglist, const char *stuff)
 {
 	Symbol *tmp = NULL;
 	char *name;
+	char *argstr;
 
 	name = remove_brackets(orig_name, NULL);
 	if (!(tmp = lookup_symbol(name)))
@@ -1127,7 +1177,14 @@ void	add_cmd_alias	(const char *orig_name, ArgList *arglist, const char *stuff)
 	destroy_arglist(&tmp->arglist);
 	tmp->arglist = arglist;
 
-	say("Alias	%s added [%s]", name, stuff);
+	argstr = print_arglist(arglist);
+	if (argstr)
+	{
+	    say("Alias	%s (%s) added [%s]", name, argstr, stuff);
+	    new_free(&argstr);
+	}
+	else
+	    say("Alias	%s added [%s]", name, stuff);
 
 	new_free(&name);
 	return;
@@ -1743,8 +1800,19 @@ static void	list_cmd_alias (const char *orig_name)
 				say("[%s]\t%s STUBBED TO %s", script, 
 					item->name, item->user_command);
 			else
-				say("[%s]\t%s\t%s", script, 
+			{
+				char *arglist = print_arglist(item->arglist);
+				if (arglist)
+				{
+				    say("[%s]\t%s (%s)\t%s", script, 
+					item->name, arglist, 
+					item->user_command);
+				    new_free(&arglist);
+				}
+				else
+				    say("[%s]\t%s\t%s", script, 
 					item->name, item->user_command);
+			}
 		}
 	    }
 	}

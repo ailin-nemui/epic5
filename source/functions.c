@@ -1,4 +1,4 @@
-/* $EPIC: functions.c,v 1.179 2004/08/22 23:57:55 jnelson Exp $ */
+/* $EPIC: functions.c,v 1.180 2004/08/24 23:27:23 jnelson Exp $ */
 /*
  * functions.c -- Built-in functions for ircII
  *
@@ -3399,15 +3399,7 @@ BUILT_IN_FUNCTION(function_servername, input)
 	int 		refnum;
 	const char *	itsname;
 
-	if (*input)
-	{
-		const char *	serv;
-
-		GET_STR_ARG(serv, input);
-		refnum = parse_server_index(serv, 1);
-	}
-	else
-		refnum = from_server;
+	refnum = str_to_servref(input);
 
 	/* get_server_itsname does all the work for us. */
 	itsname = get_server_itsname(refnum);
@@ -3419,15 +3411,7 @@ BUILT_IN_FUNCTION(function_serverourname, input)
 	int 		refnum;
 	const char *	ourname;
 
-	if (*input)
-	{
-		const char *	serv;
-
-		GET_STR_ARG(serv, input);
-		refnum = parse_server_index(serv, 1);
-	}
-	else
-		refnum = from_server;
+	refnum = str_to_servref(input);
 
 	/* Ask it what our name is */
 	ourname = get_server_name(refnum);
@@ -3439,15 +3423,7 @@ BUILT_IN_FUNCTION(function_servergroup, input)
 	int 		refnum;
 	const char *	group;
 
-	if (*input)
-	{
-		const char *	serv;
-
-		GET_STR_ARG(serv, input);
-		refnum = parse_server_index(serv, 1);
-	}
-	else
-		refnum = from_server;
+	refnum = str_to_servref(input);
 
 	/* Next we try what we think its group is */
 	group = get_server_group(refnum);
@@ -3459,15 +3435,7 @@ BUILT_IN_FUNCTION(function_servertype, input)
 	int 		refnum;
 	const char *	group;
 
-	if (*input)
-	{
-		const char *	serv;
-
-		GET_STR_ARG(serv, input);
-		refnum = parse_server_index(serv, 1);
-	}
-	else
-		refnum = from_server;
+	refnum = str_to_servref(input);
 
 	/* Next we try what we think its type is */
 	group = get_server_type(refnum);
@@ -4136,11 +4104,7 @@ BUILT_IN_FUNCTION(function_winchan, input)
 		int	win = -1;
 
 		chan = arg1;
-		if ((serv = new_next_arg(input, &input)))
-		{
-			if ((servnum = parse_server_index(serv, 0)) == NOSERV)
-				servnum = find_in_server_list(serv, 0);
-		}
+		servnum = str_to_servref(input);
 
 		/* Now return window for *any* channel. */
 		if ((win = get_channel_winref(chan, servnum)))
@@ -4356,8 +4320,7 @@ BUILT_IN_FUNCTION(function_servernick, input)
 		if (!my_stricmp(servdesc, "<global>"))
 			RETURN_STR(nickname);
 
-		if ((refnum = parse_server_index(servdesc, 1)) == NOSERV)
-		    if ((refnum = find_in_server_list(servdesc, 0)) == NOSERV)
+		if ((refnum = str_to_servref(input)) == NOSERV)
 			RETURN_EMPTY;
 	}
 	else if (from_server != NOSERV)

@@ -1,4 +1,4 @@
-/* $EPIC: irc.c,v 1.771 2004/08/22 23:57:55 jnelson Exp $ */
+/* $EPIC: irc.c,v 1.772 2004/08/24 23:27:24 jnelson Exp $ */
 /*
  * ircII: a new irc client.  I like it.  I hope you will too!
  *
@@ -503,7 +503,7 @@ static	void	show_version (void)
 static	void	parse_args (int argc, char **argv)
 {
 	int ch;
-	int add_servers = 0;
+	int append_servers = 0;
 	struct passwd *entry;
 	char *ptr = (char *) 0;
 	char *tmp_hostname = NULL;
@@ -680,8 +680,8 @@ static	void	parse_args (int argc, char **argv)
 				malloc_strcpy(&epicrc_file, optarg);
 				break;
 
-			case 'a': /* add server, not replace */
-				add_servers = 1;
+			case 'a': /* append server, not replace */
+				append_servers = 1;
 				break;
 
 			case 'q': /* quick startup -- no .ircrc */
@@ -751,7 +751,7 @@ static	void	parse_args (int argc, char **argv)
 
 	for (; *argv; argc--, argv++)
 		if (**argv)
-			build_server_list(*argv, NULL);
+			add_servers(*argv, NULL);
 
 	if (!use_input && quick_startup)
 	{
@@ -775,15 +775,15 @@ static	void	parse_args (int argc, char **argv)
 	 * Find and build the server lists...
 	 */
 	if ((ptr = getenv("IRCSERVER")))
-		build_server_list(ptr, NULL);
+		add_servers(ptr, NULL);
 
-	if (!server_list_size() || add_servers)
+	if (!server_list_size() || append_servers)
 	{
 		read_server_file();
 		if (!server_list_size())
 		{
 			ptr = malloc_strdup(DEFAULT_SERVER);
-			build_server_list(ptr, NULL);
+			add_servers(ptr, NULL);
 			new_free(&ptr);
 		}
 	}

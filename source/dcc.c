@@ -1,4 +1,4 @@
-/* $EPIC: dcc.c,v 1.101 2004/08/17 16:09:46 crazyed Exp $ */
+/* $EPIC: dcc.c,v 1.102 2004/08/24 23:27:23 jnelson Exp $ */
 /*
  * dcc.c: Things dealing client to client connections. 
  *
@@ -50,6 +50,7 @@
 #include "window.h"
 #include "term.h"
 #include "reg.h"
+#include "alias.h"
 
 #define DCC_BLOCK_SIZE (1<<11)
 
@@ -125,7 +126,7 @@ static	void 		dcc_close 		(char *);
 static	void		dcc_closeall		(char *);
 static	void		dcc_erase 		(DCC_list *);
 static	void 		dcc_garbage_collect 	(void);
-static	int		dcc_connected		(int, int);
+static	int		dcc_connected		(int);
 static	int		dcc_connect 		(DCC_list *);
 static	int		dcc_listen		(DCC_list *);
 static 	void		dcc_send_booster_ctcp 	(DCC_list *dcc);
@@ -664,10 +665,10 @@ int	dcc_chat_active (const char *user)
 
 /************************************************************************/
 /*
- * This is called when a client connection completes (either through
- * success or failure, which is indicated in 'result')
+ * This is called when a client connection completes (successfully).
+ * If the connection failed, we will forcibly eject the dcc.
  */
-static int	dcc_connected (int fd, int result)
+static int	dcc_connected (int fd)
 {
 	DCC_list *	dcc;
 	socklen_t	len;
@@ -680,10 +681,22 @@ static int	dcc_connected (int fd, int result)
 	type = dcc_types[dcc->flags & DCC_TYPES];
 
 	len = sizeof(dcc->local_sockaddr);
-	getsockname(dcc->socket, (SA *)&dcc->local_sockaddr, &len);
+	if ((getsockname(dcc->socket, (SA *)&dcc->local_sockaddr, &len)))
+	{
+	    say("DCC %s connection with %s could not be established: %s",
+			type, dcc->user, strerror(errno));
+	    dcc->flags |= DCC_DELETE;
+	    return -1;
+	}
 
 	len = sizeof(dcc->peer_sockaddr);
-	getpeername(dcc->socket, (SA *)&dcc->peer_sockaddr, &len);
+	if ((getpeername(dcc->socket, (SA *)&dcc->peer_sockaddr, &len)))
+	{
+	    say("DCC %s connection with %s could not be established: %s",
+			type, dcc->user, strerror(errno));
+	    dcc->flags |= DCC_DELETE;
+	    return -1;
+	}
 
 	/*
 	 * Set up the connection to be useful
@@ -2779,7 +2792,7 @@ static void	process_dcc_chat_connected (DCC_list *dcc)
 	    return;
 	}
 
-	dcc_connected(dcc->socket, 1);
+	dcc_connected(dcc->socket);
 	dcc->flags &= ~DCC_CONNECTING;
 	unlock_dcc(dcc);
 }
@@ -2920,7 +2933,6 @@ static void	process_dcc_raw_connected (DCC_list *dcc)
 	socklen_t len;
 
 	lock_dcc(dcc);
-	dcc_connected(dcc->socket, 0);
 	if (x_debug & DEBUG_SERVER_CONNECT)
 	    yell("process_dcc_raw_connected: dcc [%s] now ready to write", 
 			dcc->user);
@@ -3069,7 +3081,6 @@ static void	process_dcc_send_handle_ack (DCC_list *dcc)
 	if (read(dcc->socket, (char *)&bytesrecvd, 
 			sizeof(u_32int_t)) < (int) sizeof(u_32int_t))
 	{
-
 		lock_dcc(dcc);
 		encoded_description = dcc_urlencode(dcc->description);
 		if (do_hook(DCC_LOST_LIST,"%s SEND %s CONNECTION LOST",
@@ -3321,7 +3332,6 @@ static void	process_dcc_get_connected (DCC_list *dcc)
 	socklen_t len;
 
 	lock_dcc(dcc);
-	dcc_connected(dcc->socket, 0);
 	if (x_debug & DEBUG_SERVER_CONNECT)
 	    yell("process_dcc_get_connected: dcc [%s] now ready to write", 
 			dcc->user);
@@ -3339,7 +3349,7 @@ static void	process_dcc_get_connected (DCC_list *dcc)
 	    return;
 	}
 
-	dcc_connected(dcc->socket, 1);
+	dcc_connected(dcc->socket);
 	dcc->flags &= ~DCC_CONNECTING;
 	unlock_dcc(dcc);
 }
