@@ -64,3 +64,6 @@ THE CHANGELOG SINCE THE LAST RELEASE:
   certain intermittent scripting problems.
 * Fixed {f,}q1cmd in commandqueues so that it works properly in the "no server"
   context.
+* Make the output-window-searcher ignore from_server for LOG_DCC
+* Make status_hold and status_hold_lines use scrollback numbers too.
+* Make add_to_scrollback() redraw status bar if output while scrollbacking.

@@ -1,4 +1,4 @@
-/* $EPIC: status.c,v 1.34 2003/12/03 22:17:40 jnelson Exp $ */
+/* $EPIC: status.c,v 1.35 2003/12/07 20:16:52 jnelson Exp $ */
 /*
  * status.c: handles the status line updating, etc for IRCII 
  *
@@ -1144,8 +1144,12 @@ static	char	my_buffer[81];
 	if (interval == 0)
 		interval = 1;		/* XXX WHAT-ever */
 
-	if ((lines_held = window->holding_distance_from_display_ip - 
-				window->display_size) <= 0) 
+	if (window->holding_distance_from_display_ip > window->scrollback_distance_from_display_ip)
+		lines_held = window->holding_distance_from_display_ip - window->display_size;
+	else
+		lines_held = window->scrollback_distance_from_display_ip - window->display_size;
+
+	if (lines_held <= 0)
 		return empty_string;
 
 	if ((num = (lines_held / interval) * interval))
@@ -1345,10 +1349,11 @@ STATUS_FUNCTION(status_hold)
 {
 	char *text;
 
-	if (window->holding_distance_from_display_ip > window->display_size && (text = get_string_var(STATUS_HOLD_VAR)))
-		return text;
-	else
-		return empty_string;
+	if (window->holding_distance_from_display_ip > window->display_size  ||
+	    window->scrollback_distance_from_display_ip > window->display_size)
+		if ((text = get_string_var(STATUS_HOLD_VAR)))
+			return text;
+	return empty_string;
 }
 
 STATUS_FUNCTION(status_oper)

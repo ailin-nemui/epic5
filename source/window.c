@@ -1,4 +1,4 @@
-/* $EPIC: window.c,v 1.87 2003/12/04 00:48:38 jnelson Exp $ */
+/* $EPIC: window.c,v 1.88 2003/12/07 20:16:53 jnelson Exp $ */
 /*
  * window.c: Handles the organzation of the logical viewports (``windows'')
  * for irc.  This includes keeping track of what windows are open, where they
@@ -4907,6 +4907,16 @@ int	add_to_display (Window *window, const unsigned char *str)
 	    if (lines_held > 0)
 		window_statusbar_needs_update(window);
 	}
+
+	/* Check to see what happens in scrollback mode */
+	if (window->scrollback_top_of_display)
+	{
+	    size_t lines_held;
+	    lines_held = window->scrollback_distance_from_display_ip - window->display_size;
+	    if (lines_held > 0)
+		window_statusbar_needs_update(window);
+	}
+
 
 	/* Logically scroll the normal top of display pointer */
 	while (window->scrolling_distance_from_display_ip > 
