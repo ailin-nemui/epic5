@@ -1,4 +1,4 @@
-/* $EPIC: history.c,v 1.1 2000/12/05 00:11:57 jnelson Exp $ */
+/* $EPIC: history.c,v 1.2 2001/02/17 22:44:15 jnelson Exp $ */
 /*
  * history.c: stuff to handle command line history 
  *
@@ -117,54 +117,50 @@ void	shove_to_history (char unused, char *not_used)
  */
 void	add_to_history (char *line)
 {
-	char	*ptr;
 	History *new_h;
 
-	if (get_int_var(HISTORY_VAR) == 0)
+	if (get_int_var(HISTORY_VAR) == 0 || !line || *line)
 		return;
 
-	while (line && *line)
+	last_dir = OLDER;
+	command_history_pos = NULL;
+
+	if (command_history_head && !strcmp(command_history_head->stuff, line))
+		return;
+
+	if ((hist_size == get_int_var(HISTORY_VAR)) && 
+		command_history_tail)
 	{
-		if ((ptr = sindex(line, "\n\r")) != NULL)
-			*ptr++ = '\0';
-
-		if ((hist_size == get_int_var(HISTORY_VAR)) && 
-			command_history_tail)
+		if (hist_size == 1)
 		{
-			if (hist_size == 1)
-			{
-				malloc_strcpy(&command_history_tail->stuff, 
-						line);
-				return;
-			}
-			new_h = command_history_tail;
-			command_history_tail = command_history_tail->prev;
-			command_history_tail->next = (History *)NULL;
-			new_free(&new_h->stuff);
-			new_free((char **)&new_h);
-			if (command_history_tail == (History *)NULL)
-				command_history_head = (History *)NULL;
+			malloc_strcpy(&command_history_tail->stuff, line);
+			return;
 		}
-		else
-			hist_size++;
 
-		new_h = (History *) new_malloc(sizeof(History));
-		new_h->stuff = (char *)NULL;
-		new_h->number = hist_count;
-		new_h->next = command_history_head;
-		new_h->prev = (History *)NULL;
-		malloc_strcpy(&(new_h->stuff), line);
-		if (command_history_head)
-			command_history_head->prev = new_h;
-		command_history_head = new_h;
-		if (command_history_tail == (History *)NULL)
-			command_history_tail = new_h;
-		command_history_pos = (History *)NULL;
-
-		last_dir = OLDER;
-		hist_count++;
-		line = ptr;
+		new_h = command_history_tail;
+		command_history_tail = command_history_tail->prev;
+		command_history_tail->next = NULL;
+		new_free(&new_h->stuff);
+		new_free((char **)&new_h);
+		if (command_history_tail == NULL)
+			command_history_head = NULL;
 	}
+	else
+		hist_size++;
+
+	new_h = (History *) new_malloc(sizeof(History));
+	new_h->stuff = m_strdup(line);
+	new_h->number = hist_count;
+	new_h->next = command_history_head;
+	new_h->prev = NULL;
+
+	if (command_history_head)
+		command_history_head->prev = new_h;
+	command_history_head = new_h;
+	if (command_history_tail == NULL)
+		command_history_tail = new_h;
+
+	hist_count++;
 }
 
 /* history: the /HISTORY command, shows the command history buffer. */
