@@ -35,3 +35,4 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Add 'notify' script, a replacement for the notify command.
 * Fix $windowctl(GET <refnum> DOUBLE)
 * Make /on window_command give two refnums, the before and after refnums.
+* Fix the larneproofing in numeric_handler(), it was defective all over.

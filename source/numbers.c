@@ -1,4 +1,4 @@
-/* $EPIC: numbers.c,v 1.56 2003/10/23 09:09:53 jnelson Exp $ */
+/* $EPIC: numbers.c,v 1.57 2003/12/02 06:00:35 jnelson Exp $ */
 /*
  * numbers.c: handles all those strange numeric response dished out by that
  * wacky, nutty program we call ircd 
@@ -242,11 +242,11 @@ void 	numbered_command (const char *from, const char *comm, char const **ArgList
 				*umodes = NULL;
 
 		if (!(server = ArgList[0]))
-			{ rfc1459_odd(from, comm, ArgList); }
+			{ rfc1459_odd(from, comm, ArgList); goto END; }
 		else if (!(version = ArgList[1]))
-			{ rfc1459_odd(from, comm, ArgList); }
+			{ rfc1459_odd(from, comm, ArgList); goto END; }
 		else if (!(umodes = ArgList[2]))
-			{ rfc1459_odd(from, comm, ArgList); }
+			{ rfc1459_odd(from, comm, ArgList); goto END; }
 
 		/* Work around ratbox-1.2-3. */
 		if (!my_stricmp(umodes, "(brown"))
@@ -255,7 +255,7 @@ void 	numbered_command (const char *from, const char *comm, char const **ArgList
 		   if (ArgList[5] && !my_stricmp(ArgList[5], "release)"))
 		   {
 			if (!(umodes = ArgList[6]))
-				{ rfc1459_odd(from, comm, ArgList); }
+				{ rfc1459_odd(from, comm, ArgList); goto END; }
 		   }
 
 		got_initial_version_28(server, version, umodes);
@@ -437,9 +437,9 @@ void 	numbered_command (const char *from, const char *comm, char const **ArgList
 
 		PasteArgs(ArgList, 1);
 		if (!(channel = ArgList[0]))
-			{ rfc1459_odd(from, comm, ArgList); return; }
+			{ rfc1459_odd(from, comm, ArgList); goto END; }
 		if (!(mode = ArgList[1]))
-			{ rfc1459_odd(from, comm, ArgList); return; }
+			{ rfc1459_odd(from, comm, ArgList); goto END; }
 
 		/* If we're waiting for MODE reply. */
 		if (channel_is_syncing(channel, from_server))
@@ -481,11 +481,11 @@ void 	numbered_command (const char *from, const char *comm, char const **ArgList
 
 		PasteArgs(ArgList, 2);
 		if (!(type = ArgList[0]))
-			{ rfc1459_odd(from, comm, ArgList); return; }
+			{ rfc1459_odd(from, comm, ArgList); goto END; }
 		if (!(channel = ArgList[1]))
-			{ rfc1459_odd(from, comm, ArgList); return; }
+			{ rfc1459_odd(from, comm, ArgList); goto END; }
 		if (!(line = ArgList[2]))
-			{ rfc1459_odd(from, comm, ArgList); return; }
+			{ rfc1459_odd(from, comm, ArgList); goto END; }
 
 		if (channel_is_syncing(channel, from_server))
 		{
@@ -568,7 +568,7 @@ void 	numbered_command (const char *from, const char *comm, char const **ArgList
 			goto END;
 
 		if (!(channel = ArgList[0]))
-			{ rfc1459_odd(from, comm, ArgList); return; }
+			{ rfc1459_odd(from, comm, ArgList); goto END; }
 
 #ifdef IRCII_LIKE_BAN_SUMMARY
 		if (do_hook(current_numeric, "%s %s %d", 
@@ -595,7 +595,7 @@ void 	numbered_command (const char *from, const char *comm, char const **ArgList
 		const char	*nick;
 
 		if (!(nick = ArgList[0]))
-			{ rfc1459_odd(from, comm, ArgList); return; }
+			{ rfc1459_odd(from, comm, ArgList); goto END; }
 
 		if (!is_channel(nick))
 		{
@@ -621,7 +621,7 @@ void 	numbered_command (const char *from, const char *comm, char const **ArgList
 		const char	*server;
 
 		if (!(server = ArgList[0]))
-			{ rfc1459_odd(from, comm, ArgList); return; }
+			{ rfc1459_odd(from, comm, ArgList); goto END; }
 
 		fake_who_end(from_server, from, comm, server);
 		break;
@@ -688,7 +688,7 @@ void 	numbered_command (const char *from, const char *comm, char const **ArgList
 		const char	*token;
 
 		if (!(token = ArgList[0]))
-			{ rfc1459_odd(from, comm, ArgList); return; }
+			{ rfc1459_odd(from, comm, ArgList); goto END; }
 
 		if (check_server_redirect(from_server, token))
 			goto END;
@@ -702,7 +702,7 @@ void 	numbered_command (const char *from, const char *comm, char const **ArgList
 		const char	*nick;
 
 		if (!(nick = ArgList[0]))
-			{ rfc1459_odd(from, comm, ArgList); return; }
+			{ rfc1459_odd(from, comm, ArgList); goto END; }
 
 		if (!my_stricmp(target, nick))
 			yell("WARNING:  Strange invalid nick message received."
@@ -804,7 +804,7 @@ void 	numbered_command (const char *from, const char *comm, char const **ArgList
 		const char	*nick;
 
 		if (!(nick = ArgList[0]))
-			{ rfc1459_odd(from, comm, ArgList); return; }
+			{ rfc1459_odd(from, comm, ArgList); goto END; }
 
 		if (!my_stricmp(target, nick))
 			/* 
@@ -892,7 +892,7 @@ void 	numbered_command (const char *from, const char *comm, char const **ArgList
 		const char	*channel;
 
 		if (!(channel = ArgList[0]))
-			{ rfc1459_odd(from, comm, ArgList); return; }
+			{ rfc1459_odd(from, comm, ArgList); goto END; }
 
 		cant_join_channel(ArgList[0], from_server);
 		break;
@@ -1142,9 +1142,9 @@ DISPLAY:
 
 		PasteArgs(ArgList, 1);
 		if (!(channel = ArgList[0]))
-			{ rfc1459_odd(from, comm, ArgList); return; }
+			{ rfc1459_odd(from, comm, ArgList); goto END; }
 		if (!(mode = ArgList[1]))
-			{ rfc1459_odd(from, comm, ArgList); return; }
+			{ rfc1459_odd(from, comm, ArgList); goto END; }
 
 		put_it("%s Mode for channel %s is \"%s\"",
 				banner(), channel, mode);
@@ -1273,11 +1273,11 @@ DISPLAY:
 
 		PasteArgs(ArgList, 2);
 		if (!(type = ArgList[0]))
-			{ rfc1459_odd(from, comm, ArgList); return; }
+			{ rfc1459_odd(from, comm, ArgList); goto END; }
 		if (!(channel = ArgList[1]))
-			{ rfc1459_odd(from, comm, ArgList); return; }
+			{ rfc1459_odd(from, comm, ArgList); goto END; }
 		if (!(line = ArgList[2]))
-			{ rfc1459_odd(from, comm, ArgList); return; }
+			{ rfc1459_odd(from, comm, ArgList); goto END; }
 
 		/* This is only for when the user joined the channel */
 		if (channel_is_syncing(channel, from_server))
@@ -1334,9 +1334,9 @@ DISPLAY:
 
 		PasteArgs(ArgList, 2);
 		if (!(itsname = ArgList[0]))
-			{ rfc1459_odd(from, comm, ArgList); return; }
+			{ rfc1459_odd(from, comm, ArgList); goto END; }
 		if (!(uplink = ArgList[1]))
-			{ rfc1459_odd(from, comm, ArgList); return; }
+			{ rfc1459_odd(from, comm, ArgList); goto END; }
 		if (!(stuff = ArgList[2])) { stuff = empty_string; }
 
 		if (stuff)
@@ -1356,7 +1356,7 @@ DISPLAY:
 			break;
 
 		if (!(channel = ArgList[0]))
-			{ rfc1459_odd(from, comm, ArgList); return; }
+			{ rfc1459_odd(from, comm, ArgList); goto END; }
 
 		if (!channel_is_syncing(channel, from_server))
 			display_msg(from, ArgList);
@@ -1370,9 +1370,9 @@ DISPLAY:
 		time_t	howlong;
 
 		if (!(channel = ArgList[0]))
-			{ rfc1459_odd(from, comm, ArgList); return; }
+			{ rfc1459_odd(from, comm, ArgList); goto END; }
 		if (!(ban = ArgList[1]))
-			{ rfc1459_odd(from, comm, ArgList); return; }
+			{ rfc1459_odd(from, comm, ArgList); goto END; }
 		if (!(perp = ArgList[2])) { /* No problem. */ }
 		if (!(when_str = ArgList[3])) { /* No problem. */ }
 
@@ -1394,9 +1394,9 @@ DISPLAY:
 
 		PasteArgs(ArgList, 1);
 		if (!(nick = ArgList[0]))
-			{ rfc1459_odd(from, comm, ArgList); return; }
+			{ rfc1459_odd(from, comm, ArgList); goto END; }
 		if (!(stuff = ArgList[1]))
-			{ rfc1459_odd(from, comm, ArgList); return; }
+			{ rfc1459_odd(from, comm, ArgList); goto END; }
 
 		put_it("%s %s: %s", banner(), nick, stuff);
 		break;
@@ -1421,7 +1421,7 @@ DISPLAY:
 
 		PasteArgs(ArgList, 0);
 		if (!(message = ArgList[0]))
-			{ rfc1459_odd(from, comm, ArgList); return; }
+			{ rfc1459_odd(from, comm, ArgList); goto END; }
 
 		put_it("%s %s (Channel is full)", banner(), message);
 		break;
@@ -1432,7 +1432,7 @@ DISPLAY:
 
 		PasteArgs(ArgList, 0);
 		if (!(message = ArgList[0]))
-			{ rfc1459_odd(from, comm, ArgList); return; }
+			{ rfc1459_odd(from, comm, ArgList); goto END; }
 
 		put_it("%s %s (You must be invited)", banner(), message);
 		break;
@@ -1443,7 +1443,7 @@ DISPLAY:
 
 		PasteArgs(ArgList, 0);
 		if (!(message = ArgList[0]))
-			{ rfc1459_odd(from, comm, ArgList); return; }
+			{ rfc1459_odd(from, comm, ArgList); goto END; }
 
 		put_it("%s %s (You are banned)", banner(), message);
 		break;
@@ -1454,7 +1454,7 @@ DISPLAY:
 
 		PasteArgs(ArgList, 0);
 		if (!(message = ArgList[0]))
-			{ rfc1459_odd(from, comm, ArgList); return; }
+			{ rfc1459_odd(from, comm, ArgList); goto END; }
 
 		put_it("%s %s (You must give the correct key)", 
 						banner(), message);
@@ -1466,7 +1466,7 @@ DISPLAY:
 
 		PasteArgs(ArgList, 0);
 		if (!(message = ArgList[0]))
-			{ rfc1459_odd(from, comm, ArgList); return; }
+			{ rfc1459_odd(from, comm, ArgList); goto END; }
 
 		put_it("%s %s (Bad channel mask)", banner(), message);
 		break;
@@ -1477,7 +1477,7 @@ DISPLAY:
 
 		PasteArgs(ArgList, 0);
 		if (!(message = ArgList[0]))
-			{ rfc1459_odd(from, comm, ArgList); return; }
+			{ rfc1459_odd(from, comm, ArgList); goto END; }
 
 		/* IRCnet has a different 477 numeric. */
 		if (message && *message == '+')
