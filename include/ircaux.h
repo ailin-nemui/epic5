@@ -7,7 +7,7 @@
  *
  * See the COPYRIGHT file, or do a HELP IRCII COPYRIGHT 
  *
- * @(#)$Id: ircaux.h,v 1.30 2002/09/01 18:27:52 jnelson Exp $
+ * @(#)$Id: ircaux.h,v 1.31 2002/10/18 21:10:22 jnelson Exp $
  */
 
 #ifndef _IRCAUX_H_
@@ -53,12 +53,13 @@ char *	new_next_arg 		(char *, char **);
 char *	new_new_next_arg 	(char *, char **, char *);
 char *	s_next_arg		(char **);
 char *	last_arg 		(char **, size_t *cluep);
-char *	expand_twiddle 		(const char *);
+int	normalize_filename	(const char *, Filename);
+int	expand_twiddle 		(const char *, Filename);
 char *	upper 			(char *);
 char *	lower 			(char *);
 char *	sindex			(char *, char *);
 char *	rsindex 		(char *, char *, char *, int);
-char *	path_search 		(char *, char *);
+int	path_search 		(const char *, const char *, Filename);
 char *	double_quote 		(const char *, const char *, char *);
 char *	malloc_strcpy 		(char **, const char *);
 char *	malloc_strcat_c		(char **, const char *, size_t *);
@@ -132,6 +133,7 @@ char *	m_dupchar 		(int);
 char *	strmccat		(char *, char, int);
 off_t	file_size		(const char *);
 int	file_exists		(const char *);
+int	isdir			(const char *);
 int	is_root			(const char *, const char *, int);
 size_t	streq			(const char *, const char *);
 char *	m_strndup		(const char *, size_t);

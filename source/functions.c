@@ -1,4 +1,4 @@
-/* $EPIC: functions.c,v 1.83 2002/09/06 21:35:04 jnelson Exp $ */
+/* $EPIC: functions.c,v 1.84 2002/10/18 21:10:22 jnelson Exp $ */
 /*
  * functions.c -- Built-in functions for ircII
  *
@@ -2820,11 +2820,16 @@ BUILT_IN_FUNCTION(function_ascii, word)
 BUILT_IN_FUNCTION(function_which, word)
 {
 	char *file1;
+	Filename result;
 
 	GET_STR_ARG(file1, word);
-	file1 = path_search(file1, (word && *word) ? word
-			: get_string_var(LOAD_PATH_VAR));
-	RETURN_STR(file1);
+	if (!word || !*word)
+		word = get_string_var(LOAD_PATH_VAR);
+
+	if (path_search(file1, word, result))
+		RETURN_EMPTY;
+
+	RETURN_STR(result);
 }
 
 
@@ -3066,16 +3071,15 @@ BUILT_IN_FUNCTION(function_server_version, word)
 
 BUILT_IN_FUNCTION(function_unlink, words)
 {
-	char *	expanded;
+	Filename expanded;
 	int 	failure = 0;
 
 	while (words && *words)
 	{
-		if ((expanded = expand_twiddle(new_next_arg(words, &words))))
-		{
-			failure -= unlink(expanded);	
-			new_free(&expanded);
-		}
+		if (normalize_filename(new_next_arg(words, &words), expanded))
+			failure++;
+		else if (unlink(expanded))
+			failure++;
 	}
 
 	RETURN_INT(failure);
@@ -3083,39 +3087,32 @@ BUILT_IN_FUNCTION(function_unlink, words)
 
 BUILT_IN_FUNCTION(function_rename, words)
 {
-	char *	filename1, 
+	char *	filename1,
 	     *	filename2;
-	char *expanded1, *expanded2;
-	int 	failure = -1;
+	Filename expanded1;
+	Filename expanded2;
 
 	GET_STR_ARG(filename1, words)
-	if ((expanded1 = expand_twiddle(filename1)))
-	{
-		GET_STR_ARG(filename2, words)
-		if ((expanded2 = expand_twiddle(filename2)))
-		{
-			failure = rename(expanded1, expanded2);
-			new_free(&expanded2);
-		}
-		new_free(&expanded1);
-	}
+	if (normalize_filename(filename1, expanded1))
+		RETURN_INT(-1);
 
-	RETURN_INT(failure);
+	GET_STR_ARG(filename2, words)
+	if (normalize_filename(filename2, expanded2))
+		RETURN_INT(-1);
+
+	RETURN_INT(rename(expanded1, expanded2));
 }
 
 BUILT_IN_FUNCTION(function_rmdir, words)
 {
+	Filename expanded;
 	int 	failure = 0;
-	char *expanded;
 
 	while (words && *words)
 	{
-		if ((expanded = expand_twiddle(new_next_arg(words, &words))))
-		{
-			failure -= rmdir(expanded);
-			new_free(&expanded);
-		}
-		else
+		if (normalize_filename(new_next_arg(words, &words), expanded))
+			failure++;
+		else if (rmdir(expanded))
 			failure++;
 	}
 
@@ -3381,30 +3378,16 @@ BUILT_IN_FUNCTION(function_aliasctl, input)
  */
 BUILT_IN_FUNCTION(function_fexist, words)
 {
-        char	FileBuf[BIG_BUFFER_SIZE+1];
-	char	*filename, *fullname;
+        Filename expanded;
+	char	*filename;
 
 	if (!(filename = new_next_arg(words, &words)))
 		RETURN_INT(-1);
 
-	if (*filename == '/')
-		strlcpy(FileBuf, filename, BIG_BUFFER_SIZE);
-	else if (*filename == '~') 
-	{
-		if (!(fullname = expand_twiddle(filename)))
-			RETURN_INT(-1);
+	if (normalize_filename(filename, expanded))
+		RETURN_INT(-1);
 
-		strmcpy(FileBuf, fullname, BIG_BUFFER_SIZE);
-		new_free(&fullname);
-	}
-	else 
-	{
-		getcwd(FileBuf, BIG_BUFFER_SIZE);
-		strmcat(FileBuf, "/", BIG_BUFFER_SIZE);
-		strmcat(FileBuf, filename, BIG_BUFFER_SIZE);
-	}
-
-	if (access(FileBuf, R_OK) == -1)
+	if (access(expanded, R_OK) == -1)
 		RETURN_INT(-1);
 
 	RETURN_INT(1);
@@ -3412,34 +3395,16 @@ BUILT_IN_FUNCTION(function_fexist, words)
 
 BUILT_IN_FUNCTION(function_fsize, words)
 {
-        char	FileBuf[BIG_BUFFER_SIZE+1];
-	char	*filename, *fullname;
-        struct  stat    stat_buf;
+	Filename expanded;
+	char *	filename;
 
 	if (!(filename = new_next_arg(words, &words)))
 		RETURN_INT(-1);
 
-	if (*filename == '/')
-		strlcpy(FileBuf, filename, BIG_BUFFER_SIZE);
-	else if (*filename == '~') 
-	{
-		if (!(fullname = expand_twiddle(filename)))
-			RETURN_INT(-1);
-
-		strmcpy(FileBuf, fullname, BIG_BUFFER_SIZE);
-		new_free(&fullname);
-	}
-	else 
-	{
-		getcwd(FileBuf, sizeof(FileBuf));
-		strmcat(FileBuf, "/", BIG_BUFFER_SIZE);
-		strmcat(FileBuf, filename, BIG_BUFFER_SIZE);
-	}
-
-	if (stat(FileBuf, &stat_buf) == -1)
+	if (normalize_filename(filename, expanded))
 		RETURN_INT(-1);
 
-	RETURN_INT((int)stat_buf.st_size);	/* Might not be an int */
+	RETURN_INT(file_size(expanded));
 }
 
 /* 
@@ -3683,9 +3648,9 @@ BUILT_IN_FUNCTION(function_notify, words)
 
 BUILT_IN_FUNCTION(function_glob, word)
 {
-	char 	*path, 
-		*path2, 
-		*retval = NULL;
+	char 	*path;
+	Filename path2;
+	char	*retval = NULL;
 	int 	numglobs, i;
 	size_t	rvclue=0;
 	glob_t 	globbers;
@@ -3694,14 +3659,11 @@ BUILT_IN_FUNCTION(function_glob, word)
 	while (word && *word)
 	{
 		GET_STR_ARG(path, word);
-		if (!(path2 = expand_twiddle(path)))
-			path2 = m_strdup(path);
+		if (normalize_filename(path, path2))
+			strlcpy(path2, path, sizeof(path2));
 
 		if ((numglobs = glob(path2, GLOB_MARK, NULL, &globbers)) < 0)
-		{
-			new_free(&path2);
 			RETURN_INT(numglobs);
-		}
 
 		for (i = 0; i < globbers.gl_pathc; i++)
 		{
@@ -3715,7 +3677,6 @@ BUILT_IN_FUNCTION(function_glob, word)
 				m_sc3cat(&retval, space, globbers.gl_pathv[i], &rvclue);
 		}
 		globfree(&globbers);
-		new_free(&path2);
 	}
 
 	RETURN_IF_EMPTY(retval);
@@ -3724,9 +3685,9 @@ BUILT_IN_FUNCTION(function_glob, word)
 
 BUILT_IN_FUNCTION(function_globi, word)
 {
-	char 	*path, 
-		*path2, 
-		*retval = NULL;
+	char 	*path;
+	Filename path2;
+	char	*retval = NULL;
 	int 	numglobs, i;
 	size_t	rvclue=0;
 	glob_t 	globbers;
@@ -3735,15 +3696,12 @@ BUILT_IN_FUNCTION(function_globi, word)
 	while (word && *word)
 	{
 		GET_STR_ARG(path, word);
-		if (!(path2 = expand_twiddle(path)))
-			path2 = m_strdup(path);
+		if (normalize_filename(path, path2))
+			strlcpy(path2, path, sizeof(path2));
 
 		if ((numglobs = bsd_glob(path2, GLOB_MARK | GLOB_INSENSITIVE, 
 					NULL, &globbers)) < 0)
-		{
-			new_free(&path2);
 			RETURN_INT(numglobs);
-		}
 
 		for (i = 0; i < globbers.gl_pathc; i++)
 		{
@@ -3757,7 +3715,6 @@ BUILT_IN_FUNCTION(function_globi, word)
 				m_sc3cat(&retval, space, globbers.gl_pathv[i], &rvclue);
 		}
 		bsd_globfree(&globbers);
-		new_free(&path2);
 	}
 
 	RETURN_IF_EMPTY(retval);
@@ -3767,17 +3724,14 @@ BUILT_IN_FUNCTION(function_globi, word)
 
 BUILT_IN_FUNCTION(function_mkdir, words)
 {
+	Filename expanded;
 	int 	failure = 0;
-	char *expanded;
 
 	while (words && *words)
 	{
-		if ((expanded = expand_twiddle(new_next_arg(words, &words))))
-		{
-			failure -= mkdir(expanded, 0777);
-			new_free(&expanded);
-		}
-		else
+		if (normalize_filename(new_next_arg(words, &words), expanded))
+			failure++;
+		else if (mkdir(expanded, 0777))
 			failure++;
 	}
 
@@ -3798,8 +3752,7 @@ BUILT_IN_FUNCTION(function_chmod, words)
 	int 	fd = -1;
 	char 	*perm_s;
 	mode_t 	perm;
-	char 	*expanded;
-	int	retval;
+	Filename expanded;
 
 	GET_STR_ARG(filearg, words);
 	fd = (int) strtoul(filearg, &after, 0);
@@ -3816,24 +3769,20 @@ BUILT_IN_FUNCTION(function_chmod, words)
 	}
 	else
 	{
-		if ((expanded = expand_twiddle(filearg)))
-		{
-			retval = chmod(expanded, perm);
-			new_free(&expanded);
-			RETURN_INT(retval);
-		}
-		RETURN_INT(-1);
+		if (normalize_filename(filearg, expanded))
+			RETURN_INT(-1);
+
+		RETURN_INT(chmod(expanded, perm));
 	}
 }
 
 BUILT_IN_FUNCTION(function_twiddle, words)
 {
-	char *	retval = NULL;
+	Filename retval;
 
-	if (words && *words)
-		retval = expand_twiddle(new_next_arg(words, &words));
-
-	RETURN_MSTR(retval);
+	*retval = 0;
+	expand_twiddle(words, retval);
+	RETURN_STR(retval);
 }
 
 
@@ -4101,36 +4050,19 @@ BUILT_IN_FUNCTION(function_winbound, input)
 
 BUILT_IN_FUNCTION(function_ftime, words)
 {
-        char	FileBuf[BIG_BUFFER_SIZE+1];
-	char	*filename, *fullname;
+	char	*filename;
+	Filename fullname;
 	struct stat s;
 
-	if ((filename = new_next_arg(words, &words)))
-	{
-		if (*filename == '/')
-			strlcpy(FileBuf, filename, BIG_BUFFER_SIZE);
+	GET_STR_ARG(filename, words);
 
-		else if (*filename == '~') 
-		{
-			if (!(fullname = expand_twiddle(filename)))
-				RETURN_EMPTY;
+	if (normalize_filename(filename, fullname))
+		RETURN_EMPTY;
 
-			strmcpy(FileBuf, fullname, BIG_BUFFER_SIZE);
-			new_free(&fullname);
-		}
-		else 
-		{
-			getcwd(FileBuf, BIG_BUFFER_SIZE);
-			strmcat(FileBuf, "/", BIG_BUFFER_SIZE);
-			strmcat(FileBuf, filename, BIG_BUFFER_SIZE);
-		}
+	if (stat(fullname, &s) == -1)
+		RETURN_EMPTY;
 
-		if (stat(FileBuf, &s) == -1)
-			RETURN_EMPTY;
-		else
-			RETURN_INT(s.st_mtime);
-	}
-	RETURN_EMPTY;
+	RETURN_INT(s.st_mtime);
 }
 
 BUILT_IN_FUNCTION(function_irclib, input)
@@ -4476,22 +4408,19 @@ BUILT_IN_FUNCTION(function_randread, input)
 {
 	FILE 	*fp;
 	char 	buffer[BIG_BUFFER_SIZE + 1];
-	char 	*filename, *fullname = NULL;
+	char 	*filename;
+	Filename fullname;
 	off_t	filesize, offset;
 
 	*buffer = 0;
 	GET_STR_ARG(filename, input);
 
-	/*
-	 * It was this or use a goto.  :P
-	 */
-	if (  ((fullname = expand_twiddle(filename)) == NULL) ||
-	      ((filesize = file_size(fullname)) <= 0) ||
-	      ((fp = fopen(fullname, "r")) == NULL) )
-	{
-		new_free(&fullname);
+	if (normalize_filename(filename, fullname))
 		RETURN_EMPTY;
-	}
+	if ((filesize = file_size(fullname)) <= 0)
+		RETURN_EMPTY;
+	if ((fp = fopen(fullname, "r")) == NULL)
+		RETURN_EMPTY;
 
 	offset = random_number(0) % filesize - 1;
 	fseek(fp, offset, SEEK_SET);
@@ -4505,7 +4434,6 @@ BUILT_IN_FUNCTION(function_randread, input)
 	chomp(buffer);
 	fclose(fp);
 
-	new_free(&fullname);
 	RETURN_STR(buffer);
 }
 

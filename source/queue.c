@@ -1,4 +1,4 @@
-/* $EPIC: queue.c,v 1.8 2002/07/17 22:52:52 jnelson Exp $ */
+/* $EPIC: queue.c,v 1.9 2002/10/18 21:10:23 jnelson Exp $ */
 /*
  *  queue.c - The queue command
  *
@@ -392,7 +392,10 @@ static void	delete_from_queue (Queue **list, const char *name, int which)
 		return;
 	}
 
-	if (which == 0 || !q->first) {
+	if (which == -1) {
+		say("QUEUE: You need to specify an entry to delete");
+		return;
+	} else if (which == 0 || !q->first) {
 		return;
 	} else if (which == 1) {
 		c = q->first;

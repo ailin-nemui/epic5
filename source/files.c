@@ -1,4 +1,4 @@
-/* $EPIC: files.c,v 1.13 2002/07/17 22:52:52 jnelson Exp $ */
+/* $EPIC: files.c,v 1.14 2002/10/18 21:10:22 jnelson Exp $ */
 /*
  * files.c -- allows you to read/write files. Wow.
  *
@@ -125,15 +125,13 @@ int open_file_for_read (char *filename)
 
 int open_file_for_write (char *filename)
 {
-	/* patch by Scott H Kilau so expand_twiddle works */
-	char *expand = NULL;
+	Filename expand;
 	FILE *file;
 
-	if (!(expand = expand_twiddle(filename)))
-		malloc_strcpy(&expand, filename);
-	file = fopen(expand, "a");
-	new_free(&expand);
-	if (file)
+	if (normalize_filename(filename, expand))
+		strlcpy(expand, filename, sizeof(expand));
+
+	if ((file = fopen(expand, "a")))
 	{
 		File *nfs = new_file();
 		nfs->file = file;

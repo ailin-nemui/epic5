@@ -1,4 +1,4 @@
-/* $EPIC: mail.c,v 1.2 2002/07/17 22:52:52 jnelson Exp $ */
+/* $EPIC: mail.c,v 1.3 2002/10/18 21:10:23 jnelson Exp $ */
 /*
  * mail.c -- a gross simplification of mail checking.
  * Only unix maildrops are supported.
@@ -72,14 +72,12 @@ int	check_mail_status (void *ptr)
 	if (!mail_path)
 	{
 		char *mail_path_list = "/var/spool/mail:/usr/spool/mail:/var/mail:/usr/mail";
-		char *tmp_mail_path;
+		Filename tmp_mail_path;
 
-		if (!(tmp_mail_path = getenv("MAIL")))
-			tmp_mail_path = path_search(username, mail_path_list);
-
-		if (tmp_mail_path)
+		if (getenv("MAIL"))
+			mail_path = m_strdup(getenv("MAIL"));
+		else if (path_search(username, mail_path_list, tmp_mail_path))
 			mail_path = m_strdup(tmp_mail_path);
-
 		else
 			mail_path = m_strdup("<unknown>");
 	}

@@ -1,4 +1,4 @@
-/* $EPIC: log.c,v 1.6 2002/09/03 11:43:12 jnelson Exp $ */
+/* $EPIC: log.c,v 1.7 2002/10/18 21:10:23 jnelson Exp $ */
 /*
  * log.c: handles the irc session logging functions 
  *
@@ -51,6 +51,7 @@ static FILE *open_log (const char *logfile, FILE **fp)
 	time_t	t;
 	char	my_buffer[256];
 	struct	tm	*ugh;
+	Filename fullname;
 
 	time(&t);
 	ugh = localtime(&t);		/* Not gmtime, m'kay? */
@@ -66,27 +67,26 @@ static FILE *open_log (const char *logfile, FILE **fp)
 	if (!logfile)
 		return NULL;
 			
-	if (!(logfile = expand_twiddle(logfile)))
+	if (normalize_filename(logfile, fullname))
 	{
-		say("SET LOGFILE: No such user");
+		say("SET LOGFILE: %s is not a valid directory", logfile);
 		return NULL;
 	}
 
-	if ((*fp = fopen(logfile, "a")) != NULL)
+	if ((*fp = fopen(fullname, "a")) != NULL)
 	{
-		chmod(logfile, S_IREAD | S_IWRITE);
-		say("Starting logfile %s", logfile);
+		chmod(fullname, S_IREAD | S_IWRITE);
+		say("Starting logfile %s", fullname);
 
 		fprintf(*fp, "IRC log started %s\n", my_buffer);
 		fflush(*fp);
 	}
 	else
 	{
-		say("Couldn't open logfile %s: %s", logfile, strerror(errno));
+		say("Couldn't open logfile %s: %s", fullname, strerror(errno));
 		*fp = NULL;
 	}
 
-	new_free(&logfile);
 	return (*fp);
 }
 
@@ -144,28 +144,22 @@ void	logger (int flag)
  */
 void	set_log_file (const char *filename)
 {
-	char	*expand;
+	Filename expand;
 
-	if (filename)
+	if (!filename)
+		return;
+
+	if (normalize_filename(filename, expand))
 	{
-		if (strcmp(filename, get_string_var(LOGFILE_VAR)))
-			expand = expand_twiddle(filename);
-		else
-			expand = expand_twiddle(get_string_var(LOGFILE_VAR));
+		say("SET LOGFILE: %s is not a valid directory", filename);
+		return;
+	}
 
-		if (!expand)
-		{
-			say("SET LOGFILE: No such user");
-			return;
-		}
-
-		set_string_var(LOGFILE_VAR, expand);
-		new_free(&expand);
-		if (irclog_fp)
-		{
-			logger(0);
-			logger(1);
-		}
+	set_string_var(LOGFILE_VAR, expand);
+	if (irclog_fp)
+	{
+		logger(0);
+		logger(1);
 	}
 }
 

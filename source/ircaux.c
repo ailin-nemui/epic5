@@ -1,4 +1,4 @@
-/* $EPIC: ircaux.c,v 1.50 2002/09/30 23:15:38 jnelson Exp $ */
+/* $EPIC: ircaux.c,v 1.51 2002/10/18 21:10:23 jnelson Exp $ */
 /*
  * ircaux.c: some extra routines... not specific to irc... that I needed 
  *
@@ -1172,44 +1172,106 @@ char *	m_strcat_ues_c (char **dest, char *src, int unescape, size_t *cluep)
 	return *dest;
 }
 
-/* expand_twiddle: expands ~ in pathnames. */
-char *	expand_twiddle (const char *str)
+/*
+ * normalize_filename: replacement for expand_twiddle
+ *
+ * This is a front end to realpath(), has the same signature, except
+ * it expands twiddles for me, and it returns 0 or -1 instead of (char *).
+ */
+int	normalize_filename (const char *str, Filename result)
 {
-	char	buffer[BIG_BUFFER_SIZE + 1];
-	*buffer = 0;
+	Filename workpath;
+	char *	pathname;
+	char *	rest;
+	struct	passwd *entry;
 
 	if (*str == '~')
 	{
-		str++;
-		if (*str == '/' || *str == '\0')
-		{
-			strmcpy(buffer, my_path, BIG_BUFFER_SIZE);
-			strmcat(buffer, str, BIG_BUFFER_SIZE);
-		}
-		else
-		{
-			char	*rest;
-			struct	passwd *entry;
+		/* make a copy of the path we can make changes to */
+		pathname = LOCAL_COPY(str + 1);
 
-			if ((rest = strchr(str, '/')) != NULL)
-				*rest++ = '\0';
-			if ((entry = getpwnam(str)) != NULL)
-			{
-				strmcpy(buffer, entry->pw_dir, BIG_BUFFER_SIZE);
-				if (rest)
-				{
-					strmcat(buffer, "/", BIG_BUFFER_SIZE);
-					strmcat(buffer, rest, BIG_BUFFER_SIZE);
-				}
+		/* Stop the tilde-expansion at the first / (or nul) */
+		if ((rest = strchr(pathname, '/')))
+			*rest++ = 0;
+
+		/* Expand ~ to our homedir, ~user to user's homedir */
+		if (*pathname) {
+			if ((entry = getpwnam(pathname)) == NULL) {
+			    snprintf(result, MAXPATHLEN + 1, "~%s", pathname);
+			    return -1;
 			}
-			else
-				return (char *) NULL;
-		}
-	}
-	else
-		strmcpy(buffer, str, BIG_BUFFER_SIZE);
+			strlcpy(workpath, entry->pw_dir, sizeof(workpath));
+		} else
+			strlcpy(workpath, my_path, sizeof(workpath));
 
-	return m_strdup(buffer);
+		/* And tack on whatever is after the first / */
+		if (rest)
+		{
+			strlcat(workpath, "/", sizeof(workpath));
+			strlcat(workpath, rest, sizeof(workpath));
+		}
+
+		str = workpath;
+	}
+
+	if (realpath(str, result) == NULL)
+		return -1;
+
+	return 0;
+}
+
+/* 
+ * expand_twiddle: expands ~ in pathnames.
+ *
+ * XXX WARNING XXX 
+ *
+ * It is perfectly valid for (str == *result)!  You must NOT change
+ * '*result' until you have first copied 'str' to 'buffer'!  If you
+ * do not do this, you will corrupt the result!  You have been warned!
+ */
+int	expand_twiddle (const char *str, Filename result)
+{
+	Filename buffer;
+	char	*rest;
+	struct	passwd *entry;
+
+	/* Handle filenames without twiddles to expand */
+	if (*str != '~')
+	{
+		/* Only do the copy if the destination is not the source */
+		if (str != result)
+			strlcpy(result, str, MAXPATHLEN + 1);
+		return 0;
+	}
+
+	/* Handle filenames that are just ~ or ~/... */
+	str++;
+	if (!*str || *str == '/')
+	{
+		strlcpy(buffer, my_path, sizeof(buffer));
+		strlcat(buffer, str, sizeof(buffer));
+
+		strlcpy(result, buffer, MAXPATHLEN + 1);
+		return 0;
+	}
+
+	/* Handle filenames that are ~user or ~user/... */
+	if ((rest = strchr(str, '/')))
+		*rest++ = 0;
+	if ((entry = getpwnam(str)))
+	{
+		strlcpy(buffer, entry->pw_dir, sizeof(buffer));
+		if (rest)
+		{
+			strlcat(buffer, "/", sizeof(buffer));
+			strlcat(buffer, rest, sizeof(buffer));
+		}
+
+		strlcpy(result, buffer, MAXPATHLEN + 1);
+		return 0;
+	}
+
+	return -1;
 }
 
 /* islegal: true if c is a legal nickname char anywhere but first char */
@@ -1384,51 +1446,63 @@ int	is_real_number (const char *str)
  * full path name of the file is returned in a static string.  If not, null
  * is returned.  Path is a colon separated list of directories 
  */
-char *	path_search (char *name, char *path)
+int	path_search (const char *name, const char *xpath, Filename result)
 {
-	static	char	buffer[BIG_BUFFER_SIZE + 1];
-	char	*ptr,
-		*free_path = (char *) 0;
+	Filename buffer;
+	Filename candidate;
+	char	*path;
+	char	*ptr;
 
 	/* No Path -> Error */
 	if (!path)
-		return NULL;		/* Take THAT! */
+		return -1;		/* Take THAT! */
 
-	/* A "relative" path is valid if the file exists */
-	/* A "relative" path is searched in the path if the
-	   filename doesnt really exist from where we are */
-	if (strchr(name, '/') != NULL)
-		if (!access(name, F_OK))
-			return name;
-
-	/* an absolute path is always checked, never searched */
-	if (name[0] == '/')
-		return (access(name, F_OK) ? (char *) 0 : name);
-
-	/* This is cheating. >;-) */
-	free_path = LOCAL_COPY(path);
-	path = free_path;
-
-	while (path)
+	/*
+	 * A "relative" path is valid if the file exists
+	 * based on the current directory.  If it does not
+	 * exist from the current directory, then we will
+	 * search the path for it.
+	 *
+	 * PLEASE NOTE this catches things like ~foo/bar too!
+	 */
+	if (strchr(name, '/'))
 	{
-		if ((ptr = strchr(path, ':')) != NULL)
-			*ptr++ = '\0';
-		*buffer = 0;
-		if (path[0] == '~')
+	    if (!normalize_filename(name, candidate))
+	    {
+		if (file_exists(candidate))
 		{
-			strmcat(buffer, my_path, BIG_BUFFER_SIZE);
-			path++;
+			strlcpy(result, candidate, MAXPATHLEN + 1);
+			return 0;
 		}
-		strmcat(buffer, path, BIG_BUFFER_SIZE);
-		strmcat(buffer, "/", BIG_BUFFER_SIZE);
-		strmcat(buffer, name, BIG_BUFFER_SIZE);
-
-		if (access(buffer, F_OK) == 0)
-			break;
-		path = ptr;
+	    }
 	}
 
-	return (path != NULL) ? buffer : (char *) 0;
+	/* 
+	 * The previous check already took care of absolute paths
+	 * that exist, so we need to check for absolute paths here
+	 * that DON'T exist. (is this cheating?).  Also, ~user/foo
+	 * is considered an "absolute path".
+	 */
+	if (*name == '/' || *name == '~')
+		return -1;
+
+	*result = 0;
+	for (path = LOCAL_COPY(xpath); path; path = ptr)
+	{
+		if ((ptr = strchr(path, ':')))
+			*ptr++ = 0;
+
+		snprintf(buffer, sizeof(buffer), "%s/%s", path, name);
+		if (normalize_filename(buffer, candidate))
+			continue;
+
+		if (file_exists(candidate)) {
+			strlcpy(result, candidate, MAXPATHLEN + 1);
+			return 0;
+		}
+	}
+
+	return -1;
 }
 
 /*
@@ -1680,32 +1754,27 @@ static FILE *	open_compression (char *executable, char *filename)
  */
 FILE *	uzfopen (char **filename, char *path, int do_error)
 {
-	static int	setup				= 0;
+static int		setup				= 0;
+static 	Filename 	path_to_gunzip;
+static	Filename 	path_to_uncompress;
+static 	Filename 	path_to_bunzip2;
 	int 		ok_to_decompress 		= 0;
-	char *		filename_path;
-	char *		filename_expanded;
-	char 		filename_trying			[MAXPATHLEN + 2];
-	char *		filename_blah;
-	static char  *	path_to_gunzip = NULL;
-	static char  *	path_to_uncompress = NULL;
-	static char  *	path_to_bunzip = NULL;
+	Filename	fullname;
+	Filename	candidate;
+	struct stat 	file_info;
 	FILE *		doh;
 
 	if (!setup)
 	{
-		char *gzip, *compress, *bzip;
+		*path_to_gunzip = 0;
+		path_search("gunzip", getenv("PATH"), path_to_gunzip);
 
-		if (!(gzip = path_search("gunzip", getenv("PATH"))))
-			gzip = empty_string;
-		path_to_gunzip = m_strdup(gzip);
+		*path_to_uncompress = 0;
+		path_search("uncompress", getenv("PATH"), path_to_uncompress);
 
-		if (!(compress = path_search("uncompress", getenv("PATH"))))
-			compress = empty_string;
-		path_to_uncompress = m_strdup(compress);
-
-		if (!(bzip = path_search("bunzip", getenv("PATH"))))
-			bzip = empty_string;
-		path_to_bunzip = m_strdup(bzip);
+		*path_to_bunzip2 = 0;
+		if (path_search("bunzip2", getenv("PATH"), path_to_bunzip2))
+		    path_search("bunzip", getenv("PATH"), path_to_bunzip2);
 
 		setup = 1;
 	}
@@ -1719,70 +1788,56 @@ FILE *	uzfopen (char **filename, char *path, int do_error)
 
 	/* 
 	 * Start with what we were given as an initial guess 
-	 * kev asked me to call expand_twiddle here 
+	 * kev asked me to call expand_twiddle here once,
+	 * Now that path_search() does ~'s, we don't need to do
+	 * so here any more.
 	 */
-	if (**filename == '~')
-	{
-		if ((filename_blah = expand_twiddle(*filename)))
-		{
-			filename_expanded = LOCAL_COPY(filename_blah);
-			new_free(&filename_blah);
-		}
-		else
-			filename_expanded = LOCAL_COPY(*filename);
-	}
-	else
-		filename_expanded = LOCAL_COPY(*filename);
-
 
 	/* 
 	 * Look to see if the passed filename is a full compressed filename 
 	 */
-	if ((! end_strcmp(filename_expanded, ".gz", 3)) ||
-	    (! end_strcmp(filename_expanded, ".z", 2))) 
+	if ((!end_strcmp(*filename, ".gz", 3)) ||
+	    (!end_strcmp(*filename, ".z", 2))) 
 	{
-		if (*path_to_gunzip)
-		{	
-			ok_to_decompress = 2;
-			filename_path = path_search(filename_expanded, path);
-		}
-		else
+		if (!*path_to_gunzip)
 		{
 			if (do_error)
 				yell("Cannot open file %s because gunzip "
-					"was not found", filename_trying);
+					"was not found", *filename);
 			goto cleanup;
 		}
+
+		ok_to_decompress = 2;
+		if (path_search(*filename, path, fullname))
+			goto file_not_found;
 	}
-	else if (! end_strcmp(filename_expanded, ".Z", 2))
+	else if (!end_strcmp(*filename, ".Z", 2))
 	{
-		if (*path_to_gunzip || *path_to_uncompress)
-		{
-			ok_to_decompress = 1;
-			filename_path = path_search(filename_expanded, path);
-		}
-		else
+		if (!*path_to_gunzip && !*path_to_uncompress)
 		{
 			if (do_error)
 				yell("Cannot open file %s becuase uncompress "
-					"was not found", filename_trying);
+					"was not found", *filename);
 			goto cleanup;
 		}
+
+		ok_to_decompress = 1;
+		if (path_search(*filename, path, fullname))
+			goto file_not_found;
 	}
-	else if (!end_strcmp(filename_expanded, ".bz2", 4))
+	else if (!end_strcmp(*filename, ".bz2", 4))
 	{
-		if (*path_to_bunzip)
-		{
-			ok_to_decompress = 3;
-			filename_path = path_search(filename_expanded, path);
-		}
-		else
+		if (!*path_to_bunzip2)
 		{
 			if (do_error)
 				yell("Cannot open file %s because bunzip "
-					"was not found", filename_trying);
+					"was not found", *filename);
 			goto cleanup;
 		}
+
+		ok_to_decompress = 3;
+		if (path_search(*filename, path, fullname))
+			goto file_not_found;
 	}
 
 	/* Right now it doesnt look like the file is a full compressed fn */
@@ -1791,78 +1846,57 @@ FILE *	uzfopen (char **filename, char *path, int do_error)
 	    do
 	    {
 		/* Trivially, see if the file we were passed exists */
-		if ((filename_path = path_search(filename_expanded, path)))
-		{
+		if (!path_search(*filename, path, fullname)) {
 			ok_to_decompress = 0;
 			break;
 		}
 
 		/* Is there a "filename.gz"? */
-		snprintf(filename_trying, MAXPATHLEN, "%s.gz", 
-				filename_expanded);
-		if ((filename_path = path_search(filename_trying, path)))
-		{
+		snprintf(candidate, sizeof(candidate), "%s.gz", *filename);
+		if (!path_search(candidate, path, fullname)) {
 			ok_to_decompress = 2;
 			break;
 		}
 
 		/* Is there a "filename.Z"? */
-		snprintf(filename_trying, MAXPATHLEN, "%s.Z", 
-				filename_expanded);
-		if ((filename_path = path_search(filename_trying, path)))
-		{
+		snprintf(candidate, sizeof(candidate), "%s.Z", *filename);
+		if (!path_search(candidate, path, fullname)) {
 			ok_to_decompress = 1;
 			break;
 		}
 
 		/* Is there a "filename.z"? */
-		snprintf(filename_trying, MAXPATHLEN, "%s.z", 
-				filename_expanded);
-		if ((filename_path = path_search(filename_trying, path)))
-		{
+		snprintf(candidate, sizeof(candidate), "%s.z", *filename);
+		if (!path_search(candidate, path, fullname)) {
 			ok_to_decompress = 2;
 			break;
 		}
 
 		/* Is there a "filename.bz2"? */
-		snprintf(filename_trying, MAXPATHLEN, "%s.bz2", 
-				filename_expanded);
-		if ((filename_path = path_search(filename_trying, path)))
-		{
+		snprintf(candidate, sizeof(candidate), "%s.bz2", *filename);
+		if (!path_search(candidate, path, fullname)) {
 			ok_to_decompress = 3;
 			break;
 		}
+
+		goto file_not_found;
 	    }
 	    while (0);
 
-	    if (filename_path)
-	    {
-		struct stat file_info;
-
-		stat(filename_path, &file_info);
-		if (file_info.st_mode & S_IFDIR)
+		stat(fullname, &file_info);
+		if (S_ISDIR(file_info.st_mode))
 		{
 		    if (do_error)
-			yell("%s is a directory", filename_path);
+			yell("%s is a directory", fullname);
 		    goto cleanup;
 		}
 		if (file_info.st_mode & 0111)
 		{
 		    if (do_error)
-			yell("Cannot open %s -- executable file", 
-				filename_path);
+			yell("Cannot open %s -- executable file", fullname);
 		    goto cleanup;
 		}
-	    }
 	}
-
-	if (!filename_path)
-	{
-		if (do_error)
-			yell("File not found: %s", *filename);
-		goto cleanup;
-	}
-
 
 	/* 
 	 * At this point, we should have a filename in the variable
@@ -1870,15 +1904,15 @@ FILE *	uzfopen (char **filename, char *path, int do_error)
 	 * we can gunzip the file if gunzip is available.  else we 
 	 * uncompress the file.
 	 */
-	malloc_strcpy(filename, filename_path);
+	malloc_strcpy(filename, fullname);
 	if (ok_to_decompress)
 	{
 		     if ((ok_to_decompress <= 2) && *path_to_gunzip)
 			return open_compression(path_to_gunzip, *filename);
 		else if ((ok_to_decompress == 1) && *path_to_uncompress)
 			return open_compression(path_to_uncompress, *filename);
-		else if ((ok_to_decompress == 3) && *path_to_bunzip)
-			return open_compression(path_to_bunzip, *filename);
+		else if ((ok_to_decompress == 3) && *path_to_bunzip2)
+			return open_compression(path_to_bunzip2, *filename);
 
 		if (do_error)
 			yell("Cannot open compressed file %s becuase no "
@@ -1887,12 +1921,18 @@ FILE *	uzfopen (char **filename, char *path, int do_error)
 	}
 
 	/* Its not a compressed file... Try to open it regular-like. */
-	if ((doh = fopen(filename_path, "r")))
+	else if ((doh = fopen(*filename, "r")))
 		return doh;
 
 	/* nope.. we just cant seem to open this file... */
+	else if (do_error)
+		yell("Cannot open file %s: %s", *filename, strerror(errno));
+
+	goto cleanup;
+
+file_not_found:
 	if (do_error)
-		yell("Cannot open file %s: %s", filename_path, strerror(errno));
+		yell("File not found: %s", *filename);
 
 cleanup:
 	new_free(filename);
@@ -2019,6 +2059,18 @@ int	file_exists (const char *filename)
 		return 0;
 	else
 		return 1;
+}
+
+int	isdir (const char *filename)
+{
+	struct stat statbuf;
+
+	if (!stat(filename, &statbuf))
+	{
+	    if (S_ISDIR(statbuf.st_mode))
+		return 1;
+	}
+	return 0;
 }
 
 /* Gets the time in second/usecond if you can,  second/0 if you cant. */

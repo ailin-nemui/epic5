@@ -1,4 +1,4 @@
-/* $EPIC: window.c,v 1.38 2002/09/30 23:17:22 jnelson Exp $ */
+/* $EPIC: window.c,v 1.39 2002/10/18 21:10:23 jnelson Exp $ */
 /*
  * window.c: Handles the organzation of the logical viewports (``windows'')
  * for irc.  This includes keeping track of what windows are open, where they
@@ -4095,7 +4095,6 @@ static	Window *window_scratch (Window *window, char **args)
 Window *window_scroll (Window *window, char **args)
 {
 	int 	scroll = 0;
-	int	count;
 
 	if (get_boolean("SCROLL", args, &scroll))
 		return NULL;

@@ -1,4 +1,4 @@
-/* $EPIC: server.c,v 1.69 2002/09/26 22:41:43 jnelson Exp $ */
+/* $EPIC: server.c,v 1.70 2002/10/18 21:10:23 jnelson Exp $ */
 /*
  * server.c:  Things dealing with that wacky program we call ircd.
  *
@@ -557,7 +557,7 @@ int 	read_server_file (void)
 	FILE 	*fp;
 	char	file_path[MAXPATHLEN + 1];
 	char	buffer[BIG_BUFFER_SIZE + 1];
-	char	*expanded;
+	Filename expanded;
 	char	*defaultgroup = NULL;
 
 	if (getenv("IRC_SERVERS_FILE"))
@@ -570,40 +570,37 @@ int 	read_server_file (void)
 			strmcpy(file_path, irc_lib, MAXPATHLEN);
 		strmcat(file_path, SERVERS_FILE, MAXPATHLEN);
 #else
-		return 1;
+		return -1;
 #endif
 	}
 
-	if ((expanded = expand_twiddle(file_path)))
-	{
-	    if ((fp = fopen(expanded, "r")))
-	    {
-		while (fgets(buffer, BIG_BUFFER_SIZE, fp))
-		{
-			chop(buffer, 1);
-			if (*buffer == '#')
-				continue;
-			else if (*buffer == '[')
-			{
-			    char *p;
-			    if ((p = strrchr(buffer, ']')))
-				*p++ = 0;
-			    malloc_strcpy(&defaultgroup, buffer + 1);
-			}
-			else if (*buffer == 0)
-				continue;
-			else
-				build_server_list(buffer, defaultgroup);
-		}
-		fclose(fp);
-		new_free(&defaultgroup);
-		return (0);
-	    }
+	if (normalize_filename(file_path, expanded))
+		return -1;
 
-	    new_free(&expanded);
-	    new_free(&defaultgroup);
+	if (!(fp = fopen(expanded, "r")))
+		return -1;
+
+	while (fgets(buffer, BIG_BUFFER_SIZE, fp))
+	{
+		chop(buffer, 1);
+		if (*buffer == '#')
+			continue;
+		else if (*buffer == '[')
+		{
+		    char *p;
+		    if ((p = strrchr(buffer, ']')))
+			*p++ = 0;
+		    malloc_strcpy(&defaultgroup, buffer + 1);
+		}
+		else if (*buffer == 0)
+			continue;
+		else
+			build_server_list(buffer, defaultgroup);
 	}
-	return 1;
+
+	fclose(fp);
+	new_free(&defaultgroup);
+	return 0;
 }
 
 /* display_server_list: just guess what this does */

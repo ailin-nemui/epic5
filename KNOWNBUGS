@@ -14,9 +14,8 @@ KNOWN ERRATA (eg, bugs, or unresolved requests):
   just blindly calling my_strerror(errno).
 * scrollback/scrollforward/scrollend should be controlled by /window verbs
   and not solely by keybindings.
-* /TYPE honors keybindings, and calls edit_char(), but /XTYPE does not honor
-  key bindings because it calls input_add_character().
-* Some way to turn off virtual host support (ie, reverse /hostname)
+* /TYPE honors keybindings, and calls edit_char(), but /XTYPE -L does not 
+  honor key bindings because it calls input_add_character().
 * /DEFER needs to be server-specific.
 * The key timeout thing goes off every second -- should only when necessary.
 ---
@@ -111,4 +110,19 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Fix ok_to_output to update status every /window hold_interval lines, not 10.
 * Remove K&R support from info.c.sh -- this should make OS X users happy.
 * Fix bug with SCROLL_FORWARD after doing SCROLL_START.
+* Fix vhost support so you can turn it off at runtime with /HOSTNAME -
 * Fix unclear_window() so it calls recalc_cursor_and_display_ip().
+* Change expand_twiddle(), path_search() to take results as params, int retval
+* Add normalize_filename(), to do job expand_twiddle() used to do.
+* Add isdir(), just because
+* Change /CD, /LOAD, /SAVE, /DCC SEND, /DCC GET, to use normalize_filename.
+* Change /DCC RESUME, $open(), $which(), $unlink() to use normalize_filename.
+* Change $rename(), $rmdir(), $fexist(), $fsize() to use normalize_filename.
+* Change $glob(), $globi(), $mkdir(), $chmod() to use normalize_filename.
+* Change $ftime(), $randread(), and uzfopen() to use normalize_filename.
+* Change /LOG, /SET LOGFILE, servers file to use normalize_filename.
+* Fix /LOG so maximum number of targets per log is a compile time #define.
+* Revamp expand_twiddle() and uzfopen().
+* Fix uzfopen() to look for 'bunzip2' in addition to 'bunzip'.
+* Fix bug with /QUEUE -delete
+* Remove unused variable in window_scroll().

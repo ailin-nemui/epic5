@@ -1,4 +1,4 @@
-/* $EPIC: logfiles.c,v 1.8 2002/09/27 17:06:39 jnelson Exp $ */
+/* $EPIC: logfiles.c,v 1.9 2002/10/18 21:10:23 jnelson Exp $ */
 /*
  * logfiles.c - General purpose log files
  *
@@ -40,6 +40,8 @@
 #include "server.h"
 #include "window.h"
 
+#define MAX_TARGETS 32
+
 #define LOG_TARGETS 0
 #define LOG_WINDOWS 1
 #define LOG_SERVERS 2
@@ -57,7 +59,7 @@ struct Logfile {
 
 	int	type;
 	WNickList *targets;
-	int	refnums[32];
+	int	refnums[MAX_TARGETS];
 	int	level;
 
 	char *	rewrite;
@@ -84,7 +86,7 @@ Logfile *	new_logfile (void)
 	log->servref = from_server;
 	log->type = LOG_TARGETS;
 	log->targets = NULL;
-	for (i = 0; i < 32; i++)
+	for (i = 0; i < MAX_TARGETS; i++)
 		log->refnums[i] = -1;
 	log->level = LOG_ALL;
 	log->rewrite = NULL;
@@ -165,7 +167,7 @@ void	clean_log_targets (Logfile *log)
 	int	i;
 	WNickList *next;
 
-	for (i = 0; i < 32; i++)
+	for (i = 0; i < MAX_TARGETS; i++)
 		log->refnums[i] = -1;
 
 	while (log->targets)
@@ -190,7 +192,7 @@ char *logfile_get_targets (Logfile *log)
 	}
 	else if (log->type == LOG_SERVERS || log->type == LOG_WINDOWS)
 	{
-		for (i = 0; i < 32; i++)
+		for (i = 0; i < MAX_TARGETS; i++)
 			if (log->refnums[i] != -1)
 				m_s3cat(&nicks, ",", ltoa(log->refnums[i]));
 	}
@@ -252,7 +254,7 @@ static Logfile *	logfile_add (Logfile *log, char **args)
 		else if (log->type == LOG_SERVERS || log->type == LOG_WINDOWS)
 		{
 		    int refnum = my_atol(arg);
-		    for (i = 0; i < 32; i++)
+		    for (i = 0; i < MAX_TARGETS; i++)
 		    {
 			if (log->refnums[i] == refnum)
 			{
@@ -260,7 +262,7 @@ static Logfile *	logfile_add (Logfile *log, char **args)
 				break;
 			}
 		    }
-		    for (i = 0; i < 32; i++)
+		    for (i = 0; i < MAX_TARGETS; i++)
 		    {
 			if (log->refnums[i] == -1)
 			{
@@ -269,7 +271,7 @@ static Logfile *	logfile_add (Logfile *log, char **args)
 				break;
 			}
 		    }
-		    if (i >= 32)
+		    if (i >= MAX_TARGETS)
 			say("Could not add %d to log name list!", refnum);
 		}
                 arg = ptr;
@@ -512,7 +514,7 @@ static Logfile *	logfile_remove (Logfile *log, char **args)
 		{
 		    int refnum = my_atol(ptr);
 
-		    for (i = 0; i < 32; i++)
+		    for (i = 0; i < MAX_TARGETS; i++)
 		    {
 			if (log->refnums[i] == refnum)
 			{
@@ -521,7 +523,7 @@ static Logfile *	logfile_remove (Logfile *log, char **args)
 				break;
 			}
 		    }
-		    if (i >= 32)
+		    if (i >= MAX_TARGETS)
 			say("%s is not on the refnum list for this log!", arg);
 		}
 
@@ -663,7 +665,7 @@ void	add_to_logs (int winref, int servref, const char *target, int level, const 
 	{
 	    if (log->type == LOG_WINDOWS)
 	    {
-		for (i = 0; i < 32; i++) {
+		for (i = 0; i < MAX_TARGETS; i++) {
 		    if (log->refnums[i] == winref) {
 			if (log->level && (log->level & level) == 0)
 				continue;
@@ -674,7 +676,7 @@ void	add_to_logs (int winref, int servref, const char *target, int level, const 
 
 	    if (log->type == LOG_SERVERS)
 	    {
-		for (i = 0; i < 32; i++) {
+		for (i = 0; i < MAX_TARGETS; i++) {
 		    if (log->refnums[i] == servref) {
 			if (log->level && (log->level & level) == 0)
 				continue;

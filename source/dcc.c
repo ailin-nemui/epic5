@@ -1,4 +1,4 @@
-/* $EPIC: dcc.c,v 1.35 2002/07/26 17:10:07 jnelson Exp $ */
+/* $EPIC: dcc.c,v 1.36 2002/10/18 21:10:22 jnelson Exp $ */
 /*
  * dcc.c: Things dealing client to client connections. 
  *
@@ -1176,9 +1176,9 @@ static	void	dcc_getfile (char *args)
 	char		*user;
 	char		*filename = NULL;
 	DCC_list	*dcc;
-	char		*fullname = NULL;
+	Filename	fullname;
+	Filename	pathname;
 	char 		*realname = NULL;
-	char		pathname[MAXPATHLEN * 2 + 1];
 	int		get_all = 0;
 	int		count = 0;
 
@@ -1222,19 +1222,22 @@ static	void	dcc_getfile (char *args)
 		*pathname = 0;
 		if (get_string_var(DCC_STORE_PATH_VAR))
 		{
-			strmcpy(pathname, get_string_var(DCC_STORE_PATH_VAR), 
-						MAXPATHLEN * 2);
-			strlcat(pathname, "/", MAXPATHLEN * 2);
+			strlcpy(pathname, get_string_var(DCC_STORE_PATH_VAR), 
+						sizeof(pathname));
+			strlcat(pathname, "/", sizeof(pathname));
 		}
 
 		realname = dcc_urldecode(dcc->description);
-		strlcat(pathname, realname, MAXPATHLEN * 2);
+		strlcat(pathname, realname, sizeof(pathname));
 		new_free(&realname);
 
-		if (!(fullname = expand_twiddle(pathname)))
-			malloc_strcpy(&fullname, pathname);
+		if (normalize_filename(pathname, fullname))
+		{
+			say("%s is not a valid directory", fullname);
+			continue;
+		}
 
-		dcc->filename = fullname;
+		dcc->filename = m_strdup(fullname);
 		if ((dcc->file = open(fullname, 
 				O_WRONLY|O_TRUNC|O_CREAT, 0644)) == -1)
 		{
@@ -1524,9 +1527,8 @@ static	void	dcc_rename (char *args)
 static	void	dcc_filesend (char *args)
 {
 	char		*user,
-			*fullname,
-			*this_arg,
-			FileBuf[BIG_BUFFER_SIZE+1];
+			*this_arg;
+	Filename	fullname;
 	u_short		portnum = 0;
 	int		filenames_parsed = 0;
 	DCC_list	*Client;
@@ -1558,34 +1560,11 @@ static	void	dcc_filesend (char *args)
 		 * Ok.  We have a filename they want to send.  Check to
 		 * see what kind it is.
 		 */
-
-		/*
-		 * Absolute pathnames are a can of corn.
-		 */
-		if (*this_arg == '/')
-			strlcpy(FileBuf, this_arg, BIG_BUFFER_SIZE);
-		/*
-		 * Twiddle pathnames need to be expanded.
-		 */
-		else if (*this_arg == '~')
-		{
-			if (!(fullname = expand_twiddle(this_arg)))
-			{
-				say("Unable to expand %s", this_arg);
-				return;
-			}
-			strlcpy(FileBuf, fullname, BIG_BUFFER_SIZE);
-			new_free(&fullname);
-		}
-		/*
-		 * Relative pathnames get the cwd tacked onto them.
-		 */
-		else
-		{
-			getcwd(FileBuf, BIG_BUFFER_SIZE);
-			strmcat(FileBuf, "/", BIG_BUFFER_SIZE);
-			strmcat(FileBuf, this_arg, BIG_BUFFER_SIZE);
-		}
+                if (normalize_filename(this_arg, fullname))
+                {
+                        say("%s is not a valid directory", fullname);
+                        continue;
+                }
 
 		/*
 		 * Make a note that we've seen a filename
@@ -1599,42 +1578,36 @@ static	void	dcc_filesend (char *args)
 		 * your safety.  If you can figure out how to get around this,
 		 * then i guess you dont need this protection.
 		 */
-		if (!strncmp(FileBuf, "/etc/", 5) || 
-				!end_strcmp(FileBuf, "/passwd", 7))
+		if (!strncmp(fullname, "/etc/", 5) || 
+				!end_strcmp(fullname, "/passwd", 7))
 		{
 			say("Send Request Rejected");
 			continue;
 		}
 #endif
 
-		if (stat(FileBuf, &stat_buf))
+		if (access(fullname, R_OK))
 		{
-			say("The file %s is unaccessable (it doesn't exist or you dont have permission to access it.)", FileBuf);
+			say("Cannot send %s because you dont have read permission", fullname);
 			continue;
 		}
 
-		if (access(FileBuf, R_OK))
+		if (isdir(fullname))
 		{
-			say("Cannot send %s because you dont have read permission", FileBuf);
-			continue;
-		}
-
-		if (stat_buf.st_mode & S_IFDIR)
-		{
-			say("Cannot send %s because it is a directory", FileBuf);
+			say("Cannot send %s because it is a directory", fullname);
 			continue;
 		}
 
 		/* XXXXX filesize is a global XXXXX */
 		filesize = stat_buf.st_size;
-		Client = dcc_searchlist(FileBuf, user, DCC_FILEOFFER, 
+		Client = dcc_searchlist(fullname, user, DCC_FILEOFFER, 
 					1, this_arg, -1);
 		filesize = 0;
 
 		if ((Client->flags & DCC_ACTIVE) ||
 		    (Client->flags & DCC_MY_OFFER))
 		{
-			say("Sending a booster CTCP handshake for an existing DCC SEND:%s to %s", FileBuf, user);
+			say("Sending a booster CTCP handshake for an existing DCC SEND:%s to %s", fullname, user);
 			dcc_send_booster_ctcp(Client);
 			continue;
 		}
@@ -3010,7 +2983,7 @@ static void dcc_getfile_resume_demanded (char *user, char *filename, char *port,
 static	void	dcc_getfile_resume_start (char *nick, char *filename, char *port, char *offset)
 {
 	DCC_list	*Client;
-	char		*fullname;
+	Filename	fullname;
 
 	if (!get_int_var(MIRC_BROKEN_DCC_RESUME_VAR))
 		return;
@@ -3028,16 +3001,18 @@ static	void	dcc_getfile_resume_start (char *nick, char *filename, char *port, ch
 	if (dcc_open(Client))
 		return;
 
-	if (!(fullname = expand_twiddle(Client->description)))
-		malloc_strcpy(&fullname, Client->description);
+	if (normalize_filename(Client->description, fullname))
+	{
+		say("%s is not a valid directory", fullname);
+		Client->flags |= DCC_DELETE;
+		return;
+	}
 
 	if (!(Client->file = open(fullname, O_WRONLY | O_APPEND, 0644)))
 	{
 		Client->flags |= DCC_DELETE;
 		say("Unable to open %s: %s", fullname, errno ? strerror(errno) : "<No Error>");
 	}
-
-	new_free(&fullname);
 }
 
 #endif

@@ -1,4 +1,4 @@
-/* $EPIC: commands.c,v 1.36 2002/09/30 23:15:38 jnelson Exp $ */
+/* $EPIC: commands.c,v 1.37 2002/10/18 21:10:22 jnelson Exp $ */
 /*
  * commands.c -- Stuff needed to execute commands in ircII.
  *		 Includes the bulk of the built in commands for ircII.
@@ -459,24 +459,20 @@ BUILT_IN_COMMAND(beepcmd)
 
 BUILT_IN_COMMAND(cd)
 {
-	char	*arg,
-		*expand;
-	char buffer[BIG_BUFFER_SIZE + 1];
+	char	*arg;
+	Filename dir;
 
 	/* Hrm.  Is it worse to do new_next_arg than next_arg? */
 	if ((arg = new_next_arg(args, &args)) != NULL)
 	{
-		if ((expand = expand_twiddle(arg)) != NULL)
-		{
-			if (chdir(expand))
-				say("CD: %s", strerror(errno));
-			new_free(&expand);
-		}
-		else
-			say("CD: No such user");
+		if (normalize_filename(arg, dir))
+			say("CD: %s is not a valid directory", dir);
+		else if (chdir(dir))
+			say("CD: %s", strerror(errno));
 	}
-	getcwd(buffer, BIG_BUFFER_SIZE+1);
-	say("Current directory: %s", buffer);
+
+	getcwd(dir, sizeof(dir));
+	say("Current directory: %s", dir);
 }
 
 /* clear: the CLEAR command.  Figure it out */
@@ -1530,8 +1526,7 @@ BUILT_IN_COMMAND(packagecmd)
 BUILT_IN_COMMAND(load)
 {
 	FILE	*fp;
-	char	*filename,
-		*expanded = NULL;
+	char	*filename;
 	int	flag = 0;
         int     paste_level = 0;
 	char	*start,
@@ -1541,6 +1536,7 @@ BUILT_IN_COMMAND(load)
 	int	no_semicolon = 1;
 	char	*irc_path;
 	int	display;
+	char	*expanded = NULL;
 
 	if (!(irc_path = get_string_var(LOAD_PATH_VAR)))
 	{
@@ -1578,21 +1574,12 @@ BUILT_IN_COMMAND(load)
 			continue;
 		}
 
-		if (!(expanded = expand_twiddle(filename)))
-		{
-			error("Unknown user for file %s", filename);
-			continue;
-		}
-
+		/*
+		 * uzfopen emits an error if the file is not found, so we dont.
+		 */
+		expanded = m_strdup(filename);
 		if (!(fp = uzfopen(&expanded, irc_path, 1)))
-		{
-			/*
-			 * uzfopen emits an error if the file
-			 * is not found, so we dont have to.
-			 */
-			new_free(&expanded);
 			continue;
-		}
 
 		/*
 		 * Is it the "WHICH" command?
@@ -2269,10 +2256,17 @@ static void really_save (char *file, int flags, int save_all, int append)
 {
 	FILE	*fp;
 static	char *	mode[] = {"w", "a"};
+	Filename realfile;
 
-	if (!(fp = fopen(file, mode[append]))) 
+	if (normalize_filename(file, realfile))
 	{
-		say("Error opening %s: %s", file, strerror(errno));
+		say("%s is not a valid directory", realfile);
+		return;
+	}
+
+	if (!(fp = fopen(realfile, mode[append]))) 
+	{
+		say("Error opening %s: %s", realfile, strerror(errno));
 		return;
 	}
 
@@ -2292,7 +2286,7 @@ static	char *	mode[] = {"w", "a"};
 		save_variables(fp, save_all);
 
 	fclose(fp);
-	say("Settings %s to %s", append ? "appended" : "saved", file);
+	say("Settings %s to %s", append ? "appended" : "saved", realfile);
 }
 
 /* save_settings: saves the current state of IRCII to a file */
@@ -2343,9 +2337,9 @@ BUILT_IN_COMMAND(save_settings)
 		return;
 	}
 
-	if (!arg || !*arg || !(fn = expand_twiddle(arg)))
+	if (!arg || !*arg)
 	{
-		say("Invalid filename or path");
+		say("You must specify a filename.");
 		return;
 	}
 
