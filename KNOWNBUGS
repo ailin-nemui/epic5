@@ -390,3 +390,4 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Don't allow /window toplines to be a negative number!
 * Fix dcc compile error with --without-ipv6
 * Add $windowctl(GET ref TOPLINE num) and $windowctl(GET ref TOPLINES)
+* Revert changes to 1.59 of alias.c, which leaked accidentally.

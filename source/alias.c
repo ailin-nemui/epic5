@@ -1,4 +1,4 @@
-/* $EPIC: alias.c,v 1.59 2004/08/29 21:00:26 jnelson Exp $ */
+/* $EPIC: alias.c,v 1.60 2004/09/06 19:41:12 jnelson Exp $ */
 /*
  * alias.c -- Handles the whole kit and caboodle for aliases.
  *
@@ -204,7 +204,7 @@ extern	void	add_builtin_cmd_alias  (Char *, void (*)(Char *, char *, Char *));
 extern	void	add_builtin_func_alias (Char *, char *(*)(char *));
 extern	void	add_builtin_expando    (Char *, char *(*)(void));
 
-static	int	delete_var_alias   (Char *name);
+static	void	delete_var_alias   (Char *name, int noisy);
 static	void	delete_cmd_alias   (Char *name, int noisy);
 /*	void	delete_local_alias (Char *name); 		*/
 
@@ -414,12 +414,7 @@ BUILT_IN_COMMAND(assigncmd)
 		if (real_name[0] == '-')
 		{
 			if (real_name[1])
-			{
-			    if (delete_var_alias(real_name + 1))
-				say("Assign %s removed", real_name + 1);
-			    else
-				say("No such assign: %s", real_name + 1);
-			}
+				delete_var_alias(real_name + 1, 1);
 			else
 				say("You must specify an alias to be removed.");
 		}
@@ -627,12 +622,7 @@ BUILT_IN_COMMAND(unloadcmd)
 	}
 }
 
-/* * * */
-/*
- *
- * 		ARGLISTS
- *
- */
+
 /*
  * Argument lists look like this:
  *
@@ -994,11 +984,6 @@ static int	GC_symbol (Symbol *item, array *list, int loc)
 
 /* * * */
 /*
- * 
- * 		ADD
- *
- */
-/*
  * add_var_alias: Add a global variable
  *
  * name -- name of the alias to create (must be canonicalized)
@@ -1075,12 +1060,7 @@ void	add_var_alias	(const char *orig_name, const char *stuff, int noisy)
 			say("Assign %s added [%s]", name, stuff);
 	}
 	else
-	{
-	    if (delete_var_alias(name))
-		say("Assign %s removed", name);
-	    else
-		say("No such assign: %s", name);
-	}
+		delete_var_alias(name, noisy);
 
 	new_free(&save);
 	return;
@@ -1174,6 +1154,7 @@ void	add_local_alias	(const char *orig_name, const char *stuff, int noisy)
 	return;
 }
 
+/* * * */
 void	add_cmd_alias	(const char *orig_name, ArgList *arglist, const char *stuff)
 {
 	Symbol *tmp = NULL;
@@ -1317,7 +1298,7 @@ static Symbol *unstub_variable (Symbol *item)
 	if (item->user_variable_stub)
 	{
 		file = LOCAL_COPY(item->user_variable);
-		delete_var_alias(item->name);
+		delete_var_alias(item->name, 0);
 
 		if (!unstub_in_progress)
 		{
@@ -1509,17 +1490,11 @@ static Symbol *	find_local_alias (const char *orig_name, SymbolSet **list)
 
 
 /* * */
-/*
- * 
- * 		DELETE
- *
- */
-static int	delete_var_alias (const char *orig_name)
+static void	delete_var_alias (const char *orig_name, int noisy)
 {
 	Symbol *item;
 	char *	name;
 	int	cnt, loc;
-	int	retval;
 
 	name = remove_brackets(orig_name, NULL);
 	upper(name);
@@ -1530,12 +1505,12 @@ static int	delete_var_alias (const char *orig_name)
 		item->user_variable_stub = 0;
 		new_free(&(item->user_variable_package));
 		GC_symbol(item, (array *)&globals, loc);
-		retval = 1;
+		if (noisy)
+			say("Assign %s removed", name);
 	}
-	else 
-		retval = 0;
+	else if (noisy)
+		say("No such assign: %s", name);
 	new_free(&name);
-	return retval;
 }
 
 static void	delete_cmd_alias (const char *orig_name, int noisy)
@@ -1631,11 +1606,6 @@ void	delete_builtin_variable (const char *orig_name)
 }
 
 /* * * */
-/*
- * 
- * 		BUCKET
- *
- */
 static void	bucket_local_alias (Bucket *b, const char *name)
 {
 }
@@ -1667,11 +1637,6 @@ BUCKET_FUNCTION(builtin_expandos, builtin_expando)
 BUCKET_FUNCTION(builtin_variables, builtin_variable)
 
 /* * * */
-/*
- * 
- * 		LIST
- *
- */
 static void	list_local_alias (const char *orig_name)
 {
 	size_t len = 0;
@@ -1871,11 +1836,6 @@ static void	list_builtin_variables (const char *orig_name)
 }
 
 /************************* UNLOADING SCRIPTS ************************/
-/*
- * 
- * 		UNLOAD
- *
- */
 static void	unload_cmd_alias (const char *package)
 {
 	int 	cnt;
@@ -1907,7 +1867,7 @@ static void	unload_var_alias (const char *package)
 	    if (!item->user_variable_package)
 		continue;
 	    else if (!strcmp(item->user_variable_package, package)) {
-		delete_var_alias(item->name);
+		delete_var_alias(item->name, 0);
 		cnt = -1;
 		continue;
 	    }
@@ -1930,18 +1890,11 @@ static	void	unload_builtin_variables (const char *filename)
 {
 }
 
-/*
- * 
- * 		GLOB
- *
- */
 /* * */
 /*
  * This function is strictly O(N).  This should probably be addressed.
- * Updated as per get_subarray_elements.
  *
- * This code must be retained for backwards compatability reasons, for it
- * is used by $aliasctl().
+ * Updated as per get_subarray_elements.
  */
 char **	glob_cmd_alias (const char *name, int *howmany, int maxret, int start, int rev)
 {
@@ -1985,10 +1938,8 @@ char **	glob_cmd_alias (const char *name, int *howmany, int maxret, int start, i
 
 /*
  * This function is strictly O(N).  This should probably be addressed.
- * Updated as per get_subarray_elements.
  *
- * This code must be retained for backwards compatability reasons, for it
- * is used by $aliasctl().
+ * Updated as per get_subarray_elements.
  */
 char **	glob_assign_alias (const char *name, int *howmany, int maxret, int start, int rev)
 {
@@ -2030,6 +1981,27 @@ char **	glob_assign_alias (const char *name, int *howmany, int maxret, int start
 	return matches;
 }
 
+#if 0
+char **glob_builtin_commands (const char *name, int *howmany, int maxret, int start, int rev)
+{
+	return NULL;
+}
+
+char **glob_builtin_functions (const char *name, int *howmany, int maxret, int start, int rev)
+{
+	return NULL;
+}
+
+char **glob_builtin_expandos (const char *name, int *howmany, int maxret, int start, int rev)
+{
+	return NULL;
+}
+
+char **glob_builtin_variables (const char *name, int *howmany, int maxret, int start, int rev)
+{
+	return NULL;
+}
+#endif
 
 #define PMATCH_SYMBOL(x, y) \
 char **	pmatch_ ## x (const char *name, int *howmany, int maxret, int start, int rev) \
@@ -3161,12 +3133,3 @@ static int	stack_list_builtin_variable_alias (const char *name)
 	return -1;
 }
 
-
-/*
- * $symbolctl(CREATE <domain> <symbol> <value>)
- * $symbolctl(DELETE <domain> <symbol>
- * $symbolctl(GET <domain> <symbol> <attribute>)
- * $symbolctl(SET <domain> <symbol> <attribute> <value>)
- * $symbolctl(PMATCH <domain> <attribute> <pattern>)
- * $symbolctl(GLOB <domain> <pattern>)
- */
