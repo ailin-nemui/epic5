@@ -192,16 +192,21 @@ static Queue *make_new_queue (Queue *afterqueue, const char *arg_name)
 }
         
 /* add a command to a queue, at the end of the list */
-/* expands the whole thing once and stores it */
+/* expands the whole thing once and stores it (not any more!) */
 static int	add_commands_to_queue (Queue *queue, const char *what, const char *subargs)
 {
 	CmdList *	ctmp = walk_commands(queue);
 	char *		list = NULL;
+#if 0
 	const char *	sa;
 	int 		args_flag = 0;
 	
         sa = subargs ? subargs : " ";
 	list = expand_alias(what, sa, &args_flag, (char **) 0);
+#else
+	list = m_strdup(what);
+#endif
+
         if (!ctmp) 
         {
                 queue->first = (CmdList *)new_malloc(sizeof(CmdList));
@@ -212,7 +217,7 @@ static int	add_commands_to_queue (Queue *queue, const char *what, const char *su
 	        ctmp->next = (CmdList *)new_malloc(sizeof(CmdList));
 		ctmp = ctmp->next;
 	}
-	ctmp->what = m_strdup(list);
+	ctmp->what = list;
 	ctmp->next = (CmdList *) 0;
 	return num_entries(queue);
 }
@@ -288,7 +293,7 @@ static Queue  	*do_queue (Queue *queue, int noflush)
         do
 	{
 		if (tmp->what != (char *) 0)
-			parse_line("QUEUE", tmp->what, NULL, 0, 0);
+			parse_line("QUEUE", tmp->what, empty_string, 0, 0);
 		tmp = tmp->next;
 	}
         while (tmp != (CmdList *) 0);

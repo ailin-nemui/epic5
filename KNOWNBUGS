@@ -67,3 +67,6 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * CTCP SEDs recieved in NOTICEs are treated as CTCP REPLIES not queries. (ce)
 * Added $encryptparm() -- returns all information about /encrypt entries. (ce)
 * Fix prepare_display to append a zero-Attribute and not ^O to end of line.
+* "Fix" /queue so it doesn't double-eval your commands at runtime.
+* Revert last change
+* "Fix" /queue so it doesn't double-eval your commands up front.
