@@ -1,4 +1,4 @@
-/* $EPIC: functions.c,v 1.102 2003/02/11 04:32:45 jnelson Exp $ */
+/* $EPIC: functions.c,v 1.103 2003/02/12 03:44:19 jnelson Exp $ */
 /*
  * functions.c -- Built-in functions for ircII
  *
@@ -1540,8 +1540,20 @@ BUILT_IN_FUNCTION(function_channels, input)
 		Window  *window;
 
 		server = -1;
+
+		/* 
+		 * You may be wondering what I'm doing here.  It used to 
+		 * be a historical idiom that you could do $mychannels(serv)
+		 * or $mychannels(#winref).  The "#" thing was handled else-
+		 * where, but I took it out becuase it had evil side effects.
+		 * But people need to be able to use "#" here, so specifically
+		 * support "#" here if needed.
+		 */
  		if ((window = get_window_by_desc(input)))
 			server = window->server;
+		else if (*input == '#')
+			if (window = get_window_by_desc(input + 1))
+				server = window->server;
 	}
 
 	retval = create_channel_list(server);

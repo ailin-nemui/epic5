@@ -162,3 +162,7 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Don't honor/ignore "#" in a window name/refnum.  This was lame anways.
 * Fix is_window_visible/get_window to use get_window_by_desc().
 * More conversions in functions.c to handle strings-to-winrefs.
+* Add back support for $mychannels(#winref)
+* Fix null deref with /LOG KILL
+* Ignore KICKS based on the victim as well as the kicker.
+

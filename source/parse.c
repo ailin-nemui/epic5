@@ -1,4 +1,4 @@
-/* $EPIC: parse.c,v 1.34 2003/01/31 23:50:18 jnelson Exp $ */
+/* $EPIC: parse.c,v 1.35 2003/02/12 03:44:19 jnelson Exp $ */
 /*
  * parse.c: handles messages from the server.   Believe it or not.  I
  * certainly wouldn't if I were you. 
@@ -1125,6 +1125,8 @@ static void	p_kick (const char *from, const char *comm, const char **ArgList)
 	if (check_ignore_channel(from, FromUserHost, 
 				 channel, IGNORE_CRAP) != IGNORED)
 	{
+	    if (check_ignore_channel(victim, fetch_userhost(from_server, victim), channel, IGNORE_CRAP) != IGNORED)
+	    {
 		message_from(channel, LOG_CRAP);
 		if (do_hook(KICK_LIST, "%s %s %s %s", 
 				victim, from, channel, comment))
@@ -1132,6 +1134,7 @@ static void	p_kick (const char *from, const char *comm, const char **ArgList)
 				victim, check_channel_type(channel), 
 				from, comment);
 		message_from(NULL, LOG_CURRENT);
+	    }
 	}
 
 	/*
