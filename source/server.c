@@ -1,4 +1,4 @@
-/* $EPIC: server.c,v 1.121 2004/01/22 03:24:34 jnelson Exp $ */
+/* $EPIC: server.c,v 1.122 2004/01/23 08:03:53 jnelson Exp $ */
 /*
  * server.c:  Things dealing with that wacky program we call ircd.
  *
@@ -917,96 +917,88 @@ void	do_server (int fd)
 		if (!(s = get_server(i)))
 			continue;
 
-		des = s->des;
+		if ((des = s->des) < 0)
+			continue;		/* Nothing to see here, */
+
+		if (des != fd)
+			continue;		/* Move along. */
 
 		/*
 		 * First look for nonblocking connects that are finished.
 		 */
-		if (des != -1 && des == fd && s->status == SERVER_CONNECTING)
+		if (s->status == SERVER_CONNECTING)
 		{
-			SS name;
-			socklen_t len;
+		    SS name;
+		    socklen_t len;
 
-			if (x_debug & DEBUG_SERVER_CONNECT)
-				yell("do_server: server [%d] is now ready to write", i);
-			/*
-			 * If the connect failed, then restart it.
-			 */
-			len = sizeof(name);
-			if (getpeername(des, (SA *)&name, &len))
-			{
-			    if (x_debug & DEBUG_SERVER_CONNECT)
-				yell("Server [%d] is not connected.  Restarting connection", i);
-			    close_server(i, NULL);
-			    connect_to_server(i, 0);
-			    continue;
-			}
-
-			register_server(i, s->d_nickname);
-			new_open(des, do_server);
-		}
-
-		if (fd == -1)
-		{
-		    if (get_server_ssl_enabled(i) == TRUE)
+		    if (x_debug & DEBUG_SERVER_CONNECT)
+			yell("do_server: server [%d] is now ready to write", i);
+		    /*
+		     * If the connect failed, then restart it.
+		     */
+		    len = sizeof(name);
+		    if (getpeername(des, (SA *)&name, &len))
 		    {
-#ifndef HAVE_SSL
-			panic("do_server on server %d claims to be"
-				"using SSL on non-ssl client", i);
-#else
-			if (!SSL_pending((SSL *)s->ssl_fd))
-				continue;
-#endif
-		    }
-		    else
+			if (x_debug & DEBUG_SERVER_CONNECT)
+			    yell("Server [%d] is not connected.  Restarting connection", i);
+			close_server(i, NULL);
+			connect_to_server(i, 0);
 			continue;
+		    }
+
+		    register_server(i, s->d_nickname);
+		    new_open(des, do_server);
 		}
 
-		last_server = from_server = i;
-		junk = dgets(des, bufptr, get_server_line_length(from_server), 
+	        /* Everything else is a normal read. */
+		else
+		{
+		    last_server = from_server = i;
+		    junk = dgets(des, bufptr, get_server_line_length(i), 
 				1, s->ssl_fd);
 
-		switch (junk)
- 		{
-		    case 0:		/* Sit on incomplete lines */
-			break;
-
-		    case -1:	/* EOF or other error */
+		    switch (junk)
 		    {
-			server_is_unregistered(i);
-			close_server(i, NULL);
-			say("Connection closed from %s: %s", 
+		        case 0:		/* Sit on incomplete lines */
+		   	    break;
+
+			case -1:	/* EOF or other error */
+			{
+			    server_is_unregistered(i);
+			    close_server(i, NULL);
+			    say("Connection closed from %s: %s", 
 				s->name,
 				(dgets_errno == -1) ? 
 				     "Remote end closed connection" : 
 				     strerror(dgets_errno));
-			i++;		/* NEVER DELETE THIS! */
-			break;
-		    }
+			    i++;		/* NEVER DELETE THIS! */
+			    break;
+		        }
 
-		    default:	/* New inbound data */
-		    {
-			char *end;
-			int	l;
+		        default:	/* New inbound data */
+		        {
+			    char *end;
+			    int	l;
 
-			end = strlen(buffer) + buffer;
-			if (*--end == '\n')
+			    end = strlen(buffer) + buffer;
+			    if (*--end == '\n')
 				*end-- = '\0';
-			if (*end == '\r')
+			    if (*end == '\r')
 				*end-- = '\0';
 
-			l = message_from(NULL, LEVEL_CRAP);
-			if (x_debug & DEBUG_INBOUND)
+			    l = message_from(NULL, LEVEL_CRAP);
+			    if (x_debug & DEBUG_INBOUND)
 				yell("[%d] <- [%s]", 
 					s->des, buffer);
 
-			if (translation)
+			    if (translation)
 				translate_from_server(buffer);
-			parsing_server_index = i;
-			parse_server(buffer, sizeof buffer);
-			parsing_server_index = NOSERV;
-			pop_message_from(l);
-			break;
+			    parsing_server_index = i;
+			    parse_server(buffer, sizeof buffer);
+			    parsing_server_index = NOSERV;
+			    pop_message_from(l);
+			    break;
+		        }
 		    }
 	        }
 	        from_server = primary_server;

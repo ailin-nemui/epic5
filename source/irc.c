@@ -1,4 +1,4 @@
-/* $EPIC: irc.c,v 1.692 2004/01/22 03:24:34 jnelson Exp $ */
+/* $EPIC: irc.c,v 1.693 2004/01/23 08:03:53 jnelson Exp $ */
 /*
  * ircII: a new irc client.  I like it.  I hope you will too!
  *
@@ -52,7 +52,7 @@ const char internal_version[] = "20031217";
 /*
  * In theory, this number is incremented for every commit.
  */
-const unsigned long	commit_id = 1025;
+const unsigned long	commit_id = 1026;
 
 /*
  * As a way to poke fun at the current rage of naming releases after
@@ -871,15 +871,11 @@ static	int		level = 0,
 
 	/* GO AHEAD AND WAIT FOR SOME DATA TO COME IN */
 	make_window_current(NULL);
-	switch (wait_select(&timer))
+	switch (do_wait(&timer))
 	{
 		/* Timeout -- Need to do timers */
 		case 0:
 		{
-#ifdef HAVE_SSL
-			/* Yes, this is slow, but we have to check for this */
-			do_server(-1);
-#endif
 			get_time(&now);
 			ExecuteTimers();
 			break;

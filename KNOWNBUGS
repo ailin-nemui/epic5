@@ -138,3 +138,8 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Refactor io(), optimize placement of some of the post-select operations.
 * When wserv changes size, recalculate windows, and allow io() to redraw it.
 * Fix typo in do_server() that caused a blocking read. doh! (rb adm)
+* Abstract fd handling in newio.[ch] through #defines
+* Add fd handling with freebsd's kqueue().  Huzzah! (not turned on by default)
+* Refactor how dgets() works with incomplete SSL reads, slurp up everything
+* Nix the bletcherous do_server(-1) hack in io().
+* Fix a few more bogons in do_server().

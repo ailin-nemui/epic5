@@ -226,6 +226,8 @@ extern	const char *server_states[8];
 	int	close_all_servers		(const char *);
 	void	close_server			(int, const char *);
 
+	void	do_server			(int);
+
 	void	set_server_away			(int, const char *);
 const	char *	get_server_away			(int);
 
