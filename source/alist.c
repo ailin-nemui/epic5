@@ -1,4 +1,4 @@
-/* $EPIC: alist.c,v 1.10 2003/05/09 04:29:52 jnelson Exp $ */
+/* $EPIC: alist.c,v 1.11 2004/03/19 06:05:13 jnelson Exp $ */
 /*
  * alist.c -- resizeable arrays.
  *
@@ -322,26 +322,6 @@ find_array_item (array *set, const char *name, int *cnt, int *loc)
 	 * one appropriate entry.  So we set *cnt to one
 	 */
 	*cnt = 1 + pos - min;
-
-#if 0
-	/*
-	 * So we know that 'pos' is a match.  So we start 'min'
-	 * at one less than 'pos' and walk downard until we find
-	 * an entry that is NOT matched.
-	 */
-	min = pos - 1;
-	while (min >= 0 && !set->func(name, ARRAY_ITEM(set, min)->name, len))
-		(*cnt)++, min--, lin_chars++;
-	min++;
-
-	/*
-	 * Repeat the same ordeal, except this time we walk upwards
-	 * from 'pos' until we dont find a match.
-	 */
-	max = pos + 1;
-	while (max < set->max && !set->func(name, ARRAY_ITEM(set, max)->name, len))
-		(*cnt)++, max++, lin_chars++;
-#endif
 
 	/*
 	 * Alphabetically, the string that would be identical to

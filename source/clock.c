@@ -295,10 +295,6 @@ static int	system_timer (void *entry)
 	    timeout = time_to_next_interval(nominal_timeout);
 	}
 
-#if 0
-yell("Rescheduling system timer [%s] to go off in [%f] sec", 
-			item->name, timeout);
-#endif
 	add_timer(1, item->name, timeout, 1, system_timer, entry, NULL, -1);
 
 	item->callback();

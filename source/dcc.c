@@ -1,4 +1,4 @@
-/* $EPIC: dcc.c,v 1.96 2004/03/16 16:24:23 jnelson Exp $ */
+/* $EPIC: dcc.c,v 1.97 2004/03/19 06:05:13 jnelson Exp $ */
 /*
  * dcc.c: Things dealing client to client connections. 
  *
@@ -50,12 +50,8 @@
 #include "window.h"
 #include "term.h"
 
-#if 0
-/* This is an accident waiting to happen. */
-#define DCC_BLOCK_SIZE	BIG_BUFFER_SIZE
-#else
 #define DCC_BLOCK_SIZE (1<<11)
-#endif
+
 /* This should probably be configurable. */
 #define DCC_RCV_BLOCK_SIZE (1<<16)
 
@@ -330,12 +326,6 @@ static 	void		dcc_erase (DCC_list *erased)
 		else
 			nopath = erased->description;
 
-#if 0
-		if (*(erased->user) == '=')
-			dummy_nick = erased->user + 1;
-		else
-			dummy_nick = erased->user;
-#endif
 		malloc_sprintf(&dummy_ptr, "%s %s %s", 
 			erased->user,
 			(my_type == DCC_FILEOFFER ? "GET" :
@@ -3537,14 +3527,6 @@ static	char *	dcc_urldecode (const char *s)
 			break;
 		*p1 = '_';
 	}
-
-#if 0		/* (hop, 09/24/2003) */
-	for (p1 = str; *p1; p1++)
-	{
-		if (*p1 == '/')
-			*p1 = '_';
-	}
-#endif
 
 	return str;
 }

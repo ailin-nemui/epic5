@@ -1,4 +1,4 @@
-/* $EPIC: alias.c,v 1.40 2003/12/17 09:25:30 jnelson Exp $ */
+/* $EPIC: alias.c,v 1.41 2004/03/19 06:05:13 jnelson Exp $ */
 /*
  * alias.c -- Handles the whole kit and caboodle for aliases.
  *
@@ -1529,21 +1529,7 @@ static Alias *	find_local_alias (const char *orig_name, AliasSet **list)
 						implicit = c;
 						break;
 					}
-#if 0
-					else if (strlen(name) == len)
-					{
-						alias = call_stack[c].alias.list[x];
-						break;
-					}
-#endif
 				}
-#if 0
-				else
-				{
-					if (my_stricmp(call_stack[c].alias.list[x]->name, name) > 0)
-						continue;
-				}
-#endif
 			}
 
 			if (!alias && implicit >= 0)
@@ -2473,17 +2459,6 @@ void 	destroy_call_stack 	(void)
 
 
 /****************************** ALIASCTL ************************************/
-#if 0
-#define EMPTY empty_string
-#define RETURN_EMPTY return malloc_strdup(EMPTY)
-#define RETURN_IF_EMPTY(x) if (empty( x )) RETURN_EMPTY
-#define GET_INT_ARG(x, y) {RETURN_IF_EMPTY(y); x = my_atol(safe_new_next_arg(y, &y));}
-#define GET_FLOAT_ARG(x, y) {RETURN_IF_EMPTY(y); x = atof(safe_new_next_arg(y, &y));}
-#define GET_STR_ARG(x, y) {RETURN_IF_EMPTY(y); x = new_next_arg(y, &y);RETURN_IF_EMPTY(x);}
-#define RETURN_STR(x) return malloc_strdup((x) ? (x) : EMPTY)
-#define RETURN_INT(x) return malloc_strdup(ltoa((x)))
-#endif
-
 /* Used by function_aliasctl */
 /* MUST BE FIXED */
 char 	*aliasctl 	(char *input)

@@ -1,4 +1,4 @@
-/* $EPIC: words.c,v 1.19 2003/12/09 04:37:52 jnelson Exp $ */
+/* $EPIC: words.c,v 1.20 2004/03/19 06:05:13 jnelson Exp $ */
 /*
  * words.c -- right now it just holds the stuff i wrote to replace
  * that beastie arg_number().  Eventually, i may move all of the
@@ -450,9 +450,6 @@ static int	move_to_next_word (const char **str, const char *start, int extended,
 {
 	char	what;
 	int	simple;
-#if 0
-	const char *	mark2;
-#endif
 	const char *	pos;
 
 	/*
@@ -552,38 +549,8 @@ static int	move_to_next_word (const char **str, const char *start, int extended,
 		    yell(".... move_to_next_word: at next space: [%s]", pos);
 	}
 
-#if 0
-	/*
-	 * 'pos' now points at the space just after the end of the word;
-	 * This space belongs to us, but any further spaces do not long
-	 * belong to us, unless there are no more words after us!  So we
-	 * need to check this.
-	 */
-	/* -- Is the rest of a string just spaces?  -- */
-	if (x_debug & DEBUG_EXTRACTW_DEBUG)
-	    yell("... move_to_next_word: looking for another word...");
-
-	mark2 = pos;
-	while (*mark2 && my_isspace(*mark2))
-		mark2++;
-
-	if (!*mark2)		/* Only spaces after this.  Ok. */
-	{
-		if (x_debug & DEBUG_EXTRACTW_DEBUG)
-		    yell("... move_to_next_word: didn't find one.");
-		pos = mark2;
-	}
-	/* The start of the next word is after our space. */
-	else
-	{
-		if (x_debug & DEBUG_EXTRACTW_DEBUG)
-		    yell("... move_to_next_word: there's another word.");
-		pos++;
-	}
-#else
 	if (*pos)
 		pos++;
-#endif
 
 	if (x_debug & DEBUG_EXTRACTW_DEBUG)
 	    yell("... move_to_next_word: next word starts with [%s]", pos);

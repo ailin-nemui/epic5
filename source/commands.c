@@ -1,4 +1,4 @@
-/* $EPIC: commands.c,v 1.90 2004/03/19 04:38:18 jnelson Exp $ */
+/* $EPIC: commands.c,v 1.91 2004/03/19 06:05:13 jnelson Exp $ */
 /*
  * commands.c -- Stuff needed to execute commands in ircII.
  *		 Includes the bulk of the built in commands for ircII.
@@ -128,9 +128,6 @@ static	void	defercmd	(const char *, char *, const char *);
 static	void	describe 	(const char *, char *, const char *);
 static	void	e_call		(const char *, char *, const char *);
 static	void	e_clear		(const char *, char *, const char *);
-#if 0
-static	void	e_channel 	(const char *, char *, const char *);
-#endif
 static	void	e_hostname	(const char *, char *, const char *);
 static	void	e_nick 		(const char *, char *, const char *);
 static	void	e_privmsg 	(const char *, char *, const char *);
@@ -408,12 +405,7 @@ BUILT_IN_COMMAND(away)
 				args = arg;
 			}
 			else if (0 == my_strnicmp(args+1, "-", 1)) /* stop */
-			{
 				args = arg;
-#if 0
-				break; /* For use if this ever becomes a loop. */
-#endif
-			}
 			else
 			{
 				say("%s: %s unknown flag", command, args);

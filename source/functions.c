@@ -1,4 +1,4 @@
-/* $EPIC: functions.c,v 1.162 2004/03/19 04:38:18 jnelson Exp $ */
+/* $EPIC: functions.c,v 1.163 2004/03/19 06:05:13 jnelson Exp $ */
 /*
  * functions.c -- Built-in functions for ircII
  *
@@ -1281,11 +1281,6 @@ BUILT_IN_FUNCTION(function_rmatch, input)
 			match = rmatch_index;
 			best_match = current_match;
 		}
-#if 0
-		/* WARNING WARNING HACK IN PROGRESS WARNING WARNING */
-		while (input && my_isspace(*input))
-			input++;
-#endif
 	}
 
 	RETURN_INT(match);
@@ -3192,22 +3187,6 @@ BUILT_IN_FUNCTION(function_translate, words)
 
 BUILT_IN_FUNCTION(function_server_version, word)
 {
-#if 0
-	int servnum;
-	int version;
-
-	servnum = parse_server_index(word, 1);
-	version = get_server_version(servnum);
-
-	if (version == Server2_8) 		RETURN_STR("2.8");
-	else if (version == Server_u2_8) 	RETURN_STR("u2.8");
-	else if (version == Server_u2_9) 	RETURN_STR("u2.9");
-	else if (version == Server_u2_10)	RETURN_STR("u2.10");
-	else if (version == Server2_9) 		RETURN_STR("2.9");
-	else if (version == Server_u3_0)	RETURN_STR("u3.0");
-	RETURN_STR("Unknown");
-#endif
-
 	RETURN_STR("2.8");
 }
 
@@ -3499,11 +3478,7 @@ BUILT_IN_FUNCTION(function_winserv, input)
 
 BUILT_IN_FUNCTION(function_numwords, input)
 {
-#if 0
-	RETURN_INT(word_count(input));
-#else
 	RETURN_INT(count_words(input, DWORD_YES, "\""));
-#endif
 }
 
 BUILT_IN_FUNCTION(function_strlen, input)
@@ -6123,11 +6098,7 @@ BUILT_IN_FUNCTION(function_indextoword, input)
 		input[pos] = 'x';
 		input[pos + 1] = 0;
 	}
-#if 0
-	RETURN_INT(word_count(input) - 1);
-#else
 	RETURN_INT(count_words(input, DWORD_YES, "\"") - 1);
-#endif
 }
 
 BUILT_IN_FUNCTION(function_realpath, input)

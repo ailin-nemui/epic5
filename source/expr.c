@@ -1,4 +1,4 @@
-/* $EPIC: expr.c,v 1.25 2004/03/12 22:22:00 jnelson Exp $ */
+/* $EPIC: expr.c,v 1.26 2004/03/19 06:05:13 jnelson Exp $ */
 /*
  * expr.c -- The expression mode parser and the textual mode parser
  * #included by alias.c -- DO NOT DELETE
@@ -676,12 +676,7 @@ static	char	*next_unit (char *str, const char *args, int stage)
 			else
 				dvalue3 = dvalue1 + dvalue2;
 
-#if 0
-			tmp = malloc_sprintf(NULL, "%.50g", dvalue3);
-			canon_number(tmp);
-#else
 			tmp = malloc_strdup(ftoa(dvalue3));
-#endif
 #else
 			SETUP_INTEGER_OPERATION(NU_ADD)
 
@@ -721,11 +716,7 @@ static	char	*next_unit (char *str, const char *args, int stage)
 			{
 				*ptr++ = '\0';
 				SETUP_BINARY(dvalue1, dvalue2, atof)
-#if 0
-				return malloc_sprintf(NULL, "%.50g", pow(dvalue1, dvalue2));
-#else
 				return malloc_strdup(ftoa(pow(dvalue1, dvalue2)));
-#endif
 			}
 
 			SETUP_FLOAT_OPERATION(NU_MULT)
@@ -743,12 +734,7 @@ static	char	*next_unit (char *str, const char *args, int stage)
 					dvalue3 = (int)dvalue1 % (int)dvalue2;
 			}
 
-#if 0
-			tmp = malloc_sprintf(NULL, "%.50g", dvalue3);
-			canon_number(tmp);
-#else
 			tmp = malloc_strdup(ftoa(dvalue3));
-#endif
 			CLEANUP_IMPLIED()
 			return tmp;
 		}
@@ -1723,10 +1709,7 @@ static	char	*alias_special_char (char **buffer, char *ptr, const char *args, cha
 			else
 			    val = malloc_strdup(ltoa(strlen(sub_buffer)));
 
-#if 0	/* Don't need to do this here */
-			if (!(x_debug & DEBUG_SLASH_HACK))
-#endif
-				TruncateAndQuote(buffer, val, length, quote_em);
+			TruncateAndQuote(buffer, val, length, quote_em);
 			new_free(&val);
 			new_free(&sub_buffer);
 

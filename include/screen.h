@@ -26,53 +26,6 @@ typedef struct PromptStru
 	struct	PromptStru	*next;
 }	WaitPrompt;
 
-
-typedef struct	PhysicalTTY
-{
-	/* Output stuff */
-	FILE	*fpin;			/* The input FILE (eg, stdin) */
-	int	fdin;			/* The input FD (eg, 0) */
-	FILE	*fpout;			/* The output FILE (eg, stdout) */
-	int	fdout;			/* The output FD (eg, 1) */
-	int	control;		/* The control FD (to wserv) */
-	int	wserv_version;		/* The version of wserv talking to */
-
-	/* Input line and prompt stuff */
-	char	input_buffer[INPUT_BUFFER_SIZE+1];
-					/* Current user input for us */
-	int	buffer_pos;		/* Where on input line cursor is */
-	int	buffer_min_pos;		/* First position after prompt */
-	int	input_cursor;		/* Where the cursor is on input line */
-	int	input_visible;
-	int	input_zone_len;
-	int	input_start_zone;
-	int	input_end_zone;
-	char	*input_prompt;
-	int	input_prompt_len;
-	int	input_prompt_malloc;
-	int	input_line;
-
-	char	saved_input_buffer[INPUT_BUFFER_SIZE+1];
-	int	saved_buffer_pos;
-	int	saved_min_buffer_pos;
-
-	WaitPrompt	*promptlist;
-
-	/* Key qualifier stuff */
-	int	quote_hit;		/* True after QUOTE_CHARACTER hit */
-	struct timeval last_press;	/* The last time a key was pressed.
-					   Used to determine
-					   key-independence. */
-	struct Key *last_key;		/* The last Key pressed. */
-
-	char	*tty_name;
-	int	co;
-	int	li;
-	int	old_co;
-	int	old_li;
-}	Pty;
-
-
 typedef	struct	ScreenStru
 {
 	/* List stuff and overhead */
@@ -122,7 +75,6 @@ struct	ScreenStru *next;		/* Previous screen in list */
 					   Used to determine
 					   key-independence. */
 	struct Key *last_key;		/* The last Key pressed. */
-
 
 	char	*tty_name;
 	int	co;

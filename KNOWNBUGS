@@ -207,3 +207,4 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Make /window notify and /window notified take ON|OFF|TOGGLE.
 * New function, $strtol(<base> <num>), convert <num> in base <base> to base 10.
 * New function, $tobase(<base> <num>), convert <num> in base 10 to base <base>.
+* GC a bunch of unused code, unused files, that kind of stuff.

@@ -1,4 +1,4 @@
-/* $EPIC: ircaux.c,v 1.110 2004/03/12 22:22:00 jnelson Exp $ */
+/* $EPIC: ircaux.c,v 1.111 2004/03/19 06:05:13 jnelson Exp $ */
 /*
  * ircaux.c: some extra routines... not specific to irc... that I needed 
  *
@@ -1238,15 +1238,6 @@ char*	exec_pipe (const char *executable, char *input, size_t *len, char * const 
 		setuid(getuid());
 		setgid(getgid());
 		execvp(executable, args);
-#if 0
-		/*
-		 * OK, well the problem with this is that the message
-		 * is going to go out on stdout right, and where does
-		 * that end up?
-		 */
-		yell("Cannot exec %s: %s", 
-			executable, strerror(errno));
-#endif
 		_exit(0);
 	default :
 		close(pipe0[0]);
@@ -2222,11 +2213,6 @@ char 	*strextend (char *str, char app, int num)
 
 int 	empty (const char *str)
 {
-#if 0
-	while (str && *str && *str == ' ')
-		str++;
-#endif
-
 	if (str && *str)
 		return 0;
 
@@ -4125,10 +4111,6 @@ char *	malloc_strcat_word_c (char **ptr, const char *word_delim, const char *wor
 	if (word && *word)
 	{
 		int quote_word = strpbrk(word, word_delim) ? 1 : 0;
-#if 0
-		if (!*ptr || !**ptr)
-			malloc_strcpy_c(ptr, empty_string, clue);
-#endif
 
 		if (*ptr && **ptr)
 			malloc_strcat_c(ptr, word_delim, clue);
@@ -4295,10 +4277,6 @@ char *	universal_next_arg_count (char *str, char **new_ptr, int count, int exten
 	if (x_debug & DEBUG_EXTRACTW_DEBUG)
 		yell("<<<< universal_next_arg_count: End:   [%s] [%s]", 
 						str, *new_ptr);
-#if 0		/* This can't possibly be right! */
-	if (!str || !*str)
-		return NULL;
-#endif
 	return str;
 }
 

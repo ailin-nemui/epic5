@@ -1,4 +1,4 @@
-/* $EPIC: window.c,v 1.110 2004/03/19 04:38:19 jnelson Exp $ */
+/* $EPIC: window.c,v 1.111 2004/03/19 06:05:13 jnelson Exp $ */
 /*
  * window.c: Handles the organzation of the logical viewports (``windows'')
  * for irc.  This includes keeping track of what windows are open, where they
@@ -4207,16 +4207,6 @@ Window *window_scroll (Window *window, char **args)
 	if (get_boolean("SCROLL", args, &scroll))
 		return NULL;
 
-#if 0
-	if (!(window->scroll = scroll))
-	{
-		while (window->display_buffer_size < window->display_size)
-			add_to_display(window, empty_string);
-		window->noscrollcursor = 0;
-		unclear_window(window);
-	}
-#endif
-
 	return window;
 }
 
@@ -5342,10 +5332,6 @@ static void 	set_screens_current_window (Screen *screen, Window *window)
 		make_window_current(window);
 
 	window->priority = current_window_priority++;
-
-#if 0		/* Can we get away with not doing this? */
-	update_all_windows();
-#endif
 }
 
 void	make_window_current_by_refnum (int refnum)

@@ -1,4 +1,4 @@
-/* $EPIC: parse.c,v 1.61 2004/03/17 03:51:53 jnelson Exp $ */
+/* $EPIC: parse.c,v 1.62 2004/03/19 06:05:13 jnelson Exp $ */
 /*
  * parse.c: handles messages from the server.   Believe it or not.  I
  * certainly wouldn't if I were you. 
@@ -557,45 +557,6 @@ static void	p_error (const char *from, const char *comm, const char **ArgList)
 		say("%s %s", from, the_error);
 }
 
-#if 0
-static void	add_user_who (int refnum, const char *from, const char *comm, const char **ArgList)
-{
-	const char 	*channel, *user, *host, *server, *nick;
-	size_t	size;
-	char 	*userhost;
-
-	if (!(channel = ArgList[0]))
-		{ rfc1459_odd(from, "*", ArgList); return; }
-	if (!(user = ArgList[1]))
-		{ rfc1459_odd(from, "*", ArgList); return; }
-	if (!(host = ArgList[2]))
-		{ rfc1459_odd(from, "*", ArgList); return; }
-	if (!(server = ArgList[3]))
-		{ rfc1459_odd(from, "*", ArgList); return; }
-	if (!(nick = ArgList[4]))
-		{ rfc1459_odd(from, "*", ArgList); return; }
-
-	/* Obviously this is safe. */
-	size = strlen(user) + strlen(host) + 2;
-	userhost = alloca(size);
-	snprintf(userhost, size, "%s@%s", user, host);
-	add_userhost_to_channel(channel, nick, refnum, userhost);
-}
-
-static void	add_user_end (int refnum, const char *from, const char *comm, const char **ArgList)
-{
-	char *	copy;
-	char *	channel;
-
-	if (!ArgList[0])
-		{ rfc1459_odd(from, "*", ArgList); return; }
-
-	copy = LOCAL_COPY(ArgList[0]);
-	channel = next_arg(copy, &copy);
-	channel_not_waiting(channel, refnum);
-}
-#endif
-
 static void	p_channel (const char *from, const char *comm, const char **ArgList)
 {
 	const char	*channel;
@@ -1027,20 +988,6 @@ static void strip_modes (const char *from, const char *channel, const char *line
 		{
 			case '+' :
 			case '-' : mag = c; break;
-#if 0	/* Not implemented yet */
-			case 's' :
-			{
-				if (umode_s_takes_arg(from_server))
-				{
-					do_hook(MODE_STRIPPED_LIST, 
-						"%s %s %c%c %s", 
-						from, channel, mag, c, 
-						next_arg(copy, &copy));
-					break;
-				}
-				/* ELSE FALLTHROUGH */
-			}
-#endif
 			default  : 
 				do_hook(MODE_STRIPPED_LIST, 
 					"%s %s %c%c", 

@@ -1,4 +1,4 @@
-/* $EPIC: status.c,v 1.42 2004/03/19 04:38:19 jnelson Exp $ */
+/* $EPIC: status.c,v 1.43 2004/03/19 06:05:13 jnelson Exp $ */
 /*
  * status.c: handles the status line updating, etc for IRCII 
  *
@@ -1465,10 +1465,6 @@ STATUS_FUNCTION(status_position)
 			window->holding_distance_from_display_ip,
 			window->scrollback_distance_from_display_ip,
 			window->display_size, window->cursor);
-#if 0
-			window->screen->input_line,
-			window->screen->input_cursor);
-#endif
 	return my_buffer;
 }
 

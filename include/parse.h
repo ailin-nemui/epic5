@@ -28,9 +28,6 @@ const 	char	*PasteArgs 	(const char **, int);
 	int	is_channel	(const char *);
 
 extern	const char	*FromUserHost;
-#if 0
-extern	int	doing_privmsg;
-#endif
 
 #endif
 

@@ -1,4 +1,4 @@
-/* $EPIC: expr2.c,v 1.20 2003/12/17 09:25:30 jnelson Exp $ */
+/* $EPIC: expr2.c,v 1.21 2004/03/19 06:05:13 jnelson Exp $ */
 /*
  * Zsh: math.c,v 3.1.2.1 1997/06/01 06:13:15 hzoli Exp 
  * math.c - mathematical expression evaluation
@@ -612,10 +612,6 @@ __inline static	const char *	get_token_raw (expr_info *c, TOKEN v)
 
 	if (c->noeval)
 		return get_token_raw(c, 0);
-#if 0
-		panic("c->noeval is not valid here. [1]");
-#endif
-
 
 	if ((TOK(c, v).used & USED_RAW) == 0)
 	{
@@ -676,13 +672,7 @@ __inline static const char *	get_token_lval (expr_info *c, TOKEN v)
 	if (v == 0)
 		return NULL;		/* Suppress the operation entirely */
 	else if (c->noeval)
-	{
 		return NULL;		/* Suppress the operation entirely */
-#if 0
-		return get_token_raw(c, 0);
-		panic("c->noeval is not valid here. [0]");
-#endif
-	}
 	else if (((TOK(c, v).used & USED_LVAL) == 0))
 	{
 		error("Token [%d] is not an lvalue", v);
@@ -715,9 +705,6 @@ __inline static	const char *	get_token_expanded (expr_info *c, TOKEN v)
 
 	if (c->noeval)
 		return get_token_raw(c, 0);
-#if 0
-		panic("c->noeval is not valid here. [2]");
-#endif
 
 	if (x_debug & DEBUG_NEW_MATH_DEBUG)
 		yell(">>> Getting token [%d] now.", v);

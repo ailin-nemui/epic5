@@ -1,4 +1,4 @@
-/* $EPIC: if.c,v 1.28 2003/12/17 09:25:30 jnelson Exp $ */
+/* $EPIC: if.c,v 1.29 2004/03/19 06:05:13 jnelson Exp $ */
 /*
  * if.c: the IF, WHILE, FOREACH, DO, FE, FEC, and FOR commands for IRCII 
  *
@@ -433,11 +433,6 @@ BUILT_IN_COMMAND(fe)
 	char	*map = NULL;
 	size_t	mapclue = 0;
 
-#if 0
-	for (x = 0; x <= (sizeof(var) / sizeof(*var)); var[x++] = NULL)
-		;
-#endif
-
 	if (!subargs)
 		subargs = empty_string;
 
@@ -836,12 +831,6 @@ BUILT_IN_COMMAND(switchcmd)
 
 	if (!(body = next_expr(&args, '{')))
 		say("SWITCH: Execution body not found where expected");
-
-#if 0
-	/* Strip out the "" magic */
-	if (*body == '"' && body[strlen(body)-1] == '"')
-		body[strlen(body)-1] = 0, body++;
-#endif
 
 	while (body && *body)
 	{

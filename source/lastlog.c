@@ -1,4 +1,4 @@
-/* $EPIC: lastlog.c,v 1.38 2004/03/18 01:04:03 jnelson Exp $ */
+/* $EPIC: lastlog.c,v 1.39 2004/03/19 06:05:13 jnelson Exp $ */
 /*
  * lastlog.c: handles the lastlog features of irc. 
  *
@@ -787,17 +787,6 @@ static int	show_lastlog (Lastlog **l, int *skip, int *number, Mask *level_mask, 
 		(*skip)--;	/* Have not skipped enough leading records */
 		return 0;
 	}
-#if 0
-	if (*number == 0)
-	{
-		if (x_debug & DEBUG_LASTLOG)
-			yell("Number == 0");
-		*l = NULL;	/* Have iterated over the max num. records */
-		return 0;
-	}
-	if (*number > 0)
-		(*number)--;	/* Have not yet iterated over max records */
-#endif
 
 	if (!mask_isnone(level_mask) && !mask_isset(level_mask, (*l)->level))
 	{

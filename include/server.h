@@ -18,9 +18,6 @@
 #include "notify.h"
 #include "alist.h"
 
-/* XXXX Ick.  Gross.  Bad. XXX */
-struct notify_stru;
-
 typedef array A005;
 typedef struct
 {
@@ -55,11 +52,7 @@ const	AI	*next_addr;		/* The next one to try upon failure */
 
 	int	nickname_pending;	/* Is a NICK command pending? */
 	int	resetting_nickname;	/* Is a nickname reset in progress? */
-#if 0
-	int	registration_pending;	/* Is a registration going on ? */
-	int	registered;		/* true if registration is assured */
-	int	rejoined_channels;	/* Has we tried to auto-rejoin? */
-#endif
+
 	char	*userhost;		/* my userhost on this server */
 	char	*away;			/* away message for this server */
 	int	operator;		/* true if operator */
@@ -166,18 +159,6 @@ static __inline__ Server *	get_server (int server)
 
 #define NOSERV		-2
 #define FROMSERV	-1
-
-/*
- * type definition to distinguish different
- * server versions
- */
-#define Server2_8	1
-#define Server2_9	2
-#define Server2_10	3
-#define Server_u2_8	4
-#define Server_u2_9	5
-#define Server_u2_10	6
-#define Server_u3_0	7
 
 /* Funny stuff */
 #define FUNNY_PUBLIC            1 << 0

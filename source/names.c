@@ -1,4 +1,4 @@
-/* $EPIC: names.c,v 1.58 2004/03/18 01:04:03 jnelson Exp $ */
+/* $EPIC: names.c,v 1.59 2004/03/19 06:05:13 jnelson Exp $ */
 /*
  * names.c: This here is used to maintain a list of all the people currently
  * on your channel.  Seems to work 
@@ -96,12 +96,7 @@ struct	channel_stru *	prev;		/* pointer to previous channel */
 /* channel_list: list of all the channels you are currently on */
 static	Channel *	channel_list = NULL;
 
-#if 0
-/* For new eu2.9 !channels */
-static	char		new_channel_format[BIG_BUFFER_SIZE];
-#else
 static	int	match_chan_with_id (const char *chan, const char *match);
-#endif
 static	void	channel_hold_election (int winref);
 
 
@@ -603,14 +598,6 @@ const char *	check_channel_type (const char *channel)
 {
 	/* Grumblesmurf */
 	return channel;
-#if 0
-	if (*channel != '!' || strlen(channel) < 6)
-		return channel;
-
-	snprintf(new_channel_format, sizeof new_channel_format,
-			"[%.6s] %s", channel, channel + 6);
-	return new_channel_format;
-#endif
 }
 
 int 	im_on_channel (const char *channel, int refnum)

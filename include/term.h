@@ -71,14 +71,6 @@ static void term_flush (void) { fflush( current_ftarget ); }
 #define TERM_CAN_COLOR		1 << 15
 #define TERM_CAN_GCHAR		1 << 16
 
-#if 0
-extern	char	*TI_cr, *TI_nl;
-extern	int	TI_lines, TI_cols;
-extern	char	*TI_sgrstrs[];
-extern	char	*TI_forecolors[];
-extern	char	*TI_backcolors[];
-#endif
-
 extern	int	termfeatures;
 extern	struct	term	*current_term;
 
