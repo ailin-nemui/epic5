@@ -1,4 +1,4 @@
-/* $EPIC: screen.c,v 1.41 2003/03/17 19:39:39 crazyed Exp $ */
+/* $EPIC: screen.c,v 1.42 2003/03/21 00:36:56 jnelson Exp $ */
 /*
  * screen.c
  *
@@ -802,15 +802,15 @@ u_char *	normalize_string (const u_char *str, int logical)
 	 * in case you need to tack something else onto it.
 	 */
 	maxpos = strlen(str);
-	output = (u_char *)new_malloc(maxpos + 64);
+	output = (u_char *)new_malloc(maxpos + 192);
 	pos = 0;
 
 	while ((chr = next_char()))
 	{
 	    if (pos > maxpos)
 	    {
-		maxpos += 64; /* Extend 64 chars at a time */
-		RESIZE(output, unsigned char, maxpos + 64);
+		maxpos += 19; /* Extend 192 chars at a time */
+		RESIZE(output, unsigned char, maxpos + 192);
 	    }
 
 	    switch (ansi_state[chr])
@@ -1131,7 +1131,7 @@ u_char *	normalize_string (const u_char *str, int logical)
 			if (pos + args[0] > maxpos)
 			{
 				maxpos += args[0]; 
-				RESIZE(output, u_char, maxpos + 64);
+				RESIZE(output, u_char, maxpos + 192);
 			}
 			while (args[0]-- > 0)
 			{
@@ -1495,15 +1495,15 @@ u_char *	denormalize_string (const u_char *str)
 	 * in case you need to tack something else onto it.
 	 */
 	maxpos = strlen(str);
-	output = (u_char *)new_malloc(maxpos + 64);
+	output = (u_char *)new_malloc(maxpos + 192);
 	pos = 0;
 
 	while (*str)
 	{
 		if (pos > maxpos)
 		{
-			maxpos += 64; /* Extend 64 chars at a time */
-			RESIZE(output, unsigned char, maxpos + 64);
+			maxpos += 192; /* Extend 192 chars at a time */
+			RESIZE(output, unsigned char, maxpos + 192);
 		}
 		switch (*str)
 		{
