@@ -862,6 +862,12 @@ static void strip_modes (char *from, char *channel, char *line)
 	    {
 		char	c = *pointer;
 
+		/* 
+		 * Conversion from "next_arg" to "safe_new_next_arg"
+		 * done on Aug 30, 2001 because of lame-o servers that
+		 * don't send arguments with +l, +b, +k, +o, +v, +e, +I
+		 * and the like.  You all know who you are.  Don't do that.
+		 */
 		switch (c) 
 		{
 			case '+' :
@@ -875,7 +881,7 @@ static void strip_modes (char *from, char *channel, char *line)
 					do_hook(MODE_STRIPPED_LIST,
 						"%s %s %c%c %s",
 						from, channel, mag,
-						c,next_arg(copy,&copy));
+						c,safe_new_next_arg(copy,&copy));
 				else
 					do_hook(MODE_STRIPPED_LIST,
 						"%s %s %c%c",
@@ -899,7 +905,7 @@ static void strip_modes (char *from, char *channel, char *line)
 				do_hook(MODE_STRIPPED_LIST,
 					"%s %s %c%c %s", 
 					from, channel, mag, c,
-					next_arg(copy,&copy));
+					safe_new_next_arg(copy,&copy));
 				break;
 			}
 		}
