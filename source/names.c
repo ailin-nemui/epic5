@@ -298,7 +298,7 @@ static void 	destroy_channel (Channel *chan)
 		{
 		    for (tmp = channel_list; tmp; tmp = tmp->next)
 		    {
-			if (tmp == chan || tmp->window != chan->window ||
+			if (tmp->window != chan->window || 
 					tmp->server != chan->server)
 				continue;
 
@@ -1928,7 +1928,10 @@ void	channel_check_windows (void)
 			panic("Channel [%s] on server [%d] is inactive "
 				"even though this server is connected!",
 				tmp->channel, tmp->server);
-		if (!did_server_rejoin_channels(tmp->server) && !tmp->inactive)
+
+		if (is_server_connected(tmp->server) &&
+				!did_server_rejoin_channels(tmp->server) && 
+				!tmp->inactive)
 			panic("Channel [%s] on server [%d] is NOT inactive "
 				"even though this server is NOT connected!",
 				tmp->channel, tmp->server);
