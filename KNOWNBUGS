@@ -76,4 +76,5 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Add third arg to $connect(), "v4", "v6", or "vu" for IPv4/IPv6/AF_UNSPEC.
 * This means $connect(::1 ftp v6) works! (IPv6 support for $connect()) Huzzah!
 * Remove the 'family' argument in connectory() in wserv4.
+* Remove the (now) obsolete decl of inet_aton() in ircaux.h.
 * Allow $iptoname() to accept ipv6 p-addrs as well as ipv4 p-addrs.

@@ -7,7 +7,7 @@
  *
  * See the COPYRIGHT file, or do a HELP IRCII COPYRIGHT 
  *
- * @(#)$Id: ircaux.h,v 1.23 2002/05/27 15:13:00 jnelson Exp $
+ * @(#)$Id: ircaux.h,v 1.24 2002/05/28 23:10:20 jnelson Exp $
  */
 
 #ifndef _IRCAUX_H_
@@ -243,9 +243,6 @@ char *	bsd_getenv (const char *);
 int	bsd_putenv (const char *);
 int	bsd_setenv (const char *, const char *, int);
 void	bsd_unsetenv (const char *);
-#ifndef HAVE_INET_ATON
-int	inet_aton (const char *, IA *);
-#endif
 #ifndef HAVE_STRLCPY
 size_t	strlcpy (char *, const char *, size_t);
 #endif
