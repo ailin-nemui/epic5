@@ -1,0 +1,32 @@
+/* requires EPIC4 or better to run properly. if someone would like
+ * to backport this to be friendly to ircII that would be spiffy.
+ *
+ * Written because EPIC4 doesn't change your "current channel" to
+ * the OJOINed channel when you use OJOIN to join a channel.
+ *
+ * November 14, 2000 - William Rockwood <wjr@wjr.org>
+ */
+
+alias ojoin {
+        if (![$1]) {
+                echo $G Error: Not enough arguments
+                echo $G Usage: /ojoin <[#]channel> <[@][-][+]>
+        } {
+                ^stack push on 329
+                ^on -329 "*" {
+                        @ :jchan = [$1]
+                        ^channel $jchan
+                        ^stack pop on 329
+                }
+                switch ($*) {
+                        (#*) { 
+                                quote ojoin $*
+                        }
+                        (*) {
+                                quote ojoin #$* 
+                        }
+                }
+        }
+}
+
+# wjr'y2k
