@@ -675,7 +675,6 @@ Window *add_to_window_list (Screen *screen, Window *new_w)
  */
 static void 	remove_window_from_screen (Window *window, int hide)
 {
-	int	was_current = 0;
 	Screen *s;
 
 	if (!window->visible || !((s = window->screen)))
