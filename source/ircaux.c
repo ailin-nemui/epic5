@@ -1,4 +1,4 @@
-/* $EPIC: ircaux.c,v 1.61 2003/01/11 04:26:52 jnelson Exp $ */
+/* $EPIC: ircaux.c,v 1.62 2003/01/13 17:42:00 crazyed Exp $ */
 /*
  * ircaux.c: some extra routines... not specific to irc... that I needed 
  *
@@ -3785,13 +3785,21 @@ char *	urldecode (char *s, size_t *length)
  */
 char	*enquote_it (char *str, size_t len)
 {
-	char	buffer[BIG_BUFFER_SIZE + 1];
-	char	*ptr;
+	char	*buffer = new_malloc(len + 5);
+	char	*ptr = buffer;
 	int	i;
+	int	size = len;
 
-	ptr = buffer;
 	for (i = 0; i < len; i++)
 	{
+		if (ptr-buffer >= size)
+		{
+			int j = ptr-buffer;
+			size += 256;
+			RESIZE(buffer, char, size + 5);
+			ptr = buffer + j;
+		}
+
 		switch (str[i])
 		{
 			case CTCP_DELIM_CHAR:	*ptr++ = CTCP_QUOTE_CHAR;
@@ -3814,7 +3822,7 @@ char	*enquote_it (char *str, size_t len)
 		}
 	}
 	*ptr = '\0';
-	return m_strdup(buffer);
+	return buffer;
 }
 
 /*
