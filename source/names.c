@@ -1,4 +1,4 @@
-/* $EPIC: names.c,v 1.25 2002/07/30 16:12:59 crazyed Exp $ */
+/* $EPIC: names.c,v 1.26 2002/08/02 14:50:46 crazyed Exp $ */
 /*
  * names.c: This here is used to maintain a list of all the people currently
  * on your channel.  Seems to work 
@@ -959,26 +959,35 @@ static char *	get_cmode (Channel *chan)
 int	chanmodetype (char mode)
 {
 const	char	*chanmodes, *prefix;
-static	int	server = -1;
+static	char	*ochanmodes, *oprefix;
+static	int	initialised = 0;
 static	char	modemap[256];
 	char	modetype = 1;
 
-	if (server == from_server)
-		return modemap[mode];
+	prefix = get_server_005(from_server, "PREFIX");
+	chanmodes = get_server_005(from_server, "CHANMODES");
+
+	if (!initialised)
+		initialised++;
+	else if (!prefix != !oprefix || !chanmodes != !ochanmodes);
+	else if (prefix && oprefix && strcmp(prefix, oprefix));
+	else if (chanmodes && ochanmodes && strcmp(chanmodes, ochanmodes));
+	else return modemap[mode];
+	malloc_strcpy(&oprefix, prefix);
+	malloc_strcpy(&ochanmodes, chanmodes);
 
 	/* There is a not insignificant performance hit for this */
 	memset(modemap,0,sizeof(modemap));
 
 	modemap['+'] = modemap['-'] = modetype++;
 
-	prefix = get_server_005(from_server, "PREFIX");
-	if (!prefix || !*prefix == '(')
-		prefix = "(ov)";
+	if (!prefix || *prefix++ != '(')
+		prefix = "ov";
 	for (prefix++; *prefix && *prefix != ')'; prefix++)
 		modemap[*prefix] = modetype;
 	modetype++;
 
-	if (!(chanmodes = get_server_005(from_server, "CHANMODES")))
+	if (!chanmodes)
 		chanmodes = "b,k,l,imnpst";
 	for (; *chanmodes; chanmodes++)
 		if (*chanmodes == ',')
@@ -1040,6 +1049,9 @@ static void	decifer_mode (const char *modes, Channel *chan)
 				break;
 			case 'c':
 				value = MODE_C;
+				break;
+			case 'D':
+				value = MODE_D;
 				break;
 			case 'i':
 				value = MODE_INVITE;
