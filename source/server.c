@@ -1,4 +1,4 @@
-/* $EPIC: server.c,v 1.141 2005/01/06 23:54:13 jnelson Exp $ */
+/* $EPIC: server.c,v 1.142 2005/01/11 05:30:52 jnelson Exp $ */
 /*
  * server.c:  Things dealing with that wacky program we call ircd.
  *
@@ -1825,6 +1825,7 @@ int	is_server_registered (int refnum)
 void  server_is_registered (int refnum, const char *itsname, const char *ourname)
 {
 	Server *s;
+	int	winref;
 
 	if (!(s = get_server(refnum)))
 		return;
@@ -1833,6 +1834,9 @@ void  server_is_registered (int refnum, const char *itsname, const char *ourname
 
 	accept_server_nickname(refnum, ourname);
 	set_server_itsname(refnum, itsname);
+
+	if ((winref = get_winref_by_servref(refnum)) != -1)
+		set_mask_by_winref(winref, new_server_lastlog_mask);
 
 	reinstate_user_modes();
 	userhostbase(from_server, NULL, got_my_userhost, 1);

@@ -228,6 +228,7 @@ const	char	*get_echannel_by_refnum		(unsigned);
 	void	window_check_servers		(void);
 	int	turn_on_level			(unsigned, int);
 	int	turn_off_level			(int);
+	int	set_mask_by_winref		(unsigned, Mask);
 	void	message_to			(int);
 	void	save_message_from		(const char **, int *);
 	void	restore_message_from		(const char *, int);

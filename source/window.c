@@ -1,4 +1,4 @@
-/* $EPIC: window.c,v 1.128 2004/10/13 23:25:55 jnelson Exp $ */
+/* $EPIC: window.c,v 1.129 2005/01/11 05:30:52 jnelson Exp $ */
 /*
  * window.c: Handles the organzation of the logical viewports (``windows'')
  * for irc.  This includes keeping track of what windows are open, where they
@@ -1739,7 +1739,7 @@ char *	get_refnum_by_window (const Window *w)
 	return ltoa(w->refnum);
 }
 
-int	get_winref_by_servref (int servref)
+static Window *get_window_by_servref (int servref)
 {
 	Window *tmp = NULL;
 	Window *best = NULL;
@@ -1751,6 +1751,13 @@ int	get_winref_by_servref (int servref)
 	    if (best == NULL || best->priority < tmp->priority)
 		best = tmp;
 	}
+
+	return best;
+}
+
+int	get_winref_by_servref (int servref)
+{
+	Window *best = get_window_by_servref(servref);
 
 	if (best)
 		return best->refnum;
@@ -2141,6 +2148,7 @@ void 	window_check_servers (void)
 	int	cnt, max, i;
 	int	prime = NOSERV;
 	int	status;
+	int	winref;
 
 	connected_to_server = 0;
 	max = server_list_size();
@@ -2149,57 +2157,36 @@ void 	window_check_servers (void)
 	    status = get_server_status(i);
 	    cnt = 0;
 
-	    tmp = NULL;
-	    while (traverse_all_windows(&tmp))
-	    {
-		if (tmp->server != i)
-		    continue;
-
-		/*
-		 * Ordinarily, a server begins its life in the "RECONNECT"
-		 * state, and when the first window is identified with it,
-		 * we will auto-connect to the server.  After we do this
-		 * the first time, it will work its way through to the 
-		 * "CLOSED" state where it will stay forever until someone
-		 * resets it back to "RECONNECT" with /server or /reconnect.
-		 */
-		to_window = tmp;		/* Force output to this win */
-		if (status == SERVER_RECONNECT)
-		{
-		    if (x_debug & DEBUG_SERVER_CONNECT)
-			yell("window_check_servers() is bringing up server %d", i);
-		    /*
-		     * XXX - connect_to_server changes "status"!
-		     * This causes further windows to be incorrectly
-		     * handled.  new_server_lastlog_mask should be 
-		     * handled somewhere else.
-		     */
-		    connect_to_server(i, 1);
-		    status = get_server_status(i);	/* XXX */
-		    tmp->window_mask = new_server_lastlog_mask;
-		}
-		else if (status == SERVER_ACTIVE)
-		    prime = tmp->server;
-		else if (status == SERVER_CLOSED && server_more_addrs(i))
-		{
-		    if (x_debug & DEBUG_SERVER_CONNECT)
-			yell("window_check_servers() is restarting server %d", i);
-		    connect_to_server(i, 0);
-		}
-		to_window = NULL;
-
-		cnt++;
-	    }
-
-	    if (cnt)
+	    if ((tmp = get_window_by_servref(i)))
 		connected_to_server++;
 	    else if (status >= SERVER_CONNECTING && status < SERVER_CLOSING)
             {
-#if 0
-		if (0)
-#endif
+		if (1)
 			close_server(i, "No windows for this server");
 	    }
+
+	    to_window = tmp;
+
+	    if (status == SERVER_RECONNECT)
+	    {
+		if (x_debug & DEBUG_SERVER_CONNECT)
+		    yell("window_check_servers() is bringing up server %d", i);
+
+		connect_to_server(i, 1);
+	    }
+	    else if (status == SERVER_ACTIVE)
+	    {
+		if (prime == NOSERV)
+		    prime = tmp->server;
+	    }
+	    else if (status == SERVER_CLOSED && server_more_addrs(i))
+	    {
+		if (x_debug & DEBUG_SERVER_CONNECT)
+		    yell("window_check_servers() is restarting server %d", i);
+		connect_to_server(i, 0);
+	    }
+
+	    to_window = NULL;
 	}
 
 	if (!is_server_open(primary_server))
@@ -2267,6 +2254,19 @@ int	turn_off_level (int level)
 		mask_unset(&tmp->window_mask, level);
 	return 0;
 }
+
+int	set_mask_by_winref (unsigned refnum, Mask mask)
+{
+	Window *win;
+
+	if (!(win = get_window_by_refnum(refnum)))
+		return -1;
+
+	win->window_mask = mask;
+	revamp_window_masks(win);
+	return 0;
+}
+
 
 /*
  * revamp_window_masks: Given a level setting for the current window, this

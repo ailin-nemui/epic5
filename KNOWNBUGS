@@ -5,7 +5,6 @@ KNOWN ERRATA (eg, bugs, or unresolved requests):
 * Some way to hook incomplete lines via dcc raw
 * Make it easier to script your own altnick stuff.
   -- Make reset_nickname() call an /on before forcing user to select new nick.
-* check_window_servers() should not change window_mask on connect, really.
 * Implement $symbolctl(), to supercede $aliasctl().
 * Need some way to fetch your hook info
 * /query targets with nicks crossing with dcc nicks don't match.
@@ -420,3 +419,7 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Add $serverctl(GET <num> ADDRFAMILY), returns "ipv4", "ipv6" or "unix"
 * Allow /hostname <ipv4>/<ipv6>, separately set v4/v6 vhosts! (see UPDATES)
 * Don't always panic if a fd isn't ready, it might have been new_close()d.
+* New internal function set_mask_by_winref() allows changing window's level.
+* Make /xdebug regex_debug outputs privileged yell()s, just for sanity.
+* Change /set new_server_lastlog_level to take effect on 001 (see UPDATES)
+* Refactor window_check_servers() to work with server's current window only.
