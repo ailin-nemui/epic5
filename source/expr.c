@@ -1,4 +1,4 @@
-/* $EPIC: expr.c,v 1.26 2004/03/19 06:05:13 jnelson Exp $ */
+/* $EPIC: expr.c,v 1.27 2004/08/26 16:04:46 jnelson Exp $ */
 /*
  * expr.c -- The expression mode parser and the textual mode parser
  * #included by alias.c -- DO NOT DELETE
@@ -422,7 +422,7 @@ static	char	*next_unit (char *str, const char *args, int stage)
 			if ((span = MatchingBracket(ptr + 1, '{', '}')) >= 0)
 				ptr2 = ptr + 1 + span;
 			else
-				ptr2 = ptr + strlen(ptr);
+				ptr2 = ptr + strlen(ptr) - 1;
 
 			if (stage != NU_UNIT)
 			{
