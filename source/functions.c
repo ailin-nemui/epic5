@@ -241,6 +241,7 @@ static	char
 	*function_jn		(char *),
 	*function_jot 		(char *),
 	*function_key 		(char *),
+	*function_killpid	(char *),
 	*function_lastserver	(char *),
 	*function_leftpc	(char *),
 	*function_leftw 	(char *),
@@ -499,6 +500,7 @@ static BuiltInFunctions	built_in_functions[] =
 	{ "JN",			function_jn		},
 	{ "JOT",                function_jot 		},
 	{ "KEY",                function_key 		},
+	{ "KILLPID",		function_killpid	},
 	{ "LASTLOG",		function_lastlog	}, /* lastlog.h */
 	{ "LASTSERVER",		function_lastserver	},
 	{ "LEFT",		function_left 		},
@@ -6349,4 +6351,41 @@ BUILT_IN_FUNCTION(function_serverctl, input)
 	return serverctl(input);
 }
 
+BUILT_IN_FUNCTION(function_killpid, input)
+{
+	char *	pid_str;
+	char *	sig_str;
+	pid_t	pid;
+	int	sig;
+	int	retval = 0;
+
+	GET_STR_ARG(sig_str, input);
+	if ((sig = my_atol(sig_str)) > 0)
+	{
+		if ((sig < 0) || (sig >= NSIG))
+			RETURN_EMPTY;
+	}
+	else
+	{
+		for (sig = 1; sig < NSIG; sig++)
+		{
+			if (!sys_siglist[sig])
+				continue;
+			if (!my_stricmp(sys_siglist[sig], sig_str))
+				goto do_kill;	/* Oh, bite me. */
+		}
+
+		RETURN_EMPTY;
+	}
+
+do_kill:
+	while ((pid_str = new_next_arg(input, &input)))
+	{
+		pid = strtoul(pid_str, &pid_str, 10);
+		if (kill(pid, sig) == 0)
+			retval++;
+	}
+
+	RETURN_INT(retval);
+}
 
