@@ -11,6 +11,8 @@ KNOWN ERRATA (eg, bugs, or unresolved requests):
 * Study update_input() and update_all_windows() and determine if used properly
 * Shall remove_trailing_spaces honor a \ before a space trailing?
 * Some way to color the input prompt?  (Probably not)
+* The way the pattern matcher handles ?'s after *'s is really lame.
+* Be able to add comments to ignores. (for larne)
 
 [See http://www.epicsol.org/PROJECTS for things to come in the future]
 [See http://www.epicsol.org/CHANGELOG for things that changed in the past]
@@ -18,3 +20,11 @@ KNOWN ERRATA (eg, bugs, or unresolved requests):
 THE CHANGELOG SINCE THE LAST RELEASE:
 -------------------------------------
 * Add the 'paste' script, implements "paste only" mode, for anguzhawk.
+* Better to use (ssize_t) instead of (int) when dealing with string lengths.
+* New /IGNORE implementation, see UPDATES for all the gory details.
+* New built in function, $ignorectl(), see UPDATES for gory details.
+* Add provisional strlcpy_c(), strlcat_c(), strlopencat_c() funcs to ircaux.c
+* Add provisional is_empty() function to ircaux.c for new ignore stuff.
+* Move the "highlight char" stuff from ignore.c to irc.c and vars.c
+* Make figure_out_address take a (const char *) since it doesn't change it
+
