@@ -1,4 +1,4 @@
-/* $EPIC: lastlog.c,v 1.46 2005/04/03 19:00:59 jnelson Exp $ */
+/* $EPIC: lastlog.c,v 1.47 2005/04/03 19:03:35 jnelson Exp $ */
 /*
  * lastlog.c: handles the lastlog features of irc. 
  *
@@ -239,6 +239,11 @@ void	set_new_server_lastlog_mask (void *stuff)
 
 	if (str)
 	{
+	    if (!new_server_lastlog_mask)
+	    {
+		new_server_lastlog_mask = (Mask *)new_malloc(sizeof(Mask));
+		mask_unsetall(new_server_lastlog_mask);
+	    }
 	    str_to_mask(new_server_lastlog_mask, str);
 	    malloc_strcpy(&v->string, mask_to_str(new_server_lastlog_mask));
 	}
@@ -256,6 +261,11 @@ void	set_old_server_lastlog_mask (void *stuff)
 
 	if (str)
 	{
+	    if (!old_server_lastlog_mask)
+	    {
+		old_server_lastlog_mask = (Mask *)new_malloc(sizeof(Mask));
+		mask_unsetall(old_server_lastlog_mask);
+	    }
 	    str_to_mask(old_server_lastlog_mask, str);
 	    malloc_strcpy(&v->string, mask_to_str(old_server_lastlog_mask));
 	}
