@@ -7,7 +7,7 @@
  *
  * See the COPYRIGHT file, or do a HELP IRCII COPYRIGHT 
  *
- * @(#)$Id: ircaux.h,v 1.74 2005/02/21 03:11:35 jnelson Exp $
+ * @(#)$Id: ircaux.h,v 1.75 2005/03/03 02:10:39 jnelson Exp $
  */
 
 #ifndef _IRCAUX_H_
@@ -144,7 +144,6 @@ char *	urlencode		(const char *);
 char *	urldecode		(char *, size_t *);
 char *	enquote_it		(char *str, size_t len);
 char *	dequote_it		(char *str, size_t *len);
-const char *	my_strerror	(int, int);
 int	slurp_file		(char **buffer, char *filename);
 char *	endstr			(char *);
 ssize_t searchbuf		(const unsigned char *, size_t, size_t, int);

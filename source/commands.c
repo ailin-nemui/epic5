@@ -1,4 +1,4 @@
-/* $EPIC: commands.c,v 1.114 2005/03/01 00:54:55 jnelson Exp $ */
+/* $EPIC: commands.c,v 1.115 2005/03/03 02:10:39 jnelson Exp $ */
 /*
  * commands.c -- Stuff needed to execute commands in ircII.
  *		 Includes the bulk of the built in commands for ircII.
@@ -1574,7 +1574,6 @@ static void	loader_pf  (FILE *fp, const char *filename, const char *args, struct
  * though it were typed in (passes each line to parse_line). 
  * ---loadcmd---
  */
-static	const char *unknown = "<unknown>";
 BUILT_IN_COMMAND(load)
 {
 	char *	filename;

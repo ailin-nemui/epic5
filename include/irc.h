@@ -90,8 +90,6 @@ extern		int	foreground;
 extern		int	global_beep_ok;
 extern		int	inhibit_logging;
 extern		int	irc_port;
-extern		int	ircrc_loaded;
-extern		int	loading_global;
 extern		int	oper_command;
 extern		int	privileged_output;
 extern		int	quick_startup;

@@ -1,4 +1,4 @@
-/* $EPIC: newio.c,v 1.39 2005/03/01 00:54:55 jnelson Exp $ */
+/* $EPIC: newio.c,v 1.40 2005/03/03 02:10:39 jnelson Exp $ */
 /*
  * newio.c:  Passive, callback-driven IO handling for sockets-n-stuff.
  *
@@ -42,6 +42,15 @@
 #include "timer.h"
 #include <pthread.h>
 
+/* You MUST define one and ONLY one of these USE_* macros! */
+#define USE_SELECT
+/* #define USE_FREEBSD_KQUEUE */
+/* #define USE_POLL */
+/* #define USE_PTHREADS */
+
+/* This is still an experimental feature. */
+/* #define VIRTUAL_FILEDESCRIPTORS */
+
 #if defined(HAVE_SYSCONF) && defined(_SC_OPEN_MAX)
 #  define IO_ARRAYLEN 	sysconf(_SC_OPEN_MAX)
 #else
@@ -72,7 +81,6 @@ typedef	struct	myio_struct
 static	MyIO **	io_rec = NULL;
 static	int	global_max_vfd = -1;
 static	int	global_max_channel = -1;
-	int	dgets_errno = 0;
 
 /* These functions should be exposed by your i/o strategy */
 static  void    kread (int vfd);
@@ -163,9 +171,9 @@ int	dgets_buffer (int channel, void *data, ssize_t len)
 	 */
 	if (ioe->segments > MAX_SEGMENTS)
 	{
-		yell("***XXX*** Too many read()s on channel [%d] without a "
-				"newline! ***XXX***", channel);
-		ioe->error = ECONNABORTED;
+		syserr("dgets_buffer: Too many read()s on channel [%d] without"
+			" a newline -- shutting off bad peer", channel);
+		ioe->error = -1;
 		ioe->clean = 0;
 		kunlock();
 		return -1;
@@ -231,18 +239,15 @@ int	dgets_buffer (int channel, void *data, ssize_t len)
  *
  * Return values:
  *	buffer == -1		(The results are NOT null terminated)
- *		-1	The file descriptor is dead.  dgets_errno contains
- *			the error (-100 means EOF).
+ *		-1	The file descriptor is dead
  *		 0	There is no data available to read.
  *		>0	The number of bytes returned.
  *	buffer == 0		(The results are null terminated)
- *		-1	The file descriptor is dead.  dgets_errno contains
- *			the error (-100 means EOF).
+ *		-1	The file descriptor is dead
  *		 0	Some data was returned, but it was an incomplete line.
  *		>0	A full line of data was returned.
  *	buffer == 1		(The results are null terminated)
- *		-1	The file descriptor is dead.  dgets_errno contains
- *			the error (-100 means EOF).
+ *		-1	The file descriptor is dead
  *		 0	No data was returned.
  *		>0	A full line of data was returned.
  */
@@ -255,16 +260,19 @@ ssize_t	dgets (int vfd, char *buf, size_t buflen, int buffer)
 
 	if (buflen == 0)
 	{
-	    yell("**XX** Buffer for vfd [%d] is zero-length! **XX**", vfd);
-	    dgets_errno = ENOMEM; /* Cough */
+	    syserr("dgets: Destination buffer for vfd [%d] is zero length."
+			" This is surely a bug.", vfd);
 	    return -1;
 	}
 
 	if (!(ioe = io_rec[vfd]))
 		panic("dgets called on unsetup vfd %d", vfd);
 
-	if ((dgets_errno = ioe->error))
-		return -1;
+	if (ioe->error)
+	{
+	    syserr("dgets: Reporting error for vfd [%d]", vfd);
+	    return -1;
+	}
 
 
 	/*
@@ -573,7 +581,6 @@ int	new_unhold_fd (int vfd)
 int	new_close (int vfd)
 {
 	MyIO *	ioe;
-	int	channel;
 
 	if (vfd < 0 || vfd > global_max_vfd)
 		return -1;
@@ -611,7 +618,13 @@ int	new_close (int vfd)
 /************************************************************************/
 static int	unix_close (int channel)
 {
-	return close(channel);
+	if (close(channel))
+	{
+		syserr("unix_close: close(%d) failed: %s", 
+			channel, strerror(errno));
+		return -1;
+	}
+	return 0;
 }
 
 static int	unix_read (int channel)
@@ -621,9 +634,24 @@ static int	unix_read (int channel)
 
 	c = read(channel, buffer, sizeof buffer);
 	if (c == 0)
-		errno = -100;		/* -100 is EOF */
-	else if (c > 0)
-		dgets_buffer(channel, buffer, c);
+	{
+		syserr("unix_read: EOF for fd %d ", channel);
+		return 0;
+	}
+	else if (c < 0)
+	{
+		syserr("unix_read: read(%d) failed: %s", 
+				channel, strerror(errno));
+		return -1;
+	}
+
+	if (dgets_buffer(channel, buffer, c))
+	{
+		syserr("unix_read: dgets_buffer(%d, %*s) failed",
+				channel, c, buffer);
+		return -1;
+	}
+
 	return c;
 }
 
@@ -634,9 +662,24 @@ static int	unix_recv (int channel)
 
 	c = recv(channel, buffer, sizeof buffer, 0);
 	if (c == 0)
-		errno = -100;		/* -100 is EOF */
-	else if (c > 0)
-		dgets_buffer(channel, buffer, c);
+	{
+		syserr("unix_recv: EOF for fd %d ", channel);
+		return 0;
+	}
+	else if (c < 0)
+	{
+		syserr("unix_recv: read(%d) failed: %s", 
+				channel, strerror(errno));
+		return -1;
+	}
+
+	if (dgets_buffer(channel, buffer, c))
+	{
+		syserr("unix_recv: dgets_buffer(%d, %*s) failed",
+				channel, c, buffer);
+		return -1;
+	}
+
 	return c;
 }
 
@@ -652,14 +695,18 @@ static int	unix_accept (int channel)
 		fd_set	fdset;
 		FD_ZERO(&fdset);
 		FD_SET(channel, &fdset);
-		select(channel + 1, &fdset, NULL, NULL, NULL);
+		if (select(channel + 1, &fdset, NULL, NULL, NULL))
+		{
+			syserr("unix_accept: select(%d) failed: %s",
+				channel, strerror(errno));
+		}
 	}
 #endif
 
 	len = sizeof(addr);
-	newfd = Accept(channel, (SA *)&addr, &len);
-	if (newfd < 0)
-		yell("Accept() failed: %s", strerror(errno));
+	if ((newfd = Accept(channel, (SA *)&addr, &len)) < 0)
+		syserr("unix_accept: Accept(%d) failed", channel);
+
 	dgets_buffer(channel, &newfd, sizeof(newfd));
 	dgets_buffer(channel, &addr, sizeof(addr));
 	return sizeof(newfd) + sizeof(addr);
@@ -679,13 +726,23 @@ static int	unix_connect (int channel)
 		fd_set	fdset;
 		FD_ZERO(&fdset);
 		FD_SET(channel, &fdset);
-		select(channel + 1, NULL, &fdset, NULL, NULL);
+		if (select(channel + 1, NULL, &fdset, NULL, NULL) < 0)
+		{
+			syserr("unix_connect: select(%d) failed: %s",
+				channel, strerror(errno));
+		}
 	}
 #endif
 
 	len = sizeof(localaddr);
 	errno = 0;
-	getsockname(channel, (SA *)&localaddr, &len);
+	if ((getsockname(channel, (SA *)&localaddr, &len)))
+#if 0
+		syserr("unix_connect: getsockname(%d) failed: %s", 
+				channel, strerror(errno));
+#else
+		0;
+#endif
 	gsn_result = errno;
 
 	dgets_buffer(channel, &gsn_result, sizeof(gsn_result));
@@ -693,7 +750,13 @@ static int	unix_connect (int channel)
 
 	len = sizeof(remoteaddr);
 	errno = 0;
-	getpeername(channel, (SA *)&remoteaddr, &len);
+	if ((getpeername(channel, (SA *)&remoteaddr, &len)))
+#if 0
+		syserr("unix_connect: getpeername(%d) failed: %s", 
+				channel, strerror(errno));
+#else
+		0;
+#endif
 	gpn_result = errno;
 
 	dgets_buffer(channel, &gpn_result, sizeof(gpn_result));
@@ -722,11 +785,12 @@ static void	new_io_event (int vfd)
 
 	if ((c = ioe->io_callback(vfd)) <= 0)
 	{
-		ioe->error = errno;
+		ioe->error = -1;
 		ioe->clean = 0;
+		syserr("new_io_event: io_callback(%d) failed", vfd);
+
 		if (x_debug & DEBUG_INBOUND) 
-			yell("VFD [%d] FAILED [%d:%s]", 
-				vfd, c, my_strerror(vfd, ioe->error));
+			yell("VFD [%d] FAILED [%d:%d]", vfd, c);
 		return;
 	}
 
@@ -767,37 +831,52 @@ static	int	kdoit (Timeval *timeout)
 	errno = 0;
 	retval = select(global_max_channel + 1, &working_rd, &working_wd, 
 			NULL, timeout);
-	if (retval <= 0)
+
+	if (retval < 0) 
 	{
+	    int foundit = 0;
+
 	    if (errno == EBADF)
 	    {
 		struct timeval t = {0, 0};
 
 		for (channel = 0; channel <= global_max_channel; channel++)
 		{
+		    /* Skip fd's that weren't in the original set */
+		    if (!FD_ISSET(channel, &readables) &&
+			!FD_ISSET(channel, &writables))
+				continue;
+
 		    FD_ZERO(&working_rd);
 		    FD_SET(channel, &working_rd);
 		    errno = 0;
 		    retval = select(channel + 1, &working_rd, NULL, NULL, &t);
 		    if (retval < 0)
 		    {
-			yell("Closing channel %d because: %s", 
-					channel, strerror(errno));
+			syserr("kdoit(select): Closing channel %d because: %s", 
+						channel, strerror(errno));
 			FD_CLR(channel, &readables);
 			FD_CLR(channel, &writables);
 			new_close(channel);
+			foundit = 1;
 		    }
 		}
+
+		if (!foundit)
+			panic("kdoit(select): Select says I have a bad file "
+				"descriptor but I can't find it!");
 	    }
-
-	    return retval;
+	    else
+		syserr("kdoit(select): select() failed: %s", strerror(errno));
 	}
-
-	for (channel = 0; channel <= global_max_channel; channel++)
+	else if (retval > 0)
 	{
+	    for (channel = 0; channel <= global_max_channel; channel++)
+	    {
 		if (FD_ISSET(channel, &working_rd) ||
 		    FD_ISSET(channel, &working_wd))
 			new_io_event(VFD(channel));
+	    }
 	}
 
 	return retval;
@@ -819,49 +898,80 @@ static struct timespec  kqueue_poll = { 0, 0 };
 
 static void kinit (void)
 { 
-        kqueue_fd = kqueue();
+        if ((kqueue_fd = kqueue()) < 0)
+	{
+		syserr("kinit(kqueue): kqueue() failed: %s", strerror(errno));
+		irc_exit(1, "Your system doesn't support kqueue(2)");
+	}
 }
  
 static  void    kread (int vfd)
 {
 	struct kevent ev;
 	EV_SET(&ev, CHANNEL(vfd), EVFILT_READ, EV_ADD|EV_ENABLE, 0, 0, NULL);
-	kevent(kqueue_fd, &ev, 1, NULL, 0, &kqueue_poll);
+	if (kevent(kqueue_fd, &ev, 1, NULL, 0, &kqueue_poll))
+	{
+		syserr("kread(kqueue): kevent(%d) failed: %s", 
+				CHANNEL(vfd), strerror(errno));
+	}
 }
  
 static  void    knoread (int vfd)
 {
 	struct kevent ev;
 	EV_SET(&ev, CHANNEL(vfd), EVFILT_READ, EV_DELETE, 0, 0, NULL);
-	kevent(kqueue_fd, &ev, 1, NULL, 0, &kqueue_poll);
+	if (kevent(kqueue_fd, &ev, 1, NULL, 0, &kqueue_poll))
+	{
+	    if (errno != ENOENT)
+		syserr("knoread(kqueue): kevent(%d) failed: %s", 
+				CHANNEL(vfd), strerror(errno));
+	}
 }
  
 static  void    kholdread (int vfd)
 {
 	struct kevent ev;
 	EV_SET(&ev, CHANNEL(vfd), EVFILT_READ, EV_DISABLE, 0, 0, NULL);
-	kevent(kqueue_fd, &ev, 1, NULL, 0, &kqueue_poll);
+	if (kevent(kqueue_fd, &ev, 1, NULL, 0, &kqueue_poll))
+	{
+	    if (errno != ENOENT)
+		syserr("kholdread(kqueue): kevent(%d) failed: %s", 
+				CHANNEL(vfd), strerror(errno));
+	}
 }
 
 static  void    kunholdread (int vfd)
 {
 	struct kevent ev;
 	EV_SET(&ev, CHANNEL(vfd), EVFILT_READ, EV_ENABLE, 0, 0, NULL);
-	kevent(kqueue_fd, &ev, 1, NULL, 0, &kqueue_poll);
+	if (kevent(kqueue_fd, &ev, 1, NULL, 0, &kqueue_poll))
+	{
+		syserr("kunholdread(kqueue): kevent(%d) failed: %s", 
+				CHANNEL(vfd), strerror(errno));
+	}
 }
 
 static  void    kwrite (int vfd)
 {
 	struct kevent ev;
 	EV_SET(&ev, CHANNEL(vfd), EVFILT_WRITE, EV_ADD|EV_ENABLE, 0, 0, NULL);
-	kevent(kqueue_fd, &ev, 1, NULL, 0, &kqueue_poll);
+	if (kevent(kqueue_fd, &ev, 1, NULL, 0, &kqueue_poll))
+	{
+		syserr("kwrite(kqueue): kevent(%d) failed: %s", 
+				CHANNEL(vfd), strerror(errno));
+	}
 }
 
 static  void    knowrite (int vfd)
 {
 	struct kevent ev;
 	EV_SET(&ev, CHANNEL(vfd), EVFILT_WRITE, EV_DELETE, 0, 0, NULL);
-	kevent(kqueue_fd, &ev, 1, NULL, 0, &kqueue_poll);
+	if (kevent(kqueue_fd, &ev, 1, NULL, 0, &kqueue_poll))
+	{
+	    if (errno != ENOENT)
+		syserr("knowrite(kqueue): kevent(%d) failed: %s", 
+				CHANNEL(vfd), strerror(errno));
+	}
 }
 
 static	void	kcleaned (int vfd) { return; }
@@ -870,16 +980,25 @@ static	int	kdoit (Timeval *timeout)
 {
 	struct timespec	to;
 	struct kevent	event;
-	int		retval, channel;
+	int		channel;
+	int		retval;
 
 	to.tv_sec = timeout->tv_sec;
 	to.tv_nsec = timeout->tv_usec * 1000;
 	retval = kevent(kqueue_fd, NULL, 0, &event, 1, &to);
-	if (retval <= 0)
-		return retval;
 
-	channel = event.ident;
-	new_io_event(VFD(channel));
+	if (retval < 0 && errno == ETIMEDOUT)
+		retval = 0;
+
+	if (retval < 0)
+		syserr("kdoit(kqueue): kevent(NULL) failed: %s", 
+					strerror(errno));
+	else if (retval > 0)
+	{
+		channel = event.ident;
+		new_io_event(VFD(channel));
+	}
+
 	return retval;
 }
 
@@ -951,18 +1070,22 @@ static	void	kcleaned (int vfd) { return; }
 static	int	kdoit (Timeval *timeout)
 {
 	int	ms;
-	int	retval, vfd;
+	int	vfd;
+	int	retval;
 
 	ms = timeout->tv_sec * 1000;
 	ms += (timeout->tv_usec / 1000);
 	retval = poll(polls, global_max_vfd + 1, ms);
-	if (retval <= 0)
-		return retval;
 
-	for (vfd = 0; vfd <= global_max_vfd; vfd++)
+	if (retval < 0)
+		syserr("kdoit(poll): poll() failed: %s", strerror(errno));
+	else if (retval > 0)
 	{
-	    if (polls[vfd].revents)
-		    new_io_event(vfd);
+		for (vfd = 0; vfd <= global_max_vfd; vfd++)
+		{
+		    if (polls[vfd].revents)
+			    new_io_event(vfd);
+		}
 	}
 
 	return retval;
@@ -996,16 +1119,22 @@ pthread_t		global;
 static	void *	pthread_io_event (void *vvfd)
 {
 	int	vfd;
+	int	err;
 
 	vfd = *(int *)vvfd;
 	new_free(&vvfd);
 
-	pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, NULL);
-	pthread_setcanceltype(PTHREAD_CANCEL_ASYNCHRONOUS, NULL);
+	if ((err = pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, NULL)))
+		syserr("pthread_io_event: pthread_setcancelstate(%d, PTHREAD_CANCEL_ENABLE) failed: %s", vfd, strerror(err));
+
+	if ((err = pthread_setcanceltype(PTHREAD_CANCEL_ASYNCHRONOUS, NULL)))
+		syserr("pthread_io_event: pthread_setcanceltype(%d, PTHREAD_CANCEL_ASYNCHRONOUS) failed: %s", vfd, strerror(err));
 
 	new_io_event(vfd);
 	klock();
-	pthread_cond_signal(&cond);
+	if ((err = pthread_cond_signal(&cond)))
+		syserr("pthread_io_event: pthread_cond_signal(%d) failed: %s", 
+				vfd, strerror(err));
 	kunlock();
 	pthread_exit(NULL);
 }
@@ -1014,6 +1143,7 @@ static void	kinit (void)
 { 
 	int	vfd;
 	int	max_fd = IO_ARRAYLEN;
+	int	err;
 
 	global = pthread_self();
 	pfd = (PS *)new_malloc(sizeof(PS) * max_fd);
@@ -1024,9 +1154,13 @@ static void	kinit (void)
 	    pfd[vfd].active = 0;
 	}
 
-	pthread_mutex_init(&mutex, NULL);
+	if ((err = pthread_mutex_init(&mutex, NULL)))
+		syserr("kinit(pthread): pthread_mutex_init() failed: %s",
+				strerror(err));
 	klock();
-	pthread_cond_init(&cond, NULL);
+	if ((pthread_cond_init(&cond, NULL)))
+		syserr("kinit(pthread): pthread_cond_init() failed: %s",
+				strerror(err));
 }
  
 static  void    kread (int vfd)
@@ -1037,11 +1171,19 @@ static  void    kread (int vfd)
  
 static  void    knoread (int vfd)
 {
+	int	err;
+
 	if (pfd[vfd].active == 0)
 		return;
 
-	pthread_cancel(pfd[vfd].pthread);
-	pthread_join(pfd[vfd].pthread, NULL);
+	if ((err = pthread_cancel(pfd[vfd].pthread)))
+		syserr("knoread(pthread): pthread_cancel(%d) failed: %s",
+				vfd, strerror(err));
+
+	if ((err = pthread_join(pfd[vfd].pthread, NULL)))
+		syserr("knoread(pthread): pthread_join(%d) failed: %s",
+				vfd, strerror(err));
+
 	pfd[vfd].active = 0;
 }
  
@@ -1073,17 +1215,25 @@ static  void    kwrite (int vfd)
 
 static  void    knowrite (int vfd)
 {
+	int	err;
+
 	if (pfd[vfd].active == 0)
 		return;
 
-	pthread_cancel(pfd[vfd].pthread);
-	pthread_join(pfd[vfd].pthread, NULL);
+	if ((err = pthread_cancel(pfd[vfd].pthread)))
+		syserr("knowrite: pthread_cancel(%d) failed: %s",
+				vfd, strerror(err));
+	if ((err = pthread_join(pfd[vfd].pthread, NULL)))
+		syserr("knowrite: pthread_join(%d) failed: %s",
+				vfd, strerror(err));
+
 	pfd[vfd].active = 0;
 }
 
 static	void	kcleaned (int vfd) 
 {
-	int *mvfd;
+	int	err;
+	int *	mvfd;
 
 	if (!pthread_equal(pthread_self(), global))
 		panic("kcleaned not called from global thread");
@@ -1096,7 +1246,12 @@ static	void	kcleaned (int vfd)
 
 	mvfd = new_malloc(sizeof *mvfd);
 	*mvfd = vfd;
-	pthread_create(&pfd[vfd].pthread, NULL, pthread_io_event, mvfd);
+
+	if ((err = pthread_create(&pfd[vfd].pthread, NULL, 
+					pthread_io_event, mvfd)))
+		syserr("kcleaned: pthread_create(%d) failed: %s",
+				vfd, strerror(err));
+
 	vfd[pfd].active = 1;
 }
 
@@ -1108,6 +1263,7 @@ static	int	kdoit (Timeval *timeout)
 	int	saved_errno = 0;
 	int	ready = 0;
 	struct	timespec right_now;
+	int	err;
 
 	if (!pthread_equal(pthread_self(), global))
 		panic("kdoit not called from global thread");
@@ -1122,13 +1278,10 @@ static	int	kdoit (Timeval *timeout)
 	right_now.tv_sec += timeout->tv_sec;
 
 	retval = pthread_cond_timedwait(&cond, &mutex, &right_now);
-	if (retval == 0)
-		retval = 1;
-	else if (retval == ETIMEDOUT)
-		retval = 0;
-	else
+	if (retval && retval != ETIMEDOUT)
 	{
-		retval = -1;
+		syserr("kdoit(pthread): pthread_cond_timedwait() failed: %s",
+				strerror(retval));
 		saved_errno = retval;
 	}
 
@@ -1140,17 +1293,19 @@ static	int	kdoit (Timeval *timeout)
 		int c;
 
 		if ((c = pthread_join(pfd[vfd].pthread, NULL)))
-			yell("pthread_join returned [%c]", c);
+			syserr("kdoit(pthread): pthread_join(%d) failed: %s",
+					vfd, strerror(c));
 		pfd[vfd].active = 0;
 		ready++;
 	    }
 	}
 
-	errno = saved_errno;
 	if (ready)
 		return ready;
-
-	return retval;
+	else if (retval == ETIMEDOUT)
+		return 0;
+	else
+		return -1;
 }
 
 static	void	klock	(void)

@@ -54,11 +54,11 @@ void	Freeaddrinfo	(AI *);
 
 int     inet_strton             (const char *, const char *, SA *, int);
 int     inet_ntostr             (SA *, char *, int, char *, int, int);
-const char *inet_hntop             (int, const char *, char *, int);
-const char *inet_ptohn             (int, const char *, char *, int);
-char    *one_to_another         (int, const char *, char *, int);
+int	inet_hntop             (int, const char *, char *, int);
+int	inet_ptohn             (int, const char *, char *, int);
+int	one_to_another         (int, const char *, char *, int);
 int     Accept                  (int, SA *, int *);
-char    *switch_hostname        (const char *);
+char *	switch_hostname        (const char *);
 int     ip_bindery              (int family, u_short port, SS *storage);
 int     client_bind             (SA *, socklen_t);
 int     client_connect          (SA *, socklen_t, SA *, socklen_t);

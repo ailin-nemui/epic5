@@ -1,4 +1,4 @@
-/* $EPIC: functions.c,v 1.191 2005/02/21 14:07:43 jnelson Exp $ */
+/* $EPIC: functions.c,v 1.192 2005/03/03 02:10:39 jnelson Exp $ */
 /*
  * functions.c -- Built-in functions for ircII
  *
@@ -2708,7 +2708,7 @@ BUILT_IN_FUNCTION(function_sar, input)
 	char	delimiter;
 	char *	last_segment;
 	char *	text;
-	char *	after, *after2;
+	char *	after;
 	char *	workbuf = NULL;
 	char *	search;
 	char *	replace;
@@ -4604,13 +4604,8 @@ BUILT_IN_FUNCTION(function_msar, input)
 	char *	text;
 	char *	after;
 	char *	workbuf = NULL;
-	size_t	clue = 0;
-	size_t	searchlen;
 	char *	search;
 	char *	replace;
-	char *	pointer;
-	int	substitutions = 0;
-	ssize_t	span;
 
 	/*
 	 * Scan the leading part of the argument list, slurping up any

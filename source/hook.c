@@ -1,4 +1,4 @@
-/* $EPIC: hook.c,v 1.49 2005/03/01 00:54:55 jnelson Exp $ */
+/* $EPIC: hook.c,v 1.50 2005/03/03 02:10:39 jnelson Exp $ */
 /*
  * hook.c: Does those naughty hook functions. 
  *
@@ -311,6 +311,7 @@ static void	initialize_hook_functions (void)
 	hook_functions_initialized = 1;
 }
 
+#if 0
 /*
  * This converts a user-specified string of unknown composition and
  * returns a string that contains at minimum "params" number of words 
@@ -347,6 +348,7 @@ static char *	fill_it_out (char *str, int params)
 	}
 	return malloc_strdup(buffer);
 }
+#endif
 
 /*
  * 	Add a hook to the hooklist
@@ -1611,7 +1613,8 @@ enum
 	HOOKCTL_GET_HOOK_SERIAL,
 	HOOKCTL_GET_HOOK_SKIP,
 	HOOKCTL_GET_HOOK_STUFF,
-	HOOKCTL_GET_HOOK_TYPE
+	HOOKCTL_GET_HOOK_TYPE,
+	HOOKCTL_GET_HOOK_STRING
 };
 
 /*
@@ -2138,6 +2141,7 @@ char *hookctl (char *input)
 	
 		if (!input || !*input)
 			RETURN_EMPTY;
+
 		if (atoi(input) == 0 && input[0] != '0')
 		{
 			GET_STR_ARG(str, input);
@@ -2151,14 +2155,12 @@ char *hookctl (char *input)
 				
 			if (action == 0)
 				RETURN_EMPTY;
-	
 		}
 		else	
 			action = HOOKCTL_GET_HOOK_NOARG;
+
 		switch (action)
 		{
-		
-
 		/* action-switch */
 		case HOOKCTL_GET_HOOK:
 		case HOOKCTL_GET_HOOK_NOARG:
@@ -2179,7 +2181,7 @@ char *hookctl (char *input)
 				"ARGUMENT_LIST",
 				"FLEXIBLE", 	"NICK", 	"NOT",		"NOISE", 
 				"NOISY", 		"PACKAGE",	"SERIAL", 	"SKIP",
-				"STUFF",		"TYPE", 	NULL);
+				"STUFF",		"TYPE", 	"STRING",	NULL);
 			if (prop == 0)
 				RETURN_EMPTY;
 
@@ -2348,6 +2350,85 @@ char *hookctl (char *input)
 				if (!set)
 					RETURN_STR(hook_functions[hook->type].name);
 				break;
+
+			case HOOKCTL_GET_HOOK_STRING:
+			{
+				char *retval = NULL;
+				size_t	clue = 0;
+				char	blah[10];
+
+				/* Just to start off */
+				retval = new_malloc(128);
+				*retval = 0;
+
+				/* ON <SERIAL-INDICATOR><NOISE><TYPE> <SERIAL-NUMBER>
+						<QUOTE><PATTERN><QUOTE> {<STUFF>} */
+				malloc_strcat_c(&retval, "ON ", &clue);
+
+				if (hook->sernum)
+					malloc_strcat_c(&retval, "#", &clue);
+				if (noise_info[hook->noisy]->identifier)
+				{
+					blah[0] = noise_info[hook->noisy]->identifier;
+					blah[1] = 0;
+					malloc_strcat_c(&retval, blah, &clue);
+				}
+				malloc_strcat_c(&retval, hook_functions[hook->type].name, &clue);
+
+				if (hook->sernum)
+				{
+					snprintf(blah, sizeof blah, " %d", hook->sernum);
+					malloc_strcat_c(&retval, blah, &clue);
+				}
+
+				malloc_strcat_c(&retval, space, &clue);
+				if (hook->not)
+				{
+					blah[0] = '^';
+					blah[1] = 0;
+					malloc_strcat_c(&retval, blah, &clue);
+				}
+
+				if (hook->flexible)
+				{
+					blah[0] = '\'';
+					blah[1] = 0;
+				}
+				else
+				{
+					blah[0] = '"';
+					blah[1] = 0;
+				}
+				malloc_strcat_c(&retval, blah, &clue);
+				malloc_strcat_c(&retval, hook->nick, &clue);
+				malloc_strcat_c(&retval, blah, &clue);
+				malloc_strcat_c(&retval, space, &clue);
+
+				if (hook->arglist)
+				{
+					char *arglist = print_arglist(hook->arglist);
+
+					blah[0] = '(';
+					blah[1] = 0;
+					malloc_strcat_c(&retval, blah, &clue);
+					malloc_strcat_c(&retval, arglist, &clue);
+					blah[0] = ')';
+					malloc_strcat_c(&retval, blah, &clue);
+				    malloc_strcat_c(&retval, space, &clue);
+					new_free(&arglist);
+				}
+
+				if (!hook->not)
+				{
+					blah[0] = '{';
+					blah[1] = 0;
+					malloc_strcat_c(&retval, blah, &clue);
+					malloc_strcat_c(&retval, hook->stuff, &clue);
+					blah[0] = '}';
+					malloc_strcat_c(&retval, blah, &clue);
+				}
+				RETURN_MSTR(retval);
+			}
 		/* end prop-switch */
 		}
 		RETURN_EMPTY;

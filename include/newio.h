@@ -59,11 +59,6 @@
  
 #ifndef __newio_h__
 #define __newio_h__
-#define USE_SELECT 
-/* #define USE_FREEBSD_KQUEUE  */
-/* #define USE_POLL */
-/* #define USE_PTHREADS  */
-/* #define VIRTUAL_FILEDESCRIPTORS */
 
 #define NEWIO_READ	1
 #define NEWIO_ACCEPT	2
@@ -72,8 +67,6 @@
 #define NEWIO_RECV	5
 
 #define IO_BUFFER_SIZE 8192
-
-extern 	int 	dgets_errno;
 
 	int	dgets_buffer		(int, void *, ssize_t);
 	ssize_t	dgets 			(int, char *, size_t, int);

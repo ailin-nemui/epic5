@@ -38,6 +38,8 @@ typedef	struct
 	char	*name;			/* the name of the server */
 	AI 	*addrs;			/* Returned by getaddrinfo */
 const	AI	*next_addr;		/* The next one to try upon failure */
+	int	addr_counter;		/* How far we're into "addrs" */
+
 	char	*itsname;		/* the server's idea of its name */
 	char	*password;		/* password for that server */
 	int	port;			/* port number on that server */

@@ -1,4 +1,4 @@
-/* $EPIC: screen.c,v 1.94 2005/02/19 04:22:26 jnelson Exp $ */
+/* $EPIC: screen.c,v 1.95 2005/03/03 02:10:40 jnelson Exp $ */
 /*
  * screen.c
  *
@@ -2789,8 +2789,7 @@ Window	*create_additional_screen (void)
 
 	if ((new_cmd = client_bind((SA *)&local_sockaddr, sizeof(local_sockaddr))) < 0)
 	{
-		yell("Couldnt establish server side -- error [%d] [%s]", 
-				new_cmd, my_strerror(new_cmd, errno));
+		yell("Couldn't establish server side of new screen");
 		return NULL;
 	}
 	port = ntohs(local_sockaddr.sin_port);
@@ -3044,7 +3043,7 @@ void 	do_screens (int fd)
 			if (dgets(screen->control, buffer, IO_BUFFER_SIZE, 1) < 0)
 			{
 				kill_screen(screen);
-				yell("Error from remote screen [%d].", dgets_errno);
+				yell("Error from remote screen.");
 				continue;
 			}
 

@@ -1,4 +1,4 @@
-/* $EPIC: numbers.c,v 1.78 2005/01/12 00:12:21 jnelson Exp $ */
+/* $EPIC: numbers.c,v 1.79 2005/03/03 02:10:39 jnelson Exp $ */
 /*
  * numbers.c: handles all those strange numeric response dished out by that
  * wacky, nutty program we call ircd 
@@ -1256,7 +1256,7 @@ DISPLAY:
 		if (!(channel = ArgList[1]))
 			{ rfc1459_odd(from, comm, ArgList); goto END; }
 		if (!(line = ArgList[2]))
-			{ rfc1459_odd(from, comm, ArgList); goto END; }
+			{ line = empty_string; }
 
 		/* This is only for when the user joined the channel */
 		if (channel_is_syncing(channel, from_server))

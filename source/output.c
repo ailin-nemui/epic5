@@ -1,4 +1,4 @@
-/* $EPIC: output.c,v 1.14 2005/01/13 16:06:06 jnelson Exp $ */
+/* $EPIC: output.c,v 1.15 2005/03/03 02:10:40 jnelson Exp $ */
 /*
  * output.c: handles a variety of tasks dealing with the output from the irc
  * program 
@@ -328,3 +328,49 @@ void 	error (const char *format, ...)
 		put_echo(putbuf);
 	}
 }
+
+/*
+ * syserr is exactly like say, except that if the error occured while
+ * you were loading a script, it tells you where it happened.
+ */
+static void 	vsyserr (const char *format, va_list args)
+{
+	if (window_display && format)
+	{
+		char *str;
+
+		*putbuf = 0;
+		if ((str = get_string_var(BANNER_VAR)))
+		{
+			if (get_int_var(BANNER_EXPAND_VAR))
+			{
+			    char *foo;
+
+			    foo = expand_alias(str, empty_string, NULL);
+			    strlcpy(putbuf, foo, sizeof putbuf);
+			    new_free(&foo);
+			}
+			else
+			    strlcpy(putbuf, str, sizeof putbuf);
+
+			strlcat(putbuf, " ERROR -- ", sizeof putbuf);
+		}
+
+		vsnprintf(putbuf + strlen(putbuf), 
+			sizeof(putbuf) - strlen(putbuf) - 1, 
+			format, args);
+
+		if (do_hook(YELL_LIST, "%s", putbuf))
+			put_echo(putbuf);
+	}
+}
+
+void	syserr (const char *format, ...)
+{
+	va_list args;
+	va_start(args, format);
+	vsyserr(format, args);
+	va_end(args);
+}
+
+

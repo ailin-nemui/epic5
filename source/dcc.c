@@ -1,4 +1,4 @@
-/* $EPIC: dcc.c,v 1.110 2005/02/21 14:07:43 jnelson Exp $ */
+/* $EPIC: dcc.c,v 1.111 2005/03/03 02:10:39 jnelson Exp $ */
 /*
  * dcc.c: Things dealing client to client connections. 
  *
@@ -694,8 +694,8 @@ static	int	dcc_get_connect_addrs (DCC_list *dcc)
 	return 0;
 
 something_broke:
-	say("DCC %s connection with %s could not be established: %s",
-			type, dcc->user, my_strerror(dcc->socket, retval));
+	say("DCC %s connection with %s could not be established",
+						type, dcc->user);
 	dcc->flags |= DCC_DELETE;
 	return -1;
 }
@@ -835,14 +835,13 @@ static	int	dcc_connect (DCC_list *dcc)
 		char *encoded_description = dcc_urlencode(dcc->description);
 
 		/* XXX Error message may need to be tuned here. */
-		if (do_hook(DCC_LOST_LIST,"%s %s %s %s",
+		if (do_hook(DCC_LOST_LIST,"%s %s %s ERROR",
 				dcc->user,
 				dcc_types[dcc->flags&DCC_TYPES],
-				encoded_description ? encoded_description : "<any>",
-				my_strerror(dcc->socket, errno)))
-			say("Unable to create connection: (%d) [%d] %s", 
-				dcc->socket, errno, 
-				my_strerror(dcc->socket, errno));
+				encoded_description ? 
+					encoded_description : 
+					"<any>"))
+			say("Unable to create connection: (%d)", dcc->socket);
 
 		if (encoded_description)
 			new_free(&encoded_description);
@@ -903,9 +902,7 @@ static	int	dcc_listen (DCC_list *dcc)
 				      &dcc->local_sockaddr)) < 0)
 	{
 		dcc->flags |= DCC_DELETE;
-		say("Unable to create connection [%d]: %s", 
-			dcc->socket, 
-			my_strerror(dcc->socket, errno));
+		say("Unable to create connection [%d]", dcc->socket);
 		retval = -1;
 		break;
 	}
@@ -1188,9 +1185,7 @@ const	char 		*text_display, 	/* What to tell the user we sent */
 	if (writeval == -1)
 	{
 		dcc->flags |= DCC_DELETE;
-		say("Outbound write() failed: %s", 
-			errno ? strerror(errno) : 
-			"What the heck is wrong with your disk?");
+		say("Outbound write() failed: %s", strerror(errno));
 
 		from_server = old_from_server;
 		return;
@@ -1544,9 +1539,7 @@ static	void	dcc_getfile (char *args, int resume)
 					O_WRONLY|O_APPEND, 0644)) == -1)
 			{
 				say("Unable to open %s: %s", 
-					fullname, errno ? 
-						strerror(errno) : 
-						"<No Error>");
+					fullname, strerror(errno));
 				return;
 			}
 			dcc->file = file;
@@ -1586,9 +1579,7 @@ static	void	dcc_getfile (char *args, int resume)
 				O_WRONLY|O_TRUNC|O_CREAT, 0644)) == -1)
 		{
 			say("Unable to open %s: %s", 
-				fullname, errno ? 
-					strerror(errno) : 
-					"<No Error>");
+					fullname, strerror(errno));
 			return;
 		}
 
@@ -2632,8 +2623,7 @@ static	void	process_dcc_chat_connection (DCC_list *Client)
 	if (c1 != sizeof(fd) || c2 != sizeof(Client->peer_sockaddr))
 	{
 		Client->flags |= DCC_DELETE;
-		yell("### DCC Error: accept() failed (%s).", 
-			my_strerror(Client->socket, dgets_errno));
+		yell("### DCC Error: accept() failed.");
 		return;
 	}
 
@@ -2665,15 +2655,9 @@ static	void	process_dcc_chat_connection (DCC_list *Client)
 
 static	void	process_dcc_chat_error (DCC_list *Client)
 {
-	const char	*err_str;
-
-	err_str = my_strerror(Client->socket, dgets_errno);
-
 	lock_dcc(Client);
-	if (do_hook(DCC_LOST_LIST, "%s CHAT %s", 
-			Client->user, err_str))
-		say("DCC CHAT connection to %s lost [%s]", 
-			Client->user, err_str);
+	if (do_hook(DCC_LOST_LIST, "%s CHAT ERROR", Client->user))
+		say("DCC CHAT connection to %s lost", Client->user);
 	Client->flags |= DCC_DELETE;
 	unlock_dcc(Client);
 	return;
@@ -2802,12 +2786,8 @@ static void	process_dcc_chat_connected (DCC_list *dcc)
 
 	if (dcc_get_connect_addrs(dcc))
 	{
-	    if (do_hook(DCC_LOST_LIST, "%s CHAT %s", 
-					dcc->user, 
-					my_strerror(dcc->socket, errno)))
-		say("DCC CHAT connection to %s lost [%s]", 
-					dcc->user, 
-					my_strerror(dcc->socket, errno));
+	    if (do_hook(DCC_LOST_LIST, "%s CHAT ERROR", dcc->user))
+		say("DCC CHAT connection to %s lost", dcc->user);
 	    dcc->flags |= DCC_DELETE;
 	    unlock_dcc(dcc);
 	    return;
@@ -2852,8 +2832,7 @@ static	void		process_incoming_listen (DCC_list *Client)
 	if (c1 != sizeof(new_socket) || c2 != sizeof(remaddr))
 	{
 		Client->flags |= DCC_DELETE;
-		yell("### DCC Error: accept() failed (%s).", 
-			strerror(dgets_errno));
+		yell("### DCC Error: accept() failed.");
 		return;
 	}
 
@@ -2966,9 +2945,8 @@ static void	process_dcc_raw_connected (DCC_list *dcc)
 
 	if (dcc_get_connect_addrs(dcc))
 	{
-	    if (do_hook(DCC_LOST_LIST, "%s RAW %s", dcc->user, strerror(errno)))
-		say("DCC RAW connection to %s lost [%s]", 
-							dcc->user, strerror(errno));
+	    if (do_hook(DCC_LOST_LIST, "%s RAW ERROR", dcc->user))
+		say("DCC RAW connection to %s lost", dcc->user);
 	    dcc->flags |= DCC_DELETE;
 	    unlock_dcc(dcc);
 	    return;
@@ -3027,8 +3005,7 @@ static void	process_dcc_send_connection (DCC_list *dcc)
 	if (c1 != sizeof(new_fd) || c2 != sizeof(dcc->peer_sockaddr))
 	{
 		dcc->flags |= DCC_DELETE;
-		yell("### DCC Error: accept() failed (%s).", 
-			strerror(dgets_errno));
+		yell("### DCC Error: accept() failed.");
 		return;
 	}
 
@@ -3078,8 +3055,7 @@ static void	process_dcc_send_connection (DCC_list *dcc)
 	if ((dcc->file = open(dcc->description, O_RDONLY)) == -1)
 	{
 		dcc->flags |= DCC_DELETE;
-		say("Unable to open %s: %s", dcc->description,
-			errno ? strerror(errno) : "Unknown Host");
+		say("Unable to open %s: %s", dcc->description, strerror(errno));
 		return;
 	}
 
@@ -3235,10 +3211,7 @@ static void	process_dcc_send_data (DCC_list *dcc)
 		if (write(dcc->socket, tmp, bytesread) < bytesread)
 		{
 			dcc->flags |= DCC_DELETE;
-			say("Outbound write() failed: %s", 
-				errno ? strerror(errno) : 
-					"I'm not sure why");
-
+			say("Outbound write() failed: %s", strerror(errno));
 			from_server = old_from_server;
 			return;
 		}
@@ -3314,8 +3287,8 @@ static	void		process_dcc_get_data (DCC_list *dcc)
 	if ((write(dcc->file, tmp, bytesread)) == -1)
 	{
 		dcc->flags |= DCC_DELETE;
-		say("Write to local file [%d] failed, giving up: [%s]", 
-			dcc->file, strerror(errno));
+		say("Write to local file [%d] failed: %s",
+					 dcc->file, strerror(errno));
 		/* DCC_close_filesend(dcc, "GET", "LOCAL WRITE FAILED"); */
 		return;
 	}
@@ -3371,10 +3344,8 @@ static void	process_dcc_get_connected (DCC_list *dcc)
 	{
 	    char *edesc = dcc_urlencode(dcc->description);
 
-	    if (do_hook(DCC_LOST_LIST, "%s GET %s %s", 
-					dcc->user, edesc, strerror(errno)))
-		say("DCC GET connection to %s lost [%s]", 
-					dcc->user, strerror(errno));
+	    if (do_hook(DCC_LOST_LIST, "%s GET %s ERROR", dcc->user, edesc))
+		say("DCC GET connection to %s lost", dcc->user);
 	    new_free(&edesc);
 	    dcc->flags |= DCC_DELETE;
 	    unlock_dcc(dcc);

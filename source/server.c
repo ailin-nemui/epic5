@@ -1,4 +1,4 @@
-/* $EPIC: server.c,v 1.155 2005/03/01 00:54:55 jnelson Exp $ */
+/* $EPIC: server.c,v 1.156 2005/03/03 02:10:40 jnelson Exp $ */
 /*
  * server.c:  Things dealing with that wacky program we call ircd.
  *
@@ -882,9 +882,8 @@ void	do_server (int fd)
 		    if (0)
 		    {
 something_broke:
-			if (x_debug & DEBUG_SERVER_CONNECT)
-			    yell("Server [%d] is not connected.  "
-					"Restarting connection", i);
+			syserr("Could not connect to server [%d] address [%d]",
+					i, s->addr_counter);
 			close_server(i, NULL);
 			connect_to_server(i, 0);
 			continue;
@@ -922,11 +921,7 @@ something_broke:
 			{
 			    server_is_unregistered(i);
 			    close_server(i, NULL);
-			    say("Connection closed from %s: %s", 
-				s->name,
-				(dgets_errno == -1) ? 
-				     "Remote end closed connection" : 
-				     strerror(dgets_errno));
+			    say("Connection closed from %s", s->name);
 			    i++;		/* NEVER DELETE THIS! */
 			    break;
 		        }
@@ -1114,21 +1109,18 @@ static int	grab_server_address (int server)
 	hints.ai_socktype = SOCK_STREAM;
 	if ((err = Getaddrinfo(s->name, ltoa(s->port), &hints, &results)))
 	{
-		yell("Could not resolve hostname [%s:%d] for server [%d]: "
-					"%s (%d)",
-			s->name, s->port, server, 
-					gai_strerror(err), err);
-		return -5;
+		yell("DNS lookup for [%s] (server %d) failed.", 
+				s->name, server);
+		return -1;
 	}
 
 	s->addrs = results;
 	s->next_addr = results;
-	if (x_debug & DEBUG_SERVER_CONNECT)
-	{
-		for (i = 0; results; results = results->ai_next)
-			i++;
-		yell("Found [%d] addresses for server [%d]", i, server);
-	}
+	for (i = 0; results; results = results->ai_next)
+		i++;
+	say("DNS lookup for [%s] (server %d) returned (%d) addresses", 
+				s->name, server, i);
+	s->addr_counter = 0;
 	return 0;
 }
 
@@ -1146,67 +1138,67 @@ static int	connect_next_server_address (int server)
 	SS	localaddr;
 	socklen_t locallen;
 	const AI *	ai;
+	char	p_addr[256];
+	char	p_port[24];
 
 	if (!(s = get_server(server)))
-		return -1;		/* XXXX */
+	{
+		syserr("connect_next_server_address: Server %d doesn't exist", 
+						server);
+		return -1;
+	}
 
 	if (!s->addrs)
 	{
-	    if (x_debug & DEBUG_SERVER_CONNECT)
-		yell("There are no addresses to connect to for server [%d]", 
-					server);
-	    return -5;		/* XXXX */
+		syserr("connect_next_server_address: There are no more "
+			"addresses available for server %d", server);
+		return -1;
 	}
 
-	for (ai = s->next_addr; ai; ai = ai->ai_next)
+	s->addr_counter++;
+	for (ai = s->next_addr; ai; ai = ai->ai_next, s->addr_counter++)
 	{
 	    if (x_debug & DEBUG_SERVER_CONNECT)
-		yell("Trying to connect to server [%d] using next address", 
-					server);
-	    err = inet_vhostsockaddr(ai->ai_family, -1, &localaddr, &locallen);
-	    if (err < 0)
+		yell("Trying to connect to server %d using address [%d]",
+					server, s->addr_counter);
+
+	    if ((err = inet_vhostsockaddr(ai->ai_family, -1, 
+						&localaddr, &locallen)) < 0)
 	    {
-	        if (x_debug & DEBUG_SERVER_CONNECT)
-			yell("Couldn't get vhost for family [%d], "
-				"trying another address", ai->ai_family);
+		syserr("connect_next_server_address: Can't use address [%d] "
+				"for protocol [%d]", s->addr_counter, 
+							ai->ai_family);
 		continue;
 	    }
 
-	    fd = client_connect((SA *)&localaddr, locallen, 
-					ai->ai_addr, ai->ai_addrlen);
-	    if (fd < 0)
+	    if ((fd = client_connect((SA *)&localaddr, locallen, 
+					ai->ai_addr, ai->ai_addrlen)) < 0)
 	    {
-		/* XXXX - 'fd' might be negative, strerror() is wrong! */
-	        if (x_debug & DEBUG_SERVER_CONNECT)
-			yell("That address failed with error (%d:%s)", 
-					fd, strerror(fd));
-		err = fd;
-		fd = -1;
+		syserr("connect_next_server_address: "
+			"client_connect() failed for server %d address [%d].", 
+					server, s->addr_counter);
 		continue;
 	    }
+
+	    if (inet_ntostr(ai->ai_addr, p_addr, 256, p_port, 24, NI_NUMERICHOST))
+		say("Connecting to server refnum %d (%s), using address %d",
+					server, s->name, s->addr_counter);
 	    else
-		break;
+		say("Connecting to server refnum %d (%s), "
+				"using address %d (%s:%s)",
+					server, s->name, 
+					s->addr_counter, p_addr, p_port);
+
+	    s->next_addr = ai->ai_next;
+	    return fd;
 	}
 
-	if (!ai)
-	{
-	        if (x_debug & DEBUG_SERVER_CONNECT)
-			yell("Out of addresses to try for server [%d]!  "
-					"Giving up", server);
-		Freeaddrinfo(s->addrs);
-		s->addrs = NULL;
-		s->next_addr = NULL;
-		return -11;
-	}
-	else
-		s->next_addr = ai->ai_next;
-
-	if (fd < 0)
-		return err;
-
-	if (x_debug & DEBUG_SERVER_CONNECT)
-		yell("connect_next_server_address returning [%d]", fd);
-	return fd;
+	say("I'm out of addresses for server %d so I have to stop.", 
+			server);
+	Freeaddrinfo(s->addrs);
+	s->addrs = NULL;
+	s->next_addr = NULL;
+	return -1;
 }
 
 /*
@@ -1228,7 +1220,7 @@ int 	connect_to_server (int new_server, int restart)
 	 */
 	if (!(s = get_server(new_server)))
 	{
-		say("Connecting to refnum %d.  That makes no sense.", 
+		say("Connecting to server %d.  That makes no sense.", 
 			new_server);
 		return -1;		/* XXXX */
 	}
@@ -1238,7 +1230,8 @@ int 	connect_to_server (int new_server, int restart)
 	 */
 	if (s->des != -1)
 	{
-		say("Connected to port %d of server %s", s->port, s->name);
+		say("Connected to server %d at %s:%d", 
+				new_server, s->name, s->port);
 		from_server = new_server;
 		return -1;		/* Server is already connected */
 	}
@@ -1246,8 +1239,10 @@ int 	connect_to_server (int new_server, int restart)
 	/*
 	 * Make an attempt to connect to the new server.
 	 */
+/*
 	say("Connecting to port %d of server %s [refnum %d]", 
 			s->port, s->name, new_server);
+*/
 
 	set_server_status(new_server, SERVER_CONNECTING);
 	s->closing = 0;
@@ -1267,8 +1262,8 @@ int 	connect_to_server (int new_server, int restart)
 
 		if ((s = get_server(new_server)))
 		{
-		    say("Unable to connect to port %d of server %s: [%d] %s", 
-				s->port, s->name, des, my_strerror(des, errno));
+		    say("Unable to connect to server %d at %s:%d",
+				new_server, s->name, s->port);
 
 		    /* Would cause client to crash, if not wiped out */
 		    set_server_ssl_enabled(new_server, FALSE);

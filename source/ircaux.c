@@ -1,4 +1,4 @@
-/* $EPIC: ircaux.c,v 1.129 2005/02/21 14:07:43 jnelson Exp $ */
+/* $EPIC: ircaux.c,v 1.130 2005/03/03 02:10:39 jnelson Exp $ */
 /*
  * ircaux.c: some extra routines... not specific to irc... that I needed 
  *
@@ -3508,63 +3508,6 @@ char	*dequote_buffer (char *str, size_t *len)
 	return ret;
 }
 
-const char *	my_strerror (int err1, int err2)
-{
-static	char	buffer[1024];
-
-	if (err1 == -1)
-	{
-	    if (err2 < 0)
-	    {
-#ifdef HAVE_HSTRERROR
-		return hstrerror(h_errno);
-#else
-		return "Hostname lookup failure";
-#endif
-	    }
-	    else
-		return strerror(errno);
-	}
-	else if (err1 == -2)
-	    return "The operation is not supported for the protocol family";
-	else if (err1 == -3)
-	    return "The hostname has no address in the protocol family";
-	else if (err1 == -4)
-	    return "The presentation internet address was invalid";
-	else if (err1 == -5)
-	    return "The hostname does not resolve";
-	else if (err1 == -6)
-	    return "There is no virtual host for the protocol family";
-	else if (err1 == -7)
-	    return "The remote peer to connect to was not provided";
-	else if (err1 == -8)
-	    return "The local and remote address are in different protocol families.";
-	else if (err1 == -9)
-	    return "Connection was not successful (may have timed out)";
-	else if (err1 == -10)
-	    return "Requested local port is not available.";
-	else if (err1 == -11)
-	{
-	    snprintf(buffer, 1024, "Connect failed: %s", strerror(err2));
-	    return buffer;
-	}
-	else if (err1 == -12)
-	    return "Connection was not successful (may have been reset)";
-	else if (err1 == -13)
-	    return "The local address to bind to was not provided";
-	else if (err1 == -14)
-	    return "The protocol family does not make sense";
-	else if (err1 == -100)
-	    return "Connection closed";
-	else if (err1 < 0)
-	{
-	    snprintf(buffer, 1024, "EPIC Network Error %d", err1);
-	    return buffer;
-	}
-	else
-		return strerror(err1);
-}
-
 /* 
  * Should I switch over to using getaddrinfo() directly or is using
  * inet_strton() sufficient?
@@ -3599,26 +3542,19 @@ char *	switch_hostname (const char *new_hostname)
 	else
 		v6 = workstr;
 
-yell("v4 is %s, v6 is %s", v4, v6);
-
 	if (v4 && *v4)
 	{
 	    new_4.sin_family = AF_INET;
 	    if (!inet_strton(v4, zero, (SA *)&new_4, 0))
 	    {
-yell("v4 resolves, checking for bind.");
 		if ((fd = client_bind((SA *)&new_4, sizeof(ISA))) >= 0)
 		{
-yell("v4 binds.");
 		    close(fd);
 		    accept4 = 1;
 		    malloc_strcpy(&LocalIPv4HostName, v4);
 		}
 		else
-{
-yell("v4 does not bind.");
-		    malloc_strcpy(&v4_error, my_strerror(fd, errno));
-}
+		    malloc_strcpy(&v4_error, "see above");
 	    }
 	}
 
@@ -3635,7 +3571,7 @@ yell("v4 does not bind.");
 		    malloc_strcpy(&LocalIPv6HostName, v6);
 		}
 		else
-		    malloc_strcpy(&v6_error, my_strerror(fd, errno));
+		    malloc_strcpy(&v6_error, "see above");
 	    }
 	}
 #endif
@@ -4847,7 +4783,7 @@ char *	substitute_string (const char *string, const char *oldstr, const char *ne
 	}
 
 	retval[i] = 0;
-	if (i > retvalsize)
+	if (i > (int)retvalsize)
 	    panic("substitute [%s] with [%s] in [%s] overflows [%ld] chars", 
 			oldstr, newstr, string, retvalsize);
 

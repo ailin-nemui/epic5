@@ -1,4 +1,4 @@
-/* $EPIC: window.c,v 1.136 2005/03/01 00:54:55 jnelson Exp $ */
+/* $EPIC: window.c,v 1.137 2005/03/03 02:10:40 jnelson Exp $ */
 /*
  * window.c: Handles the organzation of the logical viewports (``windows'')
  * for irc.  This includes keeping track of what windows are open, where they
@@ -3690,9 +3690,15 @@ static Window *window_name (Window *window, char **args)
 			window_statusbar_needs_update(window);
 		}
 
-		/* /window name to existing name -- ignore this. */
+		/* 
+		 * /window name to existing name -- permit this, to allow
+		 * the user to change case of characters in the name.
+		 */
 		else if (window->name && (my_stricmp(window->name, arg) == 0))
-			return window;
+		{
+			malloc_strcpy(&window->name, arg);
+			window_statusbar_needs_update(window);
+		}
 
 		else if (is_window_name_unique(arg))
 		{

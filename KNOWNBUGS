@@ -3,14 +3,10 @@ EPIC5 Projects, Bugs, and other Errata:
 KNOWN ERRATA (eg, bugs, or unresolved requests):
 ------------------------------------------------
 * +k mode on status bar w/o the channel key
-* Check to see if we can hook incomplete lines via dcc now
 * Debug everything -- check to make sure dcc and ssl works
 * SSL server i can use warped.bluecherry.net:7000
 * irc.link-net.org:7000:::linknet:irc-ssl
-* Sort out the whole errno/dgets_errno/my_strerror mess.
-* Receiving dcc offers causes panic for Kitambi
 * Pthreads + SSL may not be a winning combination.
-* Something that converts an ON into a string that can be saved.
 
 [See http://www.epicsol.org/PROJECTS for things to come in the future]
 [See http://www.epicsol.org/CHANGELOG5 for things that changed in the past]
@@ -518,3 +514,22 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Fix /on 005 so it shows the /on 005's and not all numeric hooks.
 * If Accept() fails, tell the user straight-way so I can debug this.
 * Fix /window name - so it redraws the status bar.
+* Refactor the error stuff by eliminating my_strerror() and dgets_errno.
+* Error messages are now delivered on multiple levels as info is available.
+* This may get annoying, but it's a lot more accurate now!
+* Change inet_* functions to return int's since their retval is unused.
+* Add a new internal "syserr()" function that generates formatted errors.
+* Syserr's look like say()s but they act like yell()s. (can hook with /on yell)
+* Keep an counter in the server stuff so we can count off as addrs are used.
+* So the error message in /ON DCC_LOST is always just "ERROR" now.
+* Fix various compiler warnings and stuff.
+* Add $hookctl(GET HOOK <ref> STRING), return /load'able format of ON
+* Fix some debugging outbound in switch_hostname(), doh!
+* Roll set_socket_options() into a new Socket() function.
+* Roll connections to AF_UNIX sockets into the mainline stuff.
+* Roll nonblocking/connect/nonblocking into Connect().
+* Add AF_UNIX support to Getnameinfo() to remove annoying errors.
+* When doing recovery from EBADF in select, only check fd's we're using
+* Just puke if configured for kqueue() and kqueue() fails.
+* Don't puke on default 353 output if the userlist arg is missing. (for ratbox)
+* Permit doing /window name to change case of window's name.
