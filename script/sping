@@ -1,0 +1,331 @@
+# sping.irc: a script to calculate the lag between you and a server
+#
+# written by nsx
+#
+# note: this script uses the serial number 105 for its serial hooks
+#
+
+package sping.irc
+
+
+# *** config variables **
+
+@sping_timeout = 1200
+
+
+# *** commands ***
+
+alias sping (server) {
+	@:source_server = servernum()
+
+	if (server == []) {
+		@:server = servername()
+	}
+
+	@:now = utime()
+	quote PING $server $server
+
+	@:ping_id = get_ping_id()
+	@:sping_data = [$ping_id $now $source_server $server]
+
+	push sping_list $sping_data
+	^eval timer -refnum $ping_id $sping_timeout @timeout_sping\($ping_id $server\)
+
+	^eval xecho -w $serv_win() -- $sping_sent_format
+}
+
+alias vping (server) {
+	@:refnum = servernum()
+
+	if (server == []) {
+		@:server = servername()
+	}
+
+	@:serv = [!]
+	@:vping_list = vpings[$refnum]
+
+	for (@:i = 3, serv != [], @:i += 4) {
+		@:serv = word($i $vping_list)
+
+		if (serv == server) {
+			^eval xecho -w $serv_win() -- $vping_waiting_format
+			return
+		}
+	}
+
+	@:now = utime()
+	quote VERSION $server
+
+	@:ping_id = get_ping_id()
+	@:vping_data = [$ping_id $now $server]
+
+	push vpings[$servernum()] $vping_data
+	^eval timer -refnum $ping_id $sping_timeout @timeout_vping\($ping_id $server\)
+
+	^on ^351 "$server *" {
+		@:now = utime()
+		@:retval = handle_version($0 $now)
+
+		if (retval) {
+			xecho -b -w $serv_win() -- $1-
+		}
+
+		^on ^351 -"$0 *"
+		^on ^263 -"$0 VERSION *"
+	}
+
+	^on ^263 "$server VERSION *" {
+		@:now = utime()
+		@:retval = handle_version($0 $now)
+
+		if (retval) {
+			xecho -b -w $serv_win() -- $1-
+		}
+
+		^on ^351 -"$0 *"
+		^on ^263 -"$0 VERSION *"
+	}
+
+	^eval xecho -w $serv_win() -- $vping_sent_format
+}
+
+
+# *** functions ***
+
+alias calculate_ping_time (ithen, fthen, inow, fnow) {
+	@:idiff = inow - ithen
+	@:fdiff = fnow - fthen
+
+	if (fdiff < 0) {
+		@:fdiff += 1000000
+		@:idiff--
+	}
+
+	repeat ${6 - @fdiff} @:fdiff = [0] ## fdiff
+
+	@:minute_diff = my_floor(${idiff / 60})
+	@:second_diff = idiff % 60
+
+	if (idiff >= 60) {
+		if (minute_diff == 1) {
+			return $minute_diff min ${second_diff}.${fdiff} secs
+		} else {
+			return $minute_diff mins ${second_diff}.${fdiff} secs
+		}
+	} else {
+		return ${second_diff}.${fdiff} secs
+	}
+
+}
+
+alias clear_pings {
+	@sping_list = []
+	@ping_number = 0
+
+	fe ($myservers()) server_name {
+		@:refnum = servernum($server_name)
+		@vpings_$(refnum) = []
+	}
+}
+
+alias get_ping_id {
+	@ping_number++
+
+	return ping${ping_number}
+}
+
+alias handle_pong (server_name, now) {
+	@:inow = word(0 $now)
+	@:fnow = word(1 $now)
+	@:server = [!]
+
+	for (@:i = 4, server != [], @:i += 5) {
+		@:server = word($i $sping_list)
+
+		if (server == server_name) {
+			@:ping_id = word(${i - 4} $sping_list)
+			@:sping_itime = word(${i - 3} $sping_list)
+			@:sping_ftime = word(${i - 2} $sping_list)
+			@:reply_msg = calculate_ping_time($sping_itime $sping_ftime $inow $fnow)
+
+			@:new_list_start = leftw(${i - 4} $sping_list)
+			@:new_list_end = rightw(${(#sping_list - (i - 4)) - 5} $sping_list)
+
+			if (new_list_start == []) {
+				@sping_list = new_list_end
+			} else {
+				@sping_list = new_list_start ## [ ] ## new_list_end
+			}
+
+			^eval timer -del $ping_id
+
+			^eval xecho -w $serv_win() -- $sping_receive_reply_format
+			xecho -w $serv_win()
+
+			return
+		}
+	}
+
+	^eval xecho -w $serv_win() -- $server_pong_format
+}
+
+alias handle_version (server_name, now) {
+	@:inow = word(0 $now)
+	@:fnow = word(1 $now)
+	@:refnum = servernum()
+	@:server = [!]
+	@:vping_list = vpings[$refnum]
+
+	for (@:i = 3, server != [], @:i += 4) {
+		@:server = word($i $vping_list)
+
+		if (server == server_name) {
+			@:ping_id = word(${i - 3} $vping_list)
+			@:vping_itime = word(${i - 2} $vping_list)
+			@:vping_ftime = word(${i - 1} $vping_list)
+			@:reply_msg = calculate_ping_time($vping_itime $vping_ftime $inow $fnow)
+			@:new_list_start = leftw(${i - 3} $vping_list)
+			@:new_list_end = rightw(${(#vping_list - (i - 3)) - 4} $vping_list)
+
+			if (new_list_start == []) {
+				@:vping_list = new_list_end
+			} else {
+				@:vping_list = new_list_start ## [ ] ## new_list_end
+			}
+
+			@vpings[$refnum] = vping_list
+			^eval timer -del $ping_id
+
+			^eval xecho -w $serv_win() -- $vping_receive_reply_format
+			xecho -w $serv_win()
+
+			return 0
+		}
+	}
+
+	return 1
+}
+
+alias my_floor (number) {
+	switch ($count(. $number)) {
+		(1) {
+			return $before(. $number)
+		}
+
+		(0) {
+			return $number
+		}
+
+		(*) {
+			return -1
+		}
+	}
+}
+
+alias remove_ping_list_entry (field, value, entry_size, list) {
+	@:item = [!]
+	@:new_list = list
+
+	for (@:i = field, item != [], @:i += entry_size) {
+		@:item = word($i $list)
+
+		if (item == value) {
+			@:ping_id = word(${i - field} $list)
+			@:new_list_start = leftw(${i - field} $list)
+			@:new_list_end = rightw(${(#list - (i - field)) - entry_size} $list)
+
+			if (new_list_start == []) {
+				@:new_list = new_list_end
+			} else {
+				@:new_list = new_list_start ## [ ] ## new_list_end
+			}
+
+			^eval timer -del $ping_id
+		}
+	}
+
+	return $new_list
+}
+
+alias serv_win (refnum) {
+	@:win_max = [255]
+	@:i = [1]
+
+	if (refnum == []) {
+		@:refnum = servernum()
+	}
+
+	while (i < win_max) {
+		if (winserv($i) == refnum) {
+			return $i
+		}
+
+		@:i++
+	}
+}
+
+alias timeout_sping (ping_id, server) {
+	if (sping_list == []) {
+		return
+	}
+
+	@sping_list = remove_ping_list_entry(0 $ping_id 5 $sping_list)
+
+	^eval xecho -w $serv_win() -- $sping_timeout_format
+}
+
+alias timeout_vping (ping_id, server) {
+	@:refnum = servernum($server)
+	@:vping_list = vpings[$refnum]
+
+	if (vping_list == []) {
+		return
+	}
+
+	@:vping_list = remove_ping_list_entry(0 $ping_id 4 $vping_list)
+	@vpings_[$refnum] = vping_list
+
+	^eval xecho -w $serv_win() -- $vping_timeout_format
+}
+
+
+# *** hooks ***
+
+# upon connection to any server, let's make sure the ping queues for that
+# server are clean
+
+on #^connect 105 "*" {
+	@:refnum = servernum($0)
+	@:vpings[$refnum] = []
+
+	@sping_list = remove_ping_list_entry(4 $0 5 $sping_list)
+}
+
+on ^pong "*" {
+	@:now = utime()
+	@handle_pong($0 $now)
+}
+
+# upon disconnection from any server, let's make sure we're not still waiting
+# for a response to any pings we sent while connected to that server.
+
+on #^server_lost 105 "*" {
+	@:refnum = [$0]
+	@:vpings[$refnum] = []
+
+	@sping_list = remove_ping_list_entry(3 $refnum 5 $sping_list)
+}
+
+# if we're told that a server doesn't exist, let's make sure we're not waiting
+# a ping reply from that server.
+
+on #^402 105 "*" {
+	@sping_list = remove_ping_list_entry(4 $1 5 $sping_list)
+
+	fe ($myservers()) server_name {
+		@:refnum = servernum($server_name)
+		vpings[$refnum] = remove_ping_list_entry(3 $1 4 $vpings[$refnum])
+	}
+}
+
+@clear_pings()
