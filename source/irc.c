@@ -25,7 +25,7 @@ const char internal_version[] = "20011203";
 /*
  * In theory, this number is incremented for every commit.
  */
-const unsigned long	commit_id = 178;
+const unsigned long	commit_id = 179;
 
 /*
  * As a way to poke fun at the current rage of naming releases after
@@ -1160,7 +1160,7 @@ static		time_t	last_minute = -1;
 
 			from_server = primary_server;
 			do_hook(TIMER_LIST, "%02d:%02d", hour, min);
-			do_hook(IDLE_LIST, "%ld", tv.tv_sec - idle_time.tv_sec / 60);
+			do_hook(IDLE_LIST, "%ld", (tv.tv_sec - idle_time.tv_sec) / 60);
 			from_server = old_server;
 		}
 
