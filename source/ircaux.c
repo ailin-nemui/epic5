@@ -1,4 +1,4 @@
-/* $EPIC: ircaux.c,v 1.106 2003/12/17 09:25:30 jnelson Exp $ */
+/* $EPIC: ircaux.c,v 1.107 2003/12/18 02:22:31 jnelson Exp $ */
 /*
  * ircaux.c: some extra routines... not specific to irc... that I needed 
  *
@@ -1684,7 +1684,7 @@ int	slurp_file (char **buffer, char *filename)
 int 	fw_strcmp (comp_len_func *compar, char *v1, char *v2)
 {
 	int len = 0;
-	char *pos = one;
+	const char *pos = one;
 
 	while (!my_isspace(*pos))
 		pos++, len++;
@@ -2570,7 +2570,7 @@ static 	char 	*mystuff = NULL;
 
 	malloc_strcpy(&mystuff, nuh);
 
-	*host = star;
+	*host = endstr(mystuff);
 
 
 	/*
@@ -2633,14 +2633,14 @@ static 	char 	*mystuff = NULL;
 			if (adot)		/* nick!host.domain */
 			{
 				*nick = mystuff;
-				*user = star;
+				*user = endstr(mystuff);
 				*host = at + 1;
 			}
 			else			/* nick!user */
 			{
 				*nick = mystuff;
-				*user = star;
-				*host = star;
+				*user = endstr(mystuff);
+				*host = *user;
 			}
 		}
 	}
@@ -2649,7 +2649,7 @@ static 	char 	*mystuff = NULL;
 		if (at)
 		{
 			/* user@host.domain */
-			*nick = star;
+			*nick = endstr(mystuff);
 			*user = mystuff;
 			*host = at + 1;
 		}
@@ -2657,15 +2657,15 @@ static 	char 	*mystuff = NULL;
 		{
 			if (adot)		/* host.domain */
 			{
-				*nick = star;
-				*user = star;
+				*nick = endstr(mystuff);
+				*user = *nick;
 				*host = mystuff;
 			}
 			else			/* nick */
 			{
 				*nick = mystuff;
-				*user = star;
-				*host = star;
+				*user = endstr(mystuff);
+				*host = *user;
 			}
 		}
 	}

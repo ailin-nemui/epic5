@@ -41,3 +41,4 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Make KICKs, PARTs, QUITs, MODEs, et al use their new special levels!
 * All levels now mean everything in every context!  HUZZAH! 
 * Make empty_string const.  Now we're cooking with gas! 
+* Const correctness madness!

@@ -1,4 +1,4 @@
-/* $EPIC: array.c,v 1.17 2003/10/31 08:19:24 crazyed Exp $ */
+/* $EPIC: array.c,v 1.18 2003/12/18 02:22:31 jnelson Exp $ */
 /*
  * array.c -- Karll's Array Suite
  *
@@ -924,7 +924,7 @@ BUILT_IN_FUNCTION(function_listarray, input)
 
 	if ((name = next_arg(input, &input)) && (array = get_array(name)))
 	{
-		char *separator = (input && *input) ? new_next_arg(input, &input) : space;
+		const char *separator = (input && *input) ? new_next_arg(input, &input) : space;
 
 		for (idx = 0; idx < array->size; idx++)
 			malloc_strcat_wordlist_c(&result, separator, array->item[idx], &resclue);

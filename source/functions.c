@@ -1,4 +1,4 @@
-/* $EPIC: functions.c,v 1.152 2003/12/17 09:25:30 jnelson Exp $ */
+/* $EPIC: functions.c,v 1.153 2003/12/18 02:22:31 jnelson Exp $ */
 /*
  * functions.c -- Built-in functions for ircII
  *
@@ -4226,7 +4226,10 @@ BUILT_IN_FUNCTION(function_uhc, input)
 	if (figure_out_address(input, &nick, &user, &host))
 		RETURN_STR(input);
 	else
-		return malloc_sprintf(NULL, "%s!%s@%s", nick, user, host);
+		return malloc_sprintf(NULL, "%s!%s@%s", 
+				*nick ? nick : star,
+				*user ? user : star,
+				*host ? host : star);
 }
 
 /*
@@ -5212,7 +5215,7 @@ BUILT_IN_FUNCTION(function_mask, args)
 	if (!domain) domain = LOCAL_COPY(empty_string);
 
 	/* DOT gives you a "." if the host and domain are both non-empty */
-#define USER (user == star ? empty_string : user)
+#define USER *user ? user : star
 #define DOT  (*domain && *host ? dot : empty_string)
 #define MASK1(x, y) snprintf(stuff, BIG_BUFFER_SIZE, x, y); break;
 #define MASK2(x, y, z) snprintf(stuff, BIG_BUFFER_SIZE, x, y, z); break;
@@ -5223,24 +5226,24 @@ BUILT_IN_FUNCTION(function_mask, args)
 	if (!ip) 
 	switch (which)
 	{
-		case 0:  MASK4("*!%s@%s%s%s",         user, host, DOT, domain)
-		case 1:  MASK4("*!*%s@%s%s%s",        USER, host, DOT, domain)
+		case 0:  MASK4("*!%s@%s%s%s",         USER, host, DOT, domain)
+		case 1:  MASK4("*!*%s@%s%s%s",        user, host, DOT, domain)
 		case 2:  MASK3("*!*@%s%s%s",                host, DOT, domain)
-		case 3:  MASK3("*!*%s@*%s%s",         USER,       DOT, domain)
+		case 3:  MASK3("*!*%s@*%s%s",         user,       DOT, domain)
 		case 4:  MASK2("*!*@*%s%s",                       DOT, domain)
-		case 5:  MASK5("%s!%s@%s%s%s",  nick, user, host, DOT, domain)
-		case 6:  MASK5("%s!*%s@%s%s%s", nick, USER, host, DOT, domain)
+		case 5:  MASK5("%s!%s@%s%s%s",  nick, USER, host, DOT, domain)
+		case 6:  MASK5("%s!*%s@%s%s%s", nick, user, host, DOT, domain)
 		case 7:  MASK4("%s!*@%s%s%s",   nick,       host, DOT, domain)
-		case 8:  MASK4("%s!*%s@*%s%s",  nick, USER,       DOT, domain)
+		case 8:  MASK4("%s!*%s@*%s%s",  nick, user,       DOT, domain)
 		case 9:  MASK3("%s!*@*%s%s",    nick,             DOT, domain)
 		case 10: mask_digits(&host);
 			 MASK3("*!*@%s%s%s",                host, DOT, domain)
 		case 11: mask_digits(&host);
-			 MASK4("*!*%s@%s%s%s",        USER, host, DOT, domain)
+			 MASK4("*!*%s@%s%s%s",        user, host, DOT, domain)
 		case 12: mask_digits(&host);
 			 MASK4("%s!*@%s%s%s",   nick,       host, DOT, domain)
 		case 13: mask_digits(&host);
-			 MASK5("%s!*%s@%s%s%s", nick, USER, host, DOT, domain)
+			 MASK5("%s!*%s@%s%s%s", nick, user, host, DOT, domain)
 	}
 	else /* in the case of IPs, we always have domain/host */
 	switch (which)

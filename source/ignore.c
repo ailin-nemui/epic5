@@ -1,4 +1,4 @@
-/* $EPIC: ignore.c,v 1.16 2003/12/17 09:25:30 jnelson Exp $ */
+/* $EPIC: ignore.c,v 1.17 2003/12/18 02:22:31 jnelson Exp $ */
 /*
  * ignore.c: handles the ingore command for irc 
  *
@@ -291,7 +291,9 @@ static int 	remove_ignore (const char *nick)
 		strlcpy(new_nick, nick, IRCD_BUFFER_SIZE);
 	else
 		snprintf(new_nick, IRCD_BUFFER_SIZE, "%s!%s@%s",
-			mnick, user, host);
+				*mnick ? mnick : star,
+				*user ? user : star,
+				*host ? host : star);
 
 	/*
 	 * Look for an exact match first.
@@ -769,7 +771,9 @@ static int	foreach_ignore (const char *nicklist, int create, int (*callback) (Ig
 			strlcpy(new_nick, nick, sizeof new_nick);
 		    else
 			snprintf(new_nick, sizeof new_nick, "%s!%s@%s",
-					mnick, user, host);
+					*mnick ? mnick : star,
+					*user ? user : star,
+					*host ? host : star);
 
 		    /*
 		     * Create a new ignore item if this one does not exist.

@@ -1,4 +1,4 @@
-/* $EPIC: lastlog.c,v 1.31 2003/12/16 23:25:45 jnelson Exp $ */
+/* $EPIC: lastlog.c,v 1.32 2003/12/18 02:22:31 jnelson Exp $ */
 /*
  * lastlog.c: handles the lastlog features of irc. 
  *
@@ -899,7 +899,7 @@ void	set_current_window_mask (const void *stuff)
 char 	*function_line (char *word)
 {
 	int	line = 0;
-	char *	windesc = zero;
+	const char *	windesc = zero;
 	Lastlog	*start_pos;
 	Window	*win;
 	char	*extra;
@@ -950,7 +950,7 @@ char 	*function_line (char *word)
  */
 char *function_lastlog (char *word)
 {
-	char *	windesc = zero;
+	const char *	windesc = zero;
 	char *	pattern = NULL;
 	char *	retval = NULL;
 	Lastlog	*iter;

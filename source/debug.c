@@ -1,4 +1,4 @@
-/* $EPIC: debug.c,v 1.13 2003/12/15 05:41:02 jnelson Exp $ */
+/* $EPIC: debug.c,v 1.14 2003/12/18 02:22:31 jnelson Exp $ */
 /*
  * debug.c -- controll the values of x_debug.
  *
@@ -129,7 +129,7 @@ BUILT_IN_COMMAND(xdebugcmd)
 char *	function_xdebug (char *word)
 {
 	char	*ret = NULL;
-	char	*mask = NULL;
+	const char	*mask = NULL;
 	int	cnt;
 	size_t	clue = 0;
 
