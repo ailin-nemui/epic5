@@ -1,4 +1,4 @@
-/* $EPIC: reg.c,v 1.8 2003/12/25 04:39:49 jnelson Exp $ */
+/* $EPIC: reg.c,v 1.9 2003/12/25 15:28:03 jnelson Exp $ */
 /*
  * reg.c - "glob"-like wildcard pattern matching (not regexes)
  *
@@ -633,10 +633,12 @@ char *	pattern2regex (const char *pattern, int *weight)
 	const char *	pat;
 	size_t	retsize;
 
-	retsize = strlen(pattern) * 11 + 2;	/* big enough? */
+	*weight = 0;
+
+	retsize = strlen(pattern) * 11 + 4;	/* big enough? */
 	retval = new_malloc(retsize);
 	*retval = 0;
-	*weight = 0;
+	strlcat(retval, "^", retsize);
 
 	for (pat = pattern; *pat; pat++)
 	{
@@ -710,6 +712,7 @@ char *	pattern2regex (const char *pattern, int *weight)
 			break;
 	    }
 	}
+	strlcat(retval, "$", retsize);
 
 	(*weight)++;		/* The nul counts towards the weight */
 
