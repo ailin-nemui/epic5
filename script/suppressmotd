@@ -1,0 +1,45 @@
+#
+# Here's the story.  We want to suppress server-side MOTDs.
+# I don't know why anyone would want to do this, but eh, this
+# used to be an epic function and i removed it and people noticed
+# it so I'm honor bound to script it at the very least.
+#
+@ suppress_server_motd = 0
+on ^set "suppress_server_motd on" {@suppress_server_motd = 1}
+on ^set "suppress_server_motd off" {@suppress_server_motd = 0}
+
+do
+{
+	@ negser = getserial(HOOK -)
+	@ posser = getserial(HOOK +)
+
+	# The first time we see the MOTD, trigger the "doing motd" flag.
+	on #^375 $negser * {
+		if (!done_motd[$lastserver()]) {
+			^assign doing_motd[$lastserver()] 1
+		}
+	}
+	# When we see the end of the first MOTD, trigger the "done motd" flag.
+	on #^376 $posser * {
+		if (doing_motd[$lastserver()]) {
+			^assign -doing_motd[$lastserver()]
+			^assign done_motd[$lastserver()] 1
+		}
+	}
+	# When the connection is closed, reset the flag.
+	on #^server_lost $posser * {
+		^assign -done_motd[$lastserver()]
+	}
+
+	# Only suppress the first MOTD from each server connection.
+	for i in (372 375 376 377) { 
+	    on ^$i * { 
+		if (suppress_server_motd && doing_motd[$lastserver()]) { 
+			return 
+		}
+		xecho -b $1-
+	    }
+	}
+}
+
+#hop'y2k+3
