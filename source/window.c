@@ -1,4 +1,4 @@
-/* $EPIC: window.c,v 1.41 2002/10/23 20:47:08 jnelson Exp $ */
+/* $EPIC: window.c,v 1.42 2002/10/24 22:28:07 jnelson Exp $ */
 /*
  * window.c: Handles the organzation of the logical viewports (``windows'')
  * for irc.  This includes keeping track of what windows are open, where they
@@ -1104,7 +1104,7 @@ void	resize_window_display (Window *window)
 		window->ceiling_of_display = window->top_of_display;
 		window->old_size = 1;
 	}
-	else if (window->hold_mode)
+	else if (window->hold_mode || window->autohold)
 		;
 	else
 	{
@@ -3166,8 +3166,8 @@ static Window *window_hold_mode (Window *window, char **args)
 	if (get_boolean("HOLD_MODE", args, &window->hold_mode))
 		return NULL;
 
-	if (window->hold_mode == 0)
-		window_scrollback_end(window);
+	if (window->hold_mode == 0 && window->autohold == 0)
+		unhold_window(window);
 
 	return window;
 }
@@ -4722,7 +4722,7 @@ int	flush_scrollback_after (Window *window)
 
 	window->hold_mode = 0;
 	recalculate_window_cursor_and_display_ip(window);
-	window_scrollback_end(window);
+	unhold_window(window);
 	return 1;
 }
 
@@ -4917,10 +4917,7 @@ void 	unstop_all_windows (char dumb, char *dumber)
 	Window	*tmp = NULL;
 
 	while (traverse_all_windows(&tmp))
-	{
-		tmp->hold_mode = 0;
-		window_scrollback_end(tmp);
-	}
+		unhold_window(tmp);
 }
 
 /* toggle_stop_screen: the BIND function TOGGLE_STOP_SCREEN */
@@ -4928,14 +4925,15 @@ void 	toggle_stop_screen (char unused, char *not_used)
 {
 	current_window->hold_mode = !current_window->hold_mode;
 	if (current_window->hold_mode == 0)
-		window_scrollback_end(current_window);
+		unhold_window(current_window);
 	update_all_windows();
 }
 
 void	unhold_window (Window *window)
 {
 	window->hold_mode = 0;
-	window_scrollback_end(window);
+	if (window->autohold == 0)
+		window_scrollback_end(window);
 }
 
 
@@ -5143,5 +5141,13 @@ void	check_window_cursor (Window *window)
 	if (window->scroll && window->cursor < window->display_size && 
 			window->cursor < window->distance_from_display_ip)
 		recalculate_window_cursor_and_display_ip(window);
+
+	/* XXX This is a hack that covers up a bug elsewhere. */
+	if (current_window->hold_mode == 0 && current_window->autohold == 0 &&
+		    window->distance_from_display_ip > window->display_size)
+	{
+		window_scrollback_end(current_window);
+		yell("Unheld this window for you -- let #epic on efnet know!");
+	}
 }
 

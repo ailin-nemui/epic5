@@ -140,3 +140,9 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Fix $realpath() to use normalize_filename() so it gets realpath() fix.
 * Add $serverctl(SET <refnum> PRIMARY) to set primary server.  User beware! 
 * Add /set random_source 3, an arc4random random number generator.
+* Remove /set suppress_server_motd which didn't really work anyways.
+* Add function decls for bsd_arc4* to ircaux.c
+* Always check (window->hold_mode || window->autohold) together!
+* Unhold_window()s only if both hold_mode and autohold are off!
+* unhold_window()s instead of doing scrollback_end for robustness.
+* Attempt to recover from the "output is below bottom of window" bug, whine.

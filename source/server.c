@@ -1,4 +1,4 @@
-/* $EPIC: server.c,v 1.71 2002/10/22 23:18:44 jnelson Exp $ */
+/* $EPIC: server.c,v 1.72 2002/10/24 22:28:07 jnelson Exp $ */
 /*
  * server.c:  Things dealing with that wacky program we call ircd.
  *
@@ -129,7 +129,6 @@ void 	add_to_server_list (const char *server, int port, const char *password, co
 		s->userhost = (char *) 0;
 		s->connected = 0;
 		s->eof = 0;
-		s->motd = 1;
 		s->port = port;
 		s->who_queue = NULL;
 		s->ison_queue = NULL;
@@ -2249,21 +2248,6 @@ char *  get_server_cookie (int ssc_index)
 {
         return server_list[ssc_index].cookie;
 }
-
-/* MOTD */
-void 	set_server_motd (int ssm_index, int flag)
-{
-	if (ssm_index != -1 && ssm_index < number_of_servers)
-		server_list[ssm_index].motd = flag;
-}
-
-int 	get_server_motd (int gsm_index)
-{
-	if (gsm_index != -1 && gsm_index < number_of_servers)
-		return(server_list[gsm_index].motd);
-	return (0);
-}
-
 
 
 /* NICKNAMES */

@@ -41,7 +41,6 @@ struct server_typ {
 	int		write;			/* Writing fd (== read) */
 	int		read;			/* Reading fd (== write) */
 	int		eof;			/* True if we've seen an EOF */
-	int		motd;			/* True if we've seen MOTD */
 	int		sent;			/* True if we've sent stuff */
 	char *		redirect;		/* Who we're redirecting to */
 	WhoisEntry *	who_queue;		/* WHO Queue */

@@ -7,7 +7,7 @@
  *
  * See the COPYRIGHT file, or do a HELP IRCII COPYRIGHT 
  *
- * @(#)$Id: ircaux.h,v 1.32 2002/10/22 23:18:44 jnelson Exp $
+ * @(#)$Id: ircaux.h,v 1.33 2002/10/24 22:28:07 jnelson Exp $
  */
 
 #ifndef _IRCAUX_H_
@@ -248,10 +248,16 @@ char 	*tparm (const char *, ...);
 #ifndef HAVE_STRTOUL
 unsigned long 	strtoul (const char *, char **, int);
 #endif
+
 char *	bsd_getenv (const char *);
 int	bsd_putenv (const char *);
 int	bsd_setenv (const char *, const char *, int);
 void	bsd_unsetenv (const char *);
+
+void		bsd_arc4random_stir (void);
+void		bas_arc4random_addrandom (u_char, int);
+u_32int_t	bsd_arc4random (void);
+
 #ifndef HAVE_STRLCPY
 size_t	strlcpy (char *, const char *, size_t);
 #endif

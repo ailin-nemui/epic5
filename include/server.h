@@ -64,7 +64,6 @@ typedef	struct
 	int	connected;		/* true if connection is assured */
 	int	des;			/* file descriptor to server */
 	int	eof;			/* eof flag for server */
-	int	motd;			/* motd flag (used in notice.c) */
 	int	sent;			/* set if something has been sent,
 					 * used for redirect */
 	char	*redirect;		/* Who we're redirecting to here */
@@ -194,9 +193,6 @@ const	char *	get_server_userhost		(int);
 	void	set_server_operator		(int, int);
 
 	void	set_server_cookie		(int, const char *);
-
-	void	set_server_motd			(int, int);
-	int	get_server_motd			(int);
 
 const	char *	get_server_nickname		(int);
 	int	is_me				(int, const char *);

@@ -1,4 +1,4 @@
-/* $EPIC: numbers.c,v 1.30 2002/09/26 22:41:43 jnelson Exp $ */
+/* $EPIC: numbers.c,v 1.31 2002/10/24 22:28:07 jnelson Exp $ */
 /*
  * numbers.c: handles all those strange numeric response dished out by that
  * wacky, nutty program we call ircd 
@@ -205,7 +205,6 @@ void 	numbered_command (char *from, int comm, char **ArgList)
 	case 001:	/* #define RPL_WELCOME          001 */
 	{
 		accept_server_nickname(from_server, user);
-		set_server_motd(from_server, 1);
 		server_is_connected(from_server, 1);
 
 		userhostbase(NULL, got_my_userhost, 1);
@@ -582,47 +581,6 @@ void 	numbered_command (char *from, int comm, char **ArgList)
 			}
 		}
 		number_of_bans = 0;
-		break;
-	}
-
-	/* 
-	 * I put these here so that if you have SUPPRESS_SERVER_MOTD set
-	 * to on, then you cant hook 372, 375, 376, as advertised.
-	 */
-	case 372:		/* #define RPL_MOTD             372 */
-	case 377:		/* #define FORCE_RPL_MOTD	377 */
-	{
-		if (!get_int_var(SUPPRESS_SERVER_MOTD_VAR) ||
-		    !get_server_motd(from_server))
-		{
-			PasteArgs(ArgList, 0);
-			if (do_hook(current_numeric, "%s %s", from, ArgList[0]))
-				put_it("%s %s", numeric_banner(), ArgList[0]);
-		}
-		break;
-	}
-	case 375:		/* #define RPL_MOTDSTART        375 */
-	{
-		if (!get_int_var(SUPPRESS_SERVER_MOTD_VAR) ||
-		    !get_server_motd(from_server))
-		{
-			PasteArgs(ArgList, 0);
-			if (do_hook(current_numeric, "%s %s", from, ArgList[0]))
-				put_it("%s %s", numeric_banner(), ArgList[0]);
-		}
-		break;
-	}
-	case 376:		/* #define RPL_ENDOFMOTD        376 */
-	{
-		if (get_int_var(SHOW_END_OF_MSGS_VAR) &&
-		    (!get_int_var(SUPPRESS_SERVER_MOTD_VAR) ||
-		    !get_server_motd(from_server)))
-		{
-			PasteArgs(ArgList, 0);
-			if (do_hook(current_numeric, "%s %s", from, ArgList[0]))
-				put_it("%s %s", numeric_banner(), ArgList[0]);
-		}
-		set_server_motd(from_server, 0);
 		break;
 	}
 
