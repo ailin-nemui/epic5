@@ -158,7 +158,7 @@ hook_functions[] =
 	{ "SWITCH_CHANNELS",	(Hook *) 0,	3,	0,	0 },
 	{ "SWITCH_WINDOWS",	(Hook *) 0,	4,	0,	0 },
 	{ "TIMER",		(Hook *) 0,	1,	0,	0 },
-	{ "TOPIC",		(Hook *) 0,	3,	0,	0 },
+	{ "TOPIC",		(Hook *) 0,	2,	0,	0 },
 	{ "UNLOAD",		(Hook *) 0,	1,	0,	0 },
 	{ "WALL",		(Hook *) 0,	2,	0,	0 },
 	{ "WALLOP",		(Hook *) 0,	3,	0,	0 },
