@@ -1,4 +1,4 @@
-/* $EPIC: window.c,v 1.40 2002/10/21 23:15:32 jnelson Exp $ */
+/* $EPIC: window.c,v 1.41 2002/10/23 20:47:08 jnelson Exp $ */
 /*
  * window.c: Handles the organzation of the logical viewports (``windows'')
  * for irc.  This includes keeping track of what windows are open, where they
@@ -2919,10 +2919,13 @@ else
 				window->server > -1 ? 
 				get_server_name(window->server) : "<None>");
 	say("\tScreen: %p",	window->screen);
-	say("\tGeometry Info: [%d %d %d %d %d %d]", 
+	say("\tGeometry Info: [%d %d %d %d %d %d %d %d %d]", 
 				window->top, window->bottom, 
 				0, window->display_size,
-				window->cursor, window->distance_from_display_ip);
+				window->cursor, 
+				window->distance_from_display_ip,
+				window->hold_mode, window->autohold,
+				window->lines_held);
 	say("\tCO, LI are [%d %d]", current_term->TI_cols, current_term->TI_lines);
 	say("\tCurrent channel: %s", 
 				window->current_channel ? 
