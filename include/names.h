@@ -25,6 +25,7 @@ struct WindowStru;
 	int	is_on_channel		(Char *, Char *);
 	int	is_chanop		(Char *, Char *);
 	int	is_chanvoice		(Char *, Char *);
+	int	is_halfop		(Char *, Char *);
 	int	number_on_channel	(Char *, int);
 	char *	create_nick_list	(Char *, int);
 	char *	create_chops_list	(Char *, int);
