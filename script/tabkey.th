@@ -48,7 +48,6 @@ alias proc.tabkey
                 return
         }
         if (numwords($text) == 1)
-        if (numwords($text) == 1)
         {
                 parsekey erase_line
                 xtype -l $comp:$chr(32)

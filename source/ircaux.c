@@ -8,7 +8,7 @@
  */
 
 #if 0
-static	char	rcsid[] = "@(#)$Id: ircaux.c,v 1.25 2002/01/10 02:26:30 crazyed Exp $";
+static	char	rcsid[] = "@(#)$Id: ircaux.c,v 1.26 2002/01/12 21:13:15 jnelson Exp $";
 #endif
 
 #include "irc.h"
@@ -1505,7 +1505,6 @@ int 	end_strcmp (const char *one, const char *two, int bytes)
  */
 char*	exec_pipe (char *executable, char *input, size_t *len, char**args)
 {
-	int	file_pointer;
 	int 	pipe0[2] = {-1, -1};
 	int 	pipe1[2] = {-1, -1};
 	pid_t	pid;
