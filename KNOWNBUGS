@@ -7,6 +7,7 @@ KNOWN ERRATA (eg, bugs, or unresolved requests):
   Maybe try X, fall back to gnu screen on failure?
 * If you create a new query window in /on #msg -33, then the message does
   not go to that query window!
+* Should /set beep off suppress stripping of beeps?
  
 [See http://www.epicsol.org/PROJECTS for things to come in the future]
 [See http://www.epicsol.org/CHANGELOG for things that changed in the past]

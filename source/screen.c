@@ -1530,6 +1530,7 @@ const 	u_char	*ptr;
 		*words,
 		*pos_copy;
 	Attribute	a;
+	Attribute	saved_a;
 	u_char	*cont_free = NULL;
 
 	if (recursion)
@@ -1614,6 +1615,7 @@ const 	u_char	*ptr;
 					firstwb = pos;
 				}
 				word_break = pos;
+				saved_a = a;
 				if (*ptr != ' ' && ptr[1] &&
 				    (col + 1 < max_cols))
 					word_break++;
@@ -1819,7 +1821,7 @@ const 	u_char	*ptr;
 			buffer[pos] = 0;
 			pos_copy = LOCAL_COPY(buffer + word_break);
 			strlcpy(buffer, cont, BIG_BUFFER_SIZE / 2);
-			display_attributes(buffer + strlen(buffer), &a);
+			display_attributes(buffer + strlen(buffer), &saved_a);
 			strlcat(buffer, pos_copy, BIG_BUFFER_SIZE / 2);
 
 			pos = strlen(buffer);
@@ -1991,6 +1993,7 @@ int 	output_with_count (const unsigned char *str1, int clreol, int output)
 			term_beep();
 		if (clreol)
 			term_clear_to_eol();
+		term_all_off();		/* Clean up after ourselves! */
 	}
 
 	return out;
