@@ -1,4 +1,4 @@
-/* $EPIC: screen.c,v 1.87 2004/10/08 04:41:36 jnelson Exp $ */
+/* $EPIC: screen.c,v 1.88 2005/01/06 23:54:13 jnelson Exp $ */
 /*
  * screen.c
  *
@@ -2556,7 +2556,7 @@ void 	repaint_window_body (Window *window)
 		int	numls = 1;
 		unsigned char **lines;
 		unsigned char *n;
-		unsigned char *str;
+		const unsigned char *str;
 
 		if (!(str = window->topline[count]))
 			str = empty_string;

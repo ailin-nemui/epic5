@@ -1,4 +1,4 @@
-/* $EPIC: server.c,v 1.140 2004/10/30 14:56:16 crazyed Exp $ */
+/* $EPIC: server.c,v 1.141 2005/01/06 23:54:13 jnelson Exp $ */
 /*
  * server.c:  Things dealing with that wacky program we call ircd.
  *
@@ -901,6 +901,8 @@ void	do_server (int fd)
 			continue;
 		    }
 
+		    /* Update this! */
+		    *(SA *)&s->remote_sockname = *(SA *)&name;
 		    register_server(i, s->d_nickname);
 		    new_open(des, do_server);
 		}
@@ -1966,10 +1968,20 @@ int	get_server_local_port (int refnum)
 	if (!(s = get_server(refnum)))
 		return 0;
 
-	if (!inet_ntostr((SA *)&s->remote_sockname, NULL, 0, p_port, 12, 0))
+	if (!inet_ntostr((SA *)&s->local_sockname, NULL, 0, p_port, 12, 0))
 		return atol(p_port);
 
 	return 0;
+}
+
+SS	get_server_remote_addr (int refnum)
+{
+	Server *s;
+
+	if (!(s = get_server(refnum)))
+	    panic("Refnum %d isn't valid in get_server_remote_addr", refnum);
+
+	return s->remote_sockname;
 }
 
 SS	get_server_local_addr (int refnum)
@@ -2874,6 +2886,20 @@ char 	*serverctl 	(char *input)
 			RETURN_MSTR(get_server_altnames(refnum));
 		} else if (!my_strnicmp(listc, "ALTNAMES", len)) {
 			RETURN_MSTR(get_server_altnames(refnum));
+		} else if (!my_strnicmp(listc, "ADDRFAMILY", len)) {
+			SS a;
+			SA *x;
+
+			a = get_server_remote_addr(refnum);
+			x = (SA *)&a;
+			if (x->sa_family == AF_INET)
+				RETURN_STR("ipv4");
+			else if (x->sa_family == AF_INET6)
+				RETURN_STR("ipv6");
+			else if (x->sa_family = AF_UNIX)
+				RETURN_STR("unix");
+			else
+				RETURN_STR("unknown");
 		}
 	} else if (!my_strnicmp(listc, "SET", len)) {
 		GET_INT_ARG(refnum, input);

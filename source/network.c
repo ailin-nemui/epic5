@@ -1,4 +1,4 @@
-/* $EPIC: network.c,v 1.56 2004/03/18 01:04:03 jnelson Exp $ */
+/* $EPIC: network.c,v 1.57 2005/01/06 23:54:13 jnelson Exp $ */
 /*
  * network.c -- handles stuff dealing with connecting and name resolving
  *
@@ -277,6 +277,7 @@ int	inet_vhostsockaddr (int family, int port, SS *storage, socklen_t *len)
 	char	*p = NULL;
 	AI	hints, *res;
 	int	err;
+	const char *lhn;
 
 	/*
 	 * If port == -1, then this is a client connection, so we punt
@@ -285,11 +286,18 @@ int	inet_vhostsockaddr (int family, int port, SS *storage, socklen_t *len)
 	 * so we need to use LocalHostName, even if it's NULL.  If you 
 	 * return *len == 0 for port != -1, then /dcc breaks.
 	 */
-	if (family == AF_UNIX || (port == -1 && !LocalHostName))
+	if ((family == AF_UNIX) || 
+            (family == AF_INET && port == -1 && LocalIPv4HostName == NULL) ||
+            (family == AF_INET6 && port == -1 && LocalIPv6HostName == NULL))
 	{
 		*len = 0;
 		return 0;		/* No vhost needed */
 	}
+
+	if (family == AF_INET)
+		lhn = LocalIPv4HostName;
+	else if (family == AF_INET6)
+		lhn = LocalIPv6HostName;
 
 	/*
 	 * Can it really be this simple?
@@ -304,7 +312,7 @@ int	inet_vhostsockaddr (int family, int port, SS *storage, socklen_t *len)
 		p = p_port;
 	}
 
-	if ((err = Getaddrinfo(LocalHostName, p, &hints, &res)))
+	if ((err = Getaddrinfo(lhn, p, &hints, &res)))
 		return -10;
 	memcpy(storage, res->ai_addr, res->ai_addrlen);
 	*len = socklen((SA *)storage);

@@ -1,4 +1,4 @@
-/* $EPIC: functions.c,v 1.183 2005/01/01 18:03:22 jnelson Exp $ */
+/* $EPIC: functions.c,v 1.184 2005/01/06 23:54:13 jnelson Exp $ */
 /*
  * functions.c -- Built-in functions for ircII
  *
@@ -5271,6 +5271,7 @@ BUILT_IN_FUNCTION(function_ishalfop, input)
 	GET_STR_ARG(nick, input);
 	RETURN_INT(is_halfop(input, nick));
 }
+
 BUILT_IN_FUNCTION(function_servports, input)
 {
 	int	servnum = from_server;

@@ -132,9 +132,9 @@ extern	const	char	comma[];
 extern		char *	highlight_char;
 extern		int	do_window_notifies;
 
-extern 		ISA *	LocalIPv4Addr;
+extern 		char *	LocalIPv4HostName;
 #ifdef INET6
-extern		ISA6 *	LocalIPv6Addr;
+extern 		char *	LocalIPv6HostName;
 #endif
 extern		fd_set  readables, held_readables;
 extern		fd_set  writables, held_writables;

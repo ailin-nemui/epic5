@@ -1,4 +1,4 @@
-/* $EPIC: irc.c,v 1.798 2005/01/01 18:03:22 jnelson Exp $ */
+/* $EPIC: irc.c,v 1.799 2005/01/06 23:54:13 jnelson Exp $ */
 /*
  * ircII: a new irc client.  I like it.  I hope you will too!
  *
@@ -52,7 +52,7 @@ const char internal_version[] = "20040319";
 /*
  * In theory, this number is incremented for every commit.
  */
-const unsigned long	commit_id = 1129;
+const unsigned long	commit_id = 1130;
 
 /*
  * As a way to poke fun at the current rage of naming releases after
@@ -197,11 +197,9 @@ int		do_window_notifies = 1;
  * set to addresses that do not belong to the current hostname.
  * If that happens, outbound connections will fail, and its not my fault.
  */
+char *		LocalIPv4HostName = NULL;
+char *		LocalIPv6HostName = NULL;
 char *		LocalHostName = NULL;
-ISA *		LocalIPv4Addr = NULL;
-#ifdef INET6
-ISA6 *		LocalIPv6Addr = NULL;
-#endif
 
 int		inbound_line_mangler = 0,
 		outbound_line_mangler = 0;

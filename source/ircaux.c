@@ -1,4 +1,4 @@
-/* $EPIC: ircaux.c,v 1.123 2004/11/02 23:17:34 jnelson Exp $ */
+/* $EPIC: ircaux.c,v 1.124 2005/01/06 23:54:13 jnelson Exp $ */
 /*
  * ircaux.c: some extra routines... not specific to irc... that I needed 
  *
@@ -3660,77 +3660,117 @@ static	char	buffer[1024];
  */
 char *	switch_hostname (const char *new_hostname)
 {
-	char *	retval = NULL;
+	char 	*workstr = NULL, *v4 = NULL, *v6 = NULL;
+	char 	*retval4 = NULL, *retval6 = NULL, *retval = NULL;
+	char 	*v4_error = NULL, *v6_error = NULL;
 	ISA 	new_4;
-	char 	v4_name[1024];
-	int	accept4 = 0;
 #ifdef INET6
 	ISA6 	new_6;
 #endif
-	char	v6_name[1024];
-	int	accept6 = 0;
-
+	int	accept4 = 0, accept6 = 0;
+	int	fd;
 
 	if (new_hostname == NULL)
 	{
-		new_free(&LocalIPv4Addr);
+		new_free(&LocalIPv4HostName);
 #ifdef INET6
-		new_free(&LocalIPv6Addr);
+		new_free(&LocalIPv6HostName);
 #endif
-
-		if (LocalHostName)
-			malloc_sprintf(&retval, "Virtual Hostname [%s] will no longer be used", LocalHostName);
-		else
-			malloc_sprintf(&retval, "Virtual Hostname support is not activated");
-
-		new_free(&LocalHostName);
-		return retval;
+		goto summary;
 	}
 
-	strlcpy(v4_name, "<none>", sizeof v4_name);
-	new_4.sin_family = AF_INET;
-	if (!inet_strton(new_hostname, zero, (SA *)&new_4, 0)) {
-		inet_ntostr((SA *)&new_4, v4_name, 1024, NULL, 0, NI_NUMERICHOST);
-		accept4 = 1;
-	}
+	accept4 = accept6 = 0;
 
-	strlcpy(v6_name, "<none>", sizeof v6_name);
-#ifdef INET6
-	new_6.sin6_family = AF_INET6;
-	if (!inet_strton(new_hostname, zero, (SA *)&new_6, 0)) {
-		inet_ntostr((SA *)&new_6, v6_name, 1024, NULL, 0, NI_NUMERICHOST);
-		accept6 = 1;
-	}
-#endif
+	workstr = LOCAL_COPY(new_hostname);
+	v4 = workstr;
+	if ((v6 = strchr(workstr, '/')))
+		*v6++ = 0;
+	else
+		v6 = workstr;
 
-	if (accept4 || accept6)
+yell("v4 is %s, v6 is %s", v4, v6);
+
+	if (v4 && *v4)
 	{
-		new_free(&LocalIPv4Addr);
+	    new_4.sin_family = AF_INET;
+	    if (!inet_strton(v4, zero, (SA *)&new_4, 0))
+	    {
+yell("v4 resolves, checking for bind.");
+		if ((fd = client_bind((SA *)&new_4, sizeof(ISA))) >= 0)
+		{
+yell("v4 binds.");
+		    close(fd);
+		    accept4 = 1;
+		    malloc_strcpy(&LocalIPv4HostName, v4);
+		}
+		else
+{
+yell("v4 does not bind.");
+		    malloc_strcpy(&v4_error, my_strerror(fd, errno));
+}
+	    }
+	}
+
 #ifdef INET6
-		new_free(&LocalIPv6Addr);
+	if (v6 && *v6)
+	{
+	    new_6.sin6_family = AF_INET6;
+	    if (!inet_strton(v6, zero, (SA *)&new_6, 0)) 
+	    {
+		if ((fd = client_bind((SA *)&new_6, sizeof(ISA6))) >= 0)
+		{
+		    close(fd);
+		    accept6 = 1;
+		    malloc_strcpy(&LocalIPv6HostName, v6);
+		}
+		else
+		    malloc_strcpy(&v6_error, my_strerror(fd, errno));
+	    }
+	}
 #endif
 
-		if (accept4)
-		{
-		    LocalIPv4Addr = (ISA *)new_malloc(sizeof(*LocalIPv4Addr));
-		    *LocalIPv4Addr = new_4;
-		}
-
-#ifdef INET6
-		if (accept6) 
-		{
-		    LocalIPv6Addr = (ISA6 *)new_malloc(sizeof(*LocalIPv6Addr));
-		    *LocalIPv6Addr = new_6;
-		}
-#endif
-
-		malloc_strcpy(&LocalHostName, new_hostname);
-
-		malloc_sprintf(&retval, "Local address changed to [%s] (%s) (%s)",
-				LocalHostName, v4_name, v6_name);
+summary:
+	if (v4_error)
+		malloc_sprintf(&retval4, "IPv4 vhost not changed because (%s)",
+						v4_error);
+	else if (LocalIPv4HostName)
+	{
+	    if (accept4)
+		malloc_sprintf(&retval4, "IPv4 vhost changed to [%s]",
+						LocalIPv4HostName);
+	    else
+		malloc_sprintf(&retval4, "IPv4 vhost unchanged from [%s]",
+						LocalIPv4HostName);
 	}
 	else
-		malloc_sprintf(&retval, "I cannot configure [%s] -- local address not changed.", new_hostname);
+		malloc_sprintf(&retval4, "IPv4 vhost unset");
+
+#ifdef INET6
+	if (v6_error)
+		malloc_sprintf(&retval6, "IPv6 vhost not changed because (%s)",
+						v6_error);
+	else if (LocalIPv6HostName)
+	{
+	    if (accept6)
+		malloc_sprintf(&retval6, "IPv6 vhost changed to [%s]",
+						LocalIPv6HostName);
+	    else
+		malloc_sprintf(&retval6, "IPv6 vhost unchanged from [%s]",
+						LocalIPv6HostName);
+	}
+	else
+		malloc_sprintf(&retval6, "IPv6 vhost unset");
+#endif
+
+	if (retval6)
+		malloc_sprintf(&retval, "%s, %s", retval4, retval6);
+	else
+		retval = retval4, retval4 = NULL;
+
+	new_free(&v4_error);
+	new_free(&v6_error);
+	new_free(&retval4);
+	new_free(&retval6);
 
 	return retval;
 }

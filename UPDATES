@@ -1,5 +1,34 @@
 EPIC5-0.1
 
+*** News 01/06/2005 -- Can now set ipv4/ipv6 vhosts separately
+	The /hostname (/irchost) and -H command line option may now take 
+	two hostnames, separated by a slash.  Example:
+
+	/hostname foo.bar.com		Use "foo.bar.com" as the vhost for 
+					both ipv4 and ipv6
+	/hostname foo.bar.com/faz.bar.com
+					Use "foo.bar.com" as the vhost for
+					ipv4, and "faz.bar.com" as the vhost
+					for ipv6.
+	/hostname foo.bar.com/		Use "foo.bar.com" as the vhost for 
+					ipv4 only -- don't change the ipv6
+					vhost
+	/hostname /foo.bar.com		Use "foo.bar.com" as the vhost for
+					ipv6 only -- don't change the ipv4
+					vhost
+
+*** News 01/06/2005 -- New serverctl attr: $serverctl(GET <num> ADDRFAMILY)
+	The $serverctl(GET <num> ADDRFAMILY) value returns either
+		ipv4		if the server connection is ipv4
+		ipv6		if the server connection is ipv6
+		unix		if the server connection is a filename
+
+*** News 01/06/2005 -- Old (undocumented) function: $servports()
+	There has been a function $servports() around for a very long time,
+	but it's never been documented.  It returns two values, the first
+	one is the remote port (what you connected to the server with), and
+	the second one is the local port (which is not always useful).
+
 *** News 01/01/2005 -- Argument lists for hooks, and $fix_arglist() (howl)
 	$fix_arglist(arglist) returns how argument list arglist will be parsed
 	by epic.

@@ -3,15 +3,13 @@ EPIC5 Projects, Bugs, and other Errata:
 KNOWN ERRATA (eg, bugs, or unresolved requests):
 ------------------------------------------------
 * Some way to hook incomplete lines via dcc raw
-* Some way to set ipv4 and ipv6 vhosts separately?
 * Make it easier to script your own altnick stuff.
   -- Make reset_nickname() call an /on before forcing user to select new nick.
 * check_window_servers() should not change window_mask on connect, really.
 * Implement $symbolctl(), to supercede $aliasctl().
 * Need some way to fetch your hook info
 * /query targets with nicks crossing with dcc nicks don't match.
-* $serverctl(get <ref> port) errors because the address we use is bogus.
-* A $serverctl() value to tell you what address family the socket is using.
+* If 2 fd's are ready, and you close both in the 1st handler, panic.
 
 [See http://www.epicsol.org/PROJECTS for things to come in the future]
 [See http://www.epicsol.org/CHANGELOG5 for things that changed in the past]
@@ -416,3 +414,9 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Fix bug with % followed by \ in wildcard patterns from epic4.
 * Add arglists to hooks (by howl, who I will pester to document this). Woot!
 * Finish $hookctl(), by howl.
+* After connect()ing to a server, save the remote peername
+* This fixes $serverctl(GET <num> PORT)
+* This also fixes $servports(), which should work as (not) documented.
+* Fix for notify_signon default handler, from larne. thanks!
+* Add $serverctl(GET <num> ADDRFAMILY), returns "ipv4", "ipv6" or "unix"
+* Allow /hostname <ipv4>/<ipv6>, separately set v4/v6 vhosts! (see UPDATES)
