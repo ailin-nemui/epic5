@@ -1,4 +1,4 @@
-EPIC5-0.1
+EPIC5-0.0.4
 
 *** News 03/14/2005 -- New option to $line(), $line(<num> -TIME)
 	You can now provide the "-TIME" option to the $line() function
@@ -214,6 +214,8 @@ EPIC5-0.1
 		COMMAND_MODE	FULL_STATUS_LINE	REVERSE_STATUS_LINE
 		SHOW_CHANNEL_NAMES		SHOW_END_OF_MSGS
 		SHOW_WHO_HOPCOUNT		VERBOSE_CTCP
+
+EPIC5-0.0.3
 
 *** News 01/25/2005 -- New built in function, $symbolctl()
 	Here's the plan.  An all-encompasing low-level symbol manipulation 
@@ -1150,6 +1152,9 @@ EPIC5-0.1
 	patterns to regexes, and now we do things like we have always
 	done with ONs
 
+*** News 08/25/2004 -- New built in function, $regcomp_cs()
+	This is just like $regcomp(), but it's case sensitive.
+
 *** News 08/25/2004 -- In /ON DCC_RAW "* E *", $3 is the port number
 	Previously it held the "othername", which wasn't terribly useful.
 
@@ -1161,6 +1166,8 @@ EPIC5-0.1
 			wait =$fd
 	and it's pretty much the same.  This wait is of course recursive
 	(and does not block the client)
+
+EPIC5-0.0.2
 
 *** News 08/25/2004 -- Level names are always plural, except for CRAP
 	The levels have these names now, and they're gonna stay this way:
@@ -1578,14 +1585,17 @@ EPIC5-0.1
 	This feature was removed (see note above for 08/25/2004)
 			*** OBSOLETE ***
 
+EPIC5-0.0.1
+
 *** News -- 12/16/2003 -- New levels, KICK, QUIT, and MODE
 	So just for a canonical list, here are all of the levels supported
 	by flood, ignore, lastlog, and windows:
-		CRAP	PUBLIC	MSG	NOTICE	WALL	WALLOP
-		NOTE	OPNOTE	SNOTE	ACTION	DCC	CTCP
-		INVITE	JOIN	NICK	TOPIC	PART	QUIT
-		KICK	MODE	USER1	USER2	USER3	USER4
-		ALL (special)	NONE (special)	HELP (special)
+		CRAP	PUBLICS	MSGS	NOTICES	WALLS	WALLOPS
+		OPNOTES	SNOTES	ACTIONS	DCCS	CTCPS
+		INVITES	JOINS	NICKS	TOPICS	PARTS	QUITS
+		KICKS	MODES	USER1	USER2	USER3	USER4
+		USER5	USER6	USER7	USER8	USER9	USER10
+		ALL (special)	NONE (special)
 
 *** News -- 12/16/2003 -- Unification of ignore, flood, and lastlog levels
 	Previously, the ignore, flood, and lastlog levels used the same
