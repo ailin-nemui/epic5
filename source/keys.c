@@ -1,4 +1,4 @@
-/* $EPIC: keys.c,v 1.26 2003/07/10 13:08:57 jnelson Exp $ */
+/* $EPIC: keys.c,v 1.27 2003/07/22 19:04:36 jnelson Exp $ */
 /*
  * keys.c:  Keeps track of what happens whe you press a key.
  *
@@ -652,6 +652,7 @@ void init_keys (void) {
     BIND("^D", "DELETE_CHARACTER");
     BIND("^E", "END_OF_LINE");
     BIND("^F", "BLINK");
+    BIND("^G", "SELF_INSERT");
     BIND("^H", "BACKSPACE");
     BIND("^I", "TOGGLE_INSERT_MODE");
     BIND("^J", "SEND_LINE");

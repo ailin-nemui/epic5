@@ -1,4 +1,4 @@
-/* $EPIC: mail.c,v 1.10 2003/07/16 23:23:31 jnelson Exp $ */
+/* $EPIC: mail.c,v 1.11 2003/07/22 19:04:36 jnelson Exp $ */
 /*
  * mail.c -- a gross simplification of mail checking.
  * Only unix maildrops (``mbox'') are supported.
@@ -347,12 +347,6 @@ void	mail_systimer (void)
 
 void    set_mail_interval (int value)
 {
-        if (value < MINIMUM_MAIL_INTERVAL) 
-        {
-                say("The /SET MAIL_INTERVAL value must be at least %d",
-                        MINIMUM_MAIL_INTERVAL);
-                set_int_var(MAIL_INTERVAL_VAR, MINIMUM_MAIL_INTERVAL);
-        }
 }
 
 void	set_mail (int value)
@@ -363,21 +357,15 @@ void	set_mail (int value)
 		return;
 	}
 	else if (value == 0)
-	{
-		stop_system_timer(mail_timeref);
-		/* Force the status bar to be redrawn to get rid of (Mail: ) */
-		update_all_status();
-		cursor_to_input();
 		checkmail->deinit();
-	}
 	else
 	{
-		if (checkmail->init())
-		{
-			start_system_timer(mail_timeref);
-			update_all_status();
-			cursor_to_input();
-		}
+		if (!checkmail->init())
+			return;
 	}
+
+	update_system_timer(mail_timeref);
+	update_all_status();
+	cursor_to_input();
 }
 

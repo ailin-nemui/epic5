@@ -1,4 +1,4 @@
-/* $EPIC: notify.c,v 1.21 2003/07/20 15:56:02 jnelson Exp $ */
+/* $EPIC: notify.c,v 1.22 2003/07/22 19:04:36 jnelson Exp $ */
 /*
  * notify.c: a few handy routines to notify you when people enter and leave irc 
  *
@@ -342,8 +342,10 @@ void 	do_notify (void)
 	Server 		*s;
 	int 		old_from_server = from_server;
 	int		servnum;
+#if 0
 static	time_t		last_notify = 0;
 	int		interval = get_int_var(NOTIFY_INTERVAL_VAR);
+#endif
 
 	if (!number_of_servers)
 		return;
@@ -351,6 +353,7 @@ static	time_t		last_notify = 0;
 	if (x_debug & DEBUG_NOTIFY)
 		yell("do_notify() was called...");
 
+#if 0
 	if (time(NULL) < last_notify)
 		last_notify = time(NULL);
 	else if (!interval || interval > (time(NULL) - last_notify))
@@ -362,6 +365,7 @@ static	time_t		last_notify = 0;
 		return;		/* Not yet */
 	}
 	last_notify = time(NULL);
+#endif
 
 	for (servnum = 0; servnum < number_of_servers; servnum++)
 	{
@@ -630,30 +634,10 @@ void	notify_systimer (void)
 
 void    set_notify_interval (int value)
 {
-	if (value == 0)
-	{
-		stop_system_timer(notify_timeref);
-		return;
-	}
-
-        if (value < MINIMUM_NOTIFY_INTERVAL)
-        {
-                say("The /SET NOTIFY_INTERVAL value must be at least %d",
-                        MINIMUM_NOTIFY_INTERVAL);
-                set_int_var(NOTIFY_INTERVAL_VAR, MINIMUM_NOTIFY_INTERVAL);
-        }
-
-	start_system_timer(notify_timeref);
 }
 
 void    set_notify (int value)
 {
-	if (value == 0)
-	{
-		stop_system_timer(notify_timeref);
-		return;
-	}
-
-	start_system_timer(notify_timeref);
+	update_system_timer(notify_timeref);
 }
 

@@ -149,3 +149,23 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Add /lastlog -target.
 * Protect against panic if you do dcc while not connected to server
 * Protect against panic if /set mail 0 is off by default
+* Add "ON/OFF" toggle set variable to the system timer data.
+* Create 'update_system_timer' which uses the "toggle" var to run or stop timer
+* Merge '(start|stop)_system_timer' into 'update_system_timer'
+* Nix #define MINIMUM_(NOTIFY|CLOCK|MAIL)_INTERVAL since we can't stop that.
+* Do not enforce minimums for /SET *_INTERVAL since user could get around it.
+* Track "last event" time, maybe I'll use that in the future
+* Reset "now" global variable before calling timer callback.
+* Fix null deref bug with $($$)
+* Add default binding to ^G to "self_insert" for beeps.
+* Do not enforce MINIMUM_NOTIFY_INTERVAL in do_notify()
+* Don't include exec.h from screen.c
+* Add 'number' (floating point) field to /set's
+* Add FLOAT_TYPE_VAR type for /set's, using 'number' field
+* Update all the /set entries to include a default 'number' field.
+* Add get_float_var() to get the 'number' field in a set.
+* Add set_float_var() to set the 'number' field in a set.
+* Teach set_variable() about FLOAT_TYPE_VAR sets.
+* Teach save_variables() about FLOAT_TYPE_VAR sets.
+* Teach get_string_variable() about FLOAT_TYPE_VAR sets.
+

@@ -166,13 +166,7 @@ void	clock_systimer (void)
 
 void    set_clock_interval (int value)
 {
-        if (value < MINIMUM_CLOCK_INTERVAL) 
-        {
-                say("The /SET CLOCK_INTERVAL value must be at least %d",
-                        MINIMUM_CLOCK_INTERVAL);
-                set_int_var(NOTIFY_INTERVAL_VAR, MINIMUM_CLOCK_INTERVAL);
-        }
-	start_system_timer(clock_timeref);	/* XXX Oh heck, why not? */
+	update_system_timer(clock_timeref);	/* XXX Oh heck, why not? */
 }
 
 void     set_clock_format (char *value)
@@ -183,12 +177,9 @@ void     set_clock_format (char *value)
 
 void	set_clock (int value)
 {
-	if (value == 0)
-		stop_system_timer(clock_timeref);
-	else
-		start_system_timer(clock_timeref);
-
+	update_system_timer(clock_timeref);
 	update_all_status();
+	cursor_to_input();
 }
 
 /************************************************************************/
@@ -261,18 +252,23 @@ struct system_timer {
 	int	honors_cpu_saver;
 	int	interval_variable;
 	int	toggle_variable;
+	Timeval	last_event;
 	void	(*callback) (void);
 };
 
 struct system_timer system_timers[] = {
 	{ clock_timeref, 	1, 
-	  CLOCK_INTERVAL_VAR, 	CLOCK_VAR, 	clock_systimer 	},
+	  CLOCK_INTERVAL_VAR, 	CLOCK_VAR, 	{ 0, 0 },
+	  clock_systimer 	},
 	{ notify_timeref, 	1, 
-	  NOTIFY_INTERVAL_VAR,  NOTIFY_VAR, 	notify_systimer	},
+	  NOTIFY_INTERVAL_VAR,  NOTIFY_VAR, 	{ 0, 0 },
+	  notify_systimer	},
 	{ mail_timeref, 	1, 
-	  MAIL_INTERVAL_VAR, 	MAIL_VAR, 	mail_systimer 	},
+	  MAIL_INTERVAL_VAR, 	MAIL_VAR, 	{ 0, 0 },
+	  mail_systimer 	},
 	{ NULL,			0, 
-	  0,			0,		NULL 		}
+	  0,			0,		{ 0, 0 },
+	  NULL 			}
 };
 
 int	system_timer (void *entry)
@@ -284,7 +280,10 @@ int	system_timer (void *entry)
 	item = (struct system_timer *)entry;
 
 	if (item->honors_cpu_saver && cpu_saver)
-	    timeout = get_int_var(CPU_SAVER_EVERY_VAR);
+	{
+	    nominal_timeout = get_int_var(CPU_SAVER_EVERY_VAR);
+	    timeout = nominal_timeout;
+	}
 	else
 	{
 	    nominal_timeout = get_int_var(item->interval_variable);
@@ -297,12 +296,12 @@ yell("Rescheduling system timer [%s] to go off in [%f] sec",
 #endif
 	add_timer(1, item->name, timeout, 1, system_timer, entry, NULL, -1);
 
-	/* reset_clock does `update_all_status' and `cursor_to_input' for us */
 	item->callback();
+	item->last_event = now;
 	return 0;
 }
 
-int	start_system_timer (const char *entry)
+int	update_system_timer (const char *entry)
 {
 	int	i;
 	int	all = 0;
@@ -314,43 +313,21 @@ int	start_system_timer (const char *entry)
 	{
 	    if (all == 1 || !strcmp(system_timers[i].name, entry))
 	    {
-		/* 
-		 * If this one was asked for particularly, OR we're
-		 * starting all of them AND the boolean set for this
-		 * toggle is on...
-		 */
-		if (get_int_var(system_timers[i].toggle_variable))
+		/* This needs to be set before calling 'system_timer' */
+		get_time(&now);
+
+		if (get_int_var(system_timers[i].toggle_variable) &&
+		    get_int_var(system_timers[i].interval_variable))
 			system_timer(&system_timers[i]);
+		else
+		{
+		    if (timer_exists(system_timers[i].name))
+			remove_timer(system_timers[i].name);
+		}
+
 		if (all == 0)
 			return 0;
 	    }
-	}
-
-	if (all == 1)
-		return 0;
-
-	return -1;
-}
-
-int	stop_system_timer (const char *entry)
-{
-	int	i;
-	int	all = 0;
-
-	if (entry == NULL)
-		all = 1;
-
-	for (i = 0; system_timers[i].name; i++)
-	{
-		if (all == 1 || !strcmp(system_timers[i].name, entry))
-		{
-			if (timer_exists(system_timers[i].name))
-			{
-				remove_timer(system_timers[i].name);
-				if (all == 0)
-					return 0;
-			}
-		}
 	}
 
 	if (all == 1)
@@ -368,7 +345,7 @@ int	stop_system_timer (const char *entry)
 void	reset_system_timers (void)
 {
 	cpu_saver = 0;
-	start_system_timer(NULL);
+	update_system_timer(NULL);
 	cpu_saver_timer(NULL);
 }
 

@@ -1,4 +1,4 @@
-/* $EPIC: screen.c,v 1.53 2003/07/16 00:56:43 jnelson Exp $ */
+/* $EPIC: screen.c,v 1.54 2003/07/22 19:04:36 jnelson Exp $ */
 /*
  * screen.c
  *
@@ -51,7 +51,6 @@
 #include "log.h"
 #include "hook.h"
 #include "dcc.h"
-#include "exec.h"
 #include "status.h"
 #include "commands.h"
 #include "parse.h"
