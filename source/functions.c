@@ -6156,11 +6156,15 @@ BUILT_IN_FUNCTION(function_unsplit, input)
 
 BUILT_IN_FUNCTION(function_encryptparm, input)
 {
-	char *ret = NULL, *entry = NULL;
-	Crypt *key;
+	char	*ret = NULL, *entry = NULL;
+	size_t	clue = 0;
+	Crypt	*key;
 
 	GET_STR_ARG(entry, input);
-	if ((key=is_crypted(entry)))
-		ret = m_sprintf("%s %s %s", key->nick, key->key, key->prog);
+	if ((key=is_crypted(entry))) {
+		m_sc3cat  (&ret, " ", key->nick, &clue);
+		m_sc3cat_s(&ret, " ", key->key, &clue);
+		m_sc3cat_s(&ret, " ", key->prog, &clue);
+	}
 	RETURN_MSTR(ret);
 }

@@ -354,9 +354,10 @@ static void p_privmsg (char *from, char **Args)
 	level = set_lastlog_msg_level(log_type);
 	if (sed != 0)
 	{
-		sed = 0;
-		if (!do_hook(ENCRYPTED_PRIVMSG_LIST, "%s %s %s", from, to, ptr))
+		if (!do_hook(ENCRYPTED_PRIVMSG_LIST, "%s %s %s", from, to,
+				sed == 1 ? ptr : empty_string))
 			hook_normal = 0;
+		sed = 0;
 	}
 
 	if (flood && hook_normal)

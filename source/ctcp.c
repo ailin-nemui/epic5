@@ -10,7 +10,7 @@
  */
 
 #if 0
-static	char	rcsid[] = "@(#)$Id: ctcp.c,v 1.8 2001/11/29 21:04:48 crazyed Exp $";
+static	char	rcsid[] = "@(#)$Id: ctcp.c,v 1.9 2001/12/06 02:10:47 crazyed Exp $";
 #endif
 
 #include "irc.h"
@@ -178,12 +178,13 @@ CTCP_HANDLER(do_sed)
 
 	new_free(&tofrom);
 
-	if (!key || !ret)
+	if (!key || !ret) {
+		sed = 2;
 		malloc_strcpy(&ret2, "[ENCRYPTED MESSAGE]");
-	else if (!*ret)
+	} else if (!*ret) {
+		sed = 2;
 		malloc_strcpy(&ret2, "[ENCRYPTED MESSAGE - BAD KEY?]");
-	else
-	{
+	} else {
 		/* 
 		 * There might be a CTCP message in there,
 		 * so we see if we can find it.

@@ -9,7 +9,7 @@
  */
 
 #if 0
-static	char	rcsid[] = "@(#)$Id: notice.c,v 1.7 2001/12/03 01:48:47 crazyed Exp $";
+static	char	rcsid[] = "@(#)$Id: notice.c,v 1.8 2001/12/06 02:10:48 crazyed Exp $";
 #endif
 
 #include "irc.h"
@@ -286,8 +286,8 @@ void 	parse_notice (char *from, char **Args)
 
 	/* Let the user know if it is an encrypted notice */
 	/* Note that this is always hooked, even during a flood */
-	if (sed == 1 && !do_hook(ENCRYPTED_NOTICE_LIST, "%s %s %s", 
-					from, to, line))
+	if (sed != 0 && !do_hook(ENCRYPTED_NOTICE_LIST, "%s %s %s", 
+			from, to, sed == 1 ? line : empty_string))
 	{
 		sed = 0;
 		goto the_end;
