@@ -373,3 +373,4 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Fix some const correctness issues, introduce others. bleh.
 * Fix typo that caused /set -create twice to crash and burn.
 * Fix memory leak, rb CE.
+* Fix $getset() which is supposed to be case insensitive (typo), rb Xavier
