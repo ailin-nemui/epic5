@@ -1,5 +1,7 @@
 EPIC5-0.1
 
+*** News 09/10/2004 -- Command line option changes withdrawn.
+
 *** News 09/10/2004 -- Command line option changes.
 	-L now causes epic to interpret the arg list as the first of the
 	following forms rather than the second:

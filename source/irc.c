@@ -1,4 +1,4 @@
-/* $EPIC: irc.c,v 1.783 2004/09/09 22:11:08 jnelson Exp $ */
+/* $EPIC: irc.c,v 1.784 2004/09/10 03:43:49 crazyed Exp $ */
 /*
  * ircII: a new irc client.  I like it.  I hope you will too!
  *
@@ -256,9 +256,8 @@ static		char	switch_help[] =
       -c <chan>\tJoin <chan> after first connection to a server       \n\
       -H <host>\tUse a virtual host instead of default hostname	      \n\
       -l <file>\tLoads <file> instead of your .ircrc file             \n\
-      -L       \tLoads the first arg instead of your .ircrc file      \n\
+      -L <file>\tLoads <file> instead of your .ircrc file             \n\
       -n <nick>\tThe program will use <nick> as your default nickname \n\
-      -S <serv>\tThe program will add <serv> to the server list       \n\
       -p <port>\tThe program will use <port> as the default portnum   \n\
       -z <user>\tThe program will use <user> as your default username \n";
 
@@ -644,8 +643,9 @@ static	void	parse_args (int argc, char **argv)
 	/*
 	 * Parse the command line arguments.
 	 */
-	while ((ch = getopt(argc, argv, "aBbc:dfFhH:l:Ln:oOp:qsS:vxz:")) != EOF)
+	while ((ch = getopt(argc, argv, "aBbc:dfFhH:l:L:n:oOp:qsvxz:")) != EOF)
 	{
+fprintf(stderr,"SHIT: %c %d/%d %d %c %s\n", ch, optind, argc, opterr, optopt, optarg);
 		switch (ch)
 		{
 			case 'v':	/* Output ircII version */
@@ -677,19 +677,12 @@ static	void	parse_args (int argc, char **argv)
 				break;
 
 			case 'l': /* Load some file instead of ~/.ircrc */
+			case 'L': /* Same as above. Doesnt work like before */
 				malloc_strcpy(&epicrc_file, optarg);
-				break;
-
-			case 'L': /* Interpret the first non-option arg as a load file. */
-				malloc_strcpy(&epicrc_file, empty_string);
 				break;
 
 			case 'a': /* append server, not replace */
 				append_servers = 1;
-				break;
-
-			case 'S': /* add a new server */
-				add_servers(optarg, NULL);
 				break;
 
 			case 'q': /* quick startup -- no .ircrc */
@@ -746,13 +739,6 @@ static	void	parse_args (int argc, char **argv)
 	}
 	argc -= optind;
 	argv += optind;
-
-	if (epicrc_file && !*epicrc_file)
-	{
-		malloc_strcpy(&epicrc_file, *argv);
-		argc--;
-		argv++;
-	}
 
 	if (argc && **argv && !strchr(*argv, '.'))
 		strlcpy(nickname, *argv++, sizeof nickname), argc--;
