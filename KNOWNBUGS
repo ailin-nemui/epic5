@@ -71,3 +71,9 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Remove checks for inet_pton(), inet_ntop(), gethostbyname2() in configure
 * Remove impls of inet_pton(), inet_ntop(), inet_aton() in compat.c
 * Alas, inet_strton() must fill in sin_len for 32-bit integer (dcc) case.
+* Conversion to getaddrinfo()/getnameinfo() complete.  HUZZAH!
+* Make $connect() family independant.
+* Add third arg to $connect(), "v4", "v6", or "vu" for IPv4/IPv6/AF_UNSPEC.
+* This means $connect(::1 ftp v6) works! (IPv6 support for $connect()) Huzzah!
+* Remove the 'family' argument in connectory() in wserv4.
+* Allow $iptoname() to accept ipv6 p-addrs as well as ipv4 p-addrs.

@@ -1403,13 +1403,29 @@ BUILT_IN_FUNCTION(function_winnam, input)
 
 BUILT_IN_FUNCTION(function_connect, input)
 {
-	char *host;
-	char *port;
+	char *	host;
+	char *	port;
+	char *	v;
+	int	family = AF_INET;
 
 	GET_STR_ARG(host, input);
 	GET_STR_ARG(port, input);
+	if (input && *input)
+	{
+		GET_STR_ARG(v, input)
 
-	return dcc_raw_connect(host, port, AF_INET);	/* DONT USE RETURN_STR HERE! */
+		/* Figure out what family the user wants */
+		if (*v == 'v' || *v == 'V')
+			v++;
+		if (*v == '4')
+			family = AF_INET;
+		else if (*v == '6')
+			family = AF_INET6;
+		else if (*v == 'u' || *v == 'U')
+			family = AF_UNSPEC;
+	}
+
+	return dcc_raw_connect(host, port, family);	/* DONT USE RETURN_STR HERE! */
 }
 
 
@@ -2890,7 +2906,7 @@ BUILT_IN_FUNCTION(function_iptoname, words)
 	char	ret[256];
 
 	*ret = 0;
-	inet_ptohn(AF_INET, words, ret, sizeof(ret));
+	inet_ptohn(AF_UNSPEC, words, ret, sizeof(ret));
 	RETURN_STR(ret);		/* Dont put function call in macro! */
 }
 

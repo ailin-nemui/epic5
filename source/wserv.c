@@ -1,4 +1,4 @@
-/* $EPIC: wserv.c,v 1.10 2002/05/27 02:43:35 jnelson Exp $ */
+/* $EPIC: wserv.c,v 1.11 2002/05/28 05:37:59 jnelson Exp $ */
 /*
  * wserv.c -- A little program to act as a pipe between the ircII process
  * 	      and an xterm window or GNU screen.
@@ -65,7 +65,7 @@ static	void	sigwinch_func (int);
 static	int 	term_init (void);
 static	void 	term_resize (void);
 static	void	yell (const char *format, ...);
-static	int	connectory (int, const char *, const char *);
+static	int	connectory (const char *, const char *);
 
 
 int	main (int argc, char **argv)
@@ -89,10 +89,10 @@ int	main (int argc, char **argv)
 	host = argv[1];
 	port = argv[2];
 
-	if ((data = connectory(AF_INET, host, port)) < 0)
+	if ((data = connectory(host, port)) < 0)
 		my_exit(23);
 
-	if ((cmd = connectory(AF_INET, host, port)) < 0)
+	if ((cmd = connectory(host, port)) < 0)
 		my_exit(25);
 
 	/*
@@ -182,19 +182,16 @@ static void 	my_exit(int value)
 }
 
 
-static int	connectory (int family, const char *host, const char *port)
+static int	connectory (const char *host, const char *port)
 {
 	AI	hints;
 	AI *	results;
 	int 	retval;
 	int	s;
 
-	if (family != AF_INET)		/* AF_INET only for now */
-		my_exit(6);
-
 	memset(&hints, 0, sizeof(hints));
 	hints.ai_flags = 0;
-	hints.ai_family = family;
+	hints.ai_family = AF_INET;
 	hints.ai_socktype = SOCK_STREAM;
 	hints.ai_protocol = 0;
 

@@ -9,7 +9,7 @@
  */
 
 #if 0
-static	char	rcsid[] = "@(#)$Id: dcc.c,v 1.26 2002/05/28 04:55:57 jnelson Exp $";
+static	char	rcsid[] = "@(#)$Id: dcc.c,v 1.27 2002/05/28 05:37:58 jnelson Exp $";
 #endif
 
 #include "irc.h"
@@ -1682,15 +1682,12 @@ char	*dcc_raw_connect (const char *host, const char *port, int family)
 	memset(&my_sockaddr, 0, sizeof(my_sockaddr));
 
 	message_from(NULL, LOG_DCC);
-	if (family == AF_INET)
+	FAMILY(my_sockaddr) = family;
+	if (inet_strton(host, port, (SA *)&my_sockaddr, 0))
 	{
-		FAMILY(my_sockaddr) = AF_INET;
-		if (inet_strton(host, port, (SA *)&my_sockaddr, 0))
-		{
-			say("Unknown host: %s", host);
-			message_from(NULL, LOG_CURRENT);
-			return m_strdup(empty_string);
-		}
+		say("Unknown host: %s", host);
+		message_from(NULL, LOG_CURRENT);
+		return m_strdup(empty_string);
 	}
 
 	Client = dcc_searchlist(host, port, DCC_RAW, 1, NULL, -1);
