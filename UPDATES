@@ -1,5 +1,24 @@
 EPIC4-1.2.0
 
+*** News 07/04/2003 -- New interface to $dccctl()
+	You may not get or set the "offered address" of a dcc offer by
+	someone else.  Resetting the remote offered address may be 
+	necessary if the remote peer's client mangled the handshake.
+
+	$dccctl(GET <refnum> OFFERADDR)
+	- Returns the address that the remote peer offered to make the 
+	  dcc available at.  It will be a p-addr (ie, "127.0.0.1") and a 
+	  port number.
+
+	$dccctl(SET <refnum> OFFERADDR <address> <port>)
+	- Sets the address that the remote peer offered to make the dcc
+	  available at.  It may be either a p-addr (ie, "127.0.0.1") or a
+	  hostname (ie, "remote.peer.icann.com"), and a port number.  The
+	  empty string is returned if the connection is already open (it
+	  doesn't make any sense to change it at that point), or if the 
+	  address you provide doesn't make sense.  It returns 1 if the
+	  change was successful.
+
 *** News 07/04/2003 -- More interfaces to $ignorectl()
 	You can now query and set the ignore's creation time, its 
 	last-used time, and the number of times it's been used:

@@ -33,3 +33,4 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Add 'creation', 'last_used' time and usage counter to ignores
 * Add support to $ignorectl() to get/set three above values.
 * Don't do WHOWAS on channels in 401.
+* Add $dccctl([GET|SET] <refnum> OFFERADDR), the address in the handshake.

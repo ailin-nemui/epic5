@@ -1,4 +1,4 @@
-/* $EPIC: dcc.c,v 1.65 2003/06/12 23:38:21 jnelson Exp $ */
+/* $EPIC: dcc.c,v 1.66 2003/07/04 17:52:07 jnelson Exp $ */
 /*
  * dcc.c: Things dealing client to client connections. 
  *
@@ -3409,6 +3409,14 @@ char *	dccctl (char *input)
 		} else if (!my_strnicmp(listc, "HOLDTIME", len)) {
 			m_sc3cat_s(&retval, space, ltoa(client->holdtime.tv_sec), &clue);
 			m_sc3cat_s(&retval, space, ltoa(client->holdtime.tv_usec), &clue);
+		} else if (!my_strnicmp(listc, "OFFERADDR", len)) {
+			char	host[1025], port[25];
+			if (inet_ntostr((SA *)&client->offer,
+					host, sizeof(host),
+					port, sizeof(port), NI_NUMERICHOST))
+				RETURN_EMPTY;
+			m_sc3cat_s(&retval, space, host, &clue);
+			m_sc3cat_s(&retval, space, port, &clue);
 		} else if (!my_strnicmp(listc, "REMADDR", len)) {
 			char	host[1025], port[25];
 			if (!(client->flags & DCC_ACTIVE) ||
@@ -3465,6 +3473,20 @@ char *	dccctl (char *input)
 				held = dcc_unhold(client);
 
 			RETURN_INT(held);
+		} else if (!my_strnicmp(listc, "OFFERADDR", len)) {
+			char *host, *port;
+			SS a;
+
+			GET_STR_ARG(host, input);
+			GET_STR_ARG(port, input);
+
+			V4FAM(a) = AF_UNSPEC;
+			if ((client->flags & DCC_ACTIVE) ||
+					inet_strton(host, port, (SA *)&a, 0))
+				RETURN_EMPTY;
+
+			memcpy(&client->offer, &a, sizeof client->offer);
+			RETURN_INT(1);
 		} else {
 			RETURN_EMPTY;
 		}
