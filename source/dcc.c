@@ -1,4 +1,4 @@
-/* $EPIC: dcc.c,v 1.77 2003/10/29 05:26:05 jnelson Exp $ */
+/* $EPIC: dcc.c,v 1.78 2003/10/29 06:12:01 jnelson Exp $ */
 /*
  * dcc.c: Things dealing client to client connections. 
  *
@@ -874,16 +874,51 @@ static void	dcc_send_booster_ctcp (DCC_list *dcc)
 
 	family = FAMILY(dcc->local_sockaddr);
 
+	/*
+	 * Use the external gateway address (visible to the server) if the
+	 * user wants us to use that.  If the user is NOT using a vhost,
+	 * then use the address we have for ourselves connecting to the
+	 * server.  If the user IS using a vhost, then obviously use that.
+	 */
 	if (get_int_var(DCC_USE_GATEWAY_ADDR_VAR))
 		my_sockaddr = get_server_uh_addr(server);
-	else if (family == AF_INET && V4ADDR(dcc->local_sockaddr).s_addr == htonl(INADDR_ANY))
+	else if (family == AF_INET && V4ADDR(dcc->local_sockaddr).s_addr == 
+						htonl(INADDR_ANY))
 		my_sockaddr = get_server_local_addr(server);
 #ifdef INET6
-	else if (family == AF_INET6 && memcmp(&V6ADDR(dcc->local_sockaddr), &in6addr_any, sizeof(in6addr_any)) == 0)
+	else if (family == AF_INET6 && memcmp(&V6ADDR(dcc->local_sockaddr), 
+						&in6addr_any, 
+						sizeof(in6addr_any)) == 0)
 		my_sockaddr = get_server_local_addr(server);
 #endif
 	else
 		my_sockaddr = dcc->local_sockaddr;
+
+	/*
+	 * If the family the user asked for is not the family of the address
+	 * we want to put in the handshake, something is very wrong.  Tell
+	 * the user about it and give up.
+	 */
+	if (family != FAMILY(my_sockaddr))
+	{
+	    if (get_int_var(DCC_USE_GATEWAY_ADDR_VAR))
+		yell("When using /SET DCC_USE_GATEWAY_ADDR, I can only support "
+		     "DCC in the same address family (IPv4 or IPv6) as you are "
+		     "using to connect to the server.");
+	    else if (family == AF_INET)
+		yell("I do not know what your IPv4 address is.  You can tell "
+		     "me your IPv4 hostname with /HOSTNAME and retry the /DCC");
+#ifdef INET6
+	    else if (family == AF_INET6)
+		yell("I do not know what your IPv6 address is.  You can tell "
+		     "me your IPv6 hostname with /HOSTNAME and retry the /DCC");
+#endif
+	    else
+		yell("I do not know what your address is because you asked "
+		     "me for an address family that I don't support.");
+
+	    return;
+	}
 
 	if (family == AF_INET)
 		V4PORT(my_sockaddr) = V4PORT(dcc->local_sockaddr);
@@ -893,11 +928,13 @@ static void	dcc_send_booster_ctcp (DCC_list *dcc)
 #endif
 	else
 	{
-		yell("Could not send a CTCP handshake becuase the address family is not supported.");
+		yell("Could not send a CTCP handshake becuase the address "
+		     "family is not supported.");
 		return;
 	}
 
-	if (inet_ntostr((SA *)&my_sockaddr, p_host, 128, p_port, 24, GNI_INTEGER | NI_NUMERICHOST)) {
+	if (inet_ntostr((SA *)&my_sockaddr, p_host, 128, p_port, 24, 
+					GNI_INTEGER | NI_NUMERICHOST)) {
 		yell("Couldn't get host/port for address!");
 		return;
 	}

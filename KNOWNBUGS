@@ -25,3 +25,5 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Convert a bunch of stuff to use malloc_strcat_word_c to honor ""s right.
 * GC a bunch of unused code.
 * Add /on dcc_activity, to allow scripters a way around %D.
+* Nix the never valid network error code -15 (duplicate of -6)
+* Sanity check the family in a dcc handshake against the bind before sending it.

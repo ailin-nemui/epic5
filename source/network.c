@@ -1,4 +1,4 @@
-/* $EPIC: network.c,v 1.48 2003/07/09 21:10:25 jnelson Exp $ */
+/* $EPIC: network.c,v 1.49 2003/10/29 06:12:01 jnelson Exp $ */
 /*
  * network.c -- handles stuff dealing with connecting and name resolving
  *
@@ -70,7 +70,6 @@ static int	Getnameinfo(const SA *sa, socklen_t salen, char *host, size_t hostlen
    -12       The connection could not be established (after connect() time)
    -13       The local sockaddr to bind was not provided.
    -14       The family request does not make sense.
-   -15       You don't have a virtual host in the requested protocol family.
 */
 
 /*****************************************************************************/
@@ -273,7 +272,7 @@ int	ip_bindery (int family, unsigned short port, SS *storage)
 		return err;
 
 	if (!len)
-		return -15;
+		return -6;
 
 	return client_bind((SA *)storage, len);
 }

@@ -1,5 +1,17 @@
 EPIC4-1.2.0
 
+*** News -- 10/28/2003 -- Cross-family /DCC issues.
+	You can't ordinarily do cross-family /DCC.  Cross-family DCC is
+	when you're connected to an IPv4 server and try to do IPv6 DCC,
+	or when you're connected to an IPv6 server and try to do IPv4 DCC.
+	The reason this doesn't normally work is because EPIC doesn't know
+	what your IP address is (or even if you have one) in the "other"
+	family.  Normally you tell EPIC what your address is by giving it
+	a virtual hostname with /HOSTNAME <name> and it looks up your
+	address in all of the families it supports and uses that.  But if
+	you don't give it a vhost, and you try to do a cross-family DCC,
+	it will fail and remind you to use /HOSTNAME first.
+
 *** News -- 10/28/2003 -- New /ON, /ON DCC_ACTIVITY
 	This hook is activated each time some activity occurs on a 
 	/DCC GET or /DCC SEND, particularly whenever the %D status bar
