@@ -15,7 +15,6 @@ KNOWN ERRATA (eg, bugs, or unresolved requests):
 * /window disconnect (server -> -2) + /server 0 reconnects to previous server.
 * New math parser can't handle  @ foo[bar].baz = 0
 * Some way to get the client's global default nickname?
-* /eval echo ${1?{echo a}:{echo b}} at the input prompt infinite loops
 * /window flush should NOT turn hold mode off!
 * Make some provision for systems without intptr_t.
 * Something for %D to make it customizable?
@@ -210,3 +209,4 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Nominally support /dcc rename <nick> <file> <absolute path>
 * Fix /set mail 3 so it doesn't panic, fix /set mail 4 so it doesn't panic.
 * Don't allow the user to /server -delete the last server entry.
+* Fix @ {<command>} to not infinite loop looking for $FUNCTION_RETURN.

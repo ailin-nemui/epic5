@@ -1,4 +1,4 @@
-/* $EPIC: alias.c,v 1.31 2003/09/12 01:42:47 jnelson Exp $ */
+/* $EPIC: alias.c,v 1.32 2003/09/25 03:50:23 jnelson Exp $ */
 /*
  * alias.c -- Handles the whole kit and caboodle for aliases.
  *
@@ -1557,7 +1557,8 @@ static Alias *	find_local_alias (const char *orig_name, AliasSet **list)
 			break;
 		}
 
-		if (*call_stack[c].name || call_stack[c].parent == -1)
+		if (*call_stack[c].name || call_stack[c].parent == -1 ||
+		    (function_return && last_function_call_level != -1))
 		{
 			if (x_debug & DEBUG_LOCAL_VARS) 
 				yell("I didnt find [%s], stopped at level [%d]", name, c);
