@@ -73,3 +73,4 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Put a space in place of a newline in the PF loader.
 * Always ignore spaces after semicolons in parse_line (the {} parser).
 * Some compiler warning fixes from rain.
+* Fix defects and a memory leak in the pf loader.

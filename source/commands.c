@@ -1,4 +1,4 @@
-/* $EPIC: commands.c,v 1.77 2003/12/09 04:37:52 jnelson Exp $ */
+/* $EPIC: commands.c,v 1.78 2003/12/09 05:12:37 jnelson Exp $ */
 /*
  * commands.c -- Stuff needed to execute commands in ircII.
  *		 Includes the bulk of the built in commands for ircII.
@@ -2039,7 +2039,7 @@ static void	loader_pf (FILE *fp, const char *filename, char *subargs, struct loa
 	bufsize = 8192;
 	buffer = new_malloc(bufsize);
 	pos = 0;
-	newline = 0;
+	newline = 1;
 	comment = 0;
 
 	this_char = fgetc(fp);
@@ -2069,7 +2069,7 @@ static void	loader_pf (FILE *fp, const char *filename, char *subargs, struct loa
 		}
 
 		/* If the last thing we saw was a newline, put a space here */
-		if (newline)
+		if (newline && pos > 0)
 		    buffer[pos++] = ' ';
 
 		/* We are no longer at a newline */
@@ -2092,6 +2092,7 @@ static void	loader_pf (FILE *fp, const char *filename, char *subargs, struct loa
 	if (subargs == NULL)
 	    subargs = empty_string;
 	parse_line(NULL, buffer, subargs, 0, 0);
+	new_free(&buffer);
 }
 
 /*
