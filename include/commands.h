@@ -25,6 +25,7 @@ extern	int	will_catch_return_exceptions;
 extern	int	break_exception;
 extern	int	continue_exception;
 extern	int	return_exception;
+extern	int	system_exception;
 
 extern	int	need_defered_commands;
 

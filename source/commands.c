@@ -1,4 +1,4 @@
-/* $EPIC: commands.c,v 1.74 2003/10/31 08:19:24 crazyed Exp $ */
+/* $EPIC: commands.c,v 1.75 2003/11/07 23:43:47 jnelson Exp $ */
 /*
  * commands.c -- Stuff needed to execute commands in ircII.
  *		 Includes the bulk of the built in commands for ircII.
@@ -109,6 +109,7 @@
 	int	break_exception = 0;
 	int	continue_exception = 0;
 	int	return_exception = 0;
+	int	system_exception = 0;
 
 /* commands and whatnot */
 static  void    abortcmd 	(const char *, char *, const char *);
@@ -3370,7 +3371,13 @@ void	parse_line (const char *name, const char *org_line, const char *args, int h
 	 * stack.  Otherwise, this command will use someone else's stack.
 	 */
 	if (name)
-		make_local_stack(name);
+	{
+	    if (!make_local_stack(name))
+	    {
+                yell("Could not run (%s) [%s]; too much recursion", name ? name : "<unnamed>", org_line);
+                return;
+	    }
+	}
 
 	if (!org_line)
 		panic("org_line is NULL and it shouldn't be.");
@@ -3430,7 +3437,8 @@ void	parse_line (const char *name, const char *org_line, const char *args, int h
 		     */
 		    if ((will_catch_break_exceptions && break_exception) ||
 			(will_catch_return_exceptions && return_exception) ||
-			(will_catch_continue_exceptions && continue_exception))
+			(will_catch_continue_exceptions && continue_exception) ||
+			system_exception)
 		    {
 			die = 1;
 			break;
@@ -3508,7 +3516,8 @@ void	parse_line (const char *name, const char *org_line, const char *args, int h
 		 */
 		if ((will_catch_break_exceptions && break_exception) ||
 		    (will_catch_return_exceptions && return_exception) ||
-		    (will_catch_continue_exceptions && continue_exception))
+		    (will_catch_continue_exceptions && continue_exception) ||
+		     system_exception)
 			break;
 
 		/*
@@ -3558,7 +3567,8 @@ void	parse_line (const char *name, const char *org_line, const char *args, int h
 
 		if ((will_catch_break_exceptions && break_exception) ||
 		    (will_catch_return_exceptions && return_exception) ||
-		    (will_catch_continue_exceptions && continue_exception))
+		    (will_catch_continue_exceptions && continue_exception) ||
+		    system_exception)
 			break;
 	    }
 	}

@@ -1,4 +1,4 @@
-/* $EPIC: hook.c,v 1.22 2003/10/29 05:26:05 jnelson Exp $ */
+/* $EPIC: hook.c,v 1.23 2003/11/07 23:43:47 jnelson Exp $ */
 /*
  * hook.c: Does those naughty hook functions. 
  *
@@ -848,7 +848,7 @@ int 	do_hook (int which, const char *format, ...)
 		char *		name_copy;
 		char *		stuff_copy;
 		char *		result = NULL;
-		int		noise;
+		int		noise, old;
 
 		/*
 		 * This should never happen.
@@ -896,7 +896,8 @@ int 	do_hook (int which, const char *format, ...)
 		save_message_from(&saved_who_from, &saved_who_level);
 		if (noise < NOISY)
 			window_display = 0;
-		
+		old = system_exception;
+
 		if (retval == RESULT_PENDING)
 		{
 			result = call_lambda_function(name_copy, stuff_copy,
@@ -927,6 +928,7 @@ int 	do_hook (int which, const char *format, ...)
 		 * Clean up the stuff that may have been mangled by the
 		 * execution.
 		 */
+		system_exception = old;
 		window_display = display;
 		restore_message_from(saved_who_from, saved_who_level);
 	}

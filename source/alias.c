@@ -1,4 +1,4 @@
-/* $EPIC: alias.c,v 1.35 2003/10/31 08:19:24 crazyed Exp $ */
+/* $EPIC: alias.c,v 1.36 2003/11/07 23:43:47 jnelson Exp $ */
 /*
  * alias.c -- Handles the whole kit and caboodle for aliases.
  *
@@ -2152,7 +2152,12 @@ static char *	parse_line_alias_special (const char *name, const char *what, char
 	char	*result = NULL;
 
 	window_display = 0;
-	make_local_stack(name);
+	if (!make_local_stack(name))
+	{
+		yell("Could not run (%s) [%s]; too much recursion", name ? name : "<unnamed>", what);
+		return malloc_strdup(empty_string);
+	}
+
 	prepare_alias_call(arglist, &args);
 	if (function)
 	{
@@ -2313,9 +2318,17 @@ void 	destroy_aliases (int type)
 
 /******************* RUNTIME STACK SUPPORT **********************************/
 
-void 	make_local_stack 	(const char *name)
+int	make_local_stack 	(const char *name)
 {
 	wind_index++;
+
+#ifdef MAX_STACK_FRAMES
+	if (wind_index >= MAX_STACK_FRAMES)
+	{
+		system_exception++;
+		return 0;
+	}
+#endif
 
 	if (wind_index >= max_wind)
 	{
@@ -2358,6 +2371,7 @@ void 	make_local_stack 	(const char *name)
 		call_stack[wind_index].parent = wind_index - 1;
 	}
 	call_stack[wind_index].locked = 0;
+	return 1;
 }
 
 static int	find_locked_stack_frame	(void)

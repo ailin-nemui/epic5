@@ -45,6 +45,18 @@
 #define DEFAULT_SERVER "localhost irc.efnet.net irc.undernet.org irc.dal.net"
 
 /*
+ * This is an experimental feature to thwart infinite recursion.  It is not
+ * very sophisticated so it's not turned on by default.  In the future I 
+ * will probably do something less lame.
+ *
+ * When this many stack frames are created, epic will refuse to make any
+ * more.  This will stop epic from crashing with a segfault when you do 
+ * infinite recursion, but it's possible that epic may infinitely recurse
+ * if your alias is tricky enough.  Pick your poison
+ */
+#define MAX_STACK_FRAMES 20000
+
+/*
  * The left and right brace characters ('{', '}') are special characters in
  * the IRC character set, becuase they represent scandanavian characters and
  * are not expected to be treated any differently than any other alphanumeric

@@ -119,7 +119,7 @@
 /*
  * These are the two primitives for runtime stacks.
  */
-	void	make_local_stack 	(const char *);
+	int	make_local_stack 	(const char *);
 	void	destroy_local_stack 	(void);
 	void	set_current_command 	(char *);
 	void	bless_local_stack 	(void);
