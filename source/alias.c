@@ -1,4 +1,4 @@
-/* $EPIC: alias.c,v 1.21 2003/05/09 04:29:52 jnelson Exp $ */
+/* $EPIC: alias.c,v 1.22 2003/05/13 13:09:34 crazyed Exp $ */
 /*
  * alias.c -- Handles the whole kit and caboodle for aliases.
  *
@@ -1449,8 +1449,10 @@ static Alias *	find_local_alias (const char *orig_name, AliasSet **list)
 	upper(name);
 
 	ptr = after_expando(name, 1, NULL);
-	if (*ptr)
+	if (*ptr) {
+		new_free(&name);
 		return NULL;
+	}
 
 	if (!my_stricmp(name, "FUNCTION_RETURN"))
 		function_return = 1;
@@ -1543,6 +1545,8 @@ static Alias *	find_local_alias (const char *orig_name, AliasSet **list)
 			break;
 		}
 	}
+
+	new_free(&name);
 
 	if (alias)
 	{
@@ -1768,6 +1772,7 @@ void	list_cmd_alias (const char *orig_name)
 			}
 		}
 	}
+	new_free(&name);
 }
 
 /************************* UNLOADING SCRIPTS ************************/

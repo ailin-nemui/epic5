@@ -1,4 +1,4 @@
-/* $EPIC: dcc.c,v 1.60 2003/05/09 04:29:52 jnelson Exp $ */
+/* $EPIC: dcc.c,v 1.61 2003/05/13 13:09:34 crazyed Exp $ */
 /*
  * dcc.c: Things dealing client to client connections. 
  *
@@ -3321,6 +3321,9 @@ char *	dccctl (char *input)
 			RETURN_INT(client->held);
 		} else if (!my_strnicmp(listc, "HELDTIME", len)) {
 			RETURN_FLOAT(client->heldtime);
+		} else if (!my_strnicmp(listc, "FLAGS", len)) {
+			/* This is pretty much a crock. */
+			RETURN_INT(client->flags);
 		} else if (!my_strnicmp(listc, "LASTTIME", len)) {
 			m_sc3cat_s(&retval, space, ltoa(client->lasttime.tv_sec), &clue);
 			m_sc3cat_s(&retval, space, ltoa(client->lasttime.tv_usec), &clue);
