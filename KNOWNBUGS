@@ -110,3 +110,4 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Fix the lines_held status bar thingee, now full backwards compat.
 * Fix ok_to_output to update status every /window hold_interval lines, not 10.
 * Remove K&R support from info.c.sh -- this should make OS X users happy.
+* Fix bug with SCROLL_FORWARD after doing SCROLL_START.

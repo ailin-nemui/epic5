@@ -1,4 +1,4 @@
-/* $EPIC: window.c,v 1.36 2002/09/26 22:41:43 jnelson Exp $ */
+/* $EPIC: window.c,v 1.37 2002/09/28 22:40:31 jnelson Exp $ */
 /*
  * window.c: Handles the organzation of the logical viewports (``windows'')
  * for irc.  This includes keeping track of what windows are open, where they
@@ -4768,7 +4768,7 @@ static void 	window_scrollback_forwards_lines (Window *window, int lines)
 	Display *new_top = window->top_of_display;
 	int	new_lines = 0;
 
-	if (window->hold_mode == 0 &&
+	if (window->autohold == 0 && window->hold_mode == 0 &&
 		window->distance_from_display_ip <= window->display_size)
 	{
 		term_beep();
