@@ -922,6 +922,7 @@ BUILT_IN_COMMAND(echocmd)
 					break;
 				}
 			}
+			break;
 		    }
 
 		    case 'W':	/* WINDOW (output to specified window) */
