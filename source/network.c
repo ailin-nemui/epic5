@@ -329,7 +329,7 @@ static int	inet_vhostsockaddr (int family, int port, SS *storage, socklen_t *len
 	AI	hints, *res;
 	int	err;
 
-	if (family == AF_UNIX || !LocalHostName)
+	if (family == AF_UNIX)
 	{
 		*len = 0;
 		return 0;		/* No vhost needed */
@@ -624,7 +624,7 @@ static int	Getaddrinfo (const char *nodename, const char *servname, const AI *hi
 	AI *	results;
 	int	len;
 
-	if (strchr(nodename, '/'))
+	if (nodename && strchr(nodename, '/'))
 		do_af_unix = 1;
 	if (hints && hints->ai_family == AF_UNIX)
 		do_af_unix = 1;

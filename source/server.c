@@ -2082,26 +2082,32 @@ void    set_server_port (int refnum, int port)
 /* get_server_port: Returns the connection port for the given server index */
 int	get_server_port (int gsp_index)
 {
+	char	p_port[12];
+
 	if (gsp_index == -1)
 		gsp_index = primary_server;
 	else if (gsp_index >= number_of_servers)
 		return 0;
 
-	if (FAMILY(server_list[gsp_index].remote_sockname) == AF_INET)
-		return ntohs(V4PORT(server_list[gsp_index].remote_sockname));
+	if (inet_ntostr((SA *)&server_list[gsp_index].remote_sockname, 
+			NULL, 0, p_port, 12, 0))
+		return atol(p_port);
 
 	return server_list[gsp_index].port;
 }
 
 int	get_server_local_port (int gsp_index)
 {
+	char	p_port[12];
+
 	if (gsp_index == -1)
 		gsp_index = primary_server;
 	else if (gsp_index >= number_of_servers)
 		return 0;
 
-	if (FAMILY(server_list[gsp_index].local_sockname) == AF_INET)
-		return ntohs(V4PORT(server_list[gsp_index].local_sockname));
+	if (inet_ntostr((SA *)&server_list[gsp_index].remote_sockname, 
+			NULL, 0, p_port, 12, 0))
+		return atol(p_port);
 
 	return 0;
 }
@@ -2130,7 +2136,7 @@ void	set_server_userhost (int refnum, const char *userhost)
 
 	malloc_strcpy(&server_list[from_server].userhost, userhost);
 
-	/* Ack! */
+	/* Ack!  Oh well, it's for DCC. */
 	FAMILY(server_list[from_server].uh_addr) = AF_INET;
 	if (inet_strton(host + 1, zero, (SA *)&server_list[from_server].uh_addr, 0))
 		yell("Ack.  The server says your userhost is [%s] and "

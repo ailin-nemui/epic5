@@ -78,3 +78,10 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Remove the 'family' argument in connectory() in wserv4.
 * Remove the (now) obsolete decl of inet_aton() in ircaux.h.
 * Allow $iptoname() to accept ipv6 p-addrs as well as ipv4 p-addrs.
+* Allow $listen() to take a family argument, like $connect().
+* Add some V6 macros in ircaux.h, modeled after V4 macros.
+* Add a "family" member to the dcc structure.  Default to AF_INET for now.
+* Start fetching ports by calling inet_ntostr() instead of peeking directly
+  -- into the sockaddr.  This yields protocol independance.
+* Fix bug where $listen() or /dcc send w/o a virtual host caused NULL deref.
+

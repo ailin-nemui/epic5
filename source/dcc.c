@@ -9,7 +9,7 @@
  */
 
 #if 0
-static	char	rcsid[] = "@(#)$Id: dcc.c,v 1.28 2002/06/02 06:25:10 jnelson Exp $";
+static	char	rcsid[] = "@(#)$Id: dcc.c,v 1.29 2002/06/06 13:13:43 jnelson Exp $";
 #endif
 
 #include "irc.h"
@@ -50,6 +50,7 @@ static	char	rcsid[] = "@(#)$Id: dcc.c,v 1.28 2002/06/02 06:25:10 jnelson Exp $";
 typedef	struct	DCC_struct
 {
 		unsigned	flags;
+		int		family;
 		int		locked;		/* XXX - Sigh */
 		int		socket;
 		int		file;
@@ -487,6 +488,7 @@ static	DCC_list *dcc_searchlist (
 
 	new_client 			= new_malloc(sizeof(DCC_list));
 	new_client->flags 		= type;
+	new_client->family		= AF_INET;
 	new_client->locked		= 0;
 	new_client->socket 		= -1;
 	new_client->file 		= -1;
@@ -634,6 +636,7 @@ int	dcc_opened (int fd, int result)
 static	int	dcc_open (DCC_list *dcc)
 {
 	int	old_server;
+	char	p_port[12];
 
 	/*
 	 * Initialize our idea of what is going on.
@@ -682,7 +685,7 @@ static	int	dcc_open (DCC_list *dcc)
 		 * for a port if our random port isnt available.
 		 */
 		dcc->flags |= DCC_MY_OFFER;
-		dcc->socket = ip_bindery(AF_INET, dcc->want_port, 
+		dcc->socket = ip_bindery(dcc->family, dcc->want_port, 
 					 &dcc->local_sockaddr);
 		if (dcc->socket < 0)
 		{
@@ -702,8 +705,8 @@ static	int	dcc_open (DCC_list *dcc)
 		 * back that port number as its ID of what file it wants
 		 * to resume (rather than the filename. ick.)
 		 */
-		if (FAMILY(dcc->local_sockaddr) == AF_INET)
-			malloc_strcpy(&dcc->othername, ltoa((long)ntohs(V4PORT(dcc->local_sockaddr))));
+		inet_ntostr((SA *)&dcc->local_sockaddr, NULL, 0, p_port, 12, 0);
+		malloc_strcpy(&dcc->othername, p_port);
 #endif
 		new_open(dcc->socket);
 
@@ -725,6 +728,8 @@ static	int	dcc_open (DCC_list *dcc)
  * to send a CTCP handshake message to a remote peer.  The reason its a 
  * function is because its a rather large chunk of code, and it needs to be
  * done basically identically by both places.  Whatever.
+ *
+ * XXX This function is not really protocol independant.
  */
 static void	dcc_send_booster_ctcp (DCC_list *dcc)
 {
@@ -1622,9 +1627,9 @@ static	void	dcc_filesend (char *args)
 
 
 /*
- * Usage: $listen(<port>)
+ * Usage: $listen(<port> <family>)
  */
-char	*dcc_raw_listen (unsigned short port)
+char	*dcc_raw_listen (int family, unsigned short port)
 {
 	DCC_list	*Client;
 	char		*PortName;
@@ -1649,7 +1654,7 @@ char	*dcc_raw_listen (unsigned short port)
 	}
 
 	Client->want_port = port;
-	Client->socket = ip_bindery(AF_INET, Client->want_port, 
+	Client->socket = ip_bindery(family, Client->want_port, 
 				 &Client->local_sockaddr);
 	if (Client->socket < 0)
 	{
@@ -1733,6 +1738,8 @@ char	*dcc_raw_connect (const char *host, const char *port, int family)
 
 /*
  * When a user does a CTCP DCC, it comes here for preliminary parsing.
+ *
+ * XXX This function is not really family independant (but it's close)
  */
 void	register_dcc_offer (char *user, char *type, char *description, char *address, char *port, char *size, char *extra, char *rest)
 {
@@ -2834,6 +2841,8 @@ static	char *	dcc_urldecode (const char *s)
 
 /*
  * Usage: /DCC RESUME <nick> [file] [-e passkey]
+ *
+ * XXX - This function is not really protocol independant.
  */
 static	void	dcc_getfile_resume (char *args)
 {

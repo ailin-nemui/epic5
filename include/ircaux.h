@@ -7,7 +7,7 @@
  *
  * See the COPYRIGHT file, or do a HELP IRCII COPYRIGHT 
  *
- * @(#)$Id: ircaux.h,v 1.26 2002/06/02 06:25:09 jnelson Exp $
+ * @(#)$Id: ircaux.h,v 1.27 2002/06/06 13:13:43 jnelson Exp $
  */
 
 #ifndef _IRCAUX_H_
@@ -193,6 +193,12 @@ char *		real_extract2 		(const char *, int, int, int);
 #define V4FAM(x) (V4(x)->sin_family)
 #define V4ADDR(x) (V4(x)->sin_addr)
 #define V4PORT(x) (V4(x)->sin_port)
+
+#define V6(x) ((ISA6 *)&(x))
+#define V6FAM(x) (V6(x)->sin6_family)
+#define V6ADDR(x) (V6(x)->sin6_addr)
+#define V6PORT(x) (V6(x)->sin6_port)
+
 
 int	inet_strton		(const char *, const char *, SA *, int);
 char *	inet_ntostr		(SA *, char *, int, char *, int, int);

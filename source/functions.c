@@ -1427,10 +1427,11 @@ BUILT_IN_FUNCTION(function_connect, input)
 	return dcc_raw_connect(host, port, family);	/* DONT USE RETURN_STR HERE! */
 }
 
-
 BUILT_IN_FUNCTION(function_listen, input)
 {
 	int	port = 0;
+	char *	v;
+	int	family = AF_INET;
 
 	/* Oops. found by CrowMan, listen() has a default. erf. */
 	if (input && *input)
@@ -1442,9 +1443,24 @@ BUILT_IN_FUNCTION(function_listen, input)
 			if (ptr == tmp)
 				RETURN_EMPTY;	/* error. */
 		}
+
+		if (input && *input)
+		{
+			GET_STR_ARG(v, input)
+
+			/* Figure out what family the user wants */
+			if (*v == 'v' || *v == 'V')
+				v++;
+			if (*v == '4')
+				family = AF_INET;
+			else if (*v == '6')
+				family = AF_INET6;
+			else if (*v == 'u' || *v == 'U')
+				family = AF_UNSPEC;
+		}
 	}
 
-	return dcc_raw_listen(port);		/* DONT USE RETURN_STR HERE! */
+	return dcc_raw_listen(family, port);	/* DONT USE RETURN_STR HERE! */
 }
 
 BUILT_IN_FUNCTION(function_toupper, input)
