@@ -13,7 +13,7 @@
 /* To get declaration of "output_screen" */
 #include "screen.h"
 
-extern	int	need_redraw;
+extern	volatile int	need_redraw;
 extern	int	meta_mode;
 
 /* 
