@@ -1,4 +1,4 @@
-/* $EPIC: functions.c,v 1.96 2002/12/25 06:26:45 crazyed Exp $ */
+/* $EPIC: functions.c,v 1.97 2003/01/29 06:28:01 jnelson Exp $ */
 /*
  * functions.c -- Built-in functions for ircII
  *
@@ -3703,7 +3703,7 @@ BUILT_IN_FUNCTION(function_glob, word)
 	while (word && *word)
 	{
 		GET_STR_ARG(path, word);
-		normalize_filename(path, path2);
+		expand_twiddle(path, path2);
 
 		if ((numglobs = glob(path2, GLOB_MARK, NULL, &globbers)) < 0)
 			RETURN_INT(numglobs);
@@ -3739,7 +3739,7 @@ BUILT_IN_FUNCTION(function_globi, word)
 	while (word && *word)
 	{
 		GET_STR_ARG(path, word);
-		normalize_filename(path, path2);
+		expand_twiddle(path, path2);
 
 		if ((numglobs = bsd_glob(path2, GLOB_MARK | GLOB_INSENSITIVE, 
 					NULL, &globbers)) < 0)
