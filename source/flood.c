@@ -1,4 +1,4 @@
-/* $EPIC: flood.c,v 1.24 2005/01/23 21:41:28 jnelson Exp $ */
+/* $EPIC: flood.c,v 1.25 2005/03/03 02:22:11 jnelson Exp $ */
 /*
  * flood.c: handle channel flooding.
  *
@@ -264,7 +264,7 @@ static	int	 pos = 0;
 		diff = time_diff(tmp->start, right_now);
 
 		if ((diff == 0.0 || tmp->cnt / diff >= rate) &&
-				(retval = do_hook(FLOOD_LIST, "%s %s %s %d %s",
+				(retval = do_hook(FLOOD_LIST, "%s %s %s %ld %s",
 				nick, level_to_str(tmp->level),
 				chan ? chan : "*", tmp->cnt, line)))
 		{

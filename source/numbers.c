@@ -1,4 +1,4 @@
-/* $EPIC: numbers.c,v 1.79 2005/03/03 02:10:39 jnelson Exp $ */
+/* $EPIC: numbers.c,v 1.80 2005/03/03 02:22:12 jnelson Exp $ */
 /*
  * numbers.c: handles all those strange numeric response dished out by that
  * wacky, nutty program we call ircd 
@@ -288,11 +288,11 @@ void 	numbered_command (const char *from, const char *comm, char const **ArgList
 			{ rfc1459_odd(from, comm, ArgList); goto END; }
 		if (!(message = ArgList[2]))
 			{ rfc1459_odd(from, comm, ArgList); goto END; }
-		new_port = atol(ArgList[1]);
+		new_port = (int)atol(ArgList[1]);
 
 		/* Must do these things before calling "display_msg" */
 		old_server = from_server;
-		malloc_sprintf(&str, "%s:%s:::%s:", new_server, new_port, 
+		malloc_sprintf(&str, "%s:%d:::%s:", new_server, new_port, 
 					get_server_group(from_server));
 		if ((new_servref = str_to_servref(str)) == NOSERV)
 			new_servref = str_to_newserv(str);

@@ -1,4 +1,4 @@
-/* $EPIC: ircaux.c,v 1.130 2005/03/03 02:10:39 jnelson Exp $ */
+/* $EPIC: ircaux.c,v 1.131 2005/03/03 02:22:12 jnelson Exp $ */
 /*
  * ircaux.c: some extra routines... not specific to irc... that I needed 
  *
@@ -4785,7 +4785,7 @@ char *	substitute_string (const char *string, const char *oldstr, const char *ne
 	retval[i] = 0;
 	if (i > (int)retvalsize)
 	    panic("substitute [%s] with [%s] in [%s] overflows [%ld] chars", 
-			oldstr, newstr, string, retvalsize);
+			oldstr, newstr, string, (long)retvalsize);
 
 	return retval;
 }

@@ -533,3 +533,4 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Just puke if configured for kqueue() and kqueue() fails.
 * Don't puke on default 353 output if the userlist arg is missing. (for ratbox)
 * Permit doing /window name to change case of window's name.
+* Fix more compiler warnings.

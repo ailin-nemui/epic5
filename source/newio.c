@@ -1,4 +1,4 @@
-/* $EPIC: newio.c,v 1.40 2005/03/03 02:10:39 jnelson Exp $ */
+/* $EPIC: newio.c,v 1.41 2005/03/03 02:22:12 jnelson Exp $ */
 /*
  * newio.c:  Passive, callback-driven IO handling for sockets-n-stuff.
  *
@@ -736,13 +736,7 @@ static int	unix_connect (int channel)
 
 	len = sizeof(localaddr);
 	errno = 0;
-	if ((getsockname(channel, (SA *)&localaddr, &len)))
-#if 0
-		syserr("unix_connect: getsockname(%d) failed: %s", 
-				channel, strerror(errno));
-#else
-		0;
-#endif
+	getsockname(channel, (SA *)&localaddr, &len);
 	gsn_result = errno;
 
 	dgets_buffer(channel, &gsn_result, sizeof(gsn_result));
@@ -750,13 +744,7 @@ static int	unix_connect (int channel)
 
 	len = sizeof(remoteaddr);
 	errno = 0;
-	if ((getpeername(channel, (SA *)&remoteaddr, &len)))
-#if 0
-		syserr("unix_connect: getpeername(%d) failed: %s", 
-				channel, strerror(errno));
-#else
-		0;
-#endif
+	getpeername(channel, (SA *)&remoteaddr, &len);
 	gpn_result = errno;
 
 	dgets_buffer(channel, &gpn_result, sizeof(gpn_result));
@@ -790,7 +778,7 @@ static void	new_io_event (int vfd)
 		syserr("new_io_event: io_callback(%d) failed", vfd);
 
 		if (x_debug & DEBUG_INBOUND) 
-			yell("VFD [%d] FAILED [%d:%d]", vfd, c);
+			yell("VFD [%d] FAILED [%d]", vfd, c);
 		return;
 	}
 
