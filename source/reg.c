@@ -1,4 +1,4 @@
-/* $EPIC: reg.c,v 1.17 2005/02/13 22:58:28 jnelson Exp $ */
+/* $EPIC: reg.c,v 1.18 2005/03/19 03:55:56 jnelson Exp $ */
 /*
  * reg.c - "glob"-like wildcard pattern matching (not regexes)
  *
@@ -512,7 +512,7 @@ static int new_match (const unsigned char *pattern, const unsigned char *string)
  * In all cases where the string is matched by the pattern, then the "value"
  * of the match is 1 plus the number of non-wildcard characters in "str".
  *
- * \\[ and \\] handling done by Jeremy Nelson
+ * \\[ and \\] handling is an epic extension.
  */
 int wild_match (const char *p, const char *str)
 {

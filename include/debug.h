@@ -1,7 +1,5 @@
 /*
  * debug.h -- the runtime debug settings.  Can also be done on command line.
- *
- * Written by Jeremy Nelson
  * Copyright 1997 EPIC Software Labs
  */
 

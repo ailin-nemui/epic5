@@ -1,4 +1,4 @@
-/* $EPIC: alias.c,v 1.71 2005/03/18 02:42:31 jnelson Exp $ */
+/* $EPIC: alias.c,v 1.72 2005/03/19 03:55:55 jnelson Exp $ */
 /*
  * alias.c -- Handles the whole kit and caboodle for aliases.
  *
@@ -33,7 +33,6 @@
  * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF 
  * SUCH DAMAGE.
  */
-/* Almost totaly rewritten by Jeremy Nelson (01/97) */
 
 #define __need_cs_alist_hash__
 #include "irc.h"

@@ -1,8 +1,8 @@
-/* $EPIC: network.c,v 1.63 2005/03/04 00:57:45 jnelson Exp $ */
+/* $EPIC: network.c,v 1.64 2005/03/19 03:55:55 jnelson Exp $ */
 /*
  * network.c -- handles stuff dealing with connecting and name resolving
  *
- * Copyright © 1995, 2003 Jeremy Nelson
+ * Copyright © 1995, 2005 Jeremy Nelson
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without

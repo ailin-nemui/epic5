@@ -1,4 +1,4 @@
-/* $EPIC: expr.c,v 1.29 2005/03/11 05:02:22 jnelson Exp $ */
+/* $EPIC: expr.c,v 1.30 2005/03/19 03:55:55 jnelson Exp $ */
 /*
  * expr.c -- The expression mode parser and the textual mode parser
  * #included by alias.c -- DO NOT DELETE
@@ -103,7 +103,7 @@ static char	*lastop (char *ptr)
 #define NU_UNIT 8
 
 /*
- * Cleaned up/documented by Jeremy Nelson, Feb 1996.
+ * Cleaned up/documented in Feb 1996.
  *
  * What types of operators does ircII (EPIC) support?
  *
@@ -796,8 +796,8 @@ static	char	*next_unit (char *str, const char *args, int stage)
 
 
 	/* 
-	 * Reworked - Jeremy Nelson, Feb 1994
-	 * Reworked again, Feb 1996 (jfn)
+	 * Reworked in Feb 1994
+	 * Reworked again in Feb 1996
 	 * 
 	 * X, XX, and X= are all supported, where X is one of "&" (and), 
 	 * "|" (or) and "^" (xor).  The XX forms short-circuit, as they

@@ -1,4 +1,4 @@
-/* $EPIC: newio.c,v 1.47 2005/03/06 21:09:37 jnelson Exp $ */
+/* $EPIC: newio.c,v 1.48 2005/03/19 03:55:55 jnelson Exp $ */
 /*
  * newio.c:  Passive, callback-driven IO handling for sockets-n-stuff.
  *
@@ -266,7 +266,7 @@ ssize_t	dgets (int vfd, char *buf, size_t buflen, int buffer)
 
 	if (ioe->error)
 	{
-	    syserr("dgets: Reporting error for vfd [%d]", vfd);
+	    syserr("dgets: Reporting exception for vfd [%d]", vfd);
 	    return -1;
 	}
 
@@ -765,7 +765,8 @@ static void	new_io_event (int vfd)
 	{
 		ioe->error = -1;
 		ioe->clean = 0;
-		syserr("new_io_event: io_callback(%d) failed", vfd);
+		syserr("new_io_event: io_callback(%d) "
+				"said fd should be closed", vfd);
 
 		if (x_debug & DEBUG_INBOUND) 
 			yell("VFD [%d] FAILED [%d]", vfd, c);

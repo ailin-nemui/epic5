@@ -19,7 +19,7 @@ any GNU software (however, this is _not_ GNU software)
      the superuser compiling for the entire system) you can run
      configure with the "--prefix=/path/to/somewhere" flag, for example:
 
-		./configure --prefix=/usr/home/jnelson
+		./configure --prefix=/usr/home/user
 
   o  EPIC's build infrastructure fully supports all the bells and whistles
      that configure provides for compiling in different places and for

@@ -1,7 +1,6 @@
 #
-# EPIC4 ESL regression tests
-# New math parser test
-# Copyright 1998 Jeremy Nelson, Distribute freely.
+# EPIC4 ESL regression tests -- New math parser test
+# Public Domain -- Distribute Freely.
 #
 # NOTE: If you find a test that is missing, please let me know so
 # i can add it.  Doubly so if you find a test that exposes a bug!

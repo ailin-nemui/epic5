@@ -1,4 +1,4 @@
-/* $EPIC: status.c,v 1.53 2005/03/11 05:02:22 jnelson Exp $ */
+/* $EPIC: status.c,v 1.54 2005/03/19 03:55:56 jnelson Exp $ */
 /*
  * status.c: handles the status line updating, etc for IRCII 
  *
@@ -824,20 +824,42 @@ int	make_status (Window *window, int must_redraw)
 
 
 /*
+ * These macros hide the gory details of handling resizable stats_format
+ * return values.
+ */
+#define STATUS_VARS \
+	static char *my_bufferx = NULL; \
+	static int my_bufferxsize = 64; \
+	int	actual_size;
+#define CHECK \
+	RESIZE(my_bufferx, char, my_bufferxsize);
+#define RECHECK \
+	if (actual_size < my_bufferxsize) \
+		break; \
+	my_bufferxsize = actual_size + 1; \
+	CHECK
+#define PRESS(fmt, arg) \
+	if (! fmt ) return empty_string; \
+	CHECK \
+	do { \
+		actual_size = snprintf(my_bufferx, my_bufferxsize, fmt, arg); \
+		RECHECK \
+	} while (1);
+#define RETURN return my_bufferx;
+
+/*
  * These are the functions that all of the status expandoes invoke
  */
-
 
 /*
  * This is your current nickname in the window.
  */
 STATUS_FUNCTION(status_nickname)
 {
-static	char	my_buffer[64];
+	STATUS_VARS
 
-	snprintf(my_buffer, sizeof my_buffer, nick_format, 
-			get_server_nickname(window->server));
-	return my_buffer;
+	PRESS(nick_format, get_server_nickname(window->server))
+	RETURN
 }
 
 /*
@@ -845,8 +867,8 @@ static	char	my_buffer[64];
  */
 STATUS_FUNCTION(status_server)
 {
+	STATUS_VARS
 const	char	*n = NULL;
-static	char	my_buffer[64];
 
 	/*
 	 * If there is only one server, dont bother telling the user
@@ -860,12 +882,6 @@ static	char	my_buffer[64];
 	 */
 	if (window->server == NOSERV)
 		return "No Server";
-
-	/*
-	 * If the user doesnt want this expando, dont force it.
-	 */
-	if (!server_format)
-		return empty_string;
 
 	/* Map 0 uses the shortname, shown when multi-connected */
 	/* Map 1 uses the shortname, shown at all times */
@@ -881,8 +897,8 @@ static	char	my_buffer[64];
 	if (!n)
 		return "Unknown";
 
-	snprintf(my_buffer, sizeof my_buffer, server_format, n);
-	return my_buffer;
+	PRESS(server_format, n)
+	RETURN
 }
 
 /*
@@ -891,17 +907,14 @@ static	char	my_buffer[64];
  */
 STATUS_FUNCTION(status_query_nick)
 {
-	static char my_buffer[BIG_BUFFER_SIZE + 1];
+	STATUS_VARS
 	const char *q;
 
-	q = get_equery_by_refnum(window->refnum);
-	if (q && query_format)
-	{
-		snprintf(my_buffer, sizeof my_buffer, query_format, q);
-		return my_buffer;
-	}
+	if (!(q = get_equery_by_refnum(window->refnum)))
+		return empty_string;
 
-	return empty_string;
+	PRESS(query_format, q)
+	RETURN
 }
 
 /*
@@ -924,9 +937,9 @@ STATUS_FUNCTION(status_right_justify)
  */
 STATUS_FUNCTION(status_notify_windows)
 {
+	STATUS_VARS
 	int	doneone = 0;
 	char	buf2[BIG_BUFFER_SIZE];
-static	char	my_buffer[BIG_BUFFER_SIZE];
 
 	/*
 	 * This only goes to a current-type window.
@@ -934,13 +947,11 @@ static	char	my_buffer[BIG_BUFFER_SIZE];
 	if (!DISPLAY_ON_WINDOW)
 		return empty_string;
 
-	*my_buffer = 0;
-	*buf2 = 0;
-
 	/*
 	 * Look for any notifying windows that have had some output since 
 	 * they have been hidden and collect their refnums.
 	 */
+	*buf2 = 0;
 	window = NULL;
 	while (traverse_all_windows(&window))
 	{
@@ -963,10 +974,11 @@ static	char	my_buffer[BIG_BUFFER_SIZE];
 	/*
 	 * Only do the snprintf if there are windows to process.
 	 */
-	if (doneone && notify_format)
-		snprintf(my_buffer, sizeof my_buffer, notify_format, buf2);
+	if (!doneone)
+		return empty_string;
 
-	return my_buffer;
+	PRESS(notify_format, buf2)
+	RETURN
 }
 
 /*
@@ -974,14 +986,13 @@ static	char	my_buffer[BIG_BUFFER_SIZE];
  */
 STATUS_FUNCTION(status_clock)
 {
-	static	char	my_buffer[81];
+	STATUS_VARS
 
-	if (get_int_var(CLOCK_VAR) && clock_format && DISPLAY_ON_WINDOW)
-		snprintf(my_buffer, sizeof my_buffer, clock_format, get_clock());
-	else
-		*my_buffer = 0;
+	if (!get_int_var(CLOCK_VAR) || !DISPLAY_ON_WINDOW)
+		return empty_string;
 
-	return my_buffer;
+	PRESS(clock_format, get_clock())
+	RETURN
 }
 
 /*
@@ -989,27 +1000,23 @@ STATUS_FUNCTION(status_clock)
  */
 STATUS_FUNCTION(status_mode)
 {
+	STATUS_VARS
 	const char *	mode = NULL;
 	const char *	chan = NULL;
-static  char    	my_buffer[81];
-
-	/* If anything goes wrong, we return an empty string */
-	*my_buffer = 0;
 
 	/* If the user has no mode format, or we're not connected, punt. */
-        if (!mode_format || window->server == NOSERV)
-		return my_buffer;
+        if (window->server == NOSERV)
+		return empty_string;
 
 	/* If there is a current channel, get it's mode */
 	if ((chan = get_echannel_by_refnum(window->refnum)))
 		mode = get_channel_mode(chan, window->server);
-
 	if (!mode)
 		mode = empty_string;
 
 	/* If this is %+, and there is not a mode, punt. */
 	if (map == 0 && !*mode)
-		return my_buffer;
+		return empty_string;
 
 	if (map == 0 || map == 1)
 	{
@@ -1034,8 +1041,8 @@ static  char    	my_buffer[81];
 	}
 
 	/* Press the mode into the status format. */
-	snprintf(my_buffer, sizeof my_buffer, mode_format, mode);
-	return my_buffer;
+	PRESS(mode_format, mode)
+	RETURN
 }
 
 
@@ -1044,8 +1051,8 @@ static  char    	my_buffer[81];
  */
 STATUS_FUNCTION(status_umode)
 {
+	STATUS_VARS
 	char	localbuf[20];
-static	char	my_buffer[81];
 
 	/*
 	 * If we are only on one server and this isnt the current-type 
@@ -1064,8 +1071,8 @@ static	char	my_buffer[81];
 	if (!*localbuf)
 		return empty_string;
 
-	snprintf(my_buffer, sizeof my_buffer, umode_format, localbuf);
-	return my_buffer;
+	PRESS(umode_format, localbuf)
+	RETURN
 }
 
 /*
@@ -1114,8 +1121,8 @@ STATUS_FUNCTION(status_ssl)
  */
 STATUS_FUNCTION(status_hold_lines)
 {
+	STATUS_VARS
 	int	num;
-static	char	my_buffer[81];
 	int	interval = window->hold_interval;
 	int	lines_held;
 
@@ -1130,13 +1137,11 @@ static	char	my_buffer[81];
 	if (lines_held <= 0)
 		return empty_string;
 
-	if ((num = (lines_held / interval) * interval))
-	{
-		snprintf(my_buffer, sizeof my_buffer, hold_lines_format, ltoa(num));
-		return my_buffer;
-	}
+	if ((num = (lines_held / interval) * interval) == 0)
+		return empty_string;
 
-	return empty_string;
+	PRESS(hold_lines_format, ltoa(num))
+	RETURN
 }
 
 /*
@@ -1144,9 +1149,9 @@ static	char	my_buffer[81];
  */
 STATUS_FUNCTION(status_channel)
 {
+	STATUS_VARS
 	const char *chan;
 	char 	channel[IRCD_BUFFER_SIZE + 1];
-static	char	my_buffer[IRCD_BUFFER_SIZE + 1];
 	int	num;
 
 	if (window->server == NOSERV || !channel_format)
@@ -1165,9 +1170,8 @@ static	char	my_buffer[IRCD_BUFFER_SIZE + 1];
 	if (num > 0 && (int)strlen(channel) > num)
 		channel[num] = 0;
 
-	snprintf(my_buffer, sizeof my_buffer,
-			channel_format, check_channel_type(channel));
-	return my_buffer;
+	PRESS(channel_format, check_channel_type(channel))
+	RETURN
 }
 
 /*
@@ -1197,8 +1201,8 @@ STATUS_FUNCTION(status_voice)
  */
 STATUS_FUNCTION(status_mail)
 {
+	STATUS_VARS
 	const char *	number;
-static	char	my_buffer[81];
 
 	/*
 	 * The order is important here.  We check to see whether or not
@@ -1206,14 +1210,12 @@ static	char	my_buffer[81];
 	 * that will be false, and check_mail() is very expensive; we dont
 	 * want to do it if we're going to ignore the result.
 	 */
-	if (get_int_var(MAIL_VAR) && mail_format && 
-	    DISPLAY_ON_WINDOW && (number = check_mail()))
-	{
-		snprintf(my_buffer, sizeof my_buffer, mail_format, number);
-		return my_buffer;
-	}
+	if (!get_int_var(MAIL_VAR) || !DISPLAY_ON_WINDOW || 
+				((number = check_mail()) == 0))
+		return empty_string;
 
-	return empty_string;
+	PRESS(mail_format, number)
+	RETURN
 }
 
 /*
@@ -1372,19 +1374,24 @@ STATUS_FUNCTION(status_window)
 
 STATUS_FUNCTION(status_refnum)
 {
-	static char my_buffer[81];
+	STATUS_VARS
+	const char *value;
 
-	strlcpy(my_buffer, window->name ? window->name 
-					: ltoa(window->refnum), sizeof my_buffer);
-	return my_buffer;
+	if (window->name)
+		value = window->name;
+	else
+		value = ltoa(window->refnum);
+
+	PRESS("%s", value)
+	RETURN
 }
 
 STATUS_FUNCTION(status_refnum_real)
 {
-	static char my_buffer[81];
+	STATUS_VARS
 
-	strlcpy(my_buffer, ltoa(window->refnum), sizeof my_buffer);
-	return my_buffer;
+	PRESS("%s", ltoa(window->refnum))
+	RETURN
 }
 
 STATUS_FUNCTION(status_version)
@@ -1431,15 +1438,13 @@ STATUS_FUNCTION(status_dcc_all)
  */
 STATUS_FUNCTION(status_cpu_saver_mode)
 {
-	static char my_buffer[81];
+	STATUS_VARS
 
-	if (cpu_saver && cpu_saver_format)
-	{
-		snprintf(my_buffer, sizeof my_buffer, cpu_saver_format, "CPU");
-		return my_buffer;
-	}
+	if (!cpu_saver)
+		return empty_string;
 
-	return empty_string;
+	PRESS(cpu_saver_format, "CPU")
+	RETURN
 }
 
 /*
@@ -1478,15 +1483,12 @@ STATUS_FUNCTION(status_scroll_info)
 {
 	static char my_buffer[81];
 
-	if (window->scrollback_top_of_display)
-	{
-		snprintf(my_buffer, sizeof my_buffer, " (Scroll: %d of %d)", 
-				window->scrollback_distance_from_display_ip,
-				window->display_buffer_size - 1);
-	}
-	else
-		*my_buffer = 0;
+	if (!window->scrollback_top_of_display)
+		return empty_string;
 
+	snprintf(my_buffer, sizeof my_buffer, " (Scroll: %d of %d)", 
+			window->scrollback_distance_from_display_ip,
+			window->display_buffer_size - 1);
 	return my_buffer;
 }
 

@@ -1,8 +1,8 @@
-/* $EPIC: reg.h,v 1.1 2002/02/01 23:05:54 jnelson Exp $ */
+/* $EPIC: reg.h,v 1.2 2005/03/19 03:55:55 jnelson Exp $ */
 /*
  * reg.h: pattern matching and other assorted things
  *
- * Copyright 2000 Jeremy Nelson and others ("EPIC Software Labs").
+ * Copyright © 2000 EPIC Software Labs.
  * All rights reserved.
  * 
  * Redistribution and use in source and binary forms, with or without

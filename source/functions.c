@@ -1,4 +1,4 @@
-/* $EPIC: functions.c,v 1.195 2005/03/15 05:36:20 jnelson Exp $ */
+/* $EPIC: functions.c,v 1.196 2005/03/19 03:55:55 jnelson Exp $ */
 /*
  * functions.c -- Built-in functions for ircII
  *
@@ -1701,7 +1701,7 @@ BUILT_IN_FUNCTION(function_idle, input)
 /* $before(chars string of text)
  * returns the part of "string of text" that occurs before the
  * first instance of any character in "chars"
- * EX:  $before(! hop!jnelson@iastate.edu) returns "hop"
+ * EX:  $before(! nick!user@host.com) returns "nick"
  */
 BUILT_IN_FUNCTION(function_before, word)
 {
@@ -1738,7 +1738,7 @@ BUILT_IN_FUNCTION(function_before, word)
 /* $after(chars string of text)
  * returns the part of "string of text" that occurs after the 
  * first instance of any character in "chars"
- * EX: $after(! hop!jnelson@iastate.edu)  returns "jnelson@iastate.edu"
+ * EX: $after(! nick!user@host.com)  returns "user@host.com"
  */
 BUILT_IN_FUNCTION(function_after, word)
 {
@@ -2129,8 +2129,8 @@ BUILT_IN_FUNCTION(function_filter, word)
 /* $rpattern(word list of patterns)
  * Given a word and a list of patterns, return all patterns that
  * match the word.
- * EX: $rpattern(jnelson@iastate.edu *@* jnelson@* f*@*.edu)
- * returns "*@* jnelson@*"
+ * EX: $rpattern(user@host.com *@* user@* f*@*.com)
+ * returns "*@* user@*"
  */
 BUILT_IN_FUNCTION(function_rpattern, word)
 {
@@ -2152,8 +2152,8 @@ BUILT_IN_FUNCTION(function_rpattern, word)
 /* $rfilter(word list of patterns)
  * given a word and a list of patterns, return all patterns that
  * do NOT match the word
- * EX: $rfilter(jnelson@iastate.edu *@* jnelson@* f*@*.edu)
- * returns "f*@*.edu"
+ * EX: $rfilter(user@host.com *@* user@* f*@*.com)
+ * returns "f*@*.com"
  */
 BUILT_IN_FUNCTION(function_rfilter, word)
 {
@@ -2175,10 +2175,10 @@ BUILT_IN_FUNCTION(function_rfilter, word)
  * Given a pattern and two variable names, it returns all words
  * in the variable_2 corresponding to any words in variable_1 that
  * are matched by the pattern
- * EX: @nicks = [hop IRSMan skip]
- *     @userh = [jnelson@iastate.edu irsman@iastate.edu sanders@rush.cc.edu]
- *     $copattern(*@iastate.edu userh nicks) 
- *	returns "hop IRSMan"
+ * EX: @nicks = [nick1 nick2 nick3]
+ *     @userh = [user1@host1.com user2@host1.com user3@host2.com]
+ *     $copattern(*@host1.com userh nicks) 
+ *	returns "nick1 nick2"
  */
 #define COPATFUNC(fn, pat, arg, sense)                                 \
 BUILT_IN_FUNCTION((fn), word)                                          \
@@ -3237,7 +3237,7 @@ BUILT_IN_FUNCTION(function_truncate, words)
 
 /*
  * Apprantly, this was lifted from a CS client.  I reserve the right
- * to replace this code in future versions. (hop)
+ * to replace this code in future versions. 
  */
 /*
 	I added this little function so that I can have stuff formatted
@@ -5051,7 +5051,7 @@ BUILT_IN_FUNCTION(function_mask, args)
 		RETURN_EMPTY;
 
 	/*
-	 * Deal with ~jnelson@acronet.net for example, and all sorts
+	 * Deal with ~nick@user.com for example, and all sorts
 	 * of other av2.9 breakage.
 	 */
 	if (strchr("~^-+=", *user))
@@ -5446,7 +5446,6 @@ BUILT_IN_FUNCTION(function_rest, input)
 
 /* Written by panasync */
 /* Re-written by CE */
-/* Re-re-written by Jeremy */
 #define GET_UNIFIED_ARRAY_FUNCTION(thisfn, nextfn)	\
 BUILT_IN_FUNCTION( thisfn , input)			\
 {							\

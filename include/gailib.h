@@ -141,8 +141,6 @@ Standard C system should have one. */
 
   sockport.h -
 
-  $Author: jnelson $
-  $Date: 2003/11/07 03:51:10 $
   created at: Fri Apr 30 23:19:34 JST 1999
 
 ************************************************/

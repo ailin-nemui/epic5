@@ -1,4 +1,4 @@
-/* $EPIC: numbers.c,v 1.82 2005/03/12 01:40:22 jnelson Exp $ */
+/* $EPIC: numbers.c,v 1.83 2005/03/19 03:55:55 jnelson Exp $ */
 /*
  * numbers.c: handles all those strange numeric response dished out by that
  * wacky, nutty program we call ircd 
@@ -92,7 +92,7 @@ const char *	banner (void)
  * display_msg: handles the displaying of messages from the variety of
  * possible formats that the irc server spits out.
  *
- * Simplified by Jeremy Nelson (esl) some time in 1996.
+ * Simplified some time in 1996.
  * -- called by more than one place.
  */
 static void 	display_msg (const char *from, const char *comm, const char **ArgList)

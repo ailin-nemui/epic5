@@ -1,4 +1,4 @@
-/* $EPIC: compat.c,v 1.21 2004/03/12 22:22:00 jnelson Exp $ */
+/* $EPIC: compat.c,v 1.22 2005/03/19 03:55:55 jnelson Exp $ */
 /*
  * Everything that im not directly responsible for I put in here.  Almost
  * all of this stuff is either borrowed from somewhere else (for you poor
@@ -1112,7 +1112,7 @@ u_32int_t	bsd_arc4random (void)
 }
 
 /* --------------------------- start of misc stuff -------------------- */
-/* This is all written by Jeremy Nelson and is public domain */
+/* This is written by EPIC Software Labs contributers and is public domain */
 #ifndef HAVE_VSNPRINTF
 int vsnprintf (char *str, size_t size, const char *format, va_list ap)
 {

@@ -1,7 +1,7 @@
 /*
  * queue.h - header file for queue.c
  *
- * Copyright 1993 Jeremy Nelson
+ * Copyright 1993 EPIC Software Labs
  * See the coypright file for more information
  */
 

@@ -1,4 +1,4 @@
-/* $EPIC: commands.c,v 1.117 2005/03/18 02:42:31 jnelson Exp $ */
+/* $EPIC: commands.c,v 1.118 2005/03/19 03:55:55 jnelson Exp $ */
 /*
  * commands.c -- Stuff needed to execute commands in ircII.
  *		 Includes the bulk of the built in commands for ircII.
@@ -34,11 +34,6 @@
  * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
  */
-/*
- * Reorganized with ruthless abandon for EPIC3pre2 (summer, 1995)
- *   by Jeremy Nelson (jnelson@acronet.net)
- */
-
 #define __need_putchar_x__
 #define __need_term_flush__
 #include "irc.h"
@@ -1335,7 +1330,7 @@ BUILT_IN_COMMAND(info)
 		say("\tCopyright 1991-1992 Troy Rollo");
 		say("Versions 2.2pre8 through 2.8.2 by Matthew Green");
 		say("\tCopyright 1992-1995 Matthew Green");
-		say("All EPIC versions by Jeremy Nelson and Others");
+		say("All EPIC versions by EPIC Software Labs");
 		say("\tCopyright 1993-2004 EPIC Software Labs");
 		say(" ");
 		say("	    Contact the EPIC project (%s)", EMAIL_CONTACT);
@@ -1441,9 +1436,8 @@ BUILT_IN_COMMAND(license)
 	yell("Copyright (c) 1990 Michael Sandroff.");
 	yell("Copyright (c) 1991, 1992 Troy Rollo.");
  	yell("Copyright (c) 1992-1996 Matthew Green.");
- 	yell("Copyright © 1993, 1997 Jeremy Nelson.");
 	yell("Copyright © 1994 Jake Khuon.");
-	yell("Coypright © 1995, 2004 EPIC Software Labs.");
+	yell("Coypright © 1993, 2005 EPIC Software Labs.");
 	yell("All rights reserved");
 	yell(" ");
 	yell("Redistribution and use in source and binary forms, with or");

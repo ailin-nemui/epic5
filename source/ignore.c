@@ -1,4 +1,4 @@
-/* $EPIC: ignore.c,v 1.24 2004/07/29 16:59:03 jnelson Exp $ */
+/* $EPIC: ignore.c,v 1.25 2005/03/19 03:55:55 jnelson Exp $ */
 /*
  * ignore.c: handles the ingore command for irc 
  *
@@ -741,8 +741,8 @@ static int	foreach_ignore (const char *nicklist, int create, int (*callback) (Ig
 	/*
 	 * Walk over 'nicklist', which separates each target with spaces
 	 * or with commas, ie:
-	 *	/ignore "hop hop2" ALL
-	 *	/ignore hop,hop2 ALL
+	 *	/ignore "nick1 nick2" ALL
+	 *	/ignore nick1,nick2 ALL
 	 */
 	copy = LOCAL_COPY(nicklist);
         while ((arg = new_next_arg(copy, &copy)))

@@ -1,7 +1,5 @@
 /*
  * alias.h: header for alias.c 
- *
- * Written by Jeremy Nelson
  * Copyright 1997 EPIC Software Labs
  * See the COPYRIGHT file, or do a HELP IRCII COPYRIGHT 
  */

@@ -571,3 +571,7 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Permit status updates right away, instead of after first connection.
 * If /input is done in hidden window, switch to the main window.
 * Make arglists look a little less odd for fudd.
+* Change "ERROR --" to "INFO --" to not alarm people as much.
+* Change a few other warnings to not be so alarming.
+* Change new_realloc() to not move ptr if it is big enough to hold new size.
+* Fix all the status_* sub-formats to not have any hardcoded size limits.

@@ -1,4 +1,4 @@
-/* $EPIC: dcc.c,v 1.114 2005/03/16 00:35:22 jnelson Exp $ */
+/* $EPIC: dcc.c,v 1.115 2005/03/19 03:55:55 jnelson Exp $ */
 /*
  * dcc.c: Things dealing client to client connections. 
  *
@@ -1543,7 +1543,7 @@ static	void	dcc_getfile (char *args, int resume)
 
 		/* 
 		 * Don't prefix the DCC_STORE_PATH if the description
-		 * is already an absolute path (hop, 09/24/2003)
+		 * is already an absolute path (09/24/2003)
 		 */
 		if (*realfilename == '/')
 			strlcpy(fullname, realfilename, sizeof(fullname));
@@ -3157,7 +3157,7 @@ static void	process_dcc_send_handle_ack (DCC_list *dcc)
 	{
 yell("### WARNING!  The other peer claims to have recieved more bytes than");
 yell("### I have actually sent so far.  Please report this to ");
-yell("### jnelson@acronet.net or #epic on EFNet right away.");
+yell("### problems@epicsol.org or #epic on EFNet right away.");
 yell("### Ask the person who you sent the file to look for garbage at the");
 yell("### end of the file you just sent them.  Please enclose that ");
 yell("### information as well as the following:");

@@ -2,8 +2,7 @@
  * files.h -- header file for files.c
  * Direct file manipulation for irc?  Unheard of!
  *
- * Copyright 1995 Jeremy Nelson
- * Copyright 1997 EPIC Software Labs
+ * Copyright 1995, 1997 EPIC Software Labs
  * See the COPYRIGHT file for copyright information
  */
 

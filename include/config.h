@@ -5,7 +5,6 @@
  *
  * Original: Michael Sandrof
  * V2 by Carl V. Loesch (lynx@dm.unirm1.it)
- * V2.EPIC by jfn (jnelson@acronet.net)
  */
 
 #ifndef _CONFIG_H_
@@ -158,7 +157,7 @@
  *  not be used.
  */
 #undef SOFT_SECURE
-#define VALID_UID_FILE "/home/jnelson/..."
+#define VALID_UID_FILE "/home/user/..."
 
 /*
  *  This allows you to use the third security option.  If you define this,
@@ -166,7 +165,7 @@
  *  the uids (integers, not usernames) that will not be allowed to execute
  *  the resulting program.
  */
-/*#define INVALID_UID_FILE "/home/jnelson/...."*/
+/*#define INVALID_UID_FILE "/home/user/...."*/
 
 /*
  * This part lets you deny certain hosts from running your irc client.
@@ -180,7 +179,7 @@
 #undef HOST_SECURE
 
 #ifdef HOST_SECURE
-#define INVALID_HOST_FILE "/home/jnelson/...host.deny"
+#define INVALID_HOST_FILE "/home/user/...host.deny"
 #endif
 
 

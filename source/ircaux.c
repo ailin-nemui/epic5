@@ -1,4 +1,4 @@
-/* $EPIC: ircaux.c,v 1.132 2005/03/04 00:57:44 jnelson Exp $ */
+/* $EPIC: ircaux.c,v 1.133 2005/03/19 03:55:55 jnelson Exp $ */
 /*
  * ircaux.c: some extra routines... not specific to irc... that I needed 
  *
@@ -273,11 +273,14 @@ void *	really_new_realloc (void **ptr, size_t size, const char *fn, int line)
 		/* Make sure this is safe for realloc. */
 		fatal_malloc_check(*ptr, NULL, fn, line);
 
+		/* If it's already big enough, keep it. */
+		if (alloc_size(*ptr) >= size)
+			return (*ptr);
+
 		/* Copy everything, including the MO buffer */
 		if ((newptr = (char *)realloc(mo_ptr(*ptr), size + sizeof(MO))))
-		{
 			*ptr = newptr;
-		} else {
+		else {
 			new_free(ptr);
 			panic("realloc() failed from [%s/%d], giving up!", fn, line);
 		}
@@ -3053,7 +3056,7 @@ size_t	mangle_line	(char *incoming, int how, size_t how_much)
 		normalize_never_xlate = 0;	/* XXXXX */
 		if (strlcpy(incoming, output, how_much) > how_much)
 			say("Mangle_line truncating results. #1 -- "
-				"Email jnelson@acronet.net [%d] [%d]",
+				"Email problems@epicsol.org [%d] [%d]",
 				strlen(output), how_much);
 		new_free(&output);
 

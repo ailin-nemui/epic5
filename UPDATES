@@ -147,7 +147,7 @@ EPIC5-0.0.4
 	    output to another target, output it to the screen.
 
 	Note that (4b) and (3) work in complement to each other.  If you do
-		/EXEC -MSG hop w
+		/EXEC -MSG nick w
 	then the output will be handled through /ON SEND_MSG (either from
 	your own on, or from the default output).  If you do not, then the 
 	output will be handled by /ON EXEC. 
@@ -983,8 +983,8 @@ EPIC5-0.0.3
 	send a message to a nickname on a server other than your current
 	window's server.  For example:
 		@serverctl(SET 0 ALTNAME booya)		(set an altname)
-		/msg -booya/hop hi there!
-	Will send the message to "hop" on server 0.
+		/msg -booya/nick hi there!
+	Will send the message to "nick" on server 0.
 
 *** News 08/25/2004 -- "Server descriptions"
 	Anywhere EPIC expects you to give it a server, it now expects a 
@@ -1133,9 +1133,9 @@ EPIC5-0.0.3
 	the pattern is matched.  This is how ircII's /ON TYPE ^PATTERN works.
 	For example:
 			on ^msg * echo msg from $0: $1-
-			on ^msg !"hop" 
-	In this case, if anyone but hop sends you a msg, it is echoed as
-	in the first /on.  But if hop sends you a message, it will be
+			on ^msg !"nick" 
+	In this case, if anyone but nick sends you a msg, it is echoed as
+	in the first /on.  But if nick sends you a message, it will be
 	displayed in the "default" way by epic, as though you did not have
 	an on at all.
 
