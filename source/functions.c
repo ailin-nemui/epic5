@@ -3333,7 +3333,7 @@ BUILT_IN_FUNCTION(function_umode, words)
 
 static int sort_it (const void *one, const void *two)
 {
-	return my_stricmp(*(char **)one, *(char **)two);
+	return my_stricmp(*(const char **)one, *(const char **)two);
 }
 
 BUILT_IN_FUNCTION(function_sort, words)
@@ -3581,7 +3581,8 @@ BUILT_IN_FUNCTION(function_twiddle, words)
 
 static int unsort_it (const void *one, const void *two)
 {
-	return *(char**)one-*(char**)two;
+	/* This just makes me itch. ;-) */
+	return (int)(*(const char **)one - *(const char **)two);
 }
 /* 
  * Date: Sun, 29 Sep 1996 19:17:25 -0700
