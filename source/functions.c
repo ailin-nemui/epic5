@@ -1,4 +1,4 @@
-/* $EPIC: functions.c,v 1.182 2004/10/13 23:25:55 jnelson Exp $ */
+/* $EPIC: functions.c,v 1.183 2005/01/01 18:03:22 jnelson Exp $ */
 /*
  * functions.c -- Built-in functions for ircII
  *
@@ -240,6 +240,7 @@ static	char
 	*function_filter 	(char *),
 	*function_findw		(char *),
 	*function_findws	(char *),
+	*function_fix_arglist	(char *),
 	*function_floor		(char *),
 	*function_fromw 	(char *),
 	*function_fsize	 	(char *),
@@ -517,6 +518,7 @@ static BuiltInFunctions	built_in_functions[] =
 #endif
 	{ "FINDW",		function_findw		},
 	{ "FINDWS",		function_findws		},
+	{ "FIX_ARGLIST",		function_fix_arglist		},
 	{ "FLOODINFO",		function_floodinfo	},
 	{ "FLOOR",		function_floor		},
 	{ "FNEXIST",		function_fnexist	},
@@ -7066,4 +7068,18 @@ BUILT_IN_FUNCTION(function_mktime, input)
 BUILT_IN_FUNCTION(function_hookctl, input)
 {
         return hookctl(input);
+}
+
+BUILT_IN_FUNCTION(function_fix_arglist, input)
+{
+	ArgList *l;
+	char *r;
+	l = parse_arglist(input);
+	r = print_arglist(l);
+	if (r)
+	{
+		destroy_arglist(&l);
+		return r;
+	}
+	RETURN_EMPTY;
 }

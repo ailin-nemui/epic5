@@ -213,4 +213,34 @@
 	char	*aliasctl (char *);
 
 	char *	after_expando (char *, int, int *);
+
+/* 
+ * This aint my territory, but I'm putting these in here.
+ * Feel free to change it!
+ */
+
+enum ARG_TYPES {
+	WORD,
+	UWORD,
+	DWORD,
+	QWORD
+};
+
+/* Ugh. XXX Bag on the side */
+struct ArgListT {
+	char *	vars[32];
+	char *	defaults[32];
+	int	words[32];
+	enum	ARG_TYPES types[32];
+	int	void_flag;
+	int	dot_flag;
+};
+typedef struct ArgListT ArgList;
+extern ArgList	*parse_arglist (char *arglist);
+extern void	destroy_arglist (ArgList **);
+extern char *print_arglist(ArgList *);
+extern ArgList *clone_arglist (ArgList *);
+
+
+
 #endif /* _ALIAS_H_ */

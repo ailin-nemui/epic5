@@ -1,4 +1,4 @@
-/* $EPIC: hook.c,v 1.44 2004/10/13 23:25:55 jnelson Exp $ */
+/* $EPIC: hook.c,v 1.45 2005/01/01 18:03:22 jnelson Exp $ */
 /*
  * hook.c: Does those naughty hook functions. 
  *
@@ -101,6 +101,7 @@ typedef struct	hook_stru
 	int	flexible;		/* on type 'NICK' stuff */
 
 	char	*filename;		/* Where it was loaded */
+	ArgList *arglist;	/* You know, argument list */
 }	Hook;
 
 /* 
@@ -126,7 +127,6 @@ struct Current_hook
 
 	/* Set to 1 if buffer has been changed */
 	int buffer_changed;
-
 };
 
 /* A list of all the hook functions available */
@@ -236,7 +236,7 @@ static int	 hook_functions_initialized = 0;
 
 static Hook **hooklist = NULL;
 static int hooklist_size = 0;
-static int	last_created_hook = -1;
+static int	last_created_hook = -2;
 static struct Current_hook *current_hook = NULL;
 /*
  * If deny_all_hooks is set to 1, no action is taken for any hook.
@@ -486,7 +486,7 @@ static int 	find_hook (char *name, int *first, int quiet)
  * entry to the list as specified by the rest of the parameters.  The new
  * entry is added in alphabetical order (by nick). 
  */
-int add_hook (int which, char *nick, char *stuff, int noisy, int not, int sernum, int flexible)
+int add_hook (int which, char *nick, ArgList *arglist, char *stuff, int noisy, int not, int sernum, int flexible)
 {
 	Hook	*new_h;
 	
@@ -510,6 +510,7 @@ int add_hook (int which, char *nick, char *stuff, int noisy, int not, int sernum
 	new_h->flexible = flexible;
 	new_h->global = loading_global;
 	new_h->skip = 0;
+	new_h->arglist = arglist;
 	malloc_strcpy(&new_h->filename, current_package());
 	new_h->next = NULL;
 
@@ -547,7 +548,10 @@ static void remove_hook (int which, char *nick, int sernum, int quiet)
 			new_free(&(tmp->nick));
 			new_free(&(tmp->stuff));
 			new_free(&(tmp->filename));
-		
+			if (tmp->arglist != NULL)
+                    destroy_arglist(&(tmp->arglist));
+					
+	
 			hooklist[tmp->userial] = NULL;
 			if (tmp->userial == hooklist_size -1)
 			{
@@ -609,6 +613,13 @@ void    flush_on_hooks (void)
         for (x = 0; x < NUMBER_OF_LISTS; x++)
 		remove_hook(x, NULL, 0, 1); 
         window_display = old_display;
+
+		new_free(&hooklist);
+		hooklist = new_malloc(sizeof(Hook *));
+		hooklist[0] = NULL;
+		hooklist_size = 0;
+		last_created_hook = -2;
+
 }
 
 void	unload_on_hooks (char *filename)
@@ -637,14 +648,31 @@ void	unload_on_hooks (char *filename)
 /* show_hook shows a single hook */
 static void 	show_hook (Hook *list, const char *name)
 {
-	say("[%s] On %s from %c%s%c do %s [%s] <%d>",
-	    list->filename[0] ? list->filename : "*",
-	    name,
-	    (list->flexible ? '\'' : '"'), list->nick, 
-	    (list->flexible ? '\'' : '"'), 
-	    (list->not ? "nothing" : list->stuff),
-	    noise_info[list->noisy]->name,
-	    list->sernum);
+	char *arglist;
+	arglist = print_arglist(list->arglist);
+	if (arglist)
+	{
+		say ("[%s] On %s from %c%s%c (%s) do %s [%s] <%d/#%d>",
+			list->filename[0] ? list->filename : "*",
+			name,
+			(list->flexible ? '\'' : '"'),
+			list->nick,
+			(list->flexible ? '\'' : '"'),
+			arglist,
+			(list->not ? "nothing" : list->stuff),
+			noise_info[list->noisy]->name,
+			list->sernum, list->userial);
+		new_free(&arglist);
+	}
+	else
+		say("[%s] On %s from %c%s%c do %s [%s] <%d/#%d>",
+		    list->filename[0] ? list->filename : "*",
+	    	name,
+  	  	(list->flexible ? '\'' : '"'), list->nick, 
+ 		   (list->flexible ? '\'' : '"'), 
+    		(list->not ? "nothing" : list->stuff),
+	 	   noise_info[list->noisy]->name,
+	    	list->sernum, list->userial);
 }
 
 /*
@@ -766,6 +794,7 @@ int 	do_hook (int which, const char *format, ...)
 			tmp = tmp->next)
             {
 		Hook *besthook = NULL;
+		ArgList *tmp_arglist;
 		int bestmatch = 0;
 		int currmatch;
 
@@ -819,6 +848,7 @@ int 	do_hook (int which, const char *format, ...)
 		quote = tmp->flexible ? '\'' : '"';
 
 		hook->userial = tmp->userial;
+		tmp_arglist = clone_arglist(tmp->arglist);
 
 		/*
 		 * YOU CAN'T TOUCH ``tmp'' AFTER THIS POINT!!!
@@ -838,8 +868,8 @@ int 	do_hook (int which, const char *format, ...)
 		 * that we're going to execute the hook.
 		 */
 		if (noise_info[noise]->alert)
-			say("%s activated by %c%s%c", 
-				name, quote, hook->buffer, quote);
+			say("%s #%d activated by %c%s%c", 
+				name, hook->userial, quote, hook->buffer, quote);
 
 		/*
 		 * Save some information that may be reset in the 
@@ -855,14 +885,15 @@ int 	do_hook (int which, const char *format, ...)
 		{
 			char *result;
 
-			result = call_lambda_function(name, stuff_copy,
-							hook->buffer);
+			result = call_user_function(name, stuff_copy,
+							hook->buffer, tmp_arglist);
 
 			if (result && atol(result))
 				hook->retval = SUPPRESS_DEFAULT;
 			else
 				hook->retval = DONT_SUPPRESS_DEFAULT;
-
+			if (tmp_arglist)
+				destroy_arglist(&tmp_arglist);
 			new_free(&result);
 		}
 		else
@@ -873,7 +904,9 @@ int 	do_hook (int which, const char *format, ...)
 			 * so it is absolutely forbidden to reference "tmp" 
 			 * after this point.
 			 */
-			call_lambda_command(name, stuff_copy, hook->buffer);
+			call_user_command(name, stuff_copy, hook->buffer, tmp_arglist);
+			if (tmp_arglist)
+				destroy_arglist(&tmp_arglist);
 		}
 
 		/*
@@ -999,9 +1032,11 @@ BUILT_IN_COMMAND(oncmd)
 		supp		= 0,
 		which		= INVALID_HOOKNUM;
 	int	flex		= 0;
+	int userial;
 	char	type;
 	int	first;
-
+	ArgList *arglist = NULL;
+	char *str;	
 	if (!hook_functions_initialized)
 		initialize_hook_functions();
 
@@ -1127,11 +1162,14 @@ BUILT_IN_COMMAND(oncmd)
 			/*
 			 * Pad it to the appropriate number of args
 			 */
-			if (which < 0)
-				nick = fill_it_out(nick, 1);
-			else
-				nick = fill_it_out(nick, hook_functions[which].params);
-
+			/* 
+				if (which < 0)
+					nick = fill_it_out(nick, 1);
+				else
+					nick = fill_it_out(nick, hook_functions[which].params);
+			*/
+			nick = malloc_strdup(nick);
+			
 			/*
 			 * If nick is empty, something is very wrong.
 			 */
@@ -1175,6 +1213,33 @@ BUILT_IN_COMMAND(oncmd)
 			while (my_isspace(*args))
 				args++;
 
+
+			/* Ripping the alias.c-stuff mercyless */
+			if (*args == '(')
+			{
+				ssize_t span;
+				args++;
+				if ((span = MatchingBracket(args, '(', ')')) < 0)
+				{
+					say("Unmatched lparen in HOOK <-> to be fixed");
+					new_free(&nick);
+					return;
+				}
+				else
+				{
+					exp = args + span;
+					*exp++ = 0;
+					while (*exp && my_isspace(*exp))
+						exp++;
+					while (*args && my_isspace(*args))
+						args++;
+					/* Arglist stuff */
+					arglist = parse_arglist(args);
+					args = exp;
+				}
+				
+			}
+
 			/*
 			 * Then slurp up the body ("text")
 			 */
@@ -1184,6 +1249,7 @@ BUILT_IN_COMMAND(oncmd)
 				{
 					say("Unmatched brace in ON");
 					new_free(&nick);
+					destroy_arglist(&arglist);
 					return;
 				}
 			}
@@ -1193,23 +1259,39 @@ BUILT_IN_COMMAND(oncmd)
 			/*
 			 * Schedule the event
 			 */
-			add_hook(which, nick, exp, noisy, not, sernum, flex);
+			userial = add_hook(which, nick, arglist, exp, noisy, not, sernum, flex);
 
 			/*
 			 * Tell the user that we're done.
 			 */
-			if (which < 0)
-				say("On %3.3u from %c%s%c do %s [%s] <%d>",
-				    -which, type, nick, type, 
-				    (not ? "nothing" : exp),
-				    noise_info[noisy]->name, sernum);
+			str = print_arglist(arglist);
+			if (str)
+			{
+				if (which < 0)
+					say ("On %3.3u from %c%s%c (%s) do %s [%s] <%d/#%d>",
+					-which, type, nick, type, str, (not ? "nothing" : exp),
+					noise_info[noisy]->name, sernum, userial);
+				else
+					say ("On %s from %c%s%c (%s) do %s [%s] <%d/#%d>",
+						hook_functions[which].name,
+						type, nick, type, str,
+						(not ? "nothing" : exp),
+						noise_info[noisy]->name, sernum, userial);
+			}
 			else
-				say("On %s from %c%s%c do %s [%s] <%d>",
-					hook_functions[which].name, 
-					type, nick, type,
-					(not ? "nothing" : exp),
-					noise_info[noisy]->name, sernum);
-
+			{
+				if (which < 0)
+					say("On %3.3u from %c%s%c do %s [%s] <%d/#%d>",
+					    -which, type, nick, type, 
+					    (not ? "nothing" : exp),
+					    noise_info[noisy]->name, sernum, userial);
+				else
+					say("On %s from %c%s%c do %s [%s] <%d/#%d>",
+						hook_functions[which].name, 
+						type, nick, type,
+						(not ? "nothing" : exp),
+						noise_info[noisy]->name, sernum, userial);
+			}
 			/*
 			 * Clean up after the nick
 			 */
@@ -1520,7 +1602,8 @@ enum
 
 enum
 {
-	HOOKCTL_GET_HOOK_FLEXIBLE = 1,
+	HOOKCTL_GET_HOOK_ARGUMENT_LIST = 1,
+	HOOKCTL_GET_HOOK_FLEXIBLE,
 	HOOKCTL_GET_HOOK_NICK,
 	HOOKCTL_GET_HOOK_NOT,
 	HOOKCTL_GET_HOOK_NOISE,
@@ -1534,6 +1617,8 @@ enum
 
 /*
  * $hookctl() arguments:
+ *   ADD <#!'[NOISETYPE]><list> [[#]<serial>] <nick> [(<argument list>)] <stuff>
+ *       Argument list not yet implemented for $hookctl()
  *   ADD <#!'[NOISETYPE]><list> [[#]<serial>] <nick> <stuff>
  *       - Creates a new hook. Returns hook id.
  *   COUNT
@@ -1619,6 +1704,9 @@ enum
  *       SET HOOK <hook id> <prop> <arg>
  *
  *       <prop> may be one of the following:
+ *		 ARGUMENT_LIST
+ *		 	 - Returns or sets the argument list, if SET and <arg> is empty,
+ * 			   it will be set to NULL, and therefore not used.
  *       FLEXIBLE
  *           - Returns or sets the value of flexible
  *       NICK
@@ -1628,7 +1716,6 @@ enum
  *       NOT
  *           - Sets or gets the value of NOT.
  *       NOISE
- *           - See noisy
  *       NOISY
  *           - Sets or returns the value of noisy.
  *       PACKAGE
@@ -1745,6 +1832,8 @@ char *hookctl (char *input)
 	Hook *hook = NULL;
 	Hook *tmp_hook;
 
+	ArgList *tmp_arglist = NULL;
+
 	if (!hook_functions_initialized)
 		initialize_hook_functions();
 
@@ -1771,13 +1860,14 @@ char *hookctl (char *input)
 		"NOISE_LEVELS",
 		"NOISE_LEVEL_NUM",
 		"NUMBER_OF_LISTS",
+		"POPULATED_LISTS",
 		"PACKAGE",
 		"REMOVE",
 		"RETVAL",
 		"SERIAL",
 		"SET",
 		NULL);
-	
+
 	switch (go)
 	{
 	
@@ -2065,8 +2155,8 @@ char *hookctl (char *input)
 	/* go-switch */
 	case HOOKCTL_GET:
 	case HOOKCTL_SET:
-		set = (go == 8) ? 1 : 0;
-		
+		set = (go == HOOKCTL_SET);
+	
 		if (!input || !*input)
 			RETURN_EMPTY;
 		if (atoi(input) == 0 && input[0] != '0')
@@ -2093,6 +2183,7 @@ char *hookctl (char *input)
 		/* action-switch */
 		case HOOKCTL_GET_HOOK:
 		case HOOKCTL_GET_HOOK_NOARG:
+			
 			GET_INT_ARG(userial, input);
 			if (userial == -1 && current_hook)
 				userial = current_hook->userial;
@@ -2106,6 +2197,7 @@ char *hookctl (char *input)
 			GET_STR_ARG(str, input);
 
 			prop = vmy_strnicmp(strlen(str), str,
+				"ARGUMENT_LIST",
 				"FLEXIBLE", 	"NICK", 	"NOT",		"NOISE", 
 				"NOISY", 		"PACKAGE",	"SERIAL", 	"SKIP",
 				"STUFF",		"TYPE", 	NULL);
@@ -2120,13 +2212,47 @@ char *hookctl (char *input)
 			switch (prop)
 			{
 			/* prop-switch */
+			case HOOKCTL_GET_HOOK_ARGUMENT_LIST:
+				if (!set)
+				{
+					if (!hook->arglist)
+						RETURN_EMPTY;
+					str = print_arglist(hook->arglist);
+					if (!str)
+						RETURN_EMPTY;
+					return str;
+				}
+				
+				if (hook->arglist)
+					destroy_arglist(&(hook->arglist));
+				
+				if (!str || !*str)
+				{
+					hook->arglist = NULL;
+					RETURN_EMPTY;
+				}
+				
+				hook->arglist = parse_arglist(str);
+				str = print_arglist(hook->arglist);
+				if (!str)
+				{
+					destroy_arglist(&(hook->arglist));
+					RETURN_EMPTY;
+				}
+				return str;
+				
+				break;
+				
 			case HOOKCTL_GET_HOOK_NICK:
 				if (!set)
 					RETURN_STR(hook->nick);
+				/*
 				str = fill_it_out(
 					upper(str), 
 					hook_functions[hook->type].params
 				);
+				*/
+				str = malloc_strdup(upper(str));
 				for (
 					tmp_hook = hook_functions[hook->type].list;
 					tmp_hook != NULL;
@@ -2403,9 +2529,12 @@ char *hookctl (char *input)
 		if (!input || !*input)
 			RETURN_INT(-1);
 		GET_STR_ARG(nick, input);
-		nick = fill_it_out(nick, hook_functions[hooknum].params);
-		tmp_int = add_hook (hooknum, nick, input, set_noisy, set_not, serial, set_flex);
-		new_free ((char *) & nick);
+		/*
+			nick = fill_it_out(nick, hook_functions[hooknum].params);
+		*/
+		nick = malloc_strdup(nick);
+		tmp_int = add_hook (hooknum, nick, tmp_arglist, input, set_noisy, set_not, serial, set_flex);
+		new_free (&nick);
 		RETURN_INT(tmp_int);
 		break;
 

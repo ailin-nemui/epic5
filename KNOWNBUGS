@@ -414,3 +414,5 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Fix ALL/ALL_OFF thing from epic4.
 * Fix $logctl() from epic4.
 * Fix bug with % followed by \ in wildcard patterns from epic4.
+* Add arglists to hooks (by howl, who I will pester to document this). Woot!
+* Finish $hookctl(), by howl.

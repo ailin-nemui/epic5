@@ -1,4 +1,4 @@
-/* $EPIC: alias.c,v 1.61 2004/09/15 10:54:08 crazyed Exp $ */
+/* $EPIC: alias.c,v 1.62 2005/01/01 18:03:22 jnelson Exp $ */
 /*
  * alias.c -- Handles the whole kit and caboodle for aliases.
  *
@@ -67,14 +67,17 @@
 #define DOUBLE_QUOTE '"'
 
 /**************************** INTERMEDIATE INTERFACE *********************/
+/* Just doing some changes for hooks */
+/*
 enum ARG_TYPES {
 	WORD,
 	UWORD,
 	DWORD,
 	QWORD
 };
-
+*/
 /* Ugh. XXX Bag on the side */
+/*
 struct ArgListT {
 	char *	vars[32];
 	char *	defaults[32];
@@ -86,7 +89,7 @@ struct ArgListT {
 typedef struct ArgListT ArgList;
 ArgList	*parse_arglist (char *arglist);
 void	destroy_arglist (ArgList **);
-
+*/
 
 /*
  * This is the description of an alias entry
@@ -328,7 +331,6 @@ BUILT_IN_COMMAND(aliascmd)
 
 			while (*args && my_isspace(*args))
 				args++;
-
 			arglist = parse_arglist(args);
 			args = ptr;
 		    }
@@ -756,7 +758,8 @@ void	destroy_arglist (ArgList **arglist)
 	new_free((char **)arglist);
 }
 
-static ArgList *clone_arglist (ArgList *orig)
+/* static ArgList *clone_arglist (ArgList *orig) */
+ArgList *clone_arglist (ArgList *orig)
 {
 	ArgList *args;
 	int	i = 0;
@@ -878,7 +881,8 @@ void	prepare_alias_call (void *al, char **stuff)
 		*stuff = endstr(*stuff);
 }
 
-static char *	print_arglist (ArgList *args)
+/* static char *	print_arglist (ArgList *args) */
+char *	print_arglist (ArgList *args)
 {
 	char *	retval = NULL;
 	size_t	cluep = 0;
