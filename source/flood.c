@@ -1,4 +1,4 @@
-/* $EPIC: flood.c,v 1.21 2004/04/13 00:19:48 jnelson Exp $ */
+/* $EPIC: flood.c,v 1.22 2004/06/29 07:50:54 crazyed Exp $ */
 /*
  * flood.c: handle channel flooding.
  *
@@ -177,7 +177,7 @@ static	int	 pos = 0;
 		/*
 		 * Do some inexpensive tests first
 		 */
-		if (flood[i].level == level)
+		if (level != flood[i].level)
 			continue;
 		if (server != flood[i].server)
 			continue;
