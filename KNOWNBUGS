@@ -198,3 +198,4 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * All of this pretty much nukes LOG_CURRENT except for /window, HUZZAH!
 * Make /window swap update the current-window-priority thingee.
 * Fix /on ctcp_reply so it hooks in the LOG_CTCP context. (rb nsx)
+* Fix my_strnicmp() because irc servers consider ^ and ~ the same character.
