@@ -8,7 +8,7 @@
  */
 
 #if 0
-static	char	rcsid[] = "@(#)$Id: ircaux.c,v 1.27 2002/01/16 05:07:59 crazyed Exp $";
+static	char	rcsid[] = "@(#)$Id: ircaux.c,v 1.28 2002/01/17 05:28:43 crazyed Exp $";
 #endif
 
 #include "irc.h"
@@ -296,6 +296,7 @@ void malloc_dump (char* file) {
 			fprintf(fd, " %x", (unsigned char)(((char*)(alloc_table.entries[foo]))[bar]));
 		fprintf(fd, "\n");
 	}
+	fclose(fd);
 #endif
 }
 
