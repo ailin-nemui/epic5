@@ -26,16 +26,17 @@ alias debug_endsection {
 #  call.time [command]
 #
 alias call.time {
-	@ :utime = utime()
+	@ :u1 = utime()
 	$*
-	@ :utime2 = utime()
+	@ :u2 = utime()
 	stack push set floating_point_math
 	^set floating_point_math on
-	@ :time = trunc(6 ${shift(utime2) - shift(utime) + (shift(utime2) - shift(utime)) / 1000000})
+	@ :time = (shift(u2) - shift(u1)) + ((shift(u2) - shift(u1)) / 1000000)
+	@ :time = trunc(6 $time)
 	stack pop set floating_point_math
 	if (functioncall()) {
 		return $time
-	} {
+	} else {
 		echo $tdiff($time): $*
 	}
 }
