@@ -1,4 +1,4 @@
-/* $EPIC: numbers.c,v 1.71 2004/05/04 00:34:59 jnelson Exp $ */
+/* $EPIC: numbers.c,v 1.72 2004/07/23 00:49:46 jnelson Exp $ */
 /*
  * numbers.c: handles all those strange numeric response dished out by that
  * wacky, nutty program we call ircd 
@@ -113,7 +113,7 @@ void 	display_msg (const char *from, const char **ArgList)
 	else
 		ptr = NULL;
 
-        drem = (from) && (!get_int_var(SUPPRESS_FROM_REMOTE_SERVER));
+        drem = (from) && (!get_int_var(SUPPRESS_FROM_REMOTE_SERVER_VAR));
 
         /*
          * This handles all the different cases of server messages.

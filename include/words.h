@@ -31,11 +31,6 @@
 #ifndef __WORDS_H__
 #define __WORDS_H__
 
-#ifdef Char
-#undef Char
-#endif
-#define Char const char
-
 /* From words.c */
 #define SOS 		-32767
 #define EOS 		 32767

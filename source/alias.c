@@ -1,4 +1,4 @@
-/* $EPIC: alias.c,v 1.51 2004/07/03 06:31:18 crazyed Exp $ */
+/* $EPIC: alias.c,v 1.52 2004/07/23 00:49:46 jnelson Exp $ */
 /*
  * alias.c -- Handles the whole kit and caboodle for aliases.
  *
@@ -2846,7 +2846,7 @@ int	stack_list_builtin_cmd_alias (const char *name)
 		if (sym->builtin_command == NULL)
 		    say("\t%s\t<Placeholder>", sym->name);
 		else 
-		    say("\t%s\t%#p", sym->name, sym->builtin_command);
+		    say("\t%s\t%p", sym->name, sym->builtin_command);
 		counter++;
 	    }
 	}
@@ -2921,7 +2921,7 @@ int	stack_list_builtin_function_alias (const char *name)
 		if (sym->builtin_function == NULL)
 		    say("\t%s\t<Placeholder>", sym->name);
 		else 
-		    say("\t%s\t%#p", sym->name, sym->builtin_function);
+		    say("\t%s\t%p", sym->name, sym->builtin_function);
 		counter++;
 	    }
 	}
@@ -2995,7 +2995,7 @@ int	stack_list_builtin_expando_alias (const char *name)
 		if (sym->builtin_expando == NULL)
 		    say("\t%s\t<Placeholder>", sym->name);
 		else 
-		    say("\t%s\t%#p", sym->name, sym->builtin_expando);
+		    say("\t%s\t%p", sym->name, sym->builtin_expando);
 		counter++;
 	    }
 	}
@@ -3070,7 +3070,7 @@ int	stack_list_builtin_variable_alias (const char *name)
 		if (sym->builtin_variable == NULL)
 		    say("\t%s\t<Placeholder>", sym->name);
 		else 
-		    say("\t%s\t%#p", sym->name, sym->builtin_variable);
+		    say("\t%s\t%p", sym->name, sym->builtin_variable);
 		counter++;
 	    }
 	}

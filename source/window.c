@@ -1,4 +1,4 @@
-/* $EPIC: window.c,v 1.115 2004/05/04 01:06:55 jnelson Exp $ */
+/* $EPIC: window.c,v 1.116 2004/07/23 00:49:46 jnelson Exp $ */
 /*
  * window.c: Handles the organzation of the logical viewports (``windows'')
  * for irc.  This includes keeping track of what windows are open, where they
@@ -2160,7 +2160,14 @@ void 	window_check_servers (void)
 		{
 		    if (x_debug & DEBUG_SERVER_CONNECT)
 			yell("window_check_servers() is bringing up server %d", i);
+		    /*
+		     * XXX - connect_to_server changes "status"!
+		     * This causes further windows to be incorrectly
+		     * handled.  new_server_lastlog_mask should be 
+		     * handled somewhere else.
+		     */
 		    connect_to_server(i, 1);
+		    status = get_server_status(i);	/* XXX */
 		    tmp->window_mask = new_server_lastlog_mask;
 		}
 		else if (status == SERVER_ACTIVE)
@@ -2491,7 +2498,12 @@ int	unhold_a_window (Window *w)
  */
 void 	set_scroll_lines (const void *stuff)
 {
-	int size = *(const int *)stuff;
+	VARIABLE *v;
+	int	size;
+
+	v = (VARIABLE *)stuff;
+	size = v->integer;
+
 	if (size == 0)
 	{
 		say("You cannot turn SCROLL off.  Gripe at me.");
@@ -2500,9 +2512,9 @@ void 	set_scroll_lines (const void *stuff)
 
 	else if (size > current_window->display_size)
 	{
-		say("Maximum lines that may be scrolled is %d", 
-			current_window->display_size);
-		set_int_var(SCROLL_LINES_VAR, current_window->display_size);
+		say("Maximum lines that may be scrolled is %d [%d]", 
+			current_window->display_size, size);
+		v->integer = current_window->display_size;
 	}
 }
 
@@ -2511,23 +2523,6 @@ void 	set_scroll_lines (const void *stuff)
 
 
 /* * * * * * * * * UNSORTED * * * * * * * */
-
-/*
- * set_continued_line: checks the value of CONTINUED_LINE for validity,
- * altering it if its no good 
- */
-void 	set_continued_line (const void *stuff)
-{
-	const char *value = (const char *)stuff;
-
-	if (value && (strlen(value) > (size_t)(current_term->TI_cols / 2)))
-	{
-		char *chg = LOCAL_COPY(value);
-		chg[current_term->TI_cols / 2] = 0;
-		set_string_var(CONTINUED_LINE_VAR, chg);
-	}
-}
-
 
 /* current_refnum: returns the reference number for the current window */
 unsigned	current_refnum (void)
@@ -2547,8 +2542,12 @@ int 	number_of_windows_on_screen (Window *w)
  */
 void    set_scrollback_size (const void *stuff)
 {
-	int size = *(const int *)stuff;
-        Window  *window = NULL;
+	VARIABLE *v;
+	int size;
+	Window *window = NULL;
+
+	v = (VARIABLE *)stuff;
+	size = v->integer;
 
         while (traverse_all_windows(&window))
         {

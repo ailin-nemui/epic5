@@ -10,11 +10,6 @@
 #ifndef __commands_h__
 #define __commands_h__
 
-#ifdef Char
-#undef Char
-#endif
-#define Char const char
-
 extern	int	will_catch_break_exceptions;
 extern	int	will_catch_continue_exceptions;
 extern	int	will_catch_return_exceptions;

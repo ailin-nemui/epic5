@@ -8,11 +8,6 @@
 #ifndef __names_h__
 #define __names_h__
 
-#ifdef Char
-#undef Char
-#endif
-#define Char const char
-
 	void	add_channel		(Char *, int); 
 	void	remove_channel		(Char *, int);
 	void	add_to_channel		(Char *, Char *, int, int, int, int, int);

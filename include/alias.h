@@ -16,11 +16,6 @@
 #define VAR_ALIAS 		1
 #define VAR_ALIAS_LOCAL 	2
 
-#ifdef Char
-#undef Char
-#endif
-#define Char const char
-
 	extern	int	wind_index;
 	extern	int	last_function_call_level;
 

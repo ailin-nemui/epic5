@@ -171,7 +171,11 @@ void    set_clock_interval (const void *stuff)
 
 void     set_clock_format (const void *stuff)
 {
-	const char *value = (const char *)stuff;
+	VARIABLE *v;
+	const char *value;
+
+	v = (VARIABLE *)stuff;
+	value = v->string;
         malloc_strcpy(&time_format, value);
         reset_clock(NULL);
 }
@@ -226,7 +230,11 @@ int	cpu_saver_timer (void *schedule_only)
 
 void    set_cpu_saver_after (const void *stuff)
 {
-	int value = *(const int *)stuff;
+	VARIABLE *v;
+	int	value;
+
+	v = (VARIABLE *)stuff;
+	value = v->integer;
 
         if (value == 0)
 	{
@@ -240,12 +248,16 @@ void    set_cpu_saver_after (const void *stuff)
 
 void	set_cpu_saver_every (const void *stuff)
 {
-	int value = *(const int *)stuff;
+	VARIABLE *v;
+	int	value;
+
+	v = (VARIABLE *)stuff;
+	value = v->integer;
 
 	if (value < 60)
 	{
 		say("/SET CPU_SAVER_EVERY must be set to at least 60");
-		set_int_var(CPU_SAVER_EVERY_VAR, 60);
+		v->integer = 60;
 	}
 }
 

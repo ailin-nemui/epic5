@@ -257,6 +257,11 @@ typedef char Filename[MAXPATHLEN + 1];
 # endif
 #endif
 
+#ifdef Char
+#undef Char
+#endif
+#define Char const char
+
 /*
  * Some systems (AIX) have sys/select.h, but dont include it from sys/types.h
  * Some systems (Solaris) have sys/select.h, but include it from sys/types.h

@@ -1,4 +1,4 @@
-/* $EPIC: history.c,v 1.14 2004/04/13 00:19:48 jnelson Exp $ */
+/* $EPIC: history.c,v 1.15 2004/07/23 00:49:46 jnelson Exp $ */
 /*
  * history.c: stuff to handle command line history 
  *
@@ -76,10 +76,14 @@ static	int	last_dir = -1;
  */
 void	set_history_size (const void *stuff)
 {
-	int	size = *(const int *)stuff;
+	VARIABLE *v;
+	int	size;
 	int	i,
 		cnt;
 	History *ptr;
+
+	v = (VARIABLE *)stuff;
+	size = v->integer;
 
 	if (size < hist_size)
 	{

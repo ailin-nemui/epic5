@@ -1,4 +1,4 @@
-/* $EPIC: term.c,v 1.13 2004/04/13 00:19:49 jnelson Exp $ */
+/* $EPIC: term.c,v 1.14 2004/07/23 00:49:46 jnelson Exp $ */
 /*
  * term.c -- termios and (termcap || terminfo) handlers
  *
@@ -1191,7 +1191,11 @@ void	set_term_eight_bit (int value)
 
 void	set_meta_8bit (const void *stuff)
 {
-	int	value = *(const int *)stuff;
+	VARIABLE *v;
+	int	value;
+
+	v = (VARIABLE *)stuff;
+	value = v->integer;
 
 	if (dumb_mode)
 		return;

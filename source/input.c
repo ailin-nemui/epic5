@@ -1,4 +1,4 @@
-/* $EPIC: input.c,v 1.23 2004/06/28 23:48:15 jnelson Exp $ */
+/* $EPIC: input.c,v 1.24 2004/07/23 00:49:46 jnelson Exp $ */
 /*
  * input.c: does the actual input line stuff... keeps the appropriate stuff
  * on the input line, handles insert/delete of characters/words... the whole
@@ -587,7 +587,11 @@ char *	get_input_prompt (void)
  */
 void	set_input_prompt (const void *stuff)
 {
-	const char *prompt = (const char *)stuff;
+	VARIABLE *v;
+	const char *prompt;
+
+	v = (VARIABLE *)stuff;
+	prompt = v->string;
 
 	if (prompt)
 		malloc_strcpy(&input_prompt, prompt);
@@ -1124,11 +1128,17 @@ BUILT_IN_BINDING(forward_history)
 	get_history(NEWER);		/* Cursor down -- newer -- next */
 }
 
+/*
+ * XXX This keybinding is a bletcherous hideous noxious offense and must
+ * be replaced by a scripted replacement as soon as possible.
+ */
 BUILT_IN_BINDING(toggle_insert_mode)
 {
-	char *whatever;
-	whatever = LOCAL_COPY("TOGGLE");
-	set_var_value(INSERT_MODE_VAR, whatever);
+	char *	toggle;
+
+	toggle = alloca(7);
+	strlcpy(toggle, "TOGGLE", 7);
+	set_var_value(INSERT_MODE_VAR, toggle, 1);
 }
 
 BUILT_IN_BINDING(send_line)

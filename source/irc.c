@@ -1,4 +1,4 @@
-/* $EPIC: irc.c,v 1.748 2004/07/08 08:27:59 crazyed Exp $ */
+/* $EPIC: irc.c,v 1.749 2004/07/23 00:49:46 jnelson Exp $ */
 /*
  * ircII: a new irc client.  I like it.  I hope you will too!
  *
@@ -52,7 +52,7 @@ const char internal_version[] = "20040319";
 /*
  * In theory, this number is incremented for every commit.
  */
-const unsigned long	commit_id = 1081;
+const unsigned long	commit_id = 1082;
 
 /*
  * As a way to poke fun at the current rage of naming releases after
@@ -624,7 +624,7 @@ static	void	parse_args (int argc, char **argv)
 	else
 		the_path = malloc_sprintf(NULL, DEFAULT_IRCPATH, irc_lib);
 
-	set_string_var(LOAD_PATH_VAR, the_path);
+	set_var_value(LOAD_PATH_VAR, the_path, 0);
 	new_free(&the_path);
 
 	if ((ptr = getenv("IRCHOST")) && *ptr)
@@ -635,7 +635,7 @@ static	void	parse_args (int argc, char **argv)
 	else
 		translation_path = malloc_strdup2(IRCLIB, "/translation/");
 
-	set_string_var(TRANSLATION_PATH_VAR, translation_path);
+	set_var_value(TRANSLATION_PATH_VAR, translation_path, 0);
 	new_free(&translation_path);
 
 	/*
@@ -1132,6 +1132,8 @@ int 	main (int argc, char *argv[])
 	check_password();
 	check_valid_user();
 	check_invalid_host();
+
+	init_variables_stage1();
 	parse_args(argc, argv);
 	init_binds();
 	init_keys();
@@ -1177,7 +1179,7 @@ int 	main (int argc, char *argv[])
 	{
 		my_signal(SIGCONT, term_cont);
 		my_signal(SIGWINCH, sig_refresh_screen);
-		init_variables();
+		init_variables_stage2();
 		build_status(NULL);
 		update_input(UPDATE_ALL);
 	}
@@ -1191,7 +1193,7 @@ int 	main (int argc, char *argv[])
 		dumb_mode = 1;		/* Just in case */
 		create_new_screen();
 		new_window(main_screen);
-		init_variables();
+		init_variables_stage2();
 		build_status(NULL);
 	}
 
@@ -1206,7 +1208,6 @@ int 	main (int argc, char *argv[])
 		load_ircrc();
 
 	set_input(empty_string);
-	set_input_prompt(get_string_var(INPUT_PROMPT_VAR));
 
 	if (dont_connect)
 		display_server_list();		/* Let user choose server */

@@ -9,6 +9,12 @@ KNOWN ERRATA (eg, bugs, or unresolved requests):
 * Changing attribute in the middle of a word that totaly wraps does not
   "bleed" to subsequent lines (ie, ^C34<40 a's> <40a's>^C35<100 a's>
 * queue test {echo1};queue test {echo 2};queue -del test 1;queue -del test 2
+* Doing /server on disconnected window; where multiple disconnected windows
+  are connected to the same server causes all of the windows to think they
+  are bringing up the server, and grab /set new_server_lastlog_level.
+  -- This is caused because connect_to_server() changes the server's state,
+     but we don't take that into account when running through the windows.
+
 
 [See http://www.epicsol.org/PROJECTS for things to come in the future]
 [See http://www.epicsol.org/CHANGELOG5 for things that changed in the past]
@@ -277,4 +283,25 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Create clone_arglist() to clone an arglist, duh.
 * Change "user_variable_stub" symbol field to be an integer
 * Stash the stubbed filename in "user_variable" if stub is set.
-
+* Make stripcrap(ALL) exclude "ALL_OFF", so I can...
+* Fix bug with $stripcrap(ALL,-BOLD ^B^B^Btest). (rb BlackJac)
+* Make the #define Char const char thing global to all of epic now.
+* Whack /set scroll.
+* Create a "/set data" type (VARIABLE) which is union of (int) and (char *).
+* Expose VARIABLE and variable types in vars.h for others to use.
+* Break init of /set's into two parts, one to malloc() the set data
+* The second part is to init the default values once command line is done.
+* Fix some warnings from --with-warns
+* Fix all /set callbacks to accept a (void *)(VARIABLE *) variable
+* /Set callbacks can now directly modify the /set via that variable!
+* So don't allow direct setting of /set's from outside vars.c.
+* Everybody must use set_var_value() which is the backend to /set.
+* Whack the /IRCNAME and /REALNAME variable -- use /SET REALNAME, eh!
+* Hack up /xecho -x to bide my time until i whack all those /sets it uses.
+* Don't call set_input_prompt() in main() any more, it's handled elsewhere.
+* Whack /set logfile callback, since nobody seems to have missed it.
+* Whack the "number" (float) data in /set since i wasn't gonna use it.
+* Whack the "GLOBAL/CHANGED" tracking in /set's.  Tell me if you miss this.
+* Unify output of /set values as "[New|Current] value of <var> is <val>"
+* Don't limit the size of /set continued_line, this will be revisited soon.
+* Quick and dirty hack to work around adm's bug, will fix this later.

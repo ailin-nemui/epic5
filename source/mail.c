@@ -1,4 +1,4 @@
-/* $EPIC: mail.c,v 1.18 2004/03/15 03:24:51 jnelson Exp $ */
+/* $EPIC: mail.c,v 1.19 2004/07/23 00:49:46 jnelson Exp $ */
 /*
  * mail.c -- a gross simplification of mail checking.
  * Only unix maildrops (``mbox'') are supported.
@@ -86,7 +86,6 @@ static int	init_mbox_checking (void)
 	else
 	{
 		say("I can't find your mailbox.");
-		set_int_var(MAIL_VAR, 0);
 		return 0;
 	}
 
@@ -350,21 +349,24 @@ void    set_mail_interval (const void *stuff)
 
 void	set_mail (const void *stuff)
 {
-	int	value = *(const int *)stuff;
+	VARIABLE *v;
+	int	value;
+
+	v = (VARIABLE *)stuff;
+	value = v->integer;
 
 	if (value < 0 || value > 3)
 	{
 		say("/SET MAIL must be 0, 1, 2, or 3");
-		set_int_var(MAIL_VAR, 0);
-		return;
+		v->integer = value = 0;
 	}
-	else if (value == 0)
-		checkmail->deinit();
-	else
+	if (value != 0)
 	{
-		if (!checkmail->init())
-			return;
+	    if (!checkmail->init())
+		value = v->integer = 0;
 	}
+	if (value == 0)
+		checkmail->deinit();
 
 	update_system_timer(mail_timeref);
 	update_all_status();

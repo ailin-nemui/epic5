@@ -1,4 +1,4 @@
-/* $EPIC: vars.c,v 1.51 2004/05/04 01:06:55 jnelson Exp $ */
+/* $EPIC: vars.c,v 1.52 2004/07/23 00:49:46 jnelson Exp $ */
 /*
  * vars.c: All the dealing of the irc variables are handled here. 
  *
@@ -63,35 +63,27 @@ typedef struct
 {
 	const char *	name;		/* what the user types */
 	int		type;		/* variable types, see below */
-	int		integer;	/* int value of variable */
-	double		number;		/* decimal value of variable */
-	char *		string;		/* string value of variable */
-	void		(*func) (const void *); /* func called when var is set */
-	char		int_flags;	/* internal flags to the variable */
-	unsigned short	flags;		/* flags for this variable */
+	VARIABLE *	data;		/* The value of the variable */
+	void	(*func) (const void *); /* func called when var is set */
+	u_short		flags;		/* flags for this variable */
 }	IrcVariable;
 
 /*
  * The VIF_* macros stand for "(V)ariable.(i)nt_(f)lags", and have been
- * used for the various possible values of the int_flags data member.
+ * used for the various possible values of the flags data member.
  * The first two are, the third one is not.  The third one is used in
  * the 'flags' data member, but its based on the same idea.
  */
-#define VIF_CHANGED	0x01	/* /set has been changed by user */
-#define VIF_GLOBAL	0x02	/* /set was changed only by global */
 #define VIF_PENDING	0x04	/* A /set is pending for this variable */
-
-/* the types of IrcVariables */
-#define BOOL_TYPE_VAR 0
-#define CHAR_TYPE_VAR 1
-#define INT_TYPE_VAR 2
-#define STR_TYPE_VAR 3
-#define FLOAT_TYPE_VAR 4
 
 const char	*var_settings[] =
 {
 	"OFF", "ON", "TOGGLE"
 };
+
+static void 	set_string_var (enum VAR_TYPES var, const char *string);
+static void 	set_int_var (enum VAR_TYPES var, int value);
+static char 	*make_string_var_bydata (int type, void *);
 
 static	void	eight_bit_characters 	(const void *);
 static	void	set_realname 		(const void *);
@@ -100,7 +92,6 @@ static 	void	set_dcc_timeout 	(const void *);
 static	void	set_mangle_inbound 	(const void *);
 static	void	set_mangle_outbound 	(const void *);
 static	void	set_mangle_logfiles 	(const void *);
-static	void	set_scroll 		(const void *);
 static	void	update_all_status_wrapper (const void *);
 static	void	set_highlight_char	(const void *);
 static	void	set_wserv_type		(const void *);
@@ -112,230 +103,373 @@ static	void	set_wserv_type		(const void *);
  */
 static	IrcVariable irc_variable[] =
 {
-	{ "ALLOW_C1_CHARS",		BOOL_TYPE_VAR,	DEFAULT_ALLOW_C1_CHARS, 0, NULL, NULL, 0, 0 },
-	{ "ALT_CHARSET",		BOOL_TYPE_VAR,	DEFAULT_ALT_CHARSET, 0, NULL, NULL, 0, 0 },
-	{ "ALWAYS_SPLIT_BIGGEST",	BOOL_TYPE_VAR,	DEFAULT_ALWAYS_SPLIT_BIGGEST, 0, NULL, NULL, 0, 0 },
-	{ "AUTO_NEW_NICK",		BOOL_TYPE_VAR,	DEFAULT_AUTO_NEW_NICK, 0, NULL, NULL, 0, 0 },
-        { "AUTO_RECONNECT",             BOOL_TYPE_VAR,  DEFAULT_AUTO_RECONNECT, 0, NULL, NULL, 0, 0 },
-	{ "AUTO_RECONNECT_DELAY",	INT_TYPE_VAR,	DEFAULT_AUTO_RECONNECT_DELAY, 0, NULL, NULL, 0, 0 },
-        { "AUTO_REJOIN",                BOOL_TYPE_VAR,  DEFAULT_AUTO_REJOIN, 0, NULL, NULL, 0, 0 },
-	{ "AUTO_REJOIN_CONNECT",	BOOL_TYPE_VAR,	DEFAULT_AUTO_REJOIN_CONNECT, 0, NULL, NULL, 0, 0 },
-	{ "AUTO_REJOIN_DELAY",		INT_TYPE_VAR,	DEFAULT_AUTO_REJOIN_DELAY, 0, NULL, NULL, 0, 0 },
-	{ "AUTO_UNMARK_AWAY",		BOOL_TYPE_VAR,	DEFAULT_AUTO_UNMARK_AWAY, 0, NULL, NULL, 0, 0 },
-	{ "AUTO_WHOWAS",		BOOL_TYPE_VAR,	DEFAULT_AUTO_WHOWAS, 0, NULL, NULL, 0, 0 },
-	{ "BAD_STYLE",			BOOL_TYPE_VAR,	DEFAULT_BAD_STYLE, 0, NULL, NULL, 0, 0 },
-	{ "BANNER",			STR_TYPE_VAR,	0, 0, NULL, NULL, 0, 0 },
-	{ "BANNER_EXPAND",		BOOL_TYPE_VAR,	0, 0, NULL, NULL, 0, 0 },
-	{ "BEEP",			BOOL_TYPE_VAR,	DEFAULT_BEEP, 0, NULL, NULL, 0, 0 },
-	{ "BEEP_MAX",			INT_TYPE_VAR,	DEFAULT_BEEP_MAX, 0, NULL, NULL, 0, 0 },
-	{ "BLINK_VIDEO",		BOOL_TYPE_VAR,	DEFAULT_BLINK_VIDEO, 0, NULL, NULL, 0, 0 },
-	{ "BOLD_VIDEO",			BOOL_TYPE_VAR,	DEFAULT_BOLD_VIDEO, 0, NULL, NULL, 0, 0 },
-	{ "CHANNEL_NAME_WIDTH",		INT_TYPE_VAR,	DEFAULT_CHANNEL_NAME_WIDTH, 0, NULL, update_all_status_wrapper, 0, 0 },
-	{ "CLIENT_INFORMATION",		STR_TYPE_VAR,	0, 0, NULL, NULL, 0, 0 },
-	{ "CLOCK",			BOOL_TYPE_VAR,	DEFAULT_CLOCK, 0, NULL, set_clock, 0, 0 },
-	{ "CLOCK_24HOUR",		BOOL_TYPE_VAR,	DEFAULT_CLOCK_24HOUR, 0, NULL, reset_clock, 0, 0 },
-	{ "CLOCK_FORMAT",		STR_TYPE_VAR,	0, 0, NULL, set_clock_format, 0, 0 },
-	{ "CLOCK_INTERVAL",		INT_TYPE_VAR,	DEFAULT_CLOCK_INTERVAL, 0, NULL, set_clock_interval, 0, 0 },
-	{ "CMDCHARS",			STR_TYPE_VAR,	0, 0, NULL, NULL, 0, 0 },
-	{ "COLOR",			BOOL_TYPE_VAR,	DEFAULT_COLOR, 0, NULL, NULL, 0, 0 },
-	{ "COMMAND_MODE",		BOOL_TYPE_VAR,	DEFAULT_COMMAND_MODE, 0, NULL, NULL, 0, 0 },
-	{ "COMMENT_HACK",		BOOL_TYPE_VAR,	DEFAULT_COMMENT_HACK, 0, NULL, NULL, 0, 0 },
-	{ "CONNECT_TIMEOUT",		INT_TYPE_VAR,	DEFAULT_CONNECT_TIMEOUT, 0, NULL, NULL, 0, 0 },
-	{ "CONTINUED_LINE",		STR_TYPE_VAR,	0, 0, NULL, set_continued_line, 0, 0 },
-	{ "CPU_SAVER_AFTER",		INT_TYPE_VAR,	DEFAULT_CPU_SAVER_AFTER, 0, NULL, set_cpu_saver_after, 0, 0 },
-	{ "CPU_SAVER_EVERY",		INT_TYPE_VAR,	DEFAULT_CPU_SAVER_EVERY, 0, NULL, set_cpu_saver_every, 0, 0 },
-	{ "CURRENT_WINDOW_LEVEL",	STR_TYPE_VAR,	0, 0, NULL, set_current_window_mask, 0, 0 },
-	{ "DCC_AUTO_SEND_REJECTS",	BOOL_TYPE_VAR,	DEFAULT_DCC_AUTO_SEND_REJECTS, 0, NULL, NULL, 0, 0 },
-	{ "DCC_DEQUOTE_FILENAMES",	BOOL_TYPE_VAR,	DEFAULT_DCC_DEQUOTE_FILENAMES, 0, NULL, NULL, 0, 0 },
-	{ "DCC_LONG_PATHNAMES",		BOOL_TYPE_VAR,	DEFAULT_DCC_LONG_PATHNAMES, 0, NULL, NULL, 0, 0 },
-	{ "DCC_SLIDING_WINDOW",		INT_TYPE_VAR,	DEFAULT_DCC_SLIDING_WINDOW, 0, NULL, NULL, 0, 0 },
-	{ "DCC_STORE_PATH",		STR_TYPE_VAR,	0, 0, NULL, NULL, 0, 0 },
-	{ "DCC_TIMEOUT",		INT_TYPE_VAR,	DEFAULT_DCC_TIMEOUT, 0, NULL, set_dcc_timeout, 0, 0 },
-	{ "DCC_USE_GATEWAY_ADDR",	BOOL_TYPE_VAR,	0, 0, NULL, NULL, 0, 0 },
-	{ "DEBUG",			INT_TYPE_VAR,	0, 0, NULL, NULL, 0, 0 },
-	{ "DISPATCH_UNKNOWN_COMMANDS",	BOOL_TYPE_VAR,	DEFAULT_DISPATCH_UNKNOWN_COMMANDS, 0, NULL, NULL, 0, 0 },
-	{ "DISPLAY",			BOOL_TYPE_VAR,	DEFAULT_DISPLAY, 0, NULL, NULL, 0, 0 },
-	{ "DISPLAY_ANSI",		BOOL_TYPE_VAR,	DEFAULT_DISPLAY_ANSI, 0, NULL, NULL, 0, 0 },
-	{ "DISPLAY_PC_CHARACTERS",	INT_TYPE_VAR,	DEFAULT_DISPLAY_PC_CHARACTERS, 0, NULL, set_display_pc_characters, 0, 0 },
-	{ "DO_NOTIFY_IMMEDIATELY",	BOOL_TYPE_VAR,	DEFAULT_DO_NOTIFY_IMMEDIATELY, 0, NULL, NULL, 0, 0 },
-	{ "EIGHT_BIT_CHARACTERS",	BOOL_TYPE_VAR,	DEFAULT_EIGHT_BIT_CHARACTERS, 0, NULL, eight_bit_characters, 0, 0 },
-	{ "FLOATING_POINT_MATH",	BOOL_TYPE_VAR,	DEFAULT_FLOATING_POINT_MATH, 0, NULL, NULL, 0, 0 },
-	{ "FLOATING_POINT_PRECISION",	INT_TYPE_VAR,	DEFAULT_FLOATING_POINT_PRECISION, 0, NULL, NULL, 0, 0 },
-	{ "FLOOD_AFTER",		INT_TYPE_VAR,	DEFAULT_FLOOD_AFTER, 0, NULL, NULL, 0, 0 },
-	{ "FLOOD_IGNORE",		BOOL_TYPE_VAR,	DEFAULT_FLOOD_IGNORE, 0, NULL, NULL, 0, 0 },
-	{ "FLOOD_MASKUSER",		INT_TYPE_VAR,	DEFAULT_FLOOD_MASKUSER, 0, NULL, NULL, 0, 0 },
-	{ "FLOOD_RATE",			INT_TYPE_VAR,	DEFAULT_FLOOD_RATE, 0, NULL, NULL, 0, 0 },
-	{ "FLOOD_RATE_PER",		INT_TYPE_VAR,	DEFAULT_FLOOD_RATE_PER, 0, NULL, NULL, 0, 0 },
-	{ "FLOOD_USERS",		INT_TYPE_VAR,	DEFAULT_FLOOD_USERS, 0, NULL, NULL, 0, 0 },
-	{ "FLOOD_WARNING",		BOOL_TYPE_VAR,	DEFAULT_FLOOD_WARNING, 0, NULL, NULL, 0, 0 },
-	{ "FULL_STATUS_LINE",		BOOL_TYPE_VAR,	DEFAULT_FULL_STATUS_LINE, 0, NULL, update_all_status_wrapper, 0, 0 },
-	{ "HELP_PAGER",			BOOL_TYPE_VAR,	DEFAULT_HELP_PAGER, 0, NULL, NULL, 0, 0 },
-	{ "HELP_PATH",			STR_TYPE_VAR,	0, 0, NULL, NULL, 0, 0 },
-	{ "HELP_PROMPT",		BOOL_TYPE_VAR,	DEFAULT_HELP_PROMPT, 0, NULL, NULL, 0, 0 },
-	{ "HELP_WINDOW",		BOOL_TYPE_VAR,	DEFAULT_HELP_WINDOW, 0, NULL, NULL, 0, 0 },
-	{ "HIDE_PRIVATE_CHANNELS",	BOOL_TYPE_VAR,	DEFAULT_HIDE_PRIVATE_CHANNELS, 0, NULL, update_all_status_wrapper, 0, 0 },
-	{ "HIGHLIGHT_CHAR",		STR_TYPE_VAR,	0, 0, NULL, set_highlight_char, 0, 0 },
-	{ "HIGH_BIT_ESCAPE",		INT_TYPE_VAR,	DEFAULT_HIGH_BIT_ESCAPE, 0, NULL, set_meta_8bit, 0, 0 },
-	{ "HISTORY",			INT_TYPE_VAR,	DEFAULT_HISTORY, 0, NULL, set_history_size, 0, 0 },
-	{ "HISTORY_CIRCLEQ",		BOOL_TYPE_VAR,	DEFAULT_HISTORY_CIRCLEQ, 0, NULL, NULL, 0, 0 },
-	{ "HOLD_SLIDER",		INT_TYPE_VAR,	DEFAULT_HOLD_SLIDER, 0, NULL, NULL, 0, 0 },
-	{ "INDENT",			BOOL_TYPE_VAR,	DEFAULT_INDENT, 0, NULL, NULL, 0, 0 },
-	{ "INPUT_ALIASES",		BOOL_TYPE_VAR,	DEFAULT_INPUT_ALIASES, 0, NULL, NULL, 0, 0 },
-	{ "INPUT_PROMPT",		STR_TYPE_VAR,	0, 0, NULL, set_input_prompt, 0, 0 },
-	{ "INSERT_MODE",		BOOL_TYPE_VAR,	DEFAULT_INSERT_MODE, 0, NULL, update_all_status_wrapper, 0, 0 },
-	{ "INVERSE_VIDEO",		BOOL_TYPE_VAR,	DEFAULT_INVERSE_VIDEO, 0, NULL, NULL, 0, 0 },
-	{ "KEY_INTERVAL",		INT_TYPE_VAR,	DEFAULT_KEY_INTERVAL, 0, NULL, set_key_interval, 0, 0 },
-	{ "LASTLOG",			INT_TYPE_VAR,	DEFAULT_LASTLOG, 0, NULL, set_lastlog_size, 0, 0 },
-	{ "LASTLOG_LEVEL",		STR_TYPE_VAR,	0, 0, NULL, set_lastlog_mask, 0, 0 },
-	{ "LOAD_PATH",			STR_TYPE_VAR,	0, 0, NULL, NULL, 0, 0 },
-	{ "LOG",			BOOL_TYPE_VAR,	DEFAULT_LOG, 0, NULL, logger, 0, 0 },
-	{ "LOGFILE",			STR_TYPE_VAR,	0, 0, NULL, NULL, 0, 0 },
-	{ "LOG_REWRITE",		STR_TYPE_VAR,	0, 0, NULL, NULL, 0, 0 },
-	{ "MAIL",			INT_TYPE_VAR,	DEFAULT_MAIL, 0, NULL, set_mail, 0, 0 },
-	{ "MAIL_INTERVAL",		INT_TYPE_VAR,	DEFAULT_MAIL_INTERVAL, 0, NULL, set_mail_interval, 0, 0 },
-	{ "MANGLE_INBOUND",		STR_TYPE_VAR,	0, 0, NULL, set_mangle_inbound, 0, 0 },
-	{ "MANGLE_LOGFILES",		STR_TYPE_VAR,	0, 0, NULL, set_mangle_logfiles, 0, 0 },
-	{ "MANGLE_OUTBOUND",		STR_TYPE_VAR,	0, 0, NULL, set_mangle_outbound, 0, 0 },
-	{ "MAX_RECONNECTS",		INT_TYPE_VAR,	DEFAULT_MAX_RECONNECTS, 0, NULL, NULL, 0, 0 },
-	{ "METRIC_TIME",		BOOL_TYPE_VAR,	DEFAULT_METRIC_TIME, 0, NULL, reset_clock, 0, 0 },
-	{ "MIRC_BROKEN_DCC_RESUME",	BOOL_TYPE_VAR,	0, 0, NULL, NULL, 0, 0 },
-        { "MODE_STRIPPER",              BOOL_TYPE_VAR,  DEFAULT_MODE_STRIPPER, 0, NULL, NULL, 0, 0 },
-	{ "ND_SPACE_MAX",		INT_TYPE_VAR,	DEFAULT_ND_SPACE_MAX, 0, NULL, NULL, 0, 0 },
-	{ "NEW_SERVER_LASTLOG_LEVEL",	STR_TYPE_VAR,	0, 0, NULL, set_new_server_lastlog_mask, 0, 0 },
-	{ "NOTIFY",			BOOL_TYPE_VAR,	DEFAULT_NOTIFY, 0, NULL, set_notify, 0, 0 },
-	{ "NOTIFY_INTERVAL",		INT_TYPE_VAR,	DEFAULT_NOTIFY_INTERVAL, 0, NULL, set_notify_interval, 0, 0 },
-	{ "NOTIFY_LEVEL",		STR_TYPE_VAR,	0, 0, NULL, set_notify_mask, 0, 0 },
-	{ "NOTIFY_ON_TERMINATION",	BOOL_TYPE_VAR,	DEFAULT_NOTIFY_ON_TERMINATION, 0, NULL, NULL, 0, 0 },
-	{ "NOTIFY_USERHOST_AUTOMATIC",	BOOL_TYPE_VAR,	DEFAULT_NOTIFY_USERHOST_AUTOMATIC, 0, NULL, NULL, 0, 0 },
-	{ "NO_CONTROL_LOG",		BOOL_TYPE_VAR,	DEFAULT_NO_CONTROL_LOG, 0, NULL, NULL, 0, 0 },
-	{ "NO_CTCP_FLOOD",		BOOL_TYPE_VAR,	DEFAULT_NO_CTCP_FLOOD, 0, NULL, NULL, 0, 0 },
-	{ "NO_FAIL_DISCONNECT",		BOOL_TYPE_VAR,	DEFAULT_NO_FAIL_DISCONNECT, 0, NULL, NULL, 0, 0 },
-	{ "NUM_OF_WHOWAS",		INT_TYPE_VAR,	DEFAULT_NUM_OF_WHOWAS, 0, NULL, NULL, 0, 0 },
-	{ "OLD_SERVER_LASTLOG_LEVEL",	STR_TYPE_VAR,	0, 0, NULL, set_old_server_lastlog_mask, 0, 0 },
-	{ "OUTPUT_REWRITE",		STR_TYPE_VAR,	0, 0, NULL, NULL, 0, 0 },
-	{ "PAD_CHAR",			CHAR_TYPE_VAR,	DEFAULT_PAD_CHAR, 0, NULL, NULL, 0, 0 },
-	{ "QUIT_MESSAGE",		STR_TYPE_VAR,   0, 0, NULL, NULL, 0, 0 },
-	{ "RANDOM_SOURCE",		INT_TYPE_VAR,	DEFAULT_RANDOM_SOURCE, 0, NULL, NULL, 0, 0 },
-	{ "REALNAME",			STR_TYPE_VAR,	0, 0, NULL, set_realname, 0, 0 },
-	{ "REVERSE_STATUS_LINE",	BOOL_TYPE_VAR,	DEFAULT_REVERSE_STATUS_LINE, 0, NULL, update_all_status_wrapper, 0, 0 },
-	{ "SCREEN_OPTIONS",             STR_TYPE_VAR,   0, 0, NULL, NULL, 0, 0 },
-	{ "SCROLL",			BOOL_TYPE_VAR,	1, 0, NULL, set_scroll, 0, 0 },
-	{ "SCROLLBACK",			INT_TYPE_VAR,	DEFAULT_SCROLLBACK, 0, NULL, set_scrollback_size, 0, 0 },
-	{ "SCROLLBACK_RATIO",		INT_TYPE_VAR,	DEFAULT_SCROLLBACK_RATIO, 0, NULL, NULL, 0, 0 },
-	{ "SCROLL_LINES",		INT_TYPE_VAR,	DEFAULT_SCROLL_LINES, 0, NULL, set_scroll_lines, 0, 0 },
-	{ "SECURITY",			INT_TYPE_VAR,	DEFAULT_SECURITY, 0, NULL, NULL, 0, 0 },
-	{ "SHELL",			STR_TYPE_VAR,	0, 0, NULL, NULL, 0, 0 },
-	{ "SHELL_FLAGS",		STR_TYPE_VAR,	0, 0, NULL, NULL, 0, 0 },
-	{ "SHELL_LIMIT",		INT_TYPE_VAR,	DEFAULT_SHELL_LIMIT, 0, NULL, NULL, 0, 0 },
-	{ "SHOW_CHANNEL_NAMES",		BOOL_TYPE_VAR,	DEFAULT_SHOW_CHANNEL_NAMES, 0, NULL, NULL, 0, 0 },
-	{ "SHOW_END_OF_MSGS",		BOOL_TYPE_VAR,	DEFAULT_SHOW_END_OF_MSGS, 0, NULL, NULL, 0, 0 },
-	{ "SHOW_NUMERICS",		BOOL_TYPE_VAR,	DEFAULT_SHOW_NUMERICS, 0, NULL, NULL, 0, 0 },
-	{ "SHOW_STATUS_ALL",		BOOL_TYPE_VAR,	DEFAULT_SHOW_STATUS_ALL, 0, NULL, update_all_status_wrapper, 0, 0 },
-	{ "SHOW_WHO_HOPCOUNT", 		BOOL_TYPE_VAR,	DEFAULT_SHOW_WHO_HOPCOUNT, 0, NULL, NULL, 0, 0 },
-	{ "SSL_CERTFILE",		STR_TYPE_VAR,	0, 0, NULL, NULL, 0, 0 },
-	{ "SSL_KEYFILE",		STR_TYPE_VAR,	0, 0, NULL, NULL, 0, 0 },
-	{ "SSL_PATH",			STR_TYPE_VAR,	0, 0, NULL, NULL, 0, 0 },
-	{ "STATUS_AWAY",		STR_TYPE_VAR,	0, 0, NULL, build_status, 0, 0 },
-	{ "STATUS_CHANNEL",		STR_TYPE_VAR,	0, 0, NULL, build_status, 0, 0 },
-	{ "STATUS_CHANOP",		STR_TYPE_VAR,	0, 0, NULL, build_status, 0, 0 },
-	{ "STATUS_CLOCK",		STR_TYPE_VAR,	0, 0, NULL, build_status, 0, 0 },
-	{ "STATUS_CPU_SAVER",		STR_TYPE_VAR,	0, 0, NULL, build_status, 0, 0 },
-	{ "STATUS_DOES_EXPANDOS",	BOOL_TYPE_VAR,	0, 0, NULL, NULL, 0, 0 },
-	{ "STATUS_FORMAT",		STR_TYPE_VAR,	0, 0, NULL, build_status, 0, 0 },
-	{ "STATUS_FORMAT1",		STR_TYPE_VAR,	0, 0, NULL, build_status, 0, 0 },
-	{ "STATUS_FORMAT2",		STR_TYPE_VAR,	0, 0, NULL, build_status, 0, 0 },
-	{ "STATUS_HALFOP",		STR_TYPE_VAR,	0, 0, NULL, build_status, 0, 0 },
-	{ "STATUS_HOLD",		STR_TYPE_VAR,	0, 0, NULL, build_status, 0, 0 },
-	{ "STATUS_HOLD_LINES",		STR_TYPE_VAR,	0, 0, NULL, build_status, 0, 0 },
-	{ "STATUS_INSERT",		STR_TYPE_VAR,	0, 0, NULL, build_status, 0, 0 },
-	{ "STATUS_MAIL",		STR_TYPE_VAR,	0, 0, NULL, build_status, 0, 0 },
-	{ "STATUS_MODE",		STR_TYPE_VAR,	0, 0, NULL, build_status, 0, 0 },
-	{ "STATUS_NICKNAME",		STR_TYPE_VAR,	0, 0, NULL, build_status, 0, 0 },
-	{ "STATUS_NOSWAP",		STR_TYPE_VAR,	0, 0, NULL, build_status, 0, 0 },
-	{ "STATUS_NOTIFY",		STR_TYPE_VAR,	0, 0, NULL, build_status, 0, 0 },
-        { "STATUS_NO_REPEAT",           BOOL_TYPE_VAR,  DEFAULT_STATUS_NO_REPEAT, 0, NULL, build_status, 0, 0 },
-	{ "STATUS_OPER",		STR_TYPE_VAR,	0, 0, NULL, build_status, 0, 0 },
-	{ "STATUS_OVERWRITE",		STR_TYPE_VAR,	0, 0, NULL, build_status, 0, 0 },
-	{ "STATUS_QUERY",		STR_TYPE_VAR,	0, 0, NULL, build_status, 0, 0 },
-	{ "STATUS_SCROLLBACK",		STR_TYPE_VAR,	0, 0, NULL, build_status, 0, 0 },
-	{ "STATUS_SERVER",		STR_TYPE_VAR,	0, 0, NULL, build_status, 0, 0 },
-	{ "STATUS_SSL_OFF",		STR_TYPE_VAR,	0, 0, NULL, build_status, 0, 0 },
-	{ "STATUS_SSL_ON",		STR_TYPE_VAR,	0, 0, NULL, build_status, 0, 0 },
-	{ "STATUS_TRUNCATE_RHS",	BOOL_TYPE_VAR,	DEFAULT_STATUS_TRUNCATE_RHS, 0, NULL, build_status, 0, 0 },
-	{ "STATUS_UMODE",		STR_TYPE_VAR,	0, 0, NULL, build_status, 0, 0 },
-	{ "STATUS_USER",		STR_TYPE_VAR,	0, 0, NULL, build_status, 0, 0 },
-	{ "STATUS_USER1",		STR_TYPE_VAR,	0, 0, NULL, build_status, 0, 0 },
-	{ "STATUS_USER10",		STR_TYPE_VAR,	0, 0, NULL, build_status, 0, 0 },
-	{ "STATUS_USER11",		STR_TYPE_VAR,	0, 0, NULL, build_status, 0, 0 },
-	{ "STATUS_USER12",		STR_TYPE_VAR,	0, 0, NULL, build_status, 0, 0 },
-	{ "STATUS_USER13",		STR_TYPE_VAR,	0, 0, NULL, build_status, 0, 0 },
-	{ "STATUS_USER14",		STR_TYPE_VAR,	0, 0, NULL, build_status, 0, 0 },
-	{ "STATUS_USER15",		STR_TYPE_VAR,	0, 0, NULL, build_status, 0, 0 },
-	{ "STATUS_USER16",		STR_TYPE_VAR,	0, 0, NULL, build_status, 0, 0 },
-	{ "STATUS_USER17",		STR_TYPE_VAR,	0, 0, NULL, build_status, 0, 0 },
-	{ "STATUS_USER18",		STR_TYPE_VAR,	0, 0, NULL, build_status, 0, 0 },
-	{ "STATUS_USER19",		STR_TYPE_VAR,	0, 0, NULL, build_status, 0, 0 },	
-	{ "STATUS_USER2",		STR_TYPE_VAR,	0, 0, NULL, build_status, 0, 0 },
-	{ "STATUS_USER20",		STR_TYPE_VAR,	0, 0, NULL, build_status, 0, 0 },
-	{ "STATUS_USER21",		STR_TYPE_VAR,	0, 0, NULL, build_status, 0, 0 },
-	{ "STATUS_USER22",		STR_TYPE_VAR,	0, 0, NULL, build_status, 0, 0 },
-	{ "STATUS_USER23",		STR_TYPE_VAR,	0, 0, NULL, build_status, 0, 0 },
-	{ "STATUS_USER24",		STR_TYPE_VAR,	0, 0, NULL, build_status, 0, 0 },
-	{ "STATUS_USER25",		STR_TYPE_VAR,	0, 0, NULL, build_status, 0, 0 },
-	{ "STATUS_USER26",		STR_TYPE_VAR,	0, 0, NULL, build_status, 0, 0 },
-	{ "STATUS_USER27",		STR_TYPE_VAR,	0, 0, NULL, build_status, 0, 0 },
-	{ "STATUS_USER28",		STR_TYPE_VAR,	0, 0, NULL, build_status, 0, 0 },
-	{ "STATUS_USER29",		STR_TYPE_VAR,	0, 0, NULL, build_status, 0, 0 },	
-	{ "STATUS_USER3",		STR_TYPE_VAR,	0, 0, NULL, build_status, 0, 0 },
-	{ "STATUS_USER30",		STR_TYPE_VAR,	0, 0, NULL, build_status, 0, 0 },
-	{ "STATUS_USER31",		STR_TYPE_VAR,	0, 0, NULL, build_status, 0, 0 },
-	{ "STATUS_USER32",		STR_TYPE_VAR,	0, 0, NULL, build_status, 0, 0 },
-	{ "STATUS_USER33",		STR_TYPE_VAR,	0, 0, NULL, build_status, 0, 0 },
-	{ "STATUS_USER34",		STR_TYPE_VAR,	0, 0, NULL, build_status, 0, 0 },
-	{ "STATUS_USER35",		STR_TYPE_VAR,	0, 0, NULL, build_status, 0, 0 },
-	{ "STATUS_USER36",		STR_TYPE_VAR,	0, 0, NULL, build_status, 0, 0 },
-	{ "STATUS_USER37",		STR_TYPE_VAR,	0, 0, NULL, build_status, 0, 0 },
-	{ "STATUS_USER38",		STR_TYPE_VAR,	0, 0, NULL, build_status, 0, 0 },
-	{ "STATUS_USER39",		STR_TYPE_VAR,	0, 0, NULL, build_status, 0, 0 },	
-	{ "STATUS_USER4",		STR_TYPE_VAR,	0, 0, NULL, build_status, 0, 0 },
-	{ "STATUS_USER5",		STR_TYPE_VAR,	0, 0, NULL, build_status, 0, 0 },
-	{ "STATUS_USER6",		STR_TYPE_VAR,	0, 0, NULL, build_status, 0, 0 },
-	{ "STATUS_USER7",		STR_TYPE_VAR,	0, 0, NULL, build_status, 0, 0 },
-	{ "STATUS_USER8",		STR_TYPE_VAR,	0, 0, NULL, build_status, 0, 0 },
-	{ "STATUS_USER9",		STR_TYPE_VAR,	0, 0, NULL, build_status, 0, 0 },	
-	{ "STATUS_VOICE",		STR_TYPE_VAR,	0, 0, NULL, build_status, 0, 0 },
-	{ "STATUS_WINDOW",		STR_TYPE_VAR,	0, 0, NULL, build_status, 0, 0 },
-        { "SUPPRESS_FROM_REMOTE_SERVER",BOOL_TYPE_VAR,  DEFAULT_SUPPRESS_FROM_REMOTE_SERVER, 0, NULL, NULL, 0, 0},
-	{ "SWITCH_CHANNELS_BETWEEN_WINDOWS",	BOOL_TYPE_VAR,	DEFAULT_SWITCH_CHANNELS_BETWEEN_WINDOWS, 0, NULL, NULL, 0, 0 },
-	{ "SWITCH_CHANNEL_ON_PART",	BOOL_TYPE_VAR,	DEFAULT_SWITCH_CHANNEL_ON_PART, 0, NULL, NULL, 0, 0 },
-	{ "TAB",			BOOL_TYPE_VAR,	DEFAULT_TAB, 0, NULL, NULL, 0, 0 },
-	{ "TAB_MAX",			INT_TYPE_VAR,	DEFAULT_TAB_MAX, 0, NULL, NULL, 0, 0 },
-	{ "TERM_DOES_BRIGHT_BLINK",	BOOL_TYPE_VAR,	DEFAULT_TERM_DOES_BRIGHT_BLINK, 0, NULL, NULL, 0, 0 },
-	{ "TRANSLATION",		STR_TYPE_VAR,	0, 0, NULL, set_translation, 0, 0 },
-	{ "TRANSLATION_PATH",		STR_TYPE_VAR,	0, 0, NULL, NULL, 0, 0 },
-	{ "UNDERLINE_VIDEO",		BOOL_TYPE_VAR,	DEFAULT_UNDERLINE_VIDEO, 0, NULL, NULL, 0, 0 },
-	{ "USER_INFORMATION", 		STR_TYPE_VAR,	0, 0, NULL, NULL, 0, 0 },
-	{ "VERBOSE_CTCP",		BOOL_TYPE_VAR,	DEFAULT_VERBOSE_CTCP, 0, NULL, NULL, 0, 0 },
-	{ "WORD_BREAK",			STR_TYPE_VAR,	0, 0, NULL, NULL, 0, 0 },
-	{ "WSERV_PATH",			STR_TYPE_VAR,	0, 0, NULL, NULL, 0, 0 },
-	{ "WSERV_TYPE",			STR_TYPE_VAR,	0, 0, NULL, set_wserv_type, 0, 0 },
-	{ "XTERM",			STR_TYPE_VAR,	0, 0, NULL, NULL, 0, 0 },
-	{ "XTERM_OPTIONS", 		STR_TYPE_VAR,	0, 0, NULL, NULL, 0, 0 },
-	{ (char *) 0, 0, 0, 0, 0, 0, 0, 0 }
+	{ "ALLOW_C1_CHARS",		BOOL_VAR,	NULL, NULL, 0 },
+	{ "ALT_CHARSET",		BOOL_VAR,	NULL, NULL, 0 },
+	{ "ALWAYS_SPLIT_BIGGEST",	BOOL_VAR,	NULL, NULL, 0 },
+	{ "AUTO_NEW_NICK",		BOOL_VAR,	NULL, NULL, 0 },
+        { "AUTO_RECONNECT",             BOOL_VAR,	NULL, NULL, 0 },
+	{ "AUTO_RECONNECT_DELAY",	INT_VAR,	NULL, NULL, 0 },
+        { "AUTO_REJOIN",                BOOL_VAR,	NULL, NULL, 0 },
+	{ "AUTO_REJOIN_CONNECT",	BOOL_VAR,	NULL, NULL, 0 },
+	{ "AUTO_REJOIN_DELAY",		INT_VAR,	NULL, NULL, 0 },
+	{ "AUTO_UNMARK_AWAY",		BOOL_VAR,	NULL, NULL, 0 },
+	{ "AUTO_WHOWAS",		BOOL_VAR,	NULL, NULL, 0 },
+	{ "BAD_STYLE",			BOOL_VAR,	NULL, NULL, 0 },
+	{ "BANNER",			STR_VAR,	NULL, NULL, 0 },
+	{ "BANNER_EXPAND",		BOOL_VAR,	NULL, NULL, 0 },
+	{ "BEEP",			BOOL_VAR,	NULL, NULL, 0 },
+	{ "BEEP_MAX",			INT_VAR,	NULL, NULL, 0 },
+	{ "BLINK_VIDEO",		BOOL_VAR,	NULL, NULL, 0 },
+	{ "BOLD_VIDEO",			BOOL_VAR,	NULL, NULL, 0 },
+	{ "CHANNEL_NAME_WIDTH",		INT_VAR,	NULL, update_all_status_wrapper, 0 },
+	{ "CLIENT_INFORMATION",		STR_VAR,	NULL, NULL, 0 },
+	{ "CLOCK",			BOOL_VAR,	NULL, set_clock, 0 },
+	{ "CLOCK_24HOUR",		BOOL_VAR,	NULL, reset_clock, 0 },
+	{ "CLOCK_FORMAT",		STR_VAR,	NULL, set_clock_format, 0 },
+	{ "CLOCK_INTERVAL",		INT_VAR,	NULL, set_clock_interval, 0 },
+	{ "CMDCHARS",			STR_VAR,	NULL, NULL, 0 },
+	{ "COLOR",			BOOL_VAR,	NULL, NULL, 0 },
+	{ "COMMAND_MODE",		BOOL_VAR,	NULL, NULL, 0 },
+	{ "COMMENT_HACK",		BOOL_VAR,	NULL, NULL, 0 },
+	{ "CONNECT_TIMEOUT",		INT_VAR,	NULL, NULL, 0 },
+	{ "CONTINUED_LINE",		STR_VAR,	NULL, NULL, 0 },
+	{ "CPU_SAVER_AFTER",		INT_VAR,	NULL, set_cpu_saver_after, 0 },
+	{ "CPU_SAVER_EVERY",		INT_VAR,	NULL, set_cpu_saver_every, 0 },
+	{ "CURRENT_WINDOW_LEVEL",	STR_VAR,	NULL, set_current_window_mask, 0 },
+	{ "DCC_AUTO_SEND_REJECTS",	BOOL_VAR,	NULL, NULL, 0 },
+	{ "DCC_DEQUOTE_FILENAMES",	BOOL_VAR,	NULL, NULL, 0 },
+	{ "DCC_LONG_PATHNAMES",		BOOL_VAR,	NULL, NULL, 0 },
+	{ "DCC_SLIDING_WINDOW",		INT_VAR,	NULL, NULL, 0 },
+	{ "DCC_STORE_PATH",		STR_VAR,	NULL, NULL, 0 },
+	{ "DCC_TIMEOUT",		INT_VAR,	NULL, set_dcc_timeout, 0 },
+	{ "DCC_USE_GATEWAY_ADDR",	BOOL_VAR,	NULL, NULL, 0 },
+	{ "DEBUG",			INT_VAR,	NULL, NULL, 0 },
+	{ "DISPATCH_UNKNOWN_COMMANDS",	BOOL_VAR,	NULL, NULL, 0 },
+	{ "DISPLAY",			BOOL_VAR,	NULL, NULL, 0 },
+	{ "DISPLAY_ANSI",		BOOL_VAR,	NULL, NULL, 0 },
+	{ "DISPLAY_PC_CHARACTERS",	INT_VAR,	NULL, set_display_pc_characters, 0 },
+	{ "DO_NOTIFY_IMMEDIATELY",	BOOL_VAR,	NULL, NULL, 0 },
+	{ "EIGHT_BIT_CHARACTERS",	BOOL_VAR,	NULL, eight_bit_characters, 0 },
+	{ "FLOATING_POINT_MATH",	BOOL_VAR,	NULL, NULL, 0 },
+	{ "FLOATING_POINT_PRECISION",	INT_VAR,	NULL, NULL, 0 },
+	{ "FLOOD_AFTER",		INT_VAR,	NULL, NULL, 0 },
+	{ "FLOOD_IGNORE",		BOOL_VAR,	NULL, NULL, 0 },
+	{ "FLOOD_MASKUSER",		INT_VAR,	NULL, NULL, 0 },
+	{ "FLOOD_RATE",			INT_VAR,	NULL, NULL, 0 },
+	{ "FLOOD_RATE_PER",		INT_VAR,	NULL, NULL, 0 },
+	{ "FLOOD_USERS",		INT_VAR,	NULL, NULL, 0 },
+	{ "FLOOD_WARNING",		BOOL_VAR,	NULL, NULL, 0 },
+	{ "FULL_STATUS_LINE",		BOOL_VAR,	NULL, update_all_status_wrapper, 0 },
+	{ "HELP_PAGER",			BOOL_VAR,	NULL, NULL, 0 },
+	{ "HELP_PATH",			STR_VAR,	NULL, NULL, 0 },
+	{ "HELP_PROMPT",		BOOL_VAR,	NULL, NULL, 0 },
+	{ "HELP_WINDOW",		BOOL_VAR,	NULL, NULL, 0 },
+	{ "HIDE_PRIVATE_CHANNELS",	BOOL_VAR,	NULL, update_all_status_wrapper, 0 },
+	{ "HIGHLIGHT_CHAR",		STR_VAR,	NULL, set_highlight_char, 0 },
+	{ "HIGH_BIT_ESCAPE",		INT_VAR,	NULL, set_meta_8bit, 0 },
+	{ "HISTORY",			INT_VAR,	NULL, set_history_size, 0 },
+	{ "HISTORY_CIRCLEQ",		BOOL_VAR,	NULL, NULL, 0 },
+	{ "HOLD_SLIDER",		INT_VAR,	NULL, NULL, 0 },
+	{ "INDENT",			BOOL_VAR,	NULL, NULL, 0 },
+	{ "INPUT_ALIASES",		BOOL_VAR,	NULL, NULL, 0 },
+	{ "INPUT_PROMPT",		STR_VAR,	NULL, set_input_prompt, 0 },
+	{ "INSERT_MODE",		BOOL_VAR,	NULL, update_all_status_wrapper, 0 },
+	{ "INVERSE_VIDEO",		BOOL_VAR,	NULL, NULL, 0 },
+	{ "KEY_INTERVAL",		INT_VAR,	NULL, set_key_interval, 0 },
+	{ "LASTLOG",			INT_VAR,	NULL, set_lastlog_size, 0 },
+	{ "LASTLOG_LEVEL",		STR_VAR,	NULL, set_lastlog_mask, 0 },
+	{ "LOAD_PATH",			STR_VAR,	NULL, NULL, 0 },
+	{ "LOG",			BOOL_VAR,	NULL, logger, 0 },
+	{ "LOGFILE",			STR_VAR,	NULL, NULL, 0 },
+	{ "LOG_REWRITE",		STR_VAR,	NULL, NULL, 0 },
+	{ "MAIL",			INT_VAR,	NULL, set_mail, 0 },
+	{ "MAIL_INTERVAL",		INT_VAR,	NULL, set_mail_interval, 0 },
+	{ "MANGLE_INBOUND",		STR_VAR,	NULL, set_mangle_inbound, 0 },
+	{ "MANGLE_LOGFILES",		STR_VAR,	NULL, set_mangle_logfiles, 0 },
+	{ "MANGLE_OUTBOUND",		STR_VAR,	NULL, set_mangle_outbound, 0 },
+	{ "MAX_RECONNECTS",		INT_VAR,	NULL, NULL, 0 },
+	{ "METRIC_TIME",		BOOL_VAR,	NULL, reset_clock, 0 },
+	{ "MIRC_BROKEN_DCC_RESUME",	BOOL_VAR,	NULL, NULL, 0 },
+        { "MODE_STRIPPER",              BOOL_VAR,	NULL, NULL, 0 },
+	{ "ND_SPACE_MAX",		INT_VAR,	NULL, NULL, 0 },
+	{ "NEW_SERVER_LASTLOG_LEVEL",	STR_VAR,	NULL, set_new_server_lastlog_mask, 0 },
+	{ "NOTIFY",			BOOL_VAR,	NULL, set_notify, 0 },
+	{ "NOTIFY_INTERVAL",		INT_VAR,	NULL, set_notify_interval, 0 },
+	{ "NOTIFY_LEVEL",		STR_VAR,	NULL, set_notify_mask, 0 },
+	{ "NOTIFY_ON_TERMINATION",	BOOL_VAR,	NULL, NULL, 0 },
+	{ "NOTIFY_USERHOST_AUTOMATIC",	BOOL_VAR,	NULL, NULL, 0 },
+	{ "NO_CONTROL_LOG",		BOOL_VAR,	NULL, NULL, 0 },
+	{ "NO_CTCP_FLOOD",		BOOL_VAR,	NULL, NULL, 0 },
+	{ "NO_FAIL_DISCONNECT",		BOOL_VAR,	NULL, NULL, 0 },
+	{ "NUM_OF_WHOWAS",		INT_VAR,	NULL, NULL, 0 },
+	{ "OLD_SERVER_LASTLOG_LEVEL",	STR_VAR,	NULL, set_old_server_lastlog_mask, 0 },
+	{ "OUTPUT_REWRITE",		STR_VAR,	NULL, NULL, 0 },
+	{ "PAD_CHAR",			CHAR_VAR,	NULL, NULL, 0 },
+	{ "QUIT_MESSAGE",		STR_VAR,	NULL, NULL, 0 },
+	{ "RANDOM_SOURCE",		INT_VAR,	NULL, NULL, 0 },
+	{ "REALNAME",			STR_VAR,	NULL, set_realname, 0 },
+	{ "REVERSE_STATUS_LINE",	BOOL_VAR,	NULL, update_all_status_wrapper, 0 },
+	{ "SCREEN_OPTIONS",             STR_VAR,	NULL, NULL, 0 },
+	{ "SCROLLBACK",			INT_VAR,	NULL, set_scrollback_size, 0 },
+	{ "SCROLLBACK_RATIO",		INT_VAR,	NULL, NULL, 0 },
+	{ "SCROLL_LINES",		INT_VAR,	NULL, set_scroll_lines, 0 },
+	{ "SECURITY",			INT_VAR,	NULL, NULL, 0 },
+	{ "SHELL",			STR_VAR,	NULL, NULL, 0 },
+	{ "SHELL_FLAGS",		STR_VAR,	NULL, NULL, 0 },
+	{ "SHELL_LIMIT",		INT_VAR,	NULL, NULL, 0 },
+	{ "SHOW_CHANNEL_NAMES",		BOOL_VAR,	NULL, NULL, 0 },
+	{ "SHOW_END_OF_MSGS",		BOOL_VAR,	NULL, NULL, 0 },
+	{ "SHOW_NUMERICS",		BOOL_VAR,	NULL, NULL, 0 },
+	{ "SHOW_STATUS_ALL",		BOOL_VAR,	NULL, update_all_status_wrapper, 0 },
+	{ "SHOW_WHO_HOPCOUNT", 		BOOL_VAR,	NULL, NULL, 0 },
+	{ "SSL_CERTFILE",		STR_VAR,	NULL, NULL, 0 },
+	{ "SSL_KEYFILE",		STR_VAR,	NULL, NULL, 0 },
+	{ "SSL_PATH",			STR_VAR,	NULL, NULL, 0 },
+	{ "STATUS_AWAY",		STR_VAR,	NULL, build_status, 0 },
+	{ "STATUS_CHANNEL",		STR_VAR,	NULL, build_status, 0 },
+	{ "STATUS_CHANOP",		STR_VAR,	NULL, build_status, 0 },
+	{ "STATUS_CLOCK",		STR_VAR,	NULL, build_status, 0 },
+	{ "STATUS_CPU_SAVER",		STR_VAR,	NULL, build_status, 0 },
+	{ "STATUS_DOES_EXPANDOS",	BOOL_VAR,	NULL, NULL, 0 },
+	{ "STATUS_FORMAT",		STR_VAR,	NULL, build_status, 0 },
+	{ "STATUS_FORMAT1",		STR_VAR,	NULL, build_status, 0 },
+	{ "STATUS_FORMAT2",		STR_VAR,	NULL, build_status, 0 },
+	{ "STATUS_HALFOP",		STR_VAR,	NULL, build_status, 0 },
+	{ "STATUS_HOLD",		STR_VAR,	NULL, build_status, 0 },
+	{ "STATUS_HOLD_LINES",		STR_VAR,	NULL, build_status, 0 },
+	{ "STATUS_INSERT",		STR_VAR,	NULL, build_status, 0 },
+	{ "STATUS_MAIL",		STR_VAR,	NULL, build_status, 0 },
+	{ "STATUS_MODE",		STR_VAR,	NULL, build_status, 0 },
+	{ "STATUS_NICKNAME",		STR_VAR,	NULL, build_status, 0 },
+	{ "STATUS_NOSWAP",		STR_VAR,	NULL, build_status, 0 },
+	{ "STATUS_NOTIFY",		STR_VAR,	NULL, build_status, 0 },
+        { "STATUS_NO_REPEAT",           BOOL_VAR,	NULL, build_status, 0 },
+	{ "STATUS_OPER",		STR_VAR,	NULL, build_status, 0 },
+	{ "STATUS_OVERWRITE",		STR_VAR,	NULL, build_status, 0 },
+	{ "STATUS_QUERY",		STR_VAR,	NULL, build_status, 0 },
+	{ "STATUS_SCROLLBACK",		STR_VAR,	NULL, build_status, 0 },
+	{ "STATUS_SERVER",		STR_VAR,	NULL, build_status, 0 },
+	{ "STATUS_SSL_OFF",		STR_VAR,	NULL, build_status, 0 },
+	{ "STATUS_SSL_ON",		STR_VAR,	NULL, build_status, 0 },
+	{ "STATUS_TRUNCATE_RHS",	BOOL_VAR,	NULL, build_status, 0 },
+	{ "STATUS_UMODE",		STR_VAR,	NULL, build_status, 0 },
+	{ "STATUS_USER",		STR_VAR,	NULL, build_status, 0 },
+	{ "STATUS_USER1",		STR_VAR,	NULL, build_status, 0 },
+	{ "STATUS_USER10",		STR_VAR,	NULL, build_status, 0 },
+	{ "STATUS_USER11",		STR_VAR,	NULL, build_status, 0 },
+	{ "STATUS_USER12",		STR_VAR,	NULL, build_status, 0 },
+	{ "STATUS_USER13",		STR_VAR,	NULL, build_status, 0 },
+	{ "STATUS_USER14",		STR_VAR,	NULL, build_status, 0 },
+	{ "STATUS_USER15",		STR_VAR,	NULL, build_status, 0 },
+	{ "STATUS_USER16",		STR_VAR,	NULL, build_status, 0 },
+	{ "STATUS_USER17",		STR_VAR,	NULL, build_status, 0 },
+	{ "STATUS_USER18",		STR_VAR,	NULL, build_status, 0 },
+	{ "STATUS_USER19",		STR_VAR,	NULL, build_status, 0 },
+	{ "STATUS_USER2",		STR_VAR,	NULL, build_status, 0 },
+	{ "STATUS_USER20",		STR_VAR,	NULL, build_status, 0 },
+	{ "STATUS_USER21",		STR_VAR,	NULL, build_status, 0 },
+	{ "STATUS_USER22",		STR_VAR,	NULL, build_status, 0 },
+	{ "STATUS_USER23",		STR_VAR,	NULL, build_status, 0 },
+	{ "STATUS_USER24",		STR_VAR,	NULL, build_status, 0 },
+	{ "STATUS_USER25",		STR_VAR,	NULL, build_status, 0 },
+	{ "STATUS_USER26",		STR_VAR,	NULL, build_status, 0 },
+	{ "STATUS_USER27",		STR_VAR,	NULL, build_status, 0 },
+	{ "STATUS_USER28",		STR_VAR,	NULL, build_status, 0 },
+	{ "STATUS_USER29",		STR_VAR,	NULL, build_status, 0 },
+	{ "STATUS_USER3",		STR_VAR,	NULL, build_status, 0 },
+	{ "STATUS_USER30",		STR_VAR,	NULL, build_status, 0 },
+	{ "STATUS_USER31",		STR_VAR,	NULL, build_status, 0 },
+	{ "STATUS_USER32",		STR_VAR,	NULL, build_status, 0 },
+	{ "STATUS_USER33",		STR_VAR,	NULL, build_status, 0 },
+	{ "STATUS_USER34",		STR_VAR,	NULL, build_status, 0 },
+	{ "STATUS_USER35",		STR_VAR,	NULL, build_status, 0 },
+	{ "STATUS_USER36",		STR_VAR,	NULL, build_status, 0 },
+	{ "STATUS_USER37",		STR_VAR,	NULL, build_status, 0 },
+	{ "STATUS_USER38",		STR_VAR,	NULL, build_status, 0 },
+	{ "STATUS_USER39",		STR_VAR,	NULL, build_status, 0 },
+	{ "STATUS_USER4",		STR_VAR,	NULL, build_status, 0 },
+	{ "STATUS_USER5",		STR_VAR,	NULL, build_status, 0 },
+	{ "STATUS_USER6",		STR_VAR,	NULL, build_status, 0 },
+	{ "STATUS_USER7",		STR_VAR,	NULL, build_status, 0 },
+	{ "STATUS_USER8",		STR_VAR,	NULL, build_status, 0 },
+	{ "STATUS_USER9",		STR_VAR,	NULL, build_status, 0 },
+	{ "STATUS_VOICE",		STR_VAR,	NULL, build_status, 0 },
+	{ "STATUS_WINDOW",		STR_VAR,	NULL, build_status, 0 },
+        { "SUPPRESS_FROM_REMOTE_SERVER",BOOL_VAR,	NULL, NULL, 0},
+	{ "SWITCH_CHANNELS_BETWEEN_WINDOWS", BOOL_VAR,	NULL, NULL, 0 },
+	{ "SWITCH_CHANNEL_ON_PART",	BOOL_VAR,	NULL, NULL, 0 },
+	{ "TAB",			BOOL_VAR,	NULL, NULL, 0 },
+	{ "TAB_MAX",			INT_VAR,	NULL, NULL, 0 },
+	{ "TERM_DOES_BRIGHT_BLINK",	BOOL_VAR,	NULL, NULL, 0 },
+	{ "TRANSLATION",		STR_VAR,	NULL, set_translation, 0 },
+	{ "TRANSLATION_PATH",		STR_VAR,	NULL, NULL, 0 },
+	{ "UNDERLINE_VIDEO",		BOOL_VAR,	NULL, NULL, 0 },
+	{ "USER_INFORMATION", 		STR_VAR,	NULL, NULL, 0 },
+	{ "VERBOSE_CTCP",		BOOL_VAR,	NULL, NULL, 0 },
+	{ "WORD_BREAK",			STR_VAR,	NULL, NULL, 0 },
+	{ "WSERV_PATH",			STR_VAR,	NULL, NULL, 0 },
+	{ "WSERV_TYPE",			STR_VAR,	NULL, set_wserv_type, 0 },
+	{ "XTERM",			STR_VAR,	NULL, NULL, 0 },
+	{ "XTERM_OPTIONS", 		STR_VAR,	NULL, NULL, 0 },
+	{ NULL,				0,	        0,    0,    0 }
 };
 
 /*
  * init_variables: initializes the string variables that can't really be
  * initialized properly above 
  */
-void 	init_variables (void)
+void 	init_variables_stage1 (void)
 {
-	char 	*s;
 	int 	i;
 
 	for (i = 1; i < NUMBER_OF_VARIABLES - 1; i++)
 		if (strcmp(irc_variable[i-1].name, irc_variable[i].name) >= 0)
 			panic("Variable [%d] (%s) is out of order.", i, irc_variable[i].name);
+
+	for (i = 0; i < NUMBER_OF_VARIABLES; i++)
+	{
+	    irc_variable[i].data = new_malloc(sizeof(union builtin_variable));
+	    switch (irc_variable[i].type) {
+		case BOOL_VAR:
+		case CHAR_VAR:
+		case INT_VAR:
+			irc_variable[i].data->integer = 0;
+			break;
+		case STR_VAR:
+			irc_variable[i].data->string = NULL;
+			break;
+	    }
+	}
+
+}
+
+/*
+ * set_string_var: sets the string variable given as an index into the
+ * variable table to the given string.  If string is null, the current value
+ * of the string variable is freed and set to null 
+ */
+__inline
+static void 	set_string_var (enum VAR_TYPES var, const char *string)
+{
+	if (string)
+		malloc_strcpy(&(irc_variable[var].data->string), string);
+	else
+		new_free(&(irc_variable[var].data->string));
+}
+
+/* Same story, second verse. */
+__inline
+static void 	set_int_var (enum VAR_TYPES var, int value)
+{
+	irc_variable[var].data->integer = value;
+}
+
+
+void 	init_variables_stage2 (void)
+{
+	char 	*s;
+	int 	i;
+
+	set_int_var(ALLOW_C1_CHARS_VAR,		DEFAULT_ALLOW_C1_CHARS);
+	set_int_var(ALT_CHARSET_VAR, 		DEFAULT_ALT_CHARSET);
+	set_int_var(ALWAYS_SPLIT_BIGGEST_VAR, 	DEFAULT_ALWAYS_SPLIT_BIGGEST);
+	set_int_var(AUTO_NEW_NICK_VAR,		DEFAULT_AUTO_NEW_NICK);
+	set_int_var(AUTO_RECONNECT_VAR,         DEFAULT_AUTO_RECONNECT);
+	set_int_var(AUTO_RECONNECT_DELAY_VAR,	DEFAULT_AUTO_RECONNECT_DELAY);
+	set_int_var(AUTO_REJOIN_VAR,            DEFAULT_AUTO_REJOIN);
+	set_int_var(AUTO_REJOIN_CONNECT_VAR,	DEFAULT_AUTO_REJOIN_CONNECT);
+	set_int_var(AUTO_REJOIN_DELAY_VAR,	DEFAULT_AUTO_REJOIN_DELAY);
+	set_int_var(AUTO_UNMARK_AWAY_VAR,	DEFAULT_AUTO_UNMARK_AWAY);
+	set_int_var(AUTO_WHOWAS_VAR,		DEFAULT_AUTO_WHOWAS);
+	set_int_var(BAD_STYLE_VAR,		DEFAULT_BAD_STYLE);
+	set_int_var(BEEP_VAR,			DEFAULT_BEEP);
+	set_int_var(BEEP_MAX_VAR,		DEFAULT_BEEP_MAX);
+	set_int_var(BLINK_VIDEO_VAR,		DEFAULT_BLINK_VIDEO);
+	set_int_var(BOLD_VIDEO_VAR,		DEFAULT_BOLD_VIDEO);
+	set_int_var(CHANNEL_NAME_WIDTH_VAR,	DEFAULT_CHANNEL_NAME_WIDTH);
+	set_int_var(CLOCK_VAR,			DEFAULT_CLOCK);
+	set_int_var(CLOCK_24HOUR_VAR,		DEFAULT_CLOCK_24HOUR);
+	set_int_var(CLOCK_INTERVAL_VAR,		DEFAULT_CLOCK_INTERVAL);
+	set_int_var(COLOR_VAR,			DEFAULT_COLOR);
+	set_int_var(COMMAND_MODE_VAR,		DEFAULT_COMMAND_MODE);
+	set_int_var(COMMENT_HACK_VAR,		DEFAULT_COMMENT_HACK);
+	set_int_var(CONNECT_TIMEOUT_VAR,	DEFAULT_CONNECT_TIMEOUT);
+	set_int_var(CPU_SAVER_AFTER_VAR,	DEFAULT_CPU_SAVER_AFTER);
+	set_int_var(CPU_SAVER_EVERY_VAR,	DEFAULT_CPU_SAVER_EVERY);
+	set_int_var(DCC_AUTO_SEND_REJECTS_VAR,	DEFAULT_DCC_AUTO_SEND_REJECTS);
+	set_int_var(DCC_DEQUOTE_FILENAMES_VAR,	DEFAULT_DCC_DEQUOTE_FILENAMES);
+	set_int_var(DCC_LONG_PATHNAMES_VAR,	DEFAULT_DCC_LONG_PATHNAMES);
+	set_int_var(DCC_SLIDING_WINDOW_VAR,	DEFAULT_DCC_SLIDING_WINDOW);
+	set_int_var(DCC_TIMEOUT_VAR,		DEFAULT_DCC_TIMEOUT);
+	set_int_var(DISPATCH_UNKNOWN_COMMANDS_VAR,	DEFAULT_DISPATCH_UNKNOWN_COMMANDS);
+	set_int_var(DISPLAY_VAR,		DEFAULT_DISPLAY);
+	set_int_var(DISPLAY_ANSI_VAR,		DEFAULT_DISPLAY_ANSI);
+	set_int_var(DISPLAY_PC_CHARACTERS_VAR,	DEFAULT_DISPLAY_PC_CHARACTERS);
+	set_int_var(DO_NOTIFY_IMMEDIATELY_VAR,	DEFAULT_DO_NOTIFY_IMMEDIATELY);
+	set_int_var(EIGHT_BIT_CHARACTERS_VAR,	DEFAULT_EIGHT_BIT_CHARACTERS);
+	set_int_var(FLOATING_POINT_MATH_VAR,	DEFAULT_FLOATING_POINT_MATH);
+	set_int_var(FLOATING_POINT_PRECISION_VAR, DEFAULT_FLOATING_POINT_PRECISION);
+	set_int_var(FLOOD_AFTER_VAR,		DEFAULT_FLOOD_AFTER);
+	set_int_var(FLOOD_IGNORE_VAR,		DEFAULT_FLOOD_IGNORE);
+	set_int_var(FLOOD_MASKUSER_VAR,		DEFAULT_FLOOD_MASKUSER);
+	set_int_var(FLOOD_RATE_VAR,		DEFAULT_FLOOD_RATE);
+	set_int_var(FLOOD_RATE_PER_VAR,		DEFAULT_FLOOD_RATE_PER);
+	set_int_var(FLOOD_USERS_VAR,		DEFAULT_FLOOD_USERS);
+	set_int_var(FLOOD_WARNING_VAR,		DEFAULT_FLOOD_WARNING);
+	set_int_var(FULL_STATUS_LINE_VAR,	DEFAULT_FULL_STATUS_LINE);
+	set_int_var(HELP_PAGER_VAR,		DEFAULT_HELP_PAGER);
+	set_int_var(HELP_PROMPT_VAR,		DEFAULT_HELP_PROMPT);
+	set_int_var(HELP_WINDOW_VAR,		DEFAULT_HELP_WINDOW);
+	set_int_var(HIDE_PRIVATE_CHANNELS_VAR,	DEFAULT_HIDE_PRIVATE_CHANNELS);
+	set_int_var(HIGH_BIT_ESCAPE_VAR,	DEFAULT_HIGH_BIT_ESCAPE);
+	set_int_var(HISTORY_VAR,		DEFAULT_HISTORY);
+	set_int_var(HISTORY_CIRCLEQ_VAR,	DEFAULT_HISTORY_CIRCLEQ);
+	set_int_var(HOLD_SLIDER_VAR,		DEFAULT_HOLD_SLIDER);
+	set_int_var(INDENT_VAR,			DEFAULT_INDENT);
+	set_int_var(INPUT_ALIASES_VAR,		DEFAULT_INPUT_ALIASES);
+	set_int_var(INSERT_MODE_VAR,		DEFAULT_INSERT_MODE);
+	set_int_var(INVERSE_VIDEO_VAR,		DEFAULT_INVERSE_VIDEO);
+	set_int_var(KEY_INTERVAL_VAR,		DEFAULT_KEY_INTERVAL);
+	set_int_var(LASTLOG_VAR,		DEFAULT_LASTLOG);
+	set_int_var(LOG_VAR,			DEFAULT_LOG);
+	set_int_var(MAIL_VAR,			DEFAULT_MAIL);
+	set_int_var(MAIL_INTERVAL_VAR,		DEFAULT_MAIL_INTERVAL);
+	set_int_var(MAX_RECONNECTS_VAR,		DEFAULT_MAX_RECONNECTS);
+	set_int_var(METRIC_TIME_VAR,		DEFAULT_METRIC_TIME);
+	set_int_var(MODE_STRIPPER_VAR,          DEFAULT_MODE_STRIPPER);
+	set_int_var(ND_SPACE_MAX_VAR,		DEFAULT_ND_SPACE_MAX);
+	set_int_var(NOTIFY_VAR,			DEFAULT_NOTIFY);
+	set_int_var(NOTIFY_INTERVAL_VAR,	DEFAULT_NOTIFY_INTERVAL);
+	set_int_var(NOTIFY_ON_TERMINATION_VAR,	DEFAULT_NOTIFY_ON_TERMINATION);
+	set_int_var(NOTIFY_USERHOST_AUTOMATIC_VAR,	DEFAULT_NOTIFY_USERHOST_AUTOMATIC);
+	set_int_var(NO_CONTROL_LOG_VAR,		DEFAULT_NO_CONTROL_LOG);
+	set_int_var(NO_CTCP_FLOOD_VAR,		DEFAULT_NO_CTCP_FLOOD);
+	set_int_var(NO_FAIL_DISCONNECT_VAR,	DEFAULT_NO_FAIL_DISCONNECT);
+	set_int_var(NUM_OF_WHOWAS_VAR,		DEFAULT_NUM_OF_WHOWAS);
+	set_int_var(PAD_CHAR_VAR,		DEFAULT_PAD_CHAR);
+	set_int_var(RANDOM_SOURCE_VAR,		DEFAULT_RANDOM_SOURCE);
+	set_int_var(REVERSE_STATUS_LINE_VAR,	DEFAULT_REVERSE_STATUS_LINE);
+	set_int_var(SCROLLBACK_VAR,		DEFAULT_SCROLLBACK);
+	set_int_var(SCROLLBACK_RATIO_VAR,	DEFAULT_SCROLLBACK_RATIO);
+	set_int_var(SCROLL_LINES_VAR,		DEFAULT_SCROLL_LINES);
+	set_int_var(SECURITY_VAR,		DEFAULT_SECURITY);
+	set_int_var(SHELL_LIMIT_VAR,		DEFAULT_SHELL_LIMIT);
+	set_int_var(SHOW_CHANNEL_NAMES_VAR,	DEFAULT_SHOW_CHANNEL_NAMES);
+	set_int_var(SHOW_END_OF_MSGS_VAR,	DEFAULT_SHOW_END_OF_MSGS);
+	set_int_var(SHOW_NUMERICS_VAR,		DEFAULT_SHOW_NUMERICS);
+	set_int_var(SHOW_STATUS_ALL_VAR,	DEFAULT_SHOW_STATUS_ALL);
+	set_int_var(SHOW_WHO_HOPCOUNT_VAR, 	DEFAULT_SHOW_WHO_HOPCOUNT);
+	set_int_var(STATUS_NO_REPEAT_VAR,       DEFAULT_STATUS_NO_REPEAT);
+	set_int_var(STATUS_TRUNCATE_RHS_VAR,	DEFAULT_STATUS_TRUNCATE_RHS);
+	set_int_var(SUPPRESS_FROM_REMOTE_SERVER_VAR, 	DEFAULT_SUPPRESS_FROM_REMOTE_SERVER);
+	set_int_var(SWITCH_CHANNELS_BETWEEN_WINDOWS_VAR,	DEFAULT_SWITCH_CHANNELS_BETWEEN_WINDOWS);
+	set_int_var(SWITCH_CHANNEL_ON_PART_VAR,	DEFAULT_SWITCH_CHANNEL_ON_PART);
+	set_int_var(TAB_VAR,			DEFAULT_TAB);
+	set_int_var(TAB_MAX_VAR,		DEFAULT_TAB_MAX);
+	set_int_var(TERM_DOES_BRIGHT_BLINK_VAR,	DEFAULT_TERM_DOES_BRIGHT_BLINK);
+	set_int_var(UNDERLINE_VIDEO_VAR,	DEFAULT_UNDERLINE_VIDEO);
+	set_int_var(VERBOSE_CTCP_VAR,		DEFAULT_VERBOSE_CTCP);
+
 
 	set_string_var(BANNER_VAR, DEFAULT_BANNER);
 	set_string_var(CMDCHARS_VAR, DEFAULT_CMDCHARS);
@@ -461,20 +595,7 @@ void 	init_variables (void)
 				continue;
 
 			var->flags |= VIF_PENDING;
-			switch (var->type)
-			{
-				case (BOOL_TYPE_VAR):
-				case (INT_TYPE_VAR):
-				case (CHAR_TYPE_VAR):
-					var->func(&var->integer);
-					break;
-				case (FLOAT_TYPE_VAR):
-					var->func(&var->number);
-					break;
-				case (STR_TYPE_VAR):
-					var->func(var->string);
-					break;
-			}
+			var->func(var->data);
 			var->flags &= ~VIF_PENDING;
 		}
 	}
@@ -485,29 +606,6 @@ void 	init_variables (void)
  * TOGGLE 
  */
 int 	do_boolean (char *str, int *value)
-{
-	upper(str);
-	if (strcmp(str, var_settings[ON]) == 0)
-		*value = 1;
-	else if (strcmp(str, var_settings[OFF]) == 0)
-		*value = 0;
-	else if (strcmp(str, "TOGGLE") == 0)
-	{
-		if (*value)
-			*value = 0;
-		else
-			*value = 1;
-	}
-	else
-		return (1);
-	return (0);
-}
-
-/*
- * do_short_boolean: just a handy thing.  Returns 1 if the str is not 
- * ON, OFF, or TOGGLE.
- */
-int 	do_short_boolean (char *str, short *value)
 {
 	upper(str);
 	if (strcmp(str, var_settings[ON]) == 0)
@@ -545,197 +643,119 @@ static enum VAR_TYPES get_variable_index (const char *varname)
 	return NUMBER_OF_VARIABLES;
 }
 
+void	show_var_value (enum VAR_TYPES svv_index, int newval)
+{
+	IrcVariable *var;
+	char *value;
+
+	var = &irc_variable[svv_index];
+	value = make_string_var_bydata(var->type, (void *)var->data);
+
+	if (!value)
+		value = malloc_strdup("<EMPTY>");
+
+	say("%s value of %s is %s", newval ? "New" : "Current", 
+					var->name, value);
+	new_free(&value);
+}
+
 /*
  * set_var_value: Given the variable structure and the string representation
  * of the value, this sets the value in the most verbose and error checking
  * of manors.  It displays the results of the set and executes the function
  * defined in the var structure 
  */
-void 	set_var_value (int svv_index, char *value)
+void 	set_var_value (enum VAR_TYPES svv_index, char *value, int noisy)
 {
 	char	*rest;
 	IrcVariable *var;
 	int	old;
+	int	changed = 0;
 
 	var = &(irc_variable[svv_index]);
 	switch (var->type)
 	{
-	case BOOL_TYPE_VAR:
-	{
+	    case BOOL_VAR:
+	    {
 		if (value && *value && (value = next_arg(value, &rest)))
 		{
-			old = var->integer;
-			if (do_boolean(value, &(var->integer)))
-			{
-				say("Value must be either ON, OFF, or TOGGLE");
-				break;
-			}
-			if (!(var->int_flags & VIF_CHANGED))
-			{
-				if (old != var->integer)
-					var->int_flags |= VIF_CHANGED;
-			}
-			if (loading_global)
-				var->int_flags |= VIF_GLOBAL;
-			if (var->func)
-				(var->func) (&var->integer);
-			say("Value of %s set to %s", var->name,
-				var->integer ? var_settings[ON]
-					     : var_settings[OFF]);
+			old = var->data->integer;
+			if (do_boolean(value, &(var->data->integer)))
+			    say("Value must be either ON, OFF, or TOGGLE");
+			else
+			    changed = 1;
 		}
-		else
-			say("Current value of %s is %s", var->name,
-				(var->integer) ?
-				var_settings[ON] : var_settings[OFF]);
 		break;
-	}
-	case CHAR_TYPE_VAR:
-	{
+	    }
+
+	    case CHAR_VAR:
+	    {
 		if (!value)
 		{
-			if (!(var->int_flags & VIF_CHANGED))
-			{
-				if (var->integer)
-					var->int_flags |= VIF_CHANGED;
-			}
-			if (loading_global)
-				var->int_flags |= VIF_GLOBAL;
-			var->integer = ' ';
-			if (var->func)
-				(var->func) (&var->integer);
-			say("Value of %s set to '%c'", var->name, var->integer);
+			var->data->integer = ' ';
+			changed = 1;
 		}
-
-
 		else if (value && *value && (value = next_arg(value, &rest)))
 		{
 			if (strlen(value) > 1)
-				say("Value of %s must be a single character",
+			    say("Value of %s must be a single character",
 					var->name);
 			else
 			{
-				if (!(var->int_flags & VIF_CHANGED))
-				{
-					if (var->integer != *value)
-						var->int_flags |= VIF_CHANGED;
-				}
-				if (loading_global)
-					var->int_flags |= VIF_GLOBAL;
-				var->integer = *value;
-				if (var->func)
-					(var->func) (&var->integer);
-				say("Value of %s set to '%c'", var->name,
-					var->integer);
+				var->data->integer = *value;
+				changed = 1;
 			}
 		}
-		else
-			say("Current value of %s is '%c'", var->name,
-				var->integer);
 		break;
-	}
-	case INT_TYPE_VAR:
-	{
+	    }
+
+	    case INT_VAR:
+	    {
 		if (value && *value && (value = next_arg(value, &rest)))
 		{
 			int	val;
 
 			if (!is_number(value))
-			{
-				say("Value of %s must be numeric!", var->name);
-				break;
-			}
-			if ((val = my_atol(value)) < 0)
-			{
-				say("Value of %s must be a non-negative number", var->name);
-				break;
-			}
-			if (!(var->int_flags & VIF_CHANGED))
-			{
-				if (var->integer != val)
-					var->int_flags |= VIF_CHANGED;
-			}
-			if (loading_global)
-				var->int_flags |= VIF_GLOBAL;
-			var->integer = val;
-			if (var->func)
-				(var->func) (&var->integer);
-			say("Value of %s set to %d", var->name, var->integer);
-		}
-		else
-			say("Current value of %s is %d", var->name, var->integer);
-		break;
-	}
-	case FLOAT_TYPE_VAR:
-	{
-		if (value && *value && (value = next_arg(value, &rest)))
-		{
-			int	val;
-
-			if (!is_real_number(value))
-			{
-				say("Value of %s must be numeric!", var->name);
-				break;
-			}
-			val = atof(value);
-			if (!(var->int_flags & VIF_CHANGED))
-			{
-				if (var->number != val)
-					var->int_flags |= VIF_CHANGED;
-			}
-			if (loading_global)
-				var->int_flags |= VIF_GLOBAL;
-			var->number = val;
-			if (var->func)
-				(var->func) (&var->number);
-			say("Value of %s set to %f", var->name, var->number);
-		}
-		else
-			say("Current value of %s is %f", var->name, var->number);
-		break;
-	}
-	case STR_TYPE_VAR:
-	{
-		if (value)
-		{
-			if (*value)
-			{
-				if ((!var->int_flags & VIF_CHANGED))
-				{
-					if ((var->string && !value) ||
-					    (!var->string && value) ||
-					    my_stricmp(var->string, value))
-						var->int_flags |= VIF_CHANGED;
-				}
-				if (loading_global)
-					var->int_flags |= VIF_GLOBAL;
-				malloc_strcpy(&(var->string), value);
-			}
+			    say("Value of %s must be numeric!", var->name);
+			else if ((val = my_atol(value)) < 0)
+			    say("Value of %s must be a non-negative number", 
+					var->name);
 			else
 			{
-				if (var->string)
-					say("Current value of %s is %s",
-						var->name, var->string);
-				else
-					say("No value for %s has been set",
-						var->name);
-				return;
+				var->data->integer = val;
+				changed = 1;
 			}
 		}
-		else
-			new_free(&(var->string));
-
-		if (var->func && !(var->int_flags & VIF_PENDING))
-		{
-			var->int_flags |= VIF_PENDING;
-			(var->func) (var->string);
-			var->int_flags &= ~VIF_PENDING;
-		}
-
-		say("Value of %s set to %s", var->name, var->string ?
-			var->string : "<EMPTY>");
 		break;
+	    }
+
+	    case STR_VAR:
+	    {
+		if (!value)
+		{
+			new_free(&(var->data->string));
+			changed = 1;
+		}
+		else if (*value)
+		{
+			malloc_strcpy(&(var->data->string), value);
+			changed = 1;
+		}
+	    }
 	}
+
+	if (changed)
+	{
+	    if (var->func && !(var->flags & VIF_PENDING))
+	    {
+		var->flags |= VIF_PENDING;
+		(var->func)(var->data);
+		var->flags &= ~VIF_PENDING;
+	    }
 	}
+
+	if (noisy)
+	    show_var_value(svv_index, changed);
 }
 
 /*
@@ -773,16 +793,18 @@ enum VAR_TYPES	sv_index;
 
 		/* Exact match? */
 		upper(var);
-		find_fixed_array_item (irc_variable, sizeof(IrcVariable), NUMBER_OF_VARIABLES, var, &cnt, (int *)&sv_index);
+		find_fixed_array_item(irc_variable, sizeof(IrcVariable), 
+					NUMBER_OF_VARIABLES, var, &cnt, 
+					(int *)&sv_index);
 
 		if (cnt == 1)
 			cnt = -1;
 
-		if ((cnt >= 0) || !(irc_variable[sv_index].int_flags & VIF_PENDING))
+		if ((cnt >= 0) || !(irc_variable[sv_index].flags & VIF_PENDING))
 			hook = 1;
 
 		if (cnt < 0)
-			irc_variable[sv_index].int_flags |= VIF_PENDING;
+			irc_variable[sv_index].flags |= VIF_PENDING;
 
 		if (hook)
 		{
@@ -798,29 +820,37 @@ enum VAR_TYPES	sv_index;
 		}
 
 		if (cnt < 0)
-			irc_variable[sv_index].int_flags &= ~VIF_PENDING;
+			irc_variable[sv_index].flags &= ~VIF_PENDING;
 
-		if (hook)
+		/* If the user hooked it, we're all done! */
+		if (!hook)
+			return;
+
+		/* User didn't offer at it -- do the default thing. */
+		if (cnt < 0)
 		{
-			if (cnt < 0)
-				set_var_value(sv_index, args);
-			else if (cnt == 0)
+			set_var_value(sv_index, args, 1);
+			return;
+		}
+
+		/* User didn't offer at it, and it isn't valid */
+		if (cnt == 0)
+		{
+			if (do_hook(SET_LIST, "set-error No such variable \"%s\"", var))
+				say("No such variable \"%s\"", var);
+			return;
+		}
+
+		/* User didn't offer at it, and it's ambiguous */
+		if (do_hook(SET_LIST, "set-error %s is ambiguous", var))
+		{
+			say("%s is ambiguous", var);
+			for (cnt += sv_index; (int)sv_index < cnt; 
+				sv_index = (enum VAR_TYPES)(sv_index + 1))
 			{
-				if (do_hook(SET_LIST, "set-error No such variable \"%s\"", var))
-					say("No such variable \"%s\"", var);
-			}
-			else
-			{
-				if (do_hook(SET_LIST, "set-error %s is ambiguous", var))
-				{
-					say("%s is ambiguous", var);
-					for (cnt += sv_index; (int)sv_index < cnt; sv_index = (enum VAR_TYPES)(sv_index + 1))
-					{
-						char es[1];
-						es[0] = 0;
-						set_var_value(sv_index, es);
-					}
-				}
+				char es[1];
+				es[0] = 0;
+				set_var_value(sv_index, es, 1);
 			}
 		}
 	}
@@ -831,7 +861,7 @@ enum VAR_TYPES	sv_index;
 		{
 			char es[1];
 			es[0] = 0;
-			set_var_value(var_index, es);
+			set_var_value(var_index, es, 1);
 		}
         }
 }
@@ -842,7 +872,7 @@ enum VAR_TYPES	sv_index;
  */
 char *	get_string_var (enum VAR_TYPES var)
 {
-	return (irc_variable[var].string);
+	return (irc_variable[var].data->string);
 }
 
 /*
@@ -851,41 +881,7 @@ char *	get_string_var (enum VAR_TYPES var)
  */
 int 	get_int_var (enum VAR_TYPES var)
 {
-	return (irc_variable[var].integer);
-}
-
-/*
- * get_int_var: returns the value of the integer string given as an index
- * into the variable table.  Does no checking of variable types, etc 
- */
-double 	get_float_var (enum VAR_TYPES var)
-{
-	return (irc_variable[var].number);
-}
-
-/*
- * set_string_var: sets the string variable given as an index into the
- * variable table to the given string.  If string is null, the current value
- * of the string variable is freed and set to null 
- */
-void 	set_string_var (enum VAR_TYPES var, const char *string)
-{
-	if (string)
-		malloc_strcpy(&(irc_variable[var].string), string);
-	else
-		new_free(&(irc_variable[var].string));
-}
-
-/* Same story, second verse. */
-void 	set_int_var (enum VAR_TYPES var, int value)
-{
-	irc_variable[var].integer = value;
-}
-
-/* Same story, second verse. */
-void 	set_float_var (enum VAR_TYPES var, double value)
-{
-	irc_variable[var].number = value;
+	return (irc_variable[var].data->integer);
 }
 
 /*
@@ -898,44 +894,60 @@ void 	save_variables (FILE *fp, int do_all)
 
 	for (var = irc_variable; var->name; var++)
 	{
-		if (!(var->int_flags & VIF_CHANGED))
+		if (strcmp(var->name, "DISPLAY") == 0 || strcmp(var->name, "CLIENT_INFORMATION") == 0)
 			continue;
-		if (do_all || !(var->int_flags & VIF_GLOBAL))
+		fprintf(fp, "SET ");
+		switch (var->type)
 		{
-			if (strcmp(var->name, "DISPLAY") == 0 || strcmp(var->name, "CLIENT_INFORMATION") == 0)
-				continue;
-			fprintf(fp, "SET ");
-			switch (var->type)
-			{
-			case BOOL_TYPE_VAR:
-				fprintf(fp, "%s %s\n", var->name, var->integer ?
-					var_settings[ON] : var_settings[OFF]);
-				break;
-			case CHAR_TYPE_VAR:
-				fprintf(fp, "%s %c\n", var->name, var->integer);
-				break;
-			case INT_TYPE_VAR:
-				fprintf(fp, "%s %u\n", var->name, var->integer);
-				break;
-			case FLOAT_TYPE_VAR:
-				fprintf(fp, "%s %f\n", var->name, var->number);
-				break;
-			case STR_TYPE_VAR:
-				if (var->string)
-					fprintf(fp, "%s %s\n", var->name,
-						var->string);
-				else
-					fprintf(fp, "-%s\n", var->name);
-				break;
-			}
+		case BOOL_VAR:
+			fprintf(fp, "%s %s\n", var->name, var->data->integer ?
+				var_settings[ON] : var_settings[OFF]);
+			break;
+		case CHAR_VAR:
+			fprintf(fp, "%s %c\n", var->name, var->data->integer);
+			break;
+		case INT_VAR:
+			fprintf(fp, "%s %u\n", var->name, var->data->integer);
+			break;
+		case STR_VAR:
+			if (var->data->string)
+				fprintf(fp, "%s %s\n", var->name,
+					var->data->string);
+			else
+				fprintf(fp, "-%s\n", var->name);
+			break;
 		}
 	}
+}
+
+static char 	*make_string_var_bydata (int type, void *vp)
+{
+	char	*ret = (char *) 0;
+	VARIABLE *data = (VARIABLE *)vp;
+
+	switch (type)
+	{
+		case STR_VAR:
+		        if (data->string)
+			    ret = malloc_strdup(data->string);
+			break;
+		case INT_VAR:
+			ret = malloc_strdup(ltoa(data->integer));
+			break;
+		case BOOL_VAR:
+			ret = malloc_strdup(var_settings[data->integer]);
+			break;
+		case CHAR_VAR:
+			ret = malloc_dupchar(data->integer);
+			break;
+	}
+	return (ret);
+
 }
 
 char 	*make_string_var (const char *var_name)
 {
 	enum VAR_TYPES	msv_index;
-	char	*ret = (char *) 0;
 	char	*copy;
 
 	copy = LOCAL_COPY(var_name);
@@ -945,28 +957,9 @@ char 	*make_string_var (const char *var_name)
 	if (msv_index == NUMBER_OF_VARIABLES)
 		return NULL;
 
-	switch (irc_variable[msv_index].type)
-	{
-		case STR_TYPE_VAR:
-		        if (irc_variable[msv_index].string)
-			    ret = malloc_strdup(irc_variable[msv_index].string);
-			break;
-		case INT_TYPE_VAR:
-			ret = malloc_strdup(ltoa(irc_variable[msv_index].integer));
-			break;
-		case FLOAT_TYPE_VAR:
-			ret = malloc_strdup(ftoa(irc_variable[msv_index].number));
-			break;
-		case BOOL_TYPE_VAR:
-			ret = malloc_strdup(var_settings[irc_variable[msv_index].integer]);
-			break;
-		case CHAR_TYPE_VAR:
-			ret = malloc_dupchar(irc_variable[msv_index].integer);
-			break;
-	}
-	return (ret);
-
+	return make_string_var_bydata(msv_index, irc_variable[msv_index].data);
 }
+
 
 GET_FIXED_ARRAY_NAMES_FUNCTION(get_set, irc_variable)
 
@@ -978,8 +971,11 @@ int 	charset_size (void)
 
 static void 	eight_bit_characters (const void *stuff)
 {
-	int	value = *(const int *)stuff;
+	VARIABLE *v;
+	int	value;
 
+	v = (VARIABLE *)stuff;
+	value = v->integer;
 	if (value == ON && !term_eight_bit())
 		say("Warning!  Your terminal says it does not support eight bit characters");
 	set_term_eight_bit(value);
@@ -987,7 +983,11 @@ static void 	eight_bit_characters (const void *stuff)
 
 static void 	set_realname (const void *stuff)
 {
-	const char *value = (const char *)stuff;
+	VARIABLE *v;
+	const char *value;
+
+	v = (VARIABLE *)stuff;
+	value = v->string;
 
 	if (!value)
 	{
@@ -999,18 +999,26 @@ static void 	set_realname (const void *stuff)
 
 static void 	set_display_pc_characters (const void *stuff)
 {
-	int	value = *(const int *)stuff;
+	VARIABLE *v;
+	int	value;
+
+	v = (VARIABLE *)stuff;
+	value = v->integer;
 
 	if (value < 0 || value > 5)
 	{
 		say("The value of DISPLAY_PC_CHARACTERS must be between 0 and 5 inclusive");
-		set_int_var(DISPLAY_PC_CHARACTERS_VAR, 0);
+		v->integer = 0;
 	}
 }
 
 static void	set_dcc_timeout (const void *stuff)
 {
-	int	value = *(const int *)stuff;
+	VARIABLE *v;
+	int	value;
+
+	v = (VARIABLE *)stuff;
+	value = v->integer;
 
 	if (value == 0)
 		dcc_timeout = (time_t) -1;
@@ -1041,7 +1049,7 @@ int	parse_mangle (const char *value, int nvalue, char **rv)
 			else if (!my_strnicmp(str2, "-ALL_OFF", 5))
 				nvalue &= ~(STRIP_ALL_OFF);
 			else if (!my_strnicmp(str2, "ALL", 3))
-				nvalue = (0x7FFFFFFF ^ (MANGLE_ESCAPES) ^ (STRIP_OTHER));
+				nvalue = (0x7FFFFFFF ^ (MANGLE_ESCAPES) ^ (STRIP_OTHER) ^ (STRIP_ALL_OFF));
 			else if (!my_strnicmp(str2, "-ALL", 4))
 				nvalue = 0;
 			else if (!my_strnicmp(str2, "ANSI", 2))
@@ -1122,49 +1130,44 @@ int	parse_mangle (const char *value, int nvalue, char **rv)
 
 static	void	set_mangle_inbound (const void *stuff)
 {
-	const char *value = (const char *)stuff;
+	VARIABLE *v;
+	const char *value;
 	char *nv = NULL;
+
+	v = (VARIABLE *)stuff;
+	value = v->string;
+
 	inbound_line_mangler = parse_mangle(value, inbound_line_mangler, &nv);
-	set_string_var(MANGLE_INBOUND_VAR, nv);
+	malloc_strcpy(&v->string, nv);
 	new_free(&nv);
 }
 
 static	void	set_mangle_outbound (const void *stuff)
 {
-	const char *value = (const char *)stuff;
+	VARIABLE *v;
+	const char *value;
 	char *nv = NULL;
+
+	v = (VARIABLE *)stuff;
+	value = v->string;
+
 	outbound_line_mangler = parse_mangle(value, outbound_line_mangler, &nv);
-	set_string_var(MANGLE_OUTBOUND_VAR, nv);
+	malloc_strcpy(&v->string, nv);
 	new_free(&nv);
 }
 
 static	void	set_mangle_logfiles (const void *stuff)
 {
-	const char *value = (const char *)stuff;
+	VARIABLE *v;
+	const char *value;
 	char *nv = NULL;
+
+	v = (VARIABLE *)stuff;
+	value = v->string;
+
 	logfile_line_mangler = parse_mangle(value, logfile_line_mangler, &nv);
-	set_string_var(MANGLE_LOGFILES_VAR, nv);
+	malloc_strcpy(&v->string, nv);
 	new_free(&nv);
-}
-
-static	void	set_scroll (const void *stuff)
-{
-	int	value = *(const int *)stuff;
-	char *	whatever;
-	int	owd = window_display;
-
-	window_display = 0;
-	if (value)
-	{
-		whatever = LOCAL_COPY("ONE");
-		window_scroll(current_window, &whatever);
-	}
-	else
-	{
-		whatever = LOCAL_COPY("ZERO");
-		window_scroll(current_window, &whatever);
-	}
-	window_display = owd;
 }
 
 static void	update_all_status_wrapper (const void *stuff)
@@ -1174,8 +1177,12 @@ static void	update_all_status_wrapper (const void *stuff)
 
 static void    set_highlight_char (const void *stuff)
 {
-	const char *s = (const char *)stuff;
+	VARIABLE *v;
+	const char *s;
         int     len;
+
+	v = (VARIABLE *)stuff;
+	s = v->string;
 
         if (!s)
                 s = empty_string;
@@ -1193,7 +1200,11 @@ static void    set_highlight_char (const void *stuff)
 
 static void    set_wserv_type (const void *stuff)
 {
-	const char *s = (const char *)stuff;
+	VARIABLE *v;
+	const char *s;
+
+	v = (VARIABLE *)stuff;
+	s = v->string;
 
         if (!s)
 		return;		/* It's ok */
@@ -1203,7 +1214,7 @@ static void    set_wserv_type (const void *stuff)
 		return;		/* It's ok */
 
 	say("SET WSERV_TYPE must be either SCREEN or XTERM");
-	set_string_var(WSERV_TYPE_VAR, NULL);
+	new_free(&v->string);
 }
 
 
@@ -1277,7 +1288,7 @@ void	do_stack_set (int type, char *args)
 		var_index = get_variable_index(item->varname);
 		if (var_index == NUMBER_OF_VARIABLES)
 			return;		/* Do nothing */
-		set_var_value(var_index, item->value);
+		set_var_value(var_index, item->value, 1);
 		window_display = owd; 
 
 		new_free(&item->varname);

@@ -1,4 +1,4 @@
-/* $EPIC: lastlog.c,v 1.41 2004/05/04 01:06:55 jnelson Exp $ */
+/* $EPIC: lastlog.c,v 1.42 2004/07/23 00:49:46 jnelson Exp $ */
 /*
  * lastlog.c: handles the lastlog features of irc. 
  *
@@ -216,26 +216,38 @@ const char *	level_to_str (int i)
  */
 void	set_lastlog_mask (const void *stuff)
 {
-	const char *str = (const char *)stuff;
+	VARIABLE *v;
+	const char *str;
+
+	v = (VARIABLE *)stuff;
+	str = v->string;
+
 	str_to_mask(&lastlog_mask, str);
-	set_string_var(LASTLOG_LEVEL_VAR, mask_to_str(&lastlog_mask));
-	current_window->lastlog_mask = lastlog_mask;
+	malloc_strcpy(&v->string, mask_to_str(&lastlog_mask));
 }
 
 void	set_new_server_lastlog_mask (const void *stuff)
 {
-	const char *str = (const char *)stuff;
+	VARIABLE *v;
+	const char *str;
+
+	v = (VARIABLE *)stuff;
+	str = v->string;
+
 	str_to_mask(&new_server_lastlog_mask, str);
-	set_string_var(NEW_SERVER_LASTLOG_LEVEL_VAR, 
-			mask_to_str(&new_server_lastlog_mask));
+	malloc_strcpy(&v->string, mask_to_str(&new_server_lastlog_mask));
 }
 
 void	set_old_server_lastlog_mask (const void *stuff)
 {
-	const char *str = (const char *)stuff;
+	VARIABLE *v;
+	const char *str;
+
+	v = (VARIABLE *)stuff;
+	str = v->string;
+
 	str_to_mask(&old_server_lastlog_mask, str);
-	set_string_var(OLD_SERVER_LASTLOG_LEVEL_VAR, 
-			mask_to_str(&old_server_lastlog_mask));
+	malloc_strcpy(&v->string, mask_to_str(&old_server_lastlog_mask));
 }
 
 
@@ -269,10 +281,14 @@ void 	remove_from_lastlog (Window *window)
  */
 void	set_lastlog_size (const void *stuff)
 {
-	int	size = *(const int *)stuff;
+	VARIABLE *v;
+	int	size;
 	int	i,
 		diff;
 	Window	*window = NULL;
+
+	v = (VARIABLE *)stuff;
+	size = v->integer;
 
 	while (traverse_all_windows(&window))
 	{
@@ -885,18 +901,26 @@ Mask	real_lastlog_mask (void)
 
 void	set_notify_mask (const void *stuff)
 {
-	const char *str = (const char *)stuff;
+	VARIABLE *v;
+	const char *str;
+
+	v = (VARIABLE *)stuff;
+	str = v->string;
+
 	str_to_mask(&notify_mask, str);
-	set_string_var(NOTIFY_LEVEL_VAR, mask_to_str(&notify_mask));
-	current_window->notify_mask = notify_mask;
+	malloc_strcpy(&v->string, mask_to_str(&notify_mask));
 }
 
 void	set_current_window_mask (const void *stuff)
 {
-	const char *str = (const char *)stuff;
+	VARIABLE *v;
+	const char *str;
+
+	v = (VARIABLE *)stuff;
+	str = v->string;
+
 	str_to_mask(&current_window_mask, str);
-	set_string_var(CURRENT_WINDOW_LEVEL_VAR, 
-			mask_to_str(&current_window_mask));
+	malloc_strcpy(&v->string, mask_to_str(&current_window_mask));
 }
 
 #if 0

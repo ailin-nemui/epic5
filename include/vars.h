@@ -117,7 +117,6 @@ enum VAR_TYPES {
 	REALNAME_VAR,
 	REVERSE_STATUS_LINE_VAR,
 	SCREEN_OPTIONS_VAR,
-	SCROLL_VAR,
 	SCROLLBACK_VAR,
 	SCROLLBACK_RATIO_VAR,
 	SCROLL_LINES_VAR,
@@ -203,7 +202,7 @@ enum VAR_TYPES {
 	STATUS_USER9_VAR,
 	STATUS_VOICE_VAR,
 	STATUS_WINDOW_VAR,
-	SUPPRESS_FROM_REMOTE_SERVER,
+	SUPPRESS_FROM_REMOTE_SERVER_VAR,
 	SWITCH_CHANNELS_BETWEEN_WINDOWS_VAR,
 	SWITCH_CHANNEL_ON_PART_VAR,
 	TAB_VAR,
@@ -232,21 +231,30 @@ enum VAR_TYPES {
 #define	DEBUG_EXPANSIONS	0x0002
 #define DEBUG_FUNCTIONS		0x0004
 
+typedef union builtin_variable {
+        char *  string;                 /* string value of variable */
+        int     integer;                /* int value of variable */
+} VARIABLE;
+
+/* the types of IrcVariables */
+#define STR_VAR 	0
+#define INT_VAR 	1
+#define CHAR_VAR 	2
+#define BOOL_VAR 	3
+
+
 	BUILT_IN_COMMAND(setcmd);
 
 	int	do_boolean 		(char *, int *);
 	int	do_short_boolean 	(char *, short *);
 	int	get_int_var 		(enum VAR_TYPES);
 	char *	get_string_var 		(enum VAR_TYPES);
-	double	get_float_var		(enum VAR_TYPES);
-	void	set_int_var		(enum VAR_TYPES, int);
-	void	set_float_var		(enum VAR_TYPES, double);
-	void	set_string_var		(enum VAR_TYPES, const char *);
-	void	init_variables 		(void);
-	char	*make_string_var 	(const char *);
+	void	set_var_value		(enum VAR_TYPES, char *, int);
+	void	init_variables_stage1	(void);
+	void	init_variables_stage2	(void);
+	char*	make_string_var 	(const char *);
 	int	charset_size 		(void);
 	void	save_variables 		(FILE *, int);
-	void	set_var_value 		(int, char *);
 	void	do_stack_set		(int, char *);
 	int	parse_mangle		(const char *, int, char **);
 	char	*get_set		(const char *);

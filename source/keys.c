@@ -1,4 +1,4 @@
-/* $EPIC: keys.c,v 1.36 2004/06/28 23:48:15 jnelson Exp $ */
+/* $EPIC: keys.c,v 1.37 2004/07/23 00:49:46 jnelson Exp $ */
 /*
  * keys.c:  Keeps track of what happens whe you press a key.
  *
@@ -909,14 +909,18 @@ void unload_bindings_recurse (const char *pkg, struct Key *map) {
  * 'KEY_INTERVAL' /set is changed.  We modify an external variable which
  * defines how long the client will wait to timeout, at most. */
 void set_key_interval (const void *stuff) {
-    int msec = *(const int *)stuff;
+    VARIABLE *v;
+    int msec;
+
+    v = (VARIABLE *)stuff;
+    msec = v->integer;
 
     if (msec < 10) {
 	say("Setting KEY_INTERVAL below 10ms is not recommended.");
 	msec = 10;
     }
 
-    set_int_var(KEY_INTERVAL_VAR, msec);
+    v->integer = msec;
 }
 
 /* do_stack_bind:  this handles the /stack .. bind command.  below is the

@@ -1,4 +1,4 @@
-/* $EPIC: log.c,v 1.16 2004/03/19 06:05:13 jnelson Exp $ */
+/* $EPIC: log.c,v 1.17 2004/07/23 00:49:46 jnelson Exp $ */
 /*
  * log.c: handles the irc session logging functions 
  *
@@ -121,49 +121,22 @@ FILE *do_log (int flag, const char *logfile, FILE **fp)
 /* logger: if flag is 0, logging is turned off, else it's turned on */
 void	logger (const void *stuff)
 {
-	int	flag = *(const int *)stuff;
-	char	*logfile;
+	VARIABLE *v;
+	int	flag;
+	char *	logfile;
+
+	v = (VARIABLE *)stuff;
+	flag = v->integer;
 
 	if ((logfile = get_string_var(LOGFILE_VAR)) == (char *) 0)
 	{
 		say("You must set the LOGFILE variable first!");
-		set_int_var(LOG_VAR, 0);
+		v->integer = 0;
 		return;
 	}
 	do_log(flag, logfile, &irclog_fp);
 	if (!irclog_fp && flag)
-		set_int_var(LOG_VAR, 0);
-}
-
-/*
- * set_log_file: sets the log file name.  If logging is on already, this
- * closes the last log file and reopens it with the new name.  This is called
- * automatically when you SET LOGFILE. 
- */
-void	set_log_file (const void *stuff)
-{
-	const char *filename = (const char *)stuff;
-	Filename expand;
-
-	if (!filename)
-		return;
-
-	if (normalize_filename(filename, expand))
-	{
-		say("SET LOGFILE: %s contains an invalid directory", filename);
-		return;
-	}
-
-	set_string_var(LOGFILE_VAR, expand);
-	if (irclog_fp)
-	{
-		int	value;
-
-		value = 0;
-		logger(&value);
-		value = 1;
-		logger(&value);
-	}
+		v->integer = 0;
 }
 
 /*

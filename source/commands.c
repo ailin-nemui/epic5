@@ -1,4 +1,4 @@
-/* $EPIC: commands.c,v 1.100 2004/07/02 22:29:21 jnelson Exp $ */
+/* $EPIC: commands.c,v 1.101 2004/07/23 00:49:46 jnelson Exp $ */
 /*
  * commands.c -- Stuff needed to execute commands in ircII.
  *		 Includes the bulk of the built in commands for ircII.
@@ -161,7 +161,6 @@ static	void	pretend_cmd	(const char *, char *, const char *);
 static  void    push_cmd 	(const char *, char *, const char *);
 static	void	query		(const char *, char *, const char *);
 static	void	quotecmd	(const char *, char *, const char *);
-static  void    realname_cmd 	(const char *, char *, const char *);
 static  void    reconnect_cmd   (const char *, char *, const char *);
 static	void	redirect 	(const char *, char *, const char *);
 static	void	returncmd	(const char *, char *, const char *);
@@ -256,7 +255,6 @@ static	IrcCommand irc_command[] =
 	{ "INPUT",	inputcmd	},
 	{ "INPUT_CHAR",	inputcmd	},
 	{ "INVITE",	send_comm	},
-	{ "IRCNAME",	realname_cmd	},
 	{ "IRCUSER",	set_username	},
 	{ "ISON",	isoncmd		},
 	{ "JOIN",	e_channel	},
@@ -297,7 +295,6 @@ static	IrcCommand irc_command[] =
 	{ "QUIT",	e_quit		},
 	{ "QUOTE",	quotecmd	},
 	{ "RBIND",	rbindcmd	}, /* keys.c */
-        { "REALNAME",   realname_cmd    },
 	{ "RECONNECT",  reconnect_cmd   },
 	{ "REDIRECT",	redirect	},
 	{ "REHASH",	send_comm	},
@@ -887,8 +884,8 @@ BUILT_IN_COMMAND(xechocmd)
 	char	*stuff = NULL;
 	int	nolog = 0;
 	int	more = 1;
-	int	old_und = 0, old_rev = 0, old_bold = 0, 
-		old_color = 0, old_blink = 0, old_ansi = 0;
+	char 	*old_und = 0, *old_rev = 0, *old_bold = 0, 
+		*old_color = 0, *old_blink = 0, *old_ansi = 0;
 	int	xtended = 0;
 	int	l = -1;
 	int	old_window_notify = do_window_notifies;
@@ -1031,21 +1028,28 @@ BUILT_IN_COMMAND(xechocmd)
 
 		case 'X': /* X -- allow all attributes to be outputted */
 		{
+			char one_copy[4];
+
 			next_arg(args, &args);
 
-			old_und = get_int_var(UNDERLINE_VIDEO_VAR);
-			old_rev = get_int_var(INVERSE_VIDEO_VAR);
-			old_bold = get_int_var(BOLD_VIDEO_VAR);
-			old_color = get_int_var(COLOR_VAR);
-			old_blink = get_int_var(BLINK_VIDEO_VAR);
-			old_ansi = get_int_var(DISPLAY_ANSI_VAR);
+			/* 
+			 * XXX - Never mind how hideous this is, because
+			 * it's going away very soon.
+			 */
+			old_und = make_string_var("UNDERLINE_VIDEO");
+			old_rev = make_string_var("INVERSE_VIDEO");
+			old_bold = make_string_var("BOLD_VIDEO");
+			old_color = make_string_var("COLOR");
+			old_blink = make_string_var("BLINK_VIDEO");
+			old_ansi = make_string_var("DISPLAY_ANSI");
+			strlcpy(one_copy, one, 4);
 
-			set_int_var(UNDERLINE_VIDEO_VAR, 1);
-			set_int_var(INVERSE_VIDEO_VAR, 1);
-			set_int_var(BOLD_VIDEO_VAR, 1);
-			set_int_var(COLOR_VAR, 1);
-			set_int_var(BLINK_VIDEO_VAR, 1);
-			set_int_var(DISPLAY_ANSI_VAR, 1);
+			set_var_value(UNDERLINE_VIDEO_VAR, one_copy, 0);
+			set_var_value(INVERSE_VIDEO_VAR, one_copy, 0);
+			set_var_value(BOLD_VIDEO_VAR, one_copy, 0);
+			set_var_value(COLOR_VAR, one_copy, 0);
+			set_var_value(BLINK_VIDEO_VAR, one_copy, 0);
+			set_var_value(DISPLAY_ANSI_VAR, one_copy, 0);
 
 			xtended = 1;
 			break;
@@ -1118,12 +1122,18 @@ BUILT_IN_COMMAND(xechocmd)
 
 	if (xtended)
 	{
-		set_int_var(UNDERLINE_VIDEO_VAR, old_und);
-		set_int_var(INVERSE_VIDEO_VAR, old_rev);
-		set_int_var(BOLD_VIDEO_VAR, old_bold);
-		set_int_var(COLOR_VAR, old_color);
-		set_int_var(BLINK_VIDEO_VAR, old_blink);
-		set_int_var(DISPLAY_ANSI_VAR, old_ansi);
+		set_var_value(UNDERLINE_VIDEO_VAR, old_und, 0);
+		set_var_value(INVERSE_VIDEO_VAR, old_rev, 0);
+		set_var_value(BOLD_VIDEO_VAR, old_bold, 0);
+		set_var_value(COLOR_VAR, old_color, 0);
+		set_var_value(BLINK_VIDEO_VAR, old_blink, 0);
+		set_var_value(DISPLAY_ANSI_VAR, old_ansi, 0);
+		new_free(&old_und);
+		new_free(&old_rev);
+		new_free(&old_bold);
+		new_free(&old_color);
+		new_free(&old_blink);
+		new_free(&old_ansi);
 	}
 
 	if (l > -1)
@@ -2283,23 +2293,6 @@ BUILT_IN_COMMAND(quotecmd)
 		send_to_aserver(refnum, "%s %s", comm, args);
 	}
 }
-
-/* This code is courtesy of Richie B. (richie@morra.et.tudelft.nl) */
-/*
- * REALNAME command. Changes the current realname. This will only be parsed
- * to the server when the client is connected again.
- */
-BUILT_IN_COMMAND(realname_cmd)
-{
-        if (*args)
-	{
-                strlcpy(realname, args, sizeof realname);
-		say("Realname at next server connnection: %s", realname);
-	}
-	else
-		say("Usage: /REALNAME [text of realname]");
-}
-/* End of contributed code */
 
 /*
  * RECONNECT command.  Reset a server's state to RECONNECT if necessary.
