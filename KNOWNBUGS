@@ -33,3 +33,4 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Save attributes from the end of one line to after the continued_Line.
 * What this means is that attributes in /set continued_line don't "bleed"
 * Add support for ~/.epicrc which is prefered to ~/.ircrc.
+* Fix the "Warning, file exists" check for dcc to honor /set dcc_store_path.

@@ -9,7 +9,7 @@
  */
 
 #if 0
-static	char	rcsid[] = "@(#)$Id: dcc.c,v 1.6 2001/11/12 21:46:45 jnelson Exp $";
+static	char	rcsid[] = "@(#)$Id: dcc.c,v 1.7 2001/11/14 22:15:33 jnelson Exp $";
 #endif
 
 #include "irc.h"
@@ -1916,12 +1916,19 @@ void	register_dcc_offer (char *user, char *type, char *description, char *addres
 	    if ((Client->flags & DCC_TYPES) == DCC_FILEREAD)
 	    {
 		struct stat statit;
+		char *realpath;
 
-		if (stat(Client->description, &statit) == 0)
+		if (get_string_var(DCC_STORE_PATH_VAR))
+		    realpath = m_sprintf("%s/%s", get_string_var(DCC_STORE_PATH_VAR), Client->description);
+		else
+		    realpath = m_strdup(Client->description);
+
+
+		if (stat(realpath, &statit) == 0)
 		{
 		    if (statit.st_size < Client->filesize)
 		    {
-			say("WARNING: File [%s] exists but is smaller then the file offered.", Client->description);
+			say("WARNING: File [%s] exists but is smaller then the file offered.", realpath);
 			say("Use /DCC CLOSE GET %s %s        to not get the file.", user, Client->description);
 #ifdef MIRC_BROKEN_DCC_RESUME
 			say("Use /DCC RESUME %s %s           to continue the copy where it left off.", user, Client->description);
@@ -1931,19 +1938,20 @@ void	register_dcc_offer (char *user, char *type, char *description, char *addres
 		    }
 		    else if (statit.st_size == Client->filesize)
 		    {
-			say("WARNING: File [%s] exists, and its the same size.", Client->description);
+			say("WARNING: File [%s] exists, and its the same size.", realpath);
 			say("Use /DCC CLOSE GET %s %s        to not get the file.", user, Client->description);
 			say("Use /DCC RENAME %s %s           to get the file anyways under a different name.", user, Client->description);
 			say("Use /DCC GET %s %s              to overwrite the existing file.", user, Client->description);
 		    }
 		    else 	/* Bigger than */
 		    {
-			say("WARNING: File [%s] already exists.", Client->description);
+			say("WARNING: File [%s] already exists.", realpath);
 			say("Use /DCC CLOSE GET %s %s        to not get the file.", user, Client->description);
 			say("Use /DCC RENAME %s %s           to get the file anyways under a different name.", user, Client->description);
 			say("Use /DCC GET %s %s              to overwrite the existing file.", user, Client->description);
 		    }
 		}
+		new_free(&realpath);
 	    }
 
 	    /* Thanks, Tychy! (lherron@imageek.york.cuny.edu) */
