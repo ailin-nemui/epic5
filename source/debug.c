@@ -1,4 +1,4 @@
-/* $EPIC: debug.c,v 1.7 2002/08/30 16:51:25 crazyed Exp $ */
+/* $EPIC: debug.c,v 1.8 2002/12/30 13:23:47 crazyed Exp $ */
 /*
  * debug.c -- controll the values of x_debug.
  *
@@ -127,12 +127,18 @@ BUILT_IN_COMMAND(xdebugcmd)
 char* function_xdebug (char *word)
 {
 	char	*ret = NULL;
+	char	*mask = NULL;
 	int	cnt;
 	size_t	clue = 0;
+
+	mask = next_arg(word, &word);
+	mask = mask && *mask ? mask : star;
 
 	for (cnt = 0; opts[cnt].command; cnt++)
 	{
 		if (!~opts[cnt].flag) {
+			continue;
+		} else if (!wild_match(mask,opts[cnt].command)) {
 			continue;
 		} else if (x_debug & opts[cnt].flag) {
 			m_sc3cat_s(&ret, space, "+", &clue);

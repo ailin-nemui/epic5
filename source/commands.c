@@ -1,4 +1,4 @@
-/* $EPIC: commands.c,v 1.49 2002/12/23 18:37:15 jnelson Exp $ */
+/* $EPIC: commands.c,v 1.50 2002/12/30 13:23:47 crazyed Exp $ */
 /*
  * commands.c -- Stuff needed to execute commands in ircII.
  *		 Includes the bulk of the built in commands for ircII.
@@ -2182,7 +2182,7 @@ BUILT_IN_COMMAND(redirect)
 	 * redirecting to a dcc chat sessions that isn't active or 
 	 * doesn't exist.
 	 */
-	if ((*who == '=') && !dcc_chat_active(who + 1)) 
+	if ((*who == '=') && !is_number(who + 1) && !dcc_chat_active(who + 1)) 
 	{
 		say("You don't have an active DCC CHAT to %s",who + 1);
 		return;
@@ -2193,7 +2193,7 @@ BUILT_IN_COMMAND(redirect)
 	 */
 	set_server_redirect(from_server, who);
 	set_server_sent(from_server, 0);
-	parse_line(NULL, args, NULL, 0, 0);
+	parse_line(NULL, args, subargs ? subargs : NULL, 0, 0);
 
 	/*
 	 * If we've queried the server, then we wait for it to

@@ -1,4 +1,4 @@
-/* $EPIC: exec.c,v 1.13 2002/12/23 15:11:26 jnelson Exp $ */
+/* $EPIC: exec.c,v 1.14 2002/12/30 13:23:47 crazyed Exp $ */
 /*
  * exec.c: handles exec'd process for IRCII 
  *
@@ -446,6 +446,19 @@ say("Output from process %d (%s) now going to you", i, proc->name);
 			else 
 				say("The name %s is not unique!", logical);
 		}
+
+		/*
+		 * Change the stdout and stderr lines _if_ they are given.
+		 */
+		if (stdoutc)
+			malloc_strcpy(&proc->stdoutc, stdoutc);
+		if (stdoutpc)
+			malloc_strcpy(&proc->stdoutpc, stdoutpc);
+		if (stderrc)
+			malloc_strcpy(&proc->stderrc, stderrc);
+		if (stderrpc)
+			malloc_strcpy(&proc->stderrpc, stderrpc);
+
 		message_to(0);
 	}
 
@@ -773,7 +786,11 @@ static void 	handle_filedesc (Process *proc, int *fd, int hook_nonl, int hook_nl
 		}
 		default:	/* We got a full line */
 		{
+			int ofs;
 this_sucks:
+			ofs = from_server;
+			if (proc->refnum)
+				from_server = proc->server;
 			message_to(proc->refnum);
 			proc->counter++;
 
@@ -809,6 +826,7 @@ this_sucks:
 			}
 
 			message_to(0);
+			from_server = ofs;
 		}
 	}
 }

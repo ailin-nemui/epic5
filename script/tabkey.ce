@@ -5,7 +5,8 @@
 # to do the actual completion.  The function will receive a single word as
 # its argument, and return a list of potential matches.  The word is whatever
 # is under the cursor, up to the insertion point at the current time.  The
-# word may be empty and the function should be able to cope with this.
+# word may be empty or contain spaces and the function should be able to
+# cope with this.
 #
 # The exact function chosen works like this:
 # * If the current _word_ is a command (first word, begins with $cmdchars),
@@ -123,8 +124,7 @@ alias tabkey.cmd.dcc.resume tabkey.cmd.dcc.send
 alias tabkey.cmd.dcc.send {
 	bless
 	switch ($curword) {
-		(0) {echo This should never happen.;call;local}
-		(1) {echo This should never happen.;call;local}
+		(0) (1) {echo This should never happen.;call;local}
 		(2) {return $tabkey.method.nick($*)}
 		(*) {return $tabkey.method.filei($*)}
 	}

@@ -7,7 +7,7 @@
  *
  * See the COPYRIGHT file, or do a HELP IRCII COPYRIGHT 
  *
- * @(#)$Id: ircaux.h,v 1.36 2002/12/11 19:20:23 crazyed Exp $
+ * @(#)$Id: ircaux.h,v 1.37 2002/12/30 13:23:46 crazyed Exp $
  */
 
 #ifndef _IRCAUX_H_
@@ -149,6 +149,7 @@ int	vsnprintf 		(char *, size_t, const char *, va_list);
 int	snprintf 		(char *, size_t, const char *, ...) __A(3);
 #endif
 char *	next_in_comma_list	(char *, char **);
+char *	next_in_div_list	(char *, char **, char);
 char *	get_userhost		(void);
 int	charcount		(const char *, char);
 void	beep_em			(int);

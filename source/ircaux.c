@@ -1,4 +1,4 @@
-/* $EPIC: ircaux.c,v 1.58 2002/12/19 03:22:59 jnelson Exp $ */
+/* $EPIC: ircaux.c,v 1.59 2002/12/30 13:23:47 crazyed Exp $ */
 /*
  * ircaux.c: some extra routines... not specific to irc... that I needed 
  *
@@ -905,12 +905,17 @@ char *	s_next_arg (char **from)
 
 char *	next_in_comma_list (char *str, char **after)
 {
+	return next_in_div_list(str, after, ',');
+}
+
+char *	next_in_div_list (char *str, char **after, char div)
+{
 	*after = str;
 
-	while (*after && **after && **after != ',')
+	while (*after && **after && **after != div)
 		(*after)++;
 
-	if (*after && **after == ',')
+	if (*after && **after == div)
 	{
 		**after = 0;
 		(*after)++;
@@ -2311,7 +2316,7 @@ char *	ftoa (double foo)
 	extern double fmod (double, double);
 
 	if (get_int_var(FLOATING_POINT_MATH_VAR)) {
-		sprintf(buffer, "%.50g", foo);
+		sprintf(buffer, "%.*g", get_int_var(FLOATING_POINT_PRECISION_VAR), foo);
 	} else {
 		foo -= fmod(foo, 1);
 		sprintf(buffer, "%.0f", foo);
