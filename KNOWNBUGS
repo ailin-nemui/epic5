@@ -113,3 +113,15 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Fix a typo that b0rked /on server_status
 * Force output for a server connection to go to its connected window.
 * Make /server reset server's status, so it can be reconnected to.
+* Make /reconnect work on servers that are not already open.
+* Don't just cavalierly change window's servers.
+* Prefer close_server(i, NULL); over change_window_server(i, NOSERV);
+* Allow windows to stay connected to closed servers.
+* Nix window's "old server", now they're unnecessary.  HUZZAH!
+* Mop up channel stuff that coped with window-old-server.
+* Break backwards compatability and make /window +<server> reconnect to ser.
+* Break backwards compatability and make /window -<server> disconnect from serv
+* Hide a bunch more debugging output behind /xdebug server_connect
+* Refactor change_window_server().
+* Make /window discon the same as /window noserv, total disconnection.
+

@@ -1,4 +1,4 @@
-/* $EPIC: window.c,v 1.99 2004/01/14 03:04:31 jnelson Exp $ */
+/* $EPIC: window.c,v 1.100 2004/01/15 05:54:55 jnelson Exp $ */
 /*
  * window.c: Handles the organzation of the logical viewports (``windows'')
  * for irc.  This includes keeping track of what windows are open, where they
@@ -178,7 +178,6 @@ Window	*new_window (Screen *screen)
 		new_w->server = current_window->server;
 	else
 		new_w->server = NOSERV;
-	new_w->last_server = NOSERV;
 
 	new_w->priority = -1;		/* Filled in later */
 	new_w->top = 0;			/* Filled in later */
@@ -1732,7 +1731,7 @@ int	get_winref_by_servref (int servref)
 
 	while (traverse_all_windows(&tmp))
 	{
-	    if (tmp->server != servref && tmp->last_server != servref)
+	    if (tmp->server != servref)
 		continue;
 	    if (best == NULL || best->priority < tmp->priority)
 		best = tmp;
@@ -1986,58 +1985,32 @@ int 	get_window_server (unsigned int refnum)
 }
 
 /*
- * get_window_oldserver: returns the last server the window was connected to.
- */
-int	get_window_oldserver (unsigned refnum)
-{
-	Window *tmp;
-	if (!(tmp = get_window_by_refnum(refnum)))
-		tmp = current_window;
-	return tmp->last_server;
-}
-
-/*
- * Changes any windows that are currently using "old_server" to instead
- * use "new_server".  This is only ever called by connect_to_new_server.
- *
- * Somehow, someone has to be responsible for resetting the server's 
- * status to RECONNECT if it is at CLOSED.  For now, that's not here.
+ * Changes (in bulk) all of the windows pointing at "old_server" to 
+ * "new_server".  This implements the back-end of the /SERVER command.
+ * When this returns, no servers will be pointing at "old_server", and 
+ * so at the next sequence point it will be closed.
+ * 
+ * This is used by the /SERVER command (via /SERVER +, /SERVER -, or 
+ * /SERVER <name>), and by the 465 numeric (YOUREBANNEDCREPP).
  */
 void	change_window_server (int old_server, int new_server)
 {
 	Window *tmp = NULL;
 
-	/*
-	 * Only do this if we're moving servers.
-	 */
-	if (old_server != new_server)
-	{
-		/* Move any active windows first... */
-		while (traverse_all_windows(&tmp))
-		{
-			if (tmp->server != old_server)
-				continue;
-
-			tmp->server = new_server;
-		}
-	}
-
-	/*
-	 * Always try to reclaim any lost windows lying around.
-	 */
 	tmp = NULL;
 	while (traverse_all_windows(&tmp))
 	{
-		if (tmp->server != NOSERV)
-			continue;
-		if (tmp->last_server != old_server)
-			continue;
+	    if (tmp->server == old_server)
 		tmp->server = new_server;
-		tmp->last_server = NOSERV;
 	}
-	
+
 	if (old_server == primary_server)
 		primary_server = new_server;
+
+	/*
+	 * At the next sequence point, old_server will be disconnected.
+	 * We need not worry about that here.
+	 */
 }
 
 /*
@@ -2055,7 +2028,6 @@ void 	window_check_servers (void)
 	int	cnt, max, i;
 	int	prime = NOSERV;
 	int	status;
-	int	retval;
 
 	connected_to_server = 0;
 	max = server_list_size();
@@ -2081,15 +2053,17 @@ void 	window_check_servers (void)
 		to_window = tmp;		/* Force output to this win */
 		if (status == SERVER_RECONNECT)
 		{
-		    yell("window_check_servers() is bringing up server %d", i);
-		    retval = connect_to_server(i, 1);
+		    if (x_debug & DEBUG_SERVER_CONNECT)
+			yell("window_check_servers() is bringing up server %d", i);
+		    connect_to_server(i, 1);
 		}
 		else if (status == SERVER_ACTIVE)
 		    prime = tmp->server;
 		else if (status == SERVER_CLOSED && server_more_addrs(i))
 		{
-		    yell("window_check_servers() is restarting server %d", i);
-		    retval = connect_to_server(i, 0);
+		    if (x_debug & DEBUG_SERVER_CONNECT)
+			yell("window_check_servers() is restarting server %d", i);
+		    connect_to_server(i, 0);
 		}
 		to_window = NULL;
 
@@ -2938,7 +2912,6 @@ static Window *window_discon (Window *window, char **args)
 {
 	reassign_window_channels(window->refnum);
 	new_free(&window->waiting_channel);
-	window->last_server = window->server;
 	window->server = NOSERV;	/* XXX This shouldn't be set here. */
 	return window;
 }
@@ -3530,10 +3503,9 @@ static Window *window_next (Window *window, char **args)
 
 static	Window *window_noserv (Window *window, char **args)
 {
-	/* This is just like /window discon but last_server is set to NOSERV */
+	/* This is just like /window discon */
 	reassign_window_channels(window->refnum);
 	new_free(&window->waiting_channel);
-	window->last_server = NOSERV;
 	window->server = NOSERV;	/* XXX This shouldn't be set here. */
 	return window;
 }
@@ -4190,7 +4162,6 @@ Window *window_server (Window *window, char **args)
 		 * Associate ourselves with the new server.
 		 */
 		window->server = i;
-		window->last_server = NOSERV;
 		if (get_server_status(i) >= SERVER_CLOSING)
 			set_server_status(i, SERVER_RECONNECT);
 	}
@@ -5360,7 +5331,7 @@ char 	*windowctl 	(char *input)
 	    } else if (!my_strnicmp(listc, "SERVER", len)) {
 		RETURN_INT(w->server);
 	    } else if (!my_strnicmp(listc, "LAST_SERVER", len)) {
-		RETURN_INT(w->last_server);
+		RETURN_INT(NOSERV);
 	    } else if (!my_strnicmp(listc, "PRIORITY", len)) {
 		RETURN_INT(w->priority);
 	    } else if (!my_strnicmp(listc, "TOP", len)) {

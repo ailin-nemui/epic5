@@ -1,4 +1,4 @@
-/* $EPIC: commands.c,v 1.84 2004/01/07 16:05:02 jnelson Exp $ */
+/* $EPIC: commands.c,v 1.85 2004/01/15 05:54:55 jnelson Exp $ */
 /*
  * commands.c -- Stuff needed to execute commands in ircII.
  *		 Includes the bulk of the built in commands for ircII.
@@ -2292,29 +2292,35 @@ BUILT_IN_COMMAND(realname_cmd)
 	else
 		say("Usage: /REALNAME [text of realname]");
 }
+/* End of contributed code */
 
 /*
- * RECONNECT command. Closes the server, and then reconnects again.
- * Works also while connected to multiple servers. It only reconnects to the
+ * RECONNECT command.  Reset a server's state to RECONNECT if necessary.
+ * if necesasry.  This is dangerous.  Better to use /SERVER.
  * current server number (which is stored in from_server). 
  * This command puts the REALNAME command in effect.
  */
 BUILT_IN_COMMAND(reconnect_cmd)
 {
-	if (from_server == NOSERV)
+	int	server;
+
+	if ((server = from_server) == NOSERV)
 	{
-		say("Reconnect to what server? (You're not connected)");
-		return;
+	    say("Reconnect to what server?  (You're not connected)");
+	    return;
 	}
+
 	if (!args || !*args)
 		args = LOCAL_COPY("Reconnecting");
 
-        say("Reconnecting to server %d", from_server);
-	set_server_quit_message(from_server, args);
-	close_server(from_server, NULL);
-	set_server_status(from_server, SERVER_RECONNECT);
+        say("Reconnecting to server %d", server);
+	if (is_server_open(server))
+	{
+		set_server_quit_message(server, args);
+		close_server(server, NULL);
+	}
+	set_server_status(server, SERVER_RECONNECT);
 }
-/* End of contributed code */
 
 BUILT_IN_COMMAND(redirect)
 {

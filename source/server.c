@@ -1,4 +1,4 @@
-/* $EPIC: server.c,v 1.116 2004/01/14 03:04:31 jnelson Exp $ */
+/* $EPIC: server.c,v 1.117 2004/01/15 05:54:55 jnelson Exp $ */
 /*
  * server.c:  Things dealing with that wacky program we call ircd.
  *
@@ -786,9 +786,13 @@ BUILT_IN_COMMAND(servercmd)
 	 */
 	else if (*server == '+')
 	{
-		/* /SERVER +foo.bar.com is an alias for /window server */
+		/* /SERVER +foo.bar.com restarts the connection for server */
 		if (*++server)
-			window_server(current_window, &server);
+		{
+			i = find_server_refnum(server, &args);
+			if (get_server_status(i) == SERVER_CLOSED)
+				set_server_status(i, SERVER_RECONNECT);
+		}
 
 		/* /SERVER + means go to the next server */
 		else
@@ -824,7 +828,7 @@ BUILT_IN_COMMAND(servercmd)
 
 			set_server_quit_message(from_server, 
 					"Disconnected at user request");
-			change_window_server(i, NOSERV);
+			close_server(i, NULL);
 		}
 		else
 		{
@@ -834,8 +838,8 @@ BUILT_IN_COMMAND(servercmd)
 			if (from_server == 0)
 				new_server = number_of_servers - 1;
 			else
-				new_server = from_server + 1;
-			change_window_server(from_server, from_server + 1);
+				new_server = from_server - 1;
+			change_window_server(from_server, new_server);
 		}
 
 	}
@@ -1140,13 +1144,16 @@ int	grab_server_address (int server)
 
 	if (!(s = get_server(server)))
 	{
-		yell("Could not lookup hostname for server [%d] that does not exist", server);
+		say("Server [%d] does not exist -- "
+			"cannot do hostname lookup", server);
 		return -1;		/* XXXX */
 	}
 
 	if (s->addrs)
 	{
-		yell("This server still has addresses left over from last time.  Starting over anyways...");
+		if (x_debug & DEBUG_SERVER_CONNECT)
+		    yell("This server still has addresses left over from "
+			 "last time.  Starting over anyways...");
 		Freeaddrinfo(s->addrs);
 		s->addrs = NULL;
 		s->next_addr = NULL;
@@ -1157,9 +1164,11 @@ int	grab_server_address (int server)
 	hints.ai_socktype = SOCK_STREAM;
 	if ((err = Getaddrinfo(s->name, ltoa(s->port), &hints, &results)))
 	{
-		yell("Hostname lookup for [%s:%d] failed: %s (%d)",
-			s->name, s->port, gai_strerror(err), err);
-		return -3;
+		yell("Could not resolve hostname [%s:%d] for server [%d]: "
+					"%s (%d)",
+			s->name, s->port, server, 
+					gai_strerror(err), err);
+		return -5;
 	}
 
 	s->addrs = results;
@@ -1193,28 +1202,33 @@ int	connect_next_server_address (int server)
 
 	if (!s->addrs)
 	{
-		if (x_debug & DEBUG_SERVER_CONNECT)
-			yell("There are no addresses to connect to for server [%d]", server);
-		return -5;		/* XXXX */
+	    if (x_debug & DEBUG_SERVER_CONNECT)
+		yell("There are no addresses to connect to for server [%d]", 
+					server);
+	    return -5;		/* XXXX */
 	}
 
 	for (ai = s->next_addr; ai; ai = ai->ai_next)
 	{
 	    if (x_debug & DEBUG_SERVER_CONNECT)
-		yell("Trying to connect to server [%d] using next address", server);
+		yell("Trying to connect to server [%d] using next address", 
+					server);
 	    err = inet_vhostsockaddr(ai->ai_family, -1, &localaddr, &locallen);
 	    if (err < 0)
 	    {
 	        if (x_debug & DEBUG_SERVER_CONNECT)
-			yell("Couldn't get vhost for family [%d], trying another address", ai->ai_family);
+			yell("Couldn't get vhost for family [%d], "
+				"trying another address", ai->ai_family);
 		continue;
 	    }
 
-	    fd = client_connect((SA *)&localaddr, locallen, ai->ai_addr, ai->ai_addrlen, 0);
+	    fd = client_connect((SA *)&localaddr, locallen, 
+					ai->ai_addr, ai->ai_addrlen, 0);
 	    if (fd < 0)
 	    {
 	        if (x_debug & DEBUG_SERVER_CONNECT)
-			yell("That address failed with error (%d:%s)", fd, strerror(fd));
+			yell("That address failed with error (%d:%s)", 
+					fd, strerror(fd));
 		err = fd;
 		fd = -1;
 		continue;
@@ -1226,11 +1240,12 @@ int	connect_next_server_address (int server)
 	if (!ai)
 	{
 	        if (x_debug & DEBUG_SERVER_CONNECT)
-			yell("Out of addresses to try for server [%d]!  Giving up", server);
+			yell("Out of addresses to try for server [%d]!  "
+					"Giving up", server);
 		Freeaddrinfo(s->addrs);
 		s->addrs = NULL;
 		s->next_addr = NULL;
-		return -12;
+		return -11;
 	}
 	else
 		s->next_addr = ai->ai_next;
@@ -1274,7 +1289,7 @@ int 	connect_to_server (int new_server, int restart)
 	{
 		say("Connected to port %d of server %s", s->port, s->name);
 		from_server = new_server;
-		return -3;		/* Server is already connected */
+		return -1;		/* Server is already connected */
 	}
 
 	/*
@@ -1328,7 +1343,6 @@ int 	connect_to_server (int new_server, int restart)
 		getpeername(des, (SA *)&s->remote_sockname, &len);
 	}
 
-
 	/*
 	 * Initialize all of the server_list data items
 	 * XXX - Calling add_to_server_list is a hack.
@@ -1353,7 +1367,7 @@ int 	close_all_servers (const char *message)
 	for (i = 0; i < number_of_servers; i++)
 	{
 		set_server_quit_message(i, message);
-		change_window_server(i, NOSERV);
+		close_server(i, NULL);
 	}
 
 	return 0;
@@ -1756,7 +1770,6 @@ void 	password_sendline (char *data, char *line)
 
 	new_server = parse_server_index(data, 0);
 	set_server_password(new_server, line);
-	change_window_server(new_server, new_server);
 	close_server(new_server, NULL);
 	set_server_status(new_server, SERVER_RECONNECT);
 }
@@ -1912,7 +1925,7 @@ BUILT_IN_COMMAND(disconnectcmd)
 			message = args;
 
 		say("Disconnecting from server %s", get_server_itsname(i));
-		change_window_server(i, NOSERV);
+		close_server(i, message);
 		update_all_status();
 	}
 

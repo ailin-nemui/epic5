@@ -1,4 +1,4 @@
-/* $EPIC: names.c,v 1.53 2004/01/14 03:04:31 jnelson Exp $ */
+/* $EPIC: names.c,v 1.54 2004/01/15 05:54:55 jnelson Exp $ */
 /*
  * names.c: This here is used to maintain a list of all the people currently
  * on your channel.  Seems to work 
@@ -1520,12 +1520,10 @@ void	reassign_window_channels (int window)
 	Window *w = NULL;
 	int	caution = 0;
 	int	winserv;
-	int	winoldserv;
 
 	winserv = get_window_server(window);
-	winoldserv = get_window_oldserver(window);
 
-	if (winserv == NOSERV && winoldserv == NOSERV)
+	if (winserv == NOSERV)
 		caution = 1;
 
 	for (tmp = channel_list; tmp; tmp = tmp->next)
@@ -1540,7 +1538,7 @@ void	reassign_window_channels (int window)
 			caution = 0;
 		}
 
-		if (tmp->server != winserv && tmp->server != winoldserv)
+		if (tmp->server != winserv)
 		{
 			yell("Channel [%s:%d] is connected to window [%d] "
 				"which is apparantly on another server", 
@@ -1708,8 +1706,7 @@ void	channel_check_windows (void)
 		if (tmp->winref <= 0)
 			panic("I thought we just checked for this! [1]");
 
-		if (get_window_server(tmp->winref) == NOSERV && 
-			     tmp->server == get_window_oldserver(tmp->winref))
+		if (get_window_server(tmp->winref) == NOSERV)
 			continue;			/* This is OK. */
 
 		if (tmp->server != get_window_server(tmp->winref))
