@@ -701,8 +701,6 @@ void	do_server (fd_set *rd)
 
 			case -1:	/* EOF or other error */
 			{
-				int	sopen = is_server_connected(i);
-
 				say("Connection closed from %s: %s", 
 					server_list[i].name,
 					(dgets_errno == -1) ? 
@@ -1143,6 +1141,7 @@ int	reconnect (int refnum)
 
 	if (new_server != -1)
 		return get_connected(refnum, new_server);
+	return -1;
 }
 
 /*
@@ -1705,7 +1704,7 @@ int	server_reconnects_to (int oldref, int newref)
 	if (oldref == -1)
 	{
 		reconnects_to_hint = newref;
-		return;
+		return 1;
 	}
 	if (oldref < 0 || oldref >= number_of_servers)
 		return 0;
@@ -1714,6 +1713,7 @@ int	server_reconnects_to (int oldref, int newref)
 	if (newref < -1)
 		return 0;
 	server_list[oldref].reconnect_to = newref;
+	return 1;
 }
 
 

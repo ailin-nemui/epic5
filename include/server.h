@@ -151,6 +151,7 @@ const 	char *	get_server_version_string	(int);
 	void	server_is_connected		(int, int);
 	int	auto_reconnect_callback		(void *);
 	int	server_reconnects_to		(int, int);
+	int	reconnect			(int);
 
 	int	get_server_port			(int);
 	int	get_server_local_port		(int);
