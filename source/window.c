@@ -1,4 +1,4 @@
-/* $EPIC: window.c,v 1.134 2005/01/31 05:08:12 jnelson Exp $ */
+/* $EPIC: window.c,v 1.135 2005/02/23 04:21:32 jnelson Exp $ */
 /*
  * window.c: Handles the organzation of the logical viewports (``windows'')
  * for irc.  This includes keeping track of what windows are open, where they
@@ -5333,9 +5333,9 @@ static void	window_scrollback_forward (Window *window)
 	if (ratio > 100) 
 		ratio = 100;
 
-	if ((lines = current_window->display_size * ratio / 100) < 1)
+	if ((lines = window->display_size * ratio / 100) < 1)
 		lines = 1;
-	window_scrollback_forwards_lines(current_window, lines);
+	window_scrollback_forwards_lines(window, lines);
 }
 
 static void	window_scrollback_backward (Window *window)
@@ -5348,9 +5348,9 @@ static void	window_scrollback_backward (Window *window)
 	if (ratio > 100) 
 		ratio = 100;
 
-	if ((lines = current_window->display_size * ratio / 100) < 1)
+	if ((lines = window->display_size * ratio / 100) < 1)
 		lines = 1;
-	window_scrollback_backwards_lines(current_window, lines);
+	window_scrollback_backwards_lines(window, lines);
 }
 
 BUILT_IN_KEYBINDING(scrollback_forwards)

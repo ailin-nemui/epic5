@@ -498,3 +498,4 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Fix more bugs, yay!
 * Fix SSL server connections.
 * Fix bugs with /exec, INET6.
+* Fix /window <refnum> scroll_backwards/forwards.
