@@ -1,4 +1,4 @@
-/* $EPIC: notice.c,v 1.17 2003/01/31 23:50:18 jnelson Exp $ */
+/* $EPIC: notice.c,v 1.18 2003/02/12 05:19:48 jnelson Exp $ */
 /*
  * notice.c: special stuff for parsing NOTICEs
  *
@@ -221,6 +221,7 @@ static 	void 	parse_local_server_notice (const char *from, const char *to, const
 void 	p_notice (const char *from, const char *comm, const char **ArgList)
 {
 	const char 	*target, *message;
+	const char	*who_from;
 	int		level,
 			hook_type;
 	const char *	flood_channel = NULL;
@@ -263,6 +264,7 @@ void 	p_notice (const char *from, const char *comm, const char **ArgList)
 	{
 		flood_channel = target;
 		hook_type = PUBLIC_NOTICE_LIST;
+		who_from = target;
 	}
 
 	/* It is a notice from someone else, possibly remote server */
@@ -270,7 +272,7 @@ void 	p_notice (const char *from, const char *comm, const char **ArgList)
 	{
 		flood_channel = NULL;
 		hook_type = NOTICE_LIST;
-		target = from;
+		who_from = from;
 	}
 
 	/* Check for /ignore's */
@@ -294,7 +296,7 @@ void 	p_notice (const char *from, const char *comm, const char **ArgList)
 
 		sed = 0;
 		level = set_lastlog_msg_level(LOG_NOTICE);
-		message_from(target, LOG_NOTICE);
+		message_from(who_from, LOG_NOTICE);
 
 		if (do_hook(ENCRYPTED_NOTICE_LIST, "%s %s %s", 
 				from, target, sed == 1 ? message : empty_string))
@@ -322,7 +324,7 @@ void 	p_notice (const char *from, const char *comm, const char **ArgList)
 
 	/* Go ahead and throw it to the user */
 	level = set_lastlog_msg_level(LOG_NOTICE);
-	message_from(target, LOG_NOTICE);
+	message_from(who_from, LOG_NOTICE);
 
 	if (do_hook(GENERAL_NOTICE_LIST, "%s %s %s", from, target, message))
 	{

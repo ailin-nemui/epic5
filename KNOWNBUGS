@@ -165,4 +165,4 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Add back support for $mychannels(#winref)
 * Fix null deref with /LOG KILL
 * Ignore KICKS based on the victim as well as the kicker.
-
+* Don't clobber 'target' in /on general_notice; pass the original target.
