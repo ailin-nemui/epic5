@@ -1,4 +1,4 @@
-/* $EPIC: exec.c,v 1.26 2004/01/15 22:31:03 jnelson Exp $ */
+/* $EPIC: exec.c,v 1.27 2004/05/30 02:13:32 jnelson Exp $ */
 /*
  * exec.c: handles exec'd process for IRCII 
  *
@@ -710,7 +710,7 @@ void 		do_exec (int fd)
 					EXEC_PROMPT_LIST, EXEC_LIST);
 		}
 
-		if (proc->p_stderr != -1 && proc->p_stdout == fd)
+		if (proc->p_stderr != -1 && proc->p_stderr == fd)
 		{
 			handle_filedesc(proc, &proc->p_stderr,
 					EXEC_PROMPT_LIST, EXEC_ERRORS_LIST);

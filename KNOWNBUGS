@@ -8,6 +8,7 @@ KNOWN ERRATA (eg, bugs, or unresolved requests):
   -- Make reset_nickname() call an /on before forcing user to select new nick.
 * Changing attribute in the middle of a word that totaly wraps does not
   "bleed" to subsequent lines (ie, ^C34<40 a's> <40a's>^C35<100 a's>
+* queue test {echo1};queue test {echo 2};queue -del test 1;queue -del test 2
 
 [See http://www.epicsol.org/PROJECTS for things to come in the future]
 [See http://www.epicsol.org/CHANGELOG5 for things that changed in the past]
