@@ -2,7 +2,6 @@ EPIC5 Projects, Bugs, and other Errata:
 
 KNOWN ERRATA (eg, bugs, or unresolved requests):
 ------------------------------------------------
-* Allow /set -new_server_lastlog_level to not change lastlog level on connect
 * Add $windowctl(DISPLAY_SIZE) for $winsize()
 * Add $windowctl(SCREEN) for $winscreen()
 * Add $windowctl(LINE <num>) for $winline()
@@ -604,3 +603,5 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Add $serverctl(LAST_SERVER) and $serverctl(FROM_SERVER) for blackjac.
 * Comment out the round 2 $win*() functions.
 * Make //ignore output less visually jarring (change a tab to a space)
+* Permit /set -new_server_lastlog_level which won't change levels on /server
+* Permit /set -old_server_lastlog_level which will just confuse epic. ;-)

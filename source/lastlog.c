@@ -1,4 +1,4 @@
-/* $EPIC: lastlog.c,v 1.45 2005/03/15 05:36:20 jnelson Exp $ */
+/* $EPIC: lastlog.c,v 1.46 2005/04/03 19:00:59 jnelson Exp $ */
 /*
  * lastlog.c: handles the lastlog features of irc. 
  *
@@ -64,8 +64,8 @@ static int	show_lastlog (Lastlog **l, int *skip, int *number, Mask *level_mask, 
  */
 static	Mask	lastlog_mask;
 static	Mask	notify_mask;
-	Mask	new_server_lastlog_mask;
-	Mask	old_server_lastlog_mask;
+	Mask *	new_server_lastlog_mask = NULL;
+	Mask *	old_server_lastlog_mask = NULL;
 	Mask 	current_window_mask;
 
 /*
@@ -237,8 +237,13 @@ void	set_new_server_lastlog_mask (void *stuff)
 	v = (VARIABLE *)stuff;
 	str = v->string;
 
-	str_to_mask(&new_server_lastlog_mask, str);
-	malloc_strcpy(&v->string, mask_to_str(&new_server_lastlog_mask));
+	if (str)
+	{
+	    str_to_mask(new_server_lastlog_mask, str);
+	    malloc_strcpy(&v->string, mask_to_str(new_server_lastlog_mask));
+	}
+	else
+	    new_free(&new_server_lastlog_mask);
 }
 
 void	set_old_server_lastlog_mask (void *stuff)
@@ -249,8 +254,13 @@ void	set_old_server_lastlog_mask (void *stuff)
 	v = (VARIABLE *)stuff;
 	str = v->string;
 
-	str_to_mask(&old_server_lastlog_mask, str);
-	malloc_strcpy(&v->string, mask_to_str(&old_server_lastlog_mask));
+	if (str)
+	{
+	    str_to_mask(old_server_lastlog_mask, str);
+	    malloc_strcpy(&v->string, mask_to_str(old_server_lastlog_mask));
+	}
+	else
+	    new_free(&old_server_lastlog_mask);
 }
 
 
