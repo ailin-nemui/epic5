@@ -216,6 +216,7 @@ find_array_item (array *set, const char *name, int *cnt, int *loc)
 	size_t		len = strlen(name);
 	int		c = 0, 
 			pos = 0, 
+			tospot, /* :-) */
 			min, 
 			max;
 	u_32int_t	mask;
@@ -241,7 +242,12 @@ find_array_item (array *set, const char *name, int *cnt, int *loc)
 	 * four letters as 'name'.  Since we're doing all integer
 	 * comparisons, its cheaper than the full blown string compares.
 	 */
-	max = set->max - 1;
+	/*
+	 * OK, well all of that has been rolled into these two loops,
+	 * designed to find the start and end of the range directly.
+	 */
+
+	tospot = max = set->max - 1;
 	min = 0;
 
 	while (max >= min)
@@ -249,13 +255,51 @@ find_array_item (array *set, const char *name, int *cnt, int *loc)
 		bin_ints++;
 		pos = (max - min) / 2 + min;
 		c = (hash & mask) - (ARRAY_ITEM(set, pos)->hash & mask);
-		if (c == 0)
-			break;
+		if (c == 0) {
+			bin_chars++;
+			c = set->func(name, ARRAY_ITEM(set, pos)->name, len);
+		}
+		if (c == 0) {
+			if (max == pos)
+				break;
+			max = pos;
+		}
+		else if (c < 0)
+			tospot = max = pos - 1;
+		else
+			min = pos + 1;
+	}
+
+	/*
+	 * At this point, min is set to the first matching name in
+	 * the range and tospot is set to a higher position than
+	 * the last.  These are used to refine the next search.
+	 */
+
+	max = tospot;
+	tospot = pos;
+
+	while (max >= min)
+	{
+		bin_ints++;
+		pos = (min - max) / 2 + max;  /* Don't ask */
+		c = (hash & mask) - (ARRAY_ITEM(set, pos)->hash & mask);
+		if (c == 0) {
+			bin_chars++;
+			c = set->func(name, ARRAY_ITEM(set, pos)->name, len);
+		}
+		if (c == 0) {
+			if (min == pos)
+				break;
+			min = pos;
+		}
 		else if (c < 0)
 			max = pos - 1;
 		else
 			min = pos + 1;
 	}
+
+	min = tospot;
 
 	/*
 	 * If we can't find a symbol that qualifies, then we can just drop
@@ -271,54 +315,15 @@ find_array_item (array *set, const char *name, int *cnt, int *loc)
 		return NULL;
 	}
 
-	/*
-	 * Now we've found some symbol that has the same first four letters.
-	 * Expand the min/max range to include all of the symbols that have
-	 * the same first four letters...
-	 */
-	min = max = pos;
-	while ((min > 0) && (hash & mask) == (ARRAY_ITEM(set, min)->hash & mask))
-		min--, lin_ints++;
-	while ((max < set->max - 1) && (hash & mask) == (ARRAY_ITEM(set, max)->hash & mask))
-		max++, lin_ints++;
-
 	char_searches++;
-
-	/*
-	 * Then do a full blown binary search on the smaller range
-	 */
-	while (max >= min)
-	{
-		bin_chars++;
-		pos = (max - min) / 2 + min;
-		c = set->func(name, ARRAY_ITEM(set, pos)->name, len);
-		if (c == 0)
-			break;
-		else if (c < 0)
-			max = pos - 1;
-		else
-			min = pos + 1;
-	}
-
-	/*
-	 * At this point, we actually know if the symbol really exists.
-	 * If it doesnt, then we can just drop out here.
-	 */
-	if (c != 0)
-	{
-		if (c > 0)
-			*loc = pos + 1;
-		else
-			*loc = pos;
-		return NULL;
-	}
 
 	/*
 	 * If we've gotten this far, then we've found at least
 	 * one appropriate entry.  So we set *cnt to one
 	 */
-	*cnt = 1;
+	*cnt = 1 + pos - min;
 
+#if 0
 	/*
 	 * So we know that 'pos' is a match.  So we start 'min'
 	 * at one less than 'pos' and walk downard until we find
@@ -336,6 +341,7 @@ find_array_item (array *set, const char *name, int *cnt, int *loc)
 	max = pos + 1;
 	while (max < set->max && !set->func(name, ARRAY_ITEM(set, max)->name, len))
 		(*cnt)++, max++, lin_chars++;
+#endif
 
 	/*
 	 * Alphabetically, the string that would be identical to
