@@ -1,4 +1,4 @@
-/* $EPIC: screen.c,v 1.39 2002/12/26 16:40:31 jnelson Exp $ */
+/* $EPIC: screen.c,v 1.40 2003/01/11 04:26:52 jnelson Exp $ */
 /*
  * screen.c
  *
@@ -2093,12 +2093,8 @@ void 	add_to_screen (const unsigned char *buffer)
 		return;
 	}
 
-	if (in_window_command)
-	{
-		in_window_command = 0;	/* Inhibit looping! */
-		update_all_windows();
-		in_window_command = 1;
-	}
+	/* All windows MUST be "current" before output can occur */
+	update_all_windows();
 
 	/*
 	 * The highest priority is if we have explicitly stated what

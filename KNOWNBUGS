@@ -24,6 +24,8 @@ KNOWN ERRATA (eg, bugs, or unresolved requests):
 * Join #foo, then join #foobar, doesn't WHO for #foobar (maxxx)
 * Handle all filesizes in dcc uniformly as 64 bit off_t's.
 * Built in functions need to call 'parse_server_index'!
+* /server [already connected to] when channels are joined causes a panic.
+* Study update_input() and update_all_windows() and determine if used properly
 ---
 
 [See http://www.epicsol.org/PROJECTS for things to come in the future]
@@ -35,3 +37,28 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Fix build error on non-SSL systems.
 * Fix another build error on non-SSL systems.
 * Fix all the rest of the build errors now that I am able to.
+* Add support for channel mode +C at request of quakenet user.
+* /exec, /redir, $xdebug tuned as per UPDATES.
+* /set FLOATING_POINT_PRECISION added as per UPDATES.
+* next_in_comma_list converted to next_in_div_list, div argument added.
+* Change default FLOATING_POINT_PRECISION from 6 to 16 which fixes a math bug.
+* Add arg to next_args and new_next args to get a certain number of words
+* Rewrite /alias xxx (args) handling to use next_args_count and not extractw.
+* Tuned the call.xtrace alias in debug.irc.
+* Extended $is_on() in guh to allow and return multiple arguments.
+* Added $is_off() as a compliment to $is_on().
+* Don't count first incoming line as part of the flood when calcing rate.
+* Add -l<tcl> to the front of $LIBS so -lm can come after it
+* Look for SSL stuff in default location before hunting for it in /usr/local.
+* Reset $withval after check for perl so --without-perl doesn't --without-tcl
+* Make first arg of cvtchar() a (const char *) to silence warning.
+* Move 'this_sucks' label to a place where it is legal.
+* Make check_val() cope with NaNs and INFs more graciously...
+* Fix null deref with /lastlog -c
+* Update the input line in set_update(), not the caller
+* Do update the input line when redrawing status
+* Change make_status() to return a success/failure value.
+* Don't clear the "status line wants redraw" flag if redrawing status fails.
+* Nuke the now unecessary "in_window_command" global variable.
+* Fix bug where <scrollback> + <scrollforward> left you in scrollback mode.
+* Force init of Window->lines_held = 0 even though that shouldnt be needed.

@@ -1,4 +1,4 @@
-/* $EPIC: commands.c,v 1.50 2002/12/30 13:23:47 crazyed Exp $ */
+/* $EPIC: commands.c,v 1.51 2003/01/11 04:26:52 jnelson Exp $ */
 /*
  * commands.c -- Stuff needed to execute commands in ircII.
  *		 Includes the bulk of the built in commands for ircII.
@@ -3054,7 +3054,6 @@ void 	command_completion (char unused, char *not_used)
 				set_input(buffer);
 				new_free((char **)aliases);
 				new_free((char **)&aliases);
-				update_input(UPDATE_ALL);
 			}
 			else if (((cmd_cnt == 1) && (alias_cnt == 0)) ||
 			    ((cmd_cnt == 1) && (alias_cnt == 1) &&
@@ -3064,7 +3063,6 @@ void 	command_completion (char unused, char *not_used)
 					do_aliases ? empty_string : firstcmdchar,
 					command->name, rest);
 				set_input(buffer);
-				update_input(UPDATE_ALL);
 			}
 			else
 			{
@@ -3536,10 +3534,7 @@ static	unsigned 	level = 0;
 				if ((cline = do_history(cline + 1, rest)) != NULL)
 				{
 					if (level == 1)
-					{
 						set_input(cline);
-						update_input(UPDATE_ALL);
-					}
 					else
 						parse_command(cline, 0, sub_args);
 

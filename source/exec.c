@@ -1,4 +1,4 @@
-/* $EPIC: exec.c,v 1.14 2002/12/30 13:23:47 crazyed Exp $ */
+/* $EPIC: exec.c,v 1.15 2003/01/11 04:26:52 jnelson Exp $ */
 /*
  * exec.c: handles exec'd process for IRCII 
  *
@@ -781,13 +781,13 @@ static void 	handle_filedesc (Process *proc, int *fd, int hook_nonl, int hook_nl
 					proc->index, exec_buffer);
 
 			set_prompt_by_refnum(proc->refnum, exec_buffer);
-			update_input(UPDATE_ALL);
 			break;
 		}
 		default:	/* We got a full line */
+this_sucks:
 		{
 			int ofs;
-this_sucks:
+
 			ofs = from_server;
 			if (proc->refnum)
 				from_server = proc->server;

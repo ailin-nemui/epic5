@@ -1,4 +1,4 @@
-/* $EPIC: alias.c,v 1.13 2003/01/09 01:10:56 crazyed Exp $ */
+/* $EPIC: alias.c,v 1.14 2003/01/11 04:26:52 jnelson Exp $ */
 /*
  * alias.c -- Handles the whole kit and caboodle for aliases.
  *
@@ -791,8 +791,6 @@ void	prepare_alias_call (void *al, char **stuff)
 {
 	ArgList *args = (ArgList *)al;
 	int	i;
-	int	arg = 0;
-	char	*free = NULL;
 
 	if (!args)
 		return;

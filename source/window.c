@@ -1,4 +1,4 @@
-/* $EPIC: window.c,v 1.52 2002/12/25 06:26:45 crazyed Exp $ */
+/* $EPIC: window.c,v 1.53 2003/01/11 04:26:52 jnelson Exp $ */
 /*
  * window.c: Handles the organzation of the logical viewports (``windows'')
  * for irc.  This includes keeping track of what windows are open, where they
@@ -99,16 +99,6 @@ const	char	*who_from = (char *) 0;
  * determines what window output ultimately ends up in.
  */
 	int	who_level = LOG_CRAP;
-
-/*
- * This is set when we enter the /window command, and cleared when we exit.
- * It is possible for output to occur as a result of a /window command, but
- * the state of the windows may be indeterminite (because they changed size
- * or location perhaps), so when output occurs and this is set, a full update
- * of all the windows occurs, before the output, so that everything goes to
- * wherever it belongs.
- */ 
-	int	in_window_command = 0;
 
 /*
  * This is set to 1 if output is to be dispatched normally.  This is set to
@@ -216,6 +206,7 @@ Window	*new_window (Screen *screen)
 	new_w->hold_mode = 0;
 	new_w->autohold = 0;
 	new_w->hold_interval = 10;
+	new_w->lines_held = 0;
 
 	new_w->waiting_channel = NULL;
 	new_w->current_channel = NULL;
@@ -861,7 +852,6 @@ static void 	swap_window (Window *v_window, Window *window)
 	window_body_needs_redraw(window);
 	window_statusbar_needs_redraw(window);
 	window->miscflags &= ~WINDOW_NOTIFIED;
-	update_input(UPDATE_ALL);
 
 	/*
 	 * Transfer current_window if the current window is being swapped out
@@ -1204,9 +1194,7 @@ void 	update_all_status (void)
 void 	update_all_windows (void)
 {
 	Window	*tmp = NULL;
-
-	if (in_window_command)
-		return;
+	int	do_input_too = 0;
 
 	while (traverse_all_windows(&tmp))
 	{
@@ -1224,15 +1212,21 @@ void 	update_all_windows (void)
 			repaint_window_body(tmp);
 
 		if (tmp->update & REDRAW_STATUS)
-			make_status(tmp, 1);
+		{
+			if (!make_status(tmp, 1))
+			    tmp->update &= ~REDRAW_STATUS;
+			do_input_too = 1;
+		}
 		else if (tmp->update & UPDATE_STATUS)
-			make_status(tmp, 0);
-
-		/* XXX - But what about if something failed? */
-		tmp->update = 0;
+		{
+			if (!make_status(tmp, 0))
+			    tmp->update &= ~UPDATE_STATUS;
+			do_input_too = 1;
+		}
 	}
 
-	update_input(UPDATE_JUST_CURSOR);
+	if (do_input_too)
+		update_input(UPDATE_JUST_CURSOR);
 }
 
 /****************************************************************************/
@@ -1687,6 +1681,7 @@ void 	set_prompt_by_refnum (unsigned refnum, char *prompt)
 	if (!(tmp = get_window_by_refnum(refnum)))
 		tmp = current_window;
 	malloc_strcpy(&tmp->prompt, prompt);
+	update_input(UPDATE_JUST_CURSOR);
 }
 
 /* get_prompt_by_refnum: returns the prompt for the given window refnum */
@@ -3739,9 +3734,6 @@ Window *window_query (Window *window, char **args)
 		}
 	}
 
-/*
-	update_input(UPDATE_ALL);
-*/
 	return window;
 }
 
@@ -4045,12 +4037,8 @@ static Window *window_refnum_or_swap (Window *window, char **args)
 
 static Window *window_refresh (Window *window, char **args)
 {
-	int oiwc = in_window_command;
-
-	in_window_command = 0;
-	update_all_windows();
 	update_all_status();
-	in_window_command = oiwc;
+	update_all_windows();
 	return window;
 }
 
@@ -4522,9 +4510,7 @@ BUILT_IN_COMMAND(windowcmd)
 	int 	nargs = 0;
 	Window 	*window;
 	int	old_status_update;
-	int 	oiwc = in_window_command;
 
-	in_window_command = 1;
 	old_status_update = permit_status_update(0);
 	message_from(NULL, LOG_CURRENT);
 	window = current_window;
@@ -4565,7 +4551,6 @@ BUILT_IN_COMMAND(windowcmd)
 	if (!nargs)
 		window_describe(current_window, NULL);
 
-	in_window_command = oiwc;
 	permit_status_update(old_status_update);
 	message_from((char *) 0, LOG_CRAP);
 	window_check_channels();
@@ -4796,6 +4781,10 @@ static void 	window_scrollback_forwards_lines (Window *window, int lines)
 
 	for (new_lines = 0; new_lines < lines; new_lines++)
 	{
+		if (new_top == window->display_ip)
+			break;
+		new_top = new_top->next;
+
 		if (new_top == window->scrollback_point)
 		{
 			window->scrollback_point = NULL;
@@ -4805,9 +4794,6 @@ static void 	window_scrollback_forwards_lines (Window *window, int lines)
 				break;
 			/* Otherwise, just keep going */
 		}
-		if (new_top == window->display_ip)
-			break;
-		new_top = new_top->next;
 	}
 	window->top_of_display = new_top;
 
@@ -5046,7 +5032,10 @@ static void 	set_screens_current_window (Screen *screen, Window *window)
 	}
 	if (current_window != window)
 		make_window_current(window);
+
+#if 0		/* Can we get away with not doing this? */
 	update_all_windows();
+#endif
 }
 
 void	make_window_current_by_refnum (int refnum)

@@ -1,4 +1,4 @@
-/* $EPIC: names.c,v 1.36 2002/12/30 05:53:26 jnelson Exp $ */
+/* $EPIC: names.c,v 1.37 2003/01/11 04:26:52 jnelson Exp $ */
 /*
  * names.c: This here is used to maintain a list of all the people currently
  * on your channel.  Seems to work 
@@ -1416,9 +1416,10 @@ void 	switch_channels (char dumb, char *dumber)
 		}
 
 		set_channel_by_refnum(0, tmp->channel);
-		update_all_windows();
 		break;
 	}
+
+	update_all_windows();
 }
 
 void 	change_server_channels (int old_s, int new_s)
@@ -2016,6 +2017,7 @@ void	channel_check_windows (void)
 			     "windows -- throwing away all of these "
 			     "server's channels", tmp->server);
 			destroy_server_channels(tmp->server);
+			update_all_windows();
 			reset = 1;
 		}
 	}
@@ -2073,6 +2075,7 @@ void	channel_check_windows (void)
 			"channel -- making [%s] the current channel.",
 				tmp->window->refnum, tmp->channel);
 		       set_channel_by_refnum(tmp->window->refnum, tmp->channel);
+		       update_all_windows();
 		  }
 		}
 	}

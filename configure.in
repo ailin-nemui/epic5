@@ -4,9 +4,9 @@ dnl except those bits attributed otherwise.
 dnl thanks to the screen 3.3 configure.in for giving me examples to
 dnl work from and steal ;)
 dnl
-dnl @(#)$Id: configure.in,v 1.26 2002/12/28 06:19:55 jnelson Exp $
+dnl @(#)$Id: configure.in,v 1.27 2003/01/11 04:26:52 jnelson Exp $
 
-AC_REVISION($Revision: 1.26 $)dnl
+AC_REVISION($Revision: 1.27 $)dnl
 AC_INIT(source/irc.c)
 AC_CONFIG_HEADER(include/defs.h)
 
@@ -99,7 +99,16 @@ if test "x$with_ssl" = "xno"; then
 else
 	saved_LIBS="$LIBS"
 	saved_CFLAGS="$CFLAGS"
-	for ssldir in "$with_ssl" /usr/local/ssl /usr/local/openssl; do
+
+	# First just try to see if it exists in the default location
+	LIBS="$saved_LIBS -lssl -lcrypto"
+	CFLAGS="$saved_CFLAGS"
+	AC_TRY_LINK([#include <openssl/ssl.h>],
+		[SSL_accept(NULL);], have_ssl="yes")
+
+	# Otherwise, go hunting for it.
+	if test -z "$have_ssl" ; then
+	    for ssldir in "$with_ssl" /usr/local/ssl /usr/local/openssl; do
 
 		if test -n "$have_ssl"; then
 			break;
@@ -111,20 +120,15 @@ else
 
 		if test -f "$ssldir/include/openssl/ssl.h" &&
 			test -f "$ssldir/lib/libssl.a"; then
-			CFLAGS="$saved_CFLAGS -I$ssldir/include"
-			LIBS="$saved_LIBS -L$ssldir/lib -lssl -lcrypto"
-			AC_TRY_LINK([#include <openssl/ssl.h>],
+		    CFLAGS="$saved_CFLAGS -I$ssldir/include"
+		    LIBS="$saved_LIBS -L$ssldir/lib -lssl -lcrypto"
+		    AC_TRY_LINK([#include <openssl/ssl.h>],
 				[SSL_accept(NULL);], have_ssl="yes")
 		fi
-	done
-
-	if test -z "$have_ssl"; then
-		LIBS="$saved_LIBS -lssl -lcrypto"
-		CFLAGS="$saved_CFLAGS"
-		AC_TRY_LINK([#include <openssl/ssl.h>],
-			[SSL_accept(NULL);], have_ssl="yes")
+	    done
 	fi
 
+	# If we found it somewhere, great!  Otherwise, revert.
 	if test -n "$have_ssl"; then
 		AC_DEFINE(HAVE_SSL)
 		AC_MSG_RESULT(yes)
@@ -519,7 +523,7 @@ main()
 	hints.ai_protocol = 0;
 
 	retval = getaddrinfo("/tmp/.ircd/6667", 0, &hints, &results);
-	if (retval == EAI_ADDRFAMILY)
+	if (retval != 0)
 		exit(1);
 	else
 		exit(0);
@@ -602,6 +606,7 @@ do
 	break
 done
 test -z "$PERLDOTOH" && AC_MSG_RESULT(no)
+withval=''
 
 dnl ----------------------------------------------------------
 dnl
@@ -623,7 +628,7 @@ do
 		test -r $base/lib/libtcl$ver.so || continue
 		AC_MSG_RESULT(yes)
 		CFLAGS="$CFLAGS -I $incdir"
-		LIBS="$LIBS -L$base/lib -ltcl$ver"
+		LIBS="-L$base/lib -ltcl$ver $LIBS"
 		TCLDOTOH="tcl.o"
 		AC_DEFINE(TCL)
 		break 2

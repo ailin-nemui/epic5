@@ -32,7 +32,7 @@ typedef struct  status_stuff {
 extern	Status	main_status;
 
 	char *	convert_sub_format (const char *, char);
-	void	make_status 	(struct WindowStru *, int);	/* Don't call */
+	int	make_status 	(struct WindowStru *, int);	/* Don't call */
 	char	*update_clock 	(int);
 	void	reset_clock 	(char *);
 	void	build_status 	(char *);

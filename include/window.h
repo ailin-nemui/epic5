@@ -165,7 +165,9 @@ extern	Window	*to_window;
 extern	Window	*invisible_list;
 extern	int	who_level;
 extern	const char	*who_from;
+#if 0
 extern	int	in_window_command;
+#endif
 extern	unsigned window_display;
 
 

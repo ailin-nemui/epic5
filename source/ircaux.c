@@ -1,4 +1,4 @@
-/* $EPIC: ircaux.c,v 1.60 2003/01/09 01:10:56 crazyed Exp $ */
+/* $EPIC: ircaux.c,v 1.61 2003/01/11 04:26:52 jnelson Exp $ */
 /*
  * ircaux.c: some extra routines... not specific to irc... that I needed 
  *
@@ -39,6 +39,7 @@
 #include "screen.h"
 #include <pwd.h>
 #include <sys/wait.h>
+#include <math.h>
 #include "ircaux.h"
 #include "output.h"
 #include "term.h"
@@ -819,7 +820,7 @@ char *	new_next_arg_count (char *str, char **new_ptr, int count)
 
 char * next_quoted_args (char *str, char **new_ptr, int count)
 {
-
+	return NULL;
 }
 
 /*
@@ -2604,14 +2605,20 @@ int 	check_val (char *sub)
 	/* get the numeric value (if any). */
 	sval = strtod(sub, &endptr);
 
-	/* Its OK if:
-	 *  1) the f-val is not zero.
-	 *  2) the first invalid character was not a null.
-	 *  3) there were no valid f-chars.
-	 */
-	if (sval || *endptr || (sub == endptr))
+	/* Numbers that cause exceptional conditions in strtod() are true */
+	if (errno == ERANGE || isinf(sval) || isnan(sval))
 		return 1;
 
+	/* 
+	 * - Any string with no leading number
+	 * - Any string containing anything after a leading number
+	 * - Any string wholly containing a non-zero number
+	 * are all true.
+	 */
+	if (sub == endptr || *endptr || sval != 0.0)
+		return 1;
+
+	/* Basically that leaves empty strings and the number 0 as false. */
 	return 0;
 }
 

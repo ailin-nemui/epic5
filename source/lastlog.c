@@ -1,4 +1,4 @@
-/* $EPIC: lastlog.c,v 1.15 2002/12/11 19:20:23 crazyed Exp $ */
+/* $EPIC: lastlog.c,v 1.16 2003/01/11 04:26:52 jnelson Exp $ */
 /*
  * lastlog.c: handles the lastlog features of irc. 
  *
@@ -424,10 +424,10 @@ BUILT_IN_COMMAND(lastlog)
 
 		x = new_next_arg(args, &args);
 		before_str = x;
-		if ((after_str = strchr(x, ',')))
+		if (x && (after_str = strchr(x, ',')))
 			*after_str++ = 0;
 
-		if (!is_number(before_str))
+		if (!x || !is_number(before_str))
 		{
 			yell("LASTLOG -CONTEXT requires a numeric argument.");
 			goto bail;

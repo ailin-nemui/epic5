@@ -1,4 +1,4 @@
-/* $EPIC: history.c,v 1.6 2002/07/17 22:52:52 jnelson Exp $ */
+/* $EPIC: history.c,v 1.7 2003/01/11 04:26:52 jnelson Exp $ */
 /*
  * history.c: stuff to handle command line history 
  *
@@ -379,17 +379,12 @@ void	get_history (int which)
 		set_input(command_history_pos->stuff);
 	else
 		set_input(empty_string);
-
-	update_input(UPDATE_ALL);
 }
 
 void	abort_history_browsing (int fullblown)
 {
 	command_history_pos = NULL;
 	if (fullblown)
-	{
 		set_input(empty_string);
-		update_input(UPDATE_ALL);
-	}
 }
 
