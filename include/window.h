@@ -135,7 +135,7 @@ typedef	struct	WindowStru
 	int	last_lines_held;	/* Last time we updated "lines held" */
 
 	/* Channel stuff */
-        char    *waiting_channel;       /*
+	WNickList *waiting_chans;	/*
 					 * When you JOIN or reconnect, if this
 					 * is set, a JOIN to that channel will
 					 * put that channel into this win.
@@ -235,12 +235,8 @@ const char	*query_nick			(void);
 const 	char *	set_channel_by_refnum		(unsigned, const char *);
 const	char	*get_echannel_by_refnum		(unsigned);
 	char	*get_channel_by_refnum		(unsigned);
-	int	is_bound_to_window		(const Window *, const char *);
-	Window	*get_window_bound_channel	(const char *);
-	int	is_bound_anywhere		(const char *);
-	int	is_bound			(const char *, int);
-	char	*get_bound_channel		(Window *);
 	void	destroy_waiting_channels	(int);
+	int     claim_waiting_channel (const char *chan, int servref);
 	int	get_window_server		(unsigned);
 	int	get_window_oldserver		(unsigned);
 	void	set_window_server		(int, int, int);

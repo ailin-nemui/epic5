@@ -1,4 +1,4 @@
-/* $EPIC: functions.c,v 1.159 2004/03/16 00:24:33 jnelson Exp $ */
+/* $EPIC: functions.c,v 1.160 2004/03/17 03:51:53 jnelson Exp $ */
 /*
  * functions.c -- Built-in functions for ircII
  *
@@ -4257,28 +4257,7 @@ BUILT_IN_FUNCTION(function_deuhc, input)
  */
 BUILT_IN_FUNCTION(function_winbound, input)
 {
-	int	win;
-	const char *	retval;
-
-	if (input && *input && is_channel(input))
-	{
-		if ((win = get_winref_by_bound_channel(input, from_server)))
-			RETURN_INT(win);
-		RETURN_EMPTY;
-	}
-
-	if (input && *input)
-	{
-		Window *w;
-		if (!(w = get_window_by_desc(input)))
-			RETURN_EMPTY;
-		win = w->refnum;
-	}
-	else
-		win = 0;
-
-	retval = get_bound_channel_by_refnum(win);
-	RETURN_STR(retval);
+	RETURN_EMPTY;
 }
 
 BUILT_IN_FUNCTION(function_ftime, words)

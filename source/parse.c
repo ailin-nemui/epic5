@@ -1,4 +1,4 @@
-/* $EPIC: parse.c,v 1.60 2004/03/15 03:24:51 jnelson Exp $ */
+/* $EPIC: parse.c,v 1.61 2004/03/17 03:51:53 jnelson Exp $ */
 /*
  * parse.c: handles messages from the server.   Believe it or not.  I
  * certainly wouldn't if I were you. 
@@ -625,15 +625,8 @@ static void	p_channel (const char *from, const char *comm, const char **ArgList)
 
 	if (is_me(from_server, from))
 	{
-#if 0
-		char *copy = LOCAL_COPY(channel);
-#endif
-
 		add_channel(channel, from_server);
 		send_to_server("MODE %s", channel);
-#if 0
-		whobase(from_server, copy, add_user_who, add_user_end);
-#endif
 	}
 	else
 	{

@@ -1,4 +1,4 @@
-/* $EPIC: keys.c,v 1.31 2003/12/17 09:25:30 jnelson Exp $ */
+/* $EPIC: keys.c,v 1.32 2004/03/17 03:51:53 jnelson Exp $ */
 /*
  * keys.c:  Keeps track of what happens whe you press a key.
  *
@@ -366,10 +366,10 @@ struct Key *timeout_keypress (struct Key *last, Timeval pressed) {
 }
 
 struct Key *construct_keymap (struct Key *owner) {
-    unsigned char c;
+    int c;
     struct Key *map = new_malloc(sizeof(struct Key) * KEYMAP_SIZE);
 
-    for (c = 0;c < KEYMAP_SIZE - 1;c++) {
+    for (c = 0;c <= KEYMAP_SIZE - 1;c++) {
 	map[c].val = c;
 	map[c].bound = NULL;
 	map[c].map = NULL;
@@ -388,7 +388,7 @@ struct Key *construct_keymap (struct Key *owner) {
  * are not left around in the timeout system.  the function returns positive
  * if *the map passed* was removed, negative otherwise. */
 int clean_keymap (struct Key *map) {
-    unsigned char c;
+    int	c;
     int save = 0;
 
     /* walk through the map to see if things are in use.  if something is
@@ -397,7 +397,7 @@ int clean_keymap (struct Key *map) {
      * the map is saved, 0 otherwise.  we walk through all keys here, even
      * if we know we're going to save the map early on.  this allows the
      * cleaner to catch dead submaps in the current map. */
-    for (c = 0; c < KEYMAP_SIZE - 1;c++) {
+    for (c = 0; c <= KEYMAP_SIZE - 1;c++) {
 	if (map[c].bound)
 	    save = 1; /* key in use.  save map. */
 	if (map[c].map) {
@@ -634,15 +634,15 @@ struct Key *find_sequence (const unsigned char *seq, int slen) {
 /* init_keys:  initialize default keybindings that apply without terminal
  * specificity.  we use the above functions to take care of this */
 void init_keys (void) {
-    unsigned char c;
+    int c;
     unsigned char s[2];
     head_keymap = construct_keymap(NULL);
 
 #define BIND(x, y) bind_string(x, y, NULL);
     /* bind characters 32 - 255 to SELF_INSERT. */
     s[1] = '\0';
-    for (c = 32;c < KEYMAP_SIZE - 1;c++) {
-	s[0] = c;
+    for (c = 32;c <= KEYMAP_SIZE - 1;c++) {
+	s[0] = (unsigned char )c;
 	BIND(s, "SELF_INSERT");
     }
 
@@ -778,7 +778,7 @@ void save_bindings (FILE *fp, int do_all) {
 }
 
 void save_bindings_recurse (FILE *fp, struct Key *map, const unsigned char *str, size_t len) {
-    unsigned char c;
+    int c;
     unsigned char *newstr;
     unsigned char *ds; /* decompressed sequence */
     size_t size;
@@ -791,7 +791,7 @@ void save_bindings_recurse (FILE *fp, struct Key *map, const unsigned char *str,
     /* go through our map, see what is changed, and save it.  recurse down
      * as necessary. */
     newstr[len + 1] = '\0';
-    for (c = 0; c < KEYMAP_SIZE - 1;c++) {
+    for (c = 0; c <= KEYMAP_SIZE - 1;c++) {
 	newstr[len] = c;
 	if (map[c].bound && map[c].changed) {
 	    bind_string_decompress(ds, newstr, len + 1);
@@ -816,11 +816,11 @@ void remove_bindings (void) {
 }
 
 void remove_bindings_recurse (struct Key *map) {
-    unsigned char c;
+    int c;
 
     /* go through our map, clear any memory that might be left lying around.
      * recurse as necessary */
-    for (c = 0; c < KEYMAP_SIZE - 1;c++) {
+    for (c = 0; c <= KEYMAP_SIZE - 1;c++) {
 	if (map[c].map)
 	    remove_bindings_recurse(map[c].map);
 	if (map[c].stuff)
@@ -852,10 +852,10 @@ void unload_bindings (const char *pkg) {
 }
 
 void unload_bindings_recurse (const char *pkg, struct Key *map) {
-    unsigned char c;
+    int c;
 
     /* go through, see which keys are package specific, unload them. */
-    for (c = 0; c < KEYMAP_SIZE - 1;c++) {
+    for (c = 0; c <= KEYMAP_SIZE - 1;c++) {
 	/* if the key is explicitly bound to something, and it was done in
 	 * our package, unbind it. */
 	if (map[c].bound && !my_stricmp(map[c].filename, pkg)) {
@@ -1086,7 +1086,7 @@ doc/keys distributed with the EPIC source."
  * keybindings.  given a map and a string to work from.  if the string is
  * NULL, the function recurses through the entire map. */
 void show_all_bindings (struct Key *map, const unsigned char *str, size_t len) {
-    unsigned char c;
+    int c;
     unsigned char *newstr;
     struct Binding *self_insert;
     size_t size;
@@ -1098,7 +1098,7 @@ void show_all_bindings (struct Key *map, const unsigned char *str, size_t len) {
 
     /* show everything in our map.  recurse down. */
     newstr[len + 1] = '\0';
-    for (c = 0; c < KEYMAP_SIZE - 1;c++) {
+    for (c = 0; c <= KEYMAP_SIZE - 1;c++) {
 	newstr[len] = c;
 	if (map[c].map || (map[c].bound && map[c].bound != self_insert))
 	    show_key(&map[c], newstr, len + 1, 1);
@@ -1155,7 +1155,7 @@ BUILT_IN_COMMAND(rbindcmd) {
 }
 
 void show_all_rbindings (struct Key *map, const unsigned char *str, int len, struct Binding *binding) {
-    unsigned char c;
+    int c;
     unsigned char *newstr;
     size_t size;
 
@@ -1166,7 +1166,7 @@ void show_all_rbindings (struct Key *map, const unsigned char *str, int len, str
     /* this time, show only those things bound to our function, and call on
      * ourselves to recurse instead. */
     newstr[len + 1] = '\0';
-    for (c = 0; c < KEYMAP_SIZE - 1;c++) {
+    for (c = 0; c <= KEYMAP_SIZE - 1;c++) {
 	newstr[len] = c;
 	if (map[c].bound == binding)
 	    show_key(&map[c], newstr, len + 1, 0);
@@ -1376,7 +1376,7 @@ char *bindctl (char *input)
 }
 
 void bindctl_getmap (struct Key *map, const unsigned char *str, int len, char **ret) {
-    unsigned char c;
+    int c;
     unsigned char *newstr;
     unsigned char *decomp;
     size_t size;
@@ -1388,7 +1388,7 @@ void bindctl_getmap (struct Key *map, const unsigned char *str, int len, char **
 
     /* grab all keys that are bound, put them in ret, and continue. */
     newstr[len + 1] = '\0';
-    for (c = 1; c < KEYMAP_SIZE - 1;c++) {
+    for (c = 1; c <= KEYMAP_SIZE - 1;c++) {
 	newstr[len] = c;
 	if (map[c].bound)
 	    malloc_strcat_wordlist(ret, " ", bind_string_decompress(decomp, newstr, len + 1));

@@ -1,4 +1,4 @@
-/* $EPIC: names.c,v 1.56 2004/03/15 03:24:51 jnelson Exp $ */
+/* $EPIC: names.c,v 1.57 2004/03/17 03:51:53 jnelson Exp $ */
 /*
  * names.c: This here is used to maintain a list of all the people currently
  * on your channel.  Seems to work 
@@ -263,7 +263,6 @@ void 	add_channel (const char *name, int server)
 {
 	Channel *new_c;
 	int	was_window = -1;
-	Window	*tmp = NULL;
 
 	if ((new_c = find_channel(name, server)))
 	{
@@ -279,24 +278,7 @@ void 	add_channel (const char *name, int server)
 	get_time(&new_c->join_time);
 
 	if (was_window == -1)
-	{
-	    /* Try to find "our" window for this channel. */
-	    while (traverse_all_windows(&tmp))
-	    {
-		if (tmp->server != from_server)
-			continue;
-		if (!tmp->waiting_channel)
-			 continue;
-
-		if (tmp->waiting_channel &&
-			!match_chan_with_id(name, tmp->waiting_channel))
-		{
-			new_free(&tmp->waiting_channel);
-			was_window = tmp->refnum;
-			break;
-		}
-	    }
-	}
+		was_window = claim_waiting_channel(name, server);
 
 	if (was_window == -1)
 		was_window = get_winref_by_servref(from_server);
@@ -1488,13 +1470,6 @@ void   move_channel_to_window (const char *chan, int server, int old_w, int new_
 		panic("Channel [%s:%d] is on window [%d] not on window [%d] (moving to [%d])",
 			chan, server, tmp->winref, old_w, new_w);
 
-	/*
-	 * If the old window is waiting for this channel, make the new
-	 * window wait for this channel.
-	 */
-	if (is_window_waiting_for_channel(old_w, chan))
-		move_waiting_channel(old_w, new_w);
-
 	/* set_channel_window calls new elections */
 	set_channel_window(chan, server, new_w, 1);
 }
@@ -1581,41 +1556,9 @@ char *	create_channel_list (int server)
 /* I don't know if this belongs here. */
 void	cant_join_channel (const char *channel, int server)
 {
-	Window *w = NULL;
-	while (traverse_all_windows(&w))
-	{
-		if (w->server != server)
-			continue;
-		if (!w->waiting_channel)
-			continue;
-		if (!my_stricmp(w->waiting_channel, channel))
-			new_free(&w->waiting_channel);
-	}
+	/* Eh, just throw the channel away, eh? */
+	claim_waiting_channel(channel, server);
 	update_all_windows();
-}
-
-/**************************************************************************/
-/* 
- * Im sure this doesnt belong here, but im not sure where it does belong.
- */
-int 	auto_rejoin_callback (void *d)
-{
-	char *	data    = (char *) d;
-	char *	channel	= next_arg(data, &data);
-	int 	server	= parse_server_index(next_arg(data, &data), 0);
-	Window *window 	= get_window_by_refnum(my_atol(next_arg(data, &data)));
-	char *	key    	= next_arg(data, &data);
-
-	if (key && *key)
-		send_to_aserver(server, "JOIN %s %s", channel, key);
-	else
-		send_to_aserver(server, "JOIN %s", channel);
-
-	if (window)
-		malloc_strcpy(&window->waiting_channel, channel);
-	new_free((char **)&d);
-
-	return 0;
 }
 
 /*

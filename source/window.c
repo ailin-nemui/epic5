@@ -1,4 +1,4 @@
-/* $EPIC: window.c,v 1.105 2004/03/16 00:24:33 jnelson Exp $ */
+/* $EPIC: window.c,v 1.106 2004/03/17 03:51:53 jnelson Exp $ */
 /*
  * window.c: Handles the organzation of the logical viewports (``windows'')
  * for irc.  This includes keeping track of what windows are open, where they
@@ -140,6 +140,8 @@ static	int	change_line 			(Window *, const unsigned char *);
 static	int	add_to_display 			(Window *, const unsigned char *);
 static	Display *new_display_line 		(Display *prev, Window *w);
 static int	count_fixed_windows 		(Screen *s);
+static	int	add_waiting_channel (Window *win, const char *chan);
+static void    destroy_window_waiting_channels (int refnum);
 
 
 /* * * * * * * * * * * CONSTRUCTOR AND DESTRUCTOR * * * * * * * * * * * */
@@ -228,7 +230,7 @@ Window	*new_window (Screen *screen)
 	new_w->hold_interval = 10;
 	new_w->hold_slider = get_int_var(HOLD_SLIDER_VAR);
 
-	new_w->waiting_channel = NULL;
+	new_w->waiting_chans = NULL;
 	new_w->query_nick = NULL;
 	new_w->nicks = NULL;
 
@@ -474,7 +476,6 @@ delete_window_contents:
 
 	/* Various things... */
 	new_free(&window->query_nick);
-	new_free(&window->waiting_channel);
 	new_free(&window->logfile);
 	new_free(&window->name);
 
@@ -511,6 +512,8 @@ delete_window_contents:
 			window->nicks = next;
 		}
 	}
+
+	destroy_window_waiting_channels(window->refnum);
 
 	/*
 	 * Nuke the window, check server connections, and re-adjust window
@@ -1900,16 +1903,6 @@ const char 	*get_echannel_by_refnum (unsigned refnum)
 	return window_current_channel(tmp->refnum, tmp->server);
 }
 
-int	get_winref_by_bound_channel (const char *channel, int server)
-{
-	return -1;
-}
-
-const char *	get_bound_channel_by_refnum (unsigned refnum)
-{
-	return NULL;
-}
-
 int	is_window_waiting_for_channel (unsigned refnum, const char *chan)
 {
 	Window *tmp;
@@ -1918,39 +1911,16 @@ int	is_window_waiting_for_channel (unsigned refnum, const char *chan)
 
 	if (chan == NULL)
 	{
-		if (tmp->waiting_channel)
+		if (tmp->waiting_chans)
 			return 1;
 		else
 			return 0;
 	}
 
-	if (tmp->waiting_channel && !my_stricmp(chan, tmp->waiting_channel))
-		return 1;
+	if (find_in_list((List **)&tmp->waiting_chans, chan, !USE_WILDCARDS))
+		return 1;		/* Already present. */
 
 	return 0;
-}
-
-void	move_waiting_channel (unsigned oldref, unsigned newref)
-{
-	Window *oldw, *neww;
-
-	if (!(oldw = get_window_by_refnum(oldref)))
-		panic("move_waiting_channel: Old Window [%d] doesn't exist", 
-				oldref);
-	if (!(neww = get_window_by_refnum(newref)))
-		panic("move_waiting_channel: New Window [%d] doesn't exist", 
-				newref);
-	if (oldw->server != neww->server)
-		panic("move_waiting_channel: window [%d:%d] and [%d:%d] "
-			"are on different servers.", 
-			oldref, get_window_server(oldref),
-			newref, get_window_server(newref));
-
-	if (oldw->waiting_channel)
-	{
-		neww->waiting_channel = oldw->waiting_channel;
-		oldw->waiting_channel = NULL;
-	}
 }
 
 /*
@@ -1960,14 +1930,93 @@ void	move_waiting_channel (unsigned oldref, unsigned newref)
 void    destroy_waiting_channels (int server)
 {
         Window *tmp = NULL;
+	WNickList *next;
 
         while (traverse_all_windows(&tmp))
         {
                 if (tmp->server != server)
                         continue;
-                new_free(&tmp->waiting_channel);
-        }
+
+		while (tmp->waiting_chans)
+		{
+			next = tmp->waiting_chans->next;
+			new_free(&tmp->waiting_chans->nick);
+			new_free((char **)&tmp->waiting_chans);
+			tmp->waiting_chans =  next;
+		}
+	}
 }
+
+/*
+ * This is called whenever you're not going to reconnect and
+ * destroy_server_channels() is called.
+ */
+static void    destroy_window_waiting_channels (int refnum)
+{
+        Window *tmp = NULL;
+	WNickList *next;
+
+	if (!(tmp = get_window_by_refnum(refnum)))
+		return;
+
+	while (tmp->waiting_chans)
+	{
+		next = tmp->waiting_chans->next;
+		new_free(&tmp->waiting_chans->nick);
+		new_free((char **)&tmp->waiting_chans);
+		tmp->waiting_chans =  next;
+	}
+}
+
+static	int	add_waiting_channel (Window *win, const char *chan)
+{
+	Window *w = NULL;
+	WNickList *tmp;
+
+	while (traverse_all_windows(&w))
+	{
+	    if (w == win || w->server != win->server)
+		continue;
+
+	    if ((tmp = (WNickList *)remove_from_list((List **)&w->waiting_chans, chan)))
+	    {
+		new_free(&tmp->nick);
+		new_free((char **)&tmp);
+	    }
+	}
+
+	if (find_in_list((List **)&win->waiting_chans, chan, !USE_WILDCARDS))
+		return -1;		/* Already present. */
+
+	tmp = (WNickList *)new_malloc(sizeof(WNickList));
+	tmp->nick = malloc_strdup(chan);
+	add_to_list((List **)&win->waiting_chans, (List *)tmp);
+	return 0;			/* Added */
+}
+
+int	claim_waiting_channel (const char *chan, int servref)
+{
+	Window *w = NULL;
+	WNickList *tmp;
+	int	retval = -1;
+
+	/* Do a full traversal, just to make sure no channels stay behind */
+	while (traverse_all_windows(&w))
+	{
+	    if (w->server != servref)
+		continue;
+
+	    if ((tmp = (WNickList *)remove_from_list((List **)&w->waiting_chans, chan)))
+	    {
+		new_free(&tmp->nick);
+		new_free((char **)&tmp);
+		retval = w->refnum;
+	    }
+	}
+
+	return retval;		/* Not found */
+}
+
 
 /* * * * * * * * * * * * * * * * * * SERVERS * * * * * * * * * * * * * */
 /*
@@ -2473,6 +2522,21 @@ static int 	is_window_name_unique (char *name)
 	return (1);
 }
 
+char	*get_waiting_channels_by_window (Window *win)
+{
+	WNickList *nick = win->waiting_chans;
+	char *stuff = NULL;
+	size_t stuffclue = 0;
+
+	for (; nick; nick = nick->next)
+		malloc_strcat_wordlist_c(&stuff, space, nick->nick, &stuffclue);
+
+	if (!stuff)
+		return malloc_strdup(empty_string);
+	else
+		return stuff;
+}
+
 char	*get_nicklist_by_window (Window *win)
 {
 	WNickList *nick = win->nicks;
@@ -2711,7 +2775,7 @@ static Window *window_beep_always (Window *window, char **args)
 }
 
 /*
- * /WINDOW CHANNEL <#channel>
+ * /WINDOW CHANNEL ["]<#channel>[,<#channel>][ <pass>[,<pass>]]["]
  * Directs the client to make a specified channel the current channel for
  * the window -- it will JOIN the channel if you are not already on it.
  * If the channel you wish to activate is bound to a different window, you
@@ -2723,12 +2787,11 @@ static Window *window_beep_always (Window *window, char **args)
  */
 static Window *window_channel (Window *window, char **args)
 {
-	char 	*sarg, 
-		*arg,
-		*arg2 = NULL,
-		*arg3 = NULL;
-	const char *carg;
-	int	l;
+	char		*arg;
+	char 		*chans, *passwds;
+	const char 	*chan, *pass;
+	char 		*chans_to_join, *passes_to_use;
+	int		l;
 
 	/* Fix by Jason Brand, Nov 6, 2000 */
 	if (window->server == NOSERV)
@@ -2737,70 +2800,88 @@ static Window *window_channel (Window *window, char **args)
 		return NULL;
 	}
 
-	if ((sarg = new_next_arg(*args, args)))
+	if (!(passwds = new_next_arg(*args, args)))
 	{
-		if (!(carg = next_arg(sarg, &sarg)))
+	    if ((chan = get_echannel_by_refnum(window->refnum)))
+		say("The current channel is %s", chan);
+	    else
+		say("There are no channels in this window");
+	    return window;
+	}
+
+	if (!(chans = next_arg(passwds, &passwds)))
+	{
+		say("Huh?");
+		return window;
+	}
+
+	if (!my_strnicmp(chans, "-i", 2))
+	{
+		if (!(chan = get_server_invite_channel(window->server)))
 		{
-			say("Huh?");
+			say("You have not been invited to a channel!");
 			return window;
 		}
-
-		if (!my_strnicmp(carg, "-i", 2))
-		{
-			if (!(carg = get_server_invite_channel(window->server)))
-			{
-				say("You have not been invited to a channel!");
-				return window;
-			}
-		}
-
-                if (!is_channel(carg))
-                {
-                        say("CHANNEL: %s is not a valid channel name", carg);
-                        return NULL;
-                }
-
-		/*
-		 * We do some chicanery here. :/
-		 * For some complicated reasons, new_next_arg skips over
-		 * backslashed quotation marks.  Usually what happens down
-		 * the line is that the backslash eventually gets unescaped.
-		 * Well, not here.  So we have to do this manually.  This is
-		 * a quick, and nasty hack, but i will re-assess the
-		 * situation later and improve what is being done here.
-		 */
-		arg = malloc_strcat_ues(&arg2, carg, empty_string);
-		sarg = malloc_strcat_ues(&arg3, sarg, empty_string);
-
-		l = message_from(arg, LEVEL_CRAP);
-		if (im_on_channel(arg, window->server))
-		{
-			move_channel_to_window(arg, window->server, 
-						0, window->refnum);
-			say("You are now talking to channel %s", 
-				check_channel_type(arg));
-		}
-#if 0		/* What to do here? */
-		else if (arg[0] == '0' && arg[1] == 0)
-			set_channel_by_refnum(window->refnum, NULL);
-#endif
-		else
-		{
-		    /*
-		     * This needs to be done first in case anyone has any weird
-		     * ideas about doing a /wait in the /on send_to_server.
-		     */
-		    malloc_strcpy(&window->waiting_channel, arg);
-		    if (sarg)
-			send_to_aserver(window->server,"JOIN %s %s", arg, sarg);
-		    else
-			send_to_aserver(window->server,"JOIN %s", arg);
-		}
-
-		new_free(&arg2);
-		new_free(&arg3);
-		pop_message_from(l);
+		chans = LOCAL_COPY(chan);		/* Whatever */
 	}
+
+	chans_to_join = passes_to_use = NULL;
+	while ((chan = next_in_comma_list(chans, &chans)))
+	{
+	    pass = NULL;
+	    if (passwds && *passwds)
+		pass = next_in_comma_list(passwds, &passwds);
+
+	    if (!is_channel(chan))
+	    {
+		say("CHANNEL: %s is not a valid channel name", chan);
+		continue;
+	    }
+
+	    /*
+	     * We do some chicanery here. :/
+	     * For some complicated reasons, new_next_arg skips over
+	     * backslashed quotation marks.  Usually what happens down
+	     * the line is that the backslash eventually gets unescaped.
+	     * Well, not here.  So we have to do this manually.  This is
+	     * a quick, and nasty hack, but i will re-assess the
+	     * situation later and improve what is being done here.
+	     */
+	    arg = NULL;
+	    malloc_strcat_ues(&arg, chan, empty_string);
+	    chan = arg;
+	    arg = NULL;
+	    malloc_strcat_ues(&arg, pass, empty_string);
+	    pass = arg;
+
+	    if (im_on_channel(chan, window->server))
+	    {
+		move_channel_to_window(chan, window->server, 0, window->refnum);
+		say("You are now talking to channel %s", 
+				check_channel_type(chan));
+	    }
+	    else
+	    {
+		add_waiting_channel(window, chan);
+		malloc_strcat_word(&chans_to_join, comma, chan);
+		if (pass)
+			malloc_strcat_word(&passes_to_use, comma, pass);
+	    }
+
+	    new_free(&chan);
+	    new_free(&pass);
+	}
+
+	l = message_from(chans_to_join, LEVEL_CRAP);
+	if (chans_to_join && passes_to_use)
+		send_to_aserver(window->server,"JOIN %s %s", chans_to_join, 
+								passes_to_use);
+	else if (chans_to_join)
+		send_to_aserver(window->server,"JOIN %s", chans_to_join);
+
+	new_free(&chans_to_join);
+	new_free(&passes_to_use);
+	pop_message_from(l);
 
 	return window;
 }
@@ -2879,9 +2960,14 @@ else
 	chan = get_echannel_by_refnum(window->refnum);
 	say("\tCurrent channel: %s", chan ? chan : "<None>");
 
-if (window->waiting_channel)
-	say("\tWaiting channel: %s", 
-				window->waiting_channel);
+	if (window->waiting_chans)
+	{
+		WNickList *tmp;
+		say("\tWaiting channels list:");
+		for (tmp = window->waiting_chans; tmp; tmp = tmp->next)
+			say("\t  %s", tmp->nick);
+	}
+
 
 	say("\tQuery User: %s", 
 				window->query_nick ? 
@@ -2928,7 +3014,7 @@ else
 static Window *window_discon (Window *window, char **args)
 {
 	reassign_window_channels(window->refnum);
-	new_free(&window->waiting_channel);
+	destroy_window_waiting_channels(window->refnum);
 	window->server = NOSERV;	/* XXX This shouldn't be set here. */
 	return window;
 }
@@ -3529,7 +3615,7 @@ static	Window *window_noserv (Window *window, char **args)
 {
 	/* This is just like /window discon */
 	reassign_window_channels(window->refnum);
-	new_free(&window->waiting_channel);
+	destroy_window_waiting_channels(window->refnum);
 	window->server = NOSERV;	/* XXX This shouldn't be set here. */
 	return window;
 }
@@ -3871,8 +3957,7 @@ Window *window_rejoin (Window *window, char **args)
 			{
 			    if (w->server != from_server)
 				continue;
-			    if (w->waiting_channel &&
-			        !my_stricmp(w->waiting_channel, chan))
+			    if (find_in_list((List **)&window->waiting_chans, chan, !USE_WILDCARDS))
 			    {
 				owner = w;
 				break;
@@ -3896,7 +3981,7 @@ Window *window_rejoin (Window *window, char **args)
 				panic("There are no windows for this server, "
 				      "and there should be.");
 
-			malloc_strcpy(&owner->waiting_channel, chan);
+			add_waiting_channel(owner, chan);
 			malloc_strcat_wordlist(&newchan, ",", chan);
 		}
 	}
@@ -4178,7 +4263,7 @@ Window *window_server (Window *window, char **args)
 		/*
 		 * Lose our channels
 		 */
-		new_free(&window->waiting_channel);
+		destroy_window_waiting_channels(window->refnum);
 		if (window->server != i)
 			reassign_window_channels(window->refnum);
 
@@ -5016,10 +5101,10 @@ void 	unstop_all_windows (char dumb, char *dumber)
 /* toggle_stop_screen: the BIND function TOGGLE_STOP_SCREEN */
 void 	toggle_stop_screen (char unused, char *not_used)
 {
-	char toggle[7];
+	char toggle[7], *p = toggle;
 
 	strlcpy(toggle, "TOGGLE", sizeof toggle);
-	window_hold_mode(current_window, (char **)&toggle);
+	window_hold_mode(current_window, (char **)&p);
 	update_all_windows();
 }
 
@@ -5427,7 +5512,7 @@ char 	*windowctl 	(char *input)
 	    } else if (!my_strnicmp(listc, "LAST_LINES_HELD", len)) {
 		RETURN_INT(w->last_lines_held);
 	    } else if (!my_strnicmp(listc, "WAITING_CHANNEL", len)) {
-		RETURN_STR(w->waiting_channel);
+		RETURN_STR(get_waiting_channels_by_window(w));
 	    } else if (!my_strnicmp(listc, "BIND_CHANNEL", len)) {
 		RETURN_STR(empty_string);
 	    } else if (!my_strnicmp(listc, "QUERY_NICK", len)) {
@@ -5532,3 +5617,25 @@ static int	count_fixed_windows (Screen *s)
 	return count;
 }
 
+/* 
+ * Im sure this doesnt belong here, but im not sure where it does belong.
+ */
+int 	auto_rejoin_callback (void *d)
+{
+	char *	data    = (char *) d;
+	char *	channel	= next_arg(data, &data);
+	int 	server	= parse_server_index(next_arg(data, &data), 0);
+	Window *window 	= get_window_by_refnum(my_atol(next_arg(data, &data)));
+	char *	key    	= next_arg(data, &data);
+
+	if (key && *key)
+		send_to_aserver(server, "JOIN %s %s", channel, key);
+	else
+		send_to_aserver(server, "JOIN %s", channel);
+
+	if (window)
+		add_waiting_channel(window, channel);
+	new_free((char **)&d);
+
+	return 0;
+}

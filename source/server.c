@@ -1,4 +1,4 @@
-/* $EPIC: server.c,v 1.128 2004/03/16 16:24:23 jnelson Exp $ */
+/* $EPIC: server.c,v 1.129 2004/03/17 03:51:53 jnelson Exp $ */
 /*
  * server.c:  Things dealing with that wacky program we call ircd.
  *
@@ -1910,8 +1910,8 @@ void  server_is_registered (int refnum, const char *itsname, const char *ourname
 
 	update_all_status();
 	do_hook(CONNECT_LIST, "%s %d %s", get_server_name(refnum), 
-	get_server_port(refnum), 
-	get_server_itsname(from_server));
+					get_server_port(refnum), 
+					get_server_itsname(from_server));
 	window_check_channels();
 	set_server_status(refnum, SERVER_ACTIVE);
 }
@@ -1924,6 +1924,7 @@ void	server_is_unregistered (int refnum)
 		return;
 
 	destroy_005(refnum);
+	set_server_status(refnum, SERVER_EOF);
 }
 
 int	is_server_active (int refnum)

@@ -172,3 +172,8 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Offer unknown ctcp requests through /on ctcp_request before /on ctcp.
 * Fix /DCC RESUME so it works with nonblocking connects.
 * GC all of the blocking connect code.  EPIC is fully nonblocking connect!
+* Make sure that servers go through SERVER_EOF state on eof!
+* Track waiting/pending channels using a nicklist per window.
+* Nix $winbound() and all the other stuff relating to bound channels
+* Fix bug with binding/initializing the 255 key
+* Fix bug with TOGGLE_STOP_SCREEN keybinding.
