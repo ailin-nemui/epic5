@@ -1,4 +1,4 @@
-/* $EPIC: hook.c,v 1.53 2005/04/01 03:04:52 jnelson Exp $ */
+/* $EPIC: hook.c,v 1.54 2005/04/01 18:20:01 jnelson Exp $ */
 /*
  * hook.c: Does those naughty hook functions. 
  *
@@ -934,7 +934,8 @@ int 	do_hook (int which, const char *format, ...)
 		panic("do_hook: format is NULL");
 	}
 
-	malloc_sprintf(&func_call, "cparse(%s)", hook_functions[which].implied);
+	malloc_sprintf(&func_call, "cparse(\"%s\" $*)", 
+			hook_functions[which].implied);
 	func_retval = call_function(func_call, buffer);
 	put_echo(func_retval);
 
@@ -2510,7 +2511,10 @@ char *hookctl (char *input)
 										input++;
 									}
 								}
-								malloc_strcpy(&hooks->implied, input);
+								if (empty(input))
+									new_free(&hooks->implied);
+								else
+									malloc_strcpy(&hooks->implied, input);
 								RETURN_INT(1);
 							} else
 								RETURN_STR(hooks->implied);

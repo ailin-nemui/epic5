@@ -1,4 +1,4 @@
-/* $EPIC: server.c,v 1.162 2005/04/01 03:04:52 jnelson Exp $ */
+/* $EPIC: server.c,v 1.163 2005/04/01 18:20:01 jnelson Exp $ */
 /*
  * server.c:  Things dealing with that wacky program we call ircd.
  *
@@ -2743,6 +2743,10 @@ char 	*serverctl 	(char *input)
 	len = strlen(listc);
 	if (!my_strnicmp(listc, "ADD", len)) {
 	} else if (!my_strnicmp(listc, "DELETE", len)) {
+	} else if (!my_strnicmp(listc, "LAST_SERVER", len)) {
+		RETURN_INT(last_server);
+	} else if (!my_strnicmp(listc, "FROM_SERVER", len)) {
+		RETURN_INT(from_server);
 	} else if (!my_strnicmp(listc, "REFNUM", len)) {
 		char *server;
 

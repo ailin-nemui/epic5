@@ -598,3 +598,5 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Round two of blackjac's builtins script.
 * Cleanse 2.8script of stuff that has bitrotted to death.
 * Whack the invite in 2.8script, the builtin is much smarter!
+* Fix various things for fudd's loadformats script.
+* Add $serverctl(LAST_SERVER) and $serverctl(FROM_SERVER) for blackjac.
