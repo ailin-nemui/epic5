@@ -1,4 +1,4 @@
-/* $EPIC: wserv.c,v 1.8 2002/05/07 16:49:35 jnelson Exp $ */
+/* $EPIC: wserv.c,v 1.9 2002/05/22 03:30:27 jnelson Exp $ */
 /*
  * wserv.c -- A little program to act as a pipe between the ircII process
  * 	      and an xterm window or GNU screen.
@@ -94,9 +94,8 @@ int	main (int argc, char **argv)
 	if ((data = connectory(AF_INET, host, port)) < 0)
 		my_exit(23);
 
-	if ((data = connectory(AF_INET, host, port)) < 0)
+	if ((cmd = connectory(AF_INET, host, port)) < 0)
 		my_exit(25);
-
 
 	/*
 	 * First thing we do is tell the parent what protocol we plan on

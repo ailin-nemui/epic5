@@ -16,3 +16,4 @@ KNOWN ERRATA (eg, bugs, or unresolved requests):
 THE CHANGELOG SINCE THE LAST RELEASE:
 -------------------------------------
 * Add $killpid() as a favor for Liandrin.
+* Really fix wserv this time.
