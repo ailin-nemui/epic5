@@ -1,4 +1,4 @@
-/* $EPIC: timer.c,v 1.29 2003/05/09 04:29:52 jnelson Exp $ */
+/* $EPIC: timer.c,v 1.30 2003/07/09 05:45:22 jnelson Exp $ */
 /*
  * timer.c -- handles timers in ircII
  *
@@ -756,7 +756,7 @@ char *	timerctl (char *input)
 		GET_STR_ARG(listc, input);
 		len = strlen(listc);
 		if (!my_strnicmp(listc, "TIMEOUT", len)) {
-			return m_sprintf("%ld %ld", (long) t->time.tv_sec,
+			return malloc_sprintf(NULL, "%ld %ld", (long) t->time.tv_sec,
 						    (long) t->time.tv_usec);
 		} else if (!my_strnicmp(listc, "COMMAND", len)) {
 			if (t->command)
@@ -769,7 +769,7 @@ char *	timerctl (char *input)
 		} else if (!my_strnicmp(listc, "REPEATS", len)) {
 			RETURN_INT(t->events);
 		} else if (!my_strnicmp(listc, "INTERVAL", len)) {
-			return m_sprintf("%ld %ld", (long) t->interval.tv_sec,
+			return malloc_sprintf(NULL, "%ld %ld", (long) t->interval.tv_sec,
 						    (long) t->interval.tv_usec);
 		} else if (!my_strnicmp(listc, "SERVER", len)) {
 			RETURN_INT(t->server);

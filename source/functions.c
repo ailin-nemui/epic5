@@ -1,4 +1,4 @@
-/* $EPIC: functions.c,v 1.123 2003/07/08 22:36:51 jnelson Exp $ */
+/* $EPIC: functions.c,v 1.124 2003/07/09 05:45:22 jnelson Exp $ */
 /*
  * functions.c -- Built-in functions for ircII
  *
@@ -854,9 +854,9 @@ static  char    *alias_invite           (void) { return m_strdup((get_server_inv
 static	char	*alias_oper 		(void) { return m_strdup((from_server != -1) ? get_server_operator(from_server) ?  get_string_var(STATUS_OPER_VAR) : empty_string : empty_string); }
 static	char	*alias_version 		(void) { return m_strdup(internal_version); }
 static  char    *alias_show_userhost 	(void) { return m_strdup(get_server_userhost(from_server)); }
-static  char    *alias_online 		(void) { return m_sprintf("%ld",(long)start_time.tv_sec); }
-static  char    *alias_idle 		(void) { return m_sprintf("%ld",time(NULL)-idle_time.tv_sec); }
-static	char	*alias_current_numeric	(void) { return m_sprintf("%03d", -current_numeric); }
+static  char    *alias_online 		(void) { return malloc_sprintf(NULL, "%ld",(long)start_time.tv_sec); }
+static  char    *alias_idle 		(void) { return malloc_sprintf(NULL, "%ld",time(NULL)-idle_time.tv_sec); }
+static	char	*alias_current_numeric	(void) { return malloc_sprintf(NULL, "%03d", -current_numeric); }
 static	char	*alias_banner		(void) { return m_strdup(banner()); }
 
 static	char	*alias_currdir  	(void)
@@ -3309,7 +3309,7 @@ BUILT_IN_FUNCTION(function_utime, input)
 	Timeval tp;
 
 	get_time(&tp);
-	return m_sprintf("%ld %ld", (long)tp.tv_sec, (long)tp.tv_usec);
+	return malloc_sprintf(NULL, "%ld %ld", (long)tp.tv_sec, (long)tp.tv_usec);
 }
 
 
@@ -3568,7 +3568,7 @@ BUILT_IN_FUNCTION(function_geom, words)
         if (get_geom_by_winref(refnum, &col, &li))
                 RETURN_EMPTY;
 
-        return m_sprintf("%d %d", col, li);
+        return malloc_sprintf(NULL, "%d %d", col, li);
 }
 
 BUILT_IN_FUNCTION(function_pass, words)
@@ -4135,7 +4135,7 @@ BUILT_IN_FUNCTION(function_uhc, input)
 	if (figure_out_address(input, &nick, &user, &host))
 		RETURN_STR(input);
 	else
-		return m_sprintf("%s!%s@%s", nick, user, host);
+		return malloc_sprintf(NULL, "%s!%s@%s", nick, user, host);
 }
 
 /*
@@ -5194,7 +5194,7 @@ BUILT_IN_FUNCTION(function_servports, input)
 	if (servnum < 0 || servnum > server_list_size())
 		RETURN_EMPTY;
 
-	return m_sprintf("%d %d", get_server_port(servnum),
+	return malloc_sprintf(NULL, "%d %d", get_server_port(servnum),
 				  get_server_local_port(servnum));
 }
 
@@ -6227,7 +6227,7 @@ BUILT_IN_FUNCTION(function_notifywindows, input)
 
 BUILT_IN_FUNCTION(function_loadinfo, input)
 {
-	return m_sprintf("%d %s %s", current_line(), current_filename(), current_loader());
+	return malloc_sprintf(NULL, "%d %s %s", current_line(), current_filename(), current_loader());
 }
 
 BUILT_IN_FUNCTION(function_wordtoindex, input)
@@ -6362,7 +6362,7 @@ BUILT_IN_FUNCTION(function_iptolong, word)
 	if (inet_strton(dotted_quad, NULL, (SA *)&addr, AI_NUMERICHOST))
 		RETURN_EMPTY;
 	
-	return m_sprintf("%lu", (unsigned long)ntohl(addr.sin_addr.s_addr));
+	return malloc_sprintf(NULL, "%lu", (unsigned long)ntohl(addr.sin_addr.s_addr));
 }
 
 BUILT_IN_FUNCTION(function_longtoip, word)
@@ -6731,7 +6731,7 @@ BUILT_IN_FUNCTION(function_dccctl, input)
 BUILT_IN_FUNCTION(function_outputinfo, input)
 {
 	if (who_from)
-		return m_sprintf("%s %s", bits_to_lastlog_level(who_level), 
+		return malloc_sprintf(NULL, "%s %s", bits_to_lastlog_level(who_level), 
 						who_from);
 	else
 		return m_strdup(bits_to_lastlog_level(who_level));
@@ -6780,6 +6780,6 @@ BUILT_IN_FUNCTION(function_metric_time, input)
 	struct metric_time right_now;
 
 	right_now = get_metric_time(NULL);
-	return m_sprintf("%ld %9.6f", right_now.mt_days, right_now.mt_mdays);
+	return malloc_sprintf(NULL, "%ld %9.6f", right_now.mt_days, right_now.mt_mdays);
 }
 

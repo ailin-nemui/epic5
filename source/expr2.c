@@ -1,4 +1,4 @@
-/* $EPIC: expr2.c,v 1.7 2003/05/09 04:29:52 jnelson Exp $ */
+/* $EPIC: expr2.c,v 1.8 2003/07/09 05:45:22 jnelson Exp $ */
 /*
  * Zsh: math.c,v 3.1.2.1 1997/06/01 06:13:15 hzoli Exp 
  * math.c - mathematical expression evaluation
@@ -611,15 +611,15 @@ __inline static	const char *	get_token_raw (expr_info *c, TOKEN v)
 		else if (TOK(c, v).used & USED_FLOAT)
 		{
 			TOK(c, v).raw_value = 
-				m_sprintf("%f", TOK(c, v).float_value);
+				malloc_sprintf(NULL, "%f", TOK(c, v).float_value);
 			canon_number(TOK(c, v).raw_value);
 		}
 		else if (TOK(c, v).used & USED_INTEGER)
 			TOK(c, v).raw_value = 
-				m_sprintf("%ld", TOK(c, v).integer_value);
+				malloc_sprintf(NULL, "%ld", TOK(c, v).integer_value);
 		else if (TOK(c, v).used & USED_BOOLEAN)
 			TOK(c, v).raw_value = 
-				m_sprintf("%d", TOK(c, v).boolean_value);
+				malloc_sprintf(NULL, "%d", TOK(c, v).boolean_value);
 		else if (TOK(c, v).used & USED_LVAL)
 		{
 			if (x_debug & DEBUG_NEW_MATH_DEBUG)

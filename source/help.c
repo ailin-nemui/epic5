@@ -1,4 +1,4 @@
-/* $EPIC: help.c,v 1.8 2003/05/09 04:29:52 jnelson Exp $ */
+/* $EPIC: help.c,v 1.9 2003/07/09 05:45:22 jnelson Exp $ */
 /*
  * help.c: handles the help stuff for irc 
  *
@@ -237,7 +237,7 @@ static	void	help_topic (char *path, char *name)
 		return;
 
 	/* what is the base name? */
-	filename = m_sprintf("%s/%s", path, name);
+	malloc_sprintf(&filename, "%s/%s", path, name);
 	if (filename[strlen(filename)-1] == '/')
 		chop(filename, 1);
 

@@ -1,4 +1,4 @@
-/* $EPIC: dcc.c,v 1.66 2003/07/04 17:52:07 jnelson Exp $ */
+/* $EPIC: dcc.c,v 1.67 2003/07/09 05:45:22 jnelson Exp $ */
 /*
  * dcc.c: Things dealing client to client connections. 
  *
@@ -321,7 +321,7 @@ static 	void		dcc_erase (DCC_list *erased)
 		else
 			dummy_nick = erased->user;
 #endif
-		dummy_ptr = m_sprintf("%s %s %s", 
+		malloc_sprintf(&dummy_ptr, "%s %s %s", 
 			erased->user,
 			(my_type == DCC_FILEOFFER ? "GET" :
 			 (my_type == DCC_FILEREAD  ? "SEND" : 
@@ -2243,7 +2243,7 @@ display_it:
 	    char *	realfilename;
 
 	    if (get_string_var(DCC_STORE_PATH_VAR))
-		realfilename = m_sprintf("%s/%s", 
+		realfilename = malloc_sprintf(NULL, "%s/%s", 
 					get_string_var(DCC_STORE_PATH_VAR), 
 					dcc->description);
 	    else

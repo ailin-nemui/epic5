@@ -1,4 +1,4 @@
-/* $EPIC: ircaux.c,v 1.82 2003/07/09 05:14:15 jnelson Exp $ */
+/* $EPIC: ircaux.c,v 1.83 2003/07/09 05:45:22 jnelson Exp $ */
 /*
  * ircaux.c: some extra routines... not specific to irc... that I needed 
  *
@@ -560,23 +560,6 @@ char *	lower (char *str)
 	return ptr;
 }
 
-
-char *	malloc_sprintf (char **to, const char *pattern, ...)
-{
-	char booya[BIG_BUFFER_SIZE * 10 + 1];
-	*booya = 0;
-
-	if (pattern)
-	{
-		va_list args;
-		va_start(args, pattern);
-		vsnprintf(booya, BIG_BUFFER_SIZE * 10, pattern, args);
-		va_end(args);
-	}
-
-	malloc_strcpy(to, booya);
-	return *to;
-}
 
 /* same thing, different variation */
 char *	m_sprintf (const char *pattern, ...)
@@ -4246,7 +4229,7 @@ static	char	buffer[1024];
  */
 char *	switch_hostname (const char *new_hostname)
 {
-	char *	retval;
+	char *	retval = NULL;
 	ISA 	new_4;
 	char 	v4_name[1024];
 	int	accept4 = 0;
@@ -4265,9 +4248,9 @@ char *	switch_hostname (const char *new_hostname)
 #endif
 
 		if (LocalHostName)
-			retval = m_sprintf("Virtual Hostname [%s] will no longer be used", LocalHostName);
+			malloc_sprintf(&retval, "Virtual Hostname [%s] will no longer be used", LocalHostName);
 		else
-			retval = m_sprintf("Virtual Hostname support is not activated");
+			malloc_sprintf(&retval, "Virtual Hostname support is not activated");
 
 		new_free(&LocalHostName);
 		return retval;
@@ -4312,11 +4295,11 @@ char *	switch_hostname (const char *new_hostname)
 
 		malloc_strcpy(&LocalHostName, new_hostname);
 
-		retval = m_sprintf("Local address changed to [%s] (%s) (%s)",
+		malloc_sprintf(&retval, "Local address changed to [%s] (%s) (%s)",
 				LocalHostName, v4_name, v6_name);
 	}
 	else
-		retval = m_sprintf("I cannot configure [%s] -- local address not changed.", new_hostname);
+		malloc_sprintf(&retval, "I cannot configure [%s] -- local address not changed.", new_hostname);
 
 	return retval;
 }
@@ -4392,4 +4375,57 @@ int     is_string_empty (const char *str)
  
         return 1;
 }
+
+/*
+ * malloc_sprintf: write a formatted string to heap memory
+ *
+ * Arguments:
+ *  'ptr' - A NULL pointer, or a pointer to a variable pointer that is 
+ *		either NULL or a valid heap pointer which shall contain 
+ *		a valid C string which represents a word list (words 
+ *		separated by delimiters)
+ *  'format' - A *printf() format string
+ *  ... - The rest of the arguments map to 'format' in the normal way for
+ *		*printf() functions.
+ *
+ * Return value:
+ *  If 'format' is NULL, The return value will be set to a valid heap pointer 
+ *	to a zero-length C string.
+ *  If 'format' is not NULL, The return value will be set to a valid heap 
+ *	pointer sufficiently large to contain a C string of the form 'format',
+ *	filled in with the rest of the arguments in accordance with sprintf().
+ *  In either case, if ptr is not NULL, (*ptr) is set to the return value.
+ *  This function will not return (panic) if ptr is not NULL, *ptr is not NULL,
+ *	and is (*ptr) is not a valid heap pointer.
+ *
+ * Notes:
+ *  This function has an arbitrarily limit of 20k on the return value.
+ *  If the arguments passed do not match up with 'format', chaos may result.
+ *  If ptr is not NULL then the original value of (*ptr) is invalidated and
+ *	may not be used after this function returns.
+ *  You must deallocate the space later by passing a pointer to the return
+ *	value to the new_free() function.
+ */
+char *	malloc_sprintf (char **ptr, const char *format, ...)
+{
+	char booya[BIG_BUFFER_SIZE * 10 + 1];
+	*booya = 0;
+
+	if (format)
+	{
+		va_list args;
+		va_start(args, format);
+		vsnprintf(booya, sizeof booya, format, args);
+		va_end(args);
+	}
+
+	if (ptr)
+	{
+		malloc_strcpy(ptr, booya);
+		return *ptr;
+	}
+	else
+		return m_strdup(booya);
+}
+
 

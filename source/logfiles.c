@@ -1,4 +1,4 @@
-/* $EPIC: logfiles.c,v 1.17 2003/05/09 04:29:52 jnelson Exp $ */
+/* $EPIC: logfiles.c,v 1.18 2003/07/09 05:45:22 jnelson Exp $ */
 /*
  * logfiles.c - General purpose log files
  *
@@ -83,7 +83,7 @@ static Logfile *	new_logfile (void)
 	log = (Logfile *)new_malloc(sizeof(Logfile));
 	log->next = logfiles;
 	log->refnum = ++logref;
-	log->name = m_sprintf("%d", log->refnum);
+	log->name = malloc_sprintf(NULL, "%d", log->refnum);
 	log->filename = NULL;
 	log->log = NULL;
 	log->servref = from_server;

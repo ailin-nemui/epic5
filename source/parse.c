@@ -1,4 +1,4 @@
-/* $EPIC: parse.c,v 1.40 2003/05/17 18:30:21 crazyed Exp $ */
+/* $EPIC: parse.c,v 1.41 2003/07/09 05:45:22 jnelson Exp $ */
 /*
  * parse.c: handles messages from the server.   Believe it or not.  I
  * certainly wouldn't if I were you. 
@@ -1104,7 +1104,7 @@ static void	p_kick (const char *from, const char *comm, const char **ArgList)
 			add_timer(0, empty_string, 
 				  get_int_var(AUTO_REJOIN_DELAY_VAR), 1,
 				  auto_rejoin_callback, 
-				  m_sprintf("%s %d %d %s", channel, 
+				  malloc_sprintf(NULL, "%s %d %d %s", channel, 
 						from_server, 
 						win->refnum,
 						key),

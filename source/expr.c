@@ -1,4 +1,4 @@
-/* $EPIC: expr.c,v 1.16 2003/06/28 18:40:38 jnelson Exp $ */
+/* $EPIC: expr.c,v 1.17 2003/07/09 05:45:22 jnelson Exp $ */
 /*
  * expr.c -- The expression mode parser and the textual mode parser
  * #included by alias.c -- DO NOT DELETE
@@ -139,7 +139,7 @@ static	char	*next_unit (char *str, const char *args, int *arg_flag, int stage)
 		*ptr2,			/* used to point matching brackets */
 		*right,			/* used to denote end of bracket-set */
 		*lastc,			/* used to denote end of token-set */
-		*tmp = NULL,		/* place to m_sprintf() into */
+		*tmp = NULL,		/* place to malloc_sprintf() into */
 		op;			/* the op were working on */
 	int	got_sloshed = 0,	/* If the last char was a slash */
 		display;
@@ -699,7 +699,7 @@ static	char	*next_unit (char *str, const char *args, int *arg_flag, int stage)
 				dvalue3 = dvalue1 + dvalue2;
 
 #if 0
-			tmp = m_sprintf("%.50g", dvalue3);
+			tmp = malloc_sprintf(NULL, "%.50g", dvalue3);
 			canon_number(tmp);
 #else
 			tmp = m_strdup(ftoa(dvalue3));
@@ -744,7 +744,7 @@ static	char	*next_unit (char *str, const char *args, int *arg_flag, int stage)
 				*ptr++ = '\0';
 				SETUP_BINARY(dvalue1, dvalue2, atof)
 #if 0
-				return m_sprintf("%.50g", pow(dvalue1, dvalue2));
+				return malloc_sprintf(NULL, "%.50g", pow(dvalue1, dvalue2));
 #else
 				return m_strdup(ftoa(pow(dvalue1, dvalue2)));
 #endif
@@ -766,7 +766,7 @@ static	char	*next_unit (char *str, const char *args, int *arg_flag, int stage)
 			}
 
 #if 0
-			tmp = m_sprintf("%.50g", dvalue3);
+			tmp = malloc_sprintf(NULL, "%.50g", dvalue3);
 			canon_number(tmp);
 #else
 			tmp = m_strdup(ftoa(dvalue3));

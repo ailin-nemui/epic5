@@ -1,4 +1,4 @@
-/* $EPIC: irc.c,v 1.537 2003/07/09 05:14:15 jnelson Exp $ */
+/* $EPIC: irc.c,v 1.538 2003/07/09 05:45:22 jnelson Exp $ */
 /*
  * ircII: a new irc client.  I like it.  I hope you will too!
  *
@@ -52,7 +52,7 @@ const char internal_version[] = "20030613";
 /*
  * In theory, this number is incremented for every commit.
  */
-const unsigned long	commit_id = 542;
+const unsigned long	commit_id = 543;
 
 /*
  * As a way to poke fun at the current rage of naming releases after
@@ -616,7 +616,7 @@ static	void	parse_args (int argc, char **argv)
 	if ((ptr = getenv("IRCPATH")))
 		the_path = m_strdup(ptr);
 	else
-		the_path = m_sprintf(DEFAULT_IRCPATH, irc_lib);
+		the_path = malloc_sprintf(NULL, DEFAULT_IRCPATH, irc_lib);
 
 	set_string_var(LOAD_PATH_VAR, the_path);
 	new_free(&the_path);

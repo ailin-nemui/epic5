@@ -1,4 +1,4 @@
-/* $EPIC: lastlog.c,v 1.19 2003/05/09 04:29:52 jnelson Exp $ */
+/* $EPIC: lastlog.c,v 1.20 2003/07/09 05:45:22 jnelson Exp $ */
 /*
  * lastlog.c: handles the lastlog features of irc. 
  *
@@ -922,7 +922,7 @@ char 	*function_line (char *word)
 		start_pos = start_pos->newer;
 
 	if (do_level)
-		return m_sprintf("%s %s", start_pos->msg, 
+		return malloc_sprintf(NULL, "%s %s", start_pos->msg, 
 					levels[start_pos->level]);
 	else
 		RETURN_STR(start_pos->msg);
