@@ -1,4 +1,4 @@
-/* $EPIC: server.c,v 1.93 2003/03/23 02:48:33 jnelson Exp $ */
+/* $EPIC: server.c,v 1.94 2003/03/24 01:23:37 jnelson Exp $ */
 /*
  * server.c:  Things dealing with that wacky program we call ircd.
  *
@@ -1649,6 +1649,7 @@ static char *do_umode (int refnum)
 	Server *s;
 	char *c;
 	long flags, flags2, i;
+	char *retval;
 
 	if (!(s = get_server(refnum)))
 		return empty_string;
@@ -1672,7 +1673,9 @@ static char *do_umode (int refnum)
 	}
 
 	*c = 0;
-	return s->umode;
+
+	retval = s->umode;
+	return retval;		/* eliminates a specious warning from gcc */
 }
 
 const char *	get_possible_umodes (int refnum)
@@ -1698,11 +1701,13 @@ void	set_possible_umodes (int refnum, const char *umodes)
 const char *	get_umode (int refnum)
 {
 	Server *s;
+	char *	retval;
 
 	if (!(s = get_server(refnum)))
 		return empty_string;
 
-	return s->umode;
+	retval = s->umode;
+	return retval;		/* Eliminates a specious warning from gcc. */
 }
 
 void 	clear_user_modes (int refnum)

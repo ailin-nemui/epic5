@@ -1,4 +1,4 @@
-/* $EPIC: network.c,v 1.42 2002/12/19 03:22:59 jnelson Exp $ */
+/* $EPIC: network.c,v 1.43 2003/03/24 01:23:37 jnelson Exp $ */
 /*
  * network.c -- handles stuff dealing with connecting and name resolving
  *
@@ -673,7 +673,7 @@ static int	Getaddrinfo (const char *nodename, const char *servname, const AI *hi
                 memset(&storage, 0, sizeof(storage));
                 storage.sun_family = AF_UNIX;
                 strlcpy(storage.sun_path, nodename, sizeof(storage.sun_path));
-#ifdef HAVE_SUN_LEN
+#ifdef HAVE_SA_LEN
 # ifdef SUN_LEN
                 storage.sun_len = SUN_LEN(&storage);
 # else

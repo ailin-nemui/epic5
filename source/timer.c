@@ -1,4 +1,4 @@
-/* $EPIC: timer.c,v 1.23 2003/03/21 07:46:58 jnelson Exp $ */
+/* $EPIC: timer.c,v 1.24 2003/03/24 01:23:37 jnelson Exp $ */
 /*
  * timer.c -- handles timers in ircII
  *
@@ -508,6 +508,7 @@ char *add_timer (int update, const char *refnum_want, double interval, long even
 	Timer	*ntimer, *otimer = NULL;
 	char	refnum_got[REFNUM_MAX + 1];
 	Timeval now;
+	char *	retval;
 
 	now = get_time(NULL);
 
@@ -574,7 +575,8 @@ char *add_timer (int update, const char *refnum_want, double interval, long even
 	}
 
 	schedule_timer(ntimer);
-	return ntimer->ref;
+	retval = ntimer->ref;
+	return retval;		/* Eliminates a specious warning from gcc */
 }
 
 

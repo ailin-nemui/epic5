@@ -122,9 +122,6 @@
 /* define this if you have vsnprintf(3) */
 #undef HAVE_VSNPRINTF
 
-/* Define this if you have SUN_LEN in <sys/un.h> */
-#undef HAVE_SUN_LEN
-
 /* define this if you don't have struct linger */
 #undef NO_STRUCT_LINGER
 

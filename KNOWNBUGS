@@ -7,8 +7,6 @@ KNOWN ERRATA (eg, bugs, or unresolved requests):
   Maybe try X, fall back to gnu screen on failure?
 * Should /set beep off suppress stripping of beeps?
 * Allegedly 464 numeric shouldn't force a reconnect if we're registered.
-* The mangler might expand things more than 3 times -- possible
-  interference from the attribute parser?  caused by many ^v's.
 * Add /timer -delete_for_window or something to avoid window switch warnings?
 * After calling connectory(), try to output meaningful error messages, not 
   just blindly calling my_strerror(errno).
@@ -34,15 +32,7 @@ KNOWN ERRATA (eg, bugs, or unresolved requests):
 * IPV6-over-dcc, i promised morty i would.
 * Shall remove_trailing_spaces honor a \ before a space trailing?
 * get_window() should use get_window_by_desc() and not its own thing
-* The "Select() failed" bug
 * /eval echo $match("\\[s s1 \\\\"s *\\\\"\\]" "s s") really should work.
-* $glob() and $globi() tend to choke on wierdly named filenames, or rather, on
-  wierd masks.
-* msg from drogoh!~drogoh@216.249.173.230: ./Data/popups.ini:n288=..Send
-  Flood:/timer 30 1 /raw -q privmsg $$1 :DCC SEND %logo 3353362454 20
-  $rand(200,1999)  | echo 10 Send flooding $$1 for next 30 secs 
-* $isnumber() will cause internal damage to the client when fed numbers that
-  are too large for some unknown reason.
 * ^C,,, eats up all commas, not just the first one.
 * ON WHO hook not thrown in correct window.
 * New built in function to get who_from and who_level
