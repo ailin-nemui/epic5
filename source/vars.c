@@ -1,4 +1,4 @@
-/* $EPIC: vars.c,v 1.60 2004/08/12 16:48:01 jnelson Exp $ */
+/* $EPIC: vars.c,v 1.61 2004/08/12 16:59:29 jnelson Exp $ */
 /*
  * vars.c: All the dealing of the irc variables are handled here. 
  *
@@ -633,9 +633,16 @@ static void	create_user_set (char *args)
 		return;
 	}
 	else if (var != NULL && var->func == NULL)
+	{
 		delete_builtin_variable(varname);
 
-	/* XXX Need to free 'var' here! */
+		if (var->type == STR_VAR)
+			new_free(&var->data->string);
+		new_free(&var->data);
+		if (var->script)
+			new_free(&var->script);
+		new_free(&var);
+	}
 
 	if (type == STR_VAR)
 		add_biv(varname, 0, type, NULL, expr, (char *)NULL);

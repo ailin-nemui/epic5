@@ -372,3 +372,4 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Fix $currchans() so it works the way the documentation says it does.
 * Fix some const correctness issues, introduce others. bleh.
 * Fix typo that caused /set -create twice to crash and burn.
+* Fix memory leak, rb CE.
