@@ -1,4 +1,4 @@
-/* $EPIC: dcc.c,v 1.73 2003/09/23 21:49:47 jnelson Exp $ */
+/* $EPIC: dcc.c,v 1.74 2003/09/25 03:18:49 jnelson Exp $ */
 /*
  * dcc.c: Things dealing client to client connections. 
  *
@@ -1371,7 +1371,15 @@ static	void	dcc_getfile (char *args, int resume)
 			strlcat(fullname, "/", sizeof(fullname));
 
 		realfilename = dcc_urldecode(dcc->description);
-		strlcat(fullname, realfilename, sizeof(pathname));
+
+		/* 
+		 * Don't prefix the DCC_STORE_PATH if the description
+		 * is already an absolute path (hop, 09/24/2003)
+		 */
+		if (*realfilename == '/')
+			strlcpy(fullname, realfilename, sizeof(fullname));
+		else
+			strlcat(fullname, realfilename, sizeof(fullname));
 		new_free(&realfilename);
 
 #ifdef MIRC_BROKEN_DCC_RESUME
@@ -1657,7 +1665,7 @@ static	void	dcc_send_raw (char *args)
 }
 
 /*
- * Usage: /DCC RENAME <nick> [<oldname>] <newname>
+ * Usage: /DCC RENAME [-CHAT] <nick> [<oldname>] <newname>
  */
 static	void	dcc_rename (char *args)
 {
@@ -3240,11 +3248,13 @@ static	char *	dcc_urldecode (const char *s)
 		*p1 = '_';
 	}
 
+#if 0		/* (hop, 09/24/2003) */
 	for (p1 = str; *p1; p1++)
 	{
 		if (*p1 == '/')
 			*p1 = '_';
 	}
+#endif
 
 	return str;
 }
@@ -3345,7 +3355,11 @@ static	void	dcc_getfile_resume_start (const char *nick, char *filename, char *po
 		strlcat(fullname, "/", sizeof(fullname));
 
 	realfilename = dcc_urldecode(Client->description);
-	strlcat(fullname, realfilename, sizeof(pathname));
+	if (*realfilename == '/')
+		strlcpy(fullname, realfilename, sizeof(fullname));
+	else
+		strlcat(fullname, realfilename, sizeof(fullname));
+
 	new_free(&realfilename);
 
 	if (!(Client->file = open(fullname, O_WRONLY | O_APPEND, 0644)))

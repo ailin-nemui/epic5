@@ -15,6 +15,17 @@ KNOWN ERRATA (eg, bugs, or unresolved requests):
 * /window disconnect (server -> -2) + /server 0 reconnects to previous server.
 * New math parser can't handle  @ foo[bar].baz = 0
 * Some way to get the client's global default nickname?
+* /eval echo ${1?{echo a}:{echo b}} at the input prompt infinite loops
+* It's possible to delete all the servers from the server list.
+* /window flush should NOT turn hold mode off!
+* /set mail 3 leads to a panic.
+* Make sure that CTCP SED hooks /on encrypted_* properly
+* Make some provision for systems without intptr_t.
+* Something for %D to make it customizable?
+* [7] <- [:aussie.sydney.oz.org 330 complexnes Veneficus Veneficus
+                :is logged in as]
+  *** Veneficus is logged in as Veneficus :is logged in as
+* $indextoword() and extractw() don't play nice together.
 
 [See http://www.epicsol.org/PROJECTS for things to come in the future]
 [See http://www.epicsol.org/CHANGELOG for things that changed in the past]
@@ -199,3 +210,4 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Make /window swap update the current-window-priority thingee.
 * Fix /on ctcp_reply so it hooks in the LOG_CTCP context. (rb nsx)
 * Fix my_strnicmp() because irc servers consider ^ and ~ the same character.
+* Nominally support /dcc rename <nick> <file> <absolute path>
