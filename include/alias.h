@@ -69,6 +69,13 @@
 	char *	call_user_function 	(const char *, char *);
 	void	call_user_alias		(const char *, char *, char *, void *);
 
+/*
+ * This function is used to call a lambda (``anonymous'') function.
+ * You provide the lambda function name, its contents, and $*, and
+ * it returns you $FUNCTION_RETURN.
+ */
+	char *  call_lambda_function    (const char *, const char *, const char *);
+
 
 /*
  * This function is used to save all the current aliases to a global
@@ -131,7 +138,6 @@
 /*
  * Truly bogus. =)
  */
-	char	*parse_line_with_return (const char *, const char *, char *, int, int);
 	char 	*canon_number (char *input);
 
 	char	*aliasctl (char *);

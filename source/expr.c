@@ -1,4 +1,4 @@
-/* $EPIC: expr.c,v 1.18 2003/07/09 21:10:25 jnelson Exp $ */
+/* $EPIC: expr.c,v 1.19 2003/07/10 09:50:30 jnelson Exp $ */
 /*
  * expr.c -- The expression mode parser and the textual mode parser
  * #included by alias.c -- DO NOT DELETE
@@ -435,20 +435,7 @@ static	char	*next_unit (char *str, const char *args, int *arg_flag, int stage)
 			*ptr++ = 0;
 
 			/* Taken more or less from call_user_function */
-			/* XXX - This should call parse_line_with_return! */
-			make_local_stack(NULL);
-			window_display = 0;
-			add_local_alias("FUNCTION_RETURN", empty_string, 0);
-			window_display = display;
-
-			will_catch_return_exceptions++;
-			parse_line(NULL, ptr, args, 0, 1);
-			will_catch_return_exceptions--;
-			return_exception = 0;
-
-			result1 = get_variable("FUNCTION_RETURN");
-			destroy_local_stack();
-			if (!result1)
+			if (!(result1 = call_lambda_function(NULL, ptr, args)))
 				result1 = malloc_strdup(empty_string);
 
 			return result1;

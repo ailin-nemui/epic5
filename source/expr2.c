@@ -1,4 +1,4 @@
-/* $EPIC: expr2.c,v 1.9 2003/07/09 21:10:25 jnelson Exp $ */
+/* $EPIC: expr2.c,v 1.10 2003/07/10 09:50:30 jnelson Exp $ */
 /*
  * Zsh: math.c,v 3.1.2.1 1997/06/01 06:13:15 hzoli Exp 
  * math.c - mathematical expression evaluation
@@ -1933,12 +1933,9 @@ static int	zzlex (expr_info *c)
 			c->last_token = 0;
 			if (!c->noeval)
 			{
-				char *result;
-				char *argcopy;
+				char *	result;
 
-				argcopy = LOCAL_COPY(c->args);
-				result = parse_line_with_return(NULL, p, 
-							argcopy, 0, 0);
+				result = call_lambda_function(NULL, p, c->args);
 				c->last_token = tokenize_expanded(c, result);
 				new_free(&result);
 			}

@@ -57,3 +57,4 @@ THE CHANGELOG SINCE THE LAST RELEASE:
   malloc_strdup3, malloc_strcat2_c, malloc_strcat_wordlist_c, to ircaux.h.
 * Fix some pesky const correctness issues with qsort callback args.
 * Convert m_strdup() to malloc_strdup().
+* Convert parse_line_with_return() to call_lambda_function().

@@ -1,4 +1,4 @@
-/* $EPIC: hook.c,v 1.18 2003/07/09 21:10:25 jnelson Exp $ */
+/* $EPIC: hook.c,v 1.19 2003/07/10 09:50:30 jnelson Exp $ */
 /*
  * hook.c: Does those naughty hook functions. 
  *
@@ -893,8 +893,8 @@ int 	do_hook (int which, const char *format, ...)
 
 		if (retval == RESULT_PENDING)
 		{
-			result = parse_line_with_return(name_copy, 
-						stuff_copy, buffer, 0, 0);
+			result = call_lambda_function(name_copy, stuff_copy,
+							buffer);
 
 			if (result && atol(result))
 				retval = SUPPRESS_DEFAULT;

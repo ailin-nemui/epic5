@@ -1,4 +1,4 @@
-/* $EPIC: alias.c,v 1.24 2003/07/09 21:10:24 jnelson Exp $ */
+/* $EPIC: alias.c,v 1.25 2003/07/10 09:50:30 jnelson Exp $ */
 /*
  * alias.c -- Handles the whole kit and caboodle for aliases.
  *
@@ -2137,9 +2137,38 @@ static char *	parse_line_alias_special (const char *name, const char *what, char
 	return result;
 }
 
-char *	parse_line_with_return (const char *name, const char *what, char *args, int d1, int d2)
+/* 
+ * Execute a block of ircII code (``what'') as a lambda function.
+ * The block will be run in its own private local name space, and will be
+ * given its own $FUNCTION_RETURN variable. 
+ * 
+ *      name - If name is not NULL, this lambda function will be treated as
+ *              an atomic scope, and will not be able to change the enclosing
+ *              scope's local variables.  If name is NULL, it will have access
+ *              to the enclosing local variables.
+ *      what - The lambda function itself; a block of ircII code.
+ *      args - The value of $* for the lambda function
+ *      d1   - The ``hist_flag'' to parse_line.  Should always be 0.
+ *      d2   - The ``append_flag'' to parse_line.  Should always be 0.
+ *    
+ * This function returns the value of $FUNCTION_RETURN after the lambda
+ * function has finished.
+ */   
+char *  call_lambda_function (const char *name, const char *what, const char *args)
 {
-	return parse_line_alias_special(name, what, args, d1, d2, NULL, 1);
+	/* 
+	 * Explanation for why 'args' is (const char *) and not (char *).
+	 * 'args' is $*, and is passed in from above.  $* might be changed
+	 * if we were executing an alias that had a parameter list, and so
+	 * parse_line_alias_special must take a (char *).  But the only time
+	 * that ``args'' would be changed is if the ``arglist'' param was 
+	 * not NULL.  Since we hardcode ``arglist == NULL'' it is absolutely
+	 * guaranteed that ``args'' will not be touched, and so, it can safely
+	 * be treated as (const char *) by whoever called us.  Unfortunately,
+	 * C does not allow you to treat a pointer as conditionally const, so
+	 * we just use the cast to hide that.  This is absolutely safe.
+	 */
+	return parse_line_alias_special(name, what, (char *)args, 0, 0, NULL, 1);
 }
 
 /************************************************************************/
