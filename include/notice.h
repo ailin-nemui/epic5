@@ -9,7 +9,6 @@
 #define __notice_h__
 
 	void 	p_notice 		(const char *, const char *, const char **);
-	void 	got_initial_version_28 	(const char *, const char *, const char *);
 	void	load_ircrc		(void);
 
 #endif

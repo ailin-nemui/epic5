@@ -1,4 +1,4 @@
-/* $EPIC: parse.c,v 1.55 2003/12/17 09:25:30 jnelson Exp $ */
+/* $EPIC: parse.c,v 1.56 2003/12/28 05:59:15 jnelson Exp $ */
 /*
  * parse.c: handles messages from the server.   Believe it or not.  I
  * certainly wouldn't if I were you. 
@@ -984,7 +984,7 @@ do_update_mode:
 	if (is_channel(target))
 		update_channel_mode(target, changes);
 	else
-		update_user_mode(changes);
+		update_user_mode(from_server, changes);
 }
 
 static void strip_modes (const char *from, const char *channel, const char *line)

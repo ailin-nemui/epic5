@@ -1,4 +1,4 @@
-/* $EPIC: server.c,v 1.111 2003/12/17 09:25:30 jnelson Exp $ */
+/* $EPIC: server.c,v 1.112 2003/12/28 05:59:15 jnelson Exp $ */
 /*
  * server.c:  Things dealing with that wacky program we call ircd.
  *
@@ -56,6 +56,7 @@
 #include "vars.h"
 #include "newio.h"
 #include "translat.h"
+#include "notice.h"
 
 /*
  * Note to future maintainers -- we do a bit of chicanery here.  The 'flags'
@@ -73,12 +74,12 @@
  * a kludge and should be changed.
  */
 const 	char *	default_umodes = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
-static	void	do_umode (int du_index);
 static 	void 	remove_from_server_list (int i, int override);
 	void 	reset_nickname (int);
 	void	clear_reconnect_counts (void);
 	const char *get_server_group (int refnum);
 	const char *get_server_type (int refnum);
+	void	server_is_unregistered (int refnum);
 
 	int	connected_to_server = 0;	/* true when connection is
 						 * confirmed */
@@ -86,6 +87,7 @@ static 	void 	remove_from_server_list (int i, int override);
 
 static	char    lame_wait_nick[] = "***LW***";
 static	char    wait_nick[] = "***W***";
+static	int	never_connected = 1;
 
 /************************ SERVERLIST STUFF ***************************/
 
@@ -135,14 +137,11 @@ void 	add_to_server_list (const char *server, int port, const char *password, co
 		s->operator = 0;
 		s->des = -1;
 		s->version = 0;
-		s->flags = 0;
-		s->flags2 = 0;
+		s->status = SERVER_CLOSED;
 		s->nickname = (char *) 0;
 		s->s_nickname = (char *) 0;
 		s->d_nickname = (char *) 0;
 		s->userhost = (char *) 0;
-		s->registered = 0;
-		s->eof = 0;
 		s->port = port;
 		s->line_length = IRCD_BUFFER_SIZE;
 		s->max_cached_chan_size = -1;
@@ -152,13 +151,11 @@ void 	add_to_server_list (const char *server, int port, const char *password, co
 		memset(&s->uh_addr, 0, sizeof(s->uh_addr));
 		memset(&s->local_sockname, 0, sizeof(s->local_sockname));
 		memset(&s->remote_sockname, 0, sizeof(s->remote_sockname));
-		s->umodes = NULL;
 		s->redirect = NULL;
 		s->cookie = NULL;
 		s->closing = 0;
 		s->nickname_pending = 0;
 		s->fudge_factor = 0;
-		s->registration_pending = 0;
 		s->resetting_nickname = 0;
 		s->reconnects = 0;
 		s->reconnect_to = from_server;
@@ -202,10 +199,8 @@ void 	add_to_server_list (const char *server, int port, const char *password, co
 		    else
 			set_server_try_ssl(from_server, FALSE);
 		}
-		malloc_strcpy(&s->umodes, default_umodes);
 
 		make_notify_list(from_server);
-		do_umode(from_server);
 		make_005(from_server);
 	}
 	else
@@ -277,7 +272,6 @@ static 	void 	remove_from_server_list (int i, int override)
 	new_free(&s->d_nickname);
 	new_free(&s->userhost);
 	new_free(&s->cookie);
-	new_free(&s->umodes);
 	new_free(&s->ison_queue);		/* XXX Aren't these free? */
 	new_free(&s->who_queue);
 	new_free(&s->invite_channel);
@@ -935,7 +929,7 @@ void	do_server (fd_set *rd, fd_set *wd)
 				if (s->save_channels == -1)
 					set_server_save_channels(i, 1);
 
-				server_is_registered(i, 0);
+				server_is_unregistered(i);
 				close_server(i, NULL);
 				say("Connection closed from %s: %s", 
 					s->name,
@@ -1090,10 +1084,7 @@ void	send_to_aserver_raw (int refnum, size_t len, const char *buffer)
 	    {
 		if (is_server_registered(refnum))
 		{
-			/* s->save_channels == 1; */
-			/* close_server(server, strerror(errno));  */
-			server_is_registered(des, 0);
-			say("Write to server failed.  Closing connection.");
+			say("Write to server failed.  Resetting connection.");
 			if (get_server_ssl_enabled(refnum) == TRUE)
 #ifndef HAVE_SSL
 			    panic("send_to_aserver_raw: Closing server %d "
@@ -1158,6 +1149,7 @@ static int 	connect_to_server (int new_server)
 	say("Connecting to port %d of server %s [refnum %d]", 
 			s->port, s->name, new_server);
 
+	s->status = SERVER_CONNECTING;
 	s->closing = 0;
 	oper_command = 0;
 	errno = 0;
@@ -1180,6 +1172,7 @@ static int 	connect_to_server (int new_server)
 		else
 			say("Unable to connect to server.");
 
+		s->status = SERVER_CLOSED;
 		return -1;		/* Connect failed */
 	}
 
@@ -1545,6 +1538,7 @@ void	close_server (int refnum, const char *message)
 
 	was_registered = is_server_registered(refnum);
 
+	s->status = SERVER_CLOSING;
 	clean_server_queues(refnum);
 	if (s->waiting_out > s->waiting_in)		/* XXX - hack! */
 		s->waiting_out = s->waiting_in = 0;
@@ -1561,46 +1555,41 @@ void	close_server (int refnum, const char *message)
 
 	s->save_channels = -1;
 	s->operator = 0;
-	s->registration_pending = 0;
-	s->registered = 0;
-	s->rejoined_channels = 0;
 	new_free(&s->nickname);
 	new_free(&s->s_nickname);
 
-	if (s->des != -1)
+	if (s->des == -1)
+		return;		/* Nothing to do here */
+
+	if (message && *message && !s->closing)
 	{
-		if (message && *message && !s->closing)
-		{
-		    s->closing = 1;
-		    if (x_debug & DEBUG_OUTBOUND)
-			yell("Closing server %d because [%s]", 
-			   refnum, message ? message : empty_string);
+	    s->closing = 1;
+	    if (x_debug & DEBUG_OUTBOUND)
+		yell("Closing server %d because [%s]", refnum, message);
 
-		    /*
-		     * Only tell the server we are leaving if we are 
-		     * registered.  This avoids an infinite loop in the
-		     * D-line case.
-		     */
-		    if (was_registered)
-			    send_to_aserver(refnum, "QUIT :%s\n", message);
-		    if (get_server_ssl_enabled(refnum) == TRUE)
-		    {
+	    /*
+	     * Only tell the server we are leaving if we are 
+	     * registered.  This avoids an infinite loop in the
+	     * D-line case.
+	     */
+	    if (was_registered)
+		    send_to_aserver(refnum, "QUIT :%s\n", message);
+	    if (get_server_ssl_enabled(refnum) == TRUE)
+	    {
 #ifndef HAVE_SSL
-			panic("close_server: Server %d claims to be using "
-			      "ssl on a non-ssl client", refnum);
+		panic("close_server: Server %d claims to be using "
+		      "ssl on a non-ssl client", refnum);
 #else
-			say("Closing SSL connection");
-			SSL_shutdown((SSL *)s->ssl_fd);
+		say("Closing SSL connection");
+		SSL_shutdown((SSL *)s->ssl_fd);
 #endif
-		    }
-		    do_hook(SERVER_LOST_LIST, "%d %s %s", 
-				refnum, s->name, message);
-		}
-
-		s->des = new_close(s->des);
+	    }
 	}
 
-	return;
+	do_hook(SERVER_LOST_LIST, "%d %s %s", 
+			refnum, s->name, message ? message : empty_string);
+	s->des = new_close(s->des);
+	s->status = SERVER_CLOSED;
 }
 
 /********************* OTHER STUFF ************************************/
@@ -1667,58 +1656,6 @@ const char *	get_server_away (int refnum)
 
 
 /* USER MODES */
-static void	do_umode (int refnum)
-{
-	Server *s;
-	char *c;
-	long flags, flags2, i;
-
-	if (!(s = get_server(refnum)))
-		return;
-
-	c = s->umode;
-	flags = s->flags;
-	flags2 = s->flags2;
-
-	for (i = 0; s->umodes[i]; i++)
-	{
-		if (i > 31)
-		{
-			if (flags2 & (0x1 << (i - 32)))
-				*c++ = s->umodes[i];
-		}
-		else
-		{
-			if (flags & (0x1 << i))
-				*c++ = s->umodes[i];
-		}
-	}
-
-	*c = 0;
-
-	return;		/* eliminates a specious warning from gcc */
-}
-
-const char *	get_possible_umodes (int refnum)
-{
-	Server *s;
-
-	if (!(s = get_server(refnum)))
-		return empty_string;
-
-	return s->umodes;
-}
-
-void	set_possible_umodes (int refnum, const char *umodes)
-{
-	Server *s;
-
-	if (!(s = get_server(refnum)))
-		return;
-
-	malloc_strcpy(&s->umodes, umodes);
-}
-
 const char *	get_umode (int refnum)
 {
 	Server *s;
@@ -1731,6 +1668,81 @@ const char *	get_umode (int refnum)
 	return retval;		/* Eliminates a specious warning from gcc. */
 }
 
+void	add_user_mode (int refnum, int mode)
+{
+	Server *s;
+	char c, *p, *o;
+	char new_umodes[1024];		/* Too huge for words */
+	int	i;
+
+	if (!(s = get_server(refnum)))
+		return;
+
+	/* 
+	 * 'c' is the mode that is being added
+	 * 'o' is the umodes that are already set
+	 * 'p' is the string that we are building that adds 'c' to 'o'.
+	 */
+	c = (char)mode;
+	o = s->umode;
+	p = new_umodes;
+
+	/* Copy the modes in 'o' that are alphabetically less than 'c' */
+	for (i = 0; o && o[i]; i++)
+	{
+		if (o[i] >= c)
+			break;
+		*p++ = o[i];
+	}
+
+	/* If 'c' is already set, copy it, otherwise add it. */
+	if (o && o[i] == c)
+		*p++ = o[i++];
+	else
+		*p++ = c;
+
+	/* Copy all the rest of the modes */
+	for (; o && o[i]; i++)
+		*p++ = o[i];
+
+	/* Nul terminate the new string and reset the server's info */
+	*p++ = 0;
+	strlcpy(s->umode, new_umodes, 54);
+}
+
+void	remove_user_mode (int refnum, int mode)
+{
+	Server *s;
+	char c, *o, *p;
+	char new_umodes[1024];		/* Too huge for words */
+	int	i;
+
+	if (!(s = get_server(refnum)))
+		return;
+
+	/* 
+	 * 'c' is the mode that is being deleted
+	 * 'o' is the umodes that are already set
+	 * 'p' is the string that we are building that adds 'c' to 'o'.
+	 */
+	c = (char)mode;
+	o = s->umode;
+	p = new_umodes;
+
+	/*
+	 * Copy the whole of 'o' to 'p', except for any instances of 'c'.
+	 */
+	for (i = 0; o && o[i]; i++)
+	{
+		if (o[i] != c)
+			*p++ = o[i];
+	}
+
+	/* Nul terminate the new string and reset the server's info */
+	*p++ = 0;
+	strlcpy(s->umode, new_umodes, 54);
+}
+
 void 	clear_user_modes (int refnum)
 {
 	Server *s;
@@ -1738,18 +1750,12 @@ void 	clear_user_modes (int refnum)
 	if (!(s = get_server(refnum)))
 		return;
 
-	s->flags = 0;
-	s->flags2 = 0;
-	do_umode(refnum);
+	*s->umode = 0;
 }
 
-void	update_user_mode (const char *modes)
+void	update_user_mode (int refnum, const char *modes)
 {
 	int		onoff = 1;
-	const char *	p_umodes = get_possible_umodes(from_server);
-
-	if (x_debug & DEBUG_SERVER_CONNECT)
-		yell("Possible user modes for server [%d]: [%s]", from_server, p_umodes);
 
 	for (; *modes; modes++)
 	{
@@ -1757,23 +1763,13 @@ void	update_user_mode (const char *modes)
 			onoff = 0;
 		else if (*modes == '+')
 			onoff = 1;
+		else if (onoff == 1)
+			add_user_mode(refnum, *modes);
+		else if (onoff == 0)
+			remove_user_mode(refnum, *modes);
 
-		else if   ((*modes >= 'a' && *modes <= 'z')
-			|| (*modes >= 'A' && *modes <= 'Z'))
-		{
-			size_t 	idx;
-			int 	c = *modes;
-
-			idx = ccspan(p_umodes, c);
-			if (p_umodes && p_umodes[idx] == 0)
-				yell("WARNING: Invalid user mode %c referenced on server %d",
-						*modes, last_server);
-			else
-				set_server_flag(from_server, idx, onoff);
-
-			if (c == 'O' || c == 'o')
-				set_server_operator(from_server, onoff);
-		}
+		if (*modes == 'O' || *modes == 'o')
+			set_server_operator(from_server, onoff);
 	}
 	update_all_status();
 }
@@ -1792,44 +1788,6 @@ void	reinstate_user_modes (void)
 		send_to_server("MODE %s +%s", get_server_nickname(from_server), modes);
 		clear_user_modes(from_server);
 	}
-}
-
-void	set_server_flag (int refnum, int flag, int value)
-{
-	Server *s;
-
-	if (!(s = get_server(refnum)))
-		return;
-
-	if (flag > 31)
-	{
-		if (value)
-			s->flags2 |= 0x1 << (flag - 32);
-		else
-			s->flags2 &= ~(0x1 << (flag - 32));
-	}
-	else
-	{
-		if (value)
-			s->flags |= 0x1 << flag;
-		else
-			s->flags &= ~(0x1 << flag);
-	}
-
-	do_umode(refnum);
-}
-
-int	get_server_flag (int refnum, int value)
-{
-	Server *s;
-
-	if (!(s = get_server(refnum)))
-		return 0;
-
-	if (value > 31)
-		return s->flags2 & (0x1 << (value - 32));
-	else
-		return s->flags & (0x1 << value);
 }
 
 
@@ -1867,16 +1825,17 @@ void	register_server (int refnum, const char *nick)
 	if (!(s = get_server(refnum)))
 		return;
 
-	if (s->registration_pending)
+	if (s->status != SERVER_CONNECTING)
 		return;		/* Whatever */
 
 	if (is_server_registered(refnum))
 		return;		/* Whatever */
 
+	s->status = SERVER_REGISTERING;
+
 	do_hook(SERVER_ESTABLISHED_LIST, "%s %d",
 		get_server_name(refnum), get_server_port(refnum));
 
-	s->registration_pending = 1;
 	if (get_server_try_ssl(refnum) == TRUE)
 	{
 #ifndef HAVE_SSL
@@ -2003,11 +1962,6 @@ int	is_server_open (int refnum)
 	return (s->des != -1);
 }
 
-/*
- * is_server_registered: returns true if the given server is registered.  
- * This means that both the tcp connection is open and the user is properly
- * registered 
- */
 int	is_server_registered (int refnum)
 {
 	Server *s;
@@ -2015,62 +1969,84 @@ int	is_server_registered (int refnum)
 	if (!(s = get_server(refnum)))
 		return 0;
 
-	return s->registered;
+	if (s->status == SERVER_SYNCING  || s->status == SERVER_ACTIVE)
+		return 1;
+	else
+		return 0;
 }
+
 
 /*
  * Informs the client that the user is now officially registered or not
  * registered on the specified server.
  */
-void 	server_is_registered (int refnum, int value)
+void  server_is_registered (int refnum, const char *itsname, const char *ourname)
 {
 	Server *s;
 
 	if (!(s = get_server(refnum)))
 		return;
 
-	s->registered = value;
-	s->registration_pending = 0;
-	s->rejoined_channels = 0;
+	s->status = SERVER_SYNCING;
 
-	if (value)
+	accept_server_nickname(refnum, ourname);
+	set_server_itsname(refnum, itsname);
+
+	reconnect_all_channels();
+	reinstate_user_modes();
+	userhostbase(from_server, NULL, got_my_userhost, 1);
+
+	if (never_connected)
 	{
-		/* 
-		 * By default, we want to save the server's channels.
-		 * If anything happens where we don't want to do this,
-		 * then we must turn it off, rather than the other way
-		 * around.
-		 */
-#if 0
-		set_server_save_channels(refnum, 0);
-#endif
-		s->reconnect_to = refnum;
-		s->eof = 0;
-		clear_reconnect_counts();
-		destroy_005(refnum);
+		never_connected = 0;
+		permit_status_update(1);
+
+		if (!ircrc_loaded)
+			load_ircrc();
+
+		if (default_channel)
+		{
+			e_channel("JOIN", default_channel, empty_string);
+			new_free(&default_channel);
+		}
 	}
+	if (get_server_away(refnum))
+		set_server_away(from_server, get_server_away(from_server));
+
+	update_all_status();
+	do_hook(CONNECT_LIST, "%s %d %s", get_server_name(refnum), 
+	get_server_port(refnum), 
+	get_server_itsname(from_server));
+	window_check_channels();
+	s->status = SERVER_ACTIVE;
+ 
+#if 0
+       s->reconnect_to = refnum;
+#endif
 }
 
-void	server_did_rejoin_channels (int refnum)
+void	server_is_unregistered (int refnum)
 {
 	Server *s;
 
 	if (!(s = get_server(refnum)))
 		return;
 
-	s->rejoined_channels = 1;
+	if (!get_int_var(AUTO_REJOIN_CONNECT_VAR))
+		destroy_server_channels(refnum);
+	destroy_005(refnum);
 }
 
-int	did_server_rejoin_channels (int refnum)
+int	is_server_active (int refnum)
 {
 	Server *s;
 
 	if (!(s = get_server(refnum)))
 		return 0;
 
-	if (!is_server_registered(refnum))
-		return 0;
-	return s->rejoined_channels;
+	if (s->status == SERVER_ACTIVE)
+		return 1;
+	return 0;
 }
 
 BUILT_IN_COMMAND(disconnectcmd)
@@ -2643,7 +2619,6 @@ void	set_server_operator (int refnum, int flag)
 
 	s->operator = flag;
 	oper_command = 0;		/* No longer doing oper */
-	do_umode(refnum);
 }
 
 SACCESSOR(name, name, "<none>")
@@ -2725,6 +2700,7 @@ void	set_server_ssl_enabled (int refnum, int flag)
 	s->ssl_enabled = flag;
 }
 GET_IATTRIBUTE(ssl_enabled)
+
 
 /*****/
 /* WAIT STUFF */
@@ -3012,9 +2988,6 @@ char 	*serverctl 	(char *input)
 		} else if (!my_strnicmp(listc, "UMODE", len)) {
 			ret = get_umode(refnum);
 			RETURN_STR(ret);
-		} else if (!my_strnicmp(listc, "UMODES", len)) {
-			ret = get_possible_umodes(refnum);
-			RETURN_STR(ret);
 		} else if (!my_strnicmp(listc, "USERHOST", len)) {
 			ret = get_server_userhost(refnum);
 			RETURN_STR(ret);
@@ -3089,8 +3062,6 @@ char 	*serverctl 	(char *input)
 			RETURN_INT(1);
 		} else if (!my_strnicmp(listc, "UMODE", len)) {
 			RETURN_EMPTY;		/* Read only for now */
-		} else if (!my_strnicmp(listc, "UMODES", len)) {
-			set_possible_umodes (refnum, input);
 		} else if (!my_strnicmp(listc, "USERHOST", len)) {
 			set_server_userhost(refnum, input);
 		} else if (!my_strnicmp(listc, "VERSION", len)) {

@@ -1,4 +1,4 @@
-/* $EPIC: names.c,v 1.49 2003/12/17 09:25:30 jnelson Exp $ */
+/* $EPIC: names.c,v 1.50 2003/12/28 05:59:15 jnelson Exp $ */
 /*
  * names.c: This here is used to maintain a list of all the people currently
  * on your channel.  Seems to work 
@@ -1446,11 +1446,13 @@ void 	reconnect_all_channels (void)
 	char	*keys = NULL;
 	size_t	chan_clue = 0, kc_clue = 0, key_clue = 0;
 
+#if 0
 	/* Oh, what the heck. */
 	if (!get_int_var(AUTO_REJOIN_CONNECT_VAR)) {
 		destroy_server_channels(from_server);
 		return;
 	}
+#endif
 
 	while (traverse_all_channels(&tmp, from_server, 1))
 	{
@@ -1976,16 +1978,14 @@ void	channel_check_windows (void)
 		if (tmp->winref <= 0)
 			panic("I thought we just checked for this! [4]");
 
-		if (did_server_rejoin_channels(tmp->server) && tmp->inactive)
+		if (is_server_active(tmp->server) && tmp->inactive)
 			panic("Channel [%s] on server [%d] is inactive "
-				"even though this server is connected!",
+				"even though this server is active!",
 				tmp->channel, tmp->server);
 
-		if (is_server_registered(tmp->server) &&
-				!did_server_rejoin_channels(tmp->server) && 
-				!tmp->inactive)
+		if (!is_server_active(tmp->server) && !tmp->inactive)
 			panic("Channel [%s] on server [%d] is NOT inactive "
-				"even though this server is NOT connected!",
+				"even though this server is NOT active!",
 				tmp->channel, tmp->server);
 	}
 

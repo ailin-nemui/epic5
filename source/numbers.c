@@ -1,4 +1,4 @@
-/* $EPIC: numbers.c,v 1.61 2003/12/18 02:22:31 jnelson Exp $ */
+/* $EPIC: numbers.c,v 1.62 2003/12/28 05:59:15 jnelson Exp $ */
 /*
  * numbers.c: handles all those strange numeric response dished out by that
  * wacky, nutty program we call ircd 
@@ -218,9 +218,7 @@ void 	numbered_command (const char *from, const char *comm, char const **ArgList
 	 */
 	case 001:	/* #define RPL_WELCOME          001 */
 	{
-		accept_server_nickname(from_server, target);
-		server_is_registered(from_server, 1);
-		userhostbase(from_server, NULL, got_my_userhost, 1);
+		server_is_registered(from_server, from, target);
 		break;
 	}
 
@@ -236,27 +234,14 @@ void 	numbered_command (const char *from, const char *comm, char const **ArgList
 	case 004:	/* #define RPL_MYINFO           004 */
 	{
 		const char 	*server = NULL, 
-				*version = NULL, 
-				*umodes = NULL;
+				*version = NULL;
 
 		if (!(server = ArgList[0]))
 			{ rfc1459_odd(from, comm, ArgList); goto END; }
 		else if (!(version = ArgList[1]))
 			{ rfc1459_odd(from, comm, ArgList); goto END; }
-		else if (!(umodes = ArgList[2]))
-			{ rfc1459_odd(from, comm, ArgList); goto END; }
 
-		/* Work around ratbox-1.2-3. */
-		if (!my_stricmp(umodes, "(brown"))
-		 if (ArgList[3] && !my_stricmp(ArgList[3], "paper"))
-		  if (ArgList[4] && !my_stricmp(ArgList[4], "bag"))
-		   if (ArgList[5] && !my_stricmp(ArgList[5], "release)"))
-		   {
-			if (!(umodes = ArgList[6]))
-				{ rfc1459_odd(from, comm, ArgList); goto END; }
-		   }
-
-		got_initial_version_28(server, version, umodes);
+		set_server_version_string(from_server, version);
 		break;
 	}
 

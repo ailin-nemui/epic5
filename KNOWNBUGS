@@ -46,3 +46,20 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Fix matching of /on type "*" to always have a weight of 1. (rb adm)
 * Tack a ^ and $ onto regexes in pattern2regex().
 * Flexible hooks need to have 'hook->regexpr' set to NULL to avoid segfault
+* commit 1013:
+* Use a "status" variable in server, instead of a plurality of binary flags
+* Process usermodes as strings only.
+* Nix 'flags', 'flags2' and 'umodes', 's_takes_arg', and 'eof'.
+* Change update_user_mode() to take a server refnum.
+* Nix $serverctl(... UMODES)
+* Change server_is_registered() so it takes a server name and our nickname.
+* Add server_is_unregistered() which i'll use in the future.
+* Hook /on server_lost all the time in close_server() by popular request.
+* Make $version() always return "2.8" since all servers are 2.8 servers.
+* Check /set auto_rejoin_connect at disconnect-time, instead of connect-time.
+* Use a "is_server_active()" function instead of "did_server_rejoin_channels"
+* Move the guts of got_initial_version_28() into server_is_registered()
+* Call "server_is_registered()" from 001, which loads ircrc among other things.
+* Reduce 004 so it only sets the server's version string id.
+* Nix got_initial_version_28
+

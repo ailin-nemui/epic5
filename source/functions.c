@@ -1,4 +1,4 @@
-/* $EPIC: functions.c,v 1.153 2003/12/18 02:22:31 jnelson Exp $ */
+/* $EPIC: functions.c,v 1.154 2003/12/28 05:59:15 jnelson Exp $ */
 /*
  * functions.c -- Built-in functions for ircII
  *
@@ -3202,6 +3202,7 @@ BUILT_IN_FUNCTION(function_translate, words)
 
 BUILT_IN_FUNCTION(function_server_version, word)
 {
+#if 0
 	int servnum;
 	int version;
 
@@ -3214,8 +3215,10 @@ BUILT_IN_FUNCTION(function_server_version, word)
 	else if (version == Server_u2_10)	RETURN_STR("u2.10");
 	else if (version == Server2_9) 		RETURN_STR("2.9");
 	else if (version == Server_u3_0)	RETURN_STR("u3.0");
-
 	RETURN_STR("Unknown");
+#endif
+
+	RETURN_STR("2.8");
 }
 
 BUILT_IN_FUNCTION(function_unlink, words)

@@ -35,6 +35,14 @@ typedef struct WaitCmdstru
         struct  WaitCmdstru *next;
 } WaitCmd;
 
+#define SERVER_CLOSED		0
+#define SERVER_CONNECTING	1
+#define SERVER_REGISTERING	2
+#define SERVER_SYNCING		3
+#define SERVER_ACTIVE		4
+#define SERVER_EOF		5
+#define SERVER_CLOSING		6
+
 /* Server: a structure for the server_list */
 typedef	struct
 {
@@ -43,10 +51,14 @@ typedef	struct
 	char	*password;		/* password for that server */
 	int	port;			/* port number on that server */
 	char	*group;			/* Server group it belongs to */
+
 	char	*nickname;		/* Authoritative nickname for us */
 	char	*s_nickname;		/* last NICK command sent */
 	char	*d_nickname;		/* Default nickname to use */
 	size_t	fudge_factor;		/* How much s_nickname's fudged */
+
+	int	status;			/* See above */
+
 	int	nickname_pending;	/* Is a NICK command pending? */
 	int	resetting_nickname;	/* Is a nickname reset in progress? */
 	int	registration_pending;	/* Is a registration going on ? */
@@ -59,13 +71,8 @@ typedef	struct
 					 * defined above */
 	int	server2_8;		/* defined if we get an 001 numeric */
 	char	*version_string;	/* what is says */
-	long	flags;			/* Various flags */
-	long	flags2;			/* More Various flags */
-	char	*umodes;		/* Possible user modes */
 	char	umode[54];		/* Currently set user modes */
-	int	s_takes_arg;		/* Set to 1 if s user mode has arg */
 	int	des;			/* file descriptor to server */
-	int	eof;			/* eof flag for server */
 	int	sent;			/* set if something has been sent,
 					 * used for redirect */
 	char	*redirect;		/* Who we're redirecting to here */
@@ -221,7 +228,7 @@ const	char *	get_possible_umodes		(int);
 const	char *	get_umode			(int);
 	void	clear_user_modes		(int);
 	void    reinstate_user_modes    	(void);
-	void    update_user_mode        	(const char *);
+	void    update_user_mode        	(int, const char *);
 	void	set_server_flag			(int, int, int);
 	int	get_server_flag			(int, int);
 
@@ -246,7 +253,8 @@ const	char *	get_server_cipher		(int);
 	char *	set_server_password		(int, const char *);
 	int	is_server_open			(int);
 	int	is_server_registered		(int);
-	void	server_is_registered		(int, int);
+	void	server_is_registered		(int, const char *, const char *);
+	int	is_server_active		(int);
 	int	auto_reconnect_callback		(void *);
 	int	server_reconnects_to		(int, int);
 	int	reconnect			(int, int);

@@ -1,4 +1,4 @@
-/* $EPIC: notice.c,v 1.31 2003/12/17 09:25:30 jnelson Exp $ */
+/* $EPIC: notice.c,v 1.32 2003/12/28 05:59:15 jnelson Exp $ */
 /*
  * notice.c: special stuff for parsing NOTICEs
  *
@@ -53,7 +53,6 @@
 
 static	time_t 	convert_note_time_to_real_time (char *stuff);
 static	int 	kill_message (const char *from, const char *line);
-static	int	never_connected = 1;
 
 
 /*
@@ -341,77 +340,6 @@ void 	p_notice (const char *from, const char *comm, const char **ArgList)
 
 	/* Alas, this is not protected by protocol enforcement. :( */
 	notify_mark(from_server, from, 1, 0);
-}
-
-/*
- * got_initial_version_28: this is called when ircii gets the serial
- * number 004 reply.  We do this becuase the 004 numeric gives us the
- * server name and version in an easy to use fashion, and doesnt
- * rely on the syntax or construction of the 002 numeric.
- *
- * Hacked as neccesary by jfn, May 1995
- */
-void 	got_initial_version_28 (const char *server, const char *version, const char *umodes)
-{
-	/* Worthless 004 reply.  Hope for the best! */
-	if (!server || !version || !umodes)
-	{
-		set_server_version(from_server, Server2_8);
-		set_server_version_string(from_server, "<none provided>");
-		set_server_itsname(from_server, get_server_name(from_server));
-	}
-	else
-	{
-		if (!strncmp(version, "2.8", 3))
-		{
-			if (strstr(version, "mu") || strstr(version, "me"))
-				set_server_version(from_server, Server_u2_8);
-			else
-				set_server_version(from_server, Server2_8);
-		}
-		else if (!strncmp(version, "2.9", 3))
-			set_server_version(from_server, Server2_9);
-		else if (!strncmp(version, "2.10", 4))
-			set_server_version(from_server, Server2_10);
-		else if (!strncmp(version, "u2.9", 4))
-			set_server_version(from_server, Server_u2_9);
-		else if (!strncmp(version, "u2.10", 4))
-			set_server_version(from_server, Server_u2_10);
-		else if (!strncmp(version, "u3.0", 4))
-			set_server_version(from_server, Server_u3_0);
-		else
-			set_server_version(from_server, Server2_8);
-
-		set_server_version_string(from_server, version);
-		set_server_itsname(from_server, server);
-		set_possible_umodes(from_server, umodes);
-	}
-
-	reconnect_all_channels();
-	server_did_rejoin_channels(from_server);
-	reinstate_user_modes();
-
-	if (never_connected)
-	{
-		never_connected = 0;
-		permit_status_update(1);
-
-		if (!ircrc_loaded)
-			load_ircrc();
-
-		if (default_channel)
-		{
-			e_channel("JOIN", default_channel, empty_string);
-			new_free(&default_channel);
-		}
-	}
-	else if (get_server_away(from_server))
-		set_server_away(from_server, get_server_away(from_server));
-
-	update_all_status();
-	do_hook(CONNECT_LIST, "%s %d %s", get_server_name(from_server),
-		get_server_port(from_server), get_server_itsname(from_server));
-	window_check_channels();
 }
 
 int 	kill_message (const char *from, const char *cline)
