@@ -27,11 +27,6 @@ struct	ScreenStru;
 #define ON 			1
 #define TOGGLE 			2
 
-/* Flags for "misc" */
-#define WINDOW_NOTIFY		1 << 0
-#define WINDOW_NOTIFIED		1 << 1
-
-
 /* Should be a way to make static to window.c */
 typedef	struct	DisplayStru
 {
@@ -69,7 +64,8 @@ typedef	struct	WindowStru
 					 * is used as a flag for resize_display
 					 */
 	short	update;			/* True if window display is dirty */
-	short   miscflags;		/* Miscellaneous flags. */
+	short	notify_when_hidden;	/* True to notify for hidden output */
+	short	notified;		/* True if we have notified */
 	short	beep_always;		/* True if a beep to win always beeps */
 	Mask	notify_mask;		/* the notify mask.. */
 	Mask	window_mask;		/* Lastlog level for the window */
@@ -172,9 +168,6 @@ extern	Window	*to_window;
 extern	Window	*invisible_list;
 extern	int	who_level;
 extern	const char	*who_from;
-#if 0
-extern	int	in_window_command;
-#endif
 extern	unsigned window_display;
 extern	unsigned current_window_priority;
 
@@ -209,10 +202,6 @@ extern	unsigned current_window_priority;
 	char	*get_refnum_by_window		(const Window *);
 	int	is_window_visible		(char *);
 	char	*get_status_by_refnum		(unsigned, int);
-#if 0
-	void	redraw_window_statusbar		(Window *);
-	void	update_window_statusbar		(Window *);
-#endif
 	void	update_all_status		(void);
 	void	set_prompt_by_refnum		(unsigned, const char *);
 const	char 	*get_prompt_by_refnum		(unsigned);
@@ -250,7 +239,6 @@ const	char	*get_echannel_by_refnum		(unsigned);
 	void	set_continued_line		(const void *);
 	unsigned current_refnum			(void);
 	int	number_of_windows_on_screen	(Window *);
-	void	delete_display_line		(Display *);
 	int	add_to_scrollback		(Window *, const unsigned char *);
 	int	trim_scrollback			(Window *);
 	int	flush_scrollback_after		(Window *);
@@ -260,7 +248,6 @@ const	char	*get_echannel_by_refnum		(unsigned);
 	void	scrollback_start		(char, char *);
 	void	unstop_all_windows		(char, char *);
 	void	toggle_stop_screen		(char, char *);
-	void	flush_everything_being_held	(Window *);
 	int	window_is_holding		(Window *);
 	int	unhold_a_window			(Window *);
 	void	recalculate_window_cursor_and_display_ip	(Window *);
@@ -271,13 +258,9 @@ const	char	*get_echannel_by_refnum		(unsigned);
 	Window	*window_rejoin			(Window *, char **);
 	Window	*window_scroll			(Window *, char **);
 	Window *window_server			(Window *, char **);
-	int	unhold_windows			(void);
-	int	channel_going_away		(Window *, const char *);
 	void	window_check_channels		(void);
 
-	int	add_to_scratch_window_scrollback (Window *, const unsigned char *);
 	void	check_window_cursor		(Window *);
-	void	unhold_window			(Window *);
 	int     get_geom_by_winref 		(const char *, int *, int *);
 	int	get_winref_by_servref		(int);
 

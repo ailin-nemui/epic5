@@ -1,4 +1,4 @@
-/* $EPIC: window.c,v 1.109 2004/03/19 01:02:02 jnelson Exp $ */
+/* $EPIC: window.c,v 1.110 2004/03/19 04:38:19 jnelson Exp $ */
 /*
  * window.c: Handles the organzation of the logical viewports (``windows'')
  * for irc.  This includes keeping track of what windows are open, where they
@@ -194,7 +194,8 @@ Window	*new_window (Screen *screen)
 	new_w->absolute_size = 0;
 	new_w->old_size = 1;		/* Filled in later */
 	new_w->update = 0;
-	new_w->miscflags = 0;
+	new_w->notified = 0;
+	new_w->notify_when_hidden = 0;
 	new_w->beep_always = 0;
 	new_w->change_line = -1;
 	new_w->scroll = 1;
@@ -680,7 +681,7 @@ Window *add_to_window_list (Screen *screen, Window *new_w)
 
 	screen->visible_windows++;
 	new_w->screen = screen;
-	new_w->miscflags &= ~WINDOW_NOTIFIED;
+	new_w->notified = 0;
 
 	/*
 	 * If this is the first window to go on the screen
@@ -946,7 +947,7 @@ static void 	swap_window (Window *v_window, Window *window)
 	 */
 	window_body_needs_redraw(window);
 	window_statusbar_needs_redraw(window);
-	window->miscflags &= ~WINDOW_NOTIFIED;
+	window->notified = 0;
 
 	/*
 	 * Transfer current_window if the current window is being swapped out
@@ -2358,8 +2359,7 @@ static void 	clear_window (Window *window)
 		return;
 
 	window->scrolling_top_of_display = window->display_ip;
-	if (window->miscflags & WINDOW_NOTIFIED)
-		window->miscflags &= ~WINDOW_NOTIFIED;
+	window->notified = 0;
 	recalculate_window_cursor_and_display_ip(window);
 
 	window_body_needs_redraw(window);
@@ -3073,7 +3073,7 @@ else
 	say("\tNo logfile given");
 
 	say("\tNotification is %s", 
-				onoff[window->miscflags & WINDOW_NOTIFY]);
+				onoff[window->notify_when_hidden]);
 	say("\tNotify level is %s", 
 				mask_to_str(&window->notify_mask));
 
@@ -3722,17 +3722,17 @@ static	Window *window_noserv (Window *window, char **args)
 
 static Window *window_notify (Window *window, char **args)
 {
-	window->miscflags ^= WINDOW_NOTIFY;
-	say("Notification when hidden set to %s",
-		window->miscflags & WINDOW_NOTIFY ? on : off);
+	if (get_boolean("NOTIFY", args, &window->notify_when_hidden))
+		return NULL;
+
 	return window;
 }
 
 static Window *window_notify_list (Window *window, char **args)
 {
-	window->miscflags ^= WINDOW_NOTIFIED;
-	say("Notify list status set to %s",
-		window->miscflags & WINDOW_NOTIFIED ? on : off);
+	if (get_boolean("NOTIFIED", args, &window->notified))
+		return NULL;
+
 	return window;
 }
 
@@ -4700,7 +4700,7 @@ BUILT_IN_COMMAND(windowcmd)
 static Display *recycle = NULL;
 static size_t	display_line_count = 1;
 
-void 	delete_display_line (Display *stuff)
+static void 	delete_display_line (Display *stuff)
 {
 	if (recycle == stuff)
 		panic("recycle == stuff is bogus");
@@ -5580,7 +5580,11 @@ char 	*windowctl 	(char *input)
 	    } else if (!my_strnicmp(listc, "UPDATE", len)) {
 		RETURN_INT(w->update);
 	    } else if (!my_strnicmp(listc, "MISCFLAGS", len)) {
-		RETURN_INT(w->miscflags);
+		RETURN_INT(0);
+	    } else if (!my_strnicmp(listc, "NOTIFY", len)) {
+		RETURN_INT(w->notify_when_hidden);
+	    } else if (!my_strnicmp(listc, "NOTIFIED", len)) {
+		RETURN_INT(w->notified);
 	    } else if (!my_strnicmp(listc, "BEEP_ALWAYS", len)) {
 		RETURN_INT(w->beep_always);
 	    } else if (!my_strnicmp(listc, "NOTIFY_LEVEL", len)) {

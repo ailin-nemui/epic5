@@ -1,4 +1,4 @@
-/* $EPIC: screen.c,v 1.78 2004/03/19 01:02:02 jnelson Exp $ */
+/* $EPIC: screen.c,v 1.79 2004/03/19 04:38:19 jnelson Exp $ */
 /*
  * screen.c
  *
@@ -2325,11 +2325,11 @@ static void 	add_to_window (Window *window, const unsigned char *str)
 		 * Tell some visible window about our problems 
 		 * if the user wants us to.
 		 */
-		if (!(window->miscflags & WINDOW_NOTIFIED) &&
+		if (!(window->notified) &&
 			mask_isset(&window->notify_mask, who_level))
 		{
-			window->miscflags |= WINDOW_NOTIFIED;
-			if (window->miscflags & WINDOW_NOTIFY)
+			window->notified = 1;
+			if (window->notify_when_hidden)
 			{
 				Window	*old_to_window;
 

@@ -1,4 +1,4 @@
-/* $EPIC: status.c,v 1.41 2004/03/19 01:02:02 jnelson Exp $ */
+/* $EPIC: status.c,v 1.42 2004/03/19 04:38:19 jnelson Exp $ */
 /*
  * status.c: handles the status line updating, etc for IRCII 
  *
@@ -981,7 +981,7 @@ static	char	my_buffer[81];
 	window = NULL;
 	while (traverse_all_windows(&window))
 	{
-		if (window->miscflags & WINDOW_NOTIFIED)
+		if (window->notified)
 		{
 			if (doneone++)
 				strlcat(buf2, ",", sizeof buf2);

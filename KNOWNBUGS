@@ -201,3 +201,9 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Refactor add_to_screen(). wheee!
 * Change "Update %H on status bar..." to "Update %B on status bar..."
 * So $windowctl(... QUERY_NICK ...) returns empty string now.
+* Split (Window)->miscflags into "notify_when_hidden" and "notified"
+* Add $windowctl(... NOTIFY ...) and $windowctl(... NOTIFIED ...)
+* Change $windowctl(GET <refnum> MISCFLAGS) to always return 0.
+* Make /window notify and /window notified take ON|OFF|TOGGLE.
+* New function, $strtol(<base> <num>), convert <num> in base <base> to base 10.
+* New function, $tobase(<base> <num>), convert <num> in base 10 to base <base>.

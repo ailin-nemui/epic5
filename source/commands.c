@@ -1,4 +1,4 @@
-/* $EPIC: commands.c,v 1.89 2004/03/17 16:50:30 jnelson Exp $ */
+/* $EPIC: commands.c,v 1.90 2004/03/19 04:38:18 jnelson Exp $ */
 /*
  * commands.c -- Stuff needed to execute commands in ircII.
  *		 Includes the bulk of the built in commands for ircII.
@@ -1178,11 +1178,6 @@ BUILT_IN_COMMAND(evalcmd)
 /* flush: flushes all pending stuff coming from the server */
 BUILT_IN_COMMAND(flush)
 {
-#if 0
-	if (get_int_var(HOLD_MODE_VAR))
-		flush_everything_being_held(NULL);
-#endif
-
 	say("Standby, Flushing server output...");
 	flush_server(from_server);
 	say("Done");

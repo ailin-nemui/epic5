@@ -1,4 +1,4 @@
-/* $EPIC: functions.c,v 1.161 2004/03/19 01:02:02 jnelson Exp $ */
+/* $EPIC: functions.c,v 1.162 2004/03/19 04:38:18 jnelson Exp $ */
 /*
  * functions.c -- Built-in functions for ircII
  *
@@ -379,6 +379,7 @@ static	char
 	*function_stripc 	(char *),
 	*function_stripcrap	(char *),
 	*function_strlen	(char *),
+	*function_strtol	(char *),
 	*function_substr	(char *),
 	*function_tan		(char *),
 	*function_tanh		(char *),
@@ -387,6 +388,7 @@ static	char
 #ifdef TCL
 	*function_tcl		(char *),
 #endif
+	*function_tobase	(char *),
 	*function_tow		(char *),
 	*function_translate 	(char *),
 	*function_truncate 	(char *),
@@ -697,6 +699,7 @@ static BuiltInFunctions	built_in_functions[] =
 	{ "STRIPC",		function_stripc		},
 	{ "STRIPCRAP",		function_stripcrap	},
 	{ "STRLEN",		function_strlen		},
+	{ "STRTOL",		function_strtol		},
 	{ "SUBSTR",		function_substr		},
 	{ "TAN",		function_tan		},
 	{ "TANH",		function_tanh		},
@@ -707,6 +710,7 @@ static BuiltInFunctions	built_in_functions[] =
 	{ "TDIFF2",		function_tdiff2 	},
 	{ "TIME",		function_time 		},
 	{ "TIMERCTL",		function_timerctl	},
+	{ "TOBASE",		function_tobase 	},
 	{ "TOLOWER",		function_tolower 	},
 	{ "TOUPPER",		function_toupper 	},
 	{ "TOW",                function_tow 		},
@@ -6310,7 +6314,7 @@ BUILT_IN_FUNCTION(function_notifywindows, input)
 
 	window = NULL;
 	while (traverse_all_windows(&window))
-		if (window->miscflags & WINDOW_NOTIFIED)
+		if (window->notified)
 			malloc_strcat_word_c(&retval, space, ltoa(window->refnum), &rvclue);
 
 	RETURN_MSTR(retval);
@@ -6935,6 +6939,78 @@ BUILT_IN_FUNCTION(function_numlines, input)
 	prepare_display(strval, cols, &numl, 0);
 	new_free(&strval);
 	RETURN_INT(numl+1);
+}
+
+/*
+ * $strtol(<base> <number>)
+ * Returns the decimal value of <number>, where number is a number
+ * in base <base>. <base> must be higher than, or equal to 2, or
+ * lower than, or equal to 36, or 0.
+ * Returns empty on errors.
+ * Written by howl
+ */
+BUILT_IN_FUNCTION(function_strtol, input)
+{
+	int	base;
+	char *	number;
+	long	retval;
+	char *	after;
+
+	if (!input || !*input) 
+		RETURN_EMPTY;
+	GET_INT_ARG(base, input);
+	if (!input || !*input || (base != 0 && (base < 2 || base > 36)))
+		RETURN_EMPTY;
+	GET_STR_ARG(number, input);
+
+	retval = strtol(number, &after, base);
+	/* Argh -- do we want to return error if invalid char found? */
+	RETURN_INT(retval);
+}
+
+/*
+ * $tobase(<base> <number>)
+ * Returns the string value of decimal number <number>, converted to base
+ * <base>. <base> must be higher than, or equal to 2, or lower than, or 
+ * equal to 36.
+ * Written by howl
+ */
+BUILT_IN_FUNCTION(function_tobase, input)
+{
+	int	c, base, len = 0, 
+		n, num, pos = 0;
+	char *	string;
+	char 	table[] = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+
+	len = pos = 0;
+	
+	if (!input || !*input)
+		RETURN_EMPTY;
+	GET_INT_ARG(base, input);
+
+	if (!input || !*input || base < 2 || base > 36)
+		RETURN_EMPTY;
+	GET_INT_ARG(num, input);
+
+	while (pow(base, len) <= num)
+		len++;
+
+	if (!len)
+		RETURN_EMPTY;
+
+	string = new_malloc(len + 1);
+	string[len] = 0;
+	
+	while (len-- > 0)
+	{
+		n = pow(base, len),
+		c = floor(num / n);
+		string[pos] = table[c];
+		pos++;
+		num -= n * c;
+	}
+
+	return string;
 }
 
 BUILT_IN_FUNCTION(function_startupfile, input)

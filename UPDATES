@@ -1,5 +1,25 @@
 EPIC5-0.1
 
+*** News 03/19/2004 -- New built in function, $tobase(<base> <num>) [howl]
+	This function converts <num>, a number in base 10, to base <base>.
+	For example, $tobase(16 65536) returns "10000"
+
+*** News 03/19/2004 -- New built in function, $strtol(<base> <num>) [howl]
+	This function converts <num>, a number in base <base> to base 10.
+	For example, $strtol(16 10000) returns "65536"
+
+*** News 03/19/2004 -- Changes to /WINDOW NOTIFY, /WINDOW NOTIFIED
+	These two /WINDOW operations now take ON, OFF, or TOGGLE arguments,
+	instead of taking no arguments and behaving as toggle switches.
+	If you do not provide an argument, they show you their current
+	values as the other /WINDOW boolean values do.
+
+*** News 03/19/2004 -- Addition and changes to $windowctl()
+	$windowctl(GET <refnum> MISCFLAGS) always returns 0, and
+	$windowctl(GET <refnum> NOTIFY) returns 1 if /window notify is on
+	$windowctl(GET <refnum> NOTIFIED) returns 1 if /window notified is on.
+	NOTIFY and NOTIFIED replace MISCFLAGS.
+
 *** News 03/19/2004 -- New key binding, SWITCH_QUERY
 	Whenever a window has multple nicknames in its nickname list,
 	and one of those nicknames is active as the window's query, it
