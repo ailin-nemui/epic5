@@ -1,5 +1,5 @@
 /*
- * @(#)$Id: acconfig.h,v 1.23 2003/11/21 16:18:12 jnelson Exp $
+ * @(#)$Id: acconfig.h,v 1.24 2003/11/22 03:19:03 jnelson Exp $
  */
 
 /*
@@ -310,4 +310,7 @@
 
 /* Define this if you have a (long long) */
 #undef HAVE_LONG_LONG
+
+/* Define this if you have atoll() */
+#undef HAVE_ATOLL
 

@@ -1,4 +1,4 @@
-/* $EPIC: compat.c,v 1.18 2003/05/09 04:29:52 jnelson Exp $ */
+/* $EPIC: compat.c,v 1.19 2003/11/22 03:19:03 jnelson Exp $ */
 /*
  * Everything that im not directly responsible for I put in here.  Almost
  * all of this stuff is either borrowed from somewhere else (for you poor
@@ -1211,4 +1211,19 @@ char *	my_realpath (const char *pathname, char resolved_path[MAXPATHLEN])
 }
 #endif
 
+#ifndef HAVE_ATOLL
+#ifdef HAVE_LONG_LONG
+long long	atoll (const char *str)
+{
+	return strtoll(str, NULL, 0);
+}
+#else
+long	atoll (const char *str)
+{
+	return atol(str);
+}
+#endif
+#endif
+
 /**** END MISC PUBLIC DOMAIN STUFF ****/
+
