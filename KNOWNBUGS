@@ -21,3 +21,5 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Make 'start_time' and 'idle_time' struct timeval's, for future use.
 * Add some functions to ircaux.c to make manipulating timevals easier.
 * Migrate calc_speed in dcc.c to using 'struct timeval's instead of time_t's
+* Fix /xecho -v
+* Make /pause take a fractional argument, ie, /pause 1.5

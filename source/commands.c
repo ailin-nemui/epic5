@@ -694,8 +694,8 @@ static	void	e_pause_cb (char *u1, char *u2) { e_pause_cb_throw--; }
 BUILT_IN_COMMAND(e_pause)
 {
 	char *	sec;
-	int 	seconds;
-	time_t 	start;
+	double 	seconds;
+	struct timeval 	start;
 
 	if (!(sec = next_arg(args, &args)))
 	{
@@ -709,15 +709,16 @@ BUILT_IN_COMMAND(e_pause)
 		return;
 	}
 
-	seconds = my_atol(sec);
-	time(&start);
+	seconds = atof(sec);
+	get_time(&start);
+	start = time_add(start, double_to_timeval(seconds));
 
 	/* 
 	 * I use comment here simply becuase its not going to mess
 	 * with the arguments.
 	 */
 	add_timer(0, "", seconds, 1, (int (*)(void *))comment, NULL, NULL, current_window);
-	while (time(NULL) < start + seconds)
+	while (time_diff(get_time(NULL), start) > 0)
 		io("e_pause");
 }
 
