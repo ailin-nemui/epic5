@@ -220,3 +220,5 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Implement "priveleged yells" which lets you do /set debug 7 again.
 * Fix UNSTOP_ALL_WINDOWS keybinding, reported by ce.
 * When sending a /dcc chat message, make sure to call message_from properly.
+* Set the window's waiting channel before sending out the JOIN
+* Let <pagedown> and <end> work on hold mode as well as scrollback.

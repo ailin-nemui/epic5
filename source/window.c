@@ -1,4 +1,4 @@
-/* $EPIC: window.c,v 1.73 2003/10/12 03:33:10 jnelson Exp $ */
+/* $EPIC: window.c,v 1.74 2003/10/17 23:34:47 jnelson Exp $ */
 /*
  * window.c: Handles the organzation of the logical viewports (``windows'')
  * for irc.  This includes keeping track of what windows are open, where they
@@ -2863,11 +2863,15 @@ static Window *window_channel (Window *window, char **args)
 #endif
 		else
 		{
+		    /*
+		     * This needs to be done first in case anyone has any weird
+		     * ideas about doing a /wait in the /on send_to_server.
+		     */
+		    malloc_strcpy(&window->waiting_channel, arg);
 		    if (sarg)
 			send_to_aserver(window->server,"JOIN %s %s", arg, sarg);
 		    else
 			send_to_aserver(window->server,"JOIN %s", arg);
-		    malloc_strcpy(&window->waiting_channel, arg);
 		}
 
 		new_free(&arg2);
@@ -4892,17 +4896,26 @@ static void	window_scrollback_start (Window *window)
 	window_statusbar_needs_update(window);
 }
 
+/*
+ * Cancel out scrollback and holding stuff so you're left pointing at the
+ * "standard" place.  Doesn't turn hold mode off, obviously.
+ */
 static void	window_scrollback_end (Window *window)
 {
 	if (window->scrollback_top_of_display)
-	{
 		window->scrollback_top_of_display = NULL;
-		recalculate_window_cursor_and_display_ip(window);
-		window_body_needs_redraw(window);
-		window_statusbar_needs_update(window);
-	}
+	if (window->holding_top_of_display)
+		window->holding_top_of_display = window->display_ip;
+
+	recalculate_window_cursor_and_display_ip(window);
+	window_body_needs_redraw(window);
+	window_statusbar_needs_update(window);
 }
 
+/*
+ * Scroll backwards from the last scrollback point, the last hold point,
+ * or the standard place.
+ */
 static void 	window_scrollback_backwards_lines (Window *window, int lines)
 {
 	Display *new_top;
@@ -4936,12 +4949,26 @@ static void 	window_scrollback_backwards_lines (Window *window, int lines)
 	window_statusbar_needs_update(window);
 }
 
+/*
+ * Scroll the scrollback (or hold mode) forward.
+ */
 static void 	window_scrollback_forwards_lines (Window *window, int lines)
 {
-	Display *new_top = window->scrollback_top_of_display;
+	Display *new_top;
+	int	unholding;
 	int	new_lines = 0;
 
-	if (!new_top)
+	if (window->scrollback_top_of_display)
+	{
+		new_top = window->scrollback_top_of_display;
+		unholding = 0;
+	}
+	else if (window->holding_top_of_display)
+	{
+		new_top = window->holding_top_of_display;
+		unholding = 1;
+	}
+	else
 	{
 		term_beep();
 		return;
@@ -4954,7 +4981,11 @@ static void 	window_scrollback_forwards_lines (Window *window, int lines)
 	    new_top = new_top->next;
 	}
 
-	window->scrollback_top_of_display = new_top;
+	if (!unholding)
+		window->scrollback_top_of_display = new_top;
+	else
+		window->holding_top_of_display = new_top;
+
 	recalculate_window_cursor_and_display_ip(window);
 	window_body_needs_redraw(window);
 	window_statusbar_needs_update(window);
@@ -5417,116 +5448,170 @@ char 	*windowctl 	(char *input)
 	if (!my_strnicmp(listc, "REFNUMS", len)) {
 	} else if (!my_strnicmp(listc, "NEW", len)) {
 	} else if (!my_strnicmp(listc, "REFNUM", len)) {
-		char *windesc;
+	    char *windesc;
 
-		GET_STR_ARG(windesc, input);
-		if (!(w = get_window_by_desc(windesc)))
-			RETURN_EMPTY;
-		RETURN_INT(w->refnum);
+	    GET_STR_ARG(windesc, input);
+	    if (!(w = get_window_by_desc(windesc)))
+		RETURN_EMPTY;
+	    RETURN_INT(w->refnum);
 	} else if (!my_strnicmp(listc, "GET", len)) {
-		GET_INT_ARG(refnum, input);
-		if (!(w = get_window_by_refnum(refnum)))
-			RETURN_EMPTY;
+	    GET_INT_ARG(refnum, input);
+	    if (!(w = get_window_by_refnum(refnum)))
+		RETURN_EMPTY;
 
-		GET_STR_ARG(listc, input);
-		len = strlen(listc);
+	    GET_STR_ARG(listc, input);
+	    len = strlen(listc);
 
-		if (!my_strnicmp(listc, "REFNUM", len)) {
-		} else if (!my_strnicmp(listc, "NAME", len)) {
-		} else if (!my_strnicmp(listc, "SERVER", len)) {
-		} else if (!my_strnicmp(listc, "LAST_SERVER", len)) {
-		} else if (!my_strnicmp(listc, "PRIORITY", len)) {
-		} else if (!my_strnicmp(listc, "TOP", len)) {
-		} else if (!my_strnicmp(listc, "BOTTOM", len)) {
-		} else if (!my_strnicmp(listc, "CURSOR", len)) {
-		} else if (!my_strnicmp(listc, "NOSCROLLCURSOR", len)) {
-		} else if (!my_strnicmp(listc, "ABSOLUTE_SIZE", len)) {
-		} else if (!my_strnicmp(listc, "SCROLL", len)) {
-		} else if (!my_strnicmp(listc, "CHANGE_LINE", len)) {
-		} else if (!my_strnicmp(listc, "OLD_SIZE", len)) {
-		} else if (!my_strnicmp(listc, "UPDATE", len)) {
-		} else if (!my_strnicmp(listc, "MISCFLAGS", len)) {
-		} else if (!my_strnicmp(listc, "BEEP_ALWAYS", len)) {
-		} else if (!my_strnicmp(listc, "NOTIFY_LEVEL", len)) {
-		} else if (!my_strnicmp(listc, "WINDOW_LEVEL", len)) {
-		} else if (!my_strnicmp(listc, "SKIP", len)) {
-		} else if (!my_strnicmp(listc, "COLUMNS", len)) {
-		} else if (!my_strnicmp(listc, "PROMPT", len)) {
-		} else if (!my_strnicmp(listc, "STATUS_FORMAT", len)) {
-		} else if (!my_strnicmp(listc, "STATUS_FORMAT1", len)) {
-		} else if (!my_strnicmp(listc, "STATUS_FORMAT2", len)) {
-		} else if (!my_strnicmp(listc, "DISPLAY_BUFFER_SIZE", len)) {
-		} else if (!my_strnicmp(listc, "DISPLAY_BUFFER_MAX", len)) {
-		} else if (!my_strnicmp(listc, "DISPLAY_SIZE", len)) {
-		} else if (!my_strnicmp(listc, "HOLD_MODE", len)) {
-		} else if (!my_strnicmp(listc, "AUTOHOLD", len)) {
-		} else if (!my_strnicmp(listc, "LINES_HELD", len)) {
-		} else if (!my_strnicmp(listc, "HOLD_INTERVAL", len)) {
-		} else if (!my_strnicmp(listc, "LAST_LINES_HELD", len)) {
-		} else if (!my_strnicmp(listc, "DISTANCE_FROM_DISPLAY_IP", len)) {
-		} else if (!my_strnicmp(listc, "WAITING_CHANNEL", len)) {
-		} else if (!my_strnicmp(listc, "BIND_CHANNEL", len)) {
-		} else if (!my_strnicmp(listc, "QUERY_NICK", len)) {
-		} else if (!my_strnicmp(listc, "NICKLIST", len)) {
-		} else if (!my_strnicmp(listc, "LASTLOG_LEVEL", len)) {
-		} else if (!my_strnicmp(listc, "LASTLOG_SIZE", len)) {
-		} else if (!my_strnicmp(listc, "LASTLOG_MAX", len)) {
-		} else if (!my_strnicmp(listc, "LOGGING", len)) {
-		} else if (!my_strnicmp(listc, "LOGFILE", len)) {
-		} else if (!my_strnicmp(listc, "DECEASED", len)) {
-		}
+	    if (!my_strnicmp(listc, "REFNUM", len)) {
+		RETURN_INT(w->refnum);
+	    } else if (!my_strnicmp(listc, "NAME", len)) {
+		RETURN_STR(w->name);
+	    } else if (!my_strnicmp(listc, "SERVER", len)) {
+		RETURN_INT(w->server);
+	    } else if (!my_strnicmp(listc, "LAST_SERVER", len)) {
+		RETURN_INT(w->last_server);
+	    } else if (!my_strnicmp(listc, "PRIORITY", len)) {
+		RETURN_INT(w->priority);
+	    } else if (!my_strnicmp(listc, "TOP", len)) {
+		RETURN_INT(w->top);
+	    } else if (!my_strnicmp(listc, "BOTTOM", len)) {
+		RETURN_INT(w->bottom);
+	    } else if (!my_strnicmp(listc, "CURSOR", len)) {
+		RETURN_INT(w->cursor);
+	    } else if (!my_strnicmp(listc, "NOSCROLLCURSOR", len)) {
+		RETURN_INT(w->noscrollcursor);
+	    } else if (!my_strnicmp(listc, "FIXED", len)) {
+		RETURN_INT(w->absolute_size);
+	    } else if (!my_strnicmp(listc, "SCROLL", len)) {
+		RETURN_INT(w->scroll);
+	    } else if (!my_strnicmp(listc, "CHANGE_LINE", len)) {
+		RETURN_INT(w->change_line);
+	    } else if (!my_strnicmp(listc, "OLD_SIZE", len)) {
+		RETURN_INT(w->old_size);
+	    } else if (!my_strnicmp(listc, "UPDATE", len)) {
+		RETURN_INT(w->update);
+	    } else if (!my_strnicmp(listc, "MISCFLAGS", len)) {
+		RETURN_INT(w->miscflags);
+	    } else if (!my_strnicmp(listc, "BEEP_ALWAYS", len)) {
+		RETURN_INT(w->beep_always);
+	    } else if (!my_strnicmp(listc, "NOTIFY_LEVEL", len)) {
+		RETURN_STR(bits_to_lastlog_level(w->notify_level));
+	    } else if (!my_strnicmp(listc, "WINDOW_LEVEL", len)) {
+		RETURN_STR(bits_to_lastlog_level(w->window_level));
+	    } else if (!my_strnicmp(listc, "SKIP", len)) {
+		RETURN_INT(w->skip);
+	    } else if (!my_strnicmp(listc, "COLUMNS", len)) {
+		RETURN_INT(w->columns);
+	    } else if (!my_strnicmp(listc, "PROMPT", len)) {
+		RETURN_STR(w->prompt);
+	    } else if (!my_strnicmp(listc, "STATUS_FORMAT", len)) {
+		RETURN_STR(w->status.line[0].raw);
+	    } else if (!my_strnicmp(listc, "STATUS_FORMAT1", len)) {
+		RETURN_STR(w->status.line[1].raw);
+	    } else if (!my_strnicmp(listc, "STATUS_FORMAT2", len)) {
+		RETURN_STR(w->status.line[2].raw);
+	    } else if (!my_strnicmp(listc, "STATUS_LINE", len)) {
+		RETURN_STR(w->status.line[0].result);
+	    } else if (!my_strnicmp(listc, "STATUS_LINE1", len)) {
+		RETURN_STR(w->status.line[1].result);
+	    } else if (!my_strnicmp(listc, "STATUS_LINE2", len)) {
+		RETURN_STR(w->status.line[2].result);
+	    } else if (!my_strnicmp(listc, "DISPLAY_BUFFER_SIZE", len)) {
+		RETURN_INT(w->display_buffer_size);
+	    } else if (!my_strnicmp(listc, "DISPLAY_BUFFER_MAX", len)) {
+		RETURN_INT(w->display_buffer_max);
+	    } else if (!my_strnicmp(listc, "SCROLLING_DISTANCE", len)) {
+		RETURN_INT(w->scrolling_distance_from_display_ip);
+	    } else if (!my_strnicmp(listc, "HOLDING_DISTANCE", len)) {
+		RETURN_INT(w->holding_distance_from_display_ip);
+	    } else if (!my_strnicmp(listc, "SCROLLBACK_DISTANCE", len)) {
+		RETURN_INT(w->scrollback_distance_from_display_ip);
+	    } else if (!my_strnicmp(listc, "DISPLAY_COUNTER", len)) {
+		RETURN_INT(w->display_counter);
+	    } else if (!my_strnicmp(listc, "HOLD_SLIDER", len)) {
+		RETURN_INT(w->hold_slider);
+	    } else if (!my_strnicmp(listc, "HOLD_INTERVAL", len)) {
+		RETURN_INT(w->hold_interval);
+	    } else if (!my_strnicmp(listc, "LAST_LINES_HELD", len)) {
+		RETURN_INT(w->last_lines_held);
+	    } else if (!my_strnicmp(listc, "WAITING_CHANNEL", len)) {
+		RETURN_STR(w->waiting_channel);
+	    } else if (!my_strnicmp(listc, "BIND_CHANNEL", len)) {
+		RETURN_STR(w->bind_channel);
+	    } else if (!my_strnicmp(listc, "QUERY_NICK", len)) {
+		RETURN_STR(w->query_nick);
+	    } else if (!my_strnicmp(listc, "NICKLIST", len)) {
+		RETURN_MSTR(get_nicklist_by_window(w));
+	    } else if (!my_strnicmp(listc, "LASTLOG_LEVEL", len)) {
+		RETURN_STR(bits_to_lastlog_level(w->lastlog_level));
+	    } else if (!my_strnicmp(listc, "LASTLOG_SIZE", len)) {
+		RETURN_INT(w->lastlog_size);
+	    } else if (!my_strnicmp(listc, "LASTLOG_MAX", len)) {
+		RETURN_INT(w->lastlog_max);
+	    } else if (!my_strnicmp(listc, "LOGGING", len)) {
+		RETURN_INT(w->log);
+	    } else if (!my_strnicmp(listc, "LOGFILE", len)) {
+		RETURN_STR(w->logfile);
+	    } else if (!my_strnicmp(listc, "DECEASED", len)) {
+		RETURN_INT(w->deceased);
+	    }
 	} else if (!my_strnicmp(listc, "SET", len)) {
-		GET_INT_ARG(refnum, input);
-		if (!(w = get_window_by_refnum(refnum)))
-			RETURN_EMPTY;
+	    GET_INT_ARG(refnum, input);
+	    if (!(w = get_window_by_refnum(refnum)))
+		RETURN_EMPTY;
 
-		GET_STR_ARG(listc, input);
-		len = strlen(listc);
+	    GET_STR_ARG(listc, input);
+	    len = strlen(listc);
 
-		if (!my_strnicmp(listc, "REFNUM", len)) {
-		} else if (!my_strnicmp(listc, "NAME", len)) {
-		} else if (!my_strnicmp(listc, "SERVER", len)) {
-		} else if (!my_strnicmp(listc, "LAST_SERVER", len)) {
-		} else if (!my_strnicmp(listc, "PRIORITY", len)) {
-		} else if (!my_strnicmp(listc, "TOP", len)) {
-		} else if (!my_strnicmp(listc, "BOTTOM", len)) {
-		} else if (!my_strnicmp(listc, "CURSOR", len)) {
-		} else if (!my_strnicmp(listc, "NOSCROLLCURSOR", len)) {
-		} else if (!my_strnicmp(listc, "ABSOLUTE_SIZE", len)) {
-		} else if (!my_strnicmp(listc, "SCROLL", len)) {
-		} else if (!my_strnicmp(listc, "CHANGE_LINE", len)) {
-		} else if (!my_strnicmp(listc, "OLD_SIZE", len)) {
-		} else if (!my_strnicmp(listc, "UPDATE", len)) {
-		} else if (!my_strnicmp(listc, "MISCFLAGS", len)) {
-		} else if (!my_strnicmp(listc, "BEEP_ALWAYS", len)) {
-		} else if (!my_strnicmp(listc, "NOTIFY_LEVEL", len)) {
-		} else if (!my_strnicmp(listc, "WINDOW_LEVEL", len)) {
-		} else if (!my_strnicmp(listc, "SKIP", len)) {
-		} else if (!my_strnicmp(listc, "COLUMNS", len)) {
-		} else if (!my_strnicmp(listc, "PROMPT", len)) {
-		} else if (!my_strnicmp(listc, "STATUS_FORMAT", len)) {
-		} else if (!my_strnicmp(listc, "STATUS_FORMAT1", len)) {
-		} else if (!my_strnicmp(listc, "STATUS_FORMAT2", len)) {
-		} else if (!my_strnicmp(listc, "DISPLAY_BUFFER_SIZE", len)) {
-		} else if (!my_strnicmp(listc, "DISPLAY_BUFFER_MAX", len)) {
-		} else if (!my_strnicmp(listc, "DISPLAY_SIZE", len)) {
-		} else if (!my_strnicmp(listc, "HOLD_MODE", len)) {
-		} else if (!my_strnicmp(listc, "AUTOHOLD", len)) {
-		} else if (!my_strnicmp(listc, "LINES_HELD", len)) {
-		} else if (!my_strnicmp(listc, "HOLD_INTERVAL", len)) {
-		} else if (!my_strnicmp(listc, "LAST_LINES_HELD", len)) {
-		} else if (!my_strnicmp(listc, "DISTANCE_FROM_DISPLAY_IP", len)) {
-		} else if (!my_strnicmp(listc, "WAITING_CHANNEL", len)) {
-		} else if (!my_strnicmp(listc, "BIND_CHANNEL", len)) {
-		} else if (!my_strnicmp(listc, "QUERY_NICK", len)) {
-		} else if (!my_strnicmp(listc, "NICKLIST", len)) {
-		} else if (!my_strnicmp(listc, "LASTLOG_LEVEL", len)) {
-		} else if (!my_strnicmp(listc, "LASTLOG_SIZE", len)) {
-		} else if (!my_strnicmp(listc, "LASTLOG_MAX", len)) {
-		} else if (!my_strnicmp(listc, "LOGGING", len)) {
-		} else if (!my_strnicmp(listc, "LOGFILE", len)) {
-		} else if (!my_strnicmp(listc, "DECEASED", len)) {
-		}
+	    if (!my_strnicmp(listc, "REFNUM", len)) {
+	    } else if (!my_strnicmp(listc, "NAME", len)) {
+	    } else if (!my_strnicmp(listc, "SERVER", len)) {
+	    } else if (!my_strnicmp(listc, "LAST_SERVER", len)) {
+	    } else if (!my_strnicmp(listc, "PRIORITY", len)) {
+	    } else if (!my_strnicmp(listc, "TOP", len)) {
+	    } else if (!my_strnicmp(listc, "BOTTOM", len)) {
+	    } else if (!my_strnicmp(listc, "CURSOR", len)) {
+	    } else if (!my_strnicmp(listc, "NOSCROLLCURSOR", len)) {
+	    } else if (!my_strnicmp(listc, "FIXED", len)) {
+	    } else if (!my_strnicmp(listc, "SCROLL", len)) {
+	    } else if (!my_strnicmp(listc, "CHANGE_LINE", len)) {
+	    } else if (!my_strnicmp(listc, "OLD_SIZE", len)) {
+	    } else if (!my_strnicmp(listc, "UPDATE", len)) {
+	    } else if (!my_strnicmp(listc, "MISCFLAGS", len)) {
+	    } else if (!my_strnicmp(listc, "BEEP_ALWAYS", len)) {
+	    } else if (!my_strnicmp(listc, "NOTIFY_LEVEL", len)) {
+	    } else if (!my_strnicmp(listc, "WINDOW_LEVEL", len)) {
+	    } else if (!my_strnicmp(listc, "SKIP", len)) {
+	    } else if (!my_strnicmp(listc, "COLUMNS", len)) {
+	    } else if (!my_strnicmp(listc, "PROMPT", len)) {
+	    } else if (!my_strnicmp(listc, "STATUS_FORMAT", len)) {
+	    } else if (!my_strnicmp(listc, "STATUS_FORMAT1", len)) {
+	    } else if (!my_strnicmp(listc, "STATUS_FORMAT2", len)) {
+	    } else if (!my_strnicmp(listc, "STATUS_LINE", len)) {
+	    } else if (!my_strnicmp(listc, "STATUS_LINE1", len)) {
+	    } else if (!my_strnicmp(listc, "STATUS_LINE2", len)) {
+	    } else if (!my_strnicmp(listc, "DISPLAY_BUFFER_SIZE", len)) {
+	    } else if (!my_strnicmp(listc, "DISPLAY_BUFFER_MAX", len)) {
+	    } else if (!my_strnicmp(listc, "DISPLAY_BUFFER_SIZE", len)) {
+	    } else if (!my_strnicmp(listc, "DISPLAY_BUFFER_MAX", len)) {
+	    } else if (!my_strnicmp(listc, "SCROLLING_DISTANCE", len)) {
+	    } else if (!my_strnicmp(listc, "HOLDING_DISTANCE", len)) {
+	    } else if (!my_strnicmp(listc, "SCROLLBACK_DISTANCE", len)) {
+	    } else if (!my_strnicmp(listc, "DISPLAY_COUNTER", len)) {
+	    } else if (!my_strnicmp(listc, "HOLD_SLIDER", len)) {
+	    } else if (!my_strnicmp(listc, "HOLD_INTERVAL", len)) {
+	    } else if (!my_strnicmp(listc, "LAST_LINES_HELD", len)) {
+	    } else if (!my_strnicmp(listc, "WAITING_CHANNEL", len)) {
+	    } else if (!my_strnicmp(listc, "BIND_CHANNEL", len)) {
+	    } else if (!my_strnicmp(listc, "QUERY_NICK", len)) {
+	    } else if (!my_strnicmp(listc, "NICKLIST", len)) {
+	    } else if (!my_strnicmp(listc, "LASTLOG_LEVEL", len)) {
+	    } else if (!my_strnicmp(listc, "LASTLOG_SIZE", len)) {
+	    } else if (!my_strnicmp(listc, "LASTLOG_MAX", len)) {
+	    } else if (!my_strnicmp(listc, "LOGGING", len)) {
+	    } else if (!my_strnicmp(listc, "LOGFILE", len)) {
+	    } else if (!my_strnicmp(listc, "DECEASED", len)) {
+	    }
 	} else
 		RETURN_EMPTY;
 
