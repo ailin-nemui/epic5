@@ -1,4 +1,4 @@
-/* $EPIC: ircaux.c,v 1.81 2003/07/08 22:36:52 jnelson Exp $ */
+/* $EPIC: ircaux.c,v 1.82 2003/07/09 05:14:15 jnelson Exp $ */
 /*
  * ircaux.c: some extra routines... not specific to irc... that I needed 
  *
@@ -2317,32 +2317,33 @@ struct metric_time	get_metric_time (double *timer)
 	return mt;
 }
 
+
 /* Gets the time in second/usecond if you can,  second/0 if you cant. */
 Timeval get_time (Timeval *timer)
 {
-	static Timeval timer2;
+	static Timeval retval;
 
-#ifdef HAVE_GETTIMEOFDAY
-	if (timer)
+	/* Substitute a dummy timeval if we need one. */
+	if (!timer)
+		timer = &retval;
+
 	{
-		gettimeofday(timer, NULL);
-		return *timer;
-	}
-	gettimeofday(&timer2, NULL);
-	return timer2;
+#ifdef HAVE_CLOCK_GETTIME
+		struct timespec ts;
+		clock_gettime(CLOCK_REALTIME, &ts);
+		timer->tv_sec = ts.tv_sec;
+		timer->tv_usec = ts.tv_nsec / 1000;
 #else
-	time_t time2 = time(NULL);
-
-	if (timer)
-	{
-		timer->tv_sec = time2;
+# ifdef HAVE_GETTIMEOFDAY
+		gettimeofday(timer, NULL);
+# else
+		timer->tv_sec = time(NULL);
 		timer->tv_usec = 0;
-		return *timer;
-	}
-	timer2.tv_sec = time2;
-	timer2.tv_usec = 0;
-	return timer2;
+# endif
 #endif
+	}
+
+	return *timer;
 }
 
 /* 

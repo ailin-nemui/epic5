@@ -1,5 +1,5 @@
 /*
- * @(#)$Id: acconfig.h,v 1.19 2002/12/28 06:19:55 jnelson Exp $
+ * @(#)$Id: acconfig.h,v 1.20 2003/07/09 05:14:12 jnelson Exp $
  */
 
 /*
@@ -298,4 +298,7 @@
 
 /* Define this if you have TCL */
 #undef TCL
+
+/* Define this if you have clock_gettime() */
+#undef HAVE_CLOCK_GETTIME
 
