@@ -7,7 +7,7 @@
  *
  * See the COPYRIGHT file, or do a HELP IRCII COPYRIGHT 
  *
- * @(#)$Id: ircaux.h,v 1.47 2003/06/28 18:40:37 jnelson Exp $
+ * @(#)$Id: ircaux.h,v 1.48 2003/06/30 04:14:01 jnelson Exp $
  */
 
 #ifndef _IRCAUX_H_
@@ -157,7 +157,7 @@ char *	encode			(const char *, size_t);
 char *	decode			(const char *);
 char *	chomp			(char *);
 int 	opento			(const char *, int, off_t);
-int	figure_out_address	(char *, char **, char **, char **);
+int	figure_out_address	(const char *, char **, char **, char **);
 int	figure_out_domain	(char *, char **, char **, int *);
 int	count_char		(const unsigned char *, const unsigned char);
 char *	strnrchr		(char *, char, int);
@@ -277,6 +277,10 @@ int	snprintf (char *, size_t, const char *, ...);
 int	setsid (void);
 #endif
 char *	my_realpath (const char *pathname, char resolved_path[]);
+size_t	strlcpy_c (char *, const char *, size_t, size_t *);
+size_t	strlcat_c (char *, const char *, size_t, size_t *);
+char *  strlopencat_c (char *dest, size_t maxlen, size_t *cluep, ...);
+int     is_string_empty (const char *str);
 
 #define CTCP_DELIM_CHAR 	'\001'
 #define CTCP_DELIM_STR 		"\001"

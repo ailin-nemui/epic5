@@ -1,4 +1,4 @@
-/* $EPIC: vars.c,v 1.30 2003/05/17 18:30:21 crazyed Exp $ */
+/* $EPIC: vars.c,v 1.31 2003/06/30 04:14:02 jnelson Exp $ */
 /*
  * vars.c: All the dealing of the irc variables are handled here. 
  *
@@ -1066,6 +1066,25 @@ static void	update_all_status_wrapper (char *ignored)
 {
 	update_all_status();
 }
+
+void    set_highlight_char (char *s)
+{
+        int     len;
+
+        if (!s)
+                s = empty_string;
+        len = strlen(s);
+
+        if (!my_strnicmp(s, "BOLD", len))
+                malloc_strcpy(&highlight_char, BOLD_TOG_STR);
+        else if (!my_strnicmp(s, "INVERSE", len))
+                malloc_strcpy(&highlight_char, REV_TOG_STR); 
+        else if (!my_strnicmp(s, "UNDERLINE", len))
+                malloc_strcpy(&highlight_char, UND_TOG_STR);
+        else
+                malloc_strcpy(&highlight_char, s);
+}
+
 
 /*******/
 typedef struct	varstacklist

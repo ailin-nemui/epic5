@@ -1,4 +1,4 @@
-/* $EPIC: ircaux.c,v 1.77 2003/06/28 18:40:38 jnelson Exp $ */
+/* $EPIC: ircaux.c,v 1.78 2003/06/30 04:14:02 jnelson Exp $ */
 /*
  * ircaux.c: some extra routines... not specific to irc... that I needed 
  *
@@ -3026,7 +3026,7 @@ char *	chomp (char *s)
 /*
  * figure_out_address -- lets try this one more time.
  */
-int	figure_out_address (char *nuh, char **nick, char **user, char **host)
+int	figure_out_address (const char *nuh, char **nick, char **user, char **host)
 {
 static 	char 	*mystuff = NULL;
 	char 	*bang, 
@@ -4282,5 +4282,77 @@ char *	switch_hostname (const char *new_hostname)
 		retval = m_sprintf("I cannot configure [%s] -- local address not changed.", new_hostname);
 
 	return retval;
+}
+
+
+size_t	strlcpy_c (char *dst, const char *src, size_t size, size_t *cluep)
+{
+	size_t	retval;
+
+	retval = strlcpy(dst, src, size);
+	if (retval > size - 1)
+		*cluep = size - 1;
+	else
+		*cluep = retval;
+	return retval;
+}
+
+size_t	strlcat_c (char *dst, const char *src, size_t size, size_t *cluep)
+{
+	size_t	retval;
+	size_t	real_size;
+	char *	real_dst;
+
+	real_dst = dst + *cluep;
+	real_size = size - *cluep;
+
+	retval = strlcat(real_dst, src, real_size);
+	if (retval + *cluep > size - 1)
+		*cluep = size - 1;
+	else
+		*cluep = retval + *cluep;
+	return retval;
+}
+
+char *	strlopencat_c (char *dest, size_t maxlen, size_t *cluep, ...)
+{
+	va_list	args;
+	char *	this_arg = NULL;
+	size_t	spare_clue;
+
+	if (cluep == NULL)
+	{
+		spare_clue = strlen(dest);
+		cluep = &spare_clue;
+	}
+
+	va_start(args, cluep);
+	for (;;)
+	{
+		/* Grab the next string, stop if no more */
+		if (!(this_arg = va_arg(args, char *)))
+			break;
+
+		/* Add this string to the end, adjusting the clue */
+		strlcat_c(dest, this_arg, maxlen, cluep);
+
+		/* If we reached the end of our space, stop here. */
+		if (*cluep >= maxlen - 1)
+			break;
+	}
+
+	va_end(args);
+	return dest;
+}
+
+int     is_string_empty (const char *str) 
+{
+        while (str && *str && *str == ' ')
+                str++;
+ 
+        if (str && *str)
+                return 0;
+ 
+        return 1;
 }
 

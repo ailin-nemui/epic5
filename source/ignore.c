@@ -1,11 +1,11 @@
-/* $EPIC: ignore.c,v 1.7 2003/05/09 04:29:52 jnelson Exp $ */
+/* $EPIC: ignore.c,v 1.8 2003/06/30 04:14:01 jnelson Exp $ */
 /*
  * ignore.c: handles the ingore command for irc 
  *
  * Copyright (c) 1990 Michael Sandroff.
  * Copyright (c) 1991, 1992 Troy Rollo.
  * Copyright (c) 1992-1996 Matthew Green.
- * Copyright © 1995, 2002 EPIC Software Labs.
+ * Copyright © 1995, 2003 EPIC Software Labs.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -34,6 +34,65 @@
  * SUCH DAMAGE.
  */
 
+/*
+ * Here's the plan...
+ *
+ * IGNORE THEORY: There are times when we want to single out a particular
+ * person, server, or channel for special handling.  The process of
+ * identifying another target on irc for special handling (see below),
+ * and the descriptions and dispositions of what you want epic to do when
+ * that target sends you a message, is known as "IGNORING" them.  Any
+ * particular message may be subject to one or more "IGNORE" rules.
+ *
+ * Each Ignore rule may either "pass" (do nothing) on a message or terminate
+ * the disposition of a message.  There are three dispositions available:
+ *
+ *   1) Suppressive ignore (IGNORE_SUPPRESS) - A message from this person 
+ *      shall be discarded and shall not generate any direct output.
+ *   2) Exceptive ignore (IGNORE_DONT) - A message from this person shall be 
+ *      considered important enough to be exempt from all other ignore rules.
+ *      Ignores of this type are "exceptions" to ignores of other types.
+ *   3) Highlight ignore (IGNORE_HIGH) - A message from this person shall not
+ *      only be exempt from all other ignore rules, but EPIC's default output
+ *      shall be embellished to indicate to the user that a person of import
+ *      has sent a message.
+ *
+ * Each Ignore type has (currently) many "levels" through which all messages
+ * are sorted:
+ *	MSGS		PRIVMSGs sent to you
+ *	PUBLIC		PRIVMSGs sent to a channel you are on
+ *	WALLS		PRIVMSGs not covered by MSGS or PUBLIC
+ *	WALLOPS		WALLOPs messages sent to anybody.
+ *	INVITES		INVITEs sent to you
+ *	NOTICES		NOTICEs sent to anybody
+ *	NOTES		"NOTE" notices sent to you.
+ *	CTCPS		CTCP requests or CTCP replies sent to anybody
+ *	TOPICS		TOPIC changes by anybody
+ *	NICKS		NICK changes by anybody
+ *	JOINS		JOINs to any channel by anybody
+ *	PARTS		PARTs from any channel by anybody
+ *	CRAP		QUITs, MODEs, KICKs and PONGs.
+ *
+ * In addition, the user can use these shorthand level descriptions:
+ *	ALL		All of the above.
+ *
+ * Further in addition, the user can set ancilliary data which have the
+ * following descriptions:
+ *	REASON "arg"	Set the ignore's reason to the double-quoted
+ *			word argument after REASON
+ *	TIMEOUT number	Automatically cancel the ignore after "number"
+ *			seconds from now.
+ *
+ * Each message that can be ignored fits into one of the above categories.
+ * For each Ignore item, for each level, the three dispotions are mutually
+ * exclusive of each other.  If you add MSGS to your suppressive ignores, 
+ * it is implied that MSGS will be removed from Exceptive and Highlight
+ * ignores.
+ * 
+ * It is not necessary for each ignore to have a disposition for each level.
+ * If an ignore does not declare a disposition for a level, it "passes" on 
+ * that message and further ignore rules will be checked.
+ */
 #include "irc.h"
 #include "ignore.h"
 #include "ircaux.h"
@@ -41,16 +100,15 @@
 #include "vars.h"
 #include "output.h"
 #include "parse.h"
+#include "timer.h"
+#include "functions.h"
+#include "window.h"
 
-#define NUMBER_OF_IGNORE_LEVELS 9
+#define IGNORE_REMOVE 	-1
+#define IGNORE_SUPPRESS  0
+#define IGNORE_DONT 	 1
+#define IGNORE_HIGH 	 2
 
-#define IGNORE_REMOVE 1
-#define IGNORE_DONT 2
-#define IGNORE_HIGH -1
-
-	char *	highlight_char = NULL;
-
-static	int	remove_ignore (char *);
 
 /*
  * Ignore: the ignore list structure,  consists of the nickname, and the type
@@ -59,169 +117,169 @@ static	int	remove_ignore (char *);
 typedef struct	IgnoreStru
 {
 	struct	IgnoreStru *next;
-	char	*nick;
-	int	type;
-	int	dont;
-	int	high;
+	char	*nick;			/* What is being ignored */
+	int	refnum;			/* The refnum for internal use */
+	int	type;			/* Suppressive ignores */
+	int	dont;			/* Exceptional ignores */
+	int	high;			/* Highlight ignores */
+	Timeval	expiration;		/* When this ignore expires */
+	char	*reason;
 }	Ignore;
 
 /* ignored_nicks: pointer to the head of the ignore list */
 static	Ignore *ignored_nicks = NULL;
+static	int	global_ignore_refnum = 0;
 
-#define DOT (*host ? dot : empty_string)
+static void	expire_ignores			(void);
+static const char *	get_ignore_types 		(Ignore *item, int);
+static int	change_ignore_mask_by_desc 	(const char *, int *, int *, 
+						 int *, char **, Timeval *);
+static int	ignore_change			(Ignore *, int, void *);
+static int	ignore_list			(Ignore *, int, void *);
+static int	foreach_ignore			(const char *, int, 
+						 int (*)(Ignore *, int, void *),
+						 int, void *);
+static int	remove_ignore			(const char *);
+
+/*****************************************************************************/
+static Ignore *new_ignore (const char *new_nick)
+{
+	Ignore *item;
+
+	item = (Ignore *) new_malloc(sizeof(Ignore));
+	item->nick = m_strdup(new_nick);
+	upper(item->nick);
+	item->reason = NULL;
+	item->refnum = ++global_ignore_refnum;
+	item->type = 0;
+	item->dont = 0;
+	item->high = 0;
+	item->expiration.tv_sec = 0;
+	item->expiration.tv_usec = 0;
+	add_to_list((List **)&ignored_nicks, (List *)item);
+	return item;
+}
 
 /*
- * ignore_nickname: adds nick to the ignore list, using type as the type of
- * ignorance to take place.
+ * get_ignore_by_refnum: When all you have is a refnum, all the world's 
+ *			 a linked list...
+ *
+ * Arguments: 
+ *  'refnum' -- The refnum of an ignore allegedly in use
+ *
+ * Return Value:
+ *  If 'refnum' is actually in use, that Ignore item is returned, 
+ *  otherwise NULL is returned.
  */
-static void 	ignore_nickname (const char *nicklist, int type, int flag)
+static Ignore *get_ignore_by_refnum (int refnum)
 {
-	Ignore	*new_i;
-	char *	nick;
-	const char *	msg;
-	char *	ptr;
-	char	new_nick[IRCD_BUFFER_SIZE + 1];
-	char	buffer[BIG_BUFFER_SIZE+1];
-	char *	mnick;
-	char *	user;
-	char *	host;
+	Ignore *item;
 
-	for (nick = LOCAL_COPY(nicklist); nick; nick = ptr)
+	for (item = ignored_nicks; item; item = item->next)
+		if (item->refnum == refnum)
+			return item;
+
+	return NULL;
+}
+
+/****************************************************************************/
+/*
+ * do_expire_ignores: TIMER callback for when ignores should be reaped
+ *
+ * Arguments:
+ *  'ignored' -- Not used.
+ *
+ * Return Value:
+ *  No return value
+ */
+int	do_expire_ignores (void *ignored)
+{
+	expire_ignores();
+	return 0;
+}
+
+/*
+ * expire_ignores: find and destroy any timers which have reached the end
+ * 	of their useful lifetime.
+ *
+ * Arguments:
+ *  No arguments
+ *
+ * Return Value:
+ *  No return value
+ */
+static void	expire_ignores (void)
+{
+	Ignore *item, *next;
+	Timeval	right_now;
+
+	if (!ignored_nicks)
+		return;
+
+	get_time(&right_now);
+	for (item = ignored_nicks; item; item = next)
 	{
-		if ((ptr = strchr(nick, ',')))
-			*ptr++ = 0;
-
-		if (!*nick)
-			continue;
-
-		if (figure_out_address(nick, &mnick, &user, &host))
-			strlcpy(new_nick, nick, sizeof new_nick);
-		else
-			snprintf(new_nick, sizeof new_nick, "%s!%s@%s",
-				mnick, user, host);
-
-		if (!(new_i = (Ignore *) list_lookup((List **)&ignored_nicks, 
-							new_nick, 
-							!USE_WILDCARDS, 
-							!REMOVE_FROM_LIST)))
-		{
-			if (flag == IGNORE_REMOVE)
-			{
-				say("%s is not on the ignorance list", nick);
-				continue;
-			}
-			else
-			{
-				if ((new_i = (Ignore *) remove_from_list((List **)&ignored_nicks, new_nick)))
-				{
-					new_free(&(new_i->nick));
-					new_free((char **)&new_i);
-				}
-				new_i = (Ignore *) new_malloc(sizeof(Ignore));
-				new_i->type = 0;
-				new_i->dont = 0;
-				new_i->high = 0;
-				new_i->nick = m_strdup(new_nick);
-				upper(new_i->nick);
-				add_to_list((List **)&ignored_nicks, 
-					    (List *)new_i);
-			}
-		}
-
-		switch (flag)
-		{
-			case IGNORE_REMOVE:
-				new_i->type &= (~type);
-				new_i->high &= (~type);
-				new_i->dont &= (~type);
-				msg = "Not ignoring";
-				break;
-			case IGNORE_DONT:
-				new_i->dont |= type;
-				new_i->type &= (~type);
-				new_i->high &= (~type);
-				msg = "Never ignoring";
-				break;
-			case IGNORE_HIGH:
-				new_i->high |= type;
-				new_i->type &= (~type);
-				new_i->dont &= (~type);
-				msg = "Highlighting";
-				break;
-			default:
-				new_i->type |= type;
-				new_i->high &= (~type);
-				new_i->dont &= (~type);
-				msg = "Ignoring";
-				break;
-		}
-
-		if (type == IGNORE_ALL)
-		{
-			switch (flag)
-			{
-			    case IGNORE_REMOVE:
-				remove_ignore(new_i->nick);
-				break;
-			    case IGNORE_HIGH:
-				say("Highlighting ALL messages from %s", 
-						new_i->nick);
-				break;
-			    case IGNORE_DONT:
-				say("Never ignoring messages from %s", 
-						new_i->nick);
-				break;
-			    default:
-				say("Ignoring ALL messages from %s", 
-						new_i->nick);
-				break;
-			}
-			return;
-		}
-		else if (type)
-		{
-			strlcpy(buffer, msg, sizeof buffer);
-			if (type & IGNORE_MSGS)
-				strlcat(buffer, " MSGS", sizeof buffer);
-			if (type & IGNORE_PUBLIC)
-				strlcat(buffer, " PUBLIC", sizeof buffer);
-			if (type & IGNORE_WALLS)
-				strlcat(buffer, " WALLS", sizeof buffer);
-			if (type & IGNORE_WALLOPS)
-				strlcat(buffer, " WALLOPS", sizeof buffer);
-			if (type & IGNORE_INVITES)
-				strlcat(buffer, " INVITES", sizeof buffer);
-			if (type & IGNORE_NOTICES)
-				strlcat(buffer, " NOTICES", sizeof buffer);
-			if (type & IGNORE_NOTES)
-				strlcat(buffer, " NOTES", sizeof buffer);
-			if (type & IGNORE_CTCPS)
-				strlcat(buffer, " CTCPS", sizeof buffer);
-			if (type & IGNORE_TOPICS)
-				strlcat(buffer, " TOPICS", sizeof buffer);
-			if (type & IGNORE_NICKS)
-				strlcat(buffer, " NICKS", sizeof buffer);
-			if (type & IGNORE_JOINS)
-				strlcat(buffer, " JOINS", sizeof buffer);
-			if (type & IGNORE_PARTS)
-				strlcat(buffer, " PARTS", sizeof buffer);
-			if (type & IGNORE_CRAP)
-				strlcat(buffer, " CRAP", sizeof buffer);
-			say("%s from %s", buffer, new_i->nick);
-		}
+		next = item->next;
+		if (item->expiration.tv_sec != 0 &&
+				time_diff(right_now, item->expiration) < 0)
+			remove_ignore(item->nick);
 	}
 }
 
 /*
- * remove_ignore: removes the given nick from the ignore list and returns 0.
- * If the nick wasn't in the ignore list to begin with, 1 is returned. 
+ * remove_ignore: Delete one or more Ignore items by description.
+ *
+ * Arguments:
+ *  'nick' - A string containing either the exact value of an Ignore item
+ *		(ie, a nick!user@host, server name, or channel name), or 
+ *		a wildcard pattern that matches one or more values of Ignore
+ *		items.  If it is an exact value, that ignore item is deleted.
+ *		If it is a wildcard pattern, then all ignore items that are
+ *		matched by the pattern are deleted.
+ *
+ * Return value:
+ *  This function returns the number of ignore items deleted.
+ *
+ * Notes:
+ *  This function may delete more than one item!
+ *
+ *  This function tells the user what the changes are.  If you do not want
+ *  the output to occur, set window_display to 0 before calling.
  */
-static int 	remove_ignore (char *nick)
+static int 	remove_ignore (const char *nick)
 {
-	Ignore	*tmp;
+	Ignore	*item;
 	char	new_nick[IRCD_BUFFER_SIZE + 1];
 	int	count = 0;
 	char 	*mnick, *user, *host;
+
+	if (is_number(nick))
+	{
+	    Ignore *last;
+	    int	refnum = my_atol(nick);
+
+	    for (last = NULL, item = ignored_nicks; item; item = item->next)
+	    {
+		if (item->refnum == refnum)
+		{
+		    if (last)
+			last->next = item->next;
+		    else
+			ignored_nicks = item->next;
+
+		    say("%s removed from ignorance list (ignore refnum %d)", 
+				item->nick, item->refnum);
+		    new_free(&(item->nick));
+		    new_free(&(item->reason));
+		    new_free((char **)&item);
+		    return 1;
+		}
+		last = item;
+	    }
+
+	    say("Ignore refnum [%d] is not in use!", refnum);
+	    return 0;
+	}
 
 	if (figure_out_address(nick, &mnick, &user, &host))
 		strlcpy(new_nick, nick, IRCD_BUFFER_SIZE);
@@ -232,22 +290,29 @@ static int 	remove_ignore (char *nick)
 	/*
 	 * Look for an exact match first.
 	 */
-	if ((tmp = (Ignore *) list_lookup((List **)&ignored_nicks, new_nick, !USE_WILDCARDS, REMOVE_FROM_LIST)) != NULL)
+	if ((item = (Ignore *) list_lookup((List **)&ignored_nicks, new_nick, 
+					!USE_WILDCARDS, REMOVE_FROM_LIST)))
 	{
-		say("%s removed from ignorance list", tmp->nick);
-		new_free(&(tmp->nick));
-		new_free((char **)&tmp);
+		say("%s removed from ignorance list (ignore refnum %d)", 
+				item->nick, item->refnum);
+		new_free(&(item->nick));
+		new_free(&(item->reason));
+		new_free((char **)&item);
 		count++;
 	}
 
 	/*
 	 * Otherwise clear everything that matches.
 	 */
-	else while ((tmp = (Ignore *)list_lookup((List **)&ignored_nicks, new_nick, USE_WILDCARDS, REMOVE_FROM_LIST)) != NULL)
+	else while ((item = (Ignore *)list_lookup((List **)&ignored_nicks, 
+						nick, USE_WILDCARDS, 
+						REMOVE_FROM_LIST)))
 	{
-		say("%s removed from ignorance list", tmp->nick);
-		new_free(&(tmp->nick));
-		new_free((char **)&tmp);
+		say("%s removed from ignorance list (ignore refnum %d)", 
+				item->nick, item->refnum);
+		new_free(&(item->nick));
+		new_free(&(item->reason));
+		new_free((char **)&item);
 		count++;
 	} 
 
@@ -257,205 +322,824 @@ static int 	remove_ignore (char *nick)
 	return count;
 }
 
+/***************************************************************************/
+/*
+ * get_ignore_types:  Summarize the effects of an Ignore rule.
+ *
+ * Arguments:
+ *  'item' - The Ignore item whose dispositions shall be summarized
+ *
+ * Return value:
+ *  This function returns a static, temporary string that contains a summary
+ *  of the effects of the Ignore rule 'item'.  This string will be destroyed
+ *  the next time someone calls this function so if you want to keep it, you
+ *  must make a copy of it.  You must not try to write to the string.
+ */
+#define HANDLE_TYPE(x,y)						\
+	if ((item->dont & IGNORE_ ## x) == IGNORE_ ## x)		\
+	{								\
+	    if ((y) == 1)						\
+		strlcat_c(buffer, " DONT-" #x, sizeof buffer, &clue);	\
+	    else if ((y) == 2)						\
+		strlcat_c(buffer, " ^" #x, sizeof buffer, &clue);	\
+	}								\
+	else if ((item->type & IGNORE_ ## x) == IGNORE_ ## x)		\
+	{								\
+	    if ((y) == 1)						\
+		strlcat_c(buffer, " " #x, sizeof buffer, &clue);	\
+	    else if ((y) == 2)						\
+		strlcat_c(buffer, " /" #x, sizeof buffer, &clue);	\
+	}								\
+	else if ((item->high & IGNORE_ ## x) == IGNORE_ ## x)		\
+	{								\
+	    if ((y) == 1)						\
+		strlopencat_c(buffer, sizeof buffer, &clue, space, 	\
+				high, #x, high, NULL);			\
+	    else if ((y) == 2)						\
+		strlcat_c(buffer, " +" #x, sizeof buffer, &clue);	\
+	}
 
-#define BBS BIG_BUFFER_SIZE
-#define HANDLE_TYPE(x, y)						\
-	     if ((tmp->dont & x) == x)					\
-		strlcat(buffer, " DONT-" y, sizeof buffer);		\
-	else if ((tmp->type & x) == x)					\
-		strlcat(buffer, " " y, sizeof buffer);			\
-	else if ((tmp->high & x) == x)					\
-		strlopencat(buffer, sizeof buffer, space, high, y, high, NULL);
-
-static char	*get_ignore_types (Ignore *tmp)
+static const char *	get_ignore_types (Ignore *item, int output_type)
 {
-static	char 	buffer[BBS + 1];
+static	char 	buffer[BIG_BUFFER_SIZE + 1];
 	char	*high = highlight_char;
+	size_t	clue;
+	char	*retval;
 
+	clue = 0;
 	*buffer = 0;
-	HANDLE_TYPE(IGNORE_ALL, "ALL")
+	HANDLE_TYPE(ALL, output_type)
 	else
 	{
-		HANDLE_TYPE(IGNORE_MSGS,    "MSGS")
-		HANDLE_TYPE(IGNORE_PUBLIC,  "PUBLIC")
-		HANDLE_TYPE(IGNORE_WALLS,   "WALLS")
-		HANDLE_TYPE(IGNORE_WALLOPS, "WALLOPS")
-		HANDLE_TYPE(IGNORE_INVITES, "INVITES")
-		HANDLE_TYPE(IGNORE_NOTICES, "NOTICES")
-		HANDLE_TYPE(IGNORE_NOTES,   "NOTES")
-		HANDLE_TYPE(IGNORE_CTCPS,   "CTCPS")
-		HANDLE_TYPE(IGNORE_TOPICS,  "TOPICS")
-		HANDLE_TYPE(IGNORE_NICKS,   "NICKS")
-		HANDLE_TYPE(IGNORE_JOINS,   "JOINS")
-		HANDLE_TYPE(IGNORE_PARTS,   "PARTS")
-		HANDLE_TYPE(IGNORE_CRAP,    "CRAP")
-	}
-	return buffer;
-}
-
-
-/* ignore_list: shows the entired ignorance list */
-static void	ignore_list (char *nick)
-{
-	Ignore	*tmp;
-	int	len = 0;
-
-	if (!ignored_nicks)
-	{
-		say("There are no nicknames being ignored");
-		return;
-	}	
-
-	if (nick)
-	{
-		len = strlen(nick);
-		upper(nick);
+		HANDLE_TYPE(MSGS, output_type)
+		HANDLE_TYPE(PUBLIC, output_type)
+		HANDLE_TYPE(WALLS, output_type)
+		HANDLE_TYPE(WALLOPS, output_type)
+		HANDLE_TYPE(INVITES, output_type)
+		HANDLE_TYPE(NOTICES, output_type)
+		HANDLE_TYPE(NOTES, output_type)
+		HANDLE_TYPE(CTCPS, output_type)
+		HANDLE_TYPE(TOPICS, output_type)
+		HANDLE_TYPE(NICKS, output_type)
+		HANDLE_TYPE(JOINS, output_type)
+		HANDLE_TYPE(PARTS, output_type)
+		HANDLE_TYPE(CRAP, output_type)
 	}
 
-	say("Ignorance List:");
-	for (tmp = ignored_nicks; tmp; tmp = tmp->next)
-	{
-		if (nick)
-		{
-			if (strncmp(nick, tmp->nick, len))
-				continue;
-		}
-		say("\t%s:\t%s", tmp->nick, get_ignore_types(tmp));
-	}
+	retval = buffer;
+	while (isspace(*retval))
+		retval++;
+	return retval;		/* Eh! */
 }
 
 /*
- * ignore: does the /IGNORE command.  Figures out what type of ignoring the
- * user wants to do and calls the proper ignorance command to do it. 
+ * change_ignore_mask_by_desc:  Change ignore mask and ancilliary data in
+ *	the manner provided by a user description ignore-dispensation list.
+ *
+ * Arguments:
+ *  'type' 	- A comma-and-space separated list of ignore levels along with
+ *		  dispensations for the list.  For each level and dispensation
+ *		  included, the following variables will be changed:
+ *  'do_mask' 	- Suppressive ignores
+ *  'dont_mask' - Exceptional ignores
+ *  'high_mask' - Highlight ignores
+ *  'reason' 	- The reason the ignore was created.  May be NULL.
+ *		  Expects an argument.  If argument not provided or argument
+ *		  is a hyphen ("-"), the reason is unset.
+ *  'expire' 	- The time the ignore shall expire.  May be NULL.
+ *		  Expects an argument.  If argument not provided or argument
+ *		  is a hyphen ("-"), the timeout is unset.
+ *
+ * Return value:
+ *  The value 0 is returned.
+ *
+ * Notes:
+ *  The following dispositions are supported:
+ *	-<TYPE>		Remove <TYPE> from all disposition types
+ *	!<TYPE>		Change <TYPE> to an exceptional ignore
+ *	^<TYPE>		Same as !<TYPE>
+ *	+<TYPE>		Change <TYPE> to a highlight ignore
+ *	/<TYPE>		Change <TYPE> to a suppressive ignore
+ *	<TYPE>		Same as /<TYPE>
+ *
+ *  The supported <TYPE>s are defined at the top of this file in the 
+ *	"IGNORE THEORY" documentation.
+ */
+static int	change_ignore_mask_by_desc (const char *type, int *do_mask, int *dont_mask, int *high_mask, char **reason, Timeval *expire)
+{
+	char	*l1, *l2;
+	int	len;
+	int	*mask = NULL, *del1, *del2, *del3;
+	char *	copy;
+	int	bit;
+
+	copy = LOCAL_COPY(type);
+        while ((l1 = new_next_arg(copy, &copy)))
+	{
+	    while (*l1 && (l2 = next_in_comma_list(l1, &l1)))
+	    {
+		switch (*l2)
+		{
+			case '-':
+				l2++;
+				mask = NULL;
+				del1 = do_mask;
+				del2 = dont_mask;
+				del3 = high_mask;
+				break;
+			case '!':
+			case '^':
+				l2++;
+				mask = dont_mask;
+				del1 = do_mask;
+				del2 = high_mask;
+				del3 = NULL;
+				break;
+			case '+':
+				l2++;
+				mask = high_mask;
+				del1 = do_mask;
+				del2 = dont_mask;
+				del3 = NULL;
+				break;
+			case '/':
+			default:
+				mask = do_mask;
+				del1 = dont_mask;
+				del2 = high_mask;
+				del3 = NULL;
+				break;
+		}
+
+		if (!(len = strlen(l2)))
+			continue;
+
+		if (!my_strnicmp(l2, "NONE", len))
+		{
+			mask = NULL;
+			del1 = do_mask;
+			del2 = dont_mask;
+			del3 = high_mask;
+			bit = IGNORE_ALL;
+		}
+		else if (!my_strnicmp(l2, "ALL", len))
+			bit = IGNORE_ALL;
+		else if (!my_strnicmp(l2, "MSGS", len))
+			bit = IGNORE_MSGS;
+		else if (!my_strnicmp(l2, "PUBLIC", len))
+			bit = IGNORE_PUBLIC;
+		else if (!my_strnicmp(l2, "WALLS", len))
+			bit = IGNORE_WALLS;
+		else if (!my_strnicmp(l2, "WALLOPS", len))
+			bit = IGNORE_WALLOPS;
+		else if (!my_strnicmp(l2, "INVITES", len))
+			bit = IGNORE_INVITES;
+		else if (!my_strnicmp(l2, "NOTICES", len))
+			bit = IGNORE_NOTICES;
+		else if (!my_strnicmp(l2, "NOTES", len))
+			bit = IGNORE_NOTES;
+		else if (!my_strnicmp(l2, "CTCPS", len))
+			bit = IGNORE_CTCPS;
+		else if (!my_strnicmp(l2, "TOPICS", len))
+			bit = IGNORE_TOPICS;
+		else if (!my_strnicmp(l2, "NICKS", len))
+			bit = IGNORE_NICKS;
+		else if (!my_strnicmp(l2, "JOINS", len))
+			bit = IGNORE_JOINS;
+		else if (!my_strnicmp(l2, "PARTS", len))
+			bit = IGNORE_PARTS;
+		else if (!my_strnicmp(l2, "CRAP", len))
+			bit = IGNORE_CRAP;
+		else if (!my_strnicmp(l2, "REASON", len))
+		{
+			char *the_reason;
+
+			the_reason = new_next_arg(copy, &copy);
+			if (reason)
+			{
+			    if (!mask || !the_reason || !*the_reason ||
+						!strcmp(the_reason, "-"))
+				new_free(reason);
+			    else
+				malloc_strcpy(reason, the_reason);
+			}
+
+			continue;
+		}
+		else if (!my_strnicmp(l2, "TIMEOUT", len))
+		{
+			char *the_timeout;
+
+			the_timeout = new_next_arg(copy, &copy);
+			if (expire)
+			{
+			    if (!mask || !the_timeout || !*the_timeout ||
+					!strcmp(the_timeout, "-"))
+			    {
+				expire->tv_sec = 0;
+				expire->tv_usec = 0;
+			    }
+			    else if (is_real_number(the_timeout))
+			    {
+				double seconds;
+				Timeval right_now, interval;
+
+				seconds = atof(the_timeout);
+				interval = double_to_timeval(seconds);
+				get_time(&right_now);
+				*expire = time_add(right_now, interval);
+
+				add_timer(0, empty_string, seconds, 1, 
+					  do_expire_ignores, NULL, NULL, -1);
+			    }
+			}
+
+			continue;
+		}
+		else
+		{
+			say("You must specify one of the following:");
+			say("\tALL MSGS PUBLIC WALLS WALLOPS INVITES "
+				"NOTICES NOTES CTCPS TOPICS NICKS JOINS "
+				"PARTS CRAP NONE REASON \"<reason>\"");
+			continue;
+		}
+
+		if (mask)
+			*mask |= bit;
+		if (del1)
+			*del1 &= ~bit;
+		if (del2)
+			*del2 &= ~bit;
+		if (del3)
+			*del3 &= ~bit;
+	    }
+	}
+
+	return 0;
+}
+
+/*****************************************************************************/
+/*
+ * ignore_change: Change the types of things being ignored for an
+ *			Ignore item.
+ *
+ * Arguments:
+ *  'item'     - A particular Ignore item to be operated upon.
+ *  'type'     - Ignored -- should be 1
+ *  'data'     - A pointer to a string containing ignore type changes.
+ *
+ * Return value:
+ *  This function returns 0.
+ *
+ * Notes:
+ *  This function tells the user what the changes are.  If you do not want
+ *  the output to occur, set window_display to 0 before calling.
+ */
+static int	ignore_change (Ignore *item, int type, void *data)
+{
+	char *changes;
+
+	changes = (char *)data;
+	change_ignore_mask_by_desc(changes, &item->type, &item->dont, 
+					&item->high, &item->reason, 
+					&item->expiration);
+
+	/*
+	 * Tell the user the new state of the ignore.
+	 * Garbage collect this ignore if it is clear.
+	 * remove_ignore() does the output for us here.
+	 */
+	if ((item->type & IGNORE_ALL) == IGNORE_NONE && 
+	    (item->high & IGNORE_ALL) == IGNORE_NONE &&
+	    (item->dont & IGNORE_ALL) == IGNORE_NONE)
+	{
+		remove_ignore(item->nick);
+		return 0;
+	}
+
+	if (item->reason)
+		say("Now ignoring %s from %s (refnum %d) because %s", 
+			get_ignore_types(item, 1), item->nick, item->refnum, 
+			item->reason);
+	else
+		say("Now ignoring %s from %s (refnum %d)",
+			get_ignore_types(item, 1), item->nick, item->refnum);
+
+	return 0;
+}
+
+/*
+ * ignore_list: Tell the user about a particular ignore item.
+ *
+ * Arguments:
+ *  'item'     - A particular Ignore item to be described.
+ *  'type'     - This value is ignored.  Pass the value 1.
+ *  'data'     - This value is ignored.  Pass a pointer to an integer.
+ *
+ * Return value:
+ *  This function returns 0.
+ */
+static int	ignore_list (Ignore *item, int type, void *data)
+{
+	int	expiring = 0;
+	double	time_to_expire = 0;
+	Timeval	right_now;
+
+	if (item->expiration.tv_sec != 0)
+	{
+		get_time(&right_now);
+		time_to_expire = time_diff(right_now, item->expiration);
+		expiring = 1;
+	}
+
+	if (item->reason)
+	{
+	    if (!expiring)
+	    {
+		say("[%d]\t%s:\t%s (%s)", item->refnum, item->nick, 
+				get_ignore_types(item, 1), item->reason);
+	    }
+	    else
+	    {
+		say("[%d]\t%s:\t%s (%s) (%f seconds left)", 
+				item->refnum, item->nick, 
+				get_ignore_types(item, 1), item->reason,
+				time_to_expire);
+	    }
+	}
+	else
+	{
+	    if (!expiring)
+	    {
+		say("[%d]\t%s:\t%s", item->refnum, item->nick, 
+				get_ignore_types(item, 1));
+	    }
+	    else
+	    {
+		say("[%d]\t%s:\t%s (%f seconds left)", item->refnum, 
+				item->nick, get_ignore_types(item, 1),
+				time_to_expire);
+	    }
+	}
+	return 0;
+}
+
+
+/***************************************************************************/
+/*
+ * foreach_ignore: call a function to manipulate one or more ignore items.
+ *
+ * Arguments:
+ *  'nicklist' - A comma-and-space separated list of nicknames, channels,
+ *		 and targets, each of which will be operated on.
+ *  'create'   - If 1, items in 'nicklist' which do not exist will be created
+ *		 on demand.  Otherwise they will be skipped with an error.
+ *  'callback' - For each (Ignore) item represented by targets in 'nicklist',
+ *		 this function will be called passing in the (Ignore) item,
+ *		 and the two following data items:
+ *  'data1'    - An integer value to be passed to the callback function.
+ *		 The usual mean is 1 to set a value and 0 to unset a value
+ *  'data2'    - A pointer to payload data which shall be passed to the
+ *		 callback value.  This is usually a pointer to an integer
+ *		 or a character string.
+ *
+ * Return value:
+ *  This function returns 0.
+ *
+ * Notes:
+ *  This function allows you to easily perform the same operation on one or
+ *    more ignore items as requested by the user.
+ *  If a target in "nicklist" is not currently being ignored, and 'create' is
+ *    true, a new entry for that target will be created, and the new item will
+ *    be passed to the callback.  This is a preferred way to create new ignore
+ *    items.
+ */
+static int	foreach_ignore (const char *nicklist, int create, int (*callback) (Ignore *, int, void *), int data1, void *data2)
+{
+	char *copy, *arg, *nick;
+	Ignore *item;
+	char *	mnick;
+	char *	user;
+	char *	host;
+	char	new_nick[IRCD_BUFFER_SIZE + 1];
+
+	if (nicklist == NULL)
+	{
+		for (item = ignored_nicks; item; item = item->next)
+			callback(item, data1, data2);
+		return 0;
+	}
+
+	/*
+	 * Walk over 'nicklist', which separates each target with spaces
+	 * or with commas, ie:
+	 *	/ignore "hop hop2" ALL
+	 *	/ignore hop,hop2 ALL
+	 */
+	copy = LOCAL_COPY(nicklist);
+        while ((arg = new_next_arg(copy, &copy)))
+	{
+	    while (*arg && (nick = next_in_comma_list(arg, &arg)))
+	    {
+		if (is_number(nick))
+		{
+		    int	refnum = my_atol(nick);
+
+		    for (item = ignored_nicks; item; item = item->next)
+			if (item->refnum == refnum)
+				break;
+
+		    if (!item)
+		    {
+			say("Ignore refnum [%d] is not in use!", refnum);
+			continue;
+		    }
+		}
+		else
+		{
+		    /*
+		     * If possible, fill out the address.  If it cannot
+		     * be figured out, just use what we were given.
+		     */
+		    if (figure_out_address(nick, &mnick, &user, &host))
+			strlcpy(new_nick, nick, sizeof new_nick);
+		    else
+			snprintf(new_nick, sizeof new_nick, "%s!%s@%s",
+					mnick, user, host);
+
+		    /*
+		     * Create a new ignore item if this one does not exist.
+		     */
+		    if ((item = (Ignore *)find_in_list((List **)&ignored_nicks, 
+							new_nick, 0)) == NULL)
+		    {
+			if (create == 0)
+			{
+				say("%s is not being ignored!", new_nick);
+				continue;
+			}
+
+			item = new_ignore(new_nick);
+		    }
+		}
+
+		callback(item, data1, data2);
+	    }
+	}
+
+	return 0;
+}
+
+
+/**************************************************************************/
+/*
+ * ignore: The /IGNORE command
+ *
+ * Arguments:
+ *  'args' - The command line arguments to /IGNORE.
+ *
+ * Return value:
+ *  None
+ *
+ * Notes:
+ *  /IGNORE				
+ *	List all ignore items
+ *  /IGNORE <target-or-refnum-list>
+ *	List one or more particular ignore item by giving the target or
+ *	refnum; separate multiple items by commas or spaces.  Surround 
+ *	the list with double quotes if it contains spaces.
+ *  /IGNORE <target-or-refnum-list> <level-dispositions>
+ *	Change one or more particular ignore items, assigning the given
+ *	levels to the given dispositions.  The target list may be separated
+ *	with spaces or commas.  Surround the target list with double quotes
+ *	if it contains spaces.  The level dispositions may be separated with
+ *	spaces or commas.  It is not necessary to surround the level
+ *	dispositions with double quotes.
+ *
+ * Where:
+ *  <target-or-refnum-list> := ["] <target>|<refnum> 
+ *				[<delim> <target-or-refnum-list>]* ["]
+ *  <target> := [<nick>][!<user>@<host>]
+ *  <refnum> := <number>*
+ *  <delim>  := <space>|<comma>
+ *  <level-dispositions> := <disposition> <level>
+ *  <disposition> :=   [!|^] 			Set exclusionary ignore 
+ *                   | -			Remove level from all types
+ *		     | +			Set highlight ignore
+ *		     | [/|<empty string>]	Set suppressive ignore
+ *  <level> := MSGS | PUBLIC | WALLS | WALLOPS | INVITES |
+ *	       NOTICES | NOTES | CTCPS | TOPICS | NICKS | 
+ *	       JOINS | PARTS | CRAP | NONE | ALL | 
+ *	       REASON "<reason>" | TIMEOUT "<number>"
+ *
+ * Examples:
+ *	/IGNORE #EPIC +ALL		(Highlight all messages to epic)
+ *	/IGNORE #EPIC -ALL		(Delete ignore item for epic)
+ *	/IGNORE #EPIC NONE		(Same thing as -ALL)
+ *	/IGNORE 			(List all ignores)
+ *	/IGNORE 1 NONE			(Remove ignore refnum 1)
+ *	/IGNORE 2,3 NONE		(Remove ignore refnums 2 and 3)
+ *	/IGNORE "2 3" NONE		(Same thing)
  */
 BUILT_IN_COMMAND(ignore)
 {
-	char	*nick,
-		*type;
-	int	len;
-	int	flag,
-		no_flags;
-	char	nick_buffer[127];
+	char	*nick;
 
-	if ((nick = next_arg(args, &args)) != NULL)
+	nick = new_next_arg(args, &args);
+	if (nick && !is_string_empty(args))
+		foreach_ignore(nick, 1, ignore_change, 1, args);
+	else
 	{
-		strlcpy(nick_buffer, nick, 127);
-		no_flags = 1;
+		say("Ignorance List:");
+		foreach_ignore(nick, 0, ignore_list, 0, NULL);
+	}
+}
 
-		while ((type = next_arg(args, &args)) != NULL)
+/**************************** INTERNAL API ********************************/
+/*
+ * get_ignores_by_pattern: Forward or reverse matching of ignore patterns
+ *			   with a list of patterns.  The built in $igmask()
+ *			   and $rigmask() functions.
+ *
+ * Arguments:
+ * 'patterns' - A space separated list of patterns to use in forward
+ *	        or reverse matching the Ignore items.
+ * 'covered'  - If 0, do forward matching ($igmask()), 
+ *		if 1, do reverse matching ($rigmask()).
+ *
+ * Return value:
+ *  The return value is a MALLOCED word list containing all of the ignore
+ *	wildcard masks covering or covered by the 'patterns'
+ *
+ * Notes:
+ *  "Forward" matching means treating each ignore pattern as a literal
+ *	string and the user's input as a wildcard pattern.  All ignore 
+ *	patterns which are matched by the input are returned.
+ *  "Reverse" matching means treating each ignore pattern as wildcard
+ *	patterns and the user's input as a literal string.  All ignore
+ *	patterns which match the input are returned.
+ *  Forward matching asks the question -- "Which ignore patterns contain
+ *	this text in them?"
+ *  Reverse matching asks the question -- "If this was the nick!user@host,
+ *	which ignore patterns apply to that target?"
+ */
+char 	*get_ignores_by_pattern (char *patterns, int covered)
+{
+	Ignore	*tmp;
+	char 	*pattern;
+	char 	*retval = NULL;
+	size_t	clue = 0;
+
+	while ((pattern = new_next_arg(patterns, &patterns)))
+	{
+		for (tmp = ignored_nicks; tmp; tmp = tmp->next)
 		{
-			nick = nick_buffer;
-
-			no_flags = 0;
-			upper(type);
-			switch (*type)
-			{
-				case '!':
-				case '^':
-					flag = IGNORE_DONT;
-					type++;
-					break;
-				case '-':
-					flag = IGNORE_REMOVE;
-					type++;
-					break;
-				case '+':
-					flag = IGNORE_HIGH;
-					type++;
-					break;
-				default:
-					flag = 0;
-					break;
-			}
-			if ((len = strlen(type)) == 0)
-			{
-				say("You must specify one of the following:");
-				say("\tALL MSGS PUBLIC WALLS WALLOPS INVITES NOTICES NOTES TOPICS NICKS JOINS PARTS NONE");
-				return;
-			}
-
-			     if (strncmp(type, "ALL", len) == 0)
-				ignore_nickname(nick, IGNORE_ALL, flag);
-			else if (strncmp(type, "MSGS", len) == 0)
-				ignore_nickname(nick, IGNORE_MSGS, flag);
-			else if (strncmp(type, "PUBLIC", len) == 0)
-				ignore_nickname(nick, IGNORE_PUBLIC, flag);
-			else if (strncmp(type, "WALLS", len) == 0)
-				ignore_nickname(nick, IGNORE_WALLS, flag);
-			else if (strncmp(type, "WALLOPS", len) == 0)
-				ignore_nickname(nick, IGNORE_WALLOPS, flag);
-			else if (strncmp(type, "INVITES", len) == 0)
-				ignore_nickname(nick, IGNORE_INVITES, flag);
-			else if (strncmp(type, "NOTICES", len) == 0)
-				ignore_nickname(nick, IGNORE_NOTICES, flag);
-			else if (strncmp(type, "NOTES", len) == 0)
-				ignore_nickname(nick, IGNORE_NOTES, flag);
-			else if (strncmp(type, "CTCPS", len) == 0)
-				ignore_nickname(nick, IGNORE_CTCPS, flag);
-			else if (strncmp(type, "TOPICS", len) == 0)
-				ignore_nickname(nick, IGNORE_TOPICS, flag);
-			else if (strncmp(type, "NICKS", len) == 0)
-				ignore_nickname(nick, IGNORE_NICKS, flag);
-			else if (strncmp(type, "JOINS", len) == 0)
-				ignore_nickname(nick, IGNORE_JOINS, flag);
-			else if (strncmp(type, "PARTS", len) == 0)
-				ignore_nickname(nick, IGNORE_PARTS, flag);
-			else if (strncmp(type, "CRAP", len) == 0)
-				ignore_nickname(nick, IGNORE_CRAP, flag);
-			else if (strncmp(type, "NONE", len) == 0)
-			{
-				char	*ptr;
-
-				while (nick)
-				{
-					if ((ptr = strchr(nick, ',')) != NULL)
-						*ptr = 0;
-
-					if (*nick)
-						remove_ignore(nick);
-
-					if (ptr)
-						*ptr++ = ',';
-					nick = ptr;
-				}
-			}
-			else
-			{
-				say("You must specify one of the following:");
-				say("\tALL MSGS PUBLIC WALLS WALLOPS INVITES NOTICES NOTES CTCPS TOPICS NICKS JOINS PARTS CRAP NONE");
-			}
+			if (covered ? wild_match(tmp->nick, pattern)
+				    : wild_match(pattern, tmp->nick))
+				m_sc3cat(&retval, space, tmp->nick, &clue);
 		}
-		if (no_flags)
-			ignore_list(nick);
-	} else
-		ignore_list((char *) 0);
+	}
+
+	return retval ? retval : m_strdup(empty_string);
+}
+
+
+/*
+ * get_ignore_types_by_pattern:  The $igtype() built in function
+ *
+ * Arguments:
+ *  'pattern' - A single ignore pattern or refnum.
+ *
+ * Return value:
+ *  The targets being ignored by the ignore item, suitable for displaying
+ *  to the user.
+ */
+const char	*get_ignore_types_by_pattern (char *pattern)
+{
+	Ignore	*tmp;
+	int	number = -1;
+
+	if (is_number(pattern))
+		if ((number = my_atol(pattern)) < 0)
+			number = -1;
+
+	for (tmp = ignored_nicks; tmp; tmp = tmp->next)
+	{
+		if (!my_stricmp(tmp->nick, pattern))
+			return get_ignore_types(tmp, 1);
+		if (number > -1 && tmp->refnum == number)
+			return get_ignore_types(tmp, 1);
+	}
+
+	return empty_string;
 }
 
 /*
- * set_highlight_char: what the name says..  the character to use
- * for highlighting..  either BOLD, INVERSE, or UNDERLINE..
+ * get_ignore_patterns_by_type:  The $rigtype() built in function
  *
- * This does *not* belong here.
+ * Arguments:
+ *  'ctype' - A comma-and-space separated list of ignore level descriptions
+ *
+ * Return value:
+ *  A MALLOCED string containing a word list of all of the targets 
+ *	(nick!user@host or #channels) ignoring at least the levels 
+ *	described by the argument.
  */
-void	set_highlight_char (char *s)
+char	*get_ignore_patterns_by_type (char *ctype)
 {
+	Ignore	*tmp;
+	int	do_mask = 0, dont_mask = 0, high_mask = 0;
+	char	*result = NULL;
+	size_t	clue = 0;
+
+	/*
+	 * Convert the user's input into something we can use.
+	 * If the user doesnt specify anything useful, then we
+	 * just punt right here.
+	 */
+	change_ignore_mask_by_desc(ctype, &do_mask, &dont_mask, &high_mask, NULL, NULL);
+	if (do_mask == 0 && dont_mask == 0 && high_mask == 0)
+		return m_strdup(empty_string);
+
+	for (tmp = ignored_nicks; tmp; tmp = tmp->next)
+	{
+		/*
+		 * change_ignore_mask_by_desc is supposed to ensure that
+		 * each bit is set only once in 'do_mask', 'dont_mask', 
+		 * and 'high_mask', and we already know this is the case
+		 * for the Ignores.  So we check each of the three ignore
+		 * types, and if this ignore has all of the levels set in
+		 * all of the right places, it's ok.  It could have more 
+		 * levels than what the user asked for, but it can't have 
+		 * levels with different dispositions.
+		 */
+		if ((tmp->dont & dont_mask) != dont_mask)
+			continue;
+		if ((tmp->type & do_mask) != do_mask)
+			continue;
+		if ((tmp->high & high_mask) != high_mask)
+			continue;
+
+		/* Add it to the fray */
+		m_sc3cat(&result, space, tmp->nick, &clue);
+	}
+
+	return result;
+}
+
+/*
+ * Here's the plan:
+ *
+ * $ignorectl(REFNUMS)
+ * $ignorectl(REFNUM <ignore-pattern>)
+ * $ignorectl(ADD <ignore-pattern> [level-desc])
+ * $ignorectl(CHANGE <refnum> [level-desc])
+ * $ignorectl(DELETE <refnum>)
+ * $ignorectl(PATTERN <pattern>)
+ * $ignorectl(RPATTERN <pattern>)
+ * $ignorectl(WITH_TYPES <pattern>)
+ * $ignorectl(GET <refnum> [LIST])
+ * $ignorectl(SET <refnum> [ITEM] [VALUE])
+ *
+ * [LIST] and [ITEM] are one of the following
+ *	NICK		The pattern being ignored.  Changing this is dangerous.
+ *	LEVELS		A parsable summary of what is being ignored
+ *	TYPE		An integer representing the suppressive ignores
+ *	DONT		An integer representing the exceptional ignores
+ *	HIGH		An integer representing the highlight ignores
+ *	EXPIRATION	The time the ignore will expire
+ *	REASON		The reason why we're ignoring this pattern.
+ */ 
+char *	ignorectl (char *input)
+{
+	char *	refstr;
+	char *	listc;
+	Ignore *i;
 	int	len;
+	int	owd;
 
-	if (!s)
-		s = empty_string;
-	len = strlen(s);
+	GET_STR_ARG(listc, input);
+	len = strlen(listc);
+	if (!my_strnicmp(listc, "REFNUM", len)) {
+		if ((i = (Ignore *)find_in_list((List **)&ignored_nicks,
+					input, 0)) == NULL)
+			RETURN_EMPTY;
 
-	if (!my_strnicmp(s, "BOLD", len))
-		malloc_strcpy(&highlight_char, BOLD_TOG_STR);
-	else if (!my_strnicmp(s, "INVERSE", len))
-		malloc_strcpy(&highlight_char, REV_TOG_STR);
-	else if (!my_strnicmp(s, "UNDERLINE", len))
-		malloc_strcpy(&highlight_char, UND_TOG_STR);
-	else
-		malloc_strcpy(&highlight_char, s);
+		RETURN_INT(i->refnum);
+	} else if (!my_strnicmp(listc, "REFNUMS", len)) {
+		char *	retval = NULL;
+		size_t	clue = 0;
+
+		for (i = ignored_nicks; i; i = i->next)
+			m_sc3cat(&retval, space, 
+						ltoa(i->refnum), &clue);
+		RETURN_MSTR(retval);
+	} else if (!my_strnicmp(listc, "ADD", len)) {
+		char *	pattern;
+
+		GET_STR_ARG(pattern, input);
+
+		owd = window_display;
+		window_display = 0;
+		i = new_ignore(pattern);
+		ignore_change(i, 1, input);
+		window_display = owd;
+		RETURN_INT(i->refnum);
+	} else if (!my_strnicmp(listc, "CHANGE", len)) {
+		int	refnum;
+
+		GET_STR_ARG(refstr, input);
+		if (!is_number(refstr))
+			RETURN_EMPTY;
+		refnum = my_atol(refstr);
+		if (!(i = get_ignore_by_refnum(refnum)))
+			RETURN_EMPTY;
+
+		owd = window_display;
+		window_display = 0;
+		ignore_change(i, 1, input);
+		window_display = owd;
+		RETURN_INT(i->refnum);
+	} else if (!my_strnicmp(listc, "DELETE", len)) {
+		RETURN_INT(remove_ignore(input));
+	} else if (!my_strnicmp(listc, "PATTERN", len)) {
+		RETURN_MSTR(get_ignores_by_pattern(input, 0));
+	} else if (!my_strnicmp(listc, "RPATTERN", len)) {
+		RETURN_MSTR(get_ignores_by_pattern(input, 1));
+	} else if (!my_strnicmp(listc, "WITH_TYPES", len)) {
+		RETURN_MSTR(get_ignore_patterns_by_type(input));
+	} else if (!my_strnicmp(listc, "GET", len)) {
+		int	refnum;
+
+		GET_STR_ARG(refstr, input);
+		if (!is_number(refstr))
+			RETURN_EMPTY;
+		refnum = my_atol(refstr);
+		if (!(i = get_ignore_by_refnum(refnum)))
+			RETURN_EMPTY;
+
+		GET_STR_ARG(listc, input);
+		len = strlen(listc);
+		if (!my_strnicmp(listc, "NICK", len)) {
+			RETURN_STR(i->nick);
+		} else if (!my_strnicmp(listc, "LEVELS", len)) {
+			RETURN_STR(get_ignore_types(i, 2));
+		} else if (!my_strnicmp(listc, "SUPPRESS", len)) {
+			RETURN_INT(i->type);
+		} else if (!my_strnicmp(listc, "EXCEPT", len)) {
+			RETURN_INT(i->dont);
+		} else if (!my_strnicmp(listc, "HIGHLIGHT", len)) {
+			RETURN_INT(i->high);
+		} else if (!my_strnicmp(listc, "EXPIRATION", len)) {
+			return malloc_sprintf(NULL, "%ld %ld", 
+				(long) i->expiration.tv_sec,
+				(long) i->expiration.tv_usec);
+		} else if (!my_strnicmp(listc, "REASON", len)) {
+			RETURN_STR(i->reason);
+		}
+	} else if (!my_strnicmp(listc, "SET", len)) {
+		int	refnum;
+
+		GET_STR_ARG(refstr, input);
+		if (!is_number(refstr))
+			RETURN_EMPTY;
+		refnum = my_atol(refstr);
+		if (!(i = get_ignore_by_refnum(refnum)))
+			RETURN_EMPTY;
+
+		GET_STR_ARG(listc, input);
+		len = strlen(listc);
+		if (!my_strnicmp(listc, "NICK", len)) {
+			malloc_strcpy(&i->nick, input);
+		} else if (!my_strnicmp(listc, "LEVELS", len)) {
+			i->type = i->dont = i->high = 0;
+			ignore_change(i, 1, input);
+		} else if (!my_strnicmp(listc, "SUPPRESS", len)) {
+			GET_INT_ARG(i->type, input);
+		} else if (!my_strnicmp(listc, "EXCEPT", len)) {
+			GET_INT_ARG(i->dont, input);
+		} else if (!my_strnicmp(listc, "HIGHLIGHT", len)) {
+			GET_INT_ARG(i->high, input);
+		} else if (!my_strnicmp(listc, "EXPIRATION", len)) {
+			Timeval to;
+
+			GET_INT_ARG(to.tv_sec, input);
+			GET_INT_ARG(to.tv_usec, input);
+			i->expiration = to;
+			RETURN_INT(1);
+		} else if (!my_strnicmp(listc, "REASON", len)) {
+			malloc_strcpy(&i->reason, input);
+			RETURN_STR(i->reason);
+		}
+	}
+
+	/* We get here if something is not implemented. */
+	RETURN_EMPTY;
 }
 
 
+/***************************** BACK END *************************************/
 /* 
  * check_ignore -- replaces the old double_ignore
  *   Why did i change the name?
@@ -487,7 +1171,7 @@ int	check_ignore_channel (const char *nick, const char *uh, const char *channel,
 	Ignore	*c_match = NULL;
 
 	if (!ignored_nicks)
-		return DONT_IGNORE;
+		return NOT_IGNORED;
 
 	snprintf(nuh, IRCD_BUFFER_SIZE - 1, "%s!%s", nick ? nick : star,
 						uh ? uh : star);
@@ -536,7 +1220,7 @@ int	check_ignore_channel (const char *nick, const char *uh, const char *channel,
 	{
 		tmp = i_match;
 		if (tmp->dont & type)
-			return DONT_IGNORE;
+			return NOT_IGNORED;
 		if (tmp->type & type)
 			return IGNORED;
 		if (tmp->high & type)
@@ -551,7 +1235,7 @@ int	check_ignore_channel (const char *nick, const char *uh, const char *channel,
 	{
 		tmp = c_match;
 		if (tmp->dont & type)
-			return DONT_IGNORE;
+			return NOT_IGNORED;
 		if (tmp->type & type)
 			return IGNORED;
 		if (tmp->high & type)
@@ -561,157 +1245,6 @@ int	check_ignore_channel (const char *nick, const char *uh, const char *channel,
 	/*
 	 * Otherwise i guess we dont ignore them.
 	 */
-	return DONT_IGNORE;
-}
-
-
-/*
- * get_ignores_by_pattern: Get all the ignores that match the pattern
- * If "covered" is 0, then return all ignores matched by patterns
- * If "covered" is 1, then return all ignores that would activate on patterns
- * MALLOCED
- */
-char 	*get_ignores_by_pattern (char *patterns, int covered)
-{
-	Ignore	*tmp;
-	char 	*pattern;
-	char 	*retval = NULL;
-	size_t	clue = 0;
-
-	while ((pattern = new_next_arg(patterns, &patterns)))
-	{
-		for (tmp = ignored_nicks; tmp; tmp = tmp->next)
-		{
-			if (covered ? wild_match(tmp->nick, pattern)
-				    : wild_match(pattern, tmp->nick))
-				m_sc3cat(&retval, space, tmp->nick, &clue);
-		}
-	}
-
-	return retval ? retval : m_strdup(empty_string);
-}
-
-static int	get_type_by_desc (char *type, int *do_mask, int *dont_mask)
-{
-	char	*l1, *l2;
-	int	len;
-	int	*mask = NULL;
-
-	*do_mask = *dont_mask = 0;
-
-	while (type && *type)
-	{
-		l1 = new_next_arg(type, &type);
-		while (l1 && *l1)
-		{
-			l2 = l1;
-			if ((l1 = strchr(l1, ',')))
-				*l1++ = 0;
-
-			if (*l2 == '!')
-			{
-				l2++;
-				mask = dont_mask;
-			}
-			else
-				mask = do_mask;
-
-			if (!(len = strlen(l2)))
-				continue;
-
-			     if (!strncmp(l2, "ALL", len))
-				*mask |= IGNORE_ALL;
-			else if (!strncmp(l2, "MSGS", len))
-				*mask |= IGNORE_MSGS;
-			else if (!strncmp(l2, "PUBLIC", len))
-				*mask |= IGNORE_PUBLIC;
-			else if (!strncmp(l2, "WALLS", len))
-				*mask |= IGNORE_WALLS;
-			else if (!strncmp(l2, "WALLOPS", len))
-				*mask |= IGNORE_WALLOPS;
-			else if (!strncmp(l2, "INVITES", len))
-				*mask |= IGNORE_INVITES;
-			else if (!strncmp(l2, "NOTICES", len))
-				*mask |= IGNORE_NOTICES;
-			else if (!strncmp(l2, "NOTES", len))
-				*mask |= IGNORE_NOTES;
-			else if (!strncmp(l2, "CTCPS", len))
-				*mask |= IGNORE_CTCPS;
-			else if (!strncmp(l2, "TOPICS", len))
-				*mask |= IGNORE_TOPICS;
-			else if (!strncmp(l2, "NICKS", len))
-				*mask |= IGNORE_NICKS;
-			else if (!strncmp(l2, "JOINS", len))
-				*mask |= IGNORE_JOINS;
-			else if (!strncmp(l2, "PARTS", len))
-				*mask |= IGNORE_PARTS;
-			else if (!strncmp(l2, "CRAP", len))
-				*mask |= IGNORE_CRAP;
-		}
-	}
-
-	return 0;
-}
-
-/*
- * This is nasty and should be done in a more generalized way, but until
- * then, this function just does what has to be done.  Please note that 
- * if you go to the pains to re-write the ignore handling, please do fix
- * this to work the right way, please? =)
- */
-char	*get_ignore_types_by_pattern (char *pattern)
-{
-	Ignore	*tmp;
-
-	upper(pattern);
-	for (tmp = ignored_nicks; tmp; tmp = tmp->next)
-	{
-		if (!strcmp(tmp->nick, pattern))
-			return get_ignore_types(tmp);
-	}
-
-	return empty_string;
-}
-
-char	*get_ignore_patterns_by_type (char *ctype)
-{
-	Ignore	*tmp;
-	int	do_mask = 0, dont_mask = 0;
-	char	*result = NULL;
-	size_t	clue = 0;
-
-	/*
-	 * Convert the user's input into something we can use.
-	 * If the user doesnt specify anything useful, then we
-	 * just punt right here.
-	 */
-	upper(ctype);
-	get_type_by_desc(ctype, &do_mask, &dont_mask);
-	if (do_mask == 0 && dont_mask == 0)
-		return m_strdup(empty_string);
-
-	for (tmp = ignored_nicks; tmp; tmp = tmp->next)
-	{
-		/*
-		 * Any "negative ignore" bits, if any, must be present.
-		 */
-		if ((tmp->dont & dont_mask) != dont_mask)
-			continue;
-
-		/*
-		 * Any "positive ignore" bits, if any, must be present,
-		 * but there must not be a corresponding "negative ignore"
-		 * bit for the levels as well.  That is to say, the 
-		 * negative ignore bits "turn off" any corresponding bits
-		 * in the positive ignore set.
-		 */
-		if (((tmp->type & ~tmp->dont) & do_mask) != do_mask)
-			continue;
-
-		/* Add it to the fray */
-		m_sc3cat(&result, " ", tmp->nick, &clue);
-	}
-
-	return result;
+	return NOT_IGNORED;
 }
 

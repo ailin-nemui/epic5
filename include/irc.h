@@ -135,6 +135,7 @@ extern		char	username[NAME_LEN + 1];
 extern		char	userhost[NAME_LEN + 1];
 extern		char	zero[];
 extern		char	comma[];
+extern		char *	highlight_char;
 
 extern 		ISA *	LocalIPv4Addr;
 #ifdef INET6
