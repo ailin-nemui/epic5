@@ -9,7 +9,7 @@
  */
 
 #if 0
-static	char	rcsid[] = "@(#)$Id: lastlog.c,v 1.7 2001/10/12 22:33:53 jnelson Exp $";
+static	char	rcsid[] = "@(#)$Id: lastlog.c,v 1.8 2001/10/24 21:19:46 jnelson Exp $";
 #endif
 
 #include "irc.h"
@@ -255,8 +255,8 @@ int 	set_lastlog_msg_level (int level)
  *	-ALL			Add all levels to "level mask"
  *	--ALL			Reset/clear the "level mask" <default>
  *	<pattern>		<pattern> is search target
- *	<number1>		Start <number1> records into the lastlog
- *	<number2>		Continue <number2> records into the lastlog.
+ *	<number1>		Start from the <number1>th most recent record.
+ *	<number2>		Continue <number2> more records after that.
  *
  * The /LASTLOG command shows all of the lines that have appeared to your
  * window's lastlog; the oldest one first, and the newest one last, except
@@ -267,10 +267,11 @@ int 	set_lastlog_msg_level (int level)
  *	2 If any of the "LEVEL" options (including ALL) are specified,
  *	  then the line must have one of the lastlog levels specified
  *	  by the "level mask".
- *	3 If the -skip option is specified, the first <number> lines 
- *	  will be skipped (will not be displayed)
- *	4 If the -number option is specified only the first <number> 
- *	  lines will be matched.
+ *	3 If the -number option is specified only the most recent <number> 
+ *	  lines will be looked at.
+ *	4 If the -skip option is specified, the first <number> lines after
+ *        the start (either the oldest entry, or whatever you specified
+ *        with the -number option) will be skipped (will not be looked at).
  *	5 If the -literal option is specified, some portion of the line
  *	  must be matched by the pattern <pattern>
  *	6 If the -regex option is specified, some portion of the line
@@ -288,9 +289,9 @@ int 	set_lastlog_msg_level (int level)
  *	  compatability with ircII.  The very first naked parameter that 
  *	  is not a number is considered to be the argument to the -LITERAL 
  *	  option.  The second naked parameter had better be a number and
- *	  it is taken as the argument to the -SKIP option.  The third naked
+ *	  it is taken as the argument to the -NUMBER option.  The third naked
  *	  parameter also needs to be a number and is taken as the argument
- *	  to the -NUMBER option.  This can get confusing; always use the
+ *	  to the -SKIP option.  This can get confusing; always use the
  *	  options in scripts -- only use backwards compatability options
  *	  at the input prompt. ;-)
  */
