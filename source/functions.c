@@ -4606,9 +4606,16 @@ BUILT_IN_FUNCTION(function_uname, input)
 BUILT_IN_FUNCTION(function_querywin, args)
 {
 	Window *w = NULL;
+	char *	nick = NULL;
+	int	servref = -1;
+
+	GET_STR_ARG(nick, args);
+	if (args && *args)
+		GET_INT_ARG(servref, args);
 
 	while (traverse_all_windows(&w))
-		if (w->query_nick && !my_stricmp(w->query_nick, args))
+	    if (w->query_nick && !my_stricmp(w->query_nick, nick))
+		if (servref < 0 || servref == w->server)
 			RETURN_INT(w->refnum);
 
 	RETURN_INT(-1);

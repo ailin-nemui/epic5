@@ -34,7 +34,7 @@
  */
 
 /* from: static char sccsid[] = "@(#)glob.c	8.3 (Berkeley) 10/13/93"; */
-/* $Id: glob.c,v 1.1 2000/12/05 00:11:57 jnelson Exp $ */
+/* $Id: glob.c,v 1.2 2001/09/26 16:37:10 jnelson Exp $ */
 
 /*
  * glob(3) -- a superset of the one defined in POSIX 1003.2.
@@ -76,7 +76,11 @@
 #include <unistd.h>
 #include "irc.h"
 #ifndef MAXPATHLEN
-#define MAXPATHLEN PATHSIZE
+# ifndef PATHSIZE
+#  define MAXPATHLEN 1024
+# else
+#  define MAXPATHLEN PATHSIZE
+# endif
 #endif
 
 #undef EOS

@@ -19,3 +19,7 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Crazyeddy's fixes went here -- someone want to describe them?
 * Permit double-quotes around target of /msg, for compatability with /query. 
 * Fix possible problems in the word breaker in ircaux.c
+* Fix server assignment in /exec so it works in /on's again.
+* Fix failsafe declaration for MAXPATHLEN for hurd in irc_std.h and glob.c.
+* Fixes to make dcc-over-ctcp-over-dcc work again (|Rain|)
+* Fix $querywin() so it can take a second argument, a server ref (for scromp)

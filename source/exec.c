@@ -591,7 +591,7 @@ say("Output from process %d (%s) now going to you", i, proc->name);
 			proc->redirect = NULL;
 			if (redirect)
 				proc->redirect = m_strdup(redirect);
-			proc->server = current_window->server;
+			proc->server = from_server;
 			proc->counter = 0;
 			proc->exited = 0;
 			proc->termsig = 0;

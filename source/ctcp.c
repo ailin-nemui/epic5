@@ -10,7 +10,7 @@
  */
 
 #if 0
-static	char	rcsid[] = "@(#)$Id: ctcp.c,v 1.1 2000/12/05 00:11:56 jnelson Exp $";
+static	char	rcsid[] = "@(#)$Id: ctcp.c,v 1.2 2001/09/26 16:37:10 jnelson Exp $";
 #endif
 
 #include "irc.h"
@@ -245,7 +245,7 @@ CTCP_HANDLER(do_dcc)
 	char	*size;
 	char	*extra_flags;
 
-	if (!is_me(from_server, to))
+	if (!is_me(from_server, to) && *from != '=')
 		return NULL;
 
 	if     (!(type = next_arg(cmd, &cmd)) ||

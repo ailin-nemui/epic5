@@ -160,9 +160,14 @@ extern	char	*sys_errlist[];
 
 /*
  * Can you believe some systems done #define this?
+ * I was told that hurd doesn't, so this helps us on hurd.
  */
 #ifndef MAXPATHLEN
-#define MAXPATHLEN  PATHSIZE
+# ifndef PATHSIZE
+#  define MAXPATHLEN 1024
+# else
+#  define MAXPATHLEN  PATHSIZE
+# endif
 #endif
 
 /*
