@@ -1,4 +1,4 @@
-/* $EPIC: server.c,v 1.161 2005/03/28 23:53:58 jnelson Exp $ */
+/* $EPIC: server.c,v 1.162 2005/04/01 03:04:52 jnelson Exp $ */
 /*
  * server.c:  Things dealing with that wacky program we call ircd.
  *
@@ -626,7 +626,6 @@ static	void	server_is_unregistered (int refnum);
 						   connections are open */
 static	char    lame_wait_nick[] = "***LW***";
 static	char    wait_nick[] = "***W***";
-static	int	never_connected = 1;
 
 const char *server_states[8] = {
 	"RECONNECT",		"CONNECTING",		"REGISTERING",
@@ -1756,19 +1755,15 @@ void  server_is_registered (int refnum, const char *itsname, const char *ourname
 	reinstate_user_modes();
 	userhostbase(from_server, NULL, got_my_userhost, 1);
 
-	if (never_connected)
-	{
-		never_connected = 0;
-		permit_status_update(1);
-
+	if (!startup_file)
 		load_ircrc();
 
-		if (default_channel)
-		{
-			e_channel("JOIN", default_channel, empty_string);
-			new_free(&default_channel);
-		}
+	if (default_channel)
+	{
+		e_channel("JOIN", default_channel, empty_string);
+		new_free(&default_channel);
 	}
+
 	if (get_server_away(refnum))
 		set_server_away(from_server, get_server_away(from_server));
 

@@ -1,5 +1,5 @@
 /*
- * @(#)$Id: acconfig.h,v 1.27 2005/03/04 05:30:59 jnelson Exp $
+ * @(#)$Id: acconfig.h,v 1.28 2005/04/01 03:04:51 jnelson Exp $
  */
 
 /*
@@ -331,4 +331,7 @@
 
 /* Define this to use pthreads */
 #undef USE_PTHREAD
+
+/* Define this if you have arc4random() */
+#undef HAVE_ARC4RANDOM
 

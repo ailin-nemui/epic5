@@ -1,4 +1,4 @@
-/* $EPIC: ircaux.c,v 1.133 2005/03/19 03:55:55 jnelson Exp $ */
+/* $EPIC: ircaux.c,v 1.134 2005/04/01 03:04:52 jnelson Exp $ */
 /*
  * ircaux.c: some extra routines... not specific to irc... that I needed 
  *
@@ -3292,7 +3292,7 @@ static unsigned long	randa (unsigned long l)
 	if (l != 0)
 		return 0;	/* No seeding appropriate */
 
-	return (unsigned long)bsd_arc4random();
+	return (unsigned long)arc4random();
 }
 
 unsigned long	random_number (unsigned long l)

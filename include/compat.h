@@ -22,9 +22,10 @@ size_t	strlcpy (char *, const char *, size_t);
 size_t	strlcat (char *, const char *, size_t);
 #endif
 
-void	bsd_arc4random_stir (void);
-void	bsd_arc4random_addrandom (unsigned char *, int);
+#ifndef HAVE_ARC4RANDOM
 u_32int_t	bsd_arc4random (void);
+#define arc4random bsd_arc4random
+#endif
 
 #ifndef HAVE_VSNPRINTF
 int	vsnprintf (char *, size_t, const char *, va_list);

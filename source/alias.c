@@ -1,4 +1,4 @@
-/* $EPIC: alias.c,v 1.73 2005/03/21 02:59:16 jnelson Exp $ */
+/* $EPIC: alias.c,v 1.74 2005/04/01 03:04:52 jnelson Exp $ */
 /*
  * alias.c -- Handles the whole kit and caboodle for aliases.
  *
@@ -1061,10 +1061,14 @@ void	add_var_alias	(const char *orig_name, const char *stuff, int noisy)
 			tmp = make_new_Symbol(name);
 			add_to_array ((array *)&globals, (array_item *)tmp);
 		}
-		if (!tmp->user_variable_package)
+
+		if (current_package())
+		{
+		   if (!tmp->user_variable_package)
 			tmp->user_variable_package = malloc_strdup(current_package());
-		else if (strcmp(tmp->user_variable_package, current_package()))
+		   else if (strcmp(tmp->user_variable_package, current_package()))
 			malloc_strcpy(&(tmp->user_variable_package), current_package());
+		}
 
 		malloc_strcpy(&(tmp->user_variable), stuff);
 		tmp->user_variable_stub = 0;
@@ -1109,12 +1113,16 @@ void	add_var_stub_alias  (const char *orig_name, const char *stuff)
 	if (!(tmp = lookup_symbol(name)))
 	{
 		tmp = make_new_Symbol(name);
-		tmp->user_variable_package = malloc_strdup(current_package());
+		if (current_package())
+		    tmp->user_variable_package = malloc_strdup(current_package());
 		add_to_array ((array *)&globals, (array_item *)tmp);
 	}
-	else if (tmp->user_variable_package == NULL || 
+	else if (current_package())
+	{
+	    if (!tmp->user_variable_package ||
 			strcmp(tmp->user_variable_package, current_package()))
-		malloc_strcpy(&tmp->user_variable_package, current_package());
+		 malloc_strcpy(&tmp->user_variable_package, current_package());
+	}
 
 	malloc_strcpy(&(tmp->user_variable), stuff);
 	tmp->user_variable_stub = 1;
@@ -1182,12 +1190,16 @@ void	add_cmd_alias	(const char *orig_name, ArgList *arglist, const char *stuff)
 	if (!(tmp = lookup_symbol(name)))
 	{
 		tmp = make_new_Symbol(name);
-		tmp->user_command_package = malloc_strdup(current_package());
+		if (current_package())
+		   tmp->user_command_package = malloc_strdup(current_package());
 		add_to_array ((array *)&globals, (array_item *)tmp);
 	}
-	else if (tmp->user_command_package == NULL ||
+	else if (current_package()) 
+	{
+	    if (tmp->user_command_package == NULL ||
 			strcmp(tmp->user_command_package, current_package()))
 		malloc_strcpy(&tmp->user_command_package, current_package());
+	}
 
 	malloc_strcpy(&(tmp->user_command), stuff);
 	tmp->user_command_stub = 0;
@@ -1217,12 +1229,16 @@ void	add_cmd_stub_alias  (const char *orig_name, const char *stuff)
 	if (!(tmp = lookup_symbol(name)))
 	{
 		tmp = make_new_Symbol(name);
-		tmp->user_command_package = malloc_strdup(current_package());
+		if (current_package())
+		   tmp->user_command_package = malloc_strdup(current_package());
 		add_to_array ((array *)&globals, (array_item *)tmp);
 	}
-	else if (tmp->user_command_package == NULL ||
+	else if (current_package())
+	{
+		if (tmp->user_command_package == NULL ||
 			strcmp(tmp->user_command_package, current_package()))
 		malloc_strcpy(&(tmp->user_command_package), current_package());
+	}
 
 	malloc_strcpy(&(tmp->user_command), stuff);
 	tmp->user_command_stub = 1;

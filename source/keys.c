@@ -1,4 +1,4 @@
-/* $EPIC: keys.c,v 1.40 2005/03/21 03:01:12 jnelson Exp $ */
+/* $EPIC: keys.c,v 1.41 2005/04/01 03:04:52 jnelson Exp $ */
 /*
  * keys.c:  Keeps track of what happens whe you press a key.
  *
@@ -127,7 +127,9 @@ struct Binding *add_binding (const char *name, BindFunction func, char *alias) {
 	bp->func = func;
 	bp->alias = NULL;
     }
-    bp->filename = malloc_strdup(current_package());
+    bp->filename = NULL;
+    if (current_package())
+        bp->filename = malloc_strdup(current_package());
 
     add_to_list((List **)&binding_list, (List *)bp);
 
@@ -626,7 +628,8 @@ static int bind_string (const unsigned char *sequence, const char *bindstr, char
 	    if (bp != NULL) {
 		if (args)
 		    kp->stuff = malloc_strdup(args);
-		kp->filename = malloc_strdup(current_package());
+	        if (current_package())
+		    malloc_strcpy(&kp->filename, current_package());
 	    }
 	}
     }
@@ -857,7 +860,7 @@ void unload_bindings (const char *pkg) {
     bp = binding_list;
     while (bp != NULL) {
 	bp2 = bp->next;
-	if (!my_stricmp(bp->filename, pkg))
+	if (bp->filename && !my_stricmp(bp->filename, pkg))
 	    remove_binding(bp->name);
 	bp = bp2;
     }
@@ -873,7 +876,7 @@ void unload_bindings_recurse (const char *pkg, struct Key *map) {
     for (c = 0; c <= KEYMAP_SIZE - 1;c++) {
 	/* if the key is explicitly bound to something, and it was done in
 	 * our package, unbind it. */
-	if (map[c].bound && !my_stricmp(map[c].filename, pkg)) {
+	if (map[c].bound && map[c].filename && !my_stricmp(map[c].filename, pkg)) {
 	    if (map[c].stuff)
 		new_free(&map[c].stuff);
 	    if (map[c].filename)
@@ -1141,7 +1144,7 @@ void show_key (struct Key *key, const unsigned char *str, int slen, int recurse)
     else {
 	if (bp) {
 	    say("[%s] \"%s\" is bound to %s%s%s",
-		    (*key->filename ? key->filename : "*"),
+		    (empty(key->filename) ? "*" : key->filename),
 		    (slen ? bind_string_decompress(clean, str, slen) : str), 
 		    bp->name,
 		    (key->stuff ? " " : ""), (key->stuff ? key->stuff : ""));

@@ -1,4 +1,4 @@
-/* $EPIC: compat.c,v 1.22 2005/03/19 03:55:55 jnelson Exp $ */
+/* $EPIC: compat.c,v 1.23 2005/04/01 03:04:52 jnelson Exp $ */
 /*
  * Everything that im not directly responsible for I put in here.  Almost
  * all of this stuff is either borrowed from somewhere else (for you poor
@@ -979,6 +979,7 @@ size_t	strlcat (char *dst, const char *src, size_t siz)
 #endif
 
 /* --------------------------- start of arc4 stuff -------------------- */
+#ifndef HAVE_ARC4RANDOM
 /*
  * Arc4 random number generator for OpenBSD.
  * Copyright 1996 David Mazieres <dm@lcs.mit.edu>.
@@ -1110,6 +1111,7 @@ u_32int_t	bsd_arc4random (void)
 		bsd_arc4random_stir();
 	return bsd_arc4_getword(&rs);
 }
+#endif
 
 /* --------------------------- start of misc stuff -------------------- */
 /* This is written by EPIC Software Labs contributers and is public domain */

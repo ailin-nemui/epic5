@@ -1,4 +1,4 @@
-/* $EPIC: hook.c,v 1.52 2005/03/20 03:20:51 jnelson Exp $ */
+/* $EPIC: hook.c,v 1.53 2005/04/01 03:04:52 jnelson Exp $ */
 /*
  * hook.c: Does those naughty hook functions. 
  *
@@ -308,45 +308,6 @@ static void	initialize_hook_functions (void)
 	hook_functions_initialized = 1;
 }
 
-#if 0
-/*
- * This converts a user-specified string of unknown composition and
- * returns a string that contains at minimum "params" number of words 
- * in it.  For any words that are forcibly added on, the last word will
- * be a * (so it can match any number of words), and any previous words
- * will be a % (so it forces the correct number of words to be caught.)
- */
-static char *	fill_it_out (char *str, int params)
-{
-	char	buffer[BIG_BUFFER_SIZE + 1];
-	char	*arg,
-		*ptr;
-	int	i = 0;
-
-	ptr = LOCAL_COPY(str);
-	*buffer = 0;
-
-	while ((arg = next_arg(ptr, &ptr)) != NULL)
-	{
-		if (*buffer)
-			strlcat(buffer, " ", sizeof buffer);
-		strlcat(buffer, arg, sizeof buffer);
-		if (++i == params)
-			break;
-	}
-
-	for (; i < params; i++)
-		strlcat(buffer, (i < params-1) ? " %" : " *", sizeof buffer);
-
-	if (*ptr)
-	{
-		strlcat(buffer, " ", sizeof buffer);
-		strlcat(buffer, ptr, sizeof buffer);
-	}
-	return malloc_strdup(buffer);
-}
-#endif
-
 /*
  * 	Add a hook to the hooklist
  *	Returns -1 on error, or size of list if successful.
@@ -509,7 +470,8 @@ static int	add_hook (int which, char *nick, ArgList *arglist, char *stuff, int n
 	new_h->flexible = flexible;
 	new_h->skip = 0;
 	new_h->arglist = arglist;
-	malloc_strcpy(&new_h->filename, current_package());
+	if (current_package())
+	    malloc_strcpy(&new_h->filename, current_package());
 	new_h->next = NULL;
 
 	upper(new_h->nick);
@@ -633,7 +595,7 @@ void	unload_on_hooks (char *filename)
 		for (list = hook_functions[x].list; list; list = next)
 		{
 		    next = list->next;
-		    if (!strcmp(list->filename, filename))
+		    if (list->filename && !strcmp(list->filename, filename))
 			remove_hook(x, list->nick, list->sernum, 1);
 		}
 	}
@@ -651,7 +613,7 @@ static void 	show_hook (Hook *list, const char *name)
 	if (arglist)
 	{
 		say ("[%s] On %s from %c%s%c (%s) do %s [%s] <%d/#%d>",
-			list->filename[0] ? list->filename : "*",
+			empty(list->filename) ? "*" : list->filename,
 			name,
 			(list->flexible ? '\'' : '"'),
 			list->nick,
@@ -664,7 +626,7 @@ static void 	show_hook (Hook *list, const char *name)
 	}
 	else
 		say("[%s] On %s from %c%s%c do %s [%s] <%d/#%d>",
-		    list->filename[0] ? list->filename : "*",
+		    empty(list->filename) ? "*" : list->filename,
 	    	name,
   	  	(list->flexible ? '\'' : '"'), list->nick, 
  		   (list->flexible ? '\'' : '"'), 
@@ -1199,15 +1161,6 @@ BUILT_IN_COMMAND(oncmd)
 		{
 			char *exp;
 
-			/*
-			 * Pad it to the appropriate number of args
-			 */
-			/* 
-				if (which < 0)
-					nick = fill_it_out(nick, 1);
-				else
-					nick = fill_it_out(nick, hook_functions[which].params);
-			*/
 			nick = malloc_strdup(nick);
 			
 			/*
@@ -2106,8 +2059,7 @@ char *hookctl (char *input)
 				if (hooklist[tmp_int] == NULL)
 					continue;
 				if ((is_serial && hooklist[tmp_int]->sernum == serial) ||
-					(!is_serial && !my_stricmp(hooklist[tmp_int]->filename,
-					str)))
+					(!is_serial && hooklist[tmp_int]->filename && !my_stricmp(hooklist[tmp_int]->filename, str)))
 				{
 					ADD_STR_TO_LIST(ret, space, ltoa(tmp_int), retlen);	
 				}
@@ -2122,8 +2074,7 @@ char *hookctl (char *input)
 				hook != NULL; 
 				hook = hook->next)
 				if ((is_serial && hook->sernum == serial) || 
-					(!is_serial && !my_stricmp(hook->filename, 
-					str))
+					(!is_serial && hook->filename && !my_stricmp(hook->filename, str))
 				)
 				{
 					ADD_STR_TO_LIST(ret, space, ltoa(hook->userial), retlen);
@@ -2266,12 +2217,6 @@ char *hookctl (char *input)
 			case HOOKCTL_GET_HOOK_NICK:
 				if (!set)
 					RETURN_STR(hook->nick);
-				/*
-				str = fill_it_out(
-					upper(str), 
-					hook_functions[hook->type].params
-				);
-				*/
 				str = malloc_strdup(upper(str));
 				for (
 					tmp_hook = hook_functions[hook->type].list;
@@ -2643,9 +2588,6 @@ char *hookctl (char *input)
 		if (!input || !*input)
 			RETURN_INT(-1);
 		GET_STR_ARG(nick, input);
-		/*
-			nick = fill_it_out(nick, hook_functions[hooknum].params);
-		*/
 		nick = malloc_strdup(nick);
 		tmp_int = add_hook (hooknum, nick, tmp_arglist, input, set_noisy, set_not, serial, set_flex);
 		new_free (&nick);

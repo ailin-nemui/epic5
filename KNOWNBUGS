@@ -588,3 +588,9 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * OK.  I really botched /set show_channel_names.  Ugh. not my day!
 * OK! OK! OK!  So i commited the wrong builtins script. argh!
 * Ach.  Better not to know.
+* Check for arc4random() in configure, don't use compat.c version if possible.
+* GC "fill_it_out" code which has been deactive for a while.
+* Fix translation casting error for zlonix
+* Allow current_package() to return NULL, handle that as special case.
+* Refactor the startup loading stuff
+* Move a couple of loads out of basical and into global.

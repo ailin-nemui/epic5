@@ -1,5 +1,25 @@
 EPIC5-0.0.4
 
+*** News 03/29/2005 -- Just a note about mangling of /on patterns...
+	In EPIC5, your /ON patterns are no longer "filled out" to the expected
+	number of words in $*.  An example:
+		EPIC4:	/ON PUBLIC "hop" 	becomes	
+			/ON PUBLIC "hop % *"
+		EPIC5:	/ON PUBLIC "hop"	stays as it is.
+	Note that the EPIC5 version *WILL* *NOT* *EVER* *MATCH* any real
+	/on public's because it doesn't match any valid $* values.
+
+	Why was this change made?  Because /on is a general purpose function,
+	there were problems where some /on's sometimes did not always have
+	the minimum number of words in $* that they were supposed to, and it
+	would lead to spaces in odd places, preventing matches.
+
+	It was decided that we would leave "filling it out" as a task that 
+	the scripter would need to be responsible for.  In the above case,
+	you can simple solve the problem with:
+
+		EPIC5:	/ON PUBLIC "hop *"
+
 *** News 03/20/2005 -- History recall moved into a script
 		*** IMPORTANT *** IMPORTANT *** IMPORTANT ***
 	History recall (BACKWARD_HISTORY and FORWARD_HISTORY) are now

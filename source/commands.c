@@ -1,4 +1,4 @@
-/* $EPIC: commands.c,v 1.120 2005/03/28 23:50:07 jnelson Exp $ */
+/* $EPIC: commands.c,v 1.121 2005/04/01 03:04:52 jnelson Exp $ */
 /*
  * commands.c -- Stuff needed to execute commands in ircII.
  *		 Includes the bulk of the built in commands for ircII.
@@ -1532,7 +1532,7 @@ int	current_line (void)
 const char *current_package (void)
 {
 	if (load_depth == -1)
-		return empty_string;
+		return NULL;
 	else if (load_level[load_depth].package)
 		return load_level[load_depth].package;
 	else
