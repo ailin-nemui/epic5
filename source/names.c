@@ -1591,7 +1591,7 @@ void   move_channel_to_window (const char *chan, Window *old_w, Window *new_w)
 		 * we gotta unbind it or there's going to be trouble
 		 * later on...
 		 */
-		if (!my_stricmp(chan, old_w->bind_channel))
+		if (old_w->bind_channel && !my_stricmp(chan, old_w->bind_channel))
 			new_free(&old_w->bind_channel);
 
 		if (!my_stricmp(chan, old_w->current_channel))

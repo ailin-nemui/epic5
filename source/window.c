@@ -3880,10 +3880,9 @@ static Window *window_rebind (Window *window, char **args)
  */
 Window *window_rejoin (Window *window, char **args)
 {
-	char *	arg_copy;
 	char *	channels;
 	char *	chan;
-	char *	keys;
+	char *	keys = NULL;
 	char *	newchan = NULL;
 
 	/* First off, we have to be connected to join */
@@ -3895,13 +3894,12 @@ Window *window_rejoin (Window *window, char **args)
 
 	/* And the user must want to join something */
 	/* Get the channels, and the keys. */
-	arg_copy = LOCAL_COPY(*args);
-	if (!(channels = new_next_arg(arg_copy, &arg_copy)))
+	if (!(channels = new_next_arg(*args, args)))
 	{
 		say("REJOIN: Must provide a channel argument");
 		return window;
 	}
-	keys = new_next_arg(arg_copy, &arg_copy);
+	keys = new_next_arg(*args, args);
 
 
 	/* Iterate over each channel name in the list. */
@@ -4018,7 +4016,7 @@ Window *window_rejoin (Window *window, char **args)
 				      "and there should be.");
 
 			malloc_strcpy(&owner->waiting_channel, chan);
-			m_s3cat_s(&newchan, ",", chan);
+			m_s3cat(&newchan, ",", chan);
 		}
 
 		send_to_aserver(from_server, "JOIN %s %s", newchan, keys);
