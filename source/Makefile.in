@@ -47,7 +47,7 @@ clean::
 wserv4: wserv.o ircsig.o network.o
 	$(CC) $(CFLAGS) $(LDFLAGS) -o wserv4 wserv.o ircsig.o network.o $(LIBS)
 clean::
-	$(RM) wserv wserv.o wterm.c
+	$(RM) wserv4 wserv.o
 
 
 
