@@ -1,4 +1,4 @@
-/* $EPIC: newio.c,v 1.33 2005/02/19 04:22:26 jnelson Exp $ */
+/* $EPIC: newio.c,v 1.34 2005/02/19 05:15:15 jnelson Exp $ */
 /*
  * newio.c:  Passive, callback-driven IO handling for sockets-n-stuff.
  *
@@ -190,7 +190,7 @@ int	dgets_buffer (int channel, void *data, ssize_t len)
 		mlen = ioe->write_pos - ioe->read_pos;
 		memmove(ioe->buffer, ioe->buffer + ioe->read_pos, mlen);
 		ioe->read_pos = 0;
-		ioe->write_pos = len;
+		ioe->write_pos = mlen;
 		ioe->buffer[mlen] = 0;
 		ioe->segments = 1;
 	}
@@ -312,6 +312,7 @@ ssize_t	dgets (int vfd, char *buf, size_t buflen, int buffer)
 
 	if (ioe->read_pos == ioe->write_pos)
 	{
+		ioe->read_pos = ioe->write_pos = 0;
 		ioe->clean = 1;
 		kcleaned(vfd);
 	}
