@@ -57,6 +57,8 @@ bind ^i parse_command tabkey.main
 alias tabkey.default tabkey.method.nickchan
 
 alias tabkey.main {
+	@ :oxd = xdebug(extractw)
+	xdebug extractw
 	@ :curword = indextoword($curpos() $L )
 	@ :wordind = wordtoindex($curword $L)
 	if (32 >= (127 & ascii($mid(${curpos()-1} 1 $L )))) {
@@ -83,6 +85,7 @@ alias tabkey.main {
 		repeat ${curpos()-wordind} parsekey backspace
 		xtype -l $prefix${1<#matches?[]:[ ]}
 	}
+	xdebug $oxd
 }
 
 alias tabkey.cmd {
