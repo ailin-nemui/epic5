@@ -1,4 +1,4 @@
-/* $EPIC: commands.c,v 1.112 2005/01/25 01:39:54 jnelson Exp $ */
+/* $EPIC: commands.c,v 1.113 2005/02/19 04:22:26 jnelson Exp $ */
 /*
  * commands.c -- Stuff needed to execute commands in ircII.
  *		 Includes the bulk of the built in commands for ircII.
@@ -2320,8 +2320,7 @@ BUILT_IN_COMMAND(quotecmd)
 		 */
 		if (cnt < 0 && (rfc1459[loc].flags & PROTO_NOQUOTE))
 		{
-			yell("Doing /QUOTE %s is not permitted.  Use the client's built in command instead.", comm);
-			return;
+			yell("Doing /QUOTE %s will break things.  You have been warned.", comm);
 		}
 
 		/*

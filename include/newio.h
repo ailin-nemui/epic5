@@ -60,33 +60,32 @@
 #ifndef __newio_h__
 #define __newio_h__
 #define USE_SELECT
+/* #define USE_FREEBSD_KQUEUE  */
+/* #define USE_POLL */
+/* #define USE_PTHREADS */
+/* #define VIRTUAL_FILEDESCRIPTORS */
 
 #define NEWIO_READ	1
 #define NEWIO_ACCEPT	2
 #define NEWIO_SSL_READ	3
 #define NEWIO_CONNECT	4
+#define NEWIO_RECV	5
 
 #define IO_BUFFER_SIZE 8192
 
 extern 	int 	dgets_errno;
 
-	size_t	get_pending_bytes	(int);
+	int	dgets_buffer		(int, void *, ssize_t);
 	ssize_t	dgets 			(int, char *, size_t, int);
+	int	do_wait			(struct timeval *);
 	void	do_filedesc		(void);
+	void	init_newio		(void);
+	size_t	get_pending_bytes	(int);
 
-#ifdef USE_SELECT
-	int	select__do_wait			(struct timeval *);
-	int	select__new_open		(int, void (*) (int), int);
-	int	select__new_open_for_writing	(int, void (*) (int));
-	int 	select__new_close 		(int);
-	int	select__new_hold_fd		(int);
-	int	select__new_unhold_fd		(int);
-#define do_wait 		select__do_wait
-#define new_open 		select__new_open
-#define new_open_for_writing 	select__new_open_for_writing
-#define new_close 		select__new_close
-#define new_hold_fd 		select__new_hold_fd
-#define new_unhold_fd 		select__new_unhold_fd
-#endif
+	int	new_open		(int, void (*) (int), int);
+	int	new_open_for_writing	(int, void (*) (int));
+	int	new_hold_fd		(int);
+	int	new_unhold_fd		(int);
+	int 	new_close 		(int);
 
 #endif

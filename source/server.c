@@ -1,4 +1,4 @@
-/* $EPIC: server.c,v 1.148 2005/02/10 05:10:57 jnelson Exp $ */
+/* $EPIC: server.c,v 1.149 2005/02/19 04:22:26 jnelson Exp $ */
 /*
  * server.c:  Things dealing with that wacky program we call ircd.
  *
@@ -853,11 +853,9 @@ void	do_server (int fd)
 		 */
 		if (s->status == SERVER_CONNECTING)
 		{
-		    char bigbuf[8192];
-		    int  x, c;
+		    ssize_t c;
 		    int  retval;
 		    SS	 name;
-		    socklen_t len;
 
 		    if (x_debug & DEBUG_SERVER_CONNECT)
 			yell("do_server: server [%d] is now ready to write", i);
@@ -865,19 +863,19 @@ void	do_server (int fd)
 #define DGETS(x, y) dgets( x , (char *) & y , sizeof y , -1);
 
 		    c = DGETS(des, retval)
-		    if (c < sizeof(retval) || retval)
+		    if (c < (ssize_t)sizeof(retval) || retval)
 			goto something_broke;
 
 		    c = DGETS(des, name)
-		    if (c < sizeof(name))
+		    if (c < (ssize_t)sizeof(name))
 			goto something_broke;
 
 		    c = DGETS(des, retval)
-		    if (c < sizeof(retval) || retval)
+		    if (c < (ssize_t)sizeof(retval) || retval)
 			goto something_broke;
 
 		    c = DGETS(des, name)
-		    if (c < sizeof(name))
+		    if (c < (ssize_t)sizeof(name))
 			goto something_broke;
 
 		    /* XXX - I don't care if this is abusive.  */
@@ -898,7 +896,7 @@ something_broke:
 		    if (get_server_try_ssl(i) == TRUE)
 			new_open(des, do_server, NEWIO_SSL_READ);
 		    else
-			new_open(des, do_server, NEWIO_READ);
+			new_open(des, do_server, NEWIO_RECV);
 
 		    register_server(i, s->d_nickname);
 
@@ -1109,6 +1107,7 @@ static int	grab_server_address (int server)
 		s->next_addr = NULL;
 	}
 
+	say("Performing DNS lookup for [%s] (server %d)", s->name, server);
 	memset(&hints, 0, sizeof(hints));
 	hints.ai_family = AF_UNSPEC;
 	hints.ai_socktype = SOCK_STREAM;
@@ -2988,7 +2987,7 @@ int	server_more_addrs (int refnum)
 /* Returns malloced string */
 static char *	shortname (const char *oname)
 {
-	char *name, *p, *next, *rest;
+	char *name, *next, *rest;
 	ssize_t	len;
 
 	name = malloc_strdup(oname);
@@ -3020,7 +3019,6 @@ static char *	shortname (const char *oname)
 const char *	get_server_altname (int refnum, int which)
 {
 	Server	*s;
-	int	j;
 
 	if (!(s = get_server(refnum)))
 		return NULL;

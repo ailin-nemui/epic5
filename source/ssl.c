@@ -1,4 +1,4 @@
-/* $EPIC: ssl.c,v 1.9 2005/02/09 02:23:25 jnelson Exp $ */
+/* $EPIC: ssl.c,v 1.10 2005/02/19 04:22:26 jnelson Exp $ */
 /*
  * ssl.c: SSL connection functions
  *
@@ -47,6 +47,7 @@
 #include "output.h"
 #include "hook.h"
 #include "ssl.h"
+#include "newio.h"
 
 static SSL_CTX	*SSL_CTX_init (int server)
 {
@@ -60,7 +61,7 @@ static SSL_CTX	*SSL_CTX_init (int server)
 	return(ctx);
 }
 
-static SSL *SSL_FD_init (SSL_CTX *ctx, int des)
+static SSL *SSL_FD_init (SSL_CTX *ctx, int channel)
 {
 	SSL	*ssl;
 	if (!(ssl = SSL_new(ctx)))
@@ -68,7 +69,7 @@ static SSL *SSL_FD_init (SSL_CTX *ctx, int des)
 		return NULL;
 		panic("SSL_FD_init() critical error in SSL_new()");
 	}
-	SSL_set_fd(ssl, des);
+	SSL_set_fd(ssl, channel);
 	SSL_connect(ssl);
 	return(ssl);
 }
@@ -78,7 +79,8 @@ typedef struct	ssl_info_T {
 	struct ssl_info_T *next;
 	int	active;
 
-	int	fd;
+	int	vfd;
+	int	channel;
 	SSL_CTX	*ctx;
 	SSL *	ssl_fd;
 } ssl_info;
@@ -86,22 +88,22 @@ typedef struct	ssl_info_T {
 ssl_info *ssl_list = NULL;
 
 
-static ssl_info *	find_ssl (int fd)
+static ssl_info *	find_ssl (int vfd)
 {
 	ssl_info *x;
 
 	for (x = ssl_list; x; x = x->next)
-		if (x->fd == fd)
+		if (x->vfd == vfd)
 			return x;
 
 	return NULL;
 }
 
-static ssl_info *	new_ssl_info (int fd)
+static ssl_info *	new_ssl_info (int vfd)
 {
 	ssl_info *x;
 
-	if (!(x = find_ssl(fd)))
+	if (!(x = find_ssl(vfd)))
 	{
 		x = new_malloc(sizeof(*x));
 		x->next = ssl_list;
@@ -109,13 +111,14 @@ static ssl_info *	new_ssl_info (int fd)
 	}
 
 	x->active = 0;
-	x->fd = fd;
+	x->vfd = vfd;
+	x->channel = -1;
 	x->ctx = NULL;
 	x->ssl_fd = NULL;
 	return x;
 }
 
-int	startup_ssl (int fd)
+int	startup_ssl (int vfd, int channel)
 {
 	char *		u_cert_issuer;
 	char *		u_cert_subject;
@@ -125,20 +128,21 @@ int	startup_ssl (int fd)
 	EVP_PKEY *      server_pkey;
 	ssl_info *	x;
 
-	if (!(x = new_ssl_info(fd)))
+	if (!(x = new_ssl_info(vfd)))
 	{
 		errno = EINVAL;
 		return -1;
 	}
 
-	say("SSL negotiation for fd [%d] in progress...", fd);
+	say("SSL negotiation for channel [%d] in progress...", channel);
+	x->channel = channel;
 	x->ctx = SSL_CTX_init(0);
-	x->ssl_fd = SSL_FD_init(x->ctx, fd);
+	x->ssl_fd = SSL_FD_init(x->ctx, channel);
 
 	if (x_debug & DEBUG_SSL)
 		say("SSL negotiation using %s", SSL_get_cipher(x->ssl_fd));
 
-	say("SSL negotiation for fd [%d] complete", fd);
+	say("SSL negotiation for channel [%d] complete", channel);
 
 	/* The man page says this never fails in reality. */
 	if (!(server_cert = SSL_get_peer_certificate(x->ssl_fd)))
@@ -148,7 +152,7 @@ int	startup_ssl (int fd)
 		SSL_CTX_free(x->ctx);
 		x->ctx = NULL;
 		x->ssl_fd = NULL;
-		write(fd, empty_string, 1);	/* XXX Is this correct? */
+		write(channel, empty_string, 1);    /* XXX Is this correct? */
 		return -1;
 	}
 
@@ -160,7 +164,7 @@ int	startup_ssl (int fd)
 	server_pkey = X509_get_pubkey(server_cert);
 
 	if (do_hook(SSL_SERVER_CERT_LIST, "%d %s %s %d", 
-			fd, u_cert_subject, u_cert_issuer, 
+			vfd, u_cert_subject, u_cert_issuer, 
 			EVP_PKEY_bits(server_pkey))) 
 	{
 		say("SSL certificate subject: %s", cert_subject) ;
@@ -177,11 +181,11 @@ int	startup_ssl (int fd)
 }
 
 
-int	shutdown_ssl (int fd)
+int	shutdown_ssl (int vfd)
 {
 	ssl_info *x;
 
-	if (!(x = find_ssl(fd)))
+	if (!(x = find_ssl(vfd)))
 	{
 		errno = EINVAL;
 		return -1;
@@ -195,16 +199,17 @@ int	shutdown_ssl (int fd)
 
 	x->ssl_fd = NULL;
 	x->ctx = NULL;
+	x->channel = -1;
 	return 0;
 }
 
 /* * * * * * */
-int	write_ssl (int fd, const void *data, size_t len)
+int	write_ssl (int vfd, const void *data, size_t len)
 {
 	ssl_info *x;
 	int	err;
 
-	if (!(x = find_ssl(fd)))
+	if (!(x = find_ssl(vfd)))
 	{
 		errno = EINVAL;
 		return -1;
@@ -222,21 +227,18 @@ int	write_ssl (int fd, const void *data, size_t len)
 	return err;
 }
 
-int	ssl_reader (int fd, char **buffer, size_t *buffer_size, size_t *start)
+int	ssl_read (int vfd)
 {
 	ssl_info *x;
-	int	c, numb;
-	size_t	numbytes;
+	int	c;
 	int	failsafe = 0;
+	char	buffer[8192];
 
-	if (!(x = find_ssl(fd)))
+	if (!(x = find_ssl(vfd)))
 	{
 		errno = EINVAL;
 		return -1;
 	}
-
-	c = SSL_read(x->ssl_fd, (*buffer) + (*start), 
-			(*buffer_size) - (*start) - 1);
 
 	/*
 	 * So SSL_read() might read stuff from the socket (thus defeating
@@ -244,43 +246,30 @@ int	ssl_reader (int fd, char **buffer, size_t *buffer_size, size_t *start)
 	 * sure we don't leave any data on the table and flush out any data
 	 * that could be left over if the above read didn't do the job.
 	 */
-
-	/* So if any byte are left buffered by SSL... */
-	while ((numb = SSL_pending(x->ssl_fd)) > 0)
+	do
 	{
-		numbytes = numb;		/* We know it's positive ! */
-
 		/* This is to prevent an impossible deadlock */
 		if (failsafe++ > 1000)
-			panic("Caught in SSL_pending() loop! (%d)", numbytes);
+			panic("Caught in SSL_pending() loop! (%d)", vfd);
 
-		/* NUL terminate what we just read */
-		(*buffer)[(*start) + c] = 0;
-
-		/* Move the write position past what we just read */
-		*start = (*start) + c;
-
-		/* If there is not enough room to store the rest of the bytes */
-		if (numbytes > (*buffer_size) - (*start) - 1)
-		{
-			/* Resize the buffer... */
-			*buffer_size = (*buffer_size) + numbytes;
-			RESIZE((*buffer), char, (*buffer_size) + 2);
-		}
-
-		/* And read everything that is left. */
-		c = SSL_read(x->ssl_fd, (*buffer) + (*start),
-				(*buffer_size) - (*start) - 1);
+		c = SSL_read(x->ssl_fd, buffer, sizeof(buffer));
+		if (c == 0)
+			errno = -1;
+		else if (c > 0)
+			dgets_buffer(x->channel, buffer, c);
+		else
+			return c;		/* Some error */
 	}
+	while (SSL_pending(x->ssl_fd) > 0);
 
 	return c;
 }
 
-const char *	get_ssl_cipher (int fd)
+const char *	get_ssl_cipher (int vfd)
 {
 	ssl_info *x;
 
-	if (!(x = find_ssl(fd)))
+	if (!(x = find_ssl(vfd)))
 		return empty_string;
 	if (!x->ssl_fd)
 		return empty_string;
@@ -288,9 +277,9 @@ const char *	get_ssl_cipher (int fd)
 	return SSL_get_cipher(x->ssl_fd);
 }
 
-int	is_ssl_enabled (int fd)
+int	is_ssl_enabled (int vfd)
 {
-	if (find_ssl(fd))
+	if (find_ssl(vfd))
 		return 1;
 	else
 		return 0;
@@ -298,33 +287,33 @@ int	is_ssl_enabled (int fd)
 
 #else
 
-int	startup_ssl (int fd)
+int	startup_ssl (int vfd)
 {
-	panic("startup_ssl(%d) called on non-ssl client", fd);
+	panic("startup_ssl(%d) called on non-ssl client", vfd);
 }
 
-int	shutdown_ssl (int fd)
+int	shutdown_ssl (int vfd)
 {
-	panic("shutdown_ssl(%d) called on non-ssl client", fd);
+	panic("shutdown_ssl(%d) called on non-ssl client", vfd);
 }
 
-int	write_ssl (int fd, const void *data, size_t len)
+int	write_ssl (int vfd, const void *data, size_t len)
 {
 	panic("write_fd(%d, \"%s\", %ld) called on non-ssl client",
-		fd, data, len);
+		vfd, data, len);
 }
 
-int	ssl_reader (int fd, char **buf, size_t *len, size_t *start)
+int	ssl_reader (int vfd, char **buf, size_t *len, size_t *start)
 {
-	panic("ssl_reader(%d) called on non-ssl client", fd);
+	panic("ssl_reader(%d) called on non-ssl client", vfd);
 }
 
-const char *get_ssl_cipher (int fd)
+const char *get_ssl_cipher (int vfd)
 {
-	panic("get_ssl_cipher(%d) called on non-ssl client", fd);
+	panic("get_ssl_cipher(%d) called on non-ssl client", vfd);
 }
 
-int	is_ssl_enabled (int fd)
+int	is_ssl_enabled (int vfd)
 {
 	return 0;
 }

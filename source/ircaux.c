@@ -1,4 +1,4 @@
-/* $EPIC: ircaux.c,v 1.126 2005/01/23 21:41:28 jnelson Exp $ */
+/* $EPIC: ircaux.c,v 1.127 2005/02/19 04:22:26 jnelson Exp $ */
 /*
  * ircaux.c: some extra routines... not specific to irc... that I needed 
  *
@@ -3554,11 +3554,15 @@ static	char	buffer[1024];
 	    return "The local address to bind to was not provided";
 	else if (err1 == -14)
 	    return "The protocol family does not make sense";
-	else
+	else if (err1 == -100)
+	    return "Connection closed";
+	else if (err1 < 0)
 	{
 	    snprintf(buffer, 1024, "EPIC Network Error %d", err1);
 	    return buffer;
 	}
+	else
+		return strerror(err1);
 }
 
 /* 

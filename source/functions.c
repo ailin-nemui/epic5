@@ -1,4 +1,4 @@
-/* $EPIC: functions.c,v 1.187 2005/01/25 23:45:39 jnelson Exp $ */
+/* $EPIC: functions.c,v 1.188 2005/02/19 04:22:26 jnelson Exp $ */
 /*
  * functions.c -- Built-in functions for ircII
  *
@@ -2698,163 +2698,127 @@ char *function_pop (char *word)
  *  Returns 'data' if 'search' is of zero length.
  *
  * Note: Last rewritten on December 2, 1999
+ * Rewritten again on Feb 14, 2005 based on function_msar.
  */
-BUILT_IN_FUNCTION(function_sar, word)
+BUILT_IN_FUNCTION(function_sar, input)
 {
+	int	variable = 0, 
+		global = 0, 
+		case_sensitive = 0;
 	char	delimiter;
-	char *	replacing;
-	size_t	replacinglen;
-	char *	replace_with;
+	char *	last_segment;
 	char *	text;
-	char *	keep_text;
+	char *	after;
+	char *	workbuf;
+	size_t	clue = 0;
+	size_t	searchlen;
+	char *	search;
+	char *	replace;
 	char *	pointer;
-	char *	retval = NULL;
-	int	case_sensitive = 1;
-	int	variable = 0, global = 0;
-	size_t	rvclue=0;
-	
+	int	substitutions = 0;
+	ssize_t	span;
+
 	/*
 	 * Scan the leading part of the argument list, slurping up any
 	 * options, and grabbing the delimiter character.  If we don't
 	 * come across a delimiter, then just end abruptly.
 	 */
-	for (;; word++)
+	for (;; input++)
 	{
-		if (*word == 'r')
+		if (*input == 'r')
 			variable = 1;
-		else if (*word == 'g')
+		else if (*input == 'g')
 			global = 1;
-		else if (*word == 'i')
+		else if (*input == 'i')
 			case_sensitive = 0;
-		else if (!*word)
+		else if (!*input)
 			RETURN_EMPTY;
 		else
 		{
-			delimiter = *word++;
+			delimiter = *input++;
 			break;
 		}
 	}
 
 	/*
-	 * Now at this point, we have all the options slurped up and we
-	 * also have 'word' pointing to the part to substitute.
-	 * Look for the delimiter, which ends the "replacing" field.
+	 * "input" contains a pair of strings like:
+	 *	search<delim>replace[<delim>|<eol>]
+	 *
+	 * If we don't find a pair, then perform no substitution --
+	 * just bail out right here.
 	 */
-	replacing = word;
-	word = strchr(replacing, delimiter);
-	if (word == NULL)
-		RETURN_EMPTY;		/* Syntax error */
-	*word++ = 0;
-	replacinglen = strlen(replacing);
+	search = next_in_div_list(input, &after, delimiter);
+	RETURN_IF_EMPTY(search);
+	replace = next_in_div_list(after, &after, delimiter);
+	RETURN_IF_EMPTY(replace);
 
-	/*
-	 * Now at this point, we have all of the above, and also have
-	 * the string to be replaced in 'replacing', and 'word' is 
-	 * pointing at the string to replace it with.
-	 * Look for the delimiter, which ends the 'replace_with' field.
+	/* 
+	 * The last segment is either a text string, or a variable.  If it
+	 * is a variable, look up its value.
 	 */
-	replace_with = word;
-	word = strchr(replace_with, delimiter);
-	if (word == NULL)
-		RETURN_EMPTY;		/* Syntax error */
-	*word++ = 0;
+	last_segment = after;
+	RETURN_IF_EMPTY(last_segment);
 
-	/*
-	 * Now at this point, we have all of the above, and we have the
-	 * 'replace_with' field all set up, and so 'word' points at the
-	 * operative text.  It could also be a variable name.  So we
-	 * figure out what the operative text will be.
-	 */
-	if (variable)
-		text = get_variable(word);
+	if (variable == 1) 
+		text = get_variable(last_segment);
 	else
-		text = malloc_strdup(word);
+		text = malloc_strdup(last_segment);
 
-	/* If there is no operative text, then return nothing. */
-	if (!text)
-		RETURN_EMPTY;
-	if (!*text)
-	{
-		new_free(&text);
-		RETURN_EMPTY;
-	}
+	if ((searchlen = strlen(search)) > 0)
+		searchlen--;
 
-	/* If the replacing string is empty, then punt right here */
-	if (replacinglen == 0)
-		return text;
-
-	keep_text = text;
+	/*
+	 * Substitute the first "search" with "replace" in "text".
+	 */
 	do
 	{
-		/* Look for the string in the text */
+		/* Look for "search" in "text" */
 		if (case_sensitive)
-			pointer = strstr(keep_text, replacing);
+			pointer = strstr(text, search);
 		else
 		{
-			ssize_t span;
-			if ((span = stristr(keep_text, replacing)) < 0)
+			if ((span = stristr(text, search)) < 0)
 				pointer = NULL;
 			else
-				pointer = keep_text + span;
+				pointer = text + span;
 		}
 
-		/* 
-		 * If the pattern doesnt exist, or we're at the
-		 * end of the string, then just stop right here.
-		 */
-		if (pointer == NULL || *pointer == 0)
+		/* If we did not find it, we're done with this substitution */
+		if (!pointer)
 			break;
 
-		/*
-		 * Now 'pointer' points at the first character in
-		 * the string to replace.  We can NUL it out to 
-		 * terminate the part before it that is interesting.
-		 */
-		pointer[0] = 0;
+		/* Otherwise, chop off the start and end of the nixed string */
+		*pointer = *(pointer + searchlen) = 0;
+		pointer += searchlen + 1;
 
-		/*
-		 * We want to tack on the part of the string that
-		 * is before the string to be replaced, and also
-		 * the string that is to be doing the replacing.
-		 */
-		malloc_strcat2_c(&retval, keep_text, replace_with, &rvclue);
+		/* And recreate <before> + <replacement> + <after> */
+		malloc_strcat2_c(&workbuf, text, replace, &clue);
+		malloc_strcat_c(&workbuf, pointer, &clue);
 
-		/*
-		 * And now we want to step over the string and get
-		 * 'keep_text' to point after that point.
-		 */
-		keep_text = pointer + replacinglen;
+		/* Now 'text' shall be set to the substituted result. */
+		new_free(&text);
+		text = workbuf;
+		workbuf = NULL;
 
-		/*
-		 * If this is just a one-time through thing, then
-		 * there won't be another repetition.
-		 */
+		/* Just to stop infinite substitution loops */
+		if (substitutions++ > 10000)
+		{
+		    if (clue > 80)
+		       yell("$sar(/%s/%s/%80.80s...) suffers too many "
+				"substitutions", search, replace, text);
+		    else
+		       yell("$msar(/%s/%s/%s) suffers too many substitutions",
+				search, replace, text);
+		    break;
+		}
+
+		clue = 0;
 	}
 	while (global);
 
-	/*
-	 * Tack on the last part of the string.
-	 * This really does need to be here.
-	 */
-	malloc_strcat(&retval, keep_text);
-
-	/*
-	 * If we were operating on a variable, then put the value back
-	 * into the variable now that we are done.  Remember that 'word'
-	 * still points at the variable name.
-	 */
-	if (variable) 
-		add_var_alias(word, retval, 0);
-
-	/* 
-	 * Free the 'text' we malloced before
-	 */
-	new_free(&text);
-
-	/*
-	 * And return the result.
-	 */
-	return retval;
+        if (variable) 
+                add_var_alias(last_segment, text, 0);
+	return text;
 }
 
 BUILT_IN_FUNCTION(function_center, word)
@@ -4681,142 +4645,138 @@ BUILT_IN_FUNCTION(function_randread, input)
  * Returns empty string on error
  *
  * Written by panasync, Contributed on 12/03/1997
+ * Rewritten mostly from scratch, on Feb 14, 2005
  */
-BUILT_IN_FUNCTION(function_msar, word)
+BUILT_IN_FUNCTION(function_msar, input)
 {
-	char    delimiter;
-	char    *pointer        = NULL;
-	char    *srch           = NULL;
-	char    *replace        = NULL;
-	char    *data           = NULL;
-	char    *value          = NULL;
-	char    *booya          = NULL;
-	char    *p              = NULL;
-	int     variable 	= 0,
-		global 		= 0,
-		searchlen;
-	int	case_sensitive	= 1;
-	char    *svalue;
+	int	variable = 0, 
+		global = 0, 
+		case_sensitive = 0;
+	char	delimiter;
+	char *	last_segment;
+	char *	text;
+	char *	after;
+	char *	workbuf;
+	size_t	clue = 0;
+	size_t	searchlen;
+	char *	search;
+	char *	replace;
+	char *	pointer;
+	int	substitutions = 0;
+	ssize_t	span;
 
-        while (((*word == 'r') && (variable = 1)) || ((*word == 'g') && (global
-= 1)) || ((*word == 'i') && (case_sensitive = 0)))
-                word++;
+	/*
+	 * Scan the leading part of the argument list, slurping up any
+	 * options, and grabbing the delimiter character.  If we don't
+	 * come across a delimiter, then just end abruptly.
+	 */
+	for (;; input++)
+	{
+		if (*input == 'r')
+			variable = 1;
+		else if (*input == 'g')
+			global = 1;
+		else if (*input == 'i')
+			case_sensitive = 0;
+		else if (!*input)
+			RETURN_EMPTY;
+		else
+		{
+			delimiter = *input++;
+			break;
+		}
+	}
 
-        RETURN_IF_EMPTY(word);
+	/* Now that we have the delimiter, find out what we're substituting */
+	if (!(last_segment = strrchr(input, delimiter)))
+		RETURN_EMPTY;
 
-        delimiter = *word;
-        srch = word + 1;
-        if (!(replace = strchr(srch, delimiter)))
-                RETURN_EMPTY;
+	/* 
+	 * The last segment is either a text string, or a variable.  If it
+	 * is a variable, look up its value.
+	 */
+	*last_segment++ = 0;
+	if (variable == 1) 
+		text = get_variable(last_segment);
+	else
+		text = malloc_strdup(last_segment);
 
-        *replace++ = 0;
-        if (!(data = strchr(replace,delimiter)))
-                RETURN_EMPTY;
+	/*
+	 * Perform substitutions while there are still pairs remaining.
+	 */
+	while (input && *input)
+	{
+	    /*
+	     * "input" contains pairs of strings like:
+	     *	search<delim>replace[<delim>|<eol>]
+	     *
+	     * If we don't find a pair, then perform no substitution --
+	     * just bail out right here.
+	     */
+	    search = next_in_div_list(input, &after, delimiter);
+	    if (!search || !*search)
+		break;
+	    replace = next_in_div_list(after, &after, delimiter);
+	    if (!replace || !*replace)
+		break;
+	    input = after;
 
-        *data++ = 0;
+	    if ((searchlen = strlen(search)) > 0)
+		searchlen--;
 
-        if (!(p = strrchr(data, delimiter)))
-                value = (variable == 1) ? get_variable(data) : malloc_strdup(data);
-        else
-        {
-                *p++ = 0;
-                value = (variable == 1) ? get_variable(p) : malloc_strdup(p);
-        }
-
-        if (!value || !*value)
-        {
-                new_free(&value);
-                RETURN_EMPTY;
-        }
-
-        pointer = svalue = value;
-
-        do 
-        {
-                searchlen = strlen(srch) - 1;
-                if (searchlen < 0)
-                        searchlen = 0;
-                if (global)
-                {
-		    for (;;)
-		    {
-			/* Look for the string in the text */
-			if (case_sensitive)
-				pointer = strstr(pointer, srch);
+	    /*
+	     * Substitute the first "search" with "replace" in "text".
+	     */
+	    do
+	    {
+		/* Look for "search" in "text" */
+		if (case_sensitive)
+			pointer = strstr(text, search);
+		else
+		{
+			if ((span = stristr(text, search)) < 0)
+				pointer = NULL;
 			else
-			{
-				ssize_t span;
-				if ((span = stristr(pointer, srch)) < 0)
-					pointer = NULL;
-				else
-					pointer = pointer + span;
-			}
+				pointer = text + span;
+		}
 
-			if (pointer == NULL)
-				break;
+		/* If we did not find it, we're done with this substitution */
+		if (!pointer)
+			break;
 
-			pointer[0] = pointer[searchlen] = 0;
-			pointer += searchlen + 1;
-			malloc_strcat2(&booya, value, replace);
-			value = pointer;
-			if (!*pointer)
-				break;
-		    }
-                } 
-                else
-                {
-		    for (;;)
-		    {
-			/* Look for the string in the text */
-			if (case_sensitive)
-				pointer = strstr(pointer, srch);
-			else
-			{
-				ssize_t span;
-				if ((span = stristr(pointer, srch)) < 0)
-					pointer = NULL;
-				else
-					pointer = pointer + span;
-			}
+		/* Otherwise, chop off the start and end of the nixed string */
+		*pointer = *(pointer + searchlen) = 0;
+		pointer += searchlen + 1;
 
-			if (pointer == NULL)
-				break;
+		/* And recreate <before> + <replacement> + <after> */
+		malloc_strcat2_c(&workbuf, text, replace, &clue);
+		malloc_strcat_c(&workbuf, pointer, &clue);
 
-			pointer[0] = pointer[searchlen] = 0;
-			pointer += searchlen + 1;
-			malloc_strcat2(&booya, value, replace);
-			value = pointer;
-		    }
-                }
-                malloc_strcat(&booya, value);
-                if (data && *data)
-                {
-                        srch = data;
-                        if ((replace = strchr(data, delimiter)))
-                        {
-                                *replace++ = 0;
-                                if ((data = strchr(replace, delimiter)))
-                                        *data++ = 0;
-                        }
-                        new_free(&svalue);
+		/* Now 'text' shall be set to the substituted result. */
+		new_free(&text);
+		text = workbuf;
+		workbuf = NULL;
 
-			/* This was recommended by RoboHak */
-			/* And he fixed it again, from Colten */
-			if (!replace || !srch)
-			{
-				pointer = value = svalue;
-				break;
-			}
-			pointer = value = svalue = booya;
-			booya = NULL;
-                } else 
-                        break;
-        } while (1);
+		/* Just to stop infinite substitution loops */
+		if (substitutions++ > 10000)
+		{
+		    if (clue > 80)
+		       yell("$msar(/%s/%s/%80.80s...) suffers too many "
+				"substitutions", search, replace, text);
+		    else
+		       yell("$msar(/%s/%s/%s) suffers too many substitutions",
+				search, replace, text);
+		    break;
+		}
+
+		clue = 0;
+	    }
+	    while (global);
+	}
 
         if (variable) 
-                add_var_alias(data, booya, 0);
-        new_free(&svalue);
-        return (booya);
+                add_var_alias(last_segment, text, 0);
+	return text;
 }
 
 /*

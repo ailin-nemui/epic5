@@ -1,4 +1,4 @@
-/* $EPIC: hook.c,v 1.47 2005/01/23 21:41:28 jnelson Exp $ */
+/* $EPIC: hook.c,v 1.48 2005/02/19 04:22:26 jnelson Exp $ */
 /*
  * hook.c: Does those naughty hook functions. 
  *
@@ -1804,7 +1804,6 @@ char *hookctl (char *input)
 	int tmp_int, tmp_int2;
 	int set;
 	int ser;
-	int listsize;
 	int is_serial = 0;
 	int set_noisy = default_noise;
 	int set_serial = 0;
@@ -1821,13 +1820,11 @@ char *hookctl (char *input)
 	char *str;
 	char *hookname;
 	char *name;
-	const char *cname;
 	char *ret = NULL;
 	char *tmp;
 	char *nick;
 	char *buffer;
 
-	const char **list;
 	struct Current_hook *curhook;
 	
 	Hookables *hooks = NULL;

@@ -1,4 +1,4 @@
-/* $EPIC: screen.c,v 1.93 2005/02/09 02:23:25 jnelson Exp $ */
+/* $EPIC: screen.c,v 1.94 2005/02/19 04:22:26 jnelson Exp $ */
 /*
  * screen.c
  *
@@ -2942,7 +2942,7 @@ Window	*create_additional_screen (void)
 					"to new screen");
 				return NULL;
 			}
-			new_open(new_s->fdin, do_screens, NEWIO_READ);
+			new_open(new_s->fdin, do_screens, NEWIO_RECV);
 			new_s->fpin = new_s->fpout = fdopen(new_s->fdin, "r+");
 			continue;
 		}
@@ -2959,7 +2959,7 @@ Window	*create_additional_screen (void)
                                 return NULL;
                         }
 
-			new_open(new_s->control, do_screens, NEWIO_READ);
+			new_open(new_s->control, do_screens, NEWIO_RECV);
 
                         if (!(win = new_window(new_s)))
                                 panic("WINDOW is NULL and it shouldnt be!");

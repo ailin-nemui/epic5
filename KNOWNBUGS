@@ -5,7 +5,10 @@ KNOWN ERRATA (eg, bugs, or unresolved requests):
 * +k mode on status bar w/o the channel key
 * Check to see if we can hook incomplete lines via dcc now
 * Debug everything -- check to make sure dcc and ssl works
-* Figure out who is supposed to call shutdown_ssl().
+* SSL server i can use warped.bluecherry.net:7000
+* irc.link-net.org:7000:::linknet:irc-ssl
+* Sort out the whole errno/dgets_errno/my_strerror mess.
+* Can auto-reconnects happen to servers with multiple addrs after normal con?
 
 [See http://www.epicsol.org/PROJECTS for things to come in the future]
 [See http://www.epicsol.org/CHANGELOG5 for things that changed in the past]
@@ -481,3 +484,11 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Move set_socket_options() to network.c, make do_filedesc() global func
 * No longer null terminate the read()s, unnecessary now.
 * Fix pattern matching of "\<char>%" so [H*] is matched by [%\*%].
+* Refactor $sar() and $msar() so they share as much code as possible.
+* Refactor newio, support select/kqueue/poll (#define's in newio.h)
+* ... Getting closer to not needing select!
+* Fix SSL.
+* Fix a bunch of misc compiler warnings
+* Remove restrictions on /QUOTE, so there!
+* Add pthread support to newio for larne. HUZZAH!
+* I'm sure a zillion things are broken, so it's time to test!

@@ -1,4 +1,4 @@
-/* $EPIC: alias.c,v 1.68 2005/02/03 01:33:39 jnelson Exp $ */
+/* $EPIC: alias.c,v 1.69 2005/02/19 04:22:26 jnelson Exp $ */
 /*
  * alias.c -- Handles the whole kit and caboodle for aliases.
  *
@@ -3312,7 +3312,7 @@ static int	stack_list_builtin_variable_alias (const char *name)
  */
 char    *symbolctl      (char *input)
 {
-        int     refnum, len;
+        int     len;
         char    *listc;
         char    *ret = NULL;
 	size_t	clue = 0;
