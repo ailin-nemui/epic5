@@ -1,5 +1,12 @@
 EPIC4-1.2.0
 
+*** News 05/04/2003 -- New built in function: $outputinfo()
+	The $outputinfo() function returns either one or two words:
+		$0	Current output window level
+		$1	Current output target (if any)
+	The current output window level may be "NONE" which has the same
+	meaning as "CURRENT".
+
 *** News 05/01/2003 -- New command in commandqueues, /timer.ue
 	This functions the same as /timer, but won't expand the command
 	when it is executed.  It's not quite 100% clean yet.  Don't try

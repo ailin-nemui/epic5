@@ -8,11 +8,8 @@ KNOWN ERRATA (eg, bugs, or unresolved requests):
 * Should /set beep off suppress stripping of beeps?
 * /TYPE honors keybindings, and calls edit_char(), but /XTYPE -L does not 
   honor key bindings because it calls input_add_character().
-* Join #foo, then join #foobar, doesn't WHO for #foobar (maxxx)
 * Study update_input() and update_all_windows() and determine if used properly
-* DCC send yourself a file and then DCC get it leads to wackiness
 * New function, you give it a window level, it gives you the window refnum
-* IPV6-over-dcc, i promised morty i would.
 * Shall remove_trailing_spaces honor a \ before a space trailing?
 * New built in function to get who_from and who_level
 * Some way to color the input prompt?

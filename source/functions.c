@@ -1,4 +1,4 @@
-/* $EPIC: functions.c,v 1.114 2003/05/01 12:04:23 crazyed Exp $ */
+/* $EPIC: functions.c,v 1.115 2003/05/05 03:37:52 jnelson Exp $ */
 /*
  * functions.c -- Built-in functions for ircII
  *
@@ -302,6 +302,7 @@ static	char
 	*function_numwords 	(char *),
 	*function_onchannel 	(char *),
 	*function_open 		(char *),
+	*function_outputinfo	(char *),
 	*function_pad		(char *),
 	*function_pattern 	(char *),
 	*function_pass		(char *),
@@ -597,6 +598,7 @@ static BuiltInFunctions	built_in_functions[] =
 	{ "NUMWORDS",		function_numwords	},
 	{ "ONCHANNEL",          function_onchannel 	},
 	{ "OPEN",		function_open 		},
+	{ "OUTPUTINFO",		function_outputinfo	},
 	{ "PAD",		function_pad		},
 	{ "PASS",		function_pass		},
 	{ "PATTERN",		function_pattern	},
@@ -6666,5 +6668,14 @@ BUILT_IN_FUNCTION(function_timerctl, input)
 BUILT_IN_FUNCTION(function_dccctl, input)
 {
 	return dccctl(input);
+}
+
+BUILT_IN_FUNCTION(function_outputinfo, input)
+{
+	if (who_from)
+		return m_sprintf("%s %s", bits_to_lastlog_level(who_level), 
+						who_from);
+	else
+		return m_strdup(bits_to_lastlog_level(who_level));
 }
 
