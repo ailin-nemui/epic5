@@ -8,7 +8,7 @@
  */
 
 #if 0
-static	char	rcsid[] = "@(#)$Id: ircaux.c,v 1.28 2002/01/17 05:28:43 crazyed Exp $";
+static	char	rcsid[] = "@(#)$Id: ircaux.c,v 1.29 2002/01/31 21:47:29 crazyed Exp $";
 #endif
 
 #include "irc.h"
@@ -2783,19 +2783,12 @@ char *	chomp (char *s)
 /*
  * figure_out_address -- lets try this one more time.
  */
-int	figure_out_address (char *nuh, char **nick, char **user, char **host, char **domain, int *ip)
+int	figure_out_address (char *nuh, char **nick, char **user, char **host)
 {
 static 	char 	*mystuff = NULL;
-	char 	*firstback, 
-		*secondback, 
-		*thirdback, 
-		*fourthback;
 	char 	*bang, 
 		*at, 
-		*dot = NULL,
-		*myhost = star, 
-		*endstring;
-	int	number;
+		*dot = NULL;
 
 	/* Dont bother with channels, theyre ok. */
 	if (*nuh == '#' || *nuh == '&')
@@ -2803,8 +2796,7 @@ static 	char 	*mystuff = NULL;
 
 	malloc_strcpy(&mystuff, nuh);
 
-	*host = *domain = star;
-	*ip = 0;
+	*host = star;
 
 
 	/*
@@ -2845,6 +2837,9 @@ static 	char 	*mystuff = NULL;
 
 /*
  * STAGE ONE -- EXTRACT THE NICK, USER, AND HOST PORTIONS.
+ *
+ * stage two is now in 'figure_out_domain', so functions which want it
+ * that way can have it that way.
  */
 
 	/*
@@ -2857,7 +2852,7 @@ static 	char 	*mystuff = NULL;
 			/* nick!user@host */
 			*nick = mystuff;
 			*user = bang + 1;
-			myhost = at + 1;
+			*host = at + 1;
 		}
 		else
 		{
@@ -2865,13 +2860,13 @@ static 	char 	*mystuff = NULL;
 			{
 				*nick = mystuff;
 				*user = star;
-				myhost = at + 1;
+				*host = at + 1;
 			}
 			else			/* nick!user */
 			{
 				*nick = mystuff;
 				*user = star;
-				myhost = star;
+				*host = star;
 			}
 		}
 	}
@@ -2882,7 +2877,7 @@ static 	char 	*mystuff = NULL;
 			/* user@host.domain */
 			*nick = star;
 			*user = mystuff;
-			myhost = at + 1;
+			*host = at + 1;
 		}
 		else
 		{
@@ -2890,36 +2885,55 @@ static 	char 	*mystuff = NULL;
 			{
 				*nick = star;
 				*user = star;
-				myhost = mystuff;
+				*host = mystuff;
 			}
 			else			/* nick */
 			{
 				*nick = mystuff;
 				*user = star;
-				myhost = star;
+				*host = star;
+			}
 			}
 		}
-	}
 
+	return 0;
+}
+
+
+int	figure_out_domain (char *fqdn, char **host, char **domain, int *ip)
+{
+	char 	*firstback, 
+		*secondback, 
+		*thirdback, 
+		*fourthback;
+	char	*endstring;
+	char	*dot;
+	int	number;
+
+	/* determine if we have an IP, use dot to hold this */
+	if (dot = strrchr(fqdn, '.') && my_atol(dot + 1))
+		*ip = 1;
+	else
+		*ip = 0;
 
 /*
- * STAGE TWO -- EXTRACT THE HOST AND DOMAIN FROM MYHOST
+ * STAGE TWO -- EXTRACT THE HOST AND DOMAIN FROM FQDN
  */
 
 	/*
-	 * At this point, 'myhost' points what what we think the hostname
+	 * At this point, 'fqdn' points what what we think the hostname
 	 * is.  We chop it up into discrete parts and see what we end up with.
 	 */
-	endstring = myhost + strlen(myhost);
-	firstback = strnrchr(myhost, '.', 1);
-	secondback = strnrchr(myhost, '.', 2);
-	thirdback = strnrchr(myhost, '.', 3);
-	fourthback = strnrchr(myhost, '.', 4);
+	endstring = fqdn + strlen(fqdn);
+	firstback = strnrchr(fqdn, '.', 1);
+	secondback = strnrchr(fqdn, '.', 2);
+	thirdback = strnrchr(fqdn, '.', 3);
+	fourthback = strnrchr(fqdn, '.', 4);
 
 	/* Track foo@bar or some such thing. */
 	if (!firstback)
 	{
-		*host = myhost;
+		*host = fqdn;
 		return 0;
 	}
 
@@ -2928,10 +2942,9 @@ static 	char 	*mystuff = NULL;
 	 */
 	if (my_atol(firstback + 1))
 	{
-		*ip = 1;
-		*domain = myhost;
+		*domain = fqdn;
 
-		number = my_atol(myhost);
+		number = my_atol(fqdn);
 		if (number < 128)
 			*host = thirdback;
 		else if (number < 192)
@@ -2951,7 +2964,7 @@ static 	char 	*mystuff = NULL;
 	 */
 	else if (secondback && (endstring - firstback == 4))
 	{
-		*host = myhost;
+		*host = fqdn;
 		*domain = secondback;
 		**domain = 0;
 		(*domain)++;
@@ -2965,7 +2978,7 @@ static 	char 	*mystuff = NULL;
 			!strncmp(thirdback, ".k12.", 5) &&
 			!strncmp(firstback, ".us", 3))
 	{
-		*host = myhost;
+		*host = fqdn;
 		*domain = fourthback;
 		**domain = 0;
 		(*domain)++;
@@ -2980,7 +2993,7 @@ static 	char 	*mystuff = NULL;
 			!strncmp(firstback, ".us", 3))
 	{
 		*host = empty_string;
-		*domain = myhost;
+		*domain = fqdn;
 	}
 	/*
 	 *	(*).(*.???.??)
@@ -2990,7 +3003,7 @@ static 	char 	*mystuff = NULL;
 			(endstring - firstback == 3) &&
 			(firstback - secondback == 4))
 	{
-		*host = myhost;
+		*host = fqdn;
 		*domain = thirdback;
 		**domain = 0;
 		(*domain)++;
@@ -3004,7 +3017,7 @@ static 	char 	*mystuff = NULL;
 		 	(firstback - secondback == 4))
 	{
 		*host = empty_string;
-		*domain = myhost;
+		*domain = fqdn;
 	}
 	/*
 	 *	(*).(*.??.??)
@@ -3014,7 +3027,7 @@ static 	char 	*mystuff = NULL;
 			(endstring - firstback == 3) &&
 			(firstback - secondback == 3))
 	{
-		*host = myhost;
+		*host = fqdn;
 		*domain = thirdback;
 		**domain = 0;
 		(*domain)++;
@@ -3028,7 +3041,7 @@ static 	char 	*mystuff = NULL;
 			(firstback - secondback == 3))
 	{
 		*host = empty_string;
-		*domain = myhost;
+		*domain = fqdn;
 	}
 	/*
 	 *	(*).(*.??)
@@ -3036,7 +3049,7 @@ static 	char 	*mystuff = NULL;
 	 */
 	else if (secondback && (endstring - firstback == 3))
 	{
-		*host = myhost;
+		*host = fqdn;
 		*domain = secondback;
 		**domain = 0;
 		(*domain)++;
@@ -3047,7 +3060,7 @@ static 	char 	*mystuff = NULL;
 	else
 	{
 		*host = empty_string;
-		*domain = myhost;
+		*domain = fqdn;
 	}
 
 	return 0;

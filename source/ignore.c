@@ -57,11 +57,9 @@ static void 	ignore_nickname (const char *nicklist, int type, int flag)
 	char	new_nick[IRCD_BUFFER_SIZE + 1];
 	char	buffer[BIG_BUFFER_SIZE+1];
 	char *	p;
-	int	ip;
 	char *	mnick;
 	char *	user;
 	char *	host;
-	char *	dom;
 
 	for (nick = LOCAL_COPY(nicklist); nick; nick = ptr)
 	{
@@ -71,14 +69,11 @@ static void 	ignore_nickname (const char *nicklist, int type, int flag)
 		if (!*nick)
 			continue;
 
-		if (figure_out_address(nick, &mnick, &user, &host, &dom, &ip))
+		if (figure_out_address(nick, &mnick, &user, &host))
 			strlcpy(new_nick, nick, IRCD_BUFFER_SIZE);
-		else if (ip == 0)
-			snprintf(new_nick, IRCD_BUFFER_SIZE, "%s!%s@%s%s%s", 
-				mnick, user, host, DOT, dom);
 		else
-			snprintf(new_nick, IRCD_BUFFER_SIZE, "%s!%s@%s%s%s",
-				mnick, user, dom, DOT, host);
+			snprintf(new_nick, IRCD_BUFFER_SIZE, "%s!%s@%s",
+				mnick, user, host);
 
 		if (!(new_i = (Ignore *) list_lookup((List **)&ignored_nicks, 
 							new_nick, 
@@ -201,17 +196,13 @@ static int 	remove_ignore (char *nick)
 	Ignore	*tmp;
 	char	new_nick[IRCD_BUFFER_SIZE + 1];
 	int	count = 0;
-	char 	*mnick, *user, *host, *domain;
-	int	ip;
+	char 	*mnick, *user, *host;
 
-	if (figure_out_address(nick, &mnick, &user, &host, &domain, &ip))
+	if (figure_out_address(nick, &mnick, &user, &host))
 		strlcpy(new_nick, nick, IRCD_BUFFER_SIZE);
-	else if (ip == 0)
-		snprintf(new_nick, IRCD_BUFFER_SIZE, "%s!%s@%s%s%s",
-			mnick, user, host, DOT, domain);
 	else
-		snprintf(new_nick, IRCD_BUFFER_SIZE, "%s!%s@%s%s%s",
-			mnick, user, domain, DOT, host);
+		snprintf(new_nick, IRCD_BUFFER_SIZE, "%s!%s@%s",
+			mnick, user, host);
 
 	/*
 	 * Look for an exact match first.
