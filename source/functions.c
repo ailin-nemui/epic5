@@ -1,4 +1,4 @@
-/* $EPIC: functions.c,v 1.82 2002/09/03 11:43:12 jnelson Exp $ */
+/* $EPIC: functions.c,v 1.83 2002/09/06 21:35:04 jnelson Exp $ */
 /*
  * functions.c -- Built-in functions for ircII
  *
@@ -543,8 +543,8 @@ static BuiltInFunctions	built_in_functions[] =
 	{ "LISTEN",		function_listen 	},
 	{ "LOADINFO",		function_loadinfo	},
 	{ "LOG",		function_log		},
-	{ "LOGCTL",		function_logctl		},
 	{ "LOG10",		function_log10		},
+	{ "LOGCTL",		function_logctl		},
 	{ "LONGTOIP",		function_longtoip	},
 	{ "MASK",		function_mask		},
 	{ "MATCH",		function_match 		},
