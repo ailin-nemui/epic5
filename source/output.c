@@ -1,4 +1,4 @@
-/* $EPIC: output.c,v 1.9 2003/05/09 04:29:52 jnelson Exp $ */
+/* $EPIC: output.c,v 1.10 2003/10/10 06:22:39 jnelson Exp $ */
 /*
  * output.c: handles a variety of tasks dealing with the output from the irc
  * program 
@@ -287,6 +287,22 @@ void	yell (const char *format, ...)
 			put_echo(putbuf);
 	}
 }
+
+void	privileged_yell (const char *format, ...)
+{
+	if (format)
+	{
+		va_list args;
+		va_start (args, format);
+		vsnprintf(putbuf, sizeof putbuf, format, args);
+		va_end(args);
+
+		privileged_output++;
+		put_echo(putbuf);
+		privileged_output--;
+	}
+}
+
 
 /*
  * Error is exactly like yell, except that if the error occured while

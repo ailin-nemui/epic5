@@ -217,3 +217,4 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Add 'hold_mode' script, implements ircII-like /set hold_mode[_interval]
 * /XEVAL -- ends eval option processing, like how /xecho does it.
 * Fix $servernick()
+* Implement "priveleged yells" which lets you do /set debug 7 again.

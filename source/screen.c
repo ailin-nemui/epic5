@@ -1,4 +1,4 @@
-/* $EPIC: screen.c,v 1.56 2003/10/10 06:09:01 jnelson Exp $ */
+/* $EPIC: screen.c,v 1.57 2003/10/10 06:22:39 jnelson Exp $ */
 /*
  * screen.c
  *
@@ -2096,7 +2096,8 @@ void 	add_to_screen (const unsigned char *buffer)
 	if (dumb_mode)
 	{
 		add_to_lastlog(current_window, buffer);
-		if (do_hook(WINDOW_LIST, "%u %s", current_window->refnum, buffer))
+		if (privileged_output || 
+		    do_hook(WINDOW_LIST, "%u %s", current_window->refnum, buffer))
 			puts(buffer);
 		fflush(stdout);
 		return;
@@ -2295,11 +2296,13 @@ static void 	add_to_window (Window *window, const unsigned char *str)
 				str, NULL, 0))
 			return;
 
-	if (!do_hook(WINDOW_LIST, "%u %s", window->refnum, str))
+	if (!privileged_output)
+	{
+	   if (!do_hook(WINDOW_LIST, "%u %s", window->refnum, str))
 		return;
 
-	if ((pend = get_string_var(OUTPUT_REWRITE_VAR)))
-	{
+	   if ((pend = get_string_var(OUTPUT_REWRITE_VAR)))
+	   {
 		char	*prepend_exp;
 		char	argstuff[10240];
 		int	args_flag;
@@ -2314,10 +2317,13 @@ static void 	add_to_window (Window *window, const unsigned char *str)
 
 		str = prepend_exp;
 		free_me = prepend_exp;
-	}
+	   }
 
-	/* Normalize the line of output */
-	strval = normalize_string(str, 0);
+	   /* Normalize the line of output */
+	   strval = normalize_string(str, 0);
+	}
+	else
+	   strval = malloc_strdup(str);
 
 	/* Pass it off to the window */
 	window_disp(window, strval, str);

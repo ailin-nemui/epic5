@@ -1,4 +1,4 @@
-/* $EPIC: ircaux.c,v 1.94 2003/09/24 21:57:20 jnelson Exp $ */
+/* $EPIC: ircaux.c,v 1.95 2003/10/10 06:22:39 jnelson Exp $ */
 /*
  * ircaux.c: some extra routines... not specific to irc... that I needed 
  *
@@ -108,27 +108,33 @@ static int	malloc_check (void *ptr)
 
 void	fatal_malloc_check (void *ptr, const char *special, const char *fn, int line)
 {
+	static	int	recursion = 0;
+
 	switch (malloc_check(ptr))
 	{
 	    case ALLOC_MAGIC_FAILED:
 	    {
-		yell("IMPORTANT! MAKE SURE TO INCLUDE ALL OF THIS INFORMATION" 
+		if (recursion)
+			abort();
+
+		recursion++;
+		privileged_yell("IMPORTANT! MAKE SURE TO INCLUDE ALL OF THIS INFORMATION" 
 			" IN YOUR BUG REPORT!");
-		yell("MAGIC CHECK OF MALLOCED MEMORY FAILED!");
+		privileged_yell("MAGIC CHECK OF MALLOCED MEMORY FAILED!");
 		if (special)
-			yell("Because of: [%s]", special);
+			privileged_yell("Because of: [%s]", special);
 
 		if (ptr)
 		{
-			yell("Address: [%p]  Size: [%d]  Magic: [%x] "
+			privileged_yell("Address: [%p]  Size: [%d]  Magic: [%x] "
 				"(should be [%lx])",
 				ptr, alloc_size(ptr), magic(ptr), ALLOC_MAGIC);
-			yell("Dump: [%s]", prntdump(ptr, alloc_size(ptr)));
+			privileged_yell("Dump: [%s]", prntdump(ptr, alloc_size(ptr)));
 		}
 		else
-			yell("Address: [NULL]");
+			privileged_yell("Address: [NULL]");
 
-		yell("IMPORTANT! MAKE SURE TO INCLUDE ALL OF THIS INFORMATION" 
+		privileged_yell("IMPORTANT! MAKE SURE TO INCLUDE ALL OF THIS INFORMATION" 
 			" IN YOUR BUG REPORT!");
 		panic("BE SURE TO INCLUDE THE ABOVE IMPORTANT INFORMATION! "
 			"-- new_free()'s magic check failed from [%s/%d].", 
@@ -137,6 +143,10 @@ void	fatal_malloc_check (void *ptr, const char *special, const char *fn, int lin
 
 	    case ALREADY_FREED:
 	    {
+		if (recursion)
+			abort();
+
+		recursion++;
 		panic("free()d the same address twice from [%s/%d].", 
 				fn, line);
 	    }

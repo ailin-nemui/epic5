@@ -1,4 +1,4 @@
-/* $EPIC: irc.c,v 1.590 2003/10/06 03:00:05 jnelson Exp $ */
+/* $EPIC: irc.c,v 1.591 2003/10/10 06:22:39 jnelson Exp $ */
 /*
  * ircII: a new irc client.  I like it.  I hope you will too!
  *
@@ -52,7 +52,7 @@ const char internal_version[] = "20030613";
 /*
  * In theory, this number is incremented for every commit.
  */
-const unsigned long	commit_id = 595;
+const unsigned long	commit_id = 596;
 
 /*
  * As a way to poke fun at the current rage of naming releases after
@@ -180,6 +180,9 @@ Timeval		now = {0, 0};
 
 /* When you "highlight ignore", this is what is used to embellish */
 char *		highlight_char;
+
+/* Output which is displayed without modification by the user */
+int		privileged_output = 0;
 
 /*
  * If set, outbound connections will be bind()ed to the address

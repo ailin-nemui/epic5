@@ -1,4 +1,4 @@
-/* $EPIC: if.c,v 1.21 2003/07/10 13:08:57 jnelson Exp $ */
+/* $EPIC: if.c,v 1.22 2003/10/10 06:22:39 jnelson Exp $ */
 /*
  * if.c: the IF, WHILE, FOREACH, DO, FE, FEC, and FOR commands for IRCII 
  *
@@ -158,7 +158,8 @@ BUILT_IN_COMMAND(ifcmd)
 		}
 		current_expr_val = parse_inline(current_expr, subargs, &flag);
 		if (get_int_var(DEBUG_VAR) & DEBUG_EXPANSIONS)
-			yell("%s expression expands to: (%s)", command, current_expr_val);
+			privileged_yell("%s expression expands to: (%s)", command, current_expr_val);
+
 		result = check_val(current_expr_val);
 		new_free(&current_expr_val);
 
@@ -840,7 +841,7 @@ BUILT_IN_COMMAND(switchcmd)
 
 	control = expand_alias(control, subargs, &af, NULL);
 	if (get_int_var(DEBUG_VAR) & DEBUG_EXPANSIONS)
-		yell("%s expression expands to: (%s)", command, control);
+		privileged_yell("%s expression expands to: (%s)", command, control);
 
 	if (!(body = next_expr(&args, '{')))
 		say("SWITCH: Execution body not found where expected");
@@ -865,7 +866,7 @@ BUILT_IN_COMMAND(switchcmd)
 			}
 			header = expand_alias(header, subargs, &af, NULL);
 			if (get_int_var(DEBUG_VAR) & DEBUG_EXPANSIONS)
-				yell("%s expression expands to: (%s)", command, header);
+				privileged_yell("%s expression expands to: (%s)", command, header);
 			if (wild_match(header, control))
 				hooked = 1;
 			new_free(&header);
