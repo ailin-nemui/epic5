@@ -1,4 +1,4 @@
-/* $EPIC: commands.c,v 1.42 2002/11/08 03:12:10 jnelson Exp $ */
+/* $EPIC: commands.c,v 1.43 2002/11/08 23:36:12 jnelson Exp $ */
 /*
  * commands.c -- Stuff needed to execute commands in ircII.
  *		 Includes the bulk of the built in commands for ircII.
@@ -101,13 +101,6 @@
 
 /* The maximum number of recursive LOAD levels allowed */
 #define MAX_LOAD_DEPTH 10
-
-/* recv_nick: the nickname of the last person to send you a privmsg */
-	char	*recv_nick = NULL;
-
-/* sent_nick: the nickname of the last person to whom you sent a privmsg */
-	char	*sent_nick = NULL;
-	char	*sent_body = NULL;
 
 /* Used to handle and catch breaks and continues */
 	int	will_catch_break_exceptions = 0;
@@ -760,13 +753,13 @@ BUILT_IN_COMMAND(e_pause)
  */
 BUILT_IN_COMMAND(e_privmsg)
 {
-	char	*nick;
+	const char	*nick;
 
 	if ((nick = next_arg(args, &args)) != NULL)
 	{
 		if (!strcmp(nick, "."))
 		{
-			if (!(nick = sent_nick))
+			if (!(nick = get_server_sent_nick()))
 			{
 				say("You have not sent a message to anyone yet.");
 				return;
@@ -774,7 +767,7 @@ BUILT_IN_COMMAND(e_privmsg)
 		}
 		else if (!strcmp(nick, ",")) 
 		{
-			if (!(nick = recv_nick))
+			if (!(nick = get_server_recv_nick()))
 			{
 				say("You have not received a message from anyone yet.");
 				return;
@@ -783,7 +776,7 @@ BUILT_IN_COMMAND(e_privmsg)
 		else if (!strcmp(nick, "*") && (!(nick = get_channel_by_refnum(0))))
 			nick = zero;
 		send_text(nick, args, command, window_display);
-		malloc_strcpy(&sent_body, args);
+		set_server_sent_body(args);
 	}
 	else 
 	{
@@ -1971,39 +1964,6 @@ BUILT_IN_COMMAND(mecmd)
 		say("Usage: /ME <action description>");
 }
 
-/*
- * This isnt a command, its used by the wait command.  Since its extern,
- * and it doesnt use anything static in this file, im sure it doesnt
- * belong here.
- */
-static void oh_my_wait (int servnum)
-{
-	int w_server;
-
-	if ((w_server = servnum) == -1)
-		w_server = primary_server;
-
-	if (is_server_connected(w_server))
-	{
-		int old_doing_privmsg = doing_privmsg;
-		int old_doing_notice = doing_notice;
-		int old_in_ctcp_flag = in_ctcp_flag;
-		int old_from_server = from_server;
-
-		waiting_out++;
-		lock_stack_frame();
-		send_to_aserver(w_server, "%s", lame_wait_nick);
-		while (waiting_in < waiting_out)
-			io("oh_my_wait");
-
-		doing_privmsg = old_doing_privmsg;
-		doing_notice = old_doing_notice;
-		in_ctcp_flag = old_in_ctcp_flag;
-		from_server = old_from_server;
-	}
-}
-
-
 static 	void	oper_password_received (char *data, char *line)
 {
 	send_to_server("OPER %s %s", data, line);
@@ -2613,20 +2573,7 @@ BUILT_IN_COMMAND(waitcmd)
 	char	*ctl_arg = next_arg(args, &args);
 
 	if (ctl_arg && !my_strnicmp(ctl_arg, "-c", 2))
-	{
-		WaitCmd	*new_wait;
-
-		new_wait = (WaitCmd *) new_malloc(sizeof(WaitCmd));
-		new_wait->stuff = m_strdup(args);
-		new_wait->next = NULL;
-
-		if (end_wait_list)
-			end_wait_list->next = new_wait;
-		end_wait_list = new_wait;
-		if (!start_wait_list)
-			start_wait_list = new_wait;
-		send_to_server("%s", wait_nick);
-	}
+		server_passive_wait(from_server, args);
 
 	else if (ctl_arg && !my_strnicmp(ctl_arg, "for", 3))
 	{
@@ -2635,7 +2582,7 @@ BUILT_IN_COMMAND(waitcmd)
 		parse_line(NULL, args, subargs, 0, 0);
 		unlock_stack_frame();
 		if (sent_to_server(from_server))
-			oh_my_wait(from_server);
+			server_hard_wait(from_server);
 		clear_sent_to_server(from_server);	/* reset it again */
 	}
 
@@ -2653,9 +2600,6 @@ BUILT_IN_COMMAND(waitcmd)
 			}
 			else
 			{
-#if 0	/* Bogus */
-				set_input(empty_string);
-#endif
 				lock_stack_frame();
 				while (process_is_running(ctl_arg))
 					io("wait %proc");
@@ -2667,7 +2611,7 @@ BUILT_IN_COMMAND(waitcmd)
 		yell("Unknown argument to /WAIT");
 	else
 	{
-		oh_my_wait(from_server);
+		server_hard_wait(from_server);
 		clear_sent_to_server(from_server);
 	}
 }
@@ -2954,21 +2898,21 @@ struct target_type target[4] =
 		from_server = -1;
 		dcc_chat_transmit(current_nick + 1, line, text, command, hook);
 		from_server = old_server;
-		malloc_strcpy(&sent_nick, current_nick);
+		set_server_sent_nick(current_nick);
 		new_free(&line);
 	    }
 	    else
 	    {
 		char *	copy = NULL;
 
-		if (doing_notice)
+		if (doing_notice())
 		{
 			say("You cannot send a message from within ON NOTICE");
 			continue;
 		}
 
 		i = is_channel(current_nick);
-		if (doing_privmsg || (command && !strcmp(command, "NOTICE")))
+		if (doing_privmsg() || (command && !strcmp(command, "NOTICE")))
 			i += 2;
 
 		if ((key = is_crypted(current_nick)))
@@ -2984,7 +2928,7 @@ struct target_type target[4] =
 
 			send_to_server("%s %s :%s", 
 					target[i].command, current_nick, line);
-			malloc_strcpy(&sent_nick, current_nick);
+			set_server_sent_nick(current_nick);
 
 			new_free(&line);
 			set_lastlog_msg_level(lastlog_level);
@@ -2993,7 +2937,7 @@ struct target_type target[4] =
 		else
 		{
 			if (i == 0)
-				malloc_strcpy(&sent_nick, current_nick);
+				set_server_sent_nick(current_nick);
 			if (target[i].nick_list)
 				malloc_strcat(&target[i].nick_list, ",");
 			malloc_strcat(&target[i].nick_list, current_nick);
@@ -3709,39 +3653,6 @@ static	unsigned 	level = 0;
         return 0;
 }
 
-/* 
- * How does this work?  Well, when we issue the /wait command
- * it increments a variable "waiting" which is the number of 
- * times wait has been called so far.  If we get a wait
- * token, we reduce the wait level by one, and if the wait
- * level is zero, then we are free to clear irc_io_loop which
- * will cause the waits to just fall out.
- */
-int 	check_wait_command (char *nick)
-{
-	if ((waiting_out > waiting_in) && !strcmp(nick, lame_wait_nick))
-	{
-		waiting_in++;
-		unlock_stack_frame();
-	        return 1;
-	}
-	if (start_wait_list && !strcmp(nick, wait_nick))
-	{
-		WaitCmd *old = start_wait_list;
-
-		start_wait_list = old->next;
-		if (old->stuff)
-		{
-			parse_line("WAIT", old->stuff, empty_string, 0, 0);
-			new_free(&old->stuff);
-		}
-		if (end_wait_list == old)
-			end_wait_list = NULL;
-		new_free((char **)&old);
-		return 1;
-	}
-	return 0;
-}
 
 BUILT_IN_COMMAND(breakcmd)
 {

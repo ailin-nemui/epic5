@@ -1,4 +1,4 @@
-/* $EPIC: notice.c,v 1.13 2002/09/26 22:41:43 jnelson Exp $ */
+/* $EPIC: notice.c,v 1.14 2002/11/08 23:36:12 jnelson Exp $ */
 /*
  * notice.c: special stuff for parsing NOTICEs
  *
@@ -54,7 +54,6 @@
 
 static	time_t 	convert_note_time_to_real_time (char *stuff);
 static	int 	kill_message (const char *from, char *line);
-	int	doing_notice = 0;
 static	int	never_connected = 1;
 
 
@@ -248,7 +247,7 @@ void 	parse_notice (char *from, char **Args)
 	 * Suppress the sending of PRIVMSGs or NOTICEs until this
 	 * global variable is reset.
 	 */
-	doing_notice = 1;
+	set_doing_notice(1);
 	sed = 0;
 
 	/*
@@ -268,7 +267,7 @@ void 	parse_notice (char *from, char **Args)
 		!strcmp(get_server_itsname(from_server), from))
 	{
 		parse_local_server_notice(from, to, line);
-		doing_notice = 0;
+		set_doing_notice(0);
 		return;
 	}
 
@@ -340,7 +339,7 @@ the_end:
 	/* Clean up and go home. */
 	set_lastlog_msg_level(level);
 	message_from(NULL, level);
-	doing_notice = 0;
+	set_doing_notice(0);
 }
 
 /*

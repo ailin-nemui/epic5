@@ -1,4 +1,4 @@
-/* $EPIC: dcc.c,v 1.39 2002/10/22 16:31:14 crazyed Exp $ */
+/* $EPIC: dcc.c,v 1.40 2002/11/08 23:36:12 jnelson Exp $ */
 /*
  * dcc.c: Things dealing client to client connections. 
  *
@@ -1245,17 +1245,19 @@ static	void	dcc_getfile (char *args, int resume)
 				yell("SENDING DCC RESUME to [%s] [%s|%s|%ld]", user, filename, dcc->othername, (long)sb.st_size);
 		
 			/* Just in case we have to fool the protocol enforcement. */
-			old_dp = doing_privmsg;
-			old_dn = doing_notice;
-			old_dc = in_ctcp_flag;
+			old_dp = doing_privmsg();
+			old_dn = doing_notice();
+			old_dc = doing_ctcp();
 		
-			doing_privmsg = doing_notice = in_ctcp_flag = 0;
+			set_doing_privmsg(0);
+			set_doing_notice(0);
+			set_doing_ctcp(0);
 			send_ctcp(CTCP_PRIVMSG, user, CTCP_DCC, "RESUME %s %s %ld", 
 				dcc->description, dcc->othername, (long)sb.st_size);
 		
-			doing_privmsg = old_dp;
-			doing_notice = old_dn;
-			in_ctcp_flag = old_dc;
+			set_doing_privmsg(old_dp);
+			set_doing_notice(old_dn);
+			set_doing_ctcp(old_dc);
 
 			/*
 			 * Warning:  It seems to be for the best to _not_ loop
@@ -2963,17 +2965,20 @@ static	void	dcc_getfile_resume (char *args)
 		yell("SENDING DCC RESUME to [%s] [%s|%s|%ld]", user, filename, Client->othername, (long)sb.st_size);
 
 	/* Just in case we have to fool the protocol enforcement. */
-	old_dp = doing_privmsg;
-	old_dn = doing_notice;
-	old_dc = in_ctcp_flag;
+	old_dp = doing_privmsg();
+	old_dn = doing_notice();
+	old_dc = in_ctcp_flag();
 
-	doing_privmsg = doing_notice = in_ctcp_flag = 0;
+	set_doing_privmsg(0);
+	set_doing_notice(0);
+	set_doing_ctcp(0);
+
 	send_ctcp(CTCP_PRIVMSG, user, CTCP_DCC, "RESUME %s %s %ld", 
 		filename, Client->othername, (long)sb.st_size);
 
-	doing_privmsg = old_dp;
-	doing_notice = old_dn;
-	in_ctcp_flag = old_dc;
+	set_doing_privmsg(old_dp);
+	set_doing_notice(old_dn);
+	set_doing_ctcp(old_dc);
 
 	/* Then we just sit back and wait for the reply. */
 }
@@ -3011,17 +3016,20 @@ static void dcc_getfile_resume_demanded (char *user, char *filename, char *port,
 	Client->bytes_read = 0L;
 
 	/* Just in case we have to fool the protocol enforcement. */
-	old_dp = doing_privmsg;
-	old_dn = doing_notice;
-	old_dc = in_ctcp_flag;
+	old_dp = doing_privmsg();
+	old_dn = doing_notice();
+	old_dc = doing_ctcp();
 
-	doing_privmsg = doing_notice = in_ctcp_flag = 0;
+	set_doing_privmsg(0);
+	set_doing_notice(0);
+	set_doing_ctcp(0);
+
 	send_ctcp(CTCP_PRIVMSG, user, CTCP_DCC, "ACCEPT %s %s %s",
 		filename, port, offset);
 
-	doing_privmsg = old_dp;
-	doing_notice = old_dn;
-	in_ctcp_flag = old_dc;
+	set_doing_privmsg(old_dp);
+	set_doing_notice(old_dn);
+	set_doing_ctcp(old_dc);
 
 	/* Wait for them to open the connection */
 }

@@ -1,4 +1,4 @@
-/* $EPIC: exec.c,v 1.9 2002/08/26 17:20:14 crazyed Exp $ */
+/* $EPIC: exec.c,v 1.10 2002/11/08 23:36:12 jnelson Exp $ */
 /*
  * exec.c: handles exec'd process for IRCII 
  *
@@ -179,7 +179,7 @@ BUILT_IN_COMMAND(execcmd)
 		 */
 		if (my_strnicmp(flag, "OUT", len) == 0)
 		{
-			if (doing_privmsg)
+			if (doing_privmsg())
 				redirect = "NOTICE";
 			else
 				redirect = "PRIVMSG";
@@ -221,7 +221,7 @@ BUILT_IN_COMMAND(execcmd)
 		 */
 		else if (my_strnicmp(flag, "MSG", len) == 0)
 		{
-			if (doing_privmsg)
+			if (doing_privmsg())
 				redirect = "NOTICE";
 			else
 				redirect = "PRIVMSG";

@@ -1,4 +1,4 @@
-/* $EPIC: window.c,v 1.46 2002/11/08 02:59:35 jnelson Exp $ */
+/* $EPIC: window.c,v 1.47 2002/11/08 23:36:13 jnelson Exp $ */
 /*
  * window.c: Handles the organzation of the logical viewports (``windows'')
  * for irc.  This includes keeping track of what windows are open, where they
@@ -2774,6 +2774,7 @@ Window *window_channel (Window *window, char **args)
 		*arg2 = NULL,
 		*arg3 = NULL;
 	Window 	*w = NULL;
+	const char *carg;
 
 	/* Fix by Jason Brand, Nov 6, 2000 */
 	if (window->server == -1)
@@ -2784,26 +2785,24 @@ Window *window_channel (Window *window, char **args)
 
 	if ((sarg = new_next_arg(*args, args)))
 	{
-		if (!(arg = next_arg(sarg, &sarg)))
+		if (!(carg = next_arg(sarg, &sarg)))
 		{
 			say("Huh?");
 			return window;
 		}
 
-		if (!my_strnicmp(arg, "-i", 2))
+		if (!my_strnicmp(carg, "-i", 2))
 		{
-			if (invite_channel)
-				arg = invite_channel;
-			else
+			if (!(carg = get_server_invite_channel()))
 			{
 				say("You have not been invited to a channel!");
 				return window;
 			}
 		}
 
-                if (!is_channel(arg))
+                if (!is_channel(carg))
                 {
-                        say("CHANNEL: %s is not a valid channel name", arg);
+                        say("CHANNEL: %s is not a valid channel name", carg);
                         return NULL;
                 }
 
@@ -2816,7 +2815,7 @@ Window *window_channel (Window *window, char **args)
 		 * a quick, and nasty hack, but i will re-assess the
 		 * situation later and improve what is being done here.
 		 */
-		arg = m_strcat_ues(&arg2, arg, 1);
+		arg = m_strcat_ues(&arg2, carg, 1);
 		sarg = m_strcat_ues(&arg3, sarg, 1);
 
 		while (traverse_all_windows(&w))
@@ -3685,7 +3684,7 @@ static Window *window_push (Window *window, char **args)
 Window *window_query (Window *window, char **args)
 {
 	WNickList *tmp;
-	char	  *nick;
+	const char	  *nick;
 	char	  *a;
 	Window	  *sw;
 
@@ -3697,7 +3696,7 @@ Window *window_query (Window *window, char **args)
 		say("Ending conversation with %s", window->query_nick);
 		window_statusbar_needs_update(window);
 
-		a = nick;
+		a = LOCAL_COPY(nick);
 		while (a && *a)
 		{
 			nick = next_in_comma_list(a, &a);
@@ -3715,12 +3714,12 @@ Window *window_query (Window *window, char **args)
 	{
 		if (!strcmp(nick, "."))
 		{
-			if (!(nick = sent_nick))
+			if (!(nick = get_server_sent_nick()))
 				say("You have not messaged anyone yet");
 		}
 		else if (!strcmp(nick, ","))
 		{
-			if (!(nick = recv_nick))
+			if (!(nick = get_server_recv_nick()))
 				say("You have not recieved a message yet");
 		}
 		else if (!strcmp(nick, "*") && 
@@ -3748,7 +3747,7 @@ Window *window_query (Window *window, char **args)
 
 		malloc_strcpy(&window->query_nick, nick);
 		window_statusbar_needs_update(window);
-		a = nick;
+		a = LOCAL_COPY(nick);
 		while (a && *a)
 		{
 			nick = next_in_comma_list(a, &a);
@@ -3870,7 +3869,7 @@ static Window *window_rebind (Window *window, char **args)
 Window *window_rejoin (Window *window, char **args)
 {
 	char *	channels;
-	char *	chan;
+	const char *	chan;
 	char *	keys = NULL;
 	char *	newchan = NULL;
 
@@ -3896,9 +3895,7 @@ Window *window_rejoin (Window *window, char **args)
 		/* Handle /join -i, which joins last invited channel */
 		if (!my_strnicmp(chan, "-i", 2))
                 {
-                        if (invite_channel)
-                                chan = invite_channel;
-                        else
+                        if (!(chan = get_server_invite_channel()))
 			{
                                 say("You have not been invited to a channel!");
 				continue;

@@ -1,4 +1,4 @@
-/* $EPIC: parse.c,v 1.25 2002/08/30 16:51:25 crazyed Exp $ */
+/* $EPIC: parse.c,v 1.26 2002/11/08 23:36:12 jnelson Exp $ */
 /*
  * parse.c: handles messages from the server.   Believe it or not.  I
  * certainly wouldn't if I were you. 
@@ -79,9 +79,6 @@ static  void    strip_modes (char *, char *, char *);
 
 /* User and host information from server 2.7 */
 	char	*FromUserHost = empty_string;
-
-/* doing a PRIVMSG */
-	int	doing_privmsg = 0;
 
 /* fake: alerts the user. */
 void 	fake (void)
@@ -311,7 +308,7 @@ static void p_privmsg (char *from, char **Args)
 		return;
 	}
 
-	doing_privmsg = 1;
+	set_doing_privmsg(1);
 	sed = 0;
 
 	/*
@@ -323,7 +320,7 @@ static void p_privmsg (char *from, char **Args)
 	ptr = do_ctcp(from, to, ptr);
 	if (!*ptr)
 	{
-		doing_privmsg = 0;
+		set_doing_privmsg(0);
 		return;
 	}
 
@@ -371,7 +368,7 @@ static void p_privmsg (char *from, char **Args)
 	{
 		case IGNORED:
 		{
-			doing_privmsg = 0;
+			set_doing_privmsg(0);
 			return;
 		}
 		case HIGHLIGHTED:
@@ -417,7 +414,7 @@ static void p_privmsg (char *from, char **Args)
 		}
 		case MSG_LIST:
 		{
-			malloc_strcpy(&recv_nick, from);
+			set_server_recv_nick(from);
 			if (get_server_away(-2))
 				beep_em(get_int_var(BEEP_WHEN_AWAY_VAR));
 
@@ -457,7 +454,7 @@ static void p_privmsg (char *from, char **Args)
 	sed = 0;
 	set_lastlog_msg_level(level);
 	message_from(NULL, LOG_CURRENT);
-	doing_privmsg = 0;
+	set_doing_privmsg(0);
 }
 
 static void p_quit (char *from, char **ArgList)
@@ -522,7 +519,7 @@ static void p_pong (char *from, char **ArgList)
 	{
 		if (check_server_redirect(ArgList[1]))
 			return;
-		if (check_wait_command(ArgList[1]))
+		if (check_server_wait(ArgList[1]))
 			return;
 	}
 
@@ -662,8 +659,8 @@ static void 	p_invite (char *from, char **ArgList)
 		if (do_hook(INVITE_LIST, "%s %s %s", from, ArgList[1],FromUserHost))
 			say("%s%s (%s)%s invites you to channel %s", high,
 				from, FromUserHost, high, ArgList[1]);
-		malloc_strcpy(&invite_channel, ArgList[1]);
-		malloc_strcpy(&recv_nick, from);
+		set_server_invite_channel(ArgList[1]);
+		set_server_recv_nick(from);
 	}
 }
 

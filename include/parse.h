@@ -27,7 +27,9 @@ extern	int		 num_protocol_cmds;
 	int	is_channel	(const char *);
 
 extern	char	*FromUserHost;
+#if 0
 extern	int	doing_privmsg;
+#endif
 
 #endif
 

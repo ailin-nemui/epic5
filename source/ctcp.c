@@ -1,4 +1,4 @@
-/* $EPIC: ctcp.c,v 1.15 2002/07/17 22:52:52 jnelson Exp $ */
+/* $EPIC: ctcp.c,v 1.16 2002/11/08 23:36:12 jnelson Exp $ */
 /*
  * ctcp.c:handles the client-to-client protocol(ctcp). 
  *
@@ -213,9 +213,9 @@ CTCP_HANDLER(do_sed)
 		 * There might be a CTCP message in there,
 		 * so we see if we can find it.
 		 */
-		if (doing_privmsg)
+		if (doing_privmsg())
 			ret2 = m_strdup(do_ctcp(from, to, ret));
-		else if (doing_notice)
+		else if (doing_notice())
 			ret2 = m_strdup(do_notice_ctcp(from, to, ret));
 		sed = 1;
 	}

@@ -1,4 +1,4 @@
-/* $EPIC: server.c,v 1.72 2002/10/24 22:28:07 jnelson Exp $ */
+/* $EPIC: server.c,v 1.73 2002/11/08 23:36:13 jnelson Exp $ */
 /*
  * server.c:  Things dealing with that wacky program we call ircd.
  *
@@ -36,6 +36,8 @@
 
 #define NEED_SERVER_LIST
 #include "irc.h"
+#include "commands.h"
+#include "alias.h"
 #include "parse.h"
 #include "server.h"
 #include "ircaux.h"
@@ -147,6 +149,22 @@ void 	add_to_server_list (const char *server, int port, const char *password, co
 		s->reconnects = 0;
 		s->quit_message = NULL;
 		s->save_channels = -1;
+
+		s->doing_privmsg = 0;
+		s->doing_notice = 0;
+		s->in_ctcp_flag = 0;
+		s->waiting_in = 0;
+		s->waiting_out = 0;
+		s->start_wait_list = NULL;
+		s->end_wait_list = NULL;
+
+		s->invite_channel = NULL;
+		s->last_notify_nick = NULL;
+		s->joined_nick = NULL;
+		s->public_nick = NULL;
+		s->recv_nick = NULL;
+		s->sent_nick = NULL;
+		s->sent_body = NULL;
 #ifdef HAVE_SSL
 		s->enable_ssl = FALSE;
 		s->ssl_enabled = FALSE;
@@ -2562,6 +2580,216 @@ const char *get_server_type (int refnum)
 #endif
 		return "IRC";
 }
+
+/*****************************************************************************/
+static __inline__ Server *      get_server (int server)
+{
+        if (server == -1)
+                server = primary_server;
+        if (server < 0 || server >= number_of_servers)
+                return NULL;
+        return &server_list[server];
+}
+/* 
+ * These two macros do bounds checking on server refnums that are
+ * passed into various server functions
+ */
+#define CHECK_SERVER(x)                         \
+{                                               \
+        if (x < 0 || x >= number_of_servers)    \
+                return;                         \
+        if (!get_server(x))                     \
+                return;                         \
+}
+
+#define CHECK_SERVER_RET(x, y)                  \
+{                                               \
+        if (x < 0 || x >= number_of_servers)    \
+                return (y);                     \
+        if (!get_server(x))                     \
+                return (y);                     \
+}
+
+#define FROMSERV        get_server(from_server)
+#define SERVER(x)       get_server(x)
+
+int	doing_privmsg (void)
+{
+	return FROMSERV->doing_privmsg;
+}
+
+int	doing_notice (void)
+{
+	return FROMSERV->doing_notice;
+}
+
+int	doing_ctcp (void)
+{
+	return FROMSERV->in_ctcp_flag;
+}
+
+void	set_doing_privmsg (int v)
+{
+	FROMSERV->doing_privmsg = v;
+}
+
+void	set_doing_notice (int v)
+{
+	FROMSERV->doing_notice = v;
+}
+
+void	set_doing_ctcp (int v)
+{
+	FROMSERV->in_ctcp_flag = v;
+}
+
+/*****/
+void	set_server_invite_channel (const char *chan)
+{
+	malloc_strcpy(&FROMSERV->invite_channel, chan);
+}
+
+const char *	get_server_invite_channel (void)
+{
+	return FROMSERV->invite_channel;
+}
+
+void	set_server_last_notify (const char *nick)
+{
+	malloc_strcpy(&FROMSERV->last_notify_nick, nick);
+}
+
+const char *	get_server_last_notify (void)
+{
+	return FROMSERV->last_notify_nick;
+}
+
+void	set_server_joined_nick (const char *nick)
+{
+	malloc_strcpy(&FROMSERV->joined_nick, nick);
+}
+
+const char *	get_server_joined_nick (void)
+{
+	return FROMSERV->joined_nick;
+}
+
+void	set_server_public_nick (const char *nick)
+{
+	malloc_strcpy(&FROMSERV->public_nick, nick);
+}
+
+const char *	get_server_public_nick (void)
+{
+	return FROMSERV->public_nick;
+}
+
+void	set_server_recv_nick (const char *nick)
+{
+	malloc_strcpy(&FROMSERV->recv_nick, nick);
+}
+
+const char *	get_server_recv_nick (void)
+{
+	return FROMSERV->recv_nick;
+}
+
+void	set_server_sent_nick (const char *nick)
+{
+	malloc_strcpy(&FROMSERV->sent_nick, nick);
+}
+
+const char *	get_server_sent_nick (void)
+{
+	return FROMSERV->sent_nick;
+}
+
+void	set_server_sent_body (const char *text)
+{
+	malloc_strcpy(&FROMSERV->sent_body, text);
+}
+
+const char *	get_server_sent_body (void)
+{
+	return FROMSERV->sent_body;
+}
+
+/* WAIT STUFF */
+/*
+ * This isnt a command, its used by the wait command.  Since its extern,
+ * and it doesnt use anything static in this file, im sure it doesnt
+ * belong here.
+ */
+void 	server_hard_wait (int i)
+{
+	CHECK_SERVER(i)
+
+	if (!is_server_connected(i))
+		return;
+
+	SERVER(i)->waiting_out++;
+	lock_stack_frame();
+	send_to_aserver(i, "%s", lame_wait_nick);
+	while (SERVER(i) && (SERVER(i)->waiting_in < SERVER(i)->waiting_out))
+		io("oh_my_wait");
+}
+
+void	server_passive_wait (int i, const char *stuff)
+{
+	WaitCmd	*new_wait;
+
+	new_wait = (WaitCmd *)new_malloc(sizeof(WaitCmd));
+	new_wait->stuff = m_strdup(stuff);
+	new_wait->next = NULL;
+
+	if (SERVER(i)->end_wait_list)
+		SERVER(i)->end_wait_list->next = new_wait;
+	SERVER(i)->end_wait_list = new_wait;
+	if (!SERVER(i)->start_wait_list)
+		SERVER(i)->start_wait_list = new_wait;
+
+	send_to_aserver(i, "%s", wait_nick);
+}
+
+/*
+ * How does this work?  Well, when we issue the /wait command it increments
+ * a variable "waiting_out" which is the number of times that wait has been
+ * caled so far.  If we get a wait token, we increase the waiting_in level
+ * by one, and if the number of inbound waiting tokens is the same as the 
+ * number of outbound tokens, then we are free to clear this stack frame
+ * which will cause all of the pending waits to just fall out.
+ */
+int	check_server_wait (const char *nick)
+{
+	Server	*s = FROMSERV;
+
+	if ((s->waiting_out > s->waiting_in) && !strcmp(nick, lame_wait_nick))
+	{
+		s->waiting_in++;
+		unlock_stack_frame();
+	        return 1;
+	}
+
+	if (s->start_wait_list && !strcmp(nick, wait_nick))
+	{
+		WaitCmd *old = s->start_wait_list;
+
+		s->start_wait_list = old->next;
+		if (old->stuff)
+		{
+			parse_line("WAIT", old->stuff, empty_string, 0, 0);
+			new_free(&old->stuff);
+		}
+		if (s->end_wait_list == old)
+			s->end_wait_list = NULL;
+		new_free((char **)&old);
+		return 1;
+	}
+	return 0;
+}
+
+
+/*****************************************************************************/
 
 /* 005 STUFF */
 

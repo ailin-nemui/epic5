@@ -62,7 +62,7 @@ struct WindowStru *get_channel_window	(Char *, int);
 						struct WindowStru *);
 	void	reset_window_current_channel (struct WindowStru *);
 	char *	scan_channel		(char *);
-	char *	check_channel_type	(char *);
+	const char *	check_channel_type	(const char *);
 	int	channel_is_syncing	(const char *, int);
 	void	channel_not_waiting	(const char *, int); 
 	void	channel_check_windows	(void);

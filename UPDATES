@@ -1,5 +1,15 @@
 EPIC4-1.2.0
 
+*** News 11/07/2002 -- /XECHO -W now takes channel argument
+	Until now, the argument to /XECHO -W had to be a window refnum.
+	Now you can provide a channel as the argument, and epic will 
+	output to that channel's window.  Please be aware that the channel
+	you provide will be looked for in the "current server", so make
+	sure that is really what you want.  This is useful in /ONs when
+	you want to output something but you can't be bothered to look up
+	the channel's refnum.  For example:
+		on join * { xecho -w $1 BOOYA BOOYA BOOYA BOO!  }
+
 *** News 11/07/2002 -- $center() improved
 	$center() was rewritten here, so if you see any problems, this is
 	probably when they were introduced.

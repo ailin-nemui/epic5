@@ -113,7 +113,6 @@ extern		char	star[];
 extern		char	dot[];
 extern		char	hostname[];
 extern const 	char 	internal_version[];
-extern		char *	invite_channel;
 extern		char *	ircrc_file;
 extern		char *	epicrc_file;
 extern		char *	startup_file;

@@ -19,10 +19,6 @@
 #define SECURITY_NO_NONINTERACTIVE_EXEC 2
 #define SECURITY_NO_NONINTERACTIVE_SET	4
 
-extern	char	*sent_nick;
-extern	char	*sent_body;
-extern	char	*recv_nick;
-
 extern	int	will_catch_break_exceptions;
 extern	int	will_catch_continue_exceptions;
 extern	int	will_catch_return_exceptions;
@@ -32,7 +28,6 @@ extern	int	return_exception;
 
 extern	int	need_defered_commands;
 
-	int	check_wait_command 	(char *);
 	void	ExecuteTimers		(void);
 	void	parse_line 		(const char *, const char *, const char *, int, int);
 	BUILT_IN_COMMAND(load);

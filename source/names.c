@@ -1,4 +1,4 @@
-/* $EPIC: names.c,v 1.32 2002/09/26 22:41:43 jnelson Exp $ */
+/* $EPIC: names.c,v 1.33 2002/11/08 23:36:12 jnelson Exp $ */
 /*
  * names.c: This here is used to maintain a list of all the people currently
  * on your channel.  Seems to work 
@@ -584,7 +584,7 @@ static Nick *	find_nick (int server, const char *channel, const char *nick)
  * or a new !channel from irc2.10.  If the latter, then it reformats it
  * a bit into a more user-friendly form.
  */
-char *	check_channel_type (char *channel)
+const char *	check_channel_type (const char *channel)
 {
 	/* Grumblesmurf */
 	return channel;

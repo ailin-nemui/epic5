@@ -1,4 +1,4 @@
-/* $EPIC: numbers.c,v 1.31 2002/10/24 22:28:07 jnelson Exp $ */
+/* $EPIC: numbers.c,v 1.32 2002/11/08 23:36:12 jnelson Exp $ */
 /*
  * numbers.c: handles all those strange numeric response dished out by that
  * wacky, nutty program we call ircd 
@@ -710,7 +710,7 @@ void 	numbered_command (char *from, int comm, char **ArgList)
 	{
 		if (check_server_redirect(ArgList[0]))
 			break;
-		if (check_wait_command(ArgList[0]))
+		if (check_server_wait(ArgList[0]))
 			break;
 
 		PasteArgs(ArgList, 0);

@@ -1,4 +1,4 @@
-/* $EPIC: functions.c,v 1.88 2002/11/08 02:59:35 jnelson Exp $ */
+/* $EPIC: functions.c,v 1.89 2002/11/08 23:36:12 jnelson Exp $ */
 /*
  * functions.c -- Built-in functions for ircII
  *
@@ -802,14 +802,14 @@ static	char	*alias_dollar 		(void) { return m_strdup("$"); }
 static	char	*alias_detected 	(void) { return m_strdup(last_notify_nick); }
 static	char	*alias_nick 		(void) { return m_strdup((current_window->server != -1) ? get_server_nickname(current_window->server) : empty_string); }
 static	char	*alias_away 		(void) { return m_strdup(get_server_away(from_server)); }
-static	char	*alias_sent_nick 	(void) { return m_strdup((sent_nick) ? sent_nick : empty_string); }
-static	char	*alias_recv_nick 	(void) { return m_strdup((recv_nick) ? recv_nick : empty_string); }
-static	char	*alias_msg_body 	(void) { return m_strdup((sent_body) ? sent_body : empty_string); }
-static	char	*alias_joined_nick 	(void) { return m_strdup((joined_nick) ? joined_nick : empty_string); }
-static	char	*alias_public_nick 	(void) { return m_strdup((public_nick) ? public_nick : empty_string); }
+static  char    *alias_sent_nick        (void) { return m_strdup((get_server_sent_nick()) ? get_server_sent_nick() : empty_string); }
+static  char    *alias_recv_nick        (void) { return m_strdup((get_server_recv_nick()) ? get_server_recv_nick() : empty_string); }
+static  char    *alias_msg_body         (void) { return m_strdup((get_server_sent_body()) ? get_server_sent_body() : empty_string); }
+static  char    *alias_joined_nick      (void) { return m_strdup((get_server_joined_nick()) ? get_server_joined_nick() : empty_string); }
+static  char    *alias_public_nick      (void) { return m_strdup((get_server_public_nick()) ? get_server_public_nick() : empty_string); }
 static  char    *alias_show_realname 	(void) { return m_strdup(realname); }
 static	char	*alias_version_str 	(void) { return m_strdup(irc_version); }
-static	char	*alias_invite 		(void) { return m_strdup((invite_channel) ? invite_channel : empty_string); }
+static  char    *alias_invite           (void) { return m_strdup((get_server_invite_channel()) ? get_server_invite_channel() : empty_string); }
 static	char	*alias_oper 		(void) { return m_strdup((from_server != -1) ? get_server_operator(from_server) ?  get_string_var(STATUS_OPER_VAR) : empty_string : empty_string); }
 static	char	*alias_version 		(void) { return m_strdup(internal_version); }
 static  char    *alias_show_userhost 	(void) { return m_strdup(get_server_userhost(from_server)); }

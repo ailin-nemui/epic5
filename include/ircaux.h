@@ -7,7 +7,7 @@
  *
  * See the COPYRIGHT file, or do a HELP IRCII COPYRIGHT 
  *
- * @(#)$Id: ircaux.h,v 1.33 2002/10/24 22:28:07 jnelson Exp $
+ * @(#)$Id: ircaux.h,v 1.34 2002/11/08 23:36:12 jnelson Exp $
  */
 
 #ifndef _IRCAUX_H_
@@ -87,7 +87,7 @@ char *	chop 			(char *, size_t);
 char *	strmcpy 		(char *, const char *, int);
 char *	strmcat 		(char *, const char *, int);
 char *	strmcat_ue 		(char *, const char *, int);
-char *	m_strcat_ues_c 		(char **, char *, int, size_t *);
+char *	m_strcat_ues_c 		(char **, const char *, int, size_t *);
 char *	strmopencat		(char *, int, ...);
 char *	stristr 		(const char *, const char *);
 char *	rstristr 		(const char *, const char *);

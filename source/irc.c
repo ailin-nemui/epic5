@@ -1,4 +1,4 @@
-/* $EPIC: irc.c,v 1.385 2002/11/08 03:12:10 jnelson Exp $ */
+/* $EPIC: irc.c,v 1.386 2002/11/08 23:36:12 jnelson Exp $ */
 /*
  * ircII: a new irc client.  I like it.  I hope you will too!
  *
@@ -203,8 +203,7 @@ ISA6 *		LocalIPv6Addr = NULL;
 int		inbound_line_mangler = 0,
 		outbound_line_mangler = 0;
 
-char		*invite_channel = (char *) 0,	/* last channel of an INVITE */
-		*startup_file = NULL,		/* full path .epicrc file */
+char		*startup_file = NULL,		/* full path .epicrc file */
 		*epicrc_file = NULL,		/* full path .epicrc file */
 		*ircrc_file = NULL,		/* full path .ircrc file */
 		*my_path = (char *) 0,		/* path to users home dir */

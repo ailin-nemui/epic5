@@ -33,6 +33,12 @@ typedef struct
 	char	*value;
 } A005_item;
 
+typedef struct WaitCmdstru
+{
+        char    *stuff;
+        struct  WaitCmdstru *next;
+} WaitCmd;
+
 /* Server: a structure for the server_list */
 typedef	struct
 {
@@ -89,6 +95,22 @@ typedef	struct
 	int	ssl_enabled;		/* Current SSL status. */
 	SSL*	ssl_fd;
 #endif
+
+        int             doing_privmsg;
+        int             doing_notice;
+        int             in_ctcp_flag;
+        int             waiting_in;
+        int             waiting_out;
+        WaitCmd *       start_wait_list;
+        WaitCmd *       end_wait_list;
+
+        char *          invite_channel;
+        char *          last_notify_nick;
+        char *          joined_nick;
+        char *          public_nick;
+        char *          recv_nick;
+        char *          sent_nick;
+        char *          sent_body;
 }	Server;
 extern	Server	*server_list;
 #endif	/* NEED_SERVER_LIST */
@@ -224,4 +246,31 @@ const char *    get_server_quit_message		(int);
 	void	destroy_005			(int);
 const	char*	get_server_005			(int, char*);
 	void	set_server_005			(int, char*, char*);
+
+        void            server_hard_wait (int);
+        void            server_passive_wait (int, const char *);
+        int             check_server_wait (const char *);
+        int             doing_privmsg (void);
+        int             doing_notice (void);
+        int             doing_ctcp (void);
+        void            set_doing_privmsg (int);
+        void            set_doing_notice (int);
+        void            set_doing_ctcp (int);
+        void            set_server_invite_channel       (const char *);
+        const char *    get_server_invite_channel       (void);
+        void            set_server_last_notify          (const char *);
+        const char *    get_server_last_notify          (void);
+        void            set_server_joined_nick          (const char *);
+        const char *    get_server_joined_nick          (void);
+        void            set_server_public_nick          (const char *);
+        const char *    get_server_public_nick          (void);
+        void            set_server_recv_nick            (const char *);
+        const char *    get_server_recv_nick            (void);
+        void            set_server_sent_nick            (const char *);
+        const char *    get_server_sent_nick            (void);
+        void            set_server_sent_body            (const char *);
+        const char *    get_server_sent_body            (void);
+        void            set_server_window_count         (int, int);
+        int             get_server_window_count         (int);
+
 #endif /* _SERVER_H_ */
