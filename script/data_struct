@@ -22,13 +22,14 @@ alias.t alias.tt alias.t $*;alias.t $sar(g/assign/alias/$*)
 #
 alias.tt assign.check {
 	@ :last = []
-	fe ($aliasctl(assign pmatch "\\[$*\\]")) foo {
+	@ :list = aliasctl(assign pmatch "\\[$*\\]")
+	fe ($list) foo {
 		if (uniq($last $foo)!=sort($last $foo)) {
 			echo assign consistancy failure: $last >= $foo
 			@ last = foo
 		}
 	}
-	echo -- Checked $#aliasctl(assign pmatch "\\[$*\\]") assigns matching $*
+	echo Checked $#list assigns matching $*
 }
 #
 # Faster version.  Tells you whether there's an error, not where it is.
@@ -36,7 +37,7 @@ alias.tt assign.check {
 alias.tt assign.qcheck {
 	@ :list = aliasctl(assign pmatch "\\[$*\\]")
 	@ :status = uniq($list) == sort($list) ? [passed] : [failed]
-	echo Checked $#aliasctl(assign pmatch "\\[$*\\]") assigns matching $*: $status
+	echo Checked $#list assigns matching $*: $status
 }
 
 #
@@ -212,13 +213,14 @@ alias.t struct.purge {
 }
 #
 # Continued.
-# The third sub-loop should never be entered.  It's there for company.
+# The third sub-loop does what the first does and should never be entered.
+# It's there for company.
 #
 alias.t struct.purgesub {
 	fe ($*) foo {
 		@ :bar = aliasctl(assign match ${foo}.)
 		@ :hit += #bar
-		fe bar baz {
+		fe ($bar) baz {
 			^assign -$baz
 		}
 		foreach $foo bar {
