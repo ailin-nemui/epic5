@@ -71,16 +71,11 @@ struct	ScreenStru *next;		/* Previous screen in list */
 	WaitPrompt	*promptlist;
 
 	/* Key qualifier stuff */
-	int	meta_hit;		/* The last meta key that was hit */
 	int	quote_hit;		/* True after QUOTE_CHARACTER hit */
-#if 0
-	int	meta_hit[10];		/* 
-					 * Used to build keybindings...
-					 * Only one of these can be set at
-					 * any given time, should probably
-					 * be an int and using bitflags.
-					 */
-#endif
+	struct timeval last_press;	/* The last time a key was pressed.
+					   Used to determine
+					   key-independence. */
+	struct Key *last_key;		/* The last Key pressed. */
 
 
 	/* Redirect stuff */

@@ -1,4 +1,4 @@
-/* $EPIC: functions.c,v 1.78 2002/08/08 19:32:55 jnelson Exp $ */
+/* $EPIC: functions.c,v 1.79 2002/08/12 16:41:10 wd Exp $ */
 /*
  * functions.c -- Built-in functions for ircII
  *
@@ -190,6 +190,7 @@ static	char
 	*function_ascii 	(char *),
 	*function_before 	(char *),
 	*function_beforew 	(char *),
+	*function_bindctl	(char *),
 	*function_builtin	(char *),
 	*function_ceil		(char *),
 	*function_center 	(char *),
@@ -423,6 +424,7 @@ static BuiltInFunctions	built_in_functions[] =
 	{ "ATANH",		function_atanh		},
 	{ "BEFORE",             function_before 	},
 	{ "BEFOREW",            function_beforew 	},
+	{ "BINDCTL",		function_bindctl	},
 	{ "BUILTIN_EXPANDO",	function_builtin	},
 	{ "CEIL",		function_ceil	 	},
 	{ "CENTER",		function_center 	},
@@ -6457,3 +6459,8 @@ do_kill:
 	RETURN_INT(retval);
 }
 
+BUILT_IN_FUNCTION(function_bindctl, input)
+{
+	extern char *bindctl(char *);
+	return bindctl(input);
+}

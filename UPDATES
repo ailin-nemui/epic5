@@ -1,5 +1,21 @@
 EPIC4-1.2.0
 
+*** News 08/12/2002 -- New keybindings system in place (wd)
+	The old keybinding system (keys.c) has been completely rewritten to
+	add support for various new functionalities.  It is now possible to
+	bind arbitrarily long strings of arbitrary values to binding
+	functions, as well as to bind substrings of these to other
+	functions.  The META system has been removed as a result of this, so
+	you can no longer bind to any META*_* functions.  Also, there is
+	no longer a META_STATES set.
+
+*** News 08/12/2002 -- New function $bindctl(...) (wd)
+	Another side effect of the new keys system, a bindctl function
+	has been added which allows for the creation of new binding
+	functions, the retrieval of all currently available functions, and
+	other low-level interfaces to the binding system.  Detailed
+	information can be retrieved in the bindctl(6) help oage.
+
 *** News 07/29/2002 -- New function $killpid(<signal> <pid> [<pid> ...])
 	This function sends a signal to another process.  <signal> may either 
 	be a signal name (ie, HUP, KILL) or a signal number (ie, 1, 9, 15), 

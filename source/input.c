@@ -1,4 +1,4 @@
-/* $EPIC: input.c,v 1.4 2002/07/17 22:52:52 jnelson Exp $ */
+/* $EPIC: input.c,v 1.5 2002/08/12 16:41:11 wd Exp $ */
 /*
  * input.c: does the actual input line stuff... keeps the appropriate stuff
  * on the input line, handles insert/delete of characters/words... the whole
@@ -100,9 +100,6 @@
 #define CUT_BUFFER		cut_buffer
 #define SET_CUT_BUFFER(x)	malloc_strcpy(&CUT_BUFFER, x);
 
-#define BUILT_IN_KEYBINDING(x) void x (char key, char *string)
-
-
 /* XXXX Only used here anyhow XXXX */
 static int 	safe_puts (char *str, int len, int echo) 
 {
@@ -137,6 +134,35 @@ void 	cursor_to_input (void)
 		}
 	}
 	output_screen = last_input_screen = oldscreen;
+}
+
+/* do_input_timeouts: walk through the list of screens and potentially do
+ * timeouts for input */
+void 	do_input_timeouts (void)
+{
+    Screen *oldscreen = last_input_screen;
+    Screen *screen;
+    int server;
+
+    if (!foreground)
+	return;		/* Not a lot of input.. :) */
+
+    /* I hope this is sufficient to allow input to be processed.  I took
+     * a lot of the guts from do_screens().  Here's hoping I didn't
+     * break anything. ;) */
+    for (screen = screen_list; screen; screen = screen->next) {
+	if (screen->alive) {
+	    server = from_server;
+	    last_input_screen = screen;
+	    output_screen = screen;
+	    make_window_current(screen->current_window);
+	    from_server = current_window->server;
+	    screen->last_key = timeout_keypress(screen->last_key,
+		    screen->last_press);
+	    from_server = server;
+	}
+    }
+    output_screen = last_input_screen = oldscreen;
 }
 
 /*
@@ -575,7 +601,7 @@ void	set_input_prompt (char *prompt)
  * input_forward_word: move the input cursor forward one word in the input
  * line 
  */
-BUILT_IN_KEYBINDING(input_forward_word)
+BUILT_IN_BINDING(input_forward_word)
 {
 	cursor_to_input();
 
@@ -591,7 +617,7 @@ BUILT_IN_KEYBINDING(input_forward_word)
 }
 
 /* input_backward_word: move the cursor left on word in the input line */
-BUILT_IN_KEYBINDING(input_backward_word)
+BUILT_IN_BINDING(input_backward_word)
 {
 	cursor_to_input();
 
@@ -663,7 +689,7 @@ static void	input_delete_char_from_screen (void)
  * input_delete_character -- Deletes the character currently under the
  * 			     input cursor.
  */
-BUILT_IN_KEYBINDING(input_delete_character)
+BUILT_IN_BINDING(input_delete_character)
 {
 	cursor_to_input();
 
@@ -688,7 +714,7 @@ BUILT_IN_KEYBINDING(input_delete_character)
  *		      delete_character.  No, this is not significantly
  *		      more expensive than the old way.
  */
-BUILT_IN_KEYBINDING(input_backspace)
+BUILT_IN_BINDING(input_backspace)
 {
 	cursor_to_input();
 
@@ -708,7 +734,7 @@ BUILT_IN_KEYBINDING(input_backspace)
  * input_beginning_of_line: moves the input cursor to the first character in
  * the input buffer 
  */
-BUILT_IN_KEYBINDING(input_beginning_of_line)
+BUILT_IN_BINDING(input_beginning_of_line)
 {
 	cursor_to_input();
 	THIS_POS = MIN_POS;
@@ -719,7 +745,7 @@ BUILT_IN_KEYBINDING(input_beginning_of_line)
  * input_end_of_line: moves the input cursor to the last character in the
  * input buffer 
  */
-BUILT_IN_KEYBINDING(input_end_of_line)
+BUILT_IN_BINDING(input_end_of_line)
 {
 	cursor_to_input();
 	THIS_POS = strlen(INPUT_BUFFER);
@@ -774,7 +800,7 @@ void	cut_input (int anchor)
  *		This is e input buffer
  *			^			(the input cursor)
  */
-BUILT_IN_KEYBINDING(input_delete_to_previous_space)
+BUILT_IN_BINDING(input_delete_to_previous_space)
 {
 	int	anchor;
 
@@ -794,7 +820,7 @@ BUILT_IN_KEYBINDING(input_delete_to_previous_space)
  * space character.  This is probably going to be the same effect as 
  * delete_to_previous_space, but hey -- you know.
  */
-BUILT_IN_KEYBINDING(input_delete_previous_word)
+BUILT_IN_BINDING(input_delete_previous_word)
 {
 	int	anchor;
 
@@ -812,7 +838,7 @@ BUILT_IN_KEYBINDING(input_delete_previous_word)
  * input_delete_next_word: deletes from the cursor to the end of the next
  * word 
  */
-BUILT_IN_KEYBINDING(input_delete_next_word)
+BUILT_IN_BINDING(input_delete_next_word)
 {
 	int	anchor;
 
@@ -830,7 +856,7 @@ BUILT_IN_KEYBINDING(input_delete_next_word)
  * input_add_character: adds the character c to the input buffer, repecting
  * the current overwrite/insert mode status, etc 
  */
-BUILT_IN_KEYBINDING(input_add_character)
+BUILT_IN_BINDING(input_add_character)
 {
 	int	display_flag = NO_UPDATE;
 
@@ -906,7 +932,7 @@ BUILT_IN_KEYBINDING(input_add_character)
 }
 
 /* input_clear_to_eol: erases from the cursor to the end of the input buffer */
-BUILT_IN_KEYBINDING(input_clear_to_eol)
+BUILT_IN_BINDING(input_clear_to_eol)
 {
 	/* This doesnt really speak to the implementation, but it works.  */
 	cursor_to_input();
@@ -920,7 +946,7 @@ BUILT_IN_KEYBINDING(input_clear_to_eol)
  * input_clear_to_bol: clears from the cursor to the beginning of the input
  * buffer 
  */
-BUILT_IN_KEYBINDING(input_clear_to_bol)
+BUILT_IN_BINDING(input_clear_to_bol)
 {
 	char	c = THIS_CHAR;
 
@@ -940,7 +966,7 @@ BUILT_IN_KEYBINDING(input_clear_to_bol)
 /*
  * input_clear_line: clears entire input line
  */
-BUILT_IN_KEYBINDING(input_clear_line)
+BUILT_IN_BINDING(input_clear_line)
 {
 	cursor_to_input();
 
@@ -958,7 +984,7 @@ BUILT_IN_KEYBINDING(input_clear_line)
  * input_transpose_characters: swaps the positions of the two characters
  * before the cursor position 
  */
-BUILT_IN_KEYBINDING(input_transpose_characters)
+BUILT_IN_BINDING(input_transpose_characters)
 {
 	cursor_to_input();
 	if (last_input_screen->buffer_pos > MIN_POS)
@@ -1024,7 +1050,7 @@ BUILT_IN_KEYBINDING(input_transpose_characters)
 }
 
 
-BUILT_IN_KEYBINDING(refresh_inputline)
+BUILT_IN_BINDING(refresh_inputline)
 {
 	update_input(UPDATE_ALL);
 }
@@ -1033,7 +1059,7 @@ BUILT_IN_KEYBINDING(refresh_inputline)
  * input_yank_cut_buffer: takes the contents of the cut buffer and inserts it
  * into the input line 
  */
-BUILT_IN_KEYBINDING(input_yank_cut_buffer)
+BUILT_IN_BINDING(input_yank_cut_buffer)
 {
 	char	*ptr = NULL;
 
@@ -1058,32 +1084,32 @@ BUILT_IN_KEYBINDING(input_yank_cut_buffer)
 #define LEFT 0
 
 /* BIND functions: */
-BUILT_IN_KEYBINDING(forward_character)
+BUILT_IN_BINDING(forward_character)
 {
 	input_move_cursor(RIGHT);
 }
 
-BUILT_IN_KEYBINDING(backward_character)
+BUILT_IN_BINDING(backward_character)
 {
 	input_move_cursor(LEFT);
 }
 
-BUILT_IN_KEYBINDING(backward_history)
+BUILT_IN_BINDING(backward_history)
 {
 	get_history(OLDER);		/* Cursor up -- older -- prev */
 }
 
-BUILT_IN_KEYBINDING(forward_history)
+BUILT_IN_BINDING(forward_history)
 {
 	get_history(NEWER);		/* Cursor down -- newer -- next */
 }
 
-BUILT_IN_KEYBINDING(toggle_insert_mode)
+BUILT_IN_BINDING(toggle_insert_mode)
 {
 	set_var_value(INSERT_MODE_VAR, "TOGGLE");
 }
 
-BUILT_IN_KEYBINDING(send_line)
+BUILT_IN_BINDING(send_line)
 {
 	int	server = from_server;
 	char *	line = LOCAL_COPY(get_input());
@@ -1125,7 +1151,7 @@ BUILT_IN_KEYBINDING(send_line)
 
 
 
-BUILT_IN_KEYBINDING(quote_char)
+BUILT_IN_BINDING(quote_char)
 {
 	last_input_screen->quote_hit = 1;
 }
@@ -1136,39 +1162,39 @@ BUILT_IN_KEYBINDING(quote_char)
  * appropriate characters when you press any key to which you have bound
  * that highlight character. >;-)
  */
-BUILT_IN_KEYBINDING(insert_bold)
+BUILT_IN_BINDING(insert_bold)
 {
 	input_add_character(BOLD_TOG, string);
 }
 
-BUILT_IN_KEYBINDING(insert_reverse)
+BUILT_IN_BINDING(insert_reverse)
 {
 	input_add_character(REV_TOG, string);
 }
 
-BUILT_IN_KEYBINDING(insert_underline)
+BUILT_IN_BINDING(insert_underline)
 {
 	input_add_character(UND_TOG, string);
 }
 
-BUILT_IN_KEYBINDING(highlight_off)
+BUILT_IN_BINDING(highlight_off)
 {
 	input_add_character(ALL_OFF, string);
 }
 
-BUILT_IN_KEYBINDING(insert_blink)
+BUILT_IN_BINDING(insert_blink)
 {
 	input_add_character(BLINK_TOG, string);
 }
 
-BUILT_IN_KEYBINDING(insert_altcharset)
+BUILT_IN_BINDING(insert_altcharset)
 {
 	yell("alt_tog!");
 	input_add_character(ALT_TOG, string);
 }
 
 /* type_text: the BIND function TYPE_TEXT */
-BUILT_IN_KEYBINDING(type_text)
+BUILT_IN_BINDING(type_text)
 {
 	for (; *string; string++)
 		input_add_character(*string, empty_string);
@@ -1178,25 +1204,25 @@ BUILT_IN_KEYBINDING(type_text)
  * clear_screen: the CLEAR_SCREEN function for BIND.  Clears the screen and
  * starts it if it is held 
  */
-BUILT_IN_KEYBINDING(clear_screen)
+BUILT_IN_BINDING(clear_screen)
 {
 	hold_mode(NULL, OFF, 1);
 	clear_window_by_refnum(0);
 }
 
-BUILT_IN_KEYBINDING(input_unclear_screen)
+BUILT_IN_BINDING(input_unclear_screen)
 {
 	hold_mode(NULL, OFF, 1);
 	unclear_window_by_refnum(0);
 }
 
 /* parse_text: the bindable function that executes its string */
-BUILT_IN_KEYBINDING(parse_text)
+BUILT_IN_BINDING(parse_text)
 {
 	parse_line(NULL, string, empty_string, 0, 0);
 }
 
-BUILT_IN_KEYBINDING(cpu_saver_on)
+BUILT_IN_BINDING(cpu_saver_on)
 {
 	cpu_saver = 1;
 	update_all_status();
@@ -1282,23 +1308,13 @@ void	edit_char (u_char key)
 		input_add_character(extended_key, empty_string);
 	}
 
-	/* Otherwise find out what its binding is and dispatch it. */
-	else
-	{
-		int	m = last_input_screen->meta_hit;
-		int	i;
-
-		if ((i = get_binding(m, key, &func, &ptr)))
-		{
-			if (m == 4 && i == 4)
-				last_input_screen->meta_hit = 0;
-			else
-				last_input_screen->meta_hit = i;
-		}
-		else if (last_input_screen->meta_hit != 4)
-			last_input_screen->meta_hit = 0;
-		if (func)
-			func(extended_key, SAFE(ptr));
+	/* Otherwise, let the keybinding system take care of the work. */
+	else {
+		last_input_screen->last_key = handle_keypress(
+			last_input_screen->last_key,
+			last_input_screen->last_press, key);
+		last_input_screen->last_press.tv_sec = now.tv_sec;
+		last_input_screen->last_press.tv_usec = now.tv_usec;
 	}
 }
 

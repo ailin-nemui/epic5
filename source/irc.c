@@ -1,4 +1,4 @@
-/* $EPIC: irc.c,v 1.333 2002/08/10 21:48:54 jnelson Exp $ */
+/* $EPIC: irc.c,v 1.334 2002/08/12 16:41:11 wd Exp $ */
 /*
  * ircII: a new irc client.  I like it.  I hope you will too!
  *
@@ -52,7 +52,7 @@ const char internal_version[] = "20020810";
 /*
  * In theory, this number is incremented for every commit.
  */
-const unsigned long	commit_id = 338;
+const unsigned long	commit_id = 339;
 
 /*
  * As a way to poke fun at the current rage of naming releases after
@@ -137,6 +137,9 @@ int		dont_connect = 0;
 
 /* Set to the current time, each time you press a key. */
 Timeval		idle_time = { 0, 0 };
+
+/* Set to the current input timeout as defined by KEY_INTERVAL */
+Timeval		input_timeout = { 0, 0 };
 
 /* Set to the time the client booted up */
 Timeval		start_time;
@@ -928,6 +931,7 @@ static	struct	timeval	clock_timeout,
 		dcc_check(&rd);		/* XXX HACK XXX */
 
 	ExecuteTimers();
+	do_input_timeouts(); /* run through input timeouts */
 	get_child_exit(-1);
 	if (level == 1 && need_defered_commands)
 		do_defered_commands();
@@ -1222,6 +1226,7 @@ int 	main (int argc, char *argv[])
 	check_valid_user();
 	check_invalid_host();
 	parse_args(argc, argv);
+	init_binds();
 	init_keys();
 
 	fprintf(stderr, "EPIC Version 4 -- %s\n", ridiculous_version_name);
@@ -1277,7 +1282,7 @@ int 	main (int argc, char *argv[])
 	}
 
 	/* Get the terminal-specific keybindings now */
-	init_keys2();
+	init_termkeys();
 
 	/* The all-collecting stack frame */
 	make_local_stack("TOP");

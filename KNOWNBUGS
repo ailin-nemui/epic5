@@ -157,3 +157,4 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Fix $killpid() so you can $killpid(0 <pid>), rb liandrin
 * Fix warning for /set dcc_use_gateway_addr to not confuse ipv6 server users.
 * Change warning that unknown channel modes are not "error" but "type D" (ce)
+* Rewrote keys.c, completely overhauled the keybinding system. (wd)

@@ -1,0 +1,58 @@
+This document is here to explain the 'new' design of the key
+input/binding system.  The old system became rather cumbersome and hard to
+use, and didn't allow for certain effects that were deemed useful.
+
+In other words, the ircII style meta-x keybindings are gone.  In their place
+is a NFA (non-deterministic finite-state automaton).  What this means is
+that it is now possible to bind a string of arbitrary length as a single
+keybinding without going through the hassle of the meta system.  It also
+makes it possible to bind sequence initiators independantly of other
+sequences (for example, you can now bind ^[ (esc) as well as ^[[11~ (or
+similar)).
+
+The key mapping is now laid out in a way that facilitates fast lookups at
+any depth.  The client creates an array at each level necessary.  This can
+create some large memory use (depending on your definition of large) as each
+map will use 1K on 32 bit systems or 2k on 64 bit systems.  In other words,
+if you have either extremely long bind-strings or lots of different maps all
+over the place, your memory usage may become quite cumbersome.  A better way
+to handle this should probably be investigated.
+
+Infrastructure is now in place to allow the user to create new binding
+symbols (SELF_INSERT, FORWARD_HISTORY, etc).  Bindings are no longer stored
+in a table, but are now in a linked list.  This should allow for both
+script and module created bindings to be placed into the client easily.
+
+In general, I have tried to retain command compatibility with the old
+binding commands, however this was not always possible, and for the sake of
+extension I did not always do this.  The most obvious example is the fact
+that 'metaX' is now gone.  You can no longer bind to 'METAX_CHARACTER', and
+that whole system has been greatly changed.  In addition, some other changes
+have been made to extend functionality where possible.
+
+-----------------------------------------------------------------------------
+What follows here is a list of examples of how to use the 'new' system, in a
+rather tightly integrated way.  For the most part, scripters will find this
+more useful than lay-users, and if you are interested in using the system as
+a normal user, you should instead refer to the client's helpfiles on the
+/bind command.
+
+# Create a new keybinding function to act as a general 'cancel action'
+# command throughout the script.  The handling of this is, of course, left
+# to the scripter. :)
+if (bindctl(FUNCTION CANCEL_ACTION EXISTS)) {
+    echo *E* Binding function 'CANCEL_ACTION' already exists!
+} else {
+    @bindctl(FUNCTION CANCEL_ACTION CREATE some_scripted_alias)
+}
+
+# Now bind escape to this new function.  Also, bind escape+1 - escape+0 to
+# window changing actions.  These will both work, now.
+bind ^[ cancel_action
+for xx in (1 2 3 4 5 6 7 8 9 0) {
+    @bindctl(SEQUENCE ^[$xx parse_command window refnum_or_swap $xx)
+}
+
+# There are a lot more available uses for this system, and for full
+# documentation you should refer to the helpfiles for bind(4) and
+# bindctl(6).

@@ -1,11 +1,8 @@
-/* $EPIC: keys.c,v 1.5 2002/07/29 22:27:05 jnelson Exp $ */
+/* $EPIC: keys.c,v 1.6 2002/08/12 16:41:11 wd Exp $ */
 /*
  * keys.c:  Keeps track of what happens whe you press a key.
  *
- * Copyright (c) 1990 Michael Sandroff.
- * Copyright (c) 1991, 1992 Troy Rollo.
- * Copyright (c) 1992-1996 Matthew Green.
- * Copyright © 1998, 2002 EPIC Software Labs.
+ * Copyright © 2002 EPIC Software Labs.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -41,6 +38,7 @@
 #include "ircaux.h"
 #include "input.h"
 #include "keys.h"
+#include "list.h"
 #include "names.h"
 #include "output.h"
 #include "screen.h"
@@ -49,923 +47,904 @@
 #include "vars.h"
 #include "window.h"
 
-#define KEY(meta, ch) (*keys[meta])[ch]
+/* This file is split into two pieces.  The first piece represents bindings.
+ * Bindings are now held in a linked list, allowing the user to add new ones
+ * at will.  Several management functions are placed here to add/remove
+ * bindings, and the default pre-packaged bindings are placed in the
+ * init_binds() function. */
 
-typedef unsigned char uc;
-static 	void 	new_key 	(int, unsigned, int, int, char *);
-static 	void	snew_key 	(int meta, unsigned chr, char *what);
-static	uc *	display_key 	(uc c);
-static	int 	lookup_function (const uc *name, int *lf_index);
-static	void	snew_key_from_str (uc *string, char *what);
-static	int	parse_key	(const uc *sequence, uc *term);
-
-
-
-/*
- * Yet again we've changed how the key maps are held.  This time, hopefully
- * its the second to last time, as we've made the entire things independant
- * of the number of meta keymaps that are available (it can change.)  The
- * only thing i see left to be done is to encapsulate all this data inside
- * a class so that different contexts can have different bindings sets.
- * I'm sure that will come up some day.  But anyhow, on to the details!
+/* (From the author):  The following things bother me about this code:
+ *
+ * #1:  I reuse the code from show_all_bindings in various forms all over
+ *      the place.  It might be better to write small functions, and one
+ *      'recurse_keys' function which is passed those small functions.
+ * #2:  This file is very disorganized and messy.
  */
+/* * * * * * * * * * * * * * * BIND SECTION * * * * * * * * * * * * * * * * */
 
-/*
- * The actual "stuff" that is in a keybinding is defined in keys.h.
- * At the time i write this, its just an int, two pointers, and a char,
- * so its 16 bytes (after padding)....
+struct Binding *binding_list;
+
+/* Add a binding.  A binding must have either a function, alias, or neither,
+ * but never both.  If no binding with this name exists, we create a new one
+ * and fill in the details, then add it to the list of available bindings in
+ * the client.  Otherwise, we yell and go home. */
+struct Binding *add_binding(char *name, BindFunction func, char *alias) {
+    struct Binding *bp;
+    if (func && alias) {
+	yell("add_binding(): func and alias both defined!");
+	return NULL;
+    }
+    if (!name) {
+	return NULL; /* no binding name. */
+    }
+
+    bp = find_binding(name);
+    if (bp) {
+	yell("binding %s already exists!", name);
+	return NULL;
+    }
+
+    bp = new_malloc(sizeof(struct Binding));
+    bp->name = m_strdup(name);
+    if (alias) {
+	bp->alias = m_strdup(alias);
+	bp->func = NULL;
+    } else {
+	bp->func = func;
+	bp->alias = NULL;
+	}
+    bp->filename = m_strdup(current_package());
+
+    add_to_list((List **)&binding_list, (List *)bp);
+
+    return bp;
+}
+
+void remove_binding(char *name) {
+    struct Binding *bp;
+
+    if (!name)
+	return;
+
+    bp = (struct Binding *)remove_from_list((List **)&binding_list, name);
+    if (bp) {
+	new_free(&bp->name);
+	if (bp->alias)
+	    new_free(&bp->alias);
+	if (bp->filename)
+	    new_free(&bp->filename);
+	new_free(&bp);
+    }
+
+    return;
+}
+
+struct Binding *find_binding(char *name) {
+    if (!name)
+	return;
+
+    return (struct Binding *)find_in_list((List **)&binding_list, name, 0);
+}
+
+void init_binds(void) {
+#define ADDBIND(x, y) add_binding(x, y, NULL);
+    /* there is no 'NOTHING' bind anymore. */
+    ADDBIND("ALTCHARSET",		    insert_altcharset		    );
+    ADDBIND("BACKSPACE",		    input_backspace		    );
+    ADDBIND("BACKWARD_CHARACTER",	    backward_character		    );
+    ADDBIND("BACKWARD_HISTORY",		    backward_history		    );
+    ADDBIND("BACKWARD_WORD",		    input_backward_word		    );
+    ADDBIND("BEGINNING_OF_LINE",	    input_beginning_of_line	    );
+    ADDBIND("BLINK",			    insert_blink		    );
+    ADDBIND("BOLD",			    insert_bold			    );
+    ADDBIND("CLEAR_SCREEN",		    clear_screen		    );
+    ADDBIND("COMMAND_COMPLETION",	    command_completion		    );
+    ADDBIND("CPU_SAVER",		    cpu_saver_on		    );
+    ADDBIND("DELETE_CHARACTER",		    input_delete_character	    );
+    ADDBIND("DELETE_NEXT_WORD",		    input_delete_next_word	    );
+    ADDBIND("DELETE_PREVIOUS_WORD",	    input_delete_previous_word	    );
+    ADDBIND("DELETE_TO_PREVIOUS_SPACE",	    input_delete_to_previous_space  );
+    ADDBIND("END_OF_LINE",		    input_end_of_line		    );
+    ADDBIND("ERASE_LINE",		    input_clear_line		    );
+    ADDBIND("ERASE_TO_BEG_OF_LINE",	    input_clear_to_bol		    );
+    ADDBIND("ERASE_TO_END_OF_LINE",	    input_clear_to_eol		    );
+    ADDBIND("FORWARD_CHARACTER",	    forward_character		    );
+    ADDBIND("FORWARD_HISTORY",		    forward_history		    );
+    ADDBIND("FORWARD_WORD",		    input_forward_word		    );
+    ADDBIND("HIGHLIGHT_OFF",		    highlight_off		    );
+    ADDBIND("NEXT_WINDOW",		    next_window			    );
+    ADDBIND("PARSE_COMMAND",		    parse_text			    );
+    ADDBIND("PREVIOUS_WINDOW",		    previous_window		    );
+    ADDBIND("QUIT_IRC",			    irc_quit			    );
+    ADDBIND("QUOTE_CHARACTER",		    quote_char			    );
+    ADDBIND("REFRESH_INPUTLINE",	    refresh_inputline		    );
+    ADDBIND("REFRESH_SCREEN",		    (BindFunction) refresh_screen   );
+    ADDBIND("REFRESH_STATUS",		    (BindFunction) update_all_status);
+    ADDBIND("REVERSE",			    insert_reverse		    );
+    ADDBIND("SCROLL_BACKWARD",		    scrollback_backwards	    );
+    ADDBIND("SCROLL_END",		    scrollback_end		    );
+    ADDBIND("SCROLL_FORWARD",		    scrollback_forwards		    );
+    ADDBIND("SCROLL_START",		    scrollback_start		    );
+    ADDBIND("SELF_INSERT",		    input_add_character		    );
+    ADDBIND("SEND_LINE",		    send_line			    );
+    ADDBIND("SHOVE_TO_HISTORY",		    shove_to_history		    );
+    ADDBIND("STOP_IRC",			    term_pause			    );
+    ADDBIND("SWAP_LAST_WINDOW",		    swap_last_window		    );
+    ADDBIND("SWAP_NEXT_WINDOW",		    swap_next_window		    );
+    ADDBIND("SWAP_PREVIOUS_WINDOW",	    swap_previous_window	    );
+    ADDBIND("SWITCH_CHANNELS",		    switch_channels		    );
+    ADDBIND("TOGGLE_INSERT_MODE",	    toggle_insert_mode		    );
+    ADDBIND("TOGGLE_STOP_SCREEN",	    toggle_stop_screen		    );
+    ADDBIND("TRANSPOSE_CHARACTERS",	    input_transpose_characters	    );
+    ADDBIND("TYPE_TEXT",		    type_text			    );
+    ADDBIND("UNCLEAR_SCREEN",		    input_unclear_screen	    );
+    ADDBIND("UNDERLINE",		    insert_underline		    );
+    ADDBIND("UNSTOP_ALL_WINDOWS",	    unstop_all_windows		    );
+    ADDBIND("YANK_FROM_CUTBUFFER",	    input_yank_cut_buffer	    );
+#undef ADDBIND
+}
+
+/* * * * * * * * * * * * * * * KEYS SECTION * * * * * * * * * * * * * * * * */
+
+/* Keys support is below here.  We have functions to add and remove
+ * bindings, as well as get the binding for a key in a current input
+ * sequence, or a string of keys. */
+
+struct Key *construct_keymap(void);
+int clean_keymap(struct Key *);
+unsigned char *bind_string_compress(unsigned char *);
+unsigned char *bind_string_decompress(unsigned char *, unsigned char *);
+struct Key *bind_string(unsigned char *, char *, char *);
+struct Key *find_sequence(unsigned char *);
+void show_all_bindings(struct Key *, unsigned char *);
+void show_all_rbindings(struct Key *, unsigned char *, struct Binding *);
+void show_key(struct Key *, unsigned char *, int);
+
+/* this is set when we're post-init to keep track of changed keybindings. */
+unsigned char bind_post_init = 0;
+struct Key *head_keymap;
+
+/* this function is used to actually execute the binding for a specific key.
+ * it checks to see if the key needs to call an alias or a function, and
+ * then makes the appropriate call.  if the key is not bound to any action
+ * at all, assume we were called as part of a timeout or a terminator on a
+ * sequence that didn't resolve.  if that is the case, use the special
+ * 'key_exec_bt' function to walk backwards along the line and execute the
+ * keys as if they were individually pressed. */
+void key_exec_bt(struct Key *);
+void key_exec(struct Key *key) {
+    struct Binding *bp;
+
+    if (key == NULL) {
+	yell("key_exec(): called with NULL key!");
+	return; /* nothing to do. */
+    }
+
+    /* if the key isn't bound to anything, assume we got a premature
+     * terminator for a key sequence.  walk backwards along our path, and
+     * execute each key indepdently.  see below. :) */
+    if (key->bound == NULL) {
+	key_exec_bt(key);
+	return;
+    }
+
+    /* check alias first, then function */
+    if (key->bound->alias != NULL) {
+	/* I don't know if this is right ... */
+	char *exec = m_strdup(key->bound->alias);
+	if (key->stuff)
+	    m_s3cat(&exec, " ", key->stuff);
+	parse_line(NULL, exec, empty_string, 0, 0);
+	new_free(&exec);
+    } else if (key->bound->func != NULL)
+	key->bound->func(key->val, key->stuff);
+
+    return;
+}
+	
+/* this is an interesting function.  it finds the 'owning' key that the map
+ * our current key is in (ugh. :) lives in.  if this is non-NULL, it calls
+ * back on that, then executes the 'value' of the key itself. */
+void key_exec_bt(struct Key *key) {
+    struct Key *ourmap = key - (int)key->val;
+
+    /* ourmap[0].map will point back to the owning key, if it is not NULL.
+     * this is handled in 'bind_string()' */
+    if (ourmap[0].map != NULL)
+	key_exec_bt(ourmap[0].map);
+
+    key_exec(&head_keymap[key->val]);
+}
+
+/* this function tries to retrieve the binding for a key pressed on the
+ * input line.  depending on the circumstances, we may need to execute the
+ * previous key's action (if there has been a timeout).  The timeout factor
+ * is set in milliseconds by the KEY_INTERVAL variable.  See further for
+ * instructions. :) */
+struct Key *handle_keypress(struct Key *last, struct timeval pressed,
+			     unsigned char key) {
+    struct Key *kp;
+    
+    /* we call the timeout code here, too, just to be safe. */
+    last = timeout_keypress(last, pressed);
+
+    /* if last is NULL (meaning we're in a fresh state), pull from the head
+     * keymap.  if last has a map, pull from that map.  if last has no map,
+     * something went wrong (we should never return a 'last' that is
+     * mapless!) */
+    if (last == NULL)
+	kp = &head_keymap[key];
+    else if (last->map != NULL)
+	kp = &last->map[key];
+    else {
+	yell("handle_keypress(): last is not NULL but has no map!");
+	return NULL;
+    }
+
+    /* if the key has a map associated, we can't automatically execute the
+     * action.  return kp and wait quietly. */
+    if (kp->map != NULL)
+	return kp;
+
+    /* otherwise, we can just exec our key and return nothing. */
+    key_exec(kp);
+    return NULL;
+}
+
+struct Key *timeout_keypress(struct Key *last, struct timeval pressed) {
+    int mpress = 0; /* ms count since last pressing */
+    struct timeval tv;
+
+    if (last == NULL)
+	return NULL; /* fresh state, we need not worry about timeouts */
+
+    tv = time_subtract(pressed, now);
+    mpress = tv.tv_sec * 1000;
+    mpress += tv.tv_usec / 1000;
+
+    if (mpress > get_int_var(KEY_INTERVAL_VAR)) {
+	/* we timed out.  if the last key had some action associated,
+	 * execute that action. */
+	key_exec(last);
+	return NULL; /* we're no longer waiting on this key's map */
+    }
+    return last; /* still waiting.. */
+}
+
+struct Key *construct_keymap(void) {
+    unsigned char c;
+    struct Key *map = new_malloc(sizeof(struct Key) * KEYMAP_SIZE);
+
+    for (c = 0;c < KEYMAP_SIZE - 1;c++) {
+	map[c].val = c;
+	map[c].bound = NULL;
+	map[c].map = NULL;
+	map[c].stuff = NULL;
+	map[c].filename = NULL;
+    }
+
+    return map;
+}
+
+/* this function recursively 'cleans' keymaps.  which is to say, if a map
+ * has no viable members, it will destroy the map, but not before it calls
+ * itself on sub-maps.  this should be used whenever keys have been unbound
+ * to keep memory clear and (more importantly) to make sure that artifacts
+ * are not left around in the timeout system.  the function returns positive
+ * if *the map passed* was removed, negative otherwise. */
+int clean_keymap(struct Key *map) {
+    unsigned char c;
+    int save = 0;
+
+    /* walk through the map to see if things are in use.  if something is
+     * bound, the keymap will be saved.  also if a key has a submap and that
+     * submap cannot be cleaned, the keymap will be saved.  we return 1 if
+     * the map is saved, 0 otherwise.  we walk through all keys here, even
+     * if we know we're going to save the map early on.  this allows the
+     * cleaner to catch dead submaps in the current map. */
+    for (c = 1; c < KEYMAP_SIZE - 1;c++) {
+	if (map[c].bound)
+	    save = 1; /* key in use.  save map. */
+	if (map[c].map) {
+	    if (clean_keymap(map[c].map))
+		save = 1; /* map still in use. */
+	else
+		map[c].map = NULL; /* map destroyed, make sure to unlink. */
+	}
+	}
+
+    if (!save)
+	new_free(&map); /* free the memory. */
+    return save;
+}
+
+/* this function compresses a user-input string of key sequences into
+ * something interally useable.  the following notations are supported:
+ * 
+ * ^C (or ^c): control-character (c - 64).  if 'c' is not >= 64, this
+ * is treated as a literal sequence of ^ and then c.  If 'c' is '?', we
+ * treat the sequence as \177 (the DEL sequence, ascii 127, etc. :)
  *
- *	typedef struct
- *	{
- *		int	 	key_index;
- *		char		*stuff;
- *		char		*filename;
- *		char		changed;
- *	} KeyMap;
- *
- * Some special notes about 'key_index'.  No longer are the meta bindings
- * just normal bindings -- having them hardcoded as normal bindings limited
- * the ability of the user to set the number of meta states that they wanted.
- * Now all the negative values for 'key_index' are reserved for those meta
- * states.  If something is bound to META2_CHARACTER, then 'key_index' is
- * given the value -2.  Otherwise, 'key_index' is given the value of the 
- * entry of the binding in the 'key_names' table.  Note that 'key_index' is
- * not strictly sorted.  The first two bindings are special and are hardcoded,
- * and you must not change them.  Entry 0 must always be "NOTHING", and 
- * entry 1 must always be "SELF_INSERT".  The enum that was in keys.h
- * is now totaly obsolete -- we no longer use the symbolic names, but instead
- * always use the full string name for the binding.  This makes it much 
- * easier to add new key bindings, as there is only one place to manage.
- *
- *
- * Each meta map is a collection of 256 bindings...
- *
- *	typedef KeyMap MetaMap[256];
- *
- * But since most of the meta maps are either sparse or empty, it makes very 
- * little sense to actually allocate 4k (16 * 256) for each of the maps only 
- * to have them unused.  So instead the meta map is just 256 pointers to 
- * these objects, which then are allocated dynamically.
- *
- *	typedef KeyMap *MetaMap[256];		(better)
- *
- * That means that the overhead for a completely empty meta map is 1k, and 
- * the map needs to be 75% full before it uses more memory than it would have
- * otherwise.  So its a reasonable win.
- *
- * Now we need to have the meta maps stored somehow.  Originally, we used
- * to just make an array of them...
- *
- *	typedef MetaMap KeyTable[MAX_META];
- *
- * but then again, many of those MetaMaps are going to be totaly empty.
- * Why should we allocate 1k to something that isnt going to be used? 
- * So instead we should keep pointers to the maps and allocate them as
- * neccesary at runtime...
- *
- *	typedef	MetaMap	*KeyTable[MAX_META];	(better)
- *
- * Which is what we had before.  This works out fine, except, that the
- * number of meta maps is hardcoded into the client at compile time.
- * Wouldn't it be nice to be able to determine at runtime how many maps
- * we want and be able to change them as neccesary?  We can do this by
- * having a pointer to the set of pointers of MetaMaps...
- *
- *	typedef MetaMap **KeyTable;		(dyanmic now)
- *
- * And so we dynamically allocate to MetaSet enough pointers to hold the
- * number of MetaMap's we want.  Then any time we want to use a MetaMap,
- * we allocate space for it.  Then any time we want to use a binding in the
- * MetaMap, we allocate space for it and set its pointer.
- *
- * So the final dereference for a specific key binding 'X' in meta map 'Y' is:
- *
- *	KeyTable keys;
- *	keys[Y]			The pointer to the 'Y'th MetaMap
- *	(*keys[Y])		The MetaMap itself
- *	(*keys[Y])[X]		The pointer to the 'X'th character in the
- *					'Y'th MetaMap
- *	(*keys[Y])[X]->key_index
- *				What 'Y,X' is actually bound to.  This is a
- *				negative value for a transition to a new
- *				meta state Y, positive for a terminating
- *				binding.
+ * \X: where X may (or may not) have special meaning.  the following may be
+ * useful as common shorthand:
+ * \e: equivalent to ^[ (escape)
+ * \xxx: octal sequence.
+ * \^: escape the caret (hat, whatever.. :)
+ * \\: the \ character. ;)
  */
+unsigned char *bind_string_compress(unsigned char *str) {
+    unsigned char *new, *s, *oldstr;
+    unsigned char c;
 
-/* * * * * * * * * * * * * * * METAMAP MANAGEMENT * * * * * * * * * * * */
-/*
- * This is where all the bindings are stored
- * Also we store how big it thinks it is, and how big it actually is.
- */
+#define isoctaln(x) ((x) > 47 && (x) < 56)
 
-/* KeyMapNames: the structure of the keymap to realname array */
-typedef struct
-{
-	char	*	name;
-	KeyBinding 	func;
-}	KeyMapNames;
-static KeyMapNames 	key_names[] =
-{
-	/* The first two here are "magic" binds */
-	{ "NOTHING",			NULL 				},
-	{ "SELF_INSERT",		input_add_character 		},
-	{ "ALTCHARSET",			insert_altcharset		},
-	{ "BACKSPACE",			input_backspace 		},
-	{ "BACKWARD_CHARACTER",		backward_character 		},
-	{ "BACKWARD_HISTORY",		backward_history 		},
-	{ "BACKWARD_WORD",		input_backward_word 		},
-	{ "BEGINNING_OF_LINE",		input_beginning_of_line 	},
-	{ "BLINK",			insert_blink 			},
-	{ "BOLD",			insert_bold 			},
-	{ "CLEAR_SCREEN",		clear_screen 			},
-	{ "COMMAND_COMPLETION",		command_completion 		},
-	{ "CPU_SAVER",			cpu_saver_on 			},
-	{ "DELETE_CHARACTER",		input_delete_character 		},
-	{ "DELETE_NEXT_WORD",		input_delete_next_word 		},
-	{ "DELETE_PREVIOUS_WORD",	input_delete_previous_word 	},
-	{ "DELETE_TO_PREVIOUS_SPACE",	input_delete_to_previous_space 	},
-	{ "END_OF_LINE",		input_end_of_line 		},
-	{ "ERASE_LINE",			input_clear_line 		},
-	{ "ERASE_TO_BEG_OF_LINE",	input_clear_to_bol 		},
-	{ "ERASE_TO_END_OF_LINE",	input_clear_to_eol 		},
-	{ "FORWARD_CHARACTER",		forward_character 		},
-	{ "FORWARD_HISTORY",		forward_history 		},
-	{ "FORWARD_WORD",		input_forward_word 		},
-	{ "HIGHLIGHT_OFF",		highlight_off 			},
-	{ "NEXT_WINDOW",		next_window 			},
-	{ "PARSE_COMMAND",		parse_text 			},
-	{ "PREVIOUS_WINDOW",		previous_window 		},
-	{ "QUIT_IRC",			irc_quit 			},
-	{ "QUOTE_CHARACTER",		quote_char 			},
-	{ "REFRESH_INPUTLINE",		refresh_inputline 		},
-	{ "REFRESH_SCREEN",		(KeyBinding) refresh_screen 	},
-	{ "REFRESH_STATUS",		(KeyBinding) update_all_status 	},
-	{ "REVERSE",			insert_reverse 			},
-	{ "SCROLL_BACKWARD",		scrollback_backwards 		},
-	{ "SCROLL_END",			scrollback_end 			},
-	{ "SCROLL_FORWARD",		scrollback_forwards 		},
-	{ "SCROLL_START",		scrollback_start 		},
-	{ "SEND_LINE",			send_line 			},
-	{ "SHOVE_TO_HISTORY",		shove_to_history 		},
-	{ "STOP_IRC",			term_pause 			},
-	{ "SWAP_LAST_WINDOW",		swap_last_window 		},
-	{ "SWAP_NEXT_WINDOW",		swap_next_window 		},
-	{ "SWAP_PREVIOUS_WINDOW",	swap_previous_window 		},
-	{ "SWITCH_CHANNELS",		switch_channels 		},
-	{ "TOGGLE_INSERT_MODE",		toggle_insert_mode 		},
-	{ "TOGGLE_STOP_SCREEN",		toggle_stop_screen 		},
-	{ "TRANSPOSE_CHARACTERS",	input_transpose_characters 	},
-	{ "TYPE_TEXT",			type_text 			},
-	{ "UNCLEAR_SCREEN",		input_unclear_screen 		},
-	{ "UNDERLINE",			insert_underline 		},
-	{ "UNSTOP_ALL_WINDOWS",		unstop_all_windows 		},
-	{ "YANK_FROM_CUTBUFFER",	input_yank_cut_buffer 		},
-	{ "NULL",			NULL 				}
+    if (!str)
+	return NULL;
+    s = new = new_malloc(strlen(str) + 1); /* we will always make the string
+					      smaller. */
+
+    oldstr = str;
+    while (*str) {
+	switch (*str) {
+	    case '^':
+		str++; /* pass over the caret */
+		if (*str == '?') {
+		    *s++ = '\177'; /* ^? is DEL */
+		    str++;
+		} else if (*str < 64) {
+		    *s++ = '^';
+		    /* don't increment, since we're treating this normally. */
+		} else {
+		    if (isalpha(*str))
+			*s++ = toupper(*str) - 64;
+		else
+			*s++ = *str - 64;
+		    str++;
+	}
+		break;
+	    case '\\':
+		str++;
+		if (isoctaln(*str)) {
+		    c = (*str - 48);
+		    str++;
+		    if (isoctaln(*str)) {
+			c *= 8;
+			c += (*str - 48);
+			str++;
+			if (isoctaln(*str)) {
+			    c *= 8;
+			    c += (*str - 48);
+			    str++;
+			}
+		    }
+		    *s++ = c;
+		} else if (*str == 'e')  {
+		    *s++ = '\033'; /* ^[ (escape) */
+		    str++;
+		} else if (*str) /* anything else that was escaped */
+		    *s++ = *str++;
+	else
+		    *s++ = '\\'; /* end-of-string.  no escape. */
+
+		break;
+	    default:
+		*s++ = *str++;
+		}
+	}
+
+    *s = '\0';
+    if (!new[0]) {
+	yell("bind_string_compress(): sequence [%s] compressed to nothing!",
+		oldstr);
+	return NULL;
+	}
+    return new; /* should never be reached! */
+}
+
+/* this decompresses a compressed bind string into human-readable form.  it
+ * assumes sufficient memory has already been allocated for it. */
+unsigned char *bind_string_decompress(unsigned char *dst, unsigned char *src) {
+    unsigned char *ret = dst;
+
+    while (*src) {
+	if (*src < 32) {
+	    *dst++ = '^';
+	    *dst++ = *src + 64;
+	    src++;
+	} else if (*src == 127) {
+	    *dst++ = '^';
+	    *dst++ = '?';
+	    src++;
+	} else
+	    *dst++ = *src++;
+	}
+    *dst = '\0';
+
+    return ret;
+}
+
+/* this function takes a key sequence (user-input style), a function to bind
+ * to, and optionally arguments to that function, and does all the work
+ * necessary to bind it.  it will create new keymaps as it goes, if
+ * necessary, etc. */
+struct Key *bind_string(unsigned char *sequence, char *bind, char *args) {
+    unsigned char *cs; /* the compressed keysequence */
+    unsigned char *s;
+    struct Key *kp, *map;
+    struct Binding *bp = NULL;
+
+    if (!sequence || !bind) {
+	yell("bind_string(): called without sequence or bind function!");
+	return NULL;
+    }
+
+    /* nothing (the binding) is special, it's okay if they request
+     * 'NOTHING', we just do some other work. */
+    if (my_stricmp(bind, "NOTHING") && (bp = find_binding(bind)) == NULL) {
+	say("No such function %s", bind);
+	return NULL;
+    }
+
+    cs = bind_string_compress(sequence);
+    if (cs == NULL) {
+	yell("bind_string(): couldn't compress sequence %s", sequence);
+	return NULL;
+    }
+
+    s = cs;
+    map = head_keymap;
+    while (*s) {
+	kp = &map[*s++];
+	if (*s) {
+	    /* create a new map if necessary.. */
+	    if (kp->map == NULL) {
+		kp->map = construct_keymap();
+		kp->map[0].map = kp; /* the special first element refers
+					back to kp.  this allows us to trace
+					our steps backwards. */
+		map = kp->map;
+	    } else
+		map = kp->map;
+	} else {
+	    /* we're binding over whatever was here.  check various things
+	     * to see if we're overwriting them. */
+	    if (kp->stuff)
+		new_free(&kp->stuff);
+	    if (kp->filename)
+		new_free(&kp->filename);
+	    kp->bound = bp;
+	    kp->changed = bind_post_init;
+	    if (bp != NULL) {
+		if (args)
+		    kp->stuff = m_strdup(args);
+		kp->filename = m_strdup(current_package());
+	    }
+	}
+    }
+
+    /* if we're post-initialization, clean out the keymap with each call. */
+    if (bind_post_init)
+	clean_keymap(head_keymap);
+    new_free(&cs);
+    return kp;
+}
+
+/* this tries to find the key identified by 'seq' which may be uncompressed.
+ * if we can find the key bound to this sequence, return it, otherwise
+ * return NULL. */
+struct Key *find_sequence(unsigned char *seq) {
+    unsigned char *cs = bind_string_compress(seq);
+    unsigned char *s = cs;
+    struct Key *map = head_keymap;
+    struct Key *key;
+
+    if (cs == NULL)
+	return; /* yikes! */
+    /* we have to find the key.  this should only happen at the top
+     * level, otherwise it's not going to act right! */
+    while (*s) {
+	key = &map[*s++];
+	if (*s) {
+	    map = key->map;
+	    if (map == NULL) {
+		new_free(&cs);
+		return NULL;
+	    }
+	}
+    }
+    new_free(&cs);
+    return key;
+}
+    
+/* init_keys:  initialize default keybindings that apply without terminal
+ * specificity.  we use the above functions to take care of this */
+void init_keys(void) {
+    unsigned char c;
+    unsigned char s[2];
+    head_keymap = construct_keymap();
+
+#define BIND(x, y) bind_string(x, y, NULL);
+    /* first, bind the whole head table to SELF_INSERT */
+    s[1] = '\0';
+    for (c = 1;c < KEYMAP_SIZE - 1;c++) {
+	s[0] = c;
+	BIND(s, "SELF_INSERT");
+    }
+
+    /* now bind the special single-character inputs */
+    BIND("^A", "BEGINNING_OF_LINE");
+    BIND("^B", "BOLD");
+    /* ^C */
+    BIND("^D", "DELETE_CHARACTER");
+    BIND("^E", "END_OF_LINE");
+    BIND("^F", "BLINK");
+    BIND("^H", "BACKSPACE");
+    BIND("^I", "TOGGLE_INSERT_MODE");
+    BIND("^J", "SEND_LINE");
+    BIND("^K", "ERASE_TO_END_OF_LINE");
+    BIND("^L", "REFRESH_SCREEN");
+    BIND("^M", "SEND_LINE");
+    BIND("^N", "FORWARD_HISTORY");
+    BIND("^O", "HIGHLIGHT_OFF");
+    BIND("^P", "BACKWARD_HISTORY");
+    BIND("^Q", "QUOTE_CHARACTER");
+    /* ^R */
+    BIND("^S", "TOGGLE_STOP_SCREEN");
+    BIND("^T", "TRANSPOSE_CHARACTERS");
+    BIND("^U", "ERASE_LINE");
+    BIND("^V", "REVERSE");
+    BIND("^W", "NEXT_WINDOW");
+    /* ^X (was META2_CHARACTER) */
+    BIND("^Y", "YANK_FROM_CUTBUFFER");
+    BIND("^Z", "STOP_IRC");
+    /* ^[ (was META1_CHARACTER) */
+    /* ^\ */
+    BIND("^]", "SHOVE_TO_HISTORY");
+    /* ^^ */
+    BIND("^_", "UNDERLINE");
+    /* mind the gap .. */
+    BIND("^?", "BACKSPACE");
+
+#ifdef EMACS_KEYBINDS
+    BIND("\\274", "SCROLL_START");
+    BIND("\\276", "SCROLL_END");
+    BIND("\\342", "BACKWARD_WORD");
+    BIND("\\344", "DELETE_NEXT_WORD");
+    BIND("\\345", "SCROLL_END");
+    BIND("\\346", "FORWARD_WORD");
+    BIND("\\350", "DELETE_PREVIOUS_WORD");
+    BIND("\\377", "DELETE_PREVIOUS_WORD");
+#endif
+
+    /* now for what was formerly meta1 (escape) sequences. */
+    BIND("^[^[", "COMMAND_COMPLETION");
+    BIND("^[.", "CLEAR_SCREEN");
+    BIND("^[<", "SCROLL_START");
+    BIND("^[>", "SCROLL_END");
+    /* ^[O and ^[[ were both META2_CHARACTER, see below .. */
+    BIND("^[b", "BACKWARD_WORD");
+    BIND("^[d", "DELETE_NEXT_WORD");
+    BIND("^[e", "SCROLL_END");
+    BIND("^[f", "FORWARD_WORD");
+    BIND("^[h", "DELETE_PREVIOUS_WORD");
+    BIND("^[n", "SCROLL_FORWARD");
+    BIND("^[p", "SCROLL_BACKWARD");
+    BIND("^[^?", "DELETE_PREVIOUS_WORD");
+
+    /* meta2 stuff. */
+    BIND("^[O^Z", "STOP_IRC");
+    BIND("^[[^Z", "STOP_IRC");
+    BIND("^[OA", "BACKWARD_HISTORY");
+    BIND("^[[A", "BACKWARD_HISTORY");
+    BIND("^[OB", "FORWARD_HISTORY");
+    BIND("^[[B", "FORWARD_HISTORY");
+    BIND("^[OC", "FORWARD_CHARACTER");
+    BIND("^[[C", "FORWARD_CHARACTER");
+    BIND("^[OD", "BACKWARD_CHARACTER");
+    BIND("^[[D", "BACKWARD_CHARACTER");
+    BIND("^[OF", "SCROLL_START");
+    BIND("^[[F", "SCROLL_START");
+    BIND("^[OG", "SCROLL_FORWARD");
+    BIND("^[[G", "SCROLL_FORWARD");
+    BIND("^[OH", "SCROLL_END");
+    BIND("^[[H", "SCROLL_END");
+    BIND("^[OI", "SCROLL_BACKWARD");
+    BIND("^[[I", "SCROLL_BACKWARD");
+    BIND("^[On", "NEXT_WINDOW");
+    BIND("^[[n", "NEXT_WINDOW");
+    BIND("^[Op", "PREVIOUS_WINDOW");
+    BIND("^[[p", "PREVIOUS_WINDOW");
+    BIND("^[O1~", "SCROLL_START");     /* these were meta30-33 before */
+    BIND("^[[1~", "SCROLL_START"); 
+    BIND("^[O4~", "SCROLL_END");
+    BIND("^[[4~", "SCROLL_END");
+    BIND("^[O5~", "SCROLL_BACKWARD");
+    BIND("^[[5~", "SCROLL_BACKWARD");
+    BIND("^[O6~", "SCROLL_FORWARD");
+    BIND("^[[6~", "SCROLL_FORWARD");
+
+    bind_post_init = 1; /* we're post init, now (except for init_termkeys,
+			   but see below for special handling) */
+#undef BIND
+}
+
+/* init_termkeys:  formerly init_keys2, this is called after we can get
+ * terminal-specific key-sequences. */
+void init_termkeys(void) {
+
+#define TBIND(x, y) {                                                     \
+    char *l = get_term_capability(#x, 0, 1);                              \
+    if (l)                                                                \
+	bind_string(l, #y, NULL);                                         \
+}
+
+    bind_post_init = 0;
+    TBIND(key_up, BACKWARD_HISTORY);
+    TBIND(key_down, FORWARD_HISTORY);
+    TBIND(key_left, BACKWARD_CHARACTER);
+    TBIND(key_right, FORWARD_CHARACTER);
+    TBIND(key_ppage, SCROLL_BACKWARD);
+    TBIND(key_npage, SCROLL_FORWARD);
+    TBIND(key_home, SCROLL_START);
+    TBIND(key_end, SCROLL_END);
+    TBIND(key_ic, TOGGLE_INSERT_MODE);
+    TBIND(key_dc, DELETE_CHARACTER);
+    bind_post_init = 1;
+#undef TBIND
+}
+
+/* save_bindings is called by the /save command to..well.. save bindings.
+ * we call the save_bindings_recurse() function which acts a lot like
+ * (surprise surprise) show_all_bindings/show_key in tandem. */
+void save_bindings_recurse(FILE *, struct Key *, unsigned char *);
+void save_bindings(FILE *fp, int do_all) {
+    save_bindings_recurse(fp, head_keymap, "");
+}
+
+void save_bindings_recurse(FILE *fp, struct Key *map, unsigned char *str) {
+    unsigned char c;
+    unsigned char *newstr;
+    unsigned char *ds; /* decompressed sequence */
+    int len = strlen(str);
+
+    newstr = alloca(len + 2);
+    strcpy(newstr, str);
+    ds = alloca(((len + 1) * 2) + 1);
+
+    /* go through our map, see what is changed, and save it.  recurse down
+     * as necessary. */
+    newstr[len + 1] = '\0';
+    for (c = 1; c < KEYMAP_SIZE - 1;c++) {
+	newstr[len] = c;
+	if (map[c].bound && map[c].changed) {
+	    bind_string_decompress(ds, newstr);
+	    fprintf(fp, "BIND %s %s%s%s\n", ds, map[c].bound->name,
+		    (map[c].stuff ? " " : ""),
+		    (map[c].stuff ? map[c].stuff : ""));
+	}
+	if (map[c].map)
+	    save_bindings_recurse(fp, map[c].map, newstr);
+    }
+}
+
+/* this is called only by irc_exit, and its purpose is to free
+ * all our allocated stuff. */
+void remove_bindings_recurse(struct Key *);
+void remove_bindings(void) {
+
+    while (binding_list != NULL)
+	remove_binding(binding_list->name);
+
+    remove_bindings_recurse(head_keymap);
+}
+
+void remove_bindings_recurse(struct Key *map) {
+    unsigned char c;
+
+    /* go through our map, clear any memory that might be left lying around.
+     * recurse as necessary */
+    for (c = 1; c < KEYMAP_SIZE - 1;c++) {
+	if (map[c].map)
+	    remove_bindings_recurse(map[c].map);
+	if (map[c].stuff)
+	    new_free(&map[c].stuff);
+	if (map[c].filename)
+	    new_free(&map[c].filename);
+    }
+    new_free(&map);
+}
+
+/* this is called when a package is unloaded.  we should unset any
+ * package-specific keybindings, and also remove any package-specific bind
+ * functions. */
+void unload_bindings_recurse(const char *, struct Key *);
+void unload_bindings(const char *pkg) {
+    struct Binding *bp, *bp2;
+
+    /* clean the binds out first. */
+    bp = binding_list;
+    while (bp != NULL) {
+	bp2 = bp->next;
+	if (!my_stricmp(bp->filename, pkg))
+	    remove_binding(bp->name);
+	bp = bp2;
+    }
+
+    unload_bindings_recurse(pkg, head_keymap);
+    clean_keymap(head_keymap);
+}
+
+void unload_bindings_recurse(const char *pkg, struct Key *map) {
+    unsigned char c;
+
+    /* go through, see which keys are package specific, unload them. */
+    for (c = 1; c < KEYMAP_SIZE - 1;c++) {
+	/* if the key is explicitly bound to something, and it was done in
+	 * our package, unbind it. */
+	if (map[c].bound && !my_stricmp(map[c].filename, pkg)) {
+	    if (map[c].stuff)
+		new_free(&map[c].stuff);
+	    if (map[c].filename)
+		new_free(&map[c].filename);
+	    map[c].bound = NULL;
+	}
+	if (map[c].map)
+	    unload_bindings_recurse(pkg, map[c].map);
+    }
+}
+
+/* set_key_interval:  this is used to construct a new timeval when the
+ * 'KEY_INTERVAL' /set is changed.  We modify an external variable which
+ * defines how long the client will wait to timeout, at most. */
+void set_key_interval(int msec) {
+
+    if (msec < 10) {
+	say("Setting KEY_INTERVAL below 10ms is not recommended.");
+	set_int_var(KEY_INTERVAL_VAR, 10);
+	msec = 10;
+    }
+
+    input_timeout.tv_usec = (msec % 1000) * 1000;
+    input_timeout.tv_sec = msec / 1000;
+    set_int_var(KEY_INTERVAL_VAR, msec);
+}
+
+/* do_stack_bind:  this handles the /stack .. bind command.  below is the
+ * function itself, as well as a structure used to hold keysequences which
+ * have been stacked.  it is currently not possible to stack entire maps of
+ * keys. */
+struct BindStack {
+    struct BindStack *next;
+    unsigned char *sequence; /* the (compressed) sequence of keys. */
+    struct Key key; /* the key's structure. */
 };
-#define NUMBER_OF_FUNCTIONS (sizeof(key_names) / sizeof(KeyMapNames)) - 1
 
-/* KeyMap: the structure of the irc keymaps */
-typedef struct
-{
-	int		key_index;
-	char *		stuff;
-	char *		filename;
-	char		changed;
-}	KeyMap;
-typedef	KeyMap	*	MetaMap[256];
-typedef MetaMap **	KeyTable;
-static	KeyTable 	keys 		= NULL;
-static	int		curr_keys_size 	= 0;
-static	int		max_keys_size 	= 0;
-#define MAX_META 	curr_keys_size - 1
+static struct BindStack *bind_stack = NULL;
+void do_stack_bind(int type, char *arg) {
+    struct Key *key, *map;
+    struct BindStack *bsp, *bsptmp;
+    unsigned char *cs, *s;
 
-static void 	delete_metamap (int i);
-
-/*
- * resize_metamap -- When we need to increase or decrease the number of
- * metamaps that the system is handling, you call this function with the
- * new size, and everything automagically adjusts from there.   This function
- * always succeeds if it returns.  This function is the callback for the
- * /SET META_STATES action.
- */
-void	resize_metamap (int new_size)
-{
-	int	old_size = curr_keys_size;
-	int	i, j;
-
-	/*
-	 * Sorry, just too much will break if you go lower than 5.
-	 */
-	if (new_size < 5)
-	{
-		say("You can't set META_STATES to less than 5.");
-		set_int_var(META_STATES_VAR, 5);
-		new_size = 5;
-	}
-
-	if (old_size == new_size)
-		return;		/* What-EVER */
-
-	/*
-	 * If we're growing the meta table, resize and copy the data.
-	 */
-	if (old_size < new_size)
-	{
-		/*
-		 * Realloc and copy if neccesary
-		 */
-		if (new_size > max_keys_size)
-		{
-			KeyTable 	new_keys;
-			new_keys = new_malloc(sizeof(KeyTable *) * new_size);
-
-			for (i = 0; i < old_size; i++)
-				new_keys[i] = keys[i];
-			for (i = old_size; i < new_size; i++)
-				new_keys[i] = NULL;
-			new_free((void **)&keys);
-			keys = new_keys;
-			max_keys_size = new_size;
-		}
-		curr_keys_size = new_size;
-	}
-
-	/*
-	 * If we're shrinking the meta table, just garbage collect all
-	 * the old bindings, dont actually bother resizing the table.
-	 */
-	else
-	{
-		for (i = new_size; i < old_size; i++)
-			delete_metamap(i);
-		curr_keys_size = new_size;
-
-		/*
-		 * This is a bit tricky -- There might be meta transitions
-		 * in other states that point to the now defunct states.
-		 * If we leave those bindings around, then they will point
-		 * to either meaningless, or bogus data, and either cause
-		 * undefined behavior or a total program crash.  So we walk
-		 * all of the remaining states and garbage collect any 
-		 * meta transisions that are out of bounds.
-		 */
-		for (i = 0; i < new_size; i++)
-		{
-		    if (!keys[i])
-			continue;
-		    for (j = 0; j < 256; j++)
-			if (KEY(i, j) && (KEY(i, j)->key_index <= -new_size))
-				snew_key(i, j, NULL);
-		}
-	}
-
-	set_int_var(META_STATES_VAR, curr_keys_size);
-}
-
-
-/*
- * new_metamap -- When you "touch" a metamap for the first time,
- * the table for the 256 bindings in that metamap must be created, so
- * you call this function to do that.  You must never call this function
- * unless the metamap does not exist, or it will panic.
- */
-static void 	new_metamap (int which)
-{
-	int j;
-
-	if (keys[which])
-		panic("metamap already exists");
-
-	keys[which] = new_malloc(sizeof(MetaMap));
-
-	for (j = 0; j <= 255; j++)
-		KEY(which, j) = NULL;
-}
-
-/*
- * delete_metamap -- When you're all done with a metamap you can call
- * this function to garbage collect it.  If there are any bindings in the
- * metamap when you call this, they will be summarily disposed of.
- */
-static void 	delete_metamap (int i)
-{
-	int j;
-
-	/* This is cheating, but do i care? ;-) */
-	for (j = 0; j <= 255; j++)
-		snew_key(i, j, NULL);
-
-	new_free((char **)&keys[i]);
-}
-
-
-
-
-/* * * * * * * * * * * * * KEY BINDING MANAGEMENT * * * * * * * * * * * * */
-/* special interface to new_key for the default key bindings */
-static void	snew_key (int meta, unsigned chr, char *what)
-{
-	int	i;
-	int	j;
-
-	if ((j = lookup_function(what, &i)) == 1)
-		new_key(meta, chr, i, 0, NULL);
-	else
-		panic("Something bogus passed to snew_key");
-}
-
-static	void	snew_key_from_str (uc *string, char *what)
-{
-	int	i;
-	int	meta;
-	int	old_display;
-	uc	chr;
-
-	old_display = window_display;
-	window_display = 0;
-	if ((meta = parse_key(string, &chr)) == -1)
-		return;
-	window_display = old_display;
-
-	if (lookup_function(what, &i) == 1)
-	{
-		if (x_debug & DEBUG_AUTOKEY)
-			yell("snew_key_from_str: [%d] [%d] [%d]", meta, chr, i);
-		new_key(meta, chr, i, 0, NULL);
-	}
-
+    if (!bind_stack && (type == STACK_POP || type == STACK_LIST)) {
+	say("BIND stack is empty!");
 	return;
-}
-
-static void 	new_key (int meta, unsigned chr, int type, int change, char *stuff)
-{
-	/*
-	 * Create a map first time we bind into it.  We have to do this
-	 * Because its possible to do /bind METAX-f when there is not
-	 * otherwise any key bound to METAX.
-	 */
-	if (!keys[meta])
-		new_metamap(meta);
-
-	if (KEY(meta, chr))
-	{
-		if (KEY(meta, chr)->stuff)
-			new_free(&(KEY(meta, chr)->stuff));
-		if (KEY(meta, chr)->filename)
-			new_free(&(KEY(meta, chr)->filename));
-		new_free(&(KEY(meta, chr)));
-		KEY(meta, chr) = NULL;
 	}
 
-	if (type != 0)
-	{
-		KEY(meta, chr) = (KeyMap *)new_malloc(sizeof(KeyMap));
-		KEY(meta, chr)->key_index = type;
-		KEY(meta, chr)->changed = change;
-		KEY(meta, chr)->filename = m_strdup(current_package());
-		if (stuff)
-			KEY(meta, chr)->stuff = m_strdup(stuff);
-		else
-			KEY(meta, chr)->stuff = NULL;
-	}
-}
+    if (type == STACK_PUSH) {
+	/* compress the keysequence, then find the key represented by that
+	 * sequence. */
+	cs = bind_string_compress(arg);
+	if (cs == NULL)
+	    return; /* yikes! */
 
-/*
- * show_binding:  Given an unsigned character 'X' in the meta map 'Y', this
- * function will display to the screen the status of that bindings in a 
- * human-readable way.
- */
-static void 	show_binding (int meta, uc c)
-{
-	char	meta_str[8];
-
-	*meta_str = 0;
-	if (meta < 1 || meta > MAX_META)
-		meta = 0;
-	else
-		sprintf(meta_str, "META%d-", meta);
-
-	if (keys[meta] && KEY(meta, c))
-	{
-		if (KEY(meta, c)->key_index < 0)
-			say("%s%s is bound to META%d_CHARACTER",
-				meta_str, 
-				display_key(c),
-				-(KEY(meta, c)->key_index));
-		else
-			say("%s%s is bound to %s %s", 
-				meta_str, 
-				display_key(c),
-				key_names[KEY(meta, c)->key_index].name, 
-				SAFE(KEY(meta, c)->stuff));
-	}
-	else
-		say("%s%s is bound to NOTHING", meta_str, display_key(c));
-}
-
-/*
- * save_bindings: This writes all the key bindings for ircII to the given
- * FILE pointer suitable for being /LOADed again in the future.
- */
-void 	save_bindings (FILE *fp, int do_all)
-{
-	int	meta, j;
-	int	charsize = charset_size();
-	char	meta_str[10];
-
-	*meta_str = 0;
-	for (meta = 0; meta <= MAX_META; meta++)
-	{
-		if (meta != 0)
-			sprintf(meta_str, "META%d-", meta);
-
-		for (j = 0; j < charsize; j++)
-		{
-			if (keys[meta] && KEY(meta, j) && KEY(meta, j)->changed)
-			{
-				if (KEY(meta, j)->key_index < 0)
-				    fprintf(fp, "BIND %s%s META%d\n", 
-					meta_str, 
-					display_key(j), 
-					-(KEY(meta, j)->key_index));
-				else
-				    fprintf(fp, "BIND %s%s %s %s\n", 
-					meta_str, 
-					display_key(j), 
-					key_names[KEY(meta, j)->key_index].name,
-					SAFE(KEY(meta, j)->stuff));
-			}
-		}
-	}
-}
-
-/*
- * This is a function used by edit_char to retreive the details for a
- * specific key binding.  This function provides the only external access
- * to the key bindings.  The arguments are the meta state and the character
- * whose information you want to retreive.  That information is stored into
- * the 'func' and 'name' pointers you pass in.
- *
- * The function will return 0 if the binding you request is a "normal" one.
- *	If the binding is "NOTHING", then func will be set to NULL
- *	If the binding is an action, the func will be set to its callback.
- *
- * The function will return a positive number if the binding you request is
- * a "meta" character.
- *	The value of 'func' will be NULL but you should not depend on that.
- */
-int	get_binding (int meta, uc c, KeyBinding *func, char **name)
-{
-	*func = NULL;
-	*name = NULL;
-
-	if (meta >= 0 && meta <= MAX_META)
-	{
-		if (keys[meta] && KEY(meta, c))
-		{
-			/*
-			 * If this is a meta binding, return the new meta
-			 * state -- this is a "special" value.
-			 */
-			if (KEY(meta, c)->key_index < 0)
-				return -(KEY(meta, c)->key_index);
-
-			/*
-			 * Otherwise, assign to 'func' and 'name' the
-			 * appropriate values.
-			 */
-			*func = key_names[KEY(meta, c)->key_index].func;
-			*name = KEY(meta, c)->stuff;
-		}
-	}
-	return 0;
-}
-
-
-void 	remove_bindings (void)
-{
-	int i;
-
-	for (i = 0; i <= MAX_META; i++)
-		delete_metamap(i);
-}
-
-void	unload_bindings (const char *filename)
-{
-	int 	i, j;
-
-	for (i = 0; i <= MAX_META; i++)
-	{
-		if (!keys[i])
-			continue;
-
-		for (j = 0; j < 256; j++)
-			if (KEY(i, j) && !strcmp(KEY(i, j)->filename, filename))
-				snew_key(i, j, NULL);
-	}
-}
-
-
-static void	show_all_bindings (int meta)
-{
-	int	i, j, k;
-
-	if (meta == -1)
-	{
-		for (i = 0; i <= MAX_META; i++)
-			show_all_bindings(i);
-		return;
-	}
-
-	if (meta > MAX_META || !keys[meta])
-		return;		/* Eh! */
-
-	k = charset_size();
-	for (j = 0; j < k; j++)
-		if (KEY(meta, j) && KEY(meta, j)->key_index != 1)
-			show_binding(meta, j);
-}
-
-/* * * * * * * * * * * * * * PARSEKEY * * * * * * * * * * * * */
-/* parsekeycmd: does the PARSEKEY command.  */
-BUILT_IN_COMMAND(parsekeycmd)
-{
-	int	i;
-	char	*arg;
-
-	if ((arg = next_arg(args, &args)) != NULL)
-	{
-                int	keyval = lookup_function(arg, &i);
-
-		switch (keyval)
-		{
-			case 0:
-				say("No such function %s", arg);
+	s = cs;
+	map = head_keymap;
+	while (*s) {
+	    key = &map[*s++];
+	    if (*s) {
+		map = key->map;
+		if (map == NULL) {
+		    key = NULL;
 				break;
-			case 1:
-				if (i < 0)
-					last_input_screen->meta_hit = -i;
-				else if (key_names[i].func)
-					key_names[i].func(0, args);
-				break;
-			default:
-				say("Ambigious function %s", arg);
-				break;
-		}
-	}
-}
-
-/* * * * * * * * * * * * * * RBIND * * * * * * * * * * * * * * */
-/*
- * rbindcmd:  This is the /RBIND command.  If you give it a bind action,
- * it will show you all of the key bindings that have that action.  You
- * probably cannot lookup the action NOTHING as it is a magic action.
- */
-BUILT_IN_COMMAND(rbindcmd)
-{
-	int	f;
-	char	*arg;
-	int	i, j;
-	int	charsize = charset_size();
-
-	if ((arg = next_arg(args, &args)) == NULL)
-		return;		/* No args is a no-op */
-
-	switch (lookup_function(arg, &f))
-	{
-		case 0:
-			say("No such function %s", arg);
-			return;
-
-		case 1:
-			break;
-
-		default:
-			say("Ambigious function %s", arg);
-			return;
-	}
-
-	for (i = 0; i <= MAX_META; i++)
-	{
-		if (!keys[i])
-			continue;
-
-		for (j = 0; j < charsize; j++)
-			if (KEY(i, j) && KEY(i, j)->key_index == f)
-				show_binding(i, j);
-	}
-}
-
-
-/* * * * * * * * * * * * * * BIND  * * * * * * * * * * * * * */
-static int	grok_meta (const uc *ptr, const uc **end)
-{
-	int		meta = -1;
-	const uc *	str;
-
-	/*
-	 * Well, if it is going to be anywhere, META has to be out front,
-	 * so lets slurp it up if its there.
-	 */
-	if (!my_strnicmp(ptr, "META", 4))
-	{
-		str = ptr = ptr + 4;
-		while (isdigit(*ptr))
-			ptr++;
-		if (*ptr == '_' && !my_strnicmp(ptr, "_CHARACTER", 10))
-			ptr = ptr + 10;
-		if (*ptr == '-')
-			ptr++;
-		meta = atol(str);
-	}
-
-	*end = ptr;
-	return meta;
-}
-
-/*
- * copy_redux:
- * This converts an ordinary sequence into something more suitable to
- * work with, including the redux of ^X into X-64.
- * You can then work with the sequence after processing.
- */
-void	copy_redux (const uc *orig, uc *result)
-{
-	const  uc	*ptr;
-
-	for (ptr = orig; ptr && *ptr; ptr++, result++)
-	{
-		if (*ptr != '^')
-		{
-			*result = *ptr;
-			continue;
-		}
-
-		ptr++;
-		switch (toupper(*ptr))
-		{
-			case 0:			/* ^<nul> is ^ */
-				*result++ = '^';
-				*result = 0;
-				return;
-			case '?':		/* ^? is DEL */
-				*result = 0177;
-				break;
-			default:
-				if (toupper(*ptr) < 64)
-				{
-				    say("Illegal key sequence: ^%c",
-						 *ptr);
-				    *result = 0;
-				    return;
 				}
-				*result = toupper(*ptr) - 64;
-				break;
 		}
 	}
-	*result = 0;
+
+	/* key is now.. something.  if it is NULL, assume there was nothing
+	 * bound.  we still push an empty record on to the stack. */
+	bsp = new_malloc(sizeof(struct BindStack));
+	bsp->next = bind_stack;
+	bsp->sequence = cs;
+	bsp->key.changed = key ? key->changed : 0;
+	bsp->key.bound = key ? key->bound : NULL;
+	bsp->key.stuff = key ? (key->stuff ? m_strdup(key->stuff) : NULL) :
+	    NULL;
+	bsp->key.filename = key ? m_strdup(key->filename) : NULL;
+
+	bind_stack = bsp;
 	return;
-}
+    } else if( type == STACK_POP) {
+	unsigned char *cs = bind_string_compress(arg);
 
-/*
- * find_meta_map: Finds a meta map that does not already contain a 
- * binding to the specified character.
- */
-int	find_meta_map	(uc key)
-{
-	int	curr = MAX_META;
+	if (cs == NULL)
+	    return; /* yikes! */
 
-	for (curr = MAX_META; curr > 4; curr--)
-	{
-		if (!keys[curr])
-			return curr;
+	for (bsp = bind_stack;bsp;bsptmp = bsp, bsp = bsp->next) {
+	    if (!strcmp(bsp->sequence, cs)) {
+		/* a winner! */
+		if (bsp == bind_stack)
+		    bind_stack = bsp->next;
+		else
+		    bsptmp->next = bsp->next;
 
-		if (!KEY(curr, key))
-			return curr;
-	}
-
-	resize_metamap(curr_keys_size + 1);
-	return MAX_META;		/* Well, its empty now */
-}
-
-/*
- * Purpose:
- * To make sure that the key sequence X is valid upon return.
- * Composition of X is:  [<key>]*<key>
- * Where <key> is  an ascii char > 32, or a caret followed by an ascii char.
- *
- * First, remove the last character
- * Second, remove the leading part of X that is a valid meta descriptor
- *
- * At this point, we have  <META> + [<unbound-key>]* + <final-key>
- *
- * If unbound-key is present, then we have to bind it.  The first thing to
- * do is find a place where <final-key> can be stashed.  Look for the highest
- * metamap that has an open spot for <final-key>
- *
- * Now we have   <META> + [<unbound-key>]* + <unbound-key> + <final-key>
- * And we now know what meta map the first three parts have to conclude to.
- * So that is the return value.
- *
- * Now we need to build up to that.  Repeat this process until there is
- * nothing left in the unbound-key segment.
- */
-/*
- * A lot of magic goes on in this function.  The general purpose of this
- * function is to take a "key-description" of any form, and canonicalize
- * it down into a resulting meta map (which is the return value), and return
- * the final character in 'term'.  Older algorithms only allowed you to 
- * specify META(X)-(Y), where X is the meta value to be returned and Y is
- * the character, and anything else was an error.  Now we allow you to specify
- * any arbitrary string -- if the leading part of the string is already bound
- * to a META key, then we can deal with that.  If the leading part of the
- * string is NOT bound to anything in particular, then we will bind it FOR
- * you, and the resulting meta state is returned.  This allows things like
- * this to work:
- *
- *	/BIND META2-C	BIND-ACTION	(Specify a meta map directly)
- *	/BIND ^[[A	BIND-ACTION	(^[[ is bound to META2 by default)
- *	/BIND ^[[11~	BIND-ACTION	(Force us to make sure ^[[11 is bound
- *					 to a meta map before returning.)
- */
-static int	parse_key (const uc *sequence, uc *term)
-{
-	uc	*copy;
-	uc	*end;
-	int	return_meta = 0;
-	int	meta;
-	uc	last_character;
-	uc	terminal_character;
-	int	last;
-	int	somethingN;
-
-	/*
-	 * Make a local copy of the string to be bound.  Redux all of
-	 * the ^x modifers to their literal control characters.
-	 */
-	copy = alloca(strlen(sequence) + 4);
-	copy_redux(sequence, copy);
-	end = copy + strlen(copy) - 1;
-
-	if (x_debug & DEBUG_AUTOKEY)
-		yell("Starting with COPY := [%s]", copy);
-	/*
-	 * Remove any leading META description
-	 */
-	if ((meta = grok_meta(copy, (const uc **)&copy)) == -1)
-		meta = 0;
-
-	if (x_debug & DEBUG_AUTOKEY)
-		yell("After META grokked, COPY := [%s]", copy);
-
-	/*
-	 * Remove any leading characters that also comprise a META
-	 * description
-	 */
-	while (copy[0] && copy[1])
-	{
-		if (keys[meta] && KEY(meta, *copy) &&
-				  KEY(meta, *copy)->key_index < 0)
-		{
-			meta = -(KEY(meta, *copy)->key_index);
-			copy++;
-			if (x_debug & DEBUG_AUTOKEY)
-			{
-				yell("First character of COPY switches to meta [%d]", meta);
-				yell("After META grokked, COPY := [%s]", copy);
-			}
-			continue;
-		}
 		break;
 	}
-
-	if (x_debug & DEBUG_AUTOKEY)
-		yell("After ALL META [%d] grokked, COPY := [%s]", meta, copy);
-
-	/*
-	 * Check to see if the entire sequence was just a meta modifier
-	 * or if it is a META-KEY modifier.  Either way, we're done.
-	 */
-	if (!copy[0] || !copy[1])
-	{
-		*term = copy[0];
-		if (x_debug & DEBUG_AUTOKEY)
-			yell("Thats all i need to do here...");
-		return meta;
 	}
 
-	/*
-	 * Right now the input boils down to this:
-	 *
-	 * input := SOME_CHARACTERS + TERMINAL_CHARACTER + LAST_CHARACTER
-	 * SOME_CHARACTERS 	:= <key>*
-	 * TERMINAL_CHARACTER 	:= <key>
-	 * LAST_CHARACTER 	:= <key>
-	 *
-	 * The previous check assures that 'terminal character' is not
-	 * an empty value at this point.
-	 */
-	last_character = *end;
-	*end-- = 0;
-	terminal_character = *end;
-	*end-- = 0;
-
-	if (x_debug & DEBUG_AUTOKEY)
-	{
-		yell("Starting to work on the string:");
-		yell("SOME_CHARACTERS := [%s] (%d)", copy, strlen(copy));
-		yell("TERMINAL_CHARACTER := [%c]", terminal_character);
-		yell("LAST_CHARACTER := [%c]", last_character);
+	/* we'll break out when we find our first binding, or if there is
+	 * nothing.  we handle it below. */
+	if (bsp == NULL) {
+	    say("no bindings for %s are on the stack", arg);
+	    new_free(&cs);
+	    return;
 	}
 
-
-	/*
-	 * Our ultimate goal is to return when the operation:
-	 *	/bind META<something>-LAST_CHARACTER  <binding>
-	 * will succeed.  So we need to find a place to put LAST_CHARACTER.
-	 */
-	last = return_meta = find_meta_map(last_character);
-	if (x_debug & DEBUG_AUTOKEY)
-	{
-		yell("FIND_META_MAP says we can put [%c] in META [%d]", 
-				last_character, return_meta);
+	/* okay, we need to push this key back in to place.  we have to
+	 * replicate bind_string since bind_string has some undesirable
+	 * effects.  */
+	s = cs;
+	map = head_keymap;
+	while (*s) {
+	    key = &map[*s++];
+	    if (*s) {
+		/* create a new map if necessary.. */
+		if (key->map == NULL) {
+		    key->map = construct_keymap();
+		    key->map[0].map = key; /* see bind_string() for
+					      details. */
+		    map = key->map;
+		} else
+		    map = key->map;
+	    } else {
+		/* we're binding over whatever was here.  check various
+		   things to see if we're overwriting them. */
+		if (key->stuff)
+		    new_free(&key->stuff);
+		if (key->filename)
+		    new_free(&key->filename);
+		key->bound = bsp->key.bound;
+		key->changed = bsp->key.changed;
+		key->stuff = bsp->key.stuff;
+		key->filename = bsp->key.filename;
 	}
-
-	/*
-	 * So now we need to work backwards through the string linking
-	 * each of the characters to the next one.  Starting with
-	 * TERMINAL_CHARACTER, we find a meta map where that can be linked
-	 * from (that map is somethingN1).  We then do:
-	 *
-	 *	/bind META<somethingN1>-TERMINAL_CHARACTER META<LAST>
-	 *
-	 * Where 'last' is the most previous meta map we linked to, starting
-	 * with 'something'.
-	 */
-	while (*copy)
-	{
-		if (x_debug & DEBUG_AUTOKEY)
-		{
-			yell("COPY: [%s] (%d)", copy, strlen(copy));
-			yell("Now we are going to bind the [%c] character to meta [%d] somehow.",
-					terminal_character, last);
 		}
 
-		/*
-		 * <something> is any meta map such that:
-		 * /bind META<somethingN>-[TERMINAL CHARACTER] META<something>
-		 */
-		somethingN = find_meta_map(terminal_character);
-		if (x_debug & DEBUG_AUTOKEY)
-			yell("FIND_META_MAP says we can do this in META [%d]", somethingN);
-
-		new_key(somethingN, terminal_character, -last, 1, NULL);
-		show_binding(somethingN, terminal_character);
-
-		/*
-		 * Now we walk backwards in the string:  'last' now becomes
-	 	 * the meta map we just linked, and we pop TERMINAL_CHARACTER
-		 * off the end of SOME_CHARACTERS.  We repeat this until
-		 * SOME_CHARACTERS is empty.
-		 */
-		last = somethingN;
-		terminal_character = *end;
-		*end-- = 0;
+	new_free(&cs);
+	new_free(&bsp->sequence);
+	new_free(&bsp);
+	return;
+    } else if (type == STACK_LIST) {
+	say("BIND STACK LISTING");
+	for (bsp = bind_stack;bsp;bsp = bsp->next)
+	    show_key(&bsp->key, bsp->sequence, 0);
+	say("END OF BIND STACK LISTING");
+	return;
 	}
-
-	/*
-	 * Make the final link from the initial meta state to our newly
-	 * constructed chain...
-	 */
-	new_key(meta, terminal_character, -last, 1, NULL);
-	show_binding(meta, terminal_character);
-
-	/*
-	 * Return the interesting information
-	 */
-	*term = last_character;
-	return return_meta;
-
-#if 0
-	/* The rest of this isnt finished, hense is unsupported */
-	say("The bind cannot occur because the character sequence to bind contains a leading substring that is bound to something else.");
-	return -1;
-#endif
+    say("Unknown STACK type ??");
 }
 
-/*
- * bindcmd:  The /BIND command.  The general syntax is:
+/* bindcmd:  The /BIND command.  The general syntax is:
  *
  *	/BIND ([key-descr] ([bind-command] ([args])))
  * Where:
- *	KEY-DESCR    := ([^]C | META[num])
- *	BIND-COMMAND := <Any string in the key_names lookup table>
+ *	KEY-DESCR    := (Any string of keys, subject to bind_string_compress())
+ *	BIND-COMMAND := (Any binding available)
  *
- * If given no arguments, this command shows all non-empty bindings
- * current registered.
+ * If given no arguments, this command shows all non-empty bindings which
+ * are currently registered.
  *
  * If given one argument, that argument is to be a description of a valid
- * key sequence.  The command will show the binding of that sequence.
+ * key sequence.  The command will show the binding of that sequence,
  *
  * If given two arguments, the first argument is to be a description of a
  * valid key sequence and the second argument is to be a valid binding
@@ -974,528 +953,394 @@ static int	parse_key (const uc *sequence, uc *term)
  *
  * The special binding command "NOTHING" actually unbinds the key.
  */
-BUILT_IN_COMMAND(bindcmd)
-{
-	uc	*key,
-		*function;
-	int	meta;
-	uc	dakey;
-	int	bi_index;
-	int	cnt,
-		i;
+BUILT_IN_COMMAND(bindcmd) {
+    unsigned char *seq;
+    unsigned char *compseq; /* compressed sequence */
+    char *function;
+    struct Binding *bp;
+    int recurse = 0;
 
-	/*
-	 * See if they specified a key argument.  If they didnt, show all
-	 * binds and return
-	 */
-	if ((key = new_next_arg(args, &args)) == NULL)
-	{
-		show_all_bindings(-1);
+    if ((seq = new_next_arg(args, &args)) == NULL) {
+	show_all_bindings(head_keymap, "");
 		return;
 	}
 
-	/*
-	 * Grok any flags (only one, for now)
-	 */
-	if (*key == '-')
-	{
-		if (!my_strnicmp(key + 1, "DEFAULTS", 1))
-		{
+    /* look for flags */
+    if (*seq == '-') {
+	if (!my_strnicmp(seq + 1, "DEFAULTS", 1)) {
 			init_keys();
+	    init_termkeys();
 			return;
-		}
-		else if (!my_strnicmp(key + 1, "SYMBOLIC", 1))
-		{
-			char	*symbol;
+	} else if (!my_strnicmp(seq + 1, "SYMBOLIC", 1)) {
+	    char * symbol;
 
 			if ((symbol = new_next_arg(args, &args)) == NULL)
 				return;
-			if ((key = get_term_capability(symbol, 0, 1)) == NULL)
-			{
-				say("Symbolic name [%s] is not supported "
-					"in your TERM type.", symbol);
+	    if ((seq = get_term_capability(symbol, 0, 1)) == NULL) {
+		say("Symbolic name [%s] is not supported in your TERM type.",
+			symbol);
+		return;
+	    }
+	} else if (!my_strnicmp(seq + 1, "RECURSIVE", 1)) {
+	    recurse = 1;
+	    if ((seq = new_next_arg(args, &args)) == NULL) {
+		show_all_bindings(head_keymap, "");
 				return;
 			}
 		}
 	}
 
-
-	/*
-	 * Grok the key argument and see what we can make of it
-	 * If there is an error at this point, dont continue.
-	 * Most of the work is done here.
-	 */
-	if ((meta = parse_key(key, &dakey)) == -1)
-	{
-		if (x_debug & DEBUG_AUTOKEY)
-			yell("Ack!  parse_key failed.  Punting.");
+    if ((function = new_next_arg(args, &args)) == NULL) {
+	show_key(NULL, seq, recurse);
 		return;
-	}
+    }
 
-	if (x_debug & DEBUG_AUTOKEY)
-		yell("(/bind) parse_key returned: [%d] [%s] [%d]", 
-			meta, key, dakey);
+    /* bind_string() will check any errors for us. */
+    if (!bind_string(seq, function, *args ? args : NULL)) {
+	if (!my_strnicmp(function, "meta", 4))
+	    yell(
+"Please note that the META binding functions are no longer available.  \
+For more information please see the bind(4) helpfile and the file \
+doc/keys distributed with the EPIC source."
+		);
+		    
+	return; /* assume an error was spouted for us. */
+    }
+    show_key(NULL, seq, 0);
+}
 
-	/*
-	 * See if they specified an action argument.  If they didnt, then
-	 * check to see if they specified /bind METAX or if they specified
-	 * /bind <char sequence>, and output as is appropriate.
-	 */
-	if ((function = next_arg(args, &args)) == NULL)
-	{
-		/* They did /bind ^C */
-		if (dakey)
-			show_binding(meta, dakey);
+/* support function for /bind:  this function shows, recursively, all the
+ * keybindings.  given a map and a string to work from.  if the string is
+ * NULL, the function recurses through the entire map. */
+void show_all_bindings(struct Key *map, unsigned char *str) {
+    unsigned char c;
+    unsigned char *newstr;
+    int len = strlen(str);
+    struct Binding *self_insert;
 
-		/* They did /bind meta2 */
-		else
-			show_all_bindings(meta);
+    self_insert = find_binding("SELF_INSERT");
+    newstr = alloca(len + 2);
+    strcpy(newstr, str);
 
-		return;
-	}
-
-	/*
-	 * Look up the action they want to take.  If it is invalid, tell
-	 * them so, if it is ambiguous, show the possible choices, and if
-	 * if it valid, then actually do the bind action.  Note that if we
-	 * do the bind, we do a show() so the user knows we took the action.
-	 */
-	switch ((cnt = lookup_function(function, &bi_index)))
-	{
-		case 0:
-			say("No such function: %s", function);
-			if (x_debug & DEBUG_AUTOKEY)
-				yell("NO SUCH FUNCTION %s", function);
-			break;
-		case 1:
-			if (meta < 1 || meta > MAX_META)
-				meta = 0;
-			if (x_debug & DEBUG_AUTOKEY)
-				yell("/BIND: [%d] [%d] [%d]", 
-					meta, dakey, bi_index);
-			new_key(meta, dakey, bi_index, 1, *args ? args : NULL);
-			show_binding(meta, dakey);
-			break;
-		default:
-			say("Ambiguous function name: %s", function);
-			if (x_debug & DEBUG_AUTOKEY)
-				yell("AMBIGUOUS FUNCTION NAME %s", function);
-			for (i = 0; i < cnt; i++, bi_index++)
-				put_it("%s", key_names[bi_index].name);
-			break;
+    /* show everything in our map.  recurse down. */
+    newstr[len + 1] = '\0';
+    for (c = 1; c < KEYMAP_SIZE - 1;c++) {
+	newstr[len] = c;
+	if (map[c].map || (map[c].bound && map[c].bound != self_insert))
+	    show_key(&map[c], newstr, 1);
 	}
 }
 
-/* * * * * * * * * * * BINDING ACTIONS  * * * * * * * * * */
-/* I hate typedefs... */
+void show_key(struct Key *key, unsigned char *str, int recurse) {
+    struct Binding *bp;
+    unsigned char *clean = alloca(((strlen(str) + 1) * 2) + 1);
 
-/*
- * lookup_function:  When you want to convert a "binding" name (such as
- * BACKSPACE or SELF_INSERT) over to its offset in the binding lookup table,
- * you must call this function to retreive that offset.  The first argument
- * is the name you want to look up, and the second argument is where the
- * offset is to be stored.
- *
- * Return value: (its tricky)
- *	-1	  -- The name is a META binding that is invalid.
- *	Zero	  -- The name is not a valid binding name.
- *	One	  -- The name is a valid, unambiguous binding name.
- *		     If it is a META binding, lf_index will be negative,
- *		     Otherwise, lf_index will be positive.
- *	Other	  -- The name is an ambiguous (therefore invalid) binding name.
- *
- * In the case of a return value of any positive value, "lf_index" will be
- * set to the first item that matches the 'name'.  For all other return
- * values, "lf_index" will have the value -1.
- */
-static int 	lookup_function (const uc *orig_name, int *lf_index)
-{
-	int	len,
-		cnt,
-		i;
-	uc	*name;
-	char	*breakage;
-
-	if (!orig_name)
-	{
-		*lf_index = 0;
-		return 1;
+    if (key == NULL) {
+	key = find_sequence(str);
+	if (key == NULL)
+	    key = head_keymap; /* cheat here.  the first item in head_keymap
+				  will never have any real data in it. */
 	}
 
-	name = breakage = LOCAL_COPY(orig_name);
-	upper(name);
-	len = strlen(name);
-	*lf_index = -1;
-
-	/* Handle "META" descriptions especially. */
-	if (!strncmp(name, "META", 4))
-	{
-		const uc *	endp;
-		int		meta;
-
-		if ((meta = grok_meta(name, &endp)) < 0)
-			return meta;
-		else
-		{
-			*lf_index = -meta;
-			return 1;
+    bp = key->bound;
+    if (!bp && ((recurse && !key->map) || !recurse))
+	say("[*] \"%s\" is bound to NOTHING",
+		bind_string_decompress(clean, str));
+    else {
+	if (bp) {
+	    say("[%s] \"%s\" is bound to %s%s%s",
+		    (*key->filename ? key->filename : "*"),
+		    bind_string_decompress(clean, str), 
+		    bp->name,
+		    (key->stuff ? " " : ""), (key->stuff ? key->stuff : ""));
 		}
+	if (recurse && key->map)
+	    show_all_bindings(key->map, str);
 	}
+}
 
-	for (cnt = 0, i = 0; i < NUMBER_OF_FUNCTIONS; i++)
-	{
-		if (strncmp(name, key_names[i].name, len) == 0)
-		{
-			cnt++;
-			if (*lf_index == -1)
-				*lf_index = i;
-		}
-	}
-	if (*lf_index == -1)
-		return 0;
-	if (strcmp(name, key_names[*lf_index].name) == 0)
-		return 1;
+/* the /rbind command.  This command allows you to pass in the name of a
+ * binding and find all the keys which are bound to it.  we make use of a
+ * function similar to 'show_all_bindings', but not quite the same, to
+ * handle recursion. */
+BUILT_IN_COMMAND(rbindcmd) {
+    unsigned char *s;
+    char *function;
+    struct Binding *bp;
+
+    if ((function = new_next_arg(args, &args)) == NULL)
+	return;
+
+    if ((bp = find_binding(function)) == NULL) {
+	if (!my_stricmp(function, "NOTHING"))
+	    say("You cannot list all unbound keys.");
 	else
-		return cnt;
-}
-
-
-/* I dont know where this belongs. */
-/*
- * display_key: Given a (possibly unprintable) unsigned character 'c', 
- * convert that character into a printable string.  For characters less
- * than 32, and the character 127, they will be converted into the "control"
- * sequence by having a prepended caret ('^').  Other characters will be
- * left alone.  The return value belongs to the function -- dont mangle it.
- */
-static uc *	display_key (uc c)
-{
-	static	uc key[3];
-
-	key[2] = (char) 0;
-	if (c < 32)
-	{
-		key[0] = '^';
-		key[1] = c + 64;
-	}
-	else if (c == '\177')
-	{
-		key[0] = '^';
-		key[1] = '?';
-	}
-	else
-	{
-		key[0] = c;
-		key[1] = (char) 0;
-	}
-	return (key);
-}
-
-/* * * * * * * * * * * * * * * * * * INITIALIZATION * * * * * * * * * * * */
-/* 
- * This is where you put all the default key bindings.  This is a lot
- * simpler, just defining those you need, instead of all of them, isnt
- * it?  And it takes up so much less memory, too...
- */
-void 	init_keys (void)
-{
-	int i;
-
-	/*
-	 * Make sure the meta map is big enough to hold all these bindings.
-	 */
-	remove_bindings();
-	resize_metamap(40);	/* Whatever. */
-
-	/* 
-	 * All the "default" bindings are self_insert unless we bind
-	 * them differently
-	 */
-	for (i = 1; i <= 255; i++)
-		snew_key(0, i, "SELF_INSERT");
-
-	/* "default" characters that arent self_insert */
-	snew_key(0,  1, "BEGINNING_OF_LINE");		/* ^A */
-	snew_key(0,  2, "BOLD");			/* ^B */
-	snew_key(0,  4, "DELETE_CHARACTER");		/* ^D */
-	snew_key(0,  5, "END_OF_LINE");			/* ^E */
-	snew_key(0,  6, "BLINK");			/* ^F */
-	snew_key(0,  8, "BACKSPACE");			/* ^H (delete) */
-
-	snew_key(0,  9, "TOGGLE_INSERT_MODE");		/* ^I (tab) */
-	snew_key(0, 10, "SEND_LINE");			/* ^J (enter) */
-	snew_key(0, 11, "ERASE_TO_END_OF_LINE");	/* ^K */
-	snew_key(0, 12, "REFRESH_SCREEN");		/* ^L (linefeed) */
-	snew_key(0, 13, "SEND_LINE");			/* ^M (return) */
-	snew_key(0, 14, "FORWARD_HISTORY");		/* ^N */
-	snew_key(0, 15, "HIGHLIGHT_OFF");		/* ^O */
-	snew_key(0, 16, "BACKWARD_HISTORY");		/* ^P */
-
-	snew_key(0, 17, "QUOTE_CHARACTER");		/* ^Q */
-	snew_key(0, 19, "TOGGLE_STOP_SCREEN");		/* ^S */
-	snew_key(0, 20, "TRANSPOSE_CHARACTERS");	/* ^T */
-	snew_key(0, 21, "ERASE_LINE");			/* ^U */
-	snew_key(0, 22, "REVERSE");			/* ^V */
-	snew_key(0, 23, "NEXT_WINDOW");			/* ^W */
-	snew_key(0, 24, "META2_CHARACTER");		/* ^X */
-
-	snew_key(0, 25, "YANK_FROM_CUTBUFFER");		/* ^Y */
-	snew_key(0, 26, "STOP_IRC");			/* ^Z */
-	snew_key(0, 27, "META1_CHARACTER");		/* ^[ (escape) */
-	snew_key(0, 29, "SHOVE_TO_HISTORY");		/* ^] */
-	snew_key(0, 31, "UNDERLINE");			/* ^_ */
-
-	snew_key(0, 127, "BACKSPACE");			/* ^? (delete) */
-
-	/* 
-	 * european keyboards (and probably others) use the eigth bit
-	 * for extended characters.  Having these keys bound by default
-	 * causes them lots of grief, so unless you really want to use
-	 * these, they are commented out.
-	 */
-#ifdef EMACS_KEYBINDS
-	snew_key(0, 188, "SCROLL_START");
-	snew_key(0, 190, "SCROLL_END");
-	snew_key(0, 226, "BACKWARD_WORD");
-	snew_key(0, 228, "DELETE_NEXT_WORD");
-	snew_key(0, 229, "SCROLL_END");
-	snew_key(0, 230, "FORWARD_WORD");
-	snew_key(0, 232, "DELETE_PREVIOUS_WORD");
-	snew_key(0, 255, "DELETE_PREVIOUS_WORD");
-#endif
-
-	/* meta 1 characters */
-	snew_key(1,  27, "COMMAND_COMPLETION");
-	snew_key(1,  46, "CLEAR_SCREEN");
-	snew_key(1,  60, "SCROLL_START");
-	snew_key(1,  62, "SCROLL_END");
-	snew_key(1,  79, "META2_CHARACTER");
-	snew_key(1,  91, "META2_CHARACTER");
-	snew_key(1,  98, "BACKWARD_WORD");
-	snew_key(1, 100, "DELETE_NEXT_WORD");
-	snew_key(1, 101, "SCROLL_END");
-	snew_key(1, 102, "FORWARD_WORD");
-	snew_key(1, 104, "DELETE_PREVIOUS_WORD");
-	snew_key(1, 110, "SCROLL_FORWARD");
-	snew_key(1, 112, "SCROLL_BACKWARD");
-	snew_key(1, 127, "DELETE_PREVIOUS_WORD");
-
-
-	/* meta 2 characters */
-	snew_key(2,  26, "STOP_IRC");
-	snew_key(2,  65, "BACKWARD_HISTORY");	/* Cursor up */
-	snew_key(2,  66, "FORWARD_HISTORY");	/* Cursor down */
-	snew_key(2,  67, "FORWARD_CHARACTER");	/* Cursor right */
-	snew_key(2,  68, "BACKWARD_CHARACTER");	/* Cursor left */
-	snew_key(2,  70, "SCROLL_START");	/* Freebsd home */
-	snew_key(2,  71, "SCROLL_FORWARD");	/* Freebsd pgdown */
-	snew_key(2,  72, "SCROLL_END");		/* Freebsd end */
-	snew_key(2,  73, "SCROLL_BACKWARD");	/* Freebsd pgup */
-	snew_key(2, 110, "NEXT_WINDOW");
-	snew_key(2, 112, "PREVIOUS_WINDOW");
-	snew_key(2, '1', "META32_CHARACTER");	/* home */
-	snew_key(2, '4', "META33_CHARACTER");	/* end */
-	snew_key(2, '5', "META30_CHARACTER");	/* page up */
-	snew_key(2, '6', "META31_CHARACTER");	/* page down */
-
-	/* meta 3 characters */
-	/* <none> */
-
-	/* meta 4 characters -- vi key mappings */
-	snew_key(4,   8, "BACKWARD_CHARACTER");
-	snew_key(4,  32, "FORWARD_CHARACTER");
-	snew_key(4,  65, "META4");
-	snew_key(4,  72, "BACKWARD_CHARACTER");
-	snew_key(4,  73, "META4");
-	snew_key(4,  74, "FORWARD_HISTORY");
-	snew_key(4,  75, "BACKWARD_HISTORY");
-	snew_key(4,  76, "FORWARD_CHARACTER");
-	snew_key(4,  88, "DELETE_CHARACTER");
-	snew_key(4,  97, "META4");
-	snew_key(4, 104, "BACKWARD_CHARACTER");
-	snew_key(4, 105, "META4");
-	snew_key(4, 106, "FORWARD_HISTORY");
-	snew_key(4, 107, "BACKWARD_HISTORY");
-	snew_key(4, 108, "FORWARD_CHARACTER");
-	snew_key(4, 120, "DELETE_CHARACTER");
-
-	/* I used 30-something to keep them out of others' way */
-	snew_key(30, '~', "SCROLL_BACKWARD");
-	snew_key(31, '~', "SCROLL_FORWARD");
-	snew_key(32, '~', "SCROLL_START");
-	snew_key(33, '~', "SCROLL_END");
-}
-
-#define LKEY(x, y) \
-{									\
-	char *l = get_term_capability(#x, 0, 1);			\
-	if (l)								\
-	{								\
-		if (x_debug & DEBUG_AUTOKEY)				\
-			yell("X: ([%s] is [%s]) Y: (%s)", #x, l, #y);	\
-		snew_key_from_str(l, #y);				\
-	}								\
-}
-
-void	init_keys2 (void)
-{
-	/* keys bound from terminfo/termcap */
-	LKEY(key_up, BACKWARD_HISTORY)
-	LKEY(key_down, FORWARD_HISTORY)
-	LKEY(key_left, BACKWARD_CHARACTER)
-	LKEY(key_right, FORWARD_CHARACTER)
-	LKEY(key_ppage, SCROLL_BACKWARD)
-	LKEY(key_npage, SCROLL_FORWARD)
-	LKEY(key_home, SCROLL_START)
-	LKEY(key_end, SCROLL_END)
-	LKEY(key_ic, TOGGLE_INSERT_MODE)
-	LKEY(key_dc, DELETE_CHARACTER)
-}
-
-/*
- * /stack ... bind handling goes here.  This works just like the rest of the
- * /stack system.  Note: you can (obviously) only /stack actual keys, not
- * entire meta-maps (perhaps this is a limitation that should be fixed
- * later..?).
- *
- * I've modeled this code closely after the hook(on) stack code.
- *
- * I (wd) wrote this code, that is why it may not work right. ;)
- */
-
-typedef struct bindstacklist
-{
-	int	meta;	/* meta/key pair for KEY()/map use */
-	uc	key;
-	KeyMap	*ent;	/* the bound entry */
-	struct bindstacklist *next;
-}	BindStack;
-
-static	BindStack *	bind_stack = NULL;
-
-void	do_stack_bind (int type, char *arg)
-{
-	int	meta;
-	uc	key;	/* for parse_key() ... */
-
-	if (!bind_stack && (type == STACK_POP || type == STACK_LIST))
-	{
-		say("BIND stack is empty!");
-		return;
+	    say("No such function %s", function);
+	return;
 	}
 
-	if (type == STACK_PUSH)
-	{
-		/* determine what key is being pushed onto the stack, then
-		 * simply memcpy that key into ent and push it onto the stack.
-		 * nothing too rough. */
-		BindStack *bsp;
+    show_all_rbindings(head_keymap, "", bp);
+}
 
-		if ((meta = parse_key(arg, &key)) == -1) {
-		    yell("could not parse key %s!", arg);
-		    return;
-		}
-		if (!key) { /* bogus key entry */
-		    yell("you cannot /stack entire meta areas! %s is invalid.",
-			    arg);
-		    return;
-		}
-		if (KEY(meta, key) == NULL) {
-		    /* nothing in this key, error.. */
-		    say("key %s is not mapped!", arg);
-		    return;
-		}
+void show_all_rbindings(struct Key *map, unsigned char *str,
+	struct Binding *bind) {
+    unsigned char c;
+    unsigned char *newstr;
+    int len = strlen(str);
 
-		bsp = (BindStack *)new_malloc(sizeof(BindStack));
-		bsp->meta = meta;
-		bsp->key = key;
-		bsp->next = bind_stack;
-		bsp->ent = (KeyMap *)new_malloc(sizeof(KeyMap));
-		memcpy(bsp->ent, KEY(meta, key), sizeof(KeyMap));
-		if (bsp->ent->stuff)
-		    bsp->ent->stuff = m_strdup(bsp->ent->stuff);
-		if (bsp->ent->filename)
-		    bsp->ent->filename = m_strdup(bsp->ent->filename);
+    newstr = alloca(len + 2);
+    strcpy(newstr, str);
 
-		bind_stack = bsp;
-		
-		return;
-	} else if (type == STACK_POP)
-	{
-		/* determine what is to be popped, and see if we can find it.
-		 * if we can't, gripe. */
-		BindStack *bsp, *bsptmp = NULL;
-
-		if ((meta = parse_key(arg, &key)) == -1) {
-		    yell("could not parse key %s", arg);
-		    return;
+    /* this time, show only those things bound to our function, and call on
+     * ourselves to recurse instead. */
+    newstr[len + 1] = '\0';
+    for (c = 1; c < KEYMAP_SIZE - 1;c++) {
+	newstr[len] = c;
+	if (map[c].bound == bind)
+	    show_key(&map[c], newstr, 0);
+	if (map[c].map)
+	    show_all_rbindings(map[c].map, newstr, bind);
 		}
-		if (!key) { /* bogus key entry */
-		    yell("you cannot /stack entire meta areas! %s is invalid.",
-			    arg);
+}
+
+/* the parsekey command:  this command allows the user to execute a
+ * keybinding, regardless of whether it is bound or not.  some keybindings
+ * make more sense than others. :)  we look for the function, build a fake
+ * Key item, then call key_exec().  Unlike its predecessor this version
+ * allows the user to pass extra data to the keybinding as well, thus making
+ * things like /parsekey parse_command ... possible (if not altogether
+ * valuable in that specific case) */
+BUILT_IN_COMMAND(parsekeycmd) {
+    struct Key fake;
+    struct Binding *bp;
+    char *func;
+    char *stuff;
+
+    if ((func = new_next_arg(args, &args)) != NULL) {
+	bp = find_binding(func);
+	if (bp == NULL) {
+	    say("No such function %s", func);
 		    return;
 		}
 
-		for (bsp = bind_stack; bsp; bsptmp = bsp, bsp = bsp->next) {
-			if (bsp->meta == meta && bsp->key == key) {
-				/* a winner */
-				if (KEY(meta, key) == NULL) {
-					/* I don't know if this can happen, but
-					 * let us assume it can.  if this is
-					 * the case, we just allocate a new
-					 * entry.  I guess we assume our
-					 * metamap exists.  maybe we shouldn't?
-					 */
-					KEY(meta, key) = (KeyMap *)new_malloc(sizeof(KeyMap));
-				} else {
-				    if (KEY(meta, key)->stuff)
-					    new_free((char **)&KEY(meta, key)->stuff);
-				    if (KEY(meta, key)->filename)
-					    new_free((char **)&KEY(meta, key)->filename);
-				}
-				memcpy(KEY(meta, key), bsp->ent,
-					sizeof(KeyMap));
-				if (bsp == bind_stack)
-					bind_stack = bsp->next;
+	fake.val = '\0';
+	fake.bound = bp;
+	fake.map = NULL;
+	if (*args)
+	    fake.stuff = m_strdup(args);
 				else
-					bsptmp->next = bsp->next;
+	    fake.stuff = NULL;
+	fake.filename = empty_string;
 
-				new_free((char **)&bsp);
-				return;
-			}
+	key_exec(&fake);
+
+	if (fake.stuff != NULL)
+	    new_free(&fake.stuff);
 		}
-
-		say("no bindings for %s are on the stack", arg);
-		return;
-	} else if (type == STACK_LIST) /* largely stolen from show_binding() */
-	{
-		BindStack *bsp;
-		char	meta_str[8];
-
-		for (bsp = bind_stack;bsp;bsp = bsp->next)
-		{
-			meta = bsp->meta;
-			if (meta < 1 || meta > MAX_META) {
-				meta = 0;
-				meta_str[0] = '\0';
-			} else
-				sprintf(meta_str, "META%d-", meta);
-
-			if (bsp->ent->key_index < 0) {
-				/* meta binding */	    
-				say("%s%s BOUND TO META%d_CHARACTER", meta_str,
-					display_key(bsp->key),
-					-bsp->ent->key_index);
-			} else {
-				/* regular */
-				say("%s%s BOUND TO %s %s", meta_str,
-					display_key(bsp->key),
-					key_names[bsp->ent->key_index].name,
-					SAFE(bsp->ent->stuff));
-			}
-		}
-		return;
-	}
-	say("Unknown STACK type ??");
 }
 
+#define EMPTY empty_string
+#define EMPTY_STRING m_strdup(EMPTY)
+#define RETURN_EMPTY return m_strdup(EMPTY)
+#define RETURN_IF_EMPTY(x) if (empty( x )) RETURN_EMPTY
+#define GET_INT_ARG(x, y) {RETURN_IF_EMPTY(y); x = my_atol(safe_new_next_arg(y, &y));}
+#define GET_FLOAT_ARG(x, y) {RETURN_IF_EMPTY(y); x = atof(safe_new_next_arg(y, &y));}
+#define GET_STR_ARG(x, y) {RETURN_IF_EMPTY(y); x = new_next_arg(y, &y);RETURN_IF_EMPTY(x);}
+#define RETURN_MSTR(x) return ((x) ? (x) : EMPTY_STRING);
+#define RETURN_STR(x) return m_strdup((x) ? (x) : EMPTY)
+#define RETURN_INT(x) return m_strdup(ltoa((x)))
+
+/* Used by function_bindctl */
+/*
+ * $bindctl(FUNCTION [FUNC] ...)
+ *                          CREATE [ALIAS])
+ *                          DESTROY)
+ *                          EXISTS)
+ *                          GET)
+ *                          MATCH)
+ *                          PMATCH)
+ *                          GETPACKAGE)
+ *                          SETPACKAGE [PACKAGE})
+ * $bindctl(SEQUENCE [SEQ] ...)
+ *                         GET)
+ *                         SET [FUNC] [EXTRA])
+ *                         GETPACKAGE)
+ *                         SETPACKAGE [PACKAGE})
+ * $bindctl(MAP [SEQ])
+ * $bindctl(MAP [SEQ] CLEAR)
+ * Where [FUNC] is the name of a binding function and [ALIAS] is any alias
+ * name (we do not check to see if it exists!) and [SEQ] is any valid /bind
+ * key sequence and [PACKAGE] is any free form package string.
+ */
+
+void bindctl_getmap(struct Key *, unsigned char *, char **);
+char *bindctl(char *input)
+{
+    char *listc, *listc1;
+    char *retval = NULL;
+
+    GET_STR_ARG(listc, input);
+    if (!my_strnicmp(listc, "FUNCTION", 1)) {
+	struct Binding *bp;
+	char *func;
+
+	GET_STR_ARG(func, input);
+	bp = find_binding(func);
+
+	GET_STR_ARG(listc, input);
+	if (!my_strnicmp(listc, "CREATE", 1)) {
+	    char *alias;
+
+	    GET_STR_ARG(alias, input);
+
+	    if (bp) {
+		if (bp->func)
+		    RETURN_INT(0);
+		remove_binding(bp->name);
+	    }
+	    RETURN_INT(add_binding(func, NULL, alias) ? 1 : 0);
+	} else if (!my_strnicmp(listc, "DESTROY", 1)) {
+	    bp = find_binding(func);
+	    if (bp == NULL)
+		RETURN_INT(0);
+	    if (bp->func != NULL)
+		RETURN_INT(0);
+
+	    remove_binding(func);
+	    RETURN_INT(1);
+	} else if (!my_strnicmp(listc, "EXISTS", 1)) {
+	    if (!my_stricmp(func, "NOTHING"))
+		RETURN_INT(1); /* special case. */
+
+	    RETURN_INT(find_binding(func) ? 1 : 0);
+	} else if (!my_stricmp(listc, "GET")) {
+	    if (bp->func)
+		malloc_sprintf(&retval, "interal %p", bp->func);
+	    else
+		m_s3cat(&retval, "alias ", bp->alias);
+
+	    RETURN_STR(retval);
+	} else if (!my_strnicmp(listc, "MATCH", 1)) {
+	    int len;
+	    len = strlen(func);
+	    for (bp = binding_list;bp;bp = bp->next) {
+		if (!my_strnicmp(bp->name, func, len))
+		    m_s3cat(&retval, " ", bp->name);
+	    }
+
+	    RETURN_STR(retval);
+	} else if (!my_strnicmp(listc, "PMATCH", 1)) {
+	    for (bp = binding_list;bp;bp = bp->next) {
+		if (wild_match(func, bp->name))
+		    m_s3cat(&retval, " ", bp->name);
+	    }
+
+	    RETURN_STR(retval);
+	} else if (!my_strnicmp(listc, "GETPACKAGE", 1)) {
+	    if (bp != NULL)
+		RETURN_STR(bp->filename);
+	} else if (!my_strnicmp(listc, "SETPACKAGE", 1)) {
+	    char *pkg;
+
+	    if (bp == NULL)
+		RETURN_INT(0);
+
+	    malloc_strcpy(&bp->filename, input);
+	    RETURN_INT(1);
+	}
+    } else if (!my_strnicmp(listc, "SEQUENCE", 1)) {
+	struct Key *key;
+	unsigned char *seq, *cs;
+
+	GET_STR_ARG(seq, input);
+	cs = bind_string_compress(seq);
+	if (cs == NULL)
+	    RETURN_EMPTY;
+
+	/* we get lazy here.  just alloca the size of cs into seq, copy it
+	 * over, and get rid of cs.  this saves us from guessing at myriad
+	 * return points. */
+	seq = alloca(strlen(cs) + 1);
+	strcpy(seq, cs);
+	new_free(&cs);
+
+	key = find_sequence(seq);
+	GET_STR_ARG(listc, input);
+	if (!my_stricmp(listc, "GET")) {
+	    if (key == NULL || key->bound == NULL)
+		RETURN_EMPTY;
+
+	    retval = m_strdup(key->bound->name);
+	    if (key->stuff)
+		m_s3cat(&retval, " ", key->stuff);
+	    RETURN_STR(retval);
+	} else if (!my_stricmp(listc, "SET")) {
+	    GET_STR_ARG(listc, input);
+
+	    RETURN_INT(
+		    bind_string(seq, listc, (*input ? input : NULL)) ? 1 : 0);
+	} else if (!my_strnicmp(listc, "GETPACKAGE", 4)) {
+	    if (key == NULL)
+		RETURN_EMPTY;
+
+	    RETURN_STR(key->filename);
+	} else if (!my_strnicmp(listc, "SETPACKAGE", 4)) {
+	    if (key == NULL || key->bound == NULL)
+		RETURN_INT(0);
+
+	    new_free(&key->filename);
+	    key->filename = m_strdup(input);
+	}
+    } else if (!my_strnicmp(listc, "MAP", 1)) {
+	unsigned char *seq;
+	struct Key *key;
+
+	seq = new_next_arg(input, &input);
+	if (seq == NULL) {
+	    bindctl_getmap(head_keymap, "", &retval);
+	    RETURN_STR(retval);
+	}
+	seq = bind_string_compress(seq);
+	key = find_sequence(seq);
+
+	listc = new_next_arg(input, &input);
+	if (listc == NULL) {
+	    if (key == NULL || key->map == NULL) {
+		new_free(&seq);
+		RETURN_EMPTY;
+	    }
+	    bindctl_getmap(key->map, seq, &retval);
+	    new_free(&seq);
+	    RETURN_STR(retval);
+	} else if (!my_strnicmp(listc, "CLEAR", 1)) {
+	    if (key == NULL || key->map == NULL)
+		RETURN_INT(0);
+	    remove_bindings_recurse(key->map);
+	    key->map = NULL;
+	    RETURN_INT(1);
+	}
+    }
+
+    RETURN_EMPTY;
+}
+
+void bindctl_getmap(struct Key *map, unsigned char *str, char **ret) {
+    unsigned char c;
+    unsigned char *newstr;
+    unsigned char *decomp;
+    int len = strlen(str);
+
+    newstr = alloca(len + 2);
+    strcpy(newstr, str);
+    decomp = alloca(((len + 1) * 2) + 1);
+
+    /* grab all keys that are bound, put them in ret, and continue. */
+    newstr[len + 1] = '\0';
+    for (c = 1; c < KEYMAP_SIZE - 1;c++) {
+	newstr[len] = c;
+	if (map[c].bound)
+	    m_s3cat(ret, " ", bind_string_decompress(decomp, newstr));
+	if (map[c].map)
+	    bindctl_getmap(map[c].map, newstr, ret);
+			}
+}

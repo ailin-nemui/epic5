@@ -13,6 +13,7 @@
 	void	edit_char			(unsigned char);
 	void	change_input_prompt 		(int);
 	void	cursor_to_input 		(void);
+	void	do_input_timeouts		(void);
 	char *	get_input 			(void);
 	char *	get_input_prompt 		(void);
 	void	init_input 			(void);
@@ -52,45 +53,6 @@
 	void	insert_bold 			(char, char *);
 	void	insert_reverse 			(char, char *);
 	void	insert_underline 		(char, char *);
-	void 	meta1_char 			(char, char *);
-	void 	meta2_char 			(char, char *);
-	void 	meta3_char 			(char, char *);
-	void 	meta4_char 			(char, char *);
-	void 	meta5_char 			(char, char *);
-	void 	meta6_char 			(char, char *);
-	void 	meta7_char 			(char, char *);
-	void 	meta8_char 			(char, char *);
-	void 	meta9_char 			(char, char *);
-	void 	meta10_char 			(char, char *);
-	void 	meta11_char 			(char, char *);
-	void 	meta12_char 			(char, char *);
-	void 	meta13_char 			(char, char *);
-	void 	meta14_char 			(char, char *);
-	void 	meta15_char 			(char, char *);
-	void 	meta16_char 			(char, char *);
-	void 	meta17_char 			(char, char *);
-	void 	meta18_char 			(char, char *);
-	void 	meta19_char 			(char, char *);
-	void 	meta20_char 			(char, char *);
-	void 	meta21_char 			(char, char *);
-	void 	meta22_char 			(char, char *);
-	void 	meta23_char 			(char, char *);
-	void 	meta24_char 			(char, char *);
-	void 	meta25_char 			(char, char *);
-	void 	meta26_char 			(char, char *);
-	void 	meta27_char 			(char, char *);
-	void 	meta28_char 			(char, char *);
-	void 	meta29_char 			(char, char *);
-	void 	meta30_char 			(char, char *);
-	void 	meta31_char 			(char, char *);
-	void 	meta32_char 			(char, char *);
-	void 	meta33_char 			(char, char *);
-	void 	meta34_char 			(char, char *);
-	void 	meta35_char 			(char, char *);
-	void 	meta36_char 			(char, char *);
-	void 	meta37_char 			(char, char *);
-	void 	meta38_char 			(char, char *);
-	void 	meta39_char 			(char, char *);
 	void 	parse_text 			(char, char *);
 	void 	quote_char 			(char, char *);
 	void	refresh_inputline 		(char, char *);
@@ -98,6 +60,8 @@
 	void 	toggle_insert_mode 		(char, char *);
 	void 	type_text 			(char, char *);
 
+/* this was in keys.h, but it lives in input.c, so. */
+	BUILT_IN_COMMAND(type);
 /* used by update_input */
 #define NO_UPDATE 0
 #define UPDATE_ALL 1

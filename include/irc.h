@@ -150,6 +150,7 @@ extern		fd_set  readables;
 extern struct timeval 	start_time;
 extern struct timeval	idle_time;
 extern struct timeval	now;
+extern struct timeval	input_timeout;
 
 /* irc.c's extern functions */
 	char	get_a_char 		(void);

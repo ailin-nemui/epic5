@@ -1,4 +1,4 @@
-/* $EPIC: vars.c,v 1.16 2002/07/29 22:27:05 jnelson Exp $ */
+/* $EPIC: vars.c,v 1.17 2002/08/12 16:41:11 wd Exp $ */
 /*
  * vars.c: All the dealing of the irc variables are handled here. 
  *
@@ -174,6 +174,7 @@ static	IrcVariable irc_variable[] =
 	{ "INPUT_PROMPT",		STR_TYPE_VAR,	0, NULL, set_input_prompt, 0, 0 },
 	{ "INSERT_MODE",		BOOL_TYPE_VAR,	DEFAULT_INSERT_MODE, NULL, update_all_status, 0, 0 },
 	{ "INVERSE_VIDEO",		BOOL_TYPE_VAR,	DEFAULT_INVERSE_VIDEO, NULL, NULL, 0, 0 },
+	{ "KEY_INTERVAL",		INT_TYPE_VAR, DEFAULT_KEY_INTERVAL, NULL, set_key_interval, 0, 0 },
 	{ "LASTLOG",			INT_TYPE_VAR,	DEFAULT_LASTLOG, NULL, set_lastlog_size, 0, 0 },
 	{ "LASTLOG_LEVEL",		STR_TYPE_VAR,	0, NULL, set_lastlog_level, 0, 0 },
 	{ "LOAD_PATH",			STR_TYPE_VAR,	0, NULL, NULL, 0, 0 },
@@ -185,7 +186,6 @@ static	IrcVariable irc_variable[] =
 	{ "MANGLE_LOGFILES",		STR_TYPE_VAR,	0, NULL, set_mangle_logfiles, 0, 0 },
 	{ "MANGLE_OUTBOUND",		STR_TYPE_VAR,	0, NULL, set_mangle_outbound, 0, 0 },
 	{ "MAX_RECONNECTS",		INT_TYPE_VAR,	DEFAULT_MAX_RECONNECTS, NULL, NULL, 0, 0 },
-	{ "META_STATES",		INT_TYPE_VAR,	DEFAULT_META_STATES, NULL, resize_metamap, 0, 0 },
 	{ "MIRC_BROKEN_DCC_RESUME",	BOOL_TYPE_VAR,	0, NULL, NULL, 0, 0 },
         { "MODE_STRIPPER",              BOOL_TYPE_VAR,  DEFAULT_MODE_STRIPPER, NULL, NULL, 0, 0 },
 	{ "ND_SPACE_MAX",		INT_TYPE_VAR,	DEFAULT_ND_SPACE_MAX, NULL, NULL, 0, 0 },
