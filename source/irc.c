@@ -25,7 +25,7 @@ const char internal_version[] = "20010730";
 /*
  * In theory, this number is incremented for every commit.
  */
-const unsigned long	commit_id = 83;
+const unsigned long	commit_id = 84;
 
 /*
  * As a way to poke fun at the current rage of naming releases after
@@ -680,7 +680,7 @@ static	void	parse_args (int argc, char **argv)
 
 	for (; *argv; argc--, argv++)
 		if (**argv)
-			build_server_list(*argv);
+			build_server_list(*argv, NULL);
 
 
 
@@ -695,7 +695,7 @@ static	void	parse_args (int argc, char **argv)
 	 * Find and build the server lists...
 	 */
 	if ((ptr = getenv("IRCSERVER")))
-		build_server_list(ptr);
+		build_server_list(ptr, NULL);
 
 	if (!server_list_size() || add_servers)
 	{
@@ -703,7 +703,7 @@ static	void	parse_args (int argc, char **argv)
 		if (!server_list_size())
 		{
 			ptr = m_strdup(DEFAULT_SERVER);
-			build_server_list(ptr);
+			build_server_list(ptr, NULL);
 			new_free(&ptr);
 		}
 	}
@@ -1259,7 +1259,7 @@ int 	main (int argc, char *argv[])
 	if (dont_connect)
 		display_server_list();		/* Let user choose server */
 	else
-		reconnect(-1);			/* Connect to default server */
+		reconnect(-1, 0);		/* Connect to default server */
 
 	time(&idle_time);
 	set_input(empty_string);

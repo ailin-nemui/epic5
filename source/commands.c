@@ -2168,7 +2168,7 @@ BUILT_IN_COMMAND(reconnect_cmd)
         say("Reconnecting to server %d", from_server);
 	set_server_quit_message(from_server, args);
 	server_reconnects_to(from_server, from_server);
-	reconnect(from_server);
+	reconnect(from_server, 1);
 }
 /* End of contributed code */
 

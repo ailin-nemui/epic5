@@ -41,6 +41,7 @@ const 	char *	umodes = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
 static	char *	do_umode (int du_index);
 	void 	reset_nickname (int);
 	void	clear_reconnect_counts (void);
+	const char *get_server_group (int refnum);
 
 	int	never_connected = 1;		/* true until first connection
 						 * is made */
@@ -67,7 +68,7 @@ static	char *	do_umode (int du_index);
  * passes.  If the server is not on the list, it is added to the end. In
  * either case, the server is made the current server. 
  */
-void 	add_to_server_list (const char *server, int port, const char *password, const char *nick, int overwrite)
+void 	add_to_server_list (const char *server, int port, const char *password, const char *nick, const char *group, int overwrite)
 {
 	Server *s;
 
@@ -115,6 +116,8 @@ void 	add_to_server_list (const char *server, int port, const char *password, co
 
 		if (password && *password)
 			malloc_strcpy(&s->password, password);
+		if (group && *group)
+			malloc_strcpy(&s->group, group);
 		if (nick && *nick)
 			malloc_strcpy(&s->d_nickname, nick);
 		else if (!s->d_nickname)
@@ -173,6 +176,7 @@ static 	void 	remove_from_server_list (int i)
 	new_free(&s->name);
 	new_free(&s->itsname);
 	new_free(&s->password);
+	new_free(&s->group);
 	new_free(&s->away);
 	new_free(&s->version_string);
 	new_free(&s->nickname);
@@ -262,9 +266,9 @@ int	find_in_server_list (const char *server, int port)
  *
  *		refnum	 (where refnum is an integer for an existing server)
  * or
- *		hostname:port:password:nickname
+ *		hostname:port:password:nickname:group
  * or
- *		hostname port password nickname
+ *		hostname port password nickname group
  *
  * This extracts the salient information from the string and returns the
  * server_list index for that server.  If the information describes a server
@@ -279,7 +283,8 @@ int 	find_server_refnum (char *server, char **rest)
 	int	port = irc_port;
 	char 	*cport = NULL, 
 		*password = NULL,
-		*nick = NULL;
+		*nick = NULL,
+		*group = NULL;
 
 	/*
 	 * First of all, check for an existing server refnum
@@ -291,7 +296,7 @@ int 	find_server_refnum (char *server, char **rest)
 	 * Next check to see if its a "server:port:password:nick"
 	 */
 	else if (strchr(server, ':'))
-		parse_server_info(server, &cport, &password, &nick);
+		parse_server_info(server, &cport, &password, &nick, &group);
 
 	/*
 	 * Next check to see if its "server port password nick"
@@ -301,6 +306,7 @@ int 	find_server_refnum (char *server, char **rest)
 		cport = next_arg(*rest, rest);
 		password = next_arg(*rest, rest);
 		nick = next_arg(*rest, rest);
+		group = next_arg(*rest, rest);
 	}
 
 	if (cport && *cport)
@@ -310,7 +316,7 @@ int 	find_server_refnum (char *server, char **rest)
 	 * Add to the server list (this will update the port
 	 * and password fields).
 	 */
-	add_to_server_list(server, port, password, nick, 1);
+	add_to_server_list(server, port, password, nick, group, 1);
 	return from_server;
 }
 
@@ -342,8 +348,10 @@ int	parse_server_index (const char *str)
  * string, so * upon return, name will only point the the name.  If portnum
  * or password are missing or empty,  their respective returned value will
  * point to null. 
+ *
+ * "*group" must be set to something (even if it is NULL) before calling this!
  */
-void	parse_server_info (char *name, char **port, char **password, char **nick)
+void	parse_server_info (char *name, char **port, char **password, char **nick, char **group)
 {
 	char *ptr;
 
@@ -372,6 +380,13 @@ void	parse_server_info (char *name, char **port, char **password, char **nick)
 			break;
 		*nick = ptr;
 
+		if (!(ptr = strchr(ptr, ':')))
+			break;
+		*ptr++ = 0;
+		if (!*ptr)
+			break;
+		*group = ptr;
+
 		/* Ignore any additional, future fields */
 		if ((ptr = strchr(ptr, ':')) != NULL)
 			*ptr++ = 0;
@@ -394,10 +409,12 @@ void	parse_server_info (char *name, char **port, char **password, char **nick)
  *
  * servername::password 
  *
+ * servername::password:servergroup
+ *
  * Note also that this routine mucks around with the server string passed to it,
  * so make sure this is ok 
  */
-void	build_server_list (char *servers)
+void	build_server_list (char *servers, char *group)
 {
 	char	*host,
 		*rest,
@@ -412,17 +429,17 @@ void	build_server_list (char *servers)
 	while (servers)
 	{
 		if ((rest = strchr(servers, '\n')))
-			*rest++ = '\0';
+			*rest++ = 0;
 
 		while ((host = next_arg(servers, &servers)))
 		{
-			parse_server_info(host, &port, &password, &nick);
+			parse_server_info(host, &port, &password, &nick, &group);
                         if (port && *port && (port_num = my_atol(port)))
 				;
 			else
 				port_num = irc_port;
 
-			add_to_server_list(host, port_num, password, nick, 0);
+			add_to_server_list(host, port_num, password, nick, group, 0);
 		}
 		servers = rest;
 	}
@@ -438,6 +455,7 @@ int 	read_server_file (void)
 	char	file_path[MAXPATHLEN + 1];
 	char	buffer[BIG_BUFFER_SIZE + 1];
 	char	*expanded;
+	char	*defaultgroup = NULL;
 
 	if (getenv("IRC_SERVERS_FILE"))
 		strmcpy(file_path, getenv("IRC_SERVERS_FILE"), MAXPATHLEN);
@@ -455,19 +473,32 @@ int 	read_server_file (void)
 
 	if ((expanded = expand_twiddle(file_path)))
 	{
-		if ((fp = fopen(expanded, "r")))
+	    if ((fp = fopen(expanded, "r")))
+	    {
+		while (fgets(buffer, BIG_BUFFER_SIZE, fp))
 		{
-			while (fgets(buffer, BIG_BUFFER_SIZE, fp))
+			chop(buffer, 1);
+			if (*buffer == '#')
+				continue;
+			else if (*buffer == '[')
 			{
-				chop(buffer, 1);
-				build_server_list(buffer);
+			    char *p;
+			    if ((p = strrchr(buffer, ']')))
+				*p++ = 0;
+			    malloc_strcpy(&defaultgroup, buffer + 1);
 			}
-			fclose(fp);
-			new_free(&expanded);
-			return (0);
+			else if (*buffer == 0)
+				continue;
+			else
+				build_server_list(buffer, defaultgroup);
 		}
+		fclose(fp);
+		new_free(&defaultgroup);
+		return (0);
+	    }
 
-		new_free(&expanded);
+	    new_free(&expanded);
+	    new_free(&defaultgroup);
 	}
 	return 1;
 }
@@ -502,22 +533,25 @@ void 	display_server_list (void)
 	{
 		if (!server_list[i].nickname)
 		{
-			say("\t%d) %s %d", i,
+			say("\t%d) %s %d [%s]", i,
 				server_list[i].name,
-				server_list[i].port);
+				server_list[i].port,
+				get_server_group(i));
 		}
 		else
 		{
 			if (is_server_open(i))
-				say("\t%d) %s %d (%s)", i,
+				say("\t%d) %s %d (%s) [%s]", i,
 					server_list[i].name,
 					server_list[i].port,
-					server_list[i].nickname);
+					server_list[i].nickname,
+					get_server_group(i));
 			else
-				say("\t%d) %s %d (was %s)", i,
+				say("\t%d) %s %d (was %s) [%s]", i,
 					server_list[i].name,
 					server_list[i].port,
-					server_list[i].nickname);
+					server_list[i].nickname,
+					get_server_group(i));
 		}
 	}
 }
@@ -627,7 +661,7 @@ BUILT_IN_COMMAND(servercmd)
 			set_server_quit_message(from_server, 
 					"Changing servers");
 			server_reconnects_to(from_server, from_server + 1);
-			reconnect(from_server);
+			reconnect(from_server, 1);
 		}
 
 		window_check_servers();
@@ -652,7 +686,7 @@ BUILT_IN_COMMAND(servercmd)
 			set_server_quit_message(from_server, 
 					"Disconnected at user request");
 			server_reconnects_to(i, -1);
-			reconnect(i);
+			reconnect(i, 1);
 		}
 		else
 		{
@@ -664,7 +698,7 @@ BUILT_IN_COMMAND(servercmd)
 			else
 				server_reconnects_to(from_server, 
 							from_server - 1);
-			reconnect(from_server);
+			reconnect(from_server, 1);
 		}
 
 		window_check_servers();
@@ -682,7 +716,7 @@ BUILT_IN_COMMAND(servercmd)
 		{
 			clear_reconnect_counts();
 			server_reconnects_to(j, i);
-			reconnect(j);
+			reconnect(j, 0);
 			window_check_servers();
 		}
 		else
@@ -733,7 +767,7 @@ void	do_server (fd_set *rd)
 					(dgets_errno == -1) ? 
 					     "Remote end closed connection" : 
 					     strerror(dgets_errno));
-				reconnect(i);
+				reconnect(i, 1);
 				i++;		/* NEVER DELETE THIS! */
 				break;
 			}
@@ -882,7 +916,7 @@ static void 	vsend_to_server (const char *format, va_list args)
 			{
 			    server_is_connected(des, 0);
 			    say("Write to server failed.  Closing connection.");
-			    reconnect(server);
+			    reconnect(server, 1);
 			}
 		    }
 		}
@@ -993,7 +1027,7 @@ static int 	connect_to_server (int new_server)
 	 * Initialize all of the server_list data items
 	 * XXX - Calling add_to_server_list is a hack.
 	 */
-	add_to_server_list(s->name, s->port, NULL, NULL, 1);
+	add_to_server_list(s->name, s->port, NULL, NULL, NULL, 1);
 	s->des = des;
 	s->oper = 0;
 	if (!s->d_nickname)
@@ -1171,8 +1205,14 @@ int 	connect_to_new_server (int new_server, int old_server, int new_conn)
  * a normal reconnect act.  Setting the reconnecting server to another refnum
  * causes the server connection to be migrated to that refnum.  The original
  * connection is closed only if the new refnum is successfully opened.
+ *
+ * The "samegroup" argument is new and i think every call to reconnect
+ * uses the value '1' which means 'only try to connect to the same group
+ * as whatever we're reconnecting to'; the code for value 0 may not be
+ * tested very well, and i can't think of any uses for it, but eh, you 
+ * never know what the future will hold.
  */
-int	reconnect (int oldserv)
+int	reconnect (int oldserv, int samegroup)
 {
 	int	newserv;
 	int	i, j;
@@ -1224,6 +1264,10 @@ int	reconnect (int oldserv)
 	for (i = 0; i < number_of_servers; i++)
 	{
 		j = (i + newserv) % number_of_servers;
+		if (samegroup && oldserv >= 0 &&
+			my_stricmp(get_server_group(oldserv), 
+				   get_server_group(j)))
+			continue;
 		if (newserv != oldserv && j == oldserv)
 			continue;
 		if ((server_list[j].reconnects++) > max_reconnects) {
@@ -1294,7 +1338,7 @@ int 	close_all_servers (const char *message)
 	{
 		set_server_quit_message(i, message);
 		server_reconnects_to(i, -1);
-		reconnect(i);
+		reconnect(i, 0);
 	}
 
 	return 0;
@@ -1641,7 +1685,7 @@ void 	password_sendline (char *data, char *line)
 		set_server_password(new_server, line);
 		change_window_server(new_server, new_server);
 		server_reconnects_to(new_server, new_server);
-		reconnect(new_server);
+		reconnect(new_server, 1);
 	}
 }
 
@@ -1773,7 +1817,7 @@ int 	auto_reconnect_callback (void *d)
 	new_free((char **)&d);
 
 	server_reconnects_to(servref, servref);
-	reconnect(servref);
+	reconnect(servref, 1);
 	return 0;
 }
 
@@ -2153,6 +2197,20 @@ void 	set_server_redirect (int s, const char *who)
 const char *get_server_redirect (int s)
 {
 	return server_list[s].redirect;
+}
+
+const char *get_server_group (int refnum)
+{
+	if (refnum == -1 && from_server != -1)
+		refnum = from_server;
+
+	if (refnum >= number_of_servers || refnum < 0)
+		return 0;
+
+	if (server_list[refnum].group == NULL)
+		return "<default>";
+
+	return server_list[refnum].group;
 }
 
 int	check_server_redirect (const char *who)

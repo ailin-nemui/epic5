@@ -10,7 +10,7 @@
  */
 
 #if 0
-static	char	rcsid[] = "$Id: numbers.c,v 1.15 2001/05/08 22:14:22 jnelson Exp $";
+static	char	rcsid[] = "$Id: numbers.c,v 1.16 2001/09/25 18:57:26 jnelson Exp $";
 #endif
 
 #include "irc.h"
@@ -215,7 +215,7 @@ void 	numbered_command (char *from, int comm, char **ArgList)
 		PasteArgs(ArgList, 2);
 
 		/* Must do these things before calling "display_msg" */
-		add_to_server_list(new_server, new_port, NULL, NULL, 0);
+		add_to_server_list(new_server, new_port, NULL, NULL, NULL, 0);
 		server_reconnects_to(old_server, from_server);
 		from_server = old_server;
 

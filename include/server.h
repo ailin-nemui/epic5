@@ -27,6 +27,7 @@ typedef	struct
 	char	*itsname;		/* the server's idea of its name */
 	char	*password;		/* password for that server */
 	int	port;			/* port number on that server */
+	char	*group;			/* Server group it belongs to */
 	char	*nickname;		/* Authoritative nickname for us */
 	char	*s_nickname;		/* last NICK command sent */
 	char	*d_nickname;		/* Default nickname to use */
@@ -100,13 +101,13 @@ extern	int	parsing_server_index;
 
 	void	add_to_server_list 		(const char *, int, 
 						 const char *, const char *, 
-						 int);
+						 const char *, int);
 	int	find_in_server_list		(const char *, int);
 	int	find_server_refnum		(char *, char **rest);
 	int	parse_server_index		(const char *);
 	void	parse_server_info		(char *, char **, char **,
-						 char **);
-	void	build_server_list		(char *);
+						 char **, char **);
+	void	build_server_list		(char *, char *);
 	int	read_server_file		(void);
 	void	display_server_list		(void);
 	char *	create_server_list		(void);	/* MALLOC */
@@ -152,7 +153,7 @@ const 	char *	get_server_version_string	(int);
 	void	server_is_connected		(int, int);
 	int	auto_reconnect_callback		(void *);
 	int	server_reconnects_to		(int, int);
-	int	reconnect			(int);
+	int	reconnect			(int, int);
 
 	int	get_server_port			(int);
 	int	get_server_local_port		(int);
