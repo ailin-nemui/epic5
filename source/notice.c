@@ -1,4 +1,4 @@
-/* $EPIC: notice.c,v 1.11 2002/07/30 16:12:59 crazyed Exp $ */
+/* $EPIC: notice.c,v 1.12 2002/07/30 19:37:17 crazyed Exp $ */
 /*
  * notice.c: special stuff for parsing NOTICEs
  *
@@ -391,7 +391,7 @@ void 	got_initial_version_28 (char **ArgList)
 
 		set_server_version_string(from_server, version);
 		set_server_itsname(from_server, server);
-		set_possible_umodes(from_server, umodes);
+		/* set_possible_umodes(from_server, umodes); */
 	}
 
 	reconnect_all_channels();
