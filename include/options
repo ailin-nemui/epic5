@@ -48,7 +48,9 @@ const char compile_time_options[] = {
 #endif /* HACKED_DCC_WARNING */
 
 #ifdef HAVE_LONG_LONG
+#if defined(HAVE_STRTOLL) || defined(HAVE_ATOQ)
 					'l',
+#endif
 #endif
 
 #if 1

@@ -2,8 +2,6 @@ EPIC4 Projects, Bugs, and other Errata:
 
 KNOWN ERRATA (eg, bugs, or unresolved requests):
 ------------------------------------------------
-* When you do /server <refnum> from a disconnected state, it does not
-  honor server groups.
 * A lot of dcc output goes to target NULL when there is a nickname available.
 * Finish $windowctl()
 
@@ -27,3 +25,5 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Add checks in configure for (long long)
 * Make support for (long long) unconditional in new math parser
 * Make 'l' appear in $info(o) if (long long) is being used in new math parser.
+* Make wrapper for atoll() for freebsd-stable and stuff.
+* Make a more complicated wrapper for atoll() for libc5 and stuff.

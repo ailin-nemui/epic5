@@ -1,5 +1,5 @@
 /*
- * @(#)$Id: acconfig.h,v 1.24 2003/11/22 03:19:03 jnelson Exp $
+ * @(#)$Id: acconfig.h,v 1.25 2003/11/22 23:29:22 jnelson Exp $
  */
 
 /*
@@ -313,4 +313,10 @@
 
 /* Define this if you have atoll() */
 #undef HAVE_ATOLL
+
+/* Define this if you have strtoll() */
+#undef HAVE_STRTOLL
+
+/* Define this if you have atoq() */
+#undef HAVE_ATOQ
 
