@@ -11,3 +11,8 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 -------------------------------------
 * Fix null deref when reciving some of dalnet's error end-of-who replies.
 * Fix panic caused by /on switch_windows during /window hide.
+* New functions, $iptolong(), $longtoip() and $isencrypted()
+* Add support for Duhnet's +O channel mode.
+* Add support for av2.9's +a channel mode.
+* Add support for efnext's 010 "use another server" numeric.
+* Change remove_window_from_screen to take a 'hide' argument.
