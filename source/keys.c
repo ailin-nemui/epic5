@@ -1,4 +1,4 @@
-/* $EPIC: keys.c,v 1.11 2002/08/13 23:52:19 wd Exp $ */
+/* $EPIC: keys.c,v 1.12 2002/08/19 17:09:06 wd Exp $ */
 /*
  * keys.c:  Keeps track of what happens whe you press a key.
  *
@@ -1233,7 +1233,7 @@ char *bindctl (char *input)
 	    if (bp == NULL)
 		RETURN_EMPTY;
 	    else if (bp->func)
-		malloc_sprintf(&retval, "interal %p", bp->func);
+		malloc_sprintf(&retval, "internal %p", bp->func);
 	    else
 		m_s3cat(&retval, "alias ", bp->alias);
 
