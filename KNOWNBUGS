@@ -178,3 +178,4 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Fix bug with binding/initializing the 255 key
 * Fix bug with TOGGLE_STOP_SCREEN keybinding.
 * Revamp /window describe so it includes a lot more useful info.
+* Wrap send_ctcp in message_from()s to send to the right window.
