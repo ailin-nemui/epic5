@@ -1,4 +1,4 @@
-/* $EPIC: hook.c,v 1.30 2003/12/17 09:25:30 jnelson Exp $ */
+/* $EPIC: hook.c,v 1.31 2003/12/23 02:36:05 jnelson Exp $ */
 /*
  * hook.c: Does those naughty hook functions. 
  *
@@ -89,6 +89,8 @@ struct	hook_stru *next;
 
 	char	*nick;			/* /on type NICK stuff */
 	char	*stuff;			/* /on type nick STUFF */
+	regex_t	regex;			/* Compiled form of "NICK" */
+	int	regex_weight;		/* How much 'weight' it has */
 
 	int	not;			/* /on type ^nick stuff */
 	int	noisy;			/* /on [^-+]type nick stuff */
@@ -373,6 +375,14 @@ static void add_numeric_hook (int numeric, char *nick, char *stuff, int noisy, i
 
 	malloc_strcpy(&new_h->nick, nick);
 	malloc_strcpy(&new_h->stuff, stuff);
+        if (flexible == 0)
+        {
+            new_h->regex_weight = pattern_regcomp(&new_h->regex, new_h->nick,
+                                REG_EXTENDED | REG_ICASE | REG_NOSUB);
+            if (new_h->regex_weight < 0)
+                panic("new_h->regex_weight is < 0");
+        }
+
 	new_h->noisy = noisy;
 	new_h->not = not;
 	new_h->sernum = sernum;
@@ -411,6 +421,14 @@ static void add_hook (int which, char *nick, char *stuff, int noisy, int not, in
 
 	malloc_strcpy(&new_h->nick, nick);
 	malloc_strcpy(&new_h->stuff, stuff);
+        if (flexible == 0)
+        {
+            new_h->regex_weight = pattern_regcomp(&new_h->regex, new_h->nick,
+                                REG_EXTENDED | REG_ICASE | REG_NOSUB);
+            if (new_h->regex_weight < 0)
+                panic("new_h->regex_weight is < 0");
+        }
+
 	new_h->noisy = noisy;
 	new_h->not = not;
 	new_h->sernum = sernum;
@@ -446,6 +464,7 @@ static void remove_numeric_hook (int numeric, char *nick, int sernum, int quiet)
 					    (tmp->flexible?'\'':'"'), numeric);
 				}
 				new_free(&(tmp->nick));
+				regfree(&tmp->regex);
 				new_free(&(tmp->stuff));
 				new_free(&(tmp->filename));
 				new_free((char **)&tmp);
@@ -466,6 +485,7 @@ static void remove_numeric_hook (int numeric, char *nick, int sernum, int quiet)
 				next = tmp->next;
 				tmp->not = 1;
 				new_free(&(tmp->nick));
+				regfree(&tmp->regex);
 				new_free(&(tmp->stuff));
 				new_free(&(tmp->filename));
 				new_free((char **)&tmp);
@@ -509,6 +529,7 @@ static void remove_hook (int which, char *nick, int sernum, int quiet)
 					hook_functions[which].name);
 
 			new_free(&(tmp->nick));
+			regfree(&tmp->regex);
 			new_free(&(tmp->stuff));
 			new_free(&(tmp->filename));
 			tmp->next = NULL;
@@ -544,6 +565,7 @@ static void remove_hook (int which, char *nick, int sernum, int quiet)
 				top = tmp->next;
 			tmp->not = 1;
 			new_free(&(tmp->nick));
+			regfree(&tmp->regex);
 			new_free(&(tmp->stuff));
 			new_free(&(tmp->filename));
 			tmp->next = NULL;
@@ -816,20 +838,21 @@ int 	do_hook (int which, const char *format, ...)
 			 * If this is a flexible hook, expand the nick stuff
 			 */
 			if (tmp->flexible)
+			{
 				/* 
 				 * XXX Something ought to be done here
 				 * with current_window, but ick, how?
 				 */
 				tmpnick = expand_alias(tmp->nick, empty_string,
 							 NULL);
+				currmatch = wild_match(tmpnick, buffer);
+				new_free(&tmpnick);
+			}
 			else
-				tmpnick = tmp->nick;
-
-
-			/*
-			 * Check to see if the pattern matches the text
-			 */
-			currmatch = wild_match(tmpnick, buffer);
+			{
+				if (!regexec(&tmp->regex, buffer, 0, NULL, 0))
+					currmatch = tmp->regex_weight;
+			}
 
 			/*
 			 * If it is the "best match" so far, then we mark
@@ -840,12 +863,6 @@ int 	do_hook (int which, const char *format, ...)
 				oldmatch = currmatch;
 				bestmatch = tmp;
 			}
-
-			/*
-			 * Clean up after flexible hooks
-			 */
-			if (tmp->flexible)
-				new_free(&tmpnick);
 		}
 
 		/*
