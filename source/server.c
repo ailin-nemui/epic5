@@ -1173,6 +1173,9 @@ int 	connect_to_new_server (int new_server, int old_server, int new_conn)
 	 */
 	from_server = new_server;	/* XXX sigh */
 
+	do_hook(SERVER_ESTABLISHED_LIST, "%s %d",
+		get_server_name(from_server), get_server_port(from_server));
+
 	/*
 	 * If connect_to_server() resulted in a new server connection,
 	 * go ahead and register it.

@@ -106,9 +106,9 @@ fe (q push fq unshift) cmd op {
 					}
 				}
 				if (@foo) {
-					^timer -ref qcmd.$servernum() 5 qcmd
 					@ :bar = shift(qcmd[$servernum()][$foo])
 					$msar(gr/\\\\/\\/\\\"/\"/bar)
+					^timer -ref qcmd.$servernum() 5 qcmd
 				}
 			}
 		}

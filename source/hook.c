@@ -151,6 +151,7 @@ hook_functions[] =
 	{ "SEND_NOTICE",	(Hook *) 0,	2,	0,	HF_NORECURSE },
 	{ "SEND_PUBLIC",	(Hook *) 0,	2,	0,	HF_NORECURSE },
 	{ "SEND_TO_SERVER",	(Hook *) 0,	3,	0,	0 },
+	{ "SERVER_ESTABLISHED",	(Hook *) 0,	2,	0,	0 },
 	{ "SERVER_LOST",	(Hook *) 0,	2,	0,	0 },
 	{ "SERVER_NOTICE",	(Hook *) 0,	1,	0,	0 },
 	{ "SET",		(Hook *) 0,	2,	0,	0 },

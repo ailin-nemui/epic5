@@ -143,7 +143,10 @@ void check_array_size (array *array)
 		panic("array->max < array->total_max");
 
 	if (array->total_max == 0)
+	{
+		new_free(&array->list);		/* Immortality isn't necessarily a good thing. */
 		array->total_max = 6;		/* Good size to start with */
+	}
 	else if (array->max == array->total_max - 1) /* Colten suggested this */
 		array->total_max *= 2;
 	else if ((array->total_max > 6) && (array->max * 3 < array->total_max))

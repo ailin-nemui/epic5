@@ -99,4 +99,18 @@ void *		find_fixed_array_item 	(void *, size_t, int, const char *,
 #define ARRAY_ITEM(array, loc) ((array_item *) ((array) -> list [ (loc) ]))
 #define LARRAY_ITEM(array, loc) (((array) -> list [ (loc) ]))
 
+/* Written by panasync */
+/* Re-written by CE */
+#define GET_FIXED_ARRAY_NAMES_FUNCTION(fn, array)                                    \
+char *(fn)(const char *str)                                                          \
+{                                                                                    \
+	int i;                                                                       \
+	char *ret = NULL;                                                            \
+	size_t rclue = 0;                                                            \
+	for (i = 0; (array)[i].name; ++i)                                            \
+		if (!str || !*str || wild_match(str, (array)[i].name))               \
+			m_sc3cat(&ret, space, (array)[i].name, &rclue);              \
+	return ret ? ret : m_strdup(empty_string);                                   \
+}
+
 #endif

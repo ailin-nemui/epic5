@@ -239,5 +239,6 @@ enum VAR_TYPES {
 	void	set_var_value 		(int, char *);
 	void	do_stack_set		(int, char *);
 	int	parse_mangle		(char *, int, char **);
+	char	*get_set		(const char *);
 
 #endif /* _VARS_H_ */

@@ -1,3 +1,10 @@
+/*
+ * perl.c -- The perl interfacing routines.
+ *
+ * Copyright 2001 EPIC Software Labs
+ * See the COPYRIGHT file for more info
+ */
+
 #include "irc.h"
 #include "ircaux.h"
 #include "array.h"
@@ -14,6 +21,7 @@ PerlInterpreter	*my_perl;
 EXTERN_C void xs_init _((void));
 EXTERN_C void boot_DynaLoader _((CV* cv));
 
+/* RETURN_MSTR copied from functions.c rather than including due to complications. */
 #define RETURN_MSTR(x) return ((x) ? (x) : m_strdup(""));
 #define SV2STR(x,y) (y)=(void*)m_strdup((char*)SvPV_nolen(x))
 #ifndef SvPV_nolen

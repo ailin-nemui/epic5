@@ -206,6 +206,7 @@ static	char
 	*function_getcap	(char *),
 	*function_getcommands	(char *),
 	*function_getenv	(char *),
+	*function_getfunctions	(char *),
 	*function_getgid	(char *),
 	*function_getlogin	(char *),
 	*function_getopt	(char *),
@@ -449,6 +450,7 @@ static BuiltInFunctions	built_in_functions[] =
 	{ "GETCAP",		function_getcap		},
 	{ "GETCOMMANDS",	function_getcommands	},
 	{ "GETENV",		function_getenv		},
+	{ "GETFUNCTIONS",	function_getfunctions	},
 	{ "GETGID",		function_getgid		},
 	{ "GETITEM",            function_getitem 	},
 	{ "GETLOGIN",		function_getlogin	},
@@ -5307,44 +5309,32 @@ BUILT_IN_FUNCTION(function_rest, input)
 
 
 /* Written by panasync */
-BUILT_IN_FUNCTION(function_getsets, input)
-{
-extern 	char 	*get_set (char *);
-	char 	*s = NULL;
-	char	*ret = NULL;
-	size_t	clue = 0;
-
-	if (!input || !*input)
-		return get_set(NULL);
-
-	while ((s = next_arg(input, &input)))
-	{
-		char *s2 = get_set(s);
-		m_sc3cat(&ret, space, s2, &clue);
-		new_free(&s2);
-	}
-
-	RETURN_MSTR(ret);
+/* Re-written by CE */
+#define GET_FIXED_ARRAY_FUNCTION(thisfn, nextfn)         \
+BUILT_IN_FUNCTION((thisfn), input)                       \
+{                                                        \
+	char 	*s = NULL;                               \
+	char 	*s2= NULL;                               \
+	char	*ret = NULL;                             \
+	size_t	clue = 0;                                \
+                                                         \
+	if (!input || !*input)                           \
+		return (nextfn)(NULL);                   \
+                                                         \
+	while ((s = next_arg(input, &input)))            \
+	{                                                \
+		char *s2 = (nextfn)(s);                  \
+		m_sc3cat(&ret, space, s2, &clue);        \
+		new_free(&s2);                           \
+	}                                                \
+                                                         \
+	RETURN_MSTR(ret);                                \
 }
 
-BUILT_IN_FUNCTION(function_getcommands, input)
-{
-	char	*s = NULL;
-	char	*ret = NULL;
-	size_t	clue = 0;
-
-	if (!input || !*input)
-		return get_command(NULL);
-
-	while ((s = next_arg(input, &input)))
-	{
-		char *s2 = get_command(s);
-		m_sc3cat(&ret, space, s2, &clue);
-		new_free(&s2);
-	}
-
-	RETURN_MSTR(ret);
-}
+GET_FIXED_ARRAY_FUNCTION(function_getsets, get_set);
+GET_FIXED_ARRAY_FUNCTION(function_getcommands, get_command);
+GET_FIXED_ARRAY_NAMES_FUNCTION(get_function, built_in_functions);
+GET_FIXED_ARRAY_FUNCTION(function_getfunctions, get_function);
 
 /* Written by nutbar */
 BUILT_IN_FUNCTION(function_servernum, input)
