@@ -198,9 +198,10 @@ test: test.o
 
 clean:
 	@-if test -f source/Makefile; then cd source; $(MAKE2) clean; fi
+	$(RM) test.o my_test
 
 distclean cleandir realclean: clean
-	$(RM) Makefile source/Makefile source/sig.inc config.status config.cache config.log include/defs.h test.o my_test
+	$(RM) Makefile source/Makefile source/sig.inc config.status config.cache config.log include/defs.h
 
 depend:
 	(cd source;make depend)
