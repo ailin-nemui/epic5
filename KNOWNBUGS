@@ -139,3 +139,4 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Add arc4random stuff to compat.c -- will be used later!
 * Fix $realpath() to use normalize_filename() so it gets realpath() fix.
 * Add $serverctl(SET <refnum> PRIMARY) to set primary server.  User beware! 
+* Add /set random_source 3, an arc4random random number generator.

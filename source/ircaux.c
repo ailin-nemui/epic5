@@ -1,4 +1,4 @@
-/* $EPIC: ircaux.c,v 1.52 2002/10/21 15:21:43 jnelson Exp $ */
+/* $EPIC: ircaux.c,v 1.53 2002/10/22 23:23:22 jnelson Exp $ */
 /*
  * ircaux.c: some extra routines... not specific to irc... that I needed 
  *
@@ -3507,18 +3507,36 @@ static	int		random_fd = -1;
 	return value;
 }
 
+/*
+ * Random number generator #4 -- Arc4random.
+ * If you have the /dev/urandom device, this this may very well be the best
+ * random number generator for you.  It spits out relatively good entropic
+ * numbers, while not severely depleting the entropy pool (as reading directly
+ * from /dev/random does).   If you do not have the /dev/urandom device, then
+ * this function uses the stack for its entropy, which may or may not be 
+ * suitable, but what the heck.  This generator is always available.
+ */
+static unsigned long	randa (unsigned long l)
+{
+	if (l != 0)
+		return 0;	/* No seeding appropriate */
+
+	return (unsigned long)bsd_arc4random();
+}
 
 unsigned long	random_number (unsigned long l)
 {
 	switch (get_int_var(RANDOM_SOURCE_VAR))
 	{
 		case 0:
-		default:
 			return randd(l);
 		case 1:
 			return randm(l);
 		case 2:
 			return randt(l);
+		case 3:
+		default:
+			return randa(l);
 	}
 }
 
