@@ -11,7 +11,7 @@ PerlInterpreter	*my_perl;
 EXTERN_C void xs_init _((void));
 EXTERN_C void boot_DynaLoader _((CV* cv));
 
-#define RETURN_MSTR(x) return ((x) ? (x) : "");
+#define RETURN_MSTR(x) return ((x) ? (x) : m_strdup(""));
 #define SV2STR(x,y) (y)=(void*)m_strdup((char*)SvPV_nolen(x))
 #ifndef SvPV_nolen
 STRLEN	trash;
