@@ -3,7 +3,6 @@ EPIC4 Projects, Bugs, and other Errata:
 KNOWN ERRATA (eg, bugs, or unresolved requests):
 ------------------------------------------------
 * Reconnecting still gets bogus quit message from get_server_quit_message().
-* Channel_going_away's abuse of unset_window_current_channel is entirely bogus.
 <none>
  
 [See http://www.epicsol.org/PROJECTS for things to come in the future]
@@ -15,5 +14,9 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Add /on error, hooks on an irc protocol ERROR message.
 * Fix window.c:get_boolean(), passing unitialized 'newval' integer.
 * Fix path_search() to not blithely assume path != NULL (whitedragon)
+* New version of the 'hybrid6' script, from is.
 * Axe the broken "input_timeout" feature that hasn't worked in 6 years.
+* Add, but #ifdef'd out, a delayed-free mechanism -- strictly experimental.
 * Add the /defer command, to perform dangerous operations when it's safe.
+* Many changes from robohak to fix /on channel_* bogons I introduced. ;-)
+* Lice should now work again with 0.9.16.
