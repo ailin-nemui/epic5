@@ -1,3 +1,20 @@
 EPIC4-1.2.0
 
+*** News 12/23/2002 -- /exec options tuned.
+	-line, -linepart, -error and -errorpart can now be changed for a
+	process on the fly, using %process like the other options.
+
+	Using the -window option will now nail the process to the server
+	too.
+
+*** News 12/23/2002 -- $xdebug() now accepts masks.
+
+*** News 12/23/2002 -- /redir tuned
+	/redir now permits raw dccs to be used.  Also, when used outside
+	of the command line script, the $* arguments will now be available.
+
+*** News 12/23/2002 -- New /set, /set FLOATING_POINT_PRECISION
+	This sets the number of decimal places of the results of floating
+	point math.  Note that this makes FLOATING_POINT_MATH redundant.
+
 # End of file
