@@ -60,6 +60,6 @@
 	void	channel_not_waiting	(Char *, int); 
 	void	channel_check_windows	(void);
 	void	cant_join_channel	(Char *, int);
-	Char *	window_current_current	(int, int);
+	Char *	window_current_channel	(int, int);
 
 #endif /* _NAMES_H_ */
