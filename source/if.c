@@ -1,4 +1,4 @@
-/* $EPIC: if.c,v 1.19 2003/05/09 04:29:52 jnelson Exp $ */
+/* $EPIC: if.c,v 1.20 2003/07/10 10:30:45 jnelson Exp $ */
 /*
  * if.c: the IF, WHILE, FOREACH, DO, FE, FEC, and FOR commands for IRCII 
  *
@@ -213,14 +213,16 @@ BUILT_IN_COMMAND(ifcmd)
 BUILT_IN_COMMAND(docmd)
 {
 	char *body, *expr, *cmd, *ptr;
-	char *newexp = (char *) 0;
+	char *newexp = NULL;
 	int args_used = 0;
 	int result;
 
+	if (!subargs)
+		subargs = empty_string;
+
 	if (*args == '{')
 	{
-		body = next_expr(&args, '{');
-		if (body == (char *) 0)
+		if (!(body = next_expr(&args, '{')))
 		{
 			error("DO: unbalanced {");
 			return;
@@ -238,7 +240,7 @@ BUILT_IN_COMMAND(docmd)
 			will_catch_continue_exceptions++;
 			while (1)
 			{
-				parse_line ((char *) 0, body, subargs ? subargs : empty_string, 0, 0);
+				parse_line(NULL, body, subargs, 0, 0);
 				if (break_exception)
 				{
 					break_exception = 0;
@@ -254,8 +256,7 @@ BUILT_IN_COMMAND(docmd)
 
 				/* Alas, too bad the malloc is neccesary */
 				malloc_strcpy(&newexp, expr);
-				ptr = parse_inline(newexp, subargs ? subargs : empty_string,
-					&args_used);
+				ptr = parse_inline(newexp, subargs, &args_used);
 				result = check_val(ptr);
 				new_free(&ptr);
 				if (!result)
@@ -267,30 +268,33 @@ BUILT_IN_COMMAND(docmd)
 			return;
 		}
 		/* falls through to here if its /do {...} */
-		parse_line ((char *) 0, body, subargs ? subargs : empty_string, 0, 0);
+		parse_line(NULL, body, subargs, 0, 0);
 	}
 	/* falls through to here if it its /do ... */
-	parse_line ((char *) 0, args, subargs ? subargs : empty_string, 0, 0);
+	parse_line(NULL, args, subargs, 0, 0);
 }
 
 BUILT_IN_COMMAND(whilecmd)
 {
-	char	*exp = (char *) 0,
+	char	*exp = NULL,
 		*ptr,
-		*body = (char *) 0,
-		*newexp = (char *) 0;
+		*body = NULL,
+		*newexp = NULL;
 	int	args_used;	/* this isn't used here, but is passed
 				 * to expand_alias() */
 	int 	whileval = !strcmp(command, "WHILE");
 
-	if ((ptr = next_expr(&args, '(')) == (char *) 0)
+	if (!subargs)
+		subargs = empty_string;
+
+	if (!(ptr = next_expr(&args, '(')))
 	{
 		error("WHILE: missing boolean expression");
 		return;
 	}
 	exp = LOCAL_COPY(ptr);
 
-	if ((ptr = next_expr_failok(&args, '{')) == (char *) 0)
+	if (!(ptr = next_expr_failok(&args, '{')))
 		ptr = args;
 	body = LOCAL_COPY(ptr);
 
@@ -299,13 +303,13 @@ BUILT_IN_COMMAND(whilecmd)
 	while (1)
 	{
 		newexp = LOCAL_COPY(exp);
-		ptr = parse_inline(newexp, subargs ? subargs : empty_string, &args_used);
+		ptr = parse_inline(newexp, subargs, &args_used);
 		if (check_val(ptr) != whileval)
 			break;
 
 		new_free(&ptr);
 
-		parse_line((char *) 0, body, subargs ?  subargs : empty_string, 0, 0);
+		parse_line(NULL, body, subargs, 0, 0);
 		if (continue_exception)
 		{
 			continue_exception = 0;
@@ -326,10 +330,10 @@ BUILT_IN_COMMAND(whilecmd)
 
 BUILT_IN_COMMAND(foreach)
 {
-	char	*struc = (char *) 0,
+	char	*struc = NULL,
 		*ptr,
-		*body = (char *) 0,
-		*var = (char *) 0;
+		*body = NULL,
+		*var = NULL;
 	char	**sublist;
 	int	total;
 	int	i;
@@ -338,13 +342,16 @@ BUILT_IN_COMMAND(foreach)
 	int	list = VAR_ALIAS;
 	int	af;
 
+	if (!subargs)
+		subargs = empty_string;
+
 	while (args && my_isspace(*args))
 		args++;
 
 	if (*args == '-')
 		args++, list = COMMAND_ALIAS;
 
-	if ((ptr = new_next_arg(args, &args)) == (char *) 0)
+	if (!(ptr = new_next_arg(args, &args)))
 	{
 		error("FOREACH: missing structure expression");
 		return;
@@ -352,7 +359,7 @@ BUILT_IN_COMMAND(foreach)
 
 	struc = upper(remove_brackets(ptr, subargs, &af));
 
-	if ((var = next_arg(args, &args)) == (char *) 0)
+	if (!(var = next_arg(args, &args)))
 	{
 		new_free(&struc);
 		error("FOREACH: missing variable");
@@ -361,7 +368,7 @@ BUILT_IN_COMMAND(foreach)
 	while (my_isspace(*args))
 		args++;		/* why was this (*args)++? */
 
-	if ((body = next_expr(&args, '{')) == (char *) 0)
+	if (!(body = next_expr(&args, '{')))
 	{
 		new_free(&struc);
 		error("FOREACH: missing statement");
@@ -384,7 +391,7 @@ BUILT_IN_COMMAND(foreach)
 		add_local_alias(var, sublist[i] + slen + 1, 0);
 		new_free(&sublist[i]);
 
-		parse_line(NULL, body, subargs ? subargs : empty_string, 0, 0);
+		parse_line(NULL, body, subargs, 0, 0);
 	
 		if (continue_exception)
 		{
@@ -414,25 +421,25 @@ BUILT_IN_COMMAND(foreach)
  */
 BUILT_IN_COMMAND(fe)
 {
-	char    *list = (char *) 0,
-		*templist = (char *) 0,
+	char    *list = NULL,
+		*templist = NULL,
 		*placeholder,
 		*vars,
 		*var[255],
-		*word = (char *) 0,
-		*todo = (char *) 0,
+		*word = NULL,
+		*todo = NULL,
 		fec_buffer[2];
 	unsigned	ind, x, y;
 	int     args_flag;
 	int     old_display;
 	int	doing_fe = !strcmp(command, "FE");
-	char	*mapvar = (char *) 0;
+	char	*mapvar = NULL;
 	char	*mapsep = doing_fe ? space : empty_string;
-	char	*map = (char *) 0;
+	char	*map = NULL;
 	size_t	mapclue = 0;
 
 #if 0
-	for (x = 0; x <= (sizeof(var) / sizeof(*var)); var[x++] = (char *) 0)
+	for (x = 0; x <= (sizeof(var) / sizeof(*var)); var[x++] = NULL)
 		;
 #endif
 
@@ -512,8 +519,7 @@ BUILT_IN_COMMAND(fe)
 			add_local_alias(var[y], word, 0);
 		}
 		x += ind;
-		parse_line((char *) 0, todo, 
-		    subargs?subargs:empty_string, 0, 0);
+		parse_line(NULL, todo, subargs, 0, 0);
 
 		if (mapvar)
 			for ( y = 0 ; y < ind ; y++ ) {
@@ -552,6 +558,9 @@ static void	for_next_cmd (int argc, char **argv, const char *subargs)
 	char 	*var, *cmds;
 	char	istr[256];
 	int	start, end, step = 1, i;
+
+	if (!subargs)
+		subargs = empty_string;
 
 	if ((my_stricmp(argv[1], "from") && my_stricmp(argv[1], "=")) ||
 		(argc != 6 && argc != 8))
@@ -603,6 +612,9 @@ static void	for_fe_cmd (int argc, char **argv, const char *subargs)
 	char 	*var, *list, *cmds;
 	char	*next, *real_list, *x;
 	int	args_flag = 0;
+
+	if (!subargs)
+		subargs = empty_string;
 
 	if ((my_stricmp(argv[1], "in")) || (argc != 4)) {
 		error("Usage: /FOR var IN (list) {commands}");
@@ -686,15 +698,17 @@ static BUILT_IN_COMMAND(loopcmd)
  */
 BUILT_IN_COMMAND(forcmd)
 {
-	char        *working        = (char *) 0;
-	char        *commence       = (char *) 0;
-	char        *evaluation     = (char *) 0;
-	char        *lameeval       = (char *) 0;
-	char        *iteration      = (char *) 0;
-	const char  *sa             = (char *) 0;
+	char        *working        = NULL;
+	char        *commence       = NULL;
+	char        *evaluation     = NULL;
+	char        *lameeval       = NULL;
+	char        *iteration      = NULL;
 	int         argsused        = 0;
-	char        *blah           = (char *) 0;
-	char        *commands       = (char *) 0;
+	char        *blah           = NULL;
+	char        *commands       = NULL;
+
+	if (!subargs)
+		subargs = empty_string;
 
 	/* Get the whole () thing */
 	if ((working = next_expr_failok(&args, '(')) == NULL)	/* ) */
@@ -706,42 +720,37 @@ BUILT_IN_COMMAND(forcmd)
 	commence = LOCAL_COPY(working);
 
 	/* Find the beginning of the second expression */
-	evaluation = strchr(commence, ',');
-	if (!evaluation)
+	if (!(evaluation = strchr(commence, ',')))
 	{
 		error("FOR: no components!");
 		return;
 	}
 	do 
-		*evaluation++ = '\0';
+		*evaluation++ = 0;
 	while (my_isspace(*evaluation));
 
 	/* Find the beginning of the third expression */
-	iteration = strchr(evaluation, ',');
-	if (!iteration)
+	if (!(iteration = strchr(evaluation, ',')))
 	{
 		error("FOR: Only two components!");
 		return;
 	}
 	do 
-	{
-		*iteration++ = '\0';
-	}
+		*iteration++ = 0;
 	while (my_isspace(*iteration));
 
 	working = args;
 	while (my_isspace(*working))
-		*working++ = '\0';
+		*working++ = 0;
 
-	if ((working = next_expr(&working, '{')) == (char *) 0)		/* } */
+	if (!(working = next_expr(&working, '{')))		/* } */
 	{
 		error("FOR: badly formed commands");
 		return;
 	}
 	commands = LOCAL_COPY(working);
 
-	sa = subargs ? subargs : empty_string;
-	parse_line((char *) 0, commence, sa, 0, 0);
+	parse_line(NULL, commence, subargs, 0, 0);
 
 	will_catch_break_exceptions++;
 	will_catch_continue_exceptions++;
@@ -749,7 +758,7 @@ BUILT_IN_COMMAND(forcmd)
 	{
 		lameeval = LOCAL_COPY(evaluation);
 
-		blah = parse_inline(lameeval, sa, &argsused);
+		blah = parse_inline(lameeval, subargs, &argsused);
 		if (!check_val(blah))
 		{
 			new_free(&blah);
@@ -757,7 +766,7 @@ BUILT_IN_COMMAND(forcmd)
 		}
 
 		new_free(&blah);
-		parse_line((char *) 0, commands, sa, 0, 0);
+		parse_line(NULL, commands, subargs, 0, 0);
 		if (break_exception)
 		{
 			break_exception = 0;
@@ -768,7 +777,7 @@ BUILT_IN_COMMAND(forcmd)
 		if (return_exception)
 			break;
 
-		parse_line((char *) 0, iteration, sa, 0, 0);
+		parse_line(NULL, iteration, subargs, 0, 0);
 	}
 	will_catch_break_exceptions--;
 	will_catch_continue_exceptions--;
@@ -819,6 +828,9 @@ BUILT_IN_COMMAND(switchcmd)
 		*header, 
 		*commands;
 	int 	af;
+
+	if (!subargs)
+		subargs = empty_string;
 
 	if (!(control = next_expr(&args, '(')))
 	{
@@ -888,41 +900,38 @@ BUILT_IN_COMMAND(repeatcmd)
 {
 	char *	num_expr = NULL;
 	int 	value;
+	char *	tmp_val;
+
+	if (!subargs)
+		subargs = empty_string;
 
 	while (isspace(*args))
 		args++;
 
 	if (*args == '(')
 	{
-		char *		tmp_val;
 		char *		dumb_copy;
 		int 		argsused;
-		const char *	sa = subargs ? subargs : empty_string;
 
 		num_expr = next_expr(&args, '(');
 		dumb_copy = LOCAL_COPY(num_expr);
-
-		tmp_val = parse_inline(dumb_copy,sa,&argsused);
-		value = my_atol(tmp_val);
-		new_free(&tmp_val);
+		tmp_val = parse_inline(dumb_copy, subargs, &argsused);
 	}
 	else
 	{
-		char *		tmp_val;
-		int 		af;
-
 		num_expr = new_next_arg(args, &args);
-		tmp_val = expand_alias(num_expr, subargs, &af, NULL);
-		value = my_atol(tmp_val);
-		new_free(&tmp_val);
+		tmp_val = malloc_strdup(num_expr);
 	}
+
+	value = my_atol(tmp_val);
+	new_free(&tmp_val);
 
 	if (value <= 0)
 		return;
 
 	/* Probably want to catch break and continue here */
 	while (value--)
-		parse_line(NULL, args, subargs ? subargs : empty_string, 0, 0);
+		parse_line(NULL, args, subargs, 0, 0);
 
 	return;
 }

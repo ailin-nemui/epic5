@@ -1,4 +1,4 @@
-/* $EPIC: who.c,v 1.25 2003/07/09 21:10:25 jnelson Exp $ */
+/* $EPIC: who.c,v 1.26 2003/07/10 10:30:45 jnelson Exp $ */
 /*
  * who.c -- The WHO queue.  The ISON queue.  The USERHOST queue.
  *
@@ -482,7 +482,7 @@ static	int	last_width = -1;
 			*server,
 			*nick,
 			*status,
-			*realname;
+			*ircname;
 	char 	*name;
 	WhoEntry *new_w = who_queue_top(refnum);
 
@@ -545,9 +545,9 @@ do
 	if (!(status  = ArgList[5]))
 		{ rfc1459_odd(from, comm, ArgList); break; }
 	PasteArgs(ArgList, 6);
-	if (!(realname  = ArgList[6]))
+	if (!(ircname  = ArgList[6]))
 		{ rfc1459_odd(from, comm, ArgList); break; }
-	name = LOCAL_COPY(realname);
+	name = LOCAL_COPY(ircname);
 
 	if (*status == 'S')	/* this only true for the header WHOREPLY */
 	{

@@ -1,4 +1,4 @@
-/* $EPIC: expr2.c,v 1.10 2003/07/10 09:50:30 jnelson Exp $ */
+/* $EPIC: expr2.c,v 1.11 2003/07/10 10:30:45 jnelson Exp $ */
 /*
  * Zsh: math.c,v 3.1.2.1 1997/06/01 06:13:15 hzoli Exp 
  * math.c - mathematical expression evaluation
@@ -1345,12 +1345,19 @@ static void	reduce (expr_info *cx, int what)
 			break;
 		case DEREF:
 		{
-			CHECK_NOEVAL
 			if (top(cx) == MAGIC_TOKEN)
 				break;		/* Dont do anything */
 
+			/*
+			 * We need to consume the operand, even if
+			 * we don't intend to use it; plus we need
+			 * to ensure this defeats auto-append.  Ick.
+			 */
+			s = pop_expanded(cx);
 			*cx->args_flag = 1;
-			push_lval(cx, pop_expanded(cx));
+
+			CHECK_NOEVAL
+			push_lval(cx, s);
 			break;
 		}
 

@@ -1,4 +1,4 @@
-/* $EPIC: timer.c,v 1.31 2003/07/09 21:10:25 jnelson Exp $ */
+/* $EPIC: timer.c,v 1.32 2003/07/10 10:30:45 jnelson Exp $ */
 /*
  * timer.c -- handles timers in ircII
  *
@@ -75,7 +75,7 @@ BUILT_IN_COMMAND(timercmd)
 	int	winref;
 	size_t	len;
 
-	winref = current_window ? current_window->refnum : -1;
+	winref = current_window ? (int)current_window->refnum : -1;
 
 	while (*args == '-' || *args == '/')
 	{
@@ -154,7 +154,10 @@ BUILT_IN_COMMAND(timercmd)
 			update = 1;
 
 		else if (!my_strnicmp(flag + 1, "L", 1))	/* LIST */
+		{
 			list_timers(command);
+			return;
+		}
 		else if (!my_strnicmp(flag + 1, "W", 1))	/* WINDOW */
 		{
 			char 	*na;

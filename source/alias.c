@@ -1,4 +1,4 @@
-/* $EPIC: alias.c,v 1.25 2003/07/10 09:50:30 jnelson Exp $ */
+/* $EPIC: alias.c,v 1.26 2003/07/10 10:30:45 jnelson Exp $ */
 /*
  * alias.c -- Handles the whole kit and caboodle for aliases.
  *
@@ -838,6 +838,8 @@ void	prepare_alias_call (void *al, char **stuff)
 			case QWORD:
 				type = 2;
 				break;
+			default:
+				panic("Alias list argument [%d] has unsupported typed [%d]", i, args->types[i]);
 		}
 
 		/* Last argument on the list and no ... argument? */

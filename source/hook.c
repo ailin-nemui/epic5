@@ -1,4 +1,4 @@
-/* $EPIC: hook.c,v 1.19 2003/07/10 09:50:30 jnelson Exp $ */
+/* $EPIC: hook.c,v 1.20 2003/07/10 10:30:45 jnelson Exp $ */
 /*
  * hook.c: Does those naughty hook functions. 
  *
@@ -847,6 +847,7 @@ int 	do_hook (int which, const char *format, ...)
 		char *		name_copy;
 		char *		stuff_copy;
 		char *		result = NULL;
+		int		noise;
 
 		/*
 		 * This should never happen.
@@ -870,6 +871,10 @@ int 	do_hook (int which, const char *format, ...)
 		if (tmp->not || !tmp->stuff || !*tmp->stuff)
 			continue;
 
+		name_copy = LOCAL_COPY(name);
+		stuff_copy = LOCAL_COPY(tmp->stuff);
+		noise = tmp->noisy;
+
 		/*
 		 * If this is a NORMAL or NOISY hook, then we tell the user
 		 * that we're going to execute the hook.
@@ -879,18 +884,18 @@ int 	do_hook (int which, const char *format, ...)
 				name, tmp->flexible ? '\'' : '"',
 				buffer, tmp->flexible ? '\'' : '"');
 
+		/*
+		 * YOU CAN'T TOUCH ``tmp'' AFTER THIS POINT
+		 */
 
 		/*
 		 * Save some information that may be reset in the 
 		 * execution, turn off the display if the user specified.
 		 */
 		save_message_from(&saved_who_from, &saved_who_level);
-		if (tmp->noisy < NOISY)
+		if (noise < NOISY)
 			window_display = 0;
 		
-		name_copy = LOCAL_COPY(name);
-		stuff_copy = LOCAL_COPY(tmp->stuff);
-
 		if (retval == RESULT_PENDING)
 		{
 			result = call_lambda_function(name_copy, stuff_copy,

@@ -58,3 +58,11 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Fix some pesky const correctness issues with qsort callback args.
 * Convert m_strdup() to malloc_strdup().
 * Convert parse_line_with_return() to call_lambda_function().
+* Nix channel_window, duplicate of get_winref_by_channame()
+* Make arglist processor panic if it sees an argtype that doesn't exist.
+* Fix bug with * operator in exprs like (a ? b : *c) in new expression parser.
+* Fix theoretical crash with deleting hooks from /on window. Bleh.
+* General cleanups in if.c.
+* Fix /timer -list acting all wacky.
+* Fix compilation warnings, you know the deal...
+
