@@ -1,18 +1,54 @@
+/* $EPIC: reg.c,v 1.4 2002/07/17 22:52:52 jnelson Exp $ */
 /*
+ * reg.c - "glob"-like wildcard pattern matching (not regexes)
+ *
+ * Copyright (c) 1992 Troy Rollo.
+ * Copyright © 1997, 2002 EPIC Software Labs.
+ * All rights reserved.
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions
+ * are met:
+ * 1. Redistributions of source code must retain the above copyright
+ *    notice, this list of conditions and the following disclaimer.
+ * 2. Redistributions in binary form must reproduce the above copyright
+ *    notices, the above paragraph (the one permitting redistribution),
+ *    this list of conditions and the following disclaimer in the
+ *    documentation and/or other materials provided with the distribution.
+ * 3. The names of the author(s) may not be used to endorse or promote
+ *    products derived from this software without specific prior written
+ *    permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE AUTHORS ``AS IS'' AND ANY EXPRESS OR
+ * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES
+ * OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
+ * IN NO EVENT SHALL THE AUTHORS BE LIABLE FOR ANY DIRECT, INDIRECT,
+ * INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
+ * BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
+ * LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED
+ * AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+ * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
+ * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
+ * SUCH DAMAGE.
+ */
+
+/*
+ * [Original note from Troy]
  * The original was spagetti. I have replaced Michael's code with some of
  * my own which is a thousand times more readable and can also handle '%',
  * which substitutes anything except a space. This should enable people
  * to position things better based on argument. I have also added '?', which
  * substitutes to any single character. And of course it still handles '*'.
  * this should be more efficient than the previous version too.
- *
- * Thus this whole file becomes:
- *
- * Written By Troy Rollo
- * Copyright(c) 1992
- * See the COPYRIGHT file, or do a HELP IRCII COPYRIGHT 
  */
-
+/*
+ * [Note from EPIC Software Labs]
+ * I had seen that phone had written a non-recursive pattern matcher for ircII,
+ * so I decided to see if I could write one too without peeking at his 
+ * implementation.  The matcher I came up with ("new_match") is iterative and 
+ * is bug-for-bug compatable with troy's recursive matcher ("old_match"). 
+ * It's a lot more complicated, but it's also a lot faster.  (jfn)
+ */
 
 #include "irc.h"
 #include "ircaux.h"

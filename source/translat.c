@@ -1,3 +1,4 @@
+/* $EPIC: translat.c,v 1.3 2002/07/17 22:52:53 jnelson Exp $ */
 /*
  * translat.c:  Stuff for handling character translation tables
  * and a digraph entry facility.  Support an international IRC!

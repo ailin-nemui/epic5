@@ -1,11 +1,11 @@
-/* $EPIC: history.c,v 1.5 2002/05/23 03:35:17 jnelson Exp $ */
+/* $EPIC: history.c,v 1.6 2002/07/17 22:52:52 jnelson Exp $ */
 /*
  * history.c: stuff to handle command line history 
  *
  * Copyright (c) 1990 Michael Sandroff.
  * Copyright (c) 1991, 1992 Troy Rollo.
  * Copyright (c) 1992-1996 Matthew Green.
- * Copyright © 1993-1999 Jeremy Nelson and others ("EPIC Software Labs").
+ * Copyright © 1993-1999 EPIC Software Labs
  * All rights reserved.
  * 
  * Redistribution and use in source and binary forms, with or without

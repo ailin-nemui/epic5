@@ -1,4 +1,4 @@
-/* $EPIC: commands.c,v 1.30 2002/07/06 03:50:10 jnelson Exp $ */
+/* $EPIC: commands.c,v 1.31 2002/07/17 22:52:52 jnelson Exp $ */
 /*
  * commands.c -- Stuff needed to execute commands in ircII.
  *		 Includes the bulk of the built in commands for ircII.
@@ -6,7 +6,7 @@
  * Copyright (c) 1990 Michael Sandroff.
  * Copyright (c) 1991, 1992 Troy Rollo.
  * Copyright (c) 1992-1996 Matthew Green.
- * Copyright © 1995, 2002 Jeremy Nelson and others ("EPIC Software Labs").
+ * Copyright © 1995, 2002 EPIC Software Labs
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without

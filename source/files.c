@@ -1,8 +1,8 @@
-/* $EPIC: files.c,v 1.12 2002/07/06 03:50:11 jnelson Exp $ */
+/* $EPIC: files.c,v 1.13 2002/07/17 22:52:52 jnelson Exp $ */
 /*
  * files.c -- allows you to read/write files. Wow.
  *
- * Copyright © 1995, 2002 Jeremy Nelson and others ("EPIC Software Labs").
+ * Copyright © 1995, 2002 EPIC Software Labs
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without

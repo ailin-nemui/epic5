@@ -1,14 +1,12 @@
-/* $EPIC: term.c,v 1.6 2002/05/23 03:35:17 jnelson Exp $ */
+/* $EPIC: term.c,v 1.7 2002/07/17 22:52:53 jnelson Exp $ */
 /*
  * term.c -- termios and (termcap || terminfo) handlers
  *
  * Copyright (c) 1990 Michael Sandroff.
  * Copyright (c) 1991, 1992 Troy Rollo.
  * Copyright (c) 1992-1996 Matthew Green.
- * Copyright © 1993, 1997 Jeremy Nelson.
  * Copyright © 1998 J. Kean Johnston, used with permission.
- * Copyright © 1999 Ben Winslow and others ("EPIC Software Labs").
- * Copyright © 1995-2000 Jeremy Nelson and others ("EPIC Software Labs").
+ * Copyright © 1995-2002 EPIC Software Labs 
  * All rights reserved.
  * 
  * Redistribution and use in source and binary forms, with or without
@@ -36,7 +34,10 @@
  * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF 
  * SUCH DAMAGE.
  */
-
+/*
+ * Ben Winslow deserves specific praise for his fine work adding 
+ * terminfo support to EPIC.
+ */
 #define __need_putchar_x__
 #define __need_term_flush__
 #include "irc.h"
