@@ -1,4 +1,4 @@
-/* $EPIC: window.c,v 1.122 2004/08/24 23:27:24 jnelson Exp $ */
+/* $EPIC: window.c,v 1.123 2004/08/28 05:26:14 jnelson Exp $ */
 /*
  * window.c: Handles the organzation of the logical viewports (``windows'')
  * for irc.  This includes keeping track of what windows are open, where they
@@ -188,6 +188,7 @@ Window	*new_window (Screen *screen)
 		new_w->server = NOSERV;
 
 	new_w->priority = -1;		/* Filled in later */
+	new_w->saved = 0;		/* Filled in later? */
 	new_w->top = 0;			/* Filled in later */
 	new_w->bottom = 0;		/* Filled in later */
 	new_w->cursor = -1;		/* Force a clear-screen */
@@ -255,6 +256,7 @@ Window	*new_window (Screen *screen)
 	new_w->screen = screen;
 	new_w->next = new_w->prev = NULL;
 
+	new_w->topline = NULL;
 	new_w->deceased = 0;
 
 	/* Initialize the scrollback */
@@ -817,6 +819,7 @@ void	recalculate_window_positions (Screen *screen)
 	top = 0;
 	for (tmp = screen->window_list; tmp; tmp = tmp->next)
 	{
+		top += tmp->saved;
 		tmp->top = top;
 		tmp->bottom = top + tmp->display_size;
 		top += tmp->display_size + 1 + tmp->status.double_status;
@@ -900,7 +903,7 @@ static void 	swap_window (Window *v_window, Window *window)
 	 * and if the window being swapped out is curr_win, then the window
 	 * to be swapped in will be curr_win.
 	 */
-	window->top = v_window->top;
+	window->top = v_window->top - v_window->saved + window->saved;
 	window->display_size = v_window->display_size + 
 			       v_window->status.double_status - 
 				window->status.double_status;
@@ -1437,6 +1440,7 @@ void 	recalculate_windows (Screen *screen)
 	if (!screen->current_window)
 	{
 		screen->window_list->top = 0;
+		screen->window_list->saved = 0;
 		screen->window_list->display_size = screen->li - 2;
 		screen->window_list->bottom = screen->li - 2;
 		old_li = screen->li;
@@ -1450,7 +1454,7 @@ void 	recalculate_windows (Screen *screen)
 	 */
 	for (tmp = screen->window_list; tmp; tmp = tmp->next)
 	{
-		old_li += tmp->display_size + tmp->status.double_status + 1;
+		old_li += tmp->display_size + tmp->status.double_status + 1 + tmp->saved;
 		if (tmp->absolute_size && (window_count || tmp->next))
 			continue;
 		window_resized += tmp->display_size;
@@ -3021,8 +3025,8 @@ else
 				window->server, 
 				get_server_name(window->server));
 	say("\tScreen: %p",	window->screen);
-	say("\tGeometry Info: [%hd %hd %d %d %hd %d %d %d]", 
-				window->top, window->bottom, 
+	say("\tGeometry Info: [%hd %hd %hd %d %d %hd %d %d %d]", 
+				window->saved, window->top, window->bottom, 
 				0, window->display_size,
 				window->cursor, 
 				window->scrolling_distance_from_display_ip,
@@ -4610,6 +4614,46 @@ static Window *window_swappable (Window *window, char **args)
 	return window;
 }
 
+/*
+ * /WINDOW TOPLINE "...."
+ * This "saves" the top line of the window from being scrollable.  It sets 
+ * the data in this line to whatever the argument is, or if the argument is
+ * just a hyphen, it "unsaves" the top line.
+ */
+static Window *window_topline (Window *window, char **args)
+{
+	int 	saved = window->saved;
+	const char *topline;
+
+	if (!(topline = new_next_arg(*args, args)))
+		malloc_strcpy(&window->topline, empty_string);
+	else if (!strcmp(topline, "-"))
+		new_free(&window->topline);
+	else
+		malloc_strcpy(&window->topline, topline);
+
+	window->saved = window->topline ? 1 : 0;
+
+	window->display_size += saved - window->saved;
+	window->top += window->saved - saved;
+
+	if (window->display_size < 0)
+	{
+		window->display_size = 0;
+		if (window->screen)
+			recalculate_windows(window->screen);
+	}
+	if (window->top < window->saved)
+	{
+		window->top = window->saved;
+		if (window->screen)
+			recalculate_windows(window->screen);
+	}
+	recalculate_window_positions(window->screen);
+	return window;
+}
+
+
 typedef Window *(*window_func) (Window *, char **args);
 
 typedef struct window_ops_T {
@@ -4695,6 +4739,7 @@ static const window_ops options [] = {
 	{ "STATUS_SPECIAL",	window_status_special	},
 	{ "SWAP",		window_swap 		},
 	{ "SWAPPABLE",		window_swappable	},
+	{ "TOPLINE",		window_topline		},
 	{ NULL,			NULL 			}
 };
 
@@ -5626,6 +5671,8 @@ char 	*windowctl 	(char *input)
 		RETURN_INT(w->priority);
 	    } else if (!my_strnicmp(listc, "VISIBLE", len)) {
 		RETURN_INT(w->screen ? 1 : 0);
+	    } else if (!my_strnicmp(listc, "SAVED", len)) {
+		RETURN_INT(w->saved);
 	    } else if (!my_strnicmp(listc, "TOP", len)) {
 		RETURN_INT(w->top);
 	    } else if (!my_strnicmp(listc, "BOTTOM", len)) {

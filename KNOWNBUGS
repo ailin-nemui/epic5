@@ -384,3 +384,4 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Fix memory leak with /timer
 * Fix $server*() functions, when passed no arguments.
 * Add /msg -<server>/<target> thingee, i really need to document this.
+* Add /window topline -- VERY ROUGH PROOF OF CONCEPT --

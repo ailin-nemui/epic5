@@ -51,6 +51,7 @@ typedef	struct	WindowStru
 	int	server;			/* Server that win is connected to */
 	int	last_server;		/* Last server connected to */
 	int	priority;		/* "Current window Priority" */
+	short	saved;			/* Lines saved above top of window */
 	short	top;			/* SCREEN line for top of window */
 	short	bottom;			/* SCREEN line for bottom of window */
 	short	cursor;			/* WINDOW line where the cursor is */
@@ -143,6 +144,8 @@ struct lastlog_stru *lastlog_oldest;	/* pointer to bottom of lastlog list */
 	short	log;			/* True if file logging is on */
 	char	*logfile;		/* window's logfile name */
 	FILE	*log_fp;		/* file pointer for the log file */
+
+	char *	topline;
 
 	/* List stuff */
 struct	ScreenStru	*screen;	/* The screen we belong to */

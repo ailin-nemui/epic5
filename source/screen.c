@@ -1,4 +1,4 @@
-/* $EPIC: screen.c,v 1.84 2004/06/28 23:48:15 jnelson Exp $ */
+/* $EPIC: screen.c,v 1.85 2004/08/28 05:26:14 jnelson Exp $ */
 /*
  * screen.c
  *
@@ -2546,6 +2546,29 @@ void 	repaint_window_body (Window *window)
 		curr_line = window->scrolling_top_of_display;
 	    else
 		curr_line = window->holding_top_of_display;
+	}
+
+	if (window->topline && window->saved && window->screen)
+	{
+		int	cols;
+		int	numls = 1;
+		unsigned char **	lines;
+		unsigned char *n;
+
+		window->screen->cursor_window = window;
+		term_move_cursor(0, window->top - window->saved);
+		term_clear_to_eol();
+		if (window->screen)
+			cols = window->screen->co - 1;	/* XXX HERE XXX */
+		else
+			cols = window->columns - 1;
+
+		n = normalize_string(window->topline, 0);
+		lines = prepare_display(n, cols, &numls, 0);
+		if (*lines)
+			output_with_count(*lines, 1, foreground);
+		new_free(&n);
+		cursor_in_display(window);
 	}
 
 	window->cursor = 0;
