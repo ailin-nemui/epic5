@@ -1,4 +1,4 @@
-/* $EPIC: timer.c,v 1.6 2002/07/17 22:52:53 jnelson Exp $ */
+/* $EPIC: timer.c,v 1.7 2002/08/05 19:38:26 jnelson Exp $ */
 /*
  * timer.c -- handles timers in ircII
  *
@@ -161,14 +161,20 @@ BUILT_IN_COMMAND(timercmd)
 		}
 	}
 
+
 	/* else check to see if we have no args -> list */
 	waittime = next_arg(args, &args);
 	if (update || waittime)
 	{
 		if (update && !timer_exists(want))
 		{
-			say("%s: To use -UPDATE you must specify a valid refnum", command);
-			return;
+			if (waittime)
+				update = 0;
+			else
+			{
+				say("%s: To use -UPDATE you must specify a valid refnum", command);
+				return;
+			}
 		}
 
 		if (!waittime)
