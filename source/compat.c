@@ -1161,9 +1161,6 @@ int	unsetenv (const char *name)
 #endif
 
 #ifndef HAVE_INET_NTOP
-#ifdef inet_ntop
-#undef inet_ntop
-#endif
 const char *inet_ntop (int af, const void *src, char *dst, size_t size)
 {
 	if (af == AF_INET) 
@@ -1178,9 +1175,6 @@ const char *inet_ntop (int af, const void *src, char *dst, size_t size)
 #endif
 
 #ifndef HAVE_INET_PTON
-#ifdef inet_pton
-#undef inet_pton
-#endif
 int inet_pton (int af, const char *src, void *dst)
 {
 	if (af == AF_INET)

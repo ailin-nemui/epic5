@@ -2,7 +2,7 @@
  * network.c -- handles stuff dealing with connecting and name resolving
  *
  * Written by Jeremy Nelson
- * Copyright 1995 Jeremy Nelson
+ * Copyright 1995, 2002 Jeremy Nelson
  * See the COPYRIGHT file or do /help ircii copyright
  */
 
