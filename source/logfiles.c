@@ -1,4 +1,4 @@
-/* $EPIC: logfiles.c,v 1.9 2002/10/18 21:10:23 jnelson Exp $ */
+/* $EPIC: logfiles.c,v 1.10 2002/11/28 00:17:09 jnelson Exp $ */
 /*
  * logfiles.c - General purpose log files
  *
@@ -298,6 +298,7 @@ static Logfile *	logfile_describe (Logfile *log, char **args)
 	say("\t         Type: %s", logtype[log->type]);
 	say("\t       Server: %d", log->servref);
 	say("\tTarget/Refnum: %s", targets ? targets : "<NONE>");
+	say("\t        Level: %s", bits_to_lastlog_level(log->level));
 	say("\t Rewrite Rule: %s", log->rewrite ? log->rewrite : "<NONE>");
 	say("\t Mangle rules: %s", log->mangle_desc ? log->mangle_desc : "<NONE>");
 
@@ -598,6 +599,7 @@ static const logfile_ops options [] = {
 	{ "DESCRIBE",	logfile_describe	},
 	{ "FILENAME",	logfile_filename	},
 	{ "KILL",	logfile_kill		},
+	{ "LEVEL",	logfile_level		},
 	{ "LIST",	logfile_list		},
 	{ "MANGLE",	logfile_mangle		},
 	{ "NAME",	logfile_name		},

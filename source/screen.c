@@ -1,4 +1,4 @@
-/* $EPIC: screen.c,v 1.34 2002/09/26 22:41:43 jnelson Exp $ */
+/* $EPIC: screen.c,v 1.35 2002/11/28 00:17:09 jnelson Exp $ */
 /*
  * screen.c
  *
@@ -2958,6 +2958,8 @@ void 	kill_screen (Screen *screen)
 		close(screen->fdout);
 		close(screen->fdin);
 	}
+	if (screen->control)
+		screen->control = new_close(screen->control);
 	while ((window = screen->window_list))
 	{
 		screen->window_list = window->next;

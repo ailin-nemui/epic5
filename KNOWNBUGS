@@ -17,7 +17,6 @@ KNOWN ERRATA (eg, bugs, or unresolved requests):
 * /TYPE honors keybindings, and calls edit_char(), but /XTYPE -L does not 
   honor key bindings because it calls input_add_character().
 * /DEFER needs to be server-specific.
-* The key timeout thing goes off every second -- should only when necessary.
 * The check for "sun_len" in <sys/un.h> is bogus and unnecessary since we
   can just use #ifdef HAVE_SA_LEN for that.
 * Input cursor wigs out if 2ndary window is < 32 columns wide...
