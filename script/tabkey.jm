@@ -275,8 +275,16 @@ alias nick_complete {
 }
 
 alias add_nickname {
+	@:s_ref = servernum()
+
+	if (numwords($myservers()) > 1 && s_ref > -1) {
+		@:nickname = [$0:$s_ref]
+	} {
+		@:nickname = [$0]
+	}
+
 	@:nick_items = numitems(nick_hist)
-	@:prev_oc = finditem(nick_hist $0)
+	@:prev_oc = finditem(nick_hist $nickname)
 
 	if (prev_oc > -1) {
 		@delitem(nick_hist $prev_oc)
@@ -288,7 +296,7 @@ alias add_nickname {
 		@:nick_items--
 	}
 
-	@setitem(nick_hist $nick_items $0)
+	@setitem(nick_hist $nick_items $nickname)
 	@nick_index = nick_items
 }
 
@@ -304,6 +312,23 @@ alias msg_cycle {
 	@nick_index = nick_index == 0 ? nick_items - 1 : nick_index - 1
 }
 
+alias msg {
+	@:nick = before(: $0)
+	@:server = after(: $0)
+
+	if (server == []) {
+		//msg $*
+	} {
+		xeval -s $server {//msg $nick $1-}
+	}
+}
+
+on #^action 10 "*" {
+	if (!rmatch($1 #* &* +*)) {
+		@add_nickname($0)
+	}
+}
+
 on #^dcc_chat 10 "*" {
 	@add_nickname(=$0)
 }
@@ -314,6 +339,12 @@ on #^dcc_connect 10 "% CHAT *" {
 
 on #^msg 10 "*" {
 	@add_nickname($0)
+}
+
+on #^send_action 10 "*" {
+	if (!rmatch($0 #* &* +*) ) {
+		@add_nickname($0)
+	}
 }
 
 on #^send_dcc_chat 10 "*" {
