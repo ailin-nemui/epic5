@@ -1065,7 +1065,7 @@ STATUS_FUNCTION(status_channel)
 static	char	my_buffer[IRCD_BUFFER_SIZE + 1];
 	int	num;
 
-	if (!window->current_channel || window->server == -1)
+	if (!window->current_channel || window->server == -1 || !channel_format)
 		return empty_string;
 
 	if (get_int_var(HIDE_PRIVATE_CHANNELS_VAR) && 
