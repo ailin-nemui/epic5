@@ -1,4 +1,4 @@
-/* $EPIC: vars.c,v 1.50 2004/04/13 00:19:49 jnelson Exp $ */
+/* $EPIC: vars.c,v 1.51 2004/05/04 01:06:55 jnelson Exp $ */
 /*
  * vars.c: All the dealing of the irc variables are handled here. 
  *
@@ -211,6 +211,7 @@ static	IrcVariable irc_variable[] =
 	{ "NO_CTCP_FLOOD",		BOOL_TYPE_VAR,	DEFAULT_NO_CTCP_FLOOD, 0, NULL, NULL, 0, 0 },
 	{ "NO_FAIL_DISCONNECT",		BOOL_TYPE_VAR,	DEFAULT_NO_FAIL_DISCONNECT, 0, NULL, NULL, 0, 0 },
 	{ "NUM_OF_WHOWAS",		INT_TYPE_VAR,	DEFAULT_NUM_OF_WHOWAS, 0, NULL, NULL, 0, 0 },
+	{ "OLD_SERVER_LASTLOG_LEVEL",	STR_TYPE_VAR,	0, 0, NULL, set_old_server_lastlog_mask, 0, 0 },
 	{ "OUTPUT_REWRITE",		STR_TYPE_VAR,	0, 0, NULL, NULL, 0, 0 },
 	{ "PAD_CHAR",			CHAR_TYPE_VAR,	DEFAULT_PAD_CHAR, 0, NULL, NULL, 0, 0 },
 	{ "QUIT_MESSAGE",		STR_TYPE_VAR,   0, 0, NULL, NULL, 0, 0 },
@@ -353,6 +354,8 @@ void 	init_variables (void)
 	set_string_var(NEW_SERVER_LASTLOG_LEVEL_VAR, 
 			DEFAULT_NEW_SERVER_LASTLOG_LEVEL);
 	set_string_var(NOTIFY_LEVEL_VAR, DEFAULT_NOTIFY_LEVEL);
+	set_string_var(OLD_SERVER_LASTLOG_LEVEL_VAR, 
+			DEFAULT_OLD_SERVER_LASTLOG_LEVEL);
 	set_string_var(OUTPUT_REWRITE_VAR, NULL);
 	set_string_var(QUIT_MESSAGE_VAR, DEFAULT_QUIT_MESSAGE);
 	set_string_var(REALNAME_VAR, realname);

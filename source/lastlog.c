@@ -1,4 +1,4 @@
-/* $EPIC: lastlog.c,v 1.40 2004/04/13 00:19:48 jnelson Exp $ */
+/* $EPIC: lastlog.c,v 1.41 2004/05/04 01:06:55 jnelson Exp $ */
 /*
  * lastlog.c: handles the lastlog features of irc. 
  *
@@ -64,6 +64,7 @@ static int	show_lastlog (Lastlog **l, int *skip, int *number, Mask *level_mask, 
 static	Mask	lastlog_mask;
 static	Mask	notify_mask;
 	Mask	new_server_lastlog_mask;
+	Mask	old_server_lastlog_mask;
 	Mask 	current_window_mask;
 
 /*
@@ -227,6 +228,14 @@ void	set_new_server_lastlog_mask (const void *stuff)
 	str_to_mask(&new_server_lastlog_mask, str);
 	set_string_var(NEW_SERVER_LASTLOG_LEVEL_VAR, 
 			mask_to_str(&new_server_lastlog_mask));
+}
+
+void	set_old_server_lastlog_mask (const void *stuff)
+{
+	const char *str = (const char *)stuff;
+	str_to_mask(&old_server_lastlog_mask, str);
+	set_string_var(OLD_SERVER_LASTLOG_LEVEL_VAR, 
+			mask_to_str(&old_server_lastlog_mask));
 }
 
 

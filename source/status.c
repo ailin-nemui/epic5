@@ -1,4 +1,4 @@
-/* $EPIC: status.c,v 1.43 2004/03/19 06:05:13 jnelson Exp $ */
+/* $EPIC: status.c,v 1.44 2004/05/04 01:06:55 jnelson Exp $ */
 /*
  * status.c: handles the status line updating, etc for IRCII 
  *
@@ -211,6 +211,7 @@ struct status_formats status_expandos[] = {
 { 2, '8', status_user,	 	NULL, 			-1 },
 { 2, '9', status_user,	 	NULL, 			-1 },
 { 2, 'S', status_server,        &server_format,     	STATUS_SERVER_VAR },
+{ 2, 'W', status_window,	NULL, 			-1 },
 { 3, '0', status_user,	 	NULL, 			-1 },
 { 3, '1', status_user,	 	NULL, 			-1 },
 { 3, '2', status_user,	 	NULL, 			-1 },
@@ -1372,8 +1373,9 @@ STATUS_FUNCTION(status_window)
 {
 	char *text;
 
-	if ((number_of_windows_on_screen(window) > 1) && 
-	    IS_CURRENT_WINDOW && (text = get_string_var(STATUS_WINDOW_VAR)))
+	if (((map == 2) || 
+             (number_of_windows_on_screen(window) > 1 && IS_CURRENT_WINDOW)) &&
+	    (text = get_string_var(STATUS_WINDOW_VAR)))
 		return text;
 	else
 		return empty_string;

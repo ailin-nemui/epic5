@@ -20,6 +20,7 @@ struct lastlog_stru;
 
 extern	Mask	current_window_mask;
 extern	Mask	new_server_lastlog_mask;
+extern	Mask	old_server_lastlog_mask;
 
 	BUILT_IN_COMMAND(lastlog);
 
@@ -38,5 +39,6 @@ extern	Mask	new_server_lastlog_mask;
 	char *	function_line			(char *);
 	char *	function_lastlog		(char *);
 	void	set_new_server_lastlog_mask	(const void *);
+	void	set_old_server_lastlog_mask	(const void *);
 
 #endif /* __lastlog_h_ */

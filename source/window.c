@@ -1,4 +1,4 @@
-/* $EPIC: window.c,v 1.114 2004/05/04 00:44:01 jnelson Exp $ */
+/* $EPIC: window.c,v 1.115 2004/05/04 01:06:55 jnelson Exp $ */
 /*
  * window.c: Handles the organzation of the logical viewports (``windows'')
  * for irc.  This includes keeping track of what windows are open, where they
@@ -2161,6 +2161,7 @@ void 	window_check_servers (void)
 		    if (x_debug & DEBUG_SERVER_CONNECT)
 			yell("window_check_servers() is bringing up server %d", i);
 		    connect_to_server(i, 1);
+		    tmp->window_mask = new_server_lastlog_mask;
 		}
 		else if (status == SERVER_ACTIVE)
 		    prime = tmp->server;
@@ -4389,6 +4390,7 @@ Window *window_server (Window *window, char **args)
 	if ((arg = next_arg(*args, args)))
 	{
 		int i = find_server_refnum(arg, NULL);
+		int status;
 
 		/*
 		 * Lose our channels
@@ -4401,7 +4403,11 @@ Window *window_server (Window *window, char **args)
 		 * Associate ourselves with the new server.
 		 */
 		window->server = i;
-		if (get_server_status(i) >= SERVER_CLOSING)
+		status = get_server_status(i);
+
+		if (status >= SERVER_CONNECTING && status < SERVER_EOF)
+			window->window_mask = old_server_lastlog_mask;
+		else if (status >= SERVER_CLOSING)
 			set_server_status(i, SERVER_RECONNECT);
 	}
 	else
