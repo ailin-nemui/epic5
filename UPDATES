@@ -1,162 +1,16 @@
 EPIC4-1.2.0
 
+*** News -- 11/21/2003 -- /SERVER <host> now honors server groups
+	Whenever EPIC tries to connect to a new server, particularly
+	when you do /SERVER <host> it will honor the server group of
+	the new server; if you cannot connect to <host> it will only
+	try to connect to other servers in the same group as <host>.
+
 *** News -- 11/21/2003 -- New math parser can now use 64 bit integers
 	The new experimental math parser (which you can turn on via 
 	/xdebug new_math) can now support 64 bit integers.  This is 
 	auto-detected when you run 'configure' and $info(o) will include
 	the letter 'l' for you scripters who want to be able to tell when
 	the host client can do big math and when it can't.
-
-*** News -- 10/31/2003 -- Most file $functions() now use the "" hack.
-	This hack works by allowing you to specify the empty filename "" in a
-	function call, and have the function read the remaining arg list as a
-	single word which is the filename.  This is useful for dealing with
-	wierd filenames.
-
-*** News -- 10/31/2003 -- Tuned the DCC receive packet size.
-	The receive packet size is now 64k.  This may at first appear to break
-	the protocol, but the read reqest will return immediately if it doesn't
-	have all the data, so the responses will tend to repace themselves to
-	the senders window size, especially under cpu or network load where a
-	read call can't always be made immediately.
-
-	The benefits of doing this are that we don't clobber the sender with
-	quite so many un-necessary acks, and we don't have to spend so much cpu
-	time in the select loop under load.
-
-*** News -- 10/31/2003 -- Fixed dcc_lost to be called in more cases.
-	This still needs work.  There are certain cases for which it isn't
-	called.
-
-*** News -- 10/31/2003 -- Added dcc_spacefix script.
-	When this is loaded, it will automatically translate the double quoted
-	spaced filename dcc requests that some clients send into url encoded
-	ones that epic can understand.
-
-*** News -- 10/31/2003 -- Added $dccctl(refbase).
-	This will change the number from which new dccs get given new refnums.
-	It probably isn't terribly significant except that it will almost
-	definitely disappear the day that refnums become fixed in the system.
-
-*** News -- 10/31/2003 -- Added $dccctl(set [ref] quoted)
-	This is good for 8 bit clean comms over raw dccs.  While it is on, the
-	line by line mode that raw dccs are usually in will be turned off, and
-	i/o by way of "/dcc raw", "/msg =[fd]", and the DCC_RAW hook will
-	instead have dangerous characters backslashed, and can be used with
-	$asciiq(), $chrq(), $writeb(), etc.
-
-	It may on occasions be neccessary to have input be quoted and output be
-	line-by-line or vice versa.  This can be done by leaving quoted mode
-	set to the desired read mode, and flipping it for write.
-
-	With this change, epic moves a step closer to being able to process 8
-	bit clean data.  One of the last remaining parts that can't is /exec.
-
-*** News -- 10/31/2003 -- /away has a new flag, "--" to stop reading flags.
-*** News -- 10/31/2003 -- Added $sedcrypt().
-	Don't use this.  It was put in there for playing around with sed
-	encryption.
-
-*** News -- 10/31/2003 -- Added $tell().
-	This is a compliment of $seek().
-
-*** News -- 10/31/2003 -- Added $ftruncate().
-	This will truncate a file $1- to size $0.  Note that $1- is not a
-	quoted word, and unlike some other file functions, it doesn't operate
-	on fds.  This function may be changed or withdrawn.
-
-*** News -- 10/31/2003 -- $listarray() takes an extra arg.
-	$listarray() returns all values in an array joined by spaces.  Given a
-	second arg, it will use that as a joining string.
-
-*** News -- 10/31/2003 -- Added $wwordtoindex() to functions script.
-	This may be un-necessary given the recent changes to the word
-	parsing rules.
-
-*** News -- 10/31/2003 -- New $open() modes, potential incompatibility.
-	$open() can now open using all the modes available to libcs fopen(3)
-	except "w", which has traditionally been translated to "a".
-
-	The incompatibility is in the way the mode argument is read.  I have
-	seen some scripts that append extra chars for no apparent reason.  If a
-	script did this it would work under the old scheme, but under the new,
-	the entire word must match one of the modes, or the open will fail.
-
-*** News -- 10/31/2003 -- $aliasctl(maxret), rpmatch, rmatch.
-	This whole thing is a hack which will probably be withdrawn in future
-	when a more stable variable storage system is implemented.  Therefore
-	it probably won't be documented anywhere else.
-
-	It is designed to be memory overflow protection for $aliasctl(), which
-	can at times cause a coredump on itself when the variable space is
-	excessively large.
-
-	The way maxret works is that you call $aliasctl(maxret [number]), and
-	from then on, $aliasctl(assign pmatch [...]) will return a maximum of
-	[number] variables.  This is great for purge aliases, because you can
-	call it again once the first [number] are gone and get the next lot.
-	To use it for anything else, a starting range is needed, and this can
-	be specified with $aliasctl(assign [start] pmatch).  Note that [start]
-	must be numeric and _non_zero_.  This isn't a bug.  It means that all
-	scripts using this feature must be written in a future proof way.
-
-	As for rpmatch and rmatch, these are exactly like pmatch and match, but
-	they work through the list in reverse.  This is very useful for
-	performance.
-
-	The data_struct script has been rewritten to use these features as an
-	example of the use of these features.
-
-*** News -- 10/28/2003 -- Cross-family /DCC issues.
-	You can't ordinarily do cross-family /DCC.  Cross-family DCC is
-	when you're connected to an IPv4 server and try to do IPv6 DCC,
-	or when you're connected to an IPv6 server and try to do IPv4 DCC.
-	The reason this doesn't normally work is because EPIC doesn't know
-	what your IP address is (or even if you have one) in the "other"
-	family.  Normally you tell EPIC what your address is by giving it
-	a virtual hostname with /HOSTNAME <name> and it looks up your
-	address in all of the families it supports and uses that.  But if
-	you don't give it a vhost, and you try to do a cross-family DCC,
-	it will fail and remind you to use /HOSTNAME first.
-
-*** News -- 10/28/2003 -- New /ON, /ON DCC_ACTIVITY
-	This hook is activated each time some activity occurs on a 
-	/DCC GET or /DCC SEND, particularly whenever the %D status bar
-	expando is updated.  The idea is that scripters can stop using %D
-	and use the /SET STATUS_USER* expandos to craft their own custom
-	%D-like expandos.  The value of $* is the refnum of the dcc that
-	had the activity.  You can use this value with $dccctl().  When
-	a DCC closes, it throws /on dcc_lost, and then /on dcc_activity
-	will be thrown with the -1 refnum.
-
-*** News -- 10/28/2003 -- Everything should support /xdebug extractw now
-	If you turn on the experimental feature /xdebug extractw, then
-	everything in epic that works on word lists should start supporting
-	extended ("double quoted") words.  This includes numeric expandos,
-	built in functions, and so on.  Furthermore, anything that outputs
-	a word list should surround words with double quotes if they have
-	space in them.  Since double quoted words are not honored unless
-	you have /xdebug extractw, this is an all-or-nothing thing.  
-
-	This will break some scripts becase of changes like this:
-		Old:	$sort(one "two three" four)  -> [four one two three]
-		New:	$sort(one "two three" four)  -> [four one "two three"]
-
-	See the doc/word-lists file in the epic source for a very detailed
-	list of exactly what does and does not output double-quoted words.
-
-*** News -- 10/28/2003 -- New /SET, /SET WSERV_TYPE [XTERM|SCREEN]
-	When you are running EPIC under both screen and X at the same
-	time and you do /window create, some people want epic to start
-	up a new xterm and some people want epic to start up a new 
-	screen window.  The previous default has been a screen window.
-	Now you can either /SET WSERV_TYPE XTERM or /SET WSERV_TYPE SCREEN
-	to explicitly state your preference, if you have one.  Obviously
-	this only matters when you're running epic under BOTH.
-
-*** News -- 10/19/2003 -- $serverctl(SET <refnum> UMODES) now supported
-	To work around an unfortunate problem with ratbox, you are now 
-	permitted to change the "valid user modes" for a particular server.
-	You may want to set this in an /on 005 or some such thing.
 
 # End of file

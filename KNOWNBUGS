@@ -3,23 +3,13 @@ EPIC4 Projects, Bugs, and other Errata:
 KNOWN ERRATA (eg, bugs, or unresolved requests):
 ------------------------------------------------
 * A lot of dcc output goes to target NULL when there is a nickname available.
-* Finish $windowctl()
+* Document $windowctl()
 
 [See http://www.epicsol.org/PROJECTS for things to come in the future]
 [See http://www.epicsol.org/CHANGELOG for things that changed in the past]
 
 THE CHANGELOG SINCE THE LAST RELEASE:
 -------------------------------------
-* Implement experimental infinte recursion detector, see config.h
-* current_window_priority should be global variable
-* Valgrind is my hero -- fix buffer underruns with mangle_line().
-* Make the "current input window" its server's current window on user input.
-* Fix a possible logic hole in ok_to_output().
-* Fix /window query, it was a victim of larneproofing.  Ooops!
-* Hook in $windowctl(), just for fun for now.
-* Enclose a few more dcc outputs in the target nick context.
-* Fix panic when you did /clear + <scrollback> + full page of output.
-* Fix typo that broke /notify on servers other than refnum 0
 * Make /server <host> honor server groups if can't connect to <host>
 * Make reconnects use the server group of NEW server not OLD server.
 * Add checks in configure for (long long)
@@ -27,3 +17,5 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Make 'l' appear in $info(o) if (long long) is being used in new math parser.
 * Make wrapper for atoll() for freebsd-stable and stuff.
 * Make a more complicated wrapper for atoll() for libc5 and stuff.
+* Fix panics when changing hidden window's double status bar status.
+* Fix /lastlog <number> for kanan. 

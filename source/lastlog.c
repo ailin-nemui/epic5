@@ -1,4 +1,4 @@
-/* $EPIC: lastlog.c,v 1.28 2003/11/07 03:51:10 jnelson Exp $ */
+/* $EPIC: lastlog.c,v 1.29 2003/11/24 23:32:24 jnelson Exp $ */
 /*
  * lastlog.c: handles the lastlog features of irc. 
  *
@@ -579,9 +579,9 @@ BUILT_IN_COMMAND(lastlog)
 	if (x_debug & DEBUG_LASTLOG)
 	{
 		yell("Lastlog summary status:");
-		yell("Pattern: [%s]", match);
-		yell("Regex: [%s]", regex);
-		yell("Target: [%s]", target);
+		yell("Pattern: [%s]", match ? match : "<none>");
+		yell("Regex: [%s]", regex ? regex : "<none>");
+		yell("Target: [%s]", target ? target : "<none>");
 		yell("Header: %d", header);
 		yell("Reverse: %d", reverse);
 		yell("Skip: %d", skip);
@@ -630,12 +630,12 @@ BUILT_IN_COMMAND(lastlog)
 
 	    end = current_window->lastlog_newest;
 	    start = end;
-	    for (i = 1; i < number; )
+	    for (i = 0; start != current_window->lastlog_oldest; )
 	    {
-		if (start == current_window->lastlog_oldest)
-			break;
 		if (!level_mask || (level_mask & start->level))
 			i++;
+		if (i == number)
+			break;
 		start = start->older;
 	    }
 
@@ -696,9 +696,11 @@ BUILT_IN_COMMAND(lastlog)
 
 	    start = current_window->lastlog_newest;
 	    end = start;
-	    for (i = 1; i < number; i++)
+	    for (i = 0; end != current_window->lastlog_oldest; )
 	    {
-		if (end == current_window->lastlog_oldest)
+		if (!level_mask || (level_mask & start->level))
+			i++;
+		if (i == number)
 			break;
 		end = end->older;
 	    }
