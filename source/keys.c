@@ -1,4 +1,4 @@
-/* $EPIC: keys.c,v 1.28 2003/07/22 21:12:54 jnelson Exp $ */
+/* $EPIC: keys.c,v 1.29 2003/08/11 03:57:04 wd Exp $ */
 /*
  * keys.c:  Keeps track of what happens whe you press a key.
  *
@@ -717,12 +717,12 @@ void init_keys (void) {
     BIND("^[[C", "FORWARD_CHARACTER");
     BIND("^[OD", "BACKWARD_CHARACTER");
     BIND("^[[D", "BACKWARD_CHARACTER");
-    BIND("^[OF", "SCROLL_START");
-    BIND("^[[F", "SCROLL_START");
+    BIND("^[OF", "SCROLL_END");
+    BIND("^[[F", "SCROLL_END");
     BIND("^[OG", "SCROLL_FORWARD");
     BIND("^[[G", "SCROLL_FORWARD");
-    BIND("^[OH", "SCROLL_END");
-    BIND("^[[H", "SCROLL_END");
+    BIND("^[OH", "SCROLL_START");
+    BIND("^[[H", "SCROLL_START");
     BIND("^[OI", "SCROLL_BACKWARD");
     BIND("^[[I", "SCROLL_BACKWARD");
     BIND("^[On", "NEXT_WINDOW");
