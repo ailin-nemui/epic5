@@ -1,4 +1,4 @@
-/* $EPIC: screen.c,v 1.29 2002/07/17 22:52:52 jnelson Exp $ */
+/* $EPIC: screen.c,v 1.30 2002/08/03 10:58:43 crazyed Exp $ */
 /*
  * screen.c
  *
@@ -369,14 +369,14 @@ static void	term_attribute (Attribute *a)
  * Se we have to actually slurp up only those digits that comprise a legal
  * ^C code.
  */
-const u_char *read_color_seq (const u_char *start, void *d)
+const u_char *read_color_seq (const u_char *start, void *d, int blinkbold)
 {
 	/* 
 	 * The proper "attribute" color mapping is for each ^C lvalue.
 	 * If the value is -1, then that is an illegal ^C lvalue.
 	 */
 	static	int	fore_conv[] = {
-		 7,  0,  4,  2,  1,  3,  5,  1,		/*  0-7  */
+		 7,  0,  4,  2,  1,  1,  5,  3,		/*  0-7  */
 		 3,  2,  6,  6,  4,  5,  0,  7,		/*  8-15 */
 		 7, -1, -1, -1, -1, -1, -1, -1, 	/* 16-23 */
 		-1, -1, -1, -1, -1, -1,  0,  1, 	/* 24-31 */
@@ -390,8 +390,8 @@ const u_char *read_color_seq (const u_char *start, void *d)
 	 * If the value is -1, then that is an illegal ^C rvalue.
 	 */
 	static	int	back_conv[] = {
-		 7,  0,  4,  2,  1,  3,  5,  1,
-		 3,  2,  6,  6,  4,  5,  0,  0,
+		 7,  0,  4,  2,  1,  1,  5,  3,
+		 3,  2,  6,  6,  4,  5,  0,  7,
 		 7, -1, -1, -1, -1, -1, -1, -1,
 		-1, -1, -1, -1, -1, -1, -1, -1,
 		-1, -1, -1, -1, -1, -1, -1, -1,
@@ -407,7 +407,7 @@ const u_char *read_color_seq (const u_char *start, void *d)
 	 * turns bold ON or OFF.  (Every color does one or the other)
 	 */
 	static	int	fore_bold_conv[] =  {
-		1,  0,  0,  0,  0,  0,  0,  1,
+		1,  0,  0,  0,  1,  0,  0,  0,
 		1,  1,  0,  1,  1,  1,  1,  0,
 		1,  0,  0,  0,  0,  0,  0,  0,
 		0,  0,  0,  0,  0,  0,  0,  0,
@@ -432,6 +432,25 @@ const u_char *read_color_seq (const u_char *start, void *d)
 		0,  0,  1,  1,  1,  1,  1,  1,
 		1,  1,  0,  0,  0
 	};
+	/*
+	 * If /set term_does_bright_blink is on, this will be used instead
+	 * of back_blink_conv.  On an xterm, this will cause the background
+	 * to be bold.
+	 */
+	static	int	back_bold_conv[] = {
+		1,  0,  0,  0,  1,  0,  0,  0,
+		1,  1,  0,  1,  1,  1,  1,  0,
+		1,  0,  0,  0,  0,  0,  0,  0,
+		0,  0,  0,  0,  0,  0,  0,  0,
+		0,  0,  0,  0,  0,  0,  0,  0,
+		0,  0,  0,  0,  0,  0,  0,  0,
+		0,  0,  1,  1,  1,  1,  1,  1,
+		1,  1,  0,  0,  0
+	};
+	/*
+	 * And switch between the two.
+	 */
+	int	*back_blinkbold_conv = blinkbold ? back_bold_conv : back_blink_conv;
 
 	/* Local variables, of course */
 	const 	u_char *	ptr = start;
@@ -587,7 +606,7 @@ const u_char *read_color_seq (const u_char *start, void *d)
 			else
 			{
 				a->color_bg = 1;
-				a->blink = back_blink_conv[val];
+				a->blink = back_blinkbold_conv[val];
 				a->bg_color = back_conv[val];
 			}
 		}
@@ -739,7 +758,7 @@ u_char *	normalize_string (const u_char *str, int logical)
 	int		tab_max, tab_cnt = 0;
 	int		nds_max, nds_cnt = 0;
 	int		pc = 0;
-	int		reverse, bold, blink, underline, altchar, color, allow_c1;
+	int		reverse, bold, blink, underline, altchar, color, allow_c1, boldback;
 	size_t		(*attrout) (u_char *, Attribute *);
 
 	/* Figure out how many beeps/tabs/nds's we can handle */
@@ -762,6 +781,7 @@ u_char *	normalize_string (const u_char *str, int logical)
 		altchar 	= get_int_var(ALT_CHARSET_VAR);
 		color 		= get_int_var(COLOR_VAR);
 		allow_c1	= get_int_var(ALLOW_C1_CHARS_VAR);
+		boldback	= get_int_var(TERM_DOES_BRIGHT_BLINK_VAR);
 	}
 	if (logical == 0)
 		attrout = display_attributes;	/* prep for screen output */
@@ -1283,7 +1303,7 @@ u_char *	normalize_string (const u_char *str, int logical)
 			const u_char 	*end;
 
 			put_back();
-			end = read_color_seq(str, (void *)&a);
+			end = read_color_seq(str, (void *)&a, boldback);
 
 			/*
 			 * XXX - This is a short-term hack to prevent an 
