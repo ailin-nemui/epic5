@@ -215,7 +215,6 @@ void 	ExecuteTimers (void)
 		int	old_refnum = current_window->refnum;
 
 		current = PendingTimers;
-		PendingTimers = PendingTimers->next;
 
 		/*
 		 * Restore from_server and current_window from when the
@@ -245,6 +244,12 @@ void 	ExecuteTimers (void)
 		current_exec_timer = empty_string;
 		from_server = old_from_server;
 		make_window_current_by_refnum(old_refnum);
+
+		/*
+		 * Remove timer from PendingTimers list
+		 * now that it has been executed
+		 */
+		PendingTimers = PendingTimers->next;
 
 		/*
 		 * Clean up or reschedule the timer
@@ -327,11 +332,25 @@ static	int	create_timer_ref (char *refnum_want, char *refnum_gets)
 	}
 	else
 	{
-		/* See if the refnum is available */
-		for (tmp = PendingTimers; tmp; tmp = tmp->next)
+		/* 
+		 * If the refnum is being used by the current executing timer
+		 * it should be safe to use it as long as it will die after
+		 * this execution
+		 */
+		if (current_exec_timer != empty_string &&
+		    !my_stricmp(refnum_want, current_exec_timer))
 		{
-			if (!my_stricmp(tmp->ref, refnum_want))
+			if ((tmp = get_timer(current_exec_timer)) && tmp->events != 1)
 				return -1;
+		}
+		else
+		{
+			/* See if the refnum is available */
+			for (tmp = PendingTimers; tmp; tmp = tmp->next)
+			{
+				if (!my_stricmp(tmp->ref, refnum_want))
+					return -1;
+			}
 		}
 		strmcpy(refnum_gets, refnum_want, REFNUM_MAX);
 	}
