@@ -1,4 +1,4 @@
-/* $EPIC: server.c,v 1.106 2003/10/19 21:38:59 jnelson Exp $ */
+/* $EPIC: server.c,v 1.107 2003/11/21 04:38:40 jnelson Exp $ */
 /*
  * server.c:  Things dealing with that wacky program we call ircd.
  *
@@ -74,6 +74,7 @@
  */
 const 	char *	default_umodes = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
 static	char *	do_umode (int du_index);
+static 	void 	remove_from_server_list (int i, int override);
 	void 	reset_nickname (int);
 	void	clear_reconnect_counts (void);
 	const char *get_server_group (int refnum);
@@ -235,7 +236,16 @@ void 	add_to_server_list (const char *server, int port, const char *password, co
 	}
 }
 
-static 	void 	remove_from_server_list (int i)
+void	destroy_server_list (void)
+{
+	int	i;
+
+	for (i = 0; i < number_of_servers; i++)
+		remove_from_server_list(i, 1);
+	new_free((char **)&server_list);
+}
+
+static 	void 	remove_from_server_list (int i, int override)
 {
 	Server  *s;
 	int	count, j;
@@ -767,7 +777,7 @@ BUILT_IN_COMMAND(servercmd)
 			return;
 		}
 
-		remove_from_server_list(i);
+		remove_from_server_list(i, 0);
 	}
 
 	/*

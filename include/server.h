@@ -193,6 +193,7 @@ static __inline__ Server *	get_server (int server)
 						 const char *, const char *,
 						 int);
 	int	find_in_server_list		(const char *, int);
+	void	destroy_server_list		(void);
 	int	find_server_refnum		(char *, char **rest);
 	int	parse_server_index		(const char *, int);
 	void	parse_server_info		(char **, char **, char **,
