@@ -1,4 +1,4 @@
-/* $EPIC: timer.c,v 1.18 2002/12/26 16:40:31 jnelson Exp $ */
+/* $EPIC: timer.c,v 1.19 2003/01/12 21:14:11 jnelson Exp $ */
 /*
  * timer.c -- handles timers in ircII
  *
@@ -700,21 +700,21 @@ char *	timerctl (char *input)
 		RETURN_MSTR(retval);
 	} else if (!my_strnicmp(listc, "REFNUM", 5)) {
 		GET_STR_ARG(refstr, input);
-		if (!(t = get_timer(input)))
+		if (!(t = get_timer(refstr)))
 			RETURN_EMPTY;
 		RETURN_STR(t->ref);
 	} else if (!my_strnicmp(listc, "ADD", 2)) {
 		RETURN_EMPTY;		/* XXX - Not implemented yet. */
 	} else if (!my_strnicmp(listc, "DELETE", 2)) {
 		GET_STR_ARG(refstr, input);
-		if (!(t = get_timer(input)))
+		if (!(t = get_timer(refstr)))
 			RETURN_EMPTY;
 		if (t->command)
 			RETURN_EMPTY;
-		RETURN_INT(remove_timer(input));
+		RETURN_INT(remove_timer(refstr));
 	} else if (!my_strnicmp(listc, "GET", 2)) {
 		GET_STR_ARG(refstr, input);
-		if (!(t = get_timer(input)))
+		if (!(t = get_timer(refstr)))
 			RETURN_EMPTY;
 
 		GET_STR_ARG(listc, input);
@@ -741,7 +741,7 @@ char *	timerctl (char *input)
 		}
 	} else if (!my_strnicmp(listc, "SET", 2)) {
 		GET_STR_ARG(refstr, input);
-		if (!(t = get_timer(input)))
+		if (!(t = get_timer(refstr)))
 			RETURN_EMPTY;
 
 		/* Changing internal system timers is strictly prohibited */
