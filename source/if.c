@@ -412,10 +412,12 @@ BUILT_IN_COMMAND(fe)
 
 	if (*args == '(' && (list = next_expr(&args, '('))) {
 		templist = expand_alias(list, subargs, &args_flag, NULL);
-	} else {
-		mapvar = next_arg(args, &args);
+	} else if ((mapvar = next_arg(args, &args))) {
 		templist = get_variable(mapvar);
-	}
+	} else {
+		error("%s: Missing List for /%s", command, command);
+		return;
+	}    
 
 	if (!templist || !*templist) {
 		new_free(&templist);
