@@ -1,4 +1,4 @@
-/* $EPIC: alias.c,v 1.64 2005/01/23 21:41:28 jnelson Exp $ */
+/* $EPIC: alias.c,v 1.65 2005/01/25 01:39:54 jnelson Exp $ */
 /*
  * alias.c -- Handles the whole kit and caboodle for aliases.
  *
@@ -3141,4 +3141,63 @@ static int	stack_list_builtin_variable_alias (const char *name)
 		return 0;
 	return -1;
 }
+
+/*
+ * Here's the plan.  An all-encompasing low-level symbol manipulation thingee.
+ *
+ * $symbolctl(TYPES)
+ *	Return all of the types supported in this version of EPIC:
+ *	ALIAS			ASSIGN			BUILTIN_COMMAND
+ *	BUILTIN_FUNCTION	BUILTIN_EXPANDO		BUILTIN_VARIABLE
+ * $symbolctl(PMATCH <type> <pattern>)
+ *	Return all symbols of type <type> that match <pattern>.  You can use
+ *	the special value "*" for <type> to get symbols of all types.
+ *
+ * $symbolctl(GET <symbol> LEVELS)
+ *	Return the number of levels of <symbol> that are /STACKed.  This
+ *	value is always 1 unless you have /STACK PUSHed something.
+ * $symbolctl(GET <symbol> <level>)
+ *	Return all of the <type>s that are defined for <symbol> at <level>.
+ *	If <level> is 1, it gets the current value(s).  If <level> is > 1,
+ *	it starts looking at the /STACK PUSHed values.
+ * $symbolctl(GET <symbol> <level> ALIAS VALUE)
+ * $symbolctl(GET <symbol> <level> ALIAS STUB)
+ * $symbolctl(GET <symbol> <level> ALIAS PACKAGE)
+ * $symbolctl(GET <symbol> <level> ALIAS ARGLIST)
+ * $symbolctl(GET <symbol> <level> ASSIGN VALUE)
+ * $symbolctl(GET <symbol> <level> ASSIGN STUB)
+ * $symbolctl(GET <symbol> <level> ASSIGN PACKAGE)
+ * $symbolctl(GET <symbol> <level> BUILTIN_COMMAND)
+ * $symbolctl(GET <symbol> <level> BUILTIN_FUNCTION)
+ * $symbolctl(GET <symbol> <level> BUILTIN_EXPANDO)
+ * $symbolctl(GET <symbol> <level> BUILTIN_VARIABLE)
+ * $symbolctl(GET <symbol> <level> BUILTIN_VARIABLE TYPE)
+ * $symbolctl(GET <symbol> <level> BUILTIN_VARIABLE DATA)
+ * $symbolctl(GET <symbol> <level> BUILTIN_VARIABLE BUILTIN)
+ * $symbolctl(GET <symbol> <level> BUILTIN_VARIABLE SCRIPT)
+ * $symbolctl(GET <symbol> <level> BUILTIN_VARIABLE FLAGS)
+ *
+ * $symbolctl(SET <symbol> <level>)
+ *	Return all of the <type>s that are defined for <symbol>.
+ * $symbolctl(SET <symbol> <level> ALIAS VALUE <string>)
+ * $symbolctl(SET <symbol> <level> ALIAS STUB <string>)
+ * $symbolctl(SET <symbol> <level> ALIAS PACKAGE <string>)
+ * $symbolctl(SET <symbol> <level> ALIAS ARGLIST <string>)
+ * $symbolctl(SET <symbol> <level> ASSIGN VALUE <string>)
+ * $symbolctl(SET <symbol> <level> ASSIGN STUB <string>)
+ * $symbolctl(SET <symbol> <level> ASSIGN PACKAGE <string>)
+ * $symbolctl(SET <symbol> <level> BUILTIN_COMMAND)
+ * $symbolctl(SET <symbol> <level> BUILTIN_FUNCTION)
+ * $symbolctl(SET <symbol> <level> BUILTIN_EXPANDO)
+ * $symbolctl(SET <symbol> <level> BUILTIN_VARIABLE)
+ * $symbolctl(SET <symbol> <level> BUILTIN_VARIABLE TYPE <set-type>)
+ * $symbolctl(SET <symbol> <level> BUILTIN_VARIABLE DATA <string>)
+ * $symbolctl(SET <symbol> <level> BUILTIN_VARIABLE BUILTIN)
+ * $symbolctl(SET <symbol> <level> BUILTIN_VARIABLE SCRIPT <code>)
+ * $symbolctl(SET <symbol> <level> BUILTIN_VARIABLE FLAGS)
+ *
+ * $symbolctl(CREATE <symbol>)
+ * $symbolctl(DELETE <symbol>)
+ * $symbolctl(CHECK <symbol>)
+ */
 

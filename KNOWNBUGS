@@ -4,8 +4,6 @@ KNOWN ERRATA (eg, bugs, or unresolved requests):
 ------------------------------------------------
 * Some way to hook incomplete lines via dcc raw
 * Implement $symbolctl(), to supercede $aliasctl().
-* Need some way to fetch your hook info
-* /query targets with nicks crossing with dcc nicks don't match.
 
 [See http://www.epicsol.org/PROJECTS for things to come in the future]
 [See http://www.epicsol.org/CHANGELOG5 for things that changed in the past]
@@ -435,4 +433,5 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Fix up a lot of compile warnings all over the place.
 * Some changes to $hookctl() might need feedback from howl...
 * Fix vhost support so we can do inbound sockets again.
-
+* Fix add_to_screen() so /query nick catches /dcc chat nick. (rb adm)
+* Fix /away -all which sends a bogus string to the server. (rb rain)

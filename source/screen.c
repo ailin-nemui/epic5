@@ -1,4 +1,4 @@
-/* $EPIC: screen.c,v 1.91 2005/01/13 16:06:06 jnelson Exp $ */
+/* $EPIC: screen.c,v 1.92 2005/01/25 01:39:54 jnelson Exp $ */
 /*
  * screen.c
  *
@@ -2156,6 +2156,8 @@ void 	add_to_screen (const unsigned char *buffer)
 	    }
 	    else
 	    {
+	      for (;;)
+	      {
 		tmp = NULL;
 		while (traverse_all_windows(&tmp))
 		{
@@ -2171,6 +2173,21 @@ void 	add_to_screen (const unsigned char *buffer)
 		    add_to_window(tmp, buffer);
 		    return;
 		}
+
+		/*
+		 * EPIC4 had a hideously complicated if() that handled 
+		 * DCC CHAT nicks ("=nick") against /query's that look like
+		 * "nick" or "=nick".  I'm cheating here by just removing
+		 * the = and letting this go through a second pass.
+		 */
+		if (*who_from == '=')
+		{
+		    who_from++;
+		    continue;
+		}
+		else
+		    break;
+	      }
 	    }
 	}
 

@@ -132,11 +132,14 @@ EPIC5-0.1
 	   except it returns the new /on's <refnum> (of course).
 
     $hookctl(REMOVE <refnum>) 
-	Delete the given /ON.
+	Delete the given /ON.  If <refnum> is -1, it removes the currently
+	executing /ON.
 
     === WORKING WITH THE ONs YOU'VE CREATED ===
     -- In these GET HOOK operations, the values in <> are the values that
        were originally provided to the ADD operation (or the /ON command)
+       <Refnum> is always allowed to be -1, and refers to the currently
+       executing /ON.
 
     $hookctl(GET HOOK <refnum> ARGUMENT_LIST)
 	Return an /ON's <arglist> if it has one.
@@ -347,14 +350,19 @@ EPIC5-0.1
     $hookctl(GET NOISE <noisetype|noiseref> CUSTOM)
 	This always returns 0 for now.
 
-
     === MISCELLANEOUS OPERATIONS ===
+    $hookctl(EXECUTING_HOOKS)
+	This returns the refnums of all of the hooks that are currently 
+	pending (executing).  Since /ONs work like a LIFO queue, the first
+	word is the current /ON, and the second word is the /ON that is waiting
+	for the first one to finish, etc.   Obviously you can use this to 
+	operate on an /ON from within itsself whenever it goes off.
+
     $hookctl(HALTCHAIN <refnum>)
     $hookctl(DENY_ALL_HOOKS)
     $hookctl(DENY_ALL_HOOKS 1)
     $hookctl(DENY_ALL_HOOKS 0)
     $hookctl(EMPTY_SLOTS)
-    $hookctl(EXECUTING_HOOKS)
     $hookctl(HOOKLIST_SIZE)
     $hookctl(LAST_CREATED_HOOK)
     $hookctl(PACKAGE <package> [<type>])

@@ -1,4 +1,4 @@
-/* $EPIC: commands.c,v 1.111 2005/01/23 21:41:28 jnelson Exp $ */
+/* $EPIC: commands.c,v 1.112 2005/01/25 01:39:54 jnelson Exp $ */
 /*
  * commands.c -- Stuff needed to execute commands in ircII.
  *		 Includes the bulk of the built in commands for ircII.
@@ -376,7 +376,7 @@ BUILT_IN_COMMAND(away)
 			arg = args;
 			while (*arg && !isspace(*arg))
 				arg++;
-			if (arg)
+			if (*arg)
 				*arg++ = 0;
 
 			if (0 == my_strnicmp(args+1, "A", 1))	/* all */
