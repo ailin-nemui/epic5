@@ -88,13 +88,14 @@ typedef	struct
 	int	reconnect_to;		/* Server to connect to on EOF */
 	char	*quit_message;		/* Where we stash a quit message */
 	A005	a005;			/* 005 settings kept kere. */
+
 #ifdef HAVE_SSL
 	SSL_CTX*	ctx;
 	SSL_METHOD*	meth;
-	int	enable_ssl;		/* SSL requested on next connection. */
-	int	ssl_enabled;		/* Current SSL status. */
-	SSL*	ssl_fd;
 #endif
+	void *	ssl_fd;
+	int	try_ssl;		/* SSL requested on next connection. */
+	int	ssl_enabled;		/* Current SSL status. */
 
         int             doing_privmsg;
         int             doing_notice;
@@ -111,6 +112,8 @@ typedef	struct
         char *          recv_nick;
         char *          sent_nick;
         char *          sent_body;
+
+	int		(*dgets) (char *, int, int, void *);
 }	Server;
 extern	Server	**server_list;
 #endif	/* NEED_SERVER_LIST */
@@ -287,8 +290,8 @@ const	char*	get_server_005			(int, char*);
 	int	get_server_nickname_pending	(int);
 	void	set_server_sent			(int, int);
 	int	get_server_sent			(int);
-	void	set_server_enable_ssl		(int, int);
-	int	get_server_enable_ssl		(int);
+	void	set_server_try_ssl		(int, int);
+	int	get_server_try_ssl		(int);
 	void	set_server_ssl_enabled		(int, int);
 	int	get_server_ssl_enabled		(int);
 	void	set_server_save_channels	(int, int);

@@ -1,4 +1,4 @@
-/* $EPIC: server.c,v 1.79 2002/12/19 16:37:55 jnelson Exp $ */
+/* $EPIC: server.c,v 1.80 2002/12/23 15:11:27 jnelson Exp $ */
 /*
  * server.c:  Things dealing with that wacky program we call ircd.
  *
@@ -178,10 +178,9 @@ void 	add_to_server_list (const char *server, int port, const char *password, co
 		s->recv_nick = NULL;
 		s->sent_nick = NULL;
 		s->sent_body = NULL;
-#ifdef HAVE_SSL
-		s->enable_ssl = FALSE;
+
 		s->ssl_enabled = FALSE;
-#endif
+		s->ssl_fd = NULL;
 
 		if (password && *password)
 			malloc_strcpy(&s->password, password);
@@ -191,10 +190,13 @@ void 	add_to_server_list (const char *server, int port, const char *password, co
 			malloc_strcpy(&s->d_nickname, nickname);
 		if (group && *group)
 			malloc_strcpy(&s->group, group);
-#ifdef HAVE_SSL
 		if (server_type && *server_type)
-			s->enable_ssl = my_stricmp(server_type, "IRC-SSL") ? 0 : 1;
-#endif
+		{
+		    if (my_stricmp(server_type, "IRC-SSL") == 0)
+			set_server_try_ssl(from_server, TRUE);
+		    else
+			set_server_try_ssl(from_server, FALSE);
+		}
 		malloc_strcpy(&s->umodes, umodes);
 
 		make_notify_list(from_server);
@@ -261,13 +263,16 @@ static 	void 	remove_from_server_list (int i)
 	destroy_notify_list(i);
 	destroy_005(i);
 
-#ifdef HAVE_SSL
-	if (s->ssl_enabled == TRUE)
+	if (get_server_ssl_enabled(i) == TRUE)
 	{
+#ifndef HAVE_SSL
+		panic("Deleting server %d which claims to be using SSL on"
+			"a non-ssl client", i);
+#else
 		SSL_free((SSL *)&s->ssl_fd);
 		SSL_CTX_free((SSL_CTX *)&s->ctx);
-	}
 #endif
+	}
 	new_free(&server_list[i]);
 	s = NULL;
 }
@@ -830,10 +835,8 @@ BUILT_IN_COMMAND(servercmd)
 		if (i != j)
 		{
 			clear_reconnect_counts();
-#ifdef HAVE_SSL
 			if (my_stricmp(get_server_type(i), "IRC-SSL") == 0)
 				set_server_ssl_enabled(i, TRUE);
-#endif
 
 			server_reconnects_to(j, i);
 			reconnect(j, 0);
@@ -871,25 +874,23 @@ void	do_server (fd_set *rd, fd_set *wd)
 		des = s->des;
 		if (des == -1 || !FD_ISSET(des, rd))
 		{
-#ifdef HAVE_SSL
-			if (s->ssl_enabled == TRUE)
+			if (get_server_ssl_enabled(i) == TRUE)
 			{
-				if (!SSL_pending(s->ssl_fd))
+#ifndef HAVE_SSL
+				panic("do_server on server %d claims to be"
+					"using SSL on non-ssl client", i);
+#else
+				if (!SSL_pending((SSL *)s->ssl_fd))
 					continue;
+#endif
 			}
 			else
-#endif
 				continue;
 		}
 		FD_CLR(des, rd);	/* Make sure it never comes up again */
 
 		last_server = from_server = i;
-#ifdef HAVE_SSL
-		if (s->ssl_enabled == TRUE)
-			junk = SSL_dgets(bufptr, des, 1, IO_BUFFER_SIZE, s->ssl_fd);
-		else
-#endif
-			junk = dgets(bufptr, des, 1);
+		junk = dgets(bufptr, des, 1, s->ssl_fd);
 
 		switch (junk)
  		{
@@ -1032,37 +1033,43 @@ void	send_to_aserver_raw (int refnum, size_t len, const char *buffer)
 
 	if ((des = s->des) != -1 && buffer)
 	{
-#ifdef HAVE_SSL
-		if (s->ssl_enabled == TRUE)
+	    if (get_server_ssl_enabled(refnum) == TRUE)
+	    {
+#ifndef HAVE_SSL
+		panic("send_to_aserver_raw: Server %d claims to "
+			"be using SSL on a non-ssl client", refnum);
+#else
+		if (s->ssl_fd == NULL)
 		{
-			if (s->ssl_fd == 0)
-			{
-				say("SSL write error - ssl socket=0");
-				return;
-			}
-			err = SSL_write(s->ssl_fd, buffer, strlen(buffer));
-			BIO_flush(SSL_get_wbio(s->ssl_fd));
+			say("SSL write error - ssl socket = 0");
+			return;
 		}
-		else
-#endif 
-			err = write(des, buffer, strlen(buffer));
-
-		if (err == -1 &&
-			(!get_int_var(NO_FAIL_DISCONNECT_VAR)))
-		{
-			if (is_server_registered(refnum))
-			{
-				/* s->save_channels == 1; */
-				/* close_server(server, strerror(errno));  */
-				server_is_registered(des, 0);
-				say("Write to server failed.  Closing connection.");
-#ifdef HAVE_SSL
-				if (s->ssl_enabled == TRUE)
-					SSL_shutdown(s->ssl_fd);
+		err = SSL_write((SSL *)s->ssl_fd, buffer, strlen(buffer));
+		BIO_flush(SSL_get_wbio((SSL *)s->ssl_fd));
 #endif
-				reconnect(server, 1);
-			}
+	    }
+	    else
+		err = write(des, buffer, strlen(buffer));
+
+	    if (err == -1 && (!get_int_var(NO_FAIL_DISCONNECT_VAR)))
+	    {
+		if (is_server_registered(refnum))
+		{
+			/* s->save_channels == 1; */
+			/* close_server(server, strerror(errno));  */
+			server_is_registered(des, 0);
+			say("Write to server failed.  Closing connection.");
+			if (get_server_ssl_enabled(refnum) == TRUE)
+#ifndef HAVE_SSL
+			    panic("send_to_aserver_raw: Closing server %d "
+				  "which claims to be using SSL on non-ssl "
+				  "client", refnum);
+#else
+				SSL_shutdown((SSL *)s->ssl_fd);
+#endif
+			reconnect(server, 1);
 		}
+	    }
 	}
 }
 
@@ -1131,9 +1138,9 @@ static int 	connect_to_server (int new_server)
 		{
 		    say("Unable to connect to port %d of server %s: [%d] %s", 
 				s->port, s->name, des, my_strerror(errno));
-#ifdef HAVE_SSL
-		    s->ssl_enabled = FALSE; /* Would cause client to crash, if not wiped out */
-#endif
+
+		    /* Would cause client to crash, if not wiped out */
+		    set_server_ssl_enabled(new_server, FALSE);
 		}
 		else
 			say("Unable to connect to server.");
@@ -1542,13 +1549,16 @@ void	close_server (int refnum, const char *message)
 		     */
 		    if (was_registered)
 			    send_to_aserver(refnum, "QUIT :%s\n", message);
-#ifdef HAVE_SSL
-		    if (s->ssl_enabled == TRUE)
+		    if (get_server_ssl_enabled(refnum) == TRUE)
 		    {
-			    say("Closing SSL connection");
-			    SSL_shutdown(s->ssl_fd);
-		    }
+#ifndef HAVE_SSL
+			panic("close_server: Server %d claims to be using "
+			      "ssl on a non-ssl client", refnum);
+#else
+			say("Closing SSL connection");
+			SSL_shutdown((SSL *)s->ssl_fd);
 #endif
+		    }
 		    do_hook(SERVER_LOST_LIST, "%d %s %s", 
 				refnum, s->name, message);
 		}
@@ -1735,7 +1745,6 @@ int	get_server_flag (int refnum, int value)
 }
 
 
-#ifdef HAVE_SSL
 /* get_server_isssl: returns 1 if the server is using SSL connection */
 int	get_server_isssl (int refnum)
 {
@@ -1754,28 +1763,18 @@ const char	*get_server_cipher (int refnum)
 	if (!(s = get_server(refnum)) || s->ssl_enabled == FALSE)
 		return empty_string;
 
-	return SSL_get_cipher(s->ssl_fd);
-}
-
+#ifndef HAVE_SSL
+	return empty_string
 #else
-
-/* get_server_isssl: returns 1 if the server is using SSL connection */
-int	get_server_isssl (int refnum)
-{
-	return 0;
-}
+	return SSL_get_cipher((SSL *)s->ssl_fd);
 #endif
+}
+
 
 /* CONNECTION/REGISTRATION STATUS */
 void	register_server (int refnum, const char *nickname)
 {
 	Server *	s;
-#ifdef HAVE_SSL
-	char *		cert_issuer;
-	char *		cert_subject;
-	X509 *		server_cert;
-	EVP_PKEY *	server_pkey;
-#endif
 
 	if (!(s = get_server(refnum)))
 		return;
@@ -1790,20 +1789,28 @@ void	register_server (int refnum, const char *nickname)
 		get_server_name(refnum), get_server_port(refnum));
 
 	s->registration_pending = 1;
-#ifdef HAVE_SSL
-	if (s->enable_ssl == TRUE)
+	if (get_server_try_ssl(refnum) == TRUE)
 	{
+#ifndef HAVE_SSL
+		panic("register_server on server %d claims to be doing"
+			"SSL on a non-ssl client.", refnum);
+#else
+		char *		cert_issuer;
+		char *		cert_subject;
+		X509 *		server_cert;
+		EVP_PKEY *	server_pkey;
+
 		say("SSL negotiation in progress...");
 		/* Set up SSL connection */
 		s->ctx = SSL_CTX_init(0);
-		s->ssl_fd = SSL_FD_init(s->ctx, s->des);
+		s->ssl_fd = (void *)SSL_FD_init(s->ctx, s->des);
 
 		if (x_debug & DEBUG_SSL)
 			say("SSL negotiation using %s",
 				get_server_cipher(refnum));
 		say("SSL negotiation on port %d of server %s complete",
 			s->port, get_server_name(refnum));
-		server_cert = SSL_get_peer_certificate(s->ssl_fd);
+		server_cert = SSL_get_peer_certificate((SSL *)s->ssl_fd);
 
 		if (!server_cert) {
 			say ("SSL negotiation failed");
@@ -1822,7 +1829,7 @@ void	register_server (int refnum, const char *nickname)
 			u_cert_issuer = urlencode(cert_issuer);
 			say("issuer: %s", u_cert_issuer);
 
-			s->ssl_enabled = TRUE;
+			set_server_ssl_enabled(refnum, TRUE);
 			server_pkey = X509_get_pubkey(server_cert);
 			say("public key: %d", EVP_PKEY_bits(server_pkey));
 			do_hook(SSL_SERVER_CERT_LIST, "%s %s %s",
@@ -1833,8 +1840,8 @@ void	register_server (int refnum, const char *nickname)
 			free(cert_issuer);
 			free(cert_subject);
 		}
-	}
 #endif
+	}
 	if (s->password)
 		send_to_aserver(refnum, "PASS %s", s->password);
 
@@ -2452,11 +2459,9 @@ const char *get_server_type (int refnum)
 	if (!(s = get_server(refnum)))
 		return NULL;
 
-#ifdef HAVE_SSL
-	if (s->enable_ssl)
+	if (get_server_try_ssl(refnum) == TRUE)
 		return "IRC-SSL";
 	else
-#endif
 		return "IRC";
 }
 
@@ -2523,10 +2528,6 @@ IACCESSOR(v, nickname_pending)
 IACCESSOR(v, sent)
 IACCESSOR(v, version)
 IACCESSOR(v, save_channels)
-#ifdef HAVE_SSL
-IACCESSOR(v, enable_ssl)
-IACCESSOR(v, ssl_enabled)
-#endif
 SACCESSOR(chan, invite_channel, NULL)
 SACCESSOR(nick, last_notify_nick, NULL)
 SACCESSOR(nick, joined_nick, NULL)
@@ -2599,6 +2600,40 @@ void	set_server_protocol_state (int refnum, int state)
 	set_server_doing_ctcp(refnum, val);
 	state = state >> 8;
 }
+
+void	set_server_try_ssl (int refnum, int flag)
+{
+	Server *s;
+
+	if (!(s = get_server(refnum)))
+		return;
+
+#ifndef HAVE_SSL
+	if (flag == TRUE)
+		say("This server does not have SSL support.");
+	set_server_type(refnum, "IRC");
+	flag = FALSE;
+#endif
+	s->try_ssl = flag;
+}
+GET_IATTRIBUTE(try_ssl)
+
+void	set_server_ssl_enabled (int refnum, int flag)
+{
+	Server *s;
+
+	if (!(s = get_server(refnum)))
+		return;
+
+#ifndef HAVE_SSL
+	if (flag == TRUE)
+		say("This server does not have SSL support.");
+	set_server_type(refnum, "IRC");
+	flag = FALSE;
+#endif
+	s->ssl_enabled = flag;
+}
+GET_IATTRIBUTE(ssl_enabled)
 
 /*****/
 /* WAIT STUFF */
@@ -2775,19 +2810,6 @@ void set_server_005 (int refnum, char *setting, char *value)
 }
 
 
-#if 0
-#define EMPTY empty_string
-#define EMPTY_STRING m_strdup(EMPTY)
-#define RETURN_EMPTY return m_strdup(EMPTY)
-#define RETURN_IF_EMPTY(x) if (empty( x )) RETURN_EMPTY
-#define GET_INT_ARG(x, y) {RETURN_IF_EMPTY(y); x = my_atol(safe_new_next_arg(y, &y));}
-#define GET_FLOAT_ARG(x, y) {RETURN_IF_EMPTY(y); x = atof(safe_new_next_arg(y, &y));}
-#define GET_STR_ARG(x, y) {RETURN_IF_EMPTY(y); x = new_next_arg(y, &y);RETURN_IF_EMPTY(x);}
-#define RETURN_MSTR(x) return ((x) ? (x) : EMPTY_STRING);
-#define RETURN_STR(x) return m_strdup((x) ? (x) : EMPTY)
-#define RETURN_INT(x) return m_strdup(ltoa((x)))
-#endif
-
 /* Used by function_serverctl */
 /*
  * $serverctl(REFNUM server-desc)
@@ -2817,8 +2839,9 @@ void set_server_005 (int refnum, char *setting, char *value)
  */
 char 	*serverctl 	(char *input)
 {
-	int	refnum;
+	int	refnum, num;
 	char	*listc, *listc1;
+	const char *ret;
 
 	GET_STR_ARG(listc, input);
 	if (!my_strnicmp(listc, "REFNUM", 1)) {
@@ -2840,37 +2863,50 @@ char 	*serverctl 	(char *input)
 
 		GET_STR_ARG(listc, input);
 		if (!my_strnicmp(listc, "AWAY", 1)) {
-			RETURN_STR(get_server_away(refnum));
+			ret = get_server_away(refnum);
+			RETURN_STR(ret);
 		} else if (!my_strnicmp(listc, "CONNECTED", 3)) {
-			RETURN_INT(is_server_registered(refnum));
+			num = is_server_registered(refnum);
+			RETURN_INT(num);
 		} else if (!my_strnicmp(listc, "COOKIE", 3)) {
-			RETURN_STR(get_server_cookie(refnum));
+			ret = get_server_cookie(refnum);
+			RETURN_STR(ret);
 		} else if (!my_strnicmp(listc, "GROUP", 1)) {
-			RETURN_STR(get_server_group(refnum));
+			ret = get_server_group(refnum);
+			RETURN_STR(ret);
 		} else if (!my_strnicmp(listc, "ITSNAME", 1)) {
-			RETURN_STR(get_server_itsname(refnum));
+			ret = get_server_itsname(refnum);
+			RETURN_STR(ret);
 		} else if (!my_strnicmp(listc, "NAME", 2)) {
-			RETURN_STR(get_server_name(refnum));
+			ret = get_server_name(refnum);
+			RETURN_STR(ret);
 		} else if (!my_strnicmp(listc, "NICKNAME", 2)) {
-			RETURN_STR(get_server_nickname(refnum));
+			ret = get_server_nickname(refnum);
+			RETURN_STR(ret);
 		} else if (!my_strnicmp(listc, "PASSWORD", 2)) {
-			RETURN_STR(get_server_password(refnum));
+			ret = get_server_password(refnum);
+			RETURN_STR(ret);
 		} else if (!my_strnicmp(listc, "PORT", 2)) {
-			RETURN_INT(get_server_port(refnum));
+			num = get_server_port(refnum);
+			RETURN_INT(num);
 		} else if (!my_strnicmp(listc, "QUIT_MESSAGE", 1)) {
-			RETURN_STR(get_server_quit_message(refnum));
-#ifdef HAVE_SSL
+			ret = get_server_quit_message(refnum);
+			RETURN_STR(ret);
 		} else if (!my_strnicmp(listc, "SSL", 1)) {
-			RETURN_INT(get_server_enable_ssl(refnum));
-#endif
+			num = get_server_try_ssl(refnum);
+			RETURN_INT(num);
 		} else if (!my_strnicmp(listc, "UMODES", 6)) {
-			RETURN_STR(get_possible_umodes(refnum));
+			ret = get_possible_umodes(refnum);
+			RETURN_STR(ret);
 		} else if (!my_strnicmp(listc, "UMODE", 2)) {
-			RETURN_STR(get_umode(refnum));
+			ret = get_umode(refnum);
+			RETURN_STR(ret);
 		} else if (!my_strnicmp(listc, "USERHOST", 2)) {
-			RETURN_STR(get_server_userhost(refnum));
+			ret = get_server_userhost(refnum);
+			RETURN_STR(ret);
 		} else if (!my_strnicmp(listc, "VERSION", 1)) {
-			RETURN_STR(get_server_version_string(refnum));
+			ret = get_server_version_string(refnum);
+			RETURN_STR(ret);
 		} else if (!my_strnicmp(listc, "005s", 4)) {
 			int ofs = from_server;
 			char *ret;
@@ -2880,7 +2916,8 @@ char 	*serverctl 	(char *input)
 			RETURN_MSTR(ret);
 		} else if (!my_strnicmp(listc, "005", 3)) {
 			GET_STR_ARG(listc1, input);
-			RETURN_STR(get_server_005(refnum, listc1));
+			ret = get_server_005(refnum, listc1);
+			RETURN_STR(ret);
 		}
 	} else if (!my_strnicmp(listc, "SET", 1)) {
 		GET_INT_ARG(refnum, input);
@@ -2923,14 +2960,12 @@ char 	*serverctl 	(char *input)
 		} else if (!my_strnicmp(listc, "QUIT_MESSAGE", 1)) {
 			set_server_quit_message(refnum, input);
 			RETURN_INT(1);
-#ifdef HAVE_SSL
 		} else if (!my_strnicmp(listc, "SSL", 1)) {
 			int value;
 
 			GET_INT_ARG(value, input);
-			set_server_enable_ssl(refnum, value);
+			set_server_try_ssl(refnum, value);
 			RETURN_INT(1);
-#endif
 		} else if (!my_strnicmp(listc, "UMODES", 6)) {
 			RETURN_EMPTY;		/* Read only for now */
 		} else if (!my_strnicmp(listc, "UMODE", 2)) {

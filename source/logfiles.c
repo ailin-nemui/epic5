@@ -1,4 +1,4 @@
-/* $EPIC: logfiles.c,v 1.12 2002/12/19 03:22:59 jnelson Exp $ */
+/* $EPIC: logfiles.c,v 1.13 2002/12/23 15:11:27 jnelson Exp $ */
 /*
  * logfiles.c - General purpose log files
  *
@@ -709,19 +709,6 @@ void	add_to_logs (int winref, int servref, const char *target, int level, const 
 }
 
 /*****************************************************************************/
-#if 0
-#define EMPTY empty_string
-#define EMPTY_STRING m_strdup(EMPTY)
-#define RETURN_EMPTY return m_strdup(EMPTY)
-#define RETURN_IF_EMPTY(x) if (empty( x )) RETURN_EMPTY
-#define GET_INT_ARG(x, y) {RETURN_IF_EMPTY(y); x = my_atol(safe_new_next_arg(y, &y));}
-#define GET_FLOAT_ARG(x, y) {RETURN_IF_EMPTY(y); x = atof(safe_new_next_arg(y, &y));}
-#define GET_STR_ARG(x, y) {RETURN_IF_EMPTY(y); x = new_next_arg(y, &y);RETURN_IF_EMPTY(x);}
-#define RETURN_MSTR(x) return ((x) ? (x) : EMPTY_STRING);
-#define RETURN_STR(x) return m_strdup((x) ? (x) : EMPTY)
-#define RETURN_INT(x) return m_strdup(ltoa((x)))
-#endif
-
 /* Used by function_logctl */
 /*
  * $logctl(REFNUM log-desc)
@@ -784,9 +771,11 @@ char *logctl	(char *input)
                 } else if (!my_strnicmp(listc, "SERVER", 3)) {
 			RETURN_INT(log->servref);
                 } else if (!my_strnicmp(listc, "TARGETS", 3)) {
-			RETURN_MSTR(logfile_get_targets(log));
+			char *ret = logfile_get_targets(log);
+			RETURN_MSTR(ret);
                 } else if (!my_strnicmp(listc, "LEVEL", 3)) {
-			RETURN_STR(bits_to_lastlog_level(log->level));
+			char *ret = bits_to_lastlog_level(log->level);
+			RETURN_STR(ret);
                 } else if (!my_strnicmp(listc, "REWRITE", 3)) {
 			RETURN_STR(log->rewrite);
                 } else if (!my_strnicmp(listc, "MANGLE", 3)) {

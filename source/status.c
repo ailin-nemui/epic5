@@ -1,4 +1,4 @@
-/* $EPIC: status.c,v 1.14 2002/12/19 03:22:59 jnelson Exp $ */
+/* $EPIC: status.c,v 1.15 2002/12/23 15:11:27 jnelson Exp $ */
 /*
  * status.c: handles the status line updating, etc for IRCII 
  *
@@ -52,9 +52,6 @@
 #include "names.h"
 #include "ircaux.h"
 #include "alias.h"
-#ifdef HAVE_SSL
-#include "ssl.h"
-#endif
 
 #ifdef Char
 #undef Char
@@ -1087,7 +1084,6 @@ STATUS_FUNCTION(status_chanop)
  */
 STATUS_FUNCTION(status_ssl)
 {
-#ifdef HAVE_SSL
 	char *text;
 
 	if (window->server != NOSERV && get_server_isssl(window->server) &&
@@ -1095,7 +1091,6 @@ STATUS_FUNCTION(status_ssl)
 			return text;
 	else if ((text = get_string_var(STATUS_SSL_OFF_VAR)))
 			return text;
-#endif
 	return empty_string;
 }
 

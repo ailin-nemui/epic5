@@ -57,7 +57,6 @@ typedef	struct	WindowStru
 	int	bottom;			/* SCREEN line for bottom of window */
 	int	cursor;			/* WINDOW line where the cursor is */
 	int	noscrollcursor;		/* Where the next line goes */
-	int	line_cnt;		/* Number of lines ON DISPLAY */
 	int	absolute_size;		/* True if window doesnt rebalance */
 	int	scroll;			/* True if the window scrolls */
 	int	change_line;		/* True if this is a scratch window */
@@ -100,14 +99,11 @@ typedef	struct	WindowStru
 	 */
 	Display *top_of_scrollback,	/* Start of the scrollback buffer */
 		*top_of_display,	/* Where the viewport starts */
-		*ceiling_of_display,	/* The farthest back top_of_display */
 		*display_ip,		/* Where next line goes in rite() */
 		*scrollback_point;	/* Where we went into scrollback */
 	int	display_buffer_size;	/* How big the scrollback buffer is */
 	int	display_buffer_max;	/* How big its supposed to be */
 	int	display_size;		/* How big the window is - status */
-
-	int	lines_scrolled_back;	/* Where window is relatively */
 
 	int	hold_mode;		/* True if we want to hold stuff */
 	int	autohold;		/* True if we are in temp hold mode */

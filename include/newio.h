@@ -13,11 +13,7 @@
 
 extern 	int 	dgets_errno;
 
-	int 	dgets 			(char *, int, int);
-#ifdef HAVE_SSL
-	int	SSL_dgets		(char *, int, int, int, SSL*);
-#endif
-
+	int 	dgets 			(char *, int, int, void *);
 	int 	new_select 		(fd_set *, fd_set *, struct timeval *);
 	int	new_open		(int);
 	int	new_open_for_writing	(int);

@@ -1,4 +1,4 @@
-/* $EPIC: array.c,v 1.7 2002/08/30 16:51:25 crazyed Exp $ */
+/* $EPIC: array.c,v 1.8 2002/12/23 15:11:26 jnelson Exp $ */
 /*
  * array.c -- Karll's Array Suite
  *
@@ -198,6 +198,9 @@ Karll on IRC
 #include "array.h"
 #include "ircaux.h"
 #include "output.h"
+#include "functions.h"
+#undef BUILT_IN_FUNCTION
+#define BUILT_IN_FUNCTION(x, y) char * x (char * y)
 #undef index			/* doh! */
 
 #define ARRAY_THRESHOLD	10
@@ -496,23 +499,6 @@ int set_item (char* name, long item, char* input, int unsorted)
  */
 
 /*
- * These are the same ones found in alias.c
- */
-#define EMPTY empty_string
-#define EMPTY_STRING m_strdup(EMPTY)
-#define RETURN_EMPTY return m_strdup(EMPTY)
-#define RETURN_IF_EMPTY(x) if (empty( x )) RETURN_EMPTY
-#define GET_INT_ARG(x, y) {RETURN_IF_EMPTY(y); x = my_atol(safe_new_next_arg(y, &y));}
-#define GET_FLOAT_ARG(x, y) {RETURN_IF_EMPTY(y); x = atof(safe_new_next_arg(y, &y));}
-#define GET_STR_ARG(x, y) {RETURN_IF_EMPTY(y); x = new_next_arg(y, &y);RETURN_IF_EMPTY(x);}
-#define RETURN_MSTR(x) return ((x) ? (x) : EMPTY_STRING);
-#define RETURN_STR(x) return m_strdup(x ? x : EMPTY);
-#define RETURN_INT(x) return m_strdup(ltoa(x));
-
-#define BUILT_IN_FUNCTION(x, y) char * x (char * y)
-
-
-/*
  * function_matchitem() attempts to match a pattern to the contents of an array
  * RETURNS -1 if it cannot find the array, or -2 if no matches occur
  */
@@ -544,7 +530,7 @@ BUILT_IN_FUNCTION((fn), input)                                                \
 }
 MATCHITEM(function_matchitem, input, array->item[index], {})
 MATCHITEM(function_rmatchitem, array->item[index], input, {})
-MATCHITEM(function_gettmatch, input, array->item[index], {if (match >= 0) RETURN_STR(array->item[match])})
+MATCHITEM(function_gettmatch, input, array->item[index], {if (match >= 0) RETURN_STR(array->item[match]);})
 #undef MATCHITEM
 
 /*
@@ -553,25 +539,25 @@ MATCHITEM(function_gettmatch, input, array->item[index], {if (match >= 0) RETURN
  * or it returns an empty string if not items matches or if the array was not
  * found.
  */
-#define GET_MATCHES(fn, wm1, wm2, pre)                                               \
-BUILT_IN_FUNCTION((fn), input)                                                       \
-{                                                                                    \
-	char    *result = (char *) 0;                                                \
-	size_t	resclue = 0;                                                         \
-	char    *name = (char *) 0;                                                  \
-	long    index;                                                               \
-	an_array *array;                                                             \
-                                                                                     \
-	if ((name = next_arg(input, &input)) &&                                      \
-	    (array = get_array(name)) && input)                                      \
-	{                                                                            \
-		(pre);                                                               \
-		for (index = 0; index < array->size; index++)                        \
-			if (wild_match((wm1), (wm2)) > 0)                            \
-				m_sc3cat_s(&result, space, ltoa(index), &resclue);   \
-	}                                                                            \
-                                                                                     \
-	RETURN_MSTR(result);                                                         \
+#define GET_MATCHES(fn, wm1, wm2, pre)                                       \
+BUILT_IN_FUNCTION((fn), input)                                               \
+{                                                                            \
+	char    *result = (char *) 0;                                        \
+	size_t	resclue = 0;                                                 \
+	char    *name = (char *) 0;                                          \
+	long    index;                                                       \
+	an_array *array;                                                     \
+                                                                             \
+	if ((name = next_arg(input, &input)) &&                              \
+	    (array = get_array(name)) && input)                              \
+	{                                                                    \
+	    (pre);                                                           \
+	    for (index = 0; index < array->size; index++)                    \
+		if (wild_match((wm1), (wm2)) > 0)                            \
+		    m_sc3cat_s(&result, space, ltoa(index), &resclue);       \
+	}                                                                    \
+                                                                             \
+	RETURN_MSTR(result);                                                 \
 }
 GET_MATCHES(function_getmatches, input, array->item[index], {})
 GET_MATCHES(function_getrmatches, array->item[index], input, {})
@@ -638,27 +624,27 @@ GETITEM(function_igetitem, array->item[array->index[item]], SORT_INDICES(array))
  *         -2 if it was unable to find the item (item < 0 or item was greater
  *            than 1 + the prevous maximum item number
  */
-#define FUNCTION_SETITEM(fn, unsorted)                                                           \
-BUILT_IN_FUNCTION((fn), input)                                                                   \
-{                                                                                                \
-	char *name = (char *) 0;                                                                 \
-	char *itemstr = (char *) 0;                                                              \
-	long item;                                                                               \
-	int result = -1;                                                                         \
-                                                                                                 \
-	if ((name = next_arg(input, &input)))                                                    \
-	{                                                                                        \
-		if (strlen(name) && (itemstr = next_arg(input, &input)))                         \
-		{                                                                                \
-			item = my_atol(itemstr);                                                 \
-			if (item >= 0)                                                           \
-			{                                                                        \
-				upper(name);                                                     \
-				result = set_item(name, item, input, (unsorted));                \
-			}                                                                        \
-		}                                                                                \
-	}                                                                                        \
-	RETURN_INT(result);                                                                      \
+#define FUNCTION_SETITEM(fn, unsorted)                                     \
+BUILT_IN_FUNCTION((fn), input)                                             \
+{                                                                          \
+	char *name = (char *) 0;                                           \
+	char *itemstr = (char *) 0;                                        \
+	long item;                                                         \
+	int result = -1;                                                   \
+                                                                           \
+	if ((name = next_arg(input, &input)))                              \
+	{                                                                  \
+	    if (strlen(name) && (itemstr = next_arg(input, &input)))       \
+	    {                                                              \
+		item = my_atol(itemstr);                                   \
+		if (item >= 0)                                             \
+		{                                                          \
+		    upper(name);                                           \
+		    result = set_item(name, item, input, (unsorted));      \
+		}                                                          \
+	    }                                                              \
+	}                                                                  \
+	RETURN_INT(result);                                                \
 }
 FUNCTION_SETITEM(function_setitem, 0)
 FUNCTION_SETITEM(function_usetitem, 1)
@@ -689,7 +675,7 @@ BUILT_IN_FUNCTION(function_getarrays, input)
  */
 BUILT_IN_FUNCTION(function_numarrays, input)
 {
-	RETURN_INT(array_info.size)
+	RETURN_INT(array_info.size);
 }
 
 /*
@@ -711,7 +697,7 @@ BUILT_IN_FUNCTION(function_finditem, input)
 			item = (item >= 0) ? array->index[item] : -2;
 		}
         }
-	RETURN_INT(item)
+	RETURN_INT(item);
 }
 
 /*
@@ -733,7 +719,7 @@ BUILT_IN_FUNCTION(function_ifinditem, input)
 				item = -2;
 		}
         }
-	RETURN_INT(item)
+	RETURN_INT(item);
 }
 
 /*
@@ -766,9 +752,9 @@ BUILT_IN_FUNCTION((fn), input)                                             \
 		}                                                          \
 	}                                                                  \
 	if (ret)                                                           \
-		RETURN_MSTR(ret)                                           \
+		RETURN_MSTR(ret);                                          \
 	else                                                               \
-		RETURN_INT(found)                                          \
+		RETURN_INT(found);                                         \
 }
 I2I(function_indextoitem, array->index[item])
 I2I(function_itemtoindex, find_index(array, item))
@@ -832,7 +818,7 @@ BUILT_IN_FUNCTION(function_delitem, input)
 			}
 		}
 	}
-	RETURN_INT(found)
+	RETURN_INT(found);
 }
 
 /*
@@ -882,7 +868,7 @@ BUILT_IN_FUNCTION(function_delitems, input)
 			RESIZE(array->index, long, array->size);
 		}
 	}
-	RETURN_INT(found)
+	RETURN_INT(found);
 }
 
 /*
@@ -899,7 +885,7 @@ BUILT_IN_FUNCTION(function_delarray, input)
                 delete_array(name);
 		found = 0;
 	}
-	RETURN_INT(found)
+	RETURN_INT(found);
 }
 /*
  * function_ifindfirst() returns the first index of an exact match with the
@@ -926,7 +912,7 @@ BUILT_IN_FUNCTION(function_ifindfirst, input)
 			}
 		}
         }
-	RETURN_INT(item)
+	RETURN_INT(item);
 }
 
 /*
@@ -981,6 +967,6 @@ BUILT_IN_FUNCTION(function_gettmatch, input)
 
 		}
 	}
-	RETURN_STR(ret ? ret : empty_string);
+	RETURN_STR(ret);
 }
 #endif

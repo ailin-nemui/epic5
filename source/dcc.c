@@ -1,4 +1,4 @@
-/* $EPIC: dcc.c,v 1.42 2002/12/19 03:22:58 jnelson Exp $ */
+/* $EPIC: dcc.c,v 1.43 2002/12/23 15:11:26 jnelson Exp $ */
 /*
  * dcc.c: Things dealing client to client connections. 
  *
@@ -2189,7 +2189,7 @@ static	void	process_incoming_chat (DCC_list *Client)
 	}
 
         bufptr = tmp;
-	bytesread = dgets(bufptr, Client->socket, 1);
+	bytesread = dgets(bufptr, Client->socket, 1, NULL);
 
 	switch ((int)bytesread)
 	{
@@ -2367,7 +2367,7 @@ static	void		process_incoming_raw (DCC_list *Client)
 	long	bytesread;
 
         bufptr = tmp;
-	switch ((int)(bytesread = dgets(bufptr, Client->socket, 0)))
+	switch ((int)(bytesread = dgets(bufptr, Client->socket, 0, NULL)))
 	{
 	    case -1:
 	    {

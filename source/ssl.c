@@ -1,4 +1,4 @@
-/* $EPIC: ssl.c,v 1.5 2002/07/17 22:52:53 jnelson Exp $ */
+/* $EPIC: ssl.c,v 1.6 2002/12/23 15:11:27 jnelson Exp $ */
 /*
  * ssl.c: SSL connection functions
  *
@@ -36,12 +36,10 @@
  */
 
 #include "irc.h"
-#include "ircaux.h"
 
 #ifdef HAVE_SSL
+#include "ircaux.h"
 #include "ssl.h"
-
-char	err_buf[256];
 
 SSL_CTX	*SSL_CTX_init (int server)
 {

@@ -222,3 +222,15 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Make as much as possible use refnums as params and not from_server.
 * Fix bugs with send_to_aserver(). doh!
 * Fix /CLEAR so it does an update_all_windows() to actually do the clear!
+* Keep track of where went into scrollback and only stop at that point.
+* Remove colon at end of RETURN_MSTR so it is like others.
+* Unify dgets() and SSL_dgets()
+* Add a 4th argument to dgets(), an (SSL *) for ssl reads, NULL for normals
+* Integrate SSL stuff more tightly by removing unecessary #ifdef's
+* Change 'enable_ssl' to 'try_ssl' to avoid confusion with 'ssl_enabled'
+* Remove uneccesary members of (Window)
+* #include "functions.h" in any file implementing built in functions.
+* panic if ssl op attempted on non-ssl connection.
+* Don't call functions in RETURN_* macros. (they're evaled twice)
+* Nuke #ifdef 0'd uses of 'ceiling_of_display'
+

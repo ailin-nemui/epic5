@@ -1,4 +1,4 @@
-/* $EPIC: window.c,v 1.50 2002/12/20 04:52:21 jnelson Exp $ */
+/* $EPIC: window.c,v 1.51 2002/12/23 15:11:27 jnelson Exp $ */
 /*
  * window.c: Handles the organzation of the logical viewports (``windows'')
  * for irc.  This includes keeping track of what windows are open, where they
@@ -56,9 +56,6 @@
 #include "parse.h"
 #include "commands.h"
 #include "exec.h"
-#ifdef HAVE_SSL
-#include "ssl.h"
-#endif
 
 static char *onoff[] = { "OFF", "ON" };
 
@@ -182,7 +179,6 @@ Window	*new_window (Screen *screen)
 	new_w->cursor = -1;		/* Force a clear-screen */
 	new_w->noscrollcursor = -1;
 	new_w->absolute_size = 0;
-	new_w->line_cnt = 0;
 	new_w->old_size = 1;		/* Filled in later */
 	new_w->update = 0;
 	new_w->miscflags = 0;
@@ -211,9 +207,6 @@ Window	*new_window (Screen *screen)
 	new_w->top_of_scrollback = NULL;	/* Filled in later */
 	new_w->top_of_display = NULL;		/* Filled in later */
 	new_w->scrollback_point = NULL;		/* Filled in later */
-#if 0
-	new_w->ceiling_of_display = NULL;	/* Filled in later */
-#endif
 	new_w->display_ip = NULL;		/* Filled in later */
 	new_w->display_buffer_size = 0;
 	new_w->display_buffer_max = get_int_var(SCROLLBACK_VAR);
@@ -252,9 +245,6 @@ Window	*new_window (Screen *screen)
 	new_w->display_buffer_size = 1;
 	new_w->display_ip = new_w->top_of_scrollback;
 	new_w->top_of_display = new_w->top_of_scrollback;
-#if 0
-	new_w->ceiling_of_display = new_w->top_of_display;
-#endif
 	new_w->old_size = 1;
 
 	if (screen)
@@ -1112,11 +1102,7 @@ void	resize_window_display (Window *window)
 		{
 			for (i = 0; i < cnt; i++)
 			{
-				if (!tmp || !tmp->prev
-#if 0
-				    || tmp == window->ceiling_of_display
-#endif
-								)
+				if (!tmp || !tmp->prev)
 					break;
 				tmp = tmp->prev;
 			}
@@ -2226,9 +2212,6 @@ static void 	clear_window (Window *window)
 		return;
 
 	window->top_of_display = window->display_ip;
-#if 0
-	window->ceiling_of_display = window->top_of_display;
-#endif
 	if (window->miscflags & WINDOW_NOTIFIED)
 		window->miscflags &= ~WINDOW_NOTIFIED;
 	recalculate_window_cursor_and_display_ip(window);
@@ -2283,9 +2266,6 @@ static void	unclear_window (Window *window)
 			break;
 		window->top_of_display = window->top_of_display->prev;
 	}
-#if 0
-	window->ceiling_of_display = window->top_of_display;
-#endif
 
 	recalculate_window_cursor_and_display_ip(window);
 	window_body_needs_redraw(window);
@@ -4229,16 +4209,10 @@ Window *window_server (Window *window, char **args)
 {
 	char *	arg;
 	int	newconn;
-#ifdef HAVE_SSL
-	int withSSL = FALSE;
-#endif
 
 	if ((arg = next_arg(*args, args)))
 	{
 		int i = find_server_refnum(arg, NULL);
-#ifdef HAVE_SSL
-		withSSL = get_server_enable_ssl(i);
-#endif
 
 		if (windows_connected_to_server(window->server) > 1)
 		{

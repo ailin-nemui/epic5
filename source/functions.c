@@ -1,4 +1,4 @@
-/* $EPIC: functions.c,v 1.94 2002/12/23 04:17:22 jnelson Exp $ */
+/* $EPIC: functions.c,v 1.95 2002/12/23 15:11:27 jnelson Exp $ */
 /*
  * functions.c -- Built-in functions for ircII
  *
@@ -6243,8 +6243,8 @@ BUILT_IN_FUNCTION(function_ssl, words)
 
 BUILT_IN_FUNCTION(function_cipher, input)
 {
-#ifdef HAVE_SSL
-	int     sval = from_server;
+	int     	sval = from_server;
+	const char *	ret;
 
 	if (*input)
 		GET_INT_ARG(sval, input);
@@ -6252,10 +6252,8 @@ BUILT_IN_FUNCTION(function_cipher, input)
 	if (sval < 0 || sval >= server_list_size())
 		RETURN_STR(NULL);
 
-	RETURN_STR(get_server_cipher(sval));
-#else
-	RETURN_EMPTY;
-#endif
+	ret = get_server_cipher(sval);
+	RETURN_STR(ret);
 }
 
 #define MATH_RETVAL(x)						\
