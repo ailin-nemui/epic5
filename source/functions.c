@@ -1,4 +1,4 @@
-/* $EPIC: functions.c,v 1.75 2002/07/26 17:36:39 jnelson Exp $ */
+/* $EPIC: functions.c,v 1.76 2002/07/30 05:30:27 jnelson Exp $ */
 /*
  * functions.c -- Built-in functions for ircII
  *
@@ -5916,7 +5916,7 @@ BUILT_IN_FUNCTION(function_hash_32bit, input)
  */
 BUILT_IN_FUNCTION(function_indextoword, input)
 {
-	size_t	pos;
+	ssize_t	pos;
 	size_t	len;
 
 	GET_INT_ARG(pos, input);

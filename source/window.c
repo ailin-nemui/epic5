@@ -1,4 +1,4 @@
-/* $EPIC: window.c,v 1.34 2002/07/17 22:52:53 jnelson Exp $ */
+/* $EPIC: window.c,v 1.35 2002/07/30 05:30:27 jnelson Exp $ */
 /*
  * window.c: Handles the organzation of the logical viewports (``windows'')
  * for irc.  This includes keeping track of what windows are open, where they
@@ -4490,7 +4490,7 @@ typedef struct window_ops_T {
 	window_func 	func;
 } window_ops;
 
-const static window_ops options [] = {
+static const window_ops options [] = {
 	{ "ADD",		window_add 		},
 	{ "BACK",		window_back 		},
 	{ "BALANCE",		window_balance 		},

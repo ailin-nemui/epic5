@@ -122,7 +122,7 @@ extern int getnameinfo__compat (
 	int flags);
 
 extern void freeaddrinfo__compat (struct addrinfo *);
-const extern char *gai_strerror__compat (int);
+extern const char *gai_strerror__compat (int);
 
 /* In case there is no definition of offsetof() provided - though any proper
 Standard C system should have one. */
@@ -136,7 +136,7 @@ Standard C system should have one. */
   sockport.h -
 
   $Author: jnelson $
-  $Date: 2002/07/26 17:10:07 $
+  $Date: 2002/07/30 05:30:23 $
   created at: Fri Apr 30 23:19:34 JST 1999
 
 ************************************************/
