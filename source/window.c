@@ -1,4 +1,4 @@
-/* $EPIC: window.c,v 1.78 2003/11/18 05:36:10 jnelson Exp $ */
+/* $EPIC: window.c,v 1.79 2003/11/24 21:11:17 jnelson Exp $ */
 /*
  * window.c: Handles the organzation of the logical viewports (``windows'')
  * for irc.  This includes keeping track of what windows are open, where they
@@ -1228,12 +1228,16 @@ static	int	restart;
 			continue;
 		}
 
+		/* 
+		 * This should always be done, even for hidden windows
+		 * ... i think.
+		 */
+		if (tmp->display_size != tmp->old_size)
+			resize_window_display(tmp);
+
 		/* Never try to update/redraw an invisible window */
 		if (!tmp->screen)
 			continue;
-
-		if (tmp->display_size != tmp->old_size)
-			resize_window_display(tmp);
 
 		if (tmp->cursor == -1 || 
 			(tmp->scroll && 
@@ -1259,6 +1263,13 @@ static	int	restart;
 	{
 		do_input_too = 0;
 		update_input(UPDATE_JUST_CURSOR);
+	}
+
+	tmp = NULL;
+	while (traverse_all_windows(&tmp))
+	{
+		if (tmp->cursor > tmp->display_size)
+			panic("uaw: window [%d]'s cursor [%d] is off the display [%d]", tmp->refnum, tmp->cursor, tmp->display_size);
 	}
 
 	recursion--;
@@ -5281,6 +5292,12 @@ void 	make_window_current (Window *window)
 		current_window = last_input_screen->current_window;
 	else if (current_window != window)
 		current_window = window;
+
+	if (current_window == NULL)
+		current_window = last_input_screen->window_list;
+
+	if (current_window == NULL)
+		panic("make_window_current(NULL) -- can't find another window");
 
 	if (current_window->deceased)
 		panic("This window is dead and cannot be made current");
