@@ -3,7 +3,7 @@
 # This is a simplistic encryption demonstrating the principles
 # of the protocol, while being quite usable.
 #
-# the first input line contains words,the first of which is the key,
+# the first input line contains words, the first of which is the key,
 # and additional arguments, which aren't used right now.
 #
 # When the end of the line is reached, the rest of the input is to be
@@ -12,11 +12,11 @@
 # be present.
 
 function encrypt {
-	(echo ${parms[0]} ; cat ) | exec gpg -c --batch --passphrase-fd 0
+	( echo ${parms[0]} ; cat ) | gpg -c --batch --passphrase-fd 0
 }
 
 function decrypt {
-	(echo ${parms[0]} ; cat ) | gpg --batch --passphrase-fd 0
+	( echo ${parms[0]} ; cat ) | gpg --batch --passphrase-fd 0
 }
 
 proto="$1"

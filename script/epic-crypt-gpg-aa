@@ -15,7 +15,7 @@
 # mode, echo -n is used.
 
 function encrypt {
-	(echo ${parms[0]} ; cat ) | gpg -ca --batch --passphrase-fd 0 | (
+	( echo ${parms[0]} ; cat ) | gpg -ca --batch --passphrase-fd 0 | (
 		while read && [ -n "$REPLY" ] ; do : ; done
 		while read && [ -n "$REPLY" ] ; do
 			[ -n "$LAST" ] && echo -n "$LAST " ;
