@@ -25,6 +25,7 @@ static int	set_non_blocking (int fd);
 static int	set_blocking (int fd);
 static int	inet_remotesockaddr (int family, const char *host, u_short port, SS *storage, socklen_t *len);
 static int	inet_vhostsockaddr (int family, SS *storage, socklen_t *len);
+static int	Connect (int fd, SA *addr);
 
 
 /*
@@ -130,7 +131,7 @@ int	client_connect (SA *l, socklen_t ll, SA *r, socklen_t rl)
 	if (family == AF_UNIX)
 	{
 		alarm(get_int_var(CONNECT_TIMEOUT_VAR));
-		if (connect(fd, r, rl) < 0)
+		if (Connect(fd, r) < 0)
 		{
 			alarm(0);
 			return close(fd), -9;
@@ -158,7 +159,8 @@ int	client_connect (SA *l, socklen_t ll, SA *r, socklen_t rl)
 		set_non_blocking(fd);
 
 		/* Star the connect.  If any bad error occurs, punt. */
-		err = connect(fd, r, rl);
+		errno = 0;
+		err = Connect(fd, r);
 		if (err < 0 && errno != EAGAIN && errno != EINPROGRESS)
 			return close(fd), -11;
 
@@ -749,5 +751,11 @@ static int	get_high_portnum (void)
 #endif
 }
 
+static int Connect (int fd, SA *addr)
+{
+	if (addr->sa_family == AF_INET)
+		return connect(fd, addr, sizeof(ISA));
 
-
+	errno = EAFNOSUPPORT;
+	return -1;
+}

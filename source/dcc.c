@@ -9,7 +9,7 @@
  */
 
 #if 0
-static	char	rcsid[] = "@(#)$Id: dcc.c,v 1.17 2002/05/07 00:21:13 jnelson Exp $";
+static	char	rcsid[] = "@(#)$Id: dcc.c,v 1.18 2002/05/09 05:35:13 jnelson Exp $";
 #endif
 
 #include "irc.h"
@@ -47,8 +47,13 @@ static	char	rcsid[] = "@(#)$Id: dcc.c,v 1.17 2002/05/07 00:21:13 jnelson Exp $";
 #define DCC_REJECTED	((unsigned) 0x0200)
 #define DCC_STATES	((unsigned) 0xfff0)
 
-#define V4ADDR(x) ((ISA *)x->sin_addr)
-#define V4PORT(x) (ntohs((ISA *)x->sin_port))
+#define V0(x) ((SA *)&(x))
+#define FAMILY(x) (V0(x)->sa_family)
+
+#define V4(x) ((ISA *)&(x))
+#define V4FAM(x) (V4(x)->sin_family)
+#define V4ADDR(x) (V4(x)->sin_addr)
+#define V4PORT(x) (V4(x)->sin_port)
 
 typedef	struct	DCC_struct
 {
@@ -64,7 +69,7 @@ typedef	struct	DCC_struct
 		char *		encrypt;
 	struct	DCC_struct *	next;
 
-		ISA		offer;			/* Their offer */
+		SS		offer;			/* Their offer */
 		ISA		peer_sockaddr;		/* Their saddr */
 		ISA		local_sockaddr;		/* Our saddr */
 		u_short		want_port;		/* HOST ORDER */
@@ -1641,23 +1646,28 @@ char	*dcc_raw_listen (unsigned short port)
 
 
 /*
- * Usage: $connect(<hostname> <portnum>)
+ * Usage: $connect(<hostname> <portnum> <family>)
  */
-char	*dcc_raw_connect(char *host, u_short port)
+char	*dcc_raw_connect(char *host, u_short port, int family)
 {
 	DCC_list *	Client;
 	char *		bogus;
-	ISA		my_sockaddr;
+	SS		my_sockaddr;
+
+	memset(&my_sockaddr, 0, sizeof(my_sockaddr));
 
 	message_from(NULL, LOG_DCC);
-	my_sockaddr.sin_family = AF_INET;
-	if (inet_anyton(host, (SA *)&my_sockaddr))
+	if (family == AF_INET)
 	{
-		say("Unknown host: %s", host);
-		message_from(NULL, LOG_CURRENT);
-		return m_strdup(empty_string);
+		((ISA *)&my_sockaddr)->sin_family = AF_INET;
+		if (inet_anyton(host, (SA *)&my_sockaddr))
+		{
+			say("Unknown host: %s", host);
+			message_from(NULL, LOG_CURRENT);
+			return m_strdup(empty_string);
+		}
+		((ISA *)&my_sockaddr)->sin_port = htons(port);
 	}
-	my_sockaddr.sin_port = htons(port);
 
 	bogus = LOCAL_COPY(ltoa(port));
 	Client = dcc_searchlist(host, bogus, DCC_RAW, 1, NULL, -1);
@@ -1712,6 +1722,8 @@ void	register_dcc_offer (char *user, char *type, char *description, char *addres
 	char *		c;
 	u_long		TempLong = 0;
 	int		do_auto = 0;	/* used in dcc chat collisions */
+	u_short		realport;	/* Bleh */
+	char 		p_addr[256];
 
 	if (x_debug & DEBUG_DCC_SEARCH)
 		yell("register_dcc_offer: [%s|%s|%s|%s|%s|%s|%s]", user, type, description, address, port, size, extra);
@@ -1783,16 +1795,42 @@ void	register_dcc_offer (char *user, char *type, char *description, char *addres
 	}
 	Client->flags |= DCC_THEIR_OFFER;
 
+	/* Make sure the struct sockaddr_storage is clear. */
+	memset(&Client->offer, 0, sizeof(Client->offer));
+
+	/*
+	 * Fill in the "offer" sockaddr.
+	 * Unfortunately, we have to check the port like this because
+	 * putting and getting the port out of a sockaddr is a PITA.
+	 */
+	realport = strtoul(port, NULL, 10);	/* bleh */
+	if (realport < 1024)
+	{
+		Client->flags |= DCC_DELETE;
+		say("DCC %s (%s) request from %s rejected because it "
+			"specified reserved port number (%hu) [%s]", 
+				type, description, user, 
+				realport, port);
+		return;
+	}
+
+	/* 
+	 * I'd love to use inet_anyton() here, but that can do dns
+	 * lookups and people would probably exploit that for evil. :(
+	 */
+
 	if (strchr(address, '.'))
 	{
-		Client->offer.sin_family = AF_INET;
-		if (inet_pton(AF_INET, address, &Client->offer.sin_addr) == 0)
+		V4FAM(Client->offer) = AF_INET;
+		if (inet_pton(AF_INET, address, &V4ADDR(Client->offer)) == 0)
 		{
 			say("DCC %s (%s) request from %s had mangled return "
 				"address [%s]", type, description, 
 						user, address);
 			return;
 		}
+		V4PORT(Client->offer) = htons(realport);
+		inet_ntop(AF_INET, &V4ADDR(Client->offer), p_addr, 256);
 	}
 	else if (strchr(address, ':'))
 	{
@@ -1802,20 +1840,12 @@ void	register_dcc_offer (char *user, char *type, char *description, char *addres
 	else
 	{
 		TempLong = strtoul(address, NULL, 10);
-		Client->offer.sin_family = AF_INET;
-		Client->offer.sin_addr.s_addr = htonl(TempLong);
+		V4FAM(Client->offer) = AF_INET;
+		V4ADDR(Client->offer).s_addr = htonl(TempLong);
+		V4PORT(Client->offer) = htons(realport);
+		inet_ntop(AF_INET, &V4ADDR(Client->offer), p_addr, 256);
 	}
 
-	Client->offer.sin_port = htons((u_short)strtoul(port, NULL, 10));
-	if (ntohs(Client->offer.sin_port) < 1024)
-	{
-		Client->flags |= DCC_DELETE;
-		say("DCC %s (%s) request from %s rejected because it "
-			"specified reserved port number (%hu) [%s]", 
-				type, description, user, 
-				ntohs(Client->offer.sin_port), port);
-		return;
-	}
 
 #ifdef HACKED_DCC_WARNING
 	/* 
@@ -1824,9 +1854,10 @@ void	register_dcc_offer (char *user, char *type, char *description, char *addres
 	 * We do not automatically reject any discrepencies, but warn the
 	 * user instead to be cautious.
 	 */
+	if (FAMILY(Client->offer) == AF_INET)
 	{
-		char 		*fromhost;
-		ISA		irc_addr;
+		char 	*fromhost;
+		SS	irc_addr;
 
 		if (!(fromhost = strchr(FromUserHost, '@')))
 		{
@@ -1835,26 +1866,35 @@ void	register_dcc_offer (char *user, char *type, char *description, char *addres
 		}
 
 		fromhost++;
-		irc_addr.sin_family = AF_INET;
+		FAMILY(irc_addr) = FAMILY(Client->offer);
 		if (inet_anyton(fromhost, (SA *)&irc_addr))
 		{
 			yell("### Incoming handshake has an address [%s] that could not be figured out!", fromhost);
 			yell("### Please use caution in deciding whether to accept it or not");
 		}
-		else if (irc_addr.sin_addr.s_addr != Client->offer.sin_addr.s_addr)
+		else if (FAMILY(Client->offer) == AF_INET)
 		{
-			say("WARNING: Fake dcc handshake detected! [%x]", Client->offer.sin_addr.s_addr);
+		   if (V4ADDR(irc_addr).s_addr != V4ADDR(Client->offer).s_addr)
+		   {
+			say("WARNING: Fake dcc handshake detected! [%x]", V4ADDR(Client->offer).s_addr);
 			say("Unless you know where this dcc request is coming from");
 			say("It is recommended you ignore it!");
+		   }
 		}
 	}
 #endif
 
-	if (!Client->offer.sin_addr.s_addr || !ntohs(Client->offer.sin_port))
+	/*
+	 * Now check to make sure that the address is reasonable.
+	 */
+	if (FAMILY(Client->offer) == AF_INET)
 	{
+	    if (V4ADDR(Client->offer).s_addr == 0)
+	    {
 		Client->flags |= DCC_DELETE;
-		yell("### DCC handshake from %s ignored becuase it had an null port or address", user);
+		yell("### DCC handshake from %s ignored becuase it had an null address", user);
 		return;
+	    }
 	}
 
   	if (do_auto)
@@ -1872,19 +1912,12 @@ void	register_dcc_offer (char *user, char *type, char *description, char *addres
 	 */
 	Client->locked++;
 	if ((Client->flags & DCC_TYPES) == DCC_FILEREAD)
-	       jvs_blah = do_hook(DCC_REQUEST_LIST,
-			 "%s %s %s %s %d %s %ld",
-			  user, type, description,
-			  inet_ntoa(Client->offer.sin_addr),
-			  ntohs(Client->offer.sin_port),
-			  Client->description,
-			  Client->filesize);
+	       jvs_blah = do_hook(DCC_REQUEST_LIST, "%s %s %s %s %s %s %ld",
+			  user, type, description, p_addr, port,
+			  Client->description, Client->filesize);
 	else
-	       jvs_blah = do_hook(DCC_REQUEST_LIST,
-			 "%s %s %s %s %d",
-			  user, type, description,
-			  inet_ntoa(Client->offer.sin_addr),
-			  ntohs(Client->offer.sin_port));
+	       jvs_blah = do_hook(DCC_REQUEST_LIST, "%s %s %s %s %s",
+			  user, type, description, p_addr, port);
 	Client->locked--;
 
 	if (jvs_blah)
@@ -1934,15 +1967,12 @@ void	register_dcc_offer (char *user, char *type, char *description, char *addres
 
 	    /* Thanks, Tychy! (lherron@imageek.york.cuny.edu) */
 	    if ((Client->flags & DCC_TYPES) == DCC_FILEREAD)
-		say("DCC %s (%s %ld) request received from %s!%s [%s:%d]",
-		    type, description, Client->filesize, user, FromUserHost,
-		    inet_ntoa(Client->offer.sin_addr), 
-		    ntohs(Client->offer.sin_port));
+		say("DCC %s (%s %ld) request received from %s!%s [%s:%s]",
+			type, description, Client->filesize, user, 
+			FromUserHost, p_addr, port);
 	    else
-	        say("DCC %s (%s) request received from %s!%s [%s:%d]", 
-		    type, description, user, FromUserHost,
-		    inet_ntoa(Client->offer.sin_addr),
-		    ntohs(Client->offer.sin_port));
+		say("DCC %s (%s) request received from %s!%s [%s:%s]", 
+			type, description, user, FromUserHost, p_addr, port);
 	}
 
 	get_time(&Client->lasttime);
@@ -2236,7 +2266,7 @@ struct	hostent		*hp;
 	NewClient->socket = new_socket;
 
 	NewClient->peer_sockaddr = remaddr;
-	NewClient->offer = remaddr;
+	NewClient->offer = *(SS *)&remaddr;
 
 	len = sizeof(NewClient->local_sockaddr);
 	getsockname(NewClient->socket, (SA *)&NewClient->local_sockaddr, &len);
@@ -2852,10 +2882,12 @@ static	void	dcc_getfile_resume (char *args)
 	Client->bytes_sent = 0L;
 	Client->bytes_read = Client->resume_size = sb.st_size;
 
-	malloc_strcpy(&Client->othername, ltoa((long)ntohs(Client->offer.sin_port)));
+	if (((SA *)&Client->offer)->sa_family == AF_INET)
+		malloc_strcpy(&Client->othername, 
+			ltoa((long)ntohs(((ISA *)&Client->offer)->sin_port)));
 
 	if (x_debug & DEBUG_DCC_XMIT)
-		yell("SENDING DCC RESUME to [%s] [%s|%d|%ld]", user, filename, ntohs(Client->offer.sin_port), (long)sb.st_size);
+		yell("SENDING DCC RESUME to [%s] [%s|%s|%ld]", user, filename, Client->othername, (long)sb.st_size);
 
 	/* Just in case we have to fool the protocol enforcement. */
 	old_dp = doing_privmsg;
@@ -2863,8 +2895,8 @@ static	void	dcc_getfile_resume (char *args)
 	old_dc = in_ctcp_flag;
 
 	doing_privmsg = doing_notice = in_ctcp_flag = 0;
-	send_ctcp(CTCP_PRIVMSG, user, CTCP_DCC, "RESUME %s %d %ld", 
-		filename, (int)ntohs(Client->offer.sin_port), (long)sb.st_size);
+	send_ctcp(CTCP_PRIVMSG, user, CTCP_DCC, "RESUME %s %s %ld", 
+		filename, Client->othername, (long)sb.st_size);
 
 	doing_privmsg = old_dp;
 	doing_notice = old_dn;

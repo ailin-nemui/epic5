@@ -1407,7 +1407,7 @@ BUILT_IN_FUNCTION(function_connect, input)
 	GET_STR_ARG(host, input);
 	GET_INT_ARG(port, input);
 
-	return dcc_raw_connect(host, port);	/* DONT USE RETURN_STR HERE! */
+	return dcc_raw_connect(host, port, AF_INET);	/* DONT USE RETURN_STR HERE! */
 }
 
 

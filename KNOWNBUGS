@@ -9,7 +9,7 @@ KNOWN ERRATA (eg, bugs, or unresolved requests):
 * Allegedly 464 numeric shouldn't force a reconnect if we're registered.
 * The mangler might expand things more than 3 times -- possible
   interference from the attribute parser?  caused by many ^v's.
-
+* Start supporting [<p-addr>] for "presentation" notation addresses.
  
 [See http://www.epicsol.org/PROJECTS for things to come in the future]
 [See http://www.epicsol.org/CHANGELOG for things that changed in the past]
@@ -56,3 +56,9 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Convert more (last?) inet_ntoa to inet_ntop, and inet_aton to inet_pton.
 * Fix bug with $convert() (one_to_another)
 * Try to make /window create only bind to 127.0.0.1.
+* Convert $connect() to protocol independance...
+* This requires converting dcc->offer to a "SS"...
+* This requires converting dcc_open to working with dcc->offer as an SS...
+* This makes dcc_open protocol independant (in theory)
+* Use INADDR_LOOPBACK, if possible, for /window create.
+* Write a connect() wrapper because connect() requires 3rd arg to be correct.
