@@ -1,4 +1,4 @@
-/* $EPIC: newio.c,v 1.29 2005/02/05 00:08:11 jnelson Exp $ */
+/* $EPIC: newio.c,v 1.30 2005/02/09 02:23:25 jnelson Exp $ */
 /*
  * newio.c: This is some handy stuff to deal with file descriptors in a way
  * much like stdio's FILE pointers 
@@ -109,20 +109,23 @@
 
 typedef	struct	myio_struct
 {
-	char		*buffer;
-	size_t		buffer_size;
-	unsigned 	read_pos,
-			write_pos;
-	int		segments;
-	int		error;
-	void		(*callback) (int fd);
+	char *	buffer;
+	size_t	buffer_size,
+		read_pos,
+		write_pos;
+	short	segments,
+		error,
+		clean,
+		held;
+	void	(*callback) (int fd);
+	int	(*io_callback) (int, char **, size_t *, size_t *);
 }           MyIO;
 
-static	MyIO	**io_rec = NULL;
+static	MyIO **	io_rec = NULL;
 static	int	global_max_fd = -1;
 	int	dgets_errno = 0;
 
-static int	unix_read (int fd, char **buffer, size_t *buffer_size, size_t *start);
+static void	new_io_event (int fd);
 
 /*
  * Get_pending_bytes: What do you think it does?
@@ -130,7 +133,7 @@ static int	unix_read (int fd, char **buffer, size_t *buffer_size, size_t *start)
 size_t 	get_pending_bytes (int fd)
 {
 	if (fd >= 0 && io_rec[fd] && io_rec[fd]->buffer)
-		return strlen(io_rec[fd]->buffer);
+		return io_rec[fd]->write_pos - io_rec[fd]->read_pos;
 
 	return 0;
 }
@@ -158,6 +161,64 @@ static int	unix_read (int fd, char **buffer, size_t *buffer_size, size_t *start)
 	return c;
 }
 
+static int	unix_accept (int fd, char **buffer, size_t *buffer_size, size_t *start)
+{
+	int	c;
+	int	newfd;
+	SS	addr;
+	socklen_t len;
+
+	len = sizeof(addr);
+	newfd = Accept(fd, (SA *)&addr, &len);
+
+	if ((*buffer_size) - (*start) < sizeof(newfd) + sizeof(addr))
+		panic("unix_accept: Buffer isn't big enough.  "
+			"%d bytes left, need %d.", 
+				(*buffer) - (*start), 
+				sizeof(newfd) + sizeof(addr));
+
+	memcpy((*buffer) + (*start), &newfd, sizeof(newfd));
+	memcpy((*buffer) + (*start) + sizeof(newfd), &addr, sizeof(addr));
+	return sizeof(newfd) + sizeof(addr);
+}
+
+static int	unix_connect (int fd, char **buffer, size_t *buffer_size, size_t *start)
+{
+	int	gsn_result;
+	SS	localaddr;
+	int	gpn_result;
+	SS	remoteaddr;
+	socklen_t len;
+	int	x;
+
+	len = sizeof(localaddr);
+	errno = 0;
+	getsockname(fd, (SA *)&localaddr, &len);
+	gsn_result = errno;
+
+	len = sizeof(remoteaddr);
+	errno = 0;
+	getpeername(fd, (SA *)&remoteaddr, &len);
+	gpn_result = errno;
+
+	if ((*buffer_size) - (*start) < (sizeof(SS) + sizeof(int)) * 2)
+		panic("unix_accept: Buffer isn't big enough.  "
+			"%d bytes left, need %d.", 
+				(*buffer) - (*start), 
+				(sizeof(SS) + sizeof(int)) * 2);
+
+	x = 0;
+	memcpy((*buffer) + (*start) + x, &gsn_result, sizeof(gsn_result));
+	x += sizeof(gsn_result);
+	memcpy((*buffer) + (*start) + x, &localaddr, sizeof(localaddr));
+	x += sizeof(localaddr);
+	memcpy((*buffer) + (*start) + x, &gpn_result, sizeof(gpn_result));
+	x += sizeof(gpn_result);
+	memcpy((*buffer) + (*start) + x, &remoteaddr, sizeof(remoteaddr));
+	x += sizeof(remoteaddr);
+
+	return x;
+}
 
 /*
  * dgets() is used by:
@@ -201,13 +262,13 @@ static int	unix_read (int fd, char **buffer, size_t *buffer_size, size_t *start)
  *	>0 -- If a full, newline terminated line was available, the length
  *	      of the line is returned.
  */
-ssize_t	dgets (int des, char *buf, size_t buflen, int buffer, int (*reader) (int, char **, size_t *, size_t *))
+ssize_t	dgets (int des, char *buf, size_t buflen, int buffer)
 {
 	size_t	cnt = 0;
-	int	c = 0;		/* gcc can die. */
-	MyIO	*ioe;
 	size_t	consumed = 0;
+	int	c = 0;		/* gcc can die. */
 	char	h = 0;
+	MyIO *	ioe;
 
 	if (!io_rec)
 		init_io();
@@ -222,85 +283,22 @@ ssize_t	dgets (int des, char *buf, size_t buflen, int buffer, int (*reader) (int
 	ioe = io_rec[des];
 
 	if (ioe == NULL)
-	{
-		ioe = io_rec[des] = (MyIO *)new_malloc(sizeof(MyIO));
-		ioe->buffer_size = IO_BUFFER_SIZE;
-		ioe->buffer = (char *)new_malloc(ioe->buffer_size + 2);
-		ioe->read_pos = ioe->write_pos = 0;
-		ioe->segments = 0;
-		ioe->error = 0;
-	}
+		panic("dgets called on unsetup fd %d", des);
 
-	if (ioe->read_pos == ioe->write_pos)
-	{
-		ioe->read_pos = ioe->write_pos = 0;
-		ioe->buffer[0] = 0;
-		ioe->segments = 0;
-	}
-
-	/* 
-	 * If there is not a complete line of data already buffered,
-	 * and the user provided a callback, call it to get more data.
-	 * This means you can pass 'reader == NULL' to do a nonblocking
-	 * flush of the buffer.
-	 */
-	if (!strchr(ioe->buffer + ioe->read_pos, '\n'))
-	{
-	    if (ioe->segments > MAX_SEGMENTS)
-	    {
-		yell("***XXX*** Too many read()s on des [%d] without a "
-				"newline! ***XXX***", des);
-		*buf = 0;
-		dgets_errno = ECONNABORTED;
+	if ((dgets_errno = ioe->error))
 		return -1;
-	    }
 
-	    if (ioe->read_pos)
-	    {
-		ov_strcpy(ioe->buffer, ioe->buffer + ioe->read_pos);
-		ioe->read_pos = 0;
-		ioe->write_pos = strlen(ioe->buffer);
-		ioe->segments = 1;
-	    }
-
-	    /*
-	     * Dont try to read into a full buffer.
-	     */
-	    if (ioe->write_pos >= ioe->buffer_size)
-	    {
-		yell("***XXX*** Buffer for des [%d] is filled! ***XXX***", des);
-		dgets_errno = ENOMEM; /* Cough */
-		return -1;
-	    }
-
-	    if (!reader)
-		reader = unix_read;
-
-	    c = reader(des, &ioe->buffer, &ioe->buffer_size, &ioe->write_pos);
-
-	    if (x_debug & DEBUG_INBOUND) 
-		yell("FD [%d], did [%d]", des, c);
-
-	    if (c <= 0)
-	    {
-		*buf = 0;
-		dgets_errno = (c == 0) ? -1 : errno;
-		return -1;
-	    }
-	    ioe->buffer[ioe->write_pos + c] = 0;
-	    ioe->write_pos += c;
-	    ioe->segments++;
-	}
-
-	dgets_errno = 0;
 
 	/*
 	 * So the buffer probably has changed now, because we just read
 	 * in more data.  Check again to see if there is a newline.  If
 	 * there is not, and the caller wants a complete line, just punt.
 	 */
-	if (buffer && !strchr(ioe->buffer + ioe->read_pos, '\n'))
-	    return 0;
+	if (buffer == 1 && !strchr(ioe->buffer + ioe->read_pos, '\n'))
+	{
+		ioe->clean = 1;
+		return 0;
+	}
 
 	/*
 	 * AT THIS POINT WE'VE COMMITED TO RETURNING WHATEVER WE HAVE.
@@ -314,9 +312,12 @@ ssize_t	dgets (int des, char *buf, size_t buflen, int buffer, int (*reader) (int
 
 	    if (cnt <= buflen - 1)
 		buf[cnt++] = h;
-	    if (h == '\n')
+	    if (buffer >= 0 && h == '\n')
 		break;
 	}
+
+	if (ioe->read_pos == ioe->write_pos)
+		ioe->clean = 1;
 
 	/* 
 	 * Before anyone whines about this, a lot of code in epic 
@@ -332,7 +333,7 @@ ssize_t	dgets (int des, char *buf, size_t buflen, int buffer, int (*reader) (int
 					des, consumed, cnt);
 
 		/* If the line had a newline, then put the newline in. */
-		if (h == '\n')
+		if (buffer >= 0 && h == '\n')
 		{
 			cnt = buflen - 2;
 			buf[cnt++] = '\n';
@@ -342,7 +343,8 @@ ssize_t	dgets (int des, char *buf, size_t buflen, int buffer, int (*reader) (int
 	/*
 	 * Terminate it
 	 */
-	buf[cnt] = 0;
+	if (buffer >= 0)
+		buf[cnt] = 0;
 
 	/*
 	 * If we end in a newline, then all is well.
@@ -350,7 +352,7 @@ ssize_t	dgets (int des, char *buf, size_t buflen, int buffer, int (*reader) (int
 	 * The caller then would need to do a strlen() to get
  	 * the amount of data.
 	 */
-	if (cnt > 0 && buf[cnt - 1] == '\n')
+	if (buffer == -1 || (cnt > 0 && buf[cnt - 1] == '\n'))
 	    return cnt;
 	else
 	    return 0;
@@ -386,22 +388,30 @@ void	set_socket_options (int s)
  * Register a filedesc for readable events
  * Set up its input buffer
  */
-int 	select__new_open (int des, void (*callback) (int))
+int 	select__new_open (int des, void (*callback) (int), int io_type)
 {
+	MyIO *ioe;
+
 	if (des < 0)
 		return des;		/* Invalid */
 
 	if (!io_rec)
 		init_io();
 
-	if (!FD_ISSET(des, &readables))
-		FD_SET(des, &readables);
-	if (FD_ISSET(des, &writables))
-		FD_CLR(des, &writables);
-	if (FD_ISSET(des, &held_readables))
-		FD_CLR(des, &held_readables);
-	if (FD_ISSET(des, &held_writables))
-		FD_CLR(des, &held_writables);
+	if (io_type == NEWIO_CONNECT)
+	{
+		if (!FD_ISSET(des, &writables))
+			FD_SET(des, &writables);
+		if (FD_ISSET(des, &readables))
+			FD_CLR(des, &readables);
+	}
+	else
+	{
+		if (!FD_ISSET(des, &readables))
+			FD_SET(des, &readables);
+		if (FD_ISSET(des, &writables))
+			FD_CLR(des, &writables);
+	}
 
 	/*
 	 * Keep track of the highest fd in use.
@@ -409,54 +419,34 @@ int 	select__new_open (int des, void (*callback) (int))
 	if (des > global_max_fd)
 		global_max_fd = des;
 
-	if (io_rec[des] == NULL)
+	if (!(ioe = io_rec[des]))
 	{
-		MyIO *ioe;
 		ioe = io_rec[des] = (MyIO *)new_malloc(sizeof(MyIO));
 		ioe->buffer_size = IO_BUFFER_SIZE;
 		ioe->buffer = (char *)new_malloc(ioe->buffer_size + 2);
-		ioe->read_pos = ioe->write_pos = 0;
-		ioe->segments = 0;
-		ioe->error = 0;
 	}
 
-	io_rec[des]->callback = callback;
-	return des;
-}
+	ioe->read_pos = ioe->write_pos = 0;
+	ioe->segments = 0;
+	ioe->error = 0;
+	ioe->clean = 1;
+	ioe->held = 0;
 
-/*
- * Register a filedesc for readable events
- * Set up its input buffer
- */
-int 	select__new_open_for_writing (int des, void (*callback) (int))
-{
-	if (des < 0)
-		return des;		/* Invalid */
-
-	if (!io_rec)
-		init_io();
-
-	if (!FD_ISSET(des, &writables))
-		FD_SET(des, &writables);
-	if (!FD_ISSET(des, &held_writables))
-		FD_SET(des, &held_writables);
-
-	/*
-	 * Keep track of the highest fd in use.
-	 */
-	if (des > global_max_fd)
-		global_max_fd = des;
-
-	if (io_rec[des] == NULL)
+	if (io_type == NEWIO_READ)
+		io_rec[des]->io_callback = unix_read;
+	else if (io_type == NEWIO_ACCEPT)
+		io_rec[des]->io_callback = unix_accept;
+#ifdef HAVE_SSL
+	else if (io_type == NEWIO_SSL_READ)
 	{
-		MyIO *ioe;
-		ioe = io_rec[des] = (MyIO *)new_malloc(sizeof(MyIO));
-		ioe->buffer_size = IO_BUFFER_SIZE;
-		ioe->buffer = (char *)new_malloc(ioe->buffer_size + 2);
-		ioe->read_pos = ioe->write_pos = 0;
-		ioe->segments = 0;
-		ioe->error = 0;
+		io_rec[des]->io_callback = ssl_reader;
+		startup_ssl(des);
 	}
+#endif
+	else if (io_type == NEWIO_CONNECT)
+		io_rec[des]->io_callback = unix_connect;
+	else
+		panic("New_open doesn't recognize io type %d", io_type);
 
 	io_rec[des]->callback = callback;
 	return des;
@@ -474,10 +464,9 @@ int 	select__new_open_for_writing (int des, void (*callback) (int))
  */
 int	select__new_hold_fd (int des)
 {
-	if (0 <= des && des <= global_max_fd
-		&& FD_ISSET(des, &readables))
+	if (0 <= des && des <= global_max_fd && io_rec[des]->held == 0)
 	{
-		FD_SET(des, &held_readables);
+		io_rec[des]->held = 1;
 		FD_CLR(des, &readables);
 	}
 
@@ -489,11 +478,10 @@ int	select__new_hold_fd (int des)
  */
 int	select__new_unhold_fd (int des)
 {
-	if (0 <= des && des <= global_max_fd
-		&& FD_ISSET(des, &held_readables))
+	if (0 <= des && des <= global_max_fd && io_rec[des]->held == 1)
 	{
 		FD_SET(des, &readables);
-		FD_CLR(des, &held_readables);
+		io_rec[des]->held = 0;
 	}
 
 	return des;
@@ -512,16 +500,14 @@ int	select__new_close (int des)
 		FD_CLR(des, &readables);
 	if (FD_ISSET(des, &writables))
 		FD_CLR(des, &writables);
-	if (FD_ISSET(des, &held_readables))
-		FD_CLR(des, &held_readables);
-	if (FD_ISSET(des, &held_writables))
-		FD_CLR(des, &held_writables);
 
 	if (io_rec)
 	{
-		if (io_rec[des])
-			new_free(&io_rec[des]->buffer); 
+	    if (io_rec[des])
+	    {
+		new_free(&io_rec[des]->buffer); 
 		new_free((char **)&(io_rec[des]));
+	    }
 	}
 	close(des);
 
@@ -531,9 +517,7 @@ int	select__new_close (int des)
 	 */
 	while ( global_max_fd >= 0 &&
 		!FD_ISSET(global_max_fd, &readables) &&
-		!FD_ISSET(global_max_fd, &held_readables) &&
-		!FD_ISSET(global_max_fd, &writables) &&
-		!FD_ISSET(global_max_fd, &held_writables))
+		!FD_ISSET(global_max_fd, &writables))
 			global_max_fd--;
 	return -1;
 }
@@ -552,6 +536,7 @@ static	int	polls = 0;
 	int	i,
 		set = 0;
 	fd_set 	new_f;
+	int	retval;
 
 	working_rd = readables;
 	working_wd = writables;
@@ -588,15 +573,8 @@ static	int	polls = 0;
 		 * a busy-loop.
 		 */
 		if (io_rec[i])
-		{
-		    if (io_rec[i]->read_pos < io_rec[i]->write_pos &&
-			FD_ISSET(i, &working_rd) &&
-		        strchr(io_rec[i]->buffer + io_rec[i]->read_pos, '\n'))
-		    {
-			FD_SET(i, &new_f);
+		    if (!io_rec[i]->clean)
 			set++;
-		    }
-		}
 	}
 
 	/*
@@ -606,332 +584,129 @@ static	int	polls = 0;
 	 * inbetween each line.
 	 */
 	if (set)
-	{
-		working_rd = new_f;
 		return set;
-	}
+
 	else
-		return select(global_max_fd + 1, &working_rd, &working_wd, 
+	{
+		retval = select(global_max_fd + 1, &working_rd, &working_wd, 
 					NULL, newtimeout);
+
+		if (retval <= 0)
+			return retval;
+
+		for (i = 0; i <= global_max_fd; i++)
+		{
+		    if (FD_ISSET(i, &working_rd) || FD_ISSET(i, &working_wd))
+		    {
+			if (!io_rec[i])
+				panic("FD %d is ready, but not set up!", i);
+
+			/* If it's clean, read in more data */
+			if (io_rec[i]->clean)
+			    new_io_event(i);
+		    }
+		}
+
+		return retval;
+	}
 }
 
 
 void	select__do_filedesc (void)
 {
 	int	i;
-	fd_set	rd, wd;
-
-	/* 
-	 * Make copies of the result fd_set's, for the callbacks
-	 * may recursively call io() which will clober the result fds!
-	 */
-	rd = working_rd;
-	wd = working_wd;
 
 	for (i = 0; i <= global_max_fd; i++)
 	{
-	    if (FD_ISSET(i, &rd) || FD_ISSET(i, &wd))
-	    {
-		if (io_rec[i])
+		if (!io_rec[i])
+			continue;
+
+		/* Then tell the user they have data ready for them. */
+		if (!io_rec[i]->clean)
 			io_rec[i]->callback(i);
-		else
-		{
-		    /* 
-		     * Only panic if the fd is still open!
-		     * (It's possible it got new_close()d on us when we 
-		     * processed a previous fd during this run.)
-		     */
-		    if (FD_ISSET(i, &readables) ||
-			FD_ISSET(i, &held_readables) ||
-			FD_ISSET(i, &writables) ||
-			FD_ISSET(i, &held_writables))
-			    panic("File descriptor [%d] got a callback but "
-					"it's not set up", i);
-		}
-
-		FD_CLR(i, &rd);
-		FD_CLR(i, &wd);
-	    }
 	}
 }
 
-#endif
-
-
-#ifdef USE_FREEBSD_KQUEUE
-#include <sys/event.h>
-
-static int		kqueue_fd = -1;
-static struct timespec	kqueue_poll = { 0, 0 };
-static struct kevent	event;
-
-static void kqueue_init (void)
+static void	new_io_event (int fd)
 {
-	kqueue_fd = kqueue();
-}
+	MyIO *ioe;
+	int	c;
 
-static	void	kread (int fd)
-{
-	struct kevent ev;
-	EV_SET(&ev, fd, EVFILT_READ, EV_ADD|EV_ENABLE, 0, 0, NULL);
-	kevent(kqueue_fd, &ev, 1, NULL, 0, &kqueue_poll);
-}
+	ioe = io_rec[fd];
 
-static	void	knoread (int fd)
-{
-	struct kevent ev;
-	EV_SET(&ev, fd, EVFILT_READ, EV_DELETE, 0, 0, NULL);
-	kevent(kqueue_fd, &ev, 1, NULL, 0, &kqueue_poll);
-}
+	/* If it's dirty, something is very wrong. */
+	if (!ioe->clean)
+		panic("new_io_event: fd [%d] hasn't been cleaned yet", fd);
 
-static	void	kholdread (int fd)
-{
-	struct kevent ev;
-	EV_SET(&ev, fd, EVFILT_READ, EV_DISABLE, 0, 0, NULL);
-	kevent(kqueue_fd, &ev, 1, NULL, 0, &kqueue_poll);
-}
-
-static	void	kunholdread (int fd)
-{
-	struct kevent ev;
-	EV_SET(&ev, fd, EVFILT_READ, EV_ENABLE, 0, 0, NULL);
-	kevent(kqueue_fd, &ev, 1, NULL, 0, &kqueue_poll);
-}
-
-static	void	kwrite (int fd)
-{
-	struct kevent ev;
-	EV_SET(&ev, fd, EVFILT_WRITE, EV_ADD|EV_ENABLE, 0, 0, NULL);
-	kevent(kqueue_fd, &ev, 1, NULL, 0, &kqueue_poll);
-}
-
-static	void	knowrite (int fd)
-{
-	struct kevent ev;
-	EV_SET(&ev, fd, EVFILT_WRITE, EV_DELETE, 0, 0, NULL);
-	kevent(kqueue_fd, &ev, 1, NULL, 0, &kqueue_poll);
-}
-
-
-/*
- * Register a filedesc for readable events
- * Set up its input buffer
- */
-int 	kqueue__new_open (int des, void (*callback) (int))
-{
-	if (des < 0)
-		return des;		/* Invalid */
-
-	if (!io_rec)
-		init_io();
-
-	if (kqueue_fd == -1)
-		kqueue_init();
-
-	knowrite(des);
-	kread(des);
-
-	/*
-	 * Keep track of the highest fd in use.
-	 */
-	if (des > global_max_fd)
-		global_max_fd = des;
-
-	if (io_rec[des] == NULL)
-	{
-		MyIO *ioe;
-		ioe = io_rec[des] = (MyIO *)new_malloc(sizeof(MyIO));
-		ioe->buffer_size = IO_BUFFER_SIZE;
-		ioe->buffer = (char *)new_malloc(ioe->buffer_size + 2);
-		ioe->read_pos = ioe->write_pos = 0;
-		ioe->segments = 0;
-		ioe->error = 0;
-	}
-
-	io_rec[des]->callback = callback;
-	return des;
-}
-
-/*
- * Register a filedesc for readable events
- * Set up its input buffer
- */
-int 	kqueue__new_open_for_writing (int des, void (*callback) (int))
-{
-	if (des < 0)
-		return des;		/* Invalid */
-
-	if (!io_rec)
-		init_io();
-
-	knoread(des);
-	kwrite(des);
-
-	/*
-	 * Keep track of the highest fd in use.
-	 */
-	if (des > global_max_fd)
-		global_max_fd = des;
-
-	if (io_rec[des] == NULL)
-	{
-		MyIO *ioe;
-		ioe = io_rec[des] = (MyIO *)new_malloc(sizeof(MyIO));
-		ioe->buffer_size = IO_BUFFER_SIZE;
-		ioe->buffer = (char *)new_malloc(ioe->buffer_size + 2);
-		ioe->read_pos = ioe->write_pos = 0;
-		ioe->segments = 0;
-		ioe->error = 0;
-	}
-
-	io_rec[des]->callback = callback;
-	return des;
-}
-
-/*
- * This isn't really new, but what the hey..
- *
- * Remove the fd from the select fd sets so
- * that it won't bother us until we unhold it.
- *
- * Note that this is meant to be a read/write
- * hold and that this only operates on read
- * sets because that's all the client uses.
- */
-int	kqueue__new_hold_fd (int des)
-{
-	if (des < 0 || des > global_max_fd)
-		return -1;			/* Bad FD */
-
-	kholdread(des);
-
-	return des;
-}
-
-/*
- * Add the fd again.
- */
-int	kqueue__new_unhold_fd (int des)
-{
-	if (des < 0 || des > global_max_fd)
-		return -1;			/* Bad FD */
-
-	kunholdread(des);
-
-	return des;
-}
-
-/*
- * Unregister a filedesc for readable events 
- * and close it down and free its input buffer
- */
-int	kqueue__new_close (int des)
-{
-	int	i;
-
-	if (des < 0)
-		return -1;
-
-	if (io_rec)
-	{
-		if (io_rec[des])
-			new_free(&io_rec[des]->buffer); 
-		new_free((char **)&(io_rec[des]));
-	}
-
-	knoread(des);
-	knowrite(des);
-	close(des);
-
-	/*
-	 * If we're closing the highest fd in use, then we
-	 * want to adjust global_max_fd downward to the next highest fd.
-	 */
-	if (des == global_max_fd)
-	{
-	    for (i = IO_ARRAYLEN - 1; i >= 0; i--)
-	    {
-		if (io_rec[i] != NULL)
-		{
-			global_max_fd = i;
-			break;
-		}
-	    }
-	}
-
-	return -1;
-}
-
-
-/*
- * new_select: works just like select(), execpt I trimmed out the excess
- * parameters I didn't need.
- */
-int 	kqueue__do_wait (Timeval *timeout)
-{
-static	int	polls = 0;
-struct timespec thetimeout;
-struct timespec *newtimeout = &thetimeout;
-	int	i;
-
-	if (timeout)
-	{
-		thetimeout.tv_sec = timeout->tv_sec;
-		thetimeout.tv_nsec = timeout->tv_usec * 1000;
-
-		if (timeout->tv_sec == 0 && timeout->tv_usec == 0)
-		{
-			if (polls++ > 10000)
-				panic("Stuck in a polling loop. Help!");
-			return 0;		/* Timers are more important */
-		}
-		else
-			polls = 0;
-	}
-	else
-		newtimeout = NULL;
-
-	if (!io_rec)
-		panic("new_select called before io_rec was initialized");
-
-	for (i = 0; i <= global_max_fd; i++)
-	{
-		/*
-		 * Check to see if there is a complete line sitting in the
-		 * fd's buffer.  If there is, then we just tag this fd as
-		 * being ready.  No sweat.  Don't mark the fd ready if the
-		 * caller didn't ask about the fd, because that leads to 
-		 * a busy-loop.
-		 */
-		if (io_rec[i])
-		{
-		    if (io_rec[i]->read_pos < io_rec[i]->write_pos &&
-		        strchr(io_rec[i]->buffer + io_rec[i]->read_pos, '\n'))
-		    {
-			EV_SET(&event, i, EVFILT_READ, 0, 0, 1, NULL);
-			return 1;
-		    }
-		}
-	}
-
-	return kevent(kqueue_fd, NULL, 0, &event, 1, newtimeout);
-}
-
-
-void	kqueue__do_filedesc (void)
-{
-	int	i;
-
-	i = event.ident;
-
+	/* DGETS BUFFER MANAGEMENT */
 	/* 
-	 * It's not possible to sanity check this, so just downgrade it
-	 * to a yell().  It's not ilke anyone uses this anyways...
+	 * An old exploit just sends us characters every .8 seconds without
+	 * ever sending a newline.  Cut off anyone who tries that.
 	 */
-	if (!io_rec[i])
-		yell("File descriptor [%d] got a callback but it's not set up", i);
-	io_rec[i]->callback(i);
+	if (ioe->segments > MAX_SEGMENTS)
+	{
+		yell("***XXX*** Too many read()s on des [%d] without a "
+				"newline! ***XXX***", fd);
+		ioe->error = ECONNABORTED;
+		ioe->clean = 0;
+		return;
+	}
+
+	/* If the buffer completely empties, then clean it.  */
+	else if (ioe->read_pos == ioe->write_pos)
+	{
+		ioe->read_pos = ioe->write_pos = 0;
+		ioe->buffer[0] = 0;
+		ioe->segments = 0;
+	}
+
+	/*
+	 * If read_pos is non-zero, then some of the data was consumed,
+	 * but not all of it (or it would be caught above), so we have
+	 * an incomplete line of data in the buffer.  Move it to the 
+	 * start of the buffer.
+	 */
+	else if (ioe->read_pos)
+	{
+		size_t	len;
+		len = ioe->write_pos - ioe->read_pos;
+		memmove(ioe->buffer, ioe->buffer + ioe->read_pos, len);
+		ioe->read_pos = 0;
+		ioe->write_pos = len;
+		ioe->segments = 1;
+	}
+
+	/*
+	 * Dont try to read into a full buffer.
+	 */
+	if (ioe->write_pos >= ioe->buffer_size)
+	{
+		yell("***XXX*** Buffer for des [%d] is filled! ***XXX***", fd);
+		ioe->error = ENOMEM; /* Cough */
+		ioe->clean = 0;
+		return;
+	}
+
+	c = ioe->io_callback(fd, &ioe->buffer, &ioe->buffer_size, &ioe->write_pos);
+	ioe->clean = 0;
+
+	if (c <= 0)
+	{
+		ioe->error = errno;
+		if (x_debug & DEBUG_INBOUND) 
+			yell("FD [%d] FAILED [%d:%s]", 
+				fd, c, strerror(ioe->error));
+		return;
+	}
+
+	if (x_debug & DEBUG_INBOUND) 
+		yell("FD [%d], did [%d]", fd, c);
+
+	ioe->write_pos += c;
+	ioe->segments++;
 }
+
 
 #endif
 
+/* No KQUEUE support for now. */

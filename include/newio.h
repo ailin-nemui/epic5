@@ -10,14 +10,14 @@
  * looper to epic.  EPIC will call these functions to do various things:
  *
  *	int	do_wait (struct timeval *timeout)
- *	- PURPOSE: Wait until something happens or until the timeout expires
+ *	- PURPOSE: Wait until a filedesc is dirty, or the timeout expires.
  *	- INPUT:  timeout - The maximum amount of time to wait before returning
  *	- OUTPUT: -1 if returning for any reason other than timeout or 
  *		     something happening
  *		   0 if timeout occured before something happened
  *		   1 if something happened before timeout
  *
- *	int	new_open (int fd, void (*callback) (int fd));
+ *	int	new_open (int fd, void (*callback) (int fd), int type);
  *	- PURPOSE: To indicate that file descriptor 'fd' should be watched
  *		   for readable events
  *	- INPUT:   fd - The file descriptor to watch
@@ -60,21 +60,24 @@
 #ifndef __newio_h__
 #define __newio_h__
 #define USE_SELECT
-/*
-#define USE_FREEBSD_KQUEUE
-*/
+
+#define NEWIO_READ	1
+#define NEWIO_ACCEPT	2
+#define NEWIO_SSL_READ	3
+#define NEWIO_CONNECT	4
 
 #define IO_BUFFER_SIZE 8192
 
 extern 	int 	dgets_errno;
 
 	size_t	get_pending_bytes	(int);
-	ssize_t	dgets 			(int, char *, size_t, int, int (*)(int, char **, size_t *, size_t *));
+	ssize_t	dgets 			(int, char *, size_t, int);
 	void 	set_socket_options 	(int);
+	int	is_ssl_enabled		(int);
 
 #ifdef USE_SELECT
 	int	select__do_wait			(struct timeval *);
-	int	select__new_open		(int, void (*) (int));
+	int	select__new_open		(int, void (*) (int), int);
 	int	select__new_open_for_writing	(int, void (*) (int));
 	int 	select__new_close 		(int);
 	int	select__new_hold_fd		(int);
@@ -88,23 +91,5 @@ extern 	int 	dgets_errno;
 #define new_unhold_fd 		select__new_unhold_fd
 #define do_filedesc 		select__do_filedesc
 #endif
-
-#ifdef USE_FREEBSD_KQUEUE
-	int	kqueue__do_wait			(struct timeval *);
-	int	kqueue__new_open		(int, void (*) (int));
-	int	kqueue__new_open_for_writing	(int, void (*) (int));
-	int 	kqueue__new_close 		(int);
-	int	kqueue__new_hold_fd		(int);
-	int	kqueue__new_unhold_fd		(int);
-	void    kqueue__do_filedesc 		(void);
-#define do_wait 		kqueue__do_wait
-#define new_open 		kqueue__new_open
-#define new_open_for_writing 	kqueue__new_open_for_writing
-#define new_close 		kqueue__new_close
-#define new_hold_fd 		kqueue__new_hold_fd
-#define new_unhold_fd 		kqueue__new_unhold_fd
-#define do_filedesc 		kqueue__do_filedesc
-#endif
-
 
 #endif

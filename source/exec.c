@@ -1,4 +1,4 @@
-/* $EPIC: exec.c,v 1.30 2005/02/05 00:08:11 jnelson Exp $ */
+/* $EPIC: exec.c,v 1.31 2005/02/09 02:23:25 jnelson Exp $ */
 /*
  * exec.c: handles exec'd process for IRCII 
  *
@@ -677,8 +677,8 @@ say("Output from process %d (%s) now going to you", i, proc->name);
 			if (endc)
 				add_process_wait(proc->index, endc);
 
-			new_open(proc->p_stdout, do_exec);
-			new_open(proc->p_stderr, do_exec);
+			new_open(proc->p_stdout, do_exec, NEWIO_READ);
+			new_open(proc->p_stderr, do_exec, NEWIO_READ);
 			break;
 		}
 		}
@@ -742,7 +742,7 @@ static void 	handle_filedesc (Process *proc, int *fd, int hook_nonl, int hook_nl
 	int	hook = -1;
 
 	/* No buffering! */
-	switch ((len = dgets(*fd, exec_buffer, IO_BUFFER_SIZE, 0, NULL))) 
+	switch ((len = dgets(*fd, exec_buffer, IO_BUFFER_SIZE, 0))) 
 	{
 	    case -1:		/* Something died */
 	    {

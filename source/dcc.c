@@ -1,4 +1,4 @@
-/* $EPIC: dcc.c,v 1.106 2005/02/05 00:08:11 jnelson Exp $ */
+/* $EPIC: dcc.c,v 1.107 2005/02/09 02:23:25 jnelson Exp $ */
 /*
  * dcc.c: Things dealing client to client connections. 
  *
@@ -664,6 +664,55 @@ int	dcc_chat_active (const char *user)
 
 
 /************************************************************************/
+static	int	dcc_get_connect_addrs (DCC_list *dcc)
+{
+	int	c;
+	char	bigbuf[8192];
+	int	x;
+	int	retval;
+	const char *	type;
+
+	type = dcc_types[dcc->flags & DCC_TYPES];
+
+	c = dgets(dcc->socket, bigbuf, sizeof(bigbuf), -1);
+	if (c <= 0)
+	{
+		dcc->flags |= DCC_DELETE;
+		yell("### DCC Error: connect() failed (%s).", 
+			strerror(dgets_errno));
+		return -1;
+	}
+
+	x = 0;
+	memcpy(&retval, bigbuf + x, sizeof(retval));
+	x += sizeof(retval);
+	memcpy(&dcc->local_sockaddr, bigbuf + x, sizeof(dcc->local_sockaddr));
+	x += sizeof(dcc->local_sockaddr);
+
+	if (retval)
+	{
+	    say("DCC %s connection with %s could not be established: %s",
+			type, dcc->user, strerror(retval));
+	    dcc->flags |= DCC_DELETE;
+	    return -1;
+	}
+
+	memcpy(&retval, bigbuf + x, sizeof(retval));
+	x += sizeof(retval);
+	memcpy(&dcc->peer_sockaddr, bigbuf + x, sizeof(dcc->peer_sockaddr));
+	x += sizeof(dcc->peer_sockaddr);
+
+	if (retval)
+	{
+	    say("DCC %s connection with %s could not be established: %s",
+			type, dcc->user, strerror(retval));
+	    dcc->flags |= DCC_DELETE;
+	    return -1;
+	}
+
+	return 0;
+}
+
 /*
  * This is called when a client connection completes (successfully).
  * If the connection failed, we will forcibly eject the dcc.
@@ -674,34 +723,19 @@ static int	dcc_connected (int fd)
 	socklen_t	len;
 	const char *	type;
 	int		jvs_blah;
+	char		bigbuf[4096];
+	int		retval;
+	int		x;
 
 	if (!(dcc = get_dcc_by_filedesc(fd)))
 		return -1;	/* Don't want it */
 
 	type = dcc_types[dcc->flags & DCC_TYPES];
 
-	len = sizeof(dcc->local_sockaddr);
-	if ((getsockname(dcc->socket, (SA *)&dcc->local_sockaddr, &len)))
-	{
-	    say("DCC %s connection with %s could not be established: %s",
-			type, dcc->user, strerror(errno));
-	    dcc->flags |= DCC_DELETE;
-	    return -1;
-	}
-
-	len = sizeof(dcc->peer_sockaddr);
-	if ((getpeername(dcc->socket, (SA *)&dcc->peer_sockaddr, &len)))
-	{
-	    say("DCC %s connection with %s could not be established: %s",
-			type, dcc->user, strerror(errno));
-	    dcc->flags |= DCC_DELETE;
-	    return -1;
-	}
-
 	/*
 	 * Set up the connection to be useful
 	 */
-	new_open(dcc->socket, do_dcc);
+	new_open(dcc->socket, do_dcc, NEWIO_READ);
 	dcc->flags &= ~DCC_THEIR_OFFER;
 	dcc->flags |= DCC_ACTIVE;
 
@@ -836,7 +870,7 @@ static	int	dcc_connect (DCC_list *dcc)
 	}
 
 	dcc->flags |= DCC_CONNECTING;
-	new_open_for_writing(dcc->socket, do_dcc);
+	new_open(dcc->socket, do_dcc, NEWIO_CONNECT);
 	from_server = old_server;
 	break;
     }
@@ -903,7 +937,7 @@ static	int	dcc_listen (DCC_list *dcc)
 	inet_ntostr((SA *)&dcc->local_sockaddr, NULL, 0, p_port, 12, 0);
 	malloc_strcpy(&dcc->othername, p_port);
 #endif
-	new_open(dcc->socket, do_dcc);
+	new_open(dcc->socket, do_dcc, NEWIO_ACCEPT);
 
 	/*
 	 * If this is to be a 2-peer connection, then we need to
@@ -2604,18 +2638,29 @@ void	do_dcc (int fd)
 /*********************************** DCC CHAT *******************************/
 static	void	process_dcc_chat_connection (DCC_list *Client)
 {
-	SS	remaddr;
-	int	sra;
 	char	p_addr[256];
 	char	p_port[24];
 	SA *	addr;
 	int	fd;
+	int	c;
+	char	bigbuf[2048];
 
-	sra = sizeof(remaddr);
-	fd = Accept(Client->socket, (SA *)&Client->peer_sockaddr, &sra);
+	c = dgets(Client->socket, bigbuf, sizeof(bigbuf), -1);
+	if (c <= 0)
+	{
+		Client->flags |= DCC_DELETE;
+		yell("### DCC Error: accept() failed (%s).", 
+			strerror(dgets_errno));
+		return;
+	}
+
+	memcpy(&fd, bigbuf, sizeof(fd));
+	memcpy(&Client->peer_sockaddr, bigbuf + sizeof(fd), 
+				sizeof(Client->peer_sockaddr));
+
 	Client->socket = new_close(Client->socket);
 	if ((Client->socket = fd) > 0)
-		new_open(Client->socket, do_dcc);
+		new_open(Client->socket, do_dcc, NEWIO_READ);
 	else
 	{
 		Client->flags |= DCC_DELETE;
@@ -2714,7 +2759,7 @@ static	void	process_dcc_chat_data (DCC_list *Client)
 const	char	*OFUH = FromUserHost;
 
 	/* Get a new line via dgets. */
-	bytesread = dgets(Client->socket, tmp, IO_BUFFER_SIZE, 1, NULL);
+	bytesread = dgets(Client->socket, tmp, IO_BUFFER_SIZE, 1);
 
 	/* 
 	 * bytesread == 0 means there was new data, but it was an incomplete
@@ -2773,20 +2818,17 @@ const	char	*OFUH = FromUserHost;
 
 static void	process_dcc_chat_connected (DCC_list *dcc)
 {
-	SS name;
-	socklen_t len;
-
 	lock_dcc(dcc);
 	if (x_debug & DEBUG_SERVER_CONNECT)
 	    yell("process_dcc_chat_connected: dcc [%s] now ready to write", 
 			dcc->user);
 
-	len = sizeof(name);
-	if (getpeername(dcc->socket, (SA *)&name, &len))
+	if (dcc_get_connect_addrs(dcc))
 	{
-	    if (do_hook(DCC_LOST_LIST, "%s CHAT %s", dcc->user, strerror(errno)))
+	    if (do_hook(DCC_LOST_LIST, "%s CHAT %s", 
+					dcc->user, strerror(errno)))
 		say("DCC CHAT connection to %s lost [%s]", 
-							dcc->user, strerror(errno));
+					dcc->user, strerror(errno));
 	    dcc->flags |= DCC_DELETE;
 	    unlock_dcc(dcc);
 	    return;
@@ -2816,18 +2858,28 @@ static	void	process_dcc_chat (DCC_list *Client)
 static	void		process_incoming_listen (DCC_list *Client)
 {
 	SS		remaddr;
-	int		sra;
+	int		new_socket;
 	char		fdstr[10];
 	DCC_list	*NewClient;
-	int		new_socket;
 	char		host[1025];
 	socklen_t	len;
 	char		p_port[24];
 	char		l_port[24];
 	char		trash[1025] = "";
+	int		c;
+	char		bigbuf[2048];
 
-	sra = sizeof(remaddr);
-	new_socket = Accept(Client->socket, (SA *) &remaddr, &sra);
+	c = dgets(Client->socket, bigbuf, sizeof(bigbuf), -1);
+	if (c < 0)
+	{
+		yell("### DCC Error: accept() failed (%s)", 
+				strerror(dgets_errno));
+		return;
+	}
+
+	memcpy(&new_socket, bigbuf, sizeof(new_socket));
+	memcpy(&remaddr, bigbuf + sizeof(new_socket), sizeof(remaddr));
+
 	if (new_socket < 0)
 	{
 		yell("### DCC Error: accept() failed.  Punting.");
@@ -2855,7 +2907,7 @@ static	void		process_incoming_listen (DCC_list *Client)
 	NewClient->flags |= DCC_QUOTED & Client->flags;
 	NewClient->bytes_read = NewClient->bytes_sent = 0;
 	get_time(&NewClient->starttime);
-	new_open(NewClient->socket, do_dcc);
+	new_open(NewClient->socket, do_dcc, NEWIO_READ);
 
 	lock_dcc(Client);
 	if (do_hook(DCC_RAW_LIST, "%s %s N %s", 
@@ -2881,9 +2933,9 @@ static	void		process_dcc_raw_data (DCC_list *Client)
 
         bufptr = tmp;
 	if (Client->flags & DCC_QUOTED)
-		bytesread = read(Client->socket, bufptr, IO_BUFFER_SIZE);
+		bytesread = dgets(Client->socket, bufptr, IO_BUFFER_SIZE, -1);
 	else
-		bytesread = dgets(Client->socket, bufptr, IO_BUFFER_SIZE, 0, NULL);
+		bytesread = dgets(Client->socket, bufptr, IO_BUFFER_SIZE, 0);
 
 	switch (bytesread)
 	{
@@ -2930,16 +2982,12 @@ static	void		process_dcc_raw_data (DCC_list *Client)
 
 static void	process_dcc_raw_connected (DCC_list *dcc)
 {
-	SS name;
-	socklen_t len;
-
 	lock_dcc(dcc);
 	if (x_debug & DEBUG_SERVER_CONNECT)
 	    yell("process_dcc_raw_connected: dcc [%s] now ready to write", 
 			dcc->user);
 
-	len = sizeof(name);
-	if (getpeername(dcc->socket, (SA *)&name, &len))
+	if (dcc_get_connect_addrs(dcc))
 	{
 	    if (do_hook(DCC_LOST_LIST, "%s RAW %s", dcc->user, strerror(errno)))
 		say("DCC RAW connection to %s lost [%s]", 
@@ -2949,13 +2997,13 @@ static void	process_dcc_raw_connected (DCC_list *dcc)
 	    return;
 	}
 
-	if (((SA *)&name)->sa_family == AF_INET)
+	if (((SA *)&dcc->peer_sockaddr)->sa_family == AF_INET)
 		malloc_strcpy(&dcc->othername, 
-				ltoa(ntohs(V4PORT(name))));
+				ltoa(ntohs(V4PORT(dcc->peer_sockaddr))));
 #ifdef INET6
-	else if (((SA *)&name)->sa_family == AF_INET6)
+	else if (((SA *)&dcc->peer_sockaddr)->sa_family == AF_INET6)
 		malloc_strcpy(&dcc->othername, 
-				ltoa(ntohs(V6PORT(name))));
+				ltoa(ntohs(V6PORT(dcc->peer_sockaddr))));
 #endif
 	else
 		malloc_strcpy(&dcc->othername, "<any>");
@@ -2987,8 +3035,6 @@ static	void		process_incoming_raw (DCC_list *Client)
  */
 static void	process_dcc_send_connection (DCC_list *dcc)
 {
-	SS		remaddr;
-	int		sra;
 	int		new_fd;
 #ifdef HAVE_SO_SNDLOWAT
 	int		size;
@@ -2997,12 +3043,25 @@ static void	process_dcc_send_connection (DCC_list *dcc)
 	char		p_addr[256];
 	char		p_port[24];
 	char		*encoded_description;
+	int		c;
+	char		bigbuf[2048];
 
 	/*
 	 * Open up the network connection
 	 */
-	sra = sizeof(remaddr);
-	new_fd = Accept(dcc->socket, (SA *)&dcc->peer_sockaddr, &sra);
+	c = dgets(dcc->socket, bigbuf, sizeof(bigbuf), -1);
+	if (c <= 0)
+	{
+		dcc->flags |= DCC_DELETE;
+		yell("### DCC Error: accept() failed (%s)",
+				strerror(dgets_errno));
+		return;
+	}
+
+	memcpy(&new_fd, bigbuf, sizeof(new_fd));
+	memcpy(&dcc->peer_sockaddr, bigbuf + sizeof(new_fd), 
+				sizeof(dcc->peer_sockaddr));
+
 	dcc->socket = new_close(dcc->socket);
 	if ((dcc->socket = new_fd) < 0)
 	{
@@ -3010,7 +3069,7 @@ static void	process_dcc_send_connection (DCC_list *dcc)
 		yell("### DCC Error: accept() failed.  Punting.");
 		return;
 	}
-	new_open(dcc->socket, do_dcc);
+	new_open(dcc->socket, do_dcc, NEWIO_READ);
 	dcc->flags &= ~DCC_MY_OFFER;
 	dcc->flags |= DCC_ACTIVE;
 	get_time(&dcc->starttime);
@@ -3068,8 +3127,8 @@ static void	process_dcc_send_connection (DCC_list *dcc)
 
 static void	process_dcc_send_handle_ack (DCC_list *dcc)
 {
-	char		*encoded_description;
-	u_32int_t	bytesrecvd;
+	char *		encoded_description;
+	u_32int_t	bytes;
 
 	if (x_debug & DEBUG_DCC_XMIT)
 		yell("Reading a packet from [%s:%s(%s)]", 
@@ -3081,8 +3140,8 @@ static void	process_dcc_send_handle_ack (DCC_list *dcc)
 	 * It is important to note here that the ACK must always
 	 * be exactly four bytes.  Never more, never less.
 	 */
-	if (read(dcc->socket, (char *)&bytesrecvd, 
-			sizeof(u_32int_t)) < (int) sizeof(u_32int_t))
+	if (dgets(dcc->socket, (char *)&bytes, sizeof(bytes), -1) < 
+					(int) sizeof(bytes))
 	{
 		lock_dcc(dcc);
 		encoded_description = dcc_urlencode(dcc->description);
@@ -3095,12 +3154,12 @@ static void	process_dcc_send_handle_ack (DCC_list *dcc)
 		unlock_dcc(dcc);
 		return;
 	}
-	bytesrecvd = ntohl(bytesrecvd);
+	bytes = ntohl(bytes);
 
 	/*
 	 * Check to see if we need to move the sliding window up
 	 */
-	if (bytesrecvd >= (dcc->packets_ack + 1) * DCC_BLOCK_SIZE)
+	if (bytes >= (dcc->packets_ack + 1) * DCC_BLOCK_SIZE)
 	{
 		if (x_debug & DEBUG_DCC_XMIT)
 			yell("Packet #%s ACKed", 
@@ -3109,7 +3168,7 @@ static void	process_dcc_send_handle_ack (DCC_list *dcc)
 		dcc->packets_outstanding--;
 	}
 
-	if (bytesrecvd > dcc->bytes_sent)
+	if (bytes > dcc->bytes_sent)
 	{
 yell("### WARNING!  The other peer claims to have recieved more bytes than");
 yell("### I have actually sent so far.  Please report this to ");
@@ -3119,7 +3178,7 @@ yell("### end of the file you just sent them.  Please enclose that ");
 yell("### information as well as the following:");
 yell("###");
 yell("###    bytesrecvd [%ld]        dcc->bytes_sent [%s]", 
-			ntohl(bytesrecvd), 
+			ntohl(bytes), 
 			ltoa(dcc->bytes_sent));
 yell("###    dcc->filesize [%s]", 
 			ltoa(dcc->filesize));
@@ -3129,7 +3188,7 @@ yell("###    dcc->packets_outstanding [%s]",
 			ltoa(dcc->packets_outstanding));
 
 		/* And just cope with it to avoid whining */
-		dcc->bytes_sent = bytesrecvd;
+		dcc->bytes_sent = bytes;
 	}
 
 	/*
@@ -3141,7 +3200,7 @@ yell("###    dcc->packets_outstanding [%s]",
 		 * If theyve ACKed the last packet, we close 
 		 * the connection.
 		 */
-		if (bytesrecvd >= dcc->filesize)
+		if (bytes >= dcc->filesize)
 			DCC_close_filesend(dcc, "SEND", "TRANSFER COMPLETE");
 
 		/*
@@ -3267,7 +3326,8 @@ static	void		process_dcc_get_data (DCC_list *dcc)
 	u_32int_t	bytestemp;
 	ssize_t		bytesread;
 
-	if ((bytesread = read(dcc->socket, tmp, DCC_RCV_BLOCK_SIZE)) <= 0)
+	bytesread = dgets(dcc->socket, tmp, sizeof(tmp), -1);
+	if (bytesread <= 0)
 	{
 		if (dcc->bytes_read < dcc->filesize)
 		{
@@ -3339,13 +3399,14 @@ static void	process_dcc_get_connected (DCC_list *dcc)
 	    yell("process_dcc_get_connected: dcc [%s] now ready to write", 
 			dcc->user);
 
-	len = sizeof(name);
-	if (getpeername(dcc->socket, (SA *)&name, &len))
+	if (dcc_get_connect_addrs(dcc))
 	{
 	    char *edesc = dcc_urlencode(dcc->description);
-	    if (do_hook(DCC_LOST_LIST, "%s GET %s %s", dcc->user, edesc, strerror(errno)))
+
+	    if (do_hook(DCC_LOST_LIST, "%s GET %s %s", 
+					dcc->user, edesc, strerror(errno)))
 		say("DCC GET connection to %s lost [%s]", 
-							dcc->user, strerror(errno));
+					dcc->user, strerror(errno));
 	    new_free(&edesc);
 	    dcc->flags |= DCC_DELETE;
 	    unlock_dcc(dcc);

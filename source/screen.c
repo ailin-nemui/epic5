@@ -1,4 +1,4 @@
-/* $EPIC: screen.c,v 1.92 2005/01/25 01:39:54 jnelson Exp $ */
+/* $EPIC: screen.c,v 1.93 2005/02/09 02:23:25 jnelson Exp $ */
 /*
  * screen.c
  *
@@ -2682,7 +2682,7 @@ Screen *create_new_screen (void)
 	new_s->fpout = stdout;
 	new_s->fdin = 0;
 	if (use_input)
-		new_open(0, do_screens);
+		new_open(0, do_screens, NEWIO_READ);
 	new_s->fpin = stdin;
 	new_s->control = -1;
 	new_s->wserv_version = 0;
@@ -2942,7 +2942,7 @@ Window	*create_additional_screen (void)
 					"to new screen");
 				return NULL;
 			}
-			new_open(new_s->fdin, do_screens);
+			new_open(new_s->fdin, do_screens, NEWIO_READ);
 			new_s->fpin = new_s->fpout = fdopen(new_s->fdin, "r+");
 			continue;
 		}
@@ -2959,7 +2959,7 @@ Window	*create_additional_screen (void)
                                 return NULL;
                         }
 
-			new_open(new_s->control, do_screens);
+			new_open(new_s->control, do_screens, NEWIO_READ);
 
                         if (!(win = new_window(new_s)))
                                 panic("WINDOW is NULL and it shouldnt be!");
@@ -3041,7 +3041,7 @@ void 	do_screens (int fd)
 		/* wserv control */
 		if (screen->control != -1 && screen->control == fd)
 		{
-			if (dgets(screen->control, buffer, IO_BUFFER_SIZE, 1, NULL) < 0)
+			if (dgets(screen->control, buffer, IO_BUFFER_SIZE, 1) < 0)
 			{
 				kill_screen(screen);
 				yell("Error from remote screen [%d].", dgets_errno);
@@ -3116,7 +3116,7 @@ void 	do_screens (int fd)
 
 			if (dumb_mode)
 			{
-				if (dgets(screen->fdin, buffer, IO_BUFFER_SIZE, 1, NULL) < 0)
+				if (dgets(screen->fdin, buffer, IO_BUFFER_SIZE, 1) < 0)
 				{
 					say("IRCII exiting on EOF from stdin");
 					irc_exit(1, "EPIC - EOF from stdin");
@@ -3131,39 +3131,36 @@ void 	do_screens (int fd)
 			}
 			else
 			{
-				char	loc_buffer[BIG_BUFFER_SIZE + 1];
 				int	n, i;
 
 				/*
 				 * Read in from stdin.
 				 */
-				if ((n = read(screen->fdin, loc_buffer, BIG_BUFFER_SIZE)) > 0)
+				n = dgets(screen->fdin, buffer,
+						BIG_BUFFER_SIZE, -1);
+				if (n > 0)
 				{
 					for (i = 0; i < n; i++)
-						edit_char(loc_buffer[i]);
+						edit_char(buffer[i]);
 				}
 
 #ifdef WINDOW_CREATE
-				/*
-				 * if the current screen isn't the main screen,
-				 * then the socket to the current screen must have
-				 * closed, so we call kill_screen() to handle 
-				 * this - phone, jan 1993.
-				 * but not when we arent running windows - Fizzy, may 1993
-				 * if it is the main screen we got an EOF on, we exit..
-				 * closed tty -> chew cpu -> bad .. -phone, july 1993.
+				/* 
+				 * If this is a /window create screen, then 
+				 * an EOF or an error means the screen has
+				 * gone away.  We don't need it, so swap out
+				 * all of its windows and kill it off.
 				 */
 				else if (screen != main_screen)
 					kill_screen(screen);
 #endif
 
 				/*
-				 * If n == 0 or n == -1 at this point, then the read totally
-				 * died on us.  This is almost without exception caused by
-				 * the ctty being revoke(2)d on us.  4.4BSD guarantees that a
-				 * revoke()d ctty will read an EOF, while i believe linux 
-				 * fails with EBADF.  In either case, a read failure on the
-				 * main screen is totaly fatal.
+				 * If we get an EOF or error for the primary 
+				 * screen, then we've lost access to the pty
+				 * (probably because the user has been logged
+				 * out).  There is nothing more we can do but
+				 * throw up our hands and quit.
 				 */
 				else
 					irc_exit(1, "Hey!  Where'd my controlling terminal go?");

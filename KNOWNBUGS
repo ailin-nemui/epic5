@@ -452,3 +452,19 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Fix /dmsg =<numeric> again, fix compiler warnings.
 * Whack dgets() into submission regarding incomplete unbuffered lines.
 * Revamp how partial lines from an /exec process are handled.
+* Major refactoring of newio system:
+* Change main io() look into a "fill" cycle and a "drain" cycle, using buffers
+* Change new_open() to take an io policy to perform when fd is "ready"
+* Use token to determine if an fd is "dirty" or "clean" (is data ready?)
+* Process accept()s through newio/dgets.
+* Merge nonblocking connects as just another type of new_open() policy.
+* Nonblocking connects emit sockaddr info when connected for dgets().
+* Change dgets() to not perform io, but just drain from the buffer
+* Now all data goes through dgets()! huzzah!
+* Nuke kqueue support for the moment (will come back later)
+* Hide the "holding" status of a fd inside the IO metadata.
+* This allows me to support "holding" in other IO models.
+* Major refactoring of ssl support:
+* Move all meta-data about ssl in ssl.c in a linked list
+* As much as possible, have server treat the ssl case as "normal"
+* Implement all ssl interfaces even in non-ssl case, guard with panics

@@ -94,11 +94,6 @@ const	AI	*next_addr;		/* The next one to try upon failure */
 	int	funny_flags;
 	char *	funny_match;
 
-#ifdef HAVE_SSL
-	SSL_CTX*	ctx;
-	SSL_METHOD*	meth;
-#endif
-	void *	ssl_fd;
 	int	try_ssl;		/* SSL requested on next connection. */
 	int	ssl_enabled;		/* Current SSL status. */
 
