@@ -1,4 +1,4 @@
-/* $EPIC: newio.c,v 1.45 2005/03/04 05:30:59 jnelson Exp $ */
+/* $EPIC: newio.c,v 1.46 2005/03/06 04:42:16 jnelson Exp $ */
 /*
  * newio.c:  Passive, callback-driven IO handling for sockets-n-stuff.
  *
@@ -809,13 +809,12 @@ static	int	kdoit (Timeval *timeout)
 	retval = select(global_max_channel + 1, &working_rd, &working_wd, 
 			NULL, timeout);
 
-	if (retval < 0) 
+	if (retval < 0 && errno != EINTR)
 	{
-	    int foundit = 0;
-
 	    if (errno == EBADF)
 	    {
 		struct timeval t = {0, 0};
+	        int foundit = 0;
 
 		for (channel = 0; channel <= global_max_channel; channel++)
 		{
@@ -965,9 +964,12 @@ static	int	kdoit (Timeval *timeout)
 	retval = kevent(kqueue_fd, NULL, 0, &event, 1, &to);
 
 	if (retval < 0 && errno == ETIMEDOUT)
+	{
 		retval = 0;
+		errno = 0;
+	}
 
-	if (retval < 0)
+	if (retval < 0 && errno != EINTR)
 		syserr("kdoit(kqueue): kevent(NULL) failed: %s", 
 					strerror(errno));
 	else if (retval > 0)
@@ -1054,7 +1056,7 @@ static	int	kdoit (Timeval *timeout)
 	ms += (timeout->tv_usec / 1000);
 	retval = poll(polls, global_max_vfd + 1, ms);
 
-	if (retval < 0)
+	if (retval < 0 && errno != EINTR)
 		syserr("kdoit(poll): poll() failed: %s", strerror(errno));
 	else if (retval > 0)
 	{
