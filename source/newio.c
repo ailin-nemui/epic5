@@ -1,4 +1,4 @@
-/* $EPIC: newio.c,v 1.38 2005/02/27 04:47:46 jnelson Exp $ */
+/* $EPIC: newio.c,v 1.39 2005/03/01 00:54:55 jnelson Exp $ */
 /*
  * newio.c:  Passive, callback-driven IO handling for sockets-n-stuff.
  *
@@ -658,7 +658,8 @@ static int	unix_accept (int channel)
 
 	len = sizeof(addr);
 	newfd = Accept(channel, (SA *)&addr, &len);
-
+	if (newfd < 0)
+		yell("Accept() failed: %s", strerror(errno));
 	dgets_buffer(channel, &newfd, sizeof(newfd));
 	dgets_buffer(channel, &addr, sizeof(addr));
 	return sizeof(newfd) + sizeof(addr);

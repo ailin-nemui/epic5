@@ -1,4 +1,4 @@
-/* $EPIC: irc.c,v 1.830 2005/02/28 14:23:30 jnelson Exp $ */
+/* $EPIC: irc.c,v 1.831 2005/03/01 00:54:55 jnelson Exp $ */
 /*
  * ircII: a new irc client.  I like it.  I hope you will too!
  *
@@ -162,17 +162,11 @@ volatile int	cntl_c_hit = 0;
 /* This is 1 if we are in the foreground process group */
 int		foreground = 1;
 
-/* This is 0 until your ~/.ircrc is loaded */
-int		ircrc_loaded = 0;
-
 /* This is 0 unless you specify the -B command line flag */
 int		load_ircrc_right_away = 0;
 
 /* This is 1 if you want all logging to be inhibited. Dont leave this on! */
 int		inhibit_logging = 0;
-
-/* This is 1 if we're currently loading the "global" script, 0 afterwards */
-int		loading_global = 0;
 
 /* This is reset every time io() is called.  Use this to save calls to time */
 Timeval		now = {0, 0};
@@ -1160,28 +1154,20 @@ static void check_invalid_host (void)
 /*************************************************************************/
 void    load_ircrc (void)
 {
-        char buffer[7];
-        strlcpy(buffer, "global", sizeof buffer);
+	static	int	ircrc_loaded = 0;
 
-	if (ircrc_loaded)
+	if (ircrc_loaded || quick_startup)
 		return;
 
-        loading_global = 1;
-        load("LOAD", buffer, empty_string);
-        loading_global = 0;
-
-	if (!quick_startup)
-	{
-	    if (access(epicrc_file, R_OK) == 0)
+	if (access(epicrc_file, R_OK) == 0)
 		startup_file = malloc_strdup(epicrc_file);
-	    else if (access(ircrc_file, R_OK) == 0)
+	else if (access(ircrc_file, R_OK) == 0)
 		startup_file = malloc_strdup(ircrc_file);
-	}
+	else
+		startup_file = malloc_strdup("global");
 
-	if (startup_file)
-                load("LOAD", startup_file, empty_string);
-
-        ircrc_loaded = 1;
+	load("LOAD", startup_file, empty_string);
+	ircrc_loaded = 1;
 }
 
 /*************************************************************************/

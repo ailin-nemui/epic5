@@ -1,15 +1,12 @@
 : {
 	This script is intended for use with 2.8 servers on all sites.
 	It handles some formatting options and join options for novice users
- 
-	This script references some aliases that are in 'basical'.  Both of
-	these scripts should be loaded from 'global', so that should not be
-	a problem.  This script will _not_ work correctly if 'basical' is not
-	loaded from 'global'.  This script is a dependency for other scripts.
 
-	THIS SCRIPT MUST ALWAYS BE LOADED, OR OTHER SCRIPTS MIGHT NOT WORK!
-	THIS VERSION IS FOR EPIC CLIENTS ONLY (EPIC3.001 or up)
+	This legacy script should be loaded if you miss its functionality.
+	It is no longer loaded by global on startup.
 }
+
+subpackage 2.8script
 
 # I dont know why the client cant do this...
 alias join
@@ -77,7 +74,6 @@ on %set "CONTROL_C_COLOR OFF" set color off
 #
 # Comment out stuff for opers, due to repeated requests.
 # 
-: {
 on ^ctcp ^"% % ERRMSG *no such function*"
 on ^dcc_raw ^"% % D %" 
 
@@ -145,5 +141,4 @@ on ^220 * xecho -b $1 $[10]2 $3
 
 # Service list:
 on ^231 * xecho -b Service $1 \($0\)
-}
 

@@ -10,6 +10,7 @@ KNOWN ERRATA (eg, bugs, or unresolved requests):
 * Sort out the whole errno/dgets_errno/my_strerror mess.
 * Receiving dcc offers causes panic for Kitambi
 * Pthreads + SSL may not be a winning combination.
+* Something that converts an ON into a string that can be saved.
 
 [See http://www.epicsol.org/PROJECTS for things to come in the future]
 [See http://www.epicsol.org/CHANGELOG5 for things that changed in the past]
@@ -505,3 +506,15 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Fix accept() with pthreads.  Nonblocking + pthreads == Bad.
 * Throw away all unused addrs when we are registered, to ensure no reconnects.
 * Comment out a bunch of oper-only stuff in 2.8script which opers seem to hate.
+* Implement a proper built in /INVITE command.  See UPDATES
+* Revert 2.8script change.
+* Add "subpackage" command, which i'll document later.
+* Package up 'global', and '2.8script' and 'basical' so they can be /unload'ed.
+* Don't load "global" if user has their own startup script.
+* Don't load "global" if the -q option is set, either.
+* Thus, the "global" script acts as a default "epicrc" for those without one.
+* THIS IS BACKWARDS INCOMPATABLE.  SEE UPDATES FOR IMPORTANT INFORMATION.
+* Nix the "loading_global" variable, only used by hooks.
+* Fix /on 005 so it shows the /on 005's and not all numeric hooks.
+* If Accept() fails, tell the user straight-way so I can debug this.
+* Fix /window name - so it redraws the status bar.

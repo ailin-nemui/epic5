@@ -1,4 +1,4 @@
-/* $EPIC: hook.c,v 1.48 2005/02/19 04:22:26 jnelson Exp $ */
+/* $EPIC: hook.c,v 1.49 2005/03/01 00:54:55 jnelson Exp $ */
 /*
  * hook.c: Does those naughty hook functions. 
  *
@@ -98,7 +98,6 @@ typedef struct	hook_stru
 	int	sernum;			/* /on #type NUM nick stuff */
 					/* Default sernum is 0. */
 
-	int	global;			/* set if loaded from `global' */
 	int	flexible;		/* on type 'NICK' stuff */
 
 	char	*filename;		/* Where it was loaded */
@@ -509,7 +508,6 @@ static int	add_hook (int which, char *nick, ArgList *arglist, char *stuff, int n
 	new_h->not = not;
 	new_h->sernum = sernum;
 	new_h->flexible = flexible;
-	new_h->global = loading_global;
 	new_h->skip = 0;
 	new_h->arglist = arglist;
 	malloc_strcpy(&new_h->filename, current_package());
@@ -1322,7 +1320,7 @@ BUILT_IN_COMMAND(oncmd)
 			 * character of "func" is a zero or not.  If it is,
 			 * we output all of the numeric functions.
 			 */
-			if (*func == '0')
+			if (!strcmp(func, "0"))
 			{
 				if (!show_all_numerics(0))
 				    say("All numeric ON lists are empty.");

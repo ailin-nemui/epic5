@@ -1,5 +1,47 @@
 EPIC5-0.1
 
+*** News 02/28/2005 -- !!! IMPORTANT !!! "global" SCRIPT NO LONGER AUTO-LOADED
+		This is a backwards incompatable change!
+
+	A lot of people who run script packs find that the "global" script 
+	which is automatically and unconditionally loaded by epic at startup
+	is a nuisance which must be eliminated.  After much deliberation, it
+	seems agreeable to most parties that *by default*, the "global" script
+	will only be loaded for those people who do not have their own startup
+	script (~/.ircrc or ~/.epicrc)
+
+	If you *have* your own startup script, and you *like* having the global
+	script loaded at startup then you need to make a one-time change to 
+	the top of your startup script:
+			load global
+	which will give you old backwards-comaptable behavior.  If you do not
+	make this change, then some /on's, /alias's, and other things that
+	you may have had access to will disappear until you make this change.
+
+	For those of you who do not have your own startup script, you will not
+	notice any changes.
+
+	For those of you who have wished the 'global' script to die a horrible
+	fiery death, you have got your wish.
+
+*** News 02/28/2005 -- New built in command, /SUBPACKAGE
+	The /SUBPACKAGE command is probably temporary, so don't get too
+	attached to it yet.  This command should be used in scripts that
+	are loaded from other scripts, who have used the /PACKAGE command,
+	to set up a "nested" package name.  For example:
+
+	File "one":
+	  /PACKAGE one
+	  /LOAD two
+	  /ALIAS frobnitz {echo hello!}
+
+	File "two"
+	  /SUBPACKAGE two
+	  /ALIAS oofda {echo hi!}
+
+	In this example, "frobnitz" will be in the package "one" and 
+	"oofda" will be in the package "one::two".
+
 *** News 02/04/2005 -- Clarification on /EXEC process output.
 	Until this time, partial lines of output from /EXEC processes
 	were silently ignored, could not be redirected, and callbacks

@@ -1,4 +1,4 @@
-/* $EPIC: window.c,v 1.135 2005/02/23 04:21:32 jnelson Exp $ */
+/* $EPIC: window.c,v 1.136 2005/03/01 00:54:55 jnelson Exp $ */
 /*
  * window.c: Handles the organzation of the logical viewports (``windows'')
  * for irc.  This includes keeping track of what windows are open, where they
@@ -3685,7 +3685,10 @@ static Window *window_name (Window *window, char **args)
 	{
 		/* /window name -  unsets the window name */
 		if (!strcmp(arg, "-"))
+		{
 			new_free(&window->name);
+			window_statusbar_needs_update(window);
+		}
 
 		/* /window name to existing name -- ignore this. */
 		else if (window->name && (my_stricmp(window->name, arg) == 0))

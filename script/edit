@@ -7,18 +7,17 @@
 # by hop!jnelson@acronet.net (Jeremy Nelson)
 # who hacked the $aliasctl() function into EPIC3pre5-fixit1
 # which allows you to do this cleanly.
+# (Later updated to use symbolctl for epic5)
 #
 alias edit 
 {
 	^local edit.name $toupper($0)
-	^local edit.stuff $aliasctl(ALIAS GET $edit.name)
+	^local edit.stuff $symbolctl(GET $edit.name 1 ALIAS VALUE)
 
-	if (edit.stuff)
-	{
-		type ^U
-		xtype -literal /alias $^\edit.name $^\edit.stuff
-	}
-	{
-		xecho -w 0 *** Unknown alias: $edit.name
+	if (edit.stuff) {
+		parsekey erase_line
+		xtype -literal /alias $edit.name $edit.stuff
+	} else {
+		xecho -b -c Unknown alias: $edit.name
 	}
 }

@@ -4,6 +4,8 @@
 #
 # by troy & lynx
 
+subpackage basical
+
 # Standard ircI-like abbreviations
 # No irc client can call itself irc client if its not ircI-compatible!
 #
@@ -80,4 +82,10 @@ on %set "hold_mode_interval *" window $*
 
 ## Load the help command
 load help
+
+on unload "*basical" {
+	unload hold_mode
+	unload help
+	window ircII name -
+}
 

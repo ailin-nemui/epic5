@@ -1,4 +1,4 @@
-/* $EPIC: server.c,v 1.154 2005/02/28 14:23:30 jnelson Exp $ */
+/* $EPIC: server.c,v 1.155 2005/03/01 00:54:55 jnelson Exp $ */
 /*
  * server.c:  Things dealing with that wacky program we call ircd.
  *
@@ -1756,15 +1756,13 @@ void  server_is_registered (int refnum, const char *itsname, const char *ourname
 
 	reinstate_user_modes();
 	userhostbase(from_server, NULL, got_my_userhost, 1);
-	isonbase(from_server, NULL, NULL);
 
 	if (never_connected)
 	{
 		never_connected = 0;
 		permit_status_update(1);
 
-		if (!ircrc_loaded)
-			load_ircrc();
+		load_ircrc();
 
 		if (default_channel)
 		{

@@ -1,4 +1,4 @@
-/* $EPIC: who.c,v 1.42 2005/01/23 21:41:28 jnelson Exp $ */
+/* $EPIC: who.c,v 1.43 2005/03/01 00:54:55 jnelson Exp $ */
 /*
  * who.c -- The WHO queue.  The ISON queue.  The USERHOST queue.
  *
@@ -1197,7 +1197,7 @@ BUILT_IN_COMMAND(isoncmd)
 	isonbase(from_server, args, NULL);
 }
 
-void isonbase (int refnum, char *args, void (*line) (int, char *, char *))
+void	isonbase (int refnum, char *args, void (*line) (int, char *, char *))
 {
 	IsonEntry 	*new_i;
 	char 		*next = args;

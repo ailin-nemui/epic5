@@ -1,14 +1,13 @@
-# This is the global ircrc
+#
+# This is the default ircrc
+# The basic setup for ircII
 # Please make your installation changes in 'local'
 #
-# These two aliases are used by the scripts 
-alias d- ^set display off
-alias d+ ^set display on
+# Note that this file is not loaded if you have your own ~/.epicrc!
 #
-# The basic setup for ircII
+package global
+
 load builtins
 load basical
 load 2.8script
-# If you want this script, load it in your .ircrc
-#load newaway
 load local

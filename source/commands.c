@@ -1,4 +1,4 @@
-/* $EPIC: commands.c,v 1.113 2005/02/19 04:22:26 jnelson Exp $ */
+/* $EPIC: commands.c,v 1.114 2005/03/01 00:54:55 jnelson Exp $ */
 /*
  * commands.c -- Stuff needed to execute commands in ircII.
  *		 Includes the bulk of the built in commands for ircII.
@@ -156,11 +156,13 @@ static	void	redirect 	(const char *, char *, const char *);
 static	void	returncmd	(const char *, char *, const char *);
 static	void	send_2comm 	(const char *, char *, const char *);
 static	void	send_comm 	(const char *, char *, const char *);
+static	void	send_invite 	(const char *, char *, const char *);
 static	void	send_kick 	(const char *, char *, const char *);
 static	void	send_channel_com (const char *, char *, const char *);
 static  void    set_username 	(const char *, char *, const char *);
 static	void	setenvcmd	(const char *, char *, const char *);
 static	void	squitcmd	(const char *, char *, const char *);
+static	void	subpackagecmd	(const char *, char *, const char *);
 static	void	usleepcmd	(const char *, char *, const char *);
 static  void	shift_cmd 	(const char *, char *, const char *);
 static	void	sleepcmd 	(const char *, char *, const char *);
@@ -244,7 +246,7 @@ static	IrcCommand irc_command[] =
 	{ "INFO",	info		},
 	{ "INPUT",	inputcmd	},
 	{ "INPUT_CHAR",	inputcmd	},
-	{ "INVITE",	send_comm	},
+	{ "INVITE",	send_invite	},
 	{ "IRCUSER",	set_username	},
 	{ "ISON",	isoncmd		},
 	{ "JOIN",	e_channel	},
@@ -308,6 +310,7 @@ static	IrcCommand irc_command[] =
 	{ "STACK",	stackcmd	}, /* stack.c */
 	{ "STATS",	send_comm	},
 	{ "STUB",	stubcmd		}, /* alias.c */
+	{ "SUBPACKAGE",	subpackagecmd	},
 	{ "SWITCH",	switchcmd	}, /* if.c */
 	{ "TIME",	send_comm	},
 	{ "TIMER",	timercmd	},
@@ -1547,6 +1550,22 @@ BUILT_IN_COMMAND(packagecmd)
 		malloc_strcpy(&load_level[load_depth].package, args);
 }
 
+BUILT_IN_COMMAND(subpackagecmd)
+{
+	if (load_depth == -1)
+		return;
+	else if (load_depth > 0)
+	{
+		malloc_strcpy(&load_level[load_depth].package, 
+				load_level[load_depth-1].package);
+		malloc_strcat(&load_level[load_depth].package, "::");
+	}
+	else
+		new_free(&load_level[load_depth].package);
+
+	malloc_strcat(&load_level[load_depth].package, args);
+}
+
 static void	loader_which (FILE *fp, const char *filename, const char *args, struct load_info *);
 static void	loader_std (FILE *fp, const char *filename, const char *args, struct load_info *);
 static void	loader_pf  (FILE *fp, const char *filename, const char *args, struct load_info *);
@@ -2440,6 +2459,54 @@ BUILT_IN_COMMAND(send_comm)
 	else
 		send_to_server("%s", command);
 }
+
+/*
+ * Usage: INVITE #channel nickname1 nickname2 nickname3
+ *        INVITE nickname #channel1 #channel2 #channel3
+ *	  INVITE nickname
+ */
+BUILT_IN_COMMAND(send_invite)
+{
+	const char *arg;
+	const char *nick = NULL;
+	const char *channel = NULL;
+	const char *currchan;
+	int	invites = 0;
+
+	currchan = get_echannel_by_refnum(0);
+	if (!currchan || !*currchan)
+		currchan = "*";		/* what-EVER */
+
+	while ((arg = next_arg(args, &args)))
+	{
+	    if (!strcmp(arg, "*"))
+		channel = currchan;
+	    else if (is_channel(arg))
+		channel = arg;
+	    else
+		nick = arg;
+
+	    if (channel && arg)
+	    {
+		send_to_server("%s %s %s", command, nick, channel);
+		invites++;
+	    }
+	}
+
+	if (!invites && nick)
+	{
+	    if (strcmp(currchan, "*"))
+	    {
+		send_to_server("%s %s %s", command, nick, currchan);
+		invites++;
+	    }
+	    else
+		say("You are not on a channel");
+	}
+	else
+	    say("Usage: %s [#channel] nickname", command);
+}
+
 
 /*
  * send_kick: sends a kick message to the server.  Works properly with
