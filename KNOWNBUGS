@@ -43,6 +43,9 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Fix $stat() so that it expands ~ correctly.
 * Fix ctcp over dcc to not coredump.
 * Fix dcc over dcc to not coredump.  (different issue)
+* Fix /timer -delete.
+* Fix /timer -delete_for_window.
+* Add ''data_array'', ''data_struct'' scripts (ce)
 * Add %{1}+ as a special favor to howl.
 * Convert all uses of strcpy() to strlcpy()
 * Convert all uses of strcat() to strlcat()
@@ -96,9 +99,13 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Reorganize process_outgoing_file() into sub-functions.
 * Don't call "dcc_dead" or "dcc_check" in main io() looper.
 * Fix new_next_arg_count() to use real_move_to_abs_word() to emulate $1 usage
+* Suppress warnings from the status bar during the main output loop
 * Fix infinite recursion bug when a channel key contains unmatched (
 * Add $outputinfo() which outputs "level" and "target".
 * Add $levelwindow() which returns window refnum for a given level.
+* /set dcc_store_path problem fixed.
+* $dccctl(get [ref] XXX) where XXX is heldtime or holdtime.
+* Misc new one liners in script/data_array.
 * Rename 'dcc()' to 'dcc_cmd()' so we can use dcc as variable
 * Garbage collect unused 'irc_path' global variable.
 * Add --with-warns to configure to do FreeBSD "WARNS" like compiler checks
@@ -117,9 +124,15 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * - Ensure every function is either 'static' or has a prototype.
 * - Eliminate (unsigned) < (signed) type comparisons.
 * Hopefully you should not notice any changes!
+* Don't pass negative value to alloca().
+* Fixed two language related leaks.
+* Added flags for dccctl as in, $dccctl(get [ref] FLAGS).
 * Fix for $remw() and a corresponding new regression test.
 * Applied three patches from |rain| to fix perl, dcc and $chr().
 * The perl one apparently makes it possible to compile for perl 5.8.0.
+* This patch involves renaming crypt.h to sedcrypt.h.
+* Larnify whoreply(), for larne, of course!
+* Fix bug with @ var = [....
 * Made /dcc close use new_next_arg for filenames to make it consistent.
 * Fixed dcc send resume so that it will resume with mirc.
 * Change m_strcat_ues_c to take a (char *) "unescape" param and not (int)
@@ -130,6 +143,7 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Change 'expand_alias' so 'unescape' is (char *) and not (int)
 * Add extra sanity checks in mangle_line against buffer overruns
 * Fix window_channel() to use new malloc_strcat_ues() arguments.
+* Fix the "suppressmotd" script so it actually works.
 * Fix some casts to update_transfer_buffer() to avoid bad data.
 * Fix really lame bug I introduced with /eval echo }{.  Don't ask.
 * Add a kludge to update_all_windows() to thwart infinite recursion.

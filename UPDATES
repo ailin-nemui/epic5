@@ -1,5 +1,83 @@
 EPIC4-1.2.0
 
+*** News 06/12/2003 -- Improvements to epic's source code
+	A lot of changes have happened internally to EPIC to improve the
+	quality of its source code.  For those of you who know about C,
+	the types of things we fixed were:
+		1) Const correctness
+		2) Bad comparisons of integers of different sign and size.
+		3) Used valgrind to find a lot of uninitialized variables
+		4) Stopped using all ``unsafe'' functions
+		5) Treat all string literals as (const char *) [like #1]
+		6) Remove "shadow" variables
+		7) Prototype all extern functions, 'static' the rest.
+
+*** News 06/12/2003 -- New configure option, --with-warns
+	On some systems (at least on freebsd), the gcc you're using has
+	a lot of extra helpful warning flags which you can use to point
+	out low-quality code.  If you pass the --with-warns flag to 
+	configure, it will turn on most of the useful ones.  If your
+	compiler does not support these warnings, do not use this.
+
+*** News 06/12/2003 -- New verb for $dccctl(), "FLAGS"
+	This returns an epic internal integer value that indicates some
+	values that may be of interest.  The composition of this value
+	is undefined and is subject to change.  See dcc.c for more info.
+	At the time I wrote this, these are the flags:
+		1	dcc is DCC CHAT	
+		2	dcc is DCC SEND
+		3	dcc is DCC GET
+		4	dcc is DCC RAW
+		5	dcc is DCC LISTEN
+		16	The dcc is inbound (other connects to us)
+		32	The dcc is open and active
+		64	The dcc is outbound (connect to other)
+		128	The dcc is pending deletion
+		256	The dcc is bi-directionally open
+		512	The dcc has been rejected by either peer.
+
+*** News 06/12/2003 -- New verb for $dccctl(), "HELDTIME" and "HOLDTIME"
+	HELDTIME gives you a floating point value for how much time
+		the dcc has spent in "hold mode".  When you want to
+		calculate kb/s, you want to subtract this number of
+		seconds from the total open time.
+	HOLDTIME gives you the time that the dcc was last held or unheld,
+		depending on the value of $dccctl(GET <refnum> HOLD).
+
+*** News 06/12/2003 -- New arg list qualifier, "QWORD"
+	If you do
+		alias foobar (arg1 qword 2, ...) {
+			...
+		}
+	it takes "double quoted words" but does not remove any double 
+	quotes around the words.  This is in contrast to "DWORD" which 
+	does remove them.  Example:
+
+		alias foo1 (arg1 dword 2, ...) {echo $arg1}
+		alias foo2 (arg1 qword 2, ...) {echo $arg1}
+
+	/foo1 "one two" "three four" five six
+		outputs		one two three four
+
+	/foo2 "one two" "three four" five six
+		outputs		"one two" "three four"
+
+*** News 06/12/2003 -- Overhaul of dcc code, full ipv6 support
+	The DCC code has been largely rewritten, and should be a lot
+	more stable (less prone to crashes) especially when you delete
+	or close a DCC connection.  IPv6 support has been fully added
+	and it should work completely now with no exceptions.  If you
+	have any problems, let me know!
+
+*** News 06/12/2003 -- Changes to channel<->window handling
+	Previously, each window was responsible for keeping track of
+	what it's current channel was.  This could be a problem if you
+	wanted to reconnect, and each channel would rejoin its window,
+	but you could never be sure which channel would be the current
+	window.  Now, each channel keeps track of whether it is the 
+	"current channel", and when you reconnect, all of the current
+	channels should stay the same and not change around.
+
 *** News 05/04/2003 -- Change default of /set new_server_lastlog_level
 	The new default for /SET NEW_SERVER_LASTLOG_LEVEL is now ALL,-DCC.
 
