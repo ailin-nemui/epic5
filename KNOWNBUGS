@@ -236,3 +236,4 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Add /window kill_all_others for rain.
 * Add /set old_server_lastlog_level, for when you merge windows to servers.
 * Add %{2}W status expando for black, shows /set status_window in all windows.
+* Fix a bug with hook pattern counting found by hsoc and adm.

@@ -1,4 +1,4 @@
-/* $EPIC: screen.c,v 1.81 2004/05/05 16:06:09 jnelson Exp $ */
+/* $EPIC: screen.c,v 1.82 2004/05/05 16:43:27 jnelson Exp $ */
 /*
  * screen.c
  *
@@ -1650,7 +1650,9 @@ const	u_char	*cont_ptr;
 				 * attributes we will need to start the next
 				 * line.  This fixes an abort().
 				 */
+#if 0
 				if (word_break == 0)
+#endif
 					saved_a = a;
 
                                 continue;          /* Skip the column check */
@@ -1819,7 +1821,7 @@ const	u_char	*cont_ptr;
 				 * Otherwise, we just use /set continued_line, 
 				 * whatever it is.
 				 */
-				else
+				else /* if ((!cont || !*cont) && *cont_ptr) */
 					cont = LOCAL_COPY(cont_ptr);
 
 				cont_free = cont = normalize_string(cont, 0);

@@ -1,4 +1,4 @@
-/* $EPIC: newio.c,v 1.25 2004/03/28 16:26:08 jnelson Exp $ */
+/* $EPIC: newio.c,v 1.26 2004/05/05 16:43:27 jnelson Exp $ */
 /*
  * newio.c: This is some handy stuff to deal with file descriptors in a way
  * much like stdio's FILE pointers 
@@ -851,6 +851,7 @@ struct timespec *newtimeout = &thetimeout;
 		{
 			if (polls++ > 10000)
 				panic("Stuck in a polling loop. Help!");
+			return 0;		/* Timers are more important */
 		}
 		else
 			polls = 0;

@@ -1,4 +1,4 @@
-/* $EPIC: timer.c,v 1.41 2004/03/25 04:41:18 jnelson Exp $ */
+/* $EPIC: timer.c,v 1.42 2004/05/05 16:43:28 jnelson Exp $ */
 /*
  * timer.c -- handles timers in ircII
  *
@@ -663,6 +663,7 @@ char *add_timer (int update, const char *refnum_want, double interval, long even
 		malloc_strcpy(&ntimer->subargs, subargs);
 		ntimer->window = winref;
 		ntimer->server = from_server;
+		ntimer->fires = 0;
 	}
 
 	schedule_timer(ntimer);
