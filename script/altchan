@@ -1,0 +1,39 @@
+/*
+	Copyright (c) 2003 David B. Kratter (BlackJac@EFNet)
+
+	Version: 1.0.2003.12.02.1
+
+	This will allow you to toggle between hidden windows 1 through 20 more
+	easily. Press Esc+1 to toggle between windows 1 and 11, Esc+2 for win-
+	dows 2 and 12, etc., up through Esc+0 for windows 10 and 20.
+*/
+
+alias toggle.window (number, void) {
+	if (@number) {
+		if (number) {
+			@ :window = winnum() == number ? [1$number] : number
+			if (winnum($window) != -1) {
+				window swap $window
+			} else {
+				if (window < 10 && winnum(1$window) != -1) {
+					window swap 1$window
+				} else if (window > 10 && winnum($right(1 $window) != -1)) {
+					window swap $right(1 $window)
+				} else {
+					xecho -c Window $window does not exist
+				}
+			}
+		} else {
+			@ :window = winnum() == 10 ? 20 : 10
+			if (winnum($window) != -1) {
+				window swap $window
+			} else {
+				xecho -c Window $window does not exist
+			}
+		}
+	}
+}
+
+fe ($jot(0 9 1)) tt {
+	bind ^[$tt parse_command toggle.window $tt
+}
