@@ -14,7 +14,7 @@ RM	= rm -f
 OBJECTS = alias.o alist.o array.o commands.o compat.o crypt.o ctcp.o \
 	dcc.o debug.o exec.o files.o flood.o functions.o funny.o gailib.o glob.o \
 	help.o history.o hook.o if.o ignore.o input.o irc.o ircaux.o \
-	ircsig.o keys.o lastlog.o list.o log.o mail.o names.o network.o \
+	ircsig.o keys.o lastlog.o list.o log.o logfiles.o mail.o names.o network.o \
 	newio.o notice.o notify.o numbers.o output.o parse.o queue.o reg.o \
 	screen.o server.o ssl.o status.o term.o timer.o translat.o vars.o who.o \
 	window.o words.o @PERLDOTOH@ @ALLOCA@
@@ -89,75 +89,67 @@ depend:
 
 # Dont even THINK of deleting this line
 alias.o: alias.c ../include/irc.h ../include/defs.h \
- ../include/config.h ../include/irc_std.h ../include/gailib.h \
- ../include/debug.h ../include/reg.h ../include/alias.h \
- ../include/alist.h ../include/ircaux.h ../include/array.h \
- ../include/commands.h ../include/files.h ../include/history.h \
- ../include/hook.h ../include/input.h ../include/output.h \
- ../include/screen.h ../include/window.h ../include/lastlog.h \
- ../include/status.h ../include/stack.h ../include/vars.h \
- ../include/keys.h expr2.c expr.c
+ ../include/config.h ../include/irc_std.h ../include/debug.h \
+ ../include/reg.h ../include/alias.h ../include/alist.h \
+ ../include/ircaux.h ../include/array.h ../include/commands.h \
+ ../include/files.h ../include/history.h ../include/hook.h \
+ ../include/input.h ../include/output.h ../include/screen.h \
+ ../include/window.h ../include/lastlog.h ../include/status.h \
+ ../include/stack.h ../include/vars.h ../include/keys.h expr2.c expr.c
 alist.o: alist.c ../include/irc.h ../include/defs.h \
- ../include/config.h ../include/irc_std.h ../include/gailib.h \
- ../include/debug.h ../include/reg.h ../include/alist.h \
- ../include/ircaux.h ../include/output.h
+ ../include/config.h ../include/irc_std.h ../include/debug.h \
+ ../include/reg.h ../include/alist.h ../include/ircaux.h \
+ ../include/output.h
 alloca.o: alloca.c
 array.o: array.c ../include/irc.h ../include/defs.h \
- ../include/config.h ../include/irc_std.h ../include/gailib.h \
- ../include/debug.h ../include/reg.h ../include/array.h \
- ../include/ircaux.h ../include/output.h
-bounty.o: bounty.c ../include/irc.h ../include/defs.h \
- ../include/config.h ../include/irc_std.h ../include/gailib.h \
- ../include/debug.h ../include/reg.h ../include/ircaux.h \
+ ../include/config.h ../include/irc_std.h ../include/debug.h \
+ ../include/reg.h ../include/array.h ../include/ircaux.h \
  ../include/output.h
-break.o: break.c
+bounty.o: bounty.c
 commands.o: commands.c ../include/irc.h ../include/defs.h \
- ../include/config.h ../include/irc_std.h ../include/gailib.h \
- ../include/debug.h ../include/reg.h ../include/alias.h \
- ../include/alist.h ../include/ircaux.h ../include/crypt.h \
- ../include/ctcp.h ../include/dcc.h ../include/commands.h \
- ../include/exec.h ../include/files.h ../include/funny.h \
- ../include/help.h ../include/history.h ../include/hook.h \
- ../include/server.h ../include/who.h ../include/if.h \
- ../include/ignore.h ../include/input.h ../include/keys.h \
- ../include/lastlog.h ../include/names.h ../include/notify.h \
+ ../include/config.h ../include/irc_std.h ../include/debug.h \
+ ../include/reg.h ../include/alias.h ../include/alist.h \
+ ../include/ircaux.h ../include/crypt.h ../include/ctcp.h \
+ ../include/dcc.h ../include/commands.h ../include/exec.h \
+ ../include/files.h ../include/funny.h ../include/help.h \
+ ../include/history.h ../include/hook.h ../include/server.h \
+ ../include/who.h ../include/if.h ../include/ignore.h \
+ ../include/input.h ../include/keys.h ../include/lastlog.h \
+ ../include/log.h ../include/names.h ../include/notify.h \
  ../include/notice.h ../include/numbers.h ../include/output.h \
  ../include/parse.h ../include/queue.h ../include/screen.h \
  ../include/window.h ../include/status.h ../include/stack.h \
  ../include/term.h ../include/timer.h ../include/vars.h \
  ../include/newio.h ../include/ssl.h
-compat.o: compat.c ../include/defs.h ../include/irc_std.h \
- ../include/gailib.h
+compat.o: compat.c ../include/defs.h ../include/irc_std.h
 crypt.o: crypt.c ../include/irc.h ../include/defs.h \
- ../include/config.h ../include/irc_std.h ../include/gailib.h \
- ../include/debug.h ../include/reg.h ../include/crypt.h \
- ../include/ctcp.h ../include/ircaux.h ../include/list.h \
- ../include/output.h ../include/vars.h
+ ../include/config.h ../include/irc_std.h ../include/debug.h \
+ ../include/reg.h ../include/crypt.h ../include/ctcp.h \
+ ../include/ircaux.h ../include/list.h ../include/output.h \
+ ../include/vars.h
 ctcp.o: ctcp.c ../include/irc.h ../include/defs.h ../include/config.h \
- ../include/irc_std.h ../include/gailib.h ../include/debug.h \
- ../include/reg.h ../include/crypt.h ../include/ctcp.h \
- ../include/dcc.h ../include/commands.h ../include/hook.h \
- ../include/ignore.h ../include/ircaux.h ../include/lastlog.h \
- ../include/names.h ../include/output.h ../include/parse.h \
- ../include/server.h ../include/who.h ../include/status.h \
- ../include/vars.h ../include/window.h ../include/if.h \
- ../include/flood.h ../include/notice.h
-dcc.o: dcc.c ../include/irc.h ../include/defs.h ../include/config.h \
- ../include/irc_std.h ../include/gailib.h ../include/debug.h \
- ../include/reg.h ../include/crypt.h ../include/ctcp.h \
- ../include/dcc.h ../include/hook.h ../include/ircaux.h \
- ../include/lastlog.h ../include/newio.h ../include/ssl.h \
+ ../include/irc_std.h ../include/debug.h ../include/reg.h \
+ ../include/crypt.h ../include/ctcp.h ../include/dcc.h \
+ ../include/commands.h ../include/hook.h ../include/ignore.h \
+ ../include/ircaux.h ../include/lastlog.h ../include/names.h \
  ../include/output.h ../include/parse.h ../include/server.h \
  ../include/who.h ../include/status.h ../include/vars.h \
- ../include/window.h ../include/term.h ../include/screen.h \
+ ../include/window.h ../include/if.h ../include/flood.h \
  ../include/notice.h
+dcc.o: dcc.c ../include/irc.h ../include/defs.h ../include/config.h \
+ ../include/irc_std.h ../include/debug.h ../include/reg.h \
+ ../include/crypt.h ../include/ctcp.h ../include/dcc.h \
+ ../include/hook.h ../include/ircaux.h ../include/lastlog.h \
+ ../include/newio.h ../include/ssl.h ../include/output.h \
+ ../include/parse.h ../include/server.h ../include/who.h \
+ ../include/status.h ../include/vars.h ../include/window.h \
+ ../include/term.h ../include/screen.h ../include/notice.h
 debug.o: debug.c ../include/irc.h ../include/defs.h \
- ../include/config.h ../include/irc_std.h ../include/gailib.h \
- ../include/debug.h ../include/reg.h ../include/ircaux.h \
- ../include/output.h
+ ../include/config.h ../include/irc_std.h ../include/debug.h \
+ ../include/reg.h ../include/ircaux.h ../include/output.h
 exec.o: exec.c ../include/irc.h ../include/defs.h ../include/config.h \
- ../include/irc_std.h ../include/gailib.h ../include/debug.h \
- ../include/reg.h ../include/dcc.h ../include/exec.h ../include/vars.h \
+ ../include/irc_std.h ../include/debug.h ../include/reg.h \
+ ../include/dcc.h ../include/exec.h ../include/vars.h \
  ../include/ircaux.h ../include/commands.h ../include/window.h \
  ../include/lastlog.h ../include/status.h ../include/screen.h \
  ../include/hook.h ../include/input.h ../include/list.h \
@@ -167,273 +159,276 @@ exec.o: exec.c ../include/irc.h ../include/defs.h ../include/config.h \
 expr.o: expr.c
 expr2.o: expr2.c
 files.o: files.c ../include/irc.h ../include/defs.h \
- ../include/config.h ../include/irc_std.h ../include/gailib.h \
- ../include/debug.h ../include/reg.h ../include/ircaux.h \
- ../include/files.h ../include/window.h ../include/lastlog.h \
- ../include/status.h ../include/output.h
-flood.o: flood.c ../include/irc.h ../include/defs.h \
- ../include/config.h ../include/irc_std.h ../include/gailib.h \
- ../include/debug.h ../include/reg.h ../include/flood.h \
- ../include/hook.h ../include/ignore.h ../include/ircaux.h \
- ../include/output.h ../include/server.h ../include/who.h \
- ../include/vars.h
-functions.o: functions.c ../include/irc.h ../include/defs.h \
- ../include/config.h ../include/irc_std.h ../include/gailib.h \
- ../include/debug.h ../include/reg.h ../include/alias.h \
- ../include/alist.h ../include/ircaux.h ../include/array.h \
- ../include/dcc.h ../include/commands.h ../include/files.h \
- ../include/ignore.h ../include/input.h ../include/names.h \
- ../include/output.h ../include/parse.h ../include/screen.h \
+ ../include/config.h ../include/irc_std.h ../include/debug.h \
+ ../include/reg.h ../include/ircaux.h ../include/files.h \
  ../include/window.h ../include/lastlog.h ../include/status.h \
- ../include/server.h ../include/who.h ../include/vars.h \
- ../include/term.h ../include/notify.h ../include/numbers.h \
- ../include/crypt.h ../include/options ../include/glob.h
+ ../include/output.h
+flood.o: flood.c ../include/irc.h ../include/defs.h \
+ ../include/config.h ../include/irc_std.h ../include/debug.h \
+ ../include/reg.h ../include/flood.h ../include/hook.h \
+ ../include/ignore.h ../include/ircaux.h ../include/output.h \
+ ../include/server.h ../include/who.h ../include/vars.h
+functions.o: functions.c ../include/irc.h ../include/defs.h \
+ ../include/config.h ../include/irc_std.h ../include/debug.h \
+ ../include/reg.h ../include/alias.h ../include/alist.h \
+ ../include/ircaux.h ../include/array.h ../include/dcc.h \
+ ../include/commands.h ../include/files.h ../include/ignore.h \
+ ../include/input.h ../include/names.h ../include/output.h \
+ ../include/parse.h ../include/screen.h ../include/window.h \
+ ../include/lastlog.h ../include/status.h ../include/server.h \
+ ../include/who.h ../include/vars.h ../include/term.h \
+ ../include/notify.h ../include/numbers.h ../include/crypt.h \
+ ../include/options ../include/glob.h
 funny.o: funny.c ../include/irc.h ../include/defs.h \
- ../include/config.h ../include/irc_std.h ../include/gailib.h \
- ../include/debug.h ../include/reg.h ../include/funny.h \
- ../include/hook.h ../include/ignore.h ../include/ircaux.h \
- ../include/lastlog.h ../include/names.h ../include/numbers.h \
- ../include/output.h ../include/parse.h ../include/server.h \
- ../include/who.h ../include/term.h ../include/screen.h \
- ../include/window.h ../include/status.h ../include/vars.h
+ ../include/config.h ../include/irc_std.h ../include/debug.h \
+ ../include/reg.h ../include/funny.h ../include/hook.h \
+ ../include/ignore.h ../include/ircaux.h ../include/lastlog.h \
+ ../include/names.h ../include/numbers.h ../include/output.h \
+ ../include/parse.h ../include/server.h ../include/who.h \
+ ../include/term.h ../include/screen.h ../include/window.h \
+ ../include/status.h ../include/vars.h
 gailib.o: gailib.c ../include/irc_std.h ../include/defs.h \
  ../include/gailib.h
 glob.o: glob.c ../include/config.h ../include/glob.h ../include/irc.h \
- ../include/defs.h ../include/irc_std.h ../include/gailib.h \
- ../include/debug.h ../include/reg.h
+ ../include/defs.h ../include/irc_std.h ../include/debug.h \
+ ../include/reg.h
 help.o: help.c ../include/irc.h ../include/defs.h ../include/config.h \
- ../include/irc_std.h ../include/gailib.h ../include/debug.h \
- ../include/reg.h ../include/help.h ../include/input.h \
- ../include/ircaux.h ../include/hook.h ../include/output.h \
+ ../include/irc_std.h ../include/debug.h ../include/reg.h \
+ ../include/help.h ../include/input.h ../include/ircaux.h \
+ ../include/hook.h ../include/output.h ../include/screen.h \
+ ../include/window.h ../include/lastlog.h ../include/status.h \
+ ../include/server.h ../include/who.h ../include/term.h \
+ ../include/vars.h ../include/glob.h
+history.o: history.c ../include/irc.h ../include/defs.h \
+ ../include/config.h ../include/irc_std.h ../include/debug.h \
+ ../include/reg.h ../include/ircaux.h ../include/vars.h \
+ ../include/history.h ../include/output.h ../include/input.h \
+ ../include/screen.h ../include/window.h ../include/lastlog.h \
+ ../include/status.h
+hook.o: hook.c ../include/irc.h ../include/defs.h ../include/config.h \
+ ../include/irc_std.h ../include/debug.h ../include/reg.h \
+ ../include/hook.h ../include/ircaux.h ../include/alias.h \
+ ../include/window.h ../include/lastlog.h ../include/status.h \
+ ../include/output.h ../include/commands.h ../include/if.h \
+ ../include/stack.h
+if.o: if.c ../include/irc.h ../include/defs.h ../include/config.h \
+ ../include/irc_std.h ../include/debug.h ../include/reg.h \
+ ../include/alias.h ../include/if.h ../include/ircaux.h \
+ ../include/output.h ../include/parse.h ../include/vars.h \
+ ../include/commands.h ../include/window.h ../include/lastlog.h \
+ ../include/status.h
+ignore.o: ignore.c ../include/irc.h ../include/defs.h \
+ ../include/config.h ../include/irc_std.h ../include/debug.h \
+ ../include/reg.h ../include/ignore.h ../include/ircaux.h \
+ ../include/list.h ../include/vars.h ../include/output.h \
+ ../include/parse.h
+input.o: input.c ../include/irc.h ../include/defs.h \
+ ../include/config.h ../include/irc_std.h ../include/debug.h \
+ ../include/reg.h ../include/alias.h ../include/commands.h \
+ ../include/exec.h ../include/history.h ../include/hook.h \
+ ../include/input.h ../include/ircaux.h ../include/keys.h \
  ../include/screen.h ../include/window.h ../include/lastlog.h \
  ../include/status.h ../include/server.h ../include/who.h \
- ../include/term.h ../include/vars.h ../include/glob.h
-history.o: history.c ../include/irc.h ../include/defs.h \
- ../include/config.h ../include/irc_std.h ../include/gailib.h \
- ../include/debug.h ../include/reg.h ../include/ircaux.h \
- ../include/vars.h ../include/history.h ../include/output.h \
- ../include/input.h ../include/screen.h ../include/window.h \
- ../include/lastlog.h ../include/status.h
-hook.o: hook.c ../include/irc.h ../include/defs.h ../include/config.h \
- ../include/irc_std.h ../include/gailib.h ../include/debug.h \
- ../include/reg.h ../include/hook.h ../include/ircaux.h \
- ../include/alias.h ../include/window.h ../include/lastlog.h \
- ../include/status.h ../include/output.h ../include/commands.h \
- ../include/if.h ../include/stack.h
-if.o: if.c ../include/irc.h ../include/defs.h ../include/config.h \
- ../include/irc_std.h ../include/gailib.h ../include/debug.h \
- ../include/reg.h ../include/alias.h ../include/if.h \
- ../include/ircaux.h ../include/output.h ../include/parse.h \
- ../include/vars.h ../include/commands.h ../include/window.h \
- ../include/lastlog.h ../include/status.h
-ignore.o: ignore.c ../include/irc.h ../include/defs.h \
- ../include/config.h ../include/irc_std.h ../include/gailib.h \
- ../include/debug.h ../include/reg.h ../include/ignore.h \
- ../include/ircaux.h ../include/list.h ../include/vars.h \
- ../include/output.h ../include/parse.h
-input.o: input.c ../include/irc.h ../include/defs.h \
- ../include/config.h ../include/irc_std.h ../include/gailib.h \
- ../include/debug.h ../include/reg.h ../include/alias.h \
- ../include/commands.h ../include/exec.h ../include/history.h \
- ../include/hook.h ../include/input.h ../include/ircaux.h \
- ../include/keys.h ../include/screen.h ../include/window.h \
- ../include/lastlog.h ../include/status.h ../include/server.h \
- ../include/who.h ../include/term.h ../include/vars.h \
- ../include/output.h
+ ../include/term.h ../include/vars.h ../include/output.h
 irc.o: irc.c ../include/irc.h ../include/defs.h ../include/config.h \
- ../include/irc_std.h ../include/gailib.h ../include/debug.h \
- ../include/reg.h ../include/status.h ../include/dcc.h \
- ../include/names.h ../include/vars.h ../include/input.h \
- ../include/alias.h ../include/output.h ../include/term.h \
- ../include/screen.h ../include/window.h ../include/lastlog.h \
- ../include/exec.h ../include/log.h ../include/server.h \
- ../include/who.h ../include/hook.h ../include/keys.h \
- ../include/ircaux.h ../include/commands.h ../include/history.h \
- ../include/notify.h ../include/alist.h ../include/mail.h \
- ../include/timer.h ../include/newio.h ../include/ssl.h \
- ../include/parse.h ../include/notice.h
+ ../include/irc_std.h ../include/debug.h ../include/reg.h \
+ ../include/status.h ../include/dcc.h ../include/names.h \
+ ../include/vars.h ../include/input.h ../include/alias.h \
+ ../include/output.h ../include/term.h ../include/screen.h \
+ ../include/window.h ../include/lastlog.h ../include/exec.h \
+ ../include/log.h ../include/server.h ../include/who.h \
+ ../include/hook.h ../include/keys.h ../include/ircaux.h \
+ ../include/commands.h ../include/history.h ../include/notify.h \
+ ../include/alist.h ../include/mail.h ../include/timer.h \
+ ../include/newio.h ../include/ssl.h ../include/parse.h \
+ ../include/notice.h
 ircaux.o: ircaux.c ../include/irc.h ../include/defs.h \
- ../include/config.h ../include/irc_std.h ../include/gailib.h \
- ../include/debug.h ../include/reg.h ../include/screen.h \
- ../include/window.h ../include/lastlog.h ../include/status.h \
- ../include/ircaux.h ../include/output.h ../include/term.h \
- ../include/vars.h ../include/alias.h ../include/if.h
+ ../include/config.h ../include/irc_std.h ../include/debug.h \
+ ../include/reg.h ../include/screen.h ../include/window.h \
+ ../include/lastlog.h ../include/status.h ../include/ircaux.h \
+ ../include/output.h ../include/term.h ../include/vars.h \
+ ../include/alias.h ../include/if.h
 ircsig.o: ircsig.c ../include/irc.h ../include/defs.h \
- ../include/config.h ../include/irc_std.h ../include/gailib.h \
- ../include/debug.h ../include/reg.h
+ ../include/config.h ../include/irc_std.h ../include/debug.h \
+ ../include/reg.h
 keys.o: keys.c ../include/irc.h ../include/defs.h ../include/config.h \
- ../include/irc_std.h ../include/gailib.h ../include/debug.h \
- ../include/reg.h ../include/commands.h ../include/history.h \
- ../include/ircaux.h ../include/input.h ../include/keys.h \
+ ../include/irc_std.h ../include/debug.h ../include/reg.h \
+ ../include/commands.h ../include/history.h ../include/ircaux.h \
+ ../include/input.h ../include/keys.h ../include/list.h \
  ../include/names.h ../include/output.h ../include/screen.h \
  ../include/window.h ../include/lastlog.h ../include/status.h \
  ../include/stack.h ../include/term.h ../include/vars.h
 lastlog.o: lastlog.c ../include/irc.h ../include/defs.h \
- ../include/config.h ../include/irc_std.h ../include/gailib.h \
- ../include/debug.h ../include/reg.h ../include/lastlog.h \
- ../include/window.h ../include/status.h ../include/screen.h \
- ../include/vars.h ../include/ircaux.h ../include/output.h \
- ../include/numbers.h
+ ../include/config.h ../include/irc_std.h ../include/debug.h \
+ ../include/reg.h ../include/lastlog.h ../include/window.h \
+ ../include/status.h ../include/screen.h ../include/vars.h \
+ ../include/ircaux.h ../include/output.h ../include/numbers.h
 list.o: list.c ../include/irc.h ../include/defs.h ../include/config.h \
- ../include/irc_std.h ../include/gailib.h ../include/debug.h \
- ../include/reg.h ../include/list.h ../include/ircaux.h
+ ../include/irc_std.h ../include/debug.h ../include/reg.h \
+ ../include/list.h ../include/ircaux.h
 log.o: log.c ../include/irc.h ../include/defs.h ../include/config.h \
- ../include/irc_std.h ../include/gailib.h ../include/debug.h \
+ ../include/irc_std.h ../include/debug.h ../include/reg.h \
+ ../include/log.h ../include/vars.h ../include/output.h \
+ ../include/ircaux.h ../include/alias.h
+logfiles.o: logfiles.c ../include/irc.h ../include/defs.h \
+ ../include/config.h ../include/irc_std.h ../include/debug.h \
  ../include/reg.h ../include/log.h ../include/vars.h \
- ../include/output.h ../include/ircaux.h ../include/alias.h
+ ../include/output.h ../include/ircaux.h ../include/alias.h \
+ ../include/list.h ../include/window.h ../include/lastlog.h \
+ ../include/status.h
 mail.o: mail.c ../include/irc.h ../include/defs.h ../include/config.h \
- ../include/irc_std.h ../include/gailib.h ../include/debug.h \
- ../include/reg.h ../include/mail.h ../include/lastlog.h \
- ../include/hook.h ../include/vars.h ../include/ircaux.h \
- ../include/output.h
+ ../include/irc_std.h ../include/debug.h ../include/reg.h \
+ ../include/mail.h ../include/lastlog.h ../include/hook.h \
+ ../include/vars.h ../include/ircaux.h ../include/output.h
 names.o: names.c ../include/irc.h ../include/defs.h \
- ../include/config.h ../include/irc_std.h ../include/gailib.h \
- ../include/debug.h ../include/reg.h ../include/ircaux.h \
- ../include/alist.h ../include/names.h ../include/output.h \
- ../include/screen.h ../include/window.h ../include/lastlog.h \
- ../include/status.h ../include/vars.h ../include/server.h \
- ../include/who.h ../include/list.h ../include/hook.h
-network.o: network.c ../include/irc.h ../include/defs.h \
- ../include/config.h ../include/irc_std.h ../include/gailib.h \
- ../include/debug.h ../include/reg.h ../include/ircaux.h \
- ../include/vars.h ../include/newio.h ../include/ssl.h \
- ../include/output.h
-newio.o: newio.c ../include/irc.h ../include/defs.h \
- ../include/config.h ../include/irc_std.h ../include/gailib.h \
- ../include/debug.h ../include/reg.h ../include/ircaux.h \
- ../include/output.h ../include/newio.h ../include/ssl.h
-notice.o: notice.c ../include/irc.h ../include/defs.h \
- ../include/config.h ../include/irc_std.h ../include/gailib.h \
- ../include/debug.h ../include/reg.h ../include/ctcp.h \
+ ../include/config.h ../include/irc_std.h ../include/debug.h \
+ ../include/reg.h ../include/ircaux.h ../include/alist.h \
+ ../include/names.h ../include/output.h ../include/screen.h \
  ../include/window.h ../include/lastlog.h ../include/status.h \
- ../include/flood.h ../include/vars.h ../include/ircaux.h \
- ../include/hook.h ../include/ignore.h ../include/server.h \
- ../include/who.h ../include/funny.h ../include/output.h \
- ../include/names.h ../include/parse.h ../include/notify.h \
- ../include/alist.h ../include/notice.h ../include/commands.h
-notify.o: notify.c ../include/irc.h ../include/defs.h \
- ../include/config.h ../include/irc_std.h ../include/gailib.h \
- ../include/debug.h ../include/reg.h ../include/alist.h \
- ../include/ircaux.h ../include/notify.h ../include/hook.h \
- ../include/server.h ../include/who.h ../include/ssl.h \
- ../include/output.h ../include/parse.h ../include/vars.h
-numbers.o: numbers.c ../include/irc.h ../include/defs.h \
- ../include/config.h ../include/irc_std.h ../include/gailib.h \
- ../include/debug.h ../include/reg.h ../include/input.h \
- ../include/ircaux.h ../include/vars.h ../include/lastlog.h \
- ../include/hook.h ../include/server.h ../include/who.h \
- ../include/numbers.h ../include/window.h ../include/status.h \
- ../include/screen.h ../include/output.h ../include/names.h \
- ../include/funny.h ../include/parse.h ../include/commands.h \
- ../include/notice.h ../include/notify.h ../include/alist.h \
- ../include/alias.h
-output.o: output.c ../include/irc.h ../include/defs.h \
- ../include/config.h ../include/irc_std.h ../include/gailib.h \
- ../include/debug.h ../include/reg.h ../include/output.h \
- ../include/vars.h ../include/input.h ../include/term.h \
- ../include/screen.h ../include/window.h ../include/lastlog.h \
- ../include/status.h ../include/hook.h ../include/ctcp.h \
- ../include/log.h ../include/ircaux.h ../include/alias.h
-parse.o: parse.c ../include/irc.h ../include/defs.h \
- ../include/config.h ../include/irc_std.h ../include/gailib.h \
- ../include/debug.h ../include/reg.h ../include/server.h \
- ../include/who.h ../include/names.h ../include/vars.h \
- ../include/ctcp.h ../include/hook.h ../include/commands.h \
- ../include/ignore.h ../include/lastlog.h ../include/ircaux.h \
- ../include/funny.h ../include/crypt.h ../include/term.h \
- ../include/screen.h ../include/window.h ../include/status.h \
- ../include/flood.h ../include/output.h ../include/numbers.h \
- ../include/parse.h ../include/notify.h ../include/alist.h \
- ../include/notice.h ../include/timer.h
-perl.o: perl.c ../include/irc.h ../include/defs.h ../include/config.h \
- ../include/irc_std.h ../include/gailib.h ../include/debug.h \
- ../include/reg.h ../include/ircaux.h ../include/array.h \
- ../include/alias.h ../include/commands.h ../include/output.h
-queue.o: queue.c ../include/irc.h ../include/defs.h \
- ../include/config.h ../include/irc_std.h ../include/gailib.h \
- ../include/debug.h ../include/reg.h ../include/alias.h \
- ../include/commands.h ../include/if.h ../include/ircaux.h \
- ../include/queue.h ../include/output.h
-reg.o: reg.c ../include/irc.h ../include/defs.h ../include/config.h \
- ../include/irc_std.h ../include/gailib.h ../include/debug.h \
- ../include/reg.h ../include/ircaux.h ../include/output.h
-screen.o: screen.c ../include/irc.h ../include/defs.h \
- ../include/config.h ../include/irc_std.h ../include/gailib.h \
- ../include/debug.h ../include/reg.h ../include/alias.h \
- ../include/exec.h ../include/screen.h ../include/window.h \
- ../include/lastlog.h ../include/status.h ../include/output.h \
  ../include/vars.h ../include/server.h ../include/who.h \
- ../include/list.h ../include/term.h ../include/names.h \
- ../include/ircaux.h ../include/input.h ../include/log.h \
- ../include/hook.h ../include/dcc.h ../include/commands.h \
- ../include/parse.h ../include/newio.h ../include/ssl.h
+ ../include/list.h ../include/hook.h
+network.o: network.c ../include/irc.h ../include/defs.h \
+ ../include/config.h ../include/irc_std.h ../include/debug.h \
+ ../include/reg.h ../include/ircaux.h ../include/vars.h \
+ ../include/newio.h ../include/ssl.h ../include/output.h
+newio.o: newio.c ../include/irc.h ../include/defs.h \
+ ../include/config.h ../include/irc_std.h ../include/debug.h \
+ ../include/reg.h ../include/ircaux.h ../include/output.h \
+ ../include/newio.h ../include/ssl.h
+notice.o: notice.c ../include/irc.h ../include/defs.h \
+ ../include/config.h ../include/irc_std.h ../include/debug.h \
+ ../include/reg.h ../include/ctcp.h ../include/window.h \
+ ../include/lastlog.h ../include/status.h ../include/flood.h \
+ ../include/vars.h ../include/ircaux.h ../include/hook.h \
+ ../include/ignore.h ../include/server.h ../include/who.h \
+ ../include/funny.h ../include/output.h ../include/names.h \
+ ../include/parse.h ../include/notify.h ../include/alist.h \
+ ../include/notice.h ../include/commands.h
+notify.o: notify.c ../include/irc.h ../include/defs.h \
+ ../include/config.h ../include/irc_std.h ../include/debug.h \
+ ../include/reg.h ../include/alist.h ../include/ircaux.h \
+ ../include/notify.h ../include/hook.h ../include/server.h \
+ ../include/who.h ../include/ssl.h ../include/output.h \
+ ../include/parse.h ../include/vars.h
+numbers.o: numbers.c ../include/irc.h ../include/defs.h \
+ ../include/config.h ../include/irc_std.h ../include/debug.h \
+ ../include/reg.h ../include/input.h ../include/ircaux.h \
+ ../include/vars.h ../include/lastlog.h ../include/hook.h \
+ ../include/server.h ../include/who.h ../include/numbers.h \
+ ../include/window.h ../include/status.h ../include/screen.h \
+ ../include/output.h ../include/names.h ../include/funny.h \
+ ../include/parse.h ../include/commands.h ../include/notice.h \
+ ../include/notify.h ../include/alist.h ../include/alias.h
+output.o: output.c ../include/irc.h ../include/defs.h \
+ ../include/config.h ../include/irc_std.h ../include/debug.h \
+ ../include/reg.h ../include/output.h ../include/vars.h \
+ ../include/input.h ../include/term.h ../include/screen.h \
+ ../include/window.h ../include/lastlog.h ../include/status.h \
+ ../include/hook.h ../include/ctcp.h ../include/log.h \
+ ../include/ircaux.h ../include/alias.h
+parse.o: parse.c ../include/irc.h ../include/defs.h \
+ ../include/config.h ../include/irc_std.h ../include/debug.h \
+ ../include/reg.h ../include/server.h ../include/who.h \
+ ../include/names.h ../include/vars.h ../include/ctcp.h \
+ ../include/hook.h ../include/commands.h ../include/ignore.h \
+ ../include/lastlog.h ../include/ircaux.h ../include/funny.h \
+ ../include/crypt.h ../include/term.h ../include/screen.h \
+ ../include/window.h ../include/status.h ../include/flood.h \
+ ../include/output.h ../include/numbers.h ../include/parse.h \
+ ../include/notify.h ../include/alist.h ../include/notice.h \
+ ../include/timer.h
+perl.o: perl.c ../include/irc.h ../include/defs.h ../include/config.h \
+ ../include/irc_std.h ../include/debug.h ../include/reg.h \
+ ../include/ircaux.h ../include/array.h ../include/alias.h \
+ ../include/commands.h ../include/output.h
+queue.o: queue.c ../include/irc.h ../include/defs.h \
+ ../include/config.h ../include/irc_std.h ../include/debug.h \
+ ../include/reg.h ../include/alias.h ../include/commands.h \
+ ../include/if.h ../include/ircaux.h ../include/queue.h \
+ ../include/output.h
+reg.o: reg.c ../include/irc.h ../include/defs.h ../include/config.h \
+ ../include/irc_std.h ../include/debug.h ../include/reg.h \
+ ../include/ircaux.h ../include/output.h
+screen.o: screen.c ../include/irc.h ../include/defs.h \
+ ../include/config.h ../include/irc_std.h ../include/debug.h \
+ ../include/reg.h ../include/alias.h ../include/exec.h \
+ ../include/screen.h ../include/window.h ../include/lastlog.h \
+ ../include/status.h ../include/output.h ../include/vars.h \
+ ../include/server.h ../include/who.h ../include/list.h \
+ ../include/term.h ../include/names.h ../include/ircaux.h \
+ ../include/input.h ../include/log.h ../include/hook.h \
+ ../include/dcc.h ../include/commands.h ../include/parse.h \
+ ../include/newio.h ../include/ssl.h
 server.o: server.c ../include/irc.h ../include/defs.h \
- ../include/config.h ../include/irc_std.h ../include/gailib.h \
- ../include/debug.h ../include/reg.h ../include/parse.h \
- ../include/server.h ../include/who.h ../include/notify.h \
- ../include/alist.h ../include/ircaux.h ../include/ssl.h \
- ../include/lastlog.h ../include/exec.h ../include/window.h \
- ../include/status.h ../include/output.h ../include/names.h \
- ../include/hook.h ../include/screen.h ../include/vars.h \
- ../include/newio.h ../include/translat.h
+ ../include/config.h ../include/irc_std.h ../include/debug.h \
+ ../include/reg.h ../include/parse.h ../include/server.h \
+ ../include/who.h ../include/notify.h ../include/alist.h \
+ ../include/ircaux.h ../include/ssl.h ../include/lastlog.h \
+ ../include/exec.h ../include/window.h ../include/status.h \
+ ../include/output.h ../include/names.h ../include/hook.h \
+ ../include/screen.h ../include/vars.h ../include/newio.h \
+ ../include/translat.h
 ssl.o: ssl.c ../include/irc.h ../include/defs.h ../include/config.h \
- ../include/irc_std.h ../include/gailib.h ../include/debug.h \
- ../include/reg.h ../include/ircaux.h ../include/ssl.h
+ ../include/irc_std.h ../include/debug.h ../include/reg.h \
+ ../include/ircaux.h ../include/ssl.h
 status.o: status.c ../include/irc.h ../include/defs.h \
- ../include/config.h ../include/irc_std.h ../include/gailib.h \
- ../include/debug.h ../include/reg.h ../include/dcc.h \
- ../include/term.h ../include/screen.h ../include/window.h \
- ../include/lastlog.h ../include/status.h ../include/server.h \
- ../include/who.h ../include/vars.h ../include/hook.h \
- ../include/input.h ../include/commands.h ../include/mail.h \
- ../include/output.h ../include/names.h ../include/ircaux.h \
- ../include/alias.h ../include/ssl.h
+ ../include/config.h ../include/irc_std.h ../include/debug.h \
+ ../include/reg.h ../include/dcc.h ../include/term.h \
+ ../include/screen.h ../include/window.h ../include/lastlog.h \
+ ../include/status.h ../include/server.h ../include/who.h \
+ ../include/vars.h ../include/hook.h ../include/input.h \
+ ../include/commands.h ../include/mail.h ../include/output.h \
+ ../include/names.h ../include/ircaux.h ../include/alias.h \
+ ../include/ssl.h
 term.o: term.c ../include/irc.h ../include/defs.h ../include/config.h \
- ../include/irc_std.h ../include/gailib.h ../include/debug.h \
+ ../include/irc_std.h ../include/debug.h ../include/reg.h \
+ ../include/ircaux.h ../include/vars.h ../include/term.h \
+ ../include/screen.h ../include/window.h ../include/lastlog.h \
+ ../include/status.h ../include/output.h
+timer.o: timer.c ../include/irc.h ../include/defs.h \
+ ../include/config.h ../include/irc_std.h ../include/debug.h \
+ ../include/reg.h ../include/ircaux.h ../include/window.h \
+ ../include/lastlog.h ../include/status.h ../include/timer.h \
+ ../include/hook.h ../include/output.h ../include/commands.h \
+ ../include/server.h ../include/who.h ../include/screen.h
+translat.o: translat.c ../include/irc.h ../include/defs.h \
+ ../include/config.h ../include/irc_std.h ../include/debug.h \
+ ../include/reg.h ../include/vars.h ../include/translat.h \
+ ../include/ircaux.h ../include/window.h ../include/lastlog.h \
+ ../include/status.h ../include/screen.h ../include/output.h
+vars.o: vars.c ../include/irc.h ../include/defs.h ../include/config.h \
+ ../include/irc_std.h ../include/debug.h ../include/reg.h \
+ ../include/alist.h ../include/ircaux.h ../include/status.h \
+ ../include/window.h ../include/lastlog.h ../include/log.h \
+ ../include/hook.h ../include/crypt.h ../include/history.h \
+ ../include/notify.h ../include/vars.h ../include/input.h \
+ ../include/term.h ../include/screen.h ../include/output.h \
+ ../include/stack.h ../include/dcc.h ../include/keys.h \
+ ../include/translat.h
+who.o: who.c ../include/irc.h ../include/defs.h ../include/config.h \
+ ../include/irc_std.h ../include/debug.h ../include/reg.h \
+ ../include/commands.h ../include/ircaux.h ../include/who.h \
+ ../include/server.h ../include/notify.h ../include/alist.h \
+ ../include/ssl.h ../include/window.h ../include/lastlog.h \
+ ../include/status.h ../include/vars.h ../include/hook.h \
+ ../include/output.h ../include/numbers.h ../include/parse.h \
+ ../include/if.h ../include/names.h
+window.o: window.c ../include/irc.h ../include/defs.h \
+ ../include/config.h ../include/irc_std.h ../include/debug.h \
+ ../include/reg.h ../include/screen.h ../include/window.h \
+ ../include/lastlog.h ../include/status.h ../include/vars.h \
+ ../include/server.h ../include/who.h ../include/list.h \
+ ../include/term.h ../include/names.h ../include/ircaux.h \
+ ../include/input.h ../include/output.h ../include/log.h \
+ ../include/hook.h ../include/parse.h ../include/commands.h \
+ ../include/exec.h ../include/ssl.h
+words.o: words.c ../include/irc.h ../include/defs.h \
+ ../include/config.h ../include/irc_std.h ../include/debug.h \
+ ../include/reg.h ../include/ircaux.h
+wserv.o: wserv.c ../include/defs.h ../include/config.h \
+ ../include/irc_std.h
+wterm.o: wterm.c ../include/irc.h ../include/defs.h \
+ ../include/config.h ../include/irc_std.h ../include/debug.h \
  ../include/reg.h ../include/ircaux.h ../include/vars.h \
  ../include/term.h ../include/screen.h ../include/window.h \
  ../include/lastlog.h ../include/status.h ../include/output.h
-timer.o: timer.c ../include/irc.h ../include/defs.h \
- ../include/config.h ../include/irc_std.h ../include/gailib.h \
- ../include/debug.h ../include/reg.h ../include/ircaux.h \
- ../include/window.h ../include/lastlog.h ../include/status.h \
- ../include/timer.h ../include/hook.h ../include/output.h \
- ../include/commands.h ../include/server.h ../include/who.h \
- ../include/screen.h
-translat.o: translat.c ../include/irc.h ../include/defs.h \
- ../include/config.h ../include/irc_std.h ../include/gailib.h \
- ../include/debug.h ../include/reg.h ../include/vars.h \
- ../include/translat.h ../include/ircaux.h ../include/window.h \
- ../include/lastlog.h ../include/status.h ../include/screen.h \
- ../include/output.h
-vars.o: vars.c ../include/irc.h ../include/defs.h ../include/config.h \
- ../include/irc_std.h ../include/gailib.h ../include/debug.h \
- ../include/reg.h ../include/alist.h ../include/ircaux.h \
- ../include/status.h ../include/window.h ../include/lastlog.h \
- ../include/log.h ../include/hook.h ../include/crypt.h \
- ../include/history.h ../include/notify.h ../include/vars.h \
- ../include/input.h ../include/term.h ../include/screen.h \
- ../include/output.h ../include/stack.h ../include/dcc.h \
- ../include/keys.h ../include/translat.h
-who.o: who.c ../include/irc.h ../include/defs.h ../include/config.h \
- ../include/irc_std.h ../include/gailib.h ../include/debug.h \
- ../include/reg.h ../include/commands.h ../include/ircaux.h \
- ../include/who.h ../include/server.h ../include/notify.h \
- ../include/alist.h ../include/ssl.h ../include/window.h \
- ../include/lastlog.h ../include/status.h ../include/vars.h \
- ../include/hook.h ../include/output.h ../include/numbers.h \
- ../include/parse.h ../include/if.h ../include/names.h
-window.o: window.c ../include/irc.h ../include/defs.h \
- ../include/config.h ../include/irc_std.h ../include/gailib.h \
- ../include/debug.h ../include/reg.h ../include/screen.h \
- ../include/window.h ../include/lastlog.h ../include/status.h \
- ../include/vars.h ../include/server.h ../include/who.h \
- ../include/list.h ../include/term.h ../include/names.h \
- ../include/ircaux.h ../include/input.h ../include/output.h \
- ../include/log.h ../include/hook.h ../include/parse.h \
- ../include/commands.h ../include/exec.h ../include/ssl.h
-words.o: words.c ../include/irc.h ../include/defs.h \
- ../include/config.h ../include/irc_std.h ../include/gailib.h \
- ../include/debug.h ../include/reg.h ../include/ircaux.h
-wserv.o: wserv.c ../include/defs.h ../include/config.h \
- ../include/irc_std.h ../include/gailib.h

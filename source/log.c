@@ -1,4 +1,4 @@
-/* $EPIC: log.c,v 1.5 2002/09/01 18:27:52 jnelson Exp $ */
+/* $EPIC: log.c,v 1.6 2002/09/03 11:43:12 jnelson Exp $ */
 /*
  * log.c: handles the irc session logging functions 
  *
@@ -173,61 +173,63 @@ void	set_log_file (const char *filename)
  * add_to_log: add the given line to the log file.  If no log file is open
  * this function does nothing. 
  */
-void 	add_to_log (FILE *fp, unsigned winref, const unsigned char *line)
+void 	add_to_log (FILE *fp, unsigned winref, const unsigned char *line, int mangler, const char *rewriter)
 {
 	char	*local_line;
 	size_t	size;
 	int	must_free = 0;
-	char *	pend = NULL;
 
-	if (fp && !inhibit_logging)
+	if (!fp || inhibit_logging)
+		return;
+
+	/*
+	 * We need to make a local copy because 'mangle_line' 
+	 * diddles around with the source, and so we can't subject
+	 * line to that, it is 'const'.
+	 *
+	 * 'mangle_line' can expand the input string, so it is 
+	 * neccesary to allocate more than we need.
+	 */
+	size = strlen(line) * 11;
+	local_line = alloca(size + 1);
+	strcpy(local_line, line);
+
+	/* Do this first */
+	if (mangler == 0)
+		mangler = logfile_line_mangler;
+	if (mangler)
+	   if (mangle_line(local_line, mangler, size) > size)
+		; /* Whimper -- what to do, what to do? */
+
+	if (get_int_var(NO_CONTROL_LOG_VAR))
 	{
-		/*
-		 * We need to make a local copy because 'mangle_line' 
-		 * diddles around with the source, and so we can't subject
-		 * line to that, it is 'const'.
-		 *
-		 * 'mangle_line' can expand the input string, so it is 
-		 * neccesary to allocate more than we need.
-		 */
-		size = strlen(line) * 11;
-		local_line = alloca(size + 1);
-		strcpy(local_line, line);
-
-		/* Do this first */
-		if (logfile_line_mangler)
-		   if (mangle_line(local_line, logfile_line_mangler, size)
-					> size)
-			; /* Whimper -- what to do, what to do? */
-
-		if (get_int_var(NO_CONTROL_LOG_VAR))
-		{
-			char *tmp = alloca(strlen(local_line) + 1);
-			strip_control(local_line, tmp);
-			strlcpy(local_line, tmp, size);
-		}
-
-                if ((pend = get_string_var(LOG_REWRITE_VAR)))
-                {
-                        char    *prepend_exp;
-                        char    argstuff[10240];
-                        int     args_flag;
-
-                        /* First, create the $* list for the expando */
-                        snprintf(argstuff, 10240, "%u %s", winref, local_line);
-
-                        /* Now expand the expando with the above $* */
-                        prepend_exp = expand_alias(pend, argstuff,
-                                                   &args_flag, NULL);
-
-                        local_line = prepend_exp;
-                        must_free = 1;
-                }
-
-		fprintf(fp, "%s\n", local_line);
-		fflush(fp);
-
-		if (must_free)
-			new_free(&local_line);
+		char *tmp = alloca(strlen(local_line) + 1);
+		strip_control(local_line, tmp);
+		strlcpy(local_line, tmp, size);
 	}
+
+	if (rewriter == NULL)
+		rewriter = get_string_var(LOG_REWRITE_VAR);
+	if (rewriter)
+	{
+		char    *prepend_exp;
+		char    argstuff[10240];
+		int     args_flag;
+
+		/* First, create the $* list for the expando */
+		snprintf(argstuff, 10240, "%u %s", winref, local_line);
+
+		/* Now expand the expando with the above $* */
+		prepend_exp = expand_alias(rewriter, argstuff,
+					   &args_flag, NULL);
+
+		local_line = prepend_exp;
+		must_free = 1;
+	}
+
+	fprintf(fp, "%s\n", local_line);
+	fflush(fp);
+
+	if (must_free)
+		new_free(&local_line);
 }

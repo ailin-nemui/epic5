@@ -15,7 +15,7 @@ alias h help
 alias i invite
 alias j join
 alias l leave
-alias log set log
+#alias log set log
 alias m msg
 alias n names
 alias s signoff

@@ -1,4 +1,4 @@
-/* $EPIC: functions.c,v 1.81 2002/08/30 16:51:25 crazyed Exp $ */
+/* $EPIC: functions.c,v 1.82 2002/09/03 11:43:12 jnelson Exp $ */
 /*
  * functions.c -- Built-in functions for ircII
  *
@@ -269,6 +269,7 @@ static	char
 	*function_jn		(char *),
 	*function_jot 		(char *),
 	*function_key 		(char *),
+	*function_logctl	(char *),
 	*function_killpid	(char *),
 	*function_lastserver	(char *),
 	*function_leftpc	(char *),
@@ -542,6 +543,7 @@ static BuiltInFunctions	built_in_functions[] =
 	{ "LISTEN",		function_listen 	},
 	{ "LOADINFO",		function_loadinfo	},
 	{ "LOG",		function_log		},
+	{ "LOGCTL",		function_logctl		},
 	{ "LOG10",		function_log10		},
 	{ "LONGTOIP",		function_longtoip	},
 	{ "MASK",		function_mask		},
@@ -6465,3 +6467,10 @@ BUILT_IN_FUNCTION(function_bindctl, input)
 	extern char *bindctl(char *);
 	return bindctl(input);
 }
+
+BUILT_IN_FUNCTION(function_logctl, input)
+{
+	extern char *logctl(char *);
+	return logctl(input);
+}
+

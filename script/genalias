@@ -20,7 +20,7 @@ alias ws umode +ws
 alias nws umode -ws
 alias client ctcp $0 version
 alias finger ctcp $0 finger
-alias log window log $0
+#alias log window log $0
 alias cycle {@ :temp = C;leave *;wait;join $temp}
 alias script send $0 $which($1)
 alias chops who * -chop

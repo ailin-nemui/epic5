@@ -1,4 +1,4 @@
-/* $EPIC: commands.c,v 1.33 2002/07/30 16:12:59 crazyed Exp $ */
+/* $EPIC: commands.c,v 1.34 2002/09/03 11:43:12 jnelson Exp $ */
 /*
  * commands.c -- Stuff needed to execute commands in ircII.
  *		 Includes the bulk of the built in commands for ircII.
@@ -61,6 +61,7 @@
 #include "ircaux.h"
 #include "keys.h"
 #include "lastlog.h"
+#include "log.h"
 #include "names.h"
 #include "notify.h"
 #include "notice.h"
@@ -291,6 +292,7 @@ static	IrcCommand irc_command[] =
 	{ "LIST",	"LIST",		funny_stuff,		0 },
 	{ "LOAD",	"LOAD",		load,			0 },
 	{ "LOCAL",	"2",		localcmd,		0 }, /* alias.c */
+	{ "LOG",	"LOG",		logcmd,			0 }, /* logfiles.c */
 	{ "LUSERS",	"LUSERS",	send_comm,		0 },
 	{ "MAP",	"MAP",		send_comm,		0 },
 	{ "ME",		NULL,		mecmd,			0 },
