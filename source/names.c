@@ -899,6 +899,9 @@ static void	decifer_mode (const char *modes, Channel *chan)
 				add = 0;
 				continue;
 
+			case 'a':
+				value = MODE_ANONYMOUS;
+				break;
 			case 'c':
 				value = MODE_C;
 				break;
