@@ -1,5 +1,5 @@
 #!/usr/local/bin/perl5 -w
-# $Id: crash-irc,v 1.1 2000/12/05 00:11:57 jnelson Exp $
+# $Id: crash-irc,v 1.1.1.1 2000/12/05 00:11:57 jnelson Exp $
 use strict;
 use Socket;
 if(!($ARGV[1])){print("usage: $0 host port","\n");exit;}

@@ -1,5 +1,5 @@
 /*
- * @(#)$Id: acconfig.h,v 1.1 2000/12/05 00:11:56 jnelson Exp $
+ * @(#)$Id: acconfig.h,v 1.1.1.1 2000/12/05 00:11:56 jnelson Exp $
  */
 
 /*

@@ -3,7 +3,7 @@
 # formatting.
 # Written by Ian Frechette (daemon)
 
-@ RCS.newformat = [$$Header: /home/cvs/repository/epic5/script/Attic/newformat,v 1.1 2000/12/05 00:11:57 jnelson Exp $$]
+@ RCS.newformat = [$$Header: /home/cvs/repository/epic5/script/Attic/newformat,v 1.1.1.1 2000/12/05 00:11:57 jnelson Exp $$]
 # An operator command. ESC-t turns this option on and off.
 # It allows one to see users or not see them in a TRACE.
 # It also effects the output of STAT l

@@ -7,7 +7,7 @@
  *
  * See the COPYRIGHT file, or do a HELP IRCII COPYRIGHT 
  *
- * @(#)$Id: ircaux.h,v 1.1 2000/12/05 00:11:57 jnelson Exp $
+ * @(#)$Id: ircaux.h,v 1.1.1.1 2000/12/05 00:11:57 jnelson Exp $
  */
 
 #ifndef _IRCAUX_H_
