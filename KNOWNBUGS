@@ -119,3 +119,4 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Add an "activity timer" to logfiles to indicate last time written to.
 * Add /LOG <refnum> ACTIVITY which updates activity timer w/o writing to log.
 * Add $logctl([GET|SET] <refnum> ACTIVITY) to get or set the activity timer. 
+* Add new script, "suppressmotd" to implemenet /set suppress_server_motd

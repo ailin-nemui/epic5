@@ -1,5 +1,17 @@
 EPIC4-1.2.0
 
+*** News 02/03/2003 -- Implement /SET SUPPRESS_SERVER_MOTD in script
+	If you were a previous user of /SET SUPPRESS_SERVER_MOTD ON,
+	then you will want to add 
+			load suppressmotd
+	to your ~/.ircrc.  This re-implements this /SET.  And hopefully
+	this script actually works, unlike the /SET.  If you have any
+	problems, let me know, and I'll try to fix it.  If you want to
+	try to improve it, please feel free and send me patches.
+
+	Make sure you do a 'make install' before you report not being
+	able to load this script as a bug!
+
 *** News 02/03/2003 -- $logctl(REFNUMS [ACTIVE|INACTIVE|ALL])
 	You can now do the following things with logfiles:
 		$logctl(REFNUMS ACTIVE)
