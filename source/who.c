@@ -1,4 +1,4 @@
-/* $EPIC: who.c,v 1.26 2003/07/10 10:30:45 jnelson Exp $ */
+/* $EPIC: who.c,v 1.27 2003/10/29 20:15:10 jnelson Exp $ */
 /*
  * who.c -- The WHO queue.  The ISON queue.  The USERHOST queue.
  *
@@ -81,6 +81,7 @@
  * flag has *no effect* in any other context than this.
  */
 #define WHO_INVISIBLE	0x2000
+#define WHO_OPERSPY	0x4000
 
 
 static WhoEntry *who_queue_top (int refnum)
@@ -289,6 +290,8 @@ void 	whobase (int refnum, char *args, void (*line) (int, const char *, const ch
 			else
 				say("Need {...} argument for -END argument.");
 		}
+		else if (!strncmp(arg, "operspy", 5))	/* OPERSPY */
+			new_w->who_mask |= WHO_OPERSPY;
 		else if (!strncmp(arg, "o", 1))		/* OPS */
 			new_w->who_mask |= WHO_OPS;
 		else if (!strncmp(arg, "lu", 2))	/* LUSERS */
@@ -461,6 +464,11 @@ void 	whobase (int refnum, char *args, void (*line) (int, const char *, const ch
 			new_w->dalnet_extended_args,
 			new_w->who_target);
 	}
+	else if (new_w->who_mask & WHO_OPERSPY)
+		send_to_aserver(refnum, "OPERSPY WHO %s %s%s", 
+			new_w->who_target,
+			(new_w->who_mask & WHO_OPS) ?  "o" : "",
+			(new_w->who_mask & WHO_INVISIBLE) ? "x" : "");
 	else
 		send_to_aserver(refnum, "WHO %s %s%s", 
 			new_w->who_target,

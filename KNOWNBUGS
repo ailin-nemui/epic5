@@ -2,9 +2,7 @@ EPIC4 Projects, Bugs, and other Errata:
 
 KNOWN ERRATA (eg, bugs, or unresolved requests):
 ------------------------------------------------
-* /dcc chat hop from an ipv6 server connection will default to ipv4 bind(),
-  but send out an ipv6 address in the handshake. (send_booster_ctcp doesn't
-  check what protocol get_server_local_address() returns.)
+[None]
 
 [See http://www.epicsol.org/PROJECTS for things to come in the future]
 [See http://www.epicsol.org/CHANGELOG for things that changed in the past]
@@ -27,3 +25,4 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Add /on dcc_activity, to allow scripters a way around %D.
 * Nix the never valid network error code -15 (duplicate of -6)
 * Sanity check the family in a dcc handshake against the bind before sending it.
+* Add /who -operspy for hybrid opers.
