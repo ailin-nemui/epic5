@@ -1,4 +1,4 @@
-/* $EPIC: functions.c,v 1.168 2004/06/27 15:07:07 jnelson Exp $ */
+/* $EPIC: functions.c,v 1.169 2004/06/27 15:14:18 jnelson Exp $ */
 /*
  * functions.c -- Built-in functions for ircII
  *
@@ -809,7 +809,7 @@ char	*call_function (char *name, const char *args)
 	size_t	size;
 	char *	buf;
 	const char *	alias;
-	char *	(*func) (char *) = NULL;;
+	char *	(*func) (char *) = NULL;
 	void *	arglist = NULL;
 
 	debugging = get_int_var(DEBUG_VAR);
