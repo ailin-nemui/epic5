@@ -1,6 +1,6 @@
 #! /bin/sh
 
-# From configure.in Revision: 1.15 # Guess values for system-dependent variables and create Makefiles.
+# From configure.in Revision: 1.16 # Guess values for system-dependent variables and create Makefiles.
 # Generated automatically using autoconf version 2.13 
 # Copyright (C) 1992, 93, 94, 95, 96 Free Software Foundation, Inc.
 #
@@ -4073,7 +4073,7 @@ sig_name="ZERO $*"
 if test -f source/sig.inc; then
   /bin/rm -f source/sig.inc
 fi
-echo $sig_name | sed -e 's/$/"};/' -e 's/ /", "/g' -e 's/^/char *sys_siglist[] = { "/' >> source/sig.inc
+echo $sig_name | sed -e 's/$/"};/' -e 's/ /", "/g' -e 's/^/static char *sys_siglist[] = { "/' >> source/sig.inc
 fi
 
 
