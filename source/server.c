@@ -1623,7 +1623,7 @@ void 	password_sendline (char *data, char *line)
 
 	if (line && *line)
 	{
-		new_server = atoi(next_arg(line, &line));
+		new_server = atoi(data);
 		set_server_password(new_server, line);
 		change_window_server(new_server, new_server);
 		server_reconnects_to(new_server, new_server);
