@@ -259,9 +259,15 @@ EPIC4pre2
 		    		       sysctl net.inet.ip.porthilast
 
 *** News -- Oct 9, 2001 -- Perl support; new built in functions (crazyeddy)
-	Crazyeddy wrote this, and I don't know how it works.  Maybe he 
-	would like to document it.  It does come with a help file, and
-	you need to use 'configure --with-perl' to turn it on.
+	This sews a perl interpreter (libperl) into the epic binary and
+	adds bridges between the ircii and perl programming environments.
+	$perl(), $perlcall() and $perlxcall() have been added to the ircii
+	language.  EPIC::eval, EPIC::cmd and EPIC::expr are available for
+	doing stuff in epic from the perl environment.
+
+*** News -- Oct 25, 2001 -- $igetrmatches()? now works.
+	This was already present in the code, but was inaccessible due to
+	not being linked into the language structures.
 
 *** News -- Oct 9, 2001 -- Bunch of new updates
 	Everything for EPIC4-1.1.1 was documented here...
