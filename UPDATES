@@ -71,12 +71,33 @@ EPIC4-1.2.0
                if (expr) {......} else if (expr2) {......}
 
 *** News 02/01/2002 -- New built in functions, $serverourname()
+	EPIC keeps track of two different names for every server in your 
+	server list: "ourname" and "itsname".  "Ourname" is the name that
+	you give to EPIC in the /SERVER or /WINDOW SERVER command or in
+	the server file list.  When we are officially registered and
+	accepted by the server, the server tells us what "itsname" is,
+	this is the name given in the server's M: configuration line.
+	This is the name it uses when it refers to itself.  $servername()
+	already returns "itsname" [if we know "itsname"] or "ourname" if
+	we don't know "itsname" yet.  This function lets you get "ourname"
+	at any time, even after registration.
 
 *** News 02/01/2002 -- New built in functions, $servergroup()
+	This returns the server's group name that you specified in the
+	/SERVER or /WINDOW SERVER command or in the server file list.
 
 *** News 02/01/2002 -- New built in function, $regmatches()
 
 *** News 02/01/2002 -- New built in function, $corpattern()
+	Whereas $copattern(<pattern> <var1> <var2>) treats $<var1> as a
+	list of words, which are matched against <pattern> and whereas
+	the corresponding words from $<var2> are returned for each word 
+	in $<var1> that is matched by <pattern>...
+
+	$corpattern(<string> <var1> <var2>) treats $<var1> as a list of
+	patterns, which are matched against <string>, and the corresponding
+	words in $<var2> are returned for each pattern in $<var1> that
+	matches <string>
 
 *** News 02/01/2002 -- /ON CTCP_REPLY HAS CHANGED! VERY IMPORTANT!
 	Prior to this release, /ON CTCP_REPLY looked like this:
@@ -103,13 +124,49 @@ EPIC4-1.2.0
 
 *** News 02/01/2002 -- Improved CRYPT support 
 
-*** News 02/01/2002 -- Change to $trunc(... 0) : it now returns an integer
+*** News 02/01/2002 -- Change to $trunc(0 <num>) : it now returns an integer
+	$trunc(0 <num>) returns the integer <retval> with the largest absolute 
+	value that lays between <num> and 0.  In other words, $trunc(0 <num>) 
+	returns <num> with the decimal point and anything after it removed.
 
 *** News 02/01/2002 -- New math built in functions $ceil(), $floor(), $abs().
+	$ceil(<num>) -- Returns the smallest integer that is greater than or 
+			equal to <num>
+	$floor(<num>) -- Returns the largest integer that is less than or
+			 equal to <num>
+	$abs(<num>) -- Returns the absolute value of <num>
 
 *** News 02/01/2002 -- Ability to use $write(), $writeb() to logfiles
+	Currently, you can use $write(<fd> <text>) to write a line of <text>
+	to the file <fd> where <fd> was previously returned by $open().
+	But if you want to write to a window's logfile, you can do that by
+	replacing <fd> with the literal character "w" followed by the window
+	refnum.  As a special case, "w-1" refers to the global logfile.
+	Please remember that window refnum 0 is always the current window.  
 
-*** News 02/01/2002 -- New /ON's, /ON GENERAL_PRIVMSG, /ON GENERAL_NOTICE
+	Example:
+		@ write(w-1 This text will go to the global logfile)
+		@ write(w3 This text will go window 3's logfile)
+
+*** News 02/01/2002 -- New /ON, /ON GENERAL_PRIVMSG
+	Arguments:
+		$0  - Nickname who sent the privmsg
+		$1  - Target (nickname/channel) the privmsg was sent to
+		$2- - The privmsg itself.
+
+	If you catch this hook silently (/ON ^GENERAL_PRIVMSG), then 
+	/ON PUBLIC_MSG, /ON MSG_GROUP, /ON MSG, /ON PUBLIC, and 
+	/ON PUBLIC_OTHER will not be hooked for the same privmsg.
+
+*** News 02/01/2002 -- New /ON, /ON GENERAL_NOTICE
+	Arguments:
+		$0  - Nickname/server who sent the notice
+		$1  - Target (nickname/channel) the notice was sent to
+		$2- - The notice itself.
+
+	This hook is offered after /ON KILL or /ON OPER_NOTICE (if they
+	apply), but before /ON SERVER_NOTICE, /ON NOTICE, and /ON PUBLIC_NOTICE
+	are offered.
 
 *** News 12/19/2001 -- New /SET, /SET ALLOW_C1_CHARS (defaults to OFF)
 	The ascii characters 128 to 159 on many terminal emulators
@@ -290,3 +347,4 @@ EPIC4-1.2.0
 	   This function returns 1 if <fd> is a valid value previously 
 	   returned by $open() and returns 0 otherwise.
 
+#End of file
