@@ -1,5 +1,20 @@
 EPIC4-1.2.0
 
+*** News 11/12/2001 -- Changes to /SETENV let you unset environment variables
+	You may now unset environment variables with the /SETENV command by
+	prefixing the environment variable name with a single hyphen and by
+	omitting the second argument, like so:
+		/SETENV -IRCSERVER
+	You can still set an environment variable that starts with a hyphen:
+		/SETENV -FOO one two three
+	You can unset an environment variable that starts with a hyphen:
+		/SETENV --FOO
+	You can set an environment variable with no value:
+		/SETENV EMPTYVAR
+	but you can't set an empty environment variable that starts with
+	a hyphen (sorry).  If anyone ever finds that they actually need to
+	be able to do this, let me know and we'll work something out.
+
 *** News 11/12/2001 -- New built in functions for file manipulations
 	Several new functions have been added to help you manipulate files
 	that are opened with $open().

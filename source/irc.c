@@ -13,19 +13,19 @@
 /*
  * irc_version is what $J returns, its the common-name for the version.
  */
-const char irc_version[] = "EPIC4-1.1.1";
-const char useful_info[] = "epic4 1 1 1";
+const char irc_version[] = "EPIC4-1.1.2";
+const char useful_info[] = "epic4 1 1 2";
 
 /*
  * internal_version is what $V returns, its the integer-id for the
  * version, and corresponds to the date of release, YYYYMMDD.
  */ 
-const char internal_version[] = "20011111";
+const char internal_version[] = "20011112";
 
 /*
  * In theory, this number is incremented for every commit.
  */
-const unsigned long	commit_id = 126;
+const unsigned long	commit_id = 127;
 
 /*
  * As a way to poke fun at the current rage of naming releases after

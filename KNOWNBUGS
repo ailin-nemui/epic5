@@ -5,7 +5,6 @@ KNOWN ERRATA (eg, bugs, or unresolved requests):
 * A missing 'else' in create_additional_screen causes gnu screen to be
   prefered over X windows.  Should this be fixed, or at least made an option?
   Maybe try X, fall back to gnu screen on failure?
-* You can't unset environment variables.
  
 [See http://www.epicsol.org/PROJECTS for things to come in the future]
 [See http://www.epicsol.org/CHANGELOG for things that changed in the past]
@@ -13,3 +12,7 @@ KNOWN ERRATA (eg, bugs, or unresolved requests):
 THE CHANGELOG SINCE THE LAST RELEASE:
 -------------------------------------
 * Add $fskip(), $fseek(), $frewind(), $ferror() and $isfilevalid().
+* Gid rid of the awful bsd_*env() hacks in compat.c.
+* Start using getenv() and setenv() like normal programs do.
+* Fix /setenv so you can unset env variables with /setenv -VARNAME
+* "Ooops"  I didn't sort fskip/fseek/frewind/ferror in the functions list.
