@@ -1,0 +1,34 @@
+: {
+	This is a "preformatted" version of the FE script.  You can load
+	this script with /LOAD -PF fe.  This demonstrates how to pre-format
+	a script for use with the P(re)F(ormatted) loader.
+}
+
+alias opalot {fe ($2-) xx yy zz {mode $0 $1ooo $xx $yy $zz}};
+
+alias banalot {fe ($2-) xx yy zz {mode $0 $1bbb $xx $yy $zz}};
+
+#alias kickalot fe ($1-) xx {kick $0 $xx}
+alias kickalot {for xx in ($1-) {kick $0 $xx}};
+
+alias masskick {kickalot ${[$0]?[$0]:C} $remw($N $onchannel($0))};
+
+alias massdeop {opalot ${[$0]?[$0]:C} - $remw($N $chops($0))};
+
+alias opall {opalot ${[$0]?[$0]:C} + $nochops($0)};
+
+alias cuh {
+	^local foobar;
+#	fe ($onchannel($0)) ix { push foobar $userhost($ix) }
+	for ix in ($onchannel($0)) { push foobar $userhost($ix) };
+	@ function_return = foobar
+};
+
+alias botsweep (target, chan default "$C") {
+	@ :nicks = onchannel($chan);
+	@ :uhs = cuh($nicks);
+	kickalot $chan $copattern($uh($target) uhs nicks)
+};
+ 
+load guh;
+#hop'94

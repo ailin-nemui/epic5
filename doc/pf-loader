@@ -1,0 +1,118 @@
+How to preformat scripts so they can be loaded with the PF loader
+-----------------------------------------------------------------
+This tutorial will use the 'fe' script provided with epic.  The final
+result is available as 'fe.pf' and you can load it with /LOAD -PF fe.pf
+if you want to.
+
+Rule 1: Wrap C-like comments in multi-line comments
+===================================================
+The : command is a comment and it takes a standard ircII argument list.  This
+means you can wrap multiple lines in {} and the whole thing is used as the
+argument list.
+
+	Before
+	------
+	/*
+	 * The FE script... showing you the wonders of /fe!
+	 * Current supported version: ircii-EPIC
+	 * Mass* has never been easier! (tm)
+	 */
+
+	After
+	-----
+	: {
+	/*
+	 * The FE script... showing you the wonders of /fe!
+	 * Current supported version: ircii-EPIC
+	 * Mass* has never been easier! (tm)
+	 */
+	};
+
+Rule 2: Put semicolons between (after) every command
+====================================================
+The biggest task the standard loader does for you is figure out where 
+semicolons need to be put into your script.  The new loader does not do
+this task, so you will have to put in the semicolons.  Semicolons are used
+to separate commands, so you will need to put them in.
+
+	Before
+	------
+	alias opalot fe ($2-) xx yy zz {mode $0 $1ooo $xx $yy $zz}
+	alias banalot fe ($2-) xx yy zz {mode $0 $1bbb $xx $yy $zz}
+	#alias kickalot fe ($1-) xx {kick $0 $xx}
+	alias kickalot for xx in ($1-) {kick $0 $xx}
+
+	After
+	-----
+	alias opalot fe ($2-) xx yy zz {mode $0 $1ooo $xx $yy $zz};
+	alias banalot fe ($2-) xx yy zz {mode $0 $1bbb $xx $yy $zz};
+	#alias kickalot fe ($1-) xx {kick $0 $xx}
+	alias kickalot for xx in ($1-) {kick $0 $xx};
+
+Note that in Rule 1, we put a semicolon after the } in the multi-line
+comment.  If we did not do that, then each line that follows would be
+appended as part of the arguments to comment, and if you didn't have any
+comments in the file, the entire file would be treated as a comment!
+So make sure that you put semicolons between each command in your script.
+
+Rule 3: Put {}s around your alias and on bodies
+===============================================
+The standard loader executes your commands as though they were entered at the
+input line, subject to the /SET INPUT_ALIASES value.  This means that you can 
+do "alias opalot foo $*" and it will not expand the $* at /LOAD time.  The
+PF loader does not simulate the input prompt and subjects each command to 
+standard $-expansion, but not to ``quoting hell'' -- don't worry. ;-)
+
+So you will need to put {}s around your alias and on bodies to make sure that
+the expandos inside of them are not expanded at /LOAD time.
+
+	Before
+	------
+	alias opalot fe ($2-) xx yy zz {mode $0 $1ooo $xx $yy $zz};
+	alias banalot fe ($2-) xx yy zz {mode $0 $1bbb $xx $yy $zz};
+	#alias kickalot fe ($1-) xx {kick $0 $xx}
+	alias kickalot for xx in ($1-) {kick $0 $xx};
+
+	After
+	-----
+	alias opalot {fe ($2-) xx yy zz {mode $0 $1ooo $xx $yy $zz}};
+	alias banalot {fe ($2-) xx yy zz {mode $0 $1bbb $xx $yy $zz}};
+	#alias kickalot fe ($1-) xx {kick $0 $xx}
+	alias kickalot {for xx in ($1-) {kick $0 $xx}};
+
+Note that the semicolons go outside of the {}s that wrap your aliases!
+
+Rule 4: Put semicolons between commands inside of your aliases
+==============================================================
+This is similar to rule 2, but you need to make sure you put semicolons
+between your commands INSIDE your aliases, and not just between the alias
+commands themselves at the top level of your script
+
+	Before
+	------
+	alias cuh {
+		^local foobar
+	#       fe ($onchannel($0)) ix { push foobar $userhost($ix) }
+		for ix in ($onchannel($0)) { push foobar $userhost($ix) }
+		@ function_return = foobar
+	}
+
+	After
+	-----
+	alias cuh {
+		^local foobar;
+	#       fe ($onchannel($0)) ix { push foobar $userhost($ix) }
+		for ix in ($onchannel($0)) { push foobar $userhost($ix) };
+		@ function_return = foobar;
+	};
+
+Note that we put semicolons in after each line, but not after the comment 
+(it is not necessary, it would just be ignored), and we put a semicolon after
+the closing } of the alias.
+
+Conclusion
+==========
+That's all i can think of for right now.  If I can think of something else
+that needs to be done, I'll document it here.
+
+#hop'y2k3
