@@ -1,4 +1,4 @@
-/* $EPIC: irc.c,v 1.781 2004/09/09 16:06:36 crazyed Exp $ */
+/* $EPIC: irc.c,v 1.782 2004/09/09 16:33:08 crazyed Exp $ */
 /*
  * ircII: a new irc client.  I like it.  I hope you will too!
  *
@@ -52,7 +52,7 @@ const char internal_version[] = "20040319";
 /*
  * In theory, this number is incremented for every commit.
  */
-const unsigned long	commit_id = 1113;
+const unsigned long	commit_id = 1114;
 
 /*
  * As a way to poke fun at the current rage of naming releases after
@@ -256,7 +256,7 @@ static		char	switch_help[] =
       -c <chan>\tJoin <chan> after first connection to a server       \n\
       -H <host>\tUse a virtual host instead of default hostname	      \n\
       -l <file>\tLoads <file> instead of your .ircrc file             \n\
-      -L <file>\tLoads the first arg instead of your .ircrc file      \n\
+      -L       \tLoads the first arg instead of your .ircrc file      \n\
       -n <nick>\tThe program will use <nick> as your default nickname \n\
       -S <serv>\tThe program will add <serv> to the server list       \n\
       -p <port>\tThe program will use <port> as the default portnum   \n\
@@ -644,7 +644,7 @@ static	void	parse_args (int argc, char **argv)
 	/*
 	 * Parse the command line arguments.
 	 */
-	while ((ch = getopt(argc, argv, "aBbc:dfFhH:l:L:n:oOp:qsS:vxz:")) != EOF)
+	while ((ch = getopt(argc, argv, "aBbc:dfFhH:l:Ln:oOp:qsS:vxz:")) != EOF)
 	{
 		switch (ch)
 		{
