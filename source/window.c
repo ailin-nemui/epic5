@@ -1,4 +1,4 @@
-/* $EPIC: window.c,v 1.111 2004/03/19 06:05:13 jnelson Exp $ */
+/* $EPIC: window.c,v 1.112 2004/03/20 17:41:17 jnelson Exp $ */
 /*
  * window.c: Handles the organzation of the logical viewports (``windows'')
  * for irc.  This includes keeping track of what windows are open, where they
@@ -2890,7 +2890,7 @@ static Window *window_channel (Window *window, char **args)
 	}
 
 	chans_to_join = passes_to_use = NULL;
-	while ((chan = next_in_comma_list(chans, &chans)))
+	while (*chans && (chan = next_in_comma_list(chans, &chans)))
 	{
 	    pass = NULL;
 	    if (passwds && *passwds)
