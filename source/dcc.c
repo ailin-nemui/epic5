@@ -1,4 +1,4 @@
-/* $EPIC: dcc.c,v 1.80 2003/11/18 05:36:10 jnelson Exp $ */
+/* $EPIC: dcc.c,v 1.81 2003/12/01 04:41:34 crazyed Exp $ */
 /*
  * dcc.c: Things dealing client to client connections. 
  *
@@ -2469,6 +2469,10 @@ void	dcc_check (fd_set *Readables, fd_set *Writables)
 
 		from_server = previous_server;
 	    }
+	    /*
+	     * Don't time out raw_listen sockets.
+	     */
+	    else if ((Client->flags & DCC_TYPES) == DCC_RAW_LISTEN) /* nothing */;
 	    /*
 	     * Enforce any timeouts
 	     */

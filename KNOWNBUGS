@@ -26,3 +26,5 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * (*gulp*) I hope all of the above works!
 * Fix $windowctl(REFNUM ...) it was out of order with REFNUMS
 * Make /xecho -l override the "who_from" target and always send to the level
+* Fix raw listen DCCs not obey /SET DCC_TIMEOUT.
+* Added outputting of long long ints to new math parser.
