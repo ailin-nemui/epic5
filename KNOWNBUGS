@@ -9,20 +9,4 @@ KNOWN ERRATA (eg, bugs, or unresolved requests):
 
 THE CHANGELOG SINCE THE LAST RELEASE:
 -------------------------------------
-* When the server terminates a connection, save channels for reconnect.
-* Add "dont_save_server_channels" function.
-* Remove some #ifdef 0'd out code in names.c.
-* Always specify what we want to be done with channels before calling
-	close_server() -- failure to do so results in a panic.
-* Always save channels when an unexpected EOF occurs from the server.
-* Fix the 010 numeric handler -- don't use ArgList after display_msg, duh!
-* Fix the 464 numeric handler; that "odd" thing was bogus.
-* Fix a typo in the 477 numeric handler.
-* Fix p_privmsg to send public messages to LOG_PUBLIC and not LOG_MSG, duh!
-* Fix passwd_sendline to get the server refnum from "data" and not "line", duh!
-* Passworded servers now are handled correctly. Huzzah!
-* FD_CLR filedesc's after FD_ISSET in input handlers, to avoid bogons.
-* Fix /disconnect to call close_server() and update_status().
-* Fix who queue damage caused by touching ArgList after display_msg. doh!
-* Move the "can't join channel" numerics into section #1, suppress them if you
-  are actually on the channel already!
+* The "can't join channels" numeric /on's were not being thrown (adm)

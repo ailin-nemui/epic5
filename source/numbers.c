@@ -10,7 +10,7 @@
  */
 
 #if 0
-static	char	rcsid[] = "$Id: numbers.c,v 1.12 2001/03/23 18:35:43 jnelson Exp $";
+static	char	rcsid[] = "$Id: numbers.c,v 1.13 2001/03/24 03:43:40 jnelson Exp $";
 #endif
 
 #include "irc.h"
@@ -913,7 +913,9 @@ void 	numbered_command (char *from, int comm, char **ArgList)
 			reason = "Because the server said so";
 			break;
 		}	
-		put_it("%s %s (%s)", numeric_banner(), ArgList[0], reason);
+
+		if (do_hook(current_numeric, "%s %s", from, ArgList[0]))
+			put_it("%s %s (%s)", numeric_banner(), ArgList[0], reason);
 		break;
 	}
 
