@@ -4,9 +4,9 @@ dnl except those bits attributed otherwise.
 dnl thanks to the screen 3.3 configure.in for giving me examples to
 dnl work from and steal ;)
 dnl
-dnl @(#)$Id: configure.in,v 1.14 2002/05/27 02:43:35 jnelson Exp $
+dnl @(#)$Id: configure.in,v 1.15 2002/05/28 03:54:43 jnelson Exp $
 
-AC_REVISION($Revision: 1.14 $)dnl
+AC_REVISION($Revision: 1.15 $)dnl
 AC_INIT(source/irc.c)
 AC_CONFIG_HEADER(include/defs.h)
 
@@ -88,17 +88,20 @@ if test -z "$libsocket"; then
 	AC_CHECK_LIB(socket, socket, LIBS="$LIBS -lsocket",)
 fi
 
-AC_MSG_CHECKING(whether to include SSL support)
 AC_ARG_WITH(ssl,
-[  --with-ssl[=PATH]         Include SSL support (DIR is OpenSSL's install dir).],
-[
-	if test "x$withval" = "xno"; then
-		AC_MSG_RESULT(no)
+[  --with-ssl[=PATH]         Include SSL support (DIR is OpenSSL's install dir).],[
+	if test -z "$withval"; then
+		with_ssl="yes"
 	fi
-],[
+])
+
+AC_MSG_CHECKING(whether to include SSL support)
+if test "x$with_ssl" = "xno"; then
+	AC_MSG_RESULT(no)
+else
 	saved_LIBS="$LIBS"
 	saved_CFLAGS="$CFLAGS"
-	for ssldir in "$withval" /usr/local/ssl /usr/local/openssl; do
+	for ssldir in "$with_ssl" /usr/local/ssl /usr/local/openssl; do
 
 		if test -n "$have_ssl"; then
 			break;
@@ -131,11 +134,11 @@ AC_ARG_WITH(ssl,
 		LIBS="$saved_LIBS"
 		CFLAGS="$saved_CFLAGS"
 		AC_MSG_RESULT(no)
-		if test "x$withval" == "xyes"; then
+		if test "x$with_ssl" != "x"; then
 			AC_MSG_ERROR([You requested SSL support, but OpenSSL was not found. Please supply a pathname to OpenSSL])
 		fi
 	fi
-])
+fi
 
 dnl this is for isc.  need the nsl_s library as well.
 if test -z "$libinet"; then
