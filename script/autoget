@@ -66,13 +66,13 @@ on #-dcc_request 414 "% SEND *" {
 			echo $action?
 			return
 		}
-		dcc $action $0 $2
+		defer dcc $action $0 $2
 	}
 }
 
-stack push alias alias
-alias alias fe (get reget reject) cmd {//alias $sar(g/XXX/$cmd/$*)}
-alias autoXXX {
+stack push alias alias.x
+alias alias.x fe (get reget reject) cmd {//alias $sar(g/XXX/$cmd/$*)}
+alias.x autoXXX {
 	if (strlen($*) == 0) {
 		echo AutoXXX n!u@h,IP,files matching [$autoget.XXXpatterns]
 		return
@@ -86,7 +86,7 @@ alias autoXXX {
 		}
 	}
 }
-stack pop alias alias
+stack pop alias alias.x
 
 alias autoclobber (args) {
 	@ :types = [part full]

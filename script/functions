@@ -256,11 +256,11 @@ fe (min leftw max rightw) foo bar {
 
 # $regpattern() and $regfilter() work exactly like $pattern()
 # and $filter except that they use regexes rather than wildcards.
-stack push alias alias
-alias alias (args) fe (filter ! pattern "") func cond {
-	//alias $msar(gr/\${func}/$func/\${cond}/$cond/args)
+stack push alias alias.x
+alias alias.x (args) fe (filter ! pattern "") func cond {
+	alias $msar(gr/\${func}/$func/\${cond}/$cond/args)
 }
-alias reg${func} (ret) {
+alias.x reg${func} (ret) {
 	@:reg=regcomp($shift(ret))
 	fe ret foo {
 		@ foo = ${cond}regexec($reg $foo) ? [] : foo=~[* *] ? ["\$foo"] : foo
@@ -268,7 +268,7 @@ alias reg${func} (ret) {
 	@regfree($reg)
 	return $ret
 }
-stack pop alias alias
+stack pop alias alias.x
 
 # A version of $indextoword() that ignores double quoting.
 alias indextowword return $indextoword($tr(/"/_/$*))
@@ -393,21 +393,21 @@ alias words return $unsplit(" " $*)
 
 # $chvoices() returns the  voiced users on a channel.
 # $chnovoices() is the compliment.
-stack push alias alias
-alias alias (args) {
-	fe (chhops 1 ishalfop nochhops 0 ishalfop chvoices 1 ischanvoice chnovoices 0 ischanvoice) cmd val fn {
+stack push alias alias.x
+alias alias.x (args) {
+	fe (chhops 0 ishalfop nochhops 1 ishalfop chvoices 0 ischanvoice chnovoices 1 ischanvoice) cmd val fn {
 		//alias $msar(gr/\$cmd/$cmd/\$val/$val/\$fn/$fn/args)
 	}
 }
-alias $cmd (args) {
+alias.x $cmd (args) {
 	@ :chan = shift(args)
 	@ :ret = chanusers($chan)
 	fe ret user {
-		@ user = $val == $fn($user $chan) ? user : []
+		@ user = $val != $fn($user $chan) ? user : []
 	}
 	return $ret
 }
-stack pop alias alias
+stack pop alias alias.x
 
 alias mychats (args) {
 	@ :function_return = dccctl(typematch chat)

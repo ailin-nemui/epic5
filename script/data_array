@@ -110,7 +110,7 @@ alias array.stat {
 #   .write/.iwrite/.nwrite/.niwrite inverse of .read, differing in the order in which lines are written.
 #   .flush/.iflush/.nflush/.niflush write and delete the arrays.
 #
-stack push alias alias
+stack push alias alias.x
 fe (dump " -banner" "[\$[-4]item \$[-2]#content \$[-3]@content] " grep " -nobanner" "") cmd banner fnord {
 	fe (i$cmd igetitem igetmatches $cmd getitem getmatches) foo bar baz {
 		alias array.$foo (arrays default *, mask default *) fe ($getarrays($arrays)) array \{echo \$numitems($array)/\$#listarray($array)/\$@listarray($array) \$array\;fe \(\$${baz}($array $mask)\) item \{@:content=${bar}($array $item)\;echo $fnord\$content\}\}\;echo $chr(2)\$#getarrays($arrays)$chr(2) arrays listed
@@ -121,14 +121,14 @@ fe (dump "\$array [\$[-4]item \$[-2]#content \$[-3]@content] " grep "") cmd fnor
 		alias array.$foo @:array=[\$0]\;@:mk=[\$1]\;@:ar=beforew($mk $2-)\;fe \(\$${bar}($array $afterw($mk $2-))$baz\) item \{@:content=\;fe ($ar) foo {@push(content $getitem($foo $item))}\;echo $fnord\$content\}
 	}
 }
-alias alias (args) {
+alias alias.x (args) {
 	//alias $args
 	fe (write flush getmatches getitem) foo {
 		@ sar(gr/i$foo/$foo/args)
 	}
 	//alias $args
 }
-alias array.iwrite (args) {
+alias.x array.iwrite (args) {
 	@ :fd = open($shift(args) w)
 	fe ($getarrays($shift(args))) foo {
 		fe ($igetmatches($foo ${args?args:[*]})) bar {
@@ -137,7 +137,7 @@ alias array.iwrite (args) {
 	}
 	@ close($fd)
 }
-alias array.niwrite (args) {
+alias.x array.niwrite (args) {
 	fe ($getarrays($shift(args))) foo {
 		@ :fd = open($foo w)
 		fe ($igetmatches($foo ${args?args:[*]})) bar {
@@ -146,6 +146,6 @@ alias array.niwrite (args) {
 		@ close($fd)
 	}
 }
-alias array.iflush array.iwrite $*;array.purge $1-
-alias array.niflush array.niwrite $*;array.purge $*
-stack pop alias alias
+alias.x array.iflush array.iwrite $*;array.purge $1-
+alias.x array.niflush array.niwrite $*;array.purge $*
+stack pop alias alias.x
