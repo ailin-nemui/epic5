@@ -5219,6 +5219,7 @@ BUILT_IN_FUNCTION(function_isnumber, input)
 	char	*endptr;
 	char	*barg;
 	char	*number = NULL;
+	int	segments = 0;
 
 	/*
 	 * See if the first arg is the base
@@ -5259,14 +5260,19 @@ BUILT_IN_FUNCTION(function_isnumber, input)
 	RETURN_IF_EMPTY(number);
 
 	strtol(number, &endptr, base);
+	if (endptr > number)
+		segments++;
 	if (*endptr == '.')
 	{
 		if (base == 0)
 			base = 10;		/* XXX So i'm chicken. */
-		strtol(endptr + 1, &endptr, base);
+		number = endptr + 1;
+		strtol(number, &endptr, base);
+		if (endptr > number)
+			segments++;
 	}
 
-	if (*endptr)
+	if (*endptr || segments == 0)
 		RETURN_INT(0);
 	else
 		RETURN_INT(1);
