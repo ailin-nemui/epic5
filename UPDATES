@@ -1,5 +1,198 @@
 EPIC5-0.1
 
+*** News 01/01/2005 -- Argument lists for hooks, and $fix_arglist() (howl)
+	$fix_arglist(arglist) returns how argument list arglist will be parsed
+	by epic.
+
+	It is now possible to supply argument lists to hooks, just like
+	one would do for aliases:
+	/on hook "*" (a,b,...) {echo $a $b $*;};
+
+	They are optional, of course.
+
+	/ON lists the argument list as part of its output, and does also include
+	the hook's userial (unique serial)
+
+*** News 01/01/2005 -- New function: $hookctl() (howl)
+    This new function, $hookctl(), lets the users do pretty much whatever
+	they
+
+	$hookctl() arguments:
+   ADD <#!'[NOISETYPE]><list> [[#]<serial>] <nick> [(<argument list>)] <stuff>
+       Argument list not yet implemented for $hookctl()
+   ADD <#!'[NOISETYPE]><list> [[#]<serial>] <nick> <stuff>
+       - Creates a new hook. Returns hook id.
+   COUNT
+       - See COUNT/LIST
+   HALTCHAIN <recursive number>
+       - Will set the haltflag for eventchain. May halt the current chain,
+         or any chain currently being executed.
+         Returns 1 on success, 0 otherwise.
+   DEFAULT_NOISE_LEVEL
+       - returns the 'default noise level'. It is not currently possible
+         to change the current noise level, and probably never will be.
+   DENY_ALL_HOOKS <arguments>
+       - this sets the deny_all_hooks flag, or gets it's value. If set,
+         to anything non negative, all hooks will be "ignored", and the
+         default action of any event will be taken. Similar to a /DUMP ON
+         but doens't actually remove any hooks.
+   EMPTY_SLOTS
+       - will return a list of empty slots in the hook-list.
+   EXECUTING_HOOKS
+       - will return a list of the current executing hooks. This is a
+         'recursive' list, listing the current hook first.
+   FIRST_NAMED_HOOK
+       - returns FIRST_NAMED_HOOK
+   HOOKLIST_SIZE
+       - will returns HOOKLIST_SIZE
+   LAST_CREATED_HOOK
+       - returns the value of LAST_CREATED_HOOK
+   LIST
+       - See COUNT/LIST
+   NOISE_LEVELS <pattern>
+       - Returns a list of 'noise-types'. If <pattern> is specified only
+         noise levels matching pattern will be returns.
+   NOISE_LEVEL_NUM
+       - Returns NOISE_LEVEL_NUM
+   NUMBER_OF_LISTS
+       - Returns NUBER_OF_LISTS
+   PACKAGE <package> [<list>]
+       - Returns a list of hooks of the given package. If <list> is
+         specified, it will return only hooks in list <list>
+   RETVAL <recursive number> [<new value>]
+       - If recursve number isn't specified, 0 (the current) is specified.
+         Will either return the value of retval for the given hook, or
+         set it.
+   SERIAL <serial> [<list>]
+       - Works exactly like PACKAGE.
+
+   GET <type> <arg>
+       - See GET/SET
+   LOOKUP <list> <nick> [<serial>]
+       - Returns hook matching given parametres.
+   MATCH <list> <pattern>
+       - Returns a list of matching hooks.
+   REMOVE <hook id>
+       - Removes the hook with the given hook ID. Returns 1 on success,
+         0 otherwise.
+   SET <type> <arg>
+       - See GET/SET
+
+   * GET/SET usage
+   GET gettype <arguments>
+       - will return 'gettype'
+   SET gettype <arguments>
+       - will set 'gettype' or similar, and return 1 on success. Not all
+         'gettypes' may be set, and not all gettypes will silently ignore
+         being set.
+
+   It is very important to remember that GET won't ever SET anything(!!!)
+   Won't, and shouldn't.
+
+   * GET/SET types:
+   HOOK <argument>
+       - More info on this under GET/SET HOOK
+   LIST <arguments>
+       - More info on this under GET/SET LIST
+   NOISE <argument>
+   NOISY <argument>
+       - More info on this under GET/SET NOISE/NOISY
+   MATCHES <argument>
+       - More info on this under GET/SET MATCHES
+
+   * GET/SET HOOK usage:
+       GET HOOK <hook id> <prop> <arg>
+       SET HOOK <hook id> <prop> <arg>
+
+       <prop> may be one of the following:
+       ARGUMENT_LIST
+           - Returns or sets the argument list, if SET and <arg> is empty,
+             it will be set to NULL, and therefore not used.
+       FLEXIBLE
+           - Returns or sets the value of flexible
+       NICK
+           - Sets or gets the hook's nick. The position of the hook will
+             be changed if needed, and it is not possible to change this
+             to a "crashing nick"
+       NOT
+           - Sets or gets the value of NOT.
+       NOISE
+       NOISY
+           - Sets or returns the value of noisy.
+       PACKAGE
+           - Returns or sets the hook's packagename
+       SERIAL
+           - Returns or sets the serial for the hook. The hook's position
+             in the list will be changed if necesarry, and it is not
+             possible to set the serial to a crashing serial.
+       SKIP
+           - Returns or sets the value of skip.
+       STUFF
+           - Returns or sets the value of stuff.
+       TYPE
+           - Returns or sets the type.
+
+   * GET/SET LIST usage:
+       GET LIST <listname> <prop>
+       SET LIST <listname> <prop> - not functional
+
+       <prop> may be one of the following:
+       COUNT
+           - Returns count of hooks
+       FLAGS
+           - Returns flags
+       MARK
+           - Returns mark
+       NAME
+           - Returns name
+       PARAMETERS
+       PARAMS
+           - Returns value of params
+
+
+
+   * GET/SET NOISE/NOISY usage:
+       GET NOISE <noisename> <prop>
+       SET NOISE <noisename> <prop> - not functional
+
+       <prop> may be one of the following:
+           ALERT
+               - returns value of alert.
+           CUSTOM
+               - returns value of custom.
+           DISPLAY
+               - returns value of display.
+           IDENTIFIER
+               - returns value of identifier.
+           NAME
+               - returns name.
+           SUPPRESS
+               - returns value of suppress.
+           VALUE
+               - returns value of value. d'oh!
+
+   * GET/SET MATCHES:
+       - This function is not ready yet, and will currently RETURN_NULL.
+
+   * COUNT/LIST usage:
+      COUNT / LIST work doing the same, the only difference is that
+      COUNT will return the count of lists/hooks, while list will return
+      a list
+
+      The following options are permitted:
+
+          LISTS <pattern>
+          - Will either return all lists available, or only the
+            matching ones.
+          POPULATED_LISTS <pattern>
+          - Works _just_ like LISTS, but will only return "populated"
+            lists
+          HOOKS <pattern>
+          - Will either return all the hooks on the system, or all
+            the hooks in the matching lists
+
+
+
 *** News 10/29/2004 -- New /ison features.
 	To go with the -d and -f switches, the following switches have been
 	added to exploit the new queueing mechanism:
