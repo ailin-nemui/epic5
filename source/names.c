@@ -1,4 +1,4 @@
-/* $EPIC: names.c,v 1.35 2002/12/19 03:22:59 jnelson Exp $ */
+/* $EPIC: names.c,v 1.36 2002/12/30 05:53:26 jnelson Exp $ */
 /*
  * names.c: This here is used to maintain a list of all the people currently
  * on your channel.  Seems to work 
@@ -115,6 +115,7 @@ const int	MODE_D		= 1 << 12;	/* special request */
 const int	MODE_M          = 1 << 13;	/* Duhnet */
 const int	MODE_OPER_ONLY	= 1 << 14;	/* Duhnet */
 const int	MODE_RESTRICTED = 1 << 15;	/* Duhnet */
+const int	MODE_C2		= 1 << 16;	/* Quakenet */
 
 
 /* channel_list: list of all the channels you are currently on */
@@ -1039,6 +1040,9 @@ static void	decifer_mode (const char *modes, Channel *chan)
 				break;
 			case 'c':
 				value = MODE_C;
+				break;
+			case 'C':
+				value = MODE_C2;
 				break;
 			case 'D':
 				value = MODE_D;
