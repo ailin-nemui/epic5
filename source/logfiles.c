@@ -1,4 +1,4 @@
-/* $EPIC: logfiles.c,v 1.5 2002/09/06 04:01:42 jnelson Exp $ */
+/* $EPIC: logfiles.c,v 1.6 2002/09/06 19:28:29 jnelson Exp $ */
 /*
  * logfiles.c - General purpose log files
  *
@@ -294,6 +294,7 @@ static Logfile *	logfile_describe (Logfile *log, char **args)
 	say("\t Logical name: %s", log->name);
 	say("\t     Filename: %s", log->filename ? log->filename : "<NONE>");
 	say("\t         Type: %s", logtype[log->type]);
+	say("\t       Server: %d", log->servref);
 	say("\tTarget/Refnum: %s", targets ? targets : "<NONE>");
 	say("\t Rewrite Rule: %s", log->rewrite ? log->rewrite : "<NONE>");
 	say("\t Mangle rules: %s", log->mangle_desc ? log->mangle_desc : "<NONE>");
@@ -360,10 +361,11 @@ static Logfile *	logfile_list (Logfile *log, char **args)
 	for (l = logfiles; l; l = l->next)
 	{
 		targets = logfile_get_targets(l);
-		say("Log %2d [%s] logging %s is %s, file %s targets %s",
+		say("Log %2d [%s] logging %s is %s, file %s server %d targets %s",
 			l->refnum, l->name, logtype[l->type],
 			onoff[l->active],
 			l->filename ? l->filename : "<NONE>", 
+			l->servref,
 			targets ? targets : "<NONE>");
 		new_free(&targets);
 	}
