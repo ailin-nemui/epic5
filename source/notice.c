@@ -9,7 +9,7 @@
  */
 
 #if 0
-static	char	rcsid[] = "@(#)$Id: notice.c,v 1.8 2001/12/06 02:10:48 crazyed Exp $";
+static	char	rcsid[] = "@(#)$Id: notice.c,v 1.9 2002/01/24 10:45:25 crazyed Exp $";
 #endif
 
 #include "irc.h"
@@ -69,7 +69,7 @@ static void 	parse_note (char *from, char *line)
 			high = empty_string;
 	}
 
-	if (!check_flooding(from, NOTE_FLOOD, line))
+	if (!check_flooding(from, FromUserHost, NOTE_FLOOD, line))
 		return;
 
 /* 
@@ -282,7 +282,7 @@ void 	parse_notice (char *from, char **Args)
 		goto the_end;
 
 	/* Check for flooding */
-	no_flooding = check_flooding(from, NOTICE_FLOOD, line);
+	no_flooding = check_flooding(from, FromUserHost, NOTICE_FLOOD, line);
 
 	/* Let the user know if it is an encrypted notice */
 	/* Note that this is always hooked, even during a flood */

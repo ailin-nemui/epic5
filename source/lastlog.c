@@ -9,7 +9,7 @@
  */
 
 #if 0
-static	char	rcsid[] = "@(#)$Id: lastlog.c,v 1.10 2001/11/15 22:27:54 jnelson Exp $";
+static	char	rcsid[] = "@(#)$Id: lastlog.c,v 1.11 2002/01/24 10:45:25 crazyed Exp $";
 #endif
 
 #include "irc.h"
@@ -318,6 +318,8 @@ BUILT_IN_COMMAND(lastlog)
 	int		counter = 0;
 	int		show_separator = 0;
 	char *		separator = "----";
+	char *		outfile = NULL;
+	FILE *		outfp = NULL;
 
 	message_from(NULL, LOG_CURRENT);
 	cnt = current_window->lastlog_size;
@@ -414,6 +416,10 @@ BUILT_IN_COMMAND(lastlog)
 			after = my_atol(after_str);
 		if (after < 0)
 			after = 0;
+	    }
+	    else if (!my_strnicmp(arg, "-FILE", len))
+	    {
+		outfile = new_next_arg(args, &args);
 	    }
 	    else if (!my_strnicmp(arg, "-SEPARATOR", len))
 	    {
@@ -536,9 +542,18 @@ BUILT_IN_COMMAND(lastlog)
 		yell("Mask: %d", level_mask);
 	}
 
+	if (outfile)
+	{
+		if ((outfp = fopen(outfile, "a")) == NULL)
+		{
+			say("Couldn't open output file");
+			goto bail;
+		}
+	}
+
 	/* Iterate over the lastlog here */
 	if (header)
-		say("Lastlog:");
+		file_put_it(outfp, "%s Lastlog:", get_string_var(BANNER_VAR));
 
 	/*
 	 * Ugh.  This is way too complicated for its own good.  Let's
@@ -581,7 +596,7 @@ BUILT_IN_COMMAND(lastlog)
 		{
 		    if (show_separator)
 		    {
-			put_it("%s", separator);
+			file_put_it(outfp, "%s", separator);
 			show_separator = 0;
 		    }
 
@@ -602,7 +617,7 @@ BUILT_IN_COMMAND(lastlog)
 		}
 		if (counter)
 		{
-			put_it("%s", l->msg);
+			file_put_it(outfp, "%s", l->msg);
 			counter--;
 			if (counter == 0 && before != -1 && separator)
 				show_separator = 1;
@@ -632,7 +647,7 @@ BUILT_IN_COMMAND(lastlog)
 		{
 		    if (show_separator)
 		    {
-			put_it("%s", separator);
+			file_put_it(outfp, "%s", separator);
 			show_separator = 0;
 		    }
 
@@ -651,7 +666,7 @@ BUILT_IN_COMMAND(lastlog)
 		}
 		if (counter)
 		{
-			put_it("%s", l->msg);
+			file_put_it(outfp, "%s", l->msg);
 			counter--;
 			if (counter == 0 && before != -1 && separator)
 				show_separator = 1;
@@ -661,8 +676,10 @@ BUILT_IN_COMMAND(lastlog)
 	    }
 	}
 	if (header)
-		say("End of Lastlog");
+		file_put_it(outfp, "%s End of Lastlog", get_string_var(BANNER_VAR));
 bail:
+	if (outfp)
+		fclose(outfp);
 	if (reg)
 		regfree(reg);
 	current_window->lastlog_level = save_level;

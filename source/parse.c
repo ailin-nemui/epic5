@@ -200,7 +200,7 @@ static void p_topic (char *from, char **ArgList)
 			break;
 	}
 
-	if (!new_check_flooding(from, ArgList[0], ArgList[1], TOPIC_FLOOD))
+	if (!new_check_flooding(from, FromUserHost, ArgList[0], ArgList[1], TOPIC_FLOOD))
 		return;
 
 	message_from(ArgList[0], LOG_CRAP);
@@ -221,7 +221,7 @@ static void p_wallops (char *from, char **ArgList)
 	}
 
 	/* wallops from a server */
-	if (server_wallop || check_flooding(from, WALLOP_FLOOD, ArgList[0]))
+	if (server_wallop || check_flooding(from, FromUserHost, WALLOP_FLOOD, ArgList[0]))
 	{
 		int	level;
 		char	*high;
@@ -348,7 +348,7 @@ static void p_privmsg (char *from, char **Args)
 			high = empty_string;
 			break;
 	}
-	flood = new_check_flooding(from, flood_channel, ptr, flood_type);
+	flood = new_check_flooding(from, FromUserHost, flood_channel, ptr, flood_type);
 
 	/* Encrypted privmsgs are specifically exempted from flood control */
 	level = set_lastlog_msg_level(log_type);
@@ -573,7 +573,7 @@ static void	p_channel (char *from, char **ArgList)
 			break;
 	}
 
-	if (!new_check_flooding(from, channel, star, JOIN_FLOOD))
+	if (!new_check_flooding(from, FromUserHost, channel, star, JOIN_FLOOD))
 		return;
 
 	*extra = 0;
@@ -613,7 +613,7 @@ static void 	p_invite (char *from, char **ArgList)
 			break;
 	}
 
-	if (!check_flooding(from, INVITE_FLOOD, ArgList[1]))
+	if (!check_flooding(from, FromUserHost, INVITE_FLOOD, ArgList[1]))
 		return;
 
 	if (ArgList[0] && ArgList[1])
@@ -765,7 +765,7 @@ static void p_nick (char *from, char **ArgList)
 			break;
 	}
 
-	if (!check_flooding(from, NICK_FLOOD, line))
+	if (!check_flooding(from, FromUserHost, NICK_FLOOD, line))
 		goto do_rename;
 
 	for (chan = walk_channels(1, from); chan; chan = walk_channels(0, from))

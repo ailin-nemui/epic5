@@ -10,7 +10,7 @@
  */
 
 #if 0
-static	char	rcsid[] = "@(#)$Id: ctcp.c,v 1.9 2001/12/06 02:10:47 crazyed Exp $";
+static	char	rcsid[] = "@(#)$Id: ctcp.c,v 1.10 2002/01/24 10:45:25 crazyed Exp $";
 #endif
 
 #include "irc.h"
@@ -561,7 +561,7 @@ static	time_t	last_ctcp_parsed = 0;
 		allow_ctcp_reply = 0;	/* Historical limit of 4 CTCPs */
 
 	flag = check_ignore_channel(from, FromUserHost, to, IGNORE_CTCPS);
-	fflag = new_check_flooding(from, is_channel(to) ? to : NULL,
+	fflag = new_check_flooding(from, FromUserHost, is_channel(to) ? to : NULL,
 						str, CTCP_FLOOD); 
 
 	in_ctcp_flag++;

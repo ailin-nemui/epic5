@@ -279,6 +279,7 @@ static	char
 	*function_regexec	(char *),
 	*function_regerror	(char *),
 	*function_regfree	(char *),
+	*function_regmatches	(char *),
 	*function_remw 		(char *),
 	*function_remws		(char *),
 	*function_rename 	(char *),
@@ -548,6 +549,7 @@ static BuiltInFunctions	built_in_functions[] =
 	{ "REGERROR",		function_regerror	},
 	{ "REGEXEC",		function_regexec	},
 	{ "REGFREE",		function_regfree	},
+	{ "REGMATCHES",		function_regmatches	},
 	{ "REMW",               function_remw 		},
 	{ "REMWS",		function_remws		},
 	{ "RENAME",		function_rename 	},
@@ -4256,19 +4258,27 @@ BUILT_IN_FUNCTION(function_regexec, input)
 
 BUILT_IN_FUNCTION(function_regmatches, input)
 {
-	char *unsaved;
-	size_t nmatch;
+	char *unsaved, *ret = NULL;
+	size_t nmatch, n, foo, clue = 0;
 	regex_t *preg;
-	regmatch_t *pmatch;
+	regmatch_t *pmatch = NULL;
 
 	GET_STR_ARG(unsaved, input);
 	GET_INT_ARG(nmatch, input);
 	preg = (regex_t *)decode(unsaved);
 	RESIZE(pmatch, regmatch_t, nmatch);
-	last_regex_error = regexec(preg, input, nmatch, pmatch, 0);
+	if (!(last_regex_error = regexec(preg, input, nmatch, pmatch, 0)))
+		for (n = 0; n < nmatch; n++) {
+			if (0 > pmatch[n].rm_so)
+				/* This may need to be continue depending
+				 * on the regex implementation */
+				break;
+			m_sc3cat(&ret, space, ltoa(foo = pmatch[n].rm_so), &clue);
+			m_sc3cat(&ret, space, ltoa(pmatch[n].rm_eo - foo), &clue);
+		}
 	new_free((char **)&preg);
 	new_free((char **)&pmatch);
-	RETURN_INT(last_regex_error);	/* DONT PASS FUNC CALL TO RETURN_INT */
+	RETURN_MSTR(ret);	/* DONT PASS FUNC CALL TO RETURN_INT */
 }
 
 BUILT_IN_FUNCTION(function_regerror, input)

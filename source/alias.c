@@ -273,13 +273,13 @@ extern u_32int_t       char_searches;
 	    say("Total bytes allocated to aliases: %ld", 
 			alias_total_bytes_allocated);
 
-	    say("Var command hits/misses/passes/missed-by [%ld/%ld/%ld/%3.1f]",
+	    say("Var cache hits/misses/passes/missed-by [%ld/%ld/%ld/%3.1f]",
 			var_cache_hits, 
 			var_cache_misses, 
 			var_cache_passes, 
 			( var_cache_misses ? (double) 
 			  (var_cache_missed_by / var_cache_misses) : 0.0));
-	    say("Cmd command hits/misses/passes/missed-by [%ld/%ld/%ld/%3.1f]",
+	    say("Cmd cache hits/misses/passes/missed-by [%ld/%ld/%ld/%3.1f]",
 			cmd_cache_hits, 
 			cmd_cache_misses, 
 			cmd_cache_passes,

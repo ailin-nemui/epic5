@@ -188,6 +188,26 @@ void	put_it (const char *format, ...)
 	}
 }
 
+void	file_put_it (FILE *fp, const char *format, ...)
+{
+	if (format)
+	{
+		va_list args;
+		va_start (args, format);
+		vsnprintf(putbuf, OBNOXIOUS_BUFFER_SIZE, format, args);
+		va_end(args);
+		if (fp)
+		{
+			fputs(putbuf, fp);
+			fputs("\n", fp);
+		}
+		else if (window_display)
+		{
+			put_echo(putbuf);
+		}
+	}
+}
+
 /* 
  * This is an alternative form of put_it which writes three asterisks
  * before actually putting things out.

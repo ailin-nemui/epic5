@@ -268,6 +268,20 @@ find_array_item (array *set, const char *name, int *cnt, int *loc)
 	}
 
 	/*
+	 * If we can't find a symbol that qualifies, then we can just drop
+	 * out here.  This is good because a "pass" (lookup for a symbol that
+	 * does not exist) requires only cheap integer comparisons.
+	 */
+	if (c != 0)
+	{
+		if (c > 0)
+			*loc = pos + 1;
+		else
+			*loc = pos;
+		return NULL;
+	}
+
+	/*
 	 * At this point, min is set to the first matching name in
 	 * the range and tospot is set to a higher position than
 	 * the last.  These are used to refine the next search.
@@ -297,20 +311,6 @@ find_array_item (array *set, const char *name, int *cnt, int *loc)
 	}
 
 	min = tospot;
-
-	/*
-	 * If we can't find a symbol that qualifies, then we can just drop
-	 * out here.  This is good because a "pass" (lookup for a symbol that
-	 * does not exist) requires only cheap integer comparisons.
-	 */
-	if (c != 0)
-	{
-		if (c > 0)
-			*loc = pos + 1;
-		else
-			*loc = pos;
-		return NULL;
-	}
 
 	char_searches++;
 

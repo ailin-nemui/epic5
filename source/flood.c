@@ -38,13 +38,13 @@ static	char	*ignore_types[NUMBER_OF_FLOODS] =
 
 typedef struct flood_stru
 {
-	char		nick    [NICKNAME_LEN + 1];
-	char		channel [NICKNAME_LEN + 1];
+	char		*nuh;
+	char		*channel;
 	int		server;
 
 	FloodType	type;
 	long		cnt;
-	time_t		start;
+	struct timeval	start;
 	int		floods;
 }	Flooding;
 
@@ -58,7 +58,7 @@ static	Flooding *flood = (Flooding *) 0;
  * person.  It will return 1 if flooding is being check for someone and an ON
  * FLOOD is activated. 
  */
-int	new_check_flooding (char *nick, char *chan, char *line, FloodType type)
+int	new_check_flooding (char *nick, char *nuh, char *chan, char *line, FloodType type)
 {
 static	int	 users = 0,
 		 pos = 0;
@@ -66,8 +66,8 @@ static	int	 users = 0,
 		 numusers,
 		 server,
 		 retval = 1;
-	time_t	 right_now,
-		 diff;
+	struct timeval	 right_now;
+	double	 diff;
 	Flooding *tmp;
 
 
@@ -92,18 +92,24 @@ static	int	 users = 0,
 	 */
 	if (users != numusers)
 	{
-		users = numusers;
-		RESIZE(flood, Flooding, users);
-		for (i = 0; i < users; i++)
+		RESIZE(flood, Flooding, numusers);
+		i = users;
+		for (; i > numusers; i--)
 		{
-			flood[i].nick[0] = 0;
-			flood[i].channel[0] = 0;
+			new_free(&flood[i].nuh);
+			new_free(&flood[i].channel);
+		}
+		for (; i < numusers; i++)
+		{
+			flood[i].nuh = NULL;
+			flood[i].channel = NULL;
 			flood[i].server = -1;
 			flood[i].type = -1;
 			flood[i].cnt = 0;
-			flood[i].start = 0;
+			get_time(&(flood[i].start));
 			flood[i].floods = 0;
 		}
+		users = numusers;
 	}
 
 	/*
@@ -130,17 +136,19 @@ static	int	 users = 0,
 			continue;
 		if (server != flood[i].server)
 			continue;
+		if (!flood[i].nuh)
+			continue;
 
 		/*
 		 * Must be for the person we're looking for
 		 */
-		if (my_stricmp(nick, flood[i].nick))
+		if (my_stricmp(nuh, flood[i].nuh))
 			continue;
 
 		/*
 		 * Must be for a channel if we're for a channel
 		 */
-		if (!!flood[i].channel[0] != !!chan)
+		if (!!flood[i].channel != !!chan)
 			continue;
 
 		/*
@@ -155,7 +163,7 @@ static	int	 users = 0,
 		break;
 	}
 
-	time(&right_now);
+	get_time(&right_now);
 
 	/*
 	 * We didnt find anybody.
@@ -171,11 +179,11 @@ static	int	 users = 0,
 		while (flood[pos].floods && pos != old_pos);
 
 		tmp = flood + pos;
-		strmcpy(tmp->nick, nick, NICKNAME_LEN);
+		malloc_strcpy(&tmp->nuh, nuh);
 		if (chan)
-			strmcpy(tmp->channel, chan, NICKNAME_LEN);
+			malloc_strcpy(&tmp->channel, chan);
 		else
-			tmp->channel[0] = 0;
+			new_free(&tmp->channel);
 
 		tmp->server = server;
 		tmp->type = type;
@@ -192,9 +200,9 @@ static	int	 users = 0,
 	 */
 	if (++tmp->cnt >= get_int_var(FLOOD_AFTER_VAR))
 	{
-		diff = right_now - tmp->start;
+		diff = time_diff(tmp->start, right_now);
 
-		if (diff == 0 || tmp->cnt / diff >= get_int_var(FLOOD_RATE_VAR))
+		if (diff == 0.0 || tmp->cnt / diff >= get_int_var(FLOOD_RATE_VAR))
 		{
 			if (get_int_var(FLOOD_WARNING_VAR))
 				say("%s flooding detected from %s", 
@@ -202,7 +210,7 @@ static	int	 users = 0,
 
 			retval = do_hook(FLOOD_LIST, "%s %s %s %s",
 				nick, ignore_types[type], 
-				tmp->channel[0] ? chan : "*", line);
+				chan ? chan : "*", line);
 
 			tmp->floods++;
 		}
@@ -224,8 +232,8 @@ static	int	 users = 0,
 	return retval;
 }
 
-int	check_flooding (char *nick, FloodType type, char *line)
+int	check_flooding (char *nick, char *nuh, FloodType type, char *line)
 {
-	return new_check_flooding(nick, NULL, line, type);
+	return new_check_flooding(nick, nuh, NULL, line, type);
 }
 
