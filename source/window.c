@@ -1,4 +1,4 @@
-/* $EPIC: window.c,v 1.72 2003/10/10 06:09:01 jnelson Exp $ */
+/* $EPIC: window.c,v 1.73 2003/10/12 03:33:10 jnelson Exp $ */
 /*
  * window.c: Handles the organzation of the logical viewports (``windows'')
  * for irc.  This includes keeping track of what windows are open, where they
@@ -5076,11 +5076,13 @@ void 	unstop_all_windows (char dumb, char *dumber)
 {
 	Window	*tmp = NULL;
 	char	my_off[4];
+	char *	ptr;
 
 	while (traverse_all_windows(&tmp))
 	{
 		strcpy(my_off, "OFF");
-		window_hold_mode(tmp, (char **)&my_off);
+		ptr = my_off;
+		window_hold_mode(tmp, (char **)&ptr);
 	}
 	update_all_windows();
 }

@@ -218,3 +218,4 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * /XEVAL -- ends eval option processing, like how /xecho does it.
 * Fix $servernick()
 * Implement "priveleged yells" which lets you do /set debug 7 again.
+* Fix UNSTOP_ALL_WINDOWS keybinding, reported by ce.
