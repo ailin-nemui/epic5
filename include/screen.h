@@ -121,8 +121,11 @@ unsigned char**	split_up_line		(const unsigned char *, int);
 	void	close_all_screen	(void);
 	void	do_screens		(fd_set *);
 
-extern	int	strip_ansi_never_xlate;
-	u_char *strip_ansi		(const u_char *);
+const	char *	all_off			(void);
+extern	int	normalize_never_xlate;
+extern	int	normalize_permit_all_attributes;
+	u_char *normalize_string	(const u_char *, int);
+	u_char *denormalize_string	(const u_char *);
 	char   *normalize_color		(int, int, int, int);
 const	u_char *skip_ctl_c_seq		(const u_char *, int *, int *);
 	u_char **prepare_display	(const u_char *, int, int *, int);

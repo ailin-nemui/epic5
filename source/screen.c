@@ -73,12 +73,12 @@
 /*
  * Ugh.  Dont ask.
  */
-	int	strip_ansi_never_xlate = 0;
-
+	int	normalize_never_xlate = 0;
+	int	normalize_permit_all_attributes = 0;
 
 /*
- * This file has been heavily modified by FireClown, and I am indebted to
- * him for the work he has graciously donated to the project.  The major
+ * This file includes major work contributed by FireClown, and I am indebted
+ * to him for the work he has graciously donated to the project.  The major
  * highlights of his work include:
  *
  * -- ^C codes have been changed to mIRC-order.  This is the order that
@@ -88,365 +88,1418 @@
  *    way.  If you do ^C30 through ^C37, you will set the foreground color
  *    (directly corresponding to the ansi codes for 30-37), and if you do 
  *    ^C40 through ^C47, you will set the background.  ^C50 through ^C57
- *    are reserved for bold-foreground, and its likely that i will extend
- *    support for ^C60 through ^C67 for bold-background (eg, blink).
+ *    are reserved for bold-foreground, and blink-background.
  * -- $cparse() still outputs the "right" colors, so if you use $cparse(),
  *    then these changes wont affect you (much).
- * -- Colors and ansi codes can be completely filtered out or completely
- *    handled, and supposedly even if youre not on an ansi-aware terminal,
- *    the codes will happen correctly (supposedly there is a low-grade ansi
- *    emulator that does this on the fly.)
+ * -- Colors and ansi codes are either graciously handled, or completely
+ *    filtered out.  Anything that cannot be handled is removed, so there
+ *    is no risk of dangerous codes making their way to your output.  This
+ *    is accomplished by a low-grade ansi emulator that folds raw output 
+ *    into an intermediate form which is used by the display routines.
+ *
+ * To a certain extent, the original code from  FireClown was not yet complete,
+ * and it was evident that the code was in anticipation of some additional
+ * future work.  We have completed much of that work, and we are very much
+ * indebted to him for getting the ball rolling and supplying us with ideas. =)
  */
 
 
-/* * * * * * * * * OUTPUT CHAIN * * * * * * * * * * * * * * * * * * * * * *
- *	Entry is to say(), output(), yell(), put_it(), etc.
- *	------- They call add_to_screen()
- *		------- Which calls add_to_window()
- *			------- Which calls split_up_line()
- *			------- And then rite()
- *				------- Which calls scroll_window()
- *				------- And output_line()
- *					------- Which calls term_putchar().
+/* * * * * * * * * * * * * OUTPUT CHAIN * * * * * * * * * * * * * * * * * * *
+ * To put a message to the "default" window, you must first call
+ *	set_display_target(nick/channel, lastlog_level)
+ * Then you may call 
+ *	say(), output(), yell(), put_it(), put_echo(), etc.
+ * When you are done, make sure to
+ *	reset_display_target()
+ *
+ * To put a message to a specific, known window (you need it's refnum)
+ * then you may just call directly:
+ *	display_to(winref, ...)
+ *
+ * To put a series of messages to a specific, known window, (need it's refnum)
+ * You must first call:
+ *	message_to(winref)
+ * Then you may call
+ *	say(), ouitput(), yell(), put_it(), put_echo(), etc.
+ * When you are done, make sure to
+ *	message_to(-1);
+ *
+ * The 'display' (or 'display_to') functions are the main entry point for
+ * all logical output from epic.  These functions then figure out what
+ * window the output will go to and invoke its 'add' function.  From there,
+ * whatever happens is implementation defined.
+ *
+ * This file implements the middle part of the "ircII window", everything
+ * from the 'add' function to the low level terminal stuff.
  *
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
-	u_char **prepare_display    (const u_char *, int, int *, int);
-	void 	add_to_window 	    (Window *window, const unsigned char *str);
 static int 	rite 		    (Window *window, const unsigned char *str);
 static void 	scroll_window 	    (Window *window);
-static char 	display_standout    (int flag);
-static char 	display_bold 	    (int flag);
-static char	display_blink	    (int flag);
-static char 	display_underline   (int flag);
-static char	display_altcharset  (int flag);
-static int	display_color 	    (long color1, long color2);
-static void	display_normal 	    (void);
-static int 	add_to_display_list (Window *, const unsigned char *);
-static char 	*replace_color	    (int, int);
-const u_char 	*skip_ctl_c_seq     (const u_char *start, int *lhs, int *rhs);
+void 	add_to_window (Window *window, const unsigned char *str);
+void    window_disp (Window *window, const unsigned char *str);
+static int 	add_to_display_list (Window *window, const unsigned char *str);
 
 /*
- * add_to_screen: This adds the given null terminated buffer to the screen.
- * That is, it routes the line to the appropriate window.  It also handles
- * /redirect handling.
+ * XXX -- Full disclosure -- FireClown says it is completely the wrong
+ * idea to do this (re-build attributes from scratch every time) because 
+ * it causes those using slow terminals or slow connections more pain than
+ * is absolutely neccesary.  While I admit that he has a lot more experience
+ * than I do in all this, I'm not sure I have the ability to do all this 
+ * "optimally" while ensuring 100% accuracy.  Maybe I'll luck out and he 
+ * will provide something that will be optimal *and* 100% accurate. ;-)
  */
-void 	add_to_screen (const unsigned char *buffer)
-{
-	Window *tmp = NULL;
-
-	/*
-	 * Just paranoia.
-	 */
-	if (!current_window)
-	{
-		puts(buffer);
-		return;
-	}
-
-	if (dumb_mode)
-	{
-		add_to_lastlog(current_window, buffer);
-		if (do_hook(WINDOW_LIST, "%u %s", current_window->refnum, buffer))
-			puts(buffer);
-		fflush(stdout);
-		return;
-	}
-
-	if (in_window_command)
-	{
-		in_window_command = 0;	/* Inhibit looping! */
-		update_all_windows();
-		in_window_command = 1;
-	}
-
-	/*
-	 * The highest priority is if we have explicitly stated what
-	 * window we want this output to go to.
-	 */
-	if (to_window)
-	{
-		add_to_window(to_window, buffer);
-		return;
-	}
-
-	/*
-	 * The next priority is "LOG_CURRENT" which is the "default"
-	 * level for all non-routed output.  That is meant to ensure that
-	 * any extraneous error messages goes to a window where the user
-	 * will see it.  All specific output (e.g. incoming server stuff) 
-	 * is routed through one of the LOG_* levels, which is handled
-	 * below.
-	 */
-	else 
-	if (who_level == LOG_CURRENT && current_window->server == from_server)
-	{
-		add_to_window(current_window, buffer);
-		return;
-	}
-
-	/*
-	 * Next priority is if the output is targeted at a certain
-	 * user or channel (used for /window bind or /window nick targets)
-	 */
-	else if (who_from)
-	{
-		tmp = NULL;
-		while (traverse_all_windows(&tmp))
-		{
-			/*
-			 * Check for /WINDOW CHANNELs that apply.
-			 * (Any current channel will do)
-			 */
-			if (tmp->current_channel &&
-				!my_stricmp(who_from, tmp->current_channel))
-			{
-				if (tmp->server == from_server)
-				{
-					add_to_window(tmp, buffer);
-					return;
-				}
-			}
-
-			/*
-			 * Check for /WINDOW QUERYs that apply.
-			 */
-			if (tmp->query_nick &&
-			   ( ((who_level == LOG_MSG || who_level == LOG_NOTICE
-			    || who_level == LOG_DCC || who_level == LOG_CTCP
-			    || who_level == LOG_ACTION)
-				&& !my_stricmp(who_from, tmp->query_nick)
-				&& from_server == tmp->server)
-			  || ((who_level == LOG_DCC || who_level == LOG_CTCP
-			    || who_level == LOG_ACTION)
-				&& *tmp->query_nick == '='
-				&& !my_stricmp(who_from, tmp->query_nick + 1))
-			  || ((who_level == LOG_DCC || who_level == LOG_CTCP
-			    || who_level == LOG_ACTION)
-				&& *tmp->query_nick == '='
-				&& !my_stricmp(who_from, tmp->query_nick))))
-			{
-				add_to_window(tmp, buffer);
-				return;
-			}
-		}
-
-		tmp = NULL;
-		while (traverse_all_windows(&tmp))
-		{
-			/*
-			 * Check for /WINDOW NICKs that apply
-			 */
-			if (from_server == tmp->server)
-			{
-				if (find_in_list((List **)&(tmp->nicks), 
-					who_from, !USE_WILDCARDS))
-				{
-					add_to_window(tmp, buffer);
-					return;
-				}
-			}
-		}
-
-		/*
-		 * we'd better check to see if this should go to a
-		 * specific window (i dont agree with this, though)
-		 */
-		if (from_server != -1 && is_channel(who_from))
-		{
-			if ((tmp = get_channel_window(who_from, from_server)))
-			{
-				add_to_window(tmp, buffer);
-				return;
-			}
-		}
-	}
-
-	/*
-	 * Check to see if this level should go to current window
-	 */
-	if ((current_window_level & who_level) && 
-		current_window->server == from_server)
-	{
-		add_to_window(current_window, buffer);
-		return;
-	}
-
-	/*
-	 * Check to see if any window can claim this level
-	 */
-	tmp = NULL;
-	while (traverse_all_windows(&tmp))
-	{
-		/*
-		 * Check for /WINDOW LEVELs that apply
-		 */
-		if (((from_server == tmp->server) || (from_server == -1)) &&
-		    (who_level & tmp->window_level))
-		{
-			add_to_window(tmp, buffer);
-			return;
-		}
-	}
-
-	/*
-	 * If all else fails, if the current window is connected to the
-	 * given server, use the current window.
-	 */
-	if (from_server == current_window->server)
-	{
-		add_to_window(current_window, buffer);
-		return;
-	}
-
-	/*
-	 * And if that fails, look for ANY window that is bound to the
-	 * given server (this never fails if we're connected.)
-	 */
-	tmp = NULL;
-	while (traverse_all_windows(&tmp))
-	{
-		if (tmp->server == from_server)
-		{
-			add_to_window(tmp, buffer);
-			return;
-		}
-	}
-
-	/*
-	 * No window found for a server is usually because we're
-	 * disconnected or not yet connected.
-	 */
-	add_to_window(current_window, buffer);
-	return;
-}
 
 /*
- * add_to_window: Given a window and a line to display, this handles all
- * of the window-level stuff like the logfile, the lastlog, splitting
- * the line up into rows, adding it to the display (scrollback) buffer, and
- * if we're invisible and the user wants notification, we handle that too.
+ * "Attributes" were an invention for epic5, and the general idea was
+ * to expunge from the output chain all of those nasty logical toggle settings
+ * which never really did work correctly.  Rather than have half a dozen
+ * functions all keep state about whether reverse/bold/underline/whatever is
+ * on, or off, or what to do when it sees a toggle, we instead have one 
+ * function (normalize_string) which walks the string *once* and outputs a
+ * completely normalized output string.  The end result of this change is
+ * that what were formally "toggle" attributes now are "always-on" attributes,
+ * and to turn off an attribute, you need to do an ALL_OFF (^O) and then
+ * turn on whatever attributes are left.  This is *significantly* easier
+ * to parse, and yeilds much better results, at the expense of a few extra
+ * bytes.
  *
- * add_to_display_list() handles the *composure* of the buffer that backs the
- * screen, handling HOLD_MODE, trimming the scrollback buffer if it gets too
- * big, scrolling the window and moving the top_of_window pointer as neccesary.
- * It also tells us if we should display to the screen or not.
+ * Now on to the nitty gritty.  Every character has a fudamental set of
+ * attributes that apply to it.  Each character has, by default, the same
+ * set of fundamental attributes as the character before it.  In any case
+ * where this is NOT true, an "attribute marker" is put into the normalized
+ * output to indicate what the new fundamental attributes are.  These new
+ * attributes continue to be used until another attribute marker is found.
  *
- * rite() handles the *appearance* of the display, writing to the screen as
- * neccesary.
+ * The "Attribute" structure is an internal structure that represents all
+ * of the supported fundamental attributes.  This is the prefered method
+ * for keeping state of the attributes of a line.  You can convert this
+ * structure into an "attribute marker" by passing the string and an 
+ * Attribute struct to 'display_attributes'.  The result is 5 bytes of
+ * output, each byte has the high bit set (so str*() still work).  You can
+ * also convert an Attribute struct to standard ircII attribute characters
+ * by calling 'logical_attributes'.  The result will be an ALL_OFF (^O) 
+ * followed by all of the attributes that are ON in the struct.  Finally,
+ * you can suppress all attribute changes by calling ignore_attribute().
+ * These functions are used by normalize_string() to for their appropriate
+ * uses.
+ *
+ * You can read an attribute marker from a string and convert it back to
+ * an Attribute struct by calling the read_attributes() function.  You can
+ * actually perform the physical output operations neccesary to switch to
+ * the values in an Attribute struct by calling term_attribute().  These
+ * are used by various output routines for whatever reason.
  */
-void 	add_to_window (Window *window, const unsigned char *str)
+struct 	attributes {
+	int	reverse;
+	int	bold;
+	int	blink;
+	int	underline;
+	int	altchar;
+	int	color_fg;
+	int	color_bg;
+	int	fg_color;
+	int	bg_color;
+};
+typedef struct attributes Attribute;
+
+const char *all_off (void)
 {
-	int	must_free = 0;
+#ifdef NO_CHEATING
+	Attribute 	a;
+	static	char	retval[6];
 
-	if (window->server >= 0 && get_server_redirect(window->server))
-		if (redirect_text(window->server, 
-			        get_server_redirect(window->server),
-				str, NULL, 0))
-			return;
+	a->reverse = a->bold = a->blink = a->underline = a->altchar = 0;
+	a->color_fg = a->fg_color = a->color_bg = a->bg_color = 0;
+	display_attributes(retval, &a);
+	return retval;
+#else
+	static	char	retval[6];
+	retval[0] = '\006';
+	retval[1] = retval[2] = retval[3] = retval[4] = 0x80;
+	retval[5] = 0;
+	return retval;
+#endif
+}
 
-	if (do_hook(WINDOW_LIST, "%u %s", window->refnum, str))
+/* Put into 'output', an attribute marker corresponding to 'a' */
+static size_t	display_attributes (u_char *output, Attribute *a)
+{
+	u_char	val1 = 0x80;
+	u_char	val2 = 0x80;
+	u_char	val3 = 0x80;
+	u_char	val4 = 0x80;
+
+	if (a->reverse)		val1 |= 0x01;
+	if (a->bold)		val1 |= 0x02;
+	if (a->blink)		val1 |= 0x04;
+	if (a->underline)	val1 |= 0x08;
+	if (a->altchar)		val1 |= 0x10;
+
+	if (a->color_fg) {	val2 |= 0x01; val3 |= a->fg_color; }
+	if (a->color_bg) {	val2 |= 0x02; val4 |= a->bg_color; }
+
+	output[0] = '\006';
+	output[1] = val1;
+	output[2] = val2;
+	output[3] = val3;
+	output[4] = val4;
+	output[5] = 0;
+	return 5;
+}
+ 
+/* Put into 'output', logical characters so end result is 'a' */
+static size_t	logic_attributes (u_char *output, Attribute *a)
+{
+	char	*str = output;
+	size_t	count = 0;
+
+	*str++ = ALL_OFF, count++;
+	/* Colors need to be set first, always */
+	if (a->color_fg)
 	{
-		unsigned char	**lines;
-		int		cols;
-		char		*pend;
+		*str++ = '\003', count++;
+		*str++ = '3', count++;
+		*str++ = '0' + a->fg_color, count++;
+	}
+	if (a->color_bg)
+	{
+		if (!a->color_fg)
+			*str++ = '\003', count++;
+		*str++ = ',', count++;
+		*str++ = '4', count++;
+		*str++ = '0' + a->bg_color, count++;
+	}
+	if (a->bold)
+		*str++ = BOLD_TOG, count++;
+	if (a->blink)
+		*str++ = BLINK_TOG, count++;
+	if (a->reverse)
+		*str++ = REV_TOG, count++;
+	if (a->underline)
+		*str++ = UND_TOG, count++;
+	if (a->altchar)
+		*str++ = ALT_TOG, count++;
+	return count;
+}
 
-		if ((pend = get_string_var(OUTPUT_REWRITE_VAR)))
+/* Suppress any attribute changes in the output */
+static size_t	ignore_attributes (u_char *output, Attribute *a)
+{
+	return 0;
+}
+
+/* Read an attribute marker from 'input', put results in 'a'. */
+static int	read_attributes (const u_char *input, Attribute *a)
+{
+	if (!input)
+		return -1;
+	if (*input != '\006')
+		return -1;
+	if (!input[0] || !input[1] || !input[2] || !input[3] || !input[4])
+		return -1;
+
+	a->reverse = a->bold = a->blink = a->underline = a->altchar = 0;
+	a->color_fg = a->fg_color = a->color_bg = a->bg_color = 0;
+
+	input++;
+	if (*input & 0x01)	a->reverse = 1;
+	if (*input & 0x02)	a->bold = 1;
+	if (*input & 0x04)	a->blink = 1;
+	if (*input & 0x08)	a->underline = 1;
+	if (*input & 0x10)	a->altchar = 1;
+
+	input++;
+	if (*input & 0x01) {	
+		a->color_fg = 1; 
+		a->fg_color = input[1] & 0x7F; 
+	}
+	if (*input & 0x02) {	
+		a->color_bg = 1; 
+		a->bg_color = input[2] & 0x7F; 
+	}
+
+	return 0;
+}
+
+/* Invoke all of the neccesary functions so output attributes reflect 'a'. */
+static void	term_attribute (Attribute *a)
+{
+	term_all_off();
+	if (a->reverse)		term_standout_on();
+	if (a->bold)		term_bold_on();
+	if (a->blink)		term_blink_on();
+	if (a->underline)	term_underline_on();
+	if (a->altchar)		term_altcharset_on();
+
+	if (a->color_fg) {	if (a->fg_color > 7) abort(); 
+				else term_set_foreground(a->fg_color); }
+	if (a->color_bg) {	if (a->bg_color > 7) abort();
+				else term_set_background(a->bg_color); }
+}
+
+/* * * * * * * * * * * * * COLOR SUPPORT * * * * * * * * * * * * * * * * */
+/*
+ * This parses out a ^C control sequence.  Note that it is not acceptable
+ * to simply slurp up all digits after a ^C sequence (either by calling
+ * strtol(), or while (isdigit())), because people put ^C sequences right
+ * before legit output with numbers (like the time in your status bar.)
+ * Se we have to actually slurp up only those digits that comprise a legal
+ * ^C code.
+ */
+const u_char *read_color_seq (const u_char *start, void *d)
+{
+	/* 
+	 * The proper "attribute" color mapping is for each ^C lvalue.
+	 * If the value is -1, then that is an illegal ^C lvalue.
+	 */
+	static	int	fore_conv[] = {
+		 7,  0,  4,  2,  1,  3,  5,  1,		/*  0-7  */
+		 3,  2,  6,  6,  4,  5,  0,  7,		/*  8-15 */
+		 7, -1, -1, -1, -1, -1, -1, -1, 	/* 16-23 */
+		-1, -1, -1, -1, -1, -1,  0,  1, 	/* 24-31 */
+		 2,  3,  4,  5,  6,  7, -1, -1,		/* 32-39 */
+		-1, -1, -1, -1, -1, -1, -1, -1,		/* 40-47 */
+		-1, -1,  0,  1,  2,  3,  4,  5, 	/* 48-55 */
+		 6,  7,	-1, -1, -1			/* 56-60 */
+	};
+	/* 
+	 * The proper "attribute" color mapping is for each ^C rvalue.
+	 * If the value is -1, then that is an illegal ^C rvalue.
+	 */
+	static	int	back_conv[] = {
+		 7,  0,  4,  2,  1,  3,  5,  1,
+		 3,  2,  6,  6,  4,  5,  0,  0,
+		 7, -1, -1, -1, -1, -1, -1, -1,
+		-1, -1, -1, -1, -1, -1, -1, -1,
+		-1, -1, -1, -1, -1, -1, -1, -1,
+		 0,  1,  2,  3,  4,  5,  6,  7, 
+		-1, -1,  0,  1,  2,  3,  4,  5,
+		 6,  7, -1, -1, -1
+	};
+
+	/*
+	 * Some lval codes represent "bold" colors.  That actually reduces
+	 * to ^C<non bold> + ^B, so that if you do ^B later, you get the
+	 * <non bold> color.  This table indicates whether a ^C code 
+	 * turns bold ON or OFF.  (Every color does one or the other)
+	 */
+	static	int	fore_bold_conv[] =  {
+		1,  0,  0,  0,  0,  0,  0,  1,
+		1,  1,  0,  1,  1,  1,  1,  0,
+		1,  0,  0,  0,  0,  0,  0,  0,
+		0,  0,  0,  0,  0,  0,  0,  0,
+		0,  0,  0,  0,  0,  0,  0,  0,
+		0,  0,  0,  0,  0,  0,  0,  0,
+		0,  0,  1,  1,  1,  1,  1,  1,
+		1,  1,  0,  0,  0
+	};
+	/*
+	 * Some rval codes represent "blink" colors.  That actually reduces
+	 * to ^C<non blink> + ^F, so that if you do ^F later, you get the
+	 * <non blink> color.  This table indicates whether a ^C code 
+	 * turns blink ON or OFF.  (Every color does one or the other)
+	 */
+	static	int	back_blink_conv[] = {
+		0,  0,  0,  0,  0,  0,  0,  0,
+		0,  0,  0,  0,  0,  0,  0,  0,
+		0,  0,  0,  0,  0,  0,  0,  0,
+		0,  0,  0,  0,  0,  0,  0,  0,
+		0,  0,  0,  0,  0,  0,  0,  0,
+		0,  0,  0,  0,  0,  0,  0,  0,
+		0,  0,  1,  1,  1,  1,  1,  1,
+		1,  1,  0,  0,  0
+	};
+
+	/* Local variables, of course */
+	const 	u_char *	ptr = start;
+		int		c1, c2;
+		Attribute *	a;
+		Attribute	ad;
+		int		fg;
+		int		val;
+		int		noval;
+
+	/* Copy the inward attributes, if provided */
+	a = (d) ? (Attribute *)d : &ad;
+
+	/*
+	 * If we're passed a non ^C code, dont do anything.
+	 */
+	if (*ptr != '\003')
+		return ptr;
+
+	/*
+	 * This is a one-or-two-time-through loop.  We find the maximum 
+	 * span that can compose a legit ^C sequence, then if the first 
+	 * nonvalid character is a comma, we grab the rhs of the code.  
+	 */
+	for (fg = 1; ; fg = 0)
+	{
+		/*
+		 * If its just a lonely old ^C, then its probably a terminator.
+		 * Just skip over it and go on.
+		 */
+		ptr++;
+		if (*ptr == 0)
 		{
-			char	*prepend_exp;
-			char	argstuff[10240];
-			int	args_flag;
-
-			/* First, create the $* list for the expando */
-			snprintf(argstuff, 10240, "%u %s", 
-					window->refnum, str);
-
-			/* Now expand the expando with the above $* */
-			prepend_exp = expand_alias(pend, argstuff,
-						   &args_flag, NULL);
-
-			str = prepend_exp;
-			must_free = 1;
+			if (fg)
+				a->color_fg = a->fg_color = 0;
+			a->color_bg = a->bg_color = 0;
+			a->bold = a->blink = 0;
+			return ptr;
 		}
-
-                add_to_log(window->log_fp, window->refnum, str);
-                add_to_lastlog(window, str);
-		display_standout(OFF);
-		display_bold(OFF);
-
-		if (window->screen)
-			cols = window->screen->co - 1;	/* XXX HERE XXX */
-		else
-			cols = window->columns - 1;
-
-		/* Suppress status updates while we're outputting. */
-		for (lines = split_up_line(str, cols); *lines; lines++)
-		{
-			if (add_to_display_list(window, *lines))
-				rite(window, *lines);
-		}
-		term_flush();
 
 		/*
-		 * This used to be in rite(), but since rite() is a general
-		 * purpose function, and this stuff really is only intended
-		 * to hook on "new" output, it really makes more sense to do
-		 * this here.  This also avoids the terrible problem of 
-		 * recursive calls to split_up_line, which are bad.
+		 * Check for the very special case of a definite terminator.
+		 * If the argument to ^C is -1, then we absolutely know that
+		 * this ends the code without starting a new one
 		 */
-		if (!window->visible)
+		/* XXX *cough* is 'ptr[1]' valid here? */
+		else if (ptr[0] == '-' && ptr[1] == '1')
 		{
-			/*
-			 * This is for archon -- he wanted a way to have 
-			 * a hidden window always beep, even if BEEP is off.
-			 * XXX -- str has already been freed here! ACK!
-			 */
-			if (window->beep_always && strchr(str, '\007'))
+			if (fg)
+				a->color_fg = a->fg_color = 0;
+			a->color_bg = a->bg_color = 0;
+			a->bold = a->blink = 0;
+			return ptr + 2;
+		}
+
+		/*
+		 * Further checks against a lonely old naked ^C.
+		 */
+		else if (!isdigit(ptr[0]) && ptr[0] != ',')
+		{
+			if (fg)
+				a->color_fg = a->fg_color = 0;
+			a->color_bg = a->bg_color = 0;
+			a->bold = a->blink = 0;
+			return ptr;
+		}
+
+
+		/*
+		 * Code certainly cant have more than two chars in it
+		 */
+		c1 = ptr[0];
+		c2 = ptr[1];
+		val = 0;
+		noval = 0;
+
+#define mkdigit(x) ((x) - '0')
+
+		/* Our action depends on the char immediately after the ^C. */
+		switch (c1)
+		{
+			/* These might take one or two characters */
+			case '0':
+			case '1':
+			case '2':
+			case '3':
+			case '4':
+			case '5':
 			{
-				Window *old_to_window;
-				term_beep();
-				old_to_window = to_window;
-				to_window = current_window;
-				say("Beep in window %d", window->refnum);
-				to_window = old_to_window;
+			    if (c2 >= '0' && c2 <= '9')
+			    {
+				int	val1;
+				int	val2;
+
+			        ptr++;
+				val1 = mkdigit(c1);
+				val2 = mkdigit(c1) * 10 + mkdigit(c2);
+
+				if (fg)
+				{
+					if (fore_conv[val2] == -1)
+						val = val1;
+					else
+						val = val2, ptr++;
+				}
+				else
+				{
+					if (back_conv[val2] == -1)
+						val = val1;
+					else
+						val = val2, ptr++;
+				}
+				break;
+			    }
+
+			    /* FALLTHROUGH */
+			}
+
+			/* These can only take one character */
+			case '6':
+			case '7':
+			case '8':
+			case '9':
+			{
+				ptr++;
+
+				val = mkdigit(c1);
+				break;
 			}
 
 			/*
-			 * Tell some visible window about our problems 
-			 * if the user wants us to.
+			 * Y -> <stop> Y for any other nonnumeric Y
 			 */
-			if (!(window->miscflags & WINDOW_NOTIFIED) &&
-				who_level & window->notify_level)
+			default:
 			{
-				window->miscflags |= WINDOW_NOTIFIED;
-				if (window->miscflags & WINDOW_NOTIFY)
-				{
-					Window	*old_to_window;
-					int	lastlog_level;
-
-					lastlog_level = set_lastlog_msg_level(LOG_CRAP);
-					old_to_window = to_window;
-					to_window = current_window;
-					say("Activity in window %d", 
-						window->refnum);
-					to_window = old_to_window;
-					set_lastlog_msg_level(lastlog_level);
-				}
-				update_all_status();
+				noval = 1;
+				break;
 			}
 		}
 
-		if (must_free)
-			new_free(&str);
+		if (noval == 0)
+		{
+			if (fg)
+			{
+				a->color_fg = 1;
+				a->bold = fore_bold_conv[val];
+				a->fg_color = fore_conv[val];
+			}
+			else
+			{
+				a->color_bg = 1;
+				a->blink = back_blink_conv[val];
+				a->bg_color = back_conv[val];
+			}
+		}
 
-		cursor_in_display(window);
+		if (*ptr == ',')
+			continue;
+		break;
 	}
+
+	return ptr;
 }
 
-u_char **split_up_line (const unsigned char *str, int max_cols)
+/**************************** STRIP ANSI ***********************************/
+/*
+ * Used as a translation table when we cant display graphics characters
+ * or we have been told to do translation.  A no-brainer, with little attempt
+ * at being smart.
+ * (JKJ: perhaps we should allow a user to /set this?)
+ */
+static	u_char	gcxlate[256] = {
+  '*', '*', '*', '*', '*', '*', '*', '*',
+  '#', '*', '#', '*', '*', '*', '*', '*',
+  '>', '<', '|', '!', '|', '$', '_', '|',
+  '^', 'v', '>', '<', '*', '=', '^', 'v',
+  ' ', '!', '"', '#', '$', '%', '&', '\'',
+  '(', ')', '*', '+', ',', '_', '.', '/',
+  '0', '1', '2', '3', '4', '5', '6', '7',
+  '8', '9', ':', ';', '<', '=', '>', '?',
+  '@', 'A', 'B', 'C', 'D', 'E', 'F', 'G',
+  'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O',
+  'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W',
+  'Z', 'Y', 'X', '[', '\\', ']', '^', '_',
+  '`', 'a', 'b', 'c', 'd', 'e', 'f', 'g',
+  'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o',
+  'p', 'q', 'r', 's', 't', 'u', 'v', 'w',
+  'x', 'y', 'z', '{', '|', '}', '~', '?',
+  'C', 'u', 'e', 'a', 'a', 'a', 'a', 'c',
+  'e', 'e', 'e', 'i', 'i', 'i', 'A', 'A',
+  'e', 'e', 'e', 'o', 'o', 'o', 'u', 'u',
+  'y', 'O', 'U', 'C', '#', 'Y', 'P', 'f',
+  'a', 'i', 'o', 'u', 'n', 'N', '^', '^',
+  '?', '<', '>', '2', '4', '!', '<', '>',
+  '#', '#', '#', '|', '|', '|', '|', '+',
+  '+', '+', '+', '|', '+', '+', '+', '+',
+  '+', '+', '+', '+', '-', '+', '+', '+',
+  '+', '+', '+', '+', '+', '=', '+', '+',
+  '+', '+', '+', '+', '+', '+', '+', '+',
+  '+', '+', '+', '#', '-', '|', '|', '-',
+  'a', 'b', 'P', 'p', 'Z', 'o', 'u', 't',
+  '#', 'O', '0', 'O', '-', 'o', 'e', 'U',
+  '*', '+', '>', '<', '|', '|', '/', '=',
+  '*', '*', '*', '*', 'n', '2', '*', '*'
+};
+
+/*
+ * State 0 is a "normal, printable character"
+ * State 1 is an "eight bit character"
+ * State 2 is an "escape character" (\033)
+ * State 3 is a "color code character" (\003)
+ * State 4 is an "attribute change character"
+ * State 5 is a "ROM character" (\022)
+ * State 6 is a "character that is never printable."
+ * State 7 is a "beep"
+ * State 8 is a "tab"
+ * State 9 is a "non-destructive space"
+ */
+static	u_char	ansi_state[256] = {
+/*	^@	^A	^B	^C	^D	^E	^F	^G */
+	6,	6,	4,	3,	6,	4,	4,	7,  /* 000 */
+/*	^H	^I	^J	^K	^L	^M	^N	^O */
+	6,	8,	0,	6,	0,	6,	6,	4,  /* 010 */
+/*	^P	^Q	^R	^S	^T	^U	^V	^W */
+	6,	6,	5,	9,	4,	6,	4,	6,  /* 020 */
+/*	^X	^Y	^Z	^[	^\	^]	^^	^_ */
+	6,	6,	6,	2,	6,	6,	6,	4,  /* 030 */
+	0,	0,	0,	0,	0,	0,	0,	0,  /* 040 */
+	0,	0,	0,	0,	0,	0,	0,	0,  /* 050 */
+	0,	0,	0,	0,	0,	0,	0,	0,  /* 060 */
+	0,	0,	0,	0,	0,	0,	0,	0,  /* 070 */
+	0,	0,	0,	0,	0,	0,	0,	0,  /* 100 */
+	0,	0,	0,	0,	0,	0,	0,	0,  /* 110 */
+	0,	0,	0,	0,	0,	0,	0,	0,  /* 120 */
+	0,	0,	0,	0,	0,	0,	0,	0,  /* 130 */
+	0,	0,	0,	0,	0,	0,	0,	0,  /* 140 */
+	0,	0,	0,	0,	0,	0,	0,	0,  /* 150 */
+	0,	0,	0,	0,	0,	0,	0,	0,  /* 160 */
+	0,	0,	0,	0,	0,	0,	0,	0,  /* 170 */
+	1,	1,	1,	1,	1,	1,	1,	1,  /* 200 */
+	1,	1,	1,	1,	1,	1,	1,	1,  /* 210 */
+	1,	1,	1,	1,	1,	1,	1,	1,  /* 220 */
+	1,	1,	1,	1,	1,	1,	1,	1,  /* 230 */
+	1,	1,	1,	1,	1,	1,	1,	1,  /* 240 */
+	1,	1,	1,	1,	1,	1,	1,	1,  /* 250 */
+	1,	1,	1,	1,	1,	1,	1,	1,  /* 260 */
+	1,	1,	1,	1,	1,	1,	1,	1,  /* 270 */
+	1,	1,	1,	1,	1,	1,	1,	1,  /* 300 */
+	1,	1,	1,	1,	1,	1,	1,	1,  /* 310 */
+	1,	1,	1,	1,	1,	1,	1,	1,  /* 320 */
+	1,	1,	1,	1,	1,	1,	1,	1,  /* 330 */
+	1,	1,	1,	1,	1,	1,	1,	1,  /* 340 */
+	1,	1,	1,	1,	1,	1,	1,	1,  /* 350 */
+	1,	1,	1,	1,	1,	1,	1,	1,  /* 360 */
+	1,	1,	1,	1,	1,	1,	1,	1   /* 370 */
+};
+
+/*
+ * This started off as a general ansi parser, and it worked for stuff that
+ * was going out to the display, but it couldnt deal properly with ansi codes,
+ * and so when I tried to use it for the status bar, it just all fell to 
+ * pieces.  After working it over, I came up with this.  What this does
+ * (believe it or not) is walk through and strip out all the ansi codes in 
+ * the target string.  Any codes that we recognize as being safe (pretty much
+ * just ^[[<number-list>m), are converted back into their logical characters
+ * (eg, ^B, ^R, ^_, etc), and everything else is completely blown away.
+ *
+ * If "width" is not -1, then every "width" printable characters, a \n
+ * marker is put into the output so you can tell where the line breaks
+ * are.  Obviously, this is optional.  It is used by prepared_display 
+ * and $leftpc().
+ *
+ * XXX Some have asked that i "space out" the outputs with spaces and return
+ * but one row of output, so that rxvt will paste it as all one line.  Yea,
+ * that might be nice, but that raises other, more thorny issues.
+ */
+
+/*
+ * These macros help keep 8 bit chars from sneaking into the output stream
+ * where they might be stripped out.
+ */
+#define this_char() (eightbit ? *str : (*str) & 0x7f)
+#define next_char() (eightbit ? *str++ : (*str++) & 0x7f)
+#define put_back() (str--)
+#define nlchar '\n'
+
+u_char *	normalize_string (const u_char *str, int logical)
 {
-	int nl = 0;
-	return prepare_display(str, max_cols, &nl, 0);
+	u_char *	output;
+	u_char		chr;
+	Attribute	a;
+	int 		pos;
+	int		maxpos;
+	int 		args[10];
+	int		nargs;
+	int		i, n;
+	int		ansi = get_int_var(DISPLAY_ANSI_VAR);
+	int		gcmode = get_int_var(DISPLAY_PC_CHARACTERS_VAR);
+	int		eightbit = term_eight_bit();
+	int		beep_max, beep_cnt = 0;
+	int		tab_max, tab_cnt = 0;
+	int		nds_max, nds_cnt = 0;
+	int		pc = 0;
+	int		reverse, bold, blink, underline, altchar, color;
+	size_t		(*attrout) (u_char *, Attribute *);
+
+	/* Figure out how many beeps/tabs/nds's we can handle */
+	if (!(beep_max  = get_int_var(BEEP_MAX_VAR)))
+		beep_max = -1;
+	if (!get_int_var(TAB_VAR))
+		tab_max = -1;
+	else if ((tab_max = get_int_var(TAB_MAX_VAR)) < 0)
+		tab_max = -1;
+	if (!(nds_max	= get_int_var(ND_SPACE_MAX_VAR)))
+		nds_max = -1;
+	if (normalize_permit_all_attributes)	/* XXXX */
+		reverse = bold = blink = underline = altchar = color = 1;
+	else
+	{
+		reverse 	= get_int_var(INVERSE_VIDEO_VAR);
+		bold 		= get_int_var(BOLD_VIDEO_VAR);
+		blink 		= get_int_var(BLINK_VIDEO_VAR);
+		underline 	= get_int_var(UNDERLINE_VIDEO_VAR);
+		altchar 	= get_int_var(ALT_CHARSET_VAR);
+		color 		= get_int_var(COLOR_VAR);
+	}
+	if (logical == 0)
+		attrout = display_attributes;	/* prep for screen output */
+	else if (logical == 1)
+		attrout = logic_attributes;	/* non-screen handlers */
+	else if (logical == 2)
+		attrout = ignore_attributes;	/* $stripansi() function */
+	else if (logical == 3)
+		attrout = display_attributes;	/* The status line */
+	else
+		panic("'logical == %d' is not valid.", logical);
+
+	/* Reset all attributes to zero */
+	a.bold = a.underline = a.reverse = a.blink = a.altchar = 0;
+	a.color_fg = a.color_bg = a.fg_color = a.bg_color = 0;
+
+	/* 
+	 * The output string has a few extra chars on the end just 
+	 * in case you need to tack something else onto it.
+	 */
+	maxpos = strlen(str);
+	output = (u_char *)new_malloc(maxpos + 64);
+	pos = 0;
+
+	while ((chr = next_char()))
+	{
+	    if (pos > maxpos)
+	    {
+		maxpos += 64; /* Extend 64 chars at a time */
+		RESIZE(output, unsigned char, maxpos + 64);
+	    }
+
+	    switch (ansi_state[chr])
+	    {
+		/*
+		 * State 0 is a normal, printable ascii character
+		 */
+		case 0:
+			output[pos++] = chr;
+			pc++;
+			break;
+
+		/*
+		 * State 1 is a high-bit character that may or may not
+		 * need to be translated first.
+		 * State 6 is an unprintable character that must be made
+		 * unprintable (gcmode is forced to be 1)
+		 */
+		case 1:
+		case 6:
+		{
+			int my_gcmode = gcmode;
+
+			/*
+			 * This is a very paranoid check to make sure that
+			 * the 8-bit escape code doesnt elude us.
+			 */
+			if (chr == 27 + 128)
+				chr = '[';
+
+			if (ansi_state[chr] == 6)
+				my_gcmode = 1;
+
+			if (normalize_never_xlate)
+				my_gcmode = 4;
+
+			switch (my_gcmode)
+			{
+				/*
+				 * In gcmode 5, translate all characters
+				 */
+				case 5:
+				{
+					output[pos++] = gcxlate[chr];
+					break;
+				}
+
+				/*
+				 * In gcmode 4, accept all characters
+				 */
+				case 4:
+				{
+					output[pos++] = chr;
+					break;
+				}
+
+				/*
+				 * In gcmode 3, accept or translate chars
+				 */
+				case 3:
+				{
+					if (termfeatures & TERM_CAN_GCHAR)
+						output[pos++] = chr;
+					else
+						output[pos++] = gcxlate[chr];
+					break;
+				}
+
+				/*
+				 * In gcmode 2, accept or highlight xlate
+				 */
+				case 2:
+				{
+					if (termfeatures & TERM_CAN_GCHAR)
+						output[pos++] = chr;
+					else
+					{
+						/* <REV> char <REV> */
+						a.reverse = !a.reverse;
+						pos += attrout(output + pos, &a);
+						output[pos++] = gcxlate[chr];
+						a.reverse = !a.reverse;
+						pos += attrout(output + pos, &a);
+					}
+					break;
+				}
+
+				/*
+				 * gcmode 1 is "accept or reverse mangle"
+				 * If youre doing 8-bit, it accepts eight
+				 * bit characters.  If youre not doing 8 bit
+				 * then it converts the char into something
+				 * printable and then reverses it.
+				 */
+				case 1:
+				{
+					if (termfeatures & TERM_CAN_GCHAR)
+						output[pos++] = chr;
+					else if ((chr & 0x80) && eightbit)
+						output[pos++] = chr;
+					else
+					{
+						a.reverse = !a.reverse;
+						pos += attrout(output + pos, &a);
+						output[pos++] = 
+							(chr | 0x40) & 0x7f;
+						a.reverse = !a.reverse;
+						pos += attrout(output + pos, &a);
+					}
+					break;
+				}
+
+				/*
+				 * gcmode 0 is "always strip out"
+				 */
+				case 0:
+					break;
+			}
+			pc++;
+			break;
+		}
+
+
+		/*
+		 * State 2 is the escape character
+		 */
+		case 2:
+		{
+		    /*
+		     * The next thing we do is dependant on what the character
+		     * is after the escape.  Be very conservative in what we
+		     * allow.  In general, escape sequences shouldn't be very
+		     * complex at this point.
+		     * If we see an escape at the end of a string, just mangle
+		     * it and dont bother with the rest of the expensive
+		     * parsing.
+		     */
+		    if (!ansi || this_char() == 0)
+		    {
+			a.reverse = !a.reverse;
+			pos += attrout(output + pos, &a);
+			output[pos++] = '[';
+			a.reverse = !a.reverse;
+			pos += attrout(output + pos, &a);
+
+			pc++;
+			continue;
+		    }
+
+		    switch ((chr = next_char()))
+		    {
+			/*
+			 * All these codes we just skip over.  We're not
+			 * interested in them.
+			 */
+
+			/*
+			 * These are two-character commands.  The second
+			 * char is the argument.
+			 */
+			case ('#') : case ('(') : case (')') :
+			case ('*') : case ('+') : case ('$') :
+			case ('@') :
+			{
+				chr = next_char();
+				if (chr == 0)
+					put_back();	/* Bogus sequence */
+				break;
+			}
+
+			/*
+			 * These are just single-character commands.
+			 */
+			case ('7') : case ('8') : case ('=') :
+			case ('>') : case ('D') : case ('E') :
+			case ('F') : case ('H') : case ('M') :
+			case ('N') : case ('O') : case ('Z') :
+			case ('l') : case ('m') : case ('n') :
+			case ('o') : case ('|') : case ('}') :
+			case ('~') : case ('c') :
+			{
+				break;		/* Don't do anything */
+			}
+
+			/*
+			 * Swallow up graphics sequences...
+			 */
+			case ('G'):
+			{
+				while ((chr = next_char()) != 0 &&
+					chr != ':')
+					;
+				if (chr == 0)
+					put_back();
+				break;
+			}
+
+			/*
+			 * Not sure what this is, it's not supported by
+			 * rxvt, but its supposed to end with an ESCape.
+			 */
+			case ('P') :
+			{
+				while ((chr = next_char()) != 0 &&
+					chr != 033)
+					;
+				if (chr == 0)
+					put_back();
+				break;
+			}
+
+			/*
+			 * Anything else, we just munch the escape and 
+			 * leave it at that.
+			 */
+			default:
+				put_back();
+				break;
+
+
+			/*
+			 * Strip out Xterm sequences
+			 */
+			case (']') :
+			{
+				while ((chr = next_char()) != 0 && chr != 7)
+					;
+				if (chr == 0)
+					put_back();
+				break;
+			}
+
+			/*
+			 * Now these we're interested in....
+			 * (CSI sequences)
+			 */
+			case ('[') :
+			{
+	/* <<<<<<<<<<<< */
+	/*
+	 * Set up the arguments list
+	 */
+	nargs = 0;
+	args[0] = args[1] = args[2] = args[3] = 0;
+	args[4] = args[5] = args[6] = args[7] = 0;
+	args[8] = args[9] = 0;
+
+	/*
+	 * This stuff was taken/modified/inspired by rxvt.  We do it this 
+	 * way in order to trap an esc sequence that is embedded in another
+	 * (blah).  We're being really really really paranoid doing this, 
+	 * but it is for the best.
+	 */
+
+	/*
+	 * Check to see if the stuff after the command is a "private" 
+	 * modifier.  If it is, then we definitely arent interested.
+	 *   '<' , '=' , '>' , '?'
+	 */
+	chr = this_char();
+	if (chr >= '<' && chr <= '?')
+		next_char();	/* skip it */
+
+
+	/*
+	 * Now pull the arguments off one at a time.  Keep pulling them 
+	 * off until we find a character that is not a number or a semicolon.
+	 * Skip everything else.
+	 */
+	for (nargs = 0; nargs < 10; str++)
+	{
+		n = 0;
+		for (n = 0; isdigit(this_char()); next_char())
+			n = n * 10 + (this_char() - '0');
+
+		args[nargs++] = n;
+
+		/*
+		 * If we run out of code here, then we're totaly confused.
+		 * just back out with whatever we have...
+		 */
+		if (!this_char())
+		{
+			output[pos] = output[pos + 1] = 0;
+			return output;
+		}
+
+		if (this_char() != ';')
+			break;
+	}
+
+	/*
+	 * If we find a new ansi char, start all over from the top 
+	 * and strip it out too
+	 */
+	if (this_char() == 033)
+		continue;
+
+	/*
+	 * Support "spaces" (cursor right) code
+	 */
+	if (this_char() == 'a' || this_char() == 'C')
+	{
+		next_char();
+		if (nargs >= 1)
+		{
+		       /*
+			* Keep this within reality.
+			*/
+			if (args[0] > 256)
+				args[0] = 256;
+
+			/* This is just sanity */
+			if (pos + args[0] > maxpos)
+			{
+				maxpos += args[0]; 
+				RESIZE(output, u_char, maxpos + 64);
+			}
+			while (args[0]-- > 0)
+			{
+				if (nds_max > 0 && nds_cnt > nds_max)
+					break;
+
+				output[pos++] = ND_SPACE;
+				pc++;
+				nds_cnt++;
+			}
+		}
+		break;
+	}
+
+
+	/*
+	 * The 'm' command is the only one that we honor.  
+	 * All others are dumped.
+	 */
+	if (next_char() != 'm')
+		break;
+
+
+	/*
+	 * Walk all of the numeric arguments, plonking the appropriate 
+	 * attribute changes as needed.
+	 */
+	for (i = 0; i < nargs; i++)
+	{
+	    switch (args[i])
+	    {
+		case 0:		/* Reset to default */
+		{
+			a.reverse = a.bold = 0;
+			a.blink = a.underline = 0;
+			a.altchar = 0;
+			a.color_fg = a.color_bg = 0;
+			a.fg_color = a.bg_color = 0;
+			pos += attrout(output + pos, &a);
+			break;
+		}
+		case 1:		/* bold on */
+		{
+			if (bold)
+			{
+				a.bold = 1;
+				pos += attrout(output + pos, &a);
+			}
+			break;
+		}
+		case 2:		/* dim on -- not supported */
+			break;
+		case 4:		/* Underline on */
+		{
+			if (underline)
+			{
+				a.underline = 1;
+				pos += attrout(output + pos, &a);
+			}
+			break;
+		}
+		case 5:		/* Blink on */
+		case 26:	/* Blink on */
+		{
+			if (blink)
+			{
+				a.blink = 1;
+				pos += attrout(output + pos, &a);
+			}
+			break;
+		}
+		case 6:		/* Blink off */
+		case 25:	/* Blink off */
+		{
+			a.blink = 0;
+			pos += attrout(output + pos, &a);
+			break;
+		}
+		case 7:		/* Reverse on */
+		{
+			if (reverse)
+			{
+				a.reverse = 1;
+				pos += attrout(output + pos, &a);
+			}
+			break;
+		}
+		case 21:	/* Bold off */
+		case 22:	/* Bold off */
+		{
+			a.bold = 0;
+			pos += attrout(output + pos, &a);
+			break;
+		}
+		case 24:	/* Underline off */
+		{
+			a.underline = 0;
+			pos += attrout(output + pos, &a);
+			break;
+		}
+		case 27:	/* Reverse off */
+		{
+			a.reverse = 0;
+			pos += attrout(output + pos, &a);
+			break;
+		}
+		case 30: case 31: case 32: case 33: case 34: 
+		case 35: case 36: case 37:	/* Set foreground color */
+		{
+			if (color)
+			{
+				a.color_fg = 1;
+				a.fg_color = args[i] - 30;
+				pos += attrout(output + pos, &a);
+			}
+			break;
+		}
+		case 39:	/* Reset foreground color to default */
+		{
+			if (color)
+			{
+				a.color_fg = 0;
+				a.fg_color = 0;
+				pos += attrout(output + pos, &a);
+			}
+			break;
+		}
+		case 40: case 41: case 42: case 43: case 44: 
+		case 45: case 46: case 47:	/* Set background color */
+		{
+			if (color)
+			{
+				a.color_bg = 1;
+				a.bg_color = args[i] - 40;
+				pos += attrout(output + pos, &a);
+			}
+			break;
+		}
+		case 49:	/* Reset background color to default */
+		{
+			if (color)
+			{
+				a.color_bg = 0;
+				a.bg_color = 0;
+				pos += attrout(output + pos, &a);
+			}
+			break;
+		}
+
+		default:	/* Everything else is not supported */
+			break;
+	    }
+	} /* End of for (handling esc-[...m) */
+	/* >>>>>>>>>>> */
+			} /* End of escape-[ code handling */
+		    } /* End of ESC handling */
+		    break;
+	        } /* End of case 2 handling */
+
+
+	        /*
+	         * Skip over ^C codes, they're already normalized.
+	         * well, thats not totaly true.  We do some mangling
+	         * in order to make it work better
+	         */
+		case 3:
+		{
+			const u_char 	*end;
+
+			put_back();
+			end = read_color_seq(str, (void *)&a);
+
+			/*
+			 * XXX - This is a short-term hack to prevent an 
+			 * infinite loop.  I need to come back and fix
+			 * this the right way in the future.
+			 *
+			 * The infinite loop can happen when a character
+			 * 131 is encountered when eight bit chars is OFF.
+			 * We see a character 3 (131 with the 8th bit off)
+			 * and so we ask skip_ctl_c_seq where the end of 
+			 * that sequence is.  But since it isnt a ^c sequence
+			 * it just shrugs its shoulders and returns the
+			 * pointer as-is.  So we sit asking it where the end
+			 * is and it says "its right here".  So there is a 
+			 * need to check the retval of skip_ctl_c_seq to 
+			 * actually see if there is a sequence here.  If there
+			 * is not, then we just mangle this character.  For
+			 * the record, char 131 is a reverse block, so that
+			 * seems the most appropriate thing to put here.
+			 */
+			if (end == str)
+			{
+				/* Turn on reverse if neccesary */
+				a.reverse = !a.reverse;
+				pos += attrout(output + pos, &a);
+				output[pos++] = ' ';
+				a.reverse = !a.reverse;
+				pos += attrout(output + pos, &a);
+
+				pc++;
+				next_char();	/* Munch it */
+				break;
+			}
+
+			/* Move to the end of the string. */
+			str = end;
+
+			/* Suppress the color if no color is permitted */
+			if (!color)
+			{
+				a.color_fg = a.color_bg = 0;
+				a.fg_color = a.bg_color = 0;
+				break;
+			}
+
+			/* Output the new attributes */
+			pos += attrout(output + pos, &a);
+			break;
+		}
+
+		/*
+		 * State 4 is for the special highlight characters
+		 */
+		case 4:
+		{
+			put_back();
+			switch (this_char())
+			{
+				case REV_TOG:   
+					if (reverse)
+						a.reverse = !a.reverse;
+					break;
+				case BOLD_TOG:  
+					if (bold)
+						a.bold = !a.bold;
+					break;
+				case BLINK_TOG:
+					if (blink)
+						a.blink = !a.blink;
+					break;
+				case UND_TOG:
+					if (underline)
+						a.underline = !a.underline;
+					break;
+				case ALT_TOG:
+					if (altchar)
+						a.altchar = !a.altchar;
+					break;
+				case ALL_OFF:
+					a.reverse = a.bold = a.blink = 0;
+					a.underline = a.altchar = 0;
+					a.color_fg = a.color_bg = 0;
+					a.bg_color = a.fg_color = 0;
+					break;
+				default:
+					break;
+			}
+
+			pos += attrout(output + pos, &a);
+			next_char();
+			break;
+		}
+
+		case 5:
+		{
+			put_back();
+			if (str[0] && str[1] && str[2] && str[3])
+			{
+				u_char	val = 0;
+
+				next_char();
+				val += next_char() - '0';
+				val *= 10;
+				val += next_char() - '0';
+				val *= 10;
+				val += next_char() - '0';
+				output[pos++] = val;
+			}
+			else 
+			{
+				a.reverse = !a.reverse;
+				pos += attrout(output + pos, &a);
+				output[pos++] = 'R';
+				a.reverse = !a.reverse;
+				pos += attrout(output + pos, &a);
+			}
+			pc++;
+			break;
+		}
+
+		case 7:      /* bell */
+		{
+			beep_cnt++;
+			if ((beep_max == -1) || (beep_cnt > beep_max))
+			{
+				a.reverse = !a.reverse;
+				pos += attrout(output + pos, &a);
+				output[pos++] = 'G';
+				a.reverse = !a.reverse;
+				pos += attrout(output + pos, &a);
+				pc++;
+			}
+			else
+				output[pos++] = '\007';
+
+			break;
+		}
+
+		case 8:		/* Tab */
+		{
+			tab_cnt++;
+			if (tab_max < 0 || 
+			    (tab_max > 0 && tab_cnt > tab_max))
+			{
+				a.reverse = !a.reverse;
+				pos += attrout(output + pos, &a);
+				output[pos++] = 'I';
+				a.reverse = !a.reverse;
+				pos += attrout(output + pos, &a);
+				pc++;
+			}
+			else
+			{
+				int	len = 8 - (pc % 8);
+				for (i = 0; i < len; i++)
+				{
+					output[pos++] = ' ';
+					pc++;
+				}
+			}
+			break;
+		}
+
+		case 9:		/* Non-destruct space */
+		{
+			nds_cnt++;
+
+			/*
+			 * Just swallop up any ND's over the max
+			 */
+			if ((nds_max > 0) && (nds_cnt > nds_max))
+				;
+			else
+				output[pos++] = ND_SPACE;
+			break;
+		}
+
+		default:
+		{
+			panic("Unknown normalize_string mode");
+			break;
+		}
+	    } /* End of huge ansi-state switch */
+	} /* End of while, iterating over input string */
+
+	/* Terminate the output and return it. */
+	if (logical == 0)
+	{
+		a.bold = a.underline = a.reverse = a.blink = a.altchar = 0;
+		a.color_fg = a.color_bg = a.fg_color = a.bg_color = 0;
+		pos += attrout(output + pos, &a);
+	}
+	output[pos] = output[pos + 1] = 0;
+	return output;
 }
+
+/* 
+ * XXX I'm not sure where this belongs, but for now it goes here.
+ * This function takes a type-1 normalized string (with the attribute
+ * markers) and converts them back to logical characters.  This is needed
+ * for lastlog and the status line and so forth.
+ */
+u_char *	denormalize_string (const u_char *str)
+{
+	u_char *	output = NULL;
+	size_t		maxpos;
+	Attribute 	a;
+	size_t		span;
+	int		pos;
+
+	/* 
+	 * The output string has a few extra chars on the end just 
+	 * in case you need to tack something else onto it.
+	 */
+	maxpos = strlen(str);
+	output = (u_char *)new_malloc(maxpos + 64);
+	pos = 0;
+
+	while (*str)
+	{
+		if (pos > maxpos)
+		{
+			maxpos += 64; /* Extend 64 chars at a time */
+			RESIZE(output, unsigned char, maxpos + 64);
+		}
+		switch (*str)
+		{
+		    case '\006':
+		    {
+			if (read_attributes(str, &a))
+				continue;		/* Mangled */
+			str += 5;
+
+			span = logic_attributes(output + pos, &a);
+			pos += span;
+			break;
+		    }
+		    default:
+		    {
+			output[pos++] = *str++;
+			break;
+		    }
+		}
+	}
+	output[pos] = 0;
+	return output;
+}
+
 
 
 /*
@@ -467,12 +1520,11 @@ u_char **split_up_line (const unsigned char *str, int max_cols)
  * word to the next line. ($leftpc() depends on this)
  */
 #define SPLIT_EXTENT 40
-unsigned char **prepare_display(const unsigned char *orig_str,
+unsigned char **prepare_display(const unsigned char *str,
                                 int max_cols,
                                 int *lused,
                                 int flags)
 {
-	int	gchar_mode;
 static 	int 	recursion = 0, 
 		output_size = 0;
 	int 	pos = 0,            /* Current position in "buffer" */
@@ -480,16 +1532,8 @@ static 	int 	recursion = 0,
 		word_break = 0,     /* Last end of word             */
 		indent = 0,         /* Start of second word         */
 		firstwb = 0,	    /* Buffer position of second word */
-		beep_cnt = 0,       /* Number of beeps              */
-		beep_max,           /* Maximum number of beeps      */
-		tab_cnt = 0,        /* TAB counter                  */
-		tab_max,            /* Maximum number of tabs       */
-		nds_cnt = 0,
-		nds_max,
 		line = 0,           /* Current pos in "output"      */
-		len, i,             /* Used for counting tabs       */
 		do_indent,          /* Use indent or continued line? */
-		in_rev = 0,         /* Are we in reverse mode?      */
 		newline = 0;        /* Number of newlines           */
 static	u_char 	**output = (unsigned char **)0;
 const 	u_char	*ptr;
@@ -498,31 +1542,20 @@ const 	u_char	*ptr;
 		*cont = empty_string,
 		c,
 		*words,
-		*str,
 		*pos_copy;
+	Attribute	a = {0}, sa;
 
 	if (recursion)
 		panic("prepare_display() called recursively");
 	recursion++;
 
-	gchar_mode = get_int_var(DISPLAY_PC_CHARACTERS_VAR);
-	beep_max = get_int_var(BEEP_VAR)? get_int_var(BEEP_MAX_VAR) : -1;
-	tab_max = get_int_var(TAB_VAR) ? get_int_var(TAB_MAX_VAR) : -1;
-	nds_max = get_int_var(ND_SPACE_MAX_VAR);
 	do_indent = get_int_var(INDENT_VAR);
-	words = get_string_var(WORD_BREAK_VAR);
-
-	if (!words)
+	if (!(words = get_string_var(WORD_BREAK_VAR)))
 		words = ", ";
 	if (!(cont_ptr = get_string_var(CONTINUED_LINE_VAR)))
 		cont_ptr = empty_string;
 
-
 	buffer[0] = 0;
-
-	/* Handle blank or non-existant lines */
-	if (!orig_str || !orig_str[0])
-		orig_str = " ";
 
 	if (!output_size)
 	{
@@ -532,22 +1565,6 @@ const 	u_char	*ptr;
 			output[output_size++] = 0;
 	}
 
-  /*
-   * Before we do anything else, we convert the string to a normalized
-   * string. Until such time as I can do this all properly, this is
-   * the best effort we can make. The ultimate goal is to have the
-   * ANSI stripper / converter split everything into multiple lines,
-   * which will decrease the amount of time spent calculating split
-   * lines. For now though, we simply "normalize" the line before we
-   * start working with it. This will convert ANSI escape sequences
-   * into easy-to-work-with Ctrl-C sequences, or IRCI-II formatting
-   * characters.
-   * The stripper is a separate function for right now to make
-   * debugging easier. This code will be improved, this is proof-of-concept
-   * code only, right now.
-   */
-	str = strip_ansi(orig_str);
-
 	/*
 	 * Start walking through the entire string.
 	 */
@@ -556,65 +1573,8 @@ const 	u_char	*ptr;
 		switch (*ptr)
 		{
 			case '\007':      /* bell */
-			{
-				beep_cnt++;
-				if ((beep_max == -1) || (beep_cnt > beep_max))
-				{
-					if (!in_rev)
-						buffer[pos++] = REV_TOG;
-					buffer[pos++] = (*ptr & 127) | 64;
-					if (!in_rev)
-						buffer[pos++] = REV_TOG;
-					col++;
-				}
-				else
-					buffer[pos++] = *ptr;
-
-				break; /* case '\007' */
-			}
-			case '\011':    /* TAB */
-			{
-				tab_cnt++;
-				if ((tab_max > 0) && (tab_cnt > tab_max))
-				{
-					if (!in_rev)
-						buffer[pos++] = REV_TOG;
-					buffer[pos++] = (*ptr & 0x7f) | 64;
-					if (!in_rev)
-						buffer[pos++] = REV_TOG;
-					col++;
-				}
-				else
-				{
-					if (indent == 0)
-						indent = -1;
-					word_break = pos;
-
-				/* Only go as far as the edge of the screen */
-					len = 8 - (col % 8);
-					for (i = 0; i < len; i++)
-					{
-						buffer[pos++] = ' ';
-						if (col++ >= max_cols)
-							break;
-					}
-				}
-				break; /* case '\011' */
-			}
-			case ND_SPACE:
-			{
-				nds_cnt++;
-
-				/*
-				 * Just swallop up any ND's over the max
-				 */
-				if ((nds_max > 0) && (nds_cnt > nds_max))
-					;
-				else
-					buffer[pos++] = ND_SPACE;
-				col++;	/* This takes up a column! */
+				buffer[pos++] = *ptr;
 				break;
-			}
 
 			case '\n':      /* Forced newline */
 			{
@@ -624,78 +1584,49 @@ const 	u_char	*ptr;
 				word_break = pos;
 				break; /* case '\n' */
 			}
-			case '\003':
-			{
-				int lhs = 0, rhs = 0;
-				const u_char *end = skip_ctl_c_seq(ptr, &lhs, &rhs);
-				while (ptr < end)
-					buffer[pos++] = *ptr++;
-				ptr = end - 1;
-				break; /* case '\003' */
-			}
-			case ROM_CHAR:
-			{
-				/*
-				 * Copy the \r and the first three digits that
-				 * are after it.  Careful!  There may not be
-				 * three digits after it!  If there arent 3
-				 * chars, we fake it with zeros.  This is the
-				 * wrong thing, but its better than crashing.
-				 */
-				buffer[pos++] = *ptr++;  /* Copy the \R ...  */
-				if (*ptr)
-					buffer[pos++] = *ptr++;
-				else
-					buffer[pos++] = '0';
-				if (*ptr)
-					buffer[pos++] = *ptr++;
-				else
-					buffer[pos++] = '0';
-				if (*ptr)
-					buffer[pos++] = *ptr;
-				else
-					buffer[pos++] = '0';
 
-				col++;   /* This is a printable   */
-				break; /* case ROM_CHAR */
-			}
-
-			case UND_TOG:
-			case ALL_OFF:
-			case REV_TOG:
-			case BOLD_TOG:
-			case BLINK_TOG:
-			case ALT_TOG:
-			{
-				buffer[pos++] = *ptr;
-				if (*ptr == ALL_OFF)
-					in_rev = 0;
-				else if (*ptr == REV_TOG)
-					in_rev = !in_rev;
-				break;
-			}
+                        /* Attribute changes -- copy them unmodified. */
+                        case '\006':
+                        {
+                                if (read_attributes(ptr, &a) == 0)
+                                {
+                                        buffer[pos++] = *ptr++;
+                                        buffer[pos++] = *ptr++;
+                                        buffer[pos++] = *ptr++;
+                                        buffer[pos++] = *ptr++;
+                                        buffer[pos++] = *ptr;
+                                }
+                                else
+                                        abort();
+                                continue;          /* Skip the column check */
+                        }
 
 			default:
 			{
-				if (*ptr == ' ' || strchr(words, *ptr))
-				{
-					if (indent == 0)
-					{
-						indent = -1;
-						firstwb = pos;
-					}
-					word_break = pos;
-					if (*ptr != ' ' && ptr[1] &&
-					    (col + 1 < max_cols))
-						word_break++;
-					buffer[pos++] = *ptr;
-				}
-				else
+				if (!strchr(words, *ptr))
 				{
 					if (indent == -1)
 						indent = col;
 					buffer[pos++] = *ptr;
+					col++;
+					break;
 				}
+				/* FALLTHROUGH */
+			}
+
+			case ' ':
+			case ND_SPACE:
+			{
+				if (indent == 0)
+				{
+					indent = -1;
+					firstwb = pos;
+				}
+				word_break = pos;
+				if (*ptr != ' ' && ptr[1] &&
+				    (col + 1 < max_cols))
+					word_break++;
+				buffer[pos++] = *ptr;
 				col++;
 				break;
 			}
@@ -926,11 +1857,481 @@ const 	u_char	*ptr;
 	recursion--;
 	new_free(&output[line]);
 	*lused = line - 1;
-	new_free(&str);
 	return output;
 }
 
+/*
+ * rite: This is the primary display wrapper to the 'output_with_count'
+ * function.  This function is called whenever a line of text is to be
+ * displayed to an irc window.  It is assumed that the cursor has been
+ * placed in the appropriate position before this function is called.
+ *
+ * This function will "scroll" the target window.  Note that "scrolling"
+ * is both a logical and physical act.  The window needs to be told that
+ * a line is going to be output, and so it needs to be able to adjust its
+ * top_of_display pointer; the hardware terminal also needs to be scrolled
+ * so that there is room to put the new text.  scroll_window() handles both
+ * of these tasks for us.
+ *
+ * output_with_count() actually calls putchar_x() for each character in
+ * the string, doing the physical output.  It also emits any attribute
+ * markers that are in the string.  It does do a clear-to-line, but it does
+ * NOT move the cursor away from the end of the line.  We do that after it
+ * has returned.
+ *
+ * This function is used by both irciiwin_display, and irciiwin_repaint.
+ * Dont ever 'fold' it in anywhere.
+ *
+ * The arguments:
+ *	window		- The target window for the output
+ *	str		- What is to be outputted
+ */
+static int 	rite (Window *window, const unsigned char *str)
+{
+	output_screen = window->screen;
+	scroll_window(window);
 
+	if (window->visible && foreground && window->display_size)
+	{
+		output_with_count(str, 1, 1);
+		term_cr();
+		term_newline();
+	}
+
+	window->cursor++;
+	return 0;
+}
+
+/*
+ * This is the main physical output routine.  In its most obvious
+ * use, 'cleareol' and 'output' is 1, and it outputs 'str' to the main
+ * display (controlled by output_screen), outputting any attribute markers
+ * that it finds along the way.  The return value is the number of physical
+ * printable characters output.  However, if 'output' is 0, then no actual
+ * output is performed, but the counting still takes place.  If 'clreol'
+ * is 0, then the rest of the line is not cleared after 'str' has been
+ * completely output.  If 'output' is 0, then clreol is ignored.
+ */
+int 	output_with_count (const unsigned char *str1, int clreol, int output)
+{
+	int 		beep = 0, 
+			out = 0;
+	Attribute	a;
+	const unsigned char *str;
+
+	for (str = str1; str && *str; str++)
+	{
+		switch (*str)
+		{
+			/* Attribute marker */
+			case '\006':
+			{
+				if (read_attributes(str, &a))
+					break;
+				if (output)
+					term_attribute(&a);
+				str += 4;
+				break;
+			}
+
+			/* Terminal beep */
+			case '\007':
+			{
+				beep++;
+				break;
+			}
+
+			/* Dont ask */
+			case '\f':
+			{
+				if (output)
+				{
+					a.reverse = !a.reverse;
+					term_attribute(&a);
+					putchar_x('f');
+					a.reverse = !a.reverse;
+					term_attribute(&a);
+				}
+				out++;
+				break;
+			}
+
+			/* Non-destructive space */
+			case ND_SPACE:
+			{
+				if (output)
+					term_cursor_right();
+				out++;		/* Ooops */
+				break;
+			}
+
+			/* Any other printable character */
+			default:
+			{
+				/*
+				 * Note that 'putchar_x()' is safe here
+				 * because normalize_string() has already 
+				 * removed all of the nasty stuff that could 
+				 * end up getting here.  And for those things
+				 * that are nasty that get here, its probably
+				 * because the user specifically asked for it.
+				 */
+				if (output)
+					putchar_x(*str);
+				out++;
+				break;
+			}
+		}
+	}
+
+	if (output)
+	{
+		if (beep)
+			term_beep();
+		if (clreol)
+			term_clear_to_eol();
+	}
+
+	return out;
+}
+
+
+/*
+ * add_to_screen: This adds the given null terminated buffer to the screen.
+ * That is, it routes the line to the appropriate window.  It also handles
+ * /redirect handling.
+ */
+void 	add_to_screen (const unsigned char *buffer)
+{
+	Window *tmp = NULL;
+
+	/*
+	 * Just paranoia.
+	 */
+	if (!current_window)
+	{
+		puts(buffer);
+		return;
+	}
+
+	if (dumb_mode)
+	{
+		add_to_lastlog(current_window, buffer);
+		if (do_hook(WINDOW_LIST, "%u %s", current_window->refnum, buffer))
+			puts(buffer);
+		fflush(stdout);
+		return;
+	}
+
+	if (in_window_command)
+	{
+		in_window_command = 0;	/* Inhibit looping! */
+		update_all_windows();
+		in_window_command = 1;
+	}
+
+	/*
+	 * The highest priority is if we have explicitly stated what
+	 * window we want this output to go to.
+	 */
+	if (to_window)
+	{
+		add_to_window(to_window, buffer);
+		return;
+	}
+
+	/*
+	 * The next priority is "LOG_CURRENT" which is the "default"
+	 * level for all non-routed output.  That is meant to ensure that
+	 * any extraneous error messages goes to a window where the user
+	 * will see it.  All specific output (e.g. incoming server stuff) 
+	 * is routed through one of the LOG_* levels, which is handled
+	 * below.
+	 */
+	else 
+	if (who_level == LOG_CURRENT && current_window->server == from_server)
+	{
+		add_to_window(current_window, buffer);
+		return;
+	}
+
+	/*
+	 * Next priority is if the output is targeted at a certain
+	 * user or channel (used for /window bind or /window nick targets)
+	 */
+	else if (who_from)
+	{
+		tmp = NULL;
+		while (traverse_all_windows(&tmp))
+		{
+			/*
+			 * Check for /WINDOW CHANNELs that apply.
+			 * (Any current channel will do)
+			 */
+			if (tmp->current_channel &&
+				!my_stricmp(who_from, tmp->current_channel))
+			{
+				if (tmp->server == from_server)
+				{
+					add_to_window(tmp, buffer);
+					return;
+				}
+			}
+
+			/*
+			 * Check for /WINDOW QUERYs that apply.
+			 */
+			if (tmp->query_nick &&
+			   ( ((who_level == LOG_MSG || who_level == LOG_NOTICE
+			    || who_level == LOG_DCC || who_level == LOG_CTCP
+			    || who_level == LOG_ACTION)
+				&& !my_stricmp(who_from, tmp->query_nick)
+				&& from_server == tmp->server)
+			  || ((who_level == LOG_DCC || who_level == LOG_CTCP
+			    || who_level == LOG_ACTION)
+				&& *tmp->query_nick == '='
+				&& !my_stricmp(who_from, tmp->query_nick + 1))
+			  || ((who_level == LOG_DCC || who_level == LOG_CTCP
+			    || who_level == LOG_ACTION)
+				&& *tmp->query_nick == '='
+				&& !my_stricmp(who_from, tmp->query_nick))))
+			{
+				add_to_window(tmp, buffer);
+				return;
+			}
+		}
+
+		tmp = NULL;
+		while (traverse_all_windows(&tmp))
+		{
+			/*
+			 * Check for /WINDOW NICKs that apply
+			 */
+			if (from_server == tmp->server)
+			{
+				if (find_in_list((List **)&(tmp->nicks), 
+					who_from, !USE_WILDCARDS))
+				{
+					add_to_window(tmp, buffer);
+					return;
+				}
+			}
+		}
+
+		/*
+		 * we'd better check to see if this should go to a
+		 * specific window (i dont agree with this, though)
+		 */
+		if (from_server != -1 && is_channel(who_from))
+		{
+			if ((tmp = get_channel_window(who_from, from_server)))
+			{
+				add_to_window(tmp, buffer);
+				return;
+			}
+		}
+	}
+
+	/*
+	 * Check to see if this level should go to current window
+	 */
+	if ((current_window_level & who_level) && 
+		current_window->server == from_server)
+	{
+		add_to_window(current_window, buffer);
+		return;
+	}
+
+	/*
+	 * Check to see if any window can claim this level
+	 */
+	tmp = NULL;
+	while (traverse_all_windows(&tmp))
+	{
+		/*
+		 * Check for /WINDOW LEVELs that apply
+		 */
+		if (((from_server == tmp->server) || (from_server == -1)) &&
+		    (who_level & tmp->window_level))
+		{
+			add_to_window(tmp, buffer);
+			return;
+		}
+	}
+
+	/*
+	 * If all else fails, if the current window is connected to the
+	 * given server, use the current window.
+	 */
+	if (from_server == current_window->server)
+	{
+		add_to_window(current_window, buffer);
+		return;
+	}
+
+	/*
+	 * And if that fails, look for ANY window that is bound to the
+	 * given server (this never fails if we're connected.)
+	 */
+	tmp = NULL;
+	while (traverse_all_windows(&tmp))
+	{
+		if (tmp->server == from_server)
+		{
+			add_to_window(tmp, buffer);
+			return;
+		}
+	}
+
+	/*
+	 * No window found for a server is usually because we're
+	 * disconnected or not yet connected.
+	 */
+	add_to_window(current_window, buffer);
+	return;
+}
+
+/*
+ * add_to_window: Given a window and a line to display, this handles all
+ * of the window-level stuff like the logfile, the lastlog, splitting
+ * the line up into rows, adding it to the display (scrollback) buffer, and
+ * if we're invisible and the user wants notification, we handle that too.
+ *
+ * add_to_display_list() handles the *composure* of the buffer that backs the
+ * screen, handling HOLD_MODE, trimming the scrollback buffer if it gets too
+ * big, scrolling the window and moving the top_of_window pointer as neccesary.
+ * It also tells us if we should display to the screen or not.
+ *
+ * rite() handles the *appearance* of the display, writing to the screen as
+ * neccesary.
+ */
+void 	add_to_window (Window *window, const unsigned char *str)
+{
+	int	must_free = 0;
+	char *	pend;
+	char *	strval;
+
+	if (window->server >= 0 && get_server_redirect(window->server))
+		if (redirect_text(window->server, 
+			        get_server_redirect(window->server),
+				str, NULL, 0))
+			return;
+
+	if (!do_hook(WINDOW_LIST, "%u %s", window->refnum, str))
+		return;
+
+	if ((pend = get_string_var(OUTPUT_REWRITE_VAR)))
+	{
+		char	*prepend_exp;
+		char	argstuff[10240];
+		int	args_flag;
+
+		/* First, create the $* list for the expando */
+		snprintf(argstuff, 10240, "%u %s", 
+				window->refnum, str);
+
+		/* Now expand the expando with the above $* */
+		prepend_exp = expand_alias(pend, argstuff,
+					   &args_flag, NULL);
+
+		str = prepend_exp;
+		must_free = 1;
+	}
+
+	/* Normalize the line of output */
+	strval = normalize_string(str, 0);
+
+	/* Pass it off to the window */
+	window_disp(window, strval);
+	new_free(&strval);
+
+	/*
+	 * This used to be in rite(), but since rite() is a general
+	 * purpose function, and this stuff really is only intended
+	 * to hook on "new" output, it really makes more sense to do
+	 * this here.  This also avoids the terrible problem of 
+	 * recursive calls to split_up_line, which are bad.
+	 */
+	if (!window->visible)
+	{
+		/*
+		 * This is for archon -- he wanted a way to have 
+		 * a hidden window always beep, even if BEEP is off.
+		 * XXX -- str has already been freed here! ACK!
+		 */
+		if (window->beep_always && strchr(str, '\007'))
+		{
+			Window *old_to_window;
+			term_beep();
+			old_to_window = to_window;
+			to_window = current_window;
+			say("Beep in window %d", window->refnum);
+			to_window = old_to_window;
+		}
+
+		/*
+		 * Tell some visible window about our problems 
+		 * if the user wants us to.
+		 */
+		if (!(window->miscflags & WINDOW_NOTIFIED) &&
+			who_level & window->notify_level)
+		{
+			window->miscflags |= WINDOW_NOTIFIED;
+			if (window->miscflags & WINDOW_NOTIFY)
+			{
+				Window	*old_to_window;
+				int	lastlog_level;
+
+				lastlog_level = set_lastlog_msg_level(LOG_CRAP);
+				old_to_window = to_window;
+				to_window = current_window;
+				say("Activity in window %d", 
+					window->refnum);
+				to_window = old_to_window;
+				set_lastlog_msg_level(lastlog_level);
+			}
+			update_all_status();
+		}
+	}
+	if (must_free)
+		new_free(&str);
+
+	cursor_in_display(window);
+}
+
+/*
+ * The mid-level shim for output to all ircII type windows.
+ *
+ * By this point, the logical line 'str' is in the state it is going to be
+ * put onto the screen.  We need to put it in our lastlog [XXX Should that
+ * be done by the front end?] and process it through the display chopper
+ * (prepare_display) which slices and dices the logical line into manageable
+ * chunks, suitable for putting onto the display.  We then call our back end
+ * function to do the actual physical output.
+ */
+void    window_disp (Window *window, const unsigned char *str)
+{
+        u_char **       lines;
+        int             cols;
+	int		numl;
+
+	add_to_log(window->log_fp, window->refnum, str);
+	add_to_lastlog(window, str);
+
+	if (window->screen)
+		cols = window->screen->co - 1;	/* XXX HERE XXX */
+	else
+		cols = window->columns - 1;
+
+	/* Suppress status updates while we're outputting. */
+        for (lines = prepare_display(str, cols, &numl, 0); *lines; lines++)
+	{
+		if (add_to_display_list(window, *lines))
+			rite(window, *lines);
+	}
+	term_flush();
+	cursor_to_input();
+}
 
 /*
  * This puts the given string into a scratch window.  It ALWAYS suppresses
@@ -1059,11 +2460,12 @@ static	int	add_to_scratch_window_display_list (Window *window, const unsigned ch
 	 */
 	if (window->visible)
 	{
+		window->cursor = window->scratch_line;
 		window->screen->cursor_window = window;
 		term_move_cursor(0, window->top + window->cursor);
 		term_clear_to_eol();
-		output_line(str);
-		display_standout(OFF);
+		output_with_count(str, 1, 1);
+		term_all_off();
 		if (window->noscroll)
 		{
 		    term_move_cursor(0, window->top + window->scratch_line);
@@ -1071,6 +2473,9 @@ static	int	add_to_scratch_window_display_list (Window *window, const unsigned ch
 		}
 	}
 
+	window->scratch_line++;
+	if (window->scratch_line >= window->display_size)
+		window->scratch_line = 0;	/* Just go back to top */
 	window->cursor = window->scratch_line;
 	return 0;		/* Express a failure */
 }
@@ -1145,379 +2550,6 @@ static int 	add_to_display_list (Window *window, const unsigned char *str)
 	return 1;
 }
 
-
-/*
- * rite: this routine drives the system dependant way to get output to
- * the screen. If output to the specified window is impossible then
- * it will silently return.  What it does do is make sure that the line
- * goes to the correct screen and window, that the cursor is in a useful
- * place, scrolling if neccesary (scroll_window() handles this), before 
- * finally handing off the line to output_line() to be output.
- *
- * The arguments:
- *	window		- The target window for the output
- *	str		- What is to be outputted
- *
- * Note that rite sets display_standout() to what it was at then end of the
- * last rite().  Also, before returning, it sets display_standout() to OFF.
- * This way, between susequent rites(), you can be assured that the state of
- * bold face will remain the same and the it won't interfere with anything
- * else (i.e. status line, input line). 
- */
-static int 	rite (Window *window, const unsigned char *str)
-{
-static	int	high = OFF;
-static	int	bold = OFF;
-static	int	undl = OFF;
-static	int	blink = OFF;
-static	int	altc = OFF;
-
-	output_screen = window->screen;
-	scroll_window(window);
-
-	if (window->visible && foreground && window->display_size)
-	{
-		display_standout(high);
-		display_bold(bold);
-		display_blink(blink);
-		display_underline(undl);
-		display_altcharset(altc);
-		tputs_x(replace_color(-2, -2));		/* Reinstate color */
-
-		output_line(str);
-
-		high = display_standout(OFF);
-		bold = display_bold(OFF);
-		undl = display_underline(OFF);
-		blink = display_blink(OFF);
-		altc = display_altcharset(OFF);
-
-		term_cr();
-		term_newline();
-	}
-
-	window->cursor++;
-	return 0;
-}
-
-/*
- * A temporary wrapper function for backwards compatibility.
- */
-int	output_line (const unsigned char *str)
-{
-	output_with_count(str,1, 1);
-	return 0;
-}
-
-/*
- * NOTE: When we output colors, we explicitly turn off bold and reverse,
- * as they can affect the display of the colors. We turn them back on
- * afterwards, though. We dont need to worry about blinking or underline
- * as they dont affect the colors. But reverse and bold do, so we need to
- * make sure that the color sequence has preference, rather than the previous
- * IRC-II formatting colors.
- *
- * OKAY ... just how pedantic do you wanna get? We have a problem with
- * colorization, and its mostly to do with how ANSI is interpreted by
- * different systems. Both Linux and SCO consoles do the right thing,
- * but termcap lacks the ability to turn off blinking and underline
- * as individual sequences, so the "normal" sequence is sent. This causes
- * things such as reverse video, bold, underline, blinking etc to be turned
- * off. So, we have to keep track of our current set of attributes always.
- * Yes, this adds a little bit of processing to the loop, but this has already
- * been optimized to be faster than the previous mechanism, and the cycles
- * are so few, it hardly matters. I think it is more important to get the
- * correct rendering of colors than to get just one more nanosecond of
- * display speed.
- */
-int 	output_with_count(const unsigned char *str, int clreol, int output)
-{
-const 	u_char 	*ptr = str;
-	int 	beep = 0, 
-		out = 0;
-	int 	val1, 
-		val2;
-	char 	old_bold = 0, 
-		old_rev = 0, 
-		old_blink = 0, 
-		old_undl = 0, 
-		old_altc = 0,
-		in_color = 0;
-
-	if (output)
-	{
-		old_bold  = display_bold(999);
-		old_rev   = display_standout(999);
-		old_blink = display_blink(999);
-		old_undl  = display_underline(999);
-		old_altc  = display_altcharset(999);
-		in_color  = display_color(999, 999);
-	}
-
-	while (ptr && *ptr)
-	{
-	    switch (*ptr)
-	    {
-		case REV_TOG:
-		{
-			if (output)
-			{
-				display_standout(TOGGLE);
-				if (!in_color)
-				{
-					if (!(old_rev = !old_rev))
-					{
-						if (old_bold)
-							term_bold_on();
-						if (old_blink)
-							term_blink_on();
-						if (old_undl)
-							term_underline_on();
-						if (old_altc)
-							term_altcharset_on();
-					}
-				}
-			}
-			break;
-		}
-		case UND_TOG:
-		{
-			if (output)
-			{
-				display_underline(TOGGLE);
-				if (!in_color)
-				{
-					if (!(old_undl = !old_undl))
-					{
-						if (old_bold)
-							term_bold_on();
-						if (old_blink)
-							term_blink_on();
-						if (old_rev)
-							term_standout_on();
-						if (old_altc)
-							term_altcharset_on();
-					}
-				}
-			}
-			break;
-		}
-		case BOLD_TOG:
-		{
-			if (output)
-			{
-				display_bold(TOGGLE);
-				if (!in_color)
-				{
-					if (!(old_bold = !old_bold))
-					{
-						if (old_undl)
-							term_underline_on();
-						if (old_blink)
-							term_blink_on();
-						if (old_rev)
-							term_standout_on();
-						if (old_altc)
-							term_altcharset_on();
-					}
-				}
-			}
-			break;
-		}
-		case BLINK_TOG:
-		{
-			if (output)
-			{
-				display_blink(TOGGLE);
-				if (!in_color)
-				{
-					if (!(old_blink = !old_blink))
-					{
-						if (old_undl)
-							term_underline_on();
-						if (old_bold)
-							term_bold_on();
-						if (old_rev)
-							term_standout_on();
-						if (old_altc)
-							term_altcharset_on();
-					}
-				}
-			}
-			break;
-		}
-		case ALT_TOG:
-		{
-			if (output)
-			{
-				display_altcharset(TOGGLE);
-				if (!in_color)
-				{
-					if (!(old_altc = !old_altc))
-					{
-						if (old_undl)
-							term_underline_on();
-						if (old_bold)
-							term_bold_on();
-						if (old_rev)
-							term_standout_on();
-						if (old_blink)
-							term_blink_on();
-					}
-				}
-			}
-			break;
-		}
-		case ALL_OFF:
-		{
-			if (output)
-			{
-				display_underline(OFF);
-				display_bold(OFF);
-				display_standout(OFF);
-				display_blink(OFF);
-				display_altcharset(OFF);
-				display_color(-1,-1);
-				in_color = 0;
-				old_bold = old_rev = old_blink = old_undl = 0;
-				old_altc = 0;
-				if (!ptr[1])
-					display_normal();
-			}
-			break;
-		}
-		case '\007':
-		{
-			beep++;
-			break;
-		}
-		/* Dont ask */
-		case '\f':
-		{
-			if (output)
-			{
-				display_standout(TOGGLE);
-				putchar_x('f');
-				display_standout(TOGGLE);
-			}
-			out++;
-			break;
-		}
-		case ROM_CHAR:
-		{
-			/* Sanity... */
-			if (!ptr[1] || !ptr[2] || !ptr[3])
-				break;
-
-			val1 = ((ptr[1] -'0') * 100) + 
-				((ptr[2] -'0') * 10) + 
-				 (ptr[3] - '0');
-
-			if (output)
-				term_putgchar(val1);
-
-			ptr += 3;
-			out++;
-			break;
-		}
-		case '\003':
-		{
-			/*
-			 * By the time we get here, we know we need to 
-			 * display these as colors, and they have been 
-			 * conveniently "rationalized" for us to provide 
-			 * for easy color insertion.
-			 */
-			val1 = val2 = -1;
-			ptr = skip_ctl_c_seq(ptr, &val1, &val2);
-			if (output)
-			{
-				if ((val1 > -1) || (val2 > -1))
-				{
-					in_color = 1;
-					term_standout_off();
-				}
-
-				if (display_bold(999) && 
-						(val1 >= 30 && val1 <= 37))
-					val1 += 20;
-				if (display_blink(999) && 
-						(val2 >= 40 && val2 <= 47))
-					val2 += 10;
-
-				display_color (val1, val2);
-
-				if ((val1 == -1) && (val2 == -1))
-				{
-					/* Eat flaming death! */
-					display_normal();
-#if 0	/* Isnt this more correct? */
-					if (display_bold(999))
-						term_bold_on();
-					if (display_standout(999))
-						term_standout_on();
-					if (display_blink(999))
-						term_blink_on();
-					if (display_underline(999))
-						term_underline_on();
-#else
-					if (old_bold == ON)
-						term_bold_on();
-					if (old_rev == ON)
-						term_standout_on();
-					if (old_blink == ON)
-						term_blink_on();
-					if (old_undl == ON)
-						term_underline_on();
-					if (old_altc == ON)
-						term_altcharset_on();
-#endif
-					in_color = 0;
-				}
-			}
-			ptr--;
-			break;
-		}
-		case ND_SPACE:
-		{
-			term_right(1);
-			out++;		/* Ooops */
-			break;
-		}
-		default:
-		{
-		/*
-		 * JKJ TESTME: here I believe it is safe to use putchar_x,
-		 * which is MUCH faster than all the weird processing in
-		 * term_putchar. The reason for this is we can safely
-		 * assume that the stripper has handled control sequences
-		 * correctly before we ever get to this point.
-		 * term_putchar() can still be left there, for other places
-		 * that may want to call it, but at this level, I do not
-		 * see any benefit of using it. using putchar_x makes things
-		 * a LOT faster, as we have already done the processing once
-		 * to make output "terminal friendly".
-		 */
-			if (output)
-				putchar_x(*ptr);
-			out++;
-		}
-	    }
-	    ptr++;
-	}
-
-	if (output)
-	{
-		if (beep)
-			term_beep();
-		if (clreol)
-			term_clear_to_eol();
-	}
-
-	return out;
-}
-
-
 /*
  * scroll_window: Given a window, this is responsible for making sure that
  * the cursor is placed onto the "next" line.  If the window is full, then
@@ -1580,78 +2612,6 @@ static void 	scroll_window (Window *window)
 		term_clear_to_eol();
 	}
 }
-
-#define ATTRIBUTE_HANDLER(x, y)					\
-static	char	display_ ## x (int flag)			\
-{								\
-	static	int	what	= OFF;				\
-								\
-	if (flag == 999)					\
-		return (what);					\
-	if (flag == what)					\
-		return flag;					\
-								\
-	switch (flag)						\
-	{							\
-		case ON:					\
-		{						\
-			what = ON;				\
-			term_ ## x ## _on();			\
-			return OFF;				\
-		}						\
-		case OFF:					\
-		{						\
-			what = OFF;				\
-			term_ ## x ## _off();			\
-			return ON;				\
-		}						\
-		case TOGGLE:					\
-		{						\
-			if (what == ON)				\
-			{					\
-				what = OFF;			\
-				term_ ## x ## _off();		\
-				return ON;			\
-			}					\
-			else					\
-			{					\
-				what = ON;			\
-				term_ ## x ## _on();		\
-				return OFF;			\
-			}					\
-		}						\
-	}							\
-	return OFF;						\
-}
-
-ATTRIBUTE_HANDLER(underline, UNDERLINE_VIDEO_VAR)
-ATTRIBUTE_HANDLER(bold, BOLD_VIDEO_VAR)
-ATTRIBUTE_HANDLER(blink, BLINK_VIDEO_VAR)
-ATTRIBUTE_HANDLER(standout, INVERSE_VIDEO_VAR)
-ATTRIBUTE_HANDLER(altcharset, ALT_CHARSET_VAR)
-
-static	void	display_normal (void)
-{
-	tputs_x(current_term->TI_sgrstrs[TERM_SGR_NORMAL-1]);
-}
-
-static int	display_color (long color1, long color2)
-{
-	static	int	doing_color = 0;
-
-	if ((color1 == 999) && (color2 == 999))
-		return doing_color;
-
-	if ((color1 == -1) && (color2 == -1))
-		doing_color = 0;
-	else
-		doing_color = 1;
-
-	tputs_x(replace_color(color1, color2));
-	return doing_color;
-}
-
-
 
 /* * * * * CURSORS * * * * * */
 /*
@@ -2464,840 +3424,3 @@ const 	u_char 	*after = start;
 	return after;
 }
 
-/*
- * Used as a translation table when we cant display graphics characters
- * or we have been told to do translation.  A no-brainer, with little attempt
- * at being smart.
- * (JKJ: perhaps we should allow a user to /set this?)
- */
-static	u_char	gcxlate[256] = {
-  '*', '*', '*', '*', '*', '*', '*', '*',
-  '#', '*', '#', '*', '*', '*', '*', '*',
-  '>', '<', '|', '!', '|', '$', '_', '|',
-  '^', 'v', '>', '<', '*', '=', '^', 'v',
-  ' ', '!', '"', '#', '$', '%', '&', '\'',
-  '(', ')', '*', '+', ',', '_', '.', '/',
-  '0', '1', '2', '3', '4', '5', '6', '7',
-  '8', '9', ':', ';', '<', '=', '>', '?',
-  '@', 'A', 'B', 'C', 'D', 'E', 'F', 'G',
-  'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O',
-  'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W',
-  'Z', 'Y', 'X', '[', '\\', ']', '^', '_',
-  '`', 'a', 'b', 'c', 'd', 'e', 'f', 'g',
-  'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o',
-  'p', 'q', 'r', 's', 't', 'u', 'v', 'w',
-  'x', 'y', 'z', '{', '|', '}', '~', '?',
-  'C', 'u', 'e', 'a', 'a', 'a', 'a', 'c',
-  'e', 'e', 'e', 'i', 'i', 'i', 'A', 'A',
-  'e', 'e', 'e', 'o', 'o', 'o', 'u', 'u',
-  'y', 'O', 'U', 'C', '#', 'Y', 'P', 'f',
-  'a', 'i', 'o', 'u', 'n', 'N', '^', '^',
-  '?', '<', '>', '2', '4', '!', '<', '>',
-  '#', '#', '#', '|', '|', '|', '|', '+',
-  '+', '+', '+', '|', '+', '+', '+', '+',
-  '+', '+', '+', '+', '-', '+', '+', '+',
-  '+', '+', '+', '+', '+', '=', '+', '+',
-  '+', '+', '+', '+', '+', '+', '+', '+',
-  '+', '+', '+', '#', '-', '|', '|', '-',
-  'a', 'b', 'P', 'p', 'Z', 'o', 'u', 't',
-  '#', 'O', '0', 'O', '-', 'o', 'e', 'U',
-  '*', '+', '>', '<', '|', '|', '/', '=',
-  '*', '*', '*', '*', 'n', '2', '*', '*'
-};
-
-/*
- * State 0 is "normal, printable character"
- * State 1 is "nonprintable character"
- * State 2 is "Escape character" (033)
- * State 3 is "Color code" (003)
- * State 4 is "Special highlight character"
- * State 5 is "ROM character" (022)
- * State 6 is "Nonprintable character that must never be printed"
- */
-static	u_char	ansi_state[256] = {
-/*	^@	^A	^B	^C	^D	^E	^F	^G */
-	6,	6,	4,	3,	6,	4,	4,	4,  /* 000 */
-/*	^H	^I	^J	^K	^L	^M	^N	^O */
-	6,	4,	4,	6,	0,	6,	6,	4,  /* 010 */
-/*	^P	^Q	^R	^S	^T	^U	^V	^W */
-	6,	6,	5,	4,	4,	6,	4,	6,  /* 020 */
-/*	^X	^Y	^Z	^[	^\	^]	^^	^_ */
-	6,	6,	6,	2,	6,	6,	6,	4,  /* 030 */
-	0,	0,	0,	0,	0,	0,	0,	0,  /* 040 */
-	0,	0,	0,	0,	0,	0,	0,	0,  /* 050 */
-	0,	0,	0,	0,	0,	0,	0,	0,  /* 060 */
-	0,	0,	0,	0,	0,	0,	0,	0,  /* 070 */
-	0,	0,	0,	0,	0,	0,	0,	0,  /* 100 */
-	0,	0,	0,	0,	0,	0,	0,	0,  /* 110 */
-	0,	0,	0,	0,	0,	0,	0,	0,  /* 120 */
-	0,	0,	0,	0,	0,	0,	0,	0,  /* 130 */
-	0,	0,	0,	0,	0,	0,	0,	0,  /* 140 */
-	0,	0,	0,	0,	0,	0,	0,	0,  /* 150 */
-	0,	0,	0,	0,	0,	0,	0,	0,  /* 160 */
-	0,	0,	0,	0,	0,	0,	0,	0,  /* 170 */
-	1,	1,	1,	1,	1,	1,	1,	1,  /* 200 */
-	1,	1,	1,	1,	1,	1,	1,	1,  /* 210 */
-	1,	1,	1,	1,	1,	1,	1,	1,  /* 220 */
-	1,	1,	1,	1,	1,	1,	1,	1,  /* 230 */
-	1,	1,	1,	1,	1,	1,	1,	1,  /* 240 */
-	1,	1,	1,	1,	1,	1,	1,	1,  /* 250 */
-	1,	1,	1,	1,	1,	1,	1,	1,  /* 260 */
-	1,	1,	1,	1,	1,	1,	1,	1,  /* 270 */
-	1,	1,	1,	1,	1,	1,	1,	1,  /* 300 */
-	1,	1,	1,	1,	1,	1,	1,	1,  /* 310 */
-	1,	1,	1,	1,	1,	1,	1,	1,  /* 320 */
-	1,	1,	1,	1,	1,	1,	1,	1,  /* 330 */
-	1,	1,	1,	1,	1,	1,	1,	1,  /* 340 */
-	1,	1,	1,	1,	1,	1,	1,	1,  /* 350 */
-	1,	1,	1,	1,	1,	1,	1,	1,  /* 360 */
-	1,	1,	1,	1,	1,	1,	1,	1   /* 370 */
-};
-
-/*
- * This started off as a general ansi parser, and it worked for stuff that
- * was going out to the display, but it couldnt deal properly with ansi codes,
- * and so when i tried to use it for the status bar, it just all fell to 
- * pieces.  After working it over, i came up with this.  What this does is,
- * (believe it or not) walk through and strip out all the ansi codes in the
- * target string.  Any codes that we recognize as being safe (pretty much
- * just ^[[<number-list>m), are converted back into their logical characters
- * (eg, ^B, ^R, ^_, etc), and everything else is completely blown away.
- */
-
-/*
- * These macros help keep 8 bit chars from sneaking into the output stream
- * where they might be stripped out.
- */
-#define this_char() (eightbit ? *str : (*str) & 0x7f)
-#define next_char() (eightbit ? *str++ : (*str++) & 0x7f)
-#define put_back() (str--)
-
-unsigned char *strip_ansi (const unsigned char *str)
-{
-	u_char	*output;
-	u_char	chr;
-	int 	pos, maxpos;
-	int 	args[10], nargs, i;
-
-	int	bold = 0;
-	int	underline = 0;
-	int	reverse = 0;
-	int	blink = 0;
-	int	alt_mode = 0;
-	int	fg_color = 0;
-	int	bg_color = 1;
-
-	int	ansi = get_int_var(DISPLAY_ANSI_VAR);
-	int	gcmode = get_int_var(DISPLAY_PC_CHARACTERS_VAR);
-	int 	n;
-	int	eightbit = term_eight_bit();
-
-	/* 
-	 * The output string has a few extra chars on the end just 
-	 * in case you need to tack something else onto it.
-	 */
-	maxpos = strlen(str);
-	output = (u_char *)new_malloc(maxpos + 64);
-	pos = 0;
-
-	while ((chr = next_char()))
-	{
-	    if (pos > maxpos)
-	    {
-		maxpos += 64; /* Extend 64 chars at a time */
-		RESIZE(output, unsigned char, maxpos + 64);
-	    }
-
-	    switch (ansi_state[chr])
-	    {
-		/*
-		 * State 0 is a normal, printable ascii character
-		 */
-		case 0:
-			output[pos++] = chr;
-			break;
-
-		/*
-		 * State 1 is an unprintable character that may need
-		 * to be translated first.
-		 * State 6 is an unprintable character that must be made
-		 * unprintable (gcmode is forced to be 1)
-		 */
-		case 1:
-		case 6:
-		{
-			int my_gcmode = gcmode;
-
-			/*
-			 * This is a very paranoid check to make sure that
-			 * the 8-bit escape code doesnt elude us.
-			 */
-			if (chr == 27 + 128)
-				chr = '[';
-
-			if (ansi_state[chr] == 6)
-				my_gcmode = 1;
-
-			if (strip_ansi_never_xlate)
-				my_gcmode = 4;
-
-			switch (my_gcmode)
-			{
-				/*
-				 * In gcmode 5, translate all characters
-				 */
-				case 5:
-				{
-					output[pos++] = gcxlate[chr];
-					break;
-				}
-
-				/*
-				 * In gcmode 4, accept all characters
-				 */
-				case 4:
-				{
-					output[pos++] = chr;
-					break;
-				}
-
-				/*
-				 * In gcmode 3, accept or translate chars
-				 */
-				case 3:
-				{
-					if (termfeatures & TERM_CAN_GCHAR)
-						output[pos++] = chr;
-					else
-						output[pos++] = gcxlate[chr];
-					break;
-				}
-
-				/*
-				 * In gcmode 2, accept or highlight xlate
-				 */
-				case 2:
-				{
-					if (termfeatures & TERM_CAN_GCHAR)
-						output[pos++] = chr;
-					else
-					{
-						output[pos++] = REV_TOG;
-						output[pos++] = gcxlate[chr];
-						output[pos++] = REV_TOG;
-					}
-					break;
-				}
-
-				/*
-				 * gcmode 1 is "accept or reverse mangle"
-				 * If youre doing 8-bit, it accepts eight
-				 * bit characters.  If youre not doing 8 bit
-				 * then it converts the char into something
-				 * printable and then reverses it.
-				 */
-				case 1:
-				{
-					if (termfeatures & TERM_CAN_GCHAR)
-						output[pos++] = chr;
-					else if ((chr & 0x80) && eightbit)
-						output[pos++] = chr;
-					else
-					{
-						output[pos++] = REV_TOG;
-						output[pos++] = 
-						(chr | 0x40) & 0x7f;
-						output[pos++] = REV_TOG;
-					}
-					break;
-				}
-
-				/*
-				 * gcmode 0 is "always strip out"
-				 */
-				case 0:
-					break;
-			}
-			break;
-		}
-
-
-		/*
-		 * State 2 is the escape character
-		 */
-		case 2:
-		{
-		    /*
-		     * The next thing we do is dependant on what the character
-		     * is after the escape.  Be very conservative in what we
-		     * allow.  In general, escape sequences shouldnt be very
-		     * complex at this point.
-		     * If we see an escape at the end of a string, just mangle
-		     * it and dont bother with the rest of the expensive
-		     * parsing.
-		     */
-		    if (!ansi || this_char() == 0)
-		    {
-			output[pos++] = REV_TOG;
-			output[pos++] = '[';
-			output[pos++] = REV_TOG;
-			continue;
-		    }
-
-		    switch ((chr = next_char()))
-		    {
-			/*
-			 * All these codes we just skip over.  We're not
-			 * interested in them.
-			 */
-
-			/*
-			 * These are two-character commands.  The second
-			 * char is the argument.
-			 */
-			case ('#') : case ('(') : case (')') :
-			case ('*') : case ('+') : case ('$') :
-			case ('@') :
-			{
-				chr = next_char();
-				if (chr == 0)
-					put_back();	/* Bogus sequence */
-				break;
-			}
-
-			/*
-			 * These are just single-character commands.
-			 */
-			case ('7') : case ('8') : case ('=') :
-			case ('>') : case ('D') : case ('E') :
-			case ('F') : case ('H') : case ('M') :
-			case ('N') : case ('O') : case ('Z') :
-			case ('l') : case ('m') : case ('n') :
-			case ('o') : case ('|') : case ('}') :
-			case ('~') : case ('c') :
-			{
-				break;		/* Dont do anything */
-			}
-
-			/*
-			 * Swallow up graphics sequences...
-			 */
-			case ('G'):
-			{
-				while ((chr = next_char()) != 0 &&
-					chr != ':')
-					;
-				if (chr == 0)
-					put_back();
-				break;
-			}
-
-			/*
-			 * Not sure what this is, its unimplemented in 
-			 * rxvt, but its supposed to end with an ESCape.
-			 */
-			case ('P') :
-			{
-				while ((chr = next_char()) != 0 &&
-					chr != 033)
-					;
-				if (chr == 0)
-					put_back();
-				break;
-			}
-
-			/*
-			 * Anything else, we just munch the escape and 
-			 * leave it at that.
-			 */
-			default:
-				put_back();
-				break;
-
-
-			/*
-			 * Strip out Xterm sequences
-			 */
-			case (']') :
-			{
-				while ((chr = next_char()) != 0 && chr != 7)
-					;
-				if (chr == 0)
-					put_back();
-				break;
-			}
-
-			/*
-			 * Now these we're interested in....
-			 * (CSI sequences)
-			 */
-			case ('[') :
-			{
-				/*
-				 * Set up the arguments list
-				 */
-				nargs = 0;
-				args[0] = args[1] = args[2] = args[3] = 0;
-				args[4] = args[5] = args[6] = args[7] = 0;
-				args[8] = args[9] = 0;
-
-				/*
-				 * This stuff was taken/modified/inspired by
-				 * rxvt.  We do it this way in order to trap
-				 * an esc sequence that is embedded in another
-				 * (blah).  We're being really really really
-				 * paranoid doing this, but it is for the best.
-				 */
-
-				/*
-				 * Check to see if the stuff after the
-				 * command is a "private" modifier.  If it is,
-				 * then we definitely arent interested.
-				 *   '<' , '=' , '>' , '?'
-				 */
-				chr = this_char();
-				if (chr >= '<' && chr <= '?')
-					next_char();	/* skip it */
-
-
-				/*
-				 * Now pull the arguments off one at a time.
-				 * Keep pulling them off until we find a
-				 * character that is not a number or a semi-
-				 * colon.  Skip everything else.
-				 */
-				for (nargs = 0; nargs < 10; str++)
-				{
-					n = 0;
-					for (n = 0;
-					     isdigit(this_char());
-					     next_char())
-					{
-					    n = n * 10 + (this_char() - '0');
-					}
-
-					args[nargs++] = n;
-
-					/*
-					 * If we run out of code here, 
-					 * then we're totaly confused.
-					 * just back out with whatever
-					 * we have...
-					 */
-					if (!this_char())
-					{
-					    output[pos] = output[pos + 1] = 0;
-					    return output;
-					}
-
-					if (this_char() != ';')
-						break;
-				}
-
-				/*
-				 * If we find a new ansi char, start all
-				 * over from the top and strip it out too
-				 */
-				if (this_char() == 033)
-					continue;
-
-				/*
-				 * Support "spaces" (cursor right) code
-				 */
-				if (this_char() == 'a' || this_char() == 'C')
-				{
-					next_char();
-					if (nargs >= 1)
-					{
-					    /*
-					     * Keep this within reality.
-					     */
-					    if (args[0] > 256)
-						args[0] = 256;
-
-					    /* This is just sanity */
-					    if (pos + args[0] > maxpos)
-					    {
-						maxpos += args[0]; 
-						RESIZE(output, u_char, maxpos + 64);
-					    }
-					    while (args[0]-- > 0)
-						output[pos++] = ND_SPACE;
-					}
-					break;
-				}
-
-				/*
-				 * The 'm' command is the only one that
-				 * we honor.  All others are dumped.
-				 */
-				if (next_char() != 'm')
-					break;
-
-
-				/*
-				 * Walk all of the numeric arguments,
-				 * plonking the appropriate commands into
-				 * the output...
-				 *
-				 * Ugh.  We have to make a token attempt to
-				 * mangle color codes when people change the
-				 * state of bold or blink.
-				 */
-				for (i = 0; i < nargs; i++)
-				{
-					if (args[i] == 0)
-					{
-						output[pos++] = ALL_OFF;
-						bold = reverse = blink = 0;
-						fg_color = bg_color = 0;
-						underline = 0;
-					}
-					else if (args[i] == 1 && !bold)
-					{
-						output[pos++] = BOLD_TOG;
-						if (fg_color >= 30 && 
-						    fg_color <= 37)
-						{
-							fg_color += 20;
-							output[pos++] = 3;
-							output[pos++] = '5';
-							output[pos++] = '0' +
-								fg_color % 10;
-						}
-						bold = 1;
-					}
-					else if (args[i] == 4 && !underline)
-					{
-						output[pos++] = UND_TOG;
-						underline = 1;
-					}
-					else if ((args[i] == 5 || args[i] == 26)
-							&& !blink)
-					{
-						output[pos++] = BLINK_TOG;
-						if (bg_color >= 40 && 
-						    bg_color <= 47)
-						{
-							bg_color += 10;
-							output[pos++] = 3;
-							output[pos++] = ',';
-							output[pos++] = '5';
-							output[pos++] = '0' +
-								bg_color % 10;
-						}
-						blink = 1;
-					}
-					else if ((args[i] == 6 || args[i] == 25)
-							&& blink)
-					{
-						output[pos++] = BLINK_TOG;
-						if (bg_color >= 50 && 
-						    bg_color <= 57)
-						{
-							bg_color -= 10;
-							output[pos++] = 3;
-							output[pos++] = ',';
-							output[pos++] = '4';
-							output[pos++] = '0' +
-								bg_color % 10;
-						}
-						blink = 0;
-					}
-					else if (args[i] == 7 && !reverse)
-					{
-						output[pos++] = REV_TOG;
-						reverse = 1;
-					}
-					else if (args[i] == 21 && bold)
-					{
-						output[pos++] = BOLD_TOG;
-						if (fg_color >= 50 && 
-						    fg_color <= 57)
-						{
-							fg_color -= 20;
-							output[pos++] = 3;
-							output[pos++] = '3';
-							output[pos++] = '0' +
-								fg_color % 10;
-						}
-						bold = 0;
-					}
-					else if (args[i] == 24 && underline)
-					{
-						output[pos++] = UND_TOG;
-						underline = 0;
-					}
-					else if (args[i] == 27 && reverse)
-					{
-						output[pos++] = REV_TOG;
-						reverse = 0;
-					}
-					else if (args[i] >= 30 && args[i] <= 37)
-					{
-						output[pos++] = 003;
-						if (bold)
-							output[pos++] = '5';
-						else
-							output[pos++] = '3';
-						output[pos++] = args[i] - 30 + '0';
-						if (blink)
-						{
-							output[pos++] = ',';
-							output[pos++] = '5';
-							output[pos++] = '8';
-						}
-						fg_color = args[i];
-					}
-					else if (args[i] >= 40 && args[i] <= 47)
-					{
-						output[pos++] = 003;
-						output[pos++] = ',';
-						if (blink)
-							output[pos++] = '5';
-						else
-							output[pos++] = '4';
-						output[pos++] = args[i] - 40 + '0';
-						bg_color = args[i];
-					}
-
-				} /* End of for (handling esc-[...m) */
-			} /* End of escape-[ code handling */
-		    } /* End of ESC handling */
-		    break;
-	        } /* End of case 27 handling */
-
-
-	        /*
-	         * Skip over ^C codes, theyre already normalized
-	         * well, thats not totaly true.  We do some mangling
-	         * in order to make it work better
-	         */
-		case 3:
-		{
-			const u_char 	*end;
-			int		lhs, rhs;
-
-			put_back();
-			end = skip_ctl_c_seq (str, &lhs, &rhs);
-
-			/*
-			 * XXX - This is a short-term hack to prevent an 
-			 * infinite loop.  I need to come back and fix
-			 * this the right way in the future.
-			 *
-			 * The infinite loop can happen when a character
-			 * 131 is encountered when eight bit chars is OFF.
-			 * We see a character 3 (131 with the 8th bit off)
-			 * and so we ask skip_ctl_c_seq where the end of 
-			 * that sequence is.  But since it isnt a ^c sequence
-			 * it just shrugs its shoulders and returns the
-			 * pointer as-is.  So we sit asking it where the end
-			 * is and it says "its right here".  So there is a 
-			 * need to check the retval of skip_ctl_c_seq to 
-			 * actually see if there is a sequence here.  If there
-			 * is not, then we just mangle this character.  For
-			 * the record, char 131 is a reverse block, so that
-			 * seems the most appropriate thing to put here.
-			 */
-			if (end == str)
-			{
-				/* Turn on reverse if neccesary */
-				if (reverse == 0)
-					output[pos++] = REV_TOG;
-				output[pos++] = ' ';
-				if (reverse == 0)
-					output[pos++] = REV_TOG;
-				next_char();	/* Munch it */
-				break;
-			}
-
-
-			/*
-			 * If the user specifies an absolute value ^C
-			 * code (eg, not an mirc order one), then we turn
-			 * off bold or blink so that their color is rendered
-			 * exactly like they specify.
-			 */
-			/*
-			 * Turn off BOLD if the user specifies a lhs
-			 */
-			if (lhs != -1 && bold)
-			{
-				output[pos++] = BOLD_TOG;
-				bold = 0;
-			}
-
-			/*
-			 * Ditto with BLINK for rhs
-			 */
-			if (rhs != -1 && blink)
-			{
-				output[pos++] = BLINK_TOG;
-				blink = 0;
-			}
-
-			while (str < end)
-				output[pos++] = next_char();
-
-			fg_color = lhs;
-			bg_color = rhs;
-			break;
-		}
-
-		/*
-		 * State 4 is for the special highlight characters
-		 */
-		case 4:
-		{
-			put_back();
-			switch (this_char())
-			{
-				case REV_TOG:   reverse = !reverse;     break;
-				case BOLD_TOG:  bold = !bold;           break;
-				case BLINK_TOG: blink = !blink;         break;
-				case UND_TOG:   underline = !underline; break;
-				case ALT_TOG:	alt_mode = !alt_mode;	break;
-				case ALL_OFF:
-				{
-					reverse = bold = blink = underline = 0;
-					alt_mode = 0;
-					break;
-				}
-				default:   break;
-			}
-
-			output[pos++] = next_char();
-			break;
-		}
-
-		case 5:
-		{
-			put_back();
-			if (str[0] && str[1] && str[2] && str[3])
-			{
-				output[pos++] = next_char();
-				output[pos++] = next_char();
-				output[pos++] = next_char();
-				output[pos++] = next_char();
-			}
-			else 
-				output[pos++] = next_char();
-			break;
-		}
-
-		default:
-		{
-			panic("Unknown strip_ansi mode");
-			break;
-		}
-	    }
-	}
-	output[pos] = output[pos + 1] = 0;
-	return output;
-}
-
-
-/*
- * Meant as an argument to strip_ansi(). This version will replace ANSI
- * color changes with terminal specific color changes.
- *
- * Some notes about this function:
- * --	You pass this function any valid argument from a ^C code.  That is
- * 	to say, both numbers should be less than 58.  If you pass in a larger
- * 	number, the client will crash.  You must *only* pass in numbers that
- * 	have been returned from skip_ctl_c_seq in order to be safe.
- * --	If both arguments are -1, then that means "clear all color attributes"
- *	This is used as a definite terminator for color codes.
- * --	If both arguments are -2, then that means "booster the current color
- *	codes", and this returns a string suitable for outputting to reset 
- *	the client's current idea of what the color should be.
- * --	If one argument (but not both) are -1, then that means "no change
- *	to this argument", and only the one that is not -1 is recognized.
- * --	If the 'back' argument is 58, then the solitary blink attribute is
- *	turned on.  This is used to set blinking foreground colors.
- *
- * XXXX This function is a mess and should be un-kludged.
- */
-static char *	replace_color (int fore, int back)
-{
-static 	char 	retbuf[512];
-	char 	*ptr = retbuf;
-static	int	last_fore = -2,
-		last_back = -2;
-
-	static int fore_conv[] = {
-		15,  0,  4,  2,  1,  3,  5,  9,		/*  0-7  */
-		11, 10,  6, 14, 12, 13,  8,  7,		/*  8-15 */
-		15,  0,  0,  0,  0,  0,  0,  0, 	/* 16-23 */
-		 0,  0,  0,  0,  0,  0,  0,  1, 	/* 24-31 */
-		 2,  3,  4,  5,  6,  7,  0,  0,		/* 32-39 */
-		 0,  0,  0,  0,  0,  0,  0,  0,		/* 40-47 */
-		 0,  0,  8,  9, 10, 11, 12, 13, 	/* 48-55 */
-		14, 15 					/* 56-57 */
-	};
-	static int back_conv[] = {
-		 7,  0,  4,  2,  1,  3,  5,  1,
-		 3,  2,  6,  6,  4,  5,  0,  0,
-		 7,  0,  0,  0,  0,  0,  0,  0,
-		 0,  0,  0,  0,  0,  0,  0,  0,
-		 0,  0,  0,  0,  0,  0,  0,  0,
-		 0,  1,  2,  3,  4,  5,  6,  7, 
-		 0,  0,  8,  9, 10, 11, 12, 13,
-		14, 15 
-	};
-
-	*ptr = '\0';
-
-	if (!get_int_var(COLOR_VAR))
-		return retbuf;
-
-	/*
-	 * If 'fore' and 'back' are both -2, this is a direction to
-	 * reinstate whatever colors we think should be current.
-	 * This is most useful after a newline.
-	 */
-	if (fore == -2 && back == -2)
-	{
-		fore = -1;
-		back = -1;
-	}
-	/*
-	 * Otherwise, if both are -1, then that means clear any color
-	 * attributes and reset to normal.
-	 */
-	else if (fore == -1 && back == -1)
-	{
-		last_fore = last_back = -2;
-		return (current_term->TI_sgrstrs[TERM_SGR_NORMAL-1]);
-	}
-
-	if (fore == -1)
-		fore = last_fore;
-	if (back == -1)
-		back = last_back;
-
-	if (fore > -1 && fore_conv[fore] < 8)
-		strcat(retbuf, current_term->TI_sgrstrs[TERM_SGR_BOLD_OFF - 1]);
-	if (back > -1 && back < 58)
-		if (fore_conv[back] < 8 &&
-		    get_int_var(TERM_DOES_BRIGHT_BLINK_VAR))
-			strcat(retbuf, current_term->TI_sgrstrs[TERM_SGR_BLINK_OFF - 1]);
-
-	if (back == 58)
-		strcat(retbuf, current_term->TI_sgrstrs[TERM_SGR_BLINK_ON - 1]);
-	if (fore > -1)
-		strcat(retbuf, current_term->TI_forecolors[fore_conv[fore]]);
-	if (back > -1 && back < 58)
-	{
-		if (get_int_var(TERM_DOES_BRIGHT_BLINK_VAR))
-			strcat(retbuf, current_term->TI_backcolors[fore_conv[back]]);
-		else
-			strcat(retbuf, current_term->TI_backcolors[back_conv[back]]);
-	}
-
-	last_fore = fore;
-	last_back = back;
-
-	return retbuf;
-}

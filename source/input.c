@@ -211,8 +211,7 @@ void	update_input (int update)
 		 * Mangle out any ansi chars or so forth.
 		 */
 		ptr_free = ptr;
-		ptr = strip_ansi(ptr);
-		strcat(ptr, ALL_OFF_STR);	/* Yes, we can do this */
+		ptr = normalize_string(ptr, 0);	/* This should be ok */
 		if (free_it)
 			new_free(&ptr_free);
 		free_it = 1;

@@ -157,14 +157,4 @@ extern struct timeval	now;
 const	char *	current_filename	(void);  /* XXX command.c */
 	int	current_line		(void);	 /* XXX command.c */
 	char *	current_package		(void);  /* XXX command.c */
-
-#if 0
-	char *	bsd_getenv		(const char *);	/* XXX compat.c */
-	int	bsd_putenv		(const char *);	/* XXX compat.c */
-	int	bsd_setenv		(const char *, const char *, int); 
-						/* XXX compat.c */
-	void	bsd_unsetenv		(const char *);	/* XXX compat.c */
-#endif
-
-
 #endif /* __irc_h */

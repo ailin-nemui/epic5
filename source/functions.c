@@ -4449,15 +4449,32 @@ BUILT_IN_FUNCTION(function_msar, word)
 BUILT_IN_FUNCTION(function_leftpc, word)
 {
 	u_char ** 	prepared = NULL;
+	char *		retval;
 	int		lines = 1;
 	int		count;
+	int		x;
 
 	GET_INT_ARG(count, word);
 	if (count < 0 || !*word)
 		RETURN_EMPTY;
 
+	x = normalize_permit_all_attributes;
+	normalize_permit_all_attributes = 1;
+
+	/* Convert the string to "attribute format" */
+	word = normalize_string(word, 0);
+
+	/* Count off the first line of stuff */
 	prepared = prepare_display(word, count, &lines, PREPARE_NOWRAP);
-	RETURN_STR((char *)prepared[0]);
+
+	/* Convert the first line back to "logical format" */
+	retval = denormalize_string(prepared[0]);
+
+	normalize_permit_all_attributes = x;
+
+	/* Clean up and return. */
+	new_free(&word);
+	return retval;
 }
 
 
@@ -5043,7 +5060,7 @@ BUILT_IN_FUNCTION(function_printlen, input)
 
 BUILT_IN_FUNCTION(function_stripansicodes, input)
 {
-	return strip_ansi(input);
+        return normalize_string(input, 1);      /* This is ok now */
 }
 
 /*

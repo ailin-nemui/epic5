@@ -553,7 +553,7 @@ void	make_status (Window *window)
 		 * with nothing but logical characters, which are then easy
 		 * to count. :-)
 		 */
-		str = strip_ansi(buffer);
+		str = normalize_string(buffer, 3);
 
 		/*
 		 * Count out the characters.
@@ -582,40 +582,18 @@ void	make_status (Window *window)
 				prc = &pr_rhs;
 			}
 
-			/*
-			 * Skip over color attributes if we're not
-			 * doing color.
-			 */
-			else if (*ptr == '\003')
-			{
-				const u_char *end = skip_ctl_c_seq(ptr, NULL, NULL);
-				while (ptr < end)
-					*cp++ = *ptr++;
-			}
-
-			/*
-			 * If we have a ROM character code here, we need to
-			 * copy it to the output buffer, as well as the fill
-			 * character, and increment the printable counter by
-			 * only 1.
-			 */
-			else if (*ptr == ROM_CHAR)
-			{
-				fillchar[0] = *cp++ = *ptr++;
-				fillchar[1] = *cp++ = *ptr++;
-				fillchar[2] = *cp++ = *ptr++;
-				fillchar[3] = *cp++ = *ptr++;
-				fillchar[4] = 0;
-				*prc += 1;
-			}
-
-			/*
-			 * Is it NOT a printable character?
-			 */
-			else if ((*ptr == REV_TOG) || (*ptr == UND_TOG) ||
-				 (*ptr == ALL_OFF) || (*ptr == BOLD_TOG) ||
-				 (*ptr == BLINK_TOG))
-					*cp++ = *ptr++;
+                        /*
+                         * Skip over attribute changes, not useful.
+                         */
+                        else if (*ptr == '\006')
+                        {
+                                /* Copy the next 5 values */
+                                *cp++ = *ptr++;
+                                *cp++ = *ptr++;
+                                *cp++ = *ptr++;
+                                *cp++ = *ptr++;
+                                *cp++ = *ptr++;
+                        }
 
 			/*
 			 * XXXXX This is a bletcherous hack.
@@ -686,9 +664,9 @@ void	make_status (Window *window)
 						BIG_BUFFER_SIZE);
 		}
 
-		strlcpy(buffer, lhs_buffer, BIG_BUFFER_SIZE);
-		strlcat(buffer, rhs_buffer, BIG_BUFFER_SIZE);
-		strlcat(buffer, ALL_OFF_STR, BIG_BUFFER_SIZE);
+		strlcpy(buffer, lhs_buffer, BIG_BUFFER_SIZE -6);
+		strlcat(buffer, rhs_buffer, BIG_BUFFER_SIZE -6);
+		strlcat(buffer, all_off(), BIG_BUFFER_SIZE);
 		new_free(&str);
 
 		/*
@@ -724,9 +702,7 @@ void	make_status (Window *window)
 			{
 				output_screen = window->screen;
 				term_move_cursor(0, window->bottom + status_line);
-				output_line(buffer);
-				cursor_in_display(window);
-				term_all_off();
+				output_with_count(buffer, 1, 1);
 			}
 		}
 	}

@@ -1,5 +1,14 @@
 EPIC4-1.2.0
 
+*** News 11/13/2001 -- Resizable wserv support (wserv4)
+	I backported the implementation of wserv4 from EPIC5.  The main
+	features of wserv4 are that it uses two channels of communication
+	to talk to epic, and it can support independant resizing of each
+	screen.  Until now, all of your /window create screens had to be 
+	exactly the same size as your main screen or they wouldn't work.  
+	That restriction has now been removed.  All of your screens can be
+	of whatever size you wish and you can resize them at will.
+
 *** News 11/13/2001 -- /FLUSH now uses the "redirect sink"
 	Until now, /FLUSH worked by actually throwing away all data from
 	the server until there was a 1 second pause.  Since none of this

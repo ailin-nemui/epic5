@@ -27,3 +27,5 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Implement /flush to use the redirect sink instead of throwing out good data.
   -- This means /flush is safe to use again!  Huzzah!
 * You can use /REDIRECT 0 WHOIS <nick> for example to suppress "extra" output
+* Resizable wserv support, merged from epic5.
+* New highlight renderer, from epic5.  Touches a lot of stuff.  May break?
