@@ -1,0 +1,18 @@
+#!/bin/bash
+
+function encrypt {
+	exec gpg -c --batch --passphrase-fd 0
+}
+
+function decrypt {
+	exec gpg --batch --passphrase-fd 0
+}
+
+proto="$1"
+shift 1
+
+case "$proto" in
+encrypt) encrypt "$@" ;;
+decrypt) decrypt "$@" ;;
+*)	echo `basename $0` "{encrypt|decrypt} < text" 1>&2 ;;
+esac

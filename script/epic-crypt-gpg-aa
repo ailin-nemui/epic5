@@ -1,0 +1,32 @@
+#!/bin/bash
+
+function encrypt {
+	gpg -ca --batch --passphrase-fd 0 | (
+		while read && [ -n "$REPLY" ] ; do : ; done
+		while read && [ -n "$REPLY" ] ; do
+			[ -n "$LAST" ] && echo -n "$LAST " ;
+			LAST="$REPLY"
+		done
+	)
+}
+
+function decrypt {
+	read key
+	read -a input
+	( echo x | gpg -ca --batch --passphrase-fd 0 | (
+		while read && [ -n "$REPLY" ] ; do echo "$REPLY" ; done
+		while read && [ -n "$REPLY" ] ; do LAST="$REPLY" ; done
+		echo
+		for foo in "${input[@]}" ; do echo "$foo" ; done
+		echo "$LAST"
+	) ) | ( echo "$key" ; cat ) | gpg -a --batch --passphrase-fd 0
+}
+
+proto="$1"
+shift 1
+
+case "$proto" in
+encrypt) encrypt "$@" ;;
+decrypt) decrypt "$@" ;;
+*)	echo `basename $0` "{encrypt|decrypt} < text" 1>&2 ;;
+esac
