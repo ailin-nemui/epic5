@@ -1,4 +1,4 @@
-/* $EPIC: expr2.c,v 1.12 2003/07/10 13:08:56 jnelson Exp $ */
+/* $EPIC: expr2.c,v 1.13 2003/10/13 16:45:07 jnelson Exp $ */
 /*
  * Zsh: math.c,v 3.1.2.1 1997/06/01 06:13:15 hzoli Exp 
  * math.c - mathematical expression evaluation
@@ -136,6 +136,8 @@ typedef 	int		BooL;
 #define USED_FLOAT		1 << 4
 #define USED_BOOLEAN		1 << 5
 
+typedef long INTTYPE;
+
 /*
  * This is a symbol table entry.
  */
@@ -145,7 +147,7 @@ typedef struct TOKEN_type
 	char *	lval;			/* Cached unexpanded variable name */
 	char *	raw_value;		/* Cached unexpected string */
 	char *	expanded_value;		/* Cached full expanded string */
-	long	integer_value;		/* Cached integer value */
+	INTTYPE	integer_value;		/* Cached integer value */
 	double	float_value;		/* Cached floating point value */
 	short	boolean_value;		/* Cached boolean value */
 } SYMBOL;
@@ -507,7 +509,7 @@ __inline static	TOKEN		tokenize_expanded (expr_info *c, char *t)
  * is both expensive, and unnecesary.  This type of token is created by
  * integer-only operations like &, |, ^, <<, >>.
  */
-__inline static	TOKEN		tokenize_integer (expr_info *c, long t)
+__inline static	TOKEN		tokenize_integer (expr_info *c, INTTYPE t)
 {
 	if (c->token >= TOKENCOUNT)
 	{
@@ -772,7 +774,7 @@ __inline static	const char *	get_token_expanded (expr_info *c, TOKEN v)
  * this function, it calls atof() on the "raw" value, if there is one, 
  * to get the result.
  */
-__inline static	long	get_token_integer (expr_info *c, TOKEN v)
+__inline static	INTTYPE	get_token_integer (expr_info *c, TOKEN v)
 {
 	if (v == MAGIC_TOKEN)	/* Magic token */
 		return atol(c->args);		/* XXX Probably wrong */
@@ -876,7 +878,7 @@ __inline static	TOKEN	push_float (expr_info *c, double val)
 	return push_token(c, tokenize_float(c, val));
 }
 
-__inline static	TOKEN	push_integer (expr_info *c, long val)
+__inline static	TOKEN	push_integer (expr_info *c, INTTYPE val)
 { 
 	return push_token(c, tokenize_integer(c, val));
 }
@@ -952,7 +954,7 @@ __inline static	void	pop_2_floats (expr_info *c, double *a, double *b)
 	*a = pop_float(c);
 }
 
-__inline static	void	pop_2_integers (expr_info *c, long *a, long *b)
+__inline static	void	pop_2_integers (expr_info *c, INTTYPE *a, INTTYPE *b)
 {
 	*b = pop_integer(c);
 	*a = pop_integer(c);
@@ -992,7 +994,7 @@ static void	reduce (expr_info *cx, int what)
 {
 	double	a, b;
 	BooL	c, d;
-	long	i, j;
+	INTTYPE	i, j;
 	const char *s, *t;
 	TOKEN	v, w;
 
