@@ -4,9 +4,9 @@ dnl except those bits attributed otherwise.
 dnl thanks to the screen 3.3 configure.in for giving me examples to
 dnl work from and steal ;)
 dnl
-dnl @(#)$Id: configure.in,v 1.25 2002/12/27 08:44:58 crazyed Exp $
+dnl @(#)$Id: configure.in,v 1.26 2002/12/28 06:19:55 jnelson Exp $
 
-AC_REVISION($Revision: 1.25 $)dnl
+AC_REVISION($Revision: 1.26 $)dnl
 AC_INIT(source/irc.c)
 AC_CONFIG_HEADER(include/defs.h)
 
@@ -504,6 +504,7 @@ AC_TRY_RUN([
 #include <sys/socket.h>
 #include <netdb.h>
 #include <sys/un.h>
+#include <stdlib.h>
 
 main()
 {
@@ -517,8 +518,8 @@ main()
 	hints.ai_socktype = SOCK_STREAM;
 	hints.ai_protocol = 0;
 
-	retval = getaddrinfo("/tmp/.ircd/6667", NULL, &hints, &results);
-	if (retval == EA_ADDRFAMILY)
+	retval = getaddrinfo("/tmp/.ircd/6667", 0, &hints, &results);
+	if (retval == EAI_ADDRFAMILY)
 		exit(1);
 	else
 		exit(0);

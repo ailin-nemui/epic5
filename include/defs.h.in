@@ -179,10 +179,9 @@
 #undef Rselect
 
 /*
- *  Language support.
+ *  Perl support.
  */
 #undef PERL
-#undef TCL
 
 /* Define this if you have setsid() */
 #undef HAVE_SETSID
@@ -261,6 +260,9 @@
 
 /* Define this if you have a broken realpath */
 #undef HAVE_BROKEN_REALPATH
+
+/* Define this if you have TCL */
+#undef TCL
 
 /* The number of bytes in a unsigned int.  */
 #undef SIZEOF_UNSIGNED_INT
