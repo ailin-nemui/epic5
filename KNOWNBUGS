@@ -73,3 +73,4 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * This means we can fix /window channel to not hunt for the "other" window.
 * Fix /window channel to use send_to_aserver().
 * When killing a window, move channels before swapping, avoids ref int panic.
+* Add /set auto_rejoin_connect, idea from David Buckley.

@@ -9,7 +9,7 @@
  */
 
 #if 0
-static	char	rcsid[] = "$Id: vars.c,v 1.5 2001/10/20 17:19:04 jnelson Exp $";
+static	char	rcsid[] = "$Id: vars.c,v 1.6 2001/10/24 16:18:13 jnelson Exp $";
 #endif
 
 #include "irc.h"
@@ -89,6 +89,7 @@ static	IrcVariable irc_variable[] =
         { "AUTO_RECONNECT",             BOOL_TYPE_VAR,  DEFAULT_AUTO_RECONNECT, NULL, NULL, 0, 0 },
 	{ "AUTO_RECONNECT_DELAY",	INT_TYPE_VAR,	DEFAULT_AUTO_RECONNECT_DELAY, NULL, NULL, 0, 0 },
         { "AUTO_REJOIN",                BOOL_TYPE_VAR,  DEFAULT_AUTO_REJOIN, NULL, NULL, 0, 0 },
+	{ "AUTO_REJOIN_CONNECT",	BOOL_TYPE_VAR,	DEFAULT_AUTO_REJOIN_CONNECT, NULL, NULL, 0, 0 },
 	{ "AUTO_REJOIN_DELAY",		INT_TYPE_VAR,	DEFAULT_AUTO_REJOIN_DELAY, NULL, NULL, 0, 0 },
 	{ "AUTO_UNMARK_AWAY",		BOOL_TYPE_VAR,	DEFAULT_AUTO_UNMARK_AWAY, NULL, NULL, 0, 0 },
 	{ "AUTO_WHOWAS",		BOOL_TYPE_VAR,	DEFAULT_AUTO_WHOWAS, NULL, NULL, 0, 0 },
