@@ -1,4 +1,4 @@
-/* $EPIC: commands.c,v 1.106 2004/08/25 23:50:59 jnelson Exp $ */
+/* $EPIC: commands.c,v 1.107 2004/09/11 07:29:36 crazyed Exp $ */
 /*
  * commands.c -- Stuff needed to execute commands in ircII.
  *		 Includes the bulk of the built in commands for ircII.
@@ -3745,6 +3745,7 @@ BUILT_IN_COMMAND(botmodecmd)
 		background = 1;
 		my_signal(SIGHUP, SIG_IGN);
 		freopen("/dev/null", "w", stdout);
+		new_close(0);
 		if (fork())
 			_exit(0);
 	} else {
