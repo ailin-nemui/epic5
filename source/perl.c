@@ -8,11 +8,15 @@
 int	isperlrunning=0, perlcalldepth=0;
 PerlInterpreter	*my_perl;
 
-EXTERN_C void xs_init (pTHXo);
-EXTERN_C void boot_DynaLoader (pTHXo_ CV* cv);
+EXTERN_C void xs_init _((void));
+EXTERN_C void boot_DynaLoader _((CV* cv));
 
 #define RETURN_MSTR(x) return ((x) ? (x) : "");
-#define SV2STR(x,y) (y)=(void*)m_strdup(SvPV_nolen(x))
+#define SV2STR(x,y) (y)=(void*)m_strdup((char*)SvPV_nolen(x))
+#ifndef SvPV_nolen
+STRLEN	trash;
+#define SvPV_nolen(x) SvPV((x),trash)
+#endif
 
 static XS (XS_cmd) {
 	unsigned foo;
@@ -37,7 +41,7 @@ static XS (XS_expr) {
 	char* retval=NULL;
 	dXSARGS;
 	for (foo=0; foo<items; foo++) {
-		retval=(char*)parse_inline(LOCAL_COPY(SvPV_nolen(ST(foo))), "", 0);
+		retval=(char*)parse_inline(LOCAL_COPY((char*)SvPV_nolen(ST(foo))), "", 0);
 		XST_mPV(foo, retval);
 		new_free(&retval);
 	}
@@ -55,7 +59,7 @@ static XS (XS_yell) {
 }
 
 EXTERN_C void
-xs_init(pTHXo)
+xs_init(void)
 {
 	char *file = __FILE__;
 	dXSUB_SYS;
@@ -120,18 +124,18 @@ char* perlcall (const char* sub, char* in, char* out, long item, char* input) {
 	}
 	if (0<=item) {
 		I32 ax;
-		count = call_pv(sub, G_EVAL|G_ARRAY);
+		count = perl_call_pv(sub, G_EVAL|G_ARRAY);
 		SPAGAIN ;
 		SP -= count ;
 		ax = (SP - PL_stack_base) + 1 ;
 		for (foo=0; foo<count; foo++) {
-			set_item(out, item+foo, SvPV_nolen(ST(foo)));
+			set_item(out, item+foo, (char*)SvPV_nolen(ST(foo)));
 		}
 		retval=(void*)new_realloc((void**)(&retval),32);
 		snprintf(retval,31,"%u",count);
 	} else {
 		SV *sv;
-		count = call_pv(sub, G_EVAL|G_SCALAR);
+		count = perl_call_pv(sub, G_EVAL|G_SCALAR);
 		SPAGAIN ; sv=POPs ;
 		SV2STR(sv,retval);
 	}
@@ -148,7 +152,7 @@ char* perleval (const char* input) {
 		perlstartstop(1);
 		++perlcalldepth;
 		ENTER; SAVETMPS;
-		sv=eval_pv(input, FALSE);
+		sv=perl_eval_pv(input, FALSE);
 		SV2STR(sv,retval);
 		FREETMPS; LEAVE;
 		--perlcalldepth;
