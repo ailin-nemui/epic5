@@ -1,6 +1,6 @@
 A treatise on DCC REVERSE
 Prepared on May 9, 2002
-$EPIC: DCC_REVERSE,v 1.1 2002/05/10 04:46:02 jnelson Exp $
+$EPIC: DCC_REVERSE,v 1.2 2002/05/10 04:50:01 jnelson Exp $
 -------------------------------------------------------------------------------
 
 Prologue
@@ -101,8 +101,8 @@ Once the connection has been successfully established, the transmission
 shall continue as though the connection had been established via DCC SEND.
 
 
-UNREQUESTED REVERSE TRANSFERS:
-------------------------------
+UNREQUESTED REVERSE TRANSFERS: [WORK IN PROGRESS]
+-------------------------------------------------
 There may be circumstances where it is more convenient for a reciever to
 ask for a specific file from a sender than it is to wait for the sender
 to extend an offer to transmit.  An "unrequested reverse transfer" is 
@@ -113,7 +113,11 @@ a *CTCP REPLY*:
 	NOTICE sender :^ADCC REVERSE <key> <start> <p-addr> <port>^A\r\n
 
 Where the symbolic tags have the same meanings as in STAGE TWO, except that
-<key> shall be made up by the the reciepient.
+<key> shall be made up by the the reciepient. [PROBLEM] There is no way to
+identify the file you want.  Should DCC REVERSE assents be extended to 
+include the filename, or should unrequested reverse transfers not be accepted?
+Even if we did include the filename, how would you map that to a file on
+the local filesystem?  There could be many such filenames present [PROBLEM]
 
 It would be unwise for a client to automatically accept unrequested reverse
 transfers because malicious users could transfer sensitive data from the
