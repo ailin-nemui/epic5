@@ -1,4 +1,4 @@
-/* $EPIC: window.c,v 1.86 2003/12/03 23:21:22 jnelson Exp $ */
+/* $EPIC: window.c,v 1.87 2003/12/04 00:48:38 jnelson Exp $ */
 /*
  * window.c: Handles the organzation of the logical viewports (``windows'')
  * for irc.  This includes keeping track of what windows are open, where they
@@ -404,7 +404,7 @@ void 	delete_window (Window *window)
 	 */
 	if (invisible)
 		remove_from_invisible_list(window);
-	else if (fixed || !invisible_list)
+	else if (fixed || window->screen->visible_windows > fixed_wins + 1)
 		remove_window_from_screen(window, 0);
 	else if (invisible_list)
 	{
