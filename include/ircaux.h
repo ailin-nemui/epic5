@@ -7,7 +7,7 @@
  *
  * See the COPYRIGHT file, or do a HELP IRCII COPYRIGHT 
  *
- * @(#)$Id: ircaux.h,v 1.38 2003/01/09 01:10:56 crazyed Exp $
+ * @(#)$Id: ircaux.h,v 1.39 2003/02/20 17:10:07 crazyed Exp $
  */
 
 #ifndef _IRCAUX_H_
@@ -185,7 +185,7 @@ char *		search 			(char *, char **, char *, int);
 const char *	real_move_to_abs_word 	(const char *, const char **, int, int);
 char *		real_extract 		(char *, int, int, int);
 char *		real_extract2 		(const char *, int, int, int);
-#define move_to_abs_word(a, b, c)	real_move_to_abs_word(a, b, c, 0);
+#define move_to_abs_word(a, b, c)	real_move_to_abs_word(a, b, c, 1);
 #define extract(a, b, c)		real_extract(a, b, c, 0)
 #define extract2(a, b, c)		real_extract2(a, b, c, 0)
 #define extractw(a, b, c)		real_extract(a, b, c, 1)
