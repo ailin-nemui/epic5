@@ -1,4 +1,4 @@
-/* $EPIC: ircaux.c,v 1.101 2003/11/14 21:23:40 jnelson Exp $ */
+/* $EPIC: ircaux.c,v 1.102 2003/12/03 05:21:11 jnelson Exp $ */
 /*
  * ircaux.c: some extra routines... not specific to irc... that I needed 
  *
@@ -4332,7 +4332,7 @@ void	dequoter (char **str, size_t *clue, int full, int extended, const char *del
 		simple = 0;
 		what = 255;
 		if (x_debug & DEBUG_EXTRACTW_DEBUG)
-			yell("#### dequoter: Dequoting [%s] fully with delims", *str, delims);
+			yell("#### dequoter: Dequoting [%s] fully with delims [%s]", *str, delims);
 	    }
 
 	    if (str && *str && ((simple == 1 && **str == what) || 

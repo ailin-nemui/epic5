@@ -1,4 +1,4 @@
-/* $EPIC: words.c,v 1.17 2003/10/23 09:09:53 jnelson Exp $ */
+/* $EPIC: words.c,v 1.18 2003/12/03 05:21:11 jnelson Exp $ */
 /*
  * words.c -- right now it just holds the stuff i wrote to replace
  * that beastie arg_number().  Eventually, i may move all of the
@@ -541,7 +541,7 @@ static int	move_to_next_word (const char **str, const char *start, int extended,
 	else
 	{
 		if (x_debug & DEBUG_EXTRACTW_DEBUG)
-		    yell(".... move_to_next_word: handling simple word", pos);
+		    yell(".... move_to_next_word: handling simple word [%s]", pos);
 
 		while (*pos && !my_isspace(*pos))
 			pos++;

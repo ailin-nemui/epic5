@@ -38,4 +38,6 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Fix the larneproofing in numeric_handler(), it was defective all over.
 * Fix a NULL deref if you do /window when there is no current window (!)
 * Update notify script from nsx, add sping script from nsx.
+* More script changes from nsx.  Gotta ask him to stop this. :d
+* Another round of minor compiler nits.  Nothing worth fretting over.
 * Fix a couple of minor compiler nits.

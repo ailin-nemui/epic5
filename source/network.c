@@ -1,4 +1,4 @@
-/* $EPIC: network.c,v 1.49 2003/10/29 06:12:01 jnelson Exp $ */
+/* $EPIC: network.c,v 1.50 2003/12/03 05:21:11 jnelson Exp $ */
 /*
  * network.c -- handles stuff dealing with connecting and name resolving
  *
@@ -383,7 +383,7 @@ static int	inet_vhostsockaddr (int family, int port, SS *storage, socklen_t *len
 	if (port != -1) 
 	{
 		hints.ai_flags = AI_PASSIVE;
-		snprintf(p_port, 12, "%hu", port);
+		snprintf(p_port, 12, "%u", port);
 		p = p_port;
 	}
 

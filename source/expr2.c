@@ -1,4 +1,4 @@
-/* $EPIC: expr2.c,v 1.17 2003/12/01 04:41:34 crazyed Exp $ */
+/* $EPIC: expr2.c,v 1.18 2003/12/03 05:21:11 jnelson Exp $ */
 /*
  * Zsh: math.c,v 3.1.2.1 1997/06/01 06:13:15 hzoli Exp 
  * math.c - mathematical expression evaluation
@@ -143,12 +143,14 @@ typedef 	int		BooL;
  */
 #ifdef HAVE_LONG_LONG
 typedef long long INTTYPE;
+#define FORMAT "%lld"
 #define STR2INT(x) ((INTTYPE)atoll(x))
-#define INT2STR(x) (malloc_sprintf(NULL, "%lld", (INTTYPE)(x)))
+#define INT2STR(x) (malloc_sprintf(NULL, FORMAT , (INTTYPE)(x)))
 #else
 typedef long INTTYPE;
+#define FORMAT "%ld"
 #define STR2INT(x) ((INTTYPE)atol(x))
-#define INT2STR(x) (malloc_sprintf(NULL, "%ld", (INTTYPE)(x)))
+#define INT2STR(x) (malloc_sprintf(NULL, FORMAT , (INTTYPE)(x)))
 #endif
 
 /*
@@ -1052,7 +1054,7 @@ static void	reduce (expr_info *cx, int what)
 		CHECK_NOEVAL						\
 		push_integer(cx, (intop)); 				\
 		if (x_debug & DEBUG_NEW_MATH_DEBUG) 			\
-			yell("O: %s (%ld %ld) -> %ld", 			\
+			yell("O: %s (" FORMAT " " FORMAT ") -> " FORMAT, \
 				#intop, i, j, intop); 			\
 		break; 							\
 	}
@@ -1100,7 +1102,7 @@ static void	reduce (expr_info *cx, int what)
 		if (j == 0) 						\
 		{ 							\
 			if (x_debug & DEBUG_NEW_MATH_DEBUG) 		\
-				yell("O: %s (%ld %ld) -> []", 		\
+				yell("O: %s (" FORMAT " " FORMAT ") -> []", \
 					#intop, i, j); 			\
 			error("Division by zero"); 			\
 			push_token(cx, 0);				\
@@ -1108,7 +1110,7 @@ static void	reduce (expr_info *cx, int what)
 		else 							\
 		{ 							\
 			if (x_debug & DEBUG_NEW_MATH_DEBUG) 		\
-			    yell("O: %s (%ld %ld) -> %ld", 		\
+			    yell("O: %s (" FORMAT " " FORMAT ") -> " FORMAT, \
 					#intop, i, j, intop); 		\
 			push_integer(cx, (intop)); 			\
 		} 							\
@@ -1134,7 +1136,7 @@ static void	reduce (expr_info *cx, int what)
 		j = get_token_integer(cx, w);				\
 									\
 		if (x_debug & DEBUG_NEW_MATH_DEBUG) 			\
-			yell("O: %s = %s (%ld %ld) -> %ld",  		\
+			yell("O: %s = %s (" FORMAT " " FORMAT ") -> " FORMAT, \
 				s, #intop, i, j, intop); 		\
 									\
 		w = tokenize_integer(cx, (intop));			\
@@ -1230,7 +1232,7 @@ static void	reduce (expr_info *cx, int what)
 		if (j == 0) 						\
 		{ 							\
 			if (x_debug & DEBUG_NEW_MATH_DEBUG) 		\
-				yell("O: %s = %s (%ld %ld) -> 0",  	\
+				yell("O: %s = %s (" FORMAT " " FORMAT ") -> 0",\
 					s, #intop, i, j); 		\
 			error("Division by zero"); 			\
 			add_var_alias(s, empty_string, 0);		\
@@ -1239,7 +1241,7 @@ static void	reduce (expr_info *cx, int what)
 		} 							\
 									\
 		if (x_debug & DEBUG_NEW_MATH_DEBUG) 			\
-			yell("O: %s =  %s (%ld %ld) -> %ld",  		\
+			yell("O: %s =  %s (" FORMAT " "  FORMAT ") -> " FORMAT,\
 				s, #intop, i, j, intop); 		\
 									\
 		w = tokenize_float(cx, (intop));			\
@@ -1266,7 +1268,7 @@ static void	reduce (expr_info *cx, int what)
 									\
 		j = get_token_integer(cx, v);				\
 		if (x_debug & DEBUG_NEW_MATH_DEBUG) 			\
-			yell("O: %s (%s %ld) -> %ld", 			\
+			yell("O: %s (%s " FORMAT ") -> " FORMAT, 	\
 				#intop_result, s, j, (intop_result));	\
 									\
 		w = tokenize_integer(cx, (intop_assign));		\
@@ -1325,7 +1327,7 @@ static void	reduce (expr_info *cx, int what)
 			i = pop_integer(cx);
 			CHECK_NOEVAL
 			if (x_debug & DEBUG_NEW_MATH_DEBUG)
-				yell(": ~%ld -> %ld", i, ~i);
+				yell(": ~" FORMAT " -> " FORMAT, i, ~i);
 			push_integer(cx, ~i);
 			break;
 		case UPLUS:
@@ -1347,7 +1349,7 @@ static void	reduce (expr_info *cx, int what)
 			CHECK_NOEVAL
 			i = strlen(s);
 			if (x_debug & DEBUG_NEW_MATH_DEBUG)
-				yell("O: @(%s) -> %ld", s, i);
+				yell("O: @(%s) -> " FORMAT, s, i);
 			push_integer(cx, i);
 			break;
 		case WORDC:
@@ -1355,7 +1357,7 @@ static void	reduce (expr_info *cx, int what)
 			CHECK_NOEVAL
 			i = count_words(s, DWORD_YES, "\"");
 			if (x_debug & DEBUG_NEW_MATH_DEBUG)
-				yell("O: #(%s) -> %ld", s, i);
+				yell("O: #(%s) -> " FORMAT, s, i);
 			push_integer(cx, i);
 			break;
 		case DEREF:

@@ -1,4 +1,4 @@
-/* $EPIC: dcc.c,v 1.81 2003/12/01 04:41:34 crazyed Exp $ */
+/* $EPIC: dcc.c,v 1.82 2003/12/03 05:21:11 jnelson Exp $ */
 /*
  * dcc.c: Things dealing client to client connections. 
  *
@@ -3324,7 +3324,7 @@ static void 	update_transfer_buffer (long refnum, const char *format, ...)
 	else
 		*DCC_current_transfer_buffer = 0;
 
-	do_hook(DCC_ACTIVITY_LIST, "%d", refnum);
+	do_hook(DCC_ACTIVITY_LIST, "%ld", refnum);
 }
 
 
