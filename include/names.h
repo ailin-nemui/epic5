@@ -47,6 +47,7 @@ struct WindowStru;
 	int	get_channel_oper	(Char *, int);
 	int	get_channel_voice	(Char *, int);
 	int     get_channel_halfop	(Char *, int);
+	int     chanmodetype		(char);
 struct WindowStru *get_channel_window	(Char *, int);
 	void	set_channel_window	(struct WindowStru *, Char *);
 	char *	create_channel_list	(int);

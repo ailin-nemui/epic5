@@ -152,6 +152,7 @@ extern	int	parsing_server_index;
 const	char *	get_server_away			(int);
 
 const	char *	get_possible_umodes		(int);
+	void	set_possible_umodes		(int, const char *);
 const	char *	get_umode			(int);
 	void	clear_user_modes		(int);
 	void	set_server_flag			(int, int, int);

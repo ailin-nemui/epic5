@@ -1,4 +1,4 @@
-/* $EPIC: names.c,v 1.24 2002/07/17 22:52:52 jnelson Exp $ */
+/* $EPIC: names.c,v 1.25 2002/07/30 16:12:59 crazyed Exp $ */
 /*
  * names.c: This here is used to maintain a list of all the people currently
  * on your channel.  Seems to work 
@@ -611,9 +611,16 @@ void 	add_to_channel (const char *channel, const char *nick, int server, int sus
 	int	ischop = oper;
 	int	isvoice = voice;
 	int	half_assed = ha;
+const	char	*prefix;
 
 	if (!(chan = find_channel(channel, server)))
 		return;
+
+	prefix = get_server_005(from_server, "PREFIX");
+	if (prefix && *prefix == '(' && (prefix = strchr(prefix, ')')))
+		prefix++;
+	if (!prefix || !*prefix)
+		prefix = "@+";
 
 	/* 
 	 * This is defensive just in case someone in the future
@@ -621,7 +628,11 @@ void 	add_to_channel (const char *channel, const char *nick, int server, int sus
 	 */
 	for (;;)
 	{
-		if (*nick == '+')
+		if (!strchr(prefix, *nick))
+		{
+			break;
+		}
+		else if (*nick == '+')
 		{
 			nick++;
 			if (is_me(server, nick))
@@ -657,15 +668,11 @@ void 	add_to_channel (const char *channel, const char *nick, int server, int sus
 			half_assed = 1;
 			break;
 		}
-
-		/* Ignore OpenProject's "CanTopic" mode */
-		else if (*nick == '=')
+		else
 		{
 			nick++;
 			break;
 		}
-		else
-			break;
 	}
 
 	new_n = (Nick *)new_malloc(sizeof(Nick));
@@ -936,6 +943,53 @@ static char *	get_cmode (Channel *chan)
 }
 
 /*
+ * Figure out type mode type for the current server.
+ *
+ * Type 1 is a flag meaning altering char. (+ or -);
+ * Type 2 is present in a PREFIX.
+ * Types 3-6 correspond to fields 1-4 of CHANMODES.
+ * Type 0 is an invalid mode.
+ *
+ * If these variables aren't present, we chose hopefuly sane defaults.
+ *
+ * There is lots of room for improvement here.  Ideally it should deal with
+ * UTF8 characters and the scripters need to $serverctl(set x 005 CHANMODE)
+ * gracefully.
+ */
+int	chanmodetype (char mode)
+{
+const	char	*chanmodes, *prefix;
+static	int	server = -1;
+static	char	modemap[256];
+	char	modetype = 1;
+
+	if (server == from_server)
+		return modemap[mode];
+
+	/* There is a not insignificant performance hit for this */
+	memset(modemap,0,sizeof(modemap));
+
+	modemap['+'] = modemap['-'] = modetype++;
+
+	prefix = get_server_005(from_server, "PREFIX");
+	if (!prefix || !*prefix == '(')
+		prefix = "(ov)";
+	for (prefix++; *prefix && *prefix != ')'; prefix++)
+		modemap[*prefix] = modetype;
+	modetype++;
+
+	if (!(chanmodes = get_server_005(from_server, "CHANMODES")))
+		chanmodes = "b,k,l,imnpst";
+	for (; *chanmodes; chanmodes++)
+		if (*chanmodes == ',')
+			modetype++;
+		else
+			modemap[*chanmodes] = modetype;
+
+	return modemap[mode];
+}
+
+/*
  * decifer_mode: This will figure out the mode string as returned by mode
  * commands and convert that mode string into a one byte bit map of modes 
  */
@@ -958,6 +1012,20 @@ static void	decifer_mode (const char *modes, Channel *chan)
 
 	for (; *mode_str; mode_str++)
 	{
+		const char *arg = NULL;
+		switch (chanmodetype(*mode_str))
+		{
+			case 6: case 1:
+				break;
+			case 5:
+				if (!add) break;
+			case 4: case 3: case 2:
+				if (arg = next_arg(rest, &rest))
+					break;
+			default:
+				yell("WARNING:  Mode parser or server is BROKE.  Mode=%c%c args: %s"
+						, add?'+':'-', *mode_str, rest);
+		}
 		switch (*mode_str)
 		{
 			case '+':
@@ -1008,9 +1076,7 @@ static void	decifer_mode (const char *modes, Channel *chan)
 				break;
 			case 'k':
 			{
-				char *key;
-
-				if (!(key = next_arg(rest, &rest)))
+				if (!arg)
 				{
 				    yell("Channel %s is +k, but has no key.  "
 					 "This server broke backwards compatability",
@@ -1021,7 +1087,7 @@ static void	decifer_mode (const char *modes, Channel *chan)
 				value = MODE_KEY;
 
 				if (add)
-					malloc_strcpy(&chan->key, key);
+					malloc_strcpy(&chan->key, arg);
 				else
 					new_free(&chan->key);
 
@@ -1031,36 +1097,33 @@ static void	decifer_mode (const char *modes, Channel *chan)
 			case 'l':
 			{
 				value = MODE_LIMIT;
-				if (add)
-					limit = next_arg(rest, &rest);
-				else
-					limit = zero;
+				if (!add)
+					arg = zero;
 
-				chan->limit = my_atol(limit);
+				chan->limit = my_atol(arg);
 				chan->i_mode = -1;	/* Revoke old cache */
 				continue;
 			}
 
 			case 'o':
 			{
-				person = next_arg(rest, &rest);
 				/* 
 				 * Borked av2.9 sends a +o to the channel
 				 * when you create it, but doesnt bother to
 				 * send your nickname, too. blah.
 				 */
-				if (!person)
-				    person = get_server_nickname(from_server);
+				if (!arg)
+				    arg = get_server_nickname(from_server);
 
-				if (is_me(from_server, person))
+				if (is_me(from_server, arg))
 					chan->chop = add;
-				if ((nick = find_nick_on_channel(chan, person)))
+				if ((nick = find_nick_on_channel(chan, arg)))
 					nick->chanop = add;
 				continue;
 			}
 			case 'v':
 			{
-				if (!(person = next_arg(rest, &rest)))
+				if (!arg)
 				{
 					yell("Channel %s got a mode +v "
 					     "without an argument.  "
@@ -1069,15 +1132,15 @@ static void	decifer_mode (const char *modes, Channel *chan)
 					continue;
 				}
 
-				if (is_me(from_server, person))
+				if (is_me(from_server, arg))
 					chan->voice = add;
-				if ((nick = find_nick_on_channel(chan, person)))
+				if ((nick = find_nick_on_channel(chan, arg)))
 					nick->voice = add;
 				continue;
 			}
 			case 'h': /* erfnet's borked 'half-assed oper' mode */
 			{
-				if (!(person = next_arg(rest, &rest)))
+				if (!arg)
 				{
 					yell("Channel %s got a mode +h "
 					     "without an argument.  "
@@ -1086,9 +1149,9 @@ static void	decifer_mode (const char *modes, Channel *chan)
 					continue;
 				}
 
-				if (is_me(from_server, person))
+				if (is_me(from_server, arg))
 					chan->half_assed = add;
-				if ((nick = find_nick_on_channel(chan, person)))
+				if ((nick = find_nick_on_channel(chan, arg)))
 					nick->half_assed = add;
 				continue;
 			}
@@ -1096,7 +1159,6 @@ static void	decifer_mode (const char *modes, Channel *chan)
 			case 'e':	/* borked erfnet ban exceptions */
 			case 'I':	/* borked ircnet invite exceptions */
 			{
-				next_arg(rest, &rest);
 				continue;
 			}
 		}
@@ -1106,6 +1168,8 @@ static void	decifer_mode (const char *modes, Channel *chan)
 		else
 			chan->mode &= ~value;
 	}
+	if (rest && *rest)
+		yell("WARNING:  Mode parser or server is BROKE.  Remaining args: %s", rest);
 
 	if (!chan->limit)
 		chan->mode &= ~MODE_LIMIT;

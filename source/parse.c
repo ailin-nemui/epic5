@@ -1,4 +1,4 @@
-/* $EPIC: parse.c,v 1.21 2002/07/17 22:52:52 jnelson Exp $ */
+/* $EPIC: parse.c,v 1.22 2002/07/30 16:12:59 crazyed Exp $ */
 /*
  * parse.c: handles messages from the server.   Believe it or not.  I
  * certainly wouldn't if I were you. 
@@ -97,6 +97,11 @@ void 	fake (void)
  */
 int 	is_channel(const char *to)
 {
+const	char	*chantypes;
+
+	if ((chantypes = get_server_005(from_server, "CHANTYPES")))
+		return (!!strchr(chantypes, *to));
+
 	return ( (to) && (     (*to == MULTI_CHANNEL) 
 			    || (*to == STRING_CHANNEL)
 		            || (*to == LOCAL_CHANNEL) 
@@ -900,7 +905,36 @@ static void strip_modes (char *from, char *channel, char *line)
 	    for (pointer = mode; *pointer; pointer++)
 	    {
 		char	c = *pointer;
+		char	*arg = NULL;
 
+#if 1
+		switch (chanmodetype(c))
+		{
+			case 1:
+				mag = c;
+				continue;
+			case 6:
+				break;
+			case 5:
+				if (mag == '-')
+					break;
+			case 4: case 3: case 2:
+				if (arg = safe_new_next_arg(copy, &copy))
+					break;
+			default:
+				/* We already get a yell from this in decifer_mode() */
+				break;
+		}
+		if (arg)
+			do_hook(MODE_STRIPPED_LIST,
+				"%s %s %c%c %s",
+				from, channel, mag,
+				c,arg);
+		else
+			do_hook(MODE_STRIPPED_LIST,
+				"%s %s %c%c",
+				from,channel,mag,c);
+#else
 		/* 
 		 * Conversion from "next_arg" to "safe_new_next_arg"
 		 * done on Aug 30, 2001 because of lame-o servers that
@@ -949,6 +983,7 @@ static void strip_modes (char *from, char *channel, char *line)
 				break;
 			}
 		}
+#endif
 	    }
 	}
 	else /* User mode */

@@ -1,4 +1,4 @@
-/* $EPIC: commands.c,v 1.32 2002/07/23 00:16:58 jnelson Exp $ */
+/* $EPIC: commands.c,v 1.33 2002/07/30 16:12:59 crazyed Exp $ */
 /*
  * commands.c -- Stuff needed to execute commands in ircII.
  *		 Includes the bulk of the built in commands for ircII.
@@ -2927,7 +2927,7 @@ struct target_type target[4] =
 	     * $open() files.  This used to be used for DCC TALK but
 	     * we haven't supported that for 5 years.
 	     */
-	    else if (*current_nick == '@')
+	    else if (*current_nick == '@' && is_number(current_nick + 1))
 		target_file_write(current_nick + 1, text);
 
 	    else if (*current_nick == '"')

@@ -1,4 +1,4 @@
-/* $EPIC: server.c,v 1.63 2002/07/27 05:16:29 wd Exp $ */
+/* $EPIC: server.c,v 1.64 2002/07/30 16:12:59 crazyed Exp $ */
 /*
  * server.c:  Things dealing with that wacky program we call ircd.
  *
@@ -1643,6 +1643,16 @@ const char *	get_possible_umodes (int gu_index)
 	return server_list[gu_index].umodes;
 }
 
+void set_possible_umodes (int gu_index, const char *umodes)
+{
+	if (gu_index == -1)
+		gu_index = primary_server;
+	else if (gu_index >= number_of_servers)
+		return;
+
+	malloc_strcpy(&server_list[gu_index].umodes, umodes);
+}
+
 const char *	get_umode (int gu_index)
 {
 	if (gu_index == -1)
@@ -2731,6 +2741,8 @@ char 	*serverctl 	(char *input)
 		} else if (!my_strnicmp(listc, "SSL", 1)) {
 			RETURN_INT(get_server_enable_ssl(refnum));
 #endif
+		} else if (!my_strnicmp(listc, "UMODES", 6)) {
+			RETURN_STR(get_possible_umodes(refnum));
 		} else if (!my_strnicmp(listc, "UMODE", 2)) {
 			RETURN_STR(get_umode(refnum));
 		} else if (!my_strnicmp(listc, "USERHOST", 2)) {
@@ -2794,6 +2806,8 @@ char 	*serverctl 	(char *input)
 			set_server_enable_ssl(refnum, value);
 			RETURN_INT(1);
 #endif
+		} else if (!my_strnicmp(listc, "UMODES", 6)) {
+			RETURN_EMPTY;		/* Read only for now */
 		} else if (!my_strnicmp(listc, "UMODE", 2)) {
 			RETURN_EMPTY;		/* Read only for now */
 		} else if (!my_strnicmp(listc, "USERHOST", 2)) {

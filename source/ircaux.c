@@ -1,4 +1,4 @@
-/* $EPIC: ircaux.c,v 1.47 2002/07/26 17:10:07 jnelson Exp $ */
+/* $EPIC: ircaux.c,v 1.48 2002/07/30 16:12:59 crazyed Exp $ */
 /*
  * ircaux.c: some extra routines... not specific to irc... that I needed 
  *
@@ -480,7 +480,7 @@ char *	m_sc3cat (char **one, const char *maybe, const char *definitely, size_t *
 char *	m_sc3cat_s (char **one, const char *maybe, const char *ifthere, size_t *clue)
 {
 	if (ifthere && *ifthere)
-		return m_c3cat(one, maybe, ifthere, clue);
+		return m_sc3cat(one, maybe, ifthere, clue);
 
 	return *one;
 }

@@ -76,6 +76,7 @@ alias call.trace {
 #
 alias call.xtrace {
 	@ :hooks = [set output_rewrite on window on yell]
+	@ :oxd = xdebug()
 	@ :debugon = :debugoff = split(, $0)
 	repeat $#debugoff {
 		@unshift(debugon +$pop(debugon))
@@ -86,7 +87,7 @@ alias call.xtrace {
 	}
 	xdebug $debugon
 	$1-
-	xdebug $debugoff
+	xdebug $debugoff $oxd
 	fe ($hooks) foo bar {
 		stack pop $foo $bar
 	}

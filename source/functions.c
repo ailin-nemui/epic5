@@ -1,4 +1,4 @@
-/* $EPIC: functions.c,v 1.76 2002/07/30 05:30:27 jnelson Exp $ */
+/* $EPIC: functions.c,v 1.77 2002/07/30 16:12:59 crazyed Exp $ */
 /*
  * functions.c -- Built-in functions for ircII
  *
@@ -391,7 +391,8 @@ extern char
 	*function_push		(char *),
 	*function_pop		(char *),
 	*function_shift		(char *),
-	*function_unshift	(char *);
+	*function_unshift	(char *),
+	*function_xdebug	(char *);
 
 typedef char *(bf) (char *);
 typedef struct
@@ -679,6 +680,7 @@ static BuiltInFunctions	built_in_functions[] =
 	{ "WORDTOINDEX",	function_wordtoindex	},
 	{ "WRITE",		function_write 		},
 	{ "WRITEB",		function_writeb		},
+	{ "XDEBUG",		function_xdebug		},
 	{ "YN",			function_yn		},
 	{ (char *) 0,		NULL }
 };
@@ -2291,13 +2293,9 @@ BUILT_IN_FUNCTION(function_splice, word)
 		right_part = extractw(old_value, start + length, EOS);
 	}
 
-	new_value = NULL;
-	if (left_part && *left_part)
-		malloc_strcat_c(&new_value, left_part, &clue);
-	if (word && *word)
-		m_sc3cat(&new_value, space, word, &clue);
-	if (right_part && *right_part)
-		m_sc3cat(&new_value, space, right_part, &clue);
+	m_sc3cat_s(&new_value, space, left_part, &clue);
+	m_sc3cat_s(&new_value, space, word, &clue);
+	m_sc3cat_s(&new_value, space, right_part, &clue);
 
 	add_var_alias(variable, new_value, 0);
 
@@ -2819,19 +2817,9 @@ BUILT_IN_FUNCTION(function_which, word)
 	FILE *fp;
 
 	GET_STR_ARG(file1, word);
-	file1 = m_strdup(file1);
-
-	if ((fp = uzfopen(&file1, (word && *word) ? word 
-				: get_string_var(LOAD_PATH_VAR), 0)))
-	{
-		fclose(fp);
-		return (file1);
-	}
-	else
-	{
-		new_free(&file1);
-		RETURN_EMPTY;
-	}
+	file1 = path_search(file1, (word && *word) ? word
+			: get_string_var(LOAD_PATH_VAR));
+	RETURN_STR(file1);
 }
 
 
@@ -6393,10 +6381,11 @@ BUILT_IN_FUNCTION(function_unsplit, input)
 	char *	sep;
 	char *	word;
 	char *	retval = NULL;
+	size_t	clue = 0;
 
 	GET_STR_ARG(sep, input);
 	while ((word = new_next_arg(input, &input)))
-		m_s3cat(&retval, sep, word);
+		m_sc3cat(&retval, sep, word, &clue);
 	RETURN_MSTR(retval);
 }
 

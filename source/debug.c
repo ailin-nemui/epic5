@@ -1,4 +1,4 @@
-/* $EPIC: debug.c,v 1.5 2002/07/17 22:52:52 jnelson Exp $ */
+/* $EPIC: debug.c,v 1.6 2002/07/30 16:12:59 crazyed Exp $ */
 /*
  * debug.c -- controll the values of x_debug.
  *
@@ -71,7 +71,7 @@ static struct debug_opts opts[] =
 	{ "SLASH_HACK",		DEBUG_SLASH_HACK },
 	{ "LASTLOG",		DEBUG_LASTLOG },
 	{ "SSL",		DEBUG_SSL },
-	{ "ALL",		0xFFFFFFFF },
+	{ "ALL",		~0},
 	{ NULL,			0 },
 };
 
@@ -106,7 +106,7 @@ BUILT_IN_COMMAND(xdebugcmd)
 		if (*this_arg == '-')
 			remove = 1, this_arg++;
 		else if (*this_arg == '+')
-			this_arg++;
+			remove = 0, this_arg++;
 
 		for (cnt = 0; opts[cnt].command; cnt++)
 		{
@@ -124,3 +124,24 @@ BUILT_IN_COMMAND(xdebugcmd)
 	}
 }
 
+char* function_xdebug (char *word)
+{
+	char	*ret = NULL;
+	char	*this = NULL;
+	int	cnt;
+	size_t	clue = 0;
+
+	for (cnt = 0; opts[cnt].command; cnt++)
+	{
+		if (!~opts[cnt].flag) {
+			continue;
+		} else if (x_debug & opts[cnt].flag) {
+			m_sc3cat_s(&ret, space, "+", &clue);
+		} else {
+			m_sc3cat_s(&ret, space, "-", &clue);
+		}
+		malloc_strcat_c(&ret, opts[cnt].command, &clue);
+	}
+
+	return ret;
+}

@@ -1,4 +1,4 @@
-/* $EPIC: alias.c,v 1.7 2002/07/17 22:52:52 jnelson Exp $ */
+/* $EPIC: alias.c,v 1.8 2002/07/30 16:12:59 crazyed Exp $ */
 /*
  * alias.c -- Handles the whole kit and caboodle for aliases.
  *
@@ -2216,10 +2216,10 @@ void 	dump_call_stack 	(void)
 	int my_wind_index = wind_index;
 	if (wind_index >= 0)
 	{
-		say("Call stack");
+		yell("Call stack");
 		while (my_wind_index--)
-			say("[%3d] %s", my_wind_index, call_stack[my_wind_index].current);
-		say("End of call stack");
+			yell("[%3d] %s", my_wind_index, call_stack[my_wind_index].current);
+		yell("End of call stack");
 	}
 }
 
