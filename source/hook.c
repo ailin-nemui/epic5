@@ -115,7 +115,6 @@ hook_functions[] =
 	{ "GENERAL_NOTICE",	(Hook *) 0,	3,	0,	0 },
 	{ "GENERAL_PRIVMSG",	(Hook *) 0,	3,	0,	0 },
 	{ "HELP",		(Hook *) 0,	2,	0,	0 },
-	{ "GENERAL_PRIVMSG",	(Hook *) 0,	3,	0,	0 },
 	{ "HOOK",		(Hook *) 0,	1,	0,	0 },
 	{ "IDLE",		(Hook *) 0,	1,	0,	0 },
 	{ "INPUT",		(Hook *) 0,	1,	0,	HF_NORECURSE },
