@@ -1,4 +1,4 @@
-/* $EPIC: commands.c,v 1.88 2004/03/15 17:00:14 jnelson Exp $ */
+/* $EPIC: commands.c,v 1.89 2004/03/17 16:50:30 jnelson Exp $ */
 /*
  * commands.c -- Stuff needed to execute commands in ircII.
  *		 Includes the bulk of the built in commands for ircII.
@@ -884,6 +884,7 @@ BUILT_IN_COMMAND(xechocmd)
 		old_color = 0, old_blink = 0, old_ansi = 0;
 	int	xtended = 0;
 	int	l = -1;
+	int	old_window_notify = do_window_notifies;
 
 	old_to_window = to_window;
 
@@ -1043,6 +1044,12 @@ BUILT_IN_COMMAND(xechocmd)
 			break;
 		}
 
+		case 'F': /* DO not notify for hidden windwos (%F) */
+		{
+			do_window_notifies = 0;
+			break;
+		}
+
 		case '-': /* End of arg list */
 		{
 			next_arg(args, &args);
@@ -1114,6 +1121,7 @@ BUILT_IN_COMMAND(xechocmd)
 	if (l > -1)
 		pop_message_from(l);
 
+	do_window_notifies = old_window_notify;
 	if (nolog)
 		inhibit_logging = 0;
 	window_display = display;

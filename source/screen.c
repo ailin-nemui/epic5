@@ -1,4 +1,4 @@
-/* $EPIC: screen.c,v 1.74 2004/03/15 03:24:51 jnelson Exp $ */
+/* $EPIC: screen.c,v 1.75 2004/03/17 16:50:30 jnelson Exp $ */
 /*
  * screen.c
  *
@@ -2341,7 +2341,7 @@ static void 	add_to_window (Window *window, const unsigned char *str)
 	 * this here.  This also avoids the terrible problem of 
 	 * recursive calls to split_up_line, which are bad.
 	 */
-	if (!window->screen)
+	if (!window->screen && do_window_notifies)
 	{
 		/*
 		 * This is for archon -- he wanted a way to have 
