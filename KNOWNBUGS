@@ -378,3 +378,5 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Avoid NULL deref on brok^H^H^H^Hempty numeric replies
 * Fix aliasctl(): values returned by pmatch_* are not to be freed. (rb ce)
 * Better handling of damaged /who x,y responses from some servers.
+* Make $function() call builtin, and $:function() call alias
+* I need to make sure to add an /xdebug to make $function() call alias!

@@ -1,4 +1,4 @@
-/* $EPIC: functions.c,v 1.178 2004/08/17 16:09:46 crazyed Exp $ */
+/* $EPIC: functions.c,v 1.179 2004/08/22 23:57:55 jnelson Exp $ */
 /*
  * functions.c -- Built-in functions for ircII
  *
@@ -832,10 +832,10 @@ char	*call_function (char *name, const char *args)
 	debug_copy = LOCAL_COPY(tmp);
 	type = strspn(name, ":");
 
-	if (alias && type != 2)
-		result = call_user_function(name, alias, tmp, arglist);
-	else if (func && type != 1)
+	if (func && type != 1)
 		result = func(tmp);
+	else if (alias && type != 2)
+		result = call_user_function(name, alias, tmp, arglist);
 
 	size = strlen(name) + strlen(debug_copy) + 15;
 	buf = (char *)alloca(size);
