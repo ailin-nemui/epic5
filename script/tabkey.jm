@@ -44,6 +44,8 @@
 bind ^I parse_command do_tabkey 1
 bind ^R parse_command do_tabkey -1
 
+xdebug +extractw
+
 alias add_target (msg_cmd, target) {
 	if (numwords($myservers()) > 1 && count(: $target) == 0 && left(1 $target) != [=]) {
 		@:target = [${servernum()}:${target}]
@@ -419,13 +421,15 @@ alias do_tabkey (cycle_direction) {
 		}
 	}
 
-	@pad_input_line($padding)
+	if (mid(${curpos()} 1 $L) != padding) {
+		xtype -l $padding
+	}
 
 	@last_input_line = []
 }
 
 alias isdirectory (pathname) {
-	@:statret = stat($pathname)
+	@:statret = stat("$pathname")
 	@:file_type = left(1 $word(2 $statret))
 
 	if (file_type & 4) {
@@ -436,7 +440,7 @@ alias isdirectory (pathname) {
 }
 
 alias isexe (pathname) {
-	@:statret = stat($pathname)
+	@:statret = stat("$pathname")
 	@:file_mode = word(2 $statret)
 	@:file_type = left(1 $file_mode)
 	@:permissions = right(3 $file_mode)
@@ -639,52 +643,13 @@ alias match_theme (fragment) {
 	return $matches
 }
 
-alias msg (target, message) {
-	if (index(: $target) == -1) {
-		//msg $target $message
-	} else {
-		@:refnum = before(: $target)
-		@:new_target = after(: $target)
-
-		if (servername($refnum) == [<none>]) {
-			//msg $target $message
-		} elsif (findw($target $mychannels()) > -1) {
-			//msg $target $message
-		} else {
-			xeval -s $refnum {//msg $new_target $message}
-		}
-	}
-}
-
-alias notice (target, message) {
-	if (index(: $target) == -1) {
-		//notice $target $message
-	} else {
-		@:refnum = before(: $target)
-		@:new_target = after(: $target)
-
-		if (servername($refnum) == [<none>]) {
-			//notice $target $message
-		} elsif (findw($target $mychannels()) > -1) {
-			//notice $target $message
-		} else {
-			xeval -s $refnum {//notice $new_target $message}
-		}
-	}
-}
-
-alias pad_input_line (padding) {
-	if (mid(${curpos()} 1 $L) != padding) {
-		xtype -l $padding
-	}
-}
-
 alias tclear {
 	@target_cycle_list = []
 	@target_index = -2
 
 	^eval xecho -- $tab_target_history_cleared_format
 }
+
 
 # *** hooks ***
 
@@ -730,6 +695,32 @@ on #^send_msg 50 "*" {
 
 on #^send_notice 50 "*" {
 	@add_target(notice $0)
+}
+
+on ?send_to_server "% % NOTICE %:% *" {
+	if (ischannel($3)) {
+		return 0
+	}
+
+	@:refnum = before(: $3)
+	@:target = after(: $3)
+
+	xquote -server $refnum NOTICE $target $4-
+
+	return 1
+}
+
+on ?send_to_server "% % PRIVMSG %:% *" {
+	if (ischannel($3)) {
+		return 0
+	}
+
+	@:refnum = before(: $3)
+	@:target = after(: $3)
+
+	xquote -server $refnum PRIVMSG $target $4-
+
+	return 1
 }
 
 on ^set "NICK_COMPLETION_CHAR *" {
