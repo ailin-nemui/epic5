@@ -8,6 +8,7 @@
 # You can mix and match <pattern>s and -<pattern>s.
 #
 package autoget
+@ autoget_patterns = [ ]
 
 on #-dcc_request 414 "% SEND *" {
 	if (rmatch($2 $autoget_patterns)) {
@@ -16,6 +17,10 @@ on #-dcc_request 414 "% SEND *" {
 }
 
 alias autoget {
+	if (strlen($*) == 0) {
+		xecho -b Autogetting files matching [$autoget_patterns]
+		return
+	}
 	fe ($*) x {
 		if (left(1 $x) == [-]) {
 			@ x = rest(1 $x)
