@@ -61,4 +61,7 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Remember that inet_ntostr() takes one too, passed to getnameinfo().
 * Change stuff in dcc.c/functions.c/server.c to accomodate naming changes.
 * Invert the logic in connectory() to use inet_remotesockaddr() to get family.
-
+* Fix parse_server_info() to properly handle ipv6 p-addrs
+* Add support for [<ipv6 p-addr>] to parse_server_info().
+* Fix an off-by-one error in Getaddrinfo.  Bleh.
+* Fix a malloc() size mistake in Getaddrinfo.

@@ -326,7 +326,7 @@ int 	find_server_refnum (char *server, char **rest)
 	 * Next check to see if its a "server:port:password:nick"
 	 */
 	else if (strchr(server, ':'))
-		parse_server_info(server, &cport, &password, &nick, &group, &server_type);
+		parse_server_info(&server, &cport, &password, &nick, &group, &server_type);
 
 	/*
 	 * Next check to see if its "server port password nick"
@@ -383,25 +383,28 @@ int	parse_server_index (const char *str)
  * "*group" must be set to something (even if it is NULL) before calling this!
  * Colons can be backslashed.
  */
-void	parse_server_info (char *name, char **port, char **password, char **nick, char **group, char **server_type)
+void	parse_server_info (char **host, char **port, char **password, char **nick, char **group, char **server_type)
 {
 	char *ptr;
+	char *name = *host;
 
-	*port = *password = *nick = *server_type = NULL;
+	*host = *port = *password = *nick = *server_type = NULL;
 
 	do
 	{
 		ptr = name;
 		if (*ptr == '"')
-			name = new_next_arg(ptr, &ptr);
+			*host = new_next_arg(ptr, &ptr);
 		else if (*ptr == '[')
 		{
-		    name = ptr + 1;
-		    if ((ptr = MatchingBracket(ptr, '[', ']')))
+		    *host = ptr + 1;
+		    if ((ptr = MatchingBracket(ptr + 1, '[', ']')))
 			*ptr++ = 0;
 		    else
 			break;
 		}
+		else
+		    *host = ptr;
 
 		ptr = strchr(ptr, ':');
 		if (!ptr)
@@ -503,7 +506,7 @@ void	build_server_list (char *servers, char *group)
 
 		while ((host = next_arg(servers, &servers)))
 		{
-			parse_server_info(host, &port, &password, &nick, &group, &server_type);
+			parse_server_info(&host, &port, &password, &nick, &group, &server_type);
                         if (port && *port && (port_num = my_atol(port)))
 				;
 			else

@@ -116,7 +116,7 @@ extern	int	parsing_server_index;
 	int	find_in_server_list		(const char *, int);
 	int	find_server_refnum		(char *, char **rest);
 	int	parse_server_index		(const char *);
-	void	parse_server_info		(char *, char **, char **,
+	void	parse_server_info		(char **, char **, char **,
 						 char **, char **, char **);
 	void	build_server_list		(char *, char *);
 	int	read_server_file		(void);

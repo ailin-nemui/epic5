@@ -779,7 +779,7 @@ int	Getaddrinfo (const char *nodename, const char *servname, const AI *hints, AI
 
 	if (do_af_unix)
 	{
-                memset(&storage, 0, sizeof(USA));
+                memset(&storage, 0, sizeof(storage));
                 storage.sun_family = AF_UNIX;
                 strlcpy(storage.sun_path, nodename, sizeof(storage.sun_path));
 #ifdef HAVE_SUN_LEN
@@ -789,7 +789,7 @@ int	Getaddrinfo (const char *nodename, const char *servname, const AI *hints, AI
                 storage.sun_len = strlen(nodename) + 1;
 # endif
 #endif
-                len = strlen(storage.sun_path) + 2;
+                len = strlen(storage.sun_path) + 3;
 
 		(*res) = new_malloc(sizeof(*results));
 		(*res)->ai_flags = 0;
@@ -798,8 +798,8 @@ int	Getaddrinfo (const char *nodename, const char *servname, const AI *hints, AI
 		(*res)->ai_protocol = 0;
 		(*res)->ai_addrlen = len;
 		(*res)->ai_canonname = m_strdup(nodename);
-		(*res)->ai_addr = new_malloc(sizeof(struct sockaddr));
-		*((USA *)(*res)->ai_addr) = storage;
+		(*res)->ai_addr = new_malloc(sizeof(storage));
+		*(USA *)((*res)->ai_addr) = storage;
 		(*res)->ai_next = 0;
 
                 return 0;
