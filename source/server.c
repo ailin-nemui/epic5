@@ -1363,7 +1363,7 @@ int	reconnect (int oldserv, int samegroup)
 			continue;
 		if (newserv != oldserv && j == oldserv)
 			continue;
-		if ((server_list[j].reconnects++) > max_reconnects) {
+		if (++server_list[j].reconnects > max_reconnects) {
 			say("Auto-reconnect has been throttled because too many unsuccessfull attempts to connect to server %d have been performed.", j);
 			break;
 		}

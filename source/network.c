@@ -21,6 +21,8 @@ static Hostent *lookup_host (const char *);
 static Hostent *lookup_ip (const char *);
 static int	get_low_portnum (void);
 static int	get_high_portnum (void);
+int	set_non_blocking (int fd);
+int	set_blocking (int fd);
 
 /*
 	#define SERVICE_SERVER 0
@@ -75,9 +77,12 @@ int	connect_by_number (char *host, unsigned short *port, int service, int protoc
 	set_socket_options (fd);
 
 	/* Unix domain server */
-#ifdef HAVE_SYS_UN_H
 	if (is_unix)
 	{
+#ifndef HAVE_SYS_UN_H
+		yell("Unix Domain sockets are not supported on your system.");
+		return close(fd), -7;
+#else
 		USA	name;
 
 		memset(&name, 0, sizeof(name));
@@ -91,7 +96,7 @@ int	connect_by_number (char *host, unsigned short *port, int service, int protoc
 # endif
 #endif
 
-		if (is_unix && (service == SERVICE_SERVER))
+		if (service == SERVICE_SERVER)
 		{
 			if (bind(fd, (SA *)&name, strlen(name.sun_path) + 2))
 				return close(fd), -2;
@@ -100,24 +105,21 @@ int	connect_by_number (char *host, unsigned short *port, int service, int protoc
 				if (listen(fd, 4) < 0)
 					return close(fd), -3;
 		}
-
-		/* Unix domain client */
-		else if (service == SERVICE_CLIENT)
+		else 	/* Unix domain client */
 		{
 			alarm(get_int_var(CONNECT_TIMEOUT_VAR));
-			if (connect(fd, (SA *)&name, strlen(name.sun_path) + 2) < 0)
+			if (connect(fd, (SA *)&name, sizeof(name)) < 0)
 			{
 				alarm(0);
 				return close(fd), -4;
 			}
 			alarm(0);
 		}
-	}
-	else
 #endif
+	}
 
 	/* Inet domain server */
-	if (!is_unix && (service == SERVICE_SERVER))
+	else if (service == SERVICE_SERVER)
 	{
 		int 	length;
 		ISA	name;
@@ -224,10 +226,15 @@ int	connect_by_number (char *host, unsigned short *port, int service, int protoc
 	}
 
 	/* Inet domain client */
-	else if (!is_unix && (service == SERVICE_CLIENT))
+	else if (service == SERVICE_CLIENT)
 	{
 		ISA	server;
 		ISA	localaddr;
+		ISA	peer;
+		int	peerlen;
+		int	err;
+		fd_set	set;
+		Timeval	to;
 
 		/*
 		 * Doing this bind is bad news unless you are sure that
@@ -243,31 +250,54 @@ int	connect_by_number (char *host, unsigned short *port, int service, int protoc
 		}
 
 		/*
-		 * If this is an IP we're looking up, dont do a full resolve,
-		 * as it doesnt matter anyways.
-		 *
-		 * XXXXX THIS IS PROBABLY A HACK! XXXXX
-		 * At least dcc_open calls inet_ntoa, only to have us
-		 * immediately call inet_aton again.
-		 * Does anyone call us here with a hostname?
+		 * Call inet_anyton() to get a (struct in_addr) of the
+		 * hostname.  inet_anyton() does not do a DNS lookup for
+		 * dotted quad IPv4 addresses, so it's "cheap" for that
+		 * purpose.
 		 */
 		memset(&server, 0, sizeof(server));
 		server.sin_family = AF_INET;
 		server.sin_port = htons(*port);
-
 		if (inet_anyton(host, &server.sin_addr))
 		{
 			errno = -1;
 			return close(fd), -6;
 		}
 
-		alarm(get_int_var(CONNECT_TIMEOUT_VAR));
-		if (connect(fd, (SA *)&server, sizeof(server)) < 0)
-		{
-			alarm(0);
+		/*
+		 * Simulate a blocking connect, using a nonblocking connect.
+		 * Due to logic flow issues, we cannot just start a non-
+		 * blocking connect and return.  Bad things happen.  But 
+		 * what we can do is do a nonblocking connect and then wait
+		 * here until it is finished.  This lets us graciously 
+		 * trap ^C's from the user without resorting to alarm()s.
+		 */
+		set_non_blocking(fd);
+
+		/* Star the connect.  If any bad error occurs, punt. */
+		err = connect(fd, (SA *)&server, sizeof(server));
+		if (err < 0 && errno != EAGAIN && errno != EINPROGRESS)
 			return close(fd), -4;
+
+		/* Now stall for a while until it succeeds or times out. */
+		errno = 0;
+		FD_ZERO(&set);
+		FD_SET(fd, &set);
+		to.tv_sec = get_int_var(CONNECT_TIMEOUT_VAR);
+		to.tv_usec = 0;
+		switch (select(fd + 1, NULL, &set, NULL, &to))
+		{
+			case 0:
+				errno = ECONNABORTED;
+				/* FALLTHROUGH */
+			case -1:
+				return close(fd), -4;
+			default:
+				peerlen = sizeof(peer);
+				if (getpeername(fd, (SA *)&peer, &peerlen))
+					return close(fd), -4;
+				set_blocking(fd);
 		}
-		alarm(0);
 	}
 
 	/* error */
