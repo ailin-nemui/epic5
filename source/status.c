@@ -1,4 +1,4 @@
-/* $EPIC: status.c,v 1.32 2003/07/22 21:12:54 jnelson Exp $ */
+/* $EPIC: status.c,v 1.33 2003/10/10 06:09:01 jnelson Exp $ */
 /*
  * status.c: handles the status line updating, etc for IRCII 
  *
@@ -1137,11 +1137,16 @@ STATUS_FUNCTION(status_hold_lines)
 	int	num;
 static	char	my_buffer[81];
 	int	interval = window->hold_interval;
+	int	lines_held;
 
 	if (interval == 0)
 		interval = 1;		/* XXX WHAT-ever */
 
-	if ((num = (window->lines_held / interval) * interval))
+	if ((lines_held = window->holding_distance_from_display_ip - 
+				window->display_size) <= 0) 
+		return empty_string;
+
+	if ((num = (lines_held / interval) * interval))
 	{
 		snprintf(my_buffer, 80, hold_lines_format, ltoa(num));
 		return my_buffer;
@@ -1338,7 +1343,7 @@ STATUS_FUNCTION(status_hold)
 {
 	char *text;
 
-	if (window->lines_held && (text = get_string_var(STATUS_HOLD_VAR)))
+	if (window->holding_distance_from_display_ip > window->display_size && (text = get_string_var(STATUS_HOLD_VAR)))
 		return text;
 	else
 		return empty_string;
@@ -1447,10 +1452,11 @@ STATUS_FUNCTION(status_position)
 {
 	static char my_buffer[81];
 
-	snprintf(my_buffer, 80, "(%d-%d[%d/%d])", 
-			window->distance_from_display_ip,
-			window->display_size, window->hold_mode, 
-			window->autohold);
+	snprintf(my_buffer, 80, "(%d/%d/%d-%d-%d)", 
+			window->scrolling_distance_from_display_ip,
+			window->holding_distance_from_display_ip,
+			window->scrollback_distance_from_display_ip,
+			window->display_size, window->cursor);
 #if 0
 			window->screen->input_line,
 			window->screen->input_cursor);
@@ -1466,7 +1472,7 @@ STATUS_FUNCTION(status_scrollback)
 {
 	char *stuff;
 
-	if (window->autohold && 
+	if (window->scrollback_top_of_display &&
 	    (stuff = get_string_var(STATUS_SCROLLBACK_VAR)))
 		return stuff;
 	else
@@ -1477,10 +1483,10 @@ STATUS_FUNCTION(status_scroll_info)
 {
 	static char my_buffer[81];
 
-	if (window->autohold)
+	if (window->scrollback_top_of_display)
 	{
 		snprintf(my_buffer, 80, " (Scroll: %d of %d)", 
-				window->distance_from_display_ip,
+				window->scrollback_distance_from_display_ip,
 				window->display_buffer_size - 1);
 	}
 	else

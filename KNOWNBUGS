@@ -13,14 +13,14 @@ KNOWN ERRATA (eg, bugs, or unresolved requests):
 * Some way to color the input prompt?  (Probably not)
 * The way the pattern matcher handles ?'s after *'s is really lame.
 * /window disconnect (server -> -2) + /server 0 reconnects to previous server.
-* New math parser can't handle  @ foo[bar].baz = 0
-* /xeval -- should stop option processing, ala /xecho.
-* /window flush should NOT turn hold mode off!
 * Something for %D to make it customizable?
 * [7] <- [:aussie.sydney.oz.org 330 complexnes Veneficus Veneficus
                 :is logged in as]
   *** Veneficus is logged in as Veneficus :is logged in as
 * $indextoword() and extractw() don't play nice together.
+* /dcc chat hop from an ipv6 server connection will default to ipv4 bind(),
+  but send out an ipv6 address in the handshake. (send_booster_ctcp doesn't
+  check what protocol get_server_local_address() returns.)
 
 [See http://www.epicsol.org/PROJECTS for things to come in the future]
 [See http://www.epicsol.org/CHANGELOG for things that changed in the past]
@@ -211,4 +211,9 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Fix @ {<command>} to not infinite loop looking for $FUNCTION_RETURN.
 * Fix it so you can compile on systems without (intptr_t) again.
 * Add $servernick(<global>) to return the client's global nickname
+* Update tabkey.jm to latest version
+* Add new ircII-compatable /window hold_mode thingee.
+* Add /set hold_slider, /window hold_slider
+* Add 'hold_mode' script, implements ircII-like /set hold_mode[_interval]
+* /XEVAL -- ends eval option processing, like how /xecho does it.
 * Fix $servernick()

@@ -1,4 +1,4 @@
-/* $EPIC: window.c,v 1.71 2003/09/24 21:51:33 jnelson Exp $ */
+/* $EPIC: window.c,v 1.72 2003/10/10 06:09:01 jnelson Exp $ */
 /*
  * window.c: Handles the organzation of the logical viewports (``windows'')
  * for irc.  This includes keeping track of what windows are open, where they
@@ -138,6 +138,7 @@ static 	void 	window_scrollback_to_string (Window *window, regex_t *str);
 static 	void 	window_scrollforward_to_string (Window *window, regex_t *str);
 	int	change_line (Window *window, const unsigned char *str);
 	int	add_to_display (Window *window, const unsigned char *str);
+static	Display *new_display_line (Display *prev, Window *w);
 
 
 /* * * * * * * * * * * CONSTRUCTOR AND DESTRUCTOR * * * * * * * * * * * */
@@ -209,18 +210,21 @@ Window	*new_window (Screen *screen)
 	rebuild_a_status(new_w);
 
 	new_w->top_of_scrollback = NULL;	/* Filled in later */
-	new_w->top_of_display = NULL;		/* Filled in later */
-	new_w->scrollback_point = NULL;		/* Filled in later */
 	new_w->display_ip = NULL;		/* Filled in later */
 	new_w->display_buffer_size = 0;
 	new_w->display_buffer_max = get_int_var(SCROLLBACK_VAR);
 	new_w->display_size = 1;		/* Filled in later */
-	new_w->distance_from_display_ip = 0;
+	new_w->display_counter = 1;
 
-	new_w->hold_mode = 0;
-	new_w->autohold = 0;
+	new_w->scrolling_top_of_display = NULL;		/* Filled in later */
+	new_w->scrolling_distance_from_display_ip = -1;	/* Filled in later */
+	new_w->holding_top_of_display = NULL;		/* Filled in later */
+	new_w->holding_distance_from_display_ip = -1;	/* Filled in later */
+	new_w->scrollback_top_of_display = NULL;	/* Filled in later */
+	new_w->scrollback_distance_from_display_ip = -1; /* Filled in later */
+
 	new_w->hold_interval = 10;
-	new_w->lines_held = 0;
+	new_w->hold_slider = get_int_var(HOLD_SLIDER_VAR);
 
 	new_w->waiting_channel = NULL;
 	new_w->bind_channel = NULL;
@@ -243,12 +247,12 @@ Window	*new_window (Screen *screen)
 	new_w->deceased = 0;
 
 	/* Initialize the scrollback */
-	new_w->top_of_scrollback = new_display_line(NULL);
+	new_w->top_of_scrollback = new_display_line(NULL, new_w);
 	new_w->top_of_scrollback->line = NULL;
 	new_w->top_of_scrollback->next = NULL;
 	new_w->display_buffer_size = 1;
 	new_w->display_ip = new_w->top_of_scrollback;
-	new_w->top_of_display = new_w->top_of_scrollback;
+	new_w->scrolling_top_of_display = new_w->top_of_scrollback;
 	new_w->old_size = 1;
 
 	if (screen)
@@ -1091,46 +1095,40 @@ void	resize_window_display (Window *window)
 		return;
 
 	/*
-	 * We don't ever adjust the top of the window if it's being held.
+	 * Find out how much the window has changed by
 	 */
-	if (!window->hold_mode && !window->autohold)
+	cnt = window->display_size - window->old_size;
+	tmp = window->scrolling_top_of_display;
+
+	/*
+	 * If it got bigger, move the scrolling_top_of_display back.
+	 */
+	if (cnt > 0)
 	{
-		/*
-		 * Find out how much the window has changed by
-		 */
-		cnt = window->display_size - window->old_size;
-		tmp = window->top_of_display;
-
-		/*
-		 * If it got bigger, move the top_of_display back.
-		 */
-		if (cnt > 0)
+		for (i = 0; i < cnt; i++)
 		{
-			for (i = 0; i < cnt; i++)
-			{
-				if (!tmp || !tmp->prev)
-					break;
-				tmp = tmp->prev;
-			}
+			if (!tmp || !tmp->prev)
+				break;
+			tmp = tmp->prev;
 		}
-
-		/*
-		 * If it got smaller, then move the top_of_display up
-		 */
-		else if (cnt < 0)
-		{
-			/* Use any whitespace we may have lying around */
-			cnt += (window->old_size - window->distance_from_display_ip);
-			for (i = 0; i > cnt; i--)
-			{
-				if (tmp == window->display_ip)
-					break;
-				tmp = tmp->next;
-			}
-		}
-		window->top_of_display = tmp;
-		recalculate_window_cursor_and_display_ip(window);
 	}
+
+	/*
+	 * If it got smaller, then move the scrolling_top_of_display up
+	 */
+	else if (cnt < 0)
+	{
+		/* Use any whitespace we may have lying around */
+		cnt += (window->old_size - window->scrolling_distance_from_display_ip);
+		for (i = 0; i > cnt; i--)
+		{
+			if (tmp == window->display_ip)
+				break;
+			tmp = tmp->next;
+		}
+	}
+	window->scrolling_top_of_display = tmp;
+	recalculate_window_cursor_and_display_ip(window);
 
 	/*
 	 * Mark the window for redraw and store the new window size.
@@ -1239,7 +1237,7 @@ static	int	restart;
 
 		if (tmp->cursor == -1 || 
 			(tmp->scroll && 
-			 tmp->cursor < tmp->distance_from_display_ip  &&
+			 tmp->cursor < tmp->scrolling_distance_from_display_ip  &&
 			 tmp->cursor < tmp->display_size))
 			repaint_window_body(tmp);
 
@@ -2201,7 +2199,7 @@ static void 	clear_window (Window *window)
 	if (dumb_mode)
 		return;
 
-	window->top_of_display = window->display_ip;
+	window->scrolling_top_of_display = window->display_ip;
 	if (window->miscflags & WINDOW_NOTIFIED)
 		window->miscflags &= ~WINDOW_NOTIFIED;
 	recalculate_window_cursor_and_display_ip(window);
@@ -2221,8 +2219,6 @@ void 	clear_all_windows (int visible, int hidden, int unhold)
 		if (!visible && hidden && tmp->screen)
 			continue;
 
-		if (unhold && (tmp->hold_mode || tmp->autohold))
-			unhold_window(tmp);
 		clear_window(tmp);
 	}
 }
@@ -2237,8 +2233,6 @@ void 	clear_window_by_refnum (unsigned refnum, int unhold)
 
 	if (!(tmp = get_window_by_refnum(refnum)))
 		tmp = current_window;
-	if (unhold && (tmp->hold_mode || tmp->autohold))
-		unhold_window(tmp);
 	clear_window(tmp);
 }
 
@@ -2249,12 +2243,12 @@ static void	unclear_window (Window *window)
 	if (dumb_mode)
 		return;
 
-	window->top_of_display = window->display_ip;
+	window->scrolling_top_of_display = window->display_ip;
 	for (i = 0; i < window->display_size; i++)
 	{
-		if (window->top_of_display == window->top_of_scrollback)
+		if (window->scrolling_top_of_display == window->top_of_scrollback)
 			break;
-		window->top_of_display = window->top_of_display->prev;
+		window->scrolling_top_of_display = window->scrolling_top_of_display->prev;
 	}
 
 	recalculate_window_cursor_and_display_ip(window);
@@ -2273,8 +2267,6 @@ void	unclear_all_windows (int visible, int hidden, int unhold)
 		if (!visible && hidden && tmp->screen)
 			continue;
 
-		if (unhold && (tmp->hold_mode || tmp->autohold))
-			unhold_window(tmp);
 		unclear_window(tmp);
 	}
 }
@@ -2285,11 +2277,50 @@ void	unclear_window_by_refnum (unsigned refnum, int unhold)
 
 	if (!(tmp = get_window_by_refnum(refnum)))
 		tmp = current_window;
-	if (unhold && (tmp->hold_mode || tmp->autohold))
-		unhold_window(tmp);
 	unclear_window(tmp);
 }
 
+/*
+ * This returns 1 if 'w' is holding something.  This means the
+ * window has output that has never been displayed ("held").
+ * For compatability with ircII, we "unhold" windows that are 
+ * "holding", but we do the check before running a command and
+ * do the unhold after running it.  This is confusing, but it's 
+ * the way ircII has always done it, so there you have it.
+ */
+int	window_is_holding (Window *w)
+{
+	if (w->holding_distance_from_display_ip > w->display_size)
+		return 1;
+	else
+		return 0;
+}
+
+/*
+ * After running a command (from the SEND_LINE keybinding), if the window
+ * had output that was never displayed ("holding"), then display the next
+ * screenfull of output.  Unholding should only be done on windows that
+ * were holding *before* the command is run in SEND_LINE.
+ */
+int	unhold_a_window (Window *w)
+{
+	int	slider, i;
+
+	if (!w->holding_top_of_display)
+		return 0;				/* ok, whatever */
+
+	slider = (w->hold_slider * w->display_size) / 100;
+	for (i = 0; i < slider; i++)
+	{
+		if (w->holding_top_of_display == w->display_ip)
+			break;
+		w->holding_top_of_display = w->holding_top_of_display->next;
+	}
+	recalculate_window_cursor_and_display_ip(w);
+	window_body_needs_redraw(w);
+	window_statusbar_needs_update(w);
+	return 0;
+}
 
 
 
@@ -2918,13 +2949,13 @@ else
 				window->server, 
 				get_server_name(window->server));
 	say("\tScreen: %p",	window->screen);
-	say("\tGeometry Info: [%d %d %d %d %d %d %d %d %d]", 
+	say("\tGeometry Info: [%d %d %d %d %d %d %d %d]", 
 				window->top, window->bottom, 
 				0, window->display_size,
 				window->cursor, 
-				window->distance_from_display_ip,
-				window->hold_mode, window->autohold,
-				window->lines_held);
+				window->scrolling_distance_from_display_ip,
+				window->holding_distance_from_display_ip,
+				window->scrollback_distance_from_display_ip);
 	say("\tCO, LI are [%d %d]", current_term->TI_cols, current_term->TI_lines);
 	chan = get_echannel_by_refnum(window->refnum);
 	say("\tCurrent channel: %s", chan ? chan : "<None>");
@@ -2955,7 +2986,7 @@ else
 	say("\tNotification is %s", 
 				onoff[window->miscflags & WINDOW_NOTIFY]);
 	say("\tHold mode is %s", 
-				onoff[window->hold_mode]);
+				onoff[window->holding_top_of_display ? 1 : 0]);
 	say("\tWindow level is %s", 
 				bits_to_lastlog_level(window->window_level));
 	say("\tLastlog level is %s", 
@@ -3160,12 +3191,64 @@ static Window *window_hold_interval (Window *window, char **args)
  */
 static Window *window_hold_mode (Window *window, char **args)
 {
-	if (get_boolean("HOLD_MODE", args, &window->hold_mode))
+	int	hold_mode;
+	int	slider;
+	int	i;
+
+	if (window->holding_top_of_display)
+		hold_mode = 1;
+	else
+		hold_mode = 0;
+
+	if (get_boolean("HOLD_MODE", args, &hold_mode))
 		return NULL;
 
-	if (window->hold_mode == 0 && window->autohold == 0)
-		unhold_window(window);
+	if (hold_mode && !window->holding_top_of_display)
+	{
+		window->holding_top_of_display = window->scrolling_top_of_display;
+		slider = (window->hold_slider * window->display_size) / 100;
+		for (i = 0; i < slider; i++)
+		{
+			if (window->holding_top_of_display == window->display_ip)
+				break;
+			window->holding_top_of_display = window->holding_top_of_display->next;
+		}
+		recalculate_window_cursor_and_display_ip(window);
+		window_body_needs_redraw(window);
+		window_statusbar_needs_update(window);
+	}
+	if (!hold_mode && window->holding_top_of_display)
+	{
+		window->holding_top_of_display = NULL;
+		recalculate_window_cursor_and_display_ip(window);
+		window_body_needs_redraw(window);
+		window_statusbar_needs_update(window);
+	}
 
+	return window;
+}
+
+/*
+ * /WINDOW HOLD_SLIDER
+ * This determines how far up the hold pointer should move when you hit
+ * the return key (unhold action)
+ */
+static Window *window_hold_slider (Window *window, char **args)
+{
+	char *arg = next_arg(*args, args);
+
+	if (arg)
+	{
+		int	size = my_atol(arg);
+
+		if (size < 0 || size > 100)
+		{
+			say("Hold slider must be 0 to 100!");
+			return window;
+		}
+		window->hold_slider = size;
+	}
+	say("Window hold slider is %d", window->hold_slider);
 	return window;
 }
 
@@ -4498,6 +4581,7 @@ static const window_ops options [] = {
 	{ "HIDE_OTHERS",	window_hide_others 	},
 	{ "HOLD_INTERVAL",	window_hold_interval	},
 	{ "HOLD_MODE",		window_hold_mode 	},
+	{ "HOLD_SLIDER",	window_hold_slider	},
 	{ "KILL",		window_kill 		},
 	{ "KILL_OTHERS",	window_kill_others 	},
 	{ "KILLSWAP",		window_killswap 	},
@@ -4620,6 +4704,7 @@ BUILT_IN_COMMAND(windowcmd)
  * normal way.
  */
 static Display *recycle = NULL;
+static size_t	display_line_count = 1;
 
 void 	delete_display_line (Display *stuff)
 {
@@ -4645,7 +4730,7 @@ void 	delete_display_line (Display *stuff)
  * had enough space to hold the new line.  We let malloc_strcpy() do the
  * dirty work there.
  */
-Display *new_display_line (Display *prev)
+static Display *new_display_line (Display *prev, Window *w)
 {
 	Display *stuff;
 
@@ -4663,6 +4748,7 @@ Display *new_display_line (Display *prev)
 #if 0
 	stuff->line = NULL;
 #endif
+	stuff->count = w->display_counter++;
 	stuff->prev = prev;
 	stuff->next = NULL;
 	return stuff;
@@ -4687,20 +4773,57 @@ int 	add_to_scrollback (Window *window, const unsigned char *str)
 
 int	add_to_display (Window *window, const unsigned char *str)
 {
+	int	scroll;
+	int	i;
+
 	/* Add to the display list */
-	window->display_ip->next = new_display_line(window->display_ip);
+	window->display_ip->next = new_display_line(window->display_ip, window);
 	malloc_strcpy(&window->display_ip->line, str);
 	window->display_ip = window->display_ip->next;
 	window->display_buffer_size++;
-	window->distance_from_display_ip++;
+
+	/* Adjust the top of screen values */
+	window->scrolling_distance_from_display_ip++;
+	if (window->scrollback_top_of_display)
+		window->scrollback_distance_from_display_ip++;
+	if (window->holding_top_of_display)
+		window->holding_distance_from_display_ip++;
+
+	/* Check to see what happens in hold mode */
+	if (window->holding_top_of_display)
+	{
+	    size_t lines_held;
+	    lines_held = window->holding_distance_from_display_ip - window->display_size;
+	    if (lines_held > 0)
+		window_statusbar_needs_update(window);
+	}
+
+	/* Logically scroll the normal top of display pointer */
+	while (window->scrolling_distance_from_display_ip > 
+				window->display_size)
+	{
+		if ((scroll = get_int_var(SCROLL_LINES_VAR)) <= 0)
+			scroll = 1;
+
+		for (i = 0; i < scroll; i++)
+		{
+			window->scrolling_top_of_display = 
+				window->scrolling_top_of_display->next;
+			window->scrolling_distance_from_display_ip--;
+		}
+	}
+
 	return 1;
 }
 
-
 int	trim_scrollback (Window *window)
 {
-	/* Never trim the scrollback if we're holding something. */
-	if (window->hold_mode || window->autohold)
+	/* Do not trim the scrollback if we are in scrollback mode */
+	if (window->scrollback_top_of_display)
+		return 0;
+
+	/* Do not trim the scrollback if we are holding stuff. */
+	if (window->holding_distance_from_display_ip > window->display_size)
 		return 0;
 
 	/*
@@ -4727,7 +4850,7 @@ int	flush_scrollback_after (Window *window)
 	Display *curr_line, *next_line;
 	int	count;
 
-	curr_line = window->top_of_display;
+	curr_line = window->holding_top_of_display;
 	for (count = 1; count < window->display_size; count++)
 	{
 		if (curr_line == window->display_ip)
@@ -4747,9 +4870,8 @@ int	flush_scrollback_after (Window *window)
 		curr_line = next_line;
 	}
 
-	window->hold_mode = 0;
+	window->scrolling_top_of_display = window->holding_top_of_display;
 	recalculate_window_cursor_and_display_ip(window);
-	unhold_window(window);
 	return 1;
 }
 
@@ -4764,11 +4886,7 @@ static void	window_scrollback_start (Window *window)
 		return;
 	}
 
-	if (window->scrollback_point == NULL)
-		window->scrollback_point = window->top_of_display;
-
-	window->autohold = 1;
-	window->top_of_display = window->top_of_scrollback;
+	window->scrollback_top_of_display = window->top_of_scrollback;
 	recalculate_window_cursor_and_display_ip(window);
 	window_body_needs_redraw(window);
 	window_statusbar_needs_update(window);
@@ -4776,43 +4894,43 @@ static void	window_scrollback_start (Window *window)
 
 static void	window_scrollback_end (Window *window)
 {
-	window->autohold = 0;
-	if (window->scrollback_point)
+	if (window->scrollback_top_of_display)
 	{
-		window->top_of_display = window->scrollback_point;
-		window->scrollback_point = NULL;
+		window->scrollback_top_of_display = NULL;
 		recalculate_window_cursor_and_display_ip(window);
 		window_body_needs_redraw(window);
 		window_statusbar_needs_update(window);
 	}
-
-	if (window->distance_from_display_ip >= window->display_size)
-		unclear_window(window);
 }
 
 static void 	window_scrollback_backwards_lines (Window *window, int lines)
 {
-	Display *new_top = window->top_of_display;
+	Display *new_top;
 	int	new_lines;
 
-	if (new_top == window->top_of_scrollback)
+	if (window->scrollback_top_of_display == window->top_of_scrollback)
 	{
 		term_beep();
 		return;
 	}
 
-	if (window->scrollback_point == NULL)
-		window->scrollback_point = window->top_of_display;
+	if (window->scrollback_top_of_display == NULL)
+	{
+	    if (window->holding_distance_from_display_ip > window->scrolling_distance_from_display_ip)
+		window->scrollback_top_of_display = window->holding_top_of_display;
+	    else
+		window->scrollback_top_of_display = window->scrolling_top_of_display;
+	}
 
+	new_top = window->scrollback_top_of_display;
 	for (new_lines = 0; new_lines < lines; new_lines++)
 	{
 		if (new_top == window->top_of_scrollback)
 			break;
 		new_top = new_top->prev;
 	}
-	window->top_of_display = new_top;
 
-	window->autohold = 1;
+	window->scrollback_top_of_display = new_top;
 	recalculate_window_cursor_and_display_ip(window);
 	window_body_needs_redraw(window);
 	window_statusbar_needs_update(window);
@@ -4820,11 +4938,10 @@ static void 	window_scrollback_backwards_lines (Window *window, int lines)
 
 static void 	window_scrollback_forwards_lines (Window *window, int lines)
 {
-	Display *new_top = window->top_of_display;
+	Display *new_top = window->scrollback_top_of_display;
 	int	new_lines = 0;
 
-	if (window->autohold == 0 && window->hold_mode == 0 &&
-		window->distance_from_display_ip <= window->display_size)
+	if (!new_top)
 	{
 		term_beep();
 		return;
@@ -4832,39 +4949,27 @@ static void 	window_scrollback_forwards_lines (Window *window, int lines)
 
 	for (new_lines = 0; new_lines < lines; new_lines++)
 	{
-		if (new_top == window->display_ip)
-			break;
-		new_top = new_top->next;
-
-		if (new_top == window->scrollback_point)
-		{
-			window->scrollback_point = NULL;
-			window->top_of_display = new_top;
-			recalculate_window_cursor_and_display_ip(window);
-			if (window->distance_from_display_ip <= window->display_size)
-				break;
-			/* Otherwise, just keep going */
-		}
+	    if (new_top == window->display_ip)
+		break;
+	    new_top = new_top->next;
 	}
-	window->top_of_display = new_top;
 
+	window->scrollback_top_of_display = new_top;
 	recalculate_window_cursor_and_display_ip(window);
 	window_body_needs_redraw(window);
 	window_statusbar_needs_update(window);
-
-	if (window->scrollback_point == NULL && window->distance_from_display_ip <= window->display_size)
-	{
-		window->autohold = 0;
-#if 0
-		if (window->top_of_display == window->display_ip)
-			unclear_window(window);		/* Historical reasons */
-#endif
-	}
 }
 
 static void 	window_scrollback_to_string (Window *window, regex_t *preg)
 {
-	Display *new_top = window->top_of_display;
+	Display *new_top;
+
+	if (window->scrollback_top_of_display)
+		new_top = window->scrollback_top_of_display;
+	else if (window->holding_distance_from_display_ip > window->scrolling_distance_from_display_ip)
+		new_top = window->holding_top_of_display;
+	else
+		new_top = window->scrolling_top_of_display;
 
 	while (new_top != window->top_of_scrollback)
 	{
@@ -4873,10 +4978,7 @@ static void 	window_scrollback_to_string (Window *window, regex_t *preg)
 
 		if (regexec(preg, new_top->line, 0, NULL, 0) == 0)
 		{
-			if (window->scrollback_point == NULL)
-				window->scrollback_point = window->top_of_display;
-			window->top_of_display = new_top;
-			window->autohold = 1;
+			window->scrollback_top_of_display = new_top;
 			recalculate_window_cursor_and_display_ip(window);
 			window_body_needs_redraw(window);
 			window_statusbar_needs_update(window);
@@ -4889,10 +4991,14 @@ static void 	window_scrollback_to_string (Window *window, regex_t *preg)
 
 static void 	window_scrollforward_to_string (Window *window, regex_t *preg)
 {
-	Display *new_top = window->top_of_display;
+	Display *new_top;
 
-	if (new_top == window->display_ip)
-		return;
+	if (window->scrollback_top_of_display)
+		new_top = window->scrollback_top_of_display;
+	else if (window->holding_distance_from_display_ip > window->scrolling_distance_from_display_ip)
+		new_top = window->holding_top_of_display;
+	else
+		new_top = window->scrolling_top_of_display;
 
 	while (new_top->next != window->display_ip)
 	{
@@ -4901,13 +5007,10 @@ static void 	window_scrollforward_to_string (Window *window, regex_t *preg)
 
 		if (regexec(preg, new_top->line, 0, NULL, 0) == 0)
 		{
-			window->top_of_display = new_top;
-
+			window->scrollback_top_of_display = new_top;
 			recalculate_window_cursor_and_display_ip(window);
 			window_body_needs_redraw(window);
 			window_statusbar_needs_update(window);
-			if (window->distance_from_display_ip <= window->display_size)
-				window->autohold = 0;
 			return;
 		}
 	}
@@ -4972,27 +5075,25 @@ void 	scrollback_start (char dumb, char *dumber)
 void 	unstop_all_windows (char dumb, char *dumber)
 {
 	Window	*tmp = NULL;
+	char	my_off[4];
 
 	while (traverse_all_windows(&tmp))
-		unhold_window(tmp);
+	{
+		strcpy(my_off, "OFF");
+		window_hold_mode(tmp, (char **)&my_off);
+	}
+	update_all_windows();
 }
 
 /* toggle_stop_screen: the BIND function TOGGLE_STOP_SCREEN */
 void 	toggle_stop_screen (char unused, char *not_used)
 {
-	current_window->hold_mode = !current_window->hold_mode;
-	if (current_window->hold_mode == 0)
-		unhold_window(current_window);
+	char toggle[7];
+
+	strlcpy(toggle, "TOGGLE", sizeof toggle);
+	window_hold_mode(current_window, (char **)&toggle);
 	update_all_windows();
 }
-
-void	unhold_window (Window *window)
-{
-	window->hold_mode = 0;
-	if (window->autohold == 0)
-		window_scrollback_end(window);
-}
-
 
 /**************************************************************************/
 /*
@@ -5025,23 +5126,52 @@ void 	recalculate_window_cursor_and_display_ip (Window *window)
 {
 	Display *tmp;
 
-	window->cursor = window->distance_from_display_ip = 0;
-	for (tmp = window->top_of_display; tmp != window->display_ip;
-				tmp = tmp->next)
-		window->cursor++, window->distance_from_display_ip++;
+	window->cursor = 0;
+	window->display_buffer_size = 0;
+	window->scrolling_distance_from_display_ip = -1;
+	window->holding_distance_from_display_ip = -1;
+	window->scrollback_distance_from_display_ip = -1;
+	window->display_counter = 1;
 
-	if (window->cursor > window->display_size)
-		window->cursor = window->display_size;
-
-	if (window->distance_from_display_ip - window->display_size - 1 <
-			window->lines_held)
+	/* Recount and resequence the scrollback */
+	for (tmp = window->top_of_scrollback;; tmp = tmp->next)
 	{
-		if (window->distance_from_display_ip - window->display_size - 1 < 0)
-			window->lines_held = 0;
-		else
-			window->lines_held = window->distance_from_display_ip - 
-						window->display_size - 1;
+		window->display_buffer_size++;
+		tmp->count = window->display_counter++;
+		if (tmp == window->display_ip)
+			break;
 	}
+
+	/* Calculate the distances to the bottom of scrollback */
+	if (window->holding_top_of_display)
+		window->holding_distance_from_display_ip = 
+			window->display_ip->count - 
+				window->holding_top_of_display->count;
+	if (window->scrollback_top_of_display)
+		window->scrollback_distance_from_display_ip = 
+			window->display_ip->count - 
+				window->scrollback_top_of_display->count;
+	window->scrolling_distance_from_display_ip = 
+		window->display_ip->count - 
+			window->scrolling_top_of_display->count;
+
+	/* Auto-detect when scrollback should be turned off */
+	if (window->scrollback_distance_from_display_ip <= 
+		window->holding_distance_from_display_ip || 
+	    window->scrollback_distance_from_display_ip <= 
+		window->scrolling_distance_from_display_ip)
+	{
+		window->scrollback_top_of_display = NULL;
+		window->scrollback_distance_from_display_ip = -1;
+	}
+
+	/* Figure out where the cursor is */
+	if (window->holding_distance_from_display_ip >= window->display_size)
+		window->cursor = window->display_size;
+	else if (window->scrolling_distance_from_display_ip >= window->display_size)
+		window->cursor = window->display_size;
+	else
+		window->cursor = window->scrolling_distance_from_display_ip;
 }
 
 /*
@@ -5173,11 +5303,11 @@ int	change_line (Window *window, const unsigned char *str)
 		panic("change_line is too big.");
 
 	/* Make sure that the line exists that we want to change */
-	while (window->distance_from_display_ip <= chg_line)
+	while (window->scrolling_distance_from_display_ip <= chg_line)
 		add_to_display(window, empty_string);
 
 	/* Now find the line we want to change */
-	my_line = window->top_of_display;
+	my_line = window->scrollback_top_of_display;
 	if (my_line == window->display_ip)
 		panic("Can't change line [%d] -- doesn't exist", 
 			chg_line);
@@ -5200,9 +5330,12 @@ int	change_line (Window *window, const unsigned char *str)
 
 void	check_window_cursor (Window *window)
 {
+#if 0
 	if (window->scroll && window->cursor < window->display_size && 
-			window->cursor < window->distance_from_display_ip)
+		window->cursor < window->scrolling_distance_from_display_ip)
+	{
 		recalculate_window_cursor_and_display_ip(window);
+	}
 
 	/* XXX This is a hack that covers up a bug elsewhere. */
 	if (window->hold_mode == 0 && window->autohold == 0 &&
@@ -5213,6 +5346,7 @@ void	check_window_cursor (Window *window)
 		yell("Unheld this window for you -- let #epic on efnet know!");
 #endif
 	}
+#endif
 }
 
 /* Used by function_windowctl */

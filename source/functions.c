@@ -1,4 +1,4 @@
-/* $EPIC: functions.c,v 1.136 2003/10/06 03:00:05 jnelson Exp $ */
+/* $EPIC: functions.c,v 1.137 2003/10/10 06:09:01 jnelson Exp $ */
 /*
  * functions.c -- Built-in functions for ircII
  *
@@ -6388,7 +6388,7 @@ BUILT_IN_FUNCTION(function_winline, input)
 	if (!win)
 		RETURN_INT(-1);
 
-	Line = win->top_of_display;
+	Line = win->scrollback_top_of_display;
 	for (; line > 0 && Line; line--)
 		Line = Line->next;
 

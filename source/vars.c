@@ -1,4 +1,4 @@
-/* $EPIC: vars.c,v 1.41 2003/07/22 21:12:54 jnelson Exp $ */
+/* $EPIC: vars.c,v 1.42 2003/10/10 06:09:01 jnelson Exp $ */
 /*
  * vars.c: All the dealing of the irc variables are handled here. 
  *
@@ -177,6 +177,7 @@ static	IrcVariable irc_variable[] =
 	{ "HIGH_BIT_ESCAPE",		INT_TYPE_VAR,	DEFAULT_HIGH_BIT_ESCAPE, 0, NULL, set_meta_8bit, 0, 0 },
 	{ "HISTORY",			INT_TYPE_VAR,	DEFAULT_HISTORY, 0, NULL, set_history_size, 0, 0 },
 	{ "HISTORY_CIRCLEQ",		BOOL_TYPE_VAR,	DEFAULT_HISTORY_CIRCLEQ, 0, NULL, NULL, 0, 0 },
+	{ "HOLD_SLIDER",		INT_TYPE_VAR,	DEFAULT_HOLD_SLIDER, 0, NULL, NULL, 0, 0 },
 	{ "INDENT",			BOOL_TYPE_VAR,	DEFAULT_INDENT, 0, NULL, NULL, 0, 0 },
 	{ "INPUT_ALIASES",		BOOL_TYPE_VAR,	DEFAULT_INPUT_ALIASES, 0, NULL, NULL, 0, 0 },
 	{ "INPUT_PROMPT",		STR_TYPE_VAR,	0, 0, NULL, set_input_prompt, 0, 0 },

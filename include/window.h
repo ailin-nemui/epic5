@@ -35,6 +35,7 @@ struct	ScreenStru;
 /* Should be a way to make static to window.c */
 typedef	struct	DisplayStru
 {
+	size_t			count;
 	char			*line;
 	struct	DisplayStru	*prev;
 	struct	DisplayStru	*next;
@@ -98,21 +99,38 @@ typedef	struct	WindowStru
 	 * up until display_ip is the top_of_display.  "display_size" is the
 	 * number of rows that can appear on the screen at a given time.
 	 */
-	Display *top_of_scrollback,	/* Start of the scrollback buffer */
-		*top_of_display,	/* Where the viewport starts */
-		*display_ip,		/* Where next line goes in rite() */
-		*scrollback_point;	/* Where we went into scrollback */
+	Display *top_of_scrollback;	/* Start of the scrollback buffer */
+	Display *display_ip;		/* End of the scrollback buffer */
 	int	display_buffer_size;	/* How big the scrollback buffer is */
 	int	display_buffer_max;	/* How big its supposed to be */
 	int	display_size;		/* How big the window is - status */
+
+	Display *scrolling_top_of_display;
+	int	scrolling_distance_from_display_ip;
+
+	Display *holding_top_of_display;
+	int	holding_distance_from_display_ip;
+
+	Display *scrollback_top_of_display;
+	int	scrollback_distance_from_display_ip;
+
+	int	display_counter;
+	int	hold_slider;
+
+#if 0
+		*top_of_display, 	/* Where the viewport starts */
+		*display_ip,		/* Where next line goes in rite() */
+		*scrollback_point;	/* Where we went into scrollback */
 
 	int	hold_mode;		/* True if we want to hold stuff */
 	int	autohold;		/* True if we are in temp hold mode */
 
 	int	lines_held;		/* Lines currently being held */
+	int	distance_from_display_ip; /* How far t_o_d is from d_ip */
+#endif
+
 	int	hold_interval;		/* How often to update status bar */
 	int	last_lines_held;	/* Last time we updated "lines held" */
-	int	distance_from_display_ip; /* How far t_o_d is from d_ip */
 
 	/* Channel stuff */
         char    *waiting_channel;       /*
@@ -244,7 +262,6 @@ const	char	*get_echannel_by_refnum		(unsigned);
 	unsigned current_refnum			(void);
 	int	number_of_windows_on_screen	(Window *);
 	void	delete_display_line		(Display *);
-	Display *new_display_line		(Display *);
 	int	add_to_scrollback		(Window *, const unsigned char *);
 	int	trim_scrollback			(Window *);
 	int	flush_scrollback_after		(Window *);
@@ -255,6 +272,7 @@ const	char	*get_echannel_by_refnum		(unsigned);
 	void	unstop_all_windows		(char, char *);
 	void	toggle_stop_screen		(char, char *);
 	void	flush_everything_being_held	(Window *);
+	int	window_is_holding		(Window *);
 	int	unhold_a_window			(Window *);
 	void	recalculate_window_cursor_and_display_ip	(Window *);
 	char	*get_nicklist_by_window		(Window *); /* XXX */

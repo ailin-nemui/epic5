@@ -1,4 +1,4 @@
-/* $EPIC: screen.c,v 1.55 2003/09/23 21:49:47 jnelson Exp $ */
+/* $EPIC: screen.c,v 1.56 2003/10/10 06:09:01 jnelson Exp $ */
 /*
  * screen.c
  *
@@ -2417,25 +2417,28 @@ static void    window_disp (Window *window, const unsigned char *str, const unsi
 
 static int	ok_to_output (Window *window)
 {
-	/*
-	 * IF:
-	 * We are at the bottom of the screen AND scrollback mode is on
-	 * OR:
-	 * We are in hold mode and we have displayed at least a full screen
-	 * of material
-	 * THEN:
-	 * We defeat the output.
-	 */
-	if ((window->hold_mode || window->autohold) && 
-			window->distance_from_display_ip > window->display_size)
-        {
-                window->lines_held++;
-                if (window->lines_held % window->hold_interval == 0)
-                        window_statusbar_needs_update(window);
-                return 0;
-        }
+	int	retval;
 
-	return 1;		/* Output is authorized */
+	/*
+	 * Output is ok as long as the three top of displays all are 
+	 * within a screenful of the insertion point!
+	 */
+	if (window->scrollback_top_of_display)
+	{
+	    if (window->scrolling_distance_from_display_ip >=
+				window->display_size)
+		retval = 0;
+	}
+	else if (window->holding_top_of_display)
+	{
+	    if (window->holding_distance_from_display_ip >
+				window->display_size)
+		retval = 0;
+	}
+	else
+		retval = 1;
+
+	return retval;		/* Output is authorized */
 }
 
 /*
@@ -2467,19 +2470,12 @@ static void 	scroll_window (Window *window)
 		 * doing its job or something else is completely broken.
 		 * Probably shouldnt be fatal, but i want to trap these.
 		 */
-		if (window->hold_mode || window->autohold)
+		if (window->holding_distance_from_display_ip > window->display_size || window->scrollback_distance_from_display_ip > window->display_size)
 			panic("Cant scroll this window!");
 
 		/* Scroll by no less than 1 line */
 		if ((scroll = get_int_var(SCROLL_LINES_VAR)) <= 0)
 			scroll = 1;
-
-		/* Adjust the top of the logical display */
-		for (i = 0; i < scroll; i++)
-		{
-			window->top_of_display = window->top_of_display->next;
-			window->distance_from_display_ip--;
-		}
 
 		/* Adjust the top of the physical display */
 		if (window->screen && foreground && window->display_size)
@@ -2550,33 +2546,6 @@ int 	is_cursor_in_display (Screen *screen)
 
 /* * * * * * * SCREEN UDPATING AND RESIZING * * * * * * * * */
 /*
- * To only be called internally
- * 'window' and 'line' are not checked for errors.  DO NOT pass in bogus
- * values for these parameters -- epic will crash if you do.
- */
-void	repaint_one_line (Window *window, int line)
-{
-	Display *curr_line;
-	int	count;
-
-	if (dumb_mode || !window->screen)
-		return;
-
-	global_beep_ok = 0;		/* Suppress beeps */
-	curr_line = window->top_of_display;
-	for (count = 0; count < line; count++)
-	{
-		curr_line = curr_line->next;
-		if (curr_line == window->display_ip)
-			break;
-	}
-
-	window->cursor = line;
-	rite(window, curr_line->line);
-	global_beep_ok = 1;		/* Suppress beeps */
-}
-
-/*
  * repaint_window_body: redraw the entire window's scrollable region
  * The old logic for doing a partial repaint has been removed with prejudice.
  */
@@ -2593,7 +2562,21 @@ void 	repaint_window_body (Window *window)
 
 	global_beep_ok = 0;		/* Suppress beeps */
 
-	curr_line = window->top_of_display;
+	if (window->scrollback_distance_from_display_ip > window->holding_distance_from_display_ip)
+	{
+	    if (window->scrolling_distance_from_display_ip >= window->scrollback_distance_from_display_ip)
+		curr_line = window->scrolling_top_of_display;
+	    else
+		curr_line = window->scrollback_top_of_display;
+	}
+	else
+	{
+	    if (window->scrolling_distance_from_display_ip >= window->holding_distance_from_display_ip)
+		curr_line = window->scrolling_top_of_display;
+	    else
+		curr_line = window->holding_top_of_display;
+	}
+
 	window->cursor = 0;
 	for (count = 0; count < window->display_size; count++)
 	{

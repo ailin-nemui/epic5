@@ -1,4 +1,4 @@
-/* $EPIC: input.c,v 1.16 2003/07/22 21:12:54 jnelson Exp $ */
+/* $EPIC: input.c,v 1.17 2003/10/10 06:09:01 jnelson Exp $ */
 /*
  * input.c: does the actual input line stuff... keeps the appropriate stuff
  * on the input line, handles insert/delete of characters/words... the whole
@@ -1131,13 +1131,21 @@ BUILT_IN_BINDING(send_line)
 {
 	int	server = from_server;
 	char *	line = LOCAL_COPY(get_input());
+	int	do_unhold;
 
 	from_server = get_window_server(0);
-#if 0
-	unhold_a_window(last_input_screen->current_window);
-#endif
 	MIN_CHAR = 0;
 	THIS_POS = MIN_POS;
+
+	/*
+	 * If the window is not holding, then advance the hold view so a
+	 * full screen of output from the command is seen before it holds.
+	 * This is consistent with ircII behavior.
+	 */
+	do_unhold = window_is_holding(last_input_screen->current_window);
+	if (!do_unhold)
+		unhold_a_window(last_input_screen->current_window);
+
 
 	if (last_input_screen->promptlist && 
 		last_input_screen->promptlist->type == WAIT_PROMPT_LINE)
@@ -1165,6 +1173,14 @@ BUILT_IN_BINDING(send_line)
 				parse_line(NULL, line, NULL, 1, 0);
 		}
 	}
+
+	/*
+	 * If the window is holding, then any output from the above command
+	 * was already held, and so we need to unhold one screenful here.
+	 * This is consistent with ircII behavior.
+	 */
+	if (do_unhold)
+		unhold_a_window(last_input_screen->current_window);
 
 	from_server = server;
 }

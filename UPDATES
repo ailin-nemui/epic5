@@ -1,5 +1,58 @@
 EPIC4-1.2.0
 
+*** News 10/10/2003 -- /XEVAL -- now ends option processing
+	If you do /XEVAL -- <whatever> then <whatever> will be executed
+	as a command and no further options will be parsed.  This came up
+	becuase /XECHO -- does this, and someone figured out that '/' was
+	also an option argument and that got in the way of doing a built
+	in command, for example:
+		/XEVAL -- //MSG hop testing!
+
+*** News 10/10/2003 -- New built in script, 'hold_mode'
+	This script implements the /set hold_mode and /set hold_mode_interval
+	semantics of ircII.  Particularly, when you create a new window, the
+	current global values of these /set's are set for the new window.
+	Those who want ircII-like hold_mode behavior should definitely /load
+	this script in their .ircrc!
+
+*** News 10/10/2003 -- New setting, /SET HOLD_SLIDER, /WINDOW HOLD_SLIDER
+	The "HOLD_SLIDER" controls what percentage of your window must scroll
+	by before the window starts holding further output; and how much held
+	output is displayed each time you use the SEND_LINE keybinding (the
+	<enter> key).  Traditional ircII semantics would use a value of 100
+	(a full window is scrolled by each time you hit <enter>), and the
+	more recent epic behavior would use a value of 0 (the window always
+	holds new output, and you must use SCROLL_FORWARD (<page down>) to 
+	see the new output.  This can be set on a window-by-window basis or
+	set globally.  The default is 100 (traditional ircII hold_mode)
+
+*** News 10/10/2003 -- Modifications to /WINDOW HOLD_MODE system
+	When a window is in hold_mode, it allows some number of lines to 
+	be displayed and then any further lines are "held" or not displayed
+	until the user takes some definite action to display them.  The user
+	can display ("unhold") held lines by using the SCROLL_FORWARD keybind
+	(<page down>) or the SEND_LINE keybind (<enter>).  For SCROLL_FORWARD,
+	the number of lines unheld is controlled by /SET SCROLLBACK_RATIO,
+	and for SEND_LINE, it is controlled by /SET HOLD_SLIDER.
+
+	The traditional ircII behavior for hold_mode is simulated by using
+	/set hold_slider 100 and /load hold_mode.  Each time you hit <enter>
+	a full window of output is unheld, and if no data was unheld, then 
+	a full window of output will appear before new output gets held.
+
+	The more recent epic behavior for hold_mode is simulated by using
+	/set hold_slider 0.  All new output is always held, and hitting
+	<enter> does not unhold output, but rather you must use <page down>
+	to scroll forward through the held output until you hit the bottom.
+
+*** News 10/10/2003 -- No more "half blank window"
+	If you don't know what I'm explaining here, don't worry about it.
+	If you do know, then you'll be happy to hear about this.  Previously,
+	If you did <page up> then a line of output occured and you hit 
+	<page down> twice, then half the window would be empty.  It seemed
+	a lot of people hated this so I "fixed" it as part of the hold_mode
+	stuff.
+
 *** News 09/25/2003 -- $servernick(<global>) now returns global nickname
 	I just know I'm going to regret this...  If you want to get the
 	client's global current nickname (which is used for new servers

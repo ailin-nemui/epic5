@@ -69,5 +69,12 @@ alias rwhois quote whois $0 $1
 # Sent notices should by default not be visible
 on ^send_notice * :
 
+## Either the two /on's or the /load should be commented out.  By default
+## the /on's are there for epic backwards compatability and the user can 
+## do the /load to get ircII backwards compatability.
+## Comment out these...
 on ^set "hold_mode *" window $*
 on ^set "hold_mode_interval *" window $*
+## ... or comment out this.
+#load hold_mode
+
