@@ -10,8 +10,8 @@ on ^set "suppress_server_motd off" {@suppress_server_motd = 0}
 
 do
 {
-	@ negser = getserial(HOOK -)
-	@ posser = getserial(HOOK +)
+	@ negser = getserial(HOOK - 0)
+	@ posser = getserial(HOOK + 0)
 
 	# The first time we see the MOTD, trigger the "doing motd" flag.
 	on #^375 $negser * {
