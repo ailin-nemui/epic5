@@ -1,5 +1,36 @@
 EPIC5-0.1
 
+*** News 01/26/2005 -- Notes for forward compatability
+			*** /SET -CREATE DEPRECATED ***
+	EPIC5-0.0.3 includes /SET -CREATE, but this is deprecated, and will
+	be removed by EPIC5-0.0.5.  It is suggested that you start using
+	$symbolctl() [see below] in scripts that support EPIC5-0.0.3 and up.
+
+			*** THINGS ARE GOING TO BE CHANGING ***
+	Starting before EPIC5-0.0.5, there will be a signficant shift to try
+	to script as many /set's and builtin commands as possible.  This
+	stuff is all intended to be put into the 'builtins' script which is
+	loaded from 'global' (ie, it's automatically loaded).  Some of you do
+	not load 'global' and so by EPIC5-0.0.5, if you do not load builtins,
+	you will find a lot of features gone.  I won't consider this a "bug",
+	but the natural progression of EPIC5's development...
+
+	Builtin commands that will be moved to 'builtins'
+		/BYE		/DATE		/EXIT
+		/HOST		/IRCHOST	/IRCNAME
+		/LEAVE		/REALNAME
+		/SIGNOFF
+
+	Builtin functions that will be moved to 'builtins'
+		$serverhost()
+
+	Builtin SETs that will be moved to 'builtins'
+		AUTO_REJOIN	AUTO_REJOIN_DELAY	AUTO_UNMARK_AWAY
+		AUTO_WHOWAS	NUM_OF_WHOWAS		BEEP_ON_MSG
+		COMMAND_MODE	FULL_STATUS_LINE	REVERSE_STATUS_LINE
+		SHOW_CHANNEL_NAMES		SHOW_END_OF_MSGS
+		SHOW_WHO_HOPCOUNT		VERBOSE_CTCP
+
 *** News 01/25/2005 -- New built in function, $symbolctl()
 	Here's the plan.  An all-encompasing low-level symbol manipulation 
 	thingee.  This interface is not intended to replace $aliasctl(), but 
@@ -837,6 +868,7 @@ EPIC5-0.1
 	Because adm asked me to
 
 *** News 08/25/2004 -- User-created /SETs, /SET -CREATE   -- WARNING
+			*** DEPRECATED ***
 	You can create your own /set's for now with 
 		/SET -CREATE <name> <type> {<code>}
 	where <type> is one of BOOL, STR, or INT.  <code> is code that 
@@ -846,6 +878,10 @@ EPIC5-0.1
 	*** WARNING *** This interface is temporary and will go away in 
 	the future.  It will be replaced by $symbolctl() which has not
 	yet been written, so stay tuned for more information!
+			*** DEPRECATED ***
+	This feature only existed in EPIC5-0.0.3 and was/will be removed
+	in EPIC5-0.0.4.  Do not use this feature.
+			*** DEPRECATED ***
 
 *** News 08/25/2004 -- Unification of symbol namespaces
 	There is now one big table that holds all of the symbol names for
@@ -1347,12 +1383,16 @@ EPIC5-0.1
 	"UMODE" still works)
 
 *** News 01/07/2004 -- /ON wildcard patterns now compiled into regexes
+			*** OBSOLETE ***
 	At or around this date, EPIC started converting wildcard patterns
 	used by /ON into extended POSIX regexes and compiling them, and
 	using the regexes instead of the pattern matcher.  In the future,
 	epic will allow you to specify your own regexes.  "Flexible"
 	/on hooks are still wildcard pattern matched (for now) because
 	recompiling the pattern every time the /on is thrown is senseless.
+			*** OBSOLETE ***
+	This feature was removed (see note above for 08/25/2004)
+			*** OBSOLETE ***
 
 *** News -- 12/16/2003 -- New levels, KICK, QUIT, and MODE
 	So just for a canonical list, here are all of the levels supported
