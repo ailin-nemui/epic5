@@ -1,4 +1,4 @@
-/* $EPIC: dcc.c,v 1.52 2003/03/24 09:20:29 jnelson Exp $ */
+/* $EPIC: dcc.c,v 1.53 2003/03/24 17:08:50 jnelson Exp $ */
 /*
  * dcc.c: Things dealing client to client connections. 
  *
@@ -1147,12 +1147,12 @@ static void	dcc_chat (char *args)
 		if (args[1] == '6')
 		{
 			next_arg(args, &args);
-			global_family = AF_INET;
+			global_family = AF_INET6;
 		}
 		if (args[1] == '4')
 		{
 			next_arg(args, &args);
-			global_family = AF_INET6;
+			global_family = AF_INET;
 		}
 	}
 

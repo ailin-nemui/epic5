@@ -231,3 +231,4 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Add get_winref_by_servref() returns highest "priority" window for a server
 * Have /defer track server, use server's "current window" (per above)
 * I'd like to have other things use this, like maybe /xeval -s.
+* Fix a bug with /dcc chat nick -6
