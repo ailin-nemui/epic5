@@ -1,4 +1,4 @@
-/* $EPIC: hook.c,v 1.55 2005/04/07 00:00:44 jnelson Exp $ */
+/* $EPIC: hook.c,v 1.56 2005/04/07 00:09:41 jnelson Exp $ */
 /*
  * hook.c: Does those naughty hook functions. 
  *
@@ -276,7 +276,7 @@ static void	initialize_hook_functions (void)
 		hook_functions[i].params = hook_function_templates[b].params;
 		hook_functions[i].mark = hook_function_templates[b].mark;
 		hook_functions[i].flags = hook_function_templates[b].flags;
-		hook_functions[i].implied = malloc_strdup(hook_function_templates[b].implied);
+		hook_functions[i].implied = NULL;
 	}
 
 	if (hooklist == NULL)
