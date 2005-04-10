@@ -1,4 +1,4 @@
-/* $EPIC: functions.c,v 1.197 2005/04/01 22:09:48 jnelson Exp $ */
+/* $EPIC: functions.c,v 1.198 2005/04/10 20:52:37 jnelson Exp $ */
 /*
  * functions.c -- Built-in functions for ircII
  *
@@ -4286,10 +4286,10 @@ BUILT_IN_FUNCTION(function_servernick, input)
 		if (!my_stricmp(servdesc, "<global>"))
 			RETURN_STR(nickname);
 
-		if (is_string_empty(input))
+		if (is_string_empty(servdesc))
 			refnum = from_server;
 		else
-			refnum = str_to_servref(input);
+			refnum = str_to_servref(servdesc);
 
 		if (refnum == NOSERV)
 			RETURN_EMPTY;

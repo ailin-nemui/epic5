@@ -606,3 +606,4 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Add $windowctl(GET <win> DISPLAY_SIZE), same as $winsize()
 * Add $windowctl(GET <win> SCREEN), same as $winscreen()
 * Add $windowctl(GET <win> LINE <num>), same as $winline()
+* Fix $servernick()
