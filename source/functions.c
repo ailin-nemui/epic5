@@ -1,4 +1,4 @@
-/* $EPIC: functions.c,v 1.198 2005/04/10 20:52:37 jnelson Exp $ */
+/* $EPIC: functions.c,v 1.199 2005/04/15 03:06:49 jnelson Exp $ */
 /*
  * functions.c -- Built-in functions for ircII
  *
@@ -75,6 +75,7 @@
 #include "options"
 #include "words.h"
 #include "reg.h"
+#include "ssl.h"
 
 #ifdef NEED_GLOB
 # include "glob.h"
@@ -180,8 +181,10 @@ static	char
 	*function_tolower 	(char *),
 	*function_toupper 	(char *),
 	*function_userhost 	(char *),
+#if 0
 	*function_winnum 	(char *),
 	*function_winnam 	(char *),
+#endif
 	*function_word 		(char *),
 	*function_utime		(char *),
 	*function_strftime	(char *),
@@ -293,7 +296,9 @@ static	char
 	*function_jot 		(char *),
 	*function_key 		(char *),
 	*function_killpid	(char *),
+#if 0
 	*function_lastserver	(char *),
+#endif
 	*function_leftpc	(char *),
 	*function_leftw 	(char *),
 	*function_levelwindow	(char *),
@@ -363,12 +368,14 @@ static	char
 	*function_seek		(char *),
 	*function_server_version (char *),
 	*function_serverctl	(char *),
+#if 0
 	*function_servergroup	(char *),
 	*function_servername	(char *),
 	*function_servernick	(char *),
 	*function_servernum	(char *),
 	*function_serverourname	(char *),
 	*function_servertype	(char *),
+#endif
 	*function_servports	(char *),
 	*function_serverwin	(char *),
 	*function_sin		(char *),
@@ -411,11 +418,16 @@ static	char
 	*function_unsplit	(char *),
 	*function_urldecode	(char *),
 	*function_urlencode	(char *),
+#if 0
 	*function_winbound	(char *),
+#endif
 	*function_which 	(char *),
 	*function_winchan	(char *),
+#if 0
 	*function_wincurline	(char *),
+#endif
 	*function_windowctl	(char *),
+#if 0
 	*function_winlevel	(char *),
 	*function_winline	(char *),
 	*function_winnames	(char *),
@@ -427,6 +439,7 @@ static	char
 	*function_winsize	(char *),
 	*function_winstatsize	(char *),
 	*function_winvisible	(char *),
+#endif
 	*function_wordtoindex	(char *),
 	*function_write 	(char *),
 	*function_writeb	(char *),
@@ -597,7 +610,9 @@ static BuiltInFunctions	built_in_functions[] =
 	{ "KEY",                function_key 		},
 	{ "KILLPID",		function_killpid	},
 	{ "LASTLOG",		function_lastlog	}, /* lastlog.h */
+#if 0
 	{ "LASTSERVER",		function_lastserver	},
+#endif
 	{ "LEFT",		function_left 		},
 	{ "LEFTPC",		function_leftpc		},
 	{ "LEFTW",              function_leftw 		},
@@ -684,12 +699,14 @@ static BuiltInFunctions	built_in_functions[] =
 	{ "SAR",		function_sar 		},
 	{ "SEDCRYPT",		function_sedcrypt	},
 	{ "SERVERCTL",		function_serverctl	},
+#if 0
 	{ "SERVERGROUP",	function_servergroup	},
 	{ "SERVERNAME",		function_servername	},
 	{ "SERVERNICK",		function_servernick	},
 	{ "SERVERNUM",		function_servernum	},
 	{ "SERVEROURNAME",	function_serverourname	},
 	{ "SERVERTYPE",		function_servertype	},
+#endif
 	{ "SERVERWIN",		function_serverwin	},
 	{ "SERVPORTS",		function_servports	},
 	{ "SETITEM",            function_setitem 	},
@@ -757,22 +774,16 @@ static BuiltInFunctions	built_in_functions[] =
 	{ "WINDOWCTL",		function_windowctl	},
 #if 0
 	{ "WINLEVEL",		function_winlevel	},
-#endif
 	{ "WINLINE",		function_winline	},
-#if 0
 	{ "WINNAM",		function_winnam 	},
 	{ "WINNICKLIST",	function_winnames	},
 	{ "WINNUM",		function_winnum 	},
 	{ "WINQUERY",		function_winquery 	},
 	{ "WINREFS",		function_winrefs	},
-#endif
 	{ "WINSCREEN",		function_winscreen	},
-#if 0
 	{ "WINSCROLLBACKSIZE",	function_winsbsize	},
 	{ "WINSERV",		function_winserv	},
-#endif
 	{ "WINSIZE",		function_winsize	},
-#if 0
 	{ "WINSTATUSSIZE",	function_winstatsize	},
 	{ "WINVISIBLE",		function_winvisible	},
 #endif
@@ -3338,6 +3349,7 @@ BUILT_IN_FUNCTION(function_stripansi, input)
 	RETURN_STR(input);
 }
 
+#if 0
 BUILT_IN_FUNCTION(function_servername, input)
 {
 	int 		refnum;
@@ -3402,6 +3414,7 @@ BUILT_IN_FUNCTION(function_lastserver, input)
 {
 	RETURN_INT(last_server);
 }
+#endif
 
 #if 0
 BUILT_IN_FUNCTION(function_winserv, input)
@@ -3619,6 +3632,7 @@ BUILT_IN_FUNCTION(function_epic, words)
 	RETURN_INT(1);
 }
 
+#if 0
 BUILT_IN_FUNCTION(function_winsize, words)
 {
 	Window *win;
@@ -3633,6 +3647,7 @@ BUILT_IN_FUNCTION(function_winsize, words)
 
 	RETURN_EMPTY;
 }
+#endif
 
 
 BUILT_IN_FUNCTION(function_umode, words)
@@ -4274,6 +4289,7 @@ BUILT_IN_FUNCTION(function_nohighlight, input)
 	RETURN_STR(outbuf);
 }
 
+#if 0
 BUILT_IN_FUNCTION(function_servernick, input)
 {
 	char *	servdesc;
@@ -4302,6 +4318,7 @@ BUILT_IN_FUNCTION(function_servernick, input)
 	retval = get_server_nickname(refnum);
 	RETURN_STR(retval);
 }
+#endif
 
 #if 0
 BUILT_IN_FUNCTION(function_winnames, input)
@@ -5508,6 +5525,7 @@ GET_UNIFIED_ARRAY_FUNCTION(function_getsets, pmatch_builtin_variables)
 GET_UNIFIED_ARRAY_FUNCTION(function_getcommands, pmatch_builtin_commands)
 GET_UNIFIED_ARRAY_FUNCTION(function_getfunctions, pmatch_builtin_functions)
 
+#if 0
 /* Written by nutbar */
 BUILT_IN_FUNCTION(function_servernum, input)
 {
@@ -5544,6 +5562,7 @@ BUILT_IN_FUNCTION(function_servernum, input)
 	/* Ok. i give up, return -1. */
 	RETURN_INT(-1);
 }
+#endif
 
 
 BUILT_IN_FUNCTION(function_stripc, input)
@@ -6185,6 +6204,7 @@ BUILT_IN_FUNCTION(function_builtin, input)
 	return efunc();
 }
 
+#if 0
 /*
  * Date: Fri, 14 Jan 2000 00:48:55 -0500
  * Author: IceKarma (ankh@canuck.gen.nz)
@@ -6213,6 +6233,7 @@ BUILT_IN_FUNCTION(function_winscreen, input)
 
 	RETURN_INT(win->screen->screennum);
 }
+#endif
 
 /*
  * Returns what the status-line %F expando would return, except it is 
@@ -6332,6 +6353,7 @@ BUILT_IN_FUNCTION(function_wincurline, input)
 }
 #endif
 
+#if 0
 BUILT_IN_FUNCTION(function_winline, input)
 {
 	Window	*win;
@@ -6359,6 +6381,7 @@ BUILT_IN_FUNCTION(function_winline, input)
 	else 
 		RETURN_EMPTY;
 }
+#endif
 
 /*
  * These four functions contributed by 

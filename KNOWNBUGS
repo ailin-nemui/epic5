@@ -613,3 +613,5 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Round 3 of blackjac's builtins script
 * Round 1 of fudd's loadformats script.
 * Fix some "all-the-world's-an-int" bugs reported by xlc (aix's compiler).
+* New version of tabkey.ce from fudd.
+* Comment out the round 3 $serv*() functions and other stuff.

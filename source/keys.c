@@ -1,4 +1,4 @@
-/* $EPIC: keys.c,v 1.42 2005/04/15 02:47:45 jnelson Exp $ */
+/* $EPIC: keys.c,v 1.43 2005/04/15 03:06:49 jnelson Exp $ */
 /*
  * keys.c:  Keeps track of what happens whe you press a key.
  *
@@ -556,8 +556,8 @@ unsigned char *bind_string_compress (const unsigned char *str, int *len) {
 
 /* this decompresses a compressed bind string into human-readable form.  it
  * assumes sufficient memory has already been allocated for it. */
-unsigned char *bind_string_decompress (unsigned char *dst, const unsigned char
-	*src, int srclen) {
+unsigned char *	bind_string_decompress (unsigned char *dst, const unsigned char *src, int srclen) 
+{
     unsigned char *ret = dst;
 
     while (srclen) {
