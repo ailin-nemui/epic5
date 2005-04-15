@@ -1,4 +1,4 @@
-/* $EPIC: status.c,v 1.58 2005/03/29 13:25:48 jnelson Exp $ */
+/* $EPIC: status.c,v 1.59 2005/04/15 02:47:45 jnelson Exp $ */
 /*
  * status.c: handles the status line updating, etc for IRCII 
  *
@@ -1041,7 +1041,7 @@ STATUS_FUNCTION(status_mode)
 	}
 	else if (map == 2 || map == 3)
 	{
-		char *x, *c;
+		char *x;
 		x = LOCAL_COPY(mode);
 		if (!(mode = next_arg(x, &x)))
 			mode = empty_string;

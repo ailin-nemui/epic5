@@ -1,4 +1,4 @@
-/* $EPIC: ssl.c,v 1.17 2005/03/28 23:53:58 jnelson Exp $ */
+/* $EPIC: ssl.c,v 1.18 2005/04/15 02:47:45 jnelson Exp $ */
 /*
  * ssl.c: SSL connection functions
  *
@@ -36,6 +36,8 @@
  */
 
 #include "irc.h"
+#include "ircaux.h"
+
 #ifdef HAVE_SSL
 
 #include <openssl/crypto.h>
@@ -45,7 +47,6 @@
 #include <openssl/err.h>
 #include <openssl/opensslconf.h>
 
-#include "ircaux.h"
 #include "output.h"
 #include "hook.h"
 #include "ssl.h"
@@ -351,33 +352,38 @@ static void	ssl_setup_locking (void)
 
 int	startup_ssl (int vfd, int channel)
 {
-	return;
+	return -1;
 }
 
 int	shutdown_ssl (int vfd)
 {
 	panic("shutdown_ssl(%d) called on non-ssl client", vfd);
+	return -1;
 }
 
 int	write_ssl (int vfd, const void *data, size_t len)
 {
 	panic("write_fd(%d, \"%s\", %ld) called on non-ssl client",
 		vfd, data, len);
+	return -1;
 }
 
 int	ssl_read (int vfd)
 {
 	panic("ssl_read(%d) called on non-ssl client", vfd);
+	return -1;
 }
 
 int	ssl_reader (int vfd, char **buf, size_t *len, size_t *start)
 {
 	panic("ssl_reader(%d) called on non-ssl client", vfd);
+	return -1;
 }
 
 const char *get_ssl_cipher (int vfd)
 {
 	panic("get_ssl_cipher(%d) called on non-ssl client", vfd);
+	return NULL;
 }
 
 int	is_ssl_enabled (int vfd)

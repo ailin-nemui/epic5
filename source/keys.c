@@ -1,4 +1,4 @@
-/* $EPIC: keys.c,v 1.41 2005/04/01 03:04:52 jnelson Exp $ */
+/* $EPIC: keys.c,v 1.42 2005/04/15 02:47:45 jnelson Exp $ */
 /*
  * keys.c:  Keeps track of what happens whe you press a key.
  *
@@ -81,6 +81,7 @@ struct Key {
 };
 
 extern struct Key *head_keymap; /* the head keymap.  the root of the keys.  */
+static int bind_compressed_string (unsigned char *cs, int slen, const char *bindstr, char *args);
 
 /* This file is split into two pieces.  The first piece represents bindings.
  * Bindings are now held in a linked list, allowing the user to add new ones
@@ -576,20 +577,34 @@ unsigned char *bind_string_decompress (unsigned char *dst, const unsigned char
     return ret;
 }
 
+static	int	bind_string (const unsigned char *sequence, const char *bindstr, char *args) 
+{
+	unsigned char *cs;
+	int	slen, retval;
+
+	cs = bind_string_compress(sequence, &slen);
+	if (cs == NULL) {
+		yell("bind_string(): couldn't compress sequence %s", sequence);
+		return 0;
+	}
+
+	retval = bind_compressed_string(cs, slen, bindstr, args);
+	new_free(&cs);
+	return retval;
+}
+
 /* this function takes a key sequence (user-input style), a function to bind
  * to, and optionally arguments to that function, and does all the work
  * necessary to bind it.  it will create new keymaps as it goes, if
  * necessary, etc. */
-static int bind_string (const unsigned char *sequence, const char *bindstr, char *args) {
-    unsigned char *cs; /* the compressed keysequence */
+static int bind_compressed_string (unsigned char *cs, int slen, const char *bindstr, char *args) {
     unsigned char *s;
-    int slen;
     struct Key *kp = NULL;
     struct Key *map = head_keymap;
     struct Binding *bp = NULL;
 
-    if (!sequence || !bindstr) {
-	yell("bind_string(): called without sequence or bind function!");
+    if (!cs || !slen || !bindstr) {
+	yell("bind_compressed_string(): called without sequence or bind function!");
 	return 0;
     }
 
@@ -597,12 +612,6 @@ static int bind_string (const unsigned char *sequence, const char *bindstr, char
      * 'NOTHING', we just do some other work. */
     if (my_stricmp(bindstr, "NOTHING") && (bp = find_binding(bindstr)) == NULL) {
 	say("No such function %s", bindstr);
-	return 0;
-    }
-
-    cs = bind_string_compress(sequence, &slen);
-    if (cs == NULL) {
-	yell("bind_string(): couldn't compress sequence %s", sequence);
 	return 0;
     }
 
@@ -637,7 +646,6 @@ static int bind_string (const unsigned char *sequence, const char *bindstr, char
     /* if we're post-initialization, clean out the keymap with each call. */
     if (bind_post_init)
 	clean_keymap(head_keymap);
-    new_free(&cs);
     return 1;
 }
 
@@ -1048,6 +1056,8 @@ BUILT_IN_COMMAND(bindcmd) {
     const unsigned char *seq;
     char *function;
     int recurse = 0;
+    unsigned char *cs;
+    int	slen, retval;
 
     if ((seq = new_next_arg(args, &args)) == NULL) {
 	show_all_bindings(head_keymap, "", 0);
@@ -1080,28 +1090,32 @@ BUILT_IN_COMMAND(bindcmd) {
     }
 
     if ((function = new_next_arg(args, &args)) == NULL) {
-	unsigned char *compstr;
-	int slen;
-	compstr = bind_string_compress(seq, &slen);
-	if (compstr == NULL)
+	cs = bind_string_compress(seq, &slen);
+	if (cs == NULL)
 	    return; /* umm.. */
 
-	show_key(NULL, compstr, slen, recurse);
+	show_key(NULL, cs, slen, recurse);
+	return;
+    }
+
+    if (!(cs = bind_string_compress(seq, &slen))) {
+	yell("BIND: couldn't compress sequence %s", seq);
 	return;
     }
 
     /* bind_string() will check any errors for us. */
-    if (!bind_string(seq, function, *args ? args : NULL)) {
+    retval = bind_compressed_string(cs, slen, function, *args ? args : NULL);
+    if (!retval) {
 	if (!my_strnicmp(function, "meta", 4))
 	    yell(
 "Please note that the META binding functions are no longer available.  \
 For more information please see the bind(4) helpfile and the file \
 doc/keys distributed with the EPIC source."
 		);
-		    
-	return; /* assume an error was spouted for us. */
     }
-    show_key(NULL, seq, 0, 0);
+    else
+        show_key(NULL, cs, slen, 0);
+    new_free(&cs);
 }
 
 /* support function for /bind:  this function shows, recursively, all the

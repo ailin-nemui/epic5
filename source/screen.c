@@ -1,4 +1,4 @@
-/* $EPIC: screen.c,v 1.97 2005/03/28 23:53:58 jnelson Exp $ */
+/* $EPIC: screen.c,v 1.98 2005/04/15 02:47:45 jnelson Exp $ */
 /*
  * screen.c
  *
@@ -2730,7 +2730,7 @@ Window	*create_additional_screen (void)
 	Timeval		timeout;
 	pid_t		child;
 	unsigned short 	port;
-	int		new_sock_size;
+	socklen_t		new_sock_size;
 	char *		wserv_path;
 
 	if (!use_input)

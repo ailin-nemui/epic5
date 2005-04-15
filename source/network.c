@@ -1,4 +1,4 @@
-/* $EPIC: network.c,v 1.64 2005/03/19 03:55:55 jnelson Exp $ */
+/* $EPIC: network.c,v 1.65 2005/04/15 02:47:45 jnelson Exp $ */
 /*
  * network.c -- handles stuff dealing with connecting and name resolving
  *
@@ -648,7 +648,7 @@ static int	set_blocking (int fd)
  * has been closed in the interim.  This wrapper for accept() attempts to
  * defeat this by making the accept() call nonblocking.
  */
-int	Accept (int s, SA *addr, int *addrlen)
+int	Accept (int s, SA *addr, socklen_t *addrlen)
 {
 	int	retval;
 

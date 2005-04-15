@@ -57,7 +57,7 @@ int     inet_ntostr             (SA *, char *, int, char *, int, int);
 int	inet_hntop             (int, const char *, char *, int);
 int	inet_ptohn             (int, const char *, char *, int);
 int	one_to_another         (int, const char *, char *, int);
-int     Accept                  (int, SA *, int *);
+int     Accept                  (int, SA *, socklen_t *);
 char *	switch_hostname        (const char *);
 int     ip_bindery              (int family, u_short port, SS *storage);
 int     client_bind             (SA *, socklen_t);

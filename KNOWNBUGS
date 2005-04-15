@@ -3,6 +3,7 @@ EPIC5 Projects, Bugs, and other Errata:
 KNOWN ERRATA (eg, bugs, or unresolved requests):
 ------------------------------------------------
 * Logically sized windows, instead of it being based on physical lines.
+* An /on to go off when you add something to the input line.
 
 [See http://www.epicsol.org/PROJECTS for things to come in the future]
 [See http://www.epicsol.org/CHANGELOG5 for things that changed in the past]
@@ -607,3 +608,8 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Add $windowctl(GET <win> SCREEN), same as $winscreen()
 * Add $windowctl(GET <win> LINE <num>), same as $winline()
 * Fix $servernick()
+* Make /bind "compress" string, and bind and print it compressed.
+* This fixes /bind'ing literal characters being displayed literally.
+* Round 3 of blackjac's builtins script
+* Round 1 of fudd's loadformats script.
+* Fix some "all-the-world's-an-int" bugs reported by xlc (aix's compiler).

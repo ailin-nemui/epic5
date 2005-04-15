@@ -43,18 +43,17 @@ any GNU software (however, this is _not_ GNU software)
 		Enable the perl support in the scripting language.
 		WARNING:  Currently requires Perl 5.6+.
 	  --with-ssl[=PATH]
-		Enable support for SSLv3 connections to servers.
-	  --with-ssl-ver=v2
-		Use SSLv2 instead of SSLv3
+		Enable support for SSL connections to servers.
 
-  o  This IRC II client should be able to compile and run on almost
+  o  This software should be able to compile and run on almost
      any modern unix (A ``modern'' unix is one that supports POSIX
      system calls and BSD networking in addition to the most commonly
      accepted non-standard unix extensions, like getpw*() functions.)
-     All i can say is try it and see if it works.  It will definitely
-     work on Solaris, FreeBSD, Linux, Digital Unix, SCO ODT 5, AIX, etc.
+     All I can say is try it and see if it works.  It should definitely
+     work on the 4.4BSDs, Linux, SVR4s (Solaris), Digital Unix/Ultrix, 
+     AIX and SCO ODT 5, and possibly others.
 
-  o  To compile ircii, type `make'.  This will compile the `epic' and `wserv'
+  o  To compile type `make'.  This will compile the `epic5' and `wserv4'
      programs that live in the `source' subdirectory.
 
   o  Once that you are happy with the compilation, you can install them
@@ -63,7 +62,7 @@ any GNU software (however, this is _not_ GNU software)
      The help files are available as a seperate package.  They should be
      available from the same place you got the source code from.
      This release uses a new layout format for its various parts that differs
-     from the historical ircII defaults.  The binary is called 'epic', the
+     from the historical ircII defaults.  The binary is called 'epic5', the
      library is put into .../share/epic by default, and the 'wserv4'
      binary ends up as .../libexec/wserv4.
 
@@ -74,17 +73,11 @@ any GNU software (however, this is _not_ GNU software)
      before you try to compile again for a different architecture.
 
   o  Help files are not shipped with the base distribution (because of their
-     size and because they are not updated frequently.)  You should be able
-     to find the help files in the same place you got the source distribution,
-     or you can find them at ftp://ftp.epicsol.org/pub/epic.  To install the
-     help files, you need to put the gzip'd tar file in the irc library as
-     configured into the client.  This is typically either /usr/local/lib/irc
-     or $HOME/lib/irc.  Extract it there (it will create a subdirectory named
-     help).  If you have problems, start up the irc client, and run the command
-     /SET HELP_PATH   -- the output should be the directory where you installed
-     the help files.  If its not, you either need to /SET HELP_PATH to the
-     place where the help files are, or you need to move the help files to 
-     where the client is expecting to find them. ;-)
+     size and because they are not updated frequently.)  You can peruse the 
+     help files online at http://www.epicsol.org/help.  There is also a 'help'
+     script that implements the /help command if you want to do things the old
+     way.  Make sure you /SET HELP_PATH to where you put the help files or it
+     won't be able to find them.
 
   o  Bug reports go to list@epicsol.org.  Please see the BUG_FORM file for 
      information about how to file a bug report.  Please include as much 

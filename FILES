@@ -4,7 +4,7 @@ Files regarding epic's main event looper
 ========================================
 irc.c		The startup and shutdown routines and the main looper
 network.c	Hostnames and addresses and sockets, oh my!
-newio.c		Active polling-driven event looper and line bufferer
+newio.c		FD Multiplexing, data buffering, i/o callback generation.
 ssl.c		Secure Socket Layer stuff
 timer.c		Scheduling events to happen later
 translat.c	Character set remapping
@@ -26,7 +26,7 @@ ctcp.c		Client To Client Protocol (Inquiry/Response protocol)
 dcc.c		Direct Client Connections (p2p, uses CTCP as transport)
 flood.c		Flood (too much crap too quickly) detection
 ignore.c	A polite way to pay someone no mind
-names.c		Channels, nicknames, modes, and userhosts.
+names.c		Channels, nicknames, modes, and userhosts
 notify.c	Polling for the existance of other users on irc
 
 Files that have some knowledge of rfc1459 (irc) concepts
@@ -38,7 +38,7 @@ vars.c		Many built in configurables are irc related
 
 Files that regard the ircII programming language
 ================================================
-alias.c		User-defined macro-commands and macro-variables
+alias.c		Unified symbol table, macro-commands and macro-variables
 clock.c		Automatic system timers (notify, clock, and mail)
 expr.c		Expression parsing and macro expanders
 expr2.c		A better expression parser
@@ -62,8 +62,6 @@ vars.c		The /SET command (runtime configurables)
 
 Files that regard the user interface
 ====================================
-help.c		Interactive user documentation browser
-history.c	Multi-line history recall
 input.c		Logical interactive input processing
 keys.c		Turning key presses into logical input-line actions
 lastlog.c	Saving a copy of what has appeared on your window
@@ -79,7 +77,7 @@ wserv.c		Multiple physical screen support
 Files that support other things without being directly related
 ==============================================================
 alist.c		Resizable binary-searchable sorted arrays
-alloca.c	Heap emulation of dynamic stackallocation
+alloca.c	Heap emulation of dynamic stack allocation
 compat.c	Functions that we use that some systems do not have
 debug.c		Output extra info to help diagnose problems
 gailib.c	Emulate get(addr|name)info on IPv4-only systems
