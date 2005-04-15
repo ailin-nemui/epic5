@@ -5,7 +5,7 @@ if (word(2 $loadinfo()) != [pf]) {
 
 #	Copyright (c) 2005 David B. Kratter (BlackJac@EFNet)
 #
-#	Version: 1.2.2005.04.12.1
+#	Version: 1.2.2005.04.14.1
 #
 #	This script ensures backward-compatibility with epic4-2.2 by adding the
 #	following commands, functions and sets that have been removed from epic5.
@@ -189,7 +189,7 @@ alias winrefs (void) {
 };
 
 alias winscreen (winnum default 0, void) {
-	if ((:screen = windowctl(get $windowctl(refnum $winnum) screen)) > -2) {
+	if ((:screen = windowctl(get $windowctl(refnum $winnum) screen)) >= -1) {
 		return $screen;
 	};
 	return -1;
@@ -203,7 +203,7 @@ alias winscrollbacksize (winnum default 0, void) {
 };
 
 alias winserv (winnum default 0, void) {
-	if ((:serv = windowctl(get $windowctl(refnum $winnum) server)) > -3) {
+	if ((:serv = windowctl(get $windowctl(refnum $winnum) server)) >= -2) {
 		return $serv;
 	};
 	return -1;
