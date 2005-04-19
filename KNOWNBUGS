@@ -622,3 +622,6 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Comment out the round 3 $serv*() functions and other stuff.
 * Another new version of tabkey.ce from fudd
 * A new loadformats from fudd.
+* Add $dccctl(UPDATES_STATUS [0|1]), returns old value
+* Add $dccctl([SET|GET] <refnum> UPDATES_STATUS [0|1]).
+* Allow /on ^dcc_activity * # to suppress status bar redrawing.

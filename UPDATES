@@ -1,5 +1,26 @@
 EPIC5-0.0.4
 
+*** News 04/18/2005 -- Ways to keep dcc xfers from swamping your cpu...
+	There are three new ways to keep high speed dcc xfers from swamping
+	your cpu with unnecessary status bar redraws:
+
+	$dccctl(UPDATES_STATUS [0|1])
+	   Turns off (on) whether or not the %D status bar value should be
+	   updated whenever any activity occurs.  If you turn this off, then
+	   %D is frozen until you turn it back on.  The argument is optional,
+	   and if you don't supply it, it returns the current value.  If you
+	   do supply it, the old value is returned.
+
+	$dccctl([SET|GET] <refnum> UPDATES_STATUS [0|1])
+	   Turns off (on) whether or not a particular dcc should update the 
+	   %D status bar expando when it has activity.
+
+	/ON ^DCC_ACTIVITY * #
+	   Hooking (and suppressing) /ON DCC_ACTIVITY will prevent the status
+	   bar from being redrawn as a result of this activity.  This won't
+	   stop %D from being updated, but it does stop the status bar from
+	   thrasing uncontrollably.
+ 
 *** News 04/18/2005 -- The "builtins" script (Blackjac)
 		*** IMPORTANT *** IMPORTANT *** IMPORTANT ***
 	As noted below in "notes for forward compatability", there is a new

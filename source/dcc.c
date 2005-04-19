@@ -1,4 +1,4 @@
-/* $EPIC: dcc.c,v 1.118 2005/03/28 23:53:58 jnelson Exp $ */
+/* $EPIC: dcc.c,v 1.119 2005/04/19 13:43:33 jnelson Exp $ */
 /*
  * dcc.c: Things dealing client to client connections. 
  *
@@ -112,6 +112,7 @@ struct	DCC_struct *	next;
 
 	int		(*open_callback) (struct DCC_struct *);
 	int		server;
+	int		updates_status;
 }	DCC_list;
 
 static	DCC_list *	ClientList = NULL;
@@ -122,6 +123,7 @@ static	char		DCC_current_transfer_buffer[256];
 static	int		dcc_global_lock = 0;
 static	int		dccs_rejected = 0;
 static	int		dcc_refnum = 0;
+static	int		dcc_updates_status = 1;
 
 static	void		dcc_chat 		(char *);
 static	void 		dcc_close 		(char *);
@@ -145,7 +147,7 @@ static	void		process_incoming_raw 	(DCC_list *);
 static	void		process_dcc_send 	(DCC_list *);
 static	void		process_incoming_file 	(DCC_list *);
 static	void		DCC_close_filesend 	(DCC_list *, const char *, const char *);
-static	void		update_transfer_buffer 	(long refnum, const char *format, ...);
+static	void		update_transfer_buffer 	(DCC_list *, const char *format, ...);
 static	char *		dcc_urlencode		(const char *);
 static	char *		dcc_urldecode		(const char *);
 static	void		dcc_list 		(char *args);
@@ -296,10 +298,7 @@ static void 	dcc_garbage_collect (void)
 	}
 
 	if (need_update)
-	{
-		update_transfer_buffer(-1, NULL);	/* Whatever */
-		update_all_status();
-	}
+		update_transfer_buffer(NULL, NULL);	/* Whatever */
 }
 
 /*
@@ -3267,8 +3266,7 @@ static void	process_dcc_send_data (DCC_list *dcc)
 		 */
 		if (dcc->filesize)
 		{
-		    update_transfer_buffer(dcc->refnum, 
-				"(to %10s: %d of %d: %d%%)",
+		    update_transfer_buffer(dcc, "(to %10s: %d of %d: %d%%)",
 			dcc->user, 
 			(int)dcc->packets_transfer, 
 			(int)dcc->packets_total, 
@@ -3276,12 +3274,10 @@ static void	process_dcc_send_data (DCC_list *dcc)
 		}
 		else
 		{
-		    update_transfer_buffer(dcc->refnum, 
-			"(to %10s: %ld kbytes     )",
+		    update_transfer_buffer(dcc, "(to %10s: %ld kbytes     )",
 			dcc->user, 
 			(long)(dcc->bytes_sent / 1024));
 		}
-		update_all_status();
 	}
 }
 
@@ -3360,17 +3356,14 @@ static	void		process_dcc_get_data (DCC_list *dcc)
 	     ((dcc->flags & DCC_TYPES) == DCC_FILEREAD))
 	{
 		if (dcc->filesize)
-			update_transfer_buffer(dcc->refnum,
-				"(%10s: %d of %d: %d%%)", 
+			update_transfer_buffer(dcc, "(%10s: %d of %d: %d%%)", 
 				dcc->user, (int)dcc->packets_transfer,
 				(int)dcc->packets_total, 
 				(int)(dcc->bytes_read * 100.0 / dcc->filesize));
 		else
-			update_transfer_buffer(dcc->refnum,
-				"(%10s %d packets: %ldK)", 
+			update_transfer_buffer(dcc, "(%10s %d packets: %ldK)", 
 				dcc->user, (int)dcc->packets_transfer, 
 				(long)(dcc->bytes_read / 1024));
-		update_all_status();
 	}
 }
 
@@ -3549,8 +3542,11 @@ char *	DCC_get_current_transfer (void)
 }
 
 
-static void 	update_transfer_buffer (long refnum, const char *format, ...)
+static void 	update_transfer_buffer (DCC_list *dcc, const char *format, ...)
 {
+	if (!dcc_updates_status || !dcc->updates_status)
+		return;
+
 	if (format)
 	{
 		va_list args;
@@ -3563,7 +3559,8 @@ static void 	update_transfer_buffer (long refnum, const char *format, ...)
 	else
 		*DCC_current_transfer_buffer = 0;
 
-	do_hook(DCC_ACTIVITY_LIST, "%ld", refnum);
+	if (do_hook(DCC_ACTIVITY_LIST, "%ld", dcc->refnum))
+		update_all_status();
 }
 
 
@@ -3824,6 +3821,8 @@ char *	dccctl (char *input)
 			to.tv_usec = 0;
 			retint = select(client->socket + 1, NULL, &fd, NULL, &to) > 0;
 			RETURN_INT(retint);
+		} else if (!my_strnicmp(listc, "UPDATES_STATUS", len)) {
+			RETURN_INT(client->updates_status);
 		} else {
 			RETURN_EMPTY;
 		}
@@ -3883,6 +3882,12 @@ char *	dccctl (char *input)
 				RETURN_EMPTY;
 
 			memcpy(&client->offer, &a, sizeof client->offer);
+			RETURN_INT(1);
+		} else if (!my_strnicmp(listc, "UPDATES_STATUS", len)) {
+			long	updates;
+
+			GET_INT_ARG(updates, input);
+			client->updates_status = updates;
 			RETURN_INT(1);
 		} else {
 			RETURN_EMPTY;
@@ -3960,6 +3965,16 @@ char *	dccctl (char *input)
 		for (client = ClientList; client; client = client->next)
 			if (FD_ISSET(client->socket, &fd))
 				malloc_strcat_word_c(&retval, space, ltoa(client->refnum), &clue);
+	} else if (!my_strnicmp(listc, "UPDATES_STATUS", len)) {
+		int	oldval;
+
+		oldval = dcc_updates_status;
+		if (input && *input) {
+			int	newval;
+			GET_INT_ARG(newval, input);
+			dcc_updates_status = newval;
+		}
+		RETURN_INT(oldval);
 	} else
 		RETURN_EMPTY;
 
