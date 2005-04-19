@@ -1,36 +1,158 @@
+# $EPIC: loadformats,v 1.2 2005/04/19 02:40:18 jnelson Exp $
+# loadformats (format.irc) - Add customizeable formatting to EPIC5
+# Copyright (c) 2005 Brian Weiss <brian@epicsol.org>
+# See the 'COPYRIGHT' file for more information.
 #
-# Here's the plan...
-# We have an input file that looks like this:
-#	^TYPE FORMAT...$
-# where TYPE is an ON type, and FORMAT is something that can be /echo'd for
-# for that of ON.  We want to open up a file, and slurp it into $hookctl().
-# 
+# This script provides support for easily adding customizeable
+# formatting to EPIC5. Formats can either be added individually
+# via /ADDFORMAT or they can be loaded from a "format file" with
+# the /LOADFORMATS alias.
+#
+# The format of this file is as follows:
+#
+# <type> <str>
+#
+# where <type> is the name of the /ON hook that would normally be
+# used to format output from the desired event and <str> is a text
+# text string containing cparse(6) color codes and numeric expandos.
+#
+# e.g.
+# PUBLIC %K<%n$0%K>%n $2-
+# MSG %K[%C$0%K\(%c$userhost($0)%K\)] $1-
+#
+# Note: Due to the fact that this uses $cparse() to add colors, special
+#       care may need to be taken when formats contain double quotes.
+#
+# Adding a format for an event with either of the above methods will
+# create a /SET variable named "FORMAT_<type>" whose value will be
+# used to determine the formatting of the event.
+#
+# This file will refuse to load if your client doesn't have implied on
+# hooks (either cause it's too old, or you compiled it out)
+#
 
-alias loadformats (filename, void) 
+# Make sure this file gets loaded with the PF loader.
+if (word(2 $loadinfo()) != [pf])
 {
-	if (index(h $info(O)) == -1) {
-		xecho -b Your client doesn't have implied hooks, sorry.
-		return
-	}
+	load -pf $word(1 $loadinfo());
+	return;                       
+};
 
-	^local fd,line,type,retval,formats_loaded
+if (index(h $info(O)) == -1) {
+	xecho -b Your client doesn't have implied hooks, sorry.;
+	return
+};
 
-	@ fd = open($filename R)
-	@ line = read($fd)
-	while (!eof($fd))
+#
+# addformat <type> [value]
+#
+# Adds a new format into the system. This will create a /SET variable
+# named "FORMAT_<type>" and will create an IMPLIED hook for the specified
+# type via $hookctl().
+#
+alias addformat (type, value)
+{
+	if (!value)
+		return;
+
+	@ :type = toupper($type);
+	@ :var = [FORMAT_] ## type;
+	@ hookctl(set list $type implied \$$var);
+	@ symbolctl(create $var);
+	@ symbolctl(set $var 1 builtin_variable type str);
+	^set $var $value;
+	xecho -b -s Added format for the $type event;
+};
+
+#
+# delformat <type>
+#
+# Removes a format from the system. This removes both the /SET variable
+# and the implied hook.
+#
+alias delformat (type, void)
+{
+	if (!type) {
+		xecho -b Usage: $(K)DELFORMAT <type>;
+		return;
+	};
+
+	@ :type = toupper($type);
+	@ hookctl(set list $type implied);
+	@ symbolctl(delete FORMAT_$type builtin_variable);
+	@ symbolctl(check FORMAT_$type);
+	xecho -b -s Deleted format for the $type event;
+};
+
+#
+# dumpformats
+#
+# Removes all formats from the system.
+#
+alias dumpformats (void)
+{
+	xecho -b -s Dumping all formats;
+	for hook in ($hookctl(list lists))
 	{
-		@ type = shift(line)
-		@ retval = hookctl(SET LIST $type IMPLIED $line)
-		if (retval != 1) {
-			xecho -b Could not load format: $type $line
-		} else {
-			@ formats_loaded++;
-		}
-		@ line = read($fd)
-	}
+		if (hookctl(get list $hook implied))
+			^delformat $hook;
+	};
+};
 
-	xecho -b Loaded $formats_loaded formats from $(filename).
-	@close($fd)
-}
+#
+# loadformats <file>
+#
+# This loads all formats in the specified file.
+#
+alias loadformats (file, void)
+{
+	if (!file) {
+		xecho -b Usage: $(K)LOADFORMATS <file>
+		return;
+	};
 
-#hop'2K5
+	xecho -b -s Loading formats from $file;
+
+	if ((:fd = open($file r)) != -1)
+	{
+		while (!eof($fd))
+		{
+			@ :line = read($fd);
+			@ :type = word(0 $line);
+			@ :value = restw(1 $line);
+			^addformat $type $value;
+		};
+		@ close($fd);
+	}{
+		xecho -b ERROR: Unable to open file for reading: $file;
+	};
+};
+
+#
+# saveformats <file>
+#
+# Writes all existing formats to the specified file.
+#
+alias saveformats (file, void)
+{
+	if (!file) {
+		xecho -b Usage: $(K)SAVEFORMATS <file>;
+		return;
+	};
+
+	xecho -b -s Saving formats to $file;
+
+	if ((:fd = open($file w)) != -1)
+	{
+		for hook in ($hookctl(list lists))
+		{                                 
+			if (hookctl(get list $hook implied)) {
+				eval @ write\(\$fd \$hook \$FORMAT_$hook\);
+			};
+		};
+		@ close($fd);
+	}{
+		xecho -b ERROR: Unable to open file for writing: $file;
+	};
+};
+

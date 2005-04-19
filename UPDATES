@@ -1,5 +1,68 @@
 EPIC5-0.0.4
 
+*** News 04/18/2005 -- The "builtins" script (Blackjac)
+		*** IMPORTANT *** IMPORTANT *** IMPORTANT ***
+	As noted below in "notes for forward compatability", there is a new
+	script called "builtins" which is loaded by "global" which is not 
+	loaded by default if you have a startup script.  This means it is
+	really important that you add either /LOAD global or /LOAD builtins 
+	to your ~/.ircrc (or ~/.epicrc) file, or you will notice that the 
+	following features have "disappeared":
+		*** IMPORTANT *** IMPORTANT *** IMPORTANT ***
+
+	Commands:
+		BYE, DATE, EXIT, HOST, IRCHOST, IRCNAME, LEAVE, REALNAME,
+		SAVE, SIGNOFF, WHOWAS
+	Functions:
+		LASTSERVER, SERVERGROUP, SERVERNAME, SERVERNICK, SERVERNUM,
+		SERVEROURNAME, SERVERTYPE, WINBOUND, WINCURSORLINE, WINLEVEL,
+		WINLINE, WINNAM, WINNICKLIST, WINNUM, WINQUERY, WINREFS,
+		WINSCREEN, WINSCROLLBACKSIZE, WINSERV, WINSIZE, WINSTATSIZE,
+		WINVISIBLE
+	Sets:
+		AUTO_REJOIN, AUTO_REJOIN_DELAY, AUTO_UNMARK_AWAY, AUTO_WHOWAS,
+		BEEP_ON_MSG, COMMAND_MODE, DCC_TIMEOUT, FULL_STATUS_LINE,
+		NUM_OF_WHOWAS, REVERSE_STATUS_LINE, SHOW_END_OF_MSGS,
+		SHOW_WHO_HOPCOUNT, VERBOSE_CTCP
+
+	Furthermore, the following new commands have been added:
+		ADDSET, DELSET
+	which allow you to add a scripted built in /set variable (which
+	is used extensively by this script).
+
+		*** IMPORTANT *** IMPORTANT *** IMPORTANT ***
+	THESE FEATURES NO LONGER EXIST AS HARDCODED EPIC5 FEATURES AND ARE 
+	SOLELY IMPLEMENTED AS SCRIPT FEATURES VIA "builtins"!  IT IS NOT A
+	BUG THAT THEY ARE "MISSING".  The way to fix this is to /load global 
+	or /load builtins in your startup script.
+		*** IMPORTANT *** IMPORTANT *** IMPORTANT ***
+
+*** News 04/18/2005 -- New script, "loadformats" (fudd)
+	This script presents the usable interface to implied on hooks.
+	See the explanation for implied on hooks below.
+
+	/ADDFORMAT <type> [value]
+	   This binds the implied on hook for /ON <type> to a new builtin set
+	   that is called /SET FORMAT_<type>.  Remember that implied on hooks 
+	   are only used if you don't hook serial number zero!
+
+	/DELFORMAT <type>
+	   This removes the implied on hook for /ON <type> and removes the
+	   builtin set /SET FORMAT_<type>.
+
+	/DUMPFORMATS
+	   This does a /DELFORMAT for all possible values of <type>.  You
+	   will not have any implied on hooks after this is done.
+
+	/LOADFORMAT <filename>
+	   Given a file that contains lines that look like this:
+		<TYPE> <VALUE>
+	   Run /ADDFORMAT <TYPE> <VALUE> for each line.
+
+	/SAVEFORMATS <filename>
+	  Save all implied hooks to a file so it can be loaded later with
+	  /LOADFORMAT.
+
 *** News 03/29/2005 -- Just a note about mangling of /on patterns...
 	In EPIC5, your /ON patterns are no longer "filled out" to the expected
 	number of words in $*.  An example:
@@ -20,7 +83,7 @@ EPIC5-0.0.4
 
 		EPIC5:	/ON PUBLIC "hop *"
 
-*** News 03/20/2005 -- History recall moved into a script
+*** News 03/20/2005 -- History recall moved into a script (Blackjac)
 		*** IMPORTANT *** IMPORTANT *** IMPORTANT ***
 	History recall (BACKWARD_HISTORY and FORWARD_HISTORY) are now
 	scripted features, implemented by 
@@ -47,25 +110,26 @@ EPIC5-0.0.4
 	might return
 		"Some line goes here CRAP 1110000000"
 
-*** News 03/11/2005 -- New $hookctl(SET LIST <type> IMPLIED <string>)
-		*** EXPERIMENTAL -- WILL BE REMOVED ***
+*** News 03/11/2005 -- Implied ON hooks ($hookctl(SET LIST <type> IMPLIED <str>)
 	A lot of people create a large number of on hooks that look like:
 		ON ^TYPE * { echo $cparse($format[type]) }
 	for each TYPE.  Since all of these ONs are otherwise identical,
 	they clutter up the /on list, and managing all of the variables
 	is a hassle.  So there is now a feature to allow you to set an
 	"implied" on hook that does nothing more than the above.
-		*** EXPERIMENTAL -- WILL BE REMOVED ***
+
 	You can now set a format with 
 		$hookctl(SET LIST <type> IMPLIED <string>)
 	and if you don't have an /ON <type> *, then epic will do
 		echo $cparse(<string>)
 	and suppress the normal output.
-		*** EXPERIMENTAL -- WILL BE REMOVED ***
+
 	You may surround <string> with {}s if you wish, to avoid quoting
 	hell.  Match sure to keep your {}s matched up if you do so.
 	See the "loadformats" info above for how to practically use this.
-		*** EXPERIMENTAL -- WILL BE REMOVED ***
+
+	You can compile out this feature if it offends you by #undef'ing
+	IMPLIED_ON_HOOKS in config.h
 
 *** News 03/03/2005 -- New status bar expandos, %{2}+ and %{3}+
 	These two status exapndos act like %+ and %{1}+ respectively,

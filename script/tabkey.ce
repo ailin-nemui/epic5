@@ -1,4 +1,4 @@
-# version:1.0.1
+# version:1.0.2
 #
 # tabkey.ce - Tab key completion script for EPIC4/EPIC5
 # Copyright (c) 2002-2005 EPIC Software Labs
@@ -643,7 +643,7 @@ stack pop alias alias.foo;
 alias tabkey.method.mask (...)
 {
 	@ :uhost = userhost($0);
-	if (uhost == [<UNKNOWN>@<UNKNOWN>]) {
+	if (uhost == [<UNKNOWN>@<UNKNOWN>] && aliasctl(alias exists uh)) {
 		@ :uhost = uh($0);
 	};
 	@ function_return = uhost == [<UNKNOWN>@<UNKNOWN>] ? [] : mask(3 $uhost);
