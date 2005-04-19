@@ -2,8 +2,13 @@ EPIC5 Projects, Bugs, and other Errata:
 
 KNOWN ERRATA (eg, bugs, or unresolved requests):
 ------------------------------------------------
+<none>
+
+LOOK FOR IN THE NEXT RELEASE
+----------------------------
 * Logically sized windows, instead of it being based on physical lines.
 * An /on to go off when you add something to the input line.
+* Output rules
 
 [See http://www.epicsol.org/PROJECTS for things to come in the future]
 [See http://www.epicsol.org/CHANGELOG5 for things that changed in the past]
