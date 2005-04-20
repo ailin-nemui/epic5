@@ -5,12 +5,14 @@ if (word(2 $loadinfo()) != [pf]) {
 
 #	Copyright (c) 2005 David B. Kratter (BlackJac@EFNet)
 #
-#	Version: 1.4.2005.04.15.1
+#	Version: 1.5.2005.04.19.1
 #
 #	This will allow you to toggle between hidden windows 1 through 20 more
 #	easily. Press Esc+1 (or Alt+1) to toggle between windows 1 and 11,
 #	Esc+2 for windows 2 and 12, etc., up through Esc+0 for windows 10 and
-#	20. You may also use Esc+? to be prompted for a window number.
+#	20. You may also use Esc+? to be prompted for a window number. Press
+#	Esc+- (or Alt+-) to swap to the previous hidden window, or Esc+= to
+#	swap to the next hidden window.
 
 package altchan;
 
@@ -41,4 +43,6 @@ fe ($jot(0 9 1)) aa {
 	@ bindctl(sequence ^[$aa set parse_command altchan.toggle $aa);
 };
 
+@ bindctl(sequence ^[- set parse_command altchan.toggle $${winnum() - 1});
+@ bindctl(sequence ^[= set parse_command altchan.toggle $${winnum() + 1});
 @ bindctl(sequence ^[? set parse_command altchan.input);

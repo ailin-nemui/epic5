@@ -1,4 +1,46 @@
-EPIC5-0.0.4
+EPIC5-0.0.5
+
+*** News 04/18/2005 -- New $windowctl() stuff
+	$windowctl(GET <win> DISPLAY_SIZE)	to replace $winsize()
+	$windowctl(GET <win> SCREEN)		to replace $winscreen()
+	$windowctl(GET <win> LINE <num>)	to replace $winline()
+
+*** News 04/18/2005 -- /SET -OLD_SERVER_LASTLOG_LEVEL turns that feature off.
+	If you /set -old_server_lastlog_level, then the window's level is not
+	changed when it is connected to an existing server.  This is probably
+	a bad idea as it can lead to level duplication, the effects of which
+	are poorly-defined
+
+*** News 04/18/2005 -- /SET -NEW_SERVER_LASTLOG_LEVEL turns that feature off.
+	If you /set -new_server_lastlog_level, then the window's level is not
+	changed when it is connected to a new server.  This allows you to 
+	completely opt-out of this feature. 
+	
+*** News 04/18/2005 -- New $serverctl() stuff
+	So $serverctl(LAST_SERVER) and $serverctl(FROM_SERVER) have been
+	added and are used by the builtins script
+
+*** News 04/18/2005 -- Translations now fixed
+	I apologize to you RUSSIAN_WIN translation users for it being 
+	broken.  This release fixes it up, and the fix was back-ported 
+	to EPIC4.
+
+*** News 04/18/2005 -- /SET STATUS_* subformats no longer size limited
+	Previously, the effective size that /SET STATUS_* values you could
+	expand to (especially if you have /SET STATUS_DOES_EXPANDOS ON)
+	as limited on a per-expando basis.  This was inconveniently small 
+	for some people who were using lots of characters doing color 
+	markup, etc.  So all of those limits have been removed.
+
+*** News 04/18/2005 -- "ERROR --" changed to "INFO --", not used for exec, dcc
+	The "ERROR --" io messages were alarming people so they were changed
+	to "INFO --" in this release.  Further, EXEC and DCC connections do 
+	not output these diagnostic messages.
+
+*** News 04/18/2005 -- /XECHO -v outputs to current window if it's visible
+	/XECHO -v has traditionally output to the first visible window (the
+	first window on the first screen), but it was agreed that it is more
+	reasonable to output to the current window if that is visible.
 
 *** News 04/18/2005 -- Ways to keep dcc xfers from swamping your cpu...
 	There are three new ways to keep high speed dcc xfers from swamping
@@ -118,6 +160,8 @@ EPIC5-0.0.4
 	will no longer be available.  So just put 
 			/load history
 	in your startup file, and everything will be cool!
+
+EPIC5-0.0.4
 
 *** News 03/14/2005 -- New option to $line(), $line(<num> -TIME)
 	You can now provide the "-TIME" option to the $line() function

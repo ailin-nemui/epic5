@@ -2,13 +2,16 @@ EPIC5 Projects, Bugs, and other Errata:
 
 KNOWN ERRATA (eg, bugs, or unresolved requests):
 ------------------------------------------------
-<none>
+* Removing a keybinding when there are still sequences bound to it loses.
 
 LOOK FOR IN THE NEXT RELEASE
 ----------------------------
 * Logically sized windows, instead of it being based on physical lines.
 * An /on to go off when you add something to the input line.
 * Output rules
+* /ON LEAVE will change to /ON PART.
+* GC of a lot of the newly scripted stuff
+* /SET -CREATE is going bye-bye.
 
 [See http://www.epicsol.org/PROJECTS for things to come in the future]
 [See http://www.epicsol.org/CHANGELOG5 for things that changed in the past]
@@ -625,3 +628,4 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Add $dccctl(UPDATES_STATUS [0|1]), returns old value
 * Add $dccctl([SET|GET] <refnum> UPDATES_STATUS [0|1]).
 * Allow /on ^dcc_activity * # to suppress status bar redrawing.
+* Another altchan.bj from black.
