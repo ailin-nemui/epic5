@@ -2,7 +2,7 @@ EPIC5 Projects, Bugs, and other Errata:
 
 KNOWN ERRATA (eg, bugs, or unresolved requests):
 ------------------------------------------------
-* Removing a keybinding when there are still sequences bound to it loses.
+<none>
 
 LOOK FOR IN THE NEXT RELEASE
 ----------------------------
@@ -629,3 +629,5 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Add $dccctl([SET|GET] <refnum> UPDATES_STATUS [0|1]).
 * Allow /on ^dcc_activity * # to suppress status bar redrawing.
 * Another altchan.bj from black.
+* Auto-delete sequences if you delete the keybinding they're bound to.
+* Fix bogon in the dcc update-status stuff for fudd.

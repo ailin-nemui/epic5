@@ -1,4 +1,4 @@
-/* $EPIC: dcc.c,v 1.119 2005/04/19 13:43:33 jnelson Exp $ */
+/* $EPIC: dcc.c,v 1.120 2005/04/20 04:02:15 jnelson Exp $ */
 /*
  * dcc.c: Things dealing client to client connections. 
  *
@@ -3544,7 +3544,7 @@ char *	DCC_get_current_transfer (void)
 
 static void 	update_transfer_buffer (DCC_list *dcc, const char *format, ...)
 {
-	if (!dcc_updates_status || !dcc->updates_status)
+	if (!dcc_updates_status || !dcc || !dcc->updates_status)
 		return;
 
 	if (format)
