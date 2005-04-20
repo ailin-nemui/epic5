@@ -1,4 +1,4 @@
-/* $EPIC: keys.c,v 1.43 2005/04/15 03:06:49 jnelson Exp $ */
+/* $EPIC: keys.c,v 1.44 2005/04/20 03:59:09 wd Exp $ */
 /*
  * keys.c:  Keeps track of what happens whe you press a key.
  *
@@ -137,6 +137,7 @@ struct Binding *add_binding (const char *name, BindFunction func, char *alias) {
     return bp;
 }
 
+static void remove_bound_keys(struct Key *, struct Binding *);
 void remove_binding (char *name) {
     struct Binding *bp;
 
@@ -145,6 +146,9 @@ void remove_binding (char *name) {
 
     bp = (struct Binding *)remove_from_list((List **)&binding_list, name);
     if (bp) {
+        /* be sure to remove any keys bound to this binding first */
+        remove_bound_keys(head_keymap, bp);
+
 	new_free(&bp->name);
 	if (bp->alias)
 	    new_free(&bp->alias);
@@ -154,6 +158,17 @@ void remove_binding (char *name) {
     }
 
     return;
+}
+
+static void remove_bound_keys (struct Key *map, struct Binding *binding) {
+    int c;
+
+    for (c = 0; c <= KEYMAP_SIZE - 1;c++) {
+	if (map[c].bound == binding)
+            map[c].bound = NULL;
+	if (map[c].map)
+            remove_bound_keys(map[c].map, binding);
+    }
 }
 
 struct Binding *find_binding (const char *name) {
