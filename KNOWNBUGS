@@ -2,7 +2,8 @@ EPIC5 Projects, Bugs, and other Errata:
 
 KNOWN ERRATA (eg, bugs, or unresolved requests):
 ------------------------------------------------
-<none>
+* Add solaris ports support from larne's patch.
+* Switch default to new_math.
 
 LOOK FOR IN THE NEXT RELEASE
 ----------------------------

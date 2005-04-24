@@ -1,4 +1,4 @@
-/* $EPIC: server.c,v 1.164 2005/04/03 19:00:59 jnelson Exp $ */
+/* $EPIC: server.c,v 1.165 2005/04/24 13:39:30 jnelson Exp $ */
 /*
  * server.c:  Things dealing with that wacky program we call ircd.
  *
@@ -2754,7 +2754,7 @@ char 	*serverctl 	(char *input)
 		GET_STR_ARG(server, input);
 		refnum = str_to_servref(server);
 		if (refnum != NOSERV)
-			RETURN_STR(server);
+			RETURN_INT(refnum);
 		RETURN_EMPTY;
 	} else if (!my_strnicmp(listc, "GET", len)) {
 		GET_INT_ARG(refnum, input);
