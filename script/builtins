@@ -5,7 +5,7 @@ if (word(2 $loadinfo()) != [pf]) {
 
 #	Copyright (c) 2005 David B. Kratter (BlackJac@EFNet)
 #
-#	Version: 1.2.2005.04.14.1
+#	Version: 1.3.2005.04.24.1
 #
 #	This script ensures backward-compatibility with epic4-2.2 by adding the
 #	following commands, functions and sets that have been removed from epic5.
@@ -18,11 +18,11 @@ if (word(2 $loadinfo()) != [pf]) {
 #		SIGNOFF, WHOWAS
 #
 #	FUNCTIONS:
-#		LASTSERVER, SERVERGROUP, SERVERNAME, SERVERNICK, SERVERNUM,
-#		SERVEROURNAME, SERVERTYPE, WINBOUND, WINCURSORLINE, WINLEVEL,
-#		WINLINE, WINNAM, WINNICKLIST, WINNUM, WINQUERY, WINREFS,
-#		WINSCREEN, WINSCROLLBACKSIZE, WINSERV, WINSIZE, WINSTATSIZE,
-#		WINVISIBLE
+#		IGMASK, IGTYPE, LASTSERVER, RIGMASK, RIGTYPE, SERVERGROUP,
+#		SERVERNAME, SERVERNICK, SERVERNUM, SERVEROURNAME, SERVERTYPE,
+#		WINBOUND, WINCURSORLINE, WINLEVEL, WINLINE, WINNAM, WINNICKLIST,
+#		WINNUM, WINQUERY, WINREFS, WINSCREEN, WINSCROLLBACKSIZE, WINSERV,
+#		WINSIZE, WINSTATSIZE, WINVISIBLE
 #
 #	SETS:
 #		AUTO_REJOIN, AUTO_REJOIN_DELAY, AUTO_UNMARK_AWAY, AUTO_WHOWAS,
@@ -103,8 +103,24 @@ alias whowas (nick, number default "$getset(num_of_whowas)", void) {
 
 # FUNCTIONS #
 
+alias igmask (pattern, void) {
+	return $ignorectl(pattern $pattern);
+};
+
+alias igtype (pattern, void) {
+	return $strip(/+^ $ignorectl(get $ignorectl(refnum $pattern) levels));
+};
+
 alias lastserver (void) {
 	return $serverctl(last_server);
+};
+
+alias rigmask (pattern, void) {
+	return $ignorectl(rpattern $pattern);
+};
+
+alias rigtype (...) {
+	return $ignorectl(with_type $*);
 };
 
 alias servergroup (refnum default "$serverctl(from_server)", void) {
@@ -247,7 +263,11 @@ set auto_rejoin_delay 0;
 
 ^on #-kick 1 '$$servernick() *' {
 	if (getset(auto_rejoin) == [on]) {
-		${getset(auto_rejoin_delay) ? [timer -w $winnum() $getset(auto_rejoin_delay)] : [defer]} join $2;
+		if (:delay = getset(auto_rejoin_delay)) {
+			timer -w $winnum() $delay join $2;
+		} else {
+			defer join $2;
+		};
 	};
 };
 
@@ -446,10 +466,13 @@ addset dcc_timeout int;
 set dcc_timeout 3600;
 
 ^on #-timer 1 "*" {
-	if (getset(dcc_timeout)) {
+	if (:timeout == getset(dcc_timeout)) {
 		fe ($dccctl(refnums)) dd {
-			if (time() - word(0 $dccctl(get $dd lasttime)) >= getset(dcc_timeout)) {
-				dcc close $dccctl(get $dd type) $dccctl(get $dd user);
+			if (time() - word(0 $dccctl(get $dd lasttime)) >= timeout) {
+				@ :nick = dccctl(get $dd user);
+				@ :type = dccctl(get $dd type);
+				shook dcc_lost $nick $type $urlencode($dccctl(get $dd description)) IDLE TIME EXCEEDED;
+				dcc close $type $nick;
 			};
 		};
 	};
