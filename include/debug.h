@@ -29,7 +29,7 @@ extern	char *	function_xdebug (char *);
 #define DEBUG_CHANNELS		1 << 16
 #define DEBUG_UNKNOWN		1 << 17
 #define DEBUG_BOLD_HELPER	1 << 18
-#define DEBUG_NEW_MATH		1 << 19
+#define DEBUG_OLD_MATH		1 << 19
 #define DEBUG_NEW_MATH_DEBUG    1 << 20
 #define DEBUG_AUTOKEY		1 << 21
 #define DEBUG_EXTRACTW		1 << 22

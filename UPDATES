@@ -1,5 +1,23 @@
 EPIC5-0.0.5
 
+*** News 04/25/2005 -- *** IMPORTANT *** NEW MATH PARSER NOW DEFAULT
+	The new math parser, which first appeared in 1998 in EPIC4pre2.001,
+	and has been stable since early 1999, has now finally been made the
+	default math parser.  IT IS POSSIBLE THAT VERY BADLY WRITTEN SCRIPTS
+	OR SCRIPTS THAT DEPEND ON BUGS IN THE OLD MATH PARSER MAY BREAK AS A
+	RESULT OF THIS CHANGE!  
+
+	If you need to continue using the old math parser, you can turn it 
+	back on with:
+			/xdebug old_math
+	The old math parser won't be going away any time soon, but it will
+	never again be the default math parser (barring rioting crowds with
+	effigies and pitchforks at my door...)
+
+	The operation /xdebug new_math is now a no-op, and doing it will have
+	no effect.  YOU CANNOT TURN OFF NEW MATH BY DOING /XDEBUG -NEW_MATH 
+	ANY MORE.  YOU MUST DO THE ABOVE /xdebug old_math.
+
 *** News 04/18/2005 -- New $windowctl() stuff
 	$windowctl(GET <win> DISPLAY_SIZE)	to replace $winsize()
 	$windowctl(GET <win> SCREEN)		to replace $winscreen()

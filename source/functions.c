@@ -1,4 +1,4 @@
-/* $EPIC: functions.c,v 1.199 2005/04/15 03:06:49 jnelson Exp $ */
+/* $EPIC: functions.c,v 1.200 2005/04/25 23:20:38 jnelson Exp $ */
 /*
  * functions.c -- Built-in functions for ircII
  *
@@ -3545,7 +3545,11 @@ BUILT_IN_FUNCTION(function_info, words)
 	else if (!my_strnicmp(which, "W", 1))
 		RETURN_INT(1);
 	else if (!my_strnicmp(which, "M", 1))
-		RETURN_INT((x_debug & DEBUG_NEW_MATH) == DEBUG_NEW_MATH);
+	{
+		if (x_debug & DEBUG_OLD_MATH)
+			RETURN_INT(0);
+		RETURN_INT(1);
+	}
 	else if (!my_strnicmp(which, "V", 1))
 		RETURN_STR(useful_info);
 	else if (!my_strnicmp(which, "R", 1))

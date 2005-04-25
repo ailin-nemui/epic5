@@ -3,14 +3,13 @@ EPIC5 Projects, Bugs, and other Errata:
 KNOWN ERRATA (eg, bugs, or unresolved requests):
 ------------------------------------------------
 * Add solaris ports support from larne's patch.
-* Switch default to new_math.
+* /ON LEAVE will change to /ON PART.
 
 LOOK FOR IN THE NEXT RELEASE
 ----------------------------
 * Logically sized windows, instead of it being based on physical lines.
 * An /on to go off when you add something to the input line.
 * Output rules
-* /ON LEAVE will change to /ON PART.
 * GC of a lot of the newly scripted stuff
 * /SET -CREATE is going bye-bye.
 
@@ -635,3 +634,6 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Release EPIC5-0.0.5 (Indifference)
 * More builtins goodness from blackjac. (Round 4)
 * Re-fix bogon in the dcc update-status stuff for fudd (again)
+* Make /xdebug new_math the default, you can /xdebug old_math to go back.
+* Make /xdebug new_math and /xdebug -new_math no-ops.
+* Don't do %#p in printf formats, since it has no effect. (%p is better).

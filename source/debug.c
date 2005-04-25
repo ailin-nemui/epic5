@@ -1,4 +1,4 @@
-/* $EPIC: debug.c,v 1.19 2005/02/10 05:10:57 jnelson Exp $ */
+/* $EPIC: debug.c,v 1.20 2005/04/25 23:20:38 jnelson Exp $ */
 /*
  * debug.c -- controll the values of x_debug.
  *
@@ -69,7 +69,7 @@ static struct debug_opts opts[] =
 	{ "BROKEN_CLOCK",	DEBUG_BROKEN_CLOCK },
 	{ "UNKNOWN",		DEBUG_UNKNOWN },
 	{ "BOLD_HELPER",	DEBUG_BOLD_HELPER },
-	{ "NEW_MATH",		DEBUG_NEW_MATH },
+	{ "NEW_MATH",		0 },
 	{ "NEW_MATH_DEBUG",	DEBUG_NEW_MATH_DEBUG },
 	{ "AUTOKEY",		DEBUG_AUTOKEY },
 	{ "EXTRACTW",		DEBUG_EXTRACTW },
@@ -79,6 +79,7 @@ static struct debug_opts opts[] =
 	{ "EXTRACTW_DEBUG",	DEBUG_EXTRACTW_DEBUG },
 	{ "MESSAGE_FROM",	DEBUG_MESSAGE_FROM },
 	{ "WHO_QUEUE",		DEBUG_WHO_QUEUE },
+	{ "OLD_MATH",		DEBUG_OLD_MATH },
 	{ "ALL",		~0},
 	{ NULL,			0 },
 };

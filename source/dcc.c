@@ -1,4 +1,4 @@
-/* $EPIC: dcc.c,v 1.121 2005/04/25 02:59:19 jnelson Exp $ */
+/* $EPIC: dcc.c,v 1.122 2005/04/25 23:20:38 jnelson Exp $ */
 /*
  * dcc.c: Things dealing client to client connections. 
  *
@@ -242,7 +242,7 @@ static void	dcc_remove_from_list (DCC_list *erased)
 	DCC_list *prev = NULL;
 
 	if (x_debug & DEBUG_DCC_XMIT)
-		yell("Removing %#p from dcc list", erased);
+		yell("Removing %p from dcc list", erased);
 
 	if (erased != ClientList)
 	{
@@ -289,7 +289,7 @@ static void 	dcc_garbage_collect (void)
 				need_update = 1;
 
 			if (x_debug & DEBUG_DCC_XMIT)
-				yell("DCC %#p being GC'd", dcc);
+				yell("DCC %p being GC'd", dcc);
 			dcc_erase(dcc);
 			dcc = ClientList;	/* Start over */
 		}
@@ -310,7 +310,7 @@ static void 	dcc_garbage_collect (void)
 static 	void		dcc_erase (DCC_list *erased)
 {
 	if (x_debug & DEBUG_DCC_XMIT)
-		yell("DCC %#p being erased", erased);
+		yell("DCC %p being erased", erased);
 
 	dcc_remove_from_list(erased);
 
@@ -444,7 +444,7 @@ static int	dcc_unhold (DCC_list *dcc)
 static int	lock_dcc (DCC_list *dcc)
 {
 	if (x_debug & DEBUG_DCC_XMIT)
-		yell("DCC %#p being locked", dcc);
+		yell("DCC %p being locked", dcc);
 
 	if (dcc)
 		dcc->locked++;
@@ -455,7 +455,7 @@ static int	lock_dcc (DCC_list *dcc)
 static int	unlock_dcc (DCC_list *dcc)
 {
 	if (x_debug & DEBUG_DCC_XMIT)
-		yell("DCC %#p being unlocked", dcc);
+		yell("DCC %p being unlocked", dcc);
 
 	if (dcc)
 		dcc->locked--;
@@ -525,7 +525,7 @@ static	DCC_list *dcc_create (
 	get_time(&new_client->lasttime);
 
 	if (x_debug & DEBUG_DCC_XMIT)
-		yell("DCC %#p created", new_client);
+		yell("DCC %p created", new_client);
 	ClientList = new_client;
 	return new_client;
 }
@@ -2527,7 +2527,6 @@ void	do_dcc (int fd)
 {
 	DCC_list	*Client;
 	int		previous_server;
-	char		*encoded_description = NULL;
 	int		l;
 	int		found_it = 0;
 
@@ -2550,7 +2549,7 @@ void	do_dcc (int fd)
 
 		if (Client->flags & DCC_DELETE)
 		{
-		    say("DCC fd %d is ready, client is deleted.  Closing.");
+		    say("DCC fd %d is ready, client is deleted.  Closing.", fd);
 		    Client->socket = new_close(Client->socket);
 		}
 		else switch (Client->flags & DCC_TYPES)
