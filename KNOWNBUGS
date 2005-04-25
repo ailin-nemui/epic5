@@ -633,4 +633,5 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Auto-delete sequences if you delete the keybinding they're bound to.
 * Fix bogon in the dcc update-status stuff for fudd.
 * Release EPIC5-0.0.5 (Indifference)
-* More builtins goodness from blackjac.
+* More builtins goodness from blackjac. (Round 4)
+* Re-fix bogon in the dcc update-status stuff for fudd (again)
