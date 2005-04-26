@@ -1,4 +1,4 @@
-/* $EPIC: functions.c,v 1.200 2005/04/25 23:20:38 jnelson Exp $ */
+/* $EPIC: functions.c,v 1.201 2005/04/26 01:16:51 jnelson Exp $ */
 /*
  * functions.c -- Built-in functions for ircII
  *
@@ -270,9 +270,13 @@ static	char
 	*function_hash_32bit	(char *),
 	*function_hookctl	(char *),
 	*function_idle		(char *),
+#if 0
 	*function_igmask	(char *),
+#endif
 	*function_ignorectl	(char *),
+#if 0
 	*function_igtype	(char *),
+#endif
 	*function_indextoword	(char *),
 	*function_info		(char *),
 	*function_insert 	(char *),
@@ -358,8 +362,10 @@ static	char
 	*function_rewind	(char *),
 	*function_rfilter 	(char *),
 	*function_rightw 	(char *),
+#if 0
 	*function_rigmask	(char *),
 	*function_rigtype	(char *),
+#endif
 	*function_rmdir 	(char *),
 	*function_rpattern 	(char *),
 	*function_rsubstr	(char *),
@@ -578,9 +584,13 @@ static BuiltInFunctions	built_in_functions[] =
 	{ "IGETITEM",           function_igetitem 	},
 	{ "IGETMATCHES",	function_igetmatches	},
 	{ "IGETRMATCHES",	function_igetrmatches	},
+#if 0
 	{ "IGMASK",		function_igmask		},
+#endif
 	{ "IGNORECTL",		function_ignorectl	},
+#if 0
 	{ "IGTYPE",		function_igtype		},
+#endif
 	{ "INDEX",		function_index 		},
 	{ "INDEXTOITEM",        function_indextoitem 	},
 	{ "INDEXTOWORD",	function_indextoword	},
@@ -688,8 +698,10 @@ static BuiltInFunctions	built_in_functions[] =
 	{ "RFILTER",            function_rfilter 	},
 	{ "RIGHT",		function_right 		},
 	{ "RIGHTW",             function_rightw 	},
+#if 0
 	{ "RIGMASK",		function_rigmask	},
 	{ "RIGTYPE",		function_rigtype	},
+#endif
 	{ "RINDEX",		function_rindex 	},
 	{ "RMATCH",		function_rmatch 	},
 	{ "RMATCHITEM",         function_rmatchitem 	},
