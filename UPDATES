@@ -1,5 +1,15 @@
 EPIC5-0.0.5
 
+*** News 04/25/2005 -- /SET -CREATE removed (use /ADDSET)
+	The /set -create command which was first marked for deletion 6 months
+	ago has now been removed.  You can use the /addset alias provided by
+	the "builtins" script to get the same functionality:
+			/ADDSET <name> <type> {
+				... callback ...
+			}
+	Don't forget to /SET <name> <value> after you do an /addset to give 
+	it an initial value!
+
 *** News 04/25/2005 -- *** IMPORTANT *** NEW MATH PARSER NOW DEFAULT
 	The new math parser, which first appeared in 1998 in EPIC4pre2.001,
 	and has been stable since early 1999, has now finally been made the

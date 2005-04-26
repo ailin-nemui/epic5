@@ -1,4 +1,4 @@
-/* $EPIC: vars.c,v 1.71 2005/03/29 00:45:23 jnelson Exp $ */
+/* $EPIC: vars.c,v 1.72 2005/04/26 13:57:24 jnelson Exp $ */
 /*
  * vars.c: All the dealing of the irc variables are handled here. 
  *
@@ -603,6 +603,7 @@ int 	set_variable (const char *name, IrcVariable *var, const char *orig_value, i
 	return retval;
 }
 
+#if 0
 static void	create_user_set (char *args)
 {
 	char *expr = NULL;
@@ -677,7 +678,7 @@ static void	create_user_set (char *args)
 
 	say("Created new SET named \"%s\" of type %s ", varname, typestr);
 }
-
+#endif
 
 /*
  * set_variable: The SET command sets one of the irc variables.  The args
@@ -700,12 +701,14 @@ BUILT_IN_COMMAND(setcmd)
 	while (args && *args && isspace(*args))
 		args++;
 
+#if 0
 	if (!my_strnicmp(args, "-create", 7))
 	{
 		next_arg(args, &args);
 		create_user_set(args);
 		return;
 	}
+#endif
 
 	var = args;
 	while (args && *args && !isspace(*args))

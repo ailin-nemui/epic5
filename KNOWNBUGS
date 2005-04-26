@@ -638,3 +638,4 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Make /xdebug new_math and /xdebug -new_math no-ops.
 * Don't do %#p in printf formats, since it has no effect. (%p is better).
 * Comment out $[r]igmask(), $[r]igtype(), round 4 functions.
+* Comment out /set -create as has been threatened for months.
