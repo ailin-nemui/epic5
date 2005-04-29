@@ -1,4 +1,4 @@
-/* $EPIC: newio.c,v 1.50 2005/03/28 23:53:58 jnelson Exp $ */
+/* $EPIC: newio.c,v 1.51 2005/04/29 02:39:25 jnelson Exp $ */
 /*
  * newio.c:  Passive, callback-driven IO handling for sockets-n-stuff.
  *
@@ -868,9 +868,16 @@ static	int	kdoit (Timeval *timeout)
 	{
 	    for (channel = 0; channel <= global_max_channel; channel++)
 	    {
+		/* 
+		 * We only ever do ONE event at a time, because new_io_event
+		 * could have any effect, including closing other fds!
+		 */
 		if (FD_ISSET(channel, &working_rd) ||
 		    FD_ISSET(channel, &working_wd))
+		{
 			new_io_event(VFD(channel));
+			break;
+		}
 	    }
 	}
 
@@ -1082,7 +1089,10 @@ static	int	kdoit (Timeval *timeout)
 		for (vfd = 0; vfd <= global_max_vfd; vfd++)
 		{
 		    if (polls[vfd].revents)
-			    new_io_event(vfd);
+		    {
+			new_io_event(vfd);
+			break;
+		    }
 		}
 	}
 

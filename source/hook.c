@@ -1,4 +1,4 @@
-/* $EPIC: hook.c,v 1.56 2005/04/07 00:09:41 jnelson Exp $ */
+/* $EPIC: hook.c,v 1.57 2005/04/29 02:39:25 jnelson Exp $ */
 /*
  * hook.c: Does those naughty hook functions. 
  *
@@ -174,7 +174,6 @@ Hookables hook_function_templates[] =
 	{ "JOIN",		NULL,	4,	0,	0,	NULL },
 	{ "KICK",		NULL,	3,	0,	0,	NULL },
 	{ "KILL",		NULL,	5,	0,	0,	NULL },
-	{ "LEAVE",		NULL,	2,	0,	0,	NULL },
 	{ "LIST",		NULL,	3,	0,	0,	NULL },
 	{ "MAIL",		NULL,	2,	0,	0,	NULL },
 	{ "MODE",		NULL,	3,	0,	0,	NULL },
@@ -190,6 +189,7 @@ Hookables hook_function_templates[] =
 	{ "NOTIFY_SIGNON",	NULL,	2,	0,	0,	NULL },
 	{ "ODD_SERVER_STUFF",	NULL,	3,	0,	0,	NULL },
 	{ "OPER_NOTICE",	NULL,	2,	0,	0,	NULL },
+	{ "PART",		NULL,	2,	0,	0,	NULL },
 	{ "PONG",		NULL,	2,	0,	0,	NULL },
 	{ "PUBLIC",		NULL,	3,	0,	0,	NULL },
 	{ "PUBLIC_MSG",		NULL,	3,	0,	0,	NULL },

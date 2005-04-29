@@ -1,5 +1,15 @@
 EPIC5-0.0.5
 
+*** News 04/28/2005 -- *** IMPORTANT *** /ON LEAVE changed to /ON PART
+	This is a hard cut-over breaking of backwards compatability.
+	There is no way to "go back", but there are means you can take 
+	to compensate:
+		@type = (info(i) < 1224) ? [LEAVE] : [PART]
+		on $type * { ..... }
+	This is the last vestige of the senseless substitution of the
+	non-irc word "LEAVE" for the irc word "PART".  Good riddens to it
+	and may it never return again.
+
 *** News 04/25/2005 -- /SET -CREATE removed (use /ADDSET)
 	The /set -create command which was first marked for deletion 6 months
 	ago has now been removed.  You can use the /addset alias provided by

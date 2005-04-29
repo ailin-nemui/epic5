@@ -3,7 +3,6 @@ EPIC5 Projects, Bugs, and other Errata:
 KNOWN ERRATA (eg, bugs, or unresolved requests):
 ------------------------------------------------
 * Add solaris ports support from larne's patch.
-* /ON LEAVE will change to /ON PART.
 
 LOOK FOR IN THE NEXT RELEASE
 ----------------------------
@@ -11,7 +10,6 @@ LOOK FOR IN THE NEXT RELEASE
 * An /on to go off when you add something to the input line.
 * Output rules
 * GC of a lot of the newly scripted stuff
-* /SET -CREATE is going bye-bye.
 
 [See http://www.epicsol.org/PROJECTS for things to come in the future]
 [See http://www.epicsol.org/CHANGELOG5 for things that changed in the past]
@@ -639,3 +637,6 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Don't do %#p in printf formats, since it has no effect. (%p is better).
 * Comment out $[r]igmask(), $[r]igtype(), round 4 functions.
 * Comment out /set -create as has been threatened for months.
+* Change /on leave to /on part.
+* Only ever do one io event per call through select() or poll()
+* Do put_echo() and not add_to_screen() in /window echo so it can be logged

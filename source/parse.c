@@ -1,4 +1,4 @@
-/* $EPIC: parse.c,v 1.66 2005/03/28 23:50:07 jnelson Exp $ */
+/* $EPIC: parse.c,v 1.67 2005/04/29 02:39:25 jnelson Exp $ */
 /*
  * parse.c: handles messages from the server.   Believe it or not.  I
  * certainly wouldn't if I were you. 
@@ -1144,14 +1144,14 @@ static void	p_part (const char *from, const char *comm, const char **ArgList)
 		l = message_from(channel, LEVEL_PART);
 		if (reason)		/* Dalnet part messages */
 		{
-			if (do_hook(LEAVE_LIST, "%s %s %s %s", 
+			if (do_hook(PART_LIST, "%s %s %s %s", 
 				from, channel, FromUserHost, reason))
 			    say("%s has left channel %s because (%s)", 
 				from, check_channel_type(channel), reason);
 		}
 		else
 		{
-			if (do_hook(LEAVE_LIST, "%s %s %s", 
+			if (do_hook(PART_LIST, "%s %s %s", 
 				from, channel, FromUserHost))
 			    say("%s has left channel %s", 
 				from, check_channel_type(channel));

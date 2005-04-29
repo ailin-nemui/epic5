@@ -1,4 +1,4 @@
-/* $EPIC: window.c,v 1.140 2005/04/03 19:38:13 jnelson Exp $ */
+/* $EPIC: window.c,v 1.141 2005/04/29 02:39:25 jnelson Exp $ */
 /*
  * window.c: Handles the organzation of the logical viewports (``windows'')
  * for irc.  This includes keeping track of what windows are open, where they
@@ -3183,7 +3183,7 @@ static	Window *window_echo (Window *window, char **args)
 	/* Calling add_to_window() directly is a hack. */
 	old_to_window = to_window;
 	to_window = window;
-	add_to_screen(to_echo);
+	put_echo(to_echo);
 	to_window = old_to_window;
 
 	return window;
