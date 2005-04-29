@@ -6,14 +6,14 @@
 
 alias silent {
 	stack push on join
-	stack push on leave
+	stack push on part
 	stack push on signoff
 	stack push on channel_signoff
 	stack push on nick
 	stack push on mode
 	stack push on topic
         ^on ^join * set status_user Join: $$0 \($$1\)
-        ^on ^leave * set status_user Leave: $$0 \($$1\)
+        ^on ^part * set status_user Leave: $$0 \($$1\)
         ^on ^signoff * set status_user Signoff: $$*
         ^on ^channel_signoff * set status_user Signoff: $$*
         ^on ^nick * set status_user Nick: $$0 now $$1
@@ -23,7 +23,7 @@ alias silent {
 
 alias unsilent {
 	stack pop on join
-	stack pop on leave
+	stack pop on part
 	stack pop on signoff
 	stack pop on channel_signoff
 	stack pop on nick

@@ -1,4 +1,4 @@
-#$EPIC: environment,v 1.4 2005/01/12 00:12:20 jnelson Exp $
+#$EPIC: environment,v 1.5 2005/04/29 13:31:13 jnelson Exp $
 #
 # A NEW ENVIRONMENT (C) 1993
 # Written by Jeremy Nelson (jnelson@acronet.net)
@@ -37,7 +37,7 @@ on ^join * {
         }
 }
 on ^mode * echo *** Mode Change for $1 by $0: $2-
-on ^leave * echo *** Leaving $1: \($0\) $now()
+on ^part * echo *** Leaving $1: \($0\) $now()
 on ^channel_signoff * echo *** Quit: $1 \($0, $2-\) $now()
 on ^kick * {
 	if ([$0] == N) {

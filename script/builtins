@@ -367,7 +367,7 @@ set beep_on_msg none;
 	};
 };
 
-^on #-leave 1 "*" {
+^on #-part 1 "*" {
 	if (getset(beep_on_msg) == [all] || findw(crap $getset(beep_on_msg)) > -1) {
 		beep;
 	};
