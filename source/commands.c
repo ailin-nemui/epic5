@@ -1,4 +1,4 @@
-/* $EPIC: commands.c,v 1.121 2005/04/01 03:04:52 jnelson Exp $ */
+/* $EPIC: commands.c,v 1.122 2005/05/02 03:55:48 jnelson Exp $ */
 /*
  * commands.c -- Stuff needed to execute commands in ircII.
  *		 Includes the bulk of the built in commands for ircII.
@@ -3136,17 +3136,6 @@ struct target_type target[4] =
 		pop_message_from(l);
 	}
 
-#if 0
-	/*
-	 * If the user didnt explicitly send the text (hook == 1), then 
-	 * it makes no sense to presume that theyre not still /AWAY.
-	 * This also makes sure that the "no longer away" message doesnt
-	 * get munched if window_display is 0.
-	 */
-	if (hook && get_server_away(from_server) && get_int_var(AUTO_UNMARK_AWAY_VAR))
-		runcmds("AWAY", empty_string);
-#endif
-
 	window_display = old_window_display;
 	from_server = old_from_server;
 	recursion--;
@@ -3543,9 +3532,7 @@ void	parse_line (const char *name, const char *org_line, const char *args, int h
  * character of the line is equal to irc_variable[CMDCHAR_VAR].value, the
  * line is used as an irc command and parsed appropriately.  If the first
  * character is anything else, the line is sent to the current channel or to
- * the current query user.  [obsolete] If hist_flag is true, commands will 
- * be added to the command history as appropriate [obsolete].  Otherwise, 
- * parsed commands will not be added. 
+ * the current query user.   Otherwise, parsed commands will not be added. 
  *
  * Parse_command() only parses a single command.In general, you will want to 
  * use parse_line() to execute things.Parse command recognizes no quoted
@@ -3620,23 +3607,11 @@ static	unsigned 	level = 0;
 	 * always consider input a command unless we are in interactive mode
 	 * and command_mode is off.   -lynx
 	 */
-	if (hist_flag && !cmdchar_used /* && !get_int_var(COMMAND_MODE_VAR) */)
+	if (hist_flag && !cmdchar_used)
 	{
 		send_text(from_server, get_target_by_refnum(0), line, NULL, 1);
-#if 0
-		if (hist_flag && add_to_hist)
-			add_to_history(this_cmd);
-#endif
 		/* Special handling for ' and : */
 	}
-#if 0
-	else if (*com == '\'' && get_int_var(COMMAND_MODE_VAR))
-	{
-		send_text(from_server, get_target_by_refnum(0), line + 1, NULL, 1);
-		if (hist_flag && add_to_hist)
-			add_to_history(this_cmd);
-	}
-#endif
 	else if ((*com == '@') || (*com == '('))
 	{
 		/* This kludge fixes a memory leak */
@@ -3662,11 +3637,6 @@ static	unsigned 	level = 0;
 
 		if ((tmp = parse_inline(my_line + 1, sub_args)))
 			new_free(&tmp);
-
-#if 0
-		if (hist_flag && add_to_hist)
-			add_to_history(this_cmd);
-#endif
 	}
 	else do
 	{
@@ -3688,30 +3658,6 @@ static	unsigned 	level = 0;
 
 		if (cmdchar_used >= 2)
 			alias = NULL;		/* Unconditionally */
-
-#if 0
-		if (alias == NULL && cmd == NULL && *cline == '!')
-		{
-			if ((cline = do_history(cline + 1, rest)) != NULL)
-			{
-				if (level == 1)
-					set_input(cline);
-				else
-					parse_command(cline, 0, sub_args);
-
-				new_free(&cline);
-			}
-			else
-				set_input(empty_string);
-
-			break;
-		}
-#endif
-
-#if 0
-		if (hist_flag && add_to_hist)
-			add_to_history(this_cmd);
-#endif
 
 		if (alias)
 			call_user_command(cline, alias, rest, arglist);

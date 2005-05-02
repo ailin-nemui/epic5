@@ -1,4 +1,4 @@
-/* $EPIC: window.c,v 1.141 2005/04/29 02:39:25 jnelson Exp $ */
+/* $EPIC: window.c,v 1.142 2005/05/02 03:55:49 jnelson Exp $ */
 /*
  * window.c: Handles the organzation of the logical viewports (``windows'')
  * for irc.  This includes keeping track of what windows are open, where they
@@ -5950,27 +5950,3 @@ static int	count_fixed_windows (Screen *s)
 	return count;
 }
 
-#if 0
-/* 
- * Im sure this doesnt belong here, but im not sure where it does belong.
- */
-int 	auto_rejoin_callback (void *d)
-{
-	char *	data    = (char *) d;
-	char *	channel	= next_arg(data, &data);
-	int 	server	= str_to_servref(next_arg(data, &data));
-	Window *window 	= get_window_by_refnum(my_atol(next_arg(data, &data)));
-	char *	key    	= next_arg(data, &data);
-
-	if (key && *key)
-		send_to_aserver(server, "JOIN %s %s", channel, key);
-	else
-		send_to_aserver(server, "JOIN %s", channel);
-
-	if (window)
-		add_waiting_channel(window, channel);
-	new_free((char **)&d);
-
-	return 0;
-}
-#endif

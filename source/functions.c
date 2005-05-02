@@ -1,4 +1,4 @@
-/* $EPIC: functions.c,v 1.201 2005/04/26 01:16:51 jnelson Exp $ */
+/* $EPIC: functions.c,v 1.202 2005/05/02 03:55:48 jnelson Exp $ */
 /*
  * functions.c -- Built-in functions for ircII
  *
@@ -181,10 +181,6 @@ static	char
 	*function_tolower 	(char *),
 	*function_toupper 	(char *),
 	*function_userhost 	(char *),
-#if 0
-	*function_winnum 	(char *),
-	*function_winnam 	(char *),
-#endif
 	*function_word 		(char *),
 	*function_utime		(char *),
 	*function_strftime	(char *),
@@ -270,13 +266,7 @@ static	char
 	*function_hash_32bit	(char *),
 	*function_hookctl	(char *),
 	*function_idle		(char *),
-#if 0
-	*function_igmask	(char *),
-#endif
 	*function_ignorectl	(char *),
-#if 0
-	*function_igtype	(char *),
-#endif
 	*function_indextoword	(char *),
 	*function_info		(char *),
 	*function_insert 	(char *),
@@ -300,9 +290,6 @@ static	char
 	*function_jot 		(char *),
 	*function_key 		(char *),
 	*function_killpid	(char *),
-#if 0
-	*function_lastserver	(char *),
-#endif
 	*function_leftpc	(char *),
 	*function_leftw 	(char *),
 	*function_levelwindow	(char *),
@@ -362,10 +349,6 @@ static	char
 	*function_rewind	(char *),
 	*function_rfilter 	(char *),
 	*function_rightw 	(char *),
-#if 0
-	*function_rigmask	(char *),
-	*function_rigtype	(char *),
-#endif
 	*function_rmdir 	(char *),
 	*function_rpattern 	(char *),
 	*function_rsubstr	(char *),
@@ -374,14 +357,6 @@ static	char
 	*function_seek		(char *),
 	*function_server_version (char *),
 	*function_serverctl	(char *),
-#if 0
-	*function_servergroup	(char *),
-	*function_servername	(char *),
-	*function_servernick	(char *),
-	*function_servernum	(char *),
-	*function_serverourname	(char *),
-	*function_servertype	(char *),
-#endif
 	*function_servports	(char *),
 	*function_serverwin	(char *),
 	*function_sin		(char *),
@@ -424,28 +399,9 @@ static	char
 	*function_unsplit	(char *),
 	*function_urldecode	(char *),
 	*function_urlencode	(char *),
-#if 0
-	*function_winbound	(char *),
-#endif
 	*function_which 	(char *),
 	*function_winchan	(char *),
-#if 0
-	*function_wincurline	(char *),
-#endif
 	*function_windowctl	(char *),
-#if 0
-	*function_winlevel	(char *),
-	*function_winline	(char *),
-	*function_winnames	(char *),
-	*function_winquery	(char *),
-	*function_winrefs	(char *),
-	*function_winsbsize	(char *),
-	*function_winscreen	(char *),
-	*function_winserv	(char *),
-	*function_winsize	(char *),
-	*function_winstatsize	(char *),
-	*function_winvisible	(char *),
-#endif
 	*function_wordtoindex	(char *),
 	*function_write 	(char *),
 	*function_writeb	(char *),
@@ -584,13 +540,7 @@ static BuiltInFunctions	built_in_functions[] =
 	{ "IGETITEM",           function_igetitem 	},
 	{ "IGETMATCHES",	function_igetmatches	},
 	{ "IGETRMATCHES",	function_igetrmatches	},
-#if 0
-	{ "IGMASK",		function_igmask		},
-#endif
 	{ "IGNORECTL",		function_ignorectl	},
-#if 0
-	{ "IGTYPE",		function_igtype		},
-#endif
 	{ "INDEX",		function_index 		},
 	{ "INDEXTOITEM",        function_indextoitem 	},
 	{ "INDEXTOWORD",	function_indextoword	},
@@ -620,9 +570,6 @@ static BuiltInFunctions	built_in_functions[] =
 	{ "KEY",                function_key 		},
 	{ "KILLPID",		function_killpid	},
 	{ "LASTLOG",		function_lastlog	}, /* lastlog.h */
-#if 0
-	{ "LASTSERVER",		function_lastserver	},
-#endif
 	{ "LEFT",		function_left 		},
 	{ "LEFTPC",		function_leftpc		},
 	{ "LEFTW",              function_leftw 		},
@@ -698,10 +645,6 @@ static BuiltInFunctions	built_in_functions[] =
 	{ "RFILTER",            function_rfilter 	},
 	{ "RIGHT",		function_right 		},
 	{ "RIGHTW",             function_rightw 	},
-#if 0
-	{ "RIGMASK",		function_rigmask	},
-	{ "RIGTYPE",		function_rigtype	},
-#endif
 	{ "RINDEX",		function_rindex 	},
 	{ "RMATCH",		function_rmatch 	},
 	{ "RMATCHITEM",         function_rmatchitem 	},
@@ -711,14 +654,6 @@ static BuiltInFunctions	built_in_functions[] =
 	{ "SAR",		function_sar 		},
 	{ "SEDCRYPT",		function_sedcrypt	},
 	{ "SERVERCTL",		function_serverctl	},
-#if 0
-	{ "SERVERGROUP",	function_servergroup	},
-	{ "SERVERNAME",		function_servername	},
-	{ "SERVERNICK",		function_servernick	},
-	{ "SERVERNUM",		function_servernum	},
-	{ "SERVEROURNAME",	function_serverourname	},
-	{ "SERVERTYPE",		function_servertype	},
-#endif
 	{ "SERVERWIN",		function_serverwin	},
 	{ "SERVPORTS",		function_servports	},
 	{ "SETITEM",            function_setitem 	},
@@ -776,29 +711,8 @@ static BuiltInFunctions	built_in_functions[] =
 	{ "UTIME",		function_utime	 	},
 	{ "VERSION",		function_server_version },
 	{ "WHICH",		function_which 		},
-#if 0
-	{ "WINBOUND",		function_winbound	},
-#endif
 	{ "WINCHAN",		function_winchan	},
-#if 0
-	{ "WINCURSORLINE",	function_wincurline	},
-#endif
 	{ "WINDOWCTL",		function_windowctl	},
-#if 0
-	{ "WINLEVEL",		function_winlevel	},
-	{ "WINLINE",		function_winline	},
-	{ "WINNAM",		function_winnam 	},
-	{ "WINNICKLIST",	function_winnames	},
-	{ "WINNUM",		function_winnum 	},
-	{ "WINQUERY",		function_winquery 	},
-	{ "WINREFS",		function_winrefs	},
-	{ "WINSCREEN",		function_winscreen	},
-	{ "WINSCROLLBACKSIZE",	function_winsbsize	},
-	{ "WINSERV",		function_winserv	},
-	{ "WINSIZE",		function_winsize	},
-	{ "WINSTATUSSIZE",	function_winstatsize	},
-	{ "WINVISIBLE",		function_winvisible	},
-#endif
 	{ "WORD",		function_word 		},
 	{ "WORDTOINDEX",	function_wordtoindex	},
 	{ "WRITE",		function_write 		},
@@ -1511,45 +1425,6 @@ BUILT_IN_FUNCTION(function_word, word)
 	GET_STR_ARG(w_word, word);
 	RETURN_STR(w_word);
 }
-
-
-#if 0
-/*
- * Usage: $winnum()
- * Returns: the index number for the current window
- * 
- * Note: returns -1 if there are no windows open (ie, in dumb mode)
- */
-BUILT_IN_FUNCTION(function_winnum, input)
-{
-	Window *win = NULL;
-
-	if (input && *input)
-		win = get_window_by_desc(input);
-	else
-		win = get_window_by_refnum(0);
-
-	if (!win)
-		RETURN_INT(-1);
-	RETURN_INT(win->refnum);
-}
-#endif
-
-#if 0
-BUILT_IN_FUNCTION(function_winnam, input)
-{
-	Window *win = NULL;
-
-	if (input && *input)
-		win = get_window_by_desc(input);
-	else
-		win = get_window_by_refnum(0);
-
-	if (!win)
-		RETURN_EMPTY;
-	RETURN_STR(win->name);
-}
-#endif
 
 BUILT_IN_FUNCTION(function_connect, input)
 {
@@ -3361,90 +3236,6 @@ BUILT_IN_FUNCTION(function_stripansi, input)
 	RETURN_STR(input);
 }
 
-#if 0
-BUILT_IN_FUNCTION(function_servername, input)
-{
-	int 		refnum;
-	const char *	itsname;
-
-	if (is_string_empty(input))
-		refnum = from_server;
-	else
-		refnum = str_to_servref(input);
-
-	/* get_server_itsname does all the work for us. */
-	itsname = get_server_itsname(refnum);
-	RETURN_STR(itsname);
-}
-
-BUILT_IN_FUNCTION(function_serverourname, input)
-{
-	int 		refnum;
-	const char *	ourname;
-
-	if (is_string_empty(input))
-		refnum = from_server;
-	else
-		refnum = str_to_servref(input);
-
-	/* Ask it what our name is */
-	ourname = get_server_name(refnum);
-	RETURN_STR(ourname);
-}
-
-BUILT_IN_FUNCTION(function_servergroup, input)
-{
-	int 		refnum;
-	const char *	group;
-
-	if (is_string_empty(input))
-		refnum = from_server;
-	else
-		refnum = str_to_servref(input);
-
-	/* Next we try what we think its group is */
-	group = get_server_group(refnum);
-	RETURN_STR(group);
-}
-
-BUILT_IN_FUNCTION(function_servertype, input)
-{
-	int 		refnum;
-	const char *	group;
-
-	if (is_string_empty(input))
-		refnum = from_server;
-	else
-		refnum = str_to_servref(input);
-
-	/* Next we try what we think its type is */
-	group = get_server_type(refnum);
-	RETURN_STR(group);
-}
-
-BUILT_IN_FUNCTION(function_lastserver, input)
-{
-	RETURN_INT(last_server);
-}
-#endif
-
-#if 0
-BUILT_IN_FUNCTION(function_winserv, input)
-{
-	Window *winp;
-
-	if (input && *input)
-		winp = get_window_by_desc(input);
-	else
-		winp = get_window_by_refnum(0);
-
-	if (winp)
-		RETURN_INT(winp->server);
-
-	RETURN_INT(-1);
-}
-#endif
-
 BUILT_IN_FUNCTION(function_numwords, input)
 {
 	RETURN_INT(count_words(input, DWORD_YES, "\""));
@@ -3647,23 +3438,6 @@ BUILT_IN_FUNCTION(function_epic, words)
 {
 	RETURN_INT(1);
 }
-
-#if 0
-BUILT_IN_FUNCTION(function_winsize, words)
-{
-	Window *win;
-
-	if (words && *words)
-		win = get_window_by_desc(words);
-	else
-		win = get_window_by_refnum(0);
-
-	if (win)
-		RETURN_INT(win->display_size);
-
-	RETURN_EMPTY;
-}
-#endif
 
 
 BUILT_IN_FUNCTION(function_umode, words)
@@ -4047,13 +3821,6 @@ BUILT_IN_FUNCTION(function_uniq, word)
 	RETURN_MSTR(booya);
 }
 
-#if 0
-BUILT_IN_FUNCTION(function_winvisible, word)
-{
-	RETURN_INT(is_window_visible(word));
-}
-#endif
-
 BUILT_IN_FUNCTION(function_status, word)
 {
 	unsigned 	window_refnum;
@@ -4208,17 +3975,6 @@ BUILT_IN_FUNCTION(function_deuhc, input)
 }
 
 
-/* 
- * Given a channel, tells you what window its bound to.
- * Given a window, tells you what channel its bound to.
- */
-#if 0
-BUILT_IN_FUNCTION(function_winbound, input)
-{
-	RETURN_EMPTY;
-}
-#endif
-
 BUILT_IN_FUNCTION(function_ftime, words)
 {
 	char *	filename;
@@ -4304,54 +4060,6 @@ BUILT_IN_FUNCTION(function_nohighlight, input)
 	*ptr = 0;
 	RETURN_STR(outbuf);
 }
-
-#if 0
-BUILT_IN_FUNCTION(function_servernick, input)
-{
-	char *	servdesc;
-	int 	refnum;
-	const char *	retval;
-
-	if (*input)
-	{
-		GET_STR_ARG(servdesc, input);
-		if (!my_stricmp(servdesc, "<global>"))
-			RETURN_STR(nickname);
-
-		if (is_string_empty(servdesc))
-			refnum = from_server;
-		else
-			refnum = str_to_servref(servdesc);
-
-		if (refnum == NOSERV)
-			RETURN_EMPTY;
-	}
-	else if (from_server != NOSERV)
-		refnum = from_server;
-	else
-		RETURN_EMPTY;
-
-	retval = get_server_nickname(refnum);
-	RETURN_STR(retval);
-}
-#endif
-
-#if 0
-BUILT_IN_FUNCTION(function_winnames, input)
-{
-	Window *win;
-
-	if (*input)
-		win = get_window_by_desc(input);
-	else
-		win = get_window_by_refnum(0);
-
-	if (!win)
-		RETURN_EMPTY;
-
-	return get_nicklist_by_window(win);
-}
-#endif
 
 BUILT_IN_FUNCTION(function_isconnected, input)
 {
@@ -4576,33 +4284,6 @@ BUILT_IN_FUNCTION(function_count, input)
 
 	RETURN_INT(count);
 }
-
-/*
- * Usage: $igmask(pattern)
- * Returns: All the ignore patterns that are matched by the pattern
- * Example: $igmask(*) returns your entire ignore list
- * Based on work contributed by pavlov
- */
-BUILT_IN_FUNCTION(function_igmask, input)
-{
-	char *	retval;
-	retval = get_ignores_by_pattern(input, 0);
-	RETURN_MSTR(retval);
-}
-
-/*
- * Usage: $rigmask(pattern)
- * Returns: All the ignore patterns that would trigger on the given input
- * Example: $igmask(wc!bhauber@frenzy.com) would return a pattern like 
- *		*!*@*frenzy.com  or like *!bhauber@*
- */
-BUILT_IN_FUNCTION(function_rigmask, input)
-{
-	char *	retval;
-	retval = get_ignores_by_pattern(input, 1);
-	RETURN_MSTR(retval);
-}
-
 
 /*
  * Usage: $randread(filename)
@@ -5022,35 +4703,6 @@ BUILT_IN_FUNCTION(function_querywin, args)
 	RETURN_INT(-1);
 }
 
-#if 0
-BUILT_IN_FUNCTION(function_winquery, args)
-{
-	int refnum;
-	const char *nick;
-	if (!args || !*args)
-		refnum = 0;
-	else
-		GET_INT_ARG(refnum, args);
-	if ((nick = get_equery_by_refnum(refnum)) == NULL)
-		RETURN_EMPTY;
-	RETURN_STR(nick);
-}
-#endif
-
-#if 0
-BUILT_IN_FUNCTION(function_winrefs, args)
-{
-	Window *w = NULL;
-	char *retval = NULL;
-	size_t  rvclue=0;
-
-	while (traverse_all_windows(&w))
-		malloc_strcat_word_c(&retval, space, ltoa(w->refnum), &rvclue);
-
-	RETURN_MSTR(retval);
-}
-#endif
-
 /*
  * $mask(type address)      OR
  * $mask(address type)
@@ -5229,39 +4881,6 @@ BUILT_IN_FUNCTION(function_chop, input)
 	buffer = malloc_strdup(input);
 	chop(buffer, howmany);
 	return buffer;
-}
-
-#if 0
-BUILT_IN_FUNCTION(function_winlevel, input)
-{
-	Window	*win;
-	char *	retval;
-
-	if (input && *input)
-		win = get_window_by_desc(input);
-	else
-		win = get_window_by_refnum(0);
-
-	if (!win)
-		RETURN_EMPTY;
-
-	retval = mask_to_str(&win->window_mask);
-	RETURN_STR(retval);
-}
-#endif
-
-BUILT_IN_FUNCTION(function_igtype, input)
-{
-	const char *retval;
-	retval = get_ignore_types_by_pattern(input);
-	RETURN_STR(retval);
-}
-
-BUILT_IN_FUNCTION(function_rigtype, input)
-{
-	char *retval;
-	retval = get_ignore_patterns_by_type(input);
-	RETURN_MSTR(retval);
 }
 
 BUILT_IN_FUNCTION(function_getuid, input)
@@ -5540,46 +5159,6 @@ BUILT_IN_FUNCTION( thisfn , input)			\
 GET_UNIFIED_ARRAY_FUNCTION(function_getsets, pmatch_builtin_variables)
 GET_UNIFIED_ARRAY_FUNCTION(function_getcommands, pmatch_builtin_commands)
 GET_UNIFIED_ARRAY_FUNCTION(function_getfunctions, pmatch_builtin_functions)
-
-#if 0
-/* Written by nutbar */
-BUILT_IN_FUNCTION(function_servernum, input)
-{
-	int 	sval;
-	char 	*which;
-	const char *s;
-
-	/* 
-	 * Return current server refnum if no input given
-	 */
-	if (!input || !*input)
-		RETURN_INT(from_server);
-
-	GET_STR_ARG(which, input);
-
-	/*
-	 * Find the matching server name from the list
-	 */
-	for (sval = 0; sval < server_list_size(); sval++) 
-	{
-		/*
-		 * Try and match to what the server thinks its name is
-		 */
-		if ((s = get_server_itsname(sval)) && !my_stricmp(which, s))
-			RETURN_INT(sval);
-
-		/*
-		 * Otherwise, try and match what we think its name is
-		 */
-		else if (!my_stricmp(which, get_server_name(sval)))
-			RETURN_INT(sval);
-	}
-
-	/* Ok. i give up, return -1. */
-	RETURN_INT(-1);
-}
-#endif
-
 
 BUILT_IN_FUNCTION(function_stripc, input)
 {
@@ -6220,37 +5799,6 @@ BUILT_IN_FUNCTION(function_builtin, input)
 	return efunc();
 }
 
-#if 0
-/*
- * Date: Fri, 14 Jan 2000 00:48:55 -0500
- * Author: IceKarma (ankh@canuck.gen.nz)
- * Contributed by: author
- *
- * Usage: $winscreen(window <server refnum|server name>)
- * Given a channel name and either a server refnum or a direct server
- * name or an effective server name, this function will return the
- * refnum of the window where the channel is the current channel (on that
- * server if appropriate)
- *
- * Returns -1 (Too few arguments specified or Window Not Found, or Window
- * is Hidden) on error
- */
-BUILT_IN_FUNCTION(function_winscreen, input)
-{
-	Window *	win = NULL;
-
-	if (input && *input)
-		win = get_window_by_desc(input);
-	else
-		win = get_window_by_refnum(0);
-
-	if (!win || !win->screen)
-		RETURN_INT(-1);
-
-	RETURN_INT(win->screen->screennum);
-}
-#endif
-
 /*
  * Returns what the status-line %F expando would return, except it is 
  * space-seperated.  Basically, it is all the windows that are hidden,
@@ -6284,120 +5832,6 @@ BUILT_IN_FUNCTION(function_wordtoindex, input)
 	move_to_abs_word(input, &ptr, wordnum);
 	RETURN_INT((int)(ptr - input));
 }
-
-#if 0
-/*
- * Date: Tue, 25 Apr 2000 20:30:15 -0400
- * Author: IceKarma (ankh@canuck.gen.nz)
- * Contributed by: author
- *
- * Usage: $winsbsize() or $winsbsize(<window refnum or name>)
- * Given a window refnum or window name, this function will return the
- * number of lines available in the scrollback buffer.  Defaults to the
- * current window if none specified.
- *
- * Returns -1 (Window Not Found) on error
- */
-BUILT_IN_FUNCTION(function_winsbsize, input)
-{
-	Window *win;
-
-	if (input && *input)
-		win = get_window_by_desc(input);
-	else
-		win = get_window_by_refnum(0);
-
-	if (!win)
-		RETURN_INT(-1);
-	RETURN_INT(win->display_buffer_size - 1);
-}
-#endif
-
-#if 0
-/*
- * Date: Tue, 25 Apr 2000 20:40:18 -0400
- * Author: IceKarma (ankh@canuck.gen.nz)
- * Contributed by: author
- *
- * Usage: $winstatsize() or $winstatsize(<window refnum or name>)
- * Given a window refnum or window name, this function will return the
- * height of the window's status bar.  Defaults to the current window if
- * none specified.
- *
- * Returns -1 (Window Not Found) on error
- */
-BUILT_IN_FUNCTION(function_winstatsize, input)
-{
-	Window *win;
-
-	if (input && *input)
-		win = get_window_by_desc(input);
-	else
-		win = get_window_by_refnum(0);
-
-	if (!win)
-		RETURN_INT(-1);
-	RETURN_INT(win->status.double_status ? 2 : 1);
-}
-#endif
-
-#if 0
-/*
- * Date: Tue, 25 Apr 2000 20:46:25 -0400
- * Author: IceKarma (ankh@canuck.gen.nz)
- * Contributed by: author
- *
- * Usage: $wincurline() or $wincurline(<window refnum or name>)
- * Given a window refnum or window name, this function will return the
- * line number within the window the cursor is on.  Defaults to the
- * current window if none specified.
- *
- * Returns -1 (Window Not Found) on error
- */
-BUILT_IN_FUNCTION(function_wincurline, input)
-{
-	Window *win;
-
-	if (input && *input)
-		win = get_window_by_desc(input);
-	else
-		win = get_window_by_refnum(0);
-
-	if (!win)
-		RETURN_INT(-1);
-	RETURN_INT(win->cursor);
-}
-#endif
-
-#if 0
-BUILT_IN_FUNCTION(function_winline, input)
-{
-	Window	*win;
-	Display	*Line;
-	int	line;
-
-	GET_INT_ARG(line, input);
-
-	if (input && *input)
-		win = get_window_by_desc(input);
-	else
-		win = get_window_by_refnum(0);
-
-	if (!win)
-		RETURN_INT(-1);
-
-	Line = win->display_ip;
-	for (; line > 0 && Line; line--)
-		Line = Line->prev;
-
-	if (Line && Line->line) {
-		char *ret = denormalize_string(Line->line);
-		RETURN_MSTR(ret);
-	}
-	else 
-		RETURN_EMPTY;
-}
-#endif
 
 /*
  * These four functions contributed by 

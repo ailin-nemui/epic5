@@ -1,4 +1,4 @@
-/* $EPIC: who.c,v 1.45 2005/03/28 23:50:07 jnelson Exp $ */
+/* $EPIC: who.c,v 1.46 2005/05/02 03:55:49 jnelson Exp $ */
 /*
  * who.c -- The WHO queue.  The ISON queue.  The USERHOST queue.
  *
@@ -850,17 +850,8 @@ do
 			runcmds(new_w->who_stuff, buffer);
 
 		else if (do_hook(WHO_LIST, "%s", buffer))
-		{
-			if (do_hook(current_numeric, "%s", buffer))
-			{
-#if 0
-				if (!get_int_var(SHOW_WHO_HOPCOUNT_VAR))
-					next_arg(name, &name);
-#endif
-
-				put_it(format, channel, nick, status, user, host, name);
-			}
-		}
+		    if (do_hook(current_numeric, "%s", buffer))
+			put_it(format, channel, nick, status, user, host, name);
 	}
 
 }
@@ -930,10 +921,6 @@ void	who_end (int refnum, const char *from, const char *comm, const char **ArgLi
 			snprintf(buffer, 1024, "%s %s", from, ArgList[0]);
 			if (new_w->who_end)
 			    runcmds(new_w->who_end, buffer);
-
-#if 0
-			else if (get_int_var(SHOW_END_OF_MSGS_VAR))
-#endif
 			else
 			    if (do_hook(current_numeric, "%s", buffer))
 				put_it("%s %s", banner(), buffer);

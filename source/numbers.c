@@ -1,4 +1,4 @@
-/* $EPIC: numbers.c,v 1.85 2005/03/29 00:45:23 jnelson Exp $ */
+/* $EPIC: numbers.c,v 1.86 2005/05/02 03:55:49 jnelson Exp $ */
 /*
  * numbers.c: handles all those strange numeric response dished out by that
  * wacky, nutty program we call ircd 
@@ -579,11 +579,6 @@ void 	numbered_command (const char *from, const char *comm, char const **ArgList
 	{
 		const char	*channel;
 
-#if 0
-		if (!get_int_var(SHOW_END_OF_MSGS_VAR))
-			goto END;
-#endif
-
 		if (!(channel = ArgList[0]))
 			{ rfc1459_odd(from, comm, ArgList); goto END; }
 
@@ -620,20 +615,7 @@ void 	numbered_command (const char *from, const char *comm, char const **ArgList
 			{ rfc1459_odd(from, comm, ArgList); goto END; }
 
 		if (!is_channel(nick))
-		{
 		    notify_mark(from_server, nick, 0, 0);
-#if 0
-		    if (get_int_var(AUTO_WHOWAS_VAR))
-		    {
-			int foo = get_int_var(NUM_OF_WHOWAS_VAR);
-
-			if (foo > -1)
-				send_to_server("WHOWAS %s %d", nick, foo);
-			else
-				send_to_server("WHOWAS %s", nick);
-		    }
-#endif
-		}
 
 		break;
 	}
@@ -1060,10 +1042,7 @@ DISPLAY:
 	case 318:		/* #define RPL_ENDOFWHOIS       318 */
 	{
 		PasteArgs(ArgList, 0);
-#if 0
-		if (get_int_var(SHOW_END_OF_MSGS_VAR))
-#endif
-			display_msg(from, comm, ArgList);
+		display_msg(from, comm, ArgList);
 		break;
 	}
 
@@ -1284,9 +1263,7 @@ DISPLAY:
 			pop_message_from(l);
 			l = message_from(channel, LEVEL_CRAP);
 			if (do_hook(NAMES_LIST, "%s %s", channel, line))
-#if 0
 			    if (get_int_var(SHOW_CHANNEL_NAMES_VAR))
-#endif
 				say("Users on %s: %s",
 					check_channel_type(channel), line);
 			break;
@@ -1354,11 +1331,6 @@ DISPLAY:
 	{
 		const char	*channel;
 
-#if 0
-		if (!get_int_var(SHOW_END_OF_MSGS_VAR))
-			break;
-#endif
-
 		if (!(channel = ArgList[0]))
 			{ rfc1459_odd(from, comm, ArgList); goto END; }
 
@@ -1416,10 +1388,7 @@ DISPLAY:
 	case 394:		/* #define RPL_ENDOFUSERS       394 */
 	{
 		PasteArgs(ArgList, 0);
-#if 0
-		if (get_int_var(SHOW_END_OF_MSGS_VAR))
-#endif
-			display_msg(from, comm, ArgList);
+		display_msg(from, comm, ArgList);
 		break;
 	}
 

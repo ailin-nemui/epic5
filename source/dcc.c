@@ -1,4 +1,4 @@
-/* $EPIC: dcc.c,v 1.122 2005/04/25 23:20:38 jnelson Exp $ */
+/* $EPIC: dcc.c,v 1.123 2005/05/02 03:55:48 jnelson Exp $ */
 /*
  * dcc.c: Things dealing client to client connections. 
  *
@@ -117,9 +117,6 @@ struct	DCC_struct *	next;
 
 static	DCC_list *	ClientList = NULL;
 static	char		DCC_current_transfer_buffer[256];
-#if 0
-	time_t		dcc_timeout = 600;		/* Backed by a /set */
-#endif
 static	int		dcc_global_lock = 0;
 static	int		dccs_rejected = 0;
 static	int		dcc_refnum = 0;
@@ -2580,49 +2577,6 @@ void	do_dcc (int fd)
 	     */
 	    else if ((Client->flags & DCC_TYPES) == DCC_RAW_LISTEN) 
 		/* nothing */;
-
-#if 0
-	    /*
-	     * Enforce any timeouts
-	     */
-	    else if (Client->flags & (DCC_MY_OFFER | DCC_THEIR_OFFER) &&
-		 dcc_timeout >= 0 &&
-		 time_diff(Client->lasttime, now) > dcc_timeout)
-	    {
-		lock_dcc(Client);
-	        l = message_from(NULL, LEVEL_DCC);
-
-		if (Client->description) {
-			if ((Client->flags & DCC_TYPES) == DCC_FILEOFFER)
-				encoded_description = dcc_urlencode(Client->description);
-			else
-				/* assume the other end encoded the filename */
-				encoded_description = malloc_strdup(Client->description);
-		}
-
-		if (do_hook(DCC_LOST_LIST,"%s %s %s IDLE TIME EXCEEDED",
-			Client->user, 
-			dcc_types[Client->flags & DCC_TYPES],
-			encoded_description ? 
-			 encoded_description : "<any>"))
-		    say("Auto-rejecting a dcc after [%ld] seconds", 
-			(long)time_diff(Client->lasttime, now));
-
-		/* 
-		 * This is safe to do after, since the connection
-		 * is still open, and the user might want to send
-		 * something to the other peer here, and there is no
-		 * good reason not to let them.
-		 */
-		Client->flags |= DCC_DELETE;
-
-		if (encoded_description)
-			new_free(&encoded_description);
-
-		pop_message_from(l);
-		unlock_dcc(Client);
-	    }
-#endif
 
 	    /*
 	     * This shouldnt be neccesary any more, but what the hey,

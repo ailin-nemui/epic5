@@ -1,4 +1,4 @@
-/* $EPIC: keys.c,v 1.44 2005/04/20 03:59:09 wd Exp $ */
+/* $EPIC: keys.c,v 1.45 2005/05/02 03:55:48 jnelson Exp $ */
 /*
  * keys.c:  Keeps track of what happens whe you press a key.
  *
@@ -184,9 +184,6 @@ void init_binds (void) {
     ADDBIND("ALTCHARSET",		    insert_altcharset		    );
     ADDBIND("BACKSPACE",		    input_backspace		    );
     ADDBIND("BACKWARD_CHARACTER",	    backward_character		    );
-#if 0
-    ADDBIND("BACKWARD_HISTORY",		    backward_history		    );
-#endif
     ADDBIND("BACKWARD_WORD",		    input_backward_word		    );
     ADDBIND("BEGINNING_OF_LINE",	    input_beginning_of_line	    );
     ADDBIND("BLINK",			    insert_blink		    );
@@ -202,9 +199,6 @@ void init_binds (void) {
     ADDBIND("ERASE_TO_BEG_OF_LINE",	    input_clear_to_bol		    );
     ADDBIND("ERASE_TO_END_OF_LINE",	    input_clear_to_eol		    );
     ADDBIND("FORWARD_CHARACTER",	    forward_character		    );
-#if 0
-    ADDBIND("FORWARD_HISTORY",		    forward_history		    );
-#endif
     ADDBIND("FORWARD_WORD",		    input_forward_word		    );
     ADDBIND("HIGHLIGHT_OFF",		    highlight_off		    );
     ADDBIND("NEXT_WINDOW",		    next_window			    );
@@ -222,9 +216,6 @@ void init_binds (void) {
     ADDBIND("SCROLL_START",		    scrollback_start		    );
     ADDBIND("SELF_INSERT",		    input_add_character		    );
     ADDBIND("SEND_LINE",		    send_line			    );
-#if 0
-    ADDBIND("SHOVE_TO_HISTORY",		    shove_to_history		    );
-#endif
     ADDBIND("STOP_IRC",			    term_pause			    );
     ADDBIND("SWAP_LAST_WINDOW",		    swap_last_window		    );
     ADDBIND("SWAP_NEXT_WINDOW",		    swap_next_window		    );
@@ -731,9 +722,6 @@ void init_keys (void) {
     BIND("^M", "SEND_LINE");
     BIND("^N", "FORWARD_HISTORY");
     BIND("^O", "HIGHLIGHT_OFF");
-#if 0
-    BIND("^P", "BACKWARD_HISTORY");
-#endif
     BIND("^Q", "QUOTE_CHARACTER");
     /* ^R */
     BIND("^S", "TOGGLE_STOP_SCREEN");
@@ -746,9 +734,6 @@ void init_keys (void) {
     BIND("^Z", "STOP_IRC");
     /* ^[ (was META1_CHARACTER) */
     /* ^\ */
-#if 0
-    BIND("^]", "SHOVE_TO_HISTORY");
-#endif
     /* ^^ */
     BIND("^_", "UNDERLINE");
     /* mind the gap .. */
@@ -782,12 +767,6 @@ void init_keys (void) {
     /* meta2 stuff. */
     BIND("^[O^Z", "STOP_IRC");
     BIND("^[[^Z", "STOP_IRC");
-#if 0
-    BIND("^[OA", "BACKWARD_HISTORY");
-    BIND("^[[A", "BACKWARD_HISTORY");
-    BIND("^[OB", "FORWARD_HISTORY");
-    BIND("^[[B", "FORWARD_HISTORY");
-#endif
     BIND("^[OC", "FORWARD_CHARACTER");
     BIND("^[[C", "FORWARD_CHARACTER");
     BIND("^[OD", "BACKWARD_CHARACTER");
@@ -829,12 +808,6 @@ void init_termkeys (void) {
 }
 
     bind_post_init = 0;
-#if 0
-    TBIND(key_up, BACKWARD_HISTORY);
-    TBIND(key_down, FORWARD_HISTORY);
-    TBIND(key_left, BACKWARD_CHARACTER);
-    TBIND(key_right, FORWARD_CHARACTER);
-#endif
     TBIND(key_ppage, SCROLL_BACKWARD);
     TBIND(key_npage, SCROLL_FORWARD);
     TBIND(key_home, SCROLL_START);

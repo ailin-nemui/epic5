@@ -1,4 +1,4 @@
-/* $EPIC: vars.c,v 1.72 2005/04/26 13:57:24 jnelson Exp $ */
+/* $EPIC: vars.c,v 1.73 2005/05/02 03:55:49 jnelson Exp $ */
 /*
  * vars.c: All the dealing of the irc variables are handled here. 
  *
@@ -155,15 +155,7 @@ void 	init_variables_stage1 (void)
 	VAR(AUTO_NEW_NICK,		BOOL, NULL)
 	VAR(AUTO_RECONNECT, 		BOOL, NULL)
 	VAR(AUTO_RECONNECT_DELAY, 	INT,  NULL)
-/*
-	VAR(AUTO_REJOIN, 		BOOL, NULL)
-*/
 	VAR(AUTO_REJOIN_CONNECT, 	BOOL, NULL)
-/*
-	VAR(AUTO_REJOIN_DELAY, 		INT,  NULL)
-	VAR(AUTO_UNMARK_AWAY, 		BOOL, NULL)
-	VAR(AUTO_WHOWAS, 		BOOL, NULL)
-*/
 	VAR(BAD_STYLE, 			BOOL, NULL)
 	VAR(BANNER, 			STR,  NULL)
 #define DEFAULT_BANNER_EXPAND 0
@@ -181,9 +173,6 @@ void 	init_variables_stage1 (void)
 	VAR(CLOCK_INTERVAL, 		INT,  set_clock_interval);
 	VAR(CMDCHARS, 			STR,  NULL);
 	VAR(COLOR, BOOL, NULL);
-/*
-	VAR(COMMAND_MODE, BOOL, NULL);
-*/
 	VAR(COMMENT_HACK, BOOL, NULL);
 	VAR(CONNECT_TIMEOUT, INT,  NULL);
 	VAR(CONTINUED_LINE, STR,  NULL);
@@ -196,9 +185,6 @@ void 	init_variables_stage1 (void)
 	VAR(DCC_SLIDING_WINDOW, INT,  NULL);
 #define DEFAULT_DCC_STORE_PATH NULL
 	VAR(DCC_STORE_PATH, STR,  NULL);
-/*
-	VAR(DCC_TIMEOUT, INT,  set_dcc_timeout);
-*/
 #define DEFAULT_DCC_USE_GATEWAY_ADDR 0
 	VAR(DCC_USE_GATEWAY_ADDR, BOOL, NULL)
 #define DEFAULT_DEBUG 0
@@ -218,9 +204,6 @@ void 	init_variables_stage1 (void)
 	VAR(FLOOD_RATE_PER, INT,  NULL);
 	VAR(FLOOD_USERS, INT,  NULL);
 	VAR(FLOOD_WARNING, BOOL, NULL);
-/*
-	VAR(FULL_STATUS_LINE, BOOL, update_all_status_wrapper);
-*/
 	VAR(HELP_PAGER, BOOL, NULL);
 	/*
 	 * Construct the default help path
@@ -234,10 +217,6 @@ void 	init_variables_stage1 (void)
 	VAR(HIDE_PRIVATE_CHANNELS, BOOL, update_all_status_wrapper);
 	VAR(HIGHLIGHT_CHAR, STR,  set_highlight_char);
 	VAR(HIGH_BIT_ESCAPE, INT,  set_meta_8bit);
-#if 0
-	VAR(HISTORY, INT,  set_history_size);
-	VAR(HISTORY_CIRCLEQ, BOOL, NULL);
-#endif
 	VAR(HOLD_SLIDER, INT,  NULL);
 	VAR(INDENT, BOOL, NULL);
 	VAR(INPUT_ALIASES, BOOL, NULL);
@@ -276,9 +255,6 @@ void 	init_variables_stage1 (void)
 	VAR(NO_CONTROL_LOG, BOOL, NULL);
 	VAR(NO_CTCP_FLOOD, BOOL, NULL);
 	VAR(NO_FAIL_DISCONNECT, BOOL, NULL);
-/*
-	VAR(NUM_OF_WHOWAS, INT,  NULL);
-*/
 	VAR(OLD_SERVER_LASTLOG_LEVEL, STR,  set_old_server_lastlog_mask);
 #define DEFAULT_OUTPUT_REWRITE NULL
 	VAR(OUTPUT_REWRITE, STR,  NULL);
@@ -287,9 +263,6 @@ void 	init_variables_stage1 (void)
 	VAR(RANDOM_SOURCE, INT,  NULL);
 #define DEFAULT_REALNAME NULL
 	VAR(REALNAME, STR,  NULL);
-/*
-	VAR(REVERSE_STATUS_LINE, BOOL, update_all_status_wrapper);
-*/
 #define DEFAULT_SCREEN_OPTIONS NULL
 	VAR(SCREEN_OPTIONS, STR,  NULL);
 	VAR(SCROLLBACK, INT,  set_scrollback_size);
@@ -300,14 +273,8 @@ void 	init_variables_stage1 (void)
 	VAR(SHELL_FLAGS, STR,  NULL);
 	VAR(SHELL_LIMIT, INT,  NULL);
 	VAR(SHOW_CHANNEL_NAMES, BOOL, NULL);
-/*
-	VAR(SHOW_END_OF_MSGS, BOOL, NULL);
-*/
 	VAR(SHOW_NUMERICS, BOOL, NULL);
 	VAR(SHOW_STATUS_ALL, BOOL, update_all_status_wrapper);
-/*
-	VAR(SHOW_WHO_HOPCOUNT, BOOL, NULL);
-*/
 #define DEFAULT_SSL_CERTFILE NULL
 	VAR(SSL_CERTFILE, STR,  NULL);
 #define DEFAULT_SSL_KEYFILE NULL
@@ -398,9 +365,6 @@ void 	init_variables_stage1 (void)
 	VAR(TRANSLATION_PATH, STR,  NULL);
 	VAR(UNDERLINE_VIDEO, BOOL, NULL);
 	VAR(USER_INFORMATION, STR,  NULL);
-/*
-	VAR(VERBOSE_CTCP, BOOL, NULL);
-*/
 	VAR(WORD_BREAK, STR,  NULL);
 #define DEFAULT_WSERV_PATH WSERV_PATH
 	VAR(WSERV_PATH, STR,  NULL);
@@ -603,83 +567,6 @@ int 	set_variable (const char *name, IrcVariable *var, const char *orig_value, i
 	return retval;
 }
 
-#if 0
-static void	create_user_set (char *args)
-{
-	char *expr = NULL;
-	char *typestr;
-	int   type;
-	char *varname;
-	char *(*unused)(void);
-	IrcVariable *var;
-
-	varname = next_arg(args, &args);
-	if (!varname || !*varname)
-	{
-		say("Usage: /SET -CREATE varname <TYPE> [{<code>}]");
-		return;
-	}
-
-	while (args && *args && isspace(*args))
-		args++;
-	typestr = next_arg(args, &args);
-	upper(typestr);
-
-	if (typestr && !strcmp(typestr, "BOOL"))
-		type = BOOL_VAR;
-	else if (typestr && !strcmp(typestr, "STR"))
-		type = STR_VAR;
-	else if (typestr && !strcmp(typestr, "INT"))
-		type = INT_VAR;
-	else if (typestr && !strcmp(typestr, "CHAR"))
-		type = CHAR_VAR;
-	else
-	{
-		say("Usage: /SET -CREATE varname <TYPE> [{<code>}]");
-		return;
-	}
-
-	while (args && *args && isspace(*args))
-		args++;
-	if (*args == '{')
-	{
-		expr = next_expr(&args, '{');
-		if (!expr || !*expr)
-		{
-			say("Usage: /SET -CREATE varname <TYPE> [{<code>}]");
-			return;
-		}
-	}
-
-	upper(varname);
-
-	get_var_alias(varname, &unused, &var);
-	if (var != NULL && var->func)
-	{
-		say("Cannot replace builtin var %s with created var", varname);
-		return;
-	}
-	else if (var != NULL && var->func == NULL)
-	{
-		delete_builtin_variable(varname);
-
-		if (var->type == STR_VAR)
-			new_free(&var->data->string);
-		new_free(&var->data);
-		if (var->script)
-			new_free(&var->script);
-		new_free(&var);
-	}
-
-	if (type == STR_VAR)
-		add_biv(varname, 0, type, NULL, expr, (char *)NULL);
-	else
-		add_biv(varname, 0, type, NULL, expr, 0);
-
-	say("Created new SET named \"%s\" of type %s ", varname, typestr);
-}
-#endif
-
 /*
  * set_variable: The SET command sets one of the irc variables.  The args
  * should consist of "variable-name setting", where variable name can be
@@ -700,15 +587,6 @@ BUILT_IN_COMMAND(setcmd)
 	 */
 	while (args && *args && isspace(*args))
 		args++;
-
-#if 0
-	if (!my_strnicmp(args, "-create", 7))
-	{
-		next_arg(args, &args);
-		create_user_set(args);
-		return;
-	}
-#endif
 
 	var = args;
 	while (args && *args && !isspace(*args))

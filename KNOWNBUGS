@@ -640,3 +640,5 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Change /on leave to /on part.
 * Only ever do one io event per call through select() or poll()
 * Do put_echo() and not add_to_screen() in /window echo so it can be logged
+* GC functions and sets from 'builtins'
+* GC history.c and history.h, huzzah!

@@ -1,4 +1,4 @@
-/* $EPIC: expr.c,v 1.32 2005/04/25 23:20:38 jnelson Exp $ */
+/* $EPIC: expr.c,v 1.33 2005/05/02 03:55:48 jnelson Exp $ */
 /*
  * expr.c -- The expression mode parser and the textual mode parser
  * #included by alias.c -- DO NOT DELETE
@@ -1581,26 +1581,6 @@ static	char	*alias_special_char (char **buffer, char *ptr, const char *args, cha
 			new_free(&tmpsav);
 			return (ptr);
 		}
-
-#if 0
-		/*
-		 * $!...! is the history mechanism.  Given a string, it will
-		 * return the most previously executed command that contains
-		 * that string.  Or something like that.
-		 */
-		case '!':
-		{
-			if ((ptr = strchr(tmp, '!')))
-				*ptr++ = 0;
-
-			if ((tmp = do_history(tmp, empty_string)) != NULL)
-			{
-				TruncateAndQuote(buffer, tmp, length, quote_em);
-				new_free(&tmp);
-			}
-			return (ptr);
-		}
-#endif
 
 		/*
 		 * ${...} is the expression parser.  Given a mathematical

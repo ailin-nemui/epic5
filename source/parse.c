@@ -1,4 +1,4 @@
-/* $EPIC: parse.c,v 1.67 2005/04/29 02:39:25 jnelson Exp $ */
+/* $EPIC: parse.c,v 1.68 2005/05/02 03:55:49 jnelson Exp $ */
 /*
  * parse.c: handles messages from the server.   Believe it or not.  I
  * certainly wouldn't if I were you. 
@@ -1038,23 +1038,6 @@ static void	p_kick (const char *from, const char *comm, const char **ArgList)
 		    return;
 		}
 
-#if 0
-		if (get_int_var(AUTO_REJOIN_VAR))
-		{
-			const char *key = get_channel_key(channel, from_server);
-			if (!key)
-				key = empty_string;
-
-			add_timer(0, empty_string, 
-				  get_int_var(AUTO_REJOIN_DELAY_VAR), 1,
-				  auto_rejoin_callback, 
-				  malloc_sprintf(NULL, "%s %d %d %s", channel, 
-						from_server, 
-						win->refnum,
-						key),
-				  NULL, win->refnum);
-		}
-#endif
 		remove_channel(channel, from_server);
 		update_all_status();
 

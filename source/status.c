@@ -1,4 +1,4 @@
-/* $EPIC: status.c,v 1.59 2005/04/15 02:47:45 jnelson Exp $ */
+/* $EPIC: status.c,v 1.60 2005/05/02 03:55:49 jnelson Exp $ */
 /*
  * status.c: handles the status line updating, etc for IRCII 
  *
@@ -581,19 +581,7 @@ int	make_status (Window *window, int must_redraw)
 				 window->status.line[line].key[i]);
 		}
 
-		/*
-		 * If the REVERSE_STATUS_LINE var is on, then put a reverse
-		 * character in the first position (itll get translated to
-		 * the tcap code in the output code.
-		 */
-#if 0
-		if (get_int_var(REVERSE_STATUS_LINE_VAR))
-#endif
-			*buffer = REV_TOG , str = buffer + 1;
-#if 0
-		else
-			str = buffer;
-#endif
+		*buffer = REV_TOG , str = buffer + 1;
 
 		/*
 		 * Now press the status line into "buffer".  The magic about
@@ -747,9 +735,6 @@ int	make_status (Window *window, int must_redraw)
 		 * No rhs?  If the user wants us to pad it out, do so.
 		 */
 		else 
-#if 0
-			if (get_int_var(FULL_STATUS_LINE_VAR))
-#endif
 		{
 			int chars = window->screen->co - pr_lhs - 1;
 
