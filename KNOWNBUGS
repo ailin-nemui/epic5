@@ -642,3 +642,4 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Do put_echo() and not add_to_screen() in /window echo so it can be logged
 * GC functions and sets from 'builtins'
 * GC history.c and history.h, huzzah!
+* Add $serverctl(GET * LOCALPORT) (fudd)

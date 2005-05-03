@@ -1,5 +1,9 @@
 EPIC5-0.0.5
 
+*** News 05/02/2005 -- New $serverctl(), $serverctl(GET <ref> LOCALPORT)
+	This returns the port used by the local side of a connection to 
+	the server.  If the server is not connected, it returns 0.
+
 *** News 04/28/2005 -- *** IMPORTANT *** /ON LEAVE changed to /ON PART
 	This is a hard cut-over breaking of backwards compatability.
 	There is no way to "go back", but there are means you can take 
