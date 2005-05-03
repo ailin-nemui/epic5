@@ -1,4 +1,4 @@
-/* $EPIC: newio.c,v 1.51 2005/04/29 02:39:25 jnelson Exp $ */
+/* $EPIC: newio.c,v 1.52 2005/05/03 14:37:40 jnelson Exp $ */
 /*
  * newio.c:  Passive, callback-driven IO handling for sockets-n-stuff.
  *
@@ -1334,4 +1334,117 @@ static	void	kunlock (void)
 
 #endif
 
+/************************************************************************/
+/*
+ * Implementation of solaris ports front-end to synchronous unix calls
+ * Graciously provided by larne (ejb), a distinguished server coder.
+ * I made a few minor changes, so any fault with this falls to me, not him!
+ */
+#ifdef USE_SOLARIS_PORTS
+#include <port.h>
+
+static int	port_fd = -1;
+static int *	events;
+
+static void	kinit (void)
+{ 
+	if ((port_fd = port_create()) < 0) 
+	{
+	    syserr("kinit(ports): port_create() failed: %s", strerror(errno));
+	    irc_exit(1, "Your system doesn't support ports");
+	}
+
+	events = (int *)new_malloc(sizeof(int) * IO_ARRAYLEN);
+	for (i = 0; i < IO_ARRAYLEN; i++)
+		events[i] = 0;
+}
+ 
+static void	ksetflag (int fd, int flag)
+{
+	if (events[fd])
+	{
+	    if (port_dissociate(port_fd, PORT_SOURCE_FD, fd) < 0)
+		syserr("ksetflag: port_dissociate(%d) failed: %s", 
+			fd, strerror(errno));
+	}
+	events[fd] |= flag;
+	if (events[fd])
+	{
+	    if (port_associate(port_fd, PORT_SOURCE_FD, fd, 
+				events[fd], NULL) < 0)
+		syserr("ksetflag: port_associate(%d) failed: %s"
+			fd, strerror(errno));
+	}
+}
+
+static void	kunsetflag (int fd, int flag)
+{
+	if (events[fd])
+	{
+	    if (port_dissociate(port_fd, PORT_SOURCE_FD, fd) < 0)
+		syserr("kunsetflag: port_dissociate(%d) failed: %s", 
+			fd, strerror(errno));
+	}
+	events[fd] &= ~flag;
+	if (events[fd])
+	{
+	    if (port_associate(port_fd, PORT_SOURCE_FD, fd, 
+				events[fd], NULL) < 0)
+		syserr("kunsetflag: port_associate(%d) failed: %s"
+			fd, strerror(errno));
+	}
+}
+
+static  void    kread (int vfd)	      { ksetflag(CHANNEL(vfd), POLLRDNORM); }
+static  void    knoread (int vfd)     { kunsetflag(CHANNEL(vfd), POLLRDNORM); }
+static  void    kholdread (int vfd)   { kunsetflag(CHANNEL(vfd), POLLRDNORM); }
+static  void    kunholdread (int vfd) { ksetflag(CHANNEL(vfd), POLLRDNORM); }
+static  void    kwrite (int vfd)      { ksetflag(CHANNEL(vfd), POLLRWNORM); }
+static  void    knowrite (int vfd)    { kunsetflag(CHANNEL(vfd), POLLRWNORM); }
+static	void	kcleaned (int vfd)
+{
+	if (events[CHANNEL(vfd)] & POLLRDNORM)
+		kread(vfd);
+	if (events[CHANNEL(vfd)] & POLLWRNORM)
+		kwrite(vfd);
+}
+
+static	int	kdoit (Timeval *timeout)
+{
+	struct timespec	to;
+	port_event_t	pe;
+	int		channel, retval;
+	uint_t		nget = 1;
+
+	to.tv_sec = timeout->tv_sec;
+	to.tv_nsec = timeout->tv_usec * 1000;
+
+	errno = 0;
+	retval = port_getn(port_fd, &pe, 1, &nget, &to);
+
+	/*
+	 * Solaris might return a negative value than -1 from port_getn()
+	 * and this is apparantly not an error, so we must check only for
+	 * -1 to indicate an error.
+	 */
+	if (retval == -1 && errno == ETIME)
+	{
+		errno = 0;
+		return 0;
+	}
+	else if (retval == -1 && errno != EINTR)
+		syserr("kdoit(ports): port_getn(NULL) failed: %s", 
+					strerror(errno));
+	else if (retval > 0)
+	{
+		channel = pe.portev_object;
+		new_io_event(VFD(channel));
+	}
+
+	return retval;
+}
+
+static	void	klock (void) { return; }
+static	void	kunlock (void) { return; }
+#endif
 

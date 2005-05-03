@@ -1,5 +1,5 @@
 /*
- * @(#)$Id: acconfig.h,v 1.28 2005/04/01 03:04:51 jnelson Exp $
+ * @(#)$Id: acconfig.h,v 1.29 2005/05/03 14:37:40 jnelson Exp $
  */
 
 /*
@@ -335,3 +335,5 @@
 /* Define this if you have arc4random() */
 #undef HAVE_ARC4RANDOM
 
+/* Define this if you have solaris ports */
+#undef USE_SOLARIS_PORTS
