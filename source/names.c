@@ -1,4 +1,4 @@
-/* $EPIC: names.c,v 1.66 2005/03/08 13:45:44 jnelson Exp $ */
+/* $EPIC: names.c,v 1.67 2005/05/07 05:43:54 jnelson Exp $ */
 /*
  * names.c: This here is used to maintain a list of all the people currently
  * on your channel.  Seems to work 
@@ -1022,6 +1022,16 @@ int	is_channel_nomsgs (const char *channel, int server_index)
 
 	if (tmp)
 		return (strchr(tmp->base_modes, 'n') ? 1 : 0);
+	else
+		return 0;
+}
+
+int	is_channel_anonymous (const char *channel, int server_index)
+{
+	Channel *tmp = find_channel(channel, server_index);
+
+	if (tmp)
+		return (strchr(tmp->base_modes, 'a') ? 1 : 0);
 	else
 		return 0;
 }

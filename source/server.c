@@ -1,4 +1,4 @@
-/* $EPIC: server.c,v 1.166 2005/05/03 03:57:11 jnelson Exp $ */
+/* $EPIC: server.c,v 1.167 2005/05/07 05:43:54 jnelson Exp $ */
 /*
  * server.c:  Things dealing with that wacky program we call ircd.
  *
@@ -322,8 +322,12 @@ static	int	serverinfo_to_newserv (ServerInfo *si)
 		malloc_strcpy(&s->password, si->password);
 	if (si->nick && *si->nick)
 		malloc_strcpy(&s->d_nickname, si->nick);
-	else if (!s->d_nickname)
+#if 0
+	/* Don't set a default nickname for a server until we use it! */
+	else 
 		malloc_strcpy(&s->d_nickname, nickname);
+#endif
+
 	if (si->group && *si->group)
 		malloc_strcpy(&s->group, si->group);
 	if (si->server_type && *si->server_type)
@@ -1299,6 +1303,8 @@ int 	connect_to_server (int new_server, int restart)
 #endif
 	s->des = des;
 	s->operator = 0;
+
+	/* So we set the default nickname for a server only when we use it */
 	if (!s->d_nickname)
 		malloc_strcpy(&s->d_nickname, nickname);
 

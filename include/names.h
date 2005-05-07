@@ -32,6 +32,7 @@
 	Char *	get_channel_mode	(Char *, int);
 	int	is_channel_private	(Char *, int);
 	int	is_channel_nomsgs	(Char *, int);
+	int	is_channel_anonymous	(Char *, int);
 	char *	scan_channel		(char *);
 	void	list_channels		(void);
 	BUILT_IN_KEYBINDING(switch_channels);

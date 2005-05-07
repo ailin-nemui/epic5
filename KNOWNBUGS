@@ -2,7 +2,11 @@ EPIC5 Projects, Bugs, and other Errata:
 
 KNOWN ERRATA (eg, bugs, or unresolved requests):
 ------------------------------------------------
-* Add solaris ports support from larne's patch.
+* /set debug 1 + /echo $chr(6) causes an abort()as read_attribute fails.
+[weirdo's list]
+* implement $windowctl(SET ...)
+* What to do if server->d_nickname is an ircnet unique id?
+* What to do if we need a nickname and closed, or not registered?
 
 LOOK FOR IN THE NEXT RELEASE
 ----------------------------
@@ -644,3 +648,6 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * GC history.c and history.h, huzzah!
 * Add $serverctl(GET * LOCALPORT) (fudd)
 * Add larne's support for solaris ports, which i modified a bit, so blame me!
+* Fix $windowctl(GET * QUERY_NICK)
+* Don't do WHO on anonymous channels (channel mode +a) (for ircnet users)
+* Don't set server's default nickname until we first try to connect.

@@ -1,4 +1,4 @@
-/* $EPIC: numbers.c,v 1.86 2005/05/02 03:55:49 jnelson Exp $ */
+/* $EPIC: numbers.c,v 1.87 2005/05/07 05:43:54 jnelson Exp $ */
 /*
  * numbers.c: handles all those strange numeric response dished out by that
  * wacky, nutty program we call ircd 
@@ -461,19 +461,24 @@ void 	numbered_command (const char *from, const char *comm, char const **ArgList
 		    update_channel_mode(channel, mode);
 		    update_all_status();
 
-		    maxnum = get_server_max_cached_chan_size(from_server);
-		    if (maxnum >= 0)
-		    {
-			numonchannel = number_on_channel(copy, from_server);
-			if (numonchannel <= maxnum)
-			    whobase(from_server, copy, add_user_who, 
-						add_user_end);
-			else
-			    channel_not_waiting(copy, from_server);
-		    }
+		    if (is_channel_anonymous(copy, from_server))
+			channel_not_waiting(copy, from_server);
 		    else
-			    whobase(from_server, copy, add_user_who, 
+		    {
+			maxnum = get_server_max_cached_chan_size(from_server);
+			if (maxnum >= 0)
+			{
+			    numonchannel = number_on_channel(copy, from_server);
+			    if (numonchannel <= maxnum)
+				whobase(from_server, copy, add_user_who, 
 						add_user_end);
+			    else
+				channel_not_waiting(copy, from_server);
+			}
+			else
+			    whobase(from_server, copy, add_user_who, 
+					add_user_end);
+		    }
 		}
 
 		break;
