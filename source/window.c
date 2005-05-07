@@ -1,4 +1,4 @@
-/* $EPIC: window.c,v 1.143 2005/05/07 05:43:54 jnelson Exp $ */
+/* $EPIC: window.c,v 1.144 2005/05/07 15:38:47 jnelson Exp $ */
 /*
  * window.c: Handles the organzation of the logical viewports (``windows'')
  * for irc.  This includes keeping track of what windows are open, where they
@@ -5878,59 +5878,124 @@ char 	*windowctl 	(char *input)
 	    GET_STR_ARG(listc, input);
 	    len = strlen(listc);
 
-#if 0
 	    if (!my_strnicmp(listc, "REFNUM", len)) {
+		RETURN_EMPTY;
 	    } else if (!my_strnicmp(listc, "NAME", len)) {
+		RETURN_EMPTY;
 	    } else if (!my_strnicmp(listc, "SERVER", len)) {
+		RETURN_EMPTY;
 	    } else if (!my_strnicmp(listc, "LAST_SERVER", len)) {
+		RETURN_EMPTY;
 	    } else if (!my_strnicmp(listc, "PRIORITY", len)) {
+		RETURN_EMPTY;
 	    } else if (!my_strnicmp(listc, "TOP", len)) {
+		RETURN_EMPTY;
 	    } else if (!my_strnicmp(listc, "BOTTOM", len)) {
+		RETURN_EMPTY;
 	    } else if (!my_strnicmp(listc, "CURSOR", len)) {
+		RETURN_EMPTY;
 	    } else if (!my_strnicmp(listc, "NOSCROLLCURSOR", len)) {
+		RETURN_EMPTY;
 	    } else if (!my_strnicmp(listc, "FIXED", len)) {
+		RETURN_EMPTY;
 	    } else if (!my_strnicmp(listc, "SCROLL", len)) {
+		RETURN_EMPTY;
 	    } else if (!my_strnicmp(listc, "CHANGE_LINE", len)) {
+		RETURN_EMPTY;
 	    } else if (!my_strnicmp(listc, "OLD_SIZE", len)) {
+		RETURN_EMPTY;
 	    } else if (!my_strnicmp(listc, "UPDATE", len)) {
+		RETURN_EMPTY;
 	    } else if (!my_strnicmp(listc, "MISCFLAGS", len)) {
+		RETURN_EMPTY;
 	    } else if (!my_strnicmp(listc, "BEEP_ALWAYS", len)) {
+		RETURN_EMPTY;
 	    } else if (!my_strnicmp(listc, "NOTIFY_LEVEL", len)) {
+		RETURN_EMPTY;
 	    } else if (!my_strnicmp(listc, "WINDOW_LEVEL", len)) {
+		RETURN_EMPTY;
 	    } else if (!my_strnicmp(listc, "SKIP", len)) {
+		RETURN_EMPTY;
 	    } else if (!my_strnicmp(listc, "COLUMNS", len)) {
+		RETURN_EMPTY;
 	    } else if (!my_strnicmp(listc, "PROMPT", len)) {
+		RETURN_EMPTY;
 	    } else if (!my_strnicmp(listc, "STATUS_FORMAT", len)) {
+		RETURN_EMPTY;
 	    } else if (!my_strnicmp(listc, "STATUS_FORMAT1", len)) {
+		RETURN_EMPTY;
 	    } else if (!my_strnicmp(listc, "STATUS_FORMAT2", len)) {
+		RETURN_EMPTY;
 	    } else if (!my_strnicmp(listc, "STATUS_LINE", len)) {
+		RETURN_EMPTY;
 	    } else if (!my_strnicmp(listc, "STATUS_LINE1", len)) {
+		RETURN_EMPTY;
 	    } else if (!my_strnicmp(listc, "STATUS_LINE2", len)) {
+		RETURN_EMPTY;
 	    } else if (!my_strnicmp(listc, "DISPLAY_BUFFER_SIZE", len)) {
+		RETURN_EMPTY;
 	    } else if (!my_strnicmp(listc, "DISPLAY_BUFFER_MAX", len)) {
+		RETURN_EMPTY;
 	    } else if (!my_strnicmp(listc, "DISPLAY_BUFFER_SIZE", len)) {
+		RETURN_EMPTY;
 	    } else if (!my_strnicmp(listc, "DISPLAY_BUFFER_MAX", len)) {
+		RETURN_EMPTY;
 	    } else if (!my_strnicmp(listc, "SCROLLING_DISTANCE", len)) {
+		RETURN_EMPTY;
 	    } else if (!my_strnicmp(listc, "HOLDING_DISTANCE", len)) {
+		RETURN_EMPTY;
 	    } else if (!my_strnicmp(listc, "SCROLLBACK_DISTANCE", len)) {
+		RETURN_EMPTY;
 	    } else if (!my_strnicmp(listc, "DISPLAY_COUNTER", len)) {
+		RETURN_EMPTY;
 	    } else if (!my_strnicmp(listc, "HOLD_SLIDER", len)) {
+		RETURN_EMPTY;
 	    } else if (!my_strnicmp(listc, "HOLD_INTERVAL", len)) {
+		RETURN_EMPTY;
 	    } else if (!my_strnicmp(listc, "LAST_LINES_HELD", len)) {
+		RETURN_EMPTY;
 	    } else if (!my_strnicmp(listc, "WAITING_CHANNEL", len)) {
+		RETURN_EMPTY;
 	    } else if (!my_strnicmp(listc, "BIND_CHANNEL", len)) {
+		RETURN_EMPTY;
 	    } else if (!my_strnicmp(listc, "QUERY_NICK", len)) {
+		RETURN_EMPTY;
 	    } else if (!my_strnicmp(listc, "NICKLIST", len)) {
+		RETURN_EMPTY;
 	    } else if (!my_strnicmp(listc, "LASTLOG_LEVEL", len)) {
+		RETURN_EMPTY;
 	    } else if (!my_strnicmp(listc, "LASTLOG_SIZE", len)) {
+		RETURN_EMPTY;
 	    } else if (!my_strnicmp(listc, "LASTLOG_MAX", len)) {
+		RETURN_EMPTY;
 	    } else if (!my_strnicmp(listc, "LOGGING", len)) {
+		RETURN_EMPTY;
 	    } else if (!my_strnicmp(listc, "LOGFILE", len)) {
+		RETURN_EMPTY;
 	    } else if (!my_strnicmp(listc, "SWAPPABLE", len)) {
+		RETURN_EMPTY;
 	    } else if (!my_strnicmp(listc, "SCROLLADJ", len)) {
+		RETURN_EMPTY;
 	    } else if (!my_strnicmp(listc, "DECEASED", len)) {
+		RETURN_EMPTY;
+	    } else if (!my_strnicmp(listc, "TOPLINE", len)) {
+		int line;
+
+		GET_INT_ARG(line, input)
+		if (line <= 0 || line >= 10)
+			RETURN_INT(0);
+		malloc_strcpy(&w->topline[line-1], input);
+		window_body_needs_redraw(w);
+		RETURN_INT(1);
+	    } else if (!my_strnicmp(listc, "TOPLINES", len)) {
+		RETURN_EMPTY;
+	    } else if (!my_strnicmp(listc, "DISPLAY_SIZE", len)) {
+		RETURN_EMPTY;
+	    } else if (!my_strnicmp(listc, "SCREEN", len)) {
+		RETURN_EMPTY;
+	    } else if (!my_strnicmp(listc, "LINE", len)) {
+		RETURN_EMPTY;
 	    }
-#endif
 	} else
 		RETURN_EMPTY;
 

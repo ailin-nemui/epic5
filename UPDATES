@@ -1,5 +1,12 @@
 EPIC5-0.0.6
 
+*** News 05/07/2005 -- New $windowctl(SET <ref> TOPLINE <num> <stuff>)
+	You can now set a topline literally (without wrangling with the
+	/window command) this way.  The <stuff> is not subject to any
+	sort of double-quoting shenanigans.  BTW, don't get too excited,
+	I haven't implemented any other $windowctl(SET *) operations,
+	but this one needed to be done right away.
+
 *** News 05/02/2005 -- New $serverctl(), $serverctl(GET <ref> LOCALPORT)
 	This returns the port used by the local side of a connection to 
 	the server.  If the server is not connected, it returns 0.

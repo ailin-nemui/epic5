@@ -651,3 +651,4 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Don't set server's default nickname until we first try to connect.
 * For ircnet users, after a /nick <unique-id>, the def nick should be "0".
 * Even privileged_yell()s need to be run through normalize_string()!
+* Implement $windowctl(SET <ref> TOPLINE <num> <stuff>)
