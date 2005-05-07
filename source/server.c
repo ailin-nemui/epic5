@@ -1,4 +1,4 @@
-/* $EPIC: server.c,v 1.168 2005/05/07 14:28:34 jnelson Exp $ */
+/* $EPIC: server.c,v 1.169 2005/05/07 14:43:47 jnelson Exp $ */
 /*
  * server.c:  Things dealing with that wacky program we call ircd.
  *
@@ -2050,7 +2050,7 @@ void	change_server_nickname (int refnum, const char *nick)
 		    }
 		}
 
-		if (id && my_stricmp(n, id))
+		if (id && !my_stricmp(n, id))
 			malloc_strcpy(&s->d_nickname, zero);
 		else
 			malloc_strcpy(&s->d_nickname, n);
