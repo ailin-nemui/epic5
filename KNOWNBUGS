@@ -2,7 +2,6 @@ EPIC5 Projects, Bugs, and other Errata:
 
 KNOWN ERRATA (eg, bugs, or unresolved requests):
 ------------------------------------------------
-* /set debug 1 + /echo $chr(6) causes an abort()as read_attribute fails.
 [weirdo's list]
 * implement $windowctl(SET ...)
 * What to do if we need a nickname and closed, or not registered?
@@ -651,3 +650,4 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Don't do WHO on anonymous channels (channel mode +a) (for ircnet users)
 * Don't set server's default nickname until we first try to connect.
 * For ircnet users, after a /nick <unique-id>, the def nick should be "0".
+* Even privileged_yell()s need to be run through normalize_string()!

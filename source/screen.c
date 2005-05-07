@@ -1,4 +1,4 @@
-/* $EPIC: screen.c,v 1.98 2005/04/15 02:47:45 jnelson Exp $ */
+/* $EPIC: screen.c,v 1.99 2005/05/07 14:39:39 jnelson Exp $ */
 /*
  * screen.c
  *
@@ -2318,12 +2318,10 @@ static void 	add_to_window (Window *window, const unsigned char *str)
 	      }
 	   }
 	   recursion--;
-
-	   /* Normalize the line of output */
-	   strval = normalize_string(str, 0);
 	}
-	else
-	   strval = malloc_strdup(str);
+
+	/* Normalize the line of output */
+	strval = normalize_string(str, 0);
 
 	/* Pass it off to the window */
 	window_disp(window, strval, str);
