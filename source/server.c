@@ -1,4 +1,4 @@
-/* $EPIC: server.c,v 1.171 2005/05/07 14:57:56 jnelson Exp $ */
+/* $EPIC: server.c,v 1.172 2005/05/07 15:12:19 jnelson Exp $ */
 /*
  * server.c:  Things dealing with that wacky program we call ircd.
  *
@@ -2353,7 +2353,20 @@ SACCESSOR(group, group, "<default>")
 SACCESSOR(message, quit_message, get_string_var(QUIT_MESSAGE_VAR))
 SACCESSOR(cookie, cookie, NULL)
 SACCESSOR(ver, version_string, NULL)
-SACCESSOR(id, unique_id, NULL)
+
+GET_SATTRIBUTE(unique_id, NULL)
+void	set_server_unique_id (int servref, const char * id)
+{
+	Server *s;
+
+	if (!(s = get_server(servref)))
+		return;
+
+	malloc_strcpy(&s->unique_id , id);
+	if (id && s->d_nickname && !my_stricmp(id, s->d_nickname))
+		malloc_strcpy(&s->d_nickname, zero);
+}
+
 
 GET_IATTRIBUTE(status)
 void	set_server_status (int refnum, int new_status)
