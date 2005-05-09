@@ -652,3 +652,5 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * For ircnet users, after a /nick <unique-id>, the def nick should be "0".
 * Even privileged_yell()s need to be run through normalize_string()!
 * Implement $windowctl(SET <ref> TOPLINE <num> <stuff>)
+* Reorganize how nickname changes are handled, before I refactor stuff.
+* I stopped forcing client-side checking of nickname changes here.

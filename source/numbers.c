@@ -1,4 +1,4 @@
-/* $EPIC: numbers.c,v 1.87 2005/05/07 05:43:54 jnelson Exp $ */
+/* $EPIC: numbers.c,v 1.88 2005/05/09 03:43:52 jnelson Exp $ */
 /*
  * numbers.c: handles all those strange numeric response dished out by that
  * wacky, nutty program we call ircd 
@@ -791,17 +791,7 @@ void 	numbered_command (const char *from, const char *comm, char const **ArgList
 		if (!(nick = ArgList[0]))
 			{ rfc1459_odd(from, comm, ArgList); goto END; }
 
-		/* If we're registered, nick command failed, just accept it */
-		if (is_server_registered(from_server))
-		{
-			accept_server_nickname(from_server, target);
-			break;
-		}
-
-		if (get_int_var(AUTO_NEW_NICK_VAR))
-			fudge_nickname(from_server);
-		else
-			reset_nickname(from_server);
+		nickname_change_rejected(from_server, target);
 
 		if (!from)
 			from = "-1";

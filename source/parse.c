@@ -1,4 +1,4 @@
-/* $EPIC: parse.c,v 1.68 2005/05/02 03:55:49 jnelson Exp $ */
+/* $EPIC: parse.c,v 1.69 2005/05/09 03:43:52 jnelson Exp $ */
 /*
  * parse.c: handles messages from the server.   Believe it or not.  I
  * certainly wouldn't if I were you. 
@@ -806,7 +806,6 @@ static void	p_nick (const char *from, const char *comm, const char **ArgList)
 	{
 		its_me = 1;
 		accept_server_nickname(from_server, new_nick);
-		set_server_nickname_pending(from_server, 0);
 	}
 
 	switch (check_ignore(from, FromUserHost, LEVEL_NICK))

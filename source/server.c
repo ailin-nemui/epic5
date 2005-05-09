@@ -1,4 +1,4 @@
-/* $EPIC: server.c,v 1.172 2005/05/07 15:12:19 jnelson Exp $ */
+/* $EPIC: server.c,v 1.173 2005/05/09 03:43:52 jnelson Exp $ */
 /*
  * server.c:  Things dealing with that wacky program we call ircd.
  *
@@ -625,6 +625,8 @@ static int	next_server_in_group (int oldserv, int direction)
 /*****************************************************************************/
 /*****************************************************************************/
 static	void	server_is_unregistered (int refnum);
+static void 	fudge_nickname (int refnum);
+static void 	reset_nickname (int refnum);
 
 	int	connected_to_server = 0;	/* How many active server 
 						   connections are open */
@@ -2010,8 +2012,6 @@ int	is_me (int refnum, const char *nick)
 	return 0;
 }
 
-
-
 /*
  * This is the function to attempt to make a nickname change.  You
  * cannot send the NICK command directly to the server: you must call
@@ -2025,7 +2025,6 @@ int	is_me (int refnum, const char *nick)
 void	change_server_nickname (int refnum, const char *nick)
 {
 	Server *s;
-	char *	n;
 	const char *id;
 
 	if (!(s = get_server(refnum)))
@@ -2034,31 +2033,22 @@ void	change_server_nickname (int refnum, const char *nick)
 	s->resetting_nickname = 0;
 	if (nick)
 	{
-		n = LOCAL_COPY(nick);
-
+		/* If changing to our Unique ID, the default nickname is 0 */
 		id = get_server_unique_id(refnum);
-		if ((id && my_stricmp(n, id)) && strcmp(n, zero))
-		{
-		    if (!(n = check_nickname(n, 1)))
-		    {
-			if (is_server_registered(refnum))
-			    say("Cannot change nickname: '%s' is invalid",
-					nick);
-			else
-			    reset_nickname(refnum);
-			return;	
-		    }
-		}
-
-		if (id && !my_stricmp(n, id))
+		if (id && !my_stricmp(nick, id))
 			malloc_strcpy(&s->d_nickname, zero);
 		else
-			malloc_strcpy(&s->d_nickname, n);
-		malloc_strcpy(&s->s_nickname, n);
+			malloc_strcpy(&s->d_nickname, nick);
+
+		/* Make a note that we are changing our nickname */
+		malloc_strcpy(&s->s_nickname, nick);
 	}
 
 	if (s->s_nickname)
+	{
 		send_to_aserver(refnum, "NICK %s", s->s_nickname);
+		set_server_nickname_pending(refnum, 1);
+	}
 }
 
 const char *	get_pending_nickname (int refnum)
@@ -2079,21 +2069,40 @@ void	accept_server_nickname (int refnum, const char *nick)
 	if (!(s = get_server(refnum)))
 		return;
 
+	/* We always accept whatever the server says our new nick is. */
 	malloc_strcpy(&s->nickname, nick);
 	new_free(&s->s_nickname);
+	set_server_nickname_pending(refnum, 0);
+	s->fudge_factor = 0;
 
+	/* Change our default nickname to our new nick, or 0 for unique id's */
 	id = get_server_unique_id(refnum);
 	if (id && !my_stricmp(nick, id))
 		malloc_strcpy(&s->d_nickname, zero);
 	else
 		malloc_strcpy(&s->d_nickname, nick);
 
-	s->fudge_factor = 0;
-
+	/* Change the global nickname for primary server (die, die!) */
 	if (refnum == primary_server)
 		strlcpy(nickname, nick, sizeof nickname);
 
 	update_all_status();
+}
+
+void	nickname_change_rejected (int refnum, const char *mynick)
+{
+	if (is_server_registered(refnum))
+	{
+		accept_server_nickname(refnum, mynick);
+		set_server_nickname_pending(refnum, 0);
+		return;
+	}
+
+	/* This check should only ever be done here! */
+	if (get_int_var(AUTO_NEW_NICK_VAR))
+		fudge_nickname(refnum);
+	else
+		reset_nickname(refnum);
 }
 
 /* 
@@ -2107,7 +2116,7 @@ void	accept_server_nickname (int refnum, const char *nick)
  * out of guesses, and if it ever gets to that point, it will do the
  * manually-ask-you-for-a-new-nickname thing.
  */
-void 	fudge_nickname (int refnum)
+static void 	fudge_nickname (int refnum)
 {
 	Server *s;
 const	char	*nicklen_005;
@@ -2116,18 +2125,6 @@ const	char	*nicklen_005;
 
 	if (!(s = get_server(refnum)))
 		return;			/* Uh, no. */
-
-	/*
-	 * If we got here because the user did a /NICK command, and
-	 * the nick they chose doesnt exist, then we just dont do anything,
-	 * we just cancel the pending action and give up.
-	 */
-	if (s->nickname_pending)
-	{
-		set_server_nickname_pending(refnum, 0);
-		new_free(&s->s_nickname);
-		return;
-	}
 
 	/*
 	 * Ok.  So we're not doing a /NICK command, so we need to see
@@ -2193,7 +2190,7 @@ const	char	*nicklen_005;
 /*
  * -- Callback function
  */
-void 	nickname_sendline (char *data, char *nick)
+static void 	nickname_sendline (char *data, char *nick)
 {
 	int	new_server;
 
@@ -2206,7 +2203,7 @@ void 	nickname_sendline (char *data, char *nick)
  * a good one, it gets reset here. 
  * -- Called by more than one place
  */
-void 	reset_nickname (int refnum)
+static void 	reset_nickname (int refnum)
 {
 	Server *s;
 	char	server_num[10];

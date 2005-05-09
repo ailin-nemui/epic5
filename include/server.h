@@ -263,9 +263,6 @@ const	char *	get_server_nickname		(int);
 	void	change_server_nickname		(int, const char *);
 const	char *	get_pending_nickname		(int);
 	void	accept_server_nickname		(int, const char *);
-	void	fudge_nickname			(int);
-	void	nickname_sendline		(char *, char *);
-	void	reset_nickname			(int);
 
 	void	set_server_redirect		(int, const char *);
 const	char *	get_server_redirect		(int);

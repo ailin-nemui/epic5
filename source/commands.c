@@ -1,4 +1,4 @@
-/* $EPIC: commands.c,v 1.122 2005/05/02 03:55:48 jnelson Exp $ */
+/* $EPIC: commands.c,v 1.123 2005/05/09 03:43:52 jnelson Exp $ */
 /*
  * commands.c -- Stuff needed to execute commands in ircII.
  *		 Includes the bulk of the built in commands for ircII.
@@ -657,31 +657,24 @@ BUILT_IN_COMMAND(e_nick)
 	char	*nick;
 	const char *id;
 
-	if (!(nick = next_arg(args, &args)))
-	{
-		say("Your nickname is %s", get_server_nickname(get_window_server(0)));
-		if (get_pending_nickname(get_window_server(0)))
-			say("A nickname change to %s is pending.", get_pending_nickname(get_window_server(0)));
-		return;
-	}
-
-	id = get_server_unique_id(from_server);
-	if (id == NULL || (my_stricmp(nick, id) && strcmp(nick, "0")))
-	{
-	    if (!(nick = check_nickname(nick, 1)))
-	    {
-		say("The nickname you specified is not a legal nickname.");
-		return;
-	    }
-	}
-
 	if (from_server == NOSERV)
 	{
-		say("You may not change nicknames when not connected to a server");
+	    say("I can't figure out what server to change your nickname for");
+	    return;
+	}
+
+	if (!(nick = next_arg(args, &args)))
+	{
+		say("Your nickname on server %d is %s", 
+				from_server, 
+				get_server_nickname(from_server));
+		if (get_pending_nickname(from_server))
+			say("A nickname change on server %d to %s is pending.", 
+				from_server,
+				get_pending_nickname(from_server));
 		return;
 	}
 
-	set_server_nickname_pending(from_server, 1);
 	change_server_nickname(from_server, nick);
 }
 

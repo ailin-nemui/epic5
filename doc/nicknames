@@ -9,23 +9,23 @@ initial nickname.
 Each server will maintain three nicknames:
 
 	d_nickname -- This is the "default" for this server.  This is 
-		set ONCE, when then the server is first created.
-		Whenever this server's connection is re-established,
-		this is the nickname that will be used.  It is reset
-		any time the user uses the /NICK command.  It is also
-		reset any time the user's nickname has been established.
-		This member is always set to something.
+		set ONCE, either from the server-spec, or the global 
+		nickname, when the server is first connected.  Whenever 
+		this server's connection is re-established, this is the 
+		nickname that will be used.  It is reset any time the user 
+		uses the /NICK command.  It is also reset any time the 
+		user's nickname has been established.  This member is
+		always set to something after you've first connected to 
+		a server.
 
 	s_nickname -- This is the "pending" nickname for the server.
 		This is set when the user attempts to change nickname
 		through the /NICK command, or when a nick collision
-		occurs.  This member is mutually exclusive with the
-		"nickname" member.  Whenever the user recieves a
-		"Invalid Nickname" or "Nickname is in use", if this
-		member is set, it will be used as the basis for any
-		fudging.  If this member is unset, "nickname" will
-		be used as a starting value.  If this member is set,
-		then a NICK command is still pending.
+		occurs.  Whenever the user recieves a "Invalid Nickname" 
+		or "Nickname is in use", if this member is set, it will 
+		be used as the basis for any fudging.  If this member is 
+		unset, "nickname" will be used as a starting value.  If 
+		this member is set, then a NICK command is still pending.
 
 	nickname -- This is the "official" nickname for the server.
 		This is set when we either get a NICK reply back from
@@ -36,4 +36,50 @@ Each server will maintain three nicknames:
 		hope is gone.  If this member is set, and s_nickname
 		is also set, then that means a NICK command is pending,
 		and we are waiting for the reply.
+
+==========================================
+What to do when your nickname is rejected
+==========================================
+Normally, when you do a /nick while connected to the server, and the server
+rejects your new nickname, epic will just abandon the change and go back to
+your old nickname.
+
+When your nickname is rejected during registration, a new nickname must be
+created and submitted to the server.  This process is known as "fudging",
+and is only done when you are not connected to a server
+
+----------
+Errors while changing nick:
+
+While connected to the server:
+   You can do a /NICK
+	ACCEPT:		NICK sent to the server
+	REJECT:
+
+Error Numerics from NICK command:
+	432	Nickname is invalid
+	433	Nickname is already in use 
+	438	Too many nickname changes (undernet)
+	439	Nick changes disallowed (comstud)
+	453	Nickname was lost (TS4)
+
+If you're connected, nothing happens
+If you're not connected, and /SET AUTO_NEW_NICK is ON, "fudge" the nick
+If you're not connected (ie, we're registering), and /SET AUTO_NEW_NICK is OFF,
+reset the nick
+
+---------
+In change_server_nickname(), called by:
+	/NICK command
+	462	You Are Already Registered
+	fudge_nickname()
+	nickname_sendline()
+	$serverctl(SET ... NICKNAME ...)
+	register_server()
+if your new nickname is invalid, and you are connected, reject nick change
+if your new nickname is invalid, and you are not connected, reset the nick
+
+-----------
+Your nickname is reset (and you are prompted for a new one) when:
+	/SET AUTO_NEW_NICK is OFF and NICK fails  while not connected
 
