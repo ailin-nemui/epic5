@@ -3,7 +3,6 @@ EPIC5 Projects, Bugs, and other Errata:
 KNOWN ERRATA (eg, bugs, or unresolved requests):
 ------------------------------------------------
 [weirdo's list]
-* implement $windowctl(SET ...)
 * What to do if we need a nickname and closed, or not registered?
 
 LOOK FOR IN THE NEXT RELEASE

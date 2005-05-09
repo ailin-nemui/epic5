@@ -3,10 +3,9 @@ if (word(2 $loadinfo()) != [pf]) {
 	return;
 };
 
-# $EPIC: save,v 1.1 2005/03/12 01:50:51 jnelson Exp $
 #	Copyright (c) 2005 David B. Kratter (BlackJac@EFNet)
 #
-#	Version: 1.0.2005.03.06.1
+#	Version: 1.0.2005.05.08.1
 #
 #	This script simulates the save command of epic4 for epic5. The
 #	behavior should be nearly identical to the original.
@@ -32,8 +31,8 @@ alias save (args) {
 };
 
 alias save.alias (void) {
-	fe ($aliasctl(alias pmatch *)) ss {
-		@ write($save.fd ALIAS $ss \{$aliasctl(alias get $ss)\});
+	fe ($symbolctl(pmatch alias *)) ss {
+		@ write($save.fd ALIAS $ss \{$symbolctl(get $ss 1 alias value)\});
 	};
 };
 
@@ -82,5 +81,3 @@ alias save.set (void) {
 		@ write($save.fd SET $ss $($ss));
 	};
 };
-
-#end of file

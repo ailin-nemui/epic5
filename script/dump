@@ -1,0 +1,118 @@
+if (word(2 $loadinfo()) != [pf]) {
+	load -pf $word(1 $loadinfo());
+	return;
+};
+
+#	Copyright (c) 2005 David B. Kratter (BlackJac@EFNet)
+#
+#	Version: 1.0.2005.05.08.1
+#
+#	This script simulates the dump command of epic4 for epic5. The
+#	behavior should be nearly identical to the original. Several
+#	significant improvements have been made over the original epic4
+#	implementation.
+
+package dump;
+
+alias dump (args default "variable alias hook") {
+	fe ($args) dd {
+		switch ($dd) {
+			(alias*) {
+				dump.alias;
+			};
+			(all) {
+				fe (alias array bind channel dcc hook timer variable window) ee {
+					dump.$ee;
+				};
+			};
+			(array*) {
+				dump.array;
+			};
+			(bind*) {
+				dump.bind;
+			};
+			(channel*) {
+				dump.channel;
+			};
+			(dcc*) {
+				dump.dcc;
+			};
+			(hook*) (on*) {
+				dump.hook;
+			};
+			(timer*) {
+				dump.timer;
+			};
+			(var*) {
+				dump.variable;
+			};
+			(win*) {
+				dump.window;
+			};
+			(*) {
+				xecho -b -c -s Dump what? \('$toupper($choice)' is unrecognized\);
+			};
+		};
+	};
+};
+
+alias dump.alias (void) {
+	xecho -b -c -s Dumping your global aliases;
+	fe ($filter(dump.* $symbolctl(pmatch alias *))) dd {
+		^alias -$dd;
+	};
+	defer fe ($symbolctl(pmatch alias dump.*)) dd {
+		^alias -$dd;
+	};
+};
+
+alias dump.array (void) {
+	xecho -b -c -s Dumping your arrays;
+	fe ($getarrays(*)) dd {
+		@ delarray($dd);
+	};
+};
+
+alias dump.bind (void) {
+	xecho -b -c -s Dumping your binds;
+	^bind -defaults;
+};
+
+alias dump.channel (void) {
+	xecho -b -c -s Dumping your channels;
+	^join 0;
+};
+
+alias dump.dcc (void) {
+	xecho -b -c -s Dumping your DCCs;
+	^dcc closeall;
+};
+
+alias dump.hook (void) {
+	xecho -b -c -s Dumping your ONs;
+	fe ($hookctl(list hooks)) dd {
+		@ hookctl(remove $dd);
+	};		
+};
+
+alias dump.timer (void) {
+	xecho -b -c -s Dumping your timers;
+	fe ($timerctl(refnums)) dd {
+		@ timerctl(delete $dd);
+	};
+};
+
+alias dump.variable (void) {
+	xecho -b -c -s Dumping your global variables;
+	fe ($symbolctl(pmatch assign *)) dd {
+		^assign -dd;
+	};
+};
+
+alias dump.window (void) {
+	xecho -b -c -s Dumping your windows;
+	fe ($remw($windowctl(get 0 refnum) $windowctl(refnums))) dd {
+		^window refnum_or_swap $dd kill;
+	};
+	^window double off fixed off hold_mode off lastlog_level all level all name - notify off notify_level all number 1 skip off swappable on;
+};
