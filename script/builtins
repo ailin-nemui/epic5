@@ -5,7 +5,7 @@ if (word(2 $loadinfo()) != [pf]) {
 
 #	Copyright (c) 2005 David B. Kratter (BlackJac@EFNet)
 #
-#	Version: 1.5.2005.05.08.1
+#	Version: 1.6.2005.05.10.1
 #
 #	This script ensures backward-compatibility with epic4-2.2 by adding the
 #	following commands, functions and sets that have been removed from epic5.
@@ -18,11 +18,12 @@ if (word(2 $loadinfo()) != [pf]) {
 #		SAVE, SIGNOFF, WHOWAS
 #
 #	FUNCTIONS:
-#		IGMASK, IGTYPE, LASTSERVER, NOTIFYWINDOWS, RIGMASK, RIGTYPE,
-#		SERVERGROUP, SERVERNAME, SERVERNICK, SERVERNUM, SERVEROURNAME,
-#		SERVERTYPE, SERVPORTS, WINBOUND, WINCURSORLINE, WINLEVEL, WINLINE,
-#		WINNAM, WINNICKLIST, WINNUM, WINQUERY, WINREFS, WINSCREEN,
-#		WINSCROLLBACKSIZE, WINSERV, WINSIZE, WINSTATSIZE, WINVISIBLE
+#		IGMASK, IGTYPE, LASTSERVER, MYSERVERS, NOTIFYWINDOWS, RIGMASK,
+#		RIGTYPE, SERVERGROUP, SERVERNAME, SERVERNICK, SERVERNUM,
+#		SERVEROURNAME, SERVERTYPE, SERVPORTS, WINBOUND, WINCURSORLINE,
+#		WINLEVEL, WINLINE, WINNAM, WINNICKLIST, WINNUM, WINQUERY, WINREFS,
+#		WINSCREEN, WINSCROLLBACKSIZE, WINSERV, WINSIZE, WINSTATSIZE,
+#		WINVISIBLE
 #
 #	SETS:
 #		AUTO_REJOIN, AUTO_REJOIN_DELAY, AUTO_UNMARK_AWAY, AUTO_WHOWAS,
@@ -115,6 +116,18 @@ alias igtype (pattern, void) {
 
 alias lastserver (void) {
 	return $serverctl(last_server);
+};
+
+alias myservers (arg, void) {
+	fe ($serverctl(omatch *)) mm {
+		if (serverctl(get $mm connected)) {
+			push :servers $mm;
+		};
+	};
+	fe ($servers) nn {
+		push function_return ${@arg ? nn : servername($nn)};
+	};
+		
 };
 
 alias notifywindows (void) {
