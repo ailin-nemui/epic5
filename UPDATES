@@ -1,5 +1,36 @@
 EPIC5-0.0.6
 
+*** News 05/10/2005 -- Nickname rejections handled differently now
+	When the server rejects your NICK change request after you have
+	already connected and registered with the server, no further
+	action will take place because there's nothing that can be done
+	to stop a nick collision, and nothing that needs to be done if 
+	your new nick is taken.
+
+	If the server rejects your NICK during the registration process,
+	epic will no longer "fudge" your nickname by adding _'s and/or
+	rotating your nickname, and will no longer "reset" your nickname
+	by prompting you for a new one and stopping the world until you
+	give it a new one.  Rather, EPIC will throw /on new_nickname and
+	if you don't use it, will warn you that you need to use /NICK
+	to choose a new nickname (and /server +<ref> to reconnect if you
+	ping out)
+
+	This also means that /SET AUTO_NEW_NICK is gone (soon to be replaced
+	by a script, which will implement the old hardcoded behavior), and
+	handling nickname change failures is fully under control of script!
+
+*** News 05/10/2005 -- New window verb, /WINDOW KILLABLE (default on)
+	When you /WINDOW KILLABLE OFF, the following changes occur:
+	  * /WINDOW KILL will fail[1] with an error message.
+	  * /WINDOW KILL_ALL_HIDDEN will not kill the window.
+	  * /WINDOW KILL_OTHERS will not kill the window.
+	  * /WINDOW KILLSWAP will fail[1] with an error message.
+	[1] A failure of *any* /window operation causes any subsequent 
+	    operations in the same statement to be discarded, to avoid
+	    accidentally operating on the wrong window.  This behavior
+	    is not a special-case.
+
 *** News 05/07/2005 -- New $windowctl(SET <ref> TOPLINE <num> <stuff>)
 	You can now set a topline literally (without wrangling with the
 	/window command) this way.  The <stuff> is not subject to any

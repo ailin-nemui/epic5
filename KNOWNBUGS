@@ -2,8 +2,7 @@ EPIC5 Projects, Bugs, and other Errata:
 
 KNOWN ERRATA (eg, bugs, or unresolved requests):
 ------------------------------------------------
-[weirdo's list]
-* What to do if we need a nickname and closed, or not registered?
+* Setting the EXPIRATION on an ignore doesn't reset the timer.
 
 LOOK FOR IN THE NEXT RELEASE
 ----------------------------
@@ -653,3 +652,5 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Implement $windowctl(SET <ref> TOPLINE <num> <stuff>)
 * Reorganize how nickname changes are handled, before I refactor stuff.
 * I stopped forcing client-side checking of nickname changes here.
+* Add /window killable to allow you to make windows unkillable
+* Nickname rejections are handled through /on new_nickname solely now.

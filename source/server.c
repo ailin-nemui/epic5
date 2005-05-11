@@ -1,4 +1,4 @@
-/* $EPIC: server.c,v 1.173 2005/05/09 03:43:52 jnelson Exp $ */
+/* $EPIC: server.c,v 1.174 2005/05/11 01:09:48 jnelson Exp $ */
 /*
  * server.c:  Things dealing with that wacky program we call ircd.
  *
@@ -289,7 +289,6 @@ static	int	serverinfo_to_newserv (ServerInfo *si)
 	s->redirect = NULL;
 	s->cookie = NULL;
 	s->closing = 0;
-	s->nickname_pending = 0;
 	s->fudge_factor = 0;
 	s->resetting_nickname = 0;
 	s->quit_message = NULL;
@@ -625,7 +624,9 @@ static int	next_server_in_group (int oldserv, int direction)
 /*****************************************************************************/
 /*****************************************************************************/
 static	void	server_is_unregistered (int refnum);
+#if 0
 static void 	fudge_nickname (int refnum);
+#endif
 static void 	reset_nickname (int refnum);
 
 	int	connected_to_server = 0;	/* How many active server 
@@ -2030,7 +2031,6 @@ void	change_server_nickname (int refnum, const char *nick)
 	if (!(s = get_server(refnum)))
 		return;			/* Uh, no. */
 
-	s->resetting_nickname = 0;
 	if (nick)
 	{
 		/* If changing to our Unique ID, the default nickname is 0 */
@@ -2044,11 +2044,10 @@ void	change_server_nickname (int refnum, const char *nick)
 		malloc_strcpy(&s->s_nickname, nick);
 	}
 
-	if (s->s_nickname)
-	{
+	if (s->s_nickname && is_server_open(refnum))
 		send_to_aserver(refnum, "NICK %s", s->s_nickname);
-		set_server_nickname_pending(refnum, 1);
-	}
+
+	s->resetting_nickname = 0;
 }
 
 const char *	get_pending_nickname (int refnum)
@@ -2072,7 +2071,6 @@ void	accept_server_nickname (int refnum, const char *nick)
 	/* We always accept whatever the server says our new nick is. */
 	malloc_strcpy(&s->nickname, nick);
 	new_free(&s->s_nickname);
-	set_server_nickname_pending(refnum, 0);
 	s->fudge_factor = 0;
 
 	/* Change our default nickname to our new nick, or 0 for unique id's */
@@ -2094,17 +2092,13 @@ void	nickname_change_rejected (int refnum, const char *mynick)
 	if (is_server_registered(refnum))
 	{
 		accept_server_nickname(refnum, mynick);
-		set_server_nickname_pending(refnum, 0);
 		return;
 	}
 
-	/* This check should only ever be done here! */
-	if (get_int_var(AUTO_NEW_NICK_VAR))
-		fudge_nickname(refnum);
-	else
-		reset_nickname(refnum);
+	reset_nickname(refnum);
 }
 
+#if 0
 /* 
  * This will generate up to 18 nicknames plus the 9-length(nickname)
  * that are unique but still have some semblance of the original.
@@ -2185,18 +2179,7 @@ const	char	*nicklen_005;
 
 	change_server_nickname(refnum, l_nickname);
 }
-
-
-/*
- * -- Callback function
- */
-static void 	nickname_sendline (char *data, char *nick)
-{
-	int	new_server;
-
-	new_server = str_to_servref(data);
-	change_server_nickname(new_server, nick);
-}
+#endif
 
 /*
  * reset_nickname: when the server reports that the selected nickname is not
@@ -2227,14 +2210,10 @@ static void 	reset_nickname (int refnum)
 	if (s->s_nickname == NULL || 
 		(old_pending && !strcmp(old_pending, s->s_nickname)))
 	{
-	    say("You need to give me a new nickname before I can continue");
-	    if (!dumb_mode)
-	    {
-		say("Please enter a new nickname");
-		strlcpy(server_num, ltoa(refnum), sizeof server_num);
-		add_wait_prompt("Nickname: ", nickname_sendline, server_num,
-			WAIT_PROMPT_LINE, 1);
-	    }
+	    say("Use the /NICK command to set a new nick to continue "
+			"connecting.");
+	    say("If you get disconnected, you will also need to do "
+			"/server +%d to reconnect.", refnum);
 	}
 	update_all_status();
 }
@@ -2331,7 +2310,6 @@ GET_SATTRIBUTE(member, default)
 IACCESSOR(v, doing_privmsg)
 IACCESSOR(v, doing_notice)
 IACCESSOR(v, doing_ctcp)
-IACCESSOR(v, nickname_pending)
 IACCESSOR(v, sent)
 IACCESSOR(v, version)
 IACCESSOR(v, line_length)

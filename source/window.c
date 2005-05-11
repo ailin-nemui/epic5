@@ -1,4 +1,4 @@
-/* $EPIC: window.c,v 1.144 2005/05/07 15:38:47 jnelson Exp $ */
+/* $EPIC: window.c,v 1.145 2005/05/11 01:09:48 jnelson Exp $ */
 /*
  * window.c: Handles the organzation of the logical viewports (``windows'')
  * for irc.  This includes keeping track of what windows are open, where they
@@ -204,6 +204,7 @@ Window	*new_window (Screen *screen)
 	new_w->skip = 0;
 	new_w->swappable = 1;
 	new_w->scrolladj = 1;
+	new_w->killable = 1;
 	new_w->notify_mask = real_notify_mask();
 	new_w->notify_name = NULL;
 	if (!current_window)		/* First window ever */
@@ -3384,6 +3385,11 @@ static Window *window_hold_slider (Window *window, char **args)
  */
 static Window *window_kill (Window *window, char **args)
 {
+	if (!window->killable)
+	{
+		say("You cannot kill an unkillable window");
+		return NULL;
+	}
 	delete_window(window);
 	return current_window;
 }
@@ -3401,9 +3407,12 @@ static Window *window_kill_all_hidden (Window *window, char **args)
 	while (tmp)
 	{
 		next = tmp->next;
-		if (tmp == window)
+		if (tmp->killable)
+		{
+		    if (tmp == window)
 			window = NULL;
-		delete_window(tmp);
+		    delete_window(tmp);
+		}
 		tmp = next;
 	}
 
@@ -3432,10 +3441,21 @@ static Window *window_kill_others (Window *window, char **args)
 	while (tmp)
 	{
 		next = tmp->next;
-		if (tmp != window)
+		if (tmp->killable)
+		{
+		    if (tmp != window)
 			delete_window(tmp);
+		}
 		tmp = next;
 	}
+
+	return window;
+}
+
+static Window *window_killable (Window *window, char **args)
+{
+	if (get_boolean("KILLABLE", args, &window->killable))
+		return NULL;
 
 	return window;
 }
@@ -3447,6 +3467,11 @@ static Window *window_kill_others (Window *window, char **args)
  */
 static Window *window_killswap (Window *window, char **args)
 {
+	if (!window->killable)
+	{
+		say("You cannot KILLSWAP an unkillable window");
+		return NULL;
+	}
 	if (invisible_list)
 	{
 		swap_window(window, invisible_list);
@@ -4742,6 +4767,7 @@ static const window_ops options [] = {
 	{ "KILL",		window_kill 		},
 	{ "KILL_ALL_HIDDEN",	window_kill_all_hidden	},
 	{ "KILL_OTHERS",	window_kill_others 	},
+	{ "KILLABLE",		window_killable		},
 	{ "KILLSWAP",		window_killswap 	},
 	{ "LAST", 		window_last 		},
 	{ "LASTLOG",		window_lastlog 		},

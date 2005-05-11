@@ -53,7 +53,6 @@ const	AI	*next_addr;		/* The next one to try upon failure */
 
 	int	status;			/* See above */
 
-	int	nickname_pending;	/* Is a NICK command pending? */
 	int	resetting_nickname;	/* Is a nickname reset in progress? */
 
 	char	*userhost;		/* my userhost on this server */
@@ -233,7 +232,6 @@ const 	char *	get_server_version_string	(int);
 const	char *	get_server_cipher		(int);
  
 	void	register_server			(int, const char *);
-	void	server_registration_is_not_pending (int);
 	void	password_sendline		(char *, char *);
 	char *	set_server_password		(int, const char *);
 	int	is_server_open			(int);
@@ -292,8 +290,6 @@ const	char*	get_server_005			(int, const char *);
         int     get_server_doing_notice 	(int);
         void    set_server_doing_ctcp 		(int, int);
         int     get_server_doing_ctcp 		(int);
-	void	set_server_nickname_pending	(int, int);
-	int	get_server_nickname_pending	(int);
 	void	set_server_sent			(int, int);
 	int	get_server_sent			(int);
 	void	set_server_try_ssl		(int, int);
