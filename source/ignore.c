@@ -1,4 +1,4 @@
-/* $EPIC: ignore.c,v 1.26 2005/04/03 15:37:57 jnelson Exp $ */
+/* $EPIC: ignore.c,v 1.27 2005/05/13 02:06:10 jnelson Exp $ */
 /*
  * ignore.c: handles the ingore command for irc 
  *
@@ -1165,10 +1165,18 @@ char *	ignorectl (char *input)
 			RETURN_INT(i->refnum);
 		} else if (!my_strnicmp(listc, "EXPIRATION", len)) {
 			Timeval to;
+			Timeval right_now;
+			double seconds;
 
 			GET_INT_ARG(to.tv_sec, input);
 			GET_INT_ARG(to.tv_usec, input);
 			i->expiration = to;
+
+			get_time(&right_now);
+			seconds = time_diff(right_now, to);
+			add_timer(0, empty_string, seconds, 1,
+				do_expire_ignores, NULL, NULL, -1);
+
 			RETURN_INT(i->refnum);
 		} else if (!my_strnicmp(listc, "REASON", len)) {
 			if (is_string_empty(input))
