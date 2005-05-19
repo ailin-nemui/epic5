@@ -1,4 +1,4 @@
-/* $EPIC: status.c,v 1.60 2005/05/02 03:55:49 jnelson Exp $ */
+/* $EPIC: status.c,v 1.61 2005/05/19 13:34:00 jnelson Exp $ */
 /*
  * status.c: handles the status line updating, etc for IRCII 
  *
@@ -465,7 +465,7 @@ static void	init_status	(void)
 {
 	int	i, k;
 
-	main_status.double_status = 0;
+	main_status.number = 1;
 	main_status.special = 0;
 	for (i = 0; i < 3; i++)
 	{
@@ -513,7 +513,7 @@ int	make_status (Window *window, int must_redraw)
 	if (!window->screen || !status_updates_permitted)
 		return -1;
 
-	for (status_line = 0; status_line < window->status.double_status + 1; status_line++)
+	for (status_line = 0; status_line < window->status.number; status_line++)
 	{
 		u_char	lhs_fillchar[6],
 			rhs_fillchar[6],
@@ -533,28 +533,18 @@ int	make_status (Window *window, int must_redraw)
 		fillchar[0] = fillchar[1] = 0;
 
 		/*
-		 * If status line gets to one, then that means that
-		 * window->double_status is not zero.  That means that
-		 * the status line we're working on is STATUS2.
+		 * Figure out which of the three status bars we're creating.
 		 */
-		if (status_line)
-			line = 2;
-
-		/*
-		 * If status_line is zero, and window->double_status is
-		 * not zero (double status line is on) then we're working
-		 * on STATUS1.
-		 */
-		else if (window->status.double_status)
-			line = 1;
-
-		/*
-		 * So status_line is zero and window->double_status is zero.
-		 * So we're working on STATUS (0).
-		 */
-		else
+		if (window->status.number == 1 && status_line == 0)
 			line = 0;
-
+		else if (window->status.number == 2 && status_line == 0)
+			line = 1;
+		else if (window->status.number == 2 && status_line == 1)
+			line = 2;
+		else
+			panic("window->status.number is [%d] and status_line "
+				"is [%d] and that makes no sense!", 
+				window->status.number, status_line);
 
 		/*
 		 * Sanity check:  If the status format doesnt exist, dont do
@@ -1122,9 +1112,9 @@ STATUS_FUNCTION(status_hold_lines)
 		interval = 1;		/* XXX WHAT-ever */
 
 	if (window->holding_distance_from_display_ip > window->scrollback_distance_from_display_ip)
-		lines_held = window->holding_distance_from_display_ip - window->display_size;
+		lines_held = window->holding_distance_from_display_ip - window->display_lines;
 	else
-		lines_held = window->scrollback_distance_from_display_ip - window->display_size;
+		lines_held = window->scrollback_distance_from_display_ip - window->display_lines;
 
 	if (lines_held <= 0)
 		return empty_string;
@@ -1321,8 +1311,8 @@ STATUS_FUNCTION(status_hold)
 {
 	char *text;
 
-	if (window->holding_distance_from_display_ip > window->display_size  ||
-	    window->scrollback_distance_from_display_ip > window->display_size)
+	if (window->holding_distance_from_display_ip > window->display_lines  ||
+	    window->scrollback_distance_from_display_ip > window->display_lines)
 		if ((text = get_string_var(STATUS_HOLD_VAR)))
 			return text;
 	return empty_string;
@@ -1452,7 +1442,7 @@ STATUS_FUNCTION(status_position)
 			window->scrolling_distance_from_display_ip,
 			window->holding_distance_from_display_ip,
 			window->scrollback_distance_from_display_ip,
-			window->display_size, window->cursor);
+			window->display_lines, window->cursor);
 	return my_buffer;
 }
 

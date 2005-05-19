@@ -1,4 +1,4 @@
-/* $EPIC: screen.c,v 1.99 2005/05/07 14:39:39 jnelson Exp $ */
+/* $EPIC: screen.c,v 1.100 2005/05/19 13:34:00 jnelson Exp $ */
 /*
  * screen.c
  *
@@ -1969,7 +1969,7 @@ static int 	rite (Window *window, const unsigned char *str)
 	output_screen = window->screen;
 	scroll_window(window);
 
-	if (window->screen && window->display_size)
+	if (window->screen && window->display_lines)
 		output_with_count(str, 1, foreground);
 
 	window->cursor++;
@@ -2425,14 +2425,14 @@ static int	ok_to_output (Window *window)
 	if (window->scrollback_top_of_display)
 	{
 	    if (window->scrollback_distance_from_display_ip >
-				window->display_size)
+				window->display_lines)
 		return 0;	/* Definitely no output here */
 	}
 
 	if (window->holding_top_of_display)
 	{
 	    if (window->holding_distance_from_display_ip >
-				window->display_size)
+				window->display_lines)
 		return 0;	/* Definitely no output here */
 	}
 
@@ -2450,15 +2450,15 @@ static void 	scroll_window (Window *window)
 	if (dumb_mode)
 		return;
 
-	if (window->cursor > window->display_size)
+	if (window->cursor > window->display_lines)
 		panic("Window [%d]'s cursor [%d] is off the display [%d]",
-			window->refnum, window->cursor, window->display_size);
+			window->refnum, window->cursor, window->display_lines);
 
 	/*
 	 * If the cursor is beyond the window then we should probably
 	 * look into scrolling.
 	 */
-	if (window->cursor == window->display_size)
+	if (window->cursor == window->display_lines)
 	{
 		int scroll;
 
@@ -2468,10 +2468,10 @@ static void 	scroll_window (Window *window)
 		 * doing its job or something else is completely broken.
 		 * Probably shouldnt be fatal, but i want to trap these.
 		 */
-		if (window->holding_distance_from_display_ip > window->display_size)
-			panic("Can't output to window [%d] because it is holding stuff: [%d] [%d]", window->refnum, window->holding_distance_from_display_ip, window->display_size);
-		if (window->scrollback_distance_from_display_ip > window->display_size)
-			panic("Can't output to window [%d] because it is scrolling back: [%d] [%d]", window->refnum, window->scrollback_distance_from_display_ip, window->display_size);
+		if (window->holding_distance_from_display_ip > window->display_lines)
+			panic("Can't output to window [%d] because it is holding stuff: [%d] [%d]", window->refnum, window->holding_distance_from_display_ip, window->display_lines);
+		if (window->scrollback_distance_from_display_ip > window->display_lines)
+			panic("Can't output to window [%d] because it is scrolling back: [%d] [%d]", window->refnum, window->scrollback_distance_from_display_ip, window->display_lines);
 
 
 		/* Scroll by no less than 1 line */
@@ -2479,7 +2479,7 @@ static void 	scroll_window (Window *window)
 			scroll = 1;
 
 		/* Adjust the top of the physical display */
-		if (window->screen && foreground && window->display_size)
+		if (window->screen && foreground && window->display_lines)
 		{
 			term_scroll(window->top,
 				window->top + window->cursor - 1, 
@@ -2493,7 +2493,7 @@ static void 	scroll_window (Window *window)
 	/*
 	 * Move to the new line and wipe it
 	 */
-	if (window->screen && window->display_size)
+	if (window->screen && window->display_lines)
 	{
 		window->screen->cursor_window = window;
 		term_move_cursor(0, window->top + window->cursor);
@@ -2578,8 +2578,8 @@ void 	repaint_window_body (Window *window)
 		curr_line = window->holding_top_of_display;
 	}
 
-	if (window->screen && window->saved)
-	    for (count = 0; count < window->saved; count++)
+	if (window->screen && window->toplines_showing)
+	    for (count = 0; count < window->toplines_showing; count++)
 	    {
 		int	cols;
 		int	numls = 1;
@@ -2591,7 +2591,7 @@ void 	repaint_window_body (Window *window)
 			str = empty_string;
 
 		window->screen->cursor_window = window;
-		term_move_cursor(0, window->top - window->saved + count);
+		term_move_cursor(0, window->top - window->toplines_showing + count);
 		term_clear_to_eol();
 		if (window->screen)
 			cols = window->screen->co - 1;	/* XXX HERE XXX */
@@ -2607,7 +2607,7 @@ void 	repaint_window_body (Window *window)
 	   }
 
 	window->cursor = 0;
-	for (count = 0; count < window->display_size; count++)
+	for (count = 0; count < window->display_lines; count++)
 	{
 		rite(window, curr_line->line);
 
@@ -2617,7 +2617,7 @@ void 	repaint_window_body (Window *window)
 		if (curr_line == window->display_ip)
 		{
 			window->cursor--;		/* Bumped by rite */
-			for (; count < window->display_size; count++)
+			for (; count < window->display_lines; count++)
 			{
 				term_clear_to_eol();
 				term_newline();

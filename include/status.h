@@ -26,7 +26,8 @@ typedef struct  status_line {
 typedef struct  status_stuff {          
         Status_line     line[3];
         short           double_status;
-        char            *special;
+        short           number;
+        char *		special;
 } Status;
 
 extern	Status	main_status;

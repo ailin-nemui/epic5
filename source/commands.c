@@ -1,4 +1,4 @@
-/* $EPIC: commands.c,v 1.123 2005/05/09 03:43:52 jnelson Exp $ */
+/* $EPIC: commands.c,v 1.124 2005/05/19 13:33:59 jnelson Exp $ */
 /*
  * commands.c -- Stuff needed to execute commands in ircII.
  *		 Includes the bulk of the built in commands for ircII.
@@ -896,11 +896,11 @@ BUILT_IN_COMMAND(xechocmd)
 				}
 				to_line = my_atol(next_arg(args, &args));
 				if (to_line < 0 || 
-					to_line >= to_window->display_size)
+					to_line >= to_window->display_lines)
 				{
 					yell("XECHO: -LINE %d is out of range for window (max %d)", 
 						to_line, 
-						to_window->display_size - 1);
+						to_window->display_lines - 1);
 					to_window = old_to_window;
 					return;
 				}

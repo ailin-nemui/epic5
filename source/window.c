@@ -1,4 +1,4 @@
-/* $EPIC: window.c,v 1.145 2005/05/11 01:09:48 jnelson Exp $ */
+/* $EPIC: window.c,v 1.146 2005/05/19 13:34:00 jnelson Exp $ */
 /*
  * window.c: Handles the organzation of the logical viewports (``windows'')
  * for irc.  This includes keeping track of what windows are open, where they
@@ -170,6 +170,11 @@ Window	*new_window (Screen *screen)
 
 	new_w = (Window *) new_malloc(sizeof(Window));
 
+	/*
+	 * STAGE 1 -- Ensuring all values are set to default values
+	 */
+
+	/* Meta stuff */
 	tmp = NULL;
 	while (traverse_all_windows(&tmp))
 	{
@@ -181,37 +186,40 @@ Window	*new_window (Screen *screen)
 	}
 	new_w->refnum = new_refnum;
 	new_w->name = NULL;
+	new_w->priority = -1;		/* Filled in later */
 
+	/* Output rule stuff */
 	if (current_window)
 		new_w->server = current_window->server;
 	else
 		new_w->server = NOSERV;
-
-	new_w->priority = -1;		/* Filled in later */
-	new_w->saved = 0;		/* Filled in later? */
-	new_w->top = 0;			/* Filled in later */
-	new_w->bottom = 0;		/* Filled in later */
-	new_w->cursor = -1;		/* Force a clear-screen */
-	new_w->noscrollcursor = -1;
-	new_w->absolute_size = 0;
-	new_w->old_size = 1;		/* Filled in later */
-	new_w->update = 0;
-	new_w->notified = 0;
-	new_w->notify_when_hidden = 0;
-	new_w->beep_always = 0;
-	new_w->change_line = -1;
-	new_w->scroll = 1;
-	new_w->skip = 0;
-	new_w->swappable = 1;
-	new_w->scrolladj = 1;
-	new_w->killable = 1;
-	new_w->notify_mask = real_notify_mask();
-	new_w->notify_name = NULL;
 	if (!current_window)		/* First window ever */
 		mask_setall(&new_w->window_mask);
 	else
 		mask_unsetall(&new_w->window_mask);
+	new_w->waiting_chans = NULL;
+	new_w->nicks = NULL;
+	new_w->query_counter = 0;
 
+	/* Internal flags */
+	new_w->top = 0;			/* Filled in later */
+	new_w->bottom = 0;		/* Filled in later */
+	new_w->cursor = -1;		/* Force a clear-screen */
+	new_w->change_line = -1;
+	new_w->update = 0;
+
+	/* User-settable flags */
+	new_w->notify_when_hidden = 0;
+	new_w->notified = 0;
+	new_w->notify_name = NULL;
+	new_w->beep_always = 0;
+	new_w->notify_mask = real_notify_mask();
+	new_w->skip = 0;
+	new_w->swappable = 1;
+	new_w->scrolladj = 1;
+	new_w->killable = 1;
+
+	/* Input prompt and status bar stuff */
 	new_w->prompt = NULL;		/* Filled in later */
 	for (i = 0; i < 3; i++)
 	{
@@ -220,47 +228,60 @@ Window	*new_window (Screen *screen)
 		new_w->status.line[i].count = 0;
 		new_w->status.line[i].result = NULL;
 	}
-	new_w->status.double_status = 0;
+	new_w->status.number = 1;
 	new_w->status.special = NULL;
 	rebuild_a_status(new_w);
 
+	/* Scrollback stuff */
 	new_w->top_of_scrollback = NULL;	/* Filled in later */
 	new_w->display_ip = NULL;		/* Filled in later */
 	new_w->display_buffer_size = 0;
 	new_w->display_buffer_max = get_int_var(SCROLLBACK_VAR);
-	new_w->display_size = 1;		/* Filled in later */
-	new_w->display_counter = 1;
-
 	new_w->scrolling_top_of_display = NULL;		/* Filled in later */
 	new_w->scrolling_distance_from_display_ip = -1;	/* Filled in later */
 	new_w->holding_top_of_display = NULL;		/* Filled in later */
 	new_w->holding_distance_from_display_ip = -1;	/* Filled in later */
 	new_w->scrollback_top_of_display = NULL;	/* Filled in later */
 	new_w->scrollback_distance_from_display_ip = -1; /* Filled in later */
-
-	new_w->hold_interval = 10;
+	new_w->display_counter = 1;
 	new_w->hold_slider = get_int_var(HOLD_SLIDER_VAR);
 
-	new_w->waiting_chans = NULL;
-	new_w->nicks = NULL;
+	/* Window geometry stuff */
+	new_w->columns = 0;			/* Filled in later? */
+	new_w->display_lines = 1;		/* Filled in later */
+	new_w->logical_size = 100;		/* XXX Implement this */
+	new_w->fixed_size = 0;
+	new_w->old_display_lines = 1;	/* Filled in later */
 
+	/* Hold mode stuff */
+	new_w->hold_interval = 10;
+
+	/* LASTLOG stuff */
 	new_w->lastlog_oldest = NULL;
 	new_w->lastlog_newest = NULL;
 	new_w->lastlog_mask = real_lastlog_mask();
 	new_w->lastlog_size = 0;
 	new_w->lastlog_max = get_int_var(LASTLOG_VAR);
 
+	/* LOGFILE stuff */
 	new_w->log = 0;
 	new_w->logfile = NULL;
 	new_w->log_fp = NULL;
 
-	new_w->screen = screen;
-	new_w->next = new_w->prev = NULL;
-
+	/* TOPLINE stuff */
+	new_w->toplines_wanted = 0;		/* Filled in later? */
+	new_w->toplines_showing = 0;		/* Filled in later? */
 	for (i = 0; i < 10; i++)
 		new_w->topline[i] = NULL;
+
+	/* Screen list stuff */
+	new_w->screen = screen;
+	new_w->next = new_w->prev = NULL;
 	new_w->deceased = 0;
 
+	/*
+	 * STAGE 2 -- Bringing the window to life 
+	 */
 	/* Initialize the scrollback */
 	new_w->top_of_scrollback = new_display_line(NULL, new_w);
 	new_w->top_of_scrollback->line = NULL;
@@ -268,24 +289,15 @@ Window	*new_window (Screen *screen)
 	new_w->display_buffer_size = 1;
 	new_w->display_ip = new_w->top_of_scrollback;
 	new_w->scrolling_top_of_display = new_w->top_of_scrollback;
-	new_w->old_size = 1;
+	new_w->old_display_lines = 1;
 
-	if (screen)
-	{
-		/*
-		 * Add_to_window_list sets the location and size of the window
-		 */
-		if (add_to_window_list(screen, new_w))
-			set_screens_current_window(screen, new_w);
-		else
-		{
-			new_free((char **)&new_w);
-			return NULL;
-		}
-	}
+	/* Make the window visible (or hidden) to set its geometry */
+	if (screen && add_to_window_list(screen, new_w))
+		set_screens_current_window(screen, new_w);
 	else
 		add_to_invisible_list(new_w);
 
+	/* Finally bootstrap the visible part of the window */
 	resize_window_display(new_w);
 
 	/*
@@ -327,7 +339,7 @@ void 	delete_window (Window *window)
 	else
 		fixed_wins = 0;
 
-	if (window->absolute_size && window->skip)
+	if (window->fixed_size && window->skip)
 		fixed = 1;
 	else
 		fixed = 0;
@@ -482,7 +494,7 @@ delete_window_contents:
 		new_free(&window->status.line[i].raw);
 		new_free(&window->status.line[i].format);
 		new_free(&window->status.line[i].result);
-		window->status.double_status = 0;
+		window->status.number = 1;
 		new_free(&window->status.special);
 	}
 
@@ -697,7 +709,7 @@ Window *add_to_window_list (Screen *screen, Window *new_w)
 		screen->window_list_end = screen->window_list = new_w;
 		if (dumb_mode)
 		{
-			new_w->display_size = 24;
+			new_w->display_lines = 24;
 			set_screens_current_window(screen, new_w);
 			return new_w;
 		}
@@ -710,18 +722,18 @@ Window *add_to_window_list (Screen *screen, Window *new_w)
 	else
 	{
 		/* split current window, or find a better window to split */
-		if ((screen->current_window->display_size < 4) ||
+		if ((screen->current_window->display_lines < 4) ||
 				get_int_var(ALWAYS_SPLIT_BIGGEST_VAR))
 		{
 			int	size = 0;
 
 			for (tmp = screen->window_list; tmp; tmp = tmp->next)
 			{
-				if (tmp->absolute_size)
+				if (tmp->fixed_size)
 					continue;
-				if (tmp->display_size > size)
+				if (tmp->display_lines > size)
 				{
-					size = tmp->display_size;
+					size = tmp->display_lines;
 					biggest = tmp;
 				}
 			}
@@ -742,8 +754,8 @@ Window *add_to_window_list (Screen *screen, Window *new_w)
 
 		new_w->next = biggest;
 		biggest->prev = new_w;
-		biggest->display_size /= 2;
-		new_w->display_size = biggest->display_size;
+		biggest->display_lines /= 2;
+		new_w->display_lines = biggest->display_lines;
 		recalculate_windows(screen);
 	}
 	return (new_w);
@@ -812,22 +824,22 @@ static void 	remove_window_from_screen (Window *window, int hide)
  */
 void	recalculate_window_positions (Screen *screen)
 {
-	Window	*tmp;
+	Window	*w;
 	short	top;
 
 	if (!screen)
 		return;		/* Window is hidden.  Dont bother */
 
 	top = 0;
-	for (tmp = screen->window_list; tmp; tmp = tmp->next)
+	for (w = screen->window_list; w; w = w->next)
 	{
-		top += tmp->saved;
-		tmp->top = top;
-		tmp->bottom = top + tmp->display_size;
-		top += tmp->display_size + 1 + tmp->status.double_status;
+		top += w->toplines_showing;
+		w->top = top;
+		w->bottom = top + w->display_lines;
+		top += w->display_lines + w->status.number;
 
-		window_body_needs_redraw(tmp);
-		window_statusbar_needs_redraw(tmp);
+		window_body_needs_redraw(w);
+		window_statusbar_needs_redraw(w);
 	}
 }
 
@@ -905,17 +917,19 @@ static void 	swap_window (Window *v_window, Window *window)
 	 * and if the window being swapped out is curr_win, then the window
 	 * to be swapped in will be curr_win.
 	 */
-	window->top = v_window->top - v_window->saved + window->saved;
-	window->display_size = v_window->display_size + 
-			       v_window->status.double_status - 
-				window->status.double_status +
-			       v_window->saved - window->saved;
-	window->bottom = window->top + window->display_size;
+	window->top = v_window->top - v_window->toplines_showing + 
+					window->toplines_showing;
+	window->display_lines = v_window->display_lines + 
+			       v_window->status.number - 
+				window->status.number +
+			       v_window->toplines_showing - 
+				window->toplines_showing;
+	window->bottom = window->top + window->display_lines;
 	window->screen = v_window->screen;
 
-	if (window->display_size < 0)
+	if (window->display_lines < 0)
 	{
-		window->display_size = 0;
+		window->display_lines = 0;
 		recalculate_everything = 1;
 	}
 
@@ -1120,7 +1134,7 @@ static 	void 	resize_window (int how, Window *window, int offset)
 
 	if (how == RESIZE_ABS)
 	{
-		offset -= window->display_size;
+		offset -= window->display_lines;
 		how = RESIZE_REL;
 	}
 
@@ -1143,13 +1157,13 @@ static 	void 	resize_window (int how, Window *window, int offset)
 			return;
 		}
 
-		if (other->absolute_size)
+		if (other->fixed_size)
 			continue;
 	}
-	while (other->display_size < offset);
+	while (other->display_lines < offset);
 
-	window_size = window->display_size + offset;
-	other_size = other->display_size - offset;
+	window_size = window->display_lines + offset;
+	other_size = other->display_lines - offset;
 
 	if ((window_size < 0) || (other_size < 0))
 	{
@@ -1157,8 +1171,8 @@ static 	void 	resize_window (int how, Window *window, int offset)
 		return;
 	}
 
-	window->display_size = window_size;
-	other->display_size = other_size;
+	window->display_lines = window_size;
+	other->display_lines = other_size;
 	recalculate_windows(window->screen);
 }
 
@@ -1181,7 +1195,7 @@ void	resize_window_display (Window *window)
 	/*
 	 * Find out how much the window has changed by
 	 */
-	cnt = window->display_size - window->old_size;
+	cnt = window->display_lines - window->old_display_lines;
 	tmp = window->scrolling_top_of_display;
 
 	/*
@@ -1211,7 +1225,7 @@ void	resize_window_display (Window *window)
 	else if (cnt < 0)
 	{
 		/* Use any whitespace we may have lying around */
-		cnt += (window->old_size - window->scrolling_distance_from_display_ip);
+		cnt += (window->old_display_lines - window->scrolling_distance_from_display_ip);
 		for (i = 0; i > cnt; i--)
 		{
 			if (tmp == window->display_ip)
@@ -1227,7 +1241,7 @@ void	resize_window_display (Window *window)
 	 */
 	window_body_needs_redraw(window);
 	window_statusbar_needs_redraw(window);
-	window->old_size = window->display_size;
+	window->old_display_lines = window->display_lines;
 	return;
 }
 
@@ -1324,17 +1338,16 @@ static	int	restart;
 		 * This should always be done, even for hidden windows
 		 * ... i think.
 		 */
-		if (tmp->display_size != tmp->old_size)
+		if (tmp->display_lines != tmp->old_display_lines)
 			resize_window_display(tmp);
 
 		/* Never try to update/redraw an invisible window */
 		if (!tmp->screen)
 			continue;
 
-		if (tmp->cursor == -1 || 
-			(tmp->scroll && 
-			 tmp->cursor < tmp->scrolling_distance_from_display_ip  &&
-			 tmp->cursor < tmp->display_size))
+		if (tmp->cursor == -1 ||
+		   (tmp->cursor < tmp->scrolling_distance_from_display_ip  &&
+			 tmp->cursor < tmp->display_lines))
 			repaint_window_body(tmp);
 
 		if (tmp->update & REDRAW_STATUS)
@@ -1360,8 +1373,8 @@ static	int	restart;
 	tmp = NULL;
 	while (traverse_all_windows(&tmp))
 	{
-		if (tmp->cursor > tmp->display_size)
-			panic("uaw: window [%d]'s cursor [%hd] is off the display [%d]", tmp->refnum, tmp->cursor, tmp->display_size);
+		if (tmp->cursor > tmp->display_lines)
+			panic("uaw: window [%d]'s cursor [%hd] is off the display [%d]", tmp->refnum, tmp->cursor, tmp->display_lines);
 	}
 
 	recursion--;
@@ -1387,9 +1400,9 @@ void	rebalance_windows (Screen *screen)
 	 */
 	for (tmp = screen->window_list; tmp; tmp = tmp->next)
 	{
-		if (tmp->absolute_size)
+		if (tmp->fixed_size)
 			continue;
-		window_resized += tmp->display_size;
+		window_resized += tmp->display_lines;
 		window_count++;
 	}
 
@@ -1407,13 +1420,13 @@ void	rebalance_windows (Screen *screen)
 	 */
 	for (tmp = screen->window_list; tmp; tmp = tmp->next)
 	{
-		if (tmp->absolute_size)
+		if (tmp->fixed_size)
 			;
 		else
 		{
-			tmp->display_size = each;
+			tmp->display_lines = each;
 			if (extra)
-				tmp->display_size++, extra--;
+				tmp->display_lines++, extra--;
 		}
 	}
 	recalculate_window_positions(screen);
@@ -1443,8 +1456,9 @@ void 	recalculate_windows (Screen *screen)
 	if (!screen->current_window)
 	{
 		screen->window_list->top = 0;
-		screen->window_list->saved = 0;
-		screen->window_list->display_size = screen->li - 2;
+		screen->window_list->toplines_showing = 0;
+		screen->window_list->toplines_wanted = 0;
+		screen->window_list->display_lines = screen->li - 2;
 		screen->window_list->bottom = screen->li - 2;
 		old_li = screen->li;
 		return;
@@ -1457,10 +1471,11 @@ void 	recalculate_windows (Screen *screen)
 	 */
 	for (tmp = screen->window_list; tmp; tmp = tmp->next)
 	{
-		old_li += tmp->display_size + tmp->status.double_status + 1 + tmp->saved;
-		if (tmp->absolute_size && (window_count || tmp->next))
+		old_li += tmp->display_lines + tmp->status.number
+				+ tmp->toplines_showing;
+		if (tmp->fixed_size && (window_count || tmp->next))
 			continue;
-		window_resized += tmp->display_size;
+		window_resized += tmp->display_lines;
 		window_count++;
 	}
 
@@ -1468,7 +1483,7 @@ void 	recalculate_windows (Screen *screen)
 
 	for (tmp = screen->window_list; tmp; tmp = tmp->next)
 	{
-		if (tmp->absolute_size && tmp->next)
+		if (tmp->fixed_size && tmp->next)
 			;
 		else
 		{
@@ -1479,14 +1494,14 @@ void 	recalculate_windows (Screen *screen)
 			 * covers.
 			 */
 			if (tmp->next && window_resized)
-				offset = (tmp->display_size * excess_li) / 
+				offset = (tmp->display_lines * excess_li) / 
 						window_resized;
 			else
 				offset = excess_li;
 
-			tmp->display_size += offset;
-			if (tmp->display_size < 0)
-				tmp->display_size = 1;
+			tmp->display_lines += offset;
+			if (tmp->display_lines < 0)
+				tmp->display_lines = 1;
 			excess_li -= offset;
 			resize_window_display(tmp);
 			recalculate_window_cursor_and_display_ip(tmp);
@@ -1845,7 +1860,7 @@ char *	get_status_by_refnum (unsigned refnum, int line)
 
 	if ((the_window = get_window_by_refnum(refnum)))
 	{
-		if (line > the_window->status.double_status)
+		if (line > the_window->status.number)
 			return NULL;
 
 		return denormalize_string(the_window->status.line[line].result);
@@ -2429,7 +2444,7 @@ static void	unclear_window (Window *window)
 		return;
 
 	window->scrolling_top_of_display = window->display_ip;
-	for (i = 0; i < window->display_size; i++)
+	for (i = 0; i < window->display_lines; i++)
 	{
 		if (window->scrolling_top_of_display == window->top_of_scrollback)
 			break;
@@ -2475,7 +2490,7 @@ void	unclear_window_by_refnum (unsigned refnum, int unhold)
  */
 int	window_is_holding (Window *w)
 {
-	if (w->holding_distance_from_display_ip > w->display_size)
+	if (w->holding_distance_from_display_ip > w->display_lines)
 		return 1;
 	else
 		return 0;
@@ -2494,7 +2509,7 @@ int	unhold_a_window (Window *w)
 	if (!w->holding_top_of_display)
 		return 0;				/* ok, whatever */
 
-	slider = ((int)w->hold_slider * w->display_size) / 100;
+	slider = ((int)w->hold_slider * w->display_lines) / 100;
 	for (i = 0; i < slider; i++)
 	{
 		if (w->holding_top_of_display == w->display_ip)
@@ -2528,11 +2543,11 @@ void 	set_scroll_lines (void *stuff)
 		return;
 	}
 
-	else if (size > current_window->display_size)
+	else if (size > current_window->display_lines)
 	{
 		say("Maximum lines that may be scrolled is %d [%d]", 
-			current_window->display_size, size);
-		v->integer = current_window->display_size;
+			current_window->display_lines, size);
+		v->integer = current_window->display_lines;
 	}
 }
 
@@ -2569,8 +2584,8 @@ void    set_scrollback_size (void *stuff)
 
         while (traverse_all_windows(&window))
         {
-		if (size < window->display_size * 2)
-			window->display_buffer_max = window->display_size * 2;
+		if (size < window->display_lines * 2)
+			window->display_buffer_max = window->display_lines * 2;
 		else
 			window->display_buffer_max = size;
         }
@@ -3034,8 +3049,9 @@ else
 				get_server_name(window->server));
 	say("\tScreen: %p",	window->screen);
 	say("\tGeometry Info: [%hd %hd %hd %d %d %hd %d %d %d]", 
-				window->saved, window->top, window->bottom, 
-				0, window->display_size,
+				window->toplines_showing, 
+				window->top, window->bottom, 
+				0, window->display_lines,
 				window->cursor, 
 				window->scrolling_distance_from_display_ip,
 				window->holding_distance_from_display_ip,
@@ -3081,8 +3097,8 @@ else
 	say("\tPrompt: %s", 
 				window->prompt ? 
 				window->prompt : "<None>");
-	say("\tSecond status line is %s", 
-				onoff[window->status.double_status]);
+	say("\tStatus bars: %d", 
+				window->status.number);
 
 	say("\tLogging is %s", 
 				onoff[window->log]);
@@ -3113,7 +3129,7 @@ else
 				window->hold_interval);
 
 	say("\tFixed mode is %s", 
-				onoff[window->absolute_size ? 1 : 0]);
+				onoff[window->fixed_size ? 1 : 0]);
 	say("\tSkipped mode is %s", 
 				onoff[window->skip ? 1 : 0]);
 	say("\tSwappable mode is %s", 
@@ -3148,15 +3164,21 @@ static Window *window_discon (Window *window, char **args)
  */
 static Window *window_double (Window *window, char **args)
 {
-	int current = window->status.double_status;
+	short	newval = 0;
+	int	current = window->status.number;
 
-	if (get_boolean("DOUBLE", args, &window->status.double_status))
+	if (get_boolean("DOUBLE", args, &newval))
 		return NULL;
 
-	window->display_size += current - window->status.double_status;
-	if (window->display_size < 0)
+	if (newval == 0)
+		window->status.number = 1;
+	else
+		window->status.number = 2;
+
+	window->display_lines += current - window->status.number;
+	if (window->display_lines < 0)
 	{
-		window->display_size = 0;
+		window->display_lines = 0;
 		if (window->screen)
 			recalculate_windows(window->screen);
 	}
@@ -3201,7 +3223,7 @@ static	Window *window_echo (Window *window, char **args)
  */
 static	Window *window_fixed (Window *window, char **args)
 {
-	if (get_boolean("FIXED", args, &window->absolute_size))
+	if (get_boolean("FIXED", args, &window->fixed_size))
 		return NULL;
 	return window;
 }
@@ -3330,7 +3352,7 @@ static Window *window_hold_mode (Window *window, char **args)
 	if (hold_mode && !window->holding_top_of_display)
 	{
 		window->holding_top_of_display = window->scrolling_top_of_display;
-		slider = (window->hold_slider * window->display_size) / 100;
+		slider = (window->hold_slider * window->display_lines) / 100;
 		for (i = 0; i < slider; i++)
 		{
 			if (window->holding_top_of_display == window->display_ip)
@@ -4342,8 +4364,8 @@ static	Window *window_scrollback (Window *window, char **args)
 	{
 		val = get_number("SCROLLBACK", args);
 
-		if (val < window->display_size * 2)
-			window->display_buffer_max = window->display_size * 2;
+		if (val < window->display_lines * 2)
+			window->display_buffer_max = window->display_lines * 2;
 		else
 			window->display_buffer_max = val;
 	}
@@ -4543,7 +4565,7 @@ static Window *window_size (Window *window, char **args)
 
 	number = parse_number(args);
 	if (ptr == *args) 
-		say("Window size is %d", window->display_size);
+		say("Window size is %d", window->display_lines);
 	else
 		resize_window(RESIZE_ABS, window, number);
 
@@ -4700,12 +4722,12 @@ static Window *window_toplines (Window *window, char **args)
 {
 	char *	ptr = *args;
 	int	number;
-	int	saved = window->saved;
+	int	saved = window->toplines_wanted;
 
 	number = parse_number(args);
 	if (ptr == *args) 
 	{
-		say("Window saved lines is %d", window->saved);
+		say("Window saved lines is %d", window->toplines_wanted);
 		return window;
 	}
 	if (number < 0 || number >= 10)
@@ -4714,19 +4736,20 @@ static Window *window_toplines (Window *window, char **args)
 		return window;
 	}
 
-	window->saved = number;
-	window->display_size += saved - window->saved;
-	window->top += window->saved - saved;
+	window->toplines_wanted = number;
+	window->display_lines += saved - window->toplines_wanted;
+	window->top += window->toplines_wanted - saved;
+	window->toplines_showing = window->toplines_wanted;  /* XXX */
 
-	if (window->display_size < 0)
+	if (window->display_lines < 0)
 	{
-		window->display_size = 0;
+		window->display_lines = 0;
 		if (window->screen)
 			recalculate_windows(window->screen);
 	}
-	if (window->top < window->saved)
+	if (window->top < window->toplines_showing)
 	{
-		window->top = window->saved;
+		window->top = window->toplines_showing;
 		if (window->screen)
 			recalculate_windows(window->screen);
 	}
@@ -5032,7 +5055,7 @@ static int	add_to_display (Window *window, const unsigned char *str)
 	if (window->holding_top_of_display)
 	{
 	    size_t lines_held;
-	    lines_held = window->holding_distance_from_display_ip - window->display_size;
+	    lines_held = window->holding_distance_from_display_ip - window->display_lines;
 	    if (lines_held > 0)
 		window_statusbar_needs_update(window);
 	}
@@ -5044,7 +5067,7 @@ static int	add_to_display (Window *window, const unsigned char *str)
 	if (window->scrollback_top_of_display)
 	{
 	    size_t lines_held;
-	    lines_held = window->scrollback_distance_from_display_ip - window->display_size;
+	    lines_held = window->scrollback_distance_from_display_ip - window->display_lines;
 	    if (lines_held > 0)
 		window_statusbar_needs_update(window);
 	}
@@ -5055,7 +5078,7 @@ static int	add_to_display (Window *window, const unsigned char *str)
 	 * /SET SCROLL_LINES lines.
 	 */
 	while (window->scrolling_distance_from_display_ip > 
-				window->display_size)
+				window->display_lines)
 	{
 		if ((scroll = get_int_var(SCROLL_LINES_VAR)) <= 0)
 			scroll = 1;
@@ -5094,7 +5117,7 @@ int	trim_scrollback (Window *window)
 		return 0;
 
 	/* Do not trim the scrollback if we are holding stuff. */
-	if (window->holding_distance_from_display_ip > window->display_size)
+	if (window->holding_distance_from_display_ip > window->display_lines)
 		return 0;
 
 	/*
@@ -5151,7 +5174,7 @@ int	flush_scrollback_after (Window *window)
 		return 0;
 	}
 
-	for (count = 1; count < window->display_size; count++)
+	for (count = 1; count < window->display_lines; count++)
 	{
 		if (curr_line == window->display_ip)
 			return 0;
@@ -5195,7 +5218,7 @@ int	flush_scrollback_after (Window *window)
 /********************** Scrollback functionality ***************************/
 static void	window_scrollback_start (Window *window)
 {
-	if (window->display_buffer_size <= window->display_size)
+	if (window->display_buffer_size <= window->display_lines)
 	{
 		term_beep();
 		return;
@@ -5371,7 +5394,7 @@ static void	window_scrollback_forward (Window *window)
 	if (ratio > 100) 
 		ratio = 100;
 
-	if ((lines = window->display_size * ratio / 100) < 1)
+	if ((lines = window->display_lines * ratio / 100) < 1)
 		lines = 1;
 	window_scrollback_forwards_lines(window, lines);
 }
@@ -5386,7 +5409,7 @@ static void	window_scrollback_backward (Window *window)
 	if (ratio > 100) 
 		ratio = 100;
 
-	if ((lines = window->display_size * ratio / 100) < 1)
+	if ((lines = window->display_lines * ratio / 100) < 1)
 		lines = 1;
 	window_scrollback_backwards_lines(window, lines);
 }
@@ -5510,10 +5533,10 @@ void 	recalculate_window_cursor_and_display_ip (Window *window)
 	}
 
 	/* Figure out where the cursor is */
-	if (window->holding_distance_from_display_ip >= window->display_size)
-		window->cursor = window->display_size;
-	else if (window->scrolling_distance_from_display_ip >= window->display_size)
-		window->cursor = window->display_size;
+	if (window->holding_distance_from_display_ip >= window->display_lines)
+		window->cursor = window->display_lines;
+	else if (window->scrolling_distance_from_display_ip >= window->display_lines)
+		window->cursor = window->display_lines;
 	else
 		window->cursor = window->scrolling_distance_from_display_ip;
 }
@@ -5641,11 +5664,11 @@ static int	change_line (Window *window, const unsigned char *str)
 		panic("This is not a scratch window.");
 
 	/* Outputting to a 0 size window is a no-op. */
-	if (window->display_size == 0)
+	if (window->display_lines == 0)
 		return 0;
 
 	/* Must be within the bounds of the size of the window */
-	if (chg_line >= window->display_size)
+	if (chg_line >= window->display_lines)
 		panic("change_line is too big.");
 
 	/* Make sure that the line exists that we want to change */
@@ -5775,7 +5798,7 @@ char 	*windowctl 	(char *input)
 	    } else if (!my_strnicmp(listc, "VISIBLE", len)) {
 		RETURN_INT(w->screen ? 1 : 0);
 	    } else if (!my_strnicmp(listc, "SAVED", len)) {
-		RETURN_INT(w->saved);
+		RETURN_INT(w->toplines_wanted);
 	    } else if (!my_strnicmp(listc, "TOP", len)) {
 		RETURN_INT(w->top);
 	    } else if (!my_strnicmp(listc, "BOTTOM", len)) {
@@ -5783,15 +5806,15 @@ char 	*windowctl 	(char *input)
 	    } else if (!my_strnicmp(listc, "CURSOR", len)) {
 		RETURN_INT(w->cursor);
 	    } else if (!my_strnicmp(listc, "NOSCROLLCURSOR", len)) {
-		RETURN_INT(w->noscrollcursor);
+		RETURN_INT(-1);
 	    } else if (!my_strnicmp(listc, "FIXED", len)) {
-		RETURN_INT(w->absolute_size);
+		RETURN_INT(w->fixed_size);
 	    } else if (!my_strnicmp(listc, "SCROLL", len)) {
-		RETURN_INT(w->scroll);
+		RETURN_INT(-1);
 	    } else if (!my_strnicmp(listc, "CHANGE_LINE", len)) {
 		RETURN_INT(w->change_line);
 	    } else if (!my_strnicmp(listc, "OLD_SIZE", len)) {
-		RETURN_INT(w->old_size);
+		RETURN_INT(w->old_display_lines);
 	    } else if (!my_strnicmp(listc, "UPDATE", len)) {
 		RETURN_INT(w->update);
 	    } else if (!my_strnicmp(listc, "MISCFLAGS", len)) {
@@ -5815,7 +5838,7 @@ char 	*windowctl 	(char *input)
 	    } else if (!my_strnicmp(listc, "PROMPT", len)) {
 		RETURN_STR(w->prompt);
 	    } else if (!my_strnicmp(listc, "DOUBLE", len)) {
-		RETURN_INT(w->status.double_status);
+		RETURN_INT(w->status.number - 1);
 	    } else if (!my_strnicmp(listc, "STATUS_FORMAT", len)) {
 		RETURN_STR(w->status.line[0].raw);
 	    } else if (!my_strnicmp(listc, "STATUS_FORMAT1", len)) {
@@ -5845,7 +5868,7 @@ char 	*windowctl 	(char *input)
 	    } else if (!my_strnicmp(listc, "HOLD_INTERVAL", len)) {
 		RETURN_INT(w->hold_interval);
 	    } else if (!my_strnicmp(listc, "LAST_LINES_HELD", len)) {
-		RETURN_INT(w->last_lines_held);
+		RETURN_INT(-1);
 	    } else if (!my_strnicmp(listc, "WAITING_CHANNEL", len)) {
 		RETURN_STR(get_waiting_channels_by_window(w));
 	    } else if (!my_strnicmp(listc, "BIND_CHANNEL", len)) {
@@ -5876,9 +5899,9 @@ char 	*windowctl 	(char *input)
 		GET_INT_ARG(i, input);
 		RETURN_STR(w->topline[i]);
 	    } else if (!my_strnicmp(listc, "TOPLINES", len)) {
-		RETURN_INT(w->saved);
+		RETURN_INT(w->toplines_wanted);
 	    } else if (!my_strnicmp(listc, "DISPLAY_SIZE", len)) {
-		RETURN_INT(w->display_size);
+		RETURN_INT(w->display_lines);
 	    } else if (!my_strnicmp(listc, "SCREEN", len)) {
 		RETURN_INT(w->screen ? w->screen->screennum : -1);
 	    } else if (!my_strnicmp(listc, "LINE", len)) {
@@ -6036,7 +6059,7 @@ static int	count_fixed_windows (Screen *s)
 	Window *w;
 
 	for (w = s->window_list; w; w = w->next)
-		if (w->absolute_size && w->skip)
+		if (w->fixed_size && w->skip)
 			count++;
 
 	return count;

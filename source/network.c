@@ -1,4 +1,4 @@
-/* $EPIC: network.c,v 1.65 2005/04/15 02:47:45 jnelson Exp $ */
+/* $EPIC: network.c,v 1.66 2005/05/19 13:34:00 jnelson Exp $ */
 /*
  * network.c -- handles stuff dealing with connecting and name resolving
  *
@@ -469,6 +469,7 @@ int	inet_ntostr (SA *name, char *host, int hsize, char *port, int psize, int fla
 }
 
 /* * * * * * * * * */
+/* Only used by $convert() and $nametoip() */
 /*
  * NAME: inet_hntop
  * USAGE: Convert a Hostname into a "presentation address" (p-addr)
@@ -500,6 +501,7 @@ int	inet_hntop (int family, const char *host, char *retval, int size)
 	return 0;
 }
 
+/* Only used by $convert() and $iptoname() */
 /*
  * NAME: inet_ptohn
  * USAGE: Convert a "presentation address" (p-addr) into a Hostname
@@ -531,6 +533,7 @@ int	inet_ptohn (int family, const char *ip, char *retval, int size)
 	return 0;
 }
 
+/* Only used by $convert() */
 /*
  * NAME: one_to_another
  * USAGE: Convert a p-addr to a Hostname, or a Hostname to a p-addr.

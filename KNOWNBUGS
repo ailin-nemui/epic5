@@ -656,3 +656,4 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Nickname rejections are handled through /on new_nickname solely now.
 * New builtins from blackjac.
 * When changing EXPIRATION in $ignorectl(), set a new /timer.
+* Some source cleanup, in prep for the logical-sized window support.

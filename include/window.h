@@ -47,30 +47,34 @@ struct WNickListStru	*next;
 typedef	struct	WindowStru
 {
 	unsigned refnum;		/* Unique refnum for window */
-	char	*name;			/* Logical name for window */
-	int	server;			/* Server that win is connected to */
-	int	last_server;		/* Last server connected to */
+	char *	name;			/* Logical name for window */
 	int	priority;		/* "Current window Priority" */
-	short	saved;			/* Lines saved above top of window */
+
+	/* Output rule stuff */
+	int	server;			/* Server that win is connected to */
+	Mask	window_mask;		/* Window level for the window */
+	WNickList *waiting_chans;	/*
+					 * When you JOIN or reconnect, if this
+					 * is set, a JOIN to that channel will
+					 * put that channel into this win.
+					 */
+	WNickList *nicks;		/* List of nick-queries for this win */
+	int	query_counter;		/* Is there a query anyways? */
+
+
+	/* Internal flags */
 	short	top;			/* SCREEN line for top of window */
 	short	bottom;			/* SCREEN line for bottom of window */
 	short	cursor;			/* WINDOW line where the cursor is */
-	short	noscrollcursor;		/* Where the next line goes */
-	short	absolute_size;		/* True if window doesnt rebalance */
-	short	scroll;			/* True if the window scrolls */
 	short	change_line;		/* True if this is a scratch window */
-	short	old_size;		/* 
-					 * Usu. same as display_size except
-					 * right after a screen resize, and
-					 * is used as a flag for resize_display
-					 */
 	short	update;			/* True if window display is dirty */
+
+	/* User-settable flags */
 	short	notify_when_hidden;	/* True to notify for hidden output */
 	short	notified;		/* True if we have notified */
 	char *	notify_name;		/* The name for %{1}F */
 	short	beep_always;		/* True if a beep to win always beeps */
 	Mask	notify_mask;		/* the notify mask.. */
-	Mask	window_mask;		/* Lastlog level for the window */
 	short	skip;			/* Whether window should be skipped */
 	short	columns;		/* How wide we are when hidden */
 	short	swappable;		/* Can it be swapped in or out? */
@@ -81,7 +85,7 @@ typedef	struct	WindowStru
 	char *	prompt;			/* Current EXEC prompt for window */
 	Status	status;			/* Current status line info */
 
-	/* Display stuff */
+	/* SCROLLBACK stuff */
 	/*
 	 * The "scrollback" buffer is a linked list of lines that have
 	 * appeared, are appearing, or will appear on the visible window.
@@ -98,15 +102,12 @@ typedef	struct	WindowStru
 	 *
 	 * The "display_ip" is always a blank line where the NEXT displayable
 	 * line will go.  When the user does a /clear, the screen is scrolled
-	 * up until display_ip is the top_of_display.  "display_size" is the
-	 * number of rows that can appear on the screen at a given time.
+	 * up until display_ip is the top_of_display.  
 	 */
 	Display *top_of_scrollback;	/* Start of the scrollback buffer */
 	Display *display_ip;		/* End of the scrollback buffer */
-	Display *scroll_marker;		/* Set to display_ip when sb'ing */
 	int	display_buffer_size;	/* How big the scrollback buffer is */
 	int	display_buffer_max;	/* How big its supposed to be */
-	short	display_size;		/* How big the window is - status */
 
 	Display *scrolling_top_of_display;
 	int	scrolling_distance_from_display_ip;
@@ -120,17 +121,25 @@ typedef	struct	WindowStru
 	int	display_counter;
 	short	hold_slider;
 
-	short	hold_interval;		/* How often to update status bar */
-	int	last_lines_held;	/* Last time we updated "lines held" */
+	/*
+	 * Window geometry stuff
+	 *
+	 * The scrollable part of the window starts at the "top" value and 
+	 * continues on for "display_lines" lines.  The scrollable part does
+	 * not include the toplines, and does not include the status bar(s).
+	 * Each window also has a shadow "logical size" which is a unitless
+	 * number used to calculate the relative size of each window.  When
+	 * the screen size changes, we subtract all of the non-negotiable 
+	 * parts (toplines, status bars, fixed windows) and then distribute
+	 * what is left to each window.
+	 */
+	short	display_lines;		/* How many lines window size is */
+	short	logical_size;		/* How many units window size is */
+	short	fixed_size;		/* True if window doesnt rebalance */
+	short	old_display_lines;	/* How big window was on last resize */
 
-	/* Channel stuff */
-	WNickList *waiting_chans;	/*
-					 * When you JOIN or reconnect, if this
-					 * is set, a JOIN to that channel will
-					 * put that channel into this win.
-					 */
-	WNickList *nicks;		/* List of nick-queries for this win */
-	int	query_counter;		/* Is there a query anyways? */
+	/* HOLD_MODE stuff */
+	short	hold_interval;		/* How often to update status bar */
 
 	/* /LASTLOG stuff */
 struct lastlog_stru *lastlog_newest;	/* pointer to top of lastlog list */
@@ -146,15 +155,15 @@ struct lastlog_stru *lastlog_oldest;	/* pointer to bottom of lastlog list */
 	char	*logfile;		/* window's logfile name */
 	FILE	*log_fp;		/* file pointer for the log file */
 
+	/* TOPLINES stuff */
+	short	toplines_wanted;
+	short	toplines_showing;
 	char *	topline[10];
 
 	/* List stuff */
 struct	ScreenStru	*screen;	/* The screen we belong to */
 struct	WindowStru	*next;		/* Window below us on screen */
 struct	WindowStru	*prev;		/* Window above us on screen */
-
-	/* XXX - Help stuff */
-struct	HelpStru	*helper;	/* Info about current /help */
 
 	short		deceased;	/* Set when the window is killed */
 }	Window;
