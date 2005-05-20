@@ -1,4 +1,4 @@
-/* $EPIC: server.c,v 1.175 2005/05/20 05:31:31 jnelson Exp $ */
+/* $EPIC: server.c,v 1.176 2005/05/20 13:44:31 jnelson Exp $ */
 /*
  * server.c:  Things dealing with that wacky program we call ircd.
  *
@@ -1090,7 +1090,8 @@ static int	grab_server_address (int server)
 	Server *s;
 	AI	hints, *results;
 	int	err;
-	int	i;
+	int	i, xvfd;
+	size_t	len;
 
 	if (x_debug & DEBUG_SERVER_CONNECT)
 		yell("Grabbing server addresses for server [%d]", server);
@@ -1126,8 +1127,17 @@ static int	grab_server_address (int server)
 	}
 
 	/* s->addrs = s->next_addr = results; */
-	s->addrs = marshall_getaddrinfo(results);
+	/* s->addrs = marshall_getaddrinfo(results); */
+	xvfd = socket(PF_INET, SOCK_STREAM, 0);
+	new_open(xvfd, NULL, NEWIO_NULL, 1);
+	marshall_getaddrinfo(xvfd, results);
 	Freeaddrinfo(results); 
+
+	dgets(xvfd, (char *)&len, sizeof(len), -1);
+	s->addrs = (AI *)new_malloc(len);
+	dgets(xvfd, (char *)s->addrs, len, -1);
+	unmarshall_getaddrinfo(s->addrs);
+	close(xvfd);
 
 	s->next_addr = s->addrs;
 	for (i = 0; s->next_addr; s->next_addr = s->next_addr->ai_next)

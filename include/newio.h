@@ -65,6 +65,7 @@
 #define NEWIO_SSL_READ	3
 #define NEWIO_CONNECT	4
 #define NEWIO_RECV	5
+#define NEWIO_NULL	6
 
 #define IO_BUFFER_SIZE 8192
 

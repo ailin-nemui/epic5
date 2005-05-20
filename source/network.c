@@ -1,4 +1,4 @@
-/* $EPIC: network.c,v 1.67 2005/05/20 05:31:31 jnelson Exp $ */
+/* $EPIC: network.c,v 1.68 2005/05/20 13:44:31 jnelson Exp $ */
 /*
  * network.c -- handles stuff dealing with connecting and name resolving
  *
@@ -844,7 +844,7 @@ int	Socket (int domain, int type, int protocol)
 	return s;
 }
 
-AI *	marshall_getaddrinfo (AI *results)
+void	marshall_getaddrinfo (int fd, AI *results)
 {
 	size_t	len;
 	size_t	alignment = sizeof(void *);
@@ -902,7 +902,48 @@ AI *	marshall_getaddrinfo (AI *results)
 			copy->ai_next = NULL;
 	}
 
-	return (AI *)retval;
+	if (dgets_buffer(fd, (char *)&len, sizeof(len)))
+		panic("dgets_buffer failed in marshall_getaddrinfo");
+	if (dgets_buffer(fd, retval, len))
+		panic("dgets_buffer failed in marshall_getaddrinfo");
+	new_free(&retval);
+	/* return (AI *)retval; */
+}
+
+void	unmarshall_getaddrinfo (AI *results)
+{
+	size_t	len;
+	size_t	alignment = sizeof(void *);
+	AI 	*result, *copy;
+	char 	*retval, *ptr;
+
+	/* Why do I know I'm gonna regret this? */
+	for (result = results; result; result = result->ai_next)
+	{
+		ptr = (char *)result;
+
+		/* Copy over the ai_addr */
+		ptr += sizeof(AI);
+		result->ai_addr = (SA *)ptr;
+		ptr += result->ai_addrlen;
+
+		if (result->ai_canonname)
+		{
+		    result->ai_canonname = ptr;
+		    len = strlen(result->ai_canonname) + 1;
+
+		    /* Calculate the start of the next entry */
+		    while (len % 4 != 0)
+			len++;
+		    ptr += len;
+		}
+
+		/* Point the AI at the next entry */
+		if (result->ai_next)
+			copy->ai_next = (AI *)ptr;
+		else
+			copy->ai_next = NULL;
+	}
 }
 
 

@@ -1,4 +1,4 @@
-/* $EPIC: newio.c,v 1.52 2005/05/03 14:37:40 jnelson Exp $ */
+/* $EPIC: newio.c,v 1.53 2005/05/20 13:44:31 jnelson Exp $ */
 /*
  * newio.c:  Passive, callback-driven IO handling for sockets-n-stuff.
  *
@@ -512,6 +512,8 @@ int 	new_open (int channel, void (*callback) (int), int io_type, int quiet)
 		ioe->io_callback = unix_connect;
 	else if (io_type == NEWIO_RECV)
 		ioe->io_callback = unix_recv;
+	else if (io_type == NEWIO_NULL)
+		ioe->io_callback = NULL;
 	else
 		panic("New_open doesn't recognize io type %d", io_type);
 
@@ -522,6 +524,13 @@ int 	new_open (int channel, void (*callback) (int), int io_type, int quiet)
 		knowrite(vfd);
 		knoread(vfd);
 		kwrite(vfd);
+		kcleaned(vfd);
+	}
+	else if (io_type == NEWIO_NULL)
+	{
+		knowrite(vfd);
+		knoread(vfd);
+		knowrite(vfd);
 		kcleaned(vfd);
 	}
 	else

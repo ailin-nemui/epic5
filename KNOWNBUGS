@@ -662,3 +662,6 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * New builtins, history from blackjac
 * Don't object to mode changes with trailing spaces.
 * New script, "newnick" from blackjac.
+* Add marshalling functions for getaddrinfo()
+* Use getaddrinfo marshalls + dgets to simulate nonblocking dns lookups.
+* New newio io type, "NULL" which i'll probably whack later.
