@@ -1,4 +1,4 @@
-/* $EPIC: server.c,v 1.174 2005/05/11 01:09:48 jnelson Exp $ */
+/* $EPIC: server.c,v 1.175 2005/05/20 05:31:31 jnelson Exp $ */
 /*
  * server.c:  Things dealing with that wacky program we call ircd.
  *
@@ -1107,7 +1107,8 @@ static int	grab_server_address (int server)
 		if (x_debug & DEBUG_SERVER_CONNECT)
 		    yell("This server still has addresses left over from "
 			 "last time.  Starting over anyways...");
-		Freeaddrinfo(s->addrs);
+		new_free(&s->addrs);
+		/* Freeaddrinfo(s->addrs); */
 		s->addrs = NULL;
 		s->next_addr = NULL;
 	}
@@ -1124,12 +1125,17 @@ static int	grab_server_address (int server)
 		return -1;
 	}
 
-	s->addrs = results;
-	s->next_addr = results;
-	for (i = 0; results; results = results->ai_next)
+	/* s->addrs = s->next_addr = results; */
+	s->addrs = marshall_getaddrinfo(results);
+	Freeaddrinfo(results); 
+
+	s->next_addr = s->addrs;
+	for (i = 0; s->next_addr; s->next_addr = s->next_addr->ai_next)
 		i++;
 	say("DNS lookup for [%s] (server %d) returned (%d) addresses", 
 				s->name, server, i);
+
+	s->next_addr = s->addrs;
 	s->addr_counter = 0;
 	return 0;
 }
@@ -1205,8 +1211,9 @@ static int	connect_next_server_address (int server)
 
 	say("I'm out of addresses for server %d so I have to stop.", 
 			server);
-	Freeaddrinfo(s->addrs);
-	s->addrs = NULL;
+	/* Freeaddrinfo(s->addrs); */
+	/* s->addrs = NULL; */
+	new_free(&s->addrs);
 	s->next_addr = NULL;
 	return -1;
 }
@@ -1749,8 +1756,9 @@ void  server_is_registered (int refnum, const char *itsname, const char *ourname
 	/* Throw away the rest of addresses to stop reconnections */
 	if (x_debug & DEBUG_SERVER_CONNECT)
 	    yell("We're connected! Throwing away the rest of the addrs");
-	Freeaddrinfo(s->addrs);
-	s->addrs = NULL;
+	/* Freeaddrinfo(s->addrs); */
+	/* s->addrs = NULL; */
+	new_free(&s->addrs);
 	s->next_addr = NULL;
 
 	set_server_status(refnum, SERVER_SYNCING);

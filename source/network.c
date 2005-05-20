@@ -1,4 +1,4 @@
-/* $EPIC: network.c,v 1.66 2005/05/19 13:34:00 jnelson Exp $ */
+/* $EPIC: network.c,v 1.67 2005/05/20 05:31:31 jnelson Exp $ */
 /*
  * network.c -- handles stuff dealing with connecting and name resolving
  *
@@ -843,4 +843,66 @@ int	Socket (int domain, int type, int protocol)
         setsockopt(s, SOL_SOCKET, SO_KEEPALIVE, (char *)&opt, optlen);
 	return s;
 }
+
+AI *	marshall_getaddrinfo (AI *results)
+{
+	size_t	len;
+	size_t	alignment = sizeof(void *);
+	AI 	*result, *copy;
+	char 	*retval, *ptr;
+
+	for (len = 0, result = results; result; result = result->ai_next)
+	{
+		len += sizeof(AI);
+		len += result->ai_addrlen;
+		if (result->ai_canonname)
+			len += strlen(result->ai_canonname) + 1;
+		while (len % alignment != 0)
+			len++;
+	}
+
+	/* Why do I know I'm gonna regret this? */
+	ptr = retval = new_malloc(len + 1);
+	for (result = results; result; result = result->ai_next)
+	{
+		copy = (AI *)ptr;
+
+		/* Copy over the AI */
+		*copy = *result;
+
+		/* Copy over the ai_addr */
+		ptr += sizeof(AI);
+		memcpy(ptr, result->ai_addr, result->ai_addrlen);
+
+		/* Point the AI at the ai_addr */
+		copy->ai_addr = (SA *)ptr;
+
+		/* Copy over the canonname */
+		/* Point the AI at the canonname */
+		ptr += result->ai_addrlen;
+		if (result->ai_canonname)
+		{
+		    len = strlen(result->ai_canonname) + 1;
+		    memcpy(ptr, result->ai_canonname, len);
+		    copy->ai_canonname = ptr;
+
+		    /* Calculate the start of the next entry */
+		    while (len % 4 != 0)
+			len++;
+		    ptr += len;
+		}
+		else
+		    copy->ai_canonname = NULL;
+
+
+		/* Point the AI at the next entry */
+		if (result->ai_next)
+			copy->ai_next = (AI *)ptr;
+		else
+			copy->ai_next = NULL;
+	}
+
+	return (AI *)retval;
+}
+
 

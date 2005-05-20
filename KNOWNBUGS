@@ -657,3 +657,4 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * New builtins from blackjac.
 * When changing EXPIRATION in $ignorectl(), set a new /timer.
 * Some source cleanup, in prep for the logical-sized window support.
+* Create "marshall_getaddrinfo" which musters getaddrinfo() into one block.
