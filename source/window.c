@@ -1,4 +1,4 @@
-/* $EPIC: window.c,v 1.146 2005/05/19 13:34:00 jnelson Exp $ */
+/* $EPIC: window.c,v 1.147 2005/05/20 23:49:16 jnelson Exp $ */
 /*
  * window.c: Handles the organzation of the logical viewports (``windows'')
  * for irc.  This includes keeping track of what windows are open, where they
@@ -2174,7 +2174,7 @@ void 	window_check_servers (void)
 
 	    if (!(tmp = get_window_by_servref(i)))
 	    {
-		if (status >= SERVER_CONNECTING && status < SERVER_CLOSING)
+		if (status > SERVER_RECONNECT && status < SERVER_CLOSING)
             	{
 		    if (1)
 			close_server(i, "No windows for this server");
@@ -2190,7 +2190,8 @@ void 	window_check_servers (void)
 		if (x_debug & DEBUG_SERVER_CONNECT)
 		    yell("window_check_servers() is bringing up server %d", i);
 
-		connect_to_server(i, 1);
+		grab_server_address(i);
+		/* connect_to_server(i); */
 	    }
 	    else if (status == SERVER_ACTIVE)
 	    {
@@ -2201,7 +2202,7 @@ void 	window_check_servers (void)
 	    {
 		if (x_debug & DEBUG_SERVER_CONNECT)
 		    yell("window_check_servers() is restarting server %d", i);
-		connect_to_server(i, 0);
+		connect_to_server(i);
 	    }
 
 	    to_window = NULL;
@@ -4519,7 +4520,7 @@ Window *window_server (Window *window, char **args)
 		window->server = i;
 		status = get_server_status(i);
 
-		if (status >= SERVER_CONNECTING && status < SERVER_EOF)
+		if (status > SERVER_RECONNECT && status < SERVER_EOF)
 		{
 		    if (old_server_lastlog_mask)
 			window->window_mask = *old_server_lastlog_mask;

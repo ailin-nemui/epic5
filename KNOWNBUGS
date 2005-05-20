@@ -3,6 +3,7 @@ EPIC5 Projects, Bugs, and other Errata:
 KNOWN ERRATA (eg, bugs, or unresolved requests):
 ------------------------------------------------
 * /on ctcp_reply is hooked even for action type things.
+* Async dns for servers is probably very buggy.
 
 LOOK FOR IN THE NEXT RELEASE
 ----------------------------
@@ -665,3 +666,5 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Add marshalling functions for getaddrinfo()
 * Use getaddrinfo marshalls + dgets to simulate nonblocking dns lookups.
 * New newio io type, "NULL" which i'll probably whack later.
+* _VERY_ preliminary support for nonblocking dns on server connects. 
+* You should assume it's very buggy, and be patient and report bugs.

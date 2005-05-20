@@ -1,4 +1,4 @@
-/* $EPIC: network.c,v 1.68 2005/05/20 13:44:31 jnelson Exp $ */
+/* $EPIC: network.c,v 1.69 2005/05/20 23:49:16 jnelson Exp $ */
 /*
  * network.c -- handles stuff dealing with connecting and name resolving
  *
@@ -37,6 +37,9 @@
 #include "newio.h"
 #include "output.h"
 #include <sys/ioctl.h>
+
+/* This will eventually become a configurable */
+#define ASYNC_DNS
 
 #ifdef HAVE_SYS_UN_H
 #include <sys/un.h>
@@ -844,10 +847,46 @@ int	Socket (int domain, int type, int protocol)
 	return s;
 }
 
+pid_t	async_getaddrinfo (const char *nodename, const char *servname, const AI *hints, int fd)
+{
+	AI *results = NULL;
+	ssize_t	err;
+	pid_t	helper;
+
+#ifdef ASYNC_DNS
+	/* XXX Letting /exec clean up after us is a hack. */
+	if ((helper = fork()))
+		return helper;
+#endif
+
+        if ((err = Getaddrinfo(nodename, servname, hints, &results)))
+        {
+		err = -abs(err);		/* Always a negative number */
+		write(fd, &err, sizeof(err));
+		close(fd);
+                return;
+        }
+
+	if (!results)
+	{
+		err = 0;
+		write(fd, &err, sizeof(err));
+		close(fd);
+                return;
+        }
+
+        marshall_getaddrinfo(fd, results);
+        Freeaddrinfo(results);
+        close(fd);
+#ifdef ASYNC_DNS
+	exit(0);
+#endif
+}
+
 void	marshall_getaddrinfo (int fd, AI *results)
 {
-	size_t	len;
-	size_t	alignment = sizeof(void *);
+	ssize_t	len;
+	ssize_t	alignment = sizeof(void *);
 	AI 	*result, *copy;
 	char 	*retval, *ptr;
 
@@ -902,19 +941,16 @@ void	marshall_getaddrinfo (int fd, AI *results)
 			copy->ai_next = NULL;
 	}
 
-	if (dgets_buffer(fd, (char *)&len, sizeof(len)))
-		panic("dgets_buffer failed in marshall_getaddrinfo");
-	if (dgets_buffer(fd, retval, len))
-		panic("dgets_buffer failed in marshall_getaddrinfo");
+	write(fd, (void *)&len, sizeof(len));
+	write(fd, (void *)retval, len);
 	new_free(&retval);
-	/* return (AI *)retval; */
 }
 
 void	unmarshall_getaddrinfo (AI *results)
 {
-	size_t	len;
-	size_t	alignment = sizeof(void *);
-	AI 	*result, *copy;
+	ssize_t	len;
+	ssize_t	alignment = sizeof(void *);
+	AI 	*result;
 	char 	*retval, *ptr;
 
 	/* Why do I know I'm gonna regret this? */
@@ -940,9 +976,7 @@ void	unmarshall_getaddrinfo (AI *results)
 
 		/* Point the AI at the next entry */
 		if (result->ai_next)
-			copy->ai_next = (AI *)ptr;
-		else
-			copy->ai_next = NULL;
+			result->ai_next = (AI *)ptr;
 	}
 }
 

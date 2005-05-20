@@ -5,7 +5,7 @@ if (word(2 $loadinfo()) != [pf]) {
 
 #	Copyright (c) 2005 David B. Kratter (BlackJac@EFNet)
 #
-#	Version: 1.7.2005.05.18.1
+#	Version: 1.7.2005.05.20.1
 #
 #	This script ensures backward-compatibility with epic4-2.2 by adding the
 #	following commands, functions and sets that have been removed from epic5.
@@ -111,7 +111,9 @@ alias igmask (pattern, void) {
 };
 
 alias igtype (pattern, void) {
-	return $strip(/+^ $ignorectl(get $ignorectl(refnum $pattern) levels));
+	fe ($ignorectl(get $ignorectl(refnum $pattern) levels)) ii {
+		push function_return ${ii =~ [+*] ? [$rest(1 $ii)] : sar(#/##$sar(#^#DONT-#$ii))};
+	};
 };
 
 alias lastserver (void) {
@@ -277,6 +279,10 @@ alias winvisible (winnum default 0, void) {
 };
 
 # SETS #
+
+# AUTO_NEW_NICK
+
+load -pf newnick;
 
 # AUTO_REJOIN, AUTO_REJOIN_DELAY
 

@@ -39,6 +39,8 @@ typedef	struct
 	AI 	*addrs;			/* Returned by getaddrinfo */
 const	AI	*next_addr;		/* The next one to try upon failure */
 	int	addr_counter;		/* How far we're into "addrs" */
+	ssize_t	addr_len;
+	ssize_t	addr_offset;
 
 	char	*itsname;		/* the server's idea of its name */
 	char	*password;		/* password for that server */
@@ -169,14 +171,15 @@ static __inline__ Server *	get_server (int server)
 #define FUNNY_NAME              1 << 5
 
 #define SERVER_RECONNECT	0
-#define SERVER_CONNECTING	1
-#define SERVER_REGISTERING	2
-#define SERVER_SYNCING		3
-#define SERVER_ACTIVE		4
-#define SERVER_EOF		5
-#define SERVER_CLOSING		6
-#define SERVER_CLOSED		7
-extern	const char *server_states[8];
+#define SERVER_DNS		1
+#define SERVER_CONNECTING	2
+#define SERVER_REGISTERING	3
+#define SERVER_SYNCING		4
+#define SERVER_ACTIVE		5
+#define SERVER_EOF		6	
+#define SERVER_CLOSING		7
+#define SERVER_CLOSED		8	
+extern	const char *server_states[9];
 
 
 
@@ -197,8 +200,8 @@ extern	const char *server_states[8];
 	void	send_to_server			(const char *, ...) __A(1);
 	void	send_to_aserver			(int, const char *, ...) __A(2);
 	void	send_to_aserver_raw		(int, size_t len, const char *buffer);
-	int	connect_to_server		(int, int);
-	int	connect_to_new_server		(int, int, int);
+	int	grab_server_address		(int);
+	int	connect_to_server		(int);
 	int	close_all_servers		(const char *);
 	void	close_server			(int, const char *);
 

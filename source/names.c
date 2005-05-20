@@ -1,4 +1,4 @@
-/* $EPIC: names.c,v 1.68 2005/05/20 13:36:51 jnelson Exp $ */
+/* $EPIC: names.c,v 1.69 2005/05/20 23:49:16 jnelson Exp $ */
 /*
  * names.c: This here is used to maintain a list of all the people currently
  * on your channel.  Seems to work 
@@ -1273,10 +1273,8 @@ int     is_current_channel (const char *channel, int server)
 }
 
 /*
- * This is called by connect_to_new_server(), if the new server we are going
- * to attach to is already an established connection; by close_server(), if
- * it was asked to have the server's channels thrown away; by 
- * reconnect_all_channels() after reconnect and the JOINs have been sent off.
+ * This is called by close_server(), when a server connection is being 
+ * abandoned.  Channels are never retained across reconnections.
  */
 void 	destroy_server_channels (int server)
 {

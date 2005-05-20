@@ -1,4 +1,4 @@
-/* $EPIC: server.c,v 1.176 2005/05/20 13:44:31 jnelson Exp $ */
+/* $EPIC: server.c,v 1.177 2005/05/20 23:49:16 jnelson Exp $ */
 /*
  * server.c:  Things dealing with that wacky program we call ircd.
  *
@@ -634,10 +634,10 @@ static void 	reset_nickname (int refnum);
 static	char    lame_wait_nick[] = "***LW***";
 static	char    wait_nick[] = "***W***";
 
-const char *server_states[8] = {
-	"RECONNECT",		"CONNECTING",		"REGISTERING",
-	"SYNCING",		"ACTIVE",		"EOF",
-	"CLOSING",		"CLOSED"
+const char *server_states[9] = {
+	"RECONNECT",		"DNS",			"CONNECTING",
+	"REGISTERING",		"SYNCING",		"ACTIVE",
+	"EOF",			"CLOSING",		"CLOSED"
 };
 
 
@@ -855,9 +855,74 @@ void	do_server (int fd)
 			continue;		/* Move along. */
 
 		/*
+		 * Is the dns lookup finished?
+		 */
+		if (s->status == SERVER_DNS)
+		{
+		    int cnt = 0;
+		    int len;
+
+		    if (s->addrs == NULL)
+		    {
+		        len = dgets(s->des, (char *)&s->addr_len, 
+					sizeof(s->addr_len), -1);
+		        if (len < sizeof(s->addr_len))
+			    yell("Got %d, expected %d bytes", 
+					len, sizeof(s->addr_len));
+			if (s->addr_len < 0)
+			{
+			    if (EAI_AGAIN > 0)
+				s->addr_len = abs(s->addr_len);
+			    yell("Getaddrinfo(%s) for server %d failed: %s",
+				     s->name, len, gai_strerror(s->addr_len));
+			    s->des = new_close(s->des);
+			    set_server_status(i, SERVER_CLOSED);
+			    continue;
+			}
+			else if (s->addr_len == 0) 
+			{
+			    yell("Getaddrinfo(%s) for server (%d) did not "
+						"resolve.", s->name, i);
+			    s->des = new_close(s->des);
+			    set_server_status(i, SERVER_CLOSED);
+			    continue;
+			}
+		        s->addrs = (AI *)new_malloc(s->addr_len + 1);
+			s->addr_offset = 0;
+		    }
+		    else
+		    {
+		        len = dgets(s->des, (char *)s->addrs + s->addr_offset, 
+					s->addr_len - s->addr_offset, -1);
+		        if (len < s->addr_len - s->addr_offset)
+			{
+			    yell("Got %d, expected %d bytes", 
+				len, s->addr_len - s->addr_offset);
+			    s->addr_offset += len;
+			    continue;
+			}
+		        unmarshall_getaddrinfo(s->addrs);
+		        s->des = new_close(s->des);
+
+		        s->next_addr = s->addrs;
+		        for (cnt = 0; s->next_addr; s->next_addr = 
+						s->next_addr->ai_next)
+			    cnt++;
+		        say("DNS lookup for server %d [%s] returned (%d) "
+					"addresses", i, s->name, cnt);
+
+		        s->next_addr = s->addrs;
+		        s->addr_counter = 0;
+
+		        connect_to_server(i);
+		    }
+		    continue;
+		}
+
+		/*
 		 * First look for nonblocking connects that are finished.
 		 */
-		if (s->status == SERVER_CONNECTING)
+		else if (s->status == SERVER_CONNECTING)
 		{
 		    ssize_t c;
 		    int  retval;
@@ -891,7 +956,7 @@ something_broke:
 			syserr("Could not connect to server [%d] address [%d]",
 					i, s->addr_counter);
 			close_server(i, NULL);
-			connect_to_server(i, 0);
+			connect_to_server(i);
 			continue;
 		    }
 
@@ -1085,12 +1150,12 @@ void	flush_server (int servnum)
  * 	the results when they're done using the data (usually when we 
  *	successfully connect, or when we run out of addrs)
  */
-static int	grab_server_address (int server)
+int	grab_server_address (int server)
 {
 	Server *s;
 	AI	hints, *results;
 	int	err;
-	int	i, xvfd;
+	int	i, xvfd[2];
 	size_t	len;
 
 	if (x_debug & DEBUG_SERVER_CONNECT)
@@ -1114,39 +1179,20 @@ static int	grab_server_address (int server)
 		s->next_addr = NULL;
 	}
 
+	set_server_status(server, SERVER_DNS);
+
 	say("Performing DNS lookup for [%s] (server %d)", s->name, server);
+	if (socketpair(PF_UNIX, SOCK_STREAM, 0, xvfd))
+		yell("socketpair: %s", strerror(errno));
+	new_open(xvfd[1], do_server, NEWIO_READ, 1);
+
 	memset(&hints, 0, sizeof(hints));
 	hints.ai_family = AF_UNSPEC;
 	hints.ai_socktype = SOCK_STREAM;
 	hints.ai_flags = AI_ADDRCONFIG;
-	if ((err = Getaddrinfo(s->name, ltoa(s->port), &hints, &results)))
-	{
-		yell("DNS lookup for [%s] (server %d) failed.", 
-				s->name, server);
-		return -1;
-	}
-
-	/* s->addrs = s->next_addr = results; */
-	/* s->addrs = marshall_getaddrinfo(results); */
-	xvfd = socket(PF_INET, SOCK_STREAM, 0);
-	new_open(xvfd, NULL, NEWIO_NULL, 1);
-	marshall_getaddrinfo(xvfd, results);
-	Freeaddrinfo(results); 
-
-	dgets(xvfd, (char *)&len, sizeof(len), -1);
-	s->addrs = (AI *)new_malloc(len);
-	dgets(xvfd, (char *)s->addrs, len, -1);
-	unmarshall_getaddrinfo(s->addrs);
-	close(xvfd);
-
-	s->next_addr = s->addrs;
-	for (i = 0; s->next_addr; s->next_addr = s->next_addr->ai_next)
-		i++;
-	say("DNS lookup for [%s] (server %d) returned (%d) addresses", 
-				s->name, server, i);
-
-	s->next_addr = s->addrs;
-	s->addr_counter = 0;
+	async_getaddrinfo(s->name, ltoa(s->port), &hints, xvfd[0]);
+	close(xvfd[0]);
+	s->des = xvfd[1];
 	return 0;
 }
 
@@ -1185,8 +1231,8 @@ static int	connect_next_server_address (int server)
 	for (ai = s->next_addr; ai; ai = ai->ai_next, s->addr_counter++)
 	{
 	    if (x_debug & DEBUG_SERVER_CONNECT)
-		yell("Trying to connect to server %d using address [%d]",
-					server, s->addr_counter);
+		yell("Trying to connect to server %d using address [%d] and protocol [%d]",
+					server, s->addr_counter, ai->ai_family);
 
 	    if ((err = inet_vhostsockaddr(ai->ai_family, -1, 
 						&localaddr, &locallen)) < 0)
@@ -1232,11 +1278,8 @@ static int	connect_next_server_address (int server)
  * This establishes a new connection to 'new_server'.  This function does
  * not worry about why or where it is doing this.  It is only concerned
  * with getting a connection up and running.
- *
- * NOTICE! THIS MUST ONLY EVER BE CALLED BY connect_to_new_server()!
- * IF YOU CALL THIS ELSEWHERE, THINGS WILL BREAK AND ITS NOT MY FAULT!
  */
-int 	connect_to_server (int new_server, int restart)
+int 	connect_to_server (int new_server)
 {
 	int 		des;
 	socklen_t	len;
@@ -1278,9 +1321,11 @@ int 	connect_to_server (int new_server, int restart)
 	memset(&s->local_sockname, 0, sizeof(s->local_sockname));
 	memset(&s->remote_sockname, 0, sizeof(s->remote_sockname));
 
-	if (restart || s->addrs == NULL)
-		if (grab_server_address(new_server))
-			return -1;
+	if (s->addrs == NULL)
+	{
+		say("This server doesn't have any addresses to connect to.");
+		return -1;
+	}
 
 	if ((des = connect_next_server_address(new_server)) < 0)
 	{
