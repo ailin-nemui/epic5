@@ -1,0 +1,64 @@
+if (word(2 $loadinfo()) != [pf]) {
+	load -pf $word(1 $loadinfo());
+	return;
+};
+
+#	Copyright (c) 2005 David B. Kratter (BlackJac@EFNet)
+#
+#	Version: 1.0.2005.05.16.1
+#
+#	This script simulates the automatic nickname-mangling feature of epic4 for
+#	epic5.
+#
+#	Settings:
+#		set auto_new_nick [on|off|toggle]
+#			Enables or disables automatic nickname-mangling. If this is
+#			on and your current nickname is already in use, it will at-
+#			tempt to use the nicknames listed in auto_new_nick_list (if
+#			specified) first, then try to append auto_new_nick_char to
+#			the nickname, and finally try to "mangle" your nickname by
+#			moving the last character to the front.
+#		set auto_new_nick_char [<character>]
+#			Character to append to your current nickname if it is al-
+#			ready in use and you are either not using auto_new_nick_list
+#			or you are already at the end of the list.
+#		set auto_new_nick_length [<positive integer>]
+#			Maximum nickname length assumed for the network you are on.
+#		set auto_new_nick_list [<string>]
+#			List of nicknames to try (in order) if your current nickname
+#			is already in use. Leave a space between each nickname.
+
+package newnick;
+
+alias newnick.mangle (nick, void) {
+	@ :length = getset(auto_new_nick_length);
+	return ${@nick < length ? nick ## getset(auto_new_nick_char) : right(1 $nick) ## mid(0 ${length - 1} $nick)};
+};
+
+^on ^new_nickname "*" {
+	if (getset(auto_new_nick) == [on]) {
+		if (:nicklist = getset(auto_new_nick_list)) {
+			if (!(:nick = word(${findw($2 $nicklist) + 1} $nicklist))) {
+				@ :nick = newnick.mangle($2);
+			};
+		} else {
+			@ :nick = newnick.mangle($2);
+		};
+		xeval -s $0 nick $nick;
+	} else {
+		input "Nickname: " {
+			nick $0;
+		};
+	};
+};
+
+addset auto_new_nick bool;
+set auto_new_nick on;
+
+addset auto_new_nick_char char;
+set auto_new_nick_char _;
+
+addset auto_new_nick_length int;
+set auto_new_nick_length 9;
+
+addset auto_new_nick_list str;

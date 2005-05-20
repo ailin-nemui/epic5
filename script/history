@@ -5,7 +5,7 @@ if (word(2 $loadinfo()) != [pf]) {
 
 #	Copyright (c) 2005 David B. Kratter (BlackJac@EFNet)
 #
-#	Version: 1.0.2005.03.21.1
+#	Version: 1.1.2005.05.18.1
 #
 #	This script simulates the history feature of epic4 for epic5. The
 #	behavior and key bindings should be nearly identical to the original.
@@ -111,17 +111,17 @@ alias history (index, void) {
 	};
 };
 
-alias history.add (text) {
-	if (@text) {
+alias history.add (...) {
+	if (@) {
 		if (history_remove_dupes == [on]) {
-			fe ($getmatches(array.history % $text)) hh {
+			fe ($getmatches(array.history % $*)) hh {
 				@ delitem(array.history $hh);
 			};
 		};
 		if (numitems(array.history) == history) {
 			@ delitem(array.history 0);
 		};
-		@ setitem(array.history $numitems(array.history) $time() $text);
+		@ setitem(array.history $numitems(array.history) $time() $*);
 		@ history.index = [];
 	};
 };
@@ -188,13 +188,13 @@ alias historyctl (action, ...) {
 		};
 		(index) {
 			if (strlen($getitem(array.history $0))) {
-				@ history.index = [$0];
+				@ history.index = *0;
 				return 1;
 			};
 			return 0;
 		};
 		(read) {
-			if ((:fd = open(${[$0] ? [$0] : history_save_file} R)) > -1) {
+			if ((:fd = open(${*0 ? *0 : history_save_file} R)) > -1) {
 				while (:line = read($fd)) {
 					if (numitems(array.history) == history) {
 						@ delitem(array.history 0);
@@ -210,7 +210,7 @@ alias historyctl (action, ...) {
 			@ delarray(array.history);
 		};
 		(save) {
-			if ((:fd = open(${[$0] ? [$0] : history_save_file} W)) > -1) {
+			if ((:fd = open(${*0 ? *0 : history_save_file} W)) > -1) {
 				fe ($jot(0 ${numitems(array.history) - 1} 1)) hh {
 					@ write($fd $getitem(array.history $hh));
 				};
@@ -226,7 +226,7 @@ alias historyctl (action, ...) {
 };
 
 alias sendline (...) {
-	if (strlen($*)) {
+	if (@) {
 		history.add $*;
 		//sendline $*;
 	};
@@ -254,7 +254,7 @@ fe (P [OA [[A) hh {
 	@ :find = after(! $0);
 	if (isnumber($find)) {
 		if (:found = getitem(array.history $find)) {
-			xtype -l $restw(1 $found)${[$1] ? [$1-] : []};
+			xtype -l $restw(1 $found)${*1 ? [$1-] : []};
 		} else {
 			xecho -b -c No such history entry: $find;
 		};
@@ -263,30 +263,30 @@ fe (P [OA [[A) hh {
 		if (history_save_position == [on]) {
 			@ history.index = index;
 		};
-		xtype -l $restw(1 $getitem(array.history $index))${[$1] ? [ $1-] : []};
+		xtype -l $restw(1 $getitem(array.history $index))${*1 ? [ $1-] : []};
 	} else {
 		xecho -b -c No match;
 	};
 };
 
 addset history int {
-	if ([$0] == 0) {
+	if (*0 == 0) {
 		@ delarray(array.history);
 		@ history.index = [];
 		^bind ^] nothing;
-		^on #-input 1 -"*";
-	} else if ([$0]) {
+		^on #input 2 -"*";
+		^on #input 2 -"/!*";
+	} else if (@) {
 		if (numitems(array.history) > history) {
 			until (numitems(array.history) == history) {
 				@ delitem(array.history 0);
 			};
 		};
 		^bind ^] shove_to_history;
-		^on #-input 1 "*" {
-			if ([$*] !~ [/!*]) {
-				history.add $*;
-			};
+		^on #-input 2 "*" {
+			history.add $*;
 		};
+		^on #-input 2 "/!*" #;
 	};
 };
 
@@ -297,12 +297,12 @@ addset history_circleq bool;
 set history_circleq on;
 
 addset history_persistent bool {
-	if ([$0] == [on]) {
-		^on #-exit 1 "*" {
+	if (*0 == [on]) {
+		^on #-exit 2 "*" {
 			@ historyctl(save $history_save_file);
 		};
-	} else if ([$0]) {
-		^on #-exit 1 -"*";
+	} else if (@) {
+		^on #exit 2 -"*";
 	};
 };
 

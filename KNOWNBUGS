@@ -2,7 +2,7 @@ EPIC5 Projects, Bugs, and other Errata:
 
 KNOWN ERRATA (eg, bugs, or unresolved requests):
 ------------------------------------------------
-<none>
+* /on ctcp_reply is hooked even for action type things.
 
 LOOK FOR IN THE NEXT RELEASE
 ----------------------------
@@ -10,6 +10,7 @@ LOOK FOR IN THE NEXT RELEASE
 * An /on to go off when you add something to the input line.
 * Output rules
 * GC of a lot of the newly scripted stuff
+* Support for CNOTICE
 
 [See http://www.epicsol.org/PROJECTS for things to come in the future]
 [See http://www.epicsol.org/CHANGELOG5 for things that changed in the past]
@@ -658,3 +659,6 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * When changing EXPIRATION in $ignorectl(), set a new /timer.
 * Some source cleanup, in prep for the logical-sized window support.
 * Create "marshall_getaddrinfo" which musters getaddrinfo() into one block.
+* New builtins, history from blackjac
+* Don't object to mode changes with trailing spaces.
+* New script, "newnick" from blackjac.

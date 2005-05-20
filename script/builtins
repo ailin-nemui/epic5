@@ -5,7 +5,7 @@ if (word(2 $loadinfo()) != [pf]) {
 
 #	Copyright (c) 2005 David B. Kratter (BlackJac@EFNet)
 #
-#	Version: 1.6.2005.05.10.1
+#	Version: 1.7.2005.05.18.1
 #
 #	This script ensures backward-compatibility with epic4-2.2 by adding the
 #	following commands, functions and sets that have been removed from epic5.
@@ -43,12 +43,12 @@ package builtins;
 
 # COMMANDS #
 
-alias addset (name, type, args) {
+alias addset (name, type, ...) {
 	if (@name && type) {
 		@ symbolctl(create $name);
 		@ symbolctl(set $name 1 builtin_variable type $type);
-		if (args) {
-			@ symbolctl(set $name 1 builtin_variable script $args);
+		if (@) {
+			@ symbolctl(set $name 1 builtin_variable script $*);
 		};
 	};
 };
@@ -273,7 +273,7 @@ alias winvisible (winnum default 0, void) {
 # HOOKS #
 
 ^on ^send_public "*" {
-	echo ${!iscurchan($0) ? [$0] : []}> $1-;
+	echo ${!iscurchan($0) ? (*) : []}> $1-;
 };
 
 # SETS #
@@ -475,15 +475,15 @@ addset command_mode bool;
 set command_mode off;
 
 ^on ^input "*" {
-	sendline ${getset(command_mode) == [on] ? [/] : []}$*;
+	//sendline ${getset(command_mode) == [on] ? [/] : []}$*;
 };
 
 ^on ^input "'*" {
-	send ${getset(command_mode) == [on] ? rest(1 $*) : [$*]};
+	send ${getset(command_mode) == [on] ? rest(1 $*) : (*)};
 };
 
 ^on ^input "/*" {
-	sendline $*;
+	//sendline $*;
 };
 
 # DCC_TIMEOUT
@@ -508,7 +508,7 @@ set dcc_timeout 3600;
 # FULL_STATUS_LINE
 
 addset full_status_line bool {
-	if ([$0] == [on]) {
+	if (*0 == [on]) {
 		^set status_format $before(-1  $status_format);
 		^set status_format1 $before(-1  $status_format1);
 		^set status_format2 $before(-1  $status_format2);
@@ -530,7 +530,7 @@ set num_of_whowas 1;
 # REVERSE_STATUS_LINE
 
 addset reverse_status_line bool {
-	if ([$0] == [on]) {
+	if (*0 == [on]) {
 		^set status_format $after(1  $status_format);
 		^set status_format1 $after(1  $status_format1);
 		^set status_format2 $after(1  $status_format2);

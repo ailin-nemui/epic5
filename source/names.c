@@ -1,4 +1,4 @@
-/* $EPIC: names.c,v 1.67 2005/05/07 05:43:54 jnelson Exp $ */
+/* $EPIC: names.c,v 1.68 2005/05/20 13:36:51 jnelson Exp $ */
 /*
  * names.c: This here is used to maintain a list of all the people currently
  * on your channel.  Seems to work 
@@ -924,8 +924,8 @@ static void	decifer_mode (const char *modes, Channel *chan)
 		}
 	    }
 	}
-	if (rest && *rest)
-		yell("WARNING:  Mode parser or server is BROKE.  Remaining args: %s", rest);
+	if (!is_string_empty(rest))
+		yell("WARNING:  Extra unhandled arguments found in MODE: %s", rest);
 
 	strlcpy(local_buffer, chan->base_modes, sizeof local_buffer);
 	if (chan->key)
