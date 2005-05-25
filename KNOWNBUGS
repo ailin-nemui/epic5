@@ -4,6 +4,8 @@ KNOWN ERRATA (eg, bugs, or unresolved requests):
 ------------------------------------------------
 * /on ctcp_reply is hooked even for action type things.
 * Async dns for servers is probably very buggy.
+* /window server should output server list.
+* $serverctl(REFNUM irc.host.com) should pick up irc.host.com:6666
 
 LOOK FOR IN THE NEXT RELEASE
 ----------------------------
@@ -668,3 +670,4 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * New newio io type, "NULL" which i'll probably whack later.
 * _VERY_ preliminary support for nonblocking dns on server connects. 
 * You should assume it's very buggy, and be patient and report bugs.
+* Add support for single and double quoted strings in new math parser.

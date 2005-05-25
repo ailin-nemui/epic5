@@ -1,4 +1,4 @@
-/* $EPIC: expr2.c,v 1.23 2005/03/19 03:55:55 jnelson Exp $ */
+/* $EPIC: expr2.c,v 1.24 2005/05/25 01:06:57 jnelson Exp $ */
 /*
  * Zsh: math.c,v 3.1.2.1 1997/06/01 06:13:15 hzoli Exp 
  * math.c - mathematical expression evaluation
@@ -1985,6 +1985,79 @@ static int	zzlex (expr_info *c)
 				c->last_token = 0;
 			else
 				c->last_token = tokenize_raw(c, p);
+
+			if (oc)
+				*c->ptr++ = oc;
+			c->operand = 0;
+			return ID;
+		}
+
+		/*
+		 * This is a DOUBLE QUOTED (unexpanded-string) operand type.
+		 * Extract the inside of "..." and tokenize that as a "raw"
+		 * value.  It will be expanded later as needed.
+		 */
+		case '"':
+		{
+			char *p = c->ptr, *s;
+			char oc = 0;
+			ssize_t	span;
+
+			if (!c->operand)
+				return lexerr(c, "Misplaced \" token");
+
+			if ((span = MatchingBracket(p, '\0', '"')) >= 0)
+			{
+				c->ptr = p + span;
+				oc = *c->ptr;
+				*c->ptr = 0;
+			}
+			else
+				c->ptr = endstr(c->ptr);
+
+			if (c->noeval)
+				c->last_token = 0;
+			else
+				c->last_token = tokenize_raw(c, p);
+
+			if (oc)
+				*c->ptr++ = oc;
+			c->operand = 0;
+			return ID;
+		}
+
+		/*
+		 * This is a SINGLE QUOTED (expanded-string) operand type.
+		 * Extract the inside of '...' and tokenize that as an
+		 * "expanded" value.  It will be expanded later as needed.
+		 */
+		case '\'':
+		{
+			char *p = c->ptr, *s;
+			char oc = 0;
+			ssize_t	span;
+
+			if (!c->operand)
+				return lexerr(c, "Misplaced ' token");
+
+			if ((span = MatchingBracket(p, '\0', '\'')) >= 0)
+			{
+				c->ptr = p + span;
+				oc = *c->ptr;
+				*c->ptr = 0;
+			}
+			else
+				c->ptr = endstr(c->ptr);
+
+			if (c->noeval)
+				c->last_token = 0;
+			else
+			{
+			    char *ick = NULL;
+			    malloc_strcat_ues(&ick, p, "'");
+			    c->last_token = tokenize_expanded(c, ick);
+			    new_free(&ick);
+			}
 
 			if (oc)
 				*c->ptr++ = oc;

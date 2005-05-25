@@ -1,4 +1,4 @@
-/* $EPIC: input.c,v 1.27 2005/05/02 03:55:48 jnelson Exp $ */
+/* $EPIC: input.c,v 1.28 2005/05/25 01:06:57 jnelson Exp $ */
 /*
  * input.c: does the actual input line stuff... keeps the appropriate stuff
  * on the input line, handles insert/delete of characters/words... the whole
@@ -1229,7 +1229,6 @@ BUILT_IN_BINDING(insert_blink)
 
 BUILT_IN_BINDING(insert_altcharset)
 {
-	yell("alt_tog!");
 	input_add_character(ALT_TOG, string);
 }
 
