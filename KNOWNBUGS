@@ -4,12 +4,14 @@ KNOWN ERRATA (eg, bugs, or unresolved requests):
 ------------------------------------------------
 * /on ctcp_reply is hooked even for action type things.
 * Async dns for servers is probably very buggy.
+* Permit some way to set the server a timer associates with
 * /window server should output server list.
 * $serverctl(REFNUM irc.host.com) should pick up irc.host.com:6666
+* /SET QUIT_MESSAGE doesn't exist as it should
+* "DNS lookup" messages not guarded by message_from()s!
 
 LOOK FOR IN THE NEXT RELEASE
 ----------------------------
-* Logically sized windows, instead of it being based on physical lines.
 * An /on to go off when you add something to the input line.
 * Output rules
 * GC of a lot of the newly scripted stuff
