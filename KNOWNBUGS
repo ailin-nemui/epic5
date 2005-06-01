@@ -673,3 +673,9 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * _VERY_ preliminary support for nonblocking dns on server connects. 
 * You should assume it's very buggy, and be patient and report bugs.
 * Add support for single and double quoted strings in new math parser.
+* Put all handling of /set quit_message et al in close_server().
+* Fix /quit to pass unspecified quit message as NULL to irc_exit().
+* Fix irc_exit() to handle unspec. quit message as NULL to close_all_serves()
+* Fix close_all_servers() to not change quit message for NULL.
+* This allows /quit to use (not override) each server's quit message!
+* This also allows a single %s in /set quit_message to be honored everywhere!

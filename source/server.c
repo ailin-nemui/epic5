@@ -1,4 +1,4 @@
-/* $EPIC: server.c,v 1.177 2005/05/20 23:49:16 jnelson Exp $ */
+/* $EPIC: server.c,v 1.178 2005/06/01 04:49:09 jnelson Exp $ */
 /*
  * server.c:  Things dealing with that wacky program we call ircd.
  *
@@ -1386,7 +1386,8 @@ int 	close_all_servers (const char *message)
 
 	for (i = 0; i < number_of_servers; i++)
 	{
-		set_server_quit_message(i, message);
+		if (message)
+			set_server_quit_message(i, message);
 		close_server(i, NULL);
 	}
 
@@ -1403,6 +1404,8 @@ void	close_server (int refnum, const char *message)
 {
 	Server *s;
 	int	was_registered;
+	char *  sub_format;
+	char 	final_message[IRCD_BUFFER_SIZE];
 
 	/* Make sure server refnum is valid */
 	if (!(s = get_server(refnum)))
@@ -1411,12 +1414,15 @@ void	close_server (int refnum, const char *message)
 		return;
 	}
 
+	*final_message = 0;
 	if (!message)
-		if (!(message = get_server_quit_message(refnum)))
-			message = "Leaving";
+	    if (!(message = get_server_quit_message(refnum)))
+		message = "Leaving";
+	sub_format = convert_sub_format(message, 's');
+	snprintf(final_message, sizeof(final_message), sub_format, irc_version);
+	new_free(&sub_format);
 
 	was_registered = is_server_registered(refnum);
-
 	set_server_status(refnum, SERVER_CLOSING);
 	clean_server_queues(refnum);
 	if (s->waiting_out > s->waiting_in)		/* XXX - hack! */
@@ -1432,11 +1438,11 @@ void	close_server (int refnum, const char *message)
 	if (s->des == -1)
 		return;		/* Nothing to do here */
 
-	if (message && *message && !s->closing)
+	if (final_message && *final_message && !s->closing)
 	{
 	    s->closing = 1;
 	    if (x_debug & DEBUG_OUTBOUND)
-		yell("Closing server %d because [%s]", refnum, message);
+		yell("Closing server %d because [%s]", refnum, final_message);
 
 	    /*
 	     * Only tell the server we are leaving if we are 
@@ -1444,11 +1450,10 @@ void	close_server (int refnum, const char *message)
 	     * D-line case.
 	     */
 	    if (was_registered)
-		    send_to_aserver(refnum, "QUIT :%s\n", message);
+		    send_to_aserver(refnum, "QUIT :%s\n", final_message);
 	}
 
-	do_hook(SERVER_LOST_LIST, "%d %s %s", 
-			refnum, s->name, message ? message : empty_string);
+	do_hook(SERVER_LOST_LIST, "%d %s %s", refnum, s->name, final_message);
 	s->des = new_close(s->des);
 	set_server_status(refnum, SERVER_CLOSED);
 }

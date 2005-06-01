@@ -1,4 +1,4 @@
-/* $EPIC: commands.c,v 1.124 2005/05/19 13:33:59 jnelson Exp $ */
+/* $EPIC: commands.c,v 1.125 2005/06/01 04:49:09 jnelson Exp $ */
 /*
  * commands.c -- Stuff needed to execute commands in ircII.
  *		 Includes the bulk of the built in commands for ircII.
@@ -771,19 +771,12 @@ BUILT_IN_COMMAND(e_privmsg)
 }
 
 /* e_quit: The /QUIT, /EXIT, etc command */
-/* Flaming paranoia added 07/07/2000 at request of Liandrin. */
 BUILT_IN_COMMAND(e_quit)
 {
-	char *	sub_format;
-	const char *	reason;
-
 	if (args && *args)
-		reason = args;
-	else if (!(reason = get_string_var(QUIT_MESSAGE_VAR)))
-		reason = "%s";
-
-	sub_format = convert_sub_format(reason, 's');
-	irc_exit(1, sub_format, irc_version);
+		irc_exit(1, "%s", args);
+	else
+		irc_exit(1, NULL);
 }
 
 /*

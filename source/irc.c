@@ -1,4 +1,4 @@
-/* $EPIC: irc.c,v 1.918 2005/05/25 01:06:57 jnelson Exp $ */
+/* $EPIC: irc.c,v 1.919 2005/06/01 04:49:09 jnelson Exp $ */
 /*
  * ircII: a new irc client.  I like it.  I hope you will too!
  *
@@ -261,6 +261,7 @@ void	irc_exit (int really_quit, const char *format, ...)
 {
 	char 	buffer[BIG_BUFFER_SIZE];
 	char *	sub_format;
+	char *	quit_message = NULL;
 	int	old_window_display = window_display;
 	int	value;
 #ifdef PERL
@@ -293,19 +294,15 @@ void	irc_exit (int really_quit, const char *format, ...)
 	{
 		va_list arglist;
 		va_start(arglist, format);
-		vsnprintf(buffer, BIG_BUFFER_SIZE - 1, format, arglist);
+		vsnprintf(buffer, sizeof(buffer), format, arglist);
 		va_end(arglist);
+		quit_message = buffer;
 	}
 	else
 	{
-		if (!(format = get_string_var(QUIT_MESSAGE_VAR)))
-			format = "%s";
-
-		sub_format = convert_sub_format(format, 's');
-		snprintf(buffer, BIG_BUFFER_SIZE - 1, sub_format, irc_version);
-		new_free(&sub_format);
+		strlcpy(buffer, "Default", sizeof(buffer));
+		quit_message = NULL;
 	}
-
 
 	/* Do some clean up */
 	do_hook(EXIT_LIST, "%s", buffer);
@@ -315,7 +312,7 @@ void	irc_exit (int really_quit, const char *format, ...)
 #ifdef PERL
 	perlstartstop(0);  /* In case there's perl code in the exit hook. */
 #endif
-	close_all_servers(buffer);
+	close_all_servers(quit_message);
 	value = 0;
 	logger(&value);
 	get_child_exit(-1);  /* In case some children died in the exit hook. */
