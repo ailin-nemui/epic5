@@ -1,4 +1,4 @@
-/* $EPIC: server.c,v 1.178 2005/06/01 04:49:09 jnelson Exp $ */
+/* $EPIC: server.c,v 1.179 2005/06/02 05:36:16 jnelson Exp $ */
 /*
  * server.c:  Things dealing with that wacky program we call ircd.
  *
@@ -838,7 +838,7 @@ void	do_server (int fd)
 	Server *s;
 	char	buffer[IO_BUFFER_SIZE + 1];
 	int	des,
-		i;
+		i, l;
 
 	for (i = 0; i < number_of_servers; i++)
 	{
@@ -853,6 +853,9 @@ void	do_server (int fd)
 
 		if (des != fd)
 			continue;		/* Move along. */
+
+		from_server = i;
+		l = message_from(NULL, LEVEL_CRAP);
 
 		/*
 		 * Is the dns lookup finished?
@@ -869,6 +872,7 @@ void	do_server (int fd)
 		        if (len < sizeof(s->addr_len))
 			    yell("Got %d, expected %d bytes", 
 					len, sizeof(s->addr_len));
+
 			if (s->addr_len < 0)
 			{
 			    if (EAI_AGAIN > 0)
@@ -877,7 +881,6 @@ void	do_server (int fd)
 				     s->name, len, gai_strerror(s->addr_len));
 			    s->des = new_close(s->des);
 			    set_server_status(i, SERVER_CLOSED);
-			    continue;
 			}
 			else if (s->addr_len == 0) 
 			{
@@ -885,38 +888,41 @@ void	do_server (int fd)
 						"resolve.", s->name, i);
 			    s->des = new_close(s->des);
 			    set_server_status(i, SERVER_CLOSED);
-			    continue;
 			}
-		        s->addrs = (AI *)new_malloc(s->addr_len + 1);
-			s->addr_offset = 0;
+			else
+			{
+		            s->addrs = (AI *)new_malloc(s->addr_len + 1);
+			    s->addr_offset = 0;
+			}
 		    }
 		    else
 		    {
 		        len = dgets(s->des, (char *)s->addrs + s->addr_offset, 
 					s->addr_len - s->addr_offset, -1);
+
 		        if (len < s->addr_len - s->addr_offset)
 			{
 			    yell("Got %d, expected %d bytes", 
 				len, s->addr_len - s->addr_offset);
 			    s->addr_offset += len;
-			    continue;
 			}
-		        unmarshall_getaddrinfo(s->addrs);
-		        s->des = new_close(s->des);
+			else
+			{
+		            unmarshall_getaddrinfo(s->addrs);
+		            s->des = new_close(s->des);
 
-		        s->next_addr = s->addrs;
-		        for (cnt = 0; s->next_addr; s->next_addr = 
+		            s->next_addr = s->addrs;
+		            for (cnt = 0; s->next_addr; s->next_addr = 
 						s->next_addr->ai_next)
-			    cnt++;
-		        say("DNS lookup for server %d [%s] returned (%d) "
+			        cnt++;
+		            say("DNS lookup for server %d [%s] returned (%d) "
 					"addresses", i, s->name, cnt);
 
-		        s->next_addr = s->addrs;
-		        s->addr_counter = 0;
-
-		        connect_to_server(i);
+		            s->next_addr = s->addrs;
+		            s->addr_counter = 0;
+		            connect_to_server(i);
+			}
 		    }
-		    continue;
 		}
 
 		/*
@@ -957,6 +963,7 @@ something_broke:
 					i, s->addr_counter);
 			close_server(i, NULL);
 			connect_to_server(i);
+			pop_message_from(l);
 			continue;
 		    }
 
@@ -983,7 +990,7 @@ something_broke:
 	        /* Everything else is a normal read. */
 		else
 		{
-		    last_server = from_server = i;
+		    last_server = i;
 		    junk = dgets(des, bufptr, get_server_line_length(i), 1);
 
 		    switch (junk)
@@ -1026,6 +1033,8 @@ something_broke:
 		        }
 		    }
 	        }
+
+		pop_message_from(l);
 	        from_server = primary_server;
 	}
 }

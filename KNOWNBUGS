@@ -3,12 +3,10 @@ EPIC5 Projects, Bugs, and other Errata:
 KNOWN ERRATA (eg, bugs, or unresolved requests):
 ------------------------------------------------
 * /on ctcp_reply is hooked even for action type things.
-* Async dns for servers is probably very buggy.
 * Permit some way to set the server a timer associates with
-* /window server should output server list.
 * $serverctl(REFNUM irc.host.com) should pick up irc.host.com:6666
-* /SET QUIT_MESSAGE doesn't exist as it should
-* "DNS lookup" messages not guarded by message_from()s!
+* Make -B the default
+* Async dns for servers is probably very buggy.
 
 LOOK FOR IN THE NEXT RELEASE
 ----------------------------
@@ -679,3 +677,5 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Fix close_all_servers() to not change quit message for NULL.
 * This allows /quit to use (not override) each server's quit message!
 * This also allows a single %s in /set quit_message to be honored everywhere!
+* Fix up do_server() so anything that happens is wrapped in message_from()s.
+* Show the server list for /window server instead of an error.
