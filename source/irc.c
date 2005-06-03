@@ -1,4 +1,4 @@
-/* $EPIC: irc.c,v 1.920 2005/06/02 05:36:16 jnelson Exp $ */
+/* $EPIC: irc.c,v 1.921 2005/06/03 02:32:57 jnelson Exp $ */
 /*
  * ircII: a new irc client.  I like it.  I hope you will too!
  *
@@ -52,7 +52,7 @@ const char internal_version[] = "20050420";
 /*
  * In theory, this number is incremented for every commit.
  */
-const unsigned long	commit_id = 1248;
+const unsigned long	commit_id = 1249;
 
 /*
  * As a way to poke fun at the current rage of naming releases after
@@ -160,9 +160,6 @@ volatile int	cntl_c_hit = 0;
 
 /* This is 1 if we are in the foreground process group */
 int		foreground = 1;
-
-/* This is 0 unless you specify the -B command line flag */
-int		load_ircrc_right_away = 0;
 
 /* This is 1 if you want all logging to be inhibited. Dont leave this on! */
 int		inhibit_logging = 0;
@@ -757,7 +754,7 @@ static	void	parse_args (int argc, char **argv)
 				break;
 
 			case 'B':
-				load_ircrc_right_away = 1;
+				/* Historical option */
 				break;
 
 			case 'c':
@@ -1240,9 +1237,7 @@ int 	main (int argc, char *argv[])
 	/* The all-collecting stack frame */
 	make_local_stack("TOP");
 
-	/* XXXX Move this somewhere else eventually XXXX */
-	if (load_ircrc_right_away)
-		load_ircrc();
+	load_ircrc();
 
 	set_input(empty_string);
 

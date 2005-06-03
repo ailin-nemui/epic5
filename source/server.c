@@ -1,4 +1,4 @@
-/* $EPIC: server.c,v 1.179 2005/06/02 05:36:16 jnelson Exp $ */
+/* $EPIC: server.c,v 1.180 2005/06/03 02:32:57 jnelson Exp $ */
 /*
  * server.c:  Things dealing with that wacky program we call ircd.
  *
@@ -174,8 +174,10 @@ static	int	str_to_serverinfo (const char *str, ServerInfo *s)
 	}
 	while (0);
 
+#if 0
 	if (s->port == 0)
 		s->port = irc_port;
+#endif
 
 	return 0;
 }
@@ -273,7 +275,7 @@ static	int	serverinfo_to_newserv (ServerInfo *si)
 	s->d_nickname = (char *) 0;
 	s->unique_id = (char *) 0;
 	s->userhost = (char *) 0;
-	s->port = si->port;
+	s->port = si->port ? si->port : irc_port;
 	s->line_length = IRCD_BUFFER_SIZE;
 	s->max_cached_chan_size = -1;
 	s->who_queue = NULL;
@@ -1841,9 +1843,6 @@ void  server_is_registered (int refnum, const char *itsname, const char *ourname
 
 	reinstate_user_modes();
 	userhostbase(from_server, NULL, got_my_userhost, 1);
-
-	if (!startup_file)
-		load_ircrc();
 
 	if (default_channel)
 	{

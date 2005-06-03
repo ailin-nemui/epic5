@@ -4,8 +4,6 @@ KNOWN ERRATA (eg, bugs, or unresolved requests):
 ------------------------------------------------
 * /on ctcp_reply is hooked even for action type things.
 * Permit some way to set the server a timer associates with
-* $serverctl(REFNUM irc.host.com) should pick up irc.host.com:6666
-* Make -B the default
 * Async dns for servers is probably very buggy.
 
 LOOK FOR IN THE NEXT RELEASE
@@ -679,3 +677,7 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * This also allows a single %s in /set quit_message to be honored everywhere!
 * Fix up do_server() so anything that happens is wrapped in message_from()s.
 * Show the server list for /window server instead of an error.
+* By default, <hostname> as server, defaults to port 0
+* By default, port 0 changes to irc_port (6667) for a new server
+* This means any use of <hostname> in a server context picks up 1st <hostname>
+* The -B command line option (load startup file before connect) is now default.

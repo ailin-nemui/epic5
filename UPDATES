@@ -1,5 +1,100 @@
 EPIC5-0.0.6
 
+*** News 06/02/2005 -- Your startup script is loaded before connecting
+	Historically ircII has always loaded your startup script (~/.epicrc
+	or ~/.ircrc) after you successfully completed your first connection 
+	to a server.  This was to allow you to do irc commands in your startup
+	script, such as /JOIN and /NICK and /UMODE, etc.  This has now been
+	changed so your startup script is always loaded at startup before 
+	epic has attempted to connect to a server.
+
+	If you need or prefer the prior semantics, please wrap your startup
+	script in a wrapper like so:
+
+		on #^connect -1 * {
+			... your old ircrc goes here ...
+			@hookctl(remove -1)
+		}
+
+	What this does is tell epic that you want the body of your script 
+	(the "... your old ircrc goes here ..." part) to be loaded after
+	you connect to a server, and the @hookctl(remove -1) part makes sure
+	that the /on deletes itself after it goes off.  This exactly effects
+	the prior behavior.
+
+	The -B command line option continues to be supported, but is ignored
+	since its behavior is now the default.
+
+*** News 06/02/2005 -- Changes to how server descriptions w/o ports get handled
+	As you may or may not know, epic handles all server descriptions
+	in a unified way.  Server descriptions are the things that look like:
+		<hostname>:<port>:<password>:<nick>:<group>:<protocol>
+
+	The places you can use a server description ("hostname") are:
+		/SERVER -ADD <hostname>
+		/SERVER -DELETE <hostname>
+		/SERVER +<hostname>
+		/SERVER -<hostname>
+		/SERVER <hostname>
+		/DISCONNECT <hostname>
+		$serverctl(REFNUM <hostname>)
+		/XEVAL -S <hostname>
+		/XQUOTE -S <hostname>
+		/MSG -<hostname>/target
+		$winchan(#chan <hostname>)
+		/LOG SERVER <hostname>
+		/WINDOW SERVER <hostname>
+	(Every other place in epic requires a server refnum)
+
+	This change makes the following backwards-incompatable change:
+	When you add the first server for a given <hostname>, the port you
+	use on that server becomes the default port for that <hostname> in 
+	all other places in epic.  This is true even if you later add other 
+	servers for <hostname> using other ports!
+
+	Example 1:
+			/server -add irc.host.com:6666
+	adds a new server, we'll call server refnum 0.  So now any place you 
+	use "irc.host.com" (see above) will default to port 6666, and thus 
+	"irc.host.com" will refer to server refnum 0, rather than being an 
+	error.  Furthermore, let's say you do:
+			/server -add irc.host.com:6667
+	and this becomes server refnum 1.  The "irc.host.com" continues to 
+	refer to server 0, even though this server uses port 6667.
+
+	Example 2:
+			/server -add irc.host.com:6666
+	adds a new server, server refnum 0.  Then later on you do 
+			/server irc.host.com
+	This will connect to server refnum 0, on port 6666, and WILL NOT 
+	create a new server on port 6667 and connect on port 6667!
+
+*** News 06/02/2005 -- /QUIT with no arguments uses per-server quit messages
+	If you do /QUIT with no arguments, then any per-server quit message
+	that you have previously set with $serverctl() will be used, and will
+	not be clobbered by /SET QUIT_MESSAGE.  Thus, /SET QUIT_MESSAGE is 
+	only used as a fallback for servers that do not have their own quit 
+	message.
+
+*** News 06/02/2005 -- Preliminary support for nonblocking dns for server
+	DNS lookups for server connections are now done in a nonblocking way.  
+	This code has not been tested very much so it may be unstable.  If you
+	try to break it, you probably will.  Let me know how you did it.
+
+	Nonblocking DNS lookups require the use of a "dns helper" process,
+	which is fork()ed for every lookup.  Since you only have a limited 
+	number of processes available to you, this means you shouldn't try
+	to connect to an unreasonable number of servers concurrently.  If you
+	do manage to do that, you may receive errors.
+
+	It should be safe to use /server to cancel a very long nonblocking
+	dns request.
+
+*** News 06/02/2005 -- /WINDOW SERVER shows server list instead of error
+	Previously /window server without an argument displayed an error
+	which isn't terribly friendly.  So now it will display the server
+	list, as if you had done /server without any arguments.
+
 *** News 05/10/2005 -- Nickname rejections handled differently now
 	When the server rejects your NICK change request after you have
 	already connected and registered with the server, no further
