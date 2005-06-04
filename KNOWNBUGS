@@ -2,8 +2,7 @@ EPIC5 Projects, Bugs, and other Errata:
 
 KNOWN ERRATA (eg, bugs, or unresolved requests):
 ------------------------------------------------
-* /on ctcp_reply is hooked even for action type things.
-* Async dns for servers is probably very buggy.
+<none>
 
 LOOK FOR IN THE NEXT RELEASE
 ----------------------------
@@ -691,3 +690,4 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Add /timer -general to set a general timer.
 * Make /timer -win or /timer -serv set a window or serv timer especially.
 * Ooops. I really botched that.  Make epic5 start again.
+* Don't offer non-"TELLUSER" ctcps via /on ctcp_reply (ACTION/SED/UTC)

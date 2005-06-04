@@ -1,4 +1,4 @@
-/* $EPIC: commands.c,v 1.126 2005/06/04 03:59:33 jnelson Exp $ */
+/* $EPIC: commands.c,v 1.127 2005/06/04 16:27:05 jnelson Exp $ */
 /*
  * commands.c -- Stuff needed to execute commands in ircII.
  *		 Includes the bulk of the built in commands for ircII.
@@ -506,7 +506,7 @@ BUILT_IN_COMMAND(ctcp)
 		else
 			tag = CTCP_VERSION;
 
-		if ((type = in_ctcp()) == -1)
+		if ((type = in_ctcp()) && get_server_doing_notice(from_server))
 			say("You may not use the CTCP command from an ON CTCP_REPLY!");
 		else
 		{

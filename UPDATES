@@ -1,5 +1,23 @@
 EPIC5-0.0.6
 
+*** News 06/03/2005 -- New script, "newnick" (blackjac)
+	The "newnick" script, which is loaded automatically by the 'global' 
+	script [and which you need to load from your startup script if you 
+	like this functionality] implements the functionality of the old 
+	/SET AUTO_NEW_NICK feature, which has recently been removed.
+
+	It exposes four /SETs (default values):
+	  /SET AUTO_NEW_NICK ON
+		When ON, automaticaly mangle the nickname to ensure that you
+		can connect to the server without delay.
+	  /SET AUTO_NEW_NICK_CHAR _
+		Then character to append to your nickname in the mangling 
+		process.
+	  /SET AUTO_NEW_NICK_LENGTH 9
+		The maximum nickname length that can be mangled.
+	   /SET -AUTO_NEW_NICK_LIST
+		A list of nicknames to try to use before mangling begins.
+
 *** News 06/03/2005 -- New /TIMER flags, and execution contexts.
 	[ About timer domains ]
 	Each timer now belongs to one of three domains:

@@ -1,4 +1,4 @@
-/* $EPIC: ctcp.c,v 1.45 2005/05/02 03:55:48 jnelson Exp $ */
+/* $EPIC: ctcp.c,v 1.46 2005/06/04 16:27:05 jnelson Exp $ */
 /*
  * ctcp.c:handles the client-to-client protocol(ctcp). 
  *
@@ -826,12 +826,12 @@ char *	do_notice_ctcp (const char *from, const char *to, char *str)
 	if (delim_char > 8)
 		allow_ctcp_reply = 0;	/* Ignore all the CTCPs. */
 
+	/* We handle ignore, but not flooding (obviously) */
 	flag = check_ignore_channel(from, FromUserHost, to, LEVEL_CTCP);
-	if (!in_ctcp_flag)
-		in_ctcp_flag = -1;
-	strlcpy(local_ctcp_buffer, str, IRCD_BUFFER_SIZE - 2);
+	in_ctcp_flag++;
+	strlcpy(local_ctcp_buffer, str, sizeof(local_ctcp_buffer) - 2);
 
-	for (;;strlcat(local_ctcp_buffer, last, sizeof local_ctcp_buffer))
+	for (;;strlcat(local_ctcp_buffer, last, sizeof local_ctcp_buffer) - 2)
 	{
 		if (split_CTCP(local_ctcp_buffer, the_ctcp, last))
 			break;		/* All done! */
@@ -840,7 +840,8 @@ char *	do_notice_ctcp (const char *from, const char *to, char *str)
 			continue;	/* Empty requests are ignored */
 
 		/*
-		 * Apply sanity rules
+		 * The logic of all this is essentially the same as 
+		 * do_ctcp
 		 */
 
 		if (!allow_ctcp_reply)
@@ -854,8 +855,11 @@ char *	do_notice_ctcp (const char *from, const char *to, char *str)
 			continue;
 		}
 
+		/* But we don't check ctcp flooding (obviously) */
+
 		/* Global messages -- just drop the CTCP */
-		if (*to == '$' || (*to == '#' && !im_on_channel(to, from_server)))
+		if (*to == '$' || (is_channel(to) && 
+					!im_on_channel(to, from_server)))
 		{
 			allow_ctcp_reply = 0;
 			continue;
@@ -873,11 +877,15 @@ char *	do_notice_ctcp (const char *from, const char *to, char *str)
 		else
 			ctcp_argument = endstr(the_ctcp);
 
+		/* Set up the window level/logging */
+		if (is_channel(to))
+			l = message_from(to, LEVEL_CTCP);
+		else
+			l = message_from(from, LEVEL_CTCP);
 
 		/* 
 		 * Find the correct CTCP and run it.
 		 */
-
 		for (i = 0; i < NUMBER_OF_CTCPS; i++)
 			if (!strcmp(ctcp_command, ctcp_cmd[i].name))
 				break;
@@ -888,32 +896,31 @@ char *	do_notice_ctcp (const char *from, const char *to, char *str)
 		 */
 		if (i < NUMBER_OF_CTCPS && ctcp_cmd[i].repl)
 		{
-			if ((ptr = ctcp_cmd[i].repl(ctcp_cmd + i, from, to, ctcp_argument)))
-			{
-				strlcat(local_ctcp_buffer, ptr, sizeof local_ctcp_buffer);
-				new_free(&ptr);
-				continue;
-			}
+		    if ((ptr = ctcp_cmd[i].repl(ctcp_cmd + i, from, to, 
+						ctcp_argument)))
+		    {
+			strlcat(local_ctcp_buffer, ptr, 
+					sizeof local_ctcp_buffer);
+			new_free(&ptr);
+			continue;
+		    }
 		}
 
-		/* Set up the window level/logging */
-		if (is_channel(to))
-			l = message_from(to, LEVEL_CTCP);
-		else
-			l = message_from(from, LEVEL_CTCP);
-
 		/* Toss it at the user.  */
-		if (do_hook(CTCP_REPLY_LIST, "%s %s %s %s", from, to, ctcp_command, ctcp_argument))
-			say("CTCP %s reply from %s: %s", ctcp_command, from, ctcp_argument);
-
+		if (ctcp_cmd[i].flag & CTCP_TELLUSER)
+		{
+		    if (do_hook(CTCP_REPLY_LIST, "%s %s %s %s", 
+					from, to, ctcp_command, ctcp_argument))
+			say("CTCP %s reply from %s: %s", 
+					ctcp_command, from, ctcp_argument);
+		}
 		if (!(ctcp_cmd[i].flag & CTCP_NOLIMIT))
 			allow_ctcp_reply = 0;
 
 		pop_message_from(l);
 	}
 
-	if (in_ctcp_flag == -1)
-		in_ctcp_flag = 0;
+	in_ctcp_flag--;
 
 	/* 
 	 * local_ctcp_buffer is derived from 'str', so its always

@@ -1,8 +1,20 @@
 #
 # Help replacement written by howl 2003
 #
-
 package help
+
+addset help_path str
+set help_path $irclib()/help/
+
+addset help_window bool
+set help_window off
+
+addset help_prompt bool
+set help_prompt off
+
+addset help_pager bool
+set help_pager on
+
 alias h {help.help $*}
 alias help {help.help $*}
 
