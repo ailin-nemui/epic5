@@ -1,4 +1,4 @@
-/* $EPIC: if.c,v 1.32 2005/03/19 03:55:55 jnelson Exp $ */
+/* $EPIC: if.c,v 1.33 2005/06/04 03:59:33 jnelson Exp $ */
 /*
  * if.c: the IF, WHILE, FOREACH, DO, FE, FEC, and FOR commands for IRCII 
  *
@@ -252,6 +252,8 @@ BUILT_IN_COMMAND(docmd)
 				}
 				if (return_exception)
 					break;
+				if (system_exception)
+					break;
 
 				/* Alas, too bad the malloc is neccesary */
 				malloc_strcpy(&newexp, expr);
@@ -297,9 +299,10 @@ BUILT_IN_COMMAND(whilecmd)
 
 	will_catch_break_exceptions++;
 	will_catch_continue_exceptions++;
+	newexp = alloca(strlen(exp) + 2);
 	while (1)
 	{
-		newexp = LOCAL_COPY(exp);
+		strlcpy(newexp, exp, strlen(exp) + 1);
 		ptr = parse_inline(newexp, subargs);
 		if (check_val(ptr) != whileval)
 			break;
@@ -318,6 +321,8 @@ BUILT_IN_COMMAND(whilecmd)
 			break;
 		}
 		if (return_exception)
+			break;
+		if (system_exception)
 			break;
 	}
 	will_catch_break_exceptions--;
@@ -400,6 +405,8 @@ BUILT_IN_COMMAND(foreach)
 			break;
 		}
 		if (return_exception)
+			break;
+		if (system_exception)
 			break;
 	}
 	while (++i < total)
@@ -529,6 +536,8 @@ BUILT_IN_COMMAND(fe)
 		}
 		if (return_exception)
 			break;
+		if (system_exception)
+			break;
 	}
 	will_catch_break_exceptions--;
 	will_catch_continue_exceptions--;
@@ -591,6 +600,8 @@ static void	for_next_cmd (int argc, char **argv, const char *subargs)
 			continue_exception = 0;	/* Dont continue here! */
 		if (return_exception)
 			break;
+		if (system_exception)
+			break;
 	}
 	will_catch_break_exceptions--;
 	will_catch_continue_exceptions--;
@@ -633,6 +644,8 @@ static void	for_fe_cmd (int argc, char **argv, const char *subargs)
 		if (continue_exception)
 			continue_exception = 0;	/* Dont continue here! */
 		if (return_exception)
+			break;
+		if (system_exception)
 			break;
 	}
 	will_catch_break_exceptions--;
@@ -741,10 +754,10 @@ BUILT_IN_COMMAND(forcmd)
 
 	will_catch_break_exceptions++;
 	will_catch_continue_exceptions++;
+	lameeval = alloca(strlen(evaluation) + 2);
 	while (1)
 	{
-		lameeval = LOCAL_COPY(evaluation);
-
+		strlcpy(lameeval, evaluation, strlen(evaluation) + 1);
 		blah = parse_inline(lameeval, subargs);
 		if (!check_val(blah))
 		{
@@ -762,6 +775,8 @@ BUILT_IN_COMMAND(forcmd)
 		if (continue_exception)
 			continue_exception = 0;	/* Dont continue here! */
 		if (return_exception)
+			break;
+		if (system_exception)
 			break;
 
 		runcmds(iteration, subargs);

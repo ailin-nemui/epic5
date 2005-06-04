@@ -3,7 +3,6 @@ EPIC5 Projects, Bugs, and other Errata:
 KNOWN ERRATA (eg, bugs, or unresolved requests):
 ------------------------------------------------
 * /on ctcp_reply is hooked even for action type things.
-* Permit some way to set the server a timer associates with
 * Async dns for servers is probably very buggy.
 
 LOOK FOR IN THE NEXT RELEASE
@@ -681,3 +680,14 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * By default, port 0 changes to irc_port (6667) for a new server
 * This means any use of <hostname> in a server context picks up 1st <hostname>
 * The -B command line option (load startup file before connect) is now default.
+* Don't do LOCAL_COPY within an infinite loop, leads to stack exahustion.
+* Support new signal, SIGUSR2 which throws "system_exception".
+* Teach the block commands about "system_exception" so they can be stopped.
+* Whack a bunch of unused timers from vars.c. (see UPDATES)
+* Sync up config.h, vars.h, and vars.c with each other.
+* Add "domains" to timers, server timers, window timer, general timers
+* When timers go off, latch back to their domain
+* Allow timers to self-cancel if their latched item has gone away
+* Add /timer -general to set a general timer.
+* Make /timer -win or /timer -serv set a window or serv timer especially.
+

@@ -10,12 +10,18 @@
 
 	BUILT_IN_COMMAND(timercmd);
 
+typedef enum {
+	SERVER_TIMER,
+	WINDOW_TIMER,
+	GENERAL_TIMER
+} TimerDomain;
+ 
 	void	ExecuteTimers 	(void);
-	char *	add_timer	(int, const char *, double, long, 
-				 int (*) (void *), void *, 
-				 const char *, int);
-	int	timer_exists	(const char *ref);
-	int     remove_timer	(const char *ref);
+	char *	add_timer	(int, Char *, double, long, 
+				 int (*) (void *), void *, Char *, 
+				 TimerDomain, int, int);
+	int	timer_exists	(Char *);
+	int     remove_timer	(Char *);
 	Timeval	TimerTimeout 	(void);
 	char *	timerctl	(char *);
 	void	dump_timers	(void);

@@ -1,4 +1,4 @@
-/* $EPIC: timer.c,v 1.48 2005/01/12 00:12:21 jnelson Exp $ */
+/* $EPIC: timer.c,v 1.49 2005/06/04 03:59:33 jnelson Exp $ */
 /*
  * timer.c -- handles timers in ircII
  *
@@ -54,7 +54,7 @@
 	int 	timer_exists (const char *ref);
 	int 	remove_timer (const char *ref);
 static void 	remove_all_timers (void);
-static	void	remove_window_timers (int winref);
+static	void	remove_timers_by_domref (int domain, int domref);
 static	void	list_timers (const char *command);
 
 /*
@@ -72,119 +72,162 @@ BUILT_IN_COMMAND(timercmd)
 	double	interval;
 	long	events = -2;
 	int	update = 0;
-	int	winref;
 	size_t	len;
+	TimerDomain	domain;
+	int	domref;
+	int	cancelable = 0;
 
-	winref = current_window ? (int)current_window->refnum : -1;
+	if (parsing_server_index != NOSERV)
+	{
+		domain = SERVER_TIMER;
+		domref = parsing_server_index;
+	}
+	else
+	{
+		domain = WINDOW_TIMER;
+		domref = current_window ? (int)current_window->refnum : -1;
+	}
 
 	while (*args == '-' || *args == '/')
 	{
-		flag = next_arg(args, &args);
-		len = strlen(flag + 1);
+	    flag = next_arg(args, &args);
+	    len = strlen(flag + 1);
 
-		if (!my_strnicmp(flag + 1, "DELETE", len))
+	    if (!my_strnicmp(flag + 1, "DELETE", len))
+	    {
+		if (!(ptr = next_arg(args, &args)))
+		    say("%s: Need a timer reference number for -DELETE",
+				command);
+
+		/* 
+		 * Try to delete what was given.  If that
+		 * doesn't work, see if it is "delete all".
+		 * Delete_timer returns -1 on error.
+		 */
+		else if (timer_exists(ptr))
+			remove_timer(ptr);
+
+		/*
+		 * Check to see if it is /timer -delete all
+		 *
+		 * Ugh.  Yes, this hack really _is_ required.
+		 * Please don't change it without talking to
+		 * me first to understand why.
+		 */
+		else if (*ptr && !my_strnicmp(ptr, "ALL", strlen(ptr)))
+			remove_all_timers();
+		else if (*ptr)
+			say("The timer \"%s\" doesn't exist!", ptr);
+		else
+			panic("how did timercmd get here?");
+
+		return;
+	    }
+	    else if (!my_strnicmp(flag + 1, "DELETE_FOR_WINDOW", len))
+	    {
+		if (!(ptr = next_arg(args, &args)) || !is_number(ptr))
 		{
-			if (!(ptr = next_arg(args, &args)))
-			    say("%s: Need a timer reference number for -DELETE",
-					command);
+		    say("%s: Need a window number for -DELETE_FOR_WINDOW", 
+				command);
+		    return;
+		}
 
-			/* 
-			 * Try to delete what was given.  If that
-			 * doesn't work, see if it is "delete all".
-			 * Delete_timer returns -1 on error.
-			 */
-			else if (timer_exists(ptr))
-				remove_timer(ptr);
-
-			/*
-			 * Check to see if it is /timer -delete all
-			 *
-			 * Ugh.  Yes, this hack really _is_ required.
-			 * Please don't change it without talking to
-			 * me first to understand why.
-			 */
-			else if (*ptr && !my_strnicmp(ptr, "ALL", strlen(ptr)))
-				remove_all_timers();
-			else if (*ptr)
-				say("The timer \"%s\" doesn't exist!", ptr);
-			else
-				panic("how did timercmd get here?");
-
+		domref = atol(ptr);
+		remove_timers_by_domref(WINDOW_TIMER, domref);
+		return;
+	    }
+	    else if (!my_strnicmp(flag+1, "REF", 3))	/* REFNUM */
+	    {
+		want = next_arg(args, &args);
+		if (!want || !*want)
+		{
+			say("%s: Missing argument to -REFNUM", command);
 			return;
 		}
-		else if (!my_strnicmp(flag + 1, "DELETE_FOR_WINDOW", len))
+
+		continue;
+	    }
+	    else if (!my_strnicmp(flag+1, "REP", 3))	/* REPEAT */
+	    {
+		char *na = next_arg(args, &args);
+		if (!na || !*na)
 		{
-			if (!(ptr = next_arg(args, &args)) || !is_number(ptr))
+			say("%s: Missing argument to -REPEAT", command);
+			return;
+		}
+		if (!strcmp(na, "*") || !strcmp(na, "-1"))
+			events = -1;
+		else if ((events = my_atol(na)) == 0)
+			return;	 /* Repeating 0 times is a noop */
+
+		continue;
+	    }
+	    else if (!my_strnicmp(flag + 1, "U", 1))	/* UPDATE */
+		update = 1;
+
+	    else if (!my_strnicmp(flag + 1, "L", 1))	/* LIST */
+	    {
+		list_timers(command);
+		return;
+	    }
+	    else if (!my_strnicmp(flag + 1, "W", 1))	/* WINDOW */
+	    {
+		char 	*na;
+		Window *win = NULL;
+
+		domain = WINDOW_TIMER;
+		if ((na = next_arg(args, &args)))
+			win = get_window_by_desc(na);
+
+		if (!win)
+		{
+		    if (my_stricmp(na, "-1"))
+		    {
+			say("%s: That window doesnt exist!", command);
+			return;
+		    }
+		    else
+			domref = -1;
+		}
+		else
+			domref = win->refnum;
+	    }
+	    else if (!my_strnicmp(flag + 1, "S", 1))	/* SERVER */
+	    {
+		char 	*na;
+
+		domain = SERVER_TIMER;
+		domref = from_server;
+
+		if ((na = next_arg(args, &args)))
+		{
+		    if ((domref = str_to_servref(na)) == NOSERV)
+		    {
+			/* -1 defaults to from_server anyways */
+			if (!my_stricmp(na, "-1"))
+			    domref = from_server;
+			else
 			{
-			    say("%s: Need a window number for -DELETE_FOR_WINDOW", command);
+			    say("%s: Server %s doesnt exist!", command, na);
 			    return;
 			}
-
-			winref = atol(ptr);
-			remove_window_timers(winref);
-			return;
+		    }
 		}
-		else if (!my_strnicmp(flag+1, "REF", 3))	/* REFNUM */
-		{
-			want = next_arg(args, &args);
-			if (!want || !*want)
-			{
-				say("%s: Missing argument to -REFNUM", command);
-				return;
-			}
-
-			continue;
-		}
-		else if (!my_strnicmp(flag+1, "REP", 3))	/* REPEAT */
-		{
-			char *na = next_arg(args, &args);
-			if (!na || !*na)
-			{
-				say("%s: Missing argument to -REPEAT", command);
-				return;
-			}
-			if (!strcmp(na, "*") || !strcmp(na, "-1"))
-				events = -1;
-			else if ((events = my_atol(na)) == 0)
-				return;	 /* Repeating 0 times is a noop */
-
-			continue;
-		}
-		else if (!my_strnicmp(flag + 1, "U", 1))	/* UPDATE */
-			update = 1;
-
-		else if (!my_strnicmp(flag + 1, "L", 1))	/* LIST */
-		{
-			list_timers(command);
-			return;
-		}
-		else if (!my_strnicmp(flag + 1, "W", 1))	/* WINDOW */
-		{
-			char 	*na;
-			Window *win = NULL;
-
-			if ((na = next_arg(args, &args)))
-				win = get_window_by_desc(na);
-
-			if (!win)
-			{
-			    if (my_stricmp(na, "-1"))
-			    {
-				say("%s: That window doesnt exist!", command);
-				return;
-			    }
-			    else
-				winref = -1;
-			}
-			else
-				winref = win->refnum;
-		}
-
-		else
-		{
-			say("%s: %s no such flag", command, flag);
-			return;
-		}
+	    }
+	    else if (!my_strnicmp(flag + 1, "G", 1))	/* GENERAL */
+	    {
+		domain = GENERAL_TIMER;
+		domref = -1;
+	    }
+	    else if (!my_strnicmp(flag + 1, "C", 1))	/* CANCELABLE */
+	    {
+		cancelable = 1;
+	    }
+	    else
+	    {
+		say("%s: %s no such flag", command, flag);
+		return;
+	    }
 	}
 
 
@@ -198,7 +241,8 @@ BUILT_IN_COMMAND(timercmd)
 				update = 0;
 			else
 			{
-				say("%s: To use -UPDATE you must specify a valid refnum", command);
+				say("%s: To use -UPDATE you must specify a "
+						"valid refnum", command);
 				return;
 			}
 		}
@@ -215,7 +259,8 @@ BUILT_IN_COMMAND(timercmd)
 			events = -1;
 */
 
-		add_timer(update, want, interval, events, NULL, args, subargs, winref);
+		add_timer(update, want, interval, events, NULL, args, subargs, 
+				domain, domref, cancelable);
 	}
 	else
 		list_timers(command);
@@ -240,8 +285,9 @@ typedef struct  timerlist_stru
         struct  timerlist_stru *next;
 	long	events;
 	Timeval	interval;
-	int	server;
-	int	window;
+	int	domain;
+	int	domref;
+	int	cancelable;
 	long	fires;
 }       Timer;
 
@@ -267,8 +313,9 @@ static Timer * new_timer (void)
 	ntimer->events = 0;
 	ntimer->interval.tv_sec = 0;
 	ntimer->interval.tv_usec = 0;
-	ntimer->server = FROMSERV;
-	ntimer->window = -1;
+	ntimer->domain = GENERAL_TIMER;
+	ntimer->domain = -1;
+	ntimer->cancelable = 0;
 	ntimer->fires = 0;
 	return ntimer;
 }
@@ -291,8 +338,9 @@ static Timer *clone_timer (Timer *otimer)
 	ntimer->next = NULL;
 	ntimer->events = otimer->events;
 	ntimer->interval = otimer->interval;
-	ntimer->server = otimer->server;
-	ntimer->window = otimer->window;
+	ntimer->domain = otimer->domain;
+	ntimer->domref = otimer->domref;
+	ntimer->cancelable = otimer->cancelable;
 	ntimer->fires = otimer->fires;
 	return ntimer;
 }
@@ -538,7 +586,7 @@ static void 	remove_all_timers (void)
 	}
 }
 
-static	void	remove_window_timers (int winref)
+static	void	remove_timers_by_domref (int domain, int domref)
 {
 	Timer *ref, *next;
 
@@ -547,7 +595,9 @@ static	void	remove_window_timers (int winref)
 		next = ref->next;
 		if (ref->callback)
 			continue;
-		if (ref->window != winref)
+		if (ref->domain != domain)
+			continue;
+		if (ref->domref != domref)
 			continue;
 		unlink_timer(ref);
 		delete_timer(ref);
@@ -578,7 +628,7 @@ static	void	remove_window_timers (int winref)
  *		 know anything of the nature of the argument.
  * subargs:	 should be NULL, its ignored anyhow.
  */
-char *add_timer (int update, const char *refnum_want, double interval, long events, int (callback) (void *), void *commands, const char *subargs, int winref)
+char *add_timer (int update, const char *refnum_want, double interval, long events, int (callback) (void *), void *commands, const char *subargs, TimerDomain domain, int domref, int cancelable)
 {
 	Timer	*ntimer, *otimer = NULL;
 	char *	refnum_got = NULL;
@@ -635,9 +685,8 @@ char *add_timer (int update, const char *refnum_want, double interval, long even
 			malloc_strcpy(&ntimer->subargs, subargs);
 		}
 
-		if (winref != -1)
-			ntimer->window = winref;
-
+		if (domref != -1)
+			ntimer->domref = domref;
 	}
 	else
 	{
@@ -659,8 +708,9 @@ char *add_timer (int update, const char *refnum_want, double interval, long even
 		else
 			malloc_strcpy(&ntimer->command, (const char *)commands);
 		malloc_strcpy(&ntimer->subargs, subargs);
-		ntimer->window = winref;
-		ntimer->server = from_server;
+		ntimer->domain = domain;
+		ntimer->domref = domref;
+		ntimer->cancelable = cancelable;
 		ntimer->fires = 0;
 	}
 
@@ -668,7 +718,6 @@ char *add_timer (int update, const char *refnum_want, double interval, long even
 	retval = ntimer->ref;
 	return retval;		/* Eliminates a specious warning from gcc */
 }
-
 
 
 /*
@@ -727,18 +776,50 @@ void 	ExecuteTimers (void)
 			schedule_timer(next);
 		}
 
-		/*
-		 * Restore from_server and current_window from when the
-		 * timer was registered
-		 */
-		make_window_current_by_refnum(current->window);
-
-		if (is_server_open(current->server))
-			from_server = current->server;
-		else if (is_server_open(current_window->server))
+		if (current->domain == SERVER_TIMER)
+		{
+		    if (!is_server_valid(current->domref))
+		    {
+			if (current->cancelable)
+			    goto advance;
+			/* Otherwise, pretend you were a  "GENERAL" type */
+		    }
+		    else
+		    {
+			from_server = current->domref;
+			make_window_current_by_refnum(
+					get_winref_by_servref(from_server));
+		    }
+		}
+		else if (current->domain == WINDOW_TIMER)
+		{
+		    if (!get_window_by_refnum(current->domref))
+		    {
+			if (current->cancelable)
+			    goto advance;
+			/* Otherwise, pretend you were a "GENERAL" type */
+		    }
+		    else
+		    {
+			make_window_current_by_refnum(current->domref);
 			from_server = current_window->server;
+		    }
+		}
 		else
-			from_server = NOSERV;
+		{
+		    /* General timers focus on the current window. */
+		    if (current_window)
+		    {
+			if (current_window->server != from_server)
+			    from_server = current_window->server;
+		    }
+		    else
+		    {
+			if (from_server != NOSERV)
+			    make_window_current_by_refnum(
+				get_winref_by_servref(from_server));
+		    }
+		}
 
 		/* 
 		 * If a callback function was registered, then
@@ -755,6 +836,7 @@ void 	ExecuteTimers (void)
 
 		from_server = old_from_server;
 		make_window_current_by_refnum(old_refnum);
+advance:
 		delete_timer(current);
 	}
 }
@@ -832,9 +914,13 @@ char *	timerctl (char *input)
 			return malloc_sprintf(NULL, "%ld %ld", (long) t->interval.tv_sec,
 						    (long) t->interval.tv_usec);
 		} else if (!my_strnicmp(listc, "SERVER", len)) {
-			RETURN_INT(t->server);
+			if (t->domain != SERVER_TIMER)
+				RETURN_INT(-1);
+			RETURN_INT(t->domref);
 		} else if (!my_strnicmp(listc, "WINDOW", len)) {
-			RETURN_INT(t->window);
+			if (t->domain != WINDOW_TIMER)
+				RETURN_INT(-1);
+			RETURN_INT(t->domref);
 		}
 	} else if (!my_strnicmp(listc, "SET", len)) {
 		GET_STR_ARG(refstr, input);
@@ -876,12 +962,14 @@ char *	timerctl (char *input)
 			int	refnum;
 
 			GET_INT_ARG(refnum, input);
-			t->server = refnum;
+			t->domain = SERVER_TIMER;
+			t->domref = refnum;
 		} else if (!my_strnicmp(listc, "WINDOW", len)) {
-			int	winref;
+			int	refnum;
 
-			GET_INT_ARG(winref, input);
-			t->window = winref;
+			GET_INT_ARG(refnum, input);
+			t->domain = WINDOW_TIMER;
+			t->domref = refnum;
 		}
 	} else
 		RETURN_EMPTY;

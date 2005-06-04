@@ -1,4 +1,4 @@
-/* $EPIC: server.c,v 1.180 2005/06/03 02:32:57 jnelson Exp $ */
+/* $EPIC: server.c,v 1.181 2005/06/04 03:59:33 jnelson Exp $ */
 /*
  * server.c:  Things dealing with that wacky program we call ircd.
  *
@@ -1883,6 +1883,14 @@ int	is_server_active (int refnum)
 		return 1;
 	return 0;
 }
+
+int	is_server_valid (int refnum)
+{
+	if (get_server(refnum))
+		return 1;
+	return 0;
+}
+
 
 BUILT_IN_COMMAND(disconnectcmd)
 {

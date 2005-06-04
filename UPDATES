@@ -1,5 +1,59 @@
 EPIC5-0.0.6
 
+*** News 06/03/2005 -- New /TIMER flags, and execution contexts.
+	[ About timer domains ]
+	Each timer now belongs to one of three domains:
+		1) Server timers
+		2) Window timers
+		3) General timers
+	A "server timer" is created when you run /TIMER down-wind from
+	an /ON caused by a server event.  A "window timer" is created
+	when you run /TIMER at any other time.
+
+	[ Forcing a particular type of timer ]
+	You can manually force a timer to be in a particular domain
+	with a flag:
+		/TIMER -SERVER <refnum>		Create a server timer
+		/TIMER -WINDOW <refnum>		Create a window timer
+		/TIMER -GENERAL			Create a general timer.
+
+	[ When timers go off, they change the current window and server ]
+	When a timer goes off, if it is a server timer, then it will 
+	switch the default server to its server, and switch the current
+	window to that server's current window.  If the timer is a window
+	timer, it switches the current window to its window, and switches
+	the current server to that window's server.  If the timer is a 
+	general timer, it leaves the current window alone, and switches
+	the server to the current window's server.
+
+	[ When timers go off and their window or server is gone ]
+	So each server and window timer is "attached" to something, either
+	a server refnum or a window refnum.  If that thing it is attached to
+	no longer exists when the timer goes off, then the timer has to either
+	turn into a general timer (and bind to the current server) or simply
+	not execute at all.  If you use the -CANCELABLE flag, the timer is 
+	cancelable and will not execute in this case.  The default is to be
+	non-cancelable and to be treated as a general timer if the window or
+	server disappears.
+
+*** News 06/03/2005 -- The SIGUSR2 signal now supported
+	If you send epic the SIGUSR2 signal (kill -USR2 pid) from an
+	outside shell, EPIC will throw a "system exception" which makes
+	epic give up on whatever it is doing and fully unrecurse.  This
+	can be used to break out of an infinite loop.
+
+*** News 06/03/2005 -- Several builtin /set's removed, now scripted
+	The following builtin sets which no longer are used in the base
+	executable have been formally removed.  Many of them have been
+	implemented by the 'builtins' script.
+
+		AUTO_NEW_NICK		AUTO_RECONNECT	
+		AUTO_RECONNECT_DELAY	AUTO_REJOIN_CONNECT
+		CONNECT_TIMEOUT		HELP_PAGER
+		HELP_PATH		HELP_PROMPT
+		HELP_WINDOW		MAX_RECONNECTS
+		SWITCH_CHANNEL_ON_PART
+
 *** News 06/02/2005 -- Your startup script is loaded before connecting
 	Historically ircII has always loaded your startup script (~/.epicrc
 	or ~/.ircrc) after you successfully completed your first connection 

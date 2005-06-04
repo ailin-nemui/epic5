@@ -1,4 +1,4 @@
-/* $EPIC: vars.c,v 1.73 2005/05/02 03:55:49 jnelson Exp $ */
+/* $EPIC: vars.c,v 1.74 2005/06/04 03:59:33 jnelson Exp $ */
 /*
  * vars.c: All the dealing of the irc variables are handled here. 
  *
@@ -152,13 +152,8 @@ void 	init_variables_stage1 (void)
 	VAR(ALLOW_C1_CHARS, 		BOOL, NULL)
 	VAR(ALT_CHARSET, 		BOOL, NULL)
 	VAR(ALWAYS_SPLIT_BIGGEST, 	BOOL, NULL)
-	VAR(AUTO_NEW_NICK,		BOOL, NULL)
-	VAR(AUTO_RECONNECT, 		BOOL, NULL)
-	VAR(AUTO_RECONNECT_DELAY, 	INT,  NULL)
-	VAR(AUTO_REJOIN_CONNECT, 	BOOL, NULL)
 	VAR(BAD_STYLE, 			BOOL, NULL)
 	VAR(BANNER, 			STR,  NULL)
-#define DEFAULT_BANNER_EXPAND 0
 	VAR(BANNER_EXPAND, 		BOOL, NULL)
 	VAR(BEEP, 			BOOL, NULL)
 	VAR(BEEP_MAX, 			INT,  NULL)
@@ -174,7 +169,6 @@ void 	init_variables_stage1 (void)
 	VAR(CMDCHARS, 			STR,  NULL);
 	VAR(COLOR, BOOL, NULL);
 	VAR(COMMENT_HACK, BOOL, NULL);
-	VAR(CONNECT_TIMEOUT, INT,  NULL);
 	VAR(CONTINUED_LINE, STR,  NULL);
 	VAR(CPU_SAVER_AFTER, INT,  set_cpu_saver_after);
 	VAR(CPU_SAVER_EVERY, INT,  set_cpu_saver_every);
@@ -183,9 +177,7 @@ void 	init_variables_stage1 (void)
 	VAR(DCC_DEQUOTE_FILENAMES, BOOL, NULL);
 	VAR(DCC_LONG_PATHNAMES, BOOL, NULL);
 	VAR(DCC_SLIDING_WINDOW, INT,  NULL);
-#define DEFAULT_DCC_STORE_PATH NULL
 	VAR(DCC_STORE_PATH, STR,  NULL);
-#define DEFAULT_DCC_USE_GATEWAY_ADDR 0
 	VAR(DCC_USE_GATEWAY_ADDR, BOOL, NULL)
 #define DEFAULT_DEBUG 0
 	VAR(DEBUG, INT,  NULL);
@@ -204,16 +196,6 @@ void 	init_variables_stage1 (void)
 	VAR(FLOOD_RATE_PER, INT,  NULL);
 	VAR(FLOOD_USERS, INT,  NULL);
 	VAR(FLOOD_WARNING, BOOL, NULL);
-	VAR(HELP_PAGER, BOOL, NULL);
-	/*
-	 * Construct the default help path
-	 */
-	s = malloc_strdup(irc_lib);
-	malloc_strcat(&s, "/help");
-#define DEFAULT_HELP_PATH s
-	VAR(HELP_PATH, STR,  NULL);
-	VAR(HELP_PROMPT, BOOL, NULL);
-	VAR(HELP_WINDOW, BOOL, NULL);
 	VAR(HIDE_PRIVATE_CHANNELS, BOOL, update_all_status_wrapper);
 	VAR(HIGHLIGHT_CHAR, STR,  set_highlight_char);
 	VAR(HIGH_BIT_ESCAPE, INT,  set_meta_8bit);
@@ -240,9 +222,7 @@ void 	init_variables_stage1 (void)
 	VAR(MANGLE_LOGFILES, STR,  set_mangle_logfiles);
 #define DEFAULT_MANGLE_OUTBOUND NULL
 	VAR(MANGLE_OUTBOUND, STR,  set_mangle_outbound);
-	VAR(MAX_RECONNECTS, INT,  NULL);
 	VAR(METRIC_TIME, BOOL, reset_clock);
-#define DEFAULT_MIRC_BROKEN_DCC_RESUME 0
 	VAR(MIRC_BROKEN_DCC_RESUME, BOOL, NULL);
 	VAR(MODE_STRIPPER, BOOL, NULL);
 	VAR(ND_SPACE_MAX, INT,  NULL);
@@ -263,7 +243,6 @@ void 	init_variables_stage1 (void)
 	VAR(RANDOM_SOURCE, INT,  NULL);
 #define DEFAULT_REALNAME NULL
 	VAR(REALNAME, STR,  NULL);
-#define DEFAULT_SCREEN_OPTIONS NULL
 	VAR(SCREEN_OPTIONS, STR,  NULL);
 	VAR(SCROLLBACK, INT,  set_scrollback_size);
 	VAR(SCROLLBACK_RATIO, INT,  NULL);
@@ -297,7 +276,6 @@ void 	init_variables_stage1 (void)
 	VAR(STATUS_INSERT, STR,  build_status);
 	VAR(STATUS_MAIL, STR,  build_status);
 	VAR(STATUS_MODE, STR,  build_status);
-#define DEFAULT_STATUS_NICKNAME DEFAULT_STATUS_NICK
 	VAR(STATUS_NICKNAME, STR,  build_status);
 	VAR(STATUS_NOSWAP, STR,  build_status);
 	VAR(STATUS_NOTIFY, STR,  build_status);
@@ -355,7 +333,6 @@ void 	init_variables_stage1 (void)
 	VAR(STATUS_WINDOW, STR,  build_status);
 	VAR(SUPPRESS_FROM_REMOTE_SERVER, BOOL, NULL);
 	VAR(SWITCH_CHANNELS_BETWEEN_WINDOWS, BOOL, NULL);
-	VAR(SWITCH_CHANNEL_ON_PART, BOOL, NULL);
 	VAR(TAB, BOOL, NULL);
 	VAR(TAB_MAX, INT,  NULL);
 	VAR(TERM_DOES_BRIGHT_BLINK, BOOL, NULL);
