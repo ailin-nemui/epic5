@@ -690,4 +690,4 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Allow timers to self-cancel if their latched item has gone away
 * Add /timer -general to set a general timer.
 * Make /timer -win or /timer -serv set a window or serv timer especially.
-
+* Ooops. I really botched that.  Make epic5 start again.

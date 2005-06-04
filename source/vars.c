@@ -1,4 +1,4 @@
-/* $EPIC: vars.c,v 1.74 2005/06/04 03:59:33 jnelson Exp $ */
+/* $EPIC: vars.c,v 1.75 2005/06/04 13:51:50 jnelson Exp $ */
 /*
  * vars.c: All the dealing of the irc variables are handled here. 
  *
@@ -145,8 +145,6 @@ static int	add_biv (const char *name, int bucket, int type, void (*func) (void *
  */
 void 	init_variables_stage1 (void)
 {
-	char 	*s;
-
 	var_bucket = new_bucket();
 
 	VAR(ALLOW_C1_CHARS, 		BOOL, NULL)
@@ -348,8 +346,6 @@ void 	init_variables_stage1 (void)
 	VAR(WSERV_TYPE, STR,  set_wserv_type);
 	VAR(XTERM, STR,  NULL);
 	VAR(XTERM_OPTIONS, STR,  NULL);
-
-	new_free(&s);
 }
 
 void 	init_variables_stage2 (void)
