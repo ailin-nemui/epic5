@@ -1,4 +1,4 @@
-/* $EPIC: window.c,v 1.148 2005/06/02 05:36:16 jnelson Exp $ */
+/* $EPIC: window.c,v 1.149 2005/06/16 13:48:33 jnelson Exp $ */
 /*
  * window.c: Handles the organzation of the logical viewports (``windows'')
  * for irc.  This includes keeping track of what windows are open, where they
@@ -5919,7 +5919,8 @@ char 	*windowctl 	(char *input)
 			RETURN_MSTR(ret);
 		}
 		RETURN_EMPTY;
-	    }
+	    } else
+		RETURN_EMPTY;
 	} else if (!my_strnicmp(listc, "SET", len)) {
 	    GET_INT_ARG(refnum, input);
 	    if (!(w = get_window_by_refnum(refnum)))
@@ -5937,6 +5938,10 @@ char 	*windowctl 	(char *input)
 	    } else if (!my_strnicmp(listc, "LAST_SERVER", len)) {
 		RETURN_EMPTY;
 	    } else if (!my_strnicmp(listc, "PRIORITY", len)) {
+		RETURN_EMPTY;
+	    } else if (!my_strnicmp(listc, "VISIBLE", len)) {
+		RETURN_EMPTY;
+	    } else if (!my_strnicmp(listc, "SAVED", len)) {
 		RETURN_EMPTY;
 	    } else if (!my_strnicmp(listc, "TOP", len)) {
 		RETURN_EMPTY;
@@ -5958,6 +5963,16 @@ char 	*windowctl 	(char *input)
 		RETURN_EMPTY;
 	    } else if (!my_strnicmp(listc, "MISCFLAGS", len)) {
 		RETURN_EMPTY;
+	    } else if (!my_strnicmp(listc, "NOTIFY", len)) {
+		RETURN_EMPTY;
+	    } else if (!my_strnicmp(listc, "NOTIFY_NAME", len)) {
+		if (input && *input)
+			malloc_strcpy(&w->notify_name, input);
+		else
+			new_free(&w->notify_name);
+		RETURN_INT(1);
+	    } else if (!my_strnicmp(listc, "NOTIFIED", len)) {
+		RETURN_EMPTY;
 	    } else if (!my_strnicmp(listc, "BEEP_ALWAYS", len)) {
 		RETURN_EMPTY;
 	    } else if (!my_strnicmp(listc, "NOTIFY_LEVEL", len)) {
@@ -5970,6 +5985,8 @@ char 	*windowctl 	(char *input)
 		RETURN_EMPTY;
 	    } else if (!my_strnicmp(listc, "PROMPT", len)) {
 		RETURN_EMPTY;
+	    } else if (!my_strnicmp(listc, "DOUBLE", len)) {
+		RETURN_EMPTY;
 	    } else if (!my_strnicmp(listc, "STATUS_FORMAT", len)) {
 		RETURN_EMPTY;
 	    } else if (!my_strnicmp(listc, "STATUS_FORMAT1", len)) {
@@ -5981,10 +5998,6 @@ char 	*windowctl 	(char *input)
 	    } else if (!my_strnicmp(listc, "STATUS_LINE1", len)) {
 		RETURN_EMPTY;
 	    } else if (!my_strnicmp(listc, "STATUS_LINE2", len)) {
-		RETURN_EMPTY;
-	    } else if (!my_strnicmp(listc, "DISPLAY_BUFFER_SIZE", len)) {
-		RETURN_EMPTY;
-	    } else if (!my_strnicmp(listc, "DISPLAY_BUFFER_MAX", len)) {
 		RETURN_EMPTY;
 	    } else if (!my_strnicmp(listc, "DISPLAY_BUFFER_SIZE", len)) {
 		RETURN_EMPTY;
@@ -6045,7 +6058,8 @@ char 	*windowctl 	(char *input)
 		RETURN_EMPTY;
 	    } else if (!my_strnicmp(listc, "LINE", len)) {
 		RETURN_EMPTY;
-	    }
+	    } else
+		RETURN_EMPTY;
 	} else
 		RETURN_EMPTY;
 

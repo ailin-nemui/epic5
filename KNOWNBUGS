@@ -2,7 +2,11 @@ EPIC5 Projects, Bugs, and other Errata:
 
 KNOWN ERRATA (eg, bugs, or unresolved requests):
 ------------------------------------------------
-<none>
+* You can /set scroll to less than a window's size, leading to crash
+* You can /set scrollback to less than a window's size, leading to crash.
+* /window <refnum> noserv causes bad fd loop.
+* Support dalnet's CASEMAPPING=ascii senselessness.
+* /exec -out should go to current target, not just current channel.
 
 LOOK FOR IN THE NEXT RELEASE
 ----------------------------
@@ -10,6 +14,7 @@ LOOK FOR IN THE NEXT RELEASE
 * Output rules
 * GC of a lot of the newly scripted stuff
 * Support for CNOTICE
+* Turn unified symbol table into an inode table (name, entry), entry in array
 
 [See http://www.epicsol.org/PROJECTS for things to come in the future]
 [See http://www.epicsol.org/CHANGELOG5 for things that changed in the past]
@@ -691,3 +696,6 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Make /timer -win or /timer -serv set a window or serv timer especially.
 * Ooops. I really botched that.  Make epic5 start again.
 * Don't offer non-"TELLUSER" ctcps via /on ctcp_reply (ACTION/SED/UTC)
+* Implement $windowctl(SET .. NOTIFY_NAME) for howl.
+* Fix a few things with the dns helper.
+* In /on type '<pattern>', Set $* so <pattern> can match against itself.

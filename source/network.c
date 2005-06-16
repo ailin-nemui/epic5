@@ -1,4 +1,4 @@
-/* $EPIC: network.c,v 1.69 2005/05/20 23:49:16 jnelson Exp $ */
+/* $EPIC: network.c,v 1.70 2005/06/16 13:48:33 jnelson Exp $ */
 /*
  * network.c -- handles stuff dealing with connecting and name resolving
  *
@@ -864,7 +864,7 @@ pid_t	async_getaddrinfo (const char *nodename, const char *servname, const AI *h
 		err = -abs(err);		/* Always a negative number */
 		write(fd, &err, sizeof(err));
 		close(fd);
-                return;
+		exit(0);
         }
 
 	if (!results)
@@ -872,7 +872,7 @@ pid_t	async_getaddrinfo (const char *nodename, const char *servname, const AI *h
 		err = 0;
 		write(fd, &err, sizeof(err));
 		close(fd);
-                return;
+		exit(0);
         }
 
         marshall_getaddrinfo(fd, results);
@@ -949,9 +949,8 @@ void	marshall_getaddrinfo (int fd, AI *results)
 void	unmarshall_getaddrinfo (AI *results)
 {
 	ssize_t	len;
-	ssize_t	alignment = sizeof(void *);
 	AI 	*result;
-	char 	*retval, *ptr;
+	char 	*ptr;
 
 	/* Why do I know I'm gonna regret this? */
 	for (result = results; result; result = result->ai_next)
