@@ -9,7 +9,6 @@ package global
 
 load builtins
 load history
-load basical
 load hold_mode
 load help
 load 2.8script

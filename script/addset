@@ -1,0 +1,24 @@
+if (word(2 $loadinfo()) != [pf]) { load -pf $word(1 $loadinfo()); return; };
+
+#
+# Written by Blackjac.
+# There shouldn't be any harm in re-loading this, right?
+#
+package addset;
+alias addset (name, type, ...) {
+        if (@name && type) {
+                @ symbolctl(create $name);
+                @ symbolctl(set $name 1 builtin_variable type $type);
+                if (@) {
+                        @ symbolctl(set $name 1 builtin_variable script $*);
+                };
+        };
+};
+
+alias delset (name, void) {
+        if (@name) {
+                @ symbolctl(delete $name builtin_variable);
+                @ symbolctl(check $name);
+        };
+};
+

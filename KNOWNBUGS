@@ -699,3 +699,7 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Implement $windowctl(SET .. NOTIFY_NAME) for howl.
 * Fix a few things with the dns helper.
 * In /on type '<pattern>', Set $* so <pattern> can match against itself.
+* Move 'addset', 'delset' from 'builtins' to its own script.
+* Remove commented out obsolete stuff from 'functions' script.
+* Pf-ify the 'help' script.
+* Desupport a bunch of scripts.  See UPDATES.

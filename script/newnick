@@ -29,6 +29,7 @@ if (word(2 $loadinfo()) != [pf]) {
 #			is already in use. Leave a space between each nickname.
 
 package newnick;
+load addset;
 
 alias newnick.mangle (nick, void) {
 	@ :length = getset(auto_new_nick_length);

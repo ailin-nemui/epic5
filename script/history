@@ -97,6 +97,7 @@ if (word(2 $loadinfo()) != [pf]) {
 #			purges the history buffer and disables command history.
 
 package history;
+load addset;
 
 alias history (index, void) {
 	xecho -b -c Command History:;

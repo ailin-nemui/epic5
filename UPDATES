@@ -1,5 +1,30 @@
 EPIC5-0.0.6
 
+*** News 06/21/2005 -- Many scripts desupported
+	Many scripts that shipped with epic4 are now unsupported in epic5.
+	They will always be available at 
+
+	ftp://ftp.epicsol.org/pub/epic/old-scripts/epic5-old-scripts.zip
+
+	but they won't be supported for use with epic5, unless someone 
+	makes a motion to re-support them.  Here are the scripts:
+
+	alias		altchan		autokick	autoop
+	away		basical		columns		dcc_spacefix
+	dcc_timeout	deban		dig		dns
+	edit		efnext		environment	events
+	events.hop	fake-dcc	fe		fe.pf
+	genalias	hybrid6		imap		ip-to-int
+	ircprimer	keybinds	killpath	kpstat
+	langtrans	list		ls		meta
+	mkpdir		more		mudirc		netsplit.env
+	newformat	nicks		old-dcc		prefix
+	recursion	repeat		scandir		sdiff
+	silent		sound		starutils	stat
+	status_lag	tabkey.th	tabkey		tc
+	time		tls		vi-binds	webster
+	window
+
 *** News 06/03/2005 -- New script, "newnick" (blackjac)
 	The "newnick" script, which is loaded automatically by the 'global' 
 	script [and which you need to load from your startup script if you 

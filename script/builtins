@@ -43,15 +43,7 @@ package builtins;
 
 # COMMANDS #
 
-alias addset (name, type, ...) {
-	if (@name && type) {
-		@ symbolctl(create $name);
-		@ symbolctl(set $name 1 builtin_variable type $type);
-		if (@) {
-			@ symbolctl(set $name 1 builtin_variable script $*);
-		};
-	};
-};
+load addset;
 
 alias bye (...) {
 	//quit $*;
@@ -59,13 +51,6 @@ alias bye (...) {
 
 alias date (...) {
 	//time $*;
-};
-
-alias delset (name, void) {
-	if (@name) {
-		@ symbolctl(delete $name builtin_variable);
-		@ symbolctl(check $name);
-	};
 };
 
 stub alias dump -pf dump;
