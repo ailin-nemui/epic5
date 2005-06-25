@@ -30,7 +30,7 @@ set paste off;
 addset paste_strip bool;
 set paste_strip 0;
 
-addset paste_delay integer;
+addset paste_delay int;
 set paste_delay 30;
 
 # # #
