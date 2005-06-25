@@ -1,4 +1,4 @@
-# test
+if (word(2 $loadinfo()) != [pf]) { load -pf $word(1 $loadinfo()); return; };
 /*
  * guh Copyright 1993 - Dont ask me why i called it that.  I just did.
  *
@@ -15,52 +15,52 @@
 
 alias whatchan 
 {
-	stack push on 319
+	stack push on 319;
 	^on ^319 * {
-		stack pop on 319
-		return $1-
-	}
-	wait for ^whois $0
-}
+		stack pop on 319;
+		return $1-;
+	};
+	wait for ^whois $0;
+};
 
 alias is_on 
 {
-	@ serverctl(set $servernum() maxison 0)
-	^local blahblah
+	@ serverctl(set $servernum() maxison 0);
+	^local blahblah;
 	stack push on 303
 	^on ^303 * {
-		bless
-		push blahblah $*
-	}
-	wait for ison $*
-	stack pop on 303
-	return $blahblah
-}
+		bless;
+		push blahblah $*;
+	};
+	wait for ison $*;
+	stack pop on 303;
+	return $blahblah;
+};
 
 alias is_off
 {
-	^local blahblah $*
+	^local blahblah $*;
 	fe ($is_on($*)) foo {
-		@ blahblah = remw($foo $blahblah)
-	}
-	return $blahblah
-}
+		@ blahblah = remw($foo $blahblah);
+	};
+	return $blahblah;
+};
 
 alias uh 
 {
-	^local blahblah
+	^local blahblah;
 	wait for {
 		^userhost $* -cmd {
-			bless
-			push blahblah $3@$4
-		}
-	}
-	return $blahblah
-}
+			bless;
+			push blahblah $3@$4;
+		};
+	};
+	return $blahblah;
+};
 
 alias inc 
 {
-	@ $0 += [$1]?[$1]:1
-}
+	@ $0 += [$1]?[$1]:1;
+};
 
 #hop'93

@@ -1,3 +1,5 @@
+if (word(2 $loadinfo()) != [pf]) { load -pf $word(1 $loadinfo()); return; };
+
 #
 # A file pager.  A demonstration of how to do something useful in ircII.
 # This cheesy rip-off was written by hop in 1996.
@@ -11,59 +13,56 @@
 # when paging a file. 
 #
 # (1: Des (Desember) is Dec (December) in Norwegian)
-
+#
 alias less (file default "-help")
 {
-	@ winnum = winnum()
+	@ winnum = winnum();
 	if (file == [-help]) {
-		xecho -w $winnum Usage: /less <filename>
+		xecho -w $winnum Usage: /less <filename>;
 	} elsif (fexist($file) == 1) {
-		less_file $open($file R) ${winsize() - 1} $winnum
+		less_file $open($file R) ${winsize() - 1} $winnum;
 	} else {
-		xecho -w $winnum $file\: no such file.
-	}
-}
-
+		xecho -w $winnum $file\: no such file.;
+	};
+};
 
 alias less_file (file, count, winnum default 0, void)
 {
-	^local line 0
-	^local ugh
-	^local width ${word(0 $geom())-1}
+	^local line 0;
+	^local ugh;
+	^local width ${word(0 $geom())-1};
 	
-	stack push set indent
-	stack push set continue_line
-	^set indent off
-	^set -continue_line
+	stack push set indent;
+	stack push set continue_line;
+	^set indent off;
+	^set -continue_line;
 	while (!eof($file) && (line < count))
 	{
-		@ ugh = read($file)
-		@ line +=  numlines($width $ugh)
+		@ ugh = read($file);
+		@ line +=  numlines($width $ugh);
 		if (!eof($file)) {
-			xecho -w $winnum $ugh
-		}
-	}
-	stack pop set indent
-	stack pop set continue_line
+			xecho -w $winnum $ugh;
+		};
+	};
+	stack pop set indent;
+	stack pop set continue_line;
 	if (!eof($file))
 	{
-		@ less.fd = file
-		@ less.nl = count
-		@ less.w  = winnum
+		@ less.fd = file;
+		@ less.nl = count;
+		@ less.w  = winnum;
 		input_char "Enter q to quit, or anything else to continue "
 		{
 			if ([$0] != [q]) {
-				less_file $less.fd $less.nl $less.w
-			}
-			{
-				@ close($file)
-			}
-		}
-	}
-	{
-		@ close($file)
-	}
-}
+				less_file $less.fd $less.nl $less.w;
+			} else {
+				@ close($file);
+			};
+		};
+	} else {
+		@ close($file);
+	};
+};
 
 #hop'96,99
 #howl'03

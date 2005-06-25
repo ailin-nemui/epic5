@@ -1,112 +1,109 @@
-# map script.  lifted from anduril by wd.
-# this script is in the public domain
-
-# $Id: map,v 1.1 2002/07/31 23:39:35 wd Exp $
-
-# here's how it works.  we retrieve links from the server using a /links
-# command.  we then sort them out into an array as below, and then iterate
-# over the array to generate the map.  on servers with 005 support and the
+if (word(2 $loadinfo()) != [pf]) { load -pf $word(1 $loadinfo()); return; };
+#
+# Map script.  lifted from anduril by wd.
+# This script is in the public domain
+#
+# $Id: map,v 1.2 2005/06/25 14:12:12 jnelson Exp $
+#
+# Here's how it works.  We retrieve links from the server using a /links
+# command.  We then sort them out into an array as below, and then iterate
+# over the array to generate the map.  On servers with 005 support and the
 # map token, we simply use their map command unless mapping from a specific
 # server is requested.
-
-alias map.encode {return $encode($tolower($*))}
+#
+alias map.encode {return $encode($tolower($*))};
 
 alias map.retrieve_links {
-    ^on ^364 * {
-	@:client = [$1]
-	@:hub = [$2]
-	@:hops = [$3]
-	@:gecos = [$4-]
-
-	@map.links.all #= [$client ]
-	@:henc = map.encode($hub)
-	@:cenc = map.encode($client)
-	@map.links[$cenc][hub] = hub
-	@map.links[$cenc][hops] = hops
-	@map.links[$cenc][info] = gecos
+    ^on ^364 * (client, hub, hops, gecos) {
+	@map.links.all #= [$client ];
+	@:henc = map.encode($hub);
+	@:cenc = map.encode($client);
+	@map.links[$cenc][hub] = hub;
+	@map.links[$cenc][hops] = hops;
+	@map.links[$cenc][info] = gecos;
 	if (hops == 0) {
-	    return
-	}
+	    return;
+	};
 
-	@push(map.links[$cenc][servers] $hub)
-	@push(map.links[$henc][servers] $client)
-    }
-    ^eval on ^365 "*" map.finish_links $*
-    //^links
-}
+	@push(map.links[$cenc][servers] $hub);
+	@push(map.links[$henc][servers] $client);
+    };
+    ^eval on ^365 "*" map.finish_links $*;
+    //^links;
+};
 
 alias map.finish_links {
     ^on 364 -"*"
     ^on 365 -"*"
     for xx in ($map.links.all) {
-	@:senc = map.encode($xx)
-	@map.links[$senc][servers] = uniq($map.links[$senc][servers])
+	@:senc = map.encode($xx);
+	@map.links[$senc][servers] = uniq($map.links[$senc][servers]);
 	if (numwords($map.links[$map.encode($xx)][servers]) > 1) {
-	    @push(map.links.hubs $xx)
-	}
-    }
+	    @push(map.links.hubs $xx);
+	};
+    };
     # sort our hubs by distance in hops
-    @:hops = 0
-    @:newlist = []
+    @:hops = 0;
+    @:newlist = [];
     while (sort($newlist) != sort($map.links.hubs)) {
-	@:new = []
+	@:new = [];
 	for xx in ($map.links.hubs) {
 	    if (map.links[$map.encode($xx)][hops] == hops) {
-		@push(:new $xx)
-	    }
-	}
+		@push(:new $xx);
+	    };
+	};
 	if (new != []) {
-	    @push(:newlist $new)
-	}
-	@:hops++
-    }
-    @map.links.hubs = newlist
-    $*
+	    @push(:newlist $new);
+	};
+	@:hops++;
+    };
+    @map.links.hubs = newlist;
+    $*;
     fe ($aliasctl(assign pmatch map.links*)) xx {
-	^assign -$xx
-    }
-}
+	^assign -$xx;
+    };
+};
 
 alias map (server) {
     if (serverctl(GET $servernum() 005 MAP) != [] && server == []) {
-	quote map
-	return
-    }
-    map.retrieve_links map.exec $server
-}
+	quote map;
+	return;
+    };
+    map.retrieve_links map.exec $server;
+};
 
 ### this displays a single branch of a map.  I changed this alias slightly (to
 ### make it work properly) after observing the way Liandrin's script worked.
 alias map.map_branch (server, prefix) {
-    @push(map.links.seen $server)
-    @:senc = map.encode($server)
-    echo [map] $prefix$server \($map.links[$senc][hops] $map.links[$senc][info]\)
-    @:servers = remws($map.links.seen / $map.links[$senc][servers])
+    @push(map.links.seen $server);
+    @:senc = map.encode($server);
+    echo [map] $prefix$server \($map.links[$senc][hops] $map.links[$senc][info]\);
+    @:servers = remws($map.links.seen / $map.links[$senc][servers]);
     if (numwords($servers) == 0) {
-	return
-    }
-    @:prefix = msar(/`-/  /-/ /$prefix)
+	return;
+    };
+    @:prefix = msar(/`-/  /-/ /$prefix);
 
     for xx in ($servers) {
 	if (xx == rightw(1 $servers)) {
-	    map.map_branch $xx $prefix`-
+	    map.map_branch $xx $prefix`-;
 	} else {
-	    map.map_branch $xx $prefix|-
-	}
-    }
-}
+	    map.map_branch $xx $prefix|-;
+	};
+    };
+};
 
 
 alias map.exec (server) {
     if (server == []) {
-	@:server = builtin_expando(S)
-    }
+	@:server = builtin_expando(S);
+    };
 
     if (findw($server $map.links.all) == -1) {
-	aerrecho server $server does not appear to be online
-	return
-    }
-    map.map_branch $server
-}
+	echo [map] server $server does not appear to be online;
+	return;
+    };
+    map.map_branch $server;
+};
 	
 ### vi:set ts=8 sts=4 sw=4 tw=79 syntax=off ai smartindent:

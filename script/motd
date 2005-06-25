@@ -1,14 +1,16 @@
+if (word(2 $loadinfo()) != [pf]) { load -pf $word(1 $loadinfo()); return; };
+
 # Here's the plan
 # Output the MOTD for the user.
 # Load this in "local" for maximum effect.
 
-load less
-@ date = ftime(~/.ircII.motd)
-@ fdate = ftime($irclib()/ircII.motd)
+load less;
+@ date = ftime(~/.ircII.motd);
+@ fdate = ftime($irclib()/ircII.motd);
 if (fdate && (date < fdate))
 {
-	less $irclib()/ircII.motd
-	exec touch ~/.ircII.motd
-}
+	less $irclib()/ircII.motd;
+	exec touch ~/.ircII.motd;
+};
 
 #hop'97

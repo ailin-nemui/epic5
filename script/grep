@@ -1,3 +1,5 @@
+if (word(2 $loadinfo()) != [pf]) { load -pf $word(1 $loadinfo()); return; };
+
 #
 # grep 1.0 -- adds [e]grep support to the client, neat
 # Author --  wd@anduril.org White_Dragon Chip Norkus
@@ -17,55 +19,51 @@
 
 alias grep 
 {
-	^local win,exp,re,i,x,l,s.,l.
+	^local win,exp,re,i,x,l,s.,l.;
 
-	if (![$0]) 
-	{
-		echo Usage: /grep [-w #] <text>
-		return
-	}
+	if (![$0]) {
+		echo Usage: /grep [-w #] <text>;
+		return;
+	};
         
-	@ win = 1
+	@ win = 1;
         
         if ([$0] == [-w]) {
-                if (![$2]) {
-                        return
-                }
-                @ win = [$1]
-                @ exp = [$2-]
-        }{
-                @ exp = [$*]
-        }
+                if (![$2])
+                        return;
+                @ win = [$1];
+                @ exp = [$2-];
+        } else {
+                @ exp = [$*];
+        };
         
-        if (!winlevel($win)) {
-		assign -win
-        }
-        
-        @ re = regcomp($exp)
+        if (!winlevel($win))
+		assign -win;
+
+        @ re = regcomp($exp);
         
         ### grep here, and save the lines
-        @ i = getset(LASTLOG)
-        @ x = 0
+        @ i = getset(LASTLOG);
+        @ x = 0;
 	while (i) 
 	{
-		@ l = line($i $win)
-                if (!regexec($re $l))
-		{
-                        @ s[$x] = l
-                        @ l[$x] = i
-                        @ x++
-                }
-                @ i--
-        }
-        @ regfree($re)
+		@ l = line($i $win);
+                if (!regexec($re $l)) {
+                        @ s[$x] = l;
+                        @ l[$x] = i;
+                        @ x++;
+                };
+                @ i--;
+        };
+        @ regfree($re);
         
-	echo ------------------ Results of grep: ----------------------
-	@ i = 0
+	echo ------------------ Results of grep: ----------------------;
+	@ i = 0;
         while (i < x) {
-                xecho -nolog $[4]l[$i]: $s[$i]
-                @ i++
-        }
-	echo ------------------------ End -----------------------------
-}
+                xecho -nolog $[4]l[$i]: $s[$i];
+                @ i++;
+        };
+	echo ------------------------ End -----------------------------;
+};
 
 #WhiteDragon'Y2K

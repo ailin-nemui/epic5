@@ -1,4 +1,6 @@
-# $EPIC: meta-compat,v 1.2 2003/12/13 17:39:52 jnelson Exp $
+if (word(2 $loadinfo()) != [pf]) { load -pf $word(1 $loadinfo()); return; };
+
+# $EPIC: meta-compat,v 1.3 2005/06/25 14:12:12 jnelson Exp $
 # meta-compat - compatibility layer for old-style /bind METAx-y sequences
 #
 # Copyright 2003 Ben Winslow <rain bluecherry net>
@@ -13,102 +15,102 @@ package meta-compat
 alias bind (binding, boundto) {
 	# we're resetting everything to the defaults - clear our list of
 	# meta keys and reinitialize
-	
-	@metacompat.depth++
+
+	@metacompat.depth++;
 
 	if (metacompat.depth > 100) {
-		xecho -b meta-compat: recursed too many times for /bind $binding $boundto
-		return
-	}
+		xecho -b meta-compat: recursed too many times for /bind $binding $boundto;
+		return;
+	};
 
-#	echo bind: $repeat($metacompat.depth $chr(9)) $binding $boundto
+#	echo bind: $repeat($metacompat.depth $chr(9)) $binding $boundto;
 	
 	if (binding == [-DEFAULTS]) {
-		//bind -defaults
-		metacompat.defaults
+		//bind -defaults;
+		metacompat.defaults;
 
-		@metacompat.depth--
-		return
-	}
+		@metacompat.depth--;
+		return;
+	};
 	
 	# this binding uses a meta type, resolve it into a key sequence
 	if (binding =~ [META%-%]) {
-		@:spec=rest(4 $binding)
-		@:meta=before(- $spec)
-		@:keys=after(- $spec)
+		@:spec=rest(4 $binding);
+		@:meta=before(- $spec);
+		@:keys=after(- $spec);
 
 		foreach metacompat[$meta][defs] curmeta {
-			bind $decode($curmeta)$keys $boundto
-		}
+			bind $decode($curmeta)$keys $boundto;
+		};
 		if (boundto == [NOTHING]) {
-			@:boundto=[]
-		}
+			@:boundto=[];
+		};
 
-		@metacompat[$meta][keys][$encode($keys)]=boundto
+		@metacompat[$meta][keys][$encode($keys)]=boundto;
 
-		@metacompat.depth--
-		return
-	}
+		@metacompat.depth--;
+		return;
+	};
 
 	# look for an existing meta level on this key and clear it because
 	# we're binding to something else.  additionally, remove any underlying
 	# bindings that will no longer be relevant when this key is removed
-	@:encoded=encode($binding)
+	@:encoded=encode($binding);
 
 	foreach metacompat curmeta {
 		if (metacompat[$curmeta][defs][$encoded]) {
 			# unbind any affected keys
 			foreach metacompat[$curmeta][keys] curkey {
-				^bind $decode($encoded$curkey) NOTHING
-			}
-			^assign -metacompat[$curmeta][defs][$encoded]
-		}
-	}
+				^bind $decode($encoded$curkey) NOTHING;
+			};
+			^assign -metacompat[$curmeta][defs][$encoded];
+		};
+	};
 
 	# this binding sets a meta level, save it and NOP
 	if (boundto =~ [META%]) {
-		@:spec=rest(4 $boundto)
-		@:meta=before(_ $spec)
+		@:spec=rest(4 $boundto);
+		@:meta=before(_ $spec);
 		# allow shortcutting to METAx instead of METAx_CHARACTER
 		if (meta == []) {
-			@:meta=spec
-		}
-		@metacompat[$meta][defs][$encode($binding)]=1
+			@:meta=spec;
+		};
+		@metacompat[$meta][defs][$encode($binding)]=1;
 
 		# rebind keys for this meta level so that the new meta character
 		# takes effect
 		foreach metacompat[$meta][keys] curkey {
-			bind META$META-$decode($curkey) $metacompat[$meta][keys][$curkey]
-		}
+			bind META$META-$decode($curkey) $metacompat[$meta][keys][$curkey];
+		};
 
-		@metacompat.depth--
-		return
-	}
+		@metacompat.depth--;
+		return;
+	};
 
 	# we've either resolved the binding to a key sequence, or this is
 	# a new-style bind that we don't need to mangle
 	if (boundto == []) {
-		//bind $binding
-	}{
-		//bind $binding $boundto
-	}
-	@metacompat.depth--
-}
+		//bind $binding;
+	} else {
+		//bind $binding $boundto;
+	};
+	@metacompat.depth--;
+};
 
 alias metacompat.defaults {
 	fe ($aliasctl(ASSIGN PMATCH metacompat\.*)) metainfo {
-		^assign -$metainfo
-	}
+		^assign -$metainfo;
+	};
 	
 	# defaults from EPIC4-1.0.1
-	bind ^X META2_CHARACTER
-	bind ^[ META1_CHARACTER
-	bind META1-O META2_CHARACTER
-	bind META1-[ META2_CHARACTER
-	bind META2-1 META32_CHARACTER
-	bind META2-4 META33_CHARACTER
-	bind META2-5 META30_CHARACTER
-	bind META2-6 META31_CHARACTER
-}
+	bind ^X META2_CHARACTER;
+	bind ^[ META1_CHARACTER;
+	bind META1-O META2_CHARACTER;
+	bind META1-[ META2_CHARACTER;
+	bind META2-1 META32_CHARACTER;
+	bind META2-4 META33_CHARACTER;
+	bind META2-5 META30_CHARACTER;
+	bind META2-6 META31_CHARACTER;
+};
 
-metacompat.defaults
+metacompat.defaults;

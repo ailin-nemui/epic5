@@ -1,3 +1,5 @@
+if (word(2 $loadinfo()) != [pf]) { load -pf $word(1 $loadinfo()); return; };
+
 # SetMail -- Here's the plan.
 #
 # When you have /set mail 1, you want to see (Mail).
@@ -10,23 +12,23 @@
 # you otherwise couldn't do! =)
 #
 
-@ mail.format1 = [ (Mail)]
-@ mail.format2 = [ (Mail: %M)]
+@ mail.format1 = [ (Mail)];
+@ mail.format2 = [ (Mail: %M)];
 
 on %set "mail 1" {
-	^set status_mail $mail.format1
-}
+	^set status_mail $mail.format1;
+};
 
 on %set "mail 2" {
-	^set status_mail $mail.format2
-}
+	^set status_mail $mail.format2;
+};
 
 on %set "mail_format1 *" {
-	@ mail.format1 = [$1-]
-}
+	@ mail.format1 = [$1-];
+};
 
 on %set "mail_format2 *" {
-	@ mail.format2 = [$1-]
-}
+	@ mail.format2 = [$1-];
+};
 
 #hop'97

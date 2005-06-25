@@ -1,3 +1,5 @@
+if (word(2 $loadinfo()) != [pf]) { load -pf $word(1 $loadinfo()); return; };
+
 #
 # Some misc functions..  for 2.2 and beyond.
 # Originally this file contained aliases written by:
@@ -13,190 +15,190 @@
 # These are obsoleted by the built in $pad() function.
 #
 alias format {
-	@ IRCII.word = [$1-]
+	@ IRCII.word = [$1-];
 	if (@IRCII.word < [$0]) 
-		{ @ function_return = [$([-$0]IRCII.word)] } 
-		{ @ function_return = IRCII.word } 
-}
+		{ @ function_return = [$([-$0]IRCII.word)]; } 
+		{ @ function_return = IRCII.word; };
+};
 
 alias lformat {
-	@ IRCII.word = [$1-]
+	@ IRCII.word = [$1-];
 	if (@IRCII.word < [$0]) 
-		{ @ function_return = [$([$0]IRCII.word)] } 
-		{ @ function_return = IRCII.word } 
-}
+		{ @ function_return = [$([$0]IRCII.word)]; } 
+		{ @ function_return = IRCII.word; };
+};
 
 # pluck a word from a list.
 # eg. $blah == "one two three four five"
 # $pluck(blah three)     returns "one two four five"
 #
-alias pluck @ function_return = $0 = $remw($1 $($0))
+alias pluck { @ function_return = $0 = $remw($1 $($0)); };
 
-/* These map some of the original functions to their EPIC names. */
-alias notword @ function_return = notw($*)
-alias remove @ function_return = remw($*)
+# These map some of the original functions to their EPIC names. */
+alias notword { @ function_return = notw($*); };
+alias remove { @ function_return = remw($*); };
 
 # $min() $max().
 fe (min leftw max rightw) foo bar {
-	alias $foo return \$$bar\(1 \$numsort($*)\)
-}
+	alias $foo return \$$bar\(1 \$numsort($*)\);
+};
 
 # $regpattern() and $regfilter() work exactly like $pattern()
 # and $filter except that they use regexes rather than wildcards.
-stack push alias alias.x
+stack push alias alias.x;
 alias alias.x (args) fe (filter ! pattern "") func cond {
-	alias $msar(gr/\${func}/$func/\${cond}/$cond/args)
-}
+	alias $msar(gr/\${func}/$func/\${cond}/$cond/args);
+};
 alias.x reg${func} (ret) {
-	@:reg=regcomp($shift(ret))
+	@:reg=regcomp($shift(ret));
 	fe ret foo {
-		@ foo = ${cond}regexec($reg $foo) ? [] : foo=~[* *] ? ["\$foo"] : foo
-	}
-	@regfree($reg)
-	return $ret
-}
-stack pop alias alias.x
+		@ foo = ${cond}regexec($reg $foo) ? [] : foo=~[* *] ? ["\$foo"] : foo;
+	};
+	@regfree($reg);
+	return $ret;
+};
+stack pop alias alias.x;
 
 # A version of $indextoword() that ignores double quoting.
-alias indextowword return $indextoword($tr(/"/_/$*))
-alias wwordtoindex return $wordtoindex($tr(/"/_/$*))
+alias indextowword {return $indextoword($tr(/"/_/$*));};
+alias wwordtoindex {return $wordtoindex($tr(/"/_/$*));};
 
 # Character jot.
 # $jotc(afWZ) returns abcdefWXYZ.
-alias jotc return $chr($jotm($ascii($*)))
+alias jotc {return $chr($jotm($ascii($*)));};
 alias jotm (ret) {
 	fe ret foo bar {
-		@ foo = jot($foo $bar)
-		@ bar = []
-	}
-	return $ret
-}
+		@ foo = jot($foo $bar);
+		@ bar = [];
+	};
+	return $ret;
+};
 
 # A version of $mask() that operates with multiple args.
 alias maskm (mask,args) {
 	fe args arg {
-		@ arg = mask($mask $arg)
-	}
-	return $args
-}
+		@ arg = mask($mask $arg);
+	};
+	return $args;
+};
 
 # $randn( rep val ) returns rep random numbers up to val.
 alias randn (args) {
-	@ :rep = isnumber(b10 $args) ? shift(args) : 1
-	@ :val = isnumber(b10 $args) ? shift(args) : 0
-	eval return$repeat($rep  \$rand\($val\))
-}
+	@ :rep = isnumber(b10 $args) ? shift(args) : 1;
+	@ :val = isnumber(b10 $args) ? shift(args) : 0;
+	eval return$repeat($rep  \$rand\($val\));
+};
 
 # $replace(#x# x $jot(0 3)) returns #0# #1# #2# #3#.
 alias replace (args) {
-	@ :in = shift(args)
-	@ :rep = shift(args)
+	@ :in = shift(args);
+	@ :rep = shift(args);
 	fe args arg {
-		@ arg = sar(g/$rep/$arg/$in)
-	}
-	return $args
-}
+		@ arg = sar(g/$rep/$arg/$in);
+	};
+	return $args;
+};
 
 # Shuffle functions shuffle their args.
 # The s in shuffles stands for "slow".
 # The f in shufflef stands for "fast".
 # The c in shufflec stands for "char".
 # The slow version is actually faster than the fast for smaller arg lists.
-alias shufflec return $chr($shufflef($ascii($*)))
+alias shufflec { return $chr($shufflef($ascii($*))); };
 alias shufflef (args) {
-	@ :foo = randn($#args 2)
+	@ :foo = randn($#args 2);
 	if (#args < 1000) {
-		return $shuffles($copattern(0 foo args)) $shuffles($copattern(1 foo args))
+		return $shuffles($copattern(0 foo args)) $shuffles($copattern(1 foo args));
 	} else {
-		return $shufflef($copattern(0 foo args)) $shufflef($copattern(1 foo args))
-	}
-}
+		return $shufflef($copattern(0 foo args)) $shufflef($copattern(1 foo args));
+	};
+};
 alias shuffles {
-	@ :w = 0
-	@ :ret = []
+	@ :w = 0;
+	@ :ret = [];
 	if (xdebug(extractw) =~ [-*]) {
 		fe ($*) foo {
-			@ splice(ret $rand(${++w}) 0 $foo)
-		}
+			@ splice(ret $rand(${++w}) 0 $foo);
+		};
 	} else {
-		@ :space = chr($jot(1 32))
+		@ :space = chr($jot(1 32));
 		fe ($*) foo {
-			@ splice(ret $rand(${++w}) 0 ${0>index("$space" $foo)?foo:["$foo"]})
-		}
-	}
-	return $ret
-}
+			@ splice(ret $rand(${++w}) 0 ${0>index("$space" $foo)?foo:["$foo"]});
+		};
+	};
+	return $ret;
+};
 
 # A lot more like the shell version of "uniq -d" than $uniq().
 # $uniqd() removes unique items in a list.
 alias uniqd (ret) {
 	fe ret foo {
 		if (last!=foo) {
-			@ :last = foo
-			@ :foo = []
-		}
-	}
-	return $ret
-}
+			@ :last = foo;
+			@ :foo = [];
+		};
+	};
+	return $ret;
+};
 
 # $wordn(0.9.2,9.0.2 $jot(0 9)) returns "0 2 4 6 8 9 7 5 3 1".
 alias wordn (num,args) {
-	@ :num = split(, $num)
+	@ :num = split(, $num);
 	fe num foo {
-		@ :foo = foo =~ [*.*] ? jot($split(. $foo)) : foo
-	}
+		@ :foo = foo =~ [*.*] ? jot($split(. $foo)) : foo;
+	};
 	fe num foo {
-		@ foo = word($foo $args)
-	}
-	return $num
-}
+		@ foo = word($foo $args);
+	};
+	return $num;
+};
 
 # $cut(0.9.2,9.0.2 : $unsplit(: $jot(0 9))) returns "0:2:4:6:8:9:7:5:3:1".
 alias cut (num,sep,args) {
 	switch ($num) {
 		(*,*) {
-			@ :mid = (count(, $num) + 1) / 2
-			return $cut($before($mid , $num) $sep $args)$sep$cut($after($mid , $num) $sep $args)
+			@ :mid = (count(, $num) + 1) / 2;
+			return $cut($before($mid , $num) $sep $args)$sep$cut($after($mid , $num) $sep $args);
 		}
 		(*.*) {
-			return $cut($unsplit(, $jot($split(. $num))) $sep $args)
+			return $cut($unsplit(, $jot($split(. $num))) $sep $args);
 		}
 		(*) {
-			return $before(1 $sep ${num ? after($num $sep $args) : args}$sep)
+			return $before(1 $sep ${num ? after($num $sep $args) : args}$sep);
 		}
-	}
-}
+	};
+};
 
 # Splice characters.  The bless is so it can be called on local vars.
 alias splicec (var,start,count,replace) {
-	bless
-	^assign $var $ascii($($var))
-	@ function_return = chr($splice($var $start $count $ascii($replace)))
-	^assign $var $chr($($var))
-}
+	bless;
+	^assign $var $ascii($($var));
+	@ function_return = chr($splice($var $start $count $ascii($replace)));
+	^assign $var $chr($($var));
+};
 
 # Bit of a hack here.  Return all args with spacing removed.
-alias words return $unsplit(" " $*)
+alias words { return $unsplit(" " $*); };
 
 # $chvoices() returns the  voiced users on a channel.
 # $chnovoices() is the compliment.
-stack push alias alias.x
+stack push alias alias.x;
 alias alias.x (args) {
 	fe (chhops 0 ishalfop nochhops 1 ishalfop chvoices 0 ischanvoice chnovoices 1 ischanvoice) cmd val fn {
-		//alias $msar(gr/\$cmd/$cmd/\$val/$val/\$fn/$fn/args)
-	}
-}
+		//alias $msar(gr/\$cmd/$cmd/\$val/$val/\$fn/$fn/args);
+	};
+};
 alias.x $cmd (args) {
-	@ :chan = shift(args)
-	@ :ret = chanusers($chan)
+	@ :chan = shift(args);
+	@ :ret = chanusers($chan);
 	fe ret user {
-		@ user = $val != $fn($user $chan) ? user : []
-	}
-	return $ret
-}
-stack pop alias alias.x
+		@ user = $val != $fn($user $chan) ? user : [];
+	};
+	return $ret;
+};
+stack pop alias alias.x;
 
 alias mychats (args) {
-	@ :function_return = dccctl(typematch chat)
-	fe function_return dcc {@ :dcc = [=]##dccctl(get $dcc user)}
-}
+	@ :function_return = dccctl(typematch chat);
+	fe function_return dcc {@ :dcc = [=]##dccctl(get $dcc user)};
+};

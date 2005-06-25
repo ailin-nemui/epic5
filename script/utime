@@ -1,3 +1,5 @@
+if (word(2 $loadinfo()) != [pf]) { load -pf $word(1 $loadinfo()); return; };
+
 #
 # Here's the plan
 # Kanan wants a way to manipulate $utime() values.  Because theyre 
@@ -14,14 +16,14 @@
 #
 alias utime_add 
 {
-	local sec,usec
-	@ sec = [$0] + [$2]
-	@ usec = [$1] + [$3]
+	local sec,usec;
+	@ sec = [$0] + [$2];
+	@ usec = [$1] + [$3];
 	if (usec > 1000000)
 	{
-		@ usec -= 1000000, sec++
-	}
-	@ function_return = sec ## [ ] ## right(6 000000$usec)
+		@ usec -= 1000000, sec++;
+	};
+	@ function_return = sec ## [ ] ## right(6 000000$usec);
 }
 
 #
@@ -30,15 +32,15 @@ alias utime_add
 #
 alias utime_sub
 {
-	local sec,usec
-	@ sec = [$0] - [$2]
-	@ usec = [$1] - [$3]
+	local sec,usec;
+	@ sec = [$0] - [$2];
+	@ usec = [$1] - [$3];
 	if (usec < 0)
 	{
-		@ usec += 1000000, sec--
-	}
-	@ function_return = sec ## [ ] ## right(6 000000$usec)
-}
+		@ usec += 1000000, sec--;
+	};
+	@ function_return = sec ## [ ] ## right(6 000000$usec);
+};
 
 #
 # You pass a utime as $0, $1, and this function will return
@@ -46,8 +48,8 @@ alias utime_sub
 #
 alias time_since
 {
-	local now $utime()
-	@ function_return = utime_sub($now $0 $1)
-}
+	local now $utime();
+	@ function_return = utime_sub($now $0 $1);
+};
 
 #hop'97

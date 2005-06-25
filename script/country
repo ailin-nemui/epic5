@@ -1,195 +1,165 @@
-/*
- * This script is used with permission.
- *
- * Copyright 1993, 1994 Daniel Cedras
- * Copyright 1995, 1996 Daniel Cedras and Jeremy Nelson
- */
+if (word(2 $loadinfo()) != [pf]) { load -pf $word(1 $loadinfo()); return; };
 
-/*
-	Country code lookup
-	Country information compiled by Daniel Cedras (cedras@texas.net)
-	Software written by Jeremy Nelson
-	Requires ircII-EPIC4pre.
-	Last modified (01/31/97) by Jeremy Nelson
-
-	How to use:
-
-		/country
-
-		Brief Usage Instructions.
-
-
-		/country <arg>
-
-		With no flags, the alias attempts to look up the
-		userhost of the argument "as-if" it were a nickname.
-		If the userhost lookup is successful, it then figures
-		out the name of that nick's domain.  If the lookup is
-		not successful, then it will try to do a lookup on the
-		name itself.
-
-
-		/country <flags> <arg>
-
-		Supported for backwards compatibility are the ability
-		to specify flags.  All flags (except for -n, which is
-		strictly ignored) have the same effect, and that is
-		to circumvent the userhost lookup and do a direct
-		lookup on the argument.  The previous meanings of the
-		flags are no longer supported as they make no sense now.
-
-
-		/lcountry <country>
-		/lcode <code>
-		Do a forced lookup
-
-
-		NOTE:
-		You can (and should) use wildcards anywhere you want.
-*/
-
+#
+# Copyright 1993, 1994 Daniel Cedras
+# Copyright 1995, 1996 Daniel Cedras and Jeremy Nelson
+#
+# Country code lookup
+# Country information compiled by Daniel Cedras (cedras@texas.net)
+# Software written by Jeremy Nelson
+#
+# Usage:
+# /country 		Brief Usage Instructions.
+# /country <arg> 	With no flags, the alias attempts to look up the
+# 			userhost of the argument "as-if" it were a nickname.
+# 			If the userhost lookup is successful, it then figures
+# 			out the name of that nick's domain.  If the lookup is
+# 			not successful, then it will try to do a lookup on the
+# 			name itself.
+# /country <flags> <arg> 
+#			Supported for backwards compatibility are the ability
+# 			to specify flags.  All flags (except for -n, which is
+# 			strictly ignored) have the same effect, and that is
+# 			to circumvent the userhost lookup and do a direct
+# 			lookup on the argument.  The previous meanings of the
+# 			flags are no longer supported as they make no sense now.
+# /lcountry <country>	Do a forced lookup
+# /lcode <code>
+#
+# NOTE:	You can (and should) use wildcards anywhere you want.
+#
 alias country.help
 {
-	echo *** USE: /country <nickname>  or  /country <country_code>
-	echo ***      Will tell you what country nickname is from or
-	echo ***      What the country corresponding to the Isometric code is
-	echo ***      /country <country_name>  
-	echo ***      Will tell you what the Isometric code is for that country
-	echo ***      Using any flag besides -n will bypass the nick lookup.
-	echo ***      This is required for arguments with asterisks in them.
-}
+	xecho -b USE: /country <nickname>  or  /country <country_code>;
+	xecho -b      Will tell you what country nickname is from or;
+	xecho -b      What the country corresponding to the Isometric code is;
+	xecho -b      /country <country_name>  ;
+	xecho -b      Will tell you what the Isometric code is for that country;
+	xecho -b      Using any flag besides -n will bypass the nick lookup.;
+	xecho -b      This is required for arguments with asterisks in them.;
+};
 
 alias country 
 {
 	switch ($0)
 	{
-		()
-			{country.help} 
-		(-n)
-			{country $1-}
-		(-*) 
-			{country.lookup $1-}
-		(*\\**)
-		("* *")
-			{country.lookup $*}
-		(*) 
-		{
-			local args $*
-			userhost $0 -cmd 
-			{
-				bless
-				if ([$3] == [<UNKNOWN>])
-				{
-					country.lookup $args
-				}
-				{
-					country.lookup $after(-1 . $4)
-				}
+	    ()		{country.help;} 
+	    (-n)	{country $1-;}
+	    (-*) 	{country.lookup $1-;}
+	    (*\\**)
+	    ("* *") 	{country.lookup $*;}
+	    (*)		{ 
+			    local args $*;
+			    userhost $0 -cmd {
+				bless;
+				if ([$3] == [<UNKNOWN>]) {
+				    country.lookup $args;
+				} else {
+				    country.lookup $after(-1 . $4);
+				};
+			    };
+			    wait;
 			}
-			wait
-		}
-	}	
-}
+	};
+};
 
 
 /* This is an internal alias -- not intended for direct call */
 alias country.lookup
 {
-	echo *** Looking for  $TOUPPER($*)  ... Be patient !
+	xecho -b Looking for  $TOUPPER($*)  ... Be patient !;
 
-	fe ($country.info) aa ab
-	{
-		if (match("$*" "$aa") || match("$*" "$ab"))
-		{
-			echo +++ $toupper($aa) is $toupper($ab)
-                }
-        }
-	echo *** DONE !
-}
+	fe ($country.info) aa ab {
+		if (match("$*" "$aa") || match("$*" "$ab")) {
+			xecho -b $toupper($aa) is $toupper($ab);
+                };
+        };
+	xecho -b DONE !;
+};
 
-alias lcountry country -c $*
-alias lcode country -i $*
+alias lcountry country -c $*;
+alias lcode country -i $*;
 
 ############ THE ACTUAL DATABASE:
 
-push country.info Afghanistan AF Albania AL Algeria DZ "American Samoa" AS
-push country.info Andorra AD Angola AO Anguilla AI Antarctica AQ
-push country.info "Antigua and Barbuda" AG Argentina AR Armenia AM Aruba AW
-push country.info Australia AU Austria AT Azerbaijan AZ Bahamas BS
-push country.info Bahrain BH Bangladesh BD Barbados BB Belarus BY
-push country.info Belguim BE Belize BZ Benin BJ Bermuda BM
-push country.info Bhutan BT Bolivia BO Bosnia BA Botswana BW
-push country.info "Bouvet Island" BV Brazil BR "British Indian Ocean Territory" IO
-push country.info "Brunei Darussalam" BN Brunei BN Bulgaria BG "Burkina Faso" BF
-push country.info Burundi BI "Byelorussian SSR" BY Cambodia KH Cameroon CM
-push country.info Canada CA "Cap Verde" CV "Cayman Islands" KY "Central African Republic" CF
-push country.info Chad TD Chile CL China CN "Christmas Island" CX
-push country.info "Cocos (Keeling) Islands" CC Columbia CO Comoros KM Congo CG
-push country.info "Cook Islands" CK "Costa Rica" CR "Cote D'Ivoire" CI Croatia HR
-push country.info Hrvatska HR Cuba CU Cybrus CY Czechoslovakia CS
-push country.info Denmark DK Djibouti DJ Dominica DM "Dominican Republic" DO
-push country.info "East Timor" TP Ecuador EC Eqypt EG "El Salvador" SV
-push country.info "Equatorial Guinea" GQ Estonia EE Ethiopia ET "Falkland Islands" FK
-push country.info Malvinas FK "Faroe Islands" FO Fiji FJ Finland FI
-push country.info France FR "French Guiana" GF "French Polynesia" PF 
-push country.info "French Southern Territories" TF Gabon GA Gambia GM Georgia GE
-push country.info Germany DE Deutschland DE Ghana GH Gibraltar GI Greece GR
-push country.info Greenland GL Grenada GD Guadeloupe GP Guam GU
-push country.info Guatemala GT Guinea GN "Guinea Bissau" GW
-push country.info Gyana GY Haiti HT "Heard and Mc Donald Islands" HM
-push country.info Honduras HN "Hong Kong" HK Hungary HU Iceland IS India IN
-push country.info Indonesia ID Iran IR Iraq IQ Ireland IE Israel IL Italy IT
-push country.info Jamaica JM Japan JP Jordan JO Kazakhstan KZ Kenya KE
-push country.info Kiribati KI "North Korea" KP "South Korea" KR Kuwait KW
-push country.info Kyrgyzstan KG Lao LA Laos LA Latvia LV Lebanon LB Lesotho LS
-push country.info Liberia LR "Libyan Arab Jamahiriya" LY Lybia LY
-push country.info Liechtenstein LI Lituania LT Luxembourg LU Macau MO
-push country.info Macedonia MK Madagascar MG Malawi MW Malaysia MY
-push country.info Maldives MV Mali ML Malta MT "Marshall Islands" MH 
-push country.info Martinique MQ Mauritania MR Mauritius MU Mexico MX 
-push country.info Micronesia FM Moldova MD Monaco MC Mongolia MN Montserrat MS
-push country.info Morocco MA Mozambique MZ Myanmar MM Namibia NA Nauru NR
-push country.info Nepal NP Netherlands NL "Netherlands Antilles" AN
-push country.info "Neutral Zone" NT "New Caledonia" NC "New Zealand" NZ
-push country.info Nicaragua NI Niger NE Nigeria NG Niue NU "Norfolk Island" NF
-push country.info "Northern Mariana Islands" MP Norway NO Oman OM Pakistan PK
-push country.info Palau PW Panama PA "Papua New Guinea" PG Papua PG 
-push country.info "New Guinea" PG Paraguay PY Peru PE Philippines PH Pitcairn PN
-push country.info Poland PL Portugal PT "Puerto Rico" PR Qatar QA Reunion RE
-push country.info Romania RO "Russian Federation" RU Rwanda RW
-push country.info "Saint Kitts and Nevis" KN "Saint Lucia" LC
-push country.info "Saint Vincent and the Grenadines" VC Samoa WS
-push country.info "San Marino" SM "Sao Tome and Principe" ST "Saudi Arabia" SA
-push country.info Senegal SN Seychelles SC "Sierra Leone" SL Singapore SG
-push country.info Slovania SI "Solomon Islands" SB Somalia SO "South Africa" ZA
-push country.info Spain ES "Sri Lanka" LK "St. Helena" SH
-push country.info "St. Pierre and Miquelon" PM Sudan SD Suriname SR
-push country.info "Svalbard and Jan Mayen Islands" SJ Swaziland SZ Sweeden SE
-push country.info Switzerland CH "Cantons of Helvetia" CH 
-push country.info "Confederation Helvetique" CH "Syrian Arab Republic" SY
-push country.info Syria SY Taiwan TW Tajikistan TJ Tanzania TZ Thailand TH
-push country.info Togo TG Tokelau TK Tonga TO "Trinidad and Tobago" TT
-push country.info Tunisia TN Turkey TR Turkmenistan TM "Turks and Caicos Islands" TC
-push country.info Tuvalu TV Uganda UG "Ukranian SSR" UA "United Arab Emirates" AE
-push country.info "United Kingdom" UK "Great Britain" GB
-push country.info "United States of America" US "United States" US
-push country.info "Unites States Minor Outlying Islands" UM Uruguay UY USSR SU
-push country.info "Soviet Union" SU Uzbekistan UZ Vanuatu VU Vatican VA
-push country.info "Vatican City State" VA Venezuela VE "Viet Nam" VN
-push country.info "Virgin Islands (US)" VI "Virgin Islands (UK)" VG
-push country.info "Wallis and Futuna Islands" WF "Western Sahara" EH
-push country.info Yemen YE Yugoslavia YU Zaire ZR Zambia ZM Zimbabwe ZW
+push country.info Afghanistan AF Albania AL Algeria DZ "American Samoa" AS;
+push country.info Andorra AD Angola AO Anguilla AI Antarctica AQ;
+push country.info "Antigua and Barbuda" AG Argentina AR Armenia AM Aruba AW;
+push country.info Australia AU Austria AT Azerbaijan AZ Bahamas BS;
+push country.info Bahrain BH Bangladesh BD Barbados BB Belarus BY;
+push country.info Belguim BE Belize BZ Benin BJ Bermuda BM;
+push country.info Bhutan BT Bolivia BO Bosnia BA Botswana BW;
+push country.info "Bouvet Island" BV Brazil BR "British Indian Ocean Territory" IO;
+push country.info "Brunei Darussalam" BN Brunei BN Bulgaria BG "Burkina Faso" BF;
+push country.info Burundi BI "Byelorussian SSR" BY Cambodia KH Cameroon CM;
+push country.info Canada CA "Cap Verde" CV "Cayman Islands" KY "Central African Republic" CF;
+push country.info Chad TD Chile CL China CN "Christmas Island" CX;
+push country.info "Cocos (Keeling) Islands" CC Columbia CO Comoros KM Congo CG;
+push country.info "Cook Islands" CK "Costa Rica" CR "Cote D'Ivoire" CI Croatia HR;
+push country.info Hrvatska HR Cuba CU Cybrus CY Czechoslovakia CS;
+push country.info Denmark DK Djibouti DJ Dominica DM "Dominican Republic" DO;
+push country.info "East Timor" TP Ecuador EC Eqypt EG "El Salvador" SV;
+push country.info "Equatorial Guinea" GQ Estonia EE Ethiopia ET "Falkland Islands" FK;
+push country.info Malvinas FK "Faroe Islands" FO Fiji FJ Finland FI;
+push country.info France FR "French Guiana" GF "French Polynesia" PF ;
+push country.info "French Southern Territories" TF Gabon GA Gambia GM Georgia GE;
+push country.info Germany DE Deutschland DE Ghana GH Gibraltar GI Greece GR;
+push country.info Greenland GL Grenada GD Guadeloupe GP Guam GU;
+push country.info Guatemala GT Guinea GN "Guinea Bissau" GW;
+push country.info Gyana GY Haiti HT "Heard and Mc Donald Islands" HM;
+push country.info Honduras HN "Hong Kong" HK Hungary HU Iceland IS India IN;
+push country.info Indonesia ID Iran IR Iraq IQ Ireland IE Israel IL Italy IT;
+push country.info Jamaica JM Japan JP Jordan JO Kazakhstan KZ Kenya KE;
+push country.info Kiribati KI "North Korea" KP "South Korea" KR Kuwait KW;
+push country.info Kyrgyzstan KG Lao LA Laos LA Latvia LV Lebanon LB Lesotho LS;
+push country.info Liberia LR "Libyan Arab Jamahiriya" LY Lybia LY;
+push country.info Liechtenstein LI Lituania LT Luxembourg LU Macau MO;
+push country.info Macedonia MK Madagascar MG Malawi MW Malaysia MY;
+push country.info Maldives MV Mali ML Malta MT "Marshall Islands" MH ;
+push country.info Martinique MQ Mauritania MR Mauritius MU Mexico MX ;
+push country.info Micronesia FM Moldova MD Monaco MC Mongolia MN Montserrat MS;
+push country.info Morocco MA Mozambique MZ Myanmar MM Namibia NA Nauru NR;
+push country.info Nepal NP Netherlands NL "Netherlands Antilles" AN;
+push country.info "Neutral Zone" NT "New Caledonia" NC "New Zealand" NZ;
+push country.info Nicaragua NI Niger NE Nigeria NG Niue NU "Norfolk Island" NF;
+push country.info "Northern Mariana Islands" MP Norway NO Oman OM Pakistan PK;
+push country.info Palau PW Panama PA "Papua New Guinea" PG Papua PG ;
+push country.info "New Guinea" PG Paraguay PY Peru PE Philippines PH Pitcairn PN;
+push country.info Poland PL Portugal PT "Puerto Rico" PR Qatar QA Reunion RE;
+push country.info Romania RO "Russian Federation" RU Rwanda RW;
+push country.info "Saint Kitts and Nevis" KN "Saint Lucia" LC;
+push country.info "Saint Vincent and the Grenadines" VC Samoa WS;
+push country.info "San Marino" SM "Sao Tome and Principe" ST "Saudi Arabia" SA;
+push country.info Senegal SN Seychelles SC "Sierra Leone" SL Singapore SG;
+push country.info Slovania SI "Solomon Islands" SB Somalia SO "South Africa" ZA;
+push country.info Spain ES "Sri Lanka" LK "St. Helena" SH;
+push country.info "St. Pierre and Miquelon" PM Sudan SD Suriname SR;
+push country.info "Svalbard and Jan Mayen Islands" SJ Swaziland SZ Sweeden SE;
+push country.info Switzerland CH "Cantons of Helvetia" CH ;
+push country.info "Confederation Helvetique" CH "Syrian Arab Republic" SY;
+push country.info Syria SY Taiwan TW Tajikistan TJ Tanzania TZ Thailand TH;
+push country.info Togo TG Tokelau TK Tonga TO "Trinidad and Tobago" TT;
+push country.info Tunisia TN Turkey TR Turkmenistan TM "Turks and Caicos Islands" TC;
+push country.info Tuvalu TV Uganda UG "Ukranian SSR" UA "United Arab Emirates" AE;
+push country.info "United Kingdom" UK "Great Britain" GB;
+push country.info "United States of America" US "United States" US;
+push country.info "Unites States Minor Outlying Islands" UM Uruguay UY USSR SU;
+push country.info "Soviet Union" SU Uzbekistan UZ Vanuatu VU Vatican VA;
+push country.info "Vatican City State" VA Venezuela VE "Viet Nam" VN;
+push country.info "Virgin Islands (US)" VI "Virgin Islands (UK)" VG;
+push country.info "Wallis and Futuna Islands" WF "Western Sahara" EH;
+push country.info Yemen YE Yugoslavia YU Zaire ZR Zambia ZM Zimbabwe ZW;
 
 #EXTRAS
-push country.info "Commercial Organization (US)" COM
-push country.info "Educational Institution (US)" EDU
-push country.info "Networking Organization (US)" NET
-push country.info "U.S. Military" MIL "Non-Profit Organization" ORG
-push country.info "Government (US)" GOV
-push country.info "Korea - Democratic People's Republic of" KP
-push country.info "Korea - Republic Of" KR
-push country.info "Lao People's Democratic Republic" LA
-push country.info Slovakia SK
+push country.info "Commercial Organization (US)" COM;
+push country.info "Educational Institution (US)" EDU;
+push country.info "Networking Organization (US)" NET;
+push country.info "U.S. Military" MIL "Non-Profit Organization" ORG;
+push country.info "Government (US)" GOV;
+push country.info "Korea - Democratic People's Republic of" KP;
+push country.info "Korea - Republic Of" KR;
+push country.info "Lao People's Democratic Republic" LA;
+push country.info Slovakia SK;
 
 ############# END OF THE /COUNTRY FUNCTION
-/* This file has not been truncated! */
+## /* This file has not been truncated! */

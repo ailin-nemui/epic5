@@ -1,3 +1,5 @@
+if (word(2 $loadinfo()) != [pf]) { load -pf $word(1 $loadinfo()); return; };
+
 # All these aliases take commands as arguments and have the property that
 # they will not exand those commands prior to execution, making them safe.
 #
@@ -37,7 +39,7 @@
 # command.  If you wish to have them expanded when they are run, precede
 # them with /eval, or use a /timer or a /queue instead.
 
-package qcmd
+package qcmd;
 
 #
 # Synonym for /timer, but which doesn't expand args.
@@ -46,13 +48,13 @@ package qcmd
 #
 alias timer.ue (args) {
 	while (word(0 $args) =~ [-*]) {
-		push :pre $shift(args)
+		push :pre $shift(args);
 		if (isnumber(b10 $word(1 $args))) {
-			push :pre $shift(args)
-		}
-	}
-	timer $pre $shift(args) \$decode\($encode($args)\)
-}
+			push :pre $shift(args);
+		};
+	};
+	timer $pre $shift(args) \$decode\($encode($args)\);
+};
 
 #
 # Usage:
@@ -61,8 +63,8 @@ alias timer.ue (args) {
 # Execute command on server _without_ expanding command.
 #
 alias scmd (args) fe ($split(, $shift(args))) serv {
-	xeval -s $serv -w $serverwin($serv) {$args}
-}
+	xeval -s $serv -w $serverwin($serv) {$args};
+};
 
 #
 # Usage:
@@ -76,33 +78,33 @@ alias scmd (args) fe ($split(, $shift(args))) serv {
 # ago.  This is useful for riding events which occur in waves.
 #
 alias 1cmd (sec,cmd) {
-	@ :foo = encode($tolower($cmd))
-	@ :time = time()
-	@ :eserv = 0 > servernum() ? [] : servernum()
-	@ :reset = split(, $sec)
-	@ :sec = shift(reset)
-	@ :reset = shift(reset)
+	@ :foo = encode($tolower($cmd));
+	@ :time = time();
+	@ :eserv = 0 > servernum() ? [] : servernum();
+	@ :reset = split(, $sec);
+	@ :sec = shift(reset);
+	@ :reset = shift(reset);
 	if (!sec) {
-		$cmd
-		return
+		$cmd;
+		return;
 	} elsif (time - onecmd[$eserv][$foo][t] <= reset) {
-		@ onecmd[$eserv][$foo][e] = time + sec
-		@ onecmd[$eserv][$foo][t] = time
+		@ onecmd[$eserv][$foo][e] = time + sec;
+		@ onecmd[$eserv][$foo][t] = time;
 	} elsif (time - onecmd[$eserv][$foo][t] >= sec) {
-		@ onecmd[$eserv][$foo][e] = time + sec
-		@ onecmd[$eserv][$foo][t] = time
-		$cmd
-	}
+		@ onecmd[$eserv][$foo][e] = time + sec;
+		@ onecmd[$eserv][$foo][t] = time;
+		$cmd;
+	};
 	if (time != onecmd[$eserv][lp] && !(++onecmd[$eserv][cnt] % 10)) {
 		@ onecmd[$eserv] = time
 		foreach onecmd[$eserv] bar {
 			if (onecmd[$eserv][$bar][e] < time) {
-				@ onecmd[$eserv][$bar][t] = []
-				@ onecmd[$eserv][$bar][e] = []
-			}
-		}
-	}
-}
+				@ onecmd[$eserv][$bar][t] = [];
+				@ onecmd[$eserv][$bar][e] = [];
+			};
+		};
+	};
+};
 
 #
 # Usage:
@@ -122,60 +124,61 @@ alias 1cmd (sec,cmd) {
 # the second argument.  All these queues will be searched for duplicates but
 # the first will be the queue given to qcmd.
 #
-stack push alias alias.tt
+stack push alias alias.tt;
 alias alias.tt (cmd,op,args) {
-	@ sar(gr/\${cmd}/${cmd}/args)
-	@ sar(gr/\${op}/${op}/args)
-	alias $args
-}
+	@ sar(gr/\${cmd}/${cmd}/args);
+	@ sar(gr/\${op}/${op}/args);
+	alias $args;
+};
 fe (q push fq unshift) cmd op {
 	alias.tt $cmd $op ${cmd}1cmd (qo,qc,args) {
-		@ :sn = servernum()
-		@ :sn = sn < 0 ? [_] : sn
-		@ :argz = args
-		@ sar(gr/\\/\\\\/argz)
-		@ sar(gr/\"/\\\"/argz)
-		@ :qc = split(, $qc)
+		@ :sn = servernum();
+		@ :sn = sn < 0 ? [_] : sn;
+		@ :argz = args;
+		@ sar(gr/\\/\\\\/argz);
+		@ sar(gr/\"/\\\"/argz);
+		@ :qc = split(, $qc);
 		fe ($qc) qqcc {
 			if (0 <= findw("$argz" $qcmd[$sn][$qqcc])) {
-				return
-			}
-		}
-		1cmd $qo ${cmd}cmd $shift(qc) $args
-	}
+				return;
+			};
+		};
+		1cmd $qo ${cmd}cmd $shift(qc) $args;
+	};
 	alias.tt $cmd $op ${cmd}cmd {
-		@ :sn = servernum()
-		@ :sn = sn < 0 ? [_] : sn
+		@ :sn = servernum();
+		@ :sn = sn < 0 ? [_] : sn;
 		if (1 < #) {
-			@ :foo = [$1-]
-			@ :foo = ${op}(qcmd.${sn}.$0 \"$msar(gr/\\/\\\\/\"/\\\"/foo)\")
+			@ :foo = [$1-];
+			@ :foo = ${op}(qcmd.${sn}.$0 \"$msar(gr/\\/\\\\/\"/\\\"/foo)\");
 		} else {
 			if (1 == #) {
-				@ :foo = [qcmd.${sn}.$0]
-				@ :foo = aliasctl(assign match $foo)
-				@ :foo = shift(foo)
-				@ :foo = after(2 . $foo)
+				@ :foo = [qcmd.${sn}.$0];
+				@ :foo = aliasctl(assign match $foo);
+				@ :foo = shift(foo);
+				@ :foo = after(2 . $foo);
 			} elsif (islagged()) {
-				@ :bar = [ ]
+				@ :bar = [ ];
 				# Do nothing if we're lagged.
 				# This is meant to be a link to a
 				# fictitious lag measurement script.
 			} elsif (0 == #) {
 				foreach qcmd[$sn] bar {
-					@ :foo = bar
-					break
-				}
-			}
-			@ :bar = shift(qcmd[$sn][$foo])
-		}
+					@ :foo = bar;
+					break;
+				};
+			};
+			@ :bar = shift(qcmd[$sn][$foo]);
+		};
 		if (functioncall()) {
-			return $msar(gr/\\\\/\\/\\\"/\"/bar)
+			return $msar(gr/\\\\/\\/\\\"/\"/bar);
 		} elsif (@bar) {
-			$msar(gr/\\\\/\\/\\\"/\"/bar)
-			^timer -ref qcmd.$sn -update 5 qcmd
+			$msar(gr/\\\\/\\/\\\"/\"/bar);
+			^timer -ref qcmd.$sn -update 5 qcmd;
 		} elsif (@foo) {
-			^timer -ref qcmd.$sn 5 qcmd
-		}
-	}
-}
-stack pop alias alias.tt
+			^timer -ref qcmd.$sn 5 qcmd;
+		};
+	};
+};
+stack pop alias alias.tt;
+

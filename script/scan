@@ -1,3 +1,5 @@
+if (word(2 $loadinfo()) != [pf]) { load -pf $word(1 $loadinfo()); return; };
+
 #
 # Just a quick and dirty /scan routine. It's about as fast as I could
 # make it. It could be fast if the nicks weren't aligned but that'd be
@@ -8,16 +10,14 @@
 
 alias scan (chan)
 {
-        @ chan = ischannel($chan) ? chan : C
-        unless (chan)
-        {
-                return
-        }
-        xecho -b Users on $chan:
-        fe ($strip(?. $channel($chan))) n1 n2 n3 n4 n5 n6 
-        {
-                echo $[11]n1 $[11]n2 $[11]n3 $[11]n4 $[11]n5 $[11]n6
-        }
-}
+        @ chan = ischannel($chan) ? chan : C;
+        unless (chan) 
+                return;
+
+        xecho -b Users on $chan:;
+        fe ($strip(?. $channel($chan))) n1 n2 n3 n4 n5 n6 {
+                echo $[11]n1 $[11]n2 $[11]n3 $[11]n4 $[11]n5 $[11]n6;
+        };
+};
 
 # tjbh/2000

@@ -1,3 +1,5 @@
+if (word(2 $loadinfo()) != [pf]) { load -pf $word(1 $loadinfo()); return; };
+
 # tabkey.jm: a full-featured tab key script for epic4
 #
 # written by nsx
@@ -36,707 +38,704 @@
 
 # *** config variables ***
 
-@nick_completion_char = []
-@tab_history_cycle_size = 10
-@zsh_style_completion = [off]
+@nick_completion_char = [];
+@tab_history_cycle_size = 10;
+@zsh_style_completion = [off];
 
 
 # *** global variables ***
 
-@last_input_line = []
-@match_index = -1
-@match_cycle_list = []
-@target_index = 0
-@target_cycle_list = []
+@last_input_line = [];
+@match_index = -1;
+@match_cycle_list = [];
+@target_index = 0;
+@target_cycle_list = [];
 
 
-bind ^I parse_command do_tabkey 1
-bind ^R parse_command do_tabkey -1
+bind ^I parse_command do_tabkey 1;
+bind ^R parse_command do_tabkey -1;
 
-xdebug +extractw
+xdebug +extractw;
 
 alias add_target (msg_cmd, target) {
 	if (numwords($myservers()) > 1 && count(: $target) == 0 && left(1 $target) != [=]) {
-		@:target = [${servernum()}:${target}]
-	}
+		@:target = [${servernum()}:${target}];
+	};
 
-	@target_cycle_list = remw("$msg_cmd $target" $target_cycle_list)
+	@target_cycle_list = remw("$msg_cmd $target" $target_cycle_list);
 
 	if (#target_cycle_list > ((tab_history_cycle_size * 2) -1)) {
-		@target_cycle_list = restw(2 $target_cycle_list)
-	}
+		@target_cycle_list = restw(2 $target_cycle_list);
+	};
 
-	@target_index = 0
+	@target_index = 0;
 
-	@push(target_cycle_list $msg_cmd)
-	@push(target_cycle_list $target)
+	@push(target_cycle_list $msg_cmd);
+	@push(target_cycle_list $target);
 }
 
 alias current_fragment_start {
-	@:i = 0
-	@:j = curpos() - 1
-	@:last_space = 0
-	@:last_quote = 0
-	@:quotes = 0
+	@:i = 0;
+	@:j = curpos() - 1;
+	@:last_space = 0;
+	@:last_quote = 0;
+	@:quotes = 0;
 
 	while (i < j) {
-		@:char = mid($i 1 $L)
+		@:char = mid($i 1 $L);
 
 		if (char == [ ]) {
-			@:last_space = i
+			@:last_space = i;
 		} elsif (char == ["]) {
-			@:last_quote = i
-			@:quotes++
-		}
+			@:last_quote = i;
+			@:quotes++;
+		};
 
-		@:i++
-	}
+		@:i++;
+	};
 
 	if (quotes % 2) {
 		if (mid($curpos() 1 $L) == ["] || last_quote > last_space) {
-			return ${last_quote + 1}
+			return ${last_quote + 1};
 		} elsif (mid(${curpos() - 1} 1 $L) == ["]) {
-			parsekey backward_character
-			return ${last_quote + 1}
+			parsekey backward_character;
+			return ${last_quote + 1};
 		} else {
-			return ${last_space + 1}
-		}
+			return ${last_space + 1};
+		};
 	} else {
 		if (mid(${curpos() - 1} 1 $L) == [ ]) {
-			return $curpos()
+			return $curpos();
 		} elsif (last_space) {
-			return ${last_space + 1}
+			return ${last_space + 1};
 		} else {
-			return 0
-		}
-	}
-}
+			return 0;
+		};
+	};
+};
 
 alias do_match_cycle (direction) {
-	@:frag_start = current_fragment_start()
+	@:frag_start = current_fragment_start();
 
 	if (frag_start == -1) {
-		return
-	}
+		return;
+	};
 
-	@:fraglen = curpos() - frag_start
+	@:fraglen = curpos() - frag_start;
 
 	if (mid($curpos() 1 $L) == ["]) {
-		parsekey forward_character
-		repeat ${fraglen + 1} parsekey backspace
+		parsekey forward_character;
+		repeat ${fraglen + 1} parsekey backspace;
 	} elsif (mid(${curpos() - 1} 1 $L) == ["]) {
-		repeat ${fraglen + 1} parsekey backspace
+		repeat ${fraglen + 1} parsekey backspace;
 	} else {
-		repeat $fraglen parsekey backspace
-	}
+		repeat $fraglen parsekey backspace;
+	};
 
 	if (mid(${curpos() - 1} 1 $L) == ["]) {
-		parsekey backspace
-	}
+		parsekey backspace;
+	};
 
-	@match_index += direction
+	@match_index += direction;
 
 	if (match_index == #match_cycle_list) {
-		@match_index = 0
+		@match_index = 0;
 	} elsif (match_index < 0) {
-		@match_index = #match_cycle_list - 1
-	}
+		@match_index = #match_cycle_list - 1;
+	};
 
-	@:new_match = word($match_index $match_cycle_list)
+	@:new_match = word($match_index $match_cycle_list);
 
 	if (index("$chr(32)" $new_match) == -1) {
-		xtype -l $new_match
+		xtype -l $new_match;
 	} else {
-		xtype -l "$new_match"
-		parsekey backward_character
-	}
+		xtype -l "$new_match";
+		parsekey backward_character;
+	};
 
-	@last_input_line = L
-}
+	@last_input_line = L;
+};
 
 alias do_msg_cycle (direction) {
 	if (#target_cycle_list < 2) {
-		return
-	}
+		return;
+	};
 
-	@target_index -= (direction * 2)
+	@target_index -= (direction * 2);
 
 	if (target_index == #target_cycle_list) {
-		@target_index = 0
+		@target_index = 0;
 	} elsif (target_index < 0) {
-		@target_index = #target_cycle_list - 2
-	}
+		@target_index = #target_cycle_list - 2;
+	};
 
-	@:msg_cmd = word($target_index $target_cycle_list)
-	@:msg_targ = word(${target_index + 1} $target_cycle_list)
+	@:msg_cmd = word($target_index $target_cycle_list);
+	@:msg_targ = word(${target_index + 1} $target_cycle_list);
 
-	parsekey erase_line
+	parsekey erase_line;
 
-	xtype -l /${msg_cmd} ${msg_targ}${chr(32)}
+	xtype -l /${msg_cmd} ${msg_targ}${chr(32)};
 
-	@last_input_line = []
-}
+	@last_input_line = [];
+};
 
 alias do_set (variable, value) {
 	if (value == []) {
-		^eval @:setval = $variable
+		^eval @:setval = $variable;
 
 		if (setval == []) {
-			xecho -b No value for $variable has been set
+			xecho -b No value for $variable has been set;
 		} else {
-			xecho -b Current value of $variable is $setval
-		}
+			xecho -b Current value of $variable is $setval;
+		};
 
-		return
-	}
+		return;
+	};
 
 	switch ($variable) {
 		(NICK_COMPLETION_CHAR) {
 			if (value == [<unset>]) {
-				@nick_completion_char = []
+				@nick_completion_char = [];
 
-				xecho -b Value of NICK_COMPLETION_CHAR set to <EMPTY>
+				xecho -b Value of NICK_COMPLETION_CHAR set to <EMPTY>;
 			} else {
-				@nick_completion_char = value
+				@nick_completion_char = value;
 
-				xecho -b Value of NICK_COMPLETION_CHAR set to $value
-			}
+				xecho -b Value of NICK_COMPLETION_CHAR set to $value;
+			};
 		}
 
 		(TAB_HISTORY_CYCLE_SIZE) {
 			if (!isnumber($value)) {
-				xecho -b Value of TAB_HISTORY_CYCLE_SIZE must be numeric!
+				xecho -b Value of TAB_HISTORY_CYCLE_SIZE must be numeric!;
 			} elsif (value < 1) {
-				xecho -b Value of TAB_HISTORY_CYCLE_SIZE cannot be less than 1
+				xecho -b Value of TAB_HISTORY_CYCLE_SIZE cannot be less than 1;
 			} else {
-				@tab_history_cycle_size = value
-				@target_cycle_list = rightw(${value * 2} $target_cycle_list)
-				xecho -b Value of TAB_HISTORY_CYCLE_SIZE set to $value
-			}
+				@tab_history_cycle_size = value;
+				@target_cycle_list = rightw(${value * 2} $target_cycle_list);
+				xecho -b Value of TAB_HISTORY_CYCLE_SIZE set to $value;
+			};
 		}
 
 		(ZSH_STYLE_COMPLETION) {
 			if (value == [on]) {
-				@zsh_style_completion = [ON]
-				xecho -b Value of ZSH_STYLE_COMPLETION set to ON                        } elsif (value == [off]) {
-				@zsh_style_completion = [OFF]
+				@zsh_style_completion = [ON];
+				xecho -b Value of ZSH_STYLE_COMPLETION set to ON;
+                        } elsif (value == [off]) {
+				@zsh_style_completion = [OFF];
 
-				xecho -b Value of ZSH_STYLE_COMPLETION set to OFF
+				xecho -b Value of ZSH_STYLE_COMPLETION set to OFF;
 			} else {
-				xecho -b Value of ZSH_STYLE_COMPLETION must be ON or OFF!
-			}
+				xecho -b Value of ZSH_STYLE_COMPLETION must be ON or OFF!;
+			};
 		}
 
 		(*) {
-			xecho -b I don't know how to handle "$variable"
+			xecho -b I don't know how to handle "$variable";
 		}
-	}
-}
+	};
+};
 
 alias do_tabkey (cycle_direction) {
-	@:input_line = left($curpos() $L)
+	@:input_line = left($curpos() $L);
 
 	if (L == []) {
-		@target_index = #target_cycle_list
-		@do_msg_cycle($cycle_direction)
-		return
+		@target_index = #target_cycle_list;
+		@do_msg_cycle($cycle_direction);
+		return;
 	} elsif (encode($L) == encode($last_input_line)) {
 		if (zsh_style_completion == [ON] && #match_cycle_list > 1) {
-			@do_match_cycle($cycle_direction)
-			return
-		} else {
-			return
-		}
+			@do_match_cycle($cycle_direction);
+		};
+		return;
 	} elsif (leftw(1 $L) == [/msg] || leftw(1 $L) == [/notice]) {
 		if (#L == 2 && mid(${@L - 1} 1 $L) == [ ]) {
-			@do_msg_cycle($cycle_direction)
-			return
-		}
-	}
+			@do_msg_cycle($cycle_direction);
+			return;
+		};
+	};
 
-	@:frag_start = current_fragment_start()
+	@:frag_start = current_fragment_start();
 
 	if (frag_start == -1 || cycle_direction == -1) {
-		return
-	}
+		return;
+	};
 
-	@:fragment = mid($frag_start ${curpos() - frag_start} $L)
-	@:fraglen = strlen($fragment)
-	@:padding = []
+	@:fragment = mid($frag_start ${curpos() - frag_start} $L);
+	@:fraglen = strlen($fragment);
+	@:padding = [];
 
 	switch ($input_line) {
 		(/dcc %) {
-			@:matches = match_dcc($fragment)
+			@:matches = match_dcc($fragment);
 
 			if (#matches == 1) {
-				@:padding = [ ]
-			}
+				@:padding = [ ];
+			};
 		}
 
 		(/dcc send % *)
-
 		(/exec % *) {
-			@:matches = match_file($fragment)
+			@:matches = match_file($fragment);
 
 			if (#matches == 1 && !isdirectory($matches)) {
-				@:padding = [ ]
-			}
+				@:padding = [ ];
+			};
 		}
 
 		(/exec %) {
-			@:matches = match_exec($fragment)
+			@:matches = match_exec($fragment);
 
 			if (#matches == 1 && !isdirectory($matches)) {
-				@:padding = [ ]
-			}
+				@:padding = [ ];
+			};
 		}
 
 		(/help %) {
-			@:matches = match_help($fragment)
+			@:matches = match_help($fragment);
 
 			if (#matches == 1) {
 				if (!isdirectory(${getset(HELP_PATH)}/${matches})) {
-					@:padding = [ ]
-				}
-			}
+					@:padding = [ ];
+				};
+			};
 		}
 
 		(/load *)
-
 		(/unload *) {
-			@:matches = match_load($fragment)
+			@:matches = match_load($fragment);
 
 			if (#matches == 1 && !isdirectory($matches)) {
-				@:padding = [ ]
-			}
+				@:padding = [ ];
+			};
 		}
 
 		(/notify -%) {
-			@:fragment = rest($fragment)
-			@:fraglen--
-			@:matches = match_notify($fragment)
+			@:fragment = rest($fragment);
+			@:fraglen--;
+			@:matches = match_notify($fragment);
 
 			if (#matches == 1) {
-				@:padding = [ ]
-			}
+				@:padding = [ ];
+			};
 		}
 
 		(/set -%) {
-			@:fragment = rest($fragment)
-			@:fraglen--
-			@:matches = match_set($fragment)
+			@:fragment = rest($fragment);
+			@:fraglen--;
+			@:matches = match_set($fragment);
 
 			if (#matches == 1) {
-				@:padding = [ ]
-			}
+				@:padding = [ ];
+			};
 		}
 
 		(/set %) {
-			@:matches = match_set($fragment)
+			@:matches = match_set($fragment);
 
 			if (#matches == 1) {
-				@:padding = [ ]
-			}
+				@:padding = [ ];
+			};
 		}
 
 		(/%) {
-			@:fragment = rest($fragment)
-			@:fraglen--
-			@:matches = match_command($fragment)
+			@:fragment = rest($fragment);
+			@:fraglen--;
+			@:matches = match_command($fragment);
 
 			if (#matches == 1) {
-				@:padding = [ ]
-			}
+				@:padding = [ ];
+			};
 		}
 
 		(*) {
-			@:matches = []
+			@:matches = [];
 
-			@push(matches $match_chan($fragment))
-			@push(matches $match_nick($fragment))
+			@push(matches $match_chan($fragment));
+			@push(matches $match_nick($fragment));
 
 			if (#matches == 1) {
 				if (#L == 1 && !ischannel($matches)) {
 					if (nick_completion_char != []) {
-						@:padding = [$nick_completion_char ]
-					}
+						@:padding = [$nick_completion_char ];
+					};
 				} else {
-					@:padding = [ ]
-				}
-			}
+					@:padding = [ ];
+				};
+			};
 		}
-	}
+	};
 
-	@last_input_line = L
-	@match_index = -1
-	@:match_prefix = prefix($matches)
+	@last_input_line = L;
+	@match_index = -1;
+	@:match_prefix = prefix($matches);
 
 	if (@match_prefix <= fraglen && #matches > 1) {
-		xecho -c Possible matches:
-		xecho -c -- $matches
-		xecho -c
-		return
-	}
+		xecho -c Possible matches:;
+		xecho -c -- $matches;
+		xecho -c;
+		return;
+	};
 
 	if (match_prefix != []) {
-		@:new_fragment = left($fraglen $match_prefix)
+		@:new_fragment = left($fraglen $match_prefix);
 
 		if (encode($fragment) != encode($new_fragment)) {
-			repeat $fraglen parsekey backspace
+			repeat $fraglen parsekey backspace;
 
-			xtype -l $new_fragment
-		}
-	}
+			xtype -l $new_fragment;
+		};
+	};
 
-	@:completion = rest($fraglen $match_prefix)
+	@:completion = rest($fraglen $match_prefix);
 
 	if (completion == [] && padding == []) {
-		return
-	}
+		return;
+	};
 
 	if (index("$chr(32)" $fragment) == -1) {
 		if (index("$chr(32)" $match_prefix) > -1) {
-			repeat $fraglen parsekey backspace
+			repeat $fraglen parsekey backspace;
 
 			if (mid($curpos() 1 $L) == ["] && mid(${curpos() - 1} 1 $L) == ["]) {
-				xtype -l $match_prefix
+				xtype -l $match_prefix;
 
 				if (padding != []) {
-					parsekey forward_character
-				}
+					parsekey forward_character;
+				};
 			} else {
-				xtype -l "$match_prefix"
+				xtype -l "$match_prefix";
 
 				if (padding == []) {
-					parsekey backward_character
-				}
-			}
+					parsekey backward_character;
+				};
+			};
 		} else {
-			xtype -l $completion
-		}
+			xtype -l $completion;
+		};
 	} else {
-		xtype -l $completion
+		xtype -l $completion;
 
 		if (padding == []) {
 			if (mid($curpos() 1 $L) != ["]) {
-				xtype -l "
-				parsekey backward_character
-			}
+				xtype -l ";
+				parsekey backward_character;
+			};
 		} else {
 			if (mid($curpos() 1 $L) == ["]) {
-				parsekey forward_character
+				parsekey forward_character;
 			} else {
-				xtype -l "
-			}
-		}
-	}
+				xtype -l ";
+			};
+		};
+	};
 
 	if (mid(${curpos()} 1 $L) != padding) {
-		xtype -l $padding
-	}
+		xtype -l $padding;
+	};
 
-	@last_input_line = []
-}
+	@last_input_line = [];
+};
 
 alias isdirectory (pathname) {
-	@:statret = stat("$pathname")
-	@:file_type = left(1 $word(2 $statret))
+	@:statret = stat("$pathname");
+	@:file_type = left(1 $word(2 $statret));
 
 	if (file_type & 4) {
-		return 1
+		return 1;
 	} else {
-		return 0
-	}
+		return 0;
+	};
 }
 
 alias isexe (pathname) {
-	@:statret = stat("$pathname")
-	@:file_mode = word(2 $statret)
-	@:file_type = left(1 $file_mode)
-	@:permissions = right(3 $file_mode)
-	@:user_perm = left(1 $permissions)
-	@:group_perm = mid(1 1 $permissions)
-	@:other_perm = right(1 $permissions)
+	@:statret = stat("$pathname");
+	@:file_mode = word(2 $statret);
+	@:file_type = left(1 $file_mode);
+	@:permissions = right(3 $file_mode);
+	@:user_perm = left(1 $permissions);
+	@:group_perm = mid(1 1 $permissions);
+	@:other_perm = right(1 $permissions);
 
 	if (file_type == 1) {
 		if ((user_perm & 1) || (group_perm & 1) || (other_perm & 1)) {
-			return 1
+			return 1;
 		} else {
-			return 0
-		}
+			return 0;
+		};
 	} else {
-		return 0
-	}
-}
+		return 0;
+	};
+};
 
 alias match_chan (fragment) {
-	@:matches = pattern("${fragment}*" $mychannels())
-	@match_cycle_list = matches
+	@:matches = pattern("${fragment}*" $mychannels());
+	@match_cycle_list = matches;
 
-	return $matches
-}
+	return $matches;
+};
 
 alias match_command (fragment) {
-	@:matches = []
-	@:command_matches = []
+	@:matches = [];
+	@:command_matches = [];
 
-	@push(matches $getcommands(${fragment}*))
-	@push(matches $aliasctl(alias pmatch ${fragment}*))
+	@push(matches $getcommands(${fragment}*));
+	@push(matches $aliasctl(alias pmatch ${fragment}*));
 
 	fe ($matches) match {
-		@push(command_matches /${match})
-	}
+		@push(command_matches /${match});
+	};
 
-	@match_cycle_list = uniq($command_matches)
+	@match_cycle_list = uniq($command_matches);
 
-	return $uniq($matches)
-}
+	return $uniq($matches);
+};
 
 alias match_dcc (fragment) {
-	@:dcc_cmds = [chat close closeall get list raw rename resume send]
-	@:matches = pattern(${fragment}% $dcc_cmds)
-	@match_cycle_list = matches
+	@:dcc_cmds = [chat close closeall get list raw rename resume send];
+	@:matches = pattern(${fragment}% $dcc_cmds);
+	@match_cycle_list = matches;
 
-	return $matches
-}
+	return $matches;
+};
 
 alias match_exec (fragment) {
-	@:matches = []
+	@:matches = [];
 
 	if (index(/ $fragment) == -1) {
-		@:path_list = PATH
+		@:path_list = PATH;
 
 		while (path_list != []) {
-			@:pathname = before(: $path_list)
+			@:pathname = before(: $path_list);
 
 			if (pathname == []) {
-				@:pathname = path_list
-				@:path_list = []
+				@:pathname = path_list;
+				@:path_list = [];
 			} else {
-				@:path_list = after(: $path_list)
-			}
+				@:path_list = after(: $path_list);
+			};
 
 			fe ($glob("${pathname}/${fragment}*")) filename {
 				if (isexe($filename)) {
-					@push(matches $after(-1 / $filename))
-				}
-			}
-		}
+					@push(matches $after(-1 / $filename));
+				};
+			};
+		};
 
 		fe ($glob("${fragment}*")) filename {
 			if (isdirectory($filename)) {
-				@push(matches $filename)
-			}
-		}
+				@push(matches $filename);
+			};
+		};
 	} else {
 		fe ($glob("${fragment}*")) filename {
 			if (isexe($filename) || isdirectory($filename)) {
-				@push(matches $filename)
-			}
-		}
-	}
+				@push(matches $filename);
+			};
+		};
+	};
 
-	@match_cycle_list = matches = uniq($matches)
+	@match_cycle_list = matches = uniq($matches);
 
-	return $matches
-}
+	return $matches;
+};
 
 alias match_file (fragment) {
-	@:matches = glob("${fragment}*")
-	@match_cycle_list = matches
+	@:matches = glob("${fragment}*");
+	@match_cycle_list = matches;
 
-	return $matches
+	return $matches;
 }
 
 alias match_help (fragment) {
-	@:matches = []
-	@:help_path = getset(HELP_PATH)
-	@:help_matches = globi("${help_path}/${fragment}*")
+	@:matches = [];
+	@:help_path = getset(HELP_PATH);
+	@:help_matches = globi("${help_path}/${fragment}*");
 
 	fe ($help_matches) match {
-		@push(matches $rest(${@help_path + 1} $match))
-	}
+		@push(matches $rest(${@help_path + 1} $match));
+	};
 
-	@match_cycle_list = matches
+	@match_cycle_list = matches;
 
-	return $matches
+	return $matches;
 }
 
 alias match_load (fragment) {
-	@:matches = []
+	@:matches = [];
 
 	if (index(/ $fragment) == -1) {
-		@:path_list = LOAD_PATH
+		@:path_list = LOAD_PATH;
 
 		while (path_list != []) {
-			@:pathname = before(: $path_list)
+			@:pathname = before(: $path_list);
 
 			if (pathname == []) {
-				@:pathname = path_list
-				@:path_list = []
+				@:pathname = path_list;
+				@:path_list = [];
 			} else {
-				@:path_list = after(: $path_list)
+				@:path_list = after(: $path_list);
 			}
 
 			fe ($glob("${pathname}/${fragment}*")) filename {
-				@push(matches $after(-1 / $filename))
-			}
-		}
-	}
+				@push(matches $after(-1 / $filename));
+			};
+		};
+	};
 
-	@push(matches $glob("${fragment}*"))
+	@push(matches $glob("${fragment}*"));
 
-	@match_cycle_list = matches = uniq($matches)
+	@match_cycle_list = matches = uniq($matches);
 
-	return $matches
-}
+	return $matches;
+};
 		
 alias match_nick (fragment) {
-	@:nick_matches = pattern("${fragment}*" $onchannel())
+	@:nick_matches = pattern("${fragment}*" $onchannel());
 
 	if (nick_matches == []) {
-		@:nick_list = []
+		@:nick_list = [];
 
 		fe ($remw($C $mychannels())) chan {
-			@push(nick_list $onchannel($chan))
-		}
+			@push(nick_list $onchannel($chan));
+		};
 
-		@push(nick_list $notify(on))
+		@push(nick_list $notify(on));
 
-		@:nick_matches = pattern(${fragment}* $nick_list)
-	}
+		@:nick_matches = pattern(${fragment}* $nick_list);
+	};
 
 	if (nick_completion_char != [] && #matches > 1 && #L == 1) {
 		fe ($nick_matches) nickname {
-			@push(matches ${nickname}${nick_completion_char})
-		}
+			@push(matches ${nickname}${nick_completion_char});
+		};
 	} else {
-		@:matches = nick_matches
+		@:matches = nick_matches;
+	};
 
-	}
+	@:matches = uniq($matches);
+	@match_cycle_list = matches;
 
-	@:matches = uniq($matches)
-	@match_cycle_list = matches
-
-	return $matches
-}
+	return $matches;
+};
 
 alias match_notify (fragment) {
-	@:matches = pattern(${fragment}* $notify())
-	@match_cycle_list = matches
+	@:matches = pattern(${fragment}* $notify());
+	@match_cycle_list = matches;
 
-	return $matches
-}
+	return $matches;
+};
 
 alias match_set (fragment) {
-	@:matches = []
-	@:my_sets = [NICK_COMPLETION_CHAR TAB_HISTORY_CYCLE_SIZE ZSH_STYLE_COMPLETION]
+	@:matches = [];
+	@:my_sets = [NICK_COMPLETION_CHAR TAB_HISTORY_CYCLE_SIZE ZSH_STYLE_COMPLETION];
 
-	@push(matches $getsets(${fragment}*))
-	@push(matches $pattern(${fragment}* $my_sets))
+	@push(matches $getsets(${fragment}*));
+	@push(matches $pattern(${fragment}* $my_sets));
 
-	@match_cycle_list = matches
+	@match_cycle_list = matches;
 
-	return $matches
-}
+	return $matches;
+};
 
 alias match_theme (fragment) {
-	@:matches = []
-	@:theme_matches = globi("${theme_directory}/${fragment}*.theme")
+	@:matches = [];
+	@:theme_matches = globi("${theme_directory}/${fragment}*.theme");
 
 	fe ($theme_matches) match {
-		@push(matches $before(-1 . $rest(${@theme_directory + 1} $match)))
-	}
+		@push(matches $before(-1 . $rest(${@theme_directory + 1} $match)));
+	};
 
-	@match_cycle_list = matches
+	@match_cycle_list = matches;
 
-	return $matches
-}
+	return $matches;
+};
 
 alias tclear {
-	@target_cycle_list = []
-	@target_index = -2
+	@target_cycle_list = [];
+	@target_index = -2;
 
-	xecho target history cleared 
-}
+	xecho target history cleared ;
+};
 
 
 # *** hooks ***
 
 on #^action 110 "*" {
 	if (!rmatch($1 #* &* +*) ) {
-		@add_target(msg $0)
-	}
-}
+		@add_target(msg $0);
+	};
+};
 
 on #^dcc_chat 110 "*" {
-	@add_target(msg =$0)
-}
+	@add_target(msg =$0);
+};
 
 on #^dcc_connect 110 "% CHAT *" {
-	@add_target(msg =$0)
-}
+	@add_target(msg =$0);
+};
 
 on #^general_notice 110 "% *" {
-	@add_target(notice $1)
-}
+	@add_target(notice $1);
+};
 
 on #^msg 110 "*" {
-	@add_target(msg $0)
-}
+	@add_target(msg $0);
+};
 
 on #^send_action 110 "*" {
 	if (!rmatch($0 #* &* +*) ) {
-		@add_target(msg $0)
-	}
-}
+		@add_target(msg $0);
+	};
+};
 
 on #^send_dcc_chat 110 "*" {
-	@add_target(msg =$0)
-}
+	@add_target(msg =$0);
+};
 
 on #^send_msg 110 "*" {
-	@add_target(msg $0)
-}
+	@add_target(msg $0);
+};
 
 on #^send_notice 110 "*" {
-	@add_target(notice $0)
-}
+	@add_target(notice $0);
+};
 
 on ?send_to_server "% % NOTICE %:% *" {
 	if (ischannel($3)) {
-		return 0
-	}
+		return 0;
+	};
 
-	@:refnum = before(: $3)
-	@:target = after(: $3)
+	@:refnum = before(: $3);
+	@:target = after(: $3);
 
-	xquote -server $refnum NOTICE $target $4-
+	xquote -server $refnum NOTICE $target $4-;
 
-	return 1
-}
+	return 1;
+};
 
 on ?send_to_server "% % PRIVMSG %:% *" {
 	if (ischannel($3)) {
-		return 0
-	}
+		return 0;
+	};
 
-	@:refnum = before(: $3)
-	@:target = after(: $3)
+	@:refnum = before(: $3);
+	@:target = after(: $3);
 
-	xquote -server $refnum PRIVMSG $target $4-
+	xquote -server $refnum PRIVMSG $target $4-;
 
-	return 1
-}
+	return 1;
+};
 
 on ^set "NICK_COMPLETION_CHAR *" {
-	@do_set(NICK_COMPLETION_CHAR $1)
-}
+	@do_set(NICK_COMPLETION_CHAR $1);
+};
 
 on ^set "TAB_HISTORY_CYCLE_SIZE *" {
-	@do_set(TAB_HISTORY_CYCLE_SIZE $1)
-}
+	@do_set(TAB_HISTORY_CYCLE_SIZE $1);
+};
 
 on ^set "ZSH_STYLE_COMPLETION *" {
-	@do_set(ZSH_STYLE_COMPLETION $1)
-}
+	@do_set(ZSH_STYLE_COMPLETION $1);
+};
+

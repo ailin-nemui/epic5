@@ -1,3 +1,5 @@
+if (word(2 $loadinfo()) != [pf]) { load -pf $word(1 $loadinfo()); return; };
+
 #
 # Autoget!  Because people keep asking me for this.
 # Ok.  Here's the plan.
@@ -29,107 +31,112 @@
 #       arrangements.
 #
 
-package autoget
+package autoget;
 
 # Take possession of these variables while not clobbering them.
 fe (patterns.get * patterns.reget * reget.part resume reget.full close) var val {
-	@ autoget[$var] = autoget.$var ? autoget.$var : [$val]
-}
+	@ autoget[$var] = autoget.$var ? autoget.$var : [$val];
+};
 
 on #-dcc_request 414 "% SEND *" {
-	@ :path = [$getset(dcc_store_path)/$urldecode($2)]
+	@ :path = [$getset(dcc_store_path)/$urldecode($2)];
 	if ([$6] <= fsize("$path")) {
-		@ :patterns = autoget.patterns.reget
-		@ :action = autoget.reget.full
+		@ :patterns = autoget.patterns.reget;
+		@ :action = autoget.reget.full;
 	} elsif (0 < fsize("$path")) {
-		@ :patterns = autoget.patterns.reget
-		@ :action = autoget.reget.part
+		@ :patterns = autoget.patterns.reget;
+		@ :action = autoget.reget.part;
 	} else {
-		@ :patterns = autoget.patterns.get
-		@ :action = [get]
-	}
+		@ :patterns = autoget.patterns.get;
+		@ :action = [get];
+	};
 	if (rmatch($0!$userhost(),$3,$tr(/,/./$2) $autoget.patterns.reject)) {
 		# Nothing.
 	} elsif (rmatch($0!$userhost(),$3,$tr(/,/./$2) $patterns)) {
 		if (action == []) {
-			return
+			return;
 		} elsif (action == [rename]) {
-			@ :extra = 0
+			@ :extra = 0;
 			do {
-				@ extra += rand(10)
-			} while (0 < fexist("$path~$extra"))
-			@ rename("$path" "$path~$extra")
-			@ action = [get]
+				@ extra += rand(10);
+			} while (0 < fexist("$path~$extra"));
+			@ rename("$path" "$path~$extra");
+			@ action = [get];
 		} elsif (action == [close]) {
-			@ action = [close get]
+			@ action = [close get];
 		} elsif (!rmatch("$action" get resume)) {
-			echo $action?
-			return
-		}
-		defer dcc $action $0 $2
-	}
-}
+			echo $action?;
+			return;
+		};
+		defer dcc $action $0 $2;
+	};
+};
 
-stack push alias alias.x
-alias alias.x fe (get reget reject) cmd {//alias $sar(g/XXX/$cmd/$*)}
+stack push alias alias.x;
+alias alias.x {
+	fe (get reget reject) cmd {
+		//alias $sar(g/XXX/$cmd/$*);
+	};
+};
+
 alias.x autoXXX {
 	if (strlen($*) == 0) {
-		echo AutoXXX n!u@h,IP,files matching [$autoget.XXXpatterns]
-		return
-	}
+		echo AutoXXX n!u@h,IP,files matching [$autoget.XXXpatterns];
+		return;
+	};
 	fe ($*) x {
 		if (left(1 $x) == [-]) {
-			@ x = rest(1 $x)
-			@ autoget.XXXpatterns = remw($x $autoget.XXXpatterns)
+			@ x = rest(1 $x);
+			@ autoget.XXXpatterns = remw($x $autoget.XXXpatterns);
 		} else {
-			push autoget.XXXpatterns $x
-		}
-	}
-}
-stack pop alias alias.x
+			push autoget.XXXpatterns $x;
+		};
+	};
+};
+stack pop alias alias.x;
 
 alias autoclobber (args) {
-	@ :types = [part full]
+	@ :types = [part full];
 	if (#args) {
 		fe ($args) arg {
 			if (!types) {
-				break
+				break;
 			} elsif (!arg) {
-				@ shift(types)
+				@ shift(types);
 			} elsif (rmatch("$arg" get rename resume close)) {
-				@ autoget[reget][$shift(types)] = arg
+				@ autoget[reget][$shift(types)] = arg;
 			} else {
-				echo $arg isn't one of: GET RENAME RESUME CLOSE
-			}
-		}
+				echo $arg isn't one of: GET RENAME RESUME CLOSE;
+			};
+		};
 	} else {
-		echo Usage: /autoclobber [partial-mode] [full-mode]
+		echo Usage: /autoclobber [partial-mode] [full-mode];
 		fe ($types) type {
-			echo Autoclobber $type mode is: $autoget[reget][$type]
-		}
-	}
-}
+			echo Autoclobber $type mode is: $autoget[reget][$type];
+		};
+	};
+};
 
 on ^unload "autoget" {
-	^assign -autoget.patterns.get
-	^assign -autoget.patterns.reget
-	^assign -autoget.patterns.reject
-	^assign -autoget.reget.part
-	^assign -autoget.reget.full
-	^alias -autoget
-	^alias -autoreget
-	^alias -autoreject
-	^alias -autoclobber
-	^on #dcc_request 414 -"% SEND *"
-}
+	^assign -autoget.patterns.get;
+	^assign -autoget.patterns.reget;
+	^assign -autoget.patterns.reject;
+	^assign -autoget.reget.part;
+	^assign -autoget.reget.full;
+	^alias -autoget;
+	^alias -autoreget;
+	^alias -autoreject;
+	^alias -autoclobber;
+	^on #dcc_request 414 -"% SEND *";
+};
 
 if ( getset(mirc_broken_dcc_resume) == [off] ) {
-	echo Warning: Turning mIRC DCC resume on
-	set mirc_broken_dcc_resume on
-}
+	echo Warning: Turning mIRC DCC resume on;
+	set mirc_broken_dcc_resume on;
+};
 
 if ( getset(no_ctcp_flood) != [off] ) {
-	echo Warning: You may need to enter "/set no_ctcp_flood off" to autoget files from certain hosts.
-}
+	echo Warning: You may need to enter "/set no_ctcp_flood off" to autoget files from certain hosts.;
+};
 
 #hop'y2k+1

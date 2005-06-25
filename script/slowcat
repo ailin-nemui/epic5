@@ -1,22 +1,24 @@
+if (word(2 $loadinfo()) != [pf]) { load -pf $word(1 $loadinfo()); return; };
+
 # Written by request for larne on Mar 26, 2004
 # The name was suggested by anguzhawk
 
 alias slowcat (filename, void) {
-	@ slowcat.fd = open($filename R)
+	@ slowcat.fd = open($filename R);
 	if (slowcat.fd < 0) {
-		echo $filename does not exist or I can't open it.
-		return
-	}
+		echo $filename does not exist or I can't open it.;
+		return;
+	};
 
 	//timer -refnum slowcat -repeat -1 0.5 {
 		if (eof($slowcat.fd)) {
-			@close($slowcat.fd)
-			@slowcat.fd = -1
-			//timer -delete slowcat
+			@close($slowcat.fd);
+			@slowcat.fd = -1;
+			//timer -delete slowcat;
 		} else {
-			@slowcat.line = read($slowcat.fd)
-			//send $slowcat.line
-		}
-	}
-}
+			@slowcat.line = read($slowcat.fd);
+			//send $slowcat.line;
+		};
+	};
+};
 #hop'y2k4

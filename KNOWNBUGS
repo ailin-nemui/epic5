@@ -703,3 +703,4 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Remove commented out obsolete stuff from 'functions' script.
 * Pf-ify the 'help' script.
 * Desupport a bunch of scripts.  See UPDATES.
+* PF-ify all of the remaining scripts.

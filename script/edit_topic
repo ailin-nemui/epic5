@@ -1,24 +1,26 @@
+if (word(2 $loadinfo()) != [pf]) { load -pf $word(1 $loadinfo()); return; };
+
 #
 # Felony asked me for this, so here you go! =)
 #
 alias edit_topic
 {
-	^local thetopic
-	^stack push on 333
-	^stack push on 332
-	^stack push on 331
-	^on ^333 * #
+	^local thetopic;
+	^stack push on 333;
+	^stack push on 332;
+	^stack push on 331;
+	^on ^333 * #;
 	^on ^332 * {
-		bless
-		@ thetopic = [$2-]
-	}
-	^on ^331 * #
-	^topic
-	^wait
-	^parsekey erase_line
-	^xtype -literal /topic $thetopic
-	stack pop on 331
-	stack pop on 332
-	stack pop on 333
-}
+		bless;
+		@ thetopic = [$2-];
+	};
+	^on ^331 * #;
+	^topic;
+	^wait;
+	^parsekey erase_line;
+	^xtype -literal /topic $thetopic;
+	stack pop on 331;
+	stack pop on 332;
+	stack pop on 333;
+};
 #hop'y2k

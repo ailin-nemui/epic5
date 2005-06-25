@@ -1,4 +1,6 @@
-# $EPIC: screen,v 1.4 2003/12/14 20:04:09 jnelson Exp $
+if (word(2 $loadinfo()) != [pf]) { load -pf $word(1 $loadinfo()); return; };
+
+# $EPIC: screen,v 1.5 2005/06/25 14:12:12 jnelson Exp $
 # screen - makes ircII like screen.
 # original idea from Avalon (avalon@coombs.anu.edu.au)
 # this script by phone (phone@coombs.anu.edu.au)
@@ -21,26 +23,26 @@
 # ^X  (space) swap the next window.
 # ^XC clears all windows visible
 
-alias win.newwin {window new hide;window swap last}
+alias win.newwin {window new hide;window swap last;};
 
-bind ^X1 parse_command window swap 1
-bind ^X2 parse_command window swap 2
-bind ^X3 parse_command window swap 3
-bind ^X4 parse_command window swap 4
-bind ^X5 parse_command window swap 5
-bind ^X6 parse_command window swap 6
-bind ^X7 parse_command window swap 7
-bind ^X8 parse_command window swap 8
-bind ^X9 parse_command window swap 9
-bind ^X0 parse_command window swap 10
-bind ^Xa parse_command window swap last
-bind ^Xc parse_command win.newwin
-bind ^X^c parse_command win.newwin
-bind ^Xk parse_command window killswap
-bind ^Xl parse_command window list
-bind ^Xn swap_next_window
-bind ^Xp swap_previous_window
-bind ^X^` swap_next_window       # does a space, for some reason.
-bind ^XC parse_command clear all
-bind ^X^X parse_command window swap last
+bind ^X1 parse_command window swap 1;
+bind ^X2 parse_command window swap 2;
+bind ^X3 parse_command window swap 3;
+bind ^X4 parse_command window swap 4;
+bind ^X5 parse_command window swap 5;
+bind ^X6 parse_command window swap 6;
+bind ^X7 parse_command window swap 7;
+bind ^X8 parse_command window swap 8;
+bind ^X9 parse_command window swap 9;
+bind ^X0 parse_command window swap 10;
+bind ^Xa parse_command window swap last;
+bind ^Xc parse_command win.newwin;
+bind ^X^c parse_command win.newwin;
+bind ^Xk parse_command window killswap;
+bind ^Xl parse_command window list;
+bind ^Xn swap_next_window;
+bind ^Xp swap_previous_window;
+bind ^X^` swap_next_window;
+bind ^XC parse_command clear all;
+bind ^X^X parse_command window swap last;
 

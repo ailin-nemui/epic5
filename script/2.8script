@@ -1,9 +1,11 @@
-: {
-	This script has a lot of legacy behind it, but it's slowly
-	become more bitrot than anything...
-}
+if (word(2 $loadinfo()) != [pf]) { load -pf $word(1 $loadinfo()); return; };
 
-subpackage 2.8script
+#
+# This script has a lot of legacy behind it, but it's slowly
+# become more bitrot than anything...
+#
+
+subpackage 2.8script;
 
 # I dont know why the client cant do this...
 alias join
@@ -12,17 +14,17 @@ alias join
 	{
 		(*,*)
 		{
-			join $before(, $*)
-			join $after(, $*)
+			join $before(, $*);
+			join $after(, $*);
 		}
 		(#*) (&*) (0) (-*) (!*) (+*)
-			{ //join $* }
+			{ //join $*; }
 		() 
-			{ //join -i }
+			{ //join -i; }
 		(*) 
-			{ //join #$* }
-	}
-}
+			{ //join #$*; }
+	};
+};
 
 alias leave
 {
@@ -30,18 +32,18 @@ alias leave
 	{
 		(*,*)
 		{
-			leave $before(, $0) $1-
-			leave $after(, $0) $1-
+			leave $before(, $0) $1-;
+			leave $after(, $0) $1-;
 		}
 		(#*) (&*) (0) (-*) (!*) (+*)
-			{ //leave $* }
+			{ //leave $*; }
 		() (\\*)
-			{ //leave * $1- }
+			{ //leave * $1-; }
 		(*)
-			{ //leave #$* }
-	}
-}
+			{ //leave #$*; }
+	};
+};
 
 # Ban list:
-on ^367 * xecho -b $[$CHANNEL_NAME_WIDTH]1 $2-
+on ^367 * xecho -b $[$CHANNEL_NAME_WIDTH]1 $2-;
 

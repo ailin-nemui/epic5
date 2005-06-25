@@ -1,3 +1,5 @@
+if (word(2 $loadinfo()) != [pf]) { load -pf $word(1 $loadinfo()); return; };
+
 # newaway.m
 # v1.2 by Joseph Carter <knghtbrd@debian.org>
 # v1.0-1.1 by Matthew Green
@@ -10,29 +12,29 @@
 #                    - moved the whois check out of _na.show
 #                    - we now display away differently if in whois
 
-package newaway
+package newaway;
 
 alias _na.show {
-  @ :nick = encode($tolower($0))
-  @ :away = encode($tolower($1-))
+  @ :nick = encode($tolower($0));
+  @ :away = encode($tolower($1-));
 
   unless (_na.nick[$nick] == away) {
-    @ _na.nick[$nick] = away
-    return 1
-  }
-  return 0
-}
+    @ _na.nick[$nick] = away;
+    return 1;
+  };
+  return 0;
+};
 
-on #^311 311 "*" ^assign _na.whois.$lastserver() 1
-on #^318 311 "*" ^assign -_na.whois.$lastserver()
+on #^311 311 "*" { ^assign _na.whois.$lastserver() 1; };
+on #^318 311 "*" { ^assign -_na.whois.$lastserver(); };
 
 on ^301 "*" {
   if (_na.whois[$lastserver()]) {
-    xecho -b away     : $1-
+    xecho -b away     : $1-;
   } elsif (_na.show($*)) {
-    xecho -b $0 is away: $1-
-  }
-}
+    xecho -b $0 is away: $1-;
+  };
+};
 
-on ^unload "newaway *" purge _na
+on ^unload "newaway *" { purge _na; };
 

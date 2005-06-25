@@ -1,24 +1,26 @@
-/*
- * Ok.  Here's the plan.
- *
- * $pipe(commands) will return the output from 'commands'.
- */
+if (word(2 $loadinfo()) != [pf]) { load -pf $word(1 $loadinfo()); return; };
+
+#
+# Ok.  Here's the plan.
+#
+# $pipe(commands) will return the output from 'commands'.
+#
 
 alias pipe {
-	@ pipe.intval++
-	^local mypipeval $pipe.intval
-	^local mypipedesc pipe$mypipeval
-	^local mypiperetval
+	@ pipe.intval++;
+	^local mypipeval $pipe.intval;
+	^local mypipedesc pipe$mypipeval;
+	^local mypiperetval;
 
 	^on ^exec "$mypipedesc *" {
-		bless
-		push mypiperetval $1-
-	}
+		bless;
+		push mypiperetval $1-;
+	};
 
-	^exec -name $mypipedesc $*
-	^wait %$mypipedesc
-	^on exec -"$mypipedesc *"
-	return $mypiperetval
-}
+	^exec -name $mypipedesc $*;
+	^wait %$mypipedesc;
+	^on exec -"$mypipedesc *";
+	return $mypiperetval;
+};
 
 #hop'97

@@ -1,3 +1,5 @@
+if (word(2 $loadinfo()) != [pf]) { load -pf $word(1 $loadinfo()); return; };
+
 #
 # Struct/Assign manipulation functions.
 #
@@ -18,83 +20,83 @@
 # Make two aliases for every alias.  One for assign handling, one for alias
 # handling, then make two more for forward and reverse modes.
 #
-stack push alias alias.ttt
-stack push alias alias.tt
+stack push alias alias.ttt;
+stack push alias alias.tt;
 alias alias.ttt (args) {
-	alias $args
-	@ sar(gr/assign/alias/args)
-	alias $args
-}
+	alias $args;
+	@ sar(gr/assign/alias/args);
+	alias $args;
+};
 alias alias.tt (args) {
-	alias.ttt $args
-	@ sar(gr/assign./assign.r/args)
-	@ sar(gr/pmatch/rpmatch/args)
-	@ sar(gr/;@ :list = revw($list);/;/args)
-	alias.ttt $args
-}
+	alias.ttt $args;
+	@ sar(gr/assign./assign.r/args);
+	@ sar(gr/pmatch/rpmatch/args);
+	@ sar(gr/;@ :list = revw($list);/;/args);
+	alias.ttt $args;
+};
 
 #
 # Check the consistency of the internal structures.  The only
 # reason to use these is if an epic bug is suspected.
 #
 alias.ttt assign.check {
-	@ :omr = aliasctl(maxret 0)
-	@ :last = []
-	@ :list = aliasctl(assign pmatch "\\[$*\\]")
+	@ :omr = aliasctl(maxret 0);
+	@ :last = [];
+	@ :list = aliasctl(assign pmatch "\\[$*\\]");
 	fe ($list) foo {
 		if (uniq($last $foo)!=sort($last $foo)) {
-			echo assign consistancy failure: $last >= $foo
-			@ last = foo
-		}
-	}
-	@ aliasctl(maxret $omr)
-	echo Checked $#list assigns matching $*
-}
+			echo assign consistancy failure: $last >= $foo;
+			@ last = foo;
+		};
+	};
+	@ aliasctl(maxret $omr);
+	echo Checked $#list assigns matching $*;
+};
 #
 # Faster version.  Tells you whether there's an error, not where it is.
 #
 alias.ttt assign.qcheck {
-	@ :omr = aliasctl(maxret 0)
-	@ :list = aliasctl(assign pmatch "\\[$*\\]")
-	@ :status = uniq($list) == sort($list) ? [passed] : [failed]
-	@ aliasctl(maxret $omr)
-	echo Checked $#list assigns matching $*: $status
-}
+	@ :omr = aliasctl(maxret 0);
+	@ :list = aliasctl(assign pmatch "\\[$*\\]");
+	@ :status = uniq($list) == sort($list) ? [passed] : [failed];
+	@ aliasctl(maxret $omr);
+	echo Checked $#list assigns matching $*: $status;
+};
 
 #
 # Dump all assigns with name matching the given masks.
 #
 alias.tt assign.dump {
-	@ :list = aliasctl(assign pmatch "\\[$*\\]")
+	@ :list = aliasctl(assign pmatch "\\[$*\\]");
 	fe ($list) e {
-		echo [$aliasctl(assign getpackage $e)] $e$chr(9)$aliasctl(assign get $e)
-	}
-	@ list = #list
+		echo [$aliasctl(assign getpackage $e)] $e$chr(9)$aliasctl(assign get $e);
+	};
+	@ list = #list;
 	if (functioncall()) {
-		return $list
+		return $list;
 	} else {
-		echo Dumped $list matching $*
-	}
-}
+		echo Dumped $list matching $*;
+	};
+};
 
 #
 # Dump all assigns with name matching the first arg and
 # contents matching the rest.
 #
 alias.tt assign.grep (args) {
-	@ :list = aliasctl(assign pmatch "\\[$shift(args)\\]")
+	@ :list = aliasctl(assign pmatch "\\[$shift(args)\\]");
 	fe ($list) e {
 		if (aliasctl(assign get $e) =~ args) {
-			echo [$aliasctl(assign getpackage $e)] $e$chr(9)$aliasctl(assign get $e)
-		}
-	}
-	@ list = #list
+			echo [$aliasctl(assign getpackage $e)] $e$chr(9)$aliasctl(assign get $e);
+		};
+	};
+	@ list = #list;
 	if (functioncall()) {
-		return $list
+		return $list;
 	} else {
-		echo Dumped $list matching $*
-	}
-}
+		echo Dumped $list matching $*;
+	};
+};
 
 #
 # Delete and reassign all matching vars.  Theoretically, this is a no-op,
@@ -102,94 +104,94 @@ alias.tt assign.grep (args) {
 #
 alias.tt assign.pack {
 	do {
-		@ :list = aliasctl(assign $start pmatch "\\[$*\\]")
+		@ :list = aliasctl(assign $start pmatch "\\[$*\\]");
 		fe ($list) foo {
-			@ :baz = aliasctl(assign getpackage $foo)
-			@ aliasctl(assign set $foo $aliasctl(assign get $foo))
-			@ aliasctl(assign setpackage $foo $baz)
-		}
-		@ list = #list
+			@ :baz = aliasctl(assign getpackage $foo);
+			@ aliasctl(assign set $foo $aliasctl(assign get $foo));
+			@ aliasctl(assign setpackage $foo $baz);
+		};
+		@ list = #list;
 		if (functioncall()) {
-			return $list
+			return $list;
 		} elsif (isdisplaying()) {
-			echo Packed $list matching $*
-		}
-	} while (list && (:start += aliasctl(maxret)))
-}
+			echo Packed $list matching $*;
+		};
+	} while (list && (:start += aliasctl(maxret)));
+};
 
 #
 # Delete all matching vars.
 #
 alias.tt assign.purge {
 	if (functioncall()) {
-		@ :list = aliasctl(assign pmatch "\\[$*\\]")
-		@ :list = revw($list)
-		fe ($list) bar {^assign -$bar}
-		return $#list
+		@ :list = aliasctl(assign pmatch "\\[$*\\]");
+		@ :list = revw($list);
+		fe ($list) bar {^assign -$bar};
+		return $#list;
 	} else {
 		do {
-			@ :list = assign.purge($*)
+			@ :list = assign.purge($*);
 			if (isdisplaying()) {
-				echo Purged $list matching $*
-			}
-		} while (list && list == aliasctl(maxret))
-	}
-}
+				echo Purged $list matching $*;
+			};
+		} while (list && list == aliasctl(maxret));
+	};
+};
 
 #
 # Write matching assigns to a file which can then be /load'ed.  Any arg lists
 # in the original definition won't be saved by alias.save.
 #
 alias.tt assign.save {
-	@ :pkg = rand(0)
-	@ :fh = open($0 W)
-	@ :start = []
+	@ :pkg = rand(0);
+	@ :fh = open($0 W);
+	@ :start = [];
 	do {
-		@ :list = aliasctl(assign $start pmatch "\\[$1-\\]")
+		@ :list = aliasctl(assign $start pmatch "\\[$1-\\]");
 		fe list foo {
 			if (pkg != aliasctl(assign getpackage $foo)) {
-				@ write($fh PACKAGE ${pkg=aliasctl(assign getpackage $foo)})
-			}
-			@ write($fh assign $foo $sar(g/\{/\\\{/$sar(g/\}/\\\}/$aliasctl(assign get $foo))))
-			@ foo = 0
-		}
+				@ write($fh PACKAGE ${pkg=aliasctl(assign getpackage $foo)});
+			};
+			@ write($fh assign $foo $sar(g/\{/\\\{/$sar(g/\}/\\\}/$aliasctl(assign get $foo))));
+			@ foo = 0;
+		};
 		if (functioncall()) {
-			break
+			break;
 		} elsif (isdisplaying()) {
-			echo Wrote $#list matching $1-
-		}
-		@ :start += aliasctl(maxret)
-	} while (#list && start)
-	@ close($fh)
-	return $#list
-}
+			echo Wrote $#list matching $1-;
+		};
+		@ :start += aliasctl(maxret);
+	} while (#list && start);
+	@ close($fh);
+	return $#list;
+};
 #
 # As for .save, but write a $decode() encoded file which won't be
 # damaged by certain variable contents.
 #
 alias.tt assign.esave {
-	@ :pkg = rand(0)
-	@ :fh = open($0 W)
-	@ :start = []
+	@ :pkg = rand(0);
+	@ :fh = open($0 W);
+	@ :start = [];
 	do {
-		@ :list = aliasctl(assign $start pmatch "\\[$1-\\]")
+		@ :list = aliasctl(assign $start pmatch "\\[$1-\\]");
 		fe list foo {
 			if (pkg != aliasctl(assign getpackage $foo)) {
-				@ write($fh PACKAGE ${pkg=aliasctl(assign getpackage $foo)})
-			}
-			@ write($fh @aliasctl\(assign set $foo \$decode\($encode($aliasctl(assign get $foo))\)\))
-			@ foo = 0
-		}
+				@ write($fh PACKAGE ${pkg=aliasctl(assign getpackage $foo)});
+			};
+			@ write($fh @aliasctl\(assign set $foo \$decode\($encode($aliasctl(assign get $foo))\)\));
+			@ foo = 0;
+		};
 		if (functioncall()) {
-			break
+			break;
 		} elsif (isdisplaying()) {
-			echo Wrote $#list matching $1-
-		}
-		@ :start += aliasctl(maxret)
-	} while (#list && start)
-	@ close($fh)
-	return $#list
-}
+			echo Wrote $#list matching $1-;
+		};
+		@ :start += aliasctl(maxret);
+	} while (#list && start);
+	@ close($fh);
+	return $#list;
+};
 
 #
 # Save the data, then delete it.  Repeat until no more data exists.
@@ -198,27 +200,27 @@ alias.tt assign.esave {
 #
 alias.tt assign.flush {
 	do {
-		@ :bar = assign.save($*)
-		@ :bar = assign.purge($1-)
-		echo Flushed $bar matching $1-
-	} while (foo != (:foo = bar) || (foo && foo == aliasctl(maxret)))
-}
+		@ :bar = assign.save($*);
+		@ :bar = assign.purge($1-);
+		echo Flushed $bar matching $1-;
+	} while (foo != (:foo = bar) || (foo && foo == aliasctl(maxret)));
+};
 #
 # As above but use .esave.
 #
 alias.tt assign.eflush {
 	do {
-		@ :bar = assign.esave($*)
-		@ :bar = assign.purge($1-)
-		echo Flushed $bar matching $1-
-	} while (foo != (:foo = bar) || (foo && foo == aliasctl(maxret)))
-}
+		@ :bar = assign.esave($*);
+		@ :bar = assign.purge($1-);
+		echo Flushed $bar matching $1-;
+	} while (foo != (:foo = bar) || (foo && foo == aliasctl(maxret)));
+};
 
 #
 # End of /assign.* functions.
 #
-stack pop alias alias.tt
-stack pop alias alias.ttt
+stack pop alias alias.tt;
+stack pop alias alias.ttt;
 
 #
 # struct functions.
@@ -229,10 +231,10 @@ stack pop alias alias.ttt
 #
 alias struct.purge {
 	fe ($*) foo {
-		^assign -$foo
-	}
-	return ${struct.purgesub($*)+#}
-}
+		^assign -$foo;
+	};
+	return ${struct.purgesub($*)+#};
+};
 #
 # Continued.
 # The third sub-loop does what the first does and should never be entered.
@@ -240,46 +242,46 @@ alias struct.purge {
 #
 alias struct.purgesub {
 	fe ($*) foo {
-		@ :bar = aliasctl(assign match ${foo}.)
-		@ :bar = revw($bar)
-		@ :hit += #bar
+		@ :bar = aliasctl(assign match ${foo}.);
+		@ :bar = revw($bar);
+		@ :hit += #bar;
 		fe ($bar) baz {
-			^assign -$baz
-		}
+			^assign -$baz;
+		};
 		foreach $foo bar {
-			@ hit += struct.purgesub(${foo}.${bar})
-		}
+			@ hit += struct.purgesub(${foo}.${bar});
+		};
 		foreach $foo bar {
-			^assign -${foo}.${bar}
-		}
-	}
-	return ${0+hit}
-}
+			^assign -${foo}.${bar};
+		};
+	};
+	return ${0+hit};
+};
 
 #
 # Save a structure, like array.save.
 #
 alias struct.savefn {
-	@ :fd = open($0 w)
-	@ :hit = struct.savefd($fd $1-)
-	@ close($fd)
-	return $hit
-}
+	@ :fd = open($0 w);
+	@ :hit = struct.savefd($fd $1-);
+	@ close($fd);
+	return $hit;
+};
 #
 # Continued.  Save to an FD.
 #
 alias struct.savefd {
-	@:fd=[$0]
+	@:fd=[$0];
 	fe ($1-) foo {
 		if (strlen($($foo))) {
-			@ write($fd assign $foo $sar(g/\{/\\\{/$sar(g/\}/\\\}/$aliasctl(assign get $foo))))
-			@ :hit = 1
+			@ write($fd assign $foo $sar(g/\{/\\\{/$sar(g/\}/\\\}/$aliasctl(assign get $foo))));
+			@ :hit = 1;
 		} else {
-			@ :hit = 0
-		}
+			@ :hit = 0;
+		};
 		foreach $foo bar {
-			@ hit += struct.savefd($fd ${foo}.${bar})
-		}
-	}
-	return $hit
-}
+			@ hit += struct.savefd($fd ${foo}.${bar});
+		};
+	};
+	return $hit;
+};

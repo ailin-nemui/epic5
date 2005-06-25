@@ -1,49 +1,51 @@
-load utime
+if (word(2 $loadinfo()) != [pf]) { load -pf $word(1 $loadinfo()); return; };
+
+load utime;
 
 on ^set "nopaste on" {
-	@ nopaste.on = 1
-	setup_nopaste
-	xecho -b NOPASTE set to on
-}
+	@ nopaste.on = 1;
+	setup_nopaste;
+	xecho -b NOPASTE set to on;
+};
 
 on ^set "nopaste off" {
-	@ nopaste.on = 0
-	remove_nopaste
-	xecho -b NOPASTE set to off
-}
+	@ nopaste.on = 0;
+	remove_nopaste;
+	xecho -b NOPASTE set to off;
+};
 
 alias setup_nopaste 
 {
-	@ nopaste.last = utime()
-	@ nopaste.counter = 0
+	@ nopaste.last = utime();
+	@ nopaste.counter = 0;
 	on ?input * {
 		if ([$[1]*] == [/]) {
-			return 0
-		}
+			return 0;
+		};
 		if ((:nc = strlen($*)) == 0) {
-			return 0
-		}
-		@ :td = utime_sub($utime() $nopaste.last)
-		@ :sec = word(0 $td)
-		@ :usec = (sec * 1000000) + word(1 $td)
-		@ nopaste.last = utime()
+			return 0;
+		};
+		@ :td = utime_sub($utime() $nopaste.last);
+		@ :sec = word(0 $td);
+		@ :usec = (sec * 1000000) + word(1 $td);
+		@ nopaste.last = utime();
 
-		@ :us = ((100000 - usec) / nc)
-		@ nopaste.counter += us
+		@ :us = ((100000 - usec) / nc);
+		@ nopaste.counter += us;
 		if (nopaste.counter < 0) {
-			@ nopaste.counter = 0
-		}
+			@ nopaste.counter = 0;
+		};
 		if (nopaste.counter > 2500) {
-			parsekey erase_line
-			return 1
-		} {
-			return 0
-		}
-	}
-}
+			parsekey erase_line;
+			return 1;
+		} else {
+			return 0;
+		};
+	};
+};
 
 alias remove_nopaste
 {
-	on input -*
-}
+	on input -*;
+};
 
