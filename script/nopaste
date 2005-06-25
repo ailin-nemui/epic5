@@ -1,18 +1,16 @@
 if (word(2 $loadinfo()) != [pf]) { load -pf $word(1 $loadinfo()); return; };
 
 load utime;
+load addset;
 
-on ^set "nopaste on" {
-	@ nopaste.on = 1;
-	setup_nopaste;
-	xecho -b NOPASTE set to on;
+addset nopaste bool {
+	if (*0 == 'ON') {
+		setup_nopaste;
+	} elsif (*0 == 'OFF') {
+		remove_nopaste;
+	};
 };
-
-on ^set "nopaste off" {
-	@ nopaste.on = 0;
-	remove_nopaste;
-	xecho -b NOPASTE set to off;
-};
+set nopaste off;
 
 alias setup_nopaste 
 {

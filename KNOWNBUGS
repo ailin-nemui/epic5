@@ -7,6 +7,8 @@ KNOWN ERRATA (eg, bugs, or unresolved requests):
 * /window <refnum> noserv causes bad fd loop.
 * Support dalnet's CASEMAPPING=ascii senselessness.
 * /exec -out should go to current target, not just current channel.
+* /load will ignore pathname if it can't be found.
+* Function to "humanize" a number?  (ie, 1024 -> "1k")
 
 LOOK FOR IN THE NEXT RELEASE
 ----------------------------
@@ -704,3 +706,4 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Pf-ify the 'help' script.
 * Desupport a bunch of scripts.  See UPDATES.
 * PF-ify all of the remaining scripts.
+* Convert several scripts from /on set to /addset.

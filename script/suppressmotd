@@ -6,10 +6,11 @@ if (word(2 $loadinfo()) != [pf]) { load -pf $word(1 $loadinfo()); return; };
 # used to be an epic function and i removed it and people noticed
 # it so I'm honor bound to script it at the very least.
 #
-@ suppress_server_motd = 0;
-on ^set "suppress_server_motd on" {@suppress_server_motd = 1;};
-on ^set "suppress_server_motd off" {@suppress_server_motd = 0;};
+load addset;
+addset suppress_server_motd bool;
+set suppress_server_motd off;
 
+# # #
 @ negser = getserial(HOOK - 0);
 @ posser = getserial(HOOK + 0);
 
@@ -34,7 +35,7 @@ on #^server_lost $posser * {
 # Only suppress the first MOTD from each server connection.
 for i in (372 375 376 377) { 
     on ^$i * { 
-	if (suppress_server_motd && doing_motd[$lastserver()]) {
+	if (getset(suppress_server_motd) == 'ON' && doing_motd[$lastserver()]) {
 		return;
 	};
 	xecho -b $1-;

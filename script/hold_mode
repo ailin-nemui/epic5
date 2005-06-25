@@ -1,42 +1,25 @@
 if (word(2 $loadinfo()) != [pf]) { load -pf $word(1 $loadinfo()); return; };
 
 # Simulate /set hold_mode and /set hold_mode_interval for ircII users
+load addset;
+
+addset hold_mode bool {
+	fe ($winrefs()) x {
+		window $x hold_mode $0;
+	};
+};
+set hold_mode off;
+
+addset hold_interval int {
+	fe ($winrefs()) x {
+		window $x hold_interval $0;
+	};
+};
+set hold_interval 10;
 
 on #^window_create -125 * {
-	if (default_hold_mode == [on]) {
-		window $1 hold_mode on;
-	};
-	if (default_hold_mode_interval != []) {
-		window $1 hold_mode_interval $default_hold_mode_interval;
-	};
-};
-
-on %set "hold_mode *" {
-	if ([$1] != [on] && [$1] != [off] && [$1] != [toggle]) {
-		xecho -b SET HOLD_MODE must be ON, OFF, or TOGGLE;
-		return;
-	};
-	if ([$1] == [on]) {
-		@ default_hold_mode = [on];
-	} else if ([$1] == [off]) {
-		@ default_hold_mode = [off];
-	} else if ([$1] == [toggle] && default_hold_mode == [on]) {
-		@ default_hold_mode = [off];
-	} else if ([$1] == [toggle] && default_hold_mode == [off]) {
-		@ default_hold_mode = [on];
-	};
-	fe ($winrefs()) x {
-		window $x hold_mode $default_hold_mode;
-	};
-	xecho -b SET HOLD_MODE set to $default_hold_mode;
-};
-
-on %set "hold_mode_interval *" {
-	@ default_hold_mode_interval = [$1];
-	fe ($winrefs()) x {
-		window $x hold_mode_interval $default_hold_mode_interval;
-	};
-	xecho -b SET HOLD_MODE_INTERVAL set to $default_hold_mode_interval;
+	window $1 hold_mode $getset(hold_mode);
+	window $1 hold_interval $getset(hold_interval);
 };
 
 #hop'y2k3

@@ -3,7 +3,7 @@ if (word(2 $loadinfo()) != [pf]) { load -pf $word(1 $loadinfo()); return; };
 # Mail script.  lifted from anduril by wd.
 # This script is in the public domain
 #
-# $Id: mail,v 1.4 2005/06/25 14:12:12 jnelson Exp $
+# $Id: mail,v 1.5 2005/06/25 18:08:12 jnelson Exp $
 #
 # This module is intended as a replacement for the built-in functionality of
 # epic's mail code.  currently it only handles mbox-style mail boxes.  It
@@ -16,24 +16,18 @@ if (word(2 $loadinfo()) != [pf]) { load -pf $word(1 $loadinfo()); return; };
 # mailboxes.  You can also use it to add or delete folders from the list.
 #
 
+load addset;
 @mail.folders = getenv(MAIL);
 
-on ^set "mail_watch_time *" {
-    if ([$1] == []) {
-	xecho -b Current value of MAIL_WATCH_TIME is $mail.time;
-	return;
-    };
-    if (mail.time > 0) {
+addset mail_watch_time int {
 	^timer -del mailcheck;
-    };
-
-    if ([$1] > 0) {
-	@mail.time = [$1];
-	^timer -refnum mailcheck -rep -1 $mail.time mail.check;
-    };
-    xecho -b Value of MAIL_WATCH_TIME set to $mail.time;
+	if (*0 > 0) {
+	    ^timer -refnum mailcheck -rep -1 $0 mail.check;
+        };
 };
+set mail_watch_time 60;
 
+# # # #
 alias mbox (cmd, args) {
     if (cmd != [] && cmd != [list] && numwords($args) != 1) {
 	echo [mail] usage: /mbox [add|del|list] [folder];
@@ -149,8 +143,5 @@ for xx in ($mail.folders) {
 	@push(mail.times $word(11 $stat));
     };
 };
-
-@mail.time = [60];
-^timer -refnum mailcheck -rep -1 $mail.time mail.check;
 
 # vi:set ts=8 sts=4 sw=4 tw=79 syntax=off ai smartindent:
