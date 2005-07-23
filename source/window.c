@@ -1,4 +1,4 @@
-/* $EPIC: window.c,v 1.149 2005/06/16 13:48:33 jnelson Exp $ */
+/* $EPIC: window.c,v 1.150 2005/07/23 06:30:24 jnelson Exp $ */
 /*
  * window.c: Handles the organzation of the logical viewports (``windows'')
  * for irc.  This includes keeping track of what windows are open, where they
@@ -755,6 +755,7 @@ Window *add_to_window_list (Screen *screen, Window *new_w)
 		new_w->next = biggest;
 		biggest->prev = new_w;
 		biggest->display_lines /= 2;
+		/* XXX Manually resetting window's size?  Ugh */
 		new_w->display_lines = biggest->display_lines;
 		recalculate_windows(screen);
 	}
@@ -919,6 +920,7 @@ static void 	swap_window (Window *v_window, Window *window)
 	 */
 	window->top = v_window->top - v_window->toplines_showing + 
 					window->toplines_showing;
+	/* XXX Manually resetting window's size? Ugh */
 	window->display_lines = v_window->display_lines + 
 			       v_window->status.number - 
 				window->status.number +
@@ -1177,12 +1179,19 @@ static 	void 	resize_window (int how, Window *window, int offset)
 }
 
 /*
- * resize_display: After determining that the window has changed sizes, this
- * goes through and adjusts the top of the display.  If the window grew, then
- * this will *back up* the top of the display (yes, this is the right thing
- * to do!), and if the window shrank, then it will move forward the top of
- * the display.  We dont worry too much about the economy of redrawing. 
- * If a window is resized, it gets redrawn.
+ * resize_display: This is called any time "window->display_lines" and
+ *   "window->old_display_lines" disagree.  You are supposed to be able to
+ *   change "window->display_lines" and then update_all_windows() comes along
+ *   later and notices that display_lines and old_display_lines disagree and
+ *   calls us to straighten things out.
+ *
+ * So what we do here is two-fold.  We make sure that the top of the window's
+ * "normal" view is moved back (or left alone if /window scrolladj off), or
+ * forward if the window is grown or shrunk, respectively.  Then we check to 
+ * make sure the scrollback buffer is reset to be at least twice the window's 
+ * new size. 
+ * 
+ * The entire window gets redrawn after we're done, no matter what.
  */
 void	resize_window_display (Window *window)
 {
@@ -1225,7 +1234,8 @@ void	resize_window_display (Window *window)
 	else if (cnt < 0)
 	{
 		/* Use any whitespace we may have lying around */
-		cnt += (window->old_display_lines - window->scrolling_distance_from_display_ip);
+		cnt += (window->old_display_lines - 
+			window->scrolling_distance_from_display_ip);
 		for (i = 0; i > cnt; i--)
 		{
 			if (tmp == window->display_ip)
@@ -1234,6 +1244,8 @@ void	resize_window_display (Window *window)
 		}
 	}
 	window->scrolling_top_of_display = tmp;
+	if (window->display_buffer_max < window->display_lines * 2)
+		window->display_buffer_max = window->display_lines * 2;
 	recalculate_window_cursor_and_display_ip(window);
 
 	/*
@@ -5131,6 +5143,16 @@ int	trim_scrollback (Window *window)
 	while (window->display_buffer_size > window->display_buffer_max)
 	{
 		Display *next = window->top_of_scrollback->next;
+
+		/*
+		 * XXX Pure, unmitigated paranoia -- if the only thing in
+		 * the scrollback buffer is the display_ip, then the buffer
+		 * is actually completely empty.  WE MUST NEVER DELETE THE
+		 * DISPLAY_IP EVER EVER EVER.  So we just bail here.
+		 */
+		if (window->top_of_scrollback == window->display_ip)
+			break;
+
 		delete_display_line(window->top_of_scrollback);
 		window->top_of_scrollback = next;
 		window->display_buffer_size--;
@@ -5175,6 +5197,13 @@ int	flush_scrollback_after (Window *window)
 		return 0;
 	}
 
+	/*
+	 * Move "curr_line" to the first line below the bottom of the window.
+	 * We do this by moving forward one line at a time for the size of 
+	 * the window.  If we bump into the display_ip, then that means there
+	 * is nothing to flush (since the nothing "below" the bottom of the 
+	 * window.)
+	 */
 	for (count = 1; count < window->display_lines; count++)
 	{
 		if (curr_line == window->display_ip)

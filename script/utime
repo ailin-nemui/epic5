@@ -24,7 +24,7 @@ alias utime_add
 		@ usec -= 1000000, sec++;
 	};
 	@ function_return = sec ## [ ] ## right(6 000000$usec);
-}
+};
 
 #
 # Subtract two utimes.  The LARGER utime (the more recent) should

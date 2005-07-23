@@ -1,10 +1,29 @@
-if (word(2 $loadinfo()) != [pf]) { load -pf $word(1 $loadinfo()); return; };
+if (word(2 $loadinfo()) != [pf]) {
+	load -pf $word(1 $loadinfo());
+	return;
+};
 
+#	Written by David B. Kratter (BlackJac@EFNet)
 #
-# Written by Blackjac.
-# There shouldn't be any harm in re-loading this, right?
+#	Version: 1.0.2005.06.25.1
 #
+#	These commands provide a simple and standard method for creating
+#	user-defined SETs.
+#
+#	Usage:
+#		addset <name> <type> [<script>]
+#
+#			The <name> is the name of the set
+#			The <type> must be one of: bool char int str
+#			The <script> is optional and would include all code
+#				associated with changing the value of the set
+#
+#		delset <name>
+#
+#			The <name> is the name of the set
+
 package addset;
+
 alias addset (name, type, ...) {
         if (@name && type) {
                 @ symbolctl(create $name);

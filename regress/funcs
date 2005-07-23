@@ -481,9 +481,9 @@ assert ppid() != []
 assert ppid(foo) != []
 
 # testing $prefix()
-assert prefix(12345 12340 1234) == [1234]
-assert prefix(asdfg asdfx asdf) == [asdf]
-assert prefix(ASDFG asdfx asdf) == [ASDF]
+assert prefix(12345 12340 1234) === [1234]
+assert prefix(asdfg asdfx asdf) === [asdf]
+assert prefix(ASDFG asdfx asdf) === [ASDF]
 
 # testing $rand() -- cant be tested right now
 
@@ -671,18 +671,18 @@ assert tdiff(0) == [0 seconds]
 # testing $tolower()
 clear
 assert tolower() == []
-assert tolower(one two three) == [one two three]
-assert tolower(ONE TWO THREE) == [one two three]
-assert tolower(oNe TwO tHrEe) == [one two three]
-assert tolower(one @#\$ t\$r!e) == [one @#\$ t\$r!e]
+assert tolower(one two three) === [one two three]
+assert tolower(ONE TWO THREE) === [one two three]
+assert tolower(oNe TwO tHrEe) === [one two three]
+assert tolower(one @#\$ t\$r!e) === [one @#\$ t\$r!e]
 
 # testing $toupper()
 clear
-assert toupper() == []
-assert toupper(one two three) == [ONE TWO THREE]
-assert toupper(ONE TWO THREE) == [ONE TWO THREE]
-assert toupper(oNe TwO tHrEe) == [ONE TWO THREE]
-assert toupper(one @#\$ t\$r!e) == [ONE @#\$ T\$R!E]
+assert toupper() === []
+assert toupper(one two three) === [ONE TWO THREE]
+assert toupper(ONE TWO THREE) === [ONE TWO THREE]
+assert toupper(oNe TwO tHrEe) === [ONE TWO THREE]
+assert toupper(one @#\$ t\$r!e) === [ONE @#\$ T\$R!E]
 
 # testing $tow()
 clear

@@ -2,13 +2,21 @@ EPIC5 Projects, Bugs, and other Errata:
 
 KNOWN ERRATA (eg, bugs, or unresolved requests):
 ------------------------------------------------
-* You can /set scroll to less than a window's size, leading to crash
-* You can /set scrollback to less than a window's size, leading to crash.
-* /window <refnum> noserv causes bad fd loop.
 * Support dalnet's CASEMAPPING=ascii senselessness.
 * /exec -out should go to current target, not just current channel.
 * /load will ignore pathname if it can't be found.
 * Function to "humanize" a number?  (ie, 1024 -> "1k")
+* Support a === operator for case sensitive comparisons.
+* Math parser selection should be done by a /set now
+* Crap should not be considered when matching a line with /lastlog
+-> (#epic) $windowctl(SET <refnum> ACTIVITY_FORMAT 2 "$2:$1")
+-> (#epic) $windowctl(SET <refnum> ACTIVITY_LEVEL 2 "$winchan($0) $2")
+-> (#epic) $windowctl(SET <refnum> ACTIVITY_LEVEL 2)
+-> (#epic) $windowctl(SET <refnum> ACTIVITY_DATA "$winchan($0) $2")
+* For /dcc get nick ... file1 file2 ... where not-offered-file immediately 
+  follows an offered-file, treat it as an implied rename.
+* Rework the new math parser to support [$str](args) or (*str)(args) fn calls.
+* Need a new server state "ERROR" for unrecoverable unexpected errors.
 
 LOOK FOR IN THE NEXT RELEASE
 ----------------------------
@@ -17,6 +25,7 @@ LOOK FOR IN THE NEXT RELEASE
 * GC of a lot of the newly scripted stuff
 * Support for CNOTICE
 * Turn unified symbol table into an inode table (name, entry), entry in array
+* /window <refnum> noserv causes bad fd loop.  (can't reproduce?)
 
 [See http://www.epicsol.org/PROJECTS for things to come in the future]
 [See http://www.epicsol.org/CHANGELOG5 for things that changed in the past]
@@ -707,3 +716,13 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Desupport a bunch of scripts.  See UPDATES.
 * PF-ify all of the remaining scripts.
 * Convert several scripts from /on set to /addset.
+* When a window is resized, make sure scrollback is bigger than new size.
+* Add multiple stricmp tables, "ascii" and "rfc1459"
+* Make all string insensitive compares use "ascii"
+* Add black's ornamentation on the addset script.
+* Fix some regression scripts
+* Fix pf bugs with various scripts.
+* Add the [$func](args) capability to the new math parser.
+* Add the === and !== literal equivalence (case sensitive) operators.
+* Sort of set the case sensitive mapping to use in the 005 handler (hack!)
+* Fix error recovery of ssl connections.

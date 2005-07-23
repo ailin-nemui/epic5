@@ -36,6 +36,7 @@ static __inline u_32int_t  cs_alist_hash (const char *s, u_32int_t *mask)
 #endif
 
 #ifdef __need_ci_alist_hash__
+extern unsigned char *stricmp_tables[2];
 /*
  * This hash routine is for case insensitive keys.  Specifically keys that
  * cannot be prefolded to an appropriate case but are still insensitive
@@ -46,18 +47,22 @@ static __inline u_32int_t  ci_alist_hash (const char *s, u_32int_t *mask)
 
 	if (s[0] != 0)
 	{
-		if (s[1] == 0)
-			x = (stricmp_table[(int)s[0]] << 24), 
+	    if (s[1] == 0)
+		x = (stricmp_tables[0][(int)s[0]] << 24), 
 				*mask = 0xff000000;
-		else if (s[2] == 0)
-			x = ((stricmp_table[(int)s[0]] << 24) | (stricmp_table[(int)s[1]] << 16)), 
+	    else if (s[2] == 0)
+		x = ((stricmp_tables[0][(int)s[0]] << 24) | 
+		     (stricmp_tables[0][(int)s[1]] << 16)), 
 				*mask = 0xffff0000;
-		else
-			x = ((stricmp_table[(int)s[0]] << 24) | (stricmp_table[(int)s[1]] << 16) | (stricmp_table[(int)s[2]] << 8) | stricmp_table[(int)s[3]]),
+	    else
+		x = ((stricmp_tables[0][(int)s[0]] << 24) | 
+		     (stricmp_tables[0][(int)s[1]] << 16) | 
+		     (stricmp_tables[0][(int)s[2]] << 8) | 
+		     (stricmp_tables[0][(int)s[3]])),
 				(*mask = 0xffffff00 | (s[3] ? 0xff : 0x00));
 	}
 	else
-		*mask = 0;
+	    *mask = 0;
 
 	return x;
 }

@@ -31,7 +31,7 @@ alias fibb {
 alias fibbb {
 	@ [$0] > 1 ? {
 		@ :x1 = [$0], x1--, :x2 = x1, x2--
-		return fibbb($x1)+fibbb($x2)
+		return ${fibbb($x1)+fibbb($x2)}
 	} : { return $0 }
 }
 

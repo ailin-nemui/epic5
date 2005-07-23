@@ -96,7 +96,7 @@ alias 1cmd (sec,cmd) {
 		$cmd;
 	};
 	if (time != onecmd[$eserv][lp] && !(++onecmd[$eserv][cnt] % 10)) {
-		@ onecmd[$eserv] = time
+		@ onecmd[$eserv] = time;
 		foreach onecmd[$eserv] bar {
 			if (onecmd[$eserv][$bar][e] < time) {
 				@ onecmd[$eserv][$bar][t] = [];

@@ -1,4 +1,4 @@
-/* $EPIC: ssl.c,v 1.18 2005/04/15 02:47:45 jnelson Exp $ */
+/* $EPIC: ssl.c,v 1.19 2005/07/23 06:30:24 jnelson Exp $ */
 /*
  * ssl.c: SSL connection functions
  *
@@ -143,6 +143,8 @@ int	startup_ssl (int vfd, int channel)
 
 	if (!(x = new_ssl_info(vfd)))
 	{
+		syserr("Could not make new ssl info (vfd [%d]/channel [%d])",
+				vfd, channel);
 		errno = EINVAL;
 		return -1;
 	}
@@ -155,13 +157,11 @@ int	startup_ssl (int vfd, int channel)
 	if (x_debug & DEBUG_SSL)
 		say("SSL negotiation using %s", SSL_get_cipher(x->ssl_fd));
 
-	say("SSL negotiation for channel [%d] complete", channel);
-
 	/* The man page says this never fails in reality. */
-	if (!(server_cert = SSL_get_peer_certificate(x->ssl_fd)))
+	if (x->ssl_fd == NULL || 
+	     !(server_cert = SSL_get_peer_certificate(x->ssl_fd)))
 	{
-		say("SSL negotiation failed");
-		say("WARNING: Bailing to no encryption");
+		syserr("SSL negotiation failed -- reporting as error");
 		SSL_CTX_free(x->ctx);
 		x->ctx = NULL;
 		x->ssl_fd = NULL;
@@ -169,6 +169,7 @@ int	startup_ssl (int vfd, int channel)
 		return -1;
 	}
 
+	say("SSL negotiation for channel [%d] complete", channel);
 	cert_subject = X509_NAME_oneline(X509_get_subject_name(server_cert),0,0);
 	u_cert_subject = urlencode(cert_subject);
 	cert_issuer = X509_NAME_oneline(X509_get_issuer_name(server_cert),0,0);

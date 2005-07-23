@@ -1,4 +1,4 @@
-/* $EPIC: server.c,v 1.181 2005/06/04 03:59:33 jnelson Exp $ */
+/* $EPIC: server.c,v 1.182 2005/07/23 06:30:24 jnelson Exp $ */
 /*
  * server.c:  Things dealing with that wacky program we call ircd.
  *
@@ -314,6 +314,7 @@ static	int	serverinfo_to_newserv (ServerInfo *si)
 	s->sent_nick = NULL;
 	s->sent_body = NULL;
 
+	s->stricmp_table = 1;		/* By default, use rfc1459 */
 	s->funny_match = NULL;
 
 	s->try_ssl = FALSE;
@@ -974,7 +975,14 @@ something_broke:
 
 		    if (get_server_try_ssl(i) == TRUE)
 		    {
-			startup_ssl(des, des);
+			if ((startup_ssl(des, des)))
+			{
+			    /* XXX I don't care if this is abusive. */
+			    syserr("Could not start SSL connection to server "
+					"[%d] address [%d]", 
+					i, s->addr_counter);
+			    goto something_broke;
+			}
 			new_open(des, do_server, NEWIO_SSL_READ, 0);
 		    }
 		    else
@@ -2400,6 +2408,7 @@ IACCESSOR(v, line_length)
 IACCESSOR(v, max_cached_chan_size)
 IACCESSOR(v, ison_max)
 IACCESSOR(v, userhost_max)
+IACCESSOR(v, stricmp_table)
 SACCESSOR(chan, invite_channel, NULL)
 SACCESSOR(nick, last_notify_nick, NULL)
 SACCESSOR(nick, joined_nick, NULL)
@@ -2785,6 +2794,20 @@ void set_server_005 (int refnum, char *setting, const char *value)
 		(*new_005).name = malloc_strdup(setting);
 		(*new_005).value = malloc_strdup(value);
 		add_to_array((array*)(&s->a005), (array_item*)new_005);
+	}
+
+	/* XXX I hate this, i hate this, i hate this.  This is a hack XXX */
+	/* We need to set up a table to handle 005 callbacks. */
+	if (!my_stricmp(setting, "CASEMAPPING"))
+	{
+	    if (destroy)
+		set_server_stricmp_table(refnum, 1);
+	    else if (!my_stricmp(value, "rfc1459"))
+		set_server_stricmp_table(refnum, 1);
+	    else if (!my_stricmp(value, "ascii"))
+		set_server_stricmp_table(refnum, 0);
+	    else
+		set_server_stricmp_table(refnum, 1);
 	}
 }
 

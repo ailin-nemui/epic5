@@ -91,6 +91,7 @@ const	AI	*next_addr;		/* The next one to try upon failure */
 	int	reconnect_to;		/* Server to connect to on EOF */
 	char	*quit_message;		/* Where we stash a quit message */
 	A005	a005;			/* 005 settings kept kere. */
+	int	stricmp_table;		/* Which case insensitive map to use */
 
 	int	funny_min;		/* Funny stuff */
 	int	funny_max;

@@ -1,4 +1,4 @@
-/* $EPIC: expr2.c,v 1.24 2005/05/25 01:06:57 jnelson Exp $ */
+/* $EPIC: expr2.c,v 1.25 2005/07/23 06:30:24 jnelson Exp $ */
 /*
  * Zsh: math.c,v 3.1.2.1 1997/06/01 06:13:15 hzoli Exp 
  * math.c - mathematical expression evaluation
@@ -328,7 +328,7 @@ static void 	destroy_expr_info (expr_info *c)
  */
 
 enum LEX {
-	M_INPAR,
+	M_FUNCTION,	M_INPAR,
 	NOT, 		COMP, 		PREMINUS,	PREPLUS,
 			UPLUS,		UMINUS,		STRLEN,
 			WORDC,		DEREF,
@@ -338,7 +338,7 @@ enum LEX {
 	SHLEFT,		SHRIGHT,
 	LES,		LEQ,		GRE,		GEQ,
 	MATCH,		NOMATCH,
-	DEQ,		NEQ,
+	DEQ,		NEQ,		LITEQ,		NOTLITEQ,
 	AND,
 	XOR,
 	OR,
@@ -377,7 +377,7 @@ enum LEX {
  */
 static	int	prec[TOKCOUNT] = 
 {
-	1,
+	1,		1,
 	2,		2,		2,		2,
 			2,		2,		2,
 			2,		2,
@@ -387,7 +387,7 @@ static	int	prec[TOKCOUNT] =
 	6,		6,
 	7,		7,		7,		7,
 	8,		8,
-	9,		9,
+	9,		9,		9,		9,
 	10,
 	11,
 	12,
@@ -431,7 +431,7 @@ static	int	prec[TOKCOUNT] =
  */
 static 	int 	assoc[TOKCOUNT] =
 {
-	LR,
+	LR,		LR,
 	RL,		RL,		RL,		RL,
 			RL,		RL,		RL,
 			RL,		RL,
@@ -441,7 +441,7 @@ static 	int 	assoc[TOKCOUNT] =
 	LR,		LR,
 	LR,		LR,		LR,		LR,
 	LR,		LR,
-	LR,		LR,
+	LR,		LR,		LR,		LR,
 	LR,
 	LR,
 	LR,
@@ -1516,6 +1516,31 @@ static void	reduce (expr_info *cx, int what)
 			push_boolean(cx, c);
 			break;
 		}
+		case LITEQ:
+		{
+			pop_2_strings(cx, &s, &t);
+			CHECK_NOEVAL
+			c = strcmp(s, t) ? 0 : 1;
+
+			if (x_debug & DEBUG_NEW_MATH_DEBUG)
+				yell("O: %s === %s -> %d", s, t, c);
+
+			push_boolean(cx, c);
+			break;
+		}
+		case NOTLITEQ:
+		{
+			pop_2_strings(cx, &s, &t);
+			CHECK_NOEVAL
+			c = strcmp(s, t) ? 1 : 0;
+
+			if (x_debug & DEBUG_NEW_MATH_DEBUG)
+				yell("O: %s !== %s -> %d", s, t, c);
+
+			push_boolean(cx, c);
+			break;
+		}
+
 		case MATCH:
 		{
 			pop_2_strings(cx, &s, &t);
@@ -1663,8 +1688,43 @@ static int	zzlex (expr_info *c)
 	    switch (*(c->ptr++)) 
 	    {
 		case '(':
-			c->operand = 1;
-			return M_INPAR;
+		{
+			char *p = c->ptr;
+			char oc = 0;
+			ssize_t	span;
+
+			/*
+			 * If we see an open paren, and we're expecting an
+			 * operator, then this is a function call.  If we 
+			 * are expecting an operand, then it is a paren-set.
+			 */
+			if (c->operand == 0)
+			{
+			    if ((span = MatchingBracket(p, '(', ')')) >= 0)
+			    {
+				c->ptr = p + span;
+				oc = *c->ptr;
+				*c->ptr = 0;
+			    }
+			    else
+				c->ptr = endstr(c->ptr);
+
+			    if (c->noeval)
+				c->last_token = 0;
+			    else
+				c->last_token = tokenize_raw(c, p);
+
+			    if (oc)
+				*c->ptr++ = oc;
+			    c->operand = 0;
+			    return M_FUNCTION;
+			}
+			else
+			{
+				c->operand = 1;
+				return M_INPAR;
+			}
+		}
 		case ')':
 			/*
 			 * If we get a close paren and the lexer is expecting
@@ -1753,8 +1813,14 @@ static int	zzlex (expr_info *c)
 
 		case '!':
 		{
-			if (*c->ptr == '=')
-				OPERATOR("!=", 1, NEQ)
+			if (*c->ptr == '=') 
+			{
+				c->ptr++;
+				if (*c->ptr == '=')
+					OPERATOR("!==", 1, NOTLITEQ)
+				else
+					OPERATOR("!=", 0, NEQ)
+			}
 			else if (*c->ptr == '~')
 				OPERATOR("!~", 1, NOMATCH)
 			else
@@ -1875,7 +1941,13 @@ static int	zzlex (expr_info *c)
 
 		case '=':
 			if (*c->ptr == '=') 
-				OPERATOR("==", 1, DEQ)
+			{
+				c->ptr++;
+				if (*c->ptr == '=')
+					OPERATOR("===", 1, LITEQ)
+				else
+					OPERATOR("==", 0, DEQ)
+			}
 			else if (*c->ptr == '~')
 				OPERATOR("=~", 1, MATCH)
 			else
@@ -2222,6 +2294,7 @@ static void	mathparse (expr_info *c, int pc)
 		 * Getting the value is done on an as-needed basis.
 		 */
 		case ID:
+		{
 			if (x_debug & DEBUG_NEW_MATH_DEBUG)
 				yell("Parsed identifier token [%s]", 
 					get_token_expanded(c, c->last_token));
@@ -2234,6 +2307,44 @@ static void	mathparse (expr_info *c, int pc)
 			 */
 			push_token(c, c->last_token);
 			break;
+		}
+
+		/*
+		 * For a function call, the argument list is in c->last_token
+		 * and c->mtok is FUNCTION.  The function's name is on the top
+		 * of the queue.  XXX This is a hack because this is treated 
+		 * as a special case, and not as an operator.  But I don't
+		 * really care.  Maybe I'll "fix" this later. XXX
+		 */
+		case M_FUNCTION:
+		{
+			const char *funcname, *args;
+			char *hack = NULL;
+			size_t clue = 0;
+			char *retval;
+
+			funcname = pop_expanded(c);
+			args = get_token_raw(c, c->last_token);
+
+			if (c->noeval)
+				push_token(c, 0);
+			else
+			{
+			    malloc_strcpy_c(&hack, funcname, &clue);
+			    malloc_strcat_c(&hack, "(", &clue);
+			    malloc_strcat_c(&hack, args, &clue);
+			    malloc_strcat_c(&hack, ")", &clue);
+
+			    if (x_debug & DEBUG_NEW_MATH_DEBUG)
+				yell("Parsed function call %s", hack);
+
+			    retval = call_function(hack, c->args);
+			    c->last_token = tokenize_expanded(c, retval);
+
+			    push_token(c, c->last_token);
+			}
+			break;
+		}
 
 		/*
 		 * An open-parenthesis indicates that we should

@@ -49,7 +49,7 @@ alias country
 	    (*\\**)
 	    ("* *") 	{country.lookup $*;}
 	    (*)		{ 
-			    local args $*;
+			    ^local args $*;
 			    userhost $0 -cmd {
 				bless;
 				if ([$3] == [<UNKNOWN>]) {
@@ -63,18 +63,17 @@ alias country
 	};
 };
 
-
-/* This is an internal alias -- not intended for direct call */
+# This is an internal alias -- not intended for direct call 
 alias country.lookup
 {
-	xecho -b Looking for  $TOUPPER($*)  ... Be patient !;
+	xecho #*#* Looking for  $TOUPPER($*)  ... Be patient !;
 
 	fe ($country.info) aa ab {
 		if (match("$*" "$aa") || match("$*" "$ab")) {
-			xecho -b $toupper($aa) is $toupper($ab);
+			xecho #*#* $toupper($aa) is $toupper($ab);
                 };
         };
-	xecho -b DONE !;
+	xecho #*#* DONE !;
 };
 
 alias lcountry country -c $*;
@@ -82,6 +81,7 @@ alias lcode country -i $*;
 
 ############ THE ACTUAL DATABASE:
 
+@ country.info = [];
 push country.info Afghanistan AF Albania AL Algeria DZ "American Samoa" AS;
 push country.info Andorra AD Angola AO Anguilla AI Antarctica AQ;
 push country.info "Antigua and Barbuda" AG Argentina AR Armenia AM Aruba AW;
