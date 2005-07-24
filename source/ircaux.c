@@ -1,4 +1,4 @@
-/* $EPIC: ircaux.c,v 1.135 2005/07/23 06:30:24 jnelson Exp $ */
+/* $EPIC: ircaux.c,v 1.136 2005/07/24 15:45:03 jnelson Exp $ */
 /*
  * ircaux.c: some extra routines... not specific to irc... that I needed 
  *
@@ -635,6 +635,26 @@ int	my_stricmp (const unsigned char *str1, const unsigned char *str2)
 	return my_table_strnicmp(str1, str2, UINT_MAX, 0);
 }
 
+int	ascii_strnicmp (const unsigned char *str1, const unsigned char *str2, size_t n)
+{
+	return my_table_strnicmp(str1, str2, n, 0);
+}
+
+int	ascii_stricmp (const unsigned char *str1, const unsigned char *str2)
+{
+	return my_table_strnicmp(str1, str2, UINT_MAX, 0);
+}
+
+int	rfc1459_strnicmp (const unsigned char *str1, const unsigned char *str2, size_t n)
+{
+	return my_table_strnicmp(str1, str2, n, 1);
+}
+
+int	rfc1459_stricmp (const unsigned char *str1, const unsigned char *str2)
+{
+	return my_table_strnicmp(str1, str2, UINT_MAX, 1);
+}
+
 int	server_strnicmp (const unsigned char *str1, const unsigned char *str2, size_t n, int servref)
 {
 	int	table;
@@ -1165,12 +1185,14 @@ int	path_search (const char *name, const char *xpath, Filename result)
 	}
 
 	/* 
-	 * The previous check already took care of absolute paths
-	 * that exist, so we need to check for absolute paths here
-	 * that DON'T exist. (is this cheating?).  Also, ~user/foo
-	 * is considered an "absolute path".
+	 * There are three exceptions to path searching:
+	 * 1) absolute pathnames: /path/to/file, which start with "/"
+         * 2) Homedir pathnames: ~user/path/to/file, which start with "~"
+	 * 3) ``absolute'' relatives: ./path/to/file or ../path/to, which
+	 *	start with "."
+	 * In any of these three cases, we do not do path searching!
 	 */
-	if (*name == '/' || *name == '~')
+	if (*name == '.' || *name == '/' || *name == '~')
 		return -1;
 
 	*result = 0;

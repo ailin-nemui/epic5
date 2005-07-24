@@ -7,7 +7,7 @@
  *
  * See the COPYRIGHT file, or do a HELP IRCII COPYRIGHT 
  *
- * @(#)$Id: ircaux.h,v 1.76 2005/07/23 06:30:23 jnelson Exp $
+ * @(#)$Id: ircaux.h,v 1.77 2005/07/24 15:45:03 jnelson Exp $
  */
 
 #ifndef _IRCAUX_H_
@@ -68,6 +68,11 @@ int	server_strnicmp		(const unsigned char *, const unsigned char *, size_t, int)
 #define server_stricmp(x, y, s)	server_strnicmp(x, y, UINT_MAX, s)
 int	my_strnicmp 		(const unsigned char *, const unsigned char *, size_t);
 int	my_stricmp 		(const unsigned char *, const unsigned char *);
+int	ascii_strnicmp 		(const unsigned char *, const unsigned char *, size_t);
+int	ascii_stricmp 		(const unsigned char *, const unsigned char *);
+int	rfc1459_strnicmp 	(const unsigned char *, const unsigned char *, size_t);
+int	rfc1459_stricmp 	(const unsigned char *, const unsigned char *);
+
 
 void	really_free 		(int);
 char *	chop 			(char *, size_t);

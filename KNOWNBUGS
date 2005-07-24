@@ -6,7 +6,6 @@ KNOWN ERRATA (eg, bugs, or unresolved requests):
 * /exec -out should go to current target, not just current channel.
 * /load will ignore pathname if it can't be found.
 * Function to "humanize" a number?  (ie, 1024 -> "1k")
-* Support a === operator for case sensitive comparisons.
 * Math parser selection should be done by a /set now
 * Crap should not be considered when matching a line with /lastlog
 -> (#epic) $windowctl(SET <refnum> ACTIVITY_FORMAT 2 "$2:$1")
@@ -15,8 +14,8 @@ KNOWN ERRATA (eg, bugs, or unresolved requests):
 -> (#epic) $windowctl(SET <refnum> ACTIVITY_DATA "$winchan($0) $2")
 * For /dcc get nick ... file1 file2 ... where not-offered-file immediately 
   follows an offered-file, treat it as an implied rename.
-* Rework the new math parser to support [$str](args) or (*str)(args) fn calls.
 * Need a new server state "ERROR" for unrecoverable unexpected errors.
+* Reconnections back to unix pathnames segfault?  All back reconnectiosn?
 
 LOOK FOR IN THE NEXT RELEASE
 ----------------------------
@@ -726,3 +725,6 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Add the === and !== literal equivalence (case sensitive) operators.
 * Sort of set the case sensitive mapping to use in the 005 handler (hack!)
 * Fix error recovery of ssl connections.
+* Fix up how relative filenames are found with /load.  See UPDATES
+* Add ascii_str[n]icmp and rfc1459_str[n]icmp for use with alists.
+* Make nick+channel name lookups handled according to 005 CASEMAPPING!

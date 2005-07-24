@@ -1,4 +1,4 @@
-/* $EPIC: names.c,v 1.69 2005/05/20 23:49:16 jnelson Exp $ */
+/* $EPIC: names.c,v 1.70 2005/07/24 15:45:03 jnelson Exp $ */
 /*
  * names.c: This here is used to maintain a list of all the people currently
  * on your channel.  Seems to work 
@@ -146,8 +146,8 @@ static Channel *find_channel (const char *channel, int server)
 			return NULL;		/* sb colten */
 
 	while (traverse_all_channels(&ch, server, 1))
-		if (!my_stricmp(ch->channel, channel))
-			return ch;
+	    if (!server_stricmp(ch->channel, channel, server))
+		return ch;
 
 	return NULL;
 }
@@ -164,7 +164,10 @@ static Channel *create_channel (const char *name, int server)
 	new_c->winref = -1;
 	new_c->nicks.max_alloc = new_c->nicks.max = 0;
 	new_c->nicks.list = NULL;
-	new_c->nicks.func = (alist_func) my_strnicmp;
+	if (get_server_stricmp_table(server) == 0)
+		new_c->nicks.func = (alist_func) ascii_strnicmp;
+	else
+		new_c->nicks.func = (alist_func) rfc1459_strnicmp;
 	new_c->nicks.hash = HASH_INSENSITIVE;
 
 	new_c->base_modes[0] = 0;
@@ -555,7 +558,7 @@ void 	remove_from_channel (const char *channel, const char *nick, int server)
 	while (traverse_all_channels(&chan, server, 1))
 	{
 		/* This is correct, dont change it! */
-		if (channel && my_stricmp(channel, chan->channel))
+		if (channel && server_stricmp(channel, chan->channel, server))
 			continue;
 
 		if ((tmp = (Nick *)remove_from_array((array *)&chan->nicks, nick)))
@@ -1267,7 +1270,7 @@ int     is_current_channel (const char *channel, int server)
  
         if ((window = get_channel_winref(channel, server)) > 0)
                 if ((name = window_current_channel(window, server)))
-                        if (!my_stricmp(name, channel)) 
+                        if (!server_stricmp(name, channel, server)) 
                                 return 1;
         return 0; 
 }
@@ -1579,6 +1582,7 @@ void	cant_join_channel (const char *channel, int server)
 	update_all_windows();
 }
 
+#if 0
 /*
  * match_chan_with_id: check if the channel matches.  It checks also takes
  * the ID into account for !channels
@@ -1611,7 +1615,7 @@ static int	match_chan_with_id (const char *chan, const char *match)
 
 	return my_stricmp(chan, match);
 }
-
+#endif
 
 /*
  *
