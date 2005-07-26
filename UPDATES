@@ -1,5 +1,21 @@
 EPIC5-0.0.6
 
+*** News 07/27/2005 -- Extended $userhost() behaviour.
+	Given a channel name in place of a nick, $userhost() will return the
+	unknown userhost as it did previously, but as a side effect, it will
+	attempt to resolve the remaining list of nicks in the given channel
+	only.  This is a somewhat esoteric feature which should only be useful
+	for people who use the $serverctl() maxcache feature.
+
+*** News 07/27/2005 -- New function $shiftbrace().
+	Given a variable name, $shiftbrace() will remove the braced expression
+	at the beginning of the variables value and return it.  This is a
+	somewhat experimental scripting feature.
+
+	/assign qwer {asdf zxcv} {zxcv asdf qwer}
+	/eval echo $shiftbrace(qwer)  =>  asdf zxcv
+	/eval echo $shiftbrace(qwer)  =>  zxcv asdf qwer
+
 *** News 06/21/2005 -- Many scripts desupported
 	Many scripts that shipped with epic4 are now unsupported in epic5.
 	They will always be available at 

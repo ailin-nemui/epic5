@@ -1,4 +1,4 @@
-/* $EPIC: functions.c,v 1.202 2005/05/02 03:55:48 jnelson Exp $ */
+/* $EPIC: functions.c,v 1.203 2005/07/26 20:18:58 crazyed Exp $ */
 /*
  * functions.c -- Built-in functions for ircII
  *
@@ -75,6 +75,7 @@
 #include "options"
 #include "words.h"
 #include "reg.h"
+#include "if.h"
 #include "ssl.h"
 
 #ifdef NEED_GLOB
@@ -411,7 +412,8 @@ extern char
 	*function_push		(char *),
 	*function_pop		(char *),
 	*function_shift		(char *),
-	*function_unshift	(char *);
+	*function_unshift	(char *),
+	*function_shiftbrace	(char *);
 
 typedef char *(bf) (char *);
 typedef struct
@@ -658,6 +660,7 @@ static BuiltInFunctions	built_in_functions[] =
 	{ "SERVPORTS",		function_servports	},
 	{ "SETITEM",            function_setitem 	},
 	{ "SHIFT",		function_shift 		},
+	{ "SHIFTBRACE",		function_shiftbrace	},
 	{ "SIN",		function_sin		},
 	{ "SINH",		function_sinh		},
 	{ "SORT",		function_sort		},
@@ -1274,11 +1277,14 @@ BUILT_IN_FUNCTION(function_userhost, input)
 		size_t rvclue=0;
 		char *nick;
 		const char *uh;
+		const char *chan = NULL;
 
 		while (input && *input)
 		{
 			GET_STR_ARG(nick, input);
-			if ((uh = fetch_userhost(from_server, nick)))
+			if (is_channel(nick))
+				chan = nick;
+			if ((uh = fetch_userhost(from_server, chan, nick)))
 				malloc_strcat_word_c(&retval, space, uh, &rvclue);
 			else
 				malloc_strcat_word_c(&retval, space, unknown_userhost, &rvclue);
@@ -2463,6 +2469,27 @@ BUILT_IN_FUNCTION(function_jot, input)
 		}
 	}
 
+	return booya;
+}
+
+char *function_shiftbrace (char *word)
+{
+	char    *value = (char *) 0;
+	char    *var    = (char *) 0;
+	char	*booya 	= (char *) 0;
+	char    *placeholder;
+
+	GET_STR_ARG(var, word);
+
+	value = get_variable(var);
+
+	placeholder = value;
+	booya = malloc_strdup(next_expr(&value, '{'));
+	if (var)
+		add_var_alias(var, value, 0);
+	new_free(&placeholder);
+	if (!booya)
+		RETURN_EMPTY;
 	return booya;
 }
 
@@ -5418,6 +5445,7 @@ static	size_t	input_size = 0;
 		case ':':
 			add_var_alias(optopt_var, tmpstr, 0);
 			add_var_alias(optarg_var, next_arg(aptr, &aptr), 0);
+			//add_var_alias(optarg_var, args, 0);
 			RETURN_STR(tmpstr);
 		case '-':
 			add_var_alias(optopt_var, tmpstr, 0);
