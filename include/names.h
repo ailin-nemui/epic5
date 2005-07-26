@@ -42,7 +42,7 @@
 	void	destroy_server_channels	(int);
 	Char *	what_channel		(Char *);
 	Char *	walk_channels		(int, Char *);
-	Char *	fetch_userhost		(int, Char *);
+	Char *	fetch_userhost		(int, Char *, Char *);
 	int	get_channel_oper	(Char *, int);
 	int	get_channel_voice	(Char *, int);
 	int     get_channel_halfop	(Char *, int);

@@ -1,4 +1,4 @@
-/* $EPIC: who.c,v 1.48 2005/07/26 04:02:18 jnelson Exp $ */
+/* $EPIC: who.c,v 1.49 2005/07/26 20:43:24 crazyed Exp $ */
 /*
  * who.c -- The WHO queue.  The ISON queue.  The USERHOST queue.
  *
@@ -1125,6 +1125,7 @@ static void ison_queue_pop (int refnum)
 		new_free(&save->ison_got);
 		new_free(&save->oncmd);
 		new_free(&save->offcmd);
+		new_free(&save->endcmd);
 		new_free((char **)&save);
 	}
 	return;
@@ -1155,6 +1156,7 @@ static IsonEntry *get_new_ison_entry (int refnum, int next)
 	new_w->line = NULL;
 	new_w->oncmd = NULL;
 	new_w->offcmd = NULL;
+	new_w->endcmd = NULL;
 	ison_queue_add(refnum, new_w, next);
 	return new_w;
 }
@@ -1193,8 +1195,7 @@ void	isonbase (int refnum, char *args, void (*line) (int, char *, char *))
 {
 	IsonEntry 	*new_i;
 	char 		*next = args;
-	char		*on_cmd = NULL, *offcmd = NULL;
-static	size_t		len = 500;
+	char		*on_cmd = NULL, *offcmd = NULL, *endcmd = NULL, *stuff;
 	int		sendnext = 0;
 
 	/* Maybe should output a warning? */
@@ -1223,12 +1224,23 @@ static	size_t		len = 500;
 		{
 			sendnext++;
 		}
+		if (!my_stricmp(arg, "-e") && get_server(refnum)->ison_wait)
+		{
+			return;
+		}
 		if (!my_stricmp(arg, "-len"))
 		{
 			if ((stuff = next_arg(args, &args)))
-				len = MAX(100, atol(stuff));
+				get_server(refnum)->ison_len = MAX(100, atol(stuff));
 			else
 				say("Need numeric argument for -LEN argument.");
+		}
+		if (!my_stricmp(arg, "-max"))
+		{
+			if ((stuff = next_arg(args, &args)))
+				get_server(refnum)->ison_max = atol(stuff);
+			else
+				say("Need numeric argument for -MAX argument.");
 		}
 		if (!my_stricmp(arg, "-oncmd"))
 		{
@@ -1244,8 +1256,16 @@ static	size_t		len = 500;
 			else
 				say("Need {...} argument for -OFFCMD argument.");
 		}
+		if (!my_stricmp(arg, "-end"))
+		{
+			if ((stuff = next_expr(&args, '{')))
+				endcmd = stuff;
+			else
+				say("Need {...} argument for -END argument.");
+		}
 	}
 
+	ison_queue_send(refnum);
 	if (!args || !*args)
 		return;
 
@@ -1254,9 +1274,9 @@ static	size_t		len = 500;
 	{
 		new_i = get_new_ison_entry(refnum, sendnext);
 		new_i->line = line;
-		if (strlen(args) > len)
+		if (strlen(args) > get_server(refnum)->ison_len)
 		{
-			next = args + len;
+			next = args + get_server(refnum)->ison_len;
 			while (!isspace(*next))
 				next--;
 			*next++ = 0;
@@ -1267,9 +1287,10 @@ static	size_t		len = 500;
 		malloc_strcpy(&new_i->ison_asked, args);
 		malloc_strcpy(&new_i->oncmd, on_cmd);
 		malloc_strcpy(&new_i->offcmd, offcmd);
+		if (!next)
+			malloc_strcpy(&new_i->endcmd, endcmd);
 		ison_queue_send(refnum);
 	}
-	ison_queue_send(refnum);
 }
 
 /* 
@@ -1308,10 +1329,12 @@ void	ison_returned (int refnum, const char *from, const char *comm, const char *
 	}
 	else
 	{
-		if (new_i->oncmd && ArgList[0])
+		if (new_i->oncmd && ArgList[0] && ArgList[0][0])
 			runcmds(new_i->oncmd, ArgList[0]);
 		if (new_i->offcmd && do_off && *do_off)
 			runcmds(new_i->offcmd, do_off);
+		if (new_i->endcmd)
+			runcmds(new_i->endcmd, NULL);
 		if (!new_i->oncmd && !new_i->offcmd &&
 				do_hook(current_numeric, "%s", ArgList[0]))
 			put_it("%s Currently online: %s", banner(), ArgList[0]);
@@ -1469,7 +1492,7 @@ void userhostbase (int refnum, char *args, void (*line) (int, UserhostItem *, co
 		if (check_nickname(nick, 1) || is_number(nick))
 		{
 			total++;
-			if (!fetch_userhost(refnum, nick))
+			if (!fetch_userhost(refnum, NULL, nick))
 				server_query_reqd++;
 
 			if (*buffer)
@@ -1555,7 +1578,7 @@ void userhostbase (int refnum, char *args, void (*line) (int, UserhostItem *, co
 		while (ptr && *ptr)
 		{
 			char *my_nick = next_arg(ptr, &ptr);
-			const char *ouh = fetch_userhost(refnum, my_nick);
+			const char *ouh = fetch_userhost(refnum, NULL, my_nick);
 			char *uh, *host;
 			UserhostItem item = {NULL, 0, 0, 0, NULL, NULL};
 

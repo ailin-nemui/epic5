@@ -1,4 +1,4 @@
-/* $EPIC: server.c,v 1.182 2005/07/23 06:30:24 jnelson Exp $ */
+/* $EPIC: server.c,v 1.183 2005/07/26 20:43:24 crazyed Exp $ */
 /*
  * server.c:  Things dealing with that wacky program we call ircd.
  *
@@ -279,6 +279,7 @@ static	int	serverinfo_to_newserv (ServerInfo *si)
 	s->line_length = IRCD_BUFFER_SIZE;
 	s->max_cached_chan_size = -1;
 	s->who_queue = NULL;
+	s->ison_len = 500;
 	s->ison_max = 1;
 	s->ison_queue = NULL;
 	s->ison_wait = NULL;
@@ -2406,6 +2407,7 @@ IACCESSOR(v, sent)
 IACCESSOR(v, version)
 IACCESSOR(v, line_length)
 IACCESSOR(v, max_cached_chan_size)
+IACCESSOR(v, ison_len)
 IACCESSOR(v, ison_max)
 IACCESSOR(v, userhost_max)
 IACCESSOR(v, stricmp_table)
@@ -2886,6 +2888,9 @@ char 	*serverctl 	(char *input)
 		} else if (!my_strnicmp(listc, "MAXUSERHOST", len)) {
 			num = get_server_userhost_max(refnum);
 			RETURN_INT(num);
+		} else if (!my_strnicmp(listc, "ISONLEN", len)) {
+			num = get_server_ison_len(refnum);
+			RETURN_INT(num);
 		} else if (!my_strnicmp(listc, "CONNECTED", len)) {
 			num = is_server_registered(refnum);
 			RETURN_INT(num);
@@ -2993,6 +2998,11 @@ char 	*serverctl 	(char *input)
 			int	size;
 			GET_INT_ARG(size, input);
 			set_server_userhost_max(refnum, size);
+			RETURN_INT(1);
+		} else if (!my_strnicmp(listc, "ISONLEN", len)) {
+			int	size;
+			GET_INT_ARG(size, input);
+			set_server_ison_len(refnum, size);
 			RETURN_INT(1);
 		} else if (!my_strnicmp(listc, "CONNECTED", len)) {
 			RETURN_EMPTY;		/* Read only. */

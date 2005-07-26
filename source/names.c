@@ -1,4 +1,4 @@
-/* $EPIC: names.c,v 1.70 2005/07/24 15:45:03 jnelson Exp $ */
+/* $EPIC: names.c,v 1.71 2005/07/26 20:43:24 crazyed Exp $ */
 /*
  * names.c: This here is used to maintain a list of all the people currently
  * on your channel.  Seems to work 
@@ -1337,19 +1337,20 @@ const char *	walk_channels (int init, const char *nick)
 	return NULL;
 }
 
-const char *	fetch_userhost (int server, const char *nick)
+const char *	fetch_userhost (int server, const char *chan, const char *nick)
 {
 	Channel *tmp = NULL;
 	Nick *user = NULL;
 
 	if (server == NOSERV) return NULL;		/* Sanity check */
 
-	while (traverse_all_channels(&tmp, server, 1))
-	{
+	if (chan && (tmp = find_channel(chan, server)) &&
+			(user = find_nick_on_channel(tmp, nick)))
+		return user->userhost;
+	else while (traverse_all_channels(&tmp, server, 1))
 		if ((user = find_nick_on_channel(tmp, nick)) && 
 				user->userhost)
 			return user->userhost;
-	}
 
 	return NULL;
 }

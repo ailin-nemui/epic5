@@ -71,6 +71,7 @@ const	AI	*next_addr;		/* The next one to try upon failure */
 	char	*redirect;		/* Who we're redirecting to here */
 	int	who_max;		/* Max pending whos */
 	WhoEntry *	who_queue;	/* Who queue */
+	int	ison_len;		/* Max ison characters */
 	int	ison_max;		/* Max pending isons */
 	IsonEntry *	ison_queue;	/* Ison queue */
 	IsonEntry *	ison_wait;	/* Ison wait queue */
