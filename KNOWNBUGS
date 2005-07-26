@@ -15,7 +15,8 @@ KNOWN ERRATA (eg, bugs, or unresolved requests):
 * For /dcc get nick ... file1 file2 ... where not-offered-file immediately 
   follows an offered-file, treat it as an implied rename.
 * Need a new server state "ERROR" for unrecoverable unexpected errors.
-* Reconnections back to unix pathnames segfault?  All back reconnectiosn?
+* Black wants altchan.bj renamed to altchan
+* Reconnections back to unix pathnames segfault?  All back reconnections?
 
 LOOK FOR IN THE NEXT RELEASE
 ----------------------------

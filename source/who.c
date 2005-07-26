@@ -1,4 +1,4 @@
-/* $EPIC: who.c,v 1.47 2005/06/04 03:59:33 jnelson Exp $ */
+/* $EPIC: who.c,v 1.48 2005/07/26 04:02:18 jnelson Exp $ */
 /*
  * who.c -- The WHO queue.  The ISON queue.  The USERHOST queue.
  *
@@ -1286,7 +1286,9 @@ void	ison_returned (int refnum, const char *from, const char *comm, const char *
 
 	if (!new_i)
 	{
-		yell("### Please dont do /QUOTE ISON.");
+		/* XXX Hack to work around rogue /quote ison's */
+		if (do_hook(current_numeric, "%s", ArgList[0]))
+			put_it("%s Currently online: %s", banner(), ArgList[0]);
 		return;
 	}
 
