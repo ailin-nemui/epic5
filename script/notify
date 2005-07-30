@@ -1,10 +1,12 @@
-if (word(2 $loadinfo()) != [pf]) { load -pf $word(1 $loadinfo()); return; };
-
 # notify.irc: a module to detect the presence of nicknames
 #
 # written by nsx
 #
 # /set variables this script uses:
+#
+#   DO_NOTIFY_IMMEDIATELY -- if set on, the notify system will check for
+#                            signons and signoffs immediately when a
+#                            /notify command has been performed
 #
 #   NOTIFY -- turns notify system on or off
 #
@@ -15,14 +17,17 @@ if (word(2 $loadinfo()) != [pf]) { load -pf $word(1 $loadinfo()); return; };
 #                                have a very large notify list)
 #
 #
-# note: this script uses the serial number 100 for its serial hooks
+# note: this script uses the serial number 556 for its serial hooks
 #
+
+if (word(2 $loadinfo()) != [pf]) { load -pf $word(1 $loadinfo()); return; };
 
 package notify;
 
+load ison;
 
 # global config vars
-@ison_req_size = 500;
+@do_notify_immediately = [ON];
 @notify = [ON];
 @notify_interval = 30;
 @notify_userhost_automatic = [ON];
@@ -35,10 +40,6 @@ set notify off;
 alias change_notify_status (refnum, newstatus, nicklist) {
 	if (newstatus == [online]) {
 		push online_list[$refnum] $nicklist;
-
-		if (np_in_progress[$refnum] == 1) {
-			push ob_signons[$refnum] $nicklist;
-		};
 
 		if (notify_userhost_automatic == [on]) {
 			xeval -server $refnum {
@@ -56,10 +57,6 @@ alias change_notify_status (refnum, newstatus, nicklist) {
 	} elsif (newstatus == [offline]) {
 		@online_list[$refnum] = remws($nicklist / $online_list[$refnum]));
 
-		if (np_in_progress[$refnum] == 1) {
-			push ob_signoffs[$refnum] $nicklist;
-		};
-
 		fe ($nicklist) nickname {
 			shook notify_signoff $nickname;
 		};
@@ -69,14 +66,17 @@ alias change_notify_status (refnum, newstatus, nicklist) {
 alias clear_notify_list {
 	@notify_list = [];
 
-	fe ($myservers(*)) refnum {
-		@notify_list[$refnum] = [];
+	fe ($notify_networks $notify_groups) element {
+		@notify_list[$encode($toupper($element))] = [];
 	};
+
+	@notify_networks = [];
+	@notify_groups = [];
+
 };
 
 alias clear_notify_records {
-	fe ($myservers(*)) refnum {
-		@ison_hist[$refnum] = [];
+	fe ($servernums()) refnum {
 		@np_in_progress[$refnum] = [];
 		@online_list[$refnum] = [];
 	};
@@ -87,179 +87,202 @@ alias detect_signons {
 		return;
 	};
 
-	fe ($myservers(*)) refnum {
+	fe ($servernums()) refnum {
 		if (np_in_progress[$refnum] == 1) {
 			continue;
 		};
 
-		@ob_signoffs[$refnum] = [];
-		@ob_signons[$refnum] = [];
-		@ison[$refnum] = [];
-		@:ison_send_list = notify_list;
+		@:groupname = toupper($serverctl(GET $refnum GROUP));
+		@:network = toupper($serverctl(GET $refnum 005 NETWORK));
+		@:ison_send_list = getnick[$refnum];
 
-		push ison_send_list $notify_list[$refnum];
+		push ison_send_list $notify_list;
+		push ison_send_list $notify_list[$encode($toupper($groupname))];
+		push ison_send_list $notify_list[$encode($toupper($network))];
 
 		if (ison_send_list == []) {
 			continue;
 		};
 
-		xeval -server $refnum {
-			//ison $ison_send_list$();
-		};
-
-		repeat ${(@ison_send_list / (ison_req_size + 1)) + 1} push ison_hist[$refnum] n;
-
 		@np_in_progress[$refnum] = 1;
+
+		ison -oncmd {
+			@:refnum = serverctl(from_server);
+			@observe_online($uniq($*));
+		} -offcmd {
+			@:refnum = serverctl(from_server);
+			@observe_offline($uniq($*));
+		} -end {@np_in_progress[$serverctl(from_server)] = 0;} $ison_send_list;
 	};
 };
 
 alias establish_notify_hooks {
-	^on #^channel_nick 100 "*" {
-		@:refnum = servernum();
-		@:online_list = online_list[$refnum];
-		@:offline_list = remws($online_list / $notify_list $notify_list[$refnum]);
+        ^on #^channel_nick 556 "*" {
+                @observe_offline($1);
+                @observe_online($2);
+        };
 
-		if (findw($1 $online_list) > -1) {
-			@change_notify_status($refnum offline $1);
-		};
+        ^on #^channel_signoff 556 "*" {
+                @observe_offline($1);
+        };
 
-		if (findw($2 $offline_list) > -1) {
-			@change_notify_status($refnum online $2);
-		};
-	};
+        ^on #^join 556 "*" {
+                @observe_online($0);
+        };
 
-	^on #^channel_signoff 100 "*" {
-		@:refnum = servernum();
+        ^on #^msg 556 "*" {
+                @observe_online($0);
+        };
 
-		if (findw($1 $online_list[$refnum]) > -1) {
-			@change_notify_status($refnum offline $1);
-		};
-	};
+        ^on #^notice 556 "*" {
+                @observe_online($0);
+        };
 
-	^on #^join 100 "*" {
-		@:refnum = servernum();
-		@:offline_list = remws($online_list[$refnum] / $notify_list $notify_list[$refnum]);
-
-		if (findw($0 $offline_list) > -1) {
-			@change_notify_status($refnum online $0);
-		};
-	};
-
-	^on #^msg 100 "*" {
-		@:refnum = servernum();
-		@:offline_list = remws($online_list[$refnum] / $notify_list $notify_list[$refnum]);
-
-		if (findw($0 $offline_list) > -1) {
-			@change_notify_status($refnum online $0);
-		};
-	};
-
-	^on #^notice 100 "*" {
-		@:refnum = servernum();
-		@:offline_list = remws($online_list[$refnum] / $notify_list $notify_list[$refnum]);
-
-		if (findw($0 $offline_list) > -1) {
-			@change_notify_status($refnum online $0);
-		};
-	};
-
-	^on #^server_lost 100 "*" {
+	^on #^server_lost 556 "*" {
 		@:refnum = [$0];
 
-		@ison_hist[$refnum] = [];
 		@np_in_progress[$refnum] = 0;
 		@online_list[$refnum] = [];
 	};
 
-	^on #^003 100 "*" {
-		@:refnum = servernum();
+	^on #^003 556 "*" {
+		@:lserver = serverctl(from_server);
 
-		@ison_hist[$refnum] = [];
-		@np_in_progress[$refnum] = 0;
-		@online_list[$refnum] = [];
+		@np_in_progress[$lserver] = 0;
+		@online_list[$lserver] = [];
 	};
 
-	^on ^303 "*" {
-		@:refnum = servernum();
-		@:ison_type = left(1 $ison_hist[$refnum]);
-		@ison_hist[$refnum] = restw($ison_hist[$refnum]);
+        ^on #^311 556 "*" {
+                @observe_online($1);
+        };
 
-		if (ison_type == [n]) {
-			push ison[$refnum] $*;
+        ^on #^401 556 "*" {
+                @observe_offline($1);
+        };
 
-			if (index(n $ison_hist[$refnum]) == -1) {
-				@process_ison_reply($refnum $ison_list[$refnum]);
-			};
-		} else {
-			xecho -b -w $serv_win() -- online: $*;
-		};
-	};
-
-	^on #^311 100 "*" {
-		@:refnum = servernum();
-		@:offline_list = remws($online_list[$refnum] / $notify_list $notify_list[$refnum]);
-
-		if (findw($1 $offline_list) > -1) {
-			@change_notify_status($refnum online $1);
-		};
-	};
-
-	^on #^401 100 "*" {
-		@:refnum = servernum();
-
-		if (findw($1 $online_list[$refnum]) > -1) {
-			@change_notify_status($refnum offline $1);
-		};
-	};
 };
 
-alias find_local_notify_entry (nickname) {
-	fe ($myservers(*)) refnum {
-		if (findw($nickname $notify_list[$refnum]) > -1) {
-			return $refnum;
-		};
-	};
+alias getnick (nickname) {
+        if (nickname == []) {
+                @:getnick = getnick[$serverctl(from_server)];
 
-	return -1;
-};
+                if (getnick == []) {
+                        xecho -b no getnick for $serverctl(get $serverctl(from_server) itsname) has been set;
+                        xecho;
+                } else {
+                        xecho -b getnick for $serverctl(get $serverctl(from_server) itsname) is: $getnick;
+                        xecho;
+                };
 
-alias ison (nicklist) {
-	repeat ${(@nicklist / (ison_req_size + 1)) + 1} push ison_hist[$servernum()] m;
-	//ison $nicklist;
-};
+                return;
+        };
 
-alias lookup_server (server) {
-	if (findw($server $myservers()) == -1) {
-		if (isnumber($server)) {
-			if (index($server $myservers(*)) == -1) {
-				xecho -b -c -- $server is an invalid reference number;
+        if (nickname == [-]) {
+                @getnick[$serverctl(from_server)] = [];
 
-				return -1;
-			} else {
-				return $server;
-			};
-		} else {
-			xecho -b -c -- $server is an invalid server name;
+                xecho -b getnick for $serverctl(get $serverctl(from_server) itsname) has been unset;
+                xecho;
 
-			return -1;
-		};
-	} else {
-		return $servernum($server);
-	};
-};
+		return;
+        } else {
+                @getnick[$serverctl(from_server)] = nickname;
 
-alias nlist {
-	xecho -b -- global notify list: $notify_list;
+                xecho -b getnick for $serverctl(get $serverctl(from_server) itsname) set to: $nickname;
+                xecho;
+        };
 
-	fe ($myservers(*)) refnum {
-		xecho -c -b -- local notify list for server $refnum: $notify_list[$refnum];
-	};
+        @detect_signons();
 };
 
 alias notify (nicklist) {
-	@:snum = servernum();
-	@:online_list = online_list[$snum];
-	@:offline_list = remws($online_list / $notify_list $notify_list[$snum]);
+	@:lserver = serverctl(from_server);
+	@:lgroup = serverctl(GET $lserver GROUP);
+	@:lnetwork = serverctl(GET $lserver 005 NETWORK);
+	@:online_list = online_list[$lserver];
+	@:offline_list = remws($online_list / $notify_list $notify_list[$encode($toupper($lgroup))] $notify_list[$encode($toupper($lnetwork))]);
+
+	if (functioncall()) {
+		@:notify_list = notify_list;
+
+		if (#nicklist == 0) {
+			fe ($notify_networks) network {
+				fe ($notify_list[$encode($toupper($network))]) nickname {
+					push notify_list $nickname:$network;
+				};
+			};
+
+			fe ($notify_groups) groupname {
+				fe ($notify_list[$encode($toupper($groupname))]) nickname {
+					push notify_list $nickname::$groupname;
+				};
+			};
+
+			return $notify_list;
+		} elsif ((:word = findw(net $nicklist)) > -1) {
+			@:online_list = [];
+			@:network = word(${word + 1} $nicklist);
+			@:list = word(${word - 1} $nicklist) == [] ? word(${word + 2} $nicklist) : word(${word - 1} $nicklist);
+
+			fe ($notify_list[$encode($toupper($network))]) nickname {
+				fe ($servernums()) refnum {
+					if (serverctl(GET $refnum 005 NETWORK) == network && findw($nickname $online_list[$refnum]) > -1) {
+						push online_list $nickname;
+					};
+				};
+			};
+
+			@:online_list = uniq($online_list);
+
+			if (list == [off]) {
+				return $remws($online_list / $notify_list[$encode($toupper($network))]);
+			} else {
+				return $online_list;
+			};
+		} elsif ((:word = findw(group $nicklist)) > -1) {
+			@:online_list = [];
+			@:groupname = word(${word + 1} $nicklist);
+			@:list = word(${word - 1} $nicklist) == [] ? word(${word + 2} $nicklist) : word(${word - 1} $nicklist);
+
+			fe ($notify_list[$encode($toupper($groupname))]) nickname {
+				fe ($servernums()) refnum {
+					if (serverctl(GET $refnum GROUP) == groupname && findw($nickname $online_list[$refnum]) > -1) {
+						push online_list $nickname;
+					};
+				};
+			};
+
+			@:online_list = uniq($online_list);
+
+			if (list == [off]) {
+				return $remws($online_list / $notify_list[$encode($toupper($groupname))]);
+			} else {
+				return $online_list;
+			};
+		} else {
+			if ((:word = findw(serv $nicklist)) > -1) {
+				@:refnum = word(${word + 1} $nicklist);
+				@:list = word(${word - 1} $nicklist) == [] ? word(${word + 2} $nicklist) : word(${word - 1} $nicklist);
+
+			} elsif (#nicklist == 1) {
+				@:refnum = serverctl(from_server);
+				@:list = nicklist;
+			} else {
+				return -1;
+			};
+
+			if (list == [off]) {
+				@:network = serverctl(GET $refnum 005 NETWORK);
+				@:groupname = serverctl(GET $refnum GROUP);
+
+				push notify_list $notify_list[$encode($toupper($network))];
+				push notify_list $notify_list[$encode($toupper($groupname))];
+
+				return $remws($online_list[$refnum] / $notify_list);
+			} else {
+				return $online_list[$refnum];
+			};
+		};
+	};
 
 	if (nicklist == []) {
 		xecho -b -c -- Currently online: $online_list;
@@ -269,9 +292,7 @@ alias notify (nicklist) {
 	};
 
 	if (nicklist == [-]) {
-		fe ($notify_list) nickname {
-			@remove_notify_entry($nickname);
-		};
+		@remove_notify_entry();
 
 		xecho -b -c -- the global notify list has been cleared;
 
@@ -293,75 +314,56 @@ alias notify (nicklist) {
 			@:nickname = rest($nickname);
 
 			if (separators == 1) {
-				@:serv = after(: $nickname);
-				@:refnum = lookup_server($serv);
+				@:network = after(: $nickname);
 				@:nickname = before(: $nickname);
 
-				if (refnum == -1) {
-					continue;
-				};
-
 				if (nickname == []) {
-					fe ($notify_list[$refnum]) nickname {
-						@remove_notify_entry($nickname $refnum);
-					};
+					@remove_network_notify_entry($network);
 
-					xecho -b -c -- the local notify list for server $refnum has been cleared;
+					xecho -b -c -- the notify list for network $network has been cleared;
 
 					continue;
 				};
 
-				if (findw($nickname $notify_list[$refnum]) == -1) {
-					xecho -b -c -- $nickname is not in the local notify list for server ${refnum}!;
-
-					continue;
+				if (remove_network_notify_entry($network $nickname) == 1) {
+					xecho -b -c -- $nickname is not in the notify list for network ${network}!;
+				} else {
+					xecho -b -c -- $nickname has been removed from the notify list for network $network;
 				};
-
-				@remove_notify_entry($nickname $refnum);
-
-				xecho -b -c -- $nickname has been removed from the local notify list for server $serv;
-			} elsif (separators == 2) {
+			} elsif (separators >= 2) {
 				@:groupname = after(-1 : $nickname);
 				@:nickname = before(: $nickname);
-				@:grouprefs = serverctl(GMATCH $groupname);
+				@:refnums = serverctl(GMATCH $groupname);
 
-				if (grouprefs == []) {
-					xecho -b -c -- $groupname is an invalid server group name;
+				if (refnums == []) {
+					xecho -b -c -- server group $groupname does not exist;
 
 					continue;
 				};
 
 				if (nickname == []) {
-					fe ($grouprefs) refnum {
-						fe ($notify_list[$refnum]) nickname {
-							@remove_notify_entry($nickname $refnum);
-						};
-					};
+					@remove_group_notify_entry($groupname);
 
-					xecho -b -c -- the local notify lists for servers in group $groupname have been cleared;
+					xecho -b -c -- the notify list for server group $groupname has been cleared;
 
 					continue;
 				};
 
-				fe ($grouprefs) refnum {
-					@remove_notify_entry($nickname $refnum);
+				if (remove_group_notify_entry($groupname $nickname) == 1) {
+					xecho -b -c -- $nickname is not in the notify list for server group ${groupname}!;
+				} else {
+					xecho -b -c -- $nickname has been removed from the notify list for server group ${groupname};
 				};
-
-				xecho -b -c -- $nickname has been removed from the local notify lists for servers in group $groupname;
 			} else {
 				if (nickname == []) {
 					continue;
 				};
 
-				if (findw($nickname $notify_list) == -1) {
+				if (remove_notify_entry($nickname) == 1) {
 					xecho -b -c -- $nickname is not in the global notify list!;
-
-					continue;
+				} else {
+					xecho -b -c -- $nickname has been removed from the global notify list;
 				};
-
-				@remove_notify_entry($nickname -1);
-
-				xecho -b -c -- $nickname has been removed from the global notify list;
 			};
 		} else {
 			if (left(1 $nickname) == [+]) {
@@ -369,20 +371,16 @@ alias notify (nicklist) {
 			};
 
 			if (separators == 1) {
-				@:serv = after(: $nickname);
-				@:refnum = lookup_server($serv);
+				@:network = after(: $nickname);
+				@:nethash = encode($toupper($network));
 				@:nickname = before(: $nickname);
 
 				if (nickname == []) {
 					continue;
 				};
 
-				if (refnum == -1) {
-					continue;
-				};
-
-				if (findw($nickname $notify_list[$refnum]) > -1) {
-					xecho -b -c -- $nickname is already in the local notify list for server ${serv}!;
+				if (findw($nickname $notify_list[$nethash]) > -1) {
+					xecho -b -c -- $nickname is already in the notify list for network ${network}!;
 
 					continue;
 				};
@@ -393,39 +391,62 @@ alias notify (nicklist) {
 					continue;
 				};
 
-				push notify_list[$refnum] $nickname;
+				if (findw($network $notify_networks) == -1) {
+					push notify_networks $network;
+				};
 
-				xecho -b -c -- $nickname has been added to the local notify list for server $serv;
-			} elsif (separators == 2) {
+				push notify_list[$nethash] $nickname;
+
+				xecho -b -c -- $nickname has been added to the notify list for network $network;
+			} elsif (separators >= 2) {
 				@:groupname = after(-1 : $nickname);
+				@:grouphash = encode($toupper($groupname));
 				@:nickname = before(: $nickname);
-				@:grouprefs = serverctl(GMATCH $groupname);
 
 				if (nickname == []) {
+					xecho -b -c -- no nickname provided for server group $groupname;
 					continue;
 				};
 
-				if (grouprefs == []) {
-					xecho -b -c -- $groupname is an invalid server group name;
+
+				if (serverctl(GMATCH $groupname) == []) {
+					xecho -b -c -- server group $groupname does not exist;
 
 					continue;
 				};
 
-				fe ($grouprefs) refnum {
-					push notify_list[$refnum] $nickname;
+				if (findw($nickname $notify_list[$grouphash]) > -1) {
+					xecho -b -- $nickname is already in the notify list for server group ${groupname}!;
+					continue;
 				};
 
-				xecho -b -c -- $nickname has been added to the local notify lists for servers in group $groupname;
+
+				if (findw($nickname $notify_list) > -1) {
+					xecho -b -c -- $nickname is already in the global notify list!;
+
+					continue;
+				};
+
+				if (findw($groupname $notify_groups) == -1) {
+					push notify_groups $groupname;
+				};
+
+				push notify_list[$grouphash] $nickname;
+
+				xecho -b -c -- $nickname has been added to the notify list for server group $groupname;
 			} else {
-				@:refnum = find_local_notify_entry($nickname);
-
 				if (nickname == []) {
 					continue;
 				};
 
-				if (refnum > -1) {
-					xecho -b -c -- $nickname is already in the local notify list for server ${refnum}!;
+				if (findw($nickname $notify_list[$encode($toupper($lgroup))]) > -1) {
+					xecho -b -c -- $nickname is already in the notify list for server group ${lgroup}!;
 
+					continue;
+				};
+
+				if (findw($nickname $notify_list[$encode($toupper($lnetwork))]) > -1) {
+					xecho -b -c -- $nickname is already in the notify list for the network ${lnetwork}!;
 					continue;
 				};
 
@@ -442,97 +463,222 @@ alias notify (nicklist) {
 		};
 	};
 
-	@detect_signons();
+	if (do_notify_immediately == [ON]) {
+		@detect_signons();
+	};
 };
 
-alias process_ison_reply (refnum, ison_list) {
-	@:new_offline_nicks = [];
-	@:new_online_nicks = [];
-	@:current_nick = servernick($refnum);
-	@:ison_list = remws($ob_signoffs[$refnum] / $ison[$refnum]);
-	@:online_list = online_list[$refnum];
-	@:offline_list = remws($online_list / $notify_list $notify_list[$refnum]);
+alias observe_offline (nicklist) {
+	@:signoffs = [];
+        @:lserver = serverctl(from_server);
 
-	push ison_list $ob_signons[$refnum];
+	fe ($nicklist) nickname {
+	        if (getnick[$lserver] != [] && getnick[$lserver] != N && getnick[$lserver] == nickname) {
+			//nick $getnick[$lserver];
+		};
 
-	fe ($offline_list) nickname {
-		if (findw($nickname $ison_list) > -1) {
-			push new_online_nicks $nickname;
+	        if (findw($nickname $online_list[$lserver]) > -1) {
+			push signoffs $nickname;
 		};
 	};
 
-	fe ($online_list) nickname {
-		if (findw($nickname $ison_list) == -1) {
-			push new_offline_nicks $nickname;
+	@change_notify_status($lserver offline $signoffs);
+};
+
+alias observe_online (nicklist) {
+	@:signons = [];
+        @:lserver = serverctl(from_server);
+	@:groupname = serverctl(GET $lserver GROUP);
+	@:network = serverctl(GET $lserver 005 NETWORK);
+        @:offline_list = remws($online_list[$lserver] / $notify_list $notify_list[$encode($toupper($groupname))] $notify_list[$encode($toupper($network))]);
+
+	fe ($nicklist) nickname {
+		if (findw($nickname $offline_list) > -1) {
+			push signons $nickname;
 		};
 	};
 
-	if (new_offline_nicks != []) {
-		@change_notify_status($refnum offline $new_offline_nicks);
-	};
-
-	if (new_online_nicks != []) {
-		@change_notify_status($refnum online $new_online_nicks);
-	};
-
-	@np_in_progress[$refnum] = 0;
+	@change_notify_status($lserver online $signons);
 };
 
-alias remove_notify_entry (nickname, refnum) {
-	if (refnum < 0) {
+alias remove_notify_entry (nickname) {
+	if (nickname == []) {
+		fe ($notify_list) nickname {
+			fe ($servernums()) refnum {
+				@:groupname = serverctl(GET $refnum GROUP);
+				@:network = serverctl(GET $refnum 005 NETWORK);
+
+				if (findw($nickname $notify_list[$encode($toupper($groupname))]) == -1 && findw($nickname $notify_list[$encode($toupper($network))]) == -1) {
+					@online_list[$refnum] = remw($nickname $online_list[$refnum]);
+				};
+			};
+		};
+
+		@notify_list = [];
+
+		return 0;
+	};
+
+	if (findw($nickname $notify_list) == -1) {
+		return 1;
+	} else {
 		@notify_list = remw($nickname $notify_list);
 
-		fe ($myservers(*)) refnum {
-			@online_list[$refnum] = remw($nickname $online_list[$refnum]);
+		fe ($servernums()) refnum {
+			@:groupname = serverctl(GET $refnum GROUP);
+			@:network = serverctl(GET $refnum 005 NETWORK);
+
+			if (findw($nickname $notify_list[$encode($toupper($groupname))]) == -1 && findw($nickname $notify_list[$encode($toupper($network))]) == -1) {
+				@online_list[$refnum] = remw($nickname $online_list[$refnum]);
+			};
 		};
+
+		return 0;
+	};
+
+};
+
+alias remove_group_notify_entry (groupname, nickname) {
+	@:grouphash = encode($toupper($groupname));
+
+	if (nickname == []) {
+		fe ($notify_list[$grouphash]) nickname {
+			fe ($servernums()) refnum {
+				if (serverctl(GET $refnum GROUP) == groupname) {
+					@:network = serverctl(GET $refnum 005 NETWORK);
+
+					if (findw($nickname $notify_list[$encode($toupper($network))]) == -1) {
+						@online_list[$refnum] = remw($nickname $online_list[$refnum]);
+					};
+				};
+			};
+		};
+
+		@notify_list[$grouphash] = [];
+		@notify_groups = remw($groupname $notify_groups);
+
+		return 0;
+	};
+
+	if (findw($nickname $notify_list[$grouphash]) == -1) {
+		return 1;
 	} else {
-		@online_list[$refnum] = remw($nickname $online_list[$refnum]);
-		@notify_list[$refnum] = remw($nickname $notify_list[$refnum]);
+		@notify_list[$grouphash] = remw($nickname $notify_list[$grouphash]);
+
+		if (notify_list[$grouphash] == []) {
+			@notify_groups = remw($groupname $notify_groups);
+		};
+
+		fe ($servernums()) refnum {
+			if (serverctl(GET $refnum GROUP) == groupname) {
+				@:network = serverctl(GET $refnum 005 NETWORK);
+
+				if (findw($nickname $notify_list[$encode($toupper($network))]) == -1) {
+					@online_list[$refnum] = remw($nickname $online_list[$refnum]);
+				};
+			};
+		};
+
+		return 0;
+	};
+};
+
+alias remove_network_notify_entry (network, nickname) {
+	@:nethash = encode($toupper($network));
+
+	if (nickname == []) {
+		fe ($notify_list[$nethash]) nickname {
+			fe ($servernums()) refnum {
+				if (serverctl(GET $refnum 005 NETWORK) == network) {
+					@:groupname = serverctl(GET $refnum GROUP);
+
+					if (findw($nickname $notify_list[$encode($toupper($groupname))]) == -1) {
+						@online_list[$refnum] = remw($nickname $online_list[$refnum]);
+					};
+				};
+			};
+		};
+
+		@notify_list[$nethash] = [];
+		@notify_networks = remw($network $notify_networks);
+
+		return 0;
+	};
+
+	if (findw($nickname $notify_list[$nethash]) == -1) {
+		return 1;
+	} else {
+		@notify_list[$nethash] = remw($nickname $notify_list[$nethash]);
+
+		if (notify_list[$nethash] == []) {
+			@notify_networks = remw($network $notify_networks);
+		};
+
+		fe ($servernums()) refnum {
+			if (serverctl(GET $refnum 005 NETWORK) == network) {
+				@:groupname = serverctl(GET $refnum GROUP);
+
+				if (findw($nickname $notify_list[$encode($toupper($groupname))]) == -1) {
+					@online_list[$refnum] = remw($nickname $online_list[$refnum]);
+				};
+			};
+		};
+
+		return 0;
 	};
 };
 
 alias remove_notify_hooks {
-	^on #^channel_nick 100 -"*";
-	^on #^channel_signoff 100 -"*";
-	^on #^join 100 -"*";
-	^on #^msg 100 -"*";
-	^on #^notice 100 -"*";
-	^on #^server_lost 100 -"*";
-	^on #^003 100 -"*";
-	^on ^303 -"*";
-	^on #^311 100 -"*";
-	^on #^401 100 -"*";
-}
+	^on #^channel_nick 556 -"*";
+	^on #^channel_signoff 556 -"*";
+	^on #^join 556 -"*";
+	^on #^msg 556 -"*";
+	^on #^notice 556 -"*";
+	^on #^send_to_server 556 -"% % ISON *";
+	^on #^server_lost 556 -"*";
+	^on #^003 556 -"*";
+	^on #^311 556 -"*";
+	^on #^401 556 -"*";
+};
 
-alias serv_win (refnum) {
-	@:win_max = [255];
-	@:i = [1];
+alias servernums {
+	@:refnums = [];
 
-	if (refnum == []) {
-		@:refnum = servernum();
-	};
-
-	while (i < win_max) {
-		if (winserv($i) == refnum) {
-			return $i;
+	fe ($serverctl(omatch *)) refnum {
+		if (serverctl(get $refnum connected)) {
+			push refnums $refnum;
 		};
-
-		@:i++;
 	};
+
+	return $refnums;
 };
 
 
 on ^notify_signoff "*" {
-	xecho -b -w $serv_win() -- Signoff by $0 detected;
+	xecho -b -level CRAP -- Signoff by $0 detected;
 };
 
 on ^notify_signon "*" {
 	if ([$1] == [<UNKNOWN>@<UNKNOWN>]) {
-		xecho -b -w $serv_win() -- Signon by $0 \(\) detected;
+		xecho -b -level CRAP -- Signon by $0 \(\) detected;
 	} elsif ([$1] == [<EMPTY>]) {
-		xecho -b -w $serv_win() -- Signon by $0 detected;
+		xecho -b -level CRAP -- Signon by $0 detected;
 	} else {
-		xecho -b -w $serv_win() -- Signon by $0 \($1\) detected;
+		xecho -b -level CRAP Signon by $0 \($1\) detected;
+	};
+};
+
+on ^set "DO_NOTIFY_IMMEDIATELY" {
+	if ([$1] == []) {
+		xecho -b Current value of DO_NOTIFY_IMMEDIATELY is $do_notify_immediately;
+	} elsif ([$1] == [off]) {
+		@do_notify_immediately = [off];
+		xecho -b Value of DO_NOTIFY_IMMEDIATELY set to OFF;
+	} elsif ([$1] == [on]) {
+		@do_notify_immediately = [on];
+		xecho -b Value of DO_NOTIFY_IMMEDIATELY set to ON;
+	} else {
+		xecho -b Value of DO_NOTIFY_IMMEDIATELY must be ON or OFF;
 	};
 };
 
@@ -556,8 +702,8 @@ on ^set "NOTIFY *" {
 		xecho -b Value of NOTIFY set to ON;
 	} else {
 		xecho -b Value of NOTIFY must be ON or OFF;
-	}
-}
+	};
+};
 
 on ^set "NOTIFY_INTERVAL *" {
 	if ([$1] == []) {
@@ -590,10 +736,8 @@ on ^set "NOTIFY_USERHOST_AUTOMATIC *" {
 	};
 };
 
-
 @clear_notify_list();
 @clear_notify_records();
 @establish_notify_hooks();
 @detect_signons();
 timer -refnum notcheck -rep -1 $notify_interval @detect_signons();
-
