@@ -1,4 +1,4 @@
-/* $EPIC: dcc.c,v 1.124 2005/07/30 03:41:32 jnelson Exp $ */
+/* $EPIC: dcc.c,v 1.125 2005/07/30 04:36:18 jnelson Exp $ */
 /*
  * dcc.c: Things dealing client to client connections. 
  *
@@ -125,17 +125,21 @@ static	int		dcc_updates_status = 1;
 #define DCC_SUBCOMMAND(x)  static void x (int argc, char **argv, const char *subargs)
 static	void		dcc_chat 		(char *);
 DCC_SUBCOMMAND(dcc_chat_subcmd);
-static	void		dcc_filesend 		(char *);
-static	void		dcc_getfile_get 	(char *);
-static	void		dcc_send_raw 		(char *);
+static	void		dcc_get 		(char *);
+#ifdef MIRC_BROKEN_DCC_RESUME
+static	void		dcc_resume 		(char *);
+#endif
+DCC_SUBCOMMAND(dcc_get_subcmd);
 static	void 		dcc_close 		(char *);
 DCC_SUBCOMMAND(dcc_close_subcmd);
 static	void		dcc_closeall		(char *);
+DCC_SUBCOMMAND(dcc_closeall_subcmd);
+
+static	void		dcc_filesend 		(char *);
+static	void		dcc_send_raw 		(char *);
 static	void		dcc_list 		(char *args);
 static	void		dcc_rename 		(char *);
-#ifdef MIRC_BROKEN_DCC_RESUME
 static	void		dcc_getfile_resume	(char *);
-#endif
 
 static	DCC_list *	dcc_searchlist 		(unsigned, const char *, const char *, const char *, int);
 static	void		dcc_erase 		(DCC_list *);
@@ -176,7 +180,7 @@ struct
 {
 	{ "CHAT",	dcc_chat 		},	/* DCC_CHAT */
 	{ "SEND",	dcc_filesend 		},	/* DCC_FILEOFFER */
-	{ "GET",	dcc_getfile_get 	},	/* DCC_FILEREAD */
+	{ "GET",	dcc_get 		},	/* DCC_FILEREAD */
 	{ "RAW",	dcc_send_raw 		},	/* DCC_RAW */
 
 	{ "CLOSE",	dcc_close 		},
@@ -184,7 +188,7 @@ struct
 	{ "LIST",	dcc_list 		},
 	{ "RENAME",	dcc_rename 		},
 #ifdef MIRC_BROKEN_DCC_RESUME
-	{ "RESUME",	dcc_getfile_resume 	},
+	{ "RESUME",	dcc_resume 		},
 #endif
 	{ NULL,		(dcc_function) NULL 	}
 };
@@ -1370,8 +1374,8 @@ DCC_SUBCOMMAND(dcc_chat_subcmd)
 		say("DCC CHAT: Option %s not supported", argv[i]);
 	    else if (user)
 	    {
-		say("DCC CHAT: Opening multiple chats per command not 
-			supported yet -- ignoring extra nick %s", argv[i]);
+		say("DCC CHAT: Opening multiple chats per command not "
+			"supported yet -- ignoring extra nick %s", argv[i]);
 	    }
 	    else
 		malloc_strcpy(&user, argv[i]);
@@ -1414,14 +1418,10 @@ static void dcc_close (char *args)
 DCC_SUBCOMMAND(dcc_close_subcmd)
 {
 	DCC_list	*dcc;
-	char		*type = NULL;
-	char		*user;
-	char		*file = NULL;
-	char		*encoded_description = NULL;
-	int		any_type = 0;
-	int		any_user = 0;
-	int		i;
-	int		count = 0;
+	int	type;
+	char	*user = NULL, 
+		*file = NULL;
+	int	count = 0;
 
 	if (argc < 2)
 	{
@@ -1431,49 +1431,46 @@ dcc_close_usage:
 	}
 
 	if ((!my_stricmp(argv[0], "-all") || !my_stricmp(argv[0], "*")))
-		any_type = 1;
+		type = -1;
 	else
-		type = argv[0];
+	{
+		int	i;
+
+		for (i = 0; dcc_types[i]; i++)
+			if (!my_stricmp(argv[0], dcc_types[i]))
+				break;
+
+		if (!dcc_types[i])
+		{
+			say("DCC CLOSE: Unknown DCC type: %s", argv[0]);
+			return;
+		}
+
+		type = i;
+	}
 
 	if ((!my_stricmp(argv[1], "-all") || !my_stricmp(argv[1], "*")))
-		any_user = 1;
+		user = NULL;
 	else
 		user = argv[1];
 
 	if (argc >= 3)
 	    file = argv[2];
 
-	if (any_type == 0)	/* User did not specify "-all" type */
+	while ((dcc = dcc_searchlist(type, user, file, file, -1)))
 	{
-		for (i = 0; dcc_types[i]; i++)
-			if (!my_stricmp(type, dcc_types[i]))
-				break;
-
-		if (!dcc_types[i])
-		{
-			say("Unknown DCC type: %s", type);
-			return;
-		}
-	}
-	else			/* User did specify "-all" type */
-		i = -1;
-
-	if (any_user)		/* User did specify "-all" user */
-		user = NULL;
-
-	while ((dcc = dcc_searchlist(i, user, file, file, -1)))
-	{
+		char *		encoded_description = NULL;
 		unsigned	my_type = dcc->flags & DCC_TYPES;
 
 		count++;
 		lock_dcc(dcc);
 		
 		if (dcc->description) {
-			if (my_type == DCC_FILEOFFER)
-				encoded_description = dcc_urlencode(dcc->description);
-			else
-				/* assume the other end encoded the filename */
-				encoded_description = malloc_strdup(dcc->description);
+		    if (my_type == DCC_FILEOFFER)
+			encoded_description = dcc_urlencode(dcc->description);
+		    else
+			/* assume the other end encoded the filename */
+			encoded_description = malloc_strdup(dcc->description);
 		}
 		
                 if (do_hook(DCC_LOST_LIST,"%s %s %s USER ABORTED CONNECTION",
@@ -1494,7 +1491,7 @@ dcc_close_usage:
 
 	if (!count)
 		say("No DCC %s:%s to %s found", 
-			(i == -1 ? "<any>" : type), 
+			(type == -1 ? "<any>" : dcc_types[type]), 
 			(file ? file : "<any>"), 
 			user);
 }
@@ -1503,22 +1500,57 @@ dcc_close_usage:
  * Usage: /DCC CLOSEALL
  * It leaves your DCC list very empty
  */
-static void	dcc_closeall (char *args)
+static void dcc_closeall (char *args)
 {
-	const char	*my_local_args = "-all -all";
-	char	*breakage = LOCAL_COPY(my_local_args);
-	dcc_close(breakage);	/* XXX Bleh */
+	/* Just a dummy placeholder */
+	dcc_closeall_subcmd(0, NULL, NULL);
+}
+
+DCC_SUBCOMMAND(dcc_closeall_subcmd)
+{
+	char *	my_argv[3];
+
+	my_argv[0] = LOCAL_COPY("-all");
+	my_argv[1] = LOCAL_COPY("-all");
+	dcc_close_subcmd(2, my_argv, NULL);
 }
 
 /*
  * Usage: /DCC GET <nick> [file|*]
  * The '*' file gets all offered files.
  */
-static	void	dcc_getfile (char *args, int resume)
+static void dcc_get (char *args)
+{
+	int	argc;
+	char *	argv[10];
+
+	argv[0] = LOCAL_COPY("GET");
+	argc = split_args(args, &argv[1], 9);
+	dcc_get_subcmd(argc + 1, argv, NULL);
+}
+
+#ifdef MIRC_BROKEN_DCC_RESUME
+/*
+ * Usage: /DCC RESUME <nick> [file|*]
+ * The '*' file gets all offered files.
+ */
+static void dcc_resume (char *args)
+{
+	int	argc;
+	char *	argv[10];
+
+	argv[0] = LOCAL_COPY("RESUME");
+	argc = split_args(args, &argv[1], 9);
+	dcc_get_subcmd(argc + 1, argv, NULL);
+}
+#endif
+
+DCC_SUBCOMMAND(dcc_get_subcmd)
 {
 	char		*user;
 	char		*filename = NULL;
 	DCC_list	*dcc;
+	Filename	default_savedir = "";
 	Filename	fullname = "";
 	Filename	pathname = "";
 	int		file;
@@ -1527,145 +1559,155 @@ static	void	dcc_getfile (char *args, int resume)
 	int		count = 0;
 	Stat		sb;
 	int		proto;
+	const char *	x;
+	int		resume;
 
-	if (!(user = next_arg(args, &args)))
+	if (argc < 2)
 	{
 		say("You must supply a nickname for DCC GET");
 		return;
 	}
 
-	filename = next_arg(args, &args);
-	if (filename && *filename && !strcmp(filename, "*"))
-		get_all = 1, filename = NULL;
+	if (!strcmp(argv[0], "RESUME"))
+		resume = 1;
+	else
+		resume = 0;
+
+	user = argv[1];
+	if (argc == 2 || !strcmp(argv[2], "*"))
+		filename = NULL;
+	else
+		filename = argv[2];
+
+
+	/*
+	 * Deduce where we will be saving this file.  If the user has
+	 * directory they told us to use, then use that.  Otherwise, put
+	 * it in the current directory.  In either case, the place we
+	 * will put it has to exist or we will punt.
+	 */
+	x = get_string_var(DCC_STORE_PATH_VAR);
+	if (x && *x)
+		strlcpy(pathname, x, sizeof(pathname));
+	else /* SUSv2 doesn't specify realpath() behavior for "" */
+		strcpy(pathname, "./");
+
+	if (normalize_filename(pathname, default_savedir))
+	{
+		say("DCC GET: Can't save file because %s is not a valid "
+			"directory.", pathname);
+		if (x && *x)
+		    say("DCC GET: Check /SET DCC_STORE_PATH and try again.");
+		else
+		    say("DCC GET: Your current directory has vanished!  "
+			"Use /CD to change your current directory.");
+		return;
+	}
+
 
 	while ((dcc = dcc_searchlist(DCC_FILEREAD, user, filename, NULL, 0)))
 	{
-		count++;
+	    count++;
 
-		if (!get_all && dcc->flags & DCC_ACTIVE)
-		{
-			say("A previous DCC GET:%s to %s exists", 
-				filename ? filename : "<any>", user);
-			return;
-		}
-		if (!get_all && !(dcc->flags & DCC_THEIR_OFFER))
-		{
-			say("I'm a little teapot");
-			dcc->flags |= DCC_DELETE;
-			return;
-		}
+	    if (filename && (dcc->flags & DCC_ACTIVE))
+	    {
+		say("A DCC GET:%s to %s is active", filename, user);
+		return;
+	    }
+	    if (filename && !(dcc->flags & DCC_THEIR_OFFER))
+	    {
+		/* Kept purely for historical laughs */
+		say("I'm a little teapot");
+		dcc->flags |= DCC_DELETE;
+		return;
+	    }
 
-		if (get_string_var(DCC_STORE_PATH_VAR))
-		{
-			strlcpy(pathname, get_string_var(DCC_STORE_PATH_VAR), 
-						sizeof(pathname));
-		} else /* SUSv2 doesn't specify realpath() behavior for "" */
-			strcpy(pathname, "./");
+	    /* 
+	     * Figure out where we will save this file.  If the user has
+	     * /DCC RENAMEd this file to an absolute path, we honor that.
+	     * Otherwise, we use the default directory from above (09/24/2003)
+	     */
+	    realfilename = dcc_urldecode(dcc->description);
+	    if (*realfilename == '/')
+		strlcpy(fullname, realfilename, sizeof(fullname));
+	    else
+	    {
+		strlcat(fullname, default_savedir, sizeof(fullname));
+		strlcat(fullname, "/", sizeof(fullname));
+		strlcat(fullname, realfilename, sizeof(fullname));
+	    }
 
-		if (*pathname && normalize_filename(pathname, fullname))
-		{
-			say("%s is not a valid directory", fullname);
-			return;
-		}
-
-		if (fullname && *fullname)
-			strlcat(fullname, "/", sizeof(fullname));
-
-		realfilename = dcc_urldecode(dcc->description);
-
-		/* 
-		 * Don't prefix the DCC_STORE_PATH if the description
-		 * is already an absolute path (09/24/2003)
-		 */
-		if (*realfilename == '/')
-			strlcpy(fullname, realfilename, sizeof(fullname));
-		else
-			strlcat(fullname, realfilename, sizeof(fullname));
-		new_free(&realfilename);
-		dcc->filename = malloc_strdup(fullname);
-		dcc->open_callback = NULL;
+	    new_free(&realfilename);
+	    dcc->filename = malloc_strdup(fullname);
+	    dcc->open_callback = NULL;
 
 #ifdef MIRC_BROKEN_DCC_RESUME
-		if (resume && get_int_var(MIRC_BROKEN_DCC_RESUME_VAR) && stat(fullname, &sb) != -1) {
-			dcc->bytes_sent = 0;
-			dcc->bytes_read = dcc->resume_size = sb.st_size;
+	    if (resume && get_int_var(MIRC_BROKEN_DCC_RESUME_VAR) && 
+			stat(fullname, &sb) != -1) 
+	    {
+		dcc->bytes_sent = 0;
+		dcc->bytes_read = dcc->resume_size = sb.st_size;
 
-			if ((file = open(fullname,
-					O_WRONLY|O_APPEND, 0644)) == -1)
-			{
-				say("Unable to open %s: %s", 
-					fullname, strerror(errno));
-				return;
-			}
-			dcc->file = file;
+		if ((file = open(fullname, O_WRONLY|O_APPEND, 0644)) == -1)
+		{
+			say("Unable to open %s: %s", fullname, strerror(errno));
+			return;
+		}
+		dcc->file = file;
 	
-			if (((SA *)&dcc->offer)->sa_family == AF_INET)
-				malloc_strcpy(&dcc->othername, 
-						ltoa(ntohs(V4PORT(dcc->offer))));
+		if (((SA *)&dcc->offer)->sa_family == AF_INET)
+			malloc_strcpy(&dcc->othername, 
+					ltoa(ntohs(V4PORT(dcc->offer))));
 		
-			if (x_debug & DEBUG_DCC_XMIT)
-				yell("SENDING DCC RESUME to [%s] [%s|%s|%ld]", user, filename, dcc->othername, (long)sb.st_size);
+		if (x_debug & DEBUG_DCC_XMIT)
+			yell("SENDING DCC RESUME to [%s] [%s|%s|%ld]", 
+				user, filename, dcc->othername, 
+				(long)sb.st_size);
 		
-			/* Just in case we have to fool the protocol enforcement. */
-			proto = get_server_protocol_state(from_server);
-			set_server_protocol_state(from_server, 0);
-			send_ctcp(CTCP_PRIVMSG, user, CTCP_DCC,
+		/* Just in case we have to fool the protocol enforcement. */
+		proto = get_server_protocol_state(from_server);
+		set_server_protocol_state(from_server, 0);
+		send_ctcp(CTCP_PRIVMSG, user, CTCP_DCC,
 #if 1
 				sindex(dcc->description, space)
-				? "RESUME \"%s\" %s %ld"
-				: "RESUME %s %s %ld",
+					? "RESUME \"%s\" %s %ld"
+					: "RESUME %s %s %ld",
 				dcc->description,
 #else
 				/* This is for testing mirc compatability */
 				"RESUME file.ext %s %ld",
 #endif
 				dcc->othername, (long)sb.st_size);
-			set_server_protocol_state(from_server, proto);
+		set_server_protocol_state(from_server, proto);
 
-			/*
-			 * Warning:  It seems to be for the best to _not_ loop
-			 *           at this point.
-			 */
-			return;
-		}
+		/*
+		 * Warning:  It seems to be for the best to _not_ loop
+		 *           at this point.
+		 */
+		return;
+	    }
 #endif
 
-		if ((file = open(fullname, 
-				O_WRONLY|O_TRUNC|O_CREAT, 0644)) == -1)
-		{
-			say("Unable to open %s: %s", 
-					fullname, strerror(errno));
-			return;
-		}
+	    if ((file = open(fullname, O_WRONLY|O_TRUNC|O_CREAT, 0644)) == -1)
+	    {
+		say("Unable to open %s: %s", fullname, strerror(errno));
+		return;
+	    }
 
-		dcc->file = file;
-		dcc->flags |= DCC_TWOCLIENTS;
-		if (dcc_connect(dcc))	/* Nonblocking should be ok here */
-		{
-			if (get_all)
-				continue;
-			else
-				return;
-		}
-
-		if (!get_all)
-			break;
+	    dcc->file = file;
+	    dcc->flags |= DCC_TWOCLIENTS;
+	    dcc_connect(dcc);		/* Nonblocking should be ok here */
 	}
 
 	if (!count)
 	{
-		if (filename)
-			say("No file (%s) offered in SEND mode by %s", 
-					filename, user);
-		else
-			say("No file offered in SEND mode by %s", user);
-		return;
+	    if (filename)
+		say("No file (%s) offered in SEND mode by %s", filename, user);
+	    else
+		say("No file offered in SEND mode by %s", user);
+	    return;
 	}
 }
-static void dcc_getfile_get	(char *args) { dcc_getfile(args, 0); }
-#ifdef MIRC_BROKEN_DCC_RESUME
-static void dcc_getfile_resume	(char *args) { dcc_getfile(args, 1); }
-#endif
 
 /*
  * Calculates transfer speed based on size, start time, and current time.
@@ -2990,12 +3032,6 @@ static void	process_dcc_raw_connected (DCC_list *dcc)
 	dcc->user = malloc_strdup(ltoa(dcc->socket));
 	do_hook(DCC_RAW_LIST, "%s %s E %s", dcc->user, dcc->description, 
 						dcc->othername);
-/*
-            if (do_hook(DCC_CONNECT_LIST,"%s RAW %s %s", 
-				dcc->user, dcc->description, dcc->othername))
-		say("DCC RAW connection to %s on %s via %s established.", 
-				dcc->description, dcc->user, dcc->othername);
-*/
 
 	dcc_connected(dcc->socket);
 	dcc->flags &= ~DCC_CONNECTING;
@@ -3356,7 +3392,6 @@ static	void		process_dcc_get_data (DCC_list *dcc)
 
 static void	process_dcc_get_connected (DCC_list *dcc)
 {
-
 	lock_dcc(dcc);
 	if (x_debug & DEBUG_SERVER_CONNECT)
 	    yell("process_dcc_get_connected: dcc [%s] now ready to write", 
@@ -3625,7 +3660,7 @@ int	wait_for_dcc (const char *descriptor)
  * When the peer demands DCC RESUME
  * We send out a DCC ACCEPT
  */
-static void dcc_getfile_resume_demanded (const char *user, char *filename, char *port, char *offset)
+static void	dcc_getfile_resume_demanded (const char *user, char *filename, char *port, char *offset)
 {
 	DCC_list	*Client;
 	int		proto;
