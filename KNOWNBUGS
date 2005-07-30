@@ -4,7 +4,6 @@ KNOWN ERRATA (eg, bugs, or unresolved requests):
 ------------------------------------------------
 * Support dalnet's CASEMAPPING=ascii senselessness.
 * /exec -out should go to current target, not just current channel.
-* /load will ignore pathname if it can't be found.
 * Function to "humanize" a number?  (ie, 1024 -> "1k")
 * Math parser selection should be done by a /set now
 * Crap should not be considered when matching a line with /lastlog
@@ -729,3 +728,4 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Fix up how relative filenames are found with /load.  See UPDATES
 * Add ascii_str[n]icmp and rfc1459_str[n]icmp for use with alists.
 * Make nick+channel name lookups handled according to 005 CASEMAPPING!
+* Begin the work of "normalizing" argument handling to /dcc commands.

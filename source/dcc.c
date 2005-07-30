@@ -1,4 +1,4 @@
-/* $EPIC: dcc.c,v 1.123 2005/05/02 03:55:48 jnelson Exp $ */
+/* $EPIC: dcc.c,v 1.124 2005/07/30 03:41:32 jnelson Exp $ */
 /*
  * dcc.c: Things dealing client to client connections. 
  *
@@ -122,9 +122,22 @@ static	int		dccs_rejected = 0;
 static	int		dcc_refnum = 0;
 static	int		dcc_updates_status = 1;
 
+#define DCC_SUBCOMMAND(x)  static void x (int argc, char **argv, const char *subargs)
 static	void		dcc_chat 		(char *);
+DCC_SUBCOMMAND(dcc_chat_subcmd);
+static	void		dcc_filesend 		(char *);
+static	void		dcc_getfile_get 	(char *);
+static	void		dcc_send_raw 		(char *);
 static	void 		dcc_close 		(char *);
+DCC_SUBCOMMAND(dcc_close_subcmd);
 static	void		dcc_closeall		(char *);
+static	void		dcc_list 		(char *args);
+static	void		dcc_rename 		(char *);
+#ifdef MIRC_BROKEN_DCC_RESUME
+static	void		dcc_getfile_resume	(char *);
+#endif
+
+static	DCC_list *	dcc_searchlist 		(unsigned, const char *, const char *, const char *, int);
 static	void		dcc_erase 		(DCC_list *);
 static	void 		dcc_garbage_collect 	(void);
 static	int		dcc_connected		(int);
@@ -132,26 +145,20 @@ static	int		dcc_connect 		(DCC_list *);
 static	int		dcc_listen		(DCC_list *);
 static 	void		dcc_send_booster_ctcp 	(DCC_list *dcc);
 
-static	void		dcc_filesend 		(char *);
-static	void		dcc_getfile_get 	(char *);
-static	void		dcc_rename 		(char *);
-static	DCC_list *	dcc_searchlist 		(unsigned, const char *, const char *, const char *, int);
-static	void		dcc_send_raw 		(char *);
-static	void 		output_reject_ctcp 	(int, char *, char *);
+static	void		do_dcc 			(int fd);
 static	void		process_dcc_chat	(DCC_list *);
 static	void		process_incoming_listen (DCC_list *);
 static	void		process_incoming_raw 	(DCC_list *);
 static	void		process_dcc_send 	(DCC_list *);
 static	void		process_incoming_file 	(DCC_list *);
+
+static	void 		output_reject_ctcp 	(int, char *, char *);
 static	void		DCC_close_filesend 	(DCC_list *, const char *, const char *);
 static	void		update_transfer_buffer 	(DCC_list *, const char *format, ...);
 static	char *		dcc_urlencode		(const char *);
 static	char *		dcc_urldecode		(const char *);
-static	void		dcc_list 		(char *args);
-static	void		do_dcc 			(int fd);
 
 #ifdef MIRC_BROKEN_DCC_RESUME
-static	void		dcc_getfile_resume 	    (char *);
 static 	void 		dcc_getfile_resume_demanded (const char *, char *, char *, char *);
 static	void		dcc_getfile_resume_start    (const char *, char *, char *, char *);
 #endif
@@ -1316,45 +1323,58 @@ BUILT_IN_COMMAND(dcc_cmd)
 /*
  * Usage: /DCC CHAT <nick> [-p port]|[-6]|[-4]
  */
-static void	dcc_chat (char *args)
+static void dcc_chat (char *args)
 {
-	char		*user;
-	DCC_list	*dcc;
-	unsigned short	portnum = 0;
-	int		family;
+	int	argc;
+	char *	argv[10];
 
-	if ((user = next_arg(args, &args)) == NULL)
+	argc = split_args(args, argv, 10);
+	dcc_chat_subcmd(argc, argv, NULL);
+}
+
+DCC_SUBCOMMAND(dcc_chat_subcmd)
+{
+	char		*user = NULL;
+	DCC_list	*dcc;
+	unsigned short	portnum = 0;		/* Any port by default */
+	int		family = AF_INET;	/* IPv4 by default */
+	int		i;
+
+	if (argc == 0)
 	{
-		say("You must supply a nickname for DCC CHAT");
+		say("Usage: /DCC CHAT <nick> [-p port]|[-6]|[-4]");
 		return;
 	}
 
-	/* The default is AF_INET */
-	family = AF_INET;
-
-	/*
-	 * Check to see if there is a flag
-	 */
-	while (*args == '-')
+	for (i = 0; i < argc; i++)
 	{
-		if (args[1] == 'p')
-		{
-			next_arg(args, &args);
-			if (args && *args)
-			    portnum = my_atol(next_arg(args, &args));
-		}
+	    if (!strcmp(argv[i], "-4"))
+		family = AF_INET;
 #ifdef INET6
-		else if (args[1] == '6')
-		{
-			next_arg(args, &args);
-			family = AF_INET6;
-		}
+	    else if (!strcmp(argv[i], "-6"))
+		family = AF_INET6;
 #endif
-		else if (args[1] == '4')
+	    else if (!strcmp(argv[i], "-p"))
+	    {
+		if (i + 1 == argc)
+		    say("DCC CHAT: Argument to -p missing -- ignored");
+		else if (!is_number(argv[i + 1]))
+		    say("DCC CHAT: Argument to -p non-numeric -- ignored");
+		else
 		{
-			next_arg(args, &args);
-			family = AF_INET;
+		    portnum = my_atol(argv[i + 1]);
+		    i++;
 		}
+	    }
+	    else if (*argv[i] == '-')
+		say("DCC CHAT: Option %s not supported", argv[i]);
+	    else if (user)
+	    {
+		say("DCC CHAT: Opening multiple chats per command not 
+			supported yet -- ignoring extra nick %s", argv[i]);
+	    }
+	    else
+		malloc_strcpy(&user, argv[i]);
 	}
 
 	if ((dcc = dcc_searchlist(DCC_CHAT, user, NULL, NULL, -1)))
@@ -1380,34 +1400,48 @@ static void	dcc_chat (char *args)
 }
 
 /*
- * Usage: /DCC CLOSE <type> <nick>
+ * Usage: /DCC CLOSE <type> <nick> [<file>]
  */
-static	void 	dcc_close (char *args)
+static void dcc_close (char *args)
+{
+	int	argc;
+	char *	argv[10];
+
+	argc = split_args(args, argv, 10);
+	dcc_close_subcmd(argc, argv, NULL);
+}
+
+DCC_SUBCOMMAND(dcc_close_subcmd)
 {
 	DCC_list	*dcc;
-	char		*type;
+	char		*type = NULL;
 	char		*user;
-	char		*file;
+	char		*file = NULL;
 	char		*encoded_description = NULL;
 	int		any_type = 0;
 	int		any_user = 0;
 	int		i;
 	int		count = 0;
 
-	type = next_arg(args, &args);
-	user = next_arg(args, &args);
-	file = new_next_arg(args, &args);
-
-	if (type && (!my_stricmp(type, "-all") || !my_stricmp(type, "*")))
-		any_type = 1;
-	if (user && (!my_stricmp(user, "-all") || !my_stricmp(type, "*")))
-		any_user = 1;
-
-	if (!type || (!user && !any_type))
+	if (argc < 2)
 	{
-		say("You must specify a type and a nick for DCC CLOSE");
+dcc_close_usage:
+		say("Usage: /DCC CLOSE <type> <nick> [<file>]");
 		return;
 	}
+
+	if ((!my_stricmp(argv[0], "-all") || !my_stricmp(argv[0], "*")))
+		any_type = 1;
+	else
+		type = argv[0];
+
+	if ((!my_stricmp(argv[1], "-all") || !my_stricmp(argv[1], "*")))
+		any_user = 1;
+	else
+		user = argv[1];
+
+	if (argc >= 3)
+	    file = argv[2];
 
 	if (any_type == 0)	/* User did not specify "-all" type */
 	{
