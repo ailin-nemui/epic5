@@ -1,4 +1,4 @@
-/* $EPIC: vars.c,v 1.75 2005/06/04 13:51:50 jnelson Exp $ */
+/* $EPIC: vars.c,v 1.76 2005/07/30 17:29:43 jnelson Exp $ */
 /*
  * vars.c: All the dealing of the irc variables are handled here. 
  *
@@ -601,6 +601,8 @@ BUILT_IN_COMMAND(setcmd)
 					var, args ? args : "<unset>"))
 			{
 				free_bucket(&b);
+				if (thevar)
+					thevar->flags &= ~VIF_PENDING;
 				return;		/* Grabed -- stop. */
 			}
 
@@ -610,6 +612,8 @@ BUILT_IN_COMMAND(setcmd)
 					name, args ? args : "<unset>"))
 			    {
 				free_bucket(&b);
+				if (thevar)
+					thevar->flags &= ~VIF_PENDING;
 				return;		/* Grabed -- stop. */
 			    }
 			}
