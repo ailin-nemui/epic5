@@ -72,7 +72,7 @@ alias add_target (msg_cmd, target) {
 
 	@push(target_cycle_list $msg_cmd);
 	@push(target_cycle_list $target);
-}
+};
 
 alias current_fragment_start {
 	@:i = 0;
@@ -446,7 +446,7 @@ alias isdirectory (pathname) {
 	} else {
 		return 0;
 	};
-}
+};
 
 alias isexe (pathname) {
 	@:statret = stat("$pathname");
@@ -545,7 +545,7 @@ alias match_file (fragment) {
 	@match_cycle_list = matches;
 
 	return $matches;
-}
+};
 
 alias match_help (fragment) {
 	@:matches = [];
@@ -559,7 +559,7 @@ alias match_help (fragment) {
 	@match_cycle_list = matches;
 
 	return $matches;
-}
+};
 
 alias match_load (fragment) {
 	@:matches = [];

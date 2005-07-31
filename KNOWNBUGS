@@ -730,3 +730,4 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Make nick+channel name lookups handled according to 005 CASEMAPPING!
 * Begin the work of "normalizing" argument handling to /dcc commands.
 * Convert some more dcc commands, making progress!
+* Fix pf problems with tabkey.jm 
