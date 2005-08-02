@@ -23,7 +23,7 @@ alias add_ison_callback (type, expr) {
 };
 
 alias dispatch_ison_requests (servernums) {
-	if (servernums < 0) {
+	if (servernums == []) {
 		@:servernums = [];
 
 		fe ($serverctl(omatch *)) refnum {
@@ -44,14 +44,16 @@ alias dispatch_ison_requests (servernums) {
 			@:requests = #ison_send_queue[$servernum];
 		};
 
-		while (requests) {
+		while (requests > 0) {
 			@:refnum = word(0 $ison_send_queue[$servernum]);
 			@ison_send_queue[$servernum] = restw(1 $ison_send_queue[$servernum]);
 			@last_ison_req[$servernum] = ison_req[$refnum];
 
 			push ison_queue[$servernum] $refnum;
 
-			quote ison $ison_req[$refnum];
+			xeval -server $servernum {
+				quote ison $ison_req[$refnum];
+			};
 
 			@:requests--;
 		};
@@ -69,8 +71,12 @@ alias flush_ison_queues (void) {
 
 alias get_ison_refnum (void) {
 	@:i = 0;
-	@:servernum = serverctl(from_server);
-	@:used_refnums = ison_queue[$servernum] ## (ison_send_queue[$servernum] == [] ? [] : [ ] ## ison_send_queue[$servernum]);
+	@:used_refnums = [];
+
+	fe ($serverctl(omatch *)) servernum {
+		push used_refnums $ison_queue[$servernum];
+		push used_refnums $ison_send_queue[$servernum];
+	};
 
 	while (findw($i $used_refnums) > -1) {
 		@:i++;
@@ -82,7 +88,20 @@ alias get_ison_refnum (void) {
 alias ison (args) {
 	@:nicklist = [];
 	@:send_next = 0;
-	@:servernum = serverctl(from_server);
+
+	if ((:word = findw(-server $args)) > -1) {
+		@:server = word(${word + 1} $args);
+		@:servernum = serverctl(refnum $server $args));
+
+		if (servernum == [] || serverctl(GET $servernum connected) != 1) {
+			@:servernum = serverctl(from_server);
+
+			xecho -b error: invalid server $server;
+		};
+	} else {
+		@:servernum = serverctl(from_server);
+	};
+
 	@:maxlen = isonctl(get $servernum MAXLEN);
 	@:queue_request = isonctl(get $servernum SENDQUEUE);
 
@@ -123,6 +142,8 @@ alias ison (args) {
 		} elsif (word == [-f]) {
 			@ison_queue[$servernum] = [];
 			@ison_send_queue[$servernum] = [];
+		} elsif (word == [-server]) {
+			@shift(args);
 		} else {
 			push nicklist $word;
 		};
@@ -133,24 +154,36 @@ alias ison (args) {
 	};
 
 	@:i = 0;
-	@:j = 1;
+	@:j = 0;
+	@:li = #nicklist;
 	@:ison_req_list = [];
 
-	while (i < #nicklist) {
+	while (i <= li) {
 		@:next_nick = word($i $nicklist);
 
-		if (@ison_req_list + @next_nick > maxlen) {
-			@:refnum = get_ison_refnum();
+		if ((@ison_req_list + @next_nick) >= maxlen || i == li) {
+			@:refnum = get_ison_refnum($servernum);
+
 			@ison_oncmd[$refnum] = ison_oncmd;
 			@ison_offcmd[$refnum] = ison_offcmd;
-			@ison_endcmd[$refnum] = [];
+
+			if (i == li) {
+				@ison_endcmd[$refnum] = ison_endcmd;
+				@ison_end_req[$refnum] = 1;
+			} else {
+				@ison_endcmd[$refnum] = [];
+				@ison_end_req[$refnum] = 0;
+			};
+
 			@ison_req[$refnum] = ison_req_list;
-			@ison_end_req[$refnum] = 0;
 
 			if (!queue_request) {
 				@last_ison_req[$servernum] = ison_req_list;
 				push ison_queue[$servernum] $refnum;
-				quote ison $ison_req_list;
+
+				xeval -server $servernum {
+					quote ison $ison_req_list;
+				};
 			} elsif (send_next) {
 				@ison_send_queue[$servernum] = refnum ## [ ] ## ison_send_queue[$servernum];
 			} else {
@@ -166,24 +199,7 @@ alias ison (args) {
 		@:i++;
 	};
 
-	@:refnum = get_ison_refnum();
-	@ison_oncmd[$refnum] = ison_oncmd;
-	@ison_offcmd[$refnum] = ison_offcmd;
-	@ison_endcmd[$refnum] = ison_endcmd;
-	@ison_req[$refnum] = ison_req_list;
-	@ison_end_req[$refnum] = 1;
-
-	if (!queue_request) {
-		@last_ison_req[$servernum] = ison_req_list;
-		push ison_queue[$servernum] $refnum;
-		quote ison $ison_req_list;
-	} elsif (send_next) {
-		@ison_send_queue[$servernum] = refnum ## [ ] ## ison_send_queue[$servernum];
-		@dispatch_ison_requests($servernum);
-	} else {
-		push ison_send_queue[$servernum] $refnum;
-		@dispatch_ison_requests($servernum);
-	};
+	@dispatch_ison_requests($servernum);
 
 	return $j;
 };
@@ -225,7 +241,7 @@ alias isonctl (command, refnum, setting, value) {
 		} elsif (setting == [MAXREQ]) {
 			if (refnum < 0) {
 				@ison_max_requests = value;
-				@dispatch_ison_requests(-1);
+				@dispatch_ison_requests();
 			} else {
 				@ison_max_requests[$refnum] = value;
 				@dispatch_ison_requests($refnum);
@@ -233,7 +249,7 @@ alias isonctl (command, refnum, setting, value) {
 		} elsif (setting == [SENDQUEUE]) {
 			if (refnum < 0) {
 				@ison_sendqueue = value;
-				@dispatch_ison_requests(-1);
+				@dispatch_ison_requests();
 			} else {
 				@ison_sendqueue[$refnum] = value;
 				@dispatch_ison_requests($refnum);
@@ -267,15 +283,21 @@ on ^303 "*" {
 	^assign -ison_req[$refnum];
 	^assign -ison_end_req[$refnum];
 
-	if ((ison_oncmd ## ison_offcmd ## ison_endcmd) == []) {
-		xecho -b -level CRAP -- online: $*;
+	if (right(1 $*) == [ ]) {
+		@:ison_reply_list = left(${strlen($*) - 1} $*);
+	} else {
+		@:ison_reply_list = [$*];
+	};
+
+	if ((ison_oncmd ## ison_offcmd ## ison_endcmd) == [] || refnum == -1) {
+		xecho -b -level CRAP -- online: $ison_reply_list;
 
 		@dispatch_ison_requests($servernum);
 		return;
 	};
 
 	if (ison_oncmd != []) {
-		^eval $ison_oncmd $*;
+		^eval $ison_oncmd $ison_reply_list;
 
 		if (ison_end_request) {
 			^alias -$ison_oncmd;
@@ -283,7 +305,7 @@ on ^303 "*" {
 	};
 
 	if (ison_offcmd != []) {
-		^eval $ison_offcmd $remws($* / $ison_req);
+		^eval $ison_offcmd $remws($ison_reply_list / $ison_req);
 
 		if (ison_end_request) {
 			^alias -$ison_offcmd;
@@ -300,7 +322,13 @@ on ^303 "*" {
 
 on #^send_to_server 555 "% % ISON *" {
 	if (last_ison_req[$0] != before("$chr(13)" $3-)) {
-		push ison_queue[$0] m;
+		push ison_queue[$0] -1;
+	};
+};
+
+on #^send_to_server 555 "% % :% ISON *" {
+	if (last_ison_req[$0] != before("$chr(13)" $4-)) {
+		push ison_queue[$0] -1;
 	};
 };
 
