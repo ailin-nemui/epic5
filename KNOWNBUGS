@@ -732,4 +732,6 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Convert some more dcc commands, making progress!
 * Fix pf problems with tabkey.jm 
 * Add "UNPRINTABLE" as a mangle type, remove all non-printable chars.
-* Add /set old_math_parser, to turn on the old math parser (don't do this! :P) 
+* Add /set old_math_parser, to turn on the old math parser (don't do this! :P)
+* Whack /xdebug old_math
+* Rename 'altchan.bj' to 'altchan'
