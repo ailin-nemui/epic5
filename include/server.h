@@ -179,9 +179,10 @@ static __inline__ Server *	get_server (int server)
 #define SERVER_SYNCING		4
 #define SERVER_ACTIVE		5
 #define SERVER_EOF		6	
-#define SERVER_CLOSING		7
-#define SERVER_CLOSED		8	
-extern	const char *server_states[9];
+#define SERVER_ERROR		7
+#define SERVER_CLOSING		8
+#define SERVER_CLOSED		9
+extern	const char *server_states[10];
 
 
 

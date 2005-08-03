@@ -5,7 +5,6 @@ KNOWN ERRATA (eg, bugs, or unresolved requests):
 * Support dalnet's CASEMAPPING=ascii senselessness.
 * /exec -out should go to current target, not just current channel.
 * Function to "humanize" a number?  (ie, 1024 -> "1k")
-* Math parser selection should be done by a /set now
 * Crap should not be considered when matching a line with /lastlog
 -> (#epic) $windowctl(SET <refnum> ACTIVITY_FORMAT 2 "$2:$1")
 -> (#epic) $windowctl(SET <refnum> ACTIVITY_LEVEL 2 "$winchan($0) $2")
@@ -14,7 +13,6 @@ KNOWN ERRATA (eg, bugs, or unresolved requests):
 * For /dcc get nick ... file1 file2 ... where not-offered-file immediately 
   follows an offered-file, treat it as an implied rename.
 * Need a new server state "ERROR" for unrecoverable unexpected errors.
-* Black wants altchan.bj renamed to altchan
 * Reconnections back to unix pathnames segfault?  All back reconnections?
 
 LOOK FOR IN THE NEXT RELEASE
@@ -735,3 +733,4 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Add /set old_math_parser, to turn on the old math parser (don't do this! :P)
 * Whack /xdebug old_math
 * Rename 'altchan.bj' to 'altchan'
+* Add new server state, "ERROR" which triggers for non-recoverable socket errs.

@@ -1,4 +1,4 @@
-/* $EPIC: server.c,v 1.183 2005/07/26 20:43:24 crazyed Exp $ */
+/* $EPIC: server.c,v 1.184 2005/08/03 05:06:05 jnelson Exp $ */
 /*
  * server.c:  Things dealing with that wacky program we call ircd.
  *
@@ -638,10 +638,11 @@ static void 	reset_nickname (int refnum);
 static	char    lame_wait_nick[] = "***LW***";
 static	char    wait_nick[] = "***W***";
 
-const char *server_states[9] = {
+const char *server_states[10] = {
 	"RECONNECT",		"DNS",			"CONNECTING",
 	"REGISTERING",		"SYNCING",		"ACTIVE",
-	"EOF",			"CLOSING",		"CLOSED"
+	"EOF",			"ERROR",		"CLOSING",
+	"CLOSED"
 };
 
 
@@ -884,6 +885,7 @@ void	do_server (int fd)
 			    yell("Getaddrinfo(%s) for server %d failed: %s",
 				     s->name, len, gai_strerror(s->addr_len));
 			    s->des = new_close(s->des);
+			    set_server_status(i, SERVER_ERROR);
 			    set_server_status(i, SERVER_CLOSED);
 			}
 			else if (s->addr_len == 0) 
@@ -891,6 +893,7 @@ void	do_server (int fd)
 			    yell("Getaddrinfo(%s) for server (%d) did not "
 						"resolve.", s->name, i);
 			    s->des = new_close(s->des);
+			    set_server_status(i, SERVER_ERROR);
 			    set_server_status(i, SERVER_CLOSED);
 			}
 			else
@@ -965,6 +968,7 @@ void	do_server (int fd)
 something_broke:
 			syserr("Could not connect to server [%d] address [%d]",
 					i, s->addr_counter);
+			set_server_status(i, SERVER_ERROR);
 			close_server(i, NULL);
 			connect_to_server(i);
 			pop_message_from(l);
@@ -1148,6 +1152,7 @@ void	send_to_aserver_raw (int refnum, size_t len, const char *buffer)
 		if (is_server_registered(refnum))
 		{
 			say("Write to server failed.  Resetting connection.");
+			set_server_status(refnum, SERVER_ERROR);
 			close_server(refnum, NULL);
 		}
 	    }
