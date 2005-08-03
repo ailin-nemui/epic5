@@ -1,4 +1,4 @@
-/* $EPIC: expr.c,v 1.33 2005/05/02 03:55:48 jnelson Exp $ */
+/* $EPIC: expr.c,v 1.34 2005/08/03 04:21:39 jnelson Exp $ */
 /*
  * expr.c -- The expression mode parser and the textual mode parser
  * #included by alias.c -- DO NOT DELETE
@@ -1279,7 +1279,7 @@ static	char	*next_unit (char *str, const char *args, int stage)
  */
 char	*parse_inline (char *str, const char *args)
 {
-	if (x_debug & DEBUG_OLD_MATH)
+	if (get_int_var(OLD_MATH_PARSER_VAR))
 		return next_unit(str, args, NU_EXPR);
 	else
 		return matheval(str, args);
