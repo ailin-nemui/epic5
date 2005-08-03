@@ -1,4 +1,4 @@
-/* $EPIC: ircaux.c,v 1.136 2005/07/24 15:45:03 jnelson Exp $ */
+/* $EPIC: ircaux.c,v 1.137 2005/08/03 03:10:07 jnelson Exp $ */
 /*
  * ircaux.c: some extra routines... not specific to irc... that I needed 
  *
@@ -3157,6 +3157,10 @@ size_t	mangle_line	(char *incoming, int how, size_t how_much)
 		if (i >= how_much)
 			break;
 
+		if (stuff & STRIP_UNPRINTABLE)
+		    if (!isgraph(*s) && !isspace(*s))
+			continue;		/* Skip this character */
+
 		switch (*s)
 		{
 			case 003:		/* color codes */
@@ -3229,8 +3233,11 @@ size_t	mangle_line	(char *incoming, int how, size_t how_much)
 				break;
 			}
 			default:		/* Everything else */
+			{
 				if (!(stuff & STRIP_OTHER))
 					buffer[i++] = *s;
+				break;
+			}
 		}
 	}
 

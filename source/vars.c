@@ -1,4 +1,4 @@
-/* $EPIC: vars.c,v 1.76 2005/07/30 17:29:43 jnelson Exp $ */
+/* $EPIC: vars.c,v 1.77 2005/08/03 03:10:07 jnelson Exp $ */
 /*
  * vars.c: All the dealing of the irc variables are handled here. 
  *
@@ -848,10 +848,14 @@ int	parse_mangle (const char *value, int nvalue, char **rv)
 				nvalue |= STRIP_ROM_CHAR;
 			else if (!my_strnicmp(str2, "-ROM_CHAR", 3))
 				nvalue &= ~(STRIP_ROM_CHAR);
-			else if (!my_strnicmp(str2, "UNDERLINE", 1))
+			else if (!my_strnicmp(str2, "UNDERLINE", 3))
 				nvalue |= STRIP_UNDERLINE;
-			else if (!my_strnicmp(str2, "-UNDERLINE", 2))
+			else if (!my_strnicmp(str2, "-UNDERLINE", 4))
 				nvalue &= ~(STRIP_UNDERLINE);
+			else if (!my_strnicmp(str2, "UNPRINTABLE", 3))
+				nvalue |= STRIP_UNPRINTABLE;
+			else if (!my_strnicmp(str2, "-UNPRINTABLE", 4))
+				nvalue &= ~(STRIP_UNPRINTABLE);
 		}
 	}
 
@@ -879,6 +883,8 @@ int	parse_mangle (const char *value, int nvalue, char **rv)
 			malloc_strcat_wordlist(&nv, comma, "ND_SPACE");
 		if (nvalue & STRIP_ALL_OFF)
 			malloc_strcat_wordlist(&nv, comma, "ALL_OFF");
+		if (nvalue & STRIP_UNPRINTABLE)
+			malloc_strcat_wordlist(&nv, comma, "UNPRINTABLE");
 		if (nvalue & STRIP_OTHER)
 			malloc_strcat_wordlist(&nv, comma, "OTHER");
 
