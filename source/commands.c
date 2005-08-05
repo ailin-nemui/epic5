@@ -1,4 +1,4 @@
-/* $EPIC: commands.c,v 1.127 2005/06/04 16:27:05 jnelson Exp $ */
+/* $EPIC: commands.c,v 1.128 2005/08/05 00:15:44 jnelson Exp $ */
 /*
  * commands.c -- Stuff needed to execute commands in ircII.
  *		 Includes the bulk of the built in commands for ircII.
@@ -3347,7 +3347,7 @@ void	parse_line (const char *name, const char *org_line, const char *args, int h
                 {
 		    if (!(stuff = next_expr(&line, '{'))) 
 		    {
-			error("Unmatched {"); 
+			error("Unmatched { around [%-.20s]", line); 
 			if (name)
 				destroy_local_stack();
 			return;

@@ -1,4 +1,4 @@
-/* $EPIC: expr.c,v 1.34 2005/08/03 04:21:39 jnelson Exp $ */
+/* $EPIC: expr.c,v 1.35 2005/08/05 00:15:44 jnelson Exp $ */
 /*
  * expr.c -- The expression mode parser and the textual mode parser
  * #included by alias.c -- DO NOT DELETE
@@ -1407,7 +1407,7 @@ char	*expand_alias	(const char *string, const char *args, ssize_t *more_text)
 					(ch == LEFT_PAREN) ?
 					RIGHT_PAREN : RIGHT_BRACE)) < 0)
 			{
-				privileged_yell("Unmatched %c", ch);
+				privileged_yell("Unmatched %c starting at [%-.20s]", ch, stuff + 1);
 				/* 
 				 * DO NOT ``OPTIMIZE'' THIS BECAUSE
 				 * *STUFF IS NUL SO STRLEN(STUFF) IS 0!
@@ -1552,7 +1552,7 @@ static	char	*alias_special_char (char **buffer, char *ptr, const char *args, cha
 			if (ptr)
 				*ptr++ = 0;
 			else
-				yell("Unmatched ( (continuing anyways)");
+				yell("Unmatched ( after $ starting at [%-.20s] (continuing anyways)", ph);
 
 			/*
 			 * Keep expanding as long as neccesary.
@@ -1603,7 +1603,7 @@ static	char	*alias_special_char (char **buffer, char *ptr, const char *args, cha
 			if (ptr)
 				*ptr++ = 0;
 			else
-				yell("Unmatched { (continuing anyways)");
+				yell("Unmatched { after $ starting at [%-.20s] (continuing anyways)", ph);
 
 			if ((tmp = parse_inline(tmp, args)) != NULL)
 			{
