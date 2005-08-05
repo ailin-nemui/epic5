@@ -1,4 +1,4 @@
-/* $EPIC: network.c,v 1.70 2005/06/16 13:48:33 jnelson Exp $ */
+/* $EPIC: network.c,v 1.71 2005/08/05 02:45:12 jnelson Exp $ */
 /*
  * network.c -- handles stuff dealing with connecting and name resolving
  *
@@ -39,7 +39,7 @@
 #include <sys/ioctl.h>
 
 /* This will eventually become a configurable */
-#define ASYNC_DNS
+#undef ASYNC_DNS
 
 #ifdef HAVE_SYS_UN_H
 #include <sys/un.h>
@@ -885,7 +885,7 @@ pid_t	async_getaddrinfo (const char *nodename, const char *servname, const AI *h
 
 void	marshall_getaddrinfo (int fd, AI *results)
 {
-	ssize_t	len;
+	ssize_t	len, gah;
 	ssize_t	alignment = sizeof(void *);
 	AI 	*result, *copy;
 	char 	*retval, *ptr;
@@ -921,14 +921,14 @@ void	marshall_getaddrinfo (int fd, AI *results)
 		ptr += result->ai_addrlen;
 		if (result->ai_canonname)
 		{
-		    len = strlen(result->ai_canonname) + 1;
-		    memcpy(ptr, result->ai_canonname, len);
+		    gah = strlen(result->ai_canonname) + 1;
+		    memcpy(ptr, result->ai_canonname, gah);
 		    copy->ai_canonname = ptr;
 
 		    /* Calculate the start of the next entry */
-		    while (len % 4 != 0)
-			len++;
-		    ptr += len;
+		    while (gah % 4 != 0)
+			gah++;
+		    ptr += gah;
 		}
 		else
 		    copy->ai_canonname = NULL;

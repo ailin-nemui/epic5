@@ -12,7 +12,6 @@ KNOWN ERRATA (eg, bugs, or unresolved requests):
 -> (#epic) $windowctl(SET <refnum> ACTIVITY_DATA "$winchan($0) $2")
 * For /dcc get nick ... file1 file2 ... where not-offered-file immediately 
   follows an offered-file, treat it as an implied rename.
-* Reconnections back to unix pathnames segfault?  All back reconnections?
 
 LOOK FOR IN THE NEXT RELEASE
 ----------------------------
@@ -733,3 +732,4 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Whack /xdebug old_math
 * Rename 'altchan.bj' to 'altchan'
 * Add new server state, "ERROR" which triggers for non-recoverable socket errs.
+* Fix bug in marshall_getaddrinfo. DOH!
