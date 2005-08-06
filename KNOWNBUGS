@@ -2,7 +2,6 @@ EPIC5 Projects, Bugs, and other Errata:
 
 KNOWN ERRATA (eg, bugs, or unresolved requests):
 ------------------------------------------------
-* Crap should not be considered when matching a line with /lastlog
 -> (#epic) $windowctl(SET <refnum> ACTIVITY_FORMAT 2 "$2:$1")
 -> (#epic) $windowctl(SET <refnum> ACTIVITY_LEVEL 2 "$winchan($0) $2")
 -> (#epic) $windowctl(SET <refnum> ACTIVITY_LEVEL 2)
@@ -733,3 +732,4 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Fix bug in marshall_getaddrinfo. DOH!
 * Add humanize_number() to compat.c, and fix compiler warnings.
 * Change /exec -out to output to the current target, (*gulp*)
+* Add /lastlog -mangle to permit you to match against mangled lines.

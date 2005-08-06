@@ -1,4 +1,4 @@
-/* $EPIC: lastlog.c,v 1.47 2005/04/03 19:03:35 jnelson Exp $ */
+/* $EPIC: lastlog.c,v 1.48 2005/08/06 01:35:51 jnelson Exp $ */
 /*
  * lastlog.c: handles the lastlog features of irc. 
  *
@@ -56,7 +56,7 @@ typedef struct	lastlog_stru
 	time_t	when;
 }	Lastlog;
 
-static int	show_lastlog (Lastlog **l, int *skip, int *number, Mask *level_mask, char *match, regex_t *reg, int *max, const char *target);
+static int	show_lastlog (Lastlog **l, int *skip, int *number, Mask *level_mask, char *match, regex_t *reg, int *max, const char *target, int mangler);
 
 /*
  * lastlog_level: current bitmap setting of which things should be stored in
@@ -410,6 +410,7 @@ BUILT_IN_COMMAND(lastlog)
 	const char *	separator = "----";
 	char *		outfile = NULL;
 	FILE *		outfp = NULL;
+	int		mangler = 0;
 
 	message_to(0);
 	cnt = current_window->lastlog_size;
@@ -461,6 +462,12 @@ BUILT_IN_COMMAND(lastlog)
 					"a positive number.");
 			goto bail;
 		}
+	    }
+	    else if (!my_strnicmp(arg, "-MANGLE", len))
+	    {
+		char *	x = new_next_arg(args, &args);
+
+		mangler = parse_mangle(x, mangler, NULL);
 	    }
 	    else if (!my_strnicmp(arg, "-SKIP", len))
 	    {
@@ -699,7 +706,7 @@ BUILT_IN_COMMAND(lastlog)
 	    for (l = start; l; (void)(l && (l = l->newer)))
 	    {
 		if (show_lastlog(&l, &skip, &number, &level_mask, 
-				match, reg, &max, target))
+				match, reg, &max, target, mangler))
 		{
 		    if (counter == 0 && before > 0)
 		    {
@@ -765,7 +772,7 @@ BUILT_IN_COMMAND(lastlog)
 	    for (l = start; l; (void)(l && (l = l->older)))
 	    {
 		if (show_lastlog(&l, &skip, &number, &level_mask, 
-				match, reg, &max, target))
+				match, reg, &max, target, mangler))
 		{
 		    if (counter == 0 && before > 0)
 		    {
@@ -826,8 +833,10 @@ bail:
  * This returns 1 if the current item pointed to by 'l' is something that
  * should be displayed based on the criteron provided.
  */
-static int	show_lastlog (Lastlog **l, int *skip, int *number, Mask *level_mask, char *match, regex_t *reg, int *max, const char *target)
+static int	show_lastlog (Lastlog **l, int *skip, int *number, Mask *level_mask, char *match, regex_t *reg, int *max, const char *target, int mangler)
 {
+	char *str = NULL;
+
 	if (*skip > 0)
 	{
 		if (x_debug & DEBUG_LASTLOG)
@@ -843,16 +852,32 @@ static int	show_lastlog (Lastlog **l, int *skip, int *number, Mask *level_mask, 
 				mask_to_str(level_mask), level_to_str((*l)->level));
 		return 0;			/* Not of proper level */
 	}
-	if (match && !wild_match(match, (*l)->msg))
+
+	if (mangler)
+	{
+		size_t	size;
+		char *	output;
+
+		size = (strlen((*l)->msg) + 1) * 11;
+		output = alloca(size + 1);
+		strlcpy(output, (*l)->msg, size);
+		if (mangle_line(output, mangler, size) > size)
+			(void)0;	/* Result has been truncated, ick. */
+		str = output;
+	}
+	else
+		str = (*l)->msg;
+
+	if (match && !wild_match(match, str))
 	{
 		if (x_debug & DEBUG_LASTLOG)
-			yell("Line [%s] not matched [%s]", (*l)->msg, match);
+			yell("Line [%s] not matched [%s]", str, match);
 		return 0;			/* Pattern match failed */
 	}
-	if (reg && regexec(reg, (*l)->msg, 0, NULL, 0))
+	if (reg && regexec(reg, str, 0, NULL, 0))
 	{
 		if (x_debug & DEBUG_LASTLOG)
-			yell("Line [%s] not regexed", (*l)->msg);
+			yell("Line [%s] not regexed", str);
 		return 0;			/* Regex match failed */
 	}
 	if (target && (!(*l)->target || !wild_match(target, (*l)->target)))
