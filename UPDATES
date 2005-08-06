@@ -1,5 +1,79 @@
 EPIC5-0.0.6
 
+*** News 08/05/2005 -- New flag to /LASTLOG, /LASTLOG -MANGLE
+	The /LASTLOG -MANGLE flag takes a mangle description (the thing that
+	$stripcrap() takes) and mangles each line in the lastlog before 
+	matching against your pattern.  THIS IS VERY EXPENSIVE so you should 
+	not do this unless you really want to.
+
+*** News 08/05/2005 -- *** IMPORTANT *** /EXEC -OUT changed
+	/EXEC -OUT will now output to the window's current target, instead
+	of to the window's current channel.  The current target is $T, and
+	is the window's current query (if there is one) or the window's 
+	current channel (if there isn't a query).
+
+*** News 08/05/2005 -- Text following unmatched braces/parens/brackets
+	If an unmatched brace/bracket/paren is found, about 20 chars after
+	the character will be output in the error message, to help you find
+	it.  Unfortunately I can't give you line numbers yet.
+
+*** News 08/05/2005 -- New server status state, "ERROR"
+	The "ERROR" status state is used in the following cases:
+	* DNS lookup failed (DNS -> ERROR -> CLOSED)
+	* Connect failed (CONNECTING -> ERROR -> CLOSING -> CLOSED)
+	* Socket write failed (<ANY> -> ERROR -> CLOSING -> CLOSED)
+
+*** News 08/05/2005 -- The script "altchan.bj" is renamed to "altchan" ...
+	... Because we deleted the old (lame) altchan script.
+
+*** News 08/05/2005 -- New /set, /SET OLD_MATH_PARSER
+	To use the old math parser, you need to /SET OLD_MATH_PARSER ON.
+	This is a promoted version of /xdebug old_math, which you should
+	no longer use, it will no longer work.  Please make plans to 
+	migrate away from the old math parser in epic5 scripts.
+
+*** News 08/05/2005 -- New mangle type, "UNPRINTABLE"
+	You can now mangle "UNPRINTABLE", which closely models the 
+	/SET NO_CONTROL_LOG variable.  When you mangle UNPRINTABLE, all
+	characters that are not printable (isgraph() || isspace()) will
+	be removed, which includes all of the highlight characters.
+
+*** News 08/05/2005 -- New script 'ison' from jm
+	Jm has written a new 'ison' script which implements an ison queue,
+	and acts as the backend for the 'notify' script which he has also
+	revamped for this release.  This notify script will soon take over
+	the notify duties for epic, so it'd be a good thing to test it 
+	before the builtin notify goes away...
+
+*** News 08/05/2005 -- New operators, === and !==
+	The new math parser now supports two new operators, which do case
+	sensitive string comparisons.  === returns true if the two strings
+	are the same, and !== returns true if the two strings are not the
+	same.
+
+*** News 08/05/2005 -- *** IMPORTANT *** Case insensitive changes
+	All case insensitive string comparisons should now be handled in
+	the CASEMAPPING=ascii sense.  This means '{' and '[' are not equal,
+	and | and ~ and ] and } are not equal.
+
+*** News 08/05/2005 -- 005 CASEMAPPING value now handled (sort of)
+	Some networks use CASEMAPPING=ascii, which means that the characters
+	{|} are not the same as [~] as they are when CASEMAPPING=rfc1459.
+	So in order to keep track of nicks correctly on the former servers,
+	we now track CASEMAPPING and use it as best we can.
+
+*** News 08/05/2005 -- Flexible on patterns can match against themselves
+	When you do /ON TYPE '<pattern>', the value of $* in the pattern is
+	the $* of the ON, so you can essentially do self-references.  For
+	example, this now works...
+		/on general_privmsg '% $0 *' {
+			... you sent a message to yourself ...
+		}
+
+*** News 08/05/2005 -- Can set NOTIFY_NAME via $windowctl()
+	You can $windowctl(SET <refnum> NOTIFY_NAME <stuff>) now, instead
+	of having to battle with quoting hell with /window notify_name "..."
+
 *** News 07/27/2005 -- Extended $userhost() behaviour.
 	Given a channel name in place of a nick, $userhost() will return the
 	unknown userhost as it did previously, but as a side effect, it will

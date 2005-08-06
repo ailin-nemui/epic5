@@ -5,7 +5,6 @@ KNOWN ERRATA (eg, bugs, or unresolved requests):
 -> (#epic) $windowctl(SET <refnum> ACTIVITY_FORMAT 2 "$2:$1")
 -> (#epic) $windowctl(SET <refnum> ACTIVITY_LEVEL 2 "$winchan($0) $2")
 -> (#epic) $windowctl(SET <refnum> ACTIVITY_LEVEL 2)
--> (#epic) $windowctl(SET <refnum> ACTIVITY_DATA "$winchan($0) $2")
 * For /dcc get nick ... file1 file2 ... where not-offered-file immediately 
   follows an offered-file, treat it as an implied rename.
 
