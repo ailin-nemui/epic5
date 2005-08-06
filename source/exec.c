@@ -1,4 +1,4 @@
-/* $EPIC: exec.c,v 1.35 2005/03/28 23:53:58 jnelson Exp $ */
+/* $EPIC: exec.c,v 1.36 2005/08/06 00:56:37 jnelson Exp $ */
 /*
  * exec.c: handles exec'd process for IRCII 
  *
@@ -182,9 +182,9 @@ BUILT_IN_COMMAND(execcmd)
 			else
 				redirect = "PRIVMSG";
 
-			if (!(who = get_echannel_by_refnum(0)))
+			if (!(who = get_target_by_refnum(0)))
 			{
-			     say("No current channel in this window for -OUT");
+			     say("No query or channel in this window for -OUT");
 			     return;
 			}
 		}

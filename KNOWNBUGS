@@ -2,9 +2,6 @@ EPIC5 Projects, Bugs, and other Errata:
 
 KNOWN ERRATA (eg, bugs, or unresolved requests):
 ------------------------------------------------
-* Support dalnet's CASEMAPPING=ascii senselessness.
-* /exec -out should go to current target, not just current channel.
-* Function to "humanize" a number?  (ie, 1024 -> "1k")
 * Crap should not be considered when matching a line with /lastlog
 -> (#epic) $windowctl(SET <refnum> ACTIVITY_FORMAT 2 "$2:$1")
 -> (#epic) $windowctl(SET <refnum> ACTIVITY_LEVEL 2 "$winchan($0) $2")
@@ -732,5 +729,7 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Whack /xdebug old_math
 * Rename 'altchan.bj' to 'altchan'
 * Add new server state, "ERROR" which triggers for non-recoverable socket errs.
+* Try to give some trailing context for unmatched braces/bracket/parens.
 * Fix bug in marshall_getaddrinfo. DOH!
 * Add humanize_number() to compat.c, and fix compiler warnings.
+* Change /exec -out to output to the current target, (*gulp*)
