@@ -1,4 +1,4 @@
-/* $EPIC: expr2.c,v 1.25 2005/07/23 06:30:24 jnelson Exp $ */
+/* $EPIC: expr2.c,v 1.26 2005/08/06 00:54:23 jnelson Exp $ */
 /*
  * Zsh: math.c,v 3.1.2.1 1997/06/01 06:13:15 hzoli Exp 
  * math.c - mathematical expression evaluation
@@ -2071,7 +2071,7 @@ static int	zzlex (expr_info *c)
 		 */
 		case '"':
 		{
-			char *p = c->ptr, *s;
+			char *p = c->ptr;
 			char oc = 0;
 			ssize_t	span;
 
@@ -2105,7 +2105,7 @@ static int	zzlex (expr_info *c)
 		 */
 		case '\'':
 		{
-			char *p = c->ptr, *s;
+			char *p = c->ptr;
 			char oc = 0;
 			ssize_t	span;
 

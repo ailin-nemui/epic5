@@ -733,3 +733,4 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Rename 'altchan.bj' to 'altchan'
 * Add new server state, "ERROR" which triggers for non-recoverable socket errs.
 * Fix bug in marshall_getaddrinfo. DOH!
+* Add humanize_number() to compat.c, and fix compiler warnings.

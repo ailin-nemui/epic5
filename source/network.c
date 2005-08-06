@@ -1,4 +1,4 @@
-/* $EPIC: network.c,v 1.71 2005/08/05 02:45:12 jnelson Exp $ */
+/* $EPIC: network.c,v 1.72 2005/08/06 00:54:23 jnelson Exp $ */
 /*
  * network.c -- handles stuff dealing with connecting and name resolving
  *
@@ -851,12 +851,14 @@ pid_t	async_getaddrinfo (const char *nodename, const char *servname, const AI *h
 {
 	AI *results = NULL;
 	ssize_t	err;
-	pid_t	helper;
 
 #ifdef ASYNC_DNS
+	{
 	/* XXX Letting /exec clean up after us is a hack. */
+	pid_t	helper;
 	if ((helper = fork()))
 		return helper;
+	}
 #endif
 
         if ((err = Getaddrinfo(nodename, servname, hints, &results)))
@@ -881,6 +883,7 @@ pid_t	async_getaddrinfo (const char *nodename, const char *servname, const AI *h
 #ifdef ASYNC_DNS
 	exit(0);
 #endif
+	return 0;	/* XXX This function should be void */
 }
 
 void	marshall_getaddrinfo (int fd, AI *results)

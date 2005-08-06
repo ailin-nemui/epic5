@@ -65,7 +65,9 @@ int     client_connect          (SA *, socklen_t, SA *, socklen_t);
 int     inet_vhostsockaddr 	(int, int, SS *, socklen_t *);
 int	Getaddrinfo		(const char *, const char *, const AI *, AI **);
 void	Freeaddrinfo		(AI *);
+pid_t	async_getaddrinfo	(const char *, const char *, const AI *, int);
 void	marshall_getaddrinfo	(int, AI *results);
+void	unmarshall_getaddrinfo	(AI *results);
 
 #define GNI_INTEGER 0x4000
 

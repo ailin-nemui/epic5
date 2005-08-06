@@ -1,4 +1,4 @@
-/* $EPIC: dcc.c,v 1.125 2005/07/30 04:36:18 jnelson Exp $ */
+/* $EPIC: dcc.c,v 1.126 2005/08/06 00:54:23 jnelson Exp $ */
 /*
  * dcc.c: Things dealing client to client connections. 
  *
@@ -139,7 +139,6 @@ static	void		dcc_filesend 		(char *);
 static	void		dcc_send_raw 		(char *);
 static	void		dcc_list 		(char *args);
 static	void		dcc_rename 		(char *);
-static	void		dcc_getfile_resume	(char *);
 
 static	DCC_list *	dcc_searchlist 		(unsigned, const char *, const char *, const char *, int);
 static	void		dcc_erase 		(DCC_list *);
@@ -1425,7 +1424,6 @@ DCC_SUBCOMMAND(dcc_close_subcmd)
 
 	if (argc < 2)
 	{
-dcc_close_usage:
 		say("Usage: /DCC CLOSE <type> <nick> [<file>]");
 		return;
 	}
@@ -1555,7 +1553,6 @@ DCC_SUBCOMMAND(dcc_get_subcmd)
 	Filename	pathname = "";
 	int		file;
 	char 		*realfilename = NULL;
-	int		get_all = 0;
 	int		count = 0;
 	Stat		sb;
 	int		proto;

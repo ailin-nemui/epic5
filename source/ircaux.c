@@ -1,4 +1,4 @@
-/* $EPIC: ircaux.c,v 1.137 2005/08/03 03:10:07 jnelson Exp $ */
+/* $EPIC: ircaux.c,v 1.138 2005/08/06 00:54:23 jnelson Exp $ */
 /*
  * ircaux.c: some extra routines... not specific to irc... that I needed 
  *
@@ -48,6 +48,7 @@
 #include "if.h"
 #include "words.h"
 #include "ctcp.h"
+#include "server.h"
 
 /*
  * This is the basic overhead for every malloc allocation (8 bytes).

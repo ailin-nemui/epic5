@@ -198,6 +198,7 @@ extern	const char *server_states[10];
 	void	display_server_list	(void);
 	char *	create_server_list	(void);	/* MALLOC */
 	int	server_list_size	(void);
+	int	is_server_valid		(int refnum);
 
 	void	flush_server			(int);
 	void	send_to_server			(const char *, ...) __A(1);
@@ -267,6 +268,7 @@ const	char *	get_server_nickname		(int);
 	void	change_server_nickname		(int, const char *);
 const	char *	get_pending_nickname		(int);
 	void	accept_server_nickname		(int, const char *);
+	void   nickname_change_rejected		(int, const char *);
 
 	void	set_server_redirect		(int, const char *);
 const	char *	get_server_redirect		(int);
@@ -352,6 +354,8 @@ const char *	get_server_funny_match         	(int);
 
         void    set_server_window_count         (int, int);
         int     get_server_window_count         (int);
+        void    set_server_stricmp_table        (int, int);
+        int     get_server_stricmp_table        (int);
 
 	char *	serverctl			(char *);
 

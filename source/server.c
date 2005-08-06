@@ -1,4 +1,4 @@
-/* $EPIC: server.c,v 1.184 2005/08/03 05:06:05 jnelson Exp $ */
+/* $EPIC: server.c,v 1.185 2005/08/06 00:54:23 jnelson Exp $ */
 /*
  * server.c:  Things dealing with that wacky program we call ircd.
  *
@@ -1178,10 +1178,8 @@ void	flush_server (int servnum)
 int	grab_server_address (int server)
 {
 	Server *s;
-	AI	hints, *results;
-	int	err;
-	int	i, xvfd[2];
-	size_t	len;
+	AI	hints;
+	int	xvfd[2];
 
 	if (x_debug & DEBUG_SERVER_CONNECT)
 		yell("Grabbing server addresses for server [%d]", server);
@@ -2287,7 +2285,6 @@ const	char	*nicklen_005;
 static void 	reset_nickname (int refnum)
 {
 	Server *s;
-	char	server_num[10];
 	char *	old_pending = NULL;
 
 	if (!(s = get_server(refnum)))
