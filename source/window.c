@@ -1,4 +1,4 @@
-/* $EPIC: window.c,v 1.151 2005/08/07 04:57:57 jnelson Exp $ */
+/* $EPIC: window.c,v 1.152 2005/08/07 22:08:28 jnelson Exp $ */
 /*
  * window.c: Handles the organzation of the logical viewports (``windows'')
  * for irc.  This includes keeping track of what windows are open, where they
@@ -273,6 +273,14 @@ Window	*new_window (Screen *screen)
 	new_w->toplines_showing = 0;		/* Filled in later? */
 	for (i = 0; i < 10; i++)
 		new_w->topline[i] = NULL;
+
+	/* ACTIVITY stuff */
+	new_w->current_activity = 0;
+	for (i = 0; i < 11; i++)
+	{
+		new_w->activity_data[i] = NULL;
+		new_w->activity_format[i] = NULL;
+	}
 
 	/* Screen list stuff */
 	new_w->screen = screen;

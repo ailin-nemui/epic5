@@ -734,3 +734,4 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Change /exec -out to output to the current target, (*gulp*)
 * Add /lastlog -mangle to permit you to match against mangled lines.
 * Add per-window activity data, for weirdo and howl, see UPDATES
+* Initialize activity_format and activity_data when creating window. doh!
