@@ -160,6 +160,11 @@ struct lastlog_stru *lastlog_oldest;	/* pointer to bottom of lastlog list */
 	short	toplines_showing;
 	char *	topline[10];
 
+	/* ACTIVITY stuff */
+	short	current_activity;
+	char *	activity_data[11];
+	char *	activity_format[11];
+
 	/* List stuff */
 struct	ScreenStru	*screen;	/* The screen we belong to */
 struct	WindowStru	*next;		/* Window below us on screen */

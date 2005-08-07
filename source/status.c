@@ -1,4 +1,4 @@
-/* $EPIC: status.c,v 1.61 2005/05/19 13:34:00 jnelson Exp $ */
+/* $EPIC: status.c,v 1.62 2005/08/07 04:57:57 jnelson Exp $ */
 /*
  * status.c: handles the status line updating, etc for IRCII 
  *
@@ -102,6 +102,7 @@ STATUS_FUNCTION(status_windowspec);
 STATUS_FUNCTION(status_percent);
 STATUS_FUNCTION(status_test);
 STATUS_FUNCTION(status_swappable);
+STATUS_FUNCTION(status_activity);
 
 /* These are used as placeholders for some expandos */
 static	char	*mode_format 		= (char *) 0;
@@ -144,6 +145,7 @@ struct status_formats status_expandos[] = {
 { 0, 'B', status_hold_lines,    &hold_lines_format,	&STATUS_HOLD_LINES_VAR},
 { 0, 'C', status_channel,       &channel_format,	&STATUS_CHANNEL_VAR },
 { 0, 'D', status_dcc, 	        NULL, 			NULL },
+{ 0, 'E', status_activity,	NULL,			NULL },
 { 0, 'F', status_notify_windows,&notify_format,		&STATUS_NOTIFY_VAR },
 { 0, 'H', status_hold,		NULL,			NULL },
 { 0, 'I', status_insert_mode,   NULL,			NULL },
@@ -1510,4 +1512,31 @@ STATUS_FUNCTION(status_swappable)
 		return empty_string;
 }
 
+STATUS_FUNCTION(status_activity)
+{
+	const char *format, *data;
+	char *result;
+	static char retval[80];
+
+	if (window->current_activity == 0)
+		return empty_string;
+
+	format = window->activity_format[window->current_activity];
+	if (!format || !*format)
+		format = window->activity_format[0];
+	if (!format || !*format)
+		return empty_string;
+
+	data = window->activity_data[window->current_activity];
+	if (!data || !*data)
+		data = window->activity_data[0];
+	if (!data || !*data)
+		data = empty_string;
+
+yell("format is [%s], data is [%s]", format, data);
+	result = expand_alias(format, data, NULL);
+	strlcpy(retval, result, sizeof(retval));
+	new_free(&result);
+	return retval;
+}
 

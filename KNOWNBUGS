@@ -7,6 +7,7 @@ KNOWN ERRATA (eg, bugs, or unresolved requests):
 -> (#epic) $windowctl(SET <refnum> ACTIVITY_LEVEL 2)
 * For /dcc get nick ... file1 file2 ... where not-offered-file immediately 
   follows an offered-file, treat it as an implied rename.
+* /DCC GET is broken, it appends the dirname twice or something.
 
 LOOK FOR IN THE NEXT RELEASE
 ----------------------------
@@ -732,3 +733,4 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Add humanize_number() to compat.c, and fix compiler warnings.
 * Change /exec -out to output to the current target, (*gulp*)
 * Add /lastlog -mangle to permit you to match against mangled lines.
+* Add per-window activity data, for weirdo and howl, see UPDATES

@@ -1,5 +1,77 @@
 EPIC5-0.0.6
 
+*** News 08/06/2005 -- Generalized status bar activity handling
+	There are three new windowctls, and /window commands to follow
+	later on.  They allow you to control a new status bar expando %E.
+	This will take a bit of explanation.
+
+	Each window has 11 "activity levels".  An "activity level" is a 
+	format and a $* value.  The activity levels are numbered 0 to 10,
+	and 0 is special.
+
+	Each window has a 'current activity level' which you can set with:
+		$windowctl(SET <winref> CURRENT_ACTIVITY <number>)
+	When you set the current activity level to a number 1 to 10, then 
+	the %E status bar expando will replace with that activity level's
+	format expanded against that activity level's data.  The activity 
+	level 0 is not usable, but instead stores default values that are
+	used if you don't define something else for the activity level.
+
+	To set a window's activity level format:
+		$windowctl(SET <winref> ACTIVITY_FORMAT <number> <string>)
+	Remember that $'s in <string> need to be doubled, in order to protect
+	them from being expanded at $windowctl() time.  You do not need to
+	(and you should not) put quotation marks around <string>.  If you do
+	not set an activity format for a given level, then the activity format
+	you set for level 0 will be used as a default.
+
+	To set a window's activity level data:
+		$windowctl(SET <winref> ACTIVITY_DATA <number> <string>)
+	This is the value of $* that will be used to expand the activity 
+	format each time epic redraws the status bar.  If you do not set 
+	an activity data for a given level, the activity data you set for 
+	level 0 will be used as a default.
+
+	So to put this all together, if you set the current_activity value
+	to 0, then the %E expando will expand to nothing.  If you set the
+	current_activity level to any value 1 to 10, then it will expand to
+	the "activity_format" value, which is expanded on the fly using the
+	"activity_data" value as $*.  If you use a current_activity level that
+	is missing an activity_format or activity_data value, the values you
+	set for level 0 are used as defaults.
+
+	Example:
+		$windowctl(SET 1 ACTIVITY_FORMAT 1 ^C3$$*)
+		$windowctl(SET 1 ACTIVITY_FORMAT 2 ^C4$$*)
+		$windowctl(SET 1 ACTIVITY_FORMAT 3 ^C7$$notifywindows())
+		$windowctl(SET 1 ACTIVITY_FORMAT 4 ^C12$$*)
+		$windowctl(SET 1 ACTIVITY_DATA 0 booya)
+		$windowctl(SET 1 ACTIVITY_DATA 2 hazmat)
+
+	Now if I
+		$windowctl(SET 1 CURRENT_ACTIVITY 1)
+	then %E will expand to a green "booya" because the format is
+		^C$$* and the value of $* is "booya" 
+				(from activity_data 0)
+	If I then
+		$windowctl(SET 1 CURRENT_ACTIVITY 2)
+	then %E will expand to a bold red "hazmat" because the format is
+		^C4$$* and the value of $* is "hazmat" 
+				(cause I set activity_data 2)
+
+	If I then
+		$windowctl(SET 1 CURRENT_ACTIVITY 3)
+	then %E will expand to a yellow $notifywindows() that will dynamically
+	update, because there are two $'s in front of it.  It will ignore the
+	"booya" because it does not reference $*.
+
+	This feature is intended to be used to create a %F workalike that
+	gives you full and utter control over all aspects of how the expando
+	will show up, since you get 10 levels, plus a default level, and you 
+	get to control which ones use the default and which ones get their
+	own custom $* and you control the formats -- you control it all.
+	Have fun!
+
 *** News 08/05/2005 -- New flag to /LASTLOG, /LASTLOG -MANGLE
 	The /LASTLOG -MANGLE flag takes a mangle description (the thing that
 	$stripcrap() takes) and mangles each line in the lastlog before 

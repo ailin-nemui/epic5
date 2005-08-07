@@ -1,4 +1,4 @@
-/* $EPIC: window.c,v 1.150 2005/07/23 06:30:24 jnelson Exp $ */
+/* $EPIC: window.c,v 1.151 2005/08/07 04:57:57 jnelson Exp $ */
 /*
  * window.c: Handles the organzation of the logical viewports (``windows'')
  * for irc.  This includes keeping track of what windows are open, where they
@@ -5927,9 +5927,25 @@ char 	*windowctl 	(char *input)
 	    } else if (!my_strnicmp(listc, "TOPLINE", len)) {
 		int	i;
 		GET_INT_ARG(i, input);
+		if (i <= 0 || i > 10)
+			RETURN_EMPTY;
 		RETURN_STR(w->topline[i]);
 	    } else if (!my_strnicmp(listc, "TOPLINES", len)) {
 		RETURN_INT(w->toplines_wanted);
+	    } else if (!my_strnicmp(listc, "ACTIVITY_FORMAT", len)) {
+		int	i;
+		GET_INT_ARG(i, input);
+		if (i < 0 || i > 10)
+			RETURN_EMPTY;
+		RETURN_STR(w->activity_format[i]);
+	    } else if (!my_strnicmp(listc, "ACTIVITY_DATA", len)) {
+		int	i;
+		GET_INT_ARG(i, input);
+		if (i < 0 || i > 10)
+			RETURN_EMPTY;
+		RETURN_STR(w->activity_data[i]);
+	    } else if (!my_strnicmp(listc, "CURRENT_ACTIVITY", len)) {
+		RETURN_INT(w->current_activity);
 	    } else if (!my_strnicmp(listc, "DISPLAY_SIZE", len)) {
 		RETURN_INT(w->display_lines);
 	    } else if (!my_strnicmp(listc, "SCREEN", len)) {
@@ -6081,6 +6097,33 @@ char 	*windowctl 	(char *input)
 		RETURN_INT(1);
 	    } else if (!my_strnicmp(listc, "TOPLINES", len)) {
 		RETURN_EMPTY;
+	    } else if (!my_strnicmp(listc, "ACTIVITY_FORMAT", len)) {
+		int line;
+
+		GET_INT_ARG(line, input)
+		if (line < 0 || line > 10)
+			RETURN_EMPTY;
+		malloc_strcpy(&w->activity_format[line], input);
+		window_statusbar_needs_update(w);
+		RETURN_INT(1);
+	    } else if (!my_strnicmp(listc, "ACTIVITY_DATA", len)) {
+		int line;
+
+		GET_INT_ARG(line, input)
+		if (line < 0 || line > 10)
+			RETURN_EMPTY;
+		malloc_strcpy(&w->activity_data[line], input);
+		window_statusbar_needs_update(w);
+		RETURN_INT(1);
+	    } else if (!my_strnicmp(listc, "CURRENT_ACTIVITY", len)) {
+		int	line;
+
+		GET_INT_ARG(line, input)
+		if (line < 0 || line > 10)
+			RETURN_EMPTY;
+		w->current_activity = line;
+		window_statusbar_needs_update(w);
+		RETURN_INT(1);
 	    } else if (!my_strnicmp(listc, "DISPLAY_SIZE", len)) {
 		RETURN_EMPTY;
 	    } else if (!my_strnicmp(listc, "SCREEN", len)) {
