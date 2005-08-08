@@ -1,4 +1,4 @@
-/* $EPIC: status.c,v 1.62 2005/08/07 04:57:57 jnelson Exp $ */
+/* $EPIC: status.c,v 1.63 2005/08/08 00:39:07 jnelson Exp $ */
 /*
  * status.c: handles the status line updating, etc for IRCII 
  *
@@ -1533,7 +1533,6 @@ STATUS_FUNCTION(status_activity)
 	if (!data || !*data)
 		data = empty_string;
 
-yell("format is [%s], data is [%s]", format, data);
 	result = expand_alias(format, data, NULL);
 	strlcpy(retval, result, sizeof(retval));
 	new_free(&result);

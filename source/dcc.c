@@ -1,4 +1,4 @@
-/* $EPIC: dcc.c,v 1.126 2005/08/06 00:54:23 jnelson Exp $ */
+/* $EPIC: dcc.c,v 1.127 2005/08/08 00:39:07 jnelson Exp $ */
 /*
  * dcc.c: Things dealing client to client connections. 
  *
@@ -677,6 +677,149 @@ static	DCC_list *dcc_searchlist (
 	unlock_dcc(NULL);
 
 	return NULL;
+}
+
+/*
+ * dcc_bucket searches through the dcc_list and collects the clients
+ * with the the flag described in type set.  This function should never
+ * return a delete'd entry.
+ */
+static	int	dcc_bucket (
+	Bucket *	b,		/* The bucket to put entries into */
+	unsigned	type,		/* What kind of connection we want */
+	const char *	user, 		/* Nick of the remote peer */
+	const char *	description,	/* 
+					 * DCC Type specific information,
+					 * Usually a full pathname for 
+					 * SEND/GET, "listen" or "connect"
+					 * for RAW, or NULL for others.
+					 */
+	const char *	othername, 	/* Alias filename for SEND/GET */
+	int 		active)		/* Only get active/non-active? */
+{
+	DCC_list 	*client;
+	const char 	*last = NULL;
+	char		*decoded_description;
+	int		count = 0;
+
+	decoded_description = description ? dcc_urldecode(description) : NULL;
+
+	if (x_debug & DEBUG_DCC_SEARCH)
+		yell("entering dcc_b.  desc (%s) decdesc (%s) user (%s) "
+		     "type(%d) other (%s) active (%d)", 
+			description, decoded_description, user, type,
+			othername, active);
+
+	/*
+	 * Walk all of the DCC connections that we know about.
+	 */
+	lock_dcc(NULL);
+
+	for (client = ClientList; client ; client = client->next)
+	{
+		/* Never return deleted entries */
+		if (client->flags & DCC_DELETE)
+			continue;
+
+		/*
+		 * Tell the user if they care
+		 */
+		if (x_debug & DEBUG_DCC_SEARCH)
+		{
+			yell("checking against  name (%s) user (%s) type (%d) "
+					"flag (%d) other (%s) active (%x)", 
+				client->description, 
+				client->user, 
+				client->flags & DCC_TYPES,
+				client->flags, 
+				client->othername, 
+				client->flags & DCC_ACTIVE);
+		}
+
+		/*
+		 * Ok. first of all, it has to be the right type.
+		 * XXX - Doing (unsigned) -1 is a hack.
+		 */
+		if (type != (unsigned)-1 && 
+				((client->flags & DCC_TYPES) != type))
+			continue;
+
+		/*
+		 * Its OK if the user matches the client's user
+		 */
+		if (user && my_stricmp(user, client->user))
+			continue;
+
+
+		/*
+		 * If "name" is NULL, then that acts as a wildcard.
+		 * If "description" is NULL, then that also acts as a wildcard.
+		 * If "name" is not the same as "description", then it could
+		 * 	be that "description" is a filename.  Check to see if
+		 *	"name" is the last component in "description" and
+		 *	accept that.
+		 * Otherwise, "othername" must exist and be the same.
+		 * In all other cases, reject this entry.
+		 */
+		
+		if (description && client->description && 
+			my_stricmp(description, client->description) &&
+			my_stricmp(decoded_description, client->description))
+		{
+			/*
+			 * OK.  well, 'name' isnt 'description', try looking
+			 * for a last segment.  If there isnt one, choke.
+			 */
+			if ((last = strrchr(client->description, '/')) == NULL)
+				continue;
+
+			/*
+			 * If 'name' isnt 'last' then we'll have to look at
+			 * 'othername' to see if that matches.
+			 */
+			if (my_stricmp(description, last + 1) && my_stricmp(decoded_description, last + 1))
+			{
+				if (!othername || !client->othername)
+					continue;
+
+				if (my_stricmp(othername, client->othername))
+					continue;
+			}
+		}
+
+		/*
+		 * Active == 0  -> Only PENDING unopened connections, please
+		 * No deleted entries, either.
+		 */
+		if (active == 0)
+		{
+			if (client->flags & DCC_ACTIVE)
+				continue;
+		}
+		/*
+		 * Active == 1 -> Only ACTIVE and OPEN connections, please
+		 */
+		else if (active == 1)
+		{
+			if ((client->flags & DCC_ACTIVE) == 0)
+				continue;
+		}
+		/*
+		 * Active == -1 -> Only NON DELETED entries, please.
+		 */
+		else if (active == -1)
+			(void) 0;
+
+		if (x_debug & DEBUG_DCC_SEARCH)
+			yell("We have a winner!");
+
+		add_to_bucket(b, empty_string, client);
+		count++;
+	}
+
+	new_free(&decoded_description);
+	unlock_dcc(NULL);
+	return count;
 }
 
 
@@ -1551,13 +1694,15 @@ DCC_SUBCOMMAND(dcc_get_subcmd)
 	Filename	default_savedir = "";
 	Filename	fullname = "";
 	Filename	pathname = "";
+	Filename	save_as = "";
 	int		file;
 	char 		*realfilename = NULL;
-	int		count = 0;
+	int		count = 0, i;
 	Stat		sb;
 	int		proto;
 	const char *	x;
 	int		resume;
+	Bucket *	b;
 
 	if (argc < 2)
 	{
@@ -1575,7 +1720,6 @@ DCC_SUBCOMMAND(dcc_get_subcmd)
 		filename = NULL;
 	else
 		filename = argv[2];
-
 
 	/*
 	 * Deduce where we will be saving this file.  If the user has
@@ -1601,22 +1745,26 @@ DCC_SUBCOMMAND(dcc_get_subcmd)
 		return;
 	}
 
-
-	while ((dcc = dcc_searchlist(DCC_FILEREAD, user, filename, NULL, 0)))
+	b = new_bucket();
+	count = dcc_bucket(b, DCC_FILEREAD, user, filename, NULL, 0);
+	for (i = 0; i < count; i++)
 	{
-	    count++;
+	    dcc = b->list[i].stuff;
+	    lock_dcc(dcc);
 
 	    if (filename && (dcc->flags & DCC_ACTIVE))
 	    {
 		say("A DCC GET:%s to %s is active", filename, user);
-		return;
+		unlock_dcc(dcc);
+		continue;
 	    }
 	    if (filename && !(dcc->flags & DCC_THEIR_OFFER))
 	    {
 		/* Kept purely for historical laughs */
 		say("I'm a little teapot");
 		dcc->flags |= DCC_DELETE;
-		return;
+		unlock_dcc(dcc);
+		continue;
 	    }
 
 	    /* 
@@ -1629,7 +1777,7 @@ DCC_SUBCOMMAND(dcc_get_subcmd)
 		strlcpy(fullname, realfilename, sizeof(fullname));
 	    else
 	    {
-		strlcat(fullname, default_savedir, sizeof(fullname));
+		strlcpy(fullname, default_savedir, sizeof(fullname));
 		strlcat(fullname, "/", sizeof(fullname));
 		strlcat(fullname, realfilename, sizeof(fullname));
 	    }
@@ -1648,7 +1796,8 @@ DCC_SUBCOMMAND(dcc_get_subcmd)
 		if ((file = open(fullname, O_WRONLY|O_APPEND, 0644)) == -1)
 		{
 			say("Unable to open %s: %s", fullname, strerror(errno));
-			return;
+			unlock_dcc(dcc);
+			continue;
 		}
 		dcc->file = file;
 	
@@ -1676,24 +1825,20 @@ DCC_SUBCOMMAND(dcc_get_subcmd)
 #endif
 				dcc->othername, (long)sb.st_size);
 		set_server_protocol_state(from_server, proto);
-
-		/*
-		 * Warning:  It seems to be for the best to _not_ loop
-		 *           at this point.
-		 */
-		return;
 	    }
 #endif
 
 	    if ((file = open(fullname, O_WRONLY|O_TRUNC|O_CREAT, 0644)) == -1)
 	    {
 		say("Unable to open %s: %s", fullname, strerror(errno));
-		return;
+		unlock_dcc(dcc);
+		continue;
 	    }
 
 	    dcc->file = file;
 	    dcc->flags |= DCC_TWOCLIENTS;
 	    dcc_connect(dcc);		/* Nonblocking should be ok here */
+	    unlock_dcc(dcc);
 	}
 
 	if (!count)
