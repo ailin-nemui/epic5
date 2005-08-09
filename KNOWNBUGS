@@ -4,14 +4,15 @@ KNOWN ERRATA (eg, bugs, or unresolved requests):
 ------------------------------------------------
 <none>
 
-LOOK FOR IN THE NEXT RELEASE
-----------------------------
+LOOK FOR IN THE FUTURE
+-----------------------
 * An /on to go off when you add something to the input line.
 * Output rules
 * GC of a lot of the newly scripted stuff
 * Support for CNOTICE
 * Turn unified symbol table into an inode table (name, entry), entry in array
 * /window <refnum> noserv causes bad fd loop.  (can't reproduce?)
+* Revamp of /who -realname 
 
 [See http://www.epicsol.org/PROJECTS for things to come in the future]
 [See http://www.epicsol.org/CHANGELOG5 for things that changed in the past]
