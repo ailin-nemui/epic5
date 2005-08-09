@@ -1,4 +1,4 @@
-/* $EPIC: server.c,v 1.185 2005/08/06 00:54:23 jnelson Exp $ */
+/* $EPIC: server.c,v 1.186 2005/08/09 02:01:05 jnelson Exp $ */
 /*
  * server.c:  Things dealing with that wacky program we call ircd.
  *
@@ -868,13 +868,13 @@ void	do_server (int fd)
 		if (s->status == SERVER_DNS)
 		{
 		    int cnt = 0;
-		    int len;
+		    ssize_t len;
 
 		    if (s->addrs == NULL)
 		    {
 		        len = dgets(s->des, (char *)&s->addr_len, 
 					sizeof(s->addr_len), -1);
-		        if (len < sizeof(s->addr_len))
+		        if (len < (ssize_t)sizeof(s->addr_len))
 			    yell("Got %d, expected %d bytes", 
 					len, sizeof(s->addr_len));
 
@@ -1025,7 +1025,7 @@ something_broke:
 		        default:	/* New inbound data */
 		        {
 			    char *end;
-			    int	l;
+			    int	l2;
 
 			    end = strlen(buffer) + buffer;
 			    if (*--end == '\n')
@@ -1033,7 +1033,7 @@ something_broke:
 			    if (*end == '\r')
 				*end-- = '\0';
 
-			    l = message_from(NULL, LEVEL_CRAP);
+			    l2 = message_from(NULL, LEVEL_CRAP);
 			    if (x_debug & DEBUG_INBOUND)
 				yell("[%d] <- [%s]", 
 					s->des, buffer);
@@ -1043,7 +1043,7 @@ something_broke:
 			    parsing_server_index = i;
 			    parse_server(buffer, sizeof buffer);
 			    parsing_server_index = NOSERV;
-			    pop_message_from(l);
+			    pop_message_from(l2);
 			    break;
 		        }
 		    }

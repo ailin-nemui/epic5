@@ -1,4 +1,4 @@
-/* $EPIC: who.c,v 1.50 2005/08/06 00:54:23 jnelson Exp $ */
+/* $EPIC: who.c,v 1.51 2005/08/09 02:01:05 jnelson Exp $ */
 /*
  * who.c -- The WHO queue.  The ISON queue.  The USERHOST queue.
  *
@@ -1274,7 +1274,7 @@ void	isonbase (int refnum, char *args, void (*line) (int, char *, char *))
 	{
 		new_i = get_new_ison_entry(refnum, sendnext);
 		new_i->line = line;
-		if (strlen(args) > get_server(refnum)->ison_len)
+		if ((int)strlen(args) > get_server(refnum)->ison_len)
 		{
 			next = args + get_server(refnum)->ison_len;
 			while (!isspace(*next))

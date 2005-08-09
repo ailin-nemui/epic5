@@ -1,4 +1,4 @@
-/* $EPIC: newio.c,v 1.53 2005/05/20 13:44:31 jnelson Exp $ */
+/* $EPIC: newio.c,v 1.54 2005/08/09 02:01:05 jnelson Exp $ */
 /*
  * newio.c:  Passive, callback-driven IO handling for sockets-n-stuff.
  *
@@ -1183,7 +1183,7 @@ static void	kinit (void)
 static  void    kread (int vfd)
 {
 	if (pfd[vfd].active)
-		panic("vfd [%d] already is active (reading)");
+		panic("vfd [%d] already is active (reading)", vfd);
 }
  
 static  void    knoread (int vfd)

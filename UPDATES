@@ -1,5 +1,22 @@
 EPIC5-0.0.6
 
+*** News 08/08/2005 -- Updated behavior for /DCC GET
+	Based on a request from larne, the following syntaxes are now
+	supported for /DCC GET:
+
+	* /DCC GET nick file1 file2 ... fileN /directory
+	This will download one or more files to /directory.
+
+	* /DCC GET nick offered-file not-offered-file
+	This will do a /DCC RENAME get nick offered-file not-offered-file
+	and then a /DCC GET not-offered file.  You cannot combine this with
+	the previous syntax.
+
+	* /DCC GET nick
+	Download ALL files that "nick" have offered you.  You can combine
+	this with the first one, (/DCC GET nick /directory) to download 
+	all files offered to a single directory.
+
 *** News 08/06/2005 -- Generalized status bar activity handling
 	There are three new windowctls, and /window commands to follow
 	later on.  They allow you to control a new status bar expando %E.

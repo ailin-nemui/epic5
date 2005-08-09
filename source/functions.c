@@ -1,4 +1,4 @@
-/* $EPIC: functions.c,v 1.204 2005/08/03 04:21:39 jnelson Exp $ */
+/* $EPIC: functions.c,v 1.205 2005/08/09 02:01:04 jnelson Exp $ */
 /*
  * functions.c -- Built-in functions for ircII
  *
@@ -5445,7 +5445,7 @@ static	size_t	input_size = 0;
 		case ':':
 			add_var_alias(optopt_var, tmpstr, 0);
 			add_var_alias(optarg_var, next_arg(aptr, &aptr), 0);
-			//add_var_alias(optarg_var, args, 0);
+			/* add_var_alias(optarg_var, args, 0); */
 			RETURN_STR(tmpstr);
 		case '-':
 			add_var_alias(optopt_var, tmpstr, 0);

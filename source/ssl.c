@@ -1,4 +1,4 @@
-/* $EPIC: ssl.c,v 1.19 2005/07/23 06:30:24 jnelson Exp $ */
+/* $EPIC: ssl.c,v 1.20 2005/08/09 02:01:05 jnelson Exp $ */
 /*
  * ssl.c: SSL connection functions
  *
@@ -37,6 +37,7 @@
 
 #include "irc.h"
 #include "ircaux.h"
+#include "ssl.h"
 
 #ifdef HAVE_SSL
 
@@ -365,19 +366,13 @@ int	shutdown_ssl (int vfd)
 int	write_ssl (int vfd, const void *data, size_t len)
 {
 	panic("write_fd(%d, \"%s\", %ld) called on non-ssl client",
-		vfd, data, len);
+		vfd, (const char *)data, (long)len);
 	return -1;
 }
 
-int	ssl_read (int vfd)
+int	ssl_read (int vfd, int quiet)
 {
 	panic("ssl_read(%d) called on non-ssl client", vfd);
-	return -1;
-}
-
-int	ssl_reader (int vfd, char **buf, size_t *len, size_t *start)
-{
-	panic("ssl_reader(%d) called on non-ssl client", vfd);
 	return -1;
 }
 

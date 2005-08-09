@@ -2,11 +2,7 @@ EPIC5 Projects, Bugs, and other Errata:
 
 KNOWN ERRATA (eg, bugs, or unresolved requests):
 ------------------------------------------------
--> (#epic) $windowctl(SET <refnum> ACTIVITY_FORMAT 2 "$2:$1")
--> (#epic) $windowctl(SET <refnum> ACTIVITY_LEVEL 2 "$winchan($0) $2")
--> (#epic) $windowctl(SET <refnum> ACTIVITY_LEVEL 2)
-* For /dcc get nick ... file1 file2 ... where not-offered-file immediately 
-  follows an offered-file, treat it as an implied rename.
+<none>
 
 LOOK FOR IN THE NEXT RELEASE
 ----------------------------
@@ -735,3 +731,5 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Add per-window activity data, for weirdo and howl, see UPDATES
 * Initialize activity_format and activity_data when creating window. doh!
 * Fix /dcc get, and I probably should fix other things as well.
+* Add a couple of new behaviors for /dcc get, see UPDATES
+* Fix a bunch of compiler warnings.

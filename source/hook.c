@@ -1,4 +1,4 @@
-/* $EPIC: hook.c,v 1.58 2005/06/16 13:48:33 jnelson Exp $ */
+/* $EPIC: hook.c,v 1.59 2005/08/09 02:01:04 jnelson Exp $ */
 /*
  * hook.c: Does those naughty hook functions. 
  *
@@ -2506,7 +2506,7 @@ char *hookctl (char *input)
 				case 7:		if (set) {
 								if (*input == '{')
 								{
-									size_t span;
+									ssize_t span;
 									span = MatchingBracket(input+1, '{', '}');
 									if (span >= 0) {
 										input[span + 1] = 0;

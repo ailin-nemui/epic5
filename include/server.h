@@ -356,6 +356,8 @@ const char *	get_server_funny_match         	(int);
         int     get_server_window_count         (int);
         void    set_server_stricmp_table        (int, int);
         int     get_server_stricmp_table        (int);
+        void    set_server_ison_len             (int, int);
+        int     get_server_ison_len             (int);
 
 	char *	serverctl			(char *);
 

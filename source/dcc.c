@@ -1,4 +1,4 @@
-/* $EPIC: dcc.c,v 1.127 2005/08/08 00:39:07 jnelson Exp $ */
+/* $EPIC: dcc.c,v 1.128 2005/08/09 02:01:04 jnelson Exp $ */
 /*
  * dcc.c: Things dealing client to client connections. 
  *
@@ -822,6 +822,80 @@ static	int	dcc_bucket (
 	return count;
 }
 
+/*
+ * dcc_get_bucket searches through the dcc_list and collects the clients
+ * we can do dcc get on.  This function should never return a delete'd entry.
+ */
+static	int	dcc_get_bucket (Bucket *b, const char *user, const char *fname)
+{
+	DCC_list 	*client;
+	const char 	*last = NULL;
+	char		*decoded_description;
+	int		count = 0;
+
+	decoded_description = fname ? dcc_urldecode(fname) : NULL;
+
+	if (x_debug & DEBUG_DCC_SEARCH) 
+		yell("entering dcc_g_b.  desc (%s) decdesc (%s) user (%s) ",
+			fname, decoded_description, user);
+
+	/*
+	 * Walk all of the DCC connections that we know about.
+	 */
+	lock_dcc(NULL);
+
+	for (client = ClientList; client ; client = client->next)
+	{
+		/* Skip deleted entries */
+		if (client->flags & DCC_DELETE)
+			continue;
+
+		/* Skip already ACTIVE connections */
+		if (client->flags & DCC_ACTIVE)
+			continue;
+
+		/* Skip non-DCC GETs */
+		if ((client->flags & DCC_TYPES) != DCC_FILEREAD)
+			continue;
+
+		/* Skip DCC GETs with no filename (!!!) */
+		if (!client->description)
+			continue;
+
+		/* Skip DCCs from other people */
+		if (user && my_stricmp(user, client->user))
+			continue;
+
+		last = strrchr(client->description, '/');
+
+		/*
+		 * If "fname" is NULL, then that also acts as a wildcard.
+		 * If "fname" is not the same as "description", then it could
+		 * 	be that "description" is a filename.  Check to see if
+		 *	"fname" is the last component in "description" and
+		 *	accept that.
+		 * In all other cases, reject this entry.
+		 */
+#define ACCEPT { if (b) 					\
+			add_to_bucket(b, empty_string, client); \
+		 count++; 					\
+		 continue; }
+#define CHECKVAL(x) 						\
+	if (! x ) 						\
+		ACCEPT						\
+	else if (!my_stricmp( x , client->description))		\
+		ACCEPT						\
+	else if (last && !my_stricmp( x , last + 1))		\
+		ACCEPT
+
+		CHECKVAL(fname)
+		CHECKVAL(decoded_description)
+	}
+
+	new_free(&decoded_description);
+	unlock_dcc(NULL);
+	return count;
+}
 
 /*
  * Added by Chaos: Is used in edit.c for checking redirect.
@@ -1686,6 +1760,13 @@ static void dcc_resume (char *args)
 }
 #endif
 
+static void	handle_invalid_savedir (const char *pathname)
+{
+	say("DCC GET: Can't save file because %s is not a valid directory.",
+					pathname);
+	say("DCC GET: Check /SET DCC_STORE_PATH and try again.");
+}
+
 DCC_SUBCOMMAND(dcc_get_subcmd)
 {
 	char		*user;
@@ -1694,15 +1775,17 @@ DCC_SUBCOMMAND(dcc_get_subcmd)
 	Filename	default_savedir = "";
 	Filename	fullname = "";
 	Filename	pathname = "";
+	int		savedir_is_invalid = 0;
 	Filename	save_as = "";
 	int		file;
 	char 		*realfilename = NULL;
-	int		count = 0, i;
+	int		count = 0, i, j;
 	Stat		sb;
 	int		proto;
-	const char *	x;
+	const char *	x = NULL;
 	int		resume;
 	Bucket *	b;
+	int		force_savedir = 0;
 
 	if (argc < 2)
 	{
@@ -1710,110 +1793,127 @@ DCC_SUBCOMMAND(dcc_get_subcmd)
 		return;
 	}
 
+	/* Figure out if this is DCC GET or DCC RESUME */
 	if (!strcmp(argv[0], "RESUME"))
 		resume = 1;
 	else
 		resume = 0;
 
+	/* Figure out whose offer we will accept */
 	user = argv[1];
-	if (argc == 2 || !strcmp(argv[2], "*"))
-		filename = NULL;
-	else
-		filename = argv[2];
 
-	/*
-	 * Deduce where we will be saving this file.  If the user has
-	 * directory they told us to use, then use that.  Otherwise, put
-	 * it in the current directory.  In either case, the place we
-	 * will put it has to exist or we will punt.
-	 */
-	x = get_string_var(DCC_STORE_PATH_VAR);
-	if (x && *x)
-		strlcpy(pathname, x, sizeof(pathname));
-	else /* SUSv2 doesn't specify realpath() behavior for "" */
-		strcpy(pathname, "./");
+	lock_dcc(NULL);
 
-	if (normalize_filename(pathname, default_savedir))
+	/* Handle directory as the last argument */
+	normalize_filename(argv[argc-1], pathname);
+	if (isdir(pathname))
 	{
-		say("DCC GET: Can't save file because %s is not a valid "
-			"directory.", pathname);
-		if (x && *x)
-		    say("DCC GET: Check /SET DCC_STORE_PATH and try again.");
-		else
-		    say("DCC GET: Your current directory has vanished!  "
-			"Use /CD to change your current directory.");
-		return;
+	    /* Pretend the user did /set dcc_store_path argv[argc-1] */
+	    x = pathname;
+	    argv[argc-1] = NULL;
+	    argc--;
+	    force_savedir = 1;
 	}
 
-	b = new_bucket();
-	count = dcc_bucket(b, DCC_FILEREAD, user, filename, NULL, 0);
-	for (i = 0; i < count; i++)
+	/* Handle a straight rename */
+	else if (argc == 4 && dcc_get_bucket(NULL, user, argv[2]) == 1 &&
+			 dcc_get_bucket(NULL, user, argv[3]) == 0)
 	{
-	    dcc = b->list[i].stuff;
-	    lock_dcc(dcc);
+	    /* Pretend the user did /dcc rename get <user> argv[2] argv[3] */
+	    b = new_bucket();
+	    dcc_get_bucket(b, user, argv[2]);
+	    dcc = b->list[0].stuff;
+	    malloc_strcpy(&dcc->description, argv[3]);
+	    free_bucket(&b);
 
-	    if (filename && (dcc->flags & DCC_ACTIVE))
-	    {
-		say("A DCC GET:%s to %s is active", filename, user);
-		unlock_dcc(dcc);
-		continue;
-	    }
-	    if (filename && !(dcc->flags & DCC_THEIR_OFFER))
-	    {
-		/* Kept purely for historical laughs */
-		say("I'm a little teapot");
-		dcc->flags |= DCC_DELETE;
-		unlock_dcc(dcc);
-		continue;
-	    }
+	    /* Pretend the user did /dcc get <user> argv[3] */
+	    argv[2] = argv[3];
+	    argc = 3;
+	}
 
-	    /* 
-	     * Figure out where we will save this file.  If the user has
-	     * /DCC RENAMEd this file to an absolute path, we honor that.
-	     * Otherwise, we use the default directory from above (09/24/2003)
-	     */
-	    realfilename = dcc_urldecode(dcc->description);
-	    if (*realfilename == '/')
-		strlcpy(fullname, realfilename, sizeof(fullname));
-	    else
-	    {
-		strlcpy(fullname, default_savedir, sizeof(fullname));
-		strlcat(fullname, "/", sizeof(fullname));
-		strlcat(fullname, realfilename, sizeof(fullname));
-	    }
+	/* Calculate "default_savedir" */
+	if (!x)
+		x = get_string_var(DCC_STORE_PATH_VAR);
+	if (!x || !*x)
+		x = "./";
 
-	    new_free(&realfilename);
-	    dcc->filename = malloc_strdup(fullname);
-	    dcc->open_callback = NULL;
+	if (normalize_filename(x, default_savedir))
+		savedir_is_invalid = 1;
+
+	if (argc == 2)
+	{
+		filename = NULL;
+		j = 4;
+		goto jumpstart_get;
+	}
+
+	for (j = 2; j < argc; j++)
+	{
+	    filename = argv[j];
+jumpstart_get:
+	    b = new_bucket();
+	    count = dcc_get_bucket(b, user, filename);
+	    for (i = 0; i < count; i++)
+	    {
+		dcc = b->list[i].stuff;
+		lock_dcc(dcc);
+
+		/* 
+		 * Figure out where we will save this file.  If the user has
+		 * /DCC RENAMEd this file to an absolute path, we honor that.
+		 * Otherwise, we use the default directory from above 
+		 * (09/24/2003)
+		 */
+		realfilename = dcc_urldecode(dcc->description);
+		if (*realfilename == '/')
+		    strlcpy(fullname, realfilename, sizeof(fullname));
+		else
+		{
+		    if (savedir_is_invalid == 1)
+		    {
+			handle_invalid_savedir(x);
+			savedir_is_invalid++;
+			new_free(&realfilename);
+			continue;
+		    }
+
+		    strlcpy(fullname, default_savedir, sizeof(fullname));
+		    strlcat(fullname, "/", sizeof(fullname));
+		    strlcat(fullname, realfilename, sizeof(fullname));
+		}
+
+		new_free(&realfilename);
+		dcc->filename = malloc_strdup(fullname);
+		dcc->open_callback = NULL;
 
 #ifdef MIRC_BROKEN_DCC_RESUME
-	    if (resume && get_int_var(MIRC_BROKEN_DCC_RESUME_VAR) && 
-			stat(fullname, &sb) != -1) 
-	    {
-		dcc->bytes_sent = 0;
-		dcc->bytes_read = dcc->resume_size = sb.st_size;
-
-		if ((file = open(fullname, O_WRONLY|O_APPEND, 0644)) == -1)
+		if (resume && get_int_var(MIRC_BROKEN_DCC_RESUME_VAR) && 
+				stat(fullname, &sb) != -1) 
 		{
+		    dcc->bytes_sent = 0;
+		    dcc->bytes_read = dcc->resume_size = sb.st_size;
+
+		    if ((file = open(fullname, O_WRONLY|O_APPEND, 0644)) == -1)
+		    {
 			say("Unable to open %s: %s", fullname, strerror(errno));
 			unlock_dcc(dcc);
 			continue;
-		}
-		dcc->file = file;
+		    }
+		    dcc->file = file;
 	
-		if (((SA *)&dcc->offer)->sa_family == AF_INET)
+		    if (((SA *)&dcc->offer)->sa_family == AF_INET)
 			malloc_strcpy(&dcc->othername, 
 					ltoa(ntohs(V4PORT(dcc->offer))));
 		
-		if (x_debug & DEBUG_DCC_XMIT)
+		    if (x_debug & DEBUG_DCC_XMIT)
 			yell("SENDING DCC RESUME to [%s] [%s|%s|%ld]", 
 				user, filename, dcc->othername, 
 				(long)sb.st_size);
 		
-		/* Just in case we have to fool the protocol enforcement. */
-		proto = get_server_protocol_state(from_server);
-		set_server_protocol_state(from_server, 0);
-		send_ctcp(CTCP_PRIVMSG, user, CTCP_DCC,
+		    /* Just in case we have to fool the protocol enforcement. */
+		    proto = get_server_protocol_state(from_server);
+		    set_server_protocol_state(from_server, 0);
+		    send_ctcp(CTCP_PRIVMSG, user, CTCP_DCC,
 #if 1
 				sindex(dcc->description, space)
 					? "RESUME \"%s\" %s %ld"
@@ -1824,22 +1924,24 @@ DCC_SUBCOMMAND(dcc_get_subcmd)
 				"RESUME file.ext %s %ld",
 #endif
 				dcc->othername, (long)sb.st_size);
-		set_server_protocol_state(from_server, proto);
-	    }
+		    set_server_protocol_state(from_server, proto);
+	        }
 #endif
 
-	    if ((file = open(fullname, O_WRONLY|O_TRUNC|O_CREAT, 0644)) == -1)
-	    {
-		say("Unable to open %s: %s", fullname, strerror(errno));
-		unlock_dcc(dcc);
-		continue;
-	    }
+	        if ((file = open(fullname, O_WRONLY|O_TRUNC|O_CREAT, 0644))==-1)
+	        {
+		    say("Unable to open %s: %s", fullname, strerror(errno));
+		    unlock_dcc(dcc);
+		    continue;
+	        }
 
-	    dcc->file = file;
-	    dcc->flags |= DCC_TWOCLIENTS;
-	    dcc_connect(dcc);		/* Nonblocking should be ok here */
-	    unlock_dcc(dcc);
+	        dcc->file = file;
+	        dcc->flags |= DCC_TWOCLIENTS;
+	        dcc_connect(dcc);	/* Nonblocking should be ok here */
+	        unlock_dcc(dcc);
+	    }
 	}
+	unlock_dcc(NULL);
 
 	if (!count)
 	{
@@ -1847,7 +1949,6 @@ DCC_SUBCOMMAND(dcc_get_subcmd)
 		say("No file (%s) offered in SEND mode by %s", filename, user);
 	    else
 		say("No file offered in SEND mode by %s", user);
-	    return;
 	}
 }
 
@@ -2794,7 +2895,7 @@ void	do_dcc (int fd)
 	     * Don't time out raw_listen sockets.
 	     */
 	    else if ((Client->flags & DCC_TYPES) == DCC_RAW_LISTEN) 
-		/* nothing */;
+		/* nothing */(void)0;
 
 	    /*
 	     * This shouldnt be neccesary any more, but what the hey,

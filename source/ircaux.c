@@ -1,4 +1,4 @@
-/* $EPIC: ircaux.c,v 1.138 2005/08/06 00:54:23 jnelson Exp $ */
+/* $EPIC: ircaux.c,v 1.139 2005/08/09 02:01:05 jnelson Exp $ */
 /*
  * ircaux.c: some extra routines... not specific to irc... that I needed 
  *
@@ -275,7 +275,7 @@ void *	really_new_realloc (void **ptr, size_t size, const char *fn, int line)
 		fatal_malloc_check(*ptr, NULL, fn, line);
 
 		/* If it's already big enough, keep it. */
-		if (alloc_size(*ptr) >= size)
+		if ((ssize_t)alloc_size(*ptr) >= (ssize_t)size)
 			return (*ptr);
 
 		/* Copy everything, including the MO buffer */
