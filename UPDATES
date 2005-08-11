@@ -1,5 +1,11 @@
 EPIC5-0.0.6
 
+*** News 08/10/2005 -- Mangle level "ALL" does not include "UNPRINTABLE"
+	This was a mistake, and "ALL" should never have included the
+	UNPRINTABLE mangle level.  So if you want to do them both, then
+	just do ALL,UNPRINTABLE.  Although you would never want to do
+	that, since UNPRINTABLE is more encompassing than ALL.
+
 *** News 08/08/2005 -- Updated behavior for /DCC GET
 	Based on a request from larne, the following syntaxes are now
 	supported for /DCC GET:

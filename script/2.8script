@@ -45,5 +45,5 @@ alias leave
 };
 
 # Ban list:
-on ^367 * xecho -b $[$CHANNEL_NAME_WIDTH]1 $2-;
+on ^367 * { xecho -b $[$CHANNEL_NAME_WIDTH]1 $2-; }
 

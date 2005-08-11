@@ -734,3 +734,6 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Fix /dcc get, and I probably should fix other things as well.
 * Add a couple of new behaviors for /dcc get, see UPDATES
 * Fix a bunch of compiler warnings.
+* Release epic5-0.0.6 (Osculator)
+* Fix "ALL" mangle level to not include "UNPRINTABLE"
+* Fix /on 367 in 2.8script, from larne.
