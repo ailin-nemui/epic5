@@ -7,7 +7,7 @@
  *
  * See the COPYRIGHT file, or do a HELP IRCII COPYRIGHT 
  *
- * @(#)$Id: ircaux.h,v 1.78 2005/08/03 03:10:07 jnelson Exp $
+ * @(#)$Id: ircaux.h,v 1.79 2005/08/17 23:35:22 jnelson Exp $
  */
 
 #ifndef _IRCAUX_H_
@@ -101,6 +101,9 @@ double	time_to_next_minute 	(void);
 char *	remove_trailing_spaces 	(char *, size_t *cluep);
 char *	forcibly_remove_trailing_spaces (char *, size_t *);
 char *	ltoa 			(long);
+#ifdef HAVE_LONG_LONG
+char *	lltoa 			(long long);
+#endif
 char *	ftoa			(double);
 char *	strformat 		(char *, const char *, ssize_t, int);
 char *	chop_word 		(char *);
@@ -205,6 +208,7 @@ void    dequoter                (char **, size_t *, int, int, const char *);
 int	vmy_strnicmp		(int, char *, ...);
 char *	substitute_string	(const char *, const char *, const char *, int, int);
 
+/* ---------------- */
 /* Used for the inbound mangling stuff */
 #define MANGLE_ESCAPES		1 << 0
 #define MANGLE_ANSI_CODES	1 << 1
@@ -225,6 +229,7 @@ extern	int	inbound_line_mangler;
 extern	int	logfile_line_mangler;
 size_t	mangle_line		(char *, int, size_t);
 
+/* ---------------- */
 struct BucketItem {
 	const char *name;
 	void *stuff;
@@ -241,5 +246,27 @@ typedef struct Bucket Bucket;
 	Bucket *new_bucket (void);
 	void	free_bucket (Bucket **);
 	void	add_to_bucket (Bucket *, const char *, void *);
+
+/* ---------------- */
+/* 
+ * Theoretically, all these macros are independant because the return value of
+ * INT*FUNC is typecasted back to INTTYPE.  One caveat is that INT2STR
+ * must return a malloc'd string.
+ */
+#ifdef HAVE_LONG_LONG
+typedef long long INTTYPE;
+#define FORMAT "%lld"
+#define STR2INT(x) ((INTTYPE)atoll(x))
+#define INT2STR(x) (malloc_sprintf(NULL, FORMAT , (INTTYPE)(x)))
+#define STRNUM(x) ((INTTYPE)atoll(x))
+#define NUMSTR(x) (lltoa((INTTYPE)(x)))
+#else 
+typedef long INTTYPE;
+#define FORMAT "%ld"
+#define STR2INT(x) ((INTTYPE)atol(x))
+#define INT2STR(x) (malloc_sprintf(NULL, FORMAT , (INTTYPE)(x)))
+#define STRNUM(x) ((INTTYPE)atol(x))
+#define NUMSTR(x) (ltoa((INTTYPE)(x)))
+#endif
 
 #endif /* _IRCAUX_H_ */

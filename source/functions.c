@@ -1,4 +1,4 @@
-/* $EPIC: functions.c,v 1.205 2005/08/09 02:01:04 jnelson Exp $ */
+/* $EPIC: functions.c,v 1.206 2005/08/17 23:35:22 jnelson Exp $ */
 /*
  * functions.c -- Built-in functions for ircII
  *
@@ -1144,7 +1144,7 @@ BUILT_IN_FUNCTION(function_tdiff, input)
 		 * then we know that we have a real, authentic number AFTER
 		 * the decmial point.  As long as it isnt zero, we want it.
 		 */
-		strlcat(tmp, ltoa(seconds), size);
+		strlcat(tmp, NUMSTR(seconds), size);
 		if (*after == '.')
 		{
 			if ((number = atol(after + 1)))

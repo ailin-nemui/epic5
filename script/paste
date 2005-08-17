@@ -20,7 +20,7 @@ bind ^P parse_command { set paste toggle; };
 addset paste bool {
 	if (*0 == 'on') {
 		setup_paste;
-		xecho -b PASTE automatically turns off in $paste.delay seconds;
+		xecho -b PASTE automatically turns off in $paste_delay seconds;
 	} elsif (*0 == 'off') {
 		remove_paste;
 	};

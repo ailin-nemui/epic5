@@ -1,4 +1,4 @@
-/* $EPIC: numbers.c,v 1.88 2005/05/09 03:43:52 jnelson Exp $ */
+/* $EPIC: numbers.c,v 1.89 2005/08/17 23:35:23 jnelson Exp $ */
 /*
  * numbers.c: handles all those strange numeric response dished out by that
  * wacky, nutty program we call ircd 
@@ -1483,8 +1483,6 @@ END:
 		break;
 	case 464:		/* #define ERR_PASSWDMISMATCH   464 */
 	{
-		char	server_num[8];
-
 		if (oper_command)
 			oper_command = 0;
 		else if (!is_server_registered(from_server))
@@ -1493,10 +1491,9 @@ END:
 				get_server_name(from_server));
 			if (!dumb_mode)
 			{
-				strlcpy(server_num, ltoa(from_server), sizeof server_num);
 				add_wait_prompt("Server Password:", 
-					password_sendline,
-				       server_num, WAIT_PROMPT_LINE, 0);
+					password_sendline, NUMSTR(from_server),
+					WAIT_PROMPT_LINE, 0);
 			}
 		}
 	}

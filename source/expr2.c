@@ -1,4 +1,4 @@
-/* $EPIC: expr2.c,v 1.26 2005/08/06 00:54:23 jnelson Exp $ */
+/* $EPIC: expr2.c,v 1.27 2005/08/17 23:35:22 jnelson Exp $ */
 /*
  * Zsh: math.c,v 3.1.2.1 1997/06/01 06:13:15 hzoli Exp 
  * math.c - mathematical expression evaluation
@@ -135,23 +135,6 @@ typedef 	int		BooL;
 #define USED_INTEGER		1 << 3
 #define USED_FLOAT		1 << 4
 #define USED_BOOLEAN		1 << 5
-
-/*
- * Theoretically, all these macros are independant because the return value of
- * INT*FUNC is typecasted back to INTTYPE.  One caveat is that INT2STR
- * must return a malloc'd string.
- */
-#ifdef HAVE_LONG_LONG
-typedef long long INTTYPE;
-#define FORMAT "%lld"
-#define STR2INT(x) ((INTTYPE)atoll(x))
-#define INT2STR(x) (malloc_sprintf(NULL, FORMAT , (INTTYPE)(x)))
-#else
-typedef long INTTYPE;
-#define FORMAT "%ld"
-#define STR2INT(x) ((INTTYPE)atol(x))
-#define INT2STR(x) (malloc_sprintf(NULL, FORMAT , (INTTYPE)(x)))
-#endif
 
 /*
  * This is a symbol table entry.

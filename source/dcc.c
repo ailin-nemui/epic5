@@ -1,4 +1,4 @@
-/* $EPIC: dcc.c,v 1.128 2005/08/09 02:01:04 jnelson Exp $ */
+/* $EPIC: dcc.c,v 1.129 2005/08/17 23:35:22 jnelson Exp $ */
 /*
  * dcc.c: Things dealing client to client connections. 
  *
@@ -83,7 +83,7 @@ typedef	struct	DCC_struct
 	int		file;
 	int		held;
 	long		refnum;
-	u_32int_t	filesize;
+	INTTYPE		filesize;
 	char *		description;
 	char *		filename;
 	char *		user;
@@ -490,7 +490,7 @@ static	DCC_list *dcc_create (
 					 */
 	const char *	othername, 	/* Alias filename for SEND/GET */
 	int		family,
-	off_t		filesize)
+	INTTYPE		filesize)
 {
 	DCC_list *new_client;
 
@@ -999,10 +999,10 @@ static int	dcc_connected (int fd)
 		if (!strcmp(type, "SEND"))
 		{
 		    if ((jvs_blah = do_hook(DCC_CONNECT_LIST,
-					"%s %s %s %s %s %s", 
+					"%s %s %s %s %s %s",
 					dcc->user, type, p_addr, p_port,
 					encoded_description,
-					ltoa(dcc->filesize))))
+					NUMSTR(dcc->filesize))))
 			    /*
 			     * Compatability with bitchx
 			     */
@@ -1010,7 +1010,7 @@ static int	dcc_connected (int fd)
 					"%s GET %s %s %s %s", 
 					dcc->user, p_addr, p_port,
 					encoded_description,
-					ltoa(dcc->filesize));
+					NUMSTR(dcc->filesize));
 		}
 		else
 		{
@@ -1303,17 +1303,17 @@ static void	dcc_send_booster_ctcp (DCC_list *dcc)
 		 * Dont bother with the checksum.
 		 */
 		send_ctcp(CTCP_PRIVMSG, dcc->user, CTCP_DCC,
-			 "%s %s %s %s %ld",
+			 "%s %s %s %s %s",
 			 type, url_name, p_host, p_port,
-			 dcc->filesize);
+			 NUMSTR(dcc->filesize));
 
 		/*
 		 * Tell the user we sent out the request
 		 */
 		if (do_hook(DCC_OFFER_LIST, "%s %s %s %s", 
-			dcc->user, type, url_name, ltoa(dcc->filesize)))
+			dcc->user, type, url_name, NUMSTR(dcc->filesize)))
 		    say("Sent DCC %s request (%s %s) to %s", 
-			type, nopath, ltoa(dcc->filesize), dcc->user);
+			type, nopath, NUMSTR(dcc->filesize), dcc->user);
 
 		new_free(&url_name);
 	}
@@ -2019,7 +2019,7 @@ static	const char	*format =
 		/* assume the other end encoded the filename */
 		encoded_description = malloc_strdup(dcc->description);
 
-	    if (do_hook(DCC_LIST_LIST, "%s %s %s %s %ld %ld %ld %s",
+	    if (do_hook(DCC_LIST_LIST, "%s %s %s %s %s %ld %ld %s",
 				dcc_types[flags & DCC_TYPES],
 				zero,			/* No encryption */
 				dcc->user,
@@ -2029,7 +2029,7 @@ static	const char	*format =
 					flags & DCC_THEIR_OFFER  ? "Offered" :
 							           "Unknown",
 				dcc->starttime.tv_sec,
-			  (long)dcc->filesize,
+			        NUMSTR(dcc->filesize),
 				dcc->bytes_sent ? (unsigned long)dcc->bytes_sent
 						   : (unsigned long)dcc->bytes_read,
 				encoded_description))
@@ -2478,7 +2478,7 @@ void	register_dcc_offer (const char *user, char *type, char *description, char *
 	char 		p_addr[256];
 	int		err;
 	SS		offer;
-	off_t		filesize;
+	INTTYPE		filesize;
 	int		l;
 
 	/* 
@@ -2504,7 +2504,7 @@ void	register_dcc_offer (const char *user, char *type, char *description, char *
 
 	/* If they give us a file size, set the global variable */
 	if (size && *size)
-		filesize = my_atol(size);
+		filesize = STRNUM(size);
 	else
 		filesize = 0;
 
@@ -2733,7 +2733,7 @@ void	register_dcc_offer (const char *user, char *type, char *description, char *
 	{
 		if (do_hook(DCC_REQUEST_LIST, "%s %s %s %s %s %s %s",
 				  user, type, description, p_addr, port,
-				  dcc->description, ltoa(dcc->filesize)))
+				  dcc->description, NUMSTR(dcc->filesize)))
 			goto display_it;
 	}
 	else
@@ -2773,13 +2773,13 @@ display_it:
 	    {
 		int xclose = 0, resume = 0, ren = 0, get = 0;
 
-		if (statit.st_size < dcc->filesize)
+		if ((INTTYPE)statit.st_size < dcc->filesize)
 		{
 		    say("WARNING: File [%s] exists but is smaller than "
 			"the file offered.", realfilename);
 		    xclose = resume = ren = get = 1;
 		}
-		else if (statit.st_size == dcc->filesize)
+		else if ((INTTYPE)statit.st_size == dcc->filesize)
 		{
 		    say("WARNING: File [%s] exists, and its the same size.",
 			realfilename);
@@ -2815,7 +2815,7 @@ display_it:
 	/* Thanks, Tychy! (lherron@imageek.york.cuny.edu) */
 	if ((dcc->flags & DCC_TYPES) == DCC_FILEREAD)
 		say("DCC %s (%s %s) request received from %s!%s [%s:%s]",
-			type, description, ltoa(dcc->filesize), user, 
+			type, description, NUMSTR(dcc->filesize), user, 
 			FromUserHost, p_addr, port);
 	else
 		say("DCC %s (%s) request received from %s!%s [%s:%s]", 
@@ -3349,7 +3349,7 @@ static void	process_dcc_send_connection (DCC_list *dcc)
 	encoded_description = dcc_urlencode(dcc->description);
 	if (do_hook(DCC_CONNECT_LIST, "%s SEND %s %s %s %s",
 			dcc->user, p_addr, p_port,
-			dcc->description, ltoa(dcc->filesize)))
+			dcc->description, NUMSTR(dcc->filesize)))
 	    say("DCC SEND connection to %s[%s:%s] established", 
 			dcc->user, p_addr, p_port);
 	new_free(&encoded_description);
@@ -3432,11 +3432,11 @@ yell("### information as well as the following:");
 yell("###");
 yell("###    bytesrecvd [%ld]        dcc->bytes_sent [%s]", 
 			ntohl(bytes), 
-			ltoa(dcc->bytes_sent));
+			NUMSTR(dcc->bytes_sent));
 yell("###    dcc->filesize [%s]", 
-			ltoa(dcc->filesize));
+			NUMSTR(dcc->filesize));
 yell("###    dcc->packets_ack [%s]", 
-			ltoa(dcc->packets_ack));
+			NUMSTR(dcc->packets_ack));
 yell("###    dcc->packets_outstanding [%s]", 
 			ltoa(dcc->packets_outstanding));
 
@@ -3447,13 +3447,13 @@ yell("###    dcc->packets_outstanding [%s]",
 	/*
 	 * If we've sent the whole file already...
 	 */
-	if (dcc->bytes_sent >= dcc->filesize)
+	if ((INTTYPE)dcc->bytes_sent >= dcc->filesize)
 	{
 		/*
 		 * If theyve ACKed the last packet, we close 
 		 * the connection.
 		 */
-		if (bytes >= dcc->filesize)
+		if ((INTTYPE)bytes >= dcc->filesize)
 			DCC_close_filesend(dcc, "SEND", "TRANSFER COMPLETE");
 
 		/*
@@ -3509,7 +3509,7 @@ static void	process_dcc_send_data (DCC_list *dcc)
 		    yell("Sending packet [%s [%s] (packet %s) (%d bytes)]",
 			dcc->user, 
 			dcc->othername, 
-			ltoa(dcc->packets_transfer),
+			NUMSTR(dcc->packets_transfer),
 			bytesread);
 
 		/*
@@ -3576,7 +3576,7 @@ static	void		process_dcc_get_data (DCC_list *dcc)
 	bytesread = dgets(dcc->socket, tmp, sizeof(tmp), -1);
 	if (bytesread <= 0)
 	{
-		if (dcc->bytes_read < dcc->filesize)
+		if ((INTTYPE)dcc->bytes_read < dcc->filesize)
 		{
 		    say("DCC GET to %s lost -- Remote peer closed connection", 
 			dcc->user);
@@ -3609,7 +3609,7 @@ static	void		process_dcc_get_data (DCC_list *dcc)
 	dcc->packets_transfer = dcc->bytes_read / DCC_BLOCK_SIZE;
 
 	/* TAKE THIS OUT IF IT CAUSES PROBLEMS */
-	if ((dcc->filesize) && (dcc->bytes_read > dcc->filesize))
+	if ((dcc->filesize) && ((INTTYPE)dcc->bytes_read > dcc->filesize))
 	{
 		dcc->flags |= DCC_DELETE;
 		yell("### DCC GET WARNING: incoming file is larger then the "
@@ -4013,9 +4013,9 @@ char *	dccctl (char *input)
 		} else if (!my_strnicmp(listc, "OTHERNAME", len)) {
 			RETURN_STR(client->othername);
 		} else if (!my_strnicmp(listc, "SIZE", len)) {
-			RETURN_INT(client->filesize);
+			return INT2STR(client->filesize);
 		} else if (!my_strnicmp(listc, "FILESIZE", len)) {  /* DEPRECATED */
-			RETURN_INT(client->filesize);
+			return INT2STR(client->filesize);
 		} else if (!my_strnicmp(listc, "RESUMESIZE", len)) {
 			RETURN_INT(client->resume_size);
 		} else if (!my_strnicmp(listc, "READBYTES", len)) {

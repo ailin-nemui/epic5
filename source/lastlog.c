@@ -1,4 +1,4 @@
-/* $EPIC: lastlog.c,v 1.48 2005/08/06 01:35:51 jnelson Exp $ */
+/* $EPIC: lastlog.c,v 1.49 2005/08/17 23:35:22 jnelson Exp $ */
 /*
  * lastlog.c: handles the lastlog features of irc. 
  *
@@ -1043,7 +1043,7 @@ char 	*function_line (char *word)
 					level_to_str(start_pos->level), &clue);
 	if (do_timestamp)
 		malloc_strcat_wordlist_c(&retval, space, 
-					ltoa((long)start_pos->when), &clue);
+					NUMSTR(start_pos->when), &clue);
 
 
 	RETURN_MSTR(retval);
