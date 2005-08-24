@@ -742,3 +742,4 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Wrap output caused by /exec callbacks in message_from()s, for weirdo.
 * Wrap scripted set callbacks in window_display = 0 to simulate /on ^set.
 * Add /window flush_scrollback, see UPDATES
+* Fix braino that caused /set's in your ircrc to be echoed.
