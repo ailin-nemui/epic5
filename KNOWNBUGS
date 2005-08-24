@@ -2,7 +2,6 @@ EPIC5 Projects, Bugs, and other Errata:
 
 KNOWN ERRATA (eg, bugs, or unresolved requests):
 ------------------------------------------------
-* scripted /set callbacks: should they be "silent"?
 * JM needs to start a discussion on the mailing list about /msg restrictions
 * /CTCPs over /DCCs don't match up with their queries very well.
 * Revamp of /who -realname 
@@ -742,3 +741,4 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Fix "ALL" mangle level to not include "UNPRINTABLE"
 * Fix /on 367 in 2.8script, from larne.
 * Wrap output caused by /exec callbacks in message_from()s, for weirdo.
+* Wrap scripted set callbacks in window_display = 0 to simulate /on ^set.

@@ -1,4 +1,4 @@
-/* $EPIC: vars.c,v 1.79 2005/08/11 04:51:57 jnelson Exp $ */
+/* $EPIC: vars.c,v 1.80 2005/08/24 01:57:36 jnelson Exp $ */
 /*
  * vars.c: All the dealing of the irc variables are handled here. 
  *
@@ -527,8 +527,12 @@ int 	set_variable (const char *name, IrcVariable *var, const char *orig_value, i
 		if (var->script)
 		{
 		    char *s;
+		    int owd;
+
 		    s = make_string_var_bydata(var->type, (void *)var->data);
+		    window_display = 0;
 		    parse_line("SET", var->script, s, 0);
+		    window_display = owd;
 		    new_free(&s);
 		}
 		var->flags &= ~VIF_PENDING;
