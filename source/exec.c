@@ -1,4 +1,4 @@
-/* $EPIC: exec.c,v 1.36 2005/08/06 00:56:37 jnelson Exp $ */
+/* $EPIC: exec.c,v 1.37 2005/08/24 01:49:12 jnelson Exp $ */
 /*
  * exec.c: handles exec'd process for IRCII 
  *
@@ -1027,10 +1027,12 @@ static void 	cleanup_dead_processes (void)
 		*next;
 	Process *deadproc, *proc;
 	char	*exit_info;
+	int	old_from_server, l;
 
 	if (!process_list)
 		return;		/* Nothing to do */
 
+	old_from_server = from_server;
 	for (i = 0; i < process_list_size; i++)
 	{
 		if (!(proc = process_list[i]))
@@ -1066,6 +1068,8 @@ static void 	cleanup_dead_processes (void)
 				deadproc->index, deadproc->termsig, deadproc->retcode);
 		}
 
+		from_server = deadproc->server;
+		l = message_from(NULL, LEVEL_CRAP);
 
 		/*
 		 * First thing we do is run any /wait %proc -cmd commands
@@ -1085,18 +1089,31 @@ static void 	cleanup_dead_processes (void)
 		 */
 		if (do_hook(EXEC_EXIT_LIST, "%s", exit_info))
 		{
-			if (get_int_var(NOTIFY_ON_TERMINATION_VAR))
+		    if (get_int_var(NOTIFY_ON_TERMINATION_VAR))
+		    {
+			if (deadproc->termsig > 0 && deadproc->termsig < NSIG)
 			{
-				if (deadproc->termsig > 0 && deadproc->termsig < NSIG)
-	say("Process %d (%s) terminated with signal %s (%d)", 
-	   deadproc->index, deadproc->name, sys_siglist[deadproc->termsig], deadproc->termsig);
-				else if (deadproc->disowned)
-	say("Process %d (%s) disowned", deadproc->index, deadproc->name);
-				else
-	say("Process %d (%s) terminated with return code %d", 
-		deadproc->index, deadproc->name, deadproc->retcode);
+				say("Process %d (%s) terminated "
+					"with signal %s (%d)", 
+				   deadproc->index, deadproc->name, 
+				   sys_siglist[deadproc->termsig], 
+				   deadproc->termsig);
 			}
+			else if (deadproc->disowned)
+			{
+				say("Process %d (%s) disowned", 
+				   deadproc->index, deadproc->name);
+			}
+			else
+			{
+				say("Process %d (%s) terminated "
+					"with return code %d", 
+				   deadproc->index, deadproc->name, 
+				   deadproc->retcode);
+			}
+		    }
 		}
+		pop_message_from(l);
 
 		deadproc->p_stdin = new_close(deadproc->p_stdin);
 		deadproc->p_stdout = new_close(deadproc->p_stdout);
@@ -1126,6 +1143,8 @@ static void 	cleanup_dead_processes (void)
 		process_list_size = i + 1;
 		RESIZE(process_list, Process, process_list_size);
 	}
+
+	from_server = old_from_server;
 }
 
 
@@ -1183,7 +1202,8 @@ static void 	close_in (int idx)
  */
 static void 	kill_process (int kill_index, int sig)
 {
-	pid_t pgid;
+	pid_t	pgid;
+	int	old_from_server, l;
 
 	if (!process_list || kill_index > process_list_size || 
 			!process_list[kill_index])
@@ -1192,9 +1212,16 @@ static void 	kill_process (int kill_index, int sig)
 		return;
 	}
 
+	old_from_server = from_server;
+	from_server = process_list[kill_index]->server;
+	l = message_from(NULL, LEVEL_CRAP);
+
 	say("Sending signal %s (%d) to process %d: %s", 
 		sys_siglist[sig], sig, kill_index, 
 		process_list[kill_index]->name);
+
+	pop_message_from(l);
+	from_server = old_from_server;
 
 #ifdef HAVE_GETPGID
 	pgid = getpgid(process_list[kill_index]->pid);

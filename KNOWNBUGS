@@ -3,8 +3,7 @@ EPIC5 Projects, Bugs, and other Errata:
 KNOWN ERRATA (eg, bugs, or unresolved requests):
 ------------------------------------------------
 * scripted /set callbacks: should they be "silent"?
-* JM needs to start a discussion on the mailign list about /msg restrictions
-* Weirdo observes /set notify_on_termination goes to wrong window
+* JM needs to start a discussion on the mailing list about /msg restrictions
 * /CTCPs over /DCCs don't match up with their queries very well.
 * Revamp of /who -realname 
 * Some way to clear the scrollback all at once
@@ -742,3 +741,4 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Release epic5-0.0.6 (Osculator)
 * Fix "ALL" mangle level to not include "UNPRINTABLE"
 * Fix /on 367 in 2.8script, from larne.
+* Wrap output caused by /exec callbacks in message_from()s, for weirdo.
