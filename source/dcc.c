@@ -1,4 +1,4 @@
-/* $EPIC: dcc.c,v 1.129 2005/08/17 23:35:22 jnelson Exp $ */
+/* $EPIC: dcc.c,v 1.130 2005/08/24 02:25:32 jnelson Exp $ */
 /*
  * dcc.c: Things dealing client to client connections. 
  *
@@ -1776,7 +1776,6 @@ DCC_SUBCOMMAND(dcc_get_subcmd)
 	Filename	fullname = "";
 	Filename	pathname = "";
 	int		savedir_is_invalid = 0;
-	Filename	save_as = "";
 	int		file;
 	char 		*realfilename = NULL;
 	int		count = 0, i, j;

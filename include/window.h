@@ -262,7 +262,6 @@ const	char	*get_echannel_by_refnum		(unsigned);
 	int	number_of_windows_on_screen	(Window *);
 	int	add_to_scrollback		(Window *, const unsigned char *);
 	int	trim_scrollback			(Window *);
-	int	flush_scrollback_after		(Window *);
 	BUILT_IN_KEYBINDING(scrollback_backwards);
 	BUILT_IN_KEYBINDING(scrollback_forwards);
 	BUILT_IN_KEYBINDING(scrollback_end);

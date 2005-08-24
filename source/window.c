@@ -1,4 +1,4 @@
-/* $EPIC: window.c,v 1.153 2005/08/09 02:01:05 jnelson Exp $ */
+/* $EPIC: window.c,v 1.154 2005/08/24 02:25:32 jnelson Exp $ */
 /*
  * window.c: Handles the organzation of the logical viewports (``windows'')
  * for irc.  This includes keeping track of what windows are open, where they
@@ -146,9 +146,11 @@ static 	void 	window_scrollforward_to_string 	(Window *window, regex_t *str);
 static	int	change_line 			(Window *, const unsigned char *);
 static	int	add_to_display 			(Window *, const unsigned char *);
 static	Display *new_display_line 		(Display *prev, Window *w);
-static int	count_fixed_windows 		(Screen *s);
-static	int	add_waiting_channel (Window *win, const char *chan);
-static void    destroy_window_waiting_channels (int refnum);
+static 	int	count_fixed_windows 		(Screen *s);
+static	int	add_waiting_channel 		(Window *, const char *);
+static 	void   	destroy_window_waiting_channels	(int);
+static 	int	flush_scrollback_after		(Window *);
+static 	int	flush_scrollback		(Window *);
 
 
 /* * * * * * * * * * * CONSTRUCTOR AND DESTRUCTOR * * * * * * * * * * * */
@@ -3261,6 +3263,15 @@ static	Window *window_flush (Window *window, char **args)
 }
 
 /*
+ * /WINDOW FLUSH_SCROLLBACK
+ */
+static	Window *window_flush_scrollback (Window *window, char **args)
+{
+	flush_scrollback(window);
+	return window;
+}
+
+/*
  * /WINDOW GOTO refnum
  * This switches the current window selection to the window as specified
  * by the numbered refnum.
@@ -4801,6 +4812,7 @@ static const window_ops options [] = {
 	{ "ECHO",		window_echo		},
 	{ "FIXED",		window_fixed		},
 	{ "FLUSH",		window_flush		},
+	{ "FLUSH_SCROLLBACK",	window_flush_scrollback	},
 	{ "GOTO",		window_goto 		},
 	{ "GROW",		window_grow 		},
 	{ "HIDE",		window_hide 		},
@@ -5171,6 +5183,54 @@ int	trim_scrollback (Window *window)
 }
 
 /*
+ * flush_scrollback -- Flush a window's scrollback.  This forces a /clear.
+ * XXX This is cut and pasted from new_window() and clear_window().  That
+ * is a horrible abuse. this needs to be refactored someday.
+ */
+static int	flush_scrollback (Window *w)
+{
+	Display *holder, *curr_line;
+
+	/* Save the old scrollback buffer */
+	holder = w->top_of_scrollback;
+
+	/* Reset all of the scrollback values */
+        w->top_of_scrollback = NULL;        /* Filled in later */
+        w->display_ip = NULL;               /* Filled in later */
+        w->display_buffer_size = 0;
+        w->scrolling_top_of_display = NULL;         /* Filled in later */
+        w->scrolling_distance_from_display_ip = -1; /* Filled in later */
+        w->holding_top_of_display = NULL;           /* Filled in later */
+        w->holding_distance_from_display_ip = -1;   /* Filled in later */
+        w->scrollback_top_of_display = NULL;        /* Filled in later */
+        w->scrollback_distance_from_display_ip = -1; /* Filled in later */
+        w->display_counter = 1;
+
+	/* Reconstitute a new scrollback buffer */
+        w->top_of_scrollback = new_display_line(NULL, w);
+        w->top_of_scrollback->line = NULL;
+        w->top_of_scrollback->next = NULL;
+        w->display_buffer_size = 1;
+        w->display_ip = w->top_of_scrollback;
+        w->scrolling_top_of_display = w->top_of_scrollback;
+        w->old_display_lines = 1;
+
+	/* Delete the old scrollback */
+	while ((curr_line = holder))
+	{
+		holder = curr_line->next;
+		new_free(&curr_line->line);
+		new_free((char **)&curr_line);
+	}
+
+	/* Recalculate and redraw the window. */
+	recalculate_window_cursor_and_display_ip(w);
+	window_body_needs_redraw(w);
+	window_statusbar_needs_update(w);
+	return 1;
+}
+
+/*
  * flush_scrollback_after - Delete everything in the "never seen" segment
  * of the scrollback (below the current hold view).  
  * 		This is the /WINDOW FLUSH command.
@@ -5193,7 +5253,7 @@ int	trim_scrollback (Window *window)
  * coming and epic will keep holding new output.  This is not really a bug,
  * it's just the way things work.
  */
-int	flush_scrollback_after (Window *window)
+static int	flush_scrollback_after (Window *window)
 {
 	Display *curr_line, *next_line;
 	int	count;
