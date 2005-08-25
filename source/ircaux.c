@@ -1,4 +1,4 @@
-/* $EPIC: ircaux.c,v 1.140 2005/08/17 23:35:22 jnelson Exp $ */
+/* $EPIC: ircaux.c,v 1.141 2005/08/25 13:49:36 jnelson Exp $ */
 /*
  * ircaux.c: some extra routines... not specific to irc... that I needed 
  *
@@ -2053,15 +2053,14 @@ char *	ltoa (long foo)
 	return pos;
 }
 
-#ifdef HAVE_LONG_LONG
-char *	lltoa (long long foo)
+char *	intmaxtoa (intmax_t foo)
 {
 	static char buffer[BIG_BUFFER_SIZE + 1];
-	char *pos = buffer + BIG_BUFFER_SIZE - 1;
-	unsigned long long absv;
-	int negative;
+	char *	    pos = buffer + BIG_BUFFER_SIZE - 1;
+	uintmax_t   absv;
+	int	    negative;
 
-	absv = (foo < 0) ? (unsigned long long)-foo : (unsigned long long)foo;
+	absv = (foo < 0) ? (uintmax_t)-foo : (uintmax_t)foo;
 	negative = (foo < 0) ? 1 : 0;
 
 	buffer[BIG_BUFFER_SIZE] = 0;
@@ -2074,7 +2073,6 @@ char *	lltoa (long long foo)
 
 	return pos;
 }
-#endif
 
 char *	ftoa (double foo)
 {

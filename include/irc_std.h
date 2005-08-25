@@ -248,6 +248,51 @@ typedef char Filename[MAXPATHLEN + 1];
 #endif
 
 /*
+ * Figure out our intmax_t
+ *
+ * XXX -- OK.  If you have (intmax_t), then you had better have strtoimax().
+ * But if you have (long long) i can't assume you have strtoll(), so that is
+ * provided in compat.c.  If you have (quad_t), you had better have strtoq(),
+ * and you have to have strtol() in any circumstance.
+ */
+#ifndef HAVE_INTMAX_NATIVE
+# ifdef HAVE_INTMAX_LONG_LONG
+#  define intmax_t long long
+#  define uintmax_t unsigned long long
+#  define strtoimax strtoll
+#  define strtouimax strtoull
+#  define INTMAX_FORMAT "%lld"
+#  define UINTMAX_FORMAT "%llu"
+#  ifndef HAVE_STRTOLL
+#   define NEED_STRTOLL
+#  endif
+# else
+#  ifdef HAVE_INTMAX_QUADT
+#   define intmax_t quad_t
+#   define uintmax_t uquad_t
+#   define strtoimax strtoq
+#   define strtouimax strtouq
+#   define INTMAX_FORMAT "%qd"
+#   define UINTMAX_FORMAT "%qu"
+#  else
+#   ifdef HAVE_INTMAX_LONG
+#    define intmax_t long
+#    define uintmax_t unsigned long
+#    define strtoimax strtol
+#    define strtouimax strtoul
+#    define INTMAX_FORMAT "%ld"
+#    define UINTMAX_FORMAT "%lu"
+#   endif
+#  endif
+# endif
+#else
+# define INTMAX_FORMAT "%jd"
+# define UINTMAX_FORMAT "%ju"
+#endif
+#define INTTYPE intmax_t
+#define FORMAT INTMAX_FORMAT
+
+/*
  * DCC specification requires exactly a 32 bit checksum.
  * Kind of lame, actually.
  */

@@ -261,17 +261,8 @@
 /* Define this if you have intptr_t */
 #undef HAVE_INTPTR_T
 
-/* Define this if you have a (long long) */
-#undef HAVE_LONG_LONG
-
-/* Define this if you have atoll() */
-#undef HAVE_ATOLL
-
 /* Define this if you have strtoll() */
 #undef HAVE_STRTOLL
-
-/* Define this if you have atoq() */
-#undef HAVE_ATOQ
 
 /* Define this to use select() */
 #undef USE_SELECT
@@ -291,8 +282,32 @@
 /* Define this if you have solaris ports */
 #undef USE_SOLARIS_PORTS
 
+/* Define this if your largest int is (long) */
+#undef HAVE_INTMAX_LONG
+
+/* Define this if your largest int is (quad_t) */
+#undef HAVE_INTMAX_QUADT
+
+/* Define this if your largest int is (long long) */
+#undef HAVE_INTMAX_LONG_LONG
+
+/* Define this if your largest int is (intmax_t) */
+#undef HAVE_INTMAX_NATIVE
+
+/* Define this if you have a strtoimax() */
+#undef HAVE_STRTOIMAX
+
+/* Define this if you have a strtoq() */
+#undef HAVE_STRTOQ
+
+/* The number of bytes in a intmax_t.  */
+#undef SIZEOF_INTMAX_T
+
 /* The number of bytes in a long long.  */
 #undef SIZEOF_LONG_LONG
+
+/* The number of bytes in a quad_t.  */
+#undef SIZEOF_QUAD_T
 
 /* The number of bytes in a unsigned int.  */
 #undef SIZEOF_UNSIGNED_INT
