@@ -1,4 +1,4 @@
-/* $EPIC: expr2.c,v 1.27 2005/08/17 23:35:22 jnelson Exp $ */
+/* $EPIC: expr2.c,v 1.28 2005/08/26 01:28:12 jnelson Exp $ */
 /*
  * Zsh: math.c,v 3.1.2.1 1997/06/01 06:13:15 hzoli Exp 
  * math.c - mathematical expression evaluation
@@ -145,7 +145,7 @@ typedef struct TOKEN_type
 	char *	lval;			/* Cached unexpanded variable name */
 	char *	raw_value;		/* Cached unexpected string */
 	char *	expanded_value;		/* Cached full expanded string */
-	INTTYPE	integer_value;		/* Cached integer value */
+	intmax_t integer_value;		/* Cached integer value */
 	double	float_value;		/* Cached floating point value */
 	short	boolean_value;		/* Cached boolean value */
 } SYMBOL;
@@ -505,7 +505,7 @@ __inline static	TOKEN		tokenize_expanded (expr_info *c, char *t)
  * is both expensive, and unnecesary.  This type of token is created by
  * integer-only operations like &, |, ^, <<, >>.
  */
-__inline static	TOKEN		tokenize_integer (expr_info *c, INTTYPE t)
+__inline static	TOKEN		tokenize_integer (expr_info *c, intmax_t t)
 {
 	if (c->token >= TOKENCOUNT)
 	{
@@ -610,10 +610,12 @@ __inline static	const char *	get_token_raw (expr_info *c, TOKEN v)
 		}
 		else if (TOK(c, v).used & USED_INTEGER)
 			TOK(c, v).raw_value = 
-				INT2STR(TOK(c, v).integer_value);
+				malloc_sprintf(NULL, INTMAX_FORMAT, 
+						TOK(c, v).integer_value);
 		else if (TOK(c, v).used & USED_BOOLEAN)
 			TOK(c, v).raw_value = 
-				malloc_sprintf(NULL, "%d", TOK(c, v).boolean_value);
+				malloc_sprintf(NULL, "%d",
+						TOK(c, v).boolean_value);
 		else if (TOK(c, v).used & USED_LVAL)
 		{
 			if (x_debug & DEBUG_NEW_MATH_DEBUG)
@@ -757,7 +759,7 @@ __inline static	const char *	get_token_expanded (expr_info *c, TOKEN v)
  * this function, it calls atof() on the "raw" value, if there is one, 
  * to get the result.
  */
-__inline static	INTTYPE	get_token_integer (expr_info *c, TOKEN v)
+__inline static	intmax_t	get_token_integer (expr_info *c, TOKEN v)
 {
 	if (v == MAGIC_TOKEN)	/* Magic token */
 		return STR2INT(c->args);		/* XXX Probably wrong */
@@ -861,7 +863,7 @@ __inline static	TOKEN	push_float (expr_info *c, double val)
 	return push_token(c, tokenize_float(c, val));
 }
 
-__inline static	TOKEN	push_integer (expr_info *c, INTTYPE val)
+__inline static	TOKEN	push_integer (expr_info *c, intmax_t val)
 { 
 	return push_token(c, tokenize_integer(c, val));
 }
@@ -937,7 +939,7 @@ __inline static	void	pop_2_floats (expr_info *c, double *a, double *b)
 	*a = pop_float(c);
 }
 
-__inline static	void	pop_2_integers (expr_info *c, INTTYPE *a, INTTYPE *b)
+__inline static	void	pop_2_integers (expr_info *c, intmax_t *a, intmax_t *b)
 {
 	*b = pop_integer(c);
 	*a = pop_integer(c);
@@ -977,7 +979,7 @@ static void	reduce (expr_info *cx, int what)
 {
 	double	a, b;
 	BooL	c, d;
-	INTTYPE	i, j;
+	intmax_t i, j;
 	const char *s, *t;
 	TOKEN	v, w;
 
@@ -1022,7 +1024,8 @@ static void	reduce (expr_info *cx, int what)
 		CHECK_NOEVAL						\
 		push_integer(cx, (intop)); 				\
 		if (x_debug & DEBUG_NEW_MATH_DEBUG) 			\
-			yell("O: %s (" FORMAT " " FORMAT ") -> " FORMAT, \
+			yell("O: %s (" INTMAX_FORMAT " " INTMAX_FORMAT	\
+					 ") -> " INTMAX_FORMAT, 	\
 				#intop, i, j, intop); 			\
 		break; 							\
 	}
@@ -1070,7 +1073,8 @@ static void	reduce (expr_info *cx, int what)
 		if (j == 0) 						\
 		{ 							\
 			if (x_debug & DEBUG_NEW_MATH_DEBUG) 		\
-				yell("O: %s (" FORMAT " " FORMAT ") -> []", \
+				yell("O: %s (" INTMAX_FORMAT " " INTMAX_FORMAT \
+						") -> []", 		\
 					#intop, i, j); 			\
 			error("Division by zero"); 			\
 			push_token(cx, 0);				\
@@ -1078,7 +1082,8 @@ static void	reduce (expr_info *cx, int what)
 		else 							\
 		{ 							\
 			if (x_debug & DEBUG_NEW_MATH_DEBUG) 		\
-			    yell("O: %s (" FORMAT " " FORMAT ") -> " FORMAT, \
+			    yell("O: %s (" INTMAX_FORMAT " " INTMAX_FORMAT \
+						") -> " INTMAX_FORMAT,  \
 					#intop, i, j, intop); 		\
 			push_integer(cx, (intop)); 			\
 		} 							\
@@ -1104,7 +1109,8 @@ static void	reduce (expr_info *cx, int what)
 		j = get_token_integer(cx, w);				\
 									\
 		if (x_debug & DEBUG_NEW_MATH_DEBUG) 			\
-			yell("O: %s = %s (" FORMAT " " FORMAT ") -> " FORMAT, \
+			yell("O: %s = %s (" INTMAX_FORMAT " " INTMAX_FORMAT \
+					") -> " INTMAX_FORMAT, 		\
 				s, #intop, i, j, intop); 		\
 									\
 		w = tokenize_integer(cx, (intop));			\
@@ -1200,7 +1206,8 @@ static void	reduce (expr_info *cx, int what)
 		if (j == 0) 						\
 		{ 							\
 			if (x_debug & DEBUG_NEW_MATH_DEBUG) 		\
-				yell("O: %s = %s (" FORMAT " " FORMAT ") -> 0",\
+				yell("O: %s = %s (" INTMAX_FORMAT " " 	\
+						INTMAX_FORMAT ") -> 0",	\
 					s, #intop, i, j); 		\
 			error("Division by zero"); 			\
 			add_var_alias(s, empty_string, 0);		\
@@ -1209,7 +1216,9 @@ static void	reduce (expr_info *cx, int what)
 		} 							\
 									\
 		if (x_debug & DEBUG_NEW_MATH_DEBUG) 			\
-			yell("O: %s =  %s (" FORMAT " "  FORMAT ") -> " FORMAT,\
+			yell("O: %s =  %s (" INTMAX_FORMAT " "  	\
+						INTMAX_FORMAT ") -> " 	\
+						INTMAX_FORMAT,		\
 				s, #intop, i, j, intop); 		\
 									\
 		w = tokenize_float(cx, (intop));			\
@@ -1236,7 +1245,8 @@ static void	reduce (expr_info *cx, int what)
 									\
 		j = get_token_integer(cx, v);				\
 		if (x_debug & DEBUG_NEW_MATH_DEBUG) 			\
-			yell("O: %s (%s " FORMAT ") -> " FORMAT, 	\
+			yell("O: %s (%s " INTMAX_FORMAT ") -> " 	\
+					INTMAX_FORMAT, 			\
 				#intop_result, s, j, (intop_result));	\
 									\
 		w = tokenize_integer(cx, (intop_assign));		\
@@ -1295,7 +1305,8 @@ static void	reduce (expr_info *cx, int what)
 			i = pop_integer(cx);
 			CHECK_NOEVAL
 			if (x_debug & DEBUG_NEW_MATH_DEBUG)
-				yell(": ~" FORMAT " -> " FORMAT, i, ~i);
+				yell(": ~" INTMAX_FORMAT " -> "
+					   INTMAX_FORMAT, i, ~i);
 			push_integer(cx, ~i);
 			break;
 		case UPLUS:
@@ -1317,7 +1328,7 @@ static void	reduce (expr_info *cx, int what)
 			CHECK_NOEVAL
 			i = strlen(s);
 			if (x_debug & DEBUG_NEW_MATH_DEBUG)
-				yell("O: @(%s) -> " FORMAT, s, i);
+				yell("O: @(%s) -> " INTMAX_FORMAT, s, i);
 			push_integer(cx, i);
 			break;
 		case WORDC:
@@ -1325,7 +1336,7 @@ static void	reduce (expr_info *cx, int what)
 			CHECK_NOEVAL
 			i = count_words(s, DWORD_YES, "\"");
 			if (x_debug & DEBUG_NEW_MATH_DEBUG)
-				yell("O: #(%s) -> " FORMAT, s, i);
+				yell("O: #(%s) -> " INTMAX_FORMAT, s, i);
 			push_integer(cx, i);
 			break;
 		case DEREF:

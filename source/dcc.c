@@ -1,4 +1,4 @@
-/* $EPIC: dcc.c,v 1.130 2005/08/24 02:25:32 jnelson Exp $ */
+/* $EPIC: dcc.c,v 1.131 2005/08/26 01:28:12 jnelson Exp $ */
 /*
  * dcc.c: Things dealing client to client connections. 
  *
@@ -83,7 +83,7 @@ typedef	struct	DCC_struct
 	int		file;
 	int		held;
 	long		refnum;
-	INTTYPE		filesize;
+	intmax_t	filesize;
 	char *		description;
 	char *		filename;
 	char *		user;
@@ -96,19 +96,15 @@ struct	DCC_struct *	next;
 	SS		local_sockaddr;		/* Our saddr */
 	unsigned short	want_port;		/* HOST ORDER */
 
-	u_32int_t	bytes_read;
-	u_32int_t	bytes_sent;
-	int		window_sent;
-	int		window_max;
+	intmax_t	bytes_read;		/* INTMAX */
+	intmax_t	bytes_sent;		/* IM */
+	intmax_t	bytes_acked;		/* IM */
+	intmax_t	resume_size;		/* IM */
+
 	Timeval		lasttime;
 	Timeval		starttime;
 	Timeval		holdtime;
 	double		heldtime;
-	u_32int_t	packets_total;
-	u_32int_t	packets_transfer;
-	u_32int_t	packets_ack;
-	u_32int_t	packets_outstanding;	/* Not unsigned! */
-	u_32int_t	resume_size;
 
 	int		(*open_callback) (struct DCC_struct *);
 	int		server;
@@ -490,7 +486,7 @@ static	DCC_list *dcc_create (
 					 */
 	const char *	othername, 	/* Alias filename for SEND/GET */
 	int		family,
-	INTTYPE		filesize)
+	intmax_t	filesize)
 {
 	DCC_list *new_client;
 
@@ -503,11 +499,6 @@ static	DCC_list *dcc_create (
 	new_client->filesize 		= filesize;
 	new_client->held		= 0;
 	new_client->filename 		= NULL;
-	new_client->packets_total 	= filesize ? 
-					  (filesize / DCC_BLOCK_SIZE + 1) : 0;
-	new_client->packets_transfer 	= 0;
-	new_client->packets_outstanding = 0;
-	new_client->packets_ack 	= 0;
 	new_client->next 		= ClientList;
 	new_client->user 		= malloc_strdup(user);
 	new_client->userhost 		= (FromUserHost && *FromUserHost)
@@ -522,8 +513,6 @@ static	DCC_list *dcc_create (
 	new_client->holdtime.tv_sec 	= 0;
 	new_client->holdtime.tv_usec 	= 0;
 	new_client->heldtime		= 0.0;
-	new_client->window_max 		= 0;
-	new_client->window_sent 	= 0;
 	new_client->want_port 		= 0;
 	new_client->resume_size		= 0;
 	new_client->open_callback	= NULL;
@@ -999,18 +988,18 @@ static int	dcc_connected (int fd)
 		if (!strcmp(type, "SEND"))
 		{
 		    if ((jvs_blah = do_hook(DCC_CONNECT_LIST,
-					"%s %s %s %s %s %s",
+					"%s %s %s %s %s " INTMAX_FORMAT,
 					dcc->user, type, p_addr, p_port,
 					encoded_description,
-					NUMSTR(dcc->filesize))))
+					dcc->filesize)))
 			    /*
 			     * Compatability with bitchx
 			     */
 			jvs_blah = do_hook(DCC_CONNECT_LIST,
-					"%s GET %s %s %s %s", 
+					"%s GET %s %s %s " INTMAX_FORMAT, 
 					dcc->user, p_addr, p_port,
 					encoded_description,
-					NUMSTR(dcc->filesize));
+					dcc->filesize);
 		}
 		else
 		{
@@ -1303,17 +1292,17 @@ static void	dcc_send_booster_ctcp (DCC_list *dcc)
 		 * Dont bother with the checksum.
 		 */
 		send_ctcp(CTCP_PRIVMSG, dcc->user, CTCP_DCC,
-			 "%s %s %s %s %s",
+			 "%s %s %s %s "INTMAX_FORMAT,
 			 type, url_name, p_host, p_port,
-			 NUMSTR(dcc->filesize));
+			 dcc->filesize);
 
 		/*
 		 * Tell the user we sent out the request
 		 */
-		if (do_hook(DCC_OFFER_LIST, "%s %s %s %s", 
-			dcc->user, type, url_name, NUMSTR(dcc->filesize)))
-		    say("Sent DCC %s request (%s %s) to %s", 
-			type, nopath, NUMSTR(dcc->filesize), dcc->user);
+		if (do_hook(DCC_OFFER_LIST, "%s %s %s "INTMAX_FORMAT, 
+			dcc->user, type, url_name, dcc->filesize))
+		    say("Sent DCC %s request (%s "INTMAX_FORMAT") to %s", 
+			type, nopath, dcc->filesize, dcc->user);
 
 		new_free(&url_name);
 	}
@@ -1954,7 +1943,7 @@ jumpstart_get:
 /*
  * Calculates transfer speed based on size, start time, and current time.
  */
-static char *	calc_speed (u_32int_t sofar, Timeval sta, Timeval cur)
+static char *	calc_speed (intmax_t sofar, Timeval sta, Timeval cur)
 {
 	static char	buf[7];
 	double		tdiff = time_diff(sta, cur);
@@ -1963,7 +1952,7 @@ static char *	calc_speed (u_32int_t sofar, Timeval sta, Timeval cur)
 		snprintf(buf, sizeof(buf), "N/A");
 	else
 		snprintf(buf, sizeof(buf), "%4.1f", 
-				(double)sofar / tdiff / 1024.0);
+				((sofar / 1024.0) / tdiff));
 	return buf;
 }
 
@@ -1971,20 +1960,18 @@ static char *	calc_speed (u_32int_t sofar, Timeval sta, Timeval cur)
  * Packs a file size into a smaller representation of Kb, Mb, or Gb.
  * I'm sure it can be done less kludgy.
  */
-static char *	calc_size (u_32int_t fsize)
+static char *	calc_size (intmax_t fsize, char *retval, size_t retsize)
 {
-	static char	buf[8];
-
 	if (fsize < 1 << 10)
-		snprintf(buf, sizeof buf, "%ld", (long)fsize);
+		snprintf(retval, retsize, INTMAX_FORMAT, fsize);
 	else if (fsize < 1 << 20)
-		snprintf(buf, sizeof buf, "%3.1fKb", (float)fsize / (1 << 10));
+		snprintf(retval, retsize, "%3.1fKb", fsize / (double)(1 << 10));
 	else if (fsize < 1 << 30)
-		snprintf(buf, sizeof buf, "%3.1fMb", (float)fsize / (1 << 20));
+		snprintf(retval, retsize, "%3.1fMb", fsize / (double)(1 << 20));
 	else
-		snprintf(buf, sizeof buf, "%3.1fGb", (float)fsize / (1 << 30));
+		snprintf(retval, retsize, "%3.1fGb", fsize / (double)(1 << 30));
 
-	return buf;
+	return retval;
 }
 
 /*
@@ -2018,7 +2005,8 @@ static	const char	*format =
 		/* assume the other end encoded the filename */
 		encoded_description = malloc_strdup(dcc->description);
 
-	    if (do_hook(DCC_LIST_LIST, "%s %s %s %s %s %ld %ld %s",
+	    if (do_hook(DCC_LIST_LIST, "%s %s %s %s %ld "INTMAX_FORMAT
+							" "INTMAX_FORMAT" %s",
 				dcc_types[flags & DCC_TYPES],
 				zero,			/* No encryption */
 				dcc->user,
@@ -2028,9 +2016,9 @@ static	const char	*format =
 					flags & DCC_THEIR_OFFER  ? "Offered" :
 							           "Unknown",
 				dcc->starttime.tv_sec,
-			        NUMSTR(dcc->filesize),
-				dcc->bytes_sent ? (unsigned long)dcc->bytes_sent
-						   : (unsigned long)dcc->bytes_read,
+			        dcc->filesize,
+				dcc->bytes_sent ? dcc->bytes_sent
+						   : dcc->bytes_read,
 				encoded_description))
 	    {
 		char *	filename = strrchr(dcc->description, '/');
@@ -2039,8 +2027,8 @@ static	const char	*format =
 		char	speed[9];
 		char	buf[23];
 		const char *	time_f;
-		u_32int_t	tot_size;
-		u_32int_t	act_sent;
+		intmax_t	tot_size;
+		intmax_t	act_sent;
 
 		/*
 		 * Figure out something sane for the filename
@@ -2082,11 +2070,11 @@ static	const char	*format =
 			perc = prop * 100;
 
 			snprintf(completed, sizeof completed, "%ld%%", perc);
-			strlcpy(size, calc_size(dcc->filesize), sizeof size);
+			calc_size(dcc->filesize, size, sizeof(size));
 		}
 		else
 		{
-			strlcpy(completed, calc_size(tot_size), sizeof completed);
+			calc_size(tot_size, completed, sizeof(completed));
 			*size = 0;
 		}
 
@@ -2477,7 +2465,7 @@ void	register_dcc_offer (const char *user, char *type, char *description, char *
 	char 		p_addr[256];
 	int		err;
 	SS		offer;
-	INTTYPE		filesize;
+	intmax_t	filesize;
 	int		l;
 
 	/* 
@@ -2513,7 +2501,15 @@ void	register_dcc_offer (const char *user, char *type, char *description, char *
 	if (!my_stricmp(type, "CHAT"))
 		dtype = DCC_CHAT;
 	else if (!my_stricmp(type, "SEND"))
-		dtype = DCC_FILEREAD;
+	{
+	    if (!size || !*size || !is_number(size))
+	    {
+		say("DCC SEND (%s) received from %s without a file size",
+					description, user);
+		break;
+	    }
+	    dtype = DCC_FILEREAD;
+	}
 #ifdef MIRC_BROKEN_DCC_RESUME
 	else if (!my_stricmp(type, "RESUME"))
 	{
@@ -2522,6 +2518,12 @@ void	register_dcc_offer (const char *user, char *type, char *description, char *
 		 * The arguments are "out of order" because MIRC doesnt
 		 * send them in the traditional order.  Ugh.
 		 */
+		if (!port || !*port)
+		{
+		    say("DCC RESUME received from %s without a resume location",
+					user);
+		    break;
+		}
 		dcc_getfile_resume_demanded(user, description, address, port);
 		break;
 	}
@@ -2730,9 +2732,9 @@ void	register_dcc_offer (const char *user, char *type, char *description, char *
 	lock_dcc(dcc);
 	if ((dcc->flags & DCC_TYPES) == DCC_FILEREAD)
 	{
-		if (do_hook(DCC_REQUEST_LIST, "%s %s %s %s %s %s %s",
+		if (do_hook(DCC_REQUEST_LIST, "%s %s %s %s %s %s "INTMAX_FORMAT,
 				  user, type, description, p_addr, port,
-				  dcc->description, NUMSTR(dcc->filesize)))
+				  dcc->description, dcc->filesize))
 			goto display_it;
 	}
 	else
@@ -2772,13 +2774,13 @@ display_it:
 	    {
 		int xclose = 0, resume = 0, ren = 0, get = 0;
 
-		if ((INTTYPE)statit.st_size < dcc->filesize)
+		if ((intmax_t)statit.st_size < dcc->filesize)
 		{
 		    say("WARNING: File [%s] exists but is smaller than "
 			"the file offered.", realfilename);
 		    xclose = resume = ren = get = 1;
 		}
-		else if ((INTTYPE)statit.st_size == dcc->filesize)
+		else if ((intmax_t)statit.st_size == dcc->filesize)
 		{
 		    say("WARNING: File [%s] exists, and its the same size.",
 			realfilename);
@@ -2813,8 +2815,9 @@ display_it:
 
 	/* Thanks, Tychy! (lherron@imageek.york.cuny.edu) */
 	if ((dcc->flags & DCC_TYPES) == DCC_FILEREAD)
-		say("DCC %s (%s %s) request received from %s!%s [%s:%s]",
-			type, description, NUMSTR(dcc->filesize), user, 
+		say("DCC %s (%s "INTMAX_FORMAT") request received "
+				"from %s!%s [%s:%s]",
+			type, description, dcc->filesize, user, 
 			FromUserHost, p_addr, port);
 	else
 		say("DCC %s (%s) request received from %s!%s [%s:%s]", 
@@ -3346,9 +3349,9 @@ static void	process_dcc_send_connection (DCC_list *dcc)
 	 */
 	lock_dcc(dcc);
 	encoded_description = dcc_urlencode(dcc->description);
-	if (do_hook(DCC_CONNECT_LIST, "%s SEND %s %s %s %s",
+	if (do_hook(DCC_CONNECT_LIST, "%s SEND %s %s %s "INTMAX_FORMAT,
 			dcc->user, p_addr, p_port,
-			dcc->description, NUMSTR(dcc->filesize)))
+			dcc->description, dcc->filesize))
 	    say("DCC SEND connection to %s[%s:%s] established", 
 			dcc->user, p_addr, p_port);
 	new_free(&encoded_description);
@@ -3371,8 +3374,8 @@ static void	process_dcc_send_connection (DCC_list *dcc)
 	if (dcc->bytes_sent)
 	{
 		if (x_debug & DEBUG_DCC_XMIT)
-			yell("Resuming at address (%ld)", 
-				(long)dcc->bytes_sent);
+			yell("Resuming at address ("INTMAX_FORMAT")", 
+				dcc->bytes_sent);
 		lseek(dcc->file, dcc->bytes_sent, SEEK_SET);
 	}
 }
@@ -3381,19 +3384,19 @@ static void	process_dcc_send_handle_ack (DCC_list *dcc)
 {
 	char *		encoded_description;
 	u_32int_t	bytes;
+	intmax_t	provisional_bytes;
 
 	if (x_debug & DEBUG_DCC_XMIT)
-		yell("Reading a packet from [%s:%s(%s)]", 
-			dcc->user, 
-			dcc->othername, 
-			ltoa(dcc->packets_ack));
+		yell("Reading a packet from [%s:%s("INTMAX_FORMAT")]", 
+			dcc->user, dcc->othername, dcc->bytes_acked);
 
 	/*
-	 * It is important to note here that the ACK must always
-	 * be exactly four bytes.  Never more, never less.
+	 * The acknowledgement is /ALWAYS/ a 32 bit integers in network
+	 * order, no matter what.  Even if we've sent more than 2^32 bits,
+	 * the value wraps around to 0 again. ugh. bleh.
 	 */
 	if (dgets(dcc->socket, (char *)&bytes, sizeof(bytes), -1) < 
-					(int) sizeof(bytes))
+					(ssize_t)sizeof(bytes))
 	{
 		lock_dcc(dcc);
 		encoded_description = dcc_urlencode(dcc->description);
@@ -3409,18 +3412,41 @@ static void	process_dcc_send_handle_ack (DCC_list *dcc)
 	bytes = ntohl(bytes);
 
 	/*
-	 * Check to see if we need to move the sliding window up
+	 * XXX Ok.  Rollover logic is atrocious, but I wrote it in a hurry
+	 * and if you want to "fix" it, be my guest.
+	 *
+	 * Acknowledgements are always 32 bits.  This is de facto the right
+	 * 32 bits in the number of bytes transferred.  The number of bytes
+	 * transferred might exceed 32 bits, so we need to extrapolate what
+	 * the extra bits will be.
+	 *
+	 * Normally, we will substitute the right 32 bits of the last value
+	 * of "bytes_acked" with the new bytes value.  This is fine and 
+	 * dandy as long as there is no overflow.
+	 *
+	 * But if there is overflow, then the extended "bytes" will be less
+	 * than the previous value of "bytes_acked".  In this case, we will
+	 * substitute the right 32 bits of the bytes SENT, since this would
+	 * be in theory a value rolled over from the bytes ACKed.  If this
+	 * resulting value is reasonable, then we run with it, and this 
+	 * effects the rollover.
+	 *
+	 * Ugh.  Why am I wasting time supporting dcc sends > 2gb anyways?
 	 */
-	if (bytes >= (dcc->packets_ack + 1) * DCC_BLOCK_SIZE)
+	provisional_bytes = dcc->bytes_acked;
+	provisional_bytes = provisional_bytes >> 32;
+	provisional_bytes = provisional_bytes << 32;
+	provisional_bytes += bytes;
+
+	if (provisional_bytes < dcc->bytes_acked)
 	{
-		if (x_debug & DEBUG_DCC_XMIT)
-			yell("Packet #%s ACKed", 
-				ltoa(dcc->packets_ack));
-		dcc->packets_ack++;
-		dcc->packets_outstanding--;
+	    provisional_bytes = dcc->bytes_sent;
+	    provisional_bytes = provisional_bytes >> 32;
+	    provisional_bytes = provisional_bytes << 32;
+	    provisional_bytes += bytes;
 	}
 
-	if (bytes > dcc->bytes_sent)
+	if (provisional_bytes > dcc->bytes_sent)
 	{
 yell("### WARNING!  The other peer claims to have recieved more bytes than");
 yell("### I have actually sent so far.  Please report this to ");
@@ -3429,30 +3455,32 @@ yell("### Ask the person who you sent the file to look for garbage at the");
 yell("### end of the file you just sent them.  Please enclose that ");
 yell("### information as well as the following:");
 yell("###");
-yell("###    bytesrecvd [%ld]        dcc->bytes_sent [%s]", 
-			ntohl(bytes), 
-			NUMSTR(dcc->bytes_sent));
-yell("###    dcc->filesize [%s]", 
-			NUMSTR(dcc->filesize));
-yell("###    dcc->packets_ack [%s]", 
-			NUMSTR(dcc->packets_ack));
-yell("###    dcc->packets_outstanding [%s]", 
-			ltoa(dcc->packets_outstanding));
+yell("###    bytesrecvd [%ld ("INTMAX_FORMAT")]", bytes, provisional_bytes);
+yell("###    dcc->bytes_sent ["INTMAX_FORMAT"]", 	dcc->bytes_sent);
+yell("###    dcc->filesize ["INTMAX_FORMAT"]", 		dcc->filesize);
+yell("###    dcc->bytes_acked ["INTMAX_FORMAT"]", 	dcc->bytes_acked);
 
 		/* And just cope with it to avoid whining */
-		dcc->bytes_sent = bytes;
+		dcc->bytes_sent = provisional_bytes;
+	}
+
+	if (provisional_bytes >= dcc->bytes_acked)
+	{
+		if (x_debug & DEBUG_DCC_XMIT)
+			yell("Bytes to "INTMAX_FORMAT" ACKed", bytes);
+		dcc->bytes_acked = provisional_bytes;
 	}
 
 	/*
 	 * If we've sent the whole file already...
 	 */
-	if ((INTTYPE)dcc->bytes_sent >= dcc->filesize)
+	if (dcc->bytes_sent >= dcc->filesize)
 	{
 		/*
 		 * If theyve ACKed the last packet, we close 
 		 * the connection.
 		 */
-		if ((INTTYPE)bytes >= dcc->filesize)
+		if (provisional_bytes >= dcc->filesize)
 			DCC_close_filesend(dcc, "SEND", "TRANSFER COMPLETE");
 
 		/*
@@ -3466,11 +3494,13 @@ yell("###    dcc->packets_outstanding [%s]",
 static void	process_dcc_send_data (DCC_list *dcc)
 {
 	fd_set	fd;
-	int	maxpackets;
+	intmax_t	fill_window;
 	Timeval	to;
 	ssize_t	bytesread;
 	char	tmp[DCC_BLOCK_SIZE+1];
 	int	old_from_server = from_server;
+	char bytes_sent[10];
+	char filesize[10];
 
 	/*
 	 * We use a nonblocking sliding window algorithm.  We send as many
@@ -3480,11 +3510,11 @@ static void	process_dcc_send_data (DCC_list *dcc)
 	 * a select() before we write() to make sure that it wont block.
 	 */
 	FD_ZERO(&fd);
-	maxpackets = get_int_var(DCC_SLIDING_WINDOW_VAR);
-	if (maxpackets < 1)
-		maxpackets = 1;		/* Sanity */
+	fill_window = get_int_var(DCC_SLIDING_WINDOW_VAR) * DCC_BLOCK_SIZE;
+	if (fill_window < DCC_BLOCK_SIZE)
+		fill_window = DCC_BLOCK_SIZE;		/* Sanity */
 
-	while (dcc->packets_outstanding < (unsigned) maxpackets)
+	while (dcc->bytes_sent - dcc->bytes_acked < fill_window)
 	{
 		/*
 		 * Check to make sure the write won't block.
@@ -3505,11 +3535,8 @@ static void	process_dcc_send_data (DCC_list *dcc)
 		 * Bug the user
 		 */
 		if (x_debug & DEBUG_DCC_XMIT)
-		    yell("Sending packet [%s [%s] (packet %s) (%d bytes)]",
-			dcc->user, 
-			dcc->othername, 
-			NUMSTR(dcc->packets_transfer),
-			bytesread);
+		    yell("Sending packet [%s [%s] (packet XXX) (%d bytes)]",
+			dcc->user, dcc->othername, bytesread);
 
 		/*
 		 * Attempt to write the file.  If it chokes, whine.
@@ -3522,27 +3549,22 @@ static void	process_dcc_send_data (DCC_list *dcc)
 			return;
 		}
 
-		dcc->packets_outstanding++;
-		dcc->packets_transfer++;
 		dcc->bytes_sent += bytesread;
 
-		/*
-		 * Update the status bar
-		 */
-		if (dcc->filesize)
-		{
-		    update_transfer_buffer(dcc, "(to %10s: %d of %d: %d%%)",
+		/* XXX When should this ever be possible? */
+		if (!dcc->filesize)
+{
+yell("huh?");
+			continue;
+}
+
+		calc_size(dcc->bytes_sent, bytes_sent, sizeof(bytes_sent));
+		calc_size(dcc->filesize, filesize, sizeof(filesize));
+
+		update_transfer_buffer(dcc, "(to %10s: %s of %s: %d%%)",
 			dcc->user, 
-			(int)dcc->packets_transfer, 
-			(int)dcc->packets_total, 
+			bytes_sent, filesize,
 			(int)(dcc->bytes_sent * 100.0 / dcc->filesize));
-		}
-		else
-		{
-		    update_transfer_buffer(dcc, "(to %10s: %ld kbytes     )",
-			dcc->user, 
-			(long)(dcc->bytes_sent / 1024));
-		}
 	}
 }
 
@@ -3569,46 +3591,63 @@ static	void	process_dcc_send (DCC_list *dcc)
 static	void		process_dcc_get_data (DCC_list *dcc)
 {
 	char		tmp[DCC_RCV_BLOCK_SIZE+1];
+	intmax_t	provisional_bytesread;
 	u_32int_t	bytestemp;
 	ssize_t		bytesread;
+	char 		bytes_read[10];
+	char 		filesize[10];
 
-	bytesread = dgets(dcc->socket, tmp, sizeof(tmp), -1);
-	if (bytesread <= 0)
+	/* Sanity check -- file size is not permitted to be omitted! */
+	if (!dcc->filesize)
 	{
-		if ((INTTYPE)dcc->bytes_read < dcc->filesize)
-		{
-		    say("DCC GET to %s lost -- Remote peer closed connection", 
-			dcc->user);
-			DCC_close_filesend(dcc, "GET",
-					"REMOTE PEER CLOSED CONNECTION");
-		} else {
-			DCC_close_filesend(dcc, "GET", "TRANSFER COMPLETE");
-		}
+		say("DCC GET from %s lost -- Filesize is 0, no data to xfer",
+				dcc->user);
+		DCC_close_filesend(dcc, "GET", "TRANSFER COMPLETE");
 		return;
 	}
 
+	/* Read the next chunk of the file from the remote peer */
+	if ((bytesread = dgets(dcc->socket, tmp, sizeof(tmp), -1)) <= 0)
+	{
+		if (dcc->bytes_read < dcc->filesize)
+		{
+		    say("DCC GET to %s lost -- Remote peer closed connection", 
+				dcc->user);
+		    DCC_close_filesend(dcc, "GET",
+					"REMOTE PEER CLOSED CONNECTION");
+		}
+		else 
+		    DCC_close_filesend(dcc, "GET", "TRANSFER COMPLETE");
+
+		return;
+	}
+
+	/* Save the chunk to the local file */
 	if ((write(dcc->file, tmp, bytesread)) == -1)
 	{
 		dcc->flags |= DCC_DELETE;
 		say("Write to local file [%d] failed: %s",
 					 dcc->file, strerror(errno));
-		/* DCC_close_filesend(dcc, "GET", "LOCAL WRITE FAILED"); */
 		return;
 	}
 
+	/* Acknowledge receipt of the chunk */
 	dcc->bytes_read += bytesread;
-	bytestemp = htonl(dcc->bytes_read);
+	provisional_bytesread = dcc->bytes_read;
+	provisional_bytesread = provisional_bytesread >> 32;
+	provisional_bytesread = provisional_bytesread << 32;
+	bytestemp = (u_32int_t)(dcc->bytes_read - provisional_bytesread);
+	bytestemp = htonl(bytestemp);
 	if (write(dcc->socket, (char *)&bytestemp, sizeof(u_32int_t)) == -1)
 	{
 		dcc->flags |= DCC_DELETE;
-		yell("### Write to remote peer failed.  Giving up.");
+		yell("### Writing DCC GET checksum back to %s failed.  "
+				"Giving up.", dcc->user);
 		return;
 	}
 
-	dcc->packets_transfer = dcc->bytes_read / DCC_BLOCK_SIZE;
-
 	/* TAKE THIS OUT IF IT CAUSES PROBLEMS */
-	if ((dcc->filesize) && ((INTTYPE)dcc->bytes_read > dcc->filesize))
+	if (dcc->bytes_read > dcc->filesize)
 	{
 		dcc->flags |= DCC_DELETE;
 		yell("### DCC GET WARNING: incoming file is larger then the "
@@ -3617,19 +3656,13 @@ static	void		process_dcc_get_data (DCC_list *dcc)
 		return;
 	}
 
-	if (((dcc->flags & DCC_TYPES) == DCC_FILEOFFER) || 
-	     ((dcc->flags & DCC_TYPES) == DCC_FILEREAD))
-	{
-		if (dcc->filesize)
-			update_transfer_buffer(dcc, "(%10s: %d of %d: %d%%)", 
-				dcc->user, (int)dcc->packets_transfer,
-				(int)dcc->packets_total, 
-				(int)(dcc->bytes_read * 100.0 / dcc->filesize));
-		else
-			update_transfer_buffer(dcc, "(%10s %d packets: %ldK)", 
-				dcc->user, (int)dcc->packets_transfer, 
-				(long)(dcc->bytes_read / 1024));
-	}
+	/* Tell the user about it */
+	calc_size(dcc->bytes_read, bytes_read, sizeof(bytes_read));
+	calc_size(dcc->filesize, filesize, sizeof(filesize));
+	update_transfer_buffer(dcc, "(to %10s: %s of %s: %d%%)",
+		dcc->user, 
+		bytes_read, filesize,
+		(int)(dcc->bytes_read * 100.0 / dcc->filesize));
 }
 
 static void	process_dcc_get_connected (DCC_list *dcc)
@@ -3756,6 +3789,7 @@ static void	DCC_close_filesend (DCC_list *Client, const char *info,
 	double 	xtime, xfer;
 	char	*encoded_description;
 
+	/* XXX - Can't we do this by calling calc_speed? */
 	xtime = time_diff(Client->starttime, get_time(NULL));
 	xtime -= Client->heldtime;
 	if (Client->bytes_sent)
@@ -3927,7 +3961,7 @@ static void	dcc_getfile_resume_demanded (const char *user, char *filename, char 
 	if (!offset)
 		return;		/* Its a fake */
 
-	Client->bytes_sent = Client->resume_size = my_atol(offset);
+	Client->bytes_sent = Client->resume_size = STR2INT(offset);
 	Client->bytes_read = 0;
 
 	/* Just in case we have to fool the protocol enforcement. */
@@ -4016,11 +4050,11 @@ char *	dccctl (char *input)
 		} else if (!my_strnicmp(listc, "FILESIZE", len)) {  /* DEPRECATED */
 			return INT2STR(client->filesize);
 		} else if (!my_strnicmp(listc, "RESUMESIZE", len)) {
-			RETURN_INT(client->resume_size);
+			return INT2STR(client->resume_size);
 		} else if (!my_strnicmp(listc, "READBYTES", len)) {
-			RETURN_INT(client->bytes_read);
+			return INT2STR(client->bytes_read);
 		} else if (!my_strnicmp(listc, "SENTBYTES", len)) {
-			RETURN_INT(client->bytes_sent);
+			return INT2STR(client->bytes_sent);
 		} else if (!my_strnicmp(listc, "SERVER", len)) {
 			RETURN_INT(client->server);
 		} else if (!my_strnicmp(listc, "LOCKED", len)) {

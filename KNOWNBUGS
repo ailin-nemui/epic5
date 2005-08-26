@@ -6,7 +6,6 @@ KNOWN ERRATA (eg, bugs, or unresolved requests):
 * /CTCPs over /DCCs don't match up with their queries very well.
 * Revamp of /who -realname 
 * alias foo {package x;load script}  carries 'x' into 'script' ???
-* Start using intmax_t for stuff.
 
 LOOK FOR IN THE FUTURE
 -----------------------
@@ -746,3 +745,10 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Add /window flush_scrollback, see UPDATES
 * Fix braino that caused /set's in your ircrc to be echoed.
 * Add configure glop to figure out intmax_t on c90 systems.
+* Use "intmax_t" for dcc byte counts, eliminate notion of "packets".
+* Use INTMAX_FORMAT to format intmax_t's in printf formats.
+* Change %D status bar expando to look like "0.1Kb of 2.3Mb" (no packets)
+* Choke on dcc send offers that don't have file sizes.
+* Make a feeble attempt to handle 32-bit rollover on dcc get's > 2gb.
+* Use "intmax_t" for the new math parser, 64 bit int's ahoy!
+* Use INTMAX_FORMAT to format intmax_t's in new math parser.

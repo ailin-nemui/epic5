@@ -289,8 +289,6 @@ typedef char Filename[MAXPATHLEN + 1];
 # define INTMAX_FORMAT "%jd"
 # define UINTMAX_FORMAT "%ju"
 #endif
-#define INTTYPE intmax_t
-#define FORMAT INTMAX_FORMAT
 
 /*
  * DCC specification requires exactly a 32 bit checksum.
