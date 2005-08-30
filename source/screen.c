@@ -1,4 +1,4 @@
-/* $EPIC: screen.c,v 1.100 2005/05/19 13:34:00 jnelson Exp $ */
+/* $EPIC: screen.c,v 1.101 2005/08/30 23:45:13 jnelson Exp $ */
 /*
  * screen.c
  *
@@ -736,10 +736,35 @@ static	u_char	ansi_state[256] = {
  * These macros help keep 8 bit chars from sneaking into the output stream
  * where they might be stripped out.
  */
-#define this_char() (eightbit ? *str : (*str) & 0x7f)
-#define next_char() (eightbit ? *str++ : (*str++) & 0x7f)
+#define this_char() (*str)
+#define next_char() (*str++)
 #define put_back() (str--)
 #define nlchar '\n'
+
+u_char *	my_normalize_string (const u_char *str, int logical, int how)
+{
+#if 0
+	int gcmode	/set DISPLAY_PC_CHARACTERS
+	*int eightbit	/set EIGHT_BIT
+	*int beep	/set BEEP
+	*int beep_max	/set BEEP_MAX
+	*int tab_max	/set TAB_MAX
+	*int nds_max	/set ND_SPACE_MAX		ND_SPACE
+	int ansi 	/set DISPLAY_ANSI		MANGLE_ANSI
+	int reverse	/set INVERSE_VIDEO		REVERSE
+	int bold	/set BOLD_VIDEO			BOLD
+	int blink	/set BLINK_VIDEO		BLINK
+	int underline	/set UNDERLINE_VIDEO		UNDERLINE
+	int altchar	/set ALT_CHARSET		ALT_CHAR
+	int color	/set COLOR			COLOR
+	int allow_c1	/set ALLOW_C1_CHARS
+	int boldback	/set TERM_DOES_BRIGHT_BLINK
+							MANGLE_ESCAPES
+							STRIP_ALL_OFF
+							STRIP_UNPRINTABLE
+							STRIP_OTHER
+#endif
+}
 
 u_char *	normalize_string (const u_char *str, int logical)
 {
@@ -753,23 +778,11 @@ u_char *	normalize_string (const u_char *str, int logical)
 	int		i, n;
 	int		ansi = get_int_var(DISPLAY_ANSI_VAR);
 	int		gcmode = get_int_var(DISPLAY_PC_CHARACTERS_VAR);
-	int		eightbit = term_eight_bit();
-	int		beep_max, beep_cnt = 0;
-	int		tab_max, tab_cnt = 0;
-	int		nds_max, nds_cnt = 0;
 	int		pc = 0;
 	int		reverse, bold, blink, underline, altchar, color, allow_c1, boldback;
 	size_t		(*attrout) (u_char *, Attribute *) = NULL;
 
 	/* Figure out how many beeps/tabs/nds's we can handle */
-	if (!(beep_max  = get_int_var(BEEP_MAX_VAR)))
-		beep_max = -1;
-	if (!get_int_var(TAB_VAR))
-		tab_max = -1;
-	else if ((tab_max = get_int_var(TAB_MAX_VAR)) < 0)
-		tab_max = -1;
-	if (!(nds_max	= get_int_var(ND_SPACE_MAX_VAR)))
-		nds_max = -1;
 	if (normalize_permit_all_attributes)	/* XXXX */
 		reverse = bold = blink = underline = altchar = color = allow_c1 = boldback = 1;
 	else
@@ -914,7 +927,7 @@ u_char *	normalize_string (const u_char *str, int logical)
 				{
 					if (termfeatures & TERM_CAN_GCHAR)
 						output[pos++] = chr;
-					else if ((chr & 0x80) && eightbit)
+					else if (chr & 0x80)
 						output[pos++] = chr;
 					else
 					{
@@ -1136,12 +1149,8 @@ u_char *	normalize_string (const u_char *str, int logical)
 			}
 			while (args[0]-- > 0)
 			{
-				if (nds_max > 0 && nds_cnt > nds_max)
-					break;
-
 				output[pos++] = ND_SPACE;
 				pc++;
-				nds_cnt++;
 			}
 		}
 		break;
@@ -1399,58 +1408,25 @@ u_char *	normalize_string (const u_char *str, int logical)
 
 		case 7:      /* bell */
 		{
-			beep_cnt++;
-			if ((beep_max == -1) || (beep_cnt > beep_max))
-			{
-				a.reverse = !a.reverse;
-				pos += attrout(output + pos, &a);
-				output[pos++] = 'G';
-				a.reverse = !a.reverse;
-				pos += attrout(output + pos, &a);
-				pc++;
-			}
-			else
-				output[pos++] = '\007';
-
+			output[pos++] = '\007';
 			break;
 		}
 
 		case 8:		/* Tab */
 		{
-			tab_cnt++;
-			if (tab_max < 0 || 
-			    (tab_max > 0 && tab_cnt > tab_max))
+			int	len = 8 - (pc % 8);
+
+			for (i = 0; i < len; i++)
 			{
-				a.reverse = !a.reverse;
-				pos += attrout(output + pos, &a);
-				output[pos++] = 'I';
-				a.reverse = !a.reverse;
-				pos += attrout(output + pos, &a);
+				output[pos++] = ' ';
 				pc++;
-			}
-			else
-			{
-				int	len = 8 - (pc % 8);
-				for (i = 0; i < len; i++)
-				{
-					output[pos++] = ' ';
-					pc++;
-				}
 			}
 			break;
 		}
 
 		case 9:		/* Non-destruct space */
 		{
-			nds_cnt++;
-
-			/*
-			 * Just swallop up any ND's over the max
-			 */
-			if ((nds_max > 0) && (nds_cnt > nds_max))
-				;
-			else
-				output[pos++] = ND_SPACE;
+			output[pos++] = ND_SPACE;
 			break;
 		}
 

@@ -752,3 +752,7 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Make a feeble attempt to handle 32-bit rollover on dcc get's > 2gb.
 * Use "intmax_t" for the new math parser, 64 bit int's ahoy!
 * Use INTMAX_FORMAT to format intmax_t's in new math parser.
+* Fix bug with comma operator in new math parser that crazyeddy found.
+* Whack support for 7 bit terminals (8 bit support is now assumed)
+* Whack support for /set eight_bit_characters
+* Whack support for /set beep_max, tab, tab_max, and nd_space_max

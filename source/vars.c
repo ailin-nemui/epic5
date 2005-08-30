@@ -1,4 +1,4 @@
-/* $EPIC: vars.c,v 1.81 2005/08/24 02:31:25 jnelson Exp $ */
+/* $EPIC: vars.c,v 1.82 2005/08/30 23:45:13 jnelson Exp $ */
 /*
  * vars.c: All the dealing of the irc variables are handled here. 
  *
@@ -77,11 +77,7 @@ const char	*var_settings[] =
 
 	Bucket *var_bucket = NULL;
 
-static	void	eight_bit_characters 	(void *);
 static 	void 	set_display_pc_characters (void *);
-/*
-static 	void	set_dcc_timeout 	(void *);
-*/
 static	void	set_mangle_inbound 	(void *);
 static	void	set_mangle_outbound 	(void *);
 static	void	set_mangle_logfiles 	(void *);
@@ -154,7 +150,6 @@ void 	init_variables_stage1 (void)
 	VAR(BANNER, 			STR,  NULL)
 	VAR(BANNER_EXPAND, 		BOOL, NULL)
 	VAR(BEEP, 			BOOL, NULL)
-	VAR(BEEP_MAX, 			INT,  NULL)
 	VAR(BLINK_VIDEO, 		BOOL, NULL)
 	VAR(BOLD_VIDEO, 		BOOL, NULL)
 	VAR(CHANNEL_NAME_WIDTH, 	INT,  update_all_status_wrapper)
@@ -184,7 +179,6 @@ void 	init_variables_stage1 (void)
 	VAR(DISPLAY_ANSI, BOOL, NULL);
 	VAR(DISPLAY_PC_CHARACTERS, INT,  set_display_pc_characters);
 	VAR(DO_NOTIFY_IMMEDIATELY, BOOL, NULL);
-	VAR(EIGHT_BIT_CHARACTERS, BOOL, eight_bit_characters);
 	VAR(FLOATING_POINT_MATH, BOOL, NULL);
 	VAR(FLOATING_POINT_PRECISION, INT,  NULL);
 	VAR(FLOOD_AFTER, INT,  NULL);
@@ -223,7 +217,6 @@ void 	init_variables_stage1 (void)
 	VAR(METRIC_TIME, BOOL, reset_clock);
 	VAR(MIRC_BROKEN_DCC_RESUME, BOOL, NULL);
 	VAR(MODE_STRIPPER, BOOL, NULL);
-	VAR(ND_SPACE_MAX, INT,  NULL);
 	VAR(NEW_SERVER_LASTLOG_LEVEL, STR,  set_new_server_lastlog_mask);
 	VAR(NOTIFY, BOOL, set_notify);
 	VAR(NOTIFY_INTERVAL, INT,  set_notify_interval);
@@ -332,8 +325,6 @@ void 	init_variables_stage1 (void)
 	VAR(STATUS_WINDOW, STR,  build_status);
 	VAR(SUPPRESS_FROM_REMOTE_SERVER, BOOL, NULL);
 	VAR(SWITCH_CHANNELS_BETWEEN_WINDOWS, BOOL, NULL);
-	VAR(TAB, BOOL, NULL);
-	VAR(TAB_MAX, INT,  NULL);
 	VAR(TERM_DOES_BRIGHT_BLINK, BOOL, NULL);
 #define DEFAULT_TRANSLATION NULL
 	VAR(TRANSLATION, STR,  set_translation);
@@ -736,24 +727,6 @@ char 	*make_string_var_bydata (int type, void *vp)
 
 
 /***************************************************************************/
-/* returns the size of the character set */
-int 	charset_size (void)
-{
-	return get_int_var(EIGHT_BIT_CHARACTERS_VAR) ? 256 : 128;
-}
-
-static void 	eight_bit_characters (void *stuff)
-{
-	VARIABLE *v;
-	int	value;
-
-	v = (VARIABLE *)stuff;
-	value = v->integer;
-	if (value == ON && !term_eight_bit())
-		say("Warning!  Your terminal says it does not support eight bit characters");
-	set_term_eight_bit(value);
-}
-
 static void 	set_display_pc_characters (void *stuff)
 {
 	VARIABLE *v;
@@ -768,22 +741,6 @@ static void 	set_display_pc_characters (void *stuff)
 		v->integer = 0;
 	}
 }
-
-/*
-static void	set_dcc_timeout (void *stuff)
-{
-	VARIABLE *v;
-	int	value;
-
-	v = (VARIABLE *)stuff;
-	value = v->integer;
-
-	if (value == 0)
-		dcc_timeout = (time_t) -1;
-	else
-		dcc_timeout = value;
-}
-*/
 
 int	parse_mangle (const char *value, int nvalue, char **rv)
 {

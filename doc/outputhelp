@@ -27,9 +27,10 @@ set convert-meta off
 set output-meta on
 
 Then in EPIC, you may need to:
-	/set eight_bit ON
 	/set high_bit_escape 0
-and you should be on your way.
+and you should be on your way.  EPIC4 used to require
+	/SET EIGHT_BIT_CHARACTERS ON
+but this is now unnecessary in epic5.
 
 If you are using GNU screen, make sure you have "defc1 off" in your 
 screenrc file, because screen won't even display characters 128-159

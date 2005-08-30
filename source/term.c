@@ -1,4 +1,4 @@
-/* $EPIC: term.c,v 1.15 2004/08/11 23:58:39 jnelson Exp $ */
+/* $EPIC: term.c,v 1.16 2005/08/30 23:45:13 jnelson Exp $ */
 /*
  * term.c -- termios and (termcap || terminfo) handlers
  *
@@ -660,18 +660,9 @@ void	term_putchar (unsigned char c)
 	}
 
 	/*
-	 * If the user has /set eight_bit_characters off, then we lop off
-	 * any 8 bit characters we might stumble across.
-	 */
-	if (!(newb.c_cflag & CS8) && (c & 0x80))
-		c &= ~0x80;
-
-	/*
 	 * Any nonprintable characters we lop off.  In addition to this,
 	 * we catch the very nasty 0x9b which is the escape character with
-	 * the high bit set.  It is possible (indeed, likely) that a terminal
-	 * with only 7 bit capabilities wont be reflected in /set eight_bit.
-	 * It is therefore our job to head that possibility off at the pass.
+	 * the high bit set.  
 	 */
 	if (c < 0x20 || c == 0x9b)
 	{
@@ -1079,6 +1070,10 @@ int 	term_init (void)
 		tputs_x(current_term->TI_rmam);
 #endif
 
+	/* Turn on 8 bit handling unconditionally */
+	newb.c_cflag |= CS8;
+	newb.c_iflag &= ~ISTRIP;
+
 	tcsetattr(tty_des, TCSADRAIN, &newb);
 	return 0;
 }
@@ -1155,38 +1150,6 @@ void	term_beep (void)
 		tputs_x(current_term->TI_bel);
 		term_flush();
 	}
-}
-
-static int	orig_term_eight_bit (void)
-{
-	if (dumb_mode)
-		return 1;
-	return (((oldb.c_cflag) & CSIZE) == CS8) ? 1 : 0;
-}
-
-int 	term_eight_bit (void)
-{
-	if (dumb_mode)
-		return 1;
-	return (((newb.c_cflag) & CSIZE) == CS8) ? 1 : 0;
-}
-
-void	set_term_eight_bit (int value)
-{
-	if (dumb_mode)
-		return;
-
-	if (value == ON)
-	{
-		newb.c_cflag |= CS8;
-		newb.c_iflag &= ~ISTRIP;
-	}
-	else
-	{
-		newb.c_cflag &= ~CS8;
-		newb.c_iflag |= ISTRIP;
-	}
-	tcsetattr(tty_des, TCSADRAIN, &newb);
 }
 
 void	set_meta_8bit (void *stuff)

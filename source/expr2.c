@@ -1,4 +1,4 @@
-/* $EPIC: expr2.c,v 1.28 2005/08/26 01:28:12 jnelson Exp $ */
+/* $EPIC: expr2.c,v 1.29 2005/08/30 23:45:13 jnelson Exp $ */
 /*
  * Zsh: math.c,v 3.1.2.1 1997/06/01 06:13:15 hzoli Exp 
  * math.c - mathematical expression evaluation
@@ -1589,11 +1589,23 @@ static void	reduce (expr_info *cx, int what)
 			pop_2_tokens(cx, &v, &w);
 			CHECK_NOEVAL
 
+			/* 
+			 * XXX We need to EXPAND the left value, even
+			 * if we don't need it, because it might be a 
+			 * function call!
+			 */
+			get_token_expanded(cx, v);
+
 			if (x_debug & DEBUG_NEW_MATH_DEBUG)
 				yell("O: %s , %s -> %s", 
 					get_token_expanded(cx, v),
 					get_token_expanded(cx, w),
 					get_token_expanded(cx, w));
+
+			/*
+			 * But we DONT want to expand the right value, 
+			 * until we use it LATER.
+			 */
 			push_token(cx, w);
 			break;
 		}

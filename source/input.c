@@ -1,4 +1,4 @@
-/* $EPIC: input.c,v 1.28 2005/05/25 01:06:57 jnelson Exp $ */
+/* $EPIC: input.c,v 1.29 2005/08/30 23:45:13 jnelson Exp $ */
 /*
  * input.c: does the actual input line stuff... keeps the appropriate stuff
  * on the input line, handles insert/delete of characters/words... the whole
@@ -1320,15 +1320,10 @@ void	edit_char (u_char key)
 		return;
 
 	/* If the high bit is set, mangle it as neccesary. */
-	if (key & 0x80)
+	if (key & 0x80 && current_term->TI_meta_mode)
 	{
-		if (current_term->TI_meta_mode)
-		{
-			edit_char('\033');
-			key &= ~0x80;
-		}
-		else if (!term_eight_bit())
-			key &= ~0x80;
+		edit_char('\033');
+		key &= ~0x80;
 	}
 
 	extended_key = key;

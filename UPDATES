@@ -1,5 +1,26 @@
 EPIC5-0.0.6
 
+*** News 08/30/2005 -- De-support of 7-bit-only terminal/emulators
+	Once upon a time, long long ago, on a planet far away, there
+	used to be terminals and terminal emulators that did not know
+	how to handle characters with the 8th bit set.  Thankfully,
+	nobody uses these any more.  There has been rudimentary support
+	in ircII clients to support this old hardware, but it is now
+	unnecessary and only causes to torment people who can't figure
+	out how to input their 8 bit characters!
+
+	/SET EIGHT_BIT_CHARACTERS has been removed, and its behavior is
+	now hardcoded to the previous "ON" value.  If you really need
+	7-bit support, epic4 will always have it...
+
+*** News 08/30/2005 -- Simplification of display mangling, part one
+	There are 15 /set's that control how output to the display is
+	prepared ("mangled").  That's about 14 too many.  The following
+	/set's are at best historical curiosities and do not serve any
+	modern purpose.  Their function has been eliminated.
+
+	    BEEP_MAX	TAB	TAB_MAX		ND_SPACE_MAX
+
 *** News 08/23/2005 -- New /window verb, /WINDOW FLUSH_SCROLLBACK
 	The /WINDOW FLUSH_SCROLLBACK option, which I already regret the
 	naming of, deletes all of the items in your scrollback buffer.
