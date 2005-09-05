@@ -756,3 +756,4 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Whack support for 7 bit terminals (8 bit support is now assumed)
 * Whack support for /set eight_bit_characters
 * Whack support for /set beep_max, tab, tab_max, and nd_space_max
+* A new $mask() from jm, who needs to write an UPDATES entry for me. =)

@@ -1,4 +1,4 @@
-/* $EPIC: functions.c,v 1.206 2005/08/17 23:35:22 jnelson Exp $ */
+/* $EPIC: functions.c,v 1.207 2005/09/05 19:00:49 jnelson Exp $ */
 /*
  * functions.c -- Built-in functions for ircII
  *
@@ -4750,119 +4750,140 @@ BUILT_IN_FUNCTION(function_querywin, args)
  * 7: nick!*@host.domain
  * 8: nick!*user@*.domain
  * 9: nick!*@*.domain
- * 10: *!*@<number-masked-host>.domain		(matt)
- * 11: *!*user@<number-masked-host>.domain	(matt)
- * 12: nick!*@<number-masked-host>.domain	(matt)
- * 13: nick!*user@<number-masked-host>.domain	(matt)
  */
 BUILT_IN_FUNCTION(function_mask, args)
 {
-	char *	nuh;
-	char *	nick = NULL;
-	char *	user = NULL;
-	char *	fqdn = NULL;
-	char *	host = NULL;
-	char *	domain = NULL;
-	int   	which;
-	char	stuff[BIG_BUFFER_SIZE + 1];
-	int	ip = 0;
-	char	*first_arg;
-	char	*ptr;
+	char **dot = NULL, **colon = NULL;
+ 	char *buff, *nickname, *username, *hostname, *dmask, *dbuff, *p, *fa;
+	unsigned i, coloncount, dotcount, nondigit, method, userlen;
 
-	first_arg = new_next_arg(args, &args);
-	if (is_number(first_arg))
-	{
-		which = my_atol(first_arg);
-		nuh = args;
-	}
-	else
-	{
-		nuh = first_arg;
-		GET_INT_ARG(which, args);
+	fa = new_next_arg(args, &args);
+
+	if (is_number(fa)) {
+		method = my_atol(fa);
+		nickname = args;
+	} else {
+		nickname = fa;
+		GET_INT_ARG(method, args);
 	}
 
-	if (figure_out_address(nuh, &nick, &user, &fqdn))
+
+	if ((p = strchr(nickname, '!'))) {
+		*p++ = '\0';
+		username = p;
+	} else {
 		RETURN_EMPTY;
-	if (strchr(fqdn, '.') == NULL) {
-		domain = NULL;
-		host = fqdn;
 	}
-	else if (figure_out_domain(fqdn, &host, &domain, &ip))
+
+	if ((p = strchr(p, '@'))) {
+		*p++ = '\0';
+		hostname = p;
+		userlen = strlen(username);
+	} else {
 		RETURN_EMPTY;
-
-	/*
-	 * Deal with ~nick@user.com for example, and all sorts
-	 * of other av2.9 breakage.
-	 */
-	if (strchr("~^-+=", *user))
-		user++;
-
-	/* Make sure 'user' isnt too long for a ban... */
-	if (strlen(user) > 7)
-	{
-		user[7] = '*';
-		user[8] = 0;
 	}
 
-	if (!host) host = LOCAL_COPY(empty_string);
-	if (!domain) domain = LOCAL_COPY(empty_string);
+	buff = (char *) new_malloc(BIG_BUFFER_SIZE + 1);
+	dbuff = (char *) new_malloc(strlen(hostname) + 2);
+	p = dmask = dbuff + 1;
+	strcpy(p, hostname);
 
-	/* DOT gives you a "." if the host and domain are both non-empty */
-#define USER *user ? user : star
-#define DOT  (*domain && *host ? dot : empty_string)
-#define MASK1(x, y) snprintf(stuff, BIG_BUFFER_SIZE, x, y); break;
-#define MASK2(x, y, z) snprintf(stuff, BIG_BUFFER_SIZE, x, y, z); break;
-#define MASK3(x, y, z, a) snprintf(stuff, BIG_BUFFER_SIZE, x, y, z, a); break;
-#define MASK4(x, y, z, a, b) snprintf(stuff, BIG_BUFFER_SIZE, x, y, z, a, b); break;
-#define MASK5(x, y, z, a, b, c) snprintf(stuff, BIG_BUFFER_SIZE, x, y, z, a, b, c); break;
+	for (i = coloncount = dotcount = nondigit = 0; p[i]; i++) {
+		if (p[i] == '.') {
+			if (!(dotcount % 50)) {
+				new_realloc((void **) &dot,
+					sizeof(char *) * (dotcount + 50));
+			}
 
-	if (!ip) 
-	switch (which)
-	{
-		case 0:  MASK4("*!%s@%s%s%s",         USER, host, DOT, domain)
-		case 1:  MASK4("*!*%s@%s%s%s",        user, host, DOT, domain)
-		case 2:  MASK3("*!*@%s%s%s",                host, DOT, domain)
-		case 3:  MASK3("*!*%s@*%s%s",         user,       DOT, domain)
-		case 4:  MASK2("*!*@*%s%s",                       DOT, domain)
-		case 5:  MASK5("%s!%s@%s%s%s",  nick, USER, host, DOT, domain)
-		case 6:  MASK5("%s!*%s@%s%s%s", nick, user, host, DOT, domain)
-		case 7:  MASK4("%s!*@%s%s%s",   nick,       host, DOT, domain)
-		case 8:  MASK4("%s!*%s@*%s%s",  nick, user,       DOT, domain)
-		case 9:  MASK3("%s!*@*%s%s",    nick,             DOT, domain)
-		case 10: mask_digits(&host);
-			 MASK3("*!*@%s%s%s",                host, DOT, domain)
-		case 11: mask_digits(&host);
-			 MASK4("*!*%s@%s%s%s",        user, host, DOT, domain)
-		case 12: mask_digits(&host);
-			 MASK4("%s!*@%s%s%s",   nick,       host, DOT, domain)
-		case 13: mask_digits(&host);
-			 MASK5("%s!*%s@%s%s%s", nick, user, host, DOT, domain)
-	}
-	else /* in the case of IPs, we always have domain/host */
-	switch (which)
-	{
-		case 0:  MASK3("*!%s@%s.%s",          user, domain, host)
-		case 1:  MASK3("*!*%s@%s.%s",         USER, domain, host)
-		case 2:  MASK2("*!*@%s.%s",                 domain, host)
-		case 3:  MASK2("*!*%s@%s.*",          USER, domain)
-		case 4:  MASK1("*!*@%s.*",                  domain)
-		case 5:  MASK4("%s!%s@%s.%s",   nick, user, domain, host)
-		case 6:  MASK4("%s!*%s@%s.%s",  nick, USER, domain, host)
-		case 7:  MASK3("%s!*@%s.%s",    nick,       domain, host)
-		case 8:  MASK3("%s!*%s@%s.*",   nick, USER, domain)
-		case 9:  MASK2("%s!*@%s.*",     nick,       domain)
-		case 10: MASK1("*!*@%s.*",                  domain)
-		case 11: MASK2("*!*%s@%s.*",          USER, domain)
-		case 12: MASK2("%s!*@%s.*",     nick,       domain)
-		case 13: MASK3("%s!*%s@%s.*",   nick, USER, domain)
+			dot[dotcount++] = p + i;
+		} else if (p[i] == ':') {
+			if (!(coloncount % 50)) {
+				new_realloc((void **) &colon,
+					sizeof(char *) * (coloncount + 50));
+			}
+
+			colon[coloncount++] = p + i;
+		} else if (!isdigit(p[i])) {
+			nondigit++;
+		}
 	}
 
-	/* Clean up any non-printable chars */
-	for (ptr = stuff; *ptr; ptr++)
-		if (!isgraph(*ptr))
-			*ptr = '?';
+	if (coloncount >= 2) {
+		*(colon[1] + 1) = '*';
+		*(colon[1] + 2) = '\0';
+	} else if (!nondigit && dotcount == 3) {
+		*(dot[2] + 1) = '*';
+		*(dot[2] + 2) = '\0';
+	} else if (dotcount >=2) {
+		/* Treat domains like '.co.uk' as a tld. */
 
-	RETURN_STR(stuff);
+		if ((p + i - dot[dotcount - 2]) < 7) {
+			if (dotcount >= 3) {
+				dmask = dot[dotcount - 3] - 1;
+				*dmask = '*';
+			}
+		} else {
+			dmask = dot[dotcount - 2] - 1;
+			*dmask = '*';
+		}
+	}
+
+	switch (method) {
+		case 0:
+			snprintf(buff, BIG_BUFFER_SIZE + 1, "*!%s@%s", username,
+				hostname);
+			break;
+		case 1:
+			snprintf(buff, BIG_BUFFER_SIZE + 1, "*!*%s@%s",
+				userlen > 7 ? username + 1 : username,
+				hostname);
+			break;
+		case 2:
+			snprintf(buff, BIG_BUFFER_SIZE + 1, "*!*@%s",
+				hostname);
+			break;
+		case 3:
+			snprintf(buff, BIG_BUFFER_SIZE + 1, "*!*%s@%s",
+				userlen > 7 ? username + 1 : username, dmask);
+			break;
+		case 4:
+			snprintf(buff, BIG_BUFFER_SIZE + 1, "*!*@%s", dmask);
+			break;
+		case 5:
+			snprintf(buff, BIG_BUFFER_SIZE + 1, "%s!%s@%s",
+				nickname, username, hostname);
+			break;
+		case 6:
+			snprintf(buff, BIG_BUFFER_SIZE + 1, "%s!*%s@%s",
+				nickname, userlen > 7 ? username + 1 : username,
+				hostname);
+			break;
+		case 7:
+			snprintf(buff, BIG_BUFFER_SIZE + 1, "%s!*@%s", nickname,
+				hostname);
+			break;
+		case 8:
+			snprintf(buff, BIG_BUFFER_SIZE + 1, "%s!*%s@%s",
+				nickname, userlen > 7 ? username + 1 : username,
+				dmask);
+			break;
+		case 9:
+			snprintf(buff, BIG_BUFFER_SIZE + 1, "%s!*@%s", nickname,
+				dmask);
+			break;
+		default:
+			new_free(&dbuff);
+			new_free(&dot);
+			new_free(&colon);
+
+			RETURN_EMPTY;
+	}
+
+	new_free(&dbuff);
+	new_free(&dot);
+	new_free(&colon);
+
+	RETURN_STR(buff);
 }
 
 BUILT_IN_FUNCTION(function_ischanvoice, input)
