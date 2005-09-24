@@ -1,4 +1,4 @@
-/* $EPIC: screen.c,v 1.102 2005/09/24 03:04:28 jnelson Exp $ */
+/* $EPIC: screen.c,v 1.103 2005/09/24 14:43:14 jnelson Exp $ */
 /*
  * screen.c
  *
@@ -749,9 +749,9 @@ static	u_char	ansi_state[256] = {
 #define put_back() (str--)
 #define nlchar '\n'
 
+#if 0
 u_char *	my_normalize_string (const u_char *str, int logical, int how)
 {
-#if 0
 	int gcmode	/set DISPLAY_PC_CHARACTERS
 	*int eightbit	/set EIGHT_BIT
 	*int beep	/set BEEP
@@ -771,8 +771,8 @@ u_char *	my_normalize_string (const u_char *str, int logical, int how)
 							STRIP_ALL_OFF
 							STRIP_UNPRINTABLE
 							STRIP_OTHER
-#endif
 }
+#endif
 
 u_char *	normalize_string (const u_char *str, int logical)
 {
@@ -781,8 +781,8 @@ u_char *	normalize_string (const u_char *str, int logical)
 	Attribute	a;
 	int 		pos;
 	int		maxpos;
-	int 		args[10];
-	int		nargs;
+	/* int 		args[10];
+	int		nargs; */
 	int		i, n;
 	int		ansi = get_int_var(DISPLAY_ANSI_VAR);
 	int		gcmode = get_int_var(DISPLAY_PC_CHARACTERS_VAR);
@@ -968,14 +968,14 @@ u_char *	normalize_string (const u_char *str, int logical)
 			int	nd_spaces = 0;
 			ssize_t	esclen;
 
-			esclen = skip_esc_seq(str, &a, &nd_spaces);
+			esclen = skip_esc_seq(str, (void *)&a, &nd_spaces);
 
 			if (nd_spaces != 0)
 			{
 			    /* This is just sanity */
 			    if (pos + nd_spaces > maxpos)
 			    {
-				maxpos += args[0]; 
+				maxpos += nd_spaces; 
 				RESIZE(output, u_char, maxpos + 192);
 			    }
 			    while (nd_spaces-- > 0)
@@ -3009,8 +3009,9 @@ ssize_t	skip_ctl_c_seq (const u_char *start, int *lhs, int *rhs)
 }
 
 
-ssize_t	skip_esc_seq (const u_char *start, Attribute *a, int *nd_spaces)
+ssize_t	skip_esc_seq (const u_char *start, void *ptr_a, int *nd_spaces)
 {
+	Attribute *	a = NULL;
 	Attribute 	safe_a;
 	int 		args[10];
 	int		nargs;
@@ -3020,6 +3021,8 @@ ssize_t	skip_esc_seq (const u_char *start, Attribute *a, int *nd_spaces)
 
 	if (a == NULL)
 		a = &safe_a;
+	else
+		a = (Attribute *)ptr_a;
 
 	*nd_spaces = 0;
 	str = start;

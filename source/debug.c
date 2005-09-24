@@ -1,4 +1,4 @@
-/* $EPIC: debug.c,v 1.21 2005/08/03 04:21:39 jnelson Exp $ */
+/* $EPIC: debug.c,v 1.22 2005/09/24 14:43:14 jnelson Exp $ */
 /*
  * debug.c -- controll the values of x_debug.
  *
@@ -51,7 +51,7 @@ struct debug_opts
 static struct debug_opts opts[] = 
 {
 	{ "LOCAL_VARS",		DEBUG_LOCAL_VARS },
-	{ "ALIAS",		DEBUG_ALIAS },
+	{ "ALIAS",		0 },
 	{ "CHANNELS",		DEBUG_CHANNELS },
 	{ "CTCPS",		DEBUG_CTCPS },
 	{ "DCC_SEARCH",		DEBUG_DCC_SEARCH },
@@ -59,19 +59,19 @@ static struct debug_opts opts[] =
 	{ "INBOUND",		DEBUG_INBOUND },
 	{ "DCC_XMIT",		DEBUG_DCC_XMIT },
 	{ "WAITS",		DEBUG_WAITS },
-	{ "MEMORY",		DEBUG_MEMORY },
+	{ "MEMORY",		0 },
 	{ "SERVER_CONNECT",	DEBUG_SERVER_CONNECT },
 	{ "CRASH",		DEBUG_CRASH },
-	{ "COLOR",		DEBUG_COLOR },
+	{ "COLOR",		0 },
 	{ "NOTIFY",		DEBUG_NOTIFY },
 	{ "REGEX",		DEBUG_REGEX },
 	{ "REGEX_DEBUG",	DEBUG_REGEX_DEBUG },
 	{ "BROKEN_CLOCK",	DEBUG_BROKEN_CLOCK },
 	{ "UNKNOWN",		DEBUG_UNKNOWN },
-	{ "BOLD_HELPER",	DEBUG_BOLD_HELPER },
+	{ "BOLD_HELPER",	0 },
 	{ "NEW_MATH",		0 },
 	{ "NEW_MATH_DEBUG",	DEBUG_NEW_MATH_DEBUG },
-	{ "AUTOKEY",		DEBUG_AUTOKEY },
+	{ "AUTOKEY",		0 },
 	{ "EXTRACTW",		DEBUG_EXTRACTW },
 	{ "SLASH_HACK",		DEBUG_SLASH_HACK },
 	{ "LASTLOG",		DEBUG_LASTLOG },

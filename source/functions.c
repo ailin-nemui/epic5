@@ -1,4 +1,4 @@
-/* $EPIC: functions.c,v 1.208 2005/09/24 03:04:28 jnelson Exp $ */
+/* $EPIC: functions.c,v 1.209 2005/09/24 14:43:14 jnelson Exp $ */
 /*
  * functions.c -- Built-in functions for ircII
  *
@@ -2739,7 +2739,7 @@ BUILT_IN_FUNCTION(function_center, word)
 	 */
 	pad = stringlen + ((fieldsize - stringlen) / 2);
 	padc = (char *)new_malloc(pad + 1);
-	snprintf(padc, pad + 1, "%*s", pad, word);       /* Right justify it */
+	snprintf(padc, pad + 1, "%*s", (int)pad, word);  /* Right justify it */
 	return padc;
 }
 
@@ -4753,49 +4753,49 @@ BUILT_IN_FUNCTION(function_querywin, args)
  */
 BUILT_IN_FUNCTION(function_mask, args)
 {
-	char **dot = NULL, **colon = NULL;
- 	char *buff, *nickname, *username, *hostname, *dmask, *dbuff, *p, *fa;
+	char **my_dot = NULL, **colon = NULL;
+ 	char *buff, *my_nickname, *my_username, *my_hostname, *dmask, *dbuff, *p, *fa;
 	unsigned i, coloncount, dotcount, nondigit, method, userlen;
 
 	fa = new_next_arg(args, &args);
 
 	if (is_number(fa)) {
 		method = my_atol(fa);
-		nickname = args;
+		my_nickname = args;
 	} else {
-		nickname = fa;
+		my_nickname = fa;
 		GET_INT_ARG(method, args);
 	}
 
 
-	if ((p = strchr(nickname, '!'))) {
+	if ((p = strchr(my_nickname, '!'))) {
 		*p++ = '\0';
-		username = p;
+		my_username = p;
 	} else {
 		RETURN_EMPTY;
 	}
 
 	if ((p = strchr(p, '@'))) {
 		*p++ = '\0';
-		hostname = p;
-		userlen = strlen(username);
+		my_hostname = p;
+		userlen = strlen(my_username);
 	} else {
 		RETURN_EMPTY;
 	}
 
 	buff = (char *) new_malloc(BIG_BUFFER_SIZE + 1);
-	dbuff = (char *) new_malloc(strlen(hostname) + 2);
+	dbuff = (char *) new_malloc(strlen(my_hostname) + 2);
 	p = dmask = dbuff + 1;
-	strcpy(p, hostname);
+	strcpy(p, my_hostname);
 
 	for (i = coloncount = dotcount = nondigit = 0; p[i]; i++) {
 		if (p[i] == '.') {
 			if (!(dotcount % 50)) {
-				new_realloc((void **) &dot,
+				new_realloc((void **) &my_dot,
 					sizeof(char *) * (dotcount + 50));
 			}
 
-			dot[dotcount++] = p + i;
+			my_dot[dotcount++] = p + i;
 		} else if (p[i] == ':') {
 			if (!(coloncount % 50)) {
 				new_realloc((void **) &colon,
@@ -4812,75 +4812,75 @@ BUILT_IN_FUNCTION(function_mask, args)
 		*(colon[1] + 1) = '*';
 		*(colon[1] + 2) = '\0';
 	} else if (!nondigit && dotcount == 3) {
-		*(dot[2] + 1) = '*';
-		*(dot[2] + 2) = '\0';
+		*(my_dot[2] + 1) = '*';
+		*(my_dot[2] + 2) = '\0';
 	} else if (dotcount >=2) {
 		/* Treat domains like '.co.uk' as a tld. */
 
-		if ((p + i - dot[dotcount - 2]) < 7) {
+		if ((p + i - my_dot[dotcount - 2]) < 7) {
 			if (dotcount >= 3) {
-				dmask = dot[dotcount - 3] - 1;
+				dmask = my_dot[dotcount - 3] - 1;
 				*dmask = '*';
 			}
 		} else {
-			dmask = dot[dotcount - 2] - 1;
+			dmask = my_dot[dotcount - 2] - 1;
 			*dmask = '*';
 		}
 	}
 
 	switch (method) {
 		case 0:
-			snprintf(buff, BIG_BUFFER_SIZE + 1, "*!%s@%s", username,
-				hostname);
+			snprintf(buff, BIG_BUFFER_SIZE + 1, "*!%s@%s", my_username,
+				my_hostname);
 			break;
 		case 1:
 			snprintf(buff, BIG_BUFFER_SIZE + 1, "*!*%s@%s",
-				userlen > 7 ? username + 1 : username,
-				hostname);
+				userlen > 7 ? my_username + 1 : my_username,
+				my_hostname);
 			break;
 		case 2:
 			snprintf(buff, BIG_BUFFER_SIZE + 1, "*!*@%s",
-				hostname);
+				my_hostname);
 			break;
 		case 3:
 			snprintf(buff, BIG_BUFFER_SIZE + 1, "*!*%s@%s",
-				userlen > 7 ? username + 1 : username, dmask);
+				userlen > 7 ? my_username + 1 : my_username, dmask);
 			break;
 		case 4:
 			snprintf(buff, BIG_BUFFER_SIZE + 1, "*!*@%s", dmask);
 			break;
 		case 5:
 			snprintf(buff, BIG_BUFFER_SIZE + 1, "%s!%s@%s",
-				nickname, username, hostname);
+				my_nickname, my_username, my_hostname);
 			break;
 		case 6:
 			snprintf(buff, BIG_BUFFER_SIZE + 1, "%s!*%s@%s",
-				nickname, userlen > 7 ? username + 1 : username,
-				hostname);
+				my_nickname, userlen > 7 ? my_username + 1 : my_username,
+				my_hostname);
 			break;
 		case 7:
-			snprintf(buff, BIG_BUFFER_SIZE + 1, "%s!*@%s", nickname,
-				hostname);
+			snprintf(buff, BIG_BUFFER_SIZE + 1, "%s!*@%s", my_nickname,
+				my_hostname);
 			break;
 		case 8:
 			snprintf(buff, BIG_BUFFER_SIZE + 1, "%s!*%s@%s",
-				nickname, userlen > 7 ? username + 1 : username,
+				my_nickname, userlen > 7 ? my_username + 1 : my_username,
 				dmask);
 			break;
 		case 9:
-			snprintf(buff, BIG_BUFFER_SIZE + 1, "%s!*@%s", nickname,
+			snprintf(buff, BIG_BUFFER_SIZE + 1, "%s!*@%s", my_nickname,
 				dmask);
 			break;
 		default:
 			new_free(&dbuff);
-			new_free(&dot);
+			new_free(&my_dot);
 			new_free(&colon);
 
 			RETURN_EMPTY;
 	}
 
 	new_free(&dbuff);
-	new_free(&dot);
+	new_free(&my_dot);
 	new_free(&colon);
 
 	RETURN_STR(buff);
