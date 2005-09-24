@@ -1,4 +1,4 @@
-/* $EPIC: ircaux.c,v 1.141 2005/08/25 13:49:36 jnelson Exp $ */
+/* $EPIC: ircaux.c,v 1.142 2005/09/24 03:04:28 jnelson Exp $ */
 /*
  * ircaux.c: some extra routines... not specific to irc... that I needed 
  *
@@ -3069,6 +3069,7 @@ char *	strlpcat (char *source, size_t size, const char *format, ...)
 }
 
 
+/* XXX This should be eliminated */
 u_char *strcpy_nocolorcodes (u_char *dest, const u_char *source)
 {
 	u_char	*save = dest;
@@ -3192,6 +3193,8 @@ size_t	mangle_line	(char *incoming, int how, size_t how_much)
 				char *	end;
 				ssize_t	span;
 
+				/* XXX This should be rewritten to
+				 * use read_color_seq.  */
 				span = skip_ctl_c_seq(s, &lhs, &rhs);
 				end = s + span;
 				if (!(stuff & STRIP_COLOR))
