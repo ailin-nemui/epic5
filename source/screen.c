@@ -1,4 +1,4 @@
-/* $EPIC: screen.c,v 1.103 2005/09/24 14:43:14 jnelson Exp $ */
+/* $EPIC: screen.c,v 1.104 2005/09/28 02:32:46 jnelson Exp $ */
 /*
  * screen.c
  *
@@ -233,7 +233,7 @@ const unsigned char *all_off (void)
 
 	a->reverse = a->bold = a->blink = a->underline = a->altchar = 0;
 	a->color_fg = a->fg_color = a->color_bg = a->bg_color = 0;
-	display_attributes(retval, &a);
+	display_attributes(retval, NULL, &a);
 	return retval;
 #else
 	static	char	retval[6];
@@ -244,8 +244,19 @@ const unsigned char *all_off (void)
 #endif
 }
 
+/*
+ * These are "attribute changer" functions.  They work like this:
+ *	output		An output (string) buffer to write the change to
+ *	old_a		The previous (Attribute *)
+ *	new_a		The new (Attribute *)
+ * Each function should write any changes between "old_a" and "new_a" to 
+ * output in whatever way is appropriate, and should copy new_a to old_a 
+ * before returning.  The special case is when "old_a" is NULL, which 
+ * should be treated as an explicit "all off" before handling "a".
+ */
+
 /* Put into 'output', an attribute marker corresponding to 'a' */
-static size_t	display_attributes (u_char *output, Attribute *a)
+static size_t	display_attributes (u_char *output, Attribute *old_a, Attribute *a)
 {
 	u_char	val1 = 0x80;
 	u_char	val2 = 0x80;
@@ -267,49 +278,80 @@ static size_t	display_attributes (u_char *output, Attribute *a)
 	output[3] = val3;
 	output[4] = val4;
 	output[5] = 0;
+
+	old_a = a;
 	return 5;
 }
  
 /* Put into 'output', logical characters so end result is 'a' */
-static size_t	logic_attributes (u_char *output, Attribute *a)
+static size_t	logic_attributes (u_char *output, Attribute *old_a, Attribute *a)
 {
 	char	*str = output;
 	size_t	count = 0;
+	Attribute dummy;
 
-	*str++ = ALL_OFF, count++;
-	/* Colors need to be set first, always */
-	if (a->color_fg)
+	if (old_a == NULL)
 	{
-		*str++ = '\003', count++;
+		old_a = &dummy;
+		old_a->reverse = old_a->bold = old_a->blink = 0;
+		old_a->underline = old_a->altchar = 0;
+		old_a->color_fg = old_a->fg_color = 0;
+		old_a->color_bg = old_a->bg_color = 0;
+		*str++ = ALL_OFF, count++;
+	}
+
+	/* Colors need to be set first, always */
+	if (a->color_fg != old_a->color_fg)
+	{
+	    *str++ = '\003', count++;
+	    if (a->color_fg)
+	    {
 		*str++ = '3', count++;
 		*str++ = '0' + a->fg_color, count++;
+	    }
+	    else
+	    {
+		*str++ = '-', count++;
+		*str++ = '1', count++;
+	    }
 	}
-	if (a->color_bg)
+	if (a->color_bg != old_a->color_bg)
 	{
-		if (!a->color_fg)
-			*str++ = '\003', count++;
-		*str++ = ',', count++;
+	    if (!a->color_fg)
+		*str++ = '\003', count++;
+	    *str++ = ',', count++;
+	    if (a->color_bg)
+	    {
 		*str++ = '4', count++;
 		*str++ = '0' + a->bg_color, count++;
+	    }
+	    else
+	    {
+		*str++ = '-', count++;
+		*str++ = '1', count++;
+	    }
 	}
-	if (a->bold)
+	if (old_a->bold != a->bold)
 		*str++ = BOLD_TOG, count++;
-	if (a->blink)
+	if (old_a->blink != a->blink)
 		*str++ = BLINK_TOG, count++;
-	if (a->reverse)
+	if (old_a->reverse != a->reverse)
 		*str++ = REV_TOG, count++;
-	if (a->underline)
+	if (old_a->underline != a->underline)
 		*str++ = UND_TOG, count++;
-	if (a->altchar)
+	if (old_a->altchar != a->altchar)
 		*str++ = ALT_TOG, count++;
+
+	old_a = a;
 	return count;
 }
 
 /* Suppress any attribute changes in the output */
-static size_t	ignore_attributes (u_char *output, Attribute *a)
+static size_t	ignore_attributes (u_char *output, Attribute *old_a, Attribute *a)
 {
 	return 0;
 }
+
 
 /* Read an attribute marker from 'input', put results in 'a'. */
 static int	read_attributes (const u_char *input, Attribute *a)
@@ -369,7 +411,7 @@ static void	term_attribute (Attribute *a)
  * Se we have to actually slurp up only those digits that comprise a legal
  * ^C code.
  */
-static const u_char *read_color_seq (const u_char *start, void *d, int blinkbold)
+ssize_t	read_color_seq (const u_char *start, void *d, int blinkbold)
 {
 	/* 
 	 * The proper "attribute" color mapping is for each ^C lvalue.
@@ -472,7 +514,7 @@ static const u_char *read_color_seq (const u_char *start, void *d, int blinkbold
 	 * If we're passed a non ^C code, dont do anything.
 	 */
 	if (*ptr != '\003')
-		return ptr;
+		return 0;
 
 	/*
 	 * This is a one-or-two-time-through loop.  We find the maximum
@@ -492,7 +534,7 @@ static const u_char *read_color_seq (const u_char *start, void *d, int blinkbold
 				a->color_fg = a->fg_color = 0;
 			a->color_bg = a->bg_color = 0;
 			a->bold = a->blink = 0;
-			return ptr;
+			return ptr - start;
 		}
 
 		/*
@@ -507,7 +549,7 @@ static const u_char *read_color_seq (const u_char *start, void *d, int blinkbold
 				a->color_fg = a->fg_color = 0;
 			a->color_bg = a->bg_color = 0;
 			a->bold = a->blink = 0;
-			return ptr + 2;
+			return (ptr + 2) - start;
 		}
 
 		/*
@@ -519,7 +561,7 @@ static const u_char *read_color_seq (const u_char *start, void *d, int blinkbold
 				a->color_fg = a->fg_color = 0;
 			a->color_bg = a->bg_color = 0;
 			a->bold = a->blink = 0;
-			return ptr;
+			return ptr - start;
 		}
 
 
@@ -616,7 +658,7 @@ static const u_char *read_color_seq (const u_char *start, void *d, int blinkbold
 		break;
 	}
 
-	return ptr;
+	return ptr - start;
 }
 
 /**************************** STRIP ANSI ***********************************/
@@ -670,8 +712,8 @@ static	u_char	gcxlate[256] = {
 };
 
 /*
- * State 0 is a "normal, printable character"
- * State 1 is an "eight bit character"
+ * State 0 is a "normal, printable character" (8 bits included)
+ * State 1 is a "C1 character", aka a control character with high bit set.
  * State 2 is an "escape character" (\033)
  * State 3 is a "color code character" (\003)
  * State 4 is an "attribute change character"
@@ -706,18 +748,18 @@ static	u_char	ansi_state[256] = {
 	1,	1,	1,	1,	1,	1,	1,	1,  /* 210 */
 	1,	1,	1,	1,	1,	1,	1,	1,  /* 220 */
 	1,	1,	1,	1,	1,	1,	1,	1,  /* 230 */
-	1,	1,	1,	1,	1,	1,	1,	1,  /* 240 */
-	1,	1,	1,	1,	1,	1,	1,	1,  /* 250 */
-	1,	1,	1,	1,	1,	1,	1,	1,  /* 260 */
-	1,	1,	1,	1,	1,	1,	1,	1,  /* 270 */
-	1,	1,	1,	1,	1,	1,	1,	1,  /* 300 */
-	1,	1,	1,	1,	1,	1,	1,	1,  /* 310 */
-	1,	1,	1,	1,	1,	1,	1,	1,  /* 320 */
-	1,	1,	1,	1,	1,	1,	1,	1,  /* 330 */
-	1,	1,	1,	1,	1,	1,	1,	1,  /* 340 */
-	1,	1,	1,	1,	1,	1,	1,	1,  /* 350 */
-	1,	1,	1,	1,	1,	1,	1,	1,  /* 360 */
-	1,	1,	1,	1,	1,	1,	1,	1   /* 370 */
+	0,	0,	0,	0,	0,	0,	0,	0,  /* 240 */
+	0,	0,	0,	0,	0,	0,	0,	0,  /* 250 */
+	0,	0,	0,	0,	0,	0,	0,	0,  /* 260 */
+	0,	0,	0,	0,	0,	0,	0,	0,  /* 270 */
+	0,	0,	0,	0,	0,	0,	0,	0,  /* 300 */
+	0,	0,	0,	0,	0,	0,	0,	0,  /* 310 */
+	0,	0,	0,	0,	0,	0,	0,	0,  /* 320 */
+	0,	0,	0,	0,	0,	0,	0,	0,  /* 330 */
+	0,	0,	0,	0,	0,	0,	0,	0,  /* 340 */
+	0,	0,	0,	0,	0,	0,	0,	0,  /* 350 */
+	0,	0,	0,	0,	0,	0,	0,	0,  /* 360 */
+	0,	0,	0,	0,	0,	0,	0,	0,  /* 370 */
 };
 
 /*
@@ -778,7 +820,7 @@ u_char *	normalize_string (const u_char *str, int logical)
 {
 	u_char *	output;
 	u_char		chr;
-	Attribute	a;
+	Attribute	a, olda;
 	int 		pos;
 	int		maxpos;
 	/* int 		args[10];
@@ -788,7 +830,7 @@ u_char *	normalize_string (const u_char *str, int logical)
 	int		gcmode = get_int_var(DISPLAY_PC_CHARACTERS_VAR);
 	int		pc = 0;
 	int		reverse, bold, blink, underline, altchar, color, allow_c1, boldback;
-	size_t		(*attrout) (u_char *, Attribute *) = NULL;
+	size_t		(*attrout) (u_char *, Attribute *, Attribute *) = NULL;
 
 	/* Figure out how many beeps/tabs/nds's we can handle */
 	if (normalize_permit_all_attributes)	/* XXXX */
@@ -818,6 +860,7 @@ u_char *	normalize_string (const u_char *str, int logical)
 	/* Reset all attributes to zero */
 	a.bold = a.underline = a.reverse = a.blink = a.altchar = 0;
 	a.color_fg = a.color_bg = a.fg_color = a.bg_color = 0;
+	olda = a;
 
 	/* 
 	 * The output string has a few extra chars on the end just 
@@ -838,7 +881,8 @@ u_char *	normalize_string (const u_char *str, int logical)
 	    switch (ansi_state[chr])
 	    {
 		/*
-		 * State 0 is a normal, printable ascii character
+		 * State 0 are characters that are permitted under all
+		 * circumstances.
 		 */
 		case 0:
 			output[pos++] = chr;
@@ -846,114 +890,39 @@ u_char *	normalize_string (const u_char *str, int logical)
 			break;
 
 		/*
-		 * State 1 is a high-bit character that may or may not
-		 * need to be translated first.
-		 * State 6 is an unprintable character that must be made
-		 * unprintable (gcmode is forced to be 1)
+		 * State 5 are characters that are never permitted under
+		 * any circumstances.
+		 */
+		case 5:
+			break;
+
+		/*
+		 * State 1 is a control character with high bit set. (C1 char)
 		 */
 		case 1:
-		case 5:
+			if (allow_c1 == 1)
+			{
+				output[pos++] = chr;
+				pc++;
+			}
+			break;
+
+		/*
+		 * State 6 is a control character (without high bit set)
+		 * that doesn't have a special meaning to ircII.
+		 */
 		case 6:
 		{
-			int my_gcmode = gcmode;
-
-			/*
-			 * This is a very paranoid check to make sure that
-			 * the 8-bit escape codes dont elude us.
-			 */
-			if (allow_c1 == 0 && chr >= 128 && chr <= 159)
-				my_gcmode = 0;
-
-			if (ansi_state[chr] == 5)
-				my_gcmode = 0;
-
-			if (ansi_state[chr] == 6)
-				my_gcmode = 1;
-
-			if (normalize_never_xlate)
-				my_gcmode = 4;
-
-			switch (my_gcmode)
+			if (termfeatures & TERM_CAN_GCHAR)
+				output[pos++] = chr;
+			else
 			{
-				/*
-				 * In gcmode 5, translate all characters
-				 */
-				case 5:
-				{
-					output[pos++] = gcxlate[chr];
-					break;
-				}
-
-				/*
-				 * In gcmode 4, accept all characters
-				 */
-				case 4:
-				{
-					output[pos++] = chr;
-					break;
-				}
-
-				/*
-				 * In gcmode 3, accept or translate chars
-				 */
-				case 3:
-				{
-					if (termfeatures & TERM_CAN_GCHAR)
-						output[pos++] = chr;
-					else
-						output[pos++] = gcxlate[chr];
-					break;
-				}
-
-				/*
-				 * In gcmode 2, accept or highlight xlate
-				 */
-				case 2:
-				{
-					if (termfeatures & TERM_CAN_GCHAR)
-						output[pos++] = chr;
-					else
-					{
-						/* <REV> char <REV> */
-						a.reverse = !a.reverse;
-						pos += attrout(output + pos, &a);
-						output[pos++] = gcxlate[chr];
-						a.reverse = !a.reverse;
-						pos += attrout(output + pos, &a);
-					}
-					break;
-				}
-
-				/*
-				 * gcmode 1 is "accept or reverse mangle"
-				 * If youre doing 8-bit, it accepts eight
-				 * bit characters.  If youre not doing 8 bit
-				 * then it converts the char into something
-				 * printable and then reverses it.
-				 */
-				case 1:
-				{
-					if (termfeatures & TERM_CAN_GCHAR)
-						output[pos++] = chr;
-					else if (chr & 0x80)
-						output[pos++] = chr;
-					else
-					{
-						a.reverse = !a.reverse;
-						pos += attrout(output + pos, &a);
-						output[pos++] = 
-							(chr | 0x40) & 0x7f;
-						a.reverse = !a.reverse;
-						pos += attrout(output + pos, &a);
-					}
-					break;
-				}
-
-				/*
-				 * gcmode 0 is "always strip out"
-				 */
-				case 0:
-					break;
+				a.reverse = !a.reverse;
+				pos += attrout(output + pos, &olda, &a);
+				output[pos++] = 
+					(chr | 0x40) & 0x7f;
+				a.reverse = !a.reverse;
+				pos += attrout(output + pos, &olda, &a);
 			}
 			pc++;
 			break;
@@ -968,7 +937,7 @@ u_char *	normalize_string (const u_char *str, int logical)
 			int	nd_spaces = 0;
 			ssize_t	esclen;
 
-			esclen = skip_esc_seq(str, (void *)&a, &nd_spaces);
+			esclen = read_esc_seq(str, (void *)&a, &nd_spaces);
 
 			if (nd_spaces != 0)
 			{
@@ -996,25 +965,21 @@ u_char *	normalize_string (const u_char *str, int logical)
 				a.color_fg = a.color_bg = 0;
 				a.fg_color = a.bg_color = 0;
 			}
-			pos += attrout(output + pos, &a);
+			pos += attrout(output + pos, &olda, &a);
 			str += esclen;
 			break;
 		}
 
 	        /*
-	         * Skip over ^C codes, they're already normalized.
-	         * well, thats not totaly true.  We do some mangling
-	         * in order to make it work better
+		 * Normalize ^C codes...
 	         */
 		case 3:
 		{
-			const u_char 	*end;
+			ssize_t	len;
 
 			put_back();
-			end = read_color_seq(str, (void *)&a, boldback);
-
-			/* Move to the end of the string. */
-			str = end;
+			len = read_color_seq(str, (void *)&a, boldback);
+			str += len;
 
 			/* Suppress the color if no color is permitted */
 			if (!color)
@@ -1025,7 +990,7 @@ u_char *	normalize_string (const u_char *str, int logical)
 			}
 
 			/* Output the new attributes */
-			pos += attrout(output + pos, &a);
+			pos += attrout(output + pos, &olda, &a);
 			break;
 		}
 
@@ -1035,8 +1000,10 @@ u_char *	normalize_string (const u_char *str, int logical)
 		case 4:
 		{
 			put_back();
-			switch (this_char())
+			while (ansi_state[this_char()] == 4)
 			{
+			   switch (this_char())
+			   {
 				case REV_TOG:
 					if (reverse)
 						a.reverse = !a.reverse;
@@ -1065,10 +1032,11 @@ u_char *	normalize_string (const u_char *str, int logical)
 					break;
 				default:
 					break;
+			    }
+			    next_char();
 			}
 
-			pos += attrout(output + pos, &a);
-			next_char();
+			pos += attrout(output + pos, &olda, &a);
 			break;
 		}
 
@@ -1109,7 +1077,7 @@ u_char *	normalize_string (const u_char *str, int logical)
 	{
 		a.bold = a.underline = a.reverse = a.blink = a.altchar = 0;
 		a.color_fg = a.color_bg = a.fg_color = a.bg_color = 0;
-		pos += attrout(output + pos, &a);
+		pos += attrout(output + pos, &olda, &a);
 	}
 	output[pos] = output[pos + 1] = 0;
 	return output;
@@ -1125,13 +1093,14 @@ u_char *	denormalize_string (const u_char *str)
 {
 	u_char *	output = NULL;
 	size_t		maxpos;
-	Attribute 	a;
+	Attribute 	olda, a;
 	size_t		span;
 	size_t		pos;
 
         /* Reset all attributes to zero */
         a.bold = a.underline = a.reverse = a.blink = a.altchar = 0;
         a.color_fg = a.color_bg = a.fg_color = a.bg_color = 0;
+	olda = a;
 
 	/* 
 	 * The output string has a few extra chars on the end just 
@@ -1156,7 +1125,7 @@ u_char *	denormalize_string (const u_char *str)
 				continue;		/* Mangled */
 			str += 5;
 
-			span = logic_attributes(output + pos, &a);
+			span = logic_attributes(output + pos, &olda, &a);
 			pos += span;
 			break;
 		    }
@@ -1214,7 +1183,7 @@ const 	u_char	*ptr;
 const	u_char	*cont_ptr;
 	u_char	*cont = NULL;
 	const char *words;
-	Attribute	a;
+	Attribute	a, olda;
 	Attribute	saved_a;
 	u_char	*cont_free = NULL;
 
@@ -1541,9 +1510,9 @@ const	u_char	*cont_ptr;
 			buffer[pos] = 0;
 			pos_copy = LOCAL_COPY(buffer + word_break);
 			strlcpy(buffer, cont, sizeof(buffer) / 2);
-			display_attributes(buffer + strlen(buffer), &saved_a);
+			display_attributes(buffer + strlen(buffer), &olda, &saved_a);
 			strlcat(buffer, pos_copy, sizeof(buffer) / 2);
-			display_attributes(buffer + strlen(buffer), &a);
+			display_attributes(buffer + strlen(buffer), &olda, &a);
 
 			pos = strlen(buffer);
 			/* Watch this -- ugh. how expensive! :( */
@@ -1568,7 +1537,7 @@ const	u_char	*cont_ptr;
         /* Reset all attributes to zero */
         a.bold = a.underline = a.reverse = a.blink = a.altchar = 0;
         a.color_fg = a.color_bg = a.fg_color = a.bg_color = 0;
-	pos += display_attributes(buffer + pos, &a);
+	pos += display_attributes(buffer + pos, &olda, &a);
 	buffer[pos] = '\0';
 	if (*buffer)
 		malloc_strcpy((char **)&(output[line++]),buffer);
@@ -2847,169 +2816,8 @@ void 	add_wait_prompt (const char *prompt, void (*func)(char *, char *), const c
 }
 
 
-/* * * * * * * * * * * * * * * * * COLOR SUPPORT * * * * * * * * * * */
-/*
- * This parses out a ^C control sequence.  Note that it is not acceptable
- * to simply slurp up all digits after a ^C sequence (either by calling
- * strtol(), or while (isdigit())), because people put ^C sequences right
- * before legit output with numbers (like the time in your status bar.)
- * Se we have to actually slurp up only those digits that comprise a legal
- * ^C code.
- *
- * XXXX - This should be eliminated (in favor of read_color_seq) 
- */
-ssize_t	skip_ctl_c_seq (const u_char *start, int *lhs, int *rhs)
-{
-	const u_char *after = start;
-	u_char	c1, c2;
-	int *	val;
-	int	lv1, rv1;
-
-	/*
-	 * For our sanity, just use a placeholder if the caller doesnt
-	 * care where the end of the ^C code is.
-	 */
-	if (!lhs)
-		lhs = &lv1;
-	if (!rhs)
-		rhs = &rv1;
-
-	*lhs = *rhs = -1;
-
-	/*
-	 * If we're passed a non ^C code, dont do anything.
-	 */
-	if (*after != '\003')
-		return 0;
-
-	/*
-	 * This is a one-or-two-time-through loop.  We find the  maximum 
-	 * span that can compose a legit ^C sequence, then if the first 
-	 * nonvalid character is a comma, we grab the rhs of the code.
-	 */
-	val = lhs;
-	for (;;)
-	{
-		/*
-		 * If its just a lonely old ^C, then its probably a terminator.
-		 * Just skip over it and go on.
-		 */
-		after++;
-		if (*after == 0)
-			return (after - start);
-
-		/*
-		 * Check for the very special case of a definite terminator.
-		 * If the argument to ^C is -1, then we absolutely know that
-		 * this ends the code without starting a new one
-		 */
-		if (after[0] == '-' && after[1] == '1')
-			return (after + 2 - start);
-
-		/*
-		 * Further checks against a lonely old naked ^C.
-		 */
-		if (!isdigit(after[0]) && after[0] != ',')
-			return (after - start);
-
-
-		/*
-		 * Code certainly cant have more than two chars in it
-		 */
-		c1 = after[0];
-		c2 = after[1];
-
-		/*
-		 * Our action depends on the char immediately after the ^C.
-		 */
-		switch (c1)
-		{
-			/* 
-			 * 0X -> 0X <stop> for all numeric X
-			 */
-			case '0':
-				after++;
-				*val = c1 - '0';
-				if (c2 >= '0' && c2 <= '9')
-				{
-					after++;
-					*val = *val * 10 + (c2 - '0');
-				}
-				break;
-
-			/* 
-			 * 1X -> 1 <stop> X if X >= '7' 
-			 * 1X -> 1X <stop>  if X < '7'
-			 */
-			case '1':
-				after++;
-				*val = c1 - '0';
-				if (c2 >= '0' && c2 < '7')
-				{
-					after++;
-					*val = *val * 10 + (c2 - '0');
-				}
-				break;
-
-			/*
-			 * 3X -> 3 <stop> X if X >= '8'
-			 * 3X -> 3X <stop>  if X < '8'
-			 * (Same for 4X and 5X)
-			 */
-			case '3':
-			case '4':
-				after++;
-				*val = c1 - '0';
-				if (c2 >= '0' && c2 < '8')
-				{
-					after++;
-					*val = *val * 10 + (c2 - '0');
-				}
-				break;
-
-			case '5':
-				after++;
-				*val = c1 - '0';
-				if (c2 >= '0' && c2 < '9')
-				{
-					after++;
-					*val = *val * 10 + (c2 - '0');
-				}
-				break;
-
-			/*
-			 * Y -> Y <stop> for any other numeric Y.
-			 */
-			case '2':
-			case '6':
-			case '7':
-			case '8':
-			case '9':
-				*val = (c1 - '0');
-				after++;
-				break;
-
-			/*
-			 * Y -> <stop> Y for any other nonnumeric Y
-			 */
-			default:
-				break;
-		}
-
-		if (val == lhs)
-		{
-			val = rhs;
-			if (*after == ',')
-				continue;
-		}
-		break;
-	}
-
-	return (after - start);
-}
-
-
-ssize_t	skip_esc_seq (const u_char *start, void *ptr_a, int *nd_spaces)
+/**************************************************************************/
+ssize_t	read_esc_seq (const u_char *start, void *ptr_a, int *nd_spaces)
 {
 	Attribute *	a = NULL;
 	Attribute 	safe_a;

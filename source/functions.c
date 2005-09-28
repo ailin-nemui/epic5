@@ -1,4 +1,4 @@
-/* $EPIC: functions.c,v 1.209 2005/09/24 14:43:14 jnelson Exp $ */
+/* $EPIC: functions.c,v 1.210 2005/09/28 02:32:46 jnelson Exp $ */
 /*
  * functions.c -- Built-in functions for ircII
  *
@@ -5209,16 +5209,19 @@ GET_UNIFIED_ARRAY_FUNCTION(function_getcommands, pmatch_builtin_commands)
 GET_UNIFIED_ARRAY_FUNCTION(function_getfunctions, pmatch_builtin_functions)
 
 /*
- * XXX This should be rewritten to use mangle_line() [color]
+ * XXX This should be an alias.
  */
 BUILT_IN_FUNCTION(function_stripc, input)
 {
-	char	*retval;
+	char	*output;
+	size_t	size;
 
-	retval = alloca(strlen(input) + 1);
-	/* XXX Should use mangle_line(). */
-	strcpy_nocolorcodes(retval, input);
-	RETURN_STR(retval);
+	size = (strlen(input) + 1) * 11;
+	output = new_malloc(size + 1);
+	strlcpy(output, input, size);
+	if (mangle_line(output, STRIP_COLOR, size) > size)
+		(void) 0;		/* Result has been truncated. ick. */
+	return output;			/* DONT MALLOC THIS */
 }
 
 BUILT_IN_FUNCTION(function_stripcrap, input)

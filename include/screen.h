@@ -115,10 +115,10 @@ extern	int	normalize_permit_all_attributes;
 	u_char *normalize_string	(const u_char *, int);
 	u_char *denormalize_string	(const u_char *);
 	char   *normalize_color		(int, int, int, int);
-	ssize_t	skip_ctl_c_seq		(const u_char *, int *, int *);
 	u_char **prepare_display	(const u_char *, int, int *, int);
 	int	output_with_count	(const u_char *, int, int);
-	ssize_t skip_esc_seq 		(const u_char *, void *, int *);
+	ssize_t read_esc_seq 		(const u_char *, void *, int *);
+	ssize_t  read_color_seq		(const u_char *, void *d, int);
 
 /* Dont do any word-wrapping, just truncate each line at its place. */
 #define PREPARE_NOWRAP	0x01

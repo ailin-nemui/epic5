@@ -6,10 +6,7 @@ KNOWN ERRATA (eg, bugs, or unresolved requests):
 * /CTCPs over /DCCs don't match up with their queries very well.
 * Revamp of /who -realname 
 * alias foo {package x;load script}  carries 'x' into 'script' ???
-* $stripc() should use mangle_line(), not strcpy_nocolorcodes()
-* strcpy_nocolorcodes() needs to die
-* mangle_line() should use read_color_seq, not skip_ctl_c_seq
-* skip_ctl_c_seq needs to die.
+* Unify mangle_line() and normalize_string().
 
 LOOK FOR IN THE FUTURE
 -----------------------
@@ -763,3 +760,13 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * A new $mask() from jm, who needs to write an UPDATES entry for me. =)
 * Split handling of ESC seqs out of normalize_string() into skip_esc_seq().
 * Remove some now unused xdebugs, fix compile warnings.
+* Fix $stripc() to be a clone of $stripcrap(), just to strip colors
+* Nix the now unused strcpy_nocolorcodes().
+* Fix up read_color_seq() to return an offset, not ptr, a la skip_ctl_c_seq().
+* Fix mangle_line() to use read_color_seq instead of skip_ctl_c_seq
+* Nix the now unused skip_ctl_c_seq(). Only one thing now reads ^C's! HUZZAH.
+* Rename skip_esc_seq() to read_esc_seq() just because.
+* Begin moving logic|display_attributes towards a change model system
+* Begin a radical change on how characters are given "state" (see source)
+* Basically 8 bit chars (except c1 chars) are treated as "always printable" now
+* Mangle a few other callers to logic_attributes, i'm sure these are b0rked.

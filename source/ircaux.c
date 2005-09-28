@@ -1,4 +1,4 @@
-/* $EPIC: ircaux.c,v 1.142 2005/09/24 03:04:28 jnelson Exp $ */
+/* $EPIC: ircaux.c,v 1.143 2005/09/28 02:32:46 jnelson Exp $ */
 /*
  * ircaux.c: some extra routines... not specific to irc... that I needed 
  *
@@ -3068,27 +3068,6 @@ char *	strlpcat (char *source, size_t size, const char *format, ...)
 	return source;
 }
 
-
-/* XXX This should be eliminated */
-u_char *strcpy_nocolorcodes (u_char *dest, const u_char *source)
-{
-	u_char	*save = dest;
-	ssize_t	span;
-
-	do
-	{
-		while (*source == 3)
-		{
-			span = skip_ctl_c_seq(source, NULL, NULL);
-			source += span;
-		}
-		*dest++ = *source;
-	}
-	while (*source++);
-
-	return save;
-}
-
 /*
  * This mangles up 'incoming' corresponding to the current values of
  * /set mangle_inbound or /set mangle_outbound.
@@ -3193,9 +3172,7 @@ size_t	mangle_line	(char *incoming, int how, size_t how_much)
 				char *	end;
 				ssize_t	span;
 
-				/* XXX This should be rewritten to
-				 * use read_color_seq.  */
-				span = skip_ctl_c_seq(s, &lhs, &rhs);
+				span = read_color_seq(s, NULL, 0);
 				end = s + span;
 				if (!(stuff & STRIP_COLOR))
 				{
