@@ -1,4 +1,4 @@
-/* $EPIC: screen.c,v 1.104 2005/09/28 02:32:46 jnelson Exp $ */
+/* $EPIC: screen.c,v 1.105 2005/09/29 01:01:27 jnelson Exp $ */
 /*
  * screen.c
  *
@@ -96,7 +96,6 @@ static void 	do_screens (int fd);
 /*
  * Ugh.  Dont ask.
  */
-	int	normalize_never_xlate = 0;
 	int	normalize_permit_all_attributes = 0;
 
 /*
@@ -342,7 +341,7 @@ static size_t	logic_attributes (u_char *output, Attribute *old_a, Attribute *a)
 	if (old_a->altchar != a->altchar)
 		*str++ = ALT_TOG, count++;
 
-	old_a = a;
+	*old_a = *a;
 	return count;
 }
 
@@ -404,12 +403,26 @@ static void	term_attribute (Attribute *a)
 
 /* * * * * * * * * * * * * COLOR SUPPORT * * * * * * * * * * * * * * * * */
 /*
- * This parses out a ^C control sequence.  Note that it is not acceptable
- * to simply slurp up all digits after a ^C sequence (either by calling
- * strtol(), or while (isdigit())), because people put ^C sequences right
- * before legit output with numbers (like the time in your status bar.)
- * Se we have to actually slurp up only those digits that comprise a legal
- * ^C code.
+ * read_color_seq -- Parse out and count the length of a ^C color sequence
+ * Arguments:
+ *	start     - A string beginning with ^C that represents a color sequence
+ *	d         - An (Attribute *) [or NULL] that shall be modified by the
+ *		    color sequence.
+ *	blinkbold - The value of /set bold_does_bright_blink
+ * Return Value:
+ *	The length of the ^C color sequence, such that (start + retval) is
+ *	the first character that is not part of the ^C color sequence.
+ *	In no case does the return value pass the string's terminating null.
+ *
+ * Note:
+ *	Unlike some other clients, EPIC does not simply slurp up all digits 
+ *	after a ^C sequence (either by calling strtol() or while (isdigit()),
+ *	because some people put ^C sequences before legitimate output with 
+ * 	numbers (like the time on your status bar).  This function is very
+ *	careful only to consume the characters that represent a bona fide 
+ *	^C code.  This means things like "^C49" resolve to "^C4" + "9"
+ *
+ * DO NOT USE ANY OTHER FUNCTION TO PARSE ^C CODES.  YOU HAVE BEEN WARNED!
  */
 ssize_t	read_color_seq (const u_char *start, void *d, int blinkbold)
 {
@@ -492,7 +505,8 @@ ssize_t	read_color_seq (const u_char *start, void *d, int blinkbold)
 	/*
 	 * And switch between the two.
 	 */
-	int	*back_blinkbold_conv = blinkbold ? back_bold_conv : back_blink_conv;
+	int *	back_blinkbold_conv = blinkbold ? back_bold_conv : 
+						  back_blink_conv;
 
 	/* Local variables, of course */
 	const 	u_char *	ptr = start;
@@ -659,6 +673,282 @@ ssize_t	read_color_seq (const u_char *start, void *d, int blinkbold)
 	}
 
 	return ptr - start;
+}
+
+/**************************************************************************/
+/*
+ * read_esc_seq -- Parse out and count the length of an escape (ansi) sequence
+ * Arguments:
+ *	start     - A string beginning with ^C that represents a color sequence
+ *	ptr_a     - An (Attribute *) [or NULL] that shall be modified by the
+ *		    color sequence.
+ *	nd_spaces - [OUTPUT] The number of ND_SPACES the sequence generates.
+ * Return Value:
+ *	The length of the escape (ansi) sequence, such that (start + retval) is
+ *	the first character that is not part of the escape (ansi) sequence.
+ *	In no case does the return value pass the string's terminating null.
+ *
+ * Note:
+ *	EPIC supports the "Non-destructive space" escape sequence (^[[10C)
+ *	which is used by ascii artists.  If this is used, then "nd_spaces" is
+ *	set to the value, otherwise it is set to 0.
+ *
+ *	All escape sequences are parsed, but not all escape sequences are 
+ *	honored.  If a dishonored escape sequence is encountered, then its
+ *	length is counted, but 'ptr_a' will be unchanged.
+ *
+ * DO NOT USE ANY OTHER FUNCTION TO PARSE ESCAPES.  YOU HAVE BEEN WARNED!
+ */
+ssize_t	read_esc_seq (const u_char *start, void *ptr_a, int *nd_spaces)
+{
+	Attribute *	a = NULL;
+	Attribute 	safe_a;
+	int 		args[10];
+	int		nargs;
+	u_char 		chr;
+	const u_char *	str;
+	ssize_t		len;
+
+	if (ptr_a == NULL)
+		a = &safe_a;
+	else
+		a = (Attribute *)ptr_a;
+
+	*nd_spaces = 0;
+	str = start;
+	len = 0;
+
+	switch ((chr = start[len]))
+	{
+	    /*
+	     * These are two-character commands.  The second
+	     * char is the argument.
+	     */
+	    case ('#') : case ('(') : case (')') :
+	    case ('*') : case ('+') : case ('$') :
+	    case ('@') :
+	    {
+		if (start[len+1] != 0)
+			len++;
+		break;
+	    }
+
+	    /*
+	     * These are just single-character commands.
+	     */
+	    case ('7') : case ('8') : case ('=') :
+	    case ('>') : case ('D') : case ('E') :
+	    case ('F') : case ('H') : case ('M') :
+	    case ('N') : case ('O') : case ('Z') :
+	    case ('l') : case ('m') : case ('n') :
+	    case ('o') : case ('|') : case ('}') :
+	    case ('~') : case ('c') :
+	    default:
+	    {
+		break;		/* Don't do anything */
+	    }
+
+	    /*
+	     * Swallow up graphics sequences...
+	     */
+	    case ('G'):
+	    {
+		while ((chr = start[++len]) && chr != ':')
+			;
+		if (chr == 0)
+			len--;
+		break;
+	    }
+
+	    /*
+	     * Not sure what this is, it's not supported by
+	     * rxvt, but its supposed to end with an ESCape.
+	     */
+	    case ('P') :
+	    {
+		while ((chr = start[++len]) && chr != 033)
+			;
+		if (chr == 0)
+			len--;
+		break;
+	    }
+
+	    /*
+	     * Strip out Xterm sequences
+	     */
+	    case (']') :
+	    {
+		while ((chr = start[++len]) && chr != 7)
+			;
+		if (chr == 0)
+			len--;
+		break;
+	    }
+
+	    case ('[') :
+	    {
+start_over:
+
+	    /*
+	     * Set up the arguments list
+	     */
+	    nargs = 0;
+	    args[0] = args[1] = args[2] = args[3] = 0;
+	    args[4] = args[5] = args[6] = args[7] = 0;
+	    args[8] = args[9] = 0;
+        
+	   /*
+	    * This stuff was taken/modified/inspired by rxvt.  We do it this 
+	    * way in order to trap an esc sequence that is embedded in another
+	    * (blah).  We're being really really really paranoid doing this, 
+	    * but it is for the best.
+	    */
+
+	   /*
+	    * Check to see if the stuff after the command is a "private" 
+	    * modifier.  If it is, then we definitely arent interested.
+	    *   '<' , '=' , '>' , '?'
+	    */
+	   chr = start[len];
+	   if (chr >= '<' && chr <= '?')
+		(void)0;		/* Skip it */
+
+	   /*
+	    * Now pull the arguments off one at a time.  Keep pulling them 
+	    * off until we find a character that is not a number or a semicolon.
+	    * Skip everything else.
+	    */
+	   for (nargs = 0; nargs < 10; str++)
+	   {
+		int n = 0;
+
+		len++;
+		for (n = 0; isdigit(start[len]); len++)
+			n = n * 10 + (start[len] - '0');
+
+		args[nargs++] = n;
+
+		/*
+		 * If we run out of code here, then we're totaly confused.
+		 * just back out with whatever we have...
+		 */
+		if (!start[len])
+			return len;
+
+		if (start[len] != ';')
+			break;
+	    }
+
+	    /*
+	     * If we find a new ansi char, start all over from the top 
+	     * and strip it out too
+	     */
+	    if (start[len] == 033)
+		goto start_over;
+
+	    /*
+	     * Support "spaces" (cursor right) code
+	     */
+	    else if (start[len] == 'a' || start[len] == 'C')
+	    {
+		len++;
+		if (nargs >= 1)
+		{
+		    /* Keep this within reality.  */
+		    if (args[0] > 256)
+			args[0] = 256;
+		    *nd_spaces = args[0];
+		}
+	    }
+
+	    /*
+	     * Walk all of the numeric arguments, plonking the appropriate 
+	     * attribute changes as needed.
+	     */
+	    else if (start[len] == 'm')
+	    {
+		int	i;
+
+		len++;
+		for (i = 0; i < nargs; i++)
+		{
+		    switch (args[i])
+		    {
+			case 0:		/* Reset to default */
+			{
+				a->reverse = a->bold = 0;
+				a->blink = a->underline = 0;
+				a->altchar = 0;
+				a->color_fg = a->color_bg = 0;
+				a->fg_color = a->bg_color = 0;
+				break;
+			}
+			case 1:		/* bold on */
+				a->bold = 1;
+				break;
+			case 2:		/* dim on -- not supported */
+				break;
+			case 4:		/* Underline on */
+				a->underline = 1;
+				break;
+			case 5:		/* Blink on */
+			case 26:	/* Blink on */
+				a->blink = 1;
+				break;
+			case 6:		/* Blink off */
+			case 25:	/* Blink off */
+				a->blink = 0;
+				break;
+			case 7:		/* Reverse on */
+				a->reverse = 1;
+				break;
+			case 21:	/* Bold off */
+			case 22:	/* Bold off */
+				a->bold = 0;
+				break;
+			case 24:	/* Underline off */
+				a->underline = 0;
+				break;
+			case 27:	/* Reverse off */
+				a->reverse = 0;
+				break;
+			case 30: case 31: case 32: case 33: case 34: case 35:
+			case 36: case 37:	/* Set foreground color */
+			{
+				a->color_fg = 1;
+				a->fg_color = args[i] - 30;
+				break;
+			}
+			case 39:	/* Reset foreground color to default */
+			{
+				a->color_fg = 0;
+				a->fg_color = 0;
+				break;
+			}
+			case 40: case 41: case 42: case 43: case 44: case 45:
+			case 46: case 47:	/* Set background color */
+			{
+				a->color_bg = 1;
+				a->bg_color = args[i] - 40;
+				break;
+			}
+			case 49:	/* Reset background color to default */
+			{
+				a->color_bg = 0;
+				a->bg_color = 0;
+				break;
+			}
+
+			default:	/* Everything else is not supported */
+				break;
+		    }
+		} /* End of for loop */
+	    } /* End of handling esc-[...m */
+	    } /* End of case esc-[ */
+	} /* End of case esc */
+
+	/* All other escape sequences are ignored! */
+	return len;
 }
 
 /**************************** STRIP ANSI ***********************************/
@@ -885,8 +1175,19 @@ u_char *	normalize_string (const u_char *str, int logical)
 		 * circumstances.
 		 */
 		case 0:
+		{
+normal_char:
 			output[pos++] = chr;
 			pc++;
+			break;
+		}
+
+		/*
+		 * State 1 is a control char with high bit set (C1 char)
+		 */
+		case 1:
+			if (allow_c1 == 0)
+				goto normal_char;
 			break;
 
 		/*
@@ -897,36 +1198,13 @@ u_char *	normalize_string (const u_char *str, int logical)
 			break;
 
 		/*
-		 * State 1 is a control character with high bit set. (C1 char)
-		 */
-		case 1:
-			if (allow_c1 == 1)
-			{
-				output[pos++] = chr;
-				pc++;
-			}
-			break;
-
-		/*
 		 * State 6 is a control character (without high bit set)
 		 * that doesn't have a special meaning to ircII.
 		 */
 		case 6:
-		{
 			if (termfeatures & TERM_CAN_GCHAR)
-				output[pos++] = chr;
-			else
-			{
-				a.reverse = !a.reverse;
-				pos += attrout(output + pos, &olda, &a);
-				output[pos++] = 
-					(chr | 0x40) & 0x7f;
-				a.reverse = !a.reverse;
-				pos += attrout(output + pos, &olda, &a);
-			}
-			pc++;
+				goto normal_char;
 			break;
-		}
 
 
 		/*
@@ -999,45 +1277,45 @@ u_char *	normalize_string (const u_char *str, int logical)
 		 */
 		case 4:
 		{
-			put_back();
-			while (ansi_state[this_char()] == 4)
-			{
-			   switch (this_char())
-			   {
-				case REV_TOG:
-					if (reverse)
-						a.reverse = !a.reverse;
-					break;
-				case BOLD_TOG:
-					if (bold)
-						a.bold = !a.bold;
-					break;
-				case BLINK_TOG:
-					if (blink)
-						a.blink = !a.blink;
-					break;
-				case UND_TOG:
-					if (underline)
-						a.underline = !a.underline;
-					break;
-				case ALT_TOG:
-					if (altchar)
-						a.altchar = !a.altchar;
-					break;
-				case ALL_OFF:
-					a.reverse = a.bold = a.blink = 0;
-					a.underline = a.altchar = 0;
-					a.color_fg = a.color_bg = 0;
-					a.bg_color = a.fg_color = 0;
-					break;
-				default:
-					break;
-			    }
-			    next_char();
-			}
+		    put_back();
+		    switch (this_char())
+		    {
+			case REV_TOG:
+				if (reverse)
+					a.reverse = !a.reverse;
+				break;
+			case BOLD_TOG:
+				if (bold)
+					a.bold = !a.bold;
+				break;
+			case BLINK_TOG:
+				if (blink)
+					a.blink = !a.blink;
+				break;
+			case UND_TOG:
+				if (underline)
+					a.underline = !a.underline;
+				break;
+			case ALT_TOG:
+				if (altchar)
+					a.altchar = !a.altchar;
+				break;
+			case ALL_OFF:
+				a.reverse = a.bold = a.blink = 0;
+				a.underline = a.altchar = 0;
+				a.color_fg = a.color_bg = 0;
+				a.bg_color = a.fg_color = 0;
+				pos += attrout(output + pos, NULL, &a);
+				olda = a;
+				break;
+			default:
+				break;
+		    }
+		    next_char();
 
-			pos += attrout(output + pos, &olda, &a);
-			break;
+		    /* After ALL_OFF, this is a harmless no-op */
+		    pos += attrout(output + pos, &olda, &a);
+		    break;
 		}
 
 		case 7:      /* bell */
@@ -2816,256 +3094,4 @@ void 	add_wait_prompt (const char *prompt, void (*func)(char *, char *), const c
 }
 
 
-/**************************************************************************/
-ssize_t	read_esc_seq (const u_char *start, void *ptr_a, int *nd_spaces)
-{
-	Attribute *	a = NULL;
-	Attribute 	safe_a;
-	int 		args[10];
-	int		nargs;
-	u_char 		chr;
-	const u_char *	str;
-	ssize_t		len;
-
-	if (a == NULL)
-		a = &safe_a;
-	else
-		a = (Attribute *)ptr_a;
-
-	*nd_spaces = 0;
-	str = start;
-	len = 0;
-
-	switch ((chr = start[len]))
-	{
-	    /*
-	     * These are two-character commands.  The second
-	     * char is the argument.
-	     */
-	    case ('#') : case ('(') : case (')') :
-	    case ('*') : case ('+') : case ('$') :
-	    case ('@') :
-	    {
-		if (start[len+1] != 0)
-			len++;
-		break;
-	    }
-
-	    /*
-	     * These are just single-character commands.
-	     */
-	    case ('7') : case ('8') : case ('=') :
-	    case ('>') : case ('D') : case ('E') :
-	    case ('F') : case ('H') : case ('M') :
-	    case ('N') : case ('O') : case ('Z') :
-	    case ('l') : case ('m') : case ('n') :
-	    case ('o') : case ('|') : case ('}') :
-	    case ('~') : case ('c') :
-	    default:
-	    {
-		break;		/* Don't do anything */
-	    }
-
-	    /*
-	     * Swallow up graphics sequences...
-	     */
-	    case ('G'):
-	    {
-		while ((chr = start[++len]) && chr != ':')
-			;
-		if (chr == 0)
-			len--;
-		break;
-	    }
-
-	    /*
-	     * Not sure what this is, it's not supported by
-	     * rxvt, but its supposed to end with an ESCape.
-	     */
-	    case ('P') :
-	    {
-		while ((chr = start[++len]) && chr != 033)
-			;
-		if (chr == 0)
-			len--;
-		break;
-	    }
-
-	    /*
-	     * Strip out Xterm sequences
-	     */
-	    case (']') :
-	    {
-		while ((chr = start[++len]) && chr != 7)
-			;
-		if (chr == 0)
-			len--;
-		break;
-	    }
-
-	    case ('[') :
-	    {
-start_over:
-
-	    /*
-	     * Set up the arguments list
-	     */
-	    nargs = 0;
-	    args[0] = args[1] = args[2] = args[3] = 0;
-	    args[4] = args[5] = args[6] = args[7] = 0;
-	    args[8] = args[9] = 0;
-        
-	   /*
-	    * This stuff was taken/modified/inspired by rxvt.  We do it this 
-	    * way in order to trap an esc sequence that is embedded in another
-	    * (blah).  We're being really really really paranoid doing this, 
-	    * but it is for the best.
-	    */
-
-	   /*
-	    * Check to see if the stuff after the command is a "private" 
-	    * modifier.  If it is, then we definitely arent interested.
-	    *   '<' , '=' , '>' , '?'
-	    */
-	   chr = start[len];
-	   if (chr >= '<' && chr <= '?')
-		(void)0;		/* Skip it */
-
-	   /*
-	    * Now pull the arguments off one at a time.  Keep pulling them 
-	    * off until we find a character that is not a number or a semicolon.
-	    * Skip everything else.
-	    */
-	   for (nargs = 0; nargs < 10; str++)
-	   {
-		int n = 0;
-
-		len++;
-		for (n = 0; isdigit(start[len]); len++)
-			n = n * 10 + (start[len] - '0');
-
-		args[nargs++] = n;
-
-		/*
-		 * If we run out of code here, then we're totaly confused.
-		 * just back out with whatever we have...
-		 */
-		if (!start[len])
-			return len;
-
-		if (start[len] != ';')
-			break;
-	    }
-
-	    /*
-	     * If we find a new ansi char, start all over from the top 
-	     * and strip it out too
-	     */
-	    if (start[len] == 033)
-		goto start_over;
-
-	    /*
-	     * Support "spaces" (cursor right) code
-	     */
-	    else if (start[len] == 'a' || start[len] == 'C')
-	    {
-		len++;
-		if (nargs >= 1)
-		{
-		    /* Keep this within reality.  */
-		    if (args[0] > 256)
-			args[0] = 256;
-		    *nd_spaces = args[0];
-		}
-	    }
-
-	    /*
-	     * Walk all of the numeric arguments, plonking the appropriate 
-	     * attribute changes as needed.
-	     */
-	    else if (start[len] == 'm')
-	    {
-		int	i;
-
-		len++;
-		for (i = 0; i < nargs; i++)
-		{
-		    switch (args[i])
-		    {
-			case 0:		/* Reset to default */
-			{
-				a->reverse = a->bold = 0;
-				a->blink = a->underline = 0;
-				a->altchar = 0;
-				a->color_fg = a->color_bg = 0;
-				a->fg_color = a->bg_color = 0;
-				break;
-			}
-			case 1:		/* bold on */
-				a->bold = 1;
-				break;
-			case 2:		/* dim on -- not supported */
-				break;
-			case 4:		/* Underline on */
-				a->underline = 1;
-				break;
-			case 5:		/* Blink on */
-			case 26:	/* Blink on */
-				a->blink = 1;
-				break;
-			case 6:		/* Blink off */
-			case 25:	/* Blink off */
-				a->blink = 0;
-				break;
-			case 7:		/* Reverse on */
-				a->reverse = 1;
-				break;
-			case 21:	/* Bold off */
-			case 22:	/* Bold off */
-				a->bold = 0;
-				break;
-			case 24:	/* Underline off */
-				a->underline = 0;
-				break;
-			case 27:	/* Reverse off */
-				a->reverse = 0;
-				break;
-			case 30: case 31: case 32: case 33: case 34: case 35:
-			case 36: case 37:	/* Set foreground color */
-			{
-				a->color_fg = 1;
-				a->fg_color = args[i] - 30;
-				break;
-			}
-			case 39:	/* Reset foreground color to default */
-			{
-				a->color_fg = 0;
-				a->fg_color = 0;
-				break;
-			}
-			case 40: case 41: case 42: case 43: case 44: case 45:
-			case 46: case 47:	/* Set background color */
-			{
-				a->color_bg = 1;
-				a->bg_color = args[i] - 40;
-				break;
-			}
-			case 49:	/* Reset background color to default */
-			{
-				a->color_bg = 0;
-				a->bg_color = 0;
-				break;
-			}
-
-			default:	/* Everything else is not supported */
-				break;
-		    }
-		} /* End of for loop */
-	    } /* End of handling esc-[...m */
-	    } /* End of case esc-[ */
-	} /* End of case esc */
-
-	/* All other escape sequences are ignored! */
-	return len;
-}
 

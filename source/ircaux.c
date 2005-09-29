@@ -1,4 +1,4 @@
-/* $EPIC: ircaux.c,v 1.143 2005/09/28 02:32:46 jnelson Exp $ */
+/* $EPIC: ircaux.c,v 1.144 2005/09/29 01:01:27 jnelson Exp $ */
 /*
  * ircaux.c: some extra routines... not specific to irc... that I needed 
  *
@@ -3128,9 +3128,7 @@ size_t	mangle_line	(char *incoming, int how, size_t how_much)
 		/* normalize_string can expand up to three times */
 		char *output;
 
-		normalize_never_xlate = 1;	/* XXXXX */
 		output = normalize_string(incoming, 1);	/* Should be ok */
-		normalize_never_xlate = 0;	/* XXXXX */
 		if (strlcpy(incoming, output, how_much) > how_much)
 			say("Mangle_line truncating results. #1 -- "
 				"Email problems@epicsol.org [%d] [%d]",

@@ -770,3 +770,11 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Begin a radical change on how characters are given "state" (see source)
 * Basically 8 bit chars (except c1 chars) are treated as "always printable" now
 * Mangle a few other callers to logic_attributes, i'm sure these are b0rked.
+* Fix some bugs, naturally.
+* Nix the (apparantly) unused normalize_never_xlate global variable.
+* Add function comments to some stuff in screen.c (comments! the horor!)
+* Move read_esc_seq so it's closer to read_color_seq.
+* State 1 chars (C1 chars) are stripped unless /set allow_c1_chars
+* State 6 chars (Control chars) are stripped unless TERM_CAN_GCHAR is set
+* State 4 chars (Highlight chars) are handled singly
+* Plus, ALL_OFF is not generated unless you do an ALL_OFF! HUZZAH!
