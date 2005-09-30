@@ -1,4 +1,4 @@
-/* $EPIC: screen.c,v 1.105 2005/09/29 01:01:27 jnelson Exp $ */
+/* $EPIC: screen.c,v 1.106 2005/09/30 03:38:04 jnelson Exp $ */
 /*
  * screen.c
  *
@@ -961,47 +961,6 @@ start_over:
  */
 
 /*
- * Used as a translation table when we cant display graphics characters
- * or we have been told to do translation.  A no-brainer, with little attempt
- * at being smart.
- * (JKJ: perhaps we should allow a user to /set this?)
- */
-static	u_char	gcxlate[256] = {
-  '*', '*', '*', '*', '*', '*', '*', '*',
-  '#', '*', '#', '*', '*', '*', '*', '*',
-  '>', '<', '|', '!', '|', '$', '_', '|',
-  '^', 'v', '>', '<', '*', '=', '^', 'v',
-  ' ', '!', '"', '#', '$', '%', '&', '\'',
-  '(', ')', '*', '+', ',', '_', '.', '/',
-  '0', '1', '2', '3', '4', '5', '6', '7',
-  '8', '9', ':', ';', '<', '=', '>', '?',
-  '@', 'A', 'B', 'C', 'D', 'E', 'F', 'G',
-  'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O',
-  'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W',
-  'Z', 'Y', 'X', '[', '\\', ']', '^', '_',
-  '`', 'a', 'b', 'c', 'd', 'e', 'f', 'g',
-  'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o',
-  'p', 'q', 'r', 's', 't', 'u', 'v', 'w',
-  'x', 'y', 'z', '{', '|', '}', '~', '?',
-  'C', 'u', 'e', 'a', 'a', 'a', 'a', 'c',
-  'e', 'e', 'e', 'i', 'i', 'i', 'A', 'A',
-  'e', 'e', 'e', 'o', 'o', 'o', 'u', 'u',
-  'y', 'O', 'U', 'C', '#', 'Y', 'P', 'f',
-  'a', 'i', 'o', 'u', 'n', 'N', '^', '^',
-  '?', '<', '>', '2', '4', '!', '<', '>',
-  '#', '#', '#', '|', '|', '|', '|', '+',
-  '+', '+', '+', '|', '+', '+', '+', '+',
-  '+', '+', '+', '+', '-', '+', '+', '+',
-  '+', '+', '+', '+', '+', '=', '+', '+',
-  '+', '+', '+', '+', '+', '+', '+', '+',
-  '+', '+', '+', '#', '-', '|', '|', '-',
-  'a', 'b', 'P', 'p', 'Z', 'o', 'u', 't',
-  '#', 'O', '0', 'O', '-', 'o', 'e', 'U',
-  '*', '+', '>', '<', '|', '|', '/', '=',
-  '*', '*', '*', '*', 'n', '2', '*', '*'
-};
-
-/*
  * State 0 is a "normal, printable character" (8 bits included)
  * State 1 is a "C1 character", aka a control character with high bit set.
  * State 2 is an "escape character" (\033)
@@ -1019,7 +978,7 @@ static	u_char	ansi_state[256] = {
 /*	^H	^I	^J	^K	^L	^M	^N	^O */
 	6,	8,	0,	6,	0,	6,	6,	4,  /* 010 */
 /*	^P	^Q	^R	^S	^T	^U	^V	^W */
-	6,	6,	6,	9,	4,	6,	4,	6,  /* 020 */
+	6,	6,	6,	9,	6,	6,	4,	6,  /* 020 */
 /*	^X	^Y	^Z	^[	^\	^]	^^	^_ */
 	6,	6,	6,	2,	6,	6,	6,	4,  /* 030 */
 	0,	0,	0,	0,	0,	0,	0,	0,  /* 040 */
@@ -1084,7 +1043,7 @@ static	u_char	ansi_state[256] = {
 #if 0
 u_char *	my_normalize_string (const u_char *str, int logical, int how)
 {
-	int gcmode	/set DISPLAY_PC_CHARACTERS
+	*int gcmode	/set DISPLAY_PC_CHARACTERS
 	*int eightbit	/set EIGHT_BIT
 	*int beep	/set BEEP
 	*int beep_max	/set BEEP_MAX
@@ -1360,6 +1319,333 @@ normal_char:
 	output[pos] = output[pos + 1] = 0;
 	return output;
 }
+
+u_char *	new_normalize_string (const u_char *str, int logical, int mangle)
+{
+	u_char *	output;
+	u_char		chr;
+	Attribute	a, olda;
+	int 		pos;
+	int		maxpos;
+	int		i, n;
+	int		pc = 0;
+	int		mangle_escapes, normalize;
+	int		strip_reverse, strip_bold, strip_blink, 
+			strip_underline, strip_altchar, strip_color, 
+			strip_all_off, strip_nd_space, strip_c1, boldback;
+	int		strip_unprintable, strip_other;
+	size_t		(*attrout) (u_char *, Attribute *, Attribute *) = NULL;
+
+	mangle_escapes 	= ((mangle & MANGLE_ESCAPES) != 0);
+	normalize	= ((mangle & NORMALIZE) != 0);
+
+	strip_color 	= ((mangle & STRIP_COLOR) != 0);
+	strip_reverse 	= ((mangle & STRIP_REVERSE) != 0);
+	strip_underline	= ((mangle & STRIP_UNDERLINE) != 0);
+	strip_bold 	= ((mangle & STRIP_BOLD) != 0);
+	strip_blink 	= ((mangle & STRIP_BLINK) != 0);
+	strip_nd_space	= ((mangle & STRIP_ND_SPACE) != 0);
+	strip_altchar 	= ((mangle & STRIP_ALT_CHAR) != 0);
+	strip_all_off 	= ((mangle & STRIP_ALL_OFF) != 0);
+	strip_unprintable = ((mangle & STRIP_UNPRINTABLE) != 0);
+	strip_other	= ((mangle & STRIP_OTHER) != 0);
+
+	strip_c1	= !get_int_var(ALLOW_C1_CHARS_VAR);
+	boldback	= get_int_var(TERM_DOES_BRIGHT_BLINK_VAR);
+
+	if (logical == 0)
+		attrout = display_attributes;	/* prep for screen output */
+	else if (logical == 1)
+		attrout = logic_attributes;	/* non-screen handlers */
+	else if (logical == 2)
+		attrout = ignore_attributes;	/* $stripansi() function */
+	else if (logical == 3)
+		attrout = display_attributes;	/* The status line */
+	else
+		panic("'logical == %d' is not valid.", logical);
+
+	/* Reset all attributes to zero */
+	a.bold = a.underline = a.reverse = a.blink = a.altchar = 0;
+	a.color_fg = a.color_bg = a.fg_color = a.bg_color = 0;
+	olda = a;
+
+	/* 
+	 * The output string has a few extra chars on the end just 
+	 * in case you need to tack something else onto it.
+	 */
+	maxpos = strlen(str);
+	output = (u_char *)new_malloc(maxpos + 192);
+	pos = 0;
+
+	while ((chr = next_char()))
+	{
+	    if (pos > maxpos)
+	    {
+		maxpos += 192; /* Extend 192 chars at a time */
+		RESIZE(output, unsigned char, maxpos + 192);
+	    }
+
+	    switch (ansi_state[chr])
+	    {
+		/*
+		 * State 0 are characters that are permitted under all
+		 * circumstances.
+		 */
+		case 0:
+		{
+			if (strip_other)
+				break;
+
+normal_char:
+			output[pos++] = chr;
+			pc++;
+			break;
+		}
+
+		/*
+		 * State 1 is a control char with high bit set (C1 char)
+		 */
+		case 1:
+		{
+			if (strip_unprintable)
+				break;
+			if (strip_c1)
+			{
+				chr = (chr | 0x60) & 0x7F;
+abnormal_char:
+				a.reverse = !a.reverse;
+				pos += attrout(output + pos, &olda, &a);
+				output[pos++] = chr;
+				a.reverse = !a.reverse;
+				pos += attrout(output + pos, &olda, &a);
+				break;
+			}
+			goto normal_char;
+		}
+
+		/*
+		 * State 5 are characters that are never permitted under
+		 * any circumstances.
+		 */
+		case 5:
+		{
+			if (strip_unprintable)
+				break;
+			if (normalize)
+				break;
+			goto normal_char;
+		}
+
+		/*
+		 * State 6 is a control character (without high bit set)
+		 * that doesn't have a special meaning to ircII.
+		 */
+		case 6:
+		{
+			if (strip_unprintable)
+				break;
+			if (termfeatures & TERM_CAN_GCHAR)
+				goto normal_char;
+			if (normalize)
+			{
+				output[pos++] = (chr | 0x40) & 0x7F;
+				goto abnormal_char;
+			}
+			goto normal_char;
+		}
+
+		/*
+		 * State 2 is the escape character
+		 */
+		case 2:
+		{
+		    int	nd_spaces = 0;
+		    ssize_t	esclen;
+
+		    if (mangle_escapes == 1)
+		    {
+			chr = '[';
+			goto abnormal_char;
+		    }
+
+		    if (normalize == 1)
+		    {
+			esclen = read_esc_seq(str, (void *)&a, &nd_spaces);
+
+			if (nd_spaces != 0 && !strip_nd_space)
+			{
+			    /* This is just sanity */
+			    if (pos + nd_spaces > maxpos)
+			    {
+				maxpos += nd_spaces; 
+				RESIZE(output, u_char, maxpos + 192);
+			    }
+			    while (nd_spaces-- > 0)
+			    {
+				output[pos++] = ND_SPACE;
+				pc++;
+			    }
+			    break;		/* attributes can't change */
+			}
+
+			if (a.reverse && strip_reverse)		a.reverse = 0;
+			if (a.bold && strip_bold)		a.bold = 0;
+			if (a.blink && strip_blink)		a.blink = 0;
+			if (a.underline && strip_underline)	a.underline = 0;
+			if (a.altchar && strip_altchar)		a.altchar = 0;
+			if (strip_color)
+			{
+				a.color_fg = a.color_bg = 0;
+				a.fg_color = a.bg_color = 0;
+			}
+			pos += attrout(output + pos, &olda, &a);
+			str += esclen;
+			break;
+		    }
+
+		    if (strip_unprintable)
+			break;
+		    goto normal_char;
+		}
+
+	        /*
+		 * Normalize ^C codes...
+	         */
+		case 3:
+		{
+		   if (strip_unprintable)
+			break;
+
+		   if (strip_color || normalize)
+		   {
+			ssize_t	len;
+
+			put_back();
+			len = read_color_seq(str, (void *)&a, boldback);
+			str += len;
+
+			/* Suppress the color if no color is permitted */
+			if (strip_color)
+			{
+				a.color_fg = a.color_bg = 0;
+				a.fg_color = a.bg_color = 0;
+				break;
+			}
+
+			/* Output the new attributes */
+			pos += attrout(output + pos, &olda, &a);
+			break;
+		    }
+
+		    goto normal_char;
+		}
+
+		/*
+		 * State 4 is for the special highlight characters
+		 */
+		case 4:
+		{
+		    if (strip_unprintable)
+			break;
+
+		    put_back();
+		    switch (this_char())
+		    {
+			case REV_TOG:
+				if (!strip_reverse)
+					a.reverse = !a.reverse;
+				break;
+			case BOLD_TOG:
+				if (!strip_bold)
+					a.bold = !a.bold;
+				break;
+			case BLINK_TOG:
+				if (!strip_blink)
+					a.blink = !a.blink;
+				break;
+			case UND_TOG:
+				if (!strip_underline)
+					a.underline = !a.underline;
+				break;
+			case ALT_TOG:
+				if (!strip_altchar)
+					a.altchar = !a.altchar;
+				break;
+			case ALL_OFF:
+				if (!strip_all_off)
+				{
+				    a.reverse = a.bold = a.blink = 0;
+				    a.underline = a.altchar = 0;
+				    a.color_fg = a.color_bg = 0;
+				    a.bg_color = a.fg_color = 0;
+				    pos += attrout(output + pos, NULL, &a);
+				    olda = a;
+				}
+				break;
+			default:
+				break;
+		    }
+		    next_char();
+
+		    /* After ALL_OFF, this is a harmless no-op */
+		    pos += attrout(output + pos, &olda, &a);
+		    break;
+		}
+
+		case 7:      /* bell */
+		{
+			if (strip_unprintable)
+				break;
+
+			output[pos++] = '\007';
+			break;
+		}
+
+		case 8:		/* Tab */
+		{
+			int	len = 8 - (pc % 8);
+
+			if (strip_other)
+				break;
+
+			for (i = 0; i < len; i++)
+			{
+				output[pos++] = ' ';
+				pc++;
+			}
+			break;
+		}
+
+		case 9:		/* Non-destruct space */
+		{
+			if (strip_other)
+				break;
+			if (strip_nd_space)
+				break;
+
+			output[pos++] = ND_SPACE;
+			break;
+		}
+
+		default:
+		{
+			panic("Unknown normalize_string mode");
+			break;
+		}
+	    } /* End of huge ansi-state switch */
+	} /* End of while, iterating over input string */
+
+	/* Terminate the output and return it. */
+	if (logical == 0)
+	{
+		a.bold = a.underline = a.reverse = a.blink = a.altchar = 0;
+		a.color_fg = a.color_bg = a.fg_color = a.bg_color = 0;
+		pos += attrout(output + pos, &olda, &a);
+	}
+	output[pos] = output[pos + 1] = 0;
+	return output;
+}
+
 
 /* 
  * XXX I'm not sure where this belongs, but for now it goes here.

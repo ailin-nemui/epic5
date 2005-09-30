@@ -53,8 +53,6 @@
 #define BLINK_TOG_STR	"\006"
 #define ALL_OFF		'\017'		/* ^O */
 #define ALL_OFF_STR	"\017"
-#define ROM_CHAR	'\022'		/* ^R */
-#define ROM_CHAR_STR	"\022"
 #define ND_SPACE	'\023'		/* ^S */
 #define ND_SPACE_STR	"\023"
 #define ALT_TOG		'\005'		/* ^E (think Extended) */

@@ -1,4 +1,4 @@
-/* $EPIC: ircaux.c,v 1.144 2005/09/29 01:01:27 jnelson Exp $ */
+/* $EPIC: ircaux.c,v 1.145 2005/09/30 03:38:04 jnelson Exp $ */
 /*
  * ircaux.c: some extra routines... not specific to irc... that I needed 
  *
@@ -3123,7 +3123,7 @@ size_t	mangle_line	(char *incoming, int how, size_t how_much)
 		}
 	}
 
-	if (stuff & MANGLE_ANSI_CODES)
+	if (stuff & NORMALIZE)
 	{
 		/* normalize_string can expand up to three times */
 		char *output;
@@ -3206,12 +3206,6 @@ size_t	mangle_line	(char *incoming, int how, size_t how_much)
 			{
 				if (!(stuff & STRIP_BLINK))
 					buffer[i++] = BLINK_TOG;
-				break;
-			}
-			case ROM_CHAR:		/* Special rom-chars */
-			{
-				if (!(stuff & STRIP_ROM_CHAR))
-					buffer[i++] = ROM_CHAR;
 				break;
 			}
 			case ND_SPACE:		/* Nondestructive spaces */

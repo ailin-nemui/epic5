@@ -1,4 +1,4 @@
-/* $EPIC: vars.c,v 1.82 2005/08/30 23:45:13 jnelson Exp $ */
+/* $EPIC: vars.c,v 1.83 2005/09/30 03:38:04 jnelson Exp $ */
 /*
  * vars.c: All the dealing of the irc variables are handled here. 
  *
@@ -773,9 +773,9 @@ int	parse_mangle (const char *value, int nvalue, char **rv)
 			else if (!my_strnicmp(str2, "-ALT_CHAR", 4))
 				nvalue &= ~(STRIP_ALT_CHAR);
 			else if (!my_strnicmp(str2, "ANSI", 2))
-				nvalue |= MANGLE_ANSI_CODES;
+				nvalue |= NORMALIZE;
 			else if (!my_strnicmp(str2, "-ANSI", 3))
-				nvalue &= ~(MANGLE_ANSI_CODES);
+				nvalue &= ~(NORMALIZE);
 			else if (!my_strnicmp(str2, "BLINK", 2))
 				nvalue |= STRIP_BLINK;
 			else if (!my_strnicmp(str2, "-BLINK", 3))
@@ -796,6 +796,10 @@ int	parse_mangle (const char *value, int nvalue, char **rv)
 				nvalue |= STRIP_ND_SPACE;
 			else if (!my_strnicmp(str2, "-ND_SPACE", 3))
 				nvalue &= ~(STRIP_ND_SPACE);
+			else if (!my_strnicmp(str2, "NORMALIZE", 3))
+				nvalue |= NORMALIZE;
+			else if (!my_strnicmp(str2, "-NORMALIZE", 4))
+				nvalue &= ~(NORMALIZE);
 			else if (!my_strnicmp(str2, "NONE", 2))
 				nvalue = 0;
 			else if (!my_strnicmp(str2, "OTHER", 2))
@@ -806,10 +810,6 @@ int	parse_mangle (const char *value, int nvalue, char **rv)
 				nvalue |= STRIP_REVERSE;
 			else if (!my_strnicmp(str2, "-REVERSE", 3))
 				nvalue &= ~(STRIP_REVERSE);
-			else if (!my_strnicmp(str2, "ROM_CHAR", 2))
-				nvalue |= STRIP_ROM_CHAR;
-			else if (!my_strnicmp(str2, "-ROM_CHAR", 3))
-				nvalue &= ~(STRIP_ROM_CHAR);
 			else if (!my_strnicmp(str2, "UNDERLINE", 3))
 				nvalue |= STRIP_UNDERLINE;
 			else if (!my_strnicmp(str2, "-UNDERLINE", 4))
@@ -825,8 +825,8 @@ int	parse_mangle (const char *value, int nvalue, char **rv)
 	{
 		if (nvalue & MANGLE_ESCAPES)
 			malloc_strcat_wordlist(&nv, comma, "ESCAPE");
-		if (nvalue & MANGLE_ANSI_CODES)
-			malloc_strcat_wordlist(&nv, comma, "ANSI");
+		if (nvalue & NORMALIZE)
+			malloc_strcat_wordlist(&nv, comma, "NORMALIZE");
 		if (nvalue & STRIP_COLOR)
 			malloc_strcat_wordlist(&nv, comma, "COLOR");
 		if (nvalue & STRIP_REVERSE)
@@ -839,8 +839,6 @@ int	parse_mangle (const char *value, int nvalue, char **rv)
 			malloc_strcat_wordlist(&nv, comma, "BLINK");
 		if (nvalue & STRIP_ALT_CHAR)
 			malloc_strcat_wordlist(&nv, comma, "ALT_CHAR");
-		if (nvalue & STRIP_ROM_CHAR)
-			malloc_strcat_wordlist(&nv, comma, "ROM_CHAR");
 		if (nvalue & STRIP_ND_SPACE)
 			malloc_strcat_wordlist(&nv, comma, "ND_SPACE");
 		if (nvalue & STRIP_ALL_OFF)

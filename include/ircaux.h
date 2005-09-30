@@ -7,7 +7,7 @@
  *
  * See the COPYRIGHT file, or do a HELP IRCII COPYRIGHT 
  *
- * @(#)$Id: ircaux.h,v 1.81 2005/09/28 02:32:46 jnelson Exp $
+ * @(#)$Id: ircaux.h,v 1.82 2005/09/30 03:38:03 jnelson Exp $
  */
 
 #ifndef _IRCAUX_H_
@@ -208,18 +208,17 @@ char *	substitute_string	(const char *, const char *, const char *, int, int);
 /* ---------------- */
 /* Used for the inbound mangling stuff */
 #define MANGLE_ESCAPES		1 << 0
-#define MANGLE_ANSI_CODES	1 << 1
+#define NORMALIZE		1 << 1
 #define STRIP_COLOR		1 << 2
 #define STRIP_REVERSE		1 << 3
 #define STRIP_UNDERLINE		1 << 4
 #define STRIP_BOLD		1 << 5
 #define STRIP_BLINK		1 << 6
-#define STRIP_ROM_CHAR		1 << 7
-#define STRIP_ND_SPACE		1 << 8
-#define STRIP_ALT_CHAR		1 << 9
-#define STRIP_ALL_OFF		1 << 10
-#define STRIP_UNPRINTABLE	1 << 11
-#define STRIP_OTHER		1 << 12
+#define STRIP_ND_SPACE		1 << 7
+#define STRIP_ALT_CHAR		1 << 8
+#define STRIP_ALL_OFF		1 << 9
+#define STRIP_UNPRINTABLE	1 << 10
+#define STRIP_OTHER		1 << 11
 
 extern	int	outbound_line_mangler;
 extern	int	inbound_line_mangler;

@@ -93,32 +93,24 @@ struct	ScreenStru *next;		/* Previous screen in list */
 
 
 	void	add_wait_prompt 	(const char *, void (*)(char *, char *), const char *, int, int);
-	void	set_current_screen 	(Screen *);
-	void	window_redirect		(char *, int);
-	int	check_screen_redirect	(char *);
 	void	add_to_screen		(const unsigned char *);
-unsigned char**	split_up_line		(const unsigned char *, int);
-	int	output_line		(const unsigned char *);
 	void	cursor_not_in_display	(Screen *);
 	void	cursor_in_display	(Window *);
 	int	is_cursor_in_display	(Screen *);
-	void	repaint_one_line	(Window *, int);	/* Don't use */
 	void	repaint_window_body	(Window *);
 	Screen *create_new_screen	(void);
 	Window	*create_additional_screen (void);
 	void	kill_screen		(Screen *);
-	void	close_all_screen	(void);
 
 const	u_char *all_off			(void);
-extern	int	normalize_never_xlate;
 extern	int	normalize_permit_all_attributes;
 	u_char *normalize_string	(const u_char *, int);
+	u_char *new_normalize_string	(const u_char *, int, int);
 	u_char *denormalize_string	(const u_char *);
-	char   *normalize_color		(int, int, int, int);
 	u_char **prepare_display	(const u_char *, int, int *, int);
 	int	output_with_count	(const u_char *, int, int);
-	ssize_t read_esc_seq 		(const u_char *, void *, int *);
-	ssize_t  read_color_seq		(const u_char *, void *d, int);
+	ssize_t	read_esc_seq 		(const u_char *, void *, int *);
+	ssize_t	read_color_seq		(const u_char *, void *d, int);
 
 /* Dont do any word-wrapping, just truncate each line at its place. */
 #define PREPARE_NOWRAP	0x01

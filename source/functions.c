@@ -1,4 +1,4 @@
-/* $EPIC: functions.c,v 1.210 2005/09/28 02:32:46 jnelson Exp $ */
+/* $EPIC: functions.c,v 1.211 2005/09/30 03:38:03 jnelson Exp $ */
 /*
  * functions.c -- Built-in functions for ircII
  *
@@ -5234,11 +5234,15 @@ BUILT_IN_FUNCTION(function_stripcrap, input)
 	GET_STR_ARG(how, input);
 	mangle = parse_mangle(how, 0, NULL);
 
+#if 0
 	size = (strlen(input) + 1) * 11;
 	output = new_malloc(size + 1);
 	strlcpy(output, input, size);
 	if (mangle_line(output, mangle, size) > size)
 		(void) 0;		/* Result has been truncated. ick. */
+#else
+	output = new_normalize_string(input, 1, mangle);
+#endif
 	return output;			/* DONT MALLOC THIS */
 }
 
