@@ -784,3 +784,5 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Cut over $stripcrap() to use new_normalize_line (*double gulp*)
 * Rename "ANSI" mangle type to "NORMALIZE", but still accept "ANSI"
 * Nix the gxlate table, and change ^T from State 4 to State 6 character.
+* Add support for dgets buffer type -2 (only return full buffers)
+* Use buffer type -2 for reading nonblocking dns addrs, fixes probs on solaris.

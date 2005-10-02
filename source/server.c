@@ -1,4 +1,4 @@
-/* $EPIC: server.c,v 1.186 2005/08/09 02:01:05 jnelson Exp $ */
+/* $EPIC: server.c,v 1.187 2005/10/02 04:18:45 jnelson Exp $ */
 /*
  * server.c:  Things dealing with that wacky program we call ircd.
  *
@@ -873,7 +873,9 @@ void	do_server (int fd)
 		    if (s->addrs == NULL)
 		    {
 		        len = dgets(s->des, (char *)&s->addr_len, 
-					sizeof(s->addr_len), -1);
+					sizeof(s->addr_len), -2);
+			if (len == 0)
+				continue;		/* Not ready yet */
 		        if (len < (ssize_t)sizeof(s->addr_len))
 			    yell("Got %d, expected %d bytes", 
 					len, sizeof(s->addr_len));
@@ -905,8 +907,9 @@ void	do_server (int fd)
 		    else
 		    {
 		        len = dgets(s->des, (char *)s->addrs + s->addr_offset, 
-					s->addr_len - s->addr_offset, -1);
-
+					s->addr_len - s->addr_offset, -2);
+			if (len == 0)
+				continue;		/* Not ready yet */
 		        if (len < s->addr_len - s->addr_offset)
 			{
 			    yell("Got %d, expected %d bytes", 

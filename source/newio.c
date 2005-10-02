@@ -1,4 +1,4 @@
-/* $EPIC: newio.c,v 1.54 2005/08/09 02:01:05 jnelson Exp $ */
+/* $EPIC: newio.c,v 1.55 2005/10/02 04:18:45 jnelson Exp $ */
 /*
  * newio.c:  Passive, callback-driven IO handling for sockets-n-stuff.
  *
@@ -236,6 +236,10 @@ int	dgets_buffer (int channel, void *data, ssize_t len)
  *		Return nothing if there isn't one.
  *
  * Return values:
+ *	buffer == -2		(The results are NOT null terminated)
+ *		-1	The file descriptor is dead
+ *		 0	There is not "buflen" bytes available to be read
+ *		>0	The number of bytes returned.
  *	buffer == -1		(The results are NOT null terminated)
  *		-1	The file descriptor is dead
  *		 0	There is no data available to read.
@@ -282,6 +286,18 @@ ssize_t	dgets (int vfd, char *buf, size_t buflen, int buffer)
 	if (buffer == 1 && !memchr(ioe->buffer + ioe->read_pos, '\n', 
 					ioe->write_pos - ioe->read_pos))
 	{
+		ioe->clean = 1;
+		kcleaned(vfd);
+		return 0;
+	}
+
+	/*
+	 * So if the caller wants 'buflen' bytes, and we don't have it,
+	 * then mark the buffer clean and wait for more.
+	 */
+	if (buffer == -2 && ioe->write_pos - ioe->read_pos < buflen)
+	{
+		yell("dgets: Wanted %d bytes, have %d bytes", ioe->write_pos - ioe->read_pos, buflen);
 		ioe->clean = 1;
 		kcleaned(vfd);
 		return 0;
@@ -360,7 +376,7 @@ ssize_t	dgets (int vfd, char *buf, size_t buflen, int buffer)
 	 * The caller then would need to do a strlen() to get
  	 * the amount of data.
 	 */
-	if (buffer == -1 || (cnt > 0 && buf[cnt - 1] == '\n'))
+	if (buffer < 0 || (cnt > 0 && buf[cnt - 1] == '\n'))
 	    return cnt;
 	else
 	    return 0;
