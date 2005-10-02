@@ -1,4 +1,4 @@
-/* $EPIC: log.c,v 1.20 2005/03/11 05:02:22 jnelson Exp $ */
+/* $EPIC: log.c,v 1.21 2005/10/02 14:51:33 jnelson Exp $ */
 /*
  * log.c: handles the irc session logging functions 
  *
@@ -41,6 +41,7 @@
 #include "output.h"
 #include "ircaux.h"
 #include "alias.h"
+#include "screen.h"
 
 	FILE	*irclog_fp;
 	int	logfile_line_mangler;
@@ -166,23 +167,19 @@ void 	add_to_log (int logref, FILE *fp, long winref, const unsigned char *line, 
 	 * 'mangle_line' can expand the input string, so it is 
 	 * neccesary to allocate more than we need.
 	 */
+#if 0
 	size = (strlen(line) + 1) * 11;
 	local_line = alloca(size + 1);
 	strlcpy(local_line, line, size + 1);
+#endif
 
 	/* Do this first */
 	if (mangler == 0)
 		mangler = logfile_line_mangler;
-	if (mangler)
-	   if (mangle_line(local_line, mangler, size) > size)
-		(void)0; /* Whimper -- what to do, what to do? */
-
 	if (get_int_var(NO_CONTROL_LOG_VAR))
-	{
-		char *tmp = alloca(strlen(local_line) + 1);
-		strip_control(local_line, tmp);
-		strlcpy(local_line, tmp, size);
-	}
+		mangler |= STRIP_UNPRINTABLE;
+	if (mangler)
+		local_line = new_normalize_string(line, 1, mangler);
 
 	if (rewriter == NULL)
 		rewriter = get_string_var(LOG_REWRITE_VAR);
@@ -193,6 +190,7 @@ void 	add_to_log (int logref, FILE *fp, long winref, const unsigned char *line, 
 
 		/* First, create the $* list for the expando */
 		snprintf(argstuff, 10240, "%ld %s", winref, local_line);
+		new_free(&local_line);
 
 		/* Now expand the expando with the above $* */
 		prepend_exp = expand_alias(rewriter, argstuff,
@@ -204,9 +202,6 @@ void 	add_to_log (int logref, FILE *fp, long winref, const unsigned char *line, 
 
 	fprintf(fp, "%s\n", local_line);
 	fflush(fp);
-
-	if (must_free)
-		new_free(&local_line);
 
 	current_log_refnum = old_logref;
 }

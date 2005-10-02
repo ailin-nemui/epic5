@@ -1,4 +1,4 @@
-/* $EPIC: lastlog.c,v 1.49 2005/08/17 23:35:22 jnelson Exp $ */
+/* $EPIC: lastlog.c,v 1.50 2005/10/02 14:51:33 jnelson Exp $ */
 /*
  * lastlog.c: handles the lastlog features of irc. 
  *
@@ -856,13 +856,19 @@ static int	show_lastlog (Lastlog **l, int *skip, int *number, Mask *level_mask, 
 	if (mangler)
 	{
 		size_t	size;
-		char *	output;
+		char *	output, *result;
 
+#if 0
 		size = (strlen((*l)->msg) + 1) * 11;
 		output = alloca(size + 1);
 		strlcpy(output, (*l)->msg, size);
 		if (mangle_line(output, mangler, size) > size)
 			(void)0;	/* Result has been truncated, ick. */
+#else
+		result = new_normalize_string((*l)->msg, 1, mangler);
+		output = LOCAL_COPY(result);
+		new_free(&result);
+#endif
 		str = output;
 	}
 	else

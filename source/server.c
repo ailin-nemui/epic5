@@ -1,4 +1,4 @@
-/* $EPIC: server.c,v 1.187 2005/10/02 04:18:45 jnelson Exp $ */
+/* $EPIC: server.c,v 1.188 2005/10/02 14:51:33 jnelson Exp $ */
 /*
  * server.c:  Things dealing with that wacky program we call ircd.
  *
@@ -1107,9 +1107,17 @@ static void 	vsend_to_aserver (int refnum, const char *format, va_list args)
 
 		if (outbound_line_mangler)
 		{
+#if 0
 			if (mangle_line(buffer, outbound_line_mangler, size) 
 					> size)
 				yell("mangle_line truncated results!  Ick.");
+#else
+			char *s2;
+			s2 = new_normalize_string(buffer, 1, 
+							outbound_line_mangler);
+			strlcpy(buffer, s2, sizeof(buffer));
+			new_free(&s2);
+#endif
 		}
 
 		s->sent = 1;
