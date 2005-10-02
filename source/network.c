@@ -1,4 +1,4 @@
-/* $EPIC: network.c,v 1.74 2005/08/17 23:35:22 jnelson Exp $ */
+/* $EPIC: network.c,v 1.75 2005/10/02 05:12:06 jnelson Exp $ */
 /*
  * network.c -- handles stuff dealing with connecting and name resolving
  *
@@ -918,7 +918,7 @@ void	marshall_getaddrinfo (int fd, AI *results)
 		copy = (AI *)ptr;
 
 		/* Copy over the AI */
-		*copy = *result;
+		memcpy(copy, result, sizeof(AI));
 
 		/* Copy over the ai_addr */
 		ptr += sizeof(AI);
@@ -935,15 +935,14 @@ void	marshall_getaddrinfo (int fd, AI *results)
 		    gah = strlen(result->ai_canonname) + 1;
 		    memcpy(ptr, result->ai_canonname, gah);
 		    copy->ai_canonname = ptr;
-
-		    /* Calculate the start of the next entry */
-		    while (gah % 4 != 0)
-			gah++;
 		    ptr += gah;
 		}
 		else
 		    copy->ai_canonname = NULL;
 
+		 /* Calculate the start of the next entry */
+		 while ((intmax_t)ptr % alignment != 0)
+			ptr++;
 
 		/* Point the AI at the next entry */
 		if (result->ai_next)
@@ -962,6 +961,7 @@ void	unmarshall_getaddrinfo (AI *results)
 	ssize_t	len;
 	AI 	*result;
 	char 	*ptr;
+	ssize_t	alignment = sizeof(void *);
 
 	/* Why do I know I'm gonna regret this? */
 	for (result = results; result; result = result->ai_next)
@@ -977,12 +977,12 @@ void	unmarshall_getaddrinfo (AI *results)
 		{
 		    result->ai_canonname = ptr;
 		    len = strlen(result->ai_canonname) + 1;
-
-		    /* Calculate the start of the next entry */
-		    while (len % 4 != 0)
-			len++;
 		    ptr += len;
 		}
+
+		 /* Calculate the start of the next entry */
+		 while ((intmax_t)ptr % alignment != 0)
+			ptr++;
 
 		/* Point the AI at the next entry */
 		if (result->ai_next)

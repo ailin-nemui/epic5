@@ -786,3 +786,4 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Nix the gxlate table, and change ^T from State 4 to State 6 character.
 * Add support for dgets buffer type -2 (only return full buffers)
 * Use buffer type -2 for reading nonblocking dns addrs, fixes probs on solaris.
+* Fix alignment issues on sparc.  Thanks to crapple for his assistance!
