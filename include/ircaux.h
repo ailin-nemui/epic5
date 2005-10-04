@@ -7,7 +7,7 @@
  *
  * See the COPYRIGHT file, or do a HELP IRCII COPYRIGHT 
  *
- * @(#)$Id: ircaux.h,v 1.82 2005/09/30 03:38:03 jnelson Exp $
+ * @(#)$Id: ircaux.h,v 1.83 2005/10/04 03:47:45 jnelson Exp $
  */
 
 #ifndef _IRCAUX_H_
@@ -223,7 +223,6 @@ char *	substitute_string	(const char *, const char *, const char *, int, int);
 extern	int	outbound_line_mangler;
 extern	int	inbound_line_mangler;
 extern	int	logfile_line_mangler;
-size_t	mangle_line		(char *, int, size_t);
 
 /* ---------------- */
 struct BucketItem {

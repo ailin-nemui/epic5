@@ -1,4 +1,4 @@
-/* $EPIC: network.c,v 1.75 2005/10/02 05:12:06 jnelson Exp $ */
+/* $EPIC: network.c,v 1.76 2005/10/04 03:47:45 jnelson Exp $ */
 /*
  * network.c -- handles stuff dealing with connecting and name resolving
  *
@@ -941,7 +941,7 @@ void	marshall_getaddrinfo (int fd, AI *results)
 		    copy->ai_canonname = NULL;
 
 		 /* Calculate the start of the next entry */
-		 while ((intmax_t)ptr % alignment != 0)
+		 while ((intptr_t)ptr % alignment != 0)
 			ptr++;
 
 		/* Point the AI at the next entry */
@@ -981,7 +981,7 @@ void	unmarshall_getaddrinfo (AI *results)
 		}
 
 		 /* Calculate the start of the next entry */
-		 while ((intmax_t)ptr % alignment != 0)
+		 while ((intptr_t)ptr % alignment != 0)
 			ptr++;
 
 		/* Point the AI at the next entry */

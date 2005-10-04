@@ -1,5 +1,5 @@
 /*
- * @(#)$Id: acconfig.h,v 1.30 2005/08/25 13:49:33 jnelson Exp $
+ * @(#)$Id: acconfig.h,v 1.31 2005/10/04 03:47:43 jnelson Exp $
  */
 
 /*
@@ -355,4 +355,7 @@
 
 /* Define this if you have a strtoq() */
 #undef HAVE_STRTOQ
+
+/* Define this if you have <stddef.h> */
+#undef HAVE_STDDEF_H
 

@@ -1,4 +1,4 @@
-/* $EPIC: log.c,v 1.21 2005/10/02 14:51:33 jnelson Exp $ */
+/* $EPIC: log.c,v 1.22 2005/10/04 03:47:45 jnelson Exp $ */
 /*
  * log.c: handles the irc session logging functions 
  *
@@ -159,20 +159,6 @@ void 	add_to_log (int logref, FILE *fp, long winref, const unsigned char *line, 
 	old_logref = current_log_refnum;
 	current_log_refnum = logref;
 
-	/*
-	 * We need to make a local copy because 'mangle_line' 
-	 * diddles around with the source, and so we can't subject
-	 * line to that, it is 'const'.
-	 *
-	 * 'mangle_line' can expand the input string, so it is 
-	 * neccesary to allocate more than we need.
-	 */
-#if 0
-	size = (strlen(line) + 1) * 11;
-	local_line = alloca(size + 1);
-	strlcpy(local_line, line, size + 1);
-#endif
-
 	/* Do this first */
 	if (mangler == 0)
 		mangler = logfile_line_mangler;
@@ -205,3 +191,4 @@ void 	add_to_log (int logref, FILE *fp, long winref, const unsigned char *line, 
 
 	current_log_refnum = old_logref;
 }
+

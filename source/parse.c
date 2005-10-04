@@ -1,4 +1,4 @@
-/* $EPIC: parse.c,v 1.71 2005/10/02 14:51:33 jnelson Exp $ */
+/* $EPIC: parse.c,v 1.72 2005/10/04 03:47:45 jnelson Exp $ */
 /*
  * parse.c: handles messages from the server.   Believe it or not.  I
  * certainly wouldn't if I were you. 
@@ -1504,16 +1504,6 @@ void 	parse_server (const char *orig_line, size_t orig_line_size)
 	else if (!do_hook(RAW_IRC_LIST, "* %s", orig_line))
 		return;
 
-#if 0
-	size = (orig_line_size + 1) * 11;
-	line = alloca(size + 1);
-	strlcpy(line, orig_line, orig_line_size);
-	if (inbound_line_mangler)
-	{
-	    if (mangle_line(line, inbound_line_mangler, orig_line_size) > orig_line_size)
-		yell("mangle_line truncated its result.  Ack.");
-	}
-#else
 	if (inbound_line_mangler)
 	{
 	    char *s;
@@ -1523,7 +1513,6 @@ void 	parse_server (const char *orig_line, size_t orig_line_size)
 	}
 	else
 	    line = LOCAL_COPY(orig_line);
-#endif
 
 	ArgList = TrueArgs;
 	BreakArgs(line, &from, ArgList);

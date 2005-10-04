@@ -34,6 +34,9 @@
 #ifdef HAVE_INTTYPES_H
 #include <inttypes.h>
 #endif
+#ifdef HAVE_STDDEF_H
+#include <stddef.h>
+#endif
 
 /*
  * Everybody needs these POSIX headers...

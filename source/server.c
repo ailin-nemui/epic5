@@ -1,4 +1,4 @@
-/* $EPIC: server.c,v 1.188 2005/10/02 14:51:33 jnelson Exp $ */
+/* $EPIC: server.c,v 1.189 2005/10/04 03:47:45 jnelson Exp $ */
 /*
  * server.c:  Things dealing with that wacky program we call ircd.
  *
@@ -864,21 +864,43 @@ void	do_server (int fd)
 
 		/*
 		 * Is the dns lookup finished?
+		 * Handle DNS lookup responses from the dns helper.
+		 * Remember that when we start up a server connection,
+		 * s->des points to a socket connected to the dns helper
+		 * which feeds us Getaddrinfo() responses.  We then use
+		 * those reponses, to establish nonblocking connect()s
+		 * [the call to connect_to_server() below], which replaces
+		 * s->des with a new socket connecting to the server.
 		 */
 		if (s->status == SERVER_DNS)
 		{
 		    int cnt = 0;
 		    ssize_t len;
 
+		    /*
+		     * This is our handler for the first bit of data from the
+		     * dns helper, which is a length value.  This length value
+		     * tells us how much data we should expect to receive from
+		     * the dns helper.  We use this value to malloc() off some
+		     * space and then read into that buffer.
+		     */
 		    if (s->addrs == NULL)
 		    {
 		        len = dgets(s->des, (char *)&s->addr_len, 
 					sizeof(s->addr_len), -2);
-			if (len == 0)
-				continue;		/* Not ready yet */
-		        if (len < (ssize_t)sizeof(s->addr_len))
-			    yell("Got %d, expected %d bytes", 
+			if (len < (ssize_t)sizeof(s->addr_len))
+			{
+			    if (len < 0)
+				yell("DNS lookup failed, possibly because of a "
+					"bug in async_getaddrinfo!");
+			    else if (len == 0)
+				yell("Got part of the dns response, waiting "
+				     "for the rest, stand by...");
+			    else
+				yell("Got %d, expected %d bytes.  HELP!", 
 					len, sizeof(s->addr_len));
+			    continue;		/* Not ready yet */
+			}
 
 			if (s->addr_len < 0)
 			{
@@ -904,17 +926,35 @@ void	do_server (int fd)
 			    s->addr_offset = 0;
 			}
 		    }
+
+		    /*
+		     * If we've already received the "reponse length" value
+		     * [handled above] then s->addrs is not NULL, and we need
+		     * to write the nonblocking dns responses into the buffer.
+		     * once we have all of the reponse, we can "unmarshall"
+		     * the response (converting a (char *) buffer into a linked
+		     * list of (struct addrinfo *)'s, which we can then use 
+		     * to connect to the server [via connect_to_server()].
+		     */
 		    else
 		    {
 		        len = dgets(s->des, (char *)s->addrs + s->addr_offset, 
 					s->addr_len - s->addr_offset, -2);
-			if (len == 0)
-				continue;		/* Not ready yet */
-		        if (len < s->addr_len - s->addr_offset)
+			if (len < s->addr_len - s->addr_offset)
 			{
-			    yell("Got %d, expected %d bytes", 
-				len, s->addr_len - s->addr_offset);
-			    s->addr_offset += len;
+			    if (len < 0)
+				yell("DNS lookup failed, possibly because of a "
+					"bug in async_getaddrinfo!");
+			    else if (len == 0)
+				yell("Got part of the dns response, waiting "
+				     "for the rest, stand by...");
+			    else
+			    {
+			        yell("Got %d, expected %d bytes", 
+				    len, s->addr_len - s->addr_offset);
+			        s->addr_offset += len;
+			    }
+			    continue;
 			}
 			else
 			{
@@ -1107,17 +1147,10 @@ static void 	vsend_to_aserver (int refnum, const char *format, va_list args)
 
 		if (outbound_line_mangler)
 		{
-#if 0
-			if (mangle_line(buffer, outbound_line_mangler, size) 
-					> size)
-				yell("mangle_line truncated results!  Ick.");
-#else
-			char *s2;
-			s2 = new_normalize_string(buffer, 1, 
-							outbound_line_mangler);
-			strlcpy(buffer, s2, sizeof(buffer));
-			new_free(&s2);
-#endif
+		    char *s2;
+		    s2 = new_normalize_string(buffer, 1, outbound_line_mangler);
+		    strlcpy(buffer, s2, sizeof(buffer));
+		    new_free(&s2);
 		}
 
 		s->sent = 1;
