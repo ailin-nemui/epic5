@@ -788,3 +788,4 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Use buffer type -2 for reading nonblocking dns addrs, fixes probs on solaris.
 * Fix alignment issues on sparc.  Thanks to crapple for his assistance!
 * Convert the other users of mangle_line() to new_normalize_string (*gulp!*)
+* Fix another 32-bit/64-bit cast problem with karll arrays (rb crapple)

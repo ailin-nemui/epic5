@@ -1,4 +1,4 @@
-/* $EPIC: array.c,v 1.19 2004/04/13 00:19:48 jnelson Exp $ */
+/* $EPIC: array.c,v 1.20 2005/10/04 01:25:50 jnelson Exp $ */
 /*
  * array.c -- Karll's Array Suite
  *
@@ -229,14 +229,14 @@ static int compare_indices (const void *a1, const void *a2)
 {
 	int result;
 
-	result = strcmp(qsort_array->item[*(const int*)a1],
-			qsort_array->item[*(const int*)a2]);
+	result = strcmp(qsort_array->item[*(const long*)a1],
+			qsort_array->item[*(const long*)a2]);
 
 	/* array is (to be) sorted by name, then by item number. */
 	if (result)
 		return result;
 	else
-		return *(const int*)a1 - *(const int*)a2;
+		return *(const long*)a1 - *(const long*)a2;
 }
 
 static void sort_indices (an_array *array)
