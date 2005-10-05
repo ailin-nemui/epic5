@@ -1,4 +1,4 @@
-/* $EPIC: screen.c,v 1.106 2005/09/30 03:38:04 jnelson Exp $ */
+/* $EPIC: screen.c,v 1.107 2005/10/05 02:11:02 jnelson Exp $ */
 /*
  * screen.c
  *
@@ -2554,6 +2554,39 @@ static void 	add_to_window (Window *window, const unsigned char *str)
 }
 
 /*
+ * add_to_window_scrollback: XXX -- doesn't belong here. oh well.
+ * This unifies the important parts of add_to_window and window_disp
+ * for the purpose of reconstituting the scrollback of a window after
+ * a resize event.
+ */
+void 	add_to_window_scrollback (Window *window, const unsigned char *str)
+{
+	char *		strval;
+        u_char **       lines;
+        int             cols;
+	int		numl = 0;
+
+	/* Normalize the line of output */
+	strval = normalize_string(str, 0);
+
+#if 0
+	if (window->screen)
+		cols = window->screen->co - 1;	/* XXX HERE XXX */
+	else
+		cols = window->columns - 1;
+#else
+	cols = window->columns - 1;
+#endif
+
+	/* Suppress status updates while we're outputting. */
+        for (lines = prepare_display(strval, cols, &numl, 0); *lines; lines++)
+		add_to_scrollback(window, *lines);
+
+	new_free(&strval);
+}
+
+
+/*
  * The mid-level shim for output to all ircII type windows.
  *
  * By this point, the logical line 'str' is in the state it is going to be
@@ -2573,10 +2606,14 @@ static void    window_disp (Window *window, const unsigned char *str, const unsi
 	add_to_logs(window->refnum, from_server, who_from, who_level, orig_str);
 	add_to_lastlog(window, orig_str);
 
+#if 0
 	if (window->screen)
 		cols = window->screen->co - 1;	/* XXX HERE XXX */
 	else
 		cols = window->columns - 1;
+#else
+	cols = window->columns - 1;
+#endif
 
 	/* Suppress status updates while we're outputting. */
         for (lines = prepare_display(str, cols, &numl, 0); *lines; lines++)
@@ -2768,10 +2805,14 @@ void 	repaint_window_body (Window *window)
 		window->screen->cursor_window = window;
 		term_move_cursor(0, window->top - window->toplines_showing + count);
 		term_clear_to_eol();
+#if 0
 		if (window->screen)
 			cols = window->screen->co - 1;	/* XXX HERE XXX */
 		else
 			cols = window->columns - 1;
+#else
+		cols = window->columns - 1;
+#endif
 
 		n = normalize_string(str, 0);
 		lines = prepare_display(n, cols, &numls, PREPARE_NOWRAP);

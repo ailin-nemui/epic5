@@ -76,10 +76,12 @@ typedef	struct	WindowStru
 	short	beep_always;		/* True if a beep to win always beeps */
 	Mask	notify_mask;		/* the notify mask.. */
 	short	skip;			/* Whether window should be skipped */
+	short	old_co;			/* .... */
 	short	columns;		/* How wide we are when hidden */
 	short	swappable;		/* Can it be swapped in or out? */
 	short	scrolladj;		/* Push back top-of-win on grow? */
 	short	killable;		/* Can it be killed? */
+	short	auto_scrollback;	/* Rebreak sb from lastlog on resize? */
 
 	/* Input and Status stuff */
 	char *	prompt;			/* Current EXEC prompt for window */

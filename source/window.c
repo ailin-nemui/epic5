@@ -1,4 +1,4 @@
-/* $EPIC: window.c,v 1.154 2005/08/24 02:25:32 jnelson Exp $ */
+/* $EPIC: window.c,v 1.155 2005/10/05 02:11:02 jnelson Exp $ */
 /*
  * window.c: Handles the organzation of the logical viewports (``windows'')
  * for irc.  This includes keeping track of what windows are open, where they
@@ -151,6 +151,9 @@ static	int	add_waiting_channel 		(Window *, const char *);
 static 	void   	destroy_window_waiting_channels	(int);
 static 	int	flush_scrollback_after		(Window *);
 static 	int	flush_scrollback		(Window *);
+static void	unclear_window (Window *window);
+static	void	rebuild_scrollback (Window *w);
+static	void	window_check_columns (Window *w);
 
 
 /* * * * * * * * * * * CONSTRUCTOR AND DESTRUCTOR * * * * * * * * * * * */
@@ -220,6 +223,7 @@ Window	*new_window (Screen *screen)
 	new_w->swappable = 1;
 	new_w->scrolladj = 1;
 	new_w->killable = 1;
+	new_w->auto_scrollback = 1;
 
 	/* Input prompt and status bar stuff */
 	new_w->prompt = NULL;		/* Filled in later */
@@ -530,8 +534,8 @@ delete_window_contents:
 	}
 
 	/* The lastlog... */
-	while (window->lastlog_size)
-		remove_from_lastlog(window);
+	window->lastlog_max = 0;
+	trim_lastlog(window);
 
 	/* The nick list... */
 	{
@@ -975,6 +979,9 @@ static void 	swap_window (Window *v_window, Window *window)
 		recalculate_windows(window->screen);
 	recalculate_window_cursor_and_display_ip(window);
 	resize_window_display(window);
+
+	/* XXX Should I do this before, or after, for efficiency? */
+	window_check_columns(window);
 
 	/*
 	 * And recalculate the window's positions.
@@ -1482,6 +1489,7 @@ void 	recalculate_windows (Screen *screen)
 		screen->window_list->toplines_wanted = 0;
 		screen->window_list->display_lines = screen->li - 2;
 		screen->window_list->bottom = screen->li - 2;
+		screen->window_list->columns = screen->co;
 		old_li = screen->li;
 		return;
 	}
@@ -1528,9 +1536,29 @@ void 	recalculate_windows (Screen *screen)
 			resize_window_display(tmp);
 			recalculate_window_cursor_and_display_ip(tmp);
 		}
+
+		/* XXX This is just temporary */
+		window_check_columns(tmp);
 	}
 
 	recalculate_window_positions(screen);
+}
+
+static	void	window_check_columns (Window *w)
+{
+	if (w->screen && w->columns != w->screen->co)
+	{
+		w->columns = w->screen->co;
+		if (w->auto_scrollback)
+			rebuild_scrollback(w);
+	}
+}
+
+static	void	rebuild_scrollback (Window *w)
+{
+	flush_scrollback(w);
+	reconstitute_scrollback(w);
+	unclear_window(w);
 }
 
 /* * * * * * * * LOCATION AND COMPOSITION OF WINDOWS ON SCREEN * * * * * * */
@@ -2840,6 +2868,13 @@ static Window *window_add (Window *window, char **args)
 	return window;
 }
 
+static Window *window_auto_scrollback (Window *window, char **args)
+{
+	if (get_boolean("AUTO_SCROLLBACK", args, &window->auto_scrollback))
+		return NULL;
+	return window;
+}
+
 /*
  * /WINDOW BACK
  * Changes the current window pointer to the window that was most previously
@@ -3562,15 +3597,21 @@ static Window *window_lastlog (Window *window, char **args)
 
 	if (arg)
 	{
-		int size = my_atol(arg);
-		if (window->lastlog_size > size)
+		int size;
+
+		if (!is_number(arg))
 		{
-			int i, diff;
-			diff = window->lastlog_size - size;
-			for (i = 0; i < diff; i++)
-				remove_from_lastlog(window);
+		    say("/WINDOW LASTLOG takes a number (you said %s)", arg);
+		    return NULL;
+		}
+
+		if ((size = my_atol(arg)) < 0)
+		{
+			say("Lastlog size must be non-negative");
+			return window;
 		}
 		window->lastlog_max = size;
+		trim_lastlog(window);
 	}
 	say("Lastlog size is %d", window->lastlog_max);
 	return window;
@@ -4128,6 +4169,13 @@ Window *window_query (Window *window, char **args)
 
 	return window;
 }
+
+static Window *window_rebuild_scrollback (Window *window, char **args)
+{
+	rebuild_scrollback(window);
+	return window;
+}
+
 
 /*
  * /WINDOW REJOIN <#channel>[,<#channel>]
@@ -4799,6 +4847,7 @@ typedef struct window_ops_T {
 
 static const window_ops options [] = {
 	{ "ADD",		window_add 		},
+	{ "AUTO_SCROLLBACK", 	window_auto_scrollback 	},
 	{ "BACK",		window_back 		},
 	{ "BALANCE",		window_balance 		},
 	{ "BEEP_ALWAYS",	window_beep_always 	},
@@ -4849,6 +4898,7 @@ static const window_ops options [] = {
 	{ "PROMPT",		window_prompt 		},
 	{ "PUSH",		window_push 		},
 	{ "QUERY",		window_query		},
+	{ "REBUILD_SCROLLBACK",	window_rebuild_scrollback },
 	{ "REFNUM",		window_refnum 		},
 	{ "REFNUM_OR_SWAP",	window_refnum_or_swap	},
 	{ "REFRESH",		window_refresh		},
@@ -5213,7 +5263,6 @@ static int	flush_scrollback (Window *w)
         w->display_buffer_size = 1;
         w->display_ip = w->top_of_scrollback;
         w->scrolling_top_of_display = w->top_of_scrollback;
-        w->old_display_lines = 1;
 
 	/* Delete the old scrollback */
 	while ((curr_line = holder))

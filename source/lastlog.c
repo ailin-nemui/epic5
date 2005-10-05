@@ -1,4 +1,4 @@
-/* $EPIC: lastlog.c,v 1.51 2005/10/04 03:47:45 jnelson Exp $ */
+/* $EPIC: lastlog.c,v 1.52 2005/10/05 02:11:02 jnelson Exp $ */
 /*
  * lastlog.c: handles the lastlog features of irc. 
  *
@@ -54,6 +54,7 @@ typedef struct	lastlog_stru
 	struct	lastlog_stru	*older;
 	struct	lastlog_stru	*newer;
 	time_t	when;
+	int	visible;
 }	Lastlog;
 
 static int	show_lastlog (Lastlog **l, int *skip, int *number, Mask *level_mask, char *match, regex_t *reg, int *max, const char *target, int mangler);
@@ -274,13 +275,17 @@ void	set_old_server_lastlog_mask (void *stuff)
 }
 
 
-void 	remove_from_lastlog (Window *window)
+void 	trim_lastlog (Window *window)
 {
 	Lastlog *new_oldest;
 	Lastlog *being_removed;
 
-	if (window->lastlog_oldest)
+	while (window->lastlog_oldest)
 	{
+		/* All done! */
+		if (window->lastlog_size <= window->lastlog_max)
+			return;
+
 		being_removed = window->lastlog_oldest;
 		new_oldest = being_removed->newer;
 		window->lastlog_oldest = new_oldest;
@@ -288,13 +293,15 @@ void 	remove_from_lastlog (Window *window)
 			new_oldest->older = NULL;
 		else
 			window->lastlog_newest = NULL;
-		window->lastlog_size--;
+		if (being_removed->visible)
+			window->lastlog_size--;
 		new_free((char **)&being_removed->msg);
 		new_free((char **)&being_removed->target);
 		new_free((char **)&being_removed);
 	}
-	else
-		window->lastlog_size = 0;
+
+	/* Uh, the lastlog must be empty... */
+	window->lastlog_size = 0;
 }
 
 /*
@@ -306,8 +313,6 @@ void	set_lastlog_size (void *stuff)
 {
 	VARIABLE *v;
 	int	size;
-	int	i,
-		diff;
 	Window	*window = NULL;
 
 	v = (VARIABLE *)stuff;
@@ -315,13 +320,8 @@ void	set_lastlog_size (void *stuff)
 
 	while (traverse_all_windows(&window))
 	{
-		if (window->lastlog_size > size)
-		{
-			diff = window->lastlog_size - size;
-			for (i = 0; i < diff; i++)
-				remove_from_lastlog(window);
-		}
 		window->lastlog_max = size;
+		trim_lastlog(window);
 	}
 }
 
@@ -837,6 +837,13 @@ static int	show_lastlog (Lastlog **l, int *skip, int *number, Mask *level_mask, 
 {
 	const char *str = NULL;
 
+	if ((*l)->visible == 0)
+	{
+		if (x_debug & DEBUG_LASTLOG)
+			yell("Lastlog item is not visible");
+		return 0;
+	}
+
 	if (*skip > 0)
 	{
 		if (x_debug & DEBUG_LASTLOG)
@@ -899,6 +906,19 @@ static int	show_lastlog (Lastlog **l, int *skip, int *number, Mask *level_mask, 
 }
 
 /*
+ * reconstitute_scrollback: walk through the lastlog, and put_it everything,
+ * making sure to reset the level and all that jazz.  This will cause the 
+ * scrollback to be rebroken, etc.
+ */
+void	reconstitute_scrollback (Window *window)
+{
+	Lastlog *li;
+
+	for (li = window->lastlog_oldest; li; li = li->newer)
+		add_to_window_scrollback(window, li->msg);
+}
+	
+/*
  * add_to_lastlog: adds the line to the lastlog.  If the LASTLOG_CONVERSATION
  * variable is on, then only those lines that are user messages (private
  * messages, channel messages, wall's, and any outgoing messages) are
@@ -911,29 +931,32 @@ void 	add_to_lastlog (Window *window, const char *line)
 	if (!window)
 		window = current_window;
 
+	new_l = (Lastlog *)new_malloc(sizeof(Lastlog));
+	new_l->older = window->lastlog_newest;
+	new_l->newer = NULL;
+	new_l->level = who_level;
+	new_l->msg = malloc_strdup(line);
+	if (who_from)
+		new_l->target = malloc_strdup(who_from);
+	else
+		new_l->target = NULL;
+	time(&new_l->when);
+
+	if (window->lastlog_newest)
+		window->lastlog_newest->newer = new_l;
+	window->lastlog_newest = new_l;
+
+	if (!window->lastlog_oldest)
+		window->lastlog_oldest = window->lastlog_newest;
+
 	if (mask_isset(&window->lastlog_mask, who_level))
 	{
-		new_l = (Lastlog *)new_malloc(sizeof(Lastlog));
-		new_l->older = window->lastlog_newest;
-		new_l->newer = NULL;
-		new_l->level = who_level;
-		new_l->msg = malloc_strdup(line);
-		if (who_from)
-			new_l->target = malloc_strdup(who_from);
-		else
-			new_l->target = NULL;
-		time(&new_l->when);
-
-		if (window->lastlog_newest)
-			window->lastlog_newest->newer = new_l;
-		window->lastlog_newest = new_l;
-
-		if (!window->lastlog_oldest)
-			window->lastlog_oldest = window->lastlog_newest;
-
-		if (window->lastlog_size++ >= window->lastlog_max)
-			remove_from_lastlog(window);
+		new_l->visible = 1;
+		window->lastlog_size++;
+		trim_lastlog(window);
 	}
+	else
+		new_l->visible = 0;
 }
 
 Mask	real_notify_mask (void)
@@ -1027,12 +1050,22 @@ char 	*function_line (char *word)
 
 	/* Get the line from the lastlog */
 	for (start_pos = win->lastlog_newest; line; start_pos = start_pos->older)
-		line--;
+	{
+		if (start_pos->visible)
+			line--;
+	}
 
 	if (!start_pos)
 		start_pos = win->lastlog_oldest;
 	else
 		start_pos = start_pos->newer;
+
+	while (!start_pos->visible && start_pos->newer)
+		start_pos = start_pos->newer;
+
+	/* If there are no visible lastlog items, punt */
+	if (!start_pos)
+		RETURN_EMPTY;
 
 	malloc_strcat_c(&retval, start_pos->msg, &clue);
 
@@ -1042,7 +1075,6 @@ char 	*function_line (char *word)
 	if (do_timestamp)
 		malloc_strcat_wordlist_c(&retval, space, 
 					NUMSTR(start_pos->when), &clue);
-
 
 	RETURN_MSTR(retval);
 }
@@ -1075,7 +1107,8 @@ char *function_lastlog (char *word)
 
 	for (iter = win->lastlog_newest; iter; iter = iter->older, line++)
 	{
-		if (mask_isset(&lastlog_levels, iter->level))
+		if (iter->visible)
+		    if (mask_isset(&lastlog_levels, iter->level))
 			if (wild_match(pattern, iter->msg))
 				malloc_strcat_word_c(&retval, space, ltoa(line), &rvclue);
 	}

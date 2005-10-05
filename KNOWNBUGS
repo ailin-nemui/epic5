@@ -7,6 +7,8 @@ KNOWN ERRATA (eg, bugs, or unresolved requests):
 * Revamp of /who -realname 
 * alias foo {package x;load script}  carries 'x' into 'script' ???
 * Unify mangle_line() and normalize_string().
+* Make scrollback rebreaking play nice with window swapping
+* Figure out how scrollback rebreaking (doesn't) work with scrollback/holding
 
 LOOK FOR IN THE FUTURE
 -----------------------
@@ -794,3 +796,14 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Nix now unused mangle_line(). yay!
 * Use (intptr_t) instead of (intmax_t) to treat pointers as integers...
 * Try to handle failures from the dns helpers with more grace.
+* Add the idea of a "visible" and "invisible" lastlog entry
+* Always skip "invisible" lastlog entries, handle them when trimming, etc.
+* Rename remove_from_lastlog() to trim_lastlog() and have it do looping
+* Unconditionally keep every item in the lastlog, even if it's "hidden".
+* When screen changes width, purge+recreate all window's scrollback
+* Add /window rebuild_scrollback to manually invoke this process.
+* For now, auto-recreate unholds all, and cancels scrollback
+* Add /window auto_scrollback to opt-out of auto-recreate feature
+* Store each window's width individually, don't refer to server
+* Use each window's personal width to re-break lines (more on this later)
+* Fix so "/window lastlog foo" doesn't delete your lastlog!

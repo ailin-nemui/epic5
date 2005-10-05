@@ -33,7 +33,7 @@ extern	Mask *	old_server_lastlog_mask;
 	char *	mask_to_str 			(const Mask *);
 	int	str_to_mask	 		(Mask *, const char *);
 	int	str_to_level			(const char *);
-	void	remove_from_lastlog		(struct WindowStru *);
+	void	trim_lastlog			(struct WindowStru *);
 	void	set_current_window_mask 	(void *);
 	void	add_to_lastlog 		(struct WindowStru *, const char *);
 	char *	function_line			(char *);
