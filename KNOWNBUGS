@@ -6,9 +6,6 @@ KNOWN ERRATA (eg, bugs, or unresolved requests):
 * /CTCPs over /DCCs don't match up with their queries very well.
 * Revamp of /who -realname 
 * alias foo {package x;load script}  carries 'x' into 'script' ???
-* Unify mangle_line() and normalize_string().
-* Make scrollback rebreaking play nice with window swapping
-* Figure out how scrollback rebreaking (doesn't) work with scrollback/holding
 
 LOOK FOR IN THE FUTURE
 -----------------------
@@ -807,3 +804,17 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Store each window's width individually, don't refer to server
 * Use each window's personal width to re-break lines (more on this later)
 * Fix so "/window lastlog foo" doesn't delete your lastlog!
+* Change all the builtin functions to use new_normalize_string().
+* Change the input prompt to use new_normalize_string().
+* Add /set mangle_display. HUZZAH!
+* Change the display stuff to new_normalize_string() and /set mangle_display
+* Whack the now unused normalize_string(). HUZZAH! HUZZAH! HUZZAH!
+* Change the seperator of the mangler-type-parser to be spaces and not commas.
+* Start keeping a monotonically increasing refnum for all lastlog items
+* Change add_to_lastlog() to return the lastlog refnum
+* Change add_to[_window]_scrollback]() to take the lastlog refnum
+* Cross-link scrollback items with the corresponding lastlog refnum.
+* Save scrollback/hold position across scrollback rebuilds
+* This means rebuilding doesn't affect scrollback/hold users! HUZZAH!
+* Whack the now unnecessary /window auto_scrollback (mis)feature.
+* Don't unconditionally unclear after rebuild, if everything still fits.

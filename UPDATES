@@ -1,5 +1,20 @@
 EPIC5-0.0.6
 
+*** News 10/05/2005 -- Automatic Scrollback rebuilding, new /WINDOW operation
+
+*** News 10/05/2005 -- DNS Helper (hostname lookups) now nonblocking by default
+
+*** News 10/05/2005 -- New /SET, /SET MANGLE_DISPLAY, many sets removed
+
+*** News 10/05/2005 -- Functions that changed because of unified mangler
+
+*** News 10/05/2005 -- Unified string mangler/normalizer
+
+*** News 10/05/2005 -- "ANSI" mangle type linked to "NORMALIZE"
+
+*** News 10/05/2005 -- New behavior for $mask() [jm]
+	Jm needs to write me some documentation for this...
+
 *** News 08/30/2005 -- De-support of 7-bit-only terminal/emulators
 	Once upon a time, long long ago, on a planet far away, there
 	used to be terminals and terminal emulators that did not know

@@ -1,4 +1,4 @@
-/* $EPIC: screen.c,v 1.107 2005/10/05 02:11:02 jnelson Exp $ */
+/* $EPIC: screen.c,v 1.108 2005/10/05 22:37:25 jnelson Exp $ */
 /*
  * screen.c
  *
@@ -96,7 +96,11 @@ static void 	do_screens (int fd);
 /*
  * Ugh.  Dont ask.
  */
+/*
 	int	normalize_permit_all_attributes = 0;
+*/
+
+	int	display_line_mangler = 0;
 
 /*
  * This file includes major work contributed by FireClown, and I am indebted
@@ -1040,286 +1044,6 @@ static	u_char	ansi_state[256] = {
 #define put_back() (str--)
 #define nlchar '\n'
 
-#if 0
-u_char *	my_normalize_string (const u_char *str, int logical, int how)
-{
-	*int gcmode	/set DISPLAY_PC_CHARACTERS
-	*int eightbit	/set EIGHT_BIT
-	*int beep	/set BEEP
-	*int beep_max	/set BEEP_MAX
-	*int tab_max	/set TAB_MAX
-	*int nds_max	/set ND_SPACE_MAX		ND_SPACE
-	int ansi 	/set DISPLAY_ANSI		MANGLE_ANSI
-	int reverse	/set INVERSE_VIDEO		REVERSE
-	int bold	/set BOLD_VIDEO			BOLD
-	int blink	/set BLINK_VIDEO		BLINK
-	int underline	/set UNDERLINE_VIDEO		UNDERLINE
-	int altchar	/set ALT_CHARSET		ALT_CHAR
-	int color	/set COLOR			COLOR
-	int allow_c1	/set ALLOW_C1_CHARS
-	int boldback	/set TERM_DOES_BRIGHT_BLINK
-							MANGLE_ESCAPES
-							STRIP_ALL_OFF
-							STRIP_UNPRINTABLE
-							STRIP_OTHER
-}
-#endif
-
-u_char *	normalize_string (const u_char *str, int logical)
-{
-	u_char *	output;
-	u_char		chr;
-	Attribute	a, olda;
-	int 		pos;
-	int		maxpos;
-	/* int 		args[10];
-	int		nargs; */
-	int		i, n;
-	int		ansi = get_int_var(DISPLAY_ANSI_VAR);
-	int		gcmode = get_int_var(DISPLAY_PC_CHARACTERS_VAR);
-	int		pc = 0;
-	int		reverse, bold, blink, underline, altchar, color, allow_c1, boldback;
-	size_t		(*attrout) (u_char *, Attribute *, Attribute *) = NULL;
-
-	/* Figure out how many beeps/tabs/nds's we can handle */
-	if (normalize_permit_all_attributes)	/* XXXX */
-		reverse = bold = blink = underline = altchar = color = allow_c1 = boldback = 1;
-	else
-	{
-		reverse 	= get_int_var(INVERSE_VIDEO_VAR);
-		bold 		= get_int_var(BOLD_VIDEO_VAR);
-		blink 		= get_int_var(BLINK_VIDEO_VAR);
-		underline 	= get_int_var(UNDERLINE_VIDEO_VAR);
-		altchar 	= get_int_var(ALT_CHARSET_VAR);
-		color 		= get_int_var(COLOR_VAR);
-		allow_c1	= get_int_var(ALLOW_C1_CHARS_VAR);
-		boldback	= get_int_var(TERM_DOES_BRIGHT_BLINK_VAR);
-	}
-	if (logical == 0)
-		attrout = display_attributes;	/* prep for screen output */
-	else if (logical == 1)
-		attrout = logic_attributes;	/* non-screen handlers */
-	else if (logical == 2)
-		attrout = ignore_attributes;	/* $stripansi() function */
-	else if (logical == 3)
-		attrout = display_attributes;	/* The status line */
-	else
-		panic("'logical == %d' is not valid.", logical);
-
-	/* Reset all attributes to zero */
-	a.bold = a.underline = a.reverse = a.blink = a.altchar = 0;
-	a.color_fg = a.color_bg = a.fg_color = a.bg_color = 0;
-	olda = a;
-
-	/* 
-	 * The output string has a few extra chars on the end just 
-	 * in case you need to tack something else onto it.
-	 */
-	maxpos = strlen(str);
-	output = (u_char *)new_malloc(maxpos + 192);
-	pos = 0;
-
-	while ((chr = next_char()))
-	{
-	    if (pos > maxpos)
-	    {
-		maxpos += 192; /* Extend 192 chars at a time */
-		RESIZE(output, unsigned char, maxpos + 192);
-	    }
-
-	    switch (ansi_state[chr])
-	    {
-		/*
-		 * State 0 are characters that are permitted under all
-		 * circumstances.
-		 */
-		case 0:
-		{
-normal_char:
-			output[pos++] = chr;
-			pc++;
-			break;
-		}
-
-		/*
-		 * State 1 is a control char with high bit set (C1 char)
-		 */
-		case 1:
-			if (allow_c1 == 0)
-				goto normal_char;
-			break;
-
-		/*
-		 * State 5 are characters that are never permitted under
-		 * any circumstances.
-		 */
-		case 5:
-			break;
-
-		/*
-		 * State 6 is a control character (without high bit set)
-		 * that doesn't have a special meaning to ircII.
-		 */
-		case 6:
-			if (termfeatures & TERM_CAN_GCHAR)
-				goto normal_char;
-			break;
-
-
-		/*
-		 * State 2 is the escape character
-		 */
-		case 2:
-		{
-			int	nd_spaces = 0;
-			ssize_t	esclen;
-
-			esclen = read_esc_seq(str, (void *)&a, &nd_spaces);
-
-			if (nd_spaces != 0)
-			{
-			    /* This is just sanity */
-			    if (pos + nd_spaces > maxpos)
-			    {
-				maxpos += nd_spaces; 
-				RESIZE(output, u_char, maxpos + 192);
-			    }
-			    while (nd_spaces-- > 0)
-			    {
-				output[pos++] = ND_SPACE;
-				pc++;
-			    }
-			    break;		/* attributes can't change */
-			}
-
-			if (a.reverse && !reverse)	a.reverse = 0;
-			if (a.bold && !bold)		a.bold = 0;
-			if (a.blink && !blink)		a.blink = 0;
-			if (a.underline && !underline)	a.underline = 0;
-			if (a.altchar && !altchar)	a.altchar = 0;
-			if (!color)
-			{
-				a.color_fg = a.color_bg = 0;
-				a.fg_color = a.bg_color = 0;
-			}
-			pos += attrout(output + pos, &olda, &a);
-			str += esclen;
-			break;
-		}
-
-	        /*
-		 * Normalize ^C codes...
-	         */
-		case 3:
-		{
-			ssize_t	len;
-
-			put_back();
-			len = read_color_seq(str, (void *)&a, boldback);
-			str += len;
-
-			/* Suppress the color if no color is permitted */
-			if (!color)
-			{
-				a.color_fg = a.color_bg = 0;
-				a.fg_color = a.bg_color = 0;
-				break;
-			}
-
-			/* Output the new attributes */
-			pos += attrout(output + pos, &olda, &a);
-			break;
-		}
-
-		/*
-		 * State 4 is for the special highlight characters
-		 */
-		case 4:
-		{
-		    put_back();
-		    switch (this_char())
-		    {
-			case REV_TOG:
-				if (reverse)
-					a.reverse = !a.reverse;
-				break;
-			case BOLD_TOG:
-				if (bold)
-					a.bold = !a.bold;
-				break;
-			case BLINK_TOG:
-				if (blink)
-					a.blink = !a.blink;
-				break;
-			case UND_TOG:
-				if (underline)
-					a.underline = !a.underline;
-				break;
-			case ALT_TOG:
-				if (altchar)
-					a.altchar = !a.altchar;
-				break;
-			case ALL_OFF:
-				a.reverse = a.bold = a.blink = 0;
-				a.underline = a.altchar = 0;
-				a.color_fg = a.color_bg = 0;
-				a.bg_color = a.fg_color = 0;
-				pos += attrout(output + pos, NULL, &a);
-				olda = a;
-				break;
-			default:
-				break;
-		    }
-		    next_char();
-
-		    /* After ALL_OFF, this is a harmless no-op */
-		    pos += attrout(output + pos, &olda, &a);
-		    break;
-		}
-
-		case 7:      /* bell */
-		{
-			output[pos++] = '\007';
-			break;
-		}
-
-		case 8:		/* Tab */
-		{
-			int	len = 8 - (pc % 8);
-
-			for (i = 0; i < len; i++)
-			{
-				output[pos++] = ' ';
-				pc++;
-			}
-			break;
-		}
-
-		case 9:		/* Non-destruct space */
-		{
-			output[pos++] = ND_SPACE;
-			break;
-		}
-
-		default:
-		{
-			panic("Unknown normalize_string mode");
-			break;
-		}
-	    } /* End of huge ansi-state switch */
-	} /* End of while, iterating over input string */
-
-	/* Terminate the output and return it. */
-	if (logical == 0)
-	{
-		a.bold = a.underline = a.reverse = a.blink = a.altchar = 0;
-		a.color_fg = a.color_bg = a.fg_color = a.bg_color = 0;
-		pos += attrout(output + pos, &olda, &a);
-	}
-	output[pos] = output[pos + 1] = 0;
-	return output;
-}
-
 u_char *	new_normalize_string (const u_char *str, int logical, int mangle)
 {
 	u_char *	output;
@@ -1997,7 +1721,8 @@ const	u_char	*cont_ptr;
 				else /* if ((!cont || !*cont) && *cont_ptr) */
 					cont = LOCAL_COPY(cont_ptr);
 
-				cont_free = cont = normalize_string(cont, 0);
+				cont_free = cont = new_normalize_string(cont, 
+						0, display_line_mangler);
 
 				/*
 				 * XXXX "line wrap bug" fix.  If we are here,
@@ -2496,7 +2221,7 @@ static void 	add_to_window (Window *window, const unsigned char *str)
 	}
 
 	/* Normalize the line of output */
-	strval = normalize_string(str, 0);
+	strval = new_normalize_string(str, 0, display_line_mangler);
 
 	/* Pass it off to the window */
 	window_disp(window, strval, str);
@@ -2559,7 +2284,7 @@ static void 	add_to_window (Window *window, const unsigned char *str)
  * for the purpose of reconstituting the scrollback of a window after
  * a resize event.
  */
-void 	add_to_window_scrollback (Window *window, const unsigned char *str)
+void 	add_to_window_scrollback (Window *window, const unsigned char *str, intmax_t refnum)
 {
 	char *		strval;
         u_char **       lines;
@@ -2567,20 +2292,13 @@ void 	add_to_window_scrollback (Window *window, const unsigned char *str)
 	int		numl = 0;
 
 	/* Normalize the line of output */
-	strval = normalize_string(str, 0);
+	strval = new_normalize_string(str, 0, display_line_mangler);
 
-#if 0
-	if (window->screen)
-		cols = window->screen->co - 1;	/* XXX HERE XXX */
-	else
-		cols = window->columns - 1;
-#else
 	cols = window->columns - 1;
-#endif
 
 	/* Suppress status updates while we're outputting. */
         for (lines = prepare_display(strval, cols, &numl, 0); *lines; lines++)
-		add_to_scrollback(window, *lines);
+		add_to_scrollback(window, *lines, refnum);
 
 	new_free(&strval);
 }
@@ -2601,24 +2319,18 @@ static void    window_disp (Window *window, const unsigned char *str, const unsi
         u_char **       lines;
         int             cols;
 	int		numl = 0;
+	intmax_t	refnum;
 
 	add_to_log(0, window->log_fp, window->refnum, orig_str, 0, NULL);
 	add_to_logs(window->refnum, from_server, who_from, who_level, orig_str);
-	add_to_lastlog(window, orig_str);
+	refnum = add_to_lastlog(window, orig_str);
 
-#if 0
-	if (window->screen)
-		cols = window->screen->co - 1;	/* XXX HERE XXX */
-	else
-		cols = window->columns - 1;
-#else
 	cols = window->columns - 1;
-#endif
 
 	/* Suppress status updates while we're outputting. */
         for (lines = prepare_display(str, cols, &numl, 0); *lines; lines++)
 	{
-		if (add_to_scrollback(window, *lines))
+		if (add_to_scrollback(window, *lines, refnum))
 			if (ok_to_output(window))
 				rite(window, *lines);
 	}
@@ -2805,16 +2517,9 @@ void 	repaint_window_body (Window *window)
 		window->screen->cursor_window = window;
 		term_move_cursor(0, window->top - window->toplines_showing + count);
 		term_clear_to_eol();
-#if 0
-		if (window->screen)
-			cols = window->screen->co - 1;	/* XXX HERE XXX */
-		else
-			cols = window->columns - 1;
-#else
 		cols = window->columns - 1;
-#endif
 
-		n = normalize_string(str, 0);
+		n = new_normalize_string(str, 0, display_line_mangler);
 		lines = prepare_display(n, cols, &numls, PREPARE_NOWRAP);
 		if (*lines)
 			output_with_count(*lines, 1, foreground);

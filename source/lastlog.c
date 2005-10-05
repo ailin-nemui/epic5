@@ -1,4 +1,4 @@
-/* $EPIC: lastlog.c,v 1.52 2005/10/05 02:11:02 jnelson Exp $ */
+/* $EPIC: lastlog.c,v 1.53 2005/10/05 22:37:25 jnelson Exp $ */
 /*
  * lastlog.c: handles the lastlog features of irc. 
  *
@@ -55,6 +55,7 @@ typedef struct	lastlog_stru
 	struct	lastlog_stru	*newer;
 	time_t	when;
 	int	visible;
+	intmax_t refnum;
 }	Lastlog;
 
 static int	show_lastlog (Lastlog **l, int *skip, int *number, Mask *level_mask, char *match, regex_t *reg, int *max, const char *target, int mangler);
@@ -68,6 +69,7 @@ static	Mask	notify_mask;
 	Mask *	new_server_lastlog_mask = NULL;
 	Mask *	old_server_lastlog_mask = NULL;
 	Mask 	current_window_mask;
+static	intmax_t global_lastlog_refnum = 0;
 
 /*
  * warn_lastlog_level: tells the user what levels are available.
@@ -915,7 +917,7 @@ void	reconstitute_scrollback (Window *window)
 	Lastlog *li;
 
 	for (li = window->lastlog_oldest; li; li = li->newer)
-		add_to_window_scrollback(window, li->msg);
+		add_to_window_scrollback(window, li->msg, li->refnum);
 }
 	
 /*
@@ -924,7 +926,7 @@ void	reconstitute_scrollback (Window *window)
  * messages, channel messages, wall's, and any outgoing messages) are
  * recorded, otherwise, everything is recorded 
  */
-void 	add_to_lastlog (Window *window, const char *line)
+intmax_t	add_to_lastlog (Window *window, const char *line)
 {
 	Lastlog *new_l;
 
@@ -932,6 +934,7 @@ void 	add_to_lastlog (Window *window, const char *line)
 		window = current_window;
 
 	new_l = (Lastlog *)new_malloc(sizeof(Lastlog));
+	new_l->refnum = global_lastlog_refnum++;
 	new_l->older = window->lastlog_newest;
 	new_l->newer = NULL;
 	new_l->level = who_level;
@@ -957,6 +960,8 @@ void 	add_to_lastlog (Window *window, const char *line)
 	}
 	else
 		new_l->visible = 0;
+
+	return new_l->refnum;
 }
 
 Mask	real_notify_mask (void)

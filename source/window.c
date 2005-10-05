@@ -1,4 +1,4 @@
-/* $EPIC: window.c,v 1.155 2005/10/05 02:11:02 jnelson Exp $ */
+/* $EPIC: window.c,v 1.156 2005/10/05 22:37:25 jnelson Exp $ */
 /*
  * window.c: Handles the organzation of the logical viewports (``windows'')
  * for irc.  This includes keeping track of what windows are open, where they
@@ -144,7 +144,7 @@ static void	window_scrollback_forwards_lines (Window *window, int);
 static 	void 	window_scrollback_to_string 	(Window *window, regex_t *str);
 static 	void 	window_scrollforward_to_string 	(Window *window, regex_t *str);
 static	int	change_line 			(Window *, const unsigned char *);
-static	int	add_to_display 			(Window *, const unsigned char *);
+static	int	add_to_display 			(Window *, const unsigned char *, intmax_t);
 static	Display *new_display_line 		(Display *prev, Window *w);
 static 	int	count_fixed_windows 		(Screen *s);
 static	int	add_waiting_channel 		(Window *, const char *);
@@ -154,6 +154,8 @@ static 	int	flush_scrollback		(Window *);
 static void	unclear_window (Window *window);
 static	void	rebuild_scrollback (Window *w);
 static	void	window_check_columns (Window *w);
+static void	restore_window_positions (Window *w, intmax_t scrolling, intmax_t holding, intmax_t scrollback);
+static void	save_window_positions (Window *w, intmax_t *scrolling, intmax_t *holding, intmax_t *scrollback);
 
 
 /* * * * * * * * * * * CONSTRUCTOR AND DESTRUCTOR * * * * * * * * * * * */
@@ -223,7 +225,6 @@ Window	*new_window (Screen *screen)
 	new_w->swappable = 1;
 	new_w->scrolladj = 1;
 	new_w->killable = 1;
-	new_w->auto_scrollback = 1;
 
 	/* Input prompt and status bar stuff */
 	new_w->prompt = NULL;		/* Filled in later */
@@ -1549,16 +1550,83 @@ static	void	window_check_columns (Window *w)
 	if (w->screen && w->columns != w->screen->co)
 	{
 		w->columns = w->screen->co;
-		if (w->auto_scrollback)
-			rebuild_scrollback(w);
+		rebuild_scrollback(w);
 	}
 }
 
 static	void	rebuild_scrollback (Window *w)
 {
+	intmax_t	scrolling, holding, scrollback;
+
+	save_window_positions(w, &scrolling, &holding, &scrollback);
 	flush_scrollback(w);
 	reconstitute_scrollback(w);
-	unclear_window(w);
+	restore_window_positions(w, scrolling, holding, scrollback);
+}
+
+static void	save_window_positions (Window *w, intmax_t *scrolling, intmax_t *holding, intmax_t *scrollback)
+{
+	if (w->scrolling_top_of_display)
+		*scrolling = w->scrolling_top_of_display->linked_refnum;
+	else
+		*scrolling = -1;
+
+	if (w->holding_top_of_display)
+		*holding = w->holding_top_of_display->linked_refnum;
+	else
+		*holding = -1;
+
+	if (w->scrollback_top_of_display)
+		*scrollback = w->scrollback_top_of_display->linked_refnum;
+	else
+		*scrollback = -1;
+}
+
+static void	restore_window_positions (Window *w, intmax_t scrolling, intmax_t holding, intmax_t scrollback)
+{
+	Display *d;
+
+	/* First, we cancel all three views. */
+	w->scrolling_top_of_display = NULL;
+	w->holding_top_of_display = NULL;
+	w->scrollback_top_of_display = NULL;
+
+	/* 
+	 * Then we find the FIRST scrollback item that is linked to the
+	 * corresponding lastlog saved position.  The lastlog refnum -1 is
+	 * guaranteed never to match any valid scrollback item, so -1 is used
+	 * to ensure we do not set the corresponding view.
+	 */
+	for (d = w->top_of_scrollback; d != w->display_ip; d = d->next)
+	{
+	    if (d->linked_refnum == scrolling && !w->scrolling_top_of_display)
+		w->scrolling_top_of_display = d;
+	    if (d->linked_refnum == holding && !w->holding_top_of_display)
+		w->holding_top_of_display = d;
+	    if (d->linked_refnum == scrollback && !w->scrollback_top_of_display)
+		w->scrollback_top_of_display = d;
+	}
+
+	/*
+	 * If we didn't restore a view, and we were expecting to (we expect
+	 * to if the refnum is not -1), then forcibly reset it to the top of
+	 * the scrollback since that is as far back as we can go.
+	 */
+	if (!w->scrolling_top_of_display && scrolling != -1)
+		w->scrolling_top_of_display = w->top_of_scrollback;
+	if (!w->holding_top_of_display && holding != -1)
+		w->holding_top_of_display = w->top_of_scrollback;
+	if (!w->scrollback_top_of_display && scrollback != -1)
+		w->scrollback_top_of_display = w->top_of_scrollback;
+
+	recalculate_window_cursor_and_display_ip(w);
+	if (w->scrolling_distance_from_display_ip >= w->display_lines)
+		unclear_window(w);
+	else
+	{
+		window_body_needs_redraw(w);
+		window_statusbar_needs_redraw(w);
+	}
 }
 
 /* * * * * * * * LOCATION AND COMPOSITION OF WINDOWS ON SCREEN * * * * * * */
@@ -2865,13 +2933,6 @@ static Window *window_add (Window *window, char **args)
 		arg = ptr;
 	}
 
-	return window;
-}
-
-static Window *window_auto_scrollback (Window *window, char **args)
-{
-	if (get_boolean("AUTO_SCROLLBACK", args, &window->auto_scrollback))
-		return NULL;
 	return window;
 }
 
@@ -4847,7 +4908,6 @@ typedef struct window_ops_T {
 
 static const window_ops options [] = {
 	{ "ADD",		window_add 		},
-	{ "AUTO_SCROLLBACK", 	window_auto_scrollback 	},
 	{ "BACK",		window_back 		},
 	{ "BALANCE",		window_balance 		},
 	{ "BEEP_ALWAYS",	window_beep_always 	},
@@ -5079,7 +5139,7 @@ static Display *new_display_line (Display *prev, Window *w)
  * not to be displayed, then 0 is returned.  This function handles all
  * the hold_mode stuff.
  */
-int 	add_to_scrollback (Window *window, const unsigned char *str)
+int 	add_to_scrollback (Window *window, const unsigned char *str, intmax_t refnum)
 {
 	/*
 	 * If this is a scratch window, do that somewhere else
@@ -5087,7 +5147,7 @@ int 	add_to_scrollback (Window *window, const unsigned char *str)
 	if (window->change_line != -1)
 		return change_line(window, str);
 
-	return add_to_display(window, str);
+	return add_to_display(window, str, refnum);
 }
 
 /*
@@ -5107,7 +5167,7 @@ int 	add_to_scrollback (Window *window, const unsigned char *str)
  *
  * This function may be called many times between calls to trim_scrollback().
  */
-static int	add_to_display (Window *window, const unsigned char *str)
+static int	add_to_display (Window *window, const unsigned char *str, intmax_t refnum)
 {
 	int	scroll;
 	int	i;
@@ -5118,6 +5178,7 @@ static int	add_to_display (Window *window, const unsigned char *str)
 	 */
 	window->display_ip->next = new_display_line(window->display_ip, window);
 	malloc_strcpy(&window->display_ip->line, str);
+	window->display_ip->linked_refnum = refnum;
 	window->display_ip = window->display_ip->next;
 	window->display_buffer_size++;
 
@@ -5820,7 +5881,7 @@ static int	change_line (Window *window, const unsigned char *str)
 
 	/* Make sure that the line exists that we want to change */
 	while (window->scrolling_distance_from_display_ip <= chg_line)
-		add_to_display(window, empty_string);
+		add_to_display(window, empty_string, -1);
 
 	/* Now find the line we want to change */
 	my_line = window->scrolling_top_of_display;

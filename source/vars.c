@@ -1,4 +1,4 @@
-/* $EPIC: vars.c,v 1.83 2005/09/30 03:38:04 jnelson Exp $ */
+/* $EPIC: vars.c,v 1.84 2005/10/05 22:37:25 jnelson Exp $ */
 /*
  * vars.c: All the dealing of the irc variables are handled here. 
  *
@@ -81,6 +81,7 @@ static 	void 	set_display_pc_characters (void *);
 static	void	set_mangle_inbound 	(void *);
 static	void	set_mangle_outbound 	(void *);
 static	void	set_mangle_logfiles 	(void *);
+static	void	set_mangle_display	(void *);
 static	void	update_all_status_wrapper (void *);
 static	void	set_highlight_char	(void *);
 static	void	set_wserv_type		(void *);
@@ -208,6 +209,8 @@ void 	init_variables_stage1 (void)
 	VAR(LOG_REWRITE, STR,  NULL);
 	VAR(MAIL, INT,  set_mail);
 	VAR(MAIL_INTERVAL, INT,  set_mail_interval);
+#define DEFAULT_MANGLE_DISPLAY "NORMALIZE"
+	VAR(MANGLE_DISPLAY, STR,  set_mangle_display);
 #define DEFAULT_MANGLE_INBOUND NULL
 	VAR(MANGLE_INBOUND, STR,  set_mangle_inbound);
 #define DEFAULT_MANGLE_LOGFILES NULL
@@ -824,29 +827,29 @@ int	parse_mangle (const char *value, int nvalue, char **rv)
 	if (rv)
 	{
 		if (nvalue & MANGLE_ESCAPES)
-			malloc_strcat_wordlist(&nv, comma, "ESCAPE");
+			malloc_strcat_wordlist(&nv, space, "ESCAPE");
 		if (nvalue & NORMALIZE)
-			malloc_strcat_wordlist(&nv, comma, "NORMALIZE");
+			malloc_strcat_wordlist(&nv, space, "NORMALIZE");
 		if (nvalue & STRIP_COLOR)
-			malloc_strcat_wordlist(&nv, comma, "COLOR");
+			malloc_strcat_wordlist(&nv, space, "COLOR");
 		if (nvalue & STRIP_REVERSE)
-			malloc_strcat_wordlist(&nv, comma, "REVERSE");
+			malloc_strcat_wordlist(&nv, space, "REVERSE");
 		if (nvalue & STRIP_UNDERLINE)
-			malloc_strcat_wordlist(&nv, comma, "UNDERLINE");
+			malloc_strcat_wordlist(&nv, space, "UNDERLINE");
 		if (nvalue & STRIP_BOLD)
-			malloc_strcat_wordlist(&nv, comma, "BOLD");
+			malloc_strcat_wordlist(&nv, space, "BOLD");
 		if (nvalue & STRIP_BLINK)
-			malloc_strcat_wordlist(&nv, comma, "BLINK");
+			malloc_strcat_wordlist(&nv, space, "BLINK");
 		if (nvalue & STRIP_ALT_CHAR)
-			malloc_strcat_wordlist(&nv, comma, "ALT_CHAR");
+			malloc_strcat_wordlist(&nv, space, "ALT_CHAR");
 		if (nvalue & STRIP_ND_SPACE)
-			malloc_strcat_wordlist(&nv, comma, "ND_SPACE");
+			malloc_strcat_wordlist(&nv, space, "ND_SPACE");
 		if (nvalue & STRIP_ALL_OFF)
-			malloc_strcat_wordlist(&nv, comma, "ALL_OFF");
+			malloc_strcat_wordlist(&nv, space, "ALL_OFF");
 		if (nvalue & STRIP_UNPRINTABLE)
-			malloc_strcat_wordlist(&nv, comma, "UNPRINTABLE");
+			malloc_strcat_wordlist(&nv, space, "UNPRINTABLE");
 		if (nvalue & STRIP_OTHER)
-			malloc_strcat_wordlist(&nv, comma, "OTHER");
+			malloc_strcat_wordlist(&nv, space, "OTHER");
 
 		*rv = nv;
 	}
@@ -892,6 +895,20 @@ static	void	set_mangle_logfiles (void *stuff)
 	value = v->string;
 
 	logfile_line_mangler = parse_mangle(value, logfile_line_mangler, &nv);
+	malloc_strcpy(&v->string, nv);
+	new_free(&nv);
+}
+
+static	void	set_mangle_display (void *stuff)
+{
+	VARIABLE *v;
+	const char *value;
+	char *nv = NULL;
+
+	v = (VARIABLE *)stuff;
+	value = v->string;
+
+	display_line_mangler = parse_mangle(value, display_line_mangler, &nv);
 	malloc_strcpy(&v->string, nv);
 	new_free(&nv);
 }

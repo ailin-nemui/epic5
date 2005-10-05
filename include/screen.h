@@ -111,6 +111,7 @@ extern	int	normalize_permit_all_attributes;
 	int	output_with_count	(const u_char *, int, int);
 	ssize_t	read_esc_seq 		(const u_char *, void *, int *);
 	ssize_t	read_color_seq		(const u_char *, void *d, int);
+	void    add_to_window_scrollback (Window *, const unsigned char *, intmax_t);
 
 /* Dont do any word-wrapping, just truncate each line at its place. */
 #define PREPARE_NOWRAP	0x01
@@ -119,5 +120,6 @@ extern	Screen *main_screen;
 extern	Screen *last_input_screen;
 extern	Screen *screen_list;
 extern	Screen *output_screen;
+extern	int	display_line_mangler;
 
 #endif /* _SCREEN_H_ */

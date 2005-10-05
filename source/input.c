@@ -1,4 +1,4 @@
-/* $EPIC: input.c,v 1.29 2005/08/30 23:45:13 jnelson Exp $ */
+/* $EPIC: input.c,v 1.30 2005/10/05 22:37:25 jnelson Exp $ */
 /*
  * input.c: does the actual input line stuff... keeps the appropriate stuff
  * on the input line, handles insert/delete of characters/words... the whole
@@ -268,7 +268,7 @@ void	update_input (int update)
 		 * Mangle out any ansi chars or so forth.
 		 */
 		ptr_free = ptr;
-		ptr = normalize_string(ptr, 0);	/* This should be ok */
+		ptr = new_normalize_string(ptr, 0, display_line_mangler);
 		if (free_it)
 			new_free(&ptr_free);
 		free_it = 1;

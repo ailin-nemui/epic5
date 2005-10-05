@@ -1,4 +1,4 @@
-/* $EPIC: status.c,v 1.64 2005/09/24 14:43:15 jnelson Exp $ */
+/* $EPIC: status.c,v 1.65 2005/10/05 22:37:25 jnelson Exp $ */
 /*
  * status.c: handles the status line updating, etc for IRCII 
  *
@@ -624,7 +624,7 @@ int	make_status (Window *window, int must_redraw)
 		 * with nothing but logical characters, which are then easy
 		 * to count. :-)
 		 */
-		str = normalize_string(buffer, 3);
+		str = new_normalize_string(buffer, 3, display_line_mangler);
 
 		/*
 		 * Count out the characters.

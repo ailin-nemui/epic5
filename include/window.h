@@ -32,6 +32,7 @@ typedef	struct	DisplayStru
 {
 	size_t			count;
 	char			*line;
+	intmax_t		linked_refnum;
 	struct	DisplayStru	*prev;
 	struct	DisplayStru	*next;
 }	Display;
@@ -81,7 +82,6 @@ typedef	struct	WindowStru
 	short	swappable;		/* Can it be swapped in or out? */
 	short	scrolladj;		/* Push back top-of-win on grow? */
 	short	killable;		/* Can it be killed? */
-	short	auto_scrollback;	/* Rebreak sb from lastlog on resize? */
 
 	/* Input and Status stuff */
 	char *	prompt;			/* Current EXEC prompt for window */
@@ -262,7 +262,7 @@ const	char	*get_echannel_by_refnum		(unsigned);
 	void	set_continued_line		(void *);
 	unsigned current_refnum			(void);
 	int	number_of_windows_on_screen	(Window *);
-	int	add_to_scrollback		(Window *, const unsigned char *);
+	int	add_to_scrollback		(Window *, const unsigned char *, intmax_t);
 	int	trim_scrollback			(Window *);
 	BUILT_IN_KEYBINDING(scrollback_backwards);
 	BUILT_IN_KEYBINDING(scrollback_forwards);

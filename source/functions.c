@@ -1,4 +1,4 @@
-/* $EPIC: functions.c,v 1.213 2005/10/04 03:47:45 jnelson Exp $ */
+/* $EPIC: functions.c,v 1.214 2005/10/05 22:37:25 jnelson Exp $ */
 /*
  * functions.c -- Built-in functions for ircII
  *
@@ -4458,25 +4458,19 @@ BUILT_IN_FUNCTION(function_leftpc, word)
 	char *		retval;
 	int		lines = 1;
 	int		count;
-	int		x;
 
 	GET_INT_ARG(count, word);
 	if (count < 0 || !*word)
 		RETURN_EMPTY;
 
-	x = normalize_permit_all_attributes;
-	normalize_permit_all_attributes = 1;
-
 	/* Convert the string to "attribute format" */
-	word = normalize_string(word, 0);
+	word = new_normalize_string(word, 0, NORMALIZE);
 
 	/* Count off the first line of stuff */
 	prepared = prepare_display(word, count, &lines, PREPARE_NOWRAP);
 
 	/* Convert the first line back to "logical format" */
 	retval = denormalize_string(prepared[0]);
-
-	normalize_permit_all_attributes = x;
 
 	/* Clean up and return. */
 	new_free(&word);
@@ -5055,7 +5049,7 @@ BUILT_IN_FUNCTION(function_printlen, input)
 	u_char *copy;
 	int	retval;
 
-	copy = normalize_string(input, 2);	/* Normalize string */
+	copy = new_normalize_string(input, 2, NORMALIZE);
 	retval = output_with_count(copy, 0, 0);
 	new_free(&copy);
 	RETURN_INT(retval);
@@ -5063,7 +5057,7 @@ BUILT_IN_FUNCTION(function_printlen, input)
 
 BUILT_IN_FUNCTION(function_stripansicodes, input)
 {
-        return normalize_string(input, 1);      /* This is ok now */
+        return new_normalize_string(input, 1, NORMALIZE);
 }
 
 /*
@@ -6372,7 +6366,7 @@ BUILT_IN_FUNCTION(function_numlines, input)
 	cols--;
 
 	/* Normalize the line of output */
-	strval = normalize_string(input, 0);
+	strval = new_normalize_string(input, 0, NORMALIZE);
 	prepare_display(strval, cols, &numl, 0);
 	new_free(&strval);
 	RETURN_INT(numl+1);
