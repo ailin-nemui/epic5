@@ -1,4 +1,4 @@
-/* $EPIC: commands.c,v 1.129 2005/08/06 00:54:23 jnelson Exp $ */
+/* $EPIC: commands.c,v 1.130 2005/10/05 23:51:36 jnelson Exp $ */
 /*
  * commands.c -- Stuff needed to execute commands in ircII.
  *		 Includes the bulk of the built in commands for ircII.
@@ -852,11 +852,10 @@ BUILT_IN_COMMAND(xechocmd)
 	char	*stuff = NULL;
 	int	nolog = 0;
 	int	more = 1;
-	char 	*old_und = 0, *old_rev = 0, *old_bold = 0, 
-		*old_color = 0, *old_blink = 0, *old_ansi = 0;
 	int	xtended = 0;
 	int	l = -1;
 	int	old_window_notify = do_window_notifies;
+	int	old_mangler = display_line_mangler;
 
 	old_to_window = to_window;
 
@@ -1001,29 +1000,8 @@ BUILT_IN_COMMAND(xechocmd)
 
 		case 'X': /* X -- allow all attributes to be outputted */
 		{
-			char one_copy[4];
-
 			next_arg(args, &args);
-
-			/* 
-			 * XXX - Never mind how hideous this is, because
-			 * it's going away very soon.
-			 */
-			old_und = make_string_var("UNDERLINE_VIDEO");
-			old_rev = make_string_var("INVERSE_VIDEO");
-			old_bold = make_string_var("BOLD_VIDEO");
-			old_color = make_string_var("COLOR");
-			old_blink = make_string_var("BLINK_VIDEO");
-			old_ansi = make_string_var("DISPLAY_ANSI");
-			strlcpy(one_copy, one, 4);
-
-			set_var_value(UNDERLINE_VIDEO_VAR, one_copy, 0);
-			set_var_value(INVERSE_VIDEO_VAR, one_copy, 0);
-			set_var_value(BOLD_VIDEO_VAR, one_copy, 0);
-			set_var_value(COLOR_VAR, one_copy, 0);
-			set_var_value(BLINK_VIDEO_VAR, one_copy, 0);
-			set_var_value(DISPLAY_ANSI_VAR, one_copy, 0);
-
+			display_line_mangler = NORMALIZE;
 			xtended = 1;
 			break;
 		}
@@ -1094,20 +1072,7 @@ BUILT_IN_COMMAND(xechocmd)
 		new_free(&stuff);
 
 	if (xtended)
-	{
-		set_var_value(UNDERLINE_VIDEO_VAR, old_und, 0);
-		set_var_value(INVERSE_VIDEO_VAR, old_rev, 0);
-		set_var_value(BOLD_VIDEO_VAR, old_bold, 0);
-		set_var_value(COLOR_VAR, old_color, 0);
-		set_var_value(BLINK_VIDEO_VAR, old_blink, 0);
-		set_var_value(DISPLAY_ANSI_VAR, old_ansi, 0);
-		new_free(&old_und);
-		new_free(&old_rev);
-		new_free(&old_bold);
-		new_free(&old_color);
-		new_free(&old_blink);
-		new_free(&old_ansi);
-	}
+		display_line_mangler = old_mangler;
 
 	if (l > -1)
 		pop_message_from(l);

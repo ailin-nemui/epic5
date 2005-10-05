@@ -1,4 +1,4 @@
-/* $EPIC: vars.c,v 1.84 2005/10/05 22:37:25 jnelson Exp $ */
+/* $EPIC: vars.c,v 1.85 2005/10/05 23:51:36 jnelson Exp $ */
 /*
  * vars.c: All the dealing of the irc variables are handled here. 
  *
@@ -145,14 +145,11 @@ void 	init_variables_stage1 (void)
 	var_bucket = new_bucket();
 
 	VAR(ALLOW_C1_CHARS, 		BOOL, NULL)
-	VAR(ALT_CHARSET, 		BOOL, NULL)
 	VAR(ALWAYS_SPLIT_BIGGEST, 	BOOL, NULL)
 	VAR(BAD_STYLE, 			BOOL, NULL)
 	VAR(BANNER, 			STR,  NULL)
 	VAR(BANNER_EXPAND, 		BOOL, NULL)
 	VAR(BEEP, 			BOOL, NULL)
-	VAR(BLINK_VIDEO, 		BOOL, NULL)
-	VAR(BOLD_VIDEO, 		BOOL, NULL)
 	VAR(CHANNEL_NAME_WIDTH, 	INT,  update_all_status_wrapper)
 #define DEFAULT_CLIENT_INFORMATION IRCII_COMMENT
 	VAR(CLIENT_INFORMATION, 	STR,  NULL)
@@ -161,7 +158,6 @@ void 	init_variables_stage1 (void)
 	VAR(CLOCK_FORMAT, 		STR,  set_clock_format);
 	VAR(CLOCK_INTERVAL, 		INT,  set_clock_interval);
 	VAR(CMDCHARS, 			STR,  NULL);
-	VAR(COLOR, BOOL, NULL);
 	VAR(COMMENT_HACK, BOOL, NULL);
 	VAR(CONTINUED_LINE, STR,  NULL);
 	VAR(CPU_SAVER_AFTER, INT,  set_cpu_saver_after);
@@ -177,8 +173,6 @@ void 	init_variables_stage1 (void)
 	VAR(DEBUG, INT,  NULL);
 	VAR(DISPATCH_UNKNOWN_COMMANDS, BOOL, NULL);
 	VAR(DISPLAY, BOOL, NULL);
-	VAR(DISPLAY_ANSI, BOOL, NULL);
-	VAR(DISPLAY_PC_CHARACTERS, INT,  set_display_pc_characters);
 	VAR(DO_NOTIFY_IMMEDIATELY, BOOL, NULL);
 	VAR(FLOATING_POINT_MATH, BOOL, NULL);
 	VAR(FLOATING_POINT_PRECISION, INT,  NULL);
@@ -197,7 +191,6 @@ void 	init_variables_stage1 (void)
 	VAR(INPUT_ALIASES, BOOL, NULL);
 	VAR(INPUT_PROMPT, STR,  set_input_prompt);
 	VAR(INSERT_MODE, BOOL, update_all_status_wrapper);
-	VAR(INVERSE_VIDEO, BOOL, NULL);
 	VAR(KEY_INTERVAL, INT,  set_key_interval);
 	VAR(LASTLOG, INT,  set_lastlog_size);
 	VAR(LASTLOG_LEVEL, STR,  set_lastlog_mask);
@@ -226,7 +219,7 @@ void 	init_variables_stage1 (void)
 	VAR(NOTIFY_LEVEL, STR,  set_notify_mask);
 	VAR(NOTIFY_ON_TERMINATION, BOOL, NULL);
 	VAR(NOTIFY_USERHOST_AUTOMATIC, BOOL, NULL);
-	VAR(NO_CONTROL_LOG, BOOL, NULL);
+	VAR(NO_CONTROL_LOG, BOOL, NULL);	/* XXX /set mangle_logfile */
 	VAR(NO_CTCP_FLOOD, BOOL, NULL);
 	VAR(NO_FAIL_DISCONNECT, BOOL, NULL);
 	VAR(OLD_MATH_PARSER, BOOL, NULL);
@@ -333,8 +326,7 @@ void 	init_variables_stage1 (void)
 	VAR(TRANSLATION, STR,  set_translation);
 #define DEFAULT_TRANSLATION_PATH NULL
 	VAR(TRANSLATION_PATH, STR,  NULL);
-	VAR(UNDERLINE_VIDEO, BOOL, NULL);
-	VAR(USER_INFORMATION, STR,  NULL);
+	VAR(USER_INFORMATION, STR, NULL);
 	VAR(WORD_BREAK, STR,  NULL);
 #define DEFAULT_WSERV_PATH WSERV_PATH
 	VAR(WSERV_PATH, STR,  NULL);
@@ -730,21 +722,6 @@ char 	*make_string_var_bydata (int type, void *vp)
 
 
 /***************************************************************************/
-static void 	set_display_pc_characters (void *stuff)
-{
-	VARIABLE *v;
-	int	value;
-
-	v = (VARIABLE *)stuff;
-	value = v->integer;
-
-	if (value < 0 || value > 5)
-	{
-		say("The value of DISPLAY_PC_CHARACTERS must be between 0 and 5 inclusive");
-		v->integer = 0;
-	}
-}
-
 int	parse_mangle (const char *value, int nvalue, char **rv)
 {
 	char	*str1, *str2;

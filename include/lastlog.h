@@ -40,5 +40,5 @@ extern	Mask *	old_server_lastlog_mask;
 	char *	function_lastlog		(char *);
 	void	set_new_server_lastlog_mask	(void *);
 	void	set_old_server_lastlog_mask	(void *);
-
+	void  reconstitute_scrollback		(struct WindowStru *);
 #endif /* __lastlog_h_ */

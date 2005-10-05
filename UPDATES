@@ -1,10 +1,14 @@
-EPIC5-0.0.6
+EPIC5-0.0.7
 
 *** News 10/05/2005 -- Automatic Scrollback rebuilding, new /WINDOW operation
 
 *** News 10/05/2005 -- DNS Helper (hostname lookups) now nonblocking by default
 
 *** News 10/05/2005 -- New /SET, /SET MANGLE_DISPLAY, many sets removed
+Removed sets:
+	alt_charset 		blink_video 		bold_video
+	color			display_ansi 		display_pc_characters
+	inverse_video		underline_video
 
 *** News 10/05/2005 -- Functions that changed because of unified mangler
 
@@ -47,6 +51,8 @@ EPIC5-0.0.6
 	UNPRINTABLE mangle level.  So if you want to do them both, then
 	just do ALL,UNPRINTABLE.  Although you would never want to do
 	that, since UNPRINTABLE is more encompassing than ALL.
+
+EPIC5-0.0.6
 
 *** News 08/08/2005 -- Updated behavior for /DCC GET
 	Based on a request from larne, the following syntaxes are now

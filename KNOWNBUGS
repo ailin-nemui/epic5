@@ -6,6 +6,7 @@ KNOWN ERRATA (eg, bugs, or unresolved requests):
 * /CTCPs over /DCCs don't match up with their queries very well.
 * Revamp of /who -realname 
 * alias foo {package x;load script}  carries 'x' into 'script' ???
+* Remove support for "highlighted ignores" because they annoy me.
 
 LOOK FOR IN THE FUTURE
 -----------------------
@@ -818,3 +819,6 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * This means rebuilding doesn't affect scrollback/hold users! HUZZAH!
 * Whack the now unnecessary /window auto_scrollback (mis)feature.
 * Don't unconditionally unclear after rebuild, if everything still fits.
+* Fix /xecho -x
+* Remove /set alt_charset, blink_video, bold_video, color, display_ansi
+* Remove /set display_pc_characters, inverse_video, underline_video. HUZZAH!

@@ -592,19 +592,16 @@ struct term {
 int	tputs_x(char *);
 #endif
 
-#define IFV(x) if (get_int_var((x ## _VIDEO_VAR)))
-#define term_underline_on()	IFV(UNDERLINE) 	outcap(UNDL_ON)
-#define term_underline_off()	IFV(UNDERLINE) 	outcap(UNDL_OFF)
-#define term_standout_on()	IFV(INVERSE) 	outcap(REV_ON)
-#define term_standout_off()	IFV(INVERSE) 	outcap(REV_OFF)
-#define term_blink_on()		IFV(BLINK) 	outcap(BLINK_ON)
-#define term_blink_off()	IFV(BLINK) 	outcap(BLINK_OFF)
-#define term_bold_on()		IFV(BOLD) 	outcap(BOLD_ON)
-#define	term_bold_off()		IFV(BOLD) 	outcap(BOLD_OFF)
-#define term_altcharset_on()	if (get_int_var(ALT_CHARSET_VAR)) \
-					outcap(ALTCHAR_ON)
-#define term_altcharset_off()	if (get_int_var(ALT_CHARSET_VAR)) \
-					outcap(ALTCHAR_OFF)
+#define term_underline_on()	outcap(UNDL_ON)
+#define term_underline_off()	outcap(UNDL_OFF)
+#define term_standout_on()	outcap(REV_ON)
+#define term_standout_off()	outcap(REV_OFF)
+#define term_blink_on()		outcap(BLINK_ON)
+#define term_blink_off()	outcap(BLINK_OFF)
+#define term_bold_on()		outcap(BOLD_ON)
+#define	term_bold_off()		outcap(BOLD_OFF)
+#define term_altcharset_on()	outcap(ALTCHAR_ON)
+#define term_altcharset_off()	outcap(ALTCHAR_OFF)
 #define term_set_foreground(x)	tputs_x(current_term->TI_forecolors[(x) & 0x0f])
 #define term_set_background(x)	tputs_x(current_term->TI_backcolors[(x) & 0x0f])
 #define term_set_attribs(f,b)	tputs_x(term_getsgr(TERM_SGR_COLORS,(f),(b)))
