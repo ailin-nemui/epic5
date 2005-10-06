@@ -1,4 +1,4 @@
-/* $EPIC: screen.c,v 1.108 2005/10/05 22:37:25 jnelson Exp $ */
+/* $EPIC: screen.c,v 1.109 2005/10/06 05:36:52 jnelson Exp $ */
 /*
  * screen.c
  *
@@ -980,7 +980,7 @@ static	u_char	ansi_state[256] = {
 /*	^@	^A	^B	^C	^D	^E	^F	^G */
 	6,	6,	4,	3,	6,	4,	4,	7,  /* 000 */
 /*	^H	^I	^J	^K	^L	^M	^N	^O */
-	6,	8,	0,	6,	0,	6,	6,	4,  /* 010 */
+	6,	8,	0,	6,	6,	5,	6,	4,  /* 010 */
 /*	^P	^Q	^R	^S	^T	^U	^V	^W */
 	6,	6,	6,	9,	6,	6,	4,	6,  /* 020 */
 /*	^X	^Y	^Z	^[	^\	^]	^^	^_ */
@@ -1168,8 +1168,10 @@ abnormal_char:
 		{
 			if (strip_unprintable)
 				break;
+#if 0
 			if (termfeatures & TERM_CAN_GCHAR)
 				goto normal_char;
+#endif
 			if (normalize)
 			{
 				output[pos++] = (chr | 0x40) & 0x7F;
