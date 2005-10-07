@@ -5,16 +5,85 @@ EPIC5-0.0.7
 *** News 10/05/2005 -- DNS Helper (hostname lookups) now nonblocking by default
 
 *** News 10/05/2005 -- New /SET, /SET MANGLE_DISPLAY, many sets removed
-Removed sets:
-	alt_charset 		blink_video 		bold_video
-	color			display_ansi 		display_pc_characters
-	inverse_video		underline_video
+	There is a new /SET, /SET MANGLE_DISPLAY, which mangles all output
+	being sent to your display, naturally.  It works in the same way
+	that /set mangle_inbound, mangle_outbound, mangle_logfiles works,
+	and its default value is "NORMALIZE".  You should always specify
+	either "NORMALIZE" or "MANGLE_ESCAPE" -- if you turn off both, then
+	it will be possible for remote people on irc to send raw escape
+	sequences to your display, and that is bad!
+
+	The following /SETs have been superceded by recent changes, and have
+	been removed:
+		alt_charset 	blink_video 	bold_video
+		color		display_ansi 	display_pc_characters
+		inverse_video	underline_video
 
 *** News 10/05/2005 -- Functions that changed because of unified mangler
 
 *** News 10/05/2005 -- Unified string mangler/normalizer
+	Forget everything you thought you knew about the old mangler and
+	normalizer (sorry!).  This is (believe it or not) much less complicated
+	than before, and certainly more well documented than before!
+
+	EPIC5 now includes a unified mangler/normalizer that is used by the
+	following features:
+			[...]
+
+	All characters are grouped into one of 9 "types":
+	0	Normal chars 		32-127, 160-255
+	1	High bit control chars	128-159
+	2	Escape char 		^[
+	3	Color char 		^C
+	4	Highlight toggle	^B ^E ^F ^O ^V ^_
+	5	Unsafe char		^M (\r)
+	6	Control char		^@ ^A ^D ^H ^K ^L ^N ^P ^Q 
+					^R ^T ^U ^W ^X ^Y ^Z ^\ ^] ^^
+	7	Beep			^G
+	8	Tab			^I
+	9	Non-destructive Space	^S
+
+	There are the 12 following mangle types:
+	MANGLE_ESCAPES	NORMALIZE	STRIP_COLOR		STRIP_REVERSE
+	STRIP_UNDERLINE	STRIP_BOLD	STRIP_BLINK		STRIP_ND_SPACE
+	STRIP_ALT_CHAR	STRIP_ALL_OFF	STRIP_UNPRINTABLE	STRIP_OTHER
+
+	The mangle types transform the characters, according to this table:
+	-----------------------------------------------------------------------
+        A = Character or sequence converted into an attribute
+        M = Character mangled (ie, ^A into ^VA^V)
+        S = Character stripped, sequence (if any) NOT stripped
+        X = Character stripped, sequence (if any) also stripped
+        T = Transformed into other (safe) chars
+        - = No transformation
+
+						Type
+				0    1    2    3    4    5    6    7    8    9
+	(Default)               -    -    -    -    A    -    -    T    T    T
+	NORMALIZE               -    -    A    A    -    X    M    -    -    -
+	MANGLE_ESCAPES          -    -    S    -    -    -    -    -    -    -
+	STRIP_COLOR             -    -    -    X    -    -    -    -    -    -
+	STRIP_*                 -    -    -    -    X    -    -    -    -    -
+	STRIP_UNPRINTABLE       -    X    S    S    X    X    X    X    -    -
+	STRIP_OTHER             X    -    -    -    -    -    -    -    X    X
+	(/SET ALLOW_C1)         -    X    -    -    -    -    -    -    -    -
+	-----------------------------------------------------------------------
+
+	There are only *three* ambiguous cases:
+	* Type 2:
+		MANGLE_ESCAPES has first priority, then NORMALIZE, and 
+		finally STRIP_UNPRINTABLE
+	* Type 3:
+		STRIP_UNPRINTABLE has first priority, then NORMALIZE, and
+		STRIP_COLOR.  You need to use both NORMALIZE and STRIP_COLOR
+		to remove color changes in escape sequences
+	* Type 6:
+		STRIP_UNPRINTABLE has first priority over NORMALIZE.
 
 *** News 10/05/2005 -- "ANSI" mangle type linked to "NORMALIZE"
+	The mangler type "ANSI" has been renamed to "NORMALIZE".  You can 
+	continue to use "ANSI", but it will be silently changed to "NORMALIZE"
+	internally.
 
 *** News 10/05/2005 -- New behavior for $mask() [jm]
 	Jm needs to write me some documentation for this...

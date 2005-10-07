@@ -85,41 +85,30 @@ struct	ScreenStru *next;		/* Previous screen in list */
 	int	alive;
 }	Screen;
 
-/* Stuff for the screen/xterm junk */
-
-#define ST_NOTHING      -1
-#define ST_SCREEN       0
-#define ST_XTERM        1
-
-
 	void	add_wait_prompt 	(const char *, void (*)(char *, char *), const char *, int, int);
 	void	add_to_screen		(const unsigned char *);
-	void	cursor_not_in_display	(Screen *);
+	void	cursor_not_in_display	(struct ScreenStru *);
 	void	cursor_in_display	(Window *);
-	int	is_cursor_in_display	(Screen *);
+	int	is_cursor_in_display	(struct ScreenStru *);
 	void	repaint_window_body	(Window *);
-	Screen *create_new_screen	(void);
+	void	create_new_screen	(void);
 	Window	*create_additional_screen (void);
-	void	kill_screen		(Screen *);
+	void	kill_screen		(struct ScreenStru *);
 
 const	u_char *all_off			(void);
-extern	int	normalize_permit_all_attributes;
-	u_char *normalize_string	(const u_char *, int);
 	u_char *new_normalize_string	(const u_char *, int, int);
 	u_char *denormalize_string	(const u_char *);
 	u_char **prepare_display	(const u_char *, int, int *, int);
 	int	output_with_count	(const u_char *, int, int);
-	ssize_t	read_esc_seq 		(const u_char *, void *, int *);
-	ssize_t	read_color_seq		(const u_char *, void *d, int);
-	void    add_to_window_scrollback (Window *, const unsigned char *, intmax_t);
+	void    add_to_window_scrollback (Window *, const u_char *, intmax_t);
 
 /* Dont do any word-wrapping, just truncate each line at its place. */
 #define PREPARE_NOWRAP	0x01
 
-extern	Screen *main_screen;
-extern	Screen *last_input_screen;
-extern	Screen *screen_list;
-extern	Screen *output_screen;
+extern	struct ScreenStru *main_screen;
+extern	struct ScreenStru *last_input_screen;
+extern	struct ScreenStru *screen_list;
+extern	struct ScreenStru *output_screen;
 extern	int	display_line_mangler;
 
 #endif /* _SCREEN_H_ */

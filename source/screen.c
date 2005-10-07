@@ -1,10 +1,10 @@
-/* $EPIC: screen.c,v 1.109 2005/10/06 05:36:52 jnelson Exp $ */
+/* $EPIC: screen.c,v 1.110 2005/10/07 01:14:24 jnelson Exp $ */
 /*
  * screen.c
  *
  * Copyright (c) 1993-1996 Matthew Green.
  * Copyright © 1998 J. Kean Johnston, used with permission
- * Copyright © 1997, 2003 EPIC Software Labs.
+ * Copyright © 1997, 2005 EPIC Software Labs.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -32,6 +32,12 @@
  * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
  */
+/*
+ * This file includes major work contributed by FireClown (J. Kean Johnston), 
+ * and I am indebted to him for the work he has graciously donated to the 
+ * project.  Without his contributions, EPIC's robust handling of colors and 
+ * escape sequences would never have been possible.
+ */
 
 #define __need_putchar_x__
 #include "irc.h"
@@ -57,7 +63,6 @@
 #include "newio.h"
 
 #define CURRENT_WSERV_VERSION	4
-static void 	do_screens (int fd);
 
 /*
  * When some code wants to override the default lastlog level, and needs
@@ -94,137 +99,70 @@ static void 	do_screens (int fd);
 	Screen	*screen_list = NULL;
 
 /*
- * Ugh.  Dont ask.
+ * How things output to the display get mangled (set via /set mangle_display)
  */
-/*
-	int	normalize_permit_all_attributes = 0;
-*/
-
 	int	display_line_mangler = 0;
-
-/*
- * This file includes major work contributed by FireClown, and I am indebted
- * to him for the work he has graciously donated to the project.  The major
- * highlights of his work include:
- *
- * -- ^C codes have been changed to mIRC-order.  This is the order that
- *    BitchX uses as well, so those scripts that use ^CXX should work without
- *    changes now between epic and bitchx.
- * -- The old "ansi-order" ^C codes have been preserved, but in a different
- *    way.  If you do ^C30 through ^C37, you will set the foreground color
- *    (directly corresponding to the ansi codes for 30-37), and if you do 
- *    ^C40 through ^C47, you will set the background.  ^C50 through ^C57
- *    are reserved for bold-foreground, and blink-background.
- * -- $cparse() still outputs the "right" colors, so if you use $cparse(),
- *    then these changes wont affect you (much).
- * -- Colors and ansi codes are either graciously handled, or completely
- *    filtered out.  Anything that cannot be handled is removed, so there
- *    is no risk of dangerous codes making their way to your output.  This
- *    is accomplished by a low-grade ansi emulator that folds raw output 
- *    into an intermediate form which is used by the display routines.
- *
- * To a certain extent, the original code from  FireClown was not yet complete,
- * and it was evident that the code was in anticipation of some additional
- * future work.  We have completed much of that work, and we are very much
- * indebted to him for getting the ball rolling and supplying us with ideas. =)
- */
 
 
 /* * * * * * * * * * * * * OUTPUT CHAIN * * * * * * * * * * * * * * * * * * *
- * To put a message to the "default" window, you must first call
- *	set_display_target(nick/channel, lastlog_level)
- * Then you may call 
+ * The front-end api to output stuff to windows is:
+ *
+ * 1) Set the window, either directly or indirectly:
+ *     a) Directly with		message_to(winref);
+ *     b) Indirectly with	l = message_from(target, level);
+ * 2) Call an output routine:
  *	say(), output(), yell(), put_it(), put_echo(), etc.
- * When you are done, make sure to
- *	reset_display_target()
- *
- * To put a message to a specific, known window (you need it's refnum)
- * then you may just call directly:
- *	display_to(winref, ...)
- *
- * To put a series of messages to a specific, known window, (need it's refnum)
- * You must first call:
- *	message_to(winref)
- * Then you may call
- *	say(), ouitput(), yell(), put_it(), put_echo(), etc.
- * When you are done, make sure to
- *	message_to(-1);
- *
- * The 'display' (or 'display_to') functions are the main entry point for
- * all logical output from epic.  These functions then figure out what
- * window the output will go to and invoke its 'add' function.  From there,
- * whatever happens is implementation defined.
+ * 3) Reset the window:
+ *     a) Directly with		message_to(-1);
+ *     b) Indirectly with	pop_message_from(l);
  *
  * This file implements the middle part of the "ircII window", everything
- * from the 'add' function to the low level terminal stuff.
+ * that sits behind the say/output/yell/put_it/put_echo functions, and in
+ * front of the low-level terminal stuff.
  *
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
-static int 	rite 		    (Window *window, const unsigned char *str);
-static void 	scroll_window 	    (Window *window);
-static void 	add_to_window (Window *window, const unsigned char *str);
-static void    window_disp (Window *window, const unsigned char *str, const unsigned char *orig_str);
-static	int	ok_to_output (Window *window);
-
-/*
- * XXX -- Full disclosure -- FireClown says it is completely the wrong
- * idea to do this (re-build attributes from scratch every time) because 
- * it causes those using slow terminals or slow connections more pain than
- * is absolutely neccesary.  While I admit that he has a lot more experience
- * than I do in all this, I'm not sure I have the ability to do all this 
- * "optimally" while ensuring 100% accuracy.  Maybe I'll luck out and he 
- * will provide something that will be optimal *and* 100% accurate. ;-)
- */
+static void 	do_screens	(int fd);
+static int 	rite 		(Window *, const u_char *);
+static void 	scroll_window   (Window *);
+static void 	add_to_window	(Window *, const u_char *);
+static void	window_disp	(Window *, const u_char *, const u_char *);
+static	int	ok_to_output	(Window *);
+static ssize_t read_esc_seq     (const u_char *, void *, int *);
+static ssize_t read_color_seq   (const u_char *, void *d, int);
 
 /*
  * "Attributes" were an invention for epic5, and the general idea was
- * to expunge from the output chain all of those nasty logical toggle settings
- * which never really did work correctly.  Rather than have half a dozen
- * functions all keep state about whether reverse/bold/underline/whatever is
- * on, or off, or what to do when it sees a toggle, we instead have one 
- * function (normalize_string) which walks the string *once* and outputs a
- * completely normalized output string.  The end result of this change is
- * that what were formally "toggle" attributes now are "always-on" attributes,
- * and to turn off an attribute, you need to do an ALL_OFF (^O) and then
- * turn on whatever attributes are left.  This is *significantly* easier
- * to parse, and yeilds much better results, at the expense of a few extra
- * bytes.
+ * to handle all character markups (bold/color/reverse/etc) not as toggle
+ * switches, but as absolute settings, handled inline.
  *
- * Now on to the nitty gritty.  Every character has a fudamental set of
- * attributes that apply to it.  Each character has, by default, the same
- * set of fundamental attributes as the character before it.  In any case
- * where this is NOT true, an "attribute marker" is put into the normalized
- * output to indicate what the new fundamental attributes are.  These new
- * attributes continue to be used until another attribute marker is found.
+ * The function normalize_string() converts all of the character markup
+ * toggle characters (^B, ^C, ^V, etc) into Attributes.  Nothing further
+ * in the output chain needs to know about highlight toggle chars.
  *
- * The "Attribute" structure is an internal structure that represents all
- * of the supported fundamental attributes.  This is the prefered method
- * for keeping state of the attributes of a line.  You can convert this
- * structure into an "attribute marker" by passing the string and an 
- * Attribute struct to 'display_attributes'.  The result is 5 bytes of
- * output, each byte has the high bit set (so str*() still work).  You can
- * also convert an Attribute struct to standard ircII attribute characters
- * by calling 'logical_attributes'.  The result will be an ALL_OFF (^O) 
- * followed by all of the attributes that are ON in the struct.  Finally,
- * you can suppress all attribute changes by calling ignore_attribute().
- * These functions are used by normalize_string() to for their appropriate
- * uses.
+ * Attributes are expressed in two formats, an umarshalled form and a 
+ * marshalled form.  The unmarshalled form is (struct attributes) and is
+ * a struct of 9 eight-bit ints which hold toggle switches for which 
+ * attributes are currently active.  The marshalled form is 5 bytes which
+ * can be stored in a C string.
  *
- * You can read an attribute marker from a string and convert it back to
- * an Attribute struct by calling the read_attributes() function.  You can
- * actually perform the physical output operations neccesary to switch to
- * the values in an Attribute struct by calling term_attribute().  These
- * are used by various output routines for whatever reason.
+ * An unmarshalled attribute can be injected into a C string using the 
+ * display_attributes() function.  A marshalled attribute can be extracted
+ * from a C string using read_attributes().
+ *
+ * The logical_attributes() function will marshall an attribute into the
+ * logical (un-normalized) equivalents.   The ignore_attributes() function
+ * is a function that essentially ignores/strips attribute changes.
  */
 struct 	attributes {
-	int	reverse;
-	int	bold;
-	int	blink;
-	int	underline;
-	int	altchar;
-	int	color_fg;
-	int	color_bg;
-	int	fg_color;
-	int	bg_color;
+	char	reverse;
+	char	bold;
+	char	blink;
+	char	underline;
+	char	altchar;
+	char	color_fg;
+	char	color_bg;
+	char	fg_color;
+	char	bg_color;
 };
 typedef struct attributes Attribute;
 
@@ -257,8 +195,6 @@ const unsigned char *all_off (void)
  * before returning.  The special case is when "old_a" is NULL, which 
  * should be treated as an explicit "all off" before handling "a".
  */
-
-/* Put into 'output', an attribute marker corresponding to 'a' */
 static size_t	display_attributes (u_char *output, Attribute *old_a, Attribute *a)
 {
 	u_char	val1 = 0x80;
@@ -428,7 +364,7 @@ static void	term_attribute (Attribute *a)
  *
  * DO NOT USE ANY OTHER FUNCTION TO PARSE ^C CODES.  YOU HAVE BEEN WARNED!
  */
-ssize_t	read_color_seq (const u_char *start, void *d, int blinkbold)
+static ssize_t	read_color_seq (const u_char *start, void *d, int blinkbold)
 {
 	/* 
 	 * The proper "attribute" color mapping is for each ^C lvalue.
@@ -703,7 +639,7 @@ ssize_t	read_color_seq (const u_char *start, void *d, int blinkbold)
  *
  * DO NOT USE ANY OTHER FUNCTION TO PARSE ESCAPES.  YOU HAVE BEEN WARNED!
  */
-ssize_t	read_esc_seq (const u_char *start, void *ptr_a, int *nd_spaces)
+static ssize_t	read_esc_seq (const u_char *start, void *ptr_a, int *nd_spaces)
 {
 	Attribute *	a = NULL;
 	Attribute 	safe_a;
@@ -977,9 +913,9 @@ start_over:
  * State 9 is a "non-destructive space"
  */
 static	u_char	ansi_state[256] = {
-/*	^@	^A	^B	^C	^D	^E	^F	^G */
+/*	^@	^A	^B	^C	^D	^E	^F	^G(\a) */
 	6,	6,	4,	3,	6,	4,	4,	7,  /* 000 */
-/*	^H	^I	^J	^K	^L	^M	^N	^O */
+/*	^H	^I	^J(\n)	^K	^L(\f)	^M(\r)	^N	^O */
 	6,	8,	0,	6,	6,	5,	6,	4,  /* 010 */
 /*	^P	^Q	^R	^S	^T	^U	^V	^W */
 	6,	6,	6,	9,	6,	6,	4,	6,  /* 020 */
@@ -1016,34 +952,66 @@ static	u_char	ansi_state[256] = {
 };
 
 /*
- * This started off as a general ansi parser, and it worked for stuff that
- * was going out to the display, but it couldnt deal properly with ansi codes,
- * and so when I tried to use it for the status bar, it just all fell to 
- * pieces.  After working it over, I came up with this.  What this does
- * (believe it or not) is walk through and strip out all the ansi codes in 
- * the target string.  Any codes that we recognize as being safe (pretty much
- * just ^[[<number-list>m), are converted back into their logical characters
- * (eg, ^B, ^R, ^_, etc), and everything else is completely blown away.
- *
- * If "width" is not -1, then every "width" printable characters, a \n
- * marker is put into the output so you can tell where the line breaks
- * are.  Obviously, this is optional.  It is used by prepared_display 
- * and $leftpc().
- *
- * XXX Some have asked that i "space out" the outputs with spaces and return
- * but one row of output, so that rxvt will paste it as all one line.  Yea,
- * that might be nice, but that raises other, more thorny issues.
- */
+	A = Character or sequence converted into an attribute
+	M = Character mangled
+	S = Character stripped, sequence (if any) NOT stripped
+	X = Character stripped, sequence (if any) also stripped
+	T = Transformed into other (safe) chars
+	- = No transformation
+
+					Type
+    			0    1    2    3    4    5    6    7    8    9
+(Default)		-    -    -    -    A    -    -    T    T    T
+NORMALIZE		-    -    A    A    -    X    M    -    -    -
+MANGLE_ESCAPES		-    -    S    -    -    -    -    -    -    -
+STRIP_COLOR		-    -    -    X    -    -    -    -    -    -
+STRIP_*			-    -    -    -    X    -    -    -    -    -
+STRIP_UNPRINTABLE	-    X    S    S    X    X    X    X    -    -
+STRIP_OTHER		X    -    -    -    -    -    -    -    X    X
+(/SET ALLOW_C1)		-    X    -    -    -    -    -    -    -    -
+*/
 
 /*
- * These macros help keep 8 bit chars from sneaking into the output stream
- * where they might be stripped out.
+ * new_normalize_string -- Transform an untrusted input string into something
+ *				we can trust.
+ * Arguments:
+ *   str	An untrusted input string
+ *   logical	How attribute changes should look in the output:
+ *		0	Marshalled form, suitable for displaying
+ *		1	Un-normalized form, suitable for the user (ie, ^B/^V)
+ *		2	Stripped out entirely
+ *		3	Marshalled form, especially for the status bar.
+ *   mangler	How we want the string to be transformed
+ *		The above chart shows how the different types of characters
+ *		are transformed by the different mangler types.  There are
+ *		three ambiguous cases, which are resolved as such:
+ *		Type 2:
+ *			MANGLE_ESCAPES has the first priority, then
+ *			NORMALIZE is next, finally STRIP_UNPRINTABLE.
+ *		Type 3:
+ *			STRIP_UNPRINTABLE has the first priority, then
+ *			NORMALIZE and STRIP_COLOR.  You need to use both 
+ *			NORMALIZE and STRIP_COLOR to strip color changes 
+ *			in color sequences
+ *		Type 6:
+ *			STRIP_UNPRINTABLE has higher priority than NORMALIZE.
+ *
+ * Furthermore, the following two sets affect behavior:
+ *	  /SET ALLOW_C1_CHARS
+ *		ON  == Type 1 chars are treated as Type 0 chars (safe)
+ *		OFF == Type 1 chars are treated as Type 5 chars (unsafe)
+ *	  /SET TERM_DOES_BRIGHT_BLINK
+ *		???
+ *
+ * Return Value:
+ *	A new trusted string, that has been subjected to the transformations
+ *	in "mangler", with attribute changes represented in the "logical"
+ *	format.
  */
 #define this_char() (*str)
 #define next_char() (*str++)
 #define put_back() (str--)
 #define nlchar '\n'
-
 u_char *	new_normalize_string (const u_char *str, int logical, int mangle)
 {
 	u_char *	output;
@@ -1166,12 +1134,19 @@ abnormal_char:
 		 */
 		case 6:
 		{
+			/*
+			 * \f is a special case, state 0, for status bar.  
+			 * Either I special case it here, or in 
+			 * output_to_count.  I prefer here.
+			 */
+			if (logical == 3 && chr == '\f')
+				goto normal_char;
+
 			if (strip_unprintable)
 				break;
-#if 0
 			if (termfeatures & TERM_CAN_GCHAR)
 				goto normal_char;
-#endif
+
 			if (normalize)
 			{
 				output[pos++] = (chr | 0x40) & 0x7F;
@@ -1231,6 +1206,7 @@ abnormal_char:
 
 		    if (strip_unprintable)
 			break;
+
 		    goto normal_char;
 		}
 
@@ -1866,7 +1842,7 @@ const	u_char	*cont_ptr;
  *	window		- The target window for the output
  *	str		- What is to be outputted
  */
-static int 	rite (Window *window, const unsigned char *str)
+static int 	rite (Window *window, const u_char *str)
 {
 	output_screen = window->screen;
 	scroll_window(window);
@@ -1893,12 +1869,12 @@ static int 	rite (Window *window, const unsigned char *str)
  * If 'output' is 1 and 'all_off' is 1, do a term_all_off() when the output
  * is done.  If 'all_off' is 0, then don't do an all_off, because
  */
-int 	output_with_count (const unsigned char *str1, int clreol, int output)
+int 	output_with_count (const u_char *str1, int clreol, int output)
 {
 	int 		beep = 0, 
 			out = 0;
 	Attribute	a;
-	const unsigned char *str;
+	const u_char *	str;
 
         /* Reset all attributes to zero */
         a.bold = a.underline = a.reverse = a.blink = a.altchar = 0;
@@ -1906,67 +1882,51 @@ int 	output_with_count (const unsigned char *str1, int clreol, int output)
 
 	for (str = str1; str && *str; str++)
 	{
-		switch (*str)
+	    switch (*str)
+	    {
+		/* Attribute marker */
+		case '\006':
 		{
-			/* Attribute marker */
-			case '\006':
-			{
-				if (read_attributes(str, &a))
-					break;
-				if (output)
-					term_attribute(&a);
-				str += 4;
+			if (read_attributes(str, &a))
 				break;
-			}
-
-			/* Terminal beep */
-			case '\007':
-			{
-				beep++;
-				break;
-			}
-
-			/* Dont ask */
-			case '\f':
-			{
-				if (output)
-				{
-					a.reverse = !a.reverse;
-					term_attribute(&a);
-					putchar_x('f');
-					a.reverse = !a.reverse;
-					term_attribute(&a);
-				}
-				out++;
-				break;
-			}
-
-			/* Non-destructive space */
-			case ND_SPACE:
-			{
-				if (output)
-					term_cursor_right();
-				out++;		/* Ooops */
-				break;
-			}
-
-			/* Any other printable character */
-			default:
-			{
-				/*
-				 * Note that 'putchar_x()' is safe here
-				 * because normalize_string() has already 
-				 * removed all of the nasty stuff that could 
-				 * end up getting here.  And for those things
-				 * that are nasty that get here, its probably
-				 * because the user specifically asked for it.
-				 */
-				if (output)
-					putchar_x(*str);
-				out++;
-				break;
-			}
+			if (output)
+				term_attribute(&a);
+			str += 4;
+			break;
 		}
+
+		/* Terminal beep */
+		case '\007':
+		{
+			beep++;
+			break;
+		}
+
+		/* Non-destructive space */
+		case ND_SPACE:
+		{
+			if (output)
+				term_cursor_right();
+			out++;		/* Ooops */
+			break;
+		}
+
+		/* Any other printable character */
+		default:
+		{
+			/*
+			 * Note that 'putchar_x()' is safe here because 
+			 * normalize_string() has already removed all of the 
+			 * nasty stuff that could end up getting here.  And
+			 * for those things that are nasty that get here, its 
+			 * probably because the user specifically asked for it.
+			 */
+			if (output)
+				putchar_x(*str);
+			out++;
+			break;
+		}
+	    }
 	}
 
 	if (output)
@@ -2173,11 +2133,16 @@ void 	add_to_screen (const unsigned char *buffer)
  * rite() handles the *appearance* of the display, writing to the screen as
  * neccesary.
  */
-static void 	add_to_window (Window *window, const unsigned char *str)
+static void 	add_to_window (Window *window, const u_char *str)
 {
-	char *	pend;
-	char *	strval;
-	char *	free_me = NULL;
+	char *		pend;
+	u_char *	strval;
+	u_char *	free_me = NULL;
+        u_char **       lines;
+        int             cols;
+	int		numl = 0;
+	intmax_t	refnum;
+	int		beep;
 
 	if (get_server_redirect(window->server))
 		if (redirect_text(window->server, 
@@ -2200,84 +2165,78 @@ static void 	add_to_window (Window *window, const unsigned char *str)
 	    * (Recursion detection by larne in epic4-2.1.3)
 	    */
 	    recursion++;
-	    if (recursion < 5)
+	    if (recursion < 5 && (pend = get_string_var(OUTPUT_REWRITE_VAR)))
 	    {
-	      if ((pend = get_string_var(OUTPUT_REWRITE_VAR)))
-	      {
-		char	*prepend_exp;
-		char	argstuff[10240];
+		u_char	argstuff[10240];
 
-		/* First, create the $* list for the expando */
-		snprintf(argstuff, 10240, "%u %s", 
-				window->refnum, str);
-
-		/* Now expand the expando with the above $* */
-		prepend_exp = expand_alias(pend, argstuff,
-					   NULL);
-
-		str = prepend_exp;
-		free_me = prepend_exp;
-	      }
-	   }
-	   recursion--;
+		/* Create $* and then expand with it */
+		snprintf(argstuff, 10240, "%u %s", window->refnum, str);
+		str = free_me = expand_alias(pend, argstuff, NULL);
+	    }
+	    recursion--;
 	}
 
-	/* Normalize the line of output */
-	strval = new_normalize_string(str, 0, display_line_mangler);
+	/* Add to logs + lastlog... */
+	add_to_log(0, window->log_fp, window->refnum, str, 0, NULL);
+	add_to_logs(window->refnum, from_server, who_from, who_level, str);
+	refnum = add_to_lastlog(window, str);
 
-	/* Pass it off to the window */
-	window_disp(window, strval, str);
+	/* Add to scrollback + display... */
+	cols = window->columns - 1;
+	strval = new_normalize_string(str, 0, display_line_mangler);
+        for (lines = prepare_display(strval, cols, &numl, 0); *lines; lines++)
+	{
+		if (add_to_scrollback(window, *lines, refnum))
+			rite(window, *lines);
+	}
 	new_free(&strval);
 
+	/* Check the status of the window and scrollback */
+	check_window_cursor(window);
+	trim_scrollback(window);
+
+	cursor_in_display(window);
+	cursor_to_input();
+
 	/*
-	 * This used to be in rite(), but since rite() is a general
-	 * purpose function, and this stuff really is only intended
-	 * to hook on "new" output, it really makes more sense to do
-	 * this here.  This also avoids the terrible problem of 
-	 * recursive calls to split_up_line, which are bad.
+	 * Handle special cases for output to hidden windows -- A beep to
+	 * a hidden window with /window beep_always on results in a real beep 
+	 * and a message to the current window.  Output to a hidden window 
+	 * with /window notify on results in a message to the current window 
+	 * and a status bar redraw.
+	 *
+	 * /XECHO -F sets "do_window_notifies" which overrules this.
 	 */
 	if (!window->screen && do_window_notifies)
 	{
-		/*
-		 * This is for archon -- he wanted a way to have 
-		 * a hidden window always beep, even if BEEP is off.
-		 * XXX -- str has already been freed here! ACK!
-		 */
-		if (window->beep_always && strchr(str, '\007'))
-		{
-			Window *old_to_window;
-			term_beep();
-			old_to_window = to_window;
-			to_window = current_window;
-			say("Beep in window %d", window->refnum);
-			to_window = old_to_window;
-		}
+	    char *type = NULL;
 
-		/*
-		 * Tell some visible window about our problems 
-		 * if the user wants us to.
-		 */
-		if (!(window->notified) &&
+	    /* /WINDOW BEEP_ALWAYS added for archon.  */
+	    if (window->beep_always && strchr(str, '\007'))
+	    {
+		type = "Beep";
+		term_beep();
+	    }
+	    if (!(window->notified) &&
 			mask_isset(&window->notify_mask, who_level))
-		{
-			window->notified = 1;
-			if (window->notify_when_hidden)
-			{
-				Window	*old_to_window;
+	    {
+		window->notified = 1;
+		if (window->notify_when_hidden)
+			type = "Activity";
+		update_all_status();
+	    }
 
-				/* XXX - Should i set who_from here? */
-				old_to_window = to_window;
-				to_window = current_window;
-				say("Activity in window %d", window->refnum);
-				to_window = old_to_window;
-			}
-			update_all_status();
-		}
+	    if (type)
+	    {
+		Window *old_to_window;
+		old_to_window = to_window;
+		to_window = current_window;
+		say("%s in window %d", type, window->refnum);
+		to_window = old_to_window;
+	    }
 	}
 	if (free_me)
 		new_free(&free_me);
-
-	cursor_in_display(window);
 }
 
 /*
@@ -2288,60 +2247,29 @@ static void 	add_to_window (Window *window, const unsigned char *str)
  */
 void 	add_to_window_scrollback (Window *window, const unsigned char *str, intmax_t refnum)
 {
-	char *		strval;
+	u_char *	strval;
         u_char **       lines;
         int             cols;
 	int		numl = 0;
 
 	/* Normalize the line of output */
-	strval = new_normalize_string(str, 0, display_line_mangler);
-
 	cols = window->columns - 1;
-
-	/* Suppress status updates while we're outputting. */
+	strval = new_normalize_string(str, 0, display_line_mangler);
         for (lines = prepare_display(strval, cols, &numl, 0); *lines; lines++)
 		add_to_scrollback(window, *lines, refnum);
-
 	new_free(&strval);
 }
 
-
 /*
- * The mid-level shim for output to all ircII type windows.
+ * This returns 1 if the window does not need to scroll for new output.
+ * This returns 0 if the window does need to scroll for new output.
  *
- * By this point, the logical line 'str' is in the state it is going to be
- * put onto the screen.  We need to put it in our lastlog [XXX Should that
- * be done by the front end?] and process it through the display chopper
- * (prepare_display) which slices and dices the logical line into manageable
- * chunks, suitable for putting onto the display.  We then call our back end
- * function to do the actual physical output.
+ * This call should be used to guard calls to rite(), because rite() will
+ * call scroll_window() if the window is full.  Scroll_window() will panic 
+ * if the window is not using the "scrolling" view.  Therefore, this function
+ * differentiates between a window that is full because it is in hold mode or
+ * scrollback, and a window that is full and can be scrolled.
  */
-static void    window_disp (Window *window, const unsigned char *str, const unsigned char *orig_str)
-{
-        u_char **       lines;
-        int             cols;
-	int		numl = 0;
-	intmax_t	refnum;
-
-	add_to_log(0, window->log_fp, window->refnum, orig_str, 0, NULL);
-	add_to_logs(window->refnum, from_server, who_from, who_level, orig_str);
-	refnum = add_to_lastlog(window, orig_str);
-
-	cols = window->columns - 1;
-
-	/* Suppress status updates while we're outputting. */
-        for (lines = prepare_display(str, cols, &numl, 0); *lines; lines++)
-	{
-		if (add_to_scrollback(window, *lines, refnum))
-			if (ok_to_output(window))
-				rite(window, *lines);
-	}
-
-	check_window_cursor(window);
-	trim_scrollback(window);
-	cursor_to_input();
-}
-
 static int	ok_to_output (Window *window)
 {
 	/*
@@ -2370,6 +2298,10 @@ static int	ok_to_output (Window *window)
  * the cursor is placed onto the "next" line.  If the window is full, then
  * it will scroll the window as neccesary.  The cursor is always set to the
  * correct place when this returns.
+ *
+ * This is only ever (to be) called by rite(), and you must always call
+ * ok_to_output() before you call rite().  If you do not call ok_to_output(),
+ * this function will panic if the window needs to be scrolled.
  */
 static void 	scroll_window (Window *window)
 {
@@ -2394,11 +2326,21 @@ static void 	scroll_window (Window *window)
 		 * doing its job or something else is completely broken.
 		 * Probably shouldnt be fatal, but i want to trap these.
 		 */
-		if (window->holding_distance_from_display_ip > window->display_lines)
-			panic("Can't output to window [%d] because it is holding stuff: [%d] [%d]", window->refnum, window->holding_distance_from_display_ip, window->display_lines);
-		if (window->scrollback_distance_from_display_ip > window->display_lines)
-			panic("Can't output to window [%d] because it is scrolling back: [%d] [%d]", window->refnum, window->scrollback_distance_from_display_ip, window->display_lines);
+		if (window->holding_distance_from_display_ip > 
+						window->display_lines)
+			panic("Can't output to window [%d] "
+				"because it is holding stuff: [%d] [%d]", 
+				window->refnum, 
+				window->holding_distance_from_display_ip, 
+				window->display_lines);
 
+		if (window->scrollback_distance_from_display_ip > 
+						window->display_lines)
+			panic("Can't output to window [%d] "
+				"because it is scrolling back: [%d] [%d]", 
+				window->refnum, 
+				window->scrollback_distance_from_display_ip, 
+				window->display_lines);
 
 		/* Scroll by no less than 1 line */
 		if ((scroll = get_int_var(SCROLL_LINES_VAR)) <= 0)
@@ -2560,8 +2502,10 @@ void 	repaint_window_body (Window *window)
  * create_new_screen creates a new screen structure. with the help of
  * this structure we maintain ircII windows that cross screen window
  * boundaries.
+ *
+ * The new screen is stored in "last_input_screen"!
  */
-Screen *create_new_screen (void)
+void	create_new_screen (void)
 {
 	Screen	*new_s = NULL, *list;
 	static	int	refnumber = 0;
@@ -2632,11 +2576,13 @@ Screen *create_new_screen (void)
 		main_screen = new_s;
 
 	init_input();
-	return new_s;
 }
 
 
 #ifdef WINDOW_CREATE
+#define ST_NOTHING      -1
+#define ST_SCREEN       0
+#define ST_XTERM        1
 Window	*create_additional_screen (void)
 {
         Window  	*win;
@@ -2716,7 +2662,8 @@ Window	*create_additional_screen (void)
 	port = ntohs(local_sockaddr.sin_port);
 
 	oldscreen = current_window->screen;
-	new_s = create_new_screen();
+	create_new_screen();
+	new_s = last_input_screen;
 
 	/*
 	 * At this point, doing a say() or yell() or anything else that would
@@ -2946,7 +2893,7 @@ void 	kill_screen (Screen *screen)
 
 
 /* * * * * * * * * * * * * USER INPUT HANDLER * * * * * * * * * * * */
-void 	do_screens (int fd)
+static void 	do_screens (int fd)
 {
 	Screen *screen;
 	char 	buffer[IO_BUFFER_SIZE + 1];
@@ -3126,6 +3073,4 @@ void 	add_wait_prompt (const char *prompt, void (*func)(char *, char *), const c
 	if (AddLoc == &s->promptlist)
 		change_input_prompt(1);
 }
-
-
 
