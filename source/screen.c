@@ -1,4 +1,4 @@
-/* $EPIC: screen.c,v 1.110 2005/10/07 01:14:24 jnelson Exp $ */
+/* $EPIC: screen.c,v 1.111 2005/10/07 11:59:34 jnelson Exp $ */
 /*
  * screen.c
  *
@@ -2187,6 +2187,7 @@ static void 	add_to_window (Window *window, const u_char *str)
         for (lines = prepare_display(strval, cols, &numl, 0); *lines; lines++)
 	{
 		if (add_to_scrollback(window, *lines, refnum))
+		    if (ok_to_output(window))
 			rite(window, *lines);
 	}
 	new_free(&strval);
