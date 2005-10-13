@@ -27,6 +27,9 @@ u_32int_t	bsd_arc4random (void);
 #define arc4random bsd_arc4random
 #endif
 
+int	my_base64_encode (const void *, int, char **);
+int	my_base64_decode (const char *, void *);
+
 #ifndef HAVE_VSNPRINTF
 int	vsnprintf (char *, size_t, const char *, va_list);
 #endif

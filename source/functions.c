@@ -1,4 +1,4 @@
-/* $EPIC: functions.c,v 1.215 2005/10/13 01:11:58 jnelson Exp $ */
+/* $EPIC: functions.c,v 1.216 2005/10/13 01:49:44 jnelson Exp $ */
 /*
  * functions.c -- Built-in functions for ircII
  *
@@ -199,6 +199,8 @@ static	char
 	*function_aliasctl	(char *),
 	*function_ascii 	(char *),
 	*function_asciiq 	(char *),
+	*function_b64decode	(char *),
+	*function_b64encode	(char *),
 	*function_before 	(char *),
 	*function_beforew 	(char *),
 	*function_bindctl	(char *),
@@ -443,6 +445,8 @@ static BuiltInFunctions	built_in_functions[] =
 	{ "ASINH",		function_asinh		},
 	{ "ATAN",		function_atan		},
 	{ "ATANH",		function_atanh		},
+	{ "B64DECODE",		function_b64decode	},
+	{ "B64ENCODE",		function_b64encode	},
 	{ "BEFORE",             function_before 	},
 	{ "BEFOREW",            function_beforew 	},
 	{ "BINDCTL",		function_bindctl	},
@@ -6501,6 +6505,23 @@ BUILT_IN_FUNCTION(function_fix_arglist, input)
 BUILT_IN_FUNCTION(function_symbolctl, input)
 {
 	return symbolctl(input);
+}
+
+BUILT_IN_FUNCTION(function_b64encode, input)
+{
+	char *result;
+	if (my_base64_encode(input, strlen(input), &result) < 0)
+		RETURN_EMPTY;
+	RETURN_MSTR(result);
+}
+
+BUILT_IN_FUNCTION(function_b64decode, input)
+{
+	char *result;
+	result = new_malloc(strlen(input));
+	if (my_base64_decode(input, result) < 0)
+		RETURN_EMPTY;
+	RETURN_MSTR(result);
 }
 
 

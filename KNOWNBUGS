@@ -837,3 +837,5 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Replace direct users of to_window with message_setall(). yay!
 * /XECHO got rewritten as part of this.  See UPDATES
 * Fix various compiler warnings.
+* Add a bsd licensed base64 encode/decode in compat.c
+* Add $b64encode() and $b64decode().
