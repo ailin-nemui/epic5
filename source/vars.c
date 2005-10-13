@@ -1,4 +1,4 @@
-/* $EPIC: vars.c,v 1.85 2005/10/05 23:51:36 jnelson Exp $ */
+/* $EPIC: vars.c,v 1.86 2005/10/13 01:11:59 jnelson Exp $ */
 /*
  * vars.c: All the dealing of the irc variables are handled here. 
  *
@@ -77,7 +77,6 @@ const char	*var_settings[] =
 
 	Bucket *var_bucket = NULL;
 
-static 	void 	set_display_pc_characters (void *);
 static	void	set_mangle_inbound 	(void *);
 static	void	set_mangle_outbound 	(void *);
 static	void	set_mangle_logfiles 	(void *);

@@ -1,4 +1,4 @@
-/* $EPIC: dcc.c,v 1.131 2005/08/26 01:28:12 jnelson Exp $ */
+/* $EPIC: dcc.c,v 1.132 2005/10/13 01:11:58 jnelson Exp $ */
 /*
  * dcc.c: Things dealing client to client connections. 
  *
@@ -3455,7 +3455,7 @@ yell("### Ask the person who you sent the file to look for garbage at the");
 yell("### end of the file you just sent them.  Please enclose that ");
 yell("### information as well as the following:");
 yell("###");
-yell("###    bytesrecvd [%ld ("INTMAX_FORMAT")]", bytes, provisional_bytes);
+yell("###    bytesrecvd [%ld ("INTMAX_FORMAT")]", (long)bytes, provisional_bytes);
 yell("###    dcc->bytes_sent ["INTMAX_FORMAT"]", 	dcc->bytes_sent);
 yell("###    dcc->filesize ["INTMAX_FORMAT"]", 		dcc->filesize);
 yell("###    dcc->bytes_acked ["INTMAX_FORMAT"]", 	dcc->bytes_acked);
@@ -3467,7 +3467,7 @@ yell("###    dcc->bytes_acked ["INTMAX_FORMAT"]", 	dcc->bytes_acked);
 	if (provisional_bytes >= dcc->bytes_acked)
 	{
 		if (x_debug & DEBUG_DCC_XMIT)
-			yell("Bytes to "INTMAX_FORMAT" ACKed", bytes);
+			yell("Bytes to %ld ACKed", (long)bytes);
 		dcc->bytes_acked = provisional_bytes;
 	}
 

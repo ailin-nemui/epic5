@@ -1,4 +1,4 @@
-/* $EPIC: log.c,v 1.22 2005/10/04 03:47:45 jnelson Exp $ */
+/* $EPIC: log.c,v 1.23 2005/10/13 01:11:58 jnelson Exp $ */
 /*
  * log.c: handles the irc session logging functions 
  *
@@ -149,7 +149,6 @@ void	logger (void *stuff)
 void 	add_to_log (int logref, FILE *fp, long winref, const unsigned char *line, int mangler, const char *rewriter)
 {
 	char	*local_line;
-	size_t	size;
 	int	must_free = 0;
 	int	old_logref;
 

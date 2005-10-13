@@ -1,4 +1,4 @@
-/* $EPIC: window.c,v 1.156 2005/10/05 22:37:25 jnelson Exp $ */
+/* $EPIC: window.c,v 1.157 2005/10/13 01:11:59 jnelson Exp $ */
 /*
  * window.c: Handles the organzation of the logical viewports (``windows'')
  * for irc.  This includes keeping track of what windows are open, where they
@@ -2282,6 +2282,7 @@ void 	window_check_servers (void)
 	int	cnt, max, i;
 	int	prime = NOSERV;
 	int	status;
+	int	l;
 
 	connected_to_server = 0;
 	max = server_list_size();
@@ -2301,7 +2302,7 @@ void 	window_check_servers (void)
 	    }
 
 	    connected_to_server++;
-	    to_window = tmp;
+	    l = message_to(tmp->refnum);
 
 	    if (status == SERVER_RECONNECT)
 	    {
@@ -2323,7 +2324,7 @@ void 	window_check_servers (void)
 		connect_to_server(i);
 	    }
 
-	    to_window = NULL;
+	    pop_message_from(l);
 	}
 
 	if (!is_server_open(primary_server))
@@ -2363,37 +2364,6 @@ void 	window_check_channels (void)
 
 
 /* * * * * * * * * * LEVELS * * * * * * * * * */
-/*
- * turn_on_level: Turns the level on for the given window, to the exclusion
- * of all other windows on the client.  Useful for LEVEL_HELP.
- * Returns 0 if bit was set, or -1 if it's already set elsewhere
- */
-int	turn_on_level (unsigned refnum, int level)
-{
-	Window *win;
-	Window *tmp = NULL;
-
-	if (!(win = get_window_by_refnum(refnum)))
-		return -1;
-
-	while (traverse_all_windows(&tmp))
-	{
-	    if (mask_isset(&tmp->window_mask, level))
-		return -1;
-	}
-	mask_set(&win->window_mask, level);
-	return -1;
-}
-
-int	turn_off_level (int level)
-{
-	Window *tmp = NULL;
-
-	while (traverse_all_windows(&tmp))
-		mask_unset(&tmp->window_mask, level);
-	return 0;
-}
-
 int	set_mask_by_winref (unsigned refnum, Mask mask)
 {
 	Window *win;
@@ -2437,24 +2407,79 @@ static void 	revamp_window_masks (Window *window)
 	}
 }
 
-/*
- * message_to: This allows you to specify a window (by refnum) as a
- * destination for messages.  Used by EXEC routines quite nicely 
- */
-void 	message_to (int refnum)
-{
-	to_window = (refnum != -1) ? get_window_by_refnum((unsigned)refnum) : NULL;
-}
-
 struct output_context {
 	const char *	who_from;
 	int		who_level;
 	const char *	who_file;
 	int		who_line;
+	int		to_window;
 };
 struct output_context *	contexts = NULL;
 int			context_max = -1;
 int 			context_counter = -1;
+
+int	real_message_setall (int refnum, const char *who, int level, const char *file, int line)
+{
+	if (context_max < 0)
+	{
+		context_max = 32;
+		context_counter = 0;
+		RESIZE(contexts, struct output_context, context_max);
+	}
+	else if (context_counter >= context_max - 20)
+	{
+		context_max *= 2;
+		RESIZE(contexts, struct output_context, context_max);
+	}
+
+	if (x_debug & DEBUG_MESSAGE_FROM)
+		yell("Setting context %d [%d] {%s:%d}", context_counter, refnum, file, line);
+
+#ifdef NO_CHEATING
+	malloc_strcpy(&contexts[context_counter].who_from, who);
+#else
+	contexts[context_counter].who_from = who;
+#endif
+	contexts[context_counter].who_level = level;
+	contexts[context_counter].who_file = file;
+	contexts[context_counter].who_line = line;
+	contexts[context_counter].to_window = refnum;
+
+	who_from = who;
+	who_level = level;
+	to_window = get_window_by_refnum(refnum);
+	return context_counter++;
+}
+
+
+int	real_message_to (int refnum, const char *file, int line)
+{
+	if (context_max < 0)
+	{
+		context_max = 32;
+		context_counter = 0;
+		RESIZE(contexts, struct output_context, context_max);
+	}
+	else if (context_counter >= context_max - 20)
+	{
+		context_max *= 2;
+		RESIZE(contexts, struct output_context, context_max);
+	}
+
+	if (x_debug & DEBUG_MESSAGE_FROM)
+		yell("Setting context %d [%d] {%s:%d}", context_counter, refnum, file, line);
+
+	contexts[context_counter].who_from = NULL;
+	contexts[context_counter].who_level = 0;
+	contexts[context_counter].who_file = file;
+	contexts[context_counter].who_line = line;
+	contexts[context_counter].to_window = refnum;
+
+	who_from = NULL;
+	who_level = 0;
+	to_window = get_window_by_refnum(refnum);
+	return context_counter++;
+}
 
 /*
  * message_from: With this you can set the who_from variable and the 
@@ -2486,9 +2511,11 @@ int	real_message_from (const char *who, int level, const char *file, int line)
 	contexts[context_counter].who_level = level;
 	contexts[context_counter].who_file = file;
 	contexts[context_counter].who_line = line;
+	contexts[context_counter].to_window = -1;
 
 	who_from = who;
 	who_level = level;
+	to_window = NULL;
 	return context_counter++;
 }
 
@@ -2509,8 +2536,11 @@ void	pop_message_from (int context)
 	contexts[context_counter].who_level = LEVEL_NONE;
 	contexts[context_counter].who_file = NULL;
 	contexts[context_counter].who_line = -1;
+	contexts[context_counter].to_window = -1;
+
 	who_from = contexts[context_counter - 1].who_from;
 	who_level = contexts[context_counter - 1].who_level;
+	to_window = get_window_by_refnum(contexts[context_counter - 1].to_window);
 }
 
 /* * * * * * * * * * * CLEARING WINDOWS * * * * * * * * * * */
@@ -3315,7 +3345,7 @@ static Window *window_double (Window *window, char **args)
 static	Window *window_echo (Window *window, char **args)
 {
 	const char *to_echo;
-	Window *old_to_window;
+	int	l;
 
 	if (**args == '"')
 		to_echo = new_next_arg(*args, args);
@@ -3323,10 +3353,9 @@ static	Window *window_echo (Window *window, char **args)
 		to_echo = *args, *args = NULL;
 
 	/* Calling add_to_window() directly is a hack. */
-	old_to_window = to_window;
-	to_window = window;
+	l = message_to(window->refnum);
 	put_echo(to_echo);
-	to_window = old_to_window;
+	pop_message_from(l);
 
 	return window;
 }
@@ -4143,7 +4172,7 @@ Window *window_query (Window *window, char **args)
 	WNickList *tmp;
 	const char *oldnick, *nick;
 	char	  *a;
-	Window	  *sw;
+	int	l;
 
 	nick = new_next_arg(*args, args);
 
@@ -4152,10 +4181,9 @@ Window *window_query (Window *window, char **args)
 	 */
 	if ((oldnick = get_equery_by_refnum(window->refnum)))
 	{
-	    sw = to_window;
-	    to_window = window;
+	    l = message_to(window->refnum);
 	    say("Ending conversation with %s", oldnick);
-	    to_window = sw;
+	    pop_message_from(l);
 
 	    /* Only remove from nick lists if canceling the query */
 	    if (!nick)
@@ -4223,10 +4251,9 @@ Window *window_query (Window *window, char **args)
 		window->query_counter = tmp->counter;
 	}
 
-	sw = to_window;
-	to_window = window;
+	l = message_to(window->refnum);
 	say("Starting conversation with %s", nick);
-	to_window = sw;
+	pop_message_from(l);
 
 	return window;
 }

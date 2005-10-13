@@ -1,4 +1,4 @@
-/* $EPIC: commands.c,v 1.130 2005/10/05 23:51:36 jnelson Exp $ */
+/* $EPIC: commands.c,v 1.131 2005/10/13 01:11:58 jnelson Exp $ */
 /*
  * commands.c -- Stuff needed to execute commands in ircII.
  *		 Includes the bulk of the built in commands for ircII.
@@ -846,7 +846,6 @@ BUILT_IN_COMMAND(xechocmd)
 	unsigned display;
 	char	*flag_arg;
 	int	temp = 0;
-	Window *old_to_window;
 	int	all_windows = 0;
 	int	want_banner = 0;
 	char	*stuff = NULL;
@@ -856,8 +855,9 @@ BUILT_IN_COMMAND(xechocmd)
 	int	l = -1;
 	int	old_window_notify = do_window_notifies;
 	int	old_mangler = display_line_mangler;
-
-	old_to_window = to_window;
+	int	to_window_refnum = to_window ? to_window->refnum : -1;
+	int	to_level = who_level;
+	const char *	to_from = who_from;;
 
 	while (more && args && (*args == '-' || *args == '/'))
 	{
@@ -866,47 +866,50 @@ BUILT_IN_COMMAND(xechocmd)
 		case 'C':	/* CURRENT (output to user's current window) */
 		{
 			next_arg(args, &args);
-			to_window = current_window;
+			to_window_refnum = 0;
 			break;
 		}
 
 		case 'L':
 		{
-			flag_arg = next_arg(args, &args);
+		    flag_arg = next_arg(args, &args);
 
-			/* LINE (output to scratch window) */
-			if (toupper(flag_arg[2]) == 'I') 
+		    /* LINE (output to scratch window) */
+		    if (toupper(flag_arg[2]) == 'I') 
+		    {
+			int to_line = 0;
+			int display_lines;
+
+			if (to_window_refnum == -1)
 			{
-				int to_line = 0;
-
-				if (!to_window)
-				{
-					yell("XECHO: -LINE only works if -WIN is specified first");
-					to_window = old_to_window;
-					return;
-				}
-				to_line = my_atol(next_arg(args, &args));
-				if (to_line < 0 || 
-					to_line >= to_window->display_lines)
-				{
-					yell("XECHO: -LINE %d is out of range for window (max %d)", 
-						to_line, 
-						to_window->display_lines - 1);
-					to_window = old_to_window;
-					return;
-				}
-				to_window->change_line = to_line;
+			    yell("XECHO: -LINE only works if -WIN is "
+					"specified first");
+			    return;
 			}
 
-			/* LEVEL (use specified lastlog level) */
-			else	
+			display_lines = get_window_by_refnum(to_window_refnum)
+							->display_lines;
+			to_line = my_atol(next_arg(args, &args));
+			if (to_line < 0 || to_line >= display_lines)
 			{
-				if (!(flag_arg = next_arg(args, &args)))
-					break;
-				if ((temp = str_to_level(flag_arg)) > -1)
-					l = message_from(NULL, temp);
+				yell("XECHO: -LINE %d is out of range "
+					"for window (max %d)", to_line, 
+					display_lines - 1);
+				return;
 			}
-			break;
+			get_window_by_refnum(to_window_refnum)->change_line = 
+							to_line;
+		     }
+
+		     /* LEVEL (use specified lastlog level) */
+		     else	
+		     {
+			if (!(flag_arg = next_arg(args, &args)))
+				break;
+			if ((temp = str_to_level(flag_arg)) > -1)
+				to_level = temp;
+		     }
+		     break;
 		}
 
 		case 'V':	/* VISUAL (output to a visible window) */
@@ -918,14 +921,16 @@ BUILT_IN_COMMAND(xechocmd)
 			flag_arg = next_arg(args, &args);
 
 			if (current_window->screen)
-			    to_window = current_window;
+			    to_window_refnum = current_window->refnum;
 			else
 			{
 			    while ((traverse_all_windows(&win)))
 			    {
 				if (win->screen)
 				{
-					to_window = win;
+					if (l > -1)
+						pop_message_from(l);
+					l = message_to(win->refnum);
 					break;
 				}
 			    }
@@ -935,13 +940,19 @@ BUILT_IN_COMMAND(xechocmd)
 
 		case 'W':	/* WINDOW (output to specified window) */
 		{
+			Window *w;
 			next_arg(args, &args);
 
 			if (!(flag_arg = next_arg(args, &args)))
 				break;
 
-			if (!(to_window = get_window_by_desc(flag_arg)))
-				to_window = get_window_by_refnum(get_channel_winref(flag_arg, from_server));
+			if (!(w = get_window_by_desc(flag_arg)))
+			    if (!(w = get_window_by_refnum(
+					get_channel_winref(flag_arg, 
+							from_server))))
+				return;	/* No such window */
+
+			to_window_refnum = w->refnum;
 			break;
 		}
 
@@ -970,13 +981,12 @@ BUILT_IN_COMMAND(xechocmd)
 			 * So we have to make sure that output_screen is
 			 * to_window->screen.
 			 */
-			if (to_window)
-				output_screen = to_window->screen;
+			if (to_window_refnum != -1)
+				output_screen = get_window_by_refnum(to_window_refnum)->screen;
 			else
 				output_screen = current_window->screen;
 			tputs_x(args);
 			term_flush();
-			to_window = old_to_window;
 			return;
 		}
 
@@ -991,10 +1001,7 @@ BUILT_IN_COMMAND(xechocmd)
 		{
 			next_arg(args, &args);
 			if (!window_display)
-			{
-				to_window = old_to_window;
 				return;
-			}
 			break;
 		}
 
@@ -1052,21 +1059,26 @@ BUILT_IN_COMMAND(xechocmd)
 		}
 	}
 	else if (want_banner != 0)
-		abort();
+		panic("xecho: want_banner is %d", want_banner);
 
 	if (all_windows == 1)
 	{
 		Window *win = NULL;
 		while ((traverse_all_windows(&win)))
 		{
-			to_window = win;
+			int l = message_setall(win->refnum, to_from, to_level);
 			put_echo(args);
+			pop_message_from(l);
 		}
 	}
 	else if (all_windows != 0)
-		abort();
+		panic("xecho: all_windows is %d", all_windows);
 	else
+	{
+		int l = message_setall(to_window_refnum, to_from, to_level);
 		put_echo(args);
+		pop_message_from(l);
+	}
 
 	if (stuff)
 		new_free(&stuff);
@@ -1074,14 +1086,10 @@ BUILT_IN_COMMAND(xechocmd)
 	if (xtended)
 		display_line_mangler = old_mangler;
 
-	if (l > -1)
-		pop_message_from(l);
-
 	do_window_notifies = old_window_notify;
 	if (nolog)
 		inhibit_logging = 0;
 	window_display = display;
-	to_window = old_to_window;
 }
 
 /*
@@ -1093,8 +1101,8 @@ BUILT_IN_COMMAND(xevalcmd)
 {
 	char *	flag;
 	int	old_from_server = from_server;
-	Window *old_to_window = to_window;
 	int	old_refnum = current_window->refnum;
+	int	l = -1;
 
 	while (args && (*args == '-' || *args == '/'))
 	{
@@ -1120,15 +1128,17 @@ BUILT_IN_COMMAND(xevalcmd)
 			Window *win = get_window_by_desc(next_arg(args, &args));
 			if (win)
 			{
+				l = message_to(win->refnum);
 				current_window = win;
-				to_window = win;
 			}
 		}
 	}
 
 	runcmds(args, subargs);
 
-	to_window = old_to_window;
+	if (l != -1)
+		pop_message_from(l);
+
 	make_window_current_by_refnum(old_refnum);
 	from_server = old_from_server;
 }

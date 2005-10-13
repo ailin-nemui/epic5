@@ -1,4 +1,4 @@
-/* $EPIC: tcl.c,v 1.6 2004/06/28 23:48:15 jnelson Exp $ */
+/* $EPIC: tcl.c,v 1.7 2005/10/13 01:11:59 jnelson Exp $ */
 /*
  * tcl.c -- The tcl interfacing routines.
  *
@@ -69,7 +69,6 @@ int Tcl_epicCmd (clientData, interp, objc, objv)
 	char		**objv;
 {
 	int	i;
-	unsigned food = 0;
 	char	*retval = NULL;
 	char	*arg = NULL;
 

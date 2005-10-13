@@ -1,4 +1,4 @@
-/* $EPIC: parse.c,v 1.72 2005/10/04 03:47:45 jnelson Exp $ */
+/* $EPIC: parse.c,v 1.73 2005/10/13 01:11:58 jnelson Exp $ */
 /*
  * parse.c: handles messages from the server.   Believe it or not.  I
  * certainly wouldn't if I were you. 
@@ -1014,7 +1014,7 @@ static void	p_kick (const char *from, const char *comm, const char **ArgList)
 	 */
 	if (is_me(-1, victim))
 	{
-		Window *win, *old_tw, *old_cw;
+		Window *win, *old_cw;
 
 		/*
 		 * Uh-oh.  If win is null we have a problem.
@@ -1040,11 +1040,9 @@ static void	p_kick (const char *from, const char *comm, const char **ArgList)
 		remove_channel(channel, from_server);
 		update_all_status();
 
-		old_tw = to_window;
 		old_cw = current_window;
 		current_window = win;
-		to_window = win;
-		l = message_from(channel, LEVEL_KICK);
+		l = message_setall(win->refnum, channel, LEVEL_KICK);
 
 		if (do_hook(KICK_LIST, "%s %s %s %s", victim, from, 
 					check_channel_type(channel), comment))
@@ -1053,7 +1051,6 @@ static void	p_kick (const char *from, const char *comm, const char **ArgList)
 					comment);
 
 		pop_message_from(l);
-		to_window = old_tw;
 		current_window = old_cw;
 		return;
 	}
@@ -1488,7 +1485,6 @@ void 	parse_server (const char *orig_line, size_t orig_line_size)
 	int	loc;
 	int	cnt;
 	char	*line;
-	size_t	size;
 
 	if (num_protocol_cmds == -1)
 		num_protocol_cmds = NUMBER_OF_COMMANDS;

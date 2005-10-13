@@ -238,19 +238,15 @@ const	char	*get_echannel_by_refnum		(unsigned);
 	void	destroy_waiting_channels	(int);
 	int     claim_waiting_channel (const char *chan, int servref);
 	int	get_window_server		(unsigned);
-	int	get_window_oldserver		(unsigned);
-	void	set_window_server		(int, int, int);
 	void	change_window_server		(int, int);
-	void	reclaim_windows			(int, int);
 	void	window_check_servers		(void);
-	int	turn_on_level			(unsigned, int);
-	int	turn_off_level			(int);
 	int	set_mask_by_winref		(unsigned, Mask);
-	void	message_to			(int);
-	void	save_message_from		(const char **, int *);
-	void	restore_message_from		(const char *, int);
+#define message_to(x) real_message_to(x, __FILE__, __LINE__)
+	int	real_message_to			(int, const char *, int);
 #define message_from(x, y) real_message_from(x, y, __FILE__, __LINE__)
 	int	real_message_from		(const char *, int, const char *, int);
+#define message_setall(x, y, z) real_message_setall(x, y, z, __FILE__, __LINE__)
+	int     real_message_setall		(int, const char *, int, const char *, int);
 	void	pop_message_from		(int);
 
 	void	clear_all_windows		(int, int, int);

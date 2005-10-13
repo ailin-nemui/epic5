@@ -1,4 +1,4 @@
-/* $EPIC: functions.c,v 1.214 2005/10/05 22:37:25 jnelson Exp $ */
+/* $EPIC: functions.c,v 1.215 2005/10/13 01:11:58 jnelson Exp $ */
 /*
  * functions.c -- Built-in functions for ircII
  *
@@ -5208,7 +5208,6 @@ GET_UNIFIED_ARRAY_FUNCTION(function_getfunctions, pmatch_builtin_functions)
 BUILT_IN_FUNCTION(function_stripc, input)
 {
 	char	*output;
-	size_t	size;
 
 	output = new_normalize_string(input, 1, STRIP_COLOR);
 	RETURN_MSTR(output);
@@ -5219,7 +5218,6 @@ BUILT_IN_FUNCTION(function_stripcrap, input)
 	char	*how;
 	int	mangle;
 	char	*output;
-	size_t	size;
 
 	GET_STR_ARG(how, input);
 	mangle = parse_mangle(how, 0, NULL);

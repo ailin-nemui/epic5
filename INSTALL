@@ -45,6 +45,13 @@ any GNU software (however, this is _not_ GNU software)
 	  --with-ssl[=PATH]
 		Enable support for SSL connections to servers.
 
+  o  You must not try to compile epic with "gcc -O2" because -O2 will
+     generate bad code that leads to random crashes.  When you use -O2,
+     gcc assumes the source is conformant to ISO C99's requirements about
+     alias-safety, and EPIC, being a C90 program, does not conform, so the
+     result is undefined behavior (which means it crashes randomly.)  This
+     is not a bug in EPIC.  You must only compile epic with -O.
+
   o  This software should be able to compile and run on almost
      any modern unix (A ``modern'' unix is one that supports POSIX
      system calls and BSD networking in addition to the most commonly

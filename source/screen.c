@@ -1,4 +1,4 @@
-/* $EPIC: screen.c,v 1.111 2005/10/07 11:59:34 jnelson Exp $ */
+/* $EPIC: screen.c,v 1.112 2005/10/13 01:11:58 jnelson Exp $ */
 /*
  * screen.c
  *
@@ -125,7 +125,6 @@ static void 	do_screens	(int fd);
 static int 	rite 		(Window *, const u_char *);
 static void 	scroll_window   (Window *);
 static void 	add_to_window	(Window *, const u_char *);
-static void	window_disp	(Window *, const u_char *, const u_char *);
 static	int	ok_to_output	(Window *);
 static ssize_t read_esc_seq     (const u_char *, void *, int *);
 static ssize_t read_color_seq   (const u_char *, void *d, int);
@@ -1019,7 +1018,7 @@ u_char *	new_normalize_string (const u_char *str, int logical, int mangle)
 	Attribute	a, olda;
 	int 		pos;
 	int		maxpos;
-	int		i, n;
+	int		i;
 	int		pc = 0;
 	int		mangle_escapes, normalize;
 	int		strip_reverse, strip_bold, strip_blink, 
@@ -1287,7 +1286,7 @@ abnormal_char:
 			default:
 				break;
 		    }
-		    next_char();
+		    (void)next_char();
 
 		    /* After ALL_OFF, this is a harmless no-op */
 		    pos += attrout(output + pos, &olda, &a);
@@ -2142,7 +2141,6 @@ static void 	add_to_window (Window *window, const u_char *str)
         int             cols;
 	int		numl = 0;
 	intmax_t	refnum;
-	int		beep;
 
 	if (get_server_redirect(window->server))
 		if (redirect_text(window->server, 
@@ -2229,11 +2227,9 @@ static void 	add_to_window (Window *window, const u_char *str)
 
 	    if (type)
 	    {
-		Window *old_to_window;
-		old_to_window = to_window;
-		to_window = current_window;
+		int l = message_to(current_window->refnum);
 		say("%s in window %d", type, window->refnum);
-		to_window = old_to_window;
+		pop_message_from(l);
 	    }
 	}
 	if (free_me)

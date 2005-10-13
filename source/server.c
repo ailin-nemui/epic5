@@ -1,4 +1,4 @@
-/* $EPIC: server.c,v 1.189 2005/10/04 03:47:45 jnelson Exp $ */
+/* $EPIC: server.c,v 1.190 2005/10/13 01:11:58 jnelson Exp $ */
 /*
  * server.c:  Things dealing with that wacky program we call ircd.
  *
@@ -1129,7 +1129,6 @@ static void 	vsend_to_aserver (int refnum, const char *format, va_list args)
 	Server *s;
 	char	buffer[BIG_BUFFER_SIZE * 11 + 1]; /* make this buffer *much*
 						  * bigger than needed */
-	size_t	size = BIG_BUFFER_SIZE * 11;
 	int	len,
 		des;
 	int	ofs;
