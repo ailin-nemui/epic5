@@ -1,4 +1,4 @@
-/* $EPIC: expr2.c,v 1.30 2005/10/16 04:15:44 jnelson Exp $ */
+/* $EPIC: expr2.c,v 1.31 2005/10/16 15:46:01 jnelson Exp $ */
 /*
  * Zsh: math.c,v 3.1.2.1 1997/06/01 06:13:15 hzoli Exp 
  * math.c - mathematical expression evaluation
@@ -667,7 +667,6 @@ __inline static const char *	get_token_lval (expr_info *c, TOKEN v)
 		return get_token_raw(c, v);
 }
 
-
 /*
  * Get the "expanded" representation of the token.  The first time you
  * call this function, it gets the "raw" value, if there is one, and then
@@ -752,6 +751,32 @@ __inline static	const char *	get_token_expanded (expr_info *c, TOKEN v)
 	if (x_debug & DEBUG_NEW_MATH_DEBUG)
 		yell("<<< Token [%d] value is [%s].", v, TOK(c, v).expanded_value);
 	return TOK(c, v).expanded_value;
+}
+
+/*
+ * This is seriously funky.  In the old math parser, function calls could
+ * be made upon any rvalue (ick), and CrazyEddy asked me nicely to implement
+ * this backwards compatability, and how could I ever say no to him? :-D
+ */
+__inline static const char *	get_token_fname (expr_info *c, TOKEN v)
+{
+	if (v == MAGIC_TOKEN)	/* Magic token */
+		return c->args;			/* XXX Probably wrong */
+
+	if (v < 0 || v >= c->token)
+	{
+		error("Token index [%d] is out of range", v);
+		return NULL;			/* No lvalue here! */
+	}
+
+	if (v == 0)
+		return NULL;		/* Suppress the operation entirely */
+	else if (c->noeval)
+		return NULL;		/* Suppress the operation entirely */
+	else if (TOK(c, v).used & USED_LVAL)
+		return get_token_raw(c, v);
+	else
+		return get_token_expanded(c, v);
 }
 
 /*
@@ -2331,7 +2356,7 @@ static void	mathparse (expr_info *c, int pc)
 			int	func_token;
 
 			func_token = pop_token(c);
-			funcname = get_token_lval(c, func_token);
+			funcname = get_token_fname(c, func_token);
 			args = get_token_raw(c, c->last_token);
 
 			if (c->noeval)
