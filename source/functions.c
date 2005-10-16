@@ -1,4 +1,4 @@
-/* $EPIC: functions.c,v 1.216 2005/10/13 01:49:44 jnelson Exp $ */
+/* $EPIC: functions.c,v 1.217 2005/10/16 04:15:44 jnelson Exp $ */
 /*
  * functions.c -- Built-in functions for ircII
  *
@@ -765,6 +765,7 @@ char	*call_function (char *name, const char *args)
 	char *	(*func) (char *) = NULL;
 	void *	arglist = NULL;
 	size_t	type;
+	char *	str = NULL;
 
 	debugging = get_int_var(DEBUG_VAR);
 
@@ -786,14 +787,16 @@ char	*call_function (char *name, const char *args)
 	type = strspn(name, ":");
 	name += type;
 
-	alias = get_func_alias(name, &arglist, &func);
+	str = remove_brackets(name, args);
+	alias = get_func_alias(str, &arglist, &func);
 
 	if (!func && !alias)
 	{
 	    if (x_debug & DEBUG_UNKNOWN)
-		yell("Function call to non-existant alias [%s]", name);
+		yell("Function call to non-existant alias [%s]", str);
 	    if (debugging & DEBUG_FUNCTIONS)
-		privileged_yell("Function %s(%s) returned ", name, lparen);
+		privileged_yell("Function %s(%s) returned ", str, lparen);
+	    new_free(&str);
             return malloc_strdup(empty_string);
         }
 
@@ -803,17 +806,18 @@ char	*call_function (char *name, const char *args)
 	if (func && type != 1)
 		result = func(tmp);
 	else if (alias && type != 2)
-		result = call_user_function(name, alias, tmp, arglist);
+		result = call_user_function(str, alias, tmp, arglist);
 
-	size = strlen(name) + strlen(debug_copy) + 15;
+	size = strlen(str) + strlen(debug_copy) + 15;
 	buf = (char *)alloca(size);
-	snprintf(buf, size, "$%s(%s)", name, debug_copy);
+	snprintf(buf, size, "$%s(%s)", str, debug_copy);
 	MUST_BE_MALLOCED(result, buf);
 
 	if (debugging & DEBUG_FUNCTIONS)
 		privileged_yell("Function %s(%s) returned %s", 
-					name, debug_copy, result);
+					str, debug_copy, result);
 
+	new_free(&str);
 	new_free(&tmp);
 	return result;
 }

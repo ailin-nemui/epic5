@@ -1,5 +1,9 @@
 EPIC5-0.0.7
 
+*** News 10/12/2005 -- New built in functions $b64encode() and $b64decode()
+
+*** News 10/12/2005 -- Can now set both level and target with with /XECHO
+
 *** News 10/05/2005 -- Automatic Scrollback rebuilding, new /WINDOW operation
 
 *** News 10/05/2005 -- DNS Helper (hostname lookups) now nonblocking by default

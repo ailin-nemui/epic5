@@ -1,4 +1,4 @@
-/* $EPIC: expr2.c,v 1.29 2005/08/30 23:45:13 jnelson Exp $ */
+/* $EPIC: expr2.c,v 1.30 2005/10/16 04:15:44 jnelson Exp $ */
 /*
  * Zsh: math.c,v 3.1.2.1 1997/06/01 06:13:15 hzoli Exp 
  * math.c - mathematical expression evaluation
@@ -2328,8 +2328,10 @@ static void	mathparse (expr_info *c, int pc)
 			char *hack = NULL;
 			size_t clue = 0;
 			char *retval;
+			int	func_token;
 
-			funcname = pop_expanded(c);
+			func_token = pop_token(c);
+			funcname = get_token_lval(c, func_token);
 			args = get_token_raw(c, c->last_token);
 
 			if (c->noeval)
@@ -2553,7 +2555,7 @@ static  char *	after_expando_special (expr_info *c)
 
 	for (;;)
 	{
-		rest = after_expando(start, 0, &call);
+		rest = after_expando(start, 1, &call);
 		if (*rest != '$')
 			break;
 		start = rest + 1;

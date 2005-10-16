@@ -1,4 +1,4 @@
-/* $EPIC: irc.c,v 1.983 2005/10/13 01:49:44 jnelson Exp $ */
+/* $EPIC: irc.c,v 1.984 2005/10/16 04:15:44 jnelson Exp $ */
 /*
  * ircII: a new irc client.  I like it.  I hope you will too!
  *
@@ -52,7 +52,7 @@ const char internal_version[] = "20050809";
 /*
  * In theory, this number is incremented for every commit.
  */
-const unsigned long	commit_id = 1311;
+const unsigned long	commit_id = 1312;
 
 /*
  * As a way to poke fun at the current rage of naming releases after
@@ -119,12 +119,6 @@ int		background = 0;
 /* Set if the client is checking fd 0 for input. (usu. op of "background") */
 int		use_input = 1;
 
-/* The number of WAIT tokens sent out so far */
-int		waiting_out = 0;
-
-/* The number of WAIT tokens returned so far */
-int		waiting_in = 0;
-
 /*
  * Set when an OPER command is sent out, reset when umode +o or 464 reply
  * comes back.  This is *seriously* bogus.
@@ -142,9 +136,6 @@ Timeval		idle_time = { 0, 0 };
 
 /* Set to the time the client booted up */
 Timeval		start_time;
-
-/* The number of child processes still unreaped. */
-int		child_dead = 0;
 
 /* Set to 0 when you want to suppress all beeps (such as window repaints) */
 int		global_beep_ok = 1;

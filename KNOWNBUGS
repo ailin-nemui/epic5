@@ -2,15 +2,12 @@ EPIC5 Projects, Bugs, and other Errata:
 
 KNOWN ERRATA (eg, bugs, or unresolved requests):
 ------------------------------------------------
-* JM needs to start a discussion on the mailing list about /msg restrictions
-* /CTCPs over /DCCs don't match up with their queries very well.
 * Revamp of /who -realname 
-* alias foo {package x;load script}  carries 'x' into 'script' ???
 * Remove support for "highlighted ignores" because they annoy me.
-* Change direct manipulations of to_window with calls to message_to().
-* CE says $function[subfunction](args) still does not work.
+* CE says ${function[subfunction](args)} still does not work.
 * Weirdo says that /away -all will output an error if there are gaps in sl
 * Eventually message_to() users need to move to message_setall().
+* More gracious support for trickling horizontal resizes down to the window.
 
 LOOK FOR IN THE FUTURE
 -----------------------
@@ -22,6 +19,8 @@ LOOK FOR IN THE FUTURE
 * /window <refnum> noserv causes bad fd loop.  (can't reproduce?)
 * DBM support.
 * Is there some way to set what ^O resets to, a la mirc?
+* /CTCPs over /DCCs don't match up with their queries very well.
+* alias foo {package x;load script}  carries 'x' into 'script' ???
 
 [See http://www.epicsol.org/PROJECTS for things to come in the future]
 [See http://www.epicsol.org/CHANGELOG5 for things that changed in the past]
@@ -839,3 +838,8 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Fix various compiler warnings.
 * Add a bsd licensed base64 encode/decode in compat.c
 * Add $b64encode() and $b64decode().
+* Make the new math parser not slurp up function param lists in lvalues
+* Make function calling a full blown operator in the new math parser.
+* Call remove_brackets() in call_function
+* All this will permit $foo[bar](args) to work as well as ${foo[bar](args)}.
+* Remove some unused global variables
