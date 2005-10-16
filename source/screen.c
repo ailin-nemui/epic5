@@ -1,4 +1,4 @@
-/* $EPIC: screen.c,v 1.112 2005/10/13 01:11:58 jnelson Exp $ */
+/* $EPIC: screen.c,v 1.113 2005/10/16 19:23:01 jnelson Exp $ */
 /*
  * screen.c
  *
@@ -108,12 +108,11 @@
  * The front-end api to output stuff to windows is:
  *
  * 1) Set the window, either directly or indirectly:
- *     a) Directly with		message_to(winref);
+ *     a) Directly with		l = message_setall(winref, target, level);
  *     b) Indirectly with	l = message_from(target, level);
  * 2) Call an output routine:
  *	say(), output(), yell(), put_it(), put_echo(), etc.
  * 3) Reset the window:
- *     a) Directly with		message_to(-1);
  *     b) Indirectly with	pop_message_from(l);
  *
  * This file implements the middle part of the "ircII window", everything
@@ -2208,7 +2207,7 @@ static void 	add_to_window (Window *window, const u_char *str)
 	 */
 	if (!window->screen && do_window_notifies)
 	{
-	    char *type = NULL;
+	    const char *type = NULL;
 
 	    /* /WINDOW BEEP_ALWAYS added for archon.  */
 	    if (window->beep_always && strchr(str, '\007'))
@@ -2227,7 +2226,7 @@ static void 	add_to_window (Window *window, const u_char *str)
 
 	    if (type)
 	    {
-		int l = message_to(current_window->refnum);
+		int l = message_setall(current_window->refnum, who_from, who_level);
 		say("%s in window %d", type, window->refnum);
 		pop_message_from(l);
 	    }

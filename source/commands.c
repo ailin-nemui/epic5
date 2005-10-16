@@ -1,4 +1,4 @@
-/* $EPIC: commands.c,v 1.131 2005/10/13 01:11:58 jnelson Exp $ */
+/* $EPIC: commands.c,v 1.132 2005/10/16 19:23:01 jnelson Exp $ */
 /*
  * commands.c -- Stuff needed to execute commands in ircII.
  *		 Includes the bulk of the built in commands for ircII.
@@ -398,6 +398,7 @@ BUILT_IN_COMMAND(away)
 	if (flag == AWAY_ALL)
 	{
 		for (i = 0; i < server_list_size(); i++)
+		    if (is_server_valid(i))
 			set_server_away(i, args);
 	}
 	else
@@ -852,10 +853,9 @@ BUILT_IN_COMMAND(xechocmd)
 	int	nolog = 0;
 	int	more = 1;
 	int	xtended = 0;
-	int	l = -1;
 	int	old_window_notify = do_window_notifies;
 	int	old_mangler = display_line_mangler;
-	int	to_window_refnum = to_window ? to_window->refnum : -1;
+	int	to_window_refnum = to_window ? (int)to_window->refnum : -1;
 	int	to_level = who_level;
 	const char *	to_from = who_from;;
 
@@ -927,12 +927,7 @@ BUILT_IN_COMMAND(xechocmd)
 			    while ((traverse_all_windows(&win)))
 			    {
 				if (win->screen)
-				{
-					if (l > -1)
-						pop_message_from(l);
-					l = message_to(win->refnum);
-					break;
-				}
+					to_window_refnum = win->refnum;
 			    }
 			}
 			break;
@@ -1128,7 +1123,8 @@ BUILT_IN_COMMAND(xevalcmd)
 			Window *win = get_window_by_desc(next_arg(args, &args));
 			if (win)
 			{
-				l = message_to(win->refnum);
+				l = message_setall(win->refnum, who_from, 
+							who_level);
 				current_window = win;
 			}
 		}

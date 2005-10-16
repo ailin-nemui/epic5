@@ -1,4 +1,4 @@
-/* $EPIC: who.c,v 1.53 2005/10/13 01:11:59 jnelson Exp $ */
+/* $EPIC: who.c,v 1.54 2005/10/16 19:23:02 jnelson Exp $ */
 /*
  * who.c -- The WHO queue.  The ISON queue.  The USERHOST queue.
  *
@@ -834,7 +834,17 @@ do
 		if (new_w->who_mask & WHO_HOST)
 			ok = ok && wild_match(new_w->who_host, host);
 		if (new_w->who_mask & WHO_REAL)
+		{
+			char *copy;
+
+			/* First match, including the hopcount */
 			ok = ok && wild_match(new_w->who_real, name);
+
+			/* Then remove the hopcount and try again. */
+			copy = LOCAL_COPY(name);
+			new_next_arg(name, &name);
+			ok = ok && wild_match(new_w->who_real, name);
+		}
 		if (new_w->who_mask & WHO_SERVER)
 			ok = ok && wild_match(new_w->who_server, server);
 	}

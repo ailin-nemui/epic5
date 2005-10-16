@@ -2,11 +2,7 @@ EPIC5 Projects, Bugs, and other Errata:
 
 KNOWN ERRATA (eg, bugs, or unresolved requests):
 ------------------------------------------------
-* Revamp of /who -realname 
 * Remove support for "highlighted ignores" because they annoy me.
-* CE says ${function[subfunction](args)} still does not work.
-* Weirdo says that /away -all will output an error if there are gaps in sl
-* Eventually message_to() users need to move to message_setall().
 * More gracious support for trickling horizontal resizes down to the window.
 
 LOOK FOR IN THE FUTURE
@@ -844,3 +840,7 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * All this will permit $foo[bar](args) to work as well as ${foo[bar](args)}.
 * Remove some unused global variables
 * Permit function calls on rval in new math parser, by special request of ce.
+* Fix /away -all so it doesn't error on gaps in server list (weirdo)
+* Fix bogon in /xecho. doh.
+* Fix /who -real so it matches both with and without the hopcount.
+* Convert all uses of message_to() to message_setall(). yay!

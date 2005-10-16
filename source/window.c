@@ -1,4 +1,4 @@
-/* $EPIC: window.c,v 1.157 2005/10/13 01:11:59 jnelson Exp $ */
+/* $EPIC: window.c,v 1.158 2005/10/16 19:23:02 jnelson Exp $ */
 /*
  * window.c: Handles the organzation of the logical viewports (``windows'')
  * for irc.  This includes keeping track of what windows are open, where they
@@ -2302,7 +2302,7 @@ void 	window_check_servers (void)
 	    }
 
 	    connected_to_server++;
-	    l = message_to(tmp->refnum);
+	    l = message_setall(tmp->refnum, NULL, LEVEL_CRAP);
 
 	    if (status == SERVER_RECONNECT)
 	    {
@@ -2447,36 +2447,6 @@ int	real_message_setall (int refnum, const char *who, int level, const char *fil
 
 	who_from = who;
 	who_level = level;
-	to_window = get_window_by_refnum(refnum);
-	return context_counter++;
-}
-
-
-int	real_message_to (int refnum, const char *file, int line)
-{
-	if (context_max < 0)
-	{
-		context_max = 32;
-		context_counter = 0;
-		RESIZE(contexts, struct output_context, context_max);
-	}
-	else if (context_counter >= context_max - 20)
-	{
-		context_max *= 2;
-		RESIZE(contexts, struct output_context, context_max);
-	}
-
-	if (x_debug & DEBUG_MESSAGE_FROM)
-		yell("Setting context %d [%d] {%s:%d}", context_counter, refnum, file, line);
-
-	contexts[context_counter].who_from = NULL;
-	contexts[context_counter].who_level = 0;
-	contexts[context_counter].who_file = file;
-	contexts[context_counter].who_line = line;
-	contexts[context_counter].to_window = refnum;
-
-	who_from = NULL;
-	who_level = 0;
 	to_window = get_window_by_refnum(refnum);
 	return context_counter++;
 }
@@ -3353,7 +3323,7 @@ static	Window *window_echo (Window *window, char **args)
 		to_echo = *args, *args = NULL;
 
 	/* Calling add_to_window() directly is a hack. */
-	l = message_to(window->refnum);
+	l = message_setall(window->refnum, who_from, who_level);
 	put_echo(to_echo);
 	pop_message_from(l);
 
@@ -4181,7 +4151,7 @@ Window *window_query (Window *window, char **args)
 	 */
 	if ((oldnick = get_equery_by_refnum(window->refnum)))
 	{
-	    l = message_to(window->refnum);
+	    l = message_setall(window->refnum, who_from, who_level);
 	    say("Ending conversation with %s", oldnick);
 	    pop_message_from(l);
 
@@ -4251,7 +4221,7 @@ Window *window_query (Window *window, char **args)
 		window->query_counter = tmp->counter;
 	}
 
-	l = message_to(window->refnum);
+	l = message_setall(window->refnum, who_from, who_level);
 	say("Starting conversation with %s", nick);
 	pop_message_from(l);
 

@@ -1,4 +1,4 @@
-/* $EPIC: exec.c,v 1.37 2005/08/24 01:49:12 jnelson Exp $ */
+/* $EPIC: exec.c,v 1.38 2005/10/16 19:23:01 jnelson Exp $ */
 /*
  * exec.c: handles exec'd process for IRCII 
  *
@@ -395,6 +395,8 @@ BUILT_IN_COMMAND(execcmd)
 	 */
 	if (*args == '%')
 	{
+		int	l;
+
 		/*
 		 * Make sure the process is actually running
 		 */
@@ -402,7 +404,7 @@ BUILT_IN_COMMAND(execcmd)
 			return;
 
 		proc = process_list[i];
-		message_to(refnum);
+		l = message_setall(refnum, NULL, LEVEL_CRAP);
 
 		/*
 		 * Check to see if the user wants to change windows
@@ -454,7 +456,7 @@ say("Output from process %d (%s) now going to you", i, proc->name);
 		if (stderrpc)
 			malloc_strcpy(&proc->stderrpc, stderrpc);
 
-		message_to(-1);
+		pop_message_from(l);
 	}
 
 	/*
@@ -740,6 +742,7 @@ static void 	handle_filedesc (Process *proc, int *fd, int hook_nonl, int hook_nl
 	int	ofs;
 	const char *callback = NULL;
 	int	hook = -1;
+	int	l;
 
 	/* No buffering! */
 	switch ((len = dgets(*fd, exec_buffer, IO_BUFFER_SIZE, 0))) 
@@ -799,9 +802,12 @@ static void 	handle_filedesc (Process *proc, int *fd, int hook_nonl, int hook_nl
 	}
 
 	ofs = from_server;
+	from_server = proc->server;
 	if (proc->refnum)
-		from_server = proc->server;
-	message_to(proc->refnum);
+		l = message_setall(proc->refnum, NULL, LEVEL_CRAP);
+	else
+		l = message_from(NULL, LEVEL_CRAP);
+
 	proc->counter++;
 
 	while (len > 0 && (exec_buffer[len - 1] == '\n' ||
@@ -827,7 +833,7 @@ static void 	handle_filedesc (Process *proc, int *fd, int hook_nonl, int hook_nl
 		    put_it("%s", exec_buffer);
 	}
 
-	message_to(-1);
+	pop_message_from(l);
 	from_server = ofs;
 }
 
@@ -952,10 +958,12 @@ int 		text_to_process (int proc_index, const char *text, int show)
 
 	proc = process_list[proc_index];
 
-	message_to(proc->refnum);
 	if (show)
+	{
+		int	l = message_setall(proc->refnum, NULL, LEVEL_CRAP);
 		put_it("%s%s", get_prompt_by_refnum(proc->refnum), text);
-	message_to(-1);
+		pop_message_from(l);
+	}
 
 	size = strlen(text) + 2;
 	my_buffer = alloca(size);
