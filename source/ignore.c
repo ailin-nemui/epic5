@@ -1,4 +1,4 @@
-/* $EPIC: ignore.c,v 1.28 2005/06/04 03:59:33 jnelson Exp $ */
+/* $EPIC: ignore.c,v 1.29 2005/10/18 01:40:23 jnelson Exp $ */
 /*
  * ignore.c: handles the ingore command for irc 
  *
@@ -52,10 +52,6 @@
  *   2) Exceptive ignore (IGNORE_DONT) - A message from this person shall be 
  *      considered important enough to be exempt from all other ignore rules.
  *      Ignores of this type are "exceptions" to ignores of other types.
- *   3) Highlight ignore (IGNORE_HIGH) - A message from this person shall not
- *      only be exempt from all other ignore rules, but EPIC's default output
- *      shall be embellished to indicate to the user that a person of import
- *      has sent a message.
  *
  * Each Ignore type has (currently) many "levels" through which all messages
  * are sorted:
@@ -109,7 +105,6 @@
 #define IGNORE_REMOVE 	-1
 #define IGNORE_SUPPRESS  0
 #define IGNORE_DONT 	 1
-#define IGNORE_HIGH 	 2
 
 
 /*
@@ -123,7 +118,6 @@ typedef struct	IgnoreStru
 	int	refnum;			/* The refnum for internal use */
 	Mask	type;			/* Suppressive ignores */
 	Mask	dont;			/* Exceptional ignores */
-	Mask	high;			/* Highlight ignores */
 	int	counter;		/* How many times it has triggered */
 	Timeval	creation;		/* When it was created */
 	Timeval	last_used;		/* When it was last ``triggered'' */
@@ -138,7 +132,7 @@ static	int	global_ignore_refnum = 0;
 
 static void	expire_ignores			(void);
 static const char *	get_ignore_types 		(Ignore *item, int);
-static int	change_ignore_mask_by_desc (const char *type, Mask *do_mask, Mask *dont_mask, Mask *high_mask, char **reason, Timeval *expire);
+static int	change_ignore_mask_by_desc (const char *type, Mask *do_mask, Mask *dont_mask, char **reason, Timeval *expire);
 static int	ignore_change			(Ignore *, int, void *);
 static int	ignore_list			(Ignore *, int, void *);
 static int	foreach_ignore			(const char *, int, 
@@ -158,7 +152,6 @@ static Ignore *new_ignore (const char *new_nick)
 	item->refnum = ++global_ignore_refnum;
 	mask_unsetall(&item->type);
 	mask_unsetall(&item->dont);
-	mask_unsetall(&item->high);
 	item->counter = 0;
 	get_time(&item->creation);
 	item->last_used.tv_sec = 0;
@@ -362,19 +355,10 @@ static int 	remove_ignore (const char *nick)
 	    else if ((y) == 2)						\
 		strlcat_c(buffer, " /" #x, sizeof buffer, &clue);	\
 	}								\
-	else if (mask_isset(&item->high, LEVEL_ ## x))			\
-	{								\
-	    if ((y) == 1)						\
-		strlopencat_c(buffer, sizeof buffer, &clue, space, 	\
-				high, #x, high, NULL);			\
-	    else if ((y) == 2)						\
-		strlcat_c(buffer, " +" #x, sizeof buffer, &clue);	\
-	}
 
 static const char *	get_ignore_types (Ignore *item, int output_type)
 {
 static	char 	buffer[BIG_BUFFER_SIZE + 1];
-	char	*high = highlight_char;
 	size_t	clue;
 	char	*retval;
 
@@ -420,7 +404,6 @@ static	char 	buffer[BIG_BUFFER_SIZE + 1];
  *		  included, the following variables will be changed:
  *  'do_mask' 	- Suppressive ignores
  *  'dont_mask' - Exceptional ignores
- *  'high_mask' - Highlight ignores
  *  'reason' 	- The reason the ignore was created.  May be NULL.
  *		  Expects an argument.  If argument not provided or argument
  *		  is a hyphen ("-"), the reason is unset.
@@ -436,14 +419,13 @@ static	char 	buffer[BIG_BUFFER_SIZE + 1];
  *	-<TYPE>		Remove <TYPE> from all disposition types
  *	!<TYPE>		Change <TYPE> to an exceptional ignore
  *	^<TYPE>		Same as !<TYPE>
- *	+<TYPE>		Change <TYPE> to a highlight ignore
  *	/<TYPE>		Change <TYPE> to a suppressive ignore
  *	<TYPE>		Same as /<TYPE>
  *
  *  The supported <TYPE>s are defined at the top of this file in the 
  *	"IGNORE THEORY" documentation.
  */
-static int	change_ignore_mask_by_desc (const char *type, Mask *do_mask, Mask *dont_mask, Mask *high_mask, char **reason, Timeval *expire)
+static int	change_ignore_mask_by_desc (const char *type, Mask *do_mask, Mask *dont_mask, char **reason, Timeval *expire)
 {
 	char	*l1, *l2;
 	int	len;
@@ -464,28 +446,21 @@ static int	change_ignore_mask_by_desc (const char *type, Mask *do_mask, Mask *do
 				mask = NULL;
 				del1 = do_mask;
 				del2 = dont_mask;
-				del3 = high_mask;
+				del3 = NULL;
 				break;
 			case '!':
 			case '^':
 				l2++;
 				mask = dont_mask;
 				del1 = do_mask;
-				del2 = high_mask;
-				del3 = NULL;
-				break;
-			case '+':
-				l2++;
-				mask = high_mask;
-				del1 = do_mask;
-				del2 = dont_mask;
+				del2 = NULL;
 				del3 = NULL;
 				break;
 			case '/':
 			default:
 				mask = do_mask;
 				del1 = dont_mask;
-				del2 = high_mask;
+				del2 = NULL;
 				del3 = NULL;
 				break;
 		}
@@ -547,7 +522,7 @@ static int	change_ignore_mask_by_desc (const char *type, Mask *do_mask, Mask *do
 			mask = NULL;
 			del1 = do_mask;
 			del2 = dont_mask;
-			del3 = high_mask;
+			del3 = NULL;
 			bit = LEVEL_ALL;
 		}
 		else if (!my_strnicmp(l2, "ALL", len))
@@ -611,7 +586,7 @@ static int	ignore_change (Ignore *item, int type, void *data)
 
 	changes = (char *)data;
 	change_ignore_mask_by_desc(changes, &item->type, &item->dont, 
-					&item->high, &item->reason, 
+					&item->reason, 
 					&item->expiration);
 
 	/*
@@ -619,8 +594,7 @@ static int	ignore_change (Ignore *item, int type, void *data)
 	 * Garbage collect this ignore if it is clear.
 	 * remove_ignore() does the output for us here.
 	 */
-	if (mask_isnone(&item->type) && mask_isnone(&item->high) &&
-	    mask_isnone(&item->dont))
+	if (mask_isnone(&item->type) && mask_isnone(&item->dont))
 	{
 		remove_ignore(item->nick);
 		return 0;
@@ -836,7 +810,6 @@ static int	foreach_ignore (const char *nicklist, int create, int (*callback) (Ig
  *  <level-dispositions> := <disposition> <level>
  *  <disposition> :=   [!|^] 			Set exclusionary ignore 
  *                   | -			Remove level from all types
- *		     | +			Set highlight ignore
  *		     | [/|<empty string>]	Set suppressive ignore
  *  <level> := MSGS | PUBLIC | WALLS | WALLOPS | INVITES |
  *	       NOTICES | CTCPS | TOPICS | NICKS | 
@@ -959,21 +932,20 @@ const char	*get_ignore_types_by_pattern (char *pattern)
 char	*get_ignore_patterns_by_type (char *ctype)
 {
 	Ignore	*tmp;
-	Mask	do_mask, dont_mask, high_mask;
+	Mask	do_mask, dont_mask;
 	char	*result = NULL;
 	size_t	clue = 0;
 
 	mask_unsetall(&do_mask);
 	mask_unsetall(&dont_mask);
-	mask_unsetall(&high_mask);
 
 	/*
 	 * Convert the user's input into something we can use.
 	 * If the user doesnt specify anything useful, then we
 	 * just punt right here.
 	 */
-	change_ignore_mask_by_desc(ctype, &do_mask, &dont_mask, &high_mask, NULL, NULL);
-	if (mask_isnone(&do_mask) && mask_isnone(&do_mask) && mask_isnone(&high_mask))
+	change_ignore_mask_by_desc(ctype, &do_mask, &dont_mask, NULL, NULL);
+	if (mask_isnone(&do_mask) && mask_isnone(&do_mask))
 		return malloc_strdup(empty_string);
 
 	for (tmp = ignored_nicks; tmp; tmp = tmp->next)
@@ -982,8 +954,8 @@ char	*get_ignore_patterns_by_type (char *ctype)
 
 	    /*
 	     * change_ignore_mask_by_desc is supposed to ensure that
-	     * each bit is set only once in 'do_mask', 'dont_mask', 
-	     * and 'high_mask', and we already know this is the case
+	     * each bit is set only once in 'do_mask', and 'dont_mask', 
+	     * and we already know this is the case
 	     * for the Ignores.  So we check each of the three ignore
 	     * types, and if this ignore has all of the levels set in
 	     * all of the right places, it's ok.  It could have more 
@@ -995,8 +967,6 @@ char	*get_ignore_patterns_by_type (char *ctype)
 		if (mask_isset(&dont_mask, i) && !mask_isset(&tmp->dont, i))
 			goto bail;
 		if (mask_isset(&do_mask, i) && !mask_isset(&tmp->type, i))
-			goto bail;
-		if (mask_isset(&high_mask, i) && !mask_isset(&tmp->high, i))
 			goto bail;
 	    }
 
@@ -1028,7 +998,6 @@ bail:
  *	LEVELS		A parsable summary of what is being ignored
  *	TYPE		An integer representing the suppressive ignores
  *	DONT		An integer representing the exceptional ignores
- *	HIGH		An integer representing the highlight ignores
  *	EXPIRATION	The time the ignore will expire
  *	REASON		The reason why we're ignoring this pattern.
  */ 
@@ -1110,8 +1079,6 @@ char *	ignorectl (char *input)
 			RETURN_INT(i->type.__bits[0]);
 		} else if (!my_strnicmp(listc, "EXCEPT", len)) {
 			RETURN_INT(i->dont.__bits[0]);
-		} else if (!my_strnicmp(listc, "HIGHLIGHT", len)) {
-			RETURN_INT(i->high.__bits[0]);
 		} else if (!my_strnicmp(listc, "EXPIRATION", len)) {
 			char *ptr = NULL;
 			return malloc_sprintf(&ptr, "%ld %ld", 
@@ -1152,7 +1119,6 @@ char *	ignorectl (char *input)
 		} else if (!my_strnicmp(listc, "LEVELS", len)) {
 			mask_unsetall(&i->type);
 			mask_unsetall(&i->dont);
-			mask_unsetall(&i->high);
 			ignore_change(i, 1, input);
 			RETURN_INT(i->refnum);
 		} else if (!my_strnicmp(listc, "SUPPRESS", len)) {
@@ -1160,9 +1126,6 @@ char *	ignorectl (char *input)
 			RETURN_INT(i->refnum);
 		} else if (!my_strnicmp(listc, "EXCEPT", len)) {
 			GET_INT_ARG(i->dont.__bits[0], input);
-			RETURN_INT(i->refnum);
-		} else if (!my_strnicmp(listc, "HIGHLIGHT", len)) {
-			GET_INT_ARG(i->high.__bits[0], input);
 			RETURN_INT(i->refnum);
 		} else if (!my_strnicmp(listc, "EXPIRATION", len)) {
 			Timeval to;
@@ -1309,12 +1272,6 @@ int	check_ignore_channel (const char *nick, const char *uh, const char *channel,
 			get_time(&tmp->last_used);
 			return IGNORED;
 		}
-		if (mask_isset(&tmp->high, level))
-		{
-			tmp->counter++;
-			get_time(&tmp->last_used);
-			return HIGHLIGHTED;
-		}
 	}
 
 	/*
@@ -1335,12 +1292,6 @@ int	check_ignore_channel (const char *nick, const char *uh, const char *channel,
 			tmp->counter++;
 			get_time(&tmp->last_used);
 			return IGNORED;
-		}
-		if (mask_isset(&tmp->high, level))
-		{
-			tmp->counter++;
-			get_time(&tmp->last_used);
-			return HIGHLIGHTED;
 		}
 	}
 

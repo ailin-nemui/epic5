@@ -2,7 +2,6 @@ EPIC5 Projects, Bugs, and other Errata:
 
 KNOWN ERRATA (eg, bugs, or unresolved requests):
 ------------------------------------------------
-* Remove support for "highlighted ignores" because they annoy me.
 * More gracious support for trickling horizontal resizes down to the window.
 
 LOOK FOR IN THE FUTURE
@@ -844,3 +843,5 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Fix bogon in /xecho. doh.
 * Fix /who -real so it matches both with and without the hopcount.
 * Convert all uses of message_to() to message_setall(). yay!
+* Add the 'highlight' script which implements the highlight-ignore thingee
+* Whack the 'highlight ignore' feature as per discussion on the list.

@@ -14,7 +14,6 @@
 
 #define	NOT_IGNORED	0
 #define IGNORED 	1
-#define HIGHLIGHTED 	-1
 
 	BUILT_IN_COMMAND(ignore);
 	int	do_expire_ignores	(void *);

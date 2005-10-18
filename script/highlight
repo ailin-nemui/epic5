@@ -1,0 +1,204 @@
+#
+# Here's the plan -- A simulation of highlighted ignores.
+# Usage:
+#	/highlight pattern	[add a highlight pattern]
+#	/nohighlight pattern	[remove a highlight pattern]
+#	/highlight		[show all highlights]
+#
+# Use the /highlight command just like you would use /ignore +<stuff>
+# and it will output in the way highlight ignores worked.
+#
+
+@ highlights.list = [];
+@ highlights.hl = [];
+
+alias highlight.it (stuff) {
+	return $highlights.hl$stuff$highlights.hl
+}
+
+alias highlight {
+	if (!@) {
+		xecho -b Highlight List:
+		fe ($highlights.list) x {
+			xecho -b     $x;
+		};
+		return;
+	};
+	@push(highlights.list $0);
+};
+alias nohighlight {
+	@highlights.list = remw("$0" highlights.list)
+};
+
+alias check_highlight (nick, userhost, channel) {
+	fe ($highlights.list) x {
+		if (nick =~ x) { 
+			return 1;
+		} elsif (userhost =~ x) {
+			return 2;
+		} elsif (channel =~ x) {
+			return 3;
+		};
+	};
+	return 0;
+};
+
+on ^topic * (nick, channel, topic) {
+	@:uh = userhost();
+	switch (@:type = check_highlight($nick $uh $channel)) {
+		case (1) { @nick = $highlight.it($nick); }
+		case (2) { @nick = $highlight.it($nick); }
+		case (3) { @channel = $highlight.it($channel); }
+	};
+	xecho -b $nick has changed the topic on channel $chan to $topic;
+};
+
+on ^wallops * (nick, server, msg) {
+	@:uh = userhost();
+	switch (@:type = check_highlight($nick $uh $channel)) {
+		case (1) { @nick = $highlight.it($nick); }
+		case (2) { @nick = $highlight.it($nick); }
+		case (3) { @channel = $highlight.it($channel); }
+	};
+	if (server == 'S') { @server = []; };
+	xecho -b !$nick$server! $msg;
+};
+
+on ^public_msg * (nick, channel, msg) {
+	@:uh = userhost();
+	switch (@:type = check_highlight($nick $uh $channel)) {
+		case (1) { @nick = $highlight.it($nick); }
+		case (2) { @nick = $highlight.it($nick); }
+		case (3) { @channel = $highlight.it($channel); }
+	};
+	xecho -b ($nick/$chan) $msg;
+};
+
+on ^public * (nick, channel, msg) {
+	@:uh = userhost();
+	switch (@:type = check_highlight($nick $uh $channel)) {
+		case (1) { @nick = $highlight.it($nick); }
+		case (2) { @nick = $highlight.it($nick); }
+		case (3) { @channel = $highlight.it($channel); }
+	};
+	xecho -b <$nick> $msg;
+};
+
+on ^public_other * (nick, channel, msg) {
+	@:uh = userhost();
+	switch (@:type = check_highlight($nick $uh $channel)) {
+		case (1) { @nick = $highlight.it($nick); }
+		case (2) { @nick = $highlight.it($nick); }
+		case (3) { @channel = $highlight.it($channel); }
+	};
+	xecho -b <$nick:$channel> $msg;
+};
+
+on ^msg_group * (nick, target, msg) {
+	@:uh = userhost();
+	switch (@:type = check_highlight($nick $uh $target)) {
+		case (1) { @nick = $highlight.it($nick); }
+		case (2) { @nick = $highlight.it($nick); }
+		case (3) { @target = $highlight.it($target); }
+	};
+	xecho -b <-$nick:${target}-> $msg;
+};
+
+on ^msg * (nick, msg) {
+	@:uh = userhost();
+	switch (@:type = check_highlight($nick $uh $N)) {
+		case (1) { @nick = $highlight.it($nick); }
+		case (2) { @nick = $highlight.it($nick); }
+	};
+	if (serverctl(GET $serverctl(FROM_SERVER) AWAY)) {
+		@msg #= [ ] ## tia();
+	};
+	xecho -b *$nick* $msg $tia();
+};
+
+on ^signoff * (nick, msg) {
+	@:uh = userhost();
+	switch (@:type = check_highlight($nick $uh *)) {
+		case (1) { @nick = $highlight.it($nick); }
+		case (2) { @nick = $highlight.it($nick); }
+	};
+	xecho -b Signoff: $nick ($msg);
+};
+
+on ^join * (nick, channel, uh, extra) {
+	switch (@:type = check_highlight($nick $uh $channel)) {
+		case (1) { @nick = $highlight.it($nick); }
+		case (2) { @uh = $highlight.it($uh); }
+		case (3) { @channel = $highlight.it($channel); }
+	};
+	xecho -b $nick \($uh\) has joined channel $channel;
+};
+
+on ^invite * (nick, channel, uh) {
+	switch (@:type = check_highlight($nick $uh $channel)) {
+		case (1) { @nick = $highlight.it($nick); }
+		case (2) { @uh = $highlight.it($uh); }
+		case (3) { @channel = $highlight.it($channel); }
+	};
+	xecho -b $nick \($uh\) invites you to channel $channel;
+};
+
+on ^nick * (oldnick, newnick) {
+	@uh = userhost();
+	switch (@:type = check_highlight($oldnick $uh *)) {
+		case (1) { @oldnick = $highlight.it($oldnick); }
+		case (2) { @uh = $highlight.it($uh); }
+	};
+	switch (@:type = check_highlight($newnick $uh *)) {
+		case (1) { @newnick = $highlight.it($newnick); }
+	};
+	xecho -b $oldnick is now known as $newnick;
+};
+
+on ^mode * (nick, channel, stuff) {
+	@uh = userhost();
+	switch (@:type = check_highlight($nick $uh $channel)) {
+		case (1) { @nick = $highlight.it($nick); }
+		case (2) { @uh = $highlight.it($uh); }
+		case (3) { @channel = $highlight.it($channel); }
+	};
+	if (ischannel($channel)) {
+		xecho -b Mode change "$stuff" for channel $channel by $nick;
+	} else {
+		xecho -b Mode change "$stuff" for user $channel by $nick;
+	};
+};
+
+on ^kick * (victim, bastard, channel, stuff) {
+	@uh = userhost();
+	switch (@:type = check_highlight($victim * $channel)) {
+		case (1) { @victim = $highlight.it($victim); }
+		case (3) { @channel = $highlight.it($channel); }
+	};
+	switch (@:type = check_highlight($bastard * $channel)) {
+		case (1) { @bastard = $highlight.it($bastard); }
+	};
+	xecho -b $victim has been kicked off channel $channel by $bastard ($stuff);
+};
+
+on ^notice * (nick, msg) {
+	@:uh = userhost();
+	switch (@:type = check_highlight($nick $uh $N)) {
+		case (1) { @nick = $highlight.it($nick); }
+		case (2) { @nick = $highlight.it($nick); }
+	};
+	xecho -b -$nick- $msg;
+};
+
+on ^public_notice * (nick, channel, msg) {
+	@:uh = userhost();
+	switch (@:type = check_highlight($nick $uh $channel)) {
+		case (1) { @nick = $highlight.it($nick); }
+		case (2) { @nick = $highlight.it($nick); }
+		case (3) { @channel = $highlight.it($channel); }
+	};
+	xecho -b -$nick:$channel- $msg;
+};
+
+
+#hop'y2k5
