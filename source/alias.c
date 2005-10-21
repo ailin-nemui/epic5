@@ -1,4 +1,4 @@
-/* $EPIC: alias.c,v 1.75 2005/04/01 18:20:01 jnelson Exp $ */
+/* $EPIC: alias.c,v 1.76 2005/10/21 03:50:01 jnelson Exp $ */
 /*
  * alias.c -- Handles the whole kit and caboodle for aliases.
  *
@@ -238,6 +238,37 @@ extern	char ** get_subarray_elements   (Char *root, int *howmany, int type);
 
 
 static	char *	get_variable_with_args (Char *str, Char *args);
+
+void	flush_all_symbols (void)
+{
+	int	i;
+	Symbol *s;
+
+	for (i = 0; i < globals.max; i++)
+	{
+		s = globals.list[i];
+		new_free(&s->name);
+		new_free(&s->user_variable);
+		new_free(&s->user_variable_package);
+		new_free(&s->user_command);
+		new_free(&s->user_command_package);
+		destroy_arglist(&s->arglist);
+		s->builtin_command = NULL;
+		s->builtin_function = NULL;
+		s->builtin_expando = NULL;
+		if (s->builtin_variable)
+		{
+			if (s->builtin_variable->type == STR_VAR)
+				new_free(&s->builtin_variable->data->string);
+			new_free(&s->builtin_variable->data);
+			new_free(&s->builtin_variable->script);
+			new_free(&s->builtin_variable);
+		}
+		new_free(&globals.list[i]);
+	}
+	new_free(&globals.list);
+}
+
 
 /************************** HIGH LEVEL INTERFACE ***********************/
 

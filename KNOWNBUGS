@@ -2,7 +2,7 @@ EPIC5 Projects, Bugs, and other Errata:
 
 KNOWN ERRATA (eg, bugs, or unresolved requests):
 ------------------------------------------------
-* More gracious support for trickling horizontal resizes down to the window.
+[none]
 
 LOOK FOR IN THE FUTURE
 -----------------------
@@ -16,6 +16,10 @@ LOOK FOR IN THE FUTURE
 * Is there some way to set what ^O resets to, a la mirc?
 * /CTCPs over /DCCs don't match up with their queries very well.
 * alias foo {package x;load script}  carries 'x' into 'script' ???
+* More gracious support for trickling horizontal resizes down to the window.
+* The symbol code is mature and ready for optimization and memory leak checks.
+* Cache low window refnums into an array for O(1) lookups?
+* Dynamic adding/deleting levels
 
 [See http://www.epicsol.org/PROJECTS for things to come in the future]
 [See http://www.epicsol.org/CHANGELOG5 for things that changed in the past]
@@ -843,5 +847,9 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Fix bogon in /xecho. doh.
 * Fix /who -real so it matches both with and without the hopcount.
 * Convert all uses of message_to() to message_setall(). yay!
+* Permit alias_special_char() to slurp up function calls for new math. sigh.
 * Add the 'highlight' script which implements the highlight-ignore thingee
 * Whack the 'highlight ignore' feature as per discussion on the list.
+* Add flush_all_symbols() which does a total cleanup of symbols at exit-time.
+* Fix a few bugs
+* Use flush_all_symbols() instead of /dump to catch memory leaks.

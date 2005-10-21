@@ -1,4 +1,4 @@
-/* $EPIC: hook.c,v 1.59 2005/08/09 02:01:04 jnelson Exp $ */
+/* $EPIC: hook.c,v 1.60 2005/10/21 03:50:01 jnelson Exp $ */
 /*
  * hook.c: Does those naughty hook functions. 
  *
@@ -2252,7 +2252,7 @@ char *hookctl (char *input)
 			case HOOKCTL_GET_HOOK_STUFF:
 				if (!set)
 					RETURN_STR(hook->stuff);
-				new_free ((char *) & (hook->stuff));
+				new_free (&(hook->stuff));
 				hook->stuff = malloc_strdup(str);
 				RETURN_INT(1);
 				break;
@@ -2327,7 +2327,7 @@ char *hookctl (char *input)
 			case HOOKCTL_GET_HOOK_PACKAGE:
 				if (!set)
 					RETURN_STR(hook->filename);
-				new_free ((char *) & (hook->filename));
+				new_free (&(hook->filename));
 				hook->filename = malloc_strdup(str);
 				RETURN_INT(1);
 				break;

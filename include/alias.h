@@ -242,5 +242,6 @@ extern char *	print_arglist (ArgList *);
 extern ArgList *clone_arglist (ArgList *);
 #endif
 
+	void	flush_all_symbols (void);
 
 #endif /* _ALIAS_H_ */
