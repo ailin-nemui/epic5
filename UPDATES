@@ -1,12 +1,138 @@
 EPIC5-0.0.7
 
+*** News 10/12/2005 -- The %D status bar expando (dcc activity) improved
+	Previously, the %D status bar expando showed you "packets" of 
+	activity.  A packet was 2k of data, so it looked like this:
+		(      hop: 99 of 2350 (4%))
+	Now this is all done in reasonable units, like so:
+		(      hop: 198Kb of 4.7Mb (4.2%))
+	Perhaps in the future I might remove the "b" after "Kb" and "Mb".
+
+*** News 10/12/2005 -- New script 'highlight', removal of highlight ignores
+	This is kind of experimental for now, but there is a new script 
+	'highlight' which you can /load, which will implement the features
+	that were previously available via "highlight ignores".  I haven't
+	yet moved /set highlight_char over to the script, but I will do that
+	for EPIC5-0.0.8.  If you want to help me make this script more robust,
+	drop me a line or just /msg me.  If you have no idea what I'm talking
+	about, don't worry, you're not missing anything.
+
 *** News 10/12/2005 -- New built in functions $b64encode() and $b64decode()
+	The $b64encode() function takes an arbitrary string and returns an
+	expanded string using the Base64 encoding, which uses all of the 
+	characters A-Z, a-z, 0-9, and + and /.  If you count them up, this
+	is 64 distinct characters (hence the name base64), which represent
+	six bits of information.  Thus, 3 bytes of data (24 bits) can be 
+	transformed into 4 characters which are safe to send through data
+	channels that can only handle text (such as the irc server, or 
+	DCC CHAT, email, or a web server)
 
 *** News 10/12/2005 -- Can now set both level and target with with /XECHO
+	Maybe it would help if I just re-documented /XECHO's options:
+	XECHO options can always be abbreviated as long as they're not 
+	ambiguous.  For example, /XECHO -CURRENT can be used as /XECHO -C,
+	and /XECHO -WINDOW can be used as /XECHO -W.
+
+	 -CURRENT
+		The same as -W 0  (output to current global window)
+	 -LINE <number>
+		Must be used in conjunction with -WINDOW.  This allows you to
+		replace the <number>th line on a specified window.  This is 
+		the feature of the old "scratch windows".  All windows behave
+		as scratch windows these days.
+	-LEVEL <window-level>
+		The window levels are of course NONE, CRAP, PUBLICS, MSGS,
+		NOTICES, WALLS, WALLOPS, OPNOTES, SNOTES, ACTIONS, DCCS,
+		CTCPS, INVITES, JOINS, NICKS, TOPICS, PARTS, QUITS, KICKS,
+		MODES, and USER1 through USER10.  If you use this option 
+		without using -WINDOW, then the output will be sent to the
+		window that claims the corresponding level for the current
+		server.  If you use this option together with -WINDOW, then
+		it will be sent to that window anyways.  This is new, because
+		previously you could not tag output to a window with a level
+		that didn't belong to that window.
+	-VISUAL
+		Output to a visible (non-hidden) window.  If window 0 (the
+		global current window) is visible, it is used.  If window 0
+		is hidden, then another visible window is chosen.
+	-WINDOW <refnum>
+		Output to a particular window, instead of the normal one.
+		Remember that window refnum 0 is special, and represents the
+		global current window which **may or may not** be connected
+		to the current server.  If you need the current server's 
+		current window, use $serverwin().
+	-ALL
+		Output to each and every window.
+	-BANNER
+		Prefix the output with the /SET BANNER value.
+	-RAW
+		Send the output directly to the terminal and do not attempt
+		to pre-process it.  This is used to send special control 
+		sequences to your terminal that EPIC does not support (such
+		as sequences to change your character set)
+	-NOLOG
+		Do not allow the line of output to be written to the global
+		logfile, a window logfile, or to a /LOG logfile.
+	-SAY
+		Use say() to output the line, which makes it subject to 
+		output suppression rules.  An example will help:
+			alias loud { xecho -b This is always displayed }
+			alias noloud { xecho -b -s This is not always }
+
+		In the first case, you could do
+			loud
+		or
+			^loud
+		and you would still see the output either way.  There is no
+		way to "suppress" the output.  In the second case
+			noloud
+		shows the output but
+			^noloud
+		does not.
+	-X
+		("Extended" output?)  Ignore /SET DISPLAY_MANGLE for just 
+		this one line, and pretend it was /SET to NORMALIZE instead.
+		The most obvious use for this would be to output something in
+		color even when the user has used /set display_mangle to strip
+		color.
+	-F
+		Do not allow the line of output to trigger hidden-window-
+		notification.  Normally output to a hidden window will cause
+		that window's refnum to show up in the %F status bar expando.
+		Using this keeps that from happening.
+	--
+		End of argument processing: there are no more arguments after
+		this and everything else should just be output directly
+			xecho -- -f <- the -f here is output!
 
 *** News 10/05/2005 -- Automatic Scrollback rebuilding, new /WINDOW operation
+	Whenever the width of a window changes (either because you're 
+	swapping it in, and the screen is a different size than when you 
+	swapped the window out, or because it's visible on a screen that 
+	is changing size), the window's scrollback will be rebuilt.  This is
+	accomplished by clearing the scrollback and then rebreaking the 
+	lastlog.  If you have a large scrollback and a small lastlog, this
+	may result in some data lossage.
+
+	Although the rebuilding process attempts to keep the top of the window
+	the same before and after the rebuild, it's possible for what you were
+	seeing on your window to be gone after the rebuild.  If this occurs,
+	the window will be set to the very top of the scrollback (ie, as far
+	back as it can go).
+
+	Generally, it is advisable from now on to have a lastlog that is 
+	at least as large as your scrollback, if you want to avoid any
+	chance of problems when your windows resize.
 
 *** News 10/05/2005 -- DNS Helper (hostname lookups) now nonblocking by default
+	EPIC5-0.0.6 shipped with a dns helper, but it was synchronous (it 
+	did not fork off a subprocess).  It has been debugged and now it is
+	turned on, and it is asynchronous.  This DNS helper is only used for
+	server connections.  This is the final stage in making connections to 
+	server fully nonblocking. yay!  However, forking off a child process
+	to do the nonblocking dns lookup can cause issues with resource
+	limitations.  (Typically you are only permitted to run a certain
+	number of processes at a time, and this would count against that limit.)
 
 *** News 10/05/2005 -- New /SET, /SET MANGLE_DISPLAY, many sets removed
 	There is a new /SET, /SET MANGLE_DISPLAY, which mangles all output
@@ -24,6 +150,18 @@ EPIC5-0.0.7
 		inverse_video	underline_video
 
 *** News 10/05/2005 -- Functions that changed because of unified mangler
+	$leftpc(<COUNT> <TEXT>)
+		This function performs a $stripcrap(NORMALIZE <text>) now.
+	$numlines()
+		This function performs a $stripcrap(NORMALIZE <text>) now.
+	$printlen(<TEXT>)
+		This function performs a $stripcrap(NORMALIZE <text>) now.
+	$stripansicodes(<TEXT>)
+		This function is the same as $stripcrap(NORMALIZE <text>)
+	$stripc()
+		This function is the same as $stripcrap(COLOR <text>)
+	$stripcrap()
+		See below for important information.
 
 *** News 10/05/2005 -- Unified string mangler/normalizer
 	Forget everything you thought you knew about the old mangler and
@@ -32,7 +170,13 @@ EPIC5-0.0.7
 
 	EPIC5 now includes a unified mangler/normalizer that is used by the
 	following features:
-			[...]
+		(The above functions)
+		The input prompt	
+		/lastlog -mangle
+		/log mangle		
+		/set mangle_inbound
+		/set mangle_outbound	
+		The status bar
 
 	All characters are grouped into one of 9 "types":
 	0	Normal chars 		32-127, 160-255
@@ -63,7 +207,7 @@ EPIC5-0.0.7
 
 						Type
 				0    1    2    3    4    5    6    7    8    9
-	(Default)               -    -    -    -    A    -    -    T    T    T
+	(default)               -    -    -    -    A    -    -    T    T    T
 	NORMALIZE               -    -    A    A    -    X    M    -    -    -
 	MANGLE_ESCAPES          -    -    S    -    -    -    -    -    -    -
 	STRIP_COLOR             -    -    -    X    -    -    -    -    -    -
