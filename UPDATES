@@ -1,3 +1,47 @@
+EPIC5-0.0.8
+
+*** News 10/29/2005 -- New built in function, $levelctl()
+	You may now add new window/lastlog/ignore/flood levels at runtime!
+	Once you add a level, you can use it in your windows, and you can use
+	it in /xecho -l.  Since ignore and flood control are hardcoded features
+	adding a level will show up in their types, but will never be used.
+
+	The $levelctl() function permits you to add and query levels:
+	  $levelctl(LEVELS)
+		Return a space-separated list of all canonical level names.
+		This does not return any alias names (see below)
+	  $levelctl(ADD new-name)
+		Add "new-name" as a new canonical level name.  This new name
+		is automagically considered part of ALL.  There is no way to
+		remove levels (yet).  This returns the new level's refnum,
+		which is a small integer value.  If you try to add a level
+		that already exists, it is not added again, but it's existing
+		refnum is returned.
+	  $levelctl(ALIAS old-name new-name)
+		Add "new-name" as an alias for "old-name".  An alias name is
+		permitted anywhere that level names are accepted, but an alias
+		name is never output by the client -- it is silently converted
+		into the canonical name.  For example, "OTHER" is the canonical
+		level name, and "CRAP" is its alias.  If you do 
+			/WINDOW LEVEL CRAP
+		It will tell you
+			*** Window level is OTHER
+	  $levelctl(LOOKUP level-name)
+		Returns the refnum for a level-name.  The level-name can either
+		be a canonical level name or an alias level name.
+	  $levelctl(LOOKUP refnum)
+		Returns the canonical level name for a refnum.
+	  $levelctl(NORMALIZE level-name(s))
+		Given a comma-and-space separated list of level names (like
+		what you specify to /window level), this returns a canonical
+		form which is suitable for /save'ing or displaying to the user. 
+		For example,
+			ALL,-CRAP
+		would return
+			PUBLIC MSG NOTICE WALL WALLOP OPNOTE SNOTE ACTION DCC
+			CTCP INVITE JOIN NICK TOPIC PART QUIT KICK MODE USER1
+			USER2 USER3 USER4 USER5 USER6 USER7 USER8 USER9 USER10
+
 EPIC5-0.0.7
 
 *** News 10/12/2005 -- The %D status bar expando (dcc activity) improved

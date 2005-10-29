@@ -2,7 +2,10 @@ EPIC5 Projects, Bugs, and other Errata:
 
 KNOWN ERRATA (eg, bugs, or unresolved requests):
 ------------------------------------------------
-[none]
+* On solaris, libcurses includes terminfo support.
+<enral> hop: (you might find AC_SEARCH_LIBS to be helpful)
+<enral> AC_SEARCH_LIBS(tigetstr, curses, ncurses) 
+* str_to_mask() should be silent, callers should be warning.
 
 LOOK FOR IN THE FUTURE
 -----------------------
@@ -19,7 +22,6 @@ LOOK FOR IN THE FUTURE
 * More gracious support for trickling horizontal resizes down to the window.
 * The symbol code is mature and ready for optimization and memory leak checks.
 * Cache low window refnums into an array for O(1) lookups?
-* Dynamic adding/deleting levels
 
 [See http://www.epicsol.org/PROJECTS for things to come in the future]
 [See http://www.epicsol.org/CHANGELOG5 for things that changed in the past]
@@ -853,3 +855,14 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Add flush_all_symbols() which does a total cleanup of symbols at exit-time.
 * Fix a few bugs
 * Use flush_all_symbols() instead of /dump to catch memory leaks.
+* Release epic5-0.0.7 (Disaffection)
+* New file, levels.c, holds all the Mask and window level manip stuff.
+* Move level_to_str/str_to_level, mask_to_str/str_to_mask to levels.c
+* Change #define LEVEL_*'s into (int)s
+* Use BIT_VALID() instead of NUMBER_OF_LEVELS, whack NUMBER_OF_LEVELS.
+* Whack hardcoded level_types char array. yay!
+* Change users of "LEVEL_CURRENT" into "LEVEL_NONE" and whack "LEVEL_CURRENT"
+* Add "OTHER" window level, as replacement for "CRAP"
+* Continue to honor "CRAP" as a synonym for "OTHER".
+* New function $levelctl(), to add/query window levels.
+* Window/lastlog levels can now be added at runtime. HUZZAH!

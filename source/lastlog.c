@@ -1,4 +1,4 @@
-/* $EPIC: lastlog.c,v 1.55 2005/10/16 19:23:01 jnelson Exp $ */
+/* $EPIC: lastlog.c,v 1.56 2005/10/29 17:38:46 jnelson Exp $ */
 /*
  * lastlog.c: handles the lastlog features of irc. 
  *
@@ -33,7 +33,6 @@
  * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
  */
-#define WANT_LEVEL_NAMES
 #include "irc.h"
 #include "levels.h"
 #include "lastlog.h"
@@ -76,141 +75,12 @@ static	intmax_t global_lastlog_refnum = 0;
  */
 static void	warn_lastlog_levels (void)
 {
-	char buffer[BIG_BUFFER_SIZE + 1];
-	int i;
+	char *buffer;
 
 	strlcpy(buffer, "Valid levels: ", sizeof buffer);
-	for (i = 1; i < NUMBER_OF_LEVELS; i++)
-	{
-		strlcat(buffer, level_types[i], sizeof buffer);
-		strlcat(buffer, " ", sizeof buffer);
-	}
+	buffer = get_all_levels();
 	say("%s", buffer);
-}
-
-/*
- * mask_to_str: converts the bitmask of levels into a nice
- * string format.  Note that this uses the global buffer, so watch out 
- */
-char	*mask_to_str (const Mask *mask)
-{
-	static	char	buffer[256]; /* this *should* be enough for this */
-	int	i;
-
-	if (mask_isall(mask))
-		strlcpy(buffer, "ALL", sizeof buffer);
-	else if (mask_isnone(mask))
-		strlcpy(buffer, "NONE", sizeof buffer);
-	else
-	{
-		*buffer = 0;
-		for (i = 1; i < NUMBER_OF_LEVELS; i++)
-		{
-		    if (mask_isset(mask, i))
-		    {
-			if (*buffer)
-				strlcat(buffer, " ", sizeof buffer);
-			strlcat(buffer, level_types[i], sizeof buffer);
-		    }
-		}
-	}
-	return (buffer);
-}
-
-int	str_to_mask (Mask *mask, const char *orig)
-{
-	char	*ptr,
-		*rest;
-	int	len,
-		i,
-		neg;
-	int	warn = 0;
-	char *	str;
-
-	mask_unsetall(mask);
-
-	if (!orig)
-		return 0;		/* Whatever */
-
-	str = LOCAL_COPY(orig);
-	while ((str = next_arg(str, &rest)) != NULL)
-	{
-	    while (str)
-	    {
-		if ((ptr = strchr(str, ',')) != NULL)
-			*ptr++ = 0;
-		if ((len = strlen(str)) != 0)
-		{
-			if (my_strnicmp(str, "ALL", len) == 0)
-				mask_setall(mask);
-			else if (my_strnicmp(str, "NONE", len) == 0)
-				mask_unsetall(mask);
-			else
-			{
-			    if (*str == '-')
-			    {
-				str++, len--;
-				neg = 1;
-			    }
-			    else
-				neg = 0;
-
-			    for (i = 1; i < NUMBER_OF_LEVELS; i++)
-			    {
-				if (!my_strnicmp(str, level_types[i], len))
-				{
-					if (neg)
-					    mask_unset(mask, i);
-					else
-					    mask_set(mask, i);
-					break;
-				}
-			    }
-			    if (i == NUMBER_OF_LEVELS)
-			    {
-				say("Unknown level: %s", str);
-				if (!warn)
-				{
-					warn_lastlog_levels();
-					warn = 1;
-				}
-			    }
-			}
-		}
-		str = ptr;
-	    }
-	    str = rest;
-	}
-
-	if (warn)
-		return -1;
-
-	return 0;
-}
-
-int	str_to_level (const char *orig)
-{
-	int	i, len;
-
-	len = strlen(orig);
-	for (i = 1; i < NUMBER_OF_LEVELS; i++)
-		if (!my_strnicmp(orig, level_types[i], len))
-			return i;
-
-	return -1;
-}
-
-const char *	level_to_str (int i)
-{
-	if (i == LEVEL_NONE)
-		return "NONE";
-	else if (i == LEVEL_ALL)
-		return "ALL";
-
-	else if (i > 0 && i < NUMBER_OF_LEVELS)
-		return level_types[i];
-	else
-		return empty_string;
+	new_free(&buffer);	
 }
 
 /*
@@ -546,16 +416,10 @@ BUILT_IN_COMMAND(lastlog)
 		mask_unsetall(&level_mask);
 	    else if (!my_strnicmp(arg, "--", 2))
 	    {
-		int	i;
-		for (i = 1; i < NUMBER_OF_LEVELS; i++)
-		{
-		    if (!my_strnicmp(level_types[i], arg+2, len-2))
-		    {
+		int	i = str_to_level(arg+2);
+		if (i != -1)
 			mask_unset(&level_mask, i);
-			break;
-		    }
-		}
-		if (i == NUMBER_OF_LEVELS)
+		else
 		{
 			say("Unknown flag: %s", arg);
 			goto bail;
@@ -563,16 +427,10 @@ BUILT_IN_COMMAND(lastlog)
 	    }
 	    else if (!my_strnicmp(arg, "-", 1))
 	    {
-		int	i;
-		for (i = 1; i < NUMBER_OF_LEVELS; i++)
-		{
-		    if (!my_strnicmp(level_types[i], arg+1, len-1))
-		    {
+		int	i = str_to_level(arg+1);
+		if (i != -1)
 			mask_set(&level_mask, i);
-			break;
-		    }
-		}
-		if (i == NUMBER_OF_LEVELS)
+		else
 		{
 			say("Unknown flag: %s", arg);
 			goto bail;

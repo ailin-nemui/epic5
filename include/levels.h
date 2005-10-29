@@ -9,75 +9,38 @@
 #ifndef __levels_h__
 #define __levels_h__
 
-#define LEVEL_NONE	0
-#define LEVEL_CURRENT	0
-#define LEVEL_CRAP	1
-#define LEVEL_PUBLIC	2
-#define LEVEL_MSG	3
-#define LEVEL_NOTICE	4
-#define LEVEL_WALL	5
-#define LEVEL_WALLOP	6
-#define LEVEL_OPNOTE	7
-#define LEVEL_SNOTE	8
-#define LEVEL_ACTION	9
-#define LEVEL_DCC	10
-#define LEVEL_CTCP	11
-#define LEVEL_INVITE	12
-#define LEVEL_JOIN	13
-#define LEVEL_NICK	14
-#define LEVEL_TOPIC	15
-#define LEVEL_PART	16
-#define LEVEL_QUIT	17
-#define LEVEL_KICK	18
-#define LEVEL_MODE	19
-#define LEVEL_USER1	20
-#define LEVEL_USER2	21
-#define LEVEL_USER3	22
-#define LEVEL_USER4	23
-#define LEVEL_USER5	24
-#define LEVEL_USER6	25
-#define LEVEL_USER7	26
-#define LEVEL_USER8	27
-#define LEVEL_USER9	28
-#define LEVEL_USER10	29
-#define LEVEL_ALL       0x7FFFFFFF
-#define NUMBER_OF_LEVELS	30
-
-#ifdef WANT_LEVEL_NAMES
-static  const char *level_types[NUMBER_OF_LEVELS] =
-{
-        "NONE",
-        "CRAP",
-        "PUBLICS",
-        "MSGS",
-        "NOTICES",
-        "WALLS",
-        "WALLOPS",
-        "OPNOTES",
-        "SNOTES",
-        "ACTIONS",
-        "DCCS",
-        "CTCPS",
-        "INVITES",
-        "JOINS",
-        "NICKS",
-        "TOPICS",
-        "PARTS",
-        "QUITS",
-        "KICKS",
-        "MODES",
-        "USER1",
-        "USER2",
-        "USER3",
-        "USER4",
-        "USER5",
-        "USER6",
-        "USER7",
-        "USER8",
-        "USER9",
-        "USER10",
-};
-#endif
+extern int	LEVEL_NONE;
+extern int	LEVEL_OTHER;
+extern int	LEVEL_CRAP;
+extern int	LEVEL_PUBLIC;
+extern int	LEVEL_MSG;
+extern int	LEVEL_NOTICE;
+extern int	LEVEL_WALL;
+extern int	LEVEL_WALLOP;
+extern int	LEVEL_OPNOTE;
+extern int	LEVEL_SNOTE;
+extern int	LEVEL_ACTION;
+extern int	LEVEL_DCC;
+extern int	LEVEL_CTCP;
+extern int	LEVEL_INVITE;
+extern int	LEVEL_JOIN;
+extern int	LEVEL_NICK;
+extern int	LEVEL_TOPIC;
+extern int	LEVEL_PART;
+extern int	LEVEL_QUIT;
+extern int	LEVEL_KICK;
+extern int	LEVEL_MODE;
+extern int	LEVEL_USER1;
+extern int	LEVEL_USER2;
+extern int	LEVEL_USER3;
+extern int	LEVEL_USER4;
+extern int	LEVEL_USER5;
+extern int	LEVEL_USER6;
+extern int	LEVEL_USER7;
+extern int	LEVEL_USER8;
+extern int	LEVEL_USER9;
+extern int	LEVEL_USER10;
+extern int	LEVEL_ALL;
 
 /*-
  * Copyright (c) 1982, 1986, 1989, 1991, 1993
@@ -108,8 +71,8 @@ static  const char *level_types[NUMBER_OF_LEVELS] =
  * SUCH DAMAGE.
  */
 
-#define BIT_WORDS      1
-#define BIT_MAXBIT     NUMBER_OF_LEVELS
+#define BIT_WORDS      2
+#define BIT_MAXBIT     64
 #define BIT_IDX(bit)   ((bit) - 1)
 #define BIT_WORD(bit)  (BIT_IDX(bit) >> 5)
 #define BIT_BIT(bit)   (1 << (BIT_IDX(bit) & 31))
@@ -194,5 +157,17 @@ __inline static int	mask_isset (const Mask *set, int bit)
 		return -1;
 	return ((set->__bits[BIT_WORD(bit)] & BIT_BIT(bit)) ? 1 : 0);
 }
+
+/*---------------- end of bsd stuff ------------------*/
+
+	void		init_levels	(void);
+	int		add_new_level	(const char *);
+	int		add_new_level_alias (int, const char *);
+	char *		get_all_levels	(void);
+	char *		mask_to_str	(const Mask *);
+	int		str_to_mask	(Mask *, const char *);
+	const char *	level_to_str	(int);
+	int		str_to_level	(const char *);
+	char *		levelctl	(char *);
 
 #endif

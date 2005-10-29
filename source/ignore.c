@@ -1,4 +1,4 @@
-/* $EPIC: ignore.c,v 1.29 2005/10/18 01:40:23 jnelson Exp $ */
+/* $EPIC: ignore.c,v 1.30 2005/10/29 17:38:46 jnelson Exp $ */
 /*
  * ignore.c: handles the ingore command for irc 
  *
@@ -88,8 +88,6 @@
  * If an ignore does not declare a disposition for a level, it "passes" on 
  * that message and further ignore rules will be checked.
  */
-#define WANT_LEVEL_NAMES
-
 #include "irc.h"
 #include "ignore.h"
 #include "ircaux.h"
@@ -529,22 +527,15 @@ static int	change_ignore_mask_by_desc (const char *type, Mask *do_mask, Mask *do
 			bit = LEVEL_ALL;
 		else
 		{
-		    for (i = 1; i < NUMBER_OF_LEVELS; i++)
-		    {
-			if (!my_strnicmp(l2, level_types[i], len))
-			{
+		    i = str_to_level(l2);
+		    if (i != -1)
 			    bit = i;
-			    break;
-			}
-		    }
-
-		    if (i == NUMBER_OF_LEVELS)
+		    else
 		    {
+			char *levels = get_all_levels();
 			say("You must specify one of the following:");
-			say("\tALL CRAP PUBLIC MSG NOTICE WALL WALLOP "
-				"OPNOTE SNOTE ACTION DCC CTCP INVITE JOIN "
-				"NICK TOPIC PART QUIT KICK MODE NONE "
-				"REASON \"<reason>\" TIMEOUT <seconds>");
+			say("\tALL %s NONE REASON \"<reason>\" TIMEOUT <seconds>", levels);
+			new_free(&levels);
 			continue;
 		    }
 		}
@@ -962,7 +953,7 @@ char	*get_ignore_patterns_by_type (char *ctype)
 	     * levels than what the user asked for, but it can't have 
 	     * levels with different dispositions.
 	     */
-	    for (i = 1; i < NUMBER_OF_LEVELS; i++)
+	    for (i = 1; BIT_VALID(i); i++)
 	    {
 		if (mask_isset(&dont_mask, i) && !mask_isset(&tmp->dont, i))
 			goto bail;

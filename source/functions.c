@@ -1,4 +1,4 @@
-/* $EPIC: functions.c,v 1.217 2005/10/16 04:15:44 jnelson Exp $ */
+/* $EPIC: functions.c,v 1.218 2005/10/29 17:38:46 jnelson Exp $ */
 /*
  * functions.c -- Built-in functions for ircII
  *
@@ -77,6 +77,7 @@
 #include "reg.h"
 #include "if.h"
 #include "ssl.h"
+#include "levels.h"
 
 #ifdef NEED_GLOB
 # include "glob.h"
@@ -295,6 +296,7 @@ static	char
 	*function_killpid	(char *),
 	*function_leftpc	(char *),
 	*function_leftw 	(char *),
+	*function_levelctl	(char *),
 	*function_levelwindow	(char *),
 	*function_loadinfo	(char *),
 	*function_log		(char *),
@@ -579,6 +581,7 @@ static BuiltInFunctions	built_in_functions[] =
 	{ "LEFT",		function_left 		},
 	{ "LEFTPC",		function_leftpc		},
 	{ "LEFTW",              function_leftw 		},
+	{ "LEVELCTL",		function_levelctl	},
 	{ "LEVELWINDOW",	function_levelwindow	},
 	{ "LINE",		function_line		}, /* lastlog.h */
 	{ "LISTARRAY",		function_listarray	},
@@ -6317,7 +6320,7 @@ BUILT_IN_FUNCTION(function_levelwindow, input)
 		mask_isset(&w->window_mask, LEVEL_DCC))
 		RETURN_INT(w->refnum);
 
-	    for (i = 1; i < NUMBER_OF_LEVELS; i++)
+	    for (i = 1; BIT_VALID(i); i++)
 		if (mask_isset(&mask, i) &&
 		    mask_isset(&w->window_mask, i))
 			RETURN_INT(w->refnum);
@@ -6526,6 +6529,11 @@ BUILT_IN_FUNCTION(function_b64decode, input)
 	if (my_base64_decode(input, result) < 0)
 		RETURN_EMPTY;
 	RETURN_MSTR(result);
+}
+
+BUILT_IN_FUNCTION(function_levelctl, input)
+{
+	return levelctl(input);
 }
 
 

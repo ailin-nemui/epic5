@@ -1,4 +1,4 @@
-/* $EPIC: window.c,v 1.158 2005/10/16 19:23:02 jnelson Exp $ */
+/* $EPIC: window.c,v 1.159 2005/10/29 17:38:46 jnelson Exp $ */
 /*
  * window.c: Handles the organzation of the logical viewports (``windows'')
  * for irc.  This includes keeping track of what windows are open, where they
@@ -2390,7 +2390,7 @@ static void 	revamp_window_masks (Window *window)
 	Window	*tmp = NULL;
 	int	i;
 
-	for (i = 1; i < NUMBER_OF_LEVELS; i++)
+	for (i = 1; BIT_VALID(i); i++)
 	{
 	    if (!mask_isset(&window->window_mask, i))
 		continue;
@@ -3726,7 +3726,7 @@ static Window *window_level (Window *window, char **args)
 		add = 1;
 	    }
 
-	    for (i = 1; i < NUMBER_OF_LEVELS; i++)
+	    for (i = 1; BIT_VALID(i); i++)
 	    {
 		if (add == 1 && mask_isset(&mask, i))
 			mask_set(&window->window_mask, i);
@@ -5002,7 +5002,7 @@ BUILT_IN_COMMAND(windowcmd)
 	old_from_server = from_server;
 	old_current_window = current_window->refnum;
 	old_status_update = permit_status_update(0);
-	l = message_from(NULL, LEVEL_CURRENT);
+	l = message_from(NULL, LEVEL_NONE);
 	window = current_window;
 
 	while ((arg = next_arg(args, &args)))
