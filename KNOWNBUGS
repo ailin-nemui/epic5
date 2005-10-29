@@ -6,6 +6,7 @@ KNOWN ERRATA (eg, bugs, or unresolved requests):
 <enral> hop: (you might find AC_SEARCH_LIBS to be helpful)
 <enral> AC_SEARCH_LIBS(tigetstr, curses, ncurses) 
 * str_to_mask() should be silent, callers should be warning.
+* Switch users of LEVEL_CRAP to LEVEL_OTHER
 
 LOOK FOR IN THE FUTURE
 -----------------------
@@ -866,3 +867,4 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Continue to honor "CRAP" as a synonym for "OTHER".
 * New function $levelctl(), to add/query window levels.
 * Window/lastlog levels can now be added at runtime. HUZZAH!
+* I forgot that the level names are supposed to be plural (as per UPDATES).
