@@ -1,4 +1,4 @@
-/* $EPIC: parse.c,v 1.75 2005/10/30 01:51:20 jnelson Exp $ */
+/* $EPIC: parse.c,v 1.76 2005/10/30 01:53:30 jnelson Exp $ */
 /*
  * parse.c: handles messages from the server.   Believe it or not.  I
  * certainly wouldn't if I were you. 
@@ -1425,12 +1425,11 @@ void 	parse_server (const char *orig_line, size_t orig_line_size)
 		 * This is a slight reversion until I implement the 
 		 * alist to handle rfc1459 items.
 		 */
-		int i;
-		for (i = 0; rfc1459[i].command; i++)
-			if (!strcmp(rfc1459[i].command, comm))
+		for (loc = 0; rfc1459[loc].command; loc++)
+			if (!strcmp(rfc1459[loc].command, comm))
 				break;
 
-		if (rfc1459[i].command && rfc1459[loc].inbound_handler)
+		if (rfc1459[loc].command && rfc1459[loc].inbound_handler)
 			rfc1459[loc].inbound_handler(from, comm, ArgList);
 		else
 			rfc1459_odd(from, comm, ArgList);

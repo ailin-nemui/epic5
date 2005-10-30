@@ -872,3 +872,4 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Regress temporarily with handling protocol messages
 * This ends the final two users of find_fixed_array_item().
 * Nix find_fixed_array_item() and anything associated with it. 
+* Fix braino.
