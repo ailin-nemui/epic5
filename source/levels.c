@@ -35,7 +35,7 @@
 #include "ircaux.h"
 #include "functions.h"
 
-int	LEVEL_NONE,	LEVEL_CURRENT,	LEVEL_OTHER,	LEVEL_CRAP;
+int	LEVEL_NONE,	LEVEL_CURRENT,	LEVEL_OTHER;
 int	LEVEL_PUBLIC,	LEVEL_MSG,	LEVEL_NOTICE,	LEVEL_WALL;
 int	LEVEL_WALLOP,	LEVEL_OPNOTE,	LEVEL_SNOTE,	LEVEL_ACTION;
 int	LEVEL_DCC,	LEVEL_CTCP,	LEVEL_INVITE,	LEVEL_JOIN;
@@ -53,7 +53,7 @@ void	init_levels (void)
 	level_bucket = new_bucket();
 	LEVEL_NONE      = 0;
 	LEVEL_OTHER     = add_new_level("OTHER");
-	LEVEL_CRAP      = add_new_level_alias(LEVEL_OTHER, "CRAP");
+	add_new_level_alias(LEVEL_OTHER, "CRAP");
 	LEVEL_PUBLIC    = add_new_level("PUBLICS");
 	LEVEL_MSG       = add_new_level("MSGS");
 	LEVEL_NOTICE    = add_new_level("NOTICES");

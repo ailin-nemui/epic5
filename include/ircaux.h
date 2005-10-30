@@ -7,7 +7,7 @@
  *
  * See the COPYRIGHT file, or do a HELP IRCII COPYRIGHT 
  *
- * @(#)$Id: ircaux.h,v 1.83 2005/10/04 03:47:45 jnelson Exp $
+ * @(#)$Id: ircaux.h,v 1.84 2005/10/30 22:41:19 jnelson Exp $
  */
 
 #ifndef _IRCAUX_H_
@@ -44,7 +44,6 @@ void	malloc_dump		(const char *);
 
 char *	check_nickname 		(char *, int);
 char *	new_new_next_arg_count 	(char *, char **, char *, int);
-char *	s_next_arg		(char **);
 char *	last_arg 		(char **, size_t *cluep);
 
 int	normalize_filename	(const char *, Filename);
@@ -80,7 +79,6 @@ char *	malloc_strcat_ues_c	(char **, const char *, const char *, size_t *);
 char *	strlopencat		(char *, size_t, ...);
 ssize_t	stristr 		(const char *, const char *);
 ssize_t	rstristr 		(const char *, const char *);
-char *	findchar		(char *, int);
 FILE *	uzfopen 		(char **, const char *, int, struct stat *);
 int	end_strcmp 		(const char *, const char *, size_t);
 char*   exec_pipe		(const char *, char *, size_t *, char *const *);
@@ -100,9 +98,9 @@ const char *	plural 		(int);
 double	time_to_next_minute 	(void);
 char *	remove_trailing_spaces 	(char *, size_t *cluep);
 char *	forcibly_remove_trailing_spaces (char *, size_t *);
-char *	ltoa 			(long);
-char *	intmaxtoa 		(intmax_t);
-char *	ftoa			(double);
+const char *	ltoa 			(long);
+const char *	intmaxtoa 		(intmax_t);
+const char *	ftoa			(double);
 char *	strformat 		(char *, const char *, ssize_t, int);
 char *	chop_word 		(char *);
 char *	skip_spaces		(char *);

@@ -1,4 +1,4 @@
-/* $EPIC: parse.c,v 1.76 2005/10/30 01:53:30 jnelson Exp $ */
+/* $EPIC: parse.c,v 1.77 2005/10/30 22:41:19 jnelson Exp $ */
 /*
  * parse.c: handles messages from the server.   Believe it or not.  I
  * certainly wouldn't if I were you. 
@@ -488,7 +488,7 @@ static void	p_pong (const char *from, const char *comm, const char **ArgList)
 			return;
 	}
 
-	if (check_ignore(from, FromUserHost, LEVEL_CRAP) == IGNORED)
+	if (check_ignore(from, FromUserHost, LEVEL_OTHER) == IGNORED)
 		return;
 
 	if (do_hook(PONG_LIST, "%s %s %s", from, pong_server, pong_message))
@@ -1367,9 +1367,7 @@ void 	parse_server (const char *orig_line, size_t orig_line_size)
 	const char	*comm;
 	const char	**ArgList;
 	const char	*TrueArgs[MAXPARA + 2];	/* Include space for command */
-	protocol_command *retval;
 	int	loc;
-	int	cnt;
 	char	*line;
 
 	if (num_protocol_cmds == -1)
@@ -1417,6 +1415,9 @@ void 	parse_server (const char *orig_line, size_t orig_line_size)
 	else
 	{
 #if 0
+		protocol_command *retval;
+		int	cnt;
+
 		retval = (protocol_command *)find_fixed_array_item(
 			(void *)rfc1459, sizeof(protocol_command), 
 			num_protocol_cmds + 1, comm, &cnt, &loc);

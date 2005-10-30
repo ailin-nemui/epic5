@@ -1,4 +1,4 @@
-/* $EPIC: ircaux.c,v 1.146 2005/10/04 03:47:45 jnelson Exp $ */
+/* $EPIC: ircaux.c,v 1.147 2005/10/30 22:41:19 jnelson Exp $ */
 /*
  * ircaux.c: some extra routines... not specific to irc... that I needed 
  *
@@ -512,25 +512,6 @@ char *	next_in_div_list (char *str, char **after, char delim)
 	}
 
 	return str;
-}
-
-/* Find the next instance of 'what' that isn't backslashed. */
-char *	findchar (char *str, int what)
-{
-	char *p;
-
-	for (p = str; *p; p++)
-	{
-		if (p[0] == '\\' && p[1])
-			p++;
-		else if (p[0] == what)
-			break;
-	}
-
-	if (*p == what)
-		return p;
-	else
-		return NULL;
 }
 
 unsigned char rfc1459_stricmp_table [] = 
@@ -2032,7 +2013,7 @@ char *	my_ctime (time_t when)
 }
 
 
-char *	ltoa (long foo)
+const char *	ltoa (long foo)
 {
 	static char buffer[BIG_BUFFER_SIZE + 1];
 	char *pos = buffer + BIG_BUFFER_SIZE - 1;
@@ -2053,7 +2034,7 @@ char *	ltoa (long foo)
 	return pos;
 }
 
-char *	intmaxtoa (intmax_t foo)
+const char *	intmaxtoa (intmax_t foo)
 {
 	static char buffer[BIG_BUFFER_SIZE + 1];
 	char *	    pos = buffer + BIG_BUFFER_SIZE - 1;
@@ -2074,7 +2055,7 @@ char *	intmaxtoa (intmax_t foo)
 	return pos;
 }
 
-char *	ftoa (double foo)
+const char *	ftoa (double foo)
 {
 	static char buffer [BIG_BUFFER_SIZE + 1];
 	extern double fmod (double, double);

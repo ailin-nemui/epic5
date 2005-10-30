@@ -1,4 +1,4 @@
-/* $EPIC: commands.c,v 1.133 2005/10/30 01:51:20 jnelson Exp $ */
+/* $EPIC: commands.c,v 1.134 2005/10/30 22:41:19 jnelson Exp $ */
 /*
  * commands.c -- Stuff needed to execute commands in ircII.
  *		 Includes the bulk of the built in commands for ircII.
@@ -641,7 +641,7 @@ BUILT_IN_COMMAND(e_channel)
 {
 	int	l;
 
-	l = message_from(NULL, LEVEL_CRAP);
+	l = message_from(NULL, LEVEL_OTHER);
 	if (args && *args)
 		window_rejoin(current_window, &args);
 	else

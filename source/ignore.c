@@ -1,4 +1,4 @@
-/* $EPIC: ignore.c,v 1.30 2005/10/29 17:38:46 jnelson Exp $ */
+/* $EPIC: ignore.c,v 1.31 2005/10/30 22:41:19 jnelson Exp $ */
 /*
  * ignore.c: handles the ingore command for irc 
  *
@@ -66,7 +66,7 @@
  *	NICKS		NICK changes by anybody
  *	JOINS		JOINs to any channel by anybody
  *	PARTS		PARTs from any channel by anybody
- *	CRAP		QUITs, MODEs, KICKs and PONGs.
+ *	OTHER		QUITs, MODEs, KICKs and PONGs.
  *
  * In addition, the user can use these shorthand level descriptions:
  *	ALL		All of the above.
@@ -383,7 +383,7 @@ static	char 	buffer[BIG_BUFFER_SIZE + 1];
 		HANDLE_TYPE(QUIT, output_type)
 		HANDLE_TYPE(KICK, output_type)
 		HANDLE_TYPE(MODE, output_type)
-		HANDLE_TYPE(CRAP, output_type)
+		HANDLE_TYPE(OTHER, output_type)
 	}
 
 	retval = buffer;
@@ -804,7 +804,7 @@ static int	foreach_ignore (const char *nicklist, int create, int (*callback) (Ig
  *		     | [/|<empty string>]	Set suppressive ignore
  *  <level> := MSGS | PUBLIC | WALLS | WALLOPS | INVITES |
  *	       NOTICES | CTCPS | TOPICS | NICKS | 
- *	       JOINS | PARTS | CRAP | NONE | ALL | 
+ *	       JOINS | PARTS | OTHER | NONE | ALL | 
  *	       REASON "<reason>" | TIMEOUT "<number>"
  *
  * Examples:

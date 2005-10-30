@@ -1,4 +1,4 @@
-/* $EPIC: exec.c,v 1.38 2005/10/16 19:23:01 jnelson Exp $ */
+/* $EPIC: exec.c,v 1.39 2005/10/30 22:41:19 jnelson Exp $ */
 /*
  * exec.c: handles exec'd process for IRCII 
  *
@@ -404,7 +404,7 @@ BUILT_IN_COMMAND(execcmd)
 			return;
 
 		proc = process_list[i];
-		l = message_setall(refnum, NULL, LEVEL_CRAP);
+		l = message_setall(refnum, NULL, LEVEL_OTHER);
 
 		/*
 		 * Check to see if the user wants to change windows
@@ -804,9 +804,9 @@ static void 	handle_filedesc (Process *proc, int *fd, int hook_nonl, int hook_nl
 	ofs = from_server;
 	from_server = proc->server;
 	if (proc->refnum)
-		l = message_setall(proc->refnum, NULL, LEVEL_CRAP);
+		l = message_setall(proc->refnum, NULL, LEVEL_OTHER);
 	else
-		l = message_from(NULL, LEVEL_CRAP);
+		l = message_from(NULL, LEVEL_OTHER);
 
 	proc->counter++;
 
@@ -960,7 +960,7 @@ int 		text_to_process (int proc_index, const char *text, int show)
 
 	if (show)
 	{
-		int	l = message_setall(proc->refnum, NULL, LEVEL_CRAP);
+		int	l = message_setall(proc->refnum, NULL, LEVEL_OTHER);
 		put_it("%s%s", get_prompt_by_refnum(proc->refnum), text);
 		pop_message_from(l);
 	}
@@ -1077,7 +1077,7 @@ static void 	cleanup_dead_processes (void)
 		}
 
 		from_server = deadproc->server;
-		l = message_from(NULL, LEVEL_CRAP);
+		l = message_from(NULL, LEVEL_OTHER);
 
 		/*
 		 * First thing we do is run any /wait %proc -cmd commands
@@ -1222,7 +1222,7 @@ static void 	kill_process (int kill_index, int sig)
 
 	old_from_server = from_server;
 	from_server = process_list[kill_index]->server;
-	l = message_from(NULL, LEVEL_CRAP);
+	l = message_from(NULL, LEVEL_OTHER);
 
 	say("Sending signal %s (%d) to process %d: %s", 
 		sys_siglist[sig], sig, kill_index, 

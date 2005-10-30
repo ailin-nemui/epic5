@@ -1,4 +1,4 @@
-/* $EPIC: window.c,v 1.159 2005/10/29 17:38:46 jnelson Exp $ */
+/* $EPIC: window.c,v 1.160 2005/10/30 22:41:19 jnelson Exp $ */
 /*
  * window.c: Handles the organzation of the logical viewports (``windows'')
  * for irc.  This includes keeping track of what windows are open, where they
@@ -1807,13 +1807,11 @@ Window *get_window_by_desc (const char *stuff)
 {
 	Window	*w = NULL;	/* bleh */
 
-/*
-	while (*stuff == '#')
-		stuff++;
-*/
-
-	if ((w = get_window_by_name(stuff)))
-		return w;
+	while (traverse_all_windows(&w))
+	{
+		if (w->name && !my_stricmp(w->name, stuff))
+			return w;
+	}
 
 	if (is_number(stuff) && (w = get_window_by_refnum(my_atol(stuff))))
 		return w;
@@ -1843,34 +1841,6 @@ Window *get_window_by_refnum (unsigned refnum)
 	}
 
 	return NULL;
-}
-
-/*
- * get_window_by_name: returns a pointer to a window with a matching logical
- * name or null if no window matches 
- */
-Window *get_window_by_name (const char *name)
-{
-	Window	*tmp = NULL;
-
-	while (traverse_all_windows(&tmp))
-	{
-		if (tmp->name && (my_stricmp(tmp->name, name) == 0))
-			return (tmp);
-	}
-
-	return NULL;
-}
-
-/* 
- * DON'T EVEN THINK OF CALLING THIS FUNCTION IF YOU KNOW WHAT IS GOOD
- * FOR YOU!  Well, if you do feel like calling it, you better make sure
- * to make a copy of it immediately, because the ltoa() return value will
- * soon point to someone else's number... ;-)
- */
-char *	get_refnum_by_window (const Window *w)
-{
-	return ltoa(w->refnum);
 }
 
 static Window *get_window_by_servref (int servref)
@@ -2302,7 +2272,7 @@ void 	window_check_servers (void)
 	    }
 
 	    connected_to_server++;
-	    l = message_setall(tmp->refnum, NULL, LEVEL_CRAP);
+	    l = message_setall(tmp->refnum, NULL, LEVEL_OTHER);
 
 	    if (status == SERVER_RECONNECT)
 	    {
@@ -3089,7 +3059,7 @@ static Window *window_channel (Window *window, char **args)
 	    new_free(&pass);
 	}
 
-	l = message_from(chans_to_join, LEVEL_CRAP);
+	l = message_from(chans_to_join, LEVEL_OTHER);
 	if (chans_to_join && passes_to_use)
 		send_to_aserver(window->server,"JOIN %s %s", chans_to_join, 
 								passes_to_use);
@@ -4716,7 +4686,7 @@ static Window *window_size (Window *window, char **args)
  */
 static Window *window_stack (Window *window, char **args)
 {
-	WindowStack 	*last, *tmp, *crap;
+	WindowStack 	*last, *tmp, *holder;
 	Window 		*win = NULL;
 	size_t		len = 4;
 
@@ -4739,14 +4709,14 @@ static Window *window_stack (Window *window, char **args)
 		}
 		else
 		{
-			crap = tmp->next;
+			holder = tmp->next;
 			new_free((char **)&tmp);
 			if (last)
-				last->next = crap;
+				last->next = holder;
 			else
-				window->screen->window_stack = crap;
+				window->screen->window_stack = holder;
 
-			tmp = crap;
+			tmp = holder;
 		}
 	}
 

@@ -11,7 +11,6 @@
 
 extern int	LEVEL_NONE;
 extern int	LEVEL_OTHER;
-extern int	LEVEL_CRAP;
 extern int	LEVEL_PUBLIC;
 extern int	LEVEL_MSG;
 extern int	LEVEL_NOTICE;

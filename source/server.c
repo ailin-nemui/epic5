@@ -1,4 +1,4 @@
-/* $EPIC: server.c,v 1.190 2005/10/13 01:11:58 jnelson Exp $ */
+/* $EPIC: server.c,v 1.191 2005/10/30 22:41:19 jnelson Exp $ */
 /*
  * server.c:  Things dealing with that wacky program we call ircd.
  *
@@ -860,7 +860,7 @@ void	do_server (int fd)
 			continue;		/* Move along. */
 
 		from_server = i;
-		l = message_from(NULL, LEVEL_CRAP);
+		l = message_from(NULL, LEVEL_OTHER);
 
 		/*
 		 * Is the dns lookup finished?
@@ -1076,7 +1076,7 @@ something_broke:
 			    if (*end == '\r')
 				*end-- = '\0';
 
-			    l2 = message_from(NULL, LEVEL_CRAP);
+			    l2 = message_from(NULL, LEVEL_OTHER);
 			    if (x_debug & DEBUG_INBOUND)
 				yell("[%d] <- [%s]", 
 					s->des, buffer);

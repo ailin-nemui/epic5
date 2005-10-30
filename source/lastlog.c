@@ -1,4 +1,4 @@
-/* $EPIC: lastlog.c,v 1.56 2005/10/29 17:38:46 jnelson Exp $ */
+/* $EPIC: lastlog.c,v 1.57 2005/10/30 22:41:19 jnelson Exp $ */
 /*
  * lastlog.c: handles the lastlog features of irc. 
  *
@@ -285,7 +285,7 @@ BUILT_IN_COMMAND(lastlog)
 	int		mangler = 0;
 	int		lc;
 
-	lc = message_setall(0, NULL, LEVEL_CRAP);
+	lc = message_setall(0, NULL, LEVEL_OTHER);
 	cnt = current_window->lastlog_size;
 	save_mask = current_window->lastlog_mask;
 	mask_unsetall(&current_window->lastlog_mask);
