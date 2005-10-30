@@ -1,4 +1,4 @@
-/* $EPIC: commands.c,v 1.132 2005/10/16 19:23:01 jnelson Exp $ */
+/* $EPIC: commands.c,v 1.133 2005/10/30 01:51:20 jnelson Exp $ */
 /*
  * commands.c -- Stuff needed to execute commands in ircII.
  *		 Includes the bulk of the built in commands for ircII.
@@ -2217,6 +2217,7 @@ BUILT_IN_COMMAND(quotecmd)
 	}
 	else if (args && *args)
 	{
+#if 0
 		char	*comm = new_next_arg(args, &args);
 		protocol_command *p;
 		int	cnt;
@@ -2244,6 +2245,10 @@ BUILT_IN_COMMAND(quotecmd)
 			yell("Doing /QUOTE %s is discouraged because it will destablize the client.  Use the client's built in command instead.", comm);
 
 		send_to_aserver(refnum, "%s %s", comm, args);
+#else
+		send_to_aserver(refnum, "%s", args);
+#endif
+
 	}
 }
 

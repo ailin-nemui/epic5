@@ -868,3 +868,7 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * New function $levelctl(), to add/query window levels.
 * Window/lastlog levels can now be added at runtime. HUZZAH!
 * I forgot that the level names are supposed to be plural (as per UPDATES).
+* Stop doing any nagging on /quote.
+* Regress temporarily with handling protocol messages
+* This ends the final two users of find_fixed_array_item().
+* Nix find_fixed_array_item() and anything associated with it. 

@@ -1,4 +1,4 @@
-/* $EPIC: parse.c,v 1.74 2005/10/18 01:40:23 jnelson Exp $ */
+/* $EPIC: parse.c,v 1.75 2005/10/30 01:51:20 jnelson Exp $ */
 /*
  * parse.c: handles messages from the server.   Believe it or not.  I
  * certainly wouldn't if I were you. 
@@ -1309,50 +1309,50 @@ void	rfc1459_odd (const char *from, const char *comm, const char **ArgList)
 }
 
 protocol_command rfc1459[] = {
-{	"ADMIN",	NULL,		NULL,		0		},
-{	"AWAY",		NULL,		NULL,		0		},
-{ 	"CONNECT",	NULL,		NULL,		0		},
-{	"ERROR",	p_error,	NULL,		0		},
-{	"ERROR:",	p_error,	NULL,		0		},
-{	"INVITE",	p_invite,	NULL,		0		},
-{	"INFO",		NULL,		NULL,		0		},
-{	"ISON",		NULL,		NULL,		PROTO_NOQUOTE	},
-{	"JOIN",		p_channel,	NULL,		0		},
-{	"KICK",		p_kick,		NULL,		0		},
-{	"KILL",		p_kill,		NULL,		0		},
-{	"LINKS",	NULL,		NULL,		0		},
-{	"LIST",		NULL,		NULL,		0		},
-{	"MODE",		p_mode,		NULL,		0		},
-{	"NAMES",	NULL,		NULL,		0		},
-{	"NICK",		p_nick,		NULL,		PROTO_NOQUOTE	},
-{	"NOTICE",	p_notice,	NULL,		0		},
-{	"OPER",		NULL,		NULL,		0		},
-{	"PART",		p_part,		NULL,		0		},
-{	"PASS",		NULL,		NULL,		0 		},
-{	"PING",		p_ping,		NULL,		0		},
-{	"PONG",		p_pong,		NULL,		0		},
-{	"PRIVMSG",	p_privmsg,	NULL,		0		},
-{	"QUIT",		p_quit,		NULL,		PROTO_DEPREC	},
-{	"REHASH",	NULL,		NULL,		0		},
-{	"RESTART",	NULL,		NULL,		0		},
-{	"RPONG",	p_rpong,	NULL,		0		},
-{	"SERVER",	NULL,		NULL,		PROTO_NOQUOTE	},
-{	"SILENCE",	p_silence,	NULL,		0		},
-{	"SQUIT",	NULL,		NULL,		0		},
-{	"STATS",	NULL,		NULL,		0		},
-{	"SUMMON",	NULL,		NULL,		0		},
-{	"TIME",		NULL,		NULL,		0		},
-{	"TRACE",	NULL,		NULL,		0		},
-{	"TOPIC",	p_topic,	NULL,		0		},
-{	"USER",		NULL,		NULL,		0		},
-{	"USERHOST",	NULL,		NULL,		PROTO_NOQUOTE	},
-{	"USERS",	NULL,		NULL,		0		},
-{	"VERSION",	NULL,		NULL,		0		},
-{	"WALLOPS",	p_wallops,	NULL,		0		},
-{	"WHO",		NULL,		NULL,		PROTO_DEPREC	},
-{	"WHOIS",	NULL,		NULL,		0		},
-{	"WHOWAS",	NULL,		NULL,		0		},
-{	NULL,		NULL,		NULL,		0		}
+{	"ADMIN",	NULL,		0		},
+{	"AWAY",		NULL,		0		},
+{ 	"CONNECT",	NULL,		0		},
+{	"ERROR",	p_error,	0		},
+{	"ERROR:",	p_error,	0		},
+{	"INVITE",	p_invite,	0		},
+{	"INFO",		NULL,		0		},
+{	"ISON",		NULL,		PROTO_QUOTEBAD	},
+{	"JOIN",		p_channel,	0		},
+{	"KICK",		p_kick,		0		},
+{	"KILL",		p_kill,		0		},
+{	"LINKS",	NULL,		0		},
+{	"LIST",		NULL,		0		},
+{	"MODE",		p_mode,		0		},
+{	"NAMES",	NULL,		0		},
+{	"NICK",		p_nick,		PROTO_QUOTEBAD	},
+{	"NOTICE",	p_notice,	0		},
+{	"OPER",		NULL,		0		},
+{	"PART",		p_part,		0		},
+{	"PASS",		NULL,		0 		},
+{	"PING",		p_ping,		0		},
+{	"PONG",		p_pong,		0		},
+{	"PRIVMSG",	p_privmsg,	0		},
+{	"QUIT",		p_quit,		PROTO_QUOTEBAD	},
+{	"REHASH",	NULL,		0		},
+{	"RESTART",	NULL,		0		},
+{	"RPONG",	p_rpong,	0		},
+{	"SERVER",	NULL,		PROTO_QUOTEBAD	},
+{	"SILENCE",	p_silence,	0		},
+{	"SQUIT",	NULL,		0		},
+{	"STATS",	NULL,		0		},
+{	"SUMMON",	NULL,		0		},
+{	"TIME",		NULL,		0		},
+{	"TRACE",	NULL,		0		},
+{	"TOPIC",	p_topic,	0		},
+{	"USER",		NULL,		0		},
+{	"USERHOST",	NULL,		PROTO_QUOTEBAD	},
+{	"USERS",	NULL,		0		},
+{	"VERSION",	NULL,		0		},
+{	"WALLOPS",	p_wallops,	0		},
+{	"WHO",		NULL,		PROTO_QUOTEBAD	},
+{	"WHOIS",	NULL,		0		},
+{	"WHOWAS",	NULL,		0		},
+{	NULL,		NULL,		0		}
 };
 #define NUMBER_OF_COMMANDS (sizeof(rfc1459) / sizeof(protocol_command)) - 2;
 int 	num_protocol_cmds = -1;
@@ -1416,14 +1416,25 @@ void 	parse_server (const char *orig_line, size_t orig_line_size)
 		numbered_command(from, comm, ArgList);
 	else
 	{
+#if 0
 		retval = (protocol_command *)find_fixed_array_item(
 			(void *)rfc1459, sizeof(protocol_command), 
 			num_protocol_cmds + 1, comm, &cnt, &loc);
+#else
+		/* 
+		 * This is a slight reversion until I implement the 
+		 * alist to handle rfc1459 items.
+		 */
+		int i;
+		for (i = 0; rfc1459[i].command; i++)
+			if (!strcmp(rfc1459[i].command, comm))
+				break;
 
-		if (cnt < 0 && rfc1459[loc].inbound_handler)
+		if (rfc1459[i].command && rfc1459[loc].inbound_handler)
 			rfc1459[loc].inbound_handler(from, comm, ArgList);
 		else
 			rfc1459_odd(from, comm, ArgList);
+#endif
 	}
 
 	FromUserHost = empty_string;

@@ -1,4 +1,4 @@
-/* $EPIC: alist.c,v 1.11 2004/03/19 06:05:13 jnelson Exp $ */
+/* $EPIC: alist.c,v 1.12 2005/10/30 01:51:20 jnelson Exp $ */
 /*
  * alist.c -- resizeable arrays.
  *
@@ -346,6 +346,7 @@ find_array_item (array *set, const char *name, int *cnt, int *loc)
 	return ARRAY_ITEM(set, min);
 }
 
+#if 0
 #define FIXED_ITEM(list, pos, size) (*(array_item *) ((char *)list + ( pos * size )))
 
 /*
@@ -432,4 +433,4 @@ find_fixed_array_item (void *list, size_t size, int howmany, const char *name, i
 	return (void *)&FIXED_ITEM(list, min, size);
 }
 
-
+#endif

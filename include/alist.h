@@ -103,26 +103,27 @@ array_item *	remove_from_array 	(array *, const char *);
 array_item *	array_lookup 		(array *, const char *, int, int);
 array_item *	find_array_item 	(array *, const char *, int *, int *);
 array_item *	array_pop		(array *, int);
+/*
 void *		find_fixed_array_item 	(void *, size_t, int, const char *, 
 					 int *, int *);
+*/
 
 #define ARRAY_ITEM(array, loc) ((array_item *) ((array) -> list [ (loc) ]))
 #define LARRAY_ITEM(array, loc) (((array) -> list [ (loc) ]))
 
 /* Written by panasync */
 /* Re-written by CE */
-#define GET_SOME_ARRAY_NAMES_FUNCTION(fn, array, test)                               \
-char *(fn)(const char *str)                                                          \
-{                                                                                    \
-	int i;                                                                       \
-	char *ret = NULL;                                                            \
-	size_t rclue = 0;                                                            \
-	for (i = 0; (test); ++i)                                                     \
-		if (!str || !*str || wild_match(str, (array)))                       \
-			malloc_strcat_wordlist_c(&ret, space, (array), &rclue);      \
-	return ret ? ret : malloc_strdup(empty_string);                              \
+#define GET_SOME_ARRAY_NAMES_FUNCTION(fn, array, test)                        \
+char *(fn)(const char *str)                                                   \
+{                                                                             \
+	int i;                                                                \
+	char *ret = NULL;                                                     \
+	size_t rclue = 0;                                                     \
+	for (i = 0; (test); ++i)                                              \
+		if (!str || !*str || wild_match(str, (array)))                \
+			malloc_strcat_wordlist_c(&ret, space, (array), &rclue);\
+	return ret ? ret : malloc_strdup(empty_string);                       \
 }
-#define GET_FIXED_ARRAY_NAMES_FUNCTION(fn, array) GET_SOME_ARRAY_NAMES_FUNCTION((fn), ((array)[i].name), ((array)[i].name))
 #define GET_ARRAY_NAMES_FUNCTION(fn, array) GET_SOME_ARRAY_NAMES_FUNCTION((fn), ((array.list)[i]->name), (i < (array).max))
 #define GET_BUCKET_NAMES_FUNCTION(fn, bucket) GET_SOME_ARRAY_NAMES_FUNCTION((fn), ((bucket)->list[i].name), (i < (bucket)->numitems))
 
