@@ -1,4 +1,4 @@
-/* $EPIC: files.c,v 1.25 2005/03/11 05:02:22 jnelson Exp $ */
+/* $EPIC: files.c,v 1.26 2005/10/31 03:39:20 jnelson Exp $ */
 /*
  * files.c -- allows you to read/write files. Wow.
  *
@@ -390,4 +390,339 @@ int	file_valid (int fd)
 	return 0;
 }
 
+/****************************************************************************/
+#include <fcntl.h>
+#include <ndbm.h>
+#include "functions.h"
+
+static int	db_refnum = 0;
+
+struct DBM___ {
+	DBM *	db;
+	int	refnum;
+	int	type;		/* Always 0 for now, future expansion */
+	struct DBM___ *next;
+};
+typedef struct DBM___ Dbm;
+
+static Dbm *	DtopEntry = (Dbm *) 0;
+
+static Dbm *	new_dbm (DBM *the_db, int type);
+static void	remove_dbm (Dbm *db);
+static int	open_dbm (const char *filename, int readonly, int type);
+static Dbm *	lookup_dbm (int refnum);
+static int	close_dbm (int refnum);
+static int	write_to_dbm (int refnum, char *key, char *data, int replace);
+static char *	read_from_dbm (int refnum, char *key);
+static int	delete_from_dbm (int refnum, char *key);
+static char *	iterate_on_dbm (int refnum, int restart);
+static char *	all_keys_for_dbm (int refnum);
+static int	error_from_dbm (int refnum);
+static char *	datum_to_string (datum d);
+
+static Dbm *	new_dbm (DBM *the_db, int type)
+{
+	Dbm *tmp = DtopEntry;
+	Dbm *tmp_db = (Dbm *)new_malloc(sizeof(Dbm));
+
+	if (!DtopEntry)
+		DtopEntry = tmp_db;
+	else
+	{
+		while (tmp->next)
+			tmp = tmp->next;
+		tmp->next = tmp_db;
+	}
+
+	tmp_db->db = the_db;
+	tmp_db->refnum = db_refnum++;
+	tmp_db->type = type;
+	tmp_db->next = NULL;
+
+	return tmp_db;
+}
+
+static void	remove_dbm (Dbm *db)
+{
+	Dbm *tmp = DtopEntry;
+
+	if (db == DtopEntry)
+		DtopEntry = db->next;
+	else
+	{
+		while (tmp->next && tmp->next != db)
+			tmp = tmp->next;
+		if (tmp->next)
+			tmp->next = tmp->next->next;
+	}
+	dbm_close(db->db);
+	new_free((char **)&db);
+}
+
+
+static int	open_dbm (const char *filename, int readonly, int type)
+{
+	DBM *db;
+	Dbm *dbm;
+	struct stat sb;
+	int	perm;
+
+	if (readonly)
+		perm = O_RDONLY;
+	else
+		perm = O_RDWR|O_CREAT;
+
+	if (!(db = dbm_open(filename, perm, 0660)))
+	{
+		yell("open_dbm(%s) failed: %s", filename, strerror(errno));
+		return -1;
+	}
+
+	dbm = new_dbm(db, type);
+	return dbm->refnum;
+}
+
+static Dbm *	lookup_dbm (int refnum)
+{
+	Dbm *ptr = DtopEntry;
+
+	while (ptr)
+	{
+		if (ptr->refnum == refnum)
+			return ptr;
+		else
+			ptr = ptr->next;
+	}
+	return NULL;
+}
+
+static int	close_dbm (int refnum)
+{
+	Dbm *db;
+
+	if (!(db = lookup_dbm(refnum)))
+		return -1;
+
+	remove_dbm(db);
+	return 0;
+}
+
+static int	write_to_dbm (int refnum, char *key, char *data, int replace)
+{
+	Dbm *db;
+	datum k, d;
+
+	if (!(db = lookup_dbm(refnum)))
+		return -1;
+
+	k.dptr = key;
+	k.dsize = strlen(key);
+	d.dptr = data;
+	d.dsize = strlen(data);
+	if (dbm_store(db->db, k, d, replace? DBM_REPLACE : DBM_INSERT))
+		return dbm_error(db->db);
+
+	return 0;
+}
+
+/* RETURNS A MALLOCED STRING, EH! */
+static char *	read_from_dbm (int refnum, char *key)
+{
+	Dbm *db;
+	datum k, d;
+	char *retval;
+
+	if (!(db = lookup_dbm(refnum)))
+		return NULL;
+
+	k.dptr = key;
+	k.dsize = strlen(key);
+	d = dbm_fetch(db->db, k);
+	if (d.dptr == NULL)
+		return NULL;
+
+	return datum_to_string(d);
+}
+
+static int	delete_from_dbm (int refnum, char *key)
+{
+	Dbm *	db;
+	datum 	k;
+	int	retval;
+
+	if (!(db = lookup_dbm(refnum)))
+		return -1;
+
+	k.dptr = key;
+	k.dsize = strlen(key);
+	retval = dbm_delete(db->db, k);
+
+	if (retval == 1)
+		return -1;			/* Key Not found */
+	else if (retval == -1)
+		return dbm_error(db->db);	/* Errno error */
+	else
+		return 0;
+}
+
+static char *	iterate_on_dbm (int refnum, int restart)
+{
+	Dbm *	db;
+	datum 	k;
+	int	retval;
+
+	if (!(db = lookup_dbm(refnum)))
+		return NULL;
+
+	if (restart)
+		k = dbm_firstkey(db->db);
+	else
+		k = dbm_nextkey(db->db);
+
+	return datum_to_string(k);
+}
+
+static char *	all_keys_for_dbm (int refnum)
+{
+	Dbm *	db;
+	datum 	k;
+	char *	retval = NULL;
+	size_t	clue = 0;
+	char *	x;
+
+	if (!(db = lookup_dbm(refnum)))
+		return NULL;
+
+	k = dbm_firstkey(db->db);
+	x = datum_to_string(k);
+	malloc_strcat_wordlist_c(&retval, space, x, &clue);
+	new_free(&x);
+
+	for (;;)
+	{
+		k = dbm_nextkey(db->db);
+		if (k.dptr == NULL)
+			break;
+		x = datum_to_string(k);
+		malloc_strcat_wordlist_c(&retval, space, x, &clue);
+		new_free(&x);
+	}
+
+	return retval;
+}
+
+static int	error_from_dbm (int refnum)
+{
+	Dbm *	db;
+	int	retval;
+
+	if (!(db = lookup_dbm(refnum)))
+		return -1;
+
+	return dbm_error(db->db);
+}
+
+static char *	datum_to_string (datum d)
+{
+	char *retval;
+
+	if (d.dptr == NULL)
+		return NULL;
+
+	retval = new_malloc(d.dsize + 1);
+	memcpy(retval, d.dptr, d.dsize);
+	retval[d.dsize] = 0;
+	return retval;			/* MALLOCED, EH! */
+}
+
+/*
+ * $dbmctl(OPEN type filename)
+ *	Open a DBM file for read and write access.
+ * $dbmctl(OPEN_READ type filename)
+ *	Open a DBM file for read-only access.
+ * $dbmctl(CLOSE refnum)
+ *	Close a previously opened DBM file
+ * $dbmctl(ADD refnum "key" data)
+ *	Insert a new key/data pair.  Fail if key already exists.
+ * $dbmctl(CHANGE refnum "key" data)
+ *	If key already exists, change its data.  If it doesn't exist, add it.
+ * $dbmctl(DELETE refnum "key")
+ *	Remove a key/data pair
+ * $dbmctl(READ refnum "key")
+ *	Return the data for a key.
+ * $dbmctl(NEXT_KEY refnum start-over)
+ *	Return the next key in the database
+ * $dbmctl(ALL_KEYS refnum)
+ *	Return all keys -- could be huge! could take a long time!
+ * $dbmctl(ERROR refnum)
+ *	Return the errno for the last error.
+ *
+ * "refnum" is a value returned by OPEN and OPEN_READ.
+ * "type" must always be "STD" for now. 
+ * "filename" is a dbm file (without the .db extension!)
+ * "key" is a dbm key.  Spaces are important!
+ * "data" is a dbm value.  Spaces are important!
+ * 
+ */
+char *	dbmctl (char *input)
+{
+	char *	listc;
+	int	refnum;
+	char *	type;
+	char *	key;
+	int	retval;
+	char *	retstr;
+
+	GET_STR_ARG(listc, input);
+	if (!my_strnicmp(listc, "OPEN", 4)) {
+		GET_STR_ARG(type, input);	/* Ignored for now */
+		retval = open_dbm(input, 0, 0);
+		RETURN_INT(retval);
+	} else if (!my_strnicmp(listc, "OPEN_READ", 5)) {
+		GET_STR_ARG(type, input);	/* Ignored for now */
+		retval = open_dbm(input, 1, 0);
+		RETURN_INT(retval);
+	} else if (!my_strnicmp(listc, "CLOSE", 2)) {
+		GET_INT_ARG(refnum, input);
+		retval = close_dbm(refnum);
+		RETURN_INT(retval);
+	} else if (!my_strnicmp(listc, "ADD", 2)) {
+		GET_INT_ARG(refnum, input);
+		GET_STR_ARG(key, input);
+		retval = write_to_dbm(refnum, key, input, 0);
+		RETURN_INT(retval);
+	} else if (!my_strnicmp(listc, "CHANGE", 2)) {
+		GET_INT_ARG(refnum, input);
+		GET_STR_ARG(key, input);
+		retval = write_to_dbm(refnum, key, input, 1);
+		RETURN_INT(retval);
+	} else if (!my_strnicmp(listc, "DELETE", 1)) {
+		GET_INT_ARG(refnum, input);
+		GET_STR_ARG(key, input);
+		retval = delete_from_dbm(refnum, key);
+		RETURN_INT(retval);
+	} else if (!my_strnicmp(listc, "READ", 1)) {
+		GET_INT_ARG(refnum, input);
+		GET_STR_ARG(key, input);
+		retstr = read_from_dbm(refnum, key);
+		RETURN_MSTR(retstr);
+	} else if (!my_strnicmp(listc, "NEXT_KEY", 1)) {
+		int	restart;
+		GET_INT_ARG(refnum, input);
+		GET_INT_ARG(restart, input);
+		retstr = iterate_on_dbm(refnum, restart);
+		RETURN_MSTR(retstr);
+	} else if (!my_strnicmp(listc, "ALL_KEYS", 2)) {
+		GET_INT_ARG(refnum, input);
+		retstr = all_keys_for_dbm(refnum);
+		RETURN_MSTR(retstr);
+	} else if (!my_strnicmp(listc, "ERROR", 1)) {
+		GET_INT_ARG(refnum, input);
+		retval = error_from_dbm(refnum);
+		RETURN_INT(retval);
+	}
+
+	RETURN_EMPTY;
+
+}
 

@@ -13,7 +13,6 @@ LOOK FOR IN THE FUTURE
 * Support for CNOTICE
 * Turn unified symbol table into an inode table (name, entry), entry in array
 * /window <refnum> noserv causes bad fd loop.  (can't reproduce?)
-* DBM support.
 * Is there some way to set what ^O resets to, a la mirc?
 * /CTCPs over /DCCs don't match up with their queries very well.
 * alias foo {package x;load script}  carries 'x' into 'script' ???
@@ -873,3 +872,4 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Switch users of LEVEL_CRAP to LEVEL_OTHER. yay!
 * Whack some unused functions and decls, make *toa() funcs return const.
 * Roll get_window_by_name() into get_window_by_desc(), it's only user.
+* DBM (hash table) support.  See UDPATES

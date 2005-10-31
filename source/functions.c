@@ -1,4 +1,4 @@
-/* $EPIC: functions.c,v 1.218 2005/10/29 17:38:46 jnelson Exp $ */
+/* $EPIC: functions.c,v 1.219 2005/10/31 03:39:20 jnelson Exp $ */
 /*
  * functions.c -- Built-in functions for ircII
  *
@@ -231,6 +231,7 @@ static	char
 	*function_cparse	(char *),
 	*function_crypt 	(char *),
 	*function_currchans	(char *),
+	*function_dbmctl	(char *),
 	*function_dccctl	(char *),
 	*function_deuhc		(char *),
 	*function_diff 		(char *),
@@ -482,6 +483,7 @@ static BuiltInFunctions	built_in_functions[] =
 	{ "CRYPT",		function_crypt		},
 	{ "CURPOS",		function_curpos 	},
 	{ "CURRCHANS",		function_currchans	},
+	{ "DBMCTL",		function_dbmctl		},
 	{ "DCCCTL",		function_dccctl		},
 	{ "DECODE",	  (bf *)function_decode 	},
 	{ "DELARRAY",           function_delarray 	},
@@ -6534,6 +6536,11 @@ BUILT_IN_FUNCTION(function_b64decode, input)
 BUILT_IN_FUNCTION(function_levelctl, input)
 {
 	return levelctl(input);
+}
+
+BUILT_IN_FUNCTION(function_dbmctl, input)
+{
+	return dbmctl(input);
 }
 
 

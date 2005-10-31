@@ -26,4 +26,5 @@
 	int	file_tell		(int);
 	int	file_skip		(int, int);
 
+	char *	dbmctl			(char *);
 #endif

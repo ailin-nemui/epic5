@@ -1,5 +1,45 @@
 EPIC5-0.0.8
 
+*** News 10/30/2005 -- New function, $dbmctl() [hash table support]
+	The DBM interface is a standard unix interface that I'm hoping is
+	available on everybody's system.  I didn't 'configure' it up.  If it
+	doesn't compile for you, let me know!
+
+	The $dbmctl() function is an interface to the unix DBM API:
+	    $dbmctl(OPEN type filename)
+		Open a DBM file for read and write access.
+	    $dbmctl(OPEN_READ type filename)
+		Open a DBM file for read-only access.
+	    $dbmctl(CLOSE refnum)
+		Close a previously opened DBM file
+	    $dbmctl(ADD refnum "key" data)
+		Insert a new key/data pair.  Fail if key already exists.
+	    $dbmctl(CHANGE refnum "key" data)
+		If key already exists, change its data.  If it doesn't exist, 
+		add it.
+	    $dbmctl(DELETE refnum "key")
+		Remove a key/data pair
+	    $dbmctl(READ refnum "key")
+		Return the data for a key.
+	    $dbmctl(NEXT_KEY refnum start-over)
+		Return the next key in the database
+	    $dbmctl(ALL_KEYS refnum)
+		Return all keys -- could be huge! could take a long time!
+	    $dbmctl(ERROR refnum)
+		Return the errno for the last error.
+
+	"Type" must always be "STD" for now.  Reserved for future expansion.
+	"Filename" must be a filename that doesn't include the ".db" extension!
+		This is a requirement of the DBM api, and not an epic thing.
+	"Refnum" is the integer value returned by OPEN or OPEN_READ
+	"Key" is a hash table key value
+	"Data" is a hash table data value
+	"Start-over" is 1 if you want to fetch the first key in the table, and
+		is 0 if you want to fetch the next key.  You must call this
+		with 1 before you call it with 0, according to the API.
+	ALL_KEYS does a "start-over" and you need to do another "start-over"
+		after using it.
+
 *** News 10/29/2005 -- New built in function, $levelctl()
 	You may now add new window/lastlog/ignore/flood levels at runtime!
 	Once you add a level, you can use it in your windows, and you can use
