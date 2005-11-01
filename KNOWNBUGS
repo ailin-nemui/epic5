@@ -3,22 +3,17 @@ EPIC5 Projects, Bugs, and other Errata:
 KNOWN ERRATA (eg, bugs, or unresolved requests):
 ------------------------------------------------
 * str_to_mask() should be silent, callers should be warning.
-* There is a hard limit on the number of levels, but it's not enforced.
 
 LOOK FOR IN THE FUTURE
 -----------------------
 * An /on to go off when you add something to the input line.
 * Output rules
-* GC of a lot of the newly scripted stuff
 * Support for CNOTICE
-* Turn unified symbol table into an inode table (name, entry), entry in array
+* More gracious support for trickling horizontal resizes down to the window.
 * /window <refnum> noserv causes bad fd loop.  (can't reproduce?)
 * Is there some way to set what ^O resets to, a la mirc?
 * /CTCPs over /DCCs don't match up with their queries very well.
 * alias foo {package x;load script}  carries 'x' into 'script' ???
-* More gracious support for trickling horizontal resizes down to the window.
-* The symbol code is mature and ready for optimization and memory leak checks.
-* Cache low window refnums into an array for O(1) lookups?
 
 [See http://www.epicsol.org/PROJECTS for things to come in the future]
 [See http://www.epicsol.org/CHANGELOG5 for things that changed in the past]
@@ -873,3 +868,10 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Whack some unused functions and decls, make *toa() funcs return const.
 * Roll get_window_by_name() into get_window_by_desc(), it's only user.
 * DBM (hash table) support.  See UDPATES
+* Check for <ndbm.h> in configure, don't do DBM if it is absent.
+* $dbmctl() always no-ops, returns empty string if dbm not available.
+* Add 'd' to $info(o) if DBM support is included
+* Add a check for solaris cc, moxy up the CFLAGS for larne.
+* Fix compile breakage if both tparm() and base64() are missing. doh. 
+* Fail when maximum number of levels have been added.
+* Note a few places the window refnum is changed. 

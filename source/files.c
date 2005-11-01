@@ -1,4 +1,4 @@
-/* $EPIC: files.c,v 1.26 2005/10/31 03:39:20 jnelson Exp $ */
+/* $EPIC: files.c,v 1.27 2005/11/01 03:17:09 jnelson Exp $ */
 /*
  * files.c -- allows you to read/write files. Wow.
  *
@@ -391,9 +391,10 @@ int	file_valid (int fd)
 }
 
 /****************************************************************************/
-#include <fcntl.h>
-#include <ndbm.h>
 #include "functions.h"
+
+#ifdef HAVE_NDBM_H
+#include <ndbm.h>
 
 static int	db_refnum = 0;
 
@@ -464,7 +465,6 @@ static int	open_dbm (const char *filename, int readonly, int type)
 {
 	DBM *db;
 	Dbm *dbm;
-	struct stat sb;
 	int	perm;
 
 	if (readonly)
@@ -530,7 +530,6 @@ static char *	read_from_dbm (int refnum, char *key)
 {
 	Dbm *db;
 	datum k, d;
-	char *retval;
 
 	if (!(db = lookup_dbm(refnum)))
 		return NULL;
@@ -569,7 +568,6 @@ static char *	iterate_on_dbm (int refnum, int restart)
 {
 	Dbm *	db;
 	datum 	k;
-	int	retval;
 
 	if (!(db = lookup_dbm(refnum)))
 		return NULL;
@@ -614,7 +612,6 @@ static char *	all_keys_for_dbm (int refnum)
 static int	error_from_dbm (int refnum)
 {
 	Dbm *	db;
-	int	retval;
 
 	if (!(db = lookup_dbm(refnum)))
 		return -1;
@@ -723,6 +720,11 @@ char *	dbmctl (char *input)
 	}
 
 	RETURN_EMPTY;
-
 }
+#else
+char *	dbmctl (char *input)
+{
+	RETURN_EMPTY;
+}
+#endif
 

@@ -1,4 +1,4 @@
-/* $EPIC: window.c,v 1.160 2005/10/30 22:41:19 jnelson Exp $ */
+/* $EPIC: window.c,v 1.161 2005/11/01 03:17:09 jnelson Exp $ */
 /*
  * window.c: Handles the organzation of the logical viewports (``windows'')
  * for irc.  This includes keeping track of what windows are open, where they
@@ -191,6 +191,7 @@ Window	*new_window (Screen *screen)
 			tmp = NULL;
 		}
 	}
+	/* XXX refnum is changed here XXX */
 	new_w->refnum = new_refnum;
 	new_w->name = NULL;
 	new_w->priority = -1;		/* Filled in later */
@@ -4003,7 +4004,9 @@ static Window *window_number (Window *window, char **args)
 		if ((i = my_atol(arg)) > 0)
 		{
 			if ((tmp = get_window_by_refnum(i)))
+				/* XXX refnum is changed here XXX */
 				tmp->refnum = window->refnum;
+			/* XXX refnum is changed here XXX */
 			window->refnum = i;
 		}
 		else
@@ -4101,6 +4104,7 @@ static Window *window_push (Window *window, char **args)
 	WindowStack *new_ws;
 
 	new_ws = (WindowStack *) new_malloc(sizeof(WindowStack));
+	/* XXX refnum is changed here XXX */
 	new_ws->refnum = window->refnum;
 	new_ws->next = window->screen->window_stack;
 	window->screen->window_stack = new_ws;

@@ -1,4 +1,4 @@
-/* $EPIC: compat.c,v 1.26 2005/10/13 01:49:44 jnelson Exp $ */
+/* $EPIC: compat.c,v 1.27 2005/11/01 03:17:09 jnelson Exp $ */
 /*
  * Everything that im not directly responsible for I put in here.  Almost
  * all of this stuff is either borrowed from somewhere else (for you poor
@@ -1125,7 +1125,7 @@ u_32int_t	bsd_arc4random (void)
 static char base64_chars[] = 
     "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
 
-static int	pos (char c)
+static int	posfunc (char c)
 {
     char *p;
     for (p = base64_chars; *p; p++)
@@ -1191,7 +1191,7 @@ static unsigned int	token_decode (const char *token)
 	else if (marker > 0)
 	    return DECODE_ERROR;
 	else
-	    val += pos(token[i]);
+	    val += posfunc(token[i]);
     }
     if (marker > 2)
 	return DECODE_ERROR;

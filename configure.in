@@ -4,9 +4,9 @@ dnl except those bits attributed otherwise.
 dnl thanks to the screen 3.3 configure.in for giving me examples to
 dnl work from and steal ;)
 dnl
-dnl @(#)$Id: configure.in,v 1.48 2005/10/04 03:47:43 jnelson Exp $
+dnl @(#)$Id: configure.in,v 1.49 2005/11/01 03:17:07 jnelson Exp $
 
-AC_REVISION($Revision: 1.48 $)dnl
+AC_REVISION($Revision: 1.49 $)dnl
 AC_INIT(source/irc.c)
 AC_CONFIG_HEADER(include/defs.h)
 
@@ -63,7 +63,13 @@ case "$unames" in
     AC_MSG_RESULT(no)
 esac
 
-
+dnl
+dnl Checking for solaris cc
+dnl
+AC_MSG_CHECKING(for solaris cc)
+( $CC -V 2>&1 | grep 'Sun C' > /dev/null ) && \
+	CFLAGS="$CFLAGS -erroff=E_ARG_INCOMPATABLE_WITH_ARG,E_ASSIGNMENT_TYPE_MISMATCH"
+AC_MSG_RESULT(ok)
 
 dnl
 dnl checking for svr4's /usr/ccs/lib
@@ -244,7 +250,7 @@ dnl
 dnl Checking for headers, functions, and a type declarations
 dnl
 
-AC_CHECK_HEADERS(fcntl.h netdb.h regex.h sys/fcntl.h sys/file.h sys/select.h sys/syslimits.h sys/un.h sys/time.h termcap.h sys/filio.h sys/sysctl.h inttypes.h stdint.h stddef.h,)
+AC_CHECK_HEADERS(fcntl.h netdb.h regex.h sys/fcntl.h sys/file.h sys/select.h sys/syslimits.h sys/un.h sys/time.h termcap.h sys/filio.h sys/sysctl.h inttypes.h stdint.h stddef.h ndbm.h,)
 
 if test $termcap -eq 0 ; then
 	AC_CHECK_FUNC(setupterm, AC_DEFINE(HAVE_TERMINFO),)

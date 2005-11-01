@@ -1,4 +1,4 @@
-/* $EPIC: server.c,v 1.191 2005/10/30 22:41:19 jnelson Exp $ */
+/* $EPIC: server.c,v 1.192 2005/11/01 03:17:09 jnelson Exp $ */
 /*
  * server.c:  Things dealing with that wacky program we call ircd.
  *
@@ -174,11 +174,6 @@ static	int	str_to_serverinfo (const char *str, ServerInfo *s)
 	}
 	while (0);
 
-#if 0
-	if (s->port == 0)
-		s->port = irc_port;
-#endif
-
 	return 0;
 }
 
@@ -325,11 +320,6 @@ static	int	serverinfo_to_newserv (ServerInfo *si)
 		malloc_strcpy(&s->password, si->password);
 	if (si->nick && *si->nick)
 		malloc_strcpy(&s->d_nickname, si->nick);
-#if 0
-	/* Don't set a default nickname for a server until we use it! */
-	else 
-		malloc_strcpy(&s->d_nickname, nickname);
-#endif
 
 	if (si->group && *si->group)
 		malloc_strcpy(&s->group, si->group);
@@ -628,9 +618,6 @@ static int	next_server_in_group (int oldserv, int direction)
 /*****************************************************************************/
 /*****************************************************************************/
 static	void	server_is_unregistered (int refnum);
-#if 0
-static void 	fudge_nickname (int refnum);
-#endif
 static void 	reset_nickname (int refnum);
 
 	int	connected_to_server = 0;	/* How many active server 
@@ -1427,11 +1414,7 @@ int 	connect_to_server (int new_server)
 
 	/*
 	 * Initialize all of the server_list data items
-	 * XXX - Calling add_to_server_list is a hack.
 	 */
-#if 0
-	add_to_server_list(s->name, s->port, NULL, NULL, NULL, NULL, 1);
-#endif
 	s->des = des;
 	s->operator = 0;
 
@@ -2236,89 +2219,6 @@ void	nickname_change_rejected (int refnum, const char *mynick)
 
 	reset_nickname(refnum);
 }
-
-#if 0
-/* 
- * This will generate up to 18 nicknames plus the 9-length(nickname)
- * that are unique but still have some semblance of the original.
- * This is intended to allow the user to get signed back on to
- * irc after a nick collision without their having to manually
- * type a new nick every time..
- * 
- * The func will try to make an intelligent guess as to when it is
- * out of guesses, and if it ever gets to that point, it will do the
- * manually-ask-you-for-a-new-nickname thing.
- */
-static void 	fudge_nickname (int refnum)
-{
-	Server *s;
-const	char	*nicklen_005;
-	int	nicklen;
-	char 	l_nickname[NICKNAME_LEN + 1];
-
-	if (!(s = get_server(refnum)))
-		return;			/* Uh, no. */
-
-	/*
-	 * Ok.  So we're not doing a /NICK command, so we need to see
-	 * if maybe we're doing some other type of NICK change.
-	 */
-	if (s->s_nickname)
-		strlcpy(l_nickname, s->s_nickname, sizeof l_nickname);
-	else if (s->nickname)
-		strlcpy(l_nickname, s->nickname, sizeof l_nickname);
-	else
-		strlcpy(l_nickname, nickname, sizeof l_nickname);
-
-
-	if (s->fudge_factor < strlen(l_nickname))
-		s->fudge_factor = strlen(l_nickname);
-	else
-	{
-		if (++s->fudge_factor == 17)
-		{
-			/* give up... */
-			reset_nickname(refnum);
-			s->fudge_factor = 0;
-			return;
-		}
-	}
-
-	/* 
-	 * Process of fudging a nickname:
-	 * If the nickname length is less then 9, add an underscore.
-	 */
-	nicklen_005 = get_server_005(refnum, "NICKLEN");
-	nicklen = nicklen_005 ? atol(nicklen_005) : 9;
-	nicklen = nicklen >= 0 ? nicklen : 9;
-
-	if (strlen(l_nickname) < (size_t)nicklen)
-		strlcat(l_nickname, "_", sizeof l_nickname);
-
-	/* 
-	 * The nickname is 9 characters long. roll the nickname
-	 */
-	else
-	{
-		char tmp = l_nickname[nicklen-1];
-		int foo;
-		for (foo = nicklen-1; foo>0; foo--)
-			l_nickname[foo] = l_nickname[foo-1];
-		l_nickname[0] = tmp;
-	}
-
-	/*
-	 * This is the degenerate case
-	 */
-	if (strspn(l_nickname, "_") >= (size_t)nicklen)
-	{
-		reset_nickname(refnum);
-		return;
-	}
-
-	change_server_nickname(refnum, l_nickname);
-}
-#endif
 
 /*
  * reset_nickname: when the server reports that the selected nickname is not

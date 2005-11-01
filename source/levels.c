@@ -97,6 +97,10 @@ int	add_new_level (const char *name)
 	if ((i = str_to_level(name)) != -1)
 		return i;
 
+	/* Don't allow overflow */
+	if (next_level >= BIT_MAXBIT)
+		return -1;
+
 	name_copy = malloc_strdup(name);
 	levelnum = new_malloc(sizeof(int));
 	*levelnum = next_level++;

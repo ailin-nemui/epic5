@@ -1,4 +1,4 @@
-/* $EPIC: lastlog.c,v 1.57 2005/10/30 22:41:19 jnelson Exp $ */
+/* $EPIC: lastlog.c,v 1.58 2005/11/01 03:17:09 jnelson Exp $ */
 /*
  * lastlog.c: handles the lastlog features of irc. 
  *
@@ -857,15 +857,6 @@ void	set_current_window_mask (void *stuff)
 	str_to_mask(&current_window_mask, str);
 	malloc_strcpy(&v->string, mask_to_str(&current_window_mask));
 }
-
-#if 0
-#define EMPTY empty_string
-#define RETURN_EMPTY return malloc_strdup(EMPTY)
-#define RETURN_IF_EMPTY(x) if (empty( x )) RETURN_EMPTY
-#define GET_INT_ARG(x, y) {RETURN_IF_EMPTY(y); x = my_atol(safe_new_next_arg(y, &y));}
-#define GET_STR_ARG(x, y) {RETURN_IF_EMPTY((y)); x = new_next_arg((y), &(y));RETURN_IF_EMPTY((x));}
-#define RETURN_STR(x) return malloc_strdup(x ? x : EMPTY);
-#endif
 
 /*
  * $line(<line number> [window number])

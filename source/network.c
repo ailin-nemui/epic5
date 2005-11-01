@@ -1,4 +1,4 @@
-/* $EPIC: network.c,v 1.76 2005/10/04 03:47:45 jnelson Exp $ */
+/* $EPIC: network.c,v 1.77 2005/11/01 03:17:09 jnelson Exp $ */
 /*
  * network.c -- handles stuff dealing with connecting and name resolving
  *
@@ -350,38 +350,6 @@ int	inet_vhostsockaddr (int family, int port, SS *storage, socklen_t *len)
 	*len = socklen((SA *)storage);
 	return 0;
 }
-
-#if 0
-/* Don't use this, it's limited to only one address! */
-/*
- * NAME: inet_remotesockaddr
- * USAGE: Get a sockaddr of the specified host and port.
- * ARGS: family - The family whose sockaddr info is to be retrieved
- *       host - The host whose address shall be put in the sockaddr
- *       port - The port to put into the sockaddr -- MUST BE IN HOST ORDER!
- *       storage - Pointer to a sockaddr structure appropriate for family.
- */
-static int	inet_remotesockaddr (int family, const char *host, const char *port, SS *storage, socklen_t *len)
-{
-	((SA *)storage)->sa_family = family;
-
-	if (inet_strton(host, port, (SA *)storage, AI_ADDRCONFIG))
-	{
-		syserr("inet_remotesockaddr: inet_strton(%d,%s,%s) failed",
-					family, host, port);
-		return -1;
-	}
-
-	if ((*len = socklen((SA *)storage)) == 0)
-	{
-		syserr("inet_remotesockaddr: Protocol %d unsupported", family);
-		return -1;
-	}
-
-	return 0;
-}
-#endif
-
 
 /************************************************************************/
 /*
