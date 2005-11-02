@@ -27,10 +27,6 @@ const char compile_time_options[] = {
 					'c',
 #endif /* COLOR is now the default */
 
-#ifdef HAVE_NDBM_H
-					'd',
-#endif
-
 #ifdef EXEC_COMMAND
  					'e',
 #endif /* EXEC_COMMAND */

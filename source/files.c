@@ -1,4 +1,4 @@
-/* $EPIC: files.c,v 1.27 2005/11/01 03:17:09 jnelson Exp $ */
+/* $EPIC: files.c,v 1.28 2005/11/02 03:12:02 jnelson Exp $ */
 /*
  * files.c -- allows you to read/write files. Wow.
  *
@@ -392,14 +392,12 @@ int	file_valid (int fd)
 
 /****************************************************************************/
 #include "functions.h"
-
-#ifdef HAVE_NDBM_H
-#include <ndbm.h>
+#include "sdbm.h"
 
 static int	db_refnum = 0;
 
 struct DBM___ {
-	DBM *	db;
+	SDBM *	db;
 	int	refnum;
 	int	type;		/* Always 0 for now, future expansion */
 	struct DBM___ *next;
@@ -408,7 +406,7 @@ typedef struct DBM___ Dbm;
 
 static Dbm *	DtopEntry = (Dbm *) 0;
 
-static Dbm *	new_dbm (DBM *the_db, int type);
+static Dbm *	new_dbm (SDBM *the_db, int type);
 static void	remove_dbm (Dbm *db);
 static int	open_dbm (const char *filename, int readonly, int type);
 static Dbm *	lookup_dbm (int refnum);
@@ -421,7 +419,7 @@ static char *	all_keys_for_dbm (int refnum);
 static int	error_from_dbm (int refnum);
 static char *	datum_to_string (datum d);
 
-static Dbm *	new_dbm (DBM *the_db, int type)
+static Dbm *	new_dbm (SDBM *the_db, int type)
 {
 	Dbm *tmp = DtopEntry;
 	Dbm *tmp_db = (Dbm *)new_malloc(sizeof(Dbm));
@@ -456,14 +454,14 @@ static void	remove_dbm (Dbm *db)
 		if (tmp->next)
 			tmp->next = tmp->next->next;
 	}
-	dbm_close(db->db);
+	sdbm_close(db->db);
 	new_free((char **)&db);
 }
 
 
 static int	open_dbm (const char *filename, int readonly, int type)
 {
-	DBM *db;
+	SDBM *db;
 	Dbm *dbm;
 	int	perm;
 
@@ -472,7 +470,7 @@ static int	open_dbm (const char *filename, int readonly, int type)
 	else
 		perm = O_RDWR|O_CREAT;
 
-	if (!(db = dbm_open(filename, perm, 0660)))
+	if (!(db = sdbm_open(filename, perm, 0660)))
 	{
 		yell("open_dbm(%s) failed: %s", filename, strerror(errno));
 		return -1;
@@ -519,8 +517,8 @@ static int	write_to_dbm (int refnum, char *key, char *data, int replace)
 	k.dsize = strlen(key);
 	d.dptr = data;
 	d.dsize = strlen(data);
-	if (dbm_store(db->db, k, d, replace? DBM_REPLACE : DBM_INSERT))
-		return dbm_error(db->db);
+	if (sdbm_store(db->db, k, d, replace? DBM_REPLACE : DBM_INSERT))
+		return sdbm_error(db->db);
 
 	return 0;
 }
@@ -536,7 +534,7 @@ static char *	read_from_dbm (int refnum, char *key)
 
 	k.dptr = key;
 	k.dsize = strlen(key);
-	d = dbm_fetch(db->db, k);
+	d = sdbm_fetch(db->db, k);
 	if (d.dptr == NULL)
 		return NULL;
 
@@ -554,12 +552,12 @@ static int	delete_from_dbm (int refnum, char *key)
 
 	k.dptr = key;
 	k.dsize = strlen(key);
-	retval = dbm_delete(db->db, k);
+	retval = sdbm_delete(db->db, k);
 
 	if (retval == 1)
 		return -1;			/* Key Not found */
 	else if (retval == -1)
-		return dbm_error(db->db);	/* Errno error */
+		return sdbm_error(db->db);	/* Errno error */
 	else
 		return 0;
 }
@@ -573,9 +571,9 @@ static char *	iterate_on_dbm (int refnum, int restart)
 		return NULL;
 
 	if (restart)
-		k = dbm_firstkey(db->db);
+		k = sdbm_firstkey(db->db);
 	else
-		k = dbm_nextkey(db->db);
+		k = sdbm_nextkey(db->db);
 
 	return datum_to_string(k);
 }
@@ -591,14 +589,14 @@ static char *	all_keys_for_dbm (int refnum)
 	if (!(db = lookup_dbm(refnum)))
 		return NULL;
 
-	k = dbm_firstkey(db->db);
+	k = sdbm_firstkey(db->db);
 	x = datum_to_string(k);
 	malloc_strcat_wordlist_c(&retval, space, x, &clue);
 	new_free(&x);
 
 	for (;;)
 	{
-		k = dbm_nextkey(db->db);
+		k = sdbm_nextkey(db->db);
 		if (k.dptr == NULL)
 			break;
 		x = datum_to_string(k);
@@ -616,7 +614,7 @@ static int	error_from_dbm (int refnum)
 	if (!(db = lookup_dbm(refnum)))
 		return -1;
 
-	return dbm_error(db->db);
+	return sdbm_error(db->db);
 }
 
 static char *	datum_to_string (datum d)
@@ -721,10 +719,4 @@ char *	dbmctl (char *input)
 
 	RETURN_EMPTY;
 }
-#else
-char *	dbmctl (char *input)
-{
-	RETURN_EMPTY;
-}
-#endif
 

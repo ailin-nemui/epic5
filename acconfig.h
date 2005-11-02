@@ -1,5 +1,5 @@
 /*
- * @(#)$Id: acconfig.h,v 1.32 2005/11/01 03:17:07 jnelson Exp $
+ * @(#)$Id: acconfig.h,v 1.33 2005/11/02 03:11:58 jnelson Exp $
  */
 
 /*
@@ -359,5 +359,3 @@
 /* Define this if you have <stddef.h> */
 #undef HAVE_STDDEF_H
 
-/* Define this if you have <ndbm.h> */
-#undef HAVE_NDBM_H

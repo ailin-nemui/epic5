@@ -26,8 +26,11 @@ any GNU software (however, this is _not_ GNU software)
      different systems and all that esoteric stuff only used by package
      maintainers.  This support was added because Debian asked for it.
 
-  o  There are several options supported by our configure script:
+  o  On Linux, you _*-MUST-*_ install your system's "ncurses-devel" package
+     or you won't be able to build epic.  You should install your system's
+     "gdbm-devel" package or you won't have access to $dbmctl() (hash tables)
 
+  o  There are several options supported by our configure script:
 	  --with-termcap     	
 		EPIC will use ONLY termcap, and not look for terminfo.
 		You ought not specify this unless the terminfo support

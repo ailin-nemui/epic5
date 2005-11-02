@@ -1,15 +1,9 @@
 EPIC5-0.0.8
 
-*** News 10/31/2005 -- New $info(o) option, 'd' for $dbmctl() support
-	If the $info(o) value includes 'd' then you can use $dbmctl() as
-	documented below.  If $info(o) does not include 'd' then only a 
-	wrapper for $dbmctl() exists, and it always fails and returns the
-	empty string, and dbm support is not available.
-
 *** News 10/30/2005 -- New function, $dbmctl() [hash table support]
-	*** Notice *** This function is not available if the system does
-	not have <ndbm.h> (usually /usr/include/ndbm.h).  See above note.
-	You must re-run configure to use this function!
+	*** Notice *** This function uses a custom implementation of SDBM.
+	The file format it generates should be compatable with $perl() but
+	is not compatable with ndbm or gdbm.
 
 	The $dbmctl() function is an interface to the unix DBM API:
 	    $dbmctl(OPEN type filename)

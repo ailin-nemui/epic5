@@ -13,7 +13,6 @@ LOOK FOR IN THE FUTURE
 * /window <refnum> noserv causes bad fd loop.  (can't reproduce?)
 * Is there some way to set what ^O resets to, a la mirc?
 * /CTCPs over /DCCs don't match up with their queries very well.
-* alias foo {package x;load script}  carries 'x' into 'script' ???
 
 [See http://www.epicsol.org/PROJECTS for things to come in the future]
 [See http://www.epicsol.org/CHANGELOG5 for things that changed in the past]
@@ -875,3 +874,5 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Fix compile breakage if both tparm() and base64() are missing. doh. 
 * Fail when maximum number of levels have been added.
 * Note a few places the window refnum is changed. 
+* Add a pd implementation of sdbm, make $dbmctl() use it.
+* Make configure warn harder if it looks like termcap/terminfo not found.
