@@ -876,3 +876,4 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Note a few places the window refnum is changed. 
 * Add a pd implementation of sdbm, make $dbmctl() use it.
 * Make configure warn harder if it looks like termcap/terminfo not found.
+* Normalize the sdbm code, so it fits in with the epic way of doing things.

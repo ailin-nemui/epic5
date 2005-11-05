@@ -10,9 +10,10 @@
  *	       as I know, this file is wholly public domain.
  * Note: I didn't change anything!  I swear! ;-)  It is my fervent hope that
  *       files created by this file are compatable with the sdbm support in
- *       perl and apache.  I didn't test it against ndbm or gdbm.
+ *       perl and apache.  The files are probably not compatable with ndbm.
  */
-#include "irc_std.h"
+#include "irc.h"
+#include "ircaux.h"
 #include "sdbm.h"
 
 #define DBLKSIZ 4096
@@ -52,20 +53,20 @@ struct SDBM {
 
 static	SDBM *	sdbm__prep 	(char *, char *, int, int);
 static	int	sdbm__fitpair 	(char *, int);
-static	void	sdbm__putpair 	(char *, datum, datum);
-static	datum	sdbm__getpair 	(char *, datum);
-static	int	sdbm__delpair 	(char *, datum);
+static	void	sdbm__putpair 	(char *, Datum, Datum);
+static	Datum	sdbm__getpair 	(char *, Datum);
+static	int	sdbm__delpair 	(char *, Datum);
 static	int	sdbm__chkpage 	(char *);
-static	datum	sdbm__getnkey 	(char *, int);
+static	Datum	sdbm__getnkey 	(char *, int);
 static	void	sdbm__splpage 	(char *, char *, long);
-static	int	sdbm__duppair 	(char *, datum);
-static 	long	sdbm__hash	(char *str, int len);
+static	int	sdbm__duppair 	(char *, Datum);
+static 	long	sdbm__hash	(const char *str, int len);
 static 	int 	sdbm__getdbit 	(SDBM *, long);
 static 	int 	sdbm__setdbit 	(SDBM *, long);
 static 	int 	sdbm__getpage 	(SDBM *, long);
-static 	datum 	sdbm__getnext 	(SDBM *);
+static 	Datum 	sdbm__getnext 	(SDBM *);
 static 	int 	sdbm__makroom	(SDBM *, long, int);
-static 	int 	sdbm__seepair 	(char *, int, char *, int);
+static 	int 	sdbm__seepair 	(char *, int, const char *, int);
 
 /*
  * useful macros
@@ -74,8 +75,8 @@ static 	int 	sdbm__seepair 	(char *, int, char *, int);
 #define exhash(item)	sdbm__hash((item).dptr, (item).dsize)
 #define ioerr(db)	((db)->flags |= DBM_IOERR, (db)->error = errno)
 
-#define OFF_PAG(off)	(long) (off) * PBLKSIZ
-#define OFF_DIR(off)	(long) (off) * DBLKSIZ
+#define OFF_PAG(xoff)	(long) (xoff) * PBLKSIZ
+#define OFF_DIR(xoff)	(long) (xoff) * DBLKSIZ
 
 static long masks[] = {
 	000000000000, 000000000001, 000000000003, 000000000007,
@@ -88,9 +89,9 @@ static long masks[] = {
 	001777777777, 003777777777, 007777777777, 017777777777
 };
 
-datum nullitem = {NULL, 0};
+Datum nullitem = {NULL, 0};
 
-SDBM *sdbm_open (char *file, int flags, int mode)
+SDBM *sdbm_open (const char *file, int flags, int mode)
 {
 	SDBM *db;
 	char *dirname;
@@ -104,7 +105,7 @@ SDBM *sdbm_open (char *file, int flags, int mode)
  */
 	n = strlen(file) * 2 + strlen(DIRFEXT) + strlen(PAGFEXT) + 2;
 
-	if ((dirname = malloc((unsigned) n)) == NULL)
+	if ((dirname = new_malloc(n)) == NULL)
 		return errno = ENOMEM, (SDBM *) NULL;
 /*
  * build the file names
@@ -113,12 +114,8 @@ SDBM *sdbm_open (char *file, int flags, int mode)
 	pagname = strcpy(dirname + strlen(dirname) + 1, file);
 	pagname = strcat(pagname, PAGFEXT);
 
-#ifdef NETWARE
-	locking_sem = OpenLocalSemaphore (1);
-#endif
-
 	db = sdbm__prep(dirname, pagname, flags, mode);
-	free((char *) dirname);
+	new_free(&dirname);
 	return db;
 }
 
@@ -127,7 +124,7 @@ static SDBM *	sdbm__prep (char *dirname, char *pagname, int flags, int mode)
 	SDBM *db;
 	struct stat dstat;
 
-	if ((db = (SDBM *) malloc(sizeof(SDBM))) == NULL)
+	if ((db = (SDBM *)new_malloc(sizeof(SDBM))) == NULL)
 		return errno = ENOMEM, (SDBM *) NULL;
 
         db->flags = 0;
@@ -167,12 +164,10 @@ static SDBM *	sdbm__prep (char *dirname, char *pagname, int flags, int mode)
 				return db;
 			}
 			(void) close(db->dirf);
-		/* }
-		(void) sdbm_fd_unlock(db->pagf); */
 	    }
 	    (void) close(db->pagf);
 	}
-	free((char *) db);
+	new_free(&db);
 	return (SDBM *) NULL;
 }
 
@@ -182,13 +177,12 @@ void	sdbm_close(SDBM *db)
 		errno = EINVAL;
 	else {
 		(void) close(db->dirf);
-		/* (void) sdbm_fd_unlock(db->pagf); */
 		(void) close(db->pagf);
-		free((char *) db);
+		new_free(&db);
 	}
 }
 
-datum	sdbm_fetch (SDBM *db, datum key)
+Datum	sdbm_fetch (SDBM *db, Datum key)
 {
 	if (db == NULL || bad(key))
 		return errno = EINVAL, nullitem;
@@ -199,7 +193,7 @@ datum	sdbm_fetch (SDBM *db, datum key)
 	return ioerr(db), nullitem;
 }
 
-int	sdbm_delete (SDBM *db, datum key)
+int	sdbm_delete (SDBM *db, Datum key)
 {
 	if (db == NULL || bad(key))
 		return errno = EINVAL, -1;
@@ -222,7 +216,7 @@ int	sdbm_delete (SDBM *db, datum key)
 	return ioerr(db), -1;
 }
 
-int	sdbm_store (SDBM *db, datum key, datum val, int flags)
+int	sdbm_store (SDBM *db, Datum key, Datum val, int flags)
 {
 	int need;
 	long hash;
@@ -349,7 +343,7 @@ static int	sdbm__makroom (SDBM *db, long hash, int need)
  * the following two routines will break if
  * deletions aren't taken into account. (ndbm bug)
  */
-datum	sdbm_firstkey (SDBM *db)
+Datum	sdbm_firstkey (SDBM *db)
 {
 	if (db == NULL)
 		return errno = EINVAL, nullitem;
@@ -366,7 +360,7 @@ datum	sdbm_firstkey (SDBM *db)
 	return sdbm__getnext(db);
 }
 
-datum	sdbm_nextkey (SDBM *db)
+Datum	sdbm_nextkey (SDBM *db)
 {
 	if (db == NULL)
 		return errno = EINVAL, nullitem;
@@ -466,9 +460,9 @@ static int	sdbm__setdbit (SDBM *db, long dbit)
  * sdbm__getnext - get the next key in the page, and if done with
  * the page, try the next page in sequence
  */
-static datum	sdbm__getnext (SDBM *db)
+static Datum	sdbm__getnext (SDBM *db)
 {
-	datum key;
+	Datum key;
 
 	for (;;) {
 		db->keyptr++;
@@ -501,7 +495,7 @@ static datum	sdbm__getnext (SDBM *db)
  * use: 65599	nice.
  *      65587   even better. 
  */
-static long	sdbm__hash (char *str, int len)
+static long	sdbm__hash (const char *str, int len)
 {
 	unsigned long n = 0;
 
@@ -553,47 +547,47 @@ static long	sdbm__hash (char *str, int len)
 static int	sdbm__fitpair (char *pag, int need)
 {
 	int n;
-	int off;
+	int my_off;
 	int avail;
 	short *ino = (short *) pag;
 
-	off = ((n = ino[0]) > 0) ? ino[n] : PBLKSIZ;
-	avail = off - (n + 1) * sizeof(short);
+	my_off = ((n = ino[0]) > 0) ? ino[n] : PBLKSIZ;
+	avail = my_off - (n + 1) * sizeof(short);
 	need += 2 * sizeof(short);
 
 	return need <= avail;
 }
 
-static void	sdbm__putpair (char *pag, datum key, datum val)
+static void	sdbm__putpair (char *pag, Datum key, Datum val)
 {
 	int n;
-	int off;
+	int my_off;
 	short *ino = (short *) pag;
 
-	off = ((n = ino[0]) > 0) ? ino[n] : PBLKSIZ;
+	my_off = ((n = ino[0]) > 0) ? ino[n] : PBLKSIZ;
 /*
  * enter the key first
  */
-	off -= key.dsize;
-	(void) memcpy(pag + off, key.dptr, key.dsize);
-	ino[n + 1] = off;
+	my_off -= key.dsize;
+	(void) memcpy(pag + my_off, key.dptr, key.dsize);
+	ino[n + 1] = my_off;
 /*
  * now the data
  */
-	off -= val.dsize;
-	(void) memcpy(pag + off, val.dptr, val.dsize);
-	ino[n + 2] = off;
+	my_off -= val.dsize;
+	(void) memcpy(pag + my_off, val.dptr, val.dsize);
+	ino[n + 2] = my_off;
 /*
  * adjust item count
  */
 	ino[0] += 2;
 }
 
-static datum	sdbm__getpair (char *pag, datum key)
+static Datum	sdbm__getpair (char *pag, Datum key)
 {
 	int i;
 	int n;
-	datum val;
+	Datum val;
 	short *ino = (short *) pag;
 
 	if ((n = ino[0]) == 0)
@@ -607,31 +601,31 @@ static datum	sdbm__getpair (char *pag, datum key)
 	return val;
 }
 
-static int	sdbm__duppair (char *pag, datum key)
+static int	sdbm__duppair (char *pag, Datum key)
 {
 	short *ino = (short *) pag;
 	return ino[0] > 0 && sdbm__seepair(pag, ino[0], key.dptr, key.dsize) > 0;
 }
 
-static datum	sdbm__getnkey (char *pag, int num)
+static Datum	sdbm__getnkey (char *pag, int num)
 {
-	datum key;
-	int off;
+	Datum key;
+	int my_off;
 	short *ino = (short *) pag;
 
 	num = num * 2 - 1;
 	if (ino[0] == 0 || num > ino[0])
 		return nullitem;
 
-	off = (num > 1) ? ino[num - 1] : PBLKSIZ;
+	my_off = (num > 1) ? ino[num - 1] : PBLKSIZ;
 
 	key.dptr = pag + ino[num];
-	key.dsize = off - ino[num];
+	key.dsize = my_off - ino[num];
 
 	return key;
 }
 
-static int	sdbm__delpair (char *pag, datum key)
+static int	sdbm__delpair (char *pag, Datum key)
 {
 	int n;
 	int i;
@@ -699,28 +693,28 @@ static int	sdbm__delpair (char *pag, datum key)
  * return offset index in the range 0 < i < n.
  * return 0 if not found.
  */
-static int	sdbm__seepair (char *pag, int n, char *key, int siz)
+static int	sdbm__seepair (char *pag, int n, const char *key, int siz)
 {
 	int i;
-	int off = PBLKSIZ;
+	int my_off = PBLKSIZ;
 	short *ino = (short *) pag;
 
 	for (i = 1; i < n; i += 2) {
-		if (siz == off - ino[i] &&
+		if (siz == my_off - ino[i] &&
 		    memcmp(key, pag + ino[i], siz) == 0)
 			return i;
-		off = ino[i + 1];
+		my_off = ino[i + 1];
 	}
 	return 0;
 }
 
 static void	sdbm__splpage (char *pag, char *new, long sbit)
 {
-	datum key;
-	datum val;
+	Datum key;
+	Datum val;
 
 	int n;
-	int off = PBLKSIZ;
+	int my_off = PBLKSIZ;
 	char cur[PBLKSIZ];
 	short *ino = (short *) cur;
 
@@ -731,7 +725,7 @@ static void	sdbm__splpage (char *pag, char *new, long sbit)
 	n = ino[0];
 	for (ino++; n > 0; ino += 2) {
 		key.dptr = cur + ino[0]; 
-		key.dsize = off - ino[0];
+		key.dsize = my_off - ino[0];
 		val.dptr = cur + ino[1];
 		val.dsize = ino[0] - ino[1];
 /*
@@ -739,7 +733,7 @@ static void	sdbm__splpage (char *pag, char *new, long sbit)
  */
 		(void) sdbm__putpair((exhash(key) & sbit) ? new : pag, key, val);
 
-		off = ino[1];
+		my_off = ino[1];
 		n -= 2;
 	}
 }
@@ -753,19 +747,19 @@ static void	sdbm__splpage (char *pag, char *new, long sbit)
 static int	sdbm__chkpage (char *pag)
 {
 	int n;
-	int off;
+	int my_off;
 	short *ino = (short *) pag;
 
 	if ((n = ino[0]) < 0 || n > PBLKSIZ / (int)sizeof(short))
 		return 0;
 
 	if (n > 0) {
-		off = PBLKSIZ;
+		my_off = PBLKSIZ;
 		for (ino++; n > 0; ino += 2) {
-			if (ino[0] > off || ino[1] > off ||
+			if (ino[0] > my_off || ino[1] > my_off ||
 			    ino[1] > ino[0])
 				return 0;
-			off = ino[1];
+			my_off = ino[1];
 			n -= 2;
 		}
 	}

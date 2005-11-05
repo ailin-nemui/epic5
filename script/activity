@@ -1,0 +1,129 @@
+: {
+ # $EPIC: activity,v 1.1 2005/11/05 17:52:41 jnelson Exp $
+ # activity -- this script introduces two new statusbar items.
+
+ # the first one is a different activity bar, beside window's refnum it also
+ # includes abbreviation of window's query or channel. it assigns different
+ # types of activity levels to different channel events, i.e. JOIN or MODE
+ # events will make channel's name look dim, PUBLIC or ACTION will make it
+ # look normal and query ACTIONs and MSGS will make it look bold. if you
+ # need to increase the activity level after some custom events, use
+ # function named _proc_act_increase. it takes window's refnum as the first
+ # argument and level as the second. to use that statusbar item, place %2 in
+ # one of your STATUS_FORMAT* lines.
+
+ # the second one is almost the same as the first one, except that it's
+ # an indicator of the current window, not hidden ones with activity. it,
+ # too, displays differently whether window has a channel or a query or not.
+ # to use it, place %E on statusbar.
+
+ # there are some new variables:
+
+ # /set chanact_length <num>, length of abbreviated name on %2 indicator
+
+ # /set winname_length <num>, length of abbreviated name on %E indicator
+
+};
+
+if (word(2 $loadinfo()) != [pf]) {
+        load -pf $word(1 $loadinfo());
+        return;
+};
+
+addset chanact_length int;
+addset winname_length int;
+set chanact_length 4;
+set winname_length 6;
+
+alias _proc_act_default_formats {
+  @ windowctl(SET $0 ACTIVITY_FORMAT 1 $$_proc_act_check($winnum() $getset(winname_length)));
+  @ windowctl(SET $0 CURRENT_ACTIVITY 1);
+};
+alias _proc_act_check {
+  if ((:chan = winchan($0)) != []) {
+    return $0:$stripcrap(ALL,ESCAPE $left($1 $chan));
+  } elsif ((:qry = winquery($0)) != []) {
+    return $0:$stripcrap(ALL,ESCAPE $left($1 $qry));
+  } else {
+    return $0;
+  };
+};
+
+alias _proc_act_increase {
+  if (((windowctl(GET $0 CURRENT_ACTIVITY) < [$1]) && ([$0] != inputwin())) || ([$1] == 1)) {
+    @ windowctl(SET $0 CURRENT_ACTIVITY $1);
+    _proc_act_get;
+  };
+};
+
+alias _proc_act_get {
+  @ :line = [];
+  fe ($numsort($winrefs())) win {
+    if ((:act = windowctl(GET $win CURRENT_ACTIVITY)) > 1) {
+      switch ($act) {
+        (4) {
+          push line $_proc_act_check($win $getset(chanact_length));
+        };
+        (3) {
+          push line $_proc_act_check($win $getset(chanact_length));
+        };
+        (2) {
+          push line 14$_proc_act_check($win $getset(chanact_length));
+        };
+      };
+    };
+	};
+  if (strlen($line)) {
+    ^set status_user2 [act.$line];
+  } else {
+    ^set -status_user2;
+  };
+};
+
+^on #-window 28 "*" {
+  @ :num = 2;
+  @ :info = outputinfo();
+  switch ($word(0 $info)) {
+    (MSGS) {
+      @ :num = 4;
+    };
+    (ACTIONS) {
+      if (ischannel($word(1 $info))) {
+        @ :num = 3;
+				} else {
+					@ :num = 4;
+				};
+    };
+    (PUBLICS) {
+      @ :num = 3;
+    };
+  };
+  _proc_act_increase $0 $num;
+};
+
+^on #-switch_windows 28 "*" {
+	unless (switching || inputwin() != [$3]) {
+		_proc_act_increase $3 1;
+	};
+};
+
+^on -window_create * {
+	_proc_act_default_formats $0;
+};
+
+fe ($winrefs()) win {
+	_proc_act_default_formats $win;
+};
+
+alias inputwin {
+	^local bigwin,bigcount,c;
+	for i in ($windowctl(REFNUMS)) {
+		if ((c = windowctl(GET $i PRIORITY)) > bigcount) {
+			@bigwin = i;
+			@bigcount = c;
+		};
+	};
+	return $bigwin;
+};
+
+#weirdo'2k5

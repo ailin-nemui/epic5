@@ -1,4 +1,4 @@
-/* $EPIC: files.c,v 1.28 2005/11/02 03:12:02 jnelson Exp $ */
+/* $EPIC: files.c,v 1.29 2005/11/05 17:52:41 jnelson Exp $ */
 /*
  * files.c -- allows you to read/write files. Wow.
  *
@@ -417,7 +417,7 @@ static int	delete_from_dbm (int refnum, char *key);
 static char *	iterate_on_dbm (int refnum, int restart);
 static char *	all_keys_for_dbm (int refnum);
 static int	error_from_dbm (int refnum);
-static char *	datum_to_string (datum d);
+static char *	Datum_to_string (Datum d);
 
 static Dbm *	new_dbm (SDBM *the_db, int type)
 {
@@ -508,7 +508,7 @@ static int	close_dbm (int refnum)
 static int	write_to_dbm (int refnum, char *key, char *data, int replace)
 {
 	Dbm *db;
-	datum k, d;
+	Datum k, d;
 
 	if (!(db = lookup_dbm(refnum)))
 		return -1;
@@ -527,7 +527,7 @@ static int	write_to_dbm (int refnum, char *key, char *data, int replace)
 static char *	read_from_dbm (int refnum, char *key)
 {
 	Dbm *db;
-	datum k, d;
+	Datum k, d;
 
 	if (!(db = lookup_dbm(refnum)))
 		return NULL;
@@ -538,13 +538,13 @@ static char *	read_from_dbm (int refnum, char *key)
 	if (d.dptr == NULL)
 		return NULL;
 
-	return datum_to_string(d);
+	return Datum_to_string(d);
 }
 
 static int	delete_from_dbm (int refnum, char *key)
 {
 	Dbm *	db;
-	datum 	k;
+	Datum 	k;
 	int	retval;
 
 	if (!(db = lookup_dbm(refnum)))
@@ -565,7 +565,7 @@ static int	delete_from_dbm (int refnum, char *key)
 static char *	iterate_on_dbm (int refnum, int restart)
 {
 	Dbm *	db;
-	datum 	k;
+	Datum 	k;
 
 	if (!(db = lookup_dbm(refnum)))
 		return NULL;
@@ -575,13 +575,13 @@ static char *	iterate_on_dbm (int refnum, int restart)
 	else
 		k = sdbm_nextkey(db->db);
 
-	return datum_to_string(k);
+	return Datum_to_string(k);
 }
 
 static char *	all_keys_for_dbm (int refnum)
 {
 	Dbm *	db;
-	datum 	k;
+	Datum 	k;
 	char *	retval = NULL;
 	size_t	clue = 0;
 	char *	x;
@@ -590,7 +590,7 @@ static char *	all_keys_for_dbm (int refnum)
 		return NULL;
 
 	k = sdbm_firstkey(db->db);
-	x = datum_to_string(k);
+	x = Datum_to_string(k);
 	malloc_strcat_wordlist_c(&retval, space, x, &clue);
 	new_free(&x);
 
@@ -599,7 +599,7 @@ static char *	all_keys_for_dbm (int refnum)
 		k = sdbm_nextkey(db->db);
 		if (k.dptr == NULL)
 			break;
-		x = datum_to_string(k);
+		x = Datum_to_string(k);
 		malloc_strcat_wordlist_c(&retval, space, x, &clue);
 		new_free(&x);
 	}
@@ -617,7 +617,7 @@ static int	error_from_dbm (int refnum)
 	return sdbm_error(db->db);
 }
 
-static char *	datum_to_string (datum d)
+static char *	Datum_to_string (Datum d)
 {
 	char *retval;
 
