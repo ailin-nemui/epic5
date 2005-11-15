@@ -1,4 +1,4 @@
-/* $EPIC: log.c,v 1.23 2005/10/13 01:11:58 jnelson Exp $ */
+/* $EPIC: log.c,v 1.24 2005/11/15 04:24:47 jnelson Exp $ */
 /*
  * log.c: handles the irc session logging functions 
  *
@@ -148,8 +148,7 @@ void	logger (void *stuff)
  */
 void 	add_to_log (int logref, FILE *fp, long winref, const unsigned char *line, int mangler, const char *rewriter)
 {
-	char	*local_line;
-	int	must_free = 0;
+	char	*local_line = NULL;
 	int	old_logref;
 
 	if (!fp || inhibit_logging)
@@ -165,6 +164,8 @@ void 	add_to_log (int logref, FILE *fp, long winref, const unsigned char *line, 
 		mangler |= STRIP_UNPRINTABLE;
 	if (mangler)
 		local_line = new_normalize_string(line, 1, mangler);
+	else
+		local_line = malloc_strdup(line);
 
 	if (rewriter == NULL)
 		rewriter = get_string_var(LOG_REWRITE_VAR);
@@ -182,12 +183,12 @@ void 	add_to_log (int logref, FILE *fp, long winref, const unsigned char *line, 
 					   NULL);
 
 		local_line = prepend_exp;
-		must_free = 1;
 	}
 
 	fprintf(fp, "%s\n", local_line);
 	fflush(fp);
 
+	new_free(&local_line);
 	current_log_refnum = old_logref;
 }
 

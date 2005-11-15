@@ -877,3 +877,4 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Add a pd implementation of sdbm, make $dbmctl() use it.
 * Make configure warn harder if it looks like termcap/terminfo not found.
 * Normalize the sdbm code, so it fits in with the epic way of doing things.
+* Fix several bogons in add_to_log, found by ce.
