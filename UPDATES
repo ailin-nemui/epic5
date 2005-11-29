@@ -1,5 +1,28 @@
 EPIC5-0.0.8
 
+*** News 11/28/2005 -- New /ON, /ON KEYBINDING
+	This on goes off whenever a keybinding is activated:
+	  $0 - The keybinding that is activated
+	  $1 - Length of the sequence (future expansion -- always 0 for now)
+	  $2 - The ascii number of the key that activated it.
+
+	Note that $2 only contains the last character in the bound sequence.
+	In the future, $2- will change to be a word list containing all of
+	the characters in the sequence.  When this change is made, $1 will
+	be changed to a positive value.  But for now, $1 is always 0, and 
+	$2 is always just the last character.
+
+	If you hook this silently, you will suppress the keybinding!
+	If you only want to spy on a keybinding, hook it quietly.
+	The purpose for which this was requested was to be able to trap 
+	everything bound to SELF_INSERT without having to rebind them.
+
+	Examples:
+	To do something every time capital-A is pressed:
+	   on -keybinding "SELF_INSERT % 65" {echo You pressed A}
+	To keep the user from using the SWITCH_CHANNELS keybinding.
+	   on ^keybinding "SWITCH_CHANNELS % *" #
+
 *** News 10/30/2005 -- New function, $dbmctl() [hash table support]
 	*** Notice *** This function uses a custom implementation of SDBM.
 	The file format it generates should be compatable with $perl() but

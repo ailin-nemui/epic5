@@ -6,7 +6,6 @@ KNOWN ERRATA (eg, bugs, or unresolved requests):
 
 LOOK FOR IN THE FUTURE
 -----------------------
-* An /on to go off when you add something to the input line.
 * Output rules
 * Support for CNOTICE
 * More gracious support for trickling horizontal resizes down to the window.
@@ -878,3 +877,4 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Make configure warn harder if it looks like termcap/terminfo not found.
 * Normalize the sdbm code, so it fits in with the epic way of doing things.
 * Fix several bogons in add_to_log, found by ce.
+* Add /on keybinding.  Why do I know I'm going to regret this one?

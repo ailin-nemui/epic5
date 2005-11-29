@@ -1,4 +1,4 @@
-/* $EPIC: keys.c,v 1.46 2005/06/04 03:59:33 jnelson Exp $ */
+/* $EPIC: keys.c,v 1.47 2005/11/29 04:13:49 jnelson Exp $ */
 /*
  * keys.c:  Keeps track of what happens whe you press a key.
  *
@@ -35,6 +35,7 @@
 #include "config.h"
 #include "commands.h"
 #include "functions.h"
+#include "hook.h"
 #include "ircaux.h"
 #include "input.h"
 #include "keys.h"
@@ -278,17 +279,19 @@ static void key_exec (struct Key *key) {
 	return;
     }
 
-    /* check alias first, then function */
-    if (key->bound->alias != NULL) {
-	/* I don't know if this is right ... */
-	char *exec = malloc_strdup(key->bound->alias);
-	if (key->stuff)
-	    malloc_strcat_wordlist(&exec, " ", key->stuff);
-	runcmds(exec, empty_string);
-	new_free(&exec);
-    } else if (key->bound->func != NULL)
-	key->bound->func(key->val, key->stuff);
-
+    if (do_hook(KEYBINDING_LIST, "%s 0 %d", key->bound->name, (int)key->val))
+    {
+	    /* check alias first, then function */
+	    if (key->bound->alias != NULL) {
+		/* I don't know if this is right ... */
+		char *exec = malloc_strdup(key->bound->alias);
+		if (key->stuff)
+		    malloc_strcat_wordlist(&exec, " ", key->stuff);
+		runcmds(exec, empty_string);
+		new_free(&exec);
+	    } else if (key->bound->func != NULL)
+		key->bound->func(key->val, key->stuff);
+    }
     return;
 }
 	

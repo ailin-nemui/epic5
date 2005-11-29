@@ -1,4 +1,4 @@
-/* $EPIC: commands.c,v 1.134 2005/10/30 22:41:19 jnelson Exp $ */
+/* $EPIC: commands.c,v 1.135 2005/11/29 04:13:49 jnelson Exp $ */
 /*
  * commands.c -- Stuff needed to execute commands in ircII.
  *		 Includes the bulk of the built in commands for ircII.
@@ -3102,7 +3102,48 @@ struct target_type target[4] =
 	recursion--;
 }
 
-
+/*
+ * new_send_text: All that and a bag of sugar
+ *
+ * Given
+ * 1) A default server
+ * 2) A comma separated list of targets
+ * 3) A message
+ * 4) A preferred protocol command
+ * 5) A boolean flag on whether to hook /on send_* or not...
+ *
+ * Sort the comma separated list of targets into a variety of buckets,
+ * depending on a "best fit", and then dispatch the messages.
+ *
+ * Historically supported targets:
+ *	%<refnum>		Send a message to an /exec'd process
+ * 	%<refname>		Send a message to an /exec -name'd process
+ *	0			Send a message to the sink (nowhere)
+ *	@<refnum>		Send a message to an $open() file
+ *	@W<refnum>		Send a message to a window log, but do not
+ *				output the message to the window.
+ *	/<command>		Send a message to (run) an alias
+ *	=<refnum>		Send a message to a $connect()ed dcc raw
+ *	=<nick>			Send a message to a dcc chat peer
+ *	-<refnum>/<nick>	Send a message to a nick on another server.
+ *	<channel>		Send a message to a channel over irc.
+ *	<nick>			Send a message to a nickname over irc.
+ *
+ * Newly supported targets
+ *	@<channel>		Send a message to channel operators.
+ *				(Requires server-side support)
+ *
+ * Each bucket is thus represented as:
+ *	(server, key, message, command, targets)
+ *
+ * Important considerations:
+ *	If the server supports CPRIVMSG (or CNOTICE) and you are sending a 
+ *	message to someone on the same channel as you, CPRIVMSG (or CNOTICE)
+ *	will be used instead of PRIVMSG or NOTICE.
+ *
+ *	If are holding an encrypted conversation with a peer, it needs to be
+ *	sorted separately based on the encryption key you're using. 
+ */
 
 /*
  * eval_inputlist:  Cute little wrapper that calls parse_line() when we
