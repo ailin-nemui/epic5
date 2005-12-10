@@ -1,4 +1,4 @@
-/* $EPIC: ircaux.c,v 1.147 2005/10/30 22:41:19 jnelson Exp $ */
+/* $EPIC: ircaux.c,v 1.148 2005/12/10 00:49:32 jnelson Exp $ */
 /*
  * ircaux.c: some extra routines... not specific to irc... that I needed 
  *
@@ -4674,4 +4674,398 @@ char *	substitute_string (const char *string, const char *oldstr, const char *ne
 	return retval;
 }
 
+/****************************************************************************/
+
+static ssize_t	url_encoder (const char *orig, size_t orig_len, const void *meta, char *dest, size_t dest_len)
+{
+        static const char unsafe[] = "`'!@#$%^&*(){}<>~|\\\";? ,/";
+        static const char hexnum[] = "0123456789ABCDEF";
+	size_t	orig_i, dest_i;
+	ssize_t	count = 0;
+
+        if (!orig || !dest)
+                return -1;
+	if (!*orig)
+	{
+		*dest = 0;
+		return 0;
+	}
+
+	if (orig_len == 0)
+		orig_len = strlen(orig);
+	dest_i = 0;
+
+	for (orig_i = 0; orig_i < orig_len; orig_i++)
+	{
+	    if (orig[orig_i] <= 0x20 || strchr(unsafe, orig[orig_i]))
+            {
+		unsigned c = (unsigned)(unsigned char)orig[orig_i];
+
+		if (dest_i < dest_len)	
+			dest[dest_i++] = '%';
+		if (dest_i < dest_len)	
+			dest[dest_i++] = hexnum[c >> 4];
+		if (dest_i < dest_len)	
+			dest[dest_i++] = hexnum[c & 0x0f];
+		count += 3;
+	    }
+	    else
+	    {
+		if (dest_i < dest_len)
+			dest[dest_i++] = orig[orig_i];
+		count++;
+	    }
+        }
+
+	if (dest_i >= dest_len)
+		dest_i = dest_len - 1;
+	dest[dest_i] = 0;
+        return count;
+}
+
+#define XTOI(x)                                         \
+(                                                       \
+        ((x) >= '0' && (x) <= '9')                      \
+                ? ((x) - '0')                           \
+                : ( ((x) >= 'A' && (x) <= 'F')          \
+                    ? (((x) - 'A') + 10)                \
+                    : ( ((x) >= 'a' && (x) <= 'f')      \
+                        ?  (((x) - 'a') + 10)           \
+                        : -1                            \
+                      )                                 \
+                  )                                     \
+)
+
+static ssize_t	url_decoder (const char *orig, size_t orig_len, const void *meta, char *dest, size_t dest_len)
+{
+	size_t	orig_i, dest_i;
+	int	val1, val2;
+	ssize_t	count = 0;
+
+        if (!orig || !dest)
+                return -1;
+	if (!*orig)
+	{
+		*dest = 0;
+		return 0;
+	}
+
+	if (orig_len == 0)
+		orig_len = strlen(orig);
+	dest_i = 0;
+	for (orig_i = 0; orig_i < orig_len; orig_i++)
+	{
+	    if (orig[orig_i] == '%' && orig_len - orig_i >= 2 &&
+		(((val1 = XTOI(orig[orig_i+1])) != -1) &&
+		 ((val2 = XTOI(orig[orig_i+2])) != -1)))
+	    {
+		orig_i += 2;
+		if (dest_i < dest_len) 
+			dest[dest_i++] = (val1 << 4) | val2;
+	    }
+	    else
+		if (dest_i < dest_len) 
+			dest[dest_i++] = orig[orig_i];
+
+	    count++;
+	}
+
+	if (dest_i >= dest_len)
+		dest_i = dest_len - 1;
+	dest[dest_i] = 0;
+        return count;
+}
+
+static ssize_t	enc_encoder (const char *orig, size_t orig_len, const void *meta, char *dest, size_t dest_len)
+{
+	size_t	orig_i, dest_i;
+	int	val1, val2;
+	ssize_t	count = 0;
+
+        if (!orig || !dest)
+                return -1;
+	if (!*orig)
+	{
+		*dest = 0;
+		return 0;
+	}
+
+	if (orig_len == 0)
+		orig_len = strlen(orig);
+	dest_i = 0;
+	for (orig_i = 0; orig_i < orig_len; orig_i++)
+	{
+		if (dest_i < dest_len)
+		   dest[dest_i++] = ((unsigned char)orig[orig_i] >> 4) + 0x41;
+		if (dest_i < dest_len)
+		   dest[dest_i++] = ((unsigned char)orig[orig_i] & 0x0f) + 0x41;
+		count += 2;
+	}
+	if (dest_i >= dest_len)
+		dest_i = dest_len - 1;
+	dest[dest_i] = 0;
+        return count;
+}
+
+static ssize_t	enc_decoder (const char *orig, size_t orig_len, const void *meta, char *dest, size_t dest_len)
+{
+	size_t	orig_i, dest_i;
+	int	val1, val2;
+	ssize_t	count = 0;
+
+        if (!orig || !dest)
+                return -1;
+	if (!*orig)
+	{
+		*dest = 0;
+		return 0;
+	}
+
+	if (orig_len == 0)
+		orig_len = strlen(orig);
+	dest_i = 0;
+	for (orig_i = 0; orig_i + 1 < orig_len; orig_i++)
+	{
+	    if (dest_i < dest_len)
+		dest[dest_i++] = ((orig[orig_i] - 0x41) << 4) | 
+				  (orig[orig_i+1] - 0x41);
+	    count++;
+	    orig_i++;
+	}
+
+	if (dest_i >= dest_len)
+		dest_i = dest_len - 1;
+	dest[dest_i] = 0;
+        return count;
+}
+
+/* This stuff is BSD licensed, see compat.c!  */
+static char base64_chars[] =
+    "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
+static int      posfunc (char c)
+{
+    char *p;
+    for (p = base64_chars; *p; p++)
+        if (*p == c)
+            return p - base64_chars;
+    return -1;
+}
+
+static ssize_t	b64_encoder (const char *orig, size_t orig_len, const void *meta, char *dest, size_t dest_len)
+{
+	size_t	orig_i, dest_i;
+	int	val1, val2;
+	ssize_t	count = 0;
+
+        if (!orig || !dest)
+                return -1;
+	if (!*orig)
+	{
+		*dest = 0;
+		return 0;
+	}
+
+	if (orig_len == 0)
+		orig_len = strlen(orig);
+	dest_i = 0;
+	for (orig_i = 0; orig_i < orig_len; )
+	{
+	    int	c = (int)orig[orig_i];
+	    c *= 256;
+	    if (orig_i+1 < orig_len)
+		c += orig[orig_i+1];
+	    c *= 256;
+	    if (orig_i+2 < orig_len)
+		c += orig[orig_i+2];
+
+	    if (dest_i < dest_len)
+		dest[dest_i]   = base64_chars[(c & 0x00fc0000) >> 18];
+	    if (dest_i+1 < dest_len)
+		dest[dest_i+1] = base64_chars[(c & 0x0003f000) >> 12];
+	    if (dest_i+2 < dest_len)
+		dest[dest_i+2] = base64_chars[(c & 0x00000fc0) >> 6];
+	    if (dest_i+3 < dest_len)
+		dest[dest_i+3] = base64_chars[(c & 0x0000003f) >> 0];
+
+	    if (orig_i+2 >= orig_len && dest_i + 3 < dest_len)
+		dest[dest_i+3] = '=';
+	    if (orig_i+1 >= orig_len && dest_i + 2 < dest_len)
+		dest[dest_i+2] = '=';
+
+	    dest_i += 4;
+	    orig_i += 3;
+	}
+	if (dest_i >= dest_len)
+		dest_i = dest_len - 1;
+	dest[dest_i] = 0;
+        return count;
+}
+
+#define DECODE_ERROR 0xFFFFFFFF
+static unsigned int     token_decode (const char *token)
+{
+    int i;
+    unsigned int val = 0;
+    int marker = 0;
+    if (strlen(token) < 4)
+        return DECODE_ERROR;
+    for (i = 0; i < 4; i++) {
+        val *= 64;
+        if (token[i] == '=')
+            marker++;
+        else if (marker > 0)
+            return DECODE_ERROR;
+        else
+            val += posfunc(token[i]);
+    }
+    if (marker > 2)
+        return DECODE_ERROR;
+    return (marker << 24) | val;
+}
+
+static ssize_t	b64_decoder (const char *orig, size_t orig_len, const void *meta, char *dest, size_t dest_len)
+{
+	size_t	orig_i, dest_i;
+	int	val1, val2;
+	ssize_t	count = 0;
+
+        if (!orig || !dest)
+                return -1;
+	if (!*orig)
+	{
+		*dest = 0;
+		return 0;
+	}
+
+	if (orig_len == 0)
+		orig_len = strlen(orig);
+	dest_i = 0;
+	for (orig_i = 0; orig_i < orig_len; orig_i += 4)
+	{
+	    unsigned val = token_decode(orig + orig_i);
+	    unsigned marker = (val >> 24) & 0xff;
+
+	    if (val == DECODE_ERROR)
+		break;
+
+	    if (dest_i < dest_len)
+	        dest[dest_i++] = (val >> 16) & 0xff;
+	    if (marker < 2)
+		if (dest_i < dest_len)
+		    dest[dest_i++] = (val >> 8) & 0xff;
+	    if (marker < 1)
+		if (dest_i < dest_len)
+		    dest[dest_i++] = val & 0xff;
+
+	    count += 3;
+	}
+	if (dest_i >= dest_len)
+		dest_i = dest_len - 1;
+	dest[dest_i] = 0;
+        return count;
+}
+/* End BSD licensed stuff (see compat.c!) */
+
+static ssize_t	sed_encoder (const char *orig, size_t orig_len, const void *meta, char *dest, size_t dest_len)
+{
+}
+
+static ssize_t	sed_decoder (const char *orig, size_t orig_len, const void *meta, char *dest, size_t dest_len)
+{
+}
+
+static ssize_t	ctcp_encoder (const char *orig, size_t orig_len, const void *meta, char *dest, size_t dest_len)
+{
+}
+
+static ssize_t	ctcp_decoder (const char *orig, size_t orig_len, const void *meta, char *dest, size_t dest_len)
+{
+}
+
+static ssize_t	null_encoder (const char *orig, size_t orig_len, const void *meta, char *dest, size_t dest_len)
+{
+	size_t	orig_i, dest_i;
+	int	val1, val2;
+	ssize_t	count = 0;
+
+        if (!orig || !dest)
+                return -1;
+	if (!*orig)
+	{
+		*dest = 0;
+		return 0;
+	}
+
+	if (orig_len == 0)
+		orig_len = strlen(orig);
+	dest_i = 0;
+	for (orig_i = 0; orig_i < orig_len; orig_i++)
+	{
+	    if (dest_i < dest_len)
+		dest[dest_i++] = orig[orig_i];
+	    count++;
+	}
+	if (dest_i >= dest_len)
+		dest_i = dest_len - 1;
+	dest[dest_i] = 0;
+        return count;
+}
+
+static ssize_t	crypt_encoder (const char *orig, size_t orig_len, const void *meta, char *dest, size_t dest_len)
+{
+}
+
+static ssize_t	crypt_decoder (const char *orig, size_t orig_len, const void *meta, char *dest, size_t dest_len)
+{
+}
+
+
+struct Transformer
+{
+	int		refnum;
+	const char *	name;
+	int		takes_meta;
+	ssize_t		(*encoder) (const char *, size_t, const void *, char *, size_t);
+	ssize_t		(*decoder) (const char *, size_t, const void *, char *, size_t);
+};
+
+struct Transformer default_transformers[] = {
+{	1,	"URL",		0,	url_encoder,	url_decoder	},
+{	2,	"ENC",		0,	enc_encoder,	enc_decoder	},
+{	3,	"B64",		0,	b64_encoder,	b64_decoder	},
+{	4,	"SED",		1,	sed_encoder,	sed_decoder	},
+{	5,	"CTCP",		0,	ctcp_encoder,	ctcp_decoder	},
+{	6,	"NONE",		0,	null_encoder,	null_encoder	},
+{	7,	"DEF",		0,	crypt_encoder,	crypt_decoder	},
+{	-1,	NULL,		0,	NULL,		NULL		}
+};
+
+size_t	transform_string (int type, int encode, const char *meta, const char *orig_str, size_t orig_str_len, char *dest_str, size_t dest_str_len)
+{
+	char *	retval;
+	int	x;
+
+	*dest_str = 0;
+	for (x = 0; default_transformers[x].name; x++)
+	{
+	    if (default_transformers[x].refnum == type)
+	    {
+		if (encode)
+			return default_transformers[x].encoder(orig_str, orig_str_len, meta, dest_str, dest_str_len);
+		else
+			return default_transformers[x].decoder(orig_str, orig_str_len, meta, dest_str, dest_str_len);
+	    }
+	}
+	return 0;
+}
+
+int	lookup_transform (const char *str)
+{
+	int	x = 0;
+
+	for (x = 0; default_transformers[x].name; x++)
+		if (!my_stricmp(default_transformers[x].name, str))
+			return default_transformers[x].refnum;
+	return -1;
+}
 

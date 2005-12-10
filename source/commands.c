@@ -1,4 +1,4 @@
-/* $EPIC: commands.c,v 1.135 2005/11/29 04:13:49 jnelson Exp $ */
+/* $EPIC: commands.c,v 1.136 2005/12/10 00:49:32 jnelson Exp $ */
 /*
  * commands.c -- Stuff needed to execute commands in ircII.
  *		 Includes the bulk of the built in commands for ircII.
@@ -3144,6 +3144,66 @@ struct target_type target[4] =
  *	If are holding an encrypted conversation with a peer, it needs to be
  *	sorted separately based on the encryption key you're using. 
  */
+struct TextMessage {
+	int	server;
+	char *	command;
+	char *	target;
+	char *	key;
+	char *	message;
+};
+
+void 	new_send_text (int server, const char *orig_target_list, const char *text, const char *command, int hook)
+{
+	char *target_list;
+	char *target;
+
+	target_list = LOCAL_COPY(orig_target_list);
+	while (*target_list)
+	{
+	    target = next_in_comma_list(target_list, &target_list);
+
+	    if (*target == '%')
+	    {
+		char *x = target;
+		int i;
+		if ((i = get_process_index(&x)) != -1)
+			text_to_process(i, text, 1);
+		else
+			say("Tried to send msg to exec process '%s' "
+				"but it doesn't exist", target);
+	    }
+	    else if (!text || !*text)
+		;
+	    else if (*target == '0' && target[1] == 0)
+		;
+	    else if (*target == '@' && is_number(target + 1))
+	    {
+	    }
+	    else if (*target == '@' && target[1] == 'W' && 
+					is_number(target + 2))
+	    {
+	    }
+	    else if (*target == '@' && is_channel(target + 1))
+	    {
+	    }
+	    else if (*target == '/')
+	    {
+	    }
+	    else if (*target == '=')
+	    {
+	    }
+	    else if (*target == '-')
+	    {
+	    }
+	    else if (is_channel(target))
+	    {
+	    }
+	    else
+	    {
+	    }
+	}
+}
+
 
 /*
  * eval_inputlist:  Cute little wrapper that calls parse_line() when we

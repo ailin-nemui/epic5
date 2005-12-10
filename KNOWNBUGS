@@ -3,6 +3,16 @@ EPIC5 Projects, Bugs, and other Errata:
 KNOWN ERRATA (eg, bugs, or unresolved requests):
 ------------------------------------------------
 * str_to_mask() should be silent, callers should be warning.
+* Add /window indent, to overrule /set indent.
+* A $xform() function to transform strings into other formats:
+	URL	URL-encoding ($urlencode())
+	ENC	Base16 encoding ($encode()) (1 byte -> 2 bytes)
+	B64	Base64 encoding ($b64encode()) (3 bytes -> 4 bytes)
+	SED	Bit twiddling
+	CTCP	CTCP-encoding
+	NONE	No encoding
+	DEF	Default encoding (via /crypt)
+* A way to control what counts as a space on the fly (via a /set?)
 
 LOOK FOR IN THE FUTURE
 -----------------------
@@ -878,3 +888,6 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Normalize the sdbm code, so it fits in with the epic way of doing things.
 * Fix several bogons in add_to_log, found by ce.
 * Add /on keybinding.  Why do I know I'm going to regret this one?
+* Add partial implementation of $xform() (see UPDATES)
+* Add shell of implementation of new_send_text() which i hope to finish...
+* Fix bug in $b64decode()

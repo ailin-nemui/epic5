@@ -1,4 +1,4 @@
-/* $EPIC: functions.c,v 1.219 2005/10/31 03:39:20 jnelson Exp $ */
+/* $EPIC: functions.c,v 1.220 2005/12/10 00:49:32 jnelson Exp $ */
 /*
  * functions.c -- Built-in functions for ircII
  *
@@ -411,6 +411,7 @@ static	char
 	*function_wordtoindex	(char *),
 	*function_write 	(char *),
 	*function_writeb	(char *),
+	*function_xform		(char *),
 	*function_yn		(char *);
 
 extern char
@@ -730,6 +731,7 @@ static BuiltInFunctions	built_in_functions[] =
 	{ "WRITE",		function_write 		},
 	{ "WRITEB",		function_writeb		},
 	{ "XDEBUG",		function_xdebug		},
+	{ "XFORM",		function_xform		},
 	{ "YN",			function_yn		},
 	{ (char *) 0,		NULL }
 };
@@ -6527,9 +6529,11 @@ BUILT_IN_FUNCTION(function_b64encode, input)
 BUILT_IN_FUNCTION(function_b64decode, input)
 {
 	char *result;
+	size_t size;
 	result = new_malloc(strlen(input));
-	if (my_base64_decode(input, result) < 0)
+	if ((size = my_base64_decode(input, result)) < 0)
 		RETURN_EMPTY;
+	result[size] = 0;
 	RETURN_MSTR(result);
 }
 
@@ -6543,4 +6547,36 @@ BUILT_IN_FUNCTION(function_dbmctl, input)
 	return dbmctl(input);
 }
 
+BUILT_IN_FUNCTION(function_xform, input)
+{
+	char *	type;
+	int	typenum;
+	char *	encodestr;
+	int	encodenum;
+	char *	meta;
+	char *	str;
+	size_t	str_len;
+	char *	retval;
+	size_t	retval_len;
+
+	GET_STR_ARG(type, input)
+	GET_STR_ARG(encodestr, input)
+	GET_STR_ARG(meta, input)
+	str = input;
+	str_len = strlen(input);
+	retval_len = str_len * 10;
+	retval = new_malloc(retval_len);
+
+	typenum = lookup_transform(type);
+
+	if (!my_strnicmp(encodestr, "E", 1))
+		encodenum = 1;
+	else if (!my_strnicmp(encodestr, "D", 1))
+		encodenum = 0;
+	else
+		RETURN_EMPTY;
+
+	transform_string(typenum, encodenum, meta, str, str_len, retval, retval_len);
+	RETURN_MSTR(retval);
+}
 

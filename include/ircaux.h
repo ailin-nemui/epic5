@@ -7,7 +7,7 @@
  *
  * See the COPYRIGHT file, or do a HELP IRCII COPYRIGHT 
  *
- * @(#)$Id: ircaux.h,v 1.84 2005/10/30 22:41:19 jnelson Exp $
+ * @(#)$Id: ircaux.h,v 1.85 2005/12/10 00:49:32 jnelson Exp $
  */
 
 #ifndef _IRCAUX_H_
@@ -250,5 +250,9 @@ typedef struct Bucket Bucket;
 #define INT2STR(x) (malloc_sprintf(NULL, INTMAX_FORMAT, (intmax_t)(x)))
 #define STRNUM(x) (strtoimax(x, NULL, 10))
 #define NUMSTR(x) (intmaxtoa((intmax_t)(x)))
+
+/********************/
+size_t	transform_string (int, int, const char *, const char *, size_t, char *, size_t);
+int	lookup_transform (const char *);
 
 #endif /* _IRCAUX_H_ */

@@ -1,5 +1,42 @@
 EPIC5-0.0.8
 
+*** News 12/09/2005 -- New built in function, $xform()
+	The $xform() function does (symmetrical) string transformations.
+	What is a symmetrical transformation?  It is one in which all of
+	the bits in the original string are present in the result string,
+	and the original string can be recreated from the result.  This is
+	distinct from the idea of hashing, which is closer to being a lossy
+	compression algorithm.
+
+	The general format of the $xform() function is:
+		$xform(TYPE DIRECTION KEY text)
+	whereby TYPE is one of the following:
+		URL	Convert non-printable chars to %HH equivalent
+			Equivalent to $urlencode() and $urldecode()
+		ENC	Base16 encoding, for creating variable names
+			Equivalent to $encode() and $decode()
+		B64	Base64 encoding, for sending over email/http
+			Equivalent to $b64encode() and $b64decode()
+		NONE	No changes (just copies the string)
+		SED	Simple-Entropic-Data [NOT SECURE!]
+			Equivalent to $sedcrypt(), sort of.
+		CTCP	Mangle things they way CTCP ought to be
+			No equivalent
+		DEF	Transform in the "default" way for the given target.
+			No equivalent
+
+	and DIRECTION is either "E" (for encoding) or "D" (for decoding),
+	and KEY is ignored except for SED, where it is the cypher used in 
+	the SED bit-twiddling, and DEF where it is the nickname of the 
+	person who it should be transformed for
+
+	At the time I write this, SED, CTCP, and DEF are not implemented
+	yet, but they will be soon.  Watch for more info.
+
+	More transformations are expected to be supported in the future
+	(including real encryption routines).  It will probably be possible 
+	to add your own at some point.
+
 *** News 11/28/2005 -- New /ON, /ON KEYBINDING
 	This on goes off whenever a keybinding is activated:
 	  $0 - The keybinding that is activated
