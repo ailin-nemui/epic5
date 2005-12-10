@@ -1,4 +1,4 @@
-/* $EPIC: vars.c,v 1.86 2005/10/13 01:11:59 jnelson Exp $ */
+/* $EPIC: vars.c,v 1.87 2005/12/10 04:24:13 jnelson Exp $ */
 /*
  * vars.c: All the dealing of the irc variables are handled here. 
  *
@@ -84,6 +84,7 @@ static	void	set_mangle_display	(void *);
 static	void	update_all_status_wrapper (void *);
 static	void	set_highlight_char	(void *);
 static	void	set_wserv_type		(void *);
+static	void	set_indent		(void *);
 
 
 /* BIV stands for "built in variable" */
@@ -186,7 +187,7 @@ void 	init_variables_stage1 (void)
 	VAR(HIGHLIGHT_CHAR, STR,  set_highlight_char);
 	VAR(HIGH_BIT_ESCAPE, INT,  set_meta_8bit);
 	VAR(HOLD_SLIDER, INT,  NULL);
-	VAR(INDENT, BOOL, NULL);
+	VAR(INDENT, BOOL, set_indent);
 	VAR(INPUT_ALIASES, BOOL, NULL);
 	VAR(INPUT_PROMPT, STR,  set_input_prompt);
 	VAR(INSERT_MODE, BOOL, update_all_status_wrapper);
@@ -936,6 +937,24 @@ static void    set_wserv_type (void *stuff)
 	new_free(&v->string);
 }
 
+/* 
+ * set_lastlog_size: sets up a lastlog buffer of size given.  If the lastlog
+ * has gotten larger than it was before, all newer lastlog entries remain.
+ * If it get smaller, some are deleted from the end. 
+ */
+void    set_indent (void *stuff)
+{
+        VARIABLE *v;
+        int     indent;
+        Window  *window = NULL;
+ 
+        v = (VARIABLE *)stuff;
+        indent = v->integer;
+
+        while (traverse_all_windows(&window))
+                window->indent = indent;
+}
+
 
 /***************************************************************************/
 /*******/
@@ -1033,4 +1052,5 @@ void	do_stack_set (int type, char *args)
 	else
 		say("Unknown STACK type ??");
 }
+
 

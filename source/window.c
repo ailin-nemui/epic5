@@ -1,4 +1,4 @@
-/* $EPIC: window.c,v 1.161 2005/11/01 03:17:09 jnelson Exp $ */
+/* $EPIC: window.c,v 1.162 2005/12/10 04:24:13 jnelson Exp $ */
 /*
  * window.c: Handles the organzation of the logical viewports (``windows'')
  * for irc.  This includes keeping track of what windows are open, where they
@@ -260,6 +260,7 @@ Window	*new_window (Screen *screen)
 	new_w->logical_size = 100;		/* XXX Implement this */
 	new_w->fixed_size = 0;
 	new_w->old_display_lines = 1;	/* Filled in later */
+	new_w->indent = get_int_var(INDENT_VAR);
 
 	/* Hold mode stuff */
 	new_w->hold_interval = 10;
@@ -2762,7 +2763,15 @@ int     get_geom_by_winref (const char *desc, int *co, int *li)
         return 0;
 }
 
+int	get_indent_by_winref (int winref)
+{
+	Window *win;
 
+	if (winref == -1 || (!(win = get_window_by_refnum(winref))))
+		return get_int_var(INDENT_VAR);
+
+	return win->indent;
+}
 
 /* below is stuff used for parsing of WINDOW command */
 
@@ -3493,6 +3502,20 @@ static Window *window_hold_slider (Window *window, char **args)
 		window->hold_slider = size;
 	}
 	say("Window hold slider is %d", window->hold_slider);
+	return window;
+}
+
+/*
+ * /WINDOW INDENT (ON|OFF)
+ *
+ * When this is ON, 2nd and subsequent physical lines of display per logical
+ * line of output are indented to the start of the second word on the first 
+ * line.  This is essentially to the /set indent value.
+ */
+static	Window *window_indent (Window *window, char **args)
+{
+	if (get_boolean("INDENT", args, &window->indent))
+		return NULL;
 	return window;
 }
 
@@ -4900,6 +4923,7 @@ static const window_ops options [] = {
 	{ "HOLD_INTERVAL",	window_hold_interval	},
 	{ "HOLD_MODE",		window_hold_mode 	},
 	{ "HOLD_SLIDER",	window_hold_slider	},
+	{ "INDENT",		window_indent 		},
 	{ "KILL",		window_kill 		},
 	{ "KILL_ALL_HIDDEN",	window_kill_all_hidden	},
 	{ "KILL_OTHERS",	window_kill_others 	},
@@ -6046,6 +6070,8 @@ char 	*windowctl 	(char *input)
 		RETURN_INT(w->hold_slider);
 	    } else if (!my_strnicmp(listc, "HOLD_INTERVAL", len)) {
 		RETURN_INT(w->hold_interval);
+	    } else if (!my_strnicmp(listc, "INDENT", len)) {
+		RETURN_INT(w->indent);
 	    } else if (!my_strnicmp(listc, "LAST_LINES_HELD", len)) {
 		RETURN_INT(-1);
 	    } else if (!my_strnicmp(listc, "WAITING_CHANNEL", len)) {
@@ -6176,6 +6202,9 @@ char 	*windowctl 	(char *input)
 	    } else if (!my_strnicmp(listc, "SKIP", len)) {
 		RETURN_EMPTY;
 	    } else if (!my_strnicmp(listc, "COLUMNS", len)) {
+		RETURN_EMPTY;
+	    } else if (!my_strnicmp(listc, "INDENT", len)) {
+		GET_INT_ARG(w->indent, input);
 		RETURN_EMPTY;
 	    } else if (!my_strnicmp(listc, "PROMPT", len)) {
 		RETURN_EMPTY;

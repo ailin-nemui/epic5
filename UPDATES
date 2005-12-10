@@ -1,5 +1,11 @@
 EPIC5-0.0.8
 
+*** News 12/09/2005 -- New window verb, /WINDOW INDENT (ON|OFF)
+	The /window indent value permits you to tweak the /set indent
+	value on a per-window basis.  However, if you do /set indent,
+	it will overwrite all of your per-window indent values (I'm 
+	open to discussion on this), to retain backwards compatability.
+
 *** News 12/09/2005 -- New built in function, $xform()
 	The $xform() function does (symmetrical) string transformations.
 	What is a symmetrical transformation?  It is one in which all of

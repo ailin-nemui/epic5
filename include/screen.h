@@ -98,7 +98,7 @@ struct	ScreenStru *next;		/* Previous screen in list */
 const	u_char *all_off			(void);
 	u_char *new_normalize_string	(const u_char *, int, int);
 	u_char *denormalize_string	(const u_char *);
-	u_char **prepare_display	(const u_char *, int, int *, int);
+	u_char **prepare_display	(int, const u_char *, int, int *, int);
 	int	output_with_count	(const u_char *, int, int);
 	void    add_to_window_scrollback (Window *, const u_char *, intmax_t);
 

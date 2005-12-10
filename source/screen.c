@@ -1,4 +1,4 @@
-/* $EPIC: screen.c,v 1.114 2005/10/29 17:38:46 jnelson Exp $ */
+/* $EPIC: screen.c,v 1.115 2005/12/10 04:24:13 jnelson Exp $ */
 /*
  * screen.c
  *
@@ -1424,10 +1424,11 @@ u_char *	denormalize_string (const u_char *str)
  * word to the next line. ($leftpc() depends on this)
  */
 #define SPLIT_EXTENT 40
-unsigned char **prepare_display(const unsigned char *str,
-                                int max_cols,
-                                int *lused,
-                                int flags)
+unsigned char **prepare_display (int winref,
+				 const unsigned char *str,
+                                 int max_cols,
+                                 int *lused,
+                                 int flags)
 {
 static 	int 	recursion = 0, 
 		output_size = 0;
@@ -1463,7 +1464,8 @@ const	u_char	*cont_ptr;
         saved_a.color_fg = saved_a.color_bg = saved_a.fg_color = 0;
 	saved_a.bg_color = 0;
 
-	do_indent = get_int_var(INDENT_VAR);
+	/* do_indent = get_int_var(INDENT_VAR); */
+	do_indent = get_indent_by_winref(winref);
 	if (!(words = get_string_var(WORD_BREAK_VAR)))
 		words = ", ";
 	if (!(cont_ptr = get_string_var(CONTINUED_LINE_VAR)))
@@ -2181,7 +2183,7 @@ static void 	add_to_window (Window *window, const u_char *str)
 	/* Add to scrollback + display... */
 	cols = window->columns - 1;
 	strval = new_normalize_string(str, 0, display_line_mangler);
-        for (lines = prepare_display(strval, cols, &numl, 0); *lines; lines++)
+        for (lines = prepare_display(window->refnum, strval, cols, &numl, 0); *lines; lines++)
 	{
 		if (add_to_scrollback(window, *lines, refnum))
 		    if (ok_to_output(window))
@@ -2251,7 +2253,7 @@ void 	add_to_window_scrollback (Window *window, const unsigned char *str, intmax
 	/* Normalize the line of output */
 	cols = window->columns - 1;
 	strval = new_normalize_string(str, 0, display_line_mangler);
-        for (lines = prepare_display(strval, cols, &numl, 0); *lines; lines++)
+        for (lines = prepare_display(window->refnum, strval, cols, &numl, 0); *lines; lines++)
 		add_to_scrollback(window, *lines, refnum);
 	new_free(&strval);
 }
@@ -2460,7 +2462,7 @@ void 	repaint_window_body (Window *window)
 		cols = window->columns - 1;
 
 		n = new_normalize_string(str, 0, display_line_mangler);
-		lines = prepare_display(n, cols, &numls, PREPARE_NOWRAP);
+		lines = prepare_display(window->refnum, n, cols, &numls, PREPARE_NOWRAP);
 		if (*lines)
 			output_with_count(*lines, 1, foreground);
 		new_free(&n);

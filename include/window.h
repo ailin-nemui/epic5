@@ -79,6 +79,7 @@ typedef	struct	WindowStru
 	short	skip;			/* Whether window should be skipped */
 	short	old_co;			/* .... */
 	short	columns;		/* How wide we are when hidden */
+	short	indent;			/* How far /set indent goes */
 	short	swappable;		/* Can it be swapped in or out? */
 	short	scrolladj;		/* Push back top-of-win on grow? */
 	short	killable;		/* Can it be killed? */
@@ -278,6 +279,7 @@ const	char	*get_echannel_by_refnum		(unsigned);
 
 	void	check_window_cursor		(Window *);
 	int     get_geom_by_winref 		(const char *, int *, int *);
+	int	get_indent_by_winref		(int);
 	int	get_winref_by_servref		(int);
 
 	int    is_window_waiting_for_channel (unsigned, const char *);
