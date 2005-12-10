@@ -894,3 +894,4 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Add /window indent, allowing you to overrule /set indent per-window basis.
 * Make window breaking use /window indent
 * But /set indent still overrules any /window indent's you've set. :/
+* Fix $windowctl(GET <win> TOPLINE <num>) -- <num> is numbered from 1, not 0.
