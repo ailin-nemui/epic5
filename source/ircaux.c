@@ -1,4 +1,4 @@
-/* $EPIC: ircaux.c,v 1.148 2005/12/10 00:49:32 jnelson Exp $ */
+/* $EPIC: ircaux.c,v 1.149 2005/12/16 05:14:15 jnelson Exp $ */
 /*
  * ircaux.c: some extra routines... not specific to irc... that I needed 
  *
@@ -4976,10 +4976,100 @@ static ssize_t	sed_decoder (const char *orig, size_t orig_len, const void *meta,
 
 static ssize_t	ctcp_encoder (const char *orig, size_t orig_len, const void *meta, char *dest, size_t dest_len)
 {
+	size_t	orig_i, dest_i;
+	int	val1, val2;
+	ssize_t	count = 0;
+
+        if (!orig || !dest)
+                return -1;
+	if (!*orig)
+	{
+		*dest = 0;
+		return 0;
+	}
+
+	if (orig_len == 0)
+		orig_len = strlen(orig);
+	dest_i = 0;
+	for (orig_i = 0; orig_i < orig_len; orig_i++)
+	{
+	    switch (orig[orig_i])
+	    {
+		case CTCP_DELIM_CHAR:
+		    if (dest_i < dest_len) dest[dest_i++] = CTCP_QUOTE_CHAR;
+		    if (dest_i < dest_len) dest[dest_i++] = 'a';
+		    break;
+		case '\n':
+		    if (dest_i < dest_len) dest[dest_i++] = CTCP_QUOTE_CHAR;
+		    if (dest_i < dest_len) dest[dest_i++] = 'n';
+		    break;
+		case '\r':
+		    if (dest_i < dest_len) dest[dest_i++] = CTCP_QUOTE_CHAR;
+		    if (dest_i < dest_len) dest[dest_i++] = 'r';
+		    break;
+		case CTCP_QUOTE_CHAR:
+		    if (dest_i < dest_len) dest[dest_i++] = CTCP_QUOTE_CHAR;
+		    if (dest_i < dest_len) dest[dest_i++] = CTCP_QUOTE_CHAR;
+		    break;
+		case '\0':
+		    if (dest_i < dest_len) dest[dest_i++] = CTCP_QUOTE_CHAR;
+		    if (dest_i < dest_len) dest[dest_i++] = '0';
+		    break;
+		default:
+		    if (dest_i < dest_len) dest[dest_i++] = orig[orig_i];
+		    break;
+	    }
+	}
+
+	if (dest_i >= dest_len)
+		dest_i = dest_len - 1;
+	dest[dest_i] = 0;
+        return count;
 }
 
 static ssize_t	ctcp_decoder (const char *orig, size_t orig_len, const void *meta, char *dest, size_t dest_len)
 {
+	size_t	orig_i, dest_i;
+	int	val1, val2;
+	ssize_t	count = 0;
+
+        if (!orig || !dest)
+                return -1;
+	if (!*orig)
+	{
+		*dest = 0;
+		return 0;
+	}
+
+	if (orig_len == 0)
+		orig_len = strlen(orig);
+	dest_i = 0;
+	for (orig_i = 0; orig_i < orig_len; orig_i++)
+	{
+	    if (orig[orig_i] == CTCP_QUOTE_CHAR)
+	    {
+		orig_i++;
+		if (orig[orig_i] == CTCP_QUOTE_CHAR)
+		    if (dest_i < dest_len) dest[dest_i++] = CTCP_QUOTE_CHAR;
+		else if (orig[orig_i] == 'a')
+		    if (dest_i < dest_len) dest[dest_i++] = CTCP_DELIM_CHAR;
+		else if (orig[orig_i] == 'n')
+		    if (dest_i < dest_len) dest[dest_i++] = '\n';
+		else if (orig[orig_i] == 'r')
+		    if (dest_i < dest_len) dest[dest_i++] = '\r';
+		else if (orig[orig_i] == '0')
+		    if (dest_i < dest_len) dest[dest_i++] = '\0';
+		else 
+		    if (dest_i < dest_len) dest[dest_i++] = orig[orig_i];
+	    }
+	    else
+	        if (dest_i < dest_len) dest[dest_i++] = orig[orig_i];
+	}
+
+	if (dest_i >= dest_len)
+		dest_i = dest_len - 1;
+	dest[dest_i] = 0;
+        return count;
 }
 
 static ssize_t	null_encoder (const char *orig, size_t orig_len, const void *meta, char *dest, size_t dest_len)
