@@ -24,11 +24,7 @@ EPIC5-0.0.8
 		B64	Base64 encoding, for sending over email/http
 			Equivalent to $b64encode() and $b64decode()
 		NONE	No changes (just copies the string)
-		SED	Simple-Entropic-Data [NOT SECURE!]
-			Equivalent to $sedcrypt(), sort of.
 		CTCP	Mangle things they way CTCP ought to be
-			No equivalent
-		DEF	Transform in the "default" way for the given target.
 			No equivalent
 
 	and DIRECTION is either "E" (for encoding) or "D" (for decoding),

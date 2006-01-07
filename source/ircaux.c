@@ -1,4 +1,4 @@
-/* $EPIC: ircaux.c,v 1.149 2005/12/16 05:14:15 jnelson Exp $ */
+/* $EPIC: ircaux.c,v 1.150 2006/01/07 16:37:40 jnelson Exp $ */
 /*
  * ircaux.c: some extra routines... not specific to irc... that I needed 
  *
@@ -3198,7 +3198,7 @@ unsigned long	random_number (unsigned long l)
  */
 char *	urlencode (const char *s)
 {
-	static const char unsafe[] = "`'!@#$%^&*(){}<>~|\\\";? ,/";
+	static const char unsafe[] = "`'!@#$%^&*(){}<>~|\\\";? ,/+";
 	static const char hexnum[] = "0123456789ABCDEF";
 	const char *p1;
 	char *	p2;
@@ -4678,7 +4678,7 @@ char *	substitute_string (const char *string, const char *oldstr, const char *ne
 
 static ssize_t	url_encoder (const char *orig, size_t orig_len, const void *meta, char *dest, size_t dest_len)
 {
-        static const char unsafe[] = "`'!@#$%^&*(){}<>~|\\\";? ,/";
+        static const char unsafe[] = "`'!@#$%^&*(){}<>~|\\\";? ,/+";
         static const char hexnum[] = "0123456789ABCDEF";
 	size_t	orig_i, dest_i;
 	ssize_t	count = 0;
