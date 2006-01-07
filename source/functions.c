@@ -1,4 +1,4 @@
-/* $EPIC: functions.c,v 1.221 2005/12/10 04:24:13 jnelson Exp $ */
+/* $EPIC: functions.c,v 1.222 2006/01/07 16:46:39 jnelson Exp $ */
 /*
  * functions.c -- Built-in functions for ircII
  *
@@ -6529,7 +6529,7 @@ BUILT_IN_FUNCTION(function_b64encode, input)
 BUILT_IN_FUNCTION(function_b64decode, input)
 {
 	char *result;
-	size_t size;
+	ssize_t size;
 	result = new_malloc(strlen(input));
 	if ((size = my_base64_decode(input, result)) < 0)
 		RETURN_EMPTY;

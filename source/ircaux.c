@@ -1,4 +1,4 @@
-/* $EPIC: ircaux.c,v 1.150 2006/01/07 16:37:40 jnelson Exp $ */
+/* $EPIC: ircaux.c,v 1.151 2006/01/07 16:46:39 jnelson Exp $ */
 /*
  * ircaux.c: some extra routines... not specific to irc... that I needed 
  *
@@ -4968,10 +4968,12 @@ static ssize_t	b64_decoder (const char *orig, size_t orig_len, const void *meta,
 
 static ssize_t	sed_encoder (const char *orig, size_t orig_len, const void *meta, char *dest, size_t dest_len)
 {
+	return 0;
 }
 
 static ssize_t	sed_decoder (const char *orig, size_t orig_len, const void *meta, char *dest, size_t dest_len)
 {
+	return 0;
 }
 
 static ssize_t	ctcp_encoder (const char *orig, size_t orig_len, const void *meta, char *dest, size_t dest_len)
@@ -5049,18 +5051,19 @@ static ssize_t	ctcp_decoder (const char *orig, size_t orig_len, const void *meta
 	    if (orig[orig_i] == CTCP_QUOTE_CHAR)
 	    {
 		orig_i++;
-		if (orig[orig_i] == CTCP_QUOTE_CHAR)
+		if (orig[orig_i] == CTCP_QUOTE_CHAR) {
 		    if (dest_i < dest_len) dest[dest_i++] = CTCP_QUOTE_CHAR;
-		else if (orig[orig_i] == 'a')
+		} else if (orig[orig_i] == 'a') {
 		    if (dest_i < dest_len) dest[dest_i++] = CTCP_DELIM_CHAR;
-		else if (orig[orig_i] == 'n')
+		} else if (orig[orig_i] == 'n') {
 		    if (dest_i < dest_len) dest[dest_i++] = '\n';
-		else if (orig[orig_i] == 'r')
+		} else if (orig[orig_i] == 'r') {
 		    if (dest_i < dest_len) dest[dest_i++] = '\r';
-		else if (orig[orig_i] == '0')
+		} else if (orig[orig_i] == '0') {
 		    if (dest_i < dest_len) dest[dest_i++] = '\0';
-		else 
+		} else {
 		    if (dest_i < dest_len) dest[dest_i++] = orig[orig_i];
+		}
 	    }
 	    else
 	        if (dest_i < dest_len) dest[dest_i++] = orig[orig_i];
@@ -5103,10 +5106,12 @@ static ssize_t	null_encoder (const char *orig, size_t orig_len, const void *meta
 
 static ssize_t	crypt_encoder (const char *orig, size_t orig_len, const void *meta, char *dest, size_t dest_len)
 {
+	return 0;
 }
 
 static ssize_t	crypt_decoder (const char *orig, size_t orig_len, const void *meta, char *dest, size_t dest_len)
 {
+	return 0;
 }
 
 
@@ -5130,7 +5135,7 @@ struct Transformer default_transformers[] = {
 {	-1,	NULL,		0,	NULL,		NULL		}
 };
 
-size_t	transform_string (int type, int encode, const char *meta, const char *orig_str, size_t orig_str_len, char *dest_str, size_t dest_str_len)
+size_t	transform_string (int type, int encoding, const char *meta, const char *orig_str, size_t orig_str_len, char *dest_str, size_t dest_str_len)
 {
 	char *	retval;
 	int	x;
@@ -5140,7 +5145,7 @@ size_t	transform_string (int type, int encode, const char *meta, const char *ori
 	{
 	    if (default_transformers[x].refnum == type)
 	    {
-		if (encode)
+		if (encoding)
 			return default_transformers[x].encoder(orig_str, orig_str_len, meta, dest_str, dest_str_len);
 		else
 			return default_transformers[x].decoder(orig_str, orig_str_len, meta, dest_str, dest_str_len);

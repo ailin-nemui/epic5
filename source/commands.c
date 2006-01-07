@@ -1,4 +1,4 @@
-/* $EPIC: commands.c,v 1.136 2005/12/10 00:49:32 jnelson Exp $ */
+/* $EPIC: commands.c,v 1.137 2006/01/07 16:46:39 jnelson Exp $ */
 /*
  * commands.c -- Stuff needed to execute commands in ircII.
  *		 Includes the bulk of the built in commands for ircII.
@@ -3102,6 +3102,7 @@ struct target_type target[4] =
 	recursion--;
 }
 
+#if 0
 /*
  * new_send_text: All that and a bag of sugar
  *
@@ -3203,7 +3204,7 @@ void 	new_send_text (int server, const char *orig_target_list, const char *text,
 	    }
 	}
 }
-
+#endif
 
 /*
  * eval_inputlist:  Cute little wrapper that calls parse_line() when we
