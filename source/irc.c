@@ -1,4 +1,4 @@
-/* $EPIC: irc.c,v 1.1007 2006/01/07 16:46:39 jnelson Exp $ */
+/* $EPIC: irc.c,v 1.1008 2006/01/07 16:54:33 jnelson Exp $ */
 /*
  * ircII: a new irc client.  I like it.  I hope you will too!
  *
@@ -6,7 +6,7 @@
  * Copyright (c) 1991, 1992 Troy Rollo.
  * Copyright (c) 1992-1996 Matthew Green.
  * Copyright © 1994 Jake Khuon.
- * Copyright © 1993, 2003 EPIC Software Labs.
+ * Copyright © 1993, 2006 EPIC Software Labs.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -40,19 +40,19 @@
 /*
  * irc_version is what $J returns, its the common-name for the version.
  */
-const char irc_version[] = "EPIC5-0.0.7";
-const char useful_info[] = "epic5 0 0 7";
+const char irc_version[] = "EPIC5-0.0.8";
+const char useful_info[] = "epic5 0 0 8";
 
 /*
  * internal_version is what $V returns, its the integer-id for the
  * version, and corresponds to the date of release, YYYYMMDD.
  */ 
-const char internal_version[] = "20051021";
+const char internal_version[] = "20060107";
 
 /*
  * In theory, this number is incremented for every commit.
  */
-const unsigned long	commit_id = 1335;
+const unsigned long	commit_id = 1336;
 
 /*
  * As a way to poke fun at the current rage of naming releases after
@@ -60,7 +60,7 @@ const unsigned long	commit_id = 1335;
  * reality, I have decided to start doing that with EPIC.  These names
  * are intentionally and maliciously silly.  Complaints will be ignored.
  */
-const char ridiculous_version_name[] = "Disaffection";
+const char ridiculous_version_name[] = "Prevarication";
 
 #define __need_putchar_x__
 #include "status.h"
