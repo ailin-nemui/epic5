@@ -1,0 +1,141 @@
+package reconnect
+
+addset reconnect_time int
+set reconnect_time 1
+
+alias network (action, network) {
+  switch ($action) {
+    (add) {
+      if (network != []) {
+        fec ($network) i {
+          if (!isalpha($i)) {
+            echo syntax error: network name must be only alpha
+            return
+          }
+        }
+        if (reconn[groups][$network]) {
+          echo network $network already exists
+        } else {
+          @ reconn[groups][$network] = 1
+          echo network $network added
+        }
+      } else {
+        echo not enough params. syntax: /network add <network>
+      }
+    }
+    (del) {
+      if (network != []) {
+        if (reconn[groups][$network]) {
+          ^assign -reconn.groups.$network
+          ^assign -reconn.channels.$network
+          echo network $network removed
+        } else {
+          echo network $network doesn't exist
+        }
+      } else {
+        echo not enough params. syntax: /network del <network>
+      }
+    }
+    (list) {
+      @ :j = 0
+      foreach reconn.groups i {
+        @ j++
+        echo $i
+      }
+      if (j == 0) {
+        echo no networks
+      }
+    }
+    (*) {
+      echo syntax: /network [[add|del <name>]|list]
+    }
+  }
+}
+on #-SERVER_STATUS 27 "% % %" {
+  switch ($2) {
+    (EOF) (ERROR) {
+      @ :gr = servergroup($0)
+      if (reconn[groups][$gr]) {
+        if ([$1] == [ACTIVE]) {
+          @ reconn[channels][$gr] = mychannels($0)
+        }
+        @ reconn[timeout][$gr] = [$getset(reconnect_time) $0]
+      }
+    }
+    (ACTIVE) {
+      @ :gr = servergroup($0)
+      if (reconn[channels][$gr] != []) {
+        fe ($reconn[channels][$gr]) i {
+          xeval -s $0 JOIN $i
+        }
+        ^assign -reconn.channels.$gr
+      }
+    }
+    (*) {
+      if ([$3] == [CLOSING] && [$2] != [EOF] && [$2] != [ERROR]) {
+        @ :gr = servergroup($0)
+        ^assign -reconn.timeout.$gr
+        ^assign -reconn.channels.$gr
+      }
+    }
+  }
+}
+timer -ref _reconn -repeat -1 -GENERAL 60 _reconn
+alias _reconn {
+  foreach reconn.timeout i {
+    @ :minleft = word(0 $reconn[timeout][$i])
+    @ :lastsv = word(1 $reconn[timeout][$i])
+    @ minleft--
+    if (minleft > 0) {
+      @ reconn[timeout][$i] = [$minleft $lastsv]
+    } else {
+      ^ASSIGN -reconn.timeout.$i
+      @ :found = []
+      fe ($winrefs()) win {
+        if (winserv($win) == lastsv) {
+          PUSH found $win
+        }
+      }
+      if (found != []) {
+        @ :next = nextserv($lastsv)
+        if (next != -1) {
+          fe ($found) j {
+            window refnum $j SERVER $next
+          }
+        }
+      }
+    }
+  }
+}
+alias nextserv (ref) {
+  @ :gr = servergroup($ref)
+  if (gr == [<default>]) {
+    return -1
+  }
+  @ :servers = serverctl(GMATCH $gr)
+  @ :num = numwords($servers)
+  if (num == 0) {
+    return -1
+  }
+  if (num == 1) {
+    return $word(0 $servers)
+  }
+  @ :found = -1
+  @ :idx = 0
+  fe ($servers) i {
+    if (i == ref) {
+      @ found = idx
+      break
+    }
+    @ idx++
+  }
+  if (found == -1) {
+    return -1
+  }
+  @ num--
+  if (num == found) {
+    return $word(0 $servers)
+  } else {
+    return $word(${found+1} $servers)
+  }
+}
