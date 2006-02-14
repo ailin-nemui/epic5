@@ -2,7 +2,7 @@ EPIC5 Projects, Bugs, and other Errata:
 
 KNOWN ERRATA (eg, bugs, or unresolved requests):
 ------------------------------------------------
-[none]
+* Handling keypresses should overrule protocol enforcement (on_notice, etc)
 
 LOOK FOR IN THE FUTURE
 -----------------------
