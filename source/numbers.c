@@ -1,4 +1,4 @@
-/* $EPIC: numbers.c,v 1.90 2005/10/30 22:41:19 jnelson Exp $ */
+/* $EPIC: numbers.c,v 1.91 2006/02/14 00:53:11 jnelson Exp $ */
 /*
  * numbers.c: handles all those strange numeric response dished out by that
  * wacky, nutty program we call ircd 
@@ -181,6 +181,10 @@ void 	numbered_command (const char *from, const char *comm, char const **ArgList
 	/* All numerics must have a target (our nickname) */
 	if (!comm || !*comm)
 		{ rfc1459_odd(from, comm, ArgList); return; }
+	numeric = atol(comm);
+	if (numeric < 0 || numeric >= FIRST_NAMED_HOOK - 1)
+		{ rfc1459_odd(from, comm, ArgList); return; }
+
 	if (!(target = ArgList[0]))
 		{ rfc1459_odd(from, comm, ArgList); return; }
 	ArgList++;
@@ -190,7 +194,6 @@ void 	numbered_command (const char *from, const char *comm, char const **ArgList
 	else
 		l = message_from(NULL, LEVEL_OTHER);
 
-	numeric = atol(comm);
 	current_numeric = numeric;	/* must be negative of numeric! */
 
 	/*
