@@ -1,4 +1,4 @@
-/* $EPIC: who.c,v 1.55 2005/10/30 22:41:19 jnelson Exp $ */
+/* $EPIC: who.c,v 1.56 2006/02/16 06:14:40 jnelson Exp $ */
 /*
  * who.c -- The WHO queue.  The ISON queue.  The USERHOST queue.
  *
@@ -877,6 +877,9 @@ void	xwhoreply (int refnum, const char *from, const char *comm, const char **Arg
 	WhoEntry *new_w = who_queue_top(refnum);
 	int	l;
 
+	if (!ArgList[0])
+		{ rfc1459_odd(from, comm, ArgList); return; }
+
 	if (!new_w)
 	{
 		new_w = get_new_who_entry();
@@ -908,6 +911,9 @@ void	who_end (int refnum, const char *from, const char *comm, const char **ArgLi
 	char 		buffer[1025];
 	char		*target = malloc_strdup(ArgList[0]);
 	int		l;
+
+	if (!ArgList[0])
+		{ rfc1459_odd(from, comm, ArgList); return; }
 
 	if (!new_w)
 	{
@@ -1315,6 +1321,9 @@ void	ison_returned (int refnum, const char *from, const char *comm, const char *
 	char	*do_off = NULL, *this1, *all1, *this2, *all2;
 	size_t	clue = 0;
 
+	if (!ArgList[0])
+		{ rfc1459_odd(from, comm, ArgList); return; }
+
 	if (!new_i)
 	{
 		/* XXX Hack to work around rogue /quote ison's */
@@ -1627,6 +1636,9 @@ void	userhost_returned (int refnum, const char *from, const char *comm, const ch
 	UserhostEntry *top = userhost_queue_top(refnum);
 	char *ptr;
 	char *results;
+
+	if (!ArgList[0])
+		{ rfc1459_odd(from, comm, ArgList); return; }
 
 	if (!top)
 	{
