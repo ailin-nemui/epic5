@@ -2,7 +2,7 @@ EPIC5 Projects, Bugs, and other Errata:
 
 KNOWN ERRATA (eg, bugs, or unresolved requests):
 ------------------------------------------------
-* Handling keypresses should overrule protocol enforcement (on_notice, etc)
+<none>
 
 LOOK FOR IN THE FUTURE
 -----------------------
@@ -16,6 +16,8 @@ LOOK FOR IN THE FUTURE
 * str_to_mask() should be silent, callers should be warning.
 * Add /window indent, to overrule /set indent.
 * A way to control what counts as a space on the fly (via a /set?)
+* Handling keypresses should overrule protocol enforcement (on_notice, etc)
+* Support for 64 bit ints could be more widespread
 
 [See http://www.epicsol.org/PROJECTS for things to come in the future]
 [See http://www.epicsol.org/CHANGELOG5 for things that changed in the past]
