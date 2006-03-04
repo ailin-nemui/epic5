@@ -894,3 +894,7 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Implement xforms for CTCP. 
 * Fix $urlencode() so it encodes the + char.
 * Fix various compiler issues.
+* Release epic5-0.0.8 (Prevarication)
+* Fix various larnification issues uncovered by ircfuzz.
+* Fix make install issue found by nutbar (thanks!)
+* Release epic5-0.2.0 (Vicissitude)
