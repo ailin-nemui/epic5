@@ -1,4 +1,4 @@
-/* $EPIC: files.c,v 1.29 2005/11/05 17:52:41 jnelson Exp $ */
+/* $EPIC: files.c,v 1.30 2006/03/05 23:03:17 jnelson Exp $ */
 /*
  * files.c -- allows you to read/write files. Wow.
  *
@@ -332,7 +332,8 @@ int	file_rewind (int fd)
 	}
 }
 
-int	file_seek (int fd, long offset, const char *whence)
+/* LONG should support 64 bit */
+int	file_seek (int fd, off_t offset, const char *whence)
 {
 	File *ptr = lookup_file (fd);
 	if (!ptr)
@@ -348,13 +349,14 @@ int	file_seek (int fd, long offset, const char *whence)
 		return -1;
 }
 
-int	file_tell (int fd)
+intmax_t	file_tell (int fd)
 {
 	File *ptr = lookup_file (fd);
 	if (!ptr)
 		return -1;
 	else
-		return ftell(ptr->file);
+		/* XXX Should call ftello(). */
+		return (intmax_t)ftell(ptr->file);
 }
 
 int	file_skip (int fd, int lines)

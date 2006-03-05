@@ -1,4 +1,4 @@
-/* $EPIC: functions.c,v 1.222 2006/01/07 16:46:39 jnelson Exp $ */
+/* $EPIC: functions.c,v 1.223 2006/03/05 23:03:17 jnelson Exp $ */
 /*
  * functions.c -- Built-in functions for ircII
  *
@@ -866,8 +866,8 @@ static  char    *alias_invite           (void) { return malloc_strdup((get_serve
 static	char	*alias_oper 		(void) { return malloc_strdup((from_server != -1) ? get_server_operator(from_server) ?  get_string_var(STATUS_OPER_VAR) : empty_string : empty_string); }
 static	char	*alias_version 		(void) { return malloc_strdup(internal_version); }
 static  char    *alias_show_userhost 	(void) { return malloc_strdup(get_server_userhost(from_server)); }
-static  char    *alias_online 		(void) { return malloc_sprintf(NULL, "%ld",(long)start_time.tv_sec); }
-static  char    *alias_idle 		(void) { return malloc_sprintf(NULL, "%ld",time(NULL)-idle_time.tv_sec); }
+static  char    *alias_online 		(void) { return malloc_sprintf(NULL, INTMAX_FORMAT, (intmax_t)start_time.tv_sec); }
+static  char    *alias_idle 		(void) { return malloc_sprintf(NULL, INTMAX_FORMAT, (intmax_t)time(NULL) - idle_time.tv_sec); }
 static	char	*alias_current_numeric	(void) { return malloc_sprintf(NULL, "%03d", current_numeric); }
 static	char	*alias_banner		(void) { return malloc_strdup(banner()); }
 
@@ -2922,22 +2922,22 @@ BUILT_IN_FUNCTION(function_read, words)
 		GET_STR_ARG(numb, words);
 
 	if (numb)
-		return file_readb (my_atol(fdc), my_atol(numb));
+		return file_readb(my_atol(fdc), my_atol(numb));
 	else
-		return file_read (my_atol(fdc));
+		return file_read(my_atol(fdc));
 }
 
 BUILT_IN_FUNCTION(function_seek, words)
 {
-	char *fdc = NULL, 
-	     *numb = NULL, 
-	     *whence = NULL;
+	int	fdc;
+	off_t	numb;
+	char *	whence = NULL;
 
-	GET_STR_ARG(fdc, words);
-	GET_STR_ARG(numb, words);
+	GET_INT_ARG(fdc, words);
+	GET_INT_ARG(numb, words);
 	GET_STR_ARG(whence, words);
 
-	RETURN_INT(file_seek(my_atol(fdc), my_atol(numb), whence));
+	RETURN_INT(file_seek(fdc, numb, whence));
 }
 
 BUILT_IN_FUNCTION(function_eof, words)
@@ -3257,7 +3257,8 @@ BUILT_IN_FUNCTION(function_utime, input)
 	Timeval tp;
 
 	get_time(&tp);
-	return malloc_sprintf(NULL, "%ld %ld", (long)tp.tv_sec, (long)tp.tv_usec);
+	return malloc_sprintf(NULL, INTMAX_FORMAT" %ld", (intmax_t)tp.tv_sec, 
+							 (long)tp.tv_usec);
 }
 
 
@@ -3521,7 +3522,7 @@ static int num_sort_it (const void *val1, const void *val2)
 	const char *twoptr = *(const char * const *)val2;
 	char *oneptr_result;
 	char *twoptr_result;
-	long v1, v2;
+	intmax_t v1, v2;
 
 	while (*oneptr && *twoptr)
 	{
@@ -3538,8 +3539,8 @@ static int num_sort_it (const void *val1, const void *val2)
 			break;
 
 		/* These casts discard 'const', but do i care? */
-		v1 = strtol(oneptr, &oneptr_result, 0);
-		v2 = strtol(twoptr, &twoptr_result, 0);
+		v1 = strtoimax(oneptr, &oneptr_result, 0);
+		v2 = strtoimax(twoptr, &twoptr_result, 0);
 		if (v1 != v2)
 			return v1 - v2;
 		oneptr = oneptr_result;
@@ -5783,7 +5784,9 @@ BUILT_IN_FUNCTION(function_stat, words)
 		RETURN_EMPTY;
 
 	snprintf(retval, BIG_BUFFER_SIZE,
-		"%d %d %o %d %d %d %d %lu %lu %lu %ld %ld %ld",
+		"%d %d %o %d %d %d %d "
+		UINTMAX_FORMAT" "UINTMAX_FORMAT" "UINTMAX_FORMAT" "
+		INTMAX_FORMAT" "INTMAX_FORMAT" "INTMAX_FORMAT,
 		(int)	sb.st_dev,		/* device number */
 		(int)	sb.st_ino,		/* Inode number */
 		(int)	sb.st_mode,		/* Permissions */
@@ -5791,12 +5794,12 @@ BUILT_IN_FUNCTION(function_stat, words)
 		(int)	sb.st_uid,		/* Owner UID */
 		(int)	sb.st_gid,		/* Owner GID */
 		(int)	sb.st_rdev,		/* Device type */
-		(unsigned long)sb.st_size,	/* Size of file */
-		(unsigned long)sb.st_blksize,	/* Size of each block */
-		(unsigned long)sb.st_blocks,	/* Blocks used in file */
-		(long)	sb.st_atime,		/* Last-access time */
-		(long)	sb.st_mtime,		/* Last-modified time */
-		(long)	sb.st_ctime		/* Last-change time */
+		(uintmax_t)sb.st_size,		/* Size of file */
+		(uintmax_t)sb.st_blksize,	/* Size of each block */
+		(uintmax_t)sb.st_blocks,	/* Blocks used in file */
+		(intmax_t)sb.st_atime,		/* Last-access time */
+		(intmax_t)sb.st_mtime,		/* Last-modified time */
+		(intmax_t)sb.st_ctime		/* Last-change time */
 			);
 
 	RETURN_STR(retval);
@@ -5904,7 +5907,8 @@ BUILT_IN_FUNCTION(function_iptolong, word)
 	if (inet_strton(dotted_quad, NULL, (SA *)&addr, AI_NUMERICHOST))
 		RETURN_EMPTY;
 	
-	return malloc_sprintf(NULL, "%lu", (unsigned long)ntohl(addr.sin_addr.s_addr));
+	return malloc_sprintf(NULL, UINTMAX_FORMAT, 
+				(uintmax_t)ntohl(addr.sin_addr.s_addr));
 }
 
 BUILT_IN_FUNCTION(function_longtoip, word)
@@ -6397,7 +6401,7 @@ BUILT_IN_FUNCTION(function_strtol, input)
 {
 	int	base;
 	char *	number;
-	long	retval;
+	intmax_t	retval;
 	char *	after;
 
 	if (!input || !*input) 
@@ -6405,9 +6409,9 @@ BUILT_IN_FUNCTION(function_strtol, input)
 	GET_INT_ARG(base, input);
 	if (!input || !*input || (base != 0 && (base < 2 || base > 36)))
 		RETURN_EMPTY;
-	GET_STR_ARG(number, input);
+	GET_STR_ARG(number, input);	/* Must not use GET_INT_ARG */
 
-	retval = strtol(number, &after, base);
+	retval = strtoimax(number, &after, base);
 	/* Argh -- do we want to return error if invalid char found? */
 	RETURN_INT(retval);
 }
@@ -6421,10 +6425,11 @@ BUILT_IN_FUNCTION(function_strtol, input)
  */
 BUILT_IN_FUNCTION(function_tobase, input)
 {
-	int	c, base, len = 0, 
-		n, num, pos = 0;
+	int	c, base, len = 0, pos = 0;
+	intmax_t	n, num;
 	char *	string;
 	char 	table[] = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+	char *	number, *after;
 
 	len = pos = 0;
 	
@@ -6434,7 +6439,8 @@ BUILT_IN_FUNCTION(function_tobase, input)
 
 	if (!input || !*input || base < 2 || base > 36)
 		RETURN_EMPTY;
-	GET_INT_ARG(num, input);
+	GET_STR_ARG(number, input);
+	num = strtoimax(number, &after, 10);	/* Must not use GET_INT_ARG */
 
 	while (pow(base, len) <= num)
 		len++;
@@ -6447,7 +6453,7 @@ BUILT_IN_FUNCTION(function_tobase, input)
 	
 	while (len-- > 0)
 	{
-		n = pow(base, len),
+		n = (intmax_t)pow(base, len),
 		c = floor(num / n);
 		string[pos] = table[c];
 		pos++;

@@ -22,7 +22,7 @@
 #define EMPTY_STRING malloc_strdup(EMPTY)
 #define RETURN_EMPTY return EMPTY_STRING
 #define RETURN_IF_EMPTY(x) if (empty( (x) )) RETURN_EMPTY
-#define GET_INT_ARG(x, y) {RETURN_IF_EMPTY((y)); x = my_atol(safe_new_next_arg((y), &(y)));}
+#define GET_INT_ARG(x, y) {RETURN_IF_EMPTY((y)); x = strtoimax(safe_new_next_arg((y), &(y)), NULL, 0);}
 #define GET_FLOAT_ARG(x, y) {RETURN_IF_EMPTY((y)); x = atof(safe_new_next_arg((y), &(y)));}
 #define GET_STR_ARG(x, y) {RETURN_IF_EMPTY((y)); x = new_next_arg((y), &(y));}
 #define GET_A_STR_ARG(x, y) {GET_STR_ARG((x), (y));RETURN_IF_EMPTY((x));}

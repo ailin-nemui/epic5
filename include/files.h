@@ -22,8 +22,8 @@
 	int	file_valid		(int);
 	int	file_rewind		(int);
 	int	file_error		(int);
-	int	file_seek		(int, long, const char *);
-	int	file_tell		(int);
+	int	file_seek		(int, off_t, const char *);
+	intmax_t file_tell		(int);
 	int	file_skip		(int, int);
 
 	char *	dbmctl			(char *);
