@@ -2,7 +2,21 @@ EPIC5 Projects, Bugs, and other Errata:
 
 KNOWN ERRATA (eg, bugs, or unresolved requests):
 ------------------------------------------------
-<none>
+* displayble_unival() returns 1 if unicode val is displayable, 0 if not.
+  - Used in input_do_calculate_width()
+  - Used in update_input() [ugh]
+* calc_unival_width() returns number of columns a unicode val takes up.
+* calc_unival_length() returns number of bytes a unicode sequence takes up.
+* calc_unival() converts unicode sequence into an (unsigned)
+* utf8_sequence() converts an (unsigned) into a unicode sequence.
+* mbdata_init() loads an mb_data with an iconv dataset.
+* mbdata_done() unloads an mb_data.
+* decode_mb() converts "anything" into utf-8 using an mb_data.
+  - Used in input.c:set_input()
+  - Used in input.c:set_input_prompt()
+  - Used in screen.c:my_strlen_i() [string width counter]
+  - Used in screen.c:split_up_line() to count non-attribute chars.
+* Some way to call an alias in a variable indirectly
 
 LOOK FOR IN THE FUTURE
 -----------------------
@@ -29,3 +43,4 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Begin converting some time_t uses over to 64 bits, Just In Case
 * Make $numsort(), $strtol(), $tobase() support 64 bit ints.
 * Make $stat() support 64 bit ints where possible.
+* Add 'channelmonitor' script from larne.  Thanks!

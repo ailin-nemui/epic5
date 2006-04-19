@@ -18,8 +18,8 @@ addset hold_interval int {
 set hold_interval 10;
 
 on #^window_create -125 * {
-	window $1 hold_mode $getset(hold_mode);
-	window $1 hold_interval $getset(hold_interval);
+	window $0 hold_mode $getset(hold_mode);
+	window $0 hold_interval $getset(hold_interval);
 };
 
 #hop'y2k3
