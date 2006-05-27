@@ -1,4 +1,4 @@
-/* $EPIC: keys.c,v 1.47 2005/11/29 04:13:49 jnelson Exp $ */
+/* $EPIC: keys.c,v 1.48 2006/05/27 18:14:08 jnelson Exp $ */
 /*
  * keys.c:  Keeps track of what happens whe you press a key.
  *
@@ -287,7 +287,7 @@ static void key_exec (struct Key *key) {
 		char *exec = malloc_strdup(key->bound->alias);
 		if (key->stuff)
 		    malloc_strcat_wordlist(&exec, " ", key->stuff);
-		runcmds(exec, empty_string);
+		call_lambda_command("KEY", exec, empty_string);
 		new_free(&exec);
 	    } else if (key->bound->func != NULL)
 		key->bound->func(key->val, key->stuff);
@@ -723,7 +723,6 @@ void init_keys (void) {
     BIND("^K", "ERASE_TO_END_OF_LINE");
     BIND("^L", "REFRESH_SCREEN");
     BIND("^M", "SEND_LINE");
-    BIND("^N", "FORWARD_HISTORY");
     BIND("^O", "HIGHLIGHT_OFF");
     BIND("^Q", "QUOTE_CHARACTER");
     /* ^R */

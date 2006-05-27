@@ -1,4 +1,4 @@
-/* $EPIC: vars.c,v 1.87 2005/12/10 04:24:13 jnelson Exp $ */
+/* $EPIC: vars.c,v 1.88 2006/05/27 18:14:08 jnelson Exp $ */
 /*
  * vars.c: All the dealing of the irc variables are handled here. 
  *
@@ -82,7 +82,6 @@ static	void	set_mangle_outbound 	(void *);
 static	void	set_mangle_logfiles 	(void *);
 static	void	set_mangle_display	(void *);
 static	void	update_all_status_wrapper (void *);
-static	void	set_highlight_char	(void *);
 static	void	set_wserv_type		(void *);
 static	void	set_indent		(void *);
 
@@ -184,7 +183,6 @@ void 	init_variables_stage1 (void)
 	VAR(FLOOD_USERS, INT,  NULL);
 	VAR(FLOOD_WARNING, BOOL, NULL);
 	VAR(HIDE_PRIVATE_CHANNELS, BOOL, update_all_status_wrapper);
-	VAR(HIGHLIGHT_CHAR, STR,  set_highlight_char);
 	VAR(HIGH_BIT_ESCAPE, INT,  set_meta_8bit);
 	VAR(HOLD_SLIDER, INT,  NULL);
 	VAR(INDENT, BOOL, set_indent);
@@ -517,7 +515,7 @@ int 	set_variable (const char *name, IrcVariable *var, const char *orig_value, i
 
 		    s = make_string_var_bydata(var->type, (void *)var->data);
 		    window_display = 0;
-		    parse_line("SET", var->script, s, 0);
+		    call_lambda_command("SET", var->script, s);
 		    window_display = owd;
 		    new_free(&s);
 		}
@@ -893,29 +891,6 @@ static	void	set_mangle_display (void *stuff)
 static void	update_all_status_wrapper (void *stuff)
 {
 	update_all_status();
-}
-
-static void    set_highlight_char (void *stuff)
-{
-	VARIABLE *v;
-	const char *s;
-        int     len;
-
-	v = (VARIABLE *)stuff;
-	s = v->string;
-
-        if (!s)
-                s = empty_string;
-        len = strlen(s);
-
-        if (!my_strnicmp(s, "BOLD", len))
-                malloc_strcpy(&highlight_char, BOLD_TOG_STR);
-        else if (!my_strnicmp(s, "INVERSE", len))
-                malloc_strcpy(&highlight_char, REV_TOG_STR); 
-        else if (!my_strnicmp(s, "UNDERLINE", len))
-                malloc_strcpy(&highlight_char, UND_TOG_STR);
-        else
-                malloc_strcpy(&highlight_char, s);
 }
 
 static void    set_wserv_type (void *stuff)

@@ -484,7 +484,7 @@ addset dcc_timeout int;
 set dcc_timeout 3600;
 
 ^on #-timer 1 "*" {
-	if (:timeout == getset(dcc_timeout)) {
+	if (:timeout = getset(dcc_timeout)) {
 		fe ($dccctl(refnums)) dd {
 			if (time() - word(0 $dccctl(get $dd lasttime)) >= timeout) {
 				@ :nick = dccctl(get $dd user);

@@ -1,4 +1,4 @@
-/* $EPIC: who.c,v 1.56 2006/02/16 06:14:40 jnelson Exp $ */
+/* $EPIC: who.c,v 1.57 2006/05/27 18:14:08 jnelson Exp $ */
 /*
  * who.c -- The WHO queue.  The ISON queue.  The USERHOST queue.
  *
@@ -857,7 +857,7 @@ do
 				nick, status, user, host, server, name);
 
 		if (new_w->who_stuff)
-			runcmds(new_w->who_stuff, buffer);
+			call_lambda_command("WHO", new_w->who_stuff, buffer);
 
 		else if (do_hook(WHO_LIST, "%s", buffer))
 		    if (do_hook(current_numeric, "%s", buffer))
@@ -898,7 +898,7 @@ void	xwhoreply (int refnum, const char *from, const char *comm, const char **Arg
 	l = message_from(new_w->who_target, LEVEL_OTHER);
 	PasteArgs(ArgList, 0);
 	if (new_w->who_stuff)
-		runcmds(new_w->who_stuff, ArgList[0]);
+		call_lambda_command("WHO", new_w->who_stuff, ArgList[0]);
 	else if (do_hook(current_numeric, "%s", ArgList[0]))
 		put_it("%s %s", banner(), ArgList[0]);
 	pop_message_from(l);
@@ -936,7 +936,7 @@ void	who_end (int refnum, const char *from, const char *comm, const char **ArgLi
 		{
 			snprintf(buffer, 1024, "%s %s", from, ArgList[0]);
 			if (new_w->who_end)
-			    runcmds(new_w->who_end, buffer);
+			    call_lambda_command("WHO_END", new_w->who_end, buffer);
 			else
 			    if (do_hook(current_numeric, "%s", buffer))
 				put_it("%s %s", banner(), buffer);
@@ -1044,7 +1044,7 @@ int	fake_who_end (int refnum, const char *from, const char *comm, const char *wh
 
 		    snprintf(buffer, 1024, "%s %s", 
 				from, new_w->who_target);
-		    runcmds(new_w->who_end, buffer);
+		    call_lambda_command("WHO_END", new_w->who_end, buffer);
 		}
 	} 
 	while (new_w->piggyback && (new_w = new_w->next));
@@ -1349,11 +1349,11 @@ void	ison_returned (int refnum, const char *from, const char *comm, const char *
 	else
 	{
 		if (new_i->oncmd && ArgList[0] && ArgList[0][0])
-			runcmds(new_i->oncmd, ArgList[0]);
+			call_lambda_command("ISON", new_i->oncmd, ArgList[0]);
 		if (new_i->offcmd && do_off && *do_off)
-			runcmds(new_i->offcmd, do_off);
+			call_lambda_command("ISON", new_i->offcmd, do_off);
 		if (new_i->endcmd)
-			runcmds(new_i->endcmd, NULL);
+			call_lambda_command("ISON", new_i->endcmd, NULL);
 		if (!new_i->oncmd && !new_i->offcmd &&
 				do_hook(current_numeric, "%s", ArgList[0]))
 			put_it("%s Currently online: %s", banner(), ArgList[0]);
@@ -1787,7 +1787,7 @@ void	userhost_cmd_returned (int refnum, UserhostItem *stuff, const char *nick, c
 	malloc_strcat_c(&args, stuff->user ? stuff->user : empty_string, &clue);
 	malloc_strcat_c(&args, space, &clue);
 	malloc_strcat_c(&args, stuff->host ? stuff->host : empty_string, &clue);
-	runcmds(text, args);
+	call_lambda_command("USERHOST", text, args);
 
 	new_free(&args);
 }

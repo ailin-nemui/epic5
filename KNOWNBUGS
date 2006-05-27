@@ -2,29 +2,33 @@ EPIC5 Projects, Bugs, and other Errata:
 
 KNOWN ERRATA (eg, bugs, or unresolved requests):
 ------------------------------------------------
-* displayble_unival() returns 1 if unicode val is displayable, 0 if not.
-  - Used in input_do_calculate_width()
-  - Used in update_input() [ugh]
-* calc_unival_width() returns number of columns a unicode val takes up.
-* calc_unival_length() returns number of bytes a unicode sequence takes up.
-* calc_unival() converts unicode sequence into an (unsigned)
-* utf8_sequence() converts an (unsigned) into a unicode sequence.
-* mbdata_init() loads an mb_data with an iconv dataset.
-* mbdata_done() unloads an mb_data.
-* decode_mb() converts "anything" into utf-8 using an mb_data.
-  - Used in input.c:set_input()
-  - Used in input.c:set_input_prompt()
-  - Used in screen.c:my_strlen_i() [string width counter]
-  - Used in screen.c:split_up_line() to count non-attribute chars.
-* Some way to call an alias in a variable indirectly
+* Fix support for tcl in configure
+
+msg from crapple!zak@from.hell: hi, when you get around to it/if possible
++could you add something to the annoying autoconf script to detect tcls that
++are not . for everything ie; openbsd port installs of tcl8.4 looks something
++like this.
+msg from crapple: -r-xr-xr-x  1 root  wheel  1070064 Apr  2 19:51 libtcl84.a*
+msg from crapple: -r-xr-xr-x  1 root  wheel   821072 Apr  2 19:50
++libtcl84.so.1.0*
+msg from crapple: if i change them to something like libtcl8.4.so.1.0, and
++libtcl8.4.so the current autoconf script will detect.
 
 LOOK FOR IN THE FUTURE
 -----------------------
+* Import utf8 support from ircII OR add support for utf16 (wide chars)
+* Import fg/bg color support from ircII
+* Ruby support
+* Allow windows to be renumbered
+* Allow variables and aliases to be "tainted"
+* Cache what files can be /loaded in a hash
+* Support loading through ZIP files.
+* Make $* a local variable.
+* Some way to call an alias in a variable indirectly
 * Output rules
 * Support for CNOTICE
 * More gracious support for trickling horizontal resizes down to the window.
 * /window <refnum> noserv causes bad fd loop.  (can't reproduce?)
-* Is there some way to set what ^O resets to, a la mirc?
 * /CTCPs over /DCCs don't match up with their queries very well.
 * $xform()s for SED and DEF
 * str_to_mask() should be silent, callers should be warning.
@@ -44,3 +48,5 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Make $numsort(), $strtol(), $tobase() support 64 bit ints.
 * Make $stat() support 64 bit ints where possible.
 * Add 'channelmonitor' script from larne.  Thanks!
+* Whack /set highlight_char which is no longer being used.
+* Move away from calling parse_line() and runcmds(), towards the call_* funcs
