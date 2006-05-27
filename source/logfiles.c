@@ -1,4 +1,4 @@
-/* $EPIC: logfiles.c,v 1.32 2005/03/14 02:49:37 jnelson Exp $ */
+/* $EPIC: logfiles.c,v 1.33 2006/05/27 18:45:59 jnelson Exp $ */
 /*
  * logfiles.c - General purpose log files
  *
@@ -896,5 +896,29 @@ char *logctl	(char *input)
                 RETURN_EMPTY;
 
         RETURN_EMPTY;
+}
+
+/*
+ * The /WINDOW NUMBER command actually swaps the refnums of two windows:
+ * It's possible that 'newref' isn't in use, so that's ok.
+ */
+void    logfiles_swap_winrefs (int oldref, int newref)
+{
+	Logfile *log;
+	int	i;
+
+	for (log = logfiles; log; log = log->next)
+        {
+		if (log->type != LOG_WINDOWS)
+			continue;
+
+		for (i = 0; i < MAX_TARGETS; i++)
+		{
+			if (log->refnums[i] == newref)
+				log->refnums[i] = oldref;
+			else if (log->refnums[i] == oldref)
+				log->refnums[i] = newref;
+		}
+        }
 }
 

@@ -1,4 +1,4 @@
-/* $EPIC: window.c,v 1.163 2005/12/10 18:15:23 jnelson Exp $ */
+/* $EPIC: window.c,v 1.164 2006/05/27 18:45:59 jnelson Exp $ */
 /*
  * window.c: Handles the organzation of the logical viewports (``windows'')
  * for irc.  This includes keeping track of what windows are open, where they
@@ -58,6 +58,7 @@
 #include "exec.h"
 #include "functions.h"
 #include "reg.h"
+#include "timer.h"
 
 static const char *onoff[] = { "OFF", "ON" };
 
@@ -4014,23 +4015,37 @@ static Window *window_number (Window *window, char **args)
 {
 	Window 	*tmp;
 	char 	*arg;
-	int 	i;
+	int 	i, oldref, newref;
 
 	if ((arg = next_arg(*args, args)))
 	{
+#if 0
 		if (window_current_channel(window->refnum, window->server))
 		{
 			say("You cannot change the number of a window with a channel");
 			return window;
 		}
+#endif
 
 		if ((i = my_atol(arg)) > 0)
 		{
+			oldref = window->refnum;
+			newref = i;
+
 			if ((tmp = get_window_by_refnum(i)))
 				/* XXX refnum is changed here XXX */
-				tmp->refnum = window->refnum;
+				tmp->refnum = oldref;
+
 			/* XXX refnum is changed here XXX */
-			window->refnum = i;
+			window->refnum = newref;
+
+			channels_swap_winrefs(oldref, newref);
+			logfiles_swap_winrefs(oldref, newref);
+			timers_swap_winrefs(oldref, newref);
+
+			if (tmp)
+				window_statusbar_needs_update(tmp);
+			window_statusbar_needs_update(window);
 		}
 		else
 			say("Window number must be greater than 0");

@@ -19,7 +19,6 @@ LOOK FOR IN THE FUTURE
 * Import utf8 support from ircII OR add support for utf16 (wide chars)
 * Import fg/bg color support from ircII
 * Ruby support
-* Allow windows to be renumbered
 * Allow variables and aliases to be "tainted"
 * Cache what files can be /loaded in a hash
 * Support loading through ZIP files.
@@ -50,3 +49,4 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Add 'channelmonitor' script from larne.  Thanks!
 * Whack /set highlight_char which is no longer being used.
 * Move away from calling parse_line() and runcmds(), towards the call_* funcs
+* Add provisional support for renumbering windows with channels/logs/timers

@@ -18,5 +18,6 @@ extern	int	current_log_refnum;
 	BUILT_IN_COMMAND(logcmd);
 	void	add_to_logs	(long, int, const char *, int, const char *);
 	char *	logctl		(char *);
+	void    logfiles_swap_winrefs (int oldref, int newref);
 
 #endif /* _LOG_H_ */

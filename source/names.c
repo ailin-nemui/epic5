@@ -1,4 +1,4 @@
-/* $EPIC: names.c,v 1.73 2005/10/30 22:41:19 jnelson Exp $ */
+/* $EPIC: names.c,v 1.74 2006/05/27 18:45:59 jnelson Exp $ */
 /*
  * names.c: This here is used to maintain a list of all the people currently
  * on your channel.  Seems to work 
@@ -1705,3 +1705,24 @@ void	channel_check_windows (void)
 
 	return;
 }
+
+/*
+ * The /WINDOW NUMBER command actually swaps the refnums of two windows:
+ * It's possible that 'newref' isn't in use, so that's ok.
+ */
+void	channels_swap_winrefs (int oldref, int newref)
+{
+	Channel	*tmp = NULL;
+	Window *w = NULL;
+	int	reset = 0;
+
+	for (tmp = channel_list; tmp; 
+		reset ? (tmp = channel_list) : (tmp = tmp->next))
+	{
+		if (tmp->winref == newref)
+			tmp->winref = oldref;
+		else if (tmp->winref == oldref)
+			tmp->winref = newref;
+	}
+}
+
