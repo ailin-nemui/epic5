@@ -1,4 +1,4 @@
-/* $EPIC: commands.c,v 1.137 2006/01/07 16:46:39 jnelson Exp $ */
+/* $EPIC: commands.c,v 1.138 2006/06/01 23:44:14 jnelson Exp $ */
 /*
  * commands.c -- Stuff needed to execute commands in ircII.
  *		 Includes the bulk of the built in commands for ircII.
@@ -172,7 +172,6 @@ static	void	allocdumpcmd	(const char *, char *, const char *);
 
 /* other */
 static	void	eval_inputlist 	(char *, char *);
-static	int	parse_command	(const char *, int, const char *);
 
 /* I hate typedefs, but they sure can be useful.. */
 typedef void (*CmdFunc) (const char *, char *, const char *);
@@ -1524,7 +1523,7 @@ static void	loader_std (FILE *fp, const char *filename, const char *args, struct
 static void	loader_pf  (FILE *fp, const char *filename, const char *args, struct load_info *);
 /*
  * load: the /LOAD command.  Reads the named file, parsing each line as
- * though it were typed in (passes each line to parse_line). 
+ * though it were typed in (passes each line to parse_statement). 
  * ---loadcmd---
  */
 BUILT_IN_COMMAND(load)
@@ -1560,7 +1559,7 @@ BUILT_IN_COMMAND(load)
 	permit_status_update(0);	/* No updates to the status bar! */
 
 	/*
-	 * Defult loader: "std" for /load, "which" for /which
+	 * Default loader: "std" for /load, "which" for /which
 	 */
 	if (command && *command == 'W')
 	    loader = loader_which;
@@ -1751,14 +1750,7 @@ const	char	*defargs;
 		{
 		    if (!paste_level)
 		    {
-			if (subargs)
-			    defargs = subargs;
-			else if (get_int_var(INPUT_ALIASES_VAR))
-			    defargs = empty_string;
-			else
-			    defargs = NULL;
-
-			parse_line(NULL, current_row, defargs, 0);
+			parse_statement(current_row, 0, NULL);
 			new_free(&current_row);
 
 			if (return_exception)
@@ -1828,14 +1820,7 @@ const	char	*defargs;
 				/* If we are NOT in a block alias, */
 				if (paste_level == 0)
 				{
-				    if (subargs)
-					defargs = subargs;
-				    else if (get_int_var(INPUT_ALIASES_VAR))
-					defargs = empty_string;
-				    else
-					defargs = NULL;
-
-				    parse_line(NULL, current_row, defargs, 0);
+				    parse_statement(current_row, 0, NULL);
 				    new_free(&current_row);
 				    if (return_exception)
 					return;
@@ -1870,6 +1855,7 @@ const	char	*defargs;
 			no_semicolon = 1;
 			break;
 		    }
+
 		    case '}' :
 		    {
 			if (in_comment)
@@ -1893,34 +1879,28 @@ const	char	*defargs;
 			no_semicolon = ptr[1] ? 1 : 0;
 			break;
 		    }
+
 		    case ';':
 		    {
 			if (in_comment)
 			    break;
 			
 			malloc_strcat(&current_row, ";");
-			/*
-			 * I guess it was totaly wrong how ircII 
-			 * handled semicolons and we wont attempt to 
-			 * out-guess the user.  Any semicolons are
-			 * left as-is.
-			 */
+
+			/* Semicolon at the end of line, not within {}s */
 			if (ptr[1] == 0 && !paste_level)
 			{
-			    if (subargs)
-				defargs = subargs;
-			    else if (get_int_var(INPUT_ALIASES_VAR))
-				defargs = empty_string;
-			    else
-				defargs = NULL;
-			
-			    parse_line(NULL, current_row, defargs, 0);
+			    parse_statement(current_row, 0, NULL);
 			    new_free(&current_row);
 			    if (return_exception)
 				return;
 			}
+
+			/* Semicolon at end of line, within {}s */
 			else if (ptr[1] == 0 && paste_level)
 			    no_semicolon = 0;
+
+			/* Semicolon in the middle of a line */
 			else
 			    no_semicolon = 1;
 
@@ -1953,22 +1933,53 @@ const	char	*defargs;
 	    }
 	    else
 	    {
-		if (subargs)
-		    defargs = subargs;
-		else if (get_int_var(INPUT_ALIASES_VAR))
-		    defargs = empty_string;
-		else
-		    defargs = NULL;
-
-		parse_line(NULL, current_row, defargs, 0);
+		parse_statement(current_row, 0, NULL);
 	        new_free(&current_row);
-
 	        if (return_exception)
 			return;
 	    }
 	}
 }
 
+/* The "Pre-Formatted" (new) loader */
+/*
+ * The idea behind the pre-formatted loader was two-fold:
+ * 1) Eliminate the irregular syntax rules that applied only to /load'ed 
+ *    scripts and were not used anywhere else in ircII
+ * 2) Make loading scripts faster by reducing the processing needed to get
+ *    them ready for /eval'ing.
+ *
+ * Normal loader scripts are taken to be a collection of newline-separated 
+ * blocks of statements.  By custom, each block contained one statement.
+ * When people first wanted to break statements over multiple lines, the
+ * \ continued-line marker was added.  Later, when the perl-esque syntax
+ * was introduced, a fancy {-and-} counting algorithm was added that allowed
+ * the automatic continuation of a statement across lines without having to
+ * use \'s.  Further, semicolons had to be added between statements that 
+ * were within {..}'s.  The result is a file that bears little resemblance 
+ * to what ircII code actually looks like, and requires a heavyweight parser 
+ * to convert a script into something that can be executed.
+ *
+ * The rules regarding the placement and matching of {'s and }'s, and the 
+ * insertion of semicolons are, to be kind, irregular.  This irregularity
+ * inspired the PF loader.
+ * 
+ * The PF stands for "Pre-Formatted" and this means that your script is
+ * expected to be well-formed ircII code.  The PF loader does not do any
+ * processing on your code, except to remove comments and leading spaces.
+ * The whole of the file should be a block, that is, a set of semicolon-
+ * separated statements.
+ *
+ * This creates several advantages.  Because you are required to put in the
+ * semicolons yourself, the PF loader does not inexplicably insert semicolons
+ * in places you don't want them.  The PF loader does not treat each line 
+ * as a separate statement so you can break up your statements however it 
+ * pleases you. 
+ *
+ * Because of the lack of processing overhead, the pf loader is lightweight
+ * and is "signficantly" faster than the standard loader.  This can be a 
+ * big win for large scripts.
+ */
 static void	loader_pf (FILE *fp, const char *filename, const char *subargs, struct load_info *loadinfo)
 {
 	char *	buffer;
@@ -1986,28 +1997,31 @@ static void	loader_pf (FILE *fp, const char *filename, const char *subargs, stru
 
 	this_char = fgetc(fp);
 
-	/* Checks for a shebang. */
-	if (this_char == '#' && !feof(fp))
+	/* 
+	 * If the file is +x, and starts with #!, it's ok.
+	 * Otherwise, refuse to load it.
+	 */
+	if (loadinfo->sb.st_mode & 0111)
 	{
+	    /* Special code to support #! scripts. */
+	    if (this_char == '#' && !feof(fp))
+	    {
 		this_char = fgetc(fp);
 		if (this_char == '!')
-			shebang = 1;
-		ungetc(this_char, fp);
-		comment = 1;
-	}
+		   shebang = 1;
+	    }
 
-	/* 
-	 * If the file is executable, we'll usually fail at this point,
-	 * but if there's a shebang, we believe it's safe to load the 
-	 * file.
-	 */
-	
-	if (!shebang && loadinfo->sb.st_mode & 0111)
-	{
-		yell("Cannot open %s -- executable file", loadinfo->filename); 
+	    if (shebang == 0)
+	    {
+		yell("Cannot open %s -- executable file", 
+			loadinfo->filename); 
 		new_free(&buffer);
 		return;
+	    }
+
+	    comment = 1;
 	}
+
 	while (!feof(fp))
 	{
 	    do
@@ -2054,7 +2068,7 @@ static void	loader_pf (FILE *fp, const char *filename, const char *subargs, stru
 	}
 
 	buffer[pos] = 0;
-	runcmds(buffer, subargs);
+	call_lambda_command("LOAD", buffer, subargs);
 	new_free(&buffer);
 }
 
@@ -2474,7 +2488,7 @@ BUILT_IN_COMMAND(sendlinecmd)
 	server = from_server;
 	display = window_display;
 	window_display = 1;
-	parse_line(NULL, args, get_int_var(INPUT_ALIASES_VAR) ? empty_string : NULL, 1);
+	parse_statement(args, 1, NULL);
 	update_input(UPDATE_ALL);
 	window_display = display;
 	from_server = server;
@@ -2978,7 +2992,7 @@ struct target_type target[4] =
 	    else if (*current_nick == '/')
 	    {
 		line = malloc_strdup3(current_nick, space, text);
-		parse_command(line, 0, empty_string);
+		parse_statement(line, 0, empty_string);
 		new_free(&line);
 	    }
 	    else if (*current_nick == '=')
@@ -3207,7 +3221,7 @@ void 	new_send_text (int server, const char *orig_target_list, const char *text,
 #endif
 
 /*
- * eval_inputlist:  Cute little wrapper that calls parse_line() when we
+ * eval_inputlist:  Cute little wrapper that calls runcmds() when we
  * get an input prompt ..
  */
 static void	eval_inputlist (char *args, char *line)
@@ -3337,37 +3351,45 @@ void	runcmds (const char *what, const char *subargs)
 }
 
 /* 
- * parse_line: This is the main parsing routine.  It should be called in
- * almost all circumstances over parse_command().
+ * parse_line: execute a block of ircII statements (in a C string)
  *
- * parse_line breaks up the line into commands separated by unescaped
- * semicolons if we are in non interactive mode. Otherwise it tries to leave
- * the line untouched.
+ * Arguments:
+ *	name	  - If not NULL, run these commands in a new atomic scope.
+ *		    these commands will not see local variables above them,
+ *		    and any local variables by them will be deleted before
+ *		    parse_line returns.
+ *		  - If NULL, run these commands in the current atomic scope.
+ *	org_line  - A block of ircII statements.  They will be run in sequence.
+ *	args	  - The value of $* to use for this block.
+ *		  - (DEPRECATED) May be NULL if 'orig_line' is a single
+ *		    statement that must not be subject to $-expansion
+ *		    (old /load, /sendline, /on input, dumb mode input)
+ *		    *** IF args IS NULL, name MUST ALSO BE NULL! ***
+ *	interactive - (DEPRECATED) 1 if this block came from user input.
+ *		    0 if this block came from anywhere else.
+ *		    (This is used in parse_statement to decide how to handle /s)
  *
- * Currently, a carriage return or newline breaks the line into multiple
- * commands too. This is expected to stop at some point when parse_command
- * will check for such things and escape them using the ^P convention.
- * We'll also try to check before we get to this stage and escape them before
- * they become a problem.
+ * If args is NULL, the 'org_line' argument is passed straight through to 
+ * parse_statement().
  *
- * Other than these two conventions the line is left basically untouched.
- *
- * Ideas on parsing: Why should the calling function be responsible
- *  for removing {} blocks?  Why cant this parser cope with and {}s
- *  that come up?
- *
- * I whacked in 'return', 'continue', and 'break' support in one afternoon.
- * Im sure that i did a hideously bletcherous job that needs to be cleaned up.
- * So just be forewarned about the damage.
+ * If args is not NULL, the 'orig_line' argument is parsed, statement by 
+ * statement, and each statement is passed through to parse_statement().
  */
-void	parse_line (const char *name, const char *org_line, const char *args, int hist_flag)
+void	parse_line (const char *name, const char *org_line, const char *args, int interactive)
 {
 	char	*line = NULL;
-	char 	*stuff,
-		*s,
-		*t;
-	int	die = 0;
+	char 	*stuff = NULL;
 	ssize_t	span;
+
+	/* 
+	 * Explicit statements (from /load or /on input or /sendline)
+	 * are passed straight through to parse_statement without mangling.
+	 */
+	if (args == NULL)
+	{
+		parse_statement(org_line, interactive, args);
+		return;
+	}
 
 	/*
 	 * If this is an atomic scope, then we create a new local variable
@@ -3377,25 +3399,18 @@ void	parse_line (const char *name, const char *org_line, const char *args, int h
 	{
 	    if (!make_local_stack(name))
 	    {
-                yell("Could not run (%s) [%s]; too much recursion", name ? name : "<unnamed>", org_line);
+                yell("Could not run (%s) [%s]; too much recursion", 
+					name ? name : "<unnamed>", org_line);
                 return;
 	    }
 	}
 
-	if (!org_line)
-		panic("org_line is NULL and it shouldn't be.");
-
 	/*
 	 * We will be mangling 'org_line', so we make a copy to work with.
 	 */
+	if (!org_line)
+		panic("org_line is NULL and it shouldn't be.");
 	line = LOCAL_COPY(org_line);
-
-	/*
-	 * If the user outputs the "empty command", then output a blank
-	 * line to their current target.  This is useful for pastes.
-	 */
-	if (!*org_line)
-		send_text(from_server, get_target_by_refnum(0), empty_string, NULL, 1);
 
 	/*
 	 * Otherwise, if the command has arguments, then:
@@ -3403,182 +3418,47 @@ void	parse_line (const char *name, const char *org_line, const char *args, int h
 	 *	* It is being /LOADed while /set input_aliases ON
 	 *	* It is typed at the input prompt while /set input_aliases ON
 	 */
-	else if (args) 
-	{
-	    do 
-            {
-		/*
-		 * At any point where a command is expected, the user is
-		 * allowed to have { ... } set, which will be evaluated as
-		 * a sub-context.  We rip off the { ... } stuff and then
-		 * pass the insides recursively off to parse_line.  Note
-		 * that this applies recursively inside that set as well,
-		 * so arbitrary nesting is permitted by this.  If there is
-		 * a missing closing brace, we dont try to recover.
-		 *
-		 * If the sub-context throws a break, return, or continue,
-		 * then we drop out of our parsing and allow the exception
-		 * to be thrown up the stack.
-		 */
-                while (*line == '{') 
-                {
-		    if (!(stuff = next_expr(&line, '{'))) 
-		    {
-			error("Unmatched { around [%-.20s]", line); 
-			if (name)
-				destroy_local_stack();
-			return;
-		    }
+    while (line && *line)
+    {
+	/*
+	 * Now we expand the first command in this set, so as to
+	 * include any variables or argument-expandos.  The "line"
+	 * pointer is set to the first character of the next command
+	 * (if any).  
+	 */
+	if ((span = next_statement(line)) < 0)
+		break;
 
-		    /* I'm fairly sure the first arg ought not be 'name' */
-		    parse_line(NULL, stuff, args, hist_flag);
-
-		    /*
-		     * Check to see if an exception has been thrown.  If it
-		     * has, then we stop parsing, but we dont catch the
-		     * exception, someone upstream will catch it.
-		     */
-		    if ((will_catch_break_exceptions && break_exception) ||
-			(will_catch_return_exceptions && return_exception) ||
-			(will_catch_continue_exceptions && continue_exception) ||
-			system_exception)
-		    {
-			die = 1;
-			break;
-		    }
-
-		    /*
-		     * Munch up all the semicolons or spaces after the 
-		     * { ... } set.
-		     */
-		    while (line && *line && ((*line == ';') || 
-						(my_isspace(*line))))
-			*line++ = '\0';
-
-		    /*
-		     * Now we go back to the top and repeat as long as 
-		     * neccesary.
-		     */
-		}
-
-		/*
-		 * At this point we're just parsing a normal command.
-		 * If we saw an exception go by or there is nothing to
-		 * parse, stop processing.
-		 */
-		if (!line || !*line || die)
-		     break;
-
-		/*
-		 * Don't allow the user to execute a command that starts with
-		 * an expando (a possible security hole) if they have
-		 * /set security to block it.
-		 */
-		if (*line == '$' && (get_int_var(SECURITY_VAR) & 
-					SECURITY_NO_VARIABLE_COMMAND))
-		{
-			yell("WARNING: The command '%s' (%s) was not executed due to a security violation", line, args);
-			break;
-		}
-
-		/*
-		 * Now we expand the first command in this set, so as to
-		 * include any variables or argument-expandos.  The "line"
-		 * pointer is set to the first character of the next command
-		 * (if any).  If the line is only *one* command, and if our
-		 * caller wants us to add $* as neccesary, and if the command
-		 * did not reference the argument list, and there is an
-		 * argument list, then we tack the argument list on to the
-		 * end of the command.  This is what allows stuff like
-		 *	/alias m msg
-		 * to work as expected.
-		 */
-		stuff = expand_alias(line, args, &span);
-
-		if (span < 0)
-			line = NULL;
-		else
-		{
-			line += span;
-
-			/* Willfully ignore spaces after semicolons. */
-			while (line && *line && isspace(*line))
-				line++;
-		}
-
-		/*
-		 * Now we run the command.
-		 */
-		parse_command(stuff, hist_flag, args);
-
-		/*
-		 * And clean up after ourselves
-		 */
-                new_free(&stuff);
-
-		/*
-		 * If an exception was thrown by this command, then we just
-		 * stop processing and let the exception be caught by whoever
-		 * is catching it above us.
-		 */
-		if ((will_catch_break_exceptions && break_exception) ||
-		    (will_catch_return_exceptions && return_exception) ||
-		    (will_catch_continue_exceptions && continue_exception) ||
-		     system_exception)
-			break;
-
-		/*
-		 * We repeat this as long as we have more commands to parse.
-		 */
-	    }
-	    while (line && *line);
-	}
+	if (line[span] == ';')
+		line[span++] = 0;
 
 	/*
-	 * Otherwise, If it is being /LOADed, just parse it directly.
+	 * Now we run the command.
 	 */
-        else if (load_depth != -1)
-		parse_command(line, hist_flag, args);
+/*	stuff = expand_alias(line, args, NULL); */
+	parse_statement(line, interactive, args);
+/*	new_free(&stuff); */
 
 	/*
-	 * Otherwise its a command being run by the user in direct mode
-	 * and /SET INPUT_ALIASES is OFF.
+	 * If an exception was thrown by this command, then we just
+	 * stop processing and let the exception be caught by whoever
+	 * is catching it above us.
 	 */
-	else
-	{
-	    /*
-	     * This handling is strictly for backwards compatability.
-	     * It used to be possible to insert literal newlines in
-	     * the text in the input prompt via some tomfoolery, but
-	     * this does not really happen much to speak of any more.
-	     * Nevertheless, I'm sure there is someone out there who 
-	     * depends on this working, so don't take it out. ;-)
-	     */
-	    while ((s = line))
-	    {
-		/*
-		 * Find a newline, if any
-		 */
-		if ((t = sindex(line, "\r\n")))
-		{
-			*t++ = 0;
-			line = t;
-		}
-		else
-			line = NULL;
+	if ((will_catch_break_exceptions && break_exception) ||
+	    (will_catch_return_exceptions && return_exception) ||
+	    (will_catch_continue_exceptions && continue_exception) ||
+	     system_exception)
+		break;
 
-		/*
-		 * Run the command (args is NULL, remember)
-		 */
-		parse_command(s, hist_flag, args);
+	/* Willfully ignore spaces after semicolons. */
+	line += span;
+	while (line && *line && isspace(*line))
+		line++;
 
-		if ((will_catch_break_exceptions && break_exception) ||
-		    (will_catch_return_exceptions && return_exception) ||
-		    (will_catch_continue_exceptions && continue_exception) ||
-		    system_exception)
-			break;
-	    }
-	}
+	/*
+	 * We repeat this as long as we have more commands to parse.
+	 */
+    }
 
 	/*
 	 * If we're an atomic scope, blow away our local variable stack.
@@ -3591,33 +3471,36 @@ void	parse_line (const char *name, const char *org_line, const char *args, int h
 
 
 /*
- * parse_command: parses a line of input from the user.  If the first
- * character of the line is equal to irc_variable[CMDCHAR_VAR].value, the
- * line is used as an irc command and parsed appropriately.  If the first
- * character is anything else, the line is sent to the current channel or to
- * the current query user.   Otherwise, parsed commands will not be added. 
+ * parse_statement:  Execute a single statement.  Each statement is either a
+ * block statement (surrounded by {}s), an expression statement (surrounded by
+ * ()s or starts with a @), or a command statement (anything else). 
  *
- * Parse_command() only parses a single command.In general, you will want to 
- * use parse_line() to execute things.Parse command recognizes no quoted
- * characters or anything (beyond those specific for a given command being
- * executed). 
+ * Args:
+ *	line	- A single ircII statement
+ *	interactive - 1 if the statement is run because of user input
+ *		      0 if the statement is run for any other reason
+ *	subargs	- The value of $* to use for this statement
+ *		  (DEPRECATED) May be NULL if $-expansion is suppressed.
  *
- * Only Three functions have any business calling us:
- *	- call_function (in alias.c)
- *	- parse_line	(in edit.c)
- *	- parse_command (right here)
+ * You usually don't want to run this function unless you *know for sure*
+ * that what you have in hand is a statement and nothing else.  If you are
+ * not sure, better to call parse_line and let it figure it out.
  *
- * Everyone else must call parse_line.  No exceptions.
+ * Known legitimate callers:
+ *	parse_line() (which breaks a block into statements)
+ *	/LOAD -STD (which breaks a file into statements)
+ *	SEND_LINE key binding (which processes the input line as a statement)
+ *	Input in dumb mode (ditto)
+ *	/SENDLINE  (which simulates processing of the input line)
  */
-int	parse_command (const char *line, int hist_flag, const char *sub_args)
+int	parse_statement (const char *line, int interactive, const char *sub_args)
 {
 static	unsigned 	level = 0;
 	unsigned 	display;
 	int		old_display_var;
 	const char *	cmdchars;
 	const char *	com;
-	int		add_to_hist,
-			cmdchar_used = 0;
+	int		cmdchar_used = 0;
 	int		noisy = 1;
 	char *		this_cmd = NULL;
 
@@ -3632,7 +3515,6 @@ static	unsigned 	level = 0;
 
 	this_cmd = LOCAL_COPY(line);
 	set_current_command(this_cmd);
-	add_to_hist = 1;
 	display = window_display;
 	old_display_var = get_int_var(DISPLAY_VAR);
 
@@ -3646,13 +3528,14 @@ static	unsigned 	level = 0;
 	for (; *line; line++)
 	{
 		/* Fix to allow you to do ^foo at the input line. */
-		if (*line == '^' && (!hist_flag || cmdchar_used))
+		if (*line == '^' && (!interactive || cmdchar_used))
 		{
 			if (!noisy)
 				break;
 			noisy = 0;
 		}
-		else if ((!hist_flag && *line == '/') || strchr(cmdchars, *line))
+		else if ((!interactive && *line == '/') || 
+				strchr(cmdchars, *line))
 		{
 			cmdchar_used++;
 			if (cmdchar_used > 2)
@@ -3664,32 +3547,43 @@ static	unsigned 	level = 0;
 
 	if (!noisy)
 		window_display = 0;
+
 	com = line;
 
 	/*
 	 * always consider input a command unless we are in interactive mode
 	 * and command_mode is off.   -lynx
 	 */
-	if (hist_flag && !cmdchar_used)
-	{
+	if (interactive && cmdchar_used == 0)
 		send_text(from_server, get_target_by_refnum(0), line, NULL, 1);
-		/* Special handling for ' and : */
+
+	else if (*com == '{')
+	{
+	    char *stuff;
+	    char *copy;
+
+	    copy = LOCAL_COPY(com);
+	    if (!(stuff = next_expr(&copy, '{'))) 
+	    {
+		privileged_yell("Unmatched { around [%-.20s]", copy); 
+		stuff = copy + 1;
+	    }
+
+	    parse_line(NULL, stuff, sub_args, interactive);
 	}
+
 	else if ((*com == '@') || (*com == '('))
 	{
-		/* This kludge fixes a memory leak */
-		char *		tmp;
-		char *		my_line = LOCAL_COPY(line);
-
 		/*
-		 * This new "feature" masks a weakness in the underlying
-		 * grammar that allowed variable names to begin with an
-		 * lparen, which inhibited the expansion of $s inside its
-		 * name, which caused icky messes with array subscripts.
-		 *
-		 * Anyhow, we now define any commands that start with an
-		 * lparen as being "expressions", same as @ lines.
+		 * The expression parser wants to mangle the string it's given.
+		 * Normally we would copy the statement as part of the 
+		 * expand_alias() step, but since we don't expand expressions,
+		 * we just make a local copy.
 		 */
+		char *	my_line = LOCAL_COPY(line);
+		char *	tmp;
+
+		/* Expressions can start with @ or be surrounded by ()s */
 		if (*com == '(')
 		{
 		    ssize_t	span;
@@ -3701,14 +3595,18 @@ static	unsigned 	level = 0;
 		if ((tmp = parse_inline(my_line + 1, sub_args)))
 			new_free(&tmp);
 	}
+
 	else do
 	{
 		char	*cline, *rest;
-		char 	*alias = NULL;
+		const char *alias = NULL;
 		void	*arglist = NULL;
 		void	(*cmd) (const char *, char *, const char *) = NULL;
 
-		cline = LOCAL_COPY(line);
+		if (sub_args != NULL)
+			cline = expand_alias(com, sub_args, NULL); 
+		else
+			cline = malloc_strdup(com);
 
 		rest = cline;
 		while (*rest && !isspace(*rest))
@@ -3730,6 +3628,8 @@ static	unsigned 	level = 0;
 			send_to_server("%s %s", cline, rest);
 		else
 			say("Unknown command: %s", cline);
+
+		new_free(&cline);
 	}
 	while (0);
 
@@ -3743,7 +3643,7 @@ static	unsigned 	level = 0;
         return 0;
 }
 
-
+/***********************************************************************/
 BUILT_IN_COMMAND(breakcmd)
 {
 	if (!will_catch_break_exceptions)

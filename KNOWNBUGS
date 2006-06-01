@@ -2,6 +2,7 @@ EPIC5 Projects, Bugs, and other Errata:
 
 KNOWN ERRATA (eg, bugs, or unresolved requests):
 ------------------------------------------------
+* DCC "last time" is never updated ongoing.
 * Fix support for tcl in configure
 
 msg from crapple!zak@from.hell: hi, when you get around to it/if possible
@@ -50,3 +51,13 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Whack /set highlight_char which is no longer being used.
 * Move away from calling parse_line() and runcmds(), towards the call_* funcs
 * Add provisional support for renumbering windows with channels/logs/timers
+* Constify get_*_alias(), so lookups can't modify the actual alias this way.
+* Rename parse_command() to parse_statement().
+* Create a next_statement() to figure out how long the next stmt is.
+* Stop using expand_alias() to rip apart statements. yay!
+* Refactor parse_command and parse_statement to better define their roles.
+* Push responsibility for expansion to parse_statement, someday, to cmds!
+* Push responsibility for handling block statements to parse_statement.
+* "Forget" to re-implement /set input_aliases.  I wonder if anyone will notice.
+* Change the name of "hist_flag" to "interactive" to reflect its purpose.
+* Change /load -std to use parse_statement() instead of parse_line()

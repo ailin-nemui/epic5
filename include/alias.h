@@ -94,12 +94,12 @@
 	char **	glob_cmd_alias		(Char *name, int *howmany, 
 					 int maxret, int start, int rev);
 
-	char *	get_cmd_alias   	(Char *name, void **args,
+	const char *	get_cmd_alias  	(Char *name, void **args,
                                          void (**func) (const char *, char *, 
                                                         const char *));
-	char *  get_func_alias		(const char *name, void **args, 
+	const char *  get_func_alias	(const char *name, void **args, 
 					 char * (**func) (char *));
-	char *  get_var_alias		(const char *name, 
+	const char *  get_var_alias	(const char *name, 
 					 char *(**efunc)(void), 
 					 IrcVariable **var);
 

@@ -1,4 +1,4 @@
-/* $EPIC: alias.c,v 1.76 2005/10/21 03:50:01 jnelson Exp $ */
+/* $EPIC: alias.c,v 1.77 2006/06/01 23:44:14 jnelson Exp $ */
 /*
  * alias.c -- Handles the whole kit and caboodle for aliases.
  *
@@ -231,7 +231,7 @@ static	void 	destroy_builtin_expandos    (SymbolSet *);
 extern	char *  get_variable       (Char *name);
 extern	char ** glob_cmd_alias          (Char *name, int *howmany, int maxret, int start, int rev);
 extern	char ** glob_assign_alias	(Char *name, int *howmany, int maxret, int start, int rev);
-extern	char *  get_cmd_alias           (Char *name, void **args, 
+extern	const char *  get_cmd_alias     (Char *name, void **args, 
 					 void (**func) (const char *, char *, 
 					                const char *));
 extern	char ** get_subarray_elements   (Char *root, int *howmany, int type);
@@ -2543,7 +2543,7 @@ static char *	get_variable_with_args (const char *str, const char *args)
 }
 
 /* * */
-char *	get_cmd_alias (const char *name, void **args, void (**func) (const char *, char *, const char *))
+const char *	get_cmd_alias (const char *name, void **args, void (**func) (const char *, char *, const char *))
 {
 	Symbol *item;
 
@@ -2560,7 +2560,7 @@ char *	get_cmd_alias (const char *name, void **args, void (**func) (const char *
 }
 
 /* * */
-char *	get_func_alias (const char *name, void **args, char * (**func) (char *))
+const char *	get_func_alias (const char *name, void **args, char * (**func) (char *))
 {
 	Symbol *item;
 
@@ -2576,7 +2576,7 @@ char *	get_func_alias (const char *name, void **args, char * (**func) (char *))
 	return NULL;
 }
 
-char *	get_var_alias (const char *name, char *(**efunc)(void), IrcVariable **var)
+const char *	get_var_alias (const char *name, char *(**efunc)(void), IrcVariable **var)
 {
 	Symbol *item;
 
@@ -3706,4 +3706,49 @@ char    *symbolctl      (char *input)
 	} else
 	    RETURN_EMPTY;
 }
+
+/* Pure fantasy for now. */
+#if 0
+/* Statements are either blocks, expressions, or commands */
+enum StatementTypeE {
+	BLOCK_STATEMENT,
+	EXPR_STATEMENT,
+	CMD_STATEMENT
+};
+
+/* A block is a collection of statements */
+struct BlockT {
+	size_t	numcmds;
+	union StatementT *cmds;
+};
+
+/* A command statement has a command, and an argument list */
+struct CommandStatementT {
+	enum StatementTypeE type;
+	wchar_t *	cmd;
+	wchar_t *	args;
+};
+
+/* An expression statement has a math expression */
+struct ExpressionStatementT {
+	enum StatementTypeE type;
+	wchar_t *	expr;
+};
+
+/* A block statement has a block (natch) */
+struct BlockStatementT {
+	enum StatementTypeE type;
+	struct BlockT 	block;
+};
+
+/* 
+ * A statement is either a command statement, 
+ * an expression statement, or a block statement.
+ */
+union StatementT {
+	enum StatementTypeE type;
+	struct CommandStatementT;
+	struct ExpressionStatementT;
+	struct BlockStatementT;
+#endif
 

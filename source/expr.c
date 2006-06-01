@@ -1,4 +1,4 @@
-/* $EPIC: expr.c,v 1.35 2005/08/05 00:15:44 jnelson Exp $ */
+/* $EPIC: expr.c,v 1.36 2006/06/01 23:44:14 jnelson Exp $ */
 /*
  * expr.c -- The expression mode parser and the textual mode parser
  * #included by alias.c -- DO NOT DELETE
@@ -1288,6 +1288,59 @@ char	*parse_inline (char *str, const char *args)
 
 
 /**************************** TEXT MODE PARSER *****************************/
+/*
+ * next_statement: Determines the length of the first statement in 'string'.
+ *
+ * A statement ends at the first semicolon EXCEPT:
+ *   -- Anything inside (...), [...], or {...} doesn't count
+ */
+ssize_t	next_statement (const char *string)
+{
+	const char *ptr;
+	int	is_quote = 0;
+	int	paren_count = 0, brace_count = 0;
+
+	if (!string || !*string)
+		return -1;
+
+	for (ptr = string; ptr && *ptr; ptr++)
+	{
+	    if (is_quote)
+		is_quote = 0;
+
+	    else if (*ptr == ';')
+	    {
+		if (paren_count == 0 && brace_count == 0)
+		    break;
+	    }
+
+	    else if (*ptr == LEFT_PAREN)
+		paren_count++;
+	    else if (*ptr == LEFT_BRACE)
+		brace_count++;
+	    else if (*ptr == RIGHT_PAREN && paren_count > 0)
+		paren_count--;
+	    else if (*ptr == RIGHT_BRACE && brace_count > 0)
+		brace_count--;
+
+	    else if (*ptr == '\\')
+		is_quote = 1;
+	}
+
+	if (paren_count != 0)
+	{
+		privileged_yell("[%d] More ('s than )'s found in this "
+				"statement: \"%s\"", paren_count, string);
+	}
+	else if (brace_count != 0)
+	{
+		privileged_yell("[%d] More {'s than }'s found in this "
+				"statement: \"%s\"", brace_count, string);
+	}
+
+	return (ssize_t)(ptr - string);
+}
+
 /*
  * expand_alias: Expands inline variables in the given string and returns the
  * expanded string in a new string which is malloced by expand_alias(). 
