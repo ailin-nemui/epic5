@@ -1,4 +1,4 @@
-/* $EPIC: perl.c,v 1.14 2005/10/13 01:11:58 jnelson Exp $ */
+/* $EPIC: perl.c,v 1.15 2006/06/03 16:47:04 jnelson Exp $ */
 /*
  * perl.c -- The perl interfacing routines.
  *
@@ -211,3 +211,23 @@ char* perleval (const char* input) {
 	};
 	RETURN_MSTR(retval);
 }
+
+BUILT_IN_COMMAND(perlcmd)
+{
+	char *body, *x;
+
+	if (*args == '{')
+	{
+		if (!(body = next_expr(&args, '{')))
+		{
+			error("PERL: unbalanced {");
+			return;
+		}
+	}
+	else
+		body = args;
+
+	x = perleval(body);
+	new_free(&x);
+}
+

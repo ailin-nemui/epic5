@@ -61,3 +61,4 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * "Forget" to re-implement /set input_aliases.  I wonder if anyone will notice.
 * Change the name of "hist_flag" to "interactive" to reflect its purpose.
 * Change /load -std to use parse_statement() instead of parse_line()
+* Add a /perl command, just for laughs. Usage: /perl {...}

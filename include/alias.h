@@ -121,6 +121,8 @@
 	void	bucket_builtin_variables (Bucket *, const char *);
 
 /* These are in expr.c */
+	ssize_t next_statement (const char *string);
+
 /*
  * This function is a general purpose interface to alias expansion.
  * The second argument is the text to be expanded.
@@ -212,6 +214,8 @@
 	char	*symbolctl (char *);
 
 	char *	after_expando (char *, int, int *);
+
+
 
 /* 
  * This aint my territory, but I'm putting these in here.

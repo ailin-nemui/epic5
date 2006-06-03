@@ -1,4 +1,4 @@
-/* $EPIC: commands.c,v 1.138 2006/06/01 23:44:14 jnelson Exp $ */
+/* $EPIC: commands.c,v 1.139 2006/06/03 16:47:04 jnelson Exp $ */
 /*
  * commands.c -- Stuff needed to execute commands in ircII.
  *		 Includes the bulk of the built in commands for ircII.
@@ -72,12 +72,6 @@
 #include "words.h"
 #include "reg.h"
 
-/* 
- * defined to 1 if we are parsing something interactive from the user,
- * 0 if it is not being done interactive (within an alias)
- */
-	int interactive = 0;
-
 /* used with input_move_cursor */
 #define RIGHT 1
 #define LEFT 0
@@ -140,6 +134,9 @@ static	void	license		(const char *, char *, const char *);
 static	void	mecmd 		(const char *, char *, const char *);
 static	void	oper 		(const char *, char *, const char *);
 static	void	packagecmd	(const char *, char *, const char *);
+#ifdef PERL
+extern	void	perlcmd		(const char *, char *, const char *);
+#endif
 static	void	pingcmd 	(const char *, char *, const char *);
 static  void    pop_cmd 	(const char *, char *, const char *);
 static	void	pretend_cmd	(const char *, char *, const char *);
@@ -270,6 +267,9 @@ static	IrcCommand irc_command[] =
 	{ "PARSEKEY",	parsekeycmd	},
 	{ "PART",	send_2comm	},
 	{ "PAUSE",	e_pause		},
+#ifdef PERL
+	{ "PERL",	perlcmd		},
+#endif
 	{ "PING",	pingcmd		},
 	{ "POP",	pop_cmd		},
 	{ "PRETEND",	pretend_cmd	},
@@ -3695,3 +3695,4 @@ BUILT_IN_COMMAND(botmodecmd)
 	yell("This client was configured not to allow bots.  Bummer.");
 #endif
 }
+
