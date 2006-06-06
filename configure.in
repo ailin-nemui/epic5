@@ -4,9 +4,9 @@ dnl except those bits attributed otherwise.
 dnl thanks to the screen 3.3 configure.in for giving me examples to
 dnl work from and steal ;)
 dnl
-dnl @(#)$Id: configure.in,v 1.50 2005/11/02 03:11:58 jnelson Exp $
+dnl @(#)$Id: configure.in,v 1.51 2006/06/06 03:55:10 jnelson Exp $
 
-AC_REVISION($Revision: 1.50 $)dnl
+AC_REVISION($Revision: 1.51 $)dnl
 AC_INIT(source/irc.c)
 AC_CONFIG_HEADER(include/defs.h)
 
@@ -744,6 +744,34 @@ done
 test -z "$TCLDOTOH" && AC_MSG_RESULT(no)
 
 dnl ----------------------------------------------------------
+dnl
+dnl Ruby support?
+dnl
+
+AC_MSG_CHECKING(whether to support Ruby)
+AC_ARG_WITH(ruby,
+[  --with-ruby[=PATH]       Compile with ruby support.],
+[ test -z "$withval" && withval=yes ],
+)
+test "xno" != "x$withval" && for base in $withval /usr/local /usr
+do
+	incdir=`ruby -rrbconfig -e 'puts Config::CONFIG[["archdir"]]'`
+	libdir=`ruby -rrbconfig -e 'puts Config::CONFIG[["libdir"]]'`
+	extralibs=`ruby -rrbconfig -e 'puts Config::CONFIG[["LIBS"]]'`
+	rubyso=`ruby -rrbconfig -e 'puts Config::CONFIG[["RUBY_SO_NAME"]]'`
+
+	test -r $incdir/ruby.h || continue
+	AC_MSG_RESULT(yes)
+	RUBYCFLAGS="-I$incdir"
+	LIBS="$LIBS -L$libdir -l$rubyso $extralibs"
+	RUBYDOTOH="ruby.o"
+	AC_DEFINE(HAVE_RUBY)
+	AC_DEFINE(RUBYCFLAGS)
+done
+test -z "$RUBYDOTOH" && AC_MSG_RESULT(no)
+
+
+dnl ----------------------------------------------------------
 dnl ----------------------------------------------------------
 dnl
 dnl closing stuff
@@ -761,6 +789,7 @@ if test -z "$CFLAGS"; then CFLAGS=-g -O; fi
 if test -z "$LDFLAGS"; then LDFLAGS= ; fi
 if test -z "$PERLDOTOH"; then PERLDOTOH= ; fi
 if test -z "$TCLDOTOH"; then TCLDOTOH= ; fi
+if test -z "$RUBYDOTOH"; then RUBYDOTOH= ; fi
 if test -z "$bindir"; then bindir=\${prefix}/bin; fi
 if test -z "$libdir"; then libdir=\${prefix}/lib; fi
 if test -z "$irclibdir"; then irclibdir=\${libdir}/irc; fi
@@ -814,6 +843,8 @@ AC_SUBST(CFLAGS)
 AC_SUBST(LDFLAGS)
 AC_SUBST(PERLDOTOH)
 AC_SUBST(TCLDOTOH)
+AC_SUBST(RUBYDOTOH)
+AC_SUBST(RUBYCFLAGS)
 AC_SUBST(bindir)
 AC_SUBST(irclibdir)
 AC_SUBST(libexecdir)

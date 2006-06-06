@@ -1,4 +1,4 @@
-/* $EPIC: commands.c,v 1.139 2006/06/03 16:47:04 jnelson Exp $ */
+/* $EPIC: commands.c,v 1.140 2006/06/06 03:55:10 jnelson Exp $ */
 /*
  * commands.c -- Stuff needed to execute commands in ircII.
  *		 Includes the bulk of the built in commands for ircII.
@@ -145,6 +145,7 @@ static	void	query		(const char *, char *, const char *);
 static	void	quotecmd	(const char *, char *, const char *);
 static	void	redirect 	(const char *, char *, const char *);
 static	void	returncmd	(const char *, char *, const char *);
+extern	void	rubycmd		(const char *, char *, const char *);
 static	void	send_2comm 	(const char *, char *, const char *);
 static	void	send_comm 	(const char *, char *, const char *);
 static	void	send_invite 	(const char *, char *, const char *);
@@ -158,6 +159,9 @@ static	void	usleepcmd	(const char *, char *, const char *);
 static  void	shift_cmd 	(const char *, char *, const char *);
 static	void	sleepcmd 	(const char *, char *, const char *);
 static	void	stackcmd	(const char *, char *, const char *);
+#ifdef TCL
+extern void	tclcmd		(const char *, char *, const char *);
+#endif
 static  void	unshift_cmd 	(const char *, char *, const char *);
 static	void	version 	(const char *, char *, const char *);
 static 	void	waitcmd 	(const char *, char *, const char *);
@@ -268,7 +272,7 @@ static	IrcCommand irc_command[] =
 	{ "PART",	send_2comm	},
 	{ "PAUSE",	e_pause		},
 #ifdef PERL
-	{ "PERL",	perlcmd		},
+	{ "PERL",	perlcmd		}, /* perl.c */
 #endif
 	{ "PING",	pingcmd		},
 	{ "POP",	pop_cmd		},
@@ -286,6 +290,9 @@ static	IrcCommand irc_command[] =
 	{ "RESTART",	send_comm	},
 	{ "RETURN",	returncmd	},
 	{ "RPING",	send_comm	},
+#ifdef HAVE_RUBY
+	{ "RUBY",	rubycmd		}, /* ruby.c */
+#endif
 	{ "SAY",	send_to_channel	},
 	{ "SEND",	send_to_target	},
 	{ "SENDLINE",	sendlinecmd	},
@@ -304,6 +311,9 @@ static	IrcCommand irc_command[] =
 	{ "STUB",	stubcmd		}, /* alias.c */
 	{ "SUBPACKAGE",	subpackagecmd	},
 	{ "SWITCH",	switchcmd	}, /* if.c */
+#ifdef TCL
+	{ "TCL",	tclcmd		}, /* tcl.c */
+#endif
 	{ "TIME",	send_comm	},
 	{ "TIMER",	timercmd	},
 	{ "TOPIC",	e_topic		},

@@ -1,4 +1,4 @@
-/* $EPIC: functions.c,v 1.223 2006/03/05 23:03:17 jnelson Exp $ */
+/* $EPIC: functions.c,v 1.224 2006/06/06 03:55:10 jnelson Exp $ */
 /*
  * functions.c -- Built-in functions for ircII
  *
@@ -358,6 +358,9 @@ static	char
 	*function_rmdir 	(char *),
 	*function_rpattern 	(char *),
 	*function_rsubstr	(char *),
+#ifdef HAVE_RUBY
+	*function_ruby		(char *),
+#endif
 	*function_sar 		(char *),
 	*function_sedcrypt 	(char *),
 	*function_seek		(char *),
@@ -663,6 +666,9 @@ static BuiltInFunctions	built_in_functions[] =
 	{ "RMDIR",		function_rmdir 		},
 	{ "RPATTERN",           function_rpattern 	},
 	{ "RSUBSTR",		function_rsubstr	},
+#ifdef HAVE_RUBY
+	{ "RUBY",		function_ruby		},
+#endif
 	{ "SAR",		function_sar 		},
 	{ "SEDCRYPT",		function_sedcrypt	},
 	{ "SERVERCTL",		function_serverctl	},
@@ -6585,4 +6591,15 @@ BUILT_IN_FUNCTION(function_xform, input)
 	transform_string(typenum, encodenum, meta, str, str_len, retval, retval_len);
 	RETURN_MSTR(retval);
 }
+
+#ifdef HAVE_RUBY
+
+BUILT_IN_FUNCTION(function_ruby, input)
+{
+	extern char* rubyeval ( char* );
+	return rubyeval ( input );
+}
+
+#endif
+
 

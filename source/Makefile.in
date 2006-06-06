@@ -17,7 +17,7 @@ OBJECTS = alias.o alist.o array.o clock.o commands.o compat.o crypt.o ctcp.o \
 	levels.o list.o log.o logfiles.o mail.o names.o network.o \
 	newio.o notify.o numbers.o output.o parse.o queue.o reg.o \
 	screen.o sdbm.o server.o ssl.o status.o term.o timer.o translat.o vars.o \
-	who.o window.o words.o @PERLDOTOH@ @TCLDOTOH@ @ALLOCA@
+	who.o window.o words.o @PERLDOTOH@ @TCLDOTOH@ @ALLOCA@ @RUBYDOTOH@
 
 INCLUDES = -I@srcdir@/../include -I../include
 
@@ -72,6 +72,9 @@ vars.o: Makefile ../Makefile
 
 perl.o: perl.c Makefile ../Makefile
 	$(CC) $(CFLAGS) $(ansiflags) $(INCLUDES) -c @srcdir@/perl.c `perl -MExtUtils::Embed -e ccopts`
+
+ruby.o: ruby.c Makefile ../Makefile
+	$(CC) $(CFLAGS) $(ansiflags) $(INCLUDES) -c @srcdir@/ruby.c @RUBYCFLAGS@
 
 
 #

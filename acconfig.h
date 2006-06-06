@@ -1,5 +1,5 @@
 /*
- * @(#)$Id: acconfig.h,v 1.33 2005/11/02 03:11:58 jnelson Exp $
+ * @(#)$Id: acconfig.h,v 1.34 2006/06/06 03:55:10 jnelson Exp $
  */
 
 /*
@@ -299,6 +299,9 @@
 /* Define this if you have TCL */
 #undef TCL
 
+/* Define this if you have RUBY */
+#undef HAVE_RUBY
+
 /* Define this if you have clock_gettime() */
 #undef HAVE_CLOCK_GETTIME
 
@@ -359,3 +362,5 @@
 /* Define this if you have <stddef.h> */
 #undef HAVE_STDDEF_H
 
+/* Define this if you have ruby and stuff */
+#undef RUBYCFLAGS

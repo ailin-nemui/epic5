@@ -1,4 +1,4 @@
-/* $EPIC: tcl.c,v 1.7 2005/10/13 01:11:59 jnelson Exp $ */
+/* $EPIC: tcl.c,v 1.8 2006/06/06 03:55:10 jnelson Exp $ */
 /*
  * tcl.c -- The tcl interfacing routines.
  *
@@ -46,6 +46,9 @@
 Tcl_Interp *my_tcl;
 int	istclrunning = 0;
 
+/*
+ * A new TCL command, [echo], which displays back on the epic window.
+ */
 int Tcl_echoCmd (clientData, interp, objc, objv)
 	ClientData	clientData;
 	Tcl_Interp	*interp;
@@ -62,6 +65,15 @@ int Tcl_echoCmd (clientData, interp, objc, objv)
 	return TCL_OK;
 }
 
+/*
+ * A new TCL command [epic] with several subcmds:
+ *	[epic cmd ...]		Runs ... as a block of code w/o $ expansion.
+ *	[epic eval ...]		Runs ... as block of code, with $ expansion.
+ *				$* will be the empty string when expanded.
+ *	[epic expr ...]		Evals ... as an expression, returns result.
+ *	[epic call ...]		Call ... where ... is "$func(args)"
+ *				Returning the result.  $* is the empty string.
+ */
 int Tcl_epicCmd (clientData, interp, objc, objv)
 	ClientData	clientData;
 	Tcl_Interp	*interp;
@@ -102,6 +114,7 @@ int Tcl_epicCmd (clientData, interp, objc, objv)
 	return TCL_OK;
 }
 
+/* A new TCL command [tkon] which turns on tk (natch?) */
 #ifdef TK
 int Tcl_tkonCmd (clientData, interp, objc, objv)
 	ClientData	clientData;
@@ -114,6 +127,7 @@ int Tcl_tkonCmd (clientData, interp, objc, objv)
 }
 #endif
 
+/* Called by the epic hooks to activate tcl on-demand. */
 void tclstartstop (int startnotstop) {
 	if (startnotstop && !istclrunning) {
 		++istclrunning;
@@ -130,6 +144,10 @@ void tclstartstop (int startnotstop) {
 	}
 }
 
+/*
+ * Used by the $tcl(...) function: evalulate ... as a TCL statement, and 
+ * return the result of the statement.
+ */
 char* tcleval (char* input) {
 	char *retval=NULL;
 	if (input && *input) {
@@ -139,3 +157,27 @@ char* tcleval (char* input) {
 	};
 	RETURN_MSTR(retval);
 }
+
+/*
+ * The /TCL function: Evalulate the args as a TCL statement and ignore the 
+ * return value of the statement.
+ */
+BUILT_IN_COMMAND(tclcmd)
+{
+        char *body, *x;
+
+        if (*args == '{')
+        {
+                if (!(body = next_expr(&args, '{')))
+                {
+                        error("TCL: unbalanced {");
+                        return;
+                }
+        }
+        else
+                body = args;
+
+        x = tcleval(body);
+        new_free(&x);
+}
+

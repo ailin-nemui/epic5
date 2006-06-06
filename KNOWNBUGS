@@ -2,6 +2,7 @@ EPIC5 Projects, Bugs, and other Errata:
 
 KNOWN ERRATA (eg, bugs, or unresolved requests):
 ------------------------------------------------
+* Ruby support needs to trap exceptions, and convert retvals into strings.
 * DCC "last time" is never updated ongoing.
 * Fix support for tcl in configure
 
@@ -62,3 +63,5 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Change the name of "hist_flag" to "interactive" to reflect its purpose.
 * Change /load -std to use parse_statement() instead of parse_line()
 * Add a /perl command, just for laughs. Usage: /perl {...}
+* Ruby support. yay!
+* Add a /tcl command, just for laughs.  Same as perl.
