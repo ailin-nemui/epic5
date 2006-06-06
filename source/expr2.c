@@ -1,4 +1,4 @@
-/* $EPIC: expr2.c,v 1.32 2005/10/18 01:14:01 jnelson Exp $ */
+/* $EPIC: expr2.c,v 1.33 2006/06/06 05:08:48 jnelson Exp $ */
 /*
  * Zsh: math.c,v 3.1.2.1 1997/06/01 06:13:15 hzoli Exp 
  * math.c - mathematical expression evaluation
@@ -248,6 +248,7 @@ static void	setup_expr_info (expr_info *c)
 	c->noeval = 0;
 	c->operand = 1;
 	c->token = 0;
+#ifdef NO_CHEATING
 	for (i = 0; i <= TOKENCOUNT; i++)
 	{
 		TOK(c, i).used = USED_NONE;
@@ -260,6 +261,10 @@ static void	setup_expr_info (expr_info *c)
 	}
 	for (i = 0; i <= STACKSZ; i++)
 		c->stack[i] = 0;
+#else
+	memset(c->tokens, 0, sizeof(c->tokens));
+	memset(c->stack, 0, sizeof(c->stack));
+#endif
 	c->sp = -1;
 	c->mtok = 0;
 	c->errflag = 0;
@@ -623,7 +628,7 @@ __inline static	const char *	get_token_raw (expr_info *c, TOKEN v)
 					v, TOK(c, v).lval);
 
 			TOK(c, v).raw_value = expand_alias(TOK(c, v).lval, 
-					c->args, NULL);
+								c->args);
 
 			if (x_debug & DEBUG_NEW_MATH_DEBUG)
 				yell(">>> Expanded var name [%d]: [%s] to [%s]",
@@ -736,9 +741,7 @@ __inline static	const char *	get_token_expanded (expr_info *c, TOKEN v)
 					v, myval);
 
 			TOK(c, v).used |= USED_EXPANDED;
-			TOK(c, v).expanded_value = 
-				expand_alias(myval, c->args, 
-						NULL);
+			TOK(c, v).expanded_value = expand_alias(myval, c->args);
 
 			if (x_debug & DEBUG_NEW_MATH_DEBUG)
 				yell("<<< Expanded token [%d]: [%s] to: [%s]", 

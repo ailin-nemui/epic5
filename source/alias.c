@@ -1,4 +1,4 @@
-/* $EPIC: alias.c,v 1.77 2006/06/01 23:44:14 jnelson Exp $ */
+/* $EPIC: alias.c,v 1.78 2006/06/06 05:08:48 jnelson Exp $ */
 /*
  * alias.c -- Handles the whole kit and caboodle for aliases.
  *
@@ -893,7 +893,7 @@ void	prepare_alias_call (void *al, char **stuff)
 		if (!next_val || !*next_val)
 		{
 			if ((next_val = args->defaults[i]))
-				next_val = expanded = expand_alias(next_val, *stuff, NULL);
+				next_val = expanded = expand_alias(next_val, *stuff);
 			else
 				next_val = LOCAL_COPY(empty_string);
 		}

@@ -1,4 +1,4 @@
-/* $EPIC: functions.c,v 1.224 2006/06/06 03:55:10 jnelson Exp $ */
+/* $EPIC: functions.c,v 1.225 2006/06/06 05:08:48 jnelson Exp $ */
 /*
  * functions.c -- Built-in functions for ircII
  *
@@ -813,7 +813,7 @@ char	*call_function (char *name, const char *args)
             return malloc_strdup(empty_string);
         }
 
-	tmp = expand_alias(lparen, args, NULL);
+	tmp = expand_alias(lparen, args);
 	debug_copy = LOCAL_COPY(tmp);
 
 	if (func && type != 1)
@@ -4653,7 +4653,7 @@ BUILT_IN_FUNCTION(function_cparse, input)
 
 	if (expand)
 	{
-		stuff = expand_alias(output, input, NULL);
+		stuff = expand_alias(output, input);
 		RETURN_MSTR(stuff);
 	}
 

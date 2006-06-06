@@ -1,4 +1,4 @@
-/* $EPIC: numbers.c,v 1.91 2006/02/14 00:53:11 jnelson Exp $ */
+/* $EPIC: numbers.c,v 1.92 2006/06/06 05:08:48 jnelson Exp $ */
 /*
  * numbers.c: handles all those strange numeric response dished out by that
  * wacky, nutty program we call ircd 
@@ -74,7 +74,7 @@ const char *	banner (void)
 	{
 		if (get_int_var(BANNER_EXPAND_VAR))
 		{
-			char *foo = expand_alias(str, empty_string, NULL);
+			char *foo = expand_alias(str, empty_string);
 			strlcpy(thing, foo, sizeof thing);
 			new_free(&foo);
 		}

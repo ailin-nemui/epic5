@@ -1,4 +1,4 @@
-/* $EPIC: commands.c,v 1.140 2006/06/06 03:55:10 jnelson Exp $ */
+/* $EPIC: commands.c,v 1.141 2006/06/06 05:08:48 jnelson Exp $ */
 /*
  * commands.c -- Stuff needed to execute commands in ircII.
  *		 Includes the bulk of the built in commands for ircII.
@@ -6,7 +6,7 @@
  * Copyright (c) 1990 Michael Sandroff.
  * Copyright (c) 1991, 1992 Troy Rollo.
  * Copyright (c) 1992-1996 Matthew Green.
- * Copyright © 1995, 2003 EPIC Software Labs
+ * Copyright © 1995, 2006 EPIC Software Labs
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -83,7 +83,7 @@
 #define AWAY_ONE                        0
 #define AWAY_ALL                        1
 
-/* flags used by parse_line */
+/* flags used by parse_block */
 #define SECURITY_NO_VARIABLE_COMMAND    1
 #define SECURITY_NO_NONINTERACTIVE_EXEC 2
 #define SECURITY_NO_NONINTERACTIVE_SET  4
@@ -173,6 +173,7 @@ static	void	allocdumpcmd	(const char *, char *, const char *);
 
 /* other */
 static	void	eval_inputlist 	(char *, char *);
+static void	parse_block (const char *, const char *, int interactive);
 
 /* I hate typedefs, but they sure can be useful.. */
 typedef void (*CmdFunc) (const char *, char *, const char *);
@@ -3314,33 +3315,51 @@ void	call_user_command (const char *alias_name, const char *alias_stuff, char *a
 					arglist, 0);
 }
 
-static char *	parse_line_alias_special (const char *name, const char *what, char *args, void *arglist, int function)
+/*
+ * parse_line_alias_special -- Run a generalized block of code
+ * Arguments:
+ *	name	 - If non-NULL, the name of a new atomic scope.
+ *		   If NULL, this is not a new atomic scope.
+ *	what	 - The block of code to execute
+ *	args	 - The value of $*
+ *	arglist	 - Local variables to auto-assign, shifting off of $*
+ *		   If NULL, do not change $*
+ *	function - If 1, this is a function call.  Set up new $function_return
+ *			and return that value.  CALLER MUST FREE THIS VALUE.
+ *		   If 0, this is not a function call.  Return value is NULL.
+ *
+ * Special note -- This function is really only suitable for running new atomic
+ *		scopes, because it set up a new /RETURNable block.  If you 
+ *		just want to run a block of code inside an existing scope
+ *		then use the runcmds() function.
+ */
+static char *	parse_line_alias_special (const char *name, const char *what, char *subargs, void *arglist, int function)
 {
-	int	old_window_display = window_display;
 	int	old_last_function_call_level = last_function_call_level;
-	char	*result = NULL;
-	int	localvars = name ? 1 : 0;
+	char *	result = NULL;
+	int	localvars = name ? 1 : 0;	/* 'name' could be free()d */
 
-	window_display = 0;
-	if (!args)
-		args = LOCAL_COPY(empty_string);
+	if (!subargs)
+		subargs = LOCAL_COPY(empty_string);
 	if (localvars && !make_local_stack(name))
 	{
 		yell("Could not run (%s) [%s]; too much recursion", 
 				name ? name : "<unnamed>", what);
-		return malloc_strdup(empty_string);
+		if (function)
+			return malloc_strdup(empty_string);
+		else
+			return NULL;
 	}
 	if (arglist)
-		prepare_alias_call(arglist, &args);
+		prepare_alias_call(arglist, &subargs);
 	if (function)
 	{
 		last_function_call_level = wind_index;
 		add_local_alias("FUNCTION_RETURN", empty_string, 0);
 	}
-	window_display = old_window_display;
 
 	will_catch_return_exceptions++;
-	runcmds(what, args);
+	parse_block(what, subargs, 0);
 	will_catch_return_exceptions--;
 	return_exception = 0;
 
@@ -3357,18 +3376,15 @@ static char *	parse_line_alias_special (const char *name, const char *what, char
 
 void	runcmds (const char *what, const char *subargs)
 {
-	parse_line(NULL, what, subargs ? subargs : empty_string, 0);
+	if (!subargs)
+		subargs = empty_string;
+	parse_block(what, subargs, 0);
 }
 
 /* 
- * parse_line: execute a block of ircII statements (in a C string)
+ * parse_block: execute a block of ircII statements (in a C string)
  *
  * Arguments:
- *	name	  - If not NULL, run these commands in a new atomic scope.
- *		    these commands will not see local variables above them,
- *		    and any local variables by them will be deleted before
- *		    parse_line returns.
- *		  - If NULL, run these commands in the current atomic scope.
  *	org_line  - A block of ircII statements.  They will be run in sequence.
  *	args	  - The value of $* to use for this block.
  *		  - (DEPRECATED) May be NULL if 'orig_line' is a single
@@ -3385,7 +3401,7 @@ void	runcmds (const char *what, const char *subargs)
  * If args is not NULL, the 'orig_line' argument is parsed, statement by 
  * statement, and each statement is passed through to parse_statement().
  */
-void	parse_line (const char *name, const char *org_line, const char *args, int interactive)
+static void	parse_block (const char *org_line, const char *args, int interactive)
 {
 	char	*line = NULL;
 	char 	*stuff = NULL;
@@ -3399,20 +3415,6 @@ void	parse_line (const char *name, const char *org_line, const char *args, int i
 	{
 		parse_statement(org_line, interactive, args);
 		return;
-	}
-
-	/*
-	 * If this is an atomic scope, then we create a new local variable
-	 * stack.  Otherwise, this command will use someone else's stack.
-	 */
-	if (name)
-	{
-	    if (!make_local_stack(name))
-	    {
-                yell("Could not run (%s) [%s]; too much recursion", 
-					name ? name : "<unnamed>", org_line);
-                return;
-	    }
 	}
 
 	/*
@@ -3445,9 +3447,7 @@ void	parse_line (const char *name, const char *org_line, const char *args, int i
 	/*
 	 * Now we run the command.
 	 */
-/*	stuff = expand_alias(line, args, NULL); */
 	parse_statement(line, interactive, args);
-/*	new_free(&stuff); */
 
 	/*
 	 * If an exception was thrown by this command, then we just
@@ -3470,12 +3470,6 @@ void	parse_line (const char *name, const char *org_line, const char *args, int i
 	 */
     }
 
-	/*
-	 * If we're an atomic scope, blow away our local variable stack.
-	 */
-	if (name)
-		destroy_local_stack();
-
 	return;
 }
 
@@ -3494,39 +3488,36 @@ void	parse_line (const char *name, const char *org_line, const char *args, int i
  *
  * You usually don't want to run this function unless you *know for sure*
  * that what you have in hand is a statement and nothing else.  If you are
- * not sure, better to call parse_line and let it figure it out.
+ * not sure, better to call runcmds() and let it figure it out.
  *
  * Known legitimate callers:
- *	parse_line() (which breaks a block into statements)
+ *	parse_block() (which breaks a block into statements)
  *	/LOAD -STD (which breaks a file into statements)
  *	SEND_LINE key binding (which processes the input line as a statement)
  *	Input in dumb mode (ditto)
  *	/SENDLINE  (which simulates processing of the input line)
  */
-int	parse_statement (const char *line, int interactive, const char *sub_args)
+int	parse_statement (const char *stmt, int interactive, const char *subargs)
 {
 static	unsigned 	level = 0;
 	unsigned 	display;
 	int		old_display_var;
-	const char *	cmdchars;
-	const char *	com;
 	int		cmdchar_used = 0;
-	int		noisy = 1;
-	char *		this_cmd = NULL;
+	int		quiet = 0;
+	char *		this_stmt;
 
-	if (!line || !*line) 
+	if (!stmt || !*stmt)
 		return 0;
 
-	if (get_int_var(DEBUG_VAR) & DEBUG_COMMANDS)
-		privileged_yell("Executing [%d] %s", level, line);
-	level++;
-	if (!(cmdchars = get_string_var(CMDCHARS_VAR)))
-		cmdchars = DEFAULT_CMDCHARS;
+	this_stmt = LOCAL_COPY(stmt);
+	set_current_command(this_stmt);
 
-	this_cmd = LOCAL_COPY(line);
-	set_current_command(this_cmd);
 	display = window_display;
 	old_display_var = get_int_var(DISPLAY_VAR);
+
+	if (get_int_var(DEBUG_VAR) & DEBUG_COMMANDS)
+		privileged_yell("Executing [%d] %s", level, stmt);
+	level++;
 
 	/* 
 	 * Once and for all i hope i fixed this.  What does this do?
@@ -3535,54 +3526,60 @@ static	unsigned 	level = 0;
 	 * to two /s.  When any character is found that is not one of
 	 * these characters, it stops looking.
 	 */
-	for (; *line; line++)
+	for (; *stmt; stmt++)
 	{
-		/* Fix to allow you to do ^foo at the input line. */
-		if (*line == '^' && (!interactive || cmdchar_used))
-		{
-			if (!noisy)
-				break;
-			noisy = 0;
-		}
-		else if ((!interactive && *line == '/') || 
-				strchr(cmdchars, *line))
-		{
-			cmdchar_used++;
-			if (cmdchar_used > 2)
-				break;
-		}
-		else
+	    /* 
+	     * ^ turns off window_display for this statement.
+	     * The user must do /^ at the input line for this.
+	     */
+	    if (*stmt == '^' && (!interactive || cmdchar_used))
+	    {
+		if (quiet++ > 1)
 			break;
+	    }
+	    /* / is the command char.  1 or 2 are allowed */
+	    else if (*stmt == '/')
+	    {
+		if (cmdchar_used++ > 2)
+			break;	
+	    }
+	    else
+		break;	
 	}
 
-	if (!noisy)
+	if (quiet)
 		window_display = 0;
 
-	com = line;
-
-	/*
-	 * always consider input a command unless we are in interactive mode
-	 * and command_mode is off.   -lynx
+	/* 
+	 * Statement in interactive mode w/o command chars sends the
+	 * statement to the current target.
 	 */
 	if (interactive && cmdchar_used == 0)
-		send_text(from_server, get_target_by_refnum(0), line, NULL, 1);
+		send_text(from_server, get_target_by_refnum(0), stmt, NULL, 1);
 
-	else if (*com == '{')
+	/* 
+	 * Statement that starts with a { is a block statement.
+	 */
+	else if (*stmt == '{')
 	{
 	    char *stuff;
 	    char *copy;
 
-	    copy = LOCAL_COPY(com);
+	    copy = LOCAL_COPY(stmt);
 	    if (!(stuff = next_expr(&copy, '{'))) 
 	    {
 		privileged_yell("Unmatched { around [%-.20s]", copy); 
 		stuff = copy + 1;
 	    }
 
-	    parse_line(NULL, stuff, sub_args, interactive);
+	    parse_block(stuff, subargs, interactive);
 	}
 
-	else if ((*com == '@') || (*com == '('))
+	/*
+	 * Statement that starts with @ or surrounded by ()s is an
+ 	 * expression statement.
+	 */
+	else if ((*stmt == '@') || (*stmt == '('))
 	{
 		/*
 		 * The expression parser wants to mangle the string it's given.
@@ -3590,58 +3587,60 @@ static	unsigned 	level = 0;
 		 * expand_alias() step, but since we don't expand expressions,
 		 * we just make a local copy.
 		 */
-		char *	my_line = LOCAL_COPY(line);
+		char *	my_stmt = LOCAL_COPY(stmt);
 		char *	tmp;
 
 		/* Expressions can start with @ or be surrounded by ()s */
-		if (*com == '(')
+		if (*my_stmt == '(')
 		{
 		    ssize_t	span;
 
-		    if ((span = MatchingBracket(my_line + 1, '(', ')')) >= 0)
-			my_line[1 + span] = 0;
+		    if ((span = MatchingBracket(my_stmt + 1, '(', ')')) >= 0)
+			my_stmt[1 + span] = 0;
 		}
 
-		if ((tmp = parse_inline(my_line + 1, sub_args)))
+		if ((tmp = parse_inline(my_stmt + 1, subargs)))
 			new_free(&tmp);
 	}
 
-	else do
+	/*
+	 * Everything else whatsoever is a command statement.
+	 */
+	else
 	{
-		char	*cline, *rest;
+		char	*cmd, *args;
 		const char *alias = NULL;
 		void	*arglist = NULL;
-		void	(*cmd) (const char *, char *, const char *) = NULL;
+		void	(*builtin) (const char *, char *, const char *) = NULL;
 
-		if (sub_args != NULL)
-			cline = expand_alias(com, sub_args, NULL); 
+		if (subargs != NULL)
+			cmd = expand_alias(stmt, subargs); 
 		else
-			cline = malloc_strdup(com);
+			cmd = malloc_strdup(stmt);
 
-		rest = cline;
-		while (*rest && !isspace(*rest))
-			rest++;
-		if (*rest)
-			*rest++ = 0;
+		args = cmd;
+		while (*args && !isspace(*args))
+			args++;
+		if (*args)
+			*args++ = 0;
 
-		upper(cline);
-		alias = get_cmd_alias(cline, &arglist, &cmd);
+		upper(cmd);
+		alias = get_cmd_alias(cmd, &arglist, &builtin);
 
 		if (cmdchar_used >= 2)
 			alias = NULL;		/* Unconditionally */
 
 		if (alias)
-			call_user_command(cline, alias, rest, arglist);
-		else if (cmd)
-			cmd(cline, rest, sub_args);
+			call_user_command(cmd, alias, args, arglist);
+		else if (builtin)
+			builtin(cmd, args, subargs);
 		else if (get_int_var(DISPATCH_UNKNOWN_COMMANDS_VAR))
-			send_to_server("%s %s", cline, rest);
+			send_to_server("%s %s", cmd, args);
 		else
-			say("Unknown command: %s", cline);
+			say("Unknown command: %s", cmd);
 
-		new_free(&cline);
+		new_free(&cmd);
 	}
-	while (0);
 
 	if (old_display_var != get_int_var(DISPLAY_VAR))
 		window_display = get_int_var(DISPLAY_VAR);

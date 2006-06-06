@@ -66,3 +66,10 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Ruby support. yay!
 * Add a /tcl command, just for laughs.  Same as perl.
 * Trap ruby exceptions, get everything working (sort of)
+* Eliminate the third argument to expand_alias(), the statement spanner.
+* Rename parse_line() to parse_block() to better reflect its duties.
+* Make parse_block() static.  Everything needs to call runcmds() now.
+* Eliminate the local-stack-creating feature of parse_block(), callers do this.
+* Rename 'line' to 'stmt' in parse_statement().
+* Sort of forget to re-implement /set cmdchars.  The / is the cmdchar.
+* Try to optimize parse_statement() and next_statement() some.

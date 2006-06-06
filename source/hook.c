@@ -1,4 +1,4 @@
-/* $EPIC: hook.c,v 1.61 2005/11/29 04:13:49 jnelson Exp $ */
+/* $EPIC: hook.c,v 1.62 2006/06/06 05:08:48 jnelson Exp $ */
 /*
  * hook.c: Does those naughty hook functions. 
  *
@@ -780,7 +780,7 @@ int 	do_hook (int which, const char *format, ...)
 		    {
 			/* XXX What about context? */
 			char *tmpnick;
-			tmpnick = expand_alias(tmp->nick, hook->buffer, NULL);
+			tmpnick = expand_alias(tmp->nick, hook->buffer);
 		        currmatch = wild_match(tmpnick, hook->buffer);
 			new_free(&tmpnick);
 		    }
@@ -2658,8 +2658,7 @@ char *hookctl (char *input)
 					if (hook->flexible)
 					{
 						char *tmpnick;
-						tmpnick = expand_alias(hook->nick, empty_string, 
-							NULL);
+						tmpnick = expand_alias(hook->nick, empty_string);
 						currmatch = wild_match(tmpnick, buffer);
 						new_free(&tmpnick);
 					}

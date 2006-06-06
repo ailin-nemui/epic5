@@ -1,4 +1,4 @@
-/* $EPIC: input.c,v 1.31 2006/06/01 23:44:14 jnelson Exp $ */
+/* $EPIC: input.c,v 1.32 2006/06/06 05:08:48 jnelson Exp $ */
 /*
  * input.c: does the actual input line stuff... keeps the appropriate stuff
  * on the input line, handles insert/delete of characters/words... the whole
@@ -252,7 +252,7 @@ void	update_input (int update)
 		 */
 		else
 		{
-			ptr = expand_alias(prompt, empty_string, NULL);
+			ptr = expand_alias(prompt, empty_string);
 			free_it = 1;
 		}
 

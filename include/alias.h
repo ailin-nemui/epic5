@@ -125,15 +125,10 @@
 
 /*
  * This function is a general purpose interface to alias expansion.
- * The second argument is the text to be expanded.
+ * The first argument is the text to be expanded.
  * The third argument are the command line expandoes $0, $1, etc.
- * The fourth argument is a flag whether $0, $1, etc are used
- * The fifth argument, if set, controls whether only the first "command"
- *   will be expanded.  If set, this argument will be set to the "rest"
- *   of the commands (after the first semicolon, or the null).  If NULL,
- *   then the entire text will be expanded.
  */
-	char *	expand_alias 		(Char *, Char *, ssize_t *);
+	char *	expand_alias 		(Char *, Char *);
 
 /*
  * This is the interface to the "expression parser"

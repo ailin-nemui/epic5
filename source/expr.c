@@ -1,4 +1,4 @@
-/* $EPIC: expr.c,v 1.36 2006/06/01 23:44:14 jnelson Exp $ */
+/* $EPIC: expr.c,v 1.37 2006/06/06 05:08:48 jnelson Exp $ */
 /*
  * expr.c -- The expression mode parser and the textual mode parser
  * #included by alias.c -- DO NOT DELETE
@@ -172,7 +172,7 @@ static	char	*next_unit (char *str, const char *args, int stage)
 	ptr++;								\
 									\
 	/* Figure out the variable name were working on */		\
-	varname = expand_alias(str, args, NULL);			\
+	varname = expand_alias(str, args);			\
 	lastc = varname + strlen(varname) - 1;				\
 	while (lastc > varname && isspace(*lastc))			\
 		*lastc-- = 0;						\
@@ -527,14 +527,14 @@ static	char	*next_unit (char *str, const char *args, int stage)
 					result1 = extractw2(args, j, EOS);
 				}
 				else
-					result1 = expand_alias(right, args, NULL);
+					result1 = expand_alias(right, args);
 			    }
 			}
 			else if (!strchr(right, '$') && !strchr(right, '\\'))
 				result1 = malloc_strdup(right);
 			else
 #endif
-				result1 = expand_alias(right, args, NULL);
+				result1 = expand_alias(right, args);
 
 			/*
 			 * You need to look closely at this, as this test 
@@ -641,7 +641,7 @@ static	char	*next_unit (char *str, const char *args, int stage)
 				else			/* postfix */
 					prefix = 0, ptr2 = str, *ptr++ = 0;
 
-				varname = expand_alias(ptr2, args, NULL);
+				varname = expand_alias(ptr2, args);
 				upper(varname);
 
 				if (!(result1 = get_variable(varname)))
@@ -1003,7 +1003,7 @@ static	char	*next_unit (char *str, const char *args, int stage)
 			{
 				*ptr++ = '\0';
 				upper(str);
-				result1 = expand_alias(str, args, NULL);
+				result1 = expand_alias(str, args);
 				result2 = next_unit(ptr, args, stage);
 
 				lastc = result1 + strlen(result1) - 1;
@@ -1292,41 +1292,47 @@ char	*parse_inline (char *str, const char *args)
  * next_statement: Determines the length of the first statement in 'string'.
  *
  * A statement ends at the first semicolon EXCEPT:
- *   -- Anything inside (...), [...], or {...} doesn't count
+ *   -- Anything inside (...) or {...} doesn't count
  */
 ssize_t	next_statement (const char *string)
 {
 	const char *ptr;
-	int	is_quote = 0;
 	int	paren_count = 0, brace_count = 0;
 
 	if (!string || !*string)
 		return -1;
 
-	for (ptr = string; ptr && *ptr; ptr++)
+	for (ptr = string; *ptr; ptr++)
 	{
-	    if (is_quote)
-		is_quote = 0;
-
-	    else if (*ptr == ';')
+	    switch (*ptr)
 	    {
-		if (paren_count == 0 && brace_count == 0)
+		case ';':
+		    if (paren_count + brace_count)
+		    	break;
+		    goto all_done;
+		case LEFT_PAREN:
+		    paren_count++;
+		    break;
+		case LEFT_BRACE:
+		    brace_count++;
+		    break;
+		case RIGHT_PAREN:
+		    if (paren_count)
+			paren_count--;
+		    break;
+		case RIGHT_BRACE:
+		    if (brace_count)
+			brace_count--;
+		    break;
+		case '\\':
+		    ptr++;
+		    if (!*ptr)
+			goto all_done;
 		    break;
 	    }
-
-	    else if (*ptr == LEFT_PAREN)
-		paren_count++;
-	    else if (*ptr == LEFT_BRACE)
-		brace_count++;
-	    else if (*ptr == RIGHT_PAREN && paren_count > 0)
-		paren_count--;
-	    else if (*ptr == RIGHT_BRACE && brace_count > 0)
-		brace_count--;
-
-	    else if (*ptr == '\\')
-		is_quote = 1;
 	}
 
+all_done:
 	if (paren_count != 0)
 	{
 		privileged_yell("[%d] More ('s than )'s found in this "
@@ -1349,12 +1355,9 @@ ssize_t	next_statement (const char *string)
  *
  * Behaviour is modified by the following:
  *	Anything between brackets (...) {...} is left unmodified.
- *	If more_text is supplied, the text is broken up at
- *		semi-colons and returned one at a time. The unprocessed
- *		portion is written back into more_text.
  *	Backslash escapes are unescaped.
  */
-char	*expand_alias	(const char *string, const char *args, ssize_t *more_text)
+char	*expand_alias	(const char *string, const char *args)
 {
 	char	*buffer = NULL,
 		*ptr,
@@ -1370,16 +1373,10 @@ char	*expand_alias	(const char *string, const char *args, ssize_t *more_text)
 	if (!string || !*string)
 		return malloc_strdup(empty_string);
 
-	if (*string == '@' && more_text)
-		unescape = NULL;
 	quote_temp[1] = 0;
 
 	stuff = LOCAL_COPY(string);
-	free_stuff = stuff;
-
-	ptr = stuff;
-	if (more_text)
-		*more_text = -1;
+	ptr = free_stuff = stuff;
 
 	while (ptr && *ptr)
 	{
@@ -1395,19 +1392,6 @@ char	*expand_alias	(const char *string, const char *args, ssize_t *more_text)
 		    case '$':
 		    {
 			char *buffer1 = NULL;
-			/*
-			 * The test here ensures that if we are in the 
-			 * expression evaluation command, we don't expand $. 
-			 * In this case we are only coming here to do command 
-			 * separation at ';'s.  If more_text is not defined, 
-			 * and the first character is '@', we have come here 
-			 * from [] in an expression.
-			 */
-			if (more_text && *string == '@')
-			{
-				ptr++;
-				break;
-			}
 			*ptr++ = 0;
 			if (!*ptr)
 			{
@@ -1431,18 +1415,6 @@ char	*expand_alias	(const char *string, const char *args, ssize_t *more_text)
 			if (quote_str)		/* Why ``stuff''? */
 				new_free(&quote_str);
 			ptr = stuff;
-			break;
-		    }
-
-		    case ';':
-		    {
-			if (!more_text)
-			{
-				ptr++;
-				break;
-			}
-			*more_text = (ptr - free_stuff) + 1;
-			*ptr = 0; /* To terminate the loop */
 			break;
 		    }
 
@@ -1499,7 +1471,7 @@ char	*expand_alias	(const char *string, const char *args, ssize_t *more_text)
 		privileged_yell("Expanded [%s] to [%s]", string, buffer);
 
 #if 0						/* Maybe a good idea later? */
-	if (!buffer && !more_text)
+	if (!buffer)
 		panic("expanded_alias [%s] returning NULL!", string);
 #endif
 
@@ -1536,7 +1508,7 @@ static	char	*alias_special_char (char **buffer, char *ptr, const char *args, cha
 			if (*ptr == '$')
 			{
 				char *	str;
-				str = expand_alias(ptr, args, NULL);
+				str = expand_alias(ptr, args);
 				length = my_atol(str);
 				new_free(&str);
 			}
@@ -1612,7 +1584,7 @@ static	char	*alias_special_char (char **buffer, char *ptr, const char *args, cha
 			 */
 			do
 			{
-				tmp2 = expand_alias(tmp, args, NULL);
+				tmp2 = expand_alias(tmp, args);
 				if (tmpsav)
 					new_free(&tmpsav);
 				tmpsav = tmp = tmp2;

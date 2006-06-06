@@ -1,4 +1,4 @@
-/* $EPIC: if.c,v 1.34 2005/08/05 00:15:44 jnelson Exp $ */
+/* $EPIC: if.c,v 1.35 2006/06/06 05:08:48 jnelson Exp $ */
 /*
  * if.c: the IF, WHILE, FOREACH, DO, FE, FEC, and FOR commands for IRCII 
  *
@@ -446,7 +446,7 @@ BUILT_IN_COMMAND(fe)
 		mapvar = next_arg(args, &args);
 		templist = get_variable(mapvar);
 	} else if ((list = next_expr(&args, '('))) {
-		templist = expand_alias(list, subargs, NULL);
+		templist = expand_alias(list, subargs);
 	} else {
 		error("%s: Missing List for /%s", command, command);
 		return;
@@ -628,7 +628,7 @@ static void	for_fe_cmd (int argc, char **argv, const char *subargs)
 		cmds++;
 	if (*list == '(')
 		list++;
-	x = real_list = expand_alias(list, subargs, NULL);
+	x = real_list = expand_alias(list, subargs);
 	will_catch_break_exceptions++;
 	will_catch_continue_exceptions++;
 	while (real_list && *real_list)
@@ -839,7 +839,7 @@ BUILT_IN_COMMAND(switchcmd)
 		return;
 	}
 
-	control = expand_alias(control, subargs, NULL);
+	control = expand_alias(control, subargs);
 	if (get_int_var(DEBUG_VAR) & DEBUG_EXPANSIONS)
 		privileged_yell("%s expression expands to: (%s)", command, control);
 
@@ -858,7 +858,7 @@ BUILT_IN_COMMAND(switchcmd)
 				new_free(&control);
 				return;
 			}
-			header = expand_alias(header, subargs, NULL);
+			header = expand_alias(header, subargs);
 			if (get_int_var(DEBUG_VAR) & DEBUG_EXPANSIONS)
 				privileged_yell("%s expression expands to: (%s)", command, header);
 			if (wild_match(header, control))

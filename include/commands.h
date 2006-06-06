@@ -28,7 +28,6 @@ extern	int	need_defered_commands;
         void    call_user_command       (Char *, Char *, char *, void *);
 	void	runcmds			(Char *, Char *);
 
-	void	parse_line 		(const char *, const char *, const char *, int);
 	int     parse_statement 	(const char *, int, const char *);
 
 	BUILT_IN_COMMAND(load);

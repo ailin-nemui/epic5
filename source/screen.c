@@ -1,4 +1,4 @@
-/* $EPIC: screen.c,v 1.116 2006/06/01 23:44:14 jnelson Exp $ */
+/* $EPIC: screen.c,v 1.117 2006/06/06 05:08:48 jnelson Exp $ */
 /*
  * screen.c
  *
@@ -2170,7 +2170,7 @@ static void 	add_to_window (Window *window, const u_char *str)
 
 		/* Create $* and then expand with it */
 		snprintf(argstuff, 10240, "%u %s", window->refnum, str);
-		str = free_me = expand_alias(pend, argstuff, NULL);
+		str = free_me = expand_alias(pend, argstuff);
 	    }
 	    recursion--;
 	}

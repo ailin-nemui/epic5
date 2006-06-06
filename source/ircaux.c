@@ -1,4 +1,4 @@
-/* $EPIC: ircaux.c,v 1.151 2006/01/07 16:46:39 jnelson Exp $ */
+/* $EPIC: ircaux.c,v 1.152 2006/06/06 05:08:48 jnelson Exp $ */
 /*
  * ircaux.c: some extra routines... not specific to irc... that I needed 
  *
@@ -2380,7 +2380,7 @@ char *	remove_brackets (const char *name, const char *args)
 			ptr = NULL;
 
 		if (args)
-			result1 = expand_alias(right, args, NULL);
+			result1 = expand_alias(right, args);
 		else
 			result1 = right;
 
