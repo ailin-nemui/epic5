@@ -1,4 +1,4 @@
-/* $EPIC: ruby.c,v 1.1 2006/06/06 03:55:10 jnelson Exp $ */
+/* $EPIC: ruby.c,v 1.2 2006/06/06 04:59:14 jnelson Exp $ */
 /*
  * ruby.c -- Calling RUBY from epic.
  *
@@ -44,60 +44,55 @@
 VALUE	rubyclass;
 int	is_ruby_running = 0;
 
+#define RUBY_STARTUP 			\
+	VALUE x;			\
+	char *my_string;		\
+					\
+	x = rb_obj_as_string(string);	\
+	my_string = rb_string_value_cstr(&x);
+
 static VALUE epic_echo (VALUE module, VALUE string)
 {
-	char *my_string;
-
-	my_string = rb_string_value_cstr(&string);
+	RUBY_STARTUP
 	yell("%s", my_string);
 	return Qnil;
 }
 
 static VALUE epic_say (VALUE module, VALUE string)
 {
-	char *my_string;
-
-	my_string = rb_string_value_cstr(&string);
+	RUBY_STARTUP
 	say("%s", my_string);
 	return Qnil;
 }
 
 static VALUE epic_cmd (VALUE module, VALUE string)
 {
-	char *my_string;
-
-	my_string = rb_string_value_cstr(&string);
+	RUBY_STARTUP
 	runcmds("$*", my_string);
 	return Qnil;
 }
 
 static VALUE epic_eval (VALUE module, VALUE string)
 {
-	char *my_string;
-
-	my_string = rb_string_value_cstr(&string);
+	RUBY_STARTUP
 	runcmds(my_string, "");
 	return Qnil;
 }
 
 static VALUE epic_expr (VALUE module, VALUE string)
 {
-	char *my_string;
 	char *exprval;
-	VALUE retval;
+	RUBY_STARTUP
 
-	my_string = rb_string_value_cstr(&string);
 	exprval = parse_inline(my_string, "");
 	return rb_str_new(exprval, strlen(exprval));
 }
 
 static VALUE epic_call (VALUE module, VALUE string)
 {
-	char *my_string;
 	char *funcval;
-	VALUE retval;
+	RUBY_STARTUP
 
-	my_string = rb_string_value_cstr(&string);
 	funcval = call_function(my_string, "");
 	return rb_str_new(funcval, strlen(funcval));
 }
@@ -126,20 +121,47 @@ void ruby_start (void)
  * Used by the $ruby(...) function: evalulate ... as a RUBY statement, and 
  * return the result of the statement.
  */
+static VALUE	internal_rubyeval (VALUE *a)
+{
+	int	foo;
+	VALUE	rubyval;
+
+	rubyval = rb_eval_string_protect((char *)a, &foo);
+	if (rubyval == Qnil)
+		return Qnil;
+	else
+		return rubyval;
+}
+
+static	VALUE	eval_failed (VALUE args, VALUE error_info)
+{
+	VALUE err_info_str;
+	char *ick;
+
+	err_info_str = rb_string_value(&error_info);
+	ick = rb_string_value_cstr(&err_info_str);
+	say("RUBY-ERROR: %s", ick);	
+	return Qnil;
+}
+
 char *	rubyeval (char *input)
 {
-	char *retval;
-	VALUE rubyval;
-	int	foo;
+	VALUE	rubyval;
+	char *	retval;
 
 	if (input && *input) 
 	{
 		ruby_start();
-		rubyval = rb_eval_string_protect(input, &foo);
+		rubyval = rb_rescue(internal_rubyeval, (VALUE)input, 
+					eval_failed, 0);
 		if (rubyval == Qnil)
 			retval = NULL;
 		else
-			retval = rb_string_value_cstr(&rubyval);
+		{
+			VALUE x;
+			x = rb_obj_as_string(rubyval);
+			retval = rb_string_value_cstr(&x);
+		}
 	}
 
 	RETURN_STR(retval);	/* XXX Is this malloced or not? */
