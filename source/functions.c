@@ -1,4 +1,4 @@
-/* $EPIC: functions.c,v 1.225 2006/06/06 05:08:48 jnelson Exp $ */
+/* $EPIC: functions.c,v 1.226 2006/06/07 02:17:06 jnelson Exp $ */
 /*
  * functions.c -- Built-in functions for ircII
  *
@@ -327,7 +327,7 @@ static	char
 	*function_pad		(char *),
 	*function_pattern 	(char *),
 	*function_pass		(char *),
-#ifdef PERL
+#ifdef HAVE_PERL
 	*function_perl		(char *),
 	*function_perlcall	(char *),
 	*function_perlxcall	(char *),
@@ -390,7 +390,7 @@ static	char
 	*function_tanh		(char *),
 	*function_tell		(char *),
 	*function_timerctl	(char *),
-#ifdef TCL
+#ifdef HAVE_TCL
 	*function_tcl		(char *),
 #endif
 	*function_tobase	(char *),
@@ -627,7 +627,7 @@ static BuiltInFunctions	built_in_functions[] =
 	{ "PAD",		function_pad		},
 	{ "PASS",		function_pass		},
 	{ "PATTERN",		function_pattern	},
-#ifdef PERL
+#ifdef HAVE_PERL
 	{ "PERL",		function_perl		},
 	{ "PERLCALL",		function_perlcall	},
 	{ "PERLXCALL",		function_perlxcall	},
@@ -700,7 +700,7 @@ static BuiltInFunctions	built_in_functions[] =
 	{ "SYMBOLCTL",		function_symbolctl	},
 	{ "TAN",		function_tan		},
 	{ "TANH",		function_tanh		},
-#ifdef TCL
+#ifdef HAVE_TCL
 	{ "TCL",		function_tcl		},
 #endif
 	{ "TDIFF",		function_tdiff 		},
@@ -6044,7 +6044,7 @@ BUILT_IN_FUNCTION(function_atan, word)
 	MATH_RETVAL(num)
 }
 
-#ifdef PERL
+#ifdef HAVE_PERL
 
 BUILT_IN_FUNCTION(function_perl, input)
 {
@@ -6074,7 +6074,7 @@ BUILT_IN_FUNCTION(function_perlxcall, input)
 
 #endif
 
-#ifdef TCL
+#ifdef HAVE_TCL
 
 BUILT_IN_FUNCTION(function_tcl, input)
 {

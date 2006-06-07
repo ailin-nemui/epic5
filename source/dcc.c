@@ -1,4 +1,4 @@
-/* $EPIC: dcc.c,v 1.132 2005/10/13 01:11:58 jnelson Exp $ */
+/* $EPIC: dcc.c,v 1.133 2006/06/07 02:17:06 jnelson Exp $ */
 /*
  * dcc.c: Things dealing client to client connections. 
  *
@@ -1022,6 +1022,7 @@ static int	dcc_connected (int fd)
 	 * Clean up and then return.
 	 */
 	get_time(&dcc->starttime);
+	get_time(&dcc->lasttime);
 	if (dcc->open_callback)
 		dcc->open_callback(dcc);
 	return 0;		/* Going to keep it. */
@@ -1091,6 +1092,7 @@ static	int	dcc_connect (DCC_list *dcc)
 	dcc->flags |= DCC_CONNECTING;
 	new_open(dcc->socket, do_dcc, NEWIO_CONNECT, 0);
 	from_server = old_server;
+	get_time(&dcc->lasttime);
 	break;
     }
     while (0);
@@ -1163,6 +1165,7 @@ static	int	dcc_listen (DCC_list *dcc)
 	 */
 	if (dcc->flags & DCC_TWOCLIENTS)
 		dcc_send_booster_ctcp(dcc);
+	get_time(&dcc->lasttime);
     }
     while (0);
 
@@ -1439,6 +1442,7 @@ const	char 		*text_display, 	/* What to tell the user we sent */
 		unlock_dcc(dcc);
 	}
 
+	get_time(&dcc->lasttime);
 	return;
 }
 
@@ -1471,6 +1475,7 @@ void	dcc_chat_transmit (char *user, char *text, const char *orig, const char *ty
 		l = message_from(dcc->user, LEVEL_DCC);
 		dcc_message_transmit(DCC_RAW, dcc->user, dcc->description, 
 					text, orig, noisy, type);
+		get_time(&dcc->lasttime);
 	}
 	else
 	{
@@ -2888,6 +2893,7 @@ void	do_dcc (int fd)
 			process_incoming_file(Client);
 			break;
 		}
+		get_time(&Client->lasttime);
 		pop_message_from(l);
 
 		from_server = previous_server;

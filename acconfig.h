@@ -1,5 +1,5 @@
 /*
- * @(#)$Id: acconfig.h,v 1.34 2006/06/06 03:55:10 jnelson Exp $
+ * @(#)$Id: acconfig.h,v 1.35 2006/06/07 02:17:04 jnelson Exp $
  */
 
 /*
@@ -198,7 +198,7 @@
 /*
  *  Perl support.
  */
-#undef PERL
+#undef HAVE_PERL
 
 /* Define this is DIRSIZ takes no argument */
 #undef DIRSIZ_TAKES_NO_ARG
@@ -297,7 +297,7 @@
 #undef HAVE_BROKEN_REALPATH
 
 /* Define this if you have TCL */
-#undef TCL
+#undef HAVE_TCL
 
 /* Define this if you have RUBY */
 #undef HAVE_RUBY
@@ -364,3 +364,19 @@
 
 /* Define this if you have ruby and stuff */
 #undef RUBYCFLAGS
+
+/* Define this if you have ruby and stuff */
+#undef RUBYLDFLAGS
+
+/* Define this if you have tcl and stuff */
+#undef TCLCFLAGS
+
+/* Define this if you have tcl and stuff */
+#undef TCLLDFLAGS
+
+/* Define this if you have perl and stuff */
+#undef PERLCFLAGS
+
+/* Define this if you have perl and stuff */
+#undef PERLLDFLAGS
+

@@ -1,3 +1,157 @@
+EPIC5-0.3.1
+
+*** News 06/06/2006 -- Much improved configure support for perl/tcl/ruby
+		*** VERY IMPORTANT FOR PACKAGE MAINTAINERS ***
+
+	The code in the 'configure' script that decides how to integrate
+	perl, tcl, and ruby has been rewritten.  For the most part, it 
+	should automagically work.  Here's the details:
+
+	PERL:
+		--with-perl
+		--with-perl=yes
+		--with-perl=/usr/local/bin/perl
+		--with-perl=no
+		--without-perl
+	By default, unless you specify --without-perl (or --with-perl=no), 
+	configure will look for the 'perl' program in your path (or use the 
+	perl you specify) and will interrogate the extmod package for details 
+	how to compile sucessfully against perl.  If the default 'perl' binary
+	is fine, you need do nothing at all.  Otherwise, all you need know 
+	is what 'perl' binary you want to use.
+
+	RUBY:
+		--with-ruby
+		--with-ruby=yes
+		--with-ruby=/usr/local/bin/ruby
+		--with-ruby=no
+		--without-perl
+	Same deal as with perl.  Configure will use the 'ruby' program (or
+	the one you specify) to get all the details necessary to get support
+	for ruby.  For most people, you need do nothing at all.
+
+	TCL:
+		--with-tcl
+		--with-tcl=yes
+		--with-tcl=/usr/local/lib/tclConfig.sh
+		--with-tcl=no
+		--without-tcl
+	TCL is a little different.  It looks for a 'tclConfig.sh' file.
+	These ones are used by default (in this order)
+		/usr/lib/tclConfig.sh
+		/usr/local/lib/tclConfig.sh
+		/usr/local/lib/tcl8.4/tclConfig.sh
+	If your tclConfig.sh is not in one of these places, or if you want
+	to use a specific tcl version, you must specify the path to the 
+	tclConfig.h file to --with-tcl.
+
+	Note to package maintainers:
+	Please throw away all of the hacks and patches you have in place
+	to support the old nasty way to set these flags.  I tried to make
+	this as painless as possible.  If the user has ruby/perl installed, 
+	then ruby/perl support will be included.  The hard part is tcl, since
+	every system puts their tclConfig.sh in an odd place.
+
+*** News 06/06/2006 -- /SET INPUT_ALIASES and /SET CMDCHARS deprecated
+	Due to recent optimizations in the epic command parser, these two
+	sets no longer have any function (although they have not yet been
+	removed).  If you desparately need the use of these /set's, please
+	let me know.  Otherwise someday they will vanish into the ether.
+
+*** News 06/06/2006 -- Support for RUBY: $ruby() and /ruby
+	Support for ruby has been added.  The support is similar to 
+	perl and tcl.  You can call out to ruby using either the $ruby()
+	function or the /ruby command.  
+
+	The following callbacks to epic are available from within ruby:
+
+	EPIC.echo(stringval)		Same as /echo
+	EPIC.say(stringval)		Same as /xecho -b
+	EPIC.cmd(stringval)		Run "stringval" without $-expansion
+	EPIC.eval(stringval)		Run "stringval" with $-expansion
+	EPIC.expr(stringval)		Return value of epic expression
+	EPIC.call(stringval)		Return value of epic function call
+
+	All of these functions take one argument (a string) and return one
+	value (also a string).
+
+	Some examples:
+	To export an epic variable to ruby:
+		@ ruby(rubyvar=$epicvar)
+	or
+		ruby {rubyvar = EPIC.expr("epicvar")}
+
+	To export a ruby variable to epic:
+		@ epicvar=ruby(rubyvar)
+	or
+		ruby {EPIC.expr("epicvar=#{rubyvar}")}
+
+	To iterate over each item in a ruby collection, passing each
+	value as the argument to an epic command:
+		ruby {
+			something.each {|x|
+				EPIC.cmd("epiccmd #{x}")
+			}
+		}
+	(Think of using this to do database access)
+
+	The EPIC.cmd and EPIC.eval commands do not start off a new atomic
+	scope within epic.  Consequently, you can read (and write) local
+	variables that are otherwise in scope:
+		alias booya {
+			@ :epiclocal = 5
+			ruby {
+				rubyvar = EPIC.expr("epiclocal")
+				rubyvar = rubyvar.to_i + 1
+				EPIC.expr("epiclocal = '#{rubyvar}'")
+			}
+			echo $epiclocal
+		}
+	It is *IMPORTANT TO REMEMBER* that because EPIC is untyped, everything
+	is a string all of the time.  This is not the case in ruby.  If you 
+	have a number in EPIC, you need to convert it to an integer (see the
+	above example), and then convert it back.
+
+	It is *ALSO VERY IMPORTANT TO REMEMBER* that if you use the /ruby
+	command, and you use it in a script that is loaded with the standard
+	(legacy) loader, the loader will insert semicolons into your ruby code
+	in the places where it would belong if it were ircII code.  Needless
+	to say, THIS MAY OR MAY NOT ALWAYS BE CORRECT.  The best solution is 
+	to get with the program and switch over to the pf-loader where this 
+	is entirely under your control.
+
+*** News 06/06/2006 -- New commands: /PERL and /TCL
+	Support for perl and tcl has been via the $perl() and $tcl() 
+	functions.  Regretably, calling a function submits the argument
+	list to quoting hell, which can be particularly painful for perl.
+	To remedy this somewhat, you can now call a block of perl or tcl
+	code with these new commands.  The block of code must be surrounded
+	by curly braces, which protect the inside from quoting hell.
+	Usage:	/perl { <perl code goes here> };
+	Usage:	/tcl { <tcl code goes here> };
+
+	See the above warnings (for ruby) about using these commands in a 
+	script that is loaded by the standard loader.  Semicolons may be
+	a problem.  Use the PF loader instead.
+
+*** News 06/06/2006 -- Removal of /set highlight_char
+	The long-threatened removal of /set highlight_char has occurred.
+	Please use the 'highlight' script for its replacement.
+
+*** News 06/06/2006 -- New script, "channelmonitor"
+
+*** News 06/06/2006 -- Extra support for 64 bits, if you have it.
+	Most built-in-functions that take an integer argument will 
+	now support 64 bit integer values.  
+
+	Further, the following functions can output 64 bits whereas
+	they never could before:
+		fseek		numsort		strtol
+		tobase		tobase		stat
+
+EPIC5-0.2.0
+	EPIC5-0.2.0 was released somewhere in here
+
 EPIC5-0.0.8
 
 *** News 12/09/2005 -- New window verb, /WINDOW INDENT (ON|OFF)

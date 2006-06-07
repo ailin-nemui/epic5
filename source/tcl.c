@@ -1,4 +1,4 @@
-/* $EPIC: tcl.c,v 1.8 2006/06/06 03:55:10 jnelson Exp $ */
+/* $EPIC: tcl.c,v 1.9 2006/06/07 02:17:06 jnelson Exp $ */
 /*
  * tcl.c -- The tcl interfacing routines.
  *
@@ -38,6 +38,7 @@
 #include "commands.h"
 #include "functions.h"
 #include "output.h"
+#include "if.h"
 #include <tcl.h>
 #ifdef TK
 #include <tk.h>

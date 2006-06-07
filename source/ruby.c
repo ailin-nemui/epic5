@@ -1,4 +1,4 @@
-/* $EPIC: ruby.c,v 1.2 2006/06/06 04:59:14 jnelson Exp $ */
+/* $EPIC: ruby.c,v 1.3 2006/06/07 02:17:06 jnelson Exp $ */
 /*
  * ruby.c -- Calling RUBY from epic.
  *
@@ -98,10 +98,17 @@ static VALUE epic_call (VALUE module, VALUE string)
 }
 
 /* Called by the epic hooks to activate tcl on-demand. */
-void ruby_start (void)
+void ruby_startstop (int value)
 {
 	if (is_ruby_running)
-		return ;
+	{
+		if (value)
+		{
+			/* Do shutdown stuff */
+		}
+		is_ruby_running = 0;
+		return;
+	}
 
 	++is_ruby_running;
 	ruby_init();
@@ -126,7 +133,7 @@ static VALUE	internal_rubyeval (VALUE *a)
 	int	foo;
 	VALUE	rubyval;
 
-	rubyval = rb_eval_string_protect((char *)a, &foo);
+	rubyval = rb_eval_string((char *)a);
 	if (rubyval == Qnil)
 		return Qnil;
 	else
@@ -138,9 +145,9 @@ static	VALUE	eval_failed (VALUE args, VALUE error_info)
 	VALUE err_info_str;
 	char *ick;
 
-	err_info_str = rb_string_value(&error_info);
+	err_info_str = rb_obj_as_string(error_info);
 	ick = rb_string_value_cstr(&err_info_str);
-	say("RUBY-ERROR: %s", ick);	
+	yell("RUBY-ERROR: %s", ick);	
 	return Qnil;
 }
 
@@ -151,7 +158,7 @@ char *	rubyeval (char *input)
 
 	if (input && *input) 
 	{
-		ruby_start();
+		ruby_startstop(1);
 		rubyval = rb_rescue(internal_rubyeval, (VALUE)input, 
 					eval_failed, 0);
 		if (rubyval == Qnil)

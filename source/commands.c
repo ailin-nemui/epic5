@@ -1,4 +1,4 @@
-/* $EPIC: commands.c,v 1.141 2006/06/06 05:08:48 jnelson Exp $ */
+/* $EPIC: commands.c,v 1.142 2006/06/07 02:17:06 jnelson Exp $ */
 /*
  * commands.c -- Stuff needed to execute commands in ircII.
  *		 Includes the bulk of the built in commands for ircII.
@@ -134,7 +134,7 @@ static	void	license		(const char *, char *, const char *);
 static	void	mecmd 		(const char *, char *, const char *);
 static	void	oper 		(const char *, char *, const char *);
 static	void	packagecmd	(const char *, char *, const char *);
-#ifdef PERL
+#ifdef HAVE_PERL
 extern	void	perlcmd		(const char *, char *, const char *);
 #endif
 static	void	pingcmd 	(const char *, char *, const char *);
@@ -159,7 +159,7 @@ static	void	usleepcmd	(const char *, char *, const char *);
 static  void	shift_cmd 	(const char *, char *, const char *);
 static	void	sleepcmd 	(const char *, char *, const char *);
 static	void	stackcmd	(const char *, char *, const char *);
-#ifdef TCL
+#ifdef HAVE_TCL
 extern void	tclcmd		(const char *, char *, const char *);
 #endif
 static  void	unshift_cmd 	(const char *, char *, const char *);
@@ -272,7 +272,7 @@ static	IrcCommand irc_command[] =
 	{ "PARSEKEY",	parsekeycmd	},
 	{ "PART",	send_2comm	},
 	{ "PAUSE",	e_pause		},
-#ifdef PERL
+#ifdef HAVE_PERL
 	{ "PERL",	perlcmd		}, /* perl.c */
 #endif
 	{ "PING",	pingcmd		},
@@ -312,7 +312,7 @@ static	IrcCommand irc_command[] =
 	{ "STUB",	stubcmd		}, /* alias.c */
 	{ "SUBPACKAGE",	subpackagecmd	},
 	{ "SWITCH",	switchcmd	}, /* if.c */
-#ifdef TCL
+#ifdef HAVE_TCL
 	{ "TCL",	tclcmd		}, /* tcl.c */
 #endif
 	{ "TIME",	send_comm	},

@@ -1,4 +1,4 @@
-/* $EPIC: irc.c,v 1.1022 2006/06/06 05:08:48 jnelson Exp $ */
+/* $EPIC: irc.c,v 1.1023 2006/06/07 02:17:06 jnelson Exp $ */
 /*
  * ircII: a new irc client.  I like it.  I hope you will too!
  *
@@ -52,7 +52,7 @@ const char internal_version[] = "20060303";
 /*
  * In theory, this number is incremented for every commit.
  */
-const unsigned long	commit_id = 1350;
+const unsigned long	commit_id = 1351;
 
 /*
  * As a way to poke fun at the current rage of naming releases after
@@ -249,11 +249,14 @@ void	irc_exit (int really_quit, const char *format, ...)
 	char *	quit_message = NULL;
 	int	old_window_display = window_display;
 	int	value;
-#ifdef PERL
+#ifdef HAVE_PERL
 	extern void perlstartstop(int);
 #endif
-#ifdef TCL
+#ifdef HAVE_TCL
 	extern void tclstartstop(int);
+#endif
+#ifdef HAVE_RUBY
+	extern void rubystartstop(int);
 #endif
 
 	/*
@@ -291,12 +294,16 @@ void	irc_exit (int really_quit, const char *format, ...)
 
 	/* Do some clean up */
 	do_hook(EXIT_LIST, "%s", buffer);
-#ifdef TCL
+#ifdef HAVE_TCL
 	tclstartstop(0);
 #endif
-#ifdef PERL
+#ifdef HAVE_PERL
 	perlstartstop(0);  /* In case there's perl code in the exit hook. */
 #endif
+#ifdef RUBY
+	rubystartstop(0);
+#endif
+
 	close_all_servers(quit_message);
 	value = 0;
 	logger(&value);

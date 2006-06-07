@@ -2,25 +2,13 @@ EPIC5 Projects, Bugs, and other Errata:
 
 KNOWN ERRATA (eg, bugs, or unresolved requests):
 ------------------------------------------------
-* Ruby support needs to trap exceptions, and convert retvals into strings.
-* DCC "last time" is never updated ongoing.
-* Fix support for tcl in configure
-
-msg from crapple!zak@from.hell: hi, when you get around to it/if possible
-+could you add something to the annoying autoconf script to detect tcls that
-+are not . for everything ie; openbsd port installs of tcl8.4 looks something
-+like this.
-msg from crapple: -r-xr-xr-x  1 root  wheel  1070064 Apr  2 19:51 libtcl84.a*
-msg from crapple: -r-xr-xr-x  1 root  wheel   821072 Apr  2 19:50
-+libtcl84.so.1.0*
-msg from crapple: if i change them to something like libtcl8.4.so.1.0, and
-+libtcl8.4.so the current autoconf script will detect.
+* Shattah would like something like /window omit <regex> to remove stuff.
+* Tag each scrollback item with a refnum so it can be tracked
 
 LOOK FOR IN THE FUTURE
 -----------------------
 * Import utf8 support from ircII OR add support for utf16 (wide chars)
 * Import fg/bg color support from ircII
-* Ruby support
 * Allow variables and aliases to be "tainted"
 * Cache what files can be /loaded in a hash
 * Support loading through ZIP files.
@@ -28,12 +16,10 @@ LOOK FOR IN THE FUTURE
 * Some way to call an alias in a variable indirectly
 * Output rules
 * Support for CNOTICE
-* More gracious support for trickling horizontal resizes down to the window.
 * /window <refnum> noserv causes bad fd loop.  (can't reproduce?)
 * /CTCPs over /DCCs don't match up with their queries very well.
 * $xform()s for SED and DEF
 * str_to_mask() should be silent, callers should be warning.
-* Add /window indent, to overrule /set indent.
 * A way to control what counts as a space on the fly (via a /set?)
 * Handling keypresses should overrule protocol enforcement (on_notice, etc)
 * Support for 64 bit ints could be more widespread
@@ -73,3 +59,6 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Rename 'line' to 'stmt' in parse_statement().
 * Sort of forget to re-implement /set cmdchars.  The / is the cmdchar.
 * Try to optimize parse_statement() and next_statement() some.
+* Rework configure mojo for perl, ruby, tcl to autogrok compile stuff.
+* Run make depend again.
+* Update the DCC "last time" value regularly.
