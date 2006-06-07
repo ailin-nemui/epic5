@@ -1,4 +1,4 @@
-/* $EPIC: compat.c,v 1.27 2005/11/01 03:17:09 jnelson Exp $ */
+/* $EPIC: compat.c,v 1.28 2006/06/07 02:41:54 jnelson Exp $ */
 /*
  * Everything that im not directly responsible for I put in here.  Almost
  * all of this stuff is either borrowed from somewhere else (for you poor
@@ -1224,6 +1224,7 @@ int	my_base64_decode (const char *str, void *data)
     return q - (unsigned char *) data;
 }
 
+#if 0
 /* ----------------------- start of humanize_number stuff ------------------*/
 /*	$NetBSD: humanize_number.c,v 1.8 2004/07/27 01:56:24 enami Exp $ */ 
 /*
@@ -1342,6 +1343,7 @@ int humanize_number (char *buf, size_t len, long bytes, const char *suffix, int 
 
 	return (r);
 }
+#endif
 
 /* --------------------------- start of misc stuff -------------------- */
 /* This is written by EPIC Software Labs contributers and is public domain */

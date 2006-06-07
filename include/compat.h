@@ -54,6 +54,7 @@ int	unsetenv (const char *);
 char *	my_realpath (const char *, char x[MAXPATHLEN]);
 #endif
 
+#if 0
 /* humanize_number(3) */ 
 #define HN_DECIMAL              0x01
 #define HN_NOSPACE              0x02
@@ -63,5 +64,6 @@ char *	my_realpath (const char *, char x[MAXPATHLEN]);
 #define HN_GETSCALE             0x10
 #define HN_AUTOSCALE            0x20
 int	humanize_number (char *, size_t, long, const char *, int, int);
+#endif
 
 #endif
