@@ -1,4 +1,4 @@
-/* $EPIC: ruby.c,v 1.3 2006/06/07 02:17:06 jnelson Exp $ */
+/* $EPIC: ruby.c,v 1.4 2006/06/08 02:59:56 jnelson Exp $ */
 /*
  * ruby.c -- Calling RUBY from epic.
  *
@@ -49,7 +49,7 @@ int	is_ruby_running = 0;
 	char *my_string;		\
 					\
 	x = rb_obj_as_string(string);	\
-	my_string = rb_string_value_cstr(&x);
+	my_string = STR2CSTR(x);
 
 static VALUE epic_echo (VALUE module, VALUE string)
 {
@@ -112,7 +112,7 @@ void ruby_startstop (int value)
 
 	++is_ruby_running;
 	ruby_init();
-	ruby_script(irc_version);
+	ruby_script(malloc_strdup(irc_version));
 	rubyclass = rb_define_class("EPIC", rb_cObject);
 	rb_define_singleton_method(rubyclass, "echo", epic_echo, 1);
 	rb_define_singleton_method(rubyclass, "say", epic_say, 1);
@@ -146,7 +146,7 @@ static	VALUE	eval_failed (VALUE args, VALUE error_info)
 	char *ick;
 
 	err_info_str = rb_obj_as_string(error_info);
-	ick = rb_string_value_cstr(&err_info_str);
+	ick = STR2CSTR(err_info_str);
 	yell("RUBY-ERROR: %s", ick);	
 	return Qnil;
 }
@@ -167,7 +167,7 @@ char *	rubyeval (char *input)
 		{
 			VALUE x;
 			x = rb_obj_as_string(rubyval);
-			retval = rb_string_value_cstr(&x);
+			retval = STR2CSTR(x);
 		}
 	}
 

@@ -1,4 +1,4 @@
-/* $EPIC: lastlog.c,v 1.58 2005/11/01 03:17:09 jnelson Exp $ */
+/* $EPIC: lastlog.c,v 1.59 2006/06/08 02:59:56 jnelson Exp $ */
 /*
  * lastlog.c: handles the lastlog features of irc. 
  *
@@ -868,7 +868,7 @@ void	set_current_window_mask (void *stuff)
  * Lines are numbered from 1, starting at the most recent line in the buffer.
  * Contributed by Crackbaby (Matt Carothers) on March 19, 1998.
  */
-char 	*function_line (char *word)
+BUILT_IN_FUNCTION(function_line, word)
 {
 	int	line = 0;
 	const char *	windesc = zero;
@@ -940,7 +940,7 @@ char 	*function_line (char *word)
  * levels as represented by the lastlog levels. If the window number is 
  * invalid, the function will return the false value.
  */
-char *function_lastlog (char *word)
+BUILT_IN_FUNCTION(function_lastlog, word)
 {
 	const char *	windesc = zero;
 	char *	pattern = NULL;
@@ -971,5 +971,37 @@ char *function_lastlog (char *word)
 		return retval;
 
 	RETURN_EMPTY;
+}
+
+
+/*
+ * Here's the plan:
+ * 	$lastlogctl(REFNUMS <windesc> <levels>)
+ *	  Like $lastlog(), returns all lastlog refnums for <windesc> that
+ *	  belong to one of the level(s).  The refnums returned do not work
+ *	  with $line() (but work with $lastlogctl())
+ *
+ *	$lastlogctl(GET <refnum> LEVEL)
+ *	  The lastlog item's level, eg, MSGS, PUBLICS, OTHER.
+ *	$lastlogctl(GET <refnum> TARGET)
+ *	  The item's target: 
+ *		For messages sent to you, the sender.
+ *	  	For messages you sent, the receiver.  
+ *		For messages sent to a channel, the channel.
+ *		For everything else, the empty string.
+ *	$lastlogctl(GET <refnum> TEXT)
+ *	$lastlogctl(GET <refnum> TIMESTAMP)
+ *	$lastlogctl(GET <refnum> VISIBLE)
+ *	$lastlogctl(GET <refnum> WINDOW)
+ *
+ *	$lastlogctl(SET <refnum> LEVEL <level>)
+ *	$lastlogctl(SET <refnum> TARGET <target>)
+ *	$lastlogctl(SET <refnum> TEXT <text>)
+ *	$lastlogctl(SET <refnum> TIMESTAMP <timestamp>)
+ *	$lastlogctl(SET <refnum> VISIBLE [0|1])
+ *	$lastlogctl(SET <refnum> WINDOW)
+ */
+BUILT_IN_FUNCTION(function_lastlogctl, input)
+{
 }
 

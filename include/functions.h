@@ -39,7 +39,10 @@
  * They _WILL_ evaluate the term twice, and for some function calls, 
  * that can result in a memory leak, or worse.
  */
-
+#ifdef need_static_functions
 #define BUILT_IN_FUNCTION(x, y) static char * x (char * y)
+#else
+#define BUILT_IN_FUNCTION(x, y) char * x (char * y)
+#endif
 
 #endif
