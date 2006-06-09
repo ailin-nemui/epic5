@@ -1,0 +1,105 @@
+This is my attempt to document just what makes up "The IrcII Language" and
+how epic uses the ircII language.  This could be used as a starting point
+to replace ircII with something else.
+
+The ircII language is a collection of:
+--------------------------------------
+* A block parser that runs a string of "ircII statements"
+* A statement tokenizer (identify statements in a block)
+* A string macro-expander (including function-calling) and dequoter.
+* A collection of user created ircII statements
+ 	(strings that are blocks, and can be used as commands or functions)
+* A collection of user created ircII variables: strings that are macros.
+* An expression parser that performs mathematical operations.
+* A collection of built-in commands that can be used in ircII statements.
+* A collection of built-in functions that can be used in irciI expandos.
+* A stack of local variables which are constrained to an "atomic scope"
+
+These are the atomic scopes of the ircII language
+-------------------------------------------------
+* /DEFER runs a string (provided as an argument)
+* /LOAD -PF runs a string (provided in a file)
+* /EXEC runs a string (provided as argument to -ERROR, END, etc)
+* /EXEC runs a string (provided as argument to WAIT %proc -CMD)
+* Statemenet parser runs a string (aliases)
+* call_function() runs a string (provided as argument to ALIAS)
+* do_hook() runs a string (provided as argument to ON)
+* key_exec() runs a string (user-created keybindings)
+* /QUEUE -RUN runs a string (provided as an argument to QUEUE)
+* /WAIT -CMD runs a command (provided as argument)
+* /TIMER expiration runs a command (provided as argument to /TIMER)
+* /SET runs a string (provided as argument to /ADDSET)
+* /WHO callback runs a string (provided as argument to -LINE, -END, etc)
+* /ISON callback runs a string (provided as argument to -ON, etc)
+* /USERHOST callback runs a string (provided as argument to -CMD)
+
+These run ircII code asynchronously, but not in an atomic scope
+---------------------------------------------------------------
+* The SEND_LINE keybinding runs the input line as a statement
+* /LOAD -STD runs statements (provided in a file)
+* /SENDLINE runs a string as a statement (provided as argument)
+* Sending message to "/CMD" runs the command + text as a statement
+* Dumb mode input runs each line of input as statement (from stdin)
+* Expression parser runs a string (the {} operator) (hides function_return)
+
+These run ircII code, but expressly in an existing atomic scope
+---------------------------------------------------------------
+* /EVAL and /XEVAL runs a string (provided as argument)
+* /REDIRECT runs a string (provided as argument)
+* /WAIT FOR runs a string (provided as argument)
+* /INPUT runs a string (provided as an argument)
+* /IF, /DO, /WHILE, /FOREACH run a string (provided as an argument)
+* /FE, /FOR .. NEXT, /FOR .. IN, /FOR (,,) run a string (argument)
+* /SWITCH, /REPEAT run a string (provided as argument)
+* The PARSE_COMMAND keybinding runs a string (provided as argument)
+* Perl, Ruby, and TCL can all call-back to ircII blocks
+
+These call ircII expressions
+----------------------------
+* Statements starting with @ or surrounded by () are expressions.
+* The ${...} expando is an expression
+* /IF, /DO, /WHILE, /FOR, /REPEAT all take expressions
+* Perl, Ruby, and TCL can all call-back to ircII expressions
+
+These call ircII functions directly
+-----------------------------------
+* Expression parser calls functions
+* do_hook() calls the $cparse() function for implied hooks
+* Perl, Ruby, and TCL can all call-back to ircII functions.
+* /POP, /PUSH, /SHIFT, and /UNSHIFT call functions directly
+* $tow(), $afterw() $fromw(), and $beforew() calls $findw() directly
+* $uniq() calls $findw() directly
+
+These try to expand $'s or dequote \'s in strings
+-------------------------------------------------
+* Default values for arglists are expanded
+* Each statement is expanded before the command is parsed
+* Assignment operators in the expression parser expand the lval.
+* The [] operator in expression parser are expanded.
+* The operand of the ++ or -- operator is expanded
+* For $[...]var, the ... value is expanded. 
+* For $(...), the ... value is expanded
+* The argument list to a function call is expanded.
+* The first argument to $cparse() is expanded if it's double quoted.
+* The wildcard pattern in flexible hooks is expanded
+* The /FE command expands the word list
+* The /FOR var IN (list) command expands the word list
+* The /SWITCH command expands the wildcard patterns
+* The input prompt is expanded
+* The insides of []s in variable names are expanded.
+* Stuff written to logfiles is expanded via /SET LOG_REWRITE
+* /SET BANNER is expanded if /SET BANNER_EXPAND is on
+* The /QUEUE command sometimes expands the commands it runs
+* Stuff displayed to windows is expanded via /SET OUTPUT_REWRITE
+* The status bar is expanded if /SET STATUS_DOES_EXPANDOS is on
+* The %{3}F (status_activity) value is expanded
+
+These places try to extract an lval (variable name) from a string
+-----------------------------------------------------------------
+* /ASSIGN ...
+* /STUB ASSIGN ...
+* /LOCAL ...
+* The operand after the # or @ operator in the old math parser.
+* The operand tokenizer in the math parser
+* $unshift(...) and $push(...)
+
