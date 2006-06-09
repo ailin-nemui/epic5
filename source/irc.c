@@ -1,4 +1,4 @@
-/* $EPIC: irc.c,v 1.1026 2006/06/08 15:13:33 jnelson Exp $ */
+/* $EPIC: irc.c,v 1.1027 2006/06/09 03:19:14 jnelson Exp $ */
 /*
  * ircII: a new irc client.  I like it.  I hope you will too!
  *
@@ -52,7 +52,7 @@ const char internal_version[] = "20060303";
 /*
  * In theory, this number is incremented for every commit.
  */
-const unsigned long	commit_id = 1354;
+const unsigned long	commit_id = 1355;
 
 /*
  * As a way to poke fun at the current rage of naming releases after
@@ -88,6 +88,7 @@ const char ridiculous_version_name[] = "Vicissitude";
 #include "newio.h"
 #include "parse.h"
 #include "levels.h"
+#include "extlang.h"
 #include <pwd.h>
 
 
@@ -249,15 +250,6 @@ void	irc_exit (int really_quit, const char *format, ...)
 	char *	quit_message = NULL;
 	int	old_window_display = window_display;
 	int	value;
-#ifdef HAVE_PERL
-	extern void perlstartstop(int);
-#endif
-#ifdef HAVE_TCL
-	extern void tclstartstop(int);
-#endif
-#ifdef HAVE_RUBY
-	extern void rubystartstop(int);
-#endif
 
 	/*
 	 * If we get called recursively, something is hosed.

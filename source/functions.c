@@ -1,4 +1,4 @@
-/* $EPIC: functions.c,v 1.227 2006/06/08 02:59:56 jnelson Exp $ */
+/* $EPIC: functions.c,v 1.228 2006/06/09 03:19:14 jnelson Exp $ */
 /*
  * functions.c -- Built-in functions for ircII
  *
@@ -79,6 +79,7 @@
 #include "if.h"
 #include "ssl.h"
 #include "levels.h"
+#include "extlang.h"
 
 #ifdef NEED_GLOB
 # include "glob.h"
@@ -6049,14 +6050,13 @@ BUILT_IN_FUNCTION(function_atan, word)
 
 BUILT_IN_FUNCTION(function_perl, input)
 {
-	extern char* perleval ( const char* );
 	return perleval ( input );
 }
 
 BUILT_IN_FUNCTION(function_perlcall, input)
 {
 	char *sub=NULL;
-	extern char* perlcall ( const char*, char*, char*, long, char* );
+
 	GET_STR_ARG(sub, input);
 	return perlcall ( sub, NULL, NULL, -1, input );
 }
@@ -6065,7 +6065,7 @@ BUILT_IN_FUNCTION(function_perlxcall, input)
 {
 	long item=0;
 	char *sub=NULL, *in=NULL, *out=NULL;
-	extern char* perlcall ( const char*, char*, char*, long, char* );
+
 	GET_STR_ARG(sub, input);
 	if (input && *input) GET_STR_ARG(in, input);
 	if (input && *input) GET_STR_ARG(out, input);
@@ -6079,7 +6079,6 @@ BUILT_IN_FUNCTION(function_perlxcall, input)
 
 BUILT_IN_FUNCTION(function_tcl, input)
 {
-	extern char* tcleval ( char* );
 	return tcleval ( input );
 }
 
@@ -6597,7 +6596,6 @@ BUILT_IN_FUNCTION(function_xform, input)
 
 BUILT_IN_FUNCTION(function_ruby, input)
 {
-	extern char* rubyeval ( char* );
 	return rubyeval ( input );
 }
 

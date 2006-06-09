@@ -1,8 +1,8 @@
-/* $EPIC: tcl.c,v 1.9 2006/06/07 02:17:06 jnelson Exp $ */
+/* $EPIC: tcl.c,v 1.10 2006/06/09 03:19:14 jnelson Exp $ */
 /*
  * tcl.c -- The tcl interfacing routines.
  *
- * Copyright © 2001 EPIC Software Labs.
+ * Copyright © 2001, 2006 EPIC Software Labs.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -39,6 +39,7 @@
 #include "functions.h"
 #include "output.h"
 #include "if.h"
+#include "extlang.h"
 #include <tcl.h>
 #ifdef TK
 #include <tk.h>
@@ -50,11 +51,7 @@ int	istclrunning = 0;
 /*
  * A new TCL command, [echo], which displays back on the epic window.
  */
-int Tcl_echoCmd (clientData, interp, objc, objv)
-	ClientData	clientData;
-	Tcl_Interp	*interp;
-	int		objc;
-	char		**objv;
+int	Tcl_echoCmd (ClientData clientData, Tcl_Interp *interp, int objc, const char **objv)
 {
 	int	i;
 	size_t	clue = 0;
@@ -75,11 +72,7 @@ int Tcl_echoCmd (clientData, interp, objc, objv)
  *	[epic call ...]		Call ... where ... is "$func(args)"
  *				Returning the result.  $* is the empty string.
  */
-int Tcl_epicCmd (clientData, interp, objc, objv)
-	ClientData	clientData;
-	Tcl_Interp	*interp;
-	int		objc;
-	char		**objv;
+int	Tcl_epicCmd (ClientData clientData, Tcl_Interp *interp, int objc, const char **objv)
 {
 	int	i;
 	char	*retval = NULL;
@@ -117,11 +110,7 @@ int Tcl_epicCmd (clientData, interp, objc, objv)
 
 /* A new TCL command [tkon] which turns on tk (natch?) */
 #ifdef TK
-int Tcl_tkonCmd (clientData, interp, objc, objv)
-	ClientData	clientData;
-	Tcl_Interp	*interp;
-	int		objc;
-	char		**objv;
+int	Tcl_tkonCmd (ClientData clientData, Tcl_Interp *interp, int objc, char **objv)
 {
 	Tk_Init(interp);
 	return TCL_OK;
@@ -129,17 +118,24 @@ int Tcl_tkonCmd (clientData, interp, objc, objv)
 #endif
 
 /* Called by the epic hooks to activate tcl on-demand. */
-void tclstartstop (int startnotstop) {
-	if (startnotstop && !istclrunning) {
+void	tclstartstop (int startnotstop) 
+{
+	if (startnotstop && !istclrunning) 
+	{
 		++istclrunning;
 		my_tcl = Tcl_CreateInterp();
 		Tcl_Init(my_tcl);
-		Tcl_CreateCommand (my_tcl, "echo", Tcl_echoCmd, (ClientData)NULL, (void (*)())NULL);
-		Tcl_CreateCommand (my_tcl, "epic", Tcl_epicCmd, (ClientData)NULL, (void (*)())NULL);
+		Tcl_CreateCommand(my_tcl, "echo", Tcl_echoCmd, 
+				(ClientData)NULL, (void (*)())NULL);
+		Tcl_CreateCommand(my_tcl, "epic", Tcl_epicCmd, 
+				(ClientData)NULL, (void (*)())NULL);
 #ifdef TK
-		Tcl_CreateCommand (my_tcl, "tkon", Tcl_tkonCmd, (ClientData)NULL, (void (*)())NULL);
+		Tcl_CreateCommand(my_tcl, "tkon", Tcl_tkonCmd, 
+				(ClientData)NULL, (void (*)())NULL);
 #endif
-	} else if (!startnotstop && istclrunning) {
+	} 
+	else if (!startnotstop && istclrunning) 
+	{
 		Tcl_DeleteInterp(my_tcl);
 		istclrunning=0;
 	}
@@ -149,13 +145,16 @@ void tclstartstop (int startnotstop) {
  * Used by the $tcl(...) function: evalulate ... as a TCL statement, and 
  * return the result of the statement.
  */
-char* tcleval (char* input) {
+char *	tcleval (char* input) 
+{
 	char *retval=NULL;
-	if (input && *input) {
+
+	if (input && *input) 
+	{
 		tclstartstop(1);
 		Tcl_Eval(my_tcl, input);
 		retval = malloc_strdup(Tcl_GetStringResult(my_tcl));
-	};
+	}
 	RETURN_MSTR(retval);
 }
 

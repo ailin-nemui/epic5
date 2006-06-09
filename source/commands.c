@@ -1,4 +1,4 @@
-/* $EPIC: commands.c,v 1.142 2006/06/07 02:17:06 jnelson Exp $ */
+/* $EPIC: commands.c,v 1.143 2006/06/09 03:19:14 jnelson Exp $ */
 /*
  * commands.c -- Stuff needed to execute commands in ircII.
  *		 Includes the bulk of the built in commands for ircII.
@@ -71,6 +71,7 @@
 #include "newio.h"
 #include "words.h"
 #include "reg.h"
+#include "extlang.h"
 
 /* used with input_move_cursor */
 #define RIGHT 1
@@ -134,9 +135,6 @@ static	void	license		(const char *, char *, const char *);
 static	void	mecmd 		(const char *, char *, const char *);
 static	void	oper 		(const char *, char *, const char *);
 static	void	packagecmd	(const char *, char *, const char *);
-#ifdef HAVE_PERL
-extern	void	perlcmd		(const char *, char *, const char *);
-#endif
 static	void	pingcmd 	(const char *, char *, const char *);
 static  void    pop_cmd 	(const char *, char *, const char *);
 static	void	pretend_cmd	(const char *, char *, const char *);
@@ -159,9 +157,6 @@ static	void	usleepcmd	(const char *, char *, const char *);
 static  void	shift_cmd 	(const char *, char *, const char *);
 static	void	sleepcmd 	(const char *, char *, const char *);
 static	void	stackcmd	(const char *, char *, const char *);
-#ifdef HAVE_TCL
-extern void	tclcmd		(const char *, char *, const char *);
-#endif
 static  void	unshift_cmd 	(const char *, char *, const char *);
 static	void	version 	(const char *, char *, const char *);
 static 	void	waitcmd 	(const char *, char *, const char *);
@@ -1295,7 +1290,7 @@ BUILT_IN_COMMAND(info)
 		say("Versions 2.2pre8 through 2.8.2 by Matthew Green");
 		say("\tCopyright 1992-1995 Matthew Green");
 		say("All EPIC versions by EPIC Software Labs");
-		say("\tCopyright 1993-2004 EPIC Software Labs");
+		say("\tCopyright 1993-2006 EPIC Software Labs");
 		say(" ");
 		say("	    Contact the EPIC project (%s)", EMAIL_CONTACT);
 		say("	    for problems with this or any other EPIC client");

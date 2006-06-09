@@ -1,4 +1,4 @@
-/* $EPIC: lastlog.c,v 1.59 2006/06/08 02:59:56 jnelson Exp $ */
+/* $EPIC: lastlog.c,v 1.60 2006/06/09 03:19:14 jnelson Exp $ */
 /*
  * lastlog.c: handles the lastlog features of irc. 
  *
@@ -974,6 +974,7 @@ BUILT_IN_FUNCTION(function_lastlog, word)
 }
 
 
+#if 0
 /*
  * Here's the plan:
  * 	$lastlogctl(REFNUMS <windesc> <levels>)
@@ -1003,5 +1004,7 @@ BUILT_IN_FUNCTION(function_lastlog, word)
  */
 BUILT_IN_FUNCTION(function_lastlogctl, input)
 {
+	RETURN_STR(empty_string);
 }
+#endif
 

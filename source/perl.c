@@ -1,8 +1,8 @@
-/* $EPIC: perl.c,v 1.16 2006/06/06 03:55:10 jnelson Exp $ */
+/* $EPIC: perl.c,v 1.17 2006/06/09 03:19:14 jnelson Exp $ */
 /*
  * perl.c -- The perl interfacing routines.
  *
- * Copyright © 2001 EPIC Software Labs.
+ * Copyright © 2001, 2006 EPIC Software Labs.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -39,6 +39,7 @@
 #include "functions.h"
 #include "output.h"
 #include "if.h"
+#include "extlang.h"
 #include <EXTERN.h>
 #include <perl.h>
 #include <XSUB.h>
@@ -56,7 +57,7 @@ STRLEN	trash;
 #endif
 
 static XS (XS_cmd) {
-	unsigned foo;
+	int	foo;
 	dXSARGS;
 	for (foo=0; foo<items; foo++) {
 		runcmds("$*", SvPV_nolen(ST(foo)));
@@ -65,7 +66,7 @@ static XS (XS_cmd) {
 }
 
 static XS (XS_eval) {
-	unsigned foo;
+	int	foo;
 	dXSARGS;
 	for (foo=0; foo<items; foo++) {
 		runcmds(SvPV_nolen(ST(foo)), "");
@@ -74,7 +75,7 @@ static XS (XS_eval) {
 }
 
 static XS (XS_expr) {
-	unsigned foo = 0;
+	int	foo = 0;
 	char* retval=NULL;
 	char* arg=NULL;
 	dXSARGS;
@@ -89,7 +90,7 @@ static XS (XS_expr) {
 }
 
 static XS (XS_call) {
-	unsigned foo = 0;
+	int	foo = 0;
 	char* retval=NULL;
 	char* arg=NULL;
 	dXSARGS;
@@ -104,7 +105,7 @@ static XS (XS_call) {
 }
 
 static XS (XS_yell) {
-	unsigned foo;
+	int	foo;
 	dXSARGS;
 	for (foo=0; foo<items; foo++) {
 		yell("Perl: %s",SvPV_nolen(ST(foo)));
@@ -112,54 +113,66 @@ static XS (XS_yell) {
 	XSRETURN(items);
 }
 
-EXTERN_C void
-xs_init(void)
+EXTERN_C void	xs_init(void)
 {
-	char *file = __FILE__;
+	const char *file = __FILE__;
 	dXSUB_SYS;
 
 	/* DynaLoader is a special case */
-	newXS("DynaLoader::boot_DynaLoader", boot_DynaLoader, file);
-	newXS("EPIC::cmd", XS_cmd, "IRC");
-	newXS("EPIC::eval", XS_eval, "IRC");
-	newXS("EPIC::expr", XS_expr, "IRC");
-	newXS("EPIC::call", XS_call, "IRC");
-	newXS("EPIC::yell", XS_yell, "IRC");
+	newXS(malloc_strdup("DynaLoader::boot_DynaLoader"), 
+			boot_DynaLoader, malloc_strdup(file));
+	newXS(malloc_strdup("EPIC::cmd"), XS_cmd, malloc_strdup("IRC"));
+	newXS(malloc_strdup("EPIC::eval"), XS_eval, malloc_strdup("IRC"));
+	newXS(malloc_strdup("EPIC::expr"), XS_expr, malloc_strdup("IRC"));
+	newXS(malloc_strdup("EPIC::call"), XS_call, malloc_strdup("IRC"));
+	newXS(malloc_strdup("EPIC::yell"), XS_yell, malloc_strdup("IRC"));
 }
 
 /* Stopping has one big memory leak right now, so it's not used. */
-void perlstartstop (int startnotstop) {
+void	perlstartstop (int startnotstop) 
+{
 	if (startnotstop && !isperlrunning) {
-		char *embedding[] = {
-			"", "-e",
-			"$SIG{__DIE__}=$SIG{__WARN__}=\\&EPIC::yell;"
-		};
+		char *embedding[3];
+		embedding[0] = malloc_strdup(empty_string);
+		embedding[1] = malloc_strdup("-e");
+		embedding[2] = malloc_strdup("$SIG{__DIE__}=$SIG{__WARN__}=\\&EPIC::yell;");
+
 		++isperlrunning;
 		my_perl = perl_alloc();
 		perl_construct( my_perl );
 		perl_parse(my_perl, xs_init, 3, embedding, NULL);
-		if (SvTRUE(ERRSV)) yell("perl_parse: %s", SvPV_nolen(ERRSV));
+		if (SvTRUE(ERRSV)) 
+			yell("perl_parse: %s", SvPV_nolen(ERRSV));
 		perl_run(my_perl);
-		if (SvTRUE(ERRSV)) yell("perl_run: %s", SvPV_nolen(ERRSV));
+		if (SvTRUE(ERRSV)) 
+			yell("perl_run: %s", SvPV_nolen(ERRSV));
 	} else if (!startnotstop && isperlrunning && !perlcalldepth) {
 		perl_destruct(my_perl);
-		if (SvTRUE(ERRSV)) yell("perl_destruct: %s", SvPV_nolen(ERRSV));
+		if (SvTRUE(ERRSV)) 
+			yell("perl_destruct: %s", SvPV_nolen(ERRSV));
 		perl_free(my_perl);
-		if (SvTRUE(ERRSV)) yell("perl_free: %s", SvPV_nolen(ERRSV));
+		if (SvTRUE(ERRSV)) 
+			yell("perl_free: %s", SvPV_nolen(ERRSV));
 		isperlrunning=0;
 	}
 }
 
-char* perlcall (const char* sub, char* in, char* out, long item, char* input) {
+char *	perlcall (const char* sub, char* in, char* out, long item, char* input) 
+{
 	char *retval=NULL;
 	int count, foo;
 	an_array *array;
+
 	dSP ;
-	if (!isperlrunning){RETURN_MSTR(retval);}
+	if (!isperlrunning)
+		RETURN_MSTR(retval);
+
 	++perlcalldepth;
-	ENTER; SAVETMPS;
+	ENTER; 
+	SAVETMPS;
 	PUSHMARK(SP);
-	if (input && *input) XPUSHs(sv_2mortal(newSVpv(input, 0)));
+	if (input && *input) 
+		XPUSHs(sv_2mortal(newSVpv(input, 0)));
 	if (in && *in && (array=get_array(in))) {
 		for (foo=0; foo<array->size; foo++) {
 			XPUSHs(sv_2mortal(newSVpv(array->item[foo], 0)));
@@ -170,8 +183,10 @@ char* perlcall (const char* sub, char* in, char* out, long item, char* input) {
 		long size;
 		upper(out);
 		size=(array=get_array(out))?array->size:0;
-		if (0>item) item=size-~item;
-		if (item>size) item=-1;
+		if (0>item) 
+			item=size-~item;
+		if (item>size) 
+			item=-1;
 	} else {
 		item=-1;
 	}

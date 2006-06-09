@@ -65,3 +65,5 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Fix build on freebsd-i386
 * Make the ruby support work with ruby-1.6.4 api (for older freebsd)
 * Add the 'nickcomp' script contributed by Blackjac. Thanks!
+* Create an 'extlang.h' header file for perl/tcl/ruby stuff.
+* Clean up warnings and stuff for the external lang support.
