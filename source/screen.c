@@ -1,4 +1,4 @@
-/* $EPIC: screen.c,v 1.117 2006/06/06 05:08:48 jnelson Exp $ */
+/* $EPIC: screen.c,v 1.118 2006/06/09 06:01:48 jnelson Exp $ */
 /*
  * screen.c
  *
@@ -3002,8 +3002,12 @@ static void 	do_screens (int fd)
 						BIG_BUFFER_SIZE, -1);
 				if (n > 0)
 				{
+					int proto = get_server_protocol_state(from_server);
+					set_server_protocol_state(from_server, 0);
+
 					for (i = 0; i < n; i++)
 						edit_char(buffer[i]);
+					set_server_protocol_state(from_server, proto);
 				}
 
 #ifdef WINDOW_CREATE

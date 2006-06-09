@@ -3,7 +3,8 @@ EPIC5 Projects, Bugs, and other Errata:
 KNOWN ERRATA (eg, bugs, or unresolved requests):
 ------------------------------------------------
 * Shattah would like something like /window omit <regex> to remove stuff.
-* Tag each scrollback item with a refnum so it can be tracked
+* Create a unified lastlog (across all windows)
+* Permit lastlog entries to be moved across windows.
 
 LOOK FOR IN THE FUTURE
 -----------------------
@@ -21,7 +22,6 @@ LOOK FOR IN THE FUTURE
 * $xform()s for SED and DEF
 * str_to_mask() should be silent, callers should be warning.
 * A way to control what counts as a space on the fly (via a /set?)
-* Handling keypresses should overrule protocol enforcement (on_notice, etc)
 * Support for 64 bit ints could be more widespread
 
 [See http://www.epicsol.org/PROJECTS for things to come in the future]
@@ -67,3 +67,4 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Add the 'nickcomp' script contributed by Blackjac. Thanks!
 * Create an 'extlang.h' header file for perl/tcl/ruby stuff.
 * Clean up warnings and stuff for the external lang support.
+* Suspend protocol enforcement when we're processing user input.
