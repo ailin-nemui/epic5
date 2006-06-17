@@ -1,4 +1,4 @@
-/* $EPIC: numbers.c,v 1.92 2006/06/06 05:08:48 jnelson Exp $ */
+/* $EPIC: numbers.c,v 1.93 2006/06/17 04:04:02 jnelson Exp $ */
 /*
  * numbers.c: handles all those strange numeric response dished out by that
  * wacky, nutty program we call ircd 
@@ -281,7 +281,7 @@ void 	numbered_command (const char *from, const char *comm, char const **ArgList
 	{
 		const char *new_server, *new_port_s, *message;
 		int	new_port, old_server;
-		char *	str;
+		char *	str = NULL;
 		int	new_servref;
 
 		PasteArgs(ArgList, 2);

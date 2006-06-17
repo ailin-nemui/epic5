@@ -3,6 +3,11 @@ EPIC5 Projects, Bugs, and other Errata:
 KNOWN ERRATA (eg, bugs, or unresolved requests):
 ------------------------------------------------
 * Shattah would like something like /window omit <regex> to remove stuff.
+* Tag each lastlog item with a refnum so it can be tracked
+* Nonblocking SSL negotiations, for weirdo.
+* We use AI_ADDRINFO in ai_flags to getaddrinfo() but our getaddrinfo()
+	doesn't know how to handle that.  Should just return ipv4 only
+* Need to implement /set mailbox_type (MBOX or MAILDIR)
 * Create a unified lastlog (across all windows)
 * Permit lastlog entries to be moved across windows.
 
@@ -67,4 +72,11 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Add the 'nickcomp' script contributed by Blackjac. Thanks!
 * Create an 'extlang.h' header file for perl/tcl/ruby stuff.
 * Clean up warnings and stuff for the external lang support.
+<<<<<<< KNOWNBUGS
+* Lay the foundations for nonblocking ssl connection (not supported yet)
+* Change SEND_LINE to do SCROLL_FORWARD if we're in scrollback mode
+* Add support for maildir mailboxes. 
+* Fix crash with 042 numeric.
+=======
 * Suspend protocol enforcement when we're processing user input.
+>>>>>>> 1.607

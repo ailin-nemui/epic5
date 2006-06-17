@@ -175,13 +175,14 @@ static __inline__ Server *	get_server (int server)
 #define SERVER_RECONNECT	0
 #define SERVER_DNS		1
 #define SERVER_CONNECTING	2
-#define SERVER_REGISTERING	3
-#define SERVER_SYNCING		4
-#define SERVER_ACTIVE		5
-#define SERVER_EOF		6	
-#define SERVER_ERROR		7
-#define SERVER_CLOSING		8
-#define SERVER_CLOSED		9
+#define SERVER_SSL_CONNECTING	3
+#define SERVER_REGISTERING	4
+#define SERVER_SYNCING		5
+#define SERVER_ACTIVE		6
+#define SERVER_EOF		7
+#define SERVER_ERROR		8
+#define SERVER_CLOSING		9
+#define SERVER_CLOSED		10
 extern	const char *server_states[10];
 
 

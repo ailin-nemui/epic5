@@ -1,4 +1,4 @@
-/* $EPIC: ssl.c,v 1.20 2005/08/09 02:01:05 jnelson Exp $ */
+/* $EPIC: ssl.c,v 1.21 2006/06/17 04:04:02 jnelson Exp $ */
 /*
  * ssl.c: SSL connection functions
  *
@@ -132,6 +132,12 @@ static ssl_info *	new_ssl_info (int vfd)
 	return x;
 }
 
+/*
+ * Return code:
+ *	-1	Something really died
+ *	 0	SSL negotiation is pending
+ *	 1	SSL negotiation is complete
+ */
 int	startup_ssl (int vfd, int channel)
 {
 	char *		u_cert_issuer;
@@ -192,7 +198,7 @@ int	startup_ssl (int vfd, int channel)
 	new_free(&u_cert_subject);
 	free(cert_issuer);
 	free(cert_subject);
-	return 0;
+	return 1;
 }
 
 
@@ -288,6 +294,12 @@ int	ssl_read (int vfd, int quiet)
 
 	return c;
 }
+
+/* * * * * * */
+int	ssl_connect (int vfd, int quiet)
+{
+}
+
 
 const char *	get_ssl_cipher (int vfd)
 {

@@ -21,28 +21,27 @@
  *	- PURPOSE: To indicate that file descriptor 'fd' should be watched
  *		   for readable events
  *	- INPUT:   fd - The file descriptor to watch
- *	           callback - The function to call when 'fd' can be read
+ *	           callback - The function to call when 'fd' is "dirty".
  *		      -- Note, 'fd' shall be passed to the callback.
+ *		   type - One of the NEWIO_* macros below that tell us
+ *			  how data from the fd is generated:
+ *			NEWIO_READ - When Readable, call read().
+ *			NEWIO_ACCEPT - When Readable, call accept().
+ *			NEWIO_SSL_READ - When Readable, call SSL_read().
+ *			NEWIO_CONNECT - When Writable, call getpeerbyname().
+ *			NEWIO_RECV - When Readable, call recv().
+ *			NEWIO_NULL - To reversibly cease operations on 'fd'.
+ *			NEWIO_SSL_CONNECT - When Readable, call SSL_connect().
  *	- OUTPUT:  -1 if the file descriptor cannot be watched
- *		   fd if the file descriptor can be watched.
+ *		   a "channel" if the file descriptor can be watched.
  *	- NOTE:	   Calling new_open() shall cancel and override a previous
- *		   new_open_for_writing().
- *
- *	int	new_open_for_writing (int fd, void (*callback) (int fd));
- *	- PURPOSE: To indicate that file descriptor 'fd' should be watched
- *		   for writable events (nonblocking connects)
- *	- INPUT:   fd - The file descriptor to watch
- *	           callback - The function to call when 'fd' can be read
- *		      -- Note, 'fd' shall be passed to the callback.
- *	- OUTPUT   -1 if the file descriptor cannot be watched
- *		   fd if the file descriptor can be watched.
- *	- NOTE:	   Calling new_open_for_writing() shall cancel and override 
- *		   a previous new_open().
+ *		   new_open().
  *
  *	int	new_close (int fd);
- *	- PURPOSE: To indicate that file descriptor 'fd' should no longer
- *		   be watched for read or write events, and that 'fd should
- *		   be close()d or otherwise released to the system.
+ *	- PURPOSE: To irreversibly cease operations on 'fd'.  The fd shall no
+ *		   longer be watched, and shall generate no more events, and
+ *		   any pending data shall be discarded.  The fd shall be 
+ *		   close(2)d [returned to the operationg system]
  *	- INPUT:   fd - The file descriptor to release
  *	- OUTPUT:  -1 shall be returned.
  *
@@ -60,12 +59,13 @@
 #ifndef __newio_h__
 #define __newio_h__
 
-#define NEWIO_READ	1
-#define NEWIO_ACCEPT	2
-#define NEWIO_SSL_READ	3
-#define NEWIO_CONNECT	4
-#define NEWIO_RECV	5
-#define NEWIO_NULL	6
+#define NEWIO_READ	  1
+#define NEWIO_ACCEPT	  2
+#define NEWIO_SSL_READ	  3
+#define NEWIO_CONNECT	  4
+#define NEWIO_RECV	  5
+#define NEWIO_NULL	  6
+#define NEWIO_SSL_CONNECT 7
 
 #define IO_BUFFER_SIZE 8192
 

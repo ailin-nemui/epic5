@@ -1,4 +1,4 @@
-/* $EPIC: server.c,v 1.192 2005/11/01 03:17:09 jnelson Exp $ */
+/* $EPIC: server.c,v 1.193 2006/06/17 04:04:02 jnelson Exp $ */
 /*
  * server.c:  Things dealing with that wacky program we call ircd.
  *
@@ -1010,26 +1010,58 @@ something_broke:
 
 		    if (get_server_try_ssl(i) == TRUE)
 		    {
-			if ((startup_ssl(des, des)))
+			int	ssl_err = startup_ssl(des, des);
+
+			/* SSL connection failed */
+			if (ssl_err == -1)
 			{
 			    /* XXX I don't care if this is abusive. */
 			    syserr("Could not start SSL connection to server "
-					"[%d] address [%d]", 
-					i, s->addr_counter);
+				"[%d] address [%d]", 
+				i, s->addr_counter);
 			    goto something_broke;
 			}
+
+			/* Nonblocking SSL connection now pending */
+			/* This goes through a detour below */
+			else if (ssl_err == 0)
+			{
+			    s->status = SERVER_SSL_CONNECTING;
+			    new_open(des, do_server, NEWIO_SSL_CONNECT, 0);
+			}
+
+			/* SSL connection completed, fall-through */
+		    }
+
+return_from_ssl_detour:
+		    if (is_ssl_enabled(des))
+		    {
+			set_server_ssl_enabled(i, TRUE);
 			new_open(des, do_server, NEWIO_SSL_READ, 0);
 		    }
 		    else
-			new_open(des, do_server, NEWIO_RECV, 0);
-
-
-		    if (is_ssl_enabled(des))
-			set_server_ssl_enabled(i, TRUE);
-		    else
+		    {
 			set_server_ssl_enabled(i, FALSE);
-
+		        new_open(des, do_server, NEWIO_RECV, 0);
+		    }
 		    register_server(i, s->d_nickname);
+		}
+
+		/* Read the result code, 0 == success, -1 == failed */
+		/* Someone else is responsible for the error message */
+		else if (s->status == SERVER_SSL_CONNECTING)
+		{
+		    ssize_t c;
+		    int  retval;
+
+		    if (x_debug & DEBUG_SERVER_CONNECT)
+			yell("do_server: server [%d] finished ssl setup", i);
+
+		    c = DGETS(des, retval)
+		    if (c < (ssize_t)sizeof(retval) || retval)
+			goto something_broke;
+
+		    goto return_from_ssl_detour;	/* All is well! */
 		}
 
 	        /* Everything else is a normal read. */

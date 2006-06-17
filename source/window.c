@@ -1,4 +1,4 @@
-/* $EPIC: window.c,v 1.164 2006/05/27 18:45:59 jnelson Exp $ */
+/* $EPIC: window.c,v 1.165 2006/06/17 04:04:02 jnelson Exp $ */
 /*
  * window.c: Handles the organzation of the logical viewports (``windows'')
  * for irc.  This includes keeping track of what windows are open, where they
@@ -2587,6 +2587,18 @@ int	window_is_holding (Window *w)
 	else
 		return 0;
 }
+
+/*
+ * This returns 1 if 'w' is in scrollback view.
+ */
+int	window_is_scrolled_back (Window *w)
+{
+	if (w->scrollback_distance_from_display_ip > w->display_lines)
+		return 1;
+	else
+		return 0;
+}
+
 
 /*
  * After running a command (from the SEND_LINE keybinding), if the window

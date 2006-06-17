@@ -1,4 +1,4 @@
-/* $EPIC: input.c,v 1.32 2006/06/06 05:08:48 jnelson Exp $ */
+/* $EPIC: input.c,v 1.33 2006/06/17 04:04:02 jnelson Exp $ */
 /*
  * input.c: does the actual input line stuff... keeps the appropriate stuff
  * on the input line, handles insert/delete of characters/words... the whole
@@ -1132,21 +1132,25 @@ BUILT_IN_BINDING(send_line)
 {
 	int	server = from_server;
 	char *	line = LOCAL_COPY(get_input());
-	int	do_unhold;
+	int	holding_already;
+	int	do_unscroll;
 
 	from_server = get_window_server(0);
 	MIN_CHAR = 0;
 	THIS_POS = MIN_POS;
 
-	/*
-	 * If the window is not holding, then advance the hold view so a
-	 * full screen of output from the command is seen before it holds.
-	 * This is consistent with ircII behavior.
-	 */
-	do_unhold = window_is_holding(last_input_screen->current_window);
-	if (!do_unhold)
-		unhold_a_window(last_input_screen->current_window);
+	holding_already = window_is_holding(last_input_screen->current_window);
+	do_unscroll = window_is_scrolled_back(last_input_screen->current_window);
 
+	/*
+	 * Hold_mode is weird.  Hold_mode gets even weirder when you're in
+	 * scrollback mode.  Hold_mode users would expect that if they hit
+	 * <enter> when in scrollback mode, that they would scroll down, but
+	 * they would NOT unhold stuff.  But then you get into the problem of
+	 * whether to do the scrolldown before or after you run the command.
+	 */
+	if (holding_already == 0)
+		unhold_a_window(last_input_screen->current_window);
 
 	if (last_input_screen->promptlist && 
 		last_input_screen->promptlist->type == WAIT_PROMPT_LINE)
@@ -1173,13 +1177,12 @@ BUILT_IN_BINDING(send_line)
 		system_exception = old;
 	}
 
-	/*
-	 * If the window is holding, then any output from the above command
-	 * was already held, and so we need to unhold one screenful here.
-	 * This is consistent with ircII behavior.
-	 */
-	if (do_unhold)
+	if (holding_already == 1)
 		unhold_a_window(last_input_screen->current_window);
+
+	if (last_input_screen->current_window->holding_top_of_display &&
+			do_unscroll == 1)
+		scrollback_forwards(0, NULL);	/* XXX - Keybinding */
 
 	from_server = server;
 }
