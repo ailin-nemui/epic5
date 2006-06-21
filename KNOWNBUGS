@@ -72,11 +72,9 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Add the 'nickcomp' script contributed by Blackjac. Thanks!
 * Create an 'extlang.h' header file for perl/tcl/ruby stuff.
 * Clean up warnings and stuff for the external lang support.
-<<<<<<< KNOWNBUGS
+* Suspend protocol enforcement when we're processing user input.
 * Lay the foundations for nonblocking ssl connection (not supported yet)
 * Change SEND_LINE to do SCROLL_FORWARD if we're in scrollback mode
 * Add support for maildir mailboxes. 
 * Fix crash with 042 numeric.
-=======
-* Suspend protocol enforcement when we're processing user input.
->>>>>>> 1.607
+* Fix buffer overrun with new server state.

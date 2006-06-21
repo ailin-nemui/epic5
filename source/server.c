@@ -1,4 +1,4 @@
-/* $EPIC: server.c,v 1.193 2006/06/17 04:04:02 jnelson Exp $ */
+/* $EPIC: server.c,v 1.194 2006/06/21 04:22:34 jnelson Exp $ */
 /*
  * server.c:  Things dealing with that wacky program we call ircd.
  *
@@ -625,11 +625,11 @@ static void 	reset_nickname (int refnum);
 static	char    lame_wait_nick[] = "***LW***";
 static	char    wait_nick[] = "***W***";
 
-const char *server_states[10] = {
+const char *server_states[11] = {
 	"RECONNECT",		"DNS",			"CONNECTING",
-	"REGISTERING",		"SYNCING",		"ACTIVE",
-	"EOF",			"ERROR",		"CLOSING",
-	"CLOSED"
+	"SSL_CONNECTING",	"REGISTERING",		"SYNCING",
+	"ACTIVE",		"EOF",			"ERROR",
+	"CLOSING",		"CLOSED"
 };
 
 
