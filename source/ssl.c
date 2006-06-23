@@ -1,4 +1,4 @@
-/* $EPIC: ssl.c,v 1.21 2006/06/17 04:04:02 jnelson Exp $ */
+/* $EPIC: ssl.c,v 1.22 2006/06/23 05:03:11 jnelson Exp $ */
 /*
  * ssl.c: SSL connection functions
  *
@@ -56,6 +56,15 @@
 static	int	firsttime = 1;
 static void	ssl_setup_locking (void);
 
+/*
+ * SSL_CTX_init -- Create and set up a new SSL ConTeXt object.
+ * 		   This bootstraps the SSL system the first time it's called.
+ * ARGS:
+ *	server -- Will this CTX be used as a client (0) or server (1)?
+ * RETURN VALUE:
+ *	A new SSL_CTX you can use with an SSL connection.
+ *	You MUST call SSL_CTX_free() on the return value later!
+ */
 static SSL_CTX	*SSL_CTX_init (int server)
 {
 	SSL_CTX	*ctx;
@@ -68,13 +77,27 @@ static SSL_CTX	*SSL_CTX_init (int server)
 		firsttime = 0;
 	}
 
-	ctx = SSL_CTX_new(server ? SSLv23_server_method() : SSLv23_client_method());
+	ctx = SSL_CTX_new(server ? 
+			SSLv23_server_method() : 
+			SSLv23_client_method());
 	SSL_CTX_set_session_cache_mode(ctx, SSL_SESS_CACHE_BOTH);
 	SSL_CTX_set_timeout(ctx, 300);
 
-	return(ctx);
+	return ctx;
 }
 
+/*
+ * SSL_FD_init -- Create an SSL session on a given OS file descriptor using
+ *		  an SSL ConTeXt template.
+ * ARGS:
+ *	ctx -- An SSL ConTeXt previously returned by SSL_CTX_init().
+ *	channel -- A (real) file descriptor (not a vfd!) to do SSL upon.
+ * RETURN VALUE:
+ *	A pointer to SSL representing an SSL session on 'channel' of the
+ *	form given by 'ctx'.
+ *	NULL if SSL_new() fails.
+ *	Errors in SSL_connect() are ignored.
+ */
 static SSL *SSL_FD_init (SSL_CTX *ctx, int channel)
 {
 	SSL	*ssl;
@@ -84,7 +107,6 @@ static SSL *SSL_FD_init (SSL_CTX *ctx, int channel)
 		panic("SSL_FD_init() critical error in SSL_new()");
 	}
 	SSL_set_fd(ssl, channel);
-	SSL_connect(ssl);
 	return(ssl);
 }
 
@@ -102,6 +124,15 @@ typedef struct	ssl_info_T {
 ssl_info *ssl_list = NULL;
 
 
+/*
+ * find_ssl -- Get the data for an ssl-enabled connection.
+ *
+ * ARGS:
+ *	vfd -- A virtual file descriptor, previously returned by new_open().
+ * RETURN VALUE:
+ *	If the vfd has been set up to use SSL, an (ssl_info *) to its data.
+ *	If the vfd has not been se tup to use SSL, NULL.
+ */
 static ssl_info *	find_ssl (int vfd)
 {
 	ssl_info *x;
@@ -113,6 +144,19 @@ static ssl_info *	find_ssl (int vfd)
 	return NULL;
 }
 
+/*
+ * new_ssl_info -- Register vfd as an ssl-using connection.
+ *
+ * ARGS: 
+ *	vfd -- A virtual file descriptor, previously returned by new_open().
+ * RETURN VALUE:
+ *	If the vfd has never been previously set up to use SSL, a pointer to
+ *		metadata for the vfd.  The 'channel', 'ctx' and 'ssl_fd'
+ *		fields will not be filled in yet!
+ *	If the vfd has previously been set up to use SSL, a pointer to the
+ *		metadata for that vfd.  Existing information about the SSL
+ *		connection on that vfd will be discarded!
+ */
 static ssl_info *	new_ssl_info (int vfd)
 {
 	ssl_info *x;
@@ -133,19 +177,17 @@ static ssl_info *	new_ssl_info (int vfd)
 }
 
 /*
- * Return code:
+ * startup_ssl -- Create an ssl connection on a vfd using a certain channel.
+ * ARGS:
+ *	vfd -- A virtual file descriptor, previously returned by new_open().
+ *	channel -- The channel that is mapped to the vfd (passed to new_open())
+ * RETURN VALUE:
  *	-1	Something really died
  *	 0	SSL negotiation is pending
  *	 1	SSL negotiation is complete
  */
 int	startup_ssl (int vfd, int channel)
 {
-	char *		u_cert_issuer;
-	char *		u_cert_subject;
-	char *          cert_issuer;
-	char *          cert_subject;
-	X509 *          server_cert;
-	EVP_PKEY *      server_pkey;
 	ssl_info *	x;
 
 	if (!(x = new_ssl_info(vfd)))
@@ -159,49 +201,29 @@ int	startup_ssl (int vfd, int channel)
 	say("SSL negotiation for channel [%d] in progress...", channel);
 	x->channel = channel;
 	x->ctx = SSL_CTX_init(0);
-	x->ssl_fd = SSL_FD_init(x->ctx, channel);
 
-	if (x_debug & DEBUG_SSL)
-		say("SSL negotiation using %s", SSL_get_cipher(x->ssl_fd));
-
-	/* The man page says this never fails in reality. */
-	if (x->ssl_fd == NULL || 
-	     !(server_cert = SSL_get_peer_certificate(x->ssl_fd)))
+	if ((x->ssl_fd = SSL_FD_init(x->ctx, channel)) == NULL)
 	{
-		syserr("SSL negotiation failed -- reporting as error");
-		SSL_CTX_free(x->ctx);
-		x->ctx = NULL;
-		x->ssl_fd = NULL;
-		write(channel, empty_string, 1);    /* XXX Is this correct? */
+		syserr("Could not make new SSL (vfd [%d]/channel [%d])",
+				vfd, channel);
+		errno = EINVAL;
 		return -1;
 	}
 
-	say("SSL negotiation for channel [%d] complete", channel);
-	cert_subject = X509_NAME_oneline(X509_get_subject_name(server_cert),0,0);
-	u_cert_subject = urlencode(cert_subject);
-	cert_issuer = X509_NAME_oneline(X509_get_issuer_name(server_cert),0,0);
-	u_cert_issuer = urlencode(cert_issuer);
-
-	server_pkey = X509_get_pubkey(server_cert);
-
-	if (do_hook(SSL_SERVER_CERT_LIST, "%d %s %s %d", 
-			vfd, u_cert_subject, u_cert_issuer, 
-			EVP_PKEY_bits(server_pkey))) 
-	{
-		say("SSL certificate subject: %s", cert_subject) ;
-		say("SSL certificate issuer: %s", cert_issuer);
-		say("SSL certificate public key length: %d bits", 
-					EVP_PKEY_bits(server_pkey));
-	}
-
-	new_free(&u_cert_issuer);
-	new_free(&u_cert_subject);
-	free(cert_issuer);
-	free(cert_subject);
-	return 1;
+	set_non_blocking(channel);
+	ssl_connect(vfd, 0);
+	return 0;
 }
 
-
+/*
+ * shutdown_ssl -- Destroy an ssl connection on a vfd.
+ * ARGS:
+ *	vfd -- A virtual file descriptor, previously passed to startup_ssl().
+ * RETURN VALUE:
+ *	-1	The vfd is not set up to do ssl. (errno is set to EINVAL)
+ *	 0	The SSL session on the vfd has been shut down.
+ * Any errors occuring during the shutdown are ignored.
+ */
 int	shutdown_ssl (int vfd)
 {
 	ssl_info *x;
@@ -225,6 +247,17 @@ int	shutdown_ssl (int vfd)
 }
 
 /* * * * * * */
+/*
+ * write_ssl -- Write some binary data over an ssl connection on vfd.
+ *		The data is unbuffered with BIO_flush() before returning.
+ * ARGS:
+ *	vfd -- A virtual file descriptor, previously passed to startup_ssl().
+ *	data -- Any binary data you wish to send over 'vfd'.
+ *	len -- The number of bytes in 'data' to send.
+ * RETURN VALUE:
+ *	-1 / EINVAL -- The vfd is not set up for ssl.
+ *	Anything else -- The return value of SSL_write().
+ */
 int	write_ssl (int vfd, const void *data, size_t len)
 {
 	ssl_info *x;
@@ -248,6 +281,16 @@ int	write_ssl (int vfd, const void *data, size_t len)
 	return err;
 }
 
+/*
+ * read_ssl -- Post whatever data is available on 'vfd' to the newio system.
+ *		This operation may block if the SSL operations block.
+ * ARGS:
+ *	vfd -- A virtual file descriptor, previously passed to startup_ssl().
+ *	quiet -- Should errors silently ignored (1) or displayed? (0)
+ * RETURN VALUE:
+ *	-1 / EINVAL -- The vfd is not set up for ssl.
+ *	Anything else -- The final return value of SSL_read().
+ */
 int	ssl_read (int vfd, int quiet)
 {
 	ssl_info *x;
@@ -298,8 +341,98 @@ int	ssl_read (int vfd, int quiet)
 /* * * * * * */
 int	ssl_connect (int vfd, int quiet)
 {
+	ssl_info *	x;
+	int		errcode;
+	int		ssl_err;
+
+	if (!(x = find_ssl(vfd)))
+	{
+		errno = EINVAL;
+		return -1;
+	}
+
+	errcode = SSL_connect(x->ssl_fd);
+	if (errcode <= 0)
+	{
+		ssl_err = SSL_get_error(x->ssl_fd, errcode);
+		if (ssl_err == SSL_ERROR_WANT_READ || 
+		    ssl_err == SSL_ERROR_WANT_WRITE)
+			return 1;
+		else
+		{
+			/* Post the error */
+			syserr("ssl_connect: posting error %d", ssl_err);
+			dgets_buffer(x->channel, &ssl_err, sizeof(ssl_err));
+			return 1;
+		}
+	}
+
+	/* Post the success */
+	ssl_err = 0;
+	syserr("ssl_connect: connection successful!");
+	dgets_buffer(x->channel, &ssl_err, sizeof(ssl_err));
+	return 1;
 }
 
+int	ssl_connected (int vfd)
+{
+	char *		u_cert_issuer;
+	char *		u_cert_subject;
+	char *          cert_issuer;
+	char *          cert_subject;
+	X509 *          server_cert;
+	EVP_PKEY *      server_pkey;
+	ssl_info *	x;
+	int		errcode;
+	int		ssl_err;
+
+	if (!(x = find_ssl(vfd)))
+	{
+		errno = EINVAL;
+		return -1;
+	}
+
+	set_blocking(x->channel);
+
+	/* It completed!  Yay! */
+	if (x_debug & DEBUG_SSL)
+		say("SSL negotiation using %s", SSL_get_cipher(x->ssl_fd));
+
+	/* The man page says this never fails in reality. */
+	if (!(server_cert = SSL_get_peer_certificate(x->ssl_fd)))
+	{
+		syserr("SSL negotiation failed -- reporting as error");
+		SSL_CTX_free(x->ctx);
+		x->ctx = NULL;
+		x->ssl_fd = NULL;
+		write(x->channel, empty_string, 1);    /* XXX Is this correct? */
+		return -1;
+	}
+
+	say("SSL negotiation for channel [%d] complete", x->channel);
+	cert_subject = X509_NAME_oneline(X509_get_subject_name(server_cert),0,0);
+	u_cert_subject = urlencode(cert_subject);
+	cert_issuer = X509_NAME_oneline(X509_get_issuer_name(server_cert),0,0);
+	u_cert_issuer = urlencode(cert_issuer);
+
+	server_pkey = X509_get_pubkey(server_cert);
+
+	if (do_hook(SSL_SERVER_CERT_LIST, "%d %s %s %d", 
+			vfd, u_cert_subject, u_cert_issuer, 
+			EVP_PKEY_bits(server_pkey))) 
+	{
+		say("SSL certificate subject: %s", cert_subject) ;
+		say("SSL certificate issuer: %s", cert_issuer);
+		say("SSL certificate public key length: %d bits", 
+					EVP_PKEY_bits(server_pkey));
+	}
+
+	new_free(&u_cert_issuer);
+	new_free(&u_cert_subject);
+	free(cert_issuer);
+	free(cert_subject);
+	return 1;
+}
 
 const char *	get_ssl_cipher (int vfd)
 {

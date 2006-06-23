@@ -68,6 +68,8 @@ void	Freeaddrinfo		(AI *);
 pid_t	async_getaddrinfo	(const char *, const char *, const AI *, int);
 void	marshall_getaddrinfo	(int, AI *results);
 void	unmarshall_getaddrinfo	(AI *results);
+int	set_non_blocking	(int);
+int	set_blocking		(int);
 
 #define GNI_INTEGER 0x4000
 

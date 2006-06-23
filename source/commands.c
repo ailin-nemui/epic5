@@ -1,4 +1,4 @@
-/* $EPIC: commands.c,v 1.143 2006/06/09 03:19:14 jnelson Exp $ */
+/* $EPIC: commands.c,v 1.144 2006/06/23 05:03:11 jnelson Exp $ */
 /*
  * commands.c -- Stuff needed to execute commands in ircII.
  *		 Includes the bulk of the built in commands for ircII.
@@ -2236,40 +2236,7 @@ BUILT_IN_COMMAND(quotecmd)
 		send_to_aserver_raw(refnum, length, args);
 	}
 	else if (args && *args)
-	{
-#if 0
-		char	*comm = new_next_arg(args, &args);
-		protocol_command *p;
-		int	cnt;
-		int	loc;
-
-		upper(comm);
-		p = (protocol_command *)find_fixed_array_item(
-			(void *)rfc1459, sizeof(protocol_command),
-			num_protocol_cmds + 1, comm, &cnt, &loc);
-
-		/*
-		 * If theyre dispatching some protocol commands we
-		 * dont know about, then let them, without complaint.
-		 */
-		if (cnt < 0 && (rfc1459[loc].flags & PROTO_NOQUOTE))
-		{
-			yell("Doing /QUOTE %s will break things.  You have been warned.", comm);
-		}
-
-		/*
-		 * If we know its going to cause a problem in the 
-		 * future, whine about it.
-		 */
-		if (cnt < 0 && (rfc1459[loc].flags & PROTO_DEPREC))
-			yell("Doing /QUOTE %s is discouraged because it will destablize the client.  Use the client's built in command instead.", comm);
-
-		send_to_aserver(refnum, "%s %s", comm, args);
-#else
 		send_to_aserver(refnum, "%s", args);
-#endif
-
-	}
 }
 
 BUILT_IN_COMMAND(redirect)

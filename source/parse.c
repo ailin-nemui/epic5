@@ -1,4 +1,4 @@
-/* $EPIC: parse.c,v 1.77 2005/10/30 22:41:19 jnelson Exp $ */
+/* $EPIC: parse.c,v 1.78 2006/06/23 05:03:11 jnelson Exp $ */
 /*
  * parse.c: handles messages from the server.   Believe it or not.  I
  * certainly wouldn't if I were you. 
@@ -1403,29 +1403,11 @@ void 	parse_server (const char *orig_line, size_t orig_line_size)
 		return;		/* Serious protocol violation -- ByeBye */
 	}
 
-	/* 
-	 * I reformatted these in may '96 by using the output of /stats m
-	 * from a few busy servers.  They are arranged so that the most 
-	 * common types are high on the list (to save the average number
-	 * of compares.)  I will be doing more testing in the future on
-	 * a live client to see if this is a reasonable order.
-	 */
+	/* Some day all this needs to be replaced with an alist. */
 	if (is_number(comm))
 		numbered_command(from, comm, ArgList);
 	else
 	{
-#if 0
-		protocol_command *retval;
-		int	cnt;
-
-		retval = (protocol_command *)find_fixed_array_item(
-			(void *)rfc1459, sizeof(protocol_command), 
-			num_protocol_cmds + 1, comm, &cnt, &loc);
-#else
-		/* 
-		 * This is a slight reversion until I implement the 
-		 * alist to handle rfc1459 items.
-		 */
 		for (loc = 0; rfc1459[loc].command; loc++)
 			if (!strcmp(rfc1459[loc].command, comm))
 				break;
@@ -1434,7 +1416,6 @@ void 	parse_server (const char *orig_line, size_t orig_line_size)
 			rfc1459[loc].inbound_handler(from, comm, ArgList);
 		else
 			rfc1459_odd(from, comm, ArgList);
-#endif
 	}
 
 	FromUserHost = empty_string;

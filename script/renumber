@@ -1,0 +1,22 @@
+if (word(2 $loadinfo()) != [pf]) { load -pf $word(1 $loadinfo()); return; };
+
+addset renumber_auto bool;
+set renumber_auto off;
+
+alias renumber {
+  @ :cur = 1;
+  fe ($numsort($winrefs())) i {
+    if (i != cur) {
+      ^window $i number $cur;
+    };
+    @ :cur++;
+  };
+  ^assign -i;
+};
+
+on #-window_kill 384 "*" {
+  if (getset(renumber_auto) == [ON]) {
+    renumber;
+  };
+};
+#weirdo'2k6

@@ -1,0 +1,18 @@
+if (word(2 $loadinfo()) != [pf]) { load -pf $word(1 $loadinfo()); return; };
+
+addset autocreate_split_queries bool;
+set autocreate_split_queries off;
+
+on #-msg -29 "*" {
+  @ :name = encode($servernum(),$tolower($0));
+  if ((:num = winnum($name)) == -1) {
+    if (getset(autocreate_split_queries) == [ON]) {
+      window new server $servernum() query $0 name $name swap last;
+     } else {
+      window new_hide swap last server $servernum() query $0 name $name swap last;
+    };
+  } elif (querywin($0 $servernum()) == -1) {
+    ^window $num server $servernum() query $0;
+  };
+};
+#weirdo'2k6

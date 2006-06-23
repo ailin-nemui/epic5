@@ -13,6 +13,7 @@
 
 	int	startup_ssl (int nfd, int channel);
 	int	shutdown_ssl (int nfd);
+	int	ssl_connect (int nfd, int quiet);
 	int	write_ssl (int nfd, const void *, size_t);
 	int	ssl_read (int nfd, int quiet);
 	const char *get_ssl_cipher (int nfd);

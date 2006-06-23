@@ -1,0 +1,64 @@
+if (word(2 $loadinfo()) != [pf]) { load -pf $word(1 $loadinfo()); return; };
+
+addset floodprot_burst int {
+  if ([$0] < 1) {
+    set floodprot_burst 4;
+    return;
+  };
+  # new input can't be sent before queued one
+  fe ($myservers(0)) sv {
+    @ floodprot[$sv] = [$0] + 1;
+  };
+  ^assign -sv;
+};
+
+set floodprot_burst 4;
+
+on ?send_to_server "*" {
+  if (floodprot[$0] == []) {
+    @ floodprot[$0] = 1;
+    return 0;
+  };
+  if (floodprot[$0] <= getset(floodprot_burst)) {
+    @ floodprot[$0]++;
+    return 0;
+  };
+  @ setitem(queue-$0 $numitems(queue-$0) $2-);
+  return 1;
+};
+
+on #-server_lost 1023 "*" {
+  @ delarray(queue-$0);
+  ^assign -floodprot[$0];
+};
+
+timer -general -update -refnum _floodprot -repeat -1 3 {
+  fe ($myservers(0)) sv {
+    if (floodprot[$sv] == []) {
+      @ floodprot[$sv] = 0;
+    };
+    if (numitems(queue-$sv) > 0) {
+      @ floodprot[$sv] = -1;
+      @ line = getitem(queue-$sv 0);
+      @ delitem(queue-$sv 0);
+      //xquote -s $sv $chop(1 $line);
+      ^assign -line;
+      @ floodprot[$sv] = getset(floodprot_burst) + 1;
+    } elif (floodprot[$sv] > 0) {
+        @ floodprot[$sv] -= 1;
+    };
+  };
+  ^assign -sv;
+};
+
+alias qflush {
+  fe ($myservers(0)) sv {
+    if (numitems(queue-$sv)) {
+      xecho -b Flushed queue for server $sv;
+      @ delarray(queue-$sv);
+      ^assign -floodprot[$0];
+    };
+  };
+  ^assign -sv;
+};
+#weirdo'2k6

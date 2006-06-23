@@ -1,4 +1,4 @@
-/* $EPIC: network.c,v 1.77 2005/11/01 03:17:09 jnelson Exp $ */
+/* $EPIC: network.c,v 1.78 2006/06/23 05:03:11 jnelson Exp $ */
 /*
  * network.c -- handles stuff dealing with connecting and name resolving
  *
@@ -46,8 +46,6 @@
 typedef struct sockaddr_un USA;
 #endif
 
-static int	set_non_blocking (int);
-static int	set_blocking 	 (int);
 static int	Connect 	 (int, SA *);
 static socklen_t socklen  	 (SA *);
 static int	Getnameinfo 	 (const SA *, socklen_t, char *, size_t, char *, size_t, int);
@@ -538,7 +536,7 @@ int	one_to_another (int family, const char *what, char *retval, int size)
 }
 
 /****************************************************************************/
-static int	set_non_blocking (int fd)
+int	set_non_blocking (int fd)
 {
 	int	flag, rval;
 
@@ -576,7 +574,7 @@ static int	set_non_blocking (int fd)
 	return 0;
 }
 
-static int	set_blocking (int fd)
+int	set_blocking (int fd)
 {
 	int	flag, rval;
 

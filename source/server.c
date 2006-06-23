@@ -1,4 +1,4 @@
-/* $EPIC: server.c,v 1.195 2006/06/21 04:25:18 jnelson Exp $ */
+/* $EPIC: server.c,v 1.196 2006/06/23 05:03:11 jnelson Exp $ */
 /*
  * server.c:  Things dealing with that wacky program we call ircd.
  *
@@ -1008,8 +1008,17 @@ something_broke:
 		    /* Update this! */
 		    *(SA *)&s->remote_sockname = *(SA *)&name;
 
+		    /*
+		     * For SSL server connections, we have to take a little
+		     * detour.  First we start up the ssl connection, which
+		     * always returns before it completes.  Then we tell newio
+		     * to call the ssl connector when the fd is ready, and
+		     * change our status to tell us what we're doing.
+		     */
 		    if (get_server_try_ssl(i) == TRUE)
 		    {
+			/* XXX 'des' might not be both the vfd and channel! */
+			/* (ie, on systems where vfd != channel) */
 			int	ssl_err = startup_ssl(des, des);
 
 			/* SSL connection failed */
@@ -1022,15 +1031,16 @@ something_broke:
 			    goto something_broke;
 			}
 
-			/* Nonblocking SSL connection now pending */
-			/* This goes through a detour below */
-			else if (ssl_err == 0)
-			{
-			    s->status = SERVER_SSL_CONNECTING;
-			    new_open(des, do_server, NEWIO_SSL_CONNECT, 0);
-			}
-
-			/* SSL connection completed, fall-through */
+			/* 
+			 * For us, this is asynchronous.  For nonblocking
+			 * SSL connections, we have to wait until later.
+			 * For blocking connections, we choose to wait until
+			 * later, since the return code is posted to us via
+			 * dgets().
+			 */
+			s->status = SERVER_SSL_CONNECTING;
+			new_open(des, do_server, NEWIO_SSL_CONNECT, 0);
+			break;
 		    }
 
 return_from_ssl_detour:
@@ -1047,8 +1057,13 @@ return_from_ssl_detour:
 		    register_server(i, s->d_nickname);
 		}
 
-		/* Read the result code, 0 == success, -1 == failed */
-		/* Someone else is responsible for the error message */
+		/*
+		 * Above, we did new_open(..., NEWIO_SSL_CONNECT, ...)
+		 * which leads us here when the ssl stuff posts a result code.
+		 * If it failed, we punt on this address and go to the next.
+		 * If it succeeded, we "return" from out detour and go back
+		 * to the place in SERVER_CONNECTING we left off.
+		 */
 		else if (s->status == SERVER_SSL_CONNECTING)
 		{
 		    ssize_t c;
@@ -1059,7 +1074,20 @@ return_from_ssl_detour:
 
 		    c = DGETS(des, retval)
 		    if (c < (ssize_t)sizeof(retval) || retval)
+		    {
+			syserr("SSL_connect returned [%d]", retval);
 			goto something_broke;
+		    }
+
+		    /* 
+		     * This throws the /ON SSL_SERVER_CERT_LIST and makes
+		     * the socket blocking again.
+		     */
+		    if (ssl_connected(des) < 0)
+		    {
+			syserr("ssl_connected() failed", retval);
+			goto something_broke;
+		    }
 
 		    goto return_from_ssl_detour;	/* All is well! */
 		}
@@ -1770,7 +1798,8 @@ void	register_server (int refnum, const char *nick)
 	if (!(s = get_server(refnum)))
 		return;
 
-	if (get_server_status(refnum) != SERVER_CONNECTING)
+	if (get_server_status(refnum) != SERVER_CONNECTING &&
+	    get_server_status(refnum) != SERVER_SSL_CONNECTING)
 	{
 		if (x_debug & DEBUG_SERVER_CONNECT)
 			say("Server [%d] state should be [%d] but it is [%d]", 

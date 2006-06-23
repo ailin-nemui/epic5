@@ -1,141 +1,147 @@
-package reconnect
+if (word(2 $loadinfo()) != [pf]) { load -pf $word(1 $loadinfo()); return; };
 
-addset reconnect_time int
-set reconnect_time 1
+package reconnect;
 
-alias network (action, network) {
+addset reconnect_time int;
+set reconnect_time 1;
+
+alias network (action, network, unused) {
   switch ($action) {
     (add) {
-      if (network != []) {
-        fec ($network) i {
-          if (!isalpha($i)) {
-            echo syntax error: network name must be only alpha
-            return
-          }
-        }
-        if (reconn[groups][$network]) {
-          echo network $network already exists
+      @ :en = encode($network);
+      if (en != []) {
+        if (reconn[groups][$en]) {
+          echo network $network already exists;
         } else {
-          @ reconn[groups][$network] = 1
-          echo network $network added
-        }
+          @ reconn[groups][$en] = 1;
+          echo network $network added;
+        };
       } else {
-        echo not enough params. syntax: /network add <network>
-      }
-    }
+        echo not enough params. syntax: /network add <network>;
+      };
+    };
     (del) {
-      if (network != []) {
-        if (reconn[groups][$network]) {
-          ^assign -reconn.groups.$network
-          ^assign -reconn.channels.$network
-          echo network $network removed
+      @ :en = encode($network);
+      if (en != []) {
+        if (reconn[groups][$en]) {
+          ^assign -reconn[groups][$en];
+          ^assign -reconn[channels][$en];
+          ^assign -reconn[keys][$en];
+          echo network $network removed;
         } else {
-          echo network $network doesn't exist
-        }
+          echo network $network doesn't exist;
+        };
       } else {
-        echo not enough params. syntax: /network del <network>
-      }
-    }
+        echo not enough params. syntax: /network del <network>;
+      };
+    };
     (list) {
-      @ :j = 0
+      @ :j = 0;
       foreach reconn.groups i {
-        @ j++
-        echo $i
-      }
+        @ j++;
+        echo $decode($i);
+      };
       if (j == 0) {
-        echo no networks
-      }
-    }
+        echo no networks;
+      };
+    };
     (*) {
-      echo syntax: /network [[add|del <name>]|list]
-    }
-  }
-}
+      echo syntax: /network [[add|del <name>]|list];
+    };
+  };
+  ^assign -i;
+};
 on #-SERVER_STATUS 27 "% % %" {
   switch ($2) {
     (EOF) (ERROR) {
-      @ :gr = servergroup($0)
+      @ :gr = encode($servergroup($0));
       if (reconn[groups][$gr]) {
         if ([$1] == [ACTIVE]) {
-          @ reconn[channels][$gr] = mychannels($0)
-        }
-        @ reconn[timeout][$gr] = [$getset(reconnect_time) $0]
-      }
-    }
-    (ACTIVE) {
-      @ :gr = servergroup($0)
-      if (reconn[channels][$gr] != []) {
-        fe ($reconn[channels][$gr]) i {
-          xeval -s $0 JOIN $i
-        }
-        ^assign -reconn.channels.$gr
-      }
-    }
+          @ reconn[channels][$gr] = [];
+          @ reconn[keys][$gr] = [];
+          fe ($tolower($mychannels($0))) i {
+            push reconn[channels][$gr] $i;
+            xeval -s $0 {
+              push reconn[keys][$gr] $key($i);
+            };
+          };
+        };
+        @ reconn[timeout][$gr] = [$getset(reconnect_time) $0];
+      };
+    };
     (*) {
-      if ([$3] == [CLOSING] && [$2] != [EOF] && [$2] != [ERROR]) {
-        @ :gr = servergroup($0)
-        ^assign -reconn.timeout.$gr
-        ^assign -reconn.channels.$gr
-      }
-    }
-  }
-}
-timer -ref _reconn -repeat -1 -GENERAL 60 _reconn
+      if ([$2] == [CLOSING] && [$1] != [EOF] && [$1] != [ERROR]) {
+        @ :gr = encode($servergroup($0));
+        if (gr != []) {
+          ^assign -reconn[timeout][$gr];
+          ^assign -reconn[channels][$gr];
+          ^assign -reconn[keys][$gr];
+        };
+      };
+    };
+  };
+  ^assign -i;
+};
+timer -ref _reconn -repeat -1 -GENERAL 60 _reconn;
 alias _reconn {
   foreach reconn.timeout i {
-    @ :minleft = word(0 $reconn[timeout][$i])
-    @ :lastsv = word(1 $reconn[timeout][$i])
-    @ minleft--
+    @ :minleft = word(0 $reconn[timeout][$i]);
+    @ :lastsv = word(1 $reconn[timeout][$i]);
+    @ minleft--;
     if (minleft > 0) {
-      @ reconn[timeout][$i] = [$minleft $lastsv]
+      @ reconn[timeout][$i] = [$minleft $lastsv];
     } else {
-      ^ASSIGN -reconn.timeout.$i
-      @ :found = []
+      ^ASSIGN -reconn[timeout][$i];
+      @ :found = [];
       fe ($winrefs()) win {
         if (winserv($win) == lastsv) {
-          PUSH found $win
-        }
-      }
+          PUSH found $win;
+        };
+      };
       if (found != []) {
-        @ :next = nextserv($lastsv)
+        @ :next = nextserv($lastsv);
         if (next != -1) {
           fe ($found) j {
-            window refnum $j SERVER $next
-          }
-        }
-      }
-    }
-  }
-}
+            window $j SERVER $next;
+          };
+        };
+      };
+    };
+  };
+  ^assign -win;
+  ^assign -i;
+};
 alias nextserv (ref) {
-  @ :gr = servergroup($ref)
+  @ :gr = servergroup($ref);
   if (gr == [<default>]) {
-    return -1
-  }
-  @ :servers = serverctl(GMATCH $gr)
-  @ :num = numwords($servers)
+    return -1;
+  };
+  @ :servers = serverctl(GMATCH $gr);
+  @ :num = numwords($servers);
   if (num == 0) {
-    return -1
-  }
+    return -1;
+  };
   if (num == 1) {
-    return $word(0 $servers)
-  }
-  @ :found = -1
-  @ :idx = 0
+    return $word(0 $servers);
+  };
+  @ :found = -1;
+  @ :idx = 0;
   fe ($servers) i {
     if (i == ref) {
-      @ found = idx
-      break
-    }
-    @ idx++
-  }
+      @ found = idx;
+      break;
+    };
+    @ idx++;
+  };
   if (found == -1) {
-    return -1
-  }
-  @ num--
+    return -1;
+  };
+  @ num--;
   if (num == found) {
-    return $word(0 $servers)
+    return $word(0 $servers);
   } else {
-    return $word(${found+1} $servers)
-  }
-}
+    return $word(${found+1} $servers);
+  };
+  ^assign -i;
+};
+#weirdo'2k6
