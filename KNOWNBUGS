@@ -85,3 +85,7 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Reorg server SSL negotation stuff to be nonblocking. yay!
 * Comment all sorts of stuff in ssl.c.
 * Add /set mail_type (MBOX or MAILDIR) to control what we check for mail.
+* Make rebuild-scrollback a toggle flag instead of an operation.
+* Teach update_all_windows() how to rebuild scrollback
+* Write some preliminary code for the unified lastlog
+* Add /ON NUMERIC which is thrown if you don't hook the numeric specifically.

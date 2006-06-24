@@ -1,4 +1,4 @@
-/* $EPIC: numbers.c,v 1.93 2006/06/17 04:04:02 jnelson Exp $ */
+/* $EPIC: numbers.c,v 1.94 2006/06/24 17:15:06 jnelson Exp $ */
 /*
  * numbers.c: handles all those strange numeric response dished out by that
  * wacky, nutty program we call ircd 
@@ -883,6 +883,9 @@ void 	numbered_command (const char *from, const char *comm, char const **ArgList
 
 DISPLAY:
 /* DEFAULT DISPLAY */
+	if (!do_hook(NUMERIC_LIST, "%d %s %s", current_numeric, from, copy))
+		goto END;
+
 	/*
 	 * This is the "default display" case, where if the user does not 
 	 * hook the numeric, we output the message in some special way.

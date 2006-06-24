@@ -1,5 +1,60 @@
 EPIC5-0.3.1
 
+*** News 06/24/2006 -- New ON, /ON NUMERIC
+	The /ON NUMERIC hook is thrown for all numerics that you do not 
+	catch with a more specific /ON <number>.  For example:
+		/ON 318 * {echo Numeric 318 -- $*}
+		/ON NUMERIC * {echo Not Numeric 318 -- $*}
+	This can be used to unilaterally replace the default format for 
+	numerics that you don't otherwise catch, without having to actually
+	catch all of them!  The expandos are:
+		$0	The numeric being thrown
+		$1	The server who sent the message
+		$2-	The message
+
+*** News 06/24/2006 -- New script, 'renumber' from nullie
+
+*** News 06/24/2006 -- New script, 'floodprot' from nullie
+
+*** News 06/24/2006 -- New script, 'autoquery' from nullie
+
+*** News 06/24/2006 -- New script, 'autojoin' from nullie
+
+*** News 06/24/2006 -- SEND_LINE does SCROLL_FORWARD in HOLD_MODE
+	For those who use HOLD_MODE, if you accidentally scroll back, you
+	might find yourself trapped in a place where hitting <enter> (the
+	SEND_LINE keybinding) does not get you back current.  To avoid this
+	unfortunate situation, if you are in HOLD_MODE, then SEND_LINE 
+	keybinding (the <enter> key) will now always advance you forward a 
+	page, even if you are in scrollback mode.
+
+*** News 06/24/2006 -- Support for MAILDIR maildrops, /SET MAIL_TYPE
+	If you /SET MAIL_TYPE MAILDIR, epic will check your maildir maildrop
+	for email instead of your mbox maildrop.  You can /SET MAIL_TYPE MBOX
+	to switch back to mbox.
+	
+	You must set the MAILDIR (or MAIL) environment variable to point to
+	your maildrop.  For MAILDIR, your maildrop is the directory that 
+	contains the 'new' and 'cur' subdirectories.
+
+	EPIC will check your 'new' directory for new emails.  This support
+	works the same way for maildir as it does for mbox:
+
+		/on mail  (maildir)		/on mail (mbox)
+		$0 -- New emails in 'new'	$0 -- New emails in 'mbox'
+		$1 -- Total emails in 'new'	$1 -- Total emails in 'mbox'
+
+	The maildir support does not look in 'cur' or anywhere else. 
+
+*** News 06/24/2006 -- Nonblocking SSL negotiation
+	Connections to ssl-enabled servers have an SSL protocol negotiation
+	stage between the nonblocking connect() and irc protocol negotation.
+	Traditionally, this SSL negotation has been blocking, but this can
+	take a long time, during which the client is locked up.  So now 
+	SSL negotiations are nonblocking.  Yay.
+
+*** News 06/24/2006 -- New script, 'nickcomp' from Blackjac
+
 *** News 06/06/2006 -- Much improved configure support for perl/tcl/ruby
 		*** VERY IMPORTANT FOR PACKAGE MAINTAINERS ***
 
@@ -59,9 +114,9 @@ EPIC5-0.3.1
 	let me know.  Otherwise someday they will vanish into the ether.
 
 *** News 06/06/2006 -- Support for RUBY: $ruby() and /ruby
-	Support for ruby has been added.  The support is similar to 
-	perl and tcl.  You can call out to ruby using either the $ruby()
-	function or the /ruby command.  
+	Support for ruby (1.6.4 and 1.8.4 are tested) has been added.  The 
+	support is similar to perl and tcl.  You can call out to ruby using 
+	either the $ruby() function or the /ruby command.  
 
 	The following callbacks to epic are available from within ruby:
 
