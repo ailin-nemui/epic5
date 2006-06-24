@@ -1,4 +1,4 @@
-/* $EPIC: window.c,v 1.165 2006/06/17 04:04:02 jnelson Exp $ */
+/* $EPIC: window.c,v 1.166 2006/06/24 15:54:25 jnelson Exp $ */
 /*
  * window.c: Handles the organzation of the logical viewports (``windows'')
  * for irc.  This includes keeping track of what windows are open, where they
@@ -1285,6 +1285,14 @@ void	resize_window_display (Window *window)
  * to be used to declare that something needs to be updated on the screen.
  */
 
+void	window_scrollback_needs_rebuild (int winref)
+{
+	Window *the_window;
+
+	if ((the_window = get_window_by_refnum(winref)))
+		the_window->rebuild_scrollback = 1;
+}
+
 /*
  * statusbar_needs_update
  */
@@ -1366,6 +1374,9 @@ static	int	restart;
 			tmp = NULL;
 			continue;
 		}
+
+		if (tmp->rebuild_scrollback)
+			rebuild_scrollback(tmp);
 
 		/* 
 		 * This should always be done, even for hidden windows
@@ -1553,7 +1564,8 @@ static	void	window_check_columns (Window *w)
 	if (w->screen && w->columns != w->screen->co)
 	{
 		w->columns = w->screen->co;
-		rebuild_scrollback(w);
+		w->rebuild_scrollback = 1;
+		/* rebuild_scrollback(w); */
 	}
 }
 
@@ -1565,6 +1577,7 @@ static	void	rebuild_scrollback (Window *w)
 	flush_scrollback(w);
 	reconstitute_scrollback(w);
 	restore_window_positions(w, scrolling, holding, scrollback);
+	w->rebuild_scrollback = 0;
 }
 
 static void	save_window_positions (Window *w, intmax_t *scrolling, intmax_t *holding, intmax_t *scrollback)
@@ -4254,7 +4267,8 @@ Window *window_query (Window *window, char **args)
 
 static Window *window_rebuild_scrollback (Window *window, char **args)
 {
-	rebuild_scrollback(window);
+	window->rebuild_scrollback = 1;
+	/* rebuild_scrollback(window); */
 	return window;
 }
 

@@ -1,4 +1,4 @@
-/* $EPIC: mail.c,v 1.22 2006/06/17 04:04:02 jnelson Exp $ */
+/* $EPIC: mail.c,v 1.23 2006/06/24 15:54:25 jnelson Exp $ */
 /*
  * mail.c -- a gross simplification of mail checking.
  * Only unix maildrops (``mbox'') are supported.
@@ -308,20 +308,31 @@ static int	init_maildir_checking (void)
 {
 	Filename 	tmp_maildir_path;
 	const char *	maildir;
+	const char *	envvar;
 
-	if ((maildir = getenv("MAILDIR")))
-		maildir = getenv("MAIL");
-
-	if (maildir == NULL || !file_exists(maildir) || !isdir(maildir))
+	envvar = "MAILDIR";
+	if (!(maildir = getenv(envvar)))
 	{
-		if (maildir == NULL)
-			say("Your MAIL environment variable is unset.");
-		else if (!file_exists(maildir))
-			say("The file in your MAIL environment variable "
-				"does not exist.");
-		else
-			say("The file in your MAIL environment variable "
-				"is not a directory.");
+		envvar = "MAIL";
+		if (!(maildir = getenv(envvar)))
+		{
+			say("Can't find your maildir -- Both your MAILDIR "
+				"and MAIL environment variables are unset.");
+			return 0;
+		}
+	}
+
+	if (!file_exists(maildir))
+	{
+		say("The file in your %s environment variable "
+			"does not exist.", envvar);
+		return 0;
+	}
+
+	if (!isdir(maildir))
+	{
+		say("The file in your %s environment variable "
+			"is not a directory.", envvar);
 		return 0;
 	}
 
@@ -329,8 +340,9 @@ static int	init_maildir_checking (void)
 	strlcat(tmp_maildir_path, "/new", sizeof(Filename));
 	if (!file_exists(tmp_maildir_path) || !isdir(tmp_maildir_path))
 	{
-		say("The directory in your MAIL environment variable "
-			"does not contain a sub-directory called 'new'");
+		say("The directory in your %s environment variable "
+			"does not contain a sub-directory called 'new'", 
+				envvar);
 		return 0;
 	}
 
@@ -557,7 +569,7 @@ struct mail_checker mail_types[] = {
 			deinit_maildir_checking },
 	{ NULL,		NULL, NULL, NULL, NULL, NULL }
 };
-struct mail_checker *checkmail = &mail_types[1];
+struct mail_checker *checkmail = NULL;
 
 /**************************************************************************/
 const char *	check_mail (void)
@@ -570,6 +582,9 @@ char 	mail_timeref[] = "MAILTIM";
 void	mail_systimer (void)
 {
 	int	x;
+
+	if (checkmail == NULL)
+		return;		/* Whatever */
 
 	switch ((x = get_int_var(MAIL_VAR)))
 	{
@@ -611,14 +626,50 @@ void	set_mail (void *stuff)
 	}
 	if (value != 0)
 	{
-	    if (!checkmail->init())
-		value = v->integer = 0;
+		if (checkmail == NULL)
+			return;
+		if (!checkmail->init())
+			value = v->integer = 0;
 	}
 	if (value == 0)
+	{
+		if (checkmail == NULL)
+			return;
 		checkmail->deinit();
+		mail_last_count = -1;
+		mail_last_count_str = NULL;
+	}
 
 	update_system_timer(mail_timeref);
 	update_all_status();
 	cursor_to_input();
+}
+
+void	set_mail_type (void *stuff)
+{
+	VARIABLE *v;
+	const char *	value;
+	struct mail_checker *new_checker;
+	char	old_mailval[16];
+
+	v = (VARIABLE *)stuff;
+	value = v->string;
+
+	if (value == NULL)
+		new_checker = NULL;
+	else if (!my_stricmp(value, "MBOX"))
+		new_checker = &mail_types[0];
+	else if (!my_stricmp(value, "MAILDIR"))
+		new_checker = &mail_types[1];
+	else
+	{
+		say("/SET MAIL_TYPE must be MBOX or MAILDIR.");
+		return;
+	}
+
+	snprintf(old_mailval, sizeof(old_mailval), "%d", get_int_var(MAIL_VAR));
+	set_var_value(MAIL_VAR, zero, 0);
+	checkmail = new_checker;
+	set_var_value(MAIL_VAR, old_mailval, 0);
 }
 

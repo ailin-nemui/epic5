@@ -69,6 +69,7 @@ typedef	struct	WindowStru
 	short	cursor;			/* WINDOW line where the cursor is */
 	short	change_line;		/* True if this is a scratch window */
 	short	update;			/* True if window display is dirty */
+	short	rebuild_scrollback;	/* True if scrollback needs rebuild */
 
 	/* User-settable flags */
 	short	notify_when_hidden;	/* True to notify for hidden output */
@@ -288,5 +289,6 @@ const	char	*get_echannel_by_refnum		(unsigned);
 	const char *   get_bound_channel_by_refnum (unsigned refnum);
 
 	char *	windowctl			(char *);
+	void    window_scrollback_needs_rebuild (int winref);
 
 #endif /* __window_h__ */

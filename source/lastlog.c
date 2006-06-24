@@ -1,4 +1,4 @@
-/* $EPIC: lastlog.c,v 1.61 2006/06/17 04:04:02 jnelson Exp $ */
+/* $EPIC: lastlog.c,v 1.62 2006/06/24 15:54:25 jnelson Exp $ */
 /*
  * lastlog.c: handles the lastlog features of irc. 
  *
@@ -58,8 +58,14 @@ typedef struct	lastlog_stru
 	int	winref;
 }	Lastlog;
 
+static	intmax_t global_lastlog_refnum = 0;
+
 static int	show_lastlog (Lastlog **l, int *skip, int *number, Mask *level_mask, char *match, regex_t *reg, int *max, const char *target, int mangler);
 
+Lastlog *	lastlog_oldest = NULL;
+Lastlog *	lastlog_newest = NULL;
+
+/**********************************************************************/
 /*
  * lastlog_level: current bitmap setting of which things should be stored in
  * the lastlog.  The LOG_MSG, LOG_NOTICE, etc., defines tell more about this 
@@ -69,7 +75,6 @@ static	Mask	notify_mask;
 	Mask *	new_server_lastlog_mask = NULL;
 	Mask *	old_server_lastlog_mask = NULL;
 	Mask 	current_window_mask;
-static	intmax_t global_lastlog_refnum = 0;
 
 /*
  * warn_lastlog_level: tells the user what levels are available.
@@ -145,6 +150,100 @@ void	set_old_server_lastlog_mask (void *stuff)
 	}
 	else
 	    new_free(&old_server_lastlog_mask);
+}
+
+Mask	real_notify_mask (void)
+{
+	return (notify_mask);
+}
+
+Mask	real_lastlog_mask (void)
+{
+	return (lastlog_mask);
+}
+
+void	set_notify_mask (void *stuff)
+{
+	VARIABLE *v;
+	const char *str;
+
+	v = (VARIABLE *)stuff;
+	str = v->string;
+
+	str_to_mask(&notify_mask, str);
+	malloc_strcpy(&v->string, mask_to_str(&notify_mask));
+
+	current_window->notify_mask = notify_mask;
+}
+
+void	set_current_window_mask (void *stuff)
+{
+	VARIABLE *v;
+	const char *str;
+
+	v = (VARIABLE *)stuff;
+	str = v->string;
+
+	str_to_mask(&current_window_mask, str);
+	malloc_strcpy(&v->string, mask_to_str(&current_window_mask));
+}
+
+
+/**********************************************************************/
+/*
+ * add_to_lastlog: adds the line to the lastlog.  If the LASTLOG_CONVERSATION
+ * variable is on, then only those lines that are user messages (private
+ * messages, channel messages, wall's, and any outgoing messages) are
+ * recorded, otherwise, everything is recorded 
+ */
+intmax_t	add_to_lastlog (Window *window, const char *line)
+{
+	Lastlog *new_l;
+
+	if (!window)
+		window = current_window;
+
+	new_l = (Lastlog *)new_malloc(sizeof(Lastlog));
+	new_l->refnum = global_lastlog_refnum++;
+	new_l->older = window->lastlog_newest;
+	new_l->newer = NULL;
+	new_l->level = who_level;
+	new_l->msg = malloc_strdup(line);
+	if (who_from)
+		new_l->target = malloc_strdup(who_from);
+	else
+		new_l->target = NULL;
+	time(&new_l->when);
+
+	/* * * */
+	if (window->lastlog_newest)
+		window->lastlog_newest->newer = new_l;
+	window->lastlog_newest = new_l;
+
+	if (!window->lastlog_oldest)
+		window->lastlog_oldest = window->lastlog_newest;
+
+	if (mask_isset(&window->lastlog_mask, who_level))
+	{
+		new_l->visible = 1;
+		window->lastlog_size++;
+		trim_lastlog(window);
+	}
+	else
+		new_l->visible = 0;
+
+	/* * * */
+#if 0
+	lastlog_newest->newer = new_l;
+	new_l->older = lastlog_newest;
+	lastlog_newest = new_l;
+
+	if (!lastlog_oldest)
+		lastlog_oldest = lastlog_newest;
+#endif
+
+	/* * * */
+	return new_l->refnum;
 }
 
 
@@ -780,86 +879,6 @@ void	reconstitute_scrollback (Window *window)
 }
 	
 /*
- * add_to_lastlog: adds the line to the lastlog.  If the LASTLOG_CONVERSATION
- * variable is on, then only those lines that are user messages (private
- * messages, channel messages, wall's, and any outgoing messages) are
- * recorded, otherwise, everything is recorded 
- */
-intmax_t	add_to_lastlog (Window *window, const char *line)
-{
-	Lastlog *new_l;
-
-	if (!window)
-		window = current_window;
-
-	new_l = (Lastlog *)new_malloc(sizeof(Lastlog));
-	new_l->refnum = global_lastlog_refnum++;
-	new_l->older = window->lastlog_newest;
-	new_l->newer = NULL;
-	new_l->level = who_level;
-	new_l->msg = malloc_strdup(line);
-	if (who_from)
-		new_l->target = malloc_strdup(who_from);
-	else
-		new_l->target = NULL;
-	time(&new_l->when);
-
-	if (window->lastlog_newest)
-		window->lastlog_newest->newer = new_l;
-	window->lastlog_newest = new_l;
-
-	if (!window->lastlog_oldest)
-		window->lastlog_oldest = window->lastlog_newest;
-
-	if (mask_isset(&window->lastlog_mask, who_level))
-	{
-		new_l->visible = 1;
-		window->lastlog_size++;
-		trim_lastlog(window);
-	}
-	else
-		new_l->visible = 0;
-
-	return new_l->refnum;
-}
-
-Mask	real_notify_mask (void)
-{
-	return (notify_mask);
-}
-
-Mask	real_lastlog_mask (void)
-{
-	return (lastlog_mask);
-}
-
-void	set_notify_mask (void *stuff)
-{
-	VARIABLE *v;
-	const char *str;
-
-	v = (VARIABLE *)stuff;
-	str = v->string;
-
-	str_to_mask(&notify_mask, str);
-	malloc_strcpy(&v->string, mask_to_str(&notify_mask));
-
-	current_window->notify_mask = notify_mask;
-}
-
-void	set_current_window_mask (void *stuff)
-{
-	VARIABLE *v;
-	const char *str;
-
-	v = (VARIABLE *)stuff;
-	str = v->string;
-
-	str_to_mask(&current_window_mask, str);
-	malloc_strcpy(&v->string, mask_to_str(&current_window_mask));
-}
-
-/*
  * $line(<line number> [window number])
  * Returns the text of logical line <line number> from the lastlog of 
  * window <window number>.  If no window number is supplied, the current
@@ -1008,4 +1027,96 @@ BUILT_IN_FUNCTION(function_lastlogctl, input)
 	RETURN_STR(empty_string);
 }
 #endif
+
+/************************************************************************/
+int	oldest_lastlog_for_window (Lastlog **item, int winref)
+{
+	*item = NULL;
+	return newer_lastlog_entry(item, winref);
+}
+
+int	newer_lastlog_entry (Lastlog **item, int winref)
+{
+	Lastlog *i;
+
+	if (*item)
+		i = (*item)->newer;
+	else
+		i = lastlog_oldest;
+
+	while (i && i->winref != winref)
+		i = i->newer;
+	*item = i;
+
+	return i ? 1 : 0;
+}
+
+int	older_lastlog_entry (Lastlog **item, int winref)
+{
+	Lastlog *i;
+
+	if (*item)
+		i = (*item)->older;
+	else
+		i = lastlog_newest;
+
+	while (i && i->winref != winref)
+		i = i->older;
+	*item = i;
+
+	return i ? 1 : 0;
+}
+
+int	newest_lastlog_for_window (Lastlog **item, int winref)
+{
+	*item = NULL;
+	return older_lastlog_entry(item, winref);
+}
+
+int	remove_lastlog_item (Lastlog *item)
+{
+	if (item == lastlog_oldest)
+	{
+		if (item->older != NULL)
+			panic("Oldest lastlog item %jd has older item %jd",
+				item->refnum, item->older->refnum);
+
+		item->newer->older = NULL;
+		lastlog_oldest = item->newer;
+		item->newer = NULL;
+	}
+	else if (item == lastlog_newest)
+	{
+		if (item->newer != NULL)
+			panic("Newest lastlog item %jd has newer item %jd",
+				item->refnum, item->newer->refnum);
+
+		item->older->newer = NULL;
+		lastlog_newest = item->older;
+		item->older = NULL;
+	}
+	else
+	{
+		item->older->newer = item->newer;
+		item->newer->older = item->older;
+		item->newer = item->older = NULL;
+	}
+}
+
+int	remove_oldest_lastlog_for_window (int winref)
+{
+	Lastlog *item = NULL;
+
+	if (oldest_lastlog_for_window(&item, winref))
+		remove_lastlog_item(item);
+}
+
+int	switch_lastlog_window (Lastlog *item, int newref)
+{
+	/* Mark the old window's scrollback for reconstitution */
+	window_scrollback_needs_rebuild(item->winref);
+	item->winref = newref;
+	/* Mark the new window's scrollback for reconstitution */
+	window_scrollback_needs_rebuild(item->winref);
+}
 

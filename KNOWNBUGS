@@ -4,8 +4,6 @@ KNOWN ERRATA (eg, bugs, or unresolved requests):
 ------------------------------------------------
 * Shattah would like something like /window omit <regex> to remove stuff.
 * Tag each lastlog item with a refnum so it can be tracked
-* Nonblocking SSL negotiations, for weirdo.
-* Need to implement /set mailbox_type (MBOX or MAILDIR)
 * Create a unified lastlog (across all windows)
 * Permit lastlog entries to be moved across windows.
 
@@ -86,3 +84,4 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * GC the fixed-alist support (last used by /quote and protocol handler)
 * Reorg server SSL negotation stuff to be nonblocking. yay!
 * Comment all sorts of stuff in ssl.c.
+* Add /set mail_type (MBOX or MAILDIR) to control what we check for mail.

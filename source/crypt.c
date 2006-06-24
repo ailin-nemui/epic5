@@ -1,6 +1,6 @@
-/* $EPIC: crypt.c,v 1.17 2003/10/31 08:19:24 crazyed Exp $ */
+/* $EPIC: crypt.c,v 1.18 2006/06/24 15:54:25 jnelson Exp $ */
 /*
- * crypt.c: handles some encryption of messages stuff. 
+ * crypt.c: Canoodling message payloads to thwart eavesdropping.
  *
  * Copyright (c) 1990 Michael Sandroff.
  * Copyright (c) 1991, 1992 Troy Rollo.
@@ -34,6 +34,23 @@
  * SUCH DAMAGE.
  */
 
+/*
+ * Some will look at these routines and recoil in horror with their insecurity.
+ * It is true that SED ("Simple Encrypted Data", although maybe "Slightly 
+ * Entropic Data" is closer to truth) is an ECB (Electronic Cook Book -- see 
+ * http://en.wikipedia.org/wiki/Cipher_block_chaining), and does not provide 
+ * a defense against cryptoanalysis of your messages.
+ *
+ * But what SED does provide is an effective defense against server-side 
+ * pattern matching.  This is useful for discretely sending /DCC offers.
+ * Because a DCC SEND reveals not only your real IP address, but also a port
+ * from which you will send a file to the first taker, and because the server
+ * sees this information before anyone else does, the security of your DCCs
+ * are only as secure as your server admin.  For those who use rogue networks,
+ * you would be unwise to offer DCCs without using SED.
+ *
+ * Alas, CTCP-over-SED is only compatable with EPIC and BitchX.
+ */
 #include "irc.h"
 #include "sedcrypt.h"
 #include "ctcp.h"

@@ -1,4 +1,4 @@
-/* $EPIC: vars.c,v 1.88 2006/05/27 18:14:08 jnelson Exp $ */
+/* $EPIC: vars.c,v 1.89 2006/06/24 15:54:25 jnelson Exp $ */
 /*
  * vars.c: All the dealing of the irc variables are handled here. 
  *
@@ -200,6 +200,7 @@ void 	init_variables_stage1 (void)
 	VAR(LOG_REWRITE, STR,  NULL);
 	VAR(MAIL, INT,  set_mail);
 	VAR(MAIL_INTERVAL, INT,  set_mail_interval);
+	VAR(MAIL_TYPE, STR, set_mail_type);
 #define DEFAULT_MANGLE_DISPLAY "NORMALIZE"
 	VAR(MANGLE_DISPLAY, STR,  set_mangle_display);
 #define DEFAULT_MANGLE_INBOUND NULL
