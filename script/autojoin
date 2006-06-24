@@ -43,6 +43,7 @@ alias join {
       @ :k = word(1 $channels[$encode($gr)][$encode($ch)]);
     };
     //join $ch $k;
+    _autocreate $ch 0;
   };
 };
 
@@ -92,7 +93,7 @@ alias _autocreate (channel, auto) {
 
 on #-join -28 "*" {
   if ([$0] == servernick()) {
-    _autocreate $tolower($1) 0;
+    _autocreate $tolower($1) 1;
   };
 };
 
@@ -104,14 +105,14 @@ on #-SERVER_STATUS 28 "% % ACTIVE" {
   @ :egr = encode($group);
   foreach channels.$egr i {
     @ :ch = decode($i);
-    xeval -s $0 { join $ch; };
+    xeval -s $0 { //join $ch; };
   };
   @ :nw = numwords($reconn[channels][$egr]);
   for i from 0 to ${nw - 1} {
     @ :ch = word($i $reconn[channels][$egr]);
     @ :k = word($i $reconn[keys][$egr]);
     if (channels[$egr][$encode($ch)] == []) {
-      xeval -s $0 { join $ch $k; };
+      xeval -s $0 { //join $ch $k; };
     };
   };
   ^ASSIGN -i;
@@ -131,4 +132,3 @@ on #-window_beforekill -28 "*" {
   };
   ^assign -ch;
 };
-#weirdo'2k6
