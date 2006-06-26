@@ -5,7 +5,7 @@ if (word(2 $loadinfo()) != [pf]) { load -pf $word(1 $loadinfo()); return; };
 # channels are stored in ~/.irc/channels, syntax:
 # <channel> <winnum> <group> [key], i.e.:
 # #epic   2 efnet
-# test321 3 efnet test.8
+# #test321 3 efnet test.8
 
 addset autocreate_split_channels bool;
 set autocreate_split_channels off;
@@ -42,8 +42,14 @@ alias join {
     if (k == [] && (:gr = servergroup()) != []) {
       @ :k = word(1 $channels[$encode($gr)][$encode($ch)]);
     };
-    //join $ch $k;
-    _autocreate $ch 0;
+    if (k == []) {
+      @ :k = [*];
+    };
+    if (left(1 $ch) != [!]) {
+      _autocreate $ch 0 $k;
+    } else {
+      //join $ch $k;
+    };
   };
 };
 
@@ -72,28 +78,33 @@ alias _loadchannels {
 
 _loadchannels;
 
-alias _autocreate (channel, auto) {
+alias _autocreate (channel, auto, key, void) {
+  ^local num,wcmd;
   if ((:num = winnum($encode($servergroup(),$channel))) != -1) {
-    window $num server $servernum() channel $channel;
+    window $num server $servernum() channel "$channel";
   } else {
+    @ num = word(0 $channels[$encode($servergroup())][$encode($channel)]);
     if (getset(autocreate_split_channels) == [ON]) {
-      window new name $encode($servergroup(),$channel) server $servernum() channel $channel;
+      push wcmd new;
     } else {
-      window new_hide swap last name $encode($servergroup(),$channel) server $servernum() channel $channel;
+      push wcmd new_hide swap last;
     };
-    @ :num = word(0 $channels[$encode($servergroup())][$encode($channel)]);
+    push wcmd name $encode($servergroup(),$channel);
+    push wcmd server $servernum();
+    push wcmd channel "$channel $key";
     if (num != []) {
-      window number $num;
+      push wcmd number $num;
     };
     if (auto) {
-      window swap last;
+      push wcmd swap last;
     };
+    window $wcmd;
   };
 };
 
 on #-join -28 "*" {
   if ([$0] == servernick()) {
-    _autocreate $tolower($1) 1;
+    _autocreate $tolower($1) 1 *;
   };
 };
 
@@ -105,13 +116,15 @@ on #-SERVER_STATUS 28 "% % ACTIVE" {
   @ :egr = encode($group);
   foreach channels.$egr i {
     @ :ch = decode($i);
-    xeval -s $0 { //join $ch; };
+    @ :k = word(1 $channels[$egr][$i]);
+    xeval -s $0 { //join $ch $k; };
   };
   @ :nw = numwords($reconn[channels][$egr]);
   for i from 0 to ${nw - 1} {
     @ :ch = word($i $reconn[channels][$egr]);
-    @ :k = word($i $reconn[keys][$egr]);
-    if (channels[$egr][$encode($ch)] == []) {
+    @ :ech = encode($ch);
+    if (channels[$egr][$ech] == []) {
+      @ :k = word($i $reconn[keys][$egr]);
       xeval -s $0 { //join $ch $k; };
     };
   };
