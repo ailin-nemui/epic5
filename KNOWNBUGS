@@ -6,6 +6,11 @@ KNOWN ERRATA (eg, bugs, or unresolved requests):
 * Tag each lastlog item with a refnum so it can be tracked
 * Create a unified lastlog (across all windows)
 * Permit lastlog entries to be moved across windows.
+* Refactor hardcoded uses of select() so select() isn't mandatory.
+* I think i broke external encryption support.  I need to check/fix this
+* Support for blowfish is untested
+* Should be able to do -cast or -blowfish anywhere on /encrypt args.
+* The cut&paste job for do_cast5 and do_blowfish in ctcp.c blows.
 
 LOOK FOR IN THE FUTURE
 -----------------------
@@ -90,3 +95,5 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Write some preliminary code for the unified lastlog
 * Add /ON NUMERIC which is thrown if you don't hook the numeric specifically.
 * Important changes to autojoin and floodprot scripts.
+* Support cast5/blowfish encryption a la ircII.
+* Fix build for non-ssl users.

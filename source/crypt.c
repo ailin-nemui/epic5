@@ -1,4 +1,4 @@
-/* $EPIC: crypt.c,v 1.18 2006/06/24 15:54:25 jnelson Exp $ */
+/* $EPIC: crypt.c,v 1.19 2006/06/27 01:42:35 jnelson Exp $ */
 /*
  * crypt.c: Canoodling message payloads to thwart eavesdropping.
  *
@@ -72,7 +72,7 @@ static	Crypt	*crypt_list = (Crypt *) 0;
  * nickname is already in the list, then the key is changed the the supplied
  * key. 
  */
-static	void	add_to_crypt(char *nick, char *key, char* prog)
+static	void	add_to_crypt(char *nick, char *key, char* prog, int type)
 {
 	Crypt	*new_crypt;
 
@@ -87,10 +87,15 @@ static	void	add_to_crypt(char *nick, char *key, char* prog)
 	new_crypt->nick = (char *) 0;
 	new_crypt->key = (char *) 0;
 	new_crypt->prog = (char *) 0;
+	new_crypt->type = type;
 
 	malloc_strcpy(&(new_crypt->nick), nick);
 	malloc_strcpy(&(new_crypt->key), key);
-	if (prog && *prog) malloc_strcpy(&(new_crypt->prog), prog);
+	if (prog && *prog)
+	{
+		malloc_strcpy(&(new_crypt->prog), prog);
+		new_crypt->type = EXTCRYPT;
+	}
 	add_to_list((List **)&crypt_list, (List *)new_crypt);
 }
 
@@ -118,18 +123,18 @@ static	int	remove_crypt (char *nick)
  * is_crypted: looks up nick in the crypt_list and returns the encryption key
  * if found in the list.  If not found in the crypt_list, null is returned. 
  */
-Crypt	*is_crypted (const char *nick)
+Crypt	*is_crypted (const char *nick, int type)
 {
 	Crypt	*tmp;
 
 	if (!crypt_list)
 		return NULL;
-	if ((tmp = (Crypt *) list_lookup((List **)&crypt_list, nick,
-			!!strchr(nick, ','), !REMOVE_FROM_LIST)) != NULL) {
-		return tmp;
-	} else {
-		return NULL;
+	for (tmp = crypt_list; tmp; tmp = tmp->next)
+	{
+		if (!my_stricmp(tmp->nick, nick) && tmp->type == type)
+			return tmp;
 	}
+	return NULL;
 }
 
 /*
@@ -138,14 +143,27 @@ Crypt	*is_crypted (const char *nick)
  */
 BUILT_IN_COMMAND(encrypt_cmd)
 {
-	char	*nick, *key, *prog;
+	char	*nick, *key, *prog, *typestr;
+	int	type = SEDCRYPT;
 
 	if ((nick = next_arg(args, &args)) != NULL)
 	{
-		if ((key = next_arg(args, &args)) != NULL)
+	    if ((typestr = next_arg(args, &args)) != NULL)
+	    {
+		if (!my_stricmp(typestr, "-SED"))
+			type = SEDCRYPT;
+		else if (!my_stricmp(typestr, "-CAST"))
+			type = CAST5CRYPT;
+		else
 		{
-			prog = next_arg(args, &args);
-			add_to_crypt(nick, key, prog);
+			say("You must specify an encrypt type: /ENCRYPT nick -TYPE key, where TYPE is either -SED or -CAST");
+			return;
+		}
+
+		if ((key = new_next_arg(args, &args)) != NULL)
+		{
+			prog = new_next_arg(args, &args);
+			add_to_crypt(nick, key, prog, type);
 			say("%s added to the crypt with key %s and program %s",
 					nick, key, prog?prog:"[none]");
 		}
@@ -156,21 +174,21 @@ BUILT_IN_COMMAND(encrypt_cmd)
 			else
 				say("%s removed from the crypt", nick);
 		}
+	    }
+	    else
+		say("Usage: /ENCRYPT nick -TYPE key");
+	}
+	else if (crypt_list)
+	{
+		Crypt	*tmp;
+
+		say("The crypt:");
+		for (tmp = crypt_list; tmp; tmp = tmp->next)
+			put_it("%s with key %s and program %s",
+				tmp->nick, tmp->key, tmp->prog?tmp->prog:"[none]");
 	}
 	else
-	{
-		if (crypt_list)
-		{
-			Crypt	*tmp;
-
-			say("The crypt:");
-			for (tmp = crypt_list; tmp; tmp = tmp->next)
-				put_it("%s with key %s and program %s",
-					tmp->nick, tmp->key, tmp->prog?tmp->prog:"[none]");
-		}
-		else
-			say("The crypt is empty");
-	}
+		say("The crypt is empty");
 }
 
 void 	my_encrypt (char *str, int len, char *key)
@@ -256,18 +274,32 @@ char	*do_crypt (char *str, Crypt *key, int flag)
 	if (flag)
 	{
 		if (key->prog)
+		{
 			free_it = str = (char*)prog_crypt(str, &c, key, flag);
-		else
+			str = enquote_it(str, c);
+		}
+		else if (key->type == SEDCRYPT)
+		{
 			my_encrypt(str, c, key->key);
-		str = enquote_it(str, c);
+			str = enquote_it(str, c);
+		}
+		else if (key->type == CAST5CRYPT || key->type == BLOWFISHCRYPT)
+			str = cipher_message(str, strlen(str) + 1, key);
 	}
 	else
 	{
-		str = dequote_it(str, &c);
 		if (key->prog)
+		{
+			str = dequote_it(str, &c);
 			str = (char*)prog_crypt(free_it = str, &c, key, flag);
-		else
+		}
+		else if (key->type == SEDCRYPT)
+		{
+			str = dequote_it(str, &c);
 			my_decrypt(str, c, key->key);
+		}
+		else if (key->type == CAST5CRYPT || key->type == BLOWFISHCRYPT)
+			str = decipher_message(str, key);
 	}
 	new_free(&free_it);
 	return (str);
@@ -283,7 +315,13 @@ char 	*crypt_msg (char *str, Crypt *key)
 	char	thing[6];
 	char	*ptr;
 
-	snprintf(thing, 6, "%cSED ", CTCP_DELIM_CHAR);
+	if (key->type == SEDCRYPT)
+		snprintf(thing, 6, "%cSED ", CTCP_DELIM_CHAR);
+	else if (key->type == CAST5CRYPT)
+		snprintf(thing, 16, "%cCAST128ED-CBC ", CTCP_DELIM_CHAR);
+	else if (key->type == BLOWFISHCRYPT)
+		snprintf(thing, 15, "%cBLOWFISH-CBC ", CTCP_DELIM_CHAR);
+
 	*buffer = 0;
 	if ((ptr = do_crypt(str, key, 1)))
 	{

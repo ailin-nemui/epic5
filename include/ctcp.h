@@ -24,7 +24,9 @@
 #define CTCP_TIME		9
 #define CTCP_PING		10
 #define	CTCP_ECHO		11
-#define CTCP_CUSTOM		12
+#define CTCP_CAST5		12
+#define CTCP_BLOWFISH		13
+#define CTCP_CUSTOM		14
 #define NUMBER_OF_CTCPS		CTCP_CUSTOM
 
 #define CTCP_DELIM_CHAR         '\001' 

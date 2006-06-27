@@ -11,11 +11,11 @@ LDFLAGS	= @LDFLAGS@
 DEFS	= @DEFS@
 RM	= rm -f
 
-OBJECTS = alias.o alist.o array.o clock.o commands.o compat.o crypt.o ctcp.o \
-	dcc.o debug.o exec.o files.o flood.o functions.o gailib.o glob.o \
-	hook.o if.o ignore.o input.o irc.o ircaux.o ircsig.o keys.o lastlog.o \
-	levels.o list.o log.o logfiles.o mail.o names.o network.o newio.o \
-	notify.o numbers.o output.o parse.o @PERLDOTOH@ queue.o reg.o \
+OBJECTS = alias.o alist.o array.o clock.o commands.o compat.o crypt.o crypto.o \
+        ctcp.o dcc.o debug.o exec.o files.o flood.o functions.o gailib.o \
+	glob.o hook.o if.o ignore.o input.o irc.o ircaux.o ircsig.o keys.o \
+	lastlog.o levels.o list.o log.o logfiles.o mail.o names.o network.o \
+	newio.o notify.o numbers.o output.o parse.o @PERLDOTOH@ queue.o reg.o \
 	@RUBYDOTOH@ screen.o sdbm.o server.o ssl.o status.o @TCLDOTOH@ term.o \
 	timer.o translat.o vars.o who.o window.o words.o @ALLOCA@
 

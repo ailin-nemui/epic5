@@ -1,4 +1,4 @@
-/* $EPIC: server.c,v 1.196 2006/06/23 05:03:11 jnelson Exp $ */
+/* $EPIC: server.c,v 1.197 2006/06/27 01:42:35 jnelson Exp $ */
 /*
  * server.c:  Things dealing with that wacky program we call ircd.
  *
@@ -1008,6 +1008,7 @@ something_broke:
 		    /* Update this! */
 		    *(SA *)&s->remote_sockname = *(SA *)&name;
 
+#ifdef HAVE_SSL
 		    /*
 		     * For SSL server connections, we have to take a little
 		     * detour.  First we start up the ssl connection, which
@@ -1042,6 +1043,7 @@ something_broke:
 			new_open(des, do_server, NEWIO_SSL_CONNECT, 0);
 			break;
 		    }
+#endif
 
 return_from_ssl_detour:
 		    if (is_ssl_enabled(des))
@@ -1057,6 +1059,7 @@ return_from_ssl_detour:
 		    register_server(i, s->d_nickname);
 		}
 
+#ifdef HAVE_SSL
 		/*
 		 * Above, we did new_open(..., NEWIO_SSL_CONNECT, ...)
 		 * which leads us here when the ssl stuff posts a result code.
@@ -1091,6 +1094,7 @@ return_from_ssl_detour:
 
 		    goto return_from_ssl_detour;	/* All is well! */
 		}
+#endif
 
 	        /* Everything else is a normal read. */
 		else

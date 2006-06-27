@@ -1,4 +1,4 @@
-/* $EPIC: ctcp.c,v 1.47 2005/10/13 01:11:58 jnelson Exp $ */
+/* $EPIC: ctcp.c,v 1.48 2006/06/27 01:42:35 jnelson Exp $ */
 /*
  * ctcp.c:handles the client-to-client protocol(ctcp). 
  *
@@ -105,7 +105,8 @@ static	char	*do_dcc 	(CtcpEntry *, const char *, const char *, char *);
 static	char	*do_utc 	(CtcpEntry *, const char *, const char *, char *);
 static	char	*do_dcc_reply 	(CtcpEntry *, const char *, const char *, char *);
 static	char	*do_ping_reply 	(CtcpEntry *, const char *, const char *, char *);
-
+static	char	*do_cast5	(CtcpEntry *, const char *, const char *, char *);
+static	char	*do_blowfish	(CtcpEntry *, const char *, const char *, char *);
 
 static CtcpEntry ctcp_cmd[] =
 {
@@ -145,6 +146,12 @@ static CtcpEntry ctcp_cmd[] =
 	{ "ECHO", 	CTCP_ECHO, 	CTCP_REPLY | CTCP_TELLUSER,
 		"returns the arguments it receives",
 		do_echo, 	NULL },
+	{ "CAST128ED-CBC", CTCP_CAST5, 	CTCP_INLINE | CTCP_NOLIMIT,
+		"contains cast5-cbc encrypted data",
+		do_cast5, 	do_cast5 },
+	{ "BLOWFISH-CBC", CTCP_BLOWFISH, CTCP_INLINE | CTCP_NOLIMIT,
+		"contains blowfish-cbc encrypted data",
+		do_blowfish, 	do_blowfish },
 	{ NULL,		CTCP_CUSTOM,	CTCP_REPLY | CTCP_TELLUSER,
 		NULL,
 		NULL, NULL }
@@ -196,9 +203,105 @@ CTCP_HANDLER(do_sed)
 	tofrom = malloc_strdup3(to, ",", from);
 	malloc_strcat2_c(&tofrom, "!", FromUserHost, NULL);
 
-	if ((key = is_crypted(tofrom)) ||
-	    (key = is_crypted(crypt_who)))
+	if ((key = is_crypted(tofrom, SEDCRYPT)) ||
+	    (key = is_crypted(crypt_who, SEDCRYPT)))
 		ret = decrypt_msg(cmd, key);
+
+	new_free(&tofrom);
+
+	if (!key || !ret) {
+		sed = 2;
+		malloc_strcpy(&ret2, "[ENCRYPTED MESSAGE]");
+	} else if (!*ret) {
+		sed = 2;
+		malloc_strcpy(&ret2, "[ENCRYPTED MESSAGE - BAD KEY?]");
+	} else {
+		/* 
+		 * There might be a CTCP message in there,
+		 * so we see if we can find it.
+		 */
+		if (get_server_doing_privmsg(from_server))
+			ret2 = malloc_strdup(do_ctcp(from, to, ret));
+		else if (get_server_doing_notice(from_server))
+			ret2 = malloc_strdup(do_notice_ctcp(from, to, ret));
+		sed = 1;
+	}
+
+	new_free(&ret);
+	return ret2;
+}
+
+/*
+ * do_cast5:
+ */
+CTCP_HANDLER(do_cast5)
+{
+	Crypt	*key = NULL;
+	const char	*crypt_who;
+	char 	*tofrom;
+	char	*ret = NULL, *ret2 = NULL;
+
+	if (*from == '=')		/* DCC CHAT message */
+		crypt_who = from;
+	else if (is_me(from_server, to))
+		crypt_who = from;
+	else
+		crypt_who = to;
+
+	tofrom = malloc_strdup3(to, ",", from);
+	malloc_strcat2_c(&tofrom, "!", FromUserHost, NULL);
+
+	if ((key = is_crypted(tofrom, CAST5CRYPT)) ||
+	    (key = is_crypted(crypt_who, CAST5CRYPT)))
+		ret = decipher_message(cmd, key);
+
+	new_free(&tofrom);
+
+	if (!key || !ret) {
+		sed = 2;
+		malloc_strcpy(&ret2, "[ENCRYPTED MESSAGE]");
+	} else if (!*ret) {
+		sed = 2;
+		malloc_strcpy(&ret2, "[ENCRYPTED MESSAGE - BAD KEY?]");
+	} else {
+		/* 
+		 * There might be a CTCP message in there,
+		 * so we see if we can find it.
+		 */
+		if (get_server_doing_privmsg(from_server))
+			ret2 = malloc_strdup(do_ctcp(from, to, ret));
+		else if (get_server_doing_notice(from_server))
+			ret2 = malloc_strdup(do_notice_ctcp(from, to, ret));
+		sed = 1;
+	}
+
+	new_free(&ret);
+	return ret2;
+}
+
+/*
+ * do_blowfish:
+ */
+CTCP_HANDLER(do_blowfish)
+{
+	Crypt	*key = NULL;
+	const char	*crypt_who;
+	char 	*tofrom;
+	char	*ret = NULL, *ret2 = NULL;
+
+	if (*from == '=')		/* DCC CHAT message */
+		crypt_who = from;
+	else if (is_me(from_server, to))
+		crypt_who = from;
+	else
+		crypt_who = to;
+
+	tofrom = malloc_strdup3(to, ",", from);
+	malloc_strcat2_c(&tofrom, "!", FromUserHost, NULL);
+
+	if ((key = is_crypted(tofrom, BLOWFISHCRYPT)) ||
+	    (key = is_crypted(crypt_who, BLOWFISHCRYPT)))
+		ret = decipher_message(cmd, key);
 
 	new_free(&tofrom);
 
@@ -1043,3 +1146,4 @@ static int split_CTCP (char *raw_message, char *ctcp_dest, char *after_ctcp)
 	strlcpy(after_ctcp, ctcp_end, IRCD_BUFFER_SIZE - 1);
 	return 0;		/* All done! */
 }
+

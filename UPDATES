@@ -1,5 +1,32 @@
 EPIC5-0.3.1
 
+*** News 06/26/2006 -- CAST5 and Blowfish encryption support
+	This only took me 8 years to catch up with ircII!  Yah!
+	All of this support is provided by the EVP api in OpenSSL.
+	If you don't have OpenSSL, this won't be supported.
+
+	The /ENCRYPT command now takes an argument after the nickname,
+	which can be either -CAST or -BLOWFISH.
+		/ENCRYPT nick -CAST key
+		/ENCRYPT nick -BLOWFISH key
+	The -CAST support is fully compatable with ircII (as of the last 
+	time I tested it) and -BLOWFISH isn't compatable with anything 
+	but your fellow bleeding edgers (since nobody supports that yet).
+
+	The Blowfish support is *NOT* compatable with FiSH, because FiSH
+	has a couple of idiosyncracies (non-standard Base64, supports keys
+	that are longer than what openssl supports).  It would probably be
+	more likely that FiSH needs bag-on-the-side support than to be 
+	mainlined into the crypto support...
+
+	Perhaps AES (Rijndael) support will appear some time in the future.
+
+	Please remember, when you /ENCRYPT a target, everything you send to
+	that target is encoded.  This includes /CTCP requests (/DCC offers).
+	Because ircII does not do CTCP-over-CTCP, you won't be able to send
+	/DCC SEND or /DCC CHAT offers to ircII users, but it will work with 
+	EPIC users.
+
 *** News 06/24/2006 -- New ON, /ON NUMERIC
 	The /ON NUMERIC hook is thrown for all numerics that you do not 
 	catch with a more specific /ON <number>.  For example:

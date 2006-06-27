@@ -1,4 +1,4 @@
-/* $EPIC: functions.c,v 1.228 2006/06/09 03:19:14 jnelson Exp $ */
+/* $EPIC: functions.c,v 1.229 2006/06/27 01:42:35 jnelson Exp $ */
 /*
  * functions.c -- Built-in functions for ircII
  *
@@ -6104,7 +6104,7 @@ BUILT_IN_FUNCTION(function_encryptparm, input)
 	Crypt	*key;
 
 	GET_STR_ARG(entry, input);
-	if ((key = is_crypted(entry))) 
+	if ((key = is_crypted(entry, SEDCRYPT))) 
 	{
 		malloc_strcat_word_c(&ret, space, key->nick, &clue);
 		malloc_strcat_word_c(&ret, space, key->key, &clue);
@@ -6124,7 +6124,7 @@ BUILT_IN_FUNCTION(function_sedcrypt, input)
 	GET_INT_ARG(flag, input);
 	GET_STR_ARG(from, input);
 
-	if ((key = is_crypted(from)))
+	if ((key = is_crypted(from, SEDCRYPT)))
 		ret = do_crypt(input, key, flag);
 
 	RETURN_STR(ret);

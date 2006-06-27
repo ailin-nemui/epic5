@@ -1,4 +1,4 @@
-/* $EPIC: commands.c,v 1.144 2006/06/23 05:03:11 jnelson Exp $ */
+/* $EPIC: commands.c,v 1.145 2006/06/27 01:42:35 jnelson Exp $ */
 /*
  * commands.c -- Stuff needed to execute commands in ircII.
  *		 Includes the bulk of the built in commands for ircII.
@@ -2978,7 +2978,12 @@ struct target_type target[4] =
 			continue;
 		}
 
-		if ((key = is_crypted(current_nick)) != 0)
+		if ((key = is_crypted(current_nick, SEDCRYPT)) != 0)
+		{
+			char *breakage = LOCAL_COPY(text);
+			line = crypt_msg(breakage, key);
+		}
+		else if ((key = is_crypted(current_nick, CAST5CRYPT)) != 0)
 		{
 			char *breakage = LOCAL_COPY(text);
 			line = crypt_msg(breakage, key);
@@ -3027,7 +3032,26 @@ struct target_type target[4] =
 		if (get_server_doing_privmsg(from_server) || (command && !strcmp(command, "NOTICE")))
 			i += 2;
 
-		if ((key = is_crypted(current_nick)))
+		if ((key = is_crypted(current_nick, SEDCRYPT)))
+		{
+			int	l;
+
+			copy = LOCAL_COPY(text);
+			l = message_from(current_nick, target[i].mask);
+
+			if (hook && do_hook(target[i].hook_type, "%s %s", 
+						current_nick, copy))
+				put_it(target[i].format, current_nick, copy);
+			line = crypt_msg(copy, key);
+
+			send_to_server("%s %s :%s", 
+					target[i].command, current_nick, line);
+			set_server_sent_nick(from_server, current_nick);
+
+			new_free(&line);
+			pop_message_from(l);
+		}
+		else if ((key = is_crypted(current_nick, CAST5CRYPT)))
 		{
 			int	l;
 

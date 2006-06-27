@@ -1,4 +1,4 @@
-/* $EPIC: ircaux.c,v 1.152 2006/06/06 05:08:48 jnelson Exp $ */
+/* $EPIC: ircaux.c,v 1.153 2006/06/27 01:42:35 jnelson Exp $ */
 /*
  * ircaux.c: some extra routines... not specific to irc... that I needed 
  *
@@ -3317,6 +3317,8 @@ char	*enquote_it (char *str, size_t len)
 			case '\0':		*ptr++ = CTCP_QUOTE_CHAR;
 						*ptr++ = '0';
 						break;
+			case ':':		*ptr++ = CTCP_QUOTE_CHAR;
+						/* FALLTHROUGH */
 			default:		*ptr++ = str[i];
 						break;
 		}
