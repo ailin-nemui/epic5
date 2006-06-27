@@ -1,4 +1,4 @@
-/* $EPIC: crypt.c,v 1.19 2006/06/27 01:42:35 jnelson Exp $ */
+/* $EPIC: crypt.c,v 1.20 2006/06/27 02:51:22 jnelson Exp $ */
 /*
  * crypt.c: Canoodling message payloads to thwart eavesdropping.
  *
@@ -90,7 +90,15 @@ static	void	add_to_crypt(char *nick, char *key, char* prog, int type)
 	new_crypt->type = type;
 
 	malloc_strcpy(&(new_crypt->nick), nick);
-	malloc_strcpy(&(new_crypt->key), key);
+	if (type == AES256CRYPT)
+	{
+		new_crypt->key = new_malloc(32);
+		memset(new_crypt->key, 0, 32);
+		memcpy(new_crypt->key, key, strlen(key));
+	}
+	else
+		malloc_strcpy(&(new_crypt->key), key);
+
 	if (prog && *prog)
 	{
 		malloc_strcpy(&(new_crypt->prog), prog);
@@ -154,9 +162,13 @@ BUILT_IN_COMMAND(encrypt_cmd)
 			type = SEDCRYPT;
 		else if (!my_stricmp(typestr, "-CAST"))
 			type = CAST5CRYPT;
+		else if (!my_stricmp(typestr, "-BLOWFISH"))
+			type = BLOWFISHCRYPT;
+		else if (!my_stricmp(typestr, "-AES"))
+			type = AES256CRYPT;
 		else
 		{
-			say("You must specify an encrypt type: /ENCRYPT nick -TYPE key, where TYPE is either -SED or -CAST");
+			say("You must specify an encrypt type: /ENCRYPT nick -TYPE key, where TYPE is either -SED, -CAST, -BLOWFISH, or -AES");
 			return;
 		}
 
@@ -283,7 +295,9 @@ char	*do_crypt (char *str, Crypt *key, int flag)
 			my_encrypt(str, c, key->key);
 			str = enquote_it(str, c);
 		}
-		else if (key->type == CAST5CRYPT || key->type == BLOWFISHCRYPT)
+		else if (key->type == CAST5CRYPT || 
+			 key->type == BLOWFISHCRYPT ||
+			 key->type == AES256CRYPT)
 			str = cipher_message(str, strlen(str) + 1, key);
 	}
 	else
@@ -298,7 +312,9 @@ char	*do_crypt (char *str, Crypt *key, int flag)
 			str = dequote_it(str, &c);
 			my_decrypt(str, c, key->key);
 		}
-		else if (key->type == CAST5CRYPT || key->type == BLOWFISHCRYPT)
+		else if (key->type == CAST5CRYPT || 
+			 key->type == BLOWFISHCRYPT ||
+			 key->type == AES256CRYPT)
 			str = decipher_message(str, key);
 	}
 	new_free(&free_it);
@@ -321,6 +337,8 @@ char 	*crypt_msg (char *str, Crypt *key)
 		snprintf(thing, 16, "%cCAST128ED-CBC ", CTCP_DELIM_CHAR);
 	else if (key->type == BLOWFISHCRYPT)
 		snprintf(thing, 15, "%cBLOWFISH-CBC ", CTCP_DELIM_CHAR);
+	else if (key->type == AES256CRYPT)
+		snprintf(thing, 13, "%cAES256-CBC ", CTCP_DELIM_CHAR);
 
 	*buffer = 0;
 	if ((ptr = do_crypt(str, key, 1)))

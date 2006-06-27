@@ -1,4 +1,4 @@
-/* $EPIC: ctcp.c,v 1.48 2006/06/27 01:42:35 jnelson Exp $ */
+/* $EPIC: ctcp.c,v 1.49 2006/06/27 02:51:22 jnelson Exp $ */
 /*
  * ctcp.c:handles the client-to-client protocol(ctcp). 
  *
@@ -107,6 +107,7 @@ static	char	*do_dcc_reply 	(CtcpEntry *, const char *, const char *, char *);
 static	char	*do_ping_reply 	(CtcpEntry *, const char *, const char *, char *);
 static	char	*do_cast5	(CtcpEntry *, const char *, const char *, char *);
 static	char	*do_blowfish	(CtcpEntry *, const char *, const char *, char *);
+static	char	*do_aes256	(CtcpEntry *, const char *, const char *, char *);
 
 static CtcpEntry ctcp_cmd[] =
 {
@@ -152,6 +153,9 @@ static CtcpEntry ctcp_cmd[] =
 	{ "BLOWFISH-CBC", CTCP_BLOWFISH, CTCP_INLINE | CTCP_NOLIMIT,
 		"contains blowfish-cbc encrypted data",
 		do_blowfish, 	do_blowfish },
+	{ "AES256-CBC", CTCP_AES256, CTCP_INLINE | CTCP_NOLIMIT,
+		"contains aes256-cbc encrypted data",
+		do_aes256, 	do_aes256 },
 	{ NULL,		CTCP_CUSTOM,	CTCP_REPLY | CTCP_TELLUSER,
 		NULL,
 		NULL, NULL }
@@ -301,6 +305,54 @@ CTCP_HANDLER(do_blowfish)
 
 	if ((key = is_crypted(tofrom, BLOWFISHCRYPT)) ||
 	    (key = is_crypted(crypt_who, BLOWFISHCRYPT)))
+		ret = decipher_message(cmd, key);
+
+	new_free(&tofrom);
+
+	if (!key || !ret) {
+		sed = 2;
+		malloc_strcpy(&ret2, "[ENCRYPTED MESSAGE]");
+	} else if (!*ret) {
+		sed = 2;
+		malloc_strcpy(&ret2, "[ENCRYPTED MESSAGE - BAD KEY?]");
+	} else {
+		/* 
+		 * There might be a CTCP message in there,
+		 * so we see if we can find it.
+		 */
+		if (get_server_doing_privmsg(from_server))
+			ret2 = malloc_strdup(do_ctcp(from, to, ret));
+		else if (get_server_doing_notice(from_server))
+			ret2 = malloc_strdup(do_notice_ctcp(from, to, ret));
+		sed = 1;
+	}
+
+	new_free(&ret);
+	return ret2;
+}
+
+/*
+ * do_aes256
+ */
+CTCP_HANDLER(do_aes256)
+{
+	Crypt	*key = NULL;
+	const char	*crypt_who;
+	char 	*tofrom;
+	char	*ret = NULL, *ret2 = NULL;
+
+	if (*from == '=')		/* DCC CHAT message */
+		crypt_who = from;
+	else if (is_me(from_server, to))
+		crypt_who = from;
+	else
+		crypt_who = to;
+
+	tofrom = malloc_strdup3(to, ",", from);
+	malloc_strcat2_c(&tofrom, "!", FromUserHost, NULL);
+
+	if ((key = is_crypted(tofrom, AES256CRYPT)) ||
+	    (key = is_crypted(crypt_who, AES256CRYPT)))
 		ret = decipher_message(cmd, key);
 
 	new_free(&tofrom);

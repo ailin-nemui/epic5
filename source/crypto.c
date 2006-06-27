@@ -1,4 +1,4 @@
-/* $EPIC: crypto.c,v 1.1 2006/06/27 01:42:35 jnelson Exp $ */
+/* $EPIC: crypto.c,v 1.2 2006/06/27 02:51:22 jnelson Exp $ */
 /*
  * crypto.c: Calling out to OpenSSL to encrypt/decrypt cast5-cbc messages.
  *
@@ -94,8 +94,8 @@
 #include <openssl/evp.h>
 #include <openssl/err.h>
 
-static char *	decipher_evp (const char *key, const char *ciphertext, int cipherlen, const EVP_CIPHER *type);
-static char *	cipher_evp (const char *key, const char *plaintext, int plaintextlen, const EVP_CIPHER *type, int *retsize);
+static char *	cipher_evp (const char *key, int keylen, const char *plaintext, int plaintextlen, const EVP_CIPHER *type, int *retsize, int ivsize);
+static char *	decipher_evp (const char *key, int keylen, const char *ciphertext, int cipherlen, const EVP_CIPHER *type, int iv_size);
 #endif
 
 char *	decipher_message (unsigned char *orig_message, Crypt *key)
@@ -136,7 +136,8 @@ char *	decipher_message (unsigned char *orig_message, Crypt *key)
 	    else
 		break;		/* Not supported */
 
-	    if (!(outbuf = decipher_evp(key->key, copy, copylen, type)))
+	    if (!(outbuf = decipher_evp(key->key, strlen(key->key), 
+					copy, copylen, type, 8)))
 	    {
 		yell("bummer");
 		break;
@@ -149,6 +150,45 @@ char *	decipher_message (unsigned char *orig_message, Crypt *key)
 	    new_free(&free_it);
 	    return outbuf;
 	}
+	if (key->type == AES256CRYPT)
+	{
+	    unsigned char *	outbuf = NULL;
+#ifdef HAVE_SSL
+	    const EVP_CIPHER *type;
+	    int	bytes_to_trim;
+
+	    if (copylen % 16 != 0)
+	    {
+		yell("Encrypted message [%s] isn't multiple of 16! (is %d)", 
+				orig_message, copylen);
+		break;
+	    }
+	    if (copylen < 32)
+	    {
+		yell("Encrypted message [%s] doesn't contain message! "
+				"(copylen is %d)", orig_message, copylen);
+		break;
+	    }
+
+	    if (key->type == AES256CRYPT)
+		type = EVP_aes_256_cbc();
+	    else
+		break;		/* Not supported */
+
+	    if (!(outbuf = decipher_evp(key->key, 32, copy, copylen, type, 16)))
+	    {
+		yell("bummer");
+		break;
+	    }
+
+	    bytes_to_trim = outbuf[copylen - 1] & 0x0F;
+	    outbuf[copylen - bytes_to_trim - 1] = 0;
+	    memmove(outbuf, outbuf + 16, copylen - 16);
+#endif
+	    new_free(&free_it);
+	    return outbuf;
+	}
+
 	else
 	{
 		yell("HUH?");
@@ -162,21 +202,22 @@ char *	decipher_message (unsigned char *orig_message, Crypt *key)
 }
 
 #ifdef HAVE_SSL
-static char *	decipher_evp (const char *key, const char *ciphertext, int cipherlen, const EVP_CIPHER *type)
+static char *	decipher_evp (const char *key, int keylen, const char *ciphertext, int cipherlen, const EVP_CIPHER *type, int iv_size)
 {
         unsigned char *outbuf;
         int     outlen = 0;
-	unsigned char	iv[8];
+	unsigned char	*iv;
 	unsigned long errcode;
         EVP_CIPHER_CTX a;
         EVP_CIPHER_CTX_init(&a);
 	EVP_CIPHER_CTX_set_padding(&a, 0);
 
+	iv = new_malloc(iv_size);
 	outbuf = new_malloc(1024);
-	memcpy(iv, ciphertext, 8);
+	memcpy(iv, ciphertext, iv_size);
 
         EVP_DecryptInit_ex(&a, type, NULL, NULL, iv);
-	EVP_CIPHER_CTX_set_key_length(&a, strlen(key));
+	EVP_CIPHER_CTX_set_key_length(&a, keylen);
         EVP_DecryptInit_ex(&a, NULL, NULL, key, NULL);
         EVP_DecryptUpdate(&a, outbuf, &outlen, ciphertext, cipherlen);
         EVP_CIPHER_CTX_cleanup(&a);
@@ -189,6 +230,7 @@ static char *	decipher_evp (const char *key, const char *ciphertext, int cipherl
 	    yell("ERROR: %s", r);
 	}
 
+	new_free(&iv);
 	outbuf[cipherlen] = 0;
 	return outbuf;
 }
@@ -214,8 +256,26 @@ char *	cipher_message (unsigned char *orig_message, size_t len, Crypt *key)
 	    else
 		return NULL;	/* Not supported */
 
-	    if (!(outbuf = cipher_evp(key->key, orig_message, 
-					len, type, &retsize)))
+	    if (!(outbuf = cipher_evp(key->key, strlen(key->key), orig_message, 
+					len, type, &retsize, 8)))
+	    {
+		yell("bummer");
+		return NULL;
+	    }
+#endif
+	}
+	else if (key->type == AES256CRYPT)
+	{
+#ifdef HAVE_SSL
+	    const EVP_CIPHER *type;
+
+	    if (key->type == AES256CRYPT)
+		type = EVP_aes_256_cbc();
+	    else
+		return NULL;	/* Not supported */
+
+	    if (!(outbuf = cipher_evp(key->key, 32, orig_message, 
+					len, type, &retsize, 16)))
 	    {
 		yell("bummer");
 		return NULL;
@@ -232,31 +292,34 @@ char *	cipher_message (unsigned char *orig_message, size_t len, Crypt *key)
 }
 
 #ifdef HAVE_SSL
-static char *	cipher_evp (const char *key, const char *plaintext, int plaintextlen, const EVP_CIPHER *type, int *retsize)
+static char *	cipher_evp (const char *key, int keylen, const char *plaintext, int plaintextlen, const EVP_CIPHER *type, int *retsize, int ivsize)
 {
         unsigned char *outbuf;
         int     outlen = 0;
 	int	extralen = 0;
-	unsigned char	iv[8];
+	unsigned char	*iv;
 	unsigned long errcode;
 	u_32int_t	randomval;
+	int		iv_count;
         EVP_CIPHER_CTX a;
         EVP_CIPHER_CTX_init(&a);
 	EVP_CIPHER_CTX_set_padding(&a, 0);
 
-	randomval = arc4random();
-	memmove(iv, &randomval, 4);
-	randomval = arc4random();
-	memmove(iv + 4, &randomval, 4);
+	iv = new_malloc(ivsize);
+	for (iv_count = 0; iv_count < ivsize; iv_count += sizeof(u_32int_t))
+	{
+		randomval = arc4random();
+		memmove(iv + iv_count, &randomval, sizeof(u_32int_t));
+	}
 
 	outbuf = new_malloc(1024);
-	memcpy(outbuf, iv, 8);
+	memcpy(outbuf, iv, ivsize);
 
         EVP_EncryptInit_ex(&a, type, NULL, NULL, iv);
-	EVP_CIPHER_CTX_set_key_length(&a, strlen(key));
+	EVP_CIPHER_CTX_set_key_length(&a, keylen);
         EVP_EncryptInit_ex(&a, NULL, NULL, key, NULL);
-        EVP_EncryptUpdate(&a, outbuf + 8, &outlen, plaintext, plaintextlen);
-	EVP_EncryptFinal_ex(&a, outbuf + 8 + outlen, &extralen);
+        EVP_EncryptUpdate(&a, outbuf + ivsize, &outlen, plaintext, plaintextlen);
+	EVP_EncryptFinal_ex(&a, outbuf + ivsize + outlen, &extralen);
         EVP_CIPHER_CTX_cleanup(&a);
 	outlen += extralen;
 
@@ -268,7 +331,7 @@ static char *	cipher_evp (const char *key, const char *plaintext, int plaintextl
 	    yell("ERROR: %s", r);
 	}
 
-	*retsize = outlen + 8;
+	*retsize = outlen + ivsize;
 	return outbuf;
 }
 #endif

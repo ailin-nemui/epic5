@@ -11,6 +11,7 @@ KNOWN ERRATA (eg, bugs, or unresolved requests):
 * Support for blowfish is untested
 * Should be able to do -cast or -blowfish anywhere on /encrypt args.
 * The cut&paste job for do_cast5 and do_blowfish in ctcp.c blows.
+* Lots of cruft needs to be refactored once everything stabilizes.
 
 LOOK FOR IN THE FUTURE
 -----------------------
@@ -97,3 +98,4 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Important changes to autojoin and floodprot scripts.
 * Support cast5/blowfish encryption a la ircII.
 * Fix build for non-ssl users.
+* Add AES256 support.

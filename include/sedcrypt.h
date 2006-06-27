@@ -13,6 +13,7 @@
 #define CAST5CRYPT	2
 #define EXTCRYPT	3
 #define BLOWFISHCRYPT	4
+#define AES256CRYPT	5
 
 /*
  * Crypt: the crypt list structure,  consists of the nickname, and the

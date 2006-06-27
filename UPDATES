@@ -1,17 +1,20 @@
 EPIC5-0.3.1
 
-*** News 06/26/2006 -- CAST5 and Blowfish encryption support
+*** News 06/26/2006 -- CAST5, Blowfish, and AES encryption support
 	This only took me 8 years to catch up with ircII!  Yah!
 	All of this support is provided by the EVP api in OpenSSL.
 	If you don't have OpenSSL, this won't be supported.
 
 	The /ENCRYPT command now takes an argument after the nickname,
-	which can be either -CAST or -BLOWFISH.
+	which can be either -CAST, -BLOWFISH, or -AES
 		/ENCRYPT nick -CAST key
 		/ENCRYPT nick -BLOWFISH key
+		/ENCRYPT nick -AES key
+
 	The -CAST support is fully compatable with ircII (as of the last 
 	time I tested it) and -BLOWFISH isn't compatable with anything 
 	but your fellow bleeding edgers (since nobody supports that yet).
+	Same thing with -AES (only supported by EPIC for now).
 
 	The Blowfish support is *NOT* compatable with FiSH, because FiSH
 	has a couple of idiosyncracies (non-standard Base64, supports keys
@@ -19,7 +22,9 @@ EPIC5-0.3.1
 	more likely that FiSH needs bag-on-the-side support than to be 
 	mainlined into the crypto support...
 
-	Perhaps AES (Rijndael) support will appear some time in the future.
+	AES uses a fixed 256 bit key.  This is 32 characters.  If your key
+	is not 32 characters, it is padded out with nuls (ascii 0).  If your
+	key is more than 32 characters, it is truncated.
 
 	Please remember, when you /ENCRYPT a target, everything you send to
 	that target is encoded.  This includes /CTCP requests (/DCC offers).
