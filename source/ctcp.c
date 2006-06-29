@@ -1,4 +1,4 @@
-/* $EPIC: ctcp.c,v 1.49 2006/06/27 02:51:22 jnelson Exp $ */
+/* $EPIC: ctcp.c,v 1.50 2006/06/29 01:13:53 jnelson Exp $ */
 /*
  * ctcp.c:handles the client-to-client protocol(ctcp). 
  *
@@ -91,32 +91,27 @@ typedef	struct _CtcpEntry
 	CTCP_Handler 	repl;	/* Function that is called for reply */
 }	CtcpEntry;
 
+#define CTCP_HANDLER(x) \
+static char * x (CtcpEntry *ctcp, Char *from, Char *to, char *cmd)
+
 /* forward declarations for the built in CTCP functions */
-static	char	*do_sed 	(CtcpEntry *, const char *, const char *, char *);
-static	char	*do_version 	(CtcpEntry *, const char *, const char *, char *);
-static	char	*do_clientinfo 	(CtcpEntry *, const char *, const char *, char *);
-static	char	*do_ping 	(CtcpEntry *, const char *, const char *, char *);
-static	char	*do_echo 	(CtcpEntry *, const char *, const char *, char *);
-static	char	*do_userinfo 	(CtcpEntry *, const char *, const char *, char *);
-static	char	*do_finger 	(CtcpEntry *, const char *, const char *, char *);
-static	char	*do_time 	(CtcpEntry *, const char *, const char *, char *);
-static	char	*do_atmosphere 	(CtcpEntry *, const char *, const char *, char *);
-static	char	*do_dcc 	(CtcpEntry *, const char *, const char *, char *);
-static	char	*do_utc 	(CtcpEntry *, const char *, const char *, char *);
-static	char	*do_dcc_reply 	(CtcpEntry *, const char *, const char *, char *);
-static	char	*do_ping_reply 	(CtcpEntry *, const char *, const char *, char *);
-static	char	*do_cast5	(CtcpEntry *, const char *, const char *, char *);
-static	char	*do_blowfish	(CtcpEntry *, const char *, const char *, char *);
-static	char	*do_aes256	(CtcpEntry *, const char *, const char *, char *);
+CTCP_HANDLER(do_crypto);
+CTCP_HANDLER(do_version);
+CTCP_HANDLER(do_clientinfo);
+CTCP_HANDLER(do_ping);
+CTCP_HANDLER(do_echo);
+CTCP_HANDLER(do_userinfo);
+CTCP_HANDLER(do_finger);
+CTCP_HANDLER(do_time);
+CTCP_HANDLER(do_atmosphere);
+CTCP_HANDLER(do_dcc);
+CTCP_HANDLER(do_utc);
+CTCP_HANDLER(do_dcc_reply);
+CTCP_HANDLER(do_ping_reply);
 
 static CtcpEntry ctcp_cmd[] =
 {
-	{ "SED",	CTCP_SED, 	CTCP_INLINE | CTCP_NOLIMIT,
-		"contains simple_encrypted_data",
-		do_sed, 	do_sed },
-	{ "UTC",	CTCP_UTC, 	CTCP_INLINE | CTCP_NOLIMIT,
-		"substitutes the local timezone",
-		do_utc, 	do_utc },
+	/* The most common ones */
 	{ "ACTION",	CTCP_ACTION, 	CTCP_SPECIAL | CTCP_NOLIMIT,
 		"contains action descriptions for atmosphere",
 		do_atmosphere, 	do_atmosphere },
@@ -126,6 +121,34 @@ static CtcpEntry ctcp_cmd[] =
 	{ "VERSION",	CTCP_VERSION,	CTCP_REPLY | CTCP_TELLUSER,
 		"shows client type, version and environment",
 		do_version, 	NULL },
+
+	/* Common ones to people using strong crypto */
+	{ "AESSHA256-CBC",	CTCP_AESSHA256,	CTCP_INLINE | CTCP_NOLIMIT,
+		"transmit aes256-cbc ciphertext using a sha256 key",
+		do_crypto, 	do_crypto },
+	{ "AES256-CBC",		CTCP_AES256,	CTCP_INLINE | CTCP_NOLIMIT,
+		"transmit aes256-cbc ciphertext",
+		do_crypto, 	do_crypto },
+	{ "CAST128ED-CBC",	CTCP_CAST5, 	CTCP_INLINE | CTCP_NOLIMIT,
+		"transmit cast5-cbc ciphertext",
+		do_crypto, 	do_crypto},
+	{ "BLOWFISH-CBC",	CTCP_BLOWFISH,	CTCP_INLINE | CTCP_NOLIMIT,
+		"transmit blowfish-cbc ciphertext",
+		do_crypto, 	do_crypto },
+
+	/* The uncommon ones */
+	{ "PING", 	CTCP_PING, 	CTCP_REPLY | CTCP_TELLUSER,
+		"returns the arguments it receives",
+		do_ping, 	do_ping_reply },
+	{ "ECHO", 	CTCP_ECHO, 	CTCP_REPLY | CTCP_TELLUSER,
+		"returns the arguments it receives",
+		do_echo, 	NULL },
+	{ "SED",	CTCP_SED, 	CTCP_INLINE | CTCP_NOLIMIT,
+		"transmit simple_encrypted_data ciphertext",
+		do_crypto, 	do_crypto },
+	{ "UTC",	CTCP_UTC, 	CTCP_INLINE | CTCP_NOLIMIT,
+		"substitutes the local timezone",
+		do_utc, 	do_utc },
 	{ "CLIENTINFO",	CTCP_CLIENTINFO,CTCP_REPLY | CTCP_TELLUSER,
 		"gives information about available CTCP commands",
 		do_clientinfo, 	NULL },
@@ -141,21 +164,6 @@ static CtcpEntry ctcp_cmd[] =
 	{ "TIME",	CTCP_TIME, 	CTCP_REPLY | CTCP_TELLUSER,
 		"tells you the time on the user's host",
 		do_time, 	NULL },
-	{ "PING", 	CTCP_PING, 	CTCP_REPLY | CTCP_TELLUSER,
-		"returns the arguments it receives",
-		do_ping, 	do_ping_reply },
-	{ "ECHO", 	CTCP_ECHO, 	CTCP_REPLY | CTCP_TELLUSER,
-		"returns the arguments it receives",
-		do_echo, 	NULL },
-	{ "CAST128ED-CBC", CTCP_CAST5, 	CTCP_INLINE | CTCP_NOLIMIT,
-		"contains cast5-cbc encrypted data",
-		do_cast5, 	do_cast5 },
-	{ "BLOWFISH-CBC", CTCP_BLOWFISH, CTCP_INLINE | CTCP_NOLIMIT,
-		"contains blowfish-cbc encrypted data",
-		do_blowfish, 	do_blowfish },
-	{ "AES256-CBC", CTCP_AES256, CTCP_INLINE | CTCP_NOLIMIT,
-		"contains aes256-cbc encrypted data",
-		do_aes256, 	do_aes256 },
 	{ NULL,		CTCP_CUSTOM,	CTCP_REPLY | CTCP_TELLUSER,
 		NULL,
 		NULL, NULL }
@@ -177,25 +185,22 @@ int     sed = 0;
  */
 int	in_ctcp_flag = 0;
 
-#define CTCP_HANDLER(x) \
-	static char * x (CtcpEntry *ctcp, const char *from, const char *to, char *cmd)
-
-
 
 /**************************** CTCP PARSERS ****************************/
 
 /********** INLINE EXPANSION CTCPS ***************/
 /*
- * do_sed: Performs the Simple Encrypted Data trasfer for ctcp.  Returns in a
- * malloc string the decryped message (if a key is set for that user) or the
- * text "[ENCRYPTED MESSAGE]" 
+ * do_crypto: Performs strong decryption for ctcp.  Returns in a malloc 
+ * string the decryped message (if a key is set for that user) or the text 
+ * "[ENCRYPTED MESSAGE]" 
  */
-CTCP_HANDLER(do_sed)
+CTCP_HANDLER(do_crypto)
 {
 	Crypt	*key = NULL;
 	const char	*crypt_who;
 	char 	*tofrom;
 	char	*ret = NULL, *ret2 = NULL;
+	int	type;
 
 	if (*from == '=')		/* DCC CHAT message */
 		crypt_who = from;
@@ -207,153 +212,22 @@ CTCP_HANDLER(do_sed)
 	tofrom = malloc_strdup3(to, ",", from);
 	malloc_strcat2_c(&tofrom, "!", FromUserHost, NULL);
 
-	if ((key = is_crypted(tofrom, SEDCRYPT)) ||
-	    (key = is_crypted(crypt_who, SEDCRYPT)))
+	if (ctcp->id == CTCP_SED)
+		type = SEDCRYPT;
+	else if (ctcp->id == CTCP_CAST5)
+		type = CAST5CRYPT;
+	else if (ctcp->id == CTCP_BLOWFISH)
+		type = BLOWFISHCRYPT;
+	else if (ctcp->id == CTCP_AES256)
+		type = AES256CRYPT;
+	else if (ctcp->id == CTCP_AESSHA256)
+		type = AESSHA256CRYPT;
+	else
+		return NULL;
+
+	if ((key = is_crypted(tofrom, type)) ||
+	    (key = is_crypted(crypt_who, type)))
 		ret = decrypt_msg(cmd, key);
-
-	new_free(&tofrom);
-
-	if (!key || !ret) {
-		sed = 2;
-		malloc_strcpy(&ret2, "[ENCRYPTED MESSAGE]");
-	} else if (!*ret) {
-		sed = 2;
-		malloc_strcpy(&ret2, "[ENCRYPTED MESSAGE - BAD KEY?]");
-	} else {
-		/* 
-		 * There might be a CTCP message in there,
-		 * so we see if we can find it.
-		 */
-		if (get_server_doing_privmsg(from_server))
-			ret2 = malloc_strdup(do_ctcp(from, to, ret));
-		else if (get_server_doing_notice(from_server))
-			ret2 = malloc_strdup(do_notice_ctcp(from, to, ret));
-		sed = 1;
-	}
-
-	new_free(&ret);
-	return ret2;
-}
-
-/*
- * do_cast5:
- */
-CTCP_HANDLER(do_cast5)
-{
-	Crypt	*key = NULL;
-	const char	*crypt_who;
-	char 	*tofrom;
-	char	*ret = NULL, *ret2 = NULL;
-
-	if (*from == '=')		/* DCC CHAT message */
-		crypt_who = from;
-	else if (is_me(from_server, to))
-		crypt_who = from;
-	else
-		crypt_who = to;
-
-	tofrom = malloc_strdup3(to, ",", from);
-	malloc_strcat2_c(&tofrom, "!", FromUserHost, NULL);
-
-	if ((key = is_crypted(tofrom, CAST5CRYPT)) ||
-	    (key = is_crypted(crypt_who, CAST5CRYPT)))
-		ret = decipher_message(cmd, key);
-
-	new_free(&tofrom);
-
-	if (!key || !ret) {
-		sed = 2;
-		malloc_strcpy(&ret2, "[ENCRYPTED MESSAGE]");
-	} else if (!*ret) {
-		sed = 2;
-		malloc_strcpy(&ret2, "[ENCRYPTED MESSAGE - BAD KEY?]");
-	} else {
-		/* 
-		 * There might be a CTCP message in there,
-		 * so we see if we can find it.
-		 */
-		if (get_server_doing_privmsg(from_server))
-			ret2 = malloc_strdup(do_ctcp(from, to, ret));
-		else if (get_server_doing_notice(from_server))
-			ret2 = malloc_strdup(do_notice_ctcp(from, to, ret));
-		sed = 1;
-	}
-
-	new_free(&ret);
-	return ret2;
-}
-
-/*
- * do_blowfish:
- */
-CTCP_HANDLER(do_blowfish)
-{
-	Crypt	*key = NULL;
-	const char	*crypt_who;
-	char 	*tofrom;
-	char	*ret = NULL, *ret2 = NULL;
-
-	if (*from == '=')		/* DCC CHAT message */
-		crypt_who = from;
-	else if (is_me(from_server, to))
-		crypt_who = from;
-	else
-		crypt_who = to;
-
-	tofrom = malloc_strdup3(to, ",", from);
-	malloc_strcat2_c(&tofrom, "!", FromUserHost, NULL);
-
-	if ((key = is_crypted(tofrom, BLOWFISHCRYPT)) ||
-	    (key = is_crypted(crypt_who, BLOWFISHCRYPT)))
-		ret = decipher_message(cmd, key);
-
-	new_free(&tofrom);
-
-	if (!key || !ret) {
-		sed = 2;
-		malloc_strcpy(&ret2, "[ENCRYPTED MESSAGE]");
-	} else if (!*ret) {
-		sed = 2;
-		malloc_strcpy(&ret2, "[ENCRYPTED MESSAGE - BAD KEY?]");
-	} else {
-		/* 
-		 * There might be a CTCP message in there,
-		 * so we see if we can find it.
-		 */
-		if (get_server_doing_privmsg(from_server))
-			ret2 = malloc_strdup(do_ctcp(from, to, ret));
-		else if (get_server_doing_notice(from_server))
-			ret2 = malloc_strdup(do_notice_ctcp(from, to, ret));
-		sed = 1;
-	}
-
-	new_free(&ret);
-	return ret2;
-}
-
-/*
- * do_aes256
- */
-CTCP_HANDLER(do_aes256)
-{
-	Crypt	*key = NULL;
-	const char	*crypt_who;
-	char 	*tofrom;
-	char	*ret = NULL, *ret2 = NULL;
-
-	if (*from == '=')		/* DCC CHAT message */
-		crypt_who = from;
-	else if (is_me(from_server, to))
-		crypt_who = from;
-	else
-		crypt_who = to;
-
-	tofrom = malloc_strdup3(to, ",", from);
-	malloc_strcat2_c(&tofrom, "!", FromUserHost, NULL);
-
-	if ((key = is_crypted(tofrom, AES256CRYPT)) ||
-	    (key = is_crypted(crypt_who, AES256CRYPT)))
-		ret = decipher_message(cmd, key);
 
 	new_free(&tofrom);
 

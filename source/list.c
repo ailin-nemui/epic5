@@ -1,4 +1,4 @@
-/* $EPIC: list.c,v 1.5 2004/04/13 00:19:48 jnelson Exp $ */
+/* $EPIC: list.c,v 1.6 2006/06/29 01:13:53 jnelson Exp $ */
 /*
  * list.c: some generic linked list managing stuff 
  *
@@ -147,6 +147,31 @@ List	*remove_from_list (List **list, const char *name)
 	return ((List *) 0);
 }
 
+/*
+ * remove_item_from_list: this remove the given item from the given list 
+ * (again as described above).  If found, it is removed from the list and 
+ * returned (memory is not deallocated).  If not found, null is returned. 
+ */
+List *	remove_item_from_list (List **list, List *item)
+{
+	List	*tmp,
+		*last = NULL;
+
+	for (tmp = *list; tmp; tmp = tmp->next)
+	{
+		if (tmp == item)
+		{
+			if (last)
+				last->next = tmp->next;
+			else
+				*list = tmp->next;
+			return (tmp);
+		}
+		last = tmp;
+	}
+
+	return NULL;
+}
 /*
  * list_lookup: this routine just consolidates remove_from_list and
  * find_in_list.  I did this cause it fit better with some alread existing

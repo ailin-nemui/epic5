@@ -1,4 +1,4 @@
-/* $EPIC: ircaux.c,v 1.153 2006/06/27 01:42:35 jnelson Exp $ */
+/* $EPIC: ircaux.c,v 1.154 2006/06/29 01:13:53 jnelson Exp $ */
 /*
  * ircaux.c: some extra routines... not specific to irc... that I needed 
  *
@@ -3283,7 +3283,7 @@ char *	urldecode (char *s, size_t *length)
  * null terminated (it can contain nulls).  Returned is a malloced, null
  * terminated string.
  */
-char	*enquote_it (char *str, size_t len)
+char	*enquote_it (const char *str, size_t len)
 {
 	char	*buffer = new_malloc(len + 5);
 	char	*ptr = buffer;
@@ -3334,7 +3334,7 @@ char	*enquote_it (char *str, size_t len)
  * convenied, but the returned data may contain nulls!.  The len is modified
  * to contain the size of the data returned. 
  */
-char	*dequote_it (char *str, size_t *len)
+char	*dequote_it (const char *str, size_t *len)
 {
 	char	*buffer;
 	char	*ptr;

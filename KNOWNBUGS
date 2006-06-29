@@ -99,3 +99,15 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Support cast5/blowfish encryption a la ircII.
 * Fix build for non-ssl users.
 * Add AES256 support.
+* Add AESSHA256 support (AES256 using the SHA256 digest of your passkey)
+* Rename "EXTCRYPT" to "PROGCRYPT"
+* Migrate SED support from crypt.c to crypto.c
+* Integrate SED and extprog support into the mainline [de]cipher_message()
+* Refactor [de]cipher_message() to be less lame.
+* Support "anycrypt" support (AESSHA, AES, BLOWFISH, CAST5, SED, PROG)
+* Include sha256 implementation from Karll.  Thanks Karll!
+* Unify the ctcp handling of all crypto ctcps
+* Add $sha256() function to test sha support (digest)
+* Make funcs in crypto.c static and just expose [de]crypt_msg().
+* This finishes the divide between crypt.c (front end) and crypto.c (back end)
+* Fix a gazillion compiler warnings and sort out const/unsigned char issues.

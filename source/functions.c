@@ -1,4 +1,4 @@
-/* $EPIC: functions.c,v 1.229 2006/06/27 01:42:35 jnelson Exp $ */
+/* $EPIC: functions.c,v 1.230 2006/06/29 01:13:53 jnelson Exp $ */
 /*
  * functions.c -- Built-in functions for ircII
  *
@@ -370,6 +370,7 @@ static	char
 	*function_serverctl	(char *),
 	*function_servports	(char *),
 	*function_serverwin	(char *),
+	*function_sha256	(char *),
 	*function_sin		(char *),
 	*function_sinh		(char *),
 	*function_skip		(char *),
@@ -677,6 +678,7 @@ static BuiltInFunctions	built_in_functions[] =
 	{ "SERVERWIN",		function_serverwin	},
 	{ "SERVPORTS",		function_servports	},
 	{ "SETITEM",            function_setitem 	},
+	{ "SHA256",		function_sha256		},
 	{ "SHIFT",		function_shift 		},
 	{ "SHIFTBRACE",		function_shiftbrace	},
 	{ "SIN",		function_sin		},
@@ -6125,7 +6127,14 @@ BUILT_IN_FUNCTION(function_sedcrypt, input)
 	GET_STR_ARG(from, input);
 
 	if ((key = is_crypted(from, SEDCRYPT)))
-		ret = do_crypt(input, key, flag);
+	{
+		if (flag == 1)
+			ret = crypt_msg(input, key);
+		else if (flag == 0)
+			ret = decrypt_msg(input, key);
+		else
+			RETURN_EMPTY;
+	}
 
 	RETURN_STR(ret);
 }
@@ -6601,4 +6610,10 @@ BUILT_IN_FUNCTION(function_ruby, input)
 
 #endif
 
+BUILT_IN_FUNCTION(function_sha256, input)
+{
+	char retval[65];
 
+	sha256str(input, strlen(input), retval);
+	RETURN_STR(retval);
+}

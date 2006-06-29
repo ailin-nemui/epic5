@@ -19,6 +19,7 @@ void	add_to_list 		(List **, List *);
 List	*find_in_list 		(List **, const char *, int);
 List	*remove_from_list 	(List **, const char *);
 List	*list_lookup 		(List **, const char *, int, int);
+List *  remove_item_from_list	(List **list, List *item);
 
 #define REMOVE_FROM_LIST 	1
 #define USE_WILDCARDS 		1

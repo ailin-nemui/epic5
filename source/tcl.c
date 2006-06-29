@@ -1,4 +1,4 @@
-/* $EPIC: tcl.c,v 1.10 2006/06/09 03:19:14 jnelson Exp $ */
+/* $EPIC: tcl.c,v 1.11 2006/06/29 01:13:53 jnelson Exp $ */
 /*
  * tcl.c -- The tcl interfacing routines.
  *
@@ -51,7 +51,7 @@ int	istclrunning = 0;
 /*
  * A new TCL command, [echo], which displays back on the epic window.
  */
-int	Tcl_echoCmd (ClientData clientData, Tcl_Interp *interp, int objc, const char **objv)
+static int	Tcl_echoCmd (ClientData clientData, Tcl_Interp *interp, int objc, const char **objv)
 {
 	int	i;
 	size_t	clue = 0;
@@ -72,7 +72,7 @@ int	Tcl_echoCmd (ClientData clientData, Tcl_Interp *interp, int objc, const char
  *	[epic call ...]		Call ... where ... is "$func(args)"
  *				Returning the result.  $* is the empty string.
  */
-int	Tcl_epicCmd (ClientData clientData, Tcl_Interp *interp, int objc, const char **objv)
+static int	Tcl_epicCmd (ClientData clientData, Tcl_Interp *interp, int objc, const char **objv)
 {
 	int	i;
 	char	*retval = NULL;
@@ -110,7 +110,7 @@ int	Tcl_epicCmd (ClientData clientData, Tcl_Interp *interp, int objc, const char
 
 /* A new TCL command [tkon] which turns on tk (natch?) */
 #ifdef TK
-int	Tcl_tkonCmd (ClientData clientData, Tcl_Interp *interp, int objc, char **objv)
+static int	Tcl_tkonCmd (ClientData clientData, Tcl_Interp *interp, int objc, char **objv)
 {
 	Tk_Init(interp);
 	return TCL_OK;

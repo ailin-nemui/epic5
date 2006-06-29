@@ -1,4 +1,4 @@
-/* $EPIC: lastlog.c,v 1.62 2006/06/24 15:54:25 jnelson Exp $ */
+/* $EPIC: lastlog.c,v 1.63 2006/06/29 01:13:53 jnelson Exp $ */
 /*
  * lastlog.c: handles the lastlog features of irc. 
  *
@@ -1029,6 +1029,7 @@ BUILT_IN_FUNCTION(function_lastlogctl, input)
 #endif
 
 /************************************************************************/
+#if 0
 int	oldest_lastlog_for_window (Lastlog **item, int winref)
 {
 	*item = NULL;
@@ -1119,4 +1120,5 @@ int	switch_lastlog_window (Lastlog *item, int newref)
 	/* Mark the new window's scrollback for reconstitution */
 	window_scrollback_needs_rebuild(item->winref);
 }
+#endif
 

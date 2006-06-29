@@ -7,7 +7,7 @@
  *
  * See the COPYRIGHT file, or do a HELP IRCII COPYRIGHT 
  *
- * @(#)$Id: ircaux.h,v 1.85 2005/12/10 00:49:32 jnelson Exp $
+ * @(#)$Id: ircaux.h,v 1.86 2006/06/29 01:13:53 jnelson Exp $
  */
 
 #ifndef _IRCAUX_H_
@@ -150,8 +150,8 @@ char *  strlpcat		(char *, size_t, const char *, ...) __A(3);
 u_long	random_number		(u_long);
 char *	urlencode		(const char *);
 char *	urldecode		(char *, size_t *);
-char *	enquote_it		(char *str, size_t len);
-char *	dequote_it		(char *str, size_t *len);
+char *	enquote_it		(const char *str, size_t len);
+char *	dequote_it		(const char *str, size_t *len);
 int	slurp_file		(char **buffer, char *filename);
 char *	endstr			(char *);
 ssize_t searchbuf		(const unsigned char *, size_t, size_t, int);

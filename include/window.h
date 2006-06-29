@@ -290,5 +290,6 @@ const	char	*get_echannel_by_refnum		(unsigned);
 
 	char *	windowctl			(char *);
 	void    window_scrollback_needs_rebuild (int winref);
+	int	window_is_scrolled_back		(Window *);
 
 #endif /* __window_h__ */

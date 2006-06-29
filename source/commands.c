@@ -1,4 +1,4 @@
-/* $EPIC: commands.c,v 1.146 2006/06/27 02:51:22 jnelson Exp $ */
+/* $EPIC: commands.c,v 1.147 2006/06/29 01:13:53 jnelson Exp $ */
 /*
  * commands.c -- Stuff needed to execute commands in ircII.
  *		 Includes the bulk of the built in commands for ircII.
@@ -2978,12 +2978,7 @@ struct target_type target[4] =
 			continue;
 		}
 
-		if ((key = is_crypted(current_nick, SEDCRYPT)) != 0)
-		{
-			char *breakage = LOCAL_COPY(text);
-			line = crypt_msg(breakage, key);
-		}
-		else if ((key = is_crypted(current_nick, CAST5CRYPT)) != 0)
+		if ((key = is_crypted(current_nick, ANYCRYPT)) != 0)
 		{
 			char *breakage = LOCAL_COPY(text);
 			line = crypt_msg(breakage, key);
@@ -3032,10 +3027,7 @@ struct target_type target[4] =
 		if (get_server_doing_privmsg(from_server) || (command && !strcmp(command, "NOTICE")))
 			i += 2;
 
-		if ((key = is_crypted(current_nick, SEDCRYPT)) ||
-		    (key = is_crypted(current_nick, CAST5CRYPT)) ||
-		    (key = is_crypted(current_nick, BLOWFISHCRYPT)) ||
-		    (key = is_crypted(current_nick, AES256CRYPT)))
+		if ((key = is_crypted(current_nick, ANYCRYPT)))
 		{
 			int	l;
 
