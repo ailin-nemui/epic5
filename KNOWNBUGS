@@ -113,3 +113,4 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Store the length of the Crypt key within the key itself.
 * This moves us closer to being able to decrypt arbitrary data.
 * Test all of the cipher types, incl. compat of CAST with ircII.  All set!
+* Fix Cut & Paste error.

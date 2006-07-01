@@ -1,4 +1,4 @@
-/* $EPIC: newio.c,v 1.58 2006/07/01 04:17:12 jnelson Exp $ */
+/* $EPIC: newio.c,v 1.59 2006/07/01 06:53:15 jnelson Exp $ */
 /*
  * newio.c:  Passive, callback-driven IO handling for sockets-n-stuff.
  *
@@ -1104,7 +1104,7 @@ static	int	ksleep (double timeout)
 static	int	kreadable (int vfd, double timeout)
 {
 	fd_set	fd_read;
-	Timeval	timeout;
+	Timeval	interval;
 
 	FD_ZERO(&fd_read);
 	FD_SET(CHANNEL(vfd), &fd_read);
@@ -1230,7 +1230,7 @@ static	int	ksleep (double timeout)
 static	int	kreadable (int vfd, double timeout)
 {
 	fd_set	fd_read;
-	Timeval	timeout;
+	Timeval	interval;
 
 	FD_ZERO(&fd_read);
 	FD_SET(CHANNEL(vfd), &fd_read);
@@ -1494,7 +1494,7 @@ static	int	ksleep (double timeout)
 static	int	kreadable (int vfd, double timeout)
 {
 	fd_set	fd_read;
-	Timeval	timeout;
+	Timeval	interval;
 
 	FD_ZERO(&fd_read);
 	FD_SET(CHANNEL(vfd), &fd_read);
@@ -1642,7 +1642,7 @@ static	int	ksleep (double timeout)
 static	int	kreadable (int vfd, double timeout)
 {
 	fd_set	fd_read;
-	Timeval	timeout;
+	Timeval	interval;
 
 	FD_ZERO(&fd_read);
 	FD_SET(CHANNEL(vfd), &fd_read);
