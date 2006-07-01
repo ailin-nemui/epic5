@@ -1,4 +1,4 @@
-/* $EPIC: server.c,v 1.197 2006/06/27 01:42:35 jnelson Exp $ */
+/* $EPIC: server.c,v 1.198 2006/07/01 04:17:12 jnelson Exp $ */
 /*
  * server.c:  Things dealing with that wacky program we call ircd.
  *
@@ -3177,4 +3177,18 @@ const char *	get_server_altname (int refnum, int which)
 	return s->altnames->list[which].name;
 }
 
+int	which_server_altname (int refnum, const char *name)
+{
+	Server *s;
+	int	i;
+
+	if (!(s = get_server(refnum)))
+		return -2;
+
+	for (i = 0; i < s->altnames->numitems; i++)
+		if (!my_stricmp(s->altnames->list[i].name, name))
+			return i;
+
+	return -1;
+}
 

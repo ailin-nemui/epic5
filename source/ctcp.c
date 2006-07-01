@@ -1,4 +1,4 @@
-/* $EPIC: ctcp.c,v 1.50 2006/06/29 01:13:53 jnelson Exp $ */
+/* $EPIC: ctcp.c,v 1.51 2006/07/01 04:17:12 jnelson Exp $ */
 /*
  * ctcp.c:handles the client-to-client protocol(ctcp). 
  *
@@ -135,6 +135,12 @@ static CtcpEntry ctcp_cmd[] =
 	{ "BLOWFISH-CBC",	CTCP_BLOWFISH,	CTCP_INLINE | CTCP_NOLIMIT,
 		"transmit blowfish-cbc ciphertext",
 		do_crypto, 	do_crypto },
+	{ "SED",		CTCP_SED, 	CTCP_INLINE | CTCP_NOLIMIT,
+		"transmit simple_encrypted_data ciphertext",
+		do_crypto, 	do_crypto },
+	{ "SEDSHA",		CTCP_SEDSHA, 	CTCP_INLINE | CTCP_NOLIMIT,
+		"transmit simple_encrypted_data ciphertext using a sha256 key",
+		do_crypto, 	do_crypto },
 
 	/* The uncommon ones */
 	{ "PING", 	CTCP_PING, 	CTCP_REPLY | CTCP_TELLUSER,
@@ -143,9 +149,6 @@ static CtcpEntry ctcp_cmd[] =
 	{ "ECHO", 	CTCP_ECHO, 	CTCP_REPLY | CTCP_TELLUSER,
 		"returns the arguments it receives",
 		do_echo, 	NULL },
-	{ "SED",	CTCP_SED, 	CTCP_INLINE | CTCP_NOLIMIT,
-		"transmit simple_encrypted_data ciphertext",
-		do_crypto, 	do_crypto },
 	{ "UTC",	CTCP_UTC, 	CTCP_INLINE | CTCP_NOLIMIT,
 		"substitutes the local timezone",
 		do_utc, 	do_utc },
@@ -214,6 +217,8 @@ CTCP_HANDLER(do_crypto)
 
 	if (ctcp->id == CTCP_SED)
 		type = SEDCRYPT;
+	else if (ctcp->id == CTCP_SEDSHA)
+		type = SEDSHACRYPT;
 	else if (ctcp->id == CTCP_CAST5)
 		type = CAST5CRYPT;
 	else if (ctcp->id == CTCP_BLOWFISH)
@@ -225,8 +230,8 @@ CTCP_HANDLER(do_crypto)
 	else
 		return NULL;
 
-	if ((key = is_crypted(tofrom, type)) ||
-	    (key = is_crypted(crypt_who, type)))
+	if ((key = is_crypted(tofrom, from_server, type)) ||
+	    (key = is_crypted(crypt_who, from_server, type)))
 		ret = decrypt_msg(cmd, key);
 
 	new_free(&tofrom);

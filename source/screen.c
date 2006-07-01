@@ -1,4 +1,4 @@
-/* $EPIC: screen.c,v 1.118 2006/06/09 06:01:48 jnelson Exp $ */
+/* $EPIC: screen.c,v 1.119 2006/07/01 04:17:12 jnelson Exp $ */
 /*
  * screen.c
  *
@@ -2591,8 +2591,6 @@ Window	*create_additional_screen (void)
 	ISA		local_sockaddr;
         ISA		new_socket;
 	int		new_cmd;
-	fd_set		fd_read;
-	Timeval		timeout;
 	pid_t		child;
 	unsigned short 	port;
 	socklen_t		new_sock_size;
@@ -2751,10 +2749,6 @@ Window	*create_additional_screen (void)
 
 	/* All the rest of this is the parent.... */
 	new_sock_size = sizeof(new_socket);
-	FD_ZERO(&fd_read);
-	FD_SET(new_cmd, &fd_read);
-	timeout.tv_sec = (time_t) 10;
-	timeout.tv_usec = 0;
 
 	/* 
 	 * This infinite loop sb kanan to allow us to trap transitory
@@ -2766,7 +2760,7 @@ Window	*create_additional_screen (void)
 	 * You need to kill_screen(new_s) before you do say() or yell()
 	 * if you know what is good for you...
 	 */
-	switch (select(new_cmd + 1, &fd_read, NULL, NULL, &timeout))
+	switch (my_isreadable(new_cmd, 10))
 	{
 	    case -1:
 	    {

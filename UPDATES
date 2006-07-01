@@ -1,5 +1,50 @@
 EPIC5-0.3.1
 
+*** News 07/01/2006 -- Revamped /encrypt command
+	The /encrypt command, which is a legacy ircII command, has been 
+	revamped and a lot of functionality has been added (see below).
+	The new format looks like this:
+
+	/encrypt
+		See the cipher list
+
+	*** Ways to specify the other person
+	/encrypt NICK key
+		Trade messages with 'nick' on all servers using 'key'.
+	/encrypt 0/NICK key	
+		Trade messages with 'nick' only on server 0 using 'key'
+	/encrypt SERVERNAME/NICK key	
+		Trade messages with 'nick' on server 'name' using 'key'.
+		'name' can be "ourname", or "itsname"
+	/encrypt SERVERGROUP/NICK key
+		Trade messages with 'nick' on group 'group' using 'key'.
+	/encrypt ALTNAME/NICK key
+		Trade messages with 'nick' on servers with 'altname' using
+		'key'.
+
+	*** Ways to specify the cipher you want to use
+	/encrypt nick key
+		Trade SED messages (default)
+	/encrypt -SED nick key
+		Trade SED messages
+	/encrypt -SEDSHA nick key
+		Trade SED messages, using the SHA256 hash of 'key'.
+	/encrypt -CAST nick key
+		Trade CAST5-CBC messages 
+	/encrypt -BLOWFISH nick key
+		Trade BLOWFISH-CBC messages 
+	/encrypt -AES nick key
+		Trade AES256-CBC messages 
+	/encrypt -AESSHA nick key
+		Trade AES256-CBC messages, using the SHA256 hash of 'key'.
+
+	Compatability and availability of all these is discussed in the 
+	following news bulletin.
+
+	AESSHA is the best cipher, but if it's not available, then SEDSHA
+	is better than SED, but SED is universally compatable.  If you must
+	use SED, use a very long key string (40 chars)
+
 *** News 06/26/2006 -- CAST5, Blowfish, AES, and AES-SHA encryption support
 	This only took me 8 years to catch up with ircII!  Yah!
 	All of this support is provided by the EVP api in OpenSSL.
@@ -29,6 +74,10 @@ EPIC5-0.3.1
 
 	AESSHA runs your key through SHA2 to generate a 256 bit key for AES.
 	In any other way, it works the same as AES.
+
+	SEDSHA runs your key through SHA2 to generate a 256 bit key for SED.
+	In any other way, it works the same as SED.  Unlike the others, this
+	does not depend on openssl and is always available.
 
 	Please remember, when you /ENCRYPT a target, everything you send to
 	that target is encoded.  This includes /CTCP requests (/DCC offers).

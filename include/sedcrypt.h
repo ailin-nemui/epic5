@@ -12,10 +12,11 @@
 #define ANYCRYPT	-1
 #define PROGCRYPT	0
 #define	SEDCRYPT	1
-#define CAST5CRYPT	2
-#define BLOWFISHCRYPT	3
-#define AES256CRYPT	4
-#define AESSHA256CRYPT	5
+#define SEDSHACRYPT	2
+#define CAST5CRYPT	3
+#define BLOWFISHCRYPT	4
+#define AES256CRYPT	5
+#define AESSHA256CRYPT	6
 
 /*
  * Crypt: the crypt list structure,  consists of the nickname, and the
@@ -25,7 +26,9 @@ typedef struct	CryptStru
 {
 	struct	CryptStru *next;
 	char *	nick;
+	char *	serv;
 	char *	key;
+	int	keylen;
 	int	type;
 	char *	prog;
 }	Crypt;
@@ -33,7 +36,7 @@ typedef struct	CryptStru
 	BUILT_IN_COMMAND(encrypt_cmd);
 	char *	crypt_msg 	(const char *, Crypt *);
 	char *	decrypt_msg 	(const char *, Crypt *);
-	Crypt *	is_crypted 	(const char *, int type);
+	Crypt *	is_crypted 	(const char *, int serv, int type);
 
 	/* These are for internal use only -- do not call outside crypt.c */
 	unsigned char *	decipher_message (const unsigned char *, size_t, Crypt *, int *);

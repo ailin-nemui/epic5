@@ -28,7 +28,8 @@
 #define CTCP_BLOWFISH		13
 #define CTCP_AES256		14
 #define CTCP_AESSHA256		15
-#define CTCP_CUSTOM		16
+#define CTCP_SEDSHA		16
+#define CTCP_CUSTOM		17
 #define NUMBER_OF_CTCPS		CTCP_CUSTOM
 
 #define CTCP_DELIM_CHAR         '\001' 

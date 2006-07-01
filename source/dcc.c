@@ -1,4 +1,4 @@
-/* $EPIC: dcc.c,v 1.133 2006/06/07 02:17:06 jnelson Exp $ */
+/* $EPIC: dcc.c,v 1.134 2006/07/01 04:17:12 jnelson Exp $ */
 /*
  * dcc.c: Things dealing client to client connections. 
  *
@@ -3499,7 +3499,6 @@ yell("###    dcc->bytes_acked ["INTMAX_FORMAT"]", 	dcc->bytes_acked);
 
 static void	process_dcc_send_data (DCC_list *dcc)
 {
-	fd_set	fd;
 	intmax_t	fill_window;
 	Timeval	to;
 	ssize_t	bytesread;
@@ -3513,9 +3512,8 @@ static void	process_dcc_send_data (DCC_list *dcc)
 	 * packets as we can *without blocking*, up to but never more than
 	 * the value of /SET DCC_SLIDING_WINDOW.  Whenever we recieve some
 	 * stimulus (like from an ACK) we re-fill the window.  We always do
-	 * a select() before we write() to make sure that it wont block.
+	 * a my_iswritable() before we write() to make sure that it wont block.
 	 */
-	FD_ZERO(&fd);
 	fill_window = get_int_var(DCC_SLIDING_WINDOW_VAR) * DCC_BLOCK_SIZE;
 	if (fill_window < DCC_BLOCK_SIZE)
 		fill_window = DCC_BLOCK_SIZE;		/* Sanity */
@@ -3525,10 +3523,7 @@ static void	process_dcc_send_data (DCC_list *dcc)
 		/*
 		 * Check to make sure the write won't block.
 		 */
-		FD_SET(dcc->socket, &fd);
-		to.tv_sec = 0;
-		to.tv_usec = 0;
-		if (select(dcc->socket + 1, NULL, &fd, NULL, &to) <= 0)
+		if (my_iswritable(dcc->socket, 0) <= 0)
 			break;
 
 		/*
@@ -4016,7 +4011,6 @@ char *	dccctl (char *input)
 	DCC_list *	client;
 	char *		retval = NULL;
 	size_t		clue = 0;
-	fd_set		fd;
 	Timeval		to;
 
 	GET_STR_ARG(listc, input);
@@ -4109,21 +4103,11 @@ char *	dccctl (char *input)
 			malloc_strcat_word_c(&retval, space, port, &clue);
 		} else if (!my_strnicmp(listc, "READABLE", len)) {
 			int retint;
-
-			FD_ZERO(&fd);
-			FD_SET(client->socket, &fd);
-			to.tv_sec = 0;
-			to.tv_usec = 0;
-			retint = select(client->socket + 1, &fd, NULL, NULL, &to) > 0;
+			retint = my_isreadable(client->socket, 0) > 0;
 			RETURN_INT(retint);
 		} else if (!my_strnicmp(listc, "WRITABLE", len)) {
 			int retint;
-
-			FD_ZERO(&fd);
-			FD_SET(client->socket, &fd);
-			to.tv_sec = 0;
-			to.tv_usec = 0;
-			retint = select(client->socket + 1, NULL, &fd, NULL, &to) > 0;
+			retint = my_iswritable(client->socket, 0) > 0;
 			RETURN_INT(retint);
 		} else if (!my_strnicmp(listc, "UPDATES_STATUS", len)) {
 			RETURN_INT(client->updates_status);
@@ -4234,41 +4218,19 @@ char *	dccctl (char *input)
 			if (!client->held)
 				malloc_strcat_word_c(&retval, space, ltoa(client->refnum), &clue);
 	} else if (!my_strnicmp(listc, "READABLES", len)) {
-		int	max = 0;
-
-		FD_ZERO(&fd);
-		to.tv_sec = 0;
-		to.tv_usec = 0;
 		for (client = ClientList; client; client = client->next)
 		{
-			FD_SET(client->socket, &fd);
-			if (client->socket > max)
-				max = client->socket;
+			if (my_isreadable(client->socket, 0))
+				malloc_strcat_word_c(&retval, space, 
+					ltoa(client->refnum), &clue);
 		}
-
-		select(max + 1, &fd, NULL, NULL, &to);
-
-		for (client = ClientList; client; client = client->next)
-			if (FD_ISSET(client->socket, &fd))
-				malloc_strcat_word_c(&retval, space, ltoa(client->refnum), &clue);
 	} else if (!my_strnicmp(listc, "WRITABLES", len)) {
-		int	max = 0;
-
-		FD_ZERO(&fd);
-		to.tv_sec = 0;
-		to.tv_usec = 0;
 		for (client = ClientList; client; client = client->next)
 		{
-			FD_SET(client->socket, &fd);
-			if (client->socket > max)
-				max = client->socket;
+			if (my_iswritable(client->socket, 0))
+				malloc_strcat_word_c(&retval, space, 
+					ltoa(client->refnum), &clue);
 		}
-
-		select(max + 1, NULL, &fd, NULL, &to);
-
-		for (client = ClientList; client; client = client->next)
-			if (FD_ISSET(client->socket, &fd))
-				malloc_strcat_word_c(&retval, space, ltoa(client->refnum), &clue);
 	} else if (!my_strnicmp(listc, "UPDATES_STATUS", len)) {
 		int	oldval;
 

@@ -1,4 +1,4 @@
-/* $EPIC: crypto.c,v 1.3 2006/06/29 01:13:53 jnelson Exp $ */
+/* $EPIC: crypto.c,v 1.4 2006/07/01 04:17:12 jnelson Exp $ */
 /*
  * crypto.c: SED/CAST5/BLOWFISH/AES encryption and decryption routines.
  *
@@ -147,11 +147,11 @@
 #include <openssl/err.h>
 
 static char *	decipher_evp (const unsigned char *key, int keylen, const unsigned char *ciphertext, int cipherlen, const EVP_CIPHER *type, int *outlen, int ivsize);
-static void     decrypt_sed (unsigned char *str, int len, const unsigned char *key);
+static void     decrypt_sed (unsigned char *str, int len, const unsigned char *key, int key_len);
 static char *	decrypt_by_prog (const unsigned char *str, size_t *len, Crypt *key);
 
 static char *	cipher_evp (const unsigned char *key, int keylen, const unsigned char *plaintext, int plaintextlen, const EVP_CIPHER *type, int *retsize, int ivsize);
-static void     encrypt_sed (unsigned char *str, int len, char *key);
+static void     encrypt_sed (unsigned char *str, int len, char *key, int key_len);
 static char *	encrypt_by_prog (const unsigned char *str, size_t *len, Crypt *key);
 #endif
 
@@ -174,17 +174,14 @@ unsigned char *	decipher_message (const unsigned char *ciphertext, size_t len, C
 	    if (key->type == CAST5CRYPT)
 	    {
 		blocksize = 8;
-		keylen = strlen(key->key);
 	    }
 	    else if (key->type == BLOWFISHCRYPT)
 	    {
 		blocksize = 8;
-		keylen = strlen(key->key);
 	    }
 	    else if (key->type == AES256CRYPT || key->type == AESSHA256CRYPT)
 	    {
 		blocksize = 16;
-		keylen = 32;
 	    }
 	    else
 		return NULL;
@@ -211,7 +208,7 @@ unsigned char *	decipher_message (const unsigned char *ciphertext, size_t len, C
 	    else
 		break;		/* Not supported */
 
-	    if (!(outbuf = decipher_evp(key->key, keylen,
+	    if (!(outbuf = decipher_evp(key->key, key->keylen,
 					ciphertext, len, 
 					type, retlen, blocksize)))
 	    {
@@ -225,13 +222,13 @@ unsigned char *	decipher_message (const unsigned char *ciphertext, size_t len, C
 #endif
 	    return outbuf;
 	}
-	else if (key->type == SEDCRYPT)
+	else if (key->type == SEDCRYPT || key->type == SEDSHACRYPT)
 	{
 		unsigned char *	text;
 
 		text = new_malloc(len + 1);
 		memmove(text, ciphertext, len);
-		decrypt_sed(text, len, key->key);
+		decrypt_sed(text, len, key->key, key->keylen);
 		*retlen = len;
 		return text;
 	}
@@ -284,10 +281,9 @@ static char *	decipher_evp (const unsigned char *key, int keylen, const unsigned
 }
 #endif
 
-static void     decrypt_sed (unsigned char *str, int len, const unsigned char *key)
+static void     decrypt_sed (unsigned char *str, int len, const unsigned char *key, int key_len)
 {
-        int     key_len,
-                key_pos,
+        int	key_pos,
                 i;
         char    mix,
                 tmp;
@@ -342,7 +338,7 @@ unsigned char *	cipher_message (const unsigned char *orig_message, size_t len, C
 	unsigned char *	copy, *free_it;
 	size_t	copylen = 0, decipher_len = 0;
 	int	bytes_to_trim;
-	size_t	keylen, ivlen;
+	size_t	ivlen;
 
 	if (retlen)
 		*retlen = 0;
@@ -350,7 +346,7 @@ unsigned char *	cipher_message (const unsigned char *orig_message, size_t len, C
 		return NULL;
 
 	if (key->type == CAST5CRYPT || key->type == BLOWFISHCRYPT ||
-	    key->type == AES256CRYPT || AESSHA256CRYPT)
+	    key->type == AES256CRYPT || key->type == AESSHA256CRYPT)
 	{
 	    unsigned char *ciphertext = NULL;
 #ifdef HAVE_SSL
@@ -359,25 +355,22 @@ unsigned char *	cipher_message (const unsigned char *orig_message, size_t len, C
 	    if (key->type == CAST5CRYPT)
 	    {
 		type = EVP_cast5_cbc();
-		keylen = strlen(key->key);
 		ivlen = 8;
 	    }
 	    else if (key->type == BLOWFISHCRYPT)
 	    {
 		type = EVP_bf_cbc();
-		keylen = strlen(key->key);
 		ivlen = 8;
 	    }
 	    else if (key->type == AES256CRYPT || key->type == AESSHA256CRYPT)
 	    {
 		type = EVP_aes_256_cbc();
-		keylen = 32;
 		ivlen = 16;
 	    }
 	    else
 		return NULL;	/* Not supported */
 
-	    if (!(ciphertext = cipher_evp(key->key, keylen,
+	    if (!(ciphertext = cipher_evp(key->key, key->keylen,
 				      orig_message, len, 
 				      type, retlen, ivlen)))
 	    {
@@ -387,13 +380,13 @@ unsigned char *	cipher_message (const unsigned char *orig_message, size_t len, C
 #endif
 	    return ciphertext;
 	}
-	else if (key->type == SEDCRYPT)
+	else if (key->type == SEDCRYPT || key->type == SEDSHACRYPT)
 	{
 		unsigned char *	ciphertext;
 
 		ciphertext = new_malloc(len + 1);
 		memmove(ciphertext, orig_message, len);
-		encrypt_sed(ciphertext, len, key->key);
+		encrypt_sed(ciphertext, len, key->key, strlen(key->key));
 		*retlen = len;
 		return ciphertext;
 	}
@@ -456,10 +449,9 @@ static char *	cipher_evp (const unsigned char *key, int keylen, const unsigned c
 }
 #endif
 
-static void     encrypt_sed (unsigned char *str, int len, char *key)
+static void     encrypt_sed (unsigned char *str, int len, char *key, int key_len)
 {
-        int     key_len,
-                key_pos,
+        int     key_pos,
                 i;
         char    mix, 
                 tmp;

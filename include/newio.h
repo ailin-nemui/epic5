@@ -81,4 +81,8 @@
 	int	new_unhold_fd		(int);
 	int 	new_close 		(int);
 
+	int	my_sleep		(double);
+	int	my_isreadable		(int, double);
+	int	my_iswritable		(int, double);
+
 #endif

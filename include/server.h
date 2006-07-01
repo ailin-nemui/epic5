@@ -366,6 +366,7 @@ const char *	get_server_funny_match         	(int);
 	int	get_server_by_desc		(const char *, int);
 
 const char *	get_server_altname		(int refnum, int which);
+	int     which_server_altname		(int refnum, const char *);
 
 #endif /* _SERVER_H_ */
 

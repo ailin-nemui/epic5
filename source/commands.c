@@ -1,4 +1,4 @@
-/* $EPIC: commands.c,v 1.147 2006/06/29 01:13:53 jnelson Exp $ */
+/* $EPIC: commands.c,v 1.148 2006/07/01 04:17:12 jnelson Exp $ */
 /*
  * commands.c -- Stuff needed to execute commands in ircII.
  *		 Includes the bulk of the built in commands for ircII.
@@ -2523,9 +2523,7 @@ BUILT_IN_COMMAND(sleepcmd)
 	if ((arg = next_arg(args, &args)) != NULL)
 	{
 		nms = atof(arg);
-		interval.tv_sec = sec = (int)nms;
-		interval.tv_usec = (nms-sec) * 1000000;
-		select(0, NULL, NULL, NULL, &interval);
+		my_sleep(nms);
 	}
 	else
 		say("Usage: SLEEP <seconds>");
@@ -2633,15 +2631,15 @@ BUILT_IN_COMMAND(unshift_cmd)
 BUILT_IN_COMMAND(usleepcmd)
 {
 	char *	arg;
-	Timeval	interval;
 	time_t	nms;
+	double	interval;
 
 	if ((arg = next_arg(args, &args)))
 	{
 		nms = (time_t)my_atol(arg);
-		interval.tv_sec = nms / 1000000;
-		interval.tv_usec = nms % 1000000;
-		select(0, NULL, NULL, NULL, &interval);
+		interval = nms / 1000000;
+		interval += (nms % 1000000) / 1000000;
+		my_sleep(interval);
 	}
 	else
 		say("Usage: USLEEP <usec>");
@@ -2978,7 +2976,7 @@ struct target_type target[4] =
 			continue;
 		}
 
-		if ((key = is_crypted(current_nick, ANYCRYPT)) != 0)
+		if ((key = is_crypted(current_nick, -1, ANYCRYPT)) != 0)
 		{
 			char *breakage = LOCAL_COPY(text);
 			line = crypt_msg(breakage, key);
@@ -3027,7 +3025,7 @@ struct target_type target[4] =
 		if (get_server_doing_privmsg(from_server) || (command && !strcmp(command, "NOTICE")))
 			i += 2;
 
-		if ((key = is_crypted(current_nick, ANYCRYPT)))
+		if ((key = is_crypted(current_nick, from_server, ANYCRYPT)))
 		{
 			int	l;
 

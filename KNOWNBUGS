@@ -8,10 +8,6 @@ KNOWN ERRATA (eg, bugs, or unresolved requests):
 * Permit lastlog entries to be moved across windows.
 * Refactor hardcoded uses of select() so select() isn't mandatory.
 * I think i broke external encryption support.  I need to check/fix this
-* Support for blowfish is untested
-* Should be able to do -cast or -blowfish anywhere on /encrypt args.
-* The cut&paste job for do_cast5 and do_blowfish in ctcp.c blows.
-* Lots of cruft needs to be refactored once everything stabilizes.
 
 LOOK FOR IN THE FUTURE
 -----------------------
@@ -111,3 +107,9 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Make funcs in crypto.c static and just expose [de]crypt_msg().
 * This finishes the divide between crypt.c (front end) and crypto.c (back end)
 * Fix a gazillion compiler warnings and sort out const/unsigned char issues.
+* Add SEDSHA cipher type, which is better than SED, and always available.
+* Add my_sleep|isreadable|iswritable() funcs to phase out rogue selects()h
+* Add support for multiple concurrent servers to /encrypt. yay!
+* Store the length of the Crypt key within the key itself.
+* This moves us closer to being able to decrypt arbitrary data.
+* Test all of the cipher types, incl. compat of CAST with ircII.  All set!

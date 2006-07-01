@@ -1,4 +1,4 @@
-/* $EPIC: newio.c,v 1.57 2006/06/27 01:42:35 jnelson Exp $ */
+/* $EPIC: newio.c,v 1.58 2006/07/01 04:17:12 jnelson Exp $ */
 /*
  * newio.c:  Passive, callback-driven IO handling for sockets-n-stuff.
  *
@@ -91,6 +91,10 @@ static	void	kinit (void);
 static	void	kcleaned (int vfd);
 static	void	klock (void);
 static	void	kunlock (void);
+
+static	int	ksleep (double dur);
+static	int	kreadable (int vfd, double);
+static	int	kwritable (int vfd, double);
 
 /* These functions implement basic i/o operations for unix */
 static int	unix_read (int channel, int);
@@ -477,6 +481,21 @@ size_t 	get_pending_bytes (int vfd)
 		return io_rec[vfd]->write_pos - io_rec[vfd]->read_pos;
 
 	return 0;
+}
+
+int	my_sleep (double seconds)
+{
+	return ksleep(seconds);
+}
+
+int	my_isreadable (int vfd, double seconds)
+{
+	return kreadable(vfd, seconds);
+}
+
+int	my_iswritable (int vfd, double seconds)
+{
+	return kwritable(vfd, seconds);
 }
 
 /****************************************************************************/
@@ -915,6 +934,40 @@ static	int	kdoit (Timeval *timeout)
 
 static	void	klock (void) { return; }
 static	void	kunlock (void) { return; }
+
+static	int	ksleep (double timeout)
+{
+	Timeval interval;
+
+	interval.tv_sec = (time_t)timeout;
+	interval.tv_usec = (timeout - interval.tv_sec) * 1000000;
+	return select(0, NULL, NULL, NULL, &interval);
+}
+
+static	int	kreadable (int vfd, double timeout)
+{
+	fd_set	fd_read;
+	Timeval	interval;
+
+	FD_ZERO(&fd_read);
+	FD_SET(CHANNEL(vfd), &fd_read);
+	interval.tv_sec = (time_t)timeout;
+	interval.tv_usec = (timeout - interval.tv_sec) * 1000000;
+	return select(CHANNEL(vfd) + 1, &fd_read, NULL, NULL, &interval);
+}
+
+static	int	kwritable (int vfd, double timeout)
+{
+	fd_set	fd_read;
+	Timeval	interval;
+
+	FD_ZERO(&fd_read);
+	FD_SET(CHANNEL(vfd), &fd_read);
+	interval.tv_sec = (time_t)timeout;
+	interval.tv_usec = (timeout - interval.tv_sec) * 1000000;
+	return select(CHANNEL(vfd) + 1, NULL, &fd_read, NULL, &interval);
+}
+
 #endif
 
 /************************************************************************/
@@ -1038,6 +1091,40 @@ static	int	kdoit (Timeval *timeout)
 
 static	void	klock (void) { return; }
 static	void	kunlock (void) { return; }
+
+static	int	ksleep (double timeout)
+{
+	Timeval interval;
+
+	interval.tv_sec = (time_t)timeout;
+	interval.tv_usec = (timeout - interval.tv_sec) * 1000000;
+	return select(0, NULL, NULL, NULL, &interval);
+}
+
+static	int	kreadable (int vfd, double timeout)
+{
+	fd_set	fd_read;
+	Timeval	timeout;
+
+	FD_ZERO(&fd_read);
+	FD_SET(CHANNEL(vfd), &fd_read);
+	interval.tv_sec = (time_t)timeout;
+	interval.tv_usec = (timeout - interval.tv_sec) * 1000000;
+	return select(CHANNEL(vfd) + 1, &fd_read, NULL, NULL, &interval);
+}
+
+static	int	kwritable (int vfd, double timeout)
+{
+	fd_set	fd_read;
+	Timeval	interval;
+
+	FD_ZERO(&fd_read);
+	FD_SET(CHANNEL(vfd), &fd_read);
+	interval.tv_sec = (time_t)timeout;
+	interval.tv_usec = (timeout - interval.tv_sec) * 1000000;
+	return select(CHANNEL(vfd) + 1, NULL, &fd_read, NULL, &interval);
+}
+
 #endif
 
 /************************************************************************/
@@ -1130,6 +1217,40 @@ static	int	kdoit (Timeval *timeout)
 
 static	void	klock (void) { return; }
 static	void	kunlock (void) { return; }
+
+static	int	ksleep (double timeout)
+{
+	Timeval interval;
+
+	interval.tv_sec = (time_t)timeout;
+	interval.tv_usec = (timeout - interval.tv_sec) * 1000000;
+	return select(0, NULL, NULL, NULL, &interval);
+}
+
+static	int	kreadable (int vfd, double timeout)
+{
+	fd_set	fd_read;
+	Timeval	timeout;
+
+	FD_ZERO(&fd_read);
+	FD_SET(CHANNEL(vfd), &fd_read);
+	interval.tv_sec = (time_t)timeout;
+	interval.tv_usec = (timeout - interval.tv_sec) * 1000000;
+	return select(CHANNEL(vfd) + 1, &fd_read, NULL, NULL, &interval);
+}
+
+static	int	kwritable (int vfd, double timeout)
+{
+	fd_set	fd_read;
+	Timeval	interval;
+
+	FD_ZERO(&fd_read);
+	FD_SET(CHANNEL(vfd), &fd_read);
+	interval.tv_sec = (time_t)timeout;
+	interval.tv_usec = (timeout - interval.tv_sec) * 1000000;
+	return select(CHANNEL(vfd) + 1, NULL, &fd_read, NULL, &interval);
+}
+
 #endif
 
 
@@ -1361,6 +1482,39 @@ static	void	kunlock (void)
 		panic("pthread_mutex_unlock: %s", strerror(c));
 }
 
+static	int	ksleep (double timeout)
+{
+	Timeval interval;
+
+	interval.tv_sec = (time_t)timeout;
+	interval.tv_usec = (timeout - interval.tv_sec) * 1000000;
+	return select(0, NULL, NULL, NULL, &interval);
+}
+
+static	int	kreadable (int vfd, double timeout)
+{
+	fd_set	fd_read;
+	Timeval	timeout;
+
+	FD_ZERO(&fd_read);
+	FD_SET(CHANNEL(vfd), &fd_read);
+	interval.tv_sec = (time_t)timeout;
+	interval.tv_usec = (timeout - interval.tv_sec) * 1000000;
+	return select(CHANNEL(vfd) + 1, &fd_read, NULL, NULL, &interval);
+}
+
+static	int	kwritable (int vfd, double timeout)
+{
+	fd_set	fd_read;
+	Timeval	interval;
+
+	FD_ZERO(&fd_read);
+	FD_SET(CHANNEL(vfd), &fd_read);
+	interval.tv_sec = (time_t)timeout;
+	interval.tv_usec = (timeout - interval.tv_sec) * 1000000;
+	return select(CHANNEL(vfd) + 1, NULL, &fd_read, NULL, &interval);
+}
+
 #endif
 
 /************************************************************************/
@@ -1475,5 +1629,39 @@ static	int	kdoit (Timeval *timeout)
 
 static	void	klock (void) { return; }
 static	void	kunlock (void) { return; }
+
+static	int	ksleep (double timeout)
+{
+	Timeval interval;
+
+	interval.tv_sec = (time_t)timeout;
+	interval.tv_usec = (timeout - interval.tv_sec) * 1000000;
+	return select(0, NULL, NULL, NULL, &interval);
+}
+
+static	int	kreadable (int vfd, double timeout)
+{
+	fd_set	fd_read;
+	Timeval	timeout;
+
+	FD_ZERO(&fd_read);
+	FD_SET(CHANNEL(vfd), &fd_read);
+	interval.tv_sec = (time_t)timeout;
+	interval.tv_usec = (timeout - interval.tv_sec) * 1000000;
+	return select(CHANNEL(vfd) + 1, &fd_read, NULL, NULL, &interval);
+}
+
+static	int	kwritable (int vfd, double timeout)
+{
+	fd_set	fd_read;
+	Timeval	interval;
+
+	FD_ZERO(&fd_read);
+	FD_SET(CHANNEL(vfd), &fd_read);
+	interval.tv_sec = (time_t)timeout;
+	interval.tv_usec = (timeout - interval.tv_sec) * 1000000;
+	return select(CHANNEL(vfd) + 1, NULL, &fd_read, NULL, &interval);
+}
+
 #endif
 
