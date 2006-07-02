@@ -9,6 +9,7 @@
 #ifndef __crypt_h__
 #define __crypt_h__
 
+#define NOCRYPT		-2
 #define ANYCRYPT	-1
 #define PROGCRYPT	0
 #define	SEDCRYPT	1
@@ -34,8 +35,8 @@ typedef struct	CryptStru
 }	Crypt;
 
 	BUILT_IN_COMMAND(encrypt_cmd);
-	char *	crypt_msg 	(const char *, Crypt *);
-	char *	decrypt_msg 	(const char *, Crypt *);
+	char *	crypt_msg 	(const unsigned char *, Crypt *);
+	char *	decrypt_msg 	(const unsigned char *, Crypt *);
 	Crypt *	is_crypted 	(const char *, int serv, int type);
 
 	/* These are for internal use only -- do not call outside crypt.c */

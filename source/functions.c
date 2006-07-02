@@ -1,4 +1,4 @@
-/* $EPIC: functions.c,v 1.231 2006/07/01 04:17:12 jnelson Exp $ */
+/* $EPIC: functions.c,v 1.232 2006/07/02 03:12:13 jnelson Exp $ */
 /*
  * functions.c -- Built-in functions for ircII
  *
@@ -80,6 +80,7 @@
 #include "ssl.h"
 #include "levels.h"
 #include "extlang.h"
+#include "ctcp.h"
 
 #ifdef NEED_GLOB
 # include "glob.h"
@@ -6106,7 +6107,7 @@ BUILT_IN_FUNCTION(function_encryptparm, input)
 	Crypt	*key;
 
 	GET_STR_ARG(entry, input);
-	if ((key = is_crypted(entry, from_server, SEDCRYPT))) 
+	if ((key = is_crypted(entry, from_server, CTCP_SED))) 
 	{
 		malloc_strcat_word_c(&ret, space, key->nick, &clue);
 		malloc_strcat_word_c(&ret, space, key->key, &clue);
@@ -6126,7 +6127,7 @@ BUILT_IN_FUNCTION(function_sedcrypt, input)
 	GET_INT_ARG(flag, input);
 	GET_STR_ARG(from, input);
 
-	if ((key = is_crypted(from, from_server, SEDCRYPT)))
+	if ((key = is_crypted(from, from_server, CTCP_SED)))
 	{
 		if (flag == 1)
 			ret = crypt_msg(input, key);

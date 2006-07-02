@@ -1,4 +1,4 @@
-/* $EPIC: crypto.c,v 1.4 2006/07/01 04:17:12 jnelson Exp $ */
+/* $EPIC: crypto.c,v 1.5 2006/07/02 03:12:13 jnelson Exp $ */
 /*
  * crypto.c: SED/CAST5/BLOWFISH/AES encryption and decryption routines.
  *
@@ -62,7 +62,7 @@
  * The ircII format is almost compatable with openssl -- whereas openssl
  * expects the all of the fill bytes in <Final Block> to be the same, ircII
  * fills them in with random chars.  We must decrypt the string in unbuffered
- * modeor openssl will throw fits.  We handle the fill bytes ourself.
+ * mode or openssl will throw fits.  We handle the fill bytes ourself.
  *
  * When we encrypt a message, we let openssl do the buffering, so the fill 
  * bytes are not random, but ircII doesn't care.
@@ -133,6 +133,20 @@
  *
  * Alas, CTCP-over-SED is only compatable with EPIC and BitchX.
  */
+
+/*
+ *	- About SED-SHA
+ *
+ * One weakness of SED is it doesn't take very long to deduce the length of
+ * the cipher key, which goes a long way towards brute forcing that key.
+ * The SED-SHA cipher creates a 256 bit (32 char) hash of your cipher key
+ * and uses that hash to do the bit twiddling.  This obscures the length of
+ * the cipherkey which makes it less scary than SED.
+ *
+ * The SED-SHA cipher is always available, since it doesn't depend on openssl.
+ * Alas, SED-SHA is not going to be compatable with non-epic5 users.
+ */
+
 
 #include "irc.h"
 #include "sedcrypt.h"

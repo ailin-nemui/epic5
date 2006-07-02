@@ -115,3 +115,5 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Test all of the cipher types, incl. compat of CAST with ircII.  All set!
 * Fix Cut & Paste error.
 * DO YOU THINK YOU CAN RE-ORDER AN ARRAY AND NOT CHANGE THE #DEFINES DUMMY?
+* Bust do_crypt back into its callers [de]crypt_msg().
+* Make lookups between /encrypt flag<->cipher flag<->ctcp table-driven.

@@ -1,11 +1,8 @@
-/* $EPIC: crypt.c,v 1.22 2006/07/01 04:17:12 jnelson Exp $ */
+/* $EPIC: crypt.c,v 1.23 2006/07/02 03:12:13 jnelson Exp $ */
 /*
  * crypt.c: The /ENCRYPT command and all its attendant baggage.
  *
- * Copyright (c) 1990 Michael Sandroff.
- * Copyright (c) 1991, 1992 Troy Rollo.
- * Copyright (c) 1992-1996 Matthew Green.
- * Copyright © 1995, 2003 EPIC Software Labs
+ * Copyright © 2006 EPIC Software Labs
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -50,16 +47,26 @@
 /* crypt_list: the list of nicknames and encryption keys */
 static	Crypt	*crypt_list = (Crypt *) 0;
 
-/* This must be in sync with the constants in sedcrypt.h */
-static const char *ciphertype[] = {
-	"External Program",
-	"SED",
-	"SEDSHA",
-	"CAST5",
-	"BLOWFISH",
-	"AES-256",
-	"AES-SHA-256"
+struct ciphertypes {
+	int	flag;
+	int	ctcp_flag;
+	const char *flagname;
+	const char *username;
+	const char *ctcpname;
 };
+
+struct ciphertypes ciphers[] = {
+   { PROGCRYPT,      -1,	      NULL,       "Program",  "SED"	      },
+   { SEDCRYPT,       CTCP_SED,	     "-SED",      "SED",      "SED"	      },
+   { SEDSHACRYPT,    CTCP_SEDSHA,    "-SEDSHA",   "SED+SHA",  "SEDSHA"        },
+   { CAST5CRYPT,     CTCP_CAST5,     "-CAST",     "CAST5",    "CAST128ED-CBC" },
+   { BLOWFISHCRYPT,  CTCP_BLOWFISH,  "-BLOWFISH", "BLOWFISH", "BLOWFISH-CBC"  },
+   { AES256CRYPT,    CTCP_AES256,    "-AES",	  "AES",      "AES256-CBC"    },
+   { AESSHA256CRYPT, CTCP_AESSHA256, "-AESSHA",   "AES+SHA",  "AESSHA256-CBC" },
+   { NOCRYPT,        -1,	       NULL,       NULL,       NULL           }
+};
+
+const char *allciphers = "SED, SEDSHA, CAST, BLOWFISH, AES or AESSHA";
 
 static	Crypt *	internal_is_crypted (Char *nick, Char *serv, int type);
 static int	internal_remove_crypt (Char *nick, Char *serv, int type);
@@ -218,14 +225,20 @@ static int	internal_remove_crypt (Char *nick, Char *serv, int type)
 		return tmp;					\
 	}
 
-
-Crypt *	is_crypted (Char *nick, int serv, int type)
+Crypt *	is_crypted (Char *nick, int serv, int ctcp_type)
 {
 	Crypt *	tmp;
 	Crypt *	best = NULL;
-	int	bestval = -1;
+	int	type = NOCRYPT;
+	int	i;
 
 	if (!crypt_list)
+		return NULL;
+
+	for (i = 0; ciphers[i].username; i++)
+		if (ciphers[i].ctcp_flag == ctcp_type)
+			type = ciphers[i].flag;
+	if (type == NOCRYPT)
 		return NULL;
 
 	/* Look for the refnum -- Bummer, special case */
@@ -252,8 +265,25 @@ Crypt *	is_crypted (Char *nick, int serv, int type)
 }
 
 /*
- * encrypt_cmd: the ENCRYPT command.  Adds the given nickname and key to the
- * encrypt list, or removes it, or list the list, you know. 
+ * encrypt_cmd: the ENCRYPT command, the user interface to the crypt list.
+ *
+ * 	/ENCRYPT server/target -type key
+ *
+ *  Where "server" is a refnum, ourname, itsname, group, or altname,
+ *  Where "target" is a nickname or channel
+ *  Where "type" is SED, SEDSHA, CAST, BLOWFISH, AES, or AESSHA
+ *  Where "key" is a passkey
+ *
+ * Messages to and from the target on the corresponding server are ciphered
+ * with the given algorithm using the given passkey.  If you receive a cipher
+ * message from someone using a type for which you do not have an entry, you
+ * will see [ENCRYPTED MESSAGE].  If you have an entry but it has the wrong
+ * password, you will probably see garbage.
+ *
+ * The "server" argument is flexible, so if you do "efnet/#epic" then the
+ * cipher will apply to #epic on any server that belongs to that group.
+ * This allows you to have different types/keys with the same channel name 
+ * on different networks.
  */
 BUILT_IN_COMMAND(encrypt_cmd)
 {
@@ -262,26 +292,22 @@ BUILT_IN_COMMAND(encrypt_cmd)
 		*prog = NULL;
 	int	type = SEDCRYPT;
 	char *	arg;
+	int	i;
 
 	while ((arg = new_next_arg(args, &args)))
 	{
-	    if (!my_stricmp(arg, "-SED"))
-		type = SEDCRYPT;
-	    else if (!my_stricmp(arg, "-SEDSHA"))
-		type = SEDSHACRYPT;
-	    else if (!my_stricmp(arg, "-CAST"))
-		type = CAST5CRYPT;
-	    else if (!my_stricmp(arg, "-BLOWFISH"))
-		type = BLOWFISHCRYPT;
-	    else if (!my_stricmp(arg, "-AES"))
-		type = AES256CRYPT;
-	    else if (!my_stricmp(arg, "-AESSHA"))
-		type = AESSHA256CRYPT;
-	    else if (*arg == '-')
+	    if (*arg == '-')
 	    {
-		say("Usage: /ENCRYPT -TYPE nick key prog");
-		say("       Where TYPE is SED, SEDSHA, CAST, BLOWFISH, AES or AESSHA");
-		return;
+		type = NOCRYPT;
+		for (i = 0; ciphers[i].flagname; i++)
+		{
+		    if (ciphers[i].flagname && 
+					!my_stricmp(arg,ciphers[i].flagname))
+			type = ciphers[i].flag;
+		}
+
+		if (type == NOCRYPT)
+		    goto usage_error;
 	    }
 	    else if (nick == NULL)
 		nick = arg;
@@ -294,8 +320,9 @@ BUILT_IN_COMMAND(encrypt_cmd)
 	    }
 	    else
 	    {
-		say("Usage: /ENCRYPT -TYPE nick key prog");
-		say("       Where TYPE is SED, SEDSHA, CAST, BLOWFISH, AES or AESSHA");
+usage_error:
+		say("Usage: /ENCRYPT -TYPE nick key \"prog\"");
+		say("       Where TYPE is %s", allciphers);
 		return;
 	    }
 	}
@@ -319,16 +346,16 @@ BUILT_IN_COMMAND(encrypt_cmd)
 		say("Will now cipher messages with '%s' on '%s' using '%s' "
 			"with the key '%s'.",
 				nick, serv ? serv : "<any>",
-				prog ? prog : ciphertype[type], key);
+				prog ? prog : ciphers[type].username, key);
 	    }
 	    else if (internal_remove_crypt(nick, serv, type))
 		say("Not ciphering messages with '%s' on '%s' using '%s'",
 			nick, serv ? serv : "<any>",
-			prog ? prog : ciphertype[type], key);
+			prog ? prog : ciphers[type].username, key);
 	    else
 		say("Will no longer cipher messages with '%s' on '%s' using '%s'.",
 			nick, serv ? serv : "<any>",
-			prog ? prog : ciphertype[type]);
+			prog ? prog : ciphers[type].username);
 	}
 
 	else if (crypt_list)
@@ -341,7 +368,8 @@ BUILT_IN_COMMAND(encrypt_cmd)
 			   "with the key '%s'.",
 				tmp->nick, 
 				tmp->serv ? tmp->serv : "<any>",
-				tmp->prog ? tmp->prog : ciphertype[tmp->type], 
+				tmp->prog ? tmp->prog : 
+					ciphers[tmp->type].username, 
 				tmp->key);
 	}
 	else
@@ -349,126 +377,95 @@ BUILT_IN_COMMAND(encrypt_cmd)
 }
 
 /*
- * do_crypt: Transform a string using a symmetric cipher into its opposite.
+ * crypt_msg: Convert plain text into irc-ready ciphertext
  *
- * -- If flag == 0 (decryption)
- *	str	A C string containing CTCP-enquoted ciphertext
- *	key	An ircII crypt key with the details for decryption
- *	flag	0
- * returns:	A C string containing the corresponding plain text.
- *
- * -- If flag == 1 (encryption)
- *	str	A C string containing plain text
- *	key	An ircII crypt key with details for encryption
- *	flag	1
- * returns:	A C string containing CTCP-enquoted ciphertext.
- *
- * This cannot encrypt any binary data -- 'str' must be a C string.
- */
-static char *	do_crypt (Char *str, Crypt *key, int flag)
-{
-	int	i;
-	size_t	c;
-	char	*free_it = NULL;
-	unsigned char *my_str;
-
-	i = (int)strlen(str);
-	if (flag)
-	{
-		free_it = my_str = cipher_message(str, strlen(str)+1, key, &i);
-		c = i;
-		my_str = enquote_it(my_str, c);
-	}
-	else
-	{
-		c = i;
-		free_it = my_str = dequote_it(str, &c);
-		i = c;
-		my_str = decipher_message(my_str, c, key, &i);
-	}
-	new_free(&free_it);
-	return my_str;
-}
-
-/*
- * crypt_msg: Prepare a message payload containing an encrypted 'str'.
+ * Whenever you have a C string containing plain text and you want to 
+ * convert it into something you can send over irc, you call is_crypted()
+ * with the cipher type of "ANYCRYPT" to fetch a crypt key, and then you 
+ * pass the string and the key to this function.  This function returns a
+ * malloced string containing a payload that you can send in a PRIVMSG/NOTICE.
  *
  * 	str	- A C string containing plaintext (cannot be binary data!)
  *	key	- Something previously returned by is_crypted().
  * Returns:	- The payload of a PRIVMSG/NOTICE suitable for inclusion in
  *		  an IRC protocol command or DCC CHAT.
+ *
+ * This is a convenience wrapper for CTCP handling.  It does not do binary
+ * data.  You need to call cipher_message() directly for that.  You cannot
+ * use this function to send binary data over irc.
  */
-char *	crypt_msg (Char *str, Crypt *key)
+char *	crypt_msg (const unsigned char *str, Crypt *key)
 {
 	char	*ptr;
 	char	buffer[CRYPT_BUFFER_SIZE + 1];
 	char	prefix[17];
+	int	i;
+	unsigned char *my_str;
+	const char *ctcpname;
 
-	/* If the encryption can't be done, just return the string */
-	if (!(ptr = do_crypt(str, key, 1)))
-		return malloc_strdup(str);
+	/* Convert the plaintext into ciphertext */
+	i = (int)strlen(str);
+	my_str = cipher_message(str, strlen(str)+1, key, &i);
+
+	/* Convert the ciphertext into ctcp-enquoted payload */
+	ptr = enquote_it(my_str, i);
+
 	if (!*ptr)
 		yell("WARNING: Empty encrypted message, but message "
 		     "sent anyway.  Bug?");
 
-	if (key->type == SEDCRYPT)
-		snprintf(buffer, sizeof(buffer), "%c%s %s%c",
-			CTCP_DELIM_CHAR, "SED", ptr, CTCP_DELIM_CHAR);
-	else if (key->type == SEDSHACRYPT)
-		snprintf(buffer, sizeof(buffer), "%c%s %s%c",
-			CTCP_DELIM_CHAR, "SEDSHA", ptr, CTCP_DELIM_CHAR);
-	else if (key->type == CAST5CRYPT)
-		snprintf(buffer, sizeof(buffer), "%c%s %s%c",
-			CTCP_DELIM_CHAR, "CAST128ED-CBC", ptr, CTCP_DELIM_CHAR);
-	else if (key->type == BLOWFISHCRYPT)
-		snprintf(buffer, sizeof(buffer), "%c%s %s%c",
-			CTCP_DELIM_CHAR, "BLOWFISH-CBC", ptr, CTCP_DELIM_CHAR);
-	else if (key->type == AES256CRYPT)
-		snprintf(buffer, sizeof(buffer), "%c%s %s%c",
-			CTCP_DELIM_CHAR, "AES256-CBC", ptr, CTCP_DELIM_CHAR);
-	else if (key->type == AESSHA256CRYPT)
-		snprintf(buffer, sizeof(buffer), "%c%s %s%c",
-			CTCP_DELIM_CHAR, "AESSHA256-CBC", ptr, CTCP_DELIM_CHAR);
-#if 0		/* Wink Wink */
-	else if (key->type == FiSHCRYPT)
-		snprintf(buffer, sizeof(buffer), "+OK %s", ptr);
-#endif
+	if (ciphers[key->type].ctcpname)
+	     snprintf(buffer, sizeof(buffer), "%c%s %s%c",
+			CTCP_DELIM_CHAR, ciphers[key->type].ctcpname, 
+			ptr, CTCP_DELIM_CHAR);
 	else
 		panic("crypt_msg: key->type == %d not supported.", key->type);
 
+	new_free(&my_str);
 	new_free(&ptr);
 	return malloc_strdup(buffer);
 }
 
 /*
- * decrypt_msg: convert some ciphertext into plain text.
+ * decrypt_msg: Convert ciphertext from irc into plain text.
  *
- * This is a little simpler than crypt_msg, because the caller (do_ctcp)
- * already knows what the cipher is and has split out the payload from 
- * the privmsg/notice/dcc chat for us.
+ * Whenever you receive a C string containing ctcp-enquoted ciphertext 
+ * over irc, you call is_crypted() to fetch the crypt key.  Then you pass
+ * the C string and the crypt key to this function, and it returns malloced
+ * string containing the decrypted text.
  *
  *	str	- A C string containing CTCP-enquoted ciphertext
  *	key	- Something previously returned by is_crypted().
  * Returns:	- A C string containing plain text.
  *
- * Obviously, both the input and output need to be C strings.  This does not
- * support binary data.
+ * This is a convenience wrapper for CTCP handling.  It does not do binary
+ * data.  You need to call decipher_message() directly for that.  This means
+ * you can't receive binary data sent over irc via this route.
  *
  * Note that the retval MUST be at least 'BIG_BUFFER_SIZE + 1'.  This is
  * not an oversight -- the caller will pass the retval back to do_ctcp() 
  * which requires a big buffer to scratch around.  (The decrypted text could
  * contain a CTCP UTC which would expand to a larger string of text)
  */ 
-char *	decrypt_msg (Char *str, Crypt *key)
+char *	decrypt_msg (const unsigned char *str, Crypt *key)
 {
 	char	*buffer = (char *)new_malloc(BIG_BUFFER_SIZE + 1);
-	char	*ptr = NULL;
+	char	*ptr = NULL, *my_str;
+	size_t	c;
+	int	i;
 
-	if (!(ptr = do_crypt(str, key, 0)))
-		strlcat(buffer, str, CRYPT_BUFFER_SIZE + 1);
+	/* Convert the ctcp-enquoted payload into ciphertext */
+	c = strlen(str);
+	my_str = dequote_it(str, &c);
+
+	/* Decrypt the ciphertext into a C string */
+	i = c;
+	if (!(ptr = decipher_message(my_str, c, key, &i)))
+		strlcat(buffer, my_str, CRYPT_BUFFER_SIZE + 1);
 	else
 		strlcpy(buffer, ptr, CRYPT_BUFFER_SIZE + 1);
 
+	new_free(&my_str);
 	new_free(&ptr);
 	return buffer;
 }

@@ -1,4 +1,4 @@
-/* $EPIC: ctcp.c,v 1.51 2006/07/01 04:17:12 jnelson Exp $ */
+/* $EPIC: ctcp.c,v 1.52 2006/07/02 03:12:13 jnelson Exp $ */
 /*
  * ctcp.c:handles the client-to-client protocol(ctcp). 
  *
@@ -215,23 +215,8 @@ CTCP_HANDLER(do_crypto)
 	tofrom = malloc_strdup3(to, ",", from);
 	malloc_strcat2_c(&tofrom, "!", FromUserHost, NULL);
 
-	if (ctcp->id == CTCP_SED)
-		type = SEDCRYPT;
-	else if (ctcp->id == CTCP_SEDSHA)
-		type = SEDSHACRYPT;
-	else if (ctcp->id == CTCP_CAST5)
-		type = CAST5CRYPT;
-	else if (ctcp->id == CTCP_BLOWFISH)
-		type = BLOWFISHCRYPT;
-	else if (ctcp->id == CTCP_AES256)
-		type = AES256CRYPT;
-	else if (ctcp->id == CTCP_AESSHA256)
-		type = AESSHA256CRYPT;
-	else
-		return NULL;
-
-	if ((key = is_crypted(tofrom, from_server, type)) ||
-	    (key = is_crypted(crypt_who, from_server, type)))
+	if ((key = is_crypted(tofrom, from_server, ctcp->id)) ||
+	    (key = is_crypted(crypt_who, from_server, ctcp->id)))
 		ret = decrypt_msg(cmd, key);
 
 	new_free(&tofrom);
