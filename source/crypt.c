@@ -1,4 +1,4 @@
-/* $EPIC: crypt.c,v 1.23 2006/07/02 03:12:13 jnelson Exp $ */
+/* $EPIC: crypt.c,v 1.24 2006/07/02 03:20:31 jnelson Exp $ */
 /*
  * crypt.c: The /ENCRYPT command and all its attendant baggage.
  *
@@ -235,11 +235,16 @@ Crypt *	is_crypted (Char *nick, int serv, int ctcp_type)
 	if (!crypt_list)
 		return NULL;
 
-	for (i = 0; ciphers[i].username; i++)
-		if (ciphers[i].ctcp_flag == ctcp_type)
-			type = ciphers[i].flag;
-	if (type == NOCRYPT)
-		return NULL;
+	if (ctcp_type != ANYCRYPT)
+	{
+		for (i = 0; ciphers[i].username; i++)
+			if (ciphers[i].ctcp_flag == ctcp_type)
+				type = ciphers[i].flag;
+		if (type == NOCRYPT)
+			return NULL;
+	}
+	else
+		type = ANYCRYPT;
 
 	/* Look for the refnum -- Bummer, special case */
 	for (tmp = crypt_list; tmp; tmp = tmp->next)
@@ -299,7 +304,7 @@ BUILT_IN_COMMAND(encrypt_cmd)
 	    if (*arg == '-')
 	    {
 		type = NOCRYPT;
-		for (i = 0; ciphers[i].flagname; i++)
+		for (i = 0; ciphers[i].username; i++)
 		{
 		    if (ciphers[i].flagname && 
 					!my_stricmp(arg,ciphers[i].flagname))
@@ -403,6 +408,7 @@ char *	crypt_msg (const unsigned char *str, Crypt *key)
 	unsigned char *my_str;
 	const char *ctcpname;
 
+yell("crypting message");
 	/* Convert the plaintext into ciphertext */
 	i = (int)strlen(str);
 	my_str = cipher_message(str, strlen(str)+1, key, &i);
