@@ -1,4 +1,4 @@
-/* $EPIC: ctcp.c,v 1.52 2006/07/02 03:12:13 jnelson Exp $ */
+/* $EPIC: ctcp.c,v 1.53 2006/07/05 23:40:14 jnelson Exp $ */
 /*
  * ctcp.c:handles the client-to-client protocol(ctcp). 
  *
@@ -921,6 +921,7 @@ char *	do_notice_ctcp (const char *from, const char *to, char *str)
 			strlcat(local_ctcp_buffer, ptr, 
 					sizeof local_ctcp_buffer);
 			new_free(&ptr);
+			pop_message_from(l);
 			continue;
 		    }
 		}

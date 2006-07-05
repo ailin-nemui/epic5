@@ -122,3 +122,4 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Fix bugs with /crypt -- I think this finishes the project!
 * Fix bug that prevented you from deleting a crypto having server desc.
 * Add /encrypt -clear so you can purge your crypto list (for debugging)
+* Don't output the key for SEDSHA and AESSHA in binary mode (convert to hex)

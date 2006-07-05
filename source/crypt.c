@@ -1,4 +1,4 @@
-/* $EPIC: crypt.c,v 1.26 2006/07/05 23:15:09 jnelson Exp $ */
+/* $EPIC: crypt.c,v 1.27 2006/07/05 23:40:14 jnelson Exp $ */
 /*
  * crypt.c: The /ENCRYPT command and all its attendant baggage.
  *
@@ -43,6 +43,7 @@
 #define CRYPT_BUFFER_SIZE (IRCD_BUFFER_SIZE - 50)	/* Make this less than
 							 * the transmittable
 							 * buffer */
+static	const char *	happykey (const char *key, int type);
 
 /* crypt_list: the list of nicknames and encryption keys */
 static	Crypt	*crypt_list = (Crypt *) 0;
@@ -372,12 +373,14 @@ usage_error:
 		say("Will now cipher messages with '%s' on '%s' using '%s' "
 			"with the key '%s'.",
 				nick, serv ? serv : "<any>",
-				prog ? prog : ciphers[type].username, key);
+				prog ? prog : ciphers[type].username, 
+				happykey(key, type));
 	    }
 	    else if (internal_remove_crypt(nick, serv, type))
 		say("Not ciphering messages with '%s' on '%s' using '%s'",
 			nick, serv ? serv : "<any>",
-			prog ? prog : ciphers[type].username, key);
+			prog ? prog : ciphers[type].username, 
+				happykey(key, type));
 	    else
 		say("Will no longer cipher messages with '%s' on '%s' using '%s'.",
 			nick, serv ? serv : "<any>",
@@ -396,7 +399,7 @@ usage_error:
 				tmp->serv ? tmp->serv : "<any>",
 				tmp->prog ? tmp->prog : 
 					ciphers[tmp->type].username, 
-				tmp->key);
+				happykey(tmp->key, tmp->type));
 	}
 	else
 	    say("You are not ciphering messages with anyone.");
@@ -496,3 +499,23 @@ char *	decrypt_msg (const unsigned char *str, Crypt *key)
 	new_free(&ptr);
 	return buffer;
 }
+
+const char *	happykey (const char *key, int type)
+{
+	static char prettykey[BIG_BUFFER_SIZE];
+
+	if (type == AESSHA256CRYPT || type == SEDSHACRYPT)
+	{
+		int	i;
+		for (i = 0; i < 32; i++)		/* XXX */
+		    snprintf(prettykey + (i * 2), 3, "%2.2X", (unsigned)key[i]);
+	}
+	else
+	{
+		strlcpy(prettykey, key, sizeof(prettykey));
+	}
+
+	return prettykey;
+}
+
+
