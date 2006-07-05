@@ -8,6 +8,8 @@ KNOWN ERRATA (eg, bugs, or unresolved requests):
 * Permit lastlog entries to be moved across windows.
 * Refactor hardcoded uses of select() so select() isn't mandatory.
 * I think i broke external encryption support.  I need to check/fix this
+* send_text() needs rework, to add extra /on's so you can flag those 
+  differently.
 
 LOOK FOR IN THE FUTURE
 -----------------------
@@ -118,3 +120,5 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Bust do_crypt back into its callers [de]crypt_msg().
 * Make lookups between /encrypt flag<->cipher flag<->ctcp table-driven.
 * Fix bugs with /crypt -- I think this finishes the project!
+* Fix bug that prevented you from deleting a crypto having server desc.
+* Add /encrypt -clear so you can purge your crypto list (for debugging)

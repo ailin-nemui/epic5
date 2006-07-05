@@ -1,4 +1,4 @@
-/* $EPIC: crypt.c,v 1.24 2006/07/02 03:20:31 jnelson Exp $ */
+/* $EPIC: crypt.c,v 1.25 2006/07/05 23:04:40 jnelson Exp $ */
 /*
  * crypt.c: The /ENCRYPT command and all its attendant baggage.
  *
@@ -142,14 +142,40 @@ static	Crypt *	internal_is_crypted (Char *nick, Char *serv, int type)
                         continue;
                 if (my_stricmp(tmp->nick, nick))
                         continue;
-                if (serv && tmp->serv && my_stricmp(tmp->serv, serv))
-                        continue;
-                if (serv != NULL || tmp->serv != NULL)
-                        continue;
 
-		return tmp;
+                if (serv && tmp->serv && !my_stricmp(tmp->serv, serv))
+			return tmp;
+		if (serv == NULL && tmp->serv == NULL)
+			return tmp;
         }
 	return NULL;
+}
+
+static void	cleanse_crypto_item (Crypt *item)
+{
+	if (item->nick)
+	{
+		memset(item->nick, 0, strlen(item->nick));
+		new_free((char **)&(item->nick));
+	}
+	if (item->serv)
+	{
+		memset(item->serv, 0, strlen(item->serv));
+		new_free((char **)&(item->serv));
+	}
+	if (item->key)
+	{
+		memset(item->key, 0, strlen(item->key));
+		new_free((char **)&(item->key));
+	}
+	if (item->prog)
+	{
+		memset(item->prog, 0, strlen(item->prog));
+		new_free((char **)&(item->prog));
+	}
+	memset(item, 0, sizeof(Crypt));
+	new_free((char **)&item);
+	return;
 }
 
 /*
@@ -163,33 +189,25 @@ static int	internal_remove_crypt (Char *nick, Char *serv, int type)
 	if ((item = internal_is_crypted(nick, serv, type)) &&
 		(remove_item_from_list((List **)&crypt_list, (List *)item)))
 	{
-		if (item->nick)
-		{
-			memset(item->nick, 0, strlen(item->nick));
-			new_free((char **)&(item->nick));
-		}
-		if (item->serv)
-		{
-			memset(item->serv, 0, strlen(item->serv));
-			new_free((char **)&(item->serv));
-		}
-		if (item->key)
-		{
-			memset(item->key, 0, strlen(item->key));
-			new_free((char **)&(item->key));
-		}
-		if (item->prog)
-		{
-			memset(item->prog, 0, strlen(item->prog));
-			new_free((char **)&(item->prog));
-		}
-		memset(item, 0, sizeof(Crypt));
-		new_free((char **)&item);
+		cleanse_crypto_item(item);
 		return (0);
 	}
 
 	return (1);
 }
+
+static	void	clear_crypto_list (void)
+{
+	Crypt *item;
+
+	while (crypt_list)
+	{
+		item = crypt_list;
+		crypt_list = crypt_list->next;
+		cleanse_crypto_item(item);
+	}
+}
+
 
 /*
  * is_crypted: looks up nick in the crypt_list and returns the encryption key
@@ -301,7 +319,10 @@ BUILT_IN_COMMAND(encrypt_cmd)
 
 	while ((arg = new_next_arg(args, &args)))
 	{
-	    if (*arg == '-')
+	    if (my_stricmp(arg, "-CLEAR"))
+		clear_crypto_list();
+
+	    else if (*arg == '-')
 	    {
 		type = NOCRYPT;
 		for (i = 0; ciphers[i].username; i++)
