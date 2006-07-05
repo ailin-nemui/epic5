@@ -1,4 +1,4 @@
-/* $EPIC: crypt.c,v 1.25 2006/07/05 23:04:40 jnelson Exp $ */
+/* $EPIC: crypt.c,v 1.26 2006/07/05 23:15:09 jnelson Exp $ */
 /*
  * crypt.c: The /ENCRYPT command and all its attendant baggage.
  *
@@ -319,7 +319,7 @@ BUILT_IN_COMMAND(encrypt_cmd)
 
 	while ((arg = new_next_arg(args, &args)))
 	{
-	    if (my_stricmp(arg, "-CLEAR"))
+	    if (!my_stricmp(arg, "-CLEAR"))
 		clear_crypto_list();
 
 	    else if (*arg == '-')
