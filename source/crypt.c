@@ -1,4 +1,4 @@
-/* $EPIC: crypt.c,v 1.27 2006/07/05 23:40:14 jnelson Exp $ */
+/* $EPIC: crypt.c,v 1.28 2006/07/05 23:51:25 jnelson Exp $ */
 /*
  * crypt.c: The /ENCRYPT command and all its attendant baggage.
  *
@@ -377,10 +377,9 @@ usage_error:
 				happykey(key, type));
 	    }
 	    else if (internal_remove_crypt(nick, serv, type))
-		say("Not ciphering messages with '%s' on '%s' using '%s'",
+		say("Not ciphering messages with '%s' on '%s'.",
 			nick, serv ? serv : "<any>",
-			prog ? prog : ciphers[type].username, 
-				happykey(key, type));
+			prog ? prog : ciphers[type].username);
 	    else
 		say("Will no longer cipher messages with '%s' on '%s' using '%s'.",
 			nick, serv ? serv : "<any>",
