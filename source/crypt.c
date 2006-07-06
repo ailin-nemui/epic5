@@ -1,4 +1,4 @@
-/* $EPIC: crypt.c,v 1.28 2006/07/05 23:51:25 jnelson Exp $ */
+/* $EPIC: crypt.c,v 1.29 2006/07/06 00:00:34 jnelson Exp $ */
 /*
  * crypt.c: The /ENCRYPT command and all its attendant baggage.
  *
@@ -431,7 +431,6 @@ char *	crypt_msg (const unsigned char *str, Crypt *key)
 	unsigned char *my_str;
 	const char *ctcpname;
 
-yell("crypting message");
 	/* Convert the plaintext into ciphertext */
 	i = (int)strlen(str);
 	my_str = cipher_message(str, strlen(str)+1, key, &i);

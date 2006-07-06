@@ -3,7 +3,7 @@ if (word(2 $loadinfo()) != [pf]) { load -pf $word(1 $loadinfo()); return; };
 addset autocreate_split_queries bool;
 set autocreate_split_queries off;
 
-on #-msg -29 "*" {
+alias _autoquery {
   @ :name = encode($servernum(),$tolower($0));
   if ((:num = winnum($name)) == -1) {
     if (getset(autocreate_split_queries) == [ON]) {
@@ -13,6 +13,16 @@ on #-msg -29 "*" {
     };
   } elif (querywin($0 $servernum()) == -1) {
     ^window $num server $servernum() query $0;
+  };
+};
+
+on #-msg -29 "*" {
+  _autoquery $0;
+};
+
+on #-encrypted_privmsg -29 "*" {
+  if ([$0] == [$1]) {
+    _autoquery $0;
   };
 };
 #weirdo'2k6

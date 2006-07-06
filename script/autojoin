@@ -20,7 +20,7 @@ alias purge {
 
 alias join {
   if (!@) {
-    echo Usage: /join #channel1[,#channel2...] [key1,key2...];
+    echo Usage: /join #channel1[,#channel...] [key[,key]...];
     return;
   };
   @ :channels = tolower($split(, $0));
@@ -38,6 +38,10 @@ alias join {
     };
     if (!ischannel($ch)) {
       @ :ch = [#$ch];
+    };
+    if ((:wch = winchan($ch $servernum())) != -1) {
+      ^window swap $wch;
+      break;
     };
     if (k == [] && (:gr = servergroup()) != []) {
       @ :k = word(1 $channels[$encode($gr)][$encode($ch)]);
@@ -139,7 +143,7 @@ on #-window_beforekill -28 "*" {
   fe ($mychannels($sv)) ch {
     if (winchan($ch $sv) == [$0]) {
       xeval -s $sv {
-        defer //part $ch;
+        //part $ch;
       };
     };
   };
