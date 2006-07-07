@@ -1,4 +1,4 @@
-/* $EPIC: crypt.c,v 1.29 2006/07/06 00:00:34 jnelson Exp $ */
+/* $EPIC: crypt.c,v 1.30 2006/07/07 05:53:00 jnelson Exp $ */
 /*
  * crypt.c: The /ENCRYPT command and all its attendant baggage.
  *
@@ -234,7 +234,8 @@ static	void	clear_crypto_list (void)
 	    if (tmp->nick && my_stricmp(tmp->nick, nick))	\
 		continue;					\
 	    if (type != ANYCRYPT && tmp->type != type)		\
-		continue;					\
+		if (type == SEDCRYPT && tmp->type != PROGCRYPT) \
+			continue;				\
 
 #define CHECK_CRYPTO_LIST(x) \
 	for (tmp = crypt_list; tmp; tmp = tmp->next)		\

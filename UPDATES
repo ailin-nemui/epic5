@@ -8,23 +8,25 @@ EPIC5-0.3.1
 	/encrypt
 		See the cipher list
 
-	*** Ways to specify the other person
-	/encrypt NICK key
+	*** Ways to specify the other person (TARGET is a NICK or CHANNEL)
+	/encrypt TARGET key
 		Trade messages with 'nick' on all servers using 'key'.
-	/encrypt 0/NICK key	
+	/encrypt 0/TARGET key
 		Trade messages with 'nick' only on server 0 using 'key'
-	/encrypt SERVERNAME/NICK key	
+	/encrypt SERVERNAME/TARGET key	
 		Trade messages with 'nick' on server 'name' using 'key'.
 		'name' can be "ourname", or "itsname"
-	/encrypt SERVERGROUP/NICK key
+	/encrypt SERVERGROUP/TARGET key
 		Trade messages with 'nick' on group 'group' using 'key'.
-	/encrypt ALTNAME/NICK key
+	/encrypt ALTNAME/TARGET key
 		Trade messages with 'nick' on servers with 'altname' using
 		'key'.
 
 	*** Ways to specify the cipher you want to use
 	/encrypt nick key
 		Trade SED messages (default)
+	/encrypt nick key /path/to/program
+		Trade messages ciphered by an external crypto script
 	/encrypt -SED nick key
 		Trade SED messages
 	/encrypt -SEDSHA nick key
@@ -44,6 +46,10 @@ EPIC5-0.3.1
 	AESSHA is the best cipher, but if it's not available, then SEDSHA
 	is better than SED, but SED is universally compatable.  If you must
 	use SED, use a very long key string (40 chars)
+
+	For backwards compatability, messages ciphered by external crypto
+	scripts are always sent as SED messages, even though they are not,
+	technically, ciphered with SED.
 
 *** News 06/26/2006 -- CAST5, Blowfish, AES, and AES-SHA encryption support
 	This only took me 8 years to catch up with ircII!  Yah!
@@ -165,7 +171,7 @@ EPIC5-0.3.1
 		--with-ruby=yes
 		--with-ruby=/usr/local/bin/ruby
 		--with-ruby=no
-		--without-perl
+		--without-ruby
 	Same deal as with perl.  Configure will use the 'ruby' program (or
 	the one you specify) to get all the details necessary to get support
 	for ruby.  For most people, you need do nothing at all.
@@ -216,15 +222,15 @@ EPIC5-0.3.1
 	value (also a string).
 
 	Some examples:
-	To export an epic variable to ruby:
-		@ ruby(rubyvar=$epicvar)
+	To export an epic variable to ruby (as a String object):
+		@ ruby(rubyvar='$epicvar')
 	or
 		ruby {rubyvar = EPIC.expr("epicvar")}
 
 	To export a ruby variable to epic:
 		@ epicvar=ruby(rubyvar)
 	or
-		ruby {EPIC.expr("epicvar=#{rubyvar}")}
+		ruby {EPIC.expr("epicvar=[#{rubyvar}]")}
 
 	To iterate over each item in a ruby collection, passing each
 	value as the argument to an epic command:
@@ -241,16 +247,16 @@ EPIC5-0.3.1
 		alias booya {
 			@ :epiclocal = 5
 			ruby {
-				rubyvar = EPIC.expr("epiclocal")
-				rubyvar = rubyvar.to_i + 1
+				rubyvar = EPIC.expr("epiclocal").to_i
+				rubyvar = rubyvar + 1
 				EPIC.expr("epiclocal = '#{rubyvar}'")
 			}
 			echo $epiclocal
 		}
 	It is *IMPORTANT TO REMEMBER* that because EPIC is untyped, everything
-	is a string all of the time.  This is not the case in ruby.  If you 
-	have a number in EPIC, you need to convert it to an integer (see the
-	above example), and then convert it back.
+	returned to ruby is a String object.  If you have a number in EPIC,
+	it will be a String in ruby, and you need to explicitly convert it
+	to an integer (as in the above example).
 
 	It is *ALSO VERY IMPORTANT TO REMEMBER* that if you use the /ruby
 	command, and you use it in a script that is loaded with the standard
