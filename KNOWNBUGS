@@ -7,7 +7,6 @@ KNOWN ERRATA (eg, bugs, or unresolved requests):
 * Create a unified lastlog (across all windows)
 * Permit lastlog entries to be moved across windows.
 * Refactor hardcoded uses of select() so select() isn't mandatory.
-* I think i broke external encryption support.  I need to check/fix this
 * send_text() needs rework, to add extra /on's so you can flag those 
   differently.
 
@@ -123,3 +122,4 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Fix bug that prevented you from deleting a crypto having server desc.
 * Add /encrypt -clear so you can purge your crypto list (for debugging)
 * Don't output the key for SEDSHA and AESSHA in binary mode (convert to hex)
+* Fix external encryption support.

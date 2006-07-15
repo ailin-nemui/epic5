@@ -103,13 +103,51 @@ EPIC5-0.3.1
 		$1	The server who sent the message
 		$2-	The message
 
+*** News 06/24/2006 -- New script, 'reconnect' from nullie
+	The script causes the client to reconnect to disconnected servers after
+	a certain period (/SET reconnect_time, measured in minutes), cycling
+	between servers in a given servergroup. To register given servergroup
+	for its use, use "/NETWORK ADD group". With conjunction with the
+	autojoin scripts, allows the user to automatically rejoin channels he
+	was on before a disconnect.
+
 *** News 06/24/2006 -- New script, 'renumber' from nullie
+	The script adds an alias (/RENUMBER), filling "gaps" in window numbers.
+	If /SET renumber_auto is set (defaults to OFF), this will be performed
+	automatically after a window is closed.
 
 *** News 06/24/2006 -- New script, 'floodprot' from nullie
+	This script buffers all outgoing data sent by the client before
+	transmitting it to the remote server, to avoid "Excess Flood"
+	disconnection, e.g. pasting a lot of text or sending a lot of /MODE
+	commands.
+
+	/SET floodprot_burst decides how many lines can be sent immediately
+	after an idle period.
 
 *** News 06/24/2006 -- New script, 'autoquery' from nullie
+	The script creates new windows for incoming private messages, one per
+	each sender.
+
+	/SET autocreate_split_queries (defaults to OFF) decides whether windows
+	will be split (ON) or hidden (OFF).
 
 *** News 06/24/2006 -- New script, 'autojoin' from nullie
+	The script maintains a list of channels to join upon connecting to a
+	server. For user-defined channels that are joined after every connect,
+	create an ~/.irc/channels file with one line for each channel to join 
+	in the specified format:
+
+	<channel>   <winnum>  <servergroup> [key]
+
+	For instance:
+
+	#epic       2         efnet
+	#secretchan 3         somenet       qwerty
+
+	If the reconnect script is loaded and given server's group is added 
+	via /network add, the script will automatically rejoin channels on 
+	which user was before a disconnect, remembering the keys.
 
 *** News 06/24/2006 -- SEND_LINE does SCROLL_FORWARD in HOLD_MODE
 	For those who use HOLD_MODE, if you accidentally scroll back, you
