@@ -9,6 +9,7 @@ KNOWN ERRATA (eg, bugs, or unresolved requests):
 * Refactor hardcoded uses of select() so select() isn't mandatory.
 * send_text() needs rework, to add extra /on's so you can flag those 
   differently.
+* Add a server state for "created" and "deleted"
 
 LOOK FOR IN THE FUTURE
 -----------------------
@@ -123,3 +124,4 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Add /encrypt -clear so you can purge your crypto list (for debugging)
 * Don't output the key for SEDSHA and AESSHA in binary mode (convert to hex)
 * Fix external encryption support.
+* Fix compile errors for non-openssl users.

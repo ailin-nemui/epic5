@@ -1,4 +1,4 @@
-/* $EPIC: crypto.c,v 1.5 2006/07/02 03:12:13 jnelson Exp $ */
+/* $EPIC: crypto.c,v 1.6 2006/07/23 14:00:41 jnelson Exp $ */
 /*
  * crypto.c: SED/CAST5/BLOWFISH/AES encryption and decryption routines.
  *
@@ -120,8 +120,9 @@
  *
  * Some will look at these routines and recoil in horror with their insecurity.
  * It is true that SED ("Simple Encrypted Data", although maybe "Slightly 
- * Entropic Data" is closer to truth) is an exceptionally weak CBC cipher, and
- * does not provide much of a defense against cryptoanalysis of your messages.
+ * Entropic Data" is closer to truth) is a XOR-CBC stream cipher that uses 
+ * the same cipherkey for each message and is therefore subject to all the 
+ * trivial stream cipher attacks.  So it doesn't provide security.
  *
  * But what SED does provide is an effective defense against server-side 
  * pattern matching.  This is useful for discretely sending /DCC offers.
@@ -137,11 +138,11 @@
 /*
  *	- About SED-SHA
  *
- * One weakness of SED is it doesn't take very long to deduce the length of
- * the cipher key, which goes a long way towards brute forcing that key.
- * The SED-SHA cipher creates a 256 bit (32 char) hash of your cipher key
- * and uses that hash to do the bit twiddling.  This obscures the length of
- * the cipherkey which makes it less scary than SED.
+ * All XOR-CBC stream ciphers that re-use their key are subject to
+ * substitution attacks (by man-in-the-middle who has two ciphertexts) and 
+ * key recovery (by man-in-the-middle who has one plaintext).  SED-SHA does
+ * not promise any better security than SED, but it does use SHA256() of your
+ * cipherkey to make the key longer (32 bytes).
  *
  * The SED-SHA cipher is always available, since it doesn't depend on openssl.
  * Alas, SED-SHA is not going to be compatable with non-epic5 users.
@@ -159,15 +160,19 @@
 #ifdef HAVE_SSL
 #include <openssl/evp.h>
 #include <openssl/err.h>
+#endif
 
+#ifdef HAVE_SSL
 static char *	decipher_evp (const unsigned char *key, int keylen, const unsigned char *ciphertext, int cipherlen, const EVP_CIPHER *type, int *outlen, int ivsize);
+#endif
 static void     decrypt_sed (unsigned char *str, int len, const unsigned char *key, int key_len);
 static char *	decrypt_by_prog (const unsigned char *str, size_t *len, Crypt *key);
 
+#ifdef HAVE_SSL
 static char *	cipher_evp (const unsigned char *key, int keylen, const unsigned char *plaintext, int plaintextlen, const EVP_CIPHER *type, int *retsize, int ivsize);
+#endif
 static void     encrypt_sed (unsigned char *str, int len, char *key, int key_len);
 static char *	encrypt_by_prog (const unsigned char *str, size_t *len, Crypt *key);
-#endif
 
 unsigned char *	decipher_message (const unsigned char *ciphertext, size_t len, Crypt *key, int *retlen)
 {
