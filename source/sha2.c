@@ -29,7 +29,7 @@
  * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
  *
- * $Id: sha2.c,v 1.1 2006/06/29 05:04:17 jnelson Exp $
+ * $Id: sha2.c,v 1.2 2006/07/28 03:50:40 jnelson Exp $
  */
 #include "irc.h"
 #include "ircaux.h"
@@ -58,7 +58,7 @@ typedef struct _SHA256_CTX {
         u_int8_t        buffer[SHA256_BLOCK_LENGTH];
 } SHA256_CTX;
 
-#endif /* SHA2_USE_INTTYPES_H */
+#endif /* HAVE_INTTYPES_H */
 
 /*** SHA-256/384/512 Machine Architecture Definitions *****************/
 /*
@@ -88,6 +88,22 @@ typedef struct _SHA256_CTX {
  * <machine/endian.h> where the appropriate definitions are actually
  * made).
  */
+/* Workarounds for solaris */
+#if !defined(BYTE_ORDER) || (BYTE_ORDER != LITTLE_ENDIAN && BYTE_ORDER != BIG_ENDIAN)
+# ifdef _LITTLE_ENDIAN
+#  ifndef LITTLE_ENDIAN
+#   define LITTLE_ENDIAN 1234
+#  endif
+#  define BYTE_ORDER LITTLE_ENDIAN
+# endif
+# ifdef _BIG_ENDIAN
+#  ifndef BIG_ENDIAN
+#   define BIG_ENDIAN 4321
+#  endif
+#  define BYTE_ORDER BIG_ENDIAN
+# endif
+#endif
+
 #if !defined(BYTE_ORDER) || (BYTE_ORDER != LITTLE_ENDIAN && BYTE_ORDER != BIG_ENDIAN)
 #error Define BYTE_ORDER to be equal to either LITTLE_ENDIAN or BIG_ENDIAN
 #endif
@@ -106,19 +122,19 @@ typedef struct _SHA256_CTX {
  * Thank you, Jun-ichiro itojun Hagino, for suggesting using u_intXX_t
  * types and pointing out recent ANSI C support for uintXX_t in inttypes.h.
  */
-#ifdef SHA2_USE_INTTYPES_H
+#ifdef HAVE_INTTYPES_H
 
 typedef uint8_t  sha2_byte;	/* Exactly 1 byte */
 typedef uint32_t sha2_word32;	/* Exactly 4 bytes */
 typedef uint64_t sha2_word64;	/* Exactly 8 bytes */
 
-#else /* SHA2_USE_INTTYPES_H */
+#else /* HAVE_INTTYPES_H */
 
 typedef u_int8_t  sha2_byte;	/* Exactly 1 byte */
 typedef u_int32_t sha2_word32;	/* Exactly 4 bytes */
 typedef u_int64_t sha2_word64;	/* Exactly 8 bytes */
 
-#endif /* SHA2_USE_INTTYPES_H */
+#endif /* HAVE_INTTYPES_H */
 
 
 /*** SHA-256/384/512 Various Length Definitions ***********************/

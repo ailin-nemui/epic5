@@ -1,4 +1,4 @@
-/* $EPIC: newio.c,v 1.59 2006/07/01 06:53:15 jnelson Exp $ */
+/* $EPIC: newio.c,v 1.60 2006/07/28 03:50:40 jnelson Exp $ */
 /*
  * newio.c:  Passive, callback-driven IO handling for sockets-n-stuff.
  *
@@ -1531,6 +1531,8 @@ static int *	events;
 
 static void	kinit (void)
 { 
+	int	i;
+
 	if ((port_fd = port_create()) < 0) 
 	{
 	    syserr("kinit(ports): port_create() failed: %s", strerror(errno));
@@ -1555,7 +1557,7 @@ static void	ksetflag (int fd, int flag)
 	{
 	    if (port_associate(port_fd, PORT_SOURCE_FD, fd, 
 				events[fd], NULL) < 0)
-		syserr("ksetflag: port_associate(%d) failed: %s"
+		syserr("ksetflag: port_associate(%d) failed: %s",
 			fd, strerror(errno));
 	}
 }
@@ -1573,7 +1575,7 @@ static void	kunsetflag (int fd, int flag)
 	{
 	    if (port_associate(port_fd, PORT_SOURCE_FD, fd, 
 				events[fd], NULL) < 0)
-		syserr("kunsetflag: port_associate(%d) failed: %s"
+		syserr("kunsetflag: port_associate(%d) failed: %s",
 			fd, strerror(errno));
 	}
 }
@@ -1582,8 +1584,8 @@ static  void    kread (int vfd)	      { ksetflag(CHANNEL(vfd), POLLRDNORM); }
 static  void    knoread (int vfd)     { kunsetflag(CHANNEL(vfd), POLLRDNORM); }
 static  void    kholdread (int vfd)   { kunsetflag(CHANNEL(vfd), POLLRDNORM); }
 static  void    kunholdread (int vfd) { ksetflag(CHANNEL(vfd), POLLRDNORM); }
-static  void    kwrite (int vfd)      { ksetflag(CHANNEL(vfd), POLLRWNORM); }
-static  void    knowrite (int vfd)    { kunsetflag(CHANNEL(vfd), POLLRWNORM); }
+static  void    kwrite (int vfd)      { ksetflag(CHANNEL(vfd), POLLWRNORM); }
+static  void    knowrite (int vfd)    { kunsetflag(CHANNEL(vfd), POLLWRNORM); }
 static	void	kcleaned (int vfd)
 {
 	if (events[CHANNEL(vfd)] & POLLRDNORM)

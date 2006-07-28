@@ -10,6 +10,8 @@ KNOWN ERRATA (eg, bugs, or unresolved requests):
 * send_text() needs rework, to add extra /on's so you can flag those 
   differently.
 * Add a server state for "created" and "deleted"
+* Larne says that stdout can block when running under screen.
+* Larne would like /window foo size 5 to fail for want of 'foo'.
 
 LOOK FOR IN THE FUTURE
 -----------------------
@@ -125,3 +127,5 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Don't output the key for SEDSHA and AESSHA in binary mode (convert to hex)
 * Fix external encryption support.
 * Fix compile errors for non-openssl users.
+* Fix breakage for solaris found by zlonix
+* Fix %{2}+ so it behaves like %+ and not like %{1}+, as per the docs.

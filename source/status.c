@@ -1,4 +1,4 @@
-/* $EPIC: status.c,v 1.66 2006/06/06 05:08:48 jnelson Exp $ */
+/* $EPIC: status.c,v 1.67 2006/07/28 03:50:40 jnelson Exp $ */
 /*
  * status.c: handles the status line updating, etc for IRCII 
  *
@@ -999,7 +999,7 @@ STATUS_FUNCTION(status_mode)
 		mode = empty_string;
 
 	/* If this is %+, and there is not a mode, punt. */
-	if (map == 0 && !*mode)
+	if ((map == 0 || map == 2) && !*mode)
 		return empty_string;
 
 	if (map == 0 || map == 1)
