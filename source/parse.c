@@ -1,4 +1,4 @@
-/* $EPIC: parse.c,v 1.78 2006/06/23 05:03:11 jnelson Exp $ */
+/* $EPIC: parse.c,v 1.79 2006/07/29 14:47:21 jnelson Exp $ */
 /*
  * parse.c: handles messages from the server.   Believe it or not.  I
  * certainly wouldn't if I were you. 
@@ -1071,14 +1071,16 @@ static void	p_rpong (const char *from, const char *comm, const char **ArgList)
 /* 
  * This is a special subset of server (OPER) notice.
  */
-static int 	p_killmsg (const char *from, const char *cline)
+static int 	p_killmsg (const char *from, const char *to, const char *cline)
 {
 	char *poor_sap;
 	char *bastard;
 	const char *path_to_bastard;
 	char *reason;
 	char *line;
+	int   l, retval;
 
+	l = message_from(to, LEVEL_OPNOTE);
 	line = LOCAL_COPY(cline);
 	poor_sap = next_arg(line, &line);
 
@@ -1091,6 +1093,7 @@ static int 	p_killmsg (const char *from, const char *cline)
 	{
 		yell("Attempted to parse an ill-formed KILL request [%s %s]",
 			poor_sap, line);
+		pop_message_from(l);
 		return 0;
 	}
 	line += 5;
@@ -1110,8 +1113,10 @@ static int 	p_killmsg (const char *from, const char *cline)
 		reason = line;
 	}
 
-	return !do_hook(KILL_LIST, "%s %s %s %s %s", from, poor_sap, bastard,
+	retval = do_hook(KILL_LIST, "%s %s %s %s %s", from, poor_sap, bastard,
 					path_to_bastard, reason);
+	pop_message_from(l);
+	return !retval;
 }
 
 
@@ -1134,7 +1139,7 @@ static 	void 	p_snotice (const char *from, const char *to, const char *line)
 	if (!strncmp(line, "*** Notice -- ", 13))
 	{
 		if (!strncmp(line + 14, "Received KILL message for ", 26))
-			if (p_killmsg(f, line + 40))
+			if (p_killmsg(f, to, line + 40))
 				return;
 
 		l = message_from(to, LEVEL_OPNOTE);

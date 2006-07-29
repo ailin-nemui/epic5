@@ -12,6 +12,7 @@ KNOWN ERRATA (eg, bugs, or unresolved requests):
 * Add a server state for "created" and "deleted"
 * Larne says that stdout can block when running under screen.
 * Larne would like /window foo size 5 to fail for want of 'foo'.
+* Kills (p_killmsg) are not subject to any level, and they should.
 
 LOOK FOR IN THE FUTURE
 -----------------------
@@ -30,6 +31,7 @@ LOOK FOR IN THE FUTURE
 * str_to_mask() should be silent, callers should be warning.
 * A way to control what counts as a space on the fly (via a /set?)
 * Support for 64 bit ints could be more widespread
+* Larne wants suppression of duplicated lines (like syslog maybe?)
 
 [See http://www.epicsol.org/PROJECTS for things to come in the future]
 [See http://www.epicsol.org/CHANGELOG5 for things that changed in the past]
