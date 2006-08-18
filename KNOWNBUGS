@@ -13,6 +13,11 @@ KNOWN ERRATA (eg, bugs, or unresolved requests):
 * Larne says that stdout can block when running under screen.
 * Larne would like /window foo size 5 to fail for want of 'foo'.
 * Kills (p_killmsg) are not subject to any level, and they should.
+* Larne did /window 101 server ... to a server already connected but said
+	the status still said "invalid server" until he changed windows.
+* Whack /set status_truncate_rhs
+* Make sure /xecho -l overrules /query and targets.
+* Ubuntu requires -lrt to get clock_gettime().
 
 LOOK FOR IN THE FUTURE
 -----------------------
@@ -131,3 +136,4 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Fix compile errors for non-openssl users.
 * Fix breakage for solaris found by zlonix
 * Fix %{2}+ so it behaves like %+ and not like %{1}+, as per the docs.
+* Add server states CREATED and DELETED for nullie.

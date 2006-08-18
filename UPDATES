@@ -1,3 +1,17 @@
+EPIC5-0.3.2
+
+*** News 08/17/2006 -- Two new server states CREATED and DELETED
+	When a server is added to the server list, it's initial state is
+	"CREATED".  Once it is initialized, it is switched to the "RECONNECT"
+	stage.  So you can trap new servers with:
+		/on server_status "% CREATED %" {xecho -b New server is $0}
+
+	Servers that are deleted are switched to the DELETED state:
+		/on server_status "% % DELETED" {xecho -b Server $0 going away}
+	No matter what you do, you cannot stop the deletion of a server.
+	It is recommended you /defer any changes you make to the server list
+	from within an /on server_status that traps a server deletion.
+
 EPIC5-0.3.1
 
 *** News 07/01/2006 -- Revamped /encrypt command

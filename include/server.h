@@ -172,18 +172,20 @@ static __inline__ Server *	get_server (int server)
 #define FUNNY_USERS             1 << 4
 #define FUNNY_NAME              1 << 5
 
-#define SERVER_RECONNECT	0
-#define SERVER_DNS		1
-#define SERVER_CONNECTING	2
-#define SERVER_SSL_CONNECTING	3
-#define SERVER_REGISTERING	4
-#define SERVER_SYNCING		5
-#define SERVER_ACTIVE		6
-#define SERVER_EOF		7
-#define SERVER_ERROR		8
-#define SERVER_CLOSING		9
-#define SERVER_CLOSED		10
-extern	const char *server_states[11];
+#define SERVER_CREATED		0
+#define SERVER_RECONNECT	1
+#define SERVER_DNS		2
+#define SERVER_CONNECTING	3
+#define SERVER_SSL_CONNECTING	4
+#define SERVER_REGISTERING	5
+#define SERVER_SYNCING		6
+#define SERVER_ACTIVE		7
+#define SERVER_EOF		8
+#define SERVER_ERROR		9
+#define SERVER_CLOSING		10
+#define SERVER_CLOSED		11
+#define SERVER_DELETED		12
+extern	const char *server_states[13];
 
 
 

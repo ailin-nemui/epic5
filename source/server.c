@@ -1,4 +1,4 @@
-/* $EPIC: server.c,v 1.198 2006/07/01 04:17:12 jnelson Exp $ */
+/* $EPIC: server.c,v 1.199 2006/08/18 12:04:16 jnelson Exp $ */
 /*
  * server.c:  Things dealing with that wacky program we call ircd.
  *
@@ -264,7 +264,7 @@ static	int	serverinfo_to_newserv (ServerInfo *si)
 	s->operator = 0;
 	s->des = -1;
 	s->version = 0;
-	s->status = SERVER_RECONNECT;
+	s->status = SERVER_CREATED;
 	s->nickname = (char *) 0;
 	s->s_nickname = (char *) 0;
 	s->d_nickname = (char *) 0;
@@ -333,6 +333,8 @@ static	int	serverinfo_to_newserv (ServerInfo *si)
 
 	make_notify_list(i);
 	make_005(i);
+
+	set_server_status(i, SERVER_RECONNECT);
 	return i;
 }
 
@@ -396,6 +398,8 @@ static 	void 	remove_from_server_list (int i)
 	}
 
 	say("Deleting server [%d]", i);
+	set_server_status(i, SERVER_DELETED);
+
 	clean_server_queues(i);
 	new_free(&s->name);
 	new_free(&s->itsname);
@@ -625,11 +629,12 @@ static void 	reset_nickname (int refnum);
 static	char    lame_wait_nick[] = "***LW***";
 static	char    wait_nick[] = "***W***";
 
-const char *server_states[11] = {
+const char *server_states[13] = {
+	"CREATED",
 	"RECONNECT",		"DNS",			"CONNECTING",
 	"SSL_CONNECTING",	"REGISTERING",		"SYNCING",
 	"ACTIVE",		"EOF",			"ERROR",
-	"CLOSING",		"CLOSED"
+	"CLOSING",		"CLOSED",		"DELETED"
 };
 
 
@@ -2460,11 +2465,11 @@ void	set_server_status (int refnum, int new_status)
 	if (!(s = get_server(refnum)))
 		return;
 
-	if (new_status < 0 || new_status > SERVER_CLOSED)
+	if (new_status < 0 || new_status > SERVER_DELETED)
 		return;			/* Not acceptable */
 
 	old_status = s->status;
-	if (old_status < 0 || old_status > SERVER_CLOSED)
+	if (old_status < 0 || old_status > SERVER_DELETED)
 		oldstr = "UNKNOWN";
 
 	s->status = new_status;
