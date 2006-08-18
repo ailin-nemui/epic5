@@ -18,6 +18,7 @@ KNOWN ERRATA (eg, bugs, or unresolved requests):
 * Whack /set status_truncate_rhs
 * Make sure /xecho -l overrules /query and targets.
 * Ubuntu requires -lrt to get clock_gettime().
+* $levelwindow() is broken since it doesn't honor server arg.
 
 LOOK FOR IN THE FUTURE
 -----------------------
@@ -137,3 +138,5 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Fix breakage for solaris found by zlonix
 * Fix %{2}+ so it behaves like %+ and not like %{1}+, as per the docs.
 * Add server states CREATED and DELETED for nullie.
+* Add /on operwall and operwall window level for black.
+* Fix $levelwindow()

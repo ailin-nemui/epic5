@@ -1,4 +1,4 @@
-/* $EPIC: hook.c,v 1.63 2006/06/24 17:15:06 jnelson Exp $ */
+/* $EPIC: hook.c,v 1.64 2006/08/18 14:56:59 jnelson Exp $ */
 /*
  * hook.c: Does those naughty hook functions. 
  *
@@ -190,6 +190,7 @@ Hookables hook_function_templates[] =
 	{ "NOTIFY_SIGNON",	NULL,	2,	0,	0,	NULL },
 	{ "NUMERIC",		NULL,	3,	0,	0,	NULL },
 	{ "ODD_SERVER_STUFF",	NULL,	3,	0,	0,	NULL },
+	{ "OPERWALL",		NULL,	2,	0,	0,	NULL },
 	{ "OPER_NOTICE",	NULL,	2,	0,	0,	NULL },
 	{ "PART",		NULL,	2,	0,	0,	NULL },
 	{ "PONG",		NULL,	2,	0,	0,	NULL },

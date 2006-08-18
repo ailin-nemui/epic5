@@ -1,4 +1,4 @@
-/* $EPIC: functions.c,v 1.232 2006/07/02 03:12:13 jnelson Exp $ */
+/* $EPIC: functions.c,v 1.233 2006/08/18 14:56:59 jnelson Exp $ */
 /*
  * functions.c -- Built-in functions for ircII
  *
@@ -6343,6 +6343,9 @@ BUILT_IN_FUNCTION(function_levelwindow, input)
 	    if (mask_isset(&mask, LEVEL_DCC) && 
 		mask_isset(&w->window_mask, LEVEL_DCC))
 		RETURN_INT(w->refnum);
+
+	    if (w->server != server)
+		continue;
 
 	    for (i = 1; BIT_VALID(i); i++)
 		if (mask_isset(&mask, i) &&

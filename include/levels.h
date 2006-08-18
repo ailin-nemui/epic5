@@ -29,6 +29,7 @@ extern int	LEVEL_PART;
 extern int	LEVEL_QUIT;
 extern int	LEVEL_KICK;
 extern int	LEVEL_MODE;
+extern int	LEVEL_OPERWALL;
 extern int	LEVEL_USER1;
 extern int	LEVEL_USER2;
 extern int	LEVEL_USER3;

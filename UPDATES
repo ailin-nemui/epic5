@@ -1,5 +1,17 @@
 EPIC5-0.3.2
 
+*** News 08/17/2006 -- Add support for OPERWALL, /ON OPERWALL, OPERWALL level
+	OPERWALL is an efnet server command which servers send amongst
+	themselves.  The local server very graciously sends it to you 
+	wrapped in a WALLOPS (big ups to whoever was considerate enough
+	and made this decision, you made it much easier to support!)
+	so we peer at WALLOPS and route "OPERWALL - " messages to 
+	/ON OPERWALL and a new OPERWALL window level.  Now black will 
+	stop asking me to add this.
+
+	This is all opt-in.  If you don't hook /on operwall, then they
+	continue going to /on wallops and WALLOPS as they have always done.
+
 *** News 08/17/2006 -- Two new server states CREATED and DELETED
 	When a server is added to the server list, it's initial state is
 	"CREATED".  Once it is initialized, it is switched to the "RECONNECT"
