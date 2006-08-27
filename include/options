@@ -65,18 +65,6 @@ const char compile_time_options[] = {
  					'n',
 #endif /* LONG NICKNAMES are now the default */
 
-#ifdef ENFORCE_STRICTER_PROTOCOL
- 					'o',
-#endif /* ENFORCE_STRICTER_PROTOCOL */
- 
-#ifdef QUIT_ON_OPERATOR_KILL
- 					'q',
-#endif /* QUIT_ON_OPERATOR_KILL */
-
-#ifdef STRIP_EXTRANEOUS_SPACES
-					's',
-#endif /* STRIP_EXTRANEOUS_SPACES */
-
 #ifdef I_DONT_TRUST_MY_USERS
  					't',
 #endif /* I_DONT_TRUST_MY_USERS */
@@ -85,10 +73,6 @@ const char compile_time_options[] = {
  					'u',
 #endif /* UNAME_HACK */
  
-#ifdef USE_DCC_CHECKSUM
-					'v',
-#endif /* USE_DCC_CHECKSUM */
-
 #if 1
  					'x',
 #endif /* EXPERIMENTAL_STACK_HACK is now the default */

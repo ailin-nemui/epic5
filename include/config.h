@@ -447,7 +447,6 @@
 #undef HARD_UNFLASH		/* do a hard reset instead of soft on refresh */
 #undef NO_BOTS			/* no bots allowed */
 #undef NO_CHEATING		/* always do it the "right" way, no shortcuts */
-#undef STRIP_EXTRANEOUS_SPACES	/* strip leading and trailing spaces */
 
 #undef	I_DONT_TRUST_MY_USERS	/* There are certain things that the stock
 				   ircII client doesnt allow users to do

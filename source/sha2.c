@@ -1,6 +1,6 @@
 /*
  * FILE:	sha2.c
- * AUTHOR:	Aaron D. Gifford <me@aarongifford.com>
+ * AUTHOR:	Aaron D. Gifford
  * 
  * Copyright (c) 2000-2001, Aaron D. Gifford
  * All rights reserved.
@@ -29,7 +29,7 @@
  * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
  *
- * $Id: sha2.c,v 1.2 2006/07/28 03:50:40 jnelson Exp $
+ * $Id: sha2.c,v 1.3 2006/08/27 20:47:48 jnelson Exp $
  */
 #include "irc.h"
 #include "ircaux.h"
