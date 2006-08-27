@@ -1,4 +1,4 @@
-/* $EPIC: commands.c,v 1.149 2006/07/05 23:04:40 jnelson Exp $ */
+/* $EPIC: commands.c,v 1.150 2006/08/27 20:12:04 jnelson Exp $ */
 /*
  * commands.c -- Stuff needed to execute commands in ircII.
  *		 Includes the bulk of the built in commands for ircII.
@@ -862,7 +862,7 @@ BUILT_IN_COMMAND(xechocmd)
 	int	old_mangler = display_line_mangler;
 	int	to_window_refnum = to_window ? (int)to_window->refnum : -1;
 	int	to_level = who_level;
-	const char *	to_from = who_from;;
+	const char *	to_from = who_from;
 
 	while (more && args && (*args == '-' || *args == '/'))
 	{
@@ -911,8 +911,13 @@ BUILT_IN_COMMAND(xechocmd)
 		     {
 			if (!(flag_arg = next_arg(args, &args)))
 				break;
+
+			/* XECHO -L overrules /query and channels! */
 			if ((temp = str_to_level(flag_arg)) > -1)
+			{
 				to_level = temp;
+				to_from = NULL;
+			}
 		     }
 		     break;
 		}

@@ -12,13 +12,11 @@ KNOWN ERRATA (eg, bugs, or unresolved requests):
 * Add a server state for "created" and "deleted"
 * Larne says that stdout can block when running under screen.
 * Larne would like /window foo size 5 to fail for want of 'foo'.
-* Kills (p_killmsg) are not subject to any level, and they should.
 * Larne did /window 101 server ... to a server already connected but said
 	the status still said "invalid server" until he changed windows.
-* Whack /set status_truncate_rhs
 * Make sure /xecho -l overrules /query and targets.
 * Ubuntu requires -lrt to get clock_gettime().
-* $levelwindow() is broken since it doesn't honor server arg.
+* Need to document CONNECTING_SSL setting
 
 LOOK FOR IN THE FUTURE
 -----------------------
@@ -140,3 +138,6 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Add server states CREATED and DELETED for nullie.
 * Add /on operwall and operwall window level for black.
 * Fix $levelwindow()
+* Finally whack unused /set status_truncate_rhs
+* New versions of autojoin and reconnect from nullie
+* Fix /xecho -l for larne. yay!

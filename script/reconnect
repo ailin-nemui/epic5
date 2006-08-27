@@ -1,105 +1,127 @@
 if (word(2 $loadinfo()) != [pf]) { load -pf $word(1 $loadinfo()); return; };
 
+# If you want to rejoin your channels upon reconnecting or join some after a
+# connect, use the autojoin script.
+
 package reconnect;
 
 addset reconnect_time int;
 set reconnect_time 1;
 
-alias network (action, network, unused) {
-  switch ($action) {
-    (add) {
-      @ :en = encode($network);
-      if (en != []) {
-        if (reconn[groups][$en]) {
-          echo network $network already exists;
-        } else {
-          @ reconn[groups][$en] = 1;
-          echo network $network added;
-        };
-      } else {
-        echo not enough params. syntax: /network add <network>;
-      };
-    };
-    (del) {
-      @ :en = encode($network);
-      if (en != []) {
-        if (reconn[groups][$en]) {
-          ^assign -reconn[groups][$en];
-          ^assign -reconn[channels][$en];
-          ^assign -reconn[keys][$en];
-          echo network $network removed;
-        } else {
-          echo network $network doesn't exist;
-        };
-      } else {
-        echo not enough params. syntax: /network del <network>;
-      };
-    };
-    (list) {
-      @ :j = 0;
-      foreach reconn.groups i {
-        @ j++;
-        echo $decode($i);
-      };
-      if (j == 0) {
-        echo no networks;
-      };
-    };
-    (*) {
-      echo syntax: /network [[add|del <name>]|list];
-    };
+alias _svkey (ref, void) {
+  ^local gr;
+  @ gr = servergroup($ref);
+  if (gr == [<default>]) {
+    return sv $ref;
   };
-  ^assign -i;
+  return gr $gr;
 };
+
 on #-SERVER_STATUS 27 "% % %" {
   switch ($2) {
+    # the server gets disconnected because of a socket error
     (EOF) (ERROR) {
-      @ :gr = encode($servergroup($0));
-      if (reconn[groups][$gr]) {
-        if ([$1] == [ACTIVE]) {
-          @ reconn[channels][$gr] = [];
-          @ reconn[keys][$gr] = [];
-          fe ($tolower($mychannels($0))) i {
-            push reconn[channels][$gr] $i;
-            xeval -s $0 {
-              push reconn[keys][$gr] $key($i);
-            };
+      # if the server suddenly gains a group, we need to delete the old one
+      _reconn_purge $0;
+      # $1 == [CLOSING] && $2 == [ERROR] can happen if a there's a socket write error for finishing QUIT
+      if ([$1] != [CLOSING]) {
+        @ :egr = encode($_svkey($0));
+        @ reconn[$egr][channels] = [];
+        @ reconn[$egr][keys] = [];
+        ^local i;
+        fe ($tolower($mychannels($0))) i {
+          push reconn[$egr][channels] $i;
+          xeval -s $0 {
+            push reconn[$egr][keys] $key($i);
           };
         };
-        @ reconn[timeout][$gr] = [$getset(reconnect_time) $0];
+        @ reconn[$egr][timeout] = [$getset(reconnect_time) $0];
       };
     };
-    (*) {
-      if ([$2] == [CLOSING] && [$1] != [EOF] && [$1] != [ERROR]) {
-        @ :gr = encode($servergroup($0));
-        if (gr != []) {
-          ^assign -reconn[timeout][$gr];
-          ^assign -reconn[channels][$gr];
-          ^assign -reconn[keys][$gr];
-        };
+    # the server gets disconnected because user says so
+    (CLOSING) {
+      if ([$1] != [EOF] && [$1] != [ERROR]) {
+        _reconn_purge $0;
+      };
+    };
+    # the server gets deleted
+    (DELETED) {
+      _reconn_sweep $0;
+    };
+  };
+};
+
+alias _reconn_purge (ref, void) {
+  @ :gr  = _svkey($ref);
+  @ :egr = encode($gr);
+  ^assign -reconn[$egr][timeout];
+  ^assign -reconn[$egr][channels];
+  ^assign -reconn[$egr][keys];
+  if (word(0 $gr) == [gr]) {
+    # it is a server, but it suddenly gained a group
+    @ :str = encode(sv $ref);
+    ^assign -reconn[$str][timeout];
+    ^assign -reconn[$str][channels];
+    ^assign -reconn[$str][keys];
+  };
+};
+
+alias _reconn_sweep (ref, void) {
+  ^local i,str,type,item,gr,svs;
+  @ str = encode(sv $ref);
+  ^assign -reconn[$str][timeout];
+  ^assign -reconn[$str][channels];
+  ^assign -reconn[$str][keys];
+
+  foreach reconn i {
+    @ str = decode($i);
+    @ type = word(0 $str);
+    @ item = word(1 $str);
+    if (type == [sv]) {
+      @ gr = servergroup($item);
+      # it is a server, but it suddenly gained a group
+      if (gr != [<default>]) {
+        ^assign -reconn[$i][timeout];
+        ^assign -reconn[$i][channels];
+        ^assign -reconn[$i][keys];
+      };
+    } elif (type == [gr]) {
+      @ svs = serverctl(GMATCH $item);
+      # there are no servers || the only server is the one that's being deleted
+      if (svs == [] || svs == ref) {
+        ^assign -reconn[$i][timeout];
+        ^assign -reconn[$i][channels];
+        ^assign -reconn[$i][keys];
       };
     };
   };
-  ^assign -i;
 };
+
 timer -ref _reconn -repeat -1 -GENERAL 60 _reconn;
-alias _reconn {
-  foreach reconn.timeout i {
-    @ :minleft = word(0 $reconn[timeout][$i]);
-    @ :lastsv = word(1 $reconn[timeout][$i]);
+alias _reconn (void) {
+  ^local i,win,found,str,type,item;
+  foreach reconn i {
+    @ str = decode($i);
+    @ type = word(0 $str);
+    @ item = word(1 $str);
+    @ :minleft = word(0 $reconn[$i][timeout]);
+    @ :lastsv = word(1 $reconn[$i][timeout]);
     @ minleft--;
     if (minleft > 0) {
-      @ reconn[timeout][$i] = [$minleft $lastsv];
+      @ reconn[$i][timeout] = [$minleft $lastsv];
     } else {
-      ^ASSIGN -reconn[timeout][$i];
-      @ :found = [];
+      ^ASSIGN -reconn[$i][timeout];
       fe ($winrefs()) win {
         if (winserv($win) == lastsv) {
           PUSH found $win;
         };
       };
       if (found != []) {
-        @ :next = nextserv($lastsv);
+        if (type == [gr]) {
+          @ :next = nextserv($lastsv $item);
+        } else {
+          @ :next = lastsv;
+        };
         if (next != -1) {
           fe ($found) j {
             window $j SERVER $next;
@@ -108,33 +130,38 @@ alias _reconn {
       };
     };
   };
-  ^assign -win;
-  ^assign -i;
 };
-alias nextserv (ref) {
-  @ :gr = servergroup($ref);
-  if (gr == [<default>]) {
+
+alias rmreconns {
+  ^local i,st;
+  foreach reconn i {
+    ^assign -reconn[$i][timeout];
+    ^assign -reconn[$i][channels];
+    ^assign -reconn[$i][keys];
+  };
+  fe ($serverctl(OMATCH *)) i {
+    @ st = serverctl(GET $i STATUS);
+    switch ($st) {
+      (dns) (connecting) (registering) (syncing) (ssl_connecting) {
+        disconnect $i;
+      };
+    };
+  };
+};
+
+alias nextserv (ref, group, void) {
+  if (group == [<default>]) {
     return -1;
   };
-  @ :servers = serverctl(GMATCH $gr);
+  @ :servers = serverctl(GMATCH $group);
   @ :num = numwords($servers);
   if (num == 0) {
+    # can't happen
     return -1;
   };
-  if (num == 1) {
-    return $word(0 $servers);
-  };
-  @ :found = -1;
-  @ :idx = 0;
-  fe ($servers) i {
-    if (i == ref) {
-      @ found = idx;
-      break;
-    };
-    @ idx++;
-  };
+  @ :found = findw($ref $servers);
   if (found == -1) {
-    return -1;
+    return $word(0 $servers);
   };
   @ num--;
   if (num == found) {
@@ -142,6 +169,6 @@ alias nextserv (ref) {
   } else {
     return $word(${found+1} $servers);
   };
-  ^assign -i;
 };
+
 #weirdo'2k6

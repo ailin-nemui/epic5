@@ -1,5 +1,7 @@
 if (word(2 $loadinfo()) != [pf]) { load -pf $word(1 $loadinfo()); return; };
 
+package autojoin;
+
 # autojoin -- maintains a list of permanent channels and if reconnect
 # script is loaded, rejoins channels after a disconnection. permanent
 # channels are stored in ~/.irc/channels, syntax:
@@ -112,23 +114,29 @@ on #-join -28 "*" {
   };
 };
 
-on #-SERVER_STATUS 28 "% % ACTIVE" {
-  @ :group = servergroup($0);
-  if (group == []) {
-    return;
+alias _svkey (ref, void) {
+  ^local gr;
+  @ gr = servergroup($ref);
+  if (gr == [<default>]) {
+    return sv $ref;
   };
-  @ :egr = encode($group);
-  foreach channels.$egr i {
+  return gr $gr;
+};
+
+on #-SERVER_STATUS 286 "% % ACTIVE" {
+  @ :svk = encode($_svkey($0));
+  @ :egr = encode($servergroup($0));
+  foreach channels[$egr] i {
     @ :ch = decode($i);
     @ :k = word(1 $channels[$egr][$i]);
     xeval -s $0 { //join $ch $k; };
   };
-  @ :nw = numwords($reconn[channels][$egr]);
+  @ :nw = numwords($reconn[$svk][channels]);
   for i from 0 to ${nw - 1} {
-    @ :ch = word($i $reconn[channels][$egr]);
+    @ :ch = word($i $reconn[$svk][channels]);
     @ :ech = encode($ch);
-    if (channels[$egr][$ech] == []) {
-      @ :k = word($i $reconn[keys][$egr]);
+    if (channels[$svk][$ech] == []) {
+      @ :k = word($i $reconn[$svk][keys]);
       xeval -s $0 { //join $ch $k; };
     };
   };
@@ -149,3 +157,5 @@ on #-window_beforekill -28 "*" {
   };
   ^assign -ch;
 };
+
+# weirdo'2k6

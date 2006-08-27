@@ -1,4 +1,4 @@
-/* $EPIC: vars.c,v 1.89 2006/06/24 15:54:25 jnelson Exp $ */
+/* $EPIC: vars.c,v 1.90 2006/08/27 20:12:04 jnelson Exp $ */
 /*
  * vars.c: All the dealing of the irc variables are handled here. 
  *
@@ -274,7 +274,6 @@ void 	init_variables_stage1 (void)
 	VAR(STATUS_SERVER, STR,  build_status);
 	VAR(STATUS_SSL_OFF, STR,  build_status);
 	VAR(STATUS_SSL_ON, STR,  build_status);
-	VAR(STATUS_TRUNCATE_RHS, BOOL, build_status);
 	VAR(STATUS_UMODE, STR,  build_status);
 	VAR(STATUS_USER, STR,  build_status);
 	VAR(STATUS_USER1, STR,  build_status);
