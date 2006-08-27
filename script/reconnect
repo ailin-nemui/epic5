@@ -5,8 +5,10 @@ if (word(2 $loadinfo()) != [pf]) { load -pf $word(1 $loadinfo()); return; };
 
 package reconnect;
 
-addset reconnect_time int;
-set reconnect_time 1;
+addset auo_reconnect bool;
+addset auto_reconnect_delay int;
+set auto_reconnect_delay 1;
+set auto_reconnect on;
 
 alias _svkey (ref, void) {
   ^local gr;
@@ -24,7 +26,7 @@ on #-SERVER_STATUS 27 "% % %" {
       # if the server suddenly gains a group, we need to delete the old one
       _reconn_purge $0;
       # $1 == [CLOSING] && $2 == [ERROR] can happen if a there's a socket write error for finishing QUIT
-      if ([$1] != [CLOSING]) {
+      if ([$1] != [CLOSING] && getset(auto_reconnect) == [ON]) {
         @ :egr = encode($_svkey($0));
         @ reconn[$egr][channels] = [];
         @ reconn[$egr][keys] = [];
@@ -35,7 +37,7 @@ on #-SERVER_STATUS 27 "% % %" {
             push reconn[$egr][keys] $key($i);
           };
         };
-        @ reconn[$egr][timeout] = [$getset(reconnect_time) $0];
+        @ reconn[$egr][timeout] = [$getset(auto_reconnect_delay) $0];
       };
     };
     # the server gets disconnected because user says so
