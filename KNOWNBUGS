@@ -18,11 +18,8 @@ KNOWN ERRATA (eg, bugs, or unresolved requests):
 * Need better code to handle merging of levels when putting a new window
   on an existing server
 * Update copyright notices to 2006
-* Argh. HPUX has ltoa(). Argh!
 * Add a /set to thwart multiple address use on server connects.
-* Add $serverctl(GET ... ADDRSLEFT) so reconnect knows when we've given up.
 * /xecho -v should go to the current screen's current window.
-* Some way to track when windows change servers
 
 FROM NULLIE
 -----------
@@ -35,6 +32,10 @@ FROM NULLIE
 * dcc queries don't match with their queries (already know about this)
 * /on unknown_command for trapping incomplete commands.
 * /on channel_destroyed for when we are no longer on a channel for any reason.
+* Some way to replace the current input line w/o mangling cutbuffer.
+* Some way to track when windows change servers
+* Change /on kick to throw before destroying the channel
+* Add $serverctl(GET ... ADDRSLEFT) so reconnect knows when we've given up.
 
 LOOK FOR IN THE FUTURE
 -----------------------
@@ -162,3 +163,4 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Fix /whois so trailing spaces don't look like real words.
 * Change ltoa() to my_ltoa() for hpux's sake
 * Change finite() to isfinite() for hpux's sake
+* Add $serverctl(GET refnum ADDRSLEFT) (see UPDATES)

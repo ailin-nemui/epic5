@@ -1,4 +1,4 @@
-/* $EPIC: server.c,v 1.199 2006/08/18 12:04:16 jnelson Exp $ */
+/* $EPIC: server.c,v 1.200 2006/09/01 02:22:44 jnelson Exp $ */
 /*
  * server.c:  Things dealing with that wacky program we call ircd.
  *
@@ -2990,6 +2990,8 @@ char 	*serverctl 	(char *input)
 				RETURN_STR("unknown");
 		} else if (!my_strnicmp(listc, "PROTOCOL", len)) {
 			RETURN_STR(get_server_type(refnum));
+		} else if (!my_strnicmp(listc, "ADDRSLEFT", len)) {
+			RETURN_INT(server_addrs_left(refnum));
 		}
 	} else if (!my_strnicmp(listc, "SET", len)) {
 		GET_INT_ARG(refnum, input);
@@ -3135,6 +3137,21 @@ int	server_more_addrs (int refnum)
 		return 1;
 	else
 		return 0;
+}
+
+int	server_addrs_left (int refnum)
+{
+	Server *s;
+	const AI *ai;
+	int	count = 0;
+
+	if (!(s = get_server(refnum)))
+		return 0;
+
+	for (ai = s->next_addr; ai; ai = ai->ai_next)
+		count++;
+
+	return count;
 }
 
 /* Returns malloced string */

@@ -1,5 +1,16 @@
 EPIC5-0.3.2
 
+*** News 08/31/2006 -- New serverctl value, $serverctl(GET refnum ADDRSLEFT)
+	This returns the number of addresses left from the last dns lookup
+	for the server "refnum".  It's intended to be used like this:
+		on server_status "% % CLOSED" {
+			if (serverctl(GET $0 ADDRSLEFT)) {
+				# epic will be reconnecting...
+			}
+		}
+	This will help nullie write his reconnect script to not trap until
+	epic is finished with what it wants to do.
+
 *** News 08/17/2006 -- Add support for OPERWALL, /ON OPERWALL, OPERWALL level
 	OPERWALL is an efnet server command which servers send amongst
 	themselves.  The local server very graciously sends it to you 
