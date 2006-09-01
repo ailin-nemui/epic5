@@ -1,4 +1,4 @@
-/* $EPIC: ircaux.c,v 1.154 2006/06/29 01:13:53 jnelson Exp $ */
+/* $EPIC: ircaux.c,v 1.155 2006/09/01 01:53:00 jnelson Exp $ */
 /*
  * ircaux.c: some extra routines... not specific to irc... that I needed 
  *
@@ -2013,7 +2013,7 @@ char *	my_ctime (time_t when)
 }
 
 
-const char *	ltoa (long foo)
+const char *	my_ltoa (long foo)
 {
 	static char buffer[BIG_BUFFER_SIZE + 1];
 	char *pos = buffer + BIG_BUFFER_SIZE - 1;
@@ -2315,7 +2315,7 @@ int 	check_val (const char *sub)
 	sval = strtod(sub, &endptr);
 
 	/* Numbers that cause exceptional conditions in strtod() are true */
-	if (errno == ERANGE || !finite(sval))
+	if (errno == ERANGE || !isfinite(sval))
 		return 1;
 
 	/* 

@@ -1,4 +1,4 @@
-/* $EPIC: commands.c,v 1.150 2006/08/27 20:12:04 jnelson Exp $ */
+/* $EPIC: commands.c,v 1.151 2006/09/01 01:53:00 jnelson Exp $ */
 /*
  * commands.c -- Stuff needed to execute commands in ircII.
  *		 Includes the bulk of the built in commands for ircII.
@@ -2730,10 +2730,10 @@ BUILT_IN_COMMAND(whois)
 
 	if (!strcmp(command, "WHOWAS"))
 	{
-		char *word_one = next_arg (args, &args);
-		if (args && *args)
+		char *word_one = next_arg(args, &args);
+		if (!is_string_empty(args))
 			malloc_sprintf(&stuff, "%s %s", word_one, args);
-		else if (word_one && *word_one)
+		else if (!is_string_empty(word_one))
 			malloc_sprintf(&stuff, "%s", word_one);
 		else
 			malloc_sprintf(&stuff, "%s", get_server_nickname(from_server));
@@ -2742,7 +2742,9 @@ BUILT_IN_COMMAND(whois)
 		new_free(&stuff);
 	}
 	else /* whois command */
-		send_to_server("WHOIS %s", args && *args ? args : get_server_nickname(from_server));
+		send_to_server("WHOIS %s", is_string_empty(args) ? 
+					get_server_nickname(from_server) : 
+					args);
 }
 
 BUILT_IN_COMMAND(xtypecmd)

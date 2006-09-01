@@ -7,7 +7,7 @@
  *
  * See the COPYRIGHT file, or do a HELP IRCII COPYRIGHT 
  *
- * @(#)$Id: ircaux.h,v 1.86 2006/06/29 01:13:53 jnelson Exp $
+ * @(#)$Id: ircaux.h,v 1.87 2006/09/01 01:53:00 jnelson Exp $
  */
 
 #ifndef _IRCAUX_H_
@@ -98,7 +98,8 @@ const char *	plural 		(int);
 double	time_to_next_minute 	(void);
 char *	remove_trailing_spaces 	(char *, size_t *cluep);
 char *	forcibly_remove_trailing_spaces (char *, size_t *);
-const char *	ltoa 			(long);
+#define ltoa my_ltoa
+const char *	my_ltoa 		(long);
 const char *	intmaxtoa 		(intmax_t);
 const char *	ftoa			(double);
 char *	strformat 		(char *, const char *, ssize_t, int);
