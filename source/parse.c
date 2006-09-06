@@ -1,4 +1,4 @@
-/* $EPIC: parse.c,v 1.80 2006/08/18 14:56:59 jnelson Exp $ */
+/* $EPIC: parse.c,v 1.81 2006/09/06 22:12:40 jnelson Exp $ */
 /*
  * parse.c: handles messages from the server.   Believe it or not.  I
  * certainly wouldn't if I were you. 
@@ -873,8 +873,9 @@ static void strip_modes (const char *from, const char *channel, const char *line
 				if (mag == '-')
 					break;
 			case 4: case 3: case 2:
-				if ((arg = safe_new_next_arg(copy, &copy)))
-					break;
+				if (!(arg = next_arg(copy, &copy)))
+					arg = endstr(copy);
+				break;
 			default:
 				/* We already get a yell from decifer_mode() */
 				break;
@@ -958,9 +959,7 @@ static void	p_kick (const char *from, const char *comm, const char **ArgList)
 		    return;
 		}
 
-		remove_channel(channel, from_server);
-		update_all_status();
-
+		/* XXX A POX ON ANYONE WHO ASKS ME TO MOVE THIS AGAIN XXX */
 		old_cw = current_window;
 		current_window = win;
 		l = message_setall(win->refnum, channel, LEVEL_KICK);
@@ -973,6 +972,9 @@ static void	p_kick (const char *from, const char *comm, const char **ArgList)
 
 		pop_message_from(l);
 		current_window = old_cw;
+
+		remove_channel(channel, from_server);
+		update_all_status();
 		return;
 	}
 
