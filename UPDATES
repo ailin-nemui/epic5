@@ -219,6 +219,10 @@ EPIC5-0.3.1
 	take a long time, during which the client is locked up.  So now 
 	SSL negotiations are nonblocking.  Yay.
 
+	Previously, the server state goes from CONNECTING to REGISTERING.
+	But if it has to take a detour for nonblocking ssl negotation, it
+	will go from CONNECTING to SSL_CONNECTING and then to REGISTERING.
+
 *** News 06/24/2006 -- New script, 'nickcomp' from Blackjac
 
 *** News 06/06/2006 -- Much improved configure support for perl/tcl/ruby

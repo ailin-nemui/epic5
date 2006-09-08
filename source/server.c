@@ -1,4 +1,4 @@
-/* $EPIC: server.c,v 1.200 2006/09/01 02:22:44 jnelson Exp $ */
+/* $EPIC: server.c,v 1.201 2006/09/08 22:52:50 jnelson Exp $ */
 /*
  * server.c:  Things dealing with that wacky program we call ircd.
  *
@@ -754,8 +754,7 @@ BUILT_IN_COMMAND(servercmd)
 			say("No such server [%s] in list", server);
 			return;
 		}
-
-		if (get_server_status(i) == SERVER_CLOSED)
+		if (get_server(i) && get_server_status(i) == SERVER_CLOSED)
 			set_server_status(i, SERVER_RECONNECT);
 		return;
 	}
@@ -765,18 +764,8 @@ BUILT_IN_COMMAND(servercmd)
 	 */
 	if (slen > 1 && *server == '-')
 	{
-		args++;			/* Skip the + */
-		server = new_next_arg(args, &args);
-
-		if ((i = str_to_servref(server)) == NOSERV)
-		{
-			say("No such server [%s] in list", server);
-			return;
-		}
-
-		set_server_quit_message(from_server, 
-				"Disconnected at user request");
-		close_server(i, NULL);
+		args++;			/* Skip the - */
+		disconnectcmd("DISCONNECT", args, NULL);
 		return;
 	}
 

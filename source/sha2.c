@@ -29,7 +29,7 @@
  * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
  *
- * $Id: sha2.c,v 1.3 2006/08/27 20:47:48 jnelson Exp $
+ * $Id: sha2.c,v 1.4 2006/09/08 22:52:50 jnelson Exp $
  */
 #include "irc.h"
 #include "ircaux.h"
@@ -364,7 +364,7 @@ static void	SHA256_Update (SHA256_CTX *context, const sha2_byte *data, size_t le
 			context->bitcount += freespace << 3;
 			len -= freespace;
 			data += freespace;
-			SHA256_Transform(context, (sha2_word32*)context->buffer);
+			SHA256_Transform(context, (const sha2_word32*)context->buffer);
 		} else {
 			/* The buffer is not yet full */
 			MEMCPY_BCOPY(&context->buffer[usedspace], data, len);
@@ -376,7 +376,7 @@ static void	SHA256_Update (SHA256_CTX *context, const sha2_byte *data, size_t le
 	}
 	while (len >= SHA256_BLOCK_LENGTH) {
 		/* Process as many complete blocks as we can */
-		SHA256_Transform(context, (sha2_word32*)data);
+		SHA256_Transform(context, (const sha2_word32*)data);
 		context->bitcount += SHA256_BLOCK_LENGTH << 3;
 		len -= SHA256_BLOCK_LENGTH;
 		data += SHA256_BLOCK_LENGTH;
@@ -418,7 +418,7 @@ static void 	SHA256_Final (sha2_byte *digest, SHA256_CTX *context)
 					MEMSET_BZERO(&context->buffer[usedspace], SHA256_BLOCK_LENGTH - usedspace);
 				}
 				/* Do second-to-last transform: */
-				SHA256_Transform(context, (sha2_word32*)context->buffer);
+				SHA256_Transform(context, (const sha2_word32*)context->buffer);
 
 				/* And set-up for the last transform: */
 				MEMSET_BZERO(context->buffer, SHA256_SHORT_BLOCK_LENGTH);
@@ -434,7 +434,7 @@ static void 	SHA256_Final (sha2_byte *digest, SHA256_CTX *context)
 		*(sha2_word64*)&context->buffer[SHA256_SHORT_BLOCK_LENGTH] = context->bitcount;
 
 		/* Final transform: */
-		SHA256_Transform(context, (sha2_word32*)context->buffer);
+		SHA256_Transform(context, (const sha2_word32*)context->buffer);
 
 #if BYTE_ORDER == LITTLE_ENDIAN
 		{

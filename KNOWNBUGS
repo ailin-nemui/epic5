@@ -9,24 +9,20 @@ KNOWN ERRATA (eg, bugs, or unresolved requests):
 * Refactor hardcoded uses of select() so select() isn't mandatory.
 * send_text() needs rework, to add extra /on's so you can flag those 
   differently.
-* Larne says that stdout can block when running under screen.
 * Larne would like /window foo size 5 to fail for want of 'foo'.
-* Larne did /window 101 server ... to a server already connected but said
-	the status still said "invalid server" until he changed windows.
-* Ubuntu requires -lrt to get clock_gettime().
-* Need to document CONNECTING_SSL setting
 * Need better code to handle merging of levels when putting a new window
   on an existing server
-* Update copyright notices to 2006
-* Add a /set to thwart multiple address use on server connects.
-* /xecho -v should go to the current screen's current window.
+* /server -4 or /server -6 to do specific protocol (for larne)
+* The mode stripper has no business calling new_next_arg()
+* Larne and nullie say that stdout can block when running under screen
 
 FROM NULLIE
 -----------
 * Using arglists in /on's destructively alters $* for following on's.
-* The /whois command ought to ignore empty words (fixed now)
 * /notify should be per-server/group like /encrypt
-* Figure out if every /set is in use.
+* These sets are not used:
+	BAD_STYLE, INPUT_ALIASES, SECURITY, 
+	SSL_CERTFILE SSL_KEYFILE, SSL_PATH, 
 * The scripted /set reverse_status_line fails if status line is reset.
 * Support multi-extended WHOWAS via `WHOWAS nick count server',
 * dcc queries don't match with their queries (already know about this)
@@ -34,25 +30,19 @@ FROM NULLIE
 * /on channel_destroyed for when we are no longer on a channel for any reason.
 * Some way to replace the current input line w/o mangling cutbuffer.
 * Some way to track when windows change servers
-* Change /on kick to throw before destroying the channel
-* Add $serverctl(GET ... ADDRSLEFT) so reconnect knows when we've given up.
 
 LOOK FOR IN THE FUTURE
 -----------------------
 * Import utf8 support from ircII OR add support for utf16 (wide chars)
 * Import fg/bg color support from ircII
-* Allow variables and aliases to be "tainted"
 * Cache what files can be /loaded in a hash
 * Support loading through ZIP files.
-* Make $* a local variable.
 * Some way to call an alias in a variable indirectly
 * Output rules
 * Support for CNOTICE
-* /window <refnum> noserv causes bad fd loop.  (can't reproduce?)
 * /CTCPs over /DCCs don't match up with their queries very well.
 * $xform()s for SED and DEF
 * str_to_mask() should be silent, callers should be warning.
-* A way to control what counts as a space on the fly (via a /set?)
 * Support for 64 bit ints could be more widespread
 * Larne wants suppression of duplicated lines (like syslog maybe?)
 
@@ -164,3 +154,11 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Change ltoa() to my_ltoa() for hpux's sake
 * Change finite() to isfinite() for hpux's sake
 * Add $serverctl(GET refnum ADDRSLEFT) (see UPDATES)
+* Fix finite()/isfinite() madness.
+* Look for clock_gettime() in -lrt for ubuntu.
+* Automatic reconnect from nullie. yay!
+* Change /xecho -v to always output to current window if it's visible.
+* Fix /on's with arglists, so lower serial nums don't corrupt $*. [rb nullie]
+* Fix memory leak with $url(en|de)code() [rb nullie]
+* Change /server - so it calls disconnect() directly
+* Fix const correctness problems with sha2.c

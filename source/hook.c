@@ -1,4 +1,4 @@
-/* $EPIC: hook.c,v 1.64 2006/08/18 14:56:59 jnelson Exp $ */
+/* $EPIC: hook.c,v 1.65 2006/09/08 22:52:50 jnelson Exp $ */
 /*
  * hook.c: Does those naughty hook functions. 
  *
@@ -765,6 +765,7 @@ int 	do_hook (int which, const char *format, ...)
             {
 		Hook *besthook = NULL;
 		ArgList *tmp_arglist;
+		char *buffer_copy;
 		int bestmatch = 0;
 		int currmatch;
 
@@ -851,12 +852,18 @@ int 	do_hook (int which, const char *format, ...)
 			window_display = 1;
 		old = system_exception;
 
+		if (tmp_arglist)
+			buffer_copy = LOCAL_COPY(hook->buffer);
+		else
+			buffer_copy = hook->buffer;
+
 		if (hook->retval == RESULT_PENDING)
 		{
 			char *result;
 
 			result = call_user_function(name, stuff_copy,
-							hook->buffer, tmp_arglist);
+							buffer_copy,
+							tmp_arglist);
 
 			if (result && atol(result))
 				hook->retval = SUPPRESS_DEFAULT;
@@ -874,7 +881,8 @@ int 	do_hook (int which, const char *format, ...)
 			 * so it is absolutely forbidden to reference "tmp" 
 			 * after this point.
 			 */
-			call_user_command(name, stuff_copy, hook->buffer, tmp_arglist);
+			call_user_command(name, stuff_copy, 
+						buffer_copy, tmp_arglist);
 			if (tmp_arglist)
 				destroy_arglist(&tmp_arglist);
 		}

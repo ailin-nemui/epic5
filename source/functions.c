@@ -1,4 +1,4 @@
-/* $EPIC: functions.c,v 1.233 2006/08/18 14:56:59 jnelson Exp $ */
+/* $EPIC: functions.c,v 1.234 2006/09/08 22:52:50 jnelson Exp $ */
 /*
  * functions.c -- Built-in functions for ircII
  *
@@ -5764,14 +5764,14 @@ BUILT_IN_FUNCTION(function_insert, word)
 BUILT_IN_FUNCTION(function_urlencode, input)
 {
 	char *retval = urlencode(input);
-	RETURN_STR(retval);
+	RETURN_MSTR(retval);
 }
 
 /* Submitted by srfrog, August 11, 1999 */
 BUILT_IN_FUNCTION(function_urldecode, input)
 {
 	char *retval = urldecode(input, NULL);
-	RETURN_STR(retval);
+	RETURN_MSTR(retval);
 }
 
 BUILT_IN_FUNCTION(function_stat, words)

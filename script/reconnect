@@ -24,9 +24,11 @@ alias _reconn.svkey (ref, void) {
 
 alias _reconn.hook.disconn {
   if ([$1] != [CLOSING] && getset(auto_reconnect) == [ON]) {
+    if (serverctl(GET $0 ADDRSLEFT)) {
+      return;
+    };
     @ :egr = encode($_reconn.svkey($0));
     if (reconn[$egr][lastserver] == []) {
-      ^local i;
       xeval -s $0 {
         fe ($tolower($mychannels($0))) i {
           if ((:win = winchan($i)) != -1) {
@@ -115,7 +117,7 @@ alias _reconn.clrtoplines (ref, void) {
 };
 
 alias _reconn.sweep (ref, void) {
-  ^local i,str,type,item,gr,svs;
+  ^local str,type,item,gr,svs;
   _reconn.clrtoplines $ref;
   @ str = encode(sv $ref);
   _reconn.clearentry $str;

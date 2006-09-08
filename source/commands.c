@@ -1,4 +1,4 @@
-/* $EPIC: commands.c,v 1.151 2006/09/01 01:53:00 jnelson Exp $ */
+/* $EPIC: commands.c,v 1.152 2006/09/08 22:52:50 jnelson Exp $ */
 /*
  * commands.c -- Stuff needed to execute commands in ircII.
  *		 Includes the bulk of the built in commands for ircII.
@@ -932,6 +932,10 @@ BUILT_IN_COMMAND(xechocmd)
 
 			if (current_window->screen)
 			    to_window_refnum = current_window->refnum;
+			else if (last_input_screen && 
+				 last_input_screen->current_window)
+			    to_window_refnum = last_input_screen->
+							current_window->refnum;
 			else
 			{
 			    while ((traverse_all_windows(&win)))
@@ -1401,7 +1405,7 @@ BUILT_IN_COMMAND(license)
 	yell("Copyright (c) 1991, 1992 Troy Rollo.");
  	yell("Copyright (c) 1992-1996 Matthew Green.");
 	yell("Copyright © 1994 Jake Khuon.");
-	yell("Coypright © 1993, 2005 EPIC Software Labs.");
+	yell("Coypright © 1993, 2006 EPIC Software Labs.");
 	yell("All rights reserved");
 	yell(" ");
 	yell("Redistribution and use in source and binary forms, with or");
