@@ -1,4 +1,4 @@
-/* $EPIC: ircaux.c,v 1.156 2006/09/08 22:52:50 jnelson Exp $ */
+/* $EPIC: ircaux.c,v 1.157 2006/09/09 13:12:25 jnelson Exp $ */
 /*
  * ircaux.c: some extra routines... not specific to irc... that I needed 
  *
@@ -2318,7 +2318,7 @@ int 	check_val (const char *sub)
         if (errno == ERANGE
 #if defined(HAVE_FINITE)
                                 || finite(sval) == 0
-#elif defined(HAVE_INFINITE)
+#elif defined(HAVE_ISFINITE)
                                 || isfinite(sval) == 0
 #endif
                                                         )

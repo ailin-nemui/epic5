@@ -162,3 +162,4 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Fix memory leak with $url(en|de)code() [rb nullie]
 * Change /server - so it calls disconnect() directly
 * Fix const correctness problems with sha2.c
+* Fix typo: HAVE_INFINITE -> HAVE_ISFINITE [rb kev]
