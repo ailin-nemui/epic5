@@ -1,4 +1,4 @@
-/* $EPIC: window.c,v 1.167 2006/07/28 03:50:40 jnelson Exp $ */
+/* $EPIC: window.c,v 1.168 2006/09/15 03:02:44 jnelson Exp $ */
 /*
  * window.c: Handles the organzation of the logical viewports (``windows'')
  * for irc.  This includes keeping track of what windows are open, where they
@@ -5079,8 +5079,9 @@ BUILT_IN_COMMAND(windowcmd)
 			}
 			else
 			{
-				yell("WINDOW: Invalid option: [%s]", arg);
+				yell("WINDOW: Invalid window or option: [%s]", arg);
 				/* XXX Maybe this should fail? */
+				args = NULL;
 			}
 		}
 	}

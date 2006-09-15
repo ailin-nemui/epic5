@@ -9,12 +9,11 @@ KNOWN ERRATA (eg, bugs, or unresolved requests):
 * Refactor hardcoded uses of select() so select() isn't mandatory.
 * send_text() needs rework, to add extra /on's so you can flag those 
   differently.
-* Larne would like /window foo size 5 to fail for want of 'foo'.
 * Need better code to handle merging of levels when putting a new window
   on an existing server
 * /server -4 or /server -6 to do specific protocol (for larne)
-* The mode stripper has no business calling new_next_arg()
 * Larne and nullie say that stdout can block when running under screen
+* Larne wants @#channel to go to the correct window.
 
 FROM NULLIE
 -----------
@@ -163,3 +162,5 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Change /server - so it calls disconnect() directly
 * Fix const correctness problems with sha2.c
 * Fix typo: HAVE_INFINITE -> HAVE_ISFINITE [rb kev]
+* Desupport dwords in a lot of builtin functions (see updates) [nullie]
+* Make /window foo kill fail for want of 'foo' (see updates)

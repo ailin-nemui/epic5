@@ -1,5 +1,47 @@
 EPIC5-0.3.2
 
+*** News 09/14/2006 -- WINDOW command will fail if given invalid window refnum
+	Consider the behavior of
+		/WINDOW foo KILL
+	in the two cases where the window 'foo' does and does not exist.
+
+	Up until now, if 'foo' existed, it will killed, but if 'foo' did
+	not exist, this was not an error, and the current window was killed.
+	Ignoring window refnums that didn't exist was intended as a courtesy
+	but actually is a hassle, since most people assume that any further
+	commands will operate only on that window, or not at all.
+
+	So this behavior has been changed.  In the above case, if 'foo' does
+	not exist, then the /window command simply fails at that spot and
+	all further actions in that statement are ignored.
+
+*** News 09/14/2006 -- Some functions no longer support double quoted words
+        The work was done by nullie.
+
+        The following functions have previously supported double quoted
+        words, but due to popular sentiment, this support is being removed
+        to make the functions useful with untrusted data (ie, irc stuff)
+
+        match           rmatch          userhost        word
+        remw            insertw         chngw           pattern
+        filter          rpattern        pop             findw
+        findws          splitw          diff            sort
+        numsort         uniq            remws           getsets
+        getcommands     getfunctions    prefix          rfilter
+        copattern       corpattern      cofilter        corfilter
+
+        The following functions didn't support dwords unless you did
+        /xdebug extractw.  Nothing has changed for these functions.
+
+        leftw           rightw          midw            notw
+        restw           insertw         chngw           beforew
+        tow             afterw          fromw           splice
+
+        The /FE and /FOR I IN (list) commands previously supported
+        double quoted words, but now they will not.
+
+        You can revert to the epic4 behavior (for now) with /xdebug dword
+
 *** News 08/31/2006 -- New serverctl value, $serverctl(GET refnum ADDRSLEFT)
 	This returns the number of addresses left from the last dns lookup
 	for the server "refnum".  It's intended to be used like this:

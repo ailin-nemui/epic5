@@ -55,6 +55,9 @@ char *		real_extract2 		(Char *, int, int, int);
 #define extractw(a, b, c)		real_extract(a, b, c, DWORD_YES)
 #define extractw2(a, b, c)		real_extract2(a, b, c, DWORD_YES)
 
+#define NEXT_WORD(x, y) (x_debug & DEBUG_DWORD ? (new_next_arg(x, y)) : (next_arg(x, y)))
+#define SAFE_NEXT_WORD(x, y) (x_debug & DEBUG_DWORD ? safe_new_next_arg(x, y) : safe_next_arg(x, y))
+
 int		count_words		(Char *str, int extended, Char *quotes);
 
 #endif

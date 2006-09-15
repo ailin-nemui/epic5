@@ -1,4 +1,4 @@
-/* $EPIC: functions.c,v 1.234 2006/09/08 22:52:50 jnelson Exp $ */
+/* $EPIC: functions.c,v 1.235 2006/09/15 03:02:44 jnelson Exp $ */
 /*
  * functions.c -- Built-in functions for ircII
  *
@@ -420,6 +420,10 @@ static	char
 	*function_writeb	(char *),
 	*function_xform		(char *),
 	*function_yn		(char *);
+
+char
+	* wrapper_pattern (char *, int),
+	* wrapper_rpattern (char *, int);
 
 extern char
 	*function_push		(char *),
@@ -1242,9 +1246,9 @@ BUILT_IN_FUNCTION(function_match, input)
 	char	*pattern, 	*word;
 	long	current_match,	best_match = 0,	match = 0, match_index = 0;
 
-	GET_STR_ARG(pattern, input);
+	GET_WORD_ARG(pattern, input);
 
-	while ((word = new_next_arg(input, &input)))
+	while ((word = NEXT_WORD(input, &input)))
 	{
 		match_index++;
 		if ((current_match = wild_match(pattern, word)) > best_match)
@@ -1273,9 +1277,9 @@ BUILT_IN_FUNCTION(function_rmatch, input)
 	char	*pattern,	*word;
 	int	current_match,	best_match = 0,	match = 0, rmatch_index = 0;
 
-	GET_STR_ARG(word, input);
+	GET_WORD_ARG(word, input);
 
-	while ((pattern = new_next_arg(input, &input)))
+	while ((pattern = NEXT_WORD(input, &input)))
 	{
 		rmatch_index++;
 		if ((current_match = wild_match(pattern, word)) > best_match)
@@ -1307,7 +1311,7 @@ BUILT_IN_FUNCTION(function_userhost, input)
 
 		while (input && *input)
 		{
-			GET_STR_ARG(nick, input);
+			GET_WORD_ARG(nick, input);
 			if (is_channel(nick))
 				chan = nick;
 			if ((uh = fetch_userhost(from_server, chan, nick)))
@@ -1452,9 +1456,9 @@ BUILT_IN_FUNCTION(function_word, word)
 		RETURN_EMPTY;
 
 	while (cvalue-- > 0 && word && *word)
-		w_word = new_next_arg(word, &word);
+		w_word = NEXT_WORD(word, &word);
 
-	GET_STR_ARG(w_word, word);
+	GET_WORD_ARG(w_word, word);
 	RETURN_STR(w_word);
 }
 
@@ -1826,7 +1830,7 @@ BUILT_IN_FUNCTION(function_remw, word)
 	ssize_t	span;
 	char	*str;
 
-	GET_STR_ARG(word_to_remove, word);
+	GET_WORD_ARG(word_to_remove, word);
 	len = strlen(word_to_remove);
 
 	if ((span = stristr(word, word_to_remove)) >= 0)
@@ -1882,7 +1886,7 @@ BUILT_IN_FUNCTION(function_insertw, word)
 		booya = malloc_strdup(word);
 	else
 	{
-		GET_STR_ARG(what, word);
+		GET_WORD_ARG(what, word);
 		str1 = extractw(word, 0, (where - 1));
 		str2 = extractw(word, where, EOS);
 
@@ -1909,7 +1913,7 @@ BUILT_IN_FUNCTION(function_chngw, word)
 	char	*str1, *str2;
 	
 	GET_INT_ARG(which, word);
-	GET_STR_ARG(what, word);
+	GET_WORD_ARG(what, word);
 
 	if (which < 0)
 		RETURN_STR(word);
@@ -2030,25 +2034,30 @@ BUILT_IN_FUNCTION(function_diff, word)
 	return (booya);
 }
 
-/* $pattern(pattern string of words)
- * given a pattern and a string of words, returns all words that
- * are matched by the pattern
- * EX: $pattern(f* one two three four five) returns "four five"
- */
-BUILT_IN_FUNCTION(function_pattern, word)
+char *wrapper_pattern(char *word, int mode)
 {
 	char    *blah;
 	char    *booya = NULL;
 	char    *pattern;
 	size_t	rvclue=0;
 
-	GET_STR_ARG(pattern, word)
-	while (((blah = new_next_arg(word, &word)) != NULL))
+	GET_WORD_ARG(pattern, word)
+	while (((blah = NEXT_WORD(word, &word)) != NULL))
 	{
-		if (wild_match(pattern, blah))
+		if (!!wild_match(pattern, blah) == !!mode)
 			malloc_strcat_word_c(&booya, space, blah, &rvclue);
 	}
 	RETURN_MSTR(booya);
+}
+
+/* $pattern(pattern string of words)
+ * given a pattern and a string of words, returns all words that
+ * are matched by the pattern
+ * EX: $pattern(f* one two three four five) returns "four five"
+ */
+
+BUILT_IN_FUNCTION(function_pattern, word) {
+	return(wrapper_pattern(word, 1));
 }
 
 /* $filter(pattern string of words)
@@ -2056,18 +2065,24 @@ BUILT_IN_FUNCTION(function_pattern, word)
  * NOT matched by the pattern
  * $filter(f* one two three four five) returns "one two three"
  */
-BUILT_IN_FUNCTION(function_filter, word)
+
+BUILT_IN_FUNCTION(function_filter, word) {
+	return(wrapper_pattern(word, 0));
+}
+
+char *wrapper_rpattern (char *word, int mode)
 {
 	char    *blah;
 	char    *booya = NULL;
 	char    *pattern;
 	size_t	rvclue=0;
 
-	GET_STR_ARG(pattern, word)
-	while ((blah = new_next_arg(word, &word)) != NULL)
+	GET_WORD_ARG(blah, word)
+
+	while ((pattern = NEXT_WORD(word, &word)) != NULL)
 	{
-		if (!wild_match(pattern, blah))
-			malloc_strcat_word_c(&booya, space, blah, &rvclue);
+		if (!!wild_match(pattern, blah) == !!mode)
+			malloc_strcat_word_c(&booya, space, pattern, &rvclue);
 	}
 	RETURN_MSTR(booya);
 }
@@ -2078,21 +2093,9 @@ BUILT_IN_FUNCTION(function_filter, word)
  * EX: $rpattern(user@host.com *@* user@* f*@*.com)
  * returns "*@* user@*"
  */
-BUILT_IN_FUNCTION(function_rpattern, word)
-{
-	char    *blah;
-	char    *booya = NULL;
-	char    *pattern;
-	size_t	rvclue=0;
 
-	GET_STR_ARG(blah, word)
-
-	while ((pattern = new_next_arg(word, &word)) != NULL)
-	{
-		if (wild_match(pattern, blah))
-			malloc_strcat_word_c(&booya, space, pattern, &rvclue);
-	}
-	RETURN_MSTR(booya);
+BUILT_IN_FUNCTION(function_rpattern, word) {
+	return(wrapper_rpattern(word, 1));
 }
 
 /* $rfilter(word list of patterns)
@@ -2101,20 +2104,9 @@ BUILT_IN_FUNCTION(function_rpattern, word)
  * EX: $rfilter(user@host.com *@* user@* f*@*.com)
  * returns "f*@*.com"
  */
-BUILT_IN_FUNCTION(function_rfilter, word)
-{
-	char    *blah;
-	char    *booya = NULL;
-	char    *pattern;
-	size_t	rvclue=0;
 
-	GET_STR_ARG(blah, word)
-	while ((pattern = new_next_arg(word, &word)) != NULL)
-	{
-		if (!wild_match(pattern, blah))
-			malloc_strcat_word_c(&booya, space, pattern, &rvclue);
-	}
-	RETURN_MSTR(booya);
+BUILT_IN_FUNCTION(function_rfilter, word) {
+	return(wrapper_rpattern(word, 0));
 }
 
 /* $copattern(pattern var_1 var_2)
@@ -2145,9 +2137,9 @@ BUILT_IN_FUNCTION((fn), word)                                          \
        sfirstl = firstl;                                                     \
        ssecondl = secondl;                                                   \
                                                                              \
-       while ((firstel = new_next_arg(firstl, &firstl)))                     \
+       while ((firstel = NEXT_WORD(firstl, &firstl)))                     \
        {                                                                     \
-               if (!(secondel = new_next_arg(secondl, &secondl)))            \
+               if (!(secondel = NEXT_WORD(secondl, &secondl)))            \
                        break;                                                \
                                                                              \
                if ((sense) == !wild_match((pat), (arg)))                     \
@@ -2376,7 +2368,7 @@ BUILT_IN_FUNCTION(function_key, word)
 
 	do
 	{
-		channel = new_next_arg(word, &word);
+		channel = NEXT_WORD(word, &word);
 		if ((!channel || !*channel) && booya)
 			break;
 
@@ -2401,7 +2393,7 @@ BUILT_IN_FUNCTION(function_channelmode, word)
 
 	do
 	{
-		channel = new_next_arg(word, &word);
+		channel = NEXT_WORD(word, &word);
 		if ((!channel || !*channel) && booya)
 			break;
 
@@ -2425,7 +2417,7 @@ BUILT_IN_FUNCTION(function_revw, words)
 	 * chop off the double quotes from 'words'!
 	 */
 	while (words && *words)
-		malloc_strcat_wordlist_c(&booya, space, last_arg(&words, &wclue), &rvclue);
+		malloc_strcat_wordlist_c(&booya, space, last_arg(&words, &wclue, !!(x_debug & DEBUG_DWORD)), &rvclue);
 
 	if (!booya)
 		RETURN_EMPTY;
@@ -2534,7 +2526,7 @@ char *function_shift (char *word)
 	value = get_variable(var);
 
 	placeholder = value;
-	booya = malloc_strdup(new_next_arg(value, &value));
+	booya = malloc_strdup(NEXT_WORD(value, &value));
 	if (var)
 		add_var_alias(var, value, 0);
 	new_free(&placeholder);
@@ -2615,7 +2607,7 @@ char *function_pop (char *word)
 	char *pointer	= (char *) 0;
 	char *blech     = (char *) 0;
 
-	GET_STR_ARG(var, word);
+	GET_WORD_ARG(var, word);
 
 	if (word && *word)
 	{
@@ -3952,11 +3944,11 @@ BUILT_IN_FUNCTION(function_findw, input)
 	char	*word, *this_word;
 	int	word_cnt = 0;
 
-	GET_STR_ARG(word, input);
+	GET_WORD_ARG(word, input);
 
 	while (input && *input)
 	{
-		GET_STR_ARG(this_word, input);
+		GET_WORD_ARG(this_word, input);
 		if (!my_stricmp(this_word, word))
 			RETURN_INT(word_cnt);
 
@@ -3973,11 +3965,11 @@ BUILT_IN_FUNCTION(function_findws, input)
 	char	*ret = NULL;
 	size_t	clue = 0;
 
-	GET_STR_ARG(word, input);
+	GET_WORD_ARG(word, input);
 
 	for (word_cnt = 0; input && *input; word_cnt++)
 	{
-		GET_STR_ARG(this_word, input);
+		GET_WORD_ARG(this_word, input);
 		if (!my_stricmp(this_word, word))
 			malloc_strcat_word_c(&ret, space, ltoa(word_cnt), &clue);
 	}
@@ -5109,7 +5101,7 @@ BUILT_IN_FUNCTION(function_isnumber, input)
 	/*
 	 * See if the first arg is the base
 	 */
-	barg = new_next_arg(input, &input);
+	barg = next_arg(input, &input);
 
 	/*
 	 * If it is, the number is the 2nd arg
@@ -5125,7 +5117,7 @@ BUILT_IN_FUNCTION(function_isnumber, input)
 	else
 	{
 		number = barg;
-		barg = new_next_arg(input, &input);
+		barg = next_arg(input, &input);
 	}
 
 	/*
@@ -5899,6 +5891,7 @@ BUILT_IN_FUNCTION(function_wordtoindex, input)
 
 	GET_INT_ARG(wordnum, input);
 	move_to_abs_word(input, &ptr, wordnum);
+
 	RETURN_INT((int)(ptr - input));
 }
 
@@ -6095,7 +6088,7 @@ BUILT_IN_FUNCTION(function_unsplit, input)
 	size_t	clue = 0;
 
 	GET_STR_ARG(sep, input);
-	while ((word = new_next_arg(input, &input)))
+	while ((word = NEXT_WORD(input, &input)))
 		malloc_strcat_wordlist_c(&retval, sep, word, &clue);
 	RETURN_MSTR(retval);
 }
@@ -6231,7 +6224,7 @@ BUILT_IN_FUNCTION(function_joinstr, input)
 
 		for (foo = 0; foo < valc; foo++) {
 			more |= *vals[foo];
-			word = safe_new_next_arg(vals[foo], &vals[foo]);
+			word = SAFE_NEXT_WORD(vals[foo], &vals[foo]);
 			malloc_strcat2_c(&sub, foo?sep:"", word, &clue);
 		}
 
@@ -6260,7 +6253,7 @@ BUILT_IN_FUNCTION(function_exec, input)
 	size_t	clue = 0;
 
 	RETURN_IF_EMPTY(input);
-	count = splitw(input, &args);
+	count = splitdw(input, &args);
 	RESIZE(args, void *, count+1);
 	args[count] = NULL;
 

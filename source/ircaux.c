@@ -1,4 +1,4 @@
-/* $EPIC: ircaux.c,v 1.157 2006/09/09 13:12:25 jnelson Exp $ */
+/* $EPIC: ircaux.c,v 1.158 2006/09/15 03:02:44 jnelson Exp $ */
 /*
  * ircaux.c: some extra routines... not specific to irc... that I needed 
  *
@@ -2264,7 +2264,15 @@ int	split_args (char *str, char **to, size_t maxargs)
 	return counter;
 }
 
-int 	splitw (char *str, char ***to)
+int splitw(char *str, char ***to) {
+  return(internal_splitw(str, to, 0));
+}
+
+int splitdw(char *str, char ***to) {
+  return(internal_splitw(str, to, 1));
+}
+
+int 	internal_splitw (char *str, char ***to, int mode)
 {
 	int numwords = count_words(str, DWORD_YES, "\"");
 	int counter;
@@ -2273,7 +2281,7 @@ int 	splitw (char *str, char ***to)
 	{
 		*to = (char **)new_malloc(sizeof(char *) * numwords);
 		for (counter = 0; counter < numwords; counter++)
-			(*to)[counter] = safe_new_next_arg(str, &str);
+			(*to)[counter] = mode ? safe_new_next_arg(str, &str) : SAFE_NEXT_WORD(str, &str);
 	}
 	else
 		*to = NULL;
@@ -4283,11 +4291,21 @@ char *	safe_new_next_arg (char *str, char **new_ptr)
 	return ret;
 }
 
+char *	safe_next_arg (char *str, char **new_ptr)
+{
+	char * ret;
+
+	if (!(ret = next_arg(str, new_ptr)))
+		ret = endstr(str);
+
+	return ret;
+}
+
 /*
  * yanks off the last word from 'src'
  * kinda the opposite of next_arg
  */
-char *	last_arg (char **src, size_t *cluep)
+char *	last_arg (char **src, size_t *cluep, int quotes)
 {
 	char *mark, *start, *end;
 
@@ -4295,7 +4313,7 @@ char *	last_arg (char **src, size_t *cluep)
 	end = start + *cluep;
 	mark = end + strlen(end);
 	/* Always support double-quoted words. */
-	move_word_rel(start, (const char **)&mark, -1, DWORD_ALWAYS, "\"");
+	move_word_rel(start, (const char **)&mark, -1, quotes ? DWORD_ALWAYS : DWORD_NEVER, "\"");
 	*cluep = (mark - *src - 1);
 
 	if (mark > start)

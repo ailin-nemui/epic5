@@ -1,4 +1,4 @@
-/* $EPIC: if.c,v 1.35 2006/06/06 05:08:48 jnelson Exp $ */
+/* $EPIC: if.c,v 1.36 2006/09/15 03:02:44 jnelson Exp $ */
 /*
  * if.c: the IF, WHILE, FOREACH, DO, FE, FEC, and FOR commands for IRCII 
  *
@@ -504,7 +504,7 @@ BUILT_IN_COMMAND(fe)
 		for ( y = 0 ; y < ind ; y++ )
 		{
 			if (doing_fe)
-				word = new_next_arg(templist, &templist);
+				word = NEXT_WORD(templist, &templist);
 			else
 				word[0] = *templist ? *templist++ : 0;
 
@@ -633,7 +633,7 @@ static void	for_fe_cmd (int argc, char **argv, const char *subargs)
 	will_catch_continue_exceptions++;
 	while (real_list && *real_list)
 	{
-		next = new_next_arg(real_list, &real_list);
+		next = NEXT_WORD(real_list, &real_list);
 		add_local_alias(var, next, 0);
 		runcmds(cmds, subargs);
 

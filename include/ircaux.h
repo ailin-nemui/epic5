@@ -7,7 +7,7 @@
  *
  * See the COPYRIGHT file, or do a HELP IRCII COPYRIGHT 
  *
- * @(#)$Id: ircaux.h,v 1.87 2006/09/01 01:53:00 jnelson Exp $
+ * @(#)$Id: ircaux.h,v 1.88 2006/09/15 03:02:44 jnelson Exp $
  */
 
 #ifndef _IRCAUX_H_
@@ -44,7 +44,7 @@ void	malloc_dump		(const char *);
 
 char *	check_nickname 		(char *, int);
 char *	new_new_next_arg_count 	(char *, char **, char *, int);
-char *	last_arg 		(char **, size_t *cluep);
+char *	last_arg 		(char **, size_t *, int);
 
 int	normalize_filename	(const char *, Filename);
 int	expand_twiddle 		(const char *, Filename);
@@ -107,6 +107,8 @@ char *	chop_word 		(char *);
 char *	skip_spaces		(char *);
 int	split_args		(char *, char **to, size_t);
 int	splitw 			(char *, char ***);
+int	splitdw 			(char *, char ***);
+int	internal_splitw 			(char *, char ***, int);
 char *	unsplitw 		(char ***, int);
 int	check_val 		(const char *);
 char *	strext	 		(const char *, const char *);
@@ -114,6 +116,7 @@ char *	strextend 		(char *, char, int);
 char *	pullstr 		(char *, char *);
 int 	empty 			(const char *);
 char *	safe_new_next_arg	(char *, char **);
+char *	safe_next_arg	(char *, char **);
 ssize_t	MatchingBracket 	(const char *, char, char);
 int	parse_number 		(char **);
 char *	remove_brackets 	(const char *, const char *);
