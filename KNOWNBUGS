@@ -10,14 +10,14 @@ KNOWN ERRATA (eg, bugs, or unresolved requests):
 * send_text() needs rework, to add extra /on's so you can flag those 
   differently.
 * Need better code to handle merging of levels when putting a new window
-  on an existing server
-* /server -4 or /server -6 to do specific protocol (for larne)
+  on an existing server (for larne)
 * Larne and nullie say that stdout can block when running under screen
 * Larne wants @#channel to go to the correct window.
+* Allow server descs to be updated on the fly
+* Add a 'proto' field to servers, 'tcp4' or 'tcp6' (for larne)
 
 FROM NULLIE
 -----------
-* Using arglists in /on's destructively alters $* for following on's.
 * /notify should be per-server/group like /encrypt
 * These sets are not used:
 	BAD_STYLE, INPUT_ALIASES, SECURITY, 
@@ -164,3 +164,7 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Fix typo: HAVE_INFINITE -> HAVE_ISFINITE [rb kev]
 * Desupport dwords in a lot of builtin functions (see updates) [nullie]
 * Make /window foo kill fail for want of 'foo' (see updates)
+* New 'builtins' from blackjac, more modern format, /whowas improvements
+* Refactor the serverinfo stuff
+* Allow skipping of fields in server descs (see UPDATES)
+

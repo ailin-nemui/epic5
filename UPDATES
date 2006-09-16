@@ -1,5 +1,31 @@
 EPIC5-0.3.2
 
+*** News 09/16/2006 -- Enhancements to server descriptions
+	You are permitted to skip fields in the server description.  Each
+	field has a name that you refer to it by:
+		host	port	pass	nick	group	type
+
+	You can change the field by "assignment", like so:
+		/server irc.foo.com:group=efnet
+	or
+		/server irc.foo.com:7005:type=irc-ssl
+
+	The server description actually skips to the name field, so
+	you don't have to specify them in order, you can skip around
+	however it suits you.  If you skip to a field and then don't
+	specify the name of the following field, whatever field would
+	naturally follow is assumed:
+
+		/server irc.foo.com:7005:group=efnet:irc-ssl
+
+	In this case, you skipped to the 'group' field, and the field
+	that follows that is 'type', so that is what "irc-ssl' is 
+	assumed to be.
+
+	This can be used any place server descriptions are taken, 
+	from /server, to /window server, to ircII.server, to the
+	command line, everywhere.
+
 *** News 09/14/2006 -- WINDOW command will fail if given invalid window refnum
 	Consider the behavior of
 		/WINDOW foo KILL

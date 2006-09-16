@@ -1,11 +1,11 @@
-if (word(2 $loadinfo()) != [pf]) {
+if (word(2 $loadinfo()) != 'pf') {
 	load -pf $word(1 $loadinfo());
 	return;
 };
 
-#	Copyright (c) 2005 David B. Kratter (BlackJac@EFNet)
+#	Copyright (c) 2006 BlackJac@EFNet
 #
-#	Version: 1.7.2005.05.20.1
+#	Version: 1.8.2006.09.16.1
 #
 #	This script ensures backward-compatibility with epic4-2.2 by adding the
 #	following commands, functions and sets that have been removed from epic5.
@@ -85,8 +85,8 @@ alias signoff (...) {
 	//quit $*;
 };
 
-alias whowas (nick, number default "$getset(num_of_whowas)", void) {
-	//whowas $nick $number;
+alias whowas (nick, args default "$getset(num_of_whowas)") {
+	//whowas $nick $args;
 };
 
 # FUNCTIONS #
@@ -280,7 +280,7 @@ addset auto_rejoin_delay int;
 set auto_rejoin_delay 0;
 
 ^on #-kick 1 '$$servernick() *' {
-	if (getset(auto_rejoin) == [on]) {
+	if (getset(auto_rejoin) == 'on') {
 		if (:delay = getset(auto_rejoin_delay)) {
 			timer -w $winnum() $delay join $2;
 		} else {
@@ -296,13 +296,13 @@ addset auto_unmark_away bool;
 set auto_unmark_away off;
 
 ^on #-input 1 "*" {
-	if (getset(auto_unmark_away) == [on] && serverctl(get $servernum() away))
+	if (getset(auto_unmark_away) == 'on' && serverctl(get $servernum() away))
 		away;
 	};
 };
 
 ^on #-input 1 "/*" {
-	if (getset(auto_unmark_away) == [on] && serverctl(get $servernum() away) && findw($0 /me /msg /notice /say) > -1) {
+	if (getset(auto_unmark_away) == 'on' && serverctl(get $servernum() away) && findw($0 /me /msg /notice /say) > -1) {
 		away;
 	};
 };
@@ -314,7 +314,7 @@ addset auto_whowas bool;
 set auto_whowas on;
 
 ^on #-401 1 "*" {
-	if (getset(auto_whowas) == [on]) {
+	if (getset(auto_whowas) == 'on') {
 		whowas $1;
 	};
 };
@@ -326,133 +326,133 @@ addset beep_on_msg str;
 set beep_on_msg none;
 
 ^on #-action 1 "*" {
-	if (getset(beep_on_msg) == [all] || findw(action $getset(beep_on_msg)) > -1) {
+	if (getset(beep_on_msg) == 'all' || findw(action $getset(beep_on_msg)) > -1) {
 		beep;
 	};
 };
 
 ^on #-channel_sync 1 "*" {
-	if (getset(beep_on_msg) == [all] || findw(crap $getset(beep_on_msg)) > -1) {
+	if (getset(beep_on_msg) == 'all' || findw(crap $getset(beep_on_msg)) > -1) {
 		beep;
 	};
 };
 
 ^on #-ctcp 1 "*" {
-	if (getset(beep_on_msg) == [all] || findw(ctcp $getset(beep_on_msg)) > -1) {
+	if (getset(beep_on_msg) == 'all' || findw(ctcp $getset(beep_on_msg)) > -1) {
 		beep;
 	};
 };
 
 ^on #-dcc_activity 1 "*" {
-	if (getset(beep_on_msg) == [all] || findw(dcc $getset(beep_on_msg)) > -1) {
+	if (getset(beep_on_msg) == 'all' || findw(dcc $getset(beep_on_msg)) > -1) {
 		beep;
 	};
 };
 
 ^on #-dcc_connect 1 "*" {
-	if (getset(beep_on_msg) == [all] || findw(dcc $getset(beep_on_msg)) > -1) {
+	if (getset(beep_on_msg) == 'all' || findw(dcc $getset(beep_on_msg)) > -1) {
 		beep;
 	};
 };
 
 ^on #-dcc_list 1 "*" {
-	if (getset(beep_on_msg) == [all] || findw(dcc $getset(beep_on_msg)) > -1) {
+	if (getset(beep_on_msg) == 'all' || findw(dcc $getset(beep_on_msg)) > -1) {
 		beep;
 	};
 };
 
 ^on #-dcc_lost 1 "*" {
-	if (getset(beep_on_msg) == [all] || findw(dcc $getset(beep_on_msg)) > -1) {
+	if (getset(beep_on_msg) == 'all' || findw(dcc $getset(beep_on_msg)) > -1) {
 		beep;
 	};
 };
 
 ^on #-dcc_offer 1 "*" {
-	if (getset(beep_on_msg) == [all] || findw(dcc $getset(beep_on_msg)) > -1) {
+	if (getset(beep_on_msg) == 'all' || findw(dcc $getset(beep_on_msg)) > -1) {
 		beep;
 	};
 };
 
 ^on #-dcc_request 1 "*" {
-	if (getset(beep_on_msg) == [all] || findw(dcc $getset(beep_on_msg)) > -1) {
+	if (getset(beep_on_msg) == 'all' || findw(dcc $getset(beep_on_msg)) > -1) {
 		beep;
 	};
 };
 
 ^on #-join 1 "*" {
-	if (getset(beep_on_msg) == [all] || findw(crap $getset(beep_on_msg)) > -1) {
+	if (getset(beep_on_msg) == 'all' || findw(crap $getset(beep_on_msg)) > -1) {
 		beep;
 	};
 };
 
 ^on #-mail 1 "*" {
-	if (getset(beep_on_msg) == [all] || findw(crap $getset(beep_on_msg)) > -1) {
+	if (getset(beep_on_msg) == 'all' || findw(crap $getset(beep_on_msg)) > -1) {
 		beep;
 	};
 };
 
 ^on #-mode 1 "*" {
-	if (getset(beep_on_msg) == [all] || findw(crap $getset(beep_on_msg)) > -1) {
+	if (getset(beep_on_msg) == 'all' || findw(crap $getset(beep_on_msg)) > -1) {
 		beep;
 	};
 };
 
 ^on #-msg 1 "*" {
-	if (getset(beep_on_msg) == [all] || findw(msgs $getset(beep_on_msg)) > -1) {
+	if (getset(beep_on_msg) == 'all' || findw(msgs $getset(beep_on_msg)) > -1) {
 		beep;
 	};
 };
 
 ^on #-notice 1 "*" {
-	if (getset(beep_on_msg) == [all] || findw(notices $getset(beep_on_msg)) > -1) {
+	if (getset(beep_on_msg) == 'all' || findw(notices $getset(beep_on_msg)) > -1) {
 		beep;
 	};
 };
 
 ^on #-numeric 1 "*" {
-	if (getset(beep_on_msg) == [all] || findw(crap $getset(beep_on_msg)) > -1) {
+	if (getset(beep_on_msg) == 'all' || findw(crap $getset(beep_on_msg)) > -1) {
 		beep;
 	};
 };
 
 ^on #-oper_notice 1 "*" {
-	if (getset(beep_on_msg) == [all] || findw(opnotes $getset(beep_on_msg)) > -1) {
+	if (getset(beep_on_msg) == 'all' || findw(opnotes $getset(beep_on_msg)) > -1) {
 		beep;
 	};
 };
 
 ^on #-part 1 "*" {
-	if (getset(beep_on_msg) == [all] || findw(crap $getset(beep_on_msg)) > -1) {
+	if (getset(beep_on_msg) == 'all' || findw(crap $getset(beep_on_msg)) > -1) {
 		beep;
 	};
 };
 
 ^on #-pong 1 "*" {
-	if (getset(beep_on_msg) == [all] || findw(crap $getset(beep_on_msg)) > -1) {
+	if (getset(beep_on_msg) == 'all' || findw(crap $getset(beep_on_msg)) > -1) {
 		beep;
 	};
 };
 
 ^on #-public 1 "*" {
-	if (getset(beep_on_msg) == [all] || findw(public $getset(beep_on_msg)) > -1) {
+	if (getset(beep_on_msg) == 'all' || findw(public $getset(beep_on_msg)) > -1) {
 		beep;
 	};
 };
 
 ^on #-server_notice 1 "*" {
-	if (getset(beep_on_msg) == [all] || findw(snotes $getset(beep_on_msg)) > -1) {
+	if (getset(beep_on_msg) == 'all' || findw(snotes $getset(beep_on_msg)) > -1) {
 		beep;
 	};
 };
 
 ^on #-wallop 1 "*" {
-	if (getset(beep_on_msg) == [all] || findw(wallops $getset(beep_on_msg)) > -1) {
+	if (getset(beep_on_msg) == 'all' || findw(wallops $getset(beep_on_msg)) > -1) {
 		beep;
 	};
 };
 
 ^on #-who 1 "*" {
-	if (getset(beep_on_msg) == [all] || findw(crap $getset(beep_on_msg)) > -1) {
+	if (getset(beep_on_msg) == 'all' || findw(crap $getset(beep_on_msg)) > -1) {
 		beep;
 	};
 };
@@ -466,11 +466,11 @@ addset command_mode bool;
 set command_mode off;
 
 ^on ^input "*" {
-	//sendline ${getset(command_mode) == [on] ? [/] : []}$*;
+	//sendline ${getset(command_mode) == 'on' ? [/] : []}$*;
 };
 
 ^on ^input "'*" {
-	send ${getset(command_mode) == [on] ? rest(1 $*) : (*)};
+	send ${getset(command_mode) == 'on' ? rest(1 $*) : (*)};
 };
 
 ^on ^input "/*" {
@@ -499,7 +499,7 @@ set dcc_timeout 3600;
 # FULL_STATUS_LINE
 
 addset full_status_line bool {
-	if (*0 == [on]) {
+	if (*0 == 'on') {
 		^set status_format $before(-1  $status_format);
 		^set status_format1 $before(-1  $status_format1);
 		^set status_format2 $before(-1  $status_format2);
@@ -521,7 +521,7 @@ set num_of_whowas 1;
 # REVERSE_STATUS_LINE
 
 addset reverse_status_line bool {
-	if (*0 == [on]) {
+	if (*0 == 'on') {
 		^set status_format $after(1  $status_format);
 		^set status_format1 $after(1  $status_format1);
 		^set status_format2 $after(1  $status_format2);
@@ -542,7 +542,7 @@ set show_end_of_msgs on;
 
 fe (219 232 262 315 318 347 349 365 366 368 369 374 394) ss {
 	^on ?$ss "*" {
-		return ${getset(show_end_of_msgs) == [on] ? 0 : 1};
+		return ${getset(show_end_of_msgs) == 'on' ? 0 : 1};
 	};
 };
 
@@ -553,7 +553,7 @@ addset show_who_hopcount bool;
 set show_who_hopcount on;
 
 ^on ?who "*" {
-	if (getset(show_who_hopcount) == [on]) {
+	if (getset(show_who_hopcount) == 'on') {
 		xecho -w $winchan($0) $[15]0 $[9]1 $[3]2 $3@$4 \($7-\);
 		return 1;
 	};
@@ -567,5 +567,5 @@ addset verbose_ctcp bool;
 set verbose_ctcp on;
 
 ^on ?ctcp "*" {
-	return ${getset(verbose_ctcp) == [on] ? 0 : 1};
+	return ${getset(verbose_ctcp) == 'on' ? 0 : 1};
 };

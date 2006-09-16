@@ -1,4 +1,4 @@
-/* $EPIC: server.c,v 1.201 2006/09/08 22:52:50 jnelson Exp $ */
+/* $EPIC: server.c,v 1.202 2006/09/16 16:13:33 jnelson Exp $ */
 /*
  * server.c:  Things dealing with that wacky program we call ircd.
  *
@@ -81,6 +81,7 @@ typedef struct ServerInfo {
 	char *	server_type;
 } ServerInfo;
 
+static int	clear_serverinfo (ServerInfo *s);
 static	int	str_to_serverinfo (const char *str, ServerInfo *s);
 static	void	free_serverinfo (ServerInfo *s);
 static	int	serverinfo_to_servref (ServerInfo *s);
@@ -89,26 +90,69 @@ static 	void 	remove_from_server_list (int i);
 static	char *	shortname (const char *oname);
 
 
+static int	clear_serverinfo (ServerInfo *s)
+{
+        s->refnum = NOSERV;
+        s->host = NULL;
+        s->port = 0;
+        s->password = NULL;
+        s->nick = NULL;
+        s->group = NULL;
+        s->server_type = NULL;
+	return 0;
+}
+
+/*
+ * --
+ * A old-style "server description" looks like:
+ *
+ *   host:port:passwd:nick:group:type
+ *
+ * 'host'     is a hostname, or an ipv4 p-addr ("192.168.0.1")
+ *            or an ipv6 p-addr in square brackets ("[01::01]")
+ * 'port'     is the port number the server is listening on (usually 6667)
+ * 'passwd'   is the protocol passwd to log onto the server (usually blank)
+ * 'nick'     is the nickname you want to use on this server
+ * 'group'    is the server group this server belongs to
+ * 'type'     is the server type, either "IRC" or "IRC-SSL"
+ *
+ * --
+ * A new-style server description is a colon separated list of values:
+ *
+ *   host=HOST	   port=PORTNUM   pass=PASSWORD 
+ *   nick=NICK     group=GROUP    type=PROTOCOL
+ *
+ * for example:
+ *	host=irc.server.com:group=efnet:type=IRC-SSL
+ * 
+ * The command type ("host", "port") can be abbreviated as long as it's
+ * not ambiguous:
+ *	h=irc.server.com:po=6666:g=efnet:t=IRC-SSL
+ *
+ * --
+ * You can mix and match (sort of) the types, but if the meaning of any
+ * field that doesn't have a descriptor still has its old meaning.  It's
+ * suggested you only do the switch once:
+ *
+ *	GOOD:  irc.server.com:6666:group=efnet:proto=IRC-SSL
+ *	BAD:   irc.server.com:group=efnet:password
+ */
+
+enum serverinfo_fields { HOST, PORT, PASS, NICK, GROUP, TYPE, LASTFIELD };
+
 static	int	str_to_serverinfo (const char *str, ServerInfo *s)
 {
-	char *ptr;
+	char *	descstr;
 	ssize_t span;
-	char *after;
+	char *	after;
+	enum serverinfo_fields	fieldnum;
 
-	s->refnum = NOSERV;
-	s->host = NULL;
-	s->port = 0;
-	s->password = NULL;
-	s->nick = NULL;
-	s->group = NULL;
-	s->server_type = NULL;
-
-	ptr = s->freestr = malloc_strdup(str);
-	if (ptr && is_number(ptr))
+	descstr = s->freestr = malloc_strdup(str);
+	if (descstr && is_number(descstr))
 	{
 		int	i;
 
-		i = strtol(ptr, &after, 10);
+		i = strtol(descstr, &after, 10);
 		if ((!after || !*after) && get_server(i))
 		{
 			s->refnum = i;
@@ -116,63 +160,97 @@ static	int	str_to_serverinfo (const char *str, ServerInfo *s)
 		}
 	}
 
-	do
+	for (fieldnum = HOST; fieldnum <= LASTFIELD; fieldnum++)
 	{
-		if (*ptr == '[')
+		char *first_colon;
+		char *first_equals;
+		int	ignore_field = 0;
+
+		first_equals = strchr(descstr, '=');
+		first_colon = strchr(descstr, ':');
+
+		/*
+		 * This field has a field-descryption-type.  Reset the field
+		 * counter to the appropriate place.
+		 */
+		if ( (first_colon && first_equals && first_colon > first_equals)
+		  || (first_colon == NULL && first_equals) )
 		{
-		    s->host = ptr + 1;
-		    if ((span = MatchingBracket(ptr + 1, '[', ']')) >= 0)
+			char *p;
+
+			p = first_equals;
+			*p++ = 0;
+
+			if (!my_strnicmp(descstr, "H", 1))
+				fieldnum = HOST;
+			else if (!my_strnicmp(descstr, "PO", 2))
+				fieldnum = PORT;
+			else if (!my_strnicmp(descstr, "PA", 2))
+				fieldnum = PASS;
+			else if (!my_strnicmp(descstr, "N", 1))
+				fieldnum = NICK;
+			else if (!my_strnicmp(descstr, "G", 1))
+				fieldnum = GROUP;
+			else if (!my_strnicmp(descstr, "T", 1))
+				fieldnum = TYPE;
+			else
+			{
+				say("Server desc field type [%s] not recognized.", 
+					descstr);
+				ignore_field = 1;
+			}
+
+			/*
+			 * Now that we've set the correct field,
+			 * set the value to the place after the =,
+			 * and then treat it as it was not adorned.
+			 */
+			descstr = p;
+		}
+
+		/* Set the appropriate field */
+		if (fieldnum == HOST)
+		{
+		    if (*descstr == '[')
 		    {
-			ptr = ptr + 1 + span;
-			*ptr++ = 0;
+			s->host = descstr + 1;
+			if ((span = MatchingBracket(descstr + 1, '[',']')) >= 0)
+			{
+				descstr = descstr + 1 + span;
+				*descstr++ = 0;
+			}
+			else
+				break;
 		    }
 		    else
-			break;
+			s->host = descstr;
 		}
-		else
-		    s->host = ptr;
+		else if (fieldnum == PORT)
+			s->port = atol(descstr);
+		else if (fieldnum == PASS)
+			s->password = descstr;
+		else if (fieldnum == NICK)
+			s->nick = descstr;
+		else if (fieldnum == GROUP)
+			s->group = descstr;
+		else if (fieldnum == TYPE)
+			s->server_type = descstr;
 
-		if (!(ptr = strchr(ptr, ':')))
+		/*
+		 * We go one past "type" because we want to allow
+		 *      /server -add type=irc-ssl:host=irc.foo.com
+		 * and if we didn't do this, the above loop would
+		 * terminate after the "type" and not read the "host".
+		 */
+		else if (fieldnum == LASTFIELD)
 			break;
-		*ptr++ = 0;
-		if (!*ptr)
-			break;
-		s->port = atol(ptr);
 
-		if (!(ptr = strchr(ptr, ':')))
-			break;
-		*ptr++ = 0;
-		if (!*ptr)
-			break;
-		s->password = ptr;
-
-		if (!(ptr = strchr(ptr, ':')))
-			break;
-		*ptr++ = 0;
-		if (!*ptr)
-			break;
-		s->nick = ptr;
-
-		if (!(ptr = strchr(ptr, ':')))
-			break;
-		*ptr++ = 0;
-		if (!*ptr)
-			break;
-		s->group = ptr;
-
-		if (!(ptr = strchr(ptr, ':')))
-			break;
-		*ptr++ = 0;
-		if (!*ptr)
-			break;
-		s->server_type = ptr;
-
-		if (!(ptr = strchr(ptr, ':')))
+		/* And advance to the next field */
+		if (!(descstr = strchr(descstr, ':')))
 			break;
 		else
-			*ptr++ = 0;
+			*descstr++ = 0;
 	}
-	while (0);
 
 	return 0;
 }
@@ -234,6 +312,11 @@ static	int	serverinfo_to_servref (ServerInfo *si)
 	}
 
 	return NOSERV;
+}
+
+static	int	update_server_from_str (int refnum, const char *str)
+{
+	say("Updating server descs on the fly not implemented yet.");
 }
 
 static	int	serverinfo_to_newserv (ServerInfo *si)
@@ -346,6 +429,7 @@ int	str_to_servref (const char *desc)
 	int	retval;
 
 	ptr = LOCAL_COPY(desc);
+	clear_serverinfo(&si);
 	if (str_to_serverinfo(ptr, &si))
 		return NOSERV;
 
@@ -361,6 +445,7 @@ int	str_to_newserv (const char *desc)
 	int	retval;
 
 	ptr = LOCAL_COPY(desc);
+	clear_serverinfo(&si);
 	if (str_to_serverinfo(ptr, &si))
 		return NOSERV;
 
@@ -449,6 +534,7 @@ void	add_servers (char *servers, const char *group)
 
 	while ((host = next_arg(servers, &servers)))
 	{
+		clear_serverinfo(&si);
 		str_to_serverinfo(host, &si);
 		if (group && si.group == NULL)
 			malloc_strcpy(&si.group, group);
@@ -731,8 +817,13 @@ BUILT_IN_COMMAND(servercmd)
 
 		if ((from_server = str_to_servref(server)) != NOSERV)
 		{
-			say("Server [%s] already exists as server %d", 
-					server, from_server);
+/*
+			update_server_from_str(from_server, server);
+			say("Server [%d] updated with [%s]",
+					from_server, server);
+*/
+			say("Server [%s] already exists as refnum [%d]",
+				server, from_server);
 			return;
 		}
 
