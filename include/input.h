@@ -45,6 +45,7 @@
 	BUILT_IN_KEYBINDING(input_delete_to_previous_space);
 	BUILT_IN_KEYBINDING(input_end_of_line);
 	BUILT_IN_KEYBINDING(input_forward_word);
+	BUILT_IN_KEYBINDING(input_reset_line);
 	BUILT_IN_KEYBINDING(input_transpose_characters);
 	BUILT_IN_KEYBINDING(input_unclear_screen);
 	BUILT_IN_KEYBINDING(input_yank_cut_buffer);

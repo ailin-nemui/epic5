@@ -22,11 +22,9 @@ FROM NULLIE
 	BAD_STYLE, INPUT_ALIASES, SECURITY, 
 	SSL_CERTFILE SSL_KEYFILE, SSL_PATH, 
 * The scripted /set reverse_status_line fails if status line is reset.
-* Support multi-extended WHOWAS via `WHOWAS nick count server',
 * dcc queries don't match with their queries (already know about this)
 * /on unknown_command for trapping incomplete commands.
 * /on channel_destroyed for when we are no longer on a channel for any reason.
-* Some way to replace the current input line w/o mangling cutbuffer.
 * Some way to track when windows change servers
 
 LOOK FOR IN THE FUTURE
@@ -168,3 +166,4 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Allow skipping of fields in server descs (see UPDATES)
 * Make /window foo kill not fall back to /window describe, for want of 'foo'.
 * Add a 'proto' field to server descs (tcp4, tcp6, 4, or 6), see UPDATES.
+* Add RESET_LINE keybinding, for tabkey and history recall scripts.

@@ -1,5 +1,19 @@
 EPIC5-0.3.2
 
+*** News 09/18/2006 -- New keybinding, "RESET_LINE"
+	The "RESET_LINE" keybinding is intended to be used by tabkey and
+	history recall scripts that need to be able to replace the contents 
+	of the input line without affecting the cut buffer.
+
+	The RESET_LINE keybinding takes an argument (naturally) that is
+	the new value of the input line.  If you don't provide an argument
+	then the input line is simply cleared.
+
+	Example:
+	   /alias oofda {parsekey reset_line this is your new input line}
+	   /bind ^I parse_command {oofda}
+	   (type something and then hit tab)
+
 *** News 09/18/2006 -- New field in server description, "proto"
 	A new (seventh) field, has been added to server descriptions.
 	This field is named "protocol" (see below) and can be abbreviated

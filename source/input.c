@@ -1,4 +1,4 @@
-/* $EPIC: input.c,v 1.33 2006/06/17 04:04:02 jnelson Exp $ */
+/* $EPIC: input.c,v 1.34 2006/09/19 04:05:08 jnelson Exp $ */
 /*
  * input.c: does the actual input line stuff... keeps the appropriate stuff
  * on the input line, handles insert/delete of characters/words... the whole
@@ -1000,6 +1000,24 @@ BUILT_IN_BINDING(input_clear_line)
 	cursor_not_in_display(last_input_screen);
 	update_input(NO_UPDATE);
 }
+
+/*
+ * input_reset_line: clears entire input line, suitable for use in tabscripts
+ * This does not mangle the cutbuffer, so you can use it to replace the input
+ * line w/o any deleterious effects!
+ */
+BUILT_IN_BINDING(input_reset_line)
+{
+	cursor_to_input();
+
+	MIN_CHAR = 0;
+	THIS_POS = MIN_POS;
+
+	for (; *string; string++)
+		input_add_character(*string, NULL);
+	update_input(UPDATE_ALL);
+}
+
 
 /*
  * input_transpose_characters: swaps the positions of the two characters

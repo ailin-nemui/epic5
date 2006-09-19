@@ -1,4 +1,4 @@
-/* $EPIC: keys.c,v 1.48 2006/05/27 18:14:08 jnelson Exp $ */
+/* $EPIC: keys.c,v 1.49 2006/09/19 04:05:08 jnelson Exp $ */
 /*
  * keys.c:  Keeps track of what happens whe you press a key.
  *
@@ -210,6 +210,7 @@ void init_binds (void) {
     ADDBIND("REFRESH_INPUTLINE",	    refresh_inputline		    );
     ADDBIND("REFRESH_SCREEN",		    (BindFunction) refresh_screen   );
     ADDBIND("REFRESH_STATUS",		    (BindFunction) update_all_status);
+    ADDBIND("RESET_LINE",		    input_reset_line		    );
     ADDBIND("REVERSE",			    insert_reverse		    );
     ADDBIND("SCROLL_BACKWARD",		    scrollback_backwards	    );
     ADDBIND("SCROLL_END",		    scrollback_end		    );
