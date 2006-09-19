@@ -1,5 +1,18 @@
 EPIC5-0.3.2
 
+*** News 09/19/2006 -- New /ON, "CHANNEL_LOST" (nullie)
+	This hook is thrown whenever the client leaves a channel for any reason.
+	It is meant as a generalized way for clearing channel-related structures
+	in scripts, instead of having to hook on several other ones (KICK, PART
+	and SERVER_LOST). The parameters are:
+
+	$0 - server refnum where a channel is being destroyed
+	$1 - channel name
+
+	Have one thing in mind, though. This hook isn't necessarily
+	thrown in current server's context. Instead of $servernick(),
+	you need to do $servernick($0).
+
 *** News 09/18/2006 -- New keybinding, "RESET_LINE"
 	The "RESET_LINE" keybinding is intended to be used by tabkey and
 	history recall scripts that need to be able to replace the contents 
