@@ -51,7 +51,7 @@ const	AI	*next_addr;		/* The next one to try upon failure */
 	char	*s_nickname;		/* last NICK command sent */
 	char	*d_nickname;		/* Default nickname to use */
 	char	*unique_id;		/* Unique ID (for ircnet) */
-	size_t	fudge_factor;		/* How much s_nickname's fudged */
+	int	protocol;		/* AF_UNSPEC, AF_INET, or AF_INET6 */
 
 	int	status;			/* See above */
 

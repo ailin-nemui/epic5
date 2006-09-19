@@ -1,4 +1,4 @@
-/* $EPIC: server.c,v 1.202 2006/09/16 16:13:33 jnelson Exp $ */
+/* $EPIC: server.c,v 1.203 2006/09/19 03:08:46 jnelson Exp $ */
 /*
  * server.c:  Things dealing with that wacky program we call ircd.
  *
@@ -79,6 +79,7 @@ typedef struct ServerInfo {
 	char *	nick;
 	char *	group;
 	char *	server_type;
+	char *	proto_type;
 } ServerInfo;
 
 static int	clear_serverinfo (ServerInfo *s);
@@ -99,6 +100,7 @@ static int	clear_serverinfo (ServerInfo *s)
         s->nick = NULL;
         s->group = NULL;
         s->server_type = NULL;
+	s->proto_type = NULL;
 	return 0;
 }
 
@@ -114,13 +116,15 @@ static int	clear_serverinfo (ServerInfo *s)
  * 'passwd'   is the protocol passwd to log onto the server (usually blank)
  * 'nick'     is the nickname you want to use on this server
  * 'group'    is the server group this server belongs to
- * 'type'     is the server type, either "IRC" or "IRC-SSL"
+ * 'type'     is the server protocol type, either "IRC" or "IRC-SSL"
+ * 'proto'    is the socket protocol type, either 'tcp4' or 'tcp6' or neither.
  *
  * --
  * A new-style server description is a colon separated list of values:
  *
  *   host=HOST	   port=PORTNUM   pass=PASSWORD 
- *   nick=NICK     group=GROUP    type=PROTOCOL
+ *   nick=NICK     group=GROUP    type=PROTOCOL_TYPE
+ *   proto=SOCKETYPE
  *
  * for example:
  *	host=irc.server.com:group=efnet:type=IRC-SSL
@@ -131,14 +135,12 @@ static int	clear_serverinfo (ServerInfo *s)
  *
  * --
  * You can mix and match (sort of) the types, but if the meaning of any
- * field that doesn't have a descriptor still has its old meaning.  It's
- * suggested you only do the switch once:
- *
- *	GOOD:  irc.server.com:6666:group=efnet:proto=IRC-SSL
- *	BAD:   irc.server.com:group=efnet:password
+ * field that doesn't have a descriptor follows whatever was in the previous
+ * field.  
+ *	 irc.server.com:group=efnet:IRC-SSL
  */
 
-enum serverinfo_fields { HOST, PORT, PASS, NICK, GROUP, TYPE, LASTFIELD };
+enum serverinfo_fields { HOST, PORT, PASS, NICK, GROUP, TYPE, PROTO, LASTFIELD };
 
 static	int	str_to_serverinfo (const char *str, ServerInfo *s)
 {
@@ -193,6 +195,8 @@ static	int	str_to_serverinfo (const char *str, ServerInfo *s)
 				fieldnum = GROUP;
 			else if (!my_strnicmp(descstr, "T", 1))
 				fieldnum = TYPE;
+			else if (!my_strnicmp(descstr, "PR", 2))
+				fieldnum = PROTO;
 			else
 			{
 				say("Server desc field type [%s] not recognized.", 
@@ -235,6 +239,8 @@ static	int	str_to_serverinfo (const char *str, ServerInfo *s)
 			s->group = descstr;
 		else if (fieldnum == TYPE)
 			s->server_type = descstr;
+		else if (fieldnum == PROTO)
+			s->proto_type = descstr;
 
 		/*
 		 * We go one past "type" because we want to allow
@@ -261,6 +267,7 @@ static	void	free_serverinfo (ServerInfo *si)
 	si->refnum = NOSERV;
 	si->host = si->password = si->nick = NULL;
 	si->group = si->server_type = NULL;
+	si->proto_type = NULL;
 	si->port = 0;
 }
 
@@ -370,7 +377,6 @@ static	int	serverinfo_to_newserv (ServerInfo *si)
 	s->redirect = NULL;
 	s->cookie = NULL;
 	s->closing = 0;
-	s->fudge_factor = 0;
 	s->resetting_nickname = 0;
 	s->quit_message = NULL;
 	s->umode[0] = 0;
@@ -413,6 +419,23 @@ static	int	serverinfo_to_newserv (ServerInfo *si)
 	    else
 		set_server_try_ssl(i, FALSE);
 	}
+
+	if (si->proto_type && *si->proto_type)
+	{
+	    if (my_stricmp(si->proto_type, "tcp4") == 0 ||
+	             my_stricmp(si->proto_type, "4") == 0)
+		s->protocol = AF_INET;
+	    else if (my_stricmp(si->proto_type, "tcp6") == 0 ||
+	             my_stricmp(si->proto_type, "6") == 0)
+		s->protocol = AF_INET6;
+	    else if (my_stricmp(si->proto_type, "tcp") == 0 ||
+	             my_stricmp(si->proto_type, "any") == 0)
+		s->protocol = AF_UNSPEC;
+	    else
+		s->protocol = AF_UNSPEC;
+	}
+	else
+		s->protocol = AF_UNSPEC;
 
 	make_notify_list(i);
 	make_005(i);
@@ -1389,7 +1412,7 @@ int	grab_server_address (int server)
 	new_open(xvfd[1], do_server, NEWIO_READ, 1);
 
 	memset(&hints, 0, sizeof(hints));
-	hints.ai_family = AF_UNSPEC;
+	hints.ai_family = s->protocol;
 	hints.ai_socktype = SOCK_STREAM;
 	hints.ai_flags = AI_ADDRCONFIG;
 	async_getaddrinfo(s->name, ltoa(s->port), &hints, xvfd[0]);
@@ -2345,7 +2368,6 @@ void	accept_server_nickname (int refnum, const char *nick)
 	/* We always accept whatever the server says our new nick is. */
 	malloc_strcpy(&s->nickname, nick);
 	new_free(&s->s_nickname);
-	s->fudge_factor = 0;
 
 	/* Change our default nickname to our new nick, or 0 for unique id's */
 	id = get_server_unique_id(refnum);

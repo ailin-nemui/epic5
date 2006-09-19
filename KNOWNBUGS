@@ -14,8 +14,6 @@ KNOWN ERRATA (eg, bugs, or unresolved requests):
 * Larne and nullie say that stdout can block when running under screen
 * Larne wants @#channel to go to the correct window.
 * Allow server descs to be updated on the fly
-* Add a 'proto' field to servers, 'tcp4' or 'tcp6' (for larne)
-* /window foo kill -> /window describe for want of a command
 
 FROM NULLIE
 -----------
@@ -168,4 +166,5 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * New 'builtins' from blackjac, more modern format, /whowas improvements
 * Refactor the serverinfo stuff
 * Allow skipping of fields in server descs (see UPDATES)
-
+* Make /window foo kill not fall back to /window describe, for want of 'foo'.
+* Add a 'proto' field to server descs (tcp4, tcp6, 4, or 6), see UPDATES.
