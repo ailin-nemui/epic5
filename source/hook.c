@@ -1,4 +1,4 @@
-/* $EPIC: hook.c,v 1.65 2006/09/08 22:52:50 jnelson Exp $ */
+/* $EPIC: hook.c,v 1.66 2006/09/19 12:13:36 jnelson Exp $ */
 /*
  * hook.c: Does those naughty hook functions. 
  *
@@ -139,6 +139,7 @@ typedef struct Hookables
 Hookables hook_function_templates[] =
 {
 	{ "ACTION",		NULL,	3,	0,	0,	NULL },
+	{ "CHANNEL_LOST", 	NULL, 	2,  	0,  	0,  	NULL },
 	{ "CHANNEL_NICK",	NULL,	3,	0,	0,	NULL },
 	{ "CHANNEL_SIGNOFF",	NULL,	3,	0,	0,	NULL },
 	{ "CHANNEL_SYNC",	NULL,	3,	0,	0,	NULL },

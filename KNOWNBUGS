@@ -167,3 +167,4 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Make /window foo kill not fall back to /window describe, for want of 'foo'.
 * Add a 'proto' field to server descs (tcp4, tcp6, 4, or 6), see UPDATES.
 * Add RESET_LINE keybinding, for tabkey and history recall scripts.
+* Add /on channel_lost, from nullie, who needs to write an UPDATES blurb.

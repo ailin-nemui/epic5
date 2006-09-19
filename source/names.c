@@ -1,4 +1,4 @@
-/* $EPIC: names.c,v 1.74 2006/05/27 18:45:59 jnelson Exp $ */
+/* $EPIC: names.c,v 1.75 2006/09/19 12:13:36 jnelson Exp $ */
 /*
  * names.c: This here is used to maintain a list of all the people currently
  * on your channel.  Seems to work 
@@ -309,6 +309,7 @@ void 	remove_channel (const char *channel, int server)
 	{
 		if ((tmp = find_channel(channel, server)))
 		{
+			do_hook(CHANNEL_LOST_LIST, "%d %s", tmp->server, tmp->channel);
 			destroy_channel(tmp);
 			new_free((char **)&tmp);
 		}
@@ -1302,6 +1303,7 @@ void 	destroy_server_channels (int server)
 		reset = 0;
 		if (tmp->server != server)
 			continue;
+		do_hook(CHANNEL_LOST_LIST, "%d %s", tmp->server, tmp->channel);
 		destroy_channel(tmp);
 		new_free((char **)&tmp);
 		reset = 1;
