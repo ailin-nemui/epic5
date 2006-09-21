@@ -241,5 +241,7 @@ typedef struct
 	char	*get_set		(const char *);
 	char *	make_string_var_bydata	(int, void *);
 	int	set_variable		(const char *, IrcVariable *, const char *, int);
+	IrcVariable *   clone_biv	(IrcVariable *);
+	void	unclone_biv		(const char *, IrcVariable *);
 
 #endif /* _VARS_H_ */

@@ -11,8 +11,8 @@ KNOWN ERRATA (eg, bugs, or unresolved requests):
   differently.
 * Need better code to handle merging of levels when putting a new window
   on an existing server (for larne)
-* Larne and nullie say that stdout can block when running under screen
 * Larne wants @#channel to go to the correct window.
+* Make notices support @#chanel -> #channel
 * Allow server descs to be updated on the fly
 
 FROM NULLIE
@@ -41,6 +41,7 @@ LOOK FOR IN THE FUTURE
 * str_to_mask() should be silent, callers should be warning.
 * Support for 64 bit ints could be more widespread
 * Larne wants suppression of duplicated lines (like syslog maybe?)
+* Larne and nullie say that stdout can block when running under screen
 
 [See http://www.epicsol.org/PROJECTS for things to come in the future]
 [See http://www.epicsol.org/CHANGELOG5 for things that changed in the past]
@@ -137,6 +138,7 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Add /encrypt -clear so you can purge your crypto list (for debugging)
 * Don't output the key for SEDSHA and AESSHA in binary mode (convert to hex)
 * Fix external encryption support.
+* Release epic5-0.3.1
 * Fix compile errors for non-openssl users.
 * Fix breakage for solaris found by zlonix
 * Fix %{2}+ so it behaves like %+ and not like %{1}+, as per the docs.
@@ -169,3 +171,5 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Add RESET_LINE keybinding, for tabkey and history recall scripts.
 * Add /on channel_lost, from nullie, who needs to write an UPDATES blurb.
 * Fix bug with reset_line, found by nullie.
+* Finish implementation of /stack push|pop set with symbol table, rb nullie.
+* Preliminary work making @#chan public show up in #chan's window.

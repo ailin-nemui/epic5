@@ -1,4 +1,4 @@
-/* $EPIC: parse.c,v 1.81 2006/09/06 22:12:40 jnelson Exp $ */
+/* $EPIC: parse.c,v 1.82 2006/09/21 12:09:09 jnelson Exp $ */
 /*
  * parse.c: handles messages from the server.   Believe it or not.  I
  * certainly wouldn't if I were you. 
@@ -87,6 +87,24 @@ int 	is_channel (const char *to)
 
 	return ((*to == MULTI_CHANNEL) || (*to == STRING_CHANNEL) ||
 		(*to == LOCAL_CHANNEL) || (*to == ID_CHANNEL));
+}
+
+/*
+ * is_to_channel: determines if the argument is a channel target for
+ * privmsg/notice.  STATUSMSG can appear before CHANTYPES on 005 servers.
+ */
+int	is_target_channel_wall (const char *to)
+{
+	const char *	statusmsg;
+
+	if (!to || !*to)
+		return 0;
+
+	statusmsg = get_server_005(from_server, "STATUSMSG");
+	if (statusmsg && strchr(statusmsg, to[0]))
+		return 1;
+	else
+		return 0;
 }
 
 
@@ -270,7 +288,7 @@ static void	p_wallops (const char *from, const char *comm, const char **ArgList)
 
 static void	p_privmsg (const char *from, const char *comm, const char **ArgList)
 {
-	const char	*target, *message;
+	const char	*real_target, *target, *message;
 	int		hook_type,
 			level;
 	const char	*hook_format;
@@ -301,6 +319,13 @@ static void	p_privmsg (const char *from, const char *comm, const char **ArgList)
 		set_server_doing_privmsg(from_server, 0);
 		return;
 	}
+
+	/* If this is a @#chan or +#chan, ignore the @ or +.
+	real_target = target;
+	if (is_target_channel_wall(target) && 
+			im_on_channel(target + 1, from_server))
+		target++;
+
 	/* ooops. cant just do is_channel(to) because of # walls... */
 	if (is_channel(target) && im_on_channel(target, from_server))
 	{
@@ -314,6 +339,10 @@ static void	p_privmsg (const char *from, const char *comm, const char **ArgList)
 		} else if (is_current_channel(target, from_server)) {
 			hook_type = PUBLIC_LIST;
 			hook_format = "<%s%.0s> %s";
+		} else if (target != real_target && 
+				is_current_channel(target, from_server)) {
+			hook_type = PUBLIC_LIST;
+			hook_format = "<%s:%s> %s";
 		} else {
 			hook_type = PUBLIC_OTHER_LIST;
 			hook_format = "<%s:%s> %s";
@@ -340,7 +369,8 @@ static void	p_privmsg (const char *from, const char *comm, const char **ArgList)
 	if (!target || !*target)
 		target = from;		/* Target is actually sender here */
 
-	if (check_ignore_channel(from, FromUserHost, target, level) == IGNORED)
+	if (check_ignore_channel(from, FromUserHost, target, level) == IGNORED
+         || (check_ignore_channel(from, FromUserHost, real_target, level) == IGNORED))
 	{
 		set_server_doing_privmsg(from_server, 0);
 		return;
@@ -353,8 +383,8 @@ static void	p_privmsg (const char *from, const char *comm, const char **ArgList)
 
 		sed = 0;
 		l = message_from(target, level);
-		if (do_hook(ENCRYPTED_PRIVMSG_LIST, "%s %s %s", from, target,
-				message))
+		if (do_hook(ENCRYPTED_PRIVMSG_LIST, "%s %s %s", 
+					from, real_target, message))
 			do_return = 0;
 		pop_message_from(l);
 
@@ -381,7 +411,7 @@ static void	p_privmsg (const char *from, const char *comm, const char **ArgList)
 	/* Go ahead and throw it to the user */
 	l = message_from(target, level);
 
-	if (do_hook(GENERAL_PRIVMSG_LIST, "%s %s %s", from, target, message))
+	if (do_hook(GENERAL_PRIVMSG_LIST, "%s %s %s", from, real_target, message))
 	{
 	    if (hook_type == MSG_LIST)
 	    {
@@ -399,8 +429,8 @@ static void	p_privmsg (const char *from, const char *comm, const char **ArgList)
 		}
 	    }
 
-	    else if (do_hook(hook_type, "%s %s %s", from, target, message))
-		put_it(hook_format, from, check_channel_type(target), message);
+	    else if (do_hook(hook_type, "%s %s %s", from, real_target, message))
+		put_it(hook_format, from, check_channel_type(real_target), message);
 	}
 
 	/* Clean up and go home. */

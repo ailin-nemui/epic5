@@ -1,4 +1,4 @@
-/* $EPIC: vars.c,v 1.90 2006/08/27 20:12:04 jnelson Exp $ */
+/* $EPIC: vars.c,v 1.91 2006/09/21 12:09:09 jnelson Exp $ */
 /*
  * vars.c: All the dealing of the irc variables are handled here. 
  *
@@ -131,6 +131,98 @@ static int	add_biv (const char *name, int bucket, int type, void (*func) (void *
 	}
 	else
 		return -1;
+}
+
+/* 
+ * Create a clone of 'var' suitable for putting on the symbol table stack 
+ * This does not create a new built in variable!
+ * The new IrcVariable created here can be "used" by $symbolctl() but
+ * can not be put into the bucket!  
+ * Pass it to 'unclone_biv' later.
+ */
+IrcVariable *	clone_biv (IrcVariable *old)
+{
+	IrcVariable *var;
+	va_list va;
+	int numval;
+	const char *strval;
+
+	var = (IrcVariable *)new_malloc(sizeof(IrcVariable));
+	var->type = old->type;
+	if (old->script)
+		var->script = malloc_strdup(old->script);
+	else
+		var->script = NULL;
+	var->func = old->func;
+
+	var->data = new_malloc(sizeof(union builtin_variable));
+	var->flags = 0;
+
+	switch (old->type) {
+	    case BOOL_VAR:
+	    case CHAR_VAR:
+	    case INT_VAR:
+		var->data->integer = old->data->integer;
+		break;
+	    case STR_VAR:
+		if (old->data->string)
+			var->data->string = malloc_strdup(old->data->string);
+		else
+			var->data->string = NULL;
+		break;
+	}
+
+	return var;
+}
+
+/* 
+ * Restore the value of a previously cloned biv.  This does not create
+ * or remove a biv from the bucket!
+ */
+void	unclone_biv (const char *name, IrcVariable *clone)
+{
+	IrcVariable *var;
+	va_list va;
+	int numval;
+	const char *strval;
+	int	i;
+
+	for (i = 0; i < var_bucket->numitems; i++)
+	{
+	    if (!strcmp(name, var_bucket->list[i].name))
+	    {
+		var = (IrcVariable *)var_bucket->list[i].stuff;
+		var->type = clone->type;
+		if (clone->script)
+		{
+			malloc_strcpy(&var->script, clone->script);
+			new_free(&clone->script);
+		}
+		else
+			new_free(&var->script);
+
+		var->flags = clone->flags;
+
+		switch (clone->type) {
+		    case BOOL_VAR:
+		    case CHAR_VAR:
+		    case INT_VAR:
+			var->data->integer = clone->data->integer;
+			break;
+		    case STR_VAR:
+			if (clone->data->string)
+			    malloc_strcpy(&var->data->string, clone->data->string);
+			else
+			    new_free(&var->data->string);
+			new_free(&clone->data->string);
+			break;
+		}
+
+		new_free(&clone->data);
+		new_free(&clone);
+		return;
+	     }
+	}
 }
 
 #define VAR(x, y, z) x ## _VAR = add_biv( #x, 1, y ## _VAR, z,NULL, DEFAULT_ ## x);

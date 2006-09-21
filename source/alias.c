@@ -1,4 +1,4 @@
-/* $EPIC: alias.c,v 1.78 2006/06/06 05:08:48 jnelson Exp $ */
+/* $EPIC: alias.c,v 1.79 2006/09/21 12:09:09 jnelson Exp $ */
 /*
  * alias.c -- Handles the whole kit and caboodle for aliases.
  *
@@ -3166,7 +3166,7 @@ int	stack_list_builtin_expando_alias (const char *name)
 
 
 /* * * */
-static int	stack_push_builtin_var_alias (const char *name)
+int	stack_push_builtin_var_alias (const char *name)
 {
 	Symbol *item, *sym;
 	int	cnt = 0, loc = 0;
@@ -3179,14 +3179,14 @@ static int	stack_push_builtin_var_alias (const char *name)
 	}
 
 	sym = make_new_Symbol(name);
-	sym->builtin_variable = item->builtin_variable;
+	sym->builtin_variable = clone_biv(item->builtin_variable);
 	sym->saved = item->saved;
 	sym->saved_hint = SAVED_BUILTIN_VAR;
 	item->saved = sym;
 	return 0;
 }
 
-static int	stack_pop_builtin_var_alias (const char *name)
+int	stack_pop_builtin_var_alias (const char *name)
 {
 	Symbol *item, *sym, *s, *n;
 	int	cnt = 0, loc = 0;
@@ -3205,7 +3205,7 @@ static int	stack_pop_builtin_var_alias (const char *name)
 
 	s = sym->saved;
 	n = sym->saved->saved;
-	item->builtin_variable = s->builtin_variable;
+	unclone_biv(name, s->builtin_variable);
 	s->builtin_variable = NULL;
 
 	if (GC_symbol(s, NULL, -1))
@@ -3214,7 +3214,7 @@ static int	stack_pop_builtin_var_alias (const char *name)
 	return 0;
 }
 
-static int	stack_list_builtin_variable_alias (const char *name)
+int	stack_list_builtin_var_alias (const char *name)
 {
 	Symbol *item, *sym;
 	int	counter = 0;

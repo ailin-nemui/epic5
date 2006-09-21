@@ -1,4 +1,4 @@
-/* $EPIC: commands.c,v 1.152 2006/09/08 22:52:50 jnelson Exp $ */
+/* $EPIC: commands.c,v 1.153 2006/09/21 12:09:09 jnelson Exp $ */
 /*
  * commands.c -- Stuff needed to execute commands in ircII.
  *		 Includes the bulk of the built in commands for ircII.
@@ -2612,7 +2612,25 @@ BUILT_IN_COMMAND(stackcmd)
 		    new_free(&n);
 		}
 		else if (!my_strnicmp(arg, "SET", len))
-			do_stack_set(type, args);
+		{
+		    n = remove_brackets(args, subargs);
+		    if (type == STACK_PUSH)
+		    {
+			if (stack_push_builtin_var_alias(n))
+			    say("Can't push SET %s", n);
+		    }
+		    else if (type == STACK_POP)
+		    {
+			if (stack_pop_builtin_var_alias(n))
+			    say("Can't pop SET %s", n);
+		    }
+		    else
+		    {
+			if (stack_list_builtin_var_alias(n))
+			    say("Can't list SET %s", n);
+		    }
+		    new_free(&n);
+		}
 		else if (!my_strnicmp(arg, "BIND", len))
 			do_stack_bind(type, args);
 		else
