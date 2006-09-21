@@ -1,4 +1,4 @@
-/* $EPIC: parse.c,v 1.82 2006/09/21 12:09:09 jnelson Exp $ */
+/* $EPIC: parse.c,v 1.83 2006/09/21 13:47:16 jnelson Exp $ */
 /*
  * parse.c: handles messages from the server.   Believe it or not.  I
  * certainly wouldn't if I were you. 
@@ -320,7 +320,7 @@ static void	p_privmsg (const char *from, const char *comm, const char **ArgList)
 		return;
 	}
 
-	/* If this is a @#chan or +#chan, ignore the @ or +.
+	/* If this is a @#chan or +#chan, ignore the @ or +. */
 	real_target = target;
 	if (is_target_channel_wall(target) && 
 			im_on_channel(target + 1, from_server))
