@@ -1,4 +1,4 @@
-/* $EPIC: commands.c,v 1.153 2006/09/21 12:09:09 jnelson Exp $ */
+/* $EPIC: commands.c,v 1.154 2006/09/21 12:51:16 jnelson Exp $ */
 /*
  * commands.c -- Stuff needed to execute commands in ircII.
  *		 Includes the bulk of the built in commands for ircII.
@@ -3625,7 +3625,7 @@ static	unsigned 	level = 0;
 			builtin(cmd, args, subargs);
 		else if (get_int_var(DISPATCH_UNKNOWN_COMMANDS_VAR))
 			send_to_server("%s %s", cmd, args);
-		else
+		else if (do_hook(UNKNOWN_COMMAND_LIST, "%s %s", cmd, args))
 			say("Unknown command: %s", cmd);
 
 		new_free(&cmd);

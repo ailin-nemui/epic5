@@ -1,5 +1,14 @@
 EPIC5-0.3.2
 
+*** News 09/19/2006 -- New /ON, "UNKNOWN_COMMAND" (nullie)
+	The hook is thrown whenever an unknown command is entered on the
+	command line or specified in a script. This way, you can
+	complete a partial command name with an ambiguous hook. The
+	params are:
+
+	$0 - command being unknown
+	$1 - parameters, if any
+
 *** News 09/19/2006 -- New /ON, "CHANNEL_LOST" (nullie)
 	This hook is thrown whenever the client leaves a channel for any reason.
 	It is meant as a generalized way for clearing channel-related structures

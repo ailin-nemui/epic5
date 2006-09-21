@@ -1,4 +1,4 @@
-/* $EPIC: hook.c,v 1.66 2006/09/19 12:13:36 jnelson Exp $ */
+/* $EPIC: hook.c,v 1.67 2006/09/21 12:51:16 jnelson Exp $ */
 /*
  * hook.c: Does those naughty hook functions. 
  *
@@ -221,6 +221,7 @@ Hookables hook_function_templates[] =
 	{ "SWITCH_WINDOWS",	NULL,	4,	0,	0,	NULL },
 	{ "TIMER",		NULL,	1,	0,	0,	NULL },
 	{ "TOPIC",		NULL,	2,	0,	0,	NULL },
+	{ "UNKNOWN_COMMAND",	NULL,	2,	0,	HF_NORECURSE, 	NULL},
 	{ "UNLOAD",		NULL,	1,	0,	0,	NULL },
 	{ "WALL",		NULL,	2,	0,	0,	NULL },
 	{ "WALLOP",		NULL,	3,	0,	0,	NULL },

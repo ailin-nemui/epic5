@@ -14,6 +14,7 @@ KNOWN ERRATA (eg, bugs, or unresolved requests):
 * Larne wants @#channel to go to the correct window.
 * Make notices support @#chanel -> #channel
 * Allow server descs to be updated on the fly
+* Memory leaks if user deletes their own /set's?
 
 FROM NULLIE
 -----------
@@ -173,3 +174,4 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Fix bug with reset_line, found by nullie.
 * Finish implementation of /stack push|pop set with symbol table, rb nullie.
 * Preliminary work making @#chan public show up in #chan's window.
+* Add /ON UNKNOWN_COMMAND from nullie (thanks!)
