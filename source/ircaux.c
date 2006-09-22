@@ -1,4 +1,4 @@
-/* $EPIC: ircaux.c,v 1.160 2006/09/22 00:51:54 jnelson Exp $ */
+/* $EPIC: ircaux.c,v 1.161 2006/09/22 12:24:53 jnelson Exp $ */
 /*
  * ircaux.c: some extra routines... not specific to irc... that I needed 
  *
@@ -4811,7 +4811,6 @@ static ssize_t	url_decoder (const char *orig, size_t orig_len, const void *meta,
 static ssize_t	enc_encoder (const char *orig, size_t orig_len, const void *meta, char *dest, size_t dest_len)
 {
 	size_t	orig_i, dest_i;
-	int	val1, val2;
 	ssize_t	count = 0;
 
         if (!orig || !dest)
@@ -4842,7 +4841,6 @@ static ssize_t	enc_encoder (const char *orig, size_t orig_len, const void *meta,
 static ssize_t	enc_decoder (const char *orig, size_t orig_len, const void *meta, char *dest, size_t dest_len)
 {
 	size_t	orig_i, dest_i;
-	int	val1, val2;
 	ssize_t	count = 0;
 
         if (!orig || !dest)
@@ -4886,7 +4884,6 @@ static int      posfunc (char c)
 static ssize_t	b64_encoder (const char *orig, size_t orig_len, const void *meta, char *dest, size_t dest_len)
 {
 	size_t	orig_i, dest_i;
-	int	val1, val2;
 	ssize_t	count = 0;
 
         if (!orig || !dest)
@@ -4958,7 +4955,6 @@ static unsigned int     token_decode (const char *token)
 static ssize_t	b64_decoder (const char *orig, size_t orig_len, const void *meta, char *dest, size_t dest_len)
 {
 	size_t	orig_i, dest_i;
-	int	val1, val2;
 	ssize_t	count = 0;
 
         if (!orig || !dest)
@@ -5011,7 +5007,6 @@ static ssize_t	sed_decoder (const char *orig, size_t orig_len, const void *meta,
 static ssize_t	ctcp_encoder (const char *orig, size_t orig_len, const void *meta, char *dest, size_t dest_len)
 {
 	size_t	orig_i, dest_i;
-	int	val1, val2;
 	ssize_t	count = 0;
 
         if (!orig || !dest)
@@ -5064,7 +5059,6 @@ static ssize_t	ctcp_encoder (const char *orig, size_t orig_len, const void *meta
 static ssize_t	ctcp_decoder (const char *orig, size_t orig_len, const void *meta, char *dest, size_t dest_len)
 {
 	size_t	orig_i, dest_i;
-	int	val1, val2;
 	ssize_t	count = 0;
 
         if (!orig || !dest)
@@ -5110,7 +5104,6 @@ static ssize_t	ctcp_decoder (const char *orig, size_t orig_len, const void *meta
 static ssize_t	null_encoder (const char *orig, size_t orig_len, const void *meta, char *dest, size_t dest_len)
 {
 	size_t	orig_i, dest_i;
-	int	val1, val2;
 	ssize_t	count = 0;
 
         if (!orig || !dest)
@@ -5169,7 +5162,6 @@ struct Transformer default_transformers[] = {
 
 size_t	transform_string (int type, int encoding, const char *meta, const char *orig_str, size_t orig_str_len, char *dest_str, size_t dest_str_len)
 {
-	char *	retval;
 	int	x;
 
 	*dest_str = 0;

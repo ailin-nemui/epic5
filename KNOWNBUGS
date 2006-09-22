@@ -179,3 +179,4 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Fix bug with '' in the new math parser being NULL instead of empty string
 * Add support for @#chan via notices to show up in #chan's window
 * MORON.  Don't replace a 'return' with something that doesn't return!
+* Don't call happykey() on a plain text password (valgrind)

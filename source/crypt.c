@@ -1,4 +1,4 @@
-/* $EPIC: crypt.c,v 1.30 2006/07/07 05:53:00 jnelson Exp $ */
+/* $EPIC: crypt.c,v 1.31 2006/09/22 12:24:53 jnelson Exp $ */
 /*
  * crypt.c: The /ENCRYPT command and all its attendant baggage.
  *
@@ -135,7 +135,7 @@ static void	add_to_crypt (Char *nick, Char *serv, Char *key, Char *prog, int typ
 
 static	Crypt *	internal_is_crypted (Char *nick, Char *serv, int type)
 {
-        Crypt   *item = NULL, *tmp;
+        Crypt   *tmp;
 
         for (tmp = crypt_list; tmp; tmp = tmp->next)
         {
@@ -185,7 +185,7 @@ static void	cleanse_crypto_item (Crypt *item)
  */
 static int	internal_remove_crypt (Char *nick, Char *serv, int type)
 {
-	Crypt	*item = NULL, *tmp;
+	Crypt	*item = NULL;
 
 	if ((item = internal_is_crypted(nick, serv, type)) &&
 		(remove_item_from_list((List **)&crypt_list, (List *)item)))
@@ -248,7 +248,6 @@ static	void	clear_crypto_list (void)
 Crypt *	is_crypted (Char *nick, int serv, int ctcp_type)
 {
 	Crypt *	tmp;
-	Crypt *	best = NULL;
 	int	type = NOCRYPT;
 	int	i;
 
@@ -374,8 +373,7 @@ usage_error:
 		say("Will now cipher messages with '%s' on '%s' using '%s' "
 			"with the key '%s'.",
 				nick, serv ? serv : "<any>",
-				prog ? prog : ciphers[type].username, 
-				happykey(key, type));
+				prog ? prog : ciphers[type].username, key);
 	    }
 	    else if (internal_remove_crypt(nick, serv, type))
 		say("Not ciphering messages with '%s' on '%s'.",
@@ -427,10 +425,8 @@ char *	crypt_msg (const unsigned char *str, Crypt *key)
 {
 	char	*ptr;
 	char	buffer[CRYPT_BUFFER_SIZE + 1];
-	char	prefix[17];
 	int	i;
 	unsigned char *my_str;
-	const char *ctcpname;
 
 	/* Convert the plaintext into ciphertext */
 	i = (int)strlen(str);
