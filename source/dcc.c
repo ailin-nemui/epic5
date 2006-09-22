@@ -1,4 +1,4 @@
-/* $EPIC: dcc.c,v 1.134 2006/07/01 04:17:12 jnelson Exp $ */
+/* $EPIC: dcc.c,v 1.135 2006/09/22 00:24:21 jnelson Exp $ */
 /*
  * dcc.c: Things dealing client to client connections. 
  *
@@ -508,6 +508,7 @@ static	DCC_list *dcc_create (
 	new_client->othername 		= malloc_strdup(othername);
 	new_client->bytes_read 		= 0;
 	new_client->bytes_sent 		= 0;
+	new_client->bytes_acked		= 0;
 	new_client->starttime.tv_sec 	= 0;
 	new_client->starttime.tv_usec 	= 0;
 	new_client->holdtime.tv_sec 	= 0;
@@ -518,6 +519,7 @@ static	DCC_list *dcc_create (
 	new_client->open_callback	= NULL;
 	new_client->refnum		= dcc_refnum++;
 	new_client->server		= from_server;
+	new_client->updates_status	= 1;
 	get_time(&new_client->lasttime);
 
 	if (x_debug & DEBUG_DCC_XMIT)
@@ -668,6 +670,7 @@ static	DCC_list *dcc_searchlist (
 	return NULL;
 }
 
+#if 0
 /*
  * dcc_bucket searches through the dcc_list and collects the clients
  * with the the flag described in type set.  This function should never
@@ -810,6 +813,7 @@ static	int	dcc_bucket (
 	unlock_dcc(NULL);
 	return count;
 }
+#endif
 
 /*
  * dcc_get_bucket searches through the dcc_list and collects the clients
@@ -3500,7 +3504,6 @@ yell("###    dcc->bytes_acked ["INTMAX_FORMAT"]", 	dcc->bytes_acked);
 static void	process_dcc_send_data (DCC_list *dcc)
 {
 	intmax_t	fill_window;
-	Timeval	to;
 	ssize_t	bytesread;
 	char	tmp[DCC_BLOCK_SIZE+1];
 	int	old_from_server = from_server;
@@ -4011,7 +4014,6 @@ char *	dccctl (char *input)
 	DCC_list *	client;
 	char *		retval = NULL;
 	size_t		clue = 0;
-	Timeval		to;
 
 	GET_STR_ARG(listc, input);
 	len = strlen(listc);

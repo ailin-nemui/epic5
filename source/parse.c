@@ -1,4 +1,4 @@
-/* $EPIC: parse.c,v 1.83 2006/09/21 13:47:16 jnelson Exp $ */
+/* $EPIC: parse.c,v 1.84 2006/09/22 00:24:21 jnelson Exp $ */
 /*
  * parse.c: handles messages from the server.   Believe it or not.  I
  * certainly wouldn't if I were you. 
@@ -1217,6 +1217,7 @@ static 	void 	p_snotice (const char *from, const char *to, const char *line)
 static void 	p_notice (const char *from, const char *comm, const char **ArgList)
 {
 	const char 	*target, *message;
+	const char	*real_target;
 	int		hook_type;
 	const char *	flood_channel = NULL;
 	int		l;
@@ -1243,6 +1244,12 @@ static void 	p_notice (const char *from, const char *comm, const char **ArgList)
 		set_server_doing_notice(from_server, 0);
 		return;
 	}
+
+	/* If this is a @#chan or +#chan, ignore the @ or +. */
+	real_target = target;
+	if (is_target_channel_wall(target) &&
+			im_on_channel(target + 1, from_server))
+		target++;
 
 	/* Check to see if it is a "Server Notice" */
 	if ((!from || !*from) || !strcmp(get_server_itsname(from_server), from))
@@ -1296,7 +1303,7 @@ static void 	p_notice (const char *from, const char *comm, const char **ArgList)
 		l = message_from(target, LEVEL_NOTICE);
 
 		if (do_hook(ENCRYPTED_NOTICE_LIST, "%s %s %s", 
-				from, target, message))
+				from, real_target, message))
 			do_return = 0;
 
 		pop_message_from(l);
@@ -1317,7 +1324,7 @@ static void 	p_notice (const char *from, const char *comm, const char **ArgList)
 	/* Go ahead and throw it to the user */
 	l = message_from(target, LEVEL_NOTICE);
 
-	if (do_hook(GENERAL_NOTICE_LIST, "%s %s %s", from, target, message))
+	if (do_hook(GENERAL_NOTICE_LIST, "%s %s %s", from,real_target, message))
 	{
 	    if (hook_type == NOTICE_LIST)
 	    {
@@ -1326,8 +1333,8 @@ static void 	p_notice (const char *from, const char *comm, const char **ArgList)
 	    }
 	    else
 	    {
-		if (do_hook(hook_type, "%s %s %s", from, target, message))
-			put_it("-%s:%s- %s", from, target, message);
+		if (do_hook(hook_type, "%s %s %s", from, real_target, message))
+			put_it("-%s:%s- %s", from, real_target, message);
 	    }
 	}
 

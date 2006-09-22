@@ -1,4 +1,4 @@
-/* $EPIC: window.c,v 1.169 2006/09/16 16:38:53 jnelson Exp $ */
+/* $EPIC: window.c,v 1.170 2006/09/22 00:24:21 jnelson Exp $ */
 /*
  * window.c: Handles the organzation of the logical viewports (``windows'')
  * for irc.  This includes keeping track of what windows are open, where they
@@ -301,6 +301,7 @@ Window	*new_window (Screen *screen)
 	 * STAGE 2 -- Bringing the window to life 
 	 */
 	/* Initialize the scrollback */
+	new_w->rebuild_scrollback = 0;
 	new_w->top_of_scrollback = new_display_line(NULL, new_w);
 	new_w->top_of_scrollback->line = NULL;
 	new_w->top_of_scrollback->next = NULL;
