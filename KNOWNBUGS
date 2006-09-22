@@ -175,3 +175,6 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Finish implementation of /stack push|pop set with symbol table, rb nullie.
 * Preliminary work making @#chan public show up in #chan's window.
 * Add /ON UNKNOWN_COMMAND from nullie (thanks!)
+* Fix valgrind bugs that nullie found (yay!)
+* Fix bug with '' in the new math parser being NULL instead of empty string
+* Add support for @#chan via notices to show up in #chan's window
