@@ -1,4 +1,4 @@
-/* $EPIC: ircaux.c,v 1.159 2006/09/22 00:24:21 jnelson Exp $ */
+/* $EPIC: ircaux.c,v 1.160 2006/09/22 00:51:54 jnelson Exp $ */
 /*
  * ircaux.c: some extra routines... not specific to irc... that I needed 
  *
@@ -760,7 +760,10 @@ char *	malloc_strcat_ues_c (char **dest, const char *src, const char *special, s
 	 * 'src' is null or empty.
 	 */
 	if (!src || !*src)
+	{
 		malloc_strcat_c(dest, empty_string, cluep);
+		return *dest;
+	}
 
 	/* If we're not dequoting, cut it short and return. */
 	if (special == NULL)
