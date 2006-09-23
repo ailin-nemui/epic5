@@ -198,6 +198,9 @@
 	int	stack_push_builtin_expando_alias (const char *name);
 	int     stack_pop_builtin_expando_alias (const char *name);
 	int     stack_list_builtin_expando_alias (const char *name);
+	int	stack_push_builtin_var_alias (const char *name);
+	int     stack_pop_builtin_var_alias (const char *name);
+	int     stack_list_builtin_var_alias (const char *name);
 
 
 /*

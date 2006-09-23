@@ -1,4 +1,4 @@
-/* $EPIC: server.c,v 1.203 2006/09/19 03:08:46 jnelson Exp $ */
+/* $EPIC: server.c,v 1.204 2006/09/23 02:56:44 jnelson Exp $ */
 /*
  * server.c:  Things dealing with that wacky program we call ircd.
  *
@@ -321,10 +321,13 @@ static	int	serverinfo_to_servref (ServerInfo *si)
 	return NOSERV;
 }
 
+#if 0
 static	int	update_server_from_str (int refnum, const char *str)
 {
 	say("Updating server descs on the fly not implemented yet.");
+	return 0;
 }
+#endif
 
 static	int	serverinfo_to_newserv (ServerInfo *si)
 {

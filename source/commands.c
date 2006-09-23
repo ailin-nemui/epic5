@@ -1,4 +1,4 @@
-/* $EPIC: commands.c,v 1.154 2006/09/21 12:51:16 jnelson Exp $ */
+/* $EPIC: commands.c,v 1.155 2006/09/23 02:56:44 jnelson Exp $ */
 /*
  * commands.c -- Stuff needed to execute commands in ircII.
  *		 Includes the bulk of the built in commands for ircII.
@@ -1674,7 +1674,6 @@ static void	loader_std (FILE *fp, const char *filename, const char *subargs, str
 	char 	*start, *real_start, *current_row;
 #define MAX_LINE_SIZE BIG_BUFFER_SIZE * 5
 	char	buffer[MAX_LINE_SIZE * 2 + 1];
-const	char	*defargs;
 
 	loadinfo->loader = "std";
 
@@ -2525,9 +2524,7 @@ BUILT_IN_COMMAND(shift_cmd)
 BUILT_IN_COMMAND(sleepcmd)
 {
 	char	*arg;
-	Timeval	interval;
 	float	nms;
-	time_t	sec;
 
 	if ((arg = next_arg(args, &args)) != NULL)
 	{
@@ -3393,7 +3390,6 @@ void	runcmds (const char *what, const char *subargs)
 static void	parse_block (const char *org_line, const char *args, int interactive)
 {
 	char	*line = NULL;
-	char 	*stuff = NULL;
 	ssize_t	span;
 
 	/* 

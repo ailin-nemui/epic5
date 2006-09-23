@@ -31,7 +31,7 @@ alias grep {
 	};
 };
 
-/* Write a line to a file w/o using the logging features */
+: {/* Write a line to a file w/o using the logging features */}
 alias log_it {
 	@ fd = open($0 W);
 	@ write($fd $1-);

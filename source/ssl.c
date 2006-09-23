@@ -1,4 +1,4 @@
-/* $EPIC: ssl.c,v 1.22 2006/06/23 05:03:11 jnelson Exp $ */
+/* $EPIC: ssl.c,v 1.23 2006/09/23 02:56:44 jnelson Exp $ */
 /*
  * ssl.c: SSL connection functions
  *
@@ -383,8 +383,6 @@ int	ssl_connected (int vfd)
 	X509 *          server_cert;
 	EVP_PKEY *      server_pkey;
 	ssl_info *	x;
-	int		errcode;
-	int		ssl_err;
 
 	if (!(x = find_ssl(vfd)))
 	{

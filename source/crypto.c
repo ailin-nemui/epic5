@@ -1,4 +1,4 @@
-/* $EPIC: crypto.c,v 1.6 2006/07/23 14:00:41 jnelson Exp $ */
+/* $EPIC: crypto.c,v 1.7 2006/09/23 02:56:44 jnelson Exp $ */
 /*
  * crypto.c: SED/CAST5/BLOWFISH/AES encryption and decryption routines.
  *
@@ -176,9 +176,6 @@ static char *	encrypt_by_prog (const unsigned char *str, size_t *len, Crypt *key
 
 unsigned char *	decipher_message (const unsigned char *ciphertext, size_t len, Crypt *key, int *retlen)
 {
-	unsigned char *	copy, *free_it;
-	size_t	copylen = 0, decipher_len = 0;
-
     do
     {
 	if (key->type == CAST5CRYPT || key->type == BLOWFISHCRYPT ||
@@ -188,7 +185,7 @@ unsigned char *	decipher_message (const unsigned char *ciphertext, size_t len, C
 #ifdef HAVE_SSL
 	    const EVP_CIPHER *type;
 	    int	bytes_to_trim;
-	    int blocksize, keylen;
+	    int blocksize;
 
 	    if (key->type == CAST5CRYPT)
 	    {
@@ -354,11 +351,6 @@ static char *	decrypt_by_prog (const unsigned char *str, size_t *len, Crypt *key
 /*************************************************************************/
 unsigned char *	cipher_message (const unsigned char *orig_message, size_t len, Crypt *key, int *retlen)
 {
-	unsigned char *	copy, *free_it;
-	size_t	copylen = 0, decipher_len = 0;
-	int	bytes_to_trim;
-	size_t	ivlen;
-
 	if (retlen)
 		*retlen = 0;
 	if (!orig_message || !key || !retlen)
@@ -369,6 +361,7 @@ unsigned char *	cipher_message (const unsigned char *orig_message, size_t len, C
 	{
 	    unsigned char *ciphertext = NULL;
 #ifdef HAVE_SSL
+	    size_t	ivlen;
 	    const EVP_CIPHER *type;
 
 	    if (key->type == CAST5CRYPT)

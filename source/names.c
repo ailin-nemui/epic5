@@ -1,4 +1,4 @@
-/* $EPIC: names.c,v 1.75 2006/09/19 12:13:36 jnelson Exp $ */
+/* $EPIC: names.c,v 1.76 2006/09/23 02:56:44 jnelson Exp $ */
 /*
  * names.c: This here is used to maintain a list of all the people currently
  * on your channel.  Seems to work 
@@ -1715,11 +1715,8 @@ void	channel_check_windows (void)
 void	channels_swap_winrefs (int oldref, int newref)
 {
 	Channel	*tmp = NULL;
-	Window *w = NULL;
-	int	reset = 0;
 
-	for (tmp = channel_list; tmp; 
-		reset ? (tmp = channel_list) : (tmp = tmp->next))
+	for (tmp = channel_list; tmp; tmp = tmp->next)
 	{
 		if (tmp->winref == newref)
 			tmp->winref = oldref;

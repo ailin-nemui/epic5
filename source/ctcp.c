@@ -1,4 +1,4 @@
-/* $EPIC: ctcp.c,v 1.53 2006/07/05 23:40:14 jnelson Exp $ */
+/* $EPIC: ctcp.c,v 1.54 2006/09/23 02:56:44 jnelson Exp $ */
 /*
  * ctcp.c:handles the client-to-client protocol(ctcp). 
  *
@@ -203,7 +203,6 @@ CTCP_HANDLER(do_crypto)
 	const char	*crypt_who;
 	char 	*tofrom;
 	char	*ret = NULL, *ret2 = NULL;
-	int	type;
 
 	if (*from == '=')		/* DCC CHAT message */
 		crypt_who = from;

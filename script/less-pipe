@@ -33,11 +33,11 @@ alias less_pipe
 	};
 };
 
-/*
+: {/*
  * $0 is the array name to use
  * $1 is the starting line
  * $2 is the final line
- */
+ */}
 alias less_array
 {
 	local line $1;

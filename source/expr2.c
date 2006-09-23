@@ -1,4 +1,4 @@
-/* $EPIC: expr2.c,v 1.33 2006/06/06 05:08:48 jnelson Exp $ */
+/* $EPIC: expr2.c,v 1.34 2006/09/23 02:56:44 jnelson Exp $ */
 /*
  * Zsh: math.c,v 3.1.2.1 1997/06/01 06:13:15 hzoli Exp 
  * math.c - mathematical expression evaluation
@@ -242,7 +242,9 @@ __inline static	TOKEN	tokenize_raw (expr_info *c, const char *t);
  */
 static void	setup_expr_info (expr_info *c)
 {
+#ifdef NO_CHEATING
 	int	i;
+#endif
 
 	c->ptr = NULL;
 	c->noeval = 0;
