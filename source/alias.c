@@ -1,4 +1,4 @@
-/* $EPIC: alias.c,v 1.79 2006/09/21 12:09:09 jnelson Exp $ */
+/* $EPIC: alias.c,v 1.80 2006/09/24 16:03:58 jnelson Exp $ */
 /*
  * alias.c -- Handles the whole kit and caboodle for aliases.
  *
@@ -3454,8 +3454,17 @@ char    *symbolctl      (char *input)
 		    s->builtin_function = NULL;
 		if (all || !my_stricmp(input, "BUILTIN_EXPANDO"))
 		    s->builtin_expando = NULL;
-		if (all || !my_stricmp(input, "BUILTIN_VARIABLE"))
-		    s->builtin_variable = NULL;
+		if (all || !my_stricmp(input, "BUILTIN_VARIABLE")) {
+		    if (s->builtin_variable && is_var_builtin(symbol))
+			RETURN_INT(0);
+		    if (s->builtin_variable) {
+			new_free(&s->builtin_variable->script);
+			if (s->builtin_variable->type == STR_VAR)
+				new_free(&s->builtin_variable->data->string);
+			new_free(&s->builtin_variable->data);
+			new_free(&s->builtin_variable);
+		    }
+		}
 		GC_symbol(s, (array *)&globals, l);
 		RETURN_INT(1);
 	    }

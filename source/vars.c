@@ -1,4 +1,4 @@
-/* $EPIC: vars.c,v 1.92 2006/09/23 02:56:44 jnelson Exp $ */
+/* $EPIC: vars.c,v 1.93 2006/09/24 16:03:58 jnelson Exp $ */
 /*
  * vars.c: All the dealing of the irc variables are handled here. 
  *
@@ -217,6 +217,18 @@ void	unclone_biv (const char *name, IrcVariable *clone)
 		return;
 	     }
 	}
+}
+
+int	is_var_builtin (const char *varname)
+{
+	int	i;
+
+	for (i = 0; i < var_bucket->numitems; i++)
+	{
+		if (!my_stricmp(var_bucket->list[i].name, varname))
+			return 1;
+	}
+	return 0;
 }
 
 #define VAR(x, y, z) x ## _VAR = add_biv( #x, 1, y ## _VAR, z,NULL, DEFAULT_ ## x);

@@ -231,6 +231,7 @@ typedef struct
 	int	get_int_var 		(int);
 	char *	get_string_var 		(int);
 	void	set_var_value		(int, const char *, int);
+	int	is_var_builtin		(const char *);
 	void	init_variables_stage1	(void);
 	void	init_variables_stage2	(void);
 	char*	make_string_var 	(const char *);

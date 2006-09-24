@@ -1,4 +1,4 @@
-/* $EPIC: server.c,v 1.204 2006/09/23 02:56:44 jnelson Exp $ */
+/* $EPIC: server.c,v 1.205 2006/09/24 16:03:58 jnelson Exp $ */
 /*
  * server.c:  Things dealing with that wacky program we call ircd.
  *
@@ -82,6 +82,7 @@ typedef struct ServerInfo {
 	char *	proto_type;
 } ServerInfo;
 
+static void	reset_server_altnames (int refnum, char *new_altnames);
 static int	clear_serverinfo (ServerInfo *s);
 static	int	str_to_serverinfo (const char *str, ServerInfo *s);
 static	void	free_serverinfo (ServerInfo *s);
@@ -537,6 +538,8 @@ static 	void 	remove_from_server_list (int i)
 	new_free(&s->funny_match);
 	destroy_notify_list(i);
 	destroy_005(i);
+	reset_server_altnames(i, NULL);
+	free_bucket(&s->altnames);
 
 	new_free(&server_list[i]);
 	s = NULL;

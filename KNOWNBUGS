@@ -11,8 +11,6 @@ KNOWN ERRATA (eg, bugs, or unresolved requests):
   differently.
 * Need better code to handle merging of levels when putting a new window
   on an existing server (for larne)
-* Larne wants @#channel to go to the correct window.
-* Make notices support @#chanel -> #channel
 * Allow server descs to be updated on the fly
 * Memory leaks if user deletes their own /set's?
 
@@ -24,9 +22,6 @@ FROM NULLIE
 	SSL_CERTFILE SSL_KEYFILE, SSL_PATH, 
 * The scripted /set reverse_status_line fails if status line is reset.
 * dcc queries don't match with their queries (already know about this)
-* /on unknown_command for trapping incomplete commands.
-* /on channel_destroyed for when we are no longer on a channel for any reason.
-* Some way to track when windows change servers
 
 LOOK FOR IN THE FUTURE
 -----------------------
@@ -180,3 +175,5 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Add support for @#chan via notices to show up in #chan's window
 * MORON.  Don't replace a 'return' with something that doesn't return!
 * Don't call happykey() on a plain text password (valgrind)
+* Fixes for two memory leaks from nullie
+* New /on, /ON WINDOW_SERVER, from nullie who needs to write a blurb.

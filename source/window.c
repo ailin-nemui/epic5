@@ -1,4 +1,4 @@
-/* $EPIC: window.c,v 1.170 2006/09/22 00:24:21 jnelson Exp $ */
+/* $EPIC: window.c,v 1.171 2006/09/24 16:03:58 jnelson Exp $ */
 /*
  * window.c: Handles the organzation of the logical viewports (``windows'')
  * for irc.  This includes keeping track of what windows are open, where they
@@ -2237,12 +2237,10 @@ int 	get_window_server (unsigned int refnum)
 void	change_window_server (int old_server, int new_server)
 {
 	Window *tmp = NULL;
-
-	tmp = NULL;
 	while (traverse_all_windows(&tmp))
 	{
 	    if (tmp->server == old_server)
-		tmp->server = new_server;
+		window_change_server(tmp, new_server);
 	}
 
 	if (old_server == primary_server)
@@ -3276,7 +3274,7 @@ static Window *window_discon (Window *window, char **args)
 {
 	reassign_window_channels(window->refnum);
 	destroy_window_waiting_channels(window->refnum);
-	window->server = NOSERV;	/* XXX This shouldn't be set here. */
+	window_change_server(window, NOSERV); /* XXX This shouldn't be set here. */
 	return window;
 }
 
@@ -3962,15 +3960,6 @@ static Window *window_next (Window *window, char **args)
 
 	swap_window(window, next);
 	return current_window;
-}
-
-static	Window *window_noserv (Window *window, char **args)
-{
-	/* This is just like /window discon */
-	reassign_window_channels(window->refnum);
-	destroy_window_waiting_channels(window->refnum);
-	window->server = NOSERV;	/* XXX This shouldn't be set here. */
-	return window;
 }
 
 static Window *window_notify (Window *window, char **args)
@@ -4693,7 +4682,7 @@ Window *window_server (Window *window, char **args)
 		/*
 		 * Associate ourselves with the new server.
 		 */
-		window->server = i;
+		window_change_server(window, i);
 		status = get_server_status(i);
 
 		if (status > SERVER_RECONNECT && status < SERVER_EOF)
@@ -4984,7 +4973,7 @@ static const window_ops options [] = {
 	{ "NEW",		window_new 		},
 	{ "NEW_HIDE",		window_new_hide		}, /* * */
 	{ "NEXT",		window_next 		},
-	{ "NOSERV",		window_noserv		},
+	{ "NOSERV",		window_discon		},
 	{ "NOTIFIED",		window_notify_list 	},
 	{ "NOTIFY",		window_notify 		},
 	{ "NOTIFY_LEVEL",	window_notify_mask 	},
@@ -6375,3 +6364,10 @@ static int	count_fixed_windows (Screen *s)
 	return count;
 }
 
+void window_change_server (Window * win, int server) {
+    int oldserver;
+
+    oldserver = win->server;
+    win->server = server;
+    do_hook(WINDOW_SERVER_LIST, "%u %d %d", win->refnum, oldserver, server);
+}
