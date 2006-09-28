@@ -1,5 +1,14 @@
 EPIC5-0.3.2
 
+*** News 09/24/2006 -- New /ON, "WINDOW_SERVER" (nullie)
+	This new hook will trigger every time window's server is
+	changed. This might be useful for purging window-related data
+	such as scripted window-to-channel associations. The params are:
+	
+	$0 - affected window's refnum
+	$1 - old server
+	$2 - new server
+
 *** News 09/19/2006 -- New /ON, "UNKNOWN_COMMAND" (nullie)
 	The hook is thrown whenever an unknown command is entered on the
 	command line or specified in a script. This way, you can

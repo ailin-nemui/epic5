@@ -129,7 +129,7 @@ alias history.add (...) {
 
 alias history.erase (void) {
 	@ history.index = [];
-	parsekey erase_line;
+	parsekey reset_line;
 };
 
 alias history.get (direction, void) {
@@ -161,14 +161,13 @@ alias history.get (direction, void) {
 
 alias history.shove (void) {
 	history.add $L;
-	parsekey erase_line;
+	parsekey reset_line;
 };
 
 alias history.show (index, void) {
 	if (@index) {
 		@ history.index = index;
-		parsekey erase_line;
-		xtype -l $restw(1 $getitem(array.history $history.index));
+		parsekey reset_line $restw(1 $getitem(array.history $history.index));
 	};
 };
 

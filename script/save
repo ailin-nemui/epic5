@@ -1,11 +1,11 @@
-if (word(2 $loadinfo()) != [pf]) {
+if (word(2 $loadinfo()) != 'pf') {
 	load -pf $word(1 $loadinfo());
 	return;
 };
 
-#	Copyright (c) 2005 David B. Kratter (BlackJac@EFNet)
+#	Copyright (c) 2006 BlackJac@EFNet
 #
-#	Version: 1.0.2005.05.08.1
+#	Version: 1.1.2006.09.25.1
 #
 #	This script simulates the save command of epic4 for epic5. The
 #	behavior should be nearly identical to the original.
@@ -14,7 +14,7 @@ package save;
 
 alias save (args) {
 	@ :choice = shift(args);
-	@ :append = word(0 $args) == [-append] ? shift(args) : [];
+	@ :append = word(0 $args) == '-append' ? shift(args) : "";
 	if (findw($choice -alias -all -assign -bind -notify -on -server -set) > -1 && @args) {
 		if (!append) {
 			@ unlink("$args");
@@ -50,7 +50,7 @@ alias save.assign (void) {
 
 alias save.bind (void) {
 	fe ($^"bindctl(map)) ss {
-		if ((:bind = bindctl(sequence $ss get)) != [self_insert]) {
+		if ((:bind = bindctl(sequence $ss get)) != 'self_insert') {
 			@ write($save.fd BIND $ss $bind);
 		};
 	};
@@ -78,6 +78,6 @@ alias save.server (void) {
 
 alias save.set (void) {
 	fe ($symbolctl(pmatch builtin_variable *)) ss {
-		@ write($save.fd SET $ss $($ss));
+		@ write($save.fd SET $ss $getset($ss));
 	};
 };

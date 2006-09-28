@@ -2,21 +2,14 @@ EPIC5 Projects, Bugs, and other Errata:
 
 KNOWN ERRATA (eg, bugs, or unresolved requests):
 ------------------------------------------------
-* Shattah would like something like /window omit <regex> to remove stuff.
-* Tag each lastlog item with a refnum so it can be tracked
-* Create a unified lastlog (across all windows)
-* Permit lastlog entries to be moved across windows.
 * Refactor hardcoded uses of select() so select() isn't mandatory.
-* send_text() needs rework, to add extra /on's so you can flag those 
-  differently.
-* Need better code to handle merging of levels when putting a new window
-  on an existing server (for larne)
+* send_text() needs rework, to add extra /on's so you can flag those special. 
 * Allow server descs to be updated on the fly
 * Memory leaks if user deletes their own /set's?
+* Valgrind complains of a memory leak with remove_bindings_recurse().
 
 FROM NULLIE
 -----------
-* /notify should be per-server/group like /encrypt
 * These sets are not used:
 	BAD_STYLE, INPUT_ALIASES, SECURITY, 
 	SSL_CERTFILE SSL_KEYFILE, SSL_PATH, 
@@ -25,6 +18,8 @@ FROM NULLIE
 
 LOOK FOR IN THE FUTURE
 -----------------------
+* Lastlog improvements (unified lastlog, refnums, moving between windows, etc)
+* Shattah would like something like /window omit <regex> to remove stuff.
 * Import utf8 support from ircII OR add support for utf16 (wide chars)
 * Import fg/bg color support from ircII
 * Cache what files can be /loaded in a hash
@@ -176,4 +171,9 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * MORON.  Don't replace a 'return' with something that doesn't return!
 * Don't call happykey() on a plain text password (valgrind)
 * Fixes for two memory leaks from nullie
-* New /on, /ON WINDOW_SERVER, from nullie who needs to write a blurb.
+* New /on, /ON WINDOW_SERVER, from nullie.
+* Teach history script to use parsekey reset_line (nullie)
+* Fix one bogon (still others left!) in map script
+* Improvements to 'save' script (blackjac)
+* Change /on unknown_command to include // prefix if that was used (nullie)
+* Fix behavior of /set old_server_lastlog_level (rb larne, fixed by nullie)

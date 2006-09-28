@@ -1,4 +1,4 @@
-/* $EPIC: window.c,v 1.171 2006/09/24 16:03:58 jnelson Exp $ */
+/* $EPIC: window.c,v 1.172 2006/09/28 23:18:05 jnelson Exp $ */
 /*
  * window.c: Handles the organzation of the logical viewports (``windows'')
  * for irc.  This includes keeping track of what windows are open, where they
@@ -4687,8 +4687,10 @@ Window *window_server (Window *window, char **args)
 
 		if (status > SERVER_RECONNECT && status < SERVER_EOF)
 		{
-		    if (old_server_lastlog_mask)
+		    if (old_server_lastlog_mask) {
 			window->window_mask = *old_server_lastlog_mask;
+			revamp_window_masks(window);
+		    }
 		}
 		else if (status >= SERVER_CLOSING)
 			set_server_status(i, SERVER_RECONNECT);

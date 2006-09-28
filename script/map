@@ -3,7 +3,7 @@ if (word(2 $loadinfo()) != [pf]) { load -pf $word(1 $loadinfo()); return; };
 # Map script.  lifted from anduril by wd.
 # This script is in the public domain
 #
-# $Id: map,v 1.2 2005/06/25 14:12:12 jnelson Exp $
+# $Id: map,v 1.3 2006/09/28 23:18:05 jnelson Exp $
 #
 # Here's how it works.  We retrieve links from the server using a /links
 # command.  We then sort them out into an array as below, and then iterate
@@ -14,7 +14,7 @@ if (word(2 $loadinfo()) != [pf]) { load -pf $word(1 $loadinfo()); return; };
 alias map.encode {return $encode($tolower($*))};
 
 alias map.retrieve_links {
-    ^on ^364 * (client, hub, hops, gecos) {
+    ^on ^364 * (myserv, client, hub, hops, gecos) {
 	@map.links.all #= [$client ];
 	@:henc = map.encode($hub);
 	@:cenc = map.encode($client);
