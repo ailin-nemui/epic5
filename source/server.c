@@ -1,4 +1,4 @@
-/* $EPIC: server.c,v 1.205 2006/09/24 16:03:58 jnelson Exp $ */
+/* $EPIC: server.c,v 1.206 2006/09/30 01:36:08 jnelson Exp $ */
 /*
  * server.c:  Things dealing with that wacky program we call ircd.
  *
@@ -70,18 +70,6 @@
 
 
 /************************************************************************/
-typedef struct ServerInfo {
-	char *	freestr;
-	int	refnum;
-	char *	host;
-	int	port;
-	char *	password;
-	char *	nick;
-	char *	group;
-	char *	server_type;
-	char *	proto_type;
-} ServerInfo;
-
 static void	reset_server_altnames (int refnum, char *new_altnames);
 static int	clear_serverinfo (ServerInfo *s);
 static	int	str_to_serverinfo (const char *str, ServerInfo *s);
@@ -290,22 +278,22 @@ static	int	serverinfo_to_servref (ServerInfo *si)
 		if (!(s = get_server(i)))
 			continue;
 
-		if (!s->name)
+		if (!s->info->host)
 			continue;
 
 		if (opened == 1 && s->des < 0)
 			continue;
 
-		if (si->port != 0 && si->port != s->port)
+		if (si->port != 0 && si->port != s->info->port)
 			continue;
 
-		if (s->name && wild_match(si->host, s->name))
+		if (s->info->host && wild_match(si->host, s->info->host))
 			return i;
 
 		if (s->itsname && wild_match(si->host, s->itsname))
 			return i;
 
-		if (s->group && wild_match(si->host, s->group))
+		if (s->info->group && wild_match(si->host, s->info->group))
 			return i;
 
 		for (j = 0; j < s->altnames->numitems; j++)
@@ -346,12 +334,14 @@ static	int	serverinfo_to_newserv (ServerInfo *si)
 	}
 
 	s = server_list[i] = new_malloc(sizeof(Server));
-	s->name = malloc_strdup(si->host);
+	s->info = (ServerInfo *)new_malloc(sizeof(ServerInfo));
+	clear_serverinfo(s->info);
+	s->info->host = malloc_strdup(si->host);
 	s->itsname = (char *) 0;
-	s->password = (char *) 0;
-	s->group = NULL;
+	s->info->password = (char *) 0;
+	s->info->group = NULL;
 	s->altnames = new_bucket();
-	add_to_bucket(s->altnames, shortname(s->name), NULL);
+	add_to_bucket(s->altnames, shortname(s->info->host), NULL);
 	s->away = (char *) 0;
 	s->version_string = (char *) 0;
 	s->server2_8 = 0;
@@ -364,7 +354,7 @@ static	int	serverinfo_to_newserv (ServerInfo *si)
 	s->d_nickname = (char *) 0;
 	s->unique_id = (char *) 0;
 	s->userhost = (char *) 0;
-	s->port = si->port ? si->port : irc_port;
+	s->info->port = si->port ? si->port : irc_port;
 	s->line_length = IRCD_BUFFER_SIZE;
 	s->max_cached_chan_size = -1;
 	s->who_queue = NULL;
@@ -380,8 +370,6 @@ static	int	serverinfo_to_newserv (ServerInfo *si)
 	memset(&s->remote_sockname, 0, sizeof(s->remote_sockname));
 	s->redirect = NULL;
 	s->cookie = NULL;
-	s->closing = 0;
-	s->resetting_nickname = 0;
 	s->quit_message = NULL;
 	s->umode[0] = 0;
 	s->addrs = NULL;
@@ -406,40 +394,41 @@ static	int	serverinfo_to_newserv (ServerInfo *si)
 	s->stricmp_table = 1;		/* By default, use rfc1459 */
 	s->funny_match = NULL;
 
-	s->try_ssl = FALSE;
 	s->ssl_enabled = FALSE;
 
 	if (si->password && *si->password)
-		malloc_strcpy(&s->password, si->password);
+		malloc_strcpy(&s->info->password, si->password);
 	if (si->nick && *si->nick)
 		malloc_strcpy(&s->d_nickname, si->nick);
 
 	if (si->group && *si->group)
-		malloc_strcpy(&s->group, si->group);
+		malloc_strcpy(&s->info->group, si->group);
 	if (si->server_type && *si->server_type)
 	{
 	    if (my_stricmp(si->server_type, "IRC-SSL") == 0)
-		set_server_try_ssl(i, TRUE);
+		malloc_strcpy(&s->info->server_type, "IRC-SSL");
 	    else
-		set_server_try_ssl(i, FALSE);
+		malloc_strcpy(&s->info->server_type, "IRC");
 	}
+	else
+		malloc_strcpy(&s->info->server_type, "IRC");
 
 	if (si->proto_type && *si->proto_type)
 	{
 	    if (my_stricmp(si->proto_type, "tcp4") == 0 ||
 	             my_stricmp(si->proto_type, "4") == 0)
-		s->protocol = AF_INET;
+		malloc_strcpy(&s->info->proto_type, "4");
 	    else if (my_stricmp(si->proto_type, "tcp6") == 0 ||
 	             my_stricmp(si->proto_type, "6") == 0)
-		s->protocol = AF_INET6;
+		malloc_strcpy(&s->info->proto_type, "6");
 	    else if (my_stricmp(si->proto_type, "tcp") == 0 ||
 	             my_stricmp(si->proto_type, "any") == 0)
-		s->protocol = AF_UNSPEC;
+		malloc_strcpy(&s->info->proto_type, "0");
 	    else
-		s->protocol = AF_UNSPEC;
+		malloc_strcpy(&s->info->proto_type, "0");
 	}
 	else
-		s->protocol = AF_UNSPEC;
+		malloc_strcpy(&s->info->proto_type, "0");
 
 	make_notify_list(i);
 	make_005(i);
@@ -513,10 +502,10 @@ static 	void 	remove_from_server_list (int i)
 	set_server_status(i, SERVER_DELETED);
 
 	clean_server_queues(i);
-	new_free(&s->name);
+	new_free(&s->info->host);
 	new_free(&s->itsname);
-	new_free(&s->password);
-	new_free(&s->group);
+	new_free(&s->info->password);
+	new_free(&s->info->group);
 	new_free(&s->away);
 	new_free(&s->version_string);
 	new_free(&s->nickname);
@@ -540,6 +529,7 @@ static 	void 	remove_from_server_list (int i)
 	destroy_005(i);
 	reset_server_altnames(i, NULL);
 	free_bucket(&s->altnames);
+	new_free(&s->info);
 
 	new_free(&server_list[i]);
 	s = NULL;
@@ -640,12 +630,12 @@ void 	display_server_list (void)
 	}
 
 	if (from_server != NOSERV && (s = get_server(from_server)))
-		say("Current server: %s %d", s->name, s->port);
+		say("Current server: %s %d", s->info->host, s->info->port);
 	else
 		say("Current server: <None>");
 
 	if (primary_server != NOSERV && (s = get_server(primary_server)))
-		say("Primary server: %s %d", s->name, s->port);
+		say("Primary server: %s %d", s->info->host, s->info->port);
 	else
 		say("Primary server: <None>");
 
@@ -656,18 +646,18 @@ void 	display_server_list (void)
 			continue;
 
 		if (!s->nickname)
-			say("\t%d) %s %d [%s] %s [%s]", i, s->name, s->port, 
+			say("\t%d) %s %d [%s] %s [%s]", i, s->info->host, s->info->port, 
 				get_server_group(i), get_server_type(i),
 				server_states[get_server_status(i)]);
 		else if (is_server_open(i))
 			say("\t%d) %s %d (%s) [%s] %s [%s]", 
-				i, s->name, s->port,
+				i, s->info->host, s->info->port,
 				s->nickname, get_server_group(i),
 				get_server_type(i),
 				server_states[get_server_status(i)]);
 		else
-			say("\t%d) %s %d (was %s) [%s] %s [%s]", i, s->name, 
-				s->port, s->nickname, get_server_group(i),
+			say("\t%d) %s %d (was %s) [%s] %s [%s]", i, s->info->host, 
+				s->info->port, s->nickname, get_server_group(i),
 				get_server_type(i),
 				server_states[get_server_status(i)]);
 	}
@@ -1008,7 +998,7 @@ void	do_server (int fd)
 			    if (EAI_AGAIN > 0)
 				s->addr_len = abs(s->addr_len);
 			    yell("Getaddrinfo(%s) for server %d failed: %s",
-				     s->name, len, gai_strerror(s->addr_len));
+				     s->info->host, len, gai_strerror(s->addr_len));
 			    s->des = new_close(s->des);
 			    set_server_status(i, SERVER_ERROR);
 			    set_server_status(i, SERVER_CLOSED);
@@ -1016,7 +1006,7 @@ void	do_server (int fd)
 			else if (s->addr_len == 0) 
 			{
 			    yell("Getaddrinfo(%s) for server (%d) did not "
-						"resolve.", s->name, i);
+						"resolve.", s->info->host, i);
 			    s->des = new_close(s->des);
 			    set_server_status(i, SERVER_ERROR);
 			    set_server_status(i, SERVER_CLOSED);
@@ -1067,7 +1057,7 @@ void	do_server (int fd)
 						s->next_addr->ai_next)
 			        cnt++;
 		            say("DNS lookup for server %d [%s] returned (%d) "
-					"addresses", i, s->name, cnt);
+					"addresses", i, s->info->host, cnt);
 
 		            s->next_addr = s->addrs;
 		            s->addr_counter = 0;
@@ -1130,7 +1120,7 @@ something_broke:
 		     * to call the ssl connector when the fd is ready, and
 		     * change our status to tell us what we're doing.
 		     */
-		    if (get_server_try_ssl(i) == TRUE)
+		    if (!my_stricmp(get_server_server_type(i), "IRC-SSL"))
 		    {
 			/* XXX 'des' might not be both the vfd and channel! */
 			/* (ie, on systems where vfd != channel) */
@@ -1225,7 +1215,7 @@ return_from_ssl_detour:
 			{
 			    server_is_unregistered(i);
 			    close_server(i, NULL);
-			    say("Connection closed from %s", s->name);
+			    say("Connection closed from %s", s->info->host);
 			    i++;		/* NEVER DELETE THIS! */
 			    break;
 		        }
@@ -1412,16 +1402,23 @@ int	grab_server_address (int server)
 
 	set_server_status(server, SERVER_DNS);
 
-	say("Performing DNS lookup for [%s] (server %d)", s->name, server);
+	say("Performing DNS lookup for [%s] (server %d)", s->info->host, server);
 	if (socketpair(PF_UNIX, SOCK_STREAM, 0, xvfd))
 		yell("socketpair: %s", strerror(errno));
 	new_open(xvfd[1], do_server, NEWIO_READ, 1);
 
 	memset(&hints, 0, sizeof(hints));
-	hints.ai_family = s->protocol;
+	if (!my_stricmp(s->info->proto_type, "0"))
+		hints.ai_family = AF_UNSPEC;
+	else if (!my_stricmp(s->info->proto_type, "4"))
+		hints.ai_family = AF_INET;
+	else if (!my_stricmp(s->info->proto_type, "6"))
+		hints.ai_family = AF_INET6;
+	else
+		hints.ai_family = AF_UNSPEC;
 	hints.ai_socktype = SOCK_STREAM;
 	hints.ai_flags = AI_ADDRCONFIG;
-	async_getaddrinfo(s->name, ltoa(s->port), &hints, xvfd[0]);
+	async_getaddrinfo(s->info->host, ltoa(s->info->port), &hints, xvfd[0]);
 	close(xvfd[0]);
 	s->des = xvfd[1];
 	return 0;
@@ -1485,11 +1482,11 @@ static int	connect_next_server_address (int server)
 
 	    if (inet_ntostr(ai->ai_addr, p_addr, 256, p_port, 24, NI_NUMERICHOST))
 		say("Connecting to server refnum %d (%s), using address %d",
-					server, s->name, s->addr_counter);
+					server, s->info->host, s->addr_counter);
 	    else
 		say("Connecting to server refnum %d (%s), "
 				"using address %d (%s:%s)",
-					server, s->name, 
+					server, s->info->host, 
 					s->addr_counter, p_addr, p_port);
 
 	    s->next_addr = ai->ai_next;
@@ -1532,7 +1529,7 @@ int 	connect_to_server (int new_server)
 	if (s->des != -1)
 	{
 		say("Connected to server %d at %s:%d", 
-				new_server, s->name, s->port);
+				new_server, s->info->host, s->info->port);
 		from_server = new_server;
 		return -1;		/* Server is already connected */
 	}
@@ -1542,7 +1539,7 @@ int 	connect_to_server (int new_server)
 	 */
 /*
 	say("Connecting to port %d of server %s [refnum %d]", 
-			s->port, s->name, new_server);
+			s->info->port, s->info->host, new_server);
 */
 
 	set_server_status(new_server, SERVER_CONNECTING);
@@ -1566,7 +1563,7 @@ int 	connect_to_server (int new_server)
 		if ((s = get_server(new_server)))
 		{
 		    say("Unable to connect to server %d at %s:%d",
-				new_server, s->name, s->port);
+				new_server, s->info->host, s->info->port);
 
 		    /* Would cause client to crash, if not wiped out */
 		    set_server_ssl_enabled(new_server, FALSE);
@@ -1584,7 +1581,7 @@ int 	connect_to_server (int new_server)
 	new_open(des, do_server, NEWIO_CONNECT, 0);
 
 	/* Don't check getpeername(), we're not connected yet. */
-	if (*s->name != '/')
+	if (*s->info->host != '/')
 	{
 		len = sizeof(s->local_sockname);
 		getsockname(des, (SA *)&s->local_sockname, &len);
@@ -1682,7 +1679,7 @@ void	close_server (int refnum, const char *message)
 		    send_to_aserver(refnum, "QUIT :%s\n", final_message);
 	}
 
-	do_hook(SERVER_LOST_LIST, "%d %s %s", refnum, s->name, final_message);
+	do_hook(SERVER_LOST_LIST, "%d %s %s", refnum, s->info->host, final_message);
 	s->des = new_close(s->des);
 	set_server_status(refnum, SERVER_CLOSED);
 }
@@ -1940,8 +1937,8 @@ void	register_server (int refnum, const char *nick)
 		get_server_name(refnum), get_server_port(refnum));
 	from_server = ofs;
 
-	if (s->password)
-		send_to_aserver(refnum, "PASS %s", s->password);
+	if (s->info->password)
+		send_to_aserver(refnum, "PASS %s", s->info->password);
 
 	send_to_aserver(refnum, "USER %s %s %s :%s", username, 
 			(send_umode && *send_umode) ? send_umode : 
@@ -1978,7 +1975,7 @@ static const char *	get_server_password (int refnum)
 	if (!(s = get_server(refnum)))
 		return NULL;
 
-	return s->password;
+	return s->info->password;
 }
 
 /*
@@ -1993,11 +1990,11 @@ char	*set_server_password (int refnum, const char *password)
 		return NULL;
 
 	if (password)
-		malloc_strcpy(&s->password, password);
+		malloc_strcpy(&s->info->password, password);
 	else
-		new_free(&s->password);
+		new_free(&s->info->password);
 
-	return s->password;
+	return s->info->password;
 }
 
 
@@ -2167,7 +2164,7 @@ static void    set_server_port (int refnum, int port)
 	if (!(s = get_server(refnum)))
 		return;
 
-	s->port = port;
+	s->info->port = port;
 }
 
 /* get_server_port: Returns the connection port for the given server index */
@@ -2183,7 +2180,7 @@ int	get_server_port (int refnum)
 	   if (!inet_ntostr((SA *)&s->remote_sockname, NULL, 0, p_port, 12, 0))
 		return atol(p_port);
 
-	return s->port;
+	return s->info->port;
 }
 
 int	get_server_local_port (int refnum)
@@ -2349,8 +2346,6 @@ void	change_server_nickname (int refnum, const char *nick)
 
 	if (s->s_nickname && is_server_open(refnum))
 		send_to_aserver(refnum, "NICK %s", s->s_nickname);
-
-	s->resetting_nickname = 0;
 }
 
 const char *	get_pending_nickname (int refnum)
@@ -2413,7 +2408,6 @@ static void 	reset_nickname (int refnum)
 	if (!(s = get_server(refnum)))
 		return; 		/* Don't repeat the reset */
 
-	s->resetting_nickname = 1;
 	if (s->s_nickname)
 		old_pending = LOCAL_COPY(s->s_nickname);
 
@@ -2463,10 +2457,7 @@ const char *get_server_type (int refnum)
 	if (!(s = get_server(refnum)))
 		return NULL;
 
-	if (get_server_try_ssl(refnum) == TRUE)
-		return "IRC-SSL";
-	else
-		return "IRC";
+	return s->info->server_type;
 }
 
 /*****************************************************************************/
@@ -2544,7 +2535,6 @@ SACCESSOR(nick, recv_nick, NULL)
 SACCESSOR(nick, sent_nick, NULL)
 SACCESSOR(text, sent_body, NULL)
 SACCESSOR(nick, redirect, NULL)
-SACCESSOR(group, group, "<default>")
 SACCESSOR(message, quit_message, get_string_var(QUIT_MESSAGE_VAR))
 SACCESSOR(cookie, cookie, NULL)
 SACCESSOR(ver, version_string, NULL)
@@ -2600,7 +2590,78 @@ void	set_server_operator (int refnum, int flag)
 	oper_command = 0;		/* No longer doing oper */
 }
 
-SACCESSOR(name, name, "<none>")
+/* * */
+void	set_server_name (int servref, const char * param )
+{
+	Server *s;
+
+	if (!(s = get_server(servref)))
+		return;
+
+	malloc_strcpy(&s->info->host, param);
+}
+
+const char *	get_server_name (int servref )
+{
+	Server *s;
+
+	if (!(s = get_server(servref)))
+		return "<none>";
+
+	if (s->info->host)
+		return s->info->host;
+	else
+		return "<none>";
+}
+
+/* * */
+void	set_server_group (int servref, const char * param )
+{
+	Server *s;
+
+	if (!(s = get_server(servref)))
+		return;
+
+	malloc_strcpy(&s->info->group, param);
+}
+
+const char *	get_server_group (int servref )
+{
+	Server *s;
+
+	if (!(s = get_server(servref)))
+		return "<default>";
+
+	if (s->info->group)
+		return s->info->group;
+	else
+		return "<default>";
+}
+
+/* * */
+void	set_server_server_type (int servref, const char * param )
+{
+	Server *s;
+
+	if (!(s = get_server(servref)))
+		return;
+
+	malloc_strcpy(&s->info->server_type, param);
+}
+
+const char *	get_server_server_type (int servref )
+{
+	Server *s;
+
+	if (!(s = get_server(servref)))
+		return "IRC";
+
+	if (s->info->server_type)
+		return s->info->server_type;
+	else
+		return "IRC";
+}
+
 SET_SATTRIBUTE(name, itsname)
 const char	*get_server_itsname (int refnum)
 {
@@ -2612,7 +2673,7 @@ const char	*get_server_itsname (int refnum)
 	if (s->itsname)
 		return s->itsname;
 	else
-		return s->name;
+		return s->info->host;
 }
 
 int	get_server_protocol_state (int refnum)
@@ -2647,23 +2708,6 @@ void	set_server_protocol_state (int refnum, int state)
 	state = state >> 8;
 }
 
-void	set_server_try_ssl (int refnum, int flag)
-{
-	Server *s;
-
-	if (!(s = get_server(refnum)))
-		return;
-
-	if (client_ssl_enabled() == 0)
-	{
-	    if (flag == TRUE)
-		say("This client was not built with SSL support.");
-	    flag = FALSE;
-	}
-	s->try_ssl = flag;
-}
-GET_IATTRIBUTE(try_ssl)
-
 void	set_server_ssl_enabled (int refnum, int flag)
 {
 	Server *s;
@@ -2675,8 +2719,7 @@ void	set_server_ssl_enabled (int refnum, int flag)
 	{
 	    if (flag == TRUE)
 		say("This client was not built with SSL support.");
-	    flag = FALSE;
-	    s->try_ssl = flag;
+	    malloc_strcpy(&s->info->server_type, "IRC");
 	}
 
 	s->ssl_enabled = flag;
@@ -3048,8 +3091,8 @@ char 	*serverctl 	(char *input)
 				ret = empty_string;
 			RETURN_STR(ret);
 		} else if (!my_strnicmp(listc, "SSL", len)) {
-			num = get_server_try_ssl(refnum);
-			RETURN_INT(num);
+			ret = get_server_server_type(refnum);
+			RETURN_STR(ret);
 		} else if (!my_strnicmp(listc, "UMODE", len)) {
 			ret = get_umode(refnum);
 			RETURN_STR(ret);
@@ -3164,10 +3207,7 @@ char 	*serverctl 	(char *input)
 			set_server_quit_message(refnum, input);
 			RETURN_INT(1);
 		} else if (!my_strnicmp(listc, "SSL", len)) {
-			int value;
-
-			GET_INT_ARG(value, input);
-			set_server_try_ssl(refnum, value);
+			set_server_server_type(refnum, input);
 			RETURN_INT(1);
 		} else if (!my_strnicmp(listc, "UMODE", len)) {
 			RETURN_EMPTY;		/* Read only for now */

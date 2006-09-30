@@ -2,22 +2,11 @@ EPIC5 Projects, Bugs, and other Errata:
 
 KNOWN ERRATA (eg, bugs, or unresolved requests):
 ------------------------------------------------
-* Refactor hardcoded uses of select() so select() isn't mandatory.
-* send_text() needs rework, to add extra /on's so you can flag those special. 
 * Allow server descs to be updated on the fly
-* Memory leaks if user deletes their own /set's?
-* Valgrind complains of a memory leak with remove_bindings_recurse().
-
-FROM NULLIE
------------
-* These sets are not used:
-	BAD_STYLE, INPUT_ALIASES, SECURITY, 
-	SSL_CERTFILE SSL_KEYFILE, SSL_PATH, 
-* The scripted /set reverse_status_line fails if status line is reset.
-* dcc queries don't match with their queries (already know about this)
 
 LOOK FOR IN THE FUTURE
 -----------------------
+* send_text() needs rework, to add extra /on's so you can flag those special. 
 * Lastlog improvements (unified lastlog, refnums, moving between windows, etc)
 * Shattah would like something like /window omit <regex> to remove stuff.
 * Import utf8 support from ircII OR add support for utf16 (wide chars)
@@ -27,12 +16,13 @@ LOOK FOR IN THE FUTURE
 * Some way to call an alias in a variable indirectly
 * Output rules
 * Support for CNOTICE
-* /CTCPs over /DCCs don't match up with their queries very well.
+* /CTCPs over /DCCs don't match up with their queries very well. (nullie)
 * $xform()s for SED and DEF
 * str_to_mask() should be silent, callers should be warning.
 * Support for 64 bit ints could be more widespread
 * Larne wants suppression of duplicated lines (like syslog maybe?)
 * Larne and nullie say that stdout can block when running under screen
+* Refactor hardcoded uses of select() so select() isn't mandatory.
 
 [See http://www.epicsol.org/PROJECTS for things to come in the future]
 [See http://www.epicsol.org/CHANGELOG5 for things that changed in the past]
@@ -177,3 +167,9 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Improvements to 'save' script (blackjac)
 * Change /on unknown_command to include // prefix if that was used (nullie)
 * Fix behavior of /set old_server_lastlog_level (rb larne, fixed by nullie)
+* Pass double ptr to remove_bindings_recurse() to fix exit-time memory leak.
+* Remove /set bad_style, input_aliases, security,  (unused)
+* Remove /set ssl_certfile, ssl_keyfile, and ssl_path (unused)
+* Add a (ServerInfo) object to (Server), switch to using it.
+* Remove a bunch of unused thingees in (Server) while i'm here.
+* Restore /set reverse_status_line to a builtin. oh well.

@@ -1,4 +1,4 @@
-/* $EPIC: vars.c,v 1.93 2006/09/24 16:03:58 jnelson Exp $ */
+/* $EPIC: vars.c,v 1.94 2006/09/30 01:36:08 jnelson Exp $ */
 /*
  * vars.c: All the dealing of the irc variables are handled here. 
  *
@@ -243,7 +243,6 @@ void 	init_variables_stage1 (void)
 
 	VAR(ALLOW_C1_CHARS, 		BOOL, NULL)
 	VAR(ALWAYS_SPLIT_BIGGEST, 	BOOL, NULL)
-	VAR(BAD_STYLE, 			BOOL, NULL)
 	VAR(BANNER, 			STR,  NULL)
 	VAR(BANNER_EXPAND, 		BOOL, NULL)
 	VAR(BEEP, 			BOOL, NULL)
@@ -284,7 +283,6 @@ void 	init_variables_stage1 (void)
 	VAR(HIGH_BIT_ESCAPE, INT,  set_meta_8bit);
 	VAR(HOLD_SLIDER, INT,  NULL);
 	VAR(INDENT, BOOL, set_indent);
-	VAR(INPUT_ALIASES, BOOL, NULL);
 	VAR(INPUT_PROMPT, STR,  set_input_prompt);
 	VAR(INSERT_MODE, BOOL, update_all_status_wrapper);
 	VAR(KEY_INTERVAL, INT,  set_key_interval);
@@ -328,23 +326,17 @@ void 	init_variables_stage1 (void)
 	VAR(RANDOM_SOURCE, INT,  NULL);
 #define DEFAULT_REALNAME NULL
 	VAR(REALNAME, STR,  NULL);
+	VAR(REVERSE_STATUS_LINE, BOOL, build_status);
 	VAR(SCREEN_OPTIONS, STR,  NULL);
 	VAR(SCROLLBACK, INT,  set_scrollback_size);
 	VAR(SCROLLBACK_RATIO, INT,  NULL);
 	VAR(SCROLL_LINES, INT,  set_scroll_lines);
-	VAR(SECURITY, INT,  NULL);
 	VAR(SHELL, STR,  NULL);
 	VAR(SHELL_FLAGS, STR,  NULL);
 	VAR(SHELL_LIMIT, INT,  NULL);
 	VAR(SHOW_CHANNEL_NAMES, BOOL, NULL);
 	VAR(SHOW_NUMERICS, BOOL, NULL);
 	VAR(SHOW_STATUS_ALL, BOOL, update_all_status_wrapper);
-#define DEFAULT_SSL_CERTFILE NULL
-	VAR(SSL_CERTFILE, STR,  NULL);
-#define DEFAULT_SSL_KEYFILE NULL
-	VAR(SSL_KEYFILE, STR,  NULL);
-#define DEFAULT_SSL_PATH NULL
-	VAR(SSL_PATH, STR,  NULL);
 	VAR(STATUS_AWAY, STR,  build_status);
 	VAR(STATUS_CHANNEL, STR,  build_status);
 	VAR(STATUS_CHANOP, STR,  build_status);

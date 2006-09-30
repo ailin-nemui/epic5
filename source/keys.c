@@ -1,4 +1,4 @@
-/* $EPIC: keys.c,v 1.49 2006/09/19 04:05:08 jnelson Exp $ */
+/* $EPIC: keys.c,v 1.50 2006/09/30 01:36:08 jnelson Exp $ */
 /*
  * keys.c:  Keeps track of what happens whe you press a key.
  *
@@ -823,29 +823,30 @@ void init_termkeys (void) {
 
 /* this is called only by irc_exit, and its purpose is to free
  * all our allocated stuff. */
-void remove_bindings_recurse (struct Key *);
+void remove_bindings_recurse (struct Key **);
 void remove_bindings (void) {
 
     while (binding_list != NULL)
 	remove_binding(binding_list->name);
 
-    remove_bindings_recurse(head_keymap);
+    remove_bindings_recurse(&head_keymap);
 }
 
-void remove_bindings_recurse (struct Key *map) {
+void remove_bindings_recurse (struct Key **mapptr) {
+    struct Key *map = *mapptr;
     int c;
 
     /* go through our map, clear any memory that might be left lying around.
      * recurse as necessary */
     for (c = 0; c <= KEYMAP_SIZE - 1;c++) {
 	if (map[c].map)
-	    remove_bindings_recurse(map[c].map);
+	    remove_bindings_recurse(&(map[c].map));
 	if (map[c].stuff)
 	    new_free(&map[c].stuff);
 	if (map[c].filename)
 	    new_free(&map[c].filename);
     }
-    new_free(&map);
+    new_free((char **)mapptr);
 }
 
 /* this is called when a package is unloaded.  we should unset any
@@ -1393,8 +1394,7 @@ char *bindctl (char *input)
 	} else if (!my_strnicmp(listc, "CLEAR", 1)) {
 	    if (key == NULL || key->map == NULL)
 		RETURN_INT(0);
-	    remove_bindings_recurse(key->map);
-	    key->map = NULL;
+	    remove_bindings_recurse(&key->map);
 	    RETURN_INT(1);
 	}
     }

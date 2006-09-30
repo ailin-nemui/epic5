@@ -69,7 +69,7 @@ So make sure that you put semicolons between each command in your script.
 Rule 3: Put {}s around your alias and on bodies
 ===============================================
 The standard loader executes your commands as though they were entered at the
-input line, subject to the /SET INPUT_ALIASES value.  This means that you can 
+input line, without $-expansion.  This means that you can 
 do "alias opalot foo $*" and it will not expand the $* at /LOAD time.  The
 PF loader does not simulate the input prompt and subjects each command to 
 standard $-expansion, but not to ``quoting hell'' -- don't worry. ;-)

@@ -32,10 +32,33 @@ typedef struct WaitCmdstru
         struct  WaitCmdstru *next;
 } WaitCmd;
 
+typedef struct ServerInfo 
+{
+        char *  freestr;
+        int     refnum;
+        char *  host;
+        int     port;
+        char *  password;
+        char *  nick;
+        char *  group;
+        char *  server_type;
+        char *  proto_type;
+} ServerInfo;
+
 /* Server: a structure for the server_list */
 typedef	struct
 {
+	ServerInfo *info;		/* Canonical information */
+
+#if 0
 	char	*name;			/* the name of the server */
+	int	port;			/* port number on that server */
+	char	*password;		/* password for that server */
+	char	*group;			/* Server group it belongs to */
+	int	try_ssl;		/* SSL requested on next connection. */
+	int	protocol;		/* AF_UNSPEC, AF_INET, or AF_INET6 */
+#endif
+
 	AI 	*addrs;			/* Returned by getaddrinfo */
 const	AI	*next_addr;		/* The next one to try upon failure */
 	int	addr_counter;		/* How far we're into "addrs" */
@@ -43,19 +66,13 @@ const	AI	*next_addr;		/* The next one to try upon failure */
 	ssize_t	addr_offset;
 
 	char	*itsname;		/* the server's idea of its name */
-	char	*password;		/* password for that server */
-	int	port;			/* port number on that server */
-	char	*group;			/* Server group it belongs to */
 	Bucket	*altnames;		/* Alternate handles for the server */
 	char	*nickname;		/* Authoritative nickname for us */
 	char	*s_nickname;		/* last NICK command sent */
 	char	*d_nickname;		/* Default nickname to use */
 	char	*unique_id;		/* Unique ID (for ircnet) */
-	int	protocol;		/* AF_UNSPEC, AF_INET, or AF_INET6 */
 
 	int	status;			/* See above */
-
-	int	resetting_nickname;	/* Is a nickname reset in progress? */
 
 	char	*userhost;		/* my userhost on this server */
 	char	*away;			/* away message for this server */
@@ -83,13 +100,10 @@ const	AI	*next_addr;		/* The next one to try upon failure */
 	SS	remote_sockname; 	/* sockname of this connection */
 	SS	uh_addr;		/* ip address the server sees */
 	NotifyList	notify_list;	/* Notify list for this server */
-	int	reconnects;		/* Number of reconnects done */
 	char 	*cookie;		/* Erf/TS4 "cookie" value */
-	int	save_channels;		/* True if abnormal connection */
 	int	line_length;		/* How long a protocol command may be */
 	int	max_cached_chan_size;	/* Bigger channels won't cache U@H */
 	int	closing;		/* True if close_server called */
-	int	reconnect_to;		/* Server to connect to on EOF */
 	char	*quit_message;		/* Where we stash a quit message */
 	A005	a005;			/* 005 settings kept kere. */
 	int	stricmp_table;		/* Which case insensitive map to use */
@@ -99,7 +113,6 @@ const	AI	*next_addr;		/* The next one to try upon failure */
 	int	funny_flags;
 	char *	funny_match;
 
-	int	try_ssl;		/* SSL requested on next connection. */
 	int	ssl_enabled;		/* Current SSL status. */
 
         int             doing_privmsg;
@@ -117,8 +130,6 @@ const	AI	*next_addr;		/* The next one to try upon failure */
         char *          recv_nick;
         char *          sent_nick;
         char *          sent_body;
-
-	int		(*dgets) (char *, int, int, void *);
 }	Server;
 extern	Server	**server_list;
 #endif	/* NEED_SERVER_LIST */
@@ -235,6 +246,9 @@ const	char *	get_server_name			(int);
 const	char *	get_server_itsname		(int);
 	void	set_server_group		(int, const char *);
 const	char *	get_server_group		(int);
+const	char *    get_server_server_type	(int);
+	void    set_server_server_type		(int, const char *);
+
 const	char *	get_server_type			(int);
 	void	set_server_version_string	(int, const char *);
 const 	char *	get_server_version_string	(int);

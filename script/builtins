@@ -518,7 +518,18 @@ addset num_of_whowas int;
 
 set num_of_whowas 1;
 
+: {
 # REVERSE_STATUS_LINE
+
+on #^set "STATUS_FORMAT *" (type, format) { status_fixup $type $format };
+on #^set "STATUS_FORMAT1 *" (type, format) { status_fixup $type $format };
+on #^set "STATUS_FORMAT2 *" (type, format) { status_fixup $type $format };
+
+alias status_fixup (type, format) {
+	if (getset(reverse_status_line) == 'OFF') {
+		set $type $format
+	}
+};
 
 addset reverse_status_line bool {
 	if (*0 == 'on') {
@@ -533,6 +544,7 @@ addset reverse_status_line bool {
 };
 
 set reverse_status_line on;
+}
 
 # SHOW_END_OF_MSGS
 

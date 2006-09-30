@@ -1,4 +1,4 @@
-/* $EPIC: status.c,v 1.67 2006/07/28 03:50:40 jnelson Exp $ */
+/* $EPIC: status.c,v 1.68 2006/09/30 01:36:08 jnelson Exp $ */
 /*
  * status.c: handles the status line updating, etc for IRCII 
  *
@@ -573,7 +573,15 @@ int	make_status (Window *window, int must_redraw)
 				 window->status.line[line].key[i]);
 		}
 
-		*buffer = REV_TOG , str = buffer + 1;
+		/*
+		 * If the REVERSE_STATUS_LINE var is on, then put a reverse
+		 * character in the first position (itll get translated to
+		 * the tcap code in the output code.
+		 */
+		if (get_int_var(REVERSE_STATUS_LINE_VAR))
+			*buffer = REV_TOG , str = buffer + 1;
+		else
+			str = buffer;
 
 		/*
 		 * Now press the status line into "buffer".  The magic about
@@ -808,20 +816,75 @@ int	make_status (Window *window, int must_redraw)
 
 
 /*
- * These macros hide the gory details of handling resizable stats_format
- * return values.
+ * "Ack!  What are these macros?" you may be asking.
+ *
+ * Traditionally, when ircII redraws your status bar, it calls a function
+ * for each status expando you have in your status bar (ie, %T calls 
+ * status_time()).  Each function returns a malloced string, which is then
+ * sprintf()d into a bigger string, and the malloced string is freed.
+ * This is inefficient, because status redraws happen pretty frqeuently
+ * and malloc()ing is very expensive.
+ *
+ * Historically, when epic redraws your status bar, it calls a function
+ * for each status expando, just like ircII, but each function has its
+ * own private 'static' variable used for return values.  This requires
+ * less cpu since there isn't a lot of extra malloc+free stuff going on.
+ * The downside is it's possible to fill/overrun these buffers, which 
+ * would lead to the values being truncated.
+ *
+ * As a compromise, we now use a two-cycle system.  We continue to use the
+ * static variable as we always have, but we malloc() it off only the first
+ * time we use it, and any time it needs to grow in size.  This permits us
+ * to avoid malloc+free() every single time for every single status bar, and
+ * avoid possible truncation/overrun of predefined buffer sizes.
+ *
+ * These macros are only necessary for those status expandos that might
+ * return values of indeterminite length.  It's not necessary for those 
+ * functions where the return value is hardcoded or has known limited size.
+ *
+ * So what we do is do a snprintf() into the return value, and snprintf()
+ * tells us if the result was truncated.  If it was truncated, we resize
+ * the return value buffer and then do the snprintf() again, and this time
+ * it won't be truncated. 
+ */
+
+/* 
+ * This macro declares the expandable return value variables.
+ *	my_bufferx	Is the actual resizable return value.  It is malloced
+ *			of when first used, and then resized any time a return
+ *			value would overflow it.
+ *	my_bufferxsize	The actual size we have for the return value. This is 
+ *			the "having" space.
+ *	actual_size	The actual size of what we want to return.  This is the
+ *			"needed" space.
+ *
  */
 #define STATUS_VARS \
 	static char *my_bufferx = NULL; \
 	static int my_bufferxsize = 64; \
 	int	actual_size;
+
+/* After you change 'my_bufferxspace', call this to update 'my_bufferx' */
 #define CHECK \
 	RESIZE(my_bufferx, char, my_bufferxsize);
+
+/* 
+ * After you change 'actual_size', call this to check if the results
+ * overflowed the return value buffer.  If it did overflow, it resizes
+ * the return value buffer so it won't overflow again.
+ */
 #define RECHECK \
 	if (actual_size < my_bufferxsize) \
 		break; \
 	my_bufferxsize = actual_size + 1; \
 	CHECK
+
+/*
+ * Do a sprintf() using the printf format "fmt", which must contain only
+ * one "%s" and no other %-formats, using the 'arg' string.  If the result
+ * overflows the return buffer, the return buffer is resized and we do it
+ * a second time.
+ */
 #define PRESS(fmt, arg) \
 	if (! fmt ) return empty_string; \
 	CHECK \
@@ -829,8 +892,15 @@ int	make_status (Window *window, int must_redraw)
 		actual_size = snprintf(my_bufferx, my_bufferxsize, fmt, arg); \
 		RECHECK \
 	} while (1);
+
+/*
+ * Return the return buffer.  The reason this is not part of 'PRESS' is 
+ * because sometimes you may want to do something between the PRESS but 
+ * before the RETURN, based on the result.
+ */
 #define RETURN return my_bufferx;
 
+/***********************************************************************/
 /*
  * These are the functions that all of the status expandoes invoke
  */

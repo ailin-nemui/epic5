@@ -1,4 +1,4 @@
-/* $EPIC: commands.c,v 1.156 2006/09/28 23:18:05 jnelson Exp $ */
+/* $EPIC: commands.c,v 1.157 2006/09/30 01:36:08 jnelson Exp $ */
 /*
  * commands.c -- Stuff needed to execute commands in ircII.
  *		 Includes the bulk of the built in commands for ircII.
@@ -83,11 +83,6 @@
 /* flags used by e_away */
 #define AWAY_ONE                        0
 #define AWAY_ALL                        1
-
-/* flags used by parse_block */
-#define SECURITY_NO_VARIABLE_COMMAND    1
-#define SECURITY_NO_NONINTERACTIVE_EXEC 2
-#define SECURITY_NO_NONINTERACTIVE_SET  4
 
 /* Used to handle and catch breaks and continues */
 	int	will_catch_break_exceptions = 0;
