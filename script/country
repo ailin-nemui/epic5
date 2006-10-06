@@ -68,18 +68,26 @@ alias country.lookup
 {
 	xecho #*#* Looking for  $TOUPPER($*)  ... Be patient !;
 
+	@ :oldx = xdebug();
+	xdebug dword;
+
 	fe ($country.info) aa ab {
 		if (match("$*" "$aa") || match("$*" "$ab")) {
 			xecho #*#* $toupper($aa) is $toupper($ab);
                 };
         };
 	xecho #*#* DONE !;
+
+	xdebug $oldx;
 };
 
 alias lcountry country -c $*;
 alias lcode country -i $*;
 
 ############ THE ACTUAL DATABASE:
+
+@ oldx = xdebug();
+xdebug dword;
 
 @ country.info = [];
 push country.info Afghanistan AF Albania AL Algeria DZ "American Samoa" AS;
@@ -160,6 +168,9 @@ push country.info "Korea - Democratic People's Republic of" KP;
 push country.info "Korea - Republic Of" KR;
 push country.info "Lao People's Democratic Republic" LA;
 push country.info Slovakia SK;
+
+xdebug $oldx;
+^assign -oldx;
 
 ############# END OF THE /COUNTRY FUNCTION
 ## /* This file has not been truncated! */

@@ -1,4 +1,4 @@
-/* $EPIC: commands.c,v 1.157 2006/09/30 01:36:08 jnelson Exp $ */
+/* $EPIC: commands.c,v 1.158 2006/10/06 00:12:39 jnelson Exp $ */
 /*
  * commands.c -- Stuff needed to execute commands in ircII.
  *		 Includes the bulk of the built in commands for ircII.
@@ -2375,7 +2375,7 @@ BUILT_IN_COMMAND(send_invite)
 	    else
 		nick = arg;
 
-	    if (channel && arg)
+	    if (channel && nick)
 	    {
 		send_to_server("%s %s %s", command, nick, channel);
 		invites++;

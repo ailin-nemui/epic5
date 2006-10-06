@@ -35,14 +35,15 @@ typedef struct WaitCmdstru
 typedef struct ServerInfo 
 {
         char *  freestr;
+	char *	fulldesc;
         int     refnum;
-        char *  host;
+        const char *  host;
         int     port;
-        char *  password;
-        char *  nick;
-        char *  group;
-        char *  server_type;
-        char *  proto_type;
+        const char *  password;
+        const char *  nick;
+        const char *  group;
+        const char *  server_type;
+        const char *  proto_type;
 } ServerInfo;
 
 /* Server: a structure for the server_list */

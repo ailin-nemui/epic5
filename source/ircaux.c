@@ -1,4 +1,4 @@
-/* $EPIC: ircaux.c,v 1.161 2006/09/22 12:24:53 jnelson Exp $ */
+/* $EPIC: ircaux.c,v 1.162 2006/10/06 00:12:40 jnelson Exp $ */
 /*
  * ircaux.c: some extra routines... not specific to irc... that I needed 
  *
@@ -3218,7 +3218,12 @@ unsigned long	random_number (unsigned long l)
  */
 char *	urlencode (const char *s)
 {
+	static const char safe[] = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+				   "abcdefghijklmnopqrstuvwxyz"
+				   "0123456789-_";
+#if 0
 	static const char unsafe[] = "`'!@#$%^&*(){}<>~|\\\";? ,/+";
+#endif
 	static const char hexnum[] = "0123456789ABCDEF";
 	const char *p1;
 	char *	p2;
@@ -3233,7 +3238,7 @@ char *	urlencode (const char *s)
 
 	for (p1 = s, p2 = retval; *p1; p1++)
 	{
-		if (*p1 <= 0x20 || strchr(unsafe, *p1))
+		if (!strchr(safe, *p1))
 		{
 			unsigned c = (unsigned)(unsigned char)*p1;
 
@@ -4710,7 +4715,12 @@ char *	substitute_string (const char *string, const char *oldstr, const char *ne
 
 static ssize_t	url_encoder (const char *orig, size_t orig_len, const void *meta, char *dest, size_t dest_len)
 {
+	static const char safe[] = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+				   "abcdefghijklmnopqrstuvwxyz"
+				   "0123456789-_";
+#if 0
         static const char unsafe[] = "`'!@#$%^&*(){}<>~|\\\";? ,/+";
+#endif
         static const char hexnum[] = "0123456789ABCDEF";
 	size_t	orig_i, dest_i;
 	ssize_t	count = 0;
@@ -4729,7 +4739,7 @@ static ssize_t	url_encoder (const char *orig, size_t orig_len, const void *meta,
 
 	for (orig_i = 0; orig_i < orig_len; orig_i++)
 	{
-	    if (orig[orig_i] <= 0x20 || strchr(unsafe, orig[orig_i]))
+	    if (!strchr(safe, orig[orig_i]))
             {
 		unsigned c = (unsigned)(unsigned char)orig[orig_i];
 

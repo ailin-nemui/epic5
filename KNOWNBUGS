@@ -2,7 +2,7 @@ EPIC5 Projects, Bugs, and other Errata:
 
 KNOWN ERRATA (eg, bugs, or unresolved requests):
 ------------------------------------------------
-* Allow server descs to be updated on the fly
+<none>
 
 LOOK FOR IN THE FUTURE
 -----------------------
@@ -173,3 +173,10 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Add a (ServerInfo) object to (Server), switch to using it.
 * Remove a bunch of unused thingees in (Server) while i'm here.
 * Restore /set reverse_status_line to a builtin. oh well.
+* Make $urlencode() rfc3986-ish, converting all non-unreserved chars
+* Change ServerInfo to use const char's since we don't modify them directly.
+* Reorganize how ServerInfos are used, into "temporary" and "permanent" types
+* Convert Server's use of ServerInfo's into safe permanent types.
+* Add /server -update <refnum> <desc> to change server descs on the fly.
+* Fix typo in /invite.
+* Fix 'country' script by wrapping it with xdebug dwords.
