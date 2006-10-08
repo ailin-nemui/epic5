@@ -1,4 +1,4 @@
-/* $EPIC: irc.c,v 1.1083 2006/10/06 00:12:39 jnelson Exp $ */
+/* $EPIC: irc.c,v 1.1084 2006/10/08 14:00:08 jnelson Exp $ */
 /*
  * ircII: a new irc client.  I like it.  I hope you will too!
  *
@@ -52,7 +52,7 @@ const char internal_version[] = "20060715";
 /*
  * In theory, this number is incremented for every commit.
  */
-const unsigned long	commit_id = 1412;
+const unsigned long	commit_id = 1413;
 
 /*
  * As a way to poke fun at the current rage of naming releases after
@@ -205,7 +205,7 @@ const char	empty_string[] = "",		/* just an empty string */
 		star[] = "*",
 		dot[] = ".",
 		comma[] = ",";
-unsigned char	*cut_buffer = (char *) 0;	/* global cut_buffer */
+unsigned char	*cut_buffer = (unsigned char *) 0;	/* global cut_buffer */
 
 static		char	switch_help[] =
 "Usage: epic [switches] [nickname] [server list]                      \n\
@@ -1176,8 +1176,9 @@ int 	main (int argc, char *argv[])
 	init_newio();
 
 	fprintf(stderr, "EPIC Version 5 -- %s\n", ridiculous_version_name);
-	fprintf(stderr, "EPIC Software Labs (2004)\n");
-	fprintf(stderr, "Version (%s), Commit Id (%lu) -- Date (%s)\n", irc_version, commit_id, internal_version);
+	fprintf(stderr, "EPIC Software Labs (2006)\n");
+	fprintf(stderr, "Version (%s), Commit Id (%lu) -- Date (%s)\n", 
+				irc_version, commit_id, internal_version);
 	fprintf(stderr, "%s\n", compile_info);
 	fprintf(stderr, "Process [%d]", getpid());
 	if (isatty(0))

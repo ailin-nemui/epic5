@@ -258,7 +258,6 @@ const	char *	get_server_cipher		(int);
  
 	void	register_server			(int, const char *);
 	void	password_sendline		(char *, char *);
-	char *	set_server_password		(int, const char *);
 	int	is_server_open			(int);
 	int	is_server_registered		(int);
 	void	server_is_registered		(int, const char *, const char *);

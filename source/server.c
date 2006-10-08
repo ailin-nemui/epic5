@@ -1,4 +1,4 @@
-/* $EPIC: server.c,v 1.207 2006/10/06 00:12:40 jnelson Exp $ */
+/* $EPIC: server.c,v 1.208 2006/10/08 14:00:08 jnelson Exp $ */
 /*
  * server.c:  Things dealing with that wacky program we call ircd.
  *
@@ -1244,7 +1244,6 @@ something_broke:
 		    }
 #endif
 
-return_from_ssl_detour:
 		    if (is_ssl_enabled(des))
 		    {
 			set_server_ssl_enabled(i, TRUE);
@@ -1776,7 +1775,8 @@ void	close_server (int refnum, const char *message)
 		    send_to_aserver(refnum, "QUIT :%s\n", final_message);
 	}
 
-	do_hook(SERVER_LOST_LIST, "%d %s %s", refnum, s->info->host, final_message);
+	do_hook(SERVER_LOST_LIST, "%d %s %s", 
+			refnum, s->info->host, final_message);
 	s->des = new_close(s->des);
 	set_server_status(refnum, SERVER_CLOSED);
 }
@@ -2047,6 +2047,35 @@ void	register_server (int refnum, const char *nick)
 		yell("Registered with server [%d]", refnum);
 }
 
+static const char *	get_server_password (int refnum)
+{
+	Server *s;
+
+	if (!(s = get_server(refnum)))
+		return NULL;
+
+	return s->info->password;
+}
+
+/*
+ * set_server_password: this sets the password for the server with the given
+ * index. If 'password' is NULL, the password is cleared
+ */
+static void	set_server_password (int refnum, const char *password)
+{
+	Server *s;
+
+	if (!(s = get_server(refnum)))
+		return;
+
+	if (password)
+		s->info->password = password;
+	else
+		s->info->password = empty_string;
+
+	preserve_serverinfo(s->info);
+}
+
 /*
  * password_sendline: called by send_line() in get_password() to handle
  * hitting of the return key, etc 
@@ -2063,35 +2092,6 @@ void 	password_sendline (char *data, char *line)
 	set_server_password(new_server, line);
 	close_server(new_server, NULL);
 	set_server_status(new_server, SERVER_RECONNECT);
-}
-
-static const char *	get_server_password (int refnum)
-{
-	Server *s;
-
-	if (!(s = get_server(refnum)))
-		return NULL;
-
-	return s->info->password;
-}
-
-/*
- * set_server_password: this sets the password for the server with the given
- * index. If 'password' is NULL, the password is cleared
- */
-char	*set_server_password (int refnum, const char *password)
-{
-	Server *s;
-
-	if (!(s = get_server(refnum)))
-		return NULL;
-
-	if (password)
-		malloc_strcpy(&s->info->password, password);
-	else
-		new_free(&s->info->password);
-
-	return s->info->password;
 }
 
 
@@ -2262,6 +2262,7 @@ static void    set_server_port (int refnum, int port)
 		return;
 
 	s->info->port = port;
+	preserve_serverinfo(s->info);
 }
 
 /* get_server_port: Returns the connection port for the given server index */

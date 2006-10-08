@@ -1,4 +1,4 @@
-/* $EPIC: window.c,v 1.172 2006/09/28 23:18:05 jnelson Exp $ */
+/* $EPIC: window.c,v 1.173 2006/10/08 14:00:08 jnelson Exp $ */
 /*
  * window.c: Handles the organzation of the logical viewports (``windows'')
  * for irc.  This includes keeping track of what windows are open, where they
@@ -2080,6 +2080,22 @@ BUILT_IN_KEYBINDING(switch_query)
 	/* Make the oldest query the newest. */
 	winner->counter = current_query_counter++;
 	win->query_counter = winner->counter;
+	window_statusbar_needs_update(win);
+}
+
+void	recheck_queries (Window *win)
+{
+	WNickList *nick;
+
+	win->query_counter = 0;
+
+	/* Find the winner and reset query_counter */
+	for (nick = win->nicks; nick; nick = nick->next)
+	{
+		if (nick->counter > win->query_counter)
+			win->query_counter = nick->counter;
+	}
+
 	window_statusbar_needs_update(win);
 }
 
@@ -4198,6 +4214,7 @@ Window *window_query (Window *window, char **args)
 		}
 	    }
 
+	    recheck_queries(window);
 	    window_statusbar_needs_update(window);
 	}
 
@@ -4484,6 +4501,7 @@ static Window *window_remove (Window *window, char **args)
 
 			arg = ptr;
 		}
+	        window_statusbar_needs_update(window);
 	}
 	else
 		say("REMOVE: Do something!  Geez!");

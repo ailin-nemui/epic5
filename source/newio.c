@@ -1,4 +1,4 @@
-/* $EPIC: newio.c,v 1.60 2006/07/28 03:50:40 jnelson Exp $ */
+/* $EPIC: newio.c,v 1.61 2006/10/08 14:00:08 jnelson Exp $ */
 /*
  * newio.c:  Passive, callback-driven IO handling for sockets-n-stuff.
  *
@@ -301,7 +301,8 @@ ssize_t	dgets (int vfd, char *buf, size_t buflen, int buffer)
 	 */
 	if (buffer == -2 && ioe->write_pos - ioe->read_pos < buflen)
 	{
-		yell("dgets: Wanted %d bytes, have %d bytes", ioe->write_pos - ioe->read_pos, buflen);
+		yell("dgets: Wanted %d bytes, have %d bytes", 
+			ioe->write_pos - ioe->read_pos, buflen);
 		ioe->clean = 1;
 		kcleaned(vfd);
 		return 0;
