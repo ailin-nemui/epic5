@@ -1,4 +1,4 @@
-/* $EPIC: server.c,v 1.208 2006/10/08 14:00:08 jnelson Exp $ */
+/* $EPIC: server.c,v 1.209 2006/10/08 14:25:39 jnelson Exp $ */
 /*
  * server.c:  Things dealing with that wacky program we call ircd.
  *
@@ -1242,8 +1242,9 @@ something_broke:
 			new_open(des, do_server, NEWIO_SSL_CONNECT, 0);
 			break;
 		    }
-#endif
 
+return_from_ssl_detour:
+#endif
 		    if (is_ssl_enabled(des))
 		    {
 			set_server_ssl_enabled(i, TRUE);
