@@ -1,4 +1,4 @@
-/* $EPIC: dcc.c,v 1.135 2006/09/22 00:24:21 jnelson Exp $ */
+/* $EPIC: dcc.c,v 1.136 2006/10/10 20:43:38 jnelson Exp $ */
 /*
  * dcc.c: Things dealing client to client connections. 
  *
@@ -73,6 +73,18 @@
 #define DCC_QUOTED	((unsigned) 0x0400)
 #define DCC_CONNECTING	((unsigned) 0x0800)
 #define DCC_STATES	((unsigned) 0xfff0)
+
+static char *dcc_target(const char *name) {
+	size_t	len;
+	char	*ret;
+
+	len = strlen(name);
+	ret = new_malloc(len + 2);
+	ret[0] = '=';
+	memcpy(ret + 1, name, len + 1);
+
+	return ret;
+}
 
 typedef	struct	DCC_struct
 {
@@ -1458,6 +1470,7 @@ void	dcc_chat_transmit (char *user, char *text, const char *orig, const char *ty
 {
 	int	fd;
 	int	l = -1;
+	char *	target = NULL;
 
     do
     {
@@ -1475,15 +1488,16 @@ void	dcc_chat_transmit (char *user, char *text, const char *orig, const char *ty
 			put_it("Descriptor %d is not an open DCC RAW", fd);
 			break;
 		}
-
-		l = message_from(dcc->user, LEVEL_DCC);
+		target = dcc_target(dcc->user);
+		l = message_from(target, LEVEL_DCC);
 		dcc_message_transmit(DCC_RAW, dcc->user, dcc->description, 
 					text, orig, noisy, type);
 		get_time(&dcc->lasttime);
 	}
 	else
 	{
-		l = message_from(user, LEVEL_DCC);
+		target = dcc_target(user);
+		l = message_from(target, LEVEL_DCC);
 		dcc_message_transmit(DCC_CHAT, user, NULL,
 					text, orig, noisy, type);
 	}
@@ -1492,6 +1506,7 @@ void	dcc_chat_transmit (char *user, char *text, const char *orig, const char *ty
 
 	dcc_garbage_collect();
 	pop_message_from(l);
+	new_free(&target);
 }
 
 
@@ -3017,7 +3032,7 @@ static	char *	process_dcc_chat_ctcps (DCC_list *Client, char *tmp)
 		snprintf(equal_nickname, sizeof equal_nickname, 
 				"=%s", Client->user);
 
-		l = message_from(Client->user, LEVEL_CTCP);
+		l = message_from(equal_nickname, LEVEL_CTCP);
 		if (ctcp_request == 1)
 			tmp = do_ctcp(equal_nickname, nickname, tmp);
 		else
@@ -3036,9 +3051,10 @@ static	char *	process_dcc_chat_ctcps (DCC_list *Client, char *tmp)
 static	void	process_dcc_chat_data (DCC_list *Client)
 {
 	char	tmp[IO_BUFFER_SIZE + 1];
+	char 	*target;
 	ssize_t	bytesread;
 	int	l;
-const	char	*OFUH = FromUserHost;
+	const	char	*OFUH = FromUserHost;
 
 	/* Get a new line via dgets. */
 	bytesread = dgets(Client->socket, tmp, IO_BUFFER_SIZE, 1);
@@ -3077,7 +3093,8 @@ const	char	*OFUH = FromUserHost;
 		return;
 
 	/* Otherwise throw the message to the user. */
-	l = message_from(Client->user, LEVEL_DCC);
+	target = dcc_target(Client->user);
+	l = message_from(target, LEVEL_DCC);
 	lock_dcc(Client);
 	if (Client->userhost && *Client->userhost)
 		FromUserHost = Client->userhost;
@@ -3096,6 +3113,7 @@ const	char	*OFUH = FromUserHost;
 	FromUserHost = OFUH;
 	unlock_dcc(Client);
 	pop_message_from(l);
+	new_free(&target);
 }
 
 static void	process_dcc_chat_connected (DCC_list *dcc)

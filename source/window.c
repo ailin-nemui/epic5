@@ -1,4 +1,4 @@
-/* $EPIC: window.c,v 1.173 2006/10/08 14:00:08 jnelson Exp $ */
+/* $EPIC: window.c,v 1.174 2006/10/10 20:43:38 jnelson Exp $ */
 /*
  * window.c: Handles the organzation of the logical viewports (``windows'')
  * for irc.  This includes keeping track of what windows are open, where they
@@ -2459,6 +2459,10 @@ int	real_message_setall (int refnum, const char *who, int level, const char *fil
  */
 int	real_message_from (const char *who, int level, const char *file, int line)
 {
+	/* XXX - Ideally we wouldn't do this here. */
+	if (who && *who == '=')
+		level = LEVEL_DCC;
+
 	if (context_max < 0)
 	{
 		context_max = 32;

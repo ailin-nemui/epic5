@@ -1,4 +1,4 @@
-/* $EPIC: crypt.c,v 1.32 2006/10/08 14:00:08 jnelson Exp $ */
+/* $EPIC: crypt.c,v 1.33 2006/10/10 20:43:38 jnelson Exp $ */
 /*
  * crypt.c: The /ENCRYPT command and all its attendant baggage.
  *
@@ -60,14 +60,21 @@ struct ciphertypes ciphers[] = {
    { PROGCRYPT,      -1,	      NULL,       "Program",  "SED"	      },
    { SEDCRYPT,       CTCP_SED,	     "-SED",      "SED",      "SED"	      },
    { SEDSHACRYPT,    CTCP_SEDSHA,    "-SEDSHA",   "SED+SHA",  "SEDSHA"        },
+#ifdef HAVE_SSL
    { CAST5CRYPT,     CTCP_CAST5,     "-CAST",     "CAST5",    "CAST128ED-CBC" },
    { BLOWFISHCRYPT,  CTCP_BLOWFISH,  "-BLOWFISH", "BLOWFISH", "BLOWFISH-CBC"  },
    { AES256CRYPT,    CTCP_AES256,    "-AES",	  "AES",      "AES256-CBC"    },
    { AESSHA256CRYPT, CTCP_AESSHA256, "-AESSHA",   "AES+SHA",  "AESSHA256-CBC" },
+#endif
    { NOCRYPT,        -1,	       NULL,       NULL,       NULL           }
 };
 
+/* XXX sigh XXX */
+#ifdef HAVE_SSL
 const char *allciphers = "SED, SEDSHA, CAST, BLOWFISH, AES or AESSHA";
+#else
+const char *allciphers = "SED or SEDSHA (sorry, no SSL support)";
+#endif
 
 static	Crypt *	internal_is_crypted (Char *nick, Char *serv, int type);
 static int	internal_remove_crypt (Char *nick, Char *serv, int type);
@@ -487,7 +494,7 @@ char *	decrypt_msg (const unsigned char *str, Crypt *key)
 	/* Decrypt the ciphertext into a C string */
 	i = c;
 	if (!(ptr = decipher_message(my_str, c, key, &i)))
-		strlcat(buffer, my_str, CRYPT_BUFFER_SIZE + 1);
+		strlcpy(buffer, my_str, CRYPT_BUFFER_SIZE + 1);
 	else
 		strlcpy(buffer, ptr, CRYPT_BUFFER_SIZE + 1);
 

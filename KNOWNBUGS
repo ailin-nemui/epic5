@@ -181,3 +181,5 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Fix typo in /invite.
 * Fix 'country' script by wrapping it with xdebug dwords.
 * Fix some problems with /window query (rc kreca)
+* Fix cross-matching of ctcp-over-dcc with queries. YAY! (nullie)
+* Fix crash when you received ssl-encrypted msgs and you don't have ssl.
