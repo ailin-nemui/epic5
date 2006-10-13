@@ -1,4 +1,4 @@
-/* $EPIC: ignore.c,v 1.31 2005/10/30 22:41:19 jnelson Exp $ */
+/* $EPIC: ignore.c,v 1.32 2006/10/13 21:58:02 jnelson Exp $ */
 /*
  * ignore.c: handles the ingore command for irc 
  *
@@ -871,7 +871,7 @@ char 	*get_ignores_by_pattern (char *patterns, int covered)
 		{
 			if (covered ? wild_match(tmp->nick, pattern)
 				    : wild_match(pattern, tmp->nick))
-				malloc_strcat_word_c(&retval, space, tmp->nick, &clue);
+				malloc_strcat_word_c(&retval, space, tmp->nick, DWORD_NO, &clue);
 		}
 	}
 
@@ -962,7 +962,7 @@ char	*get_ignore_patterns_by_type (char *ctype)
 	    }
 
 	    /* Add it to the fray */
-	    malloc_strcat_word_c(&result, space, tmp->nick, &clue);
+	    malloc_strcat_word_c(&result, space, tmp->nick, DWORD_NO, &clue);
 bail:
 	    continue;
 	}
@@ -1000,7 +1000,7 @@ char *	ignorectl (char *input)
 	int	len;
 	int	owd;
 
-	GET_STR_ARG(listc, input);
+	GET_FUNC_ARG(listc, input);
 	len = strlen(listc);
 	if (!my_strnicmp(listc, "REFNUM", len)) {
 		if ((i = (Ignore *)find_in_list((List **)&ignored_nicks,
@@ -1014,12 +1014,12 @@ char *	ignorectl (char *input)
 
 		for (i = ignored_nicks; i; i = i->next)
 			malloc_strcat_word_c(&retval, space, 
-						ltoa(i->refnum), &clue);
+						ltoa(i->refnum), DWORD_NO, &clue);
 		RETURN_MSTR(retval);
 	} else if (!my_strnicmp(listc, "ADD", len)) {
 		char *	pattern;
 
-		GET_STR_ARG(pattern, input);
+		GET_FUNC_ARG(pattern, input);
 
 		owd = window_display;
 		window_display = 0;
@@ -1030,7 +1030,7 @@ char *	ignorectl (char *input)
 	} else if (!my_strnicmp(listc, "CHANGE", len)) {
 		int	refnum;
 
-		GET_STR_ARG(refstr, input);
+		GET_FUNC_ARG(refstr, input);
 		if (!is_number(refstr))
 			RETURN_EMPTY;
 		refnum = my_atol(refstr);
@@ -1053,14 +1053,14 @@ char *	ignorectl (char *input)
 	} else if (!my_strnicmp(listc, "GET", len)) {
 		int	refnum;
 
-		GET_STR_ARG(refstr, input);
+		GET_FUNC_ARG(refstr, input);
 		if (!is_number(refstr))
 			RETURN_EMPTY;
 		refnum = my_atol(refstr);
 		if (!(i = get_ignore_by_refnum(refnum)))
 			RETURN_EMPTY;
 
-		GET_STR_ARG(listc, input);
+		GET_FUNC_ARG(listc, input);
 		len = strlen(listc);
 		if (!my_strnicmp(listc, "NICK", len)) {
 			RETURN_STR(i->nick);
@@ -1095,14 +1095,14 @@ char *	ignorectl (char *input)
 	} else if (!my_strnicmp(listc, "SET", len)) {
 		int	refnum;
 
-		GET_STR_ARG(refstr, input);
+		GET_FUNC_ARG(refstr, input);
 		if (!is_number(refstr))
 			RETURN_EMPTY;
 		refnum = my_atol(refstr);
 		if (!(i = get_ignore_by_refnum(refnum)))
 			RETURN_EMPTY;
 
-		GET_STR_ARG(listc, input);
+		GET_FUNC_ARG(listc, input);
 		len = strlen(listc);
 		if (!my_strnicmp(listc, "NICK", len)) {
 			malloc_strcpy(&i->nick, input);

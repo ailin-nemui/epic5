@@ -1,4 +1,4 @@
-/* $EPIC: dcc.c,v 1.136 2006/10/10 20:43:38 jnelson Exp $ */
+/* $EPIC: dcc.c,v 1.137 2006/10/13 21:58:02 jnelson Exp $ */
 /*
  * dcc.c: Things dealing client to client connections. 
  *
@@ -2231,6 +2231,14 @@ static	void	dcc_rename (char *args)
 		}
 		else
 		{
+			if (is_channel(newf))
+			{
+				say("I can't permit you to DCC RENAME to "
+					"something that looks like a channel, "
+					"sorry.");
+				return;
+			}
+
 			say("DCC CHAT from %s changed to new nick %s",
 				user, newf);
 			malloc_strcpy(&dcc->user, newf);
@@ -4033,11 +4041,11 @@ char *	dccctl (char *input)
 	char *		retval = NULL;
 	size_t		clue = 0;
 
-	GET_STR_ARG(listc, input);
+	GET_FUNC_ARG(listc, input);
 	len = strlen(listc);
 	if (!my_strnicmp(listc, "REFNUMS", len)) {
 		for (client = ClientList; client; client = client->next)
-			malloc_strcat_word_c(&retval, space, ltoa(client->refnum), &clue);
+			malloc_strcat_word_c(&retval, space, ltoa(client->refnum), DWORD_DWORDS, &clue);
 	} else if (!my_strnicmp(listc, "REFBASE", len)) {
 		int oldref = dcc_refnum;
 		if (input && *input)
@@ -4049,7 +4057,7 @@ char *	dccctl (char *input)
 		if (!(client = get_dcc_by_refnum(ref)))
 			RETURN_EMPTY;
 
-		GET_STR_ARG(listc, input);
+		GET_FUNC_ARG(listc, input);
 		len = strlen(listc);
 		if (!my_strnicmp(listc, "REFNUM", len)) {
 			RETURN_INT(client->refnum);
@@ -4089,38 +4097,38 @@ char *	dccctl (char *input)
 			/* This is pretty much a crock. */
 			RETURN_INT(client->flags);
 		} else if (!my_strnicmp(listc, "LASTTIME", len)) {
-			malloc_strcat_word_c(&retval, space, ltoa(client->lasttime.tv_sec), &clue);
-			malloc_strcat_word_c(&retval, space, ltoa(client->lasttime.tv_usec), &clue);
+			malloc_strcat_word_c(&retval, space, ltoa(client->lasttime.tv_sec), DWORD_NO, &clue);
+			malloc_strcat_word_c(&retval, space, ltoa(client->lasttime.tv_usec), DWORD_NO, &clue);
 		} else if (!my_strnicmp(listc, "STARTTIME", len)) {
-			malloc_strcat_word_c(&retval, space, ltoa(client->starttime.tv_sec), &clue);
-			malloc_strcat_word_c(&retval, space, ltoa(client->starttime.tv_usec), &clue);
+			malloc_strcat_word_c(&retval, space, ltoa(client->starttime.tv_sec), DWORD_NO, &clue);
+			malloc_strcat_word_c(&retval, space, ltoa(client->starttime.tv_usec), DWORD_NO, &clue);
 		} else if (!my_strnicmp(listc, "HOLDTIME", len)) {
-			malloc_strcat_word_c(&retval, space, ltoa(client->holdtime.tv_sec), &clue);
-			malloc_strcat_word_c(&retval, space, ltoa(client->holdtime.tv_usec), &clue);
+			malloc_strcat_word_c(&retval, space, ltoa(client->holdtime.tv_sec), DWORD_NO, &clue);
+			malloc_strcat_word_c(&retval, space, ltoa(client->holdtime.tv_usec), DWORD_NO, &clue);
 		} else if (!my_strnicmp(listc, "OFFERADDR", len)) {
 			char	host[1025], port[25];
 			if (inet_ntostr((SA *)&client->offer,
 					host, sizeof(host),
 					port, sizeof(port), NI_NUMERICHOST))
 				RETURN_EMPTY;
-			malloc_strcat_word_c(&retval, space, host, &clue);
-			malloc_strcat_word_c(&retval, space, port, &clue);
+			malloc_strcat_word_c(&retval, space, host, DWORD_NO, &clue);
+			malloc_strcat_word_c(&retval, space, port, DWORD_NO, &clue);
 		} else if (!my_strnicmp(listc, "REMADDR", len)) {
 			char	host[1025], port[25];
 			if (inet_ntostr((SA *)&client->peer_sockaddr,
 					host, sizeof(host),
 					port, sizeof(port), NI_NUMERICHOST))
 				RETURN_EMPTY;
-			malloc_strcat_word_c(&retval, space, host, &clue);
-			malloc_strcat_word_c(&retval, space, port, &clue);
+			malloc_strcat_word_c(&retval, space, host, DWORD_NO, &clue);
+			malloc_strcat_word_c(&retval, space, port, DWORD_NO, &clue);
 		} else if (!my_strnicmp(listc, "LOCADDR", len)) {
 			char	host[1025], port[25];
 			if (inet_ntostr((SA *)&client->local_sockaddr,
 					host, sizeof(host),
 					port, sizeof(port), NI_NUMERICHOST))
 				RETURN_EMPTY;
-			malloc_strcat_word_c(&retval, space, host, &clue);
-			malloc_strcat_word_c(&retval, space, port, &clue);
+			malloc_strcat_word_c(&retval, space, host, DWORD_NO, &clue);
+			malloc_strcat_word_c(&retval, space, port, DWORD_NO, &clue);
 		} else if (!my_strnicmp(listc, "READABLE", len)) {
 			int retint;
 			retint = my_isreadable(client->socket, 0) > 0;
@@ -4140,7 +4148,7 @@ char *	dccctl (char *input)
 		if (!(client = get_dcc_by_refnum(ref)))
 			RETURN_EMPTY;
 
-		GET_STR_ARG(listc, input);
+		GET_FUNC_ARG(listc, input);
 		len = strlen(listc);
 		if (!my_strnicmp(listc, "REFNUM", len)) {
 			long	newref;
@@ -4181,8 +4189,8 @@ char *	dccctl (char *input)
 			char *host, *port;
 			SS a;
 
-			GET_STR_ARG(host, input);
-			GET_STR_ARG(port, input);
+			GET_FUNC_ARG(host, input);
+			GET_FUNC_ARG(port, input);
 
 			V4FAM(a) = AF_UNSPEC;
 			if ((client->flags & DCC_ACTIVE) ||
@@ -4204,52 +4212,52 @@ char *	dccctl (char *input)
 	} else if (!my_strnicmp(listc, "TYPEMATCH", len)) {
 		for (client = ClientList; client; client = client->next)
 			if (wild_match(input, dcc_types[client->flags & DCC_TYPES]))
-				malloc_strcat_word_c(&retval, space, ltoa(client->refnum), &clue);
+				malloc_strcat_word_c(&retval, space, ltoa(client->refnum), DWORD_NO, &clue);
 	} else if (!my_strnicmp(listc, "DESCMATCH", len)) {
 		for (client = ClientList; client; client = client->next)
 			if (wild_match(input, client->description ? client->description : EMPTY))
-				malloc_strcat_word_c(&retval, space, ltoa(client->refnum), &clue);
+				malloc_strcat_word_c(&retval, space, ltoa(client->refnum), DWORD_NO, &clue);
 	} else if (!my_strnicmp(listc, "FILEMATCH", len)) {
 		for (client = ClientList; client; client = client->next)
 			if (wild_match(input, client->filename ? client->filename : EMPTY))
-				malloc_strcat_word_c(&retval, space, ltoa(client->refnum), &clue);
+				malloc_strcat_word_c(&retval, space, ltoa(client->refnum), DWORD_NO, &clue);
 	} else if (!my_strnicmp(listc, "USERMATCH", len)) {
 		for (client = ClientList; client; client = client->next)
 			if (wild_match(input, client->user ? client->user : EMPTY))
-				malloc_strcat_word_c(&retval, space, ltoa(client->refnum), &clue);
+				malloc_strcat_word_c(&retval, space, ltoa(client->refnum), DWORD_NO, &clue);
 	} else if (!my_strnicmp(listc, "USERHOSTMATCH", len)) {
 		for (client = ClientList; client; client = client->next)
 			if (wild_match(input, client->userhost ? client->userhost : EMPTY))
-				malloc_strcat_word_c(&retval, space, ltoa(client->refnum), &clue);
+				malloc_strcat_word_c(&retval, space, ltoa(client->refnum), DWORD_NO, &clue);
 	} else if (!my_strnicmp(listc, "OTHERMATCH", len)) {
 		for (client = ClientList; client; client = client->next)
 			if (wild_match(input, client->othername ? client->othername : EMPTY))
-				malloc_strcat_word_c(&retval, space, ltoa(client->refnum), &clue);
+				malloc_strcat_word_c(&retval, space, ltoa(client->refnum), DWORD_NO, &clue);
 	} else if (!my_strnicmp(listc, "LOCKED", len)) {
 		for (client = ClientList; client; client = client->next)
 			if (client->locked)
-				malloc_strcat_word_c(&retval, space, ltoa(client->refnum), &clue);
+				malloc_strcat_word_c(&retval, space, ltoa(client->refnum), DWORD_NO, &clue);
 	} else if (!my_strnicmp(listc, "HELD", len)) {
 		for (client = ClientList; client; client = client->next)
 			if (client->held)
-				malloc_strcat_word_c(&retval, space, ltoa(client->refnum), &clue);
+				malloc_strcat_word_c(&retval, space, ltoa(client->refnum), DWORD_NO, &clue);
 	} else if (!my_strnicmp(listc, "UNHELD", len)) {
 		for (client = ClientList; client; client = client->next)
 			if (!client->held)
-				malloc_strcat_word_c(&retval, space, ltoa(client->refnum), &clue);
+				malloc_strcat_word_c(&retval, space, ltoa(client->refnum), DWORD_NO, &clue);
 	} else if (!my_strnicmp(listc, "READABLES", len)) {
 		for (client = ClientList; client; client = client->next)
 		{
 			if (my_isreadable(client->socket, 0))
 				malloc_strcat_word_c(&retval, space, 
-					ltoa(client->refnum), &clue);
+					ltoa(client->refnum), DWORD_NO, &clue);
 		}
 	} else if (!my_strnicmp(listc, "WRITABLES", len)) {
 		for (client = ClientList; client; client = client->next)
 		{
 			if (my_iswritable(client->socket, 0))
 				malloc_strcat_word_c(&retval, space, 
-					ltoa(client->refnum), &clue);
+					ltoa(client->refnum), DWORD_NO, &clue);
 		}
 	} else if (!my_strnicmp(listc, "UPDATES_STATUS", len)) {
 		int	oldval;

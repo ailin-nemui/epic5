@@ -1,4 +1,4 @@
-/* $EPIC: server.c,v 1.209 2006/10/08 14:25:39 jnelson Exp $ */
+/* $EPIC: server.c,v 1.210 2006/10/13 21:58:03 jnelson Exp $ */
 /*
  * server.c:  Things dealing with that wacky program we call ircd.
  *
@@ -2971,7 +2971,7 @@ static char *	get_server_altnames (int refnum)
 		return NULL;
 
 	for (i = 0; i < s->altnames->numitems; i++)
-		malloc_strcat_word_c(&retval, space, s->altnames->list[i].name, &clue);
+		malloc_strcat_word_c(&retval, space, s->altnames->list[i].name, DWORD_DWORDS, &clue);
 
 	return retval;
 }
@@ -3114,7 +3114,7 @@ char 	*serverctl 	(char *input)
 	char	*listc, *listc1;
 	const char *ret;
 
-	GET_STR_ARG(listc, input);
+	GET_FUNC_ARG(listc, input);
 	len = strlen(listc);
 	if (!my_strnicmp(listc, "ADD", len)) {
 	} else if (!my_strnicmp(listc, "DELETE", len)) {
@@ -3125,7 +3125,7 @@ char 	*serverctl 	(char *input)
 	} else if (!my_strnicmp(listc, "REFNUM", len)) {
 		char *server;
 
-		GET_STR_ARG(server, input);
+		GET_FUNC_ARG(server, input);
 		refnum = str_to_servref(server);
 		if (refnum != NOSERV)
 			RETURN_INT(refnum);
@@ -3135,7 +3135,7 @@ char 	*serverctl 	(char *input)
 		if (!get_server(refnum))
 			RETURN_EMPTY;
 
-		GET_STR_ARG(listc, input);
+		GET_FUNC_ARG(listc, input);
 		len = strlen(listc);
 		if (!my_strnicmp(listc, "AWAY", len)) {
 			ret = get_server_away(refnum);
@@ -3199,7 +3199,7 @@ char 	*serverctl 	(char *input)
 			ret = get_server_version_string(refnum);
 			RETURN_STR(ret);
 		} else if (!my_strnicmp(listc, "005", len)) {
-			GET_STR_ARG(listc1, input);
+			GET_FUNC_ARG(listc1, input);
 			ret = get_server_005(refnum, listc1);
 			RETURN_STR(ret);
 		} else if (!my_strnicmp(listc, "005s", len)) {
@@ -3242,7 +3242,7 @@ char 	*serverctl 	(char *input)
 		if (!get_server(refnum))
 			RETURN_EMPTY;
 
-		GET_STR_ARG(listc, input);
+		GET_FUNC_ARG(listc, input);
 		len = strlen(listc);
 		if (!my_strnicmp(listc, "AWAY", len)) {
 			set_server_away(refnum, input);
@@ -3311,7 +3311,7 @@ char 	*serverctl 	(char *input)
 		} else if (!my_strnicmp(listc, "VERSION", len)) {
 			set_server_version_string(refnum, input);
 		} else if (!my_strnicmp(listc, "005", len)) {
-			GET_STR_ARG(listc1, input);
+			GET_FUNC_ARG(listc1, input);
 			set_server_005(refnum, listc1, input);
 			RETURN_INT(!!*input);
 		} else if (!my_strnicmp(listc, "ALTNAME", len)) {

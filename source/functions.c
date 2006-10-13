@@ -1,4 +1,4 @@
-/* $EPIC: functions.c,v 1.236 2006/09/21 12:09:09 jnelson Exp $ */
+/* $EPIC: functions.c,v 1.237 2006/10/13 21:58:02 jnelson Exp $ */
 /*
  * functions.c -- Built-in functions for ircII
  *
@@ -1204,7 +1204,7 @@ BUILT_IN_FUNCTION(function_index, input)
 	char	*schars;
 	char	*iloc;
 
-	GET_STR_ARG(schars, input);
+	GET_DWORD_ARG(schars, input);
 	iloc = sindex(input, schars);
 	RETURN_INT(iloc ? iloc - input : -1);
 }
@@ -1222,7 +1222,7 @@ BUILT_IN_FUNCTION(function_rindex, word)
 	char	*chars, *last;
 
 	/* need to find out why ^x doesnt work */
-	GET_STR_ARG(chars, word);
+	GET_DWORD_ARG(chars, word);
 	if (!*word || !*chars)
 		RETURN_INT(-1);
 
@@ -1246,9 +1246,9 @@ BUILT_IN_FUNCTION(function_match, input)
 	char	*pattern, 	*word;
 	long	current_match,	best_match = 0,	match = 0, match_index = 0;
 
-	GET_WORD_ARG(pattern, input);
+	GET_FUNC_ARG(pattern, input);
 
-	while ((word = NEXT_WORD(input, &input)))
+	while ((word = next_func_arg(input, &input)))
 	{
 		match_index++;
 		if ((current_match = wild_match(pattern, word)) > best_match)
@@ -1277,9 +1277,9 @@ BUILT_IN_FUNCTION(function_rmatch, input)
 	char	*pattern,	*word;
 	int	current_match,	best_match = 0,	match = 0, rmatch_index = 0;
 
-	GET_WORD_ARG(word, input);
+	GET_FUNC_ARG(word, input);
 
-	while ((pattern = NEXT_WORD(input, &input)))
+	while ((pattern = next_func_arg(input, &input)))
 	{
 		rmatch_index++;
 		if ((current_match = wild_match(pattern, word)) > best_match)
@@ -1311,13 +1311,13 @@ BUILT_IN_FUNCTION(function_userhost, input)
 
 		while (input && *input)
 		{
-			GET_WORD_ARG(nick, input);
+			GET_FUNC_ARG(nick, input);
 			if (is_channel(nick))
 				chan = nick;
 			if ((uh = fetch_userhost(from_server, chan, nick)))
-				malloc_strcat_word_c(&retval, space, uh, &rvclue);
+				malloc_strcat_word_c(&retval, space, uh, DWORD_NO, &rvclue);
 			else
-				malloc_strcat_word_c(&retval, space, unknown_userhost, &rvclue);
+				malloc_strcat_word_c(&retval, space, unknown_userhost, DWORD_NO, &rvclue);
 		}
 		RETURN_MSTR(retval);
 	}
@@ -1345,7 +1345,7 @@ BUILT_IN_FUNCTION(function_strip, input)
 	char	*chars;
 	char	*cp, *dp;
 
-	GET_STR_ARG(chars, input);
+	GET_DWORD_ARG(chars, input);
 	RETURN_IF_EMPTY(input);
 
 	result = (char *)new_malloc(strlen(input) + 1);
@@ -1408,7 +1408,7 @@ BUILT_IN_FUNCTION(function_ischannel, input)
 	char *	channel;
 	int	ret;
 
-	channel = new_next_arg(input, &input);
+	channel = next_func_arg(input, &input);
 	ret = is_channel(channel);
 	RETURN_INT(ret);
 }
@@ -1434,8 +1434,8 @@ BUILT_IN_FUNCTION(function_ischanop, input)
 	char 	*nick, *chan;
 	int	ret;
 
-	nick = new_next_arg(input, &input);
-	chan = new_next_arg(input, &input);
+	nick = next_func_arg(input, &input);
+	chan = next_func_arg(input, &input);
 	ret = is_chanop(chan, nick);
 	RETURN_INT(ret);
 }
@@ -1456,9 +1456,9 @@ BUILT_IN_FUNCTION(function_word, word)
 		RETURN_EMPTY;
 
 	while (cvalue-- > 0 && word && *word)
-		w_word = NEXT_WORD(word, &word);
+		w_word = next_func_arg(word, &word);
 
-	GET_WORD_ARG(w_word, word);
+	GET_FUNC_ARG(w_word, word);
 	RETURN_STR(w_word);
 }
 
@@ -1469,11 +1469,11 @@ BUILT_IN_FUNCTION(function_connect, input)
 	char *	v;
 	int	family = AF_INET;
 
-	GET_STR_ARG(host, input);
-	GET_STR_ARG(port, input);
+	GET_FUNC_ARG(host, input);
+	GET_FUNC_ARG(port, input);
 	if (input && *input)
 	{
-		GET_STR_ARG(v, input)
+		GET_FUNC_ARG(v, input)
 
 		/* Figure out what family the user wants */
 		if (*v == 'v' || *v == 'V')
@@ -1501,7 +1501,7 @@ BUILT_IN_FUNCTION(function_listen, input)
 	if (input && *input)
 	{
 		char *tmp, *ptr;
-		if ((tmp = new_next_arg(input, &input)))
+		if ((tmp = next_func_arg(input, &input)))
 		{
 			port = strtoul(tmp, &ptr, 0);
 			if (ptr == tmp)
@@ -1510,7 +1510,7 @@ BUILT_IN_FUNCTION(function_listen, input)
 
 		if (input && *input)
 		{
-			GET_STR_ARG(v, input)
+			GET_FUNC_ARG(v, input)
 
 			/* Figure out what family the user wants */
 			if (*v == 'v' || *v == 'V')
@@ -1591,7 +1591,7 @@ BUILT_IN_FUNCTION(function_servers, input)
 	for (count = 0; count < server_list_size(); count++)
 	{
 		if (is_server_registered(count))
-			malloc_strcat_word_c(&retval, space, ltoa(count), &rvclue);
+			malloc_strcat_word_c(&retval, space, ltoa(count), DWORD_NO, &rvclue);
 	}
 	if (!retval)
 		RETURN_EMPTY;
@@ -1660,12 +1660,12 @@ BUILT_IN_FUNCTION(function_before, word)
 	char	*tmp;
 	long	numint;
 
-	GET_STR_ARG(tmp, word);			/* DONT DELETE TMP! */
+	GET_DWORD_ARG(tmp, word);			/* DONT DELETE TMP! */
 	numint = my_atol(tmp);
 
 	if (numint)
 	{
-		GET_STR_ARG(chars, word);
+		GET_DWORD_ARG(chars, word);
 	}
 	else
 	{
@@ -1697,7 +1697,7 @@ BUILT_IN_FUNCTION(function_after, word)
 	char 	*tmp;
 	long	numint;
 
-	GET_STR_ARG(tmp, word);
+	GET_DWORD_ARG(tmp, word);
 	numint = my_atol(tmp);
 
 	if (numint)
@@ -1731,7 +1731,7 @@ BUILT_IN_FUNCTION(function_leftw, word)
 	if (value < 1)
 		RETURN_EMPTY;
 
-	return (extractw(word, 0, value-1));	/* DONT USE RETURN_STR HERE! */
+	return (extractfw(word, 0, value-1));	/* DONT USE RETURN_STR HERE! */
 }
 
 /* $rightw(num string of text)
@@ -1746,7 +1746,7 @@ BUILT_IN_FUNCTION(function_rightw, word)
 	if (value < 1)
 		RETURN_EMPTY;
 		
-	return extractw2(word, -value, EOS); 
+	return extractfw2(word, -value, EOS); 
 }
 
 
@@ -1765,7 +1765,7 @@ BUILT_IN_FUNCTION(function_midw, word)
 	if (num < 1)
 		RETURN_EMPTY;
 
-	return extractw(word, start, (start + num - 1));
+	return extractfw(word, start, (start + num - 1));
 }
 
 /* $notw(num string of text)
@@ -1787,8 +1787,8 @@ BUILT_IN_FUNCTION(function_notw, word)
 	if (where > 0)
 	{
 		char *part1, *part2;
-		part1 = extractw(word, 0, (where - 1));
-		part2 = extractw(word, (where + 1), EOS);
+		part1 = extractfw(word, 0, (where - 1));
+		part2 = extractfw(word, (where + 1), EOS);
 		booya = malloc_strdup(part1);
 		/* if part2 is there, append it. */
 		malloc_strcat_wordlist(&booya, space, part2);
@@ -1796,7 +1796,7 @@ BUILT_IN_FUNCTION(function_notw, word)
 		new_free(&part2);
 	}
 	else /* where == 0 */
-		booya = extractw(word, 1, EOS);
+		booya = extractfw(word, 1, EOS);
 
 	return booya;				/* DONT USE RETURN_STR HERE! */
 }
@@ -1815,7 +1815,7 @@ BUILT_IN_FUNCTION(function_restw, word)
 	GET_INT_ARG(where, word);
 	if (where < 0)
 		RETURN_EMPTY;
-	return extractw(word, where, EOS);
+	return extractfw(word, where, EOS);
 }
 
 /* 
@@ -1830,7 +1830,7 @@ BUILT_IN_FUNCTION(function_remw, word)
 	ssize_t	span;
 	char	*str;
 
-	GET_WORD_ARG(word_to_remove, word);
+	GET_FUNC_ARG(word_to_remove, word);
 	len = strlen(word_to_remove);
 
 	if ((span = stristr(word, word_to_remove)) >= 0)
@@ -1886,9 +1886,9 @@ BUILT_IN_FUNCTION(function_insertw, word)
 		booya = malloc_strdup(word);
 	else
 	{
-		GET_WORD_ARG(what, word);
-		str1 = extractw(word, 0, (where - 1));
-		str2 = extractw(word, where, EOS);
+		GET_FUNC_ARG(what, word);
+		str1 = extractfw(word, 0, (where - 1));
+		str2 = extractfw(word, where, EOS);
 
 		booya = str1;
 		malloc_strcat_wordlist(&booya, space, what);
@@ -1909,25 +1909,22 @@ BUILT_IN_FUNCTION(function_chngw, word)
 {
 	int     which;
 	char    *what;
-	char    *booya=(char *)0;
 	char	*str1, *str2;
 	
 	GET_INT_ARG(which, word);
-	GET_WORD_ARG(what, word);
+	GET_FUNC_ARG(what, word);
 
 	if (which < 0)
 		RETURN_STR(word);
 
 	/* hmmm. if which is 0, extract does the wrong thing. */
-	str1 = extractw(word, 0, which - 1);
-	str2 = extractw(word, which + 1, EOS);
+	str1 = extractfw(word, 0, which - 1);
+	str2 = extractfw(word, which + 1, EOS);
 
-	booya = str1;
-	malloc_strcat_wordlist(&booya, space, what);
-	malloc_strcat_wordlist(&booya, space, str2);
+	malloc_strcat_word(&str1, space, what, DWORD_DWORDS);
+	malloc_strcat_wordlist(&str1, space, str2);
 	new_free(&str2);
-
-	return (booya);
+	return str1;
 }
 
 
@@ -1956,8 +1953,8 @@ BUILT_IN_FUNCTION(function_common, word)
 		RETURN_EMPTY;
 
 	*right++ = 0;
-	leftc = splitw(left, &leftw);
-	rightc = splitw(right, &rightw);
+	leftc = splitw(left, &leftw, DWORD_DWORDS);
+	rightc = splitw(right, &rightw, DWORD_DWORDS);
 
 	for (lefti = 0; lefti < leftc; lefti++)
 	{
@@ -1965,7 +1962,7 @@ BUILT_IN_FUNCTION(function_common, word)
 		{
 			if (rightw[righti] && !my_stricmp(leftw[lefti], rightw[righti]))
 			{
-				malloc_strcat_word_c(&booya, space, leftw[lefti], &rvclue);
+				malloc_strcat_word_c(&booya, space, leftw[lefti], DWORD_DWORDS, &rvclue);
 				rightw[righti] = NULL;
 			}
 		}
@@ -2001,8 +1998,8 @@ BUILT_IN_FUNCTION(function_diff, word)
 		RETURN_EMPTY;
 
 	*right++ = 0;
-	leftc = splitw(left, &leftw);
-	rightc = splitw(right, &rightw);
+	leftc = splitw(left, &leftw, DWORD_DWORDS);
+	rightc = splitw(right, &rightw, DWORD_DWORDS);
 
 	for (rvclue = lefti = 0; lefti < leftc; lefti++)
 	{
@@ -2016,13 +2013,13 @@ BUILT_IN_FUNCTION(function_diff, word)
 			}
 		}
 		if (!found)
-			malloc_strcat_word_c(&booya, space, leftw[lefti], &rvclue);
+			malloc_strcat_word_c(&booya, space, leftw[lefti], DWORD_DWORDS, &rvclue);
 	}
 
 	for (rvclue = righti = 0; righti < rightc; righti++)
 	{
 		if (rightw[righti])
-			malloc_strcat_word_c(&booya, space, rightw[righti], &rvclue);
+			malloc_strcat_word_c(&booya, space, rightw[righti], DWORD_DWORDS, &rvclue);
 	}
 
 	new_free((char **)&leftw);
@@ -2041,11 +2038,11 @@ char *wrapper_pattern(char *word, int mode)
 	char    *pattern;
 	size_t	rvclue=0;
 
-	GET_WORD_ARG(pattern, word)
-	while (((blah = NEXT_WORD(word, &word)) != NULL))
+	GET_FUNC_ARG(pattern, word)
+	while (((blah = next_func_arg(word, &word)) != NULL))
 	{
 		if (!!wild_match(pattern, blah) == !!mode)
-			malloc_strcat_word_c(&booya, space, blah, &rvclue);
+			malloc_strcat_word_c(&booya, space, blah, DWORD_DWORDS, &rvclue);
 	}
 	RETURN_MSTR(booya);
 }
@@ -2077,12 +2074,12 @@ char *wrapper_rpattern (char *word, int mode)
 	char    *pattern;
 	size_t	rvclue=0;
 
-	GET_WORD_ARG(blah, word)
+	GET_FUNC_ARG(blah, word)
 
-	while ((pattern = NEXT_WORD(word, &word)) != NULL)
+	while ((pattern = next_func_arg(word, &word)) != NULL)
 	{
 		if (!!wild_match(pattern, blah) == !!mode)
-			malloc_strcat_word_c(&booya, space, pattern, &rvclue);
+			malloc_strcat_word_c(&booya, space, pattern, DWORD_DWORDS, &rvclue);
 	}
 	RETURN_MSTR(booya);
 }
@@ -2128,22 +2125,22 @@ BUILT_IN_FUNCTION((fn), word)                                          \
        char    *sfirstl, *ssecondl;                                          \
        size_t  rvclue=0;                                                     \
                                                                              \
-       GET_STR_ARG(pattern, word);                                           \
-       GET_STR_ARG(firstlist, word);                                         \
-       GET_STR_ARG(secondlist, word);                                        \
+       GET_DWORD_ARG(pattern, word);                                         \
+       GET_FUNC_ARG(firstlist, word);                                       \
+       GET_FUNC_ARG(secondlist, word);                                      \
                                                                              \
        firstl = get_variable(firstlist);                                     \
        secondl = get_variable(secondlist);                                   \
        sfirstl = firstl;                                                     \
        ssecondl = secondl;                                                   \
                                                                              \
-       while ((firstel = NEXT_WORD(firstl, &firstl)))                     \
+       while ((firstel = next_func_arg(firstl, &firstl)))                     \
        {                                                                     \
-               if (!(secondel = NEXT_WORD(secondl, &secondl)))            \
+               if (!(secondel = next_func_arg(secondl, &secondl)))            \
                        break;                                                \
                                                                              \
                if ((sense) == !wild_match((pat), (arg)))                     \
-                       malloc_strcat_word_c(&booya, space, secondel, &rvclue); \
+                       malloc_strcat_word_c(&booya, space, secondel, DWORD_DWORDS, &rvclue); \
        }                                                                     \
        new_free(&sfirstl);                                                   \
        new_free(&ssecondl);                                                  \
@@ -2174,7 +2171,7 @@ BUILT_IN_FUNCTION(function_beforew, word)
 	if (where < 1)
 		RETURN_EMPTY;
 
-	placeholder = extractw(lame, 1, where - 1);
+	placeholder = extractfw(lame, 1, where - 1);
 	return placeholder;
 }
 		
@@ -2192,7 +2189,7 @@ BUILT_IN_FUNCTION(function_tow, word)
 	if (where < 1)
 		RETURN_EMPTY;
 
-	placeholder = extractw(lame, 1, where);
+	placeholder = extractfw(lame, 1, where);
 	return placeholder;
 }
 
@@ -2214,7 +2211,7 @@ BUILT_IN_FUNCTION(function_afterw, word)
 		new_free(&lame);
 		RETURN_EMPTY;
 	}
-	placeholder = extractw(lame, where + 1, EOS);
+	placeholder = extractfw(lame, where + 1, EOS);
 	new_free(&lame);
 	return placeholder;
 }
@@ -2238,7 +2235,7 @@ BUILT_IN_FUNCTION(function_fromw, word)
 		RETURN_EMPTY;
 	}
 
-	placeholder = extractw(lame, where, EOS);
+	placeholder = extractfw(lame, where, EOS);
 	new_free(&lame);
 	return placeholder;
 }
@@ -2257,12 +2254,12 @@ BUILT_IN_FUNCTION(function_splice, word)
 	int	num_words;
 	size_t	clue = 0;
 
-	GET_STR_ARG(variable, word);
+	GET_FUNC_ARG(variable, word);
 	GET_INT_ARG(start, word);
 	GET_INT_ARG(length, word);
 
 	old_value = get_variable(variable);
-	num_words = count_words(old_value, DWORD_YES, "\"");
+	num_words = count_words(old_value, DWORD_DWORDS, "\"");
 
 	if (start < 0)
 	{
@@ -2280,16 +2277,16 @@ BUILT_IN_FUNCTION(function_splice, word)
 
 	else if (start + length >= num_words)
 	{
-		left_part = extractw(old_value, 0, start - 1);
-		middle_part = extractw(old_value, start, EOS);
+		left_part = extractfw(old_value, 0, start - 1);
+		middle_part = extractfw(old_value, start, EOS);
 		right_part = malloc_strdup(empty_string);
 	}
 
 	else
 	{
-		left_part = extractw(old_value, 0, start - 1);
-		middle_part = extractw(old_value, start, start + length - 1);
-		right_part = extractw(old_value, start + length, EOS);
+		left_part = extractfw(old_value, 0, start - 1);
+		middle_part = extractfw(old_value, start, start + length - 1);
+		right_part = extractfw(old_value, start + length, EOS);
 	}
 
 	malloc_strcat_wordlist_c(&new_value, space, left_part, &clue);
@@ -2308,7 +2305,7 @@ BUILT_IN_FUNCTION(function_splice, word)
 /* Worked over by jfn on 3/20/97.  If it breaks, yell at me. */
 BUILT_IN_FUNCTION(function_numonchannel, word)
 {
-	RETURN_INT(number_on_channel(new_next_arg(word, &word), from_server));
+	RETURN_INT(number_on_channel(next_func_arg(word, &word), from_server));
 }
 	
 /* Worked over by jfn on 3/20/97.  If it breaks, yet all me. */
@@ -2328,7 +2325,7 @@ BUILT_IN_FUNCTION(function_onchannel, word)
 	char		*channel;
 	char		*nicks = NULL;
 
-	channel = new_next_arg(word, &word);
+	channel = next_func_arg(word, &word);
 	if ((nicks = create_nick_list(channel, from_server)))
 		return nicks;
 	else
@@ -2337,7 +2334,7 @@ BUILT_IN_FUNCTION(function_onchannel, word)
 			RETURN_EMPTY;
 
 		nicks = channel;
-		channel = new_next_arg(word, &word);
+		channel = next_func_arg(word, &word);
 		RETURN_INT(is_on_channel(channel, nicks) ? 1 : 0);
 	}
 }
@@ -2346,7 +2343,7 @@ BUILT_IN_FUNCTION(function_chops, word)
 {
 	char		*channel;
 
-	channel = new_next_arg(word, &word);
+	channel = next_func_arg(word, &word);
 	return create_chops_list(channel, from_server);
 }
 
@@ -2354,7 +2351,7 @@ BUILT_IN_FUNCTION(function_nochops, word)
 {
 	char		*channel;
 
-	channel = new_next_arg(word, &word);
+	channel = next_func_arg(word, &word);
 	return create_nochops_list(channel, from_server);
 }
 
@@ -2368,12 +2365,12 @@ BUILT_IN_FUNCTION(function_key, word)
 
 	do
 	{
-		channel = NEXT_WORD(word, &word);
+		channel = next_func_arg(word, &word);
 		if ((!channel || !*channel) && booya)
 			break;
 
 		key = get_channel_key(channel, from_server);
-		malloc_strcat_word_c(&booya, space, (key && *key) ? key : "*", &rvclue);
+		malloc_strcat_word_c(&booya, space, (key && *key) ? key : "*", DWORD_DWORDS, &rvclue);
 	}
 	while (word && *word);
 
@@ -2393,12 +2390,12 @@ BUILT_IN_FUNCTION(function_channelmode, word)
 
 	do
 	{
-		channel = NEXT_WORD(word, &word);
+		channel = next_func_arg(word, &word);
 		if ((!channel || !*channel) && booya)
 			break;
 
 		mode = get_channel_mode(channel, from_server);
-		malloc_strcat_word_c(&booya, space, (mode && *mode) ? mode : "*", &rvclue);
+		malloc_strcat_word_c(&booya, space, (mode && *mode) ? mode : "*", DWORD_DWORDS, &rvclue);
 	}
 	while (word && *word);
 
@@ -2417,7 +2414,7 @@ BUILT_IN_FUNCTION(function_revw, words)
 	 * chop off the double quotes from 'words'!
 	 */
 	while (words && *words)
-		malloc_strcat_wordlist_c(&booya, space, last_arg(&words, &wclue, !!(x_debug & DEBUG_DWORD)), &rvclue);
+		malloc_strcat_wordlist_c(&booya, space, last_arg(&words, &wclue, DWORD_DWORDS), &rvclue);
 
 	if (!booya)
 		RETURN_EMPTY;
@@ -2472,7 +2469,7 @@ BUILT_IN_FUNCTION(function_jot, input)
 		{
 			snprintf(ugh, 99, "%f", counter);
 			canon_number(ugh);
-			malloc_strcat_word_c(&booya, space, ugh, &clue);
+			malloc_strcat_word_c(&booya, space, ugh, DWORD_NO, &clue);
 		}
 	}
         else
@@ -2483,7 +2480,7 @@ BUILT_IN_FUNCTION(function_jot, input)
 		{
 			snprintf(ugh, 99, "%f", counter);
 			canon_number(ugh);
-			malloc_strcat_word_c(&booya, space, ugh, &clue);
+			malloc_strcat_word_c(&booya, space, ugh, DWORD_NO, &clue);
 		}
 	}
 
@@ -2497,7 +2494,7 @@ char *function_shiftbrace (char *word)
 	char	*booya 	= (char *) 0;
 	char    *placeholder;
 
-	GET_STR_ARG(var, word);
+	GET_FUNC_ARG(var, word);
 
 	value = get_variable(var);
 
@@ -2518,7 +2515,7 @@ char *function_shift (char *word)
 	char	*booya 	= (char *) 0;
 	char    *placeholder;
 
-	GET_STR_ARG(var, word);
+	GET_FUNC_ARG(var, word);
 
 	if (word && *word)
 		RETURN_STR(var);
@@ -2526,7 +2523,7 @@ char *function_shift (char *word)
 	value = get_variable(var);
 
 	placeholder = value;
-	booya = malloc_strdup(NEXT_WORD(value, &value));
+	booya = malloc_strdup(next_func_arg(value, &value));
 	if (var)
 		add_var_alias(var, value, 0);
 	new_free(&placeholder);
@@ -2607,7 +2604,7 @@ char *function_pop (char *word)
 	char *pointer	= (char *) 0;
 	char *blech     = (char *) 0;
 
-	GET_WORD_ARG(var, word);
+	GET_FUNC_ARG(var, word);
 
 	if (word && *word)
 	{
@@ -2745,7 +2742,7 @@ BUILT_IN_FUNCTION(function_center, word)
 
 	/* The string is wider than the field, just return it */
 	if (stringlen > fieldsize)
-	RETURN_STR(word);
+		RETURN_STR(word);
 
 	/*
 	 * Calculate how much space we need.
@@ -2780,10 +2777,10 @@ BUILT_IN_FUNCTION(function_chr, word)
 	char *ack;
 	char *blah;
 
-	aboo = new_malloc(count_words(word, DWORD_YES, "\"") + 1);
+	aboo = new_malloc(count_words(word, DWORD_DWORDS, "\"") + 1);
 	ack = aboo;
 
-	while ((blah = new_next_arg(word, &word)))
+	while ((blah = next_func_arg(word, &word)))
 		*ack++ = (char)my_atol(blah);
 
 	*ack = '\0';
@@ -2796,10 +2793,10 @@ BUILT_IN_FUNCTION(function_chrq, word)
 	char *ack;
 	char *blah;
 
-	aboo = new_malloc(count_words(word, DWORD_YES, "\"") + 1);
+	aboo = new_malloc(count_words(word, DWORD_DWORDS, "\"") + 1);
 	ack = aboo;
 	
-	while ((blah = next_arg(word, &word)))
+	while ((blah = next_func_arg(word, &word)))
 		*ack++ = (char)my_atol(blah);
 
 	*ack = '\0';
@@ -2845,7 +2842,7 @@ BUILT_IN_FUNCTION(function_which, word)
 	char *file1;
 	Filename result;
 
-	GET_STR_ARG(file1, word);
+	GET_DWORD_ARG(file1, word);
 	if (!word || !*word)
 		word = get_string_var(LOAD_PATH_VAR);
 
@@ -2877,8 +2874,8 @@ BUILT_IN_FUNCTION(function_isdigit, words)
 BUILT_IN_FUNCTION(function_open, words)
 {
 	char *filename;
-	GET_STR_ARG(filename, words);
-	GET_STR_ARG(words, words); /* clobbers remaining args */
+	GET_DWORD_ARG(filename, words);
+	GET_FUNC_ARG(words, words); /* clobbers remaining args */
 
 	if (!words || !*words)
 		RETURN_EMPTY;
@@ -2893,13 +2890,13 @@ BUILT_IN_FUNCTION(function_open, words)
 BUILT_IN_FUNCTION(function_close, words)
 {
 	RETURN_IF_EMPTY(words);
-	RETURN_INT(file_close(my_atol(new_next_arg(words, &words))));
+	RETURN_INT(file_close(my_atol(next_func_arg(words, &words))));
 }	
 
 BUILT_IN_FUNCTION(function_write, words)
 {
 	char *fdc;
-	GET_STR_ARG(fdc, words);
+	GET_FUNC_ARG(fdc, words);
 	if (*fdc == 'w' || *fdc == 'W')
 		RETURN_INT(file_write(1, my_atol(fdc + 1), words));
 	else
@@ -2909,7 +2906,7 @@ BUILT_IN_FUNCTION(function_write, words)
 BUILT_IN_FUNCTION(function_writeb, words)
 {
 	char *fdc;
-	GET_STR_ARG(fdc, words);
+	GET_FUNC_ARG(fdc, words);
 	if (*fdc == 'w' || *fdc == 'W')
 		RETURN_INT(file_writeb(1, my_atol(fdc + 1), words));
 	else
@@ -2920,9 +2917,9 @@ BUILT_IN_FUNCTION(function_read, words)
 {
 	char *fdc = NULL, *numb = NULL;
 
-	GET_STR_ARG(fdc, words);
+	GET_FUNC_ARG(fdc, words);
 	if (words && *words)
-		GET_STR_ARG(numb, words);
+		GET_FUNC_ARG(numb, words);
 
 	if (numb)
 		return file_readb(my_atol(fdc), my_atol(numb));
@@ -2938,7 +2935,7 @@ BUILT_IN_FUNCTION(function_seek, words)
 
 	GET_INT_ARG(fdc, words);
 	GET_INT_ARG(numb, words);
-	GET_STR_ARG(whence, words);
+	GET_FUNC_ARG(whence, words);
 
 	RETURN_INT(file_seek(fdc, numb, whence));
 }
@@ -2946,13 +2943,13 @@ BUILT_IN_FUNCTION(function_seek, words)
 BUILT_IN_FUNCTION(function_eof, words)
 {
 	RETURN_IF_EMPTY(words);
-	RETURN_INT(file_eof(my_atol(new_next_arg(words, &words))));
+	RETURN_INT(file_eof(my_atol(next_func_arg(words, &words))));
 }
 
 BUILT_IN_FUNCTION(function_error, words)
 {
 	RETURN_IF_EMPTY(words);
-	RETURN_INT(file_error(my_atol(new_next_arg(words, &words))));
+	RETURN_INT(file_error(my_atol(next_func_arg(words, &words))));
 }
 
 BUILT_IN_FUNCTION(function_skip, words)
@@ -2967,19 +2964,19 @@ BUILT_IN_FUNCTION(function_skip, words)
 BUILT_IN_FUNCTION(function_tell, words)
 {
 	RETURN_IF_EMPTY(words);
-	RETURN_INT(file_tell(my_atol(new_next_arg(words, &words))));
+	RETURN_INT(file_tell(my_atol(next_func_arg(words, &words))));
 }
 
 BUILT_IN_FUNCTION(function_isfilevalid, words)
 {
 	RETURN_IF_EMPTY(words);
-	RETURN_INT(file_valid(my_atol(new_next_arg(words, &words))));
+	RETURN_INT(file_valid(my_atol(next_func_arg(words, &words))));
 }
 
 BUILT_IN_FUNCTION(function_rewind, words)
 {
 	RETURN_IF_EMPTY(words);
-	RETURN_INT(file_rewind(my_atol(new_next_arg(words, &words))));
+	RETURN_INT(file_rewind(my_atol(next_func_arg(words, &words))));
 }
 
 BUILT_IN_FUNCTION(function_ftruncate, words)
@@ -3121,11 +3118,11 @@ BUILT_IN_FUNCTION(function_rename, words)
 	Filename expanded1;
 	Filename expanded2;
 
-	GET_STR_ARG(filename1, words)
+	GET_DWORD_ARG(filename1, words)
 	if (normalize_filename(filename1, expanded1))
 		RETURN_INT(-1);
 
-	GET_STR_ARG(filename2, words)
+	GET_DWORD_ARG(filename2, words)
 	if (normalize_filename(filename2, expanded2))
 		RETURN_INT(-1);
 
@@ -3284,7 +3281,7 @@ BUILT_IN_FUNCTION(function_stripansi, input)
 
 BUILT_IN_FUNCTION(function_numwords, input)
 {
-	RETURN_INT(count_words(input, DWORD_YES, "\""));
+	RETURN_INT(count_words(input, DWORD_DWORDS, "\""));
 }
 
 BUILT_IN_FUNCTION(function_strlen, input)
@@ -3370,8 +3367,8 @@ BUILT_IN_FUNCTION(function_crypt, words)
         char *blah, *bleh;
 	char *ret;
 
-	GET_STR_ARG(blah, words)
-	GET_STR_ARG(bleh, words)
+	GET_DWORD_ARG(blah, words)
+	GET_DWORD_ARG(bleh, words)
 	strlcpy(pass, blah, sizeof pass);
 	strlcpy(seed, bleh, sizeof seed);
 	ret = crypt(pass, seed);
@@ -3383,7 +3380,7 @@ BUILT_IN_FUNCTION(function_info, words)
 	char *which;
 	extern char *info_c_sum;
 
-	GET_STR_ARG(which, words);
+	GET_FUNC_ARG(which, words);
 
 	     if (!my_strnicmp(which, "C", 1))
 		RETURN_STR(compile_info);
@@ -3418,7 +3415,7 @@ BUILT_IN_FUNCTION(function_geom, words)
         if (!words || !*words)
                 refnum = zero;
         else
-                GET_STR_ARG(refnum, words);
+                GET_FUNC_ARG(refnum, words);
 
         if (get_geom_by_winref(refnum, &col, &li))
                 RETURN_EMPTY;
@@ -3431,7 +3428,7 @@ BUILT_IN_FUNCTION(function_pass, words)
 	char *lookfor;
 	char *final, *ptr;
 
-	GET_STR_ARG(lookfor, words);
+	GET_DWORD_ARG(lookfor, words);
 	final = (char *)new_malloc(strlen(words) + 1);
 	ptr = final;
 
@@ -3511,11 +3508,11 @@ BUILT_IN_FUNCTION(function_sort, words)
 	char **wordl;
 	char	*retval;
 
-	if (!(wordc = splitw(words, &wordl)))
+	if (!(wordc = splitw(words, &wordl, DWORD_DWORDS)))
 		RETURN_EMPTY;
 
 	qsort((void *)wordl, wordc, sizeof(char *), sort_it);
-	retval = unsplitw(&wordl, wordc);
+	retval = unsplitw(&wordl, wordc, DWORD_DWORDS);
 	RETURN_MSTR(retval);
 }
 
@@ -3558,10 +3555,10 @@ BUILT_IN_FUNCTION(function_numsort, words)
 	char **wordl;
 	char *retval;
 
-	if (!(wordc = splitw(words, &wordl)))
+	if (!(wordc = splitw(words, &wordl, DWORD_DWORDS)))
 		RETURN_EMPTY;
 	qsort((void *)wordl, wordc, sizeof(char *), num_sort_it);
-	retval = unsplitw(&wordl, wordc);
+	retval = unsplitw(&wordl, wordc, DWORD_DWORDS);
 	RETURN_MSTR(retval);
 }
 
@@ -3573,7 +3570,7 @@ BUILT_IN_FUNCTION(function_notify, words)
 
 	while (words && *words)
 	{
-		firstw = new_next_arg(words, &words);
+		firstw = next_func_arg(words, &words);
 		if (!my_strnicmp(firstw, "on", 2))
 		{
 			showon = 1;
@@ -3616,7 +3613,7 @@ BUILT_IN_FUNCTION(function_glob, word)
 	{
 		char	*freepath = NULL;
 
-		GET_STR_ARG(path, word);
+		GET_DWORD_ARG(path, word);
 		if (!path || !*path)
 			path = word, word = NULL;
 		else
@@ -3667,7 +3664,7 @@ BUILT_IN_FUNCTION(function_globi, word)
 	{
 		char	*freepath = NULL;
 
-		GET_STR_ARG(path, word);
+		GET_DWORD_ARG(path, word);
 		if (!path || !*path)
 			path = word, word = NULL;
 		else
@@ -3741,10 +3738,10 @@ BUILT_IN_FUNCTION(function_chmod, words)
 	mode_t 	perm;
 	Filename expanded;
 
-	GET_STR_ARG(filearg, words);
+	GET_DWORD_ARG(filearg, words);
 	fd = (int) strtoul(filearg, &after, 0);
 
-	GET_STR_ARG(perm_s, words);
+	GET_FUNC_ARG(perm_s, words);
 	perm = (mode_t) strtol(perm_s, &perm_s, 8);
 
 	if (after != words && *after == 0)
@@ -3795,7 +3792,7 @@ BUILT_IN_FUNCTION(function_uniq, word)
         int     listc, listi, listo;
 
 	RETURN_IF_EMPTY(word);
-        listc = splitw(word, &list);
+        listc = splitw(word, &list, DWORD_DWORDS);
 
 	/* 'list' is set to NULL if 'word' is empty.  Punt in this case. */
 	if (!list)
@@ -3833,7 +3830,7 @@ BUILT_IN_FUNCTION(function_uniq, word)
 
 	/* We want the remaining words to appear in their original order */
 	qsort((void *)list, listc, sizeof(char *), unsort_it);
-	booya = unsplitw(&list, listc);
+	booya = unsplitw(&list, listc, DWORD_DWORDS);
 
 #else
     { /* Oh hush.  It is #ifdef'd out, after all. */
@@ -3857,7 +3854,7 @@ BUILT_IN_FUNCTION(function_uniq, word)
 
 		tval = function_findw(input);
 		if (my_atol(tval) == -1)
-			malloc_strcat_word_c(&booya, space, list[listi], &rvclue);
+			malloc_strcat_word_c(&booya, space, list[listi], DWORD_DWORDS, &rvclue);
 		new_free(&tval);
         }
     }
@@ -3897,7 +3894,7 @@ BUILT_IN_FUNCTION(function_winchan, input)
 	char *arg1 = NULL;
 
 	if (input && *input)
-		GET_STR_ARG(arg1, input);
+		GET_FUNC_ARG(arg1, input);
 
 	/*
 	 * Return window refnum by channel
@@ -3944,11 +3941,11 @@ BUILT_IN_FUNCTION(function_findw, input)
 	char	*word, *this_word;
 	int	word_cnt = 0;
 
-	GET_WORD_ARG(word, input);
+	GET_FUNC_ARG(word, input);
 
 	while (input && *input)
 	{
-		GET_WORD_ARG(this_word, input);
+		GET_FUNC_ARG(this_word, input);
 		if (!my_stricmp(this_word, word))
 			RETURN_INT(word_cnt);
 
@@ -3965,13 +3962,13 @@ BUILT_IN_FUNCTION(function_findws, input)
 	char	*ret = NULL;
 	size_t	clue = 0;
 
-	GET_WORD_ARG(word, input);
+	GET_FUNC_ARG(word, input);
 
 	for (word_cnt = 0; input && *input; word_cnt++)
 	{
-		GET_WORD_ARG(this_word, input);
+		GET_FUNC_ARG(this_word, input);
 		if (!my_stricmp(this_word, word))
-			malloc_strcat_word_c(&ret, space, ltoa(word_cnt), &clue);
+			malloc_strcat_word_c(&ret, space, ltoa(word_cnt), DWORD_NO, &clue);
 	}
 
 	RETURN_MSTR(ret);
@@ -4027,7 +4024,7 @@ BUILT_IN_FUNCTION(function_ftime, words)
 	Filename fullname;
 	Stat 	s;
 
-	GET_STR_ARG(filename, words);
+	GET_DWORD_ARG(filename, words);
 
 	if (!filename || !*filename)
 		filename = words, words = NULL;
@@ -4051,7 +4048,7 @@ BUILT_IN_FUNCTION(function_substr, input)
 	char *srch;
 	ssize_t span;
 
-	GET_STR_ARG(srch, input);
+	GET_DWORD_ARG(srch, input);
 
 	if ((span = stristr(input, srch)) >= 0)
 		RETURN_INT((unsigned long) span);
@@ -4064,7 +4061,7 @@ BUILT_IN_FUNCTION(function_rsubstr, input)
 	char *srch;
 	ssize_t	span;
 
-	GET_STR_ARG(srch, input);
+	GET_DWORD_ARG(srch, input);
 
 	if ((span = rstristr(input, srch)) >= 0)
 		RETURN_INT((unsigned long) span);
@@ -4166,7 +4163,7 @@ BUILT_IN_FUNCTION(function_fnexist, input)
 {
 	char *fname;
 
-	GET_STR_ARG(fname, input);
+	GET_FUNC_ARG(fname, input);
 	RETURN_INT(func_exist(fname));
 }
 
@@ -4174,7 +4171,7 @@ BUILT_IN_FUNCTION(function_cexist, input)
 {
 	char *fname;
 
-	GET_STR_ARG(fname, input);
+	GET_FUNC_ARG(fname, input);
 	RETURN_INT(command_exist(fname));
 }
 
@@ -4230,7 +4227,7 @@ BUILT_IN_FUNCTION(function_regexec, input)
 	char *unsaved;
 	regex_t *preg;
 
-	GET_STR_ARG(unsaved, input);
+	GET_FUNC_ARG(unsaved, input);
 	if (strlen(unsaved) != sizeof(regex_t) * 2)
 	{
 		yell("First argument to $regex() isn't proper length");
@@ -4249,7 +4246,7 @@ BUILT_IN_FUNCTION(function_regmatches, input)
 	regex_t *preg;
 	regmatch_t *pmatch = NULL;
 
-	GET_STR_ARG(unsaved, input);
+	GET_FUNC_ARG(unsaved, input);
 	GET_INT_ARG(nmatch, input);
 	preg = (regex_t *)decode(unsaved);
 	RESIZE(pmatch, regmatch_t, nmatch);
@@ -4259,8 +4256,8 @@ BUILT_IN_FUNCTION(function_regmatches, input)
 				/* This may need to be continue depending
 				 * on the regex implementation */
 				break;
-			malloc_strcat_word_c(&ret, space, ltoa(foo = pmatch[n].rm_so), &clue);
-			malloc_strcat_word_c(&ret, space, ltoa(pmatch[n].rm_eo - foo), &clue);
+			malloc_strcat_word_c(&ret, space, ltoa(foo = pmatch[n].rm_so), DWORD_NO, &clue);
+			malloc_strcat_word_c(&ret, space, ltoa(pmatch[n].rm_eo - foo), DWORD_NO, &clue);
 		}
 	new_free((char **)&preg);
 	new_free((char **)&pmatch);
@@ -4273,7 +4270,7 @@ BUILT_IN_FUNCTION(function_regerror, input)
 	regex_t *preg;
 	char error_buf[1024] = "";
 
-	GET_STR_ARG(unsaved, input);
+	GET_FUNC_ARG(unsaved, input);
 	preg = (regex_t *)decode(unsaved);
 
 	if (last_regex_error)
@@ -4287,7 +4284,7 @@ BUILT_IN_FUNCTION(function_regfree, input)
 	char *unsaved;
 	regex_t *preg;
 
-	GET_STR_ARG(unsaved, input);
+	GET_FUNC_ARG(unsaved, input);
 	preg = (regex_t *)decode(unsaved);
 	regfree(preg);
 	new_free((char **)&preg);
@@ -4305,7 +4302,7 @@ BUILT_IN_FUNCTION(function_getenv, input)
 {
 	char *env;
 
-	GET_STR_ARG(env, input);
+	GET_FUNC_ARG(env, input);
 	RETURN_STR(getenv(env));
 }
 
@@ -4316,7 +4313,7 @@ BUILT_IN_FUNCTION(function_count, input)
 	int 	count = 0;
 	ssize_t	span;
 
-	GET_STR_ARG(str, input);
+	GET_DWORD_ARG(str, input);
 	str2 = input;
 
 	for (;;)
@@ -4345,7 +4342,7 @@ BUILT_IN_FUNCTION(function_randread, input)
 	off_t	filesize, offset;
 
 	*buffer = 0;
-	GET_STR_ARG(filename, input);
+	GET_DWORD_ARG(filename, input);
 
 	if (normalize_filename(filename, fullname))
 		RETURN_EMPTY;
@@ -4728,7 +4725,7 @@ BUILT_IN_FUNCTION(function_querywin, args)
 	int	servref = -1;
 	const char *q;
 
-	GET_STR_ARG(nick, args);
+	GET_FUNC_ARG(nick, args);
 	if (args && *args)
 		GET_INT_ARG(servref, args);
 
@@ -4903,7 +4900,7 @@ BUILT_IN_FUNCTION(function_ischanvoice, input)
 {
 	char	*nick;
 
-	GET_STR_ARG(nick, input);
+	GET_FUNC_ARG(nick, input);
 	RETURN_INT(is_chanvoice(input, nick));
 }
 
@@ -4911,7 +4908,7 @@ BUILT_IN_FUNCTION(function_ishalfop, input)
 {
 	char	*nick;
 
-	GET_STR_ARG(nick, input);
+	GET_FUNC_ARG(nick, input);
 	RETURN_INT(is_halfop(input, nick));
 }
 
@@ -4975,7 +4972,7 @@ BUILT_IN_FUNCTION(function_iscurchan, input)
 	const char *chan;
 	char *arg;
 
-	GET_STR_ARG(arg, input);
+	GET_FUNC_ARG(arg, input);
 	while (traverse_all_windows(&w))
 	{
 		/*
@@ -4995,7 +4992,7 @@ BUILT_IN_FUNCTION(function_channel, input)
 {
 	char *chan;
 
-	chan = new_next_arg(input, &input);	/* dont use GET_STR_ARG */
+	chan = next_func_arg(input, &input);	/* dont use GET_FUNC_ARG */
 	return scan_channel(chan);
 }
 
@@ -5007,7 +5004,7 @@ BUILT_IN_FUNCTION(function_pad, input)
 	char	*retval;
 
 	GET_INT_ARG(width, input);
-	GET_STR_ARG(pads, input);
+	GET_DWORD_ARG(pads, input);
 	len = strlen(input);
 
 	if (width > 0)
@@ -5046,15 +5043,15 @@ BUILT_IN_FUNCTION(function_remws, word)
 		RETURN_EMPTY;
 
 	*right++ = 0;
-	leftc = splitw(left, &lhs);
+	leftc = splitw(left, &lhs, DWORD_DWORDS);
 	if (leftc > 0)
 		qsort((void *)lhs, leftc, sizeof(char *), sort_it);
-	rightc = splitw(right, &rhs);
+	rightc = splitw(right, &rhs, DWORD_DWORDS);
 
 	for (righti = 0; righti < rightc; righti++)
 	{
 		if (leftc <= 0 || !bsearch(&rhs[righti], lhs, leftc, sizeof(char *), sort_it))
-			malloc_strcat_word_c(&booya, space, rhs[righti], &rvclue);
+			malloc_strcat_word_c(&booya, space, rhs[righti], DWORD_DWORDS, &rvclue);
 	}
 
 	new_free((char **)&lhs);
@@ -5108,7 +5105,7 @@ BUILT_IN_FUNCTION(function_isnumber, input)
 	 */
 	if (barg && *barg == 'b' && is_number(barg + 1))
 	{
-		GET_STR_ARG(number, input);
+		GET_FUNC_ARG(number, input);
 	}
 	/*
 	 * Otherwise, the first arg is the number,
@@ -5202,14 +5199,14 @@ BUILT_IN_FUNCTION( thisfn , input)			\
 	if (!input || !*input)					\
 	{							\
 		subresults = nextfn ("*", &howmany, 0, 0, 0);	\
-		ret = unsplitw(&subresults, howmany);	\
+		ret = unsplitw(&subresults, howmany, DWORD_DWORDS);	\
 		RETURN_MSTR(ret);				\
 	}							\
 								\
 	while ((s = next_arg(input, &input)))			\
 	{							\
 		subresults = nextfn (s, &howmany, 0, 0, 0);		\
-		r = unsplitw(&subresults, howmany);	\
+		r = unsplitw(&subresults, howmany, DWORD_DWORDS);	\
 		malloc_strcat_wordlist_c(&ret, space, r, &clue);	\
 		new_free(&r);					\
 	}							\
@@ -5238,7 +5235,7 @@ BUILT_IN_FUNCTION(function_stripcrap, input)
 	int	mangle;
 	char	*output;
 
-	GET_STR_ARG(how, input);
+	GET_FUNC_ARG(how, input);
 	mangle = parse_mangle(how, 0, NULL);
 
 	output = new_normalize_string(input, 1, mangle);
@@ -5317,9 +5314,9 @@ static	size_t	input_size = 0;
 	}
 
 	/* Three arguments are required -- two variables and an op-string */
-	GET_STR_ARG(optopt_var, input); 
-	GET_STR_ARG(optarg_var, input); 
-	GET_STR_ARG(optstr, input);
+	GET_FUNC_ARG(optopt_var, input); 
+	GET_FUNC_ARG(optarg_var, input); 
+	GET_DWORD_ARG(optstr, input);
 	if (!optopt_var || !optarg_var || !optstr)
 		RETURN_EMPTY;
 
@@ -5521,7 +5518,7 @@ BUILT_IN_FUNCTION(function_maxlen, input)
 
 	while (input && *input)
 	{
-		GET_STR_ARG(arg, input)
+		GET_FUNC_ARG(arg, input)
 
 		if ((len = strlen(arg)) > maxlen)
 			maxlen = len;
@@ -5554,7 +5551,7 @@ BUILT_IN_FUNCTION(function_prefix, input)
 
 	RETURN_IF_EMPTY(input);
 
-	numwords = splitw(input, &words);
+	numwords = splitw(input, &words, DWORD_DWORDS);
 	if (numwords == 0)
 		RETURN_EMPTY;		/* "Oh bother," said pooh. */
 
@@ -5708,7 +5705,7 @@ BUILT_IN_FUNCTION(function_indextoword, input)
 		input[pos] = 'x';
 		input[pos + 1] = 0;
 	}
-	RETURN_INT(count_words(input, DWORD_YES, "\"") - 1);
+	RETURN_INT(count_words(input, DWORD_DWORDS, "\"") - 1);
 }
 
 BUILT_IN_FUNCTION(function_realpath, input)
@@ -5741,7 +5738,7 @@ BUILT_IN_FUNCTION(function_insert, word)
 	char *	result;
 
 	GET_INT_ARG(where, word);
-	GET_STR_ARG(inserted, word);
+	GET_DWORD_ARG(inserted, word);
 
 	if (where <= 0)
 		result = NULL;
@@ -5817,7 +5814,7 @@ BUILT_IN_FUNCTION(function_getcap, input)
 {
 	char *	type;
 
-	GET_STR_ARG(type, input);
+	GET_FUNC_ARG(type, input);
 	if (!my_stricmp(type, "TERM"))
 	{
 		const char *	retval;
@@ -5825,7 +5822,7 @@ BUILT_IN_FUNCTION(function_getcap, input)
 		int	querytype = 0;
 		int	mangle = 1;
 		
-		GET_STR_ARG(term, input);
+		GET_FUNC_ARG(term, input);
 		if (*input)
 			GET_INT_ARG(querytype, input);
 		if (*input)
@@ -5874,7 +5871,7 @@ BUILT_IN_FUNCTION(function_notifywindows, input)
 	window = NULL;
 	while (traverse_all_windows(&window))
 		if (window->notified)
-			malloc_strcat_word_c(&retval, space, ltoa(window->refnum), &rvclue);
+			malloc_strcat_word_c(&retval, space, ltoa(window->refnum), DWORD_NO, &rvclue);
 
 	RETURN_MSTR(retval);
 }
@@ -5890,7 +5887,7 @@ BUILT_IN_FUNCTION(function_wordtoindex, input)
 	const char *	ptr;
 
 	GET_INT_ARG(wordnum, input);
-	move_to_abs_word(input, &ptr, wordnum);
+	real_move_to_abs_word(input, &ptr, wordnum, DWORD_DWORDS, "\"");
 
 	RETURN_INT((int)(ptr - input));
 }
@@ -5907,7 +5904,7 @@ BUILT_IN_FUNCTION(function_iptolong, word)
 	char *	dotted_quad;
 
 	addr.sin_family = AF_INET;
-	GET_STR_ARG(dotted_quad, word);
+	GET_FUNC_ARG(dotted_quad, word);
 	if (inet_strton(dotted_quad, NULL, (SA *)&addr, AI_NUMERICHOST))
 		RETURN_EMPTY;
 	
@@ -5921,7 +5918,7 @@ BUILT_IN_FUNCTION(function_longtoip, word)
 	SS	addr;
 	char	retval[256];
 
-	GET_STR_ARG(ip32, word);
+	GET_FUNC_ARG(ip32, word);
 	((SA *)&addr)->sa_family = AF_INET;
 	if (inet_strton(ip32, NULL, (SA *)&addr, AI_NUMERICHOST))
 		RETURN_EMPTY;
@@ -5958,7 +5955,7 @@ BUILT_IN_FUNCTION(function_cipher, input)
 		GET_INT_ARG(sval, input);
 
 	if (sval < 0 || sval >= server_list_size())
-		RETURN_STR(NULL);
+		RETURN_EMPTY;
 
 	ret = get_server_cipher(sval);
 	RETURN_STR(ret);
@@ -6053,7 +6050,7 @@ BUILT_IN_FUNCTION(function_perlcall, input)
 {
 	char *sub=NULL;
 
-	GET_STR_ARG(sub, input);
+	GET_DWORD_ARG(sub, input);
 	return perlcall ( sub, NULL, NULL, -1, input );
 }
 
@@ -6062,9 +6059,9 @@ BUILT_IN_FUNCTION(function_perlxcall, input)
 	long item=0;
 	char *sub=NULL, *in=NULL, *out=NULL;
 
-	GET_STR_ARG(sub, input);
-	if (input && *input) GET_STR_ARG(in, input);
-	if (input && *input) GET_STR_ARG(out, input);
+	GET_DWORD_ARG(sub, input);
+	if (input && *input) GET_DWORD_ARG(in, input);
+	if (input && *input) GET_DWORD_ARG(out, input);
 	if (input && *input) GET_INT_ARG(item, input);
 	return perlcall ( sub, in, out, item, input );
 }
@@ -6087,8 +6084,8 @@ BUILT_IN_FUNCTION(function_unsplit, input)
 	char *	retval = NULL;
 	size_t	clue = 0;
 
-	GET_STR_ARG(sep, input);
-	while ((word = NEXT_WORD(input, &input)))
+	GET_DWORD_ARG(sep, input);
+	while ((word = new_next_arg(input, &input)))
 		malloc_strcat_wordlist_c(&retval, sep, word, &clue);
 	RETURN_MSTR(retval);
 }
@@ -6099,12 +6096,12 @@ BUILT_IN_FUNCTION(function_encryptparm, input)
 	size_t	clue = 0;
 	Crypt	*key;
 
-	GET_STR_ARG(entry, input);
+	GET_FUNC_ARG(entry, input);
 	if ((key = is_crypted(entry, from_server, CTCP_SED))) 
 	{
-		malloc_strcat_word_c(&ret, space, key->nick, &clue);
-		malloc_strcat_word_c(&ret, space, key->key, &clue);
-		malloc_strcat_word_c(&ret, space, key->prog, &clue);
+		malloc_strcat_word_c(&ret, space, key->nick, DWORD_DWORDS, &clue);
+		malloc_strcat_word_c(&ret, space, key->key, DWORD_DWORDS, &clue);
+		malloc_strcat_word_c(&ret, space, key->prog, DWORD_DWORDS, &clue);
 	}
 
 	RETURN_MSTR(ret);
@@ -6118,7 +6115,7 @@ BUILT_IN_FUNCTION(function_sedcrypt, input)
        	char	*ret = NULL;
 
 	GET_INT_ARG(flag, input);
-	GET_STR_ARG(from, input);
+	GET_FUNC_ARG(from, input);
 
 	if ((key = is_crypted(from, from_server, CTCP_SED)))
 	{
@@ -6152,7 +6149,7 @@ BUILT_IN_FUNCTION(function_killpid, input)
 	int	sig;
 	int	retval = 0;
 
-	GET_STR_ARG(sig_str, input);
+	GET_FUNC_ARG(sig_str, input);
 	if (is_number(sig_str))
 	{
 		sig = my_atol(sig_str);
@@ -6173,7 +6170,7 @@ BUILT_IN_FUNCTION(function_killpid, input)
 	}
 
 do_kill:
-	while ((pid_str = new_next_arg(input, &input)))
+	while ((pid_str = next_func_arg(input, &input)))
 	{
 		pid = strtoul(pid_str, &pid_str, 10);
 		if (kill(pid, sig) == 0)
@@ -6207,14 +6204,14 @@ BUILT_IN_FUNCTION(function_joinstr, input)
 	size_t	retclue = 0;
 	size_t	foo;
 
-	GET_STR_ARG(sep, input)
+	GET_FUNC_ARG(sep, input)
 	for (valc = 0; input && *input; valc++) {
 		char *var;
 
 		RESIZE(vals, vals, valc + 1);
 		RESIZE(freeit, freeit, valc + 1);
 
-		GET_STR_ARG(var, input)
+		GET_FUNC_ARG(var, input)
 		freeit[valc] = vals[valc] = get_variable(var);
 	}
 
@@ -6224,14 +6221,16 @@ BUILT_IN_FUNCTION(function_joinstr, input)
 
 		for (foo = 0; foo < valc; foo++) {
 			more |= *vals[foo];
-			word = SAFE_NEXT_WORD(vals[foo], &vals[foo]);
-			malloc_strcat2_c(&sub, foo?sep:"", word, &clue);
+			word = next_func_arg(vals[foo], &vals[foo]);
+			if (word == NULL)
+				word = endstr(vals[foo]);
+			malloc_strcat2_c(&sub, foo?sep:empty_string, word, &clue);
 		}
 
 		if (!more)
 			break;
 
-		malloc_strcat_word_c(&retval, space, sub, &retclue);
+		malloc_strcat_word_c(&retval, space, sub, DWORD_DWORDS, &retclue);
 		*sub = 0;	/* Improve malloc performance */
 	}
 
@@ -6253,7 +6252,7 @@ BUILT_IN_FUNCTION(function_exec, input)
 	size_t	clue = 0;
 
 	RETURN_IF_EMPTY(input);
-	count = splitdw(input, &args);
+	count = splitw(input, &args, DWORD_YES);
 	RESIZE(args, void *, count+1);
 	args[count] = NULL;
 
@@ -6265,7 +6264,7 @@ BUILT_IN_FUNCTION(function_exec, input)
 
 	if (fds)
 		for (foo = 0; foo < 3; foo++)
-			malloc_strcat_word_c(&ret, space, ltoa(fds[foo]), &clue);
+			malloc_strcat_word_c(&ret, space, ltoa(fds[foo]), DWORD_NO, &clue);
 
 	RETURN_MSTR(ret);
 }
@@ -6283,11 +6282,11 @@ BUILT_IN_FUNCTION(function_getserial, input) {
     char *type, *sdir;
     int dir, from, serial;
 
-    GET_STR_ARG(type, input);
-    if (type == NULL || *type == '\0')
+    GET_FUNC_ARG(type, input);
+    if (!type || !*type)
 	RETURN_EMPTY;
-    if (!strcasecmp(type, "HOOK")) {
-	GET_STR_ARG(sdir, input);
+    if (!my_stricmp(type, "HOOK")) {
+	GET_FUNC_ARG(sdir, input);
 	if (!strcmp(sdir, "+"))
 	    dir = 1;
 	else if (!strcmp(sdir, "-"))
@@ -6421,7 +6420,7 @@ BUILT_IN_FUNCTION(function_strtol, input)
 	GET_INT_ARG(base, input);
 	if (!input || !*input || (base != 0 && (base < 2 || base > 36)))
 		RETURN_EMPTY;
-	GET_STR_ARG(number, input);	/* Must not use GET_INT_ARG */
+	GET_FUNC_ARG(number, input);	/* Must not use GET_INT_ARG */
 
 	retval = strtoimax(number, &after, base);
 	/* Argh -- do we want to return error if invalid char found? */
@@ -6451,7 +6450,7 @@ BUILT_IN_FUNCTION(function_tobase, input)
 
 	if (!input || !*input || base < 2 || base > 36)
 		RETURN_EMPTY;
-	GET_STR_ARG(number, input);
+	GET_FUNC_ARG(number, input);
 	num = strtoimax(number, &after, 10);	/* Must not use GET_INT_ARG */
 
 	while (pow(base, len) <= num)
@@ -6577,9 +6576,9 @@ BUILT_IN_FUNCTION(function_xform, input)
 	char *	retval;
 	size_t	retval_len;
 
-	GET_STR_ARG(type, input)
-	GET_STR_ARG(encodestr, input)
-	GET_STR_ARG(meta, input)
+	GET_FUNC_ARG(type, input)
+	GET_FUNC_ARG(encodestr, input)
+	GET_FUNC_ARG(meta, input)
 	str = input;
 	str_len = strlen(input);
 	retval_len = str_len * 10;

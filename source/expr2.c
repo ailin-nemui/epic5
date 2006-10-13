@@ -1,4 +1,4 @@
-/* $EPIC: expr2.c,v 1.34 2006/09/23 02:56:44 jnelson Exp $ */
+/* $EPIC: expr2.c,v 1.35 2006/10/13 21:58:02 jnelson Exp $ */
 /*
  * Zsh: math.c,v 3.1.2.1 1997/06/01 06:13:15 hzoli Exp 
  * math.c - mathematical expression evaluation
@@ -1364,7 +1364,7 @@ static void	reduce (expr_info *cx, int what)
 		case WORDC:
 			s = pop_expanded(cx);
 			CHECK_NOEVAL
-			i = count_words(s, DWORD_YES, "\"");
+			i = count_words(s, DWORD_EXTRACTW, "\"");
 			if (x_debug & DEBUG_NEW_MATH_DEBUG)
 				yell("O: #(%s) -> " INTMAX_FORMAT, s, i);
 			push_integer(cx, i);

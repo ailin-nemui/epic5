@@ -1,4 +1,4 @@
-/* $EPIC: files.c,v 1.30 2006/03/05 23:03:17 jnelson Exp $ */
+/* $EPIC: files.c,v 1.31 2006/10/13 21:58:02 jnelson Exp $ */
 /*
  * files.c -- allows you to read/write files. Wow.
  *
@@ -670,13 +670,13 @@ char *	dbmctl (char *input)
 	int	retval;
 	char *	retstr;
 
-	GET_STR_ARG(listc, input);
+	GET_FUNC_ARG(listc, input);
 	if (!my_strnicmp(listc, "OPEN", 4)) {
-		GET_STR_ARG(type, input);	/* Ignored for now */
+		GET_FUNC_ARG(type, input);	/* Ignored for now */
 		retval = open_dbm(input, 0, 0);
 		RETURN_INT(retval);
 	} else if (!my_strnicmp(listc, "OPEN_READ", 5)) {
-		GET_STR_ARG(type, input);	/* Ignored for now */
+		GET_FUNC_ARG(type, input);	/* Ignored for now */
 		retval = open_dbm(input, 1, 0);
 		RETURN_INT(retval);
 	} else if (!my_strnicmp(listc, "CLOSE", 2)) {
@@ -685,22 +685,22 @@ char *	dbmctl (char *input)
 		RETURN_INT(retval);
 	} else if (!my_strnicmp(listc, "ADD", 2)) {
 		GET_INT_ARG(refnum, input);
-		GET_STR_ARG(key, input);
+		GET_DWORD_ARG(key, input);
 		retval = write_to_dbm(refnum, key, input, 0);
 		RETURN_INT(retval);
 	} else if (!my_strnicmp(listc, "CHANGE", 2)) {
 		GET_INT_ARG(refnum, input);
-		GET_STR_ARG(key, input);
+		GET_DWORD_ARG(key, input);
 		retval = write_to_dbm(refnum, key, input, 1);
 		RETURN_INT(retval);
 	} else if (!my_strnicmp(listc, "DELETE", 1)) {
 		GET_INT_ARG(refnum, input);
-		GET_STR_ARG(key, input);
+		GET_DWORD_ARG(key, input);
 		retval = delete_from_dbm(refnum, key);
 		RETURN_INT(retval);
 	} else if (!my_strnicmp(listc, "READ", 1)) {
 		GET_INT_ARG(refnum, input);
-		GET_STR_ARG(key, input);
+		GET_DWORD_ARG(key, input);
 		retstr = read_from_dbm(refnum, key);
 		RETURN_MSTR(retstr);
 	} else if (!my_strnicmp(listc, "NEXT_KEY", 1)) {

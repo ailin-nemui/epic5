@@ -1,4 +1,4 @@
-/* $EPIC: words.c,v 1.21 2005/01/12 00:12:21 jnelson Exp $ */
+/* $EPIC: words.c,v 1.22 2006/10/13 21:58:03 jnelson Exp $ */
 /*
  * words.c -- right now it just holds the stuff i wrote to replace
  * that beastie arg_number().  Eventually, i may move all of the
@@ -42,15 +42,24 @@
 /* 
  * If "extended" is 1, then honor /xdebug extractw.
  * If "extended" is other than 1 but not zero, imply /xdebug extractw.
+ *
+ * This should turn to YES if DWORD_YES and DEBUG_DWORD ...
  */
 #define CHECK_EXTENDED_SUPPORT					\
-	if (extended == DWORD_YES && 				\
-			((x_debug & DEBUG_EXTRACTW) == 0))	\
-		extended = DWORD_NEVER;				\
-        else if (extended == DWORD_ALWAYS)			\
-		extended = DWORD_YES;				\
-
-
+	if (extended == DWORD_EXTRACTW)				\
+	{							\
+		if ((x_debug & DEBUG_EXTRACTW) == 0)		\
+			extended = DWORD_NO;			\
+		else						\
+			extended = DWORD_YES;			\
+	}							\
+	else if (extended == DWORD_DWORDS)			\
+	{							\
+		if ((x_debug & DEBUG_DWORD) == 0)		\
+			extended = DWORD_NO;			\
+		else						\
+			extended = DWORD_YES;			\
+	}
 
 /*
  * search() looks for a character forward or backward from mark 

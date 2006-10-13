@@ -22,10 +22,36 @@
 #define EMPTY_STRING malloc_strdup(EMPTY)
 #define RETURN_EMPTY return EMPTY_STRING
 #define RETURN_IF_EMPTY(x) if (empty( (x) )) RETURN_EMPTY
-#define GET_INT_ARG(x, y) {RETURN_IF_EMPTY((y)); x = strtoimax(safe_new_next_arg((y), &(y)), NULL, 0);}
-#define GET_FLOAT_ARG(x, y) {RETURN_IF_EMPTY((y)); x = atof(safe_new_next_arg((y), &(y)));}
+#define GET_INT_ARG(x, y) {		\
+	const char *xxx; 		\
+	RETURN_IF_EMPTY((y)); 		\
+	xxx = next_func_arg((y), &(y)); \
+	if (!xxx) 			\
+		xxx = empty_string; 	\
+	x = strtoimax(xxx, NULL, 0);	\
+}
+#define GET_FLOAT_ARG(x, y) {		\
+	const char *xxx; 		\
+	RETURN_IF_EMPTY((y)); 		\
+	xxx = next_func_arg((y), &(y)); \
+	if (!xxx) 			\
+		xxx = empty_string; 	\
+	x = atof(xxx);			\
+}
+#define GET_FUNC_ARG(x, y) {		\
+	RETURN_IF_EMPTY((y)); 		\
+	x = next_func_arg((y), &(y));	\
+}
+#define GET_DWORD_ARG(x, y) {		\
+	RETURN_IF_EMPTY((y)); 		\
+	x = new_next_arg((y), &(y));	\
+}
+#define GET_UWORD_ARG(x, y) {		\
+	RETURN_IF_EMPTY((y)); 		\
+	x = next_arg((y), &(y));	\
+}
 #define GET_STR_ARG(x, y) {RETURN_IF_EMPTY((y)); x = new_next_arg((y), &(y));}
-#define GET_WORD_ARG(x, y) {RETURN_IF_EMPTY((y)); x = NEXT_WORD((y), &(y));}
+#define GET_WORD_ARG(x, y) {RETURN_IF_EMPTY((y)); x = next_word((y), &(y));}
 #define GET_A_STR_ARG(x, y) {GET_STR_ARG((x), (y));RETURN_IF_EMPTY((x));}
 #define RETURN_MSTR(x) return ((x) ? (x) : EMPTY_STRING)
 #define RETURN_STR(x) return malloc_strdup((x) ? (x) : EMPTY)

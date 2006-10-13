@@ -1,4 +1,4 @@
-/* $EPIC: levels.c,v 1.7 2006/08/18 14:56:59 jnelson Exp $ */
+/* $EPIC: levels.c,v 1.8 2006/10/13 21:58:02 jnelson Exp $ */
 /*
  * levels.c - Sorting things by category -- Window/Lastlog, Ignore, and Floods
  *
@@ -142,7 +142,7 @@ char *	get_all_levels (void)
 	    /* This is done to skip aliases... */
 	    if (LEVELNUM(i) == next)
 	    {
-	        malloc_strcat_word_c(&buffer, space, LEVELNAME(i), &clue);
+	        malloc_strcat_word_c(&buffer, space, LEVELNAME(i), DWORD_NO, &clue);
 		next++;
 	    }
 	}
@@ -298,22 +298,22 @@ char *levelctl	(char *input)
 	const char *newlevel, *oldlevel;
 	int	oldnum, newnum;
 
-	GET_STR_ARG(listc, input);
+	GET_FUNC_ARG(listc, input);
         if (!my_strnicmp(listc, "LEVELS", 2)) {
 		retval = get_all_levels();
 		RETURN_MSTR(retval);
         } else if (!my_strnicmp(listc, "ADD", 2)) {
-		GET_STR_ARG(newlevel, input);
+		GET_FUNC_ARG(newlevel, input);
 		newnum = add_new_level(newlevel);
 		RETURN_INT(newnum);
         } else if (!my_strnicmp(listc, "ALIAS", 2)) {
-		GET_STR_ARG(oldlevel, input);
-		GET_STR_ARG(newlevel, input);
+		GET_FUNC_ARG(oldlevel, input);
+		GET_FUNC_ARG(newlevel, input);
 		oldnum = str_to_level(oldlevel);
 		newnum = add_new_level_alias(oldnum, newlevel);
 		RETURN_INT(newnum);
         } else if (!my_strnicmp(listc, "LOOKUP", 2)) {
-		GET_STR_ARG(newlevel, input);
+		GET_FUNC_ARG(newlevel, input);
 		if (is_number(newlevel)) {
 			oldnum = STR2INT(newlevel);
 			oldlevel = level_to_str(oldnum);

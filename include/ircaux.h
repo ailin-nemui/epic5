@@ -7,7 +7,7 @@
  *
  * See the COPYRIGHT file, or do a HELP IRCII COPYRIGHT 
  *
- * @(#)$Id: ircaux.h,v 1.88 2006/09/15 03:02:44 jnelson Exp $
+ * @(#)$Id: ircaux.h,v 1.89 2006/10/13 21:58:02 jnelson Exp $
  */
 
 #ifndef _IRCAUX_H_
@@ -106,10 +106,8 @@ char *	strformat 		(char *, const char *, ssize_t, int);
 char *	chop_word 		(char *);
 char *	skip_spaces		(char *);
 int	split_args		(char *, char **to, size_t);
-int	splitw 			(char *, char ***);
-int	splitdw 			(char *, char ***);
-int	internal_splitw 			(char *, char ***, int);
-char *	unsplitw 		(char ***, int);
+int	splitw 			(char *, char ***, int);
+char *	unsplitw 		(char ***, int, int);
 int	check_val 		(const char *);
 char *	strext	 		(const char *, const char *);
 char *	strextend 		(char *, char, int);
@@ -184,20 +182,24 @@ char *	malloc_strdup2 		(const char *, const char *);
 char *	malloc_strdup3 		(const char *, const char *, const char *);
 char *	malloc_strcat2_c	(char **, const char *, const char *, size_t *);
 char *	malloc_strcat_wordlist_c (char **, const char *, const char *,size_t *);
-char *	malloc_strcat_word_c    (char **, const char *, const char *,size_t *);
+char *	malloc_strcat_word_c    (char **, const char *, const char *, int, size_t *);
 char *	malloc_sprintf 		(char **, const char *, ...) __A(2);
 
 #define malloc_strcpy(x,y) malloc_strcpy_c((x),(y),NULL)
 #define malloc_strcat(x,y) malloc_strcat_c((x),(y),NULL)
 #define malloc_strcat2(x,y,z) malloc_strcat2_c((x),(y),(z),NULL)
 #define malloc_strcat_wordlist(x,y,z) malloc_strcat_wordlist_c((x),(y),(z),NULL)
-#define malloc_strcat_word(x,y,z) malloc_strcat_word_c((x),(y),(z),NULL)
+#define malloc_strcat_word(x,y,z,a) malloc_strcat_word_c((x),(y),(z),(a),NULL)
 
 char *  universal_next_arg_count (char *, char **, int, int, int, const char *);
+#if 0
 #define next_arg(a,b)           universal_next_arg_count((a),(b),1,DWORD_NEVER,0,"\"")
-#define next_arg_count(a,b,c)   universal_next_arg_count((a),(b),(c),DWORD_NEVER, 0,"\"")
 #define new_next_arg(a,b)       universal_next_arg_count((a),(b),1,DWORD_ALWAYS,1,"\"")
+#define next_arg_count(a,b,c)   universal_next_arg_count((a),(b),(c),DWORD_NEVER, 0,"\"")
 #define new_next_arg_count(a,b) universal_next_arg_count((a),(b),(c),DWORD_ALWAYS,1,"\"")
+#define next_word(a,b)       universal_next_arg_count((a),(b),1,DWORD_OPTION,1,"\"")
+#define next_word_count(a,b) universal_next_arg_count((a),(b),(c),DWORD_OPTION,1,"\"")
+#endif
 void    dequoter                (char **, size_t *, int, int, const char *);
 
 #define my_isspace(x) isspace(x)

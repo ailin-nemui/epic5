@@ -1,4 +1,4 @@
-/* $EPIC: hook.c,v 1.68 2006/09/24 16:03:58 jnelson Exp $ */
+/* $EPIC: hook.c,v 1.69 2006/10/13 21:58:02 jnelson Exp $ */
 /*
  * hook.c: Does those naughty hook functions. 
  *
@@ -1849,7 +1849,7 @@ char *hookctl (char *input)
 	if (!input || !*input)
 		RETURN_EMPTY;
 	
-	GET_STR_ARG(str, input);
+	GET_FUNC_ARG(str, input);
 	go = vmy_strnicmp (strlen(str), str, 
 		"ADD",
 		"COUNT",
@@ -1890,12 +1890,12 @@ char *hookctl (char *input)
 		ser = 0;
 		if (!input || !*input)
 			RETURN_EMPTY;
-		GET_STR_ARG(hookname, input);
+		GET_FUNC_ARG(hookname, input);
 		if ((hooknum = find_hook(hookname, NULL, 1)) == INVALID_HOOKNUM)
 			RETURN_EMPTY;
 		if (!input || !*input)
 			RETURN_EMPTY;
-		GET_STR_ARG(nick, input);
+		GET_FUNC_ARG(nick, input);
 		if (input && *input)
 			GET_INT_ARG(ser, input);
 		for (
@@ -1948,7 +1948,7 @@ char *hookctl (char *input)
 			RETURN_INT(current_hook->retval);
 		else
 		{
-			GET_STR_ARG(str, input);
+			GET_FUNC_ARG(str, input);
 			if (!isdigit(str[0]) && str[0] != '-')
 				tmp_int = -2 + vmy_strnicmp(strlen(str), str, 
 					"NO_ACTION_TAKEN",	"SUPPRESS_DEFAULT",
@@ -1995,13 +1995,13 @@ char *hookctl (char *input)
 			prop = 1;
 		else
 		{
-			GET_STR_ARG(str,input);
+			GET_FUNC_ARG(str,input);
 			prop = vmy_strnicmp(strlen(str), str, "LISTS", "POPULATED_LISTS",
 				"HOOKS");
 		}
 		if (input && *input)
 		{
-			GET_STR_ARG(str, input);
+			GET_FUNC_ARG(str, input);
 		}
 		else
 		{
@@ -2061,11 +2061,11 @@ char *hookctl (char *input)
 		}
 		else
 		{
-			GET_STR_ARG(str, input);
+			GET_FUNC_ARG(str, input);
 		}
 		if (input && *input)
 		{
-			GET_STR_ARG(hookname, input);
+			GET_FUNC_ARG(hookname, input);
 			if ((hooknum = find_hook (hookname, NULL, 1)) == INVALID_HOOKNUM)
 				RETURN_EMPTY;
 		}
@@ -2106,7 +2106,7 @@ char *hookctl (char *input)
 			nam = NULL;
 		else
 		{
-			GET_STR_ARG(nam, input);
+			GET_FUNC_ARG(nam, input);
 		}
 		for (tmp_int = 0; tmp_int < noise_level_num; tmp_int++)
 		{
@@ -2151,7 +2151,7 @@ char *hookctl (char *input)
 
 		if (atoi(input) == 0 && input[0] != '0')
 		{
-			GET_STR_ARG(str, input);
+			GET_FUNC_ARG(str, input);
 			action = vmy_strnicmp(strlen(str), str,
 				"HOOK",
 				"LIST",
@@ -2182,7 +2182,7 @@ char *hookctl (char *input)
 			hook = hooklist[userial];
 			if (!set && (!input || !*input))
 				RETURN_STR(hook->stuff);
-			GET_STR_ARG(str, input);
+			GET_FUNC_ARG(str, input);
 
 			prop = vmy_strnicmp(strlen(str), str,
 				"ARGUMENT_LIST",
@@ -2448,7 +2448,7 @@ char *hookctl (char *input)
 			}
 			else
 			{
-				GET_STR_ARG(name, input);
+				GET_FUNC_ARG(name, input);
 				for (tmp_int = 0; tmp_int < noise_level_num; tmp_int++)
 				{
 					if (!my_stricmp(name, noise_info[tmp_int]->name))
@@ -2462,7 +2462,7 @@ char *hookctl (char *input)
 			if (!input || !*input)
 				RETURN_EMPTY;
 			
-			GET_STR_ARG(str, input);
+			GET_FUNC_ARG(str, input);
 			switch (vmy_strnicmp(strlen(str), str,
 				"ALERT", 	"CUSTOM", 	"DISPLAY", 	"IDENTIFIER",
 				"NAME", 	"SUPPRESS", "VALUE", 	NULL)
@@ -2482,7 +2482,7 @@ char *hookctl (char *input)
 		/* action-switch */
 		case HOOKCTL_GET_LIST:
 		
-			GET_STR_ARG(hookname, input);
+			GET_FUNC_ARG(hookname, input);
 			if (atoi(hookname) == -1)
 			{
 				if (current_hook == NULL)
@@ -2501,7 +2501,7 @@ char *hookctl (char *input)
 				prop = 2;
 			else
 			{
-				GET_STR_ARG(str, input);
+				GET_FUNC_ARG(str, input);
 				prop = vmy_strnicmp(strlen(str), str,
 					"FLAGS",		"MARK", 		"NAME",
 					"PARAMETRES", 	"PARAMETERS",	"PARAMS",
@@ -2548,7 +2548,7 @@ char *hookctl (char *input)
 	case HOOKCTL_ADD:
 		if (!input || !*input)
 			RETURN_INT(-1);
-		GET_STR_ARG(hookname, input);
+		GET_FUNC_ARG(hookname, input);
 		while (*hookname != '\0')
 		{
 			switch (*hookname)
@@ -2591,7 +2591,7 @@ char *hookctl (char *input)
 				RETURN_INT(-1);
 			if (input[0] == '#')
 				input++;
-			GET_STR_ARG(tmp, input);
+			GET_FUNC_ARG(tmp, input);
 			if (!strcmp(tmp, "-"))
 			{
 				serial = hook_find_free_serial(-1, 0, hooknum);
@@ -2607,7 +2607,7 @@ char *hookctl (char *input)
 		}
 		if (!input || !*input)
 			RETURN_INT(-1);
-		GET_STR_ARG(nick, input);
+		GET_FUNC_ARG(nick, input);
 		nick = malloc_strdup(nick);
 		tmp_int = add_hook (hooknum, nick, tmp_arglist, input, set_noisy, set_not, serial, set_flex);
 		new_free (&nick);
@@ -2647,7 +2647,7 @@ char *hookctl (char *input)
 	case HOOKCTL_MATCH:
 		if (!input || !*input)
 			RETURN_EMPTY;
-		GET_STR_ARG(hookname, input);
+		GET_FUNC_ARG(hookname, input);
 		if ((hooknum = find_hook (hookname, NULL, 1)) == INVALID_HOOKNUM)
 			RETURN_EMPTY;
 		if (!hook_functions[hooknum].list

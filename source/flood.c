@@ -1,4 +1,4 @@
-/* $EPIC: flood.c,v 1.26 2005/10/30 22:41:19 jnelson Exp $ */
+/* $EPIC: flood.c,v 1.27 2006/10/13 21:58:02 jnelson Exp $ */
 /*
  * flood.c: handle channel flooding.
  *
@@ -326,11 +326,11 @@ char *	function_floodinfo (char *args)
 
 		dequote_buffer(arg, &len);
 		if (arg && *arg)
-			GET_STR_ARG(nuh, arg);
+			GET_FUNC_ARG(nuh, arg);
 		if (arg && *arg)
-			GET_STR_ARG(chan, arg);
+			GET_FUNC_ARG(chan, arg);
 		if (arg && *arg)
-			GET_STR_ARG(level, arg);
+			GET_FUNC_ARG(level, arg);
 		if (arg && *arg)
 			GET_INT_ARG(server, arg);
 		if (arg && *arg)

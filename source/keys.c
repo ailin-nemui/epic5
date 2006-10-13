@@ -1,4 +1,4 @@
-/* $EPIC: keys.c,v 1.50 2006/09/30 01:36:08 jnelson Exp $ */
+/* $EPIC: keys.c,v 1.51 2006/10/13 21:58:02 jnelson Exp $ */
 /*
  * keys.c:  Keeps track of what happens whe you press a key.
  *
@@ -1267,19 +1267,19 @@ char *bindctl (char *input)
     char *listc;
     char *retval = NULL;
 
-    GET_STR_ARG(listc, input);
+    GET_FUNC_ARG(listc, input);
     if (!my_strnicmp(listc, "FUNCTION", 1)) {
 	struct Binding *bp;
 	char *func;
 
-	GET_STR_ARG(func, input);
+	GET_FUNC_ARG(func, input);
 	bp = find_binding(func);
 
-	GET_STR_ARG(listc, input);
+	GET_FUNC_ARG(listc, input);
 	if (!my_strnicmp(listc, "CREATE", 1)) {
 	    char *alias;
 
-	    GET_STR_ARG(alias, input);
+	    GET_FUNC_ARG(alias, input);
 
 	    if (bp) {
 		if (bp->func)
@@ -1316,14 +1316,14 @@ char *bindctl (char *input)
 	    len = strlen(func);
 	    for (bp = binding_list;bp;bp = bp->next) {
 		if (!my_strnicmp(bp->name, func, len))
-		    malloc_strcat_word(&retval, space, bp->name);
+		    malloc_strcat_word(&retval, space, bp->name, DWORD_NO);
 	    }
 
 	    RETURN_STR(retval);
 	} else if (!my_strnicmp(listc, "PMATCH", 1)) {
 	    for (bp = binding_list;bp;bp = bp->next) {
 		if (wild_match(func, bp->name))
-		    malloc_strcat_word(&retval, space, bp->name);
+		    malloc_strcat_word(&retval, space, bp->name, DWORD_NO);
 	    }
 
 	    RETURN_STR(retval);
@@ -1342,9 +1342,9 @@ char *bindctl (char *input)
 	struct Key *key;
 	unsigned char *seq;
 
-	GET_STR_ARG(seq, input);
+	GET_DWORD_ARG(seq, input);
 	key = find_sequence(seq, 0);
-	GET_STR_ARG(listc, input);
+	GET_FUNC_ARG(listc, input);
 	if (!my_stricmp(listc, "GET")) {
 	    if (key == NULL || key->bound == NULL)
 		RETURN_EMPTY;
@@ -1354,7 +1354,7 @@ char *bindctl (char *input)
 		malloc_strcat_wordlist(&retval, " ", key->stuff);
 	    RETURN_STR(retval);
 	} else if (!my_stricmp(listc, "SET")) {
-	    GET_STR_ARG(listc, input);
+	    GET_FUNC_ARG(listc, input);
 
 	    RETURN_INT(bind_string(seq, listc, (*input ? input : NULL)));
 	} else if (!my_strnicmp(listc, "GETPACKAGE", 4)) {

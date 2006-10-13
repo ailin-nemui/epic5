@@ -1,4 +1,4 @@
-/* $EPIC: timer.c,v 1.50 2006/05/27 18:45:59 jnelson Exp $ */
+/* $EPIC: timer.c,v 1.51 2006/10/13 21:58:03 jnelson Exp $ */
 /*
  * timer.c -- handles timers in ircII
  *
@@ -867,10 +867,10 @@ char *	timerctl (char *input)
 	Timer *	t;
 	int	len;
 
-	GET_STR_ARG(listc, input);
+	GET_FUNC_ARG(listc, input);
 	len = strlen(listc);
 	if (!my_strnicmp(listc, "REFNUM", len)) {
-		GET_STR_ARG(refstr, input);
+		GET_FUNC_ARG(refstr, input);
 		if (!(t = get_timer(refstr)))
 			RETURN_EMPTY;
 		RETURN_STR(t->ref);
@@ -879,23 +879,23 @@ char *	timerctl (char *input)
 		size_t	clue = 0;
 
 		for (t = PendingTimers; t; t = t->next)
-			malloc_strcat_word_c(&retval, space, t->ref, &clue);
+			malloc_strcat_word_c(&retval, space, t->ref, DWORD_DWORDS, &clue);
 		RETURN_MSTR(retval);
 	} else if (!my_strnicmp(listc, "ADD", len)) {
 		RETURN_EMPTY;		/* XXX - Not implemented yet. */
 	} else if (!my_strnicmp(listc, "DELETE", len)) {
-		GET_STR_ARG(refstr, input);
+		GET_FUNC_ARG(refstr, input);
 		if (!(t = get_timer(refstr)))
 			RETURN_EMPTY;
 		if (t->callback)
 			RETURN_EMPTY;
 		RETURN_INT(remove_timer(refstr));
 	} else if (!my_strnicmp(listc, "GET", len)) {
-		GET_STR_ARG(refstr, input);
+		GET_FUNC_ARG(refstr, input);
 		if (!(t = get_timer(refstr)))
 			RETURN_EMPTY;
 
-		GET_STR_ARG(listc, input);
+		GET_FUNC_ARG(listc, input);
 		len = strlen(listc);
 		if (!my_strnicmp(listc, "TIMEOUT", len)) {
 			return malloc_sprintf(NULL, "%ld %ld", (long) t->time.tv_sec,
@@ -923,7 +923,7 @@ char *	timerctl (char *input)
 			RETURN_INT(t->domref);
 		}
 	} else if (!my_strnicmp(listc, "SET", len)) {
-		GET_STR_ARG(refstr, input);
+		GET_FUNC_ARG(refstr, input);
 		if (!(t = get_timer(refstr)))
 			RETURN_EMPTY;
 
@@ -931,7 +931,7 @@ char *	timerctl (char *input)
 		if (t->callback)
 			RETURN_EMPTY;
 
-		GET_STR_ARG(listc, input);
+		GET_FUNC_ARG(listc, input);
 		len = strlen(listc);
 		if (!my_strnicmp(listc, "TIMEOUT", len)) {
 			time_t	tv_sec;

@@ -1,4 +1,4 @@
-/* $EPIC: screen.c,v 1.119 2006/07/01 04:17:12 jnelson Exp $ */
+/* $EPIC: screen.c,v 1.120 2006/10/13 21:58:02 jnelson Exp $ */
 /*
  * screen.c
  *
@@ -2018,8 +2018,10 @@ void 	add_to_screen (const unsigned char *buffer)
 	    }
 	    else
 	    {
+#if 0
 	      for (;;)
 	      {
+#endif
 		tmp = NULL;
 		while (traverse_all_windows(&tmp))
 		{
@@ -2036,6 +2038,7 @@ void 	add_to_screen (const unsigned char *buffer)
 		    return;
 		}
 
+#if 0
 		/*
 		 * EPIC4 had a hideously complicated if() that handled 
 		 * DCC CHAT nicks ("=nick") against /query's that look like
@@ -2050,6 +2053,7 @@ void 	add_to_screen (const unsigned char *buffer)
 		else
 		    break;
 	      }
+#endif
 	    }
 	}
 

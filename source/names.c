@@ -1,4 +1,4 @@
-/* $EPIC: names.c,v 1.76 2006/09/23 02:56:44 jnelson Exp $ */
+/* $EPIC: names.c,v 1.77 2006/10/13 21:58:02 jnelson Exp $ */
 /*
  * names.c: This here is used to maintain a list of all the people currently
  * on your channel.  Seems to work 
@@ -672,7 +672,7 @@ char	*create_nick_list (const char *name, int server)
 		return NULL;
 
 	for (i = 0; i < channel->nicks.max; i++)
-		malloc_strcat_word_c(&str, space, channel->nicks.list[i]->nick, &clue);
+		malloc_strcat_word_c(&str, space, channel->nicks.list[i]->nick, DWORD_NO, &clue);
 
 	return str;
 }
@@ -689,7 +689,7 @@ char	*create_chops_list (const char *name, int server)
 
 	for (i = 0; i < channel->nicks.max; i++)
 	    if (channel->nicks.list[i]->chanop)
-		malloc_strcat_word_c(&str, space, channel->nicks.list[i]->nick, &clue);
+		malloc_strcat_word_c(&str, space, channel->nicks.list[i]->nick, DWORD_NO, &clue);
 
 	if (!str)
 		return malloc_strdup(empty_string);
@@ -708,7 +708,7 @@ char	*create_nochops_list (const char *name, int server)
 
 	for (i = 0; i < channel->nicks.max; i++)
 	    if (!channel->nicks.list[i]->chanop)
-		malloc_strcat_word_c(&str, space, channel->nicks.list[i]->nick, &clue);
+		malloc_strcat_word_c(&str, space, channel->nicks.list[i]->nick, DWORD_NO, &clue);
 
 	if (!str)
 		return malloc_strdup(empty_string);
@@ -1118,7 +1118,7 @@ char	*scan_channel (char *cname)
 			buffer[1] = '.';
 
 		strlcpy(buffer + 2, nicks->list[i]->nick, sizeof(buffer) - 2);
-		malloc_strcat_word_c(&retval, space, buffer, &clue);
+		malloc_strcat_word_c(&retval, space, buffer, DWORD_NO, &clue);
 	}
 
 	if (retval == NULL)
@@ -1261,7 +1261,7 @@ char *	window_all_channels (int window, int server)
 	{
 		if (tmp->winref != window)
 			continue;
-		malloc_strcat_word_c(&str, space, tmp->channel, &clue);
+		malloc_strcat_word_c(&str, space, tmp->channel, DWORD_NO, &clue);
 	}
 	return str;
 }
@@ -1573,7 +1573,7 @@ char *	create_channel_list (int server)
 	if (server >= 0)
 	{
 		while (traverse_all_channels(&tmp, server, 1))
-			malloc_strcat_word_c(&retval, space, tmp->channel, &clue);
+			malloc_strcat_word_c(&retval, space, tmp->channel, DWORD_NO, &clue);
 	}
 
 	return retval ? retval : malloc_strdup(empty_string);

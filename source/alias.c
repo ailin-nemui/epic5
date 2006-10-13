@@ -1,4 +1,4 @@
-/* $EPIC: alias.c,v 1.80 2006/09/24 16:03:58 jnelson Exp $ */
+/* $EPIC: alias.c,v 1.81 2006/10/13 21:58:02 jnelson Exp $ */
 /*
  * alias.c -- Handles the whole kit and caboodle for aliases.
  *
@@ -843,32 +843,32 @@ void	prepare_alias_call (void *al, char **stuff)
 		switch (args->types[i])
 		{
 			case WORD:
-				if (!(x_debug & DEBUG_EXTRACTW))
+				if (!(x_debug & DEBUG_DWORD))
 				{
-					type = DWORD_NEVER;
+					type = DWORD_NO;
 					do_dequote_it = 0;
 				}
 				else if (args->words[i] <= 1)
 				{
-					type = DWORD_YES;
+					type = DWORD_DWORDS;
 					do_dequote_it = 1;
 				}
 				else
 				{
-					type = DWORD_ALWAYS;
+					type = DWORD_YES;
 					do_dequote_it = 0;
 				}
 				break;
 			case UWORD:
-				type = DWORD_NEVER;
+				type = DWORD_NO;
 				do_dequote_it = 0;
 				break;
 			case DWORD:
-				type = DWORD_ALWAYS;
+				type = DWORD_YES;
 				do_dequote_it = 1;
 				break;
 			case QWORD:
-				type = DWORD_ALWAYS;
+				type = DWORD_YES;
 				do_dequote_it = 0;
 				break;
 			default:
@@ -2611,7 +2611,7 @@ static	int maxret = 0;
 	int start = 0;
 	int reverse = 0;
 
-	GET_STR_ARG(listc, input);
+	GET_FUNC_ARG(listc, input);
 	if (!my_strnicmp(listc, "AS", 2))
 		list = VAR_ALIAS;
 	else if (!my_strnicmp(listc, "AL", 2))
@@ -2628,9 +2628,9 @@ static	int maxret = 0;
 	else
 		RETURN_EMPTY;
 
-	GET_STR_ARG(listc, input);
+	GET_FUNC_ARG(listc, input);
 	if ((start = my_atol(listc)))
-		GET_STR_ARG(listc, input);
+		GET_FUNC_ARG(listc, input);
 	if (!my_strnicmp(listc, "GETP", 4))
 		op = GETPACKAGE;
 	else if (!my_strnicmp(listc, "G", 1))
@@ -2652,7 +2652,7 @@ static	int maxret = 0;
 	else
 		RETURN_EMPTY;
 
-	GET_STR_ARG(listc, input);
+	GET_FUNC_ARG(listc, input);
 	switch (op)
 	{
 		case (GET) :
@@ -2737,7 +2737,7 @@ static	int maxret = 0;
 
 			for (ctr = 0; ctr < num; ctr++)
 			{
-				malloc_strcat_word_c(&mylist, space, mlist[ctr], &mylistclue);
+				malloc_strcat_word_c(&mylist, space, mlist[ctr],DWORD_DWORDS, &mylistclue);
 				new_free((char **)&mlist[ctr]);
 			}
 			new_free((char **)&mlist);
@@ -2761,7 +2761,7 @@ static	int maxret = 0;
 				RETURN_EMPTY;
 
 			for (ctr = 0; ctr < num; ctr++)
-				malloc_strcat_word_c(&mylist, space, mlist[ctr], &mylistclue);
+				malloc_strcat_word_c(&mylist, space, mlist[ctr], DWORD_DWORDS, &mylistclue);
 			new_free((char **)&mlist);
 			if (mylist)
 				return mylist;
@@ -3377,12 +3377,12 @@ char    *symbolctl      (char *input)
 	char	*symbol, *type, *pattern, *attr;
 	int	cnt, l;
 
-        GET_STR_ARG(listc, input);
+        GET_FUNC_ARG(listc, input);
         len = strlen(listc);
 
         if (!my_strnicmp(listc, "TYPES", len)) {
 	    for (i = 0; symbol_types[i]; i++)
-		malloc_strcat_word_c(&ret, space, symbol_types[i], &clue);
+		malloc_strcat_word_c(&ret, space, symbol_types[i], DWORD_DWORDS, &clue);
 	    RETURN_MSTR(ret);
 
         } else if (!my_strnicmp(listc, "PMATCH", len)) {
@@ -3392,8 +3392,8 @@ char    *symbolctl      (char *input)
 	    int	start = 0;
 	    int	rev = 0;
 
-	    GET_STR_ARG(type, input);
-	    GET_STR_ARG(pattern, input);
+	    GET_FUNC_ARG(type, input);
+	    GET_FUNC_ARG(pattern, input);
 	    if (!my_stricmp(type, "ALIAS")) {
 		names = pmatch_cmd_alias(pattern, &num, maxret, start, rev);
 	    } else if (!my_stricmp(type, "ASSIGN")) {
@@ -3412,12 +3412,12 @@ char    *symbolctl      (char *input)
 		RETURN_EMPTY;
 
 	    for (i = 0; i < num; i++)
-		malloc_strcat_word_c(&ret, space, names[i], &clue);
+		malloc_strcat_word_c(&ret, space, names[i], DWORD_DWORDS, &clue);
 	    new_free((char **)&names);
 	    RETURN_MSTR(ret);
 
         } else if (!my_strnicmp(listc, "CREATE", len)) {
-            GET_STR_ARG(symbol, input);
+            GET_FUNC_ARG(symbol, input);
 	    upper(symbol);
 	    s = (Symbol *)find_array_item((array *)&globals, symbol, &cnt, &l);
 	    if (!s || cnt >= 0)
@@ -3429,7 +3429,7 @@ char    *symbolctl      (char *input)
 	    RETURN_INT(0);
 
         } else if (!my_strnicmp(listc, "DELETE", len)) {
-            GET_STR_ARG(symbol, input);
+            GET_FUNC_ARG(symbol, input);
 	    upper(symbol);
 	    s = (Symbol *)find_array_item((array *)&globals, symbol, &cnt, &l);
 	    if (s && cnt < 0) {
@@ -3471,7 +3471,7 @@ char    *symbolctl      (char *input)
 	    RETURN_INT(0);
 
         } else if (!my_strnicmp(listc, "CHECK", len)) {
-            GET_STR_ARG(symbol, input);
+            GET_FUNC_ARG(symbol, input);
 	    upper(symbol);
 	    s = (Symbol *)find_array_item((array *)&globals, symbol, &cnt, &l);
 	    if (s && cnt < 0) {
@@ -3483,13 +3483,13 @@ char    *symbolctl      (char *input)
         } else if (!my_strnicmp(listc, "GET", len)) {
 	    char *x;
 
-            GET_STR_ARG(symbol, input);
+            GET_FUNC_ARG(symbol, input);
 	    upper(symbol);
 	    s = (Symbol *)find_array_item((array *)&globals, symbol, &cnt, &l);
 	    if (!s || cnt >= 0)
                 RETURN_EMPTY;
 
-	    GET_STR_ARG(x, input)
+	    GET_FUNC_ARG(x, input)
 	    if (!(my_stricmp(x, "LEVELS"))) {
 		i = 1;
 		while (s->saved)
@@ -3507,23 +3507,23 @@ char    *symbolctl      (char *input)
 
 	    if (!input || !*input) {
 		if (s->user_variable || s->user_variable_stub)
-		    malloc_strcat_word_c(&ret, space, "ASSIGN", &clue);
+		    malloc_strcat_word_c(&ret, space, "ASSIGN", DWORD_NO, &clue);
 		if (s->user_command || s->user_command_stub)
-		    malloc_strcat_word_c(&ret, space, "ALIAS", &clue);
+		    malloc_strcat_word_c(&ret, space, "ALIAS", DWORD_NO, &clue);
 		if (s->builtin_command)
-		    malloc_strcat_word_c(&ret, space, "BUILTIN_COMMAND", &clue);
+		    malloc_strcat_word_c(&ret, space, "BUILTIN_COMMAND", DWORD_NO, &clue);
 		if (s->builtin_function)
-		    malloc_strcat_word_c(&ret, space, "BUILTIN_FUNCTION", &clue);
+		    malloc_strcat_word_c(&ret, space, "BUILTIN_FUNCTION", DWORD_NO, &clue);
 		if (s->builtin_expando)
-		    malloc_strcat_word_c(&ret, space, "BUILTIN_EXPANDO", &clue);
+		    malloc_strcat_word_c(&ret, space, "BUILTIN_EXPANDO", DWORD_NO, &clue);
 		if (s->builtin_variable)
-		    malloc_strcat_word_c(&ret, space, "BUILTIN_VARIABLE", &clue);
+		    malloc_strcat_word_c(&ret, space, "BUILTIN_VARIABLE", DWORD_NO, &clue);
 		RETURN_MSTR(ret);
 	    }
 
-	    GET_STR_ARG(type, input);
+	    GET_FUNC_ARG(type, input);
             if (!my_stricmp(type, "ALIAS")) {
-		GET_STR_ARG(attr, input);
+		GET_FUNC_ARG(attr, input);
 		if (!my_stricmp(attr, "VALUE"))
 		    RETURN_STR(s->user_command);
 		else if (!my_stricmp(attr, "STUB"))
@@ -3535,7 +3535,7 @@ char    *symbolctl      (char *input)
 		else
 		    RETURN_EMPTY;
             } else if (!my_stricmp(type, "ASSIGN")) {
-		GET_STR_ARG(attr, input);
+		GET_FUNC_ARG(attr, input);
        		if (!my_stricmp(attr, "VALUE"))
 		    RETURN_STR(s->user_variable);
 		else if (!my_stricmp(attr, "STUB"))
@@ -3554,7 +3554,7 @@ char    *symbolctl      (char *input)
 		if (!s->builtin_variable)
 			RETURN_EMPTY;
 
-		GET_STR_ARG(attr, input);
+		GET_FUNC_ARG(attr, input);
        		if (!my_stricmp(attr, "TYPE")) {
 		    switch (s->builtin_variable->type) {
 			case STR_VAR: RETURN_STR("STR");
@@ -3578,13 +3578,13 @@ char    *symbolctl      (char *input)
         } else if (!my_strnicmp(listc, "SET", len)) {
 	    char *x;
 
-            GET_STR_ARG(symbol, input);
+            GET_FUNC_ARG(symbol, input);
 	    upper(symbol);
 	    s = (Symbol *)find_array_item((array *)&globals, symbol, &cnt, &l);
 	    if (!s || cnt >= 0)
                 RETURN_EMPTY;
 
-	    GET_STR_ARG(x, input)
+	    GET_FUNC_ARG(x, input)
 	    GET_INT_ARG(level, x);
 	    for (i = 1; i < level; i++)
 	    {
@@ -3593,9 +3593,9 @@ char    *symbolctl      (char *input)
 		s = s->saved;
 	    }
 
-	    GET_STR_ARG(type, input);
+	    GET_FUNC_ARG(type, input);
             if (!my_stricmp(type, "ALIAS")) {
-		GET_STR_ARG(attr, input);
+		GET_FUNC_ARG(attr, input);
 		if (!my_stricmp(attr, "VALUE")) {
 		    if (input && *input)
 		        malloc_strcpy(&s->user_command, input);
@@ -3622,7 +3622,7 @@ char    *symbolctl      (char *input)
 		} else
 		    RETURN_EMPTY;
             } else if (!my_stricmp(type, "ASSIGN")) {
-		GET_STR_ARG(attr, input);
+		GET_FUNC_ARG(attr, input);
 		if (!my_stricmp(attr, "VALUE")) {
 		    if (input && *input)
 		        malloc_strcpy(&s->user_variable, input);
@@ -3668,7 +3668,7 @@ char    *symbolctl      (char *input)
 		    add_builtin_variable_alias(symbol, v);
 		}
 
-		GET_STR_ARG(attr, input);
+		GET_FUNC_ARG(attr, input);
        		if (!my_stricmp(attr, "TYPE")) {
 		    int newval;
 

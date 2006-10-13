@@ -1,4 +1,4 @@
-/* $EPIC: lastlog.c,v 1.63 2006/06/29 01:13:53 jnelson Exp $ */
+/* $EPIC: lastlog.c,v 1.64 2006/10/13 21:58:02 jnelson Exp $ */
 /*
  * lastlog.c: handles the lastlog features of irc. 
  *
@@ -904,7 +904,7 @@ BUILT_IN_FUNCTION(function_line, word)
 
 	while (word && *word)
 	{
-		GET_STR_ARG(extra, word);
+		GET_FUNC_ARG(extra, word);
 
 		if (!my_stricmp(extra, "-LEVEL"))
 			do_level = 1;
@@ -971,8 +971,8 @@ BUILT_IN_FUNCTION(function_lastlog, word)
 	int	line = 1;
 	size_t	rvclue = 0;
 
-	GET_STR_ARG(windesc, word);
-	GET_STR_ARG(pattern, word);
+	GET_FUNC_ARG(windesc, word);
+	GET_DWORD_ARG(pattern, word);
 	str_to_mask(&lastlog_levels, word);
 
 	/* Get the current window, default to current window */
@@ -984,7 +984,7 @@ BUILT_IN_FUNCTION(function_lastlog, word)
 		if (iter->visible)
 		    if (mask_isset(&lastlog_levels, iter->level))
 			if (wild_match(pattern, iter->msg))
-				malloc_strcat_word_c(&retval, space, ltoa(line), &rvclue);
+				malloc_strcat_word_c(&retval, space, ltoa(line), DWORD_NO, &rvclue);
 	}
 
 	if (retval)

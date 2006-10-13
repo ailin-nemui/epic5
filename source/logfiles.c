@@ -1,4 +1,4 @@
-/* $EPIC: logfiles.c,v 1.33 2006/05/27 18:45:59 jnelson Exp $ */
+/* $EPIC: logfiles.c,v 1.34 2006/10/13 21:58:02 jnelson Exp $ */
 /*
  * logfiles.c - General purpose log files
  *
@@ -774,12 +774,12 @@ char *logctl	(char *input)
 	int	val;
 	Logfile	*log;
 
-	GET_STR_ARG(listc, input);
+	GET_FUNC_ARG(listc, input);
         if (!my_strnicmp(listc, "REFNUMS", 7)) {
 		char *	retval = NULL;
 		int	active;
 
-		GET_STR_ARG(refstr, input);
+		GET_FUNC_ARG(refstr, input);
 		if (!my_stricmp(refstr, "ACTIVE"))
 			active = 1;
 		else if (!my_stricmp(refstr, "INACTIVE"))
@@ -793,32 +793,32 @@ char *logctl	(char *input)
 		{
 			if (active != -1 && active != log->active)
 				continue;
-			malloc_strcat_word(&retval, space, ltoa(log->refnum));
+			malloc_strcat_word(&retval, space, ltoa(log->refnum), DWORD_NO);
 		}
 		RETURN_MSTR(retval);
         } else if (!my_strnicmp(listc, "REFNUM", 6)) {
-		GET_STR_ARG(refstr, input);
+		GET_FUNC_ARG(refstr, input);
 		if (!(log = get_log_by_desc(refstr)))
 			RETURN_EMPTY;
 		RETURN_INT(log->refnum);
         } else if (!my_strnicmp(listc, "ADD", 2)) {
-		GET_STR_ARG(refstr, input);
+		GET_FUNC_ARG(refstr, input);
 		if (!(log = get_log_by_desc(refstr)))
 			RETURN_EMPTY;
 		logfile_add(log, &input);
 		RETURN_INT(1);
         } else if (!my_strnicmp(listc, "DELETE", 2)) {
-		GET_STR_ARG(refstr, input);
+		GET_FUNC_ARG(refstr, input);
 		if (!(log = get_log_by_desc(refstr)))
 			RETURN_EMPTY;
 		logfile_remove(log, &input);
 		RETURN_INT(1);
         } else if (!my_strnicmp(listc, "GET", 2)) {
-                GET_STR_ARG(refstr, input);
+                GET_FUNC_ARG(refstr, input);
 		if (!(log = get_log_by_desc(refstr)))
 			RETURN_EMPTY;
 
-                GET_STR_ARG(listc, input);
+                GET_FUNC_ARG(listc, input);
                 if (!my_strnicmp(listc, "REFNUM", 1)) {
 			RETURN_INT(log->refnum);
                 } else if (!my_strnicmp(listc, "NAME", 3)) {
@@ -845,11 +845,11 @@ char *logctl	(char *input)
 			RETURN_INT(log->activity);
 		}
         } else if (!my_strnicmp(listc, "SET", 1)) {
-                GET_STR_ARG(refstr, input);
+                GET_FUNC_ARG(refstr, input);
 		if (!(log = get_log_by_desc(refstr)))
 			RETURN_EMPTY;
 
-		GET_STR_ARG(listc, input);
+		GET_FUNC_ARG(listc, input);
                 if (!my_strnicmp(listc, "NAME", 3)) {
 			logfile_name(log, &input);
 			RETURN_INT(1);

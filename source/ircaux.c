@@ -1,4 +1,4 @@
-/* $EPIC: ircaux.c,v 1.162 2006/10/06 00:12:40 jnelson Exp $ */
+/* $EPIC: ircaux.c,v 1.163 2006/10/13 21:58:02 jnelson Exp $ */
 /*
  * ircaux.c: some extra routines... not specific to irc... that I needed 
  *
@@ -2270,24 +2270,27 @@ int	split_args (char *str, char **to, size_t maxargs)
 	return counter;
 }
 
-int splitw(char *str, char ***to) {
-  return(internal_splitw(str, to, 0));
-}
-
-int splitdw(char *str, char ***to) {
-  return(internal_splitw(str, to, 1));
-}
-
-int 	internal_splitw (char *str, char ***to, int mode)
+/*
+ * Break down a string containing a word list (words defined by 'extended')
+ * into an array of those words.  Double quotes, if any, that surround the
+ * double quoted words are removed.
+ */
+int 	splitw (char *str, char ***to, int extended)
 {
-	int numwords = count_words(str, DWORD_YES, "\"");
+	int numwords = count_words(str, extended, "\"");
 	int counter;
 
 	if (numwords)
 	{
 		*to = (char **)new_malloc(sizeof(char *) * numwords);
 		for (counter = 0; counter < numwords; counter++)
-			(*to)[counter] = mode ? safe_new_next_arg(str, &str) : SAFE_NEXT_WORD(str, &str);
+		{
+			char *x = universal_next_arg_count(str, &str, 
+							1, extended, 1, "\"");
+			if (!x)
+				x = endstr(str);
+			(*to)[counter] = x;
+		}
 	}
 	else
 		*to = NULL;
@@ -2295,7 +2298,10 @@ int 	internal_splitw (char *str, char ***to, int mode)
 	return numwords;
 }
 
-char *	unsplitw (char ***container, int howmany)
+/*
+ * unsplitw implicitly depends on /xdebug dword!
+ */
+char *	unsplitw (char ***container, int howmany, int extended)
 {
 	char *retval = NULL;
 	char **str = *container;
@@ -2307,7 +2313,7 @@ char *	unsplitw (char ***container, int howmany)
 	while (howmany)
 	{
 		if (*str && **str)
-			malloc_strcat_word_c(&retval, space, *str, &clue);
+			malloc_strcat_word_c(&retval, space, *str, extended, &clue);
 		str++, howmany--;
 	}
 
@@ -3977,10 +3983,14 @@ char *	malloc_strcat_wordlist_c (char **ptr, const char *word_delim, const char 
 	    return *ptr;
 }
 
-char *	malloc_strcat_word_c (char **ptr, const char *word_delim, const char *word, size_t *clue)
+char *	malloc_strcat_word_c (char **ptr, const char *word_delim, const char *word, int extended, size_t *clue)
 {
-	/* You MUST turn on extractw to get double quoted words */
-	if (!(x_debug & DEBUG_EXTRACTW))
+	/* You MUST turn on /xdebug dword to get double quoted words */
+	if (extended == DWORD_DWORDS && !(x_debug & DEBUG_DWORD))
+		return malloc_strcat_wordlist_c(ptr, word_delim, word, clue);
+	if (extended == DWORD_EXTRACTW && !(x_debug & DEBUG_EXTRACTW))
+		return malloc_strcat_wordlist_c(ptr, word_delim, word, clue);
+	if (extended == DWORD_NO)
 		return malloc_strcat_wordlist_c(ptr, word_delim, word, clue);
 
 	if (word && *word)
@@ -4064,9 +4074,10 @@ char *	malloc_sprintf (char **ptr, const char *format, ...)
  *  'count' - The number of words to remove.  If you want to remove one
  *		word, use the next_arg() macro.
  *  'extended' - One of the three "DWORD" macros:
- *		DWORD_NEVER  - Do not honor double-quoted words in 'str'
- *		DWORD_YES    - Honor them if /xdebug extractw is on.
- *		DWORD_ALWAYS - Always honor double-quoted words in 'str'.
+ *		DWORD_NO     - Do not honor double-quoted words in 'str'
+ *		DWORD_EXTRACTW - Honor them if /xdebug extractw is on
+ *		DWORD_DWORDS - Honor them if /xdebug dword is on
+ *		DWORD_YES    - Always honor double-quoted words in 'str'.
  *  'dequote' - The double quotes that surround double-quoted words
  *		should be stripped from the return value.
  *
@@ -4083,10 +4094,6 @@ char *	malloc_sprintf (char **ptr, const char *format, ...)
  *	and if it ends with a double quote that occurs at the end of the
  *	string or immediately before one or more spaces.  Every word that
  *	is not a "double quoted word" as defined here is a Standard Word.
- *
- *  If "extended" is DWORD_NEVER, or DWORD_YES and /xdebug extractw is off,
- *	then all words shall be treated as Standard Words, even if they 
- *	are surrounded in double quotes.
  *
  *  If "dequote" is 0, then any Double Quoted Words shall be modified to
  *	remove the double quotes that surround them.  Dequoting multiple
@@ -4169,7 +4176,7 @@ char *	universal_next_arg_count (char *str, char **new_ptr, int count, int exten
  *		dequoting is neccessary.  THIS IS VERY EXPENSIVE.  If '*str'
  *		contains one word, this should be 0.
  *  'extended' - The extended word policy for this string.  This should 
- *		usually be DWORD_ALWAYS unless you're doing something fancy.
+ *		usually be DWORD_YES unless you're doing something fancy.
  *
  * Return value:
  *	There is no return value, but '*str' and '*clue' may be modified as
@@ -4286,7 +4293,7 @@ char *	new_new_next_arg_count (char *str, char **new_ptr, char *type, int count)
 
 	kludge[0] = *type;
 	kludge[1] = 0;
-	return universal_next_arg_count(str, new_ptr, 1, DWORD_ALWAYS, 1, kludge);
+	return universal_next_arg_count(str, new_ptr, 1, DWORD_YES, 1, kludge);
 }
 
 /*
@@ -4316,7 +4323,7 @@ char *	safe_next_arg (char *str, char **new_ptr)
  * yanks off the last word from 'src'
  * kinda the opposite of next_arg
  */
-char *	last_arg (char **src, size_t *cluep, int quotes)
+char *	last_arg (char **src, size_t *cluep, int extended)
 {
 	char *mark, *start, *end;
 
@@ -4324,7 +4331,7 @@ char *	last_arg (char **src, size_t *cluep, int quotes)
 	end = start + *cluep;
 	mark = end + strlen(end);
 	/* Always support double-quoted words. */
-	move_word_rel(start, (const char **)&mark, -1, quotes ? DWORD_ALWAYS : DWORD_NEVER, "\"");
+	move_word_rel(start, (const char **)&mark, -1, extended, "\"");
 	*cluep = (mark - *src - 1);
 
 	if (mark > start)

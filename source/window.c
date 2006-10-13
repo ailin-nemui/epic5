@@ -1,4 +1,4 @@
-/* $EPIC: window.c,v 1.174 2006/10/10 20:43:38 jnelson Exp $ */
+/* $EPIC: window.c,v 1.175 2006/10/13 21:58:03 jnelson Exp $ */
 /*
  * window.c: Handles the organzation of the logical viewports (``windows'')
  * for irc.  This includes keeping track of what windows are open, where they
@@ -3105,9 +3105,9 @@ static Window *window_channel (Window *window, char **args)
 	    else
 	    {
 		add_waiting_channel(window, chan);
-		malloc_strcat_word(&chans_to_join, comma, chan);
+		malloc_strcat_word(&chans_to_join, comma, chan, DWORD_NO);
 		if (pass)
-			malloc_strcat_word(&passes_to_use, comma, pass);
+			malloc_strcat_word(&passes_to_use, comma, pass, DWORD_NO);
 	    }
 
 	    new_free(&chan);
@@ -3216,7 +3216,7 @@ else
 
 	    c = NULL;
 	    for (tmp = window->waiting_chans; tmp; tmp = tmp->next)
-		malloc_strcat_word_c(&c, space, tmp->nick, &clue);
+		malloc_strcat_word_c(&c, space, tmp->nick, DWORD_NO, &clue);
 
 	    say("\tWaiting channels list: %s", c);
 	    new_free(&c);
@@ -3232,7 +3232,7 @@ else
 
 	    c = NULL;
 	    for (tmp = window->nicks; tmp; tmp = tmp->next)
-		malloc_strcat_word_c(&c, space, tmp->nick, &clue);
+		malloc_strcat_word_c(&c, space, tmp->nick, DWORD_NO, &clue);
 
 	    say("\tName list: %s", c);
 	    new_free(&c);
@@ -6023,12 +6023,12 @@ char 	*windowctl 	(char *input)
 	char 	*ret = NULL;
 	Window	*w;
 
-	GET_STR_ARG(listc, input);
+	GET_FUNC_ARG(listc, input);
 	len = strlen(listc);
 	if (!my_strnicmp(listc, "REFNUM", len)) {
 	    char *windesc;
 
-	    GET_STR_ARG(windesc, input);
+	    GET_FUNC_ARG(windesc, input);
 	    if (!(w = get_window_by_desc(windesc)))
 		RETURN_EMPTY;
 	    RETURN_INT(w->refnum);
@@ -6043,7 +6043,7 @@ char 	*windowctl 	(char *input)
 	    if (!(w = get_window_by_refnum(refnum)))
 		RETURN_EMPTY;
 
-	    GET_STR_ARG(listc, input);
+	    GET_FUNC_ARG(listc, input);
 	    len = strlen(listc);
 
 	    if (!my_strnicmp(listc, "REFNUM", len)) {
@@ -6204,7 +6204,7 @@ char 	*windowctl 	(char *input)
 	    if (!(w = get_window_by_refnum(refnum)))
 		RETURN_EMPTY;
 
-	    GET_STR_ARG(listc, input);
+	    GET_FUNC_ARG(listc, input);
 	    len = strlen(listc);
 
 	    if (!my_strnicmp(listc, "REFNUM", len)) {

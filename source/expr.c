@@ -1,4 +1,4 @@
-/* $EPIC: expr.c,v 1.37 2006/06/06 05:08:48 jnelson Exp $ */
+/* $EPIC: expr.c,v 1.38 2006/10/13 21:58:02 jnelson Exp $ */
 /*
  * expr.c -- The expression mode parser and the textual mode parser
  * #included by alias.c -- DO NOT DELETE
@@ -513,9 +513,9 @@ static	char	*next_unit (char *str, const char *args, int stage)
 				if (end && !*end)
 				{
 					if (j < 0)
-						result1 = extractw2(args, SOS, -j);
+						result1 = extractew2(args, SOS, -j);
 					else
-						result1 = extractw2(args, j, j);
+						result1 = extractew2(args, j, j);
 
 				}
 
@@ -524,7 +524,7 @@ static	char	*next_unit (char *str, const char *args, int stage)
 				 */
 				else if (*end == '-' && !end[1])
 				{
-					result1 = extractw2(args, j, EOS);
+					result1 = extractew2(args, j, EOS);
 				}
 				else
 					result1 = expand_alias(right, args);
@@ -1259,7 +1259,7 @@ static	char	*next_unit (char *str, const char *args, int stage)
 	if (op)
 	{
 		if (op == '#')
-			value1 = count_words(result1, DWORD_YES, "\"");
+			value1 = count_words(result1, DWORD_EXTRACTW, "\"");
 		else if (op == '@')
 			value1 = strlen(result1);
 		new_free(&result1);
@@ -1715,7 +1715,7 @@ static	char	*alias_special_char (char **buffer, char *ptr, const char *args, cha
 			}
 
 			if (c == '#')
-			    val = malloc_strdup(ltoa(count_words(sub_buffer, DWORD_YES, "\"")));
+			    val = malloc_strdup(ltoa(count_words(sub_buffer, DWORD_EXTRACTW, "\"")));
 			else
 			    val = malloc_strdup(ltoa(strlen(sub_buffer)));
 
@@ -1812,7 +1812,7 @@ static	char	*alias_special_char (char **buffer, char *ptr, const char *args, cha
 			    if (!args)
 				tmp2 = malloc_strdup(empty_string);
 			    else
-				tmp2 = extractw2(args, my_lower, my_upper);
+				tmp2 = extractew2(args, my_lower, my_upper);
 
 			    TruncateAndQuote(buffer, tmp2, length, quote_em);
 			    new_free(&tmp2);
