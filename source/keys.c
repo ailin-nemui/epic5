@@ -1,4 +1,4 @@
-/* $EPIC: keys.c,v 1.51 2006/10/13 21:58:02 jnelson Exp $ */
+/* $EPIC: keys.c,v 1.52 2006/10/14 16:57:09 jnelson Exp $ */
 /*
  * keys.c:  Keeps track of what happens whe you press a key.
  *
@@ -1279,7 +1279,11 @@ char *bindctl (char *input)
 	if (!my_strnicmp(listc, "CREATE", 1)) {
 	    char *alias;
 
-	    GET_FUNC_ARG(alias, input);
+	    /* XXX Ugh, for backwards compatability */
+	    if (*input == '"')
+		GET_DWORD_ARG(alias, input)
+	    else
+		alias = input;
 
 	    if (bp) {
 		if (bp->func)

@@ -184,3 +184,4 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Fix cross-matching of ctcp-over-dcc with queries. YAY! (nullie)
 * Fix crash when you received ssl-encrypted msgs and you don't have ssl.
 * Begin a major project to normalize the behavior of "words" in function calls
+* Fix compat issues with 'history' script.
