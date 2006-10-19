@@ -1,4 +1,4 @@
-/* $EPIC: exec.c,v 1.39 2005/10/30 22:41:19 jnelson Exp $ */
+/* $EPIC: exec.c,v 1.40 2006/10/19 22:21:31 jnelson Exp $ */
 /*
  * exec.c: handles exec'd process for IRCII 
  *
@@ -874,6 +874,15 @@ int 		get_child_exit (pid_t wanted)
 		 */
 		if (wanted != -1 && pid == wanted)
 		{
+			/* 
+			 * We do not clear 'dead_children_processes' here
+			 * because we do not know if we've reaped all of
+			 * the children yet!  Leaving it set means this 
+			 * function is called again, and then if there are
+			 * no more left, it is cleared (below).
+			 */
+		        unblock_signal(SIGCHLD);
+
 			if (WIFEXITED(status))
 				return WEXITSTATUS(status);
 			if (WIFSTOPPED(status))

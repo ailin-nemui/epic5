@@ -1,4 +1,4 @@
-/* $EPIC: functions.c,v 1.237 2006/10/13 21:58:02 jnelson Exp $ */
+/* $EPIC: functions.c,v 1.238 2006/10/19 22:21:31 jnelson Exp $ */
 /*
  * functions.c -- Built-in functions for ircII
  *
@@ -4777,12 +4777,13 @@ BUILT_IN_FUNCTION(function_mask, args)
 		GET_INT_ARG(method, args);
 	}
 
-
 	if ((p = strchr(my_nickname, '!'))) {
 		*p++ = '\0';
 		my_username = p;
 	} else {
-		RETURN_EMPTY;
+		p = my_nickname;
+		my_nickname = LOCAL_COPY("*");
+		my_username = p;
 	}
 
 	if ((p = strchr(p, '@'))) {

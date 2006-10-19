@@ -1,4 +1,4 @@
-/* $EPIC: ssl.c,v 1.23 2006/09/23 02:56:44 jnelson Exp $ */
+/* $EPIC: ssl.c,v 1.24 2006/10/19 22:21:31 jnelson Exp $ */
 /*
  * ssl.c: SSL connection functions
  *
@@ -174,7 +174,44 @@ static ssl_info *	new_ssl_info (int vfd)
 	x->ctx = NULL;
 	x->ssl_fd = NULL;
 	return x;
+
 }
+
+/*
+ * remove_ssl_info -- Unregister vfd as an ssl-using connection.
+ *
+ * ARGS:
+ *	vfd -- A virtual file descriptor, previously returned by new_open().
+ * RETURN VALUE:
+ *	If the vfd has been previously set up to use SSL, 0.
+ *	If the vfd has never been previously set up to use SSL, -1.
+ */
+static ssl_info *	unlink_ssl_info (int vfd)
+{
+	ssl_info *x = NULL;
+
+	if (ssl_list->vfd == vfd)
+	{
+		x = ssl_list;
+		ssl_list = x->next;
+		return x;
+	}
+	else
+	{
+		for (x = ssl_list; x->next; x = x->next)
+		{
+			if (x->next->vfd == vfd)
+			{
+				ssl_info *y = x->next;
+				x->next = x->next->next;
+				return y;
+			}
+		}
+	}
+
+	return NULL;
+}
+
 
 /*
  * startup_ssl -- Create an ssl connection on a vfd using a certain channel.
@@ -204,6 +241,8 @@ int	startup_ssl (int vfd, int channel)
 
 	if ((x->ssl_fd = SSL_FD_init(x->ctx, channel)) == NULL)
 	{
+		/* Get rid of the 'x' we just created */
+		shutdown_ssl(vfd);
 		syserr("Could not make new SSL (vfd [%d]/channel [%d])",
 				vfd, channel);
 		errno = EINVAL;
@@ -226,23 +265,28 @@ int	startup_ssl (int vfd, int channel)
  */
 int	shutdown_ssl (int vfd)
 {
-	ssl_info *x;
+	ssl_info *	x;
 
-	if (!(x = find_ssl(vfd)))
-	{
-		errno = EINVAL;
+	if (!(x = unlink_ssl_info(vfd)))
 		return -1;
-	}
 
-	SSL_shutdown(x->ssl_fd);
-	if (x->ssl_fd)
-		SSL_free(x->ssl_fd);
-	if (x->ctx)
-		SSL_CTX_free(x->ctx);
-
-	x->ssl_fd = NULL;
-	x->ctx = NULL;
+	x->active = 0;
+	x->vfd = -1;
 	x->channel = -1;
+	if (x->ssl_fd)
+		SSL_shutdown(x->ssl_fd);
+
+	if (x->ctx)
+	{
+		SSL_CTX_free(x->ctx);
+		x->ctx = NULL;
+	}
+	if (x->ssl_fd)
+	{
+		SSL_shutdown(x->ssl_fd);
+		SSL_free(x->ssl_fd);
+		x->ssl_fd = NULL;
+	}
 	return 0;
 }
 

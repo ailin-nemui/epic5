@@ -3,6 +3,7 @@ EPIC5 Projects, Bugs, and other Errata:
 KNOWN ERRATA (eg, bugs, or unresolved requests):
 ------------------------------------------------
 * Finish the word normalization project.  Test & Debug.
+* pipe script is broken (bless problems?)
 
 LOOK FOR IN THE FUTURE
 -----------------------
@@ -185,3 +186,6 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Fix crash when you received ssl-encrypted msgs and you don't have ssl.
 * Begin a major project to normalize the behavior of "words" in function calls
 * Fix compat issues with 'history' script.
+* Fix problem with get_child_exit() can block SIGCHLD.
+* Change $mask() so it doesn't require a full $uhc() value, compat with epic4
+* Avoid crash by actually removing ssl entries when they're shut down
