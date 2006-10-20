@@ -189,3 +189,5 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Fix problem with get_child_exit() can block SIGCHLD.
 * Change $mask() so it doesn't require a full $uhc() value, compat with epic4
 * Avoid crash by actually removing ssl entries when they're shut down
+* Fix replace_line, it wasn't moving the cursor before writing new contents.
+* Fix a double SSL_free, from yesterday's fixes.

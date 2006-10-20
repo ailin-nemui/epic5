@@ -1,0 +1,46 @@
+if (word(2 $loadinfo()) != [pf]) { load -pf $word(1 $loadinfo()); return; };
+
+: {
+/* scripters, $_snippy() is obviously much more powerful in that
+   you can snip entire dwords from the beginning or end of your string
+   (as in example below), but $*snip() is there for your convenience;
+   usage is as seen below; $snip() is synonymous with $rstrip().
+   thanks kreca and hop for input.  -Xavier
+
+alias testme {
+	echo l: $_snippy(l "ez " ez ez ezIIIIIez ez ez)
+	echo r: $_snippy(r " ez" ez ez ezIIIIIez ez ez)
+	echo rs: [$rsnip(this is a test string    )]
+	echo ls: [$lsnip(    this is a test string)]
+	echo bs: [$bsnip(  this is a test string  )]
+}
+
+results in:
+l: ezIIIIIez ez ez
+r: ez ez ezIIIIIez
+rs: [this is a test string]
+ls: [this is a test string]
+bs: [this is a test string]
+*/
+};
+
+alias _snippy (stomp, chomp dwords 1, romp) {
+	@ stomp = match($stomp l) ? [l] : [r];
+	while (@romp >= @chomp) {
+		if ((stomp == [r]) && (right($@chomp $romp) == chomp)) {
+			@ romp = chop($@chomp $romp);
+		} else if ((stomp == [l]) && (left($@chomp $romp) == chomp)) {
+			@ romp = rest($@chomp $romp);
+		} else {
+			break;
+		};
+	};
+	return $romp;
+};
+
+alias snip {return $_snippy(r " " $*)};
+alias bsnip {return $_snippy(r " " $_snippy(l " " $*))};
+alias rsnip {return $_snippy(r " " $*)};
+alias lsnip {return $_snippy(l " " $*)};
+
+#xav'2k6

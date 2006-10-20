@@ -1,4 +1,4 @@
-/* $EPIC: ssl.c,v 1.24 2006/10/19 22:21:31 jnelson Exp $ */
+/* $EPIC: ssl.c,v 1.25 2006/10/20 23:20:55 jnelson Exp $ */
 /*
  * ssl.c: SSL connection functions
  *
@@ -283,7 +283,6 @@ int	shutdown_ssl (int vfd)
 	}
 	if (x->ssl_fd)
 	{
-		SSL_shutdown(x->ssl_fd);
 		SSL_free(x->ssl_fd);
 		x->ssl_fd = NULL;
 	}
