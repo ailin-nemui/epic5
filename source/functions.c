@@ -1,4 +1,4 @@
-/* $EPIC: functions.c,v 1.238 2006/10/19 22:21:31 jnelson Exp $ */
+/* $EPIC: functions.c,v 1.239 2006/10/21 00:31:10 jnelson Exp $ */
 /*
  * functions.c -- Built-in functions for ircII
  *
@@ -1459,7 +1459,7 @@ BUILT_IN_FUNCTION(function_word, word)
 		w_word = next_func_arg(word, &word);
 
 	GET_FUNC_ARG(w_word, word);
-	RETURN_STR(w_word);
+	RETURN_STR(w_word);	/* XXX Should launder through m_s_word */
 }
 
 BUILT_IN_FUNCTION(function_connect, input)
@@ -1822,6 +1822,7 @@ BUILT_IN_FUNCTION(function_restw, word)
  * $remw(word string of text)
  * returns "string of text" with the word "word" removed
  * EX: $remw(the now is the time for) returns "now is time for"
+ * XXX Should use standard word manip functions 
  */
 BUILT_IN_FUNCTION(function_remw, word)
 {
@@ -1877,6 +1878,7 @@ BUILT_IN_FUNCTION(function_insertw, word)
 	char    *what;
 	char    *booya=(char *)0;
 	char 	*str1, *str2;
+	size_t	clue = 0;
 
 	GET_INT_ARG(where, word);
 	
@@ -1890,9 +1892,11 @@ BUILT_IN_FUNCTION(function_insertw, word)
 		str1 = extractfw(word, 0, (where - 1));
 		str2 = extractfw(word, where, EOS);
 
-		booya = str1;
-		malloc_strcat_wordlist(&booya, space, what);
-		malloc_strcat_wordlist(&booya, space, str2);
+		malloc_strcat_wordlist_c(&booya, space, str1, &clue);
+		malloc_strcat_word_c(&booya, space, what, DWORD_DWORDS, &clue);
+		malloc_strcat_wordlist_c(&booya, space, str2, &clue);
+
+		new_free(&str1);
 		new_free(&str2);
 	}
 
@@ -5581,7 +5585,7 @@ BUILT_IN_FUNCTION(function_prefix, input)
 	    }
 	}
 
-	retval = malloc_strdup(words[0]);
+	malloc_strcat_word(&retval, space, words[0], DWORD_DWORDS);
 	new_free((char **)&words);
 	return retval;
 }
@@ -6087,7 +6091,7 @@ BUILT_IN_FUNCTION(function_unsplit, input)
 
 	GET_DWORD_ARG(sep, input);
 	while ((word = new_next_arg(input, &input)))
-		malloc_strcat_wordlist_c(&retval, sep, word, &clue);
+		malloc_strcat_word_c(&retval, sep, word, DWORD_NO, &clue);
 	RETURN_MSTR(retval);
 }
 

@@ -1,0 +1,309 @@
+I - Integer argument
+F - Float argument
+
+W - /xdebug dword argument
+X - /xdebug extractw argument
+D - dword
+U - uword
+
+WL - List of W words
+XL - List of X words
+DL - List of D words
+UL - List of U words
+
+S   - String (Free form text)
+... - Free form text
+V(WL)	Variable name containing a WL
+V(XL)	Variable name containing an XL
+
+STRINGS
+-------
+ S  <- after		(N D ...)
+ UL <- ascii		(...)
+ UL <- asciiq		(...)
+ S  <- before		(N D ...)
+ S  <- center		(N ...)
+ S  <- chop		(N ...)
+ N  <- count		(D ...)
+ U  <- decode		(...)
+ U  <- encode		(...)
+ S  <- fix_arglist	(...)
+ S  <- index		(D ...)
+ S  <- insert		(N D ...)
+ N  <- isalpha		(...)
+ N  <- isdigit		(...)
+ N  <- isnumber		(U W)
+ N  <- isnumber		(U U)
+ S  <- left		(N ...)
+ S  <- mid		(N N ...)
+ S  <- msar		(...)
+ S  <- pad		(N D ...)
+ S  <- pass		(D ...)
+ U  <- regcomp		(...)
+ U  <- regcomp_cs	(...)
+ N  <- regerror		(W)
+ N  <- regfree		(W)
+ N  <- regexec		(W ...)
+ UL <- regmatches	(W N ...)
+ S  <- repeat		(...) [NS]
+ S  <- rest		(...)
+ S  <- rest		(N ...) [NS]
+ S  <- reverse		(...)
+ S  <- right		(N ...)
+ S  <- rindex		(D ...)
+ N  <- rsubstr		(D ...)
+ S  <- sar		(...)
+ S  <- shiftbrace	(V(...))
+ S  <- split		(UW ...) [NS]
+ S  <- strip		(D ...)
+ N  <- strlen		(...)
+ N  <- substr		(D ...)
+ S  <- tolower		(...)
+ S  <- toupper		(...)
+ S  <- tr		(...)
+ 
+STRING MANIPS
+-------------
+ S  <- b64encode	(...)
+ S  <- b64decode	(...)
+ S  <- crypt		(D D)
+ S  <- hash_32bit	(D N ...) [NS]
+ S  <- sha256		(...)
+ S  <- urlencode	(...)
+ S  <- urldecode	(...)
+ S  <- xform		(W W W ...)
+
+DISPLAY STUFF
+-------------
+ S  <- cparse		(D ...)
+ S  <- cparse		(...)
+ N  <- curpos		()
+ UL <- geom		(W)
+ N  <- isdisplaying	()
+ S  <- leftpc		(N ...)
+ N  <- levelwindow	(N)
+ S  <- nohighlight	(...)
+ S  <- notifywindows	()
+ N  <- numlines		(N ...)
+ UL <- outputinfo	()
+ N  <- printlen		(...)
+ N  <- serverwin	(N)
+ S  <- status		(N N)
+ S  <- stripansi	(...)
+ S  <- stripansicodes	(...)
+ S  <- stripc		(...)
+ S  <- stripcrap	(W ...)
+
+WORD LISTS
+----------
+ WL <- afterw		(W WL)
+ WL <- beforew		(W WL)
+ WL <- chngw		(N W WL)
+ S  <- chr		(WL)
+ S  <- chrq		(WL)
+ WL <- common		(WL / WL)
+ WL <- cofilter		(D V(WL) V(WL))
+ WL <- copattern	(D V(WL) V(WL))
+ WL <- corfilter	(D V(WL) V(WL))
+ WL <- corpattern	(D V(WL) V(WL))
+ WL <- diff		(WL / WL)
+ WL <- filter		(W WL)
+ N  <- findw		(W WL)
+ WL <- findws		(W WL)
+ WL <- fromw		(W WL)
+ N  <- indextoword	(N WL)
+ WL <- insertw		(N W WL)
+ WL <- joinstr		(W V(WL) V(WL))
+ UL <- jot		(N N N)
+ WL <- leftw		(N WL)
+ N  <- match		(W WL)
+ N  <- maxlen		(WL)
+ WL <- midw		(N N WL)
+ WL <- notw		(N WL)
+ WL <- numsort		(WL)
+ WL <- numwords		(WL)
+ WL <- pattern		(W WL)
+... <- pop		(V(...)) [NS]
+... <- pop		(...) [NS]
+ W  <- prefix		(WL)
+ WL <- push		(V(WL) WL)
+ WL <- push		(WL WL)
+... <- remw		(W UL) [NS]
+ WL <- rewms		(WL / WL)
+ WL <- restw		(N WL)
+ WL <- revw		(...) [NS]
+ WL <- rfilter		(W WL)
+ WL <- rightw		(N WL)
+ WL <- rmatch		(W WL)
+ WL <- rpattern		(W WL)
+ W  <- shift		(V(WL))
+ W  <- shift		(WL)
+ WL <- sort		(WL)
+ WL <- splice		(V(WL) N N WL)
+ WL <- tow		(W WL)
+ WL <- uniq		(WL)
+ WL <- unshift		(V(WL) WL)
+ WL <- unshfit		(WL)
+ UL <- unsplit		(D DL)
+ W  <- word		(N WL)
+ N  <- wordtoindex	(N WL)
+
+
+IRC STUFF
+---------
+channelmode		(WL)
+channel			(W)
+chops			(W)
+cipher			(N)
+currchans		(N)
+deuhc			(...)
+encryptparm		(W)
+isaway			(N)
+ischannel		(W)
+ischanop		(W W)
+ischanvoice		(W)
+isconnected		(N)
+iscurchan		(W)
+ishalfop		(W)
+key			(WL)
+mask			(W N) [NS]
+mask			(N W) [NS]
+mychannels		(N)
+mychannels		(...) [NS]
+myservers		()
+nochops			(W)
+notify			(WL)
+numonchannel		(W)
+onchannel		(W W)
+querywin		(W N)
+servports		(N)
+ssl			()
+uhc			(...)
+umode			(N)
+userhost		(WL)
+version			()
+winchan			(W)
+
+NETWORKING 
+----------
+connect(W W W)
+listen(W W)			non-standard
+iptoname(...)
+nametoip(...)
+convert(...)
+iptolong(W)
+longtoip(W)
+
+UNIX & C STUFF
+--------------
+abs(F) ceil(F) floor(F) exp(F) log(F) log10(F) cosh(F) sinh(F) tanh(F) 
+ascosh(F) asinh(F) atanh(F) cos(F) sin(F) tan(F) acos(F) asin(F)
+atan(F F) jn(N F) yn(N F)
+exec(DL)
+getenv(W)
+getgid()
+getlogin()
+getpgrp()
+getuid()
+killpid(W WL) 			non-standard!
+pid()
+ppid()
+rand(N)
+srand()
+strtol(N W)
+tobase(N W)
+uname(...)
+
+TIME STUFF
+-----------
+mktime(N N N N N N N)
+stime(N)
+strftime(N ...)			non-standard
+tdiff(N)			non-standard
+tdiff2(N)
+time()
+utime()
+
+FILES AND PERMISSIONS
+---------------------
+chmod(D W)
+close(W)			non-standard!
+eof(W)				non-standard!
+error(W)			non-standard!
+fexist(D ...)			non-standard!
+fsize(D ...)			non-standard!
+ftime(D ...)			non-standard!
+glob(DL)
+globi(DL)
+ftruncate(N ...)
+isfilevalid(W)			non-standard!
+mkdir(DL)
+open(D W)
+randread(D)
+read(W W)
+realpath(...)
+rename(D D)
+rewind(W)			non-standard!
+rmdir(DL)
+seek(N N W)
+skip(N N)
+stat(D)
+tell(W)				non-standard!
+truncate(N F)
+ttyname()
+twiddle(...)
+umask(N)
+unlink(DL)
+which(D ...)
+write(W ...)
+writeb(W ...)
+
+
+EPIC STUFF
+----------
+builtin_expando			(...)
+cexist				(W)
+epic				()
+fnexist				(W)
+functioncall			()
+getcap				(W W N N)
+getcommands			(UL)
+getfunctions			(UL)
+getopt				(W W D DL)
+getserial			(W W N)
+getset				(...)
+getsets				(UL)
+info				(W)
+irclib				()
+isencrypted			(N)
+loadinfo			()
+metric_time			()
+sedcrypt			(N W ...)
+startupfile			()
+
+OTHERS
+------
+perlcall(D ...)
+perlxcall(D D D N ...)
+aliasctl(		XXX		)		ok
+bindctl(		XXX		)
+dbmctl(			XXX		)
+dccctl(			XXX		)
+hookctl(		XXX		)
+ignorectl(		XXX		)
+levelctl(		XXX		)
+logctl(			XXX		)
+perl(			XXX		)
+ruby(			XXX		)
+serverctl(		XXX		)
+symbolctl(		XXX		)		ok
+tcl(			XXX		)
+timerctl(		XXX		)
+windowctl(		XXX		)
+
+The following functions work on word lists
+
+EPIC4 only supported double quoted words unambiguously for
+  last_arg, new_next_arg() and new_next_arg_count()
+  which was used by GET_STR_ARG()
+

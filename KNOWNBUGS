@@ -191,3 +191,5 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Avoid crash by actually removing ssl entries when they're shut down
 * Fix replace_line, it wasn't moving the cursor before writing new contents.
 * Fix a double SSL_free, from yesterday's fixes.
+* Add a WIP document that describes how all functions arglists work.
+* Fix a few problematic word manip functions.
