@@ -1,4 +1,4 @@
-/* $EPIC: dcc.c,v 1.137 2006/10/13 21:58:02 jnelson Exp $ */
+/* $EPIC: dcc.c,v 1.138 2006/10/22 03:36:21 jnelson Exp $ */
 /*
  * dcc.c: Things dealing client to client connections. 
  *
@@ -2848,11 +2848,11 @@ display_it:
 	/* Thanks, Tychy! (lherron@imageek.york.cuny.edu) */
 	if ((dcc->flags & DCC_TYPES) == DCC_FILEREAD)
 		say("DCC %s (%s "INTMAX_FORMAT") request received "
-				"from %s!%s [%s:%s]",
+				"from %s!%s [%s (%s)]",
 			type, description, dcc->filesize, user, 
 			FromUserHost, p_addr, port);
 	else
-		say("DCC %s (%s) request received from %s!%s [%s:%s]", 
+		say("DCC %s (%s) request received from %s!%s [%s (%s)]", 
 			type, description, user, FromUserHost, p_addr, port);
     }
     while (0);
