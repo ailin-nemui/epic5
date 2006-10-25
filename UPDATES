@@ -1,5 +1,18 @@
 EPIC5-0.3.2
 
+*** News 10/25/2006 -- New field for server descriptions, 'vhost'
+	You may now specify per-server virtual hostnames ("vhosts")
+	by using the "vhost" field in a server descrpition.  
+
+	Example:
+		/server irc.foo.com:vhost=my.other.hostname.com
+
+	Obviously the value you set for vhost must be a value that 
+	you could use for /hostname; that is, a hostname or p-addr
+	that resolves to an address your machine will let you bind().
+	Specifying a vhost for the wrong protocol will malfunction.
+	 (For example: /server irc.foo.com:pr=4:vhost=[ff::ff] )
+
 *** News 09/24/2006 -- New /ON, "WINDOW_SERVER" (nullie)
 	This new hook will trigger every time window's server is
 	changed. This might be useful for purging window-related data

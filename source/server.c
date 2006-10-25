@@ -1,4 +1,4 @@
-/* $EPIC: server.c,v 1.210 2006/10/13 21:58:03 jnelson Exp $ */
+/* $EPIC: server.c,v 1.211 2006/10/25 23:40:42 jnelson Exp $ */
 /*
  * server.c:  Things dealing with that wacky program we call ircd.
  *
@@ -90,6 +90,7 @@ static int	clear_serverinfo (ServerInfo *s)
         s->group = NULL;
         s->server_type = NULL;
 	s->proto_type = NULL;
+	s->vhost = NULL;
 	s->freestr = NULL;		/* XXX ? */
 	s->fulldesc = NULL;		/* XXX ? */
 	return 0;
@@ -109,13 +110,14 @@ static int	clear_serverinfo (ServerInfo *s)
  * 'group'    is the server group this server belongs to
  * 'type'     is the server protocol type, either "IRC" or "IRC-SSL"
  * 'proto'    is the socket protocol type, either 'tcp4' or 'tcp6' or neither.
+ * 'vhost'    is the virtual hostname to use for this connection.
  *
  * --
  * A new-style server description is a colon separated list of values:
  *
  *   host=HOST	   port=PORTNUM   pass=PASSWORD 
  *   nick=NICK     group=GROUP    type=PROTOCOL_TYPE
- *   proto=SOCKETYPE
+ *   proto=SOCKETYPE  vhost=HOST
  *
  * for example:
  *	host=irc.server.com:group=efnet:type=IRC-SSL
@@ -131,7 +133,7 @@ static int	clear_serverinfo (ServerInfo *s)
  *	 irc.server.com:group=efnet:IRC-SSL
  */
 
-enum serverinfo_fields { HOST, PORT, PASS, NICK, GROUP, TYPE, PROTO, LASTFIELD };
+enum serverinfo_fields { HOST, PORT, PASS, NICK, GROUP, TYPE, PROTO, VHOST, LASTFIELD };
 
 /*
  * str_to_serverinfo:  Create or Modify a temporary ServerInfo based on string.
@@ -208,6 +210,8 @@ static	int	str_to_serverinfo (char *str, ServerInfo *s)
 				fieldnum = TYPE;
 			else if (!my_strnicmp(descstr, "PR", 2))
 				fieldnum = PROTO;
+			else if (!my_strnicmp(descstr, "V", 2))
+				fieldnum = VHOST;
 			else
 			{
 				say("Server desc field type [%s] not recognized.", 
@@ -252,6 +256,22 @@ static	int	str_to_serverinfo (char *str, ServerInfo *s)
 			s->server_type = descstr;
 		else if (fieldnum == PROTO)
 			s->proto_type = descstr;
+		else if (fieldnum == VHOST)
+		{
+		    if (*descstr == '[')
+		    {
+			s->vhost = descstr + 1;
+			if ((span = MatchingBracket(descstr + 1, '[',']')) >= 0)
+			{
+				descstr = descstr + 1 + span;
+				*descstr++ = 0;
+			}
+			else
+				break;
+		    }
+		    else
+			s->vhost = descstr;
+		}
 
 		/*
 		 * We go one past "type" because we want to allow
@@ -294,6 +314,7 @@ static	int	preserve_serverinfo (ServerInfo *si)
 	malloc_strcat2_c(&resultstr, si->group, ":", &clue);
 	malloc_strcat2_c(&resultstr, si->server_type, ":", &clue);
 	malloc_strcat2_c(&resultstr, si->proto_type, ":", &clue);
+	malloc_strcat2_c(&resultstr, si->vhost, ":", &clue);
 
 	new_free(&si->freestr);
 	new_free(&si->fulldesc);
@@ -1559,12 +1580,12 @@ static int	connect_next_server_address (int server)
 		yell("Trying to connect to server %d using address [%d] and protocol [%d]",
 					server, s->addr_counter, ai->ai_family);
 
-	    if ((err = inet_vhostsockaddr(ai->ai_family, -1, 
+	    if ((err = inet_vhostsockaddr(ai->ai_family, -1, s->info->vhost,
 						&localaddr, &locallen)) < 0)
 	    {
 		syserr("connect_next_server_address: Can't use address [%d] "
-				"for protocol [%d]", s->addr_counter, 
-							ai->ai_family);
+				" because I can't get vhost for protocol [%d]",
+					 s->addr_counter, ai->ai_family);
 		continue;
 	    }
 
@@ -2754,6 +2775,32 @@ const char *	get_server_type (int servref )
 		return "IRC";
 }
 
+/* * */
+void	set_server_vhost (int servref, const char * param )
+{
+	Server *s;
+
+	if (!(s = get_server(servref)))
+		return;
+
+	s->info->vhost = param;
+	preserve_serverinfo(s->info);
+}
+
+const char *	get_server_vhost (int servref )
+{
+	Server *s;
+
+	if (!(s = get_server(servref)))
+		return "<none>";
+
+	if (s->info->vhost)
+		return s->info->vhost;
+	else
+		return "<none>";
+}
+
+
 SET_SATTRIBUTE(name, itsname)
 const char	*get_server_itsname (int refnum)
 {
@@ -3234,6 +3281,8 @@ char 	*serverctl 	(char *input)
 				RETURN_STR("unknown");
 		} else if (!my_strnicmp(listc, "PROTOCOL", len)) {
 			RETURN_STR(get_server_type(refnum));
+		} else if (!my_strnicmp(listc, "VHOST", len)) {
+			RETURN_STR(get_server_vhost(refnum));
 		} else if (!my_strnicmp(listc, "ADDRSLEFT", len)) {
 			RETURN_INT(server_addrs_left(refnum));
 		}
@@ -3310,6 +3359,8 @@ char 	*serverctl 	(char *input)
 			set_server_userhost(refnum, input);
 		} else if (!my_strnicmp(listc, "VERSION", len)) {
 			set_server_version_string(refnum, input);
+		} else if (!my_strnicmp(listc, "VHOST", len)) {
+			set_server_vhost(refnum, input);
 		} else if (!my_strnicmp(listc, "005", len)) {
 			GET_FUNC_ARG(listc1, input);
 			set_server_005(refnum, listc1, input);

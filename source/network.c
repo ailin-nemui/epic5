@@ -1,4 +1,4 @@
-/* $EPIC: network.c,v 1.78 2006/06/23 05:03:11 jnelson Exp $ */
+/* $EPIC: network.c,v 1.79 2006/10/25 23:40:42 jnelson Exp $ */
 /*
  * network.c -- handles stuff dealing with connecting and name resolving
  *
@@ -177,7 +177,7 @@ int	ip_bindery (int family, unsigned short port, SS *storage)
 	socklen_t len;
 	int	fd;
 
-	if (inet_vhostsockaddr(family, port, storage, &len))
+	if (inet_vhostsockaddr(family, port, NULL, storage, &len))
 	{
 		syserr("ip_bindery: inet_vhostsockaddr(%d,%d) failed.", 
 							family, port);
@@ -289,7 +289,7 @@ int	client_bind (SA *local, socklen_t local_len)
  *             the given family.
  * NOTES: If "len" is set to 0, do not attempt to bind() 'storage'!
  */
-int	inet_vhostsockaddr (int family, int port, SS *storage, socklen_t *len)
+int	inet_vhostsockaddr (int family, int port, const char *wanthost, SS *storage, socklen_t *len)
 {
 	char	p_port[12];
 	char	*p = NULL;
@@ -315,7 +315,9 @@ int	inet_vhostsockaddr (int family, int port, SS *storage, socklen_t *len)
 		return 0;		/* No vhost needed */
 	}
 
-	if (family == AF_INET)
+	if (wanthost && *wanthost)
+		lhn = wanthost;
+	else if (family == AF_INET)
 		lhn = LocalIPv4HostName;
 #ifdef INET6
 	else if (family == AF_INET6)

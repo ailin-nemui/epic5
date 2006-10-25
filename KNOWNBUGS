@@ -3,7 +3,8 @@ EPIC5 Projects, Bugs, and other Errata:
 KNOWN ERRATA (eg, bugs, or unresolved requests):
 ------------------------------------------------
 * Finish the word normalization project.  Test & Debug.
-* pipe script is broken (bless problems?)
+* pipe script is broken (freebsd problems?)
+* Create a $dword() function, like $word(), but run through double quoter.
 
 LOOK FOR IN THE FUTURE
 -----------------------
@@ -193,3 +194,4 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Fix a double SSL_free, from yesterday's fixes.
 * Add a WIP document that describes how all functions arglists work.
 * Fix a few problematic word manip functions.
+* Add a 'vhost' field to server descriptions, for setting per-server vhost.

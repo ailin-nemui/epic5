@@ -1,4 +1,4 @@
-/* $EPIC: dcc.c,v 1.138 2006/10/22 03:36:21 jnelson Exp $ */
+/* $EPIC: dcc.c,v 1.139 2006/10/25 23:40:42 jnelson Exp $ */
 /*
  * dcc.c: Things dealing client to client connections. 
  *
@@ -1072,8 +1072,9 @@ static	int	dcc_connect (DCC_list *dcc)
 		break;
 	}
 
-	/* inet_vhostsockaddr doesn't ever return an error */
-	if (inet_vhostsockaddr(FAMILY(dcc->offer), -1, &local, &locallen) < 0)
+	/* inet_vhostsockaddr doesn't usually return an error */
+	if (inet_vhostsockaddr(FAMILY(dcc->offer), -1, NULL, 
+				&local, &locallen) < 0)
 	{
 		say("Can't figure out your virtual host.  "
 		    "Use /HOSTNAME to reset it and try again.");
