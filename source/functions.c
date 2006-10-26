@@ -1,4 +1,4 @@
-/* $EPIC: functions.c,v 1.239 2006/10/21 00:31:10 jnelson Exp $ */
+/* $EPIC: functions.c,v 1.240 2006/10/26 13:12:45 jnelson Exp $ */
 /*
  * functions.c -- Built-in functions for ircII
  *
@@ -5587,7 +5587,7 @@ BUILT_IN_FUNCTION(function_prefix, input)
 
 	malloc_strcat_word(&retval, space, words[0], DWORD_DWORDS);
 	new_free((char **)&words);
-	return retval;
+	RETURN_MSTR(retval);
 }
 
 /*
