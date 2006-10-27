@@ -1,4 +1,4 @@
-/* $EPIC: functions.c,v 1.240 2006/10/26 13:12:45 jnelson Exp $ */
+/* $EPIC: functions.c,v 1.241 2006/10/27 02:29:01 jnelson Exp $ */
 /*
  * functions.c -- Built-in functions for ircII
  *
@@ -338,6 +338,7 @@ static	char
 	*function_prefix	(char *),
 	*function_printlen	(char *),
 	*function_querywin	(char *),
+	*function_qword		(char *),
 	*function_randread	(char *),
 	*function_read 		(char *),
 	*function_realpath	(char *),
@@ -647,6 +648,7 @@ static BuiltInFunctions	built_in_functions[] =
 	{ "PRINTLEN",		function_printlen	},
 	{ "PUSH",		function_push 		},
 	{ "QUERYWIN",		function_querywin	},
+	{ "QWORD",		function_qword		},
 	{ "RAND",		function_rand 		},
 	{ "RANDREAD",		function_randread	},
 	{ "READ",		function_read 		},
@@ -1459,7 +1461,33 @@ BUILT_IN_FUNCTION(function_word, word)
 		w_word = next_func_arg(word, &word);
 
 	GET_FUNC_ARG(w_word, word);
-	RETURN_STR(w_word);	/* XXX Should launder through m_s_word */
+	RETURN_STR(w_word);
+}
+
+/*
+ * Usage: $qword(number text)
+ * Returns: the <number>th word in <text>, but as a qword, suitable for 
+ *          passing back into a function call as a dword.  
+ *          The first word is numbered zero.
+ * Example: $qword(3 one two three four five) returns "four" (think about it)
+ * Remember, double quoted words require /xdebug dword to be turned on!
+ */
+BUILT_IN_FUNCTION(function_qword, word)
+{
+	int	cvalue;
+	char *	w_word;
+	char *	retval = NULL;
+
+	GET_INT_ARG(cvalue, word);
+	if (cvalue < 0)
+		RETURN_EMPTY;
+
+	while (cvalue-- > 0 && word && *word)
+		w_word = next_func_arg(word, &word);
+
+	GET_FUNC_ARG(w_word, word);
+	malloc_strcat_word(&retval, space, w_word, DWORD_DWORDS);
+	RETURN_MSTR(retval);
 }
 
 BUILT_IN_FUNCTION(function_connect, input)

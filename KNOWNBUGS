@@ -4,8 +4,6 @@ KNOWN ERRATA (eg, bugs, or unresolved requests):
 ------------------------------------------------
 * Finish the word normalization project.  Test & Debug.
 * pipe script is broken (freebsd problems?)
-* Create a $dword() function, like $word(), but run through double quoter.
-* $prefix( ) causes a NULL to be returned.
 
 LOOK FOR IN THE FUTURE
 -----------------------
@@ -197,3 +195,6 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Fix a few problematic word manip functions.
 * Add a 'vhost' field to server descriptions, for setting per-server vhost.
 * Fix $prefix( )
+* Add support for "conditional dequoting" in universal_next_arg_count
+* Change next_earg() and next_func_arg() to use the conditional dequoting.
+* This permits me to implement $qword() which returns a $word() literally! yay!

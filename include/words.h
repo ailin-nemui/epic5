@@ -91,14 +91,14 @@ char *		real_extract2 		(Char *, int, int, int);
  */
 #define extractew(a, b, c)	real_extract(a, b, c, DWORD_EXTRACTW)
 #define extractew2(a, b, c)	real_extract2(a, b, c, DWORD_EXTRACTW)
-#define next_earg(a, b)		universal_next_arg_count((a),(b),1,DWORD_EXTRACTW,1,"\"")
+#define next_earg(a, b)		universal_next_arg_count((a),(b),1,DWORD_EXTRACTW,-1,"\"")
 
 /*
  * Macros to extract DWORDS FROM FUNCTIONS (depends on /xdebug dword)
  */
 #define extractfw(a, b, c)	real_extract(a, b, c, DWORD_DWORDS)
 #define extractfw2(a, b, c)	real_extract2(a, b, c, DWORD_DWORDS)
-#define next_func_arg(a, b)	universal_next_arg_count((a),(b),1,DWORD_DWORDS,1,"\"")
+#define next_func_arg(a, b)	universal_next_arg_count((a),(b),1,DWORD_DWORDS,-1,"\"")
 
 int		count_words		(Char *str, int extended, Char *quotes);
 

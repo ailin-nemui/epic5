@@ -1,4 +1,4 @@
-/* $EPIC: ircaux.c,v 1.163 2006/10/13 21:58:02 jnelson Exp $ */
+/* $EPIC: ircaux.c,v 1.164 2006/10/27 02:29:01 jnelson Exp $ */
 /*
  * ircaux.c: some extra routines... not specific to irc... that I needed 
  *
@@ -4152,7 +4152,29 @@ char *	universal_next_arg_count (char *str, char **new_ptr, int count, int exten
 		(*new_ptr)[-1] = 0;
 
 	clue = (*new_ptr) - str - 1;
+
+	/* XXX Is this really correct? This seems wrong. */
 	remove_trailing_spaces(str, &clue);
+
+	/* Arf! */
+	if (dequote == -1)
+	{
+		if (extended == DWORD_EXTRACTW)
+			if (x_debug & DEBUG_EXTRACTW)
+				dequote = 1;
+			else
+				dequote = 0;
+		else if (extended == DWORD_DWORDS)
+			if (x_debug & DEBUG_DWORD)
+				dequote = 1;
+			else
+				dequote = 0;
+		else if (extended == DWORD_YES)
+			dequote = 1;
+		else
+			dequote = 0;
+	}
+
 	if (dequote)
 		dequoter(&str, &clue, count == 1 ? 0 : 1, extended, delims);
 
