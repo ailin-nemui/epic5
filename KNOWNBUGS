@@ -198,3 +198,4 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Add support for "conditional dequoting" in universal_next_arg_count
 * Change next_earg() and next_func_arg() to use the conditional dequoting.
 * This permits me to implement $qword() which returns a $word() literally! yay!
+* Fix 'loadformats' script (rb zlonix)
