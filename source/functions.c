@@ -1,4 +1,4 @@
-/* $EPIC: functions.c,v 1.243 2006/11/04 17:37:34 jnelson Exp $ */
+/* $EPIC: functions.c,v 1.244 2006/11/04 18:46:04 jnelson Exp $ */
 /*
  * functions.c -- Built-in functions for ircII
  *
@@ -1855,6 +1855,7 @@ BUILT_IN_FUNCTION(function_restw, word)
  */
 BUILT_IN_FUNCTION(function_remw, word)
 {
+#if 0
 	char 	*word_to_remove;
 	int	len;
 	ssize_t	span;
@@ -1892,6 +1893,40 @@ BUILT_IN_FUNCTION(function_remw, word)
 	}
 
 	RETURN_STR(word);
+#endif
+
+	int	where;
+	char *	lame = NULL;
+	char *	placeholder;
+	char *	booya;
+
+	lame = LOCAL_COPY(word);
+	where = my_atol((placeholder = function_findw(lame)));
+	new_free(&placeholder);
+
+	/* Whack off the word we're looking for... */
+	GET_FUNC_ARG(lame, word);
+
+	/* XXX Cut and pasted from $notw(). */
+        /* An invalid word simply returns the string as-is */
+        if (where < 0)
+                RETURN_STR(word);
+
+        if (where > 0)
+        {
+                char *part1, *part2;
+                part1 = extractfw(word, 0, (where - 1));
+                part2 = extractfw(word, (where + 1), EOS);
+                booya = malloc_strdup(part1);
+                /* if part2 is there, append it. */
+                malloc_strcat_wordlist(&booya, space, part2);
+                new_free(&part1);
+                new_free(&part2);
+        }
+        else /* where == 0 */
+                booya = extractfw(word, 1, EOS);
+
+	return booya;			/* DON'T USE RETURN_STR HERE */
 }
 
 /* 

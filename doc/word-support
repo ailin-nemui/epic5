@@ -128,7 +128,7 @@ WORD LISTS
  WL <- push		(V(WL) WL)
  WL <- push		(WL WL)
  W  <- qword		(N WL)
-... <- remw		(W UL) [NS]		<-----
+ WL <- remw		(W WL)
  WL <- rewms		(WL / WL)
  WL <- restw		(N WL)
  WL <- revw		(WL)
