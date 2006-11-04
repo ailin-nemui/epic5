@@ -1,4 +1,4 @@
-/* $EPIC: debug.c,v 1.23 2006/09/15 03:02:44 jnelson Exp $ */
+/* $EPIC: debug.c,v 1.24 2006/11/04 17:16:56 jnelson Exp $ */
 /*
  * debug.c -- controll the values of x_debug.
  *
@@ -80,7 +80,7 @@ static struct debug_opts opts[] =
 	{ "MESSAGE_FROM",	DEBUG_MESSAGE_FROM },
 	{ "WHO_QUEUE",		DEBUG_WHO_QUEUE },
 	{ "OLD_MATH",		0 },
-	{ "DWORD",        DEBUG_DWORD },
+	{ "DWORD",        	DEBUG_DWORD },
 	{ "ALL",		~0},
 	{ NULL,			0 },
 };
@@ -89,9 +89,10 @@ static struct debug_opts opts[] =
 
 BUILT_IN_COMMAND(xdebugcmd)
 {
-	int cnt;
-	int rem = 0;
-	char *this_arg;
+	int 	cnt;
+	int 	rem = 0;
+	char *	this_arg;
+	int	original_xdebug = x_debug;
 
 	if (!args || !*args)
 	{
@@ -110,7 +111,7 @@ BUILT_IN_COMMAND(xdebugcmd)
 		return;
 	}
 
-	while (args && *args)
+	while (args && *args && *args != '{')
 	{
 		this_arg = upper(next_arg(args, &args));
 		if (*this_arg == '-')
@@ -120,7 +121,8 @@ BUILT_IN_COMMAND(xdebugcmd)
 
 		for (cnt = 0; opts[cnt].command; cnt++)
 		{
-			if (!strncmp(this_arg, opts[cnt].command, strlen(this_arg)))
+			if (!strncmp(this_arg, opts[cnt].command, 
+						strlen(this_arg)))
 			{
 				if (rem)
 					x_debug &= ~opts[cnt].flag;
@@ -131,6 +133,12 @@ BUILT_IN_COMMAND(xdebugcmd)
 		}
 		if (!opts[cnt].command)
 			say("Unrecognized XDEBUG option '%s'", this_arg);
+	}
+
+	if (args && *args && *args == '{')
+	{
+		runcmds(args, subargs);
+		x_debug = original_xdebug;
 	}
 }
 

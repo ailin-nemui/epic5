@@ -1,5 +1,37 @@
 EPIC5-0.3.2
 
+*** News 11/4/2006 -- Changes to how $push() works with dwords
+	Up until this time, the $push() function treated the arguments
+	as a list of words, rather than a single word that needed to be
+	added.  This caused confusion because people didn't have a way
+	to add a word atomically.  For example:
+
+		xdebug dword
+		assign foo one two
+		@push(foo three four)
+		echo $foo                 returns   one two "three four"
+
+*** News 11/4/2006 -- Changes to how $pop() works (along with dwords)
+	Up until this time, the $pop() function has had two conflicting
+	behaviors, that ambiguously overlapped:
+		$pop(word word word word)
+		$pop(lval)
+	But what happens if you have a word list with only one word?
+	For this reason, $pop() wasn't really useful, and people avoided
+	using it.  So I've removed the ambiguity by removing the first
+	case, which isn't used.
+
+	If you want to $pop() off a word list, use $rightw(1 <word list>)
+	which has the proper behavior.
+
+	Further, to differentiate $rightw() from $pop(), the $pop()
+	function returns an *dequoted string*, as in this example:
+
+		assign foo one two "three four"
+		xdebug dword
+		echo $rightw(1 $foo)       returns "three four"
+		echo $pop(foo)             returns three four
+
 *** News 10/25/2006 -- New field for server descriptions, 'vhost'
 	You may now specify per-server virtual hostnames ("vhosts")
 	by using the "vhost" field in a server descrpition.  

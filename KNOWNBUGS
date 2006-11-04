@@ -4,6 +4,7 @@ KNOWN ERRATA (eg, bugs, or unresolved requests):
 ------------------------------------------------
 * Finish the word normalization project.  Test & Debug.
 * pipe script is broken (freebsd problems?)
+* Need some way to avoid /lastlog output being rewritten.
 
 LOOK FOR IN THE FUTURE
 -----------------------
@@ -199,3 +200,8 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Change next_earg() and next_func_arg() to use the conditional dequoting.
 * This permits me to implement $qword() which returns a $word() literally! yay!
 * Fix 'loadformats' script (rb zlonix)
+* Change last_arg() so it dequotes the retval according to the word type
+* Change $pop() so it only takes an lvalue
+* Change $revw() to use the last_arg() improvements.
+* Improve /xdebug so it takes a block as an argument
+* Improve $push() so it pushes the whole arguments as dwords

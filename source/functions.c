@@ -1,4 +1,4 @@
-/* $EPIC: functions.c,v 1.241 2006/10/27 02:29:01 jnelson Exp $ */
+/* $EPIC: functions.c,v 1.242 2006/11/04 17:16:56 jnelson Exp $ */
 /*
  * functions.c -- Built-in functions for ircII
  *
@@ -2441,12 +2441,10 @@ BUILT_IN_FUNCTION(function_revw, words)
 	char *booya = NULL;
 	size_t  rvclue=0, wclue=0;
 
-	/* 
-	 * Don't use malloc_strcat_word_c, because 'last_arg' does not
-	 * chop off the double quotes from 'words'!
-	 */
 	while (words && *words)
-		malloc_strcat_wordlist_c(&booya, space, last_arg(&words, &wclue, DWORD_DWORDS), &rvclue);
+		malloc_strcat_word_c(&booya, space, 
+				last_arg(&words, &wclue, DWORD_DWORDS), 
+				DWORD_DWORDS, &rvclue);
 
 	if (!booya)
 		RETURN_EMPTY;
@@ -2635,9 +2633,12 @@ char *function_pop (char *word)
 	char *var	= (char *) 0;
 	char *pointer	= (char *) 0;
 	char *blech     = (char *) 0;
+	size_t	cluep;
+	char *free_it = NULL;
 
 	GET_FUNC_ARG(var, word);
 
+#if 0
 	if (word && *word)
 	{
 		pointer = word + strlen(word);
@@ -2645,33 +2646,28 @@ char *function_pop (char *word)
 			pointer--;
 		RETURN_STR(pointer > word ? pointer : word);
 	}
+#endif
 
 	upper(var);
-	value = get_variable(var);
+	free_it = value = get_variable(var);
 	if (!value || !*value)
 	{
-		new_free(&value);
+		new_free(&free_it);
 		RETURN_EMPTY;
 	}
 
-	pointer = value + strlen(value);
-	while (pointer > value && !isspace(*pointer))
-		pointer--;
-	if (pointer == value)
-	{
-		add_var_alias(var, empty_string, 0); /* dont forget this! */
-		return value;	/* one word -- return it */
-	}
-
-	*pointer++ = 0;
-	add_var_alias(var, value, 0);
+	cluep = strlen(value);
+	pointer = last_arg(&value, &cluep, DWORD_DWORDS);
+	if (!value || cluep == 0)
+		value = endstr(pointer);
 
 	/* 
 	 * because pointer points to value, we *must* make a copy of it
 	 * *before* we free value! (And we cant forget to free value, either)
 	 */
 	blech = malloc_strdup(pointer);
-	new_free(&value);
+	add_var_alias(var, value, 0);
+	new_free(&free_it);
 	return blech;
 }
 

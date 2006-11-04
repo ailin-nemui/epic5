@@ -123,15 +123,15 @@ WORD LISTS
  WL <- numsort		(WL)
  WL <- numwords		(WL)
  WL <- pattern		(W WL)
-... <- pop		(V(...)) [NS]
-... <- pop		(...) [NS]
+ UL <- pop		(V(WL))
  W  <- prefix		(WL)
  WL <- push		(V(WL) WL)
  WL <- push		(WL WL)
-... <- remw		(W UL) [NS]
+ W  <- qword		(N WL)
+... <- remw		(W UL) [NS]		<-----
  WL <- rewms		(WL / WL)
  WL <- restw		(N WL)
- WL <- revw		(...) [NS]
+ WL <- revw		(WL)
  WL <- rfilter		(W WL)
  WL <- rightw		(N WL)
  WL <- rmatch		(W WL)
@@ -145,7 +145,7 @@ WORD LISTS
  WL <- unshift		(V(WL) WL)
  WL <- unshfit		(WL)
  UL <- unsplit		(D DL)
- W  <- word		(N WL)
+ UL <- word		(N WL)
  N  <- wordtoindex	(N WL)
 
 
