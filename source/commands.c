@@ -1,4 +1,4 @@
-/* $EPIC: commands.c,v 1.158 2006/10/06 00:12:39 jnelson Exp $ */
+/* $EPIC: commands.c,v 1.159 2006/11/04 17:37:34 jnelson Exp $ */
 /*
  * commands.c -- Stuff needed to execute commands in ircII.
  *		 Includes the bulk of the built in commands for ircII.
@@ -174,6 +174,10 @@ typedef	struct
 	const char *	name;		/* what the user types */
 	CmdFunc 	func;		/* function that is the command */
 }	IrcCommand;
+
+/* Current command name, needed for $curcmd() */
+
+const char *current_command = NULL;
 
 /*
  * irc_command: all the availble irc commands:  Note that the first entry has
@@ -3592,6 +3596,7 @@ static	unsigned 	level = 0;
 		const char *alias = NULL;
 		void	*arglist = NULL;
 		void	(*builtin) (const char *, char *, const char *) = NULL;
+		const char *prevcmd;
 
 		if (subargs != NULL)
 			cmd = expand_alias(stmt, subargs); 
@@ -3610,14 +3615,23 @@ static	unsigned 	level = 0;
 		if (cmdchar_used >= 2)
 			alias = NULL;		/* Unconditionally */
 
-		if (alias)
+		if (alias || builtin) {
+			prevcmd = current_command;
+			current_command = cmd;
+		}
+		if (alias) {
 			call_user_command(cmd, alias, args, arglist);
+		}
 		else if (builtin)
 			builtin(cmd, args, subargs);
 		else if (get_int_var(DISPATCH_UNKNOWN_COMMANDS_VAR))
 			send_to_server("%s %s", cmd, args);
 		else if (do_hook(UNKNOWN_COMMAND_LIST, "%s%s %s", cmdchar_used >= 2 ? "//" : "", cmd, args))
 			say("Unknown command: %s", cmd);
+
+		if (alias || builtin) {
+			current_command = prevcmd;
+		}
 
 		new_free(&cmd);
 	}

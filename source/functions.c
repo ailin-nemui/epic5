@@ -1,4 +1,4 @@
-/* $EPIC: functions.c,v 1.242 2006/11/04 17:16:56 jnelson Exp $ */
+/* $EPIC: functions.c,v 1.243 2006/11/04 17:37:34 jnelson Exp $ */
 /*
  * functions.c -- Built-in functions for ircII
  *
@@ -233,6 +233,7 @@ static	char
 	*function_count		(char *),
 	*function_cparse	(char *),
 	*function_crypt 	(char *),
+	*function_curcmd	(char *),
 	*function_currchans	(char *),
 	*function_dbmctl	(char *),
 	*function_dccctl	(char *),
@@ -440,7 +441,6 @@ typedef struct
 	bf 		*func;
 }	BuiltInFunctions;
 
-
 /* 
  * This is the built-in function list.  This list *must* be sorted because
  * it is binary searched.   See the code for each function to see how it
@@ -494,6 +494,7 @@ static BuiltInFunctions	built_in_functions[] =
 	{ "COUNT",		function_count		},
 	{ "CPARSE",		function_cparse		},
 	{ "CRYPT",		function_crypt		},
+	{ "CURCMD",		function_curcmd		},
 	{ "CURPOS",		function_curpos 	},
 	{ "CURRCHANS",		function_currchans	},
 	{ "DBMCTL",		function_dbmctl		},
@@ -6641,4 +6642,8 @@ BUILT_IN_FUNCTION(function_sha256, input)
 
 	sha256str(input, strlen(input), retval);
 	RETURN_STR(retval);
+}
+
+BUILT_IN_FUNCTION(function_curcmd, unused) {
+	RETURN_STR(current_command);
 }

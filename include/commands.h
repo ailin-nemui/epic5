@@ -17,6 +17,7 @@ extern	int	break_exception;
 extern	int	continue_exception;
 extern	int	return_exception;
 extern	int	system_exception;
+extern	const char *	current_command;
 
 extern	int	need_defered_commands;
 
