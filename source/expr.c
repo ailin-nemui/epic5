@@ -1,4 +1,4 @@
-/* $EPIC: expr.c,v 1.38 2006/10/13 21:58:02 jnelson Exp $ */
+/* $EPIC: expr.c,v 1.39 2006/11/08 01:31:59 jnelson Exp $ */
 /*
  * expr.c -- The expression mode parser and the textual mode parser
  * #included by alias.c -- DO NOT DELETE
@@ -1680,6 +1680,8 @@ static	char	*alias_special_char (char **buffer, char *ptr, const char *args, cha
 		 */
 		case '*':
 		{
+			if (args == NULL)
+				args = LOCAL_COPY(empty_string);
 			TruncateAndQuote(buffer, args, length, quote_em);
 			return (ptr + 1);
 		}

@@ -285,7 +285,7 @@ OTHERS
 ------
 perlcall(D ...)
 perlxcall(D D D N ...)
-aliasctl(		XXX		)		ok
+aliasctl(D D [N] D ...)
 bindctl(		XXX		)
 dbmctl(			XXX		)
 dccctl(			XXX		)

@@ -1,4 +1,4 @@
-/* $EPIC: functions.c,v 1.244 2006/11/04 18:46:04 jnelson Exp $ */
+/* $EPIC: functions.c,v 1.245 2006/11/08 01:31:59 jnelson Exp $ */
 /*
  * functions.c -- Built-in functions for ircII
  *
@@ -2579,20 +2579,22 @@ char *function_shift (char *word)
 	char    *value = (char *) 0;
 	char    *var    = (char *) 0;
 	char	*booya 	= (char *) 0;
-	char    *placeholder;
+	char *	free_it = NULL;
 
 	GET_FUNC_ARG(var, word);
 
+#if 0
 	if (word && *word)
 		RETURN_STR(var);
+#endif
 
-	value = get_variable(var);
+	upper(var);
+	free_it = value = get_variable(var);
 
-	placeholder = value;
 	booya = malloc_strdup(next_func_arg(value, &value));
 	if (var)
 		add_var_alias(var, value, 0);
-	new_free(&placeholder);
+	new_free(&free_it);
 	if (!booya)
 		RETURN_EMPTY;
 	return booya;
@@ -2619,11 +2621,12 @@ char *function_unshift (char *word)
 	else if (!*var || *word)
 		RETURN_EMPTY;
 
+	upper(value);
 	value = get_variable(var);
 	if (!word || !*word)
 		return value;
 
-	booya = malloc_strdup(word);
+	malloc_strcat_word(&booya, space, word, DWORD_DWORDS);
 	malloc_strcat_wordlist(&booya, space, value);
 
 	add_var_alias(var, booya, 0);
@@ -2658,7 +2661,7 @@ char *function_push (char *word)
 	if (!word || !*word)
 		RETURN_MSTR(value);
 
-	malloc_strcat_wordlist(&value, space, word);
+	malloc_strcat_word(&value, space, word, DWORD_DWORDS);
 	add_var_alias(var, value, 0);
 	RETURN_MSTR(value);
 }

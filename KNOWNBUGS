@@ -206,3 +206,5 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Improve $push() so it pushes the whole arguments as dwords
 * Add new function $curcmd() for currently executing command (nullie)
 * Rewrite $remw() so it uses standard word handling routines.
+* Normalize $shift() and $unshift() in the same way as $push() and $pop().
+* Fix /eval echo $func($*) at the input prompt causing "add is NULL" panic.
