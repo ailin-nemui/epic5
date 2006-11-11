@@ -2,8 +2,7 @@ EPIC5 Projects, Bugs, and other Errata:
 
 KNOWN ERRATA (eg, bugs, or unresolved requests):
 ------------------------------------------------
-* Finish the word normalization project.  Test & Debug.
-* pipe script is broken (freebsd problems?)
+<none>
 
 LOOK FOR IN THE FUTURE
 -----------------------
@@ -208,3 +207,4 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Rewrite $remw() so it uses standard word handling routines.
 * Normalize $shift() and $unshift() in the same way as $push() and $pop().
 * Fix /eval echo $func($*) at the input prompt causing "add is NULL" panic.
+* Put a delay on handling 001 to avoid problem I'm seeing on epicsol.
