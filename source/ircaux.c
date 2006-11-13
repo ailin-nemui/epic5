@@ -1,4 +1,4 @@
-/* $EPIC: ircaux.c,v 1.165 2006/11/04 17:16:56 jnelson Exp $ */
+/* $EPIC: ircaux.c,v 1.166 2006/11/13 04:27:47 jnelson Exp $ */
 /*
  * ircaux.c: some extra routines... not specific to irc... that I needed 
  *
@@ -3921,6 +3921,46 @@ char *	malloc_strcat2_c (char **ptr, const char *str1, const char *str2, size_t 
 	return *ptr;
 }
 
+char *	malloc_strcat3_c (char **ptr, const char *str1, const char *str2, const char *str3, size_t *clue)
+{
+	size_t	csize;
+	int 	msize;
+
+	csize = clue ? *clue : 0;
+	msize = csize;
+
+	if (*ptr)
+	{
+		if (alloc_size(*ptr) == FREED_VAL)
+			panic("free()d pointer passed to malloc_strcat2");
+		msize += strlen(csize + *ptr);
+	}
+	if (str1)
+		msize += strlen(str1);
+	if (str2)
+		msize += strlen(str2);
+	if (str3)
+		msize += strlen(str3);
+
+	if (!*ptr)
+	{
+		*ptr = new_malloc(msize + 1);
+		**ptr = 0;
+	}
+	else
+		RESIZE(*ptr, char, msize + 1);
+
+	if (str1)
+		strlcat(csize + *ptr, str1, msize + 1 - csize);
+	if (str2)
+		strlcat(csize + *ptr, str2, msize + 1 - csize);
+	if (str3)
+		strlcat(csize + *ptr, str3, msize + 1 - csize);
+	if (clue) 
+		*clue = msize;
+
+	return *ptr;
+}
 /*
  * malloc_strcat_wordlist_c: Append a word list to another word list using
  *	a delimiter, with an optional "clue" (length of (*ptr))
@@ -3995,15 +4035,20 @@ char *	malloc_strcat_word_c (char **ptr, const char *word_delim, const char *wor
 
 	if (word && *word)
 	{
-		int quote_word = strpbrk(word, word_delim) ? 1 : 0;
-
 		if (*ptr && **ptr)
 			malloc_strcat_c(ptr, word_delim, clue);
-		if (quote_word)
-			malloc_strcat_c(ptr, "\"", clue);
-		malloc_strcat_c(ptr, word, clue);
-		if (quote_word)
-			malloc_strcat_c(ptr, "\"", clue);
+
+		/* Remember, any double quotes therein need to be quoted! */
+		if (strpbrk(word, word_delim))
+		{
+			char *oofda = NULL;
+			oofda = alloca(strlen(word) * 2 + 1);
+			double_quote(word, "\"", oofda);
+
+			malloc_strcat3_c(ptr, "\"", oofda, "\"", clue);
+		}
+		else
+			malloc_strcat_c(ptr, word, clue);
 	}
 
 	return *ptr;
