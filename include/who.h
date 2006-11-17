@@ -76,6 +76,7 @@ typedef struct UserhostItemT
 	int   	away;
 	const char *	user;
 	const char *	host;
+	const char *	extra;
 } UserhostItem;
 
 typedef struct UserhostEntryT
@@ -83,6 +84,7 @@ typedef struct UserhostEntryT
         const char *    format;
         char *          userhost_asked;
         char *          text;
+	char *		extra;
         struct UserhostEntryT * next;
         void            (*func) (int, UserhostItem *, const char *, const char *); 
 } UserhostEntry;
@@ -90,7 +92,7 @@ typedef struct UserhostEntryT
 	BUILT_IN_COMMAND(userhostcmd);
 	BUILT_IN_COMMAND(useripcmd);
 	BUILT_IN_COMMAND(usripcmd);
-	void 	userhostbase 		(int refnum, char *arg, 
+	void 	userhostbase 		(int refnum, char *arg, const char *subargs,
 					void (*line) (int, UserhostItem *, 
 						const char *, const char *), int);
 	void 	userhost_returned 	(int, const char *, const char *, const char **);

@@ -212,3 +212,4 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Make the build work with socks5 again, for freebsd ports support
 * Add malloc_strcat3_c().
 * Optimize malloc_strcat_word_c
+* Add a new /userhost -extra flag for nullie (see UPDATES)

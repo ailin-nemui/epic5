@@ -1,4 +1,4 @@
-/* $EPIC: notify.c,v 1.31 2005/07/26 20:43:24 crazyed Exp $ */
+/* $EPIC: notify.c,v 1.32 2006/11/17 20:10:03 jnelson Exp $ */
 /*
  * notify.c: a few handy routines to notify you when people enter and leave irc 
  *
@@ -465,7 +465,7 @@ void 	dispatch_notify_userhosts (int refnum)
 	{
 		if (x_debug & DEBUG_NOTIFY)
 			yell("Dispatching notifies to server [%d], [%s]", from_server, batched_notify_userhosts);
-		userhostbase(refnum, batched_notify_userhosts, notify_userhost_dispatch, 1);
+		userhostbase(refnum, batched_notify_userhosts, NULL, notify_userhost_dispatch, 1);
 		new_free(&batched_notify_userhosts);
 		batched_notifies = 0;
 	}

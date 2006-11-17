@@ -1,3 +1,41 @@
+EPIC5-0.3.3
+
+*** News 11/17/2006 -- New flag to /userhost, /userhost -extra
+	The /USERHOST -EXTRA flag causes the present value of a variable 
+	to be appended to the $* value of the results of a userhost query.
+
+	Remember that /on 303 and /userhost -cmd are hooked with:
+		$0	Nickname
+		$1	+ if oper, - if not oper
+		$2	+ if away, - if not away
+		$3	Username
+		$4	Hostname
+	and now,
+		$5-	Contents of the -extra variable
+
+	If you do not hook /on 303 or use /userhost -cmd, the contents of the
+	-extra variable are appended to the output.
+
+	Usage:
+		@ foo = [extra stuff]
+		USERHOST hop -extra foo -cmd {xecho -b $0!$3@$4 ($5-)}
+	might output
+		*** hop!jnelson@epicsol.org (extra stuff)
+
+	Remember that the argument to the -extra flag is *an lvalue*
+	(the name of a variable) and is not literal text!  The lval is 
+	expanded (yeilding an rval) and *that* value is saved, and used
+	later on.  You can freely change the value of the variable and 
+	that will not affect anything:
+
+	Example:
+		@ foo = [extra stuff]
+		USERHOST hop -extra foo -cmd {xecho -b $0!$3@$4 ($5-)}
+		@ foo = [blah blah]
+	still will output:
+		*** hop!jnelson@epicsol.org (extra stuff)
+	because the value is saved at the time you do /userhost.
+
 EPIC5-0.3.2
 
 *** News 11/04/2006 -- $shift() and $unshift() changed like $push() and $pop()

@@ -1,4 +1,4 @@
-/* $EPIC: server.c,v 1.212 2006/11/11 15:30:20 jnelson Exp $ */
+/* $EPIC: server.c,v 1.213 2006/11/17 20:10:03 jnelson Exp $ */
 /*
  * server.c:  Things dealing with that wacky program we call ircd.
  *
@@ -2178,7 +2178,7 @@ void  server_is_registered (int refnum, const char *itsname, const char *ourname
 
 	my_sleep(0.005);
 	reinstate_user_modes();
-	userhostbase(from_server, NULL, got_my_userhost, 1);
+	userhostbase(from_server, NULL, NULL, got_my_userhost, 1);
 
 	if (default_channel)
 	{

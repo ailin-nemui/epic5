@@ -1,4 +1,4 @@
-/* $EPIC: who.c,v 1.57 2006/05/27 18:14:08 jnelson Exp $ */
+/* $EPIC: who.c,v 1.58 2006/11/17 20:10:03 jnelson Exp $ */
 /*
  * who.c -- The WHO queue.  The ISON queue.  The USERHOST queue.
  *
@@ -50,6 +50,7 @@
 #include "reg.h"
 #include "log.h"
 #include "timer.h"
+#include "alias.h"
 
 /* XXXX - only debugging stuff for adm.  Remove later */
 static	FILE *	who_log = NULL;
@@ -1476,20 +1477,20 @@ static UserhostEntry *get_new_userhost_entry (int refnum)
  */
 BUILT_IN_COMMAND(userhostcmd)
 {
-	userhostbase(from_server, args, NULL, 1);
+	userhostbase(from_server, args, subargs, NULL, 1);
 }
 
 BUILT_IN_COMMAND(useripcmd)
 {
-	userhostbase(from_server, args, NULL, 0);
+	userhostbase(from_server, args, subargs, NULL, 0);
 }
 
 BUILT_IN_COMMAND(usripcmd)
 {
-	userhostbase(from_server, args, NULL, 2);
+	userhostbase(from_server, args, subargs, NULL, 2);
 }
 
-void userhostbase (int refnum, char *args, void (*line) (int, UserhostItem *, const char *, const char *), int do_userhost)
+void userhostbase (int refnum, char *args, const char *subargs, void (*line) (int, UserhostItem *, const char *, const char *), int do_userhost)
 {
 	int	total = 0,
 		userhost_cmd = 0;
@@ -1500,6 +1501,7 @@ void userhostbase (int refnum, char *args, void (*line) (int, UserhostItem *, co
 		*next_ptr,
 		*body = NULL;
 	int	count = 5;
+	char	*extra = NULL;
 
 	/* Maybe should output a warning? */
 	if (!is_server_registered(refnum))
@@ -1547,6 +1549,20 @@ void userhostbase (int refnum, char *args, void (*line) (int, UserhostItem *, co
 			userhost_cmd = 1;
 			break;
 		}
+
+		else if (!my_strnicmp(nick, "-extra", 2))
+		{
+			char *extravar = next_arg(args, &args);
+			if (empty(extravar))
+			{
+				say("Need argument to /userhost -extra");
+				break;
+			}
+			if (extra)
+				new_free(&extra);
+			/* XXX But what if extravar contains []s? */
+			extra = get_variable(extravar);
+		}
 	}
 
 	if (!userhost_cmd && !total)
@@ -1589,6 +1605,7 @@ void userhostbase (int refnum, char *args, void (*line) (int, UserhostItem *, co
 			else
 				new_u->func = NULL;
 
+			new_u->extra = extra;
 			ptr = next_ptr;
 		}
 	}
@@ -1607,6 +1624,7 @@ void userhostbase (int refnum, char *args, void (*line) (int, UserhostItem *, co
 			item.connected = 1;
 			item.away = 0;
 			item.user = uh;
+			item.extra = extra;
 			host = strchr(uh, '@');
 			if (host) {
 				*host++ = 0;
@@ -1621,6 +1639,7 @@ void userhostbase (int refnum, char *args, void (*line) (int, UserhostItem *, co
 			else
 				yell("Yowza!  I dont know what to do here!");
 		}
+		new_free(&extra);
 	}
 }
 
@@ -1716,6 +1735,7 @@ void	userhost_returned (int refnum, const char *from, const char *comm, const ch
 			item.nick = nick;
 			item.user = user;
 			item.host = host;
+			item.extra = SAFE(top->extra);
 
 			/*
 			 * If the user wanted a callback, then
@@ -1729,15 +1749,17 @@ void	userhost_returned (int refnum, const char *from, const char *comm, const ch
 			 * so we offer the numeric, and if the user
 			 * doesnt bite, we output to the screen.
 			 */
-			else if (do_hook(current_numeric, "%s %s %s %s %s", 
+			else if (do_hook(current_numeric, "%s %s %s %s %s %s", 
 						item.nick,
 						item.oper ? "+" : "-", 
 						item.away ? "-" : "+", 
-						item.user, item.host))
-				put_it("%s %s is %s@%s%s%s", banner(),
+						item.user, item.host, 
+						item.extra))
+				put_it("%s %s is %s@%s%s%s %s", banner(),
 						item.nick, item.user, item.host, 
 						item.oper ?  " (Is an IRC operator)" : empty_string,
-						item.away ? " (away)" : empty_string);
+						item.away ? " (away)" : empty_string,
+						item.extra ? item.extra : empty_string);
 		}
 
 		/*
@@ -1765,6 +1787,7 @@ void	userhost_returned (int refnum, const char *from, const char *comm, const ch
 				item.user = item.host = "<UNKNOWN>";
 				item.oper = item.away = 0;
 				item.connected = 1;
+				item.extra = top->extra;
 
 				top->func(refnum, &item, cnick, top->text);
 			}
@@ -1787,6 +1810,8 @@ void	userhost_cmd_returned (int refnum, UserhostItem *stuff, const char *nick, c
 	malloc_strcat_c(&args, stuff->user ? stuff->user : empty_string, &clue);
 	malloc_strcat_c(&args, space, &clue);
 	malloc_strcat_c(&args, stuff->host ? stuff->host : empty_string, &clue);
+	malloc_strcat_c(&args, space, &clue);
+	malloc_strcat_c(&args, stuff->extra ? stuff->extra : empty_string, &clue);
 	call_lambda_command("USERHOST", text, args);
 
 	new_free(&args);
