@@ -1,4 +1,4 @@
-/* $EPIC: alias.c,v 1.81 2006/10/13 21:58:02 jnelson Exp $ */
+/* $EPIC: alias.c,v 1.82 2006/11/23 06:23:23 jnelson Exp $ */
 /*
  * alias.c -- Handles the whole kit and caboodle for aliases.
  *
@@ -2973,7 +2973,7 @@ int	stack_pop_builtin_cmd_alias (const char *name)
 
 	for (sym = item; sym; sym = sym->saved)
 	{
-		if (sym->saved && sym->saved->saved_hint == SAVED_BUILTIN_CMD)
+		if (sym->saved && sym->saved->saved_hint == SAVED_BUILTIN_VAR)
 			break;
 	}
 	if (!sym)

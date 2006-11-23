@@ -2,7 +2,7 @@ EPIC5 Projects, Bugs, and other Errata:
 
 KNOWN ERRATA (eg, bugs, or unresolved requests):
 ------------------------------------------------
-<none>
+* $leftpc()'s behavior has changed recently, one less char than expected now.
 
 LOOK FOR IN THE FUTURE
 -----------------------
