@@ -15,7 +15,7 @@ addset floodprot_burst int {
 set floodprot_burst 4;
 
 on ?send_to_server "*" {
-  if ([$2] == [PONG]) {
+  if ([$2] == [PONG] || [$2] == [PING]) {
     return 0;
   };
   if (floodprot[$0] == []) {
