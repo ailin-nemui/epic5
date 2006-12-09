@@ -470,7 +470,7 @@ set command_mode off;
 };
 
 ^on ^input "'*" {
-	send ${getset(command_mode) == 'on' ? rest(1 $*) : (*)};
+	//send ${getset(command_mode) == 'on' ? rest(1 $*) : (*)};
 };
 
 ^on ^input "/*" {

@@ -13,6 +13,10 @@
 /* To get declaration of "output_screen" */
 #include "screen.h"
 
+#ifdef WITH_THREADED_STDOUT
+#include "tio.h"
+#endif
+
 extern	volatile int	need_redraw;
 extern	int	meta_mode;
 
@@ -25,15 +29,26 @@ extern	int	meta_mode;
 #if !defined(WTERM_C) && !defined(WSERV_C)
 #define current_ftarget (output_screen ? output_screen->fpout : stdout)
 
-#ifdef __need_putchar_x__
-__inline__ 
-static int putchar_x (int c) { return fputc((int) c, current_ftarget ); }
-#endif
+# ifdef __need_putchar_x__
+__inline__ static int putchar_x (int c) { 
+#  ifdef WITH_THREADED_STDOUT
+	tio_fputc((int)c, tio_stdout);
+	return 1;
+#  else
+	return fputc((int) c, current_ftarget );
+#  endif
+}
+# endif
 
-#ifdef __need_term_flush__
-__inline__
-static void term_flush (void) { fflush( current_ftarget ); }
-#endif
+# ifdef __need_term_flush__
+__inline__ static void term_flush (void) { 
+#  ifdef WITH_THREADED_STDOUT
+	tio_flush(tio_stdout);
+#  else
+	fflush( current_ftarget ); 
+#  endif
+}
+# endif
 #endif
 
 #define	TERM_SGR_BOLD_ON	1

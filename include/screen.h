@@ -11,6 +11,7 @@
 
 /* To get the definition of Window */
 #include "window.h"
+#include "tio.h"
 
 #define WAIT_PROMPT_LINE        0x01
 #define WAIT_PROMPT_KEY         0x02
@@ -45,6 +46,9 @@ struct	ScreenStru *next;		/* Previous screen in list */
 	int	fdin;			/* The input FD (eg, 0) */
 	FILE	*fpout;			/* The output FILE (eg, stdout) */
 	int	fdout;			/* The output FD (eg, 1) */
+#ifdef WITH_THREADED_STDOUT
+	tio_file *tio_file;
+#endif
 	int	control;		/* The control FD (to wserv) */
 	int	wserv_version;		/* The version of wserv talking to */
 

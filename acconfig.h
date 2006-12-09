@@ -1,5 +1,5 @@
 /*
- * @(#)$Id: acconfig.h,v 1.36 2006/09/08 22:52:49 jnelson Exp $
+ * @(#)$Id: acconfig.h,v 1.37 2006/12/09 18:00:06 jnelson Exp $
  */
 
 /*
@@ -389,3 +389,5 @@
 /* Define this if you have math.h */
 #undef HAVE_MATH_H
 
+/* Define this if you want to use threaded stdout */
+#undef WITH_THREADED_STDOUT

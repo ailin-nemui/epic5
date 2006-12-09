@@ -1,4 +1,4 @@
-/* $EPIC: term.c,v 1.17 2005/10/21 03:50:01 jnelson Exp $ */
+/* $EPIC: term.c,v 1.18 2006/12/09 18:00:07 jnelson Exp $ */
 /*
  * term.c -- termios and (termcap || terminfo) handlers
  *
@@ -1616,3 +1616,123 @@ static	char		retval[128];
 	return NULL;	
 }
 
+#ifdef WITH_THREADED_STDOUT
+
+#include <pthread.h>
+#include "tio.h"
+
+#define TIOBUFSZ	2048
+
+typedef struct tio_qentry_stru {
+	tio_file	*file;
+	int		 len, flush, close;
+struct	tio_qentry_stru	*next, *tail;
+	char 		 buf[TIOBUFSZ];
+} tio_qentry;
+
+struct tio_file_stru {
+	FILE		*stdio_file;
+	tio_qentry	*buf;
+};
+
+static void		tio_push(tio_file *);
+static tio_qentry	*new_tiobuf(tio_file *);
+
+tio_file	*tio_stdout;
+
+static	tio_qentry	tio_qhead;
+static	pthread_cond_t	tio_cond = PTHREAD_COND_INITIALIZER;
+static	pthread_mutex_t	tio_mtx = PTHREAD_MUTEX_INITIALIZER;
+static	pthread_t	tio_thread;
+
+static tio_qentry	*new_tiobuf(tio_file *f)
+{
+	tio_qentry	*ret;
+	ret = calloc(1, sizeof(*ret));
+	ret->file = f;
+	return ret;
+}
+
+void	tio_fputc(int c, tio_file *f)
+{
+	if (f->buf->len == TIOBUFSZ)
+		tio_push(f);
+	f->buf->buf[f->buf->len++] = c;
+}
+
+void	tio_fputs(const char *str, tio_file *stream)
+{
+	while (*str)
+		tio_fputc(*str++, stream);
+}
+
+tio_file	*tio_open(FILE *f)
+{
+	tio_file	*ret;
+
+	if (f == NULL)
+		return NULL;
+
+	ret = calloc(1, sizeof(*ret));
+	ret->stdio_file = f;
+	ret->buf = new_tiobuf(ret);
+	return ret;
+}
+
+void	tio_flush(tio_file *stream)
+{
+	stream->buf->flush = 1;
+	tio_push(stream);
+}
+
+static void	tio_push(tio_file *stream)
+{
+	pthread_mutex_lock(&tio_mtx);
+	if (!tio_qhead.next) {
+		tio_qhead.next = tio_qhead.tail = stream->buf;
+	} else {
+		tio_qhead.tail->next = stream->buf;
+		tio_qhead.tail = stream->buf;
+	}
+
+	pthread_cond_signal(&tio_cond);
+	pthread_mutex_unlock(&tio_mtx);
+
+	stream->buf = new_tiobuf(stream);
+}
+
+static void	*tio_thread_run(void *unused)
+{
+	for (;;) {
+		tio_qentry	*tq, *next;
+
+		pthread_mutex_lock(&tio_mtx);
+		if (tio_qhead.next == NULL)
+			pthread_cond_wait(&tio_cond, &tio_mtx);
+		tq = tio_qhead.next;
+		tio_qhead.next = tio_qhead.tail = NULL;
+		pthread_mutex_unlock(&tio_mtx);
+
+		for (next = tq ? tq->next : NULL; tq;
+		     tq = next, next = tq ? tq->next : NULL) {
+			if (tq->len)
+				fwrite(tq->buf, 1, tq->len, tq->file->stdio_file);
+			if (tq->flush)
+				fflush(tq->file->stdio_file);
+			free(tq);
+		}
+	}
+}
+
+void	tio_init(void)
+{
+	tio_stdout = tio_open(stdout);
+	pthread_create(&tio_thread, NULL, tio_thread_run, NULL);
+}
+
+void	tio_close (tio_file *stream)
+{
+	yell("Need to implement tio_close!");
+}
+
+#endif

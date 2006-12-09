@@ -1,5 +1,16 @@
 EPIC5-0.3.3
 
+*** News 12/09/2006 -- New configure flag, --with-threaded-stdout
+	EJB has graciously provided us with a patch to do threaded output.
+	This code will hopefully work around problems with gnu screen
+	blocking, causing pinging out of your servers.  You can turn this
+	code on by using the '--with-threaded-stdout' flag to configure.
+	This code is sort of experimental at this time, but this is an
+	officially supported feature, so please do report any problems you
+	have with it.
+	
+	If you turn this option on, then $info(o) will include 'o'.
+
 *** News 11/17/2006 -- New flag to /userhost, /userhost -extra
 	The /USERHOST -EXTRA flag causes the present value of a variable 
 	to be appended to the $* value of the results of a userhost query.

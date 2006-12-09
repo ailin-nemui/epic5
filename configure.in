@@ -4,9 +4,9 @@ dnl except those bits attributed otherwise.
 dnl thanks to the screen 3.3 configure.in for giving me examples to
 dnl work from and steal ;)
 dnl
-dnl @(#)$Id: configure.in,v 1.53 2006/09/08 22:52:49 jnelson Exp $
+dnl @(#)$Id: configure.in,v 1.54 2006/12/09 18:00:06 jnelson Exp $
 
-AC_REVISION($Revision: 1.53 $)dnl
+AC_REVISION($Revision: 1.54 $)dnl
 AC_INIT(source/irc.c)
 AC_CONFIG_HEADER(include/defs.h)
 
@@ -53,6 +53,33 @@ dnl checking for svr4's /usr/ccs/lib
 dnl
 if test -d /usr/ccs/lib; then
 	LIBS="-L/usr/ccs/lib $LIBS"
+fi
+
+
+dnl ----------------------------------------------------------
+AC_MSG_CHECKING(if you want threaded stdout)
+AC_ARG_WITH(threaded-stdout,
+[  --threaded-stdout[=yes] Threaded stdout so the client doesn't block when gnu screen malfunctions.],[
+	if test "x$withval" = "x" ; then
+		with_threaded_stdout="no"
+	elif test "x$withval" = "xy" ; then
+		with_threaded_stdout="yes"
+	elif test "x$withval" = "xY" ; then
+		with_threaded_stdout="yes"
+	elif test "x$withval" = "xyes" ; then
+		with_threaded_stdout="yes"
+	elif test "x$withval" = "xYES" ; then
+		with_threaded_stdout="yes"
+	else
+		with_threaded_stdout="no"
+	fi
+],[
+	with_threaded_stdout="no"
+])
+AC_MSG_RESULT($with_threaded_stdout)
+if test "x$with_threaded_stdout" = "xyes" ; then
+	AC_DEFINE(WITH_THREADED_STDOUT)
+	threading=1
 fi
 
 

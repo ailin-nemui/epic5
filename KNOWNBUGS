@@ -2,7 +2,8 @@ EPIC5 Projects, Bugs, and other Errata:
 
 KNOWN ERRATA (eg, bugs, or unresolved requests):
 ------------------------------------------------
-* $leftpc()'s behavior has changed recently, one less char than expected now.
+* Implement *~ for kreca
+* Permit /load'ing a directory, complete with /set load_path changes
 
 LOOK FOR IN THE FUTURE
 -----------------------
@@ -213,3 +214,5 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Add malloc_strcat3_c().
 * Optimize malloc_strcat_word_c
 * Add a new /userhost -extra flag for nullie (see UPDATES)
+* Add code to do stdout stuff with threads (larne)
+* If you're doing threaded stdout, $info(o) includes 'o'.
