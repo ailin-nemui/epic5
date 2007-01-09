@@ -1,4 +1,4 @@
-/* $EPIC: functions.c,v 1.245 2006/11/08 01:31:59 jnelson Exp $ */
+/* $EPIC: functions.c,v 1.246 2007/01/09 14:39:18 jnelson Exp $ */
 /*
  * functions.c -- Built-in functions for ircII
  *
@@ -4827,6 +4827,7 @@ BUILT_IN_FUNCTION(function_querywin, args)
  * 7: nick!*@host.domain
  * 8: nick!*user@*.domain
  * 9: nick!*@*.domain
+ * 10:*!*user@* 
  */
 BUILT_IN_FUNCTION(function_mask, args)
 {
@@ -4948,6 +4949,9 @@ BUILT_IN_FUNCTION(function_mask, args)
 		case 9:
 			snprintf(buff, BIG_BUFFER_SIZE + 1, "%s!*@%s", my_nickname,
 				dmask);
+			break;
+		case 10:
+			snprintf(buff, BIG_BUFFER_SIZE + 1, "*!*%s@*", my_username);
 			break;
 		default:
 			new_free(&dbuff);
