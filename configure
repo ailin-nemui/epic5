@@ -1,6 +1,6 @@
 #! /bin/sh
 
-# From configure.in Revision: 1.53 # Guess values for system-dependent variables and create Makefiles.
+# From configure.in Revision: 1.54 # Guess values for system-dependent variables and create Makefiles.
 # Generated automatically using autoconf version 2.13 
 # Copyright (C) 1992, 93, 94, 95, 96 Free Software Foundation, Inc.
 #
@@ -12,7 +12,7 @@ ac_help=
 ac_default_prefix=/usr/local
 # Any additions from configure.in:
 ac_help="$ac_help
-  --threaded-stdout[=yes] Threaded stdout so the client doesn't block when gnu screen malfunctions."
+  --with-threaded-stdout[=yes] Threaded stdout so the client doesn't block when gnu screen malfunctions."
 ac_help="$ac_help
   --with-multiplex[=TYPE] Multiplexer type (select,poll,freebsd-kqueue,pthread,solaris-ports)"
 ac_help="$ac_help
@@ -919,7 +919,7 @@ rm -f conftest*
 echo $ac_n "checking for solaris cc""... $ac_c" 1>&6
 echo "configure:921: checking for solaris cc" >&5
 ( $CC -V 2>&1 | grep 'Sun C' > /dev/null ) && \
-	CFLAGS="$CFLAGS -erroff=E_ARG_INCOMPATABLE_WITH_ARG,E_ASSIGNMENT_TYPE_MISMATCH"
+	CFLAGS="$CFLAGS -erroff=E_ARG_INCOMPATIBLE_WITH_ARG,E_ASSIGNMENT_TYPE_MISMATCH"
 echo "$ac_t""ok" 1>&6
 
 if test -d /usr/ccs/lib; then
@@ -5352,7 +5352,7 @@ echo "configure:5352: checking whether to support TCL" >&5
 if test "x$tclconfig" = "xno"; then
 	echo "$ac_t""no" 1>&6
 else
-	if ! test -r $tclconfig ; then
+	if test ! -r $tclconfig ; then
 		echo "$ac_t""no" 1>&6
 	else
 		echo "$ac_t""yes" 1>&6

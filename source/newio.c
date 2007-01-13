@@ -1,4 +1,4 @@
-/* $EPIC: newio.c,v 1.61 2006/10/08 14:00:08 jnelson Exp $ */
+/* $EPIC: newio.c,v 1.62 2007/01/13 04:14:23 jnelson Exp $ */
 /*
  * newio.c:  Passive, callback-driven IO handling for sockets-n-stuff.
  *
@@ -1600,13 +1600,12 @@ static	int	kdoit (Timeval *timeout)
 	struct timespec	to;
 	port_event_t	pe;
 	int		channel, retval;
-	uint_t		nget = 1;
 
 	to.tv_sec = timeout->tv_sec;
 	to.tv_nsec = timeout->tv_usec * 1000;
 
 	errno = 0;
-	retval = port_getn(port_fd, &pe, 1, &nget, &to);
+	retval = port_get(port_fd, &pe, &to);
 
 	/*
 	 * Solaris might return a negative value than -1 from port_getn()
@@ -1621,7 +1620,7 @@ static	int	kdoit (Timeval *timeout)
 	else if (retval == -1 && errno != EINTR)
 		syserr("kdoit(ports): port_getn(NULL) failed: %s", 
 					strerror(errno));
-	else if (retval > 0)
+	else if (retval == 0)
 	{
 		channel = pe.portev_object;
 		new_io_event(VFD(channel));

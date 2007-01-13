@@ -2,8 +2,38 @@ EPIC5 Projects, Bugs, and other Errata:
 
 KNOWN ERRATA (eg, bugs, or unresolved requests):
 ------------------------------------------------
+* /window <refnum> echo <stuff> doesn't add <stuff> to lastlog.
 * Implement *~ for kreca
 * Permit /load'ing a directory, complete with /set load_path changes
+<twincest> hop: couldn't this message be more informative? ::: INFO -- Could
++not connect to server [3] address [1]
+<twincest> it doesn't tell the errno
+-> (#epic) wasn't the errno in the immediately previous message?
+<twincest> not that i can see 
+<twincest> ::: DNS lookup for server 3 [oscn.attenuate.org] returned (1)
++addresses 
+<twincest> ::: Connecting to server refnum 3 (oscn.attenuate.org), using
++address 1 (212.13.198.88:6667) 
+<twincest> ::: INFO -- Could not connect to server [3] address [1] 
+<twincest> ::: Disconnected from server 3 (oscn.attenuate.org) 
+<twincest> ::: I'm out of addresses for server 3 so I have to stop. 
+<twincest> ::: Unable to connect to server 3 at oscn.attenuate.org:6667 
+-> (#epic) because we don't do blocking connects, we wouldn't actually get
++ECONNREFUSED but we would at least get ENOTCONN ("The socket is not
++connected") from getpeername()
+<twincest> you can get the real errno from getsockopt 
+* Zlonix is seeing different behavior with
+    xdebug dword
+    wii nullie
+  versus
+    xdebug dword {wii nullie}
+* Zlonix points out that  alias foo (var dwords 1) and /foo "a v" b 
+  results in $var getting all of $* instead of just one word
+* Nullie wants a way to do themed sends, such that
+	/ctcp ...   is themed, and /^ctcp .. is unthemed
+* The opening greeting should output the child pid if you do -b
+* $winquery() is documented to exist, so it should be created.
+* Larne wants me to figure out if i can support 256-color xterm
 
 LOOK FOR IN THE FUTURE
 -----------------------
@@ -216,3 +246,7 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Add a new /userhost -extra flag for nullie (see UPDATES)
 * Add code to do stdout stuff with threads (larne)
 * If you're doing threaded stdout, $info(o) includes 'o'.
+* Add $mask(10 ...) from kreca.
+* Fix from black for 'save' script, to save notify nicks.
+* Fix from larne for configure checks for tcl for solaris (ick)
+* Fix solaris ports support, inspired by patch from larne, rb zlonix
