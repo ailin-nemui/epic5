@@ -1,4 +1,4 @@
-/* $EPIC: window.c,v 1.176 2006/12/16 15:41:17 jnelson Exp $ */
+/* $EPIC: window.c,v 1.177 2007/01/27 18:47:03 jnelson Exp $ */
 /*
  * window.c: Handles the organzation of the logical viewports (``windows'')
  * for irc.  This includes keeping track of what windows are open, where they
@@ -7,7 +7,7 @@
  * Copyright (c) 1990 Michael Sandroff.
  * Copyright (c) 1991, 1992 Troy Rollo.
  * Copyright (c) 1992-1996 Matthew Green.
- * Copyright © 1997, 2003 EPIC Software Labs.
+ * Copyright © 1997, 2007 EPIC Software Labs.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -2296,7 +2296,7 @@ void 	window_check_servers (void)
 	    {
 		if (status > SERVER_RECONNECT && status < SERVER_CLOSING)
             	{
-		    if (1)
+		    if (get_server_autoclose(i))
 			close_server(i, "No windows for this server");
 	        }
 		continue;		/* Move on to next server */

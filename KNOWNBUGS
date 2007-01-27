@@ -3,7 +3,6 @@ EPIC5 Projects, Bugs, and other Errata:
 KNOWN ERRATA (eg, bugs, or unresolved requests):
 ------------------------------------------------
 * /window <refnum> echo <stuff> doesn't add <stuff> to lastlog.
-* Implement *~ for kreca
 * Permit /load'ing a directory, complete with /set load_path changes
 <twincest> hop: couldn't this message be more informative? ::: INFO -- Could
 +not connect to server [3] address [1]
@@ -22,18 +21,12 @@ KNOWN ERRATA (eg, bugs, or unresolved requests):
 +ECONNREFUSED but we would at least get ENOTCONN ("The socket is not
 +connected") from getpeername()
 <twincest> you can get the real errno from getsockopt 
-* Zlonix is seeing different behavior with
-    xdebug dword
-    wii nullie
-  versus
-    xdebug dword {wii nullie}
-* Zlonix points out that  alias foo (var dwords 1) and /foo "a v" b 
-  results in $var getting all of $* instead of just one word
 * Nullie wants a way to do themed sends, such that
 	/ctcp ...   is themed, and /^ctcp .. is unthemed
-* The opening greeting should output the child pid if you do -b
 * $winquery() is documented to exist, so it should be created.
 * Larne wants me to figure out if i can support 256-color xterm
+* Zlonix says /eval echo $ruby(puts 0.4.0) crashes.  Appears to be an
+  exception handling problem.
 
 LOOK FOR IN THE FUTURE
 -----------------------
@@ -250,3 +243,7 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Fix from black for 'save' script, to save notify nicks.
 * Fix from larne for configure checks for tcl for solaris (ick)
 * Fix solaris ports support, inspired by patch from larne, rb zlonix
+* Change startup code so it outputs the pid of the bot process for -b.
+* Fix $info(o) bug.  rb zlonix
+* Output the errno value ret by failed nonblocking server connects on error.
+* Add auto-close boolean flag for server (see UPDATES)

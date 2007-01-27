@@ -1,4 +1,4 @@
-/* $EPIC: irc.c,v 1.1111 2007/01/13 04:14:23 jnelson Exp $ */
+/* $EPIC: irc.c,v 1.1112 2007/01/27 18:47:03 jnelson Exp $ */
 /*
  * ircII: a new irc client.  I like it.  I hope you will too!
  *
@@ -6,7 +6,7 @@
  * Copyright (c) 1991, 1992 Troy Rollo.
  * Copyright (c) 1992-1996 Matthew Green.
  * Copyright © 1994 Jake Khuon.
- * Copyright © 1993, 2006 EPIC Software Labs.
+ * Copyright © 1993, 2007 EPIC Software Labs.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -52,7 +52,7 @@ const char internal_version[] = "20061111";
 /*
  * In theory, this number is incremented for every commit.
  */
-const unsigned long	commit_id = 1440;
+const unsigned long	commit_id = 1441;
 
 /*
  * As a way to poke fun at the current rage of naming releases after
@@ -1184,16 +1184,35 @@ int 	main (int argc, char *argv[])
 	fprintf(stderr, "Version (%s), Commit Id (%lu) -- Date (%s)\n", 
 				irc_version, commit_id, internal_version);
 	fprintf(stderr, "%s\n", compile_info);
-	fprintf(stderr, "Process [%d]", getpid());
-	if (isatty(0))
-		fprintf(stderr, " connected to tty [%s]", ttyname(0));
-	else
-		dumb_mode = 1;
-	fprintf(stderr, "\n");
 
 	/* If we're a bot, do the bot thing. */
-	if (!use_input && fork())
-		_exit(0);
+	if (!use_input)
+	{
+		pid_t	child_pid;
+
+		child_pid = fork();
+		if (child_pid == -1)
+		{
+			fprintf(stderr, "Could not fork a child process: %s\n",
+					strerror(errno));
+			_exit(1);
+		}
+		else if (child_pid > 0)
+		{
+			fprintf(stderr, "Process [%d] running in background\n",
+					child_pid);
+			_exit(0);
+		}
+	}
+	else
+	{
+		fprintf(stderr, "Process [%d]", getpid());
+		if (isatty(0))
+			fprintf(stderr, " connected to tty [%s]", ttyname(0));
+		else
+			dumb_mode = 1;
+		fprintf(stderr, "\n");
+	}
 
 	/* these should be taken by both dumb and smart displays */
 	my_signal(SIGSEGV, coredump);

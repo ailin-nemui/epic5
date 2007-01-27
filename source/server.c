@@ -1,11 +1,11 @@
-/* $EPIC: server.c,v 1.213 2006/11/17 20:10:03 jnelson Exp $ */
+/* $EPIC: server.c,v 1.214 2007/01/27 18:47:03 jnelson Exp $ */
 /*
  * server.c:  Things dealing with that wacky program we call ircd.
  *
  * Copyright (c) 1990 Michael Sandroff.
  * Copyright (c) 1991, 1992 Troy Rollo.
  * Copyright (c) 1992-1996 Matthew Green.
- * Copyright © 1993, 2005 EPIC Software Labs.
+ * Copyright © 1993, 2007 EPIC Software Labs.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -484,6 +484,7 @@ static	int	serverinfo_to_newserv (ServerInfo *si)
 	s->umode[0] = 0;
 	s->addrs = NULL;
 	s->next_addr = NULL;
+	s->autoclose = 1;
 
 	s->doing_privmsg = 0;
 	s->doing_notice = 0;
@@ -1196,6 +1197,8 @@ void	do_server (int fd)
 
 #define DGETS(x, y) dgets( x , (char *) & y , sizeof y , -1);
 
+		    /* XXX Should we read error from getsockopt first? */
+
 		    c = DGETS(des, retval)
 		    if (c < (ssize_t)sizeof(retval) || retval)
 			goto something_broke;
@@ -1216,8 +1219,16 @@ void	do_server (int fd)
 		    if (0)
 		    {
 something_broke:
-			syserr("Could not connect to server [%d] address [%d]",
-					i, s->addr_counter);
+			if (retval)
+			{
+			    syserr("Could not connect to server [%d] "
+					"address [%d] because of error: %s", 
+					i, s->addr_counter, strerror(retval));
+			}
+			else
+			    syserr("Could not connect to server [%d] "
+					"address [%d]", i, s->addr_counter);
+
 			set_server_status(i, SERVER_ERROR);
 			close_server(i, NULL);
 			connect_to_server(i);
@@ -2638,6 +2649,7 @@ IACCESSOR(v, ison_len)
 IACCESSOR(v, ison_max)
 IACCESSOR(v, userhost_max)
 IACCESSOR(v, stricmp_table)
+IACCESSOR(v, autoclose)
 SACCESSOR(chan, invite_channel, NULL)
 SACCESSOR(nick, last_notify_nick, NULL)
 SACCESSOR(nick, joined_nick, NULL)
@@ -3286,6 +3298,8 @@ char 	*serverctl 	(char *input)
 			RETURN_STR(get_server_vhost(refnum));
 		} else if (!my_strnicmp(listc, "ADDRSLEFT", len)) {
 			RETURN_INT(server_addrs_left(refnum));
+		} else if (!my_strnicmp(listc, "AUTOCLOSE", len)) {
+			RETURN_INT(get_server_autoclose(refnum));
 		}
 	} else if (!my_strnicmp(listc, "SET", len)) {
 		GET_INT_ARG(refnum, input);
@@ -3370,6 +3384,12 @@ char 	*serverctl 	(char *input)
 			add_server_altname(refnum, input);
 		} else if (!my_strnicmp(listc, "ALTNAMES", len)) {
 			reset_server_altnames(refnum, input);
+		} else if (!my_strnicmp(listc, "AUTOCLOSE", len)) {
+			int newval;
+
+			GET_INT_ARG(newval, input);
+			set_server_autoclose(refnum, newval);
+			RETURN_INT(1);
 		}
 	} else if (!my_strnicmp(listc, "OMATCH", len)) {
 		int	i;

@@ -1,11 +1,11 @@
-/* $EPIC: functions.c,v 1.246 2007/01/09 14:39:18 jnelson Exp $ */
+/* $EPIC: functions.c,v 1.247 2007/01/27 18:47:03 jnelson Exp $ */
 /*
  * functions.c -- Built-in functions for ircII
  *
  * Copyright (c) 1990 Michael Sandroff.
  * Copyright (c) 1991, 1992 Troy Rollo.
  * Copyright (c) 1992-1996 Matthew Green.
- * Copyright © 1993, 2003 EPIC Software Labs
+ * Copyright © 1993, 2007 EPIC Software Labs
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without

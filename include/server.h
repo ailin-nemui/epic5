@@ -2,7 +2,7 @@
  * server.h: header for server.c 
  *
  * Copyright 1990 Michael Sandrof
- * Copyright 1997 EPIC Software Labs
+ * Copyright 1997, 2007 EPIC Software Labs
  * See the COPYRIGHT file, or do a HELP IRCII COPYRIGHT 
  */
 
@@ -109,6 +109,8 @@ const	AI	*next_addr;		/* The next one to try upon failure */
 	char	*quit_message;		/* Where we stash a quit message */
 	A005	a005;			/* 005 settings kept kere. */
 	int	stricmp_table;		/* Which case insensitive map to use */
+	int	autoclose;		/* Whether the server is closed when
+					   there are no windows on it */
 
 	int	funny_min;		/* Funny stuff */
 	int	funny_max;
@@ -338,6 +340,8 @@ const	char*	get_server_005			(int, const char *);
 	int	get_server_userhost_max		(int);
 	void	set_server_status		(int, int);
 	int	get_server_status		(int);
+	void	set_server_autoclose		(int, int);
+	int	get_server_autoclose		(int);
 
         void    set_server_invite_channel       (int, const char *);
 const char *    get_server_invite_channel       (int);

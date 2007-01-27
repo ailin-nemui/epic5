@@ -1,11 +1,11 @@
-/* $EPIC: newio.c,v 1.62 2007/01/13 04:14:23 jnelson Exp $ */
+/* $EPIC: newio.c,v 1.63 2007/01/27 18:47:03 jnelson Exp $ */
 /*
  * newio.c:  Passive, callback-driven IO handling for sockets-n-stuff.
  *
  * Copyright (c) 1990 Michael Sandroff.
  * Copyright (c) 1991, 1992 Troy Rollo.
  * Copyright (c) 1992-1996 Matthew Green.
- * Copyright © 1997, 2005 EPIC Software Labs.
+ * Copyright © 1997, 2007 EPIC Software Labs.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -788,6 +788,8 @@ static int	unix_connect (int channel, int quiet)
 		}
 	}
 #endif
+
+	/* XXX Should we send the value from getsockopt first? */
 
 	len = sizeof(localaddr);
 	errno = 0;

@@ -1,10 +1,10 @@
-/* $EPIC: dcc.c,v 1.139 2006/10/25 23:40:42 jnelson Exp $ */
+/* $EPIC: dcc.c,v 1.140 2007/01/27 18:47:03 jnelson Exp $ */
 /*
  * dcc.c: Things dealing client to client connections. 
  *
  * Copyright (c) 1991, 1992 Troy Rollo.
  * Copyright (c) 1992-1996 Matthew Green.
- * Copyright © 1995, 2003 EPIC Software Labs
+ * Copyright © 1995, 2007 EPIC Software Labs
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -927,6 +927,8 @@ static	int	dcc_get_connect_addrs (DCC_list *dcc)
 	type = dcc_types[dcc->flags & DCC_TYPES];
 
 #define DGETS(x, y) dgets( x , (char *) & y , sizeof y , -1);
+
+	/* XXX Should this include an error from getsockopt? */
 
 	c = DGETS(dcc->socket, retval)
 	if (c < (ssize_t)sizeof(retval) || retval)

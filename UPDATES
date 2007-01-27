@@ -1,5 +1,14 @@
 EPIC5-0.3.3
 
+*** News 01/27/2007 -- New serverctl value, "AUTOCLOSE"
+	Normally a server is automatically closed when the last server
+	to it is disconnected (or killed).  Many people hate this behavior
+	and would like to have a server's connect persist even if there
+	are no windows connected to it.  You can now control this behavior.
+		@serverctl(SET refnum AUTOCLOSE 0)
+	The default is 1 (natch).  The behavior of turning this off is 
+	not well understood.  Use with caution, tell me of any troubles.
+
 *** News 12/09/2006 -- New configure flag, --with-threaded-stdout
 	EJB has graciously provided us with a patch to do threaded output.
 	This code will hopefully work around problems with gnu screen
