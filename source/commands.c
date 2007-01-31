@@ -1,4 +1,4 @@
-/* $EPIC: commands.c,v 1.160 2007/01/27 18:47:03 jnelson Exp $ */
+/* $EPIC: commands.c,v 1.161 2007/01/31 03:24:04 jnelson Exp $ */
 /*
  * commands.c -- Stuff needed to execute commands in ircII.
  *		 Includes the bulk of the built in commands for ircII.
@@ -1304,19 +1304,14 @@ BUILT_IN_COMMAND(info)
 		say("	    for problems with this or any other EPIC client");
 		say(" ");
 		say("EPIC Software Labs (in alphabetical order):");
-		say("       \tB. Thomas Frazier    <ay-ar@epicsol.org>");
 		say("       \tBrian Hauber         <bhauber@epicsol.org>");
 		say("       \tChip Norkus          <wd@epicsol.org>");
 		say("       \tCrazyEddy            <crazyed@epicsol.org>");
 		say("	    \tDennis Moore         <nimh@epicsol.org>");
                 say("       \tErlend B. Mikkelsen  <howl@epicsol.org>");
-		say("	    \tJake Khuon           <khuon@epicsol.org>");
 		say("       \tJason Brand          <kitambi@epicsol.org>");
 		say("	    \tJeremy Nelson        <jnelson@epicsol.org>");
-		say("       \tRobert Chady         <chady@epicsol.org>");
-		say("       \tRobohak              <robohak@epicsol.org>");
-		say("       \tSrfRoG               <cag@epicsol.org>");
-		say("       \tTerry Warner         <keerf@epicsol.org>");
+		say("       \tStanislaw Halik      <sthalik@epicsol.org>");
 		say("       \tWilliam Rockwood     <wjr@epicsol.org>");
                 say("       \tXavier               <jak@epicsol.org>");
 		say(" ");

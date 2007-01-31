@@ -27,6 +27,9 @@ KNOWN ERRATA (eg, bugs, or unresolved requests):
 * Larne wants me to figure out if i can support 256-color xterm
 * Zlonix says /eval echo $ruby(puts 0.4.0) crashes.  Appears to be an
   exception handling problem.
+* Using screen's hardware status bar causes a race condition where screen
+  can report the wrong geometry, causing epic to screw up the status bar
+  placement (the status bar ends up in the input bar)
 
 LOOK FOR IN THE FUTURE
 -----------------------
