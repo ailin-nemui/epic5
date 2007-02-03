@@ -1,4 +1,4 @@
-/* $EPIC: server.c,v 1.214 2007/01/27 18:47:03 jnelson Exp $ */
+/* $EPIC: server.c,v 1.215 2007/02/03 15:40:16 jnelson Exp $ */
 /*
  * server.c:  Things dealing with that wacky program we call ircd.
  *
@@ -1197,20 +1197,35 @@ void	do_server (int fd)
 
 #define DGETS(x, y) dgets( x , (char *) & y , sizeof y , -1);
 
-		    /* XXX Should we read error from getsockopt first? */
-
+		    /* * */
+		    /* This is the errno value from getsockopt() */
 		    c = DGETS(des, retval)
 		    if (c < (ssize_t)sizeof(retval) || retval)
 			goto something_broke;
 
+		    /* This is the socket error returned by getsockopt() */
+		    c = DGETS(des, retval)
+		    if (c < (ssize_t)sizeof(retval) || retval)
+			goto something_broke;
+
+		    /* * */
+		    /* This is the errno value from getsockname() */
+		    c = DGETS(des, retval)
+		    if (c < (ssize_t)sizeof(retval) || retval)
+			goto something_broke;
+
+		    /* This is the address returned by getsockname() */
 		    c = DGETS(des, name)
 		    if (c < (ssize_t)sizeof(name))
 			goto something_broke;
 
+		    /* * */
+		    /* This is the errno value from getpeername() */
 		    c = DGETS(des, retval)
 		    if (c < (ssize_t)sizeof(retval) || retval)
 			goto something_broke;
 
+		    /* This is the address returned by getpeername() */
 		    c = DGETS(des, name)
 		    if (c < (ssize_t)sizeof(name))
 			goto something_broke;
@@ -1227,7 +1242,8 @@ something_broke:
 			}
 			else
 			    syserr("Could not connect to server [%d] "
-					"address [%d]", i, s->addr_counter);
+					"address [%d]: (Internal error)", 
+					i, s->addr_counter);
 
 			set_server_status(i, SERVER_ERROR);
 			close_server(i, NULL);

@@ -4,32 +4,17 @@ KNOWN ERRATA (eg, bugs, or unresolved requests):
 ------------------------------------------------
 * /window <refnum> echo <stuff> doesn't add <stuff> to lastlog.
 * Permit /load'ing a directory, complete with /set load_path changes
-<twincest> hop: couldn't this message be more informative? ::: INFO -- Could
-+not connect to server [3] address [1]
-<twincest> it doesn't tell the errno
--> (#epic) wasn't the errno in the immediately previous message?
-<twincest> not that i can see 
-<twincest> ::: DNS lookup for server 3 [oscn.attenuate.org] returned (1)
-+addresses 
-<twincest> ::: Connecting to server refnum 3 (oscn.attenuate.org), using
-+address 1 (212.13.198.88:6667) 
-<twincest> ::: INFO -- Could not connect to server [3] address [1] 
-<twincest> ::: Disconnected from server 3 (oscn.attenuate.org) 
-<twincest> ::: I'm out of addresses for server 3 so I have to stop. 
-<twincest> ::: Unable to connect to server 3 at oscn.attenuate.org:6667 
--> (#epic) because we don't do blocking connects, we wouldn't actually get
-+ECONNREFUSED but we would at least get ENOTCONN ("The socket is not
-+connected") from getpeername()
-<twincest> you can get the real errno from getsockopt 
+* Observe whether the errors reported by the newio2 system are adequate.
 * Nullie wants a way to do themed sends, such that
 	/ctcp ...   is themed, and /^ctcp .. is unthemed
-* $winquery() is documented to exist, so it should be created.
 * Larne wants me to figure out if i can support 256-color xterm
 * Zlonix says /eval echo $ruby(puts 0.4.0) crashes.  Appears to be an
   exception handling problem.
 * Using screen's hardware status bar causes a race condition where screen
   can report the wrong geometry, causing epic to screw up the status bar
   placement (the status bar ends up in the input bar)
+* Nullie reports that resizing display to 1x1 then back again screws up.
+* Investigate suitability of http://miniupnp.free.fr/
 
 LOOK FOR IN THE FUTURE
 -----------------------
@@ -250,3 +235,6 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Fix $info(o) bug.  rb zlonix
 * Output the errno value ret by failed nonblocking server connects on error.
 * Add auto-close boolean flag for server (see UPDATES)
+* Black pointed out that $winquery() exists in builtins.
+* Pass error value from getsockopt() through dgets for nonblocking connects.
+* Use the error value from getsockopt() to output to the user.

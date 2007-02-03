@@ -1,4 +1,4 @@
-/* $EPIC: newio.c,v 1.63 2007/01/27 18:47:03 jnelson Exp $ */
+/* $EPIC: newio.c,v 1.64 2007/02/03 15:40:16 jnelson Exp $ */
 /*
  * newio.c:  Passive, callback-driven IO handling for sockets-n-stuff.
  *
@@ -768,6 +768,8 @@ static int	unix_accept (int channel, int quiet)
 
 static int	unix_connect (int channel, int quiet)
 {
+	int	sockerr;
+	int	gso_result;
 	int	gsn_result;
 	SS	localaddr;
 	int	gpn_result;
@@ -789,8 +791,16 @@ static int	unix_connect (int channel, int quiet)
 	}
 #endif
 
-	/* XXX Should we send the value from getsockopt first? */
+	/* * */
+	len = sizeof(sockerr);
+	errno = 0;
+	getsockopt(channel, SOL_SOCKET, SO_ERROR, &sockerr, &len);
+	gso_result = errno;
 
+	dgets_buffer(channel, &sockerr, sizeof(sockerr));
+	dgets_buffer(channel, &gso_result, sizeof(gso_result));
+
+	/* * */
 	len = sizeof(localaddr);
 	errno = 0;
 	getsockname(channel, (SA *)&localaddr, &len);
@@ -799,6 +809,7 @@ static int	unix_connect (int channel, int quiet)
 	dgets_buffer(channel, &gsn_result, sizeof(gsn_result));
 	dgets_buffer(channel, &localaddr, sizeof(localaddr));
 
+	/* * */
 	len = sizeof(remoteaddr);
 	errno = 0;
 	getpeername(channel, (SA *)&remoteaddr, &len);

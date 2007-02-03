@@ -1,4 +1,4 @@
-/* $EPIC: dcc.c,v 1.140 2007/01/27 18:47:03 jnelson Exp $ */
+/* $EPIC: dcc.c,v 1.141 2007/02/03 15:40:16 jnelson Exp $ */
 /*
  * dcc.c: Things dealing client to client connections. 
  *
@@ -921,27 +921,42 @@ int	dcc_chat_active (const char *user)
 static	int	dcc_get_connect_addrs (DCC_list *dcc)
 {
 	ssize_t	c;
-	int	retval;
 	const char *	type;
+	int	retval;
 
 	type = dcc_types[dcc->flags & DCC_TYPES];
 
 #define DGETS(x, y) dgets( x , (char *) & y , sizeof y , -1);
 
-	/* XXX Should this include an error from getsockopt? */
-
+	/* * */
+	/* This is the errno value from getsockopt() */
 	c = DGETS(dcc->socket, retval)
 	if (c < (ssize_t)sizeof(retval) || retval)
 		goto something_broke;
 
+	/* This is the socket error returned by getsockopt() */
+	c = DGETS(dcc->socket, retval)
+	if (c < (ssize_t)sizeof(retval) || retval)
+		goto something_broke;
+
+	/* * */
+	/* This is the errno value from getsockname() */
+	c = DGETS(dcc->socket, retval)
+	if (c < (ssize_t)sizeof(retval) || retval)
+		goto something_broke;
+
+	/* This is the address returned by getsockname() */
 	c = DGETS(dcc->socket, dcc->local_sockaddr)
 	if (c < (ssize_t)sizeof(dcc->local_sockaddr))
 		goto something_broke;
 
+	/* * */
+	/* This is the errno value from getpeername() */
 	c = DGETS(dcc->socket, retval)
 	if (c < (ssize_t)sizeof(retval) || retval)
 		goto something_broke;
 
+	/* This is the address returned by getpeername() */
 	c = DGETS(dcc->socket, dcc->peer_sockaddr)
 	if (c < (ssize_t)sizeof(dcc->peer_sockaddr))
 		goto something_broke;
@@ -949,8 +964,9 @@ static	int	dcc_get_connect_addrs (DCC_list *dcc)
 	return 0;
 
 something_broke:
-	say("DCC %s connection with %s could not be established",
-						type, dcc->user);
+	say("DCC %s connection with %s could not be established: %s",
+		type, dcc->user, 
+		retval ? strerror(retval) : "(internal error)");
 	dcc->flags |= DCC_DELETE;
 	return -1;
 }
