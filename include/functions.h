@@ -50,9 +50,6 @@
 	RETURN_IF_EMPTY((y)); 		\
 	x = next_arg((y), &(y));	\
 }
-#define GET_STR_ARG(x, y) {RETURN_IF_EMPTY((y)); x = new_next_arg((y), &(y));}
-#define GET_WORD_ARG(x, y) {RETURN_IF_EMPTY((y)); x = next_word((y), &(y));}
-#define GET_A_STR_ARG(x, y) {GET_STR_ARG((x), (y));RETURN_IF_EMPTY((x));}
 #define RETURN_MSTR(x) return ((x) ? (x) : EMPTY_STRING)
 #define RETURN_STR(x) return malloc_strdup((x) ? (x) : EMPTY)
 #define RETURN_INT(x) return malloc_strdup(ltoa((x)))

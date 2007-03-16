@@ -15,6 +15,7 @@ KNOWN ERRATA (eg, bugs, or unresolved requests):
   placement (the status bar ends up in the input bar)
 * Nullie reports that resizing display to 1x1 then back again screws up.
 * Investigate suitability of http://miniupnp.free.fr/
+* Kitambi says that /query doesn't canel the nick in other windows as it should
 
 LOOK FOR IN THE FUTURE
 -----------------------
@@ -238,3 +239,6 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Black pointed out that $winquery() exists in builtins.
 * Pass error value from getsockopt() through dgets for nonblocking connects.
 * Use the error value from getsockopt() to output to the user.
+* Allow you to ignore operwalls and have them tracked as floods.
+* New version of altchan from black.
+* Various and sundry fixes.

@@ -627,7 +627,7 @@ EPIC5-0.3.1
 	The long-threatened removal of /set highlight_char has occurred.
 	Please use the 'highlight' script for its replacement.
 
-*** News 06/06/2006 -- New script, "channelmonitor"
+*** News 06/06/2006 -- New script, "chanmonitor"
 
 *** News 06/06/2006 -- Extra support for 64 bits, if you have it.
 	Most built-in-functions that take an integer argument will 
@@ -2894,9 +2894,9 @@ EPIC5-0.0.2
 	of the flood in question.  This makes it easy to deal with particular
 	kinds of floods in different ways, as they occur.  For example:
 
-	/on "% parts % 5" mode $2 +b *!*@$after(@ $userhost())
-	/on "% ctcps % 5" mode $2 +b *!*@$after(@ $userhost())
-	/on "% % % 50" mode $2 +b *!*@$after(@ $userhost())
+	/on flood "% parts % 5" mode $2 +b *!*@$after(@ $userhost())
+	/on flood "% ctcps % 5" mode $2 +b *!*@$after(@ $userhost())
+	/on flood "% % % 50" mode $2 +b *!*@$after(@ $userhost())
 
 *** News 08/02/2004 -- Improvements to $floodinfo().
 	$floodinfo() will now accept as input the same list of lists it
@@ -2928,7 +2928,7 @@ EPIC5-0.0.2
 	it is reasonable to expect that if you have join and part flood records
 	for the same u@h, then it is participating in a join/part flood.
 
-	/on "% parts % 5" {
+	/on flood "% parts % 5" {
 		if (floodinfo("$userhost() $2 joins $servernum() 5")) {
 			mode $2 +b *!*@$after(@ $userhost())
 		}
@@ -2936,7 +2936,7 @@ EPIC5-0.0.2
 
 	Or alternately:
 
-	/on "% joins % 5" {
+	/on flood "% joins % 5" {
 		if (floodinfo("$userhost() $2 parts $servernum() 5")) {
 			mode $2 +b *!*@$after(@ $userhost())
 		}

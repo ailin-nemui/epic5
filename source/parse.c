@@ -1,4 +1,4 @@
-/* $EPIC: parse.c,v 1.84 2006/09/22 00:24:21 jnelson Exp $ */
+/* $EPIC: parse.c,v 1.85 2007/03/16 23:02:50 jnelson Exp $ */
 /*
  * parse.c: handles messages from the server.   Believe it or not.  I
  * certainly wouldn't if I were you. 
@@ -248,11 +248,38 @@ static void	p_wallops (const char *from, const char *comm, const char **ArgList)
 	const char 	*message;
 	int 	server_wallop;
 	int	l;
+	int	flood_type;
 
 	if (!(message = ArgList[0]))
 		{ rfc1459_odd(from, comm, ArgList); return; }
 
 	server_wallop = strchr(from, '.') ? 1 : 0;
+
+	/* So Black will stop asking me to add it... */
+	if (!strncmp(message, "OPERWALL - ", 11))
+	{
+		int	retval;
+
+		/* Check for ignores... */
+		if (check_ignore(from, FromUserHost, LEVEL_OPERWALL) == IGNORED)
+			return;
+
+		/* Check for floods... servers are exempted from flood checks */
+		if (!server_wallop && check_flooding(from, FromUserHost, 
+						LEVEL_OPERWALL, message))
+			return;
+
+		l = message_from(from, LEVEL_OPERWALL);
+		retval = do_hook(OPERWALL_LIST, "%s %s", from, message + 11);
+		pop_message_from(l);
+		if (!retval)
+			return;
+	}
+
+	/* 
+	 * If it's not an operwall, ,or if the user didn't catch it,
+	 * treat it as a wallop.
+	 */
 
 	/* Check for ignores... */
 	if (check_ignore(from, FromUserHost, LEVEL_WALLOP) == IGNORED)
@@ -262,18 +289,6 @@ static void	p_wallops (const char *from, const char *comm, const char **ArgList)
 	if (!server_wallop && check_flooding(from, FromUserHost, 
 						LEVEL_WALLOP, message))
 		return;
-
-	/* So Black will stop asking me to add it... */
-	if (!strncmp(message, "OPERWALL - ", 11))
-	{
-		int	retval;
-
-		l = message_from(from, LEVEL_OPERWALL);
-		retval = do_hook(OPERWALL_LIST, "%s %s", from, message + 11);
-		pop_message_from(l);
-		if (!retval)
-			return;
-	}
 
 	l = message_from(from, LEVEL_WALLOP);
 	if (do_hook(WALLOP_LIST, "%s %c %s", 
