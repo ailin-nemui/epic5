@@ -1,18 +1,19 @@
-if (word(2 $loadinfo()) != [pf]) {
+if (word(2 $loadinfo()) != 'pf') {
 	load -pf $word(1 $loadinfo());
 	return;
 };
 
-#	Copyright (c) 2005 David B. Kratter (BlackJac@EFNet)
+#	Copyright (c) 2007 BlackJac@EFNet
 #
-#	Version: 1.5.2005.04.20.1
+#	Version: 2.0.2007.03.16.1
 #
-#	This will allow you to toggle between hidden windows 1 through 20 more
-#	easily. Press Esc+1 (or Alt+1) to toggle between windows 1 and 11,
-#	Esc+2 for windows 2 and 12, etc., up through Esc+0 for windows 10 and
-#	20. You may also use Esc+? to be prompted for a window number. Press
-#	Esc+- (or Alt+-) to swap to the previous hidden window, or Esc+= to
-#	swap to the next hidden window.
+#	This script will allow you to switch between your hidden windows more
+#	easily. Press Alt+<number> or Esc+<number> (depending on your terminal
+#	application) to switch to hidden window <number>. If you are in hidden
+#	window 5 and you press Alt+5, you will go to window 15, then 25, etc.
+#	(assuming those windows exist), until you cycle back to window 5. You
+#	may also use Alt+? to be prompted for a window number. Press Alt+- or
+#	Alt+= to cycle through the previous or next windows, respectively.
 
 package altchan;
 
@@ -25,24 +26,37 @@ alias altchan.input (void) {
 };
 
 alias altchan.toggle (number, void) {
-	if (@number) {
-		if (number == 0) {
-			@ :window = winnum() == 10 ? 20 : 10;
+	if (number) {
+		if (number == winnum()) {
+			@ :window = number + 10;
+			if (winnum($window) != -1) {
+				window refnum_or_swap $window;
+			} else {
+				xecho -b -c Window $window does not exist;
+			};
+		} else if (number == right(1 $winnum())) {
+			@ :window = winnum() + 10;
+			if (winnum($window) != -1) {
+				window refnum_or_swap $window;
+			} else if (winnum($number) != -1) {
+				window refnum_or_swap $number;
+			} else {
+				xecho -b -c Windows $window and $number do not exist;
+			};
 		} else {
-			@ :window = number == winnum() ? number + 10 : number;
-		};
-		if (winnum($window) != -1) {
-			window refnum_or_swap $window;
-		} else {
-			xecho -b -c Window $window does not exist;
+			if (winnum($number) != -1) {
+				window refnum_or_swap $number;
+			} else {
+				xecho -b -c Window $number does not exist;
+			};
 		};
 	};
 };
 
-fe ($jot(0 9 1)) aa {
+@ bindctl(sequence ^[0 set parse_command altchan.toggle 10);
+fe ($jot(1 9 1)) aa {
 	@ bindctl(sequence ^[$aa set parse_command altchan.toggle $aa);
 };
-
 @ bindctl(sequence ^[- set parse_command window previous);
 @ bindctl(sequence ^[= set parse_command window next);
 @ bindctl(sequence ^[? set parse_command altchan.input);

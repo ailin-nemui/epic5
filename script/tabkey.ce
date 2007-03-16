@@ -1,4 +1,4 @@
-# version:1.0.2
+# version:1.0.4
 #
 # tabkey.ce - Tab key completion script for EPIC4/EPIC5
 # Copyright (c) 2002-2005 EPIC Software Labs
@@ -117,7 +117,8 @@ alias tabkey.main (cycle, void)
 {
 	@ :xd_newmath = xdebug(new_math);
 	@ :xd_extractw = xdebug(extractw);
-	xdebug new_math extractw;
+	@ :xd_dword = xdebug(dword);
+	xdebug new_math extractw dword;
 	@ :curpos = curpos();
 	@ :curword = indextoword($curpos $L);
 	@ :wordind = wordtoindex($curword $L);
@@ -152,7 +153,7 @@ alias tabkey.main (cycle, void)
 		@ TABKEY.LAST_LINE = L;
 		@ TABKEY.LAST_CYCLE_DIRECTION = cycle;
 
-		xdebug $xd_newmath $xd_extractw;
+		xdebug $xd_newmath $xd_extractw $xd_dword;
 		return;
 	};
 
@@ -196,7 +197,7 @@ alias tabkey.main (cycle, void)
 		};
 	};
 
-	xdebug $xd_newmath $xd_extractw;
+	xdebug $xd_newmath $xd_extractw $xd_dword;
 };
 
 alias tabkey.cmd (...)
@@ -729,7 +730,7 @@ for hook in (dcc_chat send_dcc_chat)
 {
 	on #^$hook 420 "*"
 	{
-		for serv in ($myservers(0)) {
+		for serv in (-1 $myservers(0)) {
 			tabkey.msg_handler $serv =$0;
 		};
 	};
@@ -737,14 +738,14 @@ for hook in (dcc_chat send_dcc_chat)
 
 on #^dcc_request 420 "% CHAT *"
 {
-	for serv in ($myservers(0)) {
+	for serv in (-1 $myservers(0)) {
 		tabkey.msg_handler $serv =$0;
 	};
 };
 
 on #^send_ctcp 420 "PRIVMSG % DCC CHAT *"
 {
-	for serv in ($myservers(0)) {
+	for serv in (-1 $myservers(0)) {
 		tabkey.msg_handler $serv =$1;
 	};
 };

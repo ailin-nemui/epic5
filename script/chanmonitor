@@ -1,6 +1,6 @@
 if (word(2 $loadinfo()) != [pf]) { load -pf $word(1 $loadinfo()); return; };
 
-on #-public 404 "*" {
+on #-public_other 404 "*" {
         if (iscurchan($1) && winvisible($winchan($1))) { return; };
         xecho -w chanmonitor [$servername()] <$0:$1> $2-;
 };
