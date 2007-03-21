@@ -1,4 +1,4 @@
-/* $EPIC: ruby.c,v 1.6 2006/06/29 01:13:53 jnelson Exp $ */
+/* $EPIC: ruby.c,v 1.7 2007/03/21 01:33:41 jnelson Exp $ */
 /*
  * ruby.c -- Calling RUBY from epic.
  *
@@ -160,8 +160,9 @@ char *	rubyeval (char *input)
 	if (input && *input) 
 	{
 		ruby_startstop(1);
-		rubyval = rb_rescue(internal_rubyeval, (VALUE)input, 
-					eval_failed, 0);
+		rubyval = rb_rescue2(internal_rubyeval, (VALUE)input, 
+					eval_failed, 0,
+					rb_eException, 0);
 		if (rubyval == Qnil)
 			retval = NULL;
 		else

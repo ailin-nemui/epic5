@@ -1,4 +1,4 @@
-/* $EPIC: window.c,v 1.177 2007/01/27 18:47:03 jnelson Exp $ */
+/* $EPIC: window.c,v 1.178 2007/03/21 01:33:41 jnelson Exp $ */
 /*
  * window.c: Handles the organzation of the logical viewports (``windows'')
  * for irc.  This includes keeping track of what windows are open, where they
@@ -2099,6 +2099,47 @@ void	recheck_queries (Window *win)
 	window_statusbar_needs_update(win);
 }
 
+/* 
+ * This forces any window for the server to release its claim upon
+ * a nickname (so it can be claimed by another window)
+ */
+static int	window_claims_nickname (int winref, int server, const char *nickname)
+{
+        Window *window = NULL;
+	WNickList *item;
+	int 	l;
+	int	already_claimed = 0;
+
+        while (traverse_all_windows(&window))
+        {
+            if (window->server != server)
+		continue;
+
+	    if (window->refnum != winref)
+	    {
+		if ((item = (WNickList *)remove_from_list(
+				(List **)&window->nicks, nickname)))
+		{
+			l = message_setall(window->refnum, who_from, who_level);
+			say("Removed %s from window name list", item->nick);
+			pop_message_from(l);
+
+			new_free(&item->nick);
+			new_free((char **)&item);
+		}
+	    }
+	    else
+	    {
+		if (find_in_list((List **)&window->nicks, nickname, !USE_WILDCARDS))
+			already_claimed = 1;
+	    }
+	}
+
+	if (already_claimed)
+		return -1;
+	else
+		return 0;
+}
 
 
 /* * * * * * * * * * * * * * CHANNELS * * * * * * * * * * * * * * * * * */
@@ -2944,7 +2985,7 @@ static Window *window_add (Window *window, char **args)
 	{
 		if ((ptr = strchr(arg, ',')))
 			*ptr++ = 0;
-		if (!find_in_list((List **)&window->nicks, arg, !USE_WILDCARDS))
+		if (!window_claims_nickname(window->refnum, window->server, arg))
 		{
 			say("Added %s to window name list", arg);
 			new_w = (WNickList *)new_malloc(sizeof(WNickList));
@@ -3347,7 +3388,6 @@ static	Window *window_echo (Window *window, char **args)
 	else
 		to_echo = *args, *args = NULL;
 
-	/* Calling add_to_window() directly is a hack. */
 	l = message_setall(window->refnum, who_from, who_level);
 	put_echo(to_echo);
 	pop_message_from(l);
@@ -4259,13 +4299,16 @@ Window *window_query (Window *window, char **args)
 	while (a && *a)
 	{
 		nick = next_in_comma_list(a, &a);
-		if (!(tmp = (WNickList *)remove_from_list((List **)&window->nicks, nick)))
+		if (!window_claims_nickname(window->refnum, window->server, nick))
 		{
 			tmp = (WNickList *)new_malloc(sizeof(WNickList));
 			tmp->nick = malloc_strdup(nick);
+			add_to_list((List **)&window->nicks, (List *)tmp);
 		}
+		else
+			tmp = (WNickList *)find_in_list((List **)&window->nicks, nick, !USE_WILDCARDS);
+
 		tmp->counter = current_query_counter++;
-		add_to_list((List **)&window->nicks, (List *)tmp);
 		window->query_counter = tmp->counter;
 	}
 
@@ -5055,7 +5098,7 @@ BUILT_IN_COMMAND(windowcmd)
 	old_from_server = from_server;
 	old_current_window = current_window->refnum;
 	old_status_update = permit_status_update(0);
-	l = message_from(NULL, LEVEL_NONE);
+	/* l = message_from(NULL, LEVEL_NONE); */	/* XXX This is bogus */
 	window = current_window;
 
 	while ((arg = next_arg(args, &args)))
@@ -5065,6 +5108,9 @@ BUILT_IN_COMMAND(windowcmd)
 
 		if (*arg == '-' || *arg == '/')		/* Ignore - or / */
 			arg++, len--;
+
+		l = message_setall(window ? window->refnum : -1, 
+					who_from, who_level);
 
 		for (i = 0; options[i].func ; i++)
 		{
@@ -5097,6 +5143,8 @@ BUILT_IN_COMMAND(windowcmd)
 				args = NULL;
 			}
 		}
+
+		pop_message_from(l);
 	}
 
 	if (!nargs)
@@ -5113,7 +5161,7 @@ BUILT_IN_COMMAND(windowcmd)
 		from_server = old_from_server;
 
 	permit_status_update(old_status_update);
-	pop_message_from(l);
+	/* pop_message_from(l); */
 	window_check_channels();
 	update_all_windows();
 }

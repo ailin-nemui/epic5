@@ -1,4 +1,4 @@
-/* $EPIC: server.c,v 1.215 2007/02/03 15:40:16 jnelson Exp $ */
+/* $EPIC: server.c,v 1.216 2007/03/21 01:33:41 jnelson Exp $ */
 /*
  * server.c:  Things dealing with that wacky program we call ircd.
  *
@@ -1557,8 +1557,10 @@ int	grab_server_address (int server)
 		hints.ai_family = AF_UNSPEC;
 	else if (!my_stricmp(s->info->proto_type, "4"))
 		hints.ai_family = AF_INET;
+#ifdef INET6
 	else if (!my_stricmp(s->info->proto_type, "6"))
 		hints.ai_family = AF_INET6;
+#endif
 	else
 		hints.ai_family = AF_UNSPEC;
 	hints.ai_socktype = SOCK_STREAM;
