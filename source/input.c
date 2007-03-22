@@ -1,4 +1,4 @@
-/* $EPIC: input.c,v 1.36 2006/10/20 23:20:55 jnelson Exp $ */
+/* $EPIC: input.c,v 1.37 2007/03/22 05:16:00 jnelson Exp $ */
 /*
  * input.c: does the actual input line stuff... keeps the appropriate stuff
  * on the input line, handles insert/delete of characters/words... the whole
@@ -418,7 +418,11 @@ void	update_input (int update)
 			 * past the end of the zone.
 			 */
 			if (INPUT_PROMPT_LEN > (last_input_screen->co - WIDTH))
-				INPUT_PROMPT_LEN = last_input_screen->co - WIDTH - 1;
+			{
+			    INPUT_PROMPT_LEN = last_input_screen->co - WIDTH;
+			    if (INPUT_PROMPT_LEN < 0)
+				INPUT_PROMPT_LEN = 0;
+			}
 
 			/*
 			 * Output the prompt.

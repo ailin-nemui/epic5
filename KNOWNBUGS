@@ -12,6 +12,11 @@ KNOWN ERRATA (eg, bugs, or unresolved requests):
   placement (the status bar ends up in the input bar)
 * Nullie reports that resizing display to 1x1 then back again screws up.
 * Investigate suitability of http://miniupnp.free.fr/
+* Rain says we need to turn off IXOFF as well as IXON
+* Because of call to new_normalize_string (input.c:271), input prompt can
+  never truly be "null" so all code that special cases that is bogus.  Decide
+  whether this call is bogus for no input prompt, or whether all code that
+  special cases null prompt is bogus.
 
 LOOK FOR IN THE FUTURE
 -----------------------
@@ -244,3 +249,5 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Fix $ruby(puts 0.4.0) by calling rb_rescue2() to catch /all/ exceptions.
 * Fix /window add/query so they auto-remove nicks from other wins first.
 * Fix build on non-ipv6 systems. (bruns)
+* Never allow INPUT_PROMPT_LEN to be < 0.
+* This fixes the damage from resizing to 1x1 and then back again.
