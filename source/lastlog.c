@@ -1,4 +1,4 @@
-/* $EPIC: lastlog.c,v 1.64 2006/10/13 21:58:02 jnelson Exp $ */
+/* $EPIC: lastlog.c,v 1.65 2007/03/27 00:20:53 jnelson Exp $ */
 /*
  * lastlog.c: handles the lastlog features of irc. 
  *
@@ -61,6 +61,7 @@ typedef struct	lastlog_stru
 static	intmax_t global_lastlog_refnum = 0;
 
 static int	show_lastlog (Lastlog **l, int *skip, int *number, Mask *level_mask, char *match, regex_t *reg, int *max, const char *target, int mangler);
+static void	remove_lastlog_item (Window *window, Lastlog *being_removed);
 
 Lastlog *	lastlog_oldest = NULL;
 Lastlog *	lastlog_newest = NULL;
@@ -233,47 +234,70 @@ intmax_t	add_to_lastlog (Window *window, const char *line)
 		new_l->visible = 0;
 
 	/* * * */
-#if 0
-	lastlog_newest->newer = new_l;
-	new_l->older = lastlog_newest;
-	lastlog_newest = new_l;
-
-	if (!lastlog_oldest)
-		lastlog_oldest = lastlog_newest;
-#endif
-
-	/* * * */
 	return new_l->refnum;
 }
 
 
 void 	trim_lastlog (Window *window)
 {
-	Lastlog *new_oldest;
-	Lastlog *being_removed;
-
 	while (window->lastlog_oldest)
 	{
 		/* All done! */
 		if (window->lastlog_size <= window->lastlog_max)
 			return;
 
-		being_removed = window->lastlog_oldest;
-		new_oldest = being_removed->newer;
-		window->lastlog_oldest = new_oldest;
-		if (new_oldest)
-			new_oldest->older = NULL;
-		else
-			window->lastlog_newest = NULL;
-		if (being_removed->visible)
-			window->lastlog_size--;
-		new_free((char **)&being_removed->msg);
-		new_free((char **)&being_removed->target);
-		new_free((char **)&being_removed);
+		remove_lastlog_item(window, window->lastlog_oldest);
 	}
 
 	/* Uh, the lastlog must be empty... */
 	window->lastlog_size = 0;
+}
+
+void	omit_from_lastlog (Window *window, const char *string)
+{
+	Lastlog *item;
+
+	item = window->lastlog_oldest;
+	while (item)
+	{
+		if (stristr(item->msg, string))
+		{
+			remove_lastlog_item(window, item);
+			item = window->lastlog_oldest;	/* Start over */
+			break;
+		}
+	}
+}
+
+static void	remove_lastlog_item (Window *window, Lastlog *being_removed)
+{
+	if (being_removed == window->lastlog_oldest)
+	{
+		window->lastlog_oldest = being_removed->newer;
+		if (window->lastlog_oldest)
+			window->lastlog_oldest->older = NULL;
+	}
+	else if (being_removed->older)
+		being_removed->older->newer = being_removed->newer;
+	else
+		panic("Lastlog item [%s] being removed is not oldest and has no older.", being_removed->msg);
+
+	if (being_removed == window->lastlog_newest)
+	{
+		window->lastlog_newest = being_removed->older;
+		if (window->lastlog_newest)
+			window->lastlog_newest->newer = NULL;
+	}
+	else if (being_removed->newer)
+		being_removed->newer->older = being_removed->older;
+	else
+		panic("Lastlog item [%s] being removed is not newest and has no newest.", being_removed->msg);
+
+	if (being_removed->visible)
+		window->lastlog_size--;
+	new_free((char **)&being_removed->msg);
+	new_free((char **)&being_removed->target);
+	new_free((char **)&being_removed);
 }
 
 /*

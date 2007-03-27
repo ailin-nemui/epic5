@@ -1,4 +1,4 @@
-/* $EPIC: irc.c,v 1.1117 2007/03/22 05:16:00 jnelson Exp $ */
+/* $EPIC: irc.c,v 1.1118 2007/03/27 00:20:53 jnelson Exp $ */
 /*
  * ircII: a new irc client.  I like it.  I hope you will too!
  *
@@ -52,7 +52,7 @@ const char internal_version[] = "20061111";
 /*
  * In theory, this number is incremented for every commit.
  */
-const unsigned long	commit_id = 1446;
+const unsigned long	commit_id = 1447;
 
 /*
  * As a way to poke fun at the current rage of naming releases after
@@ -99,11 +99,13 @@ const char ridiculous_version_name[] = "Mitigation";
 /* The ``DEFAULT'' port used for irc server connections. */
 int		irc_port = IRC_PORT;
 
+#if 0
 /* Set if ircII should usurp flow control, unset if not.  Probably bogus. */
 int		use_flow_control = 1;
 
 /* Set if ircII should turn on IEXTEN, unset to suppress */
 int		use_iexten = -1;
+#endif
 
 /* 
  * When a numeric is being processed, this holds the negative value
@@ -218,10 +220,6 @@ static		char	switch_help[] =
 #endif
 "      -B\tLoads your .ircrc file before you connect to a server.      \n\
       -d\tThe program should run in ``dumb mode'' (no fancy screen)   \n\
-      -f\tThe program won't mess with your flow control                \n\
-      -F\tThe program will mess with your flow control                \n\
-      -o\tThe program wll turn on IEXTEN terminal setting (^V/^O)     \n\
-      -O\tThe program will turn off IEXTEN (so you can bind ^V/^O)    \n\
       -h\tPrint this help message                                     \n\
       -q\tThe program will not load your .ircrc file                  \n\
       -s\tThe program will not connect to a server upon startup       \n\
@@ -292,8 +290,8 @@ void	irc_exit (int really_quit, const char *format, ...)
 #ifdef HAVE_PERL
 	perlstartstop(0);  /* In case there's perl code in the exit hook. */
 #endif
-#ifdef RUBY
-	rubystartstop(0);
+#ifdef HAVE_RUBY
+	ruby_startstop(0);
 #endif
 
 	close_all_servers(quit_message);
@@ -363,7 +361,7 @@ static SIGNAL_HANDLER(coredump)
 									\n\
 									\n\
 * * * * * * * * * * * * * * * * * * * * * * * *				\n\
-IRC-II has trapped a critical protection error.				\n\
+EPIC has trapped a critical protection error.				\n\
 This is probably due to a bug in the program.				\n\
 									\n\
 If you have access to the 'BUG_FORM' in the ircII source distribution,	\n\
@@ -375,8 +373,8 @@ to it, please dont worry about filling it out.  You might try talking	\n\
 to the person who is in charge of IRC at your site and see if you can	\n\
 get them to help you.							\n\
 									\n\
-This version of IRC II is  --->[%s (%lu)]				\n\
-The date of release is     --->[%s]					\n\
+This version of EPIC is --->[%s (%lu)]					\n\
+The date of release is  --->[%s]					\n\
 									\n\
 * * * * * * * * * * * * * * * * * * * * * * * *				\n\
 The program will now terminate.						\n", irc_version, commit_id, internal_version);
@@ -557,7 +555,7 @@ static	void	parse_args (int argc, char **argv)
 		{
 			fprintf(stderr, "I dont know what your user name is.\n");
 			fprintf(stderr, "Set your LOGNAME environment variable\n");
-			fprintf(stderr, "and restart IRC II.\n");
+			fprintf(stderr, "and restart EPIC.\n");
 			exit(1);
 		}
 
@@ -671,7 +669,7 @@ static	void	parse_args (int argc, char **argv)
 	/*
 	 * Parse the command line arguments.
 	 */
-	while ((ch = getopt(argc, argv, "aBbc:dfFhH:l:L:n:oOp:qsSvxz:")) != EOF)
+	while ((ch = getopt(argc, argv, "aBbc:dhH:l:L:n:p:qsSvxz:")) != EOF)
 	{
 		switch (ch)
 		{
@@ -683,6 +681,7 @@ static	void	parse_args (int argc, char **argv)
 				irc_port = my_atol(optarg);
 				break;
 
+#if 0
 			case 'f': /* Use flow control */
 				use_flow_control = 1;
 				break;
@@ -698,6 +697,7 @@ static	void	parse_args (int argc, char **argv)
 			case 'O': /* dont use IEXTEN */
 				use_iexten = 0;
 				break;
+#endif
 
 			case 'd': /* use dumb mode */
 				dumb_mode = 1;
@@ -798,7 +798,7 @@ static	void	parse_args (int argc, char **argv)
 	if (!check_nickname(nickname, 1))
 	{
 		fprintf(stderr, "Invalid nickname: [%s]\n", nickname);
-		fprintf(stderr, "Please restart IRC II with a valid nickname\n");
+		fprintf(stderr, "Please restart EPIC with a valid nickname\n");
 		exit(1);
 	}
 

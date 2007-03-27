@@ -1,4 +1,4 @@
-/* $EPIC: server.c,v 1.216 2007/03/21 01:33:41 jnelson Exp $ */
+/* $EPIC: server.c,v 1.217 2007/03/27 00:20:53 jnelson Exp $ */
 /*
  * server.c:  Things dealing with that wacky program we call ircd.
  *
@@ -2205,7 +2205,24 @@ void  server_is_registered (int refnum, const char *itsname, const char *ourname
 	    if (new_server_lastlog_mask)
 		set_mask_by_winref(winref, *new_server_lastlog_mask);
 
+	/*
+	 * This hack is required by a race condition with freebsd that 
+	 * I'm seeing on epicsol.  For reasons that I have never been able
+	 * to adequately explain, if I write out data to the socket (ie,
+	 * from reinstate_user_modes) at the same time as the kernel is
+	 * reassembling a fractured packet (ie, the initial packet from 
+	 * the server with the 001 and stuff), the kernel will refuse to 
+	 * flag the socket as read()able ever again.  I've confirmed this
+	 * with select(), poll(), kqueue(), and even a blocking read().
+	 * Wireshark shows that the packet(s) do come in, bu the kernel
+	 * refuses to give them to me.  This tiny sleep eliminates the 
+	 * race condition that consistently causes this problem.
+	 *
+	 * P.S. -- Yes, I tried different nic cards using different drvivers.
+	 * Yes, I've tried multiple versions of freebsd.
+	 */
 	my_sleep(0.005);
+
 	reinstate_user_modes();
 	userhostbase(from_server, NULL, NULL, got_my_userhost, 1);
 

@@ -1,4 +1,4 @@
-/* $EPIC: ruby.c,v 1.7 2007/03/21 01:33:41 jnelson Exp $ */
+/* $EPIC: ruby.c,v 1.8 2007/03/27 00:20:53 jnelson Exp $ */
 /*
  * ruby.c -- Calling RUBY from epic.
  *
@@ -113,6 +113,7 @@ void ruby_startstop (int value)
 
 	++is_ruby_running;
 	ruby_init();
+	ruby_init_loadpath();
 	ruby_script(malloc_strdup(irc_version));
 	rubyclass = rb_define_class("EPIC", rb_cObject);
 	rb_define_singleton_method(rubyclass, "echo", epic_echo, 1);

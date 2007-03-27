@@ -1,4 +1,4 @@
-/* $EPIC: term.c,v 1.18 2006/12/09 18:00:07 jnelson Exp $ */
+/* $EPIC: term.c,v 1.19 2007/03/27 00:20:53 jnelson Exp $ */
 /*
  * term.c -- termios and (termcap || terminfo) handlers
  *
@@ -845,24 +845,28 @@ int 	term_init (void)
 
 	current_term->TI_normal[0] = 0;
 	if (current_term->TI_sgr0)
-		strlcat(current_term->TI_normal, current_term->TI_sgr0, sizeof current_term->TI_normal);
+		strlcat(current_term->TI_normal, current_term->TI_sgr0, 
+				sizeof current_term->TI_normal);
 	if (current_term->TI_rmso)
 	{
 		if (current_term->TI_sgr0 && 
 		    strcmp(current_term->TI_rmso, current_term->TI_sgr0))
-			strlcat(current_term->TI_normal, current_term->TI_rmso, sizeof current_term->TI_normal);
+			strlcat(current_term->TI_normal, current_term->TI_rmso,
+					 sizeof current_term->TI_normal);
 	}
 	if (current_term->TI_rmul)
 	{
 		if (current_term->TI_sgr0 && 
 		    strcmp(current_term->TI_rmul, current_term->TI_sgr0))
-			strlcat(current_term->TI_normal, current_term->TI_rmul, sizeof current_term->TI_normal);
+			strlcat(current_term->TI_normal, current_term->TI_rmul, 
+					sizeof current_term->TI_normal);
 	}
 	/*
 	 * On some systems, alternate char set mode isn't exited with sgr0
 	 */
 	if (current_term->TI_rmacs)
-		strlcat(current_term->TI_normal, current_term->TI_rmacs, sizeof current_term->TI_normal);
+		strlcat(current_term->TI_normal, current_term->TI_rmacs, 
+				sizeof current_term->TI_normal);
 
 
 	/*
@@ -963,7 +967,7 @@ int 	term_init (void)
 
 	if ((termfeatures & desired) != desired)
 	{
-		fprintf(stderr, "\nYour terminal (%s) cannot run IRC II in full screen mode.\n", term);
+		fprintf(stderr, "\nYour terminal (%s) cannot run EPIC in full screen mode.\n", term);
 		fprintf(stderr, "The following features are missing from your TERM setting.\n");
 		if (!(termfeatures & TERM_CAN_CUP))
 			fprintf (stderr, "\tCursor movement\n");
@@ -1025,18 +1029,56 @@ int 	term_init (void)
 	tty_des = 0;			/* Has to be. */
 	tcgetattr(tty_des, &oldb);
 
+	/*
+	 * So by default, the kernel intercepts a great deal of keypresses
+	 * and does in-kernel input editing.  These keypresses are handled
+	 * by the kernel, and the result is a line of input which is then 
+	 * passed to the application.  Those special keypresses are never
+	 * sent to the application.
+	 *
+	 * So we need to turn all that off, since we need to be able to 
+	 * bind anything.
+	 */
+
+	/*
+	 * Turning off ICANON tells the kernel not to buffer input from
+	 * the user, but to pass it on to us directly.  Further, it tells
+	 * the kernel not to process the EOF (^D), EOL (^J), ERASE (^?)
+	 * and KILL (^U) keys, but to pass them on.
+	 *
+	 * Turning off ECHO tells the kernel not to output characters as
+	 * they are typed; we take responsibility for that.
+	 */
 	newb = oldb;
 	newb.c_lflag &= ~(ICANON | ECHO); /* set equ. of CBREAK, no ECHO */
-#ifdef IEXTEN
-	if (use_iexten == 1)
-		newb.c_lflag |= IEXTEN;	    /* Turn off DISCARD/LNEXT */
-	else if (use_iexten == 0)
-		newb.c_lflag &= ~(IEXTEN);  /* Turn off DISCARD/LNEXT */
-#endif
 
+	/*
+	 * Turning off IEXTEN tells the kernel not to honor any posix 
+	 * extenstions it might know about.  On 4.4BSD, this tells the 
+	 * kernel not to withhold the EOL2 (undefined), WERASE (^W), 
+	 * REPRINT (^R), LNEXT (^V), DISCARD (^O), and STATUS (^T) 
+	 * characters from us.  You wouldn't be able to /bind those keys
+	 * if this was left on.
+	 */
+	newb.c_lflag &= ~(IEXTEN);  /* Turn off DISCARD/LNEXT */
+
+	/*
+	 * Since we turned off ICANON, we have to tell the kernel how
+	 * we want the read() call to be satisifed.  We want read() to
+	 * return 0 seconds after 1 byte has been received (ie, immediately)
+	 */
 	newb.c_cc[VMIN] = 1;	          /* read() satified after 1 char */
 	newb.c_cc[VTIME] = 0;	          /* No timer */
 
+	/*
+	 * Next, we have to reclaim all of the signal-generating keys.
+	 * Normally you would do that by turning off ISIG, but we can't do
+	 * that, because we want ^C to generate SIGINT; that's how the user
+	 * can bail out of infinite recursion.
+	 *
+	 * So we have to actually turn off all of the signal-generating
+	 * keys *except* ^C by hand:  QUIT (^\), DSUSP (^Y), and SUSP (^Z).
+	 */
 #       if !defined(_POSIX_VDISABLE)
 #               if defined(HAVE_FPATHCONF)
 #                       define _POSIX_VDISABLE fpathconf(tty_des, _PC_VDISABLE)
@@ -1045,10 +1087,6 @@ int 	term_init (void)
 #               endif
 #       endif
 
-	/* 
-	 * We can't just turn off ISIG since we want ^C to send SIGINT,
-	 * so we turn off all of the other signal-generating keys
-	 */
 	newb.c_cc[VQUIT] = _POSIX_VDISABLE;
 #	ifdef VDSUSP
 		newb.c_cc[VDSUSP] = _POSIX_VDISABLE;
@@ -1057,23 +1095,55 @@ int 	term_init (void)
 		newb.c_cc[VSUSP] = _POSIX_VDISABLE;
 #	endif
 
-	if (!use_flow_control)
-		newb.c_iflag &= ~IXON;	/* No XON/XOFF */
+	/*
+	 * Now we have to turn off hardware flow control, in order to reclaim
+	 * the ^S (XOFF) and ^Q (XON) keys.  Hardware flow control is evil,
+	 * because while the flow control is off, epic will block when it
+	 * tries to output something, which could lead to you pinging out 
+	 * all your servers.
+	 */
+	newb.c_iflag &= ~(IXON | IXOFF);	/* No XON/XOFF */
 
 #if use_alt_screen
-	/* Ugh. =) This is annoying! */
+	/*
+	 * Some terminal emulators have two screens; the primary screen,
+	 * and the alternate screen.  Applications can optionally switch
+	 * to the alternate screen at startup, and then switch back to the
+	 * primary screen at shutdown.  I find this feature to be intensely
+	 * obnoxious.  It's here, if you want to #define it.
+	 */
 	if (current_term->TI_smcup)
 		tputs_x(current_term->TI_smcup);
 #endif
+
 #if use_automargins
+	/*
+	 * When you write a character to the last column of a line, most
+	 * terminal emulators will advance the cursor to the start of the
+	 * next line ("automargins") but some will leave the cursor at the end
+	 * of the line ("no automargins").  It's not always obvious which
+	 * state you're in, and it's not always obvious whether the emulator
+	 * supports one, or both modes.
+	 *
+	 * The client avoids all this by refusing to use the last column.  
+	 * But if you want to, you can define this and epic will turn off 
+	 * auto-margins and will attempt to use the final column in each line.
+	 * There are no guarantees it will work, since some emulators say they 
+	 * support turning off auto-margins, but they lie.
+	 */
 	if (current_term->TI_rmam)
 		tputs_x(current_term->TI_rmam);
 #endif
 
-	/* Turn on 8 bit handling unconditionally */
+	/*
+	 * Next we tell the kernel that it should support 8 bits both
+	 * coming in and going out, and it should not strip the high bit
+	 * from any keypress.
+	 */
 	newb.c_cflag |= CS8;
 	newb.c_iflag &= ~ISTRIP;
 
+	/* Commit our changes and we're done! */
 	tcsetattr(tty_des, TCSADRAIN, &newb);
 	return 0;
 }
@@ -1093,6 +1163,22 @@ int	term_resize (void)
 #	if defined (TIOCGWINSZ)
 	{
 		struct winsize window;
+
+		/*
+		 * This hack is required by a race condition within screen;
+		 * if you have a "caption always" bar, when you reattach to
+		 * a session, it will send us a SIGWINCH, before it has 
+		 * accounted for the "caption bar" stealing a line from the
+		 * screen.  So we race screen, and if we ask for the size of
+		 * the screen before it accounts for the caption bar, then
+		 * we lose, because we'll get the wrong number of lines, and
+		 * that will screw up the status bar.  So we do this very
+		 * small sleep to increase the chances of us losing the race,
+		 * which means we win.  Got it?
+		 *
+		 * P.S. -- GNU Screen is all kinds of icky.
+		 */
+		my_sleep(0.05);
 
 		if (ioctl(tty_des, TIOCGWINSZ, &window) < 0)
 		{

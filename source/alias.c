@@ -1,4 +1,4 @@
-/* $EPIC: alias.c,v 1.82 2006/11/23 06:23:23 jnelson Exp $ */
+/* $EPIC: alias.c,v 1.83 2007/03/27 00:20:53 jnelson Exp $ */
 /*
  * alias.c -- Handles the whole kit and caboodle for aliases.
  *
@@ -1002,6 +1002,28 @@ static Symbol *make_new_Symbol (const char *name)
 	return tmp;
 }
 
+/*
+ * Purge a symbol if it is empty.
+ * A symbol is "empty" IFF
+ *   - It has no data for any valid symbol type
+ *   - It does not have any /stack push'ed data below it
+ * UNLESS
+ *   - It is a standalone item (list == NULL) 
+ *
+ * This function returns 1 if this symbol is empty, and it was removed
+ * from list (if appropriate), and it was free()d; no further use of 
+ * 'item' may be used after this function returns 1.
+ *
+ * This function returns 0 if the symbol is not empty.  The symbol will
+ * not have been changed in any way.
+ *
+ * IF this is a standalone item, then the symbol can be considered empty
+ * even if it has /stack push'd data below it.  A standalone item will 
+ * still be GC'd, even if it has stacked data below it!  You *must* save a
+ * pointer to 'item->saved' before calling this function on a standalone
+ * item and you *must* do something with that pointer if this function 
+ * returns 1!  (If you don't, you'll leak your stacked data!)
+ */
 static int	GC_symbol (Symbol *item, array *list, int loc)
 {
 	if (item->user_variable)
@@ -1016,7 +1038,7 @@ static int	GC_symbol (Symbol *item, array *list, int loc)
 		return 0;
 	if (item->builtin_variable)
 		return 0;
-	if (item->saved)
+	if (item->saved && list != NULL)
 		return 0;
 
 	if (list && loc >= 0)

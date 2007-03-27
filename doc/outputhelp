@@ -36,5 +36,19 @@ If you are using GNU screen, make sure you have "defc1 off" in your
 screenrc file, because screen won't even display characters 128-159
 with it on (and it is on by default). (from Ben Winslow, May 16, 1999)
 
+DRAWING CHARACTERS:
+-------------------
+Fonts come with multiple character sets.  Usually there is a character
+set with european national characters ("latin-1"), and another character 
+set with box drawing characters ("vga").  These character sets are mutually
+exclusive, and epic never forces you to use one or the other (unlike bx, which
+forces you into vga mode unconditionally)
+
+So if your font is in latin-1 mode, and your script wants vga mode, then you
+will see lots of strange vowels and stuff.  Exit epic, run this command
+at your shell:
+	echo "X(U" | tr 'X' '\033'
+and restart epic.
+
 Good luck!
 Jeremy
