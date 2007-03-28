@@ -69,5 +69,6 @@
 #define UPDATE_ALL 1
 #define UPDATE_FROM_CURSOR 2
 #define UPDATE_JUST_CURSOR 3
+#define CHECK_ZONES 4
 
 #endif /* _INPUT_H_ */

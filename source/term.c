@@ -1,4 +1,4 @@
-/* $EPIC: term.c,v 1.19 2007/03/27 00:20:53 jnelson Exp $ */
+/* $EPIC: term.c,v 1.20 2007/03/28 01:14:38 jnelson Exp $ */
 /*
  * term.c -- termios and (termcap || terminfo) handlers
  *
@@ -645,13 +645,14 @@ int	term_echo (int flag)
 }
 
 /*
- * term_putchar: This is what handles the outputting of the input buffer.
+ * term_inputline_putchar: This is what handles the outputting of the input 
+ * buffer.
  * It used to handle more, but slowly the stuff in screen.c prepared away
  * all of the nasties that this was intended to handle.  Well anyhow, all
  * we need to worry about here is making sure nothing suspcious, like an
  * escape, makes its way to the output stream.
  */
-void	term_putchar (unsigned char c)
+void	term_inputline_putchar (unsigned char c)
 {
 	if (!term_echo_flag)
 	{
@@ -1384,7 +1385,7 @@ void	term_insert (unsigned char c)
 	else if (current_term->TI_ich)
 		tputs_x (tparm(current_term->TI_ich, 1));
 
-	term_putchar (c);
+	term_inputline_putchar (c);
 
 	if (current_term->TI_rmir)
 		tputs_x(current_term->TI_rmir);

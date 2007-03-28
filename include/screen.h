@@ -53,10 +53,9 @@ struct	ScreenStru *next;		/* Previous screen in list */
 	int	wserv_version;		/* The version of wserv talking to */
 
 	/* Input line and prompt stuff */
-	unsigned char	input_buffer[INPUT_BUFFER_SIZE+1];
+	unsigned char input_buffer[INPUT_BUFFER_SIZE+1];
 					/* Current user input for us */
 	int	buffer_pos;		/* Where on input line cursor is */
-	int	buffer_min_pos;		/* First position after prompt */
 	int	input_cursor;		/* Where the cursor is on input line */
 	int	input_visible;
 	int	input_zone_len;
@@ -64,7 +63,6 @@ struct	ScreenStru *next;		/* Previous screen in list */
 	int	input_end_zone;
 	unsigned char	*input_prompt;
 	int	input_prompt_len;
-	int	input_prompt_malloc;
 	int	input_line;
 
 	unsigned char	saved_input_buffer[INPUT_BUFFER_SIZE+1];

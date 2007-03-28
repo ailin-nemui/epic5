@@ -258,3 +258,4 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Start working on code to remove items from lastlog by grep.
 * Fix crashes with /stack push set that kitambi told me about
 * Put in a trivial sleep when checking screen size to avoid race with screen.
+* Stage 1 in a major overhaul of the input line code.
