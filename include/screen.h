@@ -60,7 +60,6 @@ struct	ScreenStru *next;		/* Previous screen in list */
 	int	input_visible;
 	int	input_zone_len;
 	int	input_start_zone;
-	int	input_end_zone;
 	unsigned char	*input_prompt;
 	int	input_prompt_len;
 	int	input_line;

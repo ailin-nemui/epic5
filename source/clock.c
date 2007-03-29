@@ -149,7 +149,6 @@ void	reset_clock (void *stuff)
 		reset_standard_clock();
 
 	update_all_status();
-	cursor_to_input();
 }
 
 /* update_clock: figures out the current time and returns it in a nice format */
@@ -160,7 +159,7 @@ const char *	get_clock (void)
 
 void	clock_systimer (void)
 {
-	/* reset_clock does `update_all_status' and `cursor_to_input' for us */
+	/* reset_clock does `update_all_status' for us */
 	reset_clock(NULL);
 }
 
@@ -184,7 +183,6 @@ void	set_clock (void *stuff)
 {
 	update_system_timer(clock_timeref);
 	update_all_status();
-	cursor_to_input();
 }
 
 /************************************************************************/
