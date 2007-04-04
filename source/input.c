@@ -1,4 +1,4 @@
-/* $EPIC: input.c,v 1.39 2007/03/29 02:44:40 jnelson Exp $ */
+/* $EPIC: input.c,v 1.40 2007/04/04 00:40:40 jnelson Exp $ */
 /*
  * input.c: does the actual input line stuff... keeps the appropriate stuff
  * on the input line, handles insert/delete of characters/words... the whole
@@ -917,7 +917,10 @@ BUILT_IN_BINDING(input_reset_line)
 	*INPUT_BUFFER = 0;
 	LOGICAL_CURSOR = 0;
 
-	set_input(string);	/* This calls update_input() */
+	if (!string)
+		set_input(empty_string);
+	else
+		set_input(string);	/* This calls update_input() */
 }
 
 
