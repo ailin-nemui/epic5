@@ -8,10 +8,8 @@ KNOWN ERRATA (eg, bugs, or unresolved requests):
 * Larne wants me to figure out if i can support 256-color xterm
 * Investigate suitability of http://miniupnp.free.fr/
 * Shattah would like something like /window omit <regex> to remove stuff.
-* Because of call to new_normalize_string (input.c:271), input prompt can
-  never truly be "null" so all code that special cases that is bogus.  Decide
-  whether this call is bogus for no input prompt, or whether all code that
-  special cases null prompt is bogus.
+* Finish refactoring the input prompt, by showing the prompt all the time,
+  eliminating one-column-per-byte assumption.
 * There is confusion between "proto" "type" and "addrfamily" with server
   stuff.  Normalize and redocument.
 * Need a serverctl() thingee to return the server desc
@@ -265,4 +263,4 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Stage 1 in a major overhaul of the input line code.
 * Stage 2 -- start eliminating "optimizations", use update_input() for redraw
 * Fix null deref in set_input() via reset_line() via ^U (rb kitambi)
-
+* Fix null deref with $serverctl(GET -1 005s)

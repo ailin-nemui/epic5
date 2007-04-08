@@ -1,4 +1,4 @@
-/* $EPIC: server.c,v 1.217 2007/03/27 00:20:53 jnelson Exp $ */
+/* $EPIC: server.c,v 1.218 2007/04/08 16:05:27 jnelson Exp $ */
 /*
  * server.c:  Things dealing with that wacky program we call ircd.
  *
@@ -3300,6 +3300,12 @@ char 	*serverctl 	(char *input)
 		} else if (!my_strnicmp(listc, "005s", len)) {
 			int ofs = from_server;
 			char *	retval;
+
+			/* XXX Do this another way */
+			if (refnum == -1 && from_server >= 0)
+				refnum = from_server;
+			if (refnum < 0 || refnum >= number_of_servers)
+				RETURN_EMPTY;
 
 			from_server = refnum;
 			retval = get_server_005s(input);
