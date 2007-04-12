@@ -1,4 +1,4 @@
-/* $EPIC: commands.c,v 1.163 2007/04/12 03:24:14 jnelson Exp $ */
+/* $EPIC: commands.c,v 1.164 2007/04/12 03:34:07 jnelson Exp $ */
 /*
  * commands.c -- Stuff needed to execute commands in ircII.
  *		 Includes the bulk of the built in commands for ircII.
@@ -919,6 +919,18 @@ BUILT_IN_COMMAND(xechocmd)
 			}
 		     }
 		     break;
+		}
+
+		case 'T':
+		{
+			/* Chew up the argument. */
+			next_arg(args, &args);
+
+			if (!(flag_arg = next_arg(args, &args)))
+				break;
+
+			to_from = flag_arg;
+			break;
 		}
 
 		case 'V':	/* VISUAL (output to a visible window) */

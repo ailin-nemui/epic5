@@ -1,5 +1,12 @@
 EPIC5-0.3.3
 
+*** News 04/11/2007 -- New argument to /xecho, -TARGET
+	Usually if you wanted to output to a channel's window, you would do
+		/xecho -w $winchan(#channel) ....
+	but someone asked (nicely) for a -target flag to /xecho because they
+	thought that looked nicer.  So now you can do
+		/xecho -t #channel ...
+
 *** News 04/11/2007 -- New serverctl operation "ALLGROUPS"
 	The $serverctl(ALLGROUPS) operation will return a unique list of all of
 	the group names used in all your servers.  Do not pass any arguments 
