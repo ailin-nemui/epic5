@@ -1,4 +1,4 @@
-/* $EPIC: server.c,v 1.218 2007/04/08 16:05:27 jnelson Exp $ */
+/* $EPIC: server.c,v 1.219 2007/04/12 02:51:38 jnelson Exp $ */
 /*
  * server.c:  Things dealing with that wacky program we call ircd.
  *
@@ -307,14 +307,22 @@ static	int	preserve_serverinfo (ServerInfo *si)
 	char *	resultstr = NULL;
 	size_t	clue = 0;
 
+	if (si->host && strchr(si->host, ':'))
+	   malloc_strcat_c(&resultstr, "[", &clue);
 	malloc_strcat2_c(&resultstr, si->host, ":", &clue);
+	if (si->host && strchr(si->host, ':'))
+	   malloc_strcat_c(&resultstr, "]", &clue);
 	malloc_strcat2_c(&resultstr, ltoa(si->port), ":", &clue);
 	malloc_strcat2_c(&resultstr, si->password, ":", &clue);
 	malloc_strcat2_c(&resultstr, si->nick, ":", &clue);
 	malloc_strcat2_c(&resultstr, si->group, ":", &clue);
 	malloc_strcat2_c(&resultstr, si->server_type, ":", &clue);
 	malloc_strcat2_c(&resultstr, si->proto_type, ":", &clue);
+	if (si->vhost && strchr(si->vhost, ':'))
+	   malloc_strcat_c(&resultstr, "[", &clue);
 	malloc_strcat2_c(&resultstr, si->vhost, ":", &clue);
+	if (si->vhost && strchr(si->vhost, ':'))
+	   malloc_strcat_c(&resultstr, "]", &clue);
 
 	new_free(&si->freestr);
 	new_free(&si->fulldesc);
@@ -2748,6 +2756,19 @@ void	set_server_operator (int refnum, int flag)
 	oper_command = 0;		/* No longer doing oper */
 }
 
+const char *	get_server_fulldesc (int servref )
+{
+	Server *s;
+
+	if (!(s = get_server(servref)))
+		return NULL;
+
+	if (s->info->fulldesc)
+		return s->info->fulldesc;
+	else
+		return NULL;
+}
+
 /* * */
 void	set_server_name (int servref, const char * param )
 {
@@ -3341,6 +3362,8 @@ char 	*serverctl 	(char *input)
 			RETURN_INT(server_addrs_left(refnum));
 		} else if (!my_strnicmp(listc, "AUTOCLOSE", len)) {
 			RETURN_INT(get_server_autoclose(refnum));
+		} else if (!my_strnicmp(listc, "FULLDESC", len)) {
+			RETURN_STR(get_server_fulldesc(refnum));
 		}
 	} else if (!my_strnicmp(listc, "SET", len)) {
 		GET_INT_ARG(refnum, input);

@@ -52,15 +52,6 @@ typedef	struct
 {
 	ServerInfo *info;		/* Canonical information */
 
-#if 0
-	char	*name;			/* the name of the server */
-	int	port;			/* port number on that server */
-	char	*password;		/* password for that server */
-	char	*group;			/* Server group it belongs to */
-	int	try_ssl;		/* SSL requested on next connection. */
-	int	protocol;		/* AF_UNSPEC, AF_INET, or AF_INET6 */
-#endif
-
 	AI 	*addrs;			/* Returned by getaddrinfo */
 const	AI	*next_addr;		/* The next one to try upon failure */
 	int	addr_counter;		/* How far we're into "addrs" */

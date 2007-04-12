@@ -1,5 +1,10 @@
 EPIC5-0.3.3
 
+*** News 04/11/2007 -- New serverctl value, "FULLDESC"
+	This value returns the fully qualified server description for a
+	server, suitable for writing into a servers file, or for passing
+	to /server -add or any old place.
+
 *** News 01/27/2007 -- New serverctl value, "AUTOCLOSE"
 	Normally a server is automatically closed when the last server
 	to it is disconnected (or killed).  Many people hate this behavior
