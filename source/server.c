@@ -1,4 +1,4 @@
-/* $EPIC: server.c,v 1.219 2007/04/12 02:51:38 jnelson Exp $ */
+/* $EPIC: server.c,v 1.220 2007/04/12 03:06:09 jnelson Exp $ */
 /*
  * server.c:  Things dealing with that wacky program we call ircd.
  *
@@ -2756,7 +2756,7 @@ void	set_server_operator (int refnum, int flag)
 	oper_command = 0;		/* No longer doing oper */
 }
 
-const char *	get_server_fulldesc (int servref )
+const char *	get_server_fulldesc (int servref)
 {
 	Server *s;
 
@@ -3190,6 +3190,36 @@ void set_server_005 (int refnum, char *setting, const char *value)
 	}
 }
 
+static char *	get_all_server_groups (void)
+{
+	Server *s;
+	int	i, j;
+	char *	retval = NULL;
+	size_t	clue;
+
+	for (i = 0; i < number_of_servers; i++)
+	{
+	    if (!(s = get_server(i)))
+		continue;
+
+	    /* 
+	     * A group is added to the return value if and only if
+	     * there is no lower server refnum of the same group.
+	     */
+	    for (j = 0; j < i; j++)
+	    {
+		if (!get_server(j))
+			continue;
+		if (!my_stricmp(get_server_group(i), get_server_group(j)))
+			goto sorry_wrong_number;
+	    }
+
+	    malloc_strcat_word_c(&retval, space, get_server_group(i), 
+					DWORD_DWORDS, &clue);
+sorry_wrong_number:
+	    ;
+	}
+}
 
 /* Used by function_serverctl */
 /*
@@ -3246,6 +3276,8 @@ char 	*serverctl 	(char *input)
 		if (refnum != NOSERV)
 			RETURN_INT(refnum);
 		RETURN_EMPTY;
+	} else if (!my_strnicmp(listc, "ALLGROUPS", len)) {
+		RETURN_MSTR(get_all_server_groups());
 	} else if (!my_strnicmp(listc, "GET", len)) {
 		GET_INT_ARG(refnum, input);
 		if (!get_server(refnum))

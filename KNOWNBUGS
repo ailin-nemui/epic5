@@ -12,7 +12,6 @@ KNOWN ERRATA (eg, bugs, or unresolved requests):
   eliminating one-column-per-byte assumption.
 * There is confusion between "proto" "type" and "addrfamily" with server
   stuff.  Normalize and redocument.
-* Kreca wants a way to get all valid server group names
 * Panic messages should not be outputting channel info to irc.
 * /xecho needs a way to output to a target as well as a level.
 
@@ -268,3 +267,4 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Fix fulldesc handling code to put []s around ipv6 p-addrs. oops!
 * GC the if 0'd decls from before the switch to ServerInfos
 * Add $serverctl(GET <refnum> FULLDESC) for kreca.
+* Add $serverctl(ALLGROUPS) for kreca
