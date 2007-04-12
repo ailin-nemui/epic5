@@ -264,3 +264,5 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Stage 2 -- start eliminating "optimizations", use update_input() for redraw
 * Fix null deref in set_input() via reset_line() via ^U (rb kitambi)
 * Fix null deref with $serverctl(GET -1 005s)
+* Fix warnings found by gcc4 and run make depend.
+* Add check for -Wno-pointer-sign to configure; makes using gcc4 less painful.

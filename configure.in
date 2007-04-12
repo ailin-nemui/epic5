@@ -4,9 +4,9 @@ dnl except those bits attributed otherwise.
 dnl thanks to the screen 3.3 configure.in for giving me examples to
 dnl work from and steal ;)
 dnl
-dnl @(#)$Id: configure.in,v 1.55 2007/01/13 04:14:21 jnelson Exp $
+dnl @(#)$Id: configure.in,v 1.56 2007/04/12 02:37:22 jnelson Exp $
 
-AC_REVISION($Revision: 1.55 $)dnl
+AC_REVISION($Revision: 1.56 $)dnl
 AC_INIT(source/irc.c)
 AC_CONFIG_HEADER(include/defs.h)
 
@@ -867,6 +867,15 @@ AC_ARG_WITH(warns,
         ;;
    esac ],
    AC_MSG_RESULT(no)
+)
+
+AC_MSG_CHECKING(whether your compiler supports -Wno-pointer-sign)
+old_cflags="$CFLAGS"
+CFLAGS="$CFLAGS -Wno-pointer-sign"
+AC_TRY_COMPILE(, [exit(0);], 
+	AC_MSG_RESULT(yes),
+        AC_MSG_RESULT(no)
+	CFLAGS="$old_cflags"
 )
 
 AC_SUBST(CFLAGS)

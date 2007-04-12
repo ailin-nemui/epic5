@@ -1,4 +1,4 @@
-/* $EPIC: input.c,v 1.40 2007/04/04 00:40:40 jnelson Exp $ */
+/* $EPIC: input.c,v 1.41 2007/04/12 02:37:24 jnelson Exp $ */
 /*
  * input.c: does the actual input line stuff... keeps the appropriate stuff
  * on the input line, handles insert/delete of characters/words... the whole
@@ -222,9 +222,7 @@ void	update_input (int update)
 {
 	int	old_zone;
 	char	*ptr, *ptr_free;
-	int	len,
-		free_it = 0,
-		max;
+	int	max;
 	const char	*prompt;
 	int	do_echo = 1;
 	Screen	*os = last_input_screen;
@@ -931,7 +929,6 @@ BUILT_IN_BINDING(input_reset_line)
 BUILT_IN_BINDING(input_transpose_characters)
 {
 	u_char	this_char, prev_char;
-	int	saved_cursor = LOGICAL_CURSOR;
 
 	/* If we're at the end of input, move back to the last char */
 	if (!THIS_CHAR && LOGICAL_CURSOR > 1)

@@ -1,4 +1,4 @@
-/* $EPIC: parse.c,v 1.85 2007/03/16 23:02:50 jnelson Exp $ */
+/* $EPIC: parse.c,v 1.86 2007/04/12 02:37:24 jnelson Exp $ */
 /*
  * parse.c: handles messages from the server.   Believe it or not.  I
  * certainly wouldn't if I were you. 
@@ -248,7 +248,6 @@ static void	p_wallops (const char *from, const char *comm, const char **ArgList)
 	const char 	*message;
 	int 	server_wallop;
 	int	l;
-	int	flood_type;
 
 	if (!(message = ArgList[0]))
 		{ rfc1459_odd(from, comm, ArgList); return; }

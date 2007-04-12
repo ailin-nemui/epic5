@@ -1,4 +1,4 @@
-/* $EPIC: term.c,v 1.20 2007/03/28 01:14:38 jnelson Exp $ */
+/* $EPIC: term.c,v 1.21 2007/04/12 02:37:24 jnelson Exp $ */
 /*
  * term.c -- termios and (termcap || terminfo) handlers
  *
@@ -47,6 +47,7 @@
 #include "window.h"
 #include "screen.h"
 #include "output.h"
+#include "newio.h"
 
 /*
  * If "HAVE_TERMINFO" is #define'd then we will use terminfo type function

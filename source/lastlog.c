@@ -1,4 +1,4 @@
-/* $EPIC: lastlog.c,v 1.65 2007/03/27 00:20:53 jnelson Exp $ */
+/* $EPIC: lastlog.c,v 1.66 2007/04/12 02:37:24 jnelson Exp $ */
 /*
  * lastlog.c: handles the lastlog features of irc. 
  *
@@ -76,19 +76,6 @@ static	Mask	notify_mask;
 	Mask *	new_server_lastlog_mask = NULL;
 	Mask *	old_server_lastlog_mask = NULL;
 	Mask 	current_window_mask;
-
-/*
- * warn_lastlog_level: tells the user what levels are available.
- */
-static void	warn_lastlog_levels (void)
-{
-	char *buffer;
-
-	strlcpy(buffer, "Valid levels: ", sizeof buffer);
-	buffer = get_all_levels();
-	say("%s", buffer);
-	new_free(&buffer);	
-}
 
 /*
  * set_lastlog_mask: called whenever a "SET LASTLOG_LEVEL" is done.  It
