@@ -1,4 +1,4 @@
-/* $EPIC: irc.c,v 1.1126 2007/04/12 03:06:09 jnelson Exp $ */
+/* $EPIC: irc.c,v 1.1127 2007/04/12 03:24:14 jnelson Exp $ */
 /*
  * ircII: a new irc client.  I like it.  I hope you will too!
  *
@@ -903,7 +903,7 @@ static	int		level = 0,
 			level, what, caller[level-1], caller[level-2], 
 					caller[level-3], caller[level-4]);
 	    if (level % 50 == 0)
-		panic("Ahoy there matey!  Abandon ship!");
+		panic(1, "Ahoy there matey!  Abandon ship!");
 	}
 	else if (level && (last_warn - level == 5))
 	    last_warn -= 5;

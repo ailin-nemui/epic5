@@ -1,4 +1,4 @@
-/* $EPIC: words.c,v 1.22 2006/10/13 21:58:03 jnelson Exp $ */
+/* $EPIC: words.c,v 1.23 2007/04/12 03:24:14 jnelson Exp $ */
 /*
  * words.c -- right now it just holds the stuff i wrote to replace
  * that beastie arg_number().  Eventually, i may move all of the
@@ -342,7 +342,7 @@ static int	move_to_prev_word (const char **str, const char *start, int extended,
 			yell(".... move_to_prev_word: Handling extended word.");
 
 		if (!(before = find_backward_quote(pos, start, delims)))
-			panic("find_backward returned NULL [2]");
+			panic(1, "find_backward returned NULL [2]");
 
 		if (x_debug & DEBUG_EXTRACTW_DEBUG)
 			yell(".... move_to_prev_word: Extended word begins at [%s] (of [%s])", before, start);
@@ -533,7 +533,7 @@ static int	move_to_next_word (const char **str, const char *start, int extended,
 		    yell(".... move_to_next_word: handling extended word");
 
 		if (!(after = find_forward_character(pos, start, delims)))
-			panic("find_forward returned NULL [1]");
+			panic(1, "find_forward returned NULL [1]");
 		if (*after)
 			after++;
 		pos = after;

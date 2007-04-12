@@ -1,4 +1,4 @@
-/* $EPIC: vars.c,v 1.95 2007/03/27 00:20:53 jnelson Exp $ */
+/* $EPIC: vars.c,v 1.96 2007/04/12 03:24:14 jnelson Exp $ */
 /*
  * vars.c: All the dealing of the irc variables are handled here. 
  *
@@ -805,7 +805,7 @@ char 	*make_string_var_bydata (int type, void *vp)
 			ret = malloc_dupchar(data->integer);
 			break;
 		default:
-			panic("make_string_var_bydata: unrecognized type [%d]", type);
+			panic(1, "make_string_var_bydata: unrecognized type [%d]", type);
 	}
 	return (ret);
 

@@ -1,4 +1,4 @@
-/* $EPIC: window.c,v 1.180 2007/04/04 00:40:40 jnelson Exp $ */
+/* $EPIC: window.c,v 1.181 2007/04/12 03:24:14 jnelson Exp $ */
 /*
  * window.c: Handles the organzation of the logical viewports (``windows'')
  * for irc.  This includes keeping track of what windows are open, where they
@@ -404,7 +404,7 @@ void 	delete_window (Window *window)
 			 (window->screen->current_window && 
 			    window->screen->current_window != window))
 		{
-			panic("My screen says there is only one "
+			panic(1, "My screen says there is only one "
 				"window on it, and I don't agree.");
 		}
 		else
@@ -477,7 +477,7 @@ void 	delete_window (Window *window)
 		if (window == last_input_screen->current_window)
 		{
 		    if (window->screen != last_input_screen)
-			panic("I am not on that screen");
+			panic(1, "I am not on that screen");
 		    else
 			make_window_current(last_input_screen->window_list);
 		}
@@ -485,7 +485,7 @@ void 	delete_window (Window *window)
 			make_window_current(NULL);
 	}
 	if (window == current_window)
-		panic("window == current_window -- this is wrong.");
+		panic(1, "window == current_window -- this is wrong.");
 
 	/*
 	 * OK!  Now we have completely unlinked this window from whatever
@@ -534,7 +534,7 @@ delete_window_contents:
 		}
 		window->display_ip = NULL;
 		if (window->display_buffer_size != 0)
-			panic("display_buffer_size is %d, should be 0", 
+			panic(1, "display_buffer_size is %d, should be 0", 
 				window->display_buffer_size);
 	}
 
@@ -668,7 +668,7 @@ static void 	remove_from_invisible_list (Window *window)
 	for (w = invisible_list; w && w != window; w = w->next)
 		;
 	if (!w)
-		panic("This window is _not_ invisible");
+		panic(1, "This window is _not_ invisible");
 
 	/*
 	 * Unlink it from the list
@@ -714,7 +714,7 @@ Window *add_to_window_list (Screen *screen, Window *new_w)
 		*tmp;
 
 	if (screen == NULL)
-		panic("Cannot add window [%d] to NULL screen.", new_w->refnum);
+		panic(1, "Cannot add window [%d] to NULL screen.", new_w->refnum);
 
 	screen->visible_windows++;
 	new_w->screen = screen;
@@ -796,7 +796,7 @@ static void 	remove_window_from_screen (Window *window, int hide)
 	Screen *s;
 
 	if (!((s = window->screen)))
-		panic("This window is not on a screen");
+		panic(1, "This window is not on a screen");
 
 	/*
 	 * We  used to go to greath lengths to figure out how to fill
@@ -1419,7 +1419,7 @@ static	int	restart;
 	while (traverse_all_windows(&tmp))
 	{
 		if (tmp->cursor > tmp->display_lines)
-			panic("uaw: window [%d]'s cursor [%hd] is off the display [%d]", tmp->refnum, tmp->cursor, tmp->display_lines);
+			panic(1, "uaw: window [%d]'s cursor [%hd] is off the display [%d]", tmp->refnum, tmp->cursor, tmp->display_lines);
 	}
 
 	recursion--;
@@ -2149,7 +2149,7 @@ const char 	*get_echannel_by_refnum (unsigned refnum)
 	Window	*tmp;
 
 	if ((tmp = get_window_by_refnum(refnum)) == (Window *) 0)
-		panic("get_echannel_by_refnum: invalid window [%d]", refnum);
+		panic(1, "get_echannel_by_refnum: invalid window [%d]", refnum);
 	return window_current_channel(tmp->refnum, tmp->server);
 }
 
@@ -2541,7 +2541,7 @@ void	pop_message_from (int context)
 		yell("popping message context %d", context);
 
 	if (context != context_counter - 1)
-		panic("Output context from %s:%d was not released", 
+		panic(1, "Output context from %s:%d was not released", 
 			contexts[context_counter-1].who_file,
 			contexts[context_counter-1].who_line);
 
@@ -4459,7 +4459,7 @@ Window *window_rejoin (Window *window, char **args)
 
 			/* If there is still no owner, we messed up. */
 			if (!owner)
-				panic("There are no windows for this server, "
+				panic(1, "There are no windows for this server, "
 				      "and there should be.");
 
 			add_waiting_channel(owner, chan);
@@ -5182,7 +5182,7 @@ static Display *recycle = NULL;
 static void 	delete_display_line (Display *stuff)
 {
 	if (recycle == stuff)
-		panic("recycle == stuff is bogus");
+		panic(1, "recycle == stuff is bogus");
 	if (recycle)
 	{
 		new_free((char **)&recycle->line);
@@ -5871,11 +5871,11 @@ static void 	set_screens_current_window (Screen *screen, Window *window)
 		window = screen->window_list;
 
 	if (window->deceased)
-		panic("This window is dead.");
+		panic(1, "This window is dead.");
 	if (window->screen != screen)
-		panic("The window is not on that screen.");
+		panic(1, "The window is not on that screen.");
 	if (!screen)
-		panic("Cannot set the invisible screen's current window.");
+		panic(1, "Cannot set the invisible screen's current window.");
 
 	if (screen->current_window != window)
 	{
@@ -5927,10 +5927,10 @@ void 	make_window_current (Window *window)
 		current_window = last_input_screen->window_list;
 
 	if (current_window == NULL)
-		panic("make_window_current(NULL) -- can't find another window");
+		panic(1, "make_window_current(NULL) -- can't find another window");
 
 	if (current_window->deceased)
-		panic("This window is dead and cannot be made current");
+		panic(1, "This window is dead and cannot be made current");
 
 	if (current_window == old_current_window)
 		return;
@@ -5970,7 +5970,7 @@ static int	change_line (Window *window, const unsigned char *str)
 
 	/* Must have been asked to change a line */
 	if (chg_line == -1)
-		panic("This is not a scratch window.");
+		panic(1, "This is not a scratch window.");
 
 	/* Outputting to a 0 size window is a no-op. */
 	if (window->display_lines == 0)
@@ -5978,7 +5978,7 @@ static int	change_line (Window *window, const unsigned char *str)
 
 	/* Must be within the bounds of the size of the window */
 	if (chg_line >= window->display_lines)
-		panic("change_line is too big.");
+		panic(1, "change_line is too big.");
 
 	/* Make sure that the line exists that we want to change */
 	while (window->scrolling_distance_from_display_ip <= chg_line)
@@ -5987,13 +5987,13 @@ static int	change_line (Window *window, const unsigned char *str)
 	/* Now find the line we want to change */
 	my_line = window->scrolling_top_of_display;
 	if (my_line == window->display_ip)
-		panic("Can't change line [%d] -- doesn't exist", 
+		panic(1, "Can't change line [%d] -- doesn't exist", 
 			chg_line);
 	for (cnt = 0; cnt < chg_line; cnt++)
 	{
 		my_line = my_line->next;
 		if (my_line == window->display_ip)
-			panic("Can't change line [%d] -- doesn't exist", 
+			panic(1, "Can't change line [%d] -- doesn't exist", 
 				chg_line);
 	}
 

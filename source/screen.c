@@ -1,4 +1,4 @@
-/* $EPIC: screen.c,v 1.123 2007/03/29 02:44:40 jnelson Exp $ */
+/* $EPIC: screen.c,v 1.124 2007/04/12 03:24:14 jnelson Exp $ */
 /*
  * screen.c
  *
@@ -1052,7 +1052,7 @@ u_char *	new_normalize_string (const u_char *str, int logical, int mangle)
 	else if (logical == 3)
 		attrout = display_attributes;	/* The status line */
 	else
-		panic("'logical == %d' is not valid.", logical);
+		panic(1, "'logical == %d' is not valid.", logical);
 
 	/* Reset all attributes to zero */
 	a.bold = a.underline = a.reverse = a.blink = a.altchar = 0;
@@ -1329,7 +1329,7 @@ abnormal_char:
 
 		default:
 		{
-			panic("Unknown normalize_string mode");
+			panic(1, "Unknown normalize_string mode");
 			break;
 		}
 	    } /* End of huge ansi-state switch */
@@ -1453,7 +1453,7 @@ const	u_char	*cont_ptr;
 	u_char	*cont_free = NULL;
 
 	if (recursion)
-		panic("prepare_display() called recursively");
+		panic(1, "prepare_display() called recursively");
 	recursion++;
 
         /* Reset all attributes to zero */
@@ -2006,7 +2006,7 @@ void 	add_to_screen (const unsigned char *buffer)
 	    if (is_channel(who_from))
 	    {
 		if (from_server == NOSERV)
-		    panic("Output to channel [%s:NOSERV]: %s",
+		    panic(0, "Output to channel [%s:NOSERV]: %s",
 				who_from, buffer);
 
 	        if ((tmp = get_window_by_refnum(
@@ -2311,7 +2311,7 @@ static void 	scroll_window (Window *window)
 		return;
 
 	if (window->cursor > window->display_lines)
-		panic("Window [%d]'s cursor [%d] is off the display [%d]",
+		panic(1, "Window [%d]'s cursor [%d] is off the display [%d]",
 			window->refnum, window->cursor, window->display_lines);
 
 	/*
@@ -2330,7 +2330,7 @@ static void 	scroll_window (Window *window)
 		 */
 		if (window->holding_distance_from_display_ip > 
 						window->display_lines)
-			panic("Can't output to window [%d] "
+			panic(1, "Can't output to window [%d] "
 				"because it is holding stuff: [%d] [%d]", 
 				window->refnum, 
 				window->holding_distance_from_display_ip, 
@@ -2338,7 +2338,7 @@ static void 	scroll_window (Window *window)
 
 		if (window->scrollback_distance_from_display_ip > 
 						window->display_lines)
-			panic("Can't output to window [%d] "
+			panic(1, "Can't output to window [%d] "
 				"because it is scrolling back: [%d] [%d]", 
 				window->refnum, 
 				window->scrollback_distance_from_display_ip, 
@@ -2646,7 +2646,7 @@ Window	*create_additional_screen (void)
 		say("Opening new window...");
 	}
 	else
-		panic("Opening new wound");
+		panic(1, "Opening new wound");
 
 	local_sockaddr.sin_family = AF_INET;
 #ifndef INADDR_LOOPBACK
@@ -2829,7 +2829,7 @@ Window	*create_additional_screen (void)
 			new_open(new_s->control, do_screens, NEWIO_RECV, 1);
 
                         if (!(win = new_window(new_s)))
-                                panic("WINDOW is NULL and it shouldnt be!");
+                                panic(1, "WINDOW is NULL and it shouldnt be!");
                         return win;
 		}
 	    }

@@ -1,4 +1,4 @@
-/* $EPIC: parse.c,v 1.86 2007/04/12 02:37:24 jnelson Exp $ */
+/* $EPIC: parse.c,v 1.87 2007/04/12 03:24:14 jnelson Exp $ */
 /*
  * parse.c: handles messages from the server.   Believe it or not.  I
  * certainly wouldn't if I were you. 
@@ -993,7 +993,7 @@ static void	p_kick (const char *from, const char *comm, const char **ArgList)
 		     * channel we dont think we're on.
 		     */
 		    if (im_on_channel(channel, from_server))
-			panic("Window is NULL for channel [%s]", channel);
+			panic(0, "Window is NULL for channel [%s]", channel);
 
 		    yell("You were KICKed by [%s] on channel [%s] "
 			 "(reason [%s]), which you are not on!  "

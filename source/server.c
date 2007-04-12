@@ -1,4 +1,4 @@
-/* $EPIC: server.c,v 1.220 2007/04/12 03:06:09 jnelson Exp $ */
+/* $EPIC: server.c,v 1.221 2007/04/12 03:24:14 jnelson Exp $ */
 /*
  * server.c:  Things dealing with that wacky program we call ircd.
  *
@@ -2378,7 +2378,7 @@ static SS	get_server_remote_addr (int refnum)
 	Server *s;
 
 	if (!(s = get_server(refnum)))
-	    panic("Refnum %d isn't valid in get_server_remote_addr", refnum);
+	    panic(1, "Refnum %d isn't valid in get_server_remote_addr", refnum);
 
 	return s->remote_sockname;
 }
@@ -2388,7 +2388,7 @@ SS	get_server_local_addr (int refnum)
 	Server *s;
 
 	if (!(s = get_server(refnum)))
-		panic("Refnum %d isn't valid in get_server_local_addr", refnum);
+		panic(1, "Refnum %d isn't valid in get_server_local_addr", refnum);
 
 	return s->local_sockname;
 }
@@ -2398,7 +2398,7 @@ SS	get_server_uh_addr (int refnum)
 	Server *s;
 
 	if (!(s = get_server(refnum)))
-		panic("Refnum %d isn't valid in get_server_uh_addr", refnum);
+		panic(1, "Refnum %d isn't valid in get_server_uh_addr", refnum);
 
 	return s->uh_addr;
 }

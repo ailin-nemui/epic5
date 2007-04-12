@@ -12,7 +12,6 @@ KNOWN ERRATA (eg, bugs, or unresolved requests):
   eliminating one-column-per-byte assumption.
 * There is confusion between "proto" "type" and "addrfamily" with server
   stuff.  Normalize and redocument.
-* Panic messages should not be outputting channel info to irc.
 * /xecho needs a way to output to a target as well as a level.
 
 LOOK FOR IN THE FUTURE
@@ -268,3 +267,4 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * GC the if 0'd decls from before the switch to ServerInfos
 * Add $serverctl(GET <refnum> FULLDESC) for kreca.
 * Add $serverctl(ALLGROUPS) for kreca
+* Add arg to panic() controlling whether panic is sent via QUIT (rb black)

@@ -1,4 +1,4 @@
-/* $EPIC: term.c,v 1.21 2007/04/12 02:37:24 jnelson Exp $ */
+/* $EPIC: term.c,v 1.22 2007/04/12 03:24:14 jnelson Exp $ */
 /*
  * term.c -- termios and (termcap || terminfo) handlers
  *
@@ -762,7 +762,7 @@ int 	term_init (void)
 	char	*term;
 
 	if (dumb_mode)
-		panic("term_init called in dumb_mode");
+		panic(1, "term_init called in dumb_mode");
 
 	if ((term = getenv("TERM")) == (char *) 0)
 	{
@@ -1629,7 +1629,7 @@ const char *	term_getsgr (int opt, int fore, int back)
 				ret = tparm(current_term->TI_dispc, fore);
 			break;
 		default:
-			panic ("Unknown option '%d' to term_getsgr", opt);
+			panic(1, "Unknown option '%d' to term_getsgr", opt);
 			break;
 	}
 	return (ret);

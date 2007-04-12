@@ -1,4 +1,4 @@
-/* $EPIC: commands.c,v 1.162 2007/04/12 02:37:24 jnelson Exp $ */
+/* $EPIC: commands.c,v 1.163 2007/04/12 03:24:14 jnelson Exp $ */
 /*
  * commands.c -- Stuff needed to execute commands in ircII.
  *		 Includes the bulk of the built in commands for ircII.
@@ -1067,7 +1067,7 @@ BUILT_IN_COMMAND(xechocmd)
 		}
 	}
 	else if (want_banner != 0)
-		panic("xecho: want_banner is %d", want_banner);
+		panic(1, "xecho: want_banner is %d", want_banner);
 
 	if (all_windows == 1)
 	{
@@ -1080,7 +1080,7 @@ BUILT_IN_COMMAND(xechocmd)
 		}
 	}
 	else if (all_windows != 0)
-		panic("xecho: all_windows is %d", all_windows);
+		panic(1, "xecho: all_windows is %d", all_windows);
 	else
 	{
 		int l = message_setall(to_window_refnum, to_from, to_level);
@@ -3400,7 +3400,7 @@ static void	parse_block (const char *org_line, const char *args, int interactive
 	 * We will be mangling 'org_line', so we make a copy to work with.
 	 */
 	if (!org_line)
-		panic("org_line is NULL and it shouldn't be.");
+		panic(1, "org_line is NULL and it shouldn't be.");
 	line = LOCAL_COPY(org_line);
 
 	/*

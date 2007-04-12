@@ -1,4 +1,4 @@
-/* $EPIC: names.c,v 1.77 2006/10/13 21:58:02 jnelson Exp $ */
+/* $EPIC: names.c,v 1.78 2007/04/12 03:24:14 jnelson Exp $ */
 /*
  * names.c: This here is used to maintain a list of all the people currently
  * on your channel.  Seems to work 
@@ -214,13 +214,13 @@ static void 	destroy_channel (Channel *chan)
 	if (chan != channel_list)
 	{
 		if (!chan->prev)
-			panic("chan != channel_list, but chan->prev is NULL");
+			panic(1, "chan != channel_list, but chan->prev is NULL");
 		chan->prev->next = chan->next;
 	}
 	else
 	{
 		if (chan->prev)
-			panic("channel_list->prev is not NULL");
+			panic(1, "channel_list->prev is not NULL");
 		channel_list = chan->next;
 	}
 
@@ -1408,7 +1408,7 @@ void 	set_channel_window (const char *channel, int server, int winref, int as_cu
 	Char *	new_window_old_curchan;
 
 	if (channel == NULL)
-		panic("channel == NULL in set_channel_window!");
+		panic(1, "channel == NULL in set_channel_window!");
 
 	if ((tmp = find_channel(channel, get_window_server(winref))))
 	{
@@ -1493,7 +1493,7 @@ void   move_channel_to_window (const char *chan, int server, int old_w, int new_
 	if (!(tmp = find_channel(chan, server)))
 		return;
 	if (tmp->winref != old_w)
-		panic("Channel [%s:%d] is on window [%d] not on window [%d] (moving to [%d])",
+		panic(0, "Channel [%s:%d] is on window [%d] not on window [%d] (moving to [%d])",
 			chan, server, tmp->winref, old_w, new_w);
 
 	/* set_channel_window calls new elections */
@@ -1674,14 +1674,14 @@ void	channel_check_windows (void)
 		reset ? (tmp = channel_list) : (tmp = tmp->next))
 	{
 		if (tmp->winref <= 0)
-			panic("I thought we just checked for this! [1]");
+			panic(1, "I thought we just checked for this! [1]");
 
 		if (get_window_server(tmp->winref) == NOSERV)
 			continue;			/* This is OK. */
 
 		if (tmp->server != get_window_server(tmp->winref))
 		    if (get_server_status(tmp->server) != SERVER_CLOSING)
-			panic("Referential integrity failure: "
+			panic(0, "Referential integrity failure: "
 			      "Channel [%s] on server [%d] is connected "
 			      "to window [%d] on server [%d]",
 				tmp->channel, tmp->server, 
@@ -1693,11 +1693,11 @@ void	channel_check_windows (void)
 		reset ? (tmp = channel_list) : (tmp = tmp->next))
 	{
 		if (tmp->winref <= 0)
-			panic("I thought we just checked for this! [2]");
+			panic(1, "I thought we just checked for this! [2]");
 
 		if (!get_window_by_refnum(tmp->winref))
 		    if (get_server_status(tmp->server) != SERVER_CLOSING)
-			panic("Referential integrity failure: "
+			panic(0, "Referential integrity failure: "
 			      "Channel [%s] on server [%d] is connected "
 			      "to window [%d] "
 			      "that doesn't exist any more!",

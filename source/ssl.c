@@ -1,4 +1,4 @@
-/* $EPIC: ssl.c,v 1.25 2006/10/20 23:20:55 jnelson Exp $ */
+/* $EPIC: ssl.c,v 1.26 2007/04/12 03:24:14 jnelson Exp $ */
 /*
  * ssl.c: SSL connection functions
  *
@@ -104,7 +104,7 @@ static SSL *SSL_FD_init (SSL_CTX *ctx, int channel)
 	if (!(ssl = SSL_new(ctx)))
 	{
 		return NULL;
-		panic("SSL_FD_init() critical error in SSL_new()");
+		panic(1, "SSL_FD_init() critical error in SSL_new()");
 	}
 	SSL_set_fd(ssl, channel);
 	return(ssl);
@@ -357,7 +357,7 @@ int	ssl_read (int vfd, int quiet)
 	{
 		/* This is to prevent an impossible deadlock */
 		if (failsafe++ > 1000)
-			panic("Caught in SSL_pending() loop! (%d)", vfd);
+			panic(1, "Caught in SSL_pending() loop! (%d)", vfd);
 
 		c = SSL_read(x->ssl_fd, buffer, sizeof(buffer));
 		if (c < 0)
@@ -545,26 +545,26 @@ int	startup_ssl (int vfd, int channel)
 
 int	shutdown_ssl (int vfd)
 {
-	panic("shutdown_ssl(%d) called on non-ssl client", vfd);
+	panic(1, "shutdown_ssl(%d) called on non-ssl client", vfd);
 	return -1;
 }
 
 int	write_ssl (int vfd, const void *data, size_t len)
 {
-	panic("write_fd(%d, \"%s\", %ld) called on non-ssl client",
+	panic(1, "write_fd(%d, \"%s\", %ld) called on non-ssl client",
 		vfd, (const char *)data, (long)len);
 	return -1;
 }
 
 int	ssl_read (int vfd, int quiet)
 {
-	panic("ssl_read(%d) called on non-ssl client", vfd);
+	panic(1, "ssl_read(%d) called on non-ssl client", vfd);
 	return -1;
 }
 
 const char *get_ssl_cipher (int vfd)
 {
-	panic("get_ssl_cipher(%d) called on non-ssl client", vfd);
+	panic(1, "get_ssl_cipher(%d) called on non-ssl client", vfd);
 	return NULL;
 }
 

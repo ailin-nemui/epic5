@@ -1,4 +1,4 @@
-/* $EPIC: ircaux.c,v 1.166 2006/11/13 04:27:47 jnelson Exp $ */
+/* $EPIC: ircaux.c,v 1.167 2007/04/12 03:24:14 jnelson Exp $ */
 /*
  * ircaux.c: some extra routines... not specific to irc... that I needed 
  *
@@ -135,7 +135,7 @@ void	fatal_malloc_check (void *ptr, const char *special, const char *fn, int lin
 
 		privileged_yell("IMPORTANT! MAKE SURE TO INCLUDE ALL OF THIS INFORMATION" 
 			" IN YOUR BUG REPORT!");
-		panic("BE SURE TO INCLUDE THE ABOVE IMPORTANT INFORMATION! "
+		panic(1, "BE SURE TO INCLUDE THE ABOVE IMPORTANT INFORMATION! "
 			"-- new_free()'s magic check failed from [%s/%d].", 
 			fn, line);
 	    }
@@ -146,7 +146,7 @@ void	fatal_malloc_check (void *ptr, const char *special, const char *fn, int lin
 			abort();
 
 		recursion++;
-		panic("free()d the same address twice from [%s/%d].", 
+		panic(1, "free()d the same address twice from [%s/%d].", 
 				fn, line);
 	    }
 
@@ -165,7 +165,7 @@ void *	really_new_malloc (size_t size, const char *fn, int line)
 	char	*ptr;
 
 	if (!(ptr = (char *)malloc(size + sizeof(MO))))
-		panic("Malloc() failed from [%s/%d], giving up!", fn, line);
+		panic(1, "Malloc() failed from [%s/%d], giving up!", fn, line);
 
 	/* Store the size of the allocation in the buffer. */
 	ptr += sizeof(MO);
@@ -283,7 +283,7 @@ void *	really_new_realloc (void **ptr, size_t size, const char *fn, int line)
 			*ptr = newptr;
 		else {
 			new_free(ptr);
-			panic("realloc() failed from [%s/%d], giving up!", fn, line);
+			panic(1, "realloc() failed from [%s/%d], giving up!", fn, line);
 		}
 
 		/* Re-initalize the MO buffer; magic(*ptr) is already set. */
@@ -1233,7 +1233,7 @@ char *	double_quote (const char *str, const char *stuff, char *buffer)
 	return buffer;
 }
 
-void	panic (const char *format, ...)
+void	panic (int quitmsg, const char *format, ...)
 {
 	char buffer[BIG_BUFFER_SIZE * 10 + 1];
 static	int recursion = 0;		/* Recursion is bad */
@@ -1256,10 +1256,13 @@ static	int recursion = 0;		/* Recursion is bad */
 	fprintf(stderr, "Panic: [%s (%lu):%s]\n", irc_version, commit_id, buffer);
 	panic_dump_call_stack();
 
+	if (quitmsg == 0)
+		strlcpy(buffer, "Ask user for panic message.", sizeof(buffer));
+
 	if (x_debug & DEBUG_CRASH)
-		irc_exit(0, "EPIC Panic: %s (%lu):%s", irc_version, commit_id, buffer);
+		irc_exit(0, "Panic: epic5-%lu:%s", commit_id, buffer);
 	else
-		irc_exit(1, "EPIC Panic: %s (%lu):%s", irc_version, commit_id, buffer);
+		irc_exit(1, "Panic: epic5-%lu:%s", commit_id, buffer);
 }
 
 /* beep_em: Not hard to figure this one out */
@@ -3652,7 +3655,7 @@ char *	malloc_strcpy_c (char **ptr, const char *src, size_t *clue)
 	{
 		size = alloc_size(*ptr);
 		if (size == (size_t) FREED_VAL)
-			panic("free()d pointer passed to malloc_strcpy");
+			panic(1, "free()d pointer passed to malloc_strcpy");
 
 		/* No copy neccesary! */
 		if (*ptr == src)
@@ -3725,7 +3728,7 @@ char *	malloc_strcat_c (char **ptr, const char *src, size_t *cluep)
 	if (*ptr)
 	{
 		if (alloc_size(*ptr) == FREED_VAL)
-			panic("free()d pointer passed to malloc_strcat");
+			panic(1, "free()d pointer passed to malloc_strcat");
 
 		if (!src)
 			return *ptr;
@@ -3895,7 +3898,7 @@ char *	malloc_strcat2_c (char **ptr, const char *str1, const char *str2, size_t 
 	if (*ptr)
 	{
 		if (alloc_size(*ptr) == FREED_VAL)
-			panic("free()d pointer passed to malloc_strcat2");
+			panic(1, "free()d pointer passed to malloc_strcat2");
 		msize += strlen(csize + *ptr);
 	}
 	if (str1)
@@ -3932,7 +3935,7 @@ char *	malloc_strcat3_c (char **ptr, const char *str1, const char *str2, const c
 	if (*ptr)
 	{
 		if (alloc_size(*ptr) == FREED_VAL)
-			panic("free()d pointer passed to malloc_strcat2");
+			panic(1, "free()d pointer passed to malloc_strcat2");
 		msize += strlen(csize + *ptr);
 	}
 	if (str1)
@@ -4782,7 +4785,7 @@ char *	substitute_string (const char *string, const char *oldstr, const char *ne
 
 	retval[i] = 0;
 	if (i > (int)retvalsize)
-	    panic("substitute [%s] with [%s] in [%s] overflows [%ld] chars", 
+	    panic(1, "substitute [%s] with [%s] in [%s] overflows [%ld] chars", 
 			oldstr, newstr, string, (long)retvalsize);
 
 	return retval;

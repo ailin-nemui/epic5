@@ -1,4 +1,4 @@
-/* $EPIC: mail.c,v 1.24 2007/03/29 02:44:40 jnelson Exp $ */
+/* $EPIC: mail.c,v 1.25 2007/04/12 03:24:14 jnelson Exp $ */
 /*
  * mail.c -- a gross simplification of mail checking.
  * Only unix maildrops (``mbox'') are supported.
@@ -598,7 +598,7 @@ void	mail_systimer (void)
 			checkmail->level3();
 			break;
 		default:
-			panic("mail_systimer called with set mail %d", x);
+			panic(1, "mail_systimer called with set mail %d", x);
 	}
 
 	update_all_status();

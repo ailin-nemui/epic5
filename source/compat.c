@@ -1,4 +1,4 @@
-/* $EPIC: compat.c,v 1.28 2006/06/07 02:41:54 jnelson Exp $ */
+/* $EPIC: compat.c,v 1.29 2007/04/12 03:24:14 jnelson Exp $ */
 /*
  * Everything that im not directly responsible for I put in here.  Almost
  * all of this stuff is either borrowed from somewhere else (for you poor
@@ -1355,10 +1355,10 @@ int vsnprintf (char *str, size_t size, const char *format, va_list ap)
 	/* If the string ended up overflowing, just give up. */
 	/* Pre-ansi vsprintf()s return (char *) */
 	if (ret == (int)str && strlen(str) > size)
-		panic("Buffer overflow in vsnprintf");
+		panic(1, "Buffer overflow in vsnprintf");
 	/* ANSI vsprintf()s return (int) */
 	if (ret != (int)str && ret > size)
-		panic("Buffer overflow in vsnprintf");
+		panic(1, "Buffer overflow in vsnprintf");
 
 	/* We always return (int). */
 	return ret;

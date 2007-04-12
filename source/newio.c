@@ -1,4 +1,4 @@
-/* $EPIC: newio.c,v 1.64 2007/02/03 15:40:16 jnelson Exp $ */
+/* $EPIC: newio.c,v 1.65 2007/04/12 03:24:14 jnelson Exp $ */
 /*
  * newio.c:  Passive, callback-driven IO handling for sockets-n-stuff.
  *
@@ -135,7 +135,7 @@ static	int	get_new_vfd (int channel)
 static int	get_channel_by_vfd (int vfd)
 {
 	if (!io_rec[vfd])
-		panic("get_channel_by_vfd(%d): vfd is not set up!");
+		panic(1, "get_channel_by_vfd(%d): vfd is not set up!");
 	return io_rec[vfd]->channel;
 }
 #define CHANNEL(vfd) get_channel_by_vfd(vfd);
@@ -164,7 +164,7 @@ int	dgets_buffer (int channel, void *data, ssize_t len)
 	klock();
 	vfd = VFD(channel);
 	if (!(ioe = io_rec[vfd]))
-		panic("dgets called on unsetup channel %d", channel);
+		panic(1, "dgets called on unsetup channel %d", channel);
 
 	/* 
 	 * An old exploit just sends us characters every .8 seconds without
@@ -272,7 +272,7 @@ ssize_t	dgets (int vfd, char *buf, size_t buflen, int buffer)
 	}
 
 	if (!(ioe = io_rec[vfd]))
-		panic("dgets called on unsetup vfd %d", vfd);
+		panic(1, "dgets called on unsetup vfd %d", vfd);
 
 	if (ioe->error)
 	{
@@ -413,7 +413,7 @@ static	int	polls = 0;
 		if (polls++ > 10000)
 		{
 		    dump_timers();
-		    panic("Stuck in a polling loop. Help!");
+		    panic(1, "Stuck in a polling loop. Help!");
 		}
 		return 0;		/* Timers are more important */
 	    }
@@ -464,7 +464,7 @@ void	init_newio (void)
 	int	max_fd = IO_ARRAYLEN;
 
 	if (io_rec)
-		panic("init_newio() called twice.");
+		panic(1, "init_newio() called twice.");
 
 	io_rec = (MyIO **)new_malloc(sizeof(MyIO *) * max_fd);
 	for (vfd = 0; vfd < max_fd; vfd++)
@@ -555,7 +555,7 @@ int 	new_open (int channel, void (*callback) (int), int io_type, int quiet)
 		ioe->io_callback = ssl_connect;
 #endif
 	else
-		panic("New_open doesn't recognize io type %d", io_type);
+		panic(1, "New_open doesn't recognize io type %d", io_type);
 
 	ioe->callback = callback;
 
@@ -833,11 +833,11 @@ static void	new_io_event (int vfd)
 	int	c;
 
 	if (!(ioe = io_rec[vfd]))
-		panic("new_io_event: vfd [%d] isn't set up!", vfd);
+		panic(1, "new_io_event: vfd [%d] isn't set up!", vfd);
 
 	/* If it's dirty, something is very wrong. */
 	if (!ioe->clean)
-		panic("new_io_event: vfd [%d] hasn't been cleaned yet", vfd);
+		panic(1, "new_io_event: vfd [%d] hasn't been cleaned yet", vfd);
 
 	if ((c = ioe->io_callback(vfd, ioe->quiet)) <= 0)
 	{
@@ -920,7 +920,7 @@ static	int	kdoit (Timeval *timeout)
 		}
 
 		if (!foundit)
-			panic("kdoit(select): Select says I have a bad file "
+			panic(1, "kdoit(select): Select says I have a bad file "
 				"descriptor but I can't find it!");
 	    }
 	    else
@@ -1338,7 +1338,7 @@ static void	kinit (void)
 static  void    kread (int vfd)
 {
 	if (pfd[vfd].active)
-		panic("vfd [%d] already is active (reading)", vfd);
+		panic(1, "vfd [%d] already is active (reading)", vfd);
 }
  
 static  void    knoread (int vfd)
@@ -1382,7 +1382,7 @@ static  void    kunholdread (int vfd)
 static  void    kwrite (int vfd)
 {
 	if (pfd[vfd].active)
-		panic("vfd [%d] already is active (writing)", vfd);
+		panic(1, "vfd [%d] already is active (writing)", vfd);
 }
 
 static  void    knowrite (int vfd)
@@ -1408,13 +1408,13 @@ static	void	kcleaned (int vfd)
 	int *	mvfd;
 
 	if (!pthread_equal(pthread_self(), global))
-		panic("kcleaned not called from global thread");
+		panic(1, "kcleaned not called from global thread");
 
 	if (pfd[vfd].active == 1)
-		panic("vfd [%d] is already active (kcleaned)", vfd);
+		panic(1, "vfd [%d] is already active (kcleaned)", vfd);
 
 	if (io_rec[vfd]->clean == 0)
-		panic("vfd [%d] is not really clean.", vfd);
+		panic(1, "vfd [%d] is not really clean.", vfd);
 
 	mvfd = new_malloc(sizeof *mvfd);
 	*mvfd = vfd;
@@ -1438,7 +1438,7 @@ static	int	kdoit (Timeval *timeout)
 	int	err;
 
 	if (!pthread_equal(pthread_self(), global))
-		panic("kdoit not called from global thread");
+		panic(1, "kdoit not called from global thread");
 
 	clock_gettime(CLOCK_REALTIME, &right_now);
 	right_now.tv_nsec += (timeout->tv_usec * 1000);
@@ -1485,7 +1485,7 @@ static	void	klock	(void)
 	int	c;
 
 	if ((c = pthread_mutex_lock(&mutex)))
-		panic("pthread_mutex_lock: %s", strerror(c));
+		panic(1, "pthread_mutex_lock: %s", strerror(c));
 }
 
 static	void	kunlock (void)
@@ -1493,7 +1493,7 @@ static	void	kunlock (void)
 	int	c;
 
 	if ((c = pthread_mutex_unlock(&mutex)))
-		panic("pthread_mutex_unlock: %s", strerror(c));
+		panic(1, "pthread_mutex_unlock: %s", strerror(c));
 }
 
 static	int	ksleep (double timeout)

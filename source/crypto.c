@@ -1,4 +1,4 @@
-/* $EPIC: crypto.c,v 1.7 2006/09/23 02:56:44 jnelson Exp $ */
+/* $EPIC: crypto.c,v 1.8 2007/04/12 03:24:14 jnelson Exp $ */
 /*
  * crypto.c: SED/CAST5/BLOWFISH/AES encryption and decryption routines.
  *
@@ -257,7 +257,7 @@ unsigned char *	decipher_message (const unsigned char *ciphertext, size_t len, C
 		return retval;
 	}
 	else
-		panic("decipher_message: key->type %d is not valid", key->type);
+		panic(1, "decipher_message: key->type %d is not valid", key->type);
     }
     while (0);
 
@@ -411,7 +411,7 @@ unsigned char *	cipher_message (const unsigned char *orig_message, size_t len, C
 		return ciphertext;
 	}
 	else
-		panic("cipher_message: key->type %d is not valid", key->type);
+		panic(1, "cipher_message: key->type %d is not valid", key->type);
 
 	return NULL;
 }

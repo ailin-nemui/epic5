@@ -1,4 +1,4 @@
-/* $EPIC: crypt.c,v 1.33 2006/10/10 20:43:38 jnelson Exp $ */
+/* $EPIC: crypt.c,v 1.34 2007/04/12 03:24:14 jnelson Exp $ */
 /*
  * crypt.c: The /ENCRYPT command and all its attendant baggage.
  *
@@ -451,7 +451,7 @@ char *	crypt_msg (const unsigned char *str, Crypt *key)
 			CTCP_DELIM_CHAR, ciphers[key->type].ctcpname, 
 			ptr, CTCP_DELIM_CHAR);
 	else
-		panic("crypt_msg: key->type == %d not supported.", key->type);
+		panic(1, "crypt_msg: key->type == %d not supported.", key->type);
 
 	new_free(&my_str);
 	new_free(&ptr);

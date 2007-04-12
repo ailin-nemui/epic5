@@ -1,4 +1,4 @@
-/* $EPIC: expr.c,v 1.39 2006/11/08 01:31:59 jnelson Exp $ */
+/* $EPIC: expr.c,v 1.40 2007/04/12 03:24:14 jnelson Exp $ */
 /*
  * expr.c -- The expression mode parser and the textual mode parser
  * #included by alias.c -- DO NOT DELETE
@@ -1472,7 +1472,7 @@ char	*expand_alias	(const char *string, const char *args)
 
 #if 0						/* Maybe a good idea later? */
 	if (!buffer)
-		panic("expanded_alias [%s] returning NULL!", string);
+		panic(1, "expanded_alias [%s] returning NULL!", string);
 #endif
 
 	return buffer;
@@ -1819,7 +1819,7 @@ static	char	*alias_special_char (char **buffer, char *ptr, const char *args, cha
 			    TruncateAndQuote(buffer, tmp2, length, quote_em);
 			    new_free(&tmp2);
 			    if (!ptr)
-				panic("ptr is NULL after parsing numeric expando");
+				panic(1, "ptr is NULL after parsing numeric expando");
 			    return ptr;
 			}
 
@@ -1863,7 +1863,7 @@ static	char	*alias_special_char (char **buffer, char *ptr, const char *args, cha
 			}
 		}
 	}
-	panic("Returning NULL from alias_special_char");
+	panic(1, "Returning NULL from alias_special_char");
 	return NULL;
 }
 
@@ -1877,7 +1877,7 @@ static	void	TruncateAndQuote (char **buff, const char *add, ssize_t length, cons
 	char *	buffer;
 
 	if (!add)
-		panic("add is NULL");
+		panic(1, "add is NULL");
 
 	/* 
 	 * Semantics:

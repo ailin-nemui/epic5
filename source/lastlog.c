@@ -1,4 +1,4 @@
-/* $EPIC: lastlog.c,v 1.66 2007/04/12 02:37:24 jnelson Exp $ */
+/* $EPIC: lastlog.c,v 1.67 2007/04/12 03:24:14 jnelson Exp $ */
 /*
  * lastlog.c: handles the lastlog features of irc. 
  *
@@ -267,7 +267,7 @@ static void	remove_lastlog_item (Window *window, Lastlog *being_removed)
 	else if (being_removed->older)
 		being_removed->older->newer = being_removed->newer;
 	else
-		panic("Lastlog item [%s] being removed is not oldest and has no older.", being_removed->msg);
+		panic(1, "Lastlog item [%s] being removed is not oldest and has no older.", being_removed->msg);
 
 	if (being_removed == window->lastlog_newest)
 	{
@@ -278,7 +278,7 @@ static void	remove_lastlog_item (Window *window, Lastlog *being_removed)
 	else if (being_removed->newer)
 		being_removed->newer->older = being_removed->older;
 	else
-		panic("Lastlog item [%s] being removed is not newest and has no newest.", being_removed->msg);
+		panic(1, "Lastlog item [%s] being removed is not newest and has no newest.", being_removed->msg);
 
 	if (being_removed->visible)
 		window->lastlog_size--;
@@ -1090,7 +1090,7 @@ int	remove_lastlog_item (Lastlog *item)
 	if (item == lastlog_oldest)
 	{
 		if (item->older != NULL)
-			panic("Oldest lastlog item %jd has older item %jd",
+			panic(1, "Oldest lastlog item %jd has older item %jd",
 				item->refnum, item->older->refnum);
 
 		item->newer->older = NULL;
@@ -1100,7 +1100,7 @@ int	remove_lastlog_item (Lastlog *item)
 	else if (item == lastlog_newest)
 	{
 		if (item->newer != NULL)
-			panic("Newest lastlog item %jd has newer item %jd",
+			panic(1, "Newest lastlog item %jd has newer item %jd",
 				item->refnum, item->newer->refnum);
 
 		item->older->newer = NULL;

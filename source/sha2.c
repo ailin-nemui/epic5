@@ -29,7 +29,7 @@
  * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
  *
- * $Id: sha2.c,v 1.4 2006/09/08 22:52:50 jnelson Exp $
+ * $Id: sha2.c,v 1.5 2007/04/12 03:24:14 jnelson Exp $
  */
 #include "irc.h"
 #include "ircaux.h"
@@ -349,9 +349,9 @@ static void	SHA256_Update (SHA256_CTX *context, const sha2_byte *data, size_t le
 
 	/* Sanity check: */
 	if (!context)
-		panic("SHA256_Update: context is NULL");
+		panic(1, "SHA256_Update: context is NULL");
 	if (!data)
-		panic("SHA256_Update: data is NULL");
+		panic(1, "SHA256_Update: data is NULL");
 
 	usedspace = (context->bitcount >> 3) % SHA256_BLOCK_LENGTH;
 	if (usedspace > 0) {
@@ -397,7 +397,7 @@ static void 	SHA256_Final (sha2_byte *digest, SHA256_CTX *context)
 
 	/* Sanity check: */
 	if (!context)
-		panic("SHA256_Final: context is NULL");
+		panic(1, "SHA256_Final: context is NULL");
 
 	/* If no digest buffer is passed, we don't bother doing this: */
 	if (digest != (sha2_byte*)0) {
@@ -462,7 +462,7 @@ static char *	SHA256_End (SHA256_CTX *context, char *buffer)
 
 	/* Sanity check: */
 	if (!context)
-		panic("SHA256_End: context is NULL");
+		panic(1, "SHA256_End: context is NULL");
 
 	if (buffer != (char*)0) {
 		SHA256_Final(digest, context);

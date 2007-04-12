@@ -1,4 +1,4 @@
-/* $EPIC: expr2.c,v 1.35 2006/10/13 21:58:02 jnelson Exp $ */
+/* $EPIC: expr2.c,v 1.36 2007/04/12 03:24:14 jnelson Exp $ */
 /*
  * Zsh: math.c,v 3.1.2.1 1997/06/01 06:13:15 hzoli Exp 
  * math.c - mathematical expression evaluation
@@ -608,7 +608,7 @@ __inline static	const char *	get_token_raw (expr_info *c, TOKEN v)
 		TOK(c, v).used |= USED_RAW;
 
 		if (TOK(c, v).used & USED_EXPANDED)
-			panic("Cannot convert EXPANDED token to RAW");
+			panic(1, "Cannot convert EXPANDED token to RAW");
 		else if (TOK(c, v).used & USED_FLOAT)
 		{
 			TOK(c, v).raw_value = 
@@ -637,7 +637,7 @@ __inline static	const char *	get_token_raw (expr_info *c, TOKEN v)
 					v, TOK(c, v).lval, TOK(c, v).raw_value);
 		}
 		else
-			panic("Can't convert this token to raw format");
+			panic(1, "Can't convert this token to raw format");
 	}
 
 	return TOK(c, v).raw_value;
@@ -750,7 +750,7 @@ __inline static	const char *	get_token_expanded (expr_info *c, TOKEN v)
 					v, myval, TOK(c, v).expanded_value);
 		}
 		else
-			panic("Cannot convert from this token to EXPANDED");
+			panic(1, "Cannot convert from this token to EXPANDED");
 	}
 
 	if (x_debug & DEBUG_NEW_MATH_DEBUG)
