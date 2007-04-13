@@ -2,11 +2,8 @@ EPIC5 Projects, Bugs, and other Errata:
 
 KNOWN ERRATA (eg, bugs, or unresolved requests):
 ------------------------------------------------
-* Permit /load'ing a directory, complete with /set load_path changes
 * Nullie wants a way to do themed sends, such that
 	/ctcp ...   is themed, and /^ctcp .. is unthemed
-* Larne wants me to figure out if i can support 256-color xterm
-* Investigate suitability of http://miniupnp.free.fr/
 * Shattah would like something like /window omit <regex> to remove stuff.
 * Finish refactoring the input prompt, by showing the prompt all the time,
   eliminating one-column-per-byte assumption.
@@ -18,9 +15,10 @@ LOOK FOR IN THE FUTURE
 * send_text() needs rework, to add extra /on's so you can flag those special. 
 * Lastlog improvements (unified lastlog, refnums, moving between windows, etc)
 * Import utf8 support from ircII OR add support for utf16 (wide chars)
-* Import fg/bg color support from ircII
-* Cache what files can be /loaded in a hash
-* Support loading through ZIP files.
+* Import fg/bg color support from ircII 
+* 8-bit color support (256 colors for xterm) (rb larne)
+* Improvements for LOAD_PATH; directories, zip files, filename caching.
+* UPnP support via http://miniupnp.free.fr/
 * Some way to call an alias in a variable indirectly
 * Output rules
 * Support for CNOTICE
@@ -268,3 +266,4 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Add $serverctl(ALLGROUPS) for kreca
 * Add arg to panic() controlling whether panic is sent via QUIT (rb black)
 * Add /xecho -t <target> which outputs to a target, for kreca
+* Fix boneheaded error.

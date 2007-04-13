@@ -1,4 +1,4 @@
-/* $EPIC: server.c,v 1.221 2007/04/12 03:24:14 jnelson Exp $ */
+/* $EPIC: server.c,v 1.222 2007/04/13 03:45:21 jnelson Exp $ */
 /*
  * server.c:  Things dealing with that wacky program we call ircd.
  *
@@ -3219,6 +3219,7 @@ static char *	get_all_server_groups (void)
 sorry_wrong_number:
 	    ;
 	}
+	return retval;
 }
 
 /* Used by function_serverctl */
