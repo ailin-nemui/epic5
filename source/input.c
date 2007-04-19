@@ -1,4 +1,4 @@
-/* $EPIC: input.c,v 1.41 2007/04/12 02:37:24 jnelson Exp $ */
+/* $EPIC: input.c,v 1.42 2007/04/19 23:46:46 jnelson Exp $ */
 /*
  * input.c: does the actual input line stuff... keeps the appropriate stuff
  * on the input line, handles insert/delete of characters/words... the whole
@@ -277,7 +277,7 @@ void	update_input (int update)
 			prompt = last_input_screen->promptlist->prompt;
 			do_echo = last_input_screen->promptlist->echo;
 		}
-		if (is_valid_process(get_target_by_refnum(0)) != -1)
+		else if (is_valid_process(get_target_by_refnum(0)) != -1)
 			prompt = get_prompt_by_refnum(0);
 		else
 			prompt = input_prompt;
@@ -518,7 +518,6 @@ void 	change_input_prompt (int direction)
 		LOGICAL_CURSOR = last_input_screen->saved_buffer_pos;
 		*last_input_screen->saved_input_buffer = 0;
 		last_input_screen->saved_buffer_pos = 0;
-		last_input_screen->saved_min_buffer_pos = 0;
 	}
 
 	else if (direction == -1)

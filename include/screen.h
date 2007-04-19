@@ -66,7 +66,6 @@ struct	ScreenStru *next;		/* Previous screen in list */
 
 	unsigned char	saved_input_buffer[INPUT_BUFFER_SIZE+1];
 	int	saved_buffer_pos;
-	int	saved_min_buffer_pos;
 
 	WaitPrompt	*promptlist;
 
