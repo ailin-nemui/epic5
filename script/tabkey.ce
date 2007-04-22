@@ -1,6 +1,6 @@
-# version:1.0.4
+# version:1.1
 #
-# tabkey.ce - Tab key completion script for EPIC4/EPIC5
+# tabkey.ce.bmw - Tab key completion script for EPIC5
 # Copyright (c) 2002-2005 EPIC Software Labs
 # See the 'COPYRIGHT' file for more information.
 #
@@ -115,10 +115,8 @@ if (info(i) < 1000) {
 #
 alias tabkey.main (cycle, void)
 {
-	@ :xd_newmath = xdebug(new_math);
 	@ :xd_extractw = xdebug(extractw);
-	@ :xd_dword = xdebug(dword);
-	xdebug new_math extractw dword;
+	xdebug extractw;
 	@ :curpos = curpos();
 	@ :curword = indextoword($curpos $L);
 	@ :wordind = wordtoindex($curword $L);
@@ -153,7 +151,7 @@ alias tabkey.main (cycle, void)
 		@ TABKEY.LAST_LINE = L;
 		@ TABKEY.LAST_CYCLE_DIRECTION = cycle;
 
-		xdebug $xd_newmath $xd_extractw $xd_dword;
+		xdebug $xd_extractw;
 		return;
 	};
 
@@ -197,7 +195,7 @@ alias tabkey.main (cycle, void)
 		};
 	};
 
-	xdebug $xd_newmath $xd_extractw $xd_dword;
+	xdebug $xd_extractw;
 };
 
 alias tabkey.cmd (...)
@@ -331,7 +329,7 @@ alias tabkey.cmd.dcc (args)
 {
 	bless;
 	if (curword == 1) {
-		@ function_return = tabkey.nofallback($pattern("$args*" CHAT CLOSE CLOSEALL GET LIST RAW RENAME RESUME SEND));
+		@ function_return = tabkey.nofallback($pattern($args* CHAT CLOSE CLOSEALL GET LIST RAW RENAME RESUME SEND));
 	};
 };
 
@@ -401,7 +399,7 @@ alias tabkey.cmd.ignore (...)
 	if (curword == 1) {
 		@ :retval = tabkey.method.mask($*);
 	} else if (curword > 1) {
-		@ :retval = pattern("$0*" $TABKEY.LEVELS);
+		@ :retval = pattern($0* $TABKEY.LEVELS);
 	};
 	@ function_return = tabkey.nofallback($retval);
 };
@@ -457,7 +455,7 @@ alias tabkey.cmd.msg (...)
 	bless;
 	if (curword == 1)
 	{
-		@ :retval = pattern("$word*" $sort($uniq($TABKEY.MSGHIST[$encode($winserv())] $tabkey.method.nickchan($*))));
+		@ :retval = pattern($word* $sort($uniq($TABKEY.MSGHIST[$encode($winserv())] $tabkey.method.nickchan($*))));
 	}{
 		@ :cmd = word(0 $L);
 		if (!cmd) {
@@ -509,7 +507,7 @@ alias tabkey.cmd.q (...)
 
 alias tabkey.cmd.query (...)
 {
-	@ function_return = pattern("$0*" $sort($uniq($TABKEY.MSGHIST[$encode($winserv())] $tabkey.method.nickchan($*))));
+	@ function_return = pattern($0* $sort($uniq($TABKEY.MSGHIST[$encode($winserv())] $tabkey.method.nickchan($*))));
 };
 
 alias tabkey.cmd.repeat (void)
@@ -574,7 +572,7 @@ alias tabkey.cmd.window (...)
 
 	if (word_a)
 	{
-		@ :matches = pattern("$word_b*" $list);
+		@ :matches = pattern($word_b* $list);
 		if (#matches == 1)
 		{
 			parsekey delete_to_previous_space;
@@ -594,7 +592,7 @@ alias tabkey.cmd.window (...)
 	}
 	else
 	{
-		@ :retval = pattern("$word*" $list);
+		@ :retval = pattern($word* $list);
 	};
 
 	@ function_return = tabkey.nofallback($retval);
@@ -609,7 +607,7 @@ alias tabkey.method.array (array, args)
 		@ push(:list $getitem($array $ii));
 	};
 	@ :list = sort($uniq($list));
-	@ function_return = args ? pattern("$args*" $list) : list;
+	@ function_return = args ? pattern($args* $list) : list;
 };
 
 alias tabkey.method.commands (...)
@@ -619,9 +617,9 @@ alias tabkey.method.commands (...)
 
 alias tabkey.method.chan (...)
 {
-	@ function_return = (:foo = pattern("$sar(g/\\/\\\\/$*)*" $mychannels())) ? foo :
-	                    (:foo = pattern("#$sar(g/\\/\\\\/$*)*" $mychannels())) ? foo :
-	                    pattern("&$sar(g/\\/\\\\/$*)*" $mychannels());
+	@ function_return = (:foo = pattern($sar(g/\\/\\\\/$*)* $mychannels())) ? foo :
+	                    (:foo = pattern(#$sar(g/\\/\\\\/$*)* $mychannels())) ? foo :
+	                    pattern(&$sar(g/\\/\\\\/$*)* $mychannels());
 };
 
 stack push alias alias.foo;
@@ -653,12 +651,12 @@ alias tabkey.method.mask (...)
 alias tabkey.method.nick (...)
 {
 	@ :args = sar(g/\\/\\\\/$*);
-	if (match("$args*" $chanusers())) {
-		@ function_return = pattern("$args*" $chanusers());
+	if (match($args* $chanusers())) {
+		@ function_return = pattern($args* $chanusers());
 	} else {
 		@ :chanusers = mychannels();
 		repeat $#chanusers @ push(chanusers $chanusers($shift(chanusers)));
-		@ function_return = pattern("$args*" $sort($uniq($chanusers)));
+		@ function_return = pattern($args* $sort($uniq($chanusers)));
 	};
 };
 
@@ -674,7 +672,7 @@ alias tabkey.method.nickchannotify (...)
 
 alias tabkey.method.notify (...)
 {
-	@ function_return $pattern("$sar(g/\\/\\\\/$*)*" $notify(on));
+	@ function_return $pattern($sar(g/\\/\\\\/$*)* $notify(on));
 };
 
 alias tabkey.method.variable (type, void)

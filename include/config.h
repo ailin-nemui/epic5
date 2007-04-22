@@ -368,7 +368,7 @@
 #define DEFAULT_STATUS_SSL_ON "*SSL*"
 #define DEFAULT_STATUS_TRUNCATE_RHS 1
 #define DEFAULT_STATUS_UMODE " (+%#)"
-#define DEFAULT_STATUS_USER "EPIC5 -- Type /help for help"
+#define DEFAULT_STATUS_USER "EPIC5 -- Visit http://help.epicsol.org/ for help"
 #define DEFAULT_STATUS_USER1 ""
 #define DEFAULT_STATUS_USER2 ""
 #define DEFAULT_STATUS_USER3 ""
