@@ -2,8 +2,10 @@ EPIC5 Projects, Bugs, and other Errata:
 
 KNOWN ERRATA (eg, bugs, or unresolved requests):
 ------------------------------------------------
+* /disconnect should not say it's disconnecting if already disconnected.
 * The changes to word list functions broke tabkey.jm, and new versions of 
   the scripts are not ready yet.
+* /on dcc_lost should be thrown in more places, when DCC_DELETE is set.
 
 LOOK FOR IN THE FUTURE
 -----------------------
@@ -273,3 +275,5 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Fix boneheaded error.
 * Fix $"" and $'' because of missing else in block if.
 * New tabkey.ce from fudd.
+* Release EPIC5-0.3.3 (1458) (Mendicant)
+* Change 'wserv4' to 'epic5-wserv4' to avoid conflicting with epic4.

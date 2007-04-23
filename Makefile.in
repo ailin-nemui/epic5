@@ -73,7 +73,7 @@ mandir	    = @mandir@
 
 epic5       = @epic5@
 epic5_exe   = $(bindir)/$(epic5)
-wserv_exe   = $(libexecdir)/wserv4
+wserv_exe   = $(libexecdir)/$(epic5)-wserv4
 epic5dir    = $(sharedir)/$(epic5)
 
 ############ You ought not change anything below this line ###################
