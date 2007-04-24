@@ -2,8 +2,6 @@ EPIC5 Projects, Bugs, and other Errata:
 
 KNOWN ERRATA (eg, bugs, or unresolved requests):
 ------------------------------------------------
-* The changes to word list functions broke tabkey.jm, and new versions of 
-  the scripts are not ready yet.
 * /on dcc_lost should be thrown in more places, when DCC_DELETE is set.
 
 LOOK FOR IN THE FUTURE
