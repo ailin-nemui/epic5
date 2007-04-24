@@ -1,4 +1,4 @@
-/* $EPIC: server.c,v 1.223 2007/04/18 02:53:20 jnelson Exp $ */
+/* $EPIC: server.c,v 1.224 2007/04/24 02:18:08 jnelson Exp $ */
 /*
  * server.c:  Things dealing with that wacky program we call ircd.
  *
@@ -2302,16 +2302,22 @@ BUILT_IN_COMMAND(disconnectcmd)
 
 	if (get_server(i))
 	{
-		if (args && *args)
+		if (is_server_open(i))
+		{
+		    if (args && *args)
 			message = args;
-		else if (recon)
+		    else if (recon)
 			message = "Reconnecting";
-		else
+		    else
 			message = "Disconnecting";
 
-		say("Disconnecting from server %s", get_server_itsname(i));
-		close_server(i, message);
-		update_all_status();
+		    say("Disconnecting from server %s", get_server_itsname(i));
+		    close_server(i, message);
+		    update_all_status();
+		}
+		else if (!recon)
+		    say("You are already disconnected from server %s",
+						get_server_itsname(i));
 	}
 
 	if (!connected_to_server)

@@ -62,16 +62,14 @@ alias add_target (msg_cmd, target) {
 		@:target = [${servernum()}:${target}];
 	};
 
-	@target_cycle_list = remw("$msg_cmd $target" $target_cycle_list);
-
-	if (#target_cycle_list > ((tab_history_cycle_size * 2) -1)) {
-		@target_cycle_list = restw(2 $target_cycle_list);
+	xdebug dword {
+	   @target_cycle_list = remw("$msg_cmd $target" $target_cycle_list);
+	   if (numwords($target_cycle_list) > (tab_history_cycle_size - 1)) {
+		shift target_cycle_list
+	   };
+	   @target_index = 0;
+	   @push(target_cycle_list "$msg_cmd $target")
 	};
-
-	@target_index = 0;
-
-	@push(target_cycle_list $msg_cmd);
-	@push(target_cycle_list $target);
 };
 
 alias current_fragment_start {
@@ -157,26 +155,26 @@ alias do_match_cycle (direction) {
 };
 
 alias do_msg_cycle (direction) {
-	if (#target_cycle_list < 2) {
+	xdebug dword {
+	   if (numwords($target_cycle_list) < 1) {
 		return;
-	};
+	   };
 
-	@target_index -= (direction * 2);
+	   @target_index -= direction;
 
-	if (target_index == #target_cycle_list) {
+	   if (target_index == numwords($target_cycle_list)) {
 		@target_index = 0;
-	} elsif (target_index < 0) {
-		@target_index = #target_cycle_list - 2;
-	};
+	   } elsif (target_index < 0) {
+		@target_index = numwords($target_cycle_list) - 1;
+	   };
 
-	@:msg_cmd = word($target_index $target_cycle_list);
-	@:msg_targ = word(${target_index + 1} $target_cycle_list);
+	   @:val = unsplit(" " $qword($target_index $target_cycle_list))
+	   @:msg_cmd = word($0 $val)
+	   @:msg_targ = word(1 $val)
 
-	parsekey erase_line;
-
-	xtype -l /${msg_cmd} ${msg_targ}${chr(32)};
-
-	@last_input_line = [];
+	   parsekey reset_line /${msg_cmd} ${msg_targ}$chr(32);
+	   @last_input_line = [];
+	}
 };
 
 alias do_set (variable, value) {
@@ -212,7 +210,9 @@ alias do_set (variable, value) {
 				xecho -b Value of TAB_HISTORY_CYCLE_SIZE cannot be less than 1;
 			} else {
 				@tab_history_cycle_size = value;
-				@target_cycle_list = rightw(${value * 2} $target_cycle_list);
+				xdebug dword {
+				   @target_cycle_list = rightw($value $target_cycle_list);
+				};
 				xecho -b Value of TAB_HISTORY_CYCLE_SIZE set to $value;
 			};
 		}
@@ -240,7 +240,9 @@ alias do_tabkey (cycle_direction) {
 	@:input_line = left($curpos() $L);
 
 	if (L == []) {
-		@target_index = #target_cycle_list;
+		xdebug dword {
+		   @target_index = numwords($target_cycle_list);
+		}
 		@do_msg_cycle($cycle_direction);
 		return;
 	} elsif (encode($L) == encode($last_input_line)) {
@@ -469,7 +471,7 @@ alias isexe (pathname) {
 };
 
 alias match_chan (fragment) {
-	@:matches = pattern("${fragment}*" $mychannels());
+	@:matches = pattern(${fragment}* $mychannels());
 	@match_cycle_list = matches;
 
 	return $matches;
@@ -591,7 +593,7 @@ alias match_load (fragment) {
 };
 		
 alias match_nick (fragment) {
-	@:nick_matches = pattern("${fragment}*" $onchannel());
+	@:nick_matches = pattern(${fragment}* $onchannel());
 
 	if (nick_matches == []) {
 		@:nick_list = [];
@@ -653,7 +655,7 @@ alias match_theme (fragment) {
 
 alias tclear {
 	@target_cycle_list = [];
-	@target_index = -2;
+	@target_index = -1;
 
 	xecho target history cleared ;
 };
