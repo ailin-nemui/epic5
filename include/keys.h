@@ -10,6 +10,7 @@
 
 	void *	handle_keypress		(void *, Timeval, unsigned char);
 	void *	timeout_keypress	(void *, Timeval);
+	int	do_input_timeouts	(void *);
 
 BUILT_IN_COMMAND(bindcmd);
 BUILT_IN_COMMAND(rbindcmd);

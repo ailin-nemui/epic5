@@ -41,3 +41,4 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Change 'wserv4' to 'epic5-wserv4' to avoid conflicting with epic4.
 * Fix output of /disconnect when disconnected to be less confusing.
 * Some changes to tabkey.jm to see if we can get it working.
+* Move some functions out of input.c to better places.

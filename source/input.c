@@ -1,4 +1,4 @@
-/* $EPIC: input.c,v 1.42 2007/04/19 23:46:46 jnelson Exp $ */
+/* $EPIC: input.c,v 1.43 2007/04/25 05:24:56 jnelson Exp $ */
 /*
  * input.c: does the actual input line stuff... keeps the appropriate stuff
  * on the input line, handles insert/delete of characters/words... the whole
@@ -166,37 +166,6 @@ void 	cursor_to_input (void)
 		}
 	}
 	output_screen = last_input_screen = oldscreen;
-}
-
-/* do_input_timeouts: walk through the list of screens and potentially do
- * timeouts for input */
- /* XXX This doesn't belong here -- maybe in keys.c? */
-int 	do_input_timeouts (void *ignored)
-{
-    Screen *oldscreen = last_input_screen;
-    Screen *screen;
-    int server;
-
-    if (!foreground)
-	return 0;		/* Not a lot of input.. :) */
-
-    /* I hope this is sufficient to allow input to be processed.  I took
-     * a lot of the guts from do_screens().  Here's hoping I didn't
-     * break anything. ;) */
-    for (screen = screen_list; screen; screen = screen->next) {
-	if (screen->alive) {
-	    server = from_server;
-	    last_input_screen = screen;
-	    output_screen = screen;
-	    make_window_current(screen->current_window);
-	    from_server = current_window->server;
-	    screen->last_key = timeout_keypress(screen->last_key,
-		    screen->last_press);
-	    from_server = server;
-	}
-    }
-    output_screen = last_input_screen = oldscreen;
-    return 0;
 }
 
 /*
@@ -994,19 +963,6 @@ BUILT_IN_BINDING(backward_character)
 	update_input(UPDATE_JUST_CURSOR);
 }
 
-/*
- * XXX This keybinding is a bletcherous hideous noxious offense and must
- * be replaced by a scripted replacement as soon as possible.
- */
-BUILT_IN_BINDING(toggle_insert_mode)
-{
-	char *	toggle;
-
-	toggle = alloca(7);
-	strlcpy(toggle, "TOGGLE", 7);
-	set_var_value(INSERT_MODE_VAR, toggle, 1);
-}
-
 BUILT_IN_BINDING(send_line)
 {
 	int	server = from_server;
@@ -1068,15 +1024,45 @@ BUILT_IN_BINDING(send_line)
 	from_server = server;
 }
 
+/****************************************************************************/
+/*
+ * None of the following keybindings have anything to do with the input line.
+ * But they live here, because all of the keybindings are in this file.
+ * Maybe some day I'll farm out the keybindings to the four corners.
+ * Maybe I'll convince^H^H^H^H^H black into scripting them.
+ */
+
+/* This keybinding should be scripted.  */
+BUILT_IN_BINDING(toggle_insert_mode)
+{
+	char *	toggle;
+
+	toggle = alloca(7);
+	strlcpy(toggle, "TOGGLE", 7);
+	set_var_value(INSERT_MODE_VAR, toggle, 1);
+}
+
+/* This keybinding should be scripted. */
+BUILT_IN_BINDING(clear_screen)
+{
+	clear_window_by_refnum(0, 1);
+}
+
+/* This keybinding should be scripted. */
+BUILT_IN_BINDING(input_unclear_screen)
+{
+	unclear_window_by_refnum(0, 1);
+}
 
 
+/* This keybinding should be in screen.c */
 BUILT_IN_BINDING(quote_char)
 {
 	last_input_screen->quote_hit = 1;
 }
 
 /* 
- * These four functions are boomerang functions, which allow the highlight
+ * These six functions are boomerang functions, which allow the highlight
  * characters to be bound by simply having these functions put in the
  * appropriate characters when you press any key to which you have bound
  * that highlight character. >;-)
@@ -1118,20 +1104,6 @@ BUILT_IN_BINDING(type_text)
 		input_add_character(*string, NULL);
 }
 
-/*
- * clear_screen: the CLEAR_SCREEN function for BIND.  Clears the screen and
- * starts it if it is held 
- */
-BUILT_IN_BINDING(clear_screen)
-{
-	clear_window_by_refnum(0, 1);
-}
-
-BUILT_IN_BINDING(input_unclear_screen)
-{
-	unclear_window_by_refnum(0, 1);
-}
-
 /* parse_text: the bindable function that executes its string */
 BUILT_IN_BINDING(parse_text)
 {
@@ -1140,138 +1112,5 @@ BUILT_IN_BINDING(parse_text)
 	if (string)
 		runcmds(string, empty_string);
 	system_exception = old;
-}
-
-/*
- * edit_char: handles each character for an input stream.  Not too difficult
- * to work out.
- */
-void	edit_char (u_char key)
-{
-	u_char		extended_key;
-	WaitPrompt *	oldprompt;
-	u_char		dummy[2];
-	int		xxx_return = 0;		/* XXXX Need i say more? */
-
-	if (dumb_mode)
-	{
-#ifdef TIOCSTI
-		ioctl(0, TIOCSTI, &key);
-#else
-		say("Sorry, your system doesnt support 'faking' user input...");
-#endif
-		return;
-	}
-
-	/* were we waiting for a keypress? */
-	if (last_input_screen->promptlist && 
-		last_input_screen->promptlist->type == WAIT_PROMPT_KEY)
-	{
-		dummy[0] = key, dummy[1] = 0;
-		oldprompt = last_input_screen->promptlist;
-		last_input_screen->promptlist = oldprompt->next;
-		(*oldprompt->func)(oldprompt->data, dummy);
-		new_free(&oldprompt->data);
-		new_free(&oldprompt->prompt);
-		new_free((char **)&oldprompt);
-
-		set_input(empty_string);
-		change_input_prompt(-1);
-		xxx_return = 1;
-	}
-
-	/* 
-	 * This is only used by /pause to see when a keypress event occurs,
-	 * but not to impact how that keypress is handled at all.
-	 */
-	if (last_input_screen->promptlist && 
-		last_input_screen->promptlist->type == WAIT_PROMPT_DUMMY)
-	{
-		oldprompt = last_input_screen->promptlist;
-		last_input_screen->promptlist = oldprompt->next;
-		(*oldprompt->func)(oldprompt->data, NULL);
-		new_free(&oldprompt->data);
-		new_free(&oldprompt->prompt);
-		new_free((char **)&oldprompt);
-	}
-
-	if (xxx_return)
-		return;
-
-	/* If the high bit is set, mangle it as neccesary. */
-	if (key & 0x80 && current_term->TI_meta_mode)
-	{
-		edit_char('\033');
-		key &= ~0x80;
-	}
-
-	extended_key = key;
-
-	/* If we just hit the quote character, add this character literally */
-	if (last_input_screen->quote_hit)
-	{
-		last_input_screen->quote_hit = 0;
-		input_add_character(extended_key, NULL);
-	}
-
-	/* Otherwise, let the keybinding system take care of the work. */
-	else {
-		last_input_screen->last_key = handle_keypress(
-			last_input_screen->last_key,
-			last_input_screen->last_press, key);
-		get_time(&last_input_screen->last_press);
-	}
-}
-
-/*
- * type: The TYPE command.  This parses the given string and treats each
- * character as though it were typed in by the user.  Thus key bindings
- * are used for each character parsed.  Special case characters are control
- * character sequences, specified by a ^ follow by a legal control key.
- * Thus doing "/TYPE ^B" will be as tho ^B were hit at the keyboard,
- * probably moving the cursor backward one character.
- *
- * This was moved from keys.c, because it certainly does not belong there,
- * and this seemed a reasonable place for it to go for now.
- */
-BUILT_IN_COMMAND(typecmd)
-{
-	int	c;
-	char	key;
-
-	for (; *args; args++)
-	{
-		if (*args == '^')
-		{
-			args++;
-			if (*args == '?')
-				key = '\177';
-			else if (*args)
-			{
-				c = *args;
-				if (islower(c))
-					c = toupper(c);
-				if (c < 64)
-				{
-					say("Invalid key sequence: ^%c", c);
-					return;
-				}
-				key = c - 64;
-			}
-			else
-				break;
-		}
-		else
-		{
-			if (*args == '\\')
-				args++;
-			if (*args)
-				key = *args;
-			else
-				break;
-		}
-
-		edit_char(key);
-	}
 }
 

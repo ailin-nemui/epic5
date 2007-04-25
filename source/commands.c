@@ -1,4 +1,4 @@
-/* $EPIC: commands.c,v 1.164 2007/04/12 03:34:07 jnelson Exp $ */
+/* $EPIC: commands.c,v 1.165 2007/04/25 05:24:56 jnelson Exp $ */
 /*
  * commands.c -- Stuff needed to execute commands in ircII.
  *		 Includes the bulk of the built in commands for ircII.
@@ -148,6 +148,7 @@ static  void    set_username 	(const char *, char *, const char *);
 static	void	setenvcmd	(const char *, char *, const char *);
 static	void	squitcmd	(const char *, char *, const char *);
 static	void	subpackagecmd	(const char *, char *, const char *);
+static	void	typecmd 	(const char *, char *, const char *);
 static	void	usleepcmd	(const char *, char *, const char *);
 static  void	shift_cmd 	(const char *, char *, const char *);
 static	void	sleepcmd 	(const char *, char *, const char *);
@@ -2770,6 +2771,58 @@ BUILT_IN_COMMAND(whois)
 		send_to_server("WHOIS %s", is_string_empty(args) ? 
 					get_server_nickname(from_server) : 
 					args);
+}
+
+/*
+ * type: The TYPE command.  This parses the given string and treats each
+ * character as though it were typed in by the user.  Thus key bindings
+ * are used for each character parsed.  Special case characters are control
+ * character sequences, specified by a ^ follow by a legal control key.
+ * Thus doing "/TYPE ^B" will be as tho ^B were hit at the keyboard,
+ * probably moving the cursor backward one character.
+ *
+ * This was moved from keys.c, because it certainly does not belong there,
+ * and this seemed a reasonable place for it to go for now.
+ */
+BUILT_IN_COMMAND(typecmd)
+{
+        int     c;
+        char    key;
+
+        for (; *args; args++)
+        {
+                if (*args == '^')
+                {
+                        args++;
+                        if (*args == '?')
+                                key = '\177';
+                        else if (*args)
+                        {
+                                c = *args;
+                                if (islower(c))
+                                        c = toupper(c);
+                                if (c < 64)
+                                {
+                                        say("Invalid key sequence: ^%c", c);
+                                        return;
+                                }
+                                key = c - 64;
+                        }
+                        else
+                                break;
+                }
+                else
+                {
+                        if (*args == '\\')
+                                args++;
+                        if (*args)
+                                key = *args;
+                        else
+                                break;
+                }
+
+                edit_char(key);
+        }
 }
 
 BUILT_IN_COMMAND(xtypecmd)

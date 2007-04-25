@@ -1,4 +1,4 @@
-/* $EPIC: keys.c,v 1.52 2006/10/14 16:57:09 jnelson Exp $ */
+/* $EPIC: keys.c,v 1.53 2007/04/25 05:24:56 jnelson Exp $ */
 /*
  * keys.c:  Keeps track of what happens whe you press a key.
  *
@@ -49,6 +49,7 @@
 #include "window.h"
 #include "timer.h"
 #include "reg.h"
+#include "server.h"
 
 /* This is a typedef for a function used with the /BIND system.  The
  * functions all live in input.c.  Following it is a macro to quickly define
@@ -420,6 +421,40 @@ void *	timeout_keypress (void *lastp, Timeval pressed) {
     }
     return (void *)last; /* still waiting.. */
 }
+
+/* do_input_timeouts: walk through the list of screens and potentially do
+ * timeouts for input */
+ /* XXX This doesn't belong here -- maybe in keys.c? */
+int     do_input_timeouts (void *ignored)
+{
+    Screen *oldscreen = last_input_screen;
+    Screen *screen;
+    int server;
+
+    if (!foreground)
+        return 0;               /* Not a lot of input.. :) */
+
+    /* I hope this is sufficient to allow input to be processed.  I took
+     * a lot of the guts from do_screens().  Here's hoping I didn't
+     * break anything. ;) */
+    for (screen = screen_list; screen; screen = screen->next) {
+        if (screen->alive) {
+            server = from_server;
+            last_input_screen = screen;
+            output_screen = screen;
+            make_window_current(screen->current_window);
+            from_server = current_window->server;
+            screen->last_key = timeout_keypress(screen->last_key,
+					        screen->last_press);
+            from_server = server;
+        }
+    }
+    output_screen = last_input_screen = oldscreen;
+    return 0;
+}
+
+
+/**************************************************************************/
 
 struct Key *construct_keymap (struct Key *owner) {
     int c;

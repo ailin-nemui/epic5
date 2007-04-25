@@ -10,10 +10,8 @@
 #define __input_h__
 
 /* miscelaneous functions */
-	void	edit_char			(unsigned char);
 	void	change_input_prompt 		(int);
 	void	cursor_to_input 		(void);
-	int	do_input_timeouts		(void *);
 	char *	get_input 			(void);
 	char *	get_input_prompt 		(void);
 	void	init_input 			(void);
@@ -60,9 +58,6 @@
 	BUILT_IN_KEYBINDING(send_line);
 	BUILT_IN_KEYBINDING(toggle_insert_mode);
 	BUILT_IN_KEYBINDING(type_text);
-
-/* this was in keys.h, but it lives in input.c, so. */
-	BUILT_IN_COMMAND(typecmd);
 
 /* used by update_input */
 #define NO_UPDATE 0

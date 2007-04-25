@@ -1,4 +1,4 @@
-/* $EPIC: screen.c,v 1.124 2007/04/12 03:24:14 jnelson Exp $ */
+/* $EPIC: screen.c,v 1.125 2007/04/25 05:24:56 jnelson Exp $ */
 /*
  * screen.c
  *
@@ -3077,5 +3077,86 @@ void 	add_wait_prompt (const char *prompt, void (*func)(char *, char *), const c
 	*AddLoc = New;
 	if (AddLoc == &s->promptlist)
 		change_input_prompt(1);
+}
+
+/*
+ * edit_char: handles each character for an input stream.  Not too difficult
+ * to work out.
+ */
+void    edit_char (u_char key)
+{
+        u_char          extended_key;
+        WaitPrompt *    oldprompt;
+        u_char          dummy[2];
+        int             xxx_return = 0;         /* XXXX Need i say more? */
+
+        if (dumb_mode)
+        {
+#ifdef TIOCSTI  
+                ioctl(0, TIOCSTI, &key);
+#else   
+                say("Sorry, your system doesnt support 'faking' user input...");
+#endif  
+                return;
+        }
+
+        /* were we waiting for a keypress? */
+        if (last_input_screen->promptlist && 
+                last_input_screen->promptlist->type == WAIT_PROMPT_KEY)
+        {
+                dummy[0] = key, dummy[1] = 0;
+                oldprompt = last_input_screen->promptlist;
+                last_input_screen->promptlist = oldprompt->next;
+                (*oldprompt->func)(oldprompt->data, dummy);
+                new_free(&oldprompt->data);
+                new_free(&oldprompt->prompt);
+                new_free((char **)&oldprompt);
+ 
+                set_input(empty_string);
+                change_input_prompt(-1);
+                xxx_return = 1;
+        }
+
+        /*
+         * This is only used by /pause to see when a keypress event occurs,
+         * but not to impact how that keypress is handled at all.
+         */
+        if (last_input_screen->promptlist &&
+                last_input_screen->promptlist->type == WAIT_PROMPT_DUMMY)
+        {
+                oldprompt = last_input_screen->promptlist;
+                last_input_screen->promptlist = oldprompt->next;
+                (*oldprompt->func)(oldprompt->data, NULL);
+                new_free(&oldprompt->data);
+                new_free(&oldprompt->prompt);
+                new_free((char **)&oldprompt);
+        }
+
+        if (xxx_return)
+                return;
+
+        /* If the high bit is set, mangle it as neccesary. */
+        if (key & 0x80 && current_term->TI_meta_mode)
+        {
+                edit_char('\033');
+                key &= ~0x80;
+        }
+
+        extended_key = key;
+
+        /* If we just hit the quote character, add this character literally */
+        if (last_input_screen->quote_hit)
+        {
+                last_input_screen->quote_hit = 0;
+                input_add_character(extended_key, NULL);
+        }
+
+        /* Otherwise, let the keybinding system take care of the work. */
+        else {
+                last_input_screen->last_key = handle_keypress(
+                        last_input_screen->last_key,
+                        last_input_screen->last_press, key);
+                get_time(&last_input_screen->last_press);
+        }
 }
 
