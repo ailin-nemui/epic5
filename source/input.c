@@ -1,4 +1,4 @@
-/* $EPIC: input.c,v 1.43 2007/04/25 05:24:56 jnelson Exp $ */
+/* $EPIC: input.c,v 1.44 2007/04/26 04:30:28 jnelson Exp $ */
 /*
  * input.c: does the actual input line stuff... keeps the appropriate stuff
  * on the input line, handles insert/delete of characters/words... the whole
@@ -591,7 +591,7 @@ void	set_input_prompt (void *stuff)
  * input_forward_word: move the input cursor forward one word in the input
  * line 
  */
-BUILT_IN_BINDING(input_forward_word)
+BUILT_IN_KEYBINDING(input_forward_word)
 {
 	cursor_to_input();
 
@@ -607,7 +607,7 @@ BUILT_IN_BINDING(input_forward_word)
 }
 
 /* input_backward_word: move the cursor left on word in the input line */
-BUILT_IN_BINDING(input_backward_word)
+BUILT_IN_KEYBINDING(input_backward_word)
 {
 	cursor_to_input();
 
@@ -638,7 +638,7 @@ BUILT_IN_BINDING(input_backward_word)
  * input_delete_character -- Deletes the character currently under the
  * 			     input cursor.
  */
-BUILT_IN_BINDING(input_delete_character)
+BUILT_IN_KEYBINDING(input_delete_character)
 {
 	/* Delete key does nothing at end of input */
 	if (!THIS_CHAR)
@@ -655,7 +655,7 @@ BUILT_IN_BINDING(input_delete_character)
  *		      delete_character.  No, this is not significantly
  *		      more expensive than the old way.
  */
-BUILT_IN_BINDING(input_backspace)
+BUILT_IN_KEYBINDING(input_backspace)
 {
 	/* Backspace key does nothing at start of input */
 	if (LOGICAL_CURSOR == 0)
@@ -670,7 +670,7 @@ BUILT_IN_BINDING(input_backspace)
  * input_beginning_of_line: moves the input cursor to the first character in
  * the input buffer 
  */
-BUILT_IN_BINDING(input_beginning_of_line)
+BUILT_IN_KEYBINDING(input_beginning_of_line)
 {
 	LOGICAL_CURSOR = 0;
 	update_input(UPDATE_JUST_CURSOR);
@@ -680,7 +680,7 @@ BUILT_IN_BINDING(input_beginning_of_line)
  * input_end_of_line: moves the input cursor to the last character in the
  * input buffer 
  */
-BUILT_IN_BINDING(input_end_of_line)
+BUILT_IN_KEYBINDING(input_end_of_line)
 {
 	LOGICAL_CURSOR = strlen(INPUT_BUFFER);
 	update_input(UPDATE_JUST_CURSOR);
@@ -736,7 +736,7 @@ static void	cut_input (int anchor)
  *		This is e input buffer
  *			^			(the input cursor)
  */
-BUILT_IN_BINDING(input_delete_to_previous_space)
+BUILT_IN_KEYBINDING(input_delete_to_previous_space)
 {
 	int	anchor;
 
@@ -756,7 +756,7 @@ BUILT_IN_BINDING(input_delete_to_previous_space)
  * space character.  This is probably going to be the same effect as 
  * delete_to_previous_space, but hey -- you know.
  */
-BUILT_IN_BINDING(input_delete_previous_word)
+BUILT_IN_KEYBINDING(input_delete_previous_word)
 {
 	int	anchor;
 
@@ -774,7 +774,7 @@ BUILT_IN_BINDING(input_delete_previous_word)
  * input_delete_next_word: deletes from the cursor to the end of the next
  * word 
  */
-BUILT_IN_BINDING(input_delete_next_word)
+BUILT_IN_KEYBINDING(input_delete_next_word)
 {
 	int	anchor;
 
@@ -792,7 +792,7 @@ BUILT_IN_BINDING(input_delete_next_word)
  * input_add_character: adds the character c to the input buffer, repecting
  * the current overwrite/insert mode status, etc 
  */
-BUILT_IN_BINDING(input_add_character)
+BUILT_IN_KEYBINDING(input_add_character)
 {
 	/* Don't permit the input buffer to get too big. */
 	if (LOGICAL_CURSOR >= INPUT_BUFFER_SIZE)
@@ -805,7 +805,7 @@ BUILT_IN_BINDING(input_add_character)
 	if (THIS_CHAR && get_int_var(INSERT_MODE_VAR))
 	{
 		char *ptr = LOCAL_COPY(&(THIS_CHAR));
-		THIS_CHAR = key;
+		THIS_CHAR = (unsigned char)key;
 		NEXT_CHAR = 0;
 		ADD_TO_INPUT(ptr);
 	}
@@ -818,7 +818,7 @@ BUILT_IN_BINDING(input_add_character)
 	{
 		if (THIS_CHAR == 0)
 			NEXT_CHAR = 0;
-		THIS_CHAR = key;
+		THIS_CHAR = (unsigned char)key;
 	}
 
 	update_input(UPDATE_FROM_CURSOR);
@@ -827,7 +827,7 @@ BUILT_IN_BINDING(input_add_character)
 }
 
 /* input_clear_to_eol: erases from the cursor to the end of the input buffer */
-BUILT_IN_BINDING(input_clear_to_eol)
+BUILT_IN_KEYBINDING(input_clear_to_eol)
 {
 	/* This doesnt really speak to the implementation, but it works.  */
 	SET_CUT_BUFFER(&THIS_CHAR);
@@ -839,7 +839,7 @@ BUILT_IN_BINDING(input_clear_to_eol)
  * input_clear_to_bol: clears from the cursor to the beginning of the input
  * buffer 
  */
-BUILT_IN_BINDING(input_clear_to_bol)
+BUILT_IN_KEYBINDING(input_clear_to_bol)
 {
 	char	c = THIS_CHAR;
 	char	*copy;
@@ -862,7 +862,7 @@ BUILT_IN_BINDING(input_clear_to_bol)
 /*
  * input_clear_line: clears entire input line
  */
-BUILT_IN_BINDING(input_clear_line)
+BUILT_IN_KEYBINDING(input_clear_line)
 {
 	/* Only copy if there is input. -wd */
 	if (*INPUT_BUFFER)
@@ -878,7 +878,7 @@ BUILT_IN_BINDING(input_clear_line)
  * This does not mangle the cutbuffer, so you can use it to replace the input
  * line w/o any deleterious effects!
  */
-BUILT_IN_BINDING(input_reset_line)
+BUILT_IN_KEYBINDING(input_reset_line)
 {
 	*INPUT_BUFFER = 0;
 	LOGICAL_CURSOR = 0;
@@ -894,7 +894,7 @@ BUILT_IN_BINDING(input_reset_line)
  * input_transpose_characters: move the character before the cursor to
  * the position after the cursor.
  */
-BUILT_IN_BINDING(input_transpose_characters)
+BUILT_IN_KEYBINDING(input_transpose_characters)
 {
 	u_char	this_char, prev_char;
 
@@ -917,7 +917,7 @@ BUILT_IN_BINDING(input_transpose_characters)
 }
 
 
-BUILT_IN_BINDING(refresh_inputline)
+BUILT_IN_KEYBINDING(refresh_inputline)
 {
 	update_input(UPDATE_ALL);
 }
@@ -926,7 +926,7 @@ BUILT_IN_BINDING(refresh_inputline)
  * input_yank_cut_buffer: takes the contents of the cut buffer and inserts it
  * into the input line 
  */
-BUILT_IN_BINDING(input_yank_cut_buffer)
+BUILT_IN_KEYBINDING(input_yank_cut_buffer)
 {
 	char	*ptr = NULL;
 
@@ -951,19 +951,19 @@ BUILT_IN_BINDING(input_yank_cut_buffer)
 #define LEFT 0
 
 /* BIND functions: */
-BUILT_IN_BINDING(forward_character)
+BUILT_IN_KEYBINDING(forward_character)
 {
 	input_move_cursor(1);
 	update_input(UPDATE_JUST_CURSOR);
 }
 
-BUILT_IN_BINDING(backward_character)
+BUILT_IN_KEYBINDING(backward_character)
 {
 	input_move_cursor(-1);
 	update_input(UPDATE_JUST_CURSOR);
 }
 
-BUILT_IN_BINDING(send_line)
+BUILT_IN_KEYBINDING(send_line)
 {
 	int	server = from_server;
 	char *	line;
@@ -1033,7 +1033,7 @@ BUILT_IN_BINDING(send_line)
  */
 
 /* This keybinding should be scripted.  */
-BUILT_IN_BINDING(toggle_insert_mode)
+BUILT_IN_KEYBINDING(toggle_insert_mode)
 {
 	char *	toggle;
 
@@ -1043,20 +1043,20 @@ BUILT_IN_BINDING(toggle_insert_mode)
 }
 
 /* This keybinding should be scripted. */
-BUILT_IN_BINDING(clear_screen)
+BUILT_IN_KEYBINDING(clear_screen)
 {
 	clear_window_by_refnum(0, 1);
 }
 
 /* This keybinding should be scripted. */
-BUILT_IN_BINDING(input_unclear_screen)
+BUILT_IN_KEYBINDING(input_unclear_screen)
 {
 	unclear_window_by_refnum(0, 1);
 }
 
 
 /* This keybinding should be in screen.c */
-BUILT_IN_BINDING(quote_char)
+BUILT_IN_KEYBINDING(quote_char)
 {
 	last_input_screen->quote_hit = 1;
 }
@@ -1067,45 +1067,45 @@ BUILT_IN_BINDING(quote_char)
  * appropriate characters when you press any key to which you have bound
  * that highlight character. >;-)
  */
-BUILT_IN_BINDING(insert_bold)
+BUILT_IN_KEYBINDING(insert_bold)
 {
 	input_add_character(BOLD_TOG, string);
 }
 
-BUILT_IN_BINDING(insert_reverse)
+BUILT_IN_KEYBINDING(insert_reverse)
 {
 	input_add_character(REV_TOG, string);
 }
 
-BUILT_IN_BINDING(insert_underline)
+BUILT_IN_KEYBINDING(insert_underline)
 {
 	input_add_character(UND_TOG, string);
 }
 
-BUILT_IN_BINDING(highlight_off)
+BUILT_IN_KEYBINDING(highlight_off)
 {
 	input_add_character(ALL_OFF, string);
 }
 
-BUILT_IN_BINDING(insert_blink)
+BUILT_IN_KEYBINDING(insert_blink)
 {
 	input_add_character(BLINK_TOG, string);
 }
 
-BUILT_IN_BINDING(insert_altcharset)
+BUILT_IN_KEYBINDING(insert_altcharset)
 {
 	input_add_character(ALT_TOG, string);
 }
 
 /* type_text: the BIND function TYPE_TEXT */
-BUILT_IN_BINDING(type_text)
+BUILT_IN_KEYBINDING(type_text)
 {
 	for (; *string; string++)
 		input_add_character(*string, NULL);
 }
 
 /* parse_text: the bindable function that executes its string */
-BUILT_IN_BINDING(parse_text)
+BUILT_IN_KEYBINDING(parse_text)
 {
 	int	old = system_exception;
 

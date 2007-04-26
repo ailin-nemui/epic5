@@ -190,7 +190,7 @@ void	set_clock (void *stuff)
 /************************************************************************/
 	int	cpu_saver = 0;
 
-BUILT_IN_BINDING(cpu_saver_on)
+BUILT_IN_KEYBINDING(cpu_saver_on)
 {
         cpu_saver = 1;
         update_all_status(); 

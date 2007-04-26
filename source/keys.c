@@ -1,4 +1,4 @@
-/* $EPIC: keys.c,v 1.53 2007/04/25 05:24:56 jnelson Exp $ */
+/* $EPIC: keys.c,v 1.54 2007/04/26 04:30:28 jnelson Exp $ */
 /*
  * keys.c:  Keeps track of what happens whe you press a key.
  *
@@ -54,7 +54,7 @@
 /* This is a typedef for a function used with the /BIND system.  The
  * functions all live in input.c.  Following it is a macro to quickly define
  * functions to handle keybindings. */
-typedef void (*BindFunction) (unsigned char, unsigned char *);
+typedef void (*BindFunction) (unsigned int, unsigned char *);
 
 /* This is the structure used to hold binding functions. */
 struct Binding {
@@ -209,7 +209,7 @@ void init_binds (void) {
     ADDBIND("QUIT_IRC",			    irc_quit			    );
     ADDBIND("QUOTE_CHARACTER",		    quote_char			    );
     ADDBIND("REFRESH_INPUTLINE",	    refresh_inputline		    );
-    ADDBIND("REFRESH_SCREEN",		    (BindFunction) refresh_screen   );
+    ADDBIND("REFRESH_SCREEN",		    refresh_screen   		    );
     ADDBIND("REFRESH_STATUS",		    (BindFunction) update_all_status);
     ADDBIND("RESET_LINE",		    input_reset_line		    );
     ADDBIND("REVERSE",			    insert_reverse		    );

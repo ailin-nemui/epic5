@@ -53,7 +53,7 @@ extern int	cpu_saver;
 	int	cpu_saver_timer		(void *);
 	void	set_cpu_saver_after	(void *);
 	void	set_cpu_saver_every	(void *);
-	BUILT_IN_BINDING(cpu_saver_on);
+	BUILT_IN_KEYBINDING(cpu_saver_on);
 
 	int	update_system_timer	(const char *);
 	void	reset_system_timers	(void);

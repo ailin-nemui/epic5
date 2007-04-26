@@ -231,8 +231,7 @@ sigfunc *my_signal (int, sigfunc *);
 #define BUILT_IN_COMMAND(x) \
 	void x (const char *command, char *args, const char *subargs)
 
-#define BUILT_IN_BINDING(x) void x (unsigned char key, unsigned char *string)
-#define BUILT_IN_KEYBINDING(x) void x (unsigned char key, unsigned char *string)
+#define BUILT_IN_KEYBINDING(x) void x (unsigned int key, unsigned char *string)
 
 typedef char Filename[MAXPATHLEN + 1];
 
