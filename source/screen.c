@@ -1,4 +1,4 @@
-/* $EPIC: screen.c,v 1.125 2007/04/25 05:24:56 jnelson Exp $ */
+/* $EPIC: screen.c,v 1.126 2007/05/09 00:20:35 jnelson Exp $ */
 /*
  * screen.c
  *
@@ -237,8 +237,22 @@ static size_t	logic_attributes (u_char *output, Attribute *old_a, Attribute *a)
 		*str++ = ALL_OFF, count++;
 	}
 
+	if (a->reverse == 0 && a->bold == 0 && a->blink == 0 &&
+	    a->underline == 0 && a->altchar == 0 && a->fg_color == 0 &&
+	    a->bg_color == 0 && a->color_bg == 0 && a->color_fg == 0)
+	{
+	    if (old_a->reverse != 0 || old_a->bold != 0 || old_a->blink != 0 ||
+		old_a->underline != 0 || old_a->altchar != 0 || old_a->fg_color != 0 ||
+		old_a->bg_color != 0 || old_a->color_bg != 0 || old_a->color_fg != 0)
+	    {
+		*str++ = ALL_OFF;
+		*old_a = *a;
+		return 1;
+	    }
+	}
+
 	/* Colors need to be set first, always */
-	if (a->color_fg != old_a->color_fg)
+	if (a->color_fg != old_a->color_fg || a->fg_color != old_a->fg_color)
 	{
 	    *str++ = '\003', count++;
 	    if (a->color_fg)
@@ -252,7 +266,7 @@ static size_t	logic_attributes (u_char *output, Attribute *old_a, Attribute *a)
 		*str++ = '1', count++;
 	    }
 	}
-	if (a->color_bg != old_a->color_bg)
+	if (a->color_bg != old_a->color_bg || a->bg_color != old_a->bg_color)
 	{
 	    if (!a->color_fg)
 		*str++ = '\003', count++;
@@ -1225,11 +1239,12 @@ abnormal_char:
 			str += len;
 
 			/* Suppress the color if no color is permitted */
+			if (a.bold && strip_bold)		a.bold = 0;
+			if (a.blink && strip_blink)		a.blink = 0;
 			if (strip_color)
 			{
 				a.color_fg = a.color_bg = 0;
 				a.fg_color = a.bg_color = 0;
-				break;
 			}
 
 			/* Output the new attributes */
@@ -1467,7 +1482,7 @@ const	u_char	*cont_ptr;
 	/* do_indent = get_int_var(INDENT_VAR); */
 	do_indent = get_indent_by_winref(winref);
 	if (!(words = get_string_var(WORD_BREAK_VAR)))
-		words = ", ";
+		words = " \t";
 	if (!(cont_ptr = get_string_var(CONTINUED_LINE_VAR)))
 		cont_ptr = empty_string;
 

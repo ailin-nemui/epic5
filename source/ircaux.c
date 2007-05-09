@@ -1,4 +1,4 @@
-/* $EPIC: ircaux.c,v 1.167 2007/04/12 03:24:14 jnelson Exp $ */
+/* $EPIC: ircaux.c,v 1.168 2007/05/09 00:20:35 jnelson Exp $ */
 /*
  * ircaux.c: some extra routines... not specific to irc... that I needed 
  *
@@ -2499,19 +2499,27 @@ char *	malloc_strndup (const char *str, size_t len)
 
 char *	prntdump(const char *ptr, size_t size)
 {
-	size_t i;
-static char dump[65];
+	size_t ptridx, dumpidx = 0;
+static char dump[640];
 
-	strlcat(dump, ptr, sizeof dump);
+	memset(dump, 0, 640);
 
-	for (i = 0; i < size && i < 64; i++)
+	for (ptridx = 0; ptridx < size && ptridx < 64; ptridx++)
 	{
-		if (!isgraph(dump[i]) && !isspace(dump[i]))
-			dump[i] = '.';
+	    if (!isgraph(ptr[ptridx]) && !isspace(ptr[ptridx]))
+	    {
+		dump[dumpidx++] = '<';
+		snprintf(dump + dumpidx, 3, "%02hhX", (unsigned char)(ptr[ptridx]));
+		dumpidx += 2;
+		dump[dumpidx++] = '>';
+	    }
+	    else
+		dump[dumpidx++] = ptr[ptridx];
 	}
-	if (i == 64)
-		dump[63] = '>';
-	dump[i] = 0;
+
+	if (ptridx == 64)
+		dump[dumpidx++] = '>';
+	dump[dumpidx] = 0;
 	return dump;
 }
 

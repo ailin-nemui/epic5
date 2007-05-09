@@ -1,5 +1,5 @@
 : {
- # $EPIC: activity,v 1.1 2005/11/05 17:52:41 jnelson Exp $
+ # $EPIC: activity,v 1.2 2007/05/09 00:20:35 jnelson Exp $
  # activity -- this script introduces two new statusbar items.
 
  # the first one is a different activity bar, beside window's refnum it also
@@ -24,6 +24,8 @@
  # /set winname_length <num>, length of abbreviated name on %E indicator
 
 };
+
+package activity;
 
 if (word(2 $loadinfo()) != [pf]) {
         load -pf $word(1 $loadinfo());

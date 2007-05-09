@@ -3,6 +3,9 @@ EPIC5 Projects, Bugs, and other Errata:
 KNOWN ERRATA (eg, bugs, or unresolved requests):
 ------------------------------------------------
 * /on dcc_lost should be thrown in more places, when DCC_DELETE is set.
+* Socks5 support still doesn't work with freebsd.
+* Default for /set -word_break should just be a space.
+* Kitambi says /window create is broken.
 
 LOOK FOR IN THE FUTURE
 -----------------------
@@ -42,3 +45,9 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Fix output of /disconnect when disconnected to be less confusing.
 * Some changes to tabkey.jm to see if we can get it working.
 * Move some functions out of input.c to better places.
+* Fix normalization bug via $stripcrap(all ^C0@^Otest) (from kitambi)
+* Fix denormalization bug via $leftpc(9 ^C0@^Otest) (from kitambi)
+* Make the activity script use its own /package.
+* Enhance prntdump() to convert unprintable chars to hex.
+* Change /set -word_break so it pretends you set it to " \t" (rb kitambi)
+
