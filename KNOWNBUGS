@@ -3,6 +3,7 @@ EPIC5 Projects, Bugs, and other Errata:
 KNOWN ERRATA (eg, bugs, or unresolved requests):
 ------------------------------------------------
 * /on dcc_lost should be thrown in more places, when DCC_DELETE is set.
+* Keybindings can take a NULL 2nd arg, whereas in ircII they don't.
 
 LOOK FOR IN THE FUTURE
 -----------------------
@@ -51,3 +52,4 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Remember, it's ./configure --with-socks5=/usr/local/lib
 * Make update_input() take a screen as an argument, to update one screen only.
 * Make /window create screen's input lines work again (rb kitambi)
+* Fix crash from /parsekey type_text

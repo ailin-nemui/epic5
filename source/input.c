@@ -1,4 +1,4 @@
-/* $EPIC: input.c,v 1.45 2007/05/12 05:15:11 jnelson Exp $ */
+/* $EPIC: input.c,v 1.46 2007/05/12 14:33:44 jnelson Exp $ */
 /*
  * input.c: does the actual input line stuff... keeps the appropriate stuff
  * on the input line, handles insert/delete of characters/words... the whole
@@ -1111,7 +1111,7 @@ BUILT_IN_KEYBINDING(insert_altcharset)
 /* type_text: the BIND function TYPE_TEXT */
 BUILT_IN_KEYBINDING(type_text)
 {
-	for (; *string; string++)
+	for (; string && *string; string++)
 		input_add_character(*string, NULL);
 }
 
