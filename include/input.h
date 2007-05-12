@@ -19,7 +19,7 @@
 	char	input_pause 			(char *);
 	void	set_input 			(const char *);
 	void	set_input_prompt 		(void *);
-	void	update_input 			(int);
+	void	update_input 			(void *, int);
 
 /* keybinding functions */
 	BUILT_IN_KEYBINDING(backward_character);

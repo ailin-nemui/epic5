@@ -3,9 +3,6 @@ EPIC5 Projects, Bugs, and other Errata:
 KNOWN ERRATA (eg, bugs, or unresolved requests):
 ------------------------------------------------
 * /on dcc_lost should be thrown in more places, when DCC_DELETE is set.
-* Socks5 support still doesn't work with freebsd.
-* Default for /set -word_break should just be a space.
-* Kitambi says /window create is broken.
 
 LOOK FOR IN THE FUTURE
 -----------------------
@@ -50,4 +47,7 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Make the activity script use its own /package.
 * Enhance prntdump() to convert unprintable chars to hex.
 * Change /set -word_break so it pretends you set it to " \t" (rb kitambi)
-
+* Add socks5p.h from epic4 so we can build with socks5 again.
+* Remember, it's ./configure --with-socks5=/usr/local/lib
+* Make update_input() take a screen as an argument, to update one screen only.
+* Make /window create screen's input lines work again (rb kitambi)

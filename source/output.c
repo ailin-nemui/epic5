@@ -1,4 +1,4 @@
-/* $EPIC: output.c,v 1.17 2006/06/06 05:08:48 jnelson Exp $ */
+/* $EPIC: output.c,v 1.18 2007/05/12 05:15:11 jnelson Exp $ */
 /*
  * output.c: handles a variety of tasks dealing with the output from the irc
  * program 
@@ -105,7 +105,7 @@ void	redraw_all_screens (void)
 	update_all_windows();
 
 	/* Physically redraw all input lines */
-	update_input(UPDATE_ALL);
+	update_input(NULL, UPDATE_ALL);
 
 	output_screen = old_os;
 	need_redraw = 0;

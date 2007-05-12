@@ -1,4 +1,4 @@
-/* $EPIC: input.c,v 1.44 2007/04/26 04:30:28 jnelson Exp $ */
+/* $EPIC: input.c,v 1.45 2007/05/12 05:15:11 jnelson Exp $ */
 /*
  * input.c: does the actual input line stuff... keeps the appropriate stuff
  * on the input line, handles insert/delete of characters/words... the whole
@@ -187,7 +187,7 @@ void 	cursor_to_input (void)
  *  UPDATE_JUST_CURSOR: I changed the logical cursor, update physical cursor.
  *
  */
-void	update_input (int update)
+void	update_input (void *which_screen, int update)
 {
 	int	old_zone;
 	char	*ptr, *ptr_free;
@@ -198,6 +198,7 @@ void	update_input (int update)
 	Screen	*ns;
 	Window	*saved_current_window = current_window;
 	int	cols_used;
+	int	original_update;
 
 	/*
 	 * No input line in dumb or bg mode.
@@ -205,13 +206,19 @@ void	update_input (int update)
 	if (dumb_mode || !foreground)
 		return;
 
+	original_update = update;
   for (ns = screen_list; ns; ns = ns->next)
   {
+	/* XXXX This is a HIDEOUS abuse of the language, but I don't care! */
+	if (which_screen && (Screen *)which_screen != ns)
+		ns = (Screen *)which_screen;
+
 	if (!ns->alive)
 		continue;	/* It's dead, Jim! */
 
 	last_input_screen = ns;
 	current_window = ns->current_window;
+	update = original_update;
 
 	/*
 	 * Make sure the client thinks the cursor is on the input line.
@@ -472,6 +479,10 @@ void	update_input (int update)
 	 */
 	term_echo(1);
 	term_flush();
+
+	/* XXXX HIDEOUS! Ick! Eww! */
+	if (which_screen && (Screen *)which_screen == ns)
+		break;
     }
     last_input_screen = os;
     current_window = saved_current_window;
@@ -500,7 +511,7 @@ void 	change_input_prompt (int direction)
 		LOGICAL_CURSOR = 0;
 	}
 
-	update_input(UPDATE_ALL);
+	update_input(last_input_screen, UPDATE_ALL);
 }
 
 /* input_move_cursor: moves the cursor left or right... got it? */
@@ -528,7 +539,7 @@ void	set_input (const char *str)
 {
 	strlcpy(INPUT_BUFFER, str, INPUT_BUFFER_SIZE);
 	LOGICAL_CURSOR = strlen(INPUT_BUFFER);
-	update_input(UPDATE_ALL);
+	update_input(last_input_screen, UPDATE_ALL);
 }
 
 /*
@@ -574,7 +585,7 @@ void	set_input_prompt (void *stuff)
 	else
 		return;
 
-	update_input(UPDATE_ALL);
+	update_input(NULL, UPDATE_ALL);
 }
 
 
@@ -603,7 +614,7 @@ BUILT_IN_KEYBINDING(input_forward_word)
 	while (THIS_CHAR && WHITESPACE(THIS_CHAR))
 		input_move_cursor(1);
 
-	update_input(UPDATE_JUST_CURSOR);
+	update_input(last_input_screen, UPDATE_JUST_CURSOR);
 }
 
 /* input_backward_word: move the cursor left on word in the input line */
@@ -631,7 +642,7 @@ BUILT_IN_KEYBINDING(input_backward_word)
 			input_move_cursor(-1);
 	}
 
-	update_input(UPDATE_JUST_CURSOR);
+	update_input(last_input_screen, UPDATE_JUST_CURSOR);
 }
 
 /*
@@ -646,7 +657,7 @@ BUILT_IN_KEYBINDING(input_delete_character)
 
 	/* Whack the character under cursor and redraw input line */
 	ov_strcpy(&THIS_CHAR, &NEXT_CHAR);
-	update_input(UPDATE_FROM_CURSOR);
+	update_input(last_input_screen, UPDATE_FROM_CURSOR);
 }
 
 
@@ -673,7 +684,7 @@ BUILT_IN_KEYBINDING(input_backspace)
 BUILT_IN_KEYBINDING(input_beginning_of_line)
 {
 	LOGICAL_CURSOR = 0;
-	update_input(UPDATE_JUST_CURSOR);
+	update_input(last_input_screen, UPDATE_JUST_CURSOR);
 }
 
 /*
@@ -683,7 +694,7 @@ BUILT_IN_KEYBINDING(input_beginning_of_line)
 BUILT_IN_KEYBINDING(input_end_of_line)
 {
 	LOGICAL_CURSOR = strlen(INPUT_BUFFER);
-	update_input(UPDATE_JUST_CURSOR);
+	update_input(last_input_screen, UPDATE_JUST_CURSOR);
 }
 
 /*
@@ -720,7 +731,7 @@ static void	cut_input (int anchor)
 		ADD_TO_INPUT(buffer);
 	}
 
-	update_input(UPDATE_ALL);
+	update_input(last_input_screen, UPDATE_ALL);
 }
 
 /*
@@ -821,9 +832,9 @@ BUILT_IN_KEYBINDING(input_add_character)
 		THIS_CHAR = (unsigned char)key;
 	}
 
-	update_input(UPDATE_FROM_CURSOR);
+	update_input(last_input_screen, UPDATE_FROM_CURSOR);
 	input_move_cursor(1);
-	update_input(UPDATE_JUST_CURSOR);
+	update_input(last_input_screen, UPDATE_JUST_CURSOR);
 }
 
 /* input_clear_to_eol: erases from the cursor to the end of the input buffer */
@@ -832,7 +843,7 @@ BUILT_IN_KEYBINDING(input_clear_to_eol)
 	/* This doesnt really speak to the implementation, but it works.  */
 	SET_CUT_BUFFER(&THIS_CHAR);
 	THIS_CHAR = 0;
-	update_input(UPDATE_FROM_CURSOR);
+	update_input(last_input_screen, UPDATE_FROM_CURSOR);
 }
 
 /*
@@ -856,7 +867,7 @@ BUILT_IN_KEYBINDING(input_clear_to_bol)
 	 * so we have to move it back.
 	 */
 	LOGICAL_CURSOR = 0;
-	update_input(UPDATE_JUST_CURSOR);
+	update_input(last_input_screen, UPDATE_JUST_CURSOR);
 }
 
 /*
@@ -870,7 +881,7 @@ BUILT_IN_KEYBINDING(input_clear_line)
 
 	*INPUT_BUFFER = 0;
 	LOGICAL_CURSOR = 0;
-	update_input(UPDATE_FROM_CURSOR);
+	update_input(last_input_screen, UPDATE_FROM_CURSOR);
 }
 
 /*
@@ -913,13 +924,13 @@ BUILT_IN_KEYBINDING(input_transpose_characters)
 	PREV_CHAR = this_char;
 
 	/* Then redraw ahoy! */
-	update_input(UPDATE_FROM_CURSOR);
+	update_input(last_input_screen, UPDATE_FROM_CURSOR);
 }
 
 
 BUILT_IN_KEYBINDING(refresh_inputline)
 {
-	update_input(UPDATE_ALL);
+	update_input(NULL, UPDATE_ALL);
 }
 
 /*
@@ -937,12 +948,12 @@ BUILT_IN_KEYBINDING(input_yank_cut_buffer)
 	THIS_CHAR = 0;
 	ADD_TO_INPUT(CUT_BUFFER);
 	ADD_TO_INPUT(ptr);
-	update_input(UPDATE_FROM_CURSOR);
+	update_input(last_input_screen, UPDATE_FROM_CURSOR);
 
 	input_move_cursor(strlen(cut_buffer));
 	if (LOGICAL_CURSOR > INPUT_BUFFER_SIZE)
 		LOGICAL_CURSOR = INPUT_BUFFER_SIZE;
-	update_input(UPDATE_JUST_CURSOR);
+	update_input(last_input_screen, UPDATE_JUST_CURSOR);
 }
 
 
@@ -954,13 +965,13 @@ BUILT_IN_KEYBINDING(input_yank_cut_buffer)
 BUILT_IN_KEYBINDING(forward_character)
 {
 	input_move_cursor(1);
-	update_input(UPDATE_JUST_CURSOR);
+	update_input(last_input_screen, UPDATE_JUST_CURSOR);
 }
 
 BUILT_IN_KEYBINDING(backward_character)
 {
 	input_move_cursor(-1);
-	update_input(UPDATE_JUST_CURSOR);
+	update_input(last_input_screen, UPDATE_JUST_CURSOR);
 }
 
 BUILT_IN_KEYBINDING(send_line)
@@ -976,7 +987,7 @@ BUILT_IN_KEYBINDING(send_line)
 	/* Clear the input line before dispatching the command */
 	*INPUT_BUFFER = 0;
 	LOGICAL_CURSOR = 0;
-	update_input(UPDATE_ALL);
+	update_input(last_input_screen, UPDATE_ALL);
 
 	holding_already = window_is_holding(last_input_screen->current_window);
 	do_unscroll = window_is_scrolled_back(last_input_screen->current_window);
