@@ -1,4 +1,4 @@
-/* $EPIC: irc.c,v 1.1138 2007/05/12 14:33:44 jnelson Exp $ */
+/* $EPIC: irc.c,v 1.1139 2007/05/14 02:33:33 jnelson Exp $ */
 /*
  * ircII: a new irc client.  I like it.  I hope you will too!
  *
@@ -52,7 +52,7 @@ const char internal_version[] = "20070416";
 /*
  * In theory, this number is incremented for every commit.
  */
-const unsigned long	commit_id = 1466;
+const unsigned long	commit_id = 1467;
 
 /*
  * As a way to poke fun at the current rage of naming releases after
@@ -98,14 +98,6 @@ const char ridiculous_version_name[] = "Mendicant";
 
 /* The ``DEFAULT'' port used for irc server connections. */
 int		irc_port = IRC_PORT;
-
-#if 0
-/* Set if ircII should usurp flow control, unset if not.  Probably bogus. */
-int		use_flow_control = 1;
-
-/* Set if ircII should turn on IEXTEN, unset to suppress */
-int		use_iexten = -1;
-#endif
 
 /* 
  * When a numeric is being processed, this holds the negative value
@@ -680,24 +672,6 @@ static	void	parse_args (int argc, char **argv)
 			case 'p': /* Default port to use */
 				irc_port = my_atol(optarg);
 				break;
-
-#if 0
-			case 'f': /* Use flow control */
-				use_flow_control = 1;
-				break;
-
-			case 'F': /* dont use flow control */
-				use_flow_control = 0;
-				break;
-
-			case 'o': /* Use IEXTEN */
-				use_iexten = 1;
-				break;
-
-			case 'O': /* dont use IEXTEN */
-				use_iexten = 0;
-				break;
-#endif
 
 			case 'd': /* use dumb mode */
 				dumb_mode = 1;

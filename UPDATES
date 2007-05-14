@@ -1,5 +1,14 @@
 EPIC5-0.3.3
 
+*** News 05/13/2007 -- ***IMPORTANT*** Removal of /SET REVERSE_STATUS_LINE
+		*** IMPORTANT *** IMPORTANT *** IMPORTANT ***
+	The /set reverse_status_line variable has been removed.  This means
+	that your /set status_format* variables, and your /window status_format
+	variables will not be auto-prepended with ^Vs like they have always
+	been since time immemorial.  You ***MUST*** prepend your status_formats
+	with ^Vs (control-Vs, ie, the reverse character) if you want them to
+	appear in reverse. 
+
 *** News 04/11/2007 -- New argument to /xecho, -TARGET
 	Usually if you wanted to output to a channel's window, you would do
 		/xecho -w $winchan(#channel) ....

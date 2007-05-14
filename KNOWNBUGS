@@ -53,3 +53,7 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Make update_input() take a screen as an argument, to update one screen only.
 * Make /window create screen's input lines work again (rb kitambi)
 * Fix crash from /parsekey type_text
+* Add ^Vs to the start of  DEFAULT_STATUS_FORMAT* in config.h
+* Comment out code for /set reverse_status_line pending removal later.
+* GC the code for -f/-F/-o/-O command line arguments
+* Fix the serverctl() comment for howl

@@ -330,7 +330,9 @@
 #define DEFAULT_PAD_CHAR ' '
 #define DEFAULT_QUIT_MESSAGE "ircII %s -- Are we there yet?"
 #define DEFAULT_RANDOM_SOURCE 0
+/*
 #define DEFAULT_REVERSE_STATUS_LINE 1
+*/
 #define DEFAULT_SCREEN_OPTIONS NULL
 #define DEFAULT_SCROLLBACK 256
 #define DEFAULT_SCROLLBACK_RATIO 50
@@ -346,9 +348,9 @@
 #define DEFAULT_STATUS_CHANOP "@"
 #define DEFAULT_STATUS_CLOCK " %T"
 #define DEFAULT_STATUS_CPU_SAVER " (%L)"
-#define DEFAULT_STATUS_FORMAT "%T [%R] %*%=%@%N%#%S%H%B%Q%A%C%+%I%O%M%F%L %D %U %W"
-#define DEFAULT_STATUS_FORMAT1 "%T [%R] %*%=%@%N%#%S%H%B%Q%A%C%+%I%O%M%F%L %U "
-#define DEFAULT_STATUS_FORMAT2 "%W %X %Y %Z "
+#define DEFAULT_STATUS_FORMAT "%T [%R] %*%=%@%N%#%S%H%B%Q%A%C%+%I%O%M%F%L %D %U %W"
+#define DEFAULT_STATUS_FORMAT1 "%T [%R] %*%=%@%N%#%S%H%B%Q%A%C%+%I%O%M%F%L %U "
+#define DEFAULT_STATUS_FORMAT2 "%W %X %Y %Z "
 #define DEFAULT_STATUS_HALFOP "%"
 #define DEFAULT_STATUS_HOLD " Held: "
 #define DEFAULT_STATUS_HOLD_LINES "%B"

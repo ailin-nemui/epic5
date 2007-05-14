@@ -1,4 +1,4 @@
-/* $EPIC: status.c,v 1.69 2007/04/12 03:24:14 jnelson Exp $ */
+/* $EPIC: status.c,v 1.70 2007/05/14 02:33:33 jnelson Exp $ */
 /*
  * status.c: handles the status line updating, etc for IRCII 
  *
@@ -573,6 +573,7 @@ int	make_status (Window *window, int must_redraw)
 				 window->status.line[line].key[i]);
 		}
 
+#if 0
 		/*
 		 * If the REVERSE_STATUS_LINE var is on, then put a reverse
 		 * character in the first position (itll get translated to
@@ -581,6 +582,7 @@ int	make_status (Window *window, int must_redraw)
 		if (get_int_var(REVERSE_STATUS_LINE_VAR))
 			*buffer = REV_TOG , str = buffer + 1;
 		else
+#endif
 			str = buffer;
 
 		/*

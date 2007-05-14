@@ -1,4 +1,4 @@
-/* $EPIC: server.c,v 1.224 2007/04/24 02:18:08 jnelson Exp $ */
+/* $EPIC: server.c,v 1.225 2007/05/14 02:33:33 jnelson Exp $ */
 /*
  * server.c:  Things dealing with that wacky program we call ircd.
  *
@@ -3255,10 +3255,10 @@ sorry_wrong_number:
  *	SSL		Whether this server is SSL-enabled or not.
  *      005             Individual PROTOCTL elements.
  *      005s            The full list of PROTOCTL elements.
- *	ALIAS		An alternate server designation
- *			(SETting ALIAS adds a new alternate designation) 
- *	ALIASES		All of the alternate server designations
- *			(SETting ALIASES replaces all alternate designations)
+ *	ALTNAME		An alternate server designation
+ *			(SETting ALTNAME adds a new alternate designation) 
+ *	ALTNAMES	All of the alternate server designations
+ *			(SETting ALTNAMES replaces all alternate designations)
  *			(This is the only way to delete a designation)
  */
 char 	*serverctl 	(char *input)

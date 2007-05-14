@@ -1,4 +1,4 @@
-/* $EPIC: dcc.c,v 1.141 2007/02/03 15:40:16 jnelson Exp $ */
+/* $EPIC: dcc.c,v 1.142 2007/05/14 02:33:33 jnelson Exp $ */
 /*
  * dcc.c: Things dealing client to client connections. 
  *
@@ -4288,6 +4288,7 @@ char *	dccctl (char *input)
 			dcc_updates_status = newval;
 		}
 		RETURN_INT(oldval);
+	} else if (!my_strnicmp(listc, "DEFAULT_PORT", len)) {
 	} else
 		RETURN_EMPTY;
 
