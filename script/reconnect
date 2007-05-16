@@ -1,5 +1,7 @@
 if (word(2 $loadinfo()) != [pf]) { load -pf $word(1 $loadinfo()); return; };
 
+load addset;
+
 package reconnect;
 
 addset auto_reconnect bool;

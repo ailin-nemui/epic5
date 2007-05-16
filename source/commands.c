@@ -1,4 +1,4 @@
-/* $EPIC: commands.c,v 1.166 2007/05/12 05:15:11 jnelson Exp $ */
+/* $EPIC: commands.c,v 1.167 2007/05/16 04:43:46 jnelson Exp $ */
 /*
  * commands.c -- Stuff needed to execute commands in ircII.
  *		 Includes the bulk of the built in commands for ircII.
@@ -104,8 +104,8 @@ static	void	commentcmd 	(const char *, char *, const char *);
 static	void	continuecmd	(const char *, char *, const char *);
 static	void	ctcp 		(const char *, char *, const char *);
 static	void	deop 		(const char *, char *, const char *);
-static	void	send_to_channel	(const char *, char *, const char *);
-static	void	send_to_target	(const char *, char *, const char *);
+static	void	send_to_channel_first	(const char *, char *, const char *);
+static	void	send_to_query_first	(const char *, char *, const char *);
 static	void	sendlinecmd 	(const char *, char *, const char *);
 static	void	echocmd		(const char *, char *, const char *);
 static	void	funny_stuff 	(const char *, char *, const char *);
@@ -188,7 +188,7 @@ const char *current_command = NULL;
  */
 static	IrcCommand irc_command[] =
 {
-	{ "",		send_to_channel	},
+	{ "",		send_to_channel_first	},
 	{ "#",		commentcmd	},
 	{ ":",		commentcmd	},
         { "ABORT",      abortcmd	},
@@ -289,8 +289,8 @@ static	IrcCommand irc_command[] =
 #ifdef HAVE_RUBY
 	{ "RUBY",	rubycmd		}, /* ruby.c */
 #endif
-	{ "SAY",	send_to_channel	},
-	{ "SEND",	send_to_target	},
+	{ "SAY",	send_to_channel_first	},
+	{ "SEND",	send_to_query_first	},
 	{ "SENDLINE",	sendlinecmd	},
 	{ "SERVER",	servercmd	}, /* server.c */
 	{ "SERVLIST",	send_comm	},
@@ -622,7 +622,7 @@ BUILT_IN_COMMAND(describe)
 		say("Usage: /DESCRIBE <[=]nick|channel|*> <action description>");
 }
 
-BUILT_IN_COMMAND(send_to_target)
+BUILT_IN_COMMAND(send_to_query_first)
 {
 	const char	*tmp;
 
@@ -630,12 +630,14 @@ BUILT_IN_COMMAND(send_to_target)
 	send_text(from_server, tmp, args, NULL, 1);
 }
 
-BUILT_IN_COMMAND(send_to_channel)
+BUILT_IN_COMMAND(send_to_channel_first)
 {
 	const char	*tmp;
 
-	tmp = get_echannel_by_refnum(0);
-	send_text(from_server, tmp, args, NULL, 1);
+	if ((tmp = get_echannel_by_refnum(0)))
+	    send_text(from_server, tmp, args, NULL, 1);
+	else if ((tmp = get_target_by_refnum(0)))
+	    send_text(from_server, tmp, args, NULL, 1);
 }
 
 /*

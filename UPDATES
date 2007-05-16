@@ -1,4 +1,36 @@
-EPIC5-0.3.3
+EPIC5-0.3.4
+
+*** News 05/15/2007 -- New dccctl() value, "WANT_PORT"
+	You can now get and set the "WANT_PORT" value for a dcc, which 
+	is the value that the -p flag sets.  You can therefore use this
+	to change the -p flag for the user.  Because this value is only
+	used at the time the client tries to bind() an inbound address,
+	changing this value after the dcc has already been offered will
+	have no effect: it is too late at that point to change the port.
+
+*** News 05/15/2007 -- Normalization of the /SAY and /SEND commands
+	The old behavior:
+	- /SEND (the command used when you type text) sends a message to 
+	       1) Current Query
+	    or 2) Current Channel
+	    or 3) Nowhere
+	- /SAY (the "empty" command to overrule a query) sends a message to 
+	       1) Current Channel
+	    or 2) Nowhere
+
+	The new behavior:
+	- /SEND sends a message to 
+	       1) Current Query
+	    or 2) Current Channel
+	    or 3) Nowhere
+	- /SAY sends a message to 
+	       1) Current Channel
+	    or 2) Current Query		<--- this is the change here
+	    or 3) Nowhere
+
+	So /SAY will now send a message to the current query if you are
+	not on a channel, rather than silently failing.  Until this change,
+	there was no way to do this at all.
 
 *** News 05/13/2007 -- ***IMPORTANT*** Removal of /SET REVERSE_STATUS_LINE
 		*** IMPORTANT *** IMPORTANT *** IMPORTANT ***
@@ -8,6 +40,8 @@ EPIC5-0.3.3
 	been since time immemorial.  You ***MUST*** prepend your status_formats
 	with ^Vs (control-Vs, ie, the reverse character) if you want them to
 	appear in reverse. 
+
+EPIC5-0.3.3
 
 *** News 04/11/2007 -- New argument to /xecho, -TARGET
 	Usually if you wanted to output to a channel's window, you would do
@@ -28,7 +62,7 @@ EPIC5-0.3.3
 	you cannot set it, although that's planned for the future.
 
 *** News 01/27/2007 -- New serverctl value, "AUTOCLOSE"
-	Normally a server is automatically closed when the last server
+	Normally a server is automatically closed when the last window
 	to it is disconnected (or killed).  Many people hate this behavior
 	and would like to have a server's connect persist even if there
 	are no windows connected to it.  You can now control this behavior.

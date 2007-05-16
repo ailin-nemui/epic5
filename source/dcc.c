@@ -1,4 +1,4 @@
-/* $EPIC: dcc.c,v 1.142 2007/05/14 02:33:33 jnelson Exp $ */
+/* $EPIC: dcc.c,v 1.143 2007/05/16 04:43:46 jnelson Exp $ */
 /*
  * dcc.c: Things dealing client to client connections. 
  *
@@ -4158,6 +4158,8 @@ char *	dccctl (char *input)
 			RETURN_INT(retint);
 		} else if (!my_strnicmp(listc, "UPDATES_STATUS", len)) {
 			RETURN_INT(client->updates_status);
+		} else if (!my_strnicmp(listc, "WANT_PORT", len)) {
+			RETURN_INT(client->want_port);
 		} else {
 			RETURN_EMPTY;
 		}
@@ -4186,6 +4188,11 @@ char *	dccctl (char *input)
 			malloc_strcpy(&client->userhost, input);
 		} else if (!my_strnicmp(listc, "OTHERNAME", len)) {
 			malloc_strcpy(&client->othername, input);
+		} else if (!my_strnicmp(listc, "WANT_PORT", len)) {
+			long	newref;
+			GET_INT_ARG(newref, input);
+			client->want_port = (unsigned short)newref;
+			RETURN_INT(1);
 		} else if (!my_strnicmp(listc, "HELD", len)) {
 			long	hold, held;
 

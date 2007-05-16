@@ -2,8 +2,7 @@ EPIC5 Projects, Bugs, and other Errata:
 
 KNOWN ERRATA (eg, bugs, or unresolved requests):
 ------------------------------------------------
-* /on dcc_lost should be thrown in more places, when DCC_DELETE is set.
-* Keybindings can take a NULL 2nd arg, whereas in ircII they don't.
+* There needs to be a way to let the user specify/change the dcc -p flag.
 
 LOOK FOR IN THE FUTURE
 -----------------------
@@ -57,3 +56,6 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Comment out code for /set reverse_status_line pending removal later.
 * GC the code for -f/-F/-o/-O command line arguments
 * Fix the serverctl() comment for howl
+* Change /say (or the empty command) to send to channel first, query second
+* Add $dccctl(SET|GET ref WANT_PORT) to set the -p flag.
+* Change tabkey.jm to use /msg -serv/nick instead of /msg serv:nick

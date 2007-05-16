@@ -58,8 +58,8 @@ bind ^R parse_command do_tabkey -1;
 xdebug +extractw;
 
 alias add_target (msg_cmd, target) {
-	if (numwords($myservers()) > 1 && count(: $target) == 0 && left(1 $target) != [=]) {
-		@:target = [${servernum()}:${target}];
+	if (numwords($myservers()) > 1 && count(/ $target) == 0 && left(1 $target) != [=]) {
+		@:target = [-${servernum()}/${target}];
 	};
 
 	xdebug dword {
