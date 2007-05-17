@@ -1,5 +1,52 @@
 EPIC5-0.3.4
 
+*** News 05/17/2007 -- New script, 'dcc_ports'
+	This script adds two new sets:
+		/set dcc_port_min <number>
+	and
+		/set dcc_port_max <number>
+	which create a port range which will be used by your dcc's.  Each
+	number in the range will be chosen sequentially (this will be 
+	enhanced further in the future) and any time you change either of 
+	these values you reset the sequence and it goes back to the minimum
+	port again.  When the port range is exhausted, it will cycle back
+	again to the minimum port.
+
+*** News 05/17/2007 -- Default ports for dcc, recovering from ports-in-use
+	There are two new features, that sort of complement each other, and
+	sort of overlap each other.  Whether to use one or the other depends
+	on how your script is set up and what your needs are.
+
+	When you use /dcc chat or /dcc send, but do not use the -p flag to
+	specify a port, you can create a callback to your script to create
+	a default port:
+		@dccctl(DEFAULT_PORT <string>)
+	The <string> will be expanded with $* being the dcc refnum of the
+	dcc needing a port number.  The expanded value of <string> will be
+	used to set the WANT_PORT value (see below).  If a port cannot be 
+	used because it is already in use by someone else, this value will
+	be expanded repeatedly until it generates a port we can use.
+
+	Whenever you use /dcc chat or /dcc send and use -p to bind a port,
+	and that port is already in use, then /on dcc_lost will be thrown
+		$0	The person you're sending it to
+		$1	The dcc type (ie, send or chat)
+		$2	The filename (url encoded)
+		$3	The refnum of the dcc
+		$4	The port that we tried to use that is in use.
+		$5-	The literal string "PORT IN USE"
+	It is expected that you will catch this hook and then do
+		@dccctl(SET $4 WANT_PORT <new port>)
+	and then the client will try the new port again.  If a port cannot
+	be used because it is already in use by someone else, this hook will
+	be thrown repeatedly until you set a port we can use, or you don't
+	change the port
+
+	In either case, if a port is in use, and neither the DEFAULT_PORT
+	nor /ON DCC_LOST results in the WANT_PORT value being changed, then
+	the dcc will be considered a failure, and it will be abandoned, 
+	just as it has always been until this change.
+
 *** News 05/15/2007 -- New dccctl() value, "WANT_PORT"
 	You can now get and set the "WANT_PORT" value for a dcc, which 
 	is the value that the -p flag sets.  You can therefore use this

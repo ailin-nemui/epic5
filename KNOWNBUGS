@@ -2,7 +2,7 @@ EPIC5 Projects, Bugs, and other Errata:
 
 KNOWN ERRATA (eg, bugs, or unresolved requests):
 ------------------------------------------------
-* There needs to be a way to let the user specify/change the dcc -p flag.
+<none>
 
 LOOK FOR IN THE FUTURE
 -----------------------
@@ -59,3 +59,6 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Change /say (or the empty command) to send to channel first, query second
 * Add $dccctl(SET|GET ref WANT_PORT) to set the -p flag.
 * Change tabkey.jm to use /msg -serv/nick instead of /msg serv:nick
+* Add dccctl(DEFAULT_PORT <string>) [see UPDATES]
+* Add /on dcc_lost case for cant-bind-port [see UPDATES]
+* Add 'dcc_ports' script [see UPDATES]

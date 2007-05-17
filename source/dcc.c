@@ -1,4 +1,4 @@
-/* $EPIC: dcc.c,v 1.143 2007/05/16 04:43:46 jnelson Exp $ */
+/* $EPIC: dcc.c,v 1.144 2007/05/17 14:20:54 jnelson Exp $ */
 /*
  * dcc.c: Things dealing client to client connections. 
  *
@@ -129,6 +129,7 @@ static	int		dcc_global_lock = 0;
 static	int		dccs_rejected = 0;
 static	int		dcc_refnum = 0;
 static	int		dcc_updates_status = 1;
+static	char *		default_dcc_port = NULL;
 
 #define DCC_SUBCOMMAND(x)  static void x (int argc, char **argv, const char *subargs)
 static	void		dcc_chat 		(char *);
@@ -168,6 +169,7 @@ static	void		DCC_close_filesend 	(DCC_list *, const char *, const char *);
 static	void		update_transfer_buffer 	(DCC_list *, const char *format, ...);
 static	char *		dcc_urlencode		(const char *);
 static	char *		dcc_urldecode		(const char *);
+static	void		fill_in_default_port	(DCC_list *dcc);
 
 #ifdef MIRC_BROKEN_DCC_RESUME
 static 	void 		dcc_getfile_resume_demanded (const char *, char *, char *, char *);
@@ -1172,13 +1174,31 @@ static	int	dcc_listen (DCC_list *dcc)
 	 * for a port if our random port isnt available.
 	 */
 	dcc->flags |= DCC_MY_OFFER;
-	if ((dcc->socket = ip_bindery(dcc->family, dcc->want_port, 
+
+	while ((dcc->socket = ip_bindery(dcc->family, dcc->want_port, 
 				      &dcc->local_sockaddr)) < 0)
 	{
+	    /* XXX Maybe this shouldn't be done for $listen()s. */
+	    char *encoded_description = NULL;
+	    int	  original_port = dcc->want_port;
+
+	    fill_in_default_port(dcc);
+
+	    encoded_description = dcc_urlencode(dcc->description);
+            do_hook(DCC_LOST_LIST,"%s %s %s %d %d PORT IN USE",
+			dcc->user, dcc_types[dcc->flags & DCC_TYPES],
+			encoded_description, dcc->refnum, original_port);
+	    new_free(&encoded_description);
+
+	    if (dcc->want_port == original_port)
+	    {
 		dcc->flags |= DCC_DELETE;
-		say("Unable to create connection [%d]", dcc->socket);
+		say("Unable to create connection on fd [%d] "
+		    "binding local port [%d] for inbound connection.", 
+			dcc->socket, dcc->want_port);
 		retval = -1;
-		break;
+		goto dcc_listen_bail;
+	    }
 	}
 
 #ifdef MIRC_BROKEN_DCC_RESUME
@@ -1204,6 +1224,7 @@ static	int	dcc_listen (DCC_list *dcc)
     }
     while (0);
 
+dcc_listen_bail:
 	from_server = old_server;
 	return retval;
 }
@@ -1644,6 +1665,7 @@ DCC_SUBCOMMAND(dcc_chat_subcmd)
 
 	dcc->flags |= DCC_TWOCLIENTS;
 	dcc->want_port = portnum;
+	fill_in_default_port(dcc);
 
 	if (dcc->flags & DCC_THEIR_OFFER)
 		dcc_connect(dcc);
@@ -2375,6 +2397,7 @@ static	void	dcc_filesend (char *args)
 
 		Client->flags |= DCC_TWOCLIENTS;
 		Client->want_port = portnum;
+		fill_in_default_port(Client);
 		dcc_listen(Client);
 	    } /* The WHILE */
 	} /* The IF */
@@ -3602,10 +3625,7 @@ static void	process_dcc_send_data (DCC_list *dcc)
 
 		/* XXX When should this ever be possible? */
 		if (!dcc->filesize)
-{
-yell("huh?");
 			continue;
-}
 
 		calc_size(dcc->bytes_sent, bytes_sent, sizeof(bytes_sent));
 		calc_size(dcc->filesize, filesize, sizeof(filesize));
@@ -3975,6 +3995,21 @@ int	wait_for_dcc (const char *descriptor)
 	return 0;
 }
 
+static void	fill_in_default_port (DCC_list *dcc)
+{
+	if (default_dcc_port)
+	{
+		char dcc_refnum[10];
+		char *newport = NULL;
+
+		snprintf(dcc_refnum, sizeof(dcc_refnum), "%d", dcc->refnum);
+		newport = expand_alias(default_dcc_port, dcc_refnum);
+		dcc->want_port = (unsigned short)my_atol(newport);
+		new_free(&newport);
+	}
+}
+
+
 /*
  * This stuff doesnt conform to the protocol.
  * Thanks mirc for disregarding the protocol.
@@ -4296,6 +4331,11 @@ char *	dccctl (char *input)
 		}
 		RETURN_INT(oldval);
 	} else if (!my_strnicmp(listc, "DEFAULT_PORT", len)) {
+		if (empty(input))
+			RETURN_STR(default_dcc_port);
+		else
+			malloc_strcpy(&default_dcc_port, input);
+		RETURN_INT(1);
 	} else
 		RETURN_EMPTY;
 

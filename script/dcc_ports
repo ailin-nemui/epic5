@@ -1,0 +1,40 @@
+if (word(2 $loadinfo()) != [pf]) { load -pf $word(1 $loadinfo()); return; };
+
+: {
+# Here's the plan
+# 
+# We want to create /set dcc_port_min and /set dcc_port_max that will contain 
+# numbers, and then we want to create an alias that will hook into
+# dccctl(DEFAULT_PORT $$alias()) to generate ports from that range.  Eventually
+# we will want to do something fancy like create another /set that will control
+# how ports are selected (ie, sequentially, randomly, skips, ...)
+#
+};
+
+load addset;
+package dcc_ports;
+
+addset dcc_port_min int {
+   dcc_ports.regen
+};
+addset dcc_port_max int {
+   dcc_ports.regen
+};
+
+alias dcc_ports.regen {
+   @dcc_ports.picklist = jot($dcc_port_min $dcc_port_max)
+};
+
+alias dcc_ports.nextport {
+   if (#dcc_ports.picklist == 0) {
+      dcc_ports.regen
+   };
+   @function_return = shift(dcc_ports.picklist);
+};
+
+@dccctl(DEFAULT_PORT $$dcc_ports.nextport());
+
+set dcc_port_min 1024;
+set dcc_port_max 65535;
+
+#hop'2k7
