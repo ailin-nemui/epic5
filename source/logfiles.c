@@ -1,4 +1,4 @@
-/* $EPIC: logfiles.c,v 1.34 2006/10/13 21:58:02 jnelson Exp $ */
+/* $EPIC: logfiles.c,v 1.35 2007/05/18 05:30:43 jnelson Exp $ */
 /*
  * logfiles.c - General purpose log files
  *
@@ -831,7 +831,7 @@ char *logctl	(char *input)
 			char *ret = logfile_get_targets(log);
 			RETURN_MSTR(ret);
                 } else if (!my_strnicmp(listc, "LEVEL", 3)) {
-			char *ret = mask_to_str(&log->mask);
+			const char *ret = mask_to_str(&log->mask);
 			RETURN_STR(ret);
                 } else if (!my_strnicmp(listc, "REWRITE", 3)) {
 			RETURN_STR(log->rewrite);

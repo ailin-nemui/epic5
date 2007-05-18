@@ -1,4 +1,4 @@
-/* $EPIC: levels.c,v 1.8 2006/10/13 21:58:02 jnelson Exp $ */
+/* $EPIC: levels.c,v 1.9 2007/05/18 05:30:43 jnelson Exp $ */
 /*
  * levels.c - Sorting things by category -- Window/Lastlog, Ignore, and Floods
  *
@@ -150,35 +150,78 @@ char *	get_all_levels (void)
 	return buffer;
 }
 
-char *	mask_to_str (const Mask *mask)
+static const char *	mask_to_positive_str (const Mask *mask)
 {
-	static	char	buffer[512]; /* this *should* be enough for this */
+	static char	buffer[512];
 	int	i;
 	int	next = 1;
 
-	if (mask_isall(mask))
-		strlcpy(buffer, "ALL", sizeof buffer);
-	else if (mask_isnone(mask))
-		strlcpy(buffer, "NONE", sizeof buffer);
-	else
+	*buffer = 0;
+	for (i = 0; i < level_bucket->numitems; i++)
 	{
-		*buffer = 0;
-		for (i = 0; i < level_bucket->numitems; i++)
+	    /* This is done to skip aliases... */
+	    if (LEVELNUM(i) == next)
+	    {
+		if (mask_isset(mask, next))
 		{
-		    /* This is done to skip aliases... */
-		    if (LEVELNUM(i) == next)
-		    {
-			if (mask_isset(mask, next))
-		        {
-			    if (*buffer)
-				strlcat(buffer, " ", sizeof buffer);
-			    strlcat(buffer, LEVELNAME(i), sizeof buffer);
-			}
-		        next++;
-		    }
+		    if (*buffer)
+			strlcat(buffer, " ", sizeof buffer);
+		    strlcat(buffer, LEVELNAME(i), sizeof buffer);
 		}
+		next++;
+	    }
 	}
-	return (buffer);
+	return buffer;
+}
+
+static const char *	mask_to_negative_str (const Mask *mask)
+{
+	static char	buffer[512];
+	int	i;
+	int	next = 1;
+
+	*buffer = 0;
+	strlcpy(buffer, "ALL", sizeof buffer);
+
+	for (i = 0; i < level_bucket->numitems; i++)
+	{
+	    /* This is done to skip aliases... */
+	    if (LEVELNUM(i) == next)
+	    {
+		if (!mask_isset(mask, next))
+		{
+		    if (*buffer)
+			strlcat(buffer, " -", sizeof buffer);
+		    strlcat(buffer, LEVELNAME(i), sizeof buffer);
+		}
+		next++;
+	    }
+	}
+	return buffer;
+}
+
+const char *	mask_to_str (const Mask *mask)
+{
+	static	char	buffer[512]; /* this *should* be enough for this */
+	const char 	*str1, *str2;
+
+	if (mask_isall(mask))
+	{
+		strlcpy(buffer, "ALL", sizeof buffer);
+		return buffer;
+	}
+	if (mask_isnone(mask))
+	{
+		strlcpy(buffer, "NONE", sizeof buffer);
+		return buffer;
+	}
+
+	str1 = mask_to_positive_str(mask);
+	str2 = mask_to_negative_str(mask);
+	if (strlen(str1) <= strlen(str2))
+		return str1;
+	else
+		return str2;
 }
 
 int	str_to_mask (Mask *mask, const char *orig)
@@ -324,11 +367,13 @@ char *levelctl	(char *input)
 		}
         } else if (!my_strnicmp(listc, "NORMALIZE", 1)) {
 		Mask m;
+		const char *r;
+
 		mask_unsetall(&m);
 		if (str_to_mask(&m, input) != 0)
 			RETURN_EMPTY;
-		retval = mask_to_str(&m);
-		RETURN_STR(retval);
+		r = mask_to_str(&m);
+		RETURN_STR(r);
 	}
 
         RETURN_EMPTY;

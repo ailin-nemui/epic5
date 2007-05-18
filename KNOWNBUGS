@@ -6,8 +6,6 @@ KNOWN ERRATA (eg, bugs, or unresolved requests):
 
 LOOK FOR IN THE FUTURE
 -----------------------
-* Some way to alert the user when the bind() of a dcc failed (because the
-  port is in use?)
 * Finish refactoring the input prompt, by showing the prompt all the time,
   eliminating one-column-per-byte assumption.
 * There is confusion between "proto" "type" and "addrfamily" with server
@@ -27,10 +25,7 @@ LOOK FOR IN THE FUTURE
 * str_to_mask() should be silent, callers should be warning.
 * Support for 64 bit ints could be more widespread
 * Larne wants suppression of duplicated lines (like syslog maybe?)
-* Larne and nullie say that stdout can block when running under screen
 * Refactor hardcoded uses of select() so select() isn't mandatory.
-* Nullie wants a way to do themed sends, such that
-	/ctcp ...   is themed, and /^ctcp .. is unthemed
 * Shattah would like something like /window omit <regex> to remove stuff.
 
 [See http://www.epicsol.org/PROJECTS for things to come in the future]
@@ -62,3 +57,5 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Add dccctl(DEFAULT_PORT <string>) [see UPDATES]
 * Add /on dcc_lost case for cant-bind-port [see UPDATES]
 * Add 'dcc_ports' script [see UPDATES]
+* Add mask_to_(positive|negative)_str to convert masks to shorter strings
+* So now mask_to_str() returns strings like "ALL -DCC" if it's shorter!
