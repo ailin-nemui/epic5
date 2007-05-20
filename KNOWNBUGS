@@ -59,3 +59,5 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Add 'dcc_ports' script [see UPDATES]
 * Add mask_to_(positive|negative)_str to convert masks to shorter strings
 * So now mask_to_str() returns strings like "ALL -DCC" if it's shorter!
+* Fix a couple of bugs rb zlonix
+* When doing /stack pop set ... the callback (if any) should be invoked.

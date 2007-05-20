@@ -1,4 +1,4 @@
-/* $EPIC: hook.c,v 1.70 2007/04/12 03:24:14 jnelson Exp $ */
+/* $EPIC: hook.c,v 1.71 2007/05/20 01:06:49 jnelson Exp $ */
 /*
  * hook.c: Does those naughty hook functions. 
  *
@@ -2694,8 +2694,8 @@ char *hookctl (char *input)
 			if (!hook)
 				break;
 		}
-		RETURN_MSTR(ret);
 		new_free (&buffer);
+		RETURN_MSTR(ret);
 		break;
 
 	/* go-switch */

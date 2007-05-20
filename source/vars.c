@@ -1,4 +1,4 @@
-/* $EPIC: vars.c,v 1.97 2007/05/14 02:33:33 jnelson Exp $ */
+/* $EPIC: vars.c,v 1.98 2007/05/20 01:06:49 jnelson Exp $ */
 /*
  * vars.c: All the dealing of the irc variables are handled here. 
  *
@@ -200,6 +200,9 @@ void	unclone_biv (const char *name, IrcVariable *clone)
 
 		var->flags = clone->flags;
 
+		/*
+		 * XXX This should be unified with set_variable() somehow.
+		 */
 		switch (clone->type) {
 		    case BOOL_VAR:
 		    case CHAR_VAR:
@@ -214,6 +217,30 @@ void	unclone_biv (const char *name, IrcVariable *clone)
 			new_free(&clone->data->string);
 			break;
 		}
+
+		/* 
+		 * XXX I copied this from set_variable(), but this
+		 * should be refactored and shared with that function.
+		 */
+		if ((var->func || var->script) && !(var->flags & VIF_PENDING))
+		{
+			var->flags |= VIF_PENDING;
+			if (var->func)
+			    (var->func)(var->data);
+			if (var->script)
+			{
+			    char *s;
+			    int owd = window_display;
+
+			    s = make_string_var_bydata(var->type, (void *)var->data);
+			    window_display = 0;
+			    call_lambda_command("SET", var->script, s);
+			    window_display = owd;
+			    new_free(&s);
+			}
+			var->flags &= ~VIF_PENDING;
+		}
+
 
 		new_free(&clone->data);
 		new_free(&clone);
@@ -1027,6 +1054,8 @@ void    set_indent (void *stuff)
 
 
 /***************************************************************************/
+/* XXX Apparantly this is dead code. */
+#if 0
 /*******/
 typedef struct	varstacklist
 {
@@ -1122,5 +1151,6 @@ void	do_stack_set (int type, char *args)
 	else
 		say("Unknown STACK type ??");
 }
+#endif
 
 
