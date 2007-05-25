@@ -1,4 +1,4 @@
-/* $EPIC: dcc.c,v 1.144 2007/05/17 14:20:54 jnelson Exp $ */
+/* $EPIC: dcc.c,v 1.145 2007/05/25 16:47:48 jnelson Exp $ */
 /*
  * dcc.c: Things dealing client to client connections. 
  *
@@ -3999,11 +3999,11 @@ static void	fill_in_default_port (DCC_list *dcc)
 {
 	if (default_dcc_port)
 	{
-		char dcc_refnum[10];
+		char dccref[10];
 		char *newport = NULL;
 
-		snprintf(dcc_refnum, sizeof(dcc_refnum), "%d", dcc->refnum);
-		newport = expand_alias(default_dcc_port, dcc_refnum);
+		snprintf(dccref, sizeof(dccref), "%ld", dcc->refnum);
+		newport = expand_alias(default_dcc_port, dccref);
 		dcc->want_port = (unsigned short)my_atol(newport);
 		new_free(&newport);
 	}

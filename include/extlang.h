@@ -34,8 +34,8 @@
 #ifdef HAVE_PERL
 extern	void	xs_init (void);
 extern	void	perlstartstop (int);
-extern	char *	perlcall (const char *, char *, char *, long, char *);
-extern	char *	perleval (const char *);
+extern	char *	perlcall (char *, char *, char *, long, char *);
+extern	char *	perleval (char *);
 BUILT_IN_COMMAND(perlcmd);
 #endif
 

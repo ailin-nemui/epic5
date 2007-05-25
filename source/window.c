@@ -1,4 +1,4 @@
-/* $EPIC: window.c,v 1.182 2007/05/12 05:15:11 jnelson Exp $ */
+/* $EPIC: window.c,v 1.183 2007/05/25 16:47:48 jnelson Exp $ */
 /*
  * window.c: Handles the organzation of the logical viewports (``windows'')
  * for irc.  This includes keeping track of what windows are open, where they
@@ -2083,7 +2083,7 @@ BUILT_IN_KEYBINDING(switch_query)
 	window_statusbar_needs_update(win);
 }
 
-void	recheck_queries (Window *win)
+static void	recheck_queries (Window *win)
 {
 	WNickList *nick;
 
@@ -2103,7 +2103,7 @@ void	recheck_queries (Window *win)
  * This forces any window for the server to release its claim upon
  * a nickname (so it can be claimed by another window)
  */
-static int	window_claims_nickname (int winref, int server, const char *nickname)
+static int	window_claims_nickname (unsigned winref, int server, const char *nick)
 {
         Window *window = NULL;
 	WNickList *item;
@@ -2118,7 +2118,7 @@ static int	window_claims_nickname (int winref, int server, const char *nickname)
 	    if (window->refnum != winref)
 	    {
 		if ((item = (WNickList *)remove_from_list(
-				(List **)&window->nicks, nickname)))
+				(List **)&window->nicks, nick)))
 		{
 			l = message_setall(window->refnum, who_from, who_level);
 			say("Removed %s from window name list", item->nick);
@@ -2130,7 +2130,7 @@ static int	window_claims_nickname (int winref, int server, const char *nickname)
 	    }
 	    else
 	    {
-		if (find_in_list((List **)&window->nicks, nickname, !USE_WILDCARDS))
+		if (find_in_list((List **)&window->nicks, nick, !USE_WILDCARDS))
 			already_claimed = 1;
 	    }
 	}
@@ -5109,7 +5109,7 @@ BUILT_IN_COMMAND(windowcmd)
 		if (*arg == '-' || *arg == '/')		/* Ignore - or / */
 			arg++, len--;
 
-		l = message_setall(window ? window->refnum : -1, 
+		l = message_setall(window ? (int)window->refnum : -1, 
 					who_from, who_level);
 
 		for (i = 0; options[i].func ; i++)

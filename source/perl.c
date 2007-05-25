@@ -1,4 +1,4 @@
-/* $EPIC: perl.c,v 1.17 2006/06/09 03:19:14 jnelson Exp $ */
+/* $EPIC: perl.c,v 1.18 2007/05/25 16:47:48 jnelson Exp $ */
 /*
  * perl.c -- The perl interfacing routines.
  *
@@ -157,7 +157,7 @@ void	perlstartstop (int startnotstop)
 	}
 }
 
-char *	perlcall (const char* sub, char* in, char* out, long item, char* input) 
+char *	perlcall (char* sub, char* in, char* out, long item, char* input) 
 {
 	char *retval=NULL;
 	int count, foo;
@@ -192,7 +192,7 @@ char *	perlcall (const char* sub, char* in, char* out, long item, char* input)
 	}
 	if (0<=item) {
 		I32 ax;
-		count = perl_call_pv((char*)sub, G_EVAL|G_ARRAY);
+		count = perl_call_pv(sub, G_EVAL|G_ARRAY);
 		SPAGAIN ;
 		SP -= count ;
 		ax = (SP - PL_stack_base) + 1 ;
@@ -203,7 +203,7 @@ char *	perlcall (const char* sub, char* in, char* out, long item, char* input)
 		snprintf(retval,31,"%u",count);
 	} else {
 		SV *sv;
-		count = perl_call_pv((char*)sub, G_EVAL|G_SCALAR);
+		count = perl_call_pv(sub, G_EVAL|G_SCALAR);
 		SPAGAIN ; sv=POPs ;
 		SV2STR(sv,retval);
 	}
@@ -213,7 +213,7 @@ char *	perlcall (const char* sub, char* in, char* out, long item, char* input)
 	RETURN_MSTR(retval);
 }
 
-char* perleval (const char* input) {
+char* perleval (char* input) {
 	char *retval=NULL;
 	if (input && *input) {
 		SV *sv;

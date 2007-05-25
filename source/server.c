@@ -1,4 +1,4 @@
-/* $EPIC: server.c,v 1.225 2007/05/14 02:33:33 jnelson Exp $ */
+/* $EPIC: server.c,v 1.226 2007/05/25 16:47:48 jnelson Exp $ */
 /*
  * server.c:  Things dealing with that wacky program we call ircd.
  *
@@ -1819,7 +1819,7 @@ void	close_server (int refnum, const char *message)
 	if (s->des == -1)
 		return;		/* Nothing to do here */
 
-	if (final_message && *final_message && !s->closing)
+	if (*final_message && !s->closing)
 	{
 	    s->closing = 1;
 	    if (x_debug & DEBUG_OUTBOUND)
@@ -2762,7 +2762,7 @@ void	set_server_operator (int refnum, int flag)
 	oper_command = 0;		/* No longer doing oper */
 }
 
-const char *	get_server_fulldesc (int servref)
+static const char *	get_server_fulldesc (int servref)
 {
 	Server *s;
 
