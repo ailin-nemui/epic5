@@ -1,4 +1,4 @@
-/* $EPIC: parse.c,v 1.88 2007/05/25 16:47:48 jnelson Exp $ */
+/* $EPIC: parse.c,v 1.89 2007/05/30 02:26:23 jnelson Exp $ */
 /*
  * parse.c: handles messages from the server.   Believe it or not.  I
  * certainly wouldn't if I were you. 
@@ -496,7 +496,7 @@ static void	p_quit (const char *from, const char *comm, const char **ArgList)
 
 	if (one_prints)
 	{
-		l = message_from(what_channel(from), LEVEL_QUIT);
+		l = message_from(what_channel(from, from_server), LEVEL_QUIT);
 		if (do_hook(SIGNOFF_LIST, "%s %s", from, quit_message))
 			say("Signoff: %s (%s)", from, quit_message);
 		pop_message_from(l);
@@ -822,7 +822,8 @@ static void	p_nick (const char *from, const char *comm, const char **ArgList)
 		if (its_me)
 			l = message_from(NULL, LEVEL_NICK);
 		else
-			l = message_from(what_channel(from), LEVEL_NICK);
+			l = message_from(what_channel(from, from_server), 
+						LEVEL_NICK);
 
 		if (do_hook(NICKNAME_LIST, "%s %s", from, new_nick))
 			say("%s is now known as %s", from, new_nick);

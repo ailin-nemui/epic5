@@ -1,4 +1,4 @@
-/* $EPIC: ircaux.c,v 1.168 2007/05/09 00:20:35 jnelson Exp $ */
+/* $EPIC: ircaux.c,v 1.169 2007/05/30 02:26:23 jnelson Exp $ */
 /*
  * ircaux.c: some extra routines... not specific to irc... that I needed 
  *
@@ -4801,7 +4801,7 @@ char *	substitute_string (const char *string, const char *oldstr, const char *ne
 
 /****************************************************************************/
 
-static ssize_t	url_encoder (const char *orig, size_t orig_len, const void *meta, char *dest, size_t dest_len)
+static ssize_t	url_encoder (const char *orig, size_t orig_len, const void *meta, size_t meta_len, char *dest, size_t dest_len)
 {
 	static const char safe[] = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
 				   "abcdefghijklmnopqrstuvwxyz"
@@ -4866,7 +4866,7 @@ static ssize_t	url_encoder (const char *orig, size_t orig_len, const void *meta,
                   )                                     \
 )
 
-static ssize_t	url_decoder (const char *orig, size_t orig_len, const void *meta, char *dest, size_t dest_len)
+static ssize_t	url_decoder (const char *orig, size_t orig_len, const void *meta, size_t meta_len, char *dest, size_t dest_len)
 {
 	size_t	orig_i, dest_i;
 	int	val1, val2;
@@ -4906,7 +4906,7 @@ static ssize_t	url_decoder (const char *orig, size_t orig_len, const void *meta,
         return count;
 }
 
-static ssize_t	enc_encoder (const char *orig, size_t orig_len, const void *meta, char *dest, size_t dest_len)
+static ssize_t	enc_encoder (const char *orig, size_t orig_len, const void *meta, size_t meta_len, char *dest, size_t dest_len)
 {
 	size_t	orig_i, dest_i;
 	ssize_t	count = 0;
@@ -4936,7 +4936,7 @@ static ssize_t	enc_encoder (const char *orig, size_t orig_len, const void *meta,
         return count;
 }
 
-static ssize_t	enc_decoder (const char *orig, size_t orig_len, const void *meta, char *dest, size_t dest_len)
+static ssize_t	enc_decoder (const char *orig, size_t orig_len, const void *meta, size_t meta_len, char *dest, size_t dest_len)
 {
 	size_t	orig_i, dest_i;
 	ssize_t	count = 0;
@@ -4979,7 +4979,7 @@ static int      posfunc (char c)
     return -1;
 }
 
-static ssize_t	b64_encoder (const char *orig, size_t orig_len, const void *meta, char *dest, size_t dest_len)
+static ssize_t	b64_encoder (const char *orig, size_t orig_len, const void *meta, size_t meta_len, char *dest, size_t dest_len)
 {
 	size_t	orig_i, dest_i;
 	ssize_t	count = 0;
@@ -5050,7 +5050,7 @@ static unsigned int     token_decode (const char *token)
     return (marker << 24) | val;
 }
 
-static ssize_t	b64_decoder (const char *orig, size_t orig_len, const void *meta, char *dest, size_t dest_len)
+static ssize_t	b64_decoder (const char *orig, size_t orig_len, const void *meta, size_t meta_len, char *dest, size_t dest_len)
 {
 	size_t	orig_i, dest_i;
 	ssize_t	count = 0;
@@ -5092,17 +5092,35 @@ static ssize_t	b64_decoder (const char *orig, size_t orig_len, const void *meta,
 }
 /* End BSD licensed stuff (see compat.c!) */
 
-static ssize_t	sed_encoder (const char *orig, size_t orig_len, const void *meta, char *dest, size_t dest_len)
+static ssize_t	sed_encoder (const char *orig, size_t orig_len, const void *meta, size_t meta_len, char *dest, size_t dest_len)
 {
-	return 0;
+	size_t	len;
+
+	if (dest_len < orig_len)
+		len = dest_len;
+	else
+		len = orig_len;
+
+	memmove(dest, orig, len);
+	encrypt_sed(dest, len, meta, meta_len);
+	return len;
 }
 
-static ssize_t	sed_decoder (const char *orig, size_t orig_len, const void *meta, char *dest, size_t dest_len)
+static ssize_t	sed_decoder (const char *orig, size_t orig_len, const void *meta, size_t meta_len, char *dest, size_t dest_len)
 {
-	return 0;
+	size_t	len;
+
+	if (dest_len < orig_len)
+		len = dest_len;
+	else
+		len = orig_len;
+
+	memmove(dest, orig, len);
+	decrypt_sed(dest, len, meta, meta_len);
+	return len;
 }
 
-static ssize_t	ctcp_encoder (const char *orig, size_t orig_len, const void *meta, char *dest, size_t dest_len)
+static ssize_t	ctcp_encoder (const char *orig, size_t orig_len, const void *meta, size_t meta_len, char *dest, size_t dest_len)
 {
 	size_t	orig_i, dest_i;
 	ssize_t	count = 0;
@@ -5154,7 +5172,7 @@ static ssize_t	ctcp_encoder (const char *orig, size_t orig_len, const void *meta
         return count;
 }
 
-static ssize_t	ctcp_decoder (const char *orig, size_t orig_len, const void *meta, char *dest, size_t dest_len)
+static ssize_t	ctcp_decoder (const char *orig, size_t orig_len, const void *meta, size_t meta_len, char *dest, size_t dest_len)
 {
 	size_t	orig_i, dest_i;
 	ssize_t	count = 0;
@@ -5199,7 +5217,7 @@ static ssize_t	ctcp_decoder (const char *orig, size_t orig_len, const void *meta
         return count;
 }
 
-static ssize_t	null_encoder (const char *orig, size_t orig_len, const void *meta, char *dest, size_t dest_len)
+static ssize_t	null_encoder (const char *orig, size_t orig_len, const void *meta, size_t meta_len, char *dest, size_t dest_len)
 {
 	size_t	orig_i, dest_i;
 	ssize_t	count = 0;
@@ -5227,12 +5245,12 @@ static ssize_t	null_encoder (const char *orig, size_t orig_len, const void *meta
         return count;
 }
 
-static ssize_t	crypt_encoder (const char *orig, size_t orig_len, const void *meta, char *dest, size_t dest_len)
+static ssize_t	crypt_encoder (const char *orig, size_t orig_len, const void *meta, size_t meta_len, char *dest, size_t dest_len)
 {
 	return 0;
 }
 
-static ssize_t	crypt_decoder (const char *orig, size_t orig_len, const void *meta, char *dest, size_t dest_len)
+static ssize_t	crypt_decoder (const char *orig, size_t orig_len, const void *meta, size_t meta_len, char *dest, size_t dest_len)
 {
 	return 0;
 }
@@ -5243,8 +5261,8 @@ struct Transformer
 	int		refnum;
 	const char *	name;
 	int		takes_meta;
-	ssize_t		(*encoder) (const char *, size_t, const void *, char *, size_t);
-	ssize_t		(*decoder) (const char *, size_t, const void *, char *, size_t);
+	ssize_t		(*encoder) (const char *, size_t, const void *, size_t, char *, size_t);
+	ssize_t		(*decoder) (const char *, size_t, const void *, size_t, char *, size_t);
 };
 
 struct Transformer default_transformers[] = {
@@ -5261,6 +5279,9 @@ struct Transformer default_transformers[] = {
 size_t	transform_string (int type, int encoding, const char *meta, const char *orig_str, size_t orig_str_len, char *dest_str, size_t dest_str_len)
 {
 	int	x;
+	int	meta_len;
+
+	meta_len = meta ? strlen(meta) : 0;
 
 	*dest_str = 0;
 	for (x = 0; default_transformers[x].name; x++)
@@ -5268,9 +5289,9 @@ size_t	transform_string (int type, int encoding, const char *meta, const char *o
 	    if (default_transformers[x].refnum == type)
 	    {
 		if (encoding)
-			return default_transformers[x].encoder(orig_str, orig_str_len, meta, dest_str, dest_str_len);
+			return default_transformers[x].encoder(orig_str, orig_str_len, meta, meta_len, dest_str, dest_str_len);
 		else
-			return default_transformers[x].decoder(orig_str, orig_str_len, meta, dest_str, dest_str_len);
+			return default_transformers[x].decoder(orig_str, orig_str_len, meta, meta_len, dest_str, dest_str_len);
 	    }
 	}
 	return 0;

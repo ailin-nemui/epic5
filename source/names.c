@@ -1,4 +1,4 @@
-/* $EPIC: names.c,v 1.78 2007/04/12 03:24:14 jnelson Exp $ */
+/* $EPIC: names.c,v 1.79 2007/05/30 02:26:23 jnelson Exp $ */
 /*
  * names.c: This here is used to maintain a list of all the people currently
  * on your channel.  Seems to work 
@@ -1312,11 +1312,11 @@ void 	destroy_server_channels (int server)
 }
 
 
-const char *	what_channel (const char *nick)
+const char *	what_channel (const char *nick, int servref)
 {
 	Channel *tmp = NULL;
 
-	while (traverse_all_channels(&tmp, from_server, 1))
+	while (traverse_all_channels(&tmp, servref, 1))
 	{
 		if (find_nick_on_channel(tmp, nick))
 			return tmp->channel;

@@ -61,3 +61,5 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * So now mask_to_str() returns strings like "ALL -DCC" if it's shorter!
 * Fix a couple of bugs rb zlonix
 * When doing /stack pop set ... the callback (if any) should be invoked.
+* Add a server param to what_channel() so i can use it in send_text() later.
+* Add length of 'meta' arg to ciphers so 'meta' doesn't have to be c string

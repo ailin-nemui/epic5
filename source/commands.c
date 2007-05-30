@@ -1,4 +1,4 @@
-/* $EPIC: commands.c,v 1.167 2007/05/16 04:43:46 jnelson Exp $ */
+/* $EPIC: commands.c,v 1.168 2007/05/30 02:26:23 jnelson Exp $ */
 /*
  * commands.c -- Stuff needed to execute commands in ircII.
  *		 Includes the bulk of the built in commands for ircII.
@@ -3110,7 +3110,8 @@ struct target_type target[4] =
 		}
 
 		i = is_channel(current_nick);
-		if (get_server_doing_privmsg(from_server) || (command && !strcmp(command, "NOTICE")))
+		if (get_server_doing_privmsg(from_server) || 
+				(command && !strcmp(command, "NOTICE")))
 			i += 2;
 
 		if ((key = is_crypted(current_nick, from_server, ANYCRYPT)))

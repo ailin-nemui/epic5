@@ -40,7 +40,7 @@
 	char *	window_all_channels	(int, int);
 	int	is_current_channel	(Char *, int);
 	void	destroy_server_channels	(int);
-	Char *	what_channel		(Char *);
+	Char *	what_channel		(Char *, int);
 	Char *	walk_channels		(int, Char *);
 	Char *	fetch_userhost		(int, Char *, Char *);
 	int	get_channel_oper	(Char *, int);

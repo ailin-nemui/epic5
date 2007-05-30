@@ -1,4 +1,4 @@
-/* $EPIC: crypto.c,v 1.8 2007/04/12 03:24:14 jnelson Exp $ */
+/* $EPIC: crypto.c,v 1.9 2007/05/30 02:26:23 jnelson Exp $ */
 /*
  * crypto.c: SED/CAST5/BLOWFISH/AES encryption and decryption routines.
  *
@@ -165,13 +165,13 @@
 #ifdef HAVE_SSL
 static char *	decipher_evp (const unsigned char *key, int keylen, const unsigned char *ciphertext, int cipherlen, const EVP_CIPHER *type, int *outlen, int ivsize);
 #endif
-static void     decrypt_sed (unsigned char *str, int len, const unsigned char *key, int key_len);
+void     decrypt_sed (unsigned char *str, int len, const unsigned char *key, int key_len);
 static char *	decrypt_by_prog (const unsigned char *str, size_t *len, Crypt *key);
 
 #ifdef HAVE_SSL
 static char *	cipher_evp (const unsigned char *key, int keylen, const unsigned char *plaintext, int plaintextlen, const EVP_CIPHER *type, int *retsize, int ivsize);
 #endif
-static void     encrypt_sed (unsigned char *str, int len, char *key, int key_len);
+void     encrypt_sed (unsigned char *str, int len, char *key, int key_len);
 static char *	encrypt_by_prog (const unsigned char *str, size_t *len, Crypt *key);
 
 unsigned char *	decipher_message (const unsigned char *ciphertext, size_t len, Crypt *key, int *retlen)
@@ -297,7 +297,7 @@ static char *	decipher_evp (const unsigned char *key, int keylen, const unsigned
 }
 #endif
 
-static void     decrypt_sed (unsigned char *str, int len, const unsigned char *key, int key_len)
+void     decrypt_sed (unsigned char *str, int len, const unsigned char *key, int key_len)
 {
         int	key_pos,
                 i;
@@ -461,7 +461,7 @@ static char *	cipher_evp (const unsigned char *key, int keylen, const unsigned c
 }
 #endif
 
-static void     encrypt_sed (unsigned char *str, int len, char *key, int key_len)
+void     encrypt_sed (unsigned char *str, int len, char *key, int key_len)
 {
         int     key_pos,
                 i;
