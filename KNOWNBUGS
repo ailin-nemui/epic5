@@ -63,3 +63,6 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * When doing /stack pop set ... the callback (if any) should be invoked.
 * Add a server param to what_channel() so i can use it in send_text() later.
 * Add length of 'meta' arg to ciphers so 'meta' doesn't have to be c string
+* Fix highlight script so it pf-loads
+* Add the ** unary operator -- double expand.  See UPDATES
+* Comment what I'm going to mangle xform into.

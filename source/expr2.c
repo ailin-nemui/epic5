@@ -1,4 +1,4 @@
-/* $EPIC: expr2.c,v 1.36 2007/04/12 03:24:14 jnelson Exp $ */
+/* $EPIC: expr2.c,v 1.37 2007/06/01 01:39:31 jnelson Exp $ */
 /*
  * Zsh: math.c,v 3.1.2.1 1997/06/01 06:13:15 hzoli Exp 
  * math.c - mathematical expression evaluation
@@ -321,7 +321,7 @@ enum LEX {
 	M_FUNCTION,	M_INPAR,
 	NOT, 		COMP, 		PREMINUS,	PREPLUS,
 			UPLUS,		UMINUS,		STRLEN,
-			WORDC,		DEREF,
+			WORDC,		DEREF,		REEXP,
 	POWER,
 	MUL,		DIV,		MOD,
 	PLUS,		MINUS,		STRCAT,
@@ -370,7 +370,7 @@ static	int	prec[TOKCOUNT] =
 	1,		1,
 	2,		2,		2,		2,
 			2,		2,		2,
-			2,		2,
+			2,		2,		2,
 	3,
 	4,		4,		4,
 	5,		5,		5,
@@ -424,7 +424,7 @@ static 	int 	assoc[TOKCOUNT] =
 	LR,		LR,
 	RL,		RL,		RL,		RL,
 			RL,		RL,		RL,
-			RL,		RL,
+			RL,		RL,		RL,
 	RL,
 	LR,		LR,		LR,
 	LR,		LR,		LR,
@@ -1385,6 +1385,20 @@ static void	reduce (expr_info *cx, int what)
 			push_lval(cx, s);
 			break;
 		}
+		case REEXP:
+		{
+			const char *val;
+
+			s = pop_expanded(cx);
+			if (cx->noeval)
+				cx->last_token = 0;
+			else
+				cx->last_token = tokenize_raw(cx, s);
+
+			push_token(cx, cx->last_token);
+			break;
+		}
+
 
 		/* (pre|post)(in|de)crement operators. */
 		case PREPLUS:   AUTO_UNARY(j + 1, j + 1)
@@ -1819,6 +1833,11 @@ static int	zzlex (expr_info *c)
 				c->ptr++;
 				if (*c->ptr == '=') 
 					OPERATOR("**=", 1, POWEREQ)
+				else if (c->operand)
+				{
+					dummy = 2;
+					UNARY("**", 0, REEXP)
+				}
 				else
 					OPERATOR("**", 0, POWER)
 			}

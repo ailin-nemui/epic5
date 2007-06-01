@@ -1,5 +1,24 @@
 EPIC5-0.3.4
 
+*** News 05/31/2007 -- New math operator, Unary ** operator
+	The ** unary prefix operator treats its operand as an unexpanded
+	string, permitting it to be expanded again.  This should remove
+	most any need to use /eval.  Example:
+		@ foo = 'this is a string with $var in it'
+		@ var = 'one'
+		@ val1 = **foo
+		@ var = 'two'
+		@ val2 == **foo
+	So $val1 is "this is a string with one in it" and $val2 is
+	"this is a string with two in it".  You can apply this operator
+	to any rvalue (natch):
+		@ foo = **[booya $foo booya!]
+	becomes
+		@ foo = **[booya this is a string with $var in it]
+	becomes
+		@ foo == [booya this is a string with two in it]
+	Yeah!
+
 *** News 05/17/2007 -- New script, 'dcc_ports'
 	This script adds two new sets:
 		/set dcc_port_min <number>

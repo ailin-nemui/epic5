@@ -1,3 +1,4 @@
+if (word(2 $loadinfo()) != [pf]) { load -pf $word(1 $loadinfo()); return; };
 #
 # Here's the plan -- A simulation of highlighted ignores.
 # Usage:
@@ -14,7 +15,7 @@
 
 alias highlight.it (stuff) {
 	return $highlights.hl$stuff$highlights.hl
-}
+};
 
 alias highlight {
 	if (!@) {

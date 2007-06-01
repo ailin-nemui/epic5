@@ -1,4 +1,4 @@
-/* $EPIC: functions.c,v 1.247 2007/01/27 18:47:03 jnelson Exp $ */
+/* $EPIC: functions.c,v 1.248 2007/06/01 01:39:31 jnelson Exp $ */
 /*
  * functions.c -- Built-in functions for ircII
  *
@@ -6636,6 +6636,66 @@ BUILT_IN_FUNCTION(function_dbmctl, input)
 	return dbmctl(input);
 }
 
+/*
+ * Here's the plan -- we're going to do this over again a second time.
+ *
+ * $xform("<transformations>" "meta" "meta" text)
+ *
+ * Where the <transformation>s are supported by transform_string().
+ * At the time i write this, they are:
+ *	URL		URL encoding		(reversable, no meta)
+ *	ENC		Base16 encoding		(reversable, no meta)
+ *	B64		Base64 encoding		(reversable, no meta)
+ *	CTCP		CTCP encoding		(reversable, no meta)
+ *	SED		Simple Encrypt Data	(reversable, requires meta)
+ *	DEF		Default encryption	(reversable, requires meta)
+ *
+ * You can string together multiple transformations.  Any transformation
+ * that requires a meta value (ie, a cipherkey) should be supplied after 
+ * the transformations *in the correct order*.  After this should be the
+ * plain text.  To apply a transformation, prefix its name with a plus sign
+ * ("+") and to remove a transformation, prefix its name with a minus sign
+ * ("-").  For example, +URL means url encode, and -URL means url decode.
+ *
+ * The transformations is a dword (must be surrounded by double quotes if 
+ * it contains a space, which it will if you do multiple transformations).
+ * The meta values are dwords (must be surrounded by double quotes if they
+ * contain a space).  These two things make this function behave differently
+ * than functions normally do, so this is a documented deviancy!
+ *
+ * Examples:
+ * 	URL-encode a string	$xform(+URL this is a string)
+ *	URL-decode a string	$xform(-URL this%20is%20a%20string)
+ *	SED-cipher a string	$xform(+SED password this is a string)
+ *	SED-decipher a string	$xform(-sed password <whatever>)
+ *
+ * More practical examples:
+ * 1) Read binary data from a file, encrypt it, and url encode it again.
+ *	@fd = open(file.txt R)
+ *	@data = read($fd 1024)
+ *	@cipher = xform("-CTCP +SED +URL" password $data)
+ *	@close($fd)
+ *	msg someone $cipher
+ *
+ * Why does this work?  
+ *  -- $read() returns ctcp-enquoted data, so -CTCP removes it
+ *  -- Now we have binary data, so +SED will cipher it
+ *  -- Now we have ciphertext, so +URL will url encode it.
+ *
+ * We can send this to someone else, and they can put it in $cipher...
+ *
+ *	@newfd = open(newfile.txt W)
+ *	@newdata = xform("-URL -SED +CTCP" password $cipher)
+ *	@writeb($newfd $newdata)
+ *	@close($newfd)
+ *
+ * We did the reverse of the above:
+ *  -- We -URL to recover the binary data
+ *  -- We -SED to decrypt it using the password
+ *  -- We +CTCP to put it in a form we can use with $writeb().
+ *
+ * Viola!
+ */
 BUILT_IN_FUNCTION(function_xform, input)
 {
 	char *	type;
