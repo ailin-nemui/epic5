@@ -29,6 +29,7 @@ LOOK FOR IN THE FUTURE
 * Larne wants suppression of duplicated lines (like syslog maybe?)
 * Refactor hardcoded uses of select() so select() isn't mandatory.
 * Shattah would like something like /window omit <regex> to remove stuff.
+* Kanan wants support for jabber
 
 [See http://www.epicsol.org/PROJECTS for things to come in the future]
 [See http://www.epicsol.org/CHANGELOG5 for things that changed in the past]
@@ -77,3 +78,5 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Rewrite $xform(), see UPDATES.  Strong crypto now supported! YAY!
 * Allow encryption $xform() handlers to reformat their keys, so we can...
 * Add SHA256/AES/AESSHA $xform() encoders
+* Fix it so it compiles without ssl support again.
+* Add "ALL" $xform() encoder, returns all valid xforms

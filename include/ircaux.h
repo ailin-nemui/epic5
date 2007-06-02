@@ -7,7 +7,7 @@
  *
  * See the COPYRIGHT file, or do a HELP IRCII COPYRIGHT 
  *
- * @(#)$Id: ircaux.h,v 1.92 2007/06/02 01:19:13 jnelson Exp $
+ * @(#)$Id: ircaux.h,v 1.93 2007/06/02 15:04:56 jnelson Exp $
  */
 
 #ifndef _IRCAUX_H_
@@ -261,5 +261,6 @@ typedef struct Bucket Bucket;
 /********************/
 size_t	transform_string (int, int, const char *, const char *, size_t, char *, size_t);
 int	lookup_transform (const char *, int *);
+char *	valid_transforms (void);
 
 #endif /* _IRCAUX_H_ */

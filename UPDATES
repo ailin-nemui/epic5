@@ -1,5 +1,14 @@
 EPIC5-0.3.4
 
+*** News 06/02/2007 -- New tranformer: $xform(ALL)
+	The $xform(ALL) transform ignores the text and returns a list of
+	all supported tranformers.  If the user didn't compile SSL support,
+	then you won't be able to use the strong crypto transforms, so this
+	is a great way to check before trying to use crypto.
+
+	Since this is a regular old transform, you can further transform it
+	any way you want to (if you want to).
+
 *** News 06/01/2007 -- More $xform()s added to the list below
 	Please re-read the list immediately below, it's been updated!
 

@@ -1,4 +1,4 @@
-/* $EPIC: functions.c,v 1.250 2007/06/02 01:53:30 jnelson Exp $ */
+/* $EPIC: functions.c,v 1.251 2007/06/02 15:04:56 jnelson Exp $ */
 /*
  * functions.c -- Built-in functions for ircII
  *
@@ -6749,12 +6749,12 @@ BUILT_IN_FUNCTION(function_xform, input)
 	}
 
 	refbuflen = strlen(input);
-	srcbuf = (char *)new_malloc(refbuflen * 10 + 32);
-	destbuf = (char *)new_malloc(refbuflen * 10 + 32);
+	srcbuf = (char *)new_malloc(refbuflen * 10 + 256);
+	destbuf = (char *)new_malloc(refbuflen * 10 + 256);
 
 	strlcpy(srcbuf, input, refbuflen + 1);
 	srcbuflen = refbuflen;
-	destbuflen = refbuflen * 10 + 32;
+	destbuflen = refbuflen * 10 + 256;
 
 	for (x = 0; x < i; x++)
 	{
@@ -6764,7 +6764,7 @@ BUILT_IN_FUNCTION(function_xform, input)
 		srcbuf = destbuf;
 		srcbuflen = ptrbuflen;
 		destbuf = ptr;
-		destbuflen = refbuflen * 10 + 32;
+		destbuflen = refbuflen * 10 + 256;
 	}
 
 	new_free(&destbuf);

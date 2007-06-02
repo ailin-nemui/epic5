@@ -1,4 +1,4 @@
-/* $EPIC: ircaux.c,v 1.171 2007/06/02 01:53:30 jnelson Exp $ */
+/* $EPIC: ircaux.c,v 1.172 2007/06/02 15:04:56 jnelson Exp $ */
 /*
  * ircaux.c: some extra routines... not specific to irc... that I needed 
  *
@@ -5236,6 +5236,16 @@ static ssize_t	crypt_decoder (const char *orig, size_t orig_len, const void *met
 	return 0;
 }
 
+static ssize_t	all_encoder (const char *orig, size_t orig_len, const void *meta, size_t meta_len, char *dest, size_t dest_len)
+{
+	char	*all_xforms;
+
+	all_xforms = valid_transforms();
+	strlcpy(dest, all_xforms, dest_len);
+	new_free(&all_xforms);
+	return strlen(dest);
+}
+
 static ssize_t	sha256_encoder (const char *orig, size_t orig_len, const void *meta, size_t meta_len, char *dest, size_t dest_len)
 {
 	sha256str(orig, orig_len, dest);
@@ -5259,11 +5269,14 @@ struct Transformer default_transformers[] = {
 {	5,	"CTCP",		0,	ctcp_encoder,	ctcp_decoder	},
 {	6,	"NONE",		0,	null_encoder,	null_encoder	},
 {	7,	"DEF",		0,	crypt_encoder,	crypt_decoder	},
+#ifdef HAVE_SSL
 {	8,	"BF",		1,	blowfish_encoder, blowfish_decoder },
 {	9,	"CAST",		1,	cast5_encoder,	cast5_decoder	},
 {	10,	"SHA256",	0,	sha256_encoder,	sha256_encoder	},
 {	11,	"AES",		1,	aes_encoder,	aes_decoder	},
 {	12,	"AESSHA",	1,	aessha_encoder,	aessha_decoder	},
+#endif
+{	13,	"ALL",		0,	all_encoder,	all_encoder	},
 {	-1,	NULL,		0,	NULL,		NULL		}
 };
 
@@ -5301,5 +5314,19 @@ int	lookup_transform (const char *str, int *numargs)
 		}
 	}
 	return -1;
+}
+
+char *	valid_transforms (void)
+{
+	int	x = 0;
+	char *	retval = NULL;
+	size_t	cluep;
+
+	for (x = 0; default_transformers[x].name; x++)
+	{
+		malloc_strcat_word_c(&retval, space, 
+			default_transformers[x].name, DWORD_NO, &cluep);
+	}
+	return retval;
 }
 

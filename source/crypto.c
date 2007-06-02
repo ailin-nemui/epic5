@@ -1,4 +1,4 @@
-/* $EPIC: crypto.c,v 1.11 2007/06/02 01:53:30 jnelson Exp $ */
+/* $EPIC: crypto.c,v 1.12 2007/06/02 15:04:56 jnelson Exp $ */
 /*
  * crypto.c: SED/CAST5/BLOWFISH/AES encryption and decryption routines.
  *
@@ -515,6 +515,7 @@ static char *	encrypt_by_prog (const unsigned char *str, size_t *len, Crypt *key
 }
 
 /**************************************************************************/
+#ifdef HAVE_SSL
 void	ext256_key (const char *orig, size_t orig_len, char **key, size_t *keylen)
 {
 	size_t	len;
@@ -598,7 +599,7 @@ ssize_t	x ## _decoder (const char *ciphertext, size_t len, const void *meta, siz
 	}								\
 									\
 	make_key (meta, meta_len, &realkey, &realkeylen);		\
-	if (!(outbuf = decipher_evp(realkey, realkeylen, ciphertext, len, \ 
+	if (!(outbuf = decipher_evp(realkey, realkeylen, ciphertext, len, \
 				y (), &retlen, blocksize))) 		\
 	{ 								\
 		yell("bummer"); 					\
@@ -619,4 +620,6 @@ CRYPTO_HELPER_FUNCTIONS(blowfish, EVP_bf_cbc, 8, copy_key)
 CRYPTO_HELPER_FUNCTIONS(cast5, EVP_cast5_cbc, 8, copy_key)
 CRYPTO_HELPER_FUNCTIONS(aes, EVP_aes_256_cbc, 16, ext256_key)
 CRYPTO_HELPER_FUNCTIONS(aessha, EVP_aes_256_cbc, 16, sha256_key)
+#endif
+
 
