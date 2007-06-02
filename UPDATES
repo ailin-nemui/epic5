@@ -1,5 +1,8 @@
 EPIC5-0.3.4
 
+*** News 06/01/2007 -- More $xform()s added to the list below
+	Please re-read the list immediately below, it's been updated!
+
 *** News 06/01/2007 -- Totaly rewritten $xform(), now actually useful!
 	Here's the plan -- we're going to do this over again a second time.
 
@@ -7,12 +10,25 @@ EPIC5-0.3.4
 	     
 	Where the <transformation>s are supported by transform_string().
 	At the time i write this, they are:
-	     URL             URL encoding            (reversable, no meta)
-	     ENC             Base16 encoding         (reversable, no meta)
-	     B64             Base64 encoding         (reversable, no meta)
-	     CTCP            CTCP encoding           (reversable, no meta)
-	     SED             Simple Encrypt Data     (reversable, requires meta)
-	     DEF             Default encryption      (reversable, requires meta)
+
+	Reversable encodings that convert between binary and printable data
+	and do not require a meta:
+	     URL             URL encoding           
+	     ENC             Base16 encoding        
+	     B64             Base64 encoding        
+	     CTCP            CTCP encoding          
+             NONE            Straight copy -- data not changed
+
+	Reversable encryptions that require a meta value (a password):
+	     SED             Simple Encrypt Data  
+	     BF              Blowfish-CBC         
+	     CAST            CAST5-CBC            
+	     AES             AES256-CBC
+	     AESSHA          AES256-CBC with SHA256 digest of the meta
+	     DEF             Default encryption     (NOT IMPLEMENTED YET!)
+
+	Irreversable digest operations that do not require a meta:
+	     SHA256          SHA256 message digest
 
 	You can string together multiple transformations.  Any transformation
 	that requires a meta value (ie, a cipherkey) should be supplied after

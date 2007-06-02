@@ -6,6 +6,8 @@ KNOWN ERRATA (eg, bugs, or unresolved requests):
 
 LOOK FOR IN THE FUTURE
 -----------------------
+* The $(url|b64|)(en|de)code() functions should all be aliases.
+* $sedcrypt() and $sha256() should be aliases.
 * Deprecate functions that can be scripted using $xform().
 * Finish refactoring the input prompt, by showing the prompt all the time,
   eliminating one-column-per-byte assumption.
@@ -73,4 +75,5 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Whip the $xform() callback functions into usable shape.
 * Fix base64 encoding both via $xform() and $b64encode().
 * Rewrite $xform(), see UPDATES.  Strong crypto now supported! YAY!
-
+* Allow encryption $xform() handlers to reformat their keys, so we can...
+* Add SHA256/AES/AESSHA $xform() encoders

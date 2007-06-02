@@ -1,4 +1,4 @@
-/* $EPIC: ircaux.c,v 1.170 2007/06/02 01:19:13 jnelson Exp $ */
+/* $EPIC: ircaux.c,v 1.171 2007/06/02 01:53:30 jnelson Exp $ */
 /*
  * ircaux.c: some extra routines... not specific to irc... that I needed 
  *
@@ -5236,6 +5236,11 @@ static ssize_t	crypt_decoder (const char *orig, size_t orig_len, const void *met
 	return 0;
 }
 
+static ssize_t	sha256_encoder (const char *orig, size_t orig_len, const void *meta, size_t meta_len, char *dest, size_t dest_len)
+{
+	sha256str(orig, orig_len, dest);
+	return strlen(dest);
+}
 
 struct Transformer
 {
@@ -5255,7 +5260,10 @@ struct Transformer default_transformers[] = {
 {	6,	"NONE",		0,	null_encoder,	null_encoder	},
 {	7,	"DEF",		0,	crypt_encoder,	crypt_decoder	},
 {	8,	"BF",		1,	blowfish_encoder, blowfish_decoder },
-{	9,	"CAST",		1,	cast5_encoder,	cast5_decoder },
+{	9,	"CAST",		1,	cast5_encoder,	cast5_decoder	},
+{	10,	"SHA256",	0,	sha256_encoder,	sha256_encoder	},
+{	11,	"AES",		1,	aes_encoder,	aes_decoder	},
+{	12,	"AESSHA",	1,	aessha_encoder,	aessha_decoder	},
 {	-1,	NULL,		0,	NULL,		NULL		}
 };
 

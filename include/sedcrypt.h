@@ -49,5 +49,9 @@ typedef struct	CryptStru
 	ssize_t blowfish_decoder (const char *, size_t, const void *, size_t, char *, size_t);
 	ssize_t cast5_encoder (const char *, size_t, const void *, size_t, char *, size_t);
 	ssize_t cast5_decoder (const char *, size_t, const void *, size_t, char *, size_t);
+	ssize_t aes_encoder (const char *, size_t, const void *, size_t, char *, size_t);
+	ssize_t aes_decoder (const char *, size_t, const void *, size_t, char *, size_t);
+	ssize_t aessha_encoder (const char *, size_t, const void *, size_t, char *, size_t);
+	ssize_t aessha_decoder (const char *, size_t, const void *, size_t, char *, size_t);
 
 #endif /* _CRYPT_H_ */

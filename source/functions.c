@@ -1,4 +1,4 @@
-/* $EPIC: functions.c,v 1.249 2007/06/02 01:19:13 jnelson Exp $ */
+/* $EPIC: functions.c,v 1.250 2007/06/02 01:53:30 jnelson Exp $ */
 /*
  * functions.c -- Built-in functions for ircII
  *
@@ -6771,41 +6771,6 @@ BUILT_IN_FUNCTION(function_xform, input)
 	srcbuf[srcbuflen] = 0;
 	RETURN_MSTR(srcbuf);
 }
-
-#if 0
-BUILT_IN_FUNCTION(function_xform, input)
-{
-	char *	type;
-	int	typenum;
-	char *	encodestr;
-	int	encodenum;
-	char *	meta;
-	char *	str;
-	size_t	str_len;
-	char *	retval;
-	size_t	retval_len;
-
-	GET_FUNC_ARG(type, input)
-	GET_FUNC_ARG(encodestr, input)
-	GET_FUNC_ARG(meta, input)
-	str = input;
-	str_len = strlen(input);
-	retval_len = str_len * 10;
-	retval = new_malloc(retval_len);
-
-	typenum = lookup_transform(type);
-
-	if (!my_strnicmp(encodestr, "E", 1))
-		encodenum = 1;
-	else if (!my_strnicmp(encodestr, "D", 1))
-		encodenum = 0;
-	else
-		RETURN_EMPTY;
-
-	transform_string(typenum, encodenum, meta, str, str_len, retval, retval_len);
-	RETURN_MSTR(retval);
-}
-#endif
 
 #ifdef HAVE_RUBY
 

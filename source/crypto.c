@@ -1,4 +1,4 @@
-/* $EPIC: crypto.c,v 1.10 2007/06/02 01:19:13 jnelson Exp $ */
+/* $EPIC: crypto.c,v 1.11 2007/06/02 01:53:30 jnelson Exp $ */
 /*
  * crypto.c: SED/CAST5/BLOWFISH/AES encryption and decryption routines.
  *
@@ -515,15 +515,45 @@ static char *	encrypt_by_prog (const unsigned char *str, size_t *len, Crypt *key
 }
 
 /**************************************************************************/
+void	ext256_key (const char *orig, size_t orig_len, char **key, size_t *keylen)
+{
+	size_t	len;
+
+	if (orig_len < 32)
+		len = orig_len;
+	else
+		len = 32;
+
+	*key = new_malloc(32);
+	memset(*key, 0, 32);
+	memcpy(*key, orig, len);
+	*keylen = 32;
+}
+
+void	sha256_key (const char *orig, size_t orig_len, char **key, size_t *keylen)
+{
+	*key = new_malloc(32);
+	sha256(orig, orig_len, *key);
+	*keylen = 32;
+}
+
+void	copy_key (const char *orig, size_t orig_len, char **key, size_t *keylen)
+{
+	*key = malloc_strdup(orig);
+	*keylen = orig_len;
+}
+
 /*
  * These are helper functions for $xform() to do SSL strong crypto.
  */
-#define CRYPTO_HELPER_FUNCTIONS(x, y, blocksize) 			\
+#define CRYPTO_HELPER_FUNCTIONS(x, y, blocksize, make_key)		\
 ssize_t	x ## _encoder (const char *orig, size_t orig_len, const void *meta, size_t meta_len, char *dest, size_t dest_len) \
 { 									\
 	size_t	len; 							\
 	int	retsize = 0; 						\
 	char *	retval; 						\
+	char *	realkey;						\
+	size_t	realkeylen;						\
 									\
 	if (orig_len == 0) 						\
 	{ 								\
@@ -531,7 +561,8 @@ ssize_t	x ## _encoder (const char *orig, size_t orig_len, const void *meta, size
 		return 0; 						\
 	} 								\
 									\
-	retval = cipher_evp(meta, meta_len, orig, orig_len, 		\
+	make_key (meta, meta_len, &realkey, &realkeylen);		\
+	retval = cipher_evp(realkey, realkeylen, orig, orig_len,	\
 				y (), &retsize, blocksize); 		\
 	if (retval && retsize > 0) 					\
 	{ 								\
@@ -548,6 +579,7 @@ ssize_t	x ## _encoder (const char *orig, size_t orig_len, const void *meta, size
 									\
 	if (retval) 							\
 		new_free(&retval); 					\
+	new_free(&realkey);						\
 	return 0; 							\
 }									\
 									\
@@ -555,7 +587,9 @@ ssize_t	x ## _decoder (const char *ciphertext, size_t len, const void *meta, siz
 { 									\
 	unsigned char *	outbuf = NULL; 					\
 	int	bytes_to_trim; 						\
-	int retlen = 0; 						\
+	int 	retlen = 0; 						\
+	char *	realkey;						\
+	size_t	realkeylen;						\
 									\
 	if (len == 0) 							\
 	{								\
@@ -563,7 +597,8 @@ ssize_t	x ## _decoder (const char *ciphertext, size_t len, const void *meta, siz
 		return 0; 						\
 	}								\
 									\
-	if (!(outbuf = decipher_evp(meta, meta_len, ciphertext, len,  	\
+	make_key (meta, meta_len, &realkey, &realkeylen);		\
+	if (!(outbuf = decipher_evp(realkey, realkeylen, ciphertext, len, \ 
 				y (), &retlen, blocksize))) 		\
 	{ 								\
 		yell("bummer"); 					\
@@ -580,6 +615,8 @@ ssize_t	x ## _decoder (const char *ciphertext, size_t len, const void *meta, siz
 	return retlen;							\
 }
 
-CRYPTO_HELPER_FUNCTIONS(blowfish, EVP_bf_cbc, 8)
-CRYPTO_HELPER_FUNCTIONS(cast5, EVP_cast5_cbc, 8)
+CRYPTO_HELPER_FUNCTIONS(blowfish, EVP_bf_cbc, 8, copy_key)
+CRYPTO_HELPER_FUNCTIONS(cast5, EVP_cast5_cbc, 8, copy_key)
+CRYPTO_HELPER_FUNCTIONS(aes, EVP_aes_256_cbc, 16, ext256_key)
+CRYPTO_HELPER_FUNCTIONS(aessha, EVP_aes_256_cbc, 16, sha256_key)
 
