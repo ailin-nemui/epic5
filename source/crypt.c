@@ -1,4 +1,4 @@
-/* $EPIC: crypt.c,v 1.34 2007/04/12 03:24:14 jnelson Exp $ */
+/* $EPIC: crypt.c,v 1.35 2007/06/02 01:19:13 jnelson Exp $ */
 /*
  * crypt.c: The /ENCRYPT command and all its attendant baggage.
  *
@@ -43,7 +43,7 @@
 #define CRYPT_BUFFER_SIZE (IRCD_BUFFER_SIZE - 50)	/* Make this less than
 							 * the transmittable
 							 * buffer */
-static	const char *	happykey (const char *key, int type);
+const char *	happykey (const char *key, int type);
 
 /* crypt_list: the list of nicknames and encryption keys */
 static	Crypt	*crypt_list = (Crypt *) 0;
@@ -511,7 +511,7 @@ const char *	happykey (const char *key, int type)
 	{
 		int	i;
 		for (i = 0; i < 32; i++)		/* XXX */
-		    snprintf(prettykey + (i * 2), 3, "%2.2X", (unsigned)key[i]);
+		    snprintf(prettykey + (i * 2), 3, "%2.2X", (unsigned)(unsigned char)key[i]);
 	}
 	else
 	{

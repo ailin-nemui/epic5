@@ -1,4 +1,4 @@
-/* $EPIC: functions.c,v 1.248 2007/06/01 01:39:31 jnelson Exp $ */
+/* $EPIC: functions.c,v 1.249 2007/06/02 01:19:13 jnelson Exp $ */
 /*
  * functions.c -- Built-in functions for ircII
  *
@@ -6698,6 +6698,83 @@ BUILT_IN_FUNCTION(function_dbmctl, input)
  */
 BUILT_IN_FUNCTION(function_xform, input)
 {
+#define MAX_TRANSFORMS 16
+	char *	directives;
+	int	x, i = 0;
+	int	types[MAX_TRANSFORMS];
+	char *	args[MAX_TRANSFORMS];
+	int	encodings[MAX_TRANSFORMS];
+
+	char *	typestr;
+	int	type;
+	int	encoding;
+	char *	arg;
+	int	numargs;
+
+	char	*srcbuf, *destbuf, *ptr;
+	size_t	srcbuflen, destbuflen, ptrbuflen;
+	size_t	refbuflen;
+
+	/*
+	 * First we have to calculate how many args there are before
+	 * the original text.  There is one arg for the directives,
+	 * and then we have to check each directive to see how many 
+	 * args it takes.
+	 */
+	GET_DWORD_ARG(directives, input)
+	while ((typestr = next_arg(directives, &directives)))
+	{
+	    if (*typestr == '+')
+		typestr++, encoding = 1;
+	    else if (*typestr == '-')
+		typestr++, encoding = 0;
+	    else
+		encoding = 1;
+
+	    if ((type = lookup_transform(typestr, &numargs)) > -1)
+	    {
+		if (numargs == 1)
+			GET_DWORD_ARG(arg, input)
+		else
+			arg = NULL;
+	    }
+
+	    if (i < MAX_TRANSFORMS && type > -1)
+	    {
+		types[i] = type;
+		encodings[i] = encoding;
+		args[i] = arg;
+		i++;
+	    }
+	}
+
+	refbuflen = strlen(input);
+	srcbuf = (char *)new_malloc(refbuflen * 10 + 32);
+	destbuf = (char *)new_malloc(refbuflen * 10 + 32);
+
+	strlcpy(srcbuf, input, refbuflen + 1);
+	srcbuflen = refbuflen;
+	destbuflen = refbuflen * 10 + 32;
+
+	for (x = 0; x < i; x++)
+	{
+		ptrbuflen = transform_string(types[x], encodings[x], args[x],
+				srcbuf, srcbuflen, destbuf, destbuflen);
+		ptr = srcbuf;
+		srcbuf = destbuf;
+		srcbuflen = ptrbuflen;
+		destbuf = ptr;
+		destbuflen = refbuflen * 10 + 32;
+	}
+
+	new_free(&destbuf);
+	srcbuf[srcbuflen] = 0;
+	RETURN_MSTR(srcbuf);
+}
+
+#if 0
+BUILT_IN_FUNCTION(function_xform, input)
+{
 	char *	type;
 	int	typenum;
 	char *	encodestr;
@@ -6728,6 +6805,7 @@ BUILT_IN_FUNCTION(function_xform, input)
 	transform_string(typenum, encodenum, meta, str, str_len, retval, retval_len);
 	RETURN_MSTR(retval);
 }
+#endif
 
 #ifdef HAVE_RUBY
 

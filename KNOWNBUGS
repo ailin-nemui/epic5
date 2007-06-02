@@ -6,6 +6,7 @@ KNOWN ERRATA (eg, bugs, or unresolved requests):
 
 LOOK FOR IN THE FUTURE
 -----------------------
+* Deprecate functions that can be scripted using $xform().
 * Finish refactoring the input prompt, by showing the prompt all the time,
   eliminating one-column-per-byte assumption.
 * There is confusion between "proto" "type" and "addrfamily" with server
@@ -21,7 +22,6 @@ LOOK FOR IN THE FUTURE
 * Output rules
 * Support for CNOTICE
 * /CTCPs over /DCCs don't match up with their queries very well. (nullie)
-* $xform()s for SED and DEF
 * str_to_mask() should be silent, callers should be warning.
 * Support for 64 bit ints could be more widespread
 * Larne wants suppression of duplicated lines (like syslog maybe?)
@@ -66,3 +66,11 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Fix highlight script so it pf-loads
 * Add the ** unary operator -- double expand.  See UPDATES
 * Comment what I'm going to mangle xform into.
+* Fix happykey().  Sometimes, I just don't pay enough attention.
+* Don't trim 1 too many chars on incoming encrypted messages. Important!
+* Fix buffer sizes being too small to hold buffer for enc/dec short strings.
+* Add $xform() handlers for blowfish and cast5
+* Whip the $xform() callback functions into usable shape.
+* Fix base64 encoding both via $xform() and $b64encode().
+* Rewrite $xform(), see UPDATES.  Strong crypto now supported! YAY!
+

@@ -1,4 +1,4 @@
-/* $EPIC: ircaux.c,v 1.169 2007/05/30 02:26:23 jnelson Exp $ */
+/* $EPIC: ircaux.c,v 1.170 2007/06/02 01:19:13 jnelson Exp $ */
 /*
  * ircaux.c: some extra routines... not specific to irc... that I needed 
  *
@@ -49,6 +49,7 @@
 #include "words.h"
 #include "ctcp.h"
 #include "server.h"
+#include "sedcrypt.h"
 
 /*
  * This is the basic overhead for every malloc allocation (8 bytes).
@@ -4815,11 +4816,6 @@ static ssize_t	url_encoder (const char *orig, size_t orig_len, const void *meta,
 
         if (!orig || !dest)
                 return -1;
-	if (!*orig)
-	{
-		*dest = 0;
-		return 0;
-	}
 
 	if (orig_len == 0)
 		orig_len = strlen(orig);
@@ -4827,7 +4823,7 @@ static ssize_t	url_encoder (const char *orig, size_t orig_len, const void *meta,
 
 	for (orig_i = 0; orig_i < orig_len; orig_i++)
 	{
-	    if (!strchr(safe, orig[orig_i]))
+	    if (orig[orig_i] == 0 || !strchr(safe, orig[orig_i]))
             {
 		unsigned c = (unsigned)(unsigned char)orig[orig_i];
 
@@ -4850,7 +4846,7 @@ static ssize_t	url_encoder (const char *orig, size_t orig_len, const void *meta,
 	if (dest_i >= dest_len)
 		dest_i = dest_len - 1;
 	dest[dest_i] = 0;
-        return count;
+        return dest_i;
 }
 
 #define XTOI(x)                                         \
@@ -4903,7 +4899,7 @@ static ssize_t	url_decoder (const char *orig, size_t orig_len, const void *meta,
 	if (dest_i >= dest_len)
 		dest_i = dest_len - 1;
 	dest[dest_i] = 0;
-        return count;
+        return dest_i;
 }
 
 static ssize_t	enc_encoder (const char *orig, size_t orig_len, const void *meta, size_t meta_len, char *dest, size_t dest_len)
@@ -4913,11 +4909,6 @@ static ssize_t	enc_encoder (const char *orig, size_t orig_len, const void *meta,
 
         if (!orig || !dest)
                 return -1;
-	if (!*orig)
-	{
-		*dest = 0;
-		return 0;
-	}
 
 	if (orig_len == 0)
 		orig_len = strlen(orig);
@@ -4933,7 +4924,7 @@ static ssize_t	enc_encoder (const char *orig, size_t orig_len, const void *meta,
 	if (dest_i >= dest_len)
 		dest_i = dest_len - 1;
 	dest[dest_i] = 0;
-        return count;
+        return dest_i;
 }
 
 static ssize_t	enc_decoder (const char *orig, size_t orig_len, const void *meta, size_t meta_len, char *dest, size_t dest_len)
@@ -4964,7 +4955,7 @@ static ssize_t	enc_decoder (const char *orig, size_t orig_len, const void *meta,
 	if (dest_i >= dest_len)
 		dest_i = dest_len - 1;
 	dest[dest_i] = 0;
-        return count;
+        return dest_i;
 }
 
 /* This stuff is BSD licensed, see compat.c!  */
@@ -4986,24 +4977,19 @@ static ssize_t	b64_encoder (const char *orig, size_t orig_len, const void *meta,
 
         if (!orig || !dest)
                 return -1;
-	if (!*orig)
-	{
-		*dest = 0;
-		return 0;
-	}
 
 	if (orig_len == 0)
 		orig_len = strlen(orig);
 	dest_i = 0;
 	for (orig_i = 0; orig_i < orig_len; )
 	{
-	    int	c = (int)orig[orig_i];
+	    unsigned	c = (unsigned)(unsigned char)orig[orig_i];
 	    c *= 256;
 	    if (orig_i+1 < orig_len)
-		c += orig[orig_i+1];
+		c += (unsigned)(unsigned char)orig[orig_i+1];
 	    c *= 256;
 	    if (orig_i+2 < orig_len)
-		c += orig[orig_i+2];
+		c += (unsigned)(unsigned char)orig[orig_i+2];
 
 	    if (dest_i < dest_len)
 		dest[dest_i]   = base64_chars[(c & 0x00fc0000) >> 18];
@@ -5025,7 +5011,7 @@ static ssize_t	b64_encoder (const char *orig, size_t orig_len, const void *meta,
 	if (dest_i >= dest_len)
 		dest_i = dest_len - 1;
 	dest[dest_i] = 0;
-        return count;
+        return dest_i;
 }
 
 #define DECODE_ERROR 0xFFFFFFFF
@@ -5088,7 +5074,7 @@ static ssize_t	b64_decoder (const char *orig, size_t orig_len, const void *meta,
 	if (dest_i >= dest_len)
 		dest_i = dest_len - 1;
 	dest[dest_i] = 0;
-        return count;
+        return dest_i;
 }
 /* End BSD licensed stuff (see compat.c!) */
 
@@ -5127,11 +5113,6 @@ static ssize_t	ctcp_encoder (const char *orig, size_t orig_len, const void *meta
 
         if (!orig || !dest)
                 return -1;
-	if (!*orig)
-	{
-		*dest = 0;
-		return 0;
-	}
 
 	if (orig_len == 0)
 		orig_len = strlen(orig);
@@ -5169,7 +5150,7 @@ static ssize_t	ctcp_encoder (const char *orig, size_t orig_len, const void *meta
 	if (dest_i >= dest_len)
 		dest_i = dest_len - 1;
 	dest[dest_i] = 0;
-        return count;
+        return dest_i;
 }
 
 static ssize_t	ctcp_decoder (const char *orig, size_t orig_len, const void *meta, size_t meta_len, char *dest, size_t dest_len)
@@ -5214,7 +5195,7 @@ static ssize_t	ctcp_decoder (const char *orig, size_t orig_len, const void *meta
 	if (dest_i >= dest_len)
 		dest_i = dest_len - 1;
 	dest[dest_i] = 0;
-        return count;
+        return dest_i;
 }
 
 static ssize_t	null_encoder (const char *orig, size_t orig_len, const void *meta, size_t meta_len, char *dest, size_t dest_len)
@@ -5242,7 +5223,7 @@ static ssize_t	null_encoder (const char *orig, size_t orig_len, const void *meta
 	if (dest_i >= dest_len)
 		dest_i = dest_len - 1;
 	dest[dest_i] = 0;
-        return count;
+        return dest_i;
 }
 
 static ssize_t	crypt_encoder (const char *orig, size_t orig_len, const void *meta, size_t meta_len, char *dest, size_t dest_len)
@@ -5273,6 +5254,8 @@ struct Transformer default_transformers[] = {
 {	5,	"CTCP",		0,	ctcp_encoder,	ctcp_decoder	},
 {	6,	"NONE",		0,	null_encoder,	null_encoder	},
 {	7,	"DEF",		0,	crypt_encoder,	crypt_decoder	},
+{	8,	"BF",		1,	blowfish_encoder, blowfish_decoder },
+{	9,	"CAST",		1,	cast5_encoder,	cast5_decoder },
 {	-1,	NULL,		0,	NULL,		NULL		}
 };
 
@@ -5297,13 +5280,18 @@ size_t	transform_string (int type, int encoding, const char *meta, const char *o
 	return 0;
 }
 
-int	lookup_transform (const char *str)
+int	lookup_transform (const char *str, int *numargs)
 {
 	int	x = 0;
 
 	for (x = 0; default_transformers[x].name; x++)
+	{
 		if (!my_stricmp(default_transformers[x].name, str))
+		{
+			*numargs = default_transformers[x].takes_meta;
 			return default_transformers[x].refnum;
+		}
+	}
 	return -1;
 }
 

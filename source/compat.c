@@ -1,4 +1,4 @@
-/* $EPIC: compat.c,v 1.29 2007/04/12 03:24:14 jnelson Exp $ */
+/* $EPIC: compat.c,v 1.30 2007/06/02 01:19:13 jnelson Exp $ */
 /*
  * Everything that im not directly responsible for I put in here.  Almost
  * all of this stuff is either borrowed from somewhere else (for you poor
@@ -1142,7 +1142,7 @@ int	my_base64_encode (const void *data, int size, char **str)
 {
     char *s, *p;
     int i;
-    int c;
+    unsigned c;
     const unsigned char *q;
 
     p = s = (char *)new_malloc(size * 4 / 3 + 4);
@@ -1151,14 +1151,14 @@ int	my_base64_encode (const void *data, int size, char **str)
     q = (const unsigned char *) data;
     i = 0;
     for (i = 0; i < size;) {
-	c = q[i++];
+	c = (unsigned)(unsigned char)q[i++];
 	c *= 256;
 	if (i < size)
-	    c += q[i];
+	    c += (unsigned)(unsigned char)q[i];
 	i++;
 	c *= 256;
 	if (i < size)
-	    c += q[i];
+	    c += (unsigned)(unsigned char)q[i];
 	i++;
 	p[0] = base64_chars[(c & 0x00fc0000) >> 18];
 	p[1] = base64_chars[(c & 0x0003f000) >> 12];

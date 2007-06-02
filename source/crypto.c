@@ -1,4 +1,4 @@
-/* $EPIC: crypto.c,v 1.9 2007/05/30 02:26:23 jnelson Exp $ */
+/* $EPIC: crypto.c,v 1.10 2007/06/02 01:19:13 jnelson Exp $ */
 /*
  * crypto.c: SED/CAST5/BLOWFISH/AES encryption and decryption routines.
  *
@@ -233,7 +233,8 @@ unsigned char *	decipher_message (const unsigned char *ciphertext, size_t len, C
 	    }
 
 	    bytes_to_trim = outbuf[len - 1] & (blocksize - 1);
-	    outbuf[len - bytes_to_trim - 1] = 0;
+	    /* outbuf[len - bytes_to_trim - 1] = 0; */
+	    outbuf[len - bytes_to_trim] = 0; 
 	    memmove(outbuf, outbuf + blocksize, len - blocksize);
 #endif
 	    return outbuf;
@@ -275,7 +276,7 @@ static char *	decipher_evp (const unsigned char *key, int keylen, const unsigned
 	EVP_CIPHER_CTX_set_padding(&a, 0);
 
 	iv = new_malloc(ivsize);
-	outbuf = new_malloc(1024);
+	outbuf = new_malloc(cipherlen + 1024);
 	memcpy(iv, ciphertext, ivsize);
 
         EVP_DecryptInit_ex(&a, type, NULL, NULL, iv);
@@ -433,11 +434,11 @@ static char *	cipher_evp (const unsigned char *key, int keylen, const unsigned c
 	iv = new_malloc(ivsize);
 	for (iv_count = 0; iv_count < ivsize; iv_count += sizeof(u_32int_t))
 	{
-		randomval = arc4random();
+		randomval = arc4random();  
 		memmove(iv + iv_count, &randomval, sizeof(u_32int_t));
 	}
 
-	outbuf = new_malloc(1024);
+	outbuf = new_malloc(plaintextlen + 100);
 	memcpy(outbuf, iv, ivsize);
 
         EVP_EncryptInit_ex(&a, type, NULL, NULL, iv);
@@ -457,6 +458,7 @@ static char *	cipher_evp (const unsigned char *key, int keylen, const unsigned c
 	}
 
 	*retsize = outlen + ivsize;
+	new_free(&iv);		/* XXX Is this correct? */
 	return outbuf;
 }
 #endif
@@ -511,4 +513,73 @@ static char *	encrypt_by_prog (const unsigned char *str, size_t *len, Crypt *key
         ret[*len] = 0;
         return ret;
 }
+
+/**************************************************************************/
+/*
+ * These are helper functions for $xform() to do SSL strong crypto.
+ */
+#define CRYPTO_HELPER_FUNCTIONS(x, y, blocksize) 			\
+ssize_t	x ## _encoder (const char *orig, size_t orig_len, const void *meta, size_t meta_len, char *dest, size_t dest_len) \
+{ 									\
+	size_t	len; 							\
+	int	retsize = 0; 						\
+	char *	retval; 						\
+									\
+	if (orig_len == 0) 						\
+	{ 								\
+		*dest = 0; 						\
+		return 0; 						\
+	} 								\
+									\
+	retval = cipher_evp(meta, meta_len, orig, orig_len, 		\
+				y (), &retsize, blocksize); 		\
+	if (retval && retsize > 0) 					\
+	{ 								\
+		size_t	numb; 						\
+		if (dest_len < retsize) 				\
+			numb = dest_len; 				\
+		else 							\
+			numb = retsize; 				\
+		memcpy(dest, retval, numb); 				\
+		dest[numb] = 0; 					\
+		new_free(&retval); 					\
+		return numb; 						\
+	} 								\
+									\
+	if (retval) 							\
+		new_free(&retval); 					\
+	return 0; 							\
+}									\
+									\
+ssize_t	x ## _decoder (const char *ciphertext, size_t len, const void *meta, size_t meta_len, char *dest, size_t dest_len) \
+{ 									\
+	unsigned char *	outbuf = NULL; 					\
+	int	bytes_to_trim; 						\
+	int retlen = 0; 						\
+									\
+	if (len == 0) 							\
+	{								\
+		*dest = 0; 						\
+		return 0; 						\
+	}								\
+									\
+	if (!(outbuf = decipher_evp(meta, meta_len, ciphertext, len,  	\
+				y (), &retlen, blocksize))) 		\
+	{ 								\
+		yell("bummer"); 					\
+		return -1; 						\
+	} 								\
+									\
+	bytes_to_trim = outbuf[len - 1] & (blocksize - 1); 		\
+	outbuf[len - bytes_to_trim] = 0;  				\
+	memmove(outbuf, outbuf + blocksize, len - bytes_to_trim); 	\
+									\
+	memcpy(dest, outbuf, retlen); 					\
+	dest[retlen] = 0; 						\
+	new_free(&outbuf);						\
+	return retlen;							\
+}
+
+CRYPTO_HELPER_FUNCTIONS(blowfish, EVP_bf_cbc, 8)
+CRYPTO_HELPER_FUNCTIONS(cast5, EVP_cast5_cbc, 8)
 
