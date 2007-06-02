@@ -1,4 +1,4 @@
-/* $EPIC: hook.c,v 1.71 2007/05/20 01:06:49 jnelson Exp $ */
+/* $EPIC: hook.c,v 1.72 2007/06/02 20:32:29 jnelson Exp $ */
 /*
  * hook.c: Does those naughty hook functions. 
  *
@@ -709,7 +709,13 @@ int 	do_hook (int which, const char *format, ...)
 	if (deny_all_hooks || !hook_functions[which].list)
 	{
 		retval = NO_ACTION_TAKEN;
-		goto implied_hook;
+		return retval;
+
+		/*
+		 * We don't go to the implied hook, since that could
+		 * cause an infinite loop!
+		 */
+		/* goto implied_hook; */
 	}
 
 	/*

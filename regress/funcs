@@ -730,6 +730,28 @@ assert close($rfd) == -1
 assert close($wfd) == 0
 assert close($wfd) == -1
 
+# testing xform
+assert xform("+sed +url -url -sed" "pass" "pass" this is a test) == [this is a test]
+assert xform("+sed +enc -enc -sed" "pass" "pass" this is a test) == [this is a test]
+assert xform("+sed +b64 -b64 -sed" "pass" "pass" this is a test) == [this is a test]
+assert xform("+sed +ctcp -ctcp -sed" "pass" "pass" this is a test) == [this is a test]
+assert xform("+bf +url -url -bf" "pass" "pass" this is a test) == [this is a test]
+assert xform("+bf +enc -enc -bf" "pass" "pass" this is a test) == [this is a test]
+assert xform("+bf +b64 -b64 -bf" "pass" "pass" this is a test) == [this is a test]
+assert xform("+bf +ctcp -ctcp -bf" "pass" "pass" this is a test) == [this is a test]
+assert xform("+cast +url -url -cast" "pass" "pass" this is a test) == [this is a test]
+assert xform("+cast +enc -enc -cast" "pass" "pass" this is a test) == [this is a test]
+assert xform("+cast +b64 -b64 -cast" "pass" "pass" this is a test) == [this is a test]
+assert xform("+cast +ctcp -ctcp -cast" "pass" "pass" this is a test) == [this is a test]
+assert xform("+aes +url -url -aes" "pass" "pass" this is a test) == [this is a test]
+assert xform("+aes +enc -enc -aes" "pass" "pass" this is a test) == [this is a test]
+assert xform("+aes +b64 -b64 -aes" "pass" "pass" this is a test) == [this is a test]
+assert xform("+aes +ctcp -ctcp -aes" "pass" "pass" this is a test) == [this is a test]
+assert xform("+aessha +url -url -aessha" "pass" "pass" this is a test) == [this is a test]
+assert xform("+aessha +enc -enc -aessha" "pass" "pass" this is a test) == [this is a test]
+assert xform("+aessha +b64 -b64 -aessha" "pass" "pass" this is a test) == [this is a test]
+assert xform("+aessha +ctcp -ctcp -aessha" "pass" "pass" this is a test) == [this is a test]
+
 # Testing Karll Arrays.
 #XXX Incomplete.
 clear
