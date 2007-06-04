@@ -31,6 +31,7 @@ LOOK FOR IN THE FUTURE
 * Shattah would like something like /window omit <regex> to remove stuff.
 * Kanan wants support for jabber
 * Zlonix wants a way to be notified when window geometry changes
+* Zlonix would like me to commit is /on signal patch
 
 [See http://www.epicsol.org/PROJECTS for things to come in the future]
 [See http://www.epicsol.org/CHANGELOG5 for things that changed in the past]
