@@ -1,4 +1,4 @@
-/* $EPIC: hook.c,v 1.72 2007/06/02 20:32:29 jnelson Exp $ */
+/* $EPIC: hook.c,v 1.73 2007/06/06 02:26:01 jnelson Exp $ */
 /*
  * hook.c: Does those naughty hook functions. 
  *
@@ -699,32 +699,33 @@ int 	do_hook (int which, const char *format, ...)
 	char		quote;
 	int		serial_number;
 	struct Current_hook *hook;
+	Hookables *	h;
 
 	*buffer = 0;
 
 	if (!hook_functions_initialized)
 		initialize_hook_functions();
+	h = &hook_functions[which];
 
-	/* If deny_all_hooks is set, no hooks are permitted executed. */
-	if (deny_all_hooks || !hook_functions[which].list)
+	/*
+	 * Decide whether to post this event.  Events are suppressed if:
+	 *   1) $hookctl(DENY_ALL_HOOKS 1) has been turned on
+	 *   2) There are no /on's and no implied hooks
+	 *   3) The /on has recursed and that is forbidden.
+	 */
+	if (deny_all_hooks || 
+	    (!h->list && !h->implied) ||
+	    (h->mark && h->flags & HF_NORECURSE))
 	{
 		retval = NO_ACTION_TAKEN;
 		return retval;
-
-		/*
-		 * We don't go to the implied hook, since that could
-		 * cause an infinite loop!
-		 */
-		/* goto implied_hook; */
 	}
 
 	/*
-	 * If we're already executing the type, and we're
-	 * specifically not supposed to allow recursion, then
-	 * dont allow recursion. ;-)
+	 * If there are no /on's, but there is an implied hook, skip
+	 * right to the implied hook.
 	 */
-	if (hook_functions[which].mark && 
-	    (hook_functions[which].flags & HF_NORECURSE))
+	if (!h->list && h->implied)
 	{
 		retval = NO_ACTION_TAKEN;
 		goto implied_hook;
@@ -763,14 +764,12 @@ int 	do_hook (int which, const char *format, ...)
  	 * unwanted recursion in some /on's.
 	 */
 	if (which >= 0)
-		hook_functions[which].mark++;
+		h->mark++;
 
         serial_number = INT_MIN;
         for (;!hook->halt;serial_number++)
 	{
-	    for (tmp = hook_functions[which].list; 
-			!hook->halt && tmp;
-			tmp = tmp->next)
+	    for (tmp = h->list; !hook->halt && tmp; tmp = tmp->next)
             {
 		Hook *besthook = NULL;
 		ArgList *tmp_arglist;
@@ -823,7 +822,7 @@ int 	do_hook (int which, const char *format, ...)
 		/* Copy off everything important from 'tmp'. */
 		noise = tmp->noisy;
 		if (!name)
-			name = LOCAL_COPY(hook_functions[which].name);
+			name = LOCAL_COPY(h->name);
 		stuff_copy = LOCAL_COPY(tmp->stuff);
 		quote = tmp->flexible ? '\'' : '"';
 
@@ -916,7 +915,7 @@ int 	do_hook (int which, const char *format, ...)
 	 * Mark the event as not currently being done here.
 	 */
 	if (which >= 0)
-		hook_functions[which].mark--;
+		h->mark--;
 
 	/*
 	 * Reset current_hook to it's previous value.
@@ -930,7 +929,7 @@ int 	do_hook (int which, const char *format, ...)
 	/*
 	 * And return the user-specified suppression level
 	 */
-	if (retval == SUPPRESS_DEFAULT || !hook_functions[which].implied)
+	if (retval == SUPPRESS_DEFAULT || !h->implied)
 		return retval;
 
     implied_hook:
@@ -940,7 +939,7 @@ int 	do_hook (int which, const char *format, ...)
 	char *func_call = NULL;
 	char *func_retval;
 
-	if (!hook_functions[which].implied)
+	if (!h->implied)
 		break;
 
 	if (*buffer == 0)
@@ -956,14 +955,19 @@ int 	do_hook (int which, const char *format, ...)
 		panic(1, "do_hook: format is NULL");
 	}
 
-	malloc_sprintf(&func_call, "cparse(\"%s\" $*)", 
-			hook_functions[which].implied);
+	if (which >= 0)
+		h->mark++;
+
+	malloc_sprintf(&func_call, "cparse(\"%s\" $*)", h->implied);
 	func_retval = call_function(func_call, buffer);
 	put_echo(func_retval);
 
 	new_free(&func_call);
 	new_free(&func_retval);
 	retval = SUPPRESS_DEFAULT;
+
+	if (which >= 0)
+		h->mark--;
     }
     while (0);
 #endif

@@ -2,7 +2,7 @@ EPIC5 Projects, Bugs, and other Errata:
 
 KNOWN ERRATA (eg, bugs, or unresolved requests):
 ------------------------------------------------
-<none>
+* It appears  @ $0 = var   does not work. ("Token 1 is not an lval")
 
 LOOK FOR IN THE FUTURE
 -----------------------
@@ -83,3 +83,5 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Fix it so it compiles without ssl support again.
 * Add "ALL" $xform() encoder, returns all valid xforms
 * Fix infinite recursion if you load a script as a formats file.
+* Release epic5-0.3.4 (Solicitude) (1480)
+* Fix bug that kept implied on hooks from working (important fix!)
