@@ -17,7 +17,8 @@
  *		   0 if timeout occured before something happened
  *		   1 if something happened before timeout
  *
- *	int	new_open (int fd, void (*callback) (int fd), int type);
+ *	int	new_open (int fd, void (*callback) (int fd), int type,
+ *				int quiet, int server);
  *	- PURPOSE: To indicate that file descriptor 'fd' should be watched
  *		   for readable events
  *	- INPUT:   fd - The file descriptor to watch
@@ -32,6 +33,8 @@
  *			NEWIO_RECV - When Readable, call recv().
  *			NEWIO_NULL - To reversibly cease operations on 'fd'.
  *			NEWIO_SSL_CONNECT - When Readable, call SSL_connect().
+ *		   quiet - When set, errors should not be displayed to screen
+ *		   server - Errors should go to this server's windows.
  *	- OUTPUT:  -1 if the file descriptor cannot be watched
  *		   a "channel" if the file descriptor can be watched.
  *	- NOTE:	   Calling new_open() shall cancel and override a previous
@@ -75,8 +78,10 @@
 	void	do_filedesc		(void);
 	void	init_newio		(void);
 	size_t	get_pending_bytes	(int);
+	int	get_server_by_vfd	(int);
+#define SRV(vfd) get_server_by_vfd(vfd)
 
-	int	new_open		(int, void (*) (int), int, int);
+	int	new_open		(int, void (*) (int), int, int, int);
 	int	new_hold_fd		(int);
 	int	new_unhold_fd		(int);
 	int 	new_close 		(int);

@@ -1,4 +1,4 @@
-/* $EPIC: screen.c,v 1.126 2007/05/09 00:20:35 jnelson Exp $ */
+/* $EPIC: screen.c,v 1.127 2007/06/25 22:09:29 jnelson Exp $ */
 /*
  * screen.c
  *
@@ -2567,7 +2567,7 @@ void	create_new_screen (void)
 #endif
 	new_s->fdin = 0;
 	if (use_input)
-		new_open(0, do_screens, NEWIO_READ, 0);
+		new_open(0, do_screens, NEWIO_READ, 0, -1);
 	new_s->fpin = stdin;
 	new_s->control = -1;
 	new_s->wserv_version = 0;
@@ -2821,7 +2821,7 @@ Window	*create_additional_screen (void)
 					"to new screen");
 				return NULL;
 			}
-			new_open(new_s->fdin, do_screens, NEWIO_RECV, 1);
+			new_open(new_s->fdin, do_screens, NEWIO_RECV, 1, -1);
 			new_s->fpin = new_s->fpout = fdopen(new_s->fdin, "r+");
 #ifdef WITH_THREADED_STDOUT
 			new_s->tio_file = tio_open(new_s->fpout);
@@ -2841,7 +2841,7 @@ Window	*create_additional_screen (void)
                                 return NULL;
                         }
 
-			new_open(new_s->control, do_screens, NEWIO_RECV, 1);
+			new_open(new_s->control, do_screens, NEWIO_RECV, 1, -1);
 
                         if (!(win = new_window(new_s)))
                                 panic(1, "WINDOW is NULL and it shouldnt be!");

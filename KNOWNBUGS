@@ -3,6 +3,8 @@ EPIC5 Projects, Bugs, and other Errata:
 KNOWN ERRATA (eg, bugs, or unresolved requests):
 ------------------------------------------------
 * It appears  @ $0 = var   does not work. ("Token 1 is not an lval")
+* Support $HOME with spaces in it for cygwin.
+* Zlonix wants global toplines at the top of each screen.
 
 LOOK FOR IN THE FUTURE
 -----------------------
@@ -32,6 +34,7 @@ LOOK FOR IN THE FUTURE
 * Kanan wants support for jabber
 * Zlonix wants a way to be notified when window geometry changes
 * Zlonix would like me to commit is /on signal patch
+* Larne wants low-level io errors to appear in the "right" window.
 
 [See http://www.epicsol.org/PROJECTS for things to come in the future]
 [See http://www.epicsol.org/CHANGELOG5 for things that changed in the past]
@@ -85,3 +88,8 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Fix infinite recursion if you load a script as a formats file.
 * Release epic5-0.3.4 (Solicitude) (1480)
 * Fix bug that kept implied on hooks from working (important fix!)
+* Add new level SYSERR (see UPDATES)
+* Add a server refnum to syserr() to send the syserr to the proper window.
+* Add a server refnum to new_open() so we can pass it to syserr().
+* Add new flag to /XECHO, /XECHO -AS (output to all windows on server)
+* This should make syserrs go to the "correct window" most of the time (larne)

@@ -1,4 +1,4 @@
-/* $EPIC: levels.c,v 1.9 2007/05/18 05:30:43 jnelson Exp $ */
+/* $EPIC: levels.c,v 1.10 2007/06/25 22:09:29 jnelson Exp $ */
 /*
  * levels.c - Sorting things by category -- Window/Lastlog, Ignore, and Floods
  *
@@ -44,7 +44,7 @@ int	LEVEL_PUBLIC,	LEVEL_MSG,	LEVEL_NOTICE,	LEVEL_WALL;
 int	LEVEL_WALLOP,	LEVEL_OPNOTE,	LEVEL_SNOTE,	LEVEL_ACTION;
 int	LEVEL_DCC,	LEVEL_CTCP,	LEVEL_INVITE,	LEVEL_JOIN;
 int	LEVEL_NICK,	LEVEL_TOPIC,	LEVEL_PART,	LEVEL_QUIT;
-int	LEVEL_KICK,	LEVEL_MODE,	LEVEL_OPERWALL;
+int	LEVEL_KICK,	LEVEL_MODE,	LEVEL_OPERWALL,	LEVEL_SYSERR;
 int	LEVEL_USER1,	LEVEL_USER2;
 int	LEVEL_USER3,	LEVEL_USER4,	LEVEL_USER5,	LEVEL_USER6;
 int	LEVEL_USER7,	LEVEL_USER8,	LEVEL_USER9,	LEVEL_USER10;
@@ -78,6 +78,7 @@ void	init_levels (void)
 	LEVEL_KICK      = add_new_level("KICKS");
 	LEVEL_MODE      = add_new_level("MODES");
 	LEVEL_OPERWALL	= add_new_level("OPERWALL");
+	LEVEL_SYSERR	= add_new_level("SYSERR");
 	LEVEL_USER1     = add_new_level("USER1");
 	LEVEL_USER2     = add_new_level("USER2");
 	LEVEL_USER3     = add_new_level("USER3");

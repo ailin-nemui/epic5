@@ -1,4 +1,4 @@
-/* $EPIC: server.c,v 1.226 2007/05/25 16:47:48 jnelson Exp $ */
+/* $EPIC: server.c,v 1.227 2007/06/25 22:09:29 jnelson Exp $ */
 /*
  * server.c:  Things dealing with that wacky program we call ircd.
  *
@@ -1244,12 +1244,12 @@ void	do_server (int fd)
 something_broke:
 			if (retval)
 			{
-			    syserr("Could not connect to server [%d] "
+			    syserr(i, "Could not connect to server [%d] "
 					"address [%d] because of error: %s", 
 					i, s->addr_counter, strerror(retval));
 			}
 			else
-			    syserr("Could not connect to server [%d] "
+			    syserr(i, "Could not connect to server [%d] "
 					"address [%d]: (Internal error)", 
 					i, s->addr_counter);
 
@@ -1281,7 +1281,7 @@ something_broke:
 			if (ssl_err == -1)
 			{
 			    /* XXX I don't care if this is abusive. */
-			    syserr("Could not start SSL connection to server "
+			    syserr(i, "Could not start SSL connection to server "
 				"[%d] address [%d]", 
 				i, s->addr_counter);
 			    goto something_broke;
@@ -1295,7 +1295,7 @@ something_broke:
 			 * dgets().
 			 */
 			s->status = SERVER_SSL_CONNECTING;
-			new_open(des, do_server, NEWIO_SSL_CONNECT, 0);
+			new_open(des, do_server, NEWIO_SSL_CONNECT, 0, i);
 			break;
 		    }
 
@@ -1304,12 +1304,12 @@ return_from_ssl_detour:
 		    if (is_ssl_enabled(des))
 		    {
 			set_server_ssl_enabled(i, TRUE);
-			new_open(des, do_server, NEWIO_SSL_READ, 0);
+			new_open(des, do_server, NEWIO_SSL_READ, 0, i);
 		    }
 		    else
 		    {
 			set_server_ssl_enabled(i, FALSE);
-		        new_open(des, do_server, NEWIO_RECV, 0);
+		        new_open(des, do_server, NEWIO_RECV, 0, i);
 		    }
 		    register_server(i, s->d_nickname);
 		}
@@ -1333,7 +1333,7 @@ return_from_ssl_detour:
 		    c = DGETS(des, retval)
 		    if (c < (ssize_t)sizeof(retval) || retval)
 		    {
-			syserr("SSL_connect returned [%d]", retval);
+			syserr(i, "SSL_connect returned [%d]", retval);
 			goto something_broke;
 		    }
 
@@ -1343,7 +1343,7 @@ return_from_ssl_detour:
 		     */
 		    if (ssl_connected(des) < 0)
 		    {
-			syserr("ssl_connected() failed", retval);
+			syserr(i, "ssl_connected() failed", retval);
 			goto something_broke;
 		    }
 
@@ -1556,7 +1556,7 @@ int	grab_server_address (int server)
 	say("Performing DNS lookup for [%s] (server %d)", s->info->host, server);
 	if (socketpair(PF_UNIX, SOCK_STREAM, 0, xvfd))
 		yell("socketpair: %s", strerror(errno));
-	new_open(xvfd[1], do_server, NEWIO_READ, 1);
+	new_open(xvfd[1], do_server, NEWIO_READ, 1, server);
 
 	memset(&hints, 0, sizeof(hints));
 	if (empty(s->info->proto_type))
@@ -1598,14 +1598,14 @@ static int	connect_next_server_address (int server)
 
 	if (!(s = get_server(server)))
 	{
-		syserr("connect_next_server_address: Server %d doesn't exist", 
+		syserr(-1, "connect_next_server_address: Server %d doesn't exist", 
 						server);
 		return -1;
 	}
 
 	if (!s->addrs)
 	{
-		syserr("connect_next_server_address: There are no more "
+		syserr(server, "connect_next_server_address: There are no more "
 			"addresses available for server %d", server);
 		return -1;
 	}
@@ -1620,7 +1620,7 @@ static int	connect_next_server_address (int server)
 	    if ((err = inet_vhostsockaddr(ai->ai_family, -1, s->info->vhost,
 						&localaddr, &locallen)) < 0)
 	    {
-		syserr("connect_next_server_address: Can't use address [%d] "
+		syserr(server, "connect_next_server_address: Can't use address [%d] "
 				" because I can't get vhost for protocol [%d]",
 					 s->addr_counter, ai->ai_family);
 		continue;
@@ -1629,7 +1629,7 @@ static int	connect_next_server_address (int server)
 	    if ((fd = client_connect((SA *)&localaddr, locallen, 
 					ai->ai_addr, ai->ai_addrlen)) < 0)
 	    {
-		syserr("connect_next_server_address: "
+		syserr(server, "connect_next_server_address: "
 			"client_connect() failed for server %d address [%d].", 
 					server, s->addr_counter);
 		continue;
@@ -1733,7 +1733,7 @@ int 	connect_to_server (int new_server)
 	if (x_debug & DEBUG_SERVER_CONNECT)
 		say("connect_next_server_address returned [%d]", des);
 	from_server = new_server;	/* XXX sigh */
-	new_open(des, do_server, NEWIO_CONNECT, 0);
+	new_open(des, do_server, NEWIO_CONNECT, 0, from_server);
 
 	/* Don't check getpeername(), we're not connected yet. */
 	if (*s->info->host != '/')

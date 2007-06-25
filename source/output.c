@@ -1,4 +1,4 @@
-/* $EPIC: output.c,v 1.18 2007/05/12 05:15:11 jnelson Exp $ */
+/* $EPIC: output.c,v 1.19 2007/06/25 22:09:29 jnelson Exp $ */
 /*
  * output.c: handles a variety of tasks dealing with the output from the irc
  * program 
@@ -49,6 +49,8 @@
 #include "ircaux.h"
 #include "alias.h"
 #include "commands.h"
+#include "server.h"
+#include "levels.h"
 
 /* make this buffer *much* bigger than needed */
 #define OBNOXIOUS_BUFFER_SIZE BIG_BUFFER_SIZE * 10
@@ -329,48 +331,60 @@ void 	error (const char *format, ...)
 	}
 }
 
+/******************************************************************/
 /*
  * syserr is exactly like say, except that if the error occured while
  * you were loading a script, it tells you where it happened.
  */
-static void 	vsyserr (const char *format, va_list args)
+static void     vsyserr (int server, const char *format, va_list args)
 {
-	if (window_display && format)
+	char *  str;
+	int     l, old_from_server;
+
+        if (!window_display || !format)
+		return;
+
+	*putbuf = 0;
+	if ((str = get_string_var(BANNER_VAR)))
 	{
-		char *str;
-
-		*putbuf = 0;
-		if ((str = get_string_var(BANNER_VAR)))
+		if (get_int_var(BANNER_EXPAND_VAR))
 		{
-			if (get_int_var(BANNER_EXPAND_VAR))
-			{
-			    char *foo;
+		    char *foo;
 
-			    foo = expand_alias(str, empty_string);
-			    strlcpy(putbuf, foo, sizeof putbuf);
-			    new_free(&foo);
-			}
-			else
-			    strlcpy(putbuf, str, sizeof putbuf);
-
-			strlcat(putbuf, " INFO -- ", sizeof putbuf);
+		    foo = expand_alias(str, empty_string);
+		    strlcpy(putbuf, foo, sizeof putbuf);
+		    new_free(&foo);
 		}
+		else
+		    strlcpy(putbuf, str, sizeof putbuf);
 
-		vsnprintf(putbuf + strlen(putbuf), 
-			sizeof(putbuf) - strlen(putbuf) - 1, 
-			format, args);
-
-		if (do_hook(YELL_LIST, "%s", putbuf))
-			put_echo(putbuf);
+		strlcat(putbuf, " INFO -- ", sizeof putbuf);
 	}
+
+	vsnprintf(putbuf + strlen(putbuf),
+		sizeof(putbuf) - strlen(putbuf) - 1,
+		format, args);
+
+	if (is_server_valid(server))
+	{
+		old_from_server = from_server;
+		from_server = server;
+	}
+
+	l = message_from(NULL, LEVEL_SYSERR);
+	if (do_hook(YELL_LIST, "%s", putbuf))
+		put_echo(putbuf);
+	pop_message_from(l);
+
+	if (is_server_valid(server))
+		server = old_from_server;
 }
 
-void	syserr (const char *format, ...)
+void    syserr (int server, const char *format, ...)
 {
-	va_list args;
-	va_start(args, format);
-	vsyserr(format, args);
-	va_end(args);
+        va_list args;
+        va_start(args, format);
+        vsyserr(server, format, args);
+        va_end(args);
 }
-
 

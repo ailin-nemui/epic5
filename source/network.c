@@ -1,4 +1,4 @@
-/* $EPIC: network.c,v 1.79 2006/10/25 23:40:42 jnelson Exp $ */
+/* $EPIC: network.c,v 1.80 2007/06/25 22:09:29 jnelson Exp $ */
 /*
  * network.c -- handles stuff dealing with connecting and name resolving
  *
@@ -96,13 +96,13 @@ int	client_connect (SA *l, socklen_t ll, SA *r, socklen_t rl)
 
 	if (!r)
 	{
-		syserr("client_connect: remote addr missing (connect to who?)");
+		syserr(-1, "client_connect: remote addr missing (connect to who?)");
 		return -1;
 	}
 
 	if (l && r && l->sa_family != r->sa_family)
 	{
-		syserr("client_connect: local addr protocol (%d) is different "
+		syserr(-1, "client_connect: local addr protocol (%d) is different "
 			"from remote addr protocol (%d)", 
 			l->sa_family, r->sa_family);
 		return -1;
@@ -115,7 +115,7 @@ int	client_connect (SA *l, socklen_t ll, SA *r, socklen_t rl)
 
 	if ((fd = Socket(family, SOCK_STREAM, 0)) < 0)
 	{
-		syserr("client_connect: socket(%d) failed: %s", 
+		syserr(-1, "client_connect: socket(%d) failed: %s", 
 						family, strerror(errno));
 		return -1;
 	}
@@ -128,7 +128,7 @@ int	client_connect (SA *l, socklen_t ll, SA *r, socklen_t rl)
 	{
 		if (l && bind(fd, l, ll))
 		{
-		    syserr("client_connect: bind(%d) failed: %s", 
+		    syserr(-1, "client_connect: bind(%d) failed: %s", 
 						fd, strerror(errno));
 		    close(fd);
 		    return -1;
@@ -136,7 +136,7 @@ int	client_connect (SA *l, socklen_t ll, SA *r, socklen_t rl)
 
 		if (Connect(fd, r))
 		{
-		    syserr("client_connect: connect(%d) failed: %s", 
+		    syserr(-1, "client_connect: connect(%d) failed: %s", 
 						fd, strerror(errno));
 		    close(fd);
 		    return -1;
@@ -144,7 +144,7 @@ int	client_connect (SA *l, socklen_t ll, SA *r, socklen_t rl)
 	}
 	else
 	{
-	    syserr("client_connect: protocol (%d) not supported", family);
+	    syserr(-1, "client_connect: protocol (%d) not supported", family);
 	    return -1;
 	}
 
@@ -179,21 +179,21 @@ int	ip_bindery (int family, unsigned short port, SS *storage)
 
 	if (inet_vhostsockaddr(family, port, NULL, storage, &len))
 	{
-		syserr("ip_bindery: inet_vhostsockaddr(%d,%d) failed.", 
+		syserr(-1, "ip_bindery: inet_vhostsockaddr(%d,%d) failed.", 
 							family, port);
 		return -1;
 	}
 
 	if (!len)
 	{
-		syserr("ip_bindery: inet_vhostsockaddr(%d,%d) didn't "
+		syserr(-1, "ip_bindery: inet_vhostsockaddr(%d,%d) didn't "
 			"return an address I could bind", family, port);
 		return -1;
 	}
 
 	if ((fd = client_bind((SA *)storage, len)) < 0)
 	{
-		syserr("ip_bindery: client_bind(%d,%d) failed.", family, port);
+		syserr(-1, "ip_bindery: client_bind(%d,%d) failed.", family, port);
 		return -1;
 	}
 
@@ -218,7 +218,7 @@ int	client_bind (SA *local, socklen_t local_len)
 		local = NULL;
 	if (!local)
 	{
-		syserr("client_bind: address to bind to not provided");
+		syserr(-1, "client_bind: address to bind to not provided");
 		return -1;
 	}
 
@@ -226,7 +226,7 @@ int	client_bind (SA *local, socklen_t local_len)
 
 	if ((fd = Socket(family, SOCK_STREAM, 0)) < 0)
 	{
-		syserr("client_bind: socket(%d) failed: %s", 
+		syserr(-1, "client_bind: socket(%d) failed: %s", 
 					family, strerror(errno));
 		return -1;
 	}
@@ -248,7 +248,7 @@ int	client_bind (SA *local, socklen_t local_len)
 
 	if (bind(fd, local, local_len))
 	{
-		syserr("client_bind: bind(%d) failed: %s", 
+		syserr(-1, "client_bind: bind(%d) failed: %s", 
 					fd, strerror(errno));
 		close(fd);
 		return -1;
@@ -261,7 +261,7 @@ int	client_bind (SA *local, socklen_t local_len)
 	 */	
 	if (getsockname(fd, (SA *)local, &local_len))
 	{
-		syserr("client_bind: getsockname(%d) failed: %s", 
+		syserr(-1, "client_bind: getsockname(%d) failed: %s", 
 					fd, strerror(errno));
 		close(fd);
 		return -1;
@@ -269,7 +269,7 @@ int	client_bind (SA *local, socklen_t local_len)
 
 	if (listen(fd, 4) < 0)
 	{
-		syserr("client_bind: listen(%d,4) failed: %s",
+		syserr(-1, "client_bind: listen(%d,4) failed: %s",
 					fd, strerror(errno));
 		close(fd);
 		return -1;
@@ -341,7 +341,7 @@ int	inet_vhostsockaddr (int family, int port, const char *wanthost, SS *storage,
 
 	if ((err = Getaddrinfo(lhn, p, &hints, &res)))
 	{
-		syserr("inet_vhostsockaddr: Getaddrinfo(%s,%s) failed: %s", 
+		syserr(-1, "inet_vhostsockaddr: Getaddrinfo(%s,%s) failed: %s", 
 				lhn, p, gai_strerror(err));
 		return -1;
 	}
@@ -396,7 +396,7 @@ int	inet_strton (const char *host, const char *port, SA *storage, int flags)
 
 		if ((retval = Getaddrinfo(host, port, &hints, &results))) 
 		{
-			syserr("inet_strton: Getaddrinfo(%s,%s) failed: %s", 
+			syserr(-1, "inet_strton: Getaddrinfo(%s,%s) failed: %s", 
 					host, port, gai_strerror(retval));
 			return -1;
 		}
@@ -431,7 +431,7 @@ int	inet_ntostr (SA *name, char *host, int hsize, char *port, int psize, int fla
 	if ((retval = Getnameinfo(name, len, host, hsize, port, psize, 
 					flags | NI_NUMERICSERV))) 
 	{
-		syserr("inet_ntostr: Getnameinfo(sockaddr->p_addr) failed: %s", 
+		syserr(-1, "inet_ntostr: Getnameinfo(sockaddr->p_addr) failed: %s", 
 					gai_strerror(retval));
 		return -1;
 	}
@@ -459,13 +459,13 @@ int	inet_hntop (int family, const char *host, char *retval, int size)
 	((SA *)&buffer)->sa_family = family;
 	if (inet_strton(host, NULL, (SA *)&buffer, AI_ADDRCONFIG))
 	{
-		syserr("inet_hntop: inet_strton(%d,%s) failed", family, host);
+		syserr(-1, "inet_hntop: inet_strton(%d,%s) failed", family, host);
 		return -1;
 	}
 
 	if (inet_ntostr((SA *)&buffer, retval, size, NULL, 0, NI_NUMERICHOST))
 	{
-		syserr("inet_hntop: inet_ntostr(%d,%s) failed", family, host);
+		syserr(-1, "inet_hntop: inet_ntostr(%d,%s) failed", family, host);
 		return -1;
 	}
 
@@ -491,13 +491,13 @@ int	inet_ptohn (int family, const char *ip, char *retval, int size)
 	((SA *)&buffer)->sa_family = family;
 	if (inet_strton(ip, NULL, (SA *)&buffer, AI_NUMERICHOST))
 	{
-		syserr("inet_ptohn: inet_strton(%d,%s) failed", family, ip);
+		syserr(-1, "inet_ptohn: inet_strton(%d,%s) failed", family, ip);
 		return -1;
 	}
 
 	if (inet_ntostr((SA *)&buffer, retval, size, NULL, 0, NI_NAMEREQD))
 	{
-		syserr("inet_ptohn: inet_ntostr(%d,%s) failed", family, ip);
+		syserr(-1, "inet_ptohn: inet_ntostr(%d,%s) failed", family, ip);
 		return -1;
 	}
 
@@ -527,7 +527,7 @@ int	one_to_another (int family, const char *what, char *retval, int size)
 	{
 		if (inet_hntop(family, what, retval, size))
 		{
-			syserr("one_to_another: both inet_ptohn and "
+			syserr(-1, "one_to_another: both inet_ptohn and "
 					"inet_hntop failed (%d,%s)", 
 					family, what);
 			return -1;
@@ -555,20 +555,20 @@ int	set_non_blocking (int fd)
 #if defined(O_NONBLOCK) || defined(O_NDELAY)
 	if ((rval = fcntl(fd, F_GETFL, 0)) == -1)
 	{
-		syserr("set_non_blocking: fcntl(%d, F_GETFL) failed: %s",
+		syserr(-1, "set_non_blocking: fcntl(%d, F_GETFL) failed: %s",
 				fd, strerror(errno));
 		return -1;
 	}
 	if (fcntl(fd, F_SETFL, rval | flag) == -1)
 	{
-		syserr("set_non_blocking: fcntl(%d, F_SETFL) failed: %s",
+		syserr(-1, "set_non_blocking: fcntl(%d, F_SETFL) failed: %s",
 				fd, strerror(errno));
 		return -1;
 	}
 #else
 	if (ioctl(fd, FIONBIO, &flag) < 0)
 	{
-		syserr("set_non_blocking: ioctl(%d, FIONBIO) failed: %s",
+		syserr(-1, "set_non_blocking: ioctl(%d, FIONBIO) failed: %s",
 				fd, strerror(errno));
 		return -1;
 	}
@@ -593,20 +593,20 @@ int	set_blocking (int fd)
 #if defined(O_NONBLOCK) || defined(O_NDELAY)
 	if ((rval = fcntl(fd, F_GETFL, 0)) == -1)
 	{
-		syserr("set_blocking: fcntl(%d, F_GETFL) failed: %s",
+		syserr(-1, "set_blocking: fcntl(%d, F_GETFL) failed: %s",
 				fd, strerror(errno));
 		return -1;
 	}
 	if (fcntl(fd, F_SETFL, rval & ~flag) == -1)
 	{
-		syserr("set_blocking: fcntl(%d, F_SETFL) failed: %s",
+		syserr(-1, "set_blocking: fcntl(%d, F_SETFL) failed: %s",
 				fd, strerror(errno));
 		return -1;
 	}
 #else
 	if (ioctl(fd, FIONBIO, &flag) < 0)
 	{
-		syserr("set_blocking: ioctl(%d, FIONBIO) failed: %s",
+		syserr(-1, "set_blocking: ioctl(%d, FIONBIO) failed: %s",
 				fd, strerror(errno));
 		return -1;
 	}
@@ -628,7 +628,7 @@ int	Accept (int s, SA *addr, socklen_t *addrlen)
 
 	set_non_blocking(s);
 	if ((retval = accept(s, addr, addrlen)) < 0)
-		syserr("Accept: accept(%d) failed: %s", s, strerror(errno));
+		syserr(-1, "Accept: accept(%d) failed: %s", s, strerror(errno));
 	set_blocking(s);
 	set_blocking(retval);		/* Just in case */
 	return retval;
@@ -642,7 +642,7 @@ static int Connect (int fd, SA *addr)
 	if ((retval = connect(fd, addr, socklen(addr))))
 	{
 	    if (errno != EINPROGRESS && errno != EAGAIN)
-		syserr("Connect: connect(%d) failed: %s", fd, strerror(errno));
+		syserr(-1, "Connect: connect(%d) failed: %s", fd, strerror(errno));
 	    else
 		retval = 0;
 	}
@@ -799,7 +799,7 @@ int	Socket (int domain, int type, int protocol)
 
 	if ((s = socket(domain, type, protocol)) < 0)
 	{
-		syserr("Socket: socket(%d,%d,%d) failed: %s",
+		syserr(-1, "Socket: socket(%d,%d,%d) failed: %s",
 				domain, type, protocol, strerror(errno));
 		return -1;
 	}
@@ -957,5 +957,4 @@ void	unmarshall_getaddrinfo (AI *results)
 			result->ai_next = (AI *)ptr;
 	}
 }
-
 

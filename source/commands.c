@@ -1,4 +1,4 @@
-/* $EPIC: commands.c,v 1.168 2007/05/30 02:26:23 jnelson Exp $ */
+/* $EPIC: commands.c,v 1.169 2007/06/25 22:09:29 jnelson Exp $ */
 /*
  * commands.c -- Stuff needed to execute commands in ircII.
  *		 Includes the bulk of the built in commands for ircII.
@@ -855,6 +855,7 @@ BUILT_IN_COMMAND(xechocmd)
 	char	*flag_arg;
 	int	temp = 0;
 	int	all_windows = 0;
+	int	all_windows_for_server = 0;
 	int	want_banner = 0;
 	char	*stuff = NULL;
 	int	nolog = 0;
@@ -982,8 +983,12 @@ BUILT_IN_COMMAND(xechocmd)
 		case 'A':	/* ALL (output to all windows) */
 		case '*':
 		{
+			if (toupper(flag_arg[2]) == 'S')
+				all_windows_for_server = 1;
+			else
+				all_windows = 1;
+
 			next_arg(args, &args);
-			all_windows = 1;
 			break;
 		}
 
@@ -1084,18 +1089,26 @@ BUILT_IN_COMMAND(xechocmd)
 	else if (want_banner != 0)
 		panic(1, "xecho: want_banner is %d", want_banner);
 
-	if (all_windows == 1)
+	if (all_windows == 1 || all_windows_for_server == 1)
 	{
 		Window *win = NULL;
 		while ((traverse_all_windows(&win)))
 		{
-			int l = message_setall(win->refnum, to_from, to_level);
+			int	l;
+
+			if (all_windows == 0 && win->server != from_server)
+				continue;
+
+			l = message_setall(win->refnum, to_from, to_level);
 			put_echo(args);
 			pop_message_from(l);
 		}
 	}
 	else if (all_windows != 0)
 		panic(1, "xecho: all_windows is %d", all_windows);
+	else if (all_windows_for_server != 0)
+		panic(1, "xecho: all_windows_for_server is %d", 
+			all_windows_for_server);
 	else
 	{
 		int l = message_setall(to_window_refnum, to_from, to_level);
@@ -2406,7 +2419,8 @@ BUILT_IN_COMMAND(send_invite)
 	    else
 		say("You are not on a channel");
 	}
-	else
+
+	if (!invites)
 	    say("Usage: %s [#channel] nickname", command);
 }
 

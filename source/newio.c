@@ -1,4 +1,4 @@
-/* $EPIC: newio.c,v 1.65 2007/04/12 03:24:14 jnelson Exp $ */
+/* $EPIC: newio.c,v 1.66 2007/06/25 22:09:29 jnelson Exp $ */
 /*
  * newio.c:  Passive, callback-driven IO handling for sockets-n-stuff.
  *
@@ -73,6 +73,7 @@ typedef	struct	myio_struct
 	void	(*callback) (int vfd);
 	int	(*io_callback) (int vfd, int quiet);
 	int	quiet;
+	int	server;			/* For message routing */
 }           MyIO;
 
 static	MyIO **	io_rec = NULL;
@@ -145,6 +146,14 @@ static int	get_channel_by_vfd (int vfd)
 #define get_new_vfd(channel) channel
 #endif
 
+int	get_server_by_vfd (int vfd)
+{
+	if (!io_rec[vfd])
+		panic(1, "get_server_by_vfd(%d): vfd is not set up!");
+	return io_rec[vfd]->server;
+}
+/* #define SRV(vfd) get_server_by_vfd(vfd) */ /* Defined in newio.h */
+#define CSRV(channel) get_server_by_vfd(VFD(channel))
 
 /**************************************************************************/
 /*
@@ -173,7 +182,8 @@ int	dgets_buffer (int channel, void *data, ssize_t len)
 	if (ioe->segments > MAX_SEGMENTS)
 	{
 		if (!ioe->quiet)
-		    syserr("dgets_buffer: Too many read()s on channel [%d] "
+		    syserr(ioe->server, 
+			"dgets_buffer: Too many read()s on channel [%d] "
 			"without a newline -- shutting off bad peer", channel);
 		ioe->error = -1;
 		ioe->clean = 0;
@@ -266,7 +276,8 @@ ssize_t	dgets (int vfd, char *buf, size_t buflen, int buffer)
 
 	if (buflen == 0)
 	{
-	    syserr("dgets: Destination buffer for vfd [%d] is zero length."
+	    syserr(SRV(vfd),
+			"dgets: Destination buffer for vfd [%d] is zero length."
 			" This is surely a bug.", vfd);
 	    return -1;
 	}
@@ -277,7 +288,7 @@ ssize_t	dgets (int vfd, char *buf, size_t buflen, int buffer)
 	if (ioe->error)
 	{
 	    if (!ioe->quiet)
-	       syserr("dgets: Reporting exception for vfd [%d]", vfd);
+	       syserr(SRV(vfd), "dgets: Reporting exception for vfd [%d]", vfd);
 	    return -1;
 	}
 
@@ -505,7 +516,7 @@ int	my_iswritable (int vfd, double seconds)
  * Set up its input buffer
  * Returns an vfd!
  */
-int 	new_open (int channel, void (*callback) (int), int io_type, int quiet)
+int 	new_open (int channel, void (*callback) (int), int io_type, int quiet, int server)
 {
 	MyIO *ioe;
 	int	vfd;
@@ -537,6 +548,7 @@ int 	new_open (int channel, void (*callback) (int), int io_type, int quiet)
 	ioe->clean = 1;
 	ioe->held = 0;
 	ioe->quiet = quiet;
+	ioe->server = server;
 
 	if (io_type == NEWIO_READ)
 		ioe->io_callback = unix_read;
@@ -666,7 +678,7 @@ static int	unix_close (int channel, int quiet)
 	if (close(channel))
 	{
 		if (!quiet)
-		   syserr("unix_close: close(%d) failed: %s", 
+		   syserr(CSRV(channel), "unix_close: close(%d) failed: %s", 
 			channel, strerror(errno));
 		return -1;
 	}
@@ -682,13 +694,13 @@ static int	unix_read (int channel, int quiet)
 	if (c == 0)
 	{
 		if (!quiet)
-		   syserr("unix_read: EOF for fd %d ", channel);
+		   syserr(CSRV(channel), "unix_read: EOF for fd %d ", channel);
 		return 0;
 	}
 	else if (c < 0)
 	{
 		if (!quiet)
-		   syserr("unix_read: read(%d) failed: %s", 
+		   syserr(CSRV(channel), "unix_read: read(%d) failed: %s", 
 				channel, strerror(errno));
 		return -1;
 	}
@@ -696,7 +708,7 @@ static int	unix_read (int channel, int quiet)
 	if (dgets_buffer(channel, buffer, c))
 	{
 		if (!quiet)
-		   syserr("unix_read: dgets_buffer(%d, %*s) failed",
+		   syserr(CSRV(channel), "unix_read: dgets_buffer(%d, %*s) failed",
 				channel, c, buffer);
 		return -1;
 	}
@@ -713,13 +725,13 @@ static int	unix_recv (int channel, int quiet)
 	if (c == 0)
 	{
 		if (!quiet)
-		   syserr("unix_recv: EOF for fd %d ", channel);
+		   syserr(CSRV(channel), "unix_recv: EOF for fd %d ", channel);
 		return 0;
 	}
 	else if (c < 0)
 	{
 		if (!quiet)
-		   syserr("unix_recv: read(%d) failed: %s", 
+		   syserr(CSRV(channel), "unix_recv: read(%d) failed: %s", 
 				channel, strerror(errno));
 		return -1;
 	}
@@ -727,7 +739,7 @@ static int	unix_recv (int channel, int quiet)
 	if (dgets_buffer(channel, buffer, c))
 	{
 		if (!quiet)
-		   syserr("unix_recv: dgets_buffer(%d, %*s) failed",
+		   syserr(CSRV(channel), "unix_recv: dgets_buffer(%d, %*s) failed",
 				channel, c, buffer);
 		return -1;
 	}
@@ -750,7 +762,7 @@ static int	unix_accept (int channel, int quiet)
 		if (select(channel + 1, &fdset, NULL, NULL, NULL) < 0)
 		{
 			if (!quiet)
-			   syserr("unix_accept: select(%d) failed: %s",
+			   syserr(CSRV(channel), "unix_accept: select(%d) failed: %s",
 				channel, strerror(errno));
 		}
 	}
@@ -759,7 +771,7 @@ static int	unix_accept (int channel, int quiet)
 	len = sizeof(addr);
 	if ((newfd = Accept(channel, (SA *)&addr, &len)) < 0)
 		if (!quiet)
-		   syserr("unix_accept: Accept(%d) failed", channel);
+		   syserr(CSRV(channel), "unix_accept: Accept(%d) failed", channel);
 
 	dgets_buffer(channel, &newfd, sizeof(newfd));
 	dgets_buffer(channel, &addr, sizeof(addr));
@@ -785,7 +797,8 @@ static int	unix_connect (int channel, int quiet)
 		if (select(channel + 1, NULL, &fdset, NULL, NULL) < 0)
 		{
 			if (!quiet)
-			   syserr("unix_connect: select(%d) failed: %s",
+			   syserr(CSRV(channel), 
+				"unix_connect: select(%d) failed: %s",
 				channel, strerror(errno));
 		}
 	}
@@ -844,7 +857,7 @@ static void	new_io_event (int vfd)
 		ioe->error = -1;
 		ioe->clean = 0;
 		if (!ioe->quiet)
-		   syserr("new_io_event: io_callback(%d) "
+		   syserr(SRV(vfd), "new_io_event: io_callback(%d) "
 				"said fd should be closed", vfd);
 
 		if (x_debug & DEBUG_INBOUND) 
@@ -910,8 +923,9 @@ static	int	kdoit (Timeval *timeout)
 		    retval = select(channel + 1, &working_rd, NULL, NULL, &t);
 		    if (retval < 0)
 		    {
-			syserr("kdoit(select): Closing channel %d because: %s", 
-						channel, strerror(errno));
+			syserr(-1, "kdoit(select): "
+					"Closing channel %d because: %s", 
+					channel, strerror(errno));
 			FD_CLR(channel, &readables);
 			FD_CLR(channel, &writables);
 			new_close(channel);
@@ -924,7 +938,8 @@ static	int	kdoit (Timeval *timeout)
 				"descriptor but I can't find it!");
 	    }
 	    else
-		syserr("kdoit(select): select() failed: %s", strerror(errno));
+		syserr(-1, "kdoit(select): select() failed: %s", 
+				strerror(errno));
 	}
 	else if (retval > 0)
 	{
@@ -998,7 +1013,8 @@ static void kinit (void)
 { 
         if ((kqueue_fd = kqueue()) < 0)
 	{
-		syserr("kinit(kqueue): kqueue() failed: %s", strerror(errno));
+		syserr(-1, "kinit(kqueue): kqueue() failed: %s", 
+				strerror(errno));
 		irc_exit(1, "Your system doesn't support kqueue(2)");
 	}
 }
@@ -1009,7 +1025,7 @@ static  void    kread (int vfd)
 	EV_SET(&ev, CHANNEL(vfd), EVFILT_READ, EV_ADD|EV_ENABLE, 0, 0, NULL);
 	if (kevent(kqueue_fd, &ev, 1, NULL, 0, &kqueue_poll))
 	{
-		syserr("kread(kqueue): kevent(%d) failed: %s", 
+		syserr(SRV(vfd), "kread(kqueue): kevent(%d) failed: %s", 
 				CHANNEL(vfd), strerror(errno));
 	}
 }
@@ -1021,7 +1037,7 @@ static  void    knoread (int vfd)
 	if (kevent(kqueue_fd, &ev, 1, NULL, 0, &kqueue_poll))
 	{
 	    if (errno != ENOENT)
-		syserr("knoread(kqueue): kevent(%d) failed: %s", 
+		syserr(SRV(vfd), "knoread(kqueue): kevent(%d) failed: %s", 
 				CHANNEL(vfd), strerror(errno));
 	}
 }
@@ -1033,7 +1049,7 @@ static  void    kholdread (int vfd)
 	if (kevent(kqueue_fd, &ev, 1, NULL, 0, &kqueue_poll))
 	{
 	    if (errno != ENOENT)
-		syserr("kholdread(kqueue): kevent(%d) failed: %s", 
+		syserr(SRV(vfd), "kholdread(kqueue): kevent(%d) failed: %s", 
 				CHANNEL(vfd), strerror(errno));
 	}
 }
@@ -1044,7 +1060,7 @@ static  void    kunholdread (int vfd)
 	EV_SET(&ev, CHANNEL(vfd), EVFILT_READ, EV_ENABLE, 0, 0, NULL);
 	if (kevent(kqueue_fd, &ev, 1, NULL, 0, &kqueue_poll))
 	{
-		syserr("kunholdread(kqueue): kevent(%d) failed: %s", 
+		syserr(SRV(vfd), "kunholdread(kqueue): kevent(%d) failed: %s", 
 				CHANNEL(vfd), strerror(errno));
 	}
 }
@@ -1055,7 +1071,7 @@ static  void    kwrite (int vfd)
 	EV_SET(&ev, CHANNEL(vfd), EVFILT_WRITE, EV_ADD|EV_ENABLE, 0, 0, NULL);
 	if (kevent(kqueue_fd, &ev, 1, NULL, 0, &kqueue_poll))
 	{
-		syserr("kwrite(kqueue): kevent(%d) failed: %s", 
+		syserr(SRV(vfd), "kwrite(kqueue): kevent(%d) failed: %s", 
 				CHANNEL(vfd), strerror(errno));
 	}
 }
@@ -1067,7 +1083,7 @@ static  void    knowrite (int vfd)
 	if (kevent(kqueue_fd, &ev, 1, NULL, 0, &kqueue_poll))
 	{
 	    if (errno != ENOENT)
-		syserr("knowrite(kqueue): kevent(%d) failed: %s", 
+		syserr(SRV(vfd), "knowrite(kqueue): kevent(%d) failed: %s", 
 				CHANNEL(vfd), strerror(errno));
 	}
 }
@@ -1092,7 +1108,7 @@ static	int	kdoit (Timeval *timeout)
 	}
 
 	if (retval < 0 && errno != EINTR)
-		syserr("kdoit(kqueue): kevent(NULL) failed: %s", 
+		syserr(-1, "kdoit(kqueue): kevent(NULL) failed: %s", 
 					strerror(errno));
 	else if (retval > 0)
 	{
@@ -1213,7 +1229,7 @@ static	int	kdoit (Timeval *timeout)
 	retval = poll(polls, global_max_vfd + 1, ms);
 
 	if (retval < 0 && errno != EINTR)
-		syserr("kdoit(poll): poll() failed: %s", strerror(errno));
+		syserr(-1, "kdoit(poll): poll() failed: %s", strerror(errno));
 	else if (retval > 0)
 	{
 		for (vfd = 0; vfd <= global_max_vfd; vfd++)
@@ -1297,15 +1313,15 @@ static	void *	pthread_io_event (void *vvfd)
 	new_free(&vvfd);
 
 	if ((err = pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, NULL)))
-		syserr("pthread_io_event: pthread_setcancelstate(%d, PTHREAD_CANCEL_ENABLE) failed: %s", vfd, strerror(err));
+		syserr(SRV(vfd), "pthread_io_event: pthread_setcancelstate(%d, PTHREAD_CANCEL_ENABLE) failed: %s", vfd, strerror(err));
 
 	if ((err = pthread_setcanceltype(PTHREAD_CANCEL_ASYNCHRONOUS, NULL)))
-		syserr("pthread_io_event: pthread_setcanceltype(%d, PTHREAD_CANCEL_ASYNCHRONOUS) failed: %s", vfd, strerror(err));
+		syserr(SRV(vfd), "pthread_io_event: pthread_setcanceltype(%d, PTHREAD_CANCEL_ASYNCHRONOUS) failed: %s", vfd, strerror(err));
 
 	new_io_event(vfd);
 	klock();
 	if ((err = pthread_cond_signal(&cond)))
-		syserr("pthread_io_event: pthread_cond_signal(%d) failed: %s", 
+		syserr(SRV(vfd), "pthread_io_event: pthread_cond_signal(%d) failed: %s", 
 				vfd, strerror(err));
 	kunlock();
 	pthread_exit(NULL);
@@ -1327,11 +1343,11 @@ static void	kinit (void)
 	}
 
 	if ((err = pthread_mutex_init(&mutex, NULL)))
-		syserr("kinit(pthread): pthread_mutex_init() failed: %s",
+		syserr(-1, "kinit(pthread): pthread_mutex_init() failed: %s",
 				strerror(err));
 	klock();
 	if ((pthread_cond_init(&cond, NULL)))
-		syserr("kinit(pthread): pthread_cond_init() failed: %s",
+		syserr(-1, "kinit(pthread): pthread_cond_init() failed: %s",
 				strerror(err));
 }
  
@@ -1349,11 +1365,11 @@ static  void    knoread (int vfd)
 		return;
 
 	if ((err = pthread_cancel(pfd[vfd].pthread)))
-		syserr("knoread(pthread): pthread_cancel(%d) failed: %s",
+		syserr(SRV(vfd), "knoread(pthread): pthread_cancel(%d) failed: %s",
 				vfd, strerror(err));
 
 	if ((err = pthread_join(pfd[vfd].pthread, NULL)))
-		syserr("knoread(pthread): pthread_join(%d) failed: %s",
+		syserr(SRV(vfd), "knoread(pthread): pthread_join(%d) failed: %s",
 				vfd, strerror(err));
 
 	pfd[vfd].active = 0;
@@ -1393,10 +1409,10 @@ static  void    knowrite (int vfd)
 		return;
 
 	if ((err = pthread_cancel(pfd[vfd].pthread)))
-		syserr("knowrite: pthread_cancel(%d) failed: %s",
+		syserr(SRV(vfd), "knowrite: pthread_cancel(%d) failed: %s",
 				vfd, strerror(err));
 	if ((err = pthread_join(pfd[vfd].pthread, NULL)))
-		syserr("knowrite: pthread_join(%d) failed: %s",
+		syserr(SRV(vfd), "knowrite: pthread_join(%d) failed: %s",
 				vfd, strerror(err));
 
 	pfd[vfd].active = 0;
@@ -1421,7 +1437,7 @@ static	void	kcleaned (int vfd)
 
 	if ((err = pthread_create(&pfd[vfd].pthread, NULL, 
 					pthread_io_event, mvfd)))
-		syserr("kcleaned: pthread_create(%d) failed: %s",
+		syserr(SRV(vfd), "kcleaned: pthread_create(%d) failed: %s",
 				vfd, strerror(err));
 
 	vfd[pfd].active = 1;
@@ -1452,7 +1468,7 @@ static	int	kdoit (Timeval *timeout)
 	retval = pthread_cond_timedwait(&cond, &mutex, &right_now);
 	if (retval && retval != ETIMEDOUT)
 	{
-		syserr("kdoit(pthread): pthread_cond_timedwait() failed: %s",
+		syserr(-1, "kdoit(pthread): pthread_cond_timedwait() failed: %s",
 				strerror(retval));
 		saved_errno = retval;
 	}
@@ -1465,7 +1481,7 @@ static	int	kdoit (Timeval *timeout)
 		int c;
 
 		if ((c = pthread_join(pfd[vfd].pthread, NULL)))
-			syserr("kdoit(pthread): pthread_join(%d) failed: %s",
+			syserr(SRV(vfd), "kdoit(pthread): pthread_join(%d) failed: %s",
 					vfd, strerror(c));
 		pfd[vfd].active = 0;
 		ready++;
@@ -1549,7 +1565,7 @@ static void	kinit (void)
 
 	if ((port_fd = port_create()) < 0) 
 	{
-	    syserr("kinit(ports): port_create() failed: %s", strerror(errno));
+	    syserr(-1, "kinit(ports): port_create() failed: %s", strerror(errno));
 	    irc_exit(1, "Your system doesn't support ports");
 	}
 
@@ -1563,7 +1579,7 @@ static void	ksetflag (int fd, int flag)
 	if (events[fd])
 	{
 	    if (port_dissociate(port_fd, PORT_SOURCE_FD, fd) < 0)
-		syserr("ksetflag: port_dissociate(%d) failed: %s", 
+		syserr(SRV(fd), "ksetflag: port_dissociate(%d) failed: %s", 
 			fd, strerror(errno));
 	}
 	events[fd] |= flag;
@@ -1571,7 +1587,7 @@ static void	ksetflag (int fd, int flag)
 	{
 	    if (port_associate(port_fd, PORT_SOURCE_FD, fd, 
 				events[fd], NULL) < 0)
-		syserr("ksetflag: port_associate(%d) failed: %s",
+		syserr(SRV(fd), "ksetflag: port_associate(%d) failed: %s",
 			fd, strerror(errno));
 	}
 }
@@ -1581,7 +1597,7 @@ static void	kunsetflag (int fd, int flag)
 	if (events[fd])
 	{
 	    if (port_dissociate(port_fd, PORT_SOURCE_FD, fd) < 0)
-		syserr("kunsetflag: port_dissociate(%d) failed: %s", 
+		syserr(SRV(fd), "kunsetflag: port_dissociate(%d) failed: %s", 
 			fd, strerror(errno));
 	}
 	events[fd] &= ~flag;
@@ -1589,7 +1605,7 @@ static void	kunsetflag (int fd, int flag)
 	{
 	    if (port_associate(port_fd, PORT_SOURCE_FD, fd, 
 				events[fd], NULL) < 0)
-		syserr("kunsetflag: port_associate(%d) failed: %s",
+		syserr(SRV(fd), "kunsetflag: port_associate(%d) failed: %s",
 			fd, strerror(errno));
 	}
 }
@@ -1631,7 +1647,7 @@ static	int	kdoit (Timeval *timeout)
 		return 0;
 	}
 	else if (retval == -1 && errno != EINTR)
-		syserr("kdoit(ports): port_getn(NULL) failed: %s", 
+		syserr(-1, "kdoit(ports): port_getn(NULL) failed: %s", 
 					strerror(errno));
 	else if (retval == 0)
 	{

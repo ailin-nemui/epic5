@@ -1,4 +1,4 @@
-/* $EPIC: ssl.c,v 1.26 2007/04/12 03:24:14 jnelson Exp $ */
+/* $EPIC: ssl.c,v 1.27 2007/06/25 22:09:29 jnelson Exp $ */
 /*
  * ssl.c: SSL connection functions
  *
@@ -229,7 +229,7 @@ int	startup_ssl (int vfd, int channel)
 
 	if (!(x = new_ssl_info(vfd)))
 	{
-		syserr("Could not make new ssl info (vfd [%d]/channel [%d])",
+		syserr(SRV(vfd), "Could not make new ssl info (vfd [%d]/channel [%d])",
 				vfd, channel);
 		errno = EINVAL;
 		return -1;
@@ -243,7 +243,7 @@ int	startup_ssl (int vfd, int channel)
 	{
 		/* Get rid of the 'x' we just created */
 		shutdown_ssl(vfd);
-		syserr("Could not make new SSL (vfd [%d]/channel [%d])",
+		syserr(SRV(vfd), "Could not make new SSL (vfd [%d]/channel [%d])",
 				vfd, channel);
 		errno = EINVAL;
 		return -1;
@@ -365,7 +365,7 @@ int	ssl_read (int vfd, int quiet)
 		    int ssl_error = SSL_get_error(x->ssl_fd, c);
 		    if (ssl_error == SSL_ERROR_NONE)
 			if (!quiet)
-			   syserr("SSL_read failed with [%d]/[%d]", 
+			   syserr(SRV(vfd), "SSL_read failed with [%d]/[%d]", 
 					c, ssl_error);
 		}
 
@@ -404,7 +404,7 @@ int	ssl_connect (int vfd, int quiet)
 		else
 		{
 			/* Post the error */
-			syserr("ssl_connect: posting error %d", ssl_err);
+			syserr(SRV(vfd), "ssl_connect: posting error %d", ssl_err);
 			dgets_buffer(x->channel, &ssl_err, sizeof(ssl_err));
 			return 1;
 		}
@@ -412,7 +412,7 @@ int	ssl_connect (int vfd, int quiet)
 
 	/* Post the success */
 	ssl_err = 0;
-	syserr("ssl_connect: connection successful!");
+	syserr(SRV(vfd), "ssl_connect: connection successful!");
 	dgets_buffer(x->channel, &ssl_err, sizeof(ssl_err));
 	return 1;
 }
@@ -442,7 +442,7 @@ int	ssl_connected (int vfd)
 	/* The man page says this never fails in reality. */
 	if (!(server_cert = SSL_get_peer_certificate(x->ssl_fd)))
 	{
-		syserr("SSL negotiation failed -- reporting as error");
+		syserr(SRV(vfd), "SSL negotiation failed -- reporting as error");
 		SSL_CTX_free(x->ctx);
 		x->ctx = NULL;
 		x->ssl_fd = NULL;

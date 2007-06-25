@@ -1,5 +1,21 @@
 EPIC5-0.3.4
 
+*** News 06/25/2007 -- New flag to /XECHO, /XECHO -AS
+	The /XECHO -AS flag will output a message to all windows on the
+	current server.  You can combine this with the -S flag if you want 
+	to output to another server.  This might be good for blasting a 
+	message when you're disconnected from the server.  For another
+	example, see below.
+
+*** News 06/25/2007 -- New window level, SYSERR
+	The SYSERR window level will now be used for all of those layered
+	"INFO --" system errors ("syserrs").  The client will make its best
+	effort to ensure that these messages go to the correct server's
+	windows, and that /on yell is hooked in the correct server context.
+
+	You can combine this with /xecho -as  [see above]...
+		on ^yell "* INFO -- *" {xecho -as $*}
+
 *** News 06/02/2007 -- New tranformer: $xform(ALL)
 	The $xform(ALL) transform ignores the text and returns a list of
 	all supported tranformers.  If the user didn't compile SSL support,
@@ -2018,6 +2034,16 @@ EPIC5-0.0.4
 
 	In this example, "frobnitz" will be in the package "one" and 
 	"oofda" will be in the package "one::two".
+
+*** News 02/28/2005 -- The invite command changed here
+	This was never documented for some reason until June 2007.
+
+	You can now invite people more flexibly:
+		INVITE #chan nick1 nick2 nick3
+	or	INVITE nick #chan1 #chan2 #chan3
+	or	INVITE nick
+
+	and it will just figure out the right thing to do.
 
 *** News 02/04/2005 -- Clarification on /EXEC process output.
 	Until this time, partial lines of output from /EXEC processes

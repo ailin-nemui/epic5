@@ -1,4 +1,4 @@
-/* $EPIC: dcc.c,v 1.145 2007/05/25 16:47:48 jnelson Exp $ */
+/* $EPIC: dcc.c,v 1.146 2007/06/25 22:09:29 jnelson Exp $ */
 /*
  * dcc.c: Things dealing client to client connections. 
  *
@@ -991,7 +991,7 @@ static int	dcc_connected (int fd)
 	/*
 	 * Set up the connection to be useful
 	 */
-	new_open(dcc->socket, do_dcc, NEWIO_RECV, 1);
+	new_open(dcc->socket, do_dcc, NEWIO_RECV, 1, dcc->server);
 	dcc->flags &= ~DCC_THEIR_OFFER;
 	dcc->flags |= DCC_ACTIVE;
 
@@ -1127,7 +1127,7 @@ static	int	dcc_connect (DCC_list *dcc)
 	}
 
 	dcc->flags |= DCC_CONNECTING;
-	new_open(dcc->socket, do_dcc, NEWIO_CONNECT, 0);
+	new_open(dcc->socket, do_dcc, NEWIO_CONNECT, 0, dcc->server);
 	from_server = old_server;
 	get_time(&dcc->lasttime);
 	break;
@@ -1211,7 +1211,7 @@ static	int	dcc_listen (DCC_list *dcc)
 	inet_ntostr((SA *)&dcc->local_sockaddr, NULL, 0, p_port, 12, 0);
 	malloc_strcpy(&dcc->othername, p_port);
 #endif
-	new_open(dcc->socket, do_dcc, NEWIO_ACCEPT, 1);
+	new_open(dcc->socket, do_dcc, NEWIO_ACCEPT, 1, dcc->server);
 
 	/*
 	 * If this is to be a 2-peer connection, then we need to
@@ -3015,7 +3015,7 @@ static	void	process_dcc_chat_connection (DCC_list *Client)
 
 	Client->socket = new_close(Client->socket);
 	if ((Client->socket = fd) > 0)
-		new_open(Client->socket, do_dcc, NEWIO_RECV, 1);
+		new_open(Client->socket, do_dcc, NEWIO_RECV, 1, Client->server);
 	else
 	{
 		Client->flags |= DCC_DELETE;
@@ -3252,7 +3252,7 @@ static	void		process_incoming_listen (DCC_list *Client)
 	NewClient->flags |= DCC_QUOTED & Client->flags;
 	NewClient->bytes_read = NewClient->bytes_sent = 0;
 	get_time(&NewClient->starttime);
-	new_open(NewClient->socket, do_dcc, NEWIO_RECV, 1);
+	new_open(NewClient->socket, do_dcc, NEWIO_RECV, 1, NewClient->server);
 
 	lock_dcc(Client);
 	if (do_hook(DCC_RAW_LIST, "%s %s N %s", 
@@ -3403,7 +3403,7 @@ static void	process_dcc_send_connection (DCC_list *dcc)
 		yell("### DCC Error: accept() failed.  Punting.");
 		return;
 	}
-	new_open(dcc->socket, do_dcc, NEWIO_RECV, 1);
+	new_open(dcc->socket, do_dcc, NEWIO_RECV, 1, dcc->server);
 	dcc->flags &= ~DCC_MY_OFFER;
 	dcc->flags |= DCC_ACTIVE;
 	get_time(&dcc->starttime);
