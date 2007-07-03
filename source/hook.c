@@ -1,4 +1,4 @@
-/* $EPIC: hook.c,v 1.73 2007/06/06 02:26:01 jnelson Exp $ */
+/* $EPIC: hook.c,v 1.74 2007/07/03 02:03:48 jnelson Exp $ */
 /*
  * hook.c: Does those naughty hook functions. 
  *
@@ -134,6 +134,7 @@ typedef struct Hookables
 	int	mark;			/* Hook type is currently active */
 	unsigned flags;			/* Anything else needed */
 	char *	implied;		/* Implied output if unhooked */
+	int	implied_protect;	/* Do not re-expand implied hook */
 } Hookables;
 
 Hookables hook_function_templates[] =
@@ -273,6 +274,7 @@ static void	initialize_hook_functions (void)
 		hook_functions[i].mark = 0;
 		hook_functions[i].flags = 0;
 		hook_functions[i].implied = NULL;
+		hook_functions[i].implied_protect = 0;
 	}
 
 	for (b = 0, i = FIRST_NAMED_HOOK; i < NUMBER_OF_LISTS; b++, i++)
@@ -283,6 +285,7 @@ static void	initialize_hook_functions (void)
 		hook_functions[i].mark = hook_function_templates[b].mark;
 		hook_functions[i].flags = hook_function_templates[b].flags;
 		hook_functions[i].implied = NULL;
+		hook_functions[i].implied_protect = 0;
 	}
 
 	if (hooklist == NULL)
@@ -958,7 +961,11 @@ int 	do_hook (int which, const char *format, ...)
 	if (which >= 0)
 		h->mark++;
 
-	malloc_sprintf(&func_call, "cparse(\"%s\" $*)", h->implied);
+	if (h->implied_protect)
+	    malloc_sprintf(&func_call, "cparse(%s)", h->implied);
+	else
+	    malloc_sprintf(&func_call, "cparse(\"%s\" $*)", h->implied);
+
 	func_retval = call_function(func_call, buffer);
 	put_echo(func_retval);
 
@@ -2536,6 +2543,7 @@ char *hookctl (char *input)
 										input[span + 1] = 0;
 										input++;
 									}
+									hooks->implied_protect = 1;
 								}
 								if (empty(input))
 									new_free(&hooks->implied);

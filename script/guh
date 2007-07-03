@@ -58,9 +58,9 @@ alias uh
 	return $blahblah;
 };
 
-alias inc 
+alias inc (var, amt default 1)
 {
-	@ $0 += [$1]?[$1]:1;
+	@ *var += amt;
 };
 
 #hop'93

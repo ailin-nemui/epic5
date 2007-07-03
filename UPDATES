@@ -1,5 +1,41 @@
 EPIC5-0.3.4
 
+*** News 07/02/2007 -- Clarification of single-indirection implied hooks
+	Earlier, I said...
+	   You may surround <string> with {}s if you wish, to avoid quoting
+	   hell.  Match sure to keep your {}s matched up if you do so.
+	   See the "loadformats" info above for how to practically use this.
+
+	But due to a mistake, this never worked correctly.  This is now 
+	fixed.  If you compare the normal two-expansion version:
+		@ var = [format_send_public]
+		@ fmt = '<%W$N%n> $1-'
+		addset $var int
+		@ hookctl(set list send_public implied \\$var);
+		set $var $fmt
+	which ties /on send_public dynamically to the value of 
+	/set format_send_public.
+
+	If you wanted to do it directly, and not tie the implied hook to a
+	variable, you can surround the format in curly braces, like so:
+		@ hookctl(set list send_public implied {<%W$N%n> $1-})
+	Remember that curly braces protect the insides from $-expansion,
+	so for all purposes the inside of {}s is a literal string that is
+	not expanded except each time the /on is thrown.
+
+*** News 07/02/2007 -- Clarification on using $'s in expression parser
+	The old expression parser used to allow you to use expandos as
+	lvalues in order to indirectly assign to variables, for example:
+		alias inc {
+			@ $0 += 1
+		}
+	But this is not supported in the new math parser.  Instead you 
+	have to use the deref operator, like so:
+		alias inc {
+			@ *0 += 1
+		}
+	which does the same thing.
+
 *** News 06/25/2007 -- New flag to /XECHO, /XECHO -AS
 	The /XECHO -AS flag will output a message to all windows on the
 	current server.  You can combine this with the -S flag if you want 
