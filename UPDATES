@@ -1,5 +1,10 @@
 EPIC5-0.3.4
 
+*** News 07/04/2007 -- New $windowctl() option, $windowctl(GET refnum CHANNELS)
+	You can now fetch all of the channels in a window by using
+		$windowctl(GET <refnum> CHANNELS)
+	There is no defined order to the channels returned.
+
 *** News 07/02/2007 -- Clarification of single-indirection implied hooks
 	Earlier, I said...
 	   You may surround <string> with {}s if you wish, to avoid quoting

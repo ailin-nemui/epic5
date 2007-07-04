@@ -2,7 +2,6 @@ EPIC5 Projects, Bugs, and other Errata:
 
 KNOWN ERRATA (eg, bugs, or unresolved requests):
 ------------------------------------------------
-* It appears  @ $0 = var   does not work. ("Token 1 is not an lval")
 * Support $HOME with spaces in it for cygwin.
 * Zlonix wants global toplines at the top of each screen.
 
@@ -94,3 +93,4 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Add new flag to /XECHO, /XECHO -AS (output to all windows on server)
 * This should make syserrs go to the "correct window" most of the time (larne)
 * Fix hookctl(set list ... implied {...}) to work as intended (rb zlonix)
+* Add $windowctl(GET refnum CHANNELS) for black
