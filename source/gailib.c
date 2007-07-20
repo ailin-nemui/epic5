@@ -44,8 +44,8 @@ static const char in_addrany[] = { 0, 0, 0, 0 };
 static const char in_loopback[] = { 127, 0, 0, 1 }; 
 
 struct sockinet {
-	u_char	si_len;
-	u_char	si_family;
+	unsigned char	si_len;
+	unsigned char	si_family;
 	unsigned short	si_port;
 };
 

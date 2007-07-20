@@ -1,4 +1,4 @@
-/* $EPIC: glob.c,v 1.11 2005/03/15 05:36:20 jnelson Exp $ */
+/* $EPIC: glob.c,v 1.12 2007/07/20 22:29:32 jnelson Exp $ */
 #include "config.h"
 #ifdef NEED_GLOB
 
@@ -145,11 +145,11 @@ int bsd_glob		(	const char *pattern,
 				int (*errfunc) (const char *, int),
 				glob_t *pglob				)
 {
-	const u_char *patnext;
+	const unsigned char *patnext;
 	int c;
 	Char *bufnext, *bufend, patbuf[MAXPATHLEN+1];
 
-	patnext = (const u_char *) pattern;
+	patnext = (const unsigned char *) pattern;
 	if (!(flags & GLOB_APPEND)) 
 	{
 		pglob->gl_pathc = 0;
@@ -620,14 +620,14 @@ static int glob3		(	Char *pathbuf,
 
 	while ((dp = (*readdirfunc)(dirp))) 
 	{
-		register u_char *sc;
+		register unsigned char *sc;
 		register Char *dc;
 		int	nocase = 0;
 
 		/* Initial DOT must be matched literally. */
 		if (dp->d_name[0] == DOT && *pattern != DOT)
 			continue;
-		for (sc = (u_char *) dp->d_name, dc = pathend; 
+		for (sc = (unsigned char *) dp->d_name, dc = pathend; 
 		     (*dc++ = *sc++) != EOS;)
 			continue;
 

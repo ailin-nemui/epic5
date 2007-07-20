@@ -1,4 +1,4 @@
-/* $EPIC: compat.c,v 1.30 2007/06/02 01:19:13 jnelson Exp $ */
+/* $EPIC: compat.c,v 1.31 2007/07/20 22:29:32 jnelson Exp $ */
 /*
  * Everything that im not directly responsible for I put in here.  Almost
  * all of this stuff is either borrowed from somewhere else (for you poor
@@ -1005,9 +1005,9 @@ size_t	strlcat (char *dst, const char *src, size_t siz)
  * RC4 is a registered trademark of RSA Laboratories.
  */
 struct bsd_arc4_stream {
-	u_char	i;
-	u_char	j;
-	u_char	s[256];
+	unsigned char	i;
+	unsigned char	j;
+	unsigned char	s[256];
 };
 typedef struct bsd_arc4_stream 	ARC4;
 
@@ -1026,10 +1026,10 @@ static void	bsd_arc4_init (ARC4 *as)
 }
 
 __inline__
-static void	bsd_arc4_addrandom (ARC4 *as, u_char *dat, int datlen)
+static void	bsd_arc4_addrandom (ARC4 *as, unsigned char *dat, int datlen)
 {
 	int     n;
-	u_char	si;
+	unsigned char	si;
 
 	as->i--;
 	for (n = 0; n < 256; n++) {
@@ -1047,7 +1047,7 @@ static void	bsd_arc4_stir (ARC4 *as)
 	struct {
 		Timeval tv;
 		pid_t 	pid;
-		u_char	rnd[128 - sizeof(Timeval) - sizeof(pid_t)];
+		unsigned char	rnd[128 - sizeof(Timeval) - sizeof(pid_t)];
 	}       rdat;
 
 	gettimeofday(&rdat.tv, NULL);
@@ -1064,9 +1064,9 @@ static void	bsd_arc4_stir (ARC4 *as)
 }
 
 __inline__
-static u_char		bsd_arc4_getbyte (ARC4 *as)
+static unsigned char		bsd_arc4_getbyte (ARC4 *as)
 {
-	u_char si, sj;
+	unsigned char si, sj;
 
 	as->i = (as->i + 1);
 	si = as->s[as->i];
@@ -1098,7 +1098,7 @@ void	bsd_arc4random_stir (void)
 	bsd_arc4_stir(&rs);
 }
 
-void	bsd_arc4random_addrandom (u_char *dat, int datlen)
+void	bsd_arc4random_addrandom (unsigned char *dat, int datlen)
 {
 	if (!rs_initialized)
 		bsd_arc4random_stir();

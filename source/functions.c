@@ -1,4 +1,4 @@
-/* $EPIC: functions.c,v 1.251 2007/06/02 15:04:56 jnelson Exp $ */
+/* $EPIC: functions.c,v 1.252 2007/07/20 22:29:32 jnelson Exp $ */
 /*
  * functions.c -- Built-in functions for ircII
  *
@@ -4537,7 +4537,7 @@ BUILT_IN_FUNCTION(function_msar, input)
  */
 BUILT_IN_FUNCTION(function_leftpc, word)
 {
-	u_char ** 	prepared = NULL;
+	unsigned char ** 	prepared = NULL;
 	char *		retval;
 	int		lines = 1;
 	int		count;
@@ -5134,7 +5134,7 @@ BUILT_IN_FUNCTION(function_remws, word)
 
 BUILT_IN_FUNCTION(function_printlen, input)
 {
-	u_char *copy;
+	unsigned char *copy;
 	int	retval;
 
 	copy = new_normalize_string(input, 2, NORMALIZE);

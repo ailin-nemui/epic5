@@ -1,4 +1,4 @@
-/* $EPIC: status.c,v 1.70 2007/05/14 02:33:33 jnelson Exp $ */
+/* $EPIC: status.c,v 1.71 2007/07/20 22:29:33 jnelson Exp $ */
 /*
  * status.c: handles the status line updating, etc for IRCII 
  *
@@ -503,13 +503,13 @@ int     permit_status_update (int flag)
  */
 int	make_status (Window *window, int must_redraw)
 {
-	int	status_line;
-	u_char	buffer	    [BIG_BUFFER_SIZE + 1];
-	u_char	lhs_buffer  [BIG_BUFFER_SIZE + 1];
-	u_char	rhs_buffer  [BIG_BUFFER_SIZE + 1];
-	Char	*func_value [MAX_FUNCTIONS];
-	u_char	*ptr;
-	size_t	save_size;
+	int		status_line;
+	unsigned char	buffer	    [BIG_BUFFER_SIZE + 1];
+	unsigned char	lhs_buffer  [BIG_BUFFER_SIZE + 1];
+	unsigned char	rhs_buffer  [BIG_BUFFER_SIZE + 1];
+	const char	*func_value [MAX_FUNCTIONS];
+	unsigned char	*ptr;
+	size_t		save_size;
 
 	/* We do NOT redraw status bars for hidden windows */
 	if (!window->screen || !status_updates_permitted)
@@ -517,7 +517,7 @@ int	make_status (Window *window, int must_redraw)
 
 	for (status_line = 0; status_line < window->status.number; status_line++)
 	{
-		u_char	lhs_fillchar[6],
+	unsigned char	lhs_fillchar[6],
 			rhs_fillchar[6],
 			*fillchar = lhs_fillchar,
 			*lhp = lhs_buffer,

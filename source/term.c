@@ -1,4 +1,4 @@
-/* $EPIC: term.c,v 1.22 2007/04/12 03:24:14 jnelson Exp $ */
+/* $EPIC: term.c,v 1.23 2007/07/20 22:29:33 jnelson Exp $ */
 /*
  * term.c -- termios and (termcap || terminfo) handlers
  *
@@ -1637,7 +1637,7 @@ const char *	term_getsgr (int opt, int fore, int back)
 
 static char *	control_mangle (unsigned char *text)
 {
-static 	u_char	retval[256];
+static 	unsigned char	retval[256];
 	int 	pos = 0;
 	
 	*retval = 0;

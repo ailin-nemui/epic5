@@ -1,4 +1,4 @@
-/* $EPIC: input.c,v 1.46 2007/05/12 14:33:44 jnelson Exp $ */
+/* $EPIC: input.c,v 1.47 2007/07/20 22:29:32 jnelson Exp $ */
 /*
  * input.c: does the actual input line stuff... keeps the appropriate stuff
  * on the input line, handles insert/delete of characters/words... the whole
@@ -907,7 +907,7 @@ BUILT_IN_KEYBINDING(input_reset_line)
  */
 BUILT_IN_KEYBINDING(input_transpose_characters)
 {
-	u_char	this_char, prev_char;
+	unsigned char	this_char, prev_char;
 
 	/* If we're at the end of input, move back to the last char */
 	if (!THIS_CHAR && LOGICAL_CURSOR > 1)

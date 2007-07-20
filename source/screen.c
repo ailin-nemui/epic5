@@ -1,4 +1,4 @@
-/* $EPIC: screen.c,v 1.127 2007/06/25 22:09:29 jnelson Exp $ */
+/* $EPIC: screen.c,v 1.128 2007/07/20 22:29:33 jnelson Exp $ */
 /*
  * screen.c
  *
@@ -121,12 +121,12 @@
  *
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
 static void 	do_screens	(int fd);
-static int 	rite 		(Window *, const u_char *);
+static int 	rite 		(Window *, const unsigned char *);
 static void 	scroll_window   (Window *);
-static void 	add_to_window	(Window *, const u_char *);
+static void 	add_to_window	(Window *, const unsigned char *);
 static	int	ok_to_output	(Window *);
-static ssize_t read_esc_seq     (const u_char *, void *, int *);
-static ssize_t read_color_seq   (const u_char *, void *d, int);
+static ssize_t read_esc_seq     (const unsigned char *, void *, int *);
+static ssize_t read_color_seq   (const unsigned char *, void *d, int);
 
 /*
  * "Attributes" were an invention for epic5, and the general idea was
@@ -193,12 +193,12 @@ const unsigned char *all_off (void)
  * before returning.  The special case is when "old_a" is NULL, which 
  * should be treated as an explicit "all off" before handling "a".
  */
-static size_t	display_attributes (u_char *output, Attribute *old_a, Attribute *a)
+static size_t	display_attributes (unsigned char *output, Attribute *old_a, Attribute *a)
 {
-	u_char	val1 = 0x80;
-	u_char	val2 = 0x80;
-	u_char	val3 = 0x80;
-	u_char	val4 = 0x80;
+	unsigned char	val1 = 0x80;
+	unsigned char	val2 = 0x80;
+	unsigned char	val3 = 0x80;
+	unsigned char	val4 = 0x80;
 
 	if (a->reverse)		val1 |= 0x01;
 	if (a->bold)		val1 |= 0x02;
@@ -221,7 +221,7 @@ static size_t	display_attributes (u_char *output, Attribute *old_a, Attribute *a
 }
  
 /* Put into 'output', logical characters so end result is 'a' */
-static size_t	logic_attributes (u_char *output, Attribute *old_a, Attribute *a)
+static size_t	logic_attributes (unsigned char *output, Attribute *old_a, Attribute *a)
 {
 	char	*str = output;
 	size_t	count = 0;
@@ -298,14 +298,14 @@ static size_t	logic_attributes (u_char *output, Attribute *old_a, Attribute *a)
 }
 
 /* Suppress any attribute changes in the output */
-static size_t	ignore_attributes (u_char *output, Attribute *old_a, Attribute *a)
+static size_t	ignore_attributes (unsigned char *output, Attribute *old_a, Attribute *a)
 {
 	return 0;
 }
 
 
 /* Read an attribute marker from 'input', put results in 'a'. */
-static int	read_attributes (const u_char *input, Attribute *a)
+static int	read_attributes (const unsigned char *input, Attribute *a)
 {
 	if (!input)
 		return -1;
@@ -376,7 +376,7 @@ static void	term_attribute (Attribute *a)
  *
  * DO NOT USE ANY OTHER FUNCTION TO PARSE ^C CODES.  YOU HAVE BEEN WARNED!
  */
-static ssize_t	read_color_seq (const u_char *start, void *d, int blinkbold)
+static ssize_t	read_color_seq (const unsigned char *start, void *d, int blinkbold)
 {
 	/* 
 	 * The proper "attribute" color mapping is for each ^C lvalue.
@@ -461,7 +461,7 @@ static ssize_t	read_color_seq (const u_char *start, void *d, int blinkbold)
 						  back_blink_conv;
 
 	/* Local variables, of course */
-	const 	u_char *	ptr = start;
+	const 	unsigned char *	ptr = start;
 		int		c1, c2;
 		Attribute *	a;
 		Attribute	ad;
@@ -651,14 +651,14 @@ static ssize_t	read_color_seq (const u_char *start, void *d, int blinkbold)
  *
  * DO NOT USE ANY OTHER FUNCTION TO PARSE ESCAPES.  YOU HAVE BEEN WARNED!
  */
-static ssize_t	read_esc_seq (const u_char *start, void *ptr_a, int *nd_spaces)
+static ssize_t	read_esc_seq (const unsigned char *start, void *ptr_a, int *nd_spaces)
 {
 	Attribute *	a = NULL;
 	Attribute 	safe_a;
 	int 		args[10];
 	int		nargs;
-	u_char 		chr;
-	const u_char *	str;
+	unsigned char 	chr;
+	const unsigned char *	str;
 	ssize_t		len;
 
 	if (ptr_a == NULL)
@@ -924,7 +924,7 @@ start_over:
  * State 8 is a "tab"
  * State 9 is a "non-destructive space"
  */
-static	u_char	ansi_state[256] = {
+static	unsigned char	ansi_state[256] = {
 /*	^@	^A	^B	^C	^D	^E	^F	^G(\a) */
 	6,	6,	4,	3,	6,	4,	4,	7,  /* 000 */
 /*	^H	^I	^J(\n)	^K	^L(\f)	^M(\r)	^N	^O */
@@ -1024,10 +1024,10 @@ STRIP_OTHER		X    -    -    -    -    -    -    -    X    X
 #define next_char() (*str++)
 #define put_back() (str--)
 #define nlchar '\n'
-u_char *	new_normalize_string (const u_char *str, int logical, int mangle)
+unsigned char *	new_normalize_string (const unsigned char *str, int logical, int mangle)
 {
-	u_char *	output;
-	u_char		chr;
+	unsigned char *	output;
+	unsigned char	chr;
 	Attribute	a, olda;
 	int 		pos;
 	int		maxpos;
@@ -1038,7 +1038,7 @@ u_char *	new_normalize_string (const u_char *str, int logical, int mangle)
 			strip_underline, strip_altchar, strip_color, 
 			strip_all_off, strip_nd_space, strip_c1, boldback;
 	int		strip_unprintable, strip_other;
-	size_t		(*attrout) (u_char *, Attribute *, Attribute *) = NULL;
+	size_t		(*attrout) (unsigned char *, Attribute *, Attribute *) = NULL;
 
 	mangle_escapes 	= ((mangle & MANGLE_ESCAPES) != 0);
 	normalize	= ((mangle & NORMALIZE) != 0);
@@ -1078,7 +1078,7 @@ u_char *	new_normalize_string (const u_char *str, int logical, int mangle)
 	 * in case you need to tack something else onto it.
 	 */
 	maxpos = strlen(str);
-	output = (u_char *)new_malloc(maxpos + 192);
+	output = (unsigned char *)new_malloc(maxpos + 192);
 	pos = 0;
 
 	while ((chr = next_char()))
@@ -1191,7 +1191,7 @@ abnormal_char:
 			    if (pos + nd_spaces > maxpos)
 			    {
 				maxpos += nd_spaces; 
-				RESIZE(output, u_char, maxpos + 192);
+				RESIZE(output, unsigned char, maxpos + 192);
 			    }
 			    while (nd_spaces-- > 0)
 			    {
@@ -1368,9 +1368,9 @@ abnormal_char:
  * markers) and converts them back to logical characters.  This is needed
  * for lastlog and the status line and so forth.
  */
-u_char *	denormalize_string (const u_char *str)
+unsigned char *	denormalize_string (const unsigned char *str)
 {
-	u_char *	output = NULL;
+	unsigned char *	output = NULL;
 	size_t		maxpos;
 	Attribute 	olda, a;
 	size_t		span;
@@ -1386,7 +1386,7 @@ u_char *	denormalize_string (const u_char *str)
 	 * in case you need to tack something else onto it.
 	 */
 	maxpos = strlen(str);
-	output = (u_char *)new_malloc(maxpos + 192);
+	output = (unsigned char *)new_malloc(maxpos + 192);
 	pos = 0;
 
 	while (*str)
@@ -1455,17 +1455,17 @@ static 	int 	recursion = 0,
 		line = 0,           /* Current pos in "output"      */
 		do_indent,          /* Use indent or continued line? */
 		newline = 0;        /* Number of newlines           */
-static	u_char 	**output = (unsigned char **)0;
-const 	u_char	*ptr;
-	u_char 	buffer[BIG_BUFFER_SIZE + 1],
-		c,
-		*pos_copy;
-const	u_char	*cont_ptr;
-	u_char	*cont = NULL;
-	const char *words;
+static	unsigned char 	**output = (unsigned char **)0;
+const 	unsigned char	*ptr;
+	unsigned char 	buffer[BIG_BUFFER_SIZE + 1],
+			c,
+			*pos_copy;
+const	unsigned char	*cont_ptr;
+	unsigned char	*cont = NULL;
+	const char 	*words;
 	Attribute	a, olda;
 	Attribute	saved_a;
-	u_char	*cont_free = NULL;
+	unsigned char	*cont_free = NULL;
 
 	if (recursion)
 		panic(1, "prepare_display() called recursively");
@@ -1857,7 +1857,7 @@ const	u_char	*cont_ptr;
  *	window		- The target window for the output
  *	str		- What is to be outputted
  */
-static int 	rite (Window *window, const u_char *str)
+static int 	rite (Window *window, const unsigned char *str)
 {
 	output_screen = window->screen;
 	scroll_window(window);
@@ -1884,12 +1884,12 @@ static int 	rite (Window *window, const u_char *str)
  * If 'output' is 1 and 'all_off' is 1, do a term_all_off() when the output
  * is done.  If 'all_off' is 0, then don't do an all_off, because
  */
-int 	output_with_count (const u_char *str1, int clreol, int output)
+int 	output_with_count (const unsigned char *str1, int clreol, int output)
 {
 	int 		beep = 0, 
 			out = 0;
 	Attribute	a;
-	const u_char *	str;
+	const unsigned char *	str;
 
         /* Reset all attributes to zero */
         a.bold = a.underline = a.reverse = a.blink = a.altchar = 0;
@@ -2152,12 +2152,12 @@ void 	add_to_screen (const unsigned char *buffer)
  * rite() handles the *appearance* of the display, writing to the screen as
  * neccesary.
  */
-static void 	add_to_window (Window *window, const u_char *str)
+static void 	add_to_window (Window *window, const unsigned char *str)
 {
 	char *		pend;
-	u_char *	strval;
-	u_char *	free_me = NULL;
-        u_char **       lines;
+	unsigned char *	strval;
+	unsigned char *	free_me = NULL;
+        unsigned char **       lines;
         int             cols;
 	int		numl = 0;
 	intmax_t	refnum;
@@ -2185,7 +2185,7 @@ static void 	add_to_window (Window *window, const u_char *str)
 	    recursion++;
 	    if (recursion < 5 && (pend = get_string_var(OUTPUT_REWRITE_VAR)))
 	    {
-		u_char	argstuff[10240];
+		unsigned char	argstuff[10240];
 
 		/* Create $* and then expand with it */
 		snprintf(argstuff, 10240, "%u %s", window->refnum, str);
@@ -2264,8 +2264,8 @@ static void 	add_to_window (Window *window, const u_char *str)
  */
 void 	add_to_window_scrollback (Window *window, const unsigned char *str, intmax_t refnum)
 {
-	u_char *	strval;
-        u_char **       lines;
+	unsigned char *	strval;
+        unsigned char **       lines;
         int             cols;
 	int		numl = 0;
 
@@ -3098,11 +3098,11 @@ void 	add_wait_prompt (const char *prompt, void (*func)(char *, char *), const c
  * edit_char: handles each character for an input stream.  Not too difficult
  * to work out.
  */
-void    edit_char (u_char key)
+void    edit_char (unsigned char key)
 {
-        u_char          extended_key;
+        unsigned char          extended_key;
         WaitPrompt *    oldprompt;
-        u_char          dummy[2];
+        unsigned char          dummy[2];
         int             xxx_return = 0;         /* XXXX Need i say more? */
 
         if (dumb_mode)

@@ -1,4 +1,4 @@
-/* $EPIC: newio.c,v 1.66 2007/06/25 22:09:29 jnelson Exp $ */
+/* $EPIC: newio.c,v 1.67 2007/07/20 22:29:32 jnelson Exp $ */
 /*
  * newio.c:  Passive, callback-driven IO handling for sockets-n-stuff.
  *
@@ -288,7 +288,7 @@ ssize_t	dgets (int vfd, char *buf, size_t buflen, int buffer)
 	if (ioe->error)
 	{
 	    if (!ioe->quiet)
-	       syserr(SRV(vfd), "dgets: Reporting exception for vfd [%d]", vfd);
+	       syserr(SRV(vfd), "dgets: fd [%d] must be closed", vfd);
 	    return -1;
 	}
 
@@ -761,17 +761,20 @@ static int	unix_accept (int channel, int quiet)
 		FD_SET(channel, &fdset);
 		if (select(channel + 1, &fdset, NULL, NULL, NULL) < 0)
 		{
-			if (!quiet)
-			   syserr(CSRV(channel), "unix_accept: select(%d) failed: %s",
-				channel, strerror(errno));
+		    if (!quiet)
+			syserr(CSRV(channel), "unix_accept: select(%d) failed"
+				": %s", channel, strerror(errno));
 		}
 	}
 #endif
 
 	len = sizeof(addr);
 	if ((newfd = Accept(channel, (SA *)&addr, &len)) < 0)
-		if (!quiet)
-		   syserr(CSRV(channel), "unix_accept: Accept(%d) failed", channel);
+	{
+	    if (!quiet)
+		syserr(CSRV(channel), "unix_accept: Accept(%d) failed", 
+					": %s", channel, strerror(errno));
+	}
 
 	dgets_buffer(channel, &newfd, sizeof(newfd));
 	dgets_buffer(channel, &addr, sizeof(addr));
@@ -857,8 +860,7 @@ static void	new_io_event (int vfd)
 		ioe->error = -1;
 		ioe->clean = 0;
 		if (!ioe->quiet)
-		   syserr(SRV(vfd), "new_io_event: io_callback(%d) "
-				"said fd should be closed", vfd);
+		   syserr(SRV(vfd), "new_io_event: fd %d must be closed", vfd);
 
 		if (x_debug & DEBUG_INBOUND) 
 			yell("VFD [%d] FAILED [%d]", vfd, c);
