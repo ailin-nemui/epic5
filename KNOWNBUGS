@@ -4,6 +4,8 @@ KNOWN ERRATA (eg, bugs, or unresolved requests):
 ------------------------------------------------
 * Support $HOME with spaces in it for cygwin.
 * Zlonix wants global toplines at the top of each screen.
+* Zlonix wants me to apply his /on signal patch.
+* @ *0 = "foo"  doesn't work because *0 -> 0, and it should be $0.
 
 LOOK FOR IN THE FUTURE
 -----------------------
@@ -93,4 +95,7 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Add new flag to /XECHO, /XECHO -AS (output to all windows on server)
 * This should make syserrs go to the "correct window" most of the time (larne)
 * Fix hookctl(set list ... implied {...}) to work as intended (rb zlonix)
-* Add $windowctl(GET refnum CHANNELS) for black
+* Add $windowctl(GET refnum CHANNELS) (rb Black)
+* Eliminate u_* type bsd-isms so we can compile with -ansi on linux.
+* Add /lastlog -rewrite (see UPDATES)
+* Add /set lastlog_rewrite as a special favor for larne.

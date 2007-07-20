@@ -7,7 +7,7 @@
  *
  * See the COPYRIGHT file, or do a HELP IRCII COPYRIGHT 
  *
- * @(#)$Id: ircaux.h,v 1.93 2007/06/02 15:04:56 jnelson Exp $
+ * @(#)$Id: ircaux.h,v 1.94 2007/07/20 23:03:59 jnelson Exp $
  */
 
 #ifndef _IRCAUX_H_
@@ -149,7 +149,7 @@ char *	strnrchr		(char *, char, int);
 void	mask_digits		(char **);
 char *	strpcat			(char *, const char *, ...) __A(2);
 char *  strlpcat		(char *, size_t, const char *, ...) __A(3);
-u_long	random_number		(u_long);
+unsigned long	random_number	(unsigned long);
 char *	urlencode		(const char *);
 char *	urldecode		(char *, size_t *);
 char *	enquote_it		(const char *str, size_t len);

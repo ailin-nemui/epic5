@@ -51,14 +51,14 @@ static __inline u_32int_t  ci_alist_hash (const char *s, u_32int_t *mask)
 		x = (stricmp_tables[0][(int)s[0]] << 24), 
 				*mask = 0xff000000;
 	    else if (s[2] == 0)
-		x = ((stricmp_tables[0][(int)(u_char)s[0]] << 24) | 
-		     (stricmp_tables[0][(int)(u_char)s[1]] << 16)), 
+		x = ((stricmp_tables[0][(int)(unsigned char)s[0]] << 24) | 
+		     (stricmp_tables[0][(int)(unsigned char)s[1]] << 16)), 
 				*mask = 0xffff0000;
 	    else
-		x = ((stricmp_tables[0][(int)(u_char)s[0]] << 24) | 
-		     (stricmp_tables[0][(int)(u_char)s[1]] << 16) | 
-		     (stricmp_tables[0][(int)(u_char)s[2]] << 8) | 
-		     (stricmp_tables[0][(int)(u_char)s[3]])),
+		x = ((stricmp_tables[0][(int)(unsigned char)s[0]] << 24) | 
+		     (stricmp_tables[0][(int)(unsigned char)s[1]] << 16) | 
+		     (stricmp_tables[0][(int)(unsigned char)s[2]] << 8) | 
+		     (stricmp_tables[0][(int)(unsigned char)s[3]])),
 				(*mask = 0xffffff00 | (s[3] ? 0xff : 0x00));
 	}
 	else

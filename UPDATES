@@ -1,5 +1,32 @@
 EPIC5-0.3.4
 
+*** News 07/20/2007 -- New /SET, /SET LASTLOG_REWRITE
+	This provides the default value to /lastlog -rewrite whenever you
+	don't use the /lastlog -rewrite flag.  If you always want the 
+	/lastlog command to timestamp each line, try this:
+		/set lastlog_rewrite $strftime($1 %T) $8-
+
+	(Remember, if you use this in a pf loaded script to double up $'s...
+		/set lastlog_rewrite $$strftime($1 %T) $$8-		)
+
+*** News 07/20/2007 -- New flag to /LASTLOG, /LASTLOG -REWRITE
+	The /LASTLOG -REWRITE flag rewrites each lastlog line with the 
+	following values for $*
+		$0  - The lastlog item's unique refnum
+		$1  - Timestamp (suitable for use with $strftime())
+		$2  - Window refnum
+		$3  - Output level
+		$4  - Reserved for future use
+		$5  - Reserved for future use
+		$6  - Reserved for future use
+		$7  - Output target
+		$8- - The logical line of output
+	Not all of these field are intended to be useful -- but I don't
+	know what sort of imaginative things people might come up with.
+
+	Example:  To put a timestamp before every line...
+		/lastlog -rewrite "$strftime($1 %T) $8-"
+
 *** News 07/04/2007 -- New $windowctl() option, $windowctl(GET refnum CHANNELS)
 	You can now fetch all of the channels in a window by using
 		$windowctl(GET <refnum> CHANNELS)

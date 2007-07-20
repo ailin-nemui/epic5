@@ -96,12 +96,12 @@ struct	ScreenStru *next;		/* Previous screen in list */
 	Window	*create_additional_screen (void);
 	void	kill_screen		(struct ScreenStru *);
 
-const	u_char *all_off			(void);
-	u_char *new_normalize_string	(const u_char *, int, int);
-	u_char *denormalize_string	(const u_char *);
-	u_char **prepare_display	(int, const u_char *, int, int *, int);
-	int	output_with_count	(const u_char *, int, int);
-	void    add_to_window_scrollback (Window *, const u_char *, intmax_t);
+const	unsigned char *all_off			(void);
+	unsigned char *new_normalize_string	(const unsigned char *, int, int);
+	unsigned char *denormalize_string	(const unsigned char *);
+	unsigned char **prepare_display	(int, const unsigned char *, int, int *, int);
+	int	output_with_count	(const unsigned char *, int, int);
+	void    add_to_window_scrollback (Window *, const unsigned char *, intmax_t);
 
 /* Dont do any word-wrapping, just truncate each line at its place. */
 #define PREPARE_NOWRAP	0x01

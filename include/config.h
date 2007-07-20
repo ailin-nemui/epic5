@@ -79,8 +79,7 @@
  * I moved this here because it seemed to be the most appropriate
  * place for it.  Define this if you want support for ``/window create''
  * and its related features.  If you dont want it, youll save some code,
- * and you wont need 'wserv', and if you do want it, you can have it in
- * all of its broken glory.
+ * and you wont need 'wserv'.
  */
 #define WINDOW_CREATE
 
@@ -307,6 +306,7 @@
 #define DEFAULT_KEY_INTERVAL 1000
 #define DEFAULT_LASTLOG 256
 #define DEFAULT_LASTLOG_LEVEL "ALL"
+#define DEFAULT_LASTLOG_REWRITE NULL
 #define DEFAULT_LOG 0
 #define DEFAULT_LOGFILE "irc.log"
 #define DEFAULT_MAIL 2

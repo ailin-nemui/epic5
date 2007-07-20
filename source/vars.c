@@ -1,4 +1,4 @@
-/* $EPIC: vars.c,v 1.98 2007/05/20 01:06:49 jnelson Exp $ */
+/* $EPIC: vars.c,v 1.99 2007/07/20 23:03:59 jnelson Exp $ */
 /*
  * vars.c: All the dealing of the irc variables are handled here. 
  *
@@ -318,6 +318,7 @@ void 	init_variables_stage1 (void)
 	VAR(KEY_INTERVAL, INT,  set_key_interval);
 	VAR(LASTLOG, INT,  set_lastlog_size);
 	VAR(LASTLOG_LEVEL, STR,  set_lastlog_mask);
+	VAR(LASTLOG_REWRITE, STR, NULL);
 #define DEFAULT_LOAD_PATH NULL
 	VAR(LOAD_PATH, STR,  NULL);
 	VAR(LOG, BOOL, logger);

@@ -1,4 +1,4 @@
-/* $EPIC: lastlog.c,v 1.67 2007/04/12 03:24:14 jnelson Exp $ */
+/* $EPIC: lastlog.c,v 1.68 2007/07/20 23:03:59 jnelson Exp $ */
 /*
  * lastlog.c: handles the lastlog features of irc. 
  *
@@ -44,6 +44,7 @@
 #include "numbers.h"
 #include "functions.h"
 #include "reg.h"
+#include "alias.h"
 
 typedef struct	lastlog_stru
 {
@@ -321,6 +322,7 @@ void	set_lastlog_size (void *stuff)
  *	-max <number>		Only show first <number> matches
  *	-skip <number>		Skip this many leading lastlog entries
  *	-number <number>	Only search this many lastlog entries
+ *	-rewrite "<expando>"	Rewrite each line with the expando.
  *	-<LEVEL>		Add <LEVEL> to "level mask"
  *	--<LEVEL>		Remove <LEVEL> from "level mask"
  *	-ALL			Add all levels to "level mask"
@@ -395,12 +397,14 @@ BUILT_IN_COMMAND(lastlog)
 	FILE *		outfp = NULL;
 	int		mangler = 0;
 	int		lc;
+	char *		rewrite = NULL;
 
 	lc = message_setall(0, NULL, LEVEL_OTHER);
 	cnt = current_window->lastlog_size;
 	save_mask = current_window->lastlog_mask;
 	mask_unsetall(&current_window->lastlog_mask);
 	mask_unsetall(&level_mask);
+	rewrite = get_string_var(LASTLOG_REWRITE_VAR);
 
 	while ((arg = new_next_arg(args, &args)) != NULL)
 	{
@@ -535,6 +539,10 @@ BUILT_IN_COMMAND(lastlog)
 			say("Unknown flag: %s", arg);
 			goto bail;
 		}
+	    }
+	    else if (!my_strnicmp(arg, "-REWRITE", len))
+	    {
+		rewrite = new_next_arg(args, &args);
 	    }
 	    else if (!my_strnicmp(arg, "-", 1))
 	    {
@@ -714,7 +722,25 @@ BUILT_IN_COMMAND(lastlog)
 
 		if (counter)
 		{
-			file_put_it(outfp, "%s", l->msg);
+			if (rewrite)
+			{
+				unsigned char *n, vitals[10240];
+
+				snprintf(vitals, sizeof(vitals),
+					"%ld %ld %ld %ld . . . %s %s",
+						(long)l->refnum,
+						(long)l->when,
+						(long)l->winref,
+						(long)l->level,
+						l->target, l->msg);
+
+				n = expand_alias(rewrite, vitals);
+				file_put_it(outfp, "%s", n);
+				new_free(&n);
+			}
+			else
+				file_put_it(outfp, "%s", l->msg);
+
 			lastshown = l;
 			counter--;
 			if (counter == 0 && before != -1 && separator)
@@ -779,7 +805,25 @@ BUILT_IN_COMMAND(lastlog)
 		}
 		if (counter)
 		{
-			file_put_it(outfp, "%s", l->msg);
+			if (rewrite)
+			{
+				unsigned char *n, vitals[10240];
+
+				snprintf(vitals, sizeof(vitals),
+					"%ld %ld %ld %ld . . . %s %s",
+						(long)l->refnum,
+						(long)l->when,
+						(long)l->winref,
+						(long)l->level,
+						l->target, l->msg);
+
+				n = expand_alias(rewrite, vitals);
+				file_put_it(outfp, "%s", n);
+				new_free(&n);
+			}
+			else
+				file_put_it(outfp, "%s", l->msg);
+
 			lastshown = l;
 			counter--;
 			if (counter == 0 && before != -1 && separator)

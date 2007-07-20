@@ -59,7 +59,7 @@ int	inet_ptohn             (int, const char *, char *, int);
 int	one_to_another         (int, const char *, char *, int);
 int     Accept                  (int, SA *, socklen_t *);
 char *	switch_hostname        (const char *);
-int     ip_bindery              (int family, u_short port, SS *storage);
+int     ip_bindery              (int family, unsigned short port, SS *storage);
 int     client_bind             (SA *, socklen_t);
 int     client_connect          (SA *, socklen_t, SA *, socklen_t);
 int     inet_vhostsockaddr 	(int, int, const char *, SS *, socklen_t *);

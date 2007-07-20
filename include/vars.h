@@ -63,6 +63,7 @@ int	ALLOW_C1_CHARS_VAR,
 	KEY_INTERVAL_VAR,
 	LASTLOG_VAR,
 	LASTLOG_LEVEL_VAR,
+	LASTLOG_REWRITE_VAR,
 	LOAD_PATH_VAR,
 	LOG_VAR,
 	LOGFILE_VAR,
@@ -216,7 +217,7 @@ typedef struct
         VARIABLE *      data;           /* The value of the variable */
         void    (*func) (void *); 	/* func called when var is set */
 	char *		script;		/* script called when var is set */
-        u_short         flags;          /* flags for this variable */
+        unsigned short  flags;          /* flags for this variable */
 }       IrcVariable;
 
 
