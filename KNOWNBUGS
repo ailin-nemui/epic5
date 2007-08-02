@@ -3,39 +3,38 @@ EPIC5 Projects, Bugs, and other Errata:
 KNOWN ERRATA (eg, bugs, or unresolved requests):
 ------------------------------------------------
 * Support $HOME with spaces in it for cygwin.
-* Zlonix wants global toplines at the top of each screen.
-* Zlonix wants me to apply his /on signal patch.
 * @ *0 = "foo"  doesn't work because *0 -> 0, and it should be $0.
+*  What happens when % appears in a public in an implied hook?
+       @ hookctl(set list public implied {%B<%R${isoper($0) ? [*] :
+                                        []}%C$chanflag($0 $1)%n$0%B>%n $2-}); 
 
-LOOK FOR IN THE FUTURE
------------------------
-* The $(url|b64|)(en|de)code() functions should all be aliases.
-* $sedcrypt() and $sha256() should be aliases.
-* Deprecate functions that can be scripted using $xform().
-* Finish refactoring the input prompt, by showing the prompt all the time,
-  eliminating one-column-per-byte assumption.
-* There is confusion between "proto" "type" and "addrfamily" with server
-  stuff.  Normalize and redocument.
-* send_text() needs rework, to add extra /on's so you can flag those special. 
-* Lastlog improvements (unified lastlog, refnums, moving between windows, etc)
-* Import utf8 support from ircII OR add support for utf16 (wide chars)
-* Import fg/bg color support from ircII 
-* 8-bit color support (256 colors for xterm) (rb larne)
-* Improvements for LOAD_PATH; directories, zip files, filename caching.
-* UPnP support via http://miniupnp.free.fr/
-* Some way to call an alias in a variable indirectly
+ISSUES OF INTEREST
+------------------
+* Now that $xform() is mature, we can script many things:
+    encode decode urlencode urldecode b64encode b64decode sedcrypt sha256
+* Rewrite the input prompt to use a linked list instead of a C string.
+* Normalize 'proto', 'type', and 'addrfamily' values with server stuff.
+* There should be an /on send_encrypted_msg, /on send_encrypted_public, etc.
+* All lastlogs for all windows should be stored in one big list
+* You should be able to move lastlog items between windows, split, merge.
+* Everybody wants utf8 support -- but who will volunteer to help me?
+* IRCII supports "default" fg/bg colors, which looks intriguing.
+* Larne would like to use 256-color-support for xterm.
+* I would like to be able to /load zip files and put them into LOAD_PATH.
+* UPnP support (http://miniupnp.free.fr) would fix dcc-behind-firewall dilema.
+* If @ var = [encode] you should be able to do $($var)(args) to call it.
 * Output rules
-* Support for CNOTICE
+* Undernet's CPRIVMSG and CNOTICE allow chanops to msg members w/o penalty
 * /CTCPs over /DCCs don't match up with their queries very well. (nullie)
 * str_to_mask() should be silent, callers should be warning.
 * Support for 64 bit ints could be more widespread
 * Larne wants suppression of duplicated lines (like syslog maybe?)
-* Refactor hardcoded uses of select() so select() isn't mandatory.
+* Remove all the hardcoded uses of select() so it isn't mandatory.
 * Shattah would like something like /window omit <regex> to remove stuff.
 * Kanan wants support for jabber
 * Zlonix wants a way to be notified when window geometry changes
-* Zlonix would like me to commit is /on signal patch
-* Larne wants low-level io errors to appear in the "right" window.
+* Zlonix would like me to commit his /on signal patch
+* Zlonix would like per-screen toplines
 
 [See http://www.epicsol.org/PROJECTS for things to come in the future]
 [See http://www.epicsol.org/CHANGELOG5 for things that changed in the past]
@@ -99,3 +98,5 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Eliminate u_* type bsd-isms so we can compile with -ansi on linux.
 * Add /lastlog -rewrite (see UPDATES)
 * Add /set lastlog_rewrite as a special favor for larne.
+* Fix a bug with /lastlog (in previous commit)
+* Add dyanmic support for $xform()s, which I'll be using very soon.

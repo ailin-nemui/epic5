@@ -1,4 +1,4 @@
-/* $EPIC: ircaux.c,v 1.173 2007/07/20 22:29:32 jnelson Exp $ */
+/* $EPIC: ircaux.c,v 1.174 2007/08/02 22:12:18 jnelson Exp $ */
 /*
  * ircaux.c: some extra routines... not specific to irc... that I needed 
  *
@@ -5280,6 +5280,10 @@ struct Transformer default_transformers[] = {
 {	-1,	NULL,		0,	NULL,		NULL		}
 };
 
+int	max_transform;
+int	max_number_of_transforms = 256;
+struct Transformer transformers[256];		/* XXX */
+
 size_t	transform_string (int type, int encoding, const char *meta, const char *orig_str, size_t orig_str_len, char *dest_str, size_t dest_str_len)
 {
 	int	x;
@@ -5288,14 +5292,14 @@ size_t	transform_string (int type, int encoding, const char *meta, const char *o
 	meta_len = meta ? strlen(meta) : 0;
 
 	*dest_str = 0;
-	for (x = 0; default_transformers[x].name; x++)
+	for (x = 0; transformers[x].name; x++)
 	{
-	    if (default_transformers[x].refnum == type)
+	    if (transformers[x].refnum == type)
 	    {
 		if (encoding)
-			return default_transformers[x].encoder(orig_str, orig_str_len, meta, meta_len, dest_str, dest_str_len);
+			return transformers[x].encoder(orig_str, orig_str_len, meta, meta_len, dest_str, dest_str_len);
 		else
-			return default_transformers[x].decoder(orig_str, orig_str_len, meta, meta_len, dest_str, dest_str_len);
+			return transformers[x].decoder(orig_str, orig_str_len, meta, meta_len, dest_str, dest_str_len);
 	    }
 	}
 	return 0;
@@ -5305,12 +5309,12 @@ int	lookup_transform (const char *str, int *numargs)
 {
 	int	x = 0;
 
-	for (x = 0; default_transformers[x].name; x++)
+	for (x = 0; transformers[x].name; x++)
 	{
-		if (!my_stricmp(default_transformers[x].name, str))
+		if (!my_stricmp(transformers[x].name, str))
 		{
-			*numargs = default_transformers[x].takes_meta;
-			return default_transformers[x].refnum;
+			*numargs = transformers[x].takes_meta;
+			return transformers[x].refnum;
 		}
 	}
 	return -1;
@@ -5322,11 +5326,61 @@ char *	valid_transforms (void)
 	char *	retval = NULL;
 	size_t	cluep;
 
-	for (x = 0; default_transformers[x].name; x++)
+	for (x = 0; transformers[x].name; x++)
 	{
 		malloc_strcat_word_c(&retval, space, 
-			default_transformers[x].name, DWORD_NO, &cluep);
+			transformers[x].name, DWORD_NO, &cluep);
 	}
 	return retval;
 }
+
+int	register_transform (const char *name, int takes_meta, ssize_t (*encoder)(const char *, size_t, const void *, size_t, char *, size_t), ssize_t (*decoder)(const char *, size_t, const void *, size_t, char *, size_t))
+{
+	int	i, max = 0;
+
+	for (i = 0; i < max_number_of_transforms; i++)
+	{
+		if (transformers[i].refnum == -1)
+		{
+			transformers[i].refnum = i;
+			transformers[i].name = malloc_strdup(name);
+			transformers[i].takes_meta = takes_meta;
+			transformers[i].encoder = encoder;
+			transformers[i].decoder = decoder;
+			return i;
+		}
+	} 
+}
+
+int	unregister_transform (int i)
+{
+	/* We don't change 'refnum' so this entry doesn't get re-used! */
+	new_free(&transformers[i].name);
+	transformers[i].takes_meta = 0;
+	transformers[i].encoder = NULL;
+	transformers[i].decoder = NULL;
+}
+
+void	init_transforms (void)
+{
+	int	i = 0;
+
+	for (i = 0; i < max_number_of_transforms; i++)
+	{
+		transformers[i].refnum = -1;
+		transformers[i].name = NULL;
+		transformers[i].takes_meta = 0;
+		transformers[i].encoder = NULL;
+		transformers[i].decoder = NULL;
+	}
+
+	for (i = 0; default_transformers[i].name; i++)
+	{
+		register_transform(default_transformers[i].name,
+				   default_transformers[i].takes_meta,
+				   default_transformers[i].encoder,
+				   default_transformers[i].decoder);
+	}
+}
+
 
