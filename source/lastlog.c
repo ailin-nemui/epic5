@@ -1,4 +1,4 @@
-/* $EPIC: lastlog.c,v 1.68 2007/07/20 23:03:59 jnelson Exp $ */
+/* $EPIC: lastlog.c,v 1.69 2007/08/02 16:36:58 jnelson Exp $ */
 /*
  * lastlog.c: handles the lastlog features of irc. 
  *
@@ -732,7 +732,8 @@ BUILT_IN_COMMAND(lastlog)
 						(long)l->when,
 						(long)l->winref,
 						(long)l->level,
-						l->target, l->msg);
+						l->target?l->target:".",
+						l->msg?l->msg:".");
 
 				n = expand_alias(rewrite, vitals);
 				file_put_it(outfp, "%s", n);
@@ -815,7 +816,8 @@ BUILT_IN_COMMAND(lastlog)
 						(long)l->when,
 						(long)l->winref,
 						(long)l->level,
-						l->target, l->msg);
+						l->target?l->target:".",
+						l->msg?l->msg:".");
 
 				n = expand_alias(rewrite, vitals);
 				file_put_it(outfp, "%s", n);
