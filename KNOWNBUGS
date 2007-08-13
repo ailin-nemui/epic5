@@ -7,6 +7,12 @@ KNOWN ERRATA (eg, bugs, or unresolved requests):
 *  What happens when % appears in a public in an implied hook?
        @ hookctl(set list public implied {%B<%R${isoper($0) ? [*] :
                                         []}%C$chanflag($0 $1)%n$0%B>%n $2-}); 
+* <shatter> DELETE_PREVIOUS_WORD 
+  <shatter> this will be a line with that being used 
+  <shatter> this will be a line with that bein 
+  <shatter> this will be a line with tha 
+* Why is there a /set realname but an /ircuser ?
+* Twincest wants a way to be able to change a dcc's alternate filename
 
 ISSUES OF INTEREST
 ------------------
@@ -100,3 +106,7 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Add /set lastlog_rewrite as a special favor for larne.
 * Fix a bug with /lastlog (in previous commit)
 * Add dyanmic support for $xform()s, which I'll be using very soon.
+* Fix configure so --with-threaded-stdout pulls in -pthread
+* Include some commented out code that I'm ruminating over for input line
+* Create CURSOR_LEFT and CURSOR_RIGHT macros to avoid assigning LOGICAL_CURSOR
+* Default xforms now don't need to be ordered, or have default refnums.

@@ -1,4 +1,4 @@
-/* $EPIC: input.c,v 1.47 2007/07/20 22:29:32 jnelson Exp $ */
+/* $EPIC: input.c,v 1.48 2007/08/13 03:26:42 jnelson Exp $ */
 /*
  * input.c: does the actual input line stuff... keeps the appropriate stuff
  * on the input line, handles insert/delete of characters/words... the whole
@@ -75,6 +75,74 @@
  */
 	static	char *	input_prompt;
 
+#if 0
+typedef struct InputItem {
+	struct InputItem *next;
+	struct InputItem *prev;
+
+	wchar_t	character;
+	int	column;
+	int	num_columns;
+} InputItem;
+
+InputItem *	new_input_item (wchar_t wc)
+{
+	InputItem *ii;
+
+	ii = (InputItem *)new_malloc(sizeof InputItem);
+	ii->next = NULL;
+	ii->prev = NULL;
+	ii->character = wc;
+	ii->column = -1;
+	ii->num_columns = wcwidth(wc);
+}
+
+void	delete_input_item (InputItem **ii)
+{
+	(*ii)->next = NULL;
+	(*ii)->prev = NULL;
+	(*ii)->character = L'\0';
+	(*ii)->column = -1;
+	(*ii)->num_columns = -1;
+	new_free((char **)ii);
+}
+
+void	add_item_to_input (InputItem *prev, InputItem *item)
+{
+	InputItem *next;
+	prev->next = item;
+	item->prev = prev;
+	next->prev = item;
+	item->next = next;
+	renumber_columns(item);
+}
+
+void	renumber_columns (InputItem *item);
+{
+	for (; item; item = item->next)
+	    item->column = item->prev->column + item->prev->num_columns;
+}
+
+void	delete_input_item_chain (InputItem **ii)
+{
+	if ((*ii)->next)
+		delete_input_item_chain((*ii)->next);
+	if ((*ii)->next)
+		panic("delete_input_item_chain didn't delete next item");
+	(*ii)->prev->next = NULL;
+	(*ii)->prev = NULL;
+	delete_input_item(ii);
+}
+
+void	set_cut_anchor (InputItem *i)
+{
+}
+
+void	cut_input_line (InputItem *first, InputItem *last)
+{
+}
+#endif
+
 /* 
  * These are sanity macros.  The file was completely unreadable before 
  * I put these in here.  I make no apologies for them.
@@ -111,6 +179,8 @@
 #define INPUT_BUFFER 		current_screen->input_buffer
 #define PHYSICAL_CURSOR 	current_screen->input_cursor
 #define LOGICAL_CURSOR 		current_screen->buffer_pos
+#define CURSOR_RIGHT		LOGICAL_CURSOR--
+#define CURSOR_LEFT		LOGICAL_CURSOR++
 #define THIS_CHAR 		INPUT_BUFFER[LOGICAL_CURSOR]
 #define PREV_CHAR 		INPUT_BUFFER[LOGICAL_CURSOR-1]
 #define NEXT_CHAR 		INPUT_BUFFER[LOGICAL_CURSOR+1]
@@ -153,9 +223,6 @@ void 	cursor_to_input (void)
 
 	for (screen = screen_list; screen; screen = screen->next)
 	{
-/*
-		if (screen->alive && is_cursor_in_display(screen))
-*/
 		if (screen->alive)
 		{
 			output_screen = screen;
@@ -521,13 +588,13 @@ void	input_move_cursor (int dir)
 	{
 		while (dir-- > 0)
 			if (THIS_CHAR)
-				LOGICAL_CURSOR++;
+				CURSOR_RIGHT;
 	}
 	else if (dir < 0)
 	{
 		while (dir++ < 0) 
 			if (LOGICAL_CURSOR > 0)
-				LOGICAL_CURSOR--;
+				CURSOR_LEFT;
 	}
 }
 
@@ -911,7 +978,7 @@ BUILT_IN_KEYBINDING(input_transpose_characters)
 
 	/* If we're at the end of input, move back to the last char */
 	if (!THIS_CHAR && LOGICAL_CURSOR > 1)
-		LOGICAL_CURSOR--;
+		CURSOR_LEFT;
 
 	/* Do nothing if there are not two characters to swap. */
 	if (LOGICAL_CURSOR < 2)

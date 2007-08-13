@@ -1,4 +1,4 @@
-/* $EPIC: ircaux.c,v 1.174 2007/08/02 22:12:18 jnelson Exp $ */
+/* $EPIC: ircaux.c,v 1.175 2007/08/13 03:26:42 jnelson Exp $ */
 /*
  * ircaux.c: some extra routines... not specific to irc... that I needed 
  *
@@ -5262,21 +5262,21 @@ struct Transformer
 };
 
 struct Transformer default_transformers[] = {
-{	1,	"URL",		0,	url_encoder,	url_decoder	},
-{	2,	"ENC",		0,	enc_encoder,	enc_decoder	},
-{	3,	"B64",		0,	b64_encoder,	b64_decoder	},
-{	4,	"SED",		1,	sed_encoder,	sed_decoder	},
-{	5,	"CTCP",		0,	ctcp_encoder,	ctcp_decoder	},
-{	6,	"NONE",		0,	null_encoder,	null_encoder	},
-{	7,	"DEF",		0,	crypt_encoder,	crypt_decoder	},
+{	0,	"URL",		0,	url_encoder,	url_decoder	},
+{	0,	"ENC",		0,	enc_encoder,	enc_decoder	},
+{	0,	"B64",		0,	b64_encoder,	b64_decoder	},
+{	0,	"SED",		1,	sed_encoder,	sed_decoder	},
+{	0,	"CTCP",		0,	ctcp_encoder,	ctcp_decoder	},
+{	0,	"NONE",		0,	null_encoder,	null_encoder	},
+{	0,	"DEF",		0,	crypt_encoder,	crypt_decoder	},
+{	0,	"SHA256",	0,	sha256_encoder,	sha256_encoder	},
 #ifdef HAVE_SSL
-{	8,	"BF",		1,	blowfish_encoder, blowfish_decoder },
-{	9,	"CAST",		1,	cast5_encoder,	cast5_decoder	},
-{	10,	"SHA256",	0,	sha256_encoder,	sha256_encoder	},
-{	11,	"AES",		1,	aes_encoder,	aes_decoder	},
-{	12,	"AESSHA",	1,	aessha_encoder,	aessha_decoder	},
+{	0,	"BF",		1,	blowfish_encoder, blowfish_decoder },
+{	0,	"CAST",		1,	cast5_encoder,	cast5_decoder	},
+{	0,	"AES",		1,	aes_encoder,	aes_decoder	},
+{	0,	"AESSHA",	1,	aessha_encoder,	aessha_decoder	},
 #endif
-{	13,	"ALL",		0,	all_encoder,	all_encoder	},
+{	0,	"ALL",		0,	all_encoder,	all_encoder	},
 {	-1,	NULL,		0,	NULL,		NULL		}
 };
 

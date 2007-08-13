@@ -4,9 +4,9 @@ dnl except those bits attributed otherwise.
 dnl thanks to the screen 3.3 configure.in for giving me examples to
 dnl work from and steal ;)
 dnl
-dnl @(#)$Id: configure.in,v 1.56 2007/04/12 02:37:22 jnelson Exp $
+dnl @(#)$Id: configure.in,v 1.57 2007/08/13 03:26:38 jnelson Exp $
 
-AC_REVISION($Revision: 1.56 $)dnl
+AC_REVISION($Revision: 1.57 $)dnl
 AC_INIT(source/irc.c)
 AC_CONFIG_HEADER(include/defs.h)
 
@@ -64,12 +64,16 @@ AC_ARG_WITH(threaded-stdout,
 		with_threaded_stdout="no"
 	elif test "x$withval" = "xy" ; then
 		with_threaded_stdout="yes"
+		CFLAGS="$CFLAGS -pthread"
 	elif test "x$withval" = "xY" ; then
 		with_threaded_stdout="yes"
+		CFLAGS="$CFLAGS -pthread"
 	elif test "x$withval" = "xyes" ; then
 		with_threaded_stdout="yes"
+		CFLAGS="$CFLAGS -pthread"
 	elif test "x$withval" = "xYES" ; then
 		with_threaded_stdout="yes"
+		CFLAGS="$CFLAGS -pthread"
 	else
 		with_threaded_stdout="no"
 	fi
