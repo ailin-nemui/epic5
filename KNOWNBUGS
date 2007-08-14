@@ -7,12 +7,9 @@ KNOWN ERRATA (eg, bugs, or unresolved requests):
 *  What happens when % appears in a public in an implied hook?
        @ hookctl(set list public implied {%B<%R${isoper($0) ? [*] :
                                         []}%C$chanflag($0 $1)%n$0%B>%n $2-}); 
-* <shatter> DELETE_PREVIOUS_WORD 
-  <shatter> this will be a line with that being used 
-  <shatter> this will be a line with that bein 
-  <shatter> this will be a line with tha 
 * Why is there a /set realname but an /ircuser ?
 * Twincest wants a way to be able to change a dcc's alternate filename
+* alias_show_realname() should use a value that each server should cache.
 
 ISSUES OF INTEREST
 ------------------
@@ -111,3 +108,5 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Create CURSOR_LEFT and CURSOR_RIGHT macros to avoid assigning LOGICAL_CURSOR
 * Default xforms now don't need to be ordered, or have default refnums.
 * Fix BACKWARD_WORD or PREVIOUS_WORD or whatever it's called.
+* Add /SET DEFAULT_REALNAME and DEFAULT_USERNAME
+* Add scripted /set realname and /ircuser in builtins for backwards compat.

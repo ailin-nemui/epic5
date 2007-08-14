@@ -1,4 +1,4 @@
-/* $EPIC: vars.c,v 1.99 2007/07/20 23:03:59 jnelson Exp $ */
+/* $EPIC: vars.c,v 1.100 2007/08/14 02:29:50 jnelson Exp $ */
 /*
  * vars.c: All the dealing of the irc variables are handled here. 
  *
@@ -297,6 +297,10 @@ void 	init_variables_stage1 (void)
 	VAR(DCC_USE_GATEWAY_ADDR, BOOL, NULL)
 #define DEFAULT_DEBUG 0
 	VAR(DEBUG, INT,  NULL);
+#define DEFAULT_DEFAULT_REALNAME NULL
+	VAR(DEFAULT_REALNAME, STR,  NULL);
+#define DEFAULT_DEFAULT_USERNAME NULL
+	VAR(DEFAULT_USERNAME, STR, NULL);
 	VAR(DISPATCH_UNKNOWN_COMMANDS, BOOL, NULL);
 	VAR(DISPLAY, BOOL, NULL);
 	VAR(DO_NOTIFY_IMMEDIATELY, BOOL, NULL);
@@ -355,11 +359,6 @@ void 	init_variables_stage1 (void)
 	VAR(PAD_CHAR, CHAR, NULL);
 	VAR(QUIT_MESSAGE, STR,  NULL);
 	VAR(RANDOM_SOURCE, INT,  NULL);
-#define DEFAULT_REALNAME NULL
-	VAR(REALNAME, STR,  NULL);
-#if 0
-	VAR(REVERSE_STATUS_LINE, BOOL, build_status);
-#endif
 	VAR(SCREEN_OPTIONS, STR,  NULL);
 	VAR(SCROLLBACK, INT,  set_scrollback_size);
 	VAR(SCROLLBACK_RATIO, INT,  NULL);

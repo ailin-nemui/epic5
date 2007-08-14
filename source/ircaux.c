@@ -1,4 +1,4 @@
-/* $EPIC: ircaux.c,v 1.175 2007/08/13 03:26:42 jnelson Exp $ */
+/* $EPIC: ircaux.c,v 1.176 2007/08/14 02:29:50 jnelson Exp $ */
 /*
  * ircaux.c: some extra routines... not specific to irc... that I needed 
  *
@@ -2527,7 +2527,15 @@ static char dump[640];
 /* XXXX this doesnt belong here. im not sure where it goes, though. */
 char *	get_userhost (void)
 {
-	strlcpy(userhost, username, sizeof userhost);
+	static char userhost[BIG_BUFFER_SIZE];
+
+	const char *x = get_string_var(DEFAULT_USERNAME_VAR);
+
+	if (x && *x)
+		strlcpy(userhost, x, sizeof userhost);
+	else
+		strlcpy(userhost, "Unknown", sizeof userhost);
+
 	strlcat(userhost, "@", sizeof userhost);
 	strlcat(userhost, hostname, sizeof userhost);
 	return userhost;

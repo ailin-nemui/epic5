@@ -1,4 +1,4 @@
-/* $EPIC: mail.c,v 1.25 2007/04/12 03:24:14 jnelson Exp $ */
+/* $EPIC: mail.c,v 1.26 2007/08/14 02:29:50 jnelson Exp $ */
 /*
  * mail.c -- a gross simplification of mail checking.
  * Only unix maildrops (``mbox'') are supported.
@@ -81,7 +81,7 @@ static int	init_mbox_checking (void)
 
 	if (getenv("MAIL") && file_exists(getenv("MAIL")))
 		mbox_path = malloc_strdup(getenv("MAIL"));
-	else if (!path_search(username, mbox_path_list, tmp_mbox_path))
+	else if (!path_search(getenv("LOGNAME"), mbox_path_list, tmp_mbox_path))
 		mbox_path = malloc_strdup(tmp_mbox_path);
 	else
 	{

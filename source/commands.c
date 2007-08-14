@@ -1,4 +1,4 @@
-/* $EPIC: commands.c,v 1.169 2007/06/25 22:09:29 jnelson Exp $ */
+/* $EPIC: commands.c,v 1.170 2007/08/14 02:29:50 jnelson Exp $ */
 /*
  * commands.c -- Stuff needed to execute commands in ircII.
  *		 Includes the bulk of the built in commands for ircII.
@@ -144,7 +144,6 @@ static	void	send_comm 	(const char *, char *, const char *);
 static	void	send_invite 	(const char *, char *, const char *);
 static	void	send_kick 	(const char *, char *, const char *);
 static	void	send_channel_com (const char *, char *, const char *);
-static  void    set_username 	(const char *, char *, const char *);
 static	void	setenvcmd	(const char *, char *, const char *);
 static	void	squitcmd	(const char *, char *, const char *);
 static	void	subpackagecmd	(const char *, char *, const char *);
@@ -236,7 +235,6 @@ static	IrcCommand irc_command[] =
 	{ "INPUT",	inputcmd	},
 	{ "INPUT_CHAR",	inputcmd	},
 	{ "INVITE",	send_invite	},
-	{ "IRCUSER",	set_username	},
 	{ "ISON",	isoncmd		},
 	{ "JOIN",	e_channel	},
 	{ "KICK",	send_kick	},
@@ -2498,6 +2496,7 @@ BUILT_IN_COMMAND(sendlinecmd)
 	from_server = server;
 }
 
+#if 0
 /* 
  * IRCUSER command. Changes your userhost on the fly.  Takes effect
  * the next time you connect to a server 
@@ -2518,6 +2517,7 @@ BUILT_IN_COMMAND(set_username)
 		say ("Usage: /IRCUSER <text>");
 #endif
 }
+#endif
 
 BUILT_IN_COMMAND(setenvcmd)
 {

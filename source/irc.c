@@ -1,4 +1,4 @@
-/* $EPIC: irc.c,v 1.1161 2007/08/14 02:04:52 jnelson Exp $ */
+/* $EPIC: irc.c,v 1.1162 2007/08/14 02:29:50 jnelson Exp $ */
 /*
  * ircII: a new irc client.  I like it.  I hope you will too!
  *
@@ -52,7 +52,7 @@ const char internal_version[] = "20070603";
 /*
  * In theory, this number is incremented for every commit.
  */
-const unsigned long	commit_id = 1489;
+const unsigned long	commit_id = 1490;
 
 /*
  * As a way to poke fun at the current rage of naming releases after
@@ -186,8 +186,10 @@ char		*startup_file = NULL,		/* Set when epicrc loaded */
 		*default_channel = NULL,	/* Channel to join on connect */
 		nickname[NICKNAME_LEN + 1],	/* users nickname */
 		hostname[NAME_LEN + 1],		/* name of current host */
+#if 0
 		username[NAME_LEN + 1],		/* usernameof user */
 		userhost[NAME_LEN + 1],		/* userhost of user */
+#endif
 		*send_umode = NULL,		/* sent umode */
 		*last_notify_nick = (char *) 0;	/* last detected nickname */
 const char	empty_string[] = "",		/* just an empty string */
@@ -483,7 +485,9 @@ static	void	parse_args (int argc, char **argv)
 	extern int optind;
 
 	*nickname = 0;
+#if 0
 	*username = 0;
+#endif
 
 	/* 
 	 * Its probably better to parse the environment variables
@@ -496,11 +500,11 @@ static	void	parse_args (int argc, char **argv)
 		{
 			if ((ptr = strchr(entry->pw_gecos, ',')))
 				*ptr = 0;
-			set_var_value(REALNAME_VAR, entry->pw_gecos, 0);
+			set_var_value(DEFAULT_REALNAME_VAR, entry->pw_gecos, 0);
 		}
 
 		if (entry->pw_name && *(entry->pw_name))
-			strlcpy(username, entry->pw_name, sizeof username);
+			set_var_value(DEFAULT_USERNAME_VAR, entry->pw_name, 0);
 
 		if (entry->pw_dir && *(entry->pw_dir))
 			malloc_strcpy(&my_path, entry->pw_dir);
@@ -520,28 +524,28 @@ static	void	parse_args (int argc, char **argv)
 	 * username.  I think everyone would have to agree this is the most
 	 * reasonable way to handle this.
 	 */
-	if (!*username)
+	if (empty(get_string_var(DEFAULT_USERNAME_VAR)))
 		if ((ptr = getenv("LOGNAME")) && *ptr)
-			strlcpy(username, ptr, sizeof username);
+			set_var_value(DEFAULT_USERNAME_VAR, ptr, 0);
 
 #ifndef ALLOW_USER_SPECIFIED_LOGIN
-	if (!*username)
+	if (empty(get_string_var(DEFAULT_USERNAME_VAR)))
 #endif
 		if ((ptr = getenv("IRCUSER")) && *ptr) 
-			strlcpy(username, ptr, sizeof username);
+			set_var_value(DEFAULT_USERNAME_VAR, ptr, 0);
 #ifdef ALLOW_USER_SPECIFIED_LOGIN
-		else if (*username)
+		else if (empty(get_string_var(DEFAULT_USERNAME_VAR)))
 			;
 #endif
 		else if ((ptr = getenv("USER")) && *ptr) 
-			strlcpy(username, ptr, sizeof username);
+			set_var_value(DEFAULT_USERNAME_VAR, ptr, 0);
 		else if ((ptr = getenv("HOME")) && *ptr)
 		{
 			char *ptr2 = strrchr(ptr, '/');
 			if (ptr2)
-				strlcpy(username, ptr2, sizeof username);
+				set_var_value(DEFAULT_USERNAME_VAR, ptr2, 0);
 			else
-				strlcpy(username, ptr, sizeof username);
+				set_var_value(DEFAULT_USERNAME_VAR, ptr, 0);
 		}
 		else
 		{
@@ -552,14 +556,16 @@ static	void	parse_args (int argc, char **argv)
 		}
 
 	if ((ptr = getenv("IRCNAME")))
-		set_var_value(REALNAME_VAR, ptr, 0);
+		set_var_value(DEFAULT_REALNAME_VAR, ptr, 0);
 	else if ((ptr = getenv("NAME")))
-		set_var_value(REALNAME_VAR, ptr, 0);
+		set_var_value(DEFAULT_REALNAME_VAR, ptr, 0);
+	else if ((ptr = getenv("REALNAME")))
+		set_var_value(DEFAULT_REALNAME_VAR, ptr, 0);
 	else
 	{
-		ptr = get_string_var(REALNAME_VAR);
+		ptr = get_string_var(DEFAULT_REALNAME_VAR);
 		if (!ptr || !*ptr)
-			set_var_value(REALNAME_VAR, "*Unknown*", 0);
+			set_var_value(DEFAULT_REALNAME_VAR, "*Unknown*", 0);
 	}
 
 	if ((ptr = getenv("HOME")))
@@ -718,7 +724,7 @@ static	void	parse_args (int argc, char **argv)
 
 			case 'z':
 #ifdef ALLOW_USER_SPECIFIED_LOGIN
-				strlcpy(username, optarg, sizeof username);
+				set_var_value(DEFAULT_USERNAME_VAR, optarg, 0);
 #endif
 				break;
 
@@ -752,7 +758,8 @@ static	void	parse_args (int argc, char **argv)
 	 * so do a final check on whatever nickname we're going to use.
 	 */
 	if (!*nickname)
-		strlcpy(nickname, username, sizeof nickname);
+		strlcpy(nickname, get_string_var(DEFAULT_USERNAME_VAR), 
+				sizeof nickname);
 
 	for (; *argv; argc--, argv++)
 		if (**argv)

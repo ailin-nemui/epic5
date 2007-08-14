@@ -1,5 +1,18 @@
 EPIC5-0.3.4
 
+*** News 08/13/2007 -- New /SETs, /SET DEFAULT_REALNAME and DEFAULT_USERNAME
+	Per a discussion on the list, it was decided to introduce two new
+	sets, /SET DEFAULT_REALNAME and /SET DEFAULT_USERNAME.  These control
+	what realname and username should be sent to the server each time you
+	connect.  Although I can't stop you, you shouldn't unset these 
+	variables if you know what is good for you.
+
+	/SET DEFAULT_REALNAME replaces /SET REALNAME, which confused people
+	who though that /setting it changed their realname immediately
+
+	/SET DEFAULT_USERNAME replaces /ircuser which confused people
+	because they thought it was going to be a /set.
+
 *** News 07/20/2007 -- New /SET, /SET LASTLOG_REWRITE
 	This provides the default value to /lastlog -rewrite whenever you
 	don't use the /lastlog -rewrite flag.  If you always want the 

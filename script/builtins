@@ -581,3 +581,14 @@ set verbose_ctcp on;
 ^on ?ctcp "*" {
 	return ${getset(verbose_ctcp) == 'on' ? 0 : 1};
 };
+
+# REALNAME/IRCUSER
+
+on %set "REALNAME *" {
+	set default_realname $1-
+};
+
+alias ircuser {
+	set default_username $*
+};
+
