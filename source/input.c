@@ -1,4 +1,4 @@
-/* $EPIC: input.c,v 1.48 2007/08/13 03:26:42 jnelson Exp $ */
+/* $EPIC: input.c,v 1.49 2007/08/14 02:04:52 jnelson Exp $ */
 /*
  * input.c: does the actual input line stuff... keeps the appropriate stuff
  * on the input line, handles insert/delete of characters/words... the whole
@@ -179,8 +179,8 @@ void	cut_input_line (InputItem *first, InputItem *last)
 #define INPUT_BUFFER 		current_screen->input_buffer
 #define PHYSICAL_CURSOR 	current_screen->input_cursor
 #define LOGICAL_CURSOR 		current_screen->buffer_pos
-#define CURSOR_RIGHT		LOGICAL_CURSOR--
-#define CURSOR_LEFT		LOGICAL_CURSOR++
+#define CURSOR_RIGHT		LOGICAL_CURSOR++
+#define CURSOR_LEFT		LOGICAL_CURSOR--
 #define THIS_CHAR 		INPUT_BUFFER[LOGICAL_CURSOR]
 #define PREV_CHAR 		INPUT_BUFFER[LOGICAL_CURSOR-1]
 #define NEXT_CHAR 		INPUT_BUFFER[LOGICAL_CURSOR+1]
@@ -656,7 +656,7 @@ void	set_input_prompt (void *stuff)
 }
 
 
-#define WHITESPACE(x) (my_isspace(x) || ispunct(x))
+#define WHITESPACE(x) (isspace(x) || ispunct(x))
 
 /* 
  * Why did i put these in this file?  I dunno.  But i do know that the ones 
@@ -706,7 +706,7 @@ BUILT_IN_KEYBINDING(input_backward_word)
 		/* If we overshot our goal, then move forward */
 		/* But NOT if at start of input line! (July 6th, 1999) */
 		if ((LOGICAL_CURSOR > 0) && WHITESPACE(THIS_CHAR))
-			input_move_cursor(-1);
+			input_move_cursor(1);
 	}
 
 	update_input(last_input_screen, UPDATE_JUST_CURSOR);
@@ -824,7 +824,7 @@ BUILT_IN_KEYBINDING(input_delete_to_previous_space)
 		return;
 
 	anchor = LOGICAL_CURSOR;
-	while (LOGICAL_CURSOR > 0 && !my_isspace(PREV_CHAR))
+	while (LOGICAL_CURSOR > 0 && !isspace(PREV_CHAR))
 		input_move_cursor(-1);
 	cut_input(anchor);
 }
@@ -978,7 +978,7 @@ BUILT_IN_KEYBINDING(input_transpose_characters)
 
 	/* If we're at the end of input, move back to the last char */
 	if (!THIS_CHAR && LOGICAL_CURSOR > 1)
-		CURSOR_LEFT;
+		input_move_cursor(-1);
 
 	/* Do nothing if there are not two characters to swap. */
 	if (LOGICAL_CURSOR < 2)
