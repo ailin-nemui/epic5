@@ -1,4 +1,4 @@
-/* $EPIC: window.c,v 1.184 2007/07/04 13:33:02 jnelson Exp $ */
+/* $EPIC: window.c,v 1.185 2007/08/21 04:36:46 jnelson Exp $ */
 /*
  * window.c: Handles the organzation of the logical viewports (``windows'')
  * for irc.  This includes keeping track of what windows are open, where they
@@ -4675,6 +4675,7 @@ static int	new_search_term (const char *arg)
 		regerror(errcode, last_regex, errstr, sizeof(errstr));
 		say("The regex [%s] isn't acceptable because [%s]", 
 				arg, errstr);
+		new_free((char **)&last_regex);
 		return -1;
 	}
 	return 0;
