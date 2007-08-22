@@ -1,4 +1,4 @@
-/* $EPIC: server.c,v 1.228 2007/08/14 02:29:50 jnelson Exp $ */
+/* $EPIC: server.c,v 1.229 2007/08/22 18:40:26 howl Exp $ */
 /*
  * server.c:  Things dealing with that wacky program we call ircd.
  *
@@ -493,6 +493,8 @@ static	int	serverinfo_to_newserv (ServerInfo *si)
 	s->addrs = NULL;
 	s->next_addr = NULL;
 	s->autoclose = 1;
+	s->default_realname = NULL;
+	s->realname = NULL;
 
 	s->doing_privmsg = 0;
 	s->doing_notice = 0;
@@ -2096,13 +2098,19 @@ void	register_server (int refnum, const char *nick)
 	if (!empty(s->info->password))
 		send_to_aserver(refnum, "PASS %s", s->info->password);
 
+	malloc_strcpy (&s->realname, 
+		(s->default_realname == NULL) ?
+			(get_string_var(DEFAULT_REALNAME_VAR) ?
+		 		get_string_var(DEFAULT_REALNAME_VAR) : 
+				space) :
+		s->default_realname);
+
 	send_to_aserver(refnum, "USER %s %s %s :%s", 
 			get_string_var(DEFAULT_USERNAME_VAR),
 			(send_umode && *send_umode) ? send_umode : 
 			     (LocalHostName ? LocalHostName : hostname), 
 			get_string_var(DEFAULT_USERNAME_VAR),
-			(get_string_var(DEFAULT_REALNAME_VAR) ? 
-			 get_string_var(DEFAULT_REALNAME_VAR) : space));
+			s->realname);
 	change_server_nickname(refnum, nick);
 	if (x_debug & DEBUG_SERVER_CONNECT)
 		yell("Registered with server [%d]", refnum);
@@ -2712,6 +2720,8 @@ SACCESSOR(nick, redirect, NULL)
 SACCESSOR(message, quit_message, get_string_var(QUIT_MESSAGE_VAR))
 SACCESSOR(cookie, cookie, NULL)
 SACCESSOR(ver, version_string, NULL)
+SACCESSOR(name, default_realname, get_string_var(DEFAULT_REALNAME_VAR))
+GET_SATTRIBUTE(realname, NULL)
 
 GET_SATTRIBUTE(unique_id, NULL)
 void	set_server_unique_id (int servref, const char * id)
@@ -3262,6 +3272,8 @@ sorry_wrong_number:
  *	ALTNAMES	All of the alternate server designations
  *			(SETting ALTNAMES replaces all alternate designations)
  *			(This is the only way to delete a designation)
+ *	DEFAULT_REALNAME Default realname, used at next connect.
+ *	REALNAME	Realname. Read-only.
  */
 char 	*serverctl 	(char *input)
 {
@@ -3405,6 +3417,10 @@ char 	*serverctl 	(char *input)
 			RETURN_INT(get_server_autoclose(refnum));
 		} else if (!my_strnicmp(listc, "FULLDESC", len)) {
 			RETURN_STR(get_server_fulldesc(refnum));
+		} else if (!my_strnicmp(listc, "REALNAME", len)) {
+			RETURN_STR(get_server_realname(refnum));
+		} else if (!my_strnicmp(listc, "DEFAULT_REALNAME", len)) {
+			RETURN_STR(get_server_default_realname(refnum));
 		}
 	} else if (!my_strnicmp(listc, "SET", len)) {
 		GET_INT_ARG(refnum, input);
@@ -3495,6 +3511,11 @@ char 	*serverctl 	(char *input)
 			GET_INT_ARG(newval, input);
 			set_server_autoclose(refnum, newval);
 			RETURN_INT(1);
+		} else if (!my_strnicmp(listc, "REALNAME", len)) {
+			set_server_default_realname(refnum, input);
+		}
+		else if (!my_strnicmp(listc, "DEFAULT_REALNAME", len)) {
+			set_server_default_realname(refnum, input);
 		}
 	} else if (!my_strnicmp(listc, "OMATCH", len)) {
 		int	i;

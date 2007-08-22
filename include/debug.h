@@ -39,6 +39,7 @@ extern	char *	function_xdebug (char *);
 #define DEBUG_EXTRACTW_DEBUG	1 << 26
 #define DEBUG_MESSAGE_FROM	1 << 27
 #define DEBUG_WHO_QUEUE		1 << 28
-#define DEBUG_DWORD 1 << 29
+#define DEBUG_UNICODE		1 << 29
+#define DEBUG_DWORD 1 << 30
 
 #endif

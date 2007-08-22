@@ -8,9 +8,7 @@ KNOWN ERRATA (eg, bugs, or unresolved requests):
        @ hookctl(set list public implied {%B<%R${isoper($0) ? [*] :
                                         []}%C$chanflag($0 $1)%n$0%B>%n $2-}); 
 * Twincest wants a way to be able to change a dcc's alternate filename
-* alias_show_realname() should use a value that each server should cache.
-* Howl wants a way to specify a minimum number of lines before (Held:) shows.
-* When /window search_back fails, what should i do with ''last_regex''?
+* $hookctl(list <anything invalid>) crashes the client. 
 
 ISSUES OF INTEREST
 ------------------
@@ -111,4 +109,6 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Fix BACKWARD_WORD or PREVIOUS_WORD or whatever it's called.
 * Add /SET DEFAULT_REALNAME and DEFAULT_USERNAME
 * Add scripted /set realname and /ircuser in builtins for backwards compat.
-* Don't want to regfree() a failed attempt to regcomp(). (rb larne)
+* Add $serverctl(get -1 default_realname) and $serverctl(get -1 realname).
+* Change $Y to reflect current realname for current server.
+* Add $xform(iconv fromcode/tocode ...) wrapper around iconv (3).

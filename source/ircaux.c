@@ -1,4 +1,4 @@
-/* $EPIC: ircaux.c,v 1.176 2007/08/14 02:29:50 jnelson Exp $ */
+/* $EPIC: ircaux.c,v 1.177 2007/08/22 18:40:26 howl Exp $ */
 /*
  * ircaux.c: some extra routines... not specific to irc... that I needed 
  *
@@ -50,6 +50,10 @@
 #include "ctcp.h"
 #include "server.h"
 #include "sedcrypt.h"
+
+#ifdef HAVE_ICONV_OPEN
+# 	include <iconv.h>
+#endif
 
 /*
  * This is the basic overhead for every malloc allocation (8 bytes).
@@ -5260,6 +5264,53 @@ static ssize_t	sha256_encoder (const char *orig, size_t orig_len, const void *me
 	return strlen(dest);
 }
 
+static ssize_t	iconv_recoder (const char *orig, size_t orig_len, const void *meta, size_t meta_len, char *dest, size_t dest_len)
+{
+#ifndef HAVE_ICONV_OPEN
+	return 0;
+#else
+	int sp;
+	size_t len, orig_left = orig_len, dest_left = dest_len, n;
+	char *fromcode, *tocode, *dest_ptr;
+	const char *orig_ptr;
+	iconv_t cd;
+	dest_ptr = (char *) dest;
+	orig_ptr = orig;	
+
+	for (sp = 0; *((char *) meta + sp) != '/'; sp++ < meta_len);
+	if (sp == 0 || sp >= meta_len)
+		return 0;
+	((char *)meta)[sp] = '\0';
+	fromcode = (char *) meta;
+	tocode = (char *) meta + sp + 1;
+	cd = iconv_open (tocode, fromcode);
+	if (cd == (iconv_t) -1)
+	{
+		if (x_debug & DEBUG_UNICODE)
+			yell ("Unicode debug: icon_open(3) failed to use "
+				"%s/%s.", fromcode, tocode);
+		return 0;
+	}
+
+	/* Stuff seems to be working... */
+	while ((n = iconv (cd, &orig_ptr, &orig_left, &dest_ptr, 
+		&dest_left)) != 0)
+	{
+		/* I *THINK* this is a hack. */
+		if (errno == EINVAL || errno == EILSEQ)
+		{
+			orig_ptr++;
+			orig_left--;
+			continue;
+		}
+		break;
+	}
+	iconv_close (cd);
+	return dest_len - dest_left;
+#endif
+}
+
+
 struct Transformer
 {
 	int		refnum;
@@ -5283,6 +5334,9 @@ struct Transformer default_transformers[] = {
 {	0,	"CAST",		1,	cast5_encoder,	cast5_decoder	},
 {	0,	"AES",		1,	aes_encoder,	aes_decoder	},
 {	0,	"AESSHA",	1,	aessha_encoder,	aessha_decoder	},
+#endif
+#ifdef HAVE_ICONV_OPEN
+{	0,	"ICONV",	1,	iconv_recoder,	iconv_recoder	},
 #endif
 {	0,	"ALL",		0,	all_encoder,	all_encoder	},
 {	-1,	NULL,		0,	NULL,		NULL		}

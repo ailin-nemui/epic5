@@ -110,6 +110,9 @@ const	AI	*next_addr;		/* The next one to try upon failure */
 
 	int	ssl_enabled;		/* Current SSL status. */
 
+	char *	realname;		/* The actual realname. */
+	char *	default_realname;	/* The default realname. */
+
         int             doing_privmsg;
         int             doing_notice;
         int             doing_ctcp;
@@ -125,6 +128,7 @@ const	AI	*next_addr;		/* The next one to try upon failure */
         char *          recv_nick;
         char *          sent_nick;
         char *          sent_body;
+
 }	Server;
 extern	Server	**server_list;
 #endif	/* NEED_SERVER_LIST */
