@@ -1,5 +1,28 @@
 EPIC5-0.3.4
 
+*** News 08/22/2007 -- New xform, $xform(ICONV "from/to" text)
+	If your binary is built with iconv support (re-run configure before
+	you tell me it doesn't work!) then you will be able to use iconv()
+	to translate strings from one character encoding to another.  This
+	might be useful to experimentally convert to and from utf8 while 
+	you wait for the unicode-enabled input line to be written.
+
+*** News 08/22/2007 -- Checks for iconv in configure: --with-iconv
+	Configure will now check for libiconv support.  Normally it will
+	look for libiconv.a and iconv.h in the --prefix/lib and 
+	--prefix/include directory, or in /usr/local or /opt or /usr/opt.
+	If your iconv support is not in any of these places, then you must
+	supply the --with-iconv=/path/to/dir where that directory contains
+	"include/iconv.h" and "lib/libiconv.a"
+
+*** News 08/22/2007 -- Checks for alt place in configure: --with-localdir
+	A lot of times you'll have software installed but it won't be in
+	the places the compiler looks for it.  Usually this is /usr/local
+	or /opt or something.  You can use this flag to tell configure to
+	look in this directory in addition to the default directories.  This
+	can aid in ensuring optional dependancies don't get turned off because
+	they're in a directory the compiler doesn't look in.
+
 *** News 08/13/2007 -- New /SETs, /SET DEFAULT_REALNAME and DEFAULT_USERNAME
 	Per a discussion on the list, it was decided to introduce two new
 	sets, /SET DEFAULT_REALNAME and /SET DEFAULT_USERNAME.  These control

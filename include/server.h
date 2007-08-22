@@ -360,6 +360,8 @@ const char *	get_server_cookie         	(int);
 const char *	get_server_last_notify_nick    	(int);
 	void	set_server_unique_id		(int, const char *);
 const char *	get_server_unique_id    	(int);
+	void	set_server_realname		(int, int);
+const char *	get_server_realname		(int);
 
 	void	set_server_funny_min         	(int, int);
 	int	get_server_funny_min         	(int);

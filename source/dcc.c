@@ -1,4 +1,4 @@
-/* $EPIC: dcc.c,v 1.146 2007/06/25 22:09:29 jnelson Exp $ */
+/* $EPIC: dcc.c,v 1.147 2007/08/22 21:57:18 jnelson Exp $ */
 /*
  * dcc.c: Things dealing client to client connections. 
  *
@@ -96,11 +96,11 @@ typedef	struct	DCC_struct
 	int		held;
 	long		refnum;
 	intmax_t	filesize;
+	char *		local_filename;
 	char *		description;
-	char *		filename;
+	char *		othername;
 	char *		user;
 	char *		userhost;
-	char *		othername;
 struct	DCC_struct *	next;
 
 	SS		offer;			/* Their offer */
@@ -388,7 +388,7 @@ static 	void		dcc_erase (DCC_list *erased)
 	close(erased->file);
 	erased->file = -1;
 	new_free(&erased->description);	/* Magic check failure here */
-	new_free(&erased->filename);
+	new_free(&erased->local_filename);
 	new_free(&erased->user);
 	new_free(&erased->othername);
 	new_free((char **)&erased);
@@ -512,7 +512,7 @@ static	DCC_list *dcc_create (
 	new_client->file 		= -1;
 	new_client->filesize 		= filesize;
 	new_client->held		= 0;
-	new_client->filename 		= NULL;
+	new_client->local_filename 	= NULL;
 	new_client->next 		= ClientList;
 	new_client->user 		= malloc_strdup(user);
 	new_client->userhost 		= (FromUserHost && *FromUserHost)
@@ -1936,7 +1936,7 @@ jumpstart_get:
 		}
 
 		new_free(&realfilename);
-		dcc->filename = malloc_strdup(fullname);
+		dcc->local_filename = malloc_strdup(fullname);
 		dcc->open_callback = NULL;
 
 #ifdef MIRC_BROKEN_DCC_RESUME
@@ -4120,7 +4120,7 @@ char *	dccctl (char *input)
 		} else if (!my_strnicmp(listc, "DESCRIPTION", len)) {
 			RETURN_STR(client->description);
 		} else if (!my_strnicmp(listc, "FILENAME", len)) {
-			RETURN_STR(client->filename);
+			RETURN_STR(client->local_filename);
 		} else if (!my_strnicmp(listc, "USER", len)) {
 			RETURN_STR(client->user);
 		} else if (!my_strnicmp(listc, "USERHOST", len)) {
@@ -4216,7 +4216,7 @@ char *	dccctl (char *input)
 		} else if (!my_strnicmp(listc, "DESCRIPTION", len)) {
 			malloc_strcpy(&client->description, input);
 		} else if (!my_strnicmp(listc, "FILENAME", len)) {
-			malloc_strcpy(&client->filename, input);
+			malloc_strcpy(&client->local_filename, input);
 		} else if (!my_strnicmp(listc, "USER", len)) {
 			malloc_strcpy(&client->user, input);
 		} else if (!my_strnicmp(listc, "USERHOST", len)) {
@@ -4280,7 +4280,7 @@ char *	dccctl (char *input)
 				malloc_strcat_word_c(&retval, space, ltoa(client->refnum), DWORD_NO, &clue);
 	} else if (!my_strnicmp(listc, "FILEMATCH", len)) {
 		for (client = ClientList; client; client = client->next)
-			if (wild_match(input, client->filename ? client->filename : EMPTY))
+			if (wild_match(input, client->local_filename ? client->local_filename : EMPTY))
 				malloc_strcat_word_c(&retval, space, ltoa(client->refnum), DWORD_NO, &clue);
 	} else if (!my_strnicmp(listc, "USERMATCH", len)) {
 		for (client = ClientList; client; client = client->next)

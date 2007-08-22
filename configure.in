@@ -4,9 +4,9 @@ dnl except those bits attributed otherwise.
 dnl thanks to the screen 3.3 configure.in for giving me examples to
 dnl work from and steal ;)
 dnl
-dnl @(#)$Id: configure.in,v 1.57 2007/08/13 03:26:38 jnelson Exp $
+dnl @(#)$Id: configure.in,v 1.58 2007/08/22 21:57:16 jnelson Exp $
 
-AC_REVISION($Revision: 1.57 $)dnl
+AC_REVISION($Revision: 1.58 $)dnl
 AC_INIT(source/irc.c)
 AC_CONFIG_HEADER(include/defs.h)
 
@@ -30,6 +30,23 @@ AC_PROG_CPP
 AC_ISC_POSIX
 AC_AIX
 
+dnl ----------------------------------------------------------
+AC_MSG_CHECKING(for an extra library directory)
+AC_ARG_WITH(localdir,
+[  --with-localdir=/usr/local An extra directory to look for stuff.],[
+   if test "x$withval" = "x" ; then
+      with_extra_libdir="no"
+   elif test -d "$withval" ; then
+      with_extra_libdir="yes"
+      LIBS="-L$withval/lib $LIBS"
+      CFLAGS="-I$withval/include/ $CFLAGS"
+   else
+      with_extra_libdir="no"
+   fi
+],[
+   with_extra_libdir="no"
+])
+AC_MSG_RESULT($with_extra_libdir)
 
 dnl ----------------------------------------------------------
 dnl ----------------------------------------------------------
@@ -38,7 +55,6 @@ dnl System specific checks
 dnl
 dnl ----------------------------------------------------------
 dnl ----------------------------------------------------------
-
 
 dnl
 dnl Checking for solaris cc
@@ -277,6 +293,7 @@ AC_CHECK_FUNC(getservbyport, AC_DEFINE(HAVE_GETSERVBYPORT),)
 AC_CHECK_FUNC(gettimeofday, AC_DEFINE(HAVE_GETTIMEOFDAY),)
 AC_CHECK_FUNC(killpg, AC_DEFINE(HAVE_KILLPG),)
 AC_CHECK_FUNC(memmove, AC_DEFINE(HAVE_MEMMOVE),)
+AC_CHECK_FUNC(nanosleep, AC_DEFINE(HAVE_NANOSLEEP),)
 AC_CHECK_FUNC(uname, AC_DEFINE(HAVE_UNAME),)
 AC_CHECK_FUNC(realpath, AC_DEFINE(HAVE_REALPATH),)
 AC_CHECK_FUNC(setenv, AC_DEFINE(HAVE_SETENV),)
@@ -687,6 +704,67 @@ AC_ARG_WITH(socks5,
   esac ],
   AC_MSG_RESULT(no)
 )
+
+
+dnl ----------------------------------------------------------
+dnl
+dnl Iconv support?
+dnl
+AC_ARG_WITH(iconv,
+[  --with-iconv[=PATH]       Include iconv support (DIR is eg /usr/local).],[
+	if test -z "$withval"; then
+		with_iconv="yes"
+	fi
+])
+
+AC_MSG_CHECKING(whether to include iconv support)
+if test "x$with_iconv" = "xno"; then
+	AC_MSG_RESULT(no)
+else
+	saved_LIBS="$LIBS"
+	saved_CFLAGS="$CFLAGS"
+
+	# First just try to see if it exists in the default location
+	LIBS="$saved_LIBS -liconv"
+	CFLAGS="$saved_CFLAGS"
+	AC_TRY_LINK([#include <iconv.h>],
+		[iconv_open(NULL, NULL);], have_iconv="yes")
+
+	# Otherwise, go hunting for it.
+	if test -z "$have_iconv" ; then
+	    for iconvdir in "$with_iconv" "$prefix" /usr/local /opt /usr/opt; do
+		if test -n "$have_iconv"; then
+			break;
+		fi
+
+		if test -z "$iconvdir"; then
+			continue;
+		fi
+
+		if test -f "$iconvdir/include/iconv.h" &&
+			test -f "$iconvdir/lib/libiconv.a"; then
+		    CFLAGS="$saved_CFLAGS -I$iconvdir/include"
+		    LIBS="$saved_LIBS -L$iconvdir/lib -liconv"
+		    AC_TRY_LINK([#include <iconv.h>],
+				[iconv_open(NULL, NULL);], have_iconv="yes")
+		fi
+	    done
+	fi
+
+	# If we found it somewhere, great!  Otherwise, revert.
+	if test ! -n "$have_iconv"; then
+		LIBS="$saved_LIBS"
+		CFLAGS="$saved_CFLAGS"
+		AC_MSG_RESULT(looked but did not find it)
+		if test "x$with_iconv" != "x"; then
+			AC_MSG_ERROR([You requested iconv support, but iconv was not found. Please supply a pathname to iconv])
+		fi
+	else
+		AC_MSG_RESULT(yes)
+	fi
+
+	AC_CHECK_FUNC(iconv_open, AC_DEFINE(HAVE_ICONV),)
+fi
 
 dnl ----------------------------------------------------------
 dnl

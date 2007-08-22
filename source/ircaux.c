@@ -1,4 +1,4 @@
-/* $EPIC: ircaux.c,v 1.177 2007/08/22 18:40:26 howl Exp $ */
+/* $EPIC: ircaux.c,v 1.178 2007/08/22 21:57:18 jnelson Exp $ */
 /*
  * ircaux.c: some extra routines... not specific to irc... that I needed 
  *
@@ -50,10 +50,6 @@
 #include "ctcp.h"
 #include "server.h"
 #include "sedcrypt.h"
-
-#ifdef HAVE_ICONV_OPEN
-# 	include <iconv.h>
-#endif
 
 /*
  * This is the basic overhead for every malloc allocation (8 bytes).
@@ -5264,11 +5260,9 @@ static ssize_t	sha256_encoder (const char *orig, size_t orig_len, const void *me
 	return strlen(dest);
 }
 
+#ifdef HAVE_ICONV
 static ssize_t	iconv_recoder (const char *orig, size_t orig_len, const void *meta, size_t meta_len, char *dest, size_t dest_len)
 {
-#ifndef HAVE_ICONV_OPEN
-	return 0;
-#else
 	int sp;
 	size_t len, orig_left = orig_len, dest_left = dest_len, n;
 	char *fromcode, *tocode, *dest_ptr;
@@ -5307,8 +5301,8 @@ static ssize_t	iconv_recoder (const char *orig, size_t orig_len, const void *met
 	}
 	iconv_close (cd);
 	return dest_len - dest_left;
-#endif
 }
+#endif
 
 
 struct Transformer
@@ -5335,7 +5329,7 @@ struct Transformer default_transformers[] = {
 {	0,	"AES",		1,	aes_encoder,	aes_decoder	},
 {	0,	"AESSHA",	1,	aessha_encoder,	aessha_decoder	},
 #endif
-#ifdef HAVE_ICONV_OPEN
+#ifdef HAVE_ICONV
 {	0,	"ICONV",	1,	iconv_recoder,	iconv_recoder	},
 #endif
 {	0,	"ALL",		0,	all_encoder,	all_encoder	},

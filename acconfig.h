@@ -1,5 +1,5 @@
 /*
- * @(#)$Id: acconfig.h,v 1.37 2006/12/09 18:00:06 jnelson Exp $
+ * @(#)$Id: acconfig.h,v 1.38 2007/08/22 21:57:16 jnelson Exp $
  */
 
 /*
@@ -391,3 +391,13 @@
 
 /* Define this if you want to use threaded stdout */
 #undef WITH_THREADED_STDOUT
+
+/* Define this if you have nanosleep() */
+#undef HAVE_NANOSLEEP
+
+/* Define this if you have <iconv.h> */
+#undef HAVE_ICONV_H
+
+/* Define this if you have iconv_open() */
+#undef HAVE_ICONV
+

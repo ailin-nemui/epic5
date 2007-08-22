@@ -73,6 +73,9 @@
 #include <termcap.h>
 #endif
 
+#ifdef HAVE_ICONV
+# include <iconv.h>
+#endif
 
 /*
  * Deal with brokenness in <time.h> and <sys/time.h>

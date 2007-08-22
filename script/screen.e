@@ -16,10 +16,10 @@ if (word(2 $loadinfo()) != [pf]) { load -pf $word(1 $loadinfo());return };
 
 package E.SCREEN;
 alias screen.window_swap_or_last (win) {
-	^window ${(winnum($win) == winnum()) ? [swap last] : [refnum_or_swap $win]};
+	window ${(winnum($win) == winnum()) ? [swap last] : [refnum_or_swap $win]};
 };
 alias screen.new_window {
-	^window new hide swap last;
+	window new hide swap last;
 };
 alias screen.kill_window {
 	input_char "Really kill window $winnum()${winnam() != [] ? [ \[$winnam()\]] : []}? [y/N]"
@@ -30,21 +30,21 @@ alias screen.quit_client {
 		\{if \([\$0\] == [y]\) \{quit User ipressed ^W^D\}\};
 };
 alias screen.window_xon {
-	^window hold_mode on;
+	window hold_mode on;
 };
 alias screen.window_xoff {
-	^window hold_mode off;
+	window hold_mode off;
 };
 alias screen.window_hide {
-	^window hide;
+	window hide;
 };
 alias screen.window_hide_others {
-	^window hide_others;
+	window hide_others;
 };
 alias screen.split_window {
 	for w in ($winrefs()) {
 		if (windowctl(GET $w visible) == 0) {
-			^window show $w swap last;
+			window show $w swap last;
 			return;
 		};
 	};
@@ -148,7 +148,6 @@ alias screen.init {
 	alias winmove {return screen.winmove($*);};
 	^alias -screen.init;
 };
-
 alias screen.winswap (from,to, ...)
 {
 	^local tmp;
@@ -179,13 +178,11 @@ alias screen.winmove (from,to, ...)
 {
 	^local tmp;
 	@ tmp = [];
-	
 	if (!isnumber($from) || !isnumber($to))
 	{
 		xecho -say -banner WinMove requires numeric arguments;
 		return;
 	};
-	
 	if (windowctl(get $from refnum) == [])
 	{
 		xecho -say -banner No such window: $from;
@@ -212,7 +209,6 @@ alias screen.winmove (from,to, ...)
 			^window $tmp channel "$chanwin($from)";
 		}
 	};
-
 	window $from number $to;
 	window refnum_or_swap $to;
 	if (tmp != [])
@@ -225,11 +221,5 @@ alias screen.winmove (from,to, ...)
 	};
 	return $to;
 };
-
-
-
-
 screen.init;
-
-
 # vim: filetype=
