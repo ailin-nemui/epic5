@@ -1,6 +1,6 @@
 #! /bin/sh
 
-# From configure.in Revision: 1.57 # Guess values for system-dependent variables and create Makefiles.
+# From configure.in Revision: 1.58 # Guess values for system-dependent variables and create Makefiles.
 # Generated automatically using autoconf version 2.13 
 # Copyright (C) 1992, 93, 94, 95, 96 Free Software Foundation, Inc.
 #
@@ -1183,7 +1183,7 @@ else
 #include "confdefs.h"
 #include <openssl/ssl.h>
 int main() {
-SSL_accept(NULL);
+SSL_accept(0);
 ; return 0; }
 EOF
 if { (eval echo configure:1190: \"$ac_link\") 1>&5; (eval $ac_link) 2>&5; } && test -s conftest${ac_exeext}; then
@@ -1215,7 +1215,7 @@ rm -f conftest*
 #include "confdefs.h"
 #include <openssl/ssl.h>
 int main() {
-SSL_accept(NULL);
+SSL_accept(0);
 ; return 0; }
 EOF
 if { (eval echo configure:1222: \"$ac_link\") 1>&5; (eval $ac_link) 2>&5; } && test -s conftest${ac_exeext}; then
@@ -4577,7 +4577,7 @@ main ()
 {
 	char resolved_path[MAXPATHLEN];
 
-	if (realpath("/etc/filethatdoesnotexist", resolved_path) == NULL)
+	if (realpath("/etc/filethatdoesnotexist", resolved_path) == 0)
 		exit(1);
 	exit(0);
 }
@@ -5359,7 +5359,7 @@ else
 #include "confdefs.h"
 #include <iconv.h>
 int main() {
-iconv_open(NULL, NULL);
+iconv_open(0, 0);
 ; return 0; }
 EOF
 if { (eval echo configure:5366: \"$ac_link\") 1>&5; (eval $ac_link) 2>&5; } && test -s conftest${ac_exeext}; then
@@ -5391,7 +5391,7 @@ rm -f conftest*
 #include "confdefs.h"
 #include <iconv.h>
 int main() {
-iconv_open(NULL, NULL);
+iconv_open(0, 0);
 ; return 0; }
 EOF
 if { (eval echo configure:5398: \"$ac_link\") 1>&5; (eval $ac_link) 2>&5; } && test -s conftest${ac_exeext}; then

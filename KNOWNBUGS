@@ -122,3 +122,4 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * New version of screen.e
 * Change "filename" to "local_filename" in dcc's, in prep of further work.
 * Un-revert a few minor things.
+* Don't use NULL in configure; use 0 instead.

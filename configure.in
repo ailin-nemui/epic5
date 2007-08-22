@@ -4,9 +4,9 @@ dnl except those bits attributed otherwise.
 dnl thanks to the screen 3.3 configure.in for giving me examples to
 dnl work from and steal ;)
 dnl
-dnl @(#)$Id: configure.in,v 1.58 2007/08/22 21:57:16 jnelson Exp $
+dnl @(#)$Id: configure.in,v 1.59 2007/08/22 22:12:26 jnelson Exp $
 
-AC_REVISION($Revision: 1.58 $)dnl
+AC_REVISION($Revision: 1.59 $)dnl
 AC_INIT(source/irc.c)
 AC_CONFIG_HEADER(include/defs.h)
 
@@ -178,7 +178,7 @@ else
 	LIBS="$saved_LIBS -lssl -lcrypto"
 	CFLAGS="$saved_CFLAGS"
 	AC_TRY_LINK([#include <openssl/ssl.h>],
-		[SSL_accept(NULL);], have_ssl="yes")
+		[SSL_accept(0);], have_ssl="yes")
 
 	# Otherwise, go hunting for it.
 	if test -z "$have_ssl" ; then
@@ -196,7 +196,7 @@ else
 		    CFLAGS="$saved_CFLAGS -I$ssldir/include"
 		    LIBS="$saved_LIBS -L$ssldir/lib -lssl -lcrypto"
 		    AC_TRY_LINK([#include <openssl/ssl.h>],
-				[SSL_accept(NULL);], have_ssl="yes")
+				[SSL_accept(0);], have_ssl="yes")
 		fi
 	    done
 	fi
@@ -418,7 +418,7 @@ main ()
 {
 	char resolved_path[MAXPATHLEN];
 
-	if (realpath("/etc/filethatdoesnotexist", resolved_path) == NULL)
+	if (realpath("/etc/filethatdoesnotexist", resolved_path) == 0)
 		exit(1);
 	exit(0);
 }
@@ -728,7 +728,7 @@ else
 	LIBS="$saved_LIBS -liconv"
 	CFLAGS="$saved_CFLAGS"
 	AC_TRY_LINK([#include <iconv.h>],
-		[iconv_open(NULL, NULL);], have_iconv="yes")
+		[iconv_open(0, 0);], have_iconv="yes")
 
 	# Otherwise, go hunting for it.
 	if test -z "$have_iconv" ; then
@@ -746,7 +746,7 @@ else
 		    CFLAGS="$saved_CFLAGS -I$iconvdir/include"
 		    LIBS="$saved_LIBS -L$iconvdir/lib -liconv"
 		    AC_TRY_LINK([#include <iconv.h>],
-				[iconv_open(NULL, NULL);], have_iconv="yes")
+				[iconv_open(0, 0);], have_iconv="yes")
 		fi
 	    done
 	fi
