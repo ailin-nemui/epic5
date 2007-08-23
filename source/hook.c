@@ -1,4 +1,4 @@
-/* $EPIC: hook.c,v 1.74 2007/07/03 02:03:48 jnelson Exp $ */
+/* $EPIC: hook.c,v 1.75 2007/08/23 03:56:35 jnelson Exp $ */
 /*
  * hook.c: Does those naughty hook functions. 
  *
@@ -2013,8 +2013,7 @@ char *hookctl (char *input)
 		else
 		{
 			GET_FUNC_ARG(str,input);
-			prop = vmy_strnicmp(strlen(str), str, "LISTS", "POPULATED_LISTS",
-				"HOOKS");
+			prop = vmy_strnicmp(strlen(str), str, "LISTS", "POPULATED_LISTS", "HOOKS", NULL);
 		}
 		if (input && *input)
 		{

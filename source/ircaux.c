@@ -1,4 +1,4 @@
-/* $EPIC: ircaux.c,v 1.178 2007/08/22 21:57:18 jnelson Exp $ */
+/* $EPIC: ircaux.c,v 1.179 2007/08/23 03:56:36 jnelson Exp $ */
 /*
  * ircaux.c: some extra routines... not specific to irc... that I needed 
  *
@@ -4737,17 +4737,19 @@ void	add_to_bucket (Bucket *b, const char *name, void *stuff)
  * vmy_strnicmp() compares given string against a set of strings, 
  * and returns the indexnumber of the first string which matches
  */
-int	vmy_strnicmp (int len, char *str, ...)
+int	vmy_strnicmp (size_t len, char *str, ...)
 {
 	va_list ap;
 	int ret = 1;
 	char *cmp;
 	va_start(ap, str);
 	while ((cmp = va_arg(ap, char *)) != NULL)
+	{
 		if (my_strnicmp(cmp,str,len))
 			ret++;
 		else
 			break;
+	}
 	va_end(ap);
 	return (cmp == NULL) ? 0 : ret;
 }

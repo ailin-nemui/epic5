@@ -9,7 +9,6 @@ KNOWN ERRATA (eg, bugs, or unresolved requests):
                                         []}%C$chanflag($0 $1)%n$0%B>%n $2-}); 
 * Howl wants to specify a minimum number of lines before (Held: ) shows.
 * Twincest wants a way to be able to change a dcc's alternate filename
-* $hookctl(list <anything invalid>) crashes the client. 
 
 ISSUES OF INTEREST
 ------------------
@@ -123,3 +122,5 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Change "filename" to "local_filename" in dcc's, in prep of further work.
 * Un-revert a few minor things.
 * Don't use NULL in configure; use 0 instead.
+* Fix missing NULL for $hookctl(list ...) [rb howl]
+* Fix various other issues that valgrind found (yay!)

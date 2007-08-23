@@ -1,4 +1,4 @@
-/* $EPIC: server.c,v 1.229 2007/08/22 18:40:26 howl Exp $ */
+/* $EPIC: server.c,v 1.230 2007/08/23 03:56:36 jnelson Exp $ */
 /*
  * server.c:  Things dealing with that wacky program we call ircd.
  *
@@ -1556,6 +1556,7 @@ int	grab_server_address (int server)
 	set_server_status(server, SERVER_DNS);
 
 	say("Performing DNS lookup for [%s] (server %d)", s->info->host, server);
+	xvfd[0] = xvfd[1] = -1;
 	if (socketpair(PF_UNIX, SOCK_STREAM, 0, xvfd))
 		yell("socketpair: %s", strerror(errno));
 	new_open(xvfd[1], do_server, NEWIO_READ, 1, server);

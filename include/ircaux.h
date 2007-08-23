@@ -7,7 +7,7 @@
  *
  * See the COPYRIGHT file, or do a HELP IRCII COPYRIGHT 
  *
- * @(#)$Id: ircaux.h,v 1.94 2007/07/20 23:03:59 jnelson Exp $
+ * @(#)$Id: ircaux.h,v 1.95 2007/08/23 03:56:35 jnelson Exp $
  */
 
 #ifndef _IRCAUX_H_
@@ -207,7 +207,7 @@ void    dequoter                (char **, size_t *, int, int, const char *);
 #define my_isdigit(x) \
 	(isdigit(*x) || ((*x == '-' || *x == '+') && isdigit(x[1])))
 
-int	vmy_strnicmp		(int, char *, ...);
+int	vmy_strnicmp		(size_t, char *, ...);
 char *	substitute_string	(const char *, const char *, const char *, int, int);
 
 /* ---------------- */
