@@ -124,3 +124,4 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Don't use NULL in configure; use 0 instead.
 * Fix missing NULL for $hookctl(list ...) [rb howl]
 * Fix various other issues that valgrind found (yay!)
+* Commit a 'url.irc' script that I don't know where it came from...

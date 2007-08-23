@@ -1,0 +1,47 @@
+on ^public * {
+	@words = []
+	fe ($2-) aa {
+		if (match(*www.* $aa) == 1) {
+			push words $cparse($chr(31)%b$aa$chr(31))
+			@ z = 1
+		} else if (match(*ftp.* $aa) == 1) {
+			push words $cparse($chr(31)%b$aa$chr(31))
+			@ z = 1
+		} else if (match(*://* $aa) == 1) {
+			push words $cparse($chr(31)%b$aa$chr(31))
+			@ z = 1
+		} else {
+			push words $aa
+		}
+		if (z == 1) {
+			for (@i = 9, i != 0, @i--) {
+				@url[$i] = url[${i - 1}]
+				@urlnick[$i] = urlnick[${i - 1}]
+				@urlchan[$i] = urlchan[${i - 1}]
+				@urltime[$i] = urltime[${i - 1}]
+			}
+			@url[0] = aa
+			@urlnick[0] = [$0]
+			@urlchan[0] = [$1]
+			@ z = 0
+		}
+	}
+	xecho -w $winchan($1) <$0> $words
+}
+
+alias pages (arg) {
+
+	if (arg == []) {
+		exec /usr/local/firefox/firefox -remote "openURL\($url[0],new-tab\)"
+	} else if (isnumber($arg) && (arg != 0) && (arg < 11)) {
+		exec /usr/local/firefox/firefox -remote "openURL\($url[${arg - 1}],new-tab\)"		
+	} else {
+		echo 
+		echo Last 10 Captured URLS...
+		for (@:i = 9, i >= 0, @i--) {
+			if (url[$i] != []) {
+				echo ${i + 1}. $urlchan[$i]:<$urlnick[$i]> $cparse($chr(31)%b$url[$i]$chr(31))
+			}
+		}
+	}
+}
