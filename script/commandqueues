@@ -152,7 +152,8 @@ fe (q push fq unshift) cmd op {
 		xdebug dword;
 		if (1 < #) {
 			@ :foo = [$1-];
-			@ :foo = ${op}(qcmd.${sn}.$0 $msar(gr/\\/\\\\/\"/\\\"/foo));
+			#@ :foo = ${op}(qcmd.${sn}.$0 $msar(gr/\\/\\\\/\"/\\\"/foo));
+			@ :foo = ${op}(qcmd.${sn}.$0 $foo);
 		} else {
 			if (1 == #) {
 				@ :foo = [qcmd.${sn}.$0];
