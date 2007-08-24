@@ -146,11 +146,13 @@ fe (q push fq unshift) cmd op {
 		1cmd $qo ${cmd}cmd $shift(qc) $args;
 	};
 	alias.tt $cmd $op ${cmd}cmd {
+		@ :oxd = xdebug(dword);
 		@ :sn = servernum();
 		@ :sn = sn < 0 ? [_] : sn;
+		xdebug dword;
 		if (1 < #) {
 			@ :foo = [$1-];
-			@ :foo = ${op}(qcmd.${sn}.$0 \"$msar(gr/\\/\\\\/\"/\\\"/foo)\");
+			@ :foo = ${op}(qcmd.${sn}.$0 $msar(gr/\\/\\\\/\"/\\\"/foo));
 		} else {
 			if (1 == #) {
 				@ :foo = [qcmd.${sn}.$0];
@@ -170,6 +172,7 @@ fe (q push fq unshift) cmd op {
 			};
 			@ :bar = shift(qcmd[$sn][$foo]);
 		};
+		xdebug $oxd;
 		if (functioncall()) {
 			return $msar(gr/\\\\/\\/\\\"/\"/bar);
 		} elsif (@bar) {
