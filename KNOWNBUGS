@@ -8,6 +8,7 @@ KNOWN ERRATA (eg, bugs, or unresolved requests):
        @ hookctl(set list public implied {%B<%R${isoper($0) ? [*] :
                                         []}%C$chanflag($0 $1)%n$0%B>%n $2-}); 
 * Howl wants to specify a minimum number of lines before (Held: ) shows.
+  - "(Held)" should be displayed until it hits /window hold_interval
 * Twincest wants a way to be able to change a dcc's alternate filename
 
 ISSUES OF INTEREST
@@ -125,3 +126,6 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Fix missing NULL for $hookctl(list ...) [rb howl]
 * Fix various other issues that valgrind found (yay!)
 * Commit a 'url.irc' script that I don't know where it came from...
+* Apparantly solaris 9 doesn't have <stdint.h>, intmax_t, or strtoimax. ick.
+* Begin "fixing" protected implied hooks.  Must test above examples.
+* The sequence we delete stuff on shutdown actually does matter.  (Fix crash)

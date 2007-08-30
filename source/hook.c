@@ -1,4 +1,4 @@
-/* $EPIC: hook.c,v 1.75 2007/08/23 03:56:35 jnelson Exp $ */
+/* $EPIC: hook.c,v 1.76 2007/08/30 03:29:40 jnelson Exp $ */
 /*
  * hook.c: Does those naughty hook functions. 
  *
@@ -962,11 +962,19 @@ int 	do_hook (int which, const char *format, ...)
 		h->mark++;
 
 	if (h->implied_protect)
-	    malloc_sprintf(&func_call, "cparse(%s)", h->implied);
+	{
+	    malloc_sprintf(&func_call, "cparse(\"$*\" %s)", buffer);
+	    func_retval = call_function(func_call, h->implied);
+	}
 	else
+	{
 	    malloc_sprintf(&func_call, "cparse(\"%s\" $*)", h->implied);
+	    func_retval = call_function(func_call, buffer);
+	}
 
+/*
 	func_retval = call_function(func_call, buffer);
+*/
 	put_echo(func_retval);
 
 	new_free(&func_call);
