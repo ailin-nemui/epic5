@@ -131,3 +131,15 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * The sequence we delete stuff on shutdown actually does matter.  (Fix crash)
 * OK.  The implied hook, and protected implied hook stuff works now
 * Make a note in UPDATES about *0 being an rval instead of lval, and *(*0).
+* Begin a refactoring of dcc to make my life easier
+* Simplify register_dcc_offer(), removing unnecessary args.
+* Also, register_dcc_offer() will only take url-encoded filenames now.
+* Fix up the ctcp handler do_ctcp to urlencode offered filenames.
+* Change the DCC_FILE* macros to DCC_SEND and DCC_GET to stop confusing me
+* Add a "offer_filename" variable to dcc's for next round of work
+* GC some unused code
+* Break dcc_message_transmit() into dcc_raw_transmit() and dcc_chat_transmit()
+* Drastically simplify those two functions
+* Fix up dcc_raw_transmit() so the hostname isn't required
+* This means /dcc raw <fd> <host> <msg> ignores <host>. yay!
+
