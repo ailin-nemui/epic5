@@ -1,4 +1,4 @@
-/* $EPIC: functions.c,v 1.254 2007/08/22 18:40:26 howl Exp $ */
+/* $EPIC: functions.c,v 1.255 2007/09/02 16:49:58 howl Exp $ */
 /*
  * functions.c -- Built-in functions for ircII
  *
@@ -283,6 +283,7 @@ static	char
 	*function_iptolong	(char *),
 	*function_iptoname 	(char *),
 	*function_irclib	(char *),
+	*function_is8bit 	(char *),
 	*function_isalpha 	(char *),
 	*function_isaway	(char *),
 	*function_ischanvoice	(char *),
@@ -574,6 +575,7 @@ static BuiltInFunctions	built_in_functions[] =
 	{ "IPTOLONG",		function_iptolong	},
 	{ "IPTONAME",		function_iptoname 	},
 	{ "IRCLIB",		function_irclib		},
+	{ "IS8BIT",		function_is8bit 	},
 	{ "ISALPHA",		function_isalpha 	},
 	{ "ISAWAY",		function_isaway		},
 	{ "ISCHANNEL",		function_ischannel 	},
@@ -6795,4 +6797,20 @@ BUILT_IN_FUNCTION(function_sha256, input)
 
 BUILT_IN_FUNCTION(function_curcmd, unused) {
 	RETURN_STR(current_command);
+}
+
+/* 
+ * is8bit(s) returns the index number of the first character of string
+ * s that is a 8-bit character. Possible use: "discovers" (?) Unicode or
+ * whatever. Returns -1 if nil (0) 8-bit characters are found.
+ */
+BUILT_IN_FUNCTION(function_is8bit, input) {
+	int n = 0, l;
+	if (!input || !*input)
+		RETURN_EMPTY;
+	l = strlen (input);
+	for (n = 0; n < l; n++)
+		if (input[n] & 0x80)
+			RETURN_INT(n);
+	RETURN_INT(-1);
 }

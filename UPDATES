@@ -1,5 +1,10 @@
 EPIC5-0.3.4
 
+*** News 09/02/2007 -- New function, $is8bit(string)
+	This function find the first character of string that has the
+	eight bit set. Useful to discover Unicode-strings or other 
+	non-eight bit characters.
+
 *** News 08/22/2007 -- New xform, $xform(ICONV "from/to" text)
 	If your binary is built with iconv support (re-run configure before
 	you tell me it doesn't work!) then you will be able to use iconv()
