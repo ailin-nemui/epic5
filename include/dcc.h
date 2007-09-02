@@ -19,7 +19,7 @@
 	char *	dcc_raw_listen 		(int, unsigned short);
 	void	dcc_reject 		(const char *, char *, char *);
 	void	register_dcc_offer 	(const char *, char *, char *, char *, 
-					 char *, char *, char *, char *);
+					 char *, char *);
 	char *	DCC_get_current_transfer (void);
 	int     wait_for_dcc 		(const char *);
 

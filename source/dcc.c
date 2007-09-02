@@ -1,4 +1,4 @@
-/* $EPIC: dcc.c,v 1.147 2007/08/22 21:57:18 jnelson Exp $ */
+/* $EPIC: dcc.c,v 1.148 2007/09/02 16:37:57 jnelson Exp $ */
 /*
  * dcc.c: Things dealing client to client connections. 
  *
@@ -59,8 +59,8 @@
 
 /* These are the settings for ``flags'' */
 #define DCC_CHAT	((unsigned) 0x0001)
-#define DCC_FILEOFFER	((unsigned) 0x0002)
-#define DCC_FILEREAD	((unsigned) 0x0003)
+#define DCC_SEND	((unsigned) 0x0002)
+#define DCC_GET		((unsigned) 0x0003)
 #define	DCC_RAW		((unsigned) 0x0004)
 #define	DCC_RAW_LISTEN	((unsigned) 0x0005)
 #define DCC_TYPES	((unsigned) 0x000f)
@@ -96,6 +96,7 @@ typedef	struct	DCC_struct
 	int		held;
 	long		refnum;
 	intmax_t	filesize;
+	char *		offer_filename;		/* XXX Not used yet */
 	char *		local_filename;
 	char *		description;
 	char *		othername;
@@ -188,8 +189,8 @@ struct
 }	dcc_commands[] =
 {
 	{ "CHAT",	dcc_chat 		},	/* DCC_CHAT */
-	{ "SEND",	dcc_filesend 		},	/* DCC_FILEOFFER */
-	{ "GET",	dcc_get 		},	/* DCC_FILEREAD */
+	{ "SEND",	dcc_filesend 		},	/* DCC_SEND */
+	{ "GET",	dcc_get 		},	/* DCC_GET */
 	{ "RAW",	dcc_send_raw 		},	/* DCC_RAW */
 
 	{ "CLOSE",	dcc_close 		},
@@ -209,8 +210,8 @@ static const char	*dcc_types[] =
 {
 	"<none>",
 	"CHAT",		/* DCC_CHAT */
-	"SEND",		/* DCC_FILEOFFER */
-	"GET",		/* DCC_FILEREAD */
+	"SEND",		/* DCC_SEND */
+	"GET",		/* DCC_GET */
 	"RAW",		/* DCC_RAW */
 	"RAW_LISTEN",
 	NULL
@@ -301,8 +302,8 @@ static void 	dcc_garbage_collect (void)
 	{
 		if ((dcc->flags & DCC_DELETE) && dcc->locked == 0)
 		{
-			if ((dcc->flags & DCC_TYPES) == DCC_FILEOFFER ||
-			    (dcc->flags & DCC_TYPES) == DCC_FILEREAD)
+			if ((dcc->flags & DCC_TYPES) == DCC_SEND ||
+			    (dcc->flags & DCC_TYPES) == DCC_GET)
 				need_update = 1;
 
 			if (x_debug & DEBUG_DCC_XMIT)
@@ -360,8 +361,8 @@ static 	void		dcc_erase (DCC_list *erased)
 
 		malloc_sprintf(&dummy_ptr, "%s %s %s", 
 			erased->user,
-			(my_type == DCC_FILEOFFER ? "GET" :
-			 (my_type == DCC_FILEREAD  ? "SEND" : 
+			(my_type == DCC_SEND ? "GET" :
+			 (my_type == DCC_GET  ? "SEND" : 
 			   dcc_types[my_type])),
 			nopath ? nopath : "<any>");
 
@@ -389,6 +390,7 @@ static 	void		dcc_erase (DCC_list *erased)
 	erased->file = -1;
 	new_free(&erased->description);	/* Magic check failure here */
 	new_free(&erased->local_filename);
+	new_free(&erased->offer_filename);
 	new_free(&erased->user);
 	new_free(&erased->othername);
 	new_free((char **)&erased);
@@ -513,6 +515,7 @@ static	DCC_list *dcc_create (
 	new_client->filesize 		= filesize;
 	new_client->held		= 0;
 	new_client->local_filename 	= NULL;
+	new_client->offer_filename 	= NULL;
 	new_client->next 		= ClientList;
 	new_client->user 		= malloc_strdup(user);
 	new_client->userhost 		= (FromUserHost && *FromUserHost)
@@ -638,7 +641,8 @@ static	DCC_list *dcc_searchlist (
 			 * If 'name' isnt 'last' then we'll have to look at
 			 * 'othername' to see if that matches.
 			 */
-			if (my_stricmp(description, last + 1) && my_stricmp(decoded_description, last + 1))
+			if (my_stricmp(description, last + 1) && 
+			    my_stricmp(decoded_description, last + 1))
 			{
 				if (!othername || !client->othername)
 					continue;
@@ -684,150 +688,21 @@ static	DCC_list *dcc_searchlist (
 	return NULL;
 }
 
-#if 0
-/*
- * dcc_bucket searches through the dcc_list and collects the clients
- * with the the flag described in type set.  This function should never
- * return a delete'd entry.
- */
-static	int	dcc_bucket (
-	Bucket *	b,		/* The bucket to put entries into */
-	unsigned	type,		/* What kind of connection we want */
-	const char *	user, 		/* Nick of the remote peer */
-	const char *	description,	/* 
-					 * DCC Type specific information,
-					 * Usually a full pathname for 
-					 * SEND/GET, "listen" or "connect"
-					 * for RAW, or NULL for others.
-					 */
-	const char *	othername, 	/* Alias filename for SEND/GET */
-	int 		active)		/* Only get active/non-active? */
+static	DCC_list *get_dcc_chat_by_nickname (const char *nick)
 {
-	DCC_list 	*client;
-	const char 	*last = NULL;
-	char		*decoded_description;
-	int		count = 0;
-
-	decoded_description = description ? dcc_urldecode(description) : NULL;
-
-	if (x_debug & DEBUG_DCC_SEARCH)
-		yell("entering dcc_b.  desc (%s) decdesc (%s) user (%s) "
-		     "type(%d) other (%s) active (%d)", 
-			description, decoded_description, user, type,
-			othername, active);
-
-	/*
-	 * Walk all of the DCC connections that we know about.
-	 */
-	lock_dcc(NULL);
-
-	for (client = ClientList; client ; client = client->next)
-	{
-		/* Never return deleted entries */
-		if (client->flags & DCC_DELETE)
-			continue;
-
-		/*
-		 * Tell the user if they care
-		 */
-		if (x_debug & DEBUG_DCC_SEARCH)
-		{
-			yell("checking against  name (%s) user (%s) type (%d) "
-					"flag (%d) other (%s) active (%x)", 
-				client->description, 
-				client->user, 
-				client->flags & DCC_TYPES,
-				client->flags, 
-				client->othername, 
-				client->flags & DCC_ACTIVE);
-		}
-
-		/*
-		 * Ok. first of all, it has to be the right type.
-		 * XXX - Doing (unsigned) -1 is a hack.
-		 */
-		if (type != (unsigned)-1 && 
-				((client->flags & DCC_TYPES) != type))
-			continue;
-
-		/*
-		 * Its OK if the user matches the client's user
-		 */
-		if (user && my_stricmp(user, client->user))
-			continue;
-
-
-		/*
-		 * If "name" is NULL, then that acts as a wildcard.
-		 * If "description" is NULL, then that also acts as a wildcard.
-		 * If "name" is not the same as "description", then it could
-		 * 	be that "description" is a filename.  Check to see if
-		 *	"name" is the last component in "description" and
-		 *	accept that.
-		 * Otherwise, "othername" must exist and be the same.
-		 * In all other cases, reject this entry.
-		 */
-		
-		if (description && client->description && 
-			my_stricmp(description, client->description) &&
-			my_stricmp(decoded_description, client->description))
-		{
-			/*
-			 * OK.  well, 'name' isnt 'description', try looking
-			 * for a last segment.  If there isnt one, choke.
-			 */
-			if ((last = strrchr(client->description, '/')) == NULL)
-				continue;
-
-			/*
-			 * If 'name' isnt 'last' then we'll have to look at
-			 * 'othername' to see if that matches.
-			 */
-			if (my_stricmp(description, last + 1) && my_stricmp(decoded_description, last + 1))
-			{
-				if (!othername || !client->othername)
-					continue;
-
-				if (my_stricmp(othername, client->othername))
-					continue;
-			}
-		}
-
-		/*
-		 * Active == 0  -> Only PENDING unopened connections, please
-		 * No deleted entries, either.
-		 */
-		if (active == 0)
-		{
-			if (client->flags & DCC_ACTIVE)
-				continue;
-		}
-		/*
-		 * Active == 1 -> Only ACTIVE and OPEN connections, please
-		 */
-		else if (active == 1)
-		{
-			if ((client->flags & DCC_ACTIVE) == 0)
-				continue;
-		}
-		/*
-		 * Active == -1 -> Only NON DELETED entries, please.
-		 */
-		else if (active == -1)
-			(void) 0;
-
-		if (x_debug & DEBUG_DCC_SEARCH)
-			yell("We have a winner!");
-
-		add_to_bucket(b, empty_string, client);
-		count++;
-	}
-
-	new_free(&decoded_description);
-	unlock_dcc(NULL);
-	return count;
 }
-#endif
+
+static	DCC_list *get_dcc_get_by_nickname_filename (const char *nick, const char *filename)
+{
+}
+
+static	DCC_list *get_dcc_send_by_nickname_filename (const char *nick, const char *filename)
+{
+}
+
+static	DCC_list *get_dcc_raw_by_fd (int fd)
+{
+}
 
 /*
  * dcc_get_bucket searches through the dcc_list and collects the clients
@@ -862,7 +737,7 @@ static	int	dcc_get_bucket (Bucket *b, const char *user, const char *fname)
 			continue;
 
 		/* Skip non-DCC GETs */
-		if ((client->flags & DCC_TYPES) != DCC_FILEREAD)
+		if ((client->flags & DCC_TYPES) != DCC_GET)
 			continue;
 
 		/* Skip DCC GETs with no filename (!!!) */
@@ -1333,7 +1208,7 @@ static void	dcc_send_booster_ctcp (DCC_list *dcc)
 	get_time(&dcc->starttime);
 	get_time(&dcc->lasttime);
 
-	if (((dcc->flags & DCC_TYPES) == DCC_FILEOFFER) && 
+	if (((dcc->flags & DCC_TYPES) == DCC_SEND) && 
 		  (nopath = strrchr(dcc->description, '/')))
 		nopath++;
 	else
@@ -1343,13 +1218,10 @@ static void	dcc_send_booster_ctcp (DCC_list *dcc)
 	 * If this is a DCC SEND...
 	 */
 	lock_dcc(dcc);
-	if ((dcc->flags & DCC_TYPES) == DCC_FILEOFFER)
+	if ((dcc->flags & DCC_TYPES) == DCC_SEND)
 	{
 		char *	url_name = dcc_urlencode(nopath);
 
-		/*
-		 * Dont bother with the checksum.
-		 */
 		send_ctcp(CTCP_PRIVMSG, dcc->user, CTCP_DCC,
 			 "%s %s %s %s "INTMAX_FORMAT,
 			 type, url_name, p_host, p_port,
@@ -1400,68 +1272,28 @@ static void	dcc_send_booster_ctcp (DCC_list *dcc)
  * If ``noisy'' is 1, then we tell the user that we send the message, and
  * allow them to hook it.  If ``noisy'' is 0, then we're doing this silently
  * (as in /redirect, or /ctcp) and we dont want to tell the user about it.
- *
- * XXXX This needs to be broken up into CHAT and RAW cases.
  */
-static void	dcc_message_transmit (
-	int 		type, 		/* What type of DCC to send over */
-	char 		*user, 		/* Who to send it to */
-	char		*desc,		/* THe 'desc' field in DCC_List */
-	char 		*text, 		/* What to send them */
-const	char 		*text_display, 	/* What to tell the user we sent */
-	int 		noisy, 		/* Do we tell the user? */
-	const char 	*cmd)		/* 
-					 * For /CTCP's, is this a PRIVMSG
-					 * or a NOTICE?
-					 */
+static void	dcc_raw_transmit (char *fd, char *text)
 {
 	DCC_list	*dcc;
-	char		tmp[DCC_BLOCK_SIZE+1];
-	char		thing = '\0';
-	int		list = 0;
 	int		old_from_server = from_server;
 	int		writeval;
+	int		l;
+	char *		target;
 
-	tmp[0] = 0;
-
-	switch (type)
+	if (!(dcc = dcc_searchlist(DCC_RAW, fd, NULL, NULL, -1)))
 	{
-		case DCC_CHAT:
-		{
-			thing = '=';
-			list = SEND_DCC_CHAT_LIST;
-			break;
-		}
-		case DCC_RAW:
-		{
-			noisy = 0;
-			break;
-		}
-	}
-
-	if (!(dcc = dcc_searchlist(type, user, desc, NULL, -1)))
-	{
-		say("No active DCC %s:%s connection for %s",
-			dcc_types[type], desc, user);
+		l = message_from(NULL, LEVEL_DCC);
+		put_it("Descriptor %d is not an open DCC RAW", fd);
+		pop_message_from(l);
 		return;
 	}
 
-
-	/*
-	 * Check for CTCPs... whee.
-	 * Dont tag outbound ACTIONs, which break mirc.  Blah.
-	 */
-	if (type == DCC_CHAT && *text == CTCP_DELIM_CHAR
-			&& strncmp(text + 1, "ACTION", 6))
-	{
-		if (!cmd || !strcmp(cmd, "PRIVMSG"))
-			strlcpy(tmp, "CTCP_MESSAGE ", sizeof tmp);
-		else
-			strlcpy(tmp, "CTCP_REPLY ", sizeof tmp);
-	}
+	target = dcc_target(dcc->user);
+	l = message_from(target, LEVEL_DCC);
 
 	if (x_debug & DEBUG_OUTBOUND) 
-		yell("-> [%s] [%s]", desc, text);
+		yell("-> [%s] [%s]", fd, text);
 
 	if (dcc->flags & DCC_QUOTED)
 	{
@@ -1472,33 +1304,28 @@ const	char 		*text_display, 	/* What to tell the user we sent */
 	}
 	else
 	{
-		strlcat(tmp, text, sizeof tmp);
+		char	tmp[DCC_BLOCK_SIZE+1];
+		strlcpy(tmp, text, sizeof tmp);
 		strlcat(tmp, "\n", sizeof tmp);
 		writeval = write(dcc->socket, tmp, strlen(tmp));
 	}
 
-
 	if (writeval == -1)
 	{
 		dcc->flags |= DCC_DELETE;
-		say("Outbound write() failed: %s", strerror(errno));
+		say("Outbound write() to fd %d failed: %s", 
+				fd, strerror(errno));
 
 		from_server = old_from_server;
+		pop_message_from(l);
+		new_free(&target);
 		return;
 	}
 
 	dcc->bytes_sent += writeval;
-
-	if (noisy)
-	{
-		lock_dcc(dcc);
-		if (do_hook(list, "%s %s", dcc->user, text_display))
-			put_it("=> %c%s%c %s", 
-				thing, dcc->user, thing, text_display);
-		unlock_dcc(dcc);
-	}
-
 	get_time(&dcc->lasttime);
+	pop_message_from(l);
+	new_free(&target);
 	return;
 }
 
@@ -1506,47 +1333,82 @@ const	char 		*text_display, 	/* What to tell the user we sent */
  * This is used to send a message to a remote DCC peer.  This is called
  * by send_text.
  */
-void	dcc_chat_transmit (char *user, char *text, const char *orig, const char *type, int noisy)
+void	dcc_chat_transmit (char *user, char *text, const char *orig, const char *cmd, int noisy)
 {
-	int	fd;
 	int	l = -1;
 	char *	target = NULL;
+	int	old_from_server = from_server;
+	DCC_list *dcc = NULL;
 
-    do
-    {
 	/*
 	 * This converts a message being sent to a number into whatever
 	 * its local port is (which is what we think the nickname is).
 	 * Its just a 15 minute hack. dont read too much into it.
 	 */
-	if (is_number(user) && (fd = atol(user)))
+	if (is_number(user))
 	{
-		DCC_list *	dcc;
-		if (!(dcc = get_dcc_by_filedesc(fd)))
-		{
-			l = message_from(NULL, LEVEL_DCC);
-			put_it("Descriptor %d is not an open DCC RAW", fd);
-			break;
-		}
-		target = dcc_target(dcc->user);
-		l = message_from(target, LEVEL_DCC);
-		dcc_message_transmit(DCC_RAW, dcc->user, dcc->description, 
-					text, orig, noisy, type);
-		get_time(&dcc->lasttime);
+		dcc_raw_transmit(user, text);
+		return;
+	}
+
+    do
+    {
+	char	tmp[DCC_BLOCK_SIZE+1];
+	int	writeval;
+
+	target = dcc_target(user);
+	l = message_from(target, LEVEL_DCC);
+
+	if (!(dcc = dcc_searchlist(DCC_CHAT, user, NULL, NULL, -1)))
+	{
+		say("No active DCC CHAT connection for %s", user);
+		break;
+	}
+
+	/*
+	 * Check for CTCPs... whee.
+	 * Dont tag outbound ACTIONs, which break mirc.  Blah.
+	 */
+	if (*text == CTCP_DELIM_CHAR && strncmp(text + 1, "ACTION", 6))
+	{
+		if (!cmd || !strcmp(cmd, "PRIVMSG"))
+			strlcpy(tmp, "CTCP_MESSAGE ", sizeof tmp);
+		else
+			strlcpy(tmp, "CTCP_REPLY ", sizeof tmp);
 	}
 	else
+		*tmp = 0;
+
+	if (x_debug & DEBUG_OUTBOUND) 
+		yell("-> [%s] [%s]", target, text);
+
+	strlcat(tmp, text, sizeof tmp);
+	strlcat(tmp, "\n", sizeof tmp);
+
+	if ((writeval = write(dcc->socket, tmp, strlen(tmp))) < 0)
 	{
-		target = dcc_target(user);
-		l = message_from(target, LEVEL_DCC);
-		dcc_message_transmit(DCC_CHAT, user, NULL,
-					text, orig, noisy, type);
+		dcc->flags |= DCC_DELETE;
+		say("Outbound write() failed: %s", strerror(errno));
+		break;
+	}
+	dcc->bytes_sent += writeval;
+
+	if (noisy)
+	{
+		lock_dcc(dcc);
+		if (do_hook(SEND_DCC_CHAT_LIST, "%s %s", dcc->user, orig))
+			put_it("=> =%s= %s", dcc->user, orig);
+		unlock_dcc(dcc);
 	}
     }
     while (0);
 
-	dcc_garbage_collect();
-	pop_message_from(l);
-	new_free(&target);
+    from_server = old_from_server;
+    if (dcc)
+	get_time(&dcc->lasttime);
+    dcc_garbage_collect();
+    pop_message_from(l);
+    new_free(&target);
 }
 
 
@@ -1735,7 +1597,7 @@ DCC_SUBCOMMAND(dcc_close_subcmd)
 		lock_dcc(dcc);
 		
 		if (dcc->description) {
-		    if (my_type == DCC_FILEOFFER)
+		    if (my_type == DCC_SEND)
 			encoded_description = dcc_urlencode(dcc->description);
 		    else
 			/* assume the other end encoded the filename */
@@ -2064,7 +1926,7 @@ static	const char	*format =
 	    next = dcc->next;
 	    lock_dcc(dcc);
 
-	    if ((flags & DCC_TYPES) == DCC_FILEOFFER)
+	    if ((flags & DCC_TYPES) == DCC_SEND)
 		encoded_description = dcc_urlencode(dcc->description);
 	    else
 		/* assume the other end encoded the filename */
@@ -2197,13 +2059,13 @@ static	const char	*format =
  */
 static	void	dcc_send_raw (char *args)
 {
-	char	*name;
+	char	*fd;
 	char	*host;
 	int	l;
 
-	if (!(name = next_arg(args, &args)))
+	if (!(fd = next_arg(args, &args)))
 	{
-		say("No name specified for DCC RAW");
+		say("No file descriptor name specified for DCC RAW");
 		return;
 	}
 	if (!(host = next_arg(args, &args)))
@@ -2212,8 +2074,8 @@ static	void	dcc_send_raw (char *args)
 		return;
 	}
 
-	l = message_from(name, LEVEL_DCC);
-	dcc_message_transmit(DCC_RAW, name, host, args, args, 1, NULL);
+	l = message_from(fd, LEVEL_DCC);
+	dcc_raw_transmit(fd, args);
 	pop_message_from(l);
 }
 
@@ -2227,7 +2089,7 @@ static	void	dcc_rename (char *args)
 	const char	*oldf;
 	const char	*newf;
 	char	*temp;
-	int	type = DCC_FILEREAD;
+	int	type = DCC_GET;
 	
 	if (!(user = next_arg(args, &args)) || !(temp = next_arg(args, &args)))
 	{
@@ -2257,13 +2119,13 @@ static	void	dcc_rename (char *args)
 
 	if ((dcc = dcc_searchlist(type, user, oldf, NULL, -1)))
 	{
-		if (type == DCC_FILEREAD && (dcc->flags & DCC_ACTIVE))
+		if (type == DCC_GET && (dcc->flags & DCC_ACTIVE))
 		{
 			say("Too late to rename that file");
 			return;
 		}
 
-		if (type == DCC_FILEREAD)
+		if (type == DCC_GET)
 		{
 			say("File %s from %s renamed to %s",
 				dcc->description ? dcc->description : "<any>",
@@ -2378,7 +2240,7 @@ static	void	dcc_filesend (char *args)
 		}
 
 		stat(fullname, &stat_buf);
-		if ((Client = dcc_searchlist(DCC_FILEOFFER, user, fullname,
+		if ((Client = dcc_searchlist(DCC_SEND, user, fullname,
 						this_arg, -1)))
 		{
 			if ((Client->flags & DCC_ACTIVE) ||
@@ -2392,7 +2254,7 @@ static	void	dcc_filesend (char *args)
 			}
 		}
 		else
-			Client = dcc_create(DCC_FILEOFFER, user, fullname,
+			Client = dcc_create(DCC_SEND, user, fullname,
 					this_arg, family, stat_buf.st_size);
 
 		Client->flags |= DCC_TWOCLIENTS;
@@ -2526,11 +2388,32 @@ char	*dcc_raw_connect (const char *host, const char *port, int family)
 
 
 /*
- * When a user does a CTCP DCC, it comes here for preliminary parsing.
+ * When someone sends us a CTCP DCC, it comes here for processing.
  *
- * XXX This function is not really family independant (but it's close)
+ * Legitimite DCC offers generally look like this:
+ *	:nick!user@host PRIVMSG :\001DCC TYPE description addr port\001
+ * and specifically, dcc sends look like
+ *	:nick!user@host PRIVMSG :\001DCC SEND filename addr port size\001
+ * and dcc chats look like
+ *	:nick!user@host PRIVMSG :\001DCC CHAT CHAT addr port\001
+ *
+ * so this maps to our arguments:
+ *	user 		The nickname of the person who sent us the offer
+ *	type		Either "SEND" (for file xfer) or "CHAT" (for msg xfer)
+ *	filename  	Either a filename
+ *			- This filename is always url-encoded.  Even if the 
+ *			  offer was double quoted with spaces,  It can never
+ *			  contain spaces.
+ *			- Otherwise, it might be url-encoded
+ *			or the literal string "chat" for dcc chat's.
+ *	address		Either a 32 bit network order integer (for ipv4)
+ *			-Or a p-addr (optional for ipv4, mandatory for ipv6)
+ *			where the person will accept connections.
+ *	port		The port on the address where the other person listens
+ *	size		Either a file size for dcc send
+ *			-Or the empty string (or NULL) for dcc chat
  */
-void	register_dcc_offer (const char *user, char *type, char *description, char *address, char *port, char *size, char *extra, char *rest)
+void	register_dcc_offer (const char *user, char *type, char *url_filename, char *address, char *port, char *size)
 {
 	DCC_list *	dcc = NULL;
 	int		dtype;
@@ -2541,6 +2424,7 @@ void	register_dcc_offer (const char *user, char *type, char *description, char *
 	SS		offer;
 	intmax_t	filesize;
 	int		l;
+	char *		filename, *orig_str;
 
 	/* 
 	 * Ensure that nobody will mess around with us while we're working.
@@ -2552,16 +2436,22 @@ void	register_dcc_offer (const char *user, char *type, char *description, char *
     {
 	/* If we're debugging, give the user the raw handshake details. */
 	if (x_debug & DEBUG_DCC_SEARCH)
-		yell("register_dcc_offer: [%s|%s|%s|%s|%s|%s|%s]", 
-			user, type, description, address, port, size, extra);
+		yell("register_dcc_offer: [%s|%s|%s|%s|%s|%s]", 
+			user, type, url_filename, address, port, size);
+
+	orig_str = filename = urldecode(url_filename, NULL);
 
 	/* If they offer us a path with directory, ignore the directory. */
-	if ((c = strrchr(description, '/')))
-		description = c + 1;
+	if ((c = strrchr(filename, '/')))
+		filename = c + 1;
 
 	/* If they offer us a hidden ("dot") file, mangle the dot. */
-	if (*description == '.')
-		*description = '_';
+	if (*filename == '.')
+		*filename = '_';
+
+	new_free(&url_filename);
+	url_filename = urlencode(filename);
+	new_free(&orig_str);
 
 	/* If they give us a file size, set the global variable */
 	if (size && *size)
@@ -2579,10 +2469,10 @@ void	register_dcc_offer (const char *user, char *type, char *description, char *
 	    if (!size || !*size || !is_number(size))
 	    {
 		say("DCC SEND (%s) received from %s without a file size",
-					description, user);
+					url_filename, user);
 		break;
 	    }
-	    dtype = DCC_FILEREAD;
+	    dtype = DCC_GET;
 	}
 #ifdef MIRC_BROKEN_DCC_RESUME
 	else if (!my_stricmp(type, "RESUME"))
@@ -2598,7 +2488,7 @@ void	register_dcc_offer (const char *user, char *type, char *description, char *
 					user);
 		    break;
 		}
-		dcc_getfile_resume_demanded(user, description, address, port);
+		dcc_getfile_resume_demanded(user, url_filename, address, port);
 		break;
 	}
 	else if (!my_stricmp(type, "ACCEPT"))
@@ -2606,14 +2496,14 @@ void	register_dcc_offer (const char *user, char *type, char *description, char *
 		/*
 		 * See the comment above.
 		 */
-		dcc_getfile_resume_start (user, description, address, port);
+		dcc_getfile_resume_start (user, url_filename, address, port);
 		break;
 	}
 #endif
         else
         {
                 say("Unknown DCC %s (%s) received from %s", 
-				type, description, user);
+				type, url_filename, user);
 		break;
         }
 
@@ -2627,7 +2517,7 @@ void	register_dcc_offer (const char *user, char *type, char *description, char *
 	if ((err = inet_strton(address, port, (SA *)&offer, AI_NUMERICHOST)))
 	{
 		say("DCC %s (%s) request from %s had mangled return address "
-			"[%s] (%d)", type, description, user, address, err);
+			"[%s] (%d)", type, url_filename, user, address, err);
 		break;
 	}
 
@@ -2640,7 +2530,7 @@ void	register_dcc_offer (const char *user, char *type, char *description, char *
 	{
 		say("DCC %s (%s) request from %s could not be converted back "
 		    "into a p-addr [%s] [%s]", 
-			type, description, user, address, port);
+			type, url_filename, user, address, port);
 		break;
 	}
 
@@ -2659,7 +2549,7 @@ void	register_dcc_offer (const char *user, char *type, char *description, char *
 #ifdef INET6
 	else if (FAMILY(offer) == AF_INET6)
 	{
-		/* Reserved for future expansion */
+		/* Checking for invalid ipv6 addrs should be done here. */
 	}
 #endif
 
@@ -2708,7 +2598,7 @@ void	register_dcc_offer (const char *user, char *type, char *description, char *
 #ifdef INET6
 	else if (FAMILY(offer) == AF_INET6)
 	{
-		/* Reserved for future expansion */
+		/* Checking for forged ipv6 addrs should be done here. */
 	}
 #endif
 #endif
@@ -2718,7 +2608,7 @@ void	register_dcc_offer (const char *user, char *type, char *description, char *
 	{
 		say("DCC %s (%s) request from %s rejected because it "
 			"specified reserved port number (%hu) [%s]", 
-				type, description, user, 
+				type, url_filename, user, 
 				realport, port);
 		break;
 	}
@@ -2730,7 +2620,7 @@ void	register_dcc_offer (const char *user, char *type, char *description, char *
 	 *******************************************************************/
 
 	/* Get ourselves a new dcc entry. */
-	if ((dcc = dcc_searchlist(dtype, user, description, NULL, -1)))
+	if ((dcc = dcc_searchlist(dtype, user, url_filename, NULL, -1)))
 	{
 	    /* 
 	     * If DCC_MY_OFFER is set, that means we have already sent this 
@@ -2766,10 +2656,10 @@ void	register_dcc_offer (const char *user, char *type, char *description, char *
 		 */
 		else
 		{
-		    say("DCC %s collision for %s:%s", type, user, description);
+		    say("DCC %s collision for %s:%s", type, user, url_filename);
 		    send_ctcp(CTCP_NOTICE, user, CTCP_DCC,
 			"DCC %s collision occured while connecting to %s (%s)", 
-			type, get_server_nickname(from_server), description);
+			type, get_server_nickname(from_server), url_filename);
 		    break;
 		}
 	    }
@@ -2788,7 +2678,7 @@ void	register_dcc_offer (const char *user, char *type, char *description, char *
 	    }
 	}
 	else
-		dcc = dcc_create(dtype, user, description, NULL, 
+		dcc = dcc_create(dtype, user, url_filename, NULL, 
 					FAMILY(offer), filesize);
 
 	/*
@@ -2804,16 +2694,16 @@ void	register_dcc_offer (const char *user, char *type, char *description, char *
 	 * identical for $0-4, and SEND adds filename/size in $5-6 
 	 */
 	lock_dcc(dcc);
-	if ((dcc->flags & DCC_TYPES) == DCC_FILEREAD)
+	if ((dcc->flags & DCC_TYPES) == DCC_GET)
 	{
 		if (do_hook(DCC_REQUEST_LIST, "%s %s %s %s %s %s "INTMAX_FORMAT,
-				  user, type, description, p_addr, port,
+				  user, type, url_filename, p_addr, port,
 				  dcc->description, dcc->filesize))
 			goto display_it;
 	}
 	else
 	       if (do_hook(DCC_REQUEST_LIST, "%s %s %s %s %s",
-				  user, type, description, p_addr, port))
+				  user, type, url_filename, p_addr, port))
 			goto display_it;
 	unlock_dcc(dcc);
 
@@ -2831,7 +2721,7 @@ display_it:
 	 * For DCC SEND offers, if we already have the file, we need to warn
 	 * the user so they don't accidentally delete one of their files!
 	 */
-	if ((dcc->flags & DCC_TYPES) == DCC_FILEREAD)
+	if ((dcc->flags & DCC_TYPES) == DCC_GET)
 	{
 	    Stat 	statit;
 	    char *	realfilename;
@@ -2888,14 +2778,14 @@ display_it:
 	}
 
 	/* Thanks, Tychy! (lherron@imageek.york.cuny.edu) */
-	if ((dcc->flags & DCC_TYPES) == DCC_FILEREAD)
+	if ((dcc->flags & DCC_TYPES) == DCC_GET)
 		say("DCC %s (%s "INTMAX_FORMAT") request received "
 				"from %s!%s [%s (%s)]",
-			type, description, dcc->filesize, user, 
+			type, url_filename, dcc->filesize, user, 
 			FromUserHost, p_addr, port);
 	else
 		say("DCC %s (%s) request received from %s!%s [%s (%s)]", 
-			type, description, user, FromUserHost, p_addr, port);
+			type, url_filename, user, FromUserHost, p_addr, port);
     }
     while (0);
 
@@ -2955,10 +2845,10 @@ void	do_dcc (int fd)
 		    case DCC_RAW:
 			process_incoming_raw(Client);
 			break;
-		    case DCC_FILEOFFER:
+		    case DCC_SEND:
 			process_dcc_send(Client);
 			break;
-		    case DCC_FILEREAD:
+		    case DCC_GET:
 			process_incoming_file(Client);
 			break;
 		}
@@ -2966,20 +2856,8 @@ void	do_dcc (int fd)
 		pop_message_from(l);
 
 		from_server = previous_server;
+		break;	/* We've found and processed it -- stop the loop */
 	    }
-
-	    /*
-	     * Don't time out raw_listen sockets.
-	     */
-	    else if ((Client->flags & DCC_TYPES) == DCC_RAW_LISTEN) 
-		/* nothing */(void)0;
-
-	    /*
-	     * This shouldnt be neccesary any more, but what the hey,
-	     * I'm still paranoid.
-	     */
-	    if (!Client)
-		break;
 	}
 
 	if (!found_it)
@@ -2992,7 +2870,6 @@ void	do_dcc (int fd)
 	unlock_dcc(NULL);
 	dcc_garbage_collect();
 }
-
 
 
 /*********************************** DCC CHAT *******************************/
@@ -3879,7 +3756,7 @@ static void	DCC_close_filesend (DCC_list *Client, const char *info,
 
 	lock_dcc(Client);
 	
-	if ((Client->flags & DCC_TYPES) == DCC_FILEOFFER)
+	if ((Client->flags & DCC_TYPES) == DCC_SEND)
 		encoded_description = dcc_urlencode(Client->description);
 	else
 		/* assume the other end encoded the filename */
@@ -4035,7 +3912,7 @@ static void	dcc_getfile_resume_demanded (const char *user, char *filename, char 
 	if (!strcmp(filename, "file.ext"))
 		filename = NULL;
 
-	if (!(Client = dcc_searchlist(DCC_FILEOFFER, user, filename, port, 0)))
+	if (!(Client = dcc_searchlist(DCC_SEND, user, filename, port, 0)))
 	{
 		if (x_debug & DEBUG_DCC_XMIT)
 			yell("Resume request that doesnt exist.  Hmmm.");
@@ -4077,7 +3954,7 @@ static	void	dcc_getfile_resume_start (const char *nick, char *filename, char *po
 	if (!strcmp(filename, "file.ext"))
 		filename = NULL;
 
-	if (!(Client = dcc_searchlist(DCC_FILEREAD, nick, filename, port, 0)))
+	if (!(Client = dcc_searchlist(DCC_GET, nick, filename, port, 0)))
 		return;		/* Its fake. */
 
 	Client->flags |= DCC_TWOCLIENTS;

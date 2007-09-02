@@ -3,13 +3,13 @@ EPIC5 Projects, Bugs, and other Errata:
 KNOWN ERRATA (eg, bugs, or unresolved requests):
 ------------------------------------------------
 * Support $HOME with spaces in it for cygwin.
-* @ *0 = "foo"  doesn't work because *0 -> 0, and it should be $0.
-*  What happens when % appears in a public in an implied hook?
-       @ hookctl(set list public implied {%B<%R${isoper($0) ? [*] :
-                                        []}%C$chanflag($0 $1)%n$0%B>%n $2-}); 
 * Howl wants to specify a minimum number of lines before (Held: ) shows.
   - "(Held)" should be displayed until it hits /window hold_interval
 * Twincest wants a way to be able to change a dcc's alternate filename
+<twincest> hop: my exact request was that spaces in the filename should be
++encoded to _ instead of %20, for readability 
+<twincest> hop: but it seems that that would best be implemented on top of
++some more general system 
 
 ISSUES OF INTEREST
 ------------------
@@ -129,3 +129,5 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Apparantly solaris 9 doesn't have <stdint.h>, intmax_t, or strtoimax. ick.
 * Begin "fixing" protected implied hooks.  Must test above examples.
 * The sequence we delete stuff on shutdown actually does matter.  (Fix crash)
+* OK.  The implied hook, and protected implied hook stuff works now
+* Make a note in UPDATES about *0 being an rval instead of lval, and *(*0).

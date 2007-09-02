@@ -1,4 +1,4 @@
-/* $EPIC: ctcp.c,v 1.54 2006/09/23 02:56:44 jnelson Exp $ */
+/* $EPIC: ctcp.c,v 1.55 2007/09/02 16:37:57 jnelson Exp $ */
 /*
  * ctcp.c:handles the client-to-client protocol(ctcp). 
  *
@@ -292,28 +292,26 @@ CTCP_HANDLER(do_atmosphere)
  */
 CTCP_HANDLER(do_dcc)
 {
-	char	*type;
-	char	*description;
-	char	*inetaddr;
-	char	*port;
-	char	*size;
-	char	*extra_flags;
+	char	*type, *filename, *host, *port, *size;
+	char 	*safe_filename;
 
 	if (!is_me(from_server, to) && *from != '=')
 		return NULL;
 
-	if     (!(type = next_arg(cmd, &cmd)) ||
-		!(description = (get_int_var(DCC_DEQUOTE_FILENAMES_VAR)
-				? new_next_arg(cmd, &cmd)
-				: next_arg(cmd, &cmd))) ||
-		!(inetaddr = next_arg(cmd, &cmd)) ||
-		!(port = next_arg(cmd, &cmd)))
-			return NULL;
+	type     = next_arg(cmd, &cmd);
+	filename = (get_int_var(DCC_DEQUOTE_FILENAMES_VAR)
+			? urlencode(new_next_arg(cmd, &cmd))
+			: malloc_strdup(next_arg(cmd, &cmd)));
+	host     = next_arg(cmd, &cmd);
+	port     = next_arg(cmd, &cmd);
+	size     = next_arg(cmd, &cmd);
 
-	size = next_arg(cmd, &cmd);
-	extra_flags = next_arg(cmd, &cmd);
+	if (!type || !filename || !host || !port)
+		return NULL;
 
-	register_dcc_offer(from, type, description, inetaddr, port, size, extra_flags, cmd);
+	register_dcc_offer(from, type, filename, host, port, size);
+	new_free(&filename);
+
 	return NULL;
 }
 
