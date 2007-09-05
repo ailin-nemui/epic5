@@ -1,4 +1,4 @@
-/* $EPIC: ircaux.c,v 1.179 2007/08/23 03:56:36 jnelson Exp $ */
+/* $EPIC: ircaux.c,v 1.180 2007/09/05 20:10:03 howl Exp $ */
 /*
  * ircaux.c: some extra routines... not specific to irc... that I needed 
  *
@@ -5439,6 +5439,77 @@ void	init_transforms (void)
 				   default_transformers[i].encoder,
 				   default_transformers[i].decoder);
 	}
+}
+
+
+/* 
+ * num_code_points(s) returns the number of code points in string s.
+ * However, if it "chokes" on one (1) sequence it mistakes for a code point,
+ * it returns this code point's index number negatively. 
+ * If the string doesn't end up "matching" (code points pluss
+ * trailing bytes should count up to the length of the string), nil (0)
+ * is returned.
+ */
+int num_code_points(const char *i)
+{
+	/*
+	 * I apologise the extensive use of one letter variables.
+	 * 'n' indexes current character of 'input'.
+	 * 'l' is the length of 'input'.
+	 * 't' is a temporary variable used to indicate number of
+	 * 	trailing bytes in a sequence.
+	 * 'v' is the number of valid first bytes..
+	 * 'd' is the total of trailing bytes.
+	 * 's' is the total of seven bit bytes.
+	 */
+
+	int n = 0, l, t = 0, v = 0, d = 0, s = 0;
+	l = strlen (i);
+	
+	for (n = 0; n < l; n++)
+	{
+		if (t)
+		{
+			if (((i[n] & (1 << 7)) && !(i[n] & (1 << 6))))
+			{
+				t--;
+				continue;
+			}
+			return (s + v) * -1;
+		}
+		/* This is not an eight bit character. */
+		if (!(i[n] & (1 << 7)))
+		{
+			s++;
+			continue;
+		}
+		
+		/* This is most presumably the first byte of a sequence. */
+		v++;
+	
+		/* 
+		 * I was thinking of doing this in a for (...;...;...) manner,
+		 * but as a matter of fact, this is *probably* somewhat
+		 * better.
+		 */
+		if (!(i[n] & (1 << 6))) t = 0;
+		else if (!(i[n] & (1 << 5))) t = 1;
+		else if (!(i[n] & (1 << 4))) t = 2;
+		else if (!(i[n] & (1 << 3))) t = 3;
+		else if (!(i[n] & (1 << 2))) t = 4;
+		else if (!(i[n] & (1 << 1))) t = 5;
+		else
+		{
+			/* Invalid. 1111 1111 is not a good first byte. */
+			return 0;
+		}
+		d += t;
+	}
+
+	/* At this juncture, d + v should be l. */
+	if (s + d + v != l)
+		return 0;
+	return v + s;
 }
 
 

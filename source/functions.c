@@ -1,4 +1,4 @@
-/* $EPIC: functions.c,v 1.255 2007/09/02 16:49:58 howl Exp $ */
+/* $EPIC: functions.c,v 1.256 2007/09/05 20:10:03 howl Exp $ */
 /*
  * functions.c -- Built-in functions for ircII
  *
@@ -295,6 +295,7 @@ static	char
 	*function_isfilevalid	(char *),
 	*function_ishalfop	(char *),
 	*function_isnumber	(char *),
+	*function_isutf8	(char *),
 	*function_jn		(char *),
 	*function_joinstr	(char *),
 	*function_jot 		(char *),
@@ -589,6 +590,7 @@ static BuiltInFunctions	built_in_functions[] =
 	{ "ISFILEVALID",	function_isfilevalid	},
 	{ "ISHALFOP",		function_ishalfop	},
 	{ "ISNUMBER",		function_isnumber	},
+	{ "ISUTF8",		function_isutf8		},
 	{ "ITEMTOINDEX",        function_itemtoindex 	},
 	{ "JN",			function_jn		},
 	{ "JOINSTR",		function_joinstr	},
@@ -6813,4 +6815,12 @@ BUILT_IN_FUNCTION(function_is8bit, input) {
 		if (input[n] & 0x80)
 			RETURN_INT(n);
 	RETURN_INT(-1);
+}
+
+/* Returns the result of num_code_points(). D'oh! */
+BUILT_IN_FUNCTION(function_isutf8, input)
+{
+	if (!input || !*input)
+		RETURN_EMPTY;
+	RETURN_INT(num_code_points(input));
 }
