@@ -143,3 +143,4 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Fix up dcc_raw_transmit() so the hostname isn't required
 * This means /dcc raw <fd> <host> <msg> ignores <host>. yay!
 * Add $is8bit(). See UPDATES.
+* Change $tobase(). Now $tobase(b i) should support negative integers (i).

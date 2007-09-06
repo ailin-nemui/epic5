@@ -1,4 +1,4 @@
-/* $EPIC: functions.c,v 1.256 2007/09/05 20:10:03 howl Exp $ */
+/* $EPIC: functions.c,v 1.257 2007/09/06 21:33:20 howl Exp $ */
 /*
  * functions.c -- Built-in functions for ircII
  *
@@ -6516,7 +6516,7 @@ BUILT_IN_FUNCTION(function_strtol, input)
  */
 BUILT_IN_FUNCTION(function_tobase, input)
 {
-	int	c, base, len = 0, pos = 0;
+	int	c, base, len = 0, pos = 0, negate = 0;
 	intmax_t	n, num;
 	char *	string;
 	char 	table[] = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ";
@@ -6530,18 +6530,33 @@ BUILT_IN_FUNCTION(function_tobase, input)
 
 	if (!input || !*input || base < 2 || base > 36)
 		RETURN_EMPTY;
-	GET_FUNC_ARG(number, input);
-	num = strtoimax(number, &after, 10);	/* Must not use GET_INT_ARG */
 
+	if (*input == '-')
+	{
+		negate = 1;
+		input++;
+	}
+	GET_INT_ARG(num, input);
+	//num = strtoimax(number, &after, 10);	/* Must not use GET_INT_ARG */
 	while (pow(base, len) <= num)
 		len++;
 
 	if (!len)
 		RETURN_EMPTY;
+	
+	if (negate == 1)
+		len++;
 
 	string = new_malloc(len + 1);
 	string[len] = 0;
 	
+	if (negate)
+	{
+		string[0] = '-';
+		pos++;
+		len--;
+	}
+
 	while (len-- > 0)
 	{
 		n = (intmax_t)pow(base, len),
