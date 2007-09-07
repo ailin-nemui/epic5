@@ -1,4 +1,4 @@
-/* $EPIC: commands.c,v 1.170 2007/08/14 02:29:50 jnelson Exp $ */
+/* $EPIC: commands.c,v 1.171 2007/09/07 18:07:29 jnelson Exp $ */
 /*
  * commands.c -- Stuff needed to execute commands in ircII.
  *		 Includes the bulk of the built in commands for ircII.
@@ -981,6 +981,8 @@ BUILT_IN_COMMAND(xechocmd)
 		case 'A':	/* ALL (output to all windows) */
 		case '*':
 		{
+			flag_arg = next_arg(args, &args);
+
 			if (toupper(flag_arg[2]) == 'S')
 				all_windows_for_server = 1;
 			else

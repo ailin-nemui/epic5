@@ -1,4 +1,4 @@
-/* $EPIC: server.c,v 1.230 2007/08/23 03:56:36 jnelson Exp $ */
+/* $EPIC: server.c,v 1.231 2007/09/07 18:07:29 jnelson Exp $ */
 /*
  * server.c:  Things dealing with that wacky program we call ircd.
  *
@@ -3087,7 +3087,7 @@ static void	reset_server_altnames (int refnum, char *new_altnames)
 
 	for (i = 0; i < s->altnames->numitems; i++)
 		/* XXX Free()ing this (const char *) is ok */
-		new_free((char **)&s->altnames->list[i].name);	
+		new_free((char **)(intptr_t)&s->altnames->list[i].name);	
 
 	s->altnames->numitems = 0;
 

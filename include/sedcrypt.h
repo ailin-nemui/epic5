@@ -56,4 +56,7 @@ typedef struct	CryptStru
 	ssize_t aessha_decoder (const char *, size_t, const void *, size_t, char *, size_t);
 #endif
 
+	void     encrypt_sed (unsigned char *, int, const unsigned char *, int);
+	void     decrypt_sed (unsigned char *, int, const unsigned char *, int);
+
 #endif /* _CRYPT_H_ */

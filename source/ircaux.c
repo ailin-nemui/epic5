@@ -1,4 +1,4 @@
-/* $EPIC: ircaux.c,v 1.180 2007/09/05 20:10:03 howl Exp $ */
+/* $EPIC: ircaux.c,v 1.181 2007/09/07 18:07:29 jnelson Exp $ */
 /*
  * ircaux.c: some extra routines... not specific to irc... that I needed 
  *
@@ -2527,18 +2527,18 @@ static char dump[640];
 /* XXXX this doesnt belong here. im not sure where it goes, though. */
 char *	get_userhost (void)
 {
-	static char userhost[BIG_BUFFER_SIZE];
+	static char uh[BIG_BUFFER_SIZE];
 
 	const char *x = get_string_var(DEFAULT_USERNAME_VAR);
 
 	if (x && *x)
-		strlcpy(userhost, x, sizeof userhost);
+		strlcpy(uh, x, sizeof uh);
 	else
-		strlcpy(userhost, "Unknown", sizeof userhost);
+		strlcpy(uh, "Unknown", sizeof uh);
 
-	strlcat(userhost, "@", sizeof userhost);
-	strlcat(userhost, hostname, sizeof userhost);
-	return userhost;
+	strlcat(uh, "@", sizeof uh);
+	strlcat(uh, hostname, sizeof uh);
+	return uh;
 }
 
 
@@ -5265,20 +5265,24 @@ static ssize_t	sha256_encoder (const char *orig, size_t orig_len, const void *me
 #ifdef HAVE_ICONV
 static ssize_t	iconv_recoder (const char *orig, size_t orig_len, const void *meta, size_t meta_len, char *dest, size_t dest_len)
 {
-	int sp;
+	size_t sp;
 	size_t len, orig_left = orig_len, dest_left = dest_len, n;
 	char *fromcode, *tocode, *dest_ptr;
 	const char *orig_ptr;
+	char *encodings;
+
 	iconv_t cd;
 	dest_ptr = (char *) dest;
 	orig_ptr = orig;	
 
-	for (sp = 0; *((char *) meta + sp) != '/'; sp++ < meta_len);
+	encodings = LOCAL_COPY((const char *)meta);
+	for (sp = 0; encodings[sp] != '/'; sp++ < meta_len)
+		;
 	if (sp == 0 || sp >= meta_len)
 		return 0;
-	((char *)meta)[sp] = '\0';
-	fromcode = (char *) meta;
-	tocode = (char *) meta + sp + 1;
+	encodings[sp] = '\0';
+	fromcode = encodings;
+	tocode = encodings + sp + 1;
 	cd = iconv_open (tocode, fromcode);
 	if (cd == (iconv_t) -1)
 	{
@@ -5309,11 +5313,11 @@ static ssize_t	iconv_recoder (const char *orig, size_t orig_len, const void *met
 
 struct Transformer
 {
-	int		refnum;
+	int	refnum;
 	const char *	name;
-	int		takes_meta;
-	ssize_t		(*encoder) (const char *, size_t, const void *, size_t, char *, size_t);
-	ssize_t		(*decoder) (const char *, size_t, const void *, size_t, char *, size_t);
+	int	takes_meta;
+	ssize_t	(*encoder) (const char *, size_t, const void *, size_t, char *, size_t);
+	ssize_t	(*decoder) (const char *, size_t, const void *, size_t, char *, size_t);
 };
 
 struct Transformer default_transformers[] = {
@@ -5392,7 +5396,7 @@ char *	valid_transforms (void)
 	return retval;
 }
 
-int	register_transform (const char *name, int takes_meta, ssize_t (*encoder)(const char *, size_t, const void *, size_t, char *, size_t), ssize_t (*decoder)(const char *, size_t, const void *, size_t, char *, size_t))
+static int	register_transform (const char *name, int takes_meta, ssize_t (*encoder)(const char *, size_t, const void *, size_t, char *, size_t), ssize_t (*decoder)(const char *, size_t, const void *, size_t, char *, size_t))
 {
 	int	i, max = 0;
 
@@ -5408,15 +5412,17 @@ int	register_transform (const char *name, int takes_meta, ssize_t (*encoder)(con
 			return i;
 		}
 	} 
+	return -1;
 }
 
-int	unregister_transform (int i)
+static int	unregister_transform (int i)
 {
 	/* We don't change 'refnum' so this entry doesn't get re-used! */
-	new_free(&transformers[i].name);
+	new_free((char **)(intptr_t)&transformers[i].name);
 	transformers[i].takes_meta = 0;
 	transformers[i].encoder = NULL;
 	transformers[i].decoder = NULL;
+	return i;
 }
 
 void	init_transforms (void)

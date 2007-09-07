@@ -1,4 +1,4 @@
-/* $EPIC: functions.c,v 1.257 2007/09/06 21:33:20 howl Exp $ */
+/* $EPIC: functions.c,v 1.258 2007/09/07 18:07:29 jnelson Exp $ */
 /*
  * functions.c -- Built-in functions for ircII
  *
@@ -6537,7 +6537,9 @@ BUILT_IN_FUNCTION(function_tobase, input)
 		input++;
 	}
 	GET_INT_ARG(num, input);
-	//num = strtoimax(number, &after, 10);	/* Must not use GET_INT_ARG */
+#if 0
+	num = strtoimax(number, &after, 10);	/* Must not use GET_INT_ARG */
+#endif
 	while (pow(base, len) <= num)
 		len++;
 
@@ -6760,14 +6762,14 @@ BUILT_IN_FUNCTION(function_xform, input)
 			GET_DWORD_ARG(arg, input)
 		else
 			arg = NULL;
-	    }
 
-	    if (i < MAX_TRANSFORMS && type > -1)
-	    {
-		types[i] = type;
-		encodings[i] = encoding;
-		args[i] = arg;
-		i++;
+		if (i < MAX_TRANSFORMS)
+	        {
+			types[i] = type;
+			encodings[i] = encoding;
+			args[i] = arg;
+			i++;
+		}
 	    }
 	}
 

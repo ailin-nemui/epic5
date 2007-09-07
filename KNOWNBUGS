@@ -144,3 +144,5 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * This means /dcc raw <fd> <host> <msg> ignores <host>. yay!
 * Add $is8bit(). See UPDATES.
 * Change $tobase(). Now $tobase(b i) should support negative integers (i).
+* Revert commit 1498 (the dcc stuff) -- it was half baked.
+* Fix warnings found with --with-warns.

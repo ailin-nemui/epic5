@@ -1,4 +1,4 @@
-/* $EPIC: crypto.c,v 1.12 2007/06/02 15:04:56 jnelson Exp $ */
+/* $EPIC: crypto.c,v 1.13 2007/09/07 18:07:29 jnelson Exp $ */
 /*
  * crypto.c: SED/CAST5/BLOWFISH/AES encryption and decryption routines.
  *
@@ -165,13 +165,11 @@
 #ifdef HAVE_SSL
 static char *	decipher_evp (const unsigned char *key, int keylen, const unsigned char *ciphertext, int cipherlen, const EVP_CIPHER *type, int *outlen, int ivsize);
 #endif
-void     decrypt_sed (unsigned char *str, int len, const unsigned char *key, int key_len);
 static char *	decrypt_by_prog (const unsigned char *str, size_t *len, Crypt *key);
 
 #ifdef HAVE_SSL
 static char *	cipher_evp (const unsigned char *key, int keylen, const unsigned char *plaintext, int plaintextlen, const EVP_CIPHER *type, int *retsize, int ivsize);
 #endif
-void     encrypt_sed (unsigned char *str, int len, char *key, int key_len);
 static char *	encrypt_by_prog (const unsigned char *str, size_t *len, Crypt *key);
 
 unsigned char *	decipher_message (const unsigned char *ciphertext, size_t len, Crypt *key, int *retlen)
@@ -463,7 +461,7 @@ static char *	cipher_evp (const unsigned char *key, int keylen, const unsigned c
 }
 #endif
 
-void     encrypt_sed (unsigned char *str, int len, char *key, int key_len)
+void     encrypt_sed (unsigned char *str, int len, const unsigned char *key, int key_len)
 {
         int     key_pos,
                 i;
@@ -516,7 +514,7 @@ static char *	encrypt_by_prog (const unsigned char *str, size_t *len, Crypt *key
 
 /**************************************************************************/
 #ifdef HAVE_SSL
-void	ext256_key (const char *orig, size_t orig_len, char **key, size_t *keylen)
+static void	ext256_key (const char *orig, size_t orig_len, char **key, size_t *keylen)
 {
 	size_t	len;
 
@@ -531,14 +529,14 @@ void	ext256_key (const char *orig, size_t orig_len, char **key, size_t *keylen)
 	*keylen = 32;
 }
 
-void	sha256_key (const char *orig, size_t orig_len, char **key, size_t *keylen)
+static void	sha256_key (const char *orig, size_t orig_len, char **key, size_t *keylen)
 {
 	*key = new_malloc(32);
 	sha256(orig, orig_len, *key);
 	*keylen = 32;
 }
 
-void	copy_key (const char *orig, size_t orig_len, char **key, size_t *keylen)
+static void	copy_key (const char *orig, size_t orig_len, char **key, size_t *keylen)
 {
 	*key = malloc_strdup(orig);
 	*keylen = orig_len;
@@ -568,7 +566,7 @@ ssize_t	x ## _encoder (const char *orig, size_t orig_len, const void *meta, size
 	if (retval && retsize > 0) 					\
 	{ 								\
 		size_t	numb; 						\
-		if (dest_len < retsize) 				\
+		if (dest_len < (size_t)retsize) 			\
 			numb = dest_len; 				\
 		else 							\
 			numb = retsize; 				\
@@ -592,7 +590,7 @@ ssize_t	x ## _decoder (const char *ciphertext, size_t len, const void *meta, siz
 	char *	realkey;						\
 	size_t	realkeylen;						\
 									\
-	if (len == 0) 							\
+	if (len == 0)							\
 	{								\
 		*dest = 0; 						\
 		return 0; 						\
