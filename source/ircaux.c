@@ -1,4 +1,4 @@
-/* $EPIC: ircaux.c,v 1.181 2007/09/07 18:07:29 jnelson Exp $ */
+/* $EPIC: ircaux.c,v 1.182 2007/09/10 04:13:26 jnelson Exp $ */
 /*
  * ircaux.c: some extra routines... not specific to irc... that I needed 
  *
@@ -3246,7 +3246,7 @@ char *	urlencode (const char *s)
 {
 	static const char safe[] = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
 				   "abcdefghijklmnopqrstuvwxyz"
-				   "0123456789-_";
+				   "0123456789-._~";
 #if 0
 	static const char unsafe[] = "`'!@#$%^&*(){}<>~|\\\";? ,/+";
 #endif
@@ -4816,7 +4816,7 @@ static ssize_t	url_encoder (const char *orig, size_t orig_len, const void *meta,
 {
 	static const char safe[] = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
 				   "abcdefghijklmnopqrstuvwxyz"
-				   "0123456789-_";
+				   "0123456789-._~";
 #if 0
         static const char unsafe[] = "`'!@#$%^&*(){}<>~|\\\";? ,/+";
 #endif
