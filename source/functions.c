@@ -1,4 +1,4 @@
-/* $EPIC: functions.c,v 1.258 2007/09/07 18:07:29 jnelson Exp $ */
+/* $EPIC: functions.c,v 1.259 2007/09/13 00:09:48 jnelson Exp $ */
 /*
  * functions.c -- Built-in functions for ircII
  *
@@ -819,7 +819,9 @@ char	*call_function (char *name, const char *args)
 	str = remove_brackets(name, args);
 	alias = get_func_alias(str, &arglist, &func);
 
-	if (!func && !alias)
+	if ((type == 0 && (!func && !alias)) ||
+	    (type == 1 && !alias) ||
+	    (type == 2 && !func))
 	{
 	    if (x_debug & DEBUG_UNKNOWN)
 		yell("Function call to non-existant alias [%s]", str);

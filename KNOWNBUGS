@@ -2,7 +2,6 @@ EPIC5 Projects, Bugs, and other Errata:
 
 KNOWN ERRATA (eg, bugs, or unresolved requests):
 ------------------------------------------------
-* Support $HOME with spaces in it for cygwin.
 * Howl wants to specify a minimum number of lines before (Held: ) shows.
   - "(Held)" should be displayed until it hits /window hold_interval
 * Twincest wants a way to be able to change a dcc's alternate filename
@@ -10,9 +9,13 @@ KNOWN ERRATA (eg, bugs, or unresolved requests):
 +encoded to _ instead of %20, for readability 
 <twincest> hop: but it seems that that would best be implemented on top of
 +some more general system 
+* Howl wants a function to split into dwords (like for PATH)
 
 ISSUES OF INTEREST
 ------------------
+* Support $HOME with spaces in it for cygwin.
+* Msoul wants a centralized script web service like irssi has with 
+	http://irssi.org/scripts/scripts/scriptassist.pl
 * Now that $xform() is mature, we can script many things:
     encode decode urlencode urldecode b64encode b64decode sedcrypt sha256
 * Rewrite the input prompt to use a linked list instead of a C string.
@@ -147,3 +150,4 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Revert commit 1498 (the dcc stuff) -- it was half baked.
 * Fix warnings found with --with-warns.
 * The dot (".") and tilde ("~") are unreserved characters in rfc3986 (urlencode)
+* Fix panic when you call :func() and there is a builtin, but no alias.
