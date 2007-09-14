@@ -1,4 +1,4 @@
-/* $EPIC: status.c,v 1.71 2007/07/20 22:29:33 jnelson Exp $ */
+/* $EPIC: status.c,v 1.72 2007/09/14 02:55:54 jnelson Exp $ */
 /*
  * status.c: handles the status line updating, etc for IRCII 
  *
@@ -84,6 +84,7 @@ STATUS_FUNCTION(status_user);
 STATUS_FUNCTION(status_dcc);
 STATUS_FUNCTION(status_dcc_all);
 STATUS_FUNCTION(status_hold);
+STATUS_FUNCTION(status_holdmode);
 STATUS_FUNCTION(status_version);
 STATUS_FUNCTION(status_clock);
 STATUS_FUNCTION(status_hold_lines);
@@ -196,6 +197,7 @@ struct status_formats status_expandos[] = {
 { 1, '9', status_user,		NULL, 			NULL },
 { 1, 'D', status_dcc_all,	NULL, 			NULL },
 { 1, 'F', status_notify_windows,&notify_format,		&STATUS_NOTIFY_VAR },
+{ 1, 'H', status_holdmode,	NULL,			NULL },
 { 1, 'K', status_scroll_info,	NULL,			NULL },
 { 1, 'R', status_refnum_real,   NULL, 			NULL },
 { 1, 'S', status_server,        &server_format,     	&STATUS_SERVER_VAR },
@@ -1389,6 +1391,26 @@ STATUS_FUNCTION(status_hold)
 	    window->scrollback_distance_from_display_ip > window->display_lines)
 		if ((text = get_string_var(STATUS_HOLD_VAR)))
 			return text;
+	return empty_string;
+}
+
+STATUS_FUNCTION(status_holdmode)
+{
+	char *text;
+
+	/* If hold mode is on... */
+	if (window->holding_top_of_display)
+	{
+	    /* ... and we're not holding anything */
+	    if (window->holding_distance_from_display_ip <
+				window->display_lines  &&
+	         window->scrollback_distance_from_display_ip <
+				window->display_lines)
+	    {
+		if ((text = get_string_var(STATUS_HOLDMODE_VAR)))
+			return text;
+	    }
+	}
 	return empty_string;
 }
 

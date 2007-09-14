@@ -1,5 +1,43 @@
 EPIC5-0.3.4
 
+*** News 09/13/2007 -- New /SET, /SET STATUS_HOLDMODE
+	This is the value that %{1}H expands to.  The default is " (Hold)".
+	If you don't like the "(Hold)" in your status bar when your window
+	is in hold mode but not holding anything, unset this variable 
+	entirely:
+		/set -status_holdmode
+	and it will disappear.  Or remove %{1}H from your status format.
+
+*** News 09/13/2007 -- New status expando, %{1}H, hold mode indicator.
+	The %H status expando expands when your window is in hold mode
+	*and* there is something being held.  But if your window is in
+	hold mode, but nothing is held, you can't tell just by looking.
+	So the %{1}H status expando will expand whenever the window is in
+	hold mode *except* when %H will expando.  This is so you can put
+			%{1}H%H 
+	in your status format and one or the other (but not both) will 
+	expand at all times hold mode is on.
+
+	This expando has been added to the client's default status format.
+	The value of %{1}H is controlled by /set status_holdmode, and the
+	default value of that is " (Hold)"
+
+*** News 09/13/2007 -- Remember, *0 is an rvalue, but *var is an lvalue
+	The deref operator ("*") converts a token into an rvalue and then
+	uses that as an lvalue.  Example:
+		assign foo bar
+		@ *foo = [testing]
+		echo $bar
+	in the above (*foo) is the same as "bar".  But numbers are different.
+	Derefing a number yields an rvalue:
+		alias oofda { @ foo = *0 }
+		offda one
+	To convert an argument into an lvalue, deref it a second time:
+		alias booya { @ *(*0) = 'testing' }
+		booya varname
+		echo $varname
+	Does that make it clear?
+
 *** News 09/02/2007 -- New function, $is8bit(string)
 	This function find the first character of string that has the
 	eight bit set. Useful to discover Unicode-strings or other 

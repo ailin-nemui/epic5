@@ -4,15 +4,16 @@ KNOWN ERRATA (eg, bugs, or unresolved requests):
 ------------------------------------------------
 * Howl wants to specify a minimum number of lines before (Held: ) shows.
   - "(Held)" should be displayed until it hits /window hold_interval
-* Twincest wants a way to be able to change a dcc's alternate filename
-<twincest> hop: my exact request was that spaces in the filename should be
-+encoded to _ instead of %20, for readability 
-<twincest> hop: but it seems that that would best be implemented on top of
-+some more general system 
+-> (#epic) howl: alright. so i will add a new status expando, let's call it
++%{1}H that will expand to /set status_hold_mode and will expand *IF AND ONLY
++IF* hold mode is on, *and* the window is not holding anything.
+
 * Howl wants a function to split into dwords (like for PATH)
 
 ISSUES OF INTEREST
 ------------------
+* The way dcc filenames are handled is bad; you should be able to seamlessly
+  rewrite filenames both outbound and inbound.  URL encoding should auto-detect
 * Support $HOME with spaces in it for cygwin.
 * Msoul wants a centralized script web service like irssi has with 
 	http://irssi.org/scripts/scripts/scriptassist.pl
@@ -151,3 +152,6 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Fix warnings found with --with-warns.
 * The dot (".") and tilde ("~") are unreserved characters in rfc3986 (urlencode)
 * Fix panic when you call :func() and there is a builtin, but no alias.
+* Add new status expando %{1}H which expands when in hold mode and not holding.
+* Add /set status_holdmode which controls %{1}H
+* Add %{1}H to the default status format.
