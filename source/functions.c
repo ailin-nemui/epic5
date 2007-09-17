@@ -1,4 +1,4 @@
-/* $EPIC: functions.c,v 1.259 2007/09/13 00:09:48 jnelson Exp $ */
+/* $EPIC: functions.c,v 1.260 2007/09/17 03:34:15 jnelson Exp $ */
 /*
  * functions.c -- Built-in functions for ircII
  *
@@ -381,6 +381,7 @@ static	char
 	*function_skip		(char *),
 	*function_sort		(char *),
 	*function_split 	(char *),
+	*function_splitw	(char *),
 	*function_splice 	(char *),
 	*function_ssl		(char *),
 	*function_startupfile	(char *),
@@ -698,6 +699,7 @@ static BuiltInFunctions	built_in_functions[] =
 	{ "SORT",		function_sort		},
 	{ "SPLICE",		function_splice 	},
 	{ "SPLIT",		function_split 		},
+	{ "SPLITW",		function_splitw 	},
 	{ "SRAND",		function_srand 		},
 	{ "SSL",		function_ssl		},
 	{ "STARTUPFILE",	function_startupfile	},
@@ -6843,3 +6845,24 @@ BUILT_IN_FUNCTION(function_isutf8, input)
 		RETURN_EMPTY;
 	RETURN_INT(num_code_points(input));
 }
+
+/*
+ * This function converts a delimited string (ie, $PATH) into a dword list.
+ *  $splitw(: $PATH) -> /bin /usr/bin /usr/local/bin ...
+ */
+BUILT_IN_FUNCTION(function_splitw, input)
+{
+	int 	wordc;
+	char **wordl;
+	char	*retval;
+	char *	delim;
+
+	GET_DWORD_ARG(delim, input);
+
+	if (!(wordc = split_string(input, &wordl, *delim)))
+		RETURN_EMPTY;
+
+	retval = unsplitw(&wordl, wordc, DWORD_YES);
+	RETURN_MSTR(retval);
+}
+

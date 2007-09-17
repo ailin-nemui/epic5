@@ -2,16 +2,12 @@ EPIC5 Projects, Bugs, and other Errata:
 
 KNOWN ERRATA (eg, bugs, or unresolved requests):
 ------------------------------------------------
-* Howl wants to specify a minimum number of lines before (Held: ) shows.
-  - "(Held)" should be displayed until it hits /window hold_interval
--> (#epic) howl: alright. so i will add a new status expando, let's call it
-+%{1}H that will expand to /set status_hold_mode and will expand *IF AND ONLY
-+IF* hold mode is on, *and* the window is not holding anything.
-
-* Howl wants a function to split into dwords (like for PATH)
+* WJR says he can't load files from "." despite it being in his path.
+* wjr says he can /load foo but not /load .foo
 
 ISSUES OF INTEREST
 ------------------
+* Kreca mentions that word manip functions strip extraneous spaces.
 * The way dcc filenames are handled is bad; you should be able to seamlessly
   rewrite filenames both outbound and inbound.  URL encoding should auto-detect
 * Support $HOME with spaces in it for cygwin.
@@ -155,3 +151,8 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Add new status expando %{1}H which expands when in hold mode and not holding.
 * Add /set status_holdmode which controls %{1}H
 * Add %{1}H to the default status format.
+* Add split_string() which converts a general delimited string to (char **)
+* Add $splitw(delim string) which converts delimited string into a dword list
+* Use $unsplit() to convert $splitw() into a uword list (see UPDATES)
+* Fix ./configure --without-ipv6 to allow compiling on opensewer.
+

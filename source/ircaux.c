@@ -1,4 +1,4 @@
-/* $EPIC: ircaux.c,v 1.182 2007/09/10 04:13:26 jnelson Exp $ */
+/* $EPIC: ircaux.c,v 1.183 2007/09/17 03:34:15 jnelson Exp $ */
 /*
  * ircaux.c: some extra routines... not specific to irc... that I needed 
  *
@@ -2323,6 +2323,30 @@ char *	unsplitw (char ***container, int howmany, int extended)
 
 	new_free((char **)container);
 	return retval;
+}
+
+/*
+ * Break down a delimited string and return it in a form suitable for passing
+ * back to unsplitw().  This function works on delimiters and not on words.
+ * The entire point is for stuff like PATH.
+ */
+int 	split_string (char *str, char ***to, char delimiter)
+{
+	int	parts;
+	int	counter;
+	char *	x;
+
+	parts = count_char(str, delimiter) + 1;
+	*to = (char **)new_malloc(sizeof(char *) * parts);
+	for (counter = 0; counter < parts; counter++)
+	{
+		if ((x = strchr(str, delimiter)))
+			*x++ = 0;
+		(*to)[counter] = str;
+		str = x;
+	}
+
+	return parts;
 }
 
 double strtod();	/* sunos must die. */

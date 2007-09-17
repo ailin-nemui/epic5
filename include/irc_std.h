@@ -373,13 +373,12 @@ typedef int socklen_t;
 #undef INET6
 #endif
 
-#if !defined(HAVE_GETADDRINFO) || !defined(HAVE_GETNAMEINFO) || !defined(HAVE_STRUCT_ADDRINFO)
+#if !defined(HAVE_GETADDRINFO) || !defined(HAVE_GETNAMEINFO) || !defined(HAVE_STRUCT_ADDRINFO) || !defined(INET6)
 # define NEED_GAILIB
 # undef INET6
-# ifndef HAVE_GETADDRINFO
-#  define getaddrinfo getaddrinfo__compat
-#  define freeaddrinfo freeaddrinfo__compat
-#  define gai_strerror gai_strerror__compat
+# define getaddrinfo getaddrinfo__compat
+# define freeaddrinfo freeaddrinfo__compat
+# define gai_strerror gai_strerror__compat
    struct addrinfo__compat {
         int     ai_flags;       /* AI_PASSIVE, AI_CANONNAME */
         int     ai_family;      /* PF_xxx */
@@ -390,11 +389,8 @@ typedef int socklen_t;
         struct sockaddr *ai_addr;       /* binary address */
         struct addrinfo__compat *ai_next;    /* next structure in linked list */
    };
-#  define addrinfo addrinfo__compat
-# endif
-# ifndef HAVE_GETNAMEINFO
-#  define getnameinfo getnameinfo__compat
-# endif
+# define addrinfo addrinfo__compat
+# define getnameinfo getnameinfo__compat
 # include "gailib.h"
 #endif
 

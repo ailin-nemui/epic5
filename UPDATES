@@ -1,5 +1,27 @@
 EPIC5-0.3.4
 
+*** News 09/14/2007 -- New built in function: $splitw(<delim> <string>)
+	This function takes a <string> which has sections delimited by
+	<delim>.  The <delim> argument can only be one character.  An
+	obvious example of this is $PATH which is a <string> that uses
+	the colon as <delim>.  The <delim> is a dword, so you can use the
+	space as a delimiter if you needed to.
+
+	This function unconditionally converts <string> into a dword list.
+	You will need to xdebug dword to iterate over the return value, or
+	you can use $unsplit(" " $splitw(<delim> <string>)) to collapse it
+	to a uword list (although this is probably pointless)
+
+	Example:
+		@ directories = splitw(: $PATH)
+	might return
+		/bin /sbin /usr/bin /usr/sbin /usr/local/bin
+
+	Example:
+		@ foo = splitw(: one:two:three a berry:four:five)
+	returns
+		one two "three a berry" four five
+
 *** News 09/13/2007 -- New /SET, /SET STATUS_HOLDMODE
 	This is the value that %{1}H expands to.  The default is " (Hold)".
 	If you don't like the "(Hold)" in your status bar when your window
