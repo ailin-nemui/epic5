@@ -1,4 +1,4 @@
-/* $EPIC: ircaux.c,v 1.183 2007/09/17 03:34:15 jnelson Exp $ */
+/* $EPIC: ircaux.c,v 1.184 2007/09/17 03:43:57 jnelson Exp $ */
 /*
  * ircaux.c: some extra routines... not specific to irc... that I needed 
  *
@@ -1173,6 +1173,8 @@ int	path_search (const char *name, const char *xpath, Filename result)
 	    }
 	}
 
+/* This test looks really bogus.  The above test catches all these cases. */
+#if 0
 	/* 
 	 * There are three exceptions to path searching:
 	 * 1) absolute pathnames: /path/to/file, which start with "/"
@@ -1183,6 +1185,7 @@ int	path_search (const char *name, const char *xpath, Filename result)
 	 */
 	if (*name == '.' || *name == '/' || *name == '~')
 		return -1;
+#endif
 
 	*result = 0;
 	for (path = LOCAL_COPY(xpath); path; path = ptr)
