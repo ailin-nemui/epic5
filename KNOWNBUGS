@@ -2,8 +2,7 @@ EPIC5 Projects, Bugs, and other Errata:
 
 KNOWN ERRATA (eg, bugs, or unresolved requests):
 ------------------------------------------------
-* WJR says he can't load files from "." despite it being in his path.
-* wjr says he can /load foo but not /load .foo
+<none>
 
 ISSUES OF INTEREST
 ------------------
@@ -155,4 +154,4 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Add $splitw(delim string) which converts delimited string into a dword list
 * Use $unsplit() to convert $splitw() into a uword list (see UPDATES)
 * Fix ./configure --without-ipv6 to allow compiling on opensewer.
-
+* Fix apparantly bogus test that prevented .files from being /load'ed (rb wjr)
