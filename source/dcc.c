@@ -1,4 +1,4 @@
-/* $EPIC: dcc.c,v 1.149 2007/09/07 18:07:29 jnelson Exp $ */
+/* $EPIC: dcc.c,v 1.150 2007/09/20 04:00:10 jnelson Exp $ */
 /*
  * dcc.c: Things dealing client to client connections. 
  *
@@ -3933,8 +3933,11 @@ static void 	update_transfer_buffer (DCC_list *dcc, const char *format, ...)
 
 static	char *	dcc_urlencode (const char *s)
 {
-	const char *p1;
-	char *str, *p2, *ret;
+	const char 	*p1;
+	char 		*str, *p2;
+	char 		*ret;
+	size_t		retsize;
+	int		transform, numargs;
 
 	str = malloc_strdup(s);
 
@@ -3946,26 +3949,36 @@ static	char *	dcc_urlencode (const char *s)
 	}
 
 	*p2 = 0;
-	ret = urlencode(str);
+
+        transform = lookup_transform("URL", &numargs);
+	retsize = strlen(str) * 3 + 2;
+	ret = new_malloc(retsize);
+        transform_string(transform, 1, NULL, str, strlen(str), ret, retsize);
+
 	new_free(&str);
 	return ret;
+
 }
 
 static	char *	dcc_urldecode (const char *s)
 {
-	char *str, *p1;
+	char 	*ret, *p1;
+	size_t	retsize;
+	int	transform, numargs;
 
-	str = malloc_strdup(s);
-	urldecode(str, NULL);
+        transform = lookup_transform("URL", &numargs);
+	retsize = strlen(s) + 2;
+	ret = new_malloc(retsize);
+        transform_string(transform, 0, NULL, s, strlen(s), ret, retsize);
 
-	for (p1 = str; *p1; p1++)
+	for (p1 = ret; *p1; p1++)
 	{
 		if (*p1 != '.')
 			break;
 		*p1 = '_';
 	}
 
-	return str;
+	return ret;
 }
 
 int	wait_for_dcc (const char *descriptor)

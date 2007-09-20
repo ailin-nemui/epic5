@@ -1,4 +1,4 @@
-/* $EPIC: functions.c,v 1.260 2007/09/17 03:34:15 jnelson Exp $ */
+/* $EPIC: functions.c,v 1.261 2007/09/20 04:00:10 jnelson Exp $ */
 /*
  * functions.c -- Built-in functions for ircII
  *
@@ -161,8 +161,10 @@ static	char
 	*function_channels 	(char *), 
 	*function_connect 	(char *),
 	*function_curpos 	(char *), 
+#if 0
 	*function_decode 	(unsigned char *),
 	*function_encode 	(unsigned char *),
+#endif
 	*function_index 	(char *), 
 	*function_ischannel 	(char *),
 	*function_ischanop 	(char *), 
@@ -203,8 +205,10 @@ static	char
 	*function_aliasctl	(char *),
 	*function_ascii 	(char *),
 	*function_asciiq 	(char *),
+#if 0
 	*function_b64decode	(char *),
 	*function_b64encode	(char *),
+#endif
 	*function_before 	(char *),
 	*function_beforew 	(char *),
 	*function_bindctl	(char *),
@@ -369,13 +373,17 @@ static	char
 	*function_ruby		(char *),
 #endif
 	*function_sar 		(char *),
+#if 0
 	*function_sedcrypt 	(char *),
+#endif
 	*function_seek		(char *),
 	*function_server_version (char *),
 	*function_serverctl	(char *),
 	*function_servports	(char *),
 	*function_serverwin	(char *),
+#if 0
 	*function_sha256	(char *),
+#endif
 	*function_sin		(char *),
 	*function_sinh		(char *),
 	*function_skip		(char *),
@@ -415,8 +423,10 @@ static	char
 	*function_uniq		(char *),
 	*function_unlink 	(char *),
 	*function_unsplit	(char *),
+#if 0
 	*function_urldecode	(char *),
 	*function_urlencode	(char *),
+#endif
 	*function_which 	(char *),
 	*function_winchan	(char *),
 	*function_windowctl	(char *),
@@ -464,8 +474,10 @@ static BuiltInFunctions	built_in_functions[] =
 	{ "ASINH",		function_asinh		},
 	{ "ATAN",		function_atan		},
 	{ "ATANH",		function_atanh		},
+#if 0
 	{ "B64DECODE",		function_b64decode	},
 	{ "B64ENCODE",		function_b64encode	},
+#endif
 	{ "BEFORE",             function_before 	},
 	{ "BEFOREW",            function_beforew 	},
 	{ "BINDCTL",		function_bindctl	},
@@ -502,13 +514,17 @@ static BuiltInFunctions	built_in_functions[] =
 	{ "CURRCHANS",		function_currchans	},
 	{ "DBMCTL",		function_dbmctl		},
 	{ "DCCCTL",		function_dccctl		},
+#if 0
 	{ "DECODE",	  (bf *)function_decode 	},
+#endif
 	{ "DELARRAY",           function_delarray 	},
 	{ "DELITEM",            function_delitem	},
 	{ "DELITEMS",           function_delitems	},
 	{ "DEUHC",		function_deuhc		},
 	{ "DIFF",               function_diff 		},
+#if 0
 	{ "ENCODE",	  (bf *)function_encode 	},
+#endif
 	{ "ENCRYPTPARM",	function_encryptparm	},
 	{ "EOF",		function_eof 		},
 	{ "EPIC",		function_epic		},
@@ -518,9 +534,7 @@ static BuiltInFunctions	built_in_functions[] =
 	{ "FEXIST",             function_fexist 	},
 	{ "FILTER",             function_filter 	},
 	{ "FINDITEM",		function_finditem 	},
-#if 1
 	{ "FINDITEMS",		function_finditems 	},
-#endif
 	{ "FINDW",		function_findw		},
 	{ "FINDWS",		function_findws		},
 	{ "FIX_ARGLIST",	function_fix_arglist	},
@@ -561,9 +575,7 @@ static BuiltInFunctions	built_in_functions[] =
 	{ "IDLE",		function_idle		},
 	{ "IFINDFIRST",		function_ifindfirst 	},
 	{ "IFINDITEM",		function_ifinditem	},
-#if 1
 	{ "IFINDITEMS",		function_ifinditems	},
-#endif
 	{ "IGETITEM",           function_igetitem 	},
 	{ "IGETMATCHES",	function_igetmatches	},
 	{ "IGETRMATCHES",	function_igetrmatches	},
@@ -686,12 +698,16 @@ static BuiltInFunctions	built_in_functions[] =
 	{ "RUBY",		function_ruby		},
 #endif
 	{ "SAR",		function_sar 		},
+#if 0
 	{ "SEDCRYPT",		function_sedcrypt	},
+#endif
 	{ "SERVERCTL",		function_serverctl	},
 	{ "SERVERWIN",		function_serverwin	},
 	{ "SERVPORTS",		function_servports	},
 	{ "SETITEM",            function_setitem 	},
+#if 0
 	{ "SHA256",		function_sha256		},
+#endif
 	{ "SHIFT",		function_shift 		},
 	{ "SHIFTBRACE",		function_shiftbrace	},
 	{ "SIN",		function_sin		},
@@ -740,8 +756,10 @@ static BuiltInFunctions	built_in_functions[] =
 	{ "UNLINK",		function_unlink 	},
 	{ "UNSHIFT",		function_unshift 	},
 	{ "UNSPLIT",		function_unsplit	},
+#if 0
 	{ "URLDECODE",		function_urldecode	},
 	{ "URLENCODE",		function_urlencode	},
+#endif
 	{ "USERHOST",		function_userhost 	},
 	{ "USERMODE",		function_umode		},
 	{ "USETITEM",           function_usetitem 	},
@@ -1375,6 +1393,7 @@ BUILT_IN_FUNCTION(function_strip, input)
 	return result;		/* DONT USE RETURN_STR HERE! */
 }
 
+#if 0
 /*
  * Usage: $encode(text)
  * Returns: a string, uniquely identified with <text> such that the string
@@ -1388,7 +1407,6 @@ static char	*function_encode (unsigned char *input)
 {
 	return encode(input, strlen(input));	/* DONT USE RETURN_STR HERE! */
 }
-
 
 /*
  * Usage: $decode(text)
@@ -1408,6 +1426,7 @@ static char	*function_decode (unsigned char *input)
 {
 	return decode(input);	/* DONT USE RETURN_STR HERE! */
 }
+#endif
 
 
 /*
@@ -5833,6 +5852,7 @@ BUILT_IN_FUNCTION(function_insert, word)
 	return result;				/* DONT USE RETURN_STR HERE! */
 }
 
+#if 0
 /* Submitted by srfrog, August 11, 1999 */
 BUILT_IN_FUNCTION(function_urlencode, input)
 {
@@ -5846,6 +5866,7 @@ BUILT_IN_FUNCTION(function_urldecode, input)
 	char *retval = urldecode(input, NULL);
 	RETURN_STR(retval);
 }
+#endif
 
 BUILT_IN_FUNCTION(function_stat, words)
 {
@@ -6191,6 +6212,7 @@ BUILT_IN_FUNCTION(function_encryptparm, input)
 	RETURN_MSTR(ret);
 }
 
+#if 0
 BUILT_IN_FUNCTION(function_sedcrypt, input)
 {
 	Crypt	*key;
@@ -6213,7 +6235,7 @@ BUILT_IN_FUNCTION(function_sedcrypt, input)
 
 	RETURN_STR(ret);
 }
-
+#endif
 BUILT_IN_FUNCTION(function_serverctl, input)
 {
 	return serverctl(input);
@@ -6636,6 +6658,7 @@ BUILT_IN_FUNCTION(function_symbolctl, input)
 	return symbolctl(input);
 }
 
+#if 0
 BUILT_IN_FUNCTION(function_b64encode, input)
 {
 	char *result;
@@ -6654,6 +6677,7 @@ BUILT_IN_FUNCTION(function_b64decode, input)
 	result[size] = 0;
 	RETURN_MSTR(result);
 }
+#endif
 
 BUILT_IN_FUNCTION(function_levelctl, input)
 {
@@ -6810,6 +6834,7 @@ BUILT_IN_FUNCTION(function_ruby, input)
 
 #endif
 
+#if 0
 BUILT_IN_FUNCTION(function_sha256, input)
 {
 	char retval[65];
@@ -6817,6 +6842,7 @@ BUILT_IN_FUNCTION(function_sha256, input)
 	sha256str(input, strlen(input), retval);
 	RETURN_STR(retval);
 }
+#endif
 
 BUILT_IN_FUNCTION(function_curcmd, unused) {
 	RETURN_STR(current_command);

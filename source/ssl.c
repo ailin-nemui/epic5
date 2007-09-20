@@ -1,4 +1,4 @@
-/* $EPIC: ssl.c,v 1.27 2007/06/25 22:09:29 jnelson Exp $ */
+/* $EPIC: ssl.c,v 1.28 2007/09/20 04:00:11 jnelson Exp $ */
 /*
  * ssl.c: SSL connection functions
  *
@@ -420,12 +420,15 @@ int	ssl_connect (int vfd, int quiet)
 int	ssl_connected (int vfd)
 {
 	char *		u_cert_issuer;
+	size_t		u_cert_issuer_size;
 	char *		u_cert_subject;
+	size_t		u_cert_subject_size;
 	char *          cert_issuer;
 	char *          cert_subject;
 	X509 *          server_cert;
 	EVP_PKEY *      server_pkey;
 	ssl_info *	x;
+	int		transform, numargs;
 
 	if (!(x = find_ssl(vfd)))
 	{
@@ -450,12 +453,25 @@ int	ssl_connected (int vfd)
 		return -1;
 	}
 
-	say("SSL negotiation for channel [%d] complete", x->channel);
-	cert_subject = X509_NAME_oneline(X509_get_subject_name(server_cert),0,0);
-	u_cert_subject = urlencode(cert_subject);
-	cert_issuer = X509_NAME_oneline(X509_get_issuer_name(server_cert),0,0);
-	u_cert_issuer = urlencode(cert_issuer);
+	transform = lookup_transform("URL", &numargs);
 
+	say("SSL negotiation for channel [%d] complete", x->channel);
+
+	cert_subject = X509_NAME_oneline(X509_get_subject_name(server_cert),
+							0, 0);
+	u_cert_subject_size = strlen(cert_subject) * 3 + 2;
+	u_cert_subject = new_malloc(u_cert_subject_size);
+	transform_string(transform, 1, NULL, 
+			 cert_subject, strlen(cert_subject), 
+			 u_cert_subject, u_cert_subject_size);
+
+	cert_issuer = X509_NAME_oneline(X509_get_issuer_name(server_cert),0,0);
+	u_cert_issuer_size = strlen(cert_issuer) * 3 + 2;
+	u_cert_issuer = new_malloc(u_cert_issuer_size);
+	transform_string(transform, 1, NULL, 
+			 cert_issuer, strlen(cert_issuer), 
+			 u_cert_issuer, u_cert_issuer_size);
+	
 	server_pkey = X509_get_pubkey(server_cert);
 
 	if (do_hook(SSL_SERVER_CERT_LIST, "%d %s %s %d", 

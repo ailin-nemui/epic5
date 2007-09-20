@@ -9,11 +9,6 @@ ISSUES OF INTEREST
 * Kreca mentions that word manip functions strip extraneous spaces.
 * The way dcc filenames are handled is bad; you should be able to seamlessly
   rewrite filenames both outbound and inbound.  URL encoding should auto-detect
-* Support $HOME with spaces in it for cygwin.
-* Msoul wants a centralized script web service like irssi has with 
-	http://irssi.org/scripts/scripts/scriptassist.pl
-* Now that $xform() is mature, we can script many things:
-    encode decode urlencode urldecode b64encode b64decode sedcrypt sha256
 * Rewrite the input prompt to use a linked list instead of a C string.
 * Normalize 'proto', 'type', and 'addrfamily' values with server stuff.
 * There should be an /on send_encrypted_msg, /on send_encrypted_public, etc.
@@ -155,3 +150,10 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Use $unsplit() to convert $splitw() into a uword list (see UPDATES)
 * Fix ./configure --without-ipv6 to allow compiling on opensewer.
 * Fix apparantly bogus test that prevented .files from being /load'ed (rb wjr)
+* Create aliases for [url|b64][en|de]code, sedcrypt, and sha256 into builtins.
+* Comment out builtin [url|b64][en|de]code, sedcrypt, sha256 builtin functions.
+* Change /xquote -u to use xform() instead of urldecode().
+* Change dcc_url[en|de]code to use xform() instead of urldecode().
+* Change /on ssl_server_cert to use xform() isntead of urldecode().
+* This allows me to comment out old urldcode/base64decode stuff. yay!
+

@@ -5,7 +5,7 @@ if (word(2 $loadinfo()) != 'pf') {
 
 #	Copyright (c) 2006 BlackJac@EFNet
 #
-#	Version: 1.8.2007.03.26.1
+#	Version: 1.8.2007.03.26.2
 #
 #	This script ensures backward-compatibility with epic4-2.2 by adding the
 #	following commands, functions and sets that have been removed from epic5.
@@ -23,7 +23,8 @@ if (word(2 $loadinfo()) != 'pf') {
 #		SERVEROURNAME, SERVERTYPE, SERVPORTS, WINBOUND, WINCURSORLINE,
 #		WINLEVEL, WINLINE, WINNAM, WINNICKLIST, WINNUM, WINQUERY, WINREFS,
 #		WINSCREEN, WINSCROLLBACKSIZE, WINSERV, WINSIZE, WINSTATSIZE,
-#		WINVISIBLE
+#		WINVISIBLE, ENCODE, DECODE, URLENCODE, URLDECODE, B64ENCODE,
+#		B64DECODE, SHA256
 #
 #	SETS:
 #		AUTO_REJOIN, AUTO_REJOIN_DELAY, AUTO_UNMARK_AWAY, AUTO_WHOWAS,
@@ -256,6 +257,33 @@ alias winvisible (winnum default 0, void) {
 	};
 	return -1;
 };
+
+# Old xform functions.
+alias encode {return $xform(+ENC $*)};
+alias decode {return $xform(-ENC $*)};
+
+alias urlencode {return $xform(+URL $*)};
+alias urldecode {return $xform(-URL $*)};
+
+alias b64encode {return $xform(+B64 $*)};
+alias b64decode {return $xform(-B64 $*)};
+
+alias sedcrypt (encode, who, ...) {
+	if (!(:val = encryptparm(who))) {
+		return;
+	};
+
+	@ :key = word(1 $val);
+	if (encode == 1) {
+		return $xform(+SED $key $who $*);
+	} elsif (encode == 0) {
+		return $xform(-SED $key $who $*);
+	} else {
+		return;
+	};
+};
+
+alias sha256 {return $xform(+SHA256 $*)};
 
 # HOOKS #
 

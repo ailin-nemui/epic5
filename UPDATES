@@ -1,4 +1,12 @@
-EPIC5-0.3.4
+EPIC5-0.3.6
+
+*** News 09/19/2007 -- Some built in functions now 'builtin' aliases.
+	Several functions that have been deprecated by $xform() have been
+	demoted from built in functions to aliases in the 'builtins' script.
+		encode		decode		b64encode	b64decode
+		urlencode	urldecode	sedcrypt	sha256
+
+EPIC5-0.3.5
 
 *** News 09/14/2007 -- New built in function: $splitw(<delim> <string>)
 	This function takes a <string> which has sections delimited by
@@ -184,6 +192,8 @@ EPIC5-0.3.4
 
 	You can combine this with /xecho -as  [see above]...
 		on ^yell "* INFO -- *" {xecho -as $*}
+
+EPIC5-0.3.4
 
 *** News 06/02/2007 -- New tranformer: $xform(ALL)
 	The $xform(ALL) transform ignores the text and returns a list of

@@ -1,4 +1,4 @@
-/* $EPIC: compat.c,v 1.32 2007/08/30 03:29:40 jnelson Exp $ */
+/* $EPIC: compat.c,v 1.33 2007/09/20 04:00:10 jnelson Exp $ */
 /*
  * Everything that im not directly responsible for I put in here.  Almost
  * all of this stuff is either borrowed from somewhere else (for you poor
@@ -1113,6 +1113,7 @@ u_32int_t	bsd_arc4random (void)
 }
 #endif
 
+#if 0
 /* ----------------------- start of base64 stuff ---------------------------*/
 /*
  * Copyright (c) 1995-2001 Kungliga Tekniska Högskolan
@@ -1223,6 +1224,7 @@ int	my_base64_decode (const char *str, void *data)
     }
     return q - (unsigned char *) data;
 }
+#endif
 
 #if 0
 /* ----------------------- start of humanize_number stuff ------------------*/

@@ -1,4 +1,4 @@
-/* $EPIC: ircaux.c,v 1.184 2007/09/17 03:43:57 jnelson Exp $ */
+/* $EPIC: ircaux.c,v 1.185 2007/09/20 04:00:11 jnelson Exp $ */
 /*
  * ircaux.c: some extra routines... not specific to irc... that I needed 
  *
@@ -3265,6 +3265,7 @@ unsigned long	random_number (unsigned long l)
 	}
 }
 
+#if 0
 /*
  * urlencode: converts non-alphanumeric characters to hexidecimal codes
  * Contributed by SrFrog
@@ -3354,6 +3355,7 @@ char *	urldecode (char *s, size_t *length)
 		*length = p2 - retval;
 	return memcpy(s, retval, p2 - retval + 1);
 }
+#endif
 
 /*
  * quote_it: This quotes the given string making it sendable via irc.  A
