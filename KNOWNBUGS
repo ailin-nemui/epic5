@@ -23,8 +23,6 @@ ISSUES OF INTEREST
 * Output rules
 * Undernet's CPRIVMSG and CNOTICE allow chanops to msg members w/o penalty
 * /CTCPs over /DCCs don't match up with their queries very well. (nullie)
-* str_to_mask() should be silent, callers should be warning.
-* Support for 64 bit ints could be more widespread
 * Larne wants suppression of duplicated lines (like syslog maybe?)
 * Remove all the hardcoded uses of select() so it isn't mandatory.
 * Shattah would like something like /window omit <regex> to remove stuff.
@@ -156,4 +154,7 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Change dcc_url[en|de]code to use xform() instead of urldecode().
 * Change /on ssl_server_cert to use xform() isntead of urldecode().
 * This allows me to comment out old urldcode/base64decode stuff. yay!
-
+* Add a "rejects" variable to str_to_mask()
+* Make str_to_mask() shut up.  Callers should handle error output
+* Create a standard_level_warning() handler callers can use.
+* Make the consumers of str_to_mask() handle their own error messages. yay!

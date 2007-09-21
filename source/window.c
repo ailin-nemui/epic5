@@ -1,4 +1,4 @@
-/* $EPIC: window.c,v 1.187 2007/08/22 21:57:18 jnelson Exp $ */
+/* $EPIC: window.c,v 1.188 2007/09/21 03:36:28 jnelson Exp $ */
 /*
  * window.c: Handles the organzation of the logical viewports (``windows'')
  * for irc.  This includes keeping track of what windows are open, where they
@@ -3767,9 +3767,13 @@ static Window *window_lastlog (Window *window, char **args)
 static Window *window_lastlog_mask (Window *window, char **args)
 {
 	char *arg = next_arg(*args, args);;
+	char *rejects = NULL;
 
 	if (arg)
-		str_to_mask(&window->lastlog_mask, arg);
+	{
+	    if (str_to_mask(&window->lastlog_mask, arg, &rejects))
+		standard_level_warning("/WINDOW LASTLOG_LEVEL", &rejects);
+	}
 	say("Lastlog level is %s", mask_to_str(&window->lastlog_mask));
 	return window;
 }
@@ -3789,6 +3793,7 @@ static Window *window_level (Window *window, char **args)
 	int	add = 0;
 	Mask	mask;
 	int	i;
+	char *	rejects = NULL;
 
 	mask_unsetall(&mask);
 	if ((arg = next_arg(*args, args)))
@@ -3798,7 +3803,8 @@ static Window *window_level (Window *window, char **args)
 	    else if (*arg == '-')
 		add = -1, arg++;
 
-	    str_to_mask(&mask, arg);
+	    if (str_to_mask(&mask, arg, &rejects))
+		standard_level_warning("/WINDOW LEVEL", &rejects);
 	    if (add == 0)
 	    {
 		mask_unsetall(&window->window_mask);
@@ -4041,9 +4047,12 @@ static Window *window_notify_list (Window *window, char **args)
 static Window *window_notify_mask (Window *window, char **args)
 {
 	char *arg;
+	char *rejects = NULL;
 
 	if ((arg = next_arg(*args, args)))
-		str_to_mask(&window->notify_mask, arg);
+	    if (str_to_mask(&window->notify_mask, arg, &rejects))
+		standard_level_warning("/WINDOW NOTIFY_LEVEL", &rejects);
+
 	say("Window notify level is %s", mask_to_str(&window->notify_mask));
 	return window;
 }

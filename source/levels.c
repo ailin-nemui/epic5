@@ -1,4 +1,4 @@
-/* $EPIC: levels.c,v 1.10 2007/06/25 22:09:29 jnelson Exp $ */
+/* $EPIC: levels.c,v 1.11 2007/09/21 03:36:28 jnelson Exp $ */
 /*
  * levels.c - Sorting things by category -- Window/Lastlog, Ignore, and Floods
  *
@@ -225,7 +225,7 @@ const char *	mask_to_str (const Mask *mask)
 		return str2;
 }
 
-int	str_to_mask (Mask *mask, const char *orig)
+int	str_to_mask (Mask *mask, const char *orig, char **rejects)
 {
 	char	*ptr,
 		*rest;
@@ -234,11 +234,15 @@ int	str_to_mask (Mask *mask, const char *orig)
 		neg;
 	int	warn = 0;
 	char *	str;
+	size_t	cluep = 0;
 
 	mask_unsetall(mask);
 
 	if (!orig)
 		return 0;		/* Whatever */
+
+	if (rejects == NULL || *rejects != NULL)
+		panic(1, "str_to_mask: rejects must be a pointer to null");
 
 	str = LOCAL_COPY(orig);
 	while ((str = next_arg(str, &rest)) != NULL)
@@ -274,18 +278,10 @@ int	str_to_mask (Mask *mask, const char *orig)
 					break;
 				}
 			    }
+
 			    if (i == level_bucket->numitems)
-			    {
-				say("Unknown level: %s", str);
-				if (!warn)
-				{
-					char *s;
-					s = get_all_levels();
-					say("Valid levels are: %s", s);
-					new_free(&s);
-					warn = 1;
-				}
-			    }
+				malloc_strcat_word_c(rejects, space, str, 
+							DWORD_NO, &cluep);
 			}
 		}
 		str = ptr;
@@ -293,11 +289,26 @@ int	str_to_mask (Mask *mask, const char *orig)
 	    str = rest;
 	}
 
-	if (warn)
+	if (rejects && *rejects)
 		return -1;
 
 	return 0;
 }
+
+int	standard_level_warning (const char *who, char **rejects)
+{
+	if (rejects && *rejects)
+	{
+		char *s;
+
+		say("%s ignored the these unsupported levels: %s", *rejects);
+		s = get_all_levels();
+		say("The valid levels are: %s", s);
+		new_free(&s);
+		new_free(rejects);
+	}
+}
+
 
 int	str_to_level (const char *orig)
 {
@@ -369,10 +380,10 @@ char *levelctl	(char *input)
         } else if (!my_strnicmp(listc, "NORMALIZE", 1)) {
 		Mask m;
 		const char *r;
+		char *error = NULL;
 
 		mask_unsetall(&m);
-		if (str_to_mask(&m, input) != 0)
-			RETURN_EMPTY;
+		str_to_mask(&m, input, &error);	/* Errors are ignored */
 		r = mask_to_str(&m);
 		RETURN_STR(r);
 	}

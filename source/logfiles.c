@@ -1,4 +1,4 @@
-/* $EPIC: logfiles.c,v 1.35 2007/05/18 05:30:43 jnelson Exp $ */
+/* $EPIC: logfiles.c,v 1.36 2007/09/21 03:36:28 jnelson Exp $ */
 /*
  * logfiles.c - General purpose log files
  *
@@ -376,6 +376,7 @@ static Logfile *	logfile_kill (Logfile *log, char **args)
 static Logfile *	logfile_level (Logfile *log, char **args)
 {
         char *arg = new_next_arg(*args, args);
+	char *rejects = NULL;
 
 	if (!log)
 	{
@@ -383,7 +384,8 @@ static Logfile *	logfile_level (Logfile *log, char **args)
 		return NULL;
 	}
 
-	str_to_mask(&log->mask, arg);
+	if (str_to_mask(&log->mask, arg, &rejects))
+		standard_level_warning("/LOG LEVEL", &rejects);
 	return log;
 }
 

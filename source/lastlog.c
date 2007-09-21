@@ -1,4 +1,4 @@
-/* $EPIC: lastlog.c,v 1.69 2007/08/02 16:36:58 jnelson Exp $ */
+/* $EPIC: lastlog.c,v 1.70 2007/09/21 03:36:28 jnelson Exp $ */
 /*
  * lastlog.c: handles the lastlog features of irc. 
  *
@@ -87,11 +87,13 @@ void	set_lastlog_mask (void *stuff)
 {
 	VARIABLE *v;
 	const char *str;
+	char *rejects = NULL;
 
 	v = (VARIABLE *)stuff;
 	str = v->string;
 
-	str_to_mask(&lastlog_mask, str);
+	if (str_to_mask(&lastlog_mask, str, &rejects))
+		standard_level_warning("/SET LASTLOG_LEVEL", &rejects);
 	malloc_strcpy(&v->string, mask_to_str(&lastlog_mask));
 
 	current_window->lastlog_mask = lastlog_mask;
@@ -101,6 +103,7 @@ void	set_new_server_lastlog_mask (void *stuff)
 {
 	VARIABLE *v;
 	const char *str;
+	char *rejects = NULL;
 
 	v = (VARIABLE *)stuff;
 	str = v->string;
@@ -112,7 +115,8 @@ void	set_new_server_lastlog_mask (void *stuff)
 		new_server_lastlog_mask = (Mask *)new_malloc(sizeof(Mask));
 		mask_unsetall(new_server_lastlog_mask);
 	    }
-	    str_to_mask(new_server_lastlog_mask, str);
+	    if (str_to_mask(new_server_lastlog_mask, str, &rejects))
+		standard_level_warning("/SET NEW_SERVER_LASTLOG_LEVEL", &rejects);
 	    malloc_strcpy(&v->string, mask_to_str(new_server_lastlog_mask));
 	}
 	else
@@ -123,6 +127,7 @@ void	set_old_server_lastlog_mask (void *stuff)
 {
 	VARIABLE *v;
 	const char *str;
+	char *rejects = NULL;
 
 	v = (VARIABLE *)stuff;
 	str = v->string;
@@ -134,7 +139,8 @@ void	set_old_server_lastlog_mask (void *stuff)
 		old_server_lastlog_mask = (Mask *)new_malloc(sizeof(Mask));
 		mask_unsetall(old_server_lastlog_mask);
 	    }
-	    str_to_mask(old_server_lastlog_mask, str);
+	    if (str_to_mask(old_server_lastlog_mask, str, &rejects))
+		standard_level_warning("/SET OLD_SERVER_LASTLOG_LEVEL", &rejects);
 	    malloc_strcpy(&v->string, mask_to_str(old_server_lastlog_mask));
 	}
 	else
@@ -155,11 +161,13 @@ void	set_notify_mask (void *stuff)
 {
 	VARIABLE *v;
 	const char *str;
+	char *rejects = NULL;
 
 	v = (VARIABLE *)stuff;
 	str = v->string;
 
-	str_to_mask(&notify_mask, str);
+	if (str_to_mask(&notify_mask, str, &rejects))
+		standard_level_warning("/SET NOTIFY_LEVEL", &rejects);
 	malloc_strcpy(&v->string, mask_to_str(&notify_mask));
 
 	current_window->notify_mask = notify_mask;
@@ -169,11 +177,13 @@ void	set_current_window_mask (void *stuff)
 {
 	VARIABLE *v;
 	const char *str;
+	char *rejects = NULL;
 
 	v = (VARIABLE *)stuff;
 	str = v->string;
 
-	str_to_mask(&current_window_mask, str);
+	if (str_to_mask(&current_window_mask, str, &rejects))
+		standard_level_warning("/SET CURRENT_WINDOW_LEVEL", &rejects);
 	malloc_strcpy(&v->string, mask_to_str(&current_window_mask));
 }
 
@@ -1027,10 +1037,12 @@ BUILT_IN_FUNCTION(function_lastlog, word)
 	Mask	lastlog_levels;
 	int	line = 1;
 	size_t	rvclue = 0;
+	char *	rejects = NULL;
 
 	GET_FUNC_ARG(windesc, word);
 	GET_DWORD_ARG(pattern, word);
-	str_to_mask(&lastlog_levels, word);
+	if (str_to_mask(&lastlog_levels, word, &rejects))
+		standard_level_warning("$lastlog()", &rejects);
 
 	/* Get the current window, default to current window */
 	if (!(win = get_window_by_desc(windesc)))

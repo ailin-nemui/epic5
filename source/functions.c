@@ -1,4 +1,4 @@
-/* $EPIC: functions.c,v 1.261 2007/09/20 04:00:10 jnelson Exp $ */
+/* $EPIC: functions.c,v 1.262 2007/09/21 03:36:28 jnelson Exp $ */
 /*
  * functions.c -- Built-in functions for ircII
  *
@@ -6433,9 +6433,10 @@ BUILT_IN_FUNCTION(function_levelwindow, input)
 	Window	*w = NULL;
 	int	server;
 	int	i;
+	char 	*rejects = NULL;
 
 	GET_INT_ARG(server, input);
-	str_to_mask(&mask, input);		/* Errors are just ignored */
+	str_to_mask(&mask, input, &rejects);	/* Errors are just ignored */
 	while (traverse_all_windows(&w))
 	{
 	    if (mask_isset(&mask, LEVEL_DCC) && 
