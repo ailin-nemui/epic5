@@ -1,4 +1,4 @@
-/* $EPIC: window.c,v 1.188 2007/09/21 03:36:28 jnelson Exp $ */
+/* $EPIC: window.c,v 1.189 2007/09/22 15:19:45 jnelson Exp $ */
 /*
  * window.c: Handles the organzation of the logical viewports (``windows'')
  * for irc.  This includes keeping track of what windows are open, where they
@@ -267,8 +267,10 @@ Window	*new_window (Screen *screen)
 	new_w->hold_interval = 10;
 
 	/* LASTLOG stuff */
+#if 0
 	new_w->lastlog_oldest = NULL;
 	new_w->lastlog_newest = NULL;
+#endif
 	new_w->lastlog_mask = real_lastlog_mask();
 	new_w->lastlog_size = 0;
 	new_w->lastlog_max = get_int_var(LASTLOG_VAR);

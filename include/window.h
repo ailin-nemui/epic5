@@ -146,8 +146,10 @@ typedef	struct	WindowStru
 	short	hold_interval;		/* How often to update status bar */
 
 	/* /LASTLOG stuff */
+#if 0
 struct lastlog_stru *lastlog_newest;	/* pointer to top of lastlog list */
 struct lastlog_stru *lastlog_oldest;	/* pointer to bottom of lastlog list */
+#endif
 	Mask	lastlog_mask;		/* The LASTLOG_LEVEL, determines what
 					 * messages go to lastlog */
 	int	lastlog_size;		/* number of messages in lastlog. */

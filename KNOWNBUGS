@@ -10,11 +10,11 @@ ISSUES OF INTEREST
 * The way dcc filenames are handled is bad; you should be able to seamlessly
   rewrite filenames both outbound and inbound.  URL encoding should auto-detect
 * Rewrite the input prompt to use a linked list instead of a C string.
+* Everybody wants utf8 support -- but who will volunteer to help me?
 * Normalize 'proto', 'type', and 'addrfamily' values with server stuff.
 * There should be an /on send_encrypted_msg, /on send_encrypted_public, etc.
 * All lastlogs for all windows should be stored in one big list
 * You should be able to move lastlog items between windows, split, merge.
-* Everybody wants utf8 support -- but who will volunteer to help me?
 * IRCII supports "default" fg/bg colors, which looks intriguing.
 * Larne would like to use 256-color-support for xterm.
 * I would like to be able to /load zip files and put them into LOAD_PATH.
@@ -158,3 +158,5 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Make str_to_mask() shut up.  Callers should handle error output
 * Create a standard_level_warning() handler callers can use.
 * Make the consumers of str_to_mask() handle their own error messages. yay!
+* Refactor all lastlog stuff to use a global lastlog buffer.  Yay!
+* Comment out per-window lastlog stuff.
