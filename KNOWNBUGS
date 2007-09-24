@@ -160,3 +160,6 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Make the consumers of str_to_mask() handle their own error messages. yay!
 * Refactor all lastlog stuff to use a global lastlog buffer.  Yay!
 * Comment out per-window lastlog stuff.
+* Add a bunch of functions to move lastlog items between windows.
+* No way for the user to use them yet (still thinking about it)
+* Add $windowctl(NEW) and $windowctl(NEW_HIDE)...

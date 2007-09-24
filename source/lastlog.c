@@ -1,4 +1,4 @@
-/* $EPIC: lastlog.c,v 1.71 2007/09/22 15:19:45 jnelson Exp $ */
+/* $EPIC: lastlog.c,v 1.72 2007/09/24 01:47:57 jnelson Exp $ */
 /*
  * lastlog.c: handles the lastlog features of irc. 
  *
@@ -1171,5 +1171,97 @@ int	switch_lastlog_window (Lastlog *item, int newref)
 	item->winref = newref;
 	/* Mark the new window's scrollback for reconstitution */
 	window_scrollback_needs_rebuild(item->winref);
+}
+
+/***************************************************************************/
+void	move_lastlog_item (Lastlog *item, int newref)
+{
+	int	oldref = item->winref;
+
+	item->winref = newref;
+	window_scrollback_needs_rebuild(oldref);
+	window_scrollback_needs_rebuild(newref);
+}
+
+void	move_all_lastlog (int oldref, int newref)
+{
+	Lastlog *l;
+
+	for (l = lastlog_oldest; l; l = l->newer)
+	{
+		if (l->winref != oldref)
+			continue;
+		move_lastlog_item(l, newref);
+	}
+}
+
+void	move_lastlog_item_by_string (int oldref, int newref, const char *str)
+{
+	Lastlog *l;
+
+	for (l = lastlog_oldest; l; l = l->newer)
+	{
+		if (l->winref != oldref)
+			continue;
+		if (!stristr(l->msg, str))
+			continue;
+		move_lastlog_item(l, newref);
+	}
+}
+
+void	move_lastlog_item_by_target (int oldref, int newref, const char *str)
+{
+	Lastlog *l;
+
+	for (l = lastlog_oldest; l; l = l->newer)
+	{
+		if (l->winref != oldref)
+			continue;
+		if (!my_stricmp(l->target, str))
+			continue;
+		move_lastlog_item(l, newref);
+	}
+}
+
+void	move_lastlog_item_by_level (int oldref, int newref, Mask *levels)
+{
+	Lastlog *l;
+
+	for (l = lastlog_oldest; l; l = l->newer)
+	{
+		if (l->winref != oldref)
+			continue;
+		if (!mask_isset(levels, l->level))
+			continue;
+		move_lastlog_item(l, newref);
+	}
+}
+
+void	move_lastlog_item_by_regex (int oldref, int newref, const char *str)
+{
+	Lastlog *l;
+	regex_t preg;
+	int	errcode;
+
+	errcode = regcomp(&preg, str, REG_EXTENDED | REG_ICASE | REG_NOSUB);
+	if (errcode != 0)
+	{
+		char	errstr[256];
+		regerror(errcode, &preg, errstr, sizeof(errstr));
+		say("Regular expression [%s] does not compile: %s", 
+			str, errstr);
+		return;
+	}
+
+	for (l = lastlog_oldest; l; l = l->newer)
+	{
+		if (l->winref != oldref)
+			continue;
+		if (regexec(&preg, l->msg, 0, NULL, 0))
+			continue;
+		move_lastlog_item(l, newref);
+	}
+
+	regfree(&preg);
 }
 

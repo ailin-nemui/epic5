@@ -16,7 +16,6 @@
  * window.h here. so to break the loop we forward declare Window here.
  */
 struct WindowStru;
-struct lastlog_stru;
 
 extern	Mask	current_window_mask;
 extern	Mask *	new_server_lastlog_mask;
@@ -37,6 +36,11 @@ extern	Mask *	old_server_lastlog_mask;
 	void	set_new_server_lastlog_mask	(void *);
 	void	set_old_server_lastlog_mask	(void *);
 	void	reconstitute_scrollback		(struct WindowStru *);
-	void	omit_from_lastlog	(struct WindowStru *, const char *);
+
+	void	move_all_lastlog		(int, int);
+	void	move_lastlog_item_by_string	(int, int, const char *);
+	void	move_lastlog_item_by_target	(int, int, const char *);
+	void	move_lastlog_item_by_level	(int, int, Mask *);
+	void	move_lastlog_item_by_regex	(int, int, const char *);
 
 #endif /* __lastlog_h_ */
