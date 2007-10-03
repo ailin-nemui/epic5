@@ -185,10 +185,11 @@ alias words { return $unsplit(" " $*); };
 stack push alias alias.x;
 alias alias.x (args) {
 	fe (chhops 0 ishalfop nochhops 1 ishalfop chvoices 0 ischanvoice chnovoices 1 ischanvoice) cmd val fn {
-		//alias $msar(gr/\$cmd/$cmd/\$val/$val/\$fn/$fn/args);
+		@ :argz = args;
+		//alias $msar(gr/\$cmd/$cmd/\$val/$val/\$fn/$fn/argz);
 	};
 };
-alias.x $cmd (args) {
+alias.x \$cmd (args) {
 	@ :chan = shift(args);
 	@ :ret = chanusers($chan);
 	fe ret user {

@@ -168,3 +168,10 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * No way for the user to use them yet (still thinking about it)
 * Add $windowctl(NEW) and $windowctl(NEW_HIDE)...
 * New versions of builtins, dump, and history from black
+* Fixed builtins to not return spaces at end of $xform() functions.
+* Fixed commented out lines in commandqueues for backward compatibility.
+* FINALLY cleaned up code in data_array.
+* Added some /assign handling functions to data_struct.
+* Fixed $chhops(), $nochhops(), $chvoices() $chnovoices() in script/functions.
+* Changed tabkey.ce to _also_ complete from notify list by default.
+* Changed tabkey.ce to complete recursed commands without a leading slash.

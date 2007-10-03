@@ -97,19 +97,19 @@ alias whowas (nick, args default "$getset(num_of_whowas)") {
 # FUNCTIONS #
 
 alias b64decode (...) {
-	return $xform(-B64 $*)
+	return $xform(-B64 $*);
 };
 
 alias b64encode (...) {
-	return $xform(+B64 $*)
+	return $xform(+B64 $*);
 };
 
 alias decode (...) {
-	return $xform(-ENC $*)
+	return $xform(-ENC $*);
 };
 
 alias encode (...) {
-	return $xform(+ENC $*)
+	return $xform(+ENC $*);
 };
 
 alias igmask (pattern, void) {
@@ -208,15 +208,15 @@ alias servports (refnum default "$serverctl(from_server)", void) {
 };
 
 alias sha256 (...) {
-	return $xform(+SHA256 $*)
+	return $xform(+SHA256 $*);
 };
 
 alias urldecode (...) {
-	return $xform(-URL $*)
+	return $xform(-URL $*);
 };
 
 alias urlencode (...) {
-	return $xform(+URL $*)
+	return $xform(+URL $*);
 };
 
 alias winbound (winnum default 0, void) {

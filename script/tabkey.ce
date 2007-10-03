@@ -115,8 +115,8 @@ if (info(i) < 1000) {
 #
 alias tabkey.main (cycle, void)
 {
-	@ :xd_extractw = xdebug(extractw);
-	xdebug extractw;
+	@ :xd_extractw = xdebug(dword extractw);
+	xdebug dword extractw;
 	@ :curpos = curpos();
 	@ :curword = indextoword($curpos $L);
 	@ :wordind = wordtoindex($curword $L);
@@ -221,7 +221,7 @@ alias tabkey.cmd (...)
 	if (!curword)
 	{
 		@ :ret = tabkey.method.commands($args);
-		repeat $#ret {push ret $K$shift(ret)};
+		if (!cmdind) repeat $#ret {push ret $K$shift(ret)};
 		return $ret;
 	};
 
@@ -256,10 +256,10 @@ alias tabkey.default (...)
 		if (#matches == 1) {
 			@ function_return = matches ## TABKEY_NICKCOMP_SUFFIX;
 		} else {
-			@ function_return = matches ? matches : tabkey.method.nickchan($*);
+			@ function_return = matches ? matches : tabkey.method.nickchannotify($*);
 		};
 	} else {
-		@ function_return = tabkey.method.nickchan($*);
+		@ function_return = tabkey.method.nickchannotify($*);
 	};
 };
 
@@ -455,7 +455,7 @@ alias tabkey.cmd.msg (...)
 	bless;
 	if (curword == 1)
 	{
-		@ :retval = pattern($word* $sort($uniq($TABKEY.MSGHIST[$encode($winserv())] $tabkey.method.nickchan($*))));
+		@ :retval = pattern("$word*" $sort($uniq($TABKEY.MSGHIST[$encode($winserv())] $tabkey.method.nickchannotify($*))));
 	}{
 		@ :cmd = word(0 $L);
 		if (!cmd) {
@@ -507,7 +507,7 @@ alias tabkey.cmd.q (...)
 
 alias tabkey.cmd.query (...)
 {
-	@ function_return = pattern($0* $sort($uniq($TABKEY.MSGHIST[$encode($winserv())] $tabkey.method.nickchan($*))));
+	@ function_return = pattern("$0*" $sort($uniq($TABKEY.MSGHIST[$encode($winserv())] $tabkey.method.nickchannotify($*))));
 };
 
 alias tabkey.cmd.repeat (void)
@@ -543,7 +543,7 @@ alias tabkey.cmd.window (...)
 	switch ($cmd)
 	{
 		(ADD) (QUERY) (REMOVE) (SEARCH_BACK) (SEARCH_FORWARD) {
-			@ :list = tabkey.method.nickchan($*);
+			@ :list = tabkey.method.nickchannotify($*);
 		}
 		(BEEP_ALWAYS) (DOUBLE) (FIXED) (HOLD_MODE) (LOG) (SCRATCH) (SCROLL) (SKIP) {
 			@ :list = [ON OFF TOGGLE];
@@ -672,7 +672,7 @@ alias tabkey.method.nickchannotify (...)
 
 alias tabkey.method.notify (...)
 {
-	@ function_return $pattern($sar(g/\\/\\\\/$*)* $notify(on));
+	@ function_return = pattern("$sar(g/\\/\\\\/$*)*" $notify(on));
 };
 
 alias tabkey.method.variable (type, void)

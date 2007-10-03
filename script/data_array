@@ -114,22 +114,50 @@ alias array.stat {
 #   .flush/.iflush/.nflush/.niflush write and delete the arrays.
 #
 stack push alias alias.x;
-fe (dump " -banner" "[\$[-4]item \$[-2]#content \$[-3]@content] " grep " -nobanner" "") cmd banner fnord {
-	fe (i$cmd igetitem igetmatches $cmd getitem getmatches) foo bar baz {
-		alias array.$foo (arrays default *, mask default *) {fe ($getarrays($arrays)) array \{echo \$numitems($array)/\$#listarray($array)/\$@listarray($array) \$array\;fe \(\$${baz}($array $mask)\) item \{@:content=${bar}($array $item)\;echo $fnord\$content\}\}\;echo $chr(2)\$#getarrays($arrays)$chr(2) arrays listed};
-	};
-};
-fe (dump "\$array [\$[-4]item \$[-2]#content \$[-3]@content] " grep "") cmd fnord {
-	fe (coi$cmd "indextoitem($array $igetmatches" ")" co$cmd getmatches "") foo bar baz {
-		alias array.$foo {@:array=[\$0]\;@:mk=[\$1]\;@:ar=beforew($mk $2-)\;fe \(\$${bar}($array $afterw($mk $2-))$baz\) item \{@:content=\;fe ($ar) foo {@push(content $getitem($foo $item))}\;echo $fnord\$content\}};
-	};
+stack push alias alias.xx;
+
+alias alias.xx (args) {
+	alias $args;
+	@ sar(gr/grep/dump/args);
+	@ sar(gr/-nobanner/-banner/args);
+	@ sar(gr/ -- / -- [\$[-4]item \$[-2]#content \$[-3]@content] /args);
+	alias $args;
 };
 alias alias.x (args) {
-	//alias $args;
+	alias.xx $args;
+	@ sar(gr/igrep/grep/args);
+	@ sar(gr/igetitem/getitem/args);
+	@ sar(gr/igetmatches/getmatches/args);
+	alias.xx $args;
+};
+alias.x array.igrep (arrays default *, mask default *) {
+	fe ($getarrays($arrays)) array {
+		echo $numitems($array)/$#listarray($array)/$@listarray($array) $array;
+		fe ($igetmatches($array $mask)) item {
+			@ :content = igetitem($array $item);
+			xecho -nobanner -- $content;
+		}
+	}
+	echo $chr(2)$#getarrays($arrays)$chr(2) arrays listed;
+};
+alias.x array.coigrep (array, mk, args) {
+	fe ($getarrays($array)) array {
+		fe ($igetmatches($array $afterw($mk $args))) item {
+			@ :content = igetitem($array $item);
+			fe ($beforew($mk $args)) foo {
+				push content $igetitem($foo $item);
+			};
+			xecho -nobanner -- $content;
+		};
+	};
+};
+
+alias alias.x (args) {
+	alias $args;
 	fe (write flush getmatches getitem) foo {
 		@ sar(gr/i$foo/$foo/args);
 	};
-	//alias $args;
+	alias $args;
 };
 alias.x array.iwrite (args) {
 	@ :fd = open($shift(args) w);
@@ -151,4 +179,6 @@ alias.x array.niwrite (args) {
 };
 alias.x array.iflush {array.iwrite $*;array.purge $1-;};
 alias.x array.niflush {array.niwrite $*;array.purge $*;};
+
+stack pop alias alias.xx;
 stack pop alias alias.x;

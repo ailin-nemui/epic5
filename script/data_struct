@@ -285,3 +285,25 @@ alias struct.savefd {
 	};
 	return $hit;
 };
+
+#
+# Some basic /assign handling functions.
+#
+# /assign.uniq won't work without the functions and data_array scripts.  You need to load those manually.
+# 
+alias assign.add (var,val) {assign $var $uniq($($var) $val);};
+alias assign.addn (var,val) {assign $var $revw($uniq($revw($($var) $val)));};
+alias assign.ifnul {if ([]==[$($0)]){assign $*};};
+alias assign.filter {fe ($uniq($aliasctl(assign pmatch "\\[$split(, $0)\\]"))) foo {assign $foo $filter("\\[$1-\\]" $($foo))};};
+alias assign.uniq (args) {
+	bless;
+	@ :num = isnumber(b10 $args) ? shift(args) : 1;
+	@ delarray(assign.uniq);
+	fe ($args) var {
+		@ :vars = replace(\$varx x $jot(1 $num));
+		fe ($($var)) $replace(varx x $jot(1 $num)) {
+			eval setuniqitem assign.uniq $vars;
+		};
+		assign $var $getandmitems(assign.uniq *);
+	};
+};
