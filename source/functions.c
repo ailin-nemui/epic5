@@ -1,4 +1,4 @@
-/* $EPIC: functions.c,v 1.262 2007/09/21 03:36:28 jnelson Exp $ */
+/* $EPIC: functions.c,v 1.263 2007/10/03 06:44:21 crazyed Exp $ */
 /*
  * functions.c -- Built-in functions for ircII
  *
@@ -2609,6 +2609,7 @@ char *function_shift (char *word)
 {
 	char    *value = (char *) 0;
 	char    *var    = (char *) 0;
+	char    *next   = (char *) 0;
 	char	*booya 	= (char *) 0;
 	char *	free_it = NULL;
 
@@ -2616,6 +2617,8 @@ char *function_shift (char *word)
 
 #if 0
 	if (word && *word)
+		GET_FUNC_ARG(next, word);
+	if (next && *next)
 		RETURN_STR(var);
 #endif
 
@@ -2701,6 +2704,7 @@ char *function_pop (char *word)
 {
 	char *value	= (char *) 0;
 	char *var	= (char *) 0;
+	char *last	= (char *) 0;
 	char *pointer	= (char *) 0;
 	char *blech     = (char *) 0;
 	size_t	cluep;
@@ -2709,13 +2713,10 @@ char *function_pop (char *word)
 	GET_FUNC_ARG(var, word);
 
 #if 0
-	if (word && *word)
-	{
-		pointer = word + strlen(word);
-		while (pointer > word && !isspace(*pointer))
-			pointer--;
-		RETURN_STR(pointer > word ? pointer : word);
-	}
+	while (word && *word)
+		GET_FUNC_ARG(last, word);
+	if (last && *last)
+		RETURN_STR(last);
 #endif
 
 	upper(var);
@@ -5983,7 +5984,8 @@ BUILT_IN_FUNCTION(function_notifywindows, input)
 
 BUILT_IN_FUNCTION(function_loadinfo, input)
 {
-	return malloc_sprintf(NULL, "%d %s %s", current_line(), current_filename(), current_loader());
+	return malloc_sprintf(NULL, "%d %s %s %s" , current_line(), current_filename()
+			, current_loader(), current_package() ? current_package() : empty_string);
 }
 
 BUILT_IN_FUNCTION(function_wordtoindex, input)

@@ -451,11 +451,12 @@ assert push(one three) == [one two three]
 assert push(one four) == [one two three four]
 clear
 assert shift() == []
-assert shift(one) == [one]
-assert shift(one) == [two]
-assert shift(one) == [three]
-assert shift(one) == [four]
-assert shift(one) == []
+#assert shift( $one ) == [one]
+assert shift( one ) == [one]
+assert shift( one ) == [two]
+assert shift( one ) == [three]
+assert shift( one ) == [four]
+assert shift( one ) == []
 assert one == []
 
 # testing $pop(), $unshift()
@@ -468,12 +469,13 @@ assert unshift(one three) == [three two one]
 assert unshift(one four) == [four three two one]
 assert one == [four three two one]
 clear
-assert pop() == []
-assert pop(one) == [one]
-assert pop(one) == [two]
-assert pop(one) == [three]
-assert pop(one) == [four]
-assert pop(one) == []
+assert pop( ) == []
+#assert pop( $one ) == [one]
+assert pop( one ) == [one]
+assert pop( one ) == [two]
+assert pop( one ) == [three]
+assert pop( one ) == [four]
+assert pop( one ) == []
 
 # testing $ppid()
 clear

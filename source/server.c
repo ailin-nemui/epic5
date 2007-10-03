@@ -1,4 +1,4 @@
-/* $EPIC: server.c,v 1.231 2007/09/07 18:07:29 jnelson Exp $ */
+/* $EPIC: server.c,v 1.232 2007/10/03 06:44:21 crazyed Exp $ */
 /*
  * server.c:  Things dealing with that wacky program we call ircd.
  *
@@ -2335,7 +2335,7 @@ BUILT_IN_COMMAND(disconnectcmd)
                 if (do_hook(DISCONNECT_LIST, "Disconnected by user request"))
 			say("You are not connected to a server, use /SERVER to connect.");
 
-	if (recon)
+	if (recon && 0 > connect_to_server(i))
 	{
 		set_server_status(i, SERVER_RECONNECT);
 		say("Reconnecting to server %s", get_server_itsname(i));

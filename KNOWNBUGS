@@ -175,3 +175,8 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Fixed $chhops(), $nochhops(), $chvoices() $chnovoices() in script/functions.
 * Changed tabkey.ce to _also_ complete from notify list by default.
 * Changed tabkey.ce to complete recursed commands without a leading slash.
+* Updated $shift() and $pop() with multiple args to work with dword but left it
+  #ifdef'd out as per UDPATES.  Also updated regress/funcs to test these.
+* Added current package to end of $loadinfo().
+* Changed /reconnect to jump to the next server in the address list if possible.
+* If epic crashes and /xdebug crash is set, sleep and wait for a debugger.
