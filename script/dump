@@ -1,11 +1,11 @@
-if (word(2 $loadinfo()) != [pf]) {
+if (word(2 $loadinfo()) != 'pf') {
 	load -pf $word(1 $loadinfo());
 	return;
 };
 
-#	Copyright (c) 2005 David B. Kratter (BlackJac@EFNet)
+#	Copyright (c) 2007 BlackJac@EFNet
 #
-#	Version: 1.0.2005.05.08.1
+#	Version: 1.1.2007.10.01.1
 #
 #	This script simulates the dump command of epic4 for epic5. The
 #	behavior should be nearly identical to the original. Several
@@ -14,14 +14,14 @@ if (word(2 $loadinfo()) != [pf]) {
 
 package dump;
 
-alias dump (args default "variable alias hook") {
+alias dump (args default "all") {
 	fe ($args) dd {
 		switch ($dd) {
 			(alias*) {
 				dump.alias;
 			};
 			(all) {
-				fe (alias array bind channel dcc hook timer variable window) ee {
+				fe (alias hook variable) ee {
 					dump.$ee;
 				};
 			};
@@ -49,6 +49,10 @@ alias dump (args default "variable alias hook") {
 			(win*) {
 				dump.window;
 			};
+			(wipe) {
+				fe (alias array bind channel dcc hook timer variable window) ee {
+					dump.$ee;
+				};
 			(*) {
 				xecho -b -c -s Dump what? \('$toupper($choice)' is unrecognized\);
 			};
@@ -105,7 +109,7 @@ alias dump.timer (void) {
 alias dump.variable (void) {
 	xecho -b -c -s Dumping your global variables;
 	fe ($symbolctl(pmatch assign *)) dd {
-		^assign -dd;
+		^assign -$dd;
 	};
 };
 

@@ -2,7 +2,10 @@ EPIC5 Projects, Bugs, and other Errata:
 
 KNOWN ERRATA (eg, bugs, or unresolved requests):
 ------------------------------------------------
-<none>
+* Fudd has issues with implied hooks being clobbered by 3rd party scripts.
+* Msoul says plain epic w/o script does this:
+<msoul> *** Signoff: equiraptor ($msg)
+<msoul> *** Signoff: paulr ($msg)
 
 ISSUES OF INTEREST
 ------------------
@@ -13,7 +16,6 @@ ISSUES OF INTEREST
 * Everybody wants utf8 support -- but who will volunteer to help me?
 * Normalize 'proto', 'type', and 'addrfamily' values with server stuff.
 * There should be an /on send_encrypted_msg, /on send_encrypted_public, etc.
-* All lastlogs for all windows should be stored in one big list
 * You should be able to move lastlog items between windows, split, merge.
 * IRCII supports "default" fg/bg colors, which looks intriguing.
 * Larne would like to use 256-color-support for xterm.
@@ -30,6 +32,7 @@ ISSUES OF INTEREST
 * Zlonix wants a way to be notified when window geometry changes
 * Zlonix would like me to commit his /on signal patch
 * Zlonix would like per-screen toplines
+* How about base85 support for $xform() ?
 
 [See http://www.epicsol.org/PROJECTS for things to come in the future]
 [See http://www.epicsol.org/CHANGELOG5 for things that changed in the past]
@@ -148,6 +151,7 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Use $unsplit() to convert $splitw() into a uword list (see UPDATES)
 * Fix ./configure --without-ipv6 to allow compiling on opensewer.
 * Fix apparantly bogus test that prevented .files from being /load'ed (rb wjr)
+* Release epic5-0.3.5 (Alacrity) (1509)
 * Create aliases for [url|b64][en|de]code, sedcrypt, and sha256 into builtins.
 * Comment out builtin [url|b64][en|de]code, sedcrypt, sha256 builtin functions.
 * Change /xquote -u to use xform() instead of urldecode().
@@ -163,3 +167,4 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Add a bunch of functions to move lastlog items between windows.
 * No way for the user to use them yet (still thinking about it)
 * Add $windowctl(NEW) and $windowctl(NEW_HIDE)...
+* New versions of builtins, dump, and history from black

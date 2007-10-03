@@ -1,11 +1,11 @@
-if (word(2 $loadinfo()) != [pf]) {
+if (word(2 $loadinfo()) != 'pf') {
 	load -pf $word(1 $loadinfo());
 	return;
 };
 
-#	Copyright (c) 2005 David B. Kratter (BlackJac@EFNet)
+#	Copyright (c) 2007 BlackJac@EFNet
 #
-#	Version: 1.1.2005.05.18.1
+#	Version: 1.2.2007.09.28.1
 #
 #	This script simulates the history feature of epic4 for epic5. The
 #	behavior and key bindings should be nearly identical to the original.
@@ -97,6 +97,7 @@ if (word(2 $loadinfo()) != [pf]) {
 #			purges the history buffer and disables command history.
 
 package history;
+
 load addset;
 
 alias history (index, void) {
@@ -107,28 +108,27 @@ alias history (index, void) {
 	if (index > 0) {
 		fe ($jot(0 ${index - 1} 1)) hh {
 			@ :item = getitem(array.history $hh);
-			xecho -c $hh${history_timestamp == [on] ? [  \[$word(3 $stime($word(0 $item)))\]  ] : [\: ]}$restw(1 $item);
+			xecho -c $hh${getset(history_timestamp) == 'on' ? "  \[$word(3 $stime($word(0 $item)))\]  " : "\: "}$restw(1 $item);
 		};
 	};
 };
 
 alias history.add (...) {
 	if (@) {
-		if (history_remove_dupes == [on]) {
-			fe ($getmatches(array.history % $*)) hh {
-				@ delitem(array.history $hh);
-			};
+		if (getset(history_remove_dupes) == 'on') {
+			@ delitems(array.history $getmatches(array.history % $*));
+			@ delitems(array.history $getmatches(array.history % $* ));
 		};
 		if (numitems(array.history) == history) {
 			@ delitem(array.history 0);
 		};
 		@ setitem(array.history $numitems(array.history) $time() $*);
-		@ history.index = [];
+		@ history.index = '';
 	};
 };
 
 alias history.erase (void) {
-	@ history.index = [];
+	@ history.index = '';
 	parsekey reset_line;
 };
 
@@ -138,7 +138,7 @@ alias history.get (direction, void) {
 			history.add $L;
 		};
 		if ((history.index == (:numitems = numitems(array.history) - 1) || @history.index == 0)) {
-			if (history_circleq == [on]) {
+			if (getset(history_circleq) == 'on') {
 				history.show 0;
 			} else {
 				history.erase;
@@ -151,7 +151,7 @@ alias history.get (direction, void) {
 			history.add $L;
 			@ history.index = numitems(array.history) - 1;
 		};
-		if ((history.index == 0 && history_circleq == [on]) || @history.index == 0) {
+		if ((history.index == 0 && getset(history_circleq) == 'on') || @history.index == 0) {
 			history.show ${numitems(array.history) - 1};
 		} else if (history.index > 0) {
 			history.show ${history.index - 1};
@@ -194,7 +194,7 @@ alias historyctl (action, ...) {
 			return 0;
 		};
 		(read) {
-			if ((:fd = open(${*0 ? *0 : history_save_file} R)) > -1) {
+			if ((:fd = open("${*0 ? *0 : getset(history_save_file)}" R)) > -1) {
 				while (:line = read($fd)) {
 					if (numitems(array.history) == history) {
 						@ delitem(array.history 0);
@@ -206,11 +206,11 @@ alias historyctl (action, ...) {
 			};
 		};
 		(reset) {
-			@ history.index = [];
+			@ history.index = '';
 			@ delarray(array.history);
 		};
 		(save) {
-			if ((:fd = open(${*0 ? *0 : history_save_file} W)) > -1) {
+			if ((:fd = open("${*0 ? *0 : getset(history_save_file)}" W)) > -1) {
 				fe ($jot(0 ${numitems(array.history) - 1} 1)) hh {
 					@ write($fd $getitem(array.history $hh));
 				};
@@ -254,16 +254,16 @@ fe (P [OA [[A) hh {
 	@ :find = after(! $0);
 	if (isnumber($find)) {
 		if (:found = getitem(array.history $find)) {
-			xtype -l $restw(1 $found)${*1 ? [$1-] : []};
+			xtype -l $restw(1 $found)${*1 ? "$1-" : ""};
 		} else {
 			xecho -b -c No such history entry: $find;
 		};
-	} else if (:found = [$getmatches(array.history % /$find*) $getmatches(array.history % $find*)]) {
+	} else if (:found = getmatches(array.history % /$find*) ## ' ' ## getmatches(array.history % $find*)) {
 		@ :index = rightw(1 $numsort($found));
-		if (history_save_position == [on]) {
+		if (getset(history_save_position) == 'on') {
 			@ history.index = index;
 		};
-		xtype -l $restw(1 $getitem(array.history $index))${*1 ? [ $1-] : []};
+		xtype -l $restw(1 $getitem(array.history $index))${*1 ? " $1-" : ""};
 	} else {
 		xecho -b -c No match;
 	};
@@ -272,7 +272,7 @@ fe (P [OA [[A) hh {
 addset history int {
 	if (*0 == 0) {
 		@ delarray(array.history);
-		@ history.index = [];
+		@ history.index = '';
 		^bind ^] nothing;
 		^on #input 2 -"*";
 		^on #input 2 -"/!*";
@@ -297,9 +297,9 @@ addset history_circleq bool;
 set history_circleq on;
 
 addset history_persistent bool {
-	if (*0 == [on]) {
+	if (*0 == 'on') {
 		^on #-exit 2 "*" {
-			@ historyctl(save $history_save_file);
+			@ historyctl(save $getset(history_save_file));
 		};
 	} else if (@) {
 		^on #exit 2 -"*";
@@ -324,6 +324,6 @@ addset history_timestamp bool;
 
 set history_timestamp off;
 
-if (history_persistent == [on] && fexist($history_save_file) == 1) {
-	@ historyctl(read $history_save_file);
+if (getset(history_persistent) == 'on' && fexist("$getset(history_save_file)") == 1) {
+	@ historyctl(read $getset(history_save_file));
 };
