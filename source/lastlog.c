@@ -1,4 +1,4 @@
-/* $EPIC: lastlog.c,v 1.72 2007/09/24 01:47:57 jnelson Exp $ */
+/* $EPIC: lastlog.c,v 1.73 2007/10/20 16:10:11 jnelson Exp $ */
 /*
  * lastlog.c: handles the lastlog features of irc. 
  *
@@ -1263,5 +1263,16 @@ void	move_lastlog_item_by_regex (int oldref, int newref, const char *str)
 	}
 
 	regfree(&preg);
+}
+
+void	lastlog_swap_winrefs (int oldref, int newref)
+{
+	Lastlog *l;
+
+	for (l = lastlog_oldest; l; l = l->newer)
+	{
+		if (l->winref == oldref)
+			l->winref = newref;
+	}
 }
 

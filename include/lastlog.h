@@ -43,4 +43,6 @@ extern	Mask *	old_server_lastlog_mask;
 	void	move_lastlog_item_by_level	(int, int, Mask *);
 	void	move_lastlog_item_by_regex	(int, int, const char *);
 
+	void    lastlog_swap_winrefs		(int, int);
+
 #endif /* __lastlog_h_ */

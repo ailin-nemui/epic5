@@ -1,4 +1,4 @@
-/* $EPIC: hook.c,v 1.77 2007/09/07 18:07:29 jnelson Exp $ */
+/* $EPIC: hook.c,v 1.78 2007/10/20 16:10:11 jnelson Exp $ */
 /*
  * hook.c: Does those naughty hook functions. 
  *
@@ -620,10 +620,10 @@ void	unload_on_hooks (char *filename)
 static void 	show_hook (Hook *list, const char *name)
 {
 	char *arglist;
-	arglist = print_arglist(list->arglist);
-	if (arglist)
+
+	if ((arglist = print_arglist(list->arglist)))
 	{
-		say ("[%s] On %s from %c%s%c (%s) do %s [%s] <%d/#%d>",
+		say ("[%s] On %s from %c%s%c (%s) do %s [%s%s] <%d/#%d>",
 			empty(list->filename) ? "*" : list->filename,
 			name,
 			(list->flexible ? '\'' : '"'),
@@ -632,17 +632,19 @@ static void 	show_hook (Hook *list, const char *name)
 			arglist,
 			(list->not ? "nothing" : list->stuff),
 			noise_info[list->noisy]->name,
+			list->skip ? "/DISABLED" : "",
 			list->sernum, list->userial);
 		new_free(&arglist);
 	}
 	else
-		say("[%s] On %s from %c%s%c do %s [%s] <%d/#%d>",
+		say("[%s] On %s from %c%s%c do %s [%s%s] <%d/#%d>",
 		    empty(list->filename) ? "*" : list->filename,
 	    	name,
   	  	(list->flexible ? '\'' : '"'), list->nick, 
  		   (list->flexible ? '\'' : '"'), 
     		(list->not ? "nothing" : list->stuff),
 	 	   noise_info[list->noisy]->name,
+		list->skip ? "/DISABLED" : "",
 	    	list->sernum, list->userial);
 }
 

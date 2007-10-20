@@ -1,4 +1,4 @@
-/* $EPIC: numbers.c,v 1.95 2006/06/29 01:13:53 jnelson Exp $ */
+/* $EPIC: numbers.c,v 1.96 2007/10/20 16:10:11 jnelson Exp $ */
 /*
  * numbers.c: handles all those strange numeric response dished out by that
  * wacky, nutty program we call ircd 
@@ -101,6 +101,11 @@ static void 	display_msg (const char *from, const char *comm, const char **ArgLi
 	const char	*rest;
 	int	drem;
 
+	/* XXX - 
+	 * ArgList[0] was passed to who_from() which means we need to 
+	 * either reset who_from() with our own copy, or not detokenize
+	 * ArgList[0], because this breaks channel targeting!
+	 */
 	if (!(rest = PasteArgs(ArgList, 0)))
 		{ rfc1459_odd(from, comm, ArgList); return; }
 
@@ -171,26 +176,42 @@ static void 	display_msg (const char *from, const char *comm, const char **ArgLi
  */
 void 	numbered_command (const char *from, const char *comm, char const **ArgList)
 {
-	const char	*target;
+	const char	*recipient;
+	char *	target = NULL;
 	char	*copy;
 	int	i;
 	int	old_current_numeric = current_numeric;
 	int	numeric;
 	int	l;
 
-	/* All numerics must have a target (our nickname) */
+	/* All numerics must be in the range (000, 999) */
 	if (!comm || !*comm)
 		{ rfc1459_odd(from, comm, ArgList); return; }
 	numeric = atol(comm);
 	if (numeric < 0 || numeric >= FIRST_NAMED_HOOK - 1)
 		{ rfc1459_odd(from, comm, ArgList); return; }
 
-	if (!(target = ArgList[0]))
+	/* All numerics must have a recipient (our nickname) */
+	if (!ArgList[0])
 		{ rfc1459_odd(from, comm, ArgList); return; }
+	recipient = LOCAL_COPY(ArgList[0]);
 	ArgList++;
 
-	if (ArgList[0] && is_channel(ArgList[0]))
-		l = message_from(ArgList[0], LEVEL_OTHER);
+	/* 
+	 * Numerics may have a channel target as 1st argument
+	 *
+	 * We must make a copy of ArgList[0] to pass to message_from
+	 * because display_message (above) will call PasteArgs which
+	 * will destroy ArgList[0].
+	 *
+	 * Please note that we don't consume the ArgList[0] argument,
+	 * we only peek at it to see if we should target a channel
+	 * with message_from().
+	 */
+	if (ArgList[0])
+		target = LOCAL_COPY(ArgList[0]);
+	if (target && is_channel(target))
+		l = message_from(target, LEVEL_OTHER);
 	else
 		l = message_from(NULL, LEVEL_OTHER);
 
@@ -222,7 +243,7 @@ void 	numbered_command (const char *from, const char *comm, char const **ArgList
 	 */
 	case 001:	/* #define RPL_WELCOME          001 */
 	{
-		server_is_registered(from_server, from, target);
+		server_is_registered(from_server, from, recipient);
 		break;
 	}
 
@@ -769,7 +790,7 @@ void 	numbered_command (const char *from, const char *comm, char const **ArgList
 		 */
 		if (ArgList[0] && ArgList[1] == NULL)
 		{
-			accept_server_nickname(from_server, target);
+			accept_server_nickname(from_server, recipient);
 			break;
 		}
 
@@ -806,7 +827,7 @@ void 	numbered_command (const char *from, const char *comm, char const **ArgList
 		if (!(nick = ArgList[0]))
 			{ rfc1459_odd(from, comm, ArgList); goto END; }
 
-		nickname_change_rejected(from_server, target);
+		nickname_change_rejected(from_server, recipient);
 
 		if (!from)
 			from = "-1";

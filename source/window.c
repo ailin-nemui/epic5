@@ -1,4 +1,4 @@
-/* $EPIC: window.c,v 1.190 2007/09/24 01:47:57 jnelson Exp $ */
+/* $EPIC: window.c,v 1.191 2007/10/20 16:10:11 jnelson Exp $ */
 /*
  * window.c: Handles the organzation of the logical viewports (``windows'')
  * for irc.  This includes keeping track of what windows are open, where they
@@ -4125,6 +4125,7 @@ static Window *window_number (Window *window, char **args)
 			/* XXX refnum is changed here XXX */
 			window->refnum = newref;
 
+			lastlog_swap_winrefs(oldref, newref);
 			channels_swap_winrefs(oldref, newref);
 			logfiles_swap_winrefs(oldref, newref);
 			timers_swap_winrefs(oldref, newref);
