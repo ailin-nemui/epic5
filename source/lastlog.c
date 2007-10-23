@@ -1,4 +1,4 @@
-/* $EPIC: lastlog.c,v 1.73 2007/10/20 16:10:11 jnelson Exp $ */
+/* $EPIC: lastlog.c,v 1.74 2007/10/23 03:22:08 jnelson Exp $ */
 /*
  * lastlog.c: handles the lastlog features of irc. 
  *
@@ -362,6 +362,7 @@ BUILT_IN_COMMAND(lastlog)
 	int		mangler = 0;
 	int		lc;
 	char *		rewrite = NULL;
+	int		winref = current_window->refnum;
 
 	lc = message_setall(0, NULL, LEVEL_OTHER);
 	cnt = current_window->lastlog_size;
@@ -508,6 +509,20 @@ BUILT_IN_COMMAND(lastlog)
 	    {
 		rewrite = new_next_arg(args, &args);
 	    }
+	    else if (!my_strnicmp(arg, "-WINDOW", len))
+	    {
+		Window *w;
+		char *x;
+
+		x = new_next_arg(args, &args);
+		if (!(w = get_window_by_desc(x)))
+		{
+			yell("LASTLOG -WINDOW %s is not a valid window "
+				"name or number", x);
+			goto bail;
+		}
+		winref = w->refnum;
+	    }
 	    else if (!my_strnicmp(arg, "-", 1))
 	    {
 		int	i = str_to_level(arg+1);
@@ -637,7 +652,7 @@ BUILT_IN_COMMAND(lastlog)
 
 	    for (start = end = lastlog_newest; start != lastlog_oldest; )
 	    {
-		if (start->visible && start->winref == current_window->refnum)
+		if (start->visible && start->winref == winref)
 		{
 		    if (mask_isnone(&level_mask) || 
 				(mask_isset(&level_mask, start->level)))
@@ -652,8 +667,7 @@ BUILT_IN_COMMAND(lastlog)
 	    for (l = start; l; (void)(l && (l = l->newer)))
 	    {
 		if (show_lastlog(&l, &skip, &number, &level_mask, 
-				match, reg, &max, target, mangler,
-				current_window->refnum))
+				match, reg, &max, target, mangler, winref))
 		{
 		    if (counter == 0 && before > 0)
 		    {
@@ -725,7 +739,7 @@ BUILT_IN_COMMAND(lastlog)
 
 	    for (start = end = lastlog_newest; end != lastlog_oldest; )
 	    {
-		if (end->visible && end->winref == current_window->refnum)
+		if (end->visible && end->winref == winref)
 		{
 		    if (mask_isnone(&level_mask) || 
 				(mask_isset(&level_mask, end->level)))
@@ -740,8 +754,7 @@ BUILT_IN_COMMAND(lastlog)
 	    for (l = start; l; (void)(l && (l = l->older)))
 	    {
 		if (show_lastlog(&l, &skip, &number, &level_mask, 
-				match, reg, &max, target, mangler, 
-				current_window->refnum))
+				match, reg, &max, target, mangler, winref))
 		{
 		    if (counter == 0 && before > 0)
 		    {

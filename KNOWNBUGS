@@ -187,3 +187,4 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Add forgotten code to move lastlog items between windows for /window number
 * Fix bug where default numeric output wouldn't go to a channel's window.
 * Remove a superfluous message_from() when parsing server stuff.
+* Add /lastlog -window for fusion.
