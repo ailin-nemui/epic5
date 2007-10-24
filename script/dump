@@ -5,7 +5,7 @@ if (word(2 $loadinfo()) != 'pf') {
 
 #	Copyright (c) 2007 BlackJac@EFNet
 #
-#	Version: 1.1.2007.10.01.1
+#	Version: 1.1.2007.10.23.1
 #
 #	This script simulates the dump command of epic4 for epic5. The
 #	behavior should be nearly identical to the original. Several
@@ -53,6 +53,7 @@ alias dump (args default "all") {
 				fe (alias array bind channel dcc hook timer variable window) ee {
 					dump.$ee;
 				};
+			};
 			(*) {
 				xecho -b -c -s Dump what? \('$toupper($choice)' is unrecognized\);
 			};
