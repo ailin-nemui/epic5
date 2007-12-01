@@ -1,5 +1,5 @@
 /*
- * @(#)$Id: acconfig.h,v 1.38 2007/08/22 21:57:16 jnelson Exp $
+ * @(#)$Id: acconfig.h,v 1.39 2007/12/01 04:52:02 jnelson Exp $
  */
 
 /*
@@ -400,4 +400,7 @@
 
 /* Define this if you have iconv_open() */
 #undef HAVE_ICONV
+
+/* Define this if you have iconv_open() */
+#undef HAVE_LIBARCHIVE
 

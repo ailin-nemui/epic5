@@ -1,4 +1,4 @@
-/* $EPIC: functions.c,v 1.263 2007/10/03 06:44:21 crazyed Exp $ */
+/* $EPIC: functions.c,v 1.264 2007/12/01 04:52:05 jnelson Exp $ */
 /*
  * functions.c -- Built-in functions for ircII
  *
@@ -255,6 +255,7 @@ static	char
 	*function_findw		(char *),
 	*function_findws	(char *),
 	*function_fix_arglist	(char *),
+        *function_fix_width     (char *),
 	*function_floor		(char *),
 	*function_fromw 	(char *),
 	*function_fsize	 	(char *),
@@ -538,6 +539,7 @@ static BuiltInFunctions	built_in_functions[] =
 	{ "FINDW",		function_findw		},
 	{ "FINDWS",		function_findws		},
 	{ "FIX_ARGLIST",	function_fix_arglist	},
+        { "FIX_WIDTH",          function_fix_width      },
 	{ "FLOODINFO",		function_floodinfo	},
 	{ "FLOOR",		function_floor		},
 	{ "FNEXIST",		function_fnexist	},
@@ -2855,6 +2857,65 @@ BUILT_IN_FUNCTION(function_center, word)
 	padc = (char *)new_malloc(pad + 1);
 	snprintf(padc, pad + 1, "%*s", (int)pad, word);  /* Right justify it */
 	return padc;
+}
+
+/* fix_width(<width> <l, c, r> "<fill char>" <string>)
+ * params
+ * 1 - how long the resulting string should be
+ * 2 - left, center, or right justified
+ * 3 - character to append if string is too short
+ * 4 - the string
+ */
+
+BUILT_IN_FUNCTION(function_fix_width, word)
+{
+        char *justify;
+
+	/* add */
+	char *fillchar;
+	unsigned char filler[6];
+        int width;
+	int len;
+        int chars;
+
+        /* chop */
+	unsigned char **prepared = NULL;
+        int lines = 1;
+
+        char *retval;
+
+        GET_INT_ARG(width, word);
+	if (width < 0 || !*word)
+                RETURN_EMPTY;
+
+        GET_FUNC_ARG(justify, word);
+
+	GET_DWORD_ARG(fillchar, word);
+
+	word = new_normalize_string(word, 3, display_line_mangler);
+
+        len = output_with_count(word, 0, 0);
+	if (len < width) {
+                /* add */
+		filler[0] = *fillchar;
+		filler[1] = 0;
+
+		chars=(width - len);
+		while (chars-- > 0)
+                        malloc_strcat_c(&word, filler, NULL);
+                retval = denormalize_string(word);
+	} else if (len > width) {
+                /* chop */
+		prepared = prepare_display(-1, word, width-1, &lines, PREPARE_NOWRAP);
+		retval = denormalize_string(prepared[0]);
+	} else {
+                /* 'word' is already specified length */
+		retval = denormalize_string(word);
+	}
+
+        new_free(&word);
+
+	return retval;
 }
 
 BUILT_IN_FUNCTION(function_split, word)

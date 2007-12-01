@@ -7,7 +7,7 @@
  *
  * See the COPYRIGHT file, or do a HELP IRCII COPYRIGHT 
  *
- * @(#)$Id: ircaux.h,v 1.98 2007/09/17 03:34:15 jnelson Exp $
+ * @(#)$Id: ircaux.h,v 1.99 2007/12/01 04:52:05 jnelson Exp $
  */
 
 #ifndef _IRCAUX_H_
@@ -16,6 +16,7 @@
 #include "compat.h"
 #include "network.h"
 #include "words.h"
+#include "zip.h"
 
 struct metric_time {
 	long mt_days;
@@ -79,7 +80,7 @@ char *	malloc_strcat_ues_c	(char **, const char *, const char *, size_t *);
 char *	strlopencat		(char *, size_t, ...);
 ssize_t	stristr 		(const char *, const char *);
 ssize_t	rstristr 		(const char *, const char *);
-FILE *	uzfopen 		(char **, const char *, int, struct stat *);
+struct epic_loadfile *	uzfopen 		(char **, const char *, int, struct stat *);
 int	end_strcmp 		(const char *, const char *, size_t);
 char*   exec_pipe		(const char *, char *, size_t *, char *const *);
 FILE **	open_exec		(const char *executable, char * const *args);

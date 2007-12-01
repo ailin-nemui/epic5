@@ -7,7 +7,6 @@ KNOWN ERRATA (eg, bugs, or unresolved requests):
 * If you kill a window, and create a new one with same refnum, scrollback 
   comes back, probably because the lastlog isn't purged properly.
 * Larne wants a way to globally toggle whether ignores are honored.
-* Howl wants toplines auto-padded so he can ^V and get a full reverse line.
 
 ISSUES OF INTEREST
 ------------------
@@ -189,3 +188,13 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Remove a superfluous message_from() when parsing server stuff.
 * Add /lastlog -window for fusion.
 * New version of /load dump from black.
+* Add support for libarchive to configure
+* Everything below is from fusion (Alexander Grotewohl)
+* If libarchive is present, support zip/tar files in /load and $open() 
+* Create a new "epic load file" data type that wraps FILE or libarchive.
+* Extend uzfopen() to use the new "epic load file" data type.
+* Extend the loader to honor the new "epic load file" data type
+* Extend $open() [read only for now] to honor the epic load file data type
+* Not all operations are supported on zip files.
+* Add new function $fix_width() returns string with a guaranteed printable len
+* End of things contributed by fusion (Alexander Grotewohl)

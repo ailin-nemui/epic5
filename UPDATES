@@ -1,5 +1,59 @@
 EPIC5-0.3.6
 
+*** News 11/29/2007 -- New function $fix_width()
+	The $fix_width() function takes the following arguments:
+		cols      $0    Number of columns
+		justify   $1    Justification (must be "l" for left justify)
+		fillchar  $2    Fill character (a dword, so use " " for space)
+		text      $3-   
+
+	This function returns <text> formatted so that it takes up exactly 
+	<cols> number of columns on the display.  It does this by adding
+	<fillchar> to the string on either the left or the right or both.
+
+	If <text> is already wider than <cols> then it is truncated to <cols>.
+
+	<Justify> must be either "l" for left justify, "c" for center, or "r"
+	for right justify.  Only left justify is supported.  The others are
+	for future expansion.
+
+	This function is intended for creating full width reverse toplines:
+		@ :cols = word(0 $geom())
+		@ :str = fix_width($cols l " " blah blah blah blah)
+		window topline 1 "^V$str"
+
+	You will probably want to call $fix_width() in a separate statement
+	from the /window topline in order to avoid the syntactic confusion
+	with passing a double quoted word to /window and passing a double
+	quoted word to $fix_width() (the space).  Trust me.  Don't go there.
+
+	In the future, support will be added for right justify and centered.
+	Please keep watch out in this document for more info.
+
+*** News 11/29/2007 -- Support for ZIP files from libarchive
+	Support for loading files from .zip files has been added.  This first
+	round of implementation just adds the raw ability, but it's not 
+	totaly ready to be used yet.  You're welcome to start playing with
+	it and reporting any problems you have.
+
+	You can $open() a file for reading or /load it from a zip file:
+		/load foo.zip/file
+	and
+		@fd = open(foo.zip/file R)
+
+	If you /load a zip file, it will load the file ".ircrc" in the top
+	level directory.  This might be enahanced or changed in the future:
+		/load foo.zip
+	acts like
+		/load foo.zip/.ircrc
+
+	Some operations cannot be performed on zipped files, such as $fseek()
+	and $frewind() and so forth.  This might change in the future.
+
+	All of this is based on 'libarchive' being installed.  You will need
+	to re-run configure in order to pick up libarchive support after you
+	do a cvs update.
+
 *** News 10/22/2007 -- New flag to /lastlog, /lastlog -window
 	The /lastlog -window flag lets you grep the lastlog from a different
 	window.  The output will still go to the *current* window, however!

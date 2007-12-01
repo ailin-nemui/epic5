@@ -1,4 +1,4 @@
-/* $EPIC: ircaux.c,v 1.185 2007/09/20 04:00:11 jnelson Exp $ */
+/* $EPIC: ircaux.c,v 1.186 2007/12/01 04:52:05 jnelson Exp $ */
 /*
  * ircaux.c: some extra routines... not specific to irc... that I needed 
  *
@@ -50,6 +50,9 @@
 #include "ctcp.h"
 #include "server.h"
 #include "sedcrypt.h"
+#include "archive.h"
+#include "archive_entry.h"
+#include "elf.h"
 
 /*
  * This is the basic overhead for every malloc allocation (8 bytes).
@@ -905,6 +908,15 @@ int	normalize_filename (const char *str, Filename result)
 		str = workpath;
 	}
 
+        /* yes, these are redundant, but what if people */
+        /* have directories with .zip in them? */
+        if (((stristr(str, ".zip"))!=-1) || ((stristr(str, ".tar"))!=-1)) {
+            if (file_exists(str)) {
+                snprintf(result, MAXPATHLEN + 1, "%s", str);
+                return 0;
+            }
+        }
+
 	if (realpath(str, result) == NULL)
 		return -1;
 
@@ -1486,12 +1498,14 @@ static	FILE *	file_pointers[3];
 	return file_pointers;
 }
 
-static FILE *	open_compression (char *executable, char *filename)
+struct epic_loadfile *	open_compression (char *executable, char *filename)
 {
-	FILE *	file_pointer;
+	struct epic_loadfile *	elf;
 	int 	pipes[2] = {-1, -1};
 
-	if (pipe(pipes) == -1)
+        elf = (struct epic_loadfile *) new_malloc(sizeof(struct epic_loadfile));
+
+        if (pipe(pipes) == -1)
 	{
 		yell("Cannot start decompression: %s\n", strerror(errno));
 		if (pipes[0] != -1)
@@ -1530,7 +1544,7 @@ static FILE *	open_compression (char *executable, char *filename)
 		default :
 		{
 			close(pipes[1]);
-			if (!(file_pointer = fdopen(pipes[0], "r")))
+			if (!(elf->fp = fdopen(pipes[0], "r")))
 			{
 				yell("Cannot start decompression: %s\n", 
 						strerror(errno));
@@ -1539,10 +1553,10 @@ static FILE *	open_compression (char *executable, char *filename)
 			break;
 		}
 	}
-	return file_pointer;
+	return elf;
 }
 
-/* 
+/*
  * Front end to fopen() that will open ANY file, compressed or not, and
  * is relatively smart about looking for the possibilities, and even
  * searches a path for you! ;-)
@@ -1554,7 +1568,7 @@ static FILE *	open_compression (char *executable, char *filename)
  * WITH A NEW VALUE (ie, the variable will be changed) UPON RETURN.  You must
  * not save the original value of '*filename' and use it after calling uzfopen.
  */
-FILE *	uzfopen (char **filename, const char *path, int do_error, struct stat *sb)
+struct epic_loadfile *	uzfopen (char **filename, const char *path, int do_error, struct stat *sb)
 {
 static int		setup				= 0;
 static 	Filename 	path_to_gunzip;
@@ -1563,9 +1577,10 @@ static 	Filename 	path_to_bunzip2;
 	int 		ok_to_decompress 		= 0;
 	Filename	fullname;
 	Filename	candidate;
-	FILE *		doh;
 
-	if (!setup)
+        struct epic_loadfile * elf;
+
+        if (!setup)
 	{
 		*path_to_gunzip = 0;
 		path_search("gunzip", getenv("PATH"), path_to_gunzip);
@@ -1599,18 +1614,21 @@ static 	Filename 	path_to_bunzip2;
 	 */
 	if ((!end_strcmp(*filename, ".gz", 3)) ||
 	    (!end_strcmp(*filename, ".z", 2))) 
-	{
-		if (!*path_to_gunzip)
-		{
-			if (do_error)
-				yell("Cannot open file %s because gunzip "
-					"was not found", *filename);
-			goto error_cleanup;
-		}
+        {
+            /* these are handled differently */
+            if (end_strcmp(*filename, ".tar.gz", 7)) {
+                if (!*path_to_gunzip)
+                {
+                    if (do_error)
+                            yell("Cannot open file %s because gunzip "
+                                     "was not found", *filename);
+                        goto error_cleanup;
+                }
+                ok_to_decompress = 2;
+            }
+            if (path_search(*filename, path, fullname))
+                goto file_not_found;
 
-		ok_to_decompress = 2;
-		if (path_search(*filename, path, fullname))
-			goto file_not_found;
 	}
 	else if (!end_strcmp(*filename, ".Z", 2))
 	{
@@ -1683,27 +1701,27 @@ static 	Filename 	path_to_bunzip2;
 		goto file_not_found;
 	    }
 	    while (0);
-		
-		if (stat(fullname, sb) < 0)
-		{
-			if (do_error)
-				yell("%s could not be accessed", fullname);
-			goto error_cleanup;
-		}
-	
-		if (S_ISDIR(sb->st_mode))
-		{
-		    if (do_error)
-			yell("%s is a directory", fullname);
-		    goto error_cleanup;
-		}
-	}
-	
-	/* 
-	 * At this point, we should have a filename in the variable
-	 * *filename, and it should exist.  If ok_to_decompress is one, then
-	 * we can gunzip the file if gunzip is available.  else we 
-	 * uncompress the file.
+
+            if (epic_stat(fullname, sb) < 0)
+            {
+                if (do_error)
+                    yell("%s could not be accessed", fullname);
+                goto error_cleanup;
+            }
+
+            if (S_ISDIR(sb->st_mode))
+            {
+                if (do_error)
+                    yell("%s is a directory", fullname);
+                goto error_cleanup;
+            }
+        }
+
+        /*
+         * At this point, we should have a filename in the variable
+         * *filename, and it should exist.  If ok_to_decompress is one, then
+         * we can gunzip the file if gunzip is available.  else we
+         * uncompress the file.
 	 */
 	malloc_strcpy(filename, fullname);
 	if (ok_to_decompress)
@@ -1719,15 +1737,11 @@ static 	Filename 	path_to_bunzip2;
 			yell("Cannot open compressed file %s becuase no "
 				"uncompressor was found", *filename);
 		goto error_cleanup;
-	}
-
-	/* Its not a compressed file... Try to open it regular-like. */
-	else if ((doh = fopen(*filename, "r")))
-		return doh;
-
-	/* nope.. we just cant seem to open this file... */
-	else if (do_error)
-		yell("Cannot open file %s: %s", *filename, strerror(errno));
+	} else {
+            if ((elf=epic_fopen(*filename, "r", do_error))) {
+                return elf;
+            }
+        }
 
 	goto error_cleanup;
 
@@ -1752,10 +1766,11 @@ int	slurp_file (char **buffer, char *filename)
 	off_t	local_buffer_size;
 	off_t	filesize;
 	Stat	s;
-	FILE *	file;
-	size_t	count;
+	/* FILE *	file; */
+        struct epic_loadfile * elf;
+        size_t	count;
 
-	file = uzfopen(&filename, get_string_var(LOAD_PATH_VAR), 1, &s);
+	elf = uzfopen(&filename, get_string_var(LOAD_PATH_VAR), 1, &s);
 
 /*
 	if (stat(filename, &s) < 0)
@@ -1772,7 +1787,7 @@ int	slurp_file (char **buffer, char *filename)
 		do_error = 1;
 		if (do_error)
 			yell("Cannot open %s -- executable file", filename);
-		fclose(file);
+		fclose(elf->fp);
 		new_free(&filename);
 		return -1; /* Whatever */
 	}
@@ -1797,10 +1812,10 @@ int	slurp_file (char **buffer, char *filename)
 	do
 	{
 		count = fread(local_buffer + offset, 
-			      local_buffer_size - offset, 1, file);
+			      local_buffer_size - offset, 1, elf->fp);
 		offset += count;
 
-		if (!feof(file))
+		if (!feof(elf->fp))
 		{
 			local_buffer_size += (filesize * 3);
 			new_realloc((void **)&local_buffer, local_buffer_size);
@@ -1867,7 +1882,7 @@ off_t 	file_size (const char *filename)
 {
 	Stat statbuf;
 
-	if (!stat(filename, &statbuf))
+	if (!epic_stat(filename, &statbuf))
 		return (off_t)(statbuf.st_size);
 	else
 		return -1;

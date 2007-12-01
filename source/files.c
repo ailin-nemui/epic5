@@ -1,4 +1,4 @@
-/* $EPIC: files.c,v 1.31 2006/10/13 21:58:02 jnelson Exp $ */
+/* $EPIC: files.c,v 1.32 2007/12/01 04:52:05 jnelson Exp $ */
 /*
  * files.c -- allows you to read/write files. Wow.
  *
@@ -36,6 +36,7 @@
 #include "files.h"
 #include "window.h"
 #include "output.h"
+#include "elf.h"
 
 /* Here's the plan.
  *  You want to open a file.. you can READ it or you can WRITE it.
@@ -61,17 +62,21 @@
  */
 
 struct FILE___ {
-	FILE *file;
+        long int id;
+        struct epic_loadfile *elf;
 	struct FILE___ *next;
 };
 typedef struct FILE___ File;
 
 static File *	FtopEntry = (File *) 0;
 
-static File *	new_file (FILE *the_file)
+static File *	new_file (struct epic_loadfile *elf/*FILE *the_file*/)
 {
-	File *tmp = FtopEntry;
+        static long int id = 0;
+        File *tmp = FtopEntry;
 	File *tmp_file = (File *)new_malloc(sizeof(File));
+
+        id++;
 
 	if (!FtopEntry)
 		FtopEntry = tmp_file;
@@ -82,7 +87,9 @@ static File *	new_file (FILE *the_file)
 		tmp->next = tmp_file;
 	}
 
-	tmp_file->file = the_file;
+        tmp_file->id  = id;
+        tmp_file->elf = elf;
+
 	tmp_file->next = NULL;
 
 	return tmp_file;
@@ -101,7 +108,7 @@ static void	remove_file (File *file)
 		if (tmp->next)
 			tmp->next = tmp->next->next;
 	}
-	fclose(file->file);
+	epic_fclose(file->elf);
 	new_free((char **)&file);
 }
 
@@ -109,15 +116,19 @@ static void	remove_file (File *file)
 int	open_file_for_read (const char *filename)
 {
 	char *dummy_filename = (char *) 0;
-	FILE *file;
-	struct stat sb;
+        struct epic_loadfile *elf;
+        struct stat sb;
+
+        File * fr;
 
 	malloc_strcpy(&dummy_filename, filename);
-	file = uzfopen(&dummy_filename, ".", 1, &sb);
+	elf = uzfopen(&dummy_filename, ".", 1, &sb);
 	new_free(&dummy_filename);
 
-	if (!file)
-		return -1;
+        if (!elf) {
+                new_free(&elf);
+                return -1;
+        }
 
 	if (sb.st_mode & 0111)
 	{
@@ -125,23 +136,25 @@ int	open_file_for_read (const char *filename)
 		return -1;
 	}
 
-	new_file(file);
-	return fileno(file);
+	fr=new_file(elf);
+	return fr->id;
 }
 
 int	open_file_for_write (const char *filename, const char *mode)
 {
 	Filename expand;
-	FILE *file;
+        struct epic_loadfile *elf;
+
+        File * fr;
 
 	if (normalize_filename(filename, expand))
 		strlcpy(expand, filename, sizeof(expand));
 
-	if (!(file = fopen(expand, mode)))
+	if (!(elf = epic_fopen(expand, mode, 1)))
 		return -1;
 
-	new_file(file);
-	return fileno(file);
+	fr=new_file(elf);
+	return fr->id;
 }
 
 int *	open_exec_for_in_out_err (const char *filename, char * const *args)
@@ -149,6 +162,9 @@ int *	open_exec_for_in_out_err (const char *filename, char * const *args)
 	Filename expand;
 	FILE **files;
 static	int ret[3];
+
+struct  epic_loadfile *elf;
+        File * fr;
 
 	if (normalize_filename(filename, expand))
 		strlcpy(expand, filename, sizeof(expand));
@@ -158,10 +174,19 @@ static	int ret[3];
 		int foo;
 		for (foo = 0; foo < 3; foo++) 
 		{
-			new_file(files[foo]);
-			ret[foo] = fileno(files[foo]);
-		}
-		return ret;
+                        if (!(elf=(struct epic_loadfile *)malloc(sizeof(struct epic_loadfile)))) {
+                            yell("Not enough memory.");
+                            return NULL;
+                        }
+
+                        elf->fp=files[foo];
+#ifdef HAVE_LIBARCHIVE
+                        elf->a=NULL;
+#endif
+                        fr=new_file(elf);
+			ret[foo] = fr->id;
+                }
+                return ret;
 	}
 	else 
 		return NULL;
@@ -173,7 +198,7 @@ static File *	lookup_file (int fd)
 
 	while (ptr)
 	{
-		if (fileno(ptr->file) == fd)
+		if ((ptr->id) == fd)
 			return ptr;
 		else
 			ptr = ptr -> next;
@@ -192,7 +217,7 @@ static File *	lookup_logfile (int fd)
 	if ((w = get_window_by_refnum(fd)))
 		x = w->log_fp;
 
-	retval.file = x;		/* XXX Should be a file */
+	retval.elf->fp = x;		/* XXX Should be a file */
 	retval.next = NULL;
 	return &retval;
 }
@@ -217,11 +242,11 @@ int	file_write (int window, int fd, const char *stuff)
 	else
 		ptr = lookup_file(fd);
 
-	if (!ptr || !ptr->file)
+	if (!ptr || !ptr->elf->fp)
 		return -1;
 
-	retval = fprintf(ptr->file, "%s\n", stuff);
-	if ((fflush(ptr->file)) == EOF)
+	retval = fprintf(ptr->elf->fp, "%s\n", stuff);
+	if ((fflush(ptr->elf->fp)) == EOF)
 		return -1;
 	return retval;
 }
@@ -237,14 +262,14 @@ int	file_writeb (int window, int fd, char *stuff)
 	else
 		ptr = lookup_file(fd);
 
-	if (!ptr || !ptr->file)
+	if (!ptr || !ptr->elf->fp)
 		return -1;
 
 	stuff = dequote_it(stuff, &len);
-	retval = fwrite(stuff, 1, len, ptr->file);
+	retval = fwrite(stuff, 1, len, ptr->elf->fp);
 	new_free(&stuff);
 
-	if ((fflush(ptr->file)) == EOF)
+	if ((fflush(ptr->elf->fp)) == EOF)
 		return -1;
 	return retval;
 }
@@ -261,14 +286,15 @@ char *	file_read (int fd)
 		size_t	len = 0;
 		size_t	newlen = 0;
 
-		clearerr(ptr->file);
+                if (ptr->elf->fp)
+                    clearerr(ptr->elf->fp);
 
 		for (;;)
 		{
 		    newlen += 4096;
 		    RESIZE(ret, char, newlen);
 		    ret[len] = 0;	/* Keep this -- C requires it! */
-		    if (!fgets(ret + len, newlen - len, ptr->file))
+		    if (!epic_fgets(ret + len, newlen - len, ptr->elf))
 			break;
 		    if ((end = strchr(ret + len, '\n')))
 			break;
@@ -277,9 +303,9 @@ char *	file_read (int fd)
 
 		/* Do we need to truncate the result? */
 		if (end)
-			*end = 0;	/* Either the newline */
-		else if (ferror(ptr->file))
-			*ret = 0;	/* Or the whole thing on error */
+                    *end = 0;	/* Either the newline */
+		else if ( (ptr->elf->fp) && (ferror(ptr->elf->fp)) )
+                    *ret = 0;	/* Or the whole thing on error */
 
 		return ret;
 	}
@@ -294,8 +320,16 @@ char *	file_readb (int fd, int numb)
 	{
 		char *blah = (char *)new_malloc(numb+1);
 		char *bleh = NULL;
-		clearerr(ptr->file);
-		numb = fread(blah, 1, numb, ptr->file);
+                if (ptr->elf->fp) {
+                    clearerr(ptr->elf->fp);
+                    numb = fread(blah, 1, numb, ptr->elf->fp);
+#ifdef HAVE_LIBARCHIVE
+                } else if (ptr->elf->a) {
+                    numb = archive_read_data(ptr->elf->a, blah, numb);
+#endif
+                } else {
+                    /* others */
+                }
 		bleh = enquote_it(blah, numb);
 		new_free(&blah);
 		return bleh;
@@ -308,7 +342,7 @@ int	file_eof (int fd)
 	if (!ptr)
 		return -1;
 	else
-		return feof(ptr->file);
+		return epic_feof(ptr->elf);
 }
 
 int	file_error (int fd)
@@ -317,7 +351,7 @@ int	file_error (int fd)
 	if (!ptr)
 		return -1;
 	else
-		return ferror(ptr->file);
+		return ferror(ptr->elf->fp);
 }
 
 int	file_rewind (int fd)
@@ -327,8 +361,8 @@ int	file_rewind (int fd)
 		return -1;
 	else
 	{
-		rewind(ptr->file);
-		return ferror(ptr->file);
+		rewind(ptr->elf->fp);
+		return ferror(ptr->elf->fp);
 	}
 }
 
@@ -340,11 +374,11 @@ int	file_seek (int fd, off_t offset, const char *whence)
 		return -1;
 
 	if (!my_stricmp(whence, "SET"))
-		return fseek(ptr->file, offset, SEEK_SET);
+		return fseek(ptr->elf->fp, offset, SEEK_SET);
 	else if (!my_stricmp(whence, "CUR"))
-		return fseek(ptr->file, offset, SEEK_CUR);
+		return fseek(ptr->elf->fp, offset, SEEK_CUR);
 	else if (!my_stricmp(whence, "END"))
-		return fseek(ptr->file, offset, SEEK_END);
+		return fseek(ptr->elf->fp, offset, SEEK_END);
 	else
 		return -1;
 }
@@ -356,7 +390,7 @@ intmax_t	file_tell (int fd)
 		return -1;
 	else
 		/* XXX Should call ftello(). */
-		return (intmax_t)ftell(ptr->file);
+		return (intmax_t)ftell(ptr->elf->fp);
 }
 
 int	file_skip (int fd, int lines)
