@@ -34,7 +34,7 @@ alias dcc_ports.nextport {
 
 @dccctl(DEFAULT_PORT $$dcc_ports.nextport());
 
-set dcc_port_first 1024;
-set dcc_port_last 65535;
+set dcc_port_min 1024;
+set dcc_port_max 65535;
 
 #hop'2k7

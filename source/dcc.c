@@ -1,4 +1,4 @@
-/* $EPIC: dcc.c,v 1.150 2007/09/20 04:00:10 jnelson Exp $ */
+/* $EPIC: dcc.c,v 1.151 2007/12/01 04:59:23 jnelson Exp $ */
 /*
  * dcc.c: Things dealing client to client connections. 
  *
@@ -2049,6 +2049,9 @@ static void	dcc_list (char *args)
 static	const char	*format =
 		"%-7.7s%-3.3s %-9.9s %-9.9s %-20.20s %-6.6s %-5.5s %-6.6s %s";
 	char		*encoded_description;
+	int		l;
+
+	l = message_from(NULL, LEVEL_OTHER);	/* Gulp */
 
 	if (do_hook(DCC_LIST_LIST, "Start * * * * * * *"))
 	{
@@ -2189,6 +2192,7 @@ static	const char	*format =
 	}
 	unlock_dcc(NULL);
 	do_hook(DCC_LIST_LIST, "End * * * * * * *");
+	pop_message_from(l);
 }
 
 

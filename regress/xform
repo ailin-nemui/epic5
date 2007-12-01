@@ -1,0 +1,35 @@
+@ misses = 0
+
+alias clear {
+        if (misses) {@ [$"[RETURN]"];@ misses = 0}
+        //clear
+}
+
+alias assert {
+        eval @ foo = $*
+        if (foo == 1) { echo Test [$[60]*] passed }
+                      { echo Test [$[60]*] FAILED! ;@misses++ }
+}
+
+clear
+assign string one two three
+assert ::encode($string) == :encode($string)
+assert ::decode($::encode($string)) == string
+assert :decode($::encode($string)) == string
+assert :decode($:encode($string)) == string
+assert ::decode($:encode($string)) == string
+
+assert ::urlencode($string) == :urlencode($string)
+assert ::urldecode($::urlencode($string)) == string
+assert :urldecode($::urlencode($string)) == string
+assert :urldecode($:urlencode($string)) == string
+assert ::urldecode($:urlencode($string)) == string
+
+assert ::b64encode($string) == :b64encode($string)
+assert ::b64decode($::b64encode($string)) == string
+assert :b64decode($::b64encode($string)) == string
+assert :b64decode($:b64encode($string)) == string
+assert ::b64decode($:b64encode($string)) == string
+
+assert :sha256($string) == ::sha256($string)
+

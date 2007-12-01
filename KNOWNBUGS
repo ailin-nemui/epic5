@@ -2,14 +2,14 @@ EPIC5 Projects, Bugs, and other Errata:
 
 KNOWN ERRATA (eg, bugs, or unresolved requests):
 ------------------------------------------------
-* When pasting, it sometimes sends to the wrong window. why?
-* Kreca wants the output of /dcc list to go to OTHER instead of DCC.
-* If you kill a window, and create a new one with same refnum, scrollback 
-  comes back, probably because the lastlog isn't purged properly.
+* Howl wants a temporary hold mode that expires when you reach bottom.
 * Larne wants a way to globally toggle whether ignores are honored.
+* [-1   ] == -1 is false. this is bad.
+* Kreca wants /input "prompt" (arglist) {code}
 
 ISSUES OF INTEREST
 ------------------
+* What about pastes with "rogue characters" like ³ (alt-3, ie, ^[3) ?
 * Kreca mentions that word manip functions strip extraneous spaces.
 * The way dcc filenames are handled is bad; you should be able to seamlessly
   rewrite filenames both outbound and inbound.  URL encoding should auto-detect
@@ -35,6 +35,7 @@ ISSUES OF INTEREST
 * Zlonix would like per-screen toplines
 * How about base85 support for $xform() ?
 * Larne would like to have a shadow display for "ignored" stuff
+* Larne would like a ==== that appears at his last scrollback ponit.
 
 [See http://www.epicsol.org/PROJECTS for things to come in the future]
 [See http://www.epicsol.org/CHANGELOG5 for things that changed in the past]
@@ -198,3 +199,7 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Not all operations are supported on zip files.
 * Add new function $fix_width() returns string with a guaranteed printable len
 * End of things contributed by fusion (Alexander Grotewohl)
+* Change builtins script so it doesn't /xecho -w for who replies.
+* Fix typos in dcc_ports
+* New version of tabkey.ce from fudd.
+* Make /dcc list output go to level OTHER by special request of kreca.
