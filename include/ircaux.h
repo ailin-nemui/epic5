@@ -7,7 +7,7 @@
  *
  * See the COPYRIGHT file, or do a HELP IRCII COPYRIGHT 
  *
- * @(#)$Id: ircaux.h,v 1.99 2007/12/01 04:52:05 jnelson Exp $
+ * @(#)$Id: ircaux.h,v 1.100 2007/12/01 17:16:07 jnelson Exp $
  */
 
 #ifndef _IRCAUX_H_
@@ -16,7 +16,6 @@
 #include "compat.h"
 #include "network.h"
 #include "words.h"
-#include "zip.h"
 
 struct metric_time {
 	long mt_days;

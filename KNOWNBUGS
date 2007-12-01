@@ -203,3 +203,4 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Fix typos in dcc_ports
 * New version of tabkey.ce from fudd.
 * Make /dcc list output go to level OTHER by special request of kreca.
+* Fix build (rb zlonix)
