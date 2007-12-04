@@ -13,8 +13,8 @@
 #define _ELF_H_
 
 #ifdef HAVE_LIBARCHIVE
-#include "archive.h"
-#include "archive_entry.h"
+#include <archive.h>
+#include <archive_entry.h>
 #endif
 
 struct epic_loadfile {

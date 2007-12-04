@@ -36,10 +36,6 @@
 #include "irc.h"
 #include "ircaux.h"
 #include "elf.h"
-#ifdef HAVE_LIBARCHIVE
-#include "archive.h"
-#include "archive_entry.h"
-#endif
 
 struct epic_loadfile * epic_fopen(char *filename, const char *mode, int do_error)
 {

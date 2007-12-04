@@ -6,6 +6,9 @@ KNOWN ERRATA (eg, bugs, or unresolved requests):
 * Larne wants a way to globally toggle whether ignores are honored.
 * [-1   ] == -1 is false. this is bad.
 * Kreca wants /input "prompt" (arglist) {code}
+* Howl wants the toplines that are fixed-width to auto-resize
+* $info(o) needs to indicate whether libarchive is present.  And iconv.
+* A function that tells whether a block statement is "well formed"
 
 ISSUES OF INTEREST
 ------------------
