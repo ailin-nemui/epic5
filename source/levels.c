@@ -1,4 +1,4 @@
-/* $EPIC: levels.c,v 1.11 2007/09/21 03:36:28 jnelson Exp $ */
+/* $EPIC: levels.c,v 1.12 2008/01/05 19:00:26 jnelson Exp $ */
 /*
  * levels.c - Sorting things by category -- Window/Lastlog, Ignore, and Floods
  *
@@ -301,7 +301,8 @@ int	standard_level_warning (const char *who, char **rejects)
 	{
 		char *s;
 
-		say("%s ignored the these unsupported levels: %s", *rejects);
+		say("%s ignored the these unsupported levels: %s", 
+				who, *rejects);
 		s = get_all_levels();
 		say("The valid levels are: %s", s);
 		new_free(&s);

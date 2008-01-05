@@ -5,9 +5,7 @@ KNOWN ERRATA (eg, bugs, or unresolved requests):
 * Howl wants a temporary hold mode that expires when you reach bottom.
 * Larne wants a way to globally toggle whether ignores are honored.
 * [-1   ] == -1 is false. this is bad.
-* Kreca wants /input "prompt" (arglist) {code}
 * Howl wants the toplines that are fixed-width to auto-resize
-* $info(o) needs to indicate whether libarchive is present.  And iconv.
 * A function that tells whether a block statement is "well formed"
 
 ISSUES OF INTEREST
@@ -207,3 +205,9 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * New version of tabkey.ce from fudd.
 * Make /dcc list output go to level OTHER by special request of kreca.
 * Fix build (rb zlonix)
+* $info(o) now includes 'r' for libarchive, and 'x' for iconv support
+* Unconditinally unset GREP_OPTIONS in configure (rb Pegasus)
+* Fix /oper password being shown because term_echo() not called. (rb wjr)
+* Properly handle multiple spaces between protocol tokens (rb Krisp)
+* Fix crash with standard_warning_level() when you do /window level nonsense.
+* Support /input "prompt" (args) {code}. See UPDATES. (rb kreca) (fusion)

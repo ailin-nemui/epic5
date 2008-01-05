@@ -1,4 +1,4 @@
-/* $EPIC: commands.c,v 1.173 2007/12/01 04:52:05 jnelson Exp $ */
+/* $EPIC: commands.c,v 1.174 2008/01/05 19:00:26 jnelson Exp $ */
 /*
  * commands.c -- Stuff needed to execute commands in ircII.
  *		 Includes the bulk of the built in commands for ircII.
@@ -37,6 +37,7 @@
 #define __need_putchar_x__
 #define __need_term_flush__
 #include "irc.h"
+#define __need_ArgList_t__
 #include "alias.h"
 #include "alist.h"
 #include "sedcrypt.h"
@@ -3322,7 +3323,14 @@ void 	new_send_text (int server, const char *orig_target_list, const char *text,
  */
 static void	eval_inputlist (char *args, char *line)
 {
-	runcmds(args, line);
+        char *tmp;
+	if (args[0]=='(') {
+                tmp=next_expr(&args, '(');
+                runcmds_with_arglist(args, tmp, line);
+	} else {
+                /* traditional behavior */
+		runcmds(args, line);
+	}
 }
 
 BUILT_IN_COMMAND(e_call)
@@ -3466,7 +3474,19 @@ void	runcmds (const char *what, const char *subargs)
 	parse_block(what, subargs, 0);
 }
 
-/* 
+void    runcmds_with_arglist (const char *what, const char *args, const char *subargs)
+{
+	ArgList *arglist = NULL;
+	if (!subargs)
+		subargs = empty_string;
+	arglist = parse_arglist((char *)args);
+
+	parse_line_alias_special(NULL, what, (char *)subargs, arglist, 0);
+
+	destroy_arglist(&arglist);
+}
+
+/*
  * parse_block: execute a block of ircII statements (in a C string)
  *
  * Arguments:

@@ -69,6 +69,10 @@ const char compile_time_options[] = {
 					'o',
 #endif
 
+#ifdef HAVE_LIBARCHIVE
+					'r',
+#endif
+
 #ifdef I_DONT_TRUST_MY_USERS
  					't',
 #endif /* I_DONT_TRUST_MY_USERS */
@@ -77,6 +81,10 @@ const char compile_time_options[] = {
  					'u',
 #endif /* UNAME_HACK */
  
+#ifdef HAVE_ICONV
+					'v',
+#endif
+
 #if 1
  					'x',
 #endif /* EXPERIMENTAL_STACK_HACK is now the default */

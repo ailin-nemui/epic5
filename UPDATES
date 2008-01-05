@@ -1,5 +1,18 @@
 EPIC5-0.3.6
 
+*** News 01/05/2008 -- You can now use arglists with /input (fusion)
+	You can now use arglists with input, like so:
+
+	input "Enter command and arguments: " (cmd, args) {
+		xecho -b You entered [$cmd] and [$args]!
+	}
+
+*** News 01/03/2008 -- $info(o) values for libarchive, iconv support
+	If the binary supports libarchive, $info(o) will include 'r'.
+	If the binary supports iconv, $info(o) will include 'v'.
+	Libarchive support is required to /load from a .zip file
+	Iconv support is required to be able to do character set translation.
+
 *** News 11/29/2007 -- New function $fix_width()
 	The $fix_width() function takes the following arguments:
 		cols      $0    Number of columns

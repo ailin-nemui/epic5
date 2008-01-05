@@ -1,4 +1,4 @@
-/* $EPIC: parse.c,v 1.89 2007/05/30 02:26:23 jnelson Exp $ */
+/* $EPIC: parse.c,v 1.90 2008/01/05 19:00:26 jnelson Exp $ */
 /*
  * parse.c: handles messages from the server.   Believe it or not.  I
  * certainly wouldn't if I were you. 
@@ -108,10 +108,16 @@ static int	is_target_channel_wall (const char *to)
 }
 
 
+/*
+ * This function reverses the action of BreakArgs but only after a certain
+ * token.   You shall not call this function with an 'arg_list' that was
+ * not previously passed to BreakArgs.
+ */
 const char *	PasteArgs (const char **arg_list, int paste_point)
 {
 	int	i;
 	char	*ptr;
+	size_t	len;
 
 	/*
 	 * Make sure there are enough args to parse...
@@ -120,15 +126,36 @@ const char *	PasteArgs (const char **arg_list, int paste_point)
 		if (!arg_list[i] || !*arg_list[i])
 			return NULL;		/* Not enough args */
 
+	/*
+	 * Tokens are followed by one or more nul's.  We need to change
+	 * ALL of those nuls back to spaces.  We don't know how many nuls
+	 * there might be so we have to check for each one.
+	 */
 	for (i = paste_point; arg_list[i] && arg_list[i + 1]; i++)
 	{
+		/*
+		 * arg_list is (const char **) to prevent OTHER people from
+	 	 * modifying it underneath us.  But we own arg_list, so this
+		 * laundering away of const is reasonable safe, and proper.
+		 */
 		ptr = (char *)
 #ifdef HAVE_INTPTR_T
 				(intptr_t)
 #endif
 					   arg_list[i];
-		ptr[strlen(ptr)] = ' ';
+
+		/*
+		 * Yes, this IS safe!  Please note above that the above for
+		 * loop walks tokens (1, N-1), so we are NOT clobbering the
+	 	 * actual final nul on the end of the original string. 
+		 * We leave the nul on the end of the final arg exactly the
+		 * way that BreakArgs parsed it.
+		 */
+		len = strlen(ptr);
+		while (ptr[len] == '\0')
+			ptr[len++] = ' ';
 	}
+
 	arg_list[paste_point + 1] = NULL;
 	return arg_list[paste_point];
 }
@@ -167,7 +194,7 @@ static void 	BreakArgs (char *Input, const char **Sender, const char **OutPut)
 		fuh = ++Input;
 		while (*Input && *Input != space)
 			Input++;
-		if (*Input == space)
+		while (*Input == space)
 			*Input++ = 0;
 
 		/*
@@ -187,15 +214,14 @@ static void 	BreakArgs (char *Input, const char **Sender, const char **OutPut)
 		*Sender = FromUserHost = empty_string;
 
 	/*
-	 * Now we go through the argument list...
+	 * This changes all spaces (" ") in the protocol command to nuls ('\0')
+	 * and puts pointers at the start of every token into OutPut[].  Note
+	 * that if a token is followed by more than one space, they will be
+	 * all changed into nul's.  The PasteArgs() function (above) handles
+	 * that properly.
 	 */
 	for (;;)
 	{
-/*
-		while (*Input && *Input == space)
-			Input++;
-*/
-
 		if (!*Input)
 			break;
 
@@ -211,7 +237,7 @@ static void 	BreakArgs (char *Input, const char **Sender, const char **OutPut)
 
 		while (*Input && *Input != space)
 			Input++;
-		if (*Input == space)
+		while (*Input && *Input == space)
 			*Input++ = 0;
 	}
 	OutPut[ArgCount] = NULL;

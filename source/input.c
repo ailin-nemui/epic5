@@ -1,4 +1,4 @@
-/* $EPIC: input.c,v 1.49 2007/08/14 02:04:52 jnelson Exp $ */
+/* $EPIC: input.c,v 1.50 2008/01/05 19:00:26 jnelson Exp $ */
 /*
  * input.c: does the actual input line stuff... keeps the appropriate stuff
  * on the input line, handles insert/delete of characters/words... the whole
@@ -524,6 +524,7 @@ void	update_input (void *which_screen, int update)
 		if (SHOWING_PROMPT)
 			max -= INPUT_PROMPT_LEN;
 
+		term_echo(do_echo);
 		safe_puts(&(THIS_CHAR), max, do_echo);
 		term_clear_to_eol();
 		update = UPDATE_JUST_CURSOR;
