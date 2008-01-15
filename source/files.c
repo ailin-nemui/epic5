@@ -1,4 +1,4 @@
-/* $EPIC: files.c,v 1.32 2007/12/01 04:52:05 jnelson Exp $ */
+/* $EPIC: files.c,v 1.33 2008/01/15 13:02:21 jnelson Exp $ */
 /*
  * files.c -- allows you to read/write files. Wow.
  *
@@ -214,8 +214,10 @@ static File *	lookup_logfile (int fd)
 
 	if (fd == -1)
 		x = irclog_fp;
-	if ((w = get_window_by_refnum(fd)))
+	else if ((w = get_window_by_refnum(fd)))
 		x = w->log_fp;
+	else
+		return NULL;
 
 	retval.elf->fp = x;		/* XXX Should be a file */
 	retval.next = NULL;

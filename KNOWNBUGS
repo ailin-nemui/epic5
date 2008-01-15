@@ -7,9 +7,15 @@ KNOWN ERRATA (eg, bugs, or unresolved requests):
 * [-1   ] == -1 is false. this is bad.
 * Howl wants the toplines that are fixed-width to auto-resize
 * A function that tells whether a block statement is "well formed"
+* /oper + typing password + screen redraw -> visible password
+* Krisp wants a $strptime() type function
+* <pegasus> /eval set CONTINUED_LINE $cparse(%C%N)>$cparse(%c%N)$chr(32)
+* <pegasus> /set INDENT ON
+* Crimedog says that on windows, all files are executable, breaks /load
 
 ISSUES OF INTEREST
 ------------------
+* Pegasus wants a way to send italics (^I)
 * What about pastes with "rogue characters" like ³ (alt-3, ie, ^[3) ?
 * Kreca mentions that word manip functions strip extraneous spaces.
 * The way dcc filenames are handled is bad; you should be able to seamlessly
@@ -211,3 +217,5 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Properly handle multiple spaces between protocol tokens (rb Krisp)
 * Fix crash with standard_warning_level() when you do /window level nonsense.
 * Support /input "prompt" (args) {code}. See UPDATES. (rb kreca) (fusion)
+* Fix $write(w[number] anything) crash (rb ce)
+
