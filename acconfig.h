@@ -1,5 +1,5 @@
 /*
- * @(#)$Id: acconfig.h,v 1.39 2007/12/01 04:52:02 jnelson Exp $
+ * @(#)$Id: acconfig.h,v 1.40 2008/01/22 06:44:13 jnelson Exp $
  */
 
 /*
@@ -403,4 +403,7 @@
 
 /* Define this if you have iconv_open() */
 #undef HAVE_LIBARCHIVE
+
+/* Define this if you have strptime() */
+#undef HAVE_STRPTIME
 

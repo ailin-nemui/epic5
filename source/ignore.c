@@ -1,4 +1,4 @@
-/* $EPIC: ignore.c,v 1.32 2006/10/13 21:58:02 jnelson Exp $ */
+/* $EPIC: ignore.c,v 1.33 2008/01/22 06:44:15 jnelson Exp $ */
 /*
  * ignore.c: handles the ingore command for irc 
  *
@@ -127,6 +127,7 @@ typedef struct	IgnoreStru
 /* ignored_nicks: pointer to the head of the ignore list */
 static	Ignore *ignored_nicks = NULL;
 static	int	global_ignore_refnum = 0;
+static	int	ignores_are_suspended = 0;
 
 static void	expire_ignores			(void);
 static const char *	get_ignore_types 		(Ignore *item, int);
@@ -1016,6 +1017,12 @@ char *	ignorectl (char *input)
 			malloc_strcat_word_c(&retval, space, 
 						ltoa(i->refnum), DWORD_NO, &clue);
 		RETURN_MSTR(retval);
+	} else if (!my_strnicmp(listc, "SUSPEND", len)) {
+		ignores_are_suspended++;
+	} else if (!my_strnicmp(listc, "UNSUSPEND", len)) {
+		ignores_are_suspended--;
+	} else if (!my_strnicmp(listc, "RESET_SUSPEND", len)) {
+		ignores_are_suspended = 0;
 	} else if (!my_strnicmp(listc, "ADD", len)) {
 		char *	pattern;
 
@@ -1200,6 +1207,9 @@ int	check_ignore_channel (const char *nick, const char *uh, const char *channel,
 	Ignore	*c_match = NULL;
 
 	if (!ignored_nicks)
+		return NOT_IGNORED;
+
+	if (ignores_are_suspended)
 		return NOT_IGNORED;
 
 	snprintf(nuh, IRCD_BUFFER_SIZE - 1, "%s!%s", nick ? nick : star,

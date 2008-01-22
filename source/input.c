@@ -1,4 +1,4 @@
-/* $EPIC: input.c,v 1.51 2008/01/22 04:03:40 jnelson Exp $ */
+/* $EPIC: input.c,v 1.52 2008/01/22 06:44:15 jnelson Exp $ */
 /*
  * input.c: does the actual input line stuff... keeps the appropriate stuff
  * on the input line, handles insert/delete of characters/words... the whole
@@ -466,9 +466,10 @@ void	update_input (void *which_screen, int update)
 		 */
 		if (SHOWING_PROMPT)
 		{
+			int	old_do_echo;
+
 			/* Forcibly output the prompt */
-			/* XXXX why am i overwriting do_echo here? */
-			do_echo = term_echo(1);
+			old_do_echo = term_echo(1);
 
 			/*
 			 * Figure out how many cols we will give to the
@@ -488,6 +489,7 @@ void	update_input (void *which_screen, int update)
 			if (cols_used > 0)
 				output_with_count(INPUT_PROMPT, 0, 1);
 
+			term_echo(old_do_echo);
 		}
 		else
 			cols_used = 0;

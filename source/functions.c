@@ -1,4 +1,4 @@
-/* $EPIC: functions.c,v 1.265 2008/01/22 04:03:40 jnelson Exp $ */
+/* $EPIC: functions.c,v 1.266 2008/01/22 06:44:15 jnelson Exp $ */
 /*
  * functions.c -- Built-in functions for ircII
  *
@@ -161,10 +161,6 @@ static	char
 	*function_channels 	(char *), 
 	*function_connect 	(char *),
 	*function_curpos 	(char *), 
-#if 0
-	*function_decode 	(unsigned char *),
-	*function_encode 	(unsigned char *),
-#endif
 	*function_index 	(char *), 
 	*function_ischannel 	(char *),
 	*function_ischanop 	(char *), 
@@ -205,10 +201,6 @@ static	char
 	*function_aliasctl	(char *),
 	*function_ascii 	(char *),
 	*function_asciiq 	(char *),
-#if 0
-	*function_b64decode	(char *),
-	*function_b64encode	(char *),
-#endif
 	*function_before 	(char *),
 	*function_beforew 	(char *),
 	*function_bindctl	(char *),
@@ -374,17 +366,11 @@ static	char
 	*function_ruby		(char *),
 #endif
 	*function_sar 		(char *),
-#if 0
-	*function_sedcrypt 	(char *),
-#endif
 	*function_seek		(char *),
 	*function_server_version (char *),
 	*function_serverctl	(char *),
 	*function_servports	(char *),
 	*function_serverwin	(char *),
-#if 0
-	*function_sha256	(char *),
-#endif
 	*function_sin		(char *),
 	*function_sinh		(char *),
 	*function_skip		(char *),
@@ -401,6 +387,7 @@ static	char
 	*function_stripc 	(char *),
 	*function_stripcrap	(char *),
 	*function_strlen	(char *),
+	*function_strptime	(char *),
 	*function_strtol	(char *),
 	*function_substr	(char *),
 	*function_symbolctl	(char *),
@@ -424,10 +411,6 @@ static	char
 	*function_uniq		(char *),
 	*function_unlink 	(char *),
 	*function_unsplit	(char *),
-#if 0
-	*function_urldecode	(char *),
-	*function_urlencode	(char *),
-#endif
 	*function_which 	(char *),
 	*function_winchan	(char *),
 	*function_windowctl	(char *),
@@ -437,9 +420,8 @@ static	char
 	*function_xform		(char *),
 	*function_yn		(char *);
 
-char
-	* wrapper_pattern (char *, int),
-	* wrapper_rpattern (char *, int);
+char	*wrapper_pattern	(char *, int),
+	*wrapper_rpattern	(char *, int);
 
 extern char
 	*function_push		(char *),
@@ -475,10 +457,6 @@ static BuiltInFunctions	built_in_functions[] =
 	{ "ASINH",		function_asinh		},
 	{ "ATAN",		function_atan		},
 	{ "ATANH",		function_atanh		},
-#if 0
-	{ "B64DECODE",		function_b64decode	},
-	{ "B64ENCODE",		function_b64encode	},
-#endif
 	{ "BEFORE",             function_before 	},
 	{ "BEFOREW",            function_beforew 	},
 	{ "BINDCTL",		function_bindctl	},
@@ -515,17 +493,11 @@ static BuiltInFunctions	built_in_functions[] =
 	{ "CURRCHANS",		function_currchans	},
 	{ "DBMCTL",		function_dbmctl		},
 	{ "DCCCTL",		function_dccctl		},
-#if 0
-	{ "DECODE",	  (bf *)function_decode 	},
-#endif
 	{ "DELARRAY",           function_delarray 	},
 	{ "DELITEM",            function_delitem	},
 	{ "DELITEMS",           function_delitems	},
 	{ "DEUHC",		function_deuhc		},
 	{ "DIFF",               function_diff 		},
-#if 0
-	{ "ENCODE",	  (bf *)function_encode 	},
-#endif
 	{ "ENCRYPTPARM",	function_encryptparm	},
 	{ "EOF",		function_eof 		},
 	{ "EPIC",		function_epic		},
@@ -700,16 +672,10 @@ static BuiltInFunctions	built_in_functions[] =
 	{ "RUBY",		function_ruby		},
 #endif
 	{ "SAR",		function_sar 		},
-#if 0
-	{ "SEDCRYPT",		function_sedcrypt	},
-#endif
 	{ "SERVERCTL",		function_serverctl	},
 	{ "SERVERWIN",		function_serverwin	},
 	{ "SERVPORTS",		function_servports	},
 	{ "SETITEM",            function_setitem 	},
-#if 0
-	{ "SHA256",		function_sha256		},
-#endif
 	{ "SHIFT",		function_shift 		},
 	{ "SHIFTBRACE",		function_shiftbrace	},
 	{ "SIN",		function_sin		},
@@ -731,6 +697,7 @@ static BuiltInFunctions	built_in_functions[] =
 	{ "STRIPC",		function_stripc		},
 	{ "STRIPCRAP",		function_stripcrap	},
 	{ "STRLEN",		function_strlen		},
+	{ "STRPTIME",		function_strptime	},
 	{ "STRTOL",		function_strtol		},
 	{ "SUBSTR",		function_substr		},
 	{ "SYMBOLCTL",		function_symbolctl	},
@@ -758,10 +725,6 @@ static BuiltInFunctions	built_in_functions[] =
 	{ "UNLINK",		function_unlink 	},
 	{ "UNSHIFT",		function_unshift 	},
 	{ "UNSPLIT",		function_unsplit	},
-#if 0
-	{ "URLDECODE",		function_urldecode	},
-	{ "URLENCODE",		function_urlencode	},
-#endif
 	{ "USERHOST",		function_userhost 	},
 	{ "USERMODE",		function_umode		},
 	{ "USETITEM",           function_usetitem 	},
@@ -6927,5 +6890,31 @@ BUILT_IN_FUNCTION(function_splitw, input)
 
 	retval = unsplitw(&wordl, wordc, DWORD_YES);
 	RETURN_MSTR(retval);
+}
+
+/*
+ * Usage: $strptime("strftime format" textual string)
+ * -- This function does the reverse of $strftime().  It converts 
+ *    "textual string" into a $time() value, if and only if "textual string" 
+ *    is the representation of that $time() value as created by strftime().  
+ *    Got it? 
+ */
+BUILT_IN_FUNCTION(function_strptime, input)
+{
+	struct tm	timeptr;
+	char *		format;
+	time_t		the_time;
+
+#ifdef HAVE_STRPTIME
+	GET_DWORD_ARG(format, input);
+
+	if (!(strptime(input, format, &timeptr)))
+		RETURN_EMPTY;
+
+	the_time = mktime(&timeptr);
+	RETURN_INT(the_time);
+#else
+	RETURN_EMPTY;
+#endif
 }
 

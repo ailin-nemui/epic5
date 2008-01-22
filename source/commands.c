@@ -1,4 +1,4 @@
-/* $EPIC: commands.c,v 1.174 2008/01/05 19:00:26 jnelson Exp $ */
+/* $EPIC: commands.c,v 1.175 2008/01/22 06:44:15 jnelson Exp $ */
 /*
  * commands.c -- Stuff needed to execute commands in ircII.
  *		 Includes the bulk of the built in commands for ircII.
@@ -974,7 +974,18 @@ BUILT_IN_COMMAND(xechocmd)
 			    if (!(w = get_window_by_refnum(
 					get_channel_winref(flag_arg, 
 							from_server))))
+			{
+			    /* 
+			     * This is a special favor to Blackjac for
+			     * backwards compatability with epic4 where
+			     * /xecho -w $winchan() would output to the 
+			     * current window when $winchan() returned -1.
+			     */
+			    if (!my_stricmp(flag_arg, "-1"))
+				w = current_window;
+			    else
 				return;	/* No such window */
+			}
 
 			to_window_refnum = w->refnum;
 			break;
@@ -1729,9 +1740,11 @@ static void	loader_std (struct epic_loadfile *elf, const char *filename, const c
             if (loadinfo->line == 1 && loadinfo->sb.st_mode & 0111 &&
 	    	(buffer[0] != '#' || buffer[1] != '!'))
 	    {
-	    	yell("Cannot open %s -- executable file", loadinfo->filename);
-		return;
+	    	yell("Caution -- %s is marked as an executable; "
+		     "loading binaries results in undefined behavior.", 
+		     loadinfo->filename);
 	    }
+
 	    for (start = buffer; my_isspace(*start); start++)
 		;
 

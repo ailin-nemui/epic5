@@ -1,5 +1,51 @@
 EPIC5-0.3.6
 
+*** News 01/22/2008 -- /SERVER listing now shows your vhost
+	The listing of your servers from /SERVER now shows you the vhost
+	that you're using (if any).  I forget who asked for this.
+
+*** News 01/22/2008 -- Oper passwords no longer revealed with ^L
+	Wjr pointed out that if you did /oper and typed a password that
+	was hidden and hit ^L it would reveal the password.  This has 
+	now been fixed.
+
+*** News 01/22/2008 -- $ignorectl(SUSPEND) and $ignorectl(UNSUSPEND)
+	Larne asked for a way to globally turn off /ignores for some 
+	period of time.  So you can turn off all ignores globally 
+	with $ignorectl(SUSPEND) and turn ignores back on again later
+	with $ignorectl(UNSUSPEND).  A word of caution -- this is a counting
+	queue, so each SUSPEND must be matched with an UNSUSPEND.  If you
+	do two SUSPENDs and one UNSUSPEND, it will still be SUSPENDed.
+	Use $ignorectl(RESET_SUSPEND) if you get the client totaly confused.
+
+*** News 01/22/2008 -- You can /load executable files, with caution
+	Crimedog said that all of his scripts on windows were executable 
+	(+x) and epic wouldn't let him /load them, and so I've removed the
+	restriction that you can't /load executable files.  I've replaced it
+	with a warning that the file is executable and that /loading binary
+	files yields undesirable results.
+
+*** News 01/22/2008 -- /xecho -w -1 outputs to current window
+	As a special favor to BlackJack, /xecho -w -1 will output to the
+	current window, because this is what epic4 used to do, particularly
+	when you did /xecho -w $winchan(#foo) and #foo was not a channel
+	that you were on (so it returned -1) and it output to the curernt
+	window.  In any other case but -1, /xecho -w to a window that 
+	does not exist will drop the output.
+
+*** News 01/22/2008 -- New built in function $strptime()
+	Now you know the $strftime() function converts a $time() value into
+	a string using a special format.  If you have the output of strftime
+	and you have the format it was created with,t he $strptime() function
+	will return the original $time() value it was created with.  This
+	is probably useful by people who are parsing logfiles and want to 
+	get a $time() value so they can do time math and see how long ago
+	something occured.
+
+	For the moment, this only works if you have strptime(3) on your
+	system, and not everybody does.  Very soon, a compat version of 
+	strptime() will be shipped with epic to ensure minimum functionality.
+
 *** News 01/05/2008 -- You can now use arglists with /input (fusion)
 	You can now use arglists with input, like so:
 

@@ -3,14 +3,8 @@ EPIC5 Projects, Bugs, and other Errata:
 KNOWN ERRATA (eg, bugs, or unresolved requests):
 ------------------------------------------------
 * Howl wants a temporary hold mode that expires when you reach bottom.
-* Larne wants a way to globally toggle whether ignores are honored.
 * [-1   ] == -1 is false. this is bad.
 * A function that tells whether a block statement is "well formed"
-* /oper + typing password + screen redraw -> visible password
-* Krisp wants a $strptime() type function
-* Crimedog says that on windows, all files are executable, breaks /load
-* The /server list should include the vhost if there is one.
-* Black needs /xecho -w -1 to go to current window for $winchan() reasons.
 
 ISSUES OF INTEREST
 ------------------
@@ -222,3 +216,9 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Fix /set indent to use prepare_display2(). Now you can use ^C codes. yay!
 * Fix fd leak if fork() fails for /exec.
 * Fix window toplines so they extend the width of the screen like statusbars.
+* Make /xecho -w -1 go to the current window, for compat with epic4 (rb Black)
+* Make the /server list show the vhost you're using.
+* /LOADing an executable file results in a warning and not an error.
+* Fix input line so it doesn't display hidden contents after ^L (rb wjr)
+* Add a $strptime() function, but I still need a strptime() compat version.
+* Add $ignorectl(SUSPEND) and $ignorectl(UNSUSPEND) to turn off ignores.

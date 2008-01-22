@@ -1,4 +1,4 @@
-/* $EPIC: server.c,v 1.233 2007/10/20 16:10:11 jnelson Exp $ */
+/* $EPIC: server.c,v 1.234 2008/01/22 06:44:15 jnelson Exp $ */
 /*
  * server.c:  Things dealing with that wacky program we call ircd.
  *
@@ -732,21 +732,29 @@ void 	display_server_list (void)
 		if (!(s = get_server(i)))
 			continue;
 
+		/*
+		 * XXX Ugh.  I should build this up bit by bit.
+		 */
 		if (!s->nickname)
-			say("\t%d) %s %d [%s] %s [%s]", i, s->info->host, s->info->port, 
+			say("\t%d) %s %d [%s] %s [%s] (vhost: %s)",
+				i, s->info->host, s->info->port, 
 				get_server_group(i), get_server_type(i),
-				server_states[get_server_status(i)]);
+				server_states[get_server_status(i)],
+				get_server_vhost(i));
 		else if (is_server_open(i))
-			say("\t%d) %s %d (%s) [%s] %s [%s]", 
+			say("\t%d) %s %d (%s) [%s] %s [%s] (vhost: %s)", 
 				i, s->info->host, s->info->port,
 				s->nickname, get_server_group(i),
 				get_server_type(i),
-				server_states[get_server_status(i)]);
+				server_states[get_server_status(i)],
+				get_server_vhost(i));
 		else
-			say("\t%d) %s %d (was %s) [%s] %s [%s]", i, s->info->host, 
+			say("\t%d) %s %d (was %s) [%s] %s [%s] (vhost: %s)", 
+				i, s->info->host, 
 				s->info->port, s->nickname, get_server_group(i),
 				get_server_type(i),
-				server_states[get_server_status(i)]);
+				server_states[get_server_status(i)],
+				get_server_vhost(i));
 	}
 }
 
@@ -2883,7 +2891,7 @@ const char *	get_server_vhost (int servref )
 	if (!(s = get_server(servref)))
 		return "<none>";
 
-	if (s->info->vhost)
+	if (s->info->vhost && *s->info->vhost)
 		return s->info->vhost;
 	else
 		return "<none>";
