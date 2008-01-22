@@ -1,4 +1,4 @@
-/* $EPIC: functions.c,v 1.264 2007/12/01 04:52:05 jnelson Exp $ */
+/* $EPIC: functions.c,v 1.265 2008/01/22 04:03:40 jnelson Exp $ */
 /*
  * functions.c -- Built-in functions for ircII
  *
@@ -2859,63 +2859,36 @@ BUILT_IN_FUNCTION(function_center, word)
 	return padc;
 }
 
-/* fix_width(<width> <l, c, r> "<fill char>" <string>)
+/* 
+ * fix_width(<width> <l, c, r> "<fill char>" <string>)
  * params
  * 1 - how long the resulting string should be
  * 2 - left, center, or right justified
- * 3 - character to append if string is too short
+ * 3 - character to append if string is too short (always a dword)
  * 4 - the string
  */
-
 BUILT_IN_FUNCTION(function_fix_width, word)
 {
-        char *justify;
-
-	/* add */
-	char *fillchar;
-	unsigned char filler[6];
-        int width;
-	int len;
-        int chars;
-
-        /* chop */
-	unsigned char **prepared = NULL;
-        int lines = 1;
-
-        char *retval;
+        int 	width;
+        char *	justify;
+	int	justifynum = -1;
+	char *	fillchar;
+        char *	retval;
 
         GET_INT_ARG(width, word);
 	if (width < 0 || !*word)
                 RETURN_EMPTY;
 
         GET_FUNC_ARG(justify, word);
+	if (!my_strnicmp(justify, "l", 1))
+		justifynum = -1;
+	else
+		RETURN_EMPTY;
 
 	GET_DWORD_ARG(fillchar, word);
 
-	word = new_normalize_string(word, 3, display_line_mangler);
-
-        len = output_with_count(word, 0, 0);
-	if (len < width) {
-                /* add */
-		filler[0] = *fillchar;
-		filler[1] = 0;
-
-		chars=(width - len);
-		while (chars-- > 0)
-                        malloc_strcat_c(&word, filler, NULL);
-                retval = denormalize_string(word);
-	} else if (len > width) {
-                /* chop */
-		prepared = prepare_display(-1, word, width-1, &lines, PREPARE_NOWRAP);
-		retval = denormalize_string(prepared[0]);
-	} else {
-                /* 'word' is already specified length */
-		retval = denormalize_string(word);
-	}
-
-        new_free(&word);
-
-	return retval;
+	retval = fix_string_width(word, justifynum, *fillchar, width);
+	RETURN_MSTR(retval);
 }
 
 BUILT_IN_FUNCTION(function_split, word)

@@ -1,4 +1,4 @@
-/* $EPIC: screen.c,v 1.128 2007/07/20 22:29:33 jnelson Exp $ */
+/* $EPIC: screen.c,v 1.129 2008/01/22 04:03:40 jnelson Exp $ */
 /*
  * screen.c
  *
@@ -1697,14 +1697,14 @@ const	unsigned char	*cont_ptr;
 				if (indent > max_cols / 3)
 					indent = max_cols / 3;
 
-				if (do_indent && 
-					((int)strlen(cont_ptr) < indent))
+				if (do_indent)
 				{
-					size_t size = indent + 10;;
+				    unsigned char *fixedstr;
 
-					cont = alloca(size);    /* sb pana */
-					snprintf(cont, size, 
-						"%-*s", indent, cont_ptr);
+				    fixedstr = prepare_display2(cont_ptr, 
+							indent, 0, ' ', 1);
+				    cont = LOCAL_COPY(fixedstr);
+				    new_free(&fixedstr);
 				}
 
 				/*
@@ -1829,6 +1829,119 @@ const	unsigned char	*cont_ptr;
 	new_free(&cont_free);
 	*lused = line - 1;
 	return output;
+}
+
+/*
+ * An evil bastard child hack that pulls together the important parts of
+ * prepare_display(), fix_string_width(), and output_with_count().
+ *
+ * This function is evil because it was spawned by copying the above 
+ * functions and they were not refactored to make use of this function,
+ * which they would do if I were not doing this in a rush.
+ *
+ * If you change the above three functions, you would do well to make sure to 
+ * adjust this function, for if you do not, then HIGGLEDY PIGGLEDY WILL ENSUE.
+ *
+ * XXX - This is a bletcherous inelegant hack and i hate it.
+ */
+unsigned char *prepare_display2 (const unsigned char *orig_str, int max_cols, int allow_truncate, char fillchar, int denormalize)
+{
+	int 	pos = 0,            /* Current position in "buffer" */
+		col = 0,            /* Current column in display    */
+		line = 0,           /* Current pos in "output"      */
+		newline = 0;        /* Number of newlines           */
+	unsigned char 	*str = NULL;
+	unsigned char	*retval = NULL;
+	size_t		clue = 0;
+const 	unsigned char	*ptr;
+	unsigned char 	buffer[BIG_BUFFER_SIZE + 1];
+	Attribute	a;
+	unsigned char *	real_retval;
+
+        /* Reset all attributes to zero */
+        a.bold = a.underline = a.reverse = a.blink = a.altchar = 0;
+        a.color_fg = a.color_bg = a.fg_color = a.bg_color = 0;
+
+        str = new_normalize_string(orig_str, 3, NORMALIZE);
+	buffer[0] = 0;
+
+	/*
+	 * Start walking through the entire string.
+	 */
+	for (ptr = str; *ptr && (pos < BIG_BUFFER_SIZE - 8); ptr++)
+	{
+		switch (*ptr)
+		{
+			case '\007':      /* bell */
+				buffer[pos++] = *ptr;
+				break;
+
+			case '\n':      /* Forced newline */
+				newline = 1;
+				break; /* case '\n' */
+
+                        /* Attribute changes -- copy them unmodified. */
+                        case '\006':
+                        {
+                                if (read_attributes(ptr, &a) == 0)
+                                {
+                                        buffer[pos++] = *ptr++;
+                                        buffer[pos++] = *ptr++;
+                                        buffer[pos++] = *ptr++;
+                                        buffer[pos++] = *ptr++;
+                                        buffer[pos++] = *ptr;
+                                }
+                                else
+                                        abort();
+
+                                continue;          /* Skip the column check */
+                        }
+
+			default:
+			{
+				buffer[pos++] = *ptr;
+				col++;
+				break;
+			}
+		} /* End of switch (*ptr) */
+
+		/*
+		 * Must check for cols >= maxcols+1 becuase we can have a 
+		 * character on the extreme screen edge, and we would still 
+		 * want to treat this exactly as 1 line, and col has already 
+		 * been incremented.
+		 */
+		if ((allow_truncate && col > max_cols) || newline)
+			break;
+	}
+	buffer[pos] = 0;
+
+	if (*buffer)
+		malloc_strcpy_c((char **)&retval, buffer, &clue);
+
+	/*
+	 * If we get here, either we have slurped up 'max_cols' cols, or
+	 * we hit a newline, or the string was too short.
+	 */
+	if (col < max_cols && fillchar != '\0')
+	{
+		char fillstr[2];
+		fillstr[0] = fillchar;
+		fillstr[1] = 0;
+
+		/* XXX One col per byte assumption! */
+		while (col++ < max_cols)
+			malloc_strcat_c((char **)&retval, fillstr, &clue);
+	}
+
+	if (denormalize)
+		real_retval = denormalize_string(retval);
+	else
+		real_retval = retval, retval = NULL;
+
+	new_free(&retval);
+	new_free(&str);
+	return real_retval;
 }
 
 /*
@@ -2469,7 +2582,7 @@ void 	repaint_window_body (Window *window)
 		int	cols;
 		int	numls = 1;
 		unsigned char **lines;
-		unsigned char *n;
+		unsigned char *n, *widthstr;
 		const unsigned char *str;
 
 		if (!(str = window->topline[count]))
@@ -2480,11 +2593,19 @@ void 	repaint_window_body (Window *window)
 		term_clear_to_eol();
 		cols = window->columns - 1;
 
-		n = new_normalize_string(str, 0, display_line_mangler);
-		lines = prepare_display(window->refnum, n, cols, &numls, PREPARE_NOWRAP);
+		widthstr = prepare_display2(str, cols, 1, ' ', 0);
+		output_with_count(widthstr, 1, foreground);
+		new_free(&widthstr);
+
+/*
+		n = new_normalize_string(widthstr, 0, display_line_mangler);
+		lines = prepare_display(window->refnum, n, cols, 
+					&numls, PREPARE_NOWRAP);
 		if (*lines)
 			output_with_count(*lines, 1, foreground);
 		new_free(&n);
+*/
+
 		cursor_in_display(window);
 	   }
 

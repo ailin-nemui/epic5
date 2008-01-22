@@ -1,4 +1,4 @@
-/* $EPIC: ircaux.c,v 1.187 2007/12/04 16:42:01 jnelson Exp $ */
+/* $EPIC: ircaux.c,v 1.188 2008/01/22 04:03:40 jnelson Exp $ */
 /*
  * ircaux.c: some extra routines... not specific to irc... that I needed 
  *
@@ -4849,6 +4849,55 @@ char *	substitute_string (const char *string, const char *oldstr, const char *ne
 	    panic(1, "substitute [%s] with [%s] in [%s] overflows [%ld] chars", 
 			oldstr, newstr, string, (long)retvalsize);
 
+	return retval;
+}
+
+/*
+ * This function implements the guts of $fix_width(), and is also used by 
+ * /set indent.  It returns a copy of 'orig_str' that is guaranteed to be
+ * exactly 'newlen' columns when displayed on the screen, either by truncating
+ * it or filling it out with 'fillchar'.
+ * Justify is -1 for left, 0 for center, or 1 for right; only -1 is supported
+ * for now.
+ */
+char *	fix_string_width (const char *orig_str, int justify, char fillchar, size_t newlen)
+{
+	char *	word;
+	char *	retval;
+	size_t	len;
+
+	if (justify != -1)
+		return NULL;
+
+	word = new_normalize_string(orig_str, 3, display_line_mangler);
+	len = output_with_count(word, 0, 0);
+	if (len < newlen)		/* Extend it */
+	{
+		char	filler[2];
+		ssize_t	numchars;
+
+		/* add */
+		filler[0] = fillchar;
+		filler[1] = 0;
+
+		numchars = newlen - len;
+		while (numchars-- > 0)
+			malloc_strcat_c(&word, filler, NULL);
+		retval = denormalize_string(word);
+	}
+	else if (len > newlen)		/* Truncate it */
+	{
+		unsigned char **prepared = NULL;
+		int	lines = 1;
+
+		prepared = prepare_display(-1, word, newlen-1, &lines, 
+						PREPARE_NOWRAP);
+		retval = denormalize_string(prepared[0]);
+	}
+	else		/* 'word' is already the correct width */
+		retval = denormalize_string(word);
+
+	new_free(&word);
 	return retval;
 }
 

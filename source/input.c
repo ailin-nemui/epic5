@@ -1,4 +1,4 @@
-/* $EPIC: input.c,v 1.50 2008/01/05 19:00:26 jnelson Exp $ */
+/* $EPIC: input.c,v 1.51 2008/01/22 04:03:40 jnelson Exp $ */
 /*
  * input.c: does the actual input line stuff... keeps the appropriate stuff
  * on the input line, handles insert/delete of characters/words... the whole
@@ -467,6 +467,7 @@ void	update_input (void *which_screen, int update)
 		if (SHOWING_PROMPT)
 		{
 			/* Forcibly output the prompt */
+			/* XXXX why am i overwriting do_echo here? */
 			do_echo = term_echo(1);
 
 			/*
