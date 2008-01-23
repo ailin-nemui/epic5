@@ -1,4 +1,4 @@
-/* $EPIC: functions.c,v 1.266 2008/01/22 06:44:15 jnelson Exp $ */
+/* $EPIC: functions.c,v 1.267 2008/01/23 04:05:55 jnelson Exp $ */
 /*
  * functions.c -- Built-in functions for ircII
  *
@@ -210,6 +210,7 @@ static	char
 	*function_cexist	(char *),
 	*function_channel	(char *),
 	*function_channelmode	(char *),
+	*function_check_code	(char *),
 	*function_chmod		(char *),
 	*function_chngw 	(char *),
 	*function_chop		(char *),
@@ -468,6 +469,7 @@ static BuiltInFunctions	built_in_functions[] =
 	{ "CHANNEL",		function_channel	},
 	{ "CHANUSERS",		function_onchannel 	},
 	{ "CHANWIN",		function_winchan	},
+	{ "CHECK_CODE",		function_check_code	},
 	{ "CHMOD",		function_chmod		},
 	{ "CHNGW",              function_chngw 		},
 	{ "CHOP",		function_chop		},
@@ -6916,5 +6918,41 @@ BUILT_IN_FUNCTION(function_strptime, input)
 #else
 	RETURN_EMPTY;
 #endif
+}
+
+/*
+ * This function will return 1 if the argument is an expression that
+ * appears to pass a basic syntax text.  The basic syntax test requires
+ * that the first character either be a { or a ( and contain a matching
+ * number of }s or )s.  We do this by calling my_next_expr() which is 
+ * what the command parser does anyways.
+ * 
+ * What this function does NOT do is tell you whether or not what is 
+ * inside your block makes any sense.  That's not possible to tell 
+ * without running it.  All we can tell you is if it will be rejected
+ * do to mismatched {} or ()s.
+ */
+BUILT_IN_FUNCTION(function_check_code, input)
+{
+	char type;
+	char *expr;
+
+	while (input && *input && isspace(*input))
+		input++;
+
+	if (*input != '{' && *input != '(')
+		RETURN_INT(-1);		/* Not a block statement or expr */
+
+	type = *input;
+	if (!(expr = next_expr_failok(&input, type)))
+		RETURN_INT(-2);		/* Unmatched brace or paren */
+
+	while (input && *input && isspace(*input))
+		input++;
+
+	if (*input)
+		RETURN_INT(-3);		/* Stuff after trailing } */
+
+	RETURN_INT(0);			/* Looks ok to me */
 }
 

@@ -2,12 +2,11 @@ EPIC5 Projects, Bugs, and other Errata:
 
 KNOWN ERRATA (eg, bugs, or unresolved requests):
 ------------------------------------------------
-* Howl wants a temporary hold mode that expires when you reach bottom.
-* [-1   ] == -1 is false. this is bad.
-* A function that tells whether a block statement is "well formed"
+<none>
 
 ISSUES OF INTEREST
 ------------------
+* Howl wants a temporary hold mode that expires when you reach bottom.
 * Pegasus wants a way to send italics (^I)
 * What about pastes with "rogue characters" like ³ (alt-3, ie, ^[3) ?
 * Kreca mentions that word manip functions strip extraneous spaces.
@@ -222,3 +221,5 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Fix input line so it doesn't display hidden contents after ^L (rb wjr)
 * Add a $strptime() function, but I still need a strptime() compat version.
 * Add $ignorectl(SUSPEND) and $ignorectl(UNSUSPEND) to turn off ignores.
+* Fix new math parser comparison operators to work properly with numbers.
+* Add function $check_code(), looks for unmatched parens or braces in string.

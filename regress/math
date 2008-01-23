@@ -140,6 +140,13 @@ assert [1]==1
 assert booya==[3]
 assert booya==3
 assert [$booya]==[3]
+assert [   -1   ]==-1
+assert [   -5   ]==-5
+assert [-5]==-5
+assert [    -5]==-5
+assert [-5    ]==-5
+assert [-5    ]==[     -5]
+assert [ -5    ]==[     -5   ]
 
 #define NEQ 		23
 assert 2!=1
@@ -147,6 +154,14 @@ assert 2!=[1]
 assert [2]!=[1]
 assert booya!=4
 assert booya!=[foobar]
+assert [   -1   ]!=1
+assert [   -5   ]!==5
+assert [-5]!=5
+assert [    -5]!=5
+assert [-5    ]!=5
+assert [-5    ]!=[     5]
+assert [ -5    ]!=[     5   ]
+
 
 #define DAND 		24
 alias ack {echo ack!;@counter++;@function_return = 1}
@@ -240,3 +255,5 @@ foobar
 #assert 3.0+4.3+3.4==10.7
 ###sigh, yes, this is the right value.
 #assert 3.0+4.3-4.3==3
+
+

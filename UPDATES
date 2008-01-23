@@ -1,5 +1,30 @@
 EPIC5-0.3.6
 
+*** News 01/23/2008 -- New built in function $check_code(...)
+	--- Warning --- This function is not really as useful as it looks
+	because you would be unable to submit an invalid block statement
+	or expression to the function without getting a warning from the 
+	syntax parser in the first place.  I don't know how I will "fix"
+	this, but maybe you might find the function interesting for now.
+
+	The $check_code() function takes either a *block statement* 
+	(surrounded by curly braces {}) or an *expression* (surrounded 
+	by parenthesis ()) and tells you whether the item is well-formed
+	and does not have any unmatched braces or parentheses.  It does 
+	*NOT* tell you if the code or expresison inside the item is valid
+	or even makes sense, it only tells you if it contains code that
+	you could pass to /eval or to /@.
+
+	Return values:
+		 0 - The expression or block statement looks ok
+		-1 - This is not an expression or block statement
+		-2 - The expression/block statement is invalid, probably
+		     because there is unmatched brace or parenthesis
+		-3 - There is trailing garbage after the closing brace or
+		     parenthesis.
+	More return values will probably be added in the future as more
+	errors become detectable.
+
 *** News 01/22/2008 -- /SERVER listing now shows your vhost
 	The listing of your servers from /SERVER now shows you the vhost
 	that you're using (if any).  I forget who asked for this.

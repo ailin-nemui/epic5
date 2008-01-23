@@ -1,4 +1,4 @@
-/* $EPIC: if.c,v 1.37 2006/10/13 21:58:02 jnelson Exp $ */
+/* $EPIC: if.c,v 1.38 2008/01/23 04:05:55 jnelson Exp $ */
 /*
  * if.c: the IF, WHILE, FOREACH, DO, FE, FEC, and FOR commands for IRCII 
  *
@@ -67,7 +67,9 @@ char *	my_next_expr (char **args, char type, int whine, int wantchar)
 	if ((span = MatchingBracket(expr_start + 1, type, 
 					(type == '(') ? ')' : '}')) < 0)
 	{
-		say("Unmatched '%c' around [%-.20s]", type, expr_start + 1);
+		if (whine)
+			say("Unmatched '%c' around [%-.20s]", 
+				type, expr_start + 1);
 		return NULL;
 	}
 	else

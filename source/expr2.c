@@ -1,4 +1,4 @@
-/* $EPIC: expr2.c,v 1.37 2007/06/01 01:39:31 jnelson Exp $ */
+/* $EPIC: expr2.c,v 1.38 2008/01/23 04:05:55 jnelson Exp $ */
 /*
  * Zsh: math.c,v 3.1.2.1 1997/06/01 06:13:15 hzoli Exp 
  * math.c - mathematical expression evaluation
@@ -1530,7 +1530,8 @@ static void	reduce (expr_info *cx, int what)
 		}
 
 		/* Comparison operators */
-		case DEQ:
+		case DEQ:	COMPARE(a == b,  my_stricmp(s, t) == 0)
+#if 0
 		{
 			pop_2_strings(cx, &s, &t);
 			CHECK_NOEVAL
@@ -1542,7 +1543,9 @@ static void	reduce (expr_info *cx, int what)
 			push_boolean(cx, c);
 			break;
 		}
-		case NEQ:
+#endif
+		case NEQ:	COMPARE(a != b,  my_stricmp(s, t) != 0)
+#if 0
 		{
 			pop_2_strings(cx, &s, &t);
 			CHECK_NOEVAL
@@ -1554,6 +1557,7 @@ static void	reduce (expr_info *cx, int what)
 			push_boolean(cx, c);
 			break;
 		}
+#endif
 		case LITEQ:
 		{
 			pop_2_strings(cx, &s, &t);

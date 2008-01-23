@@ -1,4 +1,4 @@
-/* $EPIC: ircaux.c,v 1.188 2008/01/22 04:03:40 jnelson Exp $ */
+/* $EPIC: ircaux.c,v 1.189 2008/01/23 04:05:55 jnelson Exp $ */
 /*
  * ircaux.c: some extra routines... not specific to irc... that I needed 
  *
@@ -1140,8 +1140,16 @@ int	is_real_number (const char *str)
 			continue;
 		}
 
-		return 0;
+		break;
 	}
+
+	/* Check for trailing spaces */
+	while (*str && isspace(*str))
+		str++;
+
+	/* If we don't end up at the end of the string, it's not a number. */
+	if (*str)
+		return 0;
 
 	return 1;
 }
