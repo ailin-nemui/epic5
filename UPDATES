@@ -1,5 +1,9 @@
 EPIC5-0.3.6
 
+*** News 01/28/2008 -- /ON WINDOW_COMMAND has command as $2        (kitambi)
+	The command being executed is $2 in /on window_command.  If you do evil
+	things with this, you may crash the client.  You Have Been Warned.
+
 *** News 01/23/2008 -- New built in function $check_code(...)
 	--- Warning --- This function is not really as useful as it looks
 	because you would be unable to submit an invalid block statement

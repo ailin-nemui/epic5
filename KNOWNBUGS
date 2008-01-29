@@ -35,6 +35,7 @@ ISSUES OF INTEREST
 * How about base85 support for $xform() ?
 * Larne would like to have a shadow display for "ignored" stuff
 * Larne would like a ==== that appears at his last scrollback ponit.
+* Jm thinks regex support for /switch would be nice.
 
 [See http://www.epicsol.org/PROJECTS for things to come in the future]
 [See http://www.epicsol.org/CHANGELOG5 for things that changed in the past]
@@ -223,3 +224,4 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Add $ignorectl(SUSPEND) and $ignorectl(UNSUSPEND) to turn off ignores.
 * Fix new math parser comparison operators to work properly with numbers.
 * Add function $check_code(), looks for unmatched parens or braces in string.
+* Add the /window command as $2 in /on window_command
