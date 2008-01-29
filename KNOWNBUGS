@@ -225,3 +225,4 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Fix new math parser comparison operators to work properly with numbers.
 * Add function $check_code(), looks for unmatched parens or braces in string.
 * Add the /window command as $2 in /on window_command
+* Release EPIC5-0.3.6 (Lugubrious) (commit 1531)
