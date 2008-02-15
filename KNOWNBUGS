@@ -2,10 +2,12 @@ EPIC5 Projects, Bugs, and other Errata:
 
 KNOWN ERRATA (eg, bugs, or unresolved requests):
 ------------------------------------------------
-<none>
+* You should be able to /msg @logfile
+* You can't move a window to a different screen atomically (you must hide it)
 
 ISSUES OF INTEREST
 ------------------
+* Krisp wants a log that only logs what is not logged somewhere else.
 * Howl wants a temporary hold mode that expires when you reach bottom.
 * Pegasus wants a way to send italics (^I)
 * What about pastes with "rogue characters" like ³ (alt-3, ie, ^[3) ?
@@ -19,6 +21,7 @@ ISSUES OF INTEREST
 * You should be able to move lastlog items between windows, split, merge.
 * IRCII supports "default" fg/bg colors, which looks intriguing.
 * Larne would like to use 256-color-support for xterm.
+  ^[[48;5;<color>m   <color> = 16 + (red * 36) + (green * 6) + blue
 * I would like to be able to /load zip files and put them into LOAD_PATH.
 * UPnP support (http://miniupnp.free.fr) would fix dcc-behind-firewall dilema.
 * If @ var = [encode] you should be able to do $($var)(args) to call it.
@@ -226,3 +229,5 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Add function $check_code(), looks for unmatched parens or braces in string.
 * Add the /window command as $2 in /on window_command
 * Release EPIC5-0.3.6 (Lugubrious) (commit 1531)
+* Fix remote crash -- you really want to update right away.
+

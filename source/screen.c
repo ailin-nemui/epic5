@@ -1,4 +1,4 @@
-/* $EPIC: screen.c,v 1.129 2008/01/22 04:03:40 jnelson Exp $ */
+/* $EPIC: screen.c,v 1.130 2008/02/15 19:31:34 jnelson Exp $ */
 /*
  * screen.c
  *
@@ -1695,6 +1695,8 @@ const	unsigned char	*cont_ptr;
 
 				/* Because Blackjac asked me to */
 				if (indent > max_cols / 3)
+					indent = max_cols / 3;
+				if (indent <= 0)
 					indent = max_cols / 3;
 
 				if (do_indent)
