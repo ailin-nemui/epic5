@@ -89,6 +89,7 @@ struct	ScreenStru *next;		/* Previous screen in list */
 	void	add_to_screen		(const unsigned char *);
 	void	cursor_not_in_display	(struct ScreenStru *);
 	void	cursor_in_display	(Window *);
+	void	edit_codepoint		(u_32int_t key);
 	void	edit_char		(unsigned char);
 	int	is_cursor_in_display	(struct ScreenStru *);
 	void	repaint_window_body	(Window *);

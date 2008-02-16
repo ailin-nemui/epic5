@@ -1,4 +1,4 @@
-/* $EPIC: lastlog.c,v 1.74 2007/10/23 03:22:08 jnelson Exp $ */
+/* $EPIC: lastlog.c,v 1.75 2008/02/16 23:42:05 jnelson Exp $ */
 /*
  * lastlog.c: handles the lastlog features of irc. 
  *
@@ -56,12 +56,19 @@ typedef struct	lastlog_stru
 	time_t	when;
 	int	visible;
 	intmax_t refnum;
-	int	winref;
+	unsigned winref;
 }	Lastlog;
 
 static	intmax_t global_lastlog_refnum = 0;
 
-static int	show_lastlog (Lastlog **l, int *skip, int *number, Mask *level_mask, char *match, regex_t *reg, int *max, const char *target, int mangler, int winref);
+static int	show_lastlog (Lastlog **l, int *skip, int *number, Mask *level_mask, char *match, regex_t *reg, int *max, const char *target, int mangler, unsigned winref);
+static int	oldest_lastlog_for_window (Lastlog **item, unsigned winref);
+static int	newer_lastlog_entry (Lastlog **item, unsigned winref);
+static int	older_lastlog_entry (Lastlog **item, unsigned winref);
+static int	newest_lastlog_for_window (Lastlog **item, unsigned winref);
+static void	remove_lastlog_item (Lastlog *item);
+static void	switch_lastlog_window (Lastlog *item, unsigned newref);
+static void	move_lastlog_item (Lastlog *item, unsigned newref);
 
 Lastlog *	lastlog_oldest = NULL;
 Lastlog *	lastlog_newest = NULL;
@@ -362,7 +369,7 @@ BUILT_IN_COMMAND(lastlog)
 	int		mangler = 0;
 	int		lc;
 	char *		rewrite = NULL;
-	int		winref = current_window->refnum;
+	unsigned	winref = current_window->refnum;
 
 	lc = message_setall(0, NULL, LEVEL_OTHER);
 	cnt = current_window->lastlog_size;
@@ -834,7 +841,7 @@ bail:
  * This returns 1 if the current item pointed to by 'l' is something that
  * should be displayed based on the criteron provided.
  */
-static int	show_lastlog (Lastlog **l, int *skip, int *number, Mask *level_mask, char *match, regex_t *reg, int *max, const char *target, int mangler, int winref)
+static int	show_lastlog (Lastlog **l, int *skip, int *number, Mask *level_mask, char *match, regex_t *reg, int *max, const char *target, int mangler, unsigned winref)
 {
 	const char *str = NULL;
 
@@ -1092,13 +1099,13 @@ BUILT_IN_FUNCTION(function_lastlogctl, input)
 
 /************************************************************************/
 
-int	oldest_lastlog_for_window (Lastlog **item, int winref)
+static int	oldest_lastlog_for_window (Lastlog **item, unsigned winref)
 {
 	*item = NULL;
 	return newer_lastlog_entry(item, winref);
 }
 
-int	newer_lastlog_entry (Lastlog **item, int winref)
+static int	newer_lastlog_entry (Lastlog **item, unsigned winref)
 {
 	Lastlog *i;
 
@@ -1114,7 +1121,7 @@ int	newer_lastlog_entry (Lastlog **item, int winref)
 	return i ? 1 : 0;
 }
 
-int	older_lastlog_entry (Lastlog **item, int winref)
+static int	older_lastlog_entry (Lastlog **item, unsigned winref)
 {
 	Lastlog *i;
 
@@ -1130,7 +1137,7 @@ int	older_lastlog_entry (Lastlog **item, int winref)
 	return i ? 1 : 0;
 }
 
-int	newest_lastlog_for_window (Lastlog **item, int winref)
+static int	newest_lastlog_for_window (Lastlog **item, unsigned winref)
 {
 	*item = NULL;
 	return older_lastlog_entry(item, winref);
@@ -1141,7 +1148,7 @@ int	newest_lastlog_for_window (Lastlog **item, int winref)
  * lastlog item belongs to *the caller* is responsible for adjusting
  * window->lastlog_size!  I could change that in the future I guess
  */
-int	remove_lastlog_item (Lastlog *item)
+static void	remove_lastlog_item (Lastlog *item)
 {
 	if (item == lastlog_oldest)
 	{
@@ -1177,7 +1184,7 @@ int	remove_lastlog_item (Lastlog *item)
 	new_free((char **)&item);
 }
 
-int	switch_lastlog_window (Lastlog *item, int newref)
+static void	switch_lastlog_window (Lastlog *item, unsigned newref)
 {
 	/* Mark the old window's scrollback for reconstitution */
 	window_scrollback_needs_rebuild(item->winref);
@@ -1187,16 +1194,16 @@ int	switch_lastlog_window (Lastlog *item, int newref)
 }
 
 /***************************************************************************/
-void	move_lastlog_item (Lastlog *item, int newref)
+static void	move_lastlog_item (Lastlog *item, unsigned newref)
 {
-	int	oldref = item->winref;
+	unsigned	oldref = item->winref;
 
 	item->winref = newref;
 	window_scrollback_needs_rebuild(oldref);
 	window_scrollback_needs_rebuild(newref);
 }
 
-void	move_all_lastlog (int oldref, int newref)
+void	move_all_lastlog (unsigned oldref, unsigned newref)
 {
 	Lastlog *l;
 
@@ -1208,7 +1215,7 @@ void	move_all_lastlog (int oldref, int newref)
 	}
 }
 
-void	move_lastlog_item_by_string (int oldref, int newref, const char *str)
+void	move_lastlog_item_by_string (unsigned oldref, unsigned newref, const char *str)
 {
 	Lastlog *l;
 
@@ -1222,7 +1229,7 @@ void	move_lastlog_item_by_string (int oldref, int newref, const char *str)
 	}
 }
 
-void	move_lastlog_item_by_target (int oldref, int newref, const char *str)
+void	move_lastlog_item_by_target (unsigned oldref, unsigned newref, const char *str)
 {
 	Lastlog *l;
 
@@ -1236,7 +1243,7 @@ void	move_lastlog_item_by_target (int oldref, int newref, const char *str)
 	}
 }
 
-void	move_lastlog_item_by_level (int oldref, int newref, Mask *levels)
+void	move_lastlog_item_by_level (unsigned oldref, unsigned newref, Mask *levels)
 {
 	Lastlog *l;
 
@@ -1250,7 +1257,7 @@ void	move_lastlog_item_by_level (int oldref, int newref, Mask *levels)
 	}
 }
 
-void	move_lastlog_item_by_regex (int oldref, int newref, const char *str)
+void	move_lastlog_item_by_regex (unsigned oldref, unsigned newref, const char *str)
 {
 	Lastlog *l;
 	regex_t preg;
@@ -1278,7 +1285,7 @@ void	move_lastlog_item_by_regex (int oldref, int newref, const char *str)
 	regfree(&preg);
 }
 
-void	lastlog_swap_winrefs (int oldref, int newref)
+void	lastlog_swap_winrefs (unsigned oldref, unsigned newref)
 {
 	Lastlog *l;
 

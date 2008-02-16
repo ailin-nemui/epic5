@@ -28,7 +28,7 @@ extern	int	need_defered_commands;
         char *  call_user_function      (Char *, Char *, char *, void *);
         void    call_user_command       (Char *, Char *, char *, void *);
 	void	runcmds			(Char *, Char *);
-        void    runcmds_with_arglist    (Char *, Char *, Char *);
+        void    runcmds_with_arglist    (Char *, char *, char *);
 
 	int     parse_statement 	(const char *, int, const char *);
 

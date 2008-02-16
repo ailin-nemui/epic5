@@ -37,12 +37,12 @@ extern	Mask *	old_server_lastlog_mask;
 	void	set_old_server_lastlog_mask	(void *);
 	void	reconstitute_scrollback		(struct WindowStru *);
 
-	void	move_all_lastlog		(int, int);
-	void	move_lastlog_item_by_string	(int, int, const char *);
-	void	move_lastlog_item_by_target	(int, int, const char *);
-	void	move_lastlog_item_by_level	(int, int, Mask *);
-	void	move_lastlog_item_by_regex	(int, int, const char *);
+	void	move_all_lastlog		(unsigned, unsigned);
+	void	move_lastlog_item_by_string	(unsigned, unsigned, Char *);
+	void	move_lastlog_item_by_target	(unsigned, unsigned, Char *);
+	void	move_lastlog_item_by_level	(unsigned, unsigned, Mask *);
+	void	move_lastlog_item_by_regex	(unsigned, unsigned, Char *);
 
-	void    lastlog_swap_winrefs		(int, int);
+	void    lastlog_swap_winrefs		(unsigned, unsigned);
 
 #endif /* __lastlog_h_ */

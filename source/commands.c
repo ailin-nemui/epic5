@@ -1,4 +1,4 @@
-/* $EPIC: commands.c,v 1.175 2008/01/22 06:44:15 jnelson Exp $ */
+/* $EPIC: commands.c,v 1.176 2008/02/16 23:42:05 jnelson Exp $ */
 /*
  * commands.c -- Stuff needed to execute commands in ircII.
  *		 Includes the bulk of the built in commands for ircII.
@@ -2237,7 +2237,6 @@ BUILT_IN_COMMAND(quotecmd)
 {
 	int	refnum = from_server;
 	int	urlencoded = 0;
-	size_t	length;
 
 	if (*command == 'X')
 	{
@@ -3487,14 +3486,13 @@ void	runcmds (const char *what, const char *subargs)
 	parse_block(what, subargs, 0);
 }
 
-void    runcmds_with_arglist (const char *what, const char *args, const char *subargs)
+void    runcmds_with_arglist (const char *what, char *args, char *subargs)
 {
 	ArgList *arglist = NULL;
 	if (!subargs)
-		subargs = empty_string;
-	arglist = parse_arglist((char *)args);
-
-	parse_line_alias_special(NULL, what, (char *)subargs, arglist, 0);
+		subargs = LOCAL_COPY(empty_string);
+	arglist = parse_arglist(args);
+	parse_line_alias_special(NULL, what, subargs, arglist, 0);
 
 	destroy_arglist(&arglist);
 }

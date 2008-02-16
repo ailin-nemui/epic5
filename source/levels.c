@@ -1,4 +1,4 @@
-/* $EPIC: levels.c,v 1.12 2008/01/05 19:00:26 jnelson Exp $ */
+/* $EPIC: levels.c,v 1.13 2008/02/16 23:42:05 jnelson Exp $ */
 /*
  * levels.c - Sorting things by category -- Window/Lastlog, Ignore, and Floods
  *
@@ -295,7 +295,7 @@ int	str_to_mask (Mask *mask, const char *orig, char **rejects)
 	return 0;
 }
 
-int	standard_level_warning (const char *who, char **rejects)
+void	standard_level_warning (const char *who, char **rejects)
 {
 	if (rejects && *rejects)
 	{
@@ -381,10 +381,10 @@ char *levelctl	(char *input)
         } else if (!my_strnicmp(listc, "NORMALIZE", 1)) {
 		Mask m;
 		const char *r;
-		char *error = NULL;
+		char *err = NULL;
 
 		mask_unsetall(&m);
-		str_to_mask(&m, input, &error);	/* Errors are ignored */
+		str_to_mask(&m, input, &err);	/* Errors are ignored */
 		r = mask_to_str(&m);
 		RETURN_STR(r);
 	}

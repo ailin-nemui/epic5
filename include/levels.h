@@ -167,7 +167,7 @@ __inline static int	mask_isset (const Mask *set, int bit)
 	char *		get_all_levels	(void);
 	const char *	mask_to_str	(const Mask *);
 	int		str_to_mask	(Mask *, const char *, char **);
-	int     	standard_level_warning (const char *, char **);
+	void    	standard_level_warning (const char *, char **);
 	const char *	level_to_str	(int);
 	int		str_to_level	(const char *);
 	char *		levelctl	(char *);

@@ -36,6 +36,12 @@
 #include "irc.h"
 #include "ircaux.h"
 #include "elf.h"
+#include "output.h"
+
+#ifdef HAVE_LIBARCHIVE
+static int archive_fopen(struct epic_loadfile *elf, char *filename, const char *ext, int do_error);
+static int find_in_archive(struct archive *a, struct archive_entry **entry, const char *str, int do_error);
+#endif
 
 struct epic_loadfile * epic_fopen(char *filename, const char *mode, int do_error)
 {
@@ -60,6 +66,8 @@ struct epic_loadfile * epic_fopen(char *filename, const char *mode, int do_error
         ret=archive_fopen(elf, filename, ".tar", do_error);
     }
 #endif
+    else
+	ret = 0;
 
     if (ret==1)
         return elf;
@@ -86,7 +94,7 @@ struct epic_loadfile * epic_fopen(char *filename, const char *mode, int do_error
  * and attempts to open it up. it returns -1 on error, 0 if it's not
  * an archive, or 1 if the archive was successfully loaded
  */
-int archive_fopen(struct epic_loadfile *elf, char *filename, const char *ext, int do_error)
+static int	archive_fopen(struct epic_loadfile *elf, char *filename, const char *ext, int do_error)
 {
     int    ret;
 
@@ -123,10 +131,10 @@ int archive_fopen(struct epic_loadfile *elf, char *filename, const char *ext, in
 
             if ( !(ret = archive_read_open_file(elf->a, fname, 10240)) ) {
                 if ( (strstr(safet, "/"))!=NULL ) { /* specific file provided */
-                    if (!find_in_archive(elf->a, elf->entry, extra, do_error))
+                    if (!find_in_archive(elf->a, &elf->entry, extra, do_error))
                         return 0;
                 } else {
-                    if (!find_in_archive(elf->a, elf->entry, ".ircrc", do_error)) { /* bootstrap */
+                    if (!find_in_archive(elf->a, &elf->entry, ".ircrc", do_error)) { /* bootstrap */
                         if (do_error)
                             yell("No .ircrc in the zip file specified");
                         return -1;
@@ -143,17 +151,17 @@ int archive_fopen(struct epic_loadfile *elf, char *filename, const char *ext, in
     return 0;
 }
 
-char *archive_fgets(char *s, int n, struct archive *a)
+static char *	archive_fgets(char *s, int n, struct archive *a)
 {
-    int ret, read;
+    int ret, bytes_read;
     char *p = s;
     char c;
 
-    read=0;
-    while (read < n) {
+    bytes_read=0;
+    while (bytes_read < n) {
         ret=archive_read_data(a, &c, 1);
         if (ret>0) {
-            read+=ret;
+            bytes_read+=ret;
             *p++ = c;
             if (c=='\n')
                 break;
@@ -166,7 +174,7 @@ char *archive_fgets(char *s, int n, struct archive *a)
 }
 #endif
 
-int epic_fgetc(struct epic_loadfile *elf)
+int	epic_fgetc(struct epic_loadfile *elf)
 {
     int ret;
     char c;
@@ -191,7 +199,7 @@ int epic_fgetc(struct epic_loadfile *elf)
     }
 }
 
-char *epic_fgets(char *s, int n, struct epic_loadfile *elf)
+char *	epic_fgets(char *s, int n, struct epic_loadfile *elf)
 {
     if ((elf->fp)!=NULL) {
         return fgets(s, n, elf->fp);
@@ -206,7 +214,7 @@ char *epic_fgets(char *s, int n, struct epic_loadfile *elf)
     }
 }
 
-int epic_feof(struct epic_loadfile *elf)
+int	epic_feof(struct epic_loadfile *elf)
 {
     if ((elf->fp)!=NULL) {
         return feof(elf->fp);
@@ -222,7 +230,7 @@ int epic_feof(struct epic_loadfile *elf)
     }
 }
 
-int epic_fclose(struct epic_loadfile *elf)
+int	epic_fclose(struct epic_loadfile *elf)
 {
     if ((elf->fp)!=NULL) {
         return fclose(elf->fp);
@@ -239,11 +247,11 @@ int epic_fclose(struct epic_loadfile *elf)
     }
 }
 
-off_t epic_stat(const char *filename, struct stat *buf)
+off_t	epic_stat(const char *filename, struct stat *buf)
 {
 #ifdef HAVE_LIBARCHIVE
     struct  archive *a;
-    struct  archive_entry *entry;
+    struct  archive_entry *entry = NULL;
 #endif
     int     ret;
 
@@ -282,7 +290,7 @@ off_t epic_stat(const char *filename, struct stat *buf)
 
         if ( !(ret=archive_read_open_file(a, zipstr, 10240)) ) {
             if (scan) {
-                if (!(find_in_archive(a, entry, zip, 0)) ) {
+                if (!(find_in_archive(a, &entry, zip, 0)) ) {
                     return -1;
                 } else {
                     /* this is such a hack, but libarchive consistantly */
@@ -307,13 +315,12 @@ off_t epic_stat(const char *filename, struct stat *buf)
 }
 
 #ifdef HAVE_LIBARCHIVE
-int find_in_archive(struct archive *a, struct archive_entry *entry, const char *str, int do_error)
+static int	find_in_archive(struct archive *a, struct archive_entry **entry, const char *str, int do_error)
 {
-
     int ret;
 
     for (;;) {
-        ret = archive_read_next_header(a, &entry);
+        ret = archive_read_next_header(a, entry);
         if (ret == ARCHIVE_EOF) {
             archive_read_close(a);
             archive_read_finish(a);
@@ -328,7 +335,7 @@ int find_in_archive(struct archive *a, struct archive_entry *entry, const char *
             return 0;
         }
 
-        if (strcmp(archive_entry_pathname(entry), str)==0)
+        if (strcmp(archive_entry_pathname(*entry), str)==0)
             break;
     }
     return 1;
