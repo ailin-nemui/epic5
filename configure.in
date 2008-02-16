@@ -4,9 +4,9 @@ dnl except those bits attributed otherwise.
 dnl thanks to the screen 3.3 configure.in for giving me examples to
 dnl work from and steal ;)
 dnl
-dnl @(#)$Id: configure.in,v 1.62 2008/01/22 06:44:13 jnelson Exp $
+dnl @(#)$Id: configure.in,v 1.63 2008/02/16 03:38:25 jnelson Exp $
 
-AC_REVISION($Revision: 1.62 $)dnl
+AC_REVISION($Revision: 1.63 $)dnl
 AC_INIT(source/irc.c)
 AC_CONFIG_HEADER(include/defs.h)
 
@@ -499,10 +499,10 @@ case $# in
 esac
 
 sig_name="ZERO $*"
-if test -f source/sig.inc; then
-  /bin/rm -f source/sig.inc
+if test -f include/sig.inc; then
+  /bin/rm -f include/sig.inc
 fi
-[echo $sig_name | sed -e 's/$/"};/' -e 's/ /", "/g' -e 's/^/static char *sys_siglist[] = { "/' >> source/sig.inc]
+[echo $sig_name | sed -e 's/$/"};/' -e 's/ /", "/g' -e 's/^/static char *sys_siglist[] = { "/' >> include/sig.inc]
 fi
 
 dnl ----------------------------------------------------------

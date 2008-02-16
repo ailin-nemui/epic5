@@ -57,12 +57,6 @@ Even if your administrator has not disabled it, you should not assume this gives
 If you do run a bot without permission, your administrator may get very angry with you, and possibly revoke your account.  
 In addition, most IRC operators on public irc networks have very little tolerance for people who run bots.
 So just a word of caution, make sure that your system administrator and your irc administrator have given you permission before you run a bot.
-.It Fl B
-This option is ignored.
-In 
-.Nm epic4
-this option forced the startup file to be loaded immediately rather than waiting until a connection to the server is established.
-This behavior is now the default.
 .It Fl c Ar chan
 Join the specified channel the first time you successfully connect to a server.
 .It Fl d
@@ -75,17 +69,10 @@ setting, or your terminal description is spectacularly broken), or you just don'
 This option will be turned on automatically if your current 
 .Ev TERM
 setting is not capable of a full screen display.
-.It Fl f
-Force use of hardware flow control.  
-With this option, the control-S and control-Q keys are probably not available to be bound to something else.
-.It Fl F
-Disable use of hardware flow control.  
-With this option, the control-S and control-Q keys are available to be bound to something else.
-However, you will not have hardware flow control.
 .It Fl h
 Display a moderately concise help message and exit immediately.
 .It Fl H Ar hostname
-Use the IP address of the specified hostname as your default IP address.
+Use the IP address of the specified hostname as your default local IP address.
 This can be used if you have multiple IP addresses on the same machine and you want to use an address other than the default address.  
 You might need to use this option when
 .Xr gethostname 3
@@ -116,14 +103,6 @@ This option overrides the
 .Ev IRCNICK
 environment variable.  
 This option can be overridden if you specify nickname argument in the command line (see below).
-.It Fl o
-Force use of IEXTEN termios characters.  
-POSIX systems are allowed to reserve additional control characters to perform special actions when IEXTEN is turned on.  
-On 4.4BSD, the control-V and control-O keys are used by IEXTEN and thus cannot be used in key bindings within EPIC since the terminal never sends them to EPIC.
-.It Fl O
-Disable use of IEXTEN termios characters.  
-This makes all of the keys reserved by your system's IEXTEN termios option available to be used in key bindings.  
-On 4.4BSD, this flag is necessary if you want to use control-V and control-O in your key bindings.
 .It Fl p Ar port
 Use the specified port as the default port for new server connections.
 The default port is usually 6667.  
@@ -151,11 +130,10 @@ environment variable.
 If this option is not specified, then the user name specified in 
 .Pa /etc/passwd
 for your user is used.  
-This feature was formerly undocumented, but with the rise and popularity and use of
+This feature was formerly undocumented, but because of 
 .Xr identd 8
-this option is much less useful than it once was.  
-Requests to have this option removed will probably be ignored.  
-If you don't want your users to spoof their usernames, install identd, and do everyone on IRC a favor.
+this option isn't as useful as it once was.  If you are a sysadmin, please
+install identd, and then this flag will provide no value to your users.
 .It nickname
 The first bare word found is taken as the default nickname to use.  
 This overrides all other options, including the -n option and the 
@@ -200,7 +178,7 @@ to open up the help system.
 When
 .Nm epic5
 is executed, it checks the user's home directory for a
-.Pa ~/.ircrc 
+.Pa ~/.epicrc 
 file, executing the commands in the file. 
 Commands in this file do not need to have a leading slash character 
 .Dq /

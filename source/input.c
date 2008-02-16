@@ -1,4 +1,4 @@
-/* $EPIC: input.c,v 1.52 2008/01/22 06:44:15 jnelson Exp $ */
+/* $EPIC: input.c,v 1.53 2008/02/16 03:38:28 jnelson Exp $ */
 /*
  * input.c: does the actual input line stuff... keeps the appropriate stuff
  * on the input line, handles insert/delete of characters/words... the whole
@@ -565,7 +565,8 @@ void 	change_input_prompt (int direction)
 	/* XXXXXX THIS is totaly wrong. XXXXXX */
 	if (!last_input_screen->promptlist)
 	{
-		strlcpy(INPUT_BUFFER, last_input_screen->saved_input_buffer, sizeof INPUT_BUFFER);
+		strlcpy(INPUT_BUFFER, last_input_screen->saved_input_buffer, 
+						sizeof INPUT_BUFFER);
 		LOGICAL_CURSOR = last_input_screen->saved_buffer_pos;
 		*last_input_screen->saved_input_buffer = 0;
 		last_input_screen->saved_buffer_pos = 0;
@@ -576,7 +577,8 @@ void 	change_input_prompt (int direction)
 
 	else if (!last_input_screen->promptlist->next)
 	{
-		strlcpy(last_input_screen->saved_input_buffer, INPUT_BUFFER, sizeof INPUT_BUFFER);
+		strlcpy(last_input_screen->saved_input_buffer, INPUT_BUFFER, 
+						sizeof INPUT_BUFFER);
 		last_input_screen->saved_buffer_pos = LOGICAL_CURSOR;
 		*INPUT_BUFFER = 0;
 		LOGICAL_CURSOR = 0;

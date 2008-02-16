@@ -230,4 +230,10 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Add the /window command as $2 in /on window_command
 * Release EPIC5-0.3.6 (Lugubrious) (commit 1531)
 * Fix remote crash -- you really want to update right away.
-
+* Put 'sig.inc' in include rather than source to fix build for r/o srcdir
+* #undef strtoimax() if we are going to define our own to fix build
+* Fix printf() qualification for syserr()
+* Fix $write(@W<num> ...) so uppercase W works
+* Nix strip_control() which isn't used any more.
+* Make #define WINDOW_CREATE go away -- it's now mandatory.
+* Reorganize do_screens() in prep for future work

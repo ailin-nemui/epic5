@@ -1,4 +1,4 @@
-/* $EPIC: files.c,v 1.33 2008/01/15 13:02:21 jnelson Exp $ */
+/* $EPIC: files.c,v 1.34 2008/02/16 03:38:28 jnelson Exp $ */
 /*
  * files.c -- allows you to read/write files. Wow.
  *
@@ -226,7 +226,7 @@ static File *	lookup_logfile (int fd)
 
 int 	target_file_write (const char *fd, const char *stuff)
 {
-	if (*fd == 'w' && is_number(fd + 1))
+	if (toupper(*fd) == 'W' && is_number(fd + 1))
 		return file_write(1, my_atol(fd + 1), stuff);
 	else if (is_number(fd))
 		return file_write(0, my_atol(fd), stuff);

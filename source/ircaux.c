@@ -1,4 +1,4 @@
-/* $EPIC: ircaux.c,v 1.189 2008/01/23 04:05:55 jnelson Exp $ */
+/* $EPIC: ircaux.c,v 1.190 2008/02/16 03:38:28 jnelson Exp $ */
 /*
  * ircaux.c: some extra routines... not specific to irc... that I needed 
  *
@@ -2702,18 +2702,6 @@ int	charcount (const char *string, char what)
 			x++;
 
 	return x;
-}
-
-/* Dest should be big enough to hold "src" */
-void	strip_control (const char *src, char *dest)
-{
-	for (; *src; src++)
-	{
-		if (isgraph(*src) || isspace(*src))
-			*dest++ = *src;
-	}
-
-	*dest++ = 0;
 }
 
 const char *	strfill (char c, int num)

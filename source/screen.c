@@ -1,4 +1,4 @@
-/* $EPIC: screen.c,v 1.130 2008/02/15 19:31:34 jnelson Exp $ */
+/* $EPIC: screen.c,v 1.131 2008/02/16 03:38:28 jnelson Exp $ */
 /*
  * screen.c
  *
@@ -127,6 +127,7 @@ static void 	add_to_window	(Window *, const unsigned char *);
 static	int	ok_to_output	(Window *);
 static ssize_t read_esc_seq     (const unsigned char *, void *, int *);
 static ssize_t read_color_seq   (const unsigned char *, void *d, int);
+static	void translate_user_input (char byte);
 
 /*
  * "Attributes" were an invention for epic5, and the general idea was
@@ -1694,9 +1695,8 @@ const	unsigned char	*cont_ptr;
 				int	continued_count = 0;
 
 				/* Because Blackjac asked me to */
-				if (indent > max_cols / 3)
-					indent = max_cols / 3;
-				if (indent <= 0)
+				/* The test against 0 is for lines w/o spaces */
+				if (indent > max_cols / 3 || indent == 0)
 					indent = max_cols / 3;
 
 				if (do_indent)
@@ -2720,7 +2720,6 @@ void	create_new_screen (void)
 }
 
 
-#ifdef WINDOW_CREATE
 #define ST_NOTHING      -1
 #define ST_SCREEN       0
 #define ST_XTERM        1
@@ -3031,7 +3030,6 @@ void 	kill_screen (Screen *screen)
 	make_window_current(NULL);
 	say("The screen is now dead.");
 }
-#endif /* WINDOW_CREATE */
 
 
 /* * * * * * * * * * * * * USER INPUT HANDLER * * * * * * * * * * * */
@@ -3039,6 +3037,11 @@ static void 	do_screens (int fd)
 {
 	Screen *screen;
 	char 	buffer[IO_BUFFER_SIZE + 1];
+	int	saved_from_server;
+	int	n, i;
+	int	proto;
+
+	saved_from_server = from_server;
 
 	if (use_input)
 	for (screen = screen_list; screen; screen = screen->next)
@@ -3046,139 +3049,141 @@ static void 	do_screens (int fd)
 		if (!screen->alive)
 			continue;
 
-#ifdef WINDOW_CREATE
-		/* wserv control */
+		/*
+		 * Handle input from a WSERV screen's control channel
+		 */
 		if (screen->control != -1 && screen->control == fd)
 		{
-			if (dgets(screen->control, buffer, IO_BUFFER_SIZE, 1) < 0)
-			{
-				kill_screen(screen);
-				yell("Error from remote screen.");
-				continue;
-			}
+		    if (dgets(screen->control, buffer, IO_BUFFER_SIZE, 1) < 0)
+		    {
+			kill_screen(screen);
+			yell("Error from remote screen.");
+			continue;
+		    }
 
-			if (!strncmp(buffer, "tty=", 4))
-				malloc_strcpy(&screen->tty_name, buffer + 4);
-			else if (!strncmp(buffer, "geom=", 5))
+		    if (!strncmp(buffer, "tty=", 4))
+			malloc_strcpy(&screen->tty_name, buffer + 4);
+		    else if (!strncmp(buffer, "geom=", 5))
+		    {
+			char *ptr;
+			if ((ptr = strchr(buffer, ' ')))
+				*ptr++ = 0;
+			screen->li = atoi(buffer + 5);
+			screen->co = atoi(ptr);
+			recalculate_windows(screen);
+		    }
+		    else if (!strncmp(buffer, "version=", 8))
+		    {
+			int     version;
+			version = atoi(buffer + 8);
+			if (version != CURRENT_WSERV_VERSION)
 			{
-				char *ptr;
-				if ((ptr = strchr(buffer, ' ')))
-					*ptr++ = 0;
-				screen->li = atoi(buffer + 5);
-				screen->co = atoi(ptr);
-				recalculate_windows(screen);
+			    yell("WSERV version %d is incompatable "
+					"with this binary", version);
+			    kill_screen(screen);
 			}
-			else if (!strncmp(buffer, "version=", 8))
-			{
-				int     version;
-				version = atoi(buffer + 8);
-				if (version != CURRENT_WSERV_VERSION)
-				{
-				    yell("WSERV version %d is incompatable with this binary",
-						version);
-				    kill_screen(screen);
-				}
-				screen->wserv_version = version;
-			}
+			screen->wserv_version = version;
+		    }
 		}
-#endif
 
-		if (screen->fdin == fd)
+
+		/*
+		 * Handle user input from any screen's fdin channel
+		 */
+		if (screen->fdin != fd)
+			continue;
+
+		/*
+		 * If normal data comes in, and the wserv didn't tell me
+		 * what its version is, then throw it out of the system.
+		 */
+		if (screen != main_screen && screen->wserv_version == 0)
 		{
-			int	server;
-
-#ifdef WINDOW_CREATE
-			if (screen != main_screen && screen->wserv_version == 0)
-			{
-				kill_screen(screen);
-				yell("The WSERV used to create this new screen is too old.");
-				return;
-			}
-#endif
-
-			/*
-			 * This section of code handles all in put from 
-			 * the terminal(s) connected to ircII.  Perhaps the 
-			 * idle time *shouldn't* be reset unless its not a 
-			 * screen-fd that was closed..
-			 */
-			get_time(&idle_time);
-			if (cpu_saver)
-				reset_system_timers();
-
-			server = from_server;
-			last_input_screen = screen;
-			output_screen = screen;
-			make_window_current(screen->current_window);
-			/*
-			 * In a multi-screen environment, it's possible for
-			 * the user to "switch" between windows connected to
-			 * the same server on multiple screens; this would
-			 * be the only place we would know about that.  So 
-			 * every time the user presses a key we have to set 
-			 * the screen's current window to be that window's
-			 * server's current window.  Right.
-			 * XXX Why do I know I'm going to regret this?
-			 */
-			current_window->priority = current_window_priority++;
-			from_server = current_window->server;
-
-			if (dumb_mode)
-			{
-				if (dgets(screen->fdin, buffer, IO_BUFFER_SIZE, 1) < 0)
-				{
-					say("IRCII exiting on EOF from stdin");
-					irc_exit(1, "EPIC - EOF from stdin");
-				}
-
-				if (strlen(buffer))
-					buffer[strlen(buffer) - 1] = 0;
-				parse_statement(buffer, 1, NULL);
-			}
-			else
-			{
-				int	n, i;
-
-				/*
-				 * Read in from stdin.
-				 */
-				n = dgets(screen->fdin, buffer,
-						BIG_BUFFER_SIZE, -1);
-				if (n > 0)
-				{
-					int proto = get_server_protocol_state(from_server);
-					set_server_protocol_state(from_server, 0);
-
-					for (i = 0; i < n; i++)
-						edit_char(buffer[i]);
-					set_server_protocol_state(from_server, proto);
-				}
-
-#ifdef WINDOW_CREATE
-				/* 
-				 * If this is a /window create screen, then 
-				 * an EOF or an error means the screen has
-				 * gone away.  We don't need it, so swap out
-				 * all of its windows and kill it off.
-				 */
-				else if (screen != main_screen)
-					kill_screen(screen);
-#endif
-
-				/*
-				 * If we get an EOF or error for the primary 
-				 * screen, then we've lost access to the pty
-				 * (probably because the user has been logged
-				 * out).  There is nothing more we can do but
-				 * throw up our hands and quit.
-				 */
-				else
-					irc_exit(1, "Hey!  Where'd my controlling terminal go?");
-			}
-			from_server = server;
+			kill_screen(screen);
+			yell("The WSERV used to create this new screen "
+				"is too old.");
+			return;		/* Bail out entirely */
 		}
-	} 
+
+		/* Reset the idleness data for the user */
+		get_time(&idle_time);
+		if (cpu_saver)
+			reset_system_timers();
+
+		/* 
+		 * Set the global processing context for the client to the 
+		 * processing context of the screen's current input window.
+		 */
+		last_input_screen = screen;
+		output_screen = screen;
+		make_window_current(screen->current_window);
+		from_server = current_window->server;
+
+		/*
+		 * PRIVMSG/NOTICE restrictions are suspended
+		 * when you're typing something.
+		 */
+		proto = get_server_protocol_state(from_server);
+		set_server_protocol_state(from_server, 0);
+
+		/*
+		 * We create a 'stack' of current windows so whenever a 
+		 * window is killed, we know which window was the current
+		 * window immediately prior to it.
+		 */
+		current_window->priority = current_window_priority++;
+
+		/* Dumb mode only accepts complete lines from the user */
+		if (dumb_mode)
+		{
+			if (dgets(screen->fdin, buffer, IO_BUFFER_SIZE, 1) < 0)
+			{
+				say("IRCII exiting on EOF from stdin");
+				irc_exit(1, "EPIC - EOF from stdin");
+			}
+
+			if (strlen(buffer))
+				buffer[strlen(buffer) - 1] = 0;
+			parse_statement(buffer, 1, NULL);
+		}
+
+		/* Ordinary full screen input is handled one byte at a time */
+		else if ((n = dgets(screen->fdin, buffer, 
+					BIG_BUFFER_SIZE, -1)) > 0)
+		{
+			for (i = 0; i < n; i++)
+				translate_user_input(buffer[i]);
+		}
+
+		/* An EOF/error error on a wserv screen kills that screen */
+		else if (screen != main_screen)
+			kill_screen(screen);
+
+		/* An EOF/error on main screen kills the whole client. */
+		else
+			irc_exit(1, "Hey!  Where'd my controlling "
+					"terminal go?");
+
+		set_server_protocol_state(from_server, proto);
+	}
+
+	from_server = saved_from_server;
 } 
+
+/*
+ * This function accumulates bytes of user input encoded in 
+ * /SET INPUT_TRANSLATION and converts them to (UCS32) code points and
+ * calls edit_codepoint() once per code point.
+ */
+static	void translate_user_input (char byte)
+{
+static	char		workbuf[32];
+static	size_t		workbuf_idx = 0;
+	u_32int_t	codepoint;
+
+	codepoint = (u_32int_t)byte;
+	edit_codepoint(codepoint);
+}
 
 
 /* * * * * * * * * INPUT PROMPTS * * * * * * * * * * */
@@ -3217,15 +3222,23 @@ void 	add_wait_prompt (const char *prompt, void (*func)(char *, char *), const c
 		change_input_prompt(1);
 }
 
+void	edit_codepoint (u_32int_t key)
+{
+	unsigned char	uckey;
+
+	uckey = (unsigned char)key;
+	edit_char(uckey);
+}
+
 /*
  * edit_char: handles each character for an input stream.  Not too difficult
  * to work out.
  */
 void    edit_char (unsigned char key)
 {
-        unsigned char          extended_key;
+        unsigned char   extended_key;
         WaitPrompt *    oldprompt;
-        unsigned char          dummy[2];
+        unsigned char   dummy[2];
         int             xxx_return = 0;         /* XXXX Need i say more? */
 
         if (dumb_mode)

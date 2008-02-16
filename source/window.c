@@ -1,4 +1,4 @@
-/* $EPIC: window.c,v 1.192 2008/01/29 03:14:38 jnelson Exp $ */
+/* $EPIC: window.c,v 1.193 2008/02/16 03:38:28 jnelson Exp $ */
 /*
  * window.c: Handles the organzation of the logical viewports (``windows'')
  * for irc.  This includes keeping track of what windows are open, where they
@@ -3189,12 +3189,10 @@ static Window *window_clear (Window *window, char **args)
  */
 static Window *window_create (Window *window, char **args)
 {
-#ifdef WINDOW_CREATE
 	Window *tmp;
 	if ((tmp = (Window *)create_additional_screen()))
 		window = tmp;
 	else
-#endif
 		say("Cannot create new screen!");
 
 	return window;
@@ -3209,9 +3207,7 @@ static Window *window_create (Window *window, char **args)
  */
 static Window *window_delete (Window *window, char **args)
 {
-#ifdef WINDOW_CREATE
 	kill_screen(window->screen);
-#endif
 	return current_window;
 }
 
