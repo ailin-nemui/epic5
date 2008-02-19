@@ -132,18 +132,23 @@ alias alias.tt (cmd,op,args) {
 };
 fe (q push fq unshift) cmd op {
 	alias.tt $cmd $op ${cmd}1cmd (qo,qc,args) {
+		@ :oxd = xdebug(dword);
+		xdebug dword;
 		@ :sn = servernum();
 		@ :sn = sn < 0 ? [_] : sn;
 		@ :argz = args;
-		@ sar(gr/\\/\\\\/argz);
-		@ sar(gr/\"/\\\"/argz);
+		#@ sar(gr/\\/\\\\/argz);
+		#@ sar(gr/\"/\\\"/argz);
 		@ :qc = split(, $qc);
 		fe ($qc) qqcc {
 			if (0 <= findw("$argz" $qcmd[$sn][$qqcc])) {
+				xdebug $oxd;
 				return;
 			};
 		};
+		xdebug -dword;
 		1cmd $qo ${cmd}cmd $shift(qc) $args;
+		xdebug $oxd;
 	};
 	alias.tt $cmd $op ${cmd}cmd {
 		@ :oxd = xdebug(dword);

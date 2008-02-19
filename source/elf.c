@@ -65,8 +65,8 @@ struct epic_loadfile * epic_fopen(char *filename, const char *mode, int do_error
     } else if (stristr(filename, ".tar")!=-1) {
         ret=archive_fopen(elf, filename, ".tar", do_error);
     }
-#endif
     else
+#endif
 	ret = 0;
 
     if (ret==1)

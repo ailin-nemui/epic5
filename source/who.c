@@ -1,4 +1,4 @@
-/* $EPIC: who.c,v 1.59 2007/05/25 16:47:48 jnelson Exp $ */
+/* $EPIC: who.c,v 1.60 2008/02/19 13:13:12 crazyed Exp $ */
 /*
  * who.c -- The WHO queue.  The ISON queue.  The USERHOST queue.
  *
@@ -1127,25 +1127,38 @@ static void ison_queue_send (int refnum)
 	send_to_aserver(refnum, "ISON %s", save->ison_asked);
 }
 
+static void ison_entry_pop (IsonEntry **entry)
+{
+	IsonEntry *save = (*entry)->next;
+
+	new_free(&(*entry)->ison_asked);
+	new_free(&(*entry)->ison_got);
+	new_free(&(*entry)->oncmd);
+	new_free(&(*entry)->offcmd);
+	new_free(&(*entry)->endcmd);
+	new_free((char **)entry);
+	*entry = save;
+	return;
+}
+
 static void ison_queue_pop (int refnum)
 {
 	Server *s;
-	IsonEntry *save;
 
 	if (!(s = get_server(refnum)))
 		return;
 
-	if ((save = s->ison_queue))
-	{
-		s->ison_queue = save->next;
-		new_free(&save->ison_asked);
-		new_free(&save->ison_got);
-		new_free(&save->oncmd);
-		new_free(&save->offcmd);
-		new_free(&save->endcmd);
-		new_free((char **)&save);
-	}
-	return;
+	return ison_entry_pop(&(s->ison_queue));
+}
+
+static void ison_wait_pop (int refnum)
+{
+	Server *s;
+
+	if (!(s = get_server(refnum)))
+		return;
+
+	return ison_entry_pop(&(s->ison_wait));
 }
 
 static IsonEntry *ison_queue_top (int refnum)
@@ -1156,6 +1169,16 @@ static IsonEntry *ison_queue_top (int refnum)
 		return NULL;
 
 	return s->ison_queue;
+}
+
+static IsonEntry *ison_wait_top (int refnum)
+{
+	Server *s;
+
+	if (!(s = get_server(refnum)))
+		return NULL;
+
+	return s->ison_wait;
 }
 
 static IsonEntry *get_new_ison_entry (int refnum, int next)
@@ -1232,6 +1255,8 @@ void	isonbase (int refnum, char *args, void (*line) (int, char *, char *))
 		{
 			while (ison_queue_top(from_server))
 				ison_queue_pop(from_server);
+			while (ison_wait_top(from_server))
+				ison_wait_pop(from_server);
 		}
 		if (!my_stricmp(arg, "-s"))
 		{
@@ -1388,6 +1413,16 @@ static UserhostEntry *userhost_queue_top (int refnum)
 	return s->userhost_queue;
 }
 
+static UserhostEntry *userhost_wait_top (int refnum)
+{
+	Server *s;
+
+	if (!(s = get_server(refnum)))
+		return NULL;
+
+	return s->userhost_wait;
+}
+
 static void userhost_queue_add (int refnum, UserhostEntry *item)
 {
 	UserhostEntry *bottom;
@@ -1443,20 +1478,35 @@ static void userhost_queue_send (int refnum)
 	send_to_aserver(refnum, save->format, save->userhost_asked);
 }
 
+static void userhost_entry_pop (UserhostEntry **entry)
+{
+	UserhostEntry *save = (*entry)->next;
+
+	new_free(&(*entry)->userhost_asked);
+	new_free(&(*entry)->text);
+	new_free((char **)entry);
+	*entry = save;
+	return;
+}
+
 static void userhost_queue_pop (int refnum)
 {
-	UserhostEntry *save;
 	Server *s;
 
 	if (!(s = get_server(refnum)))
 		return;
 
-	save = s->userhost_queue;
-	s->userhost_queue = save->next;
-	new_free(&save->userhost_asked);
-	new_free(&save->text);
-	new_free((char **)&save);
-	return;
+	return userhost_entry_pop(&(s->userhost_queue));
+}
+
+static void userhost_wait_pop (int refnum)
+{
+	Server *s;
+
+	if (!(s = get_server(refnum)))
+		return;
+
+	return userhost_entry_pop(&(s->userhost_wait));
 }
 
 static UserhostEntry *get_new_userhost_entry (int refnum)
@@ -1562,6 +1612,12 @@ void userhostbase (int refnum, char *args, const char *subargs, void (*line) (in
 				new_free(&extra);
 			/* XXX But what if extravar contains []s? */
 			extra = get_variable(extravar);
+		}
+		else if (!my_strnicmp(nick, "-flush", 2))
+		{
+			while (userhost_wait_top(refnum))
+				userhost_wait_pop(refnum);
+			return;
 		}
 	}
 

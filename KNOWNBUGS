@@ -239,3 +239,20 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Reorganize do_screens() in prep for future work
 * Release EPIC5-0.3.7 (Lacrimation) (commit 1534)
 * Fix way too many compile warnings I let go way too long.
+* Fixed q1cmd in command queues to address space mangling issues
+  first noticed by Kraca.
+* Fixed data_struct to work with dword.
+* Fixed tabkey.ce to work better with args with spaces in them.
+* Fixed tabkey.ce to not put / prefix on recursed commands (again).
+* Fixed tabkey.ce to work with 005 CHANTYPES.
+* Fixed $xdebug() to work with multiple arguments as it once did.
+* Fixed what appears to be a typo in elf.c and I don't really know what
+  it does.  I hope it doesn't break anything for anybody.  XXX
+* Minor optimisation for notify.c.
+* Added handling of the 340 numeric in numbers.c
+* Handle extraneous spaces in server MODE messages.  Austhex adds these.
+* Trigger waiting ISON's when we connect again.  * don't recall why
+  I took this out in the first place.
+* Added "/userhost -flush", which will flush the queue of messages waiting
+  to be sent, NOT the queue awaiting replies.
+* Extended "/ison -f" to also flush the queue of ISON's waiting to be sent.

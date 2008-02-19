@@ -1,4 +1,4 @@
-/* $EPIC: parse.c,v 1.90 2008/01/05 19:00:26 jnelson Exp $ */
+/* $EPIC: parse.c,v 1.91 2008/02/19 13:13:12 crazyed Exp $ */
 /*
  * parse.c: handles messages from the server.   Believe it or not.  I
  * certainly wouldn't if I were you. 
@@ -870,6 +870,8 @@ static void	p_mode (const char *from, const char *comm, const char **ArgList)
 	const char	*type;
 	int		l;
 
+	while (ArgList[0] && !*ArgList[0])
+		++ArgList;			 /* Ride Austhex breakage */
 	PasteArgs(ArgList, 1);
 	if (!(target = ArgList[0]))
 		{ rfc1459_odd(from, comm, ArgList); return; }

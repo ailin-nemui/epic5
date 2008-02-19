@@ -1,4 +1,4 @@
-/* $EPIC: debug.c,v 1.26 2007/08/22 18:40:26 howl Exp $ */
+/* $EPIC: debug.c,v 1.27 2008/02/19 13:13:12 crazyed Exp $ */
 /*
  * debug.c -- controll the values of x_debug.
  *
@@ -146,7 +146,7 @@ BUILT_IN_COMMAND(xdebugcmd)
 
 char *	function_xdebug (char *word)
 {
-	char	*ret = NULL;
+	char	*ret = NULL, *free = NULL;
 	const char	*mask = NULL;
 	int	cnt;
 	size_t	clue = 0;
@@ -168,6 +168,10 @@ char *	function_xdebug (char *word)
 		malloc_strcat_c(&ret, opts[cnt].command, &clue);
 	}
 
+	if (word && *word)
+		malloc_strcat_wordlist_c(&ret, space,
+			free = function_xdebug(word), &clue);
+	new_free(&free);
 	malloc_strcat_c(&ret, "", &clue);
 	return ret;
 }

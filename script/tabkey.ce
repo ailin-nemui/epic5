@@ -171,7 +171,7 @@ alias tabkey.main (cycle, void)
 
 	if (#matches == 1 && matches != [ ])
 	{
-		@ :prefix = 0 > index("$chr($jot(32 1))" $prefix) ? prefix : ["$prefix"];
+		#@ :prefix = 0 > index("$chr($jot(32 1))" $prefix) ? prefix : ["$prefix"];
 		@ :line = mid(0 $wordind $L);
 		parsekey erase_to_beg_of_line;
 		xtype -l $line$prefix${[ ]};
@@ -188,7 +188,7 @@ alias tabkey.main (cycle, void)
 		}
 		else if (strlen($word) <= strlen($prefix))
 		{
-			@ :prefix = 0 > index("$chr($jot(32 1))" $prefix) ? prefix : ["$prefix"];
+			@ :prefix = 0 > index("$chr($jot(32 1))" $prefix) ? prefix : ["$prefix];
 			@ :line = mid(0 $wordind $L);
 			parsekey erase_to_beg_of_line;
 			xtype -l $line$prefix;
@@ -221,7 +221,7 @@ alias tabkey.cmd (...)
 	if (!curword)
 	{
 		@ :ret = tabkey.method.commands($args);
-		repeat $#ret {push ret $K$shift(ret)};
+		if (!cmdind) repeat $#ret {push ret $K$shift(ret)};
 		return $ret;
 	};
 
@@ -617,9 +617,16 @@ alias tabkey.method.commands (...)
 
 alias tabkey.method.chan (...)
 {
-	@ function_return = (:foo = pattern($sar(g/\\/\\\\/$*)* $mychannels())) ? foo :
-	                    (:foo = pattern(#$sar(g/\\/\\\\/$*)* $mychannels())) ? foo :
-	                    pattern(&$sar(g/\\/\\\\/$*)* $mychannels());
+#	@ function_return = (:foo = pattern($sar(g/\\/\\\\/$*)* $mychannels())) ? foo :
+#	                    (:foo = pattern(#$sar(g/\\/\\\\/$*)* $mychannels())) ? foo :
+#	                    pattern(&$sar(g/\\/\\\\/$*)* $mychannels());
+	@ :chantypes = serverctl(get $servernum() 005 CHANTYPES);
+	@ :chantypes = chantypes ? chantypes : [#&];
+	@ :chantypes#= [ ];
+	@ :mc = mychannels();
+	fec ($chantypes) ct {
+		@ function_return = function_return ? function_return : pattern($ct$sar(g/\\/\\\\/$*)* $mc);
+	};
 };
 
 stack push alias alias.foo;
@@ -650,6 +657,8 @@ alias tabkey.method.mask (...)
 
 alias tabkey.method.nick (...)
 {
+	@ :oxd = xdebug();
+	xdebug -dword;
 	@ :args = sar(g/\\/\\\\/$*);
 	if (match($args* $chanusers())) {
 		@ function_return = pattern($args* $chanusers());
@@ -658,6 +667,7 @@ alias tabkey.method.nick (...)
 		repeat $#chanusers @ push(chanusers $chanusers($shift(chanusers)));
 		@ function_return = pattern($args* $sort($uniq($chanusers)));
 	};
+	xdebug $oxd;
 };
 
 alias tabkey.method.nickchan (...)

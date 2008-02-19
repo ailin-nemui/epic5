@@ -40,6 +40,8 @@ alias alias.tt (args) {
 # reason to use these is if an epic bug is suspected.
 #
 alias.ttt assign.check {
+	@ :oxd = xdebug(dword);
+	xdebug dword;
 	@ :omr = aliasctl(maxret 0);
 	@ :last = [];
 	@ :list = aliasctl(assign pmatch "\\[$*\\]");
@@ -51,27 +53,34 @@ alias.ttt assign.check {
 	};
 	@ aliasctl(maxret $omr);
 	echo Checked $#list assigns matching $*;
+	xdebug $oxd;
 };
 #
 # Faster version.  Tells you whether there's an error, not where it is.
 #
 alias.ttt assign.qcheck {
+	@ :oxd = xdebug(dword);
+	xdebug dword;
 	@ :omr = aliasctl(maxret 0);
 	@ :list = aliasctl(assign pmatch "\\[$*\\]");
 	@ :status = uniq($list) == sort($list) ? [passed] : [failed];
 	@ aliasctl(maxret $omr);
 	echo Checked $#list assigns matching $*: $status;
+	xdebug $oxd;
 };
 
 #
 # Dump all assigns with name matching the given masks.
 #
 alias.tt assign.dump {
+	@ :oxd = xdebug(dword);
+	xdebug dword;
 	@ :list = aliasctl(assign pmatch "\\[$*\\]");
 	fe ($list) e {
 		echo [$aliasctl(assign getpackage $e)] $e$chr(9)$aliasctl(assign get $e);
 	};
 	@ list = #list;
+	xdebug $oxd;
 	if (functioncall()) {
 		return $list;
 	} else {
@@ -84,6 +93,8 @@ alias.tt assign.dump {
 # contents matching the rest.
 #
 alias.tt assign.grep (args) {
+	@ :oxd = xdebug(dword);
+	xdebug dword;
 	@ :list = aliasctl(assign pmatch "\\[$shift(args)\\]");
 	fe ($list) e {
 		if (aliasctl(assign get $e) =~ args) {
@@ -91,6 +102,7 @@ alias.tt assign.grep (args) {
 		};
 	};
 	@ list = #list;
+	xdebug $oxd;
 	if (functioncall()) {
 		return $list;
 	} else {
@@ -103,6 +115,8 @@ alias.tt assign.grep (args) {
 # however, alias.pack will destroy the arg lists of the alias.
 #
 alias.tt assign.pack {
+	@ :oxd = xdebug(dword);
+	xdebug dword;
 	do {
 		@ :list = aliasctl(assign $start pmatch "\\[$*\\]");
 		fe ($list) foo {
@@ -117,6 +131,7 @@ alias.tt assign.pack {
 			echo Packed $list matching $*;
 		};
 	} while (list && (:start += aliasctl(maxret)));
+	xdebug $oxd;
 };
 
 #
@@ -129,12 +144,15 @@ alias.tt assign.purge {
 		fe ($list) bar {^assign -$bar};
 		return $#list;
 	} else {
+		@ :oxd = xdebug(dword);
+		xdebug dword;
 		do {
 			@ :list = assign.purge($*);
 			if (isdisplaying()) {
 				echo Purged $list matching $*;
 			};
 		} while (list && list == aliasctl(maxret));
+		xdebug $oxd;
 	};
 };
 
@@ -146,6 +164,8 @@ alias.tt assign.save {
 	@ :pkg = rand(0);
 	@ :fh = open($0 W);
 	@ :start = [];
+	@ :oxd = xdebug(dword);
+	xdebug dword;
 	do {
 		@ :list = aliasctl(assign $start pmatch "\\[$1-\\]");
 		fe list foo {
@@ -163,6 +183,7 @@ alias.tt assign.save {
 		@ :start += aliasctl(maxret);
 	} while (#list && start);
 	@ close($fh);
+	xdebug $oxd;
 	return $#list;
 };
 #
@@ -173,6 +194,8 @@ alias.tt assign.esave {
 	@ :pkg = rand(0);
 	@ :fh = open($0 W);
 	@ :start = [];
+	@ :oxd = xdebug(dword);
+	xdebug dword;
 	do {
 		@ :list = aliasctl(assign $start pmatch "\\[$1-\\]");
 		fe list foo {
@@ -190,6 +213,7 @@ alias.tt assign.esave {
 		@ :start += aliasctl(maxret);
 	} while (#list && start);
 	@ close($fh);
+	xdebug $oxd;
 	return $#list;
 };
 
