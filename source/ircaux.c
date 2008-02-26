@@ -1,4 +1,4 @@
-/* $EPIC: ircaux.c,v 1.191 2008/02/16 23:42:05 jnelson Exp $ */
+/* $EPIC: ircaux.c,v 1.192 2008/02/26 03:46:18 jnelson Exp $ */
 /*
  * ircaux.c: some extra routines... not specific to irc... that I needed 
  *
@@ -40,6 +40,7 @@
 #include <pwd.h>
 #include <sys/wait.h>
 #include <math.h>
+#include <stddef.h>
 #include "ircaux.h"
 #include "output.h"
 #include "term.h"
@@ -5505,7 +5506,11 @@ static int	register_transform (const char *name, int takes_meta, ssize_t (*encod
 static int	unregister_transform (int i)
 {
 	/* We don't change 'refnum' so this entry doesn't get re-used! */
-	new_free((char **)(intptr_t)&transformers[i].name);
+	new_free((char **)
+#ifdef HAVE_INTPTR_T
+		(intptr_t)
+#endif
+		&transformers[i].name);
 	transformers[i].takes_meta = 0;
 	transformers[i].encoder = NULL;
 	transformers[i].decoder = NULL;

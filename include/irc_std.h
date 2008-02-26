@@ -230,6 +230,8 @@ int	unblock_signal (int);
 sigfunc *my_signal (int, sigfunc *);
 #define SIGNAL_HANDLER(x) \
 	RETSIGTYPE x (int unused)
+sigfunc *init_signals (void);
+extern	volatile int    signals_caught[NSIG];
 
 #define BUILT_IN_COMMAND(x) \
 	void x (const char *command, char *args, const char *subargs)
@@ -251,6 +253,22 @@ typedef char Filename[MAXPATHLEN + 1];
  */
 #ifndef HAVE_MEMMOVE
 #define memmove(x, y, z) bcopy(y, x, z)
+#endif
+
+/*
+ * Interix's getpgrp() does not take an argument, but the configure script
+ * detects it wrongly.
+ */
+#ifdef __INTERIX
+# define GETPGRP_VOID
+#endif
+
+/*
+ * Interix provides intptr_t, but the shipped gcc 3.3 provides a broken
+ * stddef.h that hides it from us.
+ */
+#ifdef __INTERIX
+typedef int intptr_t;
 #endif
 
 /*

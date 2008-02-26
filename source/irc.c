@@ -1,4 +1,4 @@
-/* $EPIC: irc.c,v 1.1207 2008/02/19 13:13:12 crazyed Exp $ */
+/* $EPIC: irc.c,v 1.1208 2008/02/26 03:46:18 jnelson Exp $ */
 /*
  * ircII: a new irc client.  I like it.  I hope you will too!
  *
@@ -52,7 +52,7 @@ const char internal_version[] = "20080216";
 /*
  * In theory, this number is incremented for every commit.
  */
-const unsigned long	commit_id = 1536;
+const unsigned long	commit_id = 1537;
 
 /*
  * As a way to poke fun at the current rage of naming releases after
@@ -633,8 +633,11 @@ static	void	parse_args (int argc, char **argv)
 		
 		for (argn = 1; argn < argc; argn++)
 		{
-		    int arglen = strlen(argv[argn]);
-		    char buffer[arglen +1];
+		    int arglen;
+		    char *buffer;
+
+		    arglen =  strlen(argv[argn]);
+		    buffer = alloca(arglen + 1);
 		    argpos = -1;
 		    do
 		    {
@@ -840,6 +843,23 @@ static	void	parse_args (int argc, char **argv)
 	return;
 }
 
+/* fire scripted signal events -pegasus */
+static void	do_signals(void)
+{
+	int sig_no;
+
+	signals_caught[0] = 0;
+	for (sig_no = 0; sig_no < NSIG; sig_no++)
+	{
+		while (signals_caught[sig_no])
+		{
+			do_hook(SIGNAL_LIST, "%d %d", sig_no, 
+					signals_caught[sig_no]);
+			signals_caught[sig_no]--;
+		}
+	}
+}
+
 /* 
  * io() is a ONE TIME THROUGH loop!  It simply does ONE check on the
  * file descriptors, and if there is nothing waiting, it will time
@@ -935,6 +955,10 @@ static	int		level = 0,
 	/* 
 	 * Various things that need to be done synchronously...
 	 */
+
+	/* deal with caught signals - pegasus */
+	if (signals_caught[0] != 0)
+		do_signals();
 
 	/* Account for dead child processes */
 	get_child_exit(-1);
@@ -1198,6 +1222,8 @@ int 	main (int argc, char *argv[])
 			dumb_mode = 1;
 		fprintf(stderr, "\n");
 	}
+
+	init_signals();
 
 	/* these should be taken by both dumb and smart displays */
 	my_signal(SIGSEGV, coredump);

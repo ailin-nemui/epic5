@@ -310,6 +310,8 @@ EPIC5-0.3.5
 	so for all purposes the inside of {}s is a literal string that is
 	not expanded except each time the /on is thrown.
 
+XXX Help files updated to here XXX
+
 *** News 07/02/2007 -- Clarification on using $'s in expression parser
 	The old expression parser used to allow you to use expandos as
 	lvalues in order to indirectly assign to variables, for example:

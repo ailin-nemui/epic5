@@ -1,4 +1,4 @@
-/* $EPIC: ircsig.c,v 1.4 2002/07/29 22:27:05 jnelson Exp $ */
+/* $EPIC: ircsig.c,v 1.5 2008/02/26 03:46:18 jnelson Exp $ */
 /*
  * ircsig.c: has a `my_signal()' that uses sigaction().
  *
@@ -56,36 +56,76 @@ int	unblock_signal (int sig_no)
 	return sigprocmask(SIG_UNBLOCK, &set, NULL);
 }
 
+/* array of signal handlers containing mostly NULL */
+sigfunc *signal_handlers[NSIG];
+volatile int    signals_caught[NSIG];
+
+/* grand unified signal handler, which sets flags for scriptable signals
+ * - pegasus
+ */
+static RETSIGTYPE signal_handler (int sig_no)
+{
+	signals_caught[0] = 1;
+	signals_caught[sig_no]++;
+	if (NULL != signal_handlers[sig_no])
+		signal_handlers[sig_no](sig_no);
+}
+
+/* hook_all_signals needs to be called in main() before my_signal()
+ * if any signal hooks fail, it returns SIG_ERR, otherwise it returns
+ * NULL. - pegasus
+ */
+sigfunc *init_signals (void)
+{
+	struct sigaction sa, osa;
+	int sig_no;
+	sigfunc *error = NULL;
+
+	memset(&signals_caught, 0, NSIG * sizeof(int));
+	sa.sa_handler = &signal_handler;
+
+	for (sig_no = 0; sig_no < NSIG; sig_no++)
+	{
+		signal_handlers[sig_no] = NULL;
+		/* this is ugly, but the `correct' way.  i hate c. -mrg */
+		/* moved from my_signal. -pegasus */
+		sa.sa_flags = 0;
+#if defined(SA_RESTART) || defined(SA_INTERRUPT)
+		if (SIGALRM == sig_no || SIGINT == sig_no)
+		{
+# if defined(SA_INTERRUPT)
+			sa.sa_flags |= SA_INTERRUPT;
+# endif /* SA_INTERRUPT */
+		}
+		else
+		{
+# if defined(SA_RESTART)
+			sa.sa_flags |= SA_RESTART;
+# endif /* SA_RESTART */
+		}
+#endif /* SA_RESTART || SA_INTERRUPT */
+		/* if it wasn't for the above code, we could move the
+		 * sigemptyset() and sigaction() calls outside the loop
+		 * proper. -pegasus
+		 */
+		sigemptyset(&sa.sa_mask);
+		sigaddset(&sa.sa_mask, sig_no);
+		if (0 > sigaction(sig_no, &sa, &osa))
+			error = SIG_ERR;
+	}
+	return error;
+}
+
 sigfunc *my_signal (int sig_no, sigfunc *sig_handler)
 {
-        struct sigaction sa, osa;
+	sigfunc	*old;
 
 	if (sig_no < 0)
-		return NULL;		/* Signal not implemented */
+		return NULL;	/* Signal not implemented */
 
-        sa.sa_handler = sig_handler;
-        sigemptyset(&sa.sa_mask);
-        sigaddset(&sa.sa_mask, sig_no);
+	/* Well this is certainly simpler. - pegasus */
+	old = signal_handlers[sig_no];
+	signal_handlers[sig_no] = sig_handler;
 
-        /* this is ugly, but the `correct' way.  i hate c. -mrg */
-        sa.sa_flags = 0;
-#if defined(SA_RESTART) || defined(SA_INTERRUPT)
-        if (SIGALRM == sig_no || SIGINT == sig_no)
-        {
-# if defined(SA_INTERRUPT)
-                sa.sa_flags |= SA_INTERRUPT;
-# endif /* SA_INTERRUPT */
-        }
-        else
-        {
-# if defined(SA_RESTART)
-                sa.sa_flags |= SA_RESTART;
-# endif /* SA_RESTART */
-        }
-#endif /* SA_RESTART || SA_INTERRUPT */
-
-        if (0 > sigaction(sig_no, &sa, &osa))
-                return (SIG_ERR);
-
-        return (osa.sa_handler);
+	return old;
 }
