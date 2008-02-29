@@ -1,4 +1,4 @@
-/* $EPIC: files.c,v 1.34 2008/02/16 03:38:28 jnelson Exp $ */
+/* $EPIC: files.c,v 1.35 2008/02/29 04:14:27 crazyed Exp $ */
 /*
  * files.c -- allows you to read/write files. Wow.
  *
@@ -209,7 +209,8 @@ static File *	lookup_file (int fd)
 static File *	lookup_logfile (int fd)
 {
 	FILE *x = NULL;
-	static File retval;
+	static struct epic_loadfile elf;
+	static File retval = {0 , &elf, NULL};
 	Window *w;
 
 	if (fd == -1)
