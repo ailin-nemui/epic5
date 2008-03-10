@@ -1,4 +1,4 @@
-/* $EPIC: notify.c,v 1.34 2008/02/29 04:14:27 crazyed Exp $ */
+/* $EPIC: notify.c,v 1.35 2008/03/10 06:29:39 crazyed Exp $ */
 /*
  * notify.c: a few handy routines to notify you when people enter and leave irc 
  *
@@ -165,7 +165,7 @@ BUILT_IN_COMMAND(notify)
 	int		do_ison = 0;
 	int		shown = 0;
 	NotifyItem	*new_n;
-	int		refnum;
+	int		refnum, first = 0, last = number_of_servers;
 	int		added = 0;
 	size_t		clue = 0;
 
@@ -178,12 +178,14 @@ BUILT_IN_COMMAND(notify)
 		if ((ptr = strchr(nick, ',')))
 		    *ptr++ = '\0';
 
-		if (*nick == '-')
+		if (0 <= from_server && !my_stricmp(":", nick))
+			first = last = from_server, last++;
+		else if (*nick == '-')
 		{
 		    nick++;
 		    if (*nick)
 		    {
-			for (refnum = 0; refnum < number_of_servers; refnum++)
+			for (refnum = first; refnum < last; refnum++)
 			{
 			    if (!(s = get_server(refnum)))
 				continue;
@@ -212,7 +214,7 @@ BUILT_IN_COMMAND(notify)
 		    }
 		    else
 		    {
-			for (refnum = 0; refnum < number_of_servers; refnum++)
+			for (refnum = first; refnum < last; refnum++)
 			{
 			    if (!(s = get_server(refnum)))
 				continue;
@@ -245,7 +247,7 @@ BUILT_IN_COMMAND(notify)
 			continue;
 		    }
 
-		    for (refnum = 0; refnum < number_of_servers; refnum++)
+		    for (refnum = first; refnum < last; refnum++)
 		    {
 			if (!(s = get_server(refnum)))
 			    continue;
@@ -277,7 +279,7 @@ BUILT_IN_COMMAND(notify)
 
 	if (do_ison && get_int_var(DO_NOTIFY_IMMEDIATELY_VAR))
 	{
-	    for (refnum = 0; refnum < number_of_servers; refnum++)
+	    for (refnum = first; refnum < last; refnum++)
 	    {
 		if (!(s = get_server(refnum)))
 		    continue;

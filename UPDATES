@@ -1,5 +1,15 @@
 EPIC5-0.3.6
 
+*** News 03/10/2008 -- /NOTIFY list now applicable to local server.
+	The notify list can now be updated on a per server basis.  This is done
+	by placing the ":" nick before the list of local changes in the /NOTIFY
+	command.  Everything on the /NOTIFY line UP TO the ":" is still
+	applicable to every server.
+
+	Examples:
+	/NOTIFY : - [nicks]  # Clear local list and replace with [nicks].
+	/NOTIFY - : [nicks]  # Clear all notify lists and add [nicks] locally.
+
 *** News 01/28/2008 -- /ON WINDOW_COMMAND has command as $2        (kitambi)
 	The command being executed is $2 in /on window_command.  If you do evil
 	things with this, you may crash the client.  You Have Been Warned.

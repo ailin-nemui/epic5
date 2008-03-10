@@ -1,4 +1,4 @@
-/* $EPIC: ignore.c,v 1.33 2008/01/22 06:44:15 jnelson Exp $ */
+/* $EPIC: ignore.c,v 1.34 2008/03/10 06:29:39 crazyed Exp $ */
 /*
  * ignore.c: handles the ingore command for irc 
  *
@@ -385,6 +385,17 @@ static	char 	buffer[BIG_BUFFER_SIZE + 1];
 		HANDLE_TYPE(KICK, output_type)
 		HANDLE_TYPE(MODE, output_type)
 		HANDLE_TYPE(OTHER, output_type)
+		HANDLE_TYPE(OPERWALL, output_type)
+		HANDLE_TYPE(SYSERR, output_type)
+		HANDLE_TYPE(USER1, output_type)
+		HANDLE_TYPE(USER2, output_type)
+		HANDLE_TYPE(USER4, output_type)
+		HANDLE_TYPE(USER5, output_type)
+		HANDLE_TYPE(USER6, output_type)
+		HANDLE_TYPE(USER7, output_type)
+		HANDLE_TYPE(USER8, output_type)
+		HANDLE_TYPE(USER9, output_type)
+		HANDLE_TYPE(USER10, output_type)
 	}
 
 	retval = buffer;

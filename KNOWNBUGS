@@ -258,3 +258,9 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Fix another panic() causable by /echo. ugh.
 * $write(w-1 ....) is documented to write to the global logfile and now does.
 * Fixed a long standing notify bug where only one ISON would be sent.
+* Fixed an apparent typo in getnrolitems in data_array.
+* Fixed a bug in autoget where it wasn't actually starting a download.
+* Fixed yet another bug in commandqueues involving double quote dequoting.
+* This covers for an apparent bug in $shift() which should automatically
+  dequote quotes (unfixed).
+* Added USER1 - USER10, OPERWALL and SYSERR levels to the ignore system.

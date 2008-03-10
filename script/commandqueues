@@ -181,10 +181,12 @@ fe (q push fq unshift) cmd op {
 		xdebug $oxd;
 		if (functioncall()) {
 			#return $msar(gr/\\\\/\\/\\\"/\"/bar);
-			return $bar;
+			return $msar(gr/\\\"/\"/bar);
+			#return $bar;
 		} elsif (@bar) {
 			#$msar(gr/\\\\/\\/\\\"/\"/bar);
-			$bar;
+			$msar(gr/\\\"/\"/bar);
+			#$bar;
 			^timer -ref qcmd.$sn -update 5 qcmd;
 		} elsif (@foo) {
 			^timer -ref qcmd.$sn 5 qcmd;

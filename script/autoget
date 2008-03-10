@@ -64,7 +64,7 @@ on #-dcc_request 414 "% SEND *" {
 			@ action = [get];
 		} elsif (action == [close]) {
 			@ action = [close get];
-		} elsif (!rmatch("$action" get resume)) {
+		} elsif (!rmatch("$action" "get" "resume")) {
 			echo $action?;
 			return;
 		};

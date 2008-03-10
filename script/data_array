@@ -23,7 +23,7 @@ if (word(2 $loadinfo()) != [pf]) { load -pf $word(1 $loadinfo()); return; };
 alias itemnorm (ar,it) {@:ni=numitems($ar);fe it it {@it+=0<=it?0:ni,it=0<=it&&it<ni?it:[]};return $it};
 alias getndelitems (ar,it) {@:it=itemnorm($ar $it),:function_return=getitem($ar $it),delitems($ar $it)};
 alias getndelindex (ar,it) {@:it=itemnorm($ar $it),:function_return=igetitem($ar $it),delitems($ar $indextoitem($ar $it))};
-alias getnrolitems (a1,a2,it) {@:dt=:it=itemnorm($a1 $it);fe it it {setnextitem $a2 ${it=getitem($a1 $it)}};@delitems($a1 $dt);return $it]};
+alias getnrolitems (a1,a2,it) {@:dt=:it=itemnorm($a1 $it);fe it it {setnextitem $a2 ${it=getitem($a1 $it)}};@delitems($a1 $dt);return $it};
 #
 # Now onto some more complex functions:
 #
