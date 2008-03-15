@@ -4,9 +4,9 @@ dnl except those bits attributed otherwise.
 dnl thanks to the screen 3.3 configure.in for giving me examples to
 dnl work from and steal ;)
 dnl
-dnl @(#)$Id: configure.in,v 1.63 2008/02/16 03:38:25 jnelson Exp $
+dnl @(#)$Id: configure.in,v 1.64 2008/03/15 20:52:56 jnelson Exp $
 
-AC_REVISION($Revision: 1.63 $)dnl
+AC_REVISION($Revision: 1.64 $)dnl
 AC_INIT(source/irc.c)
 AC_CONFIG_HEADER(include/defs.h)
 
@@ -499,10 +499,10 @@ case $# in
 esac
 
 sig_name="ZERO $*"
-if test -f include/sig.inc; then
-  /bin/rm -f include/sig.inc
+if test -f sig.inc; then
+  /bin/rm -f sig.inc
 fi
-[echo $sig_name | sed -e 's/$/"};/' -e 's/ /", "/g' -e 's/^/static char *sys_siglist[] = { "/' >> include/sig.inc]
+[echo $sig_name | sed -e 's/$/"};/' -e 's/ /", "/g' -e 's/^/static char *sys_siglist[] = { "/' >> sig.inc]
 fi
 
 dnl ----------------------------------------------------------
@@ -600,6 +600,8 @@ AC_ARG_WITH(ipv6,
 	if test "x$withval" = "xno" ; then
 		AC_MSG_RESULT(no)
 		AC_DEFINE(DO_NOT_USE_IPV6)
+	else
+		AC_MSG_RESULT(yes)
 	fi
 ],[AC_MSG_RESULT(yes)])
 
@@ -731,11 +733,17 @@ else
 	saved_LIBS="$LIBS"
 	saved_CFLAGS="$CFLAGS"
 
-	# First just try to see if it exists in the default location
-	LIBS="$saved_LIBS -liconv"
-	CFLAGS="$saved_CFLAGS"
+	# First try to see if it's in libc
 	AC_TRY_LINK([#include <iconv.h>],
 		[iconv_open(0, 0);], have_iconv="yes")
+
+	# If it's not in libc, look in -liconv
+	if test -z "$have_iconv" ; then
+	   LIBS="$saved_LIBS -liconv"
+	   CFLAGS="$saved_CFLAGS"
+	   AC_TRY_LINK([#include <iconv.h>],
+		[iconv_open(0, 0);], have_iconv="yes")
+	fi
 
 	# Otherwise, go hunting for it.
 	if test -z "$have_iconv" ; then
@@ -904,7 +912,7 @@ dnl
 dnl set some last minute sanity defaults
 dnl
 
-if test -z "$CFLAGS"; then CFLAGS=-g -O; fi
+if test -z "$CFLAGS"; then CFLAGS="-g -O"; fi
 if test -z "$LDFLAGS"; then LDFLAGS= ; fi
 if test -z "$PERLDOTOH"; then PERLDOTOH= ; fi
 if test -z "$TCLDOTOH"; then TCLDOTOH= ; fi
@@ -989,6 +997,11 @@ AC_SUBST(program_prefix)
 AC_SUBST(mandir)
 
 AC_OUTPUT(Makefile source/Makefile source/info.c.sh)
+
+dnl ---- BLAH BLAH BLAH ---
+if test -f sig.inc ; then
+    mv sig.inc include/
+fi
 
 
 dnl ----------------------------------------------------------

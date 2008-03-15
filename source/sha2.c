@@ -29,7 +29,7 @@
  * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
  *
- * $Id: sha2.c,v 1.5 2007/04/12 03:24:14 jnelson Exp $
+ * $Id: sha2.c,v 1.6 2008/03/15 20:52:57 jnelson Exp $
  */
 #include "irc.h"
 #include "ircaux.h"
@@ -88,6 +88,13 @@ typedef struct _SHA256_CTX {
  * <machine/endian.h> where the appropriate definitions are actually
  * made).
  */
+/* Workarounds for HP-UX */
+#if defined(__hpux) && !defined(BYTE_ORDER)                                    
+# define LITTLE_ENDIAN 1234                                                    
+# define BIG_ENDIAN 4321                                                       
+# define BYTE_ORDER BIG_ENDIAN                                                 
+#endif                                                                         
+
 /* Workarounds for solaris */
 #if !defined(BYTE_ORDER) || (BYTE_ORDER != LITTLE_ENDIAN && BYTE_ORDER != BIG_ENDIAN)
 # ifdef _LITTLE_ENDIAN

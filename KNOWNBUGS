@@ -19,6 +19,7 @@ ISSUES OF INTEREST
 * Normalize 'proto', 'type', and 'addrfamily' values with server stuff.
 * There should be an /on send_encrypted_msg, /on send_encrypted_public, etc.
 * You should be able to move lastlog items between windows, split, merge.
+* Shattah would like something like /window omit <regex> to remove stuff.
 * IRCII supports "default" fg/bg colors, which looks intriguing.
 * Larne would like to use 256-color-support for xterm.
   ^[[48;5;<color>m   <color> = 16 + (red * 36) + (green * 6) + blue
@@ -30,13 +31,9 @@ ISSUES OF INTEREST
 * /CTCPs over /DCCs don't match up with their queries very well. (nullie)
 * Larne wants suppression of duplicated lines (like syslog maybe?)
 * Remove all the hardcoded uses of select() so it isn't mandatory.
-* Shattah would like something like /window omit <regex> to remove stuff.
-* Kanan wants support for jabber
 * Zlonix wants a way to be notified when window geometry changes
-* Zlonix would like me to commit his /on signal patch
 * Zlonix would like per-screen toplines
 * How about base85 support for $xform() ?
-* Larne would like to have a shadow display for "ignored" stuff
 * Larne would like a ==== that appears at his last scrollback ponit.
 * Jm thinks regex support for /switch would be nice.
 
@@ -253,7 +250,7 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Added "/userhost -flush", which rms those pending send, not pending recv.
 * Extended "/ison -f" to also flush the queue of ISON's waiting to be sent.
 * Add /on signal (pegasus)
-* Fix build on interix (twincest)
+* Fix build on interix (larne)
 * Fix compile warnings and a c99-ism
 * Fix another panic() causable by /echo. ugh.
 * $write(w-1 ....) is documented to write to the global logfile and now does.

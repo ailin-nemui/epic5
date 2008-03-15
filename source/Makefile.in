@@ -45,7 +45,7 @@ clean::
 
 # wserv
 wserv4: wserv.o ircsig.o gailib.o
-	$(CC) $(CFLAGS) $(LDFLAGS) -o wserv4 wserv.o ircsig.o gailib.o $(LIBS)
+	$(CC) $(CFLAGS) $(LDFLAGS) -o wserv4 wserv.o ircsig.o gailib.o compat.o $(LIBS)
 clean::
 	$(RM) wserv4 wserv.o
 

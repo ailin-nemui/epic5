@@ -279,6 +279,10 @@ typedef int intptr_t;
  * provided in compat.c.  If you have (quad_t), you had better have strtoq(),
  * and you have to have strtol() in any circumstance.
  */
+#if defined(HAVE_INTMAX_NATIVE) && !defined(HAVE_STRTOIMAX)
+# undef HAVE_INTMAX_NATIVE
+#endif
+
 #ifndef HAVE_INTMAX_NATIVE
 # ifdef HAVE_INTMAX_LONG_LONG
 #  define intmax_t long long
@@ -432,5 +436,13 @@ typedef struct addrinfo		AI;
 typedef struct hostent		Hostent;
 typedef struct timeval		Timeval;
 typedef struct stat		Stat;
+
+/*
+ * Interix's getpgrp() does not take an argument, but the configure script
+ * detects it wrongly.
+ */
+#ifdef __INTERIX
+# define GETPGRP_VOID
+#endif
 
 #endif /* __irc_std_h */
