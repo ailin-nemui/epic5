@@ -1,4 +1,4 @@
-/* $EPIC: output.c,v 1.19 2007/06/25 22:09:29 jnelson Exp $ */
+/* $EPIC: output.c,v 1.20 2008/03/29 19:00:16 jnelson Exp $ */
 /*
  * output.c: handles a variety of tasks dealing with the output from the irc
  * program 
@@ -39,7 +39,7 @@
 #include "output.h"
 #include "vars.h"
 #include "input.h"
-#include "term.h"
+#include "termx.h"
 #include "lastlog.h"
 #include "window.h"
 #include "screen.h"

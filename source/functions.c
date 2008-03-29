@@ -1,4 +1,4 @@
-/* $EPIC: functions.c,v 1.267 2008/01/23 04:05:55 jnelson Exp $ */
+/* $EPIC: functions.c,v 1.268 2008/03/29 19:00:16 jnelson Exp $ */
 /*
  * functions.c -- Built-in functions for ircII
  *
@@ -66,7 +66,7 @@
 #include "status.h"
 #include "vars.h"
 #include "window.h"
-#include "term.h"
+#include "termx.h"
 #include "notify.h"
 #include "numbers.h"
 #include "sedcrypt.h"

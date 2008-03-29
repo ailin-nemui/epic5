@@ -1,4 +1,4 @@
-/* $EPIC: screen.c,v 1.132 2008/02/26 03:46:18 jnelson Exp $ */
+/* $EPIC: screen.c,v 1.133 2008/03/29 19:00:16 jnelson Exp $ */
 /*
  * screen.c
  *
@@ -50,7 +50,7 @@
 #include "vars.h"
 #include "server.h"
 #include "list.h"
-#include "term.h"
+#include "termx.h"
 #include "names.h"
 #include "ircaux.h"
 #include "input.h"

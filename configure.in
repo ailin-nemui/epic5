@@ -4,9 +4,9 @@ dnl except those bits attributed otherwise.
 dnl thanks to the screen 3.3 configure.in for giving me examples to
 dnl work from and steal ;)
 dnl
-dnl @(#)$Id: configure.in,v 1.64 2008/03/15 20:52:56 jnelson Exp $
+dnl @(#)$Id: configure.in,v 1.65 2008/03/29 19:00:13 jnelson Exp $
 
-AC_REVISION($Revision: 1.64 $)dnl
+AC_REVISION($Revision: 1.65 $)dnl
 AC_INIT(source/irc.c)
 AC_CONFIG_HEADER(include/defs.h)
 
@@ -283,7 +283,7 @@ dnl
 dnl Checking for headers, functions, and a type declarations
 dnl
 
-AC_CHECK_HEADERS(fcntl.h inttypes.h math.h ndbm.h netdb.h regex.h stddef.h stdint.h sys/fcntl.h sys/file.h sys/filio.h sys/select.h sys/sysctl.h sys/syslimits.h sys/time.h sys/un.h termcap.h,)
+AC_CHECK_HEADERS(fcntl.h inttypes.h math.h ndbm.h netdb.h regex.h stddef.h stdint.h sys/fcntl.h sys/file.h sys/filio.h sys/select.h sys/sysctl.h sys/syslimits.h sys/time.h sys/un.h term.h termcap.h,)
 
 AC_CHECK_FUNC(arc4random, AC_DEFINE(HAVE_ARC4RANDOM),)
 AC_CHECK_FUNC(clock_gettime, AC_DEFINE(HAVE_CLOCK_GETTIME),)
@@ -315,7 +315,6 @@ AC_CHECK_FUNC(strptime, AC_DEFINE(HAVE_STRPTIME),)
 AC_CHECK_FUNC(strtoul, AC_DEFINE(HAVE_STRTOUL),)
 AC_CHECK_FUNC(sysconf, AC_DEFINE(HAVE_SYSCONF),)
 AC_CHECK_FUNC(sysctlbyname, AC_DEFINE(HAVE_SYSCTLBYNAME),)
-AC_CHECK_FUNC(tparm, AC_DEFINE(HAVE_TPARM),)
 AC_CHECK_FUNC(unsetenv, AC_DEFINE(HAVE_UNSETENV),)
 AC_CHECK_FUNC(vsnprintf, AC_DEFINE(HAVE_VSNPRINTF),)
 AC_CHECK_FUNC(finite, AC_DEFINE(HAVE_FINITE),)
@@ -323,6 +322,36 @@ AC_MSG_CHECKING(for isfinite macro in math.h)
 AC_EGREP_HEADER(isfinite, math.h, 
 	AC_DEFINE(HAVE_ISFINITE) AC_MSG_RESULT(yes),
 	AC_MSG_RESULT(no))
+AC_CHECK_FUNC(tparm, AC_DEFINE(HAVE_TPARM),)
+
+dnl -- Oh why does this have to be so painful? --
+AC_MSG_CHECKING(whether term.h works by itself)
+AC_TRY_RUN([
+#include <term.h>
+
+main ()
+{
+       exit(0);
+}
+],
+  AC_MSG_RESULT(yes),
+  AC_MSG_RESULT(no)
+  AC_MSG_CHECKING(whether term.h requires termio.h and curses.h)
+  AC_TRY_RUN([
+#include <termio.h>
+#include <curses.h>
+#include <term.h>
+
+main ()
+{
+       exit(0);
+}
+  ],
+  AC_MSG_RESULT(yes)
+  AC_DEFINE(TERM_H_REQUIRES_CURSES_H),
+  AC_MSG_RESULT(no, ugh)
+  AC_DEFINE(DONT_USE_TERM_H), :), :)
+
 
 AC_HEADER_STDC
 AC_HEADER_TIME

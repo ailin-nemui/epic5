@@ -1,4 +1,4 @@
-/* $EPIC: compat.c,v 1.33 2007/09/20 04:00:10 jnelson Exp $ */
+/* $EPIC: compat.c,v 1.34 2008/03/29 19:00:16 jnelson Exp $ */
 /*
  * Everything that im not directly responsible for I put in here.  Almost
  * all of this stuff is either borrowed from somewhere else (for you poor
@@ -279,7 +279,7 @@ static int termcap;
 
 */
 
-char *tparm(const char *str, ...) {
+char *my_tparm(const char *str, ...) {
 	static char OOPS[] = "OOPS";
 	static char buf[MAX_LINE];
 	register const char *sp;

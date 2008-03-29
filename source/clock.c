@@ -41,7 +41,7 @@
 #include "server.h"
 #include "status.h"
 #include "screen.h"
-#include "term.h"
+#include "termx.h"
 #include "timer.h"
 #include "input.h"
 #include "mail.h"

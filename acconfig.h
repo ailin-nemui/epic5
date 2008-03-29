@@ -1,5 +1,5 @@
 /*
- * @(#)$Id: acconfig.h,v 1.40 2008/01/22 06:44:13 jnelson Exp $
+ * @(#)$Id: acconfig.h,v 1.41 2008/03/29 19:00:13 jnelson Exp $
  */
 
 /*
@@ -407,3 +407,8 @@
 /* Define this if you have strptime() */
 #undef HAVE_STRPTIME
 
+/* Define this if your <term.h> requires <curses.h> (x/open curses) */
+#undef TERM_H_REQUIRES_CURSES_H
+
+/* Define this if your <term.h> can't be used */
+#undef DONT_USE_TERM_H

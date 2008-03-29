@@ -4,6 +4,7 @@ KNOWN ERRATA (eg, bugs, or unresolved requests):
 ------------------------------------------------
 * You should be able to /msg @logfile
 * You can't move a window to a different screen atomically (you must hide it)
+* Jm would like an /xdebug inbound type facility for dcc raw connections.
 
 ISSUES OF INTEREST
 ------------------
@@ -261,3 +262,5 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * This covers for an apparent bug in $shift() which should automatically
   dequote quotes (unfixed).
 * Added USER1 - USER10, OPERWALL and SYSERR levels to the ignore system.
+* Roll forward portability changes from epic4-2.10 (larne)
+* This also includes term.h -> termx.h -- Make sure you rerun configure!

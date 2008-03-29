@@ -7,7 +7,8 @@
 #define __COMPAT_H__
 
 #ifndef HAVE_TPARM
-char *tparm (const char *, ...);
+char *my_tparm (const char *, ...);
+#define tparm my_tparm
 #endif
 
 #ifndef HAVE_STRTOUL
