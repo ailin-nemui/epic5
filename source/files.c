@@ -1,4 +1,4 @@
-/* $EPIC: files.c,v 1.35 2008/02/29 04:14:27 crazyed Exp $ */
+/* $EPIC: files.c,v 1.36 2008/04/04 04:51:05 jnelson Exp $ */
 /*
  * files.c -- allows you to read/write files. Wow.
  *
@@ -447,7 +447,7 @@ static Dbm *	DtopEntry = (Dbm *) 0;
 
 static Dbm *	new_dbm (SDBM *the_db, int type);
 static void	remove_dbm (Dbm *db);
-static int	open_dbm (const char *filename, int readonly, int type);
+static int	open_dbm (const char *filename, int rdonly, int type);
 static Dbm *	lookup_dbm (int refnum);
 static int	close_dbm (int refnum);
 static int	write_to_dbm (int refnum, char *key, char *data, int replace);
@@ -498,13 +498,13 @@ static void	remove_dbm (Dbm *db)
 }
 
 
-static int	open_dbm (const char *filename, int readonly, int type)
+static int	open_dbm (const char *filename, int rdonly, int type)
 {
 	SDBM *db;
 	Dbm *dbm;
 	int	perm;
 
-	if (readonly)
+	if (rdonly)
 		perm = O_RDONLY;
 	else
 		perm = O_RDWR|O_CREAT;

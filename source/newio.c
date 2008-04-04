@@ -1,4 +1,4 @@
-/* $EPIC: newio.c,v 1.67 2007/07/20 22:29:32 jnelson Exp $ */
+/* $EPIC: newio.c,v 1.68 2008/04/04 04:51:05 jnelson Exp $ */
 /*
  * newio.c:  Passive, callback-driven IO handling for sockets-n-stuff.
  *
@@ -769,10 +769,10 @@ static int	unix_accept (int channel, int quiet)
 #endif
 
 	len = sizeof(addr);
-	if ((newfd = Accept(channel, (SA *)&addr, &len)) < 0)
+	if ((newfd = my_accept(channel, (SA *)&addr, &len)) < 0)
 	{
 	    if (!quiet)
-		syserr(CSRV(channel), "unix_accept: Accept(%d) failed", 
+		syserr(CSRV(channel), "unix_accept: my_accept(%d) failed", 
 					": %s", channel, strerror(errno));
 	}
 
@@ -1327,6 +1327,7 @@ static	void *	pthread_io_event (void *vvfd)
 				vfd, strerror(err));
 	kunlock();
 	pthread_exit(NULL);
+	return NULL;
 }
 
 static void	kinit (void)

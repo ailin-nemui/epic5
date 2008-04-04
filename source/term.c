@@ -1,4 +1,4 @@
-/* $EPIC: term.c,v 1.24 2008/03/29 19:00:16 jnelson Exp $ */
+/* $EPIC: term.c,v 1.25 2008/04/04 04:51:05 jnelson Exp $ */
 /*
  * term.c -- termios and (termcap || terminfo) handlers
  *
@@ -129,17 +129,17 @@ static	struct	termios	oldb, newb;
  * and there's no way to cover those two arglists with one prototype, so
  * we're left with these idiot wrapper functions.
  */
-char *tparm1 (const char *str, int l1)
+static char *tparm1 (const char *str, int l1)
 {
 	return tparm(str, l1, 0, 0, 0, 0, 0, 0, 0, 0);
 }
 
-char *tparm2 (const char *str, int l1, int l2)
+static char *tparm2 (const char *str, int l1, int l2)
 {
 	return tparm(str, l1, l2, 0, 0, 0, 0, 0, 0, 0);
 }
 
-char *tparm4 (const char *str, int l1, int l2, int l3, int l4)
+static char *tparm4 (const char *str, int l1, int l2, int l3, int l4)
 {
 	return tparm(str, l1, l2, l3, l4, 0, 0, 0, 0, 0);
 }

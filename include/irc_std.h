@@ -45,7 +45,9 @@
 #include <unistd.h>
 #include <signal.h>
 #include <limits.h>
+#ifdef HAVE_SYS_PARAM_H
 #include <sys/param.h>
+#endif
 #include <errno.h>
 #include <sys/stat.h>
 

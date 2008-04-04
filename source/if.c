@@ -1,4 +1,4 @@
-/* $EPIC: if.c,v 1.38 2008/01/23 04:05:55 jnelson Exp $ */
+/* $EPIC: if.c,v 1.39 2008/04/04 04:51:05 jnelson Exp $ */
 /*
  * if.c: the IF, WHILE, FOREACH, DO, FE, FEC, and FOR commands for IRCII 
  *
@@ -35,7 +35,7 @@
 
 #include "irc.h"
 #include "alias.h"
-#include "if.h"
+#include "ifcmd.h"
 #include "ircaux.h"
 #include "output.h"
 #include "parse.h"

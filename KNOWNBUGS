@@ -5,6 +5,10 @@ KNOWN ERRATA (eg, bugs, or unresolved requests):
 * You should be able to /msg @logfile
 * You can't move a window to a different screen atomically (you must hide it)
 * Jm would like an /xdebug inbound type facility for dcc raw connections.
+* Howl would like to be able to shutdown ruby and restart it again.
+<howl> It seems to properly return ERRORs. But this warning, I think, was
++output to stdout, and broke the statusline. 
+<howl> /ruby {EPIC.echo EPIC.expr "S"} 
 
 ISSUES OF INTEREST
 ------------------
@@ -264,3 +268,15 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Added USER1 - USER10, OPERWALL and SYSERR levels to the ignore system.
 * Roll forward portability changes from epic4-2.10 (larne)
 * This also includes term.h -> termx.h -- Make sure you rerun configure!
+* Roll in a bunch of changes from larne to make epic5 more vms-friendly
+* Rename if.h -> ifcmd.h  (larne) -- Make sure you rerun configure!
+* Run make depend to pick up name change of if.h
+* Check for <sys/param.h> in configure (larne)
+* Extern funcs are case insensitive in strict c90, fix (larne)
+* Rename options -> options.h since vms requires a dot in filename (larne)
+* Change "readonly" -> "rdonly" since "readonly" is a symbol in vms. (larne)
+* Pull in "compat.h" for gailib.c and glob.c (larne)
+* Set stdout to be explciitly line buffered at startup (larne)
+* Returning a value from void functino forbidden by strict c90. fix (larne)
+* Fix some compiler warnings that were lying around.
+* There are more changes forthcoming, these were the easy ones.

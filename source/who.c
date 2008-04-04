@@ -1,4 +1,4 @@
-/* $EPIC: who.c,v 1.61 2008/02/29 04:14:27 crazyed Exp $ */
+/* $EPIC: who.c,v 1.62 2008/04/04 04:51:05 jnelson Exp $ */
 /*
  * who.c -- The WHO queue.  The ISON queue.  The USERHOST queue.
  *
@@ -44,7 +44,7 @@
 #include "output.h"
 #include "numbers.h"
 #include "parse.h"
-#include "if.h"
+#include "ifcmd.h"
 #include "names.h"
 #include "words.h"
 #include "reg.h"
@@ -1160,7 +1160,6 @@ static void ison_wait_pop (int refnum)
 
 	return ison_entry_pop(&(s->ison_wait));
 }
-
 static IsonEntry *ison_queue_top (int refnum)
 {
 	Server *s;
@@ -1499,7 +1498,7 @@ static void userhost_queue_pop (int refnum)
 	if (!(s = get_server(refnum)))
 		return;
 
-	return userhost_entry_pop(&(s->userhost_queue));
+	userhost_entry_pop(&(s->userhost_queue));
 }
 
 static void userhost_wait_pop (int refnum)
@@ -1509,7 +1508,7 @@ static void userhost_wait_pop (int refnum)
 	if (!(s = get_server(refnum)))
 		return;
 
-	return userhost_entry_pop(&(s->userhost_wait));
+	userhost_entry_pop(&(s->userhost_wait));
 }
 
 static UserhostEntry *get_new_userhost_entry (int refnum)

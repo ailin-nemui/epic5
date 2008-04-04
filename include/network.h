@@ -49,22 +49,19 @@
 #define V6ADDR(x) (V6(x)->sin6_addr)
 #define V6PORT(x) (V6(x)->sin6_port)
 
-int	Getaddrinfo	(const char *, const char *, const AI *, AI **);
-void	Freeaddrinfo	(AI *);
-
 int     inet_strton             (const char *, const char *, SA *, int);
 int     inet_ntostr             (SA *, char *, int, char *, int, int);
 int	inet_hntop             (int, const char *, char *, int);
 int	inet_ptohn             (int, const char *, char *, int);
 int	one_to_another         (int, const char *, char *, int);
-int     Accept                  (int, SA *, socklen_t *);
+int     my_accept              (int, SA *, socklen_t *);
 char *	switch_hostname        (const char *);
 int     ip_bindery              (int family, unsigned short port, SS *storage);
 int     client_bind             (SA *, socklen_t);
 int     client_connect          (SA *, socklen_t, SA *, socklen_t);
 int     inet_vhostsockaddr 	(int, int, const char *, SS *, socklen_t *);
-int	Getaddrinfo		(const char *, const char *, const AI *, AI **);
-void	Freeaddrinfo		(AI *);
+int	my_getaddrinfo		(const char *, const char *, const AI *, AI **);
+void	my_freeaddrinfo		(AI *);
 pid_t	async_getaddrinfo	(const char *, const char *, const AI *, int);
 void	marshall_getaddrinfo	(int, AI *results);
 void	unmarshall_getaddrinfo	(AI *results);

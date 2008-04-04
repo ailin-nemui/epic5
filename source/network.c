@@ -1,4 +1,4 @@
-/* $EPIC: network.c,v 1.81 2007/08/23 03:56:36 jnelson Exp $ */
+/* $EPIC: network.c,v 1.82 2008/04/04 04:51:05 jnelson Exp $ */
 /*
  * network.c -- handles stuff dealing with connecting and name resolving
  *
@@ -339,9 +339,9 @@ int	inet_vhostsockaddr (int family, int port, const char *wanthost, SS *storage,
 		p = p_port;
 	}
 
-	if ((err = Getaddrinfo(lhn, p, &hints, &res)))
+	if ((err = my_getaddrinfo(lhn, p, &hints, &res)))
 	{
-		syserr(-1, "inet_vhostsockaddr: Getaddrinfo(%s,%s) failed: %s", 
+		syserr(-1, "inet_vhostsockaddr: my_getaddrinfo(%s,%s) failed: %s", 
 				lhn, p, gai_strerror(err));
 		return -1;
 	}
@@ -394,9 +394,9 @@ int	inet_strton (const char *host, const char *port, SA *storage, int flags)
 		hints.ai_socktype = SOCK_STREAM;
 		hints.ai_protocol = 0;
 
-		if ((retval = Getaddrinfo(host, port, &hints, &results))) 
+		if ((retval = my_getaddrinfo(host, port, &hints, &results))) 
 		{
-			syserr(-1, "inet_strton: Getaddrinfo(%s,%s) failed: %s", 
+			syserr(-1, "inet_strton: my_getaddrinfo(%s,%s) failed: %s", 
 					host, port, gai_strerror(retval));
 			return -1;
 		}
@@ -404,7 +404,7 @@ int	inet_strton (const char *host, const char *port, SA *storage, int flags)
 		/* memcpy can bite me. */
 		memcpy(storage, results->ai_addr, results->ai_addrlen);
 
-		Freeaddrinfo(results);
+		my_freeaddrinfo(results);
 		return 0;
 	}
 }
@@ -622,13 +622,14 @@ int	set_blocking (int fd)
  * has been closed in the interim.  This wrapper for accept() attempts to
  * defeat this by making the accept() call nonblocking.
  */
-int	Accept (int s, SA *addr, socklen_t *addrlen)
+int	my_accept (int s, SA *addr, socklen_t *addrlen)
 {
 	int	retval;
 
 	set_non_blocking(s);
 	if ((retval = accept(s, addr, addrlen)) < 0)
-		syserr(-1, "Accept: accept(%d) failed: %s", s, strerror(errno));
+		syserr(-1, "my_accept: accept(%d) failed: %s", 
+				s, strerror(errno));
 	set_blocking(s);
 	set_blocking(retval);		/* Just in case */
 	return retval;
@@ -654,7 +655,7 @@ static int Connect (int fd, SA *addr)
  * XXX - Ugh!  Some getaddrinfo()s take AF_UNIX paths as the 'servname'
  * instead of as the 'nodename'.  How heinous!
  */
-int	Getaddrinfo (const char *nodename, const char *servname, const AI *hints, AI **res)
+int	my_getaddrinfo (const char *nodename, const char *servname, const AI *hints, AI **res)
 {
 #ifdef GETADDRINFO_DOES_NOT_DO_AF_UNIX
 	int	do_af_unix = 0;
@@ -707,7 +708,7 @@ int	Getaddrinfo (const char *nodename, const char *servname, const AI *hints, AI
 		return getaddrinfo(nodename, servname, hints, res);
 }
 
-void	Freeaddrinfo (AI *ai)
+void	my_freeaddrinfo (AI *ai)
 {
 #ifdef GETADDRINFO_DOES_NOT_DO_AF_UNIX
 	if (ai->ai_family == AF_UNIX)
@@ -829,7 +830,7 @@ pid_t	async_getaddrinfo (const char *nodename, const char *servname, const AI *h
 	}
 #endif
 
-        if ((err = Getaddrinfo(nodename, servname, hints, &results)))
+        if ((err = my_getaddrinfo(nodename, servname, hints, &results)))
         {
 		err = -abs(err);		/* Always a negative number */
 		write(fd, &err, sizeof(err));
@@ -854,7 +855,7 @@ pid_t	async_getaddrinfo (const char *nodename, const char *servname, const AI *h
         }
 
         marshall_getaddrinfo(fd, results);
-        Freeaddrinfo(results);
+        my_freeaddrinfo(results);
         close(fd);
 #ifdef ASYNC_DNS
 	exit(0);

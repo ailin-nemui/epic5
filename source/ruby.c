@@ -1,4 +1,4 @@
-/* $EPIC: ruby.c,v 1.8 2007/03/27 00:20:53 jnelson Exp $ */
+/* $EPIC: ruby.c,v 1.9 2008/04/04 04:51:05 jnelson Exp $ */
 /*
  * ruby.c -- Calling RUBY from epic.
  *
@@ -38,7 +38,7 @@
 #include "commands.h"
 #include "functions.h"
 #include "output.h"
-#include "if.h"
+#include "ifcmd.h"
 #include "extlang.h"
 #include <ruby.h>
 

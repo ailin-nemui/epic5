@@ -1,4 +1,4 @@
-/* $EPIC: vars.c,v 1.102 2008/03/29 19:00:16 jnelson Exp $ */
+/* $EPIC: vars.c,v 1.103 2008/04/04 04:51:05 jnelson Exp $ */
 /*
  * vars.c: All the dealing of the irc variables are handled here. 
  *
@@ -60,7 +60,7 @@
 #include "mail.h"
 #include "reg.h"
 #include "commands.h"
-#include "if.h"
+#include "ifcmd.h"
 
 /*
  * The VIF_* macros stand for "(V)ariable.(i)nt_(f)lags", and have been

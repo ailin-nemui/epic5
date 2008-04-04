@@ -1,4 +1,4 @@
-/* $EPIC: glob.c,v 1.12 2007/07/20 22:29:32 jnelson Exp $ */
+/* $EPIC: glob.c,v 1.13 2008/04/04 04:51:05 jnelson Exp $ */
 #include "config.h"
 #ifdef NEED_GLOB
 
@@ -63,7 +63,9 @@
  *	Number of matches in the current invocation of glob.
  */
 
+#ifdef HAVE_SYS_PARAM_H
 #include <sys/param.h>
+#endif
 #include <sys/stat.h>
 #include <ctype.h>
 #include <dirent.h>
@@ -75,6 +77,7 @@
 #include <string.h>
 #include <unistd.h>
 #include "irc.h"
+#include "compat.h"
 #ifndef MAXPATHLEN
 # ifndef PATHSIZE
 #  define MAXPATHLEN 1024

@@ -1,4 +1,4 @@
-/* $EPIC: hook.c,v 1.79 2008/02/26 03:46:18 jnelson Exp $ */
+/* $EPIC: hook.c,v 1.80 2008/04/04 04:51:05 jnelson Exp $ */
 /*
  * hook.c: Does those naughty hook functions. 
  *
@@ -42,7 +42,7 @@
 #include "window.h"
 #include "output.h"
 #include "commands.h"
-#include "if.h"
+#include "ifcmd.h"
 #include "stack.h"
 #include "reg.h"
 #include "functions.h"

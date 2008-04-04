@@ -28,6 +28,7 @@
  */
 #include "irc_std.h"
 #include "gailib.h"
+#include "compat.h"
 
 #undef INET6
 #ifndef INET6

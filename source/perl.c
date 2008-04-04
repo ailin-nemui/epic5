@@ -1,4 +1,4 @@
-/* $EPIC: perl.c,v 1.18 2007/05/25 16:47:48 jnelson Exp $ */
+/* $EPIC: perl.c,v 1.19 2008/04/04 04:51:05 jnelson Exp $ */
 /*
  * perl.c -- The perl interfacing routines.
  *
@@ -38,7 +38,7 @@
 #include "commands.h"
 #include "functions.h"
 #include "output.h"
-#include "if.h"
+#include "ifcmd.h"
 #include "extlang.h"
 #include <EXTERN.h>
 #include <perl.h>

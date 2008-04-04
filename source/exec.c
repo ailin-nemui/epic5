@@ -1,4 +1,4 @@
-/* $EPIC: exec.c,v 1.42 2008/01/22 04:03:40 jnelson Exp $ */
+/* $EPIC: exec.c,v 1.43 2008/04/04 04:51:05 jnelson Exp $ */
 /*
  * exec.c: handles exec'd process for IRCII 
  *
@@ -49,7 +49,7 @@
 #include "output.h"
 #include "parse.h"
 #include "newio.h"
-#include "if.h"
+#include "ifcmd.h"
 
 #include <sys/wait.h>
 #include <sys/ioctl.h>
