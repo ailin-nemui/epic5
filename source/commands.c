@@ -1,4 +1,4 @@
-/* $EPIC: commands.c,v 1.178 2008/04/04 04:51:05 jnelson Exp $ */
+/* $EPIC: commands.c,v 1.179 2008/04/05 00:20:38 jnelson Exp $ */
 /*
  * commands.c -- Stuff needed to execute commands in ircII.
  *		 Includes the bulk of the built in commands for ircII.
@@ -3813,7 +3813,9 @@ BUILT_IN_COMMAND(allocdumpcmd)
 
 BUILT_IN_COMMAND(botmodecmd)
 {
-#ifndef NO_BOTS
+#if defined(NO_BOTS) || defined(NO_JOB_CONTROL)
+	yell("This client was configured not to allow bots.  Bummer.");
+#else
 	if (dumb_mode) {
 		use_input = 0;
 		background = 1;
@@ -3825,8 +3827,6 @@ BUILT_IN_COMMAND(botmodecmd)
 	} else {
 		say("Bot mode can only be entered from Dumb mode.");
 	}
-#else
-	yell("This client was configured not to allow bots.  Bummer.");
 #endif
 }
 

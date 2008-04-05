@@ -2,16 +2,16 @@ EPIC5 Projects, Bugs, and other Errata:
 
 KNOWN ERRATA (eg, bugs, or unresolved requests):
 ------------------------------------------------
-* You should be able to /msg @logfile
-* You can't move a window to a different screen atomically (you must hide it)
-* Jm would like an /xdebug inbound type facility for dcc raw connections.
-* Howl would like to be able to shutdown ruby and restart it again.
-<howl> It seems to properly return ERRORs. But this warning, I think, was
-+output to stdout, and broke the statusline. 
-<howl> /ruby {EPIC.echo EPIC.expr "S"} 
+* Xavier says you should be able to /ignore #chan ACTIONS
+* Configure should support --without-wserv and/or auto-grok job control.
 
 ISSUES OF INTEREST
 ------------------
+* Jm would like an /xdebug inbound type facility for dcc raw connections.
+* You should be able to /msg @logfile
+* You can't move a window to a different screen atomically (you must hide it)
+* Howl would like to shutdown/restart ruby, and trap its warnings:
+   /ruby {EPIC.echo EPIC.expr "S"}
 * Krisp wants a log that only logs what is not logged somewhere else.
 * Howl wants a temporary hold mode that expires when you reach bottom.
 * Pegasus wants a way to send italics (^I)
@@ -280,3 +280,6 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Returning a value from void functino forbidden by strict c90. fix (larne)
 * Fix some compiler warnings that were lying around.
 * There are more changes forthcoming, these were the easy ones.
+* Phase two of larne's patch is to isolate features that require job control
+* You can #define NO_JOB_CONTROL to turn off fork/exec type stuff.
+* Soon, the configure script will auto-grok this.

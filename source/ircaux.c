@@ -1,4 +1,4 @@
-/* $EPIC: ircaux.c,v 1.194 2008/04/04 04:51:05 jnelson Exp $ */
+/* $EPIC: ircaux.c,v 1.195 2008/04/05 00:20:38 jnelson Exp $ */
 /*
  * ircaux.c: some extra routines... not specific to irc... that I needed 
  *
@@ -1325,8 +1325,12 @@ int 	end_strcmp (const char *val1, const char *val2, size_t bytes)
  *
  * Special Note: stdin and stdout are not expected to be textual.
  */
-char*	exec_pipe (const char *executable, char *input, size_t *len, char * const *args)
+char *	exec_pipe (const char *executable, char *input, size_t *len, char * const *args)
 {
+#ifdef NO_JOB_CONTROL
+	yell("Your system does not support job control");
+	return NULL;
+#else
 	int 	pipe0[2] = {-1, -1};
 	int 	pipe1[2] = {-1, -1};
 	pid_t	pid;
@@ -1414,6 +1418,7 @@ char*	exec_pipe (const char *executable, char *input, size_t *len, char * const 
 	}
 	*len = rdpos;
 	return ret;
+#endif
 }
 
 /*
@@ -1423,6 +1428,10 @@ char*	exec_pipe (const char *executable, char *input, size_t *len, char * const 
  */
 FILE **	open_exec (const char *executable, char * const *args)
 {
+#ifdef NO_JOB_CONTROL
+	yell("Your system does not support job control");
+	return NULL;
+#else
 static	FILE *	file_pointers[3];
 	int 	pipe0[2] = {-1, -1};
 	int 	pipe1[2] = {-1, -1};
@@ -1503,10 +1512,15 @@ static	FILE *	file_pointers[3];
 		}
 	}
 	return file_pointers;
+#endif
 }
 
 static struct epic_loadfile *	open_compression (char *executable, char *filename)
 {
+#ifdef NO_JOB_CONTROL
+	yell("Your system does not support job control");
+	return NULL;
+#else
 	struct epic_loadfile *	elf;
 	int 	pipes[2] = {-1, -1};
 
@@ -1561,6 +1575,7 @@ static struct epic_loadfile *	open_compression (char *executable, char *filename
 		}
 	}
 	return elf;
+#endif
 }
 
 /*

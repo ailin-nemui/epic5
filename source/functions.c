@@ -1,4 +1,4 @@
-/* $EPIC: functions.c,v 1.269 2008/04/04 04:51:05 jnelson Exp $ */
+/* $EPIC: functions.c,v 1.270 2008/04/05 00:20:38 jnelson Exp $ */
 /*
  * functions.c -- Built-in functions for ircII
  *
@@ -6213,36 +6213,18 @@ BUILT_IN_FUNCTION(function_encryptparm, input)
 	RETURN_MSTR(ret);
 }
 
-#if 0
-BUILT_IN_FUNCTION(function_sedcrypt, input)
-{
-	Crypt	*key;
-	int	flag;
-	char	*from;
-       	char	*ret = NULL;
-
-	GET_INT_ARG(flag, input);
-	GET_FUNC_ARG(from, input);
-
-	if ((key = is_crypted(from, from_server, CTCP_SED)))
-	{
-		if (flag == 1)
-			ret = crypt_msg(input, key);
-		else if (flag == 0)
-			ret = decrypt_msg(input, key);
-		else
-			RETURN_EMPTY;
-	}
-
-	RETURN_STR(ret);
-}
-#endif
 BUILT_IN_FUNCTION(function_serverctl, input)
 {
 	return serverctl(input);
 }
 
 
+#ifdef NO_JOB_CONTROL
+BUILT_IN_FUNCTION(function_killpid, input)
+{
+	RETURN_EMPTY;
+}
+#else
 /* Must include this if we use sys_siglist. */
 #ifndef SYS_SIGLIST_DECLARED
 #include "sig.inc"
@@ -6286,6 +6268,7 @@ do_kill:
 
 	RETURN_INT(retval);
 }
+#endif
 
 BUILT_IN_FUNCTION(function_bindctl, input)
 {

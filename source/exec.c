@@ -1,4 +1,4 @@
-/* $EPIC: exec.c,v 1.43 2008/04/04 04:51:05 jnelson Exp $ */
+/* $EPIC: exec.c,v 1.44 2008/04/05 00:20:38 jnelson Exp $ */
 /*
  * exec.c: handles exec'd process for IRCII 
  *
@@ -50,6 +50,26 @@
 #include "parse.h"
 #include "newio.h"
 #include "ifcmd.h"
+
+#ifdef NO_JOB_CONTROL
+BUILT_IN_COMMAND(execcmd)
+{ 
+	say("Your system does not support job control, sorry.");
+	return; 
+}
+int	get_child_exit (pid_t x)			{ return -1; }
+void	clean_up_processes (void)			{ return; }
+int	text_to_process (int x, const char *y, int z) 	
+{ 
+	say("Cannot send text to process without job control, sorry.");
+	return 1; 
+}
+void	exec_server_delete (int x)			{ return; }
+void	add_process_wait (int x, const char *y)		{ return; }
+int	get_process_index (char **x)			{ return -1; }
+int	is_valid_process (const char *x)		{ return -1; }
+int	process_is_running (char *x)			{ return 0; }
+#else
 
 #include <sys/wait.h>
 #include <sys/ioctl.h>
@@ -1407,3 +1427,5 @@ int		process_is_running (char *arg)
 	else
 		return 1;
 }
+
+#endif

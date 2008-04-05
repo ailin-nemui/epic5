@@ -1,4 +1,4 @@
-/* $EPIC: screen.c,v 1.133 2008/03/29 19:00:16 jnelson Exp $ */
+/* $EPIC: screen.c,v 1.134 2008/04/05 00:20:38 jnelson Exp $ */
 /*
  * screen.c
  *
@@ -2725,6 +2725,10 @@ void	create_new_screen (void)
 #define ST_XTERM        1
 Window	*create_additional_screen (void)
 {
+#ifdef NO_JOB_CONTROL
+	yell("Your system doesn't support job control, sorry.");
+	return NULL;
+#else
         Window  	*win;
         Screen  	*oldscreen, *new_s;
         char    	*displayvar,
@@ -2972,6 +2976,7 @@ Window	*create_additional_screen (void)
 	    }
 	}
 	return NULL;
+#endif
 }
 
 /* Old screens never die. They just fade away. */
