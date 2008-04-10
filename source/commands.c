@@ -1,4 +1,4 @@
-/* $EPIC: commands.c,v 1.179 2008/04/05 00:20:38 jnelson Exp $ */
+/* $EPIC: commands.c,v 1.180 2008/04/10 23:48:21 jnelson Exp $ */
 /*
  * commands.c -- Stuff needed to execute commands in ircII.
  *		 Includes the bulk of the built in commands for ircII.
@@ -1014,6 +1014,8 @@ BUILT_IN_COMMAND(xechocmd)
 
 		case 'R':   /* RAW OUTPUT TO TERMINAL */
 		{
+			Window *wx;
+
 			next_arg(args, &args);
 			/*
 			 * Nuke reminded me of this.  Just because to_window
@@ -1022,8 +1024,9 @@ BUILT_IN_COMMAND(xechocmd)
 			 * So we have to make sure that output_screen is
 			 * to_window->screen.
 			 */
-			if (to_window_refnum != -1)
-				output_screen = get_window_by_refnum(to_window_refnum)->screen;
+			if (to_window_refnum != -1 && 
+			    ((wx = get_window_by_refnum(to_window_refnum))))
+				output_screen = wx->screen;
 			else
 				output_screen = current_window->screen;
 			tputs_x(args);

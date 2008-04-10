@@ -3,6 +3,7 @@ EPIC5 Projects, Bugs, and other Errata:
 KNOWN ERRATA (eg, bugs, or unresolved requests):
 ------------------------------------------------
 * Xavier says you should be able to /ignore #chan ACTIONS
+* Should be able to /ignore a server, for undernet
 * Configure should support --without-wserv and/or auto-grok job control.
 
 ISSUES OF INTEREST
