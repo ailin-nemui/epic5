@@ -278,9 +278,10 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Change "readonly" -> "rdonly" since "readonly" is a symbol in vms. (larne)
 * Pull in "compat.h" for gailib.c and glob.c (larne)
 * Set stdout to be explciitly line buffered at startup (larne)
-* Returning a value from void functino forbidden by strict c90. fix (larne)
+* Returning a value from void function forbidden by strict c90. fix (larne)
 * Fix some compiler warnings that were lying around.
 * There are more changes forthcoming, these were the easy ones.
 * Phase two of larne's patch is to isolate features that require job control
 * You can #define NO_JOB_CONTROL to turn off fork/exec type stuff.
 * Soon, the configure script will auto-grok this.
+* Release EPIC5-0.3.8 (Calumny) (commit 1545)

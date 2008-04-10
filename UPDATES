@@ -1,3 +1,22 @@
+EPIC5-0.3.8
+
+*** News 04/10/2008 -- Added new /on, /ON SIGNAL
+	You can hook signals with /ON SIGNAL
+		$0 - The signal that was caught (a number)
+		$1 - The number of times this signal has been caught
+		     since the last time /ON SIGNAL was thrown
+	Not every signal can be caught, and some signals are dangerous
+	to catch.  For example, no matter what, you can't catch signals
+	9 (KILL) or 13 (PIPE) 15 (TERM).  It's safe to catch 30 (USR1)
+	and 31 (USR2), but everything else is entirely at your own risk.
+	You should /defer anything you do within an /on signal to be safe.
+
+*** News 04/10/2008 -- /USERHOST -FLUSH
+	/USERHOST -FLUSH removes those userhosts which are "pending send"
+	not those which are "pending receive".
+
+EPIC5-0.3.7
+
 EPIC5-0.3.6
 
 *** News 03/10/2008 -- /NOTIFY list now applicable to local server.
