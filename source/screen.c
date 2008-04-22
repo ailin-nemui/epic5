@@ -1,4 +1,4 @@
-/* $EPIC: screen.c,v 1.135 2008/04/22 23:30:22 howl Exp $ */
+/* $EPIC: screen.c,v 1.136 2008/04/22 23:56:01 howl Exp $ */
 /*
  * screen.c
  *
@@ -2355,7 +2355,7 @@ static void 	add_to_window (Window *window, const unsigned char *str)
 			mask_isset(&window->notify_mask, who_level))
 	    {
 		window->notified = 1;
-	    	do_hook(WINDOW_NOTIFIED_LIST, "%u %s", current_window->refnum, level_to_str(who_level));
+	    	do_hook(WINDOW_NOTIFIED_LIST, "%u %s", window->refnum, level_to_str(who_level));
 		if (window->notify_when_hidden)
 			type = "Activity";
 		update_all_status();
