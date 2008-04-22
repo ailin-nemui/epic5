@@ -1,5 +1,13 @@
 EPIC5-0.3.8
 
+*** News 04/23/2008 -- Added new /on, /ON WINDOW_NOTIFIED
+	This is hook is thrown when there's activity in a hidden window
+	that is notified.
+		$0 - The window refnum
+		$1 - The level of the activity.
+	Be careful with this hook, as output defered from it, may
+	wreak havoc. 
+
 *** News 04/10/2008 -- Added new /on, /ON SIGNAL
 	You can hook signals with /ON SIGNAL
 		$0 - The signal that was caught (a number)

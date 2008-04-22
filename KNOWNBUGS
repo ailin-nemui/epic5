@@ -286,3 +286,4 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Soon, the configure script will auto-grok this.
 * Release EPIC5-0.3.8 (Calumny) (commit 1545)
 * Fix signal handling for SIG_IGN and SIG_DFL to fix crash for SIGPIPE.
+* Added /on window_notified. 

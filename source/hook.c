@@ -1,4 +1,4 @@
-/* $EPIC: hook.c,v 1.80 2008/04/04 04:51:05 jnelson Exp $ */
+/* $EPIC: hook.c,v 1.81 2008/04/22 23:30:22 howl Exp $ */
 /*
  * hook.c: Does those naughty hook functions. 
  *
@@ -233,6 +233,7 @@ Hookables hook_function_templates[] =
 	{ "WINDOW_CREATE",	NULL,	1, 	0,	0,	NULL, 0 },
 	{ "WINDOW_BEFOREKILL",	NULL,	1,	0,	0,	NULL, 0 },
 	{ "WINDOW_KILL",	NULL,	2,	0,	0,	NULL, 0 },
+	{ "WINDOW_NOTIFIED",	NULL,	2,	0,	HF_NORECURSE,	NULL, 0 },
 	{ "WINDOW_SERVER",	NULL,	3,	0,	0,	NULL, 0 },
 	{ "YELL",		NULL,	1,	0,	0,	NULL, 0 },
 };
