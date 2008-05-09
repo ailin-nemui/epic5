@@ -5,6 +5,7 @@ KNOWN ERRATA (eg, bugs, or unresolved requests):
 * Xavier says you should be able to /ignore #chan ACTIONS
 * Should be able to /ignore a server, for undernet
 * Configure should support --without-wserv and/or auto-grok job control.
+* Make_window_current should look on main screen for window before panicing.
 
 ISSUES OF INTEREST
 ------------------
@@ -48,7 +49,6 @@ ISSUES OF INTEREST
 
 THE CHANGELOG SINCE THE LAST RELEASE:
 -------------------------------------
-* Input line changes, indicators for text scrolled off the left
 * Change 'wserv4' to 'epic5-wserv4' to avoid conflicting with epic4.
 * Fix output of /disconnect when disconnected to be less confusing.
 * Some changes to tabkey.jm to see if we can get it working.
@@ -288,3 +288,20 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Release EPIC5-0.3.8 (Calumny) (commit 1545)
 * Fix signal handling for SIG_IGN and SIG_DFL to fix crash for SIGPIPE.
 * Added /on window_notified. 
+* Input line changes, indicators for text scrolled off the left
+* All of the following is from fusion (alex)
+* Add /set default_input_indicator_left|right -- see UPDATES
+* Add left and right indicator vars to struct screen, using the above
+* Revamp update_input() to always display the input prompt
+* When you slide off either edge of the input line, it still side scrolls
+* There is an "indicator" in the direction of where there is more text.
+* Re-indent stuff while here
+* Revamp input_move_cursor(), adding a "refresh" arg for physical cursor move
+* Check side-scrolling in input_move_cursor() instead of update_input()
+* This means moving the cursor w/o using input_move_cursor() is verboten!!
+* Revamp the notion of logical/physical cursor; physical cursor is calced now.
+* Revamp the keybindings that move the cursor for the new api semantics.
+* End of stuff contributed by fusion (alex)
+* Fix hitting ^C twice so it sends SIGUR2 instead of SIGLARLM
+* This is because we don't use alarm() any more, and ^C^C stops infinite loop
+* Fix some compiler nits that larne found on strict compilers.

@@ -1,9 +1,42 @@
 EPIC5-0.3.8
 
-*** News 05/09/2008 -- Revamped input line..
-	Added set INPUT_INDICATOR_LEFT and INPUT_INDICATOR_RIGHT for
-        text scrolled past the left side of the screen. The right side
-        isn't working at the moment..
+*** News 05/09/2008 -- Hitting ^C twice interrupts infinite loop
+	Historically, if you hit ^C twice in a row and the client is stuck,
+	it will send itself a SIGARLM.  In the past, this was because the
+	client used blocking connect()s and stuff, and guarded them with
+	alarm(3)s, so sending SIGARLM would cause an early interruption to 
+	a blocking connect.
+
+	Anyways, since we don't have any blocking stuff any more, this is no
+	longer useful for its intended purpose.  You've been able to send the
+	client a SIGUSR2 to raise a 'system exception" which attempts to 
+	gracefully end an infinite loop in your script.  Hitting ^C twice
+	in a row on a stuck client will send a SIGUSR2 which will cause an
+	infinite loop in your script to terminate.
+
+*** News 05/09/2008 -- New /SETs: INPUT_INDICATOR_LEFT, INPUT_INDICATOR_RIGHT
+	This was written and contributed by fusion.  Thanks!
+
+	The input line has been changed so the input prompt is always visible.
+	When you reach the right or left side of the display, the input line 
+	will still scroll side-to-side, but the input prompt will always be 
+	visible, not just when you're at the start of the input line.
+
+	Because it would otherwise not be obvious whether you are at the 
+	beginning of the input line or not, there have been two new /set's
+	added:
+		/set input_indicator_left +
+		/set input_indicator_right  +
+
+	When there is more stuff on the input line than what is currently
+	visible, if the extra stuff is off to the left, the first /set is
+	used to tell you there is more in that direction.  If the extra 
+	stuff is off to the right, the second set is used to tell you there
+	is more in that direction.
+
+	As of the time of this writing, the support for the second /set isn't
+	ready yet, so there is no visual clue if you are at the end of the
+	input line or not.  Keep watching for more info about this.
 
 *** News 04/23/2008 -- Added new /on, /ON WINDOW_NOTIFIED
 	This is hook is thrown when there's activity in a hidden window
