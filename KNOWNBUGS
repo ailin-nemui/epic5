@@ -48,6 +48,7 @@ ISSUES OF INTEREST
 
 THE CHANGELOG SINCE THE LAST RELEASE:
 -------------------------------------
+* Input line changes, indicators for text scrolled off the left
 * Change 'wserv4' to 'epic5-wserv4' to avoid conflicting with epic4.
 * Fix output of /disconnect when disconnected to be less confusing.
 * Some changes to tabkey.jm to see if we can get it working.

@@ -1,4 +1,4 @@
-/* $EPIC: screen.c,v 1.136 2008/04/22 23:56:01 howl Exp $ */
+/* $EPIC: screen.c,v 1.137 2008/05/09 16:26:34 alex Exp $ */
 /*
  * screen.c
  *
@@ -2709,7 +2709,11 @@ void	create_new_screen (void)
 	new_s->input_visible = 0;
 	new_s->input_start_zone = 0;
 	new_s->input_prompt = malloc_strdup(empty_string);
-	new_s->input_prompt_len = 0;
+        new_s->input_prompt_len = 0;
+        new_s->ind_left = malloc_strdup(empty_string);
+        new_s->ind_left_len = 0;
+        new_s->ind_right = malloc_strdup(empty_string);
+        new_s->ind_right_len = 0;
 	new_s->input_line = 23;
 
 	last_input_screen = new_s;

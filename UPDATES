@@ -1,5 +1,10 @@
 EPIC5-0.3.8
 
+*** News 05/09/2008 -- Revamped input line..
+	Added set INPUT_INDICATOR_LEFT and INPUT_INDICATOR_RIGHT for
+        text scrolled past the left side of the screen. The right side
+        isn't working at the moment..
+
 *** News 04/23/2008 -- Added new /on, /ON WINDOW_NOTIFIED
 	This is hook is thrown when there's activity in a hidden window
 	that is notified.

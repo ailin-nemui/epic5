@@ -15,7 +15,7 @@
 	char *	get_input 			(void);
 	char *	get_input_prompt 		(void);
 	void	init_input 			(void);
-	void	input_move_cursor 		(int);
+	void	input_move_cursor 		(int, int);
 	char	input_pause 			(char *);
 	void	set_input 			(const char *);
 	void	set_input_prompt 		(void *);

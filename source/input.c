@@ -1,4 +1,4 @@
-/* $EPIC: input.c,v 1.54 2008/03/29 19:00:16 jnelson Exp $ */
+/* $EPIC: input.c,v 1.55 2008/05/09 16:26:34 alex Exp $ */
 /*
  * input.c: does the actual input line stuff... keeps the appropriate stuff
  * on the input line, handles insert/delete of characters/words... the whole
@@ -177,22 +177,30 @@ void	cut_input_line (InputItem *first, InputItem *last)
 
 #define current_screen		last_input_screen
 #define INPUT_BUFFER 		current_screen->input_buffer
-#define PHYSICAL_CURSOR 	current_screen->input_cursor
-#define LOGICAL_CURSOR 		current_screen->buffer_pos
-#define CURSOR_RIGHT		LOGICAL_CURSOR++
-#define CURSOR_LEFT		LOGICAL_CURSOR--
+
+#define LOGICAL_CURSOR          current_screen->buffer_pos
+#define PHYSICAL_CURSOR         LOGICAL_CURSOR - START + INPUT_PROMPT_LEN
+
+#define CURSOR_RIGHT            LOGICAL_CURSOR++
+#define CURSOR_LEFT             LOGICAL_CURSOR--
+
+#define START                   current_screen->input_visible
+
 #define THIS_CHAR 		INPUT_BUFFER[LOGICAL_CURSOR]
 #define PREV_CHAR 		INPUT_BUFFER[LOGICAL_CURSOR-1]
 #define NEXT_CHAR 		INPUT_BUFFER[LOGICAL_CURSOR+1]
+
 #define ADD_TO_INPUT(x) 	strlcat(INPUT_BUFFER, (x), sizeof INPUT_BUFFER);
-#define INPUT_VISIBLEPOS	current_screen->input_visible
-#define SHOW_PROMPT		INPUT_VISIBLEPOS = 0
-#define SHOWING_PROMPT		(INPUT_VISIBLEPOS == 0)
-#define INPUT_VISIBLE 		INPUT_BUFFER[INPUT_VISIBLEPOS]
-#define ZONE			current_screen->input_zone_len
-#define START_ZONE 		current_screen->input_start_zone
+
 #define INPUT_PROMPT 		current_screen->input_prompt
 #define INPUT_PROMPT_LEN 	current_screen->input_prompt_len
+
+#define IND_LEFT                current_screen->ind_left
+#define IND_LEFT_LEN            current_screen->ind_left_len
+
+#define IND_RIGHT               current_screen->ind_right
+#define IND_RIGHT_LEN           current_screen->ind_right_len
+
 #define INPUT_LINE 		current_screen->input_line
 #define CUT_BUFFER		cut_buffer
 #define SET_CUT_BUFFER(x)	malloc_strcpy((char **)&CUT_BUFFER, x);
@@ -227,7 +235,10 @@ void 	cursor_to_input (void)
 		{
 			output_screen = screen;
 			last_input_screen = screen;
-			term_move_cursor(PHYSICAL_CURSOR, INPUT_LINE);
+			if (START!=0)
+				term_move_cursor(PHYSICAL_CURSOR + IND_LEFT_LEN, INPUT_LINE);
+			else
+				term_move_cursor(PHYSICAL_CURSOR, INPUT_LINE);
 			term_flush();
 			cursor_not_in_display(screen);
 		}
@@ -274,289 +285,229 @@ void	update_input (void *which_screen, int update)
 		return;
 
 	original_update = update;
-  for (ns = screen_list; ns; ns = ns->next)
-  {
-	/* XXXX This is a HIDEOUS abuse of the language, but I don't care! */
-	if (which_screen && (Screen *)which_screen != ns)
-		ns = (Screen *)which_screen;
-
-	if (!ns->alive)
-		continue;	/* It's dead, Jim! */
-
-	last_input_screen = ns;
-	current_window = ns->current_window;
-	update = original_update;
-
-	/*
-	 * Make sure the client thinks the cursor is on the input line.
-	 */
-/*
-	cursor_to_input();
-*/
-
-	/* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
-	/*
-	 * Some updates require us to recalculate the input prompt.
-	 * If the input prompt /has/ changed, then the requested update
-	 * is upgraded to UPDATE_ALL.
-	 *
-	 * CHECK_ZONES updates do not require recalculating the prompt,
-	 * since those operations do not affect the prompt.
-	 */
-
-
-	if (update == UPDATE_JUST_CURSOR || 
-	    update == UPDATE_FROM_CURSOR ||
-	    update == UPDATE_ALL )
+        for (ns = screen_list; ns; ns = ns->next)
 	{
+		/* XXXX This is a HIDEOUS abuse of the language, but I don't care! */
+		if (which_screen && (Screen *)which_screen != ns)
+			ns = (Screen *)which_screen;
+
+		if (!ns->alive)
+			continue;	/* It's dead, Jim! */
+
+		last_input_screen = ns;
+		current_window = ns->current_window;
+		update = original_update;
+
 		/*
-		 * If the current window is query'ing an exec'd process,
-		 * then we just get the current prompt for that process.
-		 * This hardly ever happens, so we malloc() this to make
-		 * the code below much simpler.
+		 * Make sure the client thinks the cursor is on the input line.
 		 */
-		if (last_input_screen->promptlist)
+		/*
+		 cursor_to_input();
+		 */
+
+		if (update == UPDATE_JUST_CURSOR ||
+		    update == UPDATE_FROM_CURSOR ||
+		    update == UPDATE_ALL )
 		{
-			prompt = last_input_screen->promptlist->prompt;
-			do_echo = last_input_screen->promptlist->echo;
-		}
-		else if (is_valid_process(get_target_by_refnum(0)) != -1)
-			prompt = get_prompt_by_refnum(0);
-		else
-			prompt = input_prompt;
+			/*
+			 * If the current window is query'ing an exec'd process,
+			 * then we just get the current prompt for that process.
+			 * This hardly ever happens, so we malloc() this to make
+			 * the code below much simpler.
+			 */
+			if (last_input_screen->promptlist)
+			{
+				prompt = last_input_screen->promptlist->prompt;
+				do_echo = last_input_screen->promptlist->echo;
+			}
+			else if (is_valid_process(get_target_by_refnum(0)) != -1)
+				prompt = get_prompt_by_refnum(0);
+			else
+				prompt = input_prompt;
 
-		ptr_free = expand_alias(prompt, empty_string);
-		ptr = new_normalize_string(ptr_free, 0, display_line_mangler);
-		new_free(&ptr_free);
-
-		/*
-		 * If the prompt has changed, update the screen, and count
-		 * the number of columns the new prompt takes up.  If the
-		 * prompt changes, we have to redraw the entire input line
-		 * from scratch (since stuff probably has moved)
-		 */
-		if (strcmp(ptr, INPUT_PROMPT))
-		{
-			malloc_strcpy((char **)&INPUT_PROMPT, ptr);
-			INPUT_PROMPT_LEN = output_with_count(INPUT_PROMPT, 0,0);
-			update = UPDATE_ALL;
-		}
-
-		new_free(&ptr);
-	}
-
-
-	/* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
-	/*
-	 * 
-	 * HAS THE SCREEN CHANGED SIZE SINCE THE LAST TIME?
-	 *
-	 */
-
-	/*
-	 * If the screen has resized, then we need to re-compute the
-	 * side-to-side scrolling effect.
-	 */
-	if ((last_input_screen->li != last_input_screen->old_li) || 
-	    (last_input_screen->co != last_input_screen->old_co))
-	{
-		/*
-		 * The input line is always the bottom line
-		 */
-		INPUT_LINE = last_input_screen->li - 1;
-
-		/*
-		 * The "zone" is the range in which when you type, the
-		 * input line does not scroll.  It is WIDTH chars in from
-		 * either side of the display.
-		 */
-		ZONE = last_input_screen->co - (WIDTH * 2);
-		if (ZONE < 10)
-			ZONE = 10;		/* Take that! */
-		START_ZONE = -1;		/* Force a full update */
-
-		last_input_screen->old_co = last_input_screen->co;
-		last_input_screen->old_li = last_input_screen->li;
-	}
-
-	/* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
-	/*
-	 * About zones:
-	 * The input line is divided into "zones".  A "zone" is set above,
-	 * and is the width of the screen minus 20 (by default).  The input
-	 * line, as displayed, is therefore composed of the current "zone",
-	 * plus 10 characters from the previous zone, plus 10 characters 
-	 * from the next zone.  When the cursor moves to an adjacent zone,
-	 * (by going into column 9 from the right or left of the edge), the
-	 * input line is redrawn.  There is one catch.  The first "zone"
-	 * includes the first ten characters of the input line.
-	 */
-	old_zone = START_ZONE;
-
-	/*
-	 * The BEGINNING of the current "zone" is a calculated value:
-	 *	The number of characters since the origin of the input buffer
-	 *	is the number of printable chars in the input prompt plus the
-	 *	current position in the input buffer.  We subtract from that
-	 * 	the WIDTH delta to take off the first delta, which doesnt
-	 *	count towards the width of the zone.  Then we divide that by
-	 * 	the size of the zone, to get an integer, then we multiply it
-	 * 	back.  This gives us the first character on the screen.  We
-	 *	add WIDTH to the result in order to get the start of the zone
-	 *	itself.
-	 * The END of the current "zone" is just the beginning plus the width.
-	 * If we have moved to an different "zone" since last time, we want to
-	 * 	completely redraw the input line.
-	 */
-	/* XXX 1 Col per byte assumption */
-	START_ZONE = WIDTH + (((INPUT_PROMPT_LEN + LOGICAL_CURSOR - WIDTH) 
-					/ ZONE) * ZONE);
-
-	if (old_zone != START_ZONE)
-		update = UPDATE_ALL;
-
-	/*
-	 * Now that we know where the "zone" is in the input buffer, we can
-	 * easily calculate where where we want to start displaying stuff
-	 * from the INPUT_BUFFER.  If we're in the first "zone", then we will
-	 * output from the beginning of the buffer.  If we're not in the first
-	 * "zone", then we will begin to output from 10 characters to the
-	 * left of the zone, after adjusting for the length of the prompt.
-	 */
-	if (START_ZONE == WIDTH)
-		SHOW_PROMPT;
-	else {
-	    /* XXX 1 Col per byte assumption */
-	    if ((INPUT_VISIBLEPOS = START_ZONE - WIDTH - INPUT_PROMPT_LEN) < 0)
-		SHOW_PROMPT;
-	}
-
-	/*
-	 * If we're showing the prompt (INPUT_VISIBLEPOS == 0) then
-	 * the physical cursor is the logical cursor adjusted for how
-	 * much room the prompt takes up.
-	 *
-	 * If we're not showing the prompt (INPUT_VISIBLEPOS != 0) then
-	 * the physical cursor is just how far away the logical cursor is
-	 * from the first visible character.
-	 */
-	/* XXX 1 Col per byte assumption */
-	if (SHOWING_PROMPT)
-		PHYSICAL_CURSOR = INPUT_PROMPT_LEN + LOGICAL_CURSOR;
-	else
-		PHYSICAL_CURSOR = LOGICAL_CURSOR - INPUT_VISIBLEPOS;
-
-	/* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
-
-	/*
-	 * If the cursor moved, or if we're supposed to do a full update,
-	 * then redraw the entire input line.
-	 */
-	if (update == UPDATE_ALL)
-	{
-		/*
-		 * Move the cursor to the start of the input line
-		 */
-		term_move_cursor(0, INPUT_LINE);
-
-		/*
-		 * If the input line is NOT empty, and we're starting the
-		 * display at the beginning of the input buffer, then we
-		 * output the prompt first.
-		 */
-		if (SHOWING_PROMPT)
-		{
-			int	old_do_echo;
-
-			/* Forcibly output the prompt */
-			old_do_echo = term_echo(1);
+			ptr_free = expand_alias(prompt, empty_string);
+			ptr = new_normalize_string(ptr_free, 0, display_line_mangler);
+			new_free(&ptr_free);
 
 			/*
-			 * Figure out how many cols we will give to the
-			 * prompt.  If the prompt is too long, we will
-			 * clobber it below.  If the prompt won't fit, then
-			 * we will clobber the whole thing.
+			 * If the prompt has changed, update the screen, and count
+			 * the number of columns the new prompt takes up.  If the
+			 * prompt changes, we have to redraw the entire input line
+			 * from scratch (since stuff probably has moved)
 			 */
-			cols_used = INPUT_PROMPT_LEN;
-			if (cols_used > (last_input_screen->co - WIDTH))
+			if (strcmp(ptr, INPUT_PROMPT))
 			{
-			    cols_used = last_input_screen->co - WIDTH;
-			    if (cols_used < 0)
-				cols_used = 0;
+				malloc_strcpy((char **)&INPUT_PROMPT, ptr);
+				INPUT_PROMPT_LEN = output_with_count(INPUT_PROMPT, 0, 0);
+				update = UPDATE_ALL;
 			}
 
-			/* Only output the prompt if there's room for it. */
-			if (cols_used > 0)
-				output_with_count(INPUT_PROMPT, 0, 1);
+			new_free(&ptr);
 
-			term_echo(old_do_echo);
+                        ptr_free = expand_alias(get_string_var(INPUT_INDICATOR_LEFT_VAR), empty_string);
+                        ptr = new_normalize_string(ptr_free, 0, display_line_mangler);
+                        new_free(&ptr_free);
+
+                        if (strcmp(ptr, IND_LEFT))
+                        {
+                                malloc_strcpy((char **)&IND_LEFT, ptr);
+                                IND_LEFT_LEN = output_with_count(IND_LEFT, 0, 0);
+                                update = UPDATE_ALL;
+                        }
+
+                        new_free(&ptr);
+
+                        /*ptr_free = expand_alias(get_string_var(INPUT_INDICATOR_RIGHT_VAR), empty_string);
+                        ptr = new_normalize_string(ptr_free, 0, display_line_mangler);
+                        new_free(&ptr_free);
+
+                        if (strcmp(ptr, IND_RIGHT))
+                        {
+                                malloc_strcpy((char **)&IND_RIGHT, ptr);
+                                IND_RIGHT_LEN = output_with_count(IND_RIGHT, 0, 0);
+                                update = UPDATE_ALL;
+                        }
+
+                        new_free(&ptr);*/
 		}
-		else
-			cols_used = 0;
+
+
+		/* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
+		/*
+		 *
+		 * HAS THE SCREEN CHANGED SIZE SINCE THE LAST TIME?
+		 *
+		 */
 
 		/*
-		 * Turn the echo back to what it was before,
-		 * and output the rest of the input buffer.
+		 * If the screen has resized, then we need to re-compute the
+		 * side-to-side scrolling effect.
 		 */
-		term_echo(do_echo);
-		safe_puts(&INPUT_VISIBLE, 
-			     last_input_screen->co - cols_used, do_echo);
+		if ((last_input_screen->li != last_input_screen->old_li) ||
+		    (last_input_screen->co != last_input_screen->old_co))
+		{
+			/*
+			 * The input line is always the bottom line
+			 */
+			INPUT_LINE = last_input_screen->li - 1;
+
+			last_input_screen->old_co = last_input_screen->co;
+			last_input_screen->old_li = last_input_screen->li;
+		}
+
+		if (update == UPDATE_ALL)
+		{
+			/*
+			 * Move the cursor to the start of the input line
+			 */
+			term_move_cursor(0, INPUT_LINE);
+
+                        int	old_do_echo;
+
+                        /* Forcibly output the prompt */
+                        old_do_echo = term_echo(1);
+
+                        /*
+                         * Figure out how many cols we will give to the
+                         * prompt.  If the prompt is too long, we will
+                         * clobber it below.  If the prompt won't fit, then
+                         * we will clobber the whole thing.
+                         */
+                        if (START!=0)
+                                cols_used = INPUT_PROMPT_LEN + IND_LEFT_LEN;
+                        else
+                                cols_used = INPUT_PROMPT_LEN;
+
+                        if (cols_used > (last_input_screen->co - WIDTH))
+                        {
+                                cols_used = last_input_screen->co - WIDTH;
+                                if (cols_used < 0)
+                                        cols_used = 0;
+                        }
+
+                        /* Only output the prompt if there's room for it. */
+                        if (cols_used > 0)
+                                output_with_count(INPUT_PROMPT, 0, 1);
+
+                        if (START!=0)
+                                output_with_count(IND_LEFT, 0, 1);
+
+                        term_echo(old_do_echo);
+
+                        /*
+                         * Turn the echo back to what it was before,
+                         * and output the rest of the input buffer.
+                         */
+                        term_echo(do_echo);
+                        safe_puts(&INPUT_BUFFER[START],
+				  last_input_screen->co - cols_used, do_echo);
+
+			/*
+			 * Clear the rest of the input line and reset the cursor
+			 * to the current input position.
+			 */
+			term_clear_to_eol();
+			update = UPDATE_JUST_CURSOR;
+		}
 
 		/*
-		 * Clear the rest of the input line and reset the cursor
-		 * to the current input position.
+		 * If we're just supposed to refresh whats to the right of the
+		 * current logical position...
 		 */
-		term_clear_to_eol();
-		update = UPDATE_JUST_CURSOR;
-	}
+		if (update == UPDATE_FROM_CURSOR)
+		{
+			/*
+			 * Move the cursor to where its supposed to be,
+			 * Figure out how much we can output from here,
+			 * and then output it.
+			 */
+			if (START!=0)
+                                term_move_cursor(PHYSICAL_CURSOR + IND_LEFT_LEN, INPUT_LINE);
+			else
+				term_move_cursor(PHYSICAL_CURSOR, INPUT_LINE);
+			/* XXX 1 Col per byte assumption */
 
-	/*
-	 * If we're just supposed to refresh whats to the right of the
-	 * current logical position...
-	 */
-	if (update == UPDATE_FROM_CURSOR)
-	{
+                        /* don't ask me why these needed to be split up */
+			max = last_input_screen->co;
+                        max -= PHYSICAL_CURSOR;
+
+			if (START!=0)
+				max -= IND_LEFT_LEN;
+
+			term_echo(do_echo);
+			safe_puts(&(THIS_CHAR), max, do_echo);
+			term_clear_to_eol();
+			update = UPDATE_JUST_CURSOR;
+		}
+
 		/*
-		 * Move the cursor to where its supposed to be,
-		 * Figure out how much we can output from here,
-		 * and then output it.
+		 * If we're just supposed to move the cursor back to the input
+		 * line, then go ahead and do that.
 		 */
-		term_move_cursor(PHYSICAL_CURSOR, INPUT_LINE);
-		/* XXX 1 Col per byte assumption */
-		max = last_input_screen->co - (LOGICAL_CURSOR - INPUT_VISIBLEPOS);
-		if (SHOWING_PROMPT)
-			max -= INPUT_PROMPT_LEN;
+		if (update == UPDATE_JUST_CURSOR)
+		{
+                        if (START!=0)
+				term_move_cursor(PHYSICAL_CURSOR + IND_LEFT_LEN, INPUT_LINE);
+			else
+                                term_move_cursor(PHYSICAL_CURSOR, INPUT_LINE);
+			cursor_not_in_display(last_input_screen);
+			update = 0;
+		}
 
-		term_echo(do_echo);
-		safe_puts(&(THIS_CHAR), max, do_echo);
-		term_clear_to_eol();
-		update = UPDATE_JUST_CURSOR;
+		/*
+		 * Turn the terminal echo back on, and flush all of the output
+		 * we may have done here.
+		 */
+		term_echo(1);
+		term_flush();
+
+		/* XXXX HIDEOUS! Ick! Eww! */
+		if (which_screen && (Screen *)which_screen == ns)
+			break;
 	}
 
-	/*
-	 * If we're just supposed to move the cursor back to the input
-	 * line, then go ahead and do that.
-	 */
-	if (update == UPDATE_JUST_CURSOR)
-	{
-		term_move_cursor(PHYSICAL_CURSOR, INPUT_LINE);
-		cursor_not_in_display(last_input_screen);
-		update = 0;
-	}
-
-	/*
-	 * Turn the terminal echo back on, and flush all of the output
-	 * we may have done here.
-	 */
-	term_echo(1);
-	term_flush();
-
-	/* XXXX HIDEOUS! Ick! Eww! */
-	if (which_screen && (Screen *)which_screen == ns)
-		break;
-    }
-    last_input_screen = os;
-    current_window = saved_current_window;
+        last_input_screen = os;
+	current_window = saved_current_window;
 }
 
 
@@ -581,6 +532,7 @@ void 	change_input_prompt (int direction)
 						sizeof INPUT_BUFFER);
 		last_input_screen->saved_buffer_pos = LOGICAL_CURSOR;
 		*INPUT_BUFFER = 0;
+                START = 0;
 		LOGICAL_CURSOR = 0;
 	}
 
@@ -588,19 +540,53 @@ void 	change_input_prompt (int direction)
 }
 
 /* input_move_cursor: moves the cursor left or right... got it? */
-void	input_move_cursor (int dir)
+void	input_move_cursor (int dir, int refresh)
 {
+	/* 'refresh' is for the 'end' key.. otherwise
+	 * it'd redraw each and every time.. which is
+	 * bad for slow terminals :)
+         */
+
 	if (dir > 0)
 	{
-		while (dir-- > 0)
-			if (THIS_CHAR)
-				CURSOR_RIGHT;
+		while (dir-- > 0) {
+			if (THIS_CHAR) {
+                                /* have we hit the right margin? */
+				if ( (PHYSICAL_CURSOR + ( (START!=0) ? IND_LEFT_LEN : 0)) > last_input_screen->co - WIDTH) {
+					START=LOGICAL_CURSOR - WIDTH + IND_LEFT_LEN;
+
+					CURSOR_RIGHT;
+                                        if (refresh)
+                                                update_input(last_input_screen, UPDATE_ALL);
+				} else {
+                                        CURSOR_RIGHT;
+				}
+			}
+		}
 	}
 	else if (dir < 0)
 	{
-		while (dir++ < 0) 
-			if (LOGICAL_CURSOR > 0)
-				CURSOR_LEFT;
+		while (dir++ < 0)  {
+			if (PREV_CHAR) {
+                                CURSOR_LEFT;
+				if ( (PHYSICAL_CURSOR + ( (START!=0) ? IND_LEFT_LEN : 0)) < (INPUT_PROMPT_LEN + ((START!=0) ? IND_LEFT_LEN : 0) + WIDTH - 1) ) {
+					if (START != 0) {
+						/* I hate that this was so easy.. */
+						while (PHYSICAL_CURSOR!=last_input_screen->co - WIDTH - 1)
+                                                        START--;
+
+						if ((START < 0) || (START <= IND_LEFT_LEN))
+							START=0;
+						else
+							if (!THIS_CHAR)
+								START=strlen(INPUT_BUFFER) - WIDTH;
+
+                                                if (refresh)
+                                                        update_input(last_input_screen, UPDATE_ALL);
+					}
+				}
+			}
+		}
 	}
 }
 
@@ -611,7 +597,15 @@ void	input_move_cursor (int dir)
 void	set_input (const char *str)
 {
 	strlcpy(INPUT_BUFFER, str, INPUT_BUFFER_SIZE);
-	LOGICAL_CURSOR = strlen(INPUT_BUFFER);
+
+	int len = strlen(INPUT_BUFFER);
+
+	if ( len < (last_input_screen->co - INPUT_PROMPT_LEN - WIDTH + 2) )
+		START=0;
+	else
+		START=len - WIDTH;
+
+	LOGICAL_CURSOR=len;
 	update_input(last_input_screen, UPDATE_ALL);
 }
 
@@ -629,7 +623,8 @@ char *	get_input (void)
 void	init_input (void)
 {
 	*INPUT_BUFFER = 0;
-	LOGICAL_CURSOR = 0;
+        START = 0;
+        LOGICAL_CURSOR = 0;
 }
 
 /* get_input_prompt: returns the current input_prompt */
@@ -681,11 +676,11 @@ BUILT_IN_KEYBINDING(input_forward_word)
 
 	/* Move to the end of the current word to the whitespace */
 	while (THIS_CHAR && !WHITESPACE(THIS_CHAR))
-		input_move_cursor(1);
+		input_move_cursor(1, 1);
 
 	/* Move past the whitespace to the start of the next word */
 	while (THIS_CHAR && WHITESPACE(THIS_CHAR))
-		input_move_cursor(1);
+		input_move_cursor(1, 1);
 
 	update_input(last_input_screen, UPDATE_JUST_CURSOR);
 }
@@ -695,25 +690,22 @@ BUILT_IN_KEYBINDING(input_backward_word)
 {
 	cursor_to_input();
 
-	if (LOGICAL_CURSOR > 0)		/* Whatever */
-	{
-		/* If already at the start of a word, move back a position */
-		if (!WHITESPACE(THIS_CHAR) && WHITESPACE(PREV_CHAR))
-			input_move_cursor(-1);
+	/* If already at the start of a word, move back a position */
+	if (!WHITESPACE(THIS_CHAR) && WHITESPACE(PREV_CHAR))
+		input_move_cursor(-1, 1);
 
-		/* Move to the start of the current whitespace */
-		while ((LOGICAL_CURSOR > 0) && WHITESPACE(THIS_CHAR))
-			input_move_cursor(-1);
+	/* Move to the start of the current whitespace */
+	while ((THIS_CHAR) && WHITESPACE(THIS_CHAR))
+		input_move_cursor(-1, 1);
 
-		/* Move to the start of the current word */
-		while ((LOGICAL_CURSOR > 0) && !WHITESPACE(THIS_CHAR))
-			input_move_cursor(-1);
+	/* Move to the start of the current word */
+	while ((THIS_CHAR) && !WHITESPACE(THIS_CHAR))
+		input_move_cursor(-1, 1);
 
-		/* If we overshot our goal, then move forward */
-		/* But NOT if at start of input line! (July 6th, 1999) */
-		if ((LOGICAL_CURSOR > 0) && WHITESPACE(THIS_CHAR))
-			input_move_cursor(1);
-	}
+	/* If we overshot our goal, then move forward */
+	/* But NOT if at start of input line! (July 6th, 1999) */
+	if ((THIS_CHAR) && WHITESPACE(THIS_CHAR))
+		input_move_cursor(1, 1);
 
 	update_input(last_input_screen, UPDATE_JUST_CURSOR);
 }
@@ -756,8 +748,10 @@ BUILT_IN_KEYBINDING(input_backspace)
  */
 BUILT_IN_KEYBINDING(input_beginning_of_line)
 {
-	LOGICAL_CURSOR = 0;
-	update_input(last_input_screen, UPDATE_JUST_CURSOR);
+	START = 0;
+        LOGICAL_CURSOR=0;
+
+	update_input(last_input_screen, UPDATE_ALL);
 }
 
 /*
@@ -766,8 +760,13 @@ BUILT_IN_KEYBINDING(input_beginning_of_line)
  */
 BUILT_IN_KEYBINDING(input_end_of_line)
 {
-	LOGICAL_CURSOR = strlen(INPUT_BUFFER);
-	update_input(last_input_screen, UPDATE_JUST_CURSOR);
+        int len=strlen(INPUT_BUFFER);
+
+	while (LOGICAL_CURSOR < len)
+                input_move_cursor(1, 0);
+
+        LOGICAL_CURSOR=len;
+	update_input(last_input_screen, UPDATE_ALL);
 }
 
 /*
@@ -831,7 +830,7 @@ BUILT_IN_KEYBINDING(input_delete_to_previous_space)
 
 	anchor = LOGICAL_CURSOR;
 	while (LOGICAL_CURSOR > 0 && !isspace(PREV_CHAR))
-		input_move_cursor(-1);
+		input_move_cursor(-1, 1);
 	cut_input(anchor);
 }
 
@@ -906,7 +905,7 @@ BUILT_IN_KEYBINDING(input_add_character)
 	}
 
 	update_input(last_input_screen, UPDATE_FROM_CURSOR);
-	input_move_cursor(1);
+	input_move_cursor(1, 1);
 	update_input(last_input_screen, UPDATE_JUST_CURSOR);
 }
 
@@ -953,7 +952,8 @@ BUILT_IN_KEYBINDING(input_clear_line)
 		SET_CUT_BUFFER(INPUT_BUFFER);
 
 	*INPUT_BUFFER = 0;
-	LOGICAL_CURSOR = 0;
+        START = 0;
+        LOGICAL_CURSOR=0;
 	update_input(last_input_screen, UPDATE_FROM_CURSOR);
 }
 
@@ -965,7 +965,8 @@ BUILT_IN_KEYBINDING(input_clear_line)
 BUILT_IN_KEYBINDING(input_reset_line)
 {
 	*INPUT_BUFFER = 0;
-	LOGICAL_CURSOR = 0;
+	START = 0;
+        LOGICAL_CURSOR=0;
 
 	if (!string)
 		set_input(empty_string);
@@ -984,11 +985,10 @@ BUILT_IN_KEYBINDING(input_transpose_characters)
 
 	/* If we're at the end of input, move back to the last char */
 	if (!THIS_CHAR && LOGICAL_CURSOR > 1)
-		input_move_cursor(-1);
+		input_move_cursor(-1, 1);
 
-	/* Do nothing if there are not two characters to swap. */
-	if (LOGICAL_CURSOR < 2)
-		return;
+	if (!PREV_CHAR)
+                return;
 
 	/* Swap the character under cursor with character before */
 	this_char = THIS_CHAR;
@@ -996,8 +996,14 @@ BUILT_IN_KEYBINDING(input_transpose_characters)
 	THIS_CHAR = prev_char;
 	PREV_CHAR = this_char;
 
-	/* Then redraw ahoy! */
+	/*
+	 * I guess we move back one and then forward, otherwise
+	 * this doesn't look instantaneous
+         */
+	input_move_cursor(-1, 1);
 	update_input(last_input_screen, UPDATE_FROM_CURSOR);
+	input_move_cursor(1, 1);
+        update_input(last_input_screen, UPDATE_JUST_CURSOR);
 }
 
 
@@ -1023,7 +1029,7 @@ BUILT_IN_KEYBINDING(input_yank_cut_buffer)
 	ADD_TO_INPUT(ptr);
 	update_input(last_input_screen, UPDATE_FROM_CURSOR);
 
-	input_move_cursor(strlen(cut_buffer));
+	input_move_cursor(strlen(cut_buffer), 1);
 	if (LOGICAL_CURSOR > INPUT_BUFFER_SIZE)
 		LOGICAL_CURSOR = INPUT_BUFFER_SIZE;
 	update_input(last_input_screen, UPDATE_JUST_CURSOR);
@@ -1037,13 +1043,13 @@ BUILT_IN_KEYBINDING(input_yank_cut_buffer)
 /* BIND functions: */
 BUILT_IN_KEYBINDING(forward_character)
 {
-	input_move_cursor(1);
+	input_move_cursor(1, 1);
 	update_input(last_input_screen, UPDATE_JUST_CURSOR);
 }
 
 BUILT_IN_KEYBINDING(backward_character)
 {
-	input_move_cursor(-1);
+	input_move_cursor(-1, 1);
 	update_input(last_input_screen, UPDATE_JUST_CURSOR);
 }
 
@@ -1058,8 +1064,11 @@ BUILT_IN_KEYBINDING(send_line)
 	line = LOCAL_COPY(INPUT_BUFFER);
 
 	/* Clear the input line before dispatching the command */
+
 	*INPUT_BUFFER = 0;
-	LOGICAL_CURSOR = 0;
+        START = 0;
+        LOGICAL_CURSOR = 0;
+
 	update_input(last_input_screen, UPDATE_ALL);
 
 	holding_already = window_is_holding(last_input_screen->current_window);

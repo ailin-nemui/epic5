@@ -64,7 +64,12 @@ struct	ScreenStru *next;		/* Previous screen in list */
 	int	input_prompt_len;
 	int	input_line;
 
-	unsigned char	saved_input_buffer[INPUT_BUFFER_SIZE+1];
+        unsigned char   *ind_left;
+        int     ind_left_len;
+        unsigned char   *ind_right;
+        int     ind_right_len;
+
+        unsigned char	saved_input_buffer[INPUT_BUFFER_SIZE+1];
 	int	saved_buffer_pos;
 
 	WaitPrompt	*promptlist;

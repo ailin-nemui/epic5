@@ -1,4 +1,4 @@
-/* $EPIC: vars.c,v 1.103 2008/04/04 04:51:05 jnelson Exp $ */
+/* $EPIC: vars.c,v 1.104 2008/05/09 16:26:34 alex Exp $ */
 /*
  * vars.c: All the dealing of the irc variables are handled here. 
  *
@@ -317,7 +317,9 @@ void 	init_variables_stage1 (void)
 	VAR(HIGH_BIT_ESCAPE, INT,  set_meta_8bit);
 	VAR(HOLD_SLIDER, INT,  NULL);
 	VAR(INDENT, BOOL, set_indent);
-	VAR(INPUT_PROMPT, STR,  set_input_prompt);
+        VAR(INPUT_INDICATOR_LEFT, STR, NULL);
+        VAR(INPUT_INDICATOR_RIGHT, STR, NULL);
+        VAR(INPUT_PROMPT, STR,  set_input_prompt);
 	VAR(INSERT_MODE, BOOL, update_all_status_wrapper);
 	VAR(KEY_INTERVAL, INT,  set_key_interval);
 	VAR(LASTLOG, INT,  set_lastlog_size);
