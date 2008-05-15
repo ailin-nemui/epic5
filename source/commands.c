@@ -1,4 +1,4 @@
-/* $EPIC: commands.c,v 1.180 2008/04/10 23:48:21 jnelson Exp $ */
+/* $EPIC: commands.c,v 1.181 2008/05/15 17:57:54 alex Exp $ */
 /*
  * commands.c -- Stuff needed to execute commands in ircII.
  *		 Includes the bulk of the built in commands for ircII.
@@ -1001,7 +1001,7 @@ BUILT_IN_COMMAND(xechocmd)
 			else
 				all_windows = 1;
 
-			next_arg(args, &args);
+			//next_arg(args, &args);
 			break;
 		}
 
@@ -1057,7 +1057,7 @@ BUILT_IN_COMMAND(xechocmd)
 			break;
 		}
 
-		case 'F': /* DO not notify for hidden windwos (%F) */
+		case 'F': /* DO not notify for hidden windows (%F) */
 		{
 			next_arg(args, &args);
 			do_window_notifies = 0;
