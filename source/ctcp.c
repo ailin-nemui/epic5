@@ -1,4 +1,4 @@
-/* $EPIC: ctcp.c,v 1.57 2008/04/04 04:51:05 jnelson Exp $ */
+/* $EPIC: ctcp.c,v 1.58 2008/06/23 21:25:03 jnelson Exp $ */
 /*
  * ctcp.c:handles the client-to-client protocol(ctcp). 
  *
@@ -260,8 +260,18 @@ CTCP_HANDLER(do_utc)
 CTCP_HANDLER(do_atmosphere)
 {
 	int	l;
+	int	flag, fflag;
 
 	if (!cmd || !*cmd)
+		return NULL;
+
+	/* Xavier mentioned that we should allow /ignore #chan action */
+	flag = check_ignore_channel(from, FromUserHost, to, LEVEL_ACTION);
+	fflag = new_check_flooding(from, FromUserHost, 
+					is_channel(to) ? to : NULL,
+					cmd, LEVEL_ACTION);
+
+	if (flag == IGNORED || fflag == 1)
 		return NULL;
 
 	if (is_channel(to))
