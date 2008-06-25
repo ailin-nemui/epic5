@@ -1,4 +1,4 @@
-/* $EPIC: window.c,v 1.194 2008/03/29 19:00:16 jnelson Exp $ */
+/* $EPIC: window.c,v 1.195 2008/06/25 05:26:57 jnelson Exp $ */
 /*
  * window.c: Handles the organzation of the logical viewports (``windows'')
  * for irc.  This includes keeping track of what windows are open, where they
@@ -5936,6 +5936,9 @@ void 	make_window_current (Window *window)
 
 	if (current_window == NULL)
 		current_window = last_input_screen->window_list;
+
+	if (current_window == NULL)
+		current_window = main_screen->window_list;
 
 	if (current_window == NULL)
 		panic(1, "make_window_current(NULL) -- can't find another window");

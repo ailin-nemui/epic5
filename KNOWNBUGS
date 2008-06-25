@@ -4,7 +4,6 @@ KNOWN ERRATA (eg, bugs, or unresolved requests):
 ------------------------------------------------
 * Should be able to /ignore a server, for undernet
 * Configure should support --without-wserv and/or auto-grok job control.
-* Make_window_current should look on main screen for window before panicing.
 * msg from fusion: so it would seem doing xecho -level crap -all -f -- <stuff>
   +still notifies windows with a notify level of ALL
 
@@ -308,3 +307,4 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Fix some compiler nits that larne found on strict compilers.
 * xecho's -all option clobbered the first word after it as if it took params
 * Support /ignore nick|#chan ACTION.  How did this get missed?
+* Fix make_window_current() to use the main_screen if all else fails.
