@@ -1,4 +1,4 @@
-/* $EPIC: parse.c,v 1.92 2008/03/29 19:00:16 jnelson Exp $ */
+/* $EPIC: parse.c,v 1.93 2008/06/26 04:23:11 jnelson Exp $ */
 /*
  * parse.c: handles messages from the server.   Believe it or not.  I
  * certainly wouldn't if I were you. 
@@ -1294,16 +1294,14 @@ static void 	p_notice (const char *from, const char *comm, const char **ArgList)
 			im_on_channel(target + 1, from_server))
 		target++;
 
+	/* For pesky prefix-less NOTICEs substitute the server's name */
 	/* Check to see if it is a "Server Notice" */
-	if ((!from || !*from) || !strcmp(get_server_itsname(from_server), from))
+	if (!from || !*from || !strcmp(get_server_itsname(from_server), from))
 	{
 		p_snotice(from, target, message);
 		set_server_doing_notice(from_server, 0);
 		return;
 	}
-	/* For pesky prefix-less NOTICEs substitute the server's name */
-	if (!from || !*from)
-		from = get_server_name(from_server);
 
 	/*
 	 * Note that NOTICEs from servers are not "server notices" unless
@@ -1465,6 +1463,7 @@ void 	parse_server (const char *orig_line, size_t orig_line_size)
 	const char	*comm;
 	const char	**ArgList;
 	const char	*TrueArgs[MAXPARA + 2];	/* Include space for command */
+	const char 	*OldFromUserHost;
 	int	loc;
 	char	*line;
 
@@ -1492,6 +1491,8 @@ void 	parse_server (const char *orig_line, size_t orig_line_size)
 	else
 	    line = LOCAL_COPY(orig_line);
 
+	OldFromUserHost = FromUserHost;
+	FromUserHost = empty_string;
 	ArgList = TrueArgs;
 	BreakArgs(line, &from, ArgList);
 
@@ -1516,6 +1517,6 @@ void 	parse_server (const char *orig_line, size_t orig_line_size)
 			rfc1459_odd(from, comm, ArgList);
 	}
 
-	FromUserHost = empty_string;
+	FromUserHost = OldFromUserHost;
 	from_server = -1;
 }

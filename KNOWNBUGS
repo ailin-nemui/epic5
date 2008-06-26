@@ -2,10 +2,7 @@ EPIC5 Projects, Bugs, and other Errata:
 
 KNOWN ERRATA (eg, bugs, or unresolved requests):
 ------------------------------------------------
-* Should be able to /ignore a server, for undernet
-* Configure should support --without-wserv and/or auto-grok job control.
-* msg from fusion: so it would seem doing xecho -level crap -all -f -- <stuff>
-  +still notifies windows with a notify level of ALL
+<none>
 
 ISSUES OF INTEREST
 ------------------
@@ -308,3 +305,7 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * xecho's -all option clobbered the first word after it as if it took params
 * Support /ignore nick|#chan ACTION.  How did this get missed?
 * Fix make_window_current() to use the main_screen if all else fails.
+* Add support for /ignore'ing a server (for undernet)
+* Add --without-wserv flag to configure (see UPDATES)
+* Add checks in configure for posix-like job control
+* Add support so no job control -> no wserv support.

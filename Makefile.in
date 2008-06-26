@@ -98,9 +98,9 @@ MFLAGS ='CC=$(CC)'					\
 	'LIBS=$(LIBS)'					\
 	'RM=$(RM)'
 
-all everything: epic5 wserv4
+all everything: epic5 @WSERV_BIN@
 install installeverything: all installbin installscript installman
-installbin: installepic5 installwserv
+installbin: installepic5 @WSERV_INSTALL@
 
 
 VPATH=@srcdir@
@@ -135,7 +135,7 @@ wserv4: source/wserv.c source/gailib.c source/Makefile
 	@cd source; $(MAKE2) wserv4
 
 WSERV	 = $(wserv_exe)
-installwserv: wserv4 installdirs test
+installwserv4: wserv4 installdirs test
 	if ./my_test \( \! -f $(IP)$(WSERV) \) -o \
 			source/wserv4 -nt $(IP)$(WSERV); then	\
 		$(INSTALL_PROGRAM) source/wserv4 $(IP)$(WSERV);	\

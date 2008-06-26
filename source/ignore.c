@@ -1,4 +1,4 @@
-/* $EPIC: ignore.c,v 1.34 2008/03/10 06:29:39 crazyed Exp $ */
+/* $EPIC: ignore.c,v 1.35 2008/06/26 04:23:11 jnelson Exp $ */
 /*
  * ignore.c: handles the ingore command for irc 
  *
@@ -1223,7 +1223,17 @@ int	check_ignore_channel (const char *nick, const char *uh, const char *channel,
 	if (ignores_are_suspended)
 		return NOT_IGNORED;
 
-	snprintf(nuh, IRCD_BUFFER_SIZE - 1, "%s!%s", nick ? nick : star,
+	/* 
+	 * If the userhost is the empty string (but not NULL)
+	 * then because of how ParseArgs() works, we know that
+	 * 'nick' contains a (remote) server name.  Yes, you 
+	 * can ignore (remote) servers.
+	 */
+	if (nick && strchr(nick, '.') && uh && !*uh)
+	    snprintf(nuh, IRCD_BUFFER_SIZE - 1, "%s", nick);
+	else
+	    snprintf(nuh, IRCD_BUFFER_SIZE - 1, "%s!%s", 
+						nick ? nick : star,
 						uh ? uh : star);
 
 	for (tmp = ignored_nicks; tmp; tmp = tmp->next)

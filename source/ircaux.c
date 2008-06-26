@@ -1,4 +1,4 @@
-/* $EPIC: ircaux.c,v 1.195 2008/04/05 00:20:38 jnelson Exp $ */
+/* $EPIC: ircaux.c,v 1.196 2008/06/26 04:23:11 jnelson Exp $ */
 /*
  * ircaux.c: some extra routines... not specific to irc... that I needed 
  *
@@ -2791,6 +2791,16 @@ char *	chomp (char *s)
 
 /*
  * figure_out_address -- lets try this one more time.
+ *
+ * Arguments:
+ *   nuh  - A raw nick!user@host string or a server or channel name
+ *   nick - A pointer to a place we can put the "nick"
+ *   user - A pointer to a place we can put the "user"
+ *   host - A pointer to a place we can put the "host"
+ *
+ * Returns:
+ *   -1     'nuh' is a server or channel -- use it as is.
+ *    0     'nuh' is a nick!user@host and has been split up/normalized
  */
 int	figure_out_address (const char *nuh, char **nick, char **user, char **host)
 {
@@ -2800,7 +2810,7 @@ static 	char 	*mystuff = NULL;
 		*adot = NULL;
 
 	/* Dont bother with channels, theyre ok. */
-	if (*nuh == '#' || *nuh == '&')
+	if (*nuh == '#' || *nuh == '&' || strchr(nuh, '.'))
 		return -1;
 
 	malloc_strcpy(&mystuff, nuh);

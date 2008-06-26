@@ -4,9 +4,9 @@ dnl except those bits attributed otherwise.
 dnl thanks to the screen 3.3 configure.in for giving me examples to
 dnl work from and steal ;)
 dnl
-dnl @(#)$Id: configure.in,v 1.66 2008/04/04 04:50:56 jnelson Exp $
+dnl @(#)$Id: configure.in,v 1.67 2008/06/26 04:23:09 jnelson Exp $
 
-AC_REVISION($Revision: 1.66 $)dnl
+AC_REVISION($Revision: 1.67 $)dnl
 AC_INIT(source/irc.c)
 AC_CONFIG_HEADER(include/defs.h)
 
@@ -303,7 +303,8 @@ AC_CHECK_FUNC(nanosleep, AC_DEFINE(HAVE_NANOSLEEP),)
 AC_CHECK_FUNC(uname, AC_DEFINE(HAVE_UNAME),)
 AC_CHECK_FUNC(realpath, AC_DEFINE(HAVE_REALPATH),)
 AC_CHECK_FUNC(setenv, AC_DEFINE(HAVE_SETENV),)
-AC_CHECK_FUNC(setsid, AC_DEFINE(HAVE_SETSID),)
+AC_CHECK_FUNC(setsid, AC_DEFINE(HAVE_SETSID),) 
+AC_CHECK_FUNC(tcsetpgrp, AC_DEFINE(HAVE_TCSETPGRP),)
 if test $termcap -eq 0 ; then
 	AC_CHECK_FUNC(setupterm, AC_DEFINE(HAVE_TERMINFO),)
 fi
@@ -810,6 +811,39 @@ else
 	AC_CHECK_FUNC(iconv_open, AC_DEFINE(HAVE_ICONV),)
 fi
 
+
+dnl ----------------------------------------------------------
+dnl
+dnl Job Control / Wserv support?
+dnl
+AC_MSG_CHECKING(whether you have posix-like job control)
+if test "x$ac_cv_func_tcsetpgrp" = "xyes" -a "x$ac_cv_func_setsid" = "xyes"; then
+	AC_MSG_RESULT(yes)
+else
+	AC_MSG_RESULT(no)
+	AC_DEFINE(NO_JOB_CONTROL)
+	no_job_control=1
+fi
+
+AC_MSG_CHECKING(whether to include wserv support)
+include_wserv="yes"
+AC_ARG_WITH(wserv,
+[  --with-wserv       Include Wserv support for multiple screens],[
+	if test -z "$withval"; then
+		include_wserv="yes"
+	else
+		include_wserv="$withval"
+	fi
+])
+if test "x$no_job_control" = "x1" ; then
+	include_wserv="no"
+fi
+AC_MSG_RESULT($include_wserv)
+if test "x$include_wserv" = "xyes" ; then
+	WSERV_BIN="wserv4"
+	WSERV_INSTALL="installwserv4"
+fi
+
 dnl ----------------------------------------------------------
 dnl
 dnl Perl support?
@@ -946,6 +980,8 @@ if test -z "$LDFLAGS"; then LDFLAGS= ; fi
 if test -z "$PERLDOTOH"; then PERLDOTOH= ; fi
 if test -z "$TCLDOTOH"; then TCLDOTOH= ; fi
 if test -z "$RUBYDOTOH"; then RUBYDOTOH= ; fi
+if test -z "$WSERV_BIN"; then WSERV_BIN= ; fi
+if test -z "$WSERV_INSTALL"; then WSERV_INSTALL= ; fi
 if test -z "$bindir"; then bindir=\${prefix}/bin; fi
 if test -z "$libdir"; then libdir=\${prefix}/lib; fi
 if test -z "$irclibdir"; then irclibdir=\${libdir}/irc; fi
@@ -1015,6 +1051,8 @@ AC_SUBST(TCLLDFLAGS)
 AC_SUBST(PERLDOTOH)
 AC_SUBST(PERLCFLAGS)
 AC_SUBST(PERLLDFLAGS)
+AC_SUBST(WSERV_BIN)
+AC_SUBST(WSERV_INSTALL)
 AC_SUBST(bindir)
 AC_SUBST(irclibdir)
 AC_SUBST(libexecdir)

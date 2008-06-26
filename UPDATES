@@ -1,5 +1,32 @@
 EPIC5-0.3.8
 
+*** News 06/25/2008 -- configure --without-wserv, job control
+	Configure now checks your system to see if it has posix job control
+	(which means you have setsid() and tcsetpgrp()) and if it does not,
+	it turns off job-control features:
+		/BOTMODE
+		/EXEC
+		/LOADing of compressed files
+		$killpid()
+		$exec()
+		$open() of compressed files
+		The -b command line option
+		External crypto program support
+		Asynchronous (nonblocking) DNS lookups
+		Wserv support
+
+	You can also use the --without-wserv flag to configure to turn off
+	wserv support for a system that otherwise supports job control.
+	There is nothing gained by omitting wserv support, only things
+	removed.  Normally this flag wouldn't be added but I did it as a
+	favor to someone.
+
+*** News 06/25/2008 -- You can now /ignore a server
+	Due to some networks (undernet) having annoying servers that 
+	spam you 10-20 times a day with annoying messages you don't want
+	to receive, it's now possible to /ignore a server:
+		/IGNORE irc.server.com ALL
+
 *** News 05/09/2008 -- Hitting ^C twice interrupts infinite loop
 	Historically, if you hit ^C twice in a row and the client is stuck,
 	it will send itself a SIGARLM.  In the past, this was because the
