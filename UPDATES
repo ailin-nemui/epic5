@@ -1,4 +1,4 @@
-EPIC5-0.3.8
+EPIC5-0.3.9
 
 *** News 06/25/2008 -- configure --without-wserv, job control
 	Configure now checks your system to see if it has posix job control
@@ -72,6 +72,8 @@ EPIC5-0.3.8
 		$1 - The level of the activity.
 	Be careful with this hook, as output defered from it, may
 	wreak havoc. 
+
+EPIC5-0.3.8
 
 *** News 04/10/2008 -- Added new /on, /ON SIGNAL
 	You can hook signals with /ON SIGNAL
