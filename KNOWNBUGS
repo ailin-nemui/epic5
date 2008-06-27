@@ -285,8 +285,8 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Release EPIC5-0.3.8 (Calumny) (commit 1545)
 * Fix signal handling for SIG_IGN and SIG_DFL to fix crash for SIGPIPE.
 * Added /on window_notified. 
-* Input line changes, indicators for text scrolled off the left
 * All of the following is from fusion (alex)
+* Input line changes, indicators for text scrolled off the left
 * Add /set default_input_indicator_left|right -- see UPDATES
 * Add left and right indicator vars to struct screen, using the above
 * Revamp update_input() to always display the input prompt
@@ -309,3 +309,5 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Add --without-wserv flag to configure (see UPDATES)
 * Add checks in configure for posix-like job control
 * Add support so no job control -> no wserv support.
+* Release EPIC5-0.3.9 (Contumacy) (commit 1554)
+
