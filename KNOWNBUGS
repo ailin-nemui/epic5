@@ -9,8 +9,6 @@ ISSUES OF INTEREST
 * Jm would like an /xdebug inbound type facility for dcc raw connections.
 * You should be able to /msg @logfile
 * You can't move a window to a different screen atomically (you must hide it)
-* Howl would like to shutdown/restart ruby, and trap its warnings:
-   /ruby {EPIC.echo EPIC.expr "S"}
 * Krisp wants a log that only logs what is not logged somewhere else.
 * Howl wants a temporary hold mode that expires when you reach bottom.
 * Pegasus wants a way to send italics (^I)
@@ -310,4 +308,6 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Add checks in configure for posix-like job control
 * Add support so no job control -> no wserv support.
 * Release EPIC5-0.3.9 (Contumacy) (commit 1554)
+* Redirect $stdout in ruby back to EPIC.echo so ruby warnings display properly
+* This is to fix howl's bug: /ruby {EPIC.echo EPIC.expr "S"}
 

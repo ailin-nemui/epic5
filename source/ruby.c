@@ -1,4 +1,4 @@
-/* $EPIC: ruby.c,v 1.9 2008/04/04 04:51:05 jnelson Exp $ */
+/* $EPIC: ruby.c,v 1.10 2008/06/28 04:19:18 jnelson Exp $ */
 /*
  * ruby.c -- Calling RUBY from epic.
  *
@@ -101,6 +101,8 @@ static VALUE epic_call (VALUE module, VALUE string)
 /* Called by the epic hooks to activate tcl on-demand. */
 void ruby_startstop (int value)
 {
+	VALUE	rubyval;
+
 	if (is_ruby_running)
 	{
 		if (value)
@@ -124,6 +126,15 @@ void ruby_startstop (int value)
 	rb_define_singleton_method(rubyclass, "call", epic_call, 1);
 	rb_gc_register_address(&rubyclass);
 
+	/* XXX Is it a hack to do it like this instead of in pure C? */
+	rubyval = rb_eval_string("EPICstdout = Object.new\n"
+                                 "def EPICstdout.write(string) \n"
+				 "   string.chomp! \n"
+				 "   EPIC.echo(\"RUBY-ERROR: #{string}\") \n"
+				 "end \n"
+				 "$stderr = EPICstdout");
+	if (rubyval == Qnil)
+		say("stderr assignment returned Qnil");
 }
 
 /*
