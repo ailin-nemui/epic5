@@ -1,3 +1,12 @@
+EPIC5-0.3.10
+
+*** News 07/01/2008 -- Add servers from file -- $serverctl(READ_FILE filename)
+	You may now insert servers into the server list from a file using
+	$serverctl(READ_FILE filename) where "filename" is the name of the 
+	servers description file.  Note that the servers are appended to the
+	end of the servers list!  The filename must be in the same format
+	as the server description file that is loaded at startup.
+
 EPIC5-0.3.9
 
 *** News 06/25/2008 -- configure --without-wserv, job control

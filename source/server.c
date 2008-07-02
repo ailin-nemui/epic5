@@ -1,4 +1,4 @@
-/* $EPIC: server.c,v 1.235 2008/02/19 13:13:12 crazyed Exp $ */
+/* $EPIC: server.c,v 1.236 2008/07/02 00:10:28 jnelson Exp $ */
 /*
  * server.c:  Things dealing with that wacky program we call ircd.
  *
@@ -651,29 +651,14 @@ void	add_servers (char *servers, const char *group)
 }
 
 /*
- * read_server_file: Add servers from "SERVERS FILE" to the server list.
+ * read_server_file: Add servers from some file to the server list
  */
-int 	read_server_file (void)
+static int 	read_server_file (const char *file_path)
 {
-	FILE 	*fp;
-	char	file_path[MAXPATHLEN + 1];
-	char	buffer[BIG_BUFFER_SIZE + 1];
 	Filename expanded;
+	FILE 	*fp;
+	char	buffer[BIG_BUFFER_SIZE + 1];
 	char	*defaultgroup = NULL;
-
-	if (getenv("IRC_SERVERS_FILE"))
-		strlcpy(file_path, getenv("IRC_SERVERS_FILE"), sizeof file_path);
-	else
-	{
-#ifdef SERVERS_FILE
-		*file_path = 0;
-		if (SERVERS_FILE[0] != '/' && SERVERS_FILE[0] != '~')
-			strlcpy(file_path, irc_lib, sizeof file_path);
-		strlcat(file_path, SERVERS_FILE, sizeof file_path);
-#else
-		return -1;
-#endif
-	}
 
 	if (normalize_filename(file_path, expanded))
 		return -1;
@@ -703,6 +688,31 @@ int 	read_server_file (void)
 	new_free(&defaultgroup);
 	return 0;
 }
+
+/*
+ * read_server_file: Add servers from "SERVERS FILE" to the server list.
+ */
+int 	read_default_server_file (void)
+{
+	char	file_path[MAXPATHLEN + 1];
+
+	if (getenv("IRC_SERVERS_FILE"))
+		strlcpy(file_path, getenv("IRC_SERVERS_FILE"), sizeof file_path);
+	else
+	{
+#ifdef SERVERS_FILE
+		*file_path = 0;
+		if (SERVERS_FILE[0] != '/' && SERVERS_FILE[0] != '~')
+			strlcpy(file_path, irc_lib, sizeof file_path);
+		strlcat(file_path, SERVERS_FILE, sizeof file_path);
+#else
+		return -1;
+#endif
+	}
+
+	return read_server_file(file_path);
+}
+
 
 /* display_server_list: just guess what this does */
 void 	display_server_list (void)
@@ -3254,7 +3264,11 @@ sorry_wrong_number:
 /* Used by function_serverctl */
 /*
  * $serverctl(REFNUM server-desc)
+ * $serverctl(LAST_SERVER)
+ * $serverctl(FROM_SERVER)
+ * $serverctl(ALLGROUPS)
  * $serverctl(MAX)
+ * $serverctl(READ_FILE filename)
  * $serverctl(GET 0 [LIST])
  * $serverctl(SET 0 [ITEM] [VALUE])
  * $serverctl(MATCH [pattern])
@@ -3557,6 +3571,8 @@ char 	*serverctl 	(char *input)
 		RETURN_MSTR(retval);
 	} else if (!my_strnicmp(listc, "MAX", len)) {
 		RETURN_INT(number_of_servers);
+	} else if (!my_strnicmp(listc, "READ_FILE", len)) {
+		read_server_file(input);
 	} else
 		RETURN_EMPTY;
 

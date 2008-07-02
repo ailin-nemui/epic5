@@ -1,4 +1,4 @@
-/* $EPIC: window.c,v 1.195 2008/06/25 05:26:57 jnelson Exp $ */
+/* $EPIC: window.c,v 1.196 2008/07/02 00:10:28 jnelson Exp $ */
 /*
  * window.c: Handles the organzation of the logical viewports (``windows'')
  * for irc.  This includes keeping track of what windows are open, where they
@@ -5536,36 +5536,6 @@ static int	flush_scrollback_after (Window *window)
 
 
 /********************** Scrollback functionality ***************************/
-static void	window_scrollback_start (Window *window)
-{
-	if (window->display_buffer_size <= window->display_lines)
-	{
-		term_beep();
-		return;
-	}
-
-	window->scrollback_top_of_display = window->top_of_scrollback;
-	recalculate_window_cursor_and_display_ip(window);
-	window_body_needs_redraw(window);
-	window_statusbar_needs_update(window);
-}
-
-/*
- * Cancel out scrollback and holding stuff so you're left pointing at the
- * "standard" place.  Doesn't turn hold mode off, obviously.
- */
-static void	window_scrollback_end (Window *window)
-{
-	if (window->scrollback_top_of_display)
-		window->scrollback_top_of_display = NULL;
-	if (window->holding_top_of_display)
-		window->holding_top_of_display = window->display_ip;
-
-	recalculate_window_cursor_and_display_ip(window);
-	window_body_needs_redraw(window);
-	window_statusbar_needs_update(window);
-}
-
 /*
  * Scroll backwards from the last scrollback point, the last hold point,
  * or the standard place.
@@ -5588,6 +5558,11 @@ static void 	window_scrollback_backwards_lines (Window *window, int lines)
 	    else
 		window->scrollback_top_of_display = window->scrolling_top_of_display;
 	}
+
+/*
+ *	if (!window->scrollback_hint)
+ *		insert_scrollback_hint(window);
+ */
 
 	new_top = window->scrollback_top_of_display;
 	for (new_lines = 0; new_lines < lines; new_lines++)
@@ -5702,6 +5677,23 @@ static void 	window_scrollforward_to_string (Window *window, regex_t *preg)
 
 	term_beep();
 }
+
+static void	window_scrollback_start (Window *window)
+{
+	/* XXX Ok.  So maybe 999999 *is* a magic number. */
+	window_scrollback_backwards_lines(window, 999999);
+}
+
+/*
+ * Cancel out scrollback and holding stuff so you're left pointing at the
+ * "standard" place.  Doesn't turn hold mode off, obviously.
+ */
+static void	window_scrollback_end (Window *window)
+{
+	window_scrollback_forwards_lines(window, 999999);
+}
+
+
 
 /* * * * * * * * */
 static void	window_scrollback_forward (Window *window)

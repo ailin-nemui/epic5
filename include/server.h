@@ -207,7 +207,7 @@ extern	const char *server_states[13];
 	int	str_to_newserv		(Char *);
 	void	destroy_server_list	(void);
 	void	add_servers		(char *, Char *);
-	int	read_server_file	(void);
+	int	read_default_server_file (void);
 	void	display_server_list	(void);
 	char *	create_server_list	(void);	/* MALLOC */
 	int	server_list_size	(void);

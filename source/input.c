@@ -1,4 +1,4 @@
-/* $EPIC: input.c,v 1.55 2008/05/09 16:26:34 alex Exp $ */
+/* $EPIC: input.c,v 1.56 2008/07/02 00:10:28 jnelson Exp $ */
 /*
  * input.c: does the actual input line stuff... keeps the appropriate stuff
  * on the input line, handles insert/delete of characters/words... the whole
@@ -94,7 +94,8 @@ InputItem *	new_input_item (wchar_t wc)
 	ii->prev = NULL;
 	ii->character = wc;
 	ii->column = -1;
-	ii->num_columns = wcwidth(wc);
+	/* ii->num_columns = wcwidth(wc); */
+	ii->num_columns = 1;
 }
 
 void	delete_input_item (InputItem **ii)
@@ -117,7 +118,7 @@ void	add_item_to_input (InputItem *prev, InputItem *item)
 	renumber_columns(item);
 }
 
-void	renumber_columns (InputItem *item);
+void	renumber_columns (InputItem *item)
 {
 	for (; item; item = item->next)
 	    item->column = item->prev->column + item->prev->num_columns;

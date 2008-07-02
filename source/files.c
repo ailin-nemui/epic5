@@ -1,4 +1,4 @@
-/* $EPIC: files.c,v 1.36 2008/04/04 04:51:05 jnelson Exp $ */
+/* $EPIC: files.c,v 1.37 2008/07/02 00:10:28 jnelson Exp $ */
 /*
  * files.c -- allows you to read/write files. Wow.
  *
@@ -206,12 +206,12 @@ static File *	lookup_file (int fd)
 	return NULL;
 }
 
-static File *	lookup_logfile (int fd)
+static File *	lookup_window_logfile (int fd)
 {
-	FILE *x = NULL;
-	static struct epic_loadfile elf;
-	static File retval = {0 , &elf, NULL};
-	Window *w;
+	FILE *			x = NULL;
+static struct epic_loadfile	elf;
+static File 			retval = {0 , &elf, NULL};
+	Window *		w;
 
 	if (fd == -1)
 		x = irclog_fp;
@@ -225,49 +225,88 @@ static File *	lookup_logfile (int fd)
 	return &retval;
 }
 
+/*
+ * target_file_write: "Send" a "message" to a file or logfile
+ * Examples:
+ *	/msg @<fileref> This is logged to an $open() file.
+ *	/msg @W<winref> This is logged to a window's logfile
+ *	/msg @L<logref> This is logged to a general logfile
+ * This function is nothing but a bald wrapper to file_write which does
+ * all of the heavy lifting.
+ */
 int 	target_file_write (const char *fd, const char *stuff)
 {
+	/* XXX Really we should call add_to_log() here */
+	/* XXX file_write() should not know or care about logfiles */
 	if (toupper(*fd) == 'W' && is_number(fd + 1))
 		return file_write(1, my_atol(fd + 1), stuff);
+	else if (toupper(*fd) == 'L' && is_number(fd + 1))
+		return file_write(2, my_atol(fd + 1), stuff);
 	else if (is_number(fd))
 		return file_write(0, my_atol(fd), stuff);
 	else
 		return -1;
 }
 
-int	file_write (int window, int fd, const char *stuff)
+/*
+ * file_write: Write something to a file or logfile
+ *
+ * logtype: 0 if 'fd' is an $open() refnum.
+ *          1 if 'fd' is a /window refnum.
+ *	    2 if 'fd' is a /log refnum.
+ * fd: A reference number, depending on the type of 'logtype'
+ * stuff: what should be written to the file.
+ *
+ * XXX - I think writes to logfiles should be sent back to the logging funcs
+ */
+int	file_write (int logtype, int fd, const char *stuff)
 {
 	File 	*ptr;
 	int	retval;
 
-	if (window == 1)
-		ptr = lookup_logfile(fd);
+	if (logtype == 2)		/* General logfile */
+		/* */;
+	else if (logtype == 1)		/* Window logfile */
+		ptr = lookup_window_logfile(fd);
 	else
 		ptr = lookup_file(fd);
 
 	if (!ptr || !ptr->elf->fp)
 		return -1;
 
+	/* XXX This should call add_to_log  if it's a logfile */
 	retval = fprintf(ptr->elf->fp, "%s\n", stuff);
 	if ((fflush(ptr->elf->fp)) == EOF)
 		return -1;
 	return retval;
 }
 
-int	file_writeb (int window, int fd, char *stuff)
+/*
+ * file_writeb: Write binary data (not a line of text) to a file or logfile
+ *
+ * logtype: 0 if 'fd' is an $open() refnum.
+ *          1 if 'fd' is a /window refnum.
+ *	    2 if 'fd' is a /log refnum.
+ * fd: A reference number, depending on the type of 'logtype'
+ * stuff: CTCP-ENCODED binary data that should be written to a file
+ */
+int	file_writeb (int logtype, int fd, char *stuff)
 {
 	File 	*ptr;
 	int	retval;
 	size_t	len = strlen(stuff);
 
-	if (window == 1)
-		ptr = lookup_logfile(fd);
+	if (logtype == 2)		/* General logfile */
+		/* */;
+	else if (logtype == 1)		/* Window logfile */
+		ptr = lookup_window_logfile(fd);
 	else
 		ptr = lookup_file(fd);
 
 	if (!ptr || !ptr->elf->fp)
 		return -1;
 
+	/* XXX This should use transform_string() */
 	stuff = dequote_it(stuff, &len);
 	retval = fwrite(stuff, 1, len, ptr->elf->fp);
 	new_free(&stuff);
