@@ -1,4 +1,4 @@
-/* $EPIC: window.c,v 1.196 2008/07/02 00:10:28 jnelson Exp $ */
+/* $EPIC: window.c,v 1.197 2008/08/25 23:58:57 jnelson Exp $ */
 /*
  * window.c: Handles the organzation of the logical viewports (``windows'')
  * for irc.  This includes keeping track of what windows are open, where they
@@ -254,6 +254,13 @@ Window	*new_window (Screen *screen)
 	new_w->scrollback_distance_from_display_ip = -1; /* Filled in later */
 	new_w->display_counter = 1;
 	new_w->hold_slider = get_int_var(HOLD_SLIDER_VAR);
+
+	/* The scrollback indicator */
+	new_w->scrollback_indicator = (Display *)new_malloc(sizeof(Display));
+	new_w->scrollback_indicator->line = NULL;
+	new_w->scrollback_indicator->count = -1;
+	new_w->scrollback_indicator->prev = NULL;
+	new_w->scrollback_indicator->next = NULL;
 
 	/* Window geometry stuff */
 	new_w->columns = 0;			/* Filled in later? */
@@ -523,11 +530,20 @@ delete_window_contents:
 	new_free(&window->logfile);
 	new_free(&window->name);
 
+	/* Delete the indicator if it's not already in the logical display */
+	if (window->scrollback_indicator->prev == NULL &&
+	    window->scrollback_indicator->next == NULL)
+	{
+		new_free(&window->scrollback_indicator->line);
+		new_free((char **)&window->scrollback_indicator);
+	}
+
 	/* The logical display */
 	{ 
 		Display *next;
 		while (window->top_of_scrollback)
 		{
+			/* XXXX This should use delete_display_line! */
 			next = window->top_of_scrollback->next;
 			new_free(&window->top_of_scrollback->line);
 			new_free((char **)&window->top_of_scrollback);
@@ -5177,6 +5193,66 @@ BUILT_IN_COMMAND(windowcmd)
 	update_all_windows();
 }
 
+/************************** INDICATOR MAINTAINANCE **************************/
+/*
+ * update_scrollback_indicator puts the scrollback indicator after the last 
+ * line that is visible on the screen right now.  
+ *  1) Figure out which view is being used
+ *  2) Figure out what the final line is visible is,
+ *  3) Put the indicator after it (but before display_ip if needed)
+ *  4) Reset the value of the indicator from /set scrollback_indicator
+ * You should not call this function unless indicator_needs_update() returns 1.
+ */
+void	update_scrollback_indicator (Window *w)
+{
+}
+
+/*
+ * remove_scrollback_indicator removes the indicator from the scrollback, 
+ * making it available for placement somewhere else.  This does the whole
+ * shebang: finding it, removing it, and cleansing it.
+ */
+void	remove_scrollback_indicator (Window *w)
+{
+}
+
+/*
+ * window_indicator_is_visible returns 1 if the window's indicator is in
+ * the scrollback and 0 if it is not in use.  It's important to call
+ * cleanse_indicator() when the indicator is removed from scrollback or 
+ * this function will break.
+ */
+void	window_indicator_is_visible (Window *w)
+{
+}
+
+/*
+ * cleanse_indicator clears the values in the indicator and makes it available
+ * for reuse.  If you haven't unlinked it from the scrollback it does that 
+ * for you.  It's important to cleanse the indicator because it does things
+ * that are used by window_indicator_is_visible().
+ */
+void	cleanse_indicator (Window *w)
+{
+}
+
+/*
+ * indicator_needs_update tells you when you do a scrollback whether the 
+ * indicator needs to be moved further down the scrollback or not.  If the
+ * indicator is not being used or if it is above your current view, then it
+ * does need to be moved down.  Otherwise it does not need to be moved.
+ */ 
+void	indicator_needs_update (Window *w)
+{
+}
+
+/*
+ * go_back_to_indicator will return the scrollback view to where the
+ * indicator is and then do a full recalculation.
+ */
+void	go_back_to_indicator (Window *w)
+{
+}
 
 /********************** SCROLLBACK BUFFER MAINTAINANCE **********************/
 /* 
@@ -5438,6 +5514,7 @@ static int	flush_scrollback (Window *w)
         w->scrolling_top_of_display = w->top_of_scrollback;
 
 	/* Delete the old scrollback */
+	/* XXXX - this should use delete_display_line! */ 
 	while ((curr_line = holder))
 	{
 		holder = curr_line->next;
@@ -6455,10 +6532,13 @@ static int	count_fixed_windows (Screen *s)
 	return count;
 }
 
-void window_change_server (Window * win, int server) {
+void	window_change_server (Window * win, int server) 
+{
     int oldserver;
 
     oldserver = win->server;
     win->server = server;
     do_hook(WINDOW_SERVER_LIST, "%u %d %d", win->refnum, oldserver, server);
 }
+
+

@@ -1,4 +1,4 @@
-/* $EPIC: input.c,v 1.57 2008/08/25 21:07:13 alex Exp $ */
+/* $EPIC: input.c,v 1.58 2008/08/25 23:58:57 jnelson Exp $ */
 /*
  * input.c: does the actual input line stuff... keeps the appropriate stuff
  * on the input line, handles insert/delete of characters/words... the whole
@@ -142,6 +142,254 @@ void	set_cut_anchor (InputItem *i)
 void	cut_input_line (InputItem *first, InputItem *last)
 {
 }
+
+/*************************************************************/
+/*
+ * add_codepoint_to_input
+ * input: codepoint -- the codepoint to insert into the input line
+ * 1) Convert codepoint into an InputItem
+ * 2) Insert it in place of, or after, the cursor
+ * 3) Update the logical cursor
+ * 4) Update the physical display
+ */
+void	add_codepoint_to_input (long codepoint)
+{
+}
+
+/*
+ * assemble_input_line
+ * param: s -- The screen whose input line is to be assembled
+ *        result -- Where the assembled input line shall be put
+ *        len -- How big the assembled input line is.
+ * 1) Transform each InputItem into a string of the appropriate encoding
+ * 2) Catenate all of these encoded strings together into 'result'
+ * 3) 'len' is the number of bytes in ``result''.
+ *
+ * Note: `result' is not necessarily a C string!  Unless the output 
+ *	  encoding being used is a C string encoding (ie, utf8)
+ * Note: `result' always ends with a nul, but that does not mean that
+ *       the first nul is this trailing nul (for some encodings, like
+ *	 ucs16, it definitely will not be!)
+ */
+size_t	assemble_input_line (Screen *s, char **result, size_t *len)
+{
+}
+
+static int 	input_puts (InputItem *i, int numcols, int echo) 
+{
+}
+
+void 	cursor_to_input (void)
+{
+}
+
+void	update_input (void *which_screen, int update)
+{
+}
+
+void 	change_input_prompt (int direction)
+{
+}
+
+void	input_move_cursor (int dir, int refresh)
+{
+}
+
+void	set_input (const char *str)
+{
+}
+
+char *	get_input (void)
+{
+}
+
+void	init_input (void)
+{
+}
+
+char *	get_input_prompt (void)
+{
+}
+
+void	set_input_prompt (void *stuff)
+{
+}
+
+BUILT_IN_KEYBINDING(input_forward_word)
+{
+}
+
+/* input_backward_word: move the cursor left on word in the input line */
+BUILT_IN_KEYBINDING(input_backward_word)
+{
+}
+
+/*
+ * input_delete_character -- Deletes the character currently under the
+ * 			     input cursor.
+ */
+BUILT_IN_KEYBINDING(input_delete_character)
+{
+}
+
+
+/*
+ * input_backspace -- Basically a combination of backward_character and
+ *		      delete_character.  No, this is not significantly
+ *		      more expensive than the old way.
+ */
+BUILT_IN_KEYBINDING(input_backspace)
+{
+}
+
+/*
+ * input_beginning_of_line: moves the input cursor to the first character in
+ * the input buffer 
+ */
+BUILT_IN_KEYBINDING(input_beginning_of_line)
+{
+}
+
+/*
+ * input_end_of_line: moves the input cursor to the last character in the
+ * input buffer 
+ */
+BUILT_IN_KEYBINDING(input_end_of_line)
+{
+}
+
+/*
+ * This removes every character from the 'anchor' position to the current
+ * position from the input line, and puts it into the cut buffer.  It does
+ * the requisite redraw as well.
+ */
+static void	cut_input (int anchor)
+{
+}
+
+/*
+ * To visualize:
+ *
+ *		This is the input buffer
+ *			  ^			(the input cursor)
+ * orig_pos points to the 'e'.
+ * c is an 'e'.
+ * LOGICAL_CURSOR is moved to the space between the 's' and the 't'.
+ * The input buffer is changed to:
+ *
+ *		This is e input buffer
+ *			^			(the input cursor)
+ */
+BUILT_IN_KEYBINDING(input_delete_to_previous_space)
+{
+}
+
+/*
+ * input_delete_previous_word: deletes from the cursor backwards to the next
+ * space character.  This is probably going to be the same effect as 
+ * delete_to_previous_space, but hey -- you know.
+ */
+BUILT_IN_KEYBINDING(input_delete_previous_word)
+{
+}
+
+/*
+ * input_delete_next_word: deletes from the cursor to the end of the next
+ * word 
+ */
+BUILT_IN_KEYBINDING(input_delete_next_word)
+{
+}
+
+/*
+ * input_add_character: adds the character c to the input buffer, repecting
+ * the current overwrite/insert mode status, etc 
+ */
+BUILT_IN_KEYBINDING(input_add_character)
+{
+}
+
+/* input_clear_to_eol: erases from the cursor to the end of the input buffer */
+BUILT_IN_KEYBINDING(input_clear_to_eol)
+{
+}
+
+/*
+ * input_clear_to_bol: clears from the cursor to the beginning of the input
+ * buffer 
+ */
+BUILT_IN_KEYBINDING(input_clear_to_bol)
+{
+}
+
+/*
+ * input_clear_line: clears entire input line
+ */
+BUILT_IN_KEYBINDING(input_clear_line)
+{
+}
+
+/*
+ * input_reset_line: clears entire input line, suitable for use in tabscripts
+ * This does not mangle the cutbuffer, so you can use it to replace the input
+ * line w/o any deleterious effects!
+ */
+BUILT_IN_KEYBINDING(input_reset_line)
+{
+}
+
+
+/*
+ * input_transpose_characters: move the character before the cursor to
+ * the position after the cursor.
+ */
+BUILT_IN_KEYBINDING(input_transpose_characters)
+{
+}
+
+
+BUILT_IN_KEYBINDING(refresh_inputline)
+{
+}
+
+/*
+ * input_yank_cut_buffer: takes the contents of the cut buffer and inserts it
+ * into the input line 
+ */
+BUILT_IN_KEYBINDING(input_yank_cut_buffer)
+{
+}
+
+
+/* used with input_move_cursor */
+#define RIGHT 1
+#define LEFT 0
+
+/* BIND functions: */
+BUILT_IN_KEYBINDING(forward_character)
+{
+}
+
+BUILT_IN_KEYBINDING(backward_character)
+{
+}
+
+/*
+ * The SEND_LINE function (the <enter> key):
+ *  1) Assemble the current input line,
+ *  2a) If the window is prompting a user, do the callback
+ *  2b) Otherwise, Hook /on input, or run parse_statement().
+ *  3) If the window is holding, unhold it
+ *  4) If the window is scrolling back and holding, scroll down
+ */
+BUILT_IN_KEYBINDING(send_line)
+{
+}
+
+/****************************************************************************/
+
+
+
 #endif
 
 /* 
@@ -1227,4 +1475,3 @@ BUILT_IN_KEYBINDING(parse_text)
 		runcmds(string, empty_string);
 	system_exception = old;
 }
-

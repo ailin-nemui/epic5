@@ -1,5 +1,9 @@
 EPIC5-0.3.10
 
+*** News 08/25/2008 -- /SET INPUT_INDICATOR_RIGHT now functional
+	It was documented below, but the code for it wasn't finished until
+	today.  So now it will start appearing on your input line.
+
 *** News 07/01/2008 -- Add servers from file -- $serverctl(READ_FILE filename)
 	You may now insert servers into the server list from a file using
 	$serverctl(READ_FILE filename) where "filename" is the name of the 

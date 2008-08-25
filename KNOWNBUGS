@@ -2,10 +2,12 @@ EPIC5 Projects, Bugs, and other Errata:
 
 KNOWN ERRATA (eg, bugs, or unresolved requests):
 ------------------------------------------------
-<none>
+* /set scroll_lines <X> crashes if <X> is greater than your window size.
+* Add /window scroll_lines
 
 ISSUES OF INTEREST
 ------------------
+* Re-implement /set cmdchars
 * You should be able to /msg @logfile
 * You should be able to move lastlog items between windows, split, merge.
 * Shattah would like something like /window omit <regex> to remove stuff.
@@ -38,6 +40,16 @@ ISSUES OF INTEREST
 * If @ var = [encode] you should be able to do $($var)(args) to call it.
 * Krisp wants a log that only logs what is not logged somewhere else.
 * UPnP support (http://miniupnp.free.fr) would fix dcc-behind-firewall dilema.
+* <twincest> hop: i would like a function that erases the last 10 lines of the
+  +display and replaces them with the output of /lastlog 10
+  <twincest> (obviously, for any number, not just 10 ;-)
+  <twincest> since i use lastlog_rewrite to timestamp the log, that would allow
+  +me to insert timestamps without duplicating text
+  <twincest> also, i would like a way to temporarily disable window updates
+  <twincest> so i can do /window upate off; /lastlog; /window update on
+  <twincest> and it outputs the lastlog without me having to wait for the entire
+  +thing to be drawn
+  <twincest> it would just appear in the scrollback
 
 [See http://www.epicsol.org/PROJECTS for things to come in the future]
 [See http://www.epicsol.org/CHANGELOG5 for things that changed in the past]
@@ -314,3 +326,8 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Add some preliminary code for sending a /msg to a logfile.
 * Make scrollback_start/end use "scroll up/down 999,999 lines"
 * This is for future consolidation of the scrollback code.
+* Make /set input_indicator_right functional now (fusion)
+* Add stub code for a scrollback indicator in the future (rb twincest)
+* Add stub code for a ucs32 input line in the future.
+* Reformat all of the /set creation code in vars.c
+

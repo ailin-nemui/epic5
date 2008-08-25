@@ -125,6 +125,8 @@ typedef	struct	WindowStru
 	int	display_counter;
 	short	hold_slider;
 
+	Display *scrollback_indicator;	/* The === thing */
+
 	/*
 	 * Window geometry stuff
 	 *
