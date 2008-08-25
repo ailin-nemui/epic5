@@ -1,4 +1,4 @@
-/* $EPIC: input.c,v 1.56 2008/07/02 00:10:28 jnelson Exp $ */
+/* $EPIC: input.c,v 1.57 2008/08/25 21:07:13 alex Exp $ */
 /*
  * input.c: does the actual input line stuff... keeps the appropriate stuff
  * on the input line, handles insert/delete of characters/words... the whole
@@ -358,7 +358,7 @@ void	update_input (void *which_screen, int update)
 
                         new_free(&ptr);
 
-                        /*ptr_free = expand_alias(get_string_var(INPUT_INDICATOR_RIGHT_VAR), empty_string);
+                        ptr_free = expand_alias(get_string_var(INPUT_INDICATOR_RIGHT_VAR), empty_string);
                         ptr = new_normalize_string(ptr_free, 0, display_line_mangler);
                         new_free(&ptr_free);
 
@@ -369,7 +369,7 @@ void	update_input (void *which_screen, int update)
                                 update = UPDATE_ALL;
                         }
 
-                        new_free(&ptr);*/
+                        new_free(&ptr);
 		}
 
 
@@ -440,10 +440,18 @@ void	update_input (void *which_screen, int update)
                          * and output the rest of the input buffer.
                          */
                         term_echo(do_echo);
-                        safe_puts(&INPUT_BUFFER[START],
-				  last_input_screen->co - cols_used, do_echo);
 
-			/*
+                        if (INPUT_BUFFER[START + last_input_screen->co - cols_used]) {
+				cols_used+=IND_RIGHT_LEN;
+				safe_puts(&INPUT_BUFFER[START],
+					  last_input_screen->co - cols_used, do_echo);
+				output_with_count(IND_RIGHT, 0, 1);
+			} else {
+				safe_puts(&INPUT_BUFFER[START],
+					  last_input_screen->co - cols_used, do_echo);
+                        }
+
+                        /*
 			 * Clear the rest of the input line and reset the cursor
 			 * to the current input position.
 			 */
@@ -476,7 +484,14 @@ void	update_input (void *which_screen, int update)
 				max -= IND_LEFT_LEN;
 
 			term_echo(do_echo);
-			safe_puts(&(THIS_CHAR), max, do_echo);
+
+                        if (INPUT_BUFFER[LOGICAL_CURSOR+max]) {
+                                max -= IND_RIGHT_LEN;
+                                safe_puts(&(THIS_CHAR), max, do_echo);
+                                output_with_count(IND_RIGHT, 0, 1);
+                        } else {
+                                safe_puts(&(THIS_CHAR), max, do_echo);
+                        }
 			term_clear_to_eol();
 			update = UPDATE_JUST_CURSOR;
 		}
@@ -535,7 +550,8 @@ void 	change_input_prompt (int direction)
 		*INPUT_BUFFER = 0;
                 START = 0;
 		LOGICAL_CURSOR = 0;
-	}
+                memset(INPUT_BUFFER, 0, sizeof(INPUT_BUFFER));
+        }
 
 	update_input(last_input_screen, UPDATE_ALL);
 }
@@ -626,6 +642,7 @@ void	init_input (void)
 	*INPUT_BUFFER = 0;
         START = 0;
         LOGICAL_CURSOR = 0;
+        memset(INPUT_BUFFER, 0, sizeof(INPUT_BUFFER));
 }
 
 /* get_input_prompt: returns the current input_prompt */
@@ -955,7 +972,8 @@ BUILT_IN_KEYBINDING(input_clear_line)
 	*INPUT_BUFFER = 0;
         START = 0;
         LOGICAL_CURSOR=0;
-	update_input(last_input_screen, UPDATE_FROM_CURSOR);
+        memset(INPUT_BUFFER, 0, sizeof(INPUT_BUFFER));
+        update_input(last_input_screen, UPDATE_FROM_CURSOR);
 }
 
 /*
@@ -968,8 +986,9 @@ BUILT_IN_KEYBINDING(input_reset_line)
 	*INPUT_BUFFER = 0;
 	START = 0;
         LOGICAL_CURSOR=0;
+        memset(INPUT_BUFFER, 0, sizeof(INPUT_BUFFER));
 
-	if (!string)
+        if (!string)
 		set_input(empty_string);
 	else
 		set_input(string);	/* This calls update_input() */
@@ -1069,6 +1088,7 @@ BUILT_IN_KEYBINDING(send_line)
 	*INPUT_BUFFER = 0;
         START = 0;
         LOGICAL_CURSOR = 0;
+        memset(INPUT_BUFFER, 0, sizeof(INPUT_BUFFER));
 
 	update_input(last_input_screen, UPDATE_ALL);
 
