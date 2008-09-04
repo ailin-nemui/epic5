@@ -1,4 +1,4 @@
-/* $EPIC: ruby.c,v 1.11 2008/09/04 20:54:43 howl Exp $ */
+/* $EPIC: ruby.c,v 1.12 2008/09/04 21:10:01 jnelson Exp $ */
 /*
  * ruby.c -- Calling RUBY from epic.
  *
@@ -103,16 +103,19 @@ void ruby_startstop (int value)
 {
 	VALUE	rubyval;
 
-	if (is_ruby_running)
+	/* If it is already in the state we want, do nothing. */
+	if (is_ruby_running == value)
+		return;
+
+	/* Do a shutdown */
+	if (value == 0)
 	{
-		if (value)
-		{
-			/* Do shutdown stuff */
-		}
 		is_ruby_running = 0;
+		/* Do shutdown stuff */
 		return;
 	}
 
+	/* Do a startup */
 	++is_ruby_running;
 	ruby_init();
 	ruby_init_loadpath();
