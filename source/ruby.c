@@ -1,4 +1,4 @@
-/* $EPIC: ruby.c,v 1.10 2008/06/28 04:19:18 jnelson Exp $ */
+/* $EPIC: ruby.c,v 1.11 2008/09/04 20:54:43 howl Exp $ */
 /*
  * ruby.c -- Calling RUBY from epic.
  *
@@ -127,7 +127,7 @@ void ruby_startstop (int value)
 	rb_gc_register_address(&rubyclass);
 
 	/* XXX Is it a hack to do it like this instead of in pure C? */
-	rubyval = rb_eval_string("EPICstdout = Object.new\n"
+	rubyval = rb_eval_string("EPICstdout = Object.new unless defined? EPICstdout\n"
                                  "def EPICstdout.write(string) \n"
 				 "   string.chomp! \n"
 				 "   EPIC.echo(\"RUBY-ERROR: #{string}\") \n"
