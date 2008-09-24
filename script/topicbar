@@ -1,0 +1,193 @@
+#
+# This script supplies a topicbar.
+# It uses the status_format or status_format1 to format output.
+# Currently it "hogs" topline 1.
+#
+# Shut off with /SET TOPICBAR OFF. The default is ON.
+#
+# I hope you like it. :-)
+#
+# - howl@epicsol.org sep'08
+#
+if (word(2 $loadinfo()) != [pf])
+{
+	load -pf $word(1 $loadinfo());
+	return;
+};
+package TOPICBAR;
+alias topicbar.update
+{
+	fe (topic 332 331 333 switch_channels switch_windows set) li
+	{
+		fe ($hookctl(list hooks $li)) ho
+		{
+			if (hookctl(get $ho package) == 'TOPICBAR')
+			{
+				@ hookctl(remove $ho);
+			};
+		};
+	};
+	if (getset(topicbar) == 'off')
+	{
+		topicbar.off;
+		return;
+	};
+	^on #-topic + "*"
+	{
+		topicbar.dataupdate $serverctl(from_server) $1-;
+	};
+	@ hookctl(set hook $hookctl(last_created) package topicbar);
+	^on #-332 + "*"
+	{
+		topicbar.dataupdate $serverctl(from_server) $1-;
+	};
+	@ hookctl(set hook $hookctl(last_created) package topicbar);
+	^on #-331 + "*"
+	{
+		topicbar.dataupdate $serverctl(from_server) $1;
+	};
+	@ hookctl(set hook $hookctl(last_created) package topicbar);
+	^on #-switch_channels + "*"
+	{
+		topicbar.winupdate $0;
+	};
+	@ hookctl(set hook $hookctl(last_created) package topicbar);
+	^on #-switch_windows + "*"
+	{
+		topicbar.winupdate $3;
+	};
+	@ hookctl(set hook $hookctl(last_created) package topicbar);
+	topicbar.harvest;
+};
+alias topicbar.off (list default $winrefs())
+{
+	fe ($list) win
+	{
+		window $win toplines 0;
+		window $win topline 0;
+	};
+};
+alias topicbar.winupdate (list default $winrefs())
+{
+	fe ($list) win
+	{
+		@ :se = windowctl(get $win server);
+		@ :ch = winchan($win);
+		@ :it = matchitem(topicbar $se $ch *);
+		@ :st = afterw($ch $getitem(topicbar $it));
+		@ :ol = 1;
+		if (windowctl(get $win double) == 1)
+		{
+			@ :for = windowctl(get $win status_format1);
+			if (!@for)
+			{
+				@ for = getset(status_format1);
+			};
+		}
+		else
+		{
+			@ :for = windowctl(get $win status_format);
+			if (!@for)
+			{
+				@ for = getset(status_format);
+			};
+		};
+		@ for = before($left(1 $stripcrap(all,ansi $for)) $for);
+		if (!@ch || it < 0 || #st == 0)
+		{
+			window $win toplines 0;
+			window $win topline $ol;
+			continue;
+		};
+		window $win toplines $ol;
+		window $win topline $ol "$for $st";
+	};
+};
+alias topicbar.dataupdate
+{
+	@ :item = matchitem(topicbar $0 $1 *);
+	if (item < 0)
+	{
+		@ :item = numitems(topicbar);
+	};
+	@ :st = aliasctl(alias exist utf8hack) ? utf8hack($2-) : [$2-];
+	@ setitem(topicbar $item $0 $1 $st);
+	xeval -s $0
+	{
+		topicbar.winupdate $chanwin($1);
+	};
+};
+alias topicbar.flush
+{
+	@ delarray(topicbar);
+};
+alias topicbar.harvest
+{
+	@ topicbar.harvest = myservers(*);
+	fe ($topicbar.harvest) server
+	{
+		xeval -s $server {@ topicbar.harvest[$server] = mychannels();};
+	};
+	topicbar.harvest_next;
+};
+alias topicbar.harvest_next
+{
+	fe (331 332 333) li
+	{
+		fe ($hookctl(list hooks $li)) ho
+		{
+			if (hookctl(get hook $ho package) == 'topicbar_harvest')
+			{
+				@ hookctl(remove $ho);
+			};
+		};
+	};
+	@ :server = word(0 $topicbar.harvest);
+	@ :channel = pop(topicbar.harvest[$server]);
+	if (!@channel && !@topicbar.harvest[$server])
+	{
+		shift topicbar.harvest;
+		^assign -topicbar.harvest[$server];
+		@ :server = word(0 $topicbar.harvest);
+		if (!@topicbar.harvest) ^assign -topicbar.harvest;
+		@ :channel = pop(topicbar.harvest[$server]);
+		if (!@channel)
+		{
+			^assign -topicbar.harvest;
+			return;
+		};
+	};
+	@ :p = ["$serverctl(get $server itsname) $channel *"];
+	^on ^331 $p
+	{
+		defer {topicbar.harvest_next;};
+		@ hookctl(remove $word(0 $hookctl(exec)));
+	};
+	@ hookctl(set hook $hookctl(last_created) package topicbar_harvest);
+	^on ^332 $p
+	{
+		@ hookctl(remove $word(0 $hookctl(exec)));
+	};
+	@ hookctl(set hook $hookctl(last_created) package topicbar_harvest);
+	^on ^333 $p
+	{
+		@ hookctl(remove $word(0 $hookctl(exec)));
+		defer {topicbar.harvest_next;};
+	};
+	@ hookctl(set hook $hookctl(last_created) package topicbar_harvest);
+	xeval -s $server {topic $channel;}
+};
+alias topicbar.list
+{
+	@ :item = 0;
+	while ((:st = getitem(topicbar $item)) != '')
+	{
+		@ item++;
+		echo $st;
+	}
+};
+@ symbolctl(create topicbar);
+@ symbolctl(set topicbar 1 builtin_variable type bool);
+@ symbolctl(set topicbar 1 builtin_variable script topicbar.update);
+@ symbolctl(set topicbar 1 builtin_variable data on);
+# vim: tabstop=2 syntax=
