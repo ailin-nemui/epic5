@@ -17,7 +17,7 @@ if (word(2 $loadinfo()) != [pf])
 package TOPICBAR;
 alias topicbar.update
 {
-	fe (topic 332 331 333 switch_channels switch_windows set) li
+	fe (topic 332 331 333 switch_channels switch_windows part server_lost) li
 	{
 		fe ($hookctl(list hooks $li)) ho
 		{
@@ -55,6 +55,19 @@ alias topicbar.update
 	^on #-switch_windows + "*"
 	{
 		topicbar.winupdate $3;
+	};
+	@ hookctl(set hook $hookctl(last_created) package topicbar);
+	^on #-part + "*"
+	{
+		@ :se = serverctl(from_server);
+		if ([$0] != serverctl(get $se nick))
+			return;
+		topicbar.datapurge $se $1;
+	};
+	@ hookctl(set hook $hookctl(last_created) package topicbar);
+	^on #-server_lost + "*"
+	{
+		topicbar.datapurge $0;
 	};
 	@ hookctl(set hook $hookctl(last_created) package topicbar);
 	topicbar.harvest;
@@ -180,11 +193,28 @@ alias topicbar.harvest_next
 alias topicbar.list
 {
 	@ :item = 0;
+	xecho -b Topicbar data;
 	while ((:st = getitem(topicbar $item)) != '')
 	{
+		xecho $item: $st;
 		@ item++;
-		echo $st;
 	}
+};
+alias topicbar.purge
+{
+	@ :l = [$*];
+	if (@l == 0)
+		@ l = [*];
+	while ((:it = matchitem(topicbar $l)) > -1)
+	{
+		@ delitem(topicbar $it);
+	};
+	while ((:it = matchitem(topicbar $l *)) > -1)
+	{
+		@ delitem(topicbar $it);
+	};
+	if (numitems(topicbar) == 0)
+		@ delarray(topicbar);
 };
 @ symbolctl(create topicbar);
 @ symbolctl(set topicbar 1 builtin_variable type bool);
