@@ -331,3 +331,5 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Add stub code for a ucs32 input line in the future.
 * Reformat all of the /set creation code in vars.c
 * Fix problem with ruby startup code running over and over again (howl)
+* Add script topicbar
+* Fix toplines so they don't sometimes end one column short
