@@ -1,4 +1,4 @@
-/* $EPIC: functions.c,v 1.270 2008/04/05 00:20:38 jnelson Exp $ */
+/* $EPIC: functions.c,v 1.271 2008/10/01 22:19:22 howl Exp $ */
 /*
  * functions.c -- Built-in functions for ircII
  *
@@ -250,6 +250,7 @@ static	char
 	*function_fix_arglist	(char *),
         *function_fix_width     (char *),
 	*function_floor		(char *),
+	*function_from 		(char *),
 	*function_fromw 	(char *),
 	*function_fsize	 	(char *),
 	*function_ftime		(char *),
@@ -518,6 +519,7 @@ static BuiltInFunctions	built_in_functions[] =
 	{ "FLOOR",		function_floor		},
 	{ "FNEXIST",		function_fnexist	},
 	{ "FREWIND",		function_rewind		},
+	{ "FROM",              	function_from 		},
 	{ "FROMW",              function_fromw 		},
 	{ "FSEEK",		function_seek		},
 	{ "FSIZE",		function_fsize		},
@@ -6939,3 +6941,21 @@ BUILT_IN_FUNCTION(function_check_code, input)
 	RETURN_INT(0);			/* Looks ok to me */
 }
 
+/*
+ * This function is like fromw(), but for strings.
+ */
+BUILT_IN_FUNCTION(function_from, input)
+{
+	int cut;
+	
+	GET_INT_ARG(cut, input);
+	RETURN_IF_EMPTY(input);
+	
+	if (cut < 0)
+		cut = 0;
+	
+	if (strlen(input) <= cut)
+		RETURN_EMPTY;
+
+	RETURN_STR(input + cut);
+}

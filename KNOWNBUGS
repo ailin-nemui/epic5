@@ -333,3 +333,4 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Fix problem with ruby startup code running over and over again (howl)
 * Add script topicbar
 * Fix toplines so they don't sometimes end one column short
+* Add function $from(<count> <string>). Returns string from count bytes.
