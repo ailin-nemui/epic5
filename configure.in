@@ -4,9 +4,9 @@ dnl except those bits attributed otherwise.
 dnl thanks to the screen 3.3 configure.in for giving me examples to
 dnl work from and steal ;)
 dnl
-dnl @(#)$Id: configure.in,v 1.67 2008/06/26 04:23:09 jnelson Exp $
+dnl @(#)$Id: configure.in,v 1.68 2008/10/11 01:15:56 jnelson Exp $
 
-AC_REVISION($Revision: 1.67 $)dnl
+AC_REVISION($Revision: 1.68 $)dnl
 AC_INIT(source/irc.c)
 AC_CONFIG_HEADER(include/defs.h)
 
@@ -63,6 +63,7 @@ dnl Checking for solaris cc
 dnl
 AC_MSG_CHECKING(for solaris cc)
 ( $CC -V 2>&1 | grep 'Sun C' > /dev/null ) && \
+	sun_compiler="yes"
 	CFLAGS="$CFLAGS -erroff=E_ARG_INCOMPATIBLE_WITH_ARG,E_ASSIGNMENT_TYPE_MISMATCH"
 AC_MSG_RESULT(ok)
 
@@ -82,16 +83,32 @@ AC_ARG_WITH(threaded-stdout,
 		with_threaded_stdout="no"
 	elif test "x$withval" = "xy" ; then
 		with_threaded_stdout="yes"
-		CFLAGS="$CFLAGS -pthread"
+		if [ "x$sun_compiler" = "xyes" ] ; then
+			CFLAGS="CFLAGS -mt"
+		else
+			CFLAGS="$CFLAGS -pthread"
+		fi
 	elif test "x$withval" = "xY" ; then
 		with_threaded_stdout="yes"
-		CFLAGS="$CFLAGS -pthread"
+		if [ "x$sun_compiler" = "xyes" ] ; then
+			CFLAGS="CFLAGS -mt"
+		else
+			CFLAGS="$CFLAGS -pthread"
+		fi
 	elif test "x$withval" = "xyes" ; then
 		with_threaded_stdout="yes"
-		CFLAGS="$CFLAGS -pthread"
+		if [ "x$sun_compiler" = "xyes" ] ; then
+			CFLAGS="CFLAGS -mt"
+		else
+			CFLAGS="$CFLAGS -pthread"
+		fi
 	elif test "x$withval" = "xYES" ; then
 		with_threaded_stdout="yes"
-		CFLAGS="$CFLAGS -pthread"
+		if [ "x$sun_compiler" = "xyes" ] ; then
+			CFLAGS="CFLAGS -mt"
+		else
+			CFLAGS="$CFLAGS -pthread"
+		fi
 	else
 		with_threaded_stdout="no"
 	fi
@@ -122,7 +139,11 @@ AC_ARG_WITH(multiplex,
 		with_multiplex="port_create"
 	elif test "x$withval" = "xpthread"; then
 		with_multiplex="pthread_create"
-		CFLAGS="$CFLAGS -pthread"
+		if [ "x$sun_compiler" = "xyes" ] ; then
+			CFLAGS="CFLAGS -mt"
+		else
+			CFLAGS="$CFLAGS -pthread"
+		fi
 	else
 		with_multiplex="select"
 	fi

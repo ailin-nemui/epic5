@@ -78,11 +78,10 @@ static		int	hour = -1;
 	struct 	tm	time_val;
 		time_t	hideous;
 
-	/*
-	 * This is cheating because we only call localtime() once per minute.
-	 * This implicitly assumes that you only want to get the localtime
-	 * info once every minute, which we do.  If you wanted to get it every
-	 * second (which we dont), you DONT WANT TO DO THIS!
+	/* 
+	 * Every time /set clock_interval goes off this function calls
+	 * localtime() to update $Z.  Localtime() is very expensive, so
+	 * if you /set clock_interval too low you will use a lot of cpu.
 	 */
 	get_time(&tv);
 	hideous = tv.tv_sec;
@@ -98,6 +97,9 @@ static		int	hour = -1;
 		strftime(current_clock, sizeof current_clock,
 				strftime_12hour, &time_val);
 
+	/*
+	 * Either way we only update /on timer and /on idle every minute.
+	 */
 	if ((time_val.tm_min != min) || (time_val.tm_hour != hour))
 	{
 		int	old_server = from_server;
@@ -287,6 +289,15 @@ struct system_timer system_timers[] = {
 	  NULL 			}
 };
 
+/*
+ * This is a unified callback function that handles the processing for all
+ * of the system timers.  
+ * It calculates how long until the callback should be called again:
+ *	If CPU SAVER mode is on, then /set CPU_SAVE_EVERY seconds
+ *	If it is off, then the next round /SET *_INTERVAL seconds
+ *	  where * is "CLOCK", "NOTIFY" or "MAIL".
+ * Then it calls the processing callback ("callback") to do the work.
+ */
 static int	system_timer (void *entry)
 {
 	double	timeout = 0;

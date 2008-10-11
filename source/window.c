@@ -1,4 +1,4 @@
-/* $EPIC: window.c,v 1.197 2008/08/25 23:58:57 jnelson Exp $ */
+/* $EPIC: window.c,v 1.198 2008/10/11 01:15:59 jnelson Exp $ */
 /*
  * window.c: Handles the organzation of the logical viewports (``windows'')
  * for irc.  This includes keeping track of what windows are open, where they
@@ -3350,6 +3350,7 @@ static Window *window_discon (Window *window, char **args)
 	reassign_window_channels(window->refnum);
 	destroy_window_waiting_channels(window->refnum);
 	window_change_server(window, NOSERV); /* XXX This shouldn't be set here. */
+	window_statusbar_needs_update(window);
 	return window;
 }
 
