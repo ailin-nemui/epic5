@@ -1,4 +1,4 @@
-/* $EPIC: input.c,v 1.58 2008/08/25 23:58:57 jnelson Exp $ */
+/* $EPIC: input.c,v 1.59 2008/10/15 16:07:55 alex Exp $ */
 /*
  * input.c: does the actual input line stuff... keeps the appropriate stuff
  * on the input line, handles insert/delete of characters/words... the whole
@@ -957,15 +957,15 @@ BUILT_IN_KEYBINDING(input_backward_word)
 	cursor_to_input();
 
 	/* If already at the start of a word, move back a position */
-	if (!WHITESPACE(THIS_CHAR) && WHITESPACE(PREV_CHAR))
+        if (!WHITESPACE(THIS_CHAR) && WHITESPACE(PREV_CHAR) && (LOGICAL_CURSOR > 0))
 		input_move_cursor(-1, 1);
 
 	/* Move to the start of the current whitespace */
-	while ((THIS_CHAR) && WHITESPACE(THIS_CHAR))
+	while (/*(THIS_CHAR) &&*/ WHITESPACE(THIS_CHAR) && (LOGICAL_CURSOR > 0))
 		input_move_cursor(-1, 1);
 
 	/* Move to the start of the current word */
-	while ((THIS_CHAR) && !WHITESPACE(THIS_CHAR))
+	while (/*(THIS_CHAR) &&*/ !WHITESPACE(THIS_CHAR) && (LOGICAL_CURSOR > 0))
 		input_move_cursor(-1, 1);
 
 	/* If we overshot our goal, then move forward */
@@ -1111,7 +1111,7 @@ BUILT_IN_KEYBINDING(input_delete_previous_word)
 
 	cursor_to_input();
 
-	if (LOGICAL_CURSOR <= 0)
+        if (LOGICAL_CURSOR <= 0)
 		return;
 
 	anchor = LOGICAL_CURSOR;

@@ -1,4 +1,4 @@
-/* $EPIC: functions.c,v 1.271 2008/10/01 22:19:22 howl Exp $ */
+/* $EPIC: functions.c,v 1.272 2008/10/15 16:07:55 alex Exp $ */
 /*
  * functions.c -- Built-in functions for ircII
  *
@@ -401,7 +401,7 @@ static	char
 	*function_tcl		(char *),
 #endif
 	*function_tobase	(char *),
-	*function_tow		(char *),
+        *function_tow		(char *),
 	*function_translate 	(char *),
 	*function_truncate 	(char *),
 	*function_ttyname	(char *),
@@ -429,7 +429,8 @@ extern char
 	*function_push		(char *),
 	*function_pop		(char *),
 	*function_shift		(char *),
-	*function_unshift	(char *),
+        *function_shiftseg      (char *),
+        *function_unshift	(char *),
 	*function_shiftbrace	(char *);
 
 typedef char *(bf) (char *);
@@ -682,6 +683,7 @@ static BuiltInFunctions	built_in_functions[] =
 	{ "SETITEM",            function_setitem 	},
 	{ "SHIFT",		function_shift 		},
 	{ "SHIFTBRACE",		function_shiftbrace	},
+	{ "SHIFTSEG",           function_shiftseg       },
 	{ "SIN",		function_sin		},
 	{ "SINH",		function_sinh		},
 	{ "SORT",		function_sort		},
@@ -715,7 +717,7 @@ static BuiltInFunctions	built_in_functions[] =
 	{ "TIME",		function_time 		},
 	{ "TIMERCTL",		function_timerctl	},
 	{ "TOBASE",		function_tobase 	},
-	{ "TOLOWER",		function_tolower 	},
+        { "TOLOWER",		function_tolower 	},
 	{ "TOUPPER",		function_toupper 	},
 	{ "TOW",                function_tow 		},
 	{ "TR",			function_translate 	},
@@ -2572,6 +2574,50 @@ char *function_shiftbrace (char *word)
 	if (!booya)
 		RETURN_EMPTY;
 	return booya;
+}
+
+char *function_shiftseg (char *input)
+{
+	char *var;
+	char *tok;
+
+        char *placeholder;
+	char *blah;
+
+	if (!input || !*input)
+		RETURN_EMPTY;
+
+	GET_DWORD_ARG(tok, input);
+        GET_FUNC_ARG(var, input);
+
+	upper(var);
+
+	placeholder = get_variable(var);
+
+        ssize_t x = stristr(placeholder, tok);
+
+        if (x < 0) {
+                add_var_alias(var, empty_string, 0);
+		RETURN_STR(placeholder);
+        }
+
+        blah = placeholder + x;
+
+        /* we chop our string in half here, separating the result from
+	 what gets placed back into our variable */
+	*blah=0;
+        /* then we skip over our token, since it's a separator and not data */
+	blah+=strlen(tok);
+
+	if (var)
+                add_var_alias(var, blah, 0);
+
+        /* this will copy everything from the beginning up until our token */
+	blah = malloc_strdup(placeholder);
+
+	new_free(&placeholder);
+
+	return blah;
 }
 
 char *function_shift (char *word)
