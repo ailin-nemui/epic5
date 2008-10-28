@@ -1,6 +1,6 @@
 #! /bin/sh
 
-# From configure.in Revision: 1.67 # Guess values for system-dependent variables and create Makefiles.
+# From configure.in Revision: 1.68 # Guess values for system-dependent variables and create Makefiles.
 # Generated automatically using autoconf version 2.13 
 # Copyright (C) 1992, 93, 94, 95, 96 Free Software Foundation, Inc.
 #
@@ -949,7 +949,7 @@ echo "$ac_t""$with_extra_libdir" 1>&6
 echo $ac_n "checking for solaris cc""... $ac_c" 1>&6
 echo "configure:951: checking for solaris cc" >&5
 ( $CC -V 2>&1 | grep 'Sun C' > /dev/null ) && \
-	sun_compiler="yes"
+	sun_compiler="yes" \
 	CFLAGS="$CFLAGS -erroff=E_ARG_INCOMPATIBLE_WITH_ARG,E_ASSIGNMENT_TYPE_MISMATCH"
 echo "$ac_t""ok" 1>&6
 
