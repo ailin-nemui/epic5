@@ -1,4 +1,4 @@
-/* $EPIC: dcc.c,v 1.152 2008/03/29 19:00:16 jnelson Exp $ */
+/* $EPIC: dcc.c,v 1.153 2008/11/01 18:04:50 jnelson Exp $ */
 /*
  * dcc.c: Things dealing client to client connections. 
  *
@@ -51,6 +51,7 @@
 #include "termx.h"
 #include "reg.h"
 #include "alias.h"
+#include "timer.h"
 
 #define DCC_BLOCK_SIZE (1<<11)
 
@@ -1064,6 +1065,56 @@ static int	dcc_connected (int fd)
 	return 0;		/* Going to keep it. */
 }
 
+int	do_expire_dcc_connects (void *stuff)
+{
+	int	old_server = from_server;
+	int	seconds;
+	DCC_list *dcc;
+	Timeval	right_now;
+	int	l;
+
+	/*
+	 * Initialize our idea of what is going on.
+	 */
+	if (from_server == NOSERV)
+		from_server = get_window_server(0);
+
+	get_time(&right_now);
+	if ((seconds = get_int_var(DCC_CONNECT_TIMEOUT_VAR)) == 0)
+		return;		/* Do not time out if == 0 */
+
+	lock_dcc(NULL);
+	for (dcc = ClientList ; dcc != NULL ; dcc = dcc->next)
+	{
+	    if (!(dcc->flags & DCC_CONNECTING))
+		continue;
+
+	    if (time_diff(dcc->lasttime, right_now) >= seconds)
+	    {
+                unsigned my_type = dcc->flags & DCC_TYPES;
+                char *encoded_description;
+
+                encoded_description = dcc_urlencode(dcc->description);
+		l = message_from(dcc->user, LEVEL_DCC);
+		if (do_hook(DCC_LOST_LIST,"%s %s %s CONNECT TIMED OUT",
+		        dcc->user,
+		        dcc_types[my_type],
+			encoded_description ? encoded_description : "<any>"))
+                    say("DCC %s:%s to %s -- connection timed out",
+                        dcc_types[my_type],
+                        dcc->description ? dcc->description : "<any>",
+                        dcc->user);
+		dcc->flags |= DCC_DELETE;
+		pop_message_from(l);
+	    }
+	}
+	unlock_dcc(NULL);
+
+	dcc_garbage_collect();
+	from_server = old_server;
+	return 0;
+}
+
 /*
  * Whenever a DCC changes state from WAITING->ACTIVE, it calls this function
  * to initiate the internet connection for the transaction.
@@ -1074,6 +1125,7 @@ static	int	dcc_connect (DCC_list *dcc)
 	int	retval = 0;
 	SS	local;
 	socklen_t	locallen;
+	int	seconds;
 
 	/*
 	 * Initialize our idea of what is going on.
@@ -1128,6 +1180,12 @@ static	int	dcc_connect (DCC_list *dcc)
 
 	dcc->flags |= DCC_CONNECTING;
 	new_open(dcc->socket, do_dcc, NEWIO_CONNECT, 0, dcc->server);
+
+	if ((seconds = get_int_var(DCC_CONNECT_TIMEOUT_VAR)) > 0)
+		add_timer(0, empty_string, seconds, 1,
+			  do_expire_dcc_connects, NULL, NULL,
+			  GENERAL_TIMER, -1, 0);
+
 	from_server = old_server;
 	get_time(&dcc->lasttime);
 	break;

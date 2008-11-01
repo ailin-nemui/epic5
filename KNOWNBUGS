@@ -10,6 +10,7 @@ KNOWN ERRATA (eg, bugs, or unresolved requests):
 * Document the wikihelp for lastlog with stuff like -context.
 * Don't include termcap stuff if we're using terminfo, it conflicts.
 * Unique refnums for scrollback items in windows?
+* There needs to be timeouts for /dcc get or /dcc chat
 
 ISSUES OF INTEREST
 ------------------
@@ -342,3 +343,4 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Add function $from(<count> <string>). Returns string from count bytes.
 * Add some support in configure for sun's compiler which uses -mt for threads
 * Make the status bar redraw after /window discon (nb zlonix)
+* New /SET, /SET DCC_CONNECT_TIMEOUT (see UPDATES)

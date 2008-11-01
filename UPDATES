@@ -1,5 +1,14 @@
 EPIC5-0.3.10
 
+*** News 11/01/2008 -- New /SET, /SET DCC_CONNECT_TIMEOUT
+	This set will control how long a nonblocking connect for a /dcc get
+	or /dcc chat can go before the client decides to abandon it.  The 
+	value is in seconds, and 0 turns this off (connects will not time out)
+	The default value is 30 seconds.  This feature uses system timers,
+	and you shouldn't change the value of this /set while a connect is 
+	pending or you'll confuse things and your connects probably won't
+	time out properly.
+
 *** News 09/24/2008 -- New script, 'topicbar'
 	The idea with this script is to use topline 1 of any window
 	with a channel to display the topic of the given channel.

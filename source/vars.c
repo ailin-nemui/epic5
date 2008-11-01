@@ -1,4 +1,4 @@
-/* $EPIC: vars.c,v 1.105 2008/08/25 23:58:57 jnelson Exp $ */
+/* $EPIC: vars.c,v 1.106 2008/11/01 18:04:50 jnelson Exp $ */
 /*
  * vars.c: All the dealing of the irc variables are handled here. 
  *
@@ -290,6 +290,7 @@ void 	init_variables_stage1 (void)
 	VAR(CPU_SAVER_EVERY, 		INT,  set_cpu_saver_every);
 	VAR(CURRENT_WINDOW_LEVEL, 	STR,  set_current_window_mask);
 	VAR(DCC_AUTO_SEND_REJECTS, 	BOOL, NULL);
+	VAR(DCC_CONNECT_TIMEOUT,	INT,  NULL);
 	VAR(DCC_DEQUOTE_FILENAMES, 	BOOL, NULL);
 	VAR(DCC_LONG_PATHNAMES, 	BOOL, NULL);
 	VAR(DCC_SLIDING_WINDOW, 	INT,  NULL);
