@@ -4,7 +4,6 @@ KNOWN ERRATA (eg, bugs, or unresolved requests):
 ------------------------------------------------
 * /set scroll_lines <X> crashes if <X> is greater than your window size.
 * Add /window scroll_lines
-* Howl found bug when you do alias fish (options ...) because that's bogus arg.
 * Implied on hooks still result in Unmatched { errors if you type { because
   of the run-through expand_alias!
 * Document the wikihelp for lastlog with stuff like -context.
@@ -344,3 +343,4 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Add some support in configure for sun's compiler which uses -mt for threads
 * Make the status bar redraw after /window discon (nb zlonix)
 * New /SET, /SET DCC_CONNECT_TIMEOUT (see UPDATES)
+* Add /window scroll_lines, which overrules /set scroll_lines (see updates)

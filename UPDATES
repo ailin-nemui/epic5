@@ -1,5 +1,10 @@
 EPIC5-0.3.10
 
+*** News 11/24/2008 -- New /window operation, /WINDOW SCROLL_LINES
+	The /WINDOW SCROLL_LINES operation overrules /SET SCROLL_LINES for
+	one particular window.  The value may be -1 (which is the default, 
+	and means use /SET SCROLL_LINES) or a positive number.
+
 *** News 11/01/2008 -- New /SET, /SET DCC_CONNECT_TIMEOUT
 	This set will control how long a nonblocking connect for a /dcc get
 	or /dcc chat can go before the client decides to abandon it.  The 

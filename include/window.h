@@ -84,6 +84,7 @@ typedef	struct	WindowStru
 	short	swappable;		/* Can it be swapped in or out? */
 	short	scrolladj;		/* Push back top-of-win on grow? */
 	short	killable;		/* Can it be killed? */
+	short	scroll_lines;		/* How many lines scroll at a time? */
 
 	/* Input and Status stuff */
 	char *	prompt;			/* Current EXEC prompt for window */

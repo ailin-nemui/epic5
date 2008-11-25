@@ -1,4 +1,4 @@
-/* $EPIC: window.c,v 1.198 2008/10/11 01:15:59 jnelson Exp $ */
+/* $EPIC: window.c,v 1.199 2008/11/25 04:06:52 jnelson Exp $ */
 /*
  * window.c: Handles the organzation of the logical viewports (``windows'')
  * for irc.  This includes keeping track of what windows are open, where they
@@ -227,6 +227,7 @@ Window	*new_window (Screen *screen)
 	new_w->swappable = 1;
 	new_w->scrolladj = 1;
 	new_w->killable = 1;
+	new_w->scroll_lines = -1;
 
 	/* Input prompt and status bar stuff */
 	new_w->prompt = NULL;		/* Filled in later */
@@ -4611,6 +4612,40 @@ static Window *window_scrolladj (Window *window, char **args)
 	return window;
 }
 
+static Window *window_scroll_lines (Window *window, char **args)
+{
+	int new_value = 0;
+
+	if (!args || !*args || !**args)
+	{
+		if (window->scroll_lines < 0)
+			say("Window SCROLL_LINES is <default>");
+		else
+			say("Window SCROLL_LINES is %d", window->scroll_lines);
+		return NULL;
+	}
+
+	new_value = get_number("SCROLL_LINES", args);
+	if (new_value == 0 || new_value < -1)
+	{
+		say("Window SCROLL_LINES must be -1 or a positive value");
+		return NULL;
+	}
+	else if (new_value > window->display_lines)
+	{
+		say("Maximum lines that may be scrolled is %d [%d]", 
+			window->display_lines, new_value);
+		new_value = current_window->display_lines;
+	}
+
+	window->scroll_lines = new_value;
+	if (window->scroll_lines < 0)
+		say("Window SCROLL_LINES is <default>");
+	else
+		say("Window SCROLL_LINES is %d", window->scroll_lines);
+
+	return window;
+}
 
 static	Window *window_scrollback (Window *window, char **args)
 {
@@ -4629,6 +4664,7 @@ static	Window *window_scrollback (Window *window, char **args)
 	say("Window scrollback size set to %d", window->display_buffer_max);
 	return window;
 }
+
 
 static	Window *window_scroll_backward (Window *window, char **args)
 {
@@ -5090,6 +5126,7 @@ static const window_ops options [] = {
 	{ "SCROLL_BACKWARD",	window_scroll_backward	},
 	{ "SCROLL_END",		window_scroll_end	},
 	{ "SCROLL_FORWARD",	window_scroll_forward	},
+	{ "SCROLL_LINES",	window_scroll_lines	},
 	{ "SCROLL_START",	window_scroll_start	},
 	{ "SEARCH_BACK",	window_search_back	},
 	{ "SEARCH_FORWARD",	window_search_forward	},
@@ -5413,7 +5450,8 @@ static int	add_to_display (Window *window, const unsigned char *str, intmax_t re
 	while (window->scrolling_distance_from_display_ip > 
 				window->display_lines)
 	{
-		if ((scroll = get_int_var(SCROLL_LINES_VAR)) <= 0)
+		if ((scroll = window->scroll_lines) <= 0)
+		    if ((scroll = get_int_var(SCROLL_LINES_VAR)) <= 0)
 			scroll = 1;
 
 		for (i = 0; i < scroll; i++)
@@ -6300,6 +6338,8 @@ char 	*windowctl 	(char *input)
 		RETURN_INT(w->swappable);
 	    } else if (!my_strnicmp(listc, "SCROLLADJ", len)) {
 		RETURN_INT(w->swappable);
+	    } else if (!my_strnicmp(listc, "SCROLL_LINES", len)) {
+		RETURN_INT(w->scroll_lines);
 	    } else if (!my_strnicmp(listc, "DECEASED", len)) {
 		RETURN_INT(w->deceased);
 	    } else if (!my_strnicmp(listc, "TOPLINE", len)) {
