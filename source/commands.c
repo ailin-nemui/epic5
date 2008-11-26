@@ -1,4 +1,4 @@
-/* $EPIC: commands.c,v 1.183 2008/07/02 00:10:28 jnelson Exp $ */
+/* $EPIC: commands.c,v 1.184 2008/11/26 03:26:34 jnelson Exp $ */
 /*
  * commands.c -- Stuff needed to execute commands in ircII.
  *		 Includes the bulk of the built in commands for ircII.
@@ -2046,14 +2046,14 @@ static void	loader_pf (struct epic_loadfile *elf, const char *filename, const ch
 {
 	char *	buffer;
 	int	bufsize, pos;
-	int	this_char, newline, comment, shebang;
+	int	this_char, my_newline, comment, shebang;
 
 	loadinfo->loader = "pf";
 
 	bufsize = 8192;
 	buffer = new_malloc(bufsize);
 	pos = 0;
-	newline = 1;
+	my_newline = 1;
 	comment = 0;
 	shebang = 0;
 
@@ -2090,7 +2090,7 @@ static void	loader_pf (struct epic_loadfile *elf, const char *filename, const ch
 	    {
 		/* At a newline, turn on eol handling, turn off comment. */
 		if (this_char == '\n') {
-		    newline = 1;
+		    my_newline = 1;
 		    comment = 0;
 		    break;
 		}
@@ -2100,21 +2100,21 @@ static void	loader_pf (struct epic_loadfile *elf, const char *filename, const ch
 		    break;
 
 		/* If we last saw an eol, ignore any following spaces */
-		if (newline && isspace(this_char))
+		if (my_newline && isspace(this_char))
 		    break;
 
 		/* If we last saw an eol, a # starts a one-line comment. */
-		if (newline && this_char == '#') {
+		if (my_newline && this_char == '#') {
 		    comment = 1;
 		    break;
 		}
 
 		/* If the last thing we saw was a newline, put a space here */
-		if (newline && pos > 0)
+		if (my_newline && pos > 0)
 		    buffer[pos++] = ' ';
 
 		/* We are no longer at a newline */
-		newline = 0;
+		my_newline = 0;
 
 		/* Append this character to the buffer */
 		buffer[pos++] = this_char;

@@ -1,4 +1,4 @@
-/* $EPIC: screen.c,v 1.140 2008/11/25 04:06:52 jnelson Exp $ */
+/* $EPIC: screen.c,v 1.141 2008/11/26 03:26:34 jnelson Exp $ */
 /*
  * screen.c
  *
@@ -1455,7 +1455,7 @@ static 	int 	recursion = 0,
 		firstwb = 0,	    /* Buffer position of second word */
 		line = 0,           /* Current pos in "output"      */
 		do_indent,          /* Use indent or continued line? */
-		newline = 0;        /* Number of newlines           */
+		my_newline = 0;        /* Number of newlines           */
 static	unsigned char 	**output = (unsigned char **)0;
 const 	unsigned char	*ptr;
 	unsigned char 	buffer[BIG_BUFFER_SIZE + 1],
@@ -1510,7 +1510,7 @@ const	unsigned char	*cont_ptr;
 
 			case '\n':      /* Forced newline */
 			{
-				newline = 1;
+				my_newline = 1;
 				if (indent == 0)
 					indent = -1;
 				word_break = pos;
@@ -1587,7 +1587,7 @@ const	unsigned char	*cont_ptr;
 		 * want to treat this exactly as 1 line, and col has already 
 		 * been incremented.
 		 */
-		if ((col > max_cols) || newline)
+		if ((col > max_cols) || my_newline)
 		{
 			/*
 			 * We just incremented col, but we need to decrement
@@ -1802,7 +1802,7 @@ const	unsigned char	*cont_ptr;
 			/* Watch this -- ugh. how expensive! :( */
 			col = output_with_count(buffer, 0, 0);
 			word_break = 0;
-			newline = 0;
+			my_newline = 0;
 
 			/*
 			 * The 'lused' argument allows us to truncate the
@@ -1851,7 +1851,7 @@ unsigned char *prepare_display2 (const unsigned char *orig_str, int max_cols, in
 	int 	pos = 0,            /* Current position in "buffer" */
 		col = 0,            /* Current column in display    */
 		line = 0,           /* Current pos in "output"      */
-		newline = 0;        /* Number of newlines           */
+		my_newline = 0;        /* Number of newlines           */
 	unsigned char 	*str = NULL;
 	unsigned char	*retval = NULL;
 	size_t		clue = 0;
@@ -1879,7 +1879,7 @@ const 	unsigned char	*ptr;
 				break;
 
 			case '\n':      /* Forced newline */
-				newline = 1;
+				my_newline = 1;
 				break; /* case '\n' */
 
                         /* Attribute changes -- copy them unmodified. */
@@ -1913,7 +1913,7 @@ const 	unsigned char	*ptr;
 		 * want to treat this exactly as 1 line, and col has already 
 		 * been incremented.
 		 */
-		if ((allow_truncate && col > max_cols) || newline)
+		if ((allow_truncate && col > max_cols) || my_newline)
 			break;
 	}
 	buffer[pos] = 0;
@@ -2272,7 +2272,7 @@ static void 	add_to_window (Window *window, const unsigned char *str)
 	char *		pend;
 	unsigned char *	strval;
 	unsigned char *	free_me = NULL;
-        unsigned char **       lines;
+        unsigned char **       my_lines;
         int             cols;
 	int		numl = 0;
 	intmax_t	refnum;
@@ -2315,13 +2315,13 @@ static void 	add_to_window (Window *window, const unsigned char *str)
 	refnum = add_to_lastlog(window, str);
 
 	/* Add to scrollback + display... */
-	cols = window->columns - 1;
+	cols = window->my_columns - 1;
 	strval = new_normalize_string(str, 0, display_line_mangler);
-        for (lines = prepare_display(window->refnum, strval, cols, &numl, 0); *lines; lines++)
+        for (my_lines = prepare_display(window->refnum, strval, cols, &numl, 0); *my_lines; my_lines++)
 	{
-		if (add_to_scrollback(window, *lines, refnum))
+		if (add_to_scrollback(window, *my_lines, refnum))
 		    if (ok_to_output(window))
-			rite(window, *lines);
+			rite(window, *my_lines);
 	}
 	new_free(&strval);
 
@@ -2381,15 +2381,15 @@ static void 	add_to_window (Window *window, const unsigned char *str)
 void 	add_to_window_scrollback (Window *window, const unsigned char *str, intmax_t refnum)
 {
 	unsigned char *	strval;
-        unsigned char **       lines;
+        unsigned char **       my_lines;
         int             cols;
 	int		numl = 0;
 
 	/* Normalize the line of output */
-	cols = window->columns - 1;
+	cols = window->my_columns - 1;
 	strval = new_normalize_string(str, 0, display_line_mangler);
-        for (lines = prepare_display(window->refnum, strval, cols, &numl, 0); *lines; lines++)
-		add_to_scrollback(window, *lines, refnum);
+        for (my_lines = prepare_display(window->refnum, strval, cols, &numl, 0); *my_lines; my_lines++)
+		add_to_scrollback(window, *my_lines, refnum);
 	new_free(&strval);
 }
 
@@ -2584,7 +2584,7 @@ void 	repaint_window_body (Window *window)
 	    for (count = 0; count < window->toplines_showing; count++)
 	    {
 		int	numls = 1;
-		unsigned char **lines;
+		unsigned char **my_lines;
 		unsigned char *n, *widthstr;
 		const unsigned char *str;
 
@@ -2595,16 +2595,16 @@ void 	repaint_window_body (Window *window)
 		term_move_cursor(0, window->top - window->toplines_showing + count);
 		term_clear_to_eol();
 
-		widthstr = prepare_display2(str, window->columns, 1, ' ', 0);
+		widthstr = prepare_display2(str, window->my_columns, 1, ' ', 0);
 		output_with_count(widthstr, 1, foreground);
 		new_free(&widthstr);
 
 /*
 		n = new_normalize_string(widthstr, 0, display_line_mangler);
-		lines = prepare_display(window->refnum, n, cols, 
+		my_lines = prepare_display(window->refnum, n, cols, 
 					&numls, PREPARE_NOWRAP);
-		if (*lines)
-			output_with_count(*lines, 1, foreground);
+		if (*my_lines)
+			output_with_count(*my_lines, 1, foreground);
 		new_free(&n);
 */
 

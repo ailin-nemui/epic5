@@ -1,4 +1,4 @@
-/* $EPIC: vars.c,v 1.106 2008/11/01 18:04:50 jnelson Exp $ */
+/* $EPIC: vars.c,v 1.107 2008/11/26 03:26:34 jnelson Exp $ */
 /*
  * vars.c: All the dealing of the irc variables are handled here. 
  *
@@ -279,7 +279,7 @@ void 	init_variables_stage1 (void)
 	VAR(CHANNEL_NAME_WIDTH, 	INT,  update_all_status_wrapper)
 #define DEFAULT_CLIENT_INFORMATION IRCII_COMMENT
 	VAR(CLIENT_INFORMATION, 	STR,  NULL)
-	VAR(CLOCK, 			BOOL, set_clock);
+	VAR(CLOCK, 			BOOL, my_set_clock);
 	VAR(CLOCK_24HOUR, 		BOOL, reset_clock);
 	VAR(CLOCK_FORMAT, 		STR,  set_clock_format);
 	VAR(CLOCK_INTERVAL, 		INT,  set_clock_interval);

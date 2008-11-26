@@ -1,4 +1,4 @@
-/* $EPIC: window.c,v 1.199 2008/11/25 04:06:52 jnelson Exp $ */
+/* $EPIC: window.c,v 1.200 2008/11/26 03:26:34 jnelson Exp $ */
 /*
  * window.c: Handles the organzation of the logical viewports (``windows'')
  * for irc.  This includes keeping track of what windows are open, where they
@@ -264,7 +264,7 @@ Window	*new_window (Screen *screen)
 	new_w->scrollback_indicator->next = NULL;
 
 	/* Window geometry stuff */
-	new_w->columns = 0;			/* Filled in later? */
+	new_w->my_columns = 0;			/* Filled in later? */
 	new_w->display_lines = 1;		/* Filled in later */
 	new_w->logical_size = 100;		/* XXX Implement this */
 	new_w->fixed_size = 0;
@@ -713,9 +713,9 @@ void 	add_to_invisible_list (Window *window)
 	invisible_list = window;
 	window->prev = (Window *) 0;
 	if (window->screen)
-		window->columns = window->screen->co;
+		window->my_columns = window->screen->co;
 	else
-		window->columns = current_term->TI_cols;	/* Whatever */
+		window->my_columns = current_term->TI_cols;	/* Whatever */
 	window->screen = (Screen *) 0;
 }
 
@@ -1524,7 +1524,7 @@ void 	recalculate_windows (Screen *screen)
 		screen->window_list->toplines_wanted = 0;
 		screen->window_list->display_lines = screen->li - 2;
 		screen->window_list->bottom = screen->li - 2;
-		screen->window_list->columns = screen->co;
+		screen->window_list->my_columns = screen->co;
 		old_li = screen->li;
 		return;
 	}
@@ -1581,9 +1581,9 @@ void 	recalculate_windows (Screen *screen)
 
 static	void	window_check_columns (Window *w)
 {
-	if (w->screen && w->columns != w->screen->co)
+	if (w->screen && w->my_columns != w->screen->co)
 	{
-		w->columns = w->screen->co;
+		w->my_columns = w->screen->co;
 		w->rebuild_scrollback = 1;
 		/* rebuild_scrollback(w); */
 	}
@@ -1667,11 +1667,11 @@ static void	restore_window_positions (Window *w, intmax_t scrolling, intmax_t ho
 
 /* * * * * * * * LOCATION AND COMPOSITION OF WINDOWS ON SCREEN * * * * * * */
 /*
- * goto_window: This will switch the current window to the N'th window 
+ * my_goto_window: This will switch the current window to the N'th window 
  * from the top of the screen.  The "which" has nothing  to do with the 
  * window's refnum, only its location on the screen.
  */
-static void 	goto_window (Screen *s, int which)
+static void 	my_goto_window (Screen *s, int which)
 {
 	Window	*tmp;
 	int	i;
@@ -3454,7 +3454,7 @@ static	Window *window_flush_scrollback (Window *window, char **args)
  */
 static Window *window_goto (Window *window, char **args)
 {
-	goto_window(window->screen, get_number("GOTO", args));
+	my_goto_window(window->screen, get_number("GOTO", args));
 	from_server = get_window_server(0);
 	return current_window;
 }
@@ -5656,7 +5656,7 @@ static int	flush_scrollback_after (Window *window)
  * Scroll backwards from the last scrollback point, the last hold point,
  * or the standard place.
  */
-static void 	window_scrollback_backwards_lines (Window *window, int lines)
+static void 	window_scrollback_backwards_lines (Window *window, int my_lines)
 {
 	Display *new_top;
 	int	new_lines;
@@ -5681,7 +5681,7 @@ static void 	window_scrollback_backwards_lines (Window *window, int lines)
  */
 
 	new_top = window->scrollback_top_of_display;
-	for (new_lines = 0; new_lines < lines; new_lines++)
+	for (new_lines = 0; new_lines < my_lines; new_lines++)
 	{
 		if (new_top == window->top_of_scrollback)
 			break;
@@ -5697,7 +5697,7 @@ static void 	window_scrollback_backwards_lines (Window *window, int lines)
 /*
  * Scroll the scrollback (or hold mode) forward.
  */
-static void 	window_scrollback_forwards_lines (Window *window, int lines)
+static void 	window_scrollback_forwards_lines (Window *window, int my_lines)
 {
 	Display *new_top;
 	int	unholding;
@@ -5719,7 +5719,7 @@ static void 	window_scrollback_forwards_lines (Window *window, int lines)
 		return;
 	}
 
-	for (new_lines = 0; new_lines < lines; new_lines++)
+	for (new_lines = 0; new_lines < my_lines; new_lines++)
 	{
 	    if (new_top == window->display_ip)
 		break;
@@ -5815,31 +5815,31 @@ static void	window_scrollback_end (Window *window)
 static void	window_scrollback_forward (Window *window)
 {
 	int 	ratio = get_int_var(SCROLLBACK_RATIO_VAR);
-	int	lines;
+	int	my_lines;
 
 	if (ratio < 1) 
 		ratio = 1;
 	if (ratio > 100) 
 		ratio = 100;
 
-	if ((lines = window->display_lines * ratio / 100) < 1)
-		lines = 1;
-	window_scrollback_forwards_lines(window, lines);
+	if ((my_lines = window->display_lines * ratio / 100) < 1)
+		my_lines = 1;
+	window_scrollback_forwards_lines(window, my_lines);
 }
 
 static void	window_scrollback_backward (Window *window)
 {
 	int 	ratio = get_int_var(SCROLLBACK_RATIO_VAR);
-	int	lines;
+	int	my_lines;
 
 	if (ratio < 1) 
 		ratio = 1;
 	if (ratio > 100) 
 		ratio = 100;
 
-	if ((lines = window->display_lines * ratio / 100) < 1)
-		lines = 1;
-	window_scrollback_backwards_lines(window, lines);
+	if ((my_lines = window->display_lines * ratio / 100) < 1)
+		my_lines = 1;
+	window_scrollback_backwards_lines(window, my_lines);
 }
 
 BUILT_IN_KEYBINDING(scrollback_forwards)
@@ -6276,7 +6276,7 @@ char 	*windowctl 	(char *input)
 	    } else if (!my_strnicmp(listc, "SKIP", len)) {
 		RETURN_INT(w->skip);
 	    } else if (!my_strnicmp(listc, "COLUMNS", len)) {
-		RETURN_INT(w->columns);
+		RETURN_INT(w->my_columns);
 	    } else if (!my_strnicmp(listc, "PROMPT", len)) {
 		RETURN_STR(w->prompt);
 	    } else if (!my_strnicmp(listc, "DOUBLE", len)) {

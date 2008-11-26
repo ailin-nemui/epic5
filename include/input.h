@@ -24,7 +24,7 @@
 /* keybinding functions */
 	BUILT_IN_KEYBINDING(backward_character);
 	BUILT_IN_KEYBINDING(backward_history);
-	BUILT_IN_KEYBINDING(clear_screen);
+	BUILT_IN_KEYBINDING(my_clear_screen);
 	BUILT_IN_KEYBINDING(command_completion);
 	BUILT_IN_KEYBINDING(cpu_saver_on);
 	BUILT_IN_KEYBINDING(forward_character);

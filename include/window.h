@@ -79,7 +79,7 @@ typedef	struct	WindowStru
 	Mask	notify_mask;		/* the notify mask.. */
 	short	skip;			/* Whether window should be skipped */
 	short	old_co;			/* .... */
-	short	columns;		/* How wide we are when hidden */
+	short	my_columns;		/* How wide we are when hidden */
 	short	indent;			/* How far /set indent goes */
 	short	swappable;		/* Can it be swapped in or out? */
 	short	scrolladj;		/* Push back top-of-win on grow? */

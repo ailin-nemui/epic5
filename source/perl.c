@@ -1,4 +1,4 @@
-/* $EPIC: perl.c,v 1.19 2008/04/04 04:51:05 jnelson Exp $ */
+/* $EPIC: perl.c,v 1.20 2008/11/26 03:26:34 jnelson Exp $ */
 /*
  * perl.c -- The perl interfacing routines.
  *
@@ -31,6 +31,11 @@
  * SUCH DAMAGE.
  */
 
+#include "extlang.h"
+#include <EXTERN.h>
+#include <perl.h>
+#include <XSUB.h>
+#define __no_timeval_stuff__
 #include "irc.h"
 #include "ircaux.h"
 #include "array.h"
@@ -39,10 +44,6 @@
 #include "functions.h"
 #include "output.h"
 #include "ifcmd.h"
-#include "extlang.h"
-#include <EXTERN.h>
-#include <perl.h>
-#include <XSUB.h>
 
 int	isperlrunning=0, perlcalldepth=0;
 PerlInterpreter	*my_perl;

@@ -46,7 +46,7 @@ extern char	clock_timeref[];
 	void	clock_systimer		(void);
 	void	set_clock_interval	(void *);
 	void	set_clock_format	(void *);
-	void	set_clock		(void *);
+	void	my_set_clock		(void *);
 
 extern int	cpu_saver;
 

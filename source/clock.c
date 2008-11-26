@@ -181,7 +181,7 @@ void     set_clock_format (void *stuff)
         reset_clock(NULL);
 }
 
-void	set_clock (void *stuff)
+void	my_set_clock (void *stuff)
 {
 	update_system_timer(clock_timeref);
 	update_all_status();

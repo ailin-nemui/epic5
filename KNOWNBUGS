@@ -2,14 +2,10 @@ EPIC5 Projects, Bugs, and other Errata:
 
 KNOWN ERRATA (eg, bugs, or unresolved requests):
 ------------------------------------------------
-* /set scroll_lines <X> crashes if <X> is greater than your window size.
-* Add /window scroll_lines
 * Implied on hooks still result in Unmatched { errors if you type { because
   of the run-through expand_alias!
 * Document the wikihelp for lastlog with stuff like -context.
-* Don't include termcap stuff if we're using terminfo, it conflicts.
 * Unique refnums for scrollback items in windows?
-* There needs to be timeouts for /dcc get or /dcc chat
 
 ISSUES OF INTEREST
 ------------------
@@ -344,3 +340,8 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Make the status bar redraw after /window discon (nb zlonix)
 * New /SET, /SET DCC_CONNECT_TIMEOUT (see UPDATES)
 * Add /window scroll_lines, which overrules /set scroll_lines (see updates)
+* Don't include <termcap.h> if the system has <term.h>
+* And uh, <term.h> sure does have a lot of namespace pollution.
+* Change all the symbols in epic which conflict with <term.h>
+* This finally fixes intermixed termcap-vs-terminfo support. HUZZAH!
+

@@ -1,4 +1,4 @@
-/* $EPIC: files.c,v 1.37 2008/07/02 00:10:28 jnelson Exp $ */
+/* $EPIC: files.c,v 1.38 2008/11/26 03:26:34 jnelson Exp $ */
 /*
  * files.c -- allows you to read/write files. Wow.
  *
@@ -435,11 +435,11 @@ intmax_t	file_tell (int fd)
 		return (intmax_t)ftell(ptr->elf->fp);
 }
 
-int	file_skip (int fd, int lines)
+int	file_skip (int fd, int num_lines)
 {
 	int line = 0;
 
-	while (line < lines && !file_eof(fd))
+	while (line < num_lines && !file_eof(fd))
 	{
 		char *foo = file_read(fd);
 		new_free(&foo);

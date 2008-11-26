@@ -1,4 +1,4 @@
-/* $EPIC: functions.c,v 1.272 2008/10/15 16:07:55 alex Exp $ */
+/* $EPIC: functions.c,v 1.273 2008/11/26 03:26:34 jnelson Exp $ */
 /*
  * functions.c -- Built-in functions for ircII
  *
@@ -4618,7 +4618,7 @@ BUILT_IN_FUNCTION(function_leftpc, word)
 {
 	unsigned char ** 	prepared = NULL;
 	char *		retval;
-	int		lines = 1;
+	int		my_lines = 1;
 	int		count;
 
 	GET_INT_ARG(count, word);
@@ -4629,7 +4629,7 @@ BUILT_IN_FUNCTION(function_leftpc, word)
 	word = new_normalize_string(word, 0, NORMALIZE);
 
 	/* Count off the first line of stuff */
-	prepared = prepare_display(-1, word, count, &lines, PREPARE_NOWRAP);
+	prepared = prepare_display(-1, word, count, &my_lines, PREPARE_NOWRAP);
 
 	/* Convert the first line back to "logical format" */
 	retval = denormalize_string(prepared[0]);

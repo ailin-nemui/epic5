@@ -1,4 +1,4 @@
-/* $EPIC: term.c,v 1.25 2008/04/04 04:51:05 jnelson Exp $ */
+/* $EPIC: term.c,v 1.26 2008/11/26 03:26:34 jnelson Exp $ */
 /*
  * term.c -- termios and (termcap || terminfo) handlers
  *
@@ -86,11 +86,13 @@ static	struct	termios	oldb, newb;
  * using the system's (and not our) tparm().
  */
 #if defined(HAVE_TERM_H) && !defined(DONT_USE_TERM_H)
+/*
 # if defined(TERM_H_REQUIRES_CURSES_H)
 #  include <termio.h>
 #  include <curses.h>
 # endif
 # include <term.h>
+*/
 #else
 # ifdef HAVE_TERMINFO
 	extern  int     setupterm();

@@ -72,7 +72,15 @@
  * Some systems define tputs, etc in this header
  */
 #ifdef HAVE_TERMCAP_H
-#include <termcap.h>
+# include <termcap.h>
+#else
+# if defined(HAVE_TERM_H) && !defined(DONT_USE_TERM_H)
+#  if defined(TERM_H_REQUIRES_CURSES_H)
+#   include <termio.h>
+#   include <curses.h>
+#  endif
+#  include <term.h>
+# endif
 #endif
 
 #ifdef HAVE_ICONV
@@ -436,7 +444,9 @@ typedef struct in6_addr		I6A;
 
 typedef struct addrinfo		AI;
 typedef struct hostent		Hostent;
+#ifndef __no_timeval_stuff__
 typedef struct timeval		Timeval;
+#endif
 typedef struct stat		Stat;
 
 /*

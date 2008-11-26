@@ -1,4 +1,4 @@
-/* $EPIC: keys.c,v 1.56 2008/03/29 19:00:16 jnelson Exp $ */
+/* $EPIC: keys.c,v 1.57 2008/11/26 03:26:34 jnelson Exp $ */
 /*
  * keys.c:  Keeps track of what happens whe you press a key.
  *
@@ -190,7 +190,7 @@ void init_binds (void) {
     ADDBIND("BEGINNING_OF_LINE",	    input_beginning_of_line	    );
     ADDBIND("BLINK",			    insert_blink		    );
     ADDBIND("BOLD",			    insert_bold			    );
-    ADDBIND("CLEAR_SCREEN",		    clear_screen		    );
+    ADDBIND("CLEAR_SCREEN",		    my_clear_screen		    );
     ADDBIND("CPU_SAVER",		    cpu_saver_on		    );
     ADDBIND("DELETE_CHARACTER",		    input_delete_character	    );
     ADDBIND("DELETE_NEXT_WORD",		    input_delete_next_word	    );
