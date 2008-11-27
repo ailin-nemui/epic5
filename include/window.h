@@ -35,6 +35,7 @@ typedef	struct	DisplayStru
 	intmax_t		linked_refnum;
 	struct	DisplayStru	*prev;
 	struct	DisplayStru	*next;
+	ssize_t			unique_refnum;
 }	Display;
 
 typedef struct	WNickListStru

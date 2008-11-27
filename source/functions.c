@@ -1,4 +1,4 @@
-/* $EPIC: functions.c,v 1.273 2008/11/26 03:26:34 jnelson Exp $ */
+/* $EPIC: functions.c,v 1.274 2008/11/27 03:44:11 jnelson Exp $ */
 /*
  * functions.c -- Built-in functions for ircII
  *
@@ -228,7 +228,6 @@ static	char
 	*function_cos		(char *),
 	*function_cosh		(char *),
 	*function_count		(char *),
-	*function_cparse	(char *),
 	*function_crypt 	(char *),
 	*function_curcmd	(char *),
 	*function_currchans	(char *),
@@ -426,6 +425,7 @@ char	*wrapper_pattern	(char *, int),
 	*wrapper_rpattern	(char *, int);
 
 extern char
+	*function_cparse	(char *),
 	*function_push		(char *),
 	*function_pop		(char *),
 	*function_shift		(char *),
@@ -4645,7 +4645,7 @@ BUILT_IN_FUNCTION(function_leftpc, word)
  * ^C codes rather than ansi codes as bitchx does.  You shouldnt notice one
  * way or the other.
  */
-BUILT_IN_FUNCTION(function_cparse, input)
+char *	function_cparse (char *input)
 {
 	int 	i, j, max;
 	char 	*output;

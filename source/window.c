@@ -1,4 +1,4 @@
-/* $EPIC: window.c,v 1.200 2008/11/26 03:26:34 jnelson Exp $ */
+/* $EPIC: window.c,v 1.201 2008/11/27 03:44:11 jnelson Exp $ */
 /*
  * window.c: Handles the organzation of the logical viewports (``windows'')
  * for irc.  This includes keeping track of what windows are open, where they
@@ -122,6 +122,11 @@ const	char	*who_from = (char *) 0;
  * Ditto for queries
  */
 static  int     current_query_counter = 0;
+
+/*
+ * Ditto for scrollback items
+ */
+static	int	current_display_counter = 1;
 
 
 static 	void 	remove_from_invisible_list 	(Window *);
@@ -5354,6 +5359,7 @@ static Display *new_display_line (Display *prev, Window *w)
 	 */
 
 	stuff->count = w->display_counter++;
+	stuff->unique_refnum = ++current_display_counter;
 	stuff->prev = prev;
 	stuff->next = NULL;
 	return stuff;

@@ -1,4 +1,4 @@
-/* $EPIC: hook.c,v 1.81 2008/04/22 23:30:22 howl Exp $ */
+/* $EPIC: hook.c,v 1.82 2008/11/27 03:44:11 jnelson Exp $ */
 /*
  * hook.c: Does those naughty hook functions. 
  *
@@ -254,7 +254,7 @@ static struct NoiseInfo **noise_info = NULL;
 static int noise_level_num = 0;
 static int default_noise;
 
-
+extern char *	    function_cparse	(char *);
 static void 	    add_to_list 	(Hook **list, Hook *item);
 static Hook *	    remove_from_list 	(Hook **list, char *item, int sernum);
 
@@ -967,8 +967,8 @@ int 	do_hook (int which, const char *format, ...)
 
 	if (h->implied_protect)
 	{
-	    malloc_sprintf(&func_call, "cparse(\"$*\" %s)", buffer);
-	    func_retval = call_function(func_call, h->implied);
+	    malloc_sprintf(&func_call, "\"%s\" %s", h->implied, buffer);
+	    func_retval = function_cparse(func_call);
 	}
 	else
 	{
