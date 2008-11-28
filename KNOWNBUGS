@@ -2,7 +2,7 @@ EPIC5 Projects, Bugs, and other Errata:
 
 KNOWN ERRATA (eg, bugs, or unresolved requests):
 ------------------------------------------------
-<none>
+* next_expr() absolutely returns NULL, but not every place checks for that!
 
 ISSUES OF INTEREST
 ------------------
