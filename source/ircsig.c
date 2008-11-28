@@ -1,4 +1,4 @@
-/* $EPIC: ircsig.c,v 1.8 2008/04/15 04:49:51 jnelson Exp $ */
+/* $EPIC: ircsig.c,v 1.9 2008/11/28 16:28:03 jnelson Exp $ */
 /*
  * ircsig.c: has a `my_signal()' that uses sigaction().
  *
@@ -71,7 +71,7 @@ static RETSIGTYPE signal_handler (int sig_no)
 		signal_handlers[sig_no](sig_no);
 }
 
-sigfunc *reset_one_signal (int sig_no, sigfunc *sig_handler)
+static sigfunc *reset_one_signal (int sig_no, sigfunc *sig_handler)
 {
 	struct sigaction sa, osa;
 

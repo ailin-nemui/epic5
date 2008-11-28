@@ -1,4 +1,4 @@
-/* $EPIC: functions.c,v 1.274 2008/11/27 03:44:11 jnelson Exp $ */
+/* $EPIC: functions.c,v 1.275 2008/11/28 16:28:03 jnelson Exp $ */
 /*
  * functions.c -- Built-in functions for ircII
  *
@@ -6993,14 +6993,14 @@ BUILT_IN_FUNCTION(function_check_code, input)
 BUILT_IN_FUNCTION(function_from, input)
 {
 	int cut;
-	
+
 	GET_INT_ARG(cut, input);
 	RETURN_IF_EMPTY(input);
 	
 	if (cut < 0)
 		cut = 0;
-	
-	if (strlen(input) <= cut)
+
+	if (strlen(input) <= (size_t)cut)
 		RETURN_EMPTY;
 
 	RETURN_STR(input + cut);

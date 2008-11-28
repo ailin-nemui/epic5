@@ -112,7 +112,7 @@ extern		char *	last_notify_nick;
 extern		char *	LocalHostName;
 extern		char *	my_path;
 extern		char	nickname[NICKNAME_LEN + 1];
-extern	const	char	off[];
+/* extern	const	char	my_off[]; */
 extern	const	char	on[];
 extern	const	char	one[];
 extern		char	realname[REALNAME_LEN + 1];

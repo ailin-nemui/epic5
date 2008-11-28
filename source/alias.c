@@ -1,4 +1,4 @@
-/* $EPIC: alias.c,v 1.84 2007/04/12 03:24:14 jnelson Exp $ */
+/* $EPIC: alias.c,v 1.85 2008/11/28 16:28:03 jnelson Exp $ */
 /*
  * alias.c -- Handles the whole kit and caboodle for aliases.
  *
@@ -492,7 +492,7 @@ const 	char 	*usage = "Usage: STUB (alias|assign) <name> <file> [<file> ...]";
 	 */
 	if (!(cmd = upper(next_arg(args, &args))))
 	{
-		error("Missing stub type");
+		my_error("Missing stub type");
 		say("%s", usage);
 		return;
 	}
@@ -503,7 +503,7 @@ const 	char 	*usage = "Usage: STUB (alias|assign) <name> <file> [<file> ...]";
 		type = VAR_ALIAS;
 	else
 	{
-		error("[%s] is an Unrecognized stub type", cmd);
+		my_error("[%s] is an Unrecognized stub type", cmd);
 		say("%s", usage);
 		return;
 	}
@@ -514,7 +514,7 @@ const 	char 	*usage = "Usage: STUB (alias|assign) <name> <file> [<file> ...]";
 	 */
 	if (!(name = next_arg(args, &args)))
 	{
-		error("Missing alias name");
+		my_error("Missing alias name");
 		say("%s", usage);
 		return;
 	}
@@ -531,7 +531,7 @@ const 	char 	*usage = "Usage: STUB (alias|assign) <name> <file> [<file> ...]";
 	 */
 	if (!args || !*args)
 	{
-		error("Missing file name");
+		my_error("Missing file name");
 		say("%s", usage);
 		return;
 	}
@@ -644,7 +644,7 @@ BUILT_IN_COMMAND(unloadcmd)
 	char *filename;
 
 	if (!(filename = next_arg(args, &args)))
-		error("You must supply a filename for /UNLOAD.");
+		my_error("You must supply a filename for /UNLOAD.");
 	else
 	{
 		do_hook(UNLOAD_LIST, "%s", filename);
@@ -1085,7 +1085,7 @@ void	add_var_alias	(const char *orig_name, const char *stuff, int noisy)
 	 */
 	ptr = after_expando(name, 1, NULL);
 	if (*ptr)
-		error("ASSIGN names may not contain '%c' (You asked for [%s])", *ptr, name);
+		my_error("ASSIGN names may not contain '%c' (You asked for [%s])", *ptr, name);
 
 	/*
 	 * Weed out FUNCTION_RETURN (die die die)
@@ -1151,13 +1151,13 @@ void	add_var_stub_alias  (const char *orig_name, const char *stuff)
 	ptr = after_expando(name, 1, NULL);
 	if (*ptr)
 	{
-		error("Assign names may not contain '%c' (You asked for [%s])", *ptr, name);
+		my_error("Assign names may not contain '%c' (You asked for [%s])", *ptr, name);
 		new_free(&name);
 		return;
 	}
 	else if (!strcmp(name, "FUNCTION_RETURN"))
 	{
-		error("You may not stub the FUNCTION_RETURN variable.");
+		my_error("You may not stub the FUNCTION_RETURN variable.");
 		new_free(&name);
 		return;
 	}
@@ -1200,7 +1200,7 @@ void	add_local_alias	(const char *orig_name, const char *stuff, int noisy)
 	ptr = after_expando(name, 1, NULL);
 	if (*ptr)
 	{
-		error("LOCAL names may not contain '%c' (You asked for [%s])", 
+		my_error("LOCAL names may not contain '%c' (You asked for [%s])", 
 						*ptr, name);
 		new_free(&name);
 		return;
@@ -2790,7 +2790,7 @@ static	int maxret = 0;
 			RETURN_EMPTY;
 		}
 		default :
-			error("aliasctl: Error");
+			my_error("aliasctl: Error");
 			RETURN_EMPTY;
 	}
 	RETURN_EMPTY;

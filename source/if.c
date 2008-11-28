@@ -1,4 +1,4 @@
-/* $EPIC: if.c,v 1.39 2008/04/04 04:51:05 jnelson Exp $ */
+/* $EPIC: if.c,v 1.40 2008/11/28 16:28:03 jnelson Exp $ */
 /*
  * if.c: the IF, WHILE, FOREACH, DO, FE, FEC, and FOR commands for IRCII 
  *
@@ -154,7 +154,7 @@ BUILT_IN_COMMAND(ifcmd)
 		current_expr = next_expr(&args, '(');
 		if (!current_expr)
 		{
-			error("IF: Missing expression");
+			my_error("IF: Missing expression");
 			return;
 		}
 		current_expr_val = parse_inline(current_expr, subargs);
@@ -225,7 +225,7 @@ BUILT_IN_COMMAND(docmd)
 	{
 		if (!(body = next_expr(&args, '{')))
 		{
-			error("DO: unbalanced {");
+			my_error("DO: unbalanced {");
 			return;
 		}	
 		if (args && *args && (cmd = next_arg(args, &args)) && 
@@ -233,7 +233,7 @@ BUILT_IN_COMMAND(docmd)
 		{
 			if (!(expr = next_expr(&args, '(')))
 			{
-				error("DO: unbalanced (");
+				my_error("DO: unbalanced (");
 				return;
 			}
 
@@ -290,7 +290,7 @@ BUILT_IN_COMMAND(whilecmd)
 
 	if (!(ptr = next_expr(&args, '(')))
 	{
-		error("WHILE: missing boolean expression");
+		my_error("WHILE: missing boolean expression");
 		return;
 	}
 	exp = LOCAL_COPY(ptr);
@@ -356,7 +356,7 @@ BUILT_IN_COMMAND(foreach)
 
 	if (!(ptr = new_next_arg(args, &args)))
 	{
-		error("FOREACH: missing structure expression");
+		my_error("FOREACH: missing structure expression");
 		return;
 	}
 
@@ -365,7 +365,7 @@ BUILT_IN_COMMAND(foreach)
 	if (!(var = next_arg(args, &args)))
 	{
 		new_free(&struc);
-		error("FOREACH: missing variable");
+		my_error("FOREACH: missing variable");
 		return;
 	}
 	while (my_isspace(*args))
@@ -374,7 +374,7 @@ BUILT_IN_COMMAND(foreach)
 	if (!(body = next_expr(&args, '{')))
 	{
 		new_free(&struc);
-		error("FOREACH: missing statement");
+		my_error("FOREACH: missing statement");
 		return;
 	}
 
@@ -450,7 +450,7 @@ BUILT_IN_COMMAND(fe)
 	} else if ((list = next_expr(&args, '('))) {
 		templist = expand_alias(list, subargs);
 	} else {
-		error("%s: Missing List for /%s", command, command);
+		my_error("%s: Missing List for /%s", command, command);
 		return;
 	}    
 
@@ -461,12 +461,12 @@ BUILT_IN_COMMAND(fe)
 
 	vars = args;
 	if (!(args = strchr(args, '{'))) {
-		error("%s: Missing commands", command);
+		my_error("%s: Missing commands", command);
 		new_free(&templist);
 		return;
 	}
 	if (vars == args) {
-		error("%s: You did not specify any variables", command);
+		my_error("%s: You did not specify any variables", command);
 		new_free(&templist);
 		return;
 	}
@@ -478,7 +478,7 @@ BUILT_IN_COMMAND(fe)
 	{
 		if (ind > (sizeof(var) / sizeof(*var)))
 		{
-			error("%s: Too many variables", command);
+			my_error("%s: Too many variables", command);
 			new_free(&templist);
 			return;
 		}
@@ -487,7 +487,7 @@ BUILT_IN_COMMAND(fe)
 
 	if (!(todo = next_expr(&args, '{')))
 	{
-		error("%s: Missing }", command);
+		my_error("%s: Missing }", command);
 		new_free(&templist);
 		return;
 	}
@@ -565,7 +565,7 @@ static void	for_next_cmd (int argc, char **argv, const char *subargs)
 	if ((my_stricmp(argv[1], "from") && my_stricmp(argv[1], "=")) ||
 		(argc != 6 && argc != 8))
 	{
-		error("Usage: /FOR var FROM start TO end {commands}");
+		my_error("Usage: /FOR var FROM start TO end {commands}");
 		return;
 	}
 
@@ -618,7 +618,7 @@ static void	for_fe_cmd (int argc, char **argv, const char *subargs)
 		subargs = empty_string;
 
 	if ((my_stricmp(argv[1], "in")) || (argc != 4)) {
-		error("Usage: /FOR var IN (list) {commands}");
+		my_error("Usage: /FOR var IN (list) {commands}");
 		return;
 	}
 
@@ -657,7 +657,7 @@ static void	for_fe_cmd (int argc, char **argv, const char *subargs)
 
 static void	for_pattern_cmd (int argc, char **argv, const char *subargs)
 {
-	error("/FOR var IN <pattern> {commands} reserved for future use");
+	my_error("/FOR var IN <pattern> {commands} reserved for future use");
 }
 
 static BUILT_IN_COMMAND(loopcmd)
@@ -671,20 +671,20 @@ static BUILT_IN_COMMAND(loopcmd)
 	argc = split_args(args, argv, 9);
 
 	if (argc < 2)
-		error("%s: syntax error", command);
+		my_error("%s: syntax error", command);
 	else if (!my_stricmp(argv[1], "from") || !my_stricmp(argv[1], "="))
 		for_next_cmd(argc, argv, subargs);
 	else if (!my_stricmp(argv[1], "in"))
 	{
 		if (argc < 4)
-			error("%s: syntax error", command);
+			my_error("%s: syntax error", command);
 		else if (*argv[2] == '(')
 			for_fe_cmd(argc, argv, subargs);
 		else
 			for_pattern_cmd(argc, argv, subargs);
 	}
 	else
-		error("%s: syntax error", command);
+		my_error("%s: syntax error", command);
 }
 
 /* 
@@ -724,7 +724,7 @@ BUILT_IN_COMMAND(forcmd)
 	/* Find the beginning of the second expression */
 	if (!(evaluation = strchr(commence, ',')))
 	{
-		error("FOR: no components!");
+		my_error("FOR: no components!");
 		return;
 	}
 	do 
@@ -734,7 +734,7 @@ BUILT_IN_COMMAND(forcmd)
 	/* Find the beginning of the third expression */
 	if (!(iteration = strchr(evaluation, ',')))
 	{
-		error("FOR: Only two components!");
+		my_error("FOR: Only two components!");
 		return;
 	}
 	do 
@@ -747,7 +747,7 @@ BUILT_IN_COMMAND(forcmd)
 
 	if (!(working = next_expr(&working, '{')))		/* } */
 	{
-		error("FOR: badly formed commands");
+		my_error("FOR: badly formed commands");
 		return;
 	}
 	commands = LOCAL_COPY(working);

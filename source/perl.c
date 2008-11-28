@@ -1,4 +1,4 @@
-/* $EPIC: perl.c,v 1.20 2008/11/26 03:26:34 jnelson Exp $ */
+/* $EPIC: perl.c,v 1.21 2008/11/28 16:28:03 jnelson Exp $ */
 /*
  * perl.c -- The perl interfacing routines.
  *
@@ -237,7 +237,7 @@ BUILT_IN_COMMAND(perlcmd)
 	{
 		if (!(body = next_expr(&args, '{')))
 		{
-			error("PERL: unbalanced {");
+			my_error("PERL: unbalanced {");
 			return;
 		}
 	}

@@ -1,4 +1,4 @@
-/* $EPIC: dcc.c,v 1.153 2008/11/01 18:04:50 jnelson Exp $ */
+/* $EPIC: dcc.c,v 1.154 2008/11/28 16:28:03 jnelson Exp $ */
 /*
  * dcc.c: Things dealing client to client connections. 
  *
@@ -1065,7 +1065,7 @@ static int	dcc_connected (int fd)
 	return 0;		/* Going to keep it. */
 }
 
-int	do_expire_dcc_connects (void *stuff)
+static int	do_expire_dcc_connects (void *stuff)
 {
 	int	old_server = from_server;
 	int	seconds;
@@ -1081,7 +1081,7 @@ int	do_expire_dcc_connects (void *stuff)
 
 	get_time(&right_now);
 	if ((seconds = get_int_var(DCC_CONNECT_TIMEOUT_VAR)) == 0)
-		return;		/* Do not time out if == 0 */
+		return 0;		/* Do not time out if == 0 */
 
 	lock_dcc(NULL);
 	for (dcc = ClientList ; dcc != NULL ; dcc = dcc->next)

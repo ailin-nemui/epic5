@@ -1,4 +1,4 @@
-/* $EPIC: output.c,v 1.20 2008/03/29 19:00:16 jnelson Exp $ */
+/* $EPIC: output.c,v 1.21 2008/11/28 16:28:03 jnelson Exp $ */
 /*
  * output.c: handles a variety of tasks dealing with the output from the irc
  * program 
@@ -317,7 +317,7 @@ void	privileged_yell (const char *format, ...)
  * Error is exactly like yell, except that if the error occured while
  * you were loading a script, it tells you where it happened.
  */
-void 	error (const char *format, ...)
+void 	my_error (const char *format, ...)
 {
 	dump_load_stack(0);
 	if (format)

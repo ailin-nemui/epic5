@@ -1,4 +1,4 @@
-/* $EPIC: files.c,v 1.38 2008/11/26 03:26:34 jnelson Exp $ */
+/* $EPIC: files.c,v 1.39 2008/11/28 16:28:03 jnelson Exp $ */
 /*
  * files.c -- allows you to read/write files. Wow.
  *
@@ -265,7 +265,7 @@ int	file_write (int logtype, int fd, const char *stuff)
 	int	retval;
 
 	if (logtype == 2)		/* General logfile */
-		/* */;
+		ptr = NULL /* */;
 	else if (logtype == 1)		/* Window logfile */
 		ptr = lookup_window_logfile(fd);
 	else
@@ -297,7 +297,7 @@ int	file_writeb (int logtype, int fd, char *stuff)
 	size_t	len = strlen(stuff);
 
 	if (logtype == 2)		/* General logfile */
-		/* */;
+		ptr = NULL /* */;
 	else if (logtype == 1)		/* Window logfile */
 		ptr = lookup_window_logfile(fd);
 	else

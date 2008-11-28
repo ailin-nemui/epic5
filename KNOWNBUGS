@@ -2,10 +2,11 @@ EPIC5 Projects, Bugs, and other Errata:
 
 KNOWN ERRATA (eg, bugs, or unresolved requests):
 ------------------------------------------------
-* Document the wikihelp for lastlog with stuff like -context.
+<none>
 
 ISSUES OF INTEREST
 ------------------
+* Document the wikihelp for lastlog with stuff like -context.
 * Re-implement /set cmdchars
 * You should be able to /msg @logfile
 * You should be able to move lastlog items between windows, split, merge.
@@ -344,3 +345,4 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * This finally fixes intermixed termcap-vs-terminfo support. HUZZAH!
 * Add a unique refnum to every scrollback item, for the indicator someday.
 * Call function_cparse() directly for protected implied hooks to avoid { issues
+* Fix --with-warns compiler warnings and stuff.

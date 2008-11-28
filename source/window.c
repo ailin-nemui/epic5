@@ -1,4 +1,4 @@
-/* $EPIC: window.c,v 1.201 2008/11/27 03:44:11 jnelson Exp $ */
+/* $EPIC: window.c,v 1.202 2008/11/28 16:28:03 jnelson Exp $ */
 /*
  * window.c: Handles the organzation of the logical viewports (``windows'')
  * for irc.  This includes keeping track of what windows are open, where they
@@ -5246,7 +5246,7 @@ BUILT_IN_COMMAND(windowcmd)
  *  4) Reset the value of the indicator from /set scrollback_indicator
  * You should not call this function unless indicator_needs_update() returns 1.
  */
-void	update_scrollback_indicator (Window *w)
+static void	update_scrollback_indicator (Window *w)
 {
 }
 
@@ -5255,7 +5255,7 @@ void	update_scrollback_indicator (Window *w)
  * making it available for placement somewhere else.  This does the whole
  * shebang: finding it, removing it, and cleansing it.
  */
-void	remove_scrollback_indicator (Window *w)
+static void	remove_scrollback_indicator (Window *w)
 {
 }
 
@@ -5265,7 +5265,7 @@ void	remove_scrollback_indicator (Window *w)
  * cleanse_indicator() when the indicator is removed from scrollback or 
  * this function will break.
  */
-void	window_indicator_is_visible (Window *w)
+static void	window_indicator_is_visible (Window *w)
 {
 }
 
@@ -5275,7 +5275,7 @@ void	window_indicator_is_visible (Window *w)
  * for you.  It's important to cleanse the indicator because it does things
  * that are used by window_indicator_is_visible().
  */
-void	cleanse_indicator (Window *w)
+static void	cleanse_indicator (Window *w)
 {
 }
 
@@ -5285,7 +5285,7 @@ void	cleanse_indicator (Window *w)
  * indicator is not being used or if it is above your current view, then it
  * does need to be moved down.  Otherwise it does not need to be moved.
  */ 
-void	indicator_needs_update (Window *w)
+static void	indicator_needs_update (Window *w)
 {
 }
 
@@ -5293,7 +5293,7 @@ void	indicator_needs_update (Window *w)
  * go_back_to_indicator will return the scrollback view to where the
  * indicator is and then do a full recalculation.
  */
-void	go_back_to_indicator (Window *w)
+static void	go_back_to_indicator (Window *w)
 {
 }
 

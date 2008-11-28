@@ -1,4 +1,4 @@
-/* $EPIC: commands.c,v 1.184 2008/11/26 03:26:34 jnelson Exp $ */
+/* $EPIC: commands.c,v 1.185 2008/11/28 16:28:03 jnelson Exp $ */
 /*
  * commands.c -- Stuff needed to execute commands in ircII.
  *		 Includes the bulk of the built in commands for ircII.
@@ -1925,7 +1925,7 @@ static void	loader_std (struct epic_loadfile *elf, const char *filename, const c
 
 			if (!paste_level)
 			{
-				error("Unexpected } in %s, line %d",
+				my_error("Unexpected } in %s, line %d",
 					filename, loadinfo->line);
 				break;
 			}
@@ -1982,14 +1982,14 @@ static void	loader_std (struct epic_loadfile *elf, const char *filename, const c
 	} /* End of for(;;line++) */
 
 	if (in_comment)
-	    error("File %s ended with an unterminated comment in line %d",
+	    my_error("File %s ended with an unterminated comment in line %d",
 			filename, comment_line);
 
 	if (current_row)
 	{
 	    if (paste_level)
 	    {
-		error("Unexpected EOF in %s trying to match '{' at line %d",
+		my_error("Unexpected EOF in %s trying to match '{' at line %d",
 				filename, paste_line);
 	        new_free(&current_row);
 	    }

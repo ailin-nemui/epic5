@@ -1,4 +1,4 @@
-/* $EPIC: irc.c,v 1.1238 2008/11/27 03:44:11 jnelson Exp $ */
+/* $EPIC: irc.c,v 1.1239 2008/11/28 16:28:03 jnelson Exp $ */
 /*
  * ircII: a new irc client.  I like it.  I hope you will too!
  *
@@ -40,19 +40,19 @@
 /*
  * irc_version is what $J returns, its the common-name for the version.
  */
-const char irc_version[] = "EPIC5-0.3.9";
-const char useful_info[] = "epic5 0 3 9";
+const char irc_version[] = "EPIC5-0.9.0";
+const char useful_info[] = "epic5 0 9 0";
 
 /*
  * internal_version is what $V returns, its the integer-id for the
  * version, and corresponds to the date of release, YYYYMMDD.
  */ 
-const char internal_version[] = "20080626";
+const char internal_version[] = "20081128";
 
 /*
  * In theory, this number is incremented for every commit.
  */
-const unsigned long	commit_id = 1567;
+const unsigned long	commit_id = 1569;
 
 /*
  * As a way to poke fun at the current rage of naming releases after
@@ -60,7 +60,7 @@ const unsigned long	commit_id = 1567;
  * reality, I have decided to start doing that with EPIC.  These names
  * are intentionally and maliciously silly.  Complaints will be ignored.
  */
-const char ridiculous_version_name[] = "Contumacy";
+const char ridiculous_version_name[] = "Hyperpyrexia";
 
 #define __need_putchar_x__
 #include "status.h"
@@ -195,7 +195,7 @@ char		*startup_file = NULL,		/* Set when epicrc loaded */
 const char	empty_string[] = "",		/* just an empty string */
 		space[] = " ",			/* just a lonely space */
 		on[] = "ON",
-		off[] = "OFF",
+/*		my_off[] = "OFF", */
 		zero[] = "0",
 		one[] = "1",
 		star[] = "*",

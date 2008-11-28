@@ -1,4 +1,4 @@
-/* $EPIC: tcl.c,v 1.12 2008/04/04 04:51:05 jnelson Exp $ */
+/* $EPIC: tcl.c,v 1.13 2008/11/28 16:28:03 jnelson Exp $ */
 /*
  * tcl.c -- The tcl interfacing routines.
  *
@@ -170,7 +170,7 @@ BUILT_IN_COMMAND(tclcmd)
         {
                 if (!(body = next_expr(&args, '{')))
                 {
-                        error("TCL: unbalanced {");
+                        my_error("TCL: unbalanced {");
                         return;
                 }
         }

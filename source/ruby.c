@@ -1,4 +1,4 @@
-/* $EPIC: ruby.c,v 1.12 2008/09/04 21:10:01 jnelson Exp $ */
+/* $EPIC: ruby.c,v 1.13 2008/11/28 16:28:03 jnelson Exp $ */
 /*
  * ruby.c -- Calling RUBY from epic.
  *
@@ -203,7 +203,7 @@ BUILT_IN_COMMAND(rubycmd)
         {
                 if (!(body = next_expr(&args, '{')))
                 {
-                        error("RUBY: unbalanced {");
+                        my_error("RUBY: unbalanced {");
                         return;
                 }
         }
