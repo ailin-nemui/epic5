@@ -1,4 +1,4 @@
-/* $EPIC: if.c,v 1.40 2008/11/28 16:28:03 jnelson Exp $ */
+/* $EPIC: if.c,v 1.41 2008/11/30 19:09:23 jnelson Exp $ */
 /*
  * if.c: the IF, WHILE, FOREACH, DO, FE, FEC, and FOR commands for IRCII 
  *
@@ -47,6 +47,10 @@
 /*
  * next_expr finds the next expression delimited by brackets. The type
  * of bracket expected is passed as a parameter. Returns NULL on error.
+ *
+ * YOU MUST CHECK FOR AND PROPERLY HANDLE A NULL ON RETURN -- 
+ * PASSING NULL TO parse_line() or parse_arglist() OR SIMILAR FUNCTIONS
+ * WILL RETURN IN A PANIC.  DO NOT IGNORE THIS!
  */
 static __inline__
 char *	my_next_expr (char **args, char type, int whine, int wantchar)
@@ -100,16 +104,31 @@ char *	my_next_expr (char **args, char type, int whine, int wantchar)
 	return expr_start;
 }
 
+/*
+ * YOU MUST CHECK FOR AND PROPERLY HANDLE A NULL ON RETURN -- 
+ * PASSING NULL TO parse_line() or parse_arglist() OR SIMILAR FUNCTIONS
+ * WILL RETURN IN A PANIC.  DO NOT IGNORE THIS!
+ */
 char *	next_expr_with_type (char **args, char type)
 {
 	return my_next_expr (args, type, 0, 1);
 }
 
+/*
+ * YOU MUST CHECK FOR AND PROPERLY HANDLE A NULL ON RETURN -- 
+ * PASSING NULL TO parse_line() or parse_arglist() OR SIMILAR FUNCTIONS
+ * WILL RETURN IN A PANIC.  DO NOT IGNORE THIS!
+ */
 char *	next_expr_failok (char **args, char type)
 {
 	return my_next_expr (args, type, 0, 0);
 }
 
+/*
+ * YOU MUST CHECK FOR AND PROPERLY HANDLE A NULL ON RETURN -- 
+ * PASSING NULL TO parse_line() or parse_arglist() OR SIMILAR FUNCTIONS 
+ * WILL RETURN IN A PANIC.  DO NOT IGNORE THIS!
+ */
 char *	next_expr (char **args, char type)
 {
 	return my_next_expr (args, type, 1, 0);
@@ -909,7 +928,11 @@ BUILT_IN_COMMAND(repeatcmd)
 	{
 		char *		dumb_copy;
 
-		num_expr = next_expr(&args, '(');
+		if (!(num_expr = next_expr(&args, '(')))
+		{
+			say("REPEAT: Could not find expression");
+			return;
+		}
 		dumb_copy = LOCAL_COPY(num_expr);
 		tmp_val = parse_inline(dumb_copy, subargs);
 	}

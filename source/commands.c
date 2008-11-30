@@ -1,4 +1,4 @@
-/* $EPIC: commands.c,v 1.185 2008/11/28 16:28:03 jnelson Exp $ */
+/* $EPIC: commands.c,v 1.186 2008/11/30 19:09:23 jnelson Exp $ */
 /*
  * commands.c -- Stuff needed to execute commands in ircII.
  *		 Includes the bulk of the built in commands for ircII.
@@ -3342,7 +3342,10 @@ static void	eval_inputlist (char *args, char *line)
 {
         char *tmp;
 	if (args[0]=='(') {
-                tmp=next_expr(&args, '(');
+                if (!(tmp = next_expr(&args, '('))) {
+			yell("INPUT: syntax error with arglist");
+			return;
+		}
                 runcmds_with_arglist(args, tmp, line);
 	} else {
                 /* traditional behavior */

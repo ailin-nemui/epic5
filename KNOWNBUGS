@@ -2,7 +2,7 @@ EPIC5 Projects, Bugs, and other Errata:
 
 KNOWN ERRATA (eg, bugs, or unresolved requests):
 ------------------------------------------------
-* next_expr() absolutely returns NULL, but not every place checks for that!
+<none>
 
 ISSUES OF INTEREST
 ------------------
@@ -346,3 +346,4 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Add a unique refnum to every scrollback item, for the indicator someday.
 * Call function_cparse() directly for protected implied hooks to avoid { issues
 * Fix --with-warns compiler warnings and stuff.
+* The next_arg() functions can return NULL and must be handled properly

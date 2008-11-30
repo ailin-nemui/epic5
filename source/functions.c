@@ -1,4 +1,4 @@
-/* $EPIC: functions.c,v 1.275 2008/11/28 16:28:03 jnelson Exp $ */
+/* $EPIC: functions.c,v 1.276 2008/11/30 19:09:23 jnelson Exp $ */
 /*
  * functions.c -- Built-in functions for ircII
  *
@@ -2561,19 +2561,23 @@ char *function_shiftbrace (char *word)
 	char    *var    = (char *) 0;
 	char	*booya 	= (char *) 0;
 	char    *placeholder;
+	char 	*oof;
 
 	GET_FUNC_ARG(var, word);
-
-	value = get_variable(var);
-
-	placeholder = value;
-	booya = malloc_strdup(next_expr(&value, '{'));
-	if (var)
-		add_var_alias(var, value, 0);
-	new_free(&placeholder);
-	if (!booya)
+	if (!var || !*var)
 		RETURN_EMPTY;
-	return booya;
+
+	placeholder = value = get_variable(var);
+	if ((oof = next_expr(&value, '{')) == NULL)
+	{
+		new_free(&placeholder);
+		RETURN_EMPTY;
+	}
+	booya = malloc_strdup(oof);
+	add_var_alias(var, value, 0);
+
+	new_free(&placeholder);
+	RETURN_MSTR(booya);
 }
 
 char *function_shiftseg (char *input)
