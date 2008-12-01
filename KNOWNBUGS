@@ -346,4 +346,6 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Add a unique refnum to every scrollback item, for the indicator someday.
 * Call function_cparse() directly for protected implied hooks to avoid { issues
 * Fix --with-warns compiler warnings and stuff.
-* The next_arg() functions can return NULL and must be handled properly
+* The next_expr() functions can return NULL and must be handled properly
+* Remove $from() as it's the same as $rest() (approved by howl)
+* EPIC5-0.9.0 was released here (Hyperpyrexia) (commit 1572)

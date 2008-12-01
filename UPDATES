@@ -1,4 +1,4 @@
-EPIC5-0.3.10
+EPIC5-0.9.0 (EPIC5-0.3.10)
 
 *** News 11/24/2008 -- New /window operation, /WINDOW SCROLL_LINES
 	The /WINDOW SCROLL_LINES operation overrules /SET SCROLL_LINES for
