@@ -1,4 +1,4 @@
-/* $EPIC: server.c,v 1.236 2008/07/02 00:10:28 jnelson Exp $ */
+/* $EPIC: server.c,v 1.237 2008/12/10 23:32:37 jnelson Exp $ */
 /*
  * server.c:  Things dealing with that wacky program we call ircd.
  *
@@ -2241,7 +2241,7 @@ void  server_is_registered (int refnum, const char *itsname, const char *ourname
 
 	if ((winref = get_winref_by_servref(refnum)) != -1)
 	    if (new_server_lastlog_mask)
-		set_mask_by_winref(winref, *new_server_lastlog_mask);
+		renormalize_window_levels(winref, *new_server_lastlog_mask);
 
 	/*
 	 * This hack is required by a race condition with freebsd that 

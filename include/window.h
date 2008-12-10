@@ -247,6 +247,7 @@ const	char	*get_echannel_by_refnum		(unsigned);
 	void	change_window_server		(int, int);
 	void	window_check_servers		(void);
 	int	set_mask_by_winref		(unsigned, Mask);
+	int	renormalize_window_levels	(unsigned, Mask);
 #define message_to(x) real_message_to(x, __FILE__, __LINE__)
 	int	real_message_to			(int, const char *, int);
 #define message_from(x, y) real_message_from(x, y, __FILE__, __LINE__)

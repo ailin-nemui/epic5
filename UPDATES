@@ -1,3 +1,28 @@
+EPIC5-0.9.1
+
+*** News 12/10/2008 -- Minor change to /SET NEW_SERVER_LASTLOG_LEVEL
+	Previously, each time you connected to a server (received a 001 reply)
+	the client would unconditionally assign all of the levels in 
+	/set new_server_lastlog_level to the server's current window.
+	This is rather annoying if you got disconnected from the server 
+	because the default value is ALL,-DCC and that would clobber all of
+	your window levels. 
+
+	Having this brought to my attention, this has been changed to be 
+	more reasonable.  These will now reclaim any unused levels, rather
+	than unconditionally stealing them from other windows.  Thus, what
+	/set new_server_lastlog_level ALL,-DCC means is, "each time I connect
+	to a server, please put any levels that aren't being used by any 
+	window connected to this server in the current window".   I apologize
+	for the previous behavior which was stupid and shouldn't have survived
+	as long as it did.
+
+*** News 12/10/2008 -- Minor change to /SET OLD_SERVER_LASTLOG_LEVEL
+	The same change applies when you /window server a window to a server
+	that is already connected -- it has its window level changed to
+	/set old_server_lastlog_level, but it will now NOT steal the level
+	from any other window that already claims it.
+
 EPIC5-0.9.0 (EPIC5-0.3.10)
 
 *** News 11/24/2008 -- New /window operation, /WINDOW SCROLL_LINES

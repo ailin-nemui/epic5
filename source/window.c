@@ -1,4 +1,4 @@
-/* $EPIC: window.c,v 1.202 2008/11/28 16:28:03 jnelson Exp $ */
+/* $EPIC: window.c,v 1.203 2008/12/10 23:32:37 jnelson Exp $ */
 /*
  * window.c: Handles the organzation of the logical viewports (``windows'')
  * for irc.  This includes keeping track of what windows are open, where they
@@ -2442,6 +2442,52 @@ int	set_mask_by_winref (unsigned refnum, Mask mask)
 	return 0;
 }
 
+/*
+ * This is what makes /set new_server_lastlog_level work.  Previously,
+ * each time you connected to a server (got a 001 numeric) those levels
+ * were unconditionally assigned to the server's current window.  That was
+ * actually a bad thing for reconnectors who had already got their levels
+ * set up and didn't want them reassigned thank-you-very-much.  So now 
+ * what it'll do is leave alone any levels that are already set and just set
+ * the ones that are totaly unused. 
+ * 
+ * Naturally if you're one of those goofballs who sets all your window levels
+ * to NONE you're definitely gonna want to /set new_server_lastlog_level NONE
+ * if you haven't done that already.
+ */
+int	renormalize_window_levels (unsigned refnum, Mask mask)
+{
+	Window	*win, *tmp;
+	int	i, claimed;
+
+	if (!(win = get_window_by_refnum(refnum)))
+		return -1;
+
+	/* Test each level in the reclaimable bitmask */
+	for (i = 1; BIT_VALID(i); i++)
+	{
+	    /* If this level isn't reclaimable, skip it */
+	    if (!mask_isset(&mask, i))
+		continue;
+
+	    /* Now look for any window (including us) that already claims it */
+	    tmp = NULL;
+	    claimed = 0;
+	    while (traverse_all_windows(&tmp))
+	    {
+		if (mask_isset(&tmp->window_mask, i))
+		    claimed = 1;
+	    }
+
+	    /* If no window claims it (including us), then we will. */
+	    if (!claimed)
+		mask_set(&tmp->window_mask, i);
+	}
+
+	revamp_window_masks(win);
+	return 0;
+}
+
 
 /*
  * revamp_window_masks: Given a level setting for the current window, this
@@ -4820,7 +4866,8 @@ Window *window_server (Window *window, char **args)
 		if (status > SERVER_RECONNECT && status < SERVER_EOF)
 		{
 		    if (old_server_lastlog_mask) {
-			window->window_mask = *old_server_lastlog_mask;
+			renormalize_window_levels(window->refnum, 
+					*old_server_lastlog_mask);
 			revamp_window_masks(window);
 		    }
 		}
