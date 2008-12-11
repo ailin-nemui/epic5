@@ -1,5 +1,10 @@
 EPIC5-0.9.1
 
+*** News 12/10/2008 -- New function, $chanlimit(#chan #chan #chan)
+	The $chanlimit() command works just like $chanmode(), but it
+	returns the +l argument -- the channel membership limit.
+	This is by special request of fusion.
+
 *** News 12/10/2008 -- Minor change to /SET NEW_SERVER_LASTLOG_LEVEL
 	Previously, each time you connected to a server (received a 001 reply)
 	the client would unconditionally assign all of the levels in 

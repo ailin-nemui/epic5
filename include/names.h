@@ -43,6 +43,7 @@
 	Char *	what_channel		(Char *, int);
 	Char *	walk_channels		(int, Char *);
 	Char *	fetch_userhost		(int, Char *, Char *);
+	int	get_channel_limit	(Char *, int);
 	int	get_channel_oper	(Char *, int);
 	int	get_channel_voice	(Char *, int);
 	int     get_channel_halfop	(Char *, int);

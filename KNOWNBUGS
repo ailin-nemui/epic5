@@ -2,7 +2,6 @@ EPIC5 Projects, Bugs, and other Errata:
 
 KNOWN ERRATA (eg, bugs, or unresolved requests):
 ------------------------------------------------
-* Fusion wants some way to get the channel +l limit.
 * You might see the input right indicator if you're at the end and the 
   input line is full
 * Embedded perl should actually be tested instead of assuming it works

@@ -1,4 +1,4 @@
-/* $EPIC: functions.c,v 1.277 2008/11/30 21:30:08 jnelson Exp $ */
+/* $EPIC: functions.c,v 1.278 2008/12/11 04:45:58 jnelson Exp $ */
 /*
  * functions.c -- Built-in functions for ircII
  *
@@ -209,6 +209,7 @@ static	char
 	*function_center 	(char *),
 	*function_cexist	(char *),
 	*function_channel	(char *),
+	*function_channellimit	(char *),
 	*function_channelmode	(char *),
 	*function_check_code	(char *),
 	*function_chmod		(char *),
@@ -467,6 +468,7 @@ static BuiltInFunctions	built_in_functions[] =
 	{ "CEIL",		function_ceil	 	},
 	{ "CENTER",		function_center 	},
 	{ "CEXIST",		function_cexist		},
+	{ "CHANLIMIT",		function_channellimit	},
 	{ "CHANMODE",		function_channelmode	},
 	{ "CHANNEL",		function_channel	},
 	{ "CHANUSERS",		function_onchannel 	},
@@ -1856,46 +1858,6 @@ BUILT_IN_FUNCTION(function_restw, word)
  */
 BUILT_IN_FUNCTION(function_remw, word)
 {
-#if 0
-	char 	*word_to_remove;
-	int	len;
-	ssize_t	span;
-	char	*str;
-
-	GET_FUNC_ARG(word_to_remove, word);
-	len = strlen(word_to_remove);
-
-	if ((span = stristr(word, word_to_remove)) >= 0)
-	{
-	    str = word + span;
-	    while (str && *str)
-	    {
-		if (str == word || isspace(str[-1]))
-		{
-			if (!str[len] || isspace(str[len]))
-			{
-				if (!str[len])
-				{
-					if (str != word)
-						str--;
-					*str = 0;
-				}
-				else if (str > word)
-					ov_strcpy(str - 1, str + len);
-				else 
-					ov_strcpy(str, str + len + 1);
-				break;
-			}
-		}
-		if ((span = stristr(str + 1, word_to_remove)) < 0)
-			break; 
-		str += span + 1;
-	    }
-	}
-
-	RETURN_STR(word);
-#endif
-
 	int	where;
 	char *	lame = NULL;
 	char *	placeholder;
@@ -2094,10 +2056,7 @@ BUILT_IN_FUNCTION(function_diff, word)
 	new_free((char **)&leftw);
 	new_free((char **)&rightw);
 
-	if (!booya)
-		RETURN_EMPTY;
-
-	return (booya);
+	RETURN_MSTR(booya);
 }
 
 char *wrapper_pattern(char *word, int mode)
@@ -2443,7 +2402,7 @@ BUILT_IN_FUNCTION(function_key, word)
 	}
 	while (word && *word);
 
-	return (booya ? booya : malloc_strdup(empty_string));
+	RETURN_MSTR(booya);
 }
 
 /*
@@ -2468,7 +2427,7 @@ BUILT_IN_FUNCTION(function_channelmode, word)
 	}
 	while (word && *word);
 
-	return (booya ? booya : malloc_strdup(empty_string));
+	RETURN_MSTR(booya);
 }
 
 
@@ -2483,10 +2442,7 @@ BUILT_IN_FUNCTION(function_revw, words)
 				last_arg(&words, &wclue, DWORD_DWORDS), 
 				DWORD_DWORDS, &rvclue);
 
-	if (!booya)
-		RETURN_EMPTY;
-
-	return booya;
+	RETURN_MSTR(booya);
 }
 
 BUILT_IN_FUNCTION(function_reverse, words)
@@ -2551,7 +2507,7 @@ BUILT_IN_FUNCTION(function_jot, input)
 		}
 	}
 
-	return booya;
+	RETURN_MSTR(booya);
 }
 
 char *function_shiftbrace (char *word)
@@ -2647,9 +2603,7 @@ char *function_shift (char *word)
 	if (var)
 		add_var_alias(var, value, 0);
 	new_free(&free_it);
-	if (!booya)
-		RETURN_EMPTY;
-	return booya;
+	RETURN_MSTR(booya);
 }
 
 /*
@@ -6989,4 +6943,28 @@ BUILT_IN_FUNCTION(function_check_code, input)
 
 	RETURN_INT(0);			/* Looks ok to me */
 }
+
+
+BUILT_IN_FUNCTION(function_channellimit, word)
+{
+	char	*channel;
+	char    *booya = (char *) 0;
+	int	limit;
+	size_t	rvclue=0;
+
+	do
+	{
+		channel = next_func_arg(word, &word);
+		if ((!channel || !*channel) && booya)
+			break;
+
+		limit = get_channel_limit(channel, from_server);
+		malloc_strcat_word_c(&booya, space, ltoa(limit), 
+					DWORD_DWORDS, &rvclue);
+	}
+	while (word && *word);
+
+	RETURN_MSTR(booya);
+}
+
 
