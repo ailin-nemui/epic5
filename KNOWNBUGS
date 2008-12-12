@@ -4,7 +4,8 @@ KNOWN ERRATA (eg, bugs, or unresolved requests):
 ------------------------------------------------
 * You might see the input right indicator if you're at the end and the 
   input line is full
-* Embedded perl should actually be tested instead of assuming it works
+* Should do a configure-time check for embeddable ruby (and tcl) like 
+  for perl, to avoid link-time errors.
 
 ISSUES OF INTEREST
 ------------------
@@ -352,3 +353,4 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Remove $from() as it's the same as $rest() (approved by howl)
 * EPIC5-0.9.0 was released here (Hyperpyrexia) (commit 1572)
 * When reconnecting, /set new_server_lastlog_level should reclaim, not steal
+* Actually try to use embedded perl in configure before allowing its use.

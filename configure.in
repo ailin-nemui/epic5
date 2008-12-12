@@ -4,9 +4,9 @@ dnl except those bits attributed otherwise.
 dnl thanks to the screen 3.3 configure.in for giving me examples to
 dnl work from and steal ;)
 dnl
-dnl @(#)$Id: configure.in,v 1.70 2008/11/26 03:26:33 jnelson Exp $
+dnl @(#)$Id: configure.in,v 1.71 2008/12/12 03:44:00 jnelson Exp $
 
-AC_REVISION($Revision: 1.70 $)dnl
+AC_REVISION($Revision: 1.71 $)dnl
 AC_INIT(source/irc.c)
 AC_CONFIG_HEADER(include/defs.h)
 
@@ -900,9 +900,43 @@ else
 		PERLLDFLAGS=`$perlexe -MExtUtils::Embed -e ldopts`
 		PERLDOTOH="perl.o"
 
-		AC_DEFINE(HAVE_PERL)
-		AC_DEFINE(PERLCFLAGS)
-		AC_DEFINE(PERLLDFLAGS)
+		AC_MSG_CHECKING(whether embedded perl works)
+		have_embedded_perl="no"
+		old_CFLAGS="$CFLAGS"
+		old_LDFLAGS="$LDFLAGS"
+		CFLAGS="$CFLAGS $PERLCFLAGS"
+		LDFLAGS="$LDFLAGS $PERLLDFLAGS"
+		AC_TRY_LINK([
+#include <EXTERN.h>
+#include <perl.h>
+#include <XSUB.h>
+], [
+	   /* I "borrowed" this from the perlembed(1) man page */
+           static PerlInterpreter *my_perl;
+           int main(int argc, char **argv, char **env)
+           {
+               PERL_SYS_INIT3(&argc,&argv,&env);
+               my_perl = perl_alloc();
+               perl_construct(my_perl);
+               PL_exit_flags |= PERL_EXIT_DESTRUCT_END;
+               perl_parse(my_perl, NULL, argc, argv, (char **)NULL);
+               perl_run(my_perl);
+               perl_destruct(my_perl);
+               perl_free(my_perl);
+               PERL_SYS_TERM();
+           }
+], have_embedded_perl="yes")
+
+		CFLAGS="$old_CFLAGS"
+		LDFLAGS="$old_LDFLAGS"
+		if test $have_embedded_perl = "yes" ; then
+			AC_MSG_RESULT(yes)
+			AC_DEFINE(HAVE_PERL)
+			AC_DEFINE(PERLCFLAGS)
+			AC_DEFINE(PERLLDFLAGS)
+		else
+			AC_MSG_RESULT(no, sorry)
+		fi
 	fi
 fi
 
