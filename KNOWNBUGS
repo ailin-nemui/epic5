@@ -2,10 +2,7 @@ EPIC5 Projects, Bugs, and other Errata:
 
 KNOWN ERRATA (eg, bugs, or unresolved requests):
 ------------------------------------------------
-* You might see the input right indicator if you're at the end and the 
-  input line is full
-* Should do a configure-time check for embeddable ruby (and tcl) like 
-  for perl, to avoid link-time errors.
+<none>
 
 ISSUES OF INTEREST
 ------------------
@@ -354,3 +351,5 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * EPIC5-0.9.0 was released here (Hyperpyrexia) (commit 1572)
 * When reconnecting, /set new_server_lastlog_level should reclaim, not steal
 * Actually try to use embedded perl in configure before allowing its use.
+* Have configure check whether perl/tcl/ruby actually work the way we use them
+* This should prevent compile errors if the apis change in the future.

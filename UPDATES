@@ -1,5 +1,14 @@
 EPIC5-0.9.1
 
+*** News 12/12/2008 -- Configure will check for perl/ruby/tcl usability
+	Up until now, configure would include perl/ruby/tcl as long as it
+	existed and told us where its stuff was at.  That's bad if you
+	don't install the dev packages, because linking against the 
+	langauage library won't work if it's not there.  Configure will now
+	try a test-compile to use the language embedding to see if it works
+	and supports the api we expect.  Failures will cause that language
+	to be turned off.  Be sure to re-run configure!
+
 *** News 12/10/2008 -- New function, $chanlimit(#chan #chan #chan)
 	The $chanlimit() command works just like $chanmode(), but it
 	returns the +l argument -- the channel membership limit.

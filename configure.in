@@ -4,9 +4,9 @@ dnl except those bits attributed otherwise.
 dnl thanks to the screen 3.3 configure.in for giving me examples to
 dnl work from and steal ;)
 dnl
-dnl @(#)$Id: configure.in,v 1.71 2008/12/12 03:44:00 jnelson Exp $
+dnl @(#)$Id: configure.in,v 1.72 2008/12/13 02:33:04 jnelson Exp $
 
-AC_REVISION($Revision: 1.71 $)dnl
+AC_REVISION($Revision: 1.72 $)dnl
 AC_INIT(source/irc.c)
 AC_CONFIG_HEADER(include/defs.h)
 
@@ -900,7 +900,7 @@ else
 		PERLLDFLAGS=`$perlexe -MExtUtils::Embed -e ldopts`
 		PERLDOTOH="perl.o"
 
-		AC_MSG_CHECKING(whether embedded perl works)
+		AC_MSG_CHECKING(whether embedded perl works the way I expect)
 		have_embedded_perl="no"
 		old_CFLAGS="$CFLAGS"
 		old_LDFLAGS="$LDFLAGS"
@@ -972,12 +972,43 @@ else
 		TCLCFLAGS=`(. $tclconfig && echo $TCL_INCLUDE_SPEC)`
 		TCLLDFLAGS1=`(. $tclconfig && echo $TCL_LIB_SPEC)`
 		TCLLDFLAGS2=`(. $tclconfig && echo $TCL_LIBS)`
-		TCLLDFLAGS="$TCLLDFLAGS1 $TCLLDFLAGS2"
+		TCLLDFLAGS=$(eval echo "$TCLLDFLAGS1 $TCLLDFLAGS2")
 		TCLDOTOH="tcl.o"
 
-		AC_DEFINE(HAVE_TCL)
-		AC_DEFINE(TCLCFLAGS)
-		AC_DEFINE(TCLLDFLAGS)
+		AC_MSG_CHECKING(whether embedded tcl works the way I expect)
+		have_embedded_tcl="no"
+		old_CFLAGS="$CFLAGS"
+		old_LDFLAGS="$LDFLAGS"
+		CFLAGS="$CFLAGS $TCLCFLAGS"
+		LDFLAGS="$LDFLAGS $TCLLDFLAGS"
+		AC_TRY_LINK([
+#include <tcl.h>
+], [
+	   Tcl_Interp *my_tcl;
+	   static int Tcl_echoCmd (ClientData clientData, Tcl_Interp *interp, int objc, const char **objv)
+	   {
+		return TCL_OK;
+	   }
+           int main(int argc, char **argv, char **env)
+           {
+		my_tcl = Tcl_CreateInterp();
+		Tcl_Init(my_tcl);
+		Tcl_CreateCommand(my_tcl, "echo", Tcl_echoCmd,
+			(ClientData)NULL, (void (*)()) NULL);
+		Tcl_DeleteInterp(my_tcl);
+           }
+], have_embedded_tcl="yes")
+
+		CFLAGS="$old_CFLAGS"
+		LDFLAGS="$old_LDFLAGS"
+		if test $have_embedded_tcl = "yes" ; then
+		    AC_MSG_RESULT(yes)
+		    AC_DEFINE(HAVE_TCL)
+		    AC_DEFINE(TCLCFLAGS)
+		    AC_DEFINE(TCLLDFLAGS)
+		else
+		    AC_MSG_RESULT(no, sorry)
+		fi
 	fi
 fi
 
@@ -1015,9 +1046,45 @@ else
 	    RUBYLDFLAGS="$rubylibs $extralibs"
 	    RUBYDOTOH="ruby.o"
 
-	    AC_DEFINE(HAVE_RUBY)
-	    AC_DEFINE(RUBYCFLAGS)
-	    AC_DEFINE(RUBYLDFLAGS)
+	    AC_MSG_CHECKING(whether embedded ruby works the way I expect)
+	    have_embedded_ruby="no"
+	    old_CFLAGS="$CFLAGS"
+	    old_LDFLAGS="$LDFLAGS"
+	    CFLAGS="$CFLAGS $RUBYCFLAGS"
+	    LDFLAGS="$LDFLAGS $RUBYLDFLAGS"
+	    AC_TRY_LINK([
+#include <ruby.h>
+], [
+    static VALUE epic_echo (VALUE module, VALUE string)
+    {
+	VALUE x;
+	char *my_string;
+	x = rb_obj_as_string(string);
+	my_string = STR2CSTR(x);
+	return Qnil;
+    }
+    int main(int argc, char **argv, char **env)
+    {
+	VALUE rubyclass;
+
+	ruby_init();
+	ruby_init_loadpath();
+	rubyclass = rb_define_class("EPIC", rb_cObject);
+	rb_define_singleton_method(rubyclass, "echo", epic_echo, 1);
+	rb_gc_register_address(&rubyclass);
+    }
+], have_embedded_ruby="yes")
+
+	    CFLAGS="$old_CFLAGS"
+	    LDFLAGS="$old_LDFLAGS"
+	    if test $have_embedded_ruby = "yes" ; then
+		AC_MSG_RESULT(yes)
+		AC_DEFINE(HAVE_RUBY)
+		AC_DEFINE(RUBYCFLAGS)
+		AC_DEFINE(RUBYLDFLAGS)
+	    else
+		AC_MSG_RESULT(no, sorry)
+	    fi
 	fi
 fi
 
