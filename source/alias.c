@@ -1,4 +1,4 @@
-/* $EPIC: alias.c,v 1.86 2008/11/30 19:09:23 jnelson Exp $ */
+/* $EPIC: alias.c,v 1.87 2008/12/21 06:32:57 jnelson Exp $ */
 /*
  * alias.c -- Handles the whole kit and caboodle for aliases.
  *
@@ -770,7 +770,7 @@ ArgList	*parse_arglist (char *arglist)
 				}
 				else
 				{
-					yell("Bad modifier %s", modifier);
+					yell("Bad arglist parameter modifier %s -- did you forget to put a comma before this variable names?", modifier);
 				}
 			}
 			arg_count++;

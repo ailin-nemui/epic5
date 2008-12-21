@@ -1,4 +1,4 @@
-/* $EPIC: ircaux.c,v 1.197 2008/11/26 03:26:34 jnelson Exp $ */
+/* $EPIC: ircaux.c,v 1.198 2008/12/21 06:32:58 jnelson Exp $ */
 /*
  * ircaux.c: some extra routines... not specific to irc... that I needed 
  *
@@ -5531,11 +5531,8 @@ static int	register_transform (const char *name, int takes_meta, ssize_t (*encod
 static int	unregister_transform (int i)
 {
 	/* We don't change 'refnum' so this entry doesn't get re-used! */
-	new_free((char **)
-#ifdef HAVE_INTPTR_T
-		(intptr_t)
-#endif
-		&transformers[i].name);
+	/* The warning generated here is intentional */
+	new_free((char **) &transformers[i].name);
 	transformers[i].takes_meta = 0;
 	transformers[i].encoder = NULL;
 	transformers[i].decoder = NULL;

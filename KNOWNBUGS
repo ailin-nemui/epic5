@@ -2,10 +2,13 @@ EPIC5 Projects, Bugs, and other Errata:
 
 KNOWN ERRATA (eg, bugs, or unresolved requests):
 ------------------------------------------------
-<none>
+* Document $xform(ICONV ...)
 
 ISSUES OF INTEREST
 ------------------
+* Should there be client-side topic caching?
+* $listen() should be able to take a vhost/paddr directly
+* There should be a function that returns your vhosts.
 * Document the wikihelp for lastlog with stuff like -context.
 * Re-implement /set cmdchars
 * You should be able to /msg @logfile
@@ -353,3 +356,5 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Actually try to use embedded perl in configure before allowing its use.
 * Have configure check whether perl/tcl/ruby actually work the way we use them
 * This should prevent compile errors if the apis change in the future.
+* EPIC5-0.9.1 was released here (Noisome) (commit 1578)
+* Fix compile error using #ifdef in new_free() arglist (rb KainX)

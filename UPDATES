@@ -617,9 +617,9 @@ EPIC5-0.3.4
 	to any rvalue (natch):
 		@ foo = **[booya $foo booya!]
 	becomes
-		@ foo = **[booya this is a string with $var in it]
+		@ foo = **[booya this is a string with $var in it booya!]
 	becomes
-		@ foo == [booya this is a string with two in it]
+		@ foo == [booya this is a string with two in it booya!]
 	Yeah!
 
 *** News 05/17/2007 -- New script, 'dcc_ports'
