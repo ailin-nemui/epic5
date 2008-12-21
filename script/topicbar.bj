@@ -1,0 +1,149 @@
+if (word(2 $loadinfo()) != 'pf') {
+	load -pf $word(1 $loadinfo());
+	return;
+};
+
+#	Copyright (c) 2006 BlackJac@EFNet
+#
+#	Version: 0.5.2006.07.30.1
+#
+#	Settings:
+#		set topicbar [on|off|toggle]
+#			Toggles the topicbar on/off.
+#		set topicbar_double [on|off|toggle]
+#			Toggles whether a second topicbar is shown directly
+#			underneath the first one.
+#		set topicbar_format <string>
+#			Sets the format of the first topicbar.
+#		set topicbar_format2 <string>
+#			Sets the format of the second topicbar.
+#
+#	Note:
+#		Be VERY careful when modifying the format of the two topicbars!
+#		If you set them incorrectly, they can break.
+
+package topicbar;
+
+load addset;
+
+addset topicbar bool {
+	if (*0 == 'on') {
+		stack push on 331;
+		stack push on 332;
+		stack push on 333;
+		^on ^331 "*" #;
+		^on ^331 '% $C *' {
+			topicbar.update;
+		};
+		^on ^332 "*" {
+			topicbar.store 0 $servernum() $1-;
+		};
+		^on ^333 "*" {
+			topicbar.store 1 $servernum() $1-;
+			if (*1 == C) {
+				topicbar.update;
+			};
+		};
+		@ :numlines = getset(topicbar_double) == 'on' ? 2 : 1;
+		window toplines $numlines;
+		fe ($windowctl(refnums)) tt {
+			if (!windowctl(get $tt visible)) {
+				window $tt toplines $numlines;
+			};
+			if (:channel = winchan($tt)) {
+				topic $channel;
+			} else {
+				topicbar.update;
+			};
+		};
+		wait;
+		stack pop on 331;
+		stack pop on 332;
+		stack pop on 333;
+	} else {
+		fe ($windowctl(refnums)) tt {
+			if (windowctl(get $tt toplines)) {
+				window $tt toplines 0;
+			};
+		};
+	};
+};
+
+addset topicbar_double bool {
+	if (getset(topicbar) == 'on') {
+		fe ($windowctl(refnums)) tt {
+			if ((:toplines = windowctl(get $tt toplines)) == 1 && *0 == 'on') {
+				window $tt toplines 2;
+				topicbar.update;
+			} else if (toplines == 2 && *0 == 'off') {
+				window $tt toplines 1;
+			};
+		};
+	};
+};
+
+fe (format format2) tt {
+	addset topicbar_$tt str {
+		if (getset(topicbar) == 'on') {
+			topicbar.update;
+		};
+	};
+};
+
+alias topicbar.store (index, server, channel, ...) {
+	if (@index && @server && channel) {
+		@ setitem(array.topicbar.$server\.$channel $index $*);
+	};
+};
+
+alias topicbar.update (void) {
+	@ :winnum = windowctl(get 0 refnum);
+	^eval assign :line1 $getset(topicbar_format);
+	@ windowctl(set $winnum topline 1 $line1);
+	if (windowctl(get $winnum toplines) == 2) {
+		^eval assign :line2 $getset(topicbar_format2);
+		@ windowctl(set $winnum topline 2 $line2);
+	};
+};
+
+on #-332 5 "*" {
+	topicbar.store 0 $servernum() $1-;
+};
+
+on #-333 5 "*" {
+	topicbar.store 1 $servernum() $1-;
+	if (*1 == C && getset(topicbar) == 'on') {
+		topicbar.update;
+	};
+};
+
+on #-part 5 '$$servernick() *' {
+	@ delarray(array.topicbar.$servernum().$1);
+};
+
+fe (channels windows) tt {
+	on #-switch_$tt 5 "*" {
+		if (getset(topicbar) == 'on') {
+			topicbar.update;
+		};
+	};
+};
+
+on #-topic 5 "*" {
+	topicbar.store 0 $servernum() $1-;
+	@ setitem(array.topicbar.$servernum().$1 1 $0!$userhost() $time());
+	if (getset(topicbar) == 'on') {
+		topicbar.update;
+	};
+};
+
+on #-window_create 5 "*" {
+	if (getset(topicbar) == 'on') {
+		defer window $0 toplines ${getset(topicbar_double) == 'on' ? 2 : 1};
+	};
+};
+
+set topicbar off;
+set topicbar_double on;
+set topicbar_format 30,47$$[$word(0 $geom())]stripcrap(all $getitem(array.topicbar.$servernum().$C 0))-1;
+set topicbar_format2 30,47$$[$word(0 $geom())]{getitem(array.topicbar.$servernum().$C 0) ? [Topic set at $stime($word(1 $getitem(array.topicbar.$servernum().$C 1))) by $before(! $getitem(array.topicbar.$servernum().$C 1)!) \($after(-1 ! !$word(0 $getitem(array.topicbar.$servernum().$C 1)))\)] : []}-1;
