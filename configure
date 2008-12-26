@@ -1,6 +1,6 @@
 #! /bin/sh
 
-# From configure.in Revision: 1.71 # Guess values for system-dependent variables and create Makefiles.
+# From configure.in Revision: 1.72 # Guess values for system-dependent variables and create Makefiles.
 # Generated automatically using autoconf version 2.13 
 # Copyright (C) 1992, 93, 94, 95, 96 Free Software Foundation, Inc.
 #
@@ -5935,7 +5935,7 @@ echo "configure:5922: checking whether embedded perl works the way I expect" >&5
 int main() {
 
 	   /* I "borrowed" this from the perlembed(1) man page */
-           static PerlInterpreter *my_perl;
+           PerlInterpreter *my_perl;
            int main(int argc, char **argv, char **env)
            {
                PERL_SYS_INIT3(&argc,&argv,&env);
@@ -6034,7 +6034,7 @@ echo "configure:6023: checking whether embedded tcl works the way I expect" >&5
 int main() {
 
 	   Tcl_Interp *my_tcl;
-	   static int Tcl_echoCmd (ClientData clientData, Tcl_Interp *interp, int objc, const char **objv)
+	   int Tcl_echoCmd (ClientData clientData, Tcl_Interp *interp, int objc, const char **objv)
 	   {
 		return TCL_OK;
 	   }
@@ -6160,7 +6160,7 @@ echo "configure:6150: checking whether embedded ruby works the way I expect" >&5
 
 int main() {
 
-    static VALUE epic_echo (VALUE module, VALUE string)
+    VALUE epic_echo (VALUE module, VALUE string)
     {
 	VALUE x;
 	char *my_string;
