@@ -2,7 +2,7 @@ EPIC5 Projects, Bugs, and other Errata:
 
 KNOWN ERRATA (eg, bugs, or unresolved requests):
 ------------------------------------------------
-* Document $xform(ICONV ...)
+<none>
 
 ISSUES OF INTEREST
 ------------------
@@ -358,3 +358,4 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * This should prevent compile errors if the apis change in the future.
 * EPIC5-0.9.1 was released here (Noisome) (commit 1578)
 * Fix compile error using #ifdef in new_free() arglist (rb KainX)
+* EPIC5-1.0 was released here (Sesquipedalian) (commit 1580)
