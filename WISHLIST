@@ -1,0 +1,59 @@
+These are wishlist items that people have asked me for.  Maybe someday
+someone will think they are interesting and implement them!
+
+ISSUES OF INTEREST
+------------------
+* Should there be client-side topic caching?
+* $listen() should be able to take a vhost/paddr directly
+* There should be a function that returns your vhosts.
+* Document the wikihelp for lastlog with stuff like -context.
+* Re-implement /set cmdchars
+* You should be able to /msg @logfile
+* You should be able to move lastlog items between windows, split, merge.
+* Shattah would like something like /window omit <regex> to remove stuff.
+* Rewrite the input prompt to use a linked list instead of a C string.
+* There should be a SWITCH_TARGET keybinding
+* I would like to be able to /load zip files and put them into LOAD_PATH.
+* Normalize 'proto', 'type', and 'addrfamily' values with server stuff.
+* Undernet's CPRIVMSG and CNOTICE allow chanops to msg members w/o penalty
+* You can't move a window to a different screen atomically (you must hide it)
+* Howl wants a temporary hold mode that expires when you reach bottom.
+* Everybody wants utf8 support -- but who will volunteer to help me?
+* There should be something internally that detects pastes.
+* What about pastes with "rogue characters" like ³ (alt-3, ie, ^[3) ?
+* The way dcc filenames are handled is bad; you should be able to seamlessly
+  rewrite filenames both outbound and inbound.  URL encoding should auto-detect
+* There should be an /on send_encrypted_msg, /on send_encrypted_public, etc.
+* IRCII supports "default" fg/bg colors, which looks intriguing.
+* Larne would like to use 256-color-support for xterm.
+  ^[[48;5;<color>m   <color> = 16 + (red * 36) + (green * 6) + blue
+* Larne would like a ==== indicator that appears at his last scrollback point.
+* Larne wants suppression of duplicated lines (like syslog maybe?)
+* Remove all the hardcoded uses of select() so it isn't mandatory.
+* Zlonix wants a way to be notified when window geometry changes
+* Jm would like an /xdebug inbound type facility for dcc raw connections.
+* Jm thinks regex support for /switch would be nice.
+* How about base85 support for $xform() ?
+* Zlonix would like per-screen toplines
+* Output rules
+* Pegasus wants a way to send italics (^I)
+* Kreca mentions that word manip functions strip extraneous spaces.
+* If @ var = [encode] you should be able to do $($var)(args) to call it.
+* Krisp wants a log that only logs what is not logged somewhere else.
+* UPnP support (http://miniupnp.free.fr) would fix dcc-behind-firewall dilema.
+* <twincest> hop: i would like a function that erases the last 10 lines of the
+  +display and replaces them with the output of /lastlog 10
+  <twincest> (obviously, for any number, not just 10 ;-)
+  <twincest> since i use lastlog_rewrite to timestamp the log, that would allow
+  +me to insert timestamps without duplicating text
+  <twincest> also, i would like a way to temporarily disable window updates
+  <twincest> so i can do /window upate off; /lastlog; /window update on
+  <twincest> and it outputs the lastlog without me having to wait for the entire
+  +thing to be drawn
+  <twincest> it would just appear in the scrollback
+
+[See http://www.epicsol.org/PROJECTS for things to come in the future]
+[See http://www.epicsol.org/CHANGELOG5 for things that changed in the past]
+
+THE CHANGELOG SINCE THE LAST RELEASE:
+-------------------------------------

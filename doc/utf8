@@ -1,0 +1,21 @@
+A plan for utf8 support
+
+Project 1: Scripts
+  All scripts will be translated into utf8 at /load time.
+  All output will be translated from utf8 at display time.
+  Column counting is not in the scope of this project.
+
+Project 2: Targets
+  All targets (channels and nicknames) shall be maintained in a table
+  Each target shall be associated with an encoding
+  Strings to and from the target shall be converted to/from utf8
+
+Project 3: Column Counting
+  The output code needs to know how to count utf8 strings properly
+
+Project 4: Input handling
+  All input shall be converted to utf8 
+  The input line needs to know about utf8 strings, 
+  Specifically how to count columns.  
+  Better handling for utf8 vagaries, specifically OS X's composed characters.
+
