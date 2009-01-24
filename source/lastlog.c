@@ -1,4 +1,4 @@
-/* $EPIC: lastlog.c,v 1.75 2008/02/16 23:42:05 jnelson Exp $ */
+/* $EPIC: lastlog.c,v 1.76 2009/01/24 15:58:58 jnelson Exp $ */
 /*
  * lastlog.c: handles the lastlog features of irc. 
  *
@@ -61,7 +61,7 @@ typedef struct	lastlog_stru
 
 static	intmax_t global_lastlog_refnum = 0;
 
-static int	show_lastlog (Lastlog **l, int *skip, int *number, Mask *level_mask, char *match, regex_t *reg, int *max, const char *target, int mangler, unsigned winref);
+static int	show_lastlog (Lastlog **l, int *skip, int *number, Mask *level_mask, char *match, regex_t *rex, int *max, const char *target, int mangler, unsigned winref);
 static int	oldest_lastlog_for_window (Lastlog **item, unsigned winref);
 static int	newer_lastlog_entry (Lastlog **item, unsigned winref);
 static int	older_lastlog_entry (Lastlog **item, unsigned winref);
@@ -354,7 +354,7 @@ BUILT_IN_COMMAND(lastlog)
 	Lastlog *	l;
 	Lastlog *	lastshown;
 	regex_t 	realreg;
-	regex_t *	reg = NULL;
+	regex_t *	rex = NULL;
 	int		cnt;
 	char *		arg;
 	int		header = 1;
@@ -602,7 +602,7 @@ BUILT_IN_COMMAND(lastlog)
 			yell("%s", errmsg);
 			goto bail;
 		}
-		reg = &realreg;
+		rex = &realreg;
 	}
 
 	if (x_debug & DEBUG_LASTLOG)
@@ -674,7 +674,7 @@ BUILT_IN_COMMAND(lastlog)
 	    for (l = start; l; (void)(l && (l = l->newer)))
 	    {
 		if (show_lastlog(&l, &skip, &number, &level_mask, 
-				match, reg, &max, target, mangler, winref))
+				match, rex, &max, target, mangler, winref))
 		{
 		    if (counter == 0 && before > 0)
 		    {
@@ -761,7 +761,7 @@ BUILT_IN_COMMAND(lastlog)
 	    for (l = start; l; (void)(l && (l = l->older)))
 	    {
 		if (show_lastlog(&l, &skip, &number, &level_mask, 
-				match, reg, &max, target, mangler, winref))
+				match, rex, &max, target, mangler, winref))
 		{
 		    if (counter == 0 && before > 0)
 		    {
@@ -830,8 +830,8 @@ BUILT_IN_COMMAND(lastlog)
 bail:
 	if (outfp)
 		fclose(outfp);
-	if (reg)
-		regfree(reg);
+	if (rex)
+		regfree(rex);
 	current_window->lastlog_mask = save_mask;
 	pop_message_from(lc);
 	return;
@@ -841,7 +841,7 @@ bail:
  * This returns 1 if the current item pointed to by 'l' is something that
  * should be displayed based on the criteron provided.
  */
-static int	show_lastlog (Lastlog **l, int *skip, int *number, Mask *level_mask, char *match, regex_t *reg, int *max, const char *target, int mangler, unsigned winref)
+static int	show_lastlog (Lastlog **l, int *skip, int *number, Mask *level_mask, char *match, regex_t *rex, int *max, const char *target, int mangler, unsigned winref)
 {
 	const char *str = NULL;
 
@@ -894,7 +894,7 @@ static int	show_lastlog (Lastlog **l, int *skip, int *number, Mask *level_mask, 
 			yell("Line [%s] not matched [%s]", str, match);
 		return 0;			/* Pattern match failed */
 	}
-	if (reg && regexec(reg, str, 0, NULL, 0))
+	if (rex && regexec(rex, str, 0, NULL, 0))
 	{
 		if (x_debug & DEBUG_LASTLOG)
 			yell("Line [%s] not regexed", str);

@@ -1,4 +1,4 @@
-/* $EPIC: parse.c,v 1.93 2008/06/26 04:23:11 jnelson Exp $ */
+/* $EPIC: parse.c,v 1.94 2009/01/24 15:58:58 jnelson Exp $ */
 /*
  * parse.c: handles messages from the server.   Believe it or not.  I
  * certainly wouldn't if I were you. 
@@ -294,7 +294,7 @@ static void	p_wallops (const char *from, const char *comm, const char **ArgList)
 						LEVEL_OPERWALL, message))
 			return;
 
-		l = message_from(from, LEVEL_OPERWALL);
+		l = message_from(NULL, LEVEL_OPERWALL);
 		retval = do_hook(OPERWALL_LIST, "%s %s", from, message + 11);
 		pop_message_from(l);
 		if (!retval)
@@ -315,7 +315,7 @@ static void	p_wallops (const char *from, const char *comm, const char **ArgList)
 						LEVEL_WALLOP, message))
 		return;
 
-	l = message_from(from, LEVEL_WALLOP);
+	l = message_from(NULL, LEVEL_WALLOP);
 	if (do_hook(WALLOP_LIST, "%s %c %s", 
 				from, 
 				server_wallop ? 'S' : '*', 

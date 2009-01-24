@@ -14,3 +14,5 @@ ISSUES OF INTEREST
 
 THE CHANGELOG SINCE THE LAST RELEASE:
 -------------------------------------
+* Patch from twincest to fix build on solaris
+* Don't honor queries for WALLOPS (requested by opers)

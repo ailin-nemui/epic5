@@ -19,3 +19,13 @@ Project 4: Input handling
   Specifically how to count columns.  
   Better handling for utf8 vagaries, specifically OS X's composed characters.
 
+
+Helpful notes provided by people:
+<Q_> hop: The console is set with LC_CTYPE.  You can use nl_langinfo(CODESET)
++to convert it to the character encoding. 
+<Q_> Please atleast use that when it's available. 
+
+$xform(ICONV "from/to" string) needs to allow optional "from" or "to" to 
+translate from or to the user's effective translation w/o the script having
+to know what it is.
+

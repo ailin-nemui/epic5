@@ -12,6 +12,7 @@
  *       files created by this file are compatable with the sdbm support in
  *       perl and apache.  The files are probably not compatable with ndbm.
  */
+#include <fcntl.h>
 #include "irc.h"
 #include "ircaux.h"
 #include "sdbm.h"
