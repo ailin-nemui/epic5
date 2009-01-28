@@ -1,5 +1,5 @@
 /*
- * @(#)$Id: acconfig.h,v 1.42 2008/06/26 04:23:09 jnelson Exp $
+ * @(#)$Id: acconfig.h,v 1.43 2009/01/28 14:46:55 jnelson Exp $
  */
 
 /*
@@ -421,4 +421,7 @@
 
 /* Define this if you want wserv support */
 #undef WSERV_SUPPORT
+
+/* Define this if you have <ieeefp.h> */
+#undef HAVE_IEEEFP_H
 

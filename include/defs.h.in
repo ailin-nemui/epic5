@@ -372,6 +372,9 @@
 /* Define if you have the <fcntl.h> header file.  */
 #undef HAVE_FCNTL_H
 
+/* Define if you have the <ieeefp.h> header file.  */
+#undef HAVE_IEEEFP_H
+
 /* Define if you have the <inttypes.h> header file.  */
 #undef HAVE_INTTYPES_H
 

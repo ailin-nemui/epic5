@@ -4,9 +4,9 @@ dnl except those bits attributed otherwise.
 dnl thanks to the screen 3.3 configure.in for giving me examples to
 dnl work from and steal ;)
 dnl
-dnl @(#)$Id: configure.in,v 1.73 2008/12/26 01:30:11 jnelson Exp $
+dnl @(#)$Id: configure.in,v 1.74 2009/01/28 14:46:55 jnelson Exp $
 
-AC_REVISION($Revision: 1.73 $)dnl
+AC_REVISION($Revision: 1.74 $)dnl
 AC_INIT(source/irc.c)
 AC_CONFIG_HEADER(include/defs.h)
 
@@ -304,7 +304,7 @@ dnl
 dnl Checking for headers, functions, and a type declarations
 dnl
 
-AC_CHECK_HEADERS(fcntl.h inttypes.h math.h ndbm.h netdb.h regex.h stddef.h stdint.h sys/fcntl.h sys/file.h sys/filio.h sys/select.h sys/sysctl.h sys/syslimits.h sys/time.h sys/un.h sys/param.h,)
+AC_CHECK_HEADERS(fcntl.h ieeefp.h inttypes.h math.h ndbm.h netdb.h regex.h stddef.h stdint.h sys/fcntl.h sys/file.h sys/filio.h sys/select.h sys/sysctl.h sys/syslimits.h sys/time.h sys/un.h sys/param.h,)
 if test $termcap -eq 0 ; then
 	AC_CHECK_HEADERS(term.h,)
 else
