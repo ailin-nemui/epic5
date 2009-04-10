@@ -2,7 +2,21 @@ EPIC5 Projects, Bugs, and other Errata:
 
 KNOWN ERRATA (eg, bugs, or unresolved requests):
 ------------------------------------------------
-<none>
+<twincest> here 
+<twincest>
++[@twincest]-[serv(criten)]-[act(4,2,3,10,11,5,7,6,12,22,14,21,18,15,19,16,20--
++-----------------------------------------[win(13)]-[time(09:18PM)] 
+-> (#epic) are you using %> in your status format, right?
+-> (#epic) can you show me your status_format ?  i'd like to see where the %>
++is.
+<twincest> ::: Current value of STATUS_FORMAT is
++[%*%=%@%N%#]%S%H%B%Q%A%I%O%M%F%L%D%U%W-%>[win(%R)]%T 
+-> (#epic) ok. you know, despite what it might appear from the symptoms, i'm
++more likely to believe this is a bug in the %> code.
+------------
+A ~/.ircrc if it exists but isn't readable is treated as existing.
+: This is because load_ircrc() can't know if the /load will fail.
+: This probably requires turning /load into a wrapper with a retval
 
 ISSUES OF INTEREST
 ------------------
@@ -17,3 +31,11 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Patch from twincest to fix build on solaris
 * Don't honor queries for WALLOPS (requested by opers)
 * Conditionalize <ieeefp.h> per twincest's fix.
+* Clear RUBYDOTOH if ruby is found but it isn't usable (rb Zoopee)
+* Rewrite checks for (intmax_t) for systems w/o strtoimax(). (rb JailBird)
+* Define NSIG as _NSIG or 32 if it's not defined (rb JailBird)
+* Broaden what you can specify for the server "proto" field (see UPDATES)
+* Fix figure_out_address() to properly identify a server name
+* This fixes /ignore user@host.com which was lamely broken.
+* Make /window channel output all channels in the window
+* Don't call update_all_status() if /set -status_clock (by Oliver Fromme)

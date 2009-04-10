@@ -143,6 +143,8 @@ static	long	last_milliday;
 
 void	reset_clock (void *stuff)
 {
+	char *	sclock;
+
 	if (x_debug & DEBUG_BROKEN_CLOCK)
 		reset_broken_clock();
 	else if (get_int_var(METRIC_TIME_VAR))
@@ -150,7 +152,9 @@ void	reset_clock (void *stuff)
 	else
 		reset_standard_clock();
 
-	update_all_status();
+	sclock = get_string_var(STATUS_CLOCK_VAR);
+	if (sclock && *sclock)
+		update_all_status();
 }
 
 /* update_clock: figures out the current time and returns it in a nice format */

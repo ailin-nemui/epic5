@@ -1,5 +1,5 @@
 /*
- * @(#)$Id: acconfig.h,v 1.43 2009/01/28 14:46:55 jnelson Exp $
+ * @(#)$Id: acconfig.h,v 1.44 2009/04/10 18:46:11 jnelson Exp $
  */
 
 /*
@@ -424,4 +424,7 @@
 
 /* Define this if you have <ieeefp.h> */
 #undef HAVE_IEEEFP_H
+
+/* Define this if you need strtoll() */
+#undef NEED_STRTOLL
 

@@ -284,16 +284,19 @@ typedef int intptr_t;
 /*
  * Figure out our intmax_t
  *
- * XXX -- OK.  If you have (intmax_t), then you had better have strtoimax().
- * But if you have (long long) i can't assume you have strtoll(), so that is
- * provided in compat.c.  If you have (quad_t), you had better have strtoq(),
- * and you have to have strtol() in any circumstance.
+ * XXX -- Configure cheats for us a little bit.  It checks a few types to 
+ * see if we have both the type and the strto*() function.  For all of those
+ * types that are function, the corresponding #define is set
+ *	HAVE_INTMAX_NATIVE
+ *	HAVE_INTMAX_LONG_LONG
+ *	HAVE_INTMAX_QUADT
+ *	HAVE_INTMAX_LONG
+ * We will use whichever one is first on the list.
  */
-#if defined(HAVE_INTMAX_NATIVE) && !defined(HAVE_STRTOIMAX)
-# undef HAVE_INTMAX_NATIVE
-#endif
-
-#ifndef HAVE_INTMAX_NATIVE
+#ifdef HAVE_INTMAX_NATIVE
+# define INTMAX_FORMAT "%jd"
+# define UINTMAX_FORMAT "%ju"
+#else
 # ifdef HAVE_INTMAX_LONG_LONG
 #  define intmax_t long long
 #  define uintmax_t unsigned long long
@@ -301,9 +304,6 @@ typedef int intptr_t;
 #  define strtouimax strtoull
 #  define INTMAX_FORMAT "%lld"
 #  define UINTMAX_FORMAT "%llu"
-#  ifndef HAVE_STRTOLL
-#   define NEED_STRTOLL
-#  endif
 # else
 #  ifdef HAVE_INTMAX_QUADT
 #   define intmax_t quad_t
@@ -323,9 +323,6 @@ typedef int intptr_t;
 #   endif
 #  endif
 # endif
-#else
-# define INTMAX_FORMAT "%jd"
-# define UINTMAX_FORMAT "%ju"
 #endif
 
 /*
@@ -455,6 +452,17 @@ typedef struct stat		Stat;
  */
 #ifdef __INTERIX
 # define GETPGRP_VOID
+#endif
+
+/*
+ * NSIG is a pain in my [censored]
+ */
+#ifndef NSIG
+# ifdef _NSIG
+#  define NSIG _NSIG
+# else
+#  define NSIG 32
+# endif
 #endif
 
 #endif /* __irc_std_h */

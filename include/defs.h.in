@@ -354,6 +354,9 @@
 /* Define this if you have no posix-like job control */
 #undef NO_JOB_CONTROL
 
+/* Define this if you need strtoll() */
+#undef NEED_STRTOLL
+
 /* The number of bytes in a long long.  */
 #undef SIZEOF_LONG_LONG
 

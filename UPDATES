@@ -1,3 +1,46 @@
+EPIC5-1.0.1
+
+*** News 04/10/2009 -- /WINDOW CHANNEL now outputs all channels in the window
+	Previously, /window channel only output the window's current channel.
+	It still does that, but now it will also output the full and complete
+	channel list so you see the other channels in that window.
+
+*** News 04/10/2009 -- /IGNORE user@host.com now works again
+	Due to a really lame bug, /ignore user@host.com did not work 
+	properly because the client thought it was a server name and did
+	not fix it up to *!user@host.com which prevented it from matching
+	anything which prevented it from working.  Sorry about that.
+
+*** News 04/10/2009 -- Add permitted values for server desc "proto" field
+	Previously, despite all of the documentation to the contrary, the 
+	only permitted values were "0", "4", and "6" for "either", "ipv4 only"
+	and "ipv6 only" respectively.  This has been increased so you can
+	specify any of these values:
+
+	For "either ipv4 or ipv6, I don't care" (the default)
+		0
+		any
+		ip
+		tcp
+	For "ipv4 only, never use ipv6 for this server"
+		4
+		tcp4
+		ipv4
+		v4
+		ip4
+	For "ipv6 only, never use ipv4 for this server"
+		6
+		tcp6
+		ipv6
+		v6
+		ip6
+
+	Example to connect to an ipv6 server:
+		/server irc.ipv6.foo.com:6665:proto=tcp6
+
+	Example to connect to a server only using ipv4:
+		/server irc.foo.com:proto=ipv4
+
 EPIC5-1.0
 
 *** News 12/25/2008 -- EPIC5-1.0 was released here.

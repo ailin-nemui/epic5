@@ -1,4 +1,4 @@
-/* $EPIC: server.c,v 1.237 2008/12/10 23:32:37 jnelson Exp $ */
+/* $EPIC: server.c,v 1.238 2009/04/10 18:46:14 jnelson Exp $ */
 /*
  * server.c:  Things dealing with that wacky program we call ircd.
  *
@@ -1583,12 +1583,23 @@ int	grab_server_address (int server)
 	memset(&hints, 0, sizeof(hints));
 	if (empty(s->info->proto_type))
 		hints.ai_family = AF_UNSPEC;
-	else if (!my_stricmp(s->info->proto_type, "0"))
+	else if (!my_stricmp(s->info->proto_type, "0")
+	      || !my_stricmp(s->info->proto_type, "any") 
+	      || !my_stricmp(s->info->proto_type, "ip") 
+	      || !my_stricmp(s->info->proto_type, "tcp") )
 		hints.ai_family = AF_UNSPEC;
-	else if (!my_stricmp(s->info->proto_type, "4"))
+	else if (!my_stricmp(s->info->proto_type, "4")
+	      || !my_stricmp(s->info->proto_type, "tcp4") 
+	      || !my_stricmp(s->info->proto_type, "ipv4") 
+	      || !my_stricmp(s->info->proto_type, "v4") 
+	      || !my_stricmp(s->info->proto_type, "ip4") )
 		hints.ai_family = AF_INET;
 #ifdef INET6
-	else if (!my_stricmp(s->info->proto_type, "6"))
+	else if (!my_stricmp(s->info->proto_type, "6")
+	      || !my_stricmp(s->info->proto_type, "tcp6") 
+	      || !my_stricmp(s->info->proto_type, "ipv6") 
+	      || !my_stricmp(s->info->proto_type, "v6") 
+	      || !my_stricmp(s->info->proto_type, "ip6") )
 		hints.ai_family = AF_INET6;
 #endif
 	else

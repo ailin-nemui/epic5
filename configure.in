@@ -4,9 +4,9 @@ dnl except those bits attributed otherwise.
 dnl thanks to the screen 3.3 configure.in for giving me examples to
 dnl work from and steal ;)
 dnl
-dnl @(#)$Id: configure.in,v 1.74 2009/01/28 14:46:55 jnelson Exp $
+dnl @(#)$Id: configure.in,v 1.75 2009/04/10 18:46:11 jnelson Exp $
 
-AC_REVISION($Revision: 1.74 $)dnl
+AC_REVISION($Revision: 1.75 $)dnl
 AC_INIT(source/irc.c)
 AC_CONFIG_HEADER(include/defs.h)
 
@@ -73,6 +73,20 @@ dnl
 if test -d /usr/ccs/lib; then
 	LIBS="-L/usr/ccs/lib $LIBS"
 fi
+
+dnl
+dnl Checking for HP-UX's porting kit (from twincest)
+dnl
+dnl <twincest> hop: please change configure to look for setenv in -lcext
+dnl <twincest> and with -I/usr/include/ep
+dnl <twincest> (that's where setenv from the hp-ux porting kit lives)
+dnl <twincest> in fact, perhaps just check for /usr/include/ep and -lcext, 
+dnl +and use them unconditionally if present
+dnl
+if test -d /usr/include/ep; then
+	CFLAGS="-I/usr/include/ep $CFLAGS"
+fi
+AC_CHECK_LIB(cext, setenv, LIBS="$LIBS -lcext",)
 
 
 dnl ----------------------------------------------------------
@@ -561,35 +575,49 @@ fi
 [echo $sig_name | sed -e 's/$/"};/' -e 's/ /", "/g' -e 's/^/static char *sys_siglist[] = { "/' >> sig.inc]
 fi
 
+dnl ---------------------------------------------------------
+dnl Check for NSIG vs sys_nsig vs __sys_nsig
+dnl
+......
+
 dnl ----------------------------------------------------------
 dnl
 dnl Check for 'intmax_t'
 dnl
 have_intmax_t=""
+have_strtoimax_t=""
 AC_MSG_CHECKING(for intmax_t in inttypes.h or stdint.h)
 AC_EGREP_HEADER(intmax_t, inttypes.h, have_intmax_t=yes)
 AC_EGREP_HEADER(intmax_t, stdint.h, have_intmax_t=yes)
 
 if test "x$have_intmax_t" != "x"; then
    AC_MSG_RESULT(yes)
-   AC_DEFINE(HAVE_INTMAX_NATIVE)
-   AC_CHECK_FUNC(strtoimax, AC_DEFINE(HAVE_STRTOIMAX),)
+   AC_CHECK_FUNC(strtoimax, have_strtoimax_t=yes,)
 else
    AC_MSG_RESULT(no)
-   AC_CHECK_SIZEOF(long long, 0)
-   if test "$ac_cv_sizeof_long_long" != 0; then
-      AC_DEFINE(HAVE_INTMAX_LONG_LONG)
-      AC_CHECK_FUNC(strtoll, AC_DEFINE(HAVE_STRTOLL),)
-   else
-      AC_CHECK_SIZEOF(quad_t, 0)
-      if test "$ac_cv_sizeof_quad_t" != 0; then
-         AC_DEFINE(HAVE_INTMAX_QUADT)
-         AC_CHECK_FUNC(strtoq, AC_DEFINE(HAVE_STRTOQ),)
-      else
-         AC_DEFINE(HAVE_INTMAX_LONG)
-      fi
-   fi
 fi
+
+if test "x$have_intmax_t" != "x" -a "x$have_strtoimax" != "x"; then
+   AC_DEFINE(HAVE_STRTOIMAX)
+   AC_DEFINE(HAVE_INTMAX_NATIVE)
+fi
+
+dnl Can we use (long long) for (intmax_t) ?
+AC_CHECK_SIZEOF(long long, 0)
+if test "$ac_cv_sizeof_long_long" != 0; then
+   AC_DEFINE(HAVE_INTMAX_LONG_LONG)
+   AC_CHECK_FUNC(strtoll, AC_DEFINE(HAVE_STRTOLL), AC_DEFINE(NEED_STRTOLL))
+fi
+
+dnl Can we use (quad_t) for (intmax_t) ?
+AC_CHECK_SIZEOF(quad_t, 0)
+if test "$ac_cv_sizeof_quad_t" != 0; then
+   AC_CHECK_FUNC(strtoq, AC_DEFINE(HAVE_STRTOQ)
+			 AC_DEFINE(HAVE_INTMAX_QUADT),)
+fi
+
+dnl Can we use (long) for (intmax_t)?  (Yes. always, if we must)
+AC_DEFINE(HAVE_INTMAX_LONG)
 
 dnl ----------------------------------------------------------
 dnl
@@ -1083,6 +1111,7 @@ else
 		AC_DEFINE(RUBYCFLAGS)
 		AC_DEFINE(RUBYLDFLAGS)
 	    else
+	        RUBYDOTOH="ruby.o"
 		AC_MSG_RESULT(no, sorry)
 	    fi
 	fi
