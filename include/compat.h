@@ -55,12 +55,14 @@ int	unsetenv (const char *);
 char *	my_realpath (const char *, char x[MAXPATHLEN]);
 #endif
 
+/*
 #ifndef HAVE_STRTOIMAX
 #ifdef strtoimax
 #undef strtoimax
 #endif
 long	strtoimax (const char *, char **, int);
 #endif
+*/
 
 #if 0
 /* humanize_number(3) */ 

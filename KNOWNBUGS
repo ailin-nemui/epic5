@@ -17,6 +17,7 @@ KNOWN ERRATA (eg, bugs, or unresolved requests):
 A ~/.ircrc if it exists but isn't readable is treated as existing.
 : This is because load_ircrc() can't know if the /load will fail.
 : This probably requires turning /load into a wrapper with a retval
+--------------
 
 ISSUES OF INTEREST
 ------------------
@@ -39,3 +40,4 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * This fixes /ignore user@host.com which was lamely broken.
 * Make /window channel output all channels in the window
 * Don't call update_all_status() if /set -status_clock (by Oliver Fromme)
+* Comment out strtol() compat stuff, causing people problems.
