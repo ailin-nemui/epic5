@@ -1,4 +1,4 @@
-/* $EPIC: status.c,v 1.73 2008/03/29 19:00:16 jnelson Exp $ */
+/* $EPIC: status.c,v 1.74 2009/04/22 22:50:39 jnelson Exp $ */
 /*
  * status.c: handles the status line updating, etc for IRCII 
  *
@@ -878,9 +878,12 @@ int	make_status (Window *window, int must_redraw)
  * the return value buffer so it won't overflow again.
  */
 #define RECHECK \
-	if (actual_size < my_bufferxsize) \
+	if (actual_size < 0) 	/* Die Die Die */ \
+		my_bufferxsize += 16;	\
+	else if (actual_size < my_bufferxsize) \
 		break; \
-	my_bufferxsize = actual_size + 1; \
+	else					\
+		my_bufferxsize = actual_size + 1; \
 	CHECK
 
 /*

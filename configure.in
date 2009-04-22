@@ -4,9 +4,9 @@ dnl except those bits attributed otherwise.
 dnl thanks to the screen 3.3 configure.in for giving me examples to
 dnl work from and steal ;)
 dnl
-dnl @(#)$Id: configure.in,v 1.75 2009/04/10 18:46:11 jnelson Exp $
+dnl @(#)$Id: configure.in,v 1.76 2009/04/22 22:50:38 jnelson Exp $
 
-AC_REVISION($Revision: 1.75 $)dnl
+AC_REVISION($Revision: 1.76 $)dnl
 AC_INIT(source/irc.c)
 AC_CONFIG_HEADER(include/defs.h)
 
@@ -83,9 +83,11 @@ dnl <twincest> (that's where setenv from the hp-ux porting kit lives)
 dnl <twincest> in fact, perhaps just check for /usr/include/ep and -lcext, 
 dnl +and use them unconditionally if present
 dnl
-if test -d /usr/include/ep; then
-	CFLAGS="-I/usr/include/ep $CFLAGS"
-fi
+dnl -- Do not use /usr/include/ep/.
+dnl
+dnl if test -d /usr/include/ep; then
+dnl	CFLAGS="-I/usr/include/ep $CFLAGS"
+dnl fi
 AC_CHECK_LIB(cext, setenv, LIBS="$LIBS -lcext",)
 
 
