@@ -2,7 +2,12 @@ EPIC5 Projects, Bugs, and other Errata:
 
 KNOWN ERRATA (eg, bugs, or unresolved requests):
 ------------------------------------------------
-<none>
+* What about scrolling back to some point in time?
+* Implement $mask() types 11, 12, and 13
+    11           *!*u@h.d                       *!*u@d.*
+    12           n!*@h.d                        n!*@d.*
+    13           n!*u@h.d                       n!*u@d.*
+* Add support for $hookctl(SET HOOK -1 ARGS ....) to set $*
 
 ISSUES OF INTEREST
 ------------------
@@ -26,5 +31,5 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Make /window channel output all channels in the window
 * Don't call update_all_status() if /set -status_clock (by Oliver Fromme)
 * Comment out strtol() compat stuff, causing people problems.
+* More graciously handle snprintf() returning -1 (rb twincest)
 * Do not use /usr/include/ep on hpux
-* Make status format more forgiving of systems with weird snprintf()s.

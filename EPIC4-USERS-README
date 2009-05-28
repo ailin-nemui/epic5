@@ -1,0 +1,41 @@
+If you're upgrading from EPIC4, and you have your own ~/.epicrc (or ~/.ircrc)
+file with your own stuff in it, you need to know about these things:
+
+1) Aliases no longer auto-append $*
+This sort of alias no longer works:
+	alias m msg
+Internally, up through epic4, the client would silently rewrite this to:
+	alias m {msg $*}
+without telling you.  This auto-append feature is not included in epic5, so
+your alias is taken literally -- unless there is a $* there, it will not be
+appended.  So if you mean to use $* in your alias, you need to put it there.
+
+
+2) You need to /load global
+It used to be that the client unconditionally did a /load global for you
+and you couldn't turn that off.  Some people didn't like that, so epic5 does
+not unconditionally /load global.
+
+BUT: If you are not using a script, you really do want to load it, and you
+will be alarmed at features that don't exist (like command history) if you 
+don't load it. 
+
+So put this somewhere in your  ~/.epicrc (or ~/.ircrc)
+	load global
+
+
+3) /XECHO -W to a window that doesn't exist is no longer displayed
+It used to be that if you did /XECHO -W to a window that didn't exist the
+client would just put your output "wherever".  The client no longer does
+this -- if you try to output to a window that doesn't exist, then it will
+not output it somewhere else, it will just not output at all.
+
+This is an issue for things like MsgWins, where your script might be doing
+something like:
+	on ^msg * {xecho -w MsgWin *$0* $1-}
+but if you haven't created a window called "MsgWin" then you will never see
+your messages.
+
+
+[more things as we go along]
+
