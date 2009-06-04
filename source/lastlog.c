@@ -1,4 +1,4 @@
-/* $EPIC: lastlog.c,v 1.77 2009/06/04 02:40:40 jnelson Exp $ */
+/* $EPIC: lastlog.c,v 1.78 2009/06/04 05:26:49 jnelson Exp $ */
 /*
  * lastlog.c: handles the lastlog features of irc. 
  *
@@ -1169,7 +1169,8 @@ static void	remove_lastlog_item (Lastlog *item)
 		lastlog_oldest = item->newer;
 		item->newer = NULL;
 	}
-	else if (item == lastlog_newest)
+
+	if (item == lastlog_newest)
 	{
 		if (item->newer != NULL)
 			panic(1, "Newest lastlog item %jd has newer item %jd",
@@ -1180,12 +1181,12 @@ static void	remove_lastlog_item (Lastlog *item)
 		lastlog_newest = item->older;
 		item->older = NULL;
 	}
-	else
-	{
+
+	if (item->older)
 		item->older->newer = item->newer;
+	if (item->newer)
 		item->newer->older = item->older;
-		item->newer = item->older = NULL;
-	}
+	item->newer = item->older = NULL;
 
 	item->dead = 1;
 	new_free((char **)&item->msg);

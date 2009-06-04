@@ -2,24 +2,13 @@ EPIC5 Projects, Bugs, and other Errata:
 
 KNOWN ERRATA (eg, bugs, or unresolved requests):
 ------------------------------------------------
-* /eval defer window new kill;defer window new;defer window kill_others
-results in this valgrind error:
-==27754== Invalid write of size 4
-==27754==    at 0x80A8FE4: add_to_lastlog (lastlog.c:226)
-==27754==    by 0x80BE84D: add_to_window (screen.c:2315)
-==27754==    by 0x80BE68D: add_to_screen (screen.c:2230)
-==27754==    by 0x80B729E: put_echo (output.c:198)
-==27754==  Address 0x3C786A9C is 24 bytes inside a block of size 48 free'd
-==27754==    at 0x3C03867F: free (in /usr/local/lib/valgrind/vgpreload_memcheck.so)
-==27754==    by 0x809F6DF: really_new_free (ircaux.c:262)
-==27754==    by 0x80AAEEC: remove_lastlog_item (lastlog.c:1184)
-   A second time panics.
 * What about scrolling back to some point in time?
 * Implement $mask() types 11, 12, and 13
     11           *!*u@h.d                       *!*u@d.*
     12           n!*@h.d                        n!*@d.*
     13           n!*u@h.d                       n!*u@d.*
 * Add support for $hookctl(SET HOOK -1 ARGS ....) to set $*
+* /on 322 (LIST reply) requires special handling for message_from(NULL, ...);
 
 ISSUES OF INTEREST
 ------------------
@@ -47,3 +36,6 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Do not use /usr/include/ep on hpux
 * Mark lastlog items as "dead" and check for them to avoid dangling ptrs
 * Handle (graciously) when /set scroll_lines is > size of the window. (rb CE)
+* Properly handle remove_lastlog_item() for the very last item.
+* Fixes /eval defer window new kill;defer window new;defer window kill_others
+
