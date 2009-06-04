@@ -4,9 +4,9 @@ dnl except those bits attributed otherwise.
 dnl thanks to the screen 3.3 configure.in for giving me examples to
 dnl work from and steal ;)
 dnl
-dnl @(#)$Id: configure.in,v 1.76 2009/04/22 22:50:38 jnelson Exp $
+dnl @(#)$Id: configure.in,v 1.77 2009/06/04 02:40:40 jnelson Exp $
 
-AC_REVISION($Revision: 1.76 $)dnl
+AC_REVISION($Revision: 1.77 $)dnl
 AC_INIT(source/irc.c)
 AC_CONFIG_HEADER(include/defs.h)
 
@@ -580,7 +580,7 @@ fi
 dnl ---------------------------------------------------------
 dnl Check for NSIG vs sys_nsig vs __sys_nsig
 dnl
-......
+dnl ......
 
 dnl ----------------------------------------------------------
 dnl

@@ -1,4 +1,4 @@
-/* $EPIC: window.c,v 1.204 2009/04/10 18:46:14 jnelson Exp $ */
+/* $EPIC: window.c,v 1.205 2009/06/04 02:40:40 jnelson Exp $ */
 /*
  * window.c: Handles the organzation of the logical viewports (``windows'')
  * for irc.  This includes keeping track of what windows are open, where they
@@ -5513,9 +5513,16 @@ static int	add_to_display (Window *window, const unsigned char *str, intmax_t re
 		if ((scroll = window->scroll_lines) <= 0)
 		    if ((scroll = get_int_var(SCROLL_LINES_VAR)) <= 0)
 			scroll = 1;
+		if (scroll > window->display_lines)
+			scroll = window->display_lines;
 
 		for (i = 0; i < scroll; i++)
 		{
+			if (window->scrolling_top_of_display == NULL)
+				panic(1, "Window %d tried to scroll %d lines"
+				      "but it is only %d lines tall",
+						scroll, i);
+
 			window->scrolling_top_of_display = 
 				window->scrolling_top_of_display->next;
 			window->scrolling_distance_from_display_ip--;

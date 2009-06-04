@@ -29,3 +29,7 @@ $xform(ICONV "from/to" string) needs to allow optional "from" or "to" to
 translate from or to the user's effective translation w/o the script having
 to know what it is.
 
+Adding support for $hookctl(SET HOOK -1 ARGS ....) would allow people to 
+rewrite $* for an /on event, which would work great with $xform() to do 
+script-level iconv handling.
+

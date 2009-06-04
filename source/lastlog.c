@@ -1,4 +1,4 @@
-/* $EPIC: lastlog.c,v 1.76 2009/01/24 15:58:58 jnelson Exp $ */
+/* $EPIC: lastlog.c,v 1.77 2009/06/04 02:40:40 jnelson Exp $ */
 /*
  * lastlog.c: handles the lastlog features of irc. 
  *
@@ -57,6 +57,7 @@ typedef struct	lastlog_stru
 	int	visible;
 	intmax_t refnum;
 	unsigned winref;
+	int	dead;
 }	Lastlog;
 
 static	intmax_t global_lastlog_refnum = 0;
@@ -209,6 +210,7 @@ intmax_t	add_to_lastlog (Window *window, const char *line)
 		window = current_window;
 
 	new_l = (Lastlog *)new_malloc(sizeof(Lastlog));
+	new_l->dead = 0;
 	new_l->refnum = global_lastlog_refnum++;
 	new_l->older = lastlog_newest;
 	new_l->newer = NULL;
@@ -222,6 +224,9 @@ intmax_t	add_to_lastlog (Window *window, const char *line)
 	time(&new_l->when);
 
 	/* * * */
+	if (lastlog_newest && lastlog_newest->dead)
+		panic(1, "Lastlog_newest is dead");
+
 	if (lastlog_newest)
 		lastlog_newest->newer = new_l;
 	lastlog_newest = new_l;
@@ -1150,6 +1155,9 @@ static int	newest_lastlog_for_window (Lastlog **item, unsigned winref)
  */
 static void	remove_lastlog_item (Lastlog *item)
 {
+	if (item->dead)
+		panic(1, "Lastlog item is already dead.");
+
 	if (item == lastlog_oldest)
 	{
 		if (item->older != NULL)
@@ -1179,6 +1187,7 @@ static void	remove_lastlog_item (Lastlog *item)
 		item->newer = item->older = NULL;
 	}
 
+	item->dead = 1;
 	new_free((char **)&item->msg);
 	new_free((char **)&item->target);
 	new_free((char **)&item);
