@@ -7,7 +7,6 @@ KNOWN ERRATA (eg, bugs, or unresolved requests):
     11           *!*u@h.d                       *!*u@d.*
     12           n!*@h.d                        n!*@d.*
     13           n!*u@h.d                       n!*u@d.*
-* Add support for $hookctl(SET HOOK -1 ARGS ....) to set $*
 * /on 322 (LIST reply) requires special handling for message_from(NULL, ...);
 
 ISSUES OF INTEREST
@@ -38,4 +37,4 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Handle (graciously) when /set scroll_lines is > size of the window. (rb CE)
 * Properly handle remove_lastlog_item() for the very last item.
 * Fixes /eval defer window new kill;defer window new;defer window kill_others
-
+* Add $hookctl(ARGS <recursive> <args>) allows you to replace $* in /on.

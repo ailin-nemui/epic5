@@ -1,4 +1,4 @@
-/* $EPIC: hook.c,v 1.82 2008/11/27 03:44:11 jnelson Exp $ */
+/* $EPIC: hook.c,v 1.83 2009/06/05 21:21:35 jnelson Exp $ */
 /*
  * hook.c: Does those naughty hook functions. 
  *
@@ -1614,6 +1614,7 @@ enum
 enum
 {
 	HOOKCTL_ADD = 1,
+	HOOKCTL_ARGS,
 	HOOKCTL_COUNT,
 	HOOKCTL_DEFAULT_NOISE_LEVEL,
 	HOOKCTL_DENY_ALL_HOOKS,
@@ -1881,6 +1882,7 @@ char *hookctl (char *input)
 	GET_FUNC_ARG(str, input);
 	go = vmy_strnicmp (strlen(str), str, 
 		"ADD",
+		"ARGS",
 		"COUNT",
 		"DEFAULT_NOISE_LEVEL", 
 		"DENY_ALL_HOOKS",
@@ -2671,7 +2673,22 @@ char *hookctl (char *input)
 		curhook->halt = 1;
 		RETURN_INT(1);
 		break;
-		
+
+	/* go-switch */
+	case HOOKCTL_ARGS:
+		if (input && *input)
+		{
+			GET_INT_ARG(halt, input);
+		}
+		curhook = current_hook;
+		for (tmp_int = 0; curhook && tmp_int < halt; tmp_int++)
+			curhook = curhook->under;
+		if (!curhook)
+			RETURN_INT(0);
+		malloc_strcpy(&curhook->buffer, input);
+		RETURN_INT(1);
+		break;
+
 	/* go-switch */
 	case HOOKCTL_MATCH:
 		if (!input || !*input)
