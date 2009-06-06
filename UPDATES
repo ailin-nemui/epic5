@@ -1,5 +1,45 @@
 EPIC5-1.0.1
 
+*** News 06/06/2009 -- Can change $* in an /on hook now
+	You can change the value of $* in an /on hook that will affect
+	/on's with higher serial numbers.  
+		@hookctl(ARGS <level> <new value of $*>)
+
+	This is expected to be useful for things like iconv translation.  
+	Please note carefully that the pattern matching of /on's against 
+	$* is done *AFTER EACH ON IS RAN* so if you change $* you might
+	affect which higher serial numbered /ons will run!
+
+	Usually <level> is -1 and usually the new value of $* would be based
+	on the current value of $*.  The change to $* takes place immediately.
+
+	Example one:
+		on #^hook -100 * {@hookctl(ARGS -1 >>>$0 $1<<< $2-)
+		on ^hook * {echo $*}
+		hook This is a test
+	  would output
+		>>>This is<<< a test
+	  because the /on hook with serial number -100 changed the old value
+	  of $*
+		"This is a test"
+	  to 
+		">>>$0 $1<<< $2-"
+	  which after expansion is:
+		">>>This is<<< a test"
+	  which is the value of $* in the /on hook with serial number 0.
+
+	Example two:
+		on #^hook -100 * {@hookctl(ARGS -1 $reverse($*))}
+		on ^hook "ape" {echo APE! APE!}
+		hook epa
+	  would output
+		"APE! APE"
+	  because the first hook changes $* from its original value
+		"epa"
+	  to $reverse(epa) or
+		"ape"
+	  which matches the second hook.
+
 *** News 04/10/2009 -- /WINDOW CHANNEL now outputs all channels in the window
 	Previously, /window channel only output the window's current channel.
 	It still does that, but now it will also output the full and complete

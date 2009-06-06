@@ -1,4 +1,4 @@
-/* $EPIC: hook.c,v 1.83 2009/06/05 21:21:35 jnelson Exp $ */
+/* $EPIC: hook.c,v 1.84 2009/06/06 19:20:57 jnelson Exp $ */
 /*
  * hook.c: Does those naughty hook functions. 
  *
@@ -2685,7 +2685,11 @@ char *hookctl (char *input)
 			curhook = curhook->under;
 		if (!curhook)
 			RETURN_INT(0);
-		malloc_strcpy(&curhook->buffer, input);
+		if (curhook->buffer_changed)
+			malloc_strcpy(&curhook->buffer, input);
+		else
+			curhook->buffer = malloc_strdup(input);
+		curhook->buffer_changed = 1;
 		RETURN_INT(1);
 		break;
 

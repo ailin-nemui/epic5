@@ -38,3 +38,4 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Properly handle remove_lastlog_item() for the very last item.
 * Fixes /eval defer window new kill;defer window new;defer window kill_others
 * Add $hookctl(ARGS <recursive> <args>) allows you to replace $* in /on.
+* Don't lamely malloc_strcpy() over non-malloced strings in hookctl.
