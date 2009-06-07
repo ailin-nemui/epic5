@@ -1,4 +1,4 @@
-/* $EPIC: hook.c,v 1.84 2009/06/06 19:20:57 jnelson Exp $ */
+/* $EPIC: hook.c,v 1.85 2009/06/07 16:28:50 howl Exp $ */
 /*
  * hook.c: Does those naughty hook functions. 
  *
@@ -123,6 +123,11 @@ struct Current_hook
 
 	/* Set to 1 if buffer has been changed */
 	int buffer_changed;
+
+	/* 
+	 * User-supplied information.
+	 */
+	char *user_supplied_info;
 };
 
 /* A list of all the hook functions available */
@@ -764,6 +769,7 @@ int 	do_hook (int which, const char *format, ...)
 	hook->retval = DONT_SUPPRESS_DEFAULT;
 	hook->buffer = buffer;
 	hook->buffer_changed = 0;
+	hook->user_supplied_info = NULL;
 	current_hook = hook;
 
 	/*
@@ -925,11 +931,13 @@ int 	do_hook (int which, const char *format, ...)
 		h->mark--;
 
 	/*
-	 * Reset current_hook to it's previous value.
+	 * Reset current_hook to its previous value.
 	 */
 	retval = hook->retval;
 	if (hook->buffer_changed)
 		new_free(&hook->buffer);
+	if (hook->user_supplied_info)
+		new_free(&hook->user_supplied_info);
 	current_hook = hook->under;
 	new_free(&hook);
 
@@ -1637,7 +1645,8 @@ enum
 	HOOKCTL_REMOVE,
 	HOOKCTL_RETVAL,
 	HOOKCTL_SERIAL,
-	HOOKCTL_SET
+	HOOKCTL_SET,
+	HOOKCTL_USERINFO
 };
 
 enum
@@ -1906,6 +1915,7 @@ char *hookctl (char *input)
 		"RETVAL",
 		"SERIAL",
 		"SET",
+		"USERINFO",
 		NULL);
 
 	switch (go)
@@ -2693,6 +2703,27 @@ char *hookctl (char *input)
 		RETURN_INT(1);
 		break;
 
+	/* go-switch */
+	case HOOKCTL_USERINFO:
+		if (input && *input)
+		{
+			GET_INT_ARG(halt, input);
+		};
+		curhook = current_hook;
+		for (tmp_int = 0; curhook && tmp_int < halt; tmp_int++)
+			curhook = curhook->under;
+		if (!curhook)
+			RETURN_INT(0);
+		if (!input || !*input)
+		{
+			if (curhook->user_supplied_info == NULL)
+				RETURN_EMPTY;
+			else
+				RETURN_STR(curhook->user_supplied_info);
+		}
+		malloc_strcpy(&curhook->user_supplied_info, input);
+		RETURN_INT(1);
+		break;
 	/* go-switch */
 	case HOOKCTL_MATCH:
 		if (!input || !*input)
