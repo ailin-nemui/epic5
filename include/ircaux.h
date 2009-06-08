@@ -7,7 +7,7 @@
  *
  * See the COPYRIGHT file, or do a HELP IRCII COPYRIGHT 
  *
- * @(#)$Id: ircaux.h,v 1.101 2008/01/22 04:03:40 jnelson Exp $
+ * @(#)$Id: ircaux.h,v 1.102 2009/06/08 00:38:42 howl Exp $
  */
 
 #ifndef _IRCAUX_H_
@@ -267,5 +267,15 @@ int	lookup_transform (const char *, int *);
 char *	valid_transforms (void);
 
 extern int 	num_code_points (const char *);
+
+#ifdef HAVE_ICONV
+extern struct Iconv_stuff {
+	char *stuff;
+	iconv_t forward; /* I dunno  */
+	iconv_t reverse; /* Alright! */
+} **iconv_list;
+extern size_t iconv_list_size;
+extern int my_iconv_open (iconv_t *, iconv_t *, char *);
+#endif
 
 #endif /* _IRCAUX_H_ */

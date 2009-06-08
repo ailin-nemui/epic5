@@ -1,4 +1,4 @@
-/* $EPIC: functions.c,v 1.278 2008/12/11 04:45:58 jnelson Exp $ */
+/* $EPIC: functions.c,v 1.279 2009/06/08 00:38:42 howl Exp $ */
 /*
  * functions.c -- Built-in functions for ircII
  *
@@ -273,6 +273,7 @@ static	char
 	*function_globi		(char *),
 	*function_hash_32bit	(char *),
 	*function_hookctl	(char *),
+	*function_iconvctl	(char *),
 	*function_idle		(char *),
 	*function_ignorectl	(char *),
 	*function_indextoword	(char *),
@@ -552,6 +553,7 @@ static BuiltInFunctions	built_in_functions[] =
 	{ "GLOBI",		function_globi		},
 	{ "HASH_32BIT",		function_hash_32bit	},
 	{ "HOOKCTL",		function_hookctl	},
+	{ "ICONVCTL",		function_iconvctl	},
 	{ "IDLE",		function_idle		},
 	{ "IFINDFIRST",		function_ifindfirst 	},
 	{ "IFINDITEM",		function_ifinditem	},
@@ -6968,3 +6970,177 @@ BUILT_IN_FUNCTION(function_channellimit, word)
 }
 
 
+/*
+ * Here is the "plan": we allow the user to either do: 
+ *
+ *   echo $xform(iconv FROMCODE/TOCODE[/OPTION] stuff) 
+ *
+ * which is heaps expensive, because it /opens/ and 
+ * /closes/ an iconv_t descriptor for each usage. 
+ *   Or the user can control this stuff herself, by first
+ * opening the iconv descriptor manually, and then refering to
+ * its identifier thusly:
+ *
+ *   @ id = xform(add FROMCODE/TOCODE[/OPTION])
+ *   echo $xform(+iconv $id stuff)
+ *
+ * This will allow for a reversal of the encoding like:
+ *   echo $xform(-iconv $id stuff)
+ *
+ * The identifier will be closed by doing:
+ *
+ *   @ iconvctl(remove $id)
+ *
+ * A list of (occupied) identiers will accessable by:
+ *
+ *   echo $iconvctl(list)
+ *
+ * And a specific identifiers specification will be available by:
+ *
+ *   echo $iconvctl(get $id)
+ *
+ * Other functionality may or may not be added at
+ * a later point of time.
+ */
+
+char *function_iconvctl (char *input)
+{
+	size_t len, pos;
+	char *listc, *stuff = NULL,
+		*fromcode, *fromcode_opt = NULL, 
+		*tocode, *tocode_opt = NULL, 
+		*option = NULL;
+	unsigned int id;
+	int intarg;
+
+	iconv_t forward, reverse;
+
+	GET_FUNC_ARG(listc, input);
+	len = strlen(listc);
+
+	/*
+	 * Add descriptor to the first available "slot",
+	 * or extend the list by one, and use the last "slot".
+	 */
+	if (!my_strnicmp(listc, "ADD", len))
+	{
+		GET_FUNC_ARG(listc, input);
+		if (my_iconv_open(&forward, &reverse, listc))
+			RETURN_EMPTY;
+		
+		/* Do we need to initiate the list? */
+		if (iconv_list_size == 0)
+		{
+			iconv_list = (struct Iconv_stuff **) new_malloc(sizeof(struct Iconv_stuff *));
+			iconv_list_size = 1;
+			iconv_list[0] = NULL;
+		}
+
+		/* Is there an empty "slot"? */
+		for (id = 0; id < iconv_list_size; id++)
+			if (iconv_list[id] == NULL)
+				break;
+		
+		/* Do we need to realloc the list? */
+		if (id == iconv_list_size)
+		{
+			iconv_list_size++;
+			new_realloc((void **) &iconv_list, 
+				sizeof(struct Iconv_stuff *) * iconv_list_size);	
+		}
+		
+		/* Allocate a structure. */
+		iconv_list[id] = (struct Iconv_stuff *) new_malloc(sizeof(struct Iconv_stuff));
+		
+		/* Do this stuff... */
+		iconv_list[id]->forward = forward;
+		iconv_list[id]->reverse = reverse;
+		iconv_list[id]->stuff = malloc_strdup(listc);
+		
+		/* Return identifier. */
+		RETURN_INT(id);
+	}
+
+	if (iconv_list_size == 0)
+		RETURN_EMPTY;
+
+	/*
+	 * Return a list of used identifiers.
+	 */
+	if (!my_strnicmp(listc, "LIST", len)) 
+	{
+		size_t  clue = 0;
+		char *retval = NULL;
+		for (id = 0; id < iconv_list_size; id++)
+			if (iconv_list[id] != NULL && iconv_list[id]->stuff != NULL)
+				malloc_strcat_wordlist_c(&retval, space, ltoa(id), &clue);
+		RETURN_MSTR(retval);
+	}
+
+	/* 
+	 * Return list size.
+	 */
+	 if (!my_strnicmp(listc,"SIZE", len))
+	 	RETURN_INT(iconv_list_size);
+
+	/*
+	 * Return the stuff from a given identifier; 
+	 * 0 if NULL, and nothing if too high.
+	 */
+	if (!my_strnicmp(listc, "GET", len))
+	{
+		GET_INT_ARG(intarg, input);
+		
+		if (intarg >= iconv_list_size || intarg < 0)
+			RETURN_EMPTY;
+		if (iconv_list[(size_t) intarg] == NULL)
+			RETURN_INT(0);
+		RETURN_STR(iconv_list[(size_t) intarg]->stuff);
+	}
+
+	/*
+	 * Remove a given identifier from the list, and
+	 * truncate the identifier was the last of the list.
+	 *
+	 * Return 0 if unsuccessful, 1 if successful.
+	 */
+	if (!my_strnicmp(listc, "REMOVE", len))
+	{
+		GET_INT_ARG(intarg, input);
+		if (intarg >= iconv_list_size || intarg < 0)
+			RETURN_EMPTY;
+		id = (size_t) intarg;
+		if (iconv_list[id] == NULL && id + 1 != iconv_list_size)
+			RETURN_INT(0);
+		if (iconv_list[id] != NULL)
+		{
+			iconv_close(iconv_list[id]->forward);
+			iconv_close(iconv_list[id]->reverse);
+			new_free(&iconv_list[id]->stuff);
+			new_free(&iconv_list[id]);
+			iconv_list[id] = NULL;
+		}
+
+		/* Check the last slots. If 1 or more is "empty", realloc. */
+		for (pos = iconv_list_size - 1;
+			pos > 0 && iconv_list[pos] == NULL; pos--);
+		if (((iconv_list_size -1) - pos) > 0)
+		{
+			iconv_list_size = pos + 1;
+			if (iconv_list[iconv_list_size - 1] == NULL)
+			{
+				new_free(&iconv_list);
+				iconv_list = NULL;
+				iconv_list_size = 0;
+			}
+			else
+			{
+				new_realloc((void **) &iconv_list, iconv_list_size * 
+					sizeof(struct Iconv_stuff *));
+			}
+		}
+		RETURN_INT(1);
+	}
+
+	RETURN_EMPTY;
+}

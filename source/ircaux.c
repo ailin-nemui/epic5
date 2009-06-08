@@ -1,4 +1,4 @@
-/* $EPIC: ircaux.c,v 1.201 2009/04/10 18:46:13 jnelson Exp $ */
+/* $EPIC: ircaux.c,v 1.202 2009/06/08 00:38:42 howl Exp $ */
 /*
  * ircaux.c: some extra routines... not specific to irc... that I needed 
  *
@@ -5384,37 +5384,136 @@ static ssize_t	sha256_encoder (const char *orig, size_t orig_len, const void *me
 }
 
 #ifdef HAVE_ICONV
+size_t iconv_list_size = 0;
+struct Iconv_stuff **iconv_list = NULL;
+
+int my_iconv_open (iconv_t *forward, iconv_t *reverse, char *stuff2)
+{
+	size_t pos, len;
+	char *stuff, *fromcode, *tocode, *option, *tmp;
+	
+	stuff = LOCAL_COPY((const char *) stuff2);
+	tmp = alloca(strlen(stuff));
+	len = strlen(stuff);
+	for (pos = 0; pos < len && stuff[pos] != '/'; pos++);
+	if (stuff[pos] != '/')
+	{
+		if (x_debug & DEBUG_UNICODE)
+			yell ("Unicode debug: Incomplete encoding information: %s", stuff);
+		return 1;
+	}
+	stuff[pos] = '\0';
+	fromcode = stuff;
+	tocode = stuff + (pos + 1);
+
+	for (;pos<len && stuff[pos] != '/'; pos++);
+
+	if (stuff[pos] == '/')
+	{
+		stuff[pos] = '\0';
+		option = stuff + (pos + 1);
+	}
+	else
+		option = NULL;
+	
+	/* forward: tocode (+option), fromcode*/
+	if (forward)
+	{
+		tmp = strcpy(tmp, tocode);
+		if (option)
+		{
+			len = strlen(tocode);
+			tmp[len] = '/';
+			tmp[len + 1] = '\0';
+			strcpy(tmp + len + 1, option);
+		}
+		if ((*forward = iconv_open(tmp, fromcode)) == (iconv_t) (-1))
+		{
+			if (x_debug & DEBUG_UNICODE)
+				yell ("Unicode debug: my_iconv_open() fwd: iconv_open(%s, %s) failed.",
+					tmp, fromcode);
+			return 1;
+		}
+
+	}
+	/* reverse: fromcode (+option), tocode*/
+	if (reverse)
+	{
+		tmp = strcpy(tmp, fromcode);
+		if (option)
+		{
+			len = strlen(fromcode);
+			tmp[len] = '/';
+			tmp[len +1] = '\0';
+			strcpy(tmp + len + 1, option);
+		}
+		if ((*reverse = iconv_open(tmp, tocode)) == (iconv_t) (-1))
+		{
+			if (x_debug & DEBUG_UNICODE)
+				yell ("Unicode debug: my_iconv_open() rev: iconv_open(%s, %s) failed.",
+					tmp, tocode);
+			return 1;
+		}
+	}
+	return 0;
+}
+
 static ssize_t	iconv_recoder (const char *orig, size_t orig_len, const void *meta, size_t meta_len, char *dest, size_t dest_len)
 {
-	size_t sp;
-	size_t len, orig_left = orig_len, dest_left = dest_len, n;
+	size_t orig_left = orig_len, dest_left = dest_len, n, id, close = 1;
 	char *fromcode, *tocode, *dest_ptr;
 	const char *orig_ptr;
-	char *encodings;
 
-	iconv_t cd;
+	iconv_t encoding;
 	dest_ptr = (char *) dest;
 	orig_ptr = orig;	
 
-	encodings = LOCAL_COPY((const char *)meta);
-	for (sp = 0; encodings[sp] != '/'; sp++ < meta_len)
-		;
-	if (sp == 0 || sp >= meta_len)
-		return 0;
-	encodings[sp] = '\0';
-	fromcode = encodings;
-	tocode = encodings + sp + 1;
-	cd = iconv_open (tocode, fromcode);
-	if (cd == (iconv_t) -1)
+	if ((*(char *)meta) == '+' || (*(char*)meta) == '-')
 	{
-		if (x_debug & DEBUG_UNICODE)
-			yell ("Unicode debug: icon_open(3) failed to use "
-				"%s/%s.", fromcode, tocode);
-		return 0;
+		if (strlen((char *)meta) <= 1)
+			return 0;
+		id = (size_t) strtol((char *)meta +1, NULL, 10);
+		if (id < iconv_list_size && iconv_list[id] != NULL)
+		{
+			if ((*(char *)meta) == '+')
+			{
+				if (iconv_list[id]->forward == NULL)
+				{
+					if (x_debug & DEBUG_UNICODE)
+						yell ("Unicode debug: iconv_recoder(): iconv identifier: %i has no forward", id);
+					return 0;
+				}
+				encoding = iconv_list[id]->forward;
+			}
+			else
+			{
+				if (iconv_list[id]->reverse == NULL)
+				{
+					if (x_debug & DEBUG_UNICODE)
+						yell ("Unicode debug: iconv_recoder(): iconv identifier: %i has no reverse", id);
+					return 0;
+				}
+				encoding = iconv_list[id]->reverse;
+			}
+			close = 0;
+		}
+		else
+		{
+			if (x_debug & DEBUG_UNICODE)
+			{
+				yell ("Unicode debug: iconv_recoder(): no such iconv identifier: %i", id);
+			}
+			return 0;
+		}
+	}
+	else
+	{
+		if (my_iconv_open(&encoding, NULL, (char *) meta))
+			return 0;
 	}
 
 	/* Stuff seems to be working... */
-	while ((n = iconv (cd, &orig_ptr, &orig_left, &dest_ptr, 
+	while ((n = iconv (encoding, &orig_ptr, &orig_left, &dest_ptr, 
 		&dest_left)) != 0)
 	{
 		/* I *THINK* this is a hack. */
@@ -5426,9 +5525,11 @@ static ssize_t	iconv_recoder (const char *orig, size_t orig_len, const void *met
 		}
 		break;
 	}
-	iconv_close (cd);
+	if (close)
+		iconv_close (encoding);
 	return dest_len - dest_left;
 }
+
 #endif
 
 
@@ -5457,7 +5558,7 @@ struct Transformer default_transformers[] = {
 {	0,	"AESSHA",	1,	aessha_encoder,	aessha_decoder	},
 #endif
 #ifdef HAVE_ICONV
-{	0,	"ICONV",	1,	iconv_recoder,	iconv_recoder	},
+{	0,	"ICONV",	1,	iconv_recoder, iconv_recoder },
 #endif
 {	0,	"ALL",		0,	all_encoder,	all_encoder	},
 {	-1,	NULL,		0,	NULL,		NULL		}

@@ -1,5 +1,68 @@
 EPIC5-1.0.1
 
+*** News 06/08/2009 -- New $xform(iconv) functionality
+	You can now refer to a pre-defined iconv encoding setup,
+	instead of specifying encoding upon every use of
+	$xform(iconv). Whereas you in the old days would do:
+
+		echo $xform(iconv utf-8/ascii $stuff)
+
+	which would take a lot of cpu time, as the client would have
+	to do a lot of stuff to open, use, and then close up, the
+	iconv stuff, you can now do as follows:
+
+		@ id = iconvctl(ADD utf-8/ascii);
+		echo $xform(iconv +$id $stuff);
+
+	You can also do:
+
+		echo $xform(iconv -$id $stuff)
+
+	to reverse.
+		Use /xdebug +unicode to debug iconv stuff!
+
+*** News 06/08/2009 -- New control function: $ICONVCTL()
+	This function works as follows:
+
+		@ id = iconvctl(ADD fromcode/tocode[//option])
+	
+	This sets $id to a permanent identifier for doing encoding 
+	from *fromcode* to *tocode*. (This may speed up encoding a 
+	bit.)
+		If the chosen encoding isn't accepted by iconv(),
+	$iconvctl() returns empty.
+	
+		@ encoding = iconvctl(GET $id)
+
+	This will return whatever you set the encoding $id to.
+
+		@ iconvctl(REMOVE $id)
+
+	This removes the $id from the table of encodings.
+
+		@ iconvctl(LIST)
+
+	This lists encodings.
+
+		@ iconvctl(SIZE)
+
+	And this returns the size of the iconv table.
+
+	Do notice that identifers are re-used after removal.	
+
+*** News 06/08/2009 -- Add USERINFO to /on hooks
+	You can now add some information to "executing hooks".
+	
+		@ hookctl(USERINFO -1 stuff)
+
+	This will set the USERINFO of the current executing hook 
+	to "stuff". To get the userinfo of the current executing hook:
+
+		echo $hookctl(USERINFO -1)
+
+	This can be used in conjunction with changing the $* of a hook,
+	to, for instance, add encoding information to a it.
+
 *** News 06/06/2009 -- Can change $* in an /on hook now
 	You can change the value of $* in an /on hook that will affect
 	/on's with higher serial numbers.  

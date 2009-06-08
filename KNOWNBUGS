@@ -40,3 +40,5 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Add $hookctl(ARGS <recursive> <args>) allows you to replace $* in /on.
 * Add $hookctl(USERINFO <recursive> <info>) allows you to set dynamic info.
 * Don't lamely malloc_strcpy() over non-malloced strings in hookctl.
+* Add $iconvctl() to control iconv stuff. (See UPDATES.)
+* Add $xform(iconv +<iconv id>) functionality. (See UPDATES.)
