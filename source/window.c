@@ -1,4 +1,4 @@
-/* $EPIC: window.c,v 1.205 2009/06/04 02:40:40 jnelson Exp $ */
+/* $EPIC: window.c,v 1.206 2009/06/18 04:42:58 jnelson Exp $ */
 /*
  * window.c: Handles the organzation of the logical viewports (``windows'')
  * for irc.  This includes keeping track of what windows are open, where they
@@ -5515,6 +5515,7 @@ static int	add_to_display (Window *window, const unsigned char *str, intmax_t re
 			scroll = 1;
 		if (scroll > window->display_lines)
 			scroll = window->display_lines;
+			/* XXX but what if display_liens is 0? */
 
 		for (i = 0; i < scroll; i++)
 		{

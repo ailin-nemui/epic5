@@ -1,4 +1,4 @@
-/* $EPIC: lastlog.c,v 1.78 2009/06/04 05:26:49 jnelson Exp $ */
+/* $EPIC: lastlog.c,v 1.79 2009/06/18 04:42:58 jnelson Exp $ */
 /*
  * lastlog.c: handles the lastlog features of irc. 
  *
@@ -1303,6 +1303,8 @@ void	lastlog_swap_winrefs (unsigned oldref, unsigned newref)
 	{
 		if (l->winref == oldref)
 			l->winref = newref;
+		else if (l->winref == newref)
+			l->winref = oldref;
 	}
 }
 

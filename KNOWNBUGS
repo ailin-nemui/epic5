@@ -8,6 +8,10 @@ KNOWN ERRATA (eg, bugs, or unresolved requests):
     12           n!*@h.d                        n!*@d.*
     13           n!*u@h.d                       n!*u@d.*
 * /on 322 (LIST reply) requires special handling for message_from(NULL, ...);
+* Kreca thinks I should have two refnums, one public, one private for windows.
+* <CrazyEddy> Hey hop, another bug report:  This eventually locks up in the loop
++at line 5510 of window.c:  /timer -rep -1 1 /window new double on hold_slider
++0 hide_others 
 
 ISSUES OF INTEREST
 ------------------
@@ -42,3 +46,6 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Don't lamely malloc_strcpy() over non-malloced strings in hookctl.
 * Add $iconvctl() to control iconv stuff. (See UPDATES.)
 * Add $xform(iconv +<iconv id>) functionality. (See UPDATES.)
+* Fix bug where /window number could lead to confused lastlogs
+* Generalize base64 encoding so it doesn't hardcode the base64 string.
+* Add $xform(+FISH64 ...) which does FiSH's base64 encoding.

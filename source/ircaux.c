@@ -1,4 +1,4 @@
-/* $EPIC: ircaux.c,v 1.202 2009/06/08 00:38:42 howl Exp $ */
+/* $EPIC: ircaux.c,v 1.203 2009/06/18 04:42:58 jnelson Exp $ */
 /*
  * ircaux.c: some extra routines... not specific to irc... that I needed 
  *
@@ -5089,19 +5089,29 @@ static ssize_t	enc_decoder (const char *orig, size_t orig_len, const void *meta,
         return dest_i;
 }
 
-/* This stuff is BSD licensed, see compat.c!  */
+/* Begin BSD licensed code */
+/*
+ * Copyright (c) 1995-2001 Kungliga Tekniska Högskolan
+ * (Royal Institute of Technology, Stockholm, Sweden).
+ * All rights reserved.
+ *
+ * This is licensed under the 3-clause BSD license, which is found in compat.c
+ */
 static char base64_chars[] =
     "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
-static int      posfunc (char c)
+static char fish64_chars[] =
+    "./0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
+
+static int      posfunc (const char *base, char c)
 {
-    char *p;
-    for (p = base64_chars; *p; p++)
+    const char *p;
+    for (p = base; *p; p++)
         if (*p == c)
-            return p - base64_chars;
+            return p - base;
     return -1;
 }
 
-static ssize_t	b64_encoder (const char *orig, size_t orig_len, const void *meta, size_t meta_len, char *dest, size_t dest_len)
+static ssize_t	b64_general_encoder (const char *orig, size_t orig_len, const void *meta, size_t meta_len, char *dest, size_t dest_len, const char *base)
 {
 	size_t	orig_i, dest_i;
 	ssize_t	count = 0;
@@ -5123,13 +5133,13 @@ static ssize_t	b64_encoder (const char *orig, size_t orig_len, const void *meta,
 		c += (unsigned)(unsigned char)orig[orig_i+2];
 
 	    if (dest_i < dest_len)
-		dest[dest_i]   = base64_chars[(c & 0x00fc0000) >> 18];
+		dest[dest_i]   = base[(c & 0x00fc0000) >> 18];
 	    if (dest_i+1 < dest_len)
-		dest[dest_i+1] = base64_chars[(c & 0x0003f000) >> 12];
+		dest[dest_i+1] = base[(c & 0x0003f000) >> 12];
 	    if (dest_i+2 < dest_len)
-		dest[dest_i+2] = base64_chars[(c & 0x00000fc0) >> 6];
+		dest[dest_i+2] = base[(c & 0x00000fc0) >> 6];
 	    if (dest_i+3 < dest_len)
-		dest[dest_i+3] = base64_chars[(c & 0x0000003f) >> 0];
+		dest[dest_i+3] = base[(c & 0x0000003f) >> 0];
 
 	    if (orig_i+2 >= orig_len && dest_i + 3 < dest_len)
 		dest[dest_i+3] = '=';
@@ -5145,8 +5155,18 @@ static ssize_t	b64_encoder (const char *orig, size_t orig_len, const void *meta,
         return dest_i;
 }
 
+static ssize_t	b64_encoder (const char *orig, size_t orig_len, const void *meta, size_t meta_len, char *dest, size_t dest_len)
+{
+	return b64_general_encoder(orig, orig_len, meta, meta_len, dest, dest_len, base64_chars);
+}
+
+static ssize_t	fish64_encoder (const char *orig, size_t orig_len, const void *meta, size_t meta_len, char *dest, size_t dest_len)
+{
+	return b64_general_encoder(orig, orig_len, meta, meta_len, dest, dest_len, fish64_chars);
+}
+
 #define DECODE_ERROR 0xFFFFFFFF
-static unsigned int     token_decode (const char *token)
+static unsigned int     token_decode (const char *base, const char *token)
 {
     int i;
     unsigned int val = 0;
@@ -5160,14 +5180,14 @@ static unsigned int     token_decode (const char *token)
         else if (marker > 0)
             return DECODE_ERROR;
         else
-            val += posfunc(token[i]);
+            val += posfunc(base, token[i]);
     }
     if (marker > 2)
         return DECODE_ERROR;
     return (marker << 24) | val;
 }
 
-static ssize_t	b64_decoder (const char *orig, size_t orig_len, const void *meta, size_t meta_len, char *dest, size_t dest_len)
+static ssize_t	b64_general_decoder (const char *orig, size_t orig_len, const void *meta, size_t meta_len, char *dest, size_t dest_len, const char *base)
 {
 	size_t	orig_i, dest_i;
 	ssize_t	count = 0;
@@ -5185,7 +5205,7 @@ static ssize_t	b64_decoder (const char *orig, size_t orig_len, const void *meta,
 	dest_i = 0;
 	for (orig_i = 0; orig_i < orig_len; orig_i += 4)
 	{
-	    unsigned val = token_decode(orig + orig_i);
+	    unsigned val = token_decode(base, orig + orig_i);
 	    unsigned marker = (val >> 24) & 0xff;
 
 	    if (val == DECODE_ERROR)
@@ -5206,6 +5226,16 @@ static ssize_t	b64_decoder (const char *orig, size_t orig_len, const void *meta,
 		dest_i = dest_len - 1;
 	dest[dest_i] = 0;
         return dest_i;
+}
+
+static ssize_t	b64_decoder (const char *orig, size_t orig_len, const void *meta, size_t meta_len, char *dest, size_t dest_len)
+{
+	return b64_general_decoder(orig, orig_len, meta, meta_len, dest, dest_len, base64_chars);
+}
+
+static ssize_t	fish64_decoder (const char *orig, size_t orig_len, const void *meta, size_t meta_len, char *dest, size_t dest_len)
+{
+	return b64_general_decoder(orig, orig_len, meta, meta_len, dest, dest_len, fish64_chars);
 }
 /* End BSD licensed stuff (see compat.c!) */
 
@@ -5546,6 +5576,7 @@ struct Transformer default_transformers[] = {
 {	0,	"URL",		0,	url_encoder,	url_decoder	},
 {	0,	"ENC",		0,	enc_encoder,	enc_decoder	},
 {	0,	"B64",		0,	b64_encoder,	b64_decoder	},
+{	0,	"FISH64",	0,	fish64_encoder,	fish64_decoder	},
 {	0,	"SED",		1,	sed_encoder,	sed_decoder	},
 {	0,	"CTCP",		0,	ctcp_encoder,	ctcp_decoder	},
 {	0,	"NONE",		0,	null_encoder,	null_encoder	},

@@ -1,5 +1,10 @@
 EPIC5-1.0.1
 
+*** News 06/17/2009 -- New $xform, "FISH64"
+	The FISH64 transform performs base64 encoding that is compatable
+	with FiSH.  Fish64 uses the same algorithm as base64, but it uses
+	a different character set.
+
 *** News 06/08/2009 -- New $xform(iconv) functionality
 	You can now refer to a pre-defined iconv encoding setup,
 	instead of specifying encoding upon every use of
