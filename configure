@@ -1,6 +1,6 @@
 #! /bin/sh
 
-# From configure.in Revision: 1.76 # Guess values for system-dependent variables and create Makefiles.
+# From configure.in Revision: 1.77 # Guess values for system-dependent variables and create Makefiles.
 # Generated automatically using autoconf version 2.13 
 # Copyright (C) 1992, 93, 94, 95, 96 Free Software Foundation, Inc.
 #
@@ -5995,7 +5995,11 @@ int main() {
                perl_construct(my_perl);
                PL_exit_flags |= PERL_EXIT_DESTRUCT_END;
                perl_parse(my_perl, NULL, argc, argv, (char **)NULL);
+               if (SvTRUE(ERRSV))
+		(void)SvPV_nolen(ERRSV);
                perl_run(my_perl);
+	       if (SvTRUE(ERRSV))
+		(void)SvPV_nolen(ERRSV);
                perl_destruct(my_perl);
                perl_free(my_perl);
                PERL_SYS_TERM();
@@ -6003,7 +6007,7 @@ int main() {
 
 ; return 0; }
 EOF
-if { (eval echo configure:6007: \"$ac_link\") 1>&5; (eval $ac_link) 2>&5; } && test -s conftest${ac_exeext}; then
+if { (eval echo configure:6011: \"$ac_link\") 1>&5; (eval $ac_link) 2>&5; } && test -s conftest${ac_exeext}; then
   rm -rf conftest*
   have_embedded_perl="yes"
 else
@@ -6056,7 +6060,7 @@ if test "x$tclconfig" = "xyes" ; then
 fi
 
 echo $ac_n "checking whether to support TCL""... $ac_c" 1>&6
-echo "configure:6060: checking whether to support TCL" >&5
+echo "configure:6064: checking whether to support TCL" >&5
 if test "x$tclconfig" = "xno"; then
 	echo "$ac_t""no" 1>&6
 else
@@ -6071,14 +6075,14 @@ else
 		TCLDOTOH="tcl.o"
 
 		echo $ac_n "checking whether embedded tcl works the way I expect""... $ac_c" 1>&6
-echo "configure:6075: checking whether embedded tcl works the way I expect" >&5
+echo "configure:6079: checking whether embedded tcl works the way I expect" >&5
 		have_embedded_tcl="no"
 		old_CFLAGS="$CFLAGS"
 		old_LDFLAGS="$LDFLAGS"
 		CFLAGS="$CFLAGS $TCLCFLAGS"
 		LDFLAGS="$LDFLAGS $TCLLDFLAGS"
 		cat > conftest.$ac_ext <<EOF
-#line 6082 "configure"
+#line 6086 "configure"
 #include "confdefs.h"
 
 #include <tcl.h>
@@ -6101,7 +6105,7 @@ int main() {
 
 ; return 0; }
 EOF
-if { (eval echo configure:6105: \"$ac_link\") 1>&5; (eval $ac_link) 2>&5; } && test -s conftest${ac_exeext}; then
+if { (eval echo configure:6109: \"$ac_link\") 1>&5; (eval $ac_link) 2>&5; } && test -s conftest${ac_exeext}; then
   rm -rf conftest*
   have_embedded_tcl="yes"
 else
@@ -6150,13 +6154,13 @@ fi
 
 if test "x$rubyexe" = "xno"; then
 	echo $ac_n "checking whether to support Ruby""... $ac_c" 1>&6
-echo "configure:6154: checking whether to support Ruby" >&5
+echo "configure:6158: checking whether to support Ruby" >&5
 	echo "$ac_t""no" 1>&6
 else
 	# Extract the first word of "$rubyexe", so it can be a program name with args.
 set dummy $rubyexe; ac_word=$2
 echo $ac_n "checking for $ac_word""... $ac_c" 1>&6
-echo "configure:6160: checking for $ac_word" >&5
+echo "configure:6164: checking for $ac_word" >&5
 if eval "test \"`echo '$''{'ac_cv_prog_RUBYPROG'+set}'`\" = set"; then
   echo $ac_n "(cached) $ac_c" 1>&6
 else
@@ -6184,7 +6188,7 @@ else
 fi
 
 	echo $ac_n "checking whether to support Ruby""... $ac_c" 1>&6
-echo "configure:6188: checking whether to support Ruby" >&5
+echo "configure:6192: checking whether to support Ruby" >&5
 	if test $RUBYPROG != "yes" ; then 
 	    echo "$ac_t""no" 1>&6
 	else
@@ -6198,14 +6202,14 @@ echo "configure:6188: checking whether to support Ruby" >&5
 	    RUBYDOTOH="ruby.o"
 
 	    echo $ac_n "checking whether embedded ruby works the way I expect""... $ac_c" 1>&6
-echo "configure:6202: checking whether embedded ruby works the way I expect" >&5
+echo "configure:6206: checking whether embedded ruby works the way I expect" >&5
 	    have_embedded_ruby="no"
 	    old_CFLAGS="$CFLAGS"
 	    old_LDFLAGS="$LDFLAGS"
 	    CFLAGS="$CFLAGS $RUBYCFLAGS"
 	    LDFLAGS="$LDFLAGS $RUBYLDFLAGS"
 	    cat > conftest.$ac_ext <<EOF
-#line 6209 "configure"
+#line 6213 "configure"
 #include "confdefs.h"
 
 #include <ruby.h>
@@ -6233,7 +6237,7 @@ int main() {
 
 ; return 0; }
 EOF
-if { (eval echo configure:6237: \"$ac_link\") 1>&5; (eval $ac_link) 2>&5; } && test -s conftest${ac_exeext}; then
+if { (eval echo configure:6241: \"$ac_link\") 1>&5; (eval $ac_link) 2>&5; } && test -s conftest${ac_exeext}; then
   rm -rf conftest*
   have_embedded_ruby="yes"
 else
@@ -6286,7 +6290,7 @@ if test "$program_prefix" = "NONE" ; then
 fi
 
 echo $ac_n "checking whether to support bounds checking gcc""... $ac_c" 1>&6
-echo "configure:6290: checking whether to support bounds checking gcc" >&5
+echo "configure:6294: checking whether to support bounds checking gcc" >&5
 # Check whether --with-bc or --without-bc was given.
 if test "${with_bc+set}" = set; then
   withval="$with_bc"
@@ -6311,7 +6315,7 @@ fi
 
 
 echo $ac_n "checking whether to turn on FreeBSD WARNS-like compiler warnings""... $ac_c" 1>&6
-echo "configure:6315: checking whether to turn on FreeBSD WARNS-like compiler warnings" >&5
+echo "configure:6319: checking whether to turn on FreeBSD WARNS-like compiler warnings" >&5
 # Check whether --with-warns or --without-warns was given.
 if test "${with_warns+set}" = set; then
   withval="$with_warns"
@@ -6335,18 +6339,18 @@ fi
 
 
 echo $ac_n "checking whether your compiler supports -Wno-pointer-sign""... $ac_c" 1>&6
-echo "configure:6339: checking whether your compiler supports -Wno-pointer-sign" >&5
+echo "configure:6343: checking whether your compiler supports -Wno-pointer-sign" >&5
 old_cflags="$CFLAGS"
 CFLAGS="$CFLAGS -Wno-pointer-sign"
 cat > conftest.$ac_ext <<EOF
-#line 6343 "configure"
+#line 6347 "configure"
 #include "confdefs.h"
 
 int main() {
 exit(0);
 ; return 0; }
 EOF
-if { (eval echo configure:6350: \"$ac_compile\") 1>&5; (eval $ac_compile) 2>&5; }; then
+if { (eval echo configure:6354: \"$ac_compile\") 1>&5; (eval $ac_compile) 2>&5; }; then
   rm -rf conftest*
   echo "$ac_t""yes" 1>&6
 else

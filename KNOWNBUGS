@@ -49,3 +49,6 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Fix bug where /window number could lead to confused lastlogs
 * Generalize base64 encoding so it doesn't hardcode the base64 string.
 * Add $xform(+FISH64 ...) which does FiSH's base64 encoding.
+* Make a better test for embedded perl support by calling SvTRUE().
+* Fix /bind -defaults so it actually removes all keybindings first. doh.
+* Fix /window double so it actually shows you the current double status.

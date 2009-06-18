@@ -1,4 +1,4 @@
-/* $EPIC: window.c,v 1.206 2009/06/18 04:42:58 jnelson Exp $ */
+/* $EPIC: window.c,v 1.207 2009/06/18 04:46:53 jnelson Exp $ */
 /*
  * window.c: Handles the organzation of the logical viewports (``windows'')
  * for irc.  This includes keeping track of what windows are open, where they
@@ -3426,6 +3426,7 @@ static Window *window_double (Window *window, char **args)
 	short	newval = 0;
 	int	current = window->status.number;
 
+	newval = window->status.number - 1;
 	if (get_boolean("DOUBLE", args, &newval))
 		return NULL;
 
