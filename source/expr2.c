@@ -1,4 +1,4 @@
-/* $EPIC: expr2.c,v 1.39 2008/11/28 16:28:03 jnelson Exp $ */
+/* $EPIC: expr2.c,v 1.40 2009/06/27 16:35:58 jnelson Exp $ */
 /*
  * Zsh: math.c,v 3.1.2.1 1997/06/01 06:13:15 hzoli Exp 
  * math.c - mathematical expression evaluation
@@ -157,6 +157,9 @@ typedef struct TOKEN_type
  */
 typedef struct
 {
+	/* This is the original expression, used for debugging output */
+	char 	*orig_expr;
+
 	/* POSITION AND STATE INFORMATION */
 	/*
 	 * This is the current position in the lexing.
@@ -233,6 +236,7 @@ __inline static	TOKEN	tokenize_raw (expr_info *c, const char *t);
 	static	char *	after_expando_special (expr_info *c);
 	static	char *	alias_special_char (char **buffer, char *ptr, 
 					const char *args, char *quote_em);
+__inline static	const char *	get_token_expanded (expr_info *c, TOKEN v);
 
 
 /******************** EXPRESSION CONSTRUCTOR AND DESTRUCTOR ****************/
@@ -667,7 +671,8 @@ __inline static const char *	get_token_lval (expr_info *c, TOKEN v)
 		return NULL;		/* Suppress the operation entirely */
 	else if (((TOK(c, v).used & USED_LVAL) == 0))
 	{
-		my_error("Token [%d] is not an lvalue", v);
+		my_error("Token [%d] (\"%s\") is not an lvalue", 
+				v, get_token_expanded(c, v));
 		return NULL;			/* No lvalue here! */
 	}
 	else
@@ -2544,6 +2549,7 @@ static char *	matheval (char *s, const char *args)
 	setup_expr_info(&context);
 	context.ptr = s;
 	context.args = args;
+	context.orig_expr = LOCAL_COPY(s);
 
 	/* Actually do the parsing */
 	mathparse(&context, TOPPREC);
@@ -2557,14 +2563,16 @@ static char *	matheval (char *s, const char *args)
 
 	/* Check for leftover operands */
 	if (context.sp)
-		my_error("The expression has too many operands");
+	{
+		my_error("This expression failed because it is missing operators: %s", context.orig_expr);
+	}
 
 	if (x_debug & DEBUG_NEW_MATH_DEBUG)
 	{
 		int i;
-		yell("Terms left: %d", context.sp);
+		yell("Operands left: %d", context.sp + 1);
 		for (i = 0; i <= context.sp; i++)
-			yell("Term [%d]: [%s]", i, 
+			yell("Operand [%d]: [%s]", i, 
 				get_token_expanded(&context, context.stack[i]));
 	}
 

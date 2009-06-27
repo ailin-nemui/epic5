@@ -12,6 +12,18 @@ KNOWN ERRATA (eg, bugs, or unresolved requests):
 * <CrazyEddy> Hey hop, another bug report:  This eventually locks up in the loop
 +at line 5510 of window.c:  /timer -rep -1 1 /window new double on hold_slider
 +0 hide_others 
+* The FiSH cipher will be EVP_bf_ecb(void) with an SHA256 key.
+  (FiSH == BLOWFISH_ECB_SHA)
+* FiSH64 doesn't actually do a streaming base64, 
+  Whereas base64 digits hold 6 bits of information, making a sync point 
+  every 24 bits (3 bytes), FiSH has an additional sync point at 32 bits
+  (in the middle of the 6th digit) and then starts a new 7th digit at
+  bit 33.
+                            1 1 1 1 1 1 1 1 1 1 2 2 2 2 2 2 2 2 2 2 3 3 
+	0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
+        |--b64-1--| |--b64-2--| |--b64-3--| |--b64-4--| |--b64-5--| |--b64-6
+  Whereas Base64 does 3 bytes -> 4 bytes
+  FiSH64 does 6 digits (48 bits) -> 4 raw bytes (32 bits), twice
 
 ISSUES OF INTEREST
 ------------------
@@ -52,3 +64,4 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Make a better test for embedded perl support by calling SvTRUE().
 * Fix /bind -defaults so it actually removes all keybindings first. doh.
 * Fix /window double so it actually shows you the current double status.
+* Make the expression error for too many operands output the expression.
