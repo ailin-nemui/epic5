@@ -4,9 +4,9 @@ dnl except those bits attributed otherwise.
 dnl thanks to the screen 3.3 configure.in for giving me examples to
 dnl work from and steal ;)
 dnl
-dnl @(#)$Id: configure.in,v 1.78 2009/06/18 04:46:51 jnelson Exp $
+dnl @(#)$Id: configure.in,v 1.79 2009/06/29 19:30:30 jnelson Exp $
 
-AC_REVISION($Revision: 1.78 $)dnl
+AC_REVISION($Revision: 1.79 $)dnl
 AC_INIT(source/irc.c)
 AC_CONFIG_HEADER(include/defs.h)
 
@@ -589,19 +589,22 @@ dnl
 have_intmax_t=""
 have_strtoimax_t=""
 AC_MSG_CHECKING(for intmax_t in inttypes.h or stdint.h)
-AC_EGREP_HEADER(intmax_t, inttypes.h, have_intmax_t=yes)
 AC_EGREP_HEADER(intmax_t, stdint.h, have_intmax_t=yes)
+AC_EGREP_HEADER(intmax_t, inttypes.h, have_intmax_t=yes)
 
 if test "x$have_intmax_t" != "x"; then
    AC_MSG_RESULT(yes)
-   AC_CHECK_FUNC(strtoimax, have_strtoimax_t=yes,)
+   AC_CHECK_FUNC(strtoimax, have_strtoimax=yes,)
 else
    AC_MSG_RESULT(no)
 fi
 
-if test "x$have_intmax_t" != "x" -a "x$have_strtoimax" != "x"; then
-   AC_DEFINE(HAVE_STRTOIMAX)
-   AC_DEFINE(HAVE_INTMAX_NATIVE)
+dnl Can we use (intmax_t) for (intmax_t)?
+if test "x$have_intmax_t" != "x" ; then
+  if test "x$have_strtoimax" != "x" ; then
+    AC_DEFINE(HAVE_STRTOIMAX)
+    AC_DEFINE(HAVE_INTMAX_NATIVE)
+  fi
 fi
 
 dnl Can we use (long long) for (intmax_t) ?
@@ -824,7 +827,7 @@ else
 		[iconv_open(0, 0);], have_iconv="yes")
 
 	# If it's not in libc, look in -liconv
-	if test -z "$have_iconv" ; then
+	if test "x$have_iconv" = "x"; then
 	   LIBS="$saved_LIBS -liconv"
 	   CFLAGS="$saved_CFLAGS"
 	   AC_TRY_LINK([#include <iconv.h>],
@@ -832,14 +835,14 @@ else
 	fi
 
 	# Otherwise, go hunting for it.
-	if test -z "$have_iconv" ; then
+	if test "x$have_iconv" = "x"; then
 	    for iconvdir in "$with_iconv" "$prefix" /usr/local /opt /usr/opt; do
-		if test -n "$have_iconv"; then
-			break;
+		if test "x$have_iconv" != "x"; then
+			break
 		fi
 
-		if test -z "$iconvdir"; then
-			continue;
+		if test "x$iconvdir" = "x"; then
+			continue
 		fi
 
 		if test -f "$iconvdir/include/iconv.h" &&
@@ -849,22 +852,30 @@ else
 		    AC_TRY_LINK([#include <iconv.h>],
 				[iconv_open(0, 0);], have_iconv="yes")
 		fi
+
+		if test "x$with_iconv" != "x"; then
+			break
+		fi
 	    done
 	fi
 
 	# If we found it somewhere, great!  Otherwise, revert.
-	if test ! -n "$have_iconv"; then
+	if test "x$have_iconv" = "x"; then
 		LIBS="$saved_LIBS"
 		CFLAGS="$saved_CFLAGS"
 		AC_MSG_RESULT(looked but did not find it)
-		if test "x$with_iconv" != "x"; then
-			AC_MSG_ERROR([You requested iconv support, but iconv was not found. Please supply a pathname to iconv])
+		if test "x$with_iconv" != "x" ; then
+			AC_MSG_ERROR(You specified --with-iconv but that directory did not contain files include/iconv.h and lib/iconv.a.  Either specify a different directory or let me auto-detect it for you)
+		else
+			AC_MSG_ERROR(Iconv support is required.  I could not find your system's iconv support.  If you have iconv installed, please re-run configure with the --with-iconv=/path/to/dir option where include/iconv.h and lib/iconv.a exist.)
 		fi
 	else
 		AC_MSG_RESULT(yes)
+		AC_DEFINE(HAVE_ICONV)
 	fi
 
-	AC_CHECK_FUNC(iconv_open, AC_DEFINE(HAVE_ICONV),)
+	dnl #sigh#
+	dnl AC_CHECK_FUNC(iconv_open, AC_DEFINE(HAVE_ICONV),)
 fi
 
 
@@ -940,25 +951,29 @@ else
 #include <EXTERN.h>
 #include <perl.h>
 #include <XSUB.h>
+int dummy_retval = 0;
+
+/* I "borrowed" this from the perlembed(1) man page */
+PerlInterpreter *my_perl;
+int startup_perl(int argc, char **argv, char **env)
+{
+	PERL_SYS_INIT3(&argc,&argv,&env);
+	my_perl = perl_alloc();
+	perl_construct(my_perl);
+	PL_exit_flags |= PERL_EXIT_DESTRUCT_END;
+	perl_parse(my_perl, NULL, argc, argv, (char **)NULL);
+	if (SvTRUE(ERRSV))
+	   (void)SvPV_nolen(ERRSV);
+	perl_run(my_perl);
+	if (SvTRUE(ERRSV))
+	   (void)SvPV_nolen(ERRSV);
+	perl_destruct(my_perl);
+	perl_free(my_perl);
+	PERL_SYS_TERM();
+}
 ], [
-	   /* I "borrowed" this from the perlembed(1) man page */
-           PerlInterpreter *my_perl;
-           int main(int argc, char **argv, char **env)
-           {
-               PERL_SYS_INIT3(&argc,&argv,&env);
-               my_perl = perl_alloc();
-               perl_construct(my_perl);
-               PL_exit_flags |= PERL_EXIT_DESTRUCT_END;
-               perl_parse(my_perl, NULL, argc, argv, (char **)NULL);
-               if (SvTRUE(ERRSV))
-		(void)SvPV_nolen(ERRSV);
-               perl_run(my_perl);
-	       if (SvTRUE(ERRSV))
-		(void)SvPV_nolen(ERRSV);
-               perl_destruct(my_perl);
-               perl_free(my_perl);
-               PERL_SYS_TERM();
-           }
+		startup_perl(0, NULL, NULL);
+		exit(dummy_retval);
 ], have_embedded_perl="yes")
 
 		CFLAGS="$old_CFLAGS"
@@ -1017,20 +1032,17 @@ else
 		LDFLAGS="$LDFLAGS $TCLLDFLAGS"
 		AC_TRY_LINK([
 #include <tcl.h>
-], [
 	   Tcl_Interp *my_tcl;
 	   int Tcl_echoCmd (ClientData clientData, Tcl_Interp *interp, int objc, const char **objv)
 	   {
 		return TCL_OK;
 	   }
-           int main(int argc, char **argv, char **env)
-           {
-		my_tcl = Tcl_CreateInterp();
-		Tcl_Init(my_tcl);
-		Tcl_CreateCommand(my_tcl, "echo", Tcl_echoCmd,
-			(ClientData)NULL, (void (*)()) NULL);
-		Tcl_DeleteInterp(my_tcl);
-           }
+], [
+	my_tcl = Tcl_CreateInterp();
+	Tcl_Init(my_tcl);
+	Tcl_CreateCommand(my_tcl, "echo", Tcl_echoCmd,
+		(ClientData)NULL, (void (*)()) NULL);
+	Tcl_DeleteInterp(my_tcl);
 ], have_embedded_tcl="yes")
 
 		CFLAGS="$old_CFLAGS"
@@ -1088,7 +1100,6 @@ else
 	    LDFLAGS="$LDFLAGS $RUBYLDFLAGS"
 	    AC_TRY_LINK([
 #include <ruby.h>
-], [
     VALUE epic_echo (VALUE module, VALUE string)
     {
 	VALUE x;
@@ -1097,8 +1108,7 @@ else
 	my_string = STR2CSTR(x);
 	return Qnil;
     }
-    int main(int argc, char **argv, char **env)
-    {
+], [
 	VALUE rubyclass;
 
 	ruby_init();
@@ -1106,7 +1116,6 @@ else
 	rubyclass = rb_define_class("EPIC", rb_cObject);
 	rb_define_singleton_method(rubyclass, "echo", epic_echo, 1);
 	rb_gc_register_address(&rubyclass);
-    }
 ], have_embedded_ruby="yes")
 
 	    CFLAGS="$old_CFLAGS"

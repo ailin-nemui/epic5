@@ -1,4 +1,4 @@
-/* $EPIC: window.c,v 1.207 2009/06/18 04:46:53 jnelson Exp $ */
+/* $EPIC: window.c,v 1.208 2009/06/29 19:30:33 jnelson Exp $ */
 /*
  * window.c: Handles the organzation of the logical viewports (``windows'')
  * for irc.  This includes keeping track of what windows are open, where they
@@ -3143,6 +3143,7 @@ static Window *window_channel (Window *window, char **args)
 	char 		*chans, *passwds;
 	char 		*chan, *pass;
 	const char 	*c;
+	char 		*cl;
 	char 		*chans_to_join, *passes_to_use;
 	int		l;
 
@@ -3158,10 +3159,10 @@ static Window *window_channel (Window *window, char **args)
 	    if ((c = get_echannel_by_refnum(window->refnum)))
 	    {
 		say("The current channel is %s", c);
-		if ((c = window_all_channels(window->refnum, window->server)))
+		if ((cl = window_all_channels(window->refnum, window->server)))
 		{
-		    say("All channels in this window: %s", c);
-		    new_free(&c);
+		    say("All channels in this window: %s", cl);
+		    new_free(&cl);
 		}
 	    }
 	    else

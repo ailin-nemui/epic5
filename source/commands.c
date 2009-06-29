@@ -1,4 +1,4 @@
-/* $EPIC: commands.c,v 1.186 2008/11/30 19:09:23 jnelson Exp $ */
+/* $EPIC: commands.c,v 1.187 2009/06/29 19:30:33 jnelson Exp $ */
 /*
  * commands.c -- Stuff needed to execute commands in ircII.
  *		 Includes the bulk of the built in commands for ircII.
@@ -2192,7 +2192,8 @@ BUILT_IN_COMMAND(pingcmd)
 	char buffer[64];
 
 	get_time(&t);
-	snprintf(buffer, 63, "%s PING %ld %ld", args, t.tv_sec, t.tv_usec);
+	snprintf(buffer, 63, "%s PING %ld %ld", args, 
+				(long)t.tv_sec, (long)t.tv_usec);
 	ctcp(NULL, buffer, empty_string);
 }
 

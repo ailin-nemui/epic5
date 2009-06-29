@@ -1,4 +1,4 @@
-/* $EPIC: ircaux.c,v 1.203 2009/06/18 04:42:58 jnelson Exp $ */
+/* $EPIC: ircaux.c,v 1.204 2009/06/29 19:30:33 jnelson Exp $ */
 /*
  * ircaux.c: some extra routines... not specific to irc... that I needed 
  *
@@ -5111,6 +5111,61 @@ static int      posfunc (const char *base, char c)
     return -1;
 }
 
+static ssize_t	base64_32bit_encoder (const char *orig, size_t orig_len, const void *meta, size_t meta_len, char *dest, size_t dest_len, const char *base)
+{
+	size_t	orig_i, dest_i;
+	ssize_t	count = 0;
+
+        if (!orig || !dest)
+                return -1;
+
+	if (orig_len == 0)
+		orig_len = strlen(orig);
+	dest_i = 0;
+	for (orig_i = 0; orig_i < orig_len; )
+	{
+	    /* Convert the first four bytes of 'orig' into 'c' */
+	    unsigned	c = (unsigned)(unsigned char)orig[orig_i];
+	    c *= 256;
+	    if (orig_i+1 < orig_len)
+		c += (unsigned)(unsigned char)orig[orig_i+1];
+	    c *= 256;
+	    if (orig_i+2 < orig_len)
+		c += (unsigned)(unsigned char)orig[orig_i+2];
+	    c *= 256;
+	    if (orig_i+3 < orig_len)
+		c += (unsigned)(unsigned char)orig[orig_i+3];
+
+	    /* Convert the first 30 bits to 5 radix bytes */
+	    if (dest_i < dest_len)
+		dest[dest_i]   = base[(c & 0xfc000000) >> 26];
+	    if (dest_i+1 < dest_len)
+		dest[dest_i+1] = base[(c & 0x03f00000) >> 20];
+	    if (dest_i+2 < dest_len)
+		dest[dest_i+2] = base[(c & 0x000fc000) >> 14];
+	    if (dest_i+3 < dest_len)
+		dest[dest_i+3] = base[(c & 0x00003f00) >> 8];
+	    if (dest_i+4 < dest_len)
+		dest[dest_i+4] = base[(c & 0x000000fc) >> 2];
+	    if (dest_i+5 < dest_len)
+		dest[dest_i+5] = base[(c & 0x00000003) >> 0];
+
+	    if (orig_i+2 >= orig_len && dest_i + 6 < dest_len)
+		dest[dest_i+6] = '=';
+	    if (orig_i+1 >= orig_len && dest_i + 7 < dest_len)
+		dest[dest_i+7] = '=';
+
+	    dest_i += 4;
+	    orig_i += 3;
+	}
+	if (dest_i >= dest_len)
+		dest_i = dest_len - 1;
+	dest[dest_i] = 0;
+        return dest_i;
+
+}
+
+
 static ssize_t	b64_general_encoder (const char *orig, size_t orig_len, const void *meta, size_t meta_len, char *dest, size_t dest_len, const char *base)
 {
 	size_t	orig_i, dest_i;
@@ -5414,15 +5469,15 @@ static ssize_t	sha256_encoder (const char *orig, size_t orig_len, const void *me
 }
 
 #ifdef HAVE_ICONV
-size_t iconv_list_size = 0;
+ssize_t iconv_list_size = 0;
 struct Iconv_stuff **iconv_list = NULL;
 
-int my_iconv_open (iconv_t *forward, iconv_t *reverse, char *stuff2)
+int my_iconv_open (iconv_t *forward, iconv_t *reverse, const char *stuff2)
 {
 	size_t pos, len;
 	char *stuff, *fromcode, *tocode, *option, *tmp;
 	
-	stuff = LOCAL_COPY((const char *) stuff2);
+	stuff = LOCAL_COPY(stuff2);
 	tmp = alloca(strlen(stuff));
 	len = strlen(stuff);
 	for (pos = 0; pos < len && stuff[pos] != '/'; pos++);
@@ -5490,7 +5545,8 @@ int my_iconv_open (iconv_t *forward, iconv_t *reverse, char *stuff2)
 
 static ssize_t	iconv_recoder (const char *orig, size_t orig_len, const void *meta, size_t meta_len, char *dest, size_t dest_len)
 {
-	size_t orig_left = orig_len, dest_left = dest_len, n, id, close = 1;
+	size_t orig_left = orig_len, dest_left = dest_len, n, close_it = 1;
+	int	id;
 	char *fromcode, *tocode, *dest_ptr;
 	const char *orig_ptr;
 
@@ -5498,14 +5554,14 @@ static ssize_t	iconv_recoder (const char *orig, size_t orig_len, const void *met
 	dest_ptr = (char *) dest;
 	orig_ptr = orig;	
 
-	if ((*(char *)meta) == '+' || (*(char*)meta) == '-')
+	if ((*(const char *)meta) == '+' || (*(const char*)meta) == '-')
 	{
-		if (strlen((char *)meta) <= 1)
+		if (strlen((const char *)meta) <= 1)
 			return 0;
-		id = (size_t) strtol((char *)meta +1, NULL, 10);
+		id = (size_t) strtol((const char *)meta +1, NULL, 10);
 		if (id < iconv_list_size && iconv_list[id] != NULL)
 		{
-			if ((*(char *)meta) == '+')
+			if ((*(const char *)meta) == '+')
 			{
 				if (iconv_list[id]->forward == NULL)
 				{
@@ -5525,7 +5581,7 @@ static ssize_t	iconv_recoder (const char *orig, size_t orig_len, const void *met
 				}
 				encoding = iconv_list[id]->reverse;
 			}
-			close = 0;
+			close_it = 0;
 		}
 		else
 		{
@@ -5538,7 +5594,7 @@ static ssize_t	iconv_recoder (const char *orig, size_t orig_len, const void *met
 	}
 	else
 	{
-		if (my_iconv_open(&encoding, NULL, (char *) meta))
+		if (my_iconv_open(&encoding, NULL, (const char *) meta))
 			return 0;
 	}
 
@@ -5555,7 +5611,7 @@ static ssize_t	iconv_recoder (const char *orig, size_t orig_len, const void *met
 		}
 		break;
 	}
-	if (close)
+	if (close_it)
 		iconv_close (encoding);
 	return dest_len - dest_left;
 }

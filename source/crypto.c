@@ -1,4 +1,4 @@
-/* $EPIC: crypto.c,v 1.13 2007/09/07 18:07:29 jnelson Exp $ */
+/* $EPIC: crypto.c,v 1.14 2009/06/29 19:30:33 jnelson Exp $ */
 /*
  * crypto.c: SED/CAST5/BLOWFISH/AES encryption and decryption routines.
  *
@@ -615,6 +615,7 @@ ssize_t	x ## _decoder (const char *ciphertext, size_t len, const void *meta, siz
 }
 
 CRYPTO_HELPER_FUNCTIONS(blowfish, EVP_bf_cbc, 8, copy_key)
+CRYPTO_HELPER_FUNCTIONS(fish, EVP_bf_ecb, 8, copy_key)
 CRYPTO_HELPER_FUNCTIONS(cast5, EVP_cast5_cbc, 8, copy_key)
 CRYPTO_HELPER_FUNCTIONS(aes, EVP_aes_256_cbc, 16, ext256_key)
 CRYPTO_HELPER_FUNCTIONS(aessha, EVP_aes_256_cbc, 16, sha256_key)

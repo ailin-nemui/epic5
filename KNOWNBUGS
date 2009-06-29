@@ -65,3 +65,9 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Fix /bind -defaults so it actually removes all keybindings first. doh.
 * Fix /window double so it actually shows you the current double status.
 * Make the expression error for too many operands output the expression.
+* Rewrite the iconv() configure checks to deal with libiconv's #define's.
+* Rewrite the strtoimax() tests so they don't fail lamely to detect (intmax_t)
+* Rewrite the perl and ruby runtime configure tests so they work right with gcc
+* Fix various warnings revealed by gcc warnings
+* Make a very preliminary attempt to write some fish decoding stuff. Not Ready!
+
