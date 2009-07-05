@@ -1,4 +1,4 @@
-/* $EPIC: ruby.c,v 1.13 2008/11/28 16:28:03 jnelson Exp $ */
+/* $EPIC: ruby.c,v 1.14 2009/07/05 04:29:44 jnelson Exp $ */
 /*
  * ruby.c -- Calling RUBY from epic.
  *
@@ -130,12 +130,21 @@ void ruby_startstop (int value)
 	rb_gc_register_address(&rubyclass);
 
 	/* XXX Is it a hack to do it like this instead of in pure C? */
+	rubyval = rb_eval_string("EPICstderr = Object.new unless defined? EPICstderr\n"
+                                 "def EPICstderr.write(string) \n"
+				 "   str = string.chomp \n"
+				 "   EPIC.echo(\"RUBY-ERROR: #{str}\") \n"
+				 "end \n"
+				 "$stderr = EPICstderr");
+	if (rubyval == Qnil)
+		say("stderr assignment returned Qnil");
+
 	rubyval = rb_eval_string("EPICstdout = Object.new unless defined? EPICstdout\n"
                                  "def EPICstdout.write(string) \n"
-				 "   string.chomp! \n"
-				 "   EPIC.echo(\"RUBY-ERROR: #{string}\") \n"
+				 "   str = string.chomp \n"
+				 "   EPIC.echo(str) \n"
 				 "end \n"
-				 "$stderr = EPICstdout");
+				 "$stdout = EPICstdout");
 	if (rubyval == Qnil)
 		say("stderr assignment returned Qnil");
 }

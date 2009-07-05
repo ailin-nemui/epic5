@@ -1,4 +1,4 @@
-/* $EPIC: ctcp.c,v 1.58 2008/06/23 21:25:03 jnelson Exp $ */
+/* $EPIC: ctcp.c,v 1.59 2009/07/05 04:29:44 jnelson Exp $ */
 /*
  * ctcp.c:handles the client-to-client protocol(ctcp). 
  *
@@ -134,6 +134,9 @@ static CtcpEntry ctcp_cmd[] =
 		do_crypto, 	do_crypto},
 	{ "BLOWFISH-CBC",	CTCP_BLOWFISH,	CTCP_INLINE | CTCP_NOLIMIT,
 		"transmit blowfish-cbc ciphertext",
+		do_crypto, 	do_crypto },
+	{ "FISH",		CTCP_FISH,	CTCP_INLINE | CTCP_NOLIMIT,
+		"transmit FiSH (blowfish-ecb with sha256'd key) ciphertext",
 		do_crypto, 	do_crypto },
 	{ "SED",		CTCP_SED, 	CTCP_INLINE | CTCP_NOLIMIT,
 		"transmit simple_encrypted_data ciphertext",

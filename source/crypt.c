@@ -1,4 +1,4 @@
-/* $EPIC: crypt.c,v 1.35 2007/06/02 01:19:13 jnelson Exp $ */
+/* $EPIC: crypt.c,v 1.36 2009/07/05 04:29:44 jnelson Exp $ */
 /*
  * crypt.c: The /ENCRYPT command and all its attendant baggage.
  *
@@ -65,13 +65,14 @@ struct ciphertypes ciphers[] = {
    { BLOWFISHCRYPT,  CTCP_BLOWFISH,  "-BLOWFISH", "BLOWFISH", "BLOWFISH-CBC"  },
    { AES256CRYPT,    CTCP_AES256,    "-AES",	  "AES",      "AES256-CBC"    },
    { AESSHA256CRYPT, CTCP_AESSHA256, "-AESSHA",   "AES+SHA",  "AESSHA256-CBC" },
+   { FISHCRYPT,	     CTCP_FISH,	     "-FISH",     "FISH",     "BLOWFISHSHA-EBC" },
 #endif
    { NOCRYPT,        -1,	       NULL,       NULL,       NULL           }
 };
 
 /* XXX sigh XXX */
 #ifdef HAVE_SSL
-const char *allciphers = "SED, SEDSHA, CAST, BLOWFISH, AES or AESSHA";
+const char *allciphers = "SED, SEDSHA, CAST, BLOWFISH, FISH, AES or AESSHA";
 #else
 const char *allciphers = "SED or SEDSHA (sorry, no SSL support)";
 #endif
@@ -109,7 +110,7 @@ static void	add_to_crypt (Char *nick, Char *serv, Char *key, Char *prog, int typ
 
 	/* Fill in the 'key' field. */
 	if (type == AES256CRYPT || type == AESSHA256CRYPT || 
-		type == SEDSHACRYPT)
+		type == SEDSHACRYPT || type == FISHCRYPT)
 	{
 		if (new_crypt->key == NULL)
 			new_crypt->key = new_malloc(32);
@@ -511,12 +512,11 @@ const char *	happykey (const char *key, int type)
 	{
 		int	i;
 		for (i = 0; i < 32; i++)		/* XXX */
-		    snprintf(prettykey + (i * 2), 3, "%2.2X", (unsigned)(unsigned char)key[i]);
+		    snprintf(prettykey + (i * 2), 3, "%2.2X", 
+				(unsigned)(unsigned char)key[i]);
 	}
 	else
-	{
 		strlcpy(prettykey, key, sizeof(prettykey));
-	}
 
 	return prettykey;
 }

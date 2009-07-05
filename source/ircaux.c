@@ -1,4 +1,4 @@
-/* $EPIC: ircaux.c,v 1.204 2009/06/29 19:30:33 jnelson Exp $ */
+/* $EPIC: ircaux.c,v 1.205 2009/07/05 04:29:44 jnelson Exp $ */
 /*
  * ircaux.c: some extra routines... not specific to irc... that I needed 
  *
@@ -5089,6 +5089,133 @@ static ssize_t	enc_decoder (const char *orig, size_t orig_len, const void *meta,
         return dest_i;
 }
 
+
+/**********************************************************************/
+static char fish64_chars[] =
+    "./0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
+
+/*
+ * Convert 4 bytes (32 bits) into 6 FiSH64 (printable) characters.
+ *
+ * Taking the 32 bits, append to the left 4 zero bits, and chop it up into
+ * six 6-bit groupings.  Working RIGHT TO LEFT, convert each grouping into 
+ * a FiSH64 printable character.  Thus, the first character is the low 6 
+ * bits of the 4th character, and the final character is the high 2 bits of
+ * the first character.
+ *
+ * XXX What do i do if the buffer is short?
+ */
+static size_t	bin32_to_fish64 (uint32_t packet, char *output, size_t *outputlen)
+{
+	if (*outputlen < 6)
+		return 0;
+
+	output[0] = fish64_chars[ packet & 0x0000003fL		];
+	output[1] = fish64_chars[(packet & 0x00000fc0L) >> 6	];
+	output[2] = fish64_chars[(packet & 0x0003f000L) >> 12	];
+	output[3] = fish64_chars[(packet & 0x00fc0000L) >> 18	];
+	output[4] = fish64_chars[(packet & 0x3f000000L) >> 24	];
+	output[5] = fish64_chars[(packet & 0xc0000000L) >> 30	];
+	return 6;
+}
+
+/*
+ * Convert 8 bytes (64 bits) into 12 FiSH64 (printable) characters.
+ *
+ * Chop the 64 bits into two 32-bit blocks, and encode them RIGHT TO LEFT,
+ * so the first character is the low 6 bits of the 8th byte, and the sixth
+ * character is the high 2 bits of the 5th byte; and the seventh character
+ * is the low 6 bits of the 4th byte, and the twelfth character is the high
+ * 2 bits of the 1st byte.  Got it?
+ */
+static size_t	char8_to_fish64 (const char *input, size_t inputlen, char *output, size_t *outputlen)
+{
+	uint32_t left, right;
+	size_t	retval = 0;
+
+	if (*outputlen < 12)
+		return 0;
+
+	if (inputlen >= 8)
+	{
+		left = *(const uint32_t *)input;
+		right = *(const uint32_t *)(input + 4);
+	}
+	else
+	{
+		left = right = 0;
+	}
+	retval += fish64_word(right, output, outputlen);
+	retval += fish64_word(left, output + 6, outputlen - 6);
+	*outputlen -= 12;
+	return retval;
+}
+
+/*
+ * Convert binary data into printable text compatable with FiSH ("FiSH64").
+ *
+ * Convert the input buffer into 8 byte (64 bit) chunks and encode them into
+ * 12 output bytes using char8_to_fish64.
+ */
+static ssize_t	fish64_encoder (const char *orig, size_t orig_len, const void *meta, size_t meta_len, char *dest, size_t dest_len)
+{
+	const char *p;
+
+/*
+	for (p = orig; orig_len > ; )
+
+	return b64_general_encoder(orig, orig_len, meta, meta_len, dest, dest_len, fish64_chars);
+*/
+}
+
+/* * * * */
+/*
+ * Convert the first six characters of the input string into 4 bytes (32 bits)
+ * XXX What do i do if the string is short?
+ */
+static uint32_t	fish64_to_bin32 (const char *radix, size_t *radixlen)
+{
+	uint32_t retval = 0;
+	int	i = 0;
+	char *	p;
+
+	for (i = 0; i <= 5; i++)
+	{
+		if (radix[i] == 0)
+			break;
+		if ((p = strchr(fish64_chars, (int)radix[i])))
+			retval |= (p - fish64_chars) << (i * 6);
+	}
+
+	return retval;
+}
+
+/*
+ * Convert fish64 data back into binary data.
+ */
+static size_t	fish64_to_char8 (const char *input, size_t *inputlen, char *output, size_t *outputlen)
+{
+	uint32_t	left, right;
+
+	right = left = 0;
+
+	if (*inputlen > 6)
+		right = fish64_to_bin32(input, inputlen);
+	*inputlen -= 6;
+	if (*inputlen > 6)
+		left = fish64_to_bin32(input + 6, inputlen);
+	memcpy(output, &left, 4);
+	memcpy(output + 4, &right, 4);
+	return 12;
+}
+
+static ssize_t	fish64_decoder (const char *orig, size_t orig_len, const void *meta, size_t meta_len, char *dest, size_t dest_len)
+{
+	/* iterate over orig */
+	return fish64_to_char8(orig, &orig_len, dest, &dest_len);
+}
+
+/*****************************************************************************/
 /* Begin BSD licensed code */
 /*
  * Copyright (c) 1995-2001 Kungliga Tekniska Högskolan
@@ -5099,8 +5226,6 @@ static ssize_t	enc_decoder (const char *orig, size_t orig_len, const void *meta,
  */
 static char base64_chars[] =
     "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
-static char fish64_chars[] =
-    "./0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
 
 static int      posfunc (const char *base, char c)
 {
@@ -5110,61 +5235,6 @@ static int      posfunc (const char *base, char c)
             return p - base;
     return -1;
 }
-
-static ssize_t	base64_32bit_encoder (const char *orig, size_t orig_len, const void *meta, size_t meta_len, char *dest, size_t dest_len, const char *base)
-{
-	size_t	orig_i, dest_i;
-	ssize_t	count = 0;
-
-        if (!orig || !dest)
-                return -1;
-
-	if (orig_len == 0)
-		orig_len = strlen(orig);
-	dest_i = 0;
-	for (orig_i = 0; orig_i < orig_len; )
-	{
-	    /* Convert the first four bytes of 'orig' into 'c' */
-	    unsigned	c = (unsigned)(unsigned char)orig[orig_i];
-	    c *= 256;
-	    if (orig_i+1 < orig_len)
-		c += (unsigned)(unsigned char)orig[orig_i+1];
-	    c *= 256;
-	    if (orig_i+2 < orig_len)
-		c += (unsigned)(unsigned char)orig[orig_i+2];
-	    c *= 256;
-	    if (orig_i+3 < orig_len)
-		c += (unsigned)(unsigned char)orig[orig_i+3];
-
-	    /* Convert the first 30 bits to 5 radix bytes */
-	    if (dest_i < dest_len)
-		dest[dest_i]   = base[(c & 0xfc000000) >> 26];
-	    if (dest_i+1 < dest_len)
-		dest[dest_i+1] = base[(c & 0x03f00000) >> 20];
-	    if (dest_i+2 < dest_len)
-		dest[dest_i+2] = base[(c & 0x000fc000) >> 14];
-	    if (dest_i+3 < dest_len)
-		dest[dest_i+3] = base[(c & 0x00003f00) >> 8];
-	    if (dest_i+4 < dest_len)
-		dest[dest_i+4] = base[(c & 0x000000fc) >> 2];
-	    if (dest_i+5 < dest_len)
-		dest[dest_i+5] = base[(c & 0x00000003) >> 0];
-
-	    if (orig_i+2 >= orig_len && dest_i + 6 < dest_len)
-		dest[dest_i+6] = '=';
-	    if (orig_i+1 >= orig_len && dest_i + 7 < dest_len)
-		dest[dest_i+7] = '=';
-
-	    dest_i += 4;
-	    orig_i += 3;
-	}
-	if (dest_i >= dest_len)
-		dest_i = dest_len - 1;
-	dest[dest_i] = 0;
-        return dest_i;
-
-}
-
 
 static ssize_t	b64_general_encoder (const char *orig, size_t orig_len, const void *meta, size_t meta_len, char *dest, size_t dest_len, const char *base)
 {
@@ -5215,10 +5285,6 @@ static ssize_t	b64_encoder (const char *orig, size_t orig_len, const void *meta,
 	return b64_general_encoder(orig, orig_len, meta, meta_len, dest, dest_len, base64_chars);
 }
 
-static ssize_t	fish64_encoder (const char *orig, size_t orig_len, const void *meta, size_t meta_len, char *dest, size_t dest_len)
-{
-	return b64_general_encoder(orig, orig_len, meta, meta_len, dest, dest_len, fish64_chars);
-}
 
 #define DECODE_ERROR 0xFFFFFFFF
 static unsigned int     token_decode (const char *base, const char *token)
@@ -5288,10 +5354,6 @@ static ssize_t	b64_decoder (const char *orig, size_t orig_len, const void *meta,
 	return b64_general_decoder(orig, orig_len, meta, meta_len, dest, dest_len, base64_chars);
 }
 
-static ssize_t	fish64_decoder (const char *orig, size_t orig_len, const void *meta, size_t meta_len, char *dest, size_t dest_len)
-{
-	return b64_general_decoder(orig, orig_len, meta, meta_len, dest, dest_len, fish64_chars);
-}
 /* End BSD licensed stuff (see compat.c!) */
 
 static ssize_t	sed_encoder (const char *orig, size_t orig_len, const void *meta, size_t meta_len, char *dest, size_t dest_len)
@@ -5632,7 +5694,9 @@ struct Transformer default_transformers[] = {
 {	0,	"URL",		0,	url_encoder,	url_decoder	},
 {	0,	"ENC",		0,	enc_encoder,	enc_decoder	},
 {	0,	"B64",		0,	b64_encoder,	b64_decoder	},
+/*
 {	0,	"FISH64",	0,	fish64_encoder,	fish64_decoder	},
+*/
 {	0,	"SED",		1,	sed_encoder,	sed_decoder	},
 {	0,	"CTCP",		0,	ctcp_encoder,	ctcp_decoder	},
 {	0,	"NONE",		0,	null_encoder,	null_encoder	},
@@ -5643,6 +5707,9 @@ struct Transformer default_transformers[] = {
 {	0,	"CAST",		1,	cast5_encoder,	cast5_decoder	},
 {	0,	"AES",		1,	aes_encoder,	aes_decoder	},
 {	0,	"AESSHA",	1,	aessha_encoder,	aessha_decoder	},
+/*
+{	0,	"FISH",		1,	fish_encoder,	fish_decoder },
+*/
 #endif
 #ifdef HAVE_ICONV
 {	0,	"ICONV",	1,	iconv_recoder, iconv_recoder },

@@ -1,4 +1,4 @@
-/* $EPIC: crypto.c,v 1.14 2009/06/29 19:30:33 jnelson Exp $ */
+/* $EPIC: crypto.c,v 1.15 2009/07/05 04:29:44 jnelson Exp $ */
 /*
  * crypto.c: SED/CAST5/BLOWFISH/AES encryption and decryption routines.
  *
@@ -177,7 +177,8 @@ unsigned char *	decipher_message (const unsigned char *ciphertext, size_t len, C
     do
     {
 	if (key->type == CAST5CRYPT || key->type == BLOWFISHCRYPT ||
-	    key->type == AES256CRYPT || key->type == AESSHA256CRYPT)
+	    key->type == AES256CRYPT || key->type == AESSHA256CRYPT ||
+	    key->type == FISHCRYPT)
 	{
 	    unsigned char *	outbuf = NULL;
 #ifdef HAVE_SSL
@@ -189,7 +190,7 @@ unsigned char *	decipher_message (const unsigned char *ciphertext, size_t len, C
 	    {
 		blocksize = 8;
 	    }
-	    else if (key->type == BLOWFISHCRYPT)
+	    else if (key->type == BLOWFISHCRYPT || key->type == FISHCRYPT)
 	    {
 		blocksize = 8;
 	    }
@@ -217,6 +218,8 @@ unsigned char *	decipher_message (const unsigned char *ciphertext, size_t len, C
 		type = EVP_cast5_cbc();
 	    else if (key->type == BLOWFISHCRYPT)
 		type = EVP_bf_cbc();
+	    else if (key->type == FISHCRYPT)
+		type = EVP_bf_ecb();
 	    else if (key->type == AES256CRYPT || key->type == AESSHA256CRYPT)
 		type = EVP_aes_256_cbc();
 	    else
@@ -356,6 +359,7 @@ unsigned char *	cipher_message (const unsigned char *orig_message, size_t len, C
 		return NULL;
 
 	if (key->type == CAST5CRYPT || key->type == BLOWFISHCRYPT ||
+	    key->type == FISHCRYPT ||
 	    key->type == AES256CRYPT || key->type == AESSHA256CRYPT)
 	{
 	    unsigned char *ciphertext = NULL;
@@ -371,6 +375,11 @@ unsigned char *	cipher_message (const unsigned char *orig_message, size_t len, C
 	    else if (key->type == BLOWFISHCRYPT)
 	    {
 		type = EVP_bf_cbc();
+		ivlen = 8;
+	    }
+	    else if (key->type == FISHCRYPT)
+	    {
+		type = EVP_bf_ecb();
 		ivlen = 8;
 	    }
 	    else if (key->type == AES256CRYPT || key->type == AESSHA256CRYPT)

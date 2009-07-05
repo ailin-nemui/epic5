@@ -18,6 +18,7 @@
 #define BLOWFISHCRYPT	4
 #define AES256CRYPT	5
 #define AESSHA256CRYPT	6
+#define FISHCRYPT	7
 
 /*
  * Crypt: the crypt list structure,  consists of the nickname, and the
@@ -54,6 +55,8 @@ typedef struct	CryptStru
 	ssize_t aes_decoder (const char *, size_t, const void *, size_t, char *, size_t);
 	ssize_t aessha_encoder (const char *, size_t, const void *, size_t, char *, size_t);
 	ssize_t aessha_decoder (const char *, size_t, const void *, size_t, char *, size_t);
+	ssize_t fish_encoder (const char *, size_t, const void *, size_t, char *, size_t);
+	ssize_t fish_decoder (const char *, size_t, const void *, size_t, char *, size_t);
 #endif
 
 	void     encrypt_sed (unsigned char *, int, const unsigned char *, int);
