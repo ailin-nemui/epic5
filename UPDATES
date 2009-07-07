@@ -1,5 +1,12 @@
 EPIC5-1.0.1
 
+*** News 07/06/2009 -- The Fish64 xform actually works now (see below)
+	The first implementation of FISH64 was not actually, to be technical,
+	compatable with FiSH.  It is a strange thing and it took me a while
+	to come up with an implementation of it that doesn't depend on how
+	bits are stored in integers.  I have actually tested it against the
+	real life FiSH implementation and it's correct now.
+
 *** News 06/17/2009 -- New $xform, "FISH64"
 	The FISH64 transform performs base64 encoding that is compatable
 	with FiSH.  Fish64 uses the same algorithm as base64, but it uses

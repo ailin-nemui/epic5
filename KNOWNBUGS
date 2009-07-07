@@ -17,17 +17,6 @@ KNOWN ERRATA (eg, bugs, or unresolved requests):
 	*!*user@*.com.au but instead *!*user@*.domain.com.au
 * The FiSH cipher will be EVP_bf_ecb(void) with an SHA256 key.
   (FiSH == BLOWFISH_ECB_SHA)
-* FiSH64 doesn't actually do a streaming base64, 
-  Whereas base64 digits hold 6 bits of information, making a sync point 
-  every 24 bits (3 bytes), FiSH has an additional sync point at 32 bits
-  (in the middle of the 6th digit) and then starts a new 7th digit at
-  bit 33.
-   -------| |---------| |---------| |---------| |---------| |---------|
-        3 3 2 2 2 2 2 2 2 2 2 2 1 1 1 1 1 1 1 1 1 1
-        1 0 9 8 7 6 5 4 3 2 1 0 9 8 7 6 5 4 3 2 1 0 9 8 7 6 5 4 3 2 1 0
-  -b64-6--| |--b64-5--| |--b64-4--| |--b64-3--| |--b64-2--| |--b64-1--|
-  Whereas Base64 does 3 bytes -> 4 bytes
-  FiSH64 does 6 digits (48 bits) -> 4 raw bytes (32 bits), twice
 * There should be a watch to check for the validity of a $connect() 
   by working directly off the fd instead of the port (user) and host (desc)
 * enquote_it and dequote_it (ctcp) users need to migrate to the xforms.
@@ -85,4 +74,5 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * I took the "fish64" entry out of $xform() for now while it's broken.
 * Capture stdout of ruby scripts and send it to an epic window. yay!
 * This means you can do regular old 'puts' in ruby script and it'll Just Work.
-
+* Finish $xform() for +fish64 and -fish64, verified against actual FiSH code
+* Try to make the perl configure check more robust for non-working perls.

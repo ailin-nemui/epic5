@@ -4,9 +4,9 @@ dnl except those bits attributed otherwise.
 dnl thanks to the screen 3.3 configure.in for giving me examples to
 dnl work from and steal ;)
 dnl
-dnl @(#)$Id: configure.in,v 1.80 2009/07/05 04:29:43 jnelson Exp $
+dnl @(#)$Id: configure.in,v 1.81 2009/07/07 04:35:04 jnelson Exp $
 
-AC_REVISION($Revision: 1.80 $)dnl
+AC_REVISION($Revision: 1.81 $)dnl
 AC_INIT(source/irc.c)
 AC_CONFIG_HEADER(include/defs.h)
 
@@ -984,6 +984,8 @@ int startup_perl(int argc, char **argv, char **env)
 			AC_DEFINE(PERLLDFLAGS)
 			PERLDOTOH="perl.o"
 		else
+			PERLCFLAGS=""
+			PERLLDFLAGS=""
 			AC_MSG_RESULT(no, sorry)
 		fi
 	fi

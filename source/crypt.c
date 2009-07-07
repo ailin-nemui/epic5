@@ -1,4 +1,4 @@
-/* $EPIC: crypt.c,v 1.36 2009/07/05 04:29:44 jnelson Exp $ */
+/* $EPIC: crypt.c,v 1.37 2009/07/07 04:35:04 jnelson Exp $ */
 /*
  * crypt.c: The /ENCRYPT command and all its attendant baggage.
  *
@@ -65,14 +65,14 @@ struct ciphertypes ciphers[] = {
    { BLOWFISHCRYPT,  CTCP_BLOWFISH,  "-BLOWFISH", "BLOWFISH", "BLOWFISH-CBC"  },
    { AES256CRYPT,    CTCP_AES256,    "-AES",	  "AES",      "AES256-CBC"    },
    { AESSHA256CRYPT, CTCP_AESSHA256, "-AESSHA",   "AES+SHA",  "AESSHA256-CBC" },
-   { FISHCRYPT,	     CTCP_FISH,	     "-FISH",     "FISH",     "BLOWFISHSHA-EBC" },
+   { FISHCRYPT,	     -1,	     NULL,	  "FiSH",     "BLOWFISH-EBC"  },
 #endif
    { NOCRYPT,        -1,	       NULL,       NULL,       NULL           }
 };
 
 /* XXX sigh XXX */
 #ifdef HAVE_SSL
-const char *allciphers = "SED, SEDSHA, CAST, BLOWFISH, FISH, AES or AESSHA";
+const char *allciphers = "SED, SEDSHA, CAST, BLOWFISH, AES or AESSHA";
 #else
 const char *allciphers = "SED or SEDSHA (sorry, no SSL support)";
 #endif
@@ -110,7 +110,7 @@ static void	add_to_crypt (Char *nick, Char *serv, Char *key, Char *prog, int typ
 
 	/* Fill in the 'key' field. */
 	if (type == AES256CRYPT || type == AESSHA256CRYPT || 
-		type == SEDSHACRYPT || type == FISHCRYPT)
+		type == SEDSHACRYPT)
 	{
 		if (new_crypt->key == NULL)
 			new_crypt->key = new_malloc(32);
