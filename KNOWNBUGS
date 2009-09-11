@@ -76,3 +76,5 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * This means you can do regular old 'puts' in ruby script and it'll Just Work.
 * Finish $xform() for +fish64 and -fish64, verified against actual FiSH code
 * Try to make the perl configure check more robust for non-working perls.
+* Start a project to convert things to use transform_string().
+* Fix show_lastlog() to return the rewritten result (so -mangle works)

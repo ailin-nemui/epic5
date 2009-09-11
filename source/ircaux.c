@@ -1,4 +1,4 @@
-/* $EPIC: ircaux.c,v 1.206 2009/07/07 04:35:04 jnelson Exp $ */
+/* $EPIC: ircaux.c,v 1.207 2009/09/11 01:42:14 jnelson Exp $ */
 /*
  * ircaux.c: some extra routines... not specific to irc... that I needed 
  *
@@ -3308,98 +3308,6 @@ unsigned long	random_number (unsigned long l)
 	}
 }
 
-#if 0
-/*
- * urlencode: converts non-alphanumeric characters to hexidecimal codes
- * Contributed by SrFrog
- */
-char *	urlencode (const char *s)
-{
-	static const char safe[] = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
-				   "abcdefghijklmnopqrstuvwxyz"
-				   "0123456789-._~";
-#if 0
-	static const char unsafe[] = "`'!@#$%^&*(){}<>~|\\\";? ,/+";
-#endif
-	static const char hexnum[] = "0123456789ABCDEF";
-	const char *p1;
-	char *	p2;
-	size_t	len;
-	char *	retval;
-
-	if (!s || !*s)
-		return NULL;
-
-	len = strlen(s);
-	retval = new_malloc(len * 3 + 1);
-
-	for (p1 = s, p2 = retval; *p1; p1++)
-	{
-		if (!strchr(safe, *p1))
-		{
-			unsigned c = (unsigned)(unsigned char)*p1;
-
-			*p2++ = '%';
-			*p2++ = hexnum[c >> 4];
-			*p2++ = hexnum[c & 0x0f];
-		}
-		else
-			*p2++ = *p1;
-	}
-	*p2 = 0;
-
-	return retval;
-}
-
-#define XTOI(x) 					\
-( 							\
-	((x) >= '0' && (x) <= '9') 			\
-		? ((x) - '0') 				\
-		: ( ((x) >= 'A' && (x) <= 'F')		\
-		    ? (((x) - 'A') + 10) 		\
-		    : ( ((x) >= 'a' && (x) <= 'f')	\
-			?  (((x) - 'a') + 10)		\
-			: -1				\
-		      )					\
-		  )					\
-)
-
-char *	urldecode (char *s, size_t *length)
-{
-	const char *p1;
-	char *	p2;
-	size_t	len;
-	char *	retval;
-	int	val1;
-	int	val2;
-
-	if (!s || !*s)
-		return NULL;
-
-	len = length ? *length : strlen(s);
-	retval = alloca(len + 1);
-
-	for (p1 = s, p2 = retval; len--; p1++, p2++)
-	{
-		if (*p1 == '%' && len >= 2 &&
-		    (((val1 = XTOI(p1[1])) != -1) &&
-		     ((val2 = XTOI(p1[2])) != -1)))
-		{
-			p1++, p1++;
-			len--, len--;
-			*p2 = (val1 << 4) | val2;
-		}
-		else
-			*p2 = *p1;
-	}
-
-	*p2 = 0;
-	if (length)
-		*length = p2 - retval;
-	return memcpy(s, retval, p2 - retval + 1);
-}
-#endif
-
 /*
  * quote_it: This quotes the given string making it sendable via irc.  A
  * pointer to the length of the data is required and the data need not be
@@ -4933,6 +4841,7 @@ char *	fix_string_width (const char *orig_str, int justify, char fillchar, size_
 
 /****************************************************************************/
 
+/* Based in whole or in part on code contributed by SrFrOg in 1999 */
 static ssize_t	url_encoder (const char *orig, size_t orig_len, const void *meta, size_t meta_len, char *dest, size_t dest_len)
 {
 	static const char safe[] = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
@@ -4993,6 +4902,7 @@ static ssize_t	url_encoder (const char *orig, size_t orig_len, const void *meta,
                   )                                     \
 )
 
+/* Based in whole or in part on code contributed by SrFrOg in 1999 */
 static ssize_t	url_decoder (const char *orig, size_t orig_len, const void *meta, size_t meta_len, char *dest, size_t dest_len)
 {
 	size_t	orig_i, dest_i;
@@ -5200,6 +5110,9 @@ static ssize_t	fish64_encoder (const char *orig, size_t orig_len, const void *me
 	 * Remember, this is the number of output bytes, which is
 	 * always a multiple of 12.  FiSH demands no less.
 	 */
+	if (ob >= dest_len)
+		ob = dest_len - 1;
+	dest[ob] = 0;
 	return ob;
 }
 
@@ -5838,9 +5751,7 @@ struct Transformer default_transformers[] = {
 {	0,	"CAST",		1,	cast5_encoder,	cast5_decoder	},
 {	0,	"AES",		1,	aes_encoder,	aes_decoder	},
 {	0,	"AESSHA",	1,	aessha_encoder,	aessha_decoder	},
-/*
 {	0,	"FISH",		1,	fish_encoder,	fish_decoder },
-*/
 #endif
 #ifdef HAVE_ICONV
 {	0,	"ICONV",	1,	iconv_recoder, iconv_recoder },

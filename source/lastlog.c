@@ -1,4 +1,4 @@
-/* $EPIC: lastlog.c,v 1.79 2009/06/18 04:42:58 jnelson Exp $ */
+/* $EPIC: lastlog.c,v 1.80 2009/09/11 01:42:14 jnelson Exp $ */
 /*
  * lastlog.c: handles the lastlog features of irc. 
  *
@@ -62,7 +62,7 @@ typedef struct	lastlog_stru
 
 static	intmax_t global_lastlog_refnum = 0;
 
-static int	show_lastlog (Lastlog **l, int *skip, int *number, Mask *level_mask, char *match, regex_t *rex, int *max, const char *target, int mangler, unsigned winref);
+static int	show_lastlog (Lastlog **l, int *skip, int *number, Mask *level_mask, char *match, regex_t *rex, int *max, const char *target, int mangler, unsigned winref, char **);
 static int	oldest_lastlog_for_window (Lastlog **item, unsigned winref);
 static int	newer_lastlog_entry (Lastlog **item, unsigned winref);
 static int	older_lastlog_entry (Lastlog **item, unsigned winref);
@@ -678,8 +678,11 @@ BUILT_IN_COMMAND(lastlog)
 	    lastshown = NULL;
 	    for (l = start; l; (void)(l && (l = l->newer)))
 	    {
+		char *result = NULL;
+
 		if (show_lastlog(&l, &skip, &number, &level_mask, 
-				match, rex, &max, target, mangler, winref))
+				match, rex, &max, target, mangler, winref,
+				&result))
 		{
 		    if (counter == 0 && before > 0)
 		    {
@@ -726,14 +729,14 @@ BUILT_IN_COMMAND(lastlog)
 						(long)l->winref,
 						(long)l->level,
 						l->target?l->target:".",
-						l->msg?l->msg:".");
+						result?result:".");
 
 				n = expand_alias(rewrite, vitals);
 				file_put_it(outfp, "%s", n);
 				new_free(&n);
 			}
 			else
-				file_put_it(outfp, "%s", l->msg);
+				file_put_it(outfp, "%s", result);
 
 			lastshown = l;
 			counter--;
@@ -741,6 +744,7 @@ BUILT_IN_COMMAND(lastlog)
 				show_separator = 1;
 		}
 
+		new_free(&result);
 		if (l == end)
 			break;
 	    }
@@ -765,8 +769,11 @@ BUILT_IN_COMMAND(lastlog)
 	    lastshown = NULL;
 	    for (l = start; l; (void)(l && (l = l->older)))
 	    {
+		char *result = NULL;
+
 		if (show_lastlog(&l, &skip, &number, &level_mask, 
-				match, rex, &max, target, mangler, winref))
+				match, rex, &max, target, mangler, winref,
+				&result))
 		{
 		    if (counter == 0 && before > 0)
 		    {
@@ -812,20 +819,21 @@ BUILT_IN_COMMAND(lastlog)
 						(long)l->winref,
 						(long)l->level,
 						l->target?l->target:".",
-						l->msg?l->msg:".");
+						result?result:".");
 
 				n = expand_alias(rewrite, vitals);
 				file_put_it(outfp, "%s", n);
 				new_free(&n);
 			}
 			else
-				file_put_it(outfp, "%s", l->msg);
+				file_put_it(outfp, "%s", result);
 
 			lastshown = l;
 			counter--;
 			if (counter == 0 && before != -1 && separator)
 				show_separator = 1;
 		}
+		new_free(&result);
 		if (l == end)
 			break;
 	    }
@@ -846,9 +854,10 @@ bail:
  * This returns 1 if the current item pointed to by 'l' is something that
  * should be displayed based on the criteron provided.
  */
-static int	show_lastlog (Lastlog **l, int *skip, int *number, Mask *level_mask, char *match, regex_t *rex, int *max, const char *target, int mangler, unsigned winref)
+static int	show_lastlog (Lastlog **l, int *skip, int *number, Mask *level_mask, char *match, regex_t *rex, int *max, const char *target, int mangler, unsigned winref, char **result)
 {
 	const char *str = NULL;
+	*result = NULL;
 
 	if ((*l)->winref != winref)
 	{
@@ -922,6 +931,7 @@ static int	show_lastlog (Lastlog **l, int *skip, int *number, Mask *level_mask, 
 	if (*max > 0)
 		(*max)--;	/* Have not yet shown max number of matches */
 
+	(*result) = malloc_strdup(str);
 	return 1;		/* Show it! */
 }
 

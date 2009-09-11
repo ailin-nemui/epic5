@@ -1,4 +1,4 @@
-/* $EPIC: functions.c,v 1.280 2009/06/18 04:42:58 jnelson Exp $ */
+/* $EPIC: functions.c,v 1.281 2009/09/11 01:42:14 jnelson Exp $ */
 /*
  * functions.c -- Built-in functions for ircII
  *
@@ -2876,41 +2876,102 @@ BUILT_IN_FUNCTION(function_split, word)
 	RETURN_STR(word);
 }
 
+/*
+ * This function converts an input word list into a string, where each word
+ * of the input string must be a cardinal number in base 10 (0-255) or base 16
+ * (0x00-0xFF -- including the leading "0x"!).  The output string is the 
+ * sequence of bytes represented by the catenation of each of these cardinal
+ * numbers.
+ *
+ * An invalid input word will be converted to 0 by my_atol() which results in
+ * a zero byte, which terminates the string.  Therefore, any invalid word
+ * in the input implicitly ends the return value.  You should not depend on
+ * this behavior because in the future invalid words may be skipped rather than
+ * converted to nul bytes.
+ *
+ * Example:
+ * $chr(104 105 33) returns "hi!"
+ */
 BUILT_IN_FUNCTION(function_chr, word)
 {
 	char *aboo = NULL;
 	char *ack;
 	char *blah;
+	size_t	bytes = 0;
+	size_t	cnt;
 
-	aboo = new_malloc(count_words(word, DWORD_DWORDS, "\"") + 1);
-	ack = aboo;
+	cnt = count_words(word, DWORD_DWORDS, "\"");
+	ack = aboo = new_malloc(cnt + 1);
 
 	while ((blah = next_func_arg(word, &word)))
+	{
 		*ack++ = (char)my_atol(blah);
+		if (bytes++ >= cnt)
+			break;
+	}
 
-	*ack = '\0';
+	*ack = 0;
 	RETURN_MSTR(aboo);
 }
 
+/*
+ * This function converts an input word list into a string, where each word
+ * of the input string must be a cardinal number in base 10 (0-255) or base 16
+ * (0x00-0xFF -- including the leading "0x"!).  The output string is the CTCP
+ * ENQUOTED  sequence of bytes represented by the catenation of each of these 
+ * cardinal numbers.
+ *
+ * An invalid input word will be converted to 0 by my_atol() which results in
+ * a zero byte.  You should not depend on this behavior because in the future 
+ * invalid words may be skipped rather than converted to nul bytes.
+ *
+ * Example:
+ * $chr(104 105 33 0 134 104 105 33 0) returns "hi\0\\hi!\0"
+ *	because the string undergoes CTCP QUOTING before being returned.
+ */
 BUILT_IN_FUNCTION(function_chrq, word)
 {
 	char *aboo = NULL;
 	char *ack;
 	char *blah;
+	size_t	cnt;
+	size_t  length,
+		retsize;
+	char    *ret;
+	int     transform,
+		numargs;
+	size_t	bytes = 0;
 
-	aboo = new_malloc(count_words(word, DWORD_DWORDS, "\"") + 1);
-	ack = aboo;
+	cnt = count_words(word, DWORD_DWORDS, "\"");
+	ack = aboo = new_malloc(cnt + 1);
 	
 	while ((blah = next_func_arg(word, &word)))
+	{
 		*ack++ = (char)my_atol(blah);
+		if (bytes++ >= cnt)
+			break;
+	}
+	*ack = 0;
 
-	*ack = '\0';
-	ack = enquote_it(aboo, ack-aboo);
+	retsize = bytes * 2 + 2;
+	ret = new_malloc(retsize);
+	transform = lookup_transform("URL", &numargs);
+	/* Transform 'aboo' -> +URL -> 'ret' */
+	length = transform_string(transform, 1, NULL,
+				  aboo, bytes, ret, retsize);
 	new_free(&aboo);
 
-	RETURN_MSTR(ack);
+	RETURN_MSTR(ret);
 }
 
+/*
+ * This function converts an input string into a word list, where each byte
+ * of the input string is converted to a cardinal number in base 10 (0-255)
+ * and the return value is a word list of such cardinal numbers.
+ *
+ * Example:
+ * $ascii(hi!) returns "104 105 33"
+ */
 BUILT_IN_FUNCTION(function_ascii, word)
 {
 	char *aboo = NULL;
@@ -2925,6 +2986,18 @@ BUILT_IN_FUNCTION(function_ascii, word)
 	return aboo;
 }
 
+/*
+ * This function converts a CTCP ENCODED input string into a word list, where
+ * each byte of the input string is converted to a cardinal number in base 10
+ * (0-255) and the return value is a word list of such cardinal numbers.
+ *
+ * Example:
+ * $ascii(hi!) returns "104 105 33"   of course
+ * $ascii(hi!\0\\hi!\0)  returns "104 105 33 0 134 104 105 33 0"
+ *	because the string undergoes CTCP DEQUOTING first.
+ *	-- Be careful: the CTCP QUOTE character (\) is the same as ircII's
+ *	   quote character, so you can quickly get into quoting hell here.
+ */
 BUILT_IN_FUNCTION(function_asciiq, word)
 {
 	char	*aboo = NULL, *free_it;
@@ -5858,22 +5931,6 @@ BUILT_IN_FUNCTION(function_insert, word)
 	malloc_strcat2(&result, inserted, word + where);
 	return result;				/* DONT USE RETURN_STR HERE! */
 }
-
-#if 0
-/* Submitted by srfrog, August 11, 1999 */
-BUILT_IN_FUNCTION(function_urlencode, input)
-{
-	char *retval = urlencode(input);
-	RETURN_MSTR(retval);
-}
-
-/* Submitted by srfrog, August 11, 1999 */
-BUILT_IN_FUNCTION(function_urldecode, input)
-{
-	char *retval = urldecode(input, NULL);
-	RETURN_STR(retval);
-}
-#endif
 
 BUILT_IN_FUNCTION(function_stat, words)
 {

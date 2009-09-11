@@ -1,4 +1,4 @@
-/* $EPIC: crypt.c,v 1.37 2009/07/07 04:35:04 jnelson Exp $ */
+/* $EPIC: crypt.c,v 1.38 2009/09/11 01:42:14 jnelson Exp $ */
 /*
  * crypt.c: The /ENCRYPT command and all its attendant baggage.
  *
@@ -431,31 +431,37 @@ usage_error:
  */
 char *	crypt_msg (const unsigned char *str, Crypt *key)
 {
-	char	*ptr;
 	char	buffer[CRYPT_BUFFER_SIZE + 1];
-	int	i;
-	unsigned char *my_str;
+	int	srclen;
+	unsigned char *ciphertext;
+	int	ciphertextlen;
+	char *	dest;
+	size_t	destsize;
+	size_t	destlen;
+	int	transform, numargs;
 
 	/* Convert the plaintext into ciphertext */
-	i = (int)strlen(str);
-	my_str = cipher_message(str, strlen(str)+1, key, &i);
+	srclen = (int)strlen(str);
+	ciphertext = cipher_message(str, srclen + 1, key, &ciphertextlen);
 
 	/* Convert the ciphertext into ctcp-enquoted payload */
-	ptr = enquote_it(my_str, i);
-
-	if (!*ptr)
-		yell("WARNING: Empty encrypted message, but message "
-		     "sent anyway.  Bug?");
+	destsize = ciphertextlen * 2 + 2;
+	dest = new_malloc(destsize);
+	transform = lookup_transform("CTCP", &numargs);
+	/* Transform 'cipertext' -> +CTCP -> dest */
+	destlen = transform_string(transform, 1, NULL, 
+				   ciphertext, ciphertextlen,
+				   dest, destsize);
 
 	if (ciphers[key->type].ctcpname)
 	     snprintf(buffer, sizeof(buffer), "%c%s %s%c",
 			CTCP_DELIM_CHAR, ciphers[key->type].ctcpname, 
-			ptr, CTCP_DELIM_CHAR);
+			dest, CTCP_DELIM_CHAR);
 	else
 		panic(1, "crypt_msg: key->type == %d not supported.", key->type);
 
-	new_free(&my_str);
-	new_free(&ptr);
+	new_free(&dest);
+	new_free(&ciphertext);
 	return malloc_strdup(buffer);
 }
 
@@ -482,26 +488,29 @@ char *	crypt_msg (const unsigned char *str, Crypt *key)
  */ 
 char *	decrypt_msg (const unsigned char *str, Crypt *key)
 {
-	char	*buffer = (char *)new_malloc(BIG_BUFFER_SIZE + 1);
-	unsigned char	*ptr = NULL;
-	char *	my_str;
-	size_t	c;
-	int	i;
+	char *	plaintext;
+	int	srclen;
+	char *	dest;
+	size_t	destsize;
+	int	destlen;
+	int	transform, numargs;
 
 	/* Convert the ctcp-enquoted payload into ciphertext */
-	c = strlen(str);
-	my_str = dequote_it(str, &c);
+	srclen = strlen(str);
+	destsize = srclen + 2;
+	if (!(dest = alloca(destsize)))
+		return NULL;		/* Bail on the decrypt if no space */
 
-	/* Decrypt the ciphertext into a C string */
-	i = c;
-	if (!(ptr = decipher_message(my_str, c, key, &i)))
-		strlcpy(buffer, my_str, CRYPT_BUFFER_SIZE + 1);
-	else
-		strlcpy(buffer, ptr, CRYPT_BUFFER_SIZE + 1);
+	transform = lookup_transform("CTCP", &numargs);
+	/* Transform 'str' -> -CTCP -> 'dest' */
+	destlen = transform_string(transform, 0, NULL, 
+					str, srclen, 
+					dest, destsize);
 
-	new_free(&my_str);
-	new_free(&ptr);
-	return buffer;
+	if (!(plaintext = decipher_message(dest, destlen, key, &destlen)))
+		plaintext = malloc_strdup(dest);
+
+	return plaintext;
 }
 
 const char *	happykey (const char *key, int type)
