@@ -78,3 +78,7 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Try to make the perl configure check more robust for non-working perls.
 * Start a project to convert things to use transform_string().
 * Fix show_lastlog() to return the rewritten result (so -mangle works)
+* Actually de-orbit [en|de]code().
+* Create transform_string_dyn, a pleasant api in front of transform_string.
+* Create a bunch of global vars for transform_string to avoid lookups.
+* Add hints to how big destination buffers should be for xforming.

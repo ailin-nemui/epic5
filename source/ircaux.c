@@ -1,4 +1,4 @@
-/* $EPIC: ircaux.c,v 1.207 2009/09/11 01:42:14 jnelson Exp $ */
+/* $EPIC: ircaux.c,v 1.208 2009/09/11 21:02:02 jnelson Exp $ */
 /*
  * ircaux.c: some extra routines... not specific to irc... that I needed 
  *
@@ -2739,6 +2739,7 @@ const char *	strfill (char c, int num)
 }
 
 
+#if 0
 char *	encode (const char *str, size_t len)
 {
 	char *retval;
@@ -2775,6 +2776,7 @@ char *	decode (const char *str)
 	*ptr = 0;
 	return retval;
 }
+#endif
 
 char *	chomp (char *s)
 {
@@ -3308,6 +3310,7 @@ unsigned long	random_number (unsigned long l)
 	}
 }
 
+#if 0
 /*
  * quote_it: This quotes the given string making it sendable via irc.  A
  * pointer to the length of the data is required and the data need not be
@@ -3424,6 +3427,7 @@ char	*dequote_buffer (char *str, size_t *len)
 	new_free(&freeme);
 	return ret;
 }
+#endif
 
 /* 
  * Should I switch over to using getaddrinfo() directly or is using
@@ -5208,7 +5212,7 @@ yell("The output packet is %c %c %c %c %#x", output[0], output[1],
  * the 4th byte; and the twelfth character goes into the high 2 bits of the
  * 1st byte.  Got it?
  */
-static size_t	fish64_to_eight_bytes (const char *input, size_t inputlen, char *output, size_t outputlen)
+static int	fish64_to_eight_bytes (const char *input, size_t inputlen, char *output, size_t outputlen)
 {
 	if (outputlen < 8)
 		return -1;	/* Sorry Dave, I can't let you do that. */
@@ -5732,38 +5736,74 @@ struct Transformer
 	int	refnum;
 	const char *	name;
 	int	takes_meta;
+	int	recommended_size;
+	int	recommended_overhead;
 	ssize_t	(*encoder) (const char *, size_t, const void *, size_t, char *, size_t);
 	ssize_t	(*decoder) (const char *, size_t, const void *, size_t, char *, size_t);
 };
 
 struct Transformer default_transformers[] = {
-{	0,	"URL",		0,	url_encoder,	url_decoder	},
-{	0,	"ENC",		0,	enc_encoder,	enc_decoder	},
-{	0,	"B64",		0,	b64_encoder,	b64_decoder	},
-{	0,	"FISH64",	0,	fish64_encoder,	fish64_decoder	},
-{	0,	"SED",		1,	sed_encoder,	sed_decoder	},
-{	0,	"CTCP",		0,	ctcp_encoder,	ctcp_decoder	},
-{	0,	"NONE",		0,	null_encoder,	null_encoder	},
-{	0,	"DEF",		0,	crypt_encoder,	crypt_decoder	},
-{	0,	"SHA256",	0,	sha256_encoder,	sha256_encoder	},
+{	0,	"URL",		0, 3, 2,  url_encoder,	  url_decoder	 },
+{	0,	"ENC",		0, 2, 2,  enc_encoder,	  enc_decoder	 },
+{	0,	"B64",		0, 2, 6,  b64_encoder,	  b64_decoder	 },
+{	0,	"FISH64",	0, 2, 12, fish64_encoder, fish64_decoder },
+{	0,	"SED",		1, 2, 2,  sed_encoder,	  sed_decoder	 },
+{	0,	"CTCP",		0, 2, 2,  ctcp_encoder,	  ctcp_decoder	 },
+{	0,	"NONE",		0, 1, 2,  null_encoder,	  null_encoder	 },
+{	0,	"DEF",		0, 1, 12, crypt_encoder,  crypt_decoder	 },
+{	0,	"SHA256",	0, 0, 10, sha256_encoder, sha256_encoder },
 #ifdef HAVE_SSL
-{	0,	"BF",		1,	blowfish_encoder, blowfish_decoder },
-{	0,	"CAST",		1,	cast5_encoder,	cast5_decoder	},
-{	0,	"AES",		1,	aes_encoder,	aes_decoder	},
-{	0,	"AESSHA",	1,	aessha_encoder,	aessha_decoder	},
-{	0,	"FISH",		1,	fish_encoder,	fish_decoder },
+{	0,	"BF",		1, 1, 8,  blowfish_encoder, blowfish_decoder },
+{	0,	"CAST",		1, 1, 8,  cast5_encoder,    cast5_decoder    },
+{	0,	"AES",		1, 1, 8,  aes_encoder,	    aes_decoder	     },
+{	0,	"AESSHA",	1, 1, 8,  aessha_encoder,   aessha_decoder   },
+{	0,	"FISH",		1, 1, 12, fish_encoder,     fish_decoder     },
 #endif
 #ifdef HAVE_ICONV
-{	0,	"ICONV",	1,	iconv_recoder, iconv_recoder },
+{	0,	"ICONV",	1, 4, 12, iconv_recoder,  iconv_recoder },
 #endif
-{	0,	"ALL",		0,	all_encoder,	all_encoder	},
-{	-1,	NULL,		0,	NULL,		NULL		}
+{	0,	"ALL",		0, 0, 256, all_encoder,	  all_encoder	},
+{	-1,	NULL,		0, 0, 0,   NULL,	  NULL		}
 };
 
 int	max_transform;
 int	max_number_of_transforms = 256;
 struct Transformer transformers[256];		/* XXX */
+int	URL_xform, ENC_xform, B64_xform, FISH64_xform;
+int	CTCP_xform, SHA256_xform;
 
+/*
+ * transform_string -- Transform some bytes from one form into another form
+ *
+ * Args:
+ *  'type'	- The type of transformation.  You must fetch this value by
+ *		  calling lookup_transform().
+ *  'encoding'	- 0 for "decoding" : The input is encoded in the 'type' and
+ *			you need to recover the original data
+ *		  1 for "encoding" : The input is raw data and you need it
+ *			to be encoded in 'type'.
+ *  'meta'	- A word separated list of meta argument(s) required by the
+ *		  transform.  May be NULL if the transform doesn't require 
+ *		  an argument.
+ *		  Example:  Encryption require a password argument, so you 
+ *			    would pass it here.  
+ *		  Note: No transforms currently require multiple arguments
+ *		        so there are no examples I can give for that, but it
+ *		        is definitely supported for future use.
+ *  'orig_str'	- The data to be transformed
+ *  'orig_str_len' - The number of bytes in 'orig_str' to transform.
+ *		     Note: This function does not work on C strings, so if you
+ *		        pass in a C string you have to tell it how long it is!
+ *  'dest_str'	   - Where to put the transformed string (output)
+ *  'dest_str_len' - How many bytes 'dest_str' has.
+ *		     Note: If 'dest_str' isn't big enough to hold all of the
+ *		           transformed output, it will be truncated. 
+ *
+ * Returns:
+ *	Returns 0 if 'type' is not a valid transform.
+ *	Returns the return value of the transform, which should be the
+ *		number of bytes written to 'dest_str'.
+ */
 size_t	transform_string (int type, int encoding, const char *meta, const char *orig_str, size_t orig_str_len, char *dest_str, size_t dest_str_len)
 {
 	int	x;
@@ -5785,7 +5825,70 @@ size_t	transform_string (int type, int encoding, const char *meta, const char *o
 	return 0;
 }
 
-int	lookup_transform (const char *str, int *numargs)
+/*
+ * transform_string_dyn -- a more pleasant front end to transform_string
+ *
+ * Args:
+ *  'type'	   - The string transformation you want to use.
+ *		     For now we only support non-encryption transforms.
+ *		     You should prefix with + to encode, - to decode.
+ *  'orig_str'	   - The string you want to transform
+ *  'orig_str_len' - The number of bytes of 'orig_str' to transform
+ *		     If this value is 0, then will do a strlen(orig_str)
+ *  'dest_str_len' - If non-NULL, the size of the return value.
+ *
+ * Return value:
+ *  Returns the transformed buffer.  
+ *  Return value may or may not be nul terminated depending on the transform!
+ *  You *MUST* new_free() the return value later.
+ */
+char *	transform_string_dyn (const char *type, const char *orig_str, size_t orig_str_len, size_t *my_dest_str_len)
+{
+	char *	dest_str;
+	size_t	dest_str_len;
+	int	transform, numargs;
+	int	expansion_size, expansion_overhead;
+	int	direction;
+	int	retval;
+
+	if (*type == '-')
+	{
+		direction = XFORM_DECODE;
+		type++;
+	}
+	else if (*type == '+')
+	{
+		direction = XFORM_ENCODE;
+		type++;
+	}
+	else
+		direction = XFORM_ENCODE;
+
+	if (orig_str_len <= 0)
+		orig_str_len = strlen(orig_str);
+
+	transform = lookup_transform(type, &numargs, 
+					&expansion_size, &expansion_overhead);
+	dest_str_len = orig_str_len * expansion_size + expansion_overhead;
+	dest_str = (char *)new_malloc(dest_str_len);
+	retval = transform_string(transform, direction, NULL, 
+				  orig_str, orig_str_len, 
+				  dest_str, dest_str_len);
+
+	if (retval == 0)	/* It failed */
+	{
+		new_free(&dest_str);
+		if (my_dest_str_len)
+			*my_dest_str_len = 0;
+		return NULL;
+	}
+
+	if (my_dest_str_len)
+		*my_dest_str_len = dest_str_len;
+	return dest_str;
+}
+
+int	lookup_transform (const char *str, int *numargs, int *expansion_size, int *expansion_overhead)
 {
 	int	x = 0;
 
@@ -5794,6 +5897,8 @@ int	lookup_transform (const char *str, int *numargs)
 		if (!my_stricmp(transformers[x].name, str))
 		{
 			*numargs = transformers[x].takes_meta;
+			*expansion_size = transformers[x].recommended_size;
+			*expansion_overhead = transformers[x].recommended_overhead;
 			return transformers[x].refnum;
 		}
 	}
@@ -5847,6 +5952,8 @@ static int	unregister_transform (int i)
 void	init_transforms (void)
 {
 	int	i = 0;
+	int	numargs;
+	int	d1, d2;
 
 	for (i = 0; i < max_number_of_transforms; i++)
 	{
@@ -5864,6 +5971,13 @@ void	init_transforms (void)
 				   default_transformers[i].encoder,
 				   default_transformers[i].decoder);
 	}
+
+	URL_xform = lookup_transform("URL", &numargs, &d1, &d2);
+	ENC_xform = lookup_transform("ENC", &numargs, &d1, &d2);
+	B64_xform = lookup_transform("B64", &numargs, &d1, &d2);
+	FISH64_xform = lookup_transform("FISH64", &numargs, &d1, &d2);
+	CTCP_xform = lookup_transform("CTCP", &numargs, &d1, &d2);
+	SHA256_xform = lookup_transform("SHA256", &numargs, &d1, &d2);
 }
 
 
@@ -5875,7 +5989,7 @@ void	init_transforms (void)
  * trailing bytes should count up to the length of the string), nil (0)
  * is returned.
  */
-int num_code_points(const char *i)
+int	num_code_points(const char *i)
 {
 	/*
 	 * I apologise the extensive use of one letter variables.

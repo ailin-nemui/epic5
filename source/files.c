@@ -1,4 +1,4 @@
-/* $EPIC: files.c,v 1.40 2009/09/11 01:42:14 jnelson Exp $ */
+/* $EPIC: files.c,v 1.41 2009/09/11 21:02:02 jnelson Exp $ */
 /*
  * files.c -- allows you to read/write files. Wow.
  *
@@ -292,13 +292,10 @@ int	file_write (int logtype, int fd, const char *stuff)
  */
 int	file_writeb (int logtype, int fd, char *text)
 {
-	File 	*ptr;
+	File *	ptr;
 	int	retval;
-	size_t	len;
-	char            *ret;
-	size_t          retsize;
-	int             transform, numargs;
-	size_t          blen;
+	char *	ret;
+	size_t	retlen;
 
 	if (logtype == 2)		/* General logfile */
 		ptr = NULL /* */;
@@ -310,15 +307,8 @@ int	file_writeb (int logtype, int fd, char *text)
 	if (!ptr || !ptr->elf->fp)
 		return -1;
 
-	len = strlen(text);
-	retsize = len + 2;
-	ret = new_malloc(retsize);
-
-	transform = lookup_transform("CTCP", &numargs);
-	blen = transform_string(transform, 0, NULL, text, len, ret, retsize);
-	retval = fwrite(ret, 1, blen, ptr->elf->fp);
-
-	new_free(&ret);
+	ret = transform_string_dyn("-CTCP", text, 0, &retlen);
+	retval = fwrite(ret, 1, retlen, ptr->elf->fp);
 
 	if ((fflush(ptr->elf->fp)) == EOF)
 		return -1;
@@ -369,12 +359,8 @@ char *	file_readb (int fd, int numb)
 		return malloc_strdup(empty_string);
 	else
 	{
-                size_t  length,
-                        retsize;
-                char    *ret;
-                int     transform,
-                        numargs;
-		char *blah;
+                char *	ret;
+		char *	blah;
 
 		blah = (char *)new_malloc(numb+1);
                 if (ptr->elf->fp) {
@@ -388,11 +374,7 @@ char *	file_readb (int fd, int numb)
                     /* others */
                 }
 
-                transform = lookup_transform("URL", &numargs);
-                retsize = numb * 2 + 2;
-                ret = new_malloc(retsize);
-                length = transform_string(transform, 1, NULL,
-                                        blah, numb, ret, retsize);
+		ret = transform_string_dyn("+CTCP", blah, numb, NULL);
 		new_free(&blah);
 		return ret;
 	}

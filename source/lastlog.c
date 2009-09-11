@@ -1,4 +1,4 @@
-/* $EPIC: lastlog.c,v 1.80 2009/09/11 01:42:14 jnelson Exp $ */
+/* $EPIC: lastlog.c,v 1.81 2009/09/11 21:02:02 jnelson Exp $ */
 /*
  * lastlog.c: handles the lastlog features of irc. 
  *
@@ -892,11 +892,11 @@ static int	show_lastlog (Lastlog **l, int *skip, int *number, Mask *level_mask, 
 
 	if (mangler)
 	{
-		char *	output, *result;
+		char *	output, *rresult;
 
-		result = new_normalize_string((*l)->msg, 1, mangler);
-		output = LOCAL_COPY(result);
-		new_free(&result);
+		rresult = new_normalize_string((*l)->msg, 1, mangler);
+		output = LOCAL_COPY(rresult);
+		new_free(&rresult);
 		str = output;
 	}
 	else

@@ -1,4 +1,4 @@
-/* $EPIC: perl.c,v 1.21 2008/11/28 16:28:03 jnelson Exp $ */
+/* $EPIC: perl.c,v 1.22 2009/09/11 21:02:02 jnelson Exp $ */
 /*
  * perl.c -- The perl interfacing routines.
  *
@@ -44,6 +44,7 @@
 #include "functions.h"
 #include "output.h"
 #include "ifcmd.h"
+#include "extlang.h"
 
 int	isperlrunning=0, perlcalldepth=0;
 PerlInterpreter	*my_perl;

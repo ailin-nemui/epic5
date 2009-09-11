@@ -1,4 +1,4 @@
-/* $EPIC: functions.c,v 1.281 2009/09/11 01:42:14 jnelson Exp $ */
+/* $EPIC: functions.c,v 1.282 2009/09/11 21:02:02 jnelson Exp $ */
 /*
  * functions.c -- Built-in functions for ircII
  *
@@ -2894,9 +2894,9 @@ BUILT_IN_FUNCTION(function_split, word)
  */
 BUILT_IN_FUNCTION(function_chr, word)
 {
-	char *aboo = NULL;
-	char *ack;
-	char *blah;
+	char *	aboo = NULL;
+	char *	ack;
+	char *	blah;
 	size_t	bytes = 0;
 	size_t	cnt;
 
@@ -2931,20 +2931,16 @@ BUILT_IN_FUNCTION(function_chr, word)
  */
 BUILT_IN_FUNCTION(function_chrq, word)
 {
-	char *aboo = NULL;
-	char *ack;
-	char *blah;
+	char *	aboo = NULL;
+	char *	ack;
+	char *	blah;
 	size_t	cnt;
-	size_t  length,
-		retsize;
-	char    *ret;
-	int     transform,
-		numargs;
+	char *	ret;
 	size_t	bytes = 0;
 
 	cnt = count_words(word, DWORD_DWORDS, "\"");
-	ack = aboo = new_malloc(cnt + 1);
-	
+	ack = aboo = alloca(cnt + 1);
+
 	while ((blah = next_func_arg(word, &word)))
 	{
 		*ack++ = (char)my_atol(blah);
@@ -2953,14 +2949,7 @@ BUILT_IN_FUNCTION(function_chrq, word)
 	}
 	*ack = 0;
 
-	retsize = bytes * 2 + 2;
-	ret = new_malloc(retsize);
-	transform = lookup_transform("URL", &numargs);
-	/* Transform 'aboo' -> +URL -> 'ret' */
-	length = transform_string(transform, 1, NULL,
-				  aboo, bytes, ret, retsize);
-	new_free(&aboo);
-
+	ret = transform_string_dyn("+URL", aboo, bytes, NULL);
 	RETURN_MSTR(ret);
 }
 
@@ -3002,14 +2991,17 @@ BUILT_IN_FUNCTION(function_asciiq, word)
 {
 	char	*aboo = NULL, *free_it;
 	size_t	rvclue=0;
-	size_t	len = strlen(word);
 
 	if (!word || !*word)
 		RETURN_EMPTY;
 
-	free_it = word = dequote_it(word, &len);
-	for (; 0 < len--; word++)
-		malloc_strcat_wordlist_c(&aboo, space, ltoa((long)(unsigned char)*word), &rvclue);
+	/* The CTCP enquoting is intentional... */
+	free_it = word = transform_string_dyn("-CTCP", word, 0, NULL);
+	for (; word && *word; word++)
+	{
+		malloc_strcat_wordlist_c(&aboo, space, 
+				ltoa((long)(unsigned char)*word), &rvclue);
+	}
 
 	new_free(&free_it);
 	return aboo;
@@ -3796,8 +3788,9 @@ BUILT_IN_FUNCTION(function_glob, word)
 			path = word, word = NULL;
 		else
 		{
-			size_t	len = strlen(path);
-			freepath = path = dequote_it(path,&len);
+		   /* The CTCP enquoting is intentional, probably
+		    * to do de-\-ing */
+		    freepath = path = transform_string_dyn("-CTCP", path, 0, NULL);
 		}
 		expand_twiddle(path, path2);
 
@@ -3847,8 +3840,9 @@ BUILT_IN_FUNCTION(function_globi, word)
 			path = word, word = NULL;
 		else
 		{
-			size_t	len = strlen(path);
-			freepath = dequote_it(path,&len);
+		   /* The CTCP enquoting is intentional, probably
+		    * to do de-\-ing */
+		    freepath = path = transform_string_dyn("-CTCP", path, 0, NULL);
 		}
 		expand_twiddle(path, path2);
 
@@ -4384,88 +4378,137 @@ static int last_regex_error = 0; 		/* XXX */
 
 BUILT_IN_FUNCTION(function_regcomp_cs, input)
 {
+	char *	dest;
 	regex_t preg;
 
 	memset(&preg, 0, sizeof(preg)); 	/* make valgrind happy */
 	last_regex_error = regcomp(&preg, input, REG_EXTENDED);
-	return encode((char *)&preg, sizeof(regex_t));
+
+	dest = transform_string_dyn("+ENC", (char *)&preg, 
+					sizeof(regex_t), NULL);
+	return dest;
 }
 
 BUILT_IN_FUNCTION(function_regcomp, input)
 {
+	char *	dest;
 	regex_t preg;
 
 	memset(&preg, 0, sizeof(preg)); 	/* make valgrind happy */
 	last_regex_error = regcomp(&preg, input, REG_EXTENDED | REG_ICASE);
-	return encode((char *)&preg, sizeof(regex_t));
+
+	dest = transform_string_dyn("+ENC", (char *)&preg, 
+					sizeof(regex_t), NULL);
+	return dest;
 }
 
 BUILT_IN_FUNCTION(function_regexec, input)
 {
-	char *unsaved;
-	regex_t *preg;
+	char *	unsaved;
+	regex_t preg;
 
 	GET_FUNC_ARG(unsaved, input);
 	if (strlen(unsaved) != sizeof(regex_t) * 2)
 	{
-		yell("First argument to $regex() isn't proper length");
+		yell("First argument to $regexec() isn't proper length");
 		RETURN_EMPTY;
 	}
-	preg = (regex_t *)decode(unsaved);
-	last_regex_error = regexec(preg, input, 0, NULL, 0);
-	new_free((char **)&preg);
+
+	transform_string(ENC_xform, XFORM_DECODE, NULL,
+			 unsaved, strlen(unsaved),
+			 (char *)&preg, sizeof(preg));
+	last_regex_error = regexec(&preg, input, 0, NULL, 0);
 	RETURN_INT(last_regex_error);	/* DONT PASS FUNC CALL TO RETURN_INT */
 }
 
 BUILT_IN_FUNCTION(function_regmatches, input)
 {
-	char *unsaved, *ret = NULL;
-	size_t nmatch, n, foo, clue = 0;
-	regex_t *preg;
+	char *	unsaved;
+	size_t	nmatch;
+	char *	ret = NULL;
+	regex_t preg;
 	regmatch_t *pmatch = NULL;
 
 	GET_FUNC_ARG(unsaved, input);
 	GET_INT_ARG(nmatch, input);
-	preg = (regex_t *)decode(unsaved);
+
+	if (strlen(unsaved) != sizeof(regex_t) * 2)
+	{
+		yell("First argument to $regmatches() isn't proper length");
+		RETURN_EMPTY;
+	}
+
+	transform_string(ENC_xform, XFORM_DECODE, NULL,
+			 unsaved, strlen(unsaved),
+			 (char *)&preg, sizeof(preg));
+
 	RESIZE(pmatch, regmatch_t, nmatch);
-	if (!(last_regex_error = regexec(preg, input, nmatch, pmatch, 0)))
-		for (n = 0; n < nmatch; n++) {
-			if (0 > pmatch[n].rm_so)
-				/* This may need to be continue depending
-				 * on the regex implementation */
-				break;
-			malloc_strcat_word_c(&ret, space, ltoa(foo = pmatch[n].rm_so), DWORD_NO, &clue);
-			malloc_strcat_word_c(&ret, space, ltoa(pmatch[n].rm_eo - foo), DWORD_NO, &clue);
+	if (!(last_regex_error = regexec(&preg, input, nmatch, pmatch, 0)))
+	{
+	    size_t	n, clue = 0;
+
+	    for (n = 0; n < nmatch; n++) 
+	    {
+		if (pmatch[n].rm_so < 0)
+		{
+			/* This may need to be continue depending
+			 * on the regex implementation */
+			break;
 		}
-	new_free((char **)&preg);
+		malloc_strcat_word_c(&ret, space, 
+					ltoa(pmatch[n].rm_so), 
+					DWORD_NO, &clue);
+		malloc_strcat_word_c(&ret, space, 
+					ltoa(pmatch[n].rm_eo - pmatch[n].rm_so),
+					DWORD_NO, &clue);
+	    }
+	}
 	new_free((char **)&pmatch);
 	RETURN_MSTR(ret);	/* DONT PASS FUNC CALL TO RETURN_INT */
 }
 
 BUILT_IN_FUNCTION(function_regerror, input)
 {
-	char *unsaved;
-	regex_t *preg;
-	char error_buf[1024] = "";
+	char *	unsaved;
+	char	error_buf[1024];
+	regex_t	preg;
+	regmatch_t *pmatch = NULL;
 
 	GET_FUNC_ARG(unsaved, input);
-	preg = (regex_t *)decode(unsaved);
+	if (strlen(unsaved) != sizeof(regex_t) * 2)
+	{
+		yell("First argument to $regmatches() isn't proper length");
+		RETURN_EMPTY;
+	}
 
+	transform_string(ENC_xform, XFORM_DECODE, NULL,
+			 unsaved, strlen(unsaved),
+			 (char *)&preg, sizeof(preg));
+
+	*error_buf = 0;
 	if (last_regex_error)
-		regerror(last_regex_error, preg, error_buf, 1024);
-	new_free((char **)&preg);
+		regerror(last_regex_error, &preg, error_buf, sizeof(error_buf));
 	RETURN_STR(error_buf);
 }
 
 BUILT_IN_FUNCTION(function_regfree, input)
 {
 	char *unsaved;
-	regex_t *preg;
+	regex_t	preg;
+	regmatch_t *pmatch = NULL;
 
 	GET_FUNC_ARG(unsaved, input);
-	preg = (regex_t *)decode(unsaved);
-	regfree(preg);
-	new_free((char **)&preg);
+	if (strlen(unsaved) != sizeof(regex_t) * 2)
+	{
+		yell("First argument to $regmatches() isn't proper length");
+		RETURN_EMPTY;
+	}
+
+	transform_string(ENC_xform, XFORM_DECODE, NULL,
+			 unsaved, strlen(unsaved),
+			 (char *)&preg, sizeof(preg));
+
+	regfree(&preg);
 	RETURN_EMPTY;
 }
 
@@ -6795,6 +6838,7 @@ BUILT_IN_FUNCTION(function_xform, input)
 	char	*srcbuf, *destbuf, *ptr;
 	size_t	srcbuflen, destbuflen, ptrbuflen;
 	size_t	refbuflen;
+	int	expand, overh;
 
 	/*
 	 * First we have to calculate how many args there are before
@@ -6812,7 +6856,7 @@ BUILT_IN_FUNCTION(function_xform, input)
 	    else
 		encoding = 1;
 
-	    if ((type = lookup_transform(typestr, &numargs)) > -1)
+	    if ((type = lookup_transform(typestr, &numargs, &expand, &overh)) > -1)
 	    {
 		if (numargs == 1)
 			GET_DWORD_ARG(arg, input)

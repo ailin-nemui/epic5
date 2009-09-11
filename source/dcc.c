@@ -1,4 +1,4 @@
-/* $EPIC: dcc.c,v 1.155 2009/09/11 01:42:14 jnelson Exp $ */
+/* $EPIC: dcc.c,v 1.156 2009/09/11 21:02:02 jnelson Exp $ */
 /*
  * dcc.c: Things dealing client to client connections. 
  *
@@ -1523,22 +1523,10 @@ const	char 		*text_display, 	/* What to tell the user we sent */
 
 	if (dcc->flags & DCC_QUOTED)
 	{
-		size_t	srclen;
 		char *	dest;
-		size_t	destsize;
 		size_t	destlen;
-		int	transform,
-			numargs;
 
-		srclen = strlen(text);
-		destsize = srclen + 2;
-		dest = new_malloc(destsize);
-
-		transform = lookup_transform("CTCP", &numargs);
-		/* Transform 'args' -> -CTCP -> 'dest' */
-		destlen = transform_string(transform, 0, NULL, 
-						text, srclen, 
-						dest, destsize);
+		dest = transform_string_dyn("-CTCP", text, 0, &destlen);
 		writeval = write(dcc->socket, dest, destlen);
 		new_free(&dest);
 	}
@@ -3349,7 +3337,7 @@ static	void		process_dcc_raw_data (DCC_list *Client)
 {
 	char	tmp[IO_BUFFER_SIZE + 1];
 	char 	*bufptr;
-	char	*freeme = NULL;
+	char *	freeme = NULL;
 	ssize_t	bytesread;
 
         bufptr = tmp;
@@ -3386,19 +3374,8 @@ static	void		process_dcc_raw_data (DCC_list *Client)
 		if (Client->flags & DCC_QUOTED)
 		{
 			char *  dest;
-			size_t  destsize;
-			size_t  destlen;
-			int     transform,
-				numargs;
-
-			destsize = bytesread * 2 + 2;
-			dest = new_malloc(destsize);
-
-			transform = lookup_transform("CTCP", &numargs);
-			/* Transform 'bufptr' -> +CTCP -> 'dest' */
-			destlen = transform_string(transform, 1, NULL,
-							bufptr, bytesread,
-							dest, destsize);
+			dest = transform_string_dyn("+CTCP", bufptr, 
+							bytesread, NULL);
 			freeme = bufptr = dest;
 		}
 		else if (bytesread > 0 && tmp[strlen(tmp) - 1] == '\n')
@@ -4032,7 +4009,6 @@ static	char *	dcc_urlencode (const char *s)
 	char *	dest;
 	size_t	destsize;
 	size_t	destlen;
-	int	transform, numargs;
 
 	src = LOCAL_COPY(s);
 	for (p1 = s, p2 = src; *p1; p1++)
@@ -4046,9 +4022,7 @@ static	char *	dcc_urlencode (const char *s)
 	srclen = strlen(src);
 	destsize = srclen * 3 + 2;
 	dest = new_malloc(destsize);
-        transform = lookup_transform("URL", &numargs);
-	/* Transform 'str' -> "+URL" -> 'dest' */
-        destlen = transform_string(transform, 1, NULL, 
+        destlen = transform_string(URL_xform, XFORM_ENCODE, NULL, 
 					src, srclen,
 					dest, destsize);
 	return dest;
@@ -4062,14 +4036,11 @@ static	char *	dcc_urldecode (const char *s)
 	char *	dest;
 	size_t	destsize;
 	size_t	destlen;
-	int	transform, numargs;
 
 	srclen = strlen(s);
 	destsize = srclen + 2;
 	dest = new_malloc(destsize);
-        transform = lookup_transform("URL", &numargs);
-	/* Transform 's' -> -URL -> 'dest' */
-        transform_string(transform, 0, NULL, 
+        transform_string(URL_xform, XFORM_DECODE, NULL,
 				s, srclen,
 				dest, destsize);
 

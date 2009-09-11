@@ -1,4 +1,4 @@
-/* $EPIC: commands.c,v 1.188 2009/09/11 01:42:14 jnelson Exp $ */
+/* $EPIC: commands.c,v 1.189 2009/09/11 21:02:02 jnelson Exp $ */
 /*
  * commands.c -- Stuff needed to execute commands in ircII.
  *		 Includes the bulk of the built in commands for ircII.
@@ -2288,18 +2288,9 @@ BUILT_IN_COMMAND(quotecmd)
 	if (urlencoded)
 	{
 		char *	dest;
-		size_t	destsize;
 		size_t  destlen;
-		int     transform, 
-			numargs;
 
-		destsize = strlen(args) + 2;
-		dest = new_malloc(destsize);
-		transform = lookup_transform("URL", &numargs);
-		/* Transform 'args' -> -URL -> 'dest' */
-		destlen = transform_string(transform, 0, NULL, 
-					args, strlen(args), 
-					dest, destsize);
+		dest = transform_string_dyn("-URL", args, 0, &destlen);
 		send_to_aserver_raw(refnum, destlen, dest);
 		new_free(&dest);
 	}

@@ -1,4 +1,4 @@
-/* $EPIC: crypt.c,v 1.38 2009/09/11 01:42:14 jnelson Exp $ */
+/* $EPIC: crypt.c,v 1.39 2009/09/11 21:02:02 jnelson Exp $ */
 /*
  * crypt.c: The /ENCRYPT command and all its attendant baggage.
  *
@@ -436,22 +436,13 @@ char *	crypt_msg (const unsigned char *str, Crypt *key)
 	unsigned char *ciphertext;
 	int	ciphertextlen;
 	char *	dest;
-	size_t	destsize;
-	size_t	destlen;
-	int	transform, numargs;
 
 	/* Convert the plaintext into ciphertext */
 	srclen = (int)strlen(str);
 	ciphertext = cipher_message(str, srclen + 1, key, &ciphertextlen);
 
 	/* Convert the ciphertext into ctcp-enquoted payload */
-	destsize = ciphertextlen * 2 + 2;
-	dest = new_malloc(destsize);
-	transform = lookup_transform("CTCP", &numargs);
-	/* Transform 'cipertext' -> +CTCP -> dest */
-	destlen = transform_string(transform, 1, NULL, 
-				   ciphertext, ciphertextlen,
-				   dest, destsize);
+	dest = transform_string_dyn("+CTCP", ciphertext, ciphertextlen, NULL);
 
 	if (ciphers[key->type].ctcpname)
 	     snprintf(buffer, sizeof(buffer), "%c%s %s%c",
@@ -460,8 +451,8 @@ char *	crypt_msg (const unsigned char *str, Crypt *key)
 	else
 		panic(1, "crypt_msg: key->type == %d not supported.", key->type);
 
-	new_free(&dest);
 	new_free(&ciphertext);
+	new_free(&dest);
 	return malloc_strdup(buffer);
 }
 
@@ -493,23 +484,17 @@ char *	decrypt_msg (const unsigned char *str, Crypt *key)
 	char *	dest;
 	size_t	destsize;
 	int	destlen;
-	int	transform, numargs;
 
 	/* Convert the ctcp-enquoted payload into ciphertext */
-	srclen = strlen(str);
-	destsize = srclen + 2;
-	if (!(dest = alloca(destsize)))
-		return NULL;		/* Bail on the decrypt if no space */
+	dest = transform_string_dyn("-CTCP", str, 0, &destsize);
 
-	transform = lookup_transform("CTCP", &numargs);
-	/* Transform 'str' -> -CTCP -> 'dest' */
-	destlen = transform_string(transform, 0, NULL, 
-					str, srclen, 
-					dest, destsize);
+	if (!(plaintext = decipher_message(dest, destsize, key, &destlen)))
+	{
+		plaintext = dest;
+		dest = NULL;
+	}
 
-	if (!(plaintext = decipher_message(dest, destlen, key, &destlen)))
-		plaintext = malloc_strdup(dest);
-
+	new_free(&dest);
 	return plaintext;
 }
 

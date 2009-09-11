@@ -7,7 +7,7 @@
  *
  * See the COPYRIGHT file, or do a HELP IRCII COPYRIGHT 
  *
- * @(#)$Id: ircaux.h,v 1.103 2009/06/29 19:30:33 jnelson Exp $
+ * @(#)$Id: ircaux.h,v 1.104 2009/09/11 21:02:02 jnelson Exp $
  */
 
 #ifndef _IRCAUX_H_
@@ -139,8 +139,6 @@ int	charcount		(const char *, char);
 void	beep_em			(int);
 void	strip_control		(const char *, char *);
 const char *strfill		(char, int);
-char *	encode			(const char *, size_t);
-char *	decode			(const char *);
 char *	chomp			(char *);
 int 	opento			(const char *, int, off_t);
 int	figure_out_address	(const char *, char **, char **, char **);
@@ -151,10 +149,14 @@ void	mask_digits		(char **);
 char *	strpcat			(char *, const char *, ...) __A(2);
 char *  strlpcat		(char *, size_t, const char *, ...) __A(3);
 unsigned long	random_number	(unsigned long);
+#if 0
+char *	encode			(const char *, size_t);
+char *	decode			(const char *);
 char *	urlencode		(const char *);
 char *	urldecode		(char *, size_t *);
 char *	enquote_it		(const char *str, size_t len);
 char *	dequote_it		(const char *str, size_t *len);
+#endif
 int	slurp_file		(char **buffer, char *filename);
 char *	endstr			(char *);
 ssize_t searchbuf		(const unsigned char *, size_t, size_t, int);
@@ -263,8 +265,18 @@ typedef struct Bucket Bucket;
 /********************/
 void	init_transforms (void);
 size_t	transform_string (int, int, const char *, const char *, size_t, char *, size_t);
-int	lookup_transform (const char *, int *);
+int	lookup_transform (const char *, int *, int *, int *);
 char *	valid_transforms (void);
+char *	transform_string_dyn (const char *, const char *, size_t, size_t *);
+
+extern	int	URL_xform;
+extern	int	ENC_xform;
+extern	int	B64_xform;
+extern	int	FISH64_xform;
+extern	int	CTCP_xform;
+extern	int	SHA256_xform;
+#define XFORM_ENCODE 1
+#define XFORM_DECODE 0
 
 extern int 	num_code_points (const char *);
 

@@ -1,4 +1,4 @@
-/* $EPIC: flood.c,v 1.27 2006/10/13 21:58:02 jnelson Exp $ */
+/* $EPIC: flood.c,v 1.28 2009/09/11 21:02:02 jnelson Exp $ */
 /*
  * flood.c: handle channel flooding.
  *
@@ -313,7 +313,8 @@ char *	function_floodinfo (char *args)
 
 	get_time(&right_now);
 
-	while ((arg = new_next_arg(args, &args))) {
+	while ((arg = new_next_arg(args, &args))) 
+	{
 	const	char	*nuh = star;
 	const	char	*chan = star;
 	const	char	*level = star;
@@ -322,9 +323,13 @@ char *	function_floodinfo (char *args)
 		double	diff = 0;
 		double	rate = 0;
 		int	cless = 0, dless = 0, rless = 0;
-		size_t	len = strlen(arg);
+		char *	freeme = NULL;
 
-		dequote_buffer(arg, &len);
+		/* 
+		 * CTCP enquoting handles \\, which is what I think
+		 * ce was going for here.
+		 */
+		freeme = arg = transform_string_dyn("-CTCP", arg, 0, NULL);
 		if (arg && *arg)
 			GET_FUNC_ARG(nuh, arg);
 		if (arg && *arg)
@@ -370,6 +375,8 @@ char *	function_floodinfo (char *args)
 				malloc_strcat_wordlist_c(&ret, empty_string, "\"", &clue);
 			}
 		}
+
+		new_free(&freeme);
 	}
 
 	RETURN_MSTR(ret);
