@@ -17,8 +17,6 @@ KNOWN ERRATA (eg, bugs, or unresolved requests):
 	*!*user@*.com.au but instead *!*user@*.domain.com.au
 * There should be a watch to check for the validity of a $connect() 
   by working directly off the fd instead of the port (user) and host (desc)
-* All users of transform_string_dyn need to be prepared for null retval.
-* All transforms need to check and refuse dest_len <= 0
 
 ISSUES OF INTEREST
 ------------------
@@ -83,3 +81,5 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Add hints to how big destination buffers should be for xforming.
 * Fix transforms by initializing the expander and overhead items.
 * Make various sanity checks for transforms to fix amn.
+* Ensure all the users of transform_string_dyn are prepared to handle NULLs
+* Ensure all the xform encoder/decoders can handle zero dest buffer sizes

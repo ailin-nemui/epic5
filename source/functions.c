@@ -1,4 +1,4 @@
-/* $EPIC: functions.c,v 1.283 2009/09/14 01:29:51 jnelson Exp $ */
+/* $EPIC: functions.c,v 1.284 2009/09/14 04:49:57 jnelson Exp $ */
 /*
  * functions.c -- Built-in functions for ircII
  *
@@ -3846,6 +3846,7 @@ BUILT_IN_FUNCTION(function_globi, word)
 		   /* The CTCP enquoting is intentional, probably
 		    * to do de-\-ing */
 		    freepath = path = transform_string_dyn("-CTCP", path, 0, NULL);
+		    RETURN_IF_EMPTY(path);
 		}
 		expand_twiddle(path, path2);
 
@@ -4389,7 +4390,7 @@ BUILT_IN_FUNCTION(function_regcomp_cs, input)
 
 	dest = transform_string_dyn("+ENC", (char *)&preg, 
 					sizeof(regex_t), NULL);
-	return dest;
+	RETURN_MSTR(dest);
 }
 
 BUILT_IN_FUNCTION(function_regcomp, input)
@@ -4402,7 +4403,7 @@ BUILT_IN_FUNCTION(function_regcomp, input)
 
 	dest = transform_string_dyn("+ENC", (char *)&preg, 
 					sizeof(regex_t), NULL);
-	return dest;
+	RETURN_MSTR(dest);
 }
 
 BUILT_IN_FUNCTION(function_regexec, input)
@@ -4417,6 +4418,7 @@ BUILT_IN_FUNCTION(function_regexec, input)
 		RETURN_EMPTY;
 	}
 
+	/* XXX - What if this fails? */
 	transform_string(ENC_xform, XFORM_DECODE, NULL,
 			 unsaved, strlen(unsaved),
 			 (char *)&preg, sizeof(preg));
@@ -4441,6 +4443,7 @@ BUILT_IN_FUNCTION(function_regmatches, input)
 		RETURN_EMPTY;
 	}
 
+	/* XXX - What if this fails? */
 	transform_string(ENC_xform, XFORM_DECODE, NULL,
 			 unsaved, strlen(unsaved),
 			 (char *)&preg, sizeof(preg));
@@ -4484,6 +4487,7 @@ BUILT_IN_FUNCTION(function_regerror, input)
 		RETURN_EMPTY;
 	}
 
+	/* XXX - What if this fails? */
 	transform_string(ENC_xform, XFORM_DECODE, NULL,
 			 unsaved, strlen(unsaved),
 			 (char *)&preg, sizeof(preg));
@@ -4507,6 +4511,7 @@ BUILT_IN_FUNCTION(function_regfree, input)
 		RETURN_EMPTY;
 	}
 
+	/* XXX - What if this fails? */
 	transform_string(ENC_xform, XFORM_DECODE, NULL,
 			 unsaved, strlen(unsaved),
 			 (char *)&preg, sizeof(preg));

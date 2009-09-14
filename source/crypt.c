@@ -1,4 +1,4 @@
-/* $EPIC: crypt.c,v 1.39 2009/09/11 21:02:02 jnelson Exp $ */
+/* $EPIC: crypt.c,v 1.40 2009/09/14 04:49:57 jnelson Exp $ */
 /*
  * crypt.c: The /ENCRYPT command and all its attendant baggage.
  *
@@ -442,7 +442,11 @@ char *	crypt_msg (const unsigned char *str, Crypt *key)
 	ciphertext = cipher_message(str, srclen + 1, key, &ciphertextlen);
 
 	/* Convert the ciphertext into ctcp-enquoted payload */
-	dest = transform_string_dyn("+CTCP", ciphertext, ciphertextlen, NULL);
+	if (!(dest = transform_string_dyn("+CTCP", ciphertext, ciphertextlen, NULL)))
+	{
+		yell("crypt_msg: Could not CTCP-enquote [%s]", ciphertext);
+		return ciphertext;	/* Here goes nothing! */
+	}
 
 	if (ciphers[key->type].ctcpname)
 	     snprintf(buffer, sizeof(buffer), "%c%s %s%c",
@@ -486,7 +490,11 @@ char *	decrypt_msg (const unsigned char *str, Crypt *key)
 	int	destlen;
 
 	/* Convert the ctcp-enquoted payload into ciphertext */
-	dest = transform_string_dyn("-CTCP", str, 0, &destsize);
+	if (!(dest = transform_string_dyn("-CTCP", str, 0, &destsize)))
+	{
+		yell("decrypt_msg: Could not ctcp-dequote encrypted privmsg");
+		return malloc_strdup(str);
+	}
 
 	if (!(plaintext = decipher_message(dest, destsize, key, &destlen)))
 	{

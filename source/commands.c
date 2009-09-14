@@ -1,4 +1,4 @@
-/* $EPIC: commands.c,v 1.189 2009/09/11 21:02:02 jnelson Exp $ */
+/* $EPIC: commands.c,v 1.190 2009/09/14 04:49:57 jnelson Exp $ */
 /*
  * commands.c -- Stuff needed to execute commands in ircII.
  *		 Includes the bulk of the built in commands for ircII.
@@ -2290,7 +2290,12 @@ BUILT_IN_COMMAND(quotecmd)
 		char *	dest;
 		size_t  destlen;
 
-		dest = transform_string_dyn("-URL", args, 0, &destlen);
+		if (!(dest = transform_string_dyn("-URL", args, 0, &destlen)))
+		{
+			yell("XQUOTE -U: Could not urldecode [%s]", args);
+			return;		/* It failed. bail. */
+		}
+
 		send_to_aserver_raw(refnum, destlen, dest);
 		new_free(&dest);
 	}

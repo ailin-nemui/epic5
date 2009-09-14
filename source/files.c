@@ -1,4 +1,4 @@
-/* $EPIC: files.c,v 1.41 2009/09/11 21:02:02 jnelson Exp $ */
+/* $EPIC: files.c,v 1.42 2009/09/14 04:49:57 jnelson Exp $ */
 /*
  * files.c -- allows you to read/write files. Wow.
  *
@@ -307,8 +307,14 @@ int	file_writeb (int logtype, int fd, char *text)
 	if (!ptr || !ptr->elf->fp)
 		return -1;
 
-	ret = transform_string_dyn("-CTCP", text, 0, &retlen);
+	if (!(ret = transform_string_dyn("-CTCP", text, 0, &retlen)))
+	{
+		yell("$writeb(): Could not CTCP dequote [%s]", text);
+		return -1;
+	}
+
 	retval = fwrite(ret, 1, retlen, ptr->elf->fp);
+	new_free(&ret);
 
 	if ((fflush(ptr->elf->fp)) == EOF)
 		return -1;
@@ -374,8 +380,10 @@ char *	file_readb (int fd, int numb)
                     /* others */
                 }
 
-		ret = transform_string_dyn("+CTCP", blah, numb, NULL);
-		new_free(&blah);
+		if ((ret = transform_string_dyn("+CTCP", blah, numb, NULL)))
+			new_free(&blah);
+		else
+			ret = blah;
 		return ret;
 	}
 }

@@ -1,4 +1,4 @@
-/* $EPIC: ssl.c,v 1.29 2009/09/11 21:02:02 jnelson Exp $ */
+/* $EPIC: ssl.c,v 1.30 2009/09/14 04:49:58 jnelson Exp $ */
 /*
  * ssl.c: SSL connection functions
  *
@@ -454,10 +454,14 @@ int	ssl_connected (int vfd)
 
 	cert_subject = X509_NAME_oneline(X509_get_subject_name(server_cert),
 							0, 0);
-	u_cert_subject = transform_string_dyn("+URL", cert_subject, 0, NULL);
+	if (!(u_cert_subject = transform_string_dyn("+URL", cert_subject, 
+							0, NULL)))
+		u_cert_subject = malloc_strdup(cert_subject);
 
 	cert_issuer = X509_NAME_oneline(X509_get_issuer_name(server_cert),0,0);
-	u_cert_issuer = transform_string_dyn("+URL", cert_issuer, 0, NULL);
+	if (!(u_cert_issuer = transform_string_dyn("+URL", cert_issuer, 
+							0, NULL)))
+		u_cert_issuer = malloc_strdup(cert_issuer);
 	
 	server_pkey = X509_get_pubkey(server_cert);
 

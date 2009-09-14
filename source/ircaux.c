@@ -1,4 +1,4 @@
-/* $EPIC: ircaux.c,v 1.209 2009/09/14 01:29:52 jnelson Exp $ */
+/* $EPIC: ircaux.c,v 1.210 2009/09/14 04:49:58 jnelson Exp $ */
 /*
  * ircaux.c: some extra routines... not specific to irc... that I needed 
  *
@@ -4858,7 +4858,7 @@ static ssize_t	url_encoder (const char *orig, size_t orig_len, const void *meta,
 	size_t	orig_i, dest_i;
 	ssize_t	count = 0;
 
-        if (!orig || !dest)
+        if (!orig || !dest || dest_len <= 0)
                 return -1;
 
 	if (orig_len == 0)
@@ -4913,8 +4913,9 @@ static ssize_t	url_decoder (const char *orig, size_t orig_len, const void *meta,
 	int	val1, val2;
 	ssize_t	count = 0;
 
-        if (!orig || !dest)
+        if (!orig || !dest || dest_len <= 0)
                 return -1;
+
 	if (!*orig)
 	{
 		*dest = 0;
@@ -4952,7 +4953,7 @@ static ssize_t	enc_encoder (const char *orig, size_t orig_len, const void *meta,
 	size_t	orig_i, dest_i;
 	ssize_t	count = 0;
 
-        if (!orig || !dest)
+        if (!orig || !dest || dest_len <= 0)
                 return -1;
 
 	if (orig_len == 0)
@@ -4977,8 +4978,9 @@ static ssize_t	enc_decoder (const char *orig, size_t orig_len, const void *meta,
 	size_t	orig_i, dest_i;
 	ssize_t	count = 0;
 
-        if (!orig || !dest)
+        if (!orig || !dest || dest_len <= 0)
                 return -1;
+
 	if (!*orig)
 	{
 		*dest = 0;
@@ -5096,6 +5098,9 @@ static ssize_t	fish64_encoder (const char *orig, size_t orig_len, const void *me
 {
 	size_t	ib	= 0;	/* Input Bytes Consumed */
 	size_t	ob	= 0;	/* Output Bytes Generated */
+
+        if (!orig || !dest || dest_len <= 0)
+                return -1;
 
 	/*
 	 * Convert each 8 byte packet into 12 radix64 chars, and then
@@ -5238,6 +5243,9 @@ static ssize_t	fish64_decoder (const char *orig, size_t orig_len, const void *me
 	size_t	ib	= 0;	/* Input Bytes Consumed */
 	size_t	ob	= 0;	/* Output Bytes Generated */
 
+        if (!orig || !dest || dest_len <= 0)
+                return -1;
+
 	/*
 	 * A sanity check -- our input buffer must contain only FiSH64 chars
 	 * XXX Yea. yea yea, this is lame.  I'll take it out later.
@@ -5291,7 +5299,7 @@ static ssize_t	b64_general_encoder (const char *orig, size_t orig_len, const voi
 	size_t	orig_i, dest_i;
 	ssize_t	count = 0;
 
-        if (!orig || !dest)
+        if (!orig || !dest || dest_len <= 0)
                 return -1;
 
 	if (orig_len == 0)
@@ -5363,8 +5371,9 @@ static ssize_t	b64_general_decoder (const char *orig, size_t orig_len, const voi
 	size_t	orig_i, dest_i;
 	ssize_t	count = 0;
 
-        if (!orig || !dest || !dest_len)
+        if (!orig || !dest || dest_len <= 0)
                 return -1;
+
 	if (!*orig)
 	{
 		*dest = 0;
@@ -5410,6 +5419,9 @@ static ssize_t	sed_encoder (const char *orig, size_t orig_len, const void *meta,
 {
 	size_t	len;
 
+        if (!orig || !dest || dest_len <= 0)
+                return -1;
+
 	if (dest_len < orig_len)
 		len = dest_len;
 	else
@@ -5423,6 +5435,9 @@ static ssize_t	sed_encoder (const char *orig, size_t orig_len, const void *meta,
 static ssize_t	sed_decoder (const char *orig, size_t orig_len, const void *meta, size_t meta_len, char *dest, size_t dest_len)
 {
 	size_t	len;
+
+        if (!orig || !dest || dest_len <= 0)
+                return -1;
 
 	if (dest_len < orig_len)
 		len = dest_len;
@@ -5439,7 +5454,7 @@ static ssize_t	ctcp_encoder (const char *orig, size_t orig_len, const void *meta
 	size_t	orig_i, dest_i;
 	ssize_t	count = 0;
 
-        if (!orig || !dest || !dest_len)
+        if (!orig || !dest || dest_len <= 0)
                 return -1;
 
 	if (orig_len == 0)
@@ -5486,7 +5501,7 @@ static ssize_t	ctcp_decoder (const char *orig, size_t orig_len, const void *meta
 	size_t	orig_i, dest_i;
 	ssize_t	count = 0;
 
-        if (!orig || !dest || !dest_len)
+        if (!orig || !dest || dest_len <= 0)
                 return -1;
 
 	if (!*orig)
@@ -5532,8 +5547,9 @@ static ssize_t	null_encoder (const char *orig, size_t orig_len, const void *meta
 	size_t	orig_i, dest_i;
 	ssize_t	count = 0;
 
-        if (!orig || !dest)
+        if (!orig || !dest || dest_len <= 0)
                 return -1;
+
 	if (!*orig)
 	{
 		*dest = 0;
@@ -5569,6 +5585,9 @@ static ssize_t	all_encoder (const char *orig, size_t orig_len, const void *meta,
 {
 	char	*all_xforms;
 
+        if (!dest || dest_len <= 0)
+                return -1;
+
 	all_xforms = valid_transforms();
 	strlcpy(dest, all_xforms, dest_len);
 	new_free(&all_xforms);
@@ -5577,6 +5596,9 @@ static ssize_t	all_encoder (const char *orig, size_t orig_len, const void *meta,
 
 static ssize_t	sha256_encoder (const char *orig, size_t orig_len, const void *meta, size_t meta_len, char *dest, size_t dest_len)
 {
+        if (!orig || !dest || dest_len <= 0)
+                return -1;
+
 	sha256str(orig, orig_len, dest);
 	return strlen(dest);
 }
@@ -5658,10 +5680,18 @@ int my_iconv_open (iconv_t *forward, iconv_t *reverse, const char *stuff2)
 
 static ssize_t	iconv_recoder (const char *orig, size_t orig_len, const void *meta, size_t meta_len, char *dest, size_t dest_len)
 {
-	size_t orig_left = orig_len, dest_left = dest_len, n, close_it = 1;
+	size_t	orig_left = orig_len, 
+		dest_left = dest_len, 
+		n, 
+		close_it = 1;
 	int	id;
-	char *fromcode, *tocode, *dest_ptr;
-	const char *orig_ptr;
+	char 	*fromcode, 
+		*tocode, 
+		*dest_ptr;
+const	char 	*orig_ptr;
+
+        if (!orig || !dest || dest_len <= 0)
+                return -1;
 
 	iconv_t encoding;
 	dest_ptr = (char *) dest;

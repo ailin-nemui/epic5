@@ -1,4 +1,4 @@
-/* $EPIC: dcc.c,v 1.156 2009/09/11 21:02:02 jnelson Exp $ */
+/* $EPIC: dcc.c,v 1.157 2009/09/14 04:49:57 jnelson Exp $ */
 /*
  * dcc.c: Things dealing client to client connections. 
  *
@@ -1526,7 +1526,11 @@ const	char 		*text_display, 	/* What to tell the user we sent */
 		char *	dest;
 		size_t	destlen;
 
-		dest = transform_string_dyn("-CTCP", text, 0, &destlen);
+		if (!(dest = transform_string_dyn("-CTCP", text, 0, &destlen)))
+		{
+			yell("DMSG: Could not CTCP-dequote [%s]", text);
+			dest = malloc_strdup(text);
+		}
 		writeval = write(dcc->socket, dest, destlen);
 		new_free(&dest);
 	}
@@ -3374,9 +3378,12 @@ static	void		process_dcc_raw_data (DCC_list *Client)
 		if (Client->flags & DCC_QUOTED)
 		{
 			char *  dest;
-			dest = transform_string_dyn("+CTCP", bufptr, 
-							bytesread, NULL);
-			freeme = bufptr = dest;
+			if (!(dest = transform_string_dyn("+CTCP", bufptr, 
+							bytesread, NULL)))
+				yell("DCC RAW: Could not CTCP enquote [%s]",
+					bufptr);
+			else
+				freeme = bufptr = dest;
 		}
 		else if (bytesread > 0 && tmp[strlen(tmp) - 1] == '\n')
 			tmp[strlen(tmp) - 1] = '\0';
