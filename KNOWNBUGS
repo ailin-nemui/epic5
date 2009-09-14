@@ -15,11 +15,10 @@ KNOWN ERRATA (eg, bugs, or unresolved requests):
 * There needs to be an /on switch_query for wuf/sjhoran
 * wuf says that fred!user@machine.domain.com.au should not be
 	*!*user@*.com.au but instead *!*user@*.domain.com.au
-* The FiSH cipher will be EVP_bf_ecb(void) with an SHA256 key.
-  (FiSH == BLOWFISH_ECB_SHA)
 * There should be a watch to check for the validity of a $connect() 
   by working directly off the fd instead of the port (user) and host (desc)
-* enquote_it and dequote_it (ctcp) users need to migrate to the xforms.
+* All users of transform_string_dyn need to be prepared for null retval.
+* All transforms need to check and refuse dest_len <= 0
 
 ISSUES OF INTEREST
 ------------------
@@ -82,3 +81,5 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Create transform_string_dyn, a pleasant api in front of transform_string.
 * Create a bunch of global vars for transform_string to avoid lookups.
 * Add hints to how big destination buffers should be for xforming.
+* Fix transforms by initializing the expander and overhead items.
+* Make various sanity checks for transforms to fix amn.

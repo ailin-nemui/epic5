@@ -1,4 +1,4 @@
-/* $EPIC: ircaux.c,v 1.208 2009/09/11 21:02:02 jnelson Exp $ */
+/* $EPIC: ircaux.c,v 1.209 2009/09/14 01:29:52 jnelson Exp $ */
 /*
  * ircaux.c: some extra routines... not specific to irc... that I needed 
  *
@@ -5363,7 +5363,7 @@ static ssize_t	b64_general_decoder (const char *orig, size_t orig_len, const voi
 	size_t	orig_i, dest_i;
 	ssize_t	count = 0;
 
-        if (!orig || !dest)
+        if (!orig || !dest || !dest_len)
                 return -1;
 	if (!*orig)
 	{
@@ -5439,7 +5439,7 @@ static ssize_t	ctcp_encoder (const char *orig, size_t orig_len, const void *meta
 	size_t	orig_i, dest_i;
 	ssize_t	count = 0;
 
-        if (!orig || !dest)
+        if (!orig || !dest || !dest_len)
                 return -1;
 
 	if (orig_len == 0)
@@ -5486,8 +5486,9 @@ static ssize_t	ctcp_decoder (const char *orig, size_t orig_len, const void *meta
 	size_t	orig_i, dest_i;
 	ssize_t	count = 0;
 
-        if (!orig || !dest)
+        if (!orig || !dest || !dest_len)
                 return -1;
+
 	if (!*orig)
 	{
 		*dest = 0;
@@ -5867,16 +5868,32 @@ char *	transform_string_dyn (const char *type, const char *orig_str, size_t orig
 	if (orig_str_len <= 0)
 		orig_str_len = strlen(orig_str);
 
-	transform = lookup_transform(type, &numargs, 
-					&expansion_size, &expansion_overhead);
+	if (!(transform = lookup_transform(type, &numargs, 
+					&expansion_size, &expansion_overhead)))
+	{
+		yell("Invalid transform: [%s] to transform_string_dyn", type);
+		return NULL;
+	}
+
 	dest_str_len = orig_str_len * expansion_size + expansion_overhead;
+	if (dest_str_len <= 0)
+	{
+		yell("Transform [%s] on a string of size [%d] resulted in "
+		     "an invalid destination size of [%d].  Refusing to "
+		     " transform.  Sorry!", type, orig_str_len, dest_str_len);
+		*my_dest_str_len = orig_str_len;
+		return malloc_strdup(orig_str);
+	}
+
 	dest_str = (char *)new_malloc(dest_str_len);
 	retval = transform_string(transform, direction, NULL, 
 				  orig_str, orig_str_len, 
 				  dest_str, dest_str_len);
 
-	if (retval == 0)	/* It failed */
+	if (retval <= 0)	/* It failed */
 	{
+		yell("Transform [%s] failed to transform string [%s]", 
+			type, orig_str);
 		new_free(&dest_str);
 		if (my_dest_str_len)
 			*my_dest_str_len = 0;
@@ -5919,7 +5936,7 @@ char *	valid_transforms (void)
 	return retval;
 }
 
-static int	register_transform (const char *name, int takes_meta, ssize_t (*encoder)(const char *, size_t, const void *, size_t, char *, size_t), ssize_t (*decoder)(const char *, size_t, const void *, size_t, char *, size_t))
+static int	register_transform (const char *name, int takes_meta, int expansion_size, int expansion_overhead, ssize_t (*encoder)(const char *, size_t, const void *, size_t, char *, size_t), ssize_t (*decoder)(const char *, size_t, const void *, size_t, char *, size_t))
 {
 	int	i, max = 0;
 
@@ -5932,6 +5949,8 @@ static int	register_transform (const char *name, int takes_meta, ssize_t (*encod
 			transformers[i].takes_meta = takes_meta;
 			transformers[i].encoder = encoder;
 			transformers[i].decoder = decoder;
+			transformers[i].recommended_size = expansion_size;
+			transformers[i].recommended_overhead = expansion_overhead;
 			return i;
 		}
 	} 
@@ -5960,6 +5979,8 @@ void	init_transforms (void)
 		transformers[i].refnum = -1;
 		transformers[i].name = NULL;
 		transformers[i].takes_meta = 0;
+		transformers[i].recommended_size = 0;
+		transformers[i].recommended_overhead = 0;
 		transformers[i].encoder = NULL;
 		transformers[i].decoder = NULL;
 	}
@@ -5968,6 +5989,8 @@ void	init_transforms (void)
 	{
 		register_transform(default_transformers[i].name,
 				   default_transformers[i].takes_meta,
+				   default_transformers[i].recommended_size,
+				   default_transformers[i].recommended_overhead,
 				   default_transformers[i].encoder,
 				   default_transformers[i].decoder);
 	}

@@ -1,4 +1,4 @@
-/* $EPIC: functions.c,v 1.282 2009/09/11 21:02:02 jnelson Exp $ */
+/* $EPIC: functions.c,v 1.283 2009/09/14 01:29:51 jnelson Exp $ */
 /*
  * functions.c -- Built-in functions for ircII
  *
@@ -2997,6 +2997,8 @@ BUILT_IN_FUNCTION(function_asciiq, word)
 
 	/* The CTCP enquoting is intentional... */
 	free_it = word = transform_string_dyn("-CTCP", word, 0, NULL);
+	RETURN_IF_EMPTY(word);
+
 	for (; word && *word; word++)
 	{
 		malloc_strcat_wordlist_c(&aboo, space, 
@@ -3791,6 +3793,7 @@ BUILT_IN_FUNCTION(function_glob, word)
 		   /* The CTCP enquoting is intentional, probably
 		    * to do de-\-ing */
 		    freepath = path = transform_string_dyn("-CTCP", path, 0, NULL);
+		    RETURN_IF_EMPTY(path);
 		}
 		expand_twiddle(path, path2);
 
