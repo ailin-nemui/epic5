@@ -4,9 +4,9 @@ dnl except those bits attributed otherwise.
 dnl thanks to the screen 3.3 configure.in for giving me examples to
 dnl work from and steal ;)
 dnl
-dnl @(#)$Id: configure.in,v 1.82 2009/09/11 01:42:10 jnelson Exp $
+dnl @(#)$Id: configure.in,v 1.83 2009/09/18 21:30:11 jnelson Exp $
 
-AC_REVISION($Revision: 1.82 $)dnl
+AC_REVISION($Revision: 1.83 $)dnl
 AC_INIT(source/irc.c)
 AC_CONFIG_HEADER(include/defs.h)
 
@@ -213,24 +213,42 @@ AC_ARG_WITH(ssl,
 AC_MSG_CHECKING(whether to include SSL support)
 if test "x$with_ssl" = "xno"; then
 	AC_MSG_RESULT(no)
+	AC_MSG_ERROR([You cannot explicitly turn off OpenSSL support any more.  This error is intentional.  Please remove --without-ssl and try again.])
 else
 	saved_LIBS="$LIBS"
 	saved_CFLAGS="$CFLAGS"
 
-	# First just try to see if it exists in the default location
+	# First, let's see if the user overrode the openssl location
+	ssldir="$with_ssl"
+	if test "x$ssldir" != "x" -a "x$ssldir" != "xyes"; then
+	    if test -f "$ssldir/include/openssl/ssl.h" && 
+			test -f "$ssldir/lib/libssl.a"; then
+		LIBS="$saved_LIBS -L$ssldir/lib -lssl -lcrypto"
+	        CFLAGS="$saved_CFLAGS -I$ssldir/include"
+		AC_TRY_LINK([#include <openssl/ssl.h>],
+			    [SSL_accept(0);], have_ssl="yes")
+	    fi
+
+	    if test "x$have_ssl" != "xyes"; then
+		AC_MSG_RESULT(no)	
+		AC_MSG_ERROR([I could not find the OpenSSL installed at $with_ssl you asked me to use with --with-ssl=$with_ssl.  Please ensure that directory contains the files 'include/openssl/ssl.h' and 'lib/libssl.a'.  If you are unsure, remove --with-ssl and just let me auto-detect it.])
+	    fi
+	fi
+
+	# Second, let's see if it just works by default
 	LIBS="$saved_LIBS -lssl -lcrypto"
 	CFLAGS="$saved_CFLAGS"
 	AC_TRY_LINK([#include <openssl/ssl.h>],
 		[SSL_accept(0);], have_ssl="yes")
 
 	# Otherwise, go hunting for it.
-	if test -z "$have_ssl" ; then
-	    for ssldir in "$with_ssl" /usr/local/ssl /usr/local/openssl; do
-		if test -n "$have_ssl"; then
+	if test "x$have_ssl" = "x" ; then
+	    for ssldir in /usr/local/ssl /usr/local/openssl; do
+		if test "x$have_ssl" != "x"; then
 			break;
 		fi
 
-		if test -z "$ssldir"; then
+		if test "x$ssldir" = "x"; then
 			continue;
 		fi
 
@@ -252,6 +270,7 @@ else
 		if test "x$with_ssl" != "x"; then
 			AC_MSG_ERROR([You requested SSL support, but OpenSSL was not found. Please supply a pathname to OpenSSL])
 		fi
+		AC_MSG_ERROR([I was unable to find OpenSSL.  If it is not installed, please install it.  If it is installed, please help me find it using --with-ssl=/usr/local or similar.])
 	else
 	    if test "x$threading" = "x1" ; then
 		AC_MSG_RESULT(yes)

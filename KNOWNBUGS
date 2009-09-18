@@ -83,3 +83,4 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Make various sanity checks for transforms to fix amn.
 * Ensure all the users of transform_string_dyn are prepared to handle NULLs
 * Ensure all the xform encoder/decoders can handle zero dest buffer sizes
+* Add code to configure to fail if OpenSSL is not found.  No turning back!
