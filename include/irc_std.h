@@ -465,4 +465,17 @@ typedef struct stat		Stat;
 # endif
 #endif
 
+/*
+ * See if we are supposed to give valgrind a hand in memory leak checking
+ */
+#ifdef HAVE_VALGRIND_MEMCHECK_H
+#include <valgrind/memcheck.h>
+#else
+#define VALGRIND_CREATE_MEMPOOL(x,y,z)
+#define VALGRIND_MEMPOOL_ALLOC(x,y,z)
+#define VALGRIND_MEMPOOL_TRIM(x,y,z)
+#define VALGRIND_MEMPOOL_FREE(x,y)
+#define VALGRIND_DESTROY_MEMPOOL(x)
+#endif
+
 #endif /* __irc_std_h */

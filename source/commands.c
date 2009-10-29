@@ -1,4 +1,4 @@
-/* $EPIC: commands.c,v 1.190 2009/09/14 04:49:57 jnelson Exp $ */
+/* $EPIC: commands.c,v 1.191 2009/10/29 07:37:32 jnelson Exp $ */
 /*
  * commands.c -- Stuff needed to execute commands in ircII.
  *		 Includes the bulk of the built in commands for ircII.
@@ -3155,6 +3155,8 @@ struct target_type target[4] =
 	    else
 	    {
 		char *	copy = NULL;
+
+		/* XXX SHoudl we check for invalid from_server here? */
 
 		if (get_server_doing_notice(from_server))
 		{

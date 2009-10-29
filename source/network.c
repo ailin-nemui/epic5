@@ -1,4 +1,4 @@
-/* $EPIC: network.c,v 1.83 2008/04/05 00:20:38 jnelson Exp $ */
+/* $EPIC: network.c,v 1.84 2009/10/29 07:37:32 jnelson Exp $ */
 /*
  * network.c -- handles stuff dealing with connecting and name resolving
  *
@@ -349,6 +349,7 @@ int	inet_vhostsockaddr (int family, int port, const char *wanthost, SS *storage,
 	}
 
 	memcpy(storage, res->ai_addr, res->ai_addrlen);
+	my_freeaddrinfo(res);
 	*len = socklen((SA *)storage);
 	return 0;
 }

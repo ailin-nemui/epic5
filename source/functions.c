@@ -1,4 +1,4 @@
-/* $EPIC: functions.c,v 1.284 2009/09/14 04:49:57 jnelson Exp $ */
+/* $EPIC: functions.c,v 1.285 2009/10/29 07:37:32 jnelson Exp $ */
 /*
  * functions.c -- Built-in functions for ircII
  *
@@ -1366,42 +1366,6 @@ BUILT_IN_FUNCTION(function_strip, input)
 
 	return result;		/* DONT USE RETURN_STR HERE! */
 }
-
-#if 0
-/*
- * Usage: $encode(text)
- * Returns: a string, uniquely identified with <text> such that the string
- *          can be used as a variable name.
- * Example: $encode(fe fi fo fum) returns "GGGFCAGGGJCAGGGPCAGGHFGN"
- *
- * Note: $encode($decode(text)) returns text (most of the time)
- *       $decode($encode(text)) also returns text.
- */
-static char	*function_encode (unsigned char *input)
-{
-	return encode(input, strlen(input));	/* DONT USE RETURN_STR HERE! */
-}
-
-/*
- * Usage: $decode(text)
- * Returns: If <text> was generated with $encode(), it returns the string
- *          you originally encoded.  If it wasnt, you will probably get
- *	    nothing useful in particular.
- * Example: $decode(GGGFCAGGGJCAGGGPCAGGHFGN) returns "fe fi fo fum"
- *
- * Note: $encode($decode(text)) returns "text"
- *       $decode($encode(text)) returns "text" too.
- *
- * Note: Yes.  $decode(plain-text) can compress the data in half, but it is
- *	 lossy compression (more than one plain-text can yeild identical
- *	 output), so most input is irreversably mangled.  Dont do it.
- */
-static char	*function_decode (unsigned char *input)
-{
-	return decode(input);	/* DONT USE RETURN_STR HERE! */
-}
-#endif
-
 
 /*
  * Usage: $ischannel(text)
@@ -6912,16 +6876,6 @@ BUILT_IN_FUNCTION(function_ruby, input)
 	return rubyeval ( input );
 }
 
-#endif
-
-#if 0
-BUILT_IN_FUNCTION(function_sha256, input)
-{
-	char retval[65];
-
-	sha256str(input, strlen(input), retval);
-	RETURN_STR(retval);
-}
 #endif
 
 BUILT_IN_FUNCTION(function_curcmd, unused) {

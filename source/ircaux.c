@@ -1,4 +1,4 @@
-/* $EPIC: ircaux.c,v 1.210 2009/09/14 04:49:58 jnelson Exp $ */
+/* $EPIC: ircaux.c,v 1.211 2009/10/29 07:37:32 jnelson Exp $ */
 /*
  * ircaux.c: some extra routines... not specific to irc... that I needed 
  *
@@ -186,6 +186,8 @@ void *	really_new_malloc (size_t size, const char *fn, int line)
 	alloc_table.entries = realloc(alloc_table.entries, (alloc_table.size) * sizeof(void**));
 	alloc_table.entries[alloc_table.size-1] = ptr;
 #endif
+	VALGRIND_CREATE_MEMPOOL(mo_ptr(ptr), 0, 1);
+	VALGRIND_MEMPOOL_ALLOC(mo_ptr(ptr), ptr, size);
 	return ptr;
 }
 
@@ -249,6 +251,8 @@ void *	really_new_free (void **ptr, const char *fn, int line)
 {
 	if (*ptr)
 	{
+		VALGRIND_MEMPOOL_FREE(mo_ptr(*ptr), *ptr);
+		VALGRIND_DESTROY_MEMPOOL(mo_ptr(*ptr));
 		fatal_malloc_check(*ptr, NULL, fn, line);
 		alloc_size(*ptr) = FREED_VAL;
 #ifdef ALLOC_DEBUG
@@ -283,9 +287,14 @@ void *	really_new_realloc (void **ptr, size_t size, const char *fn, int line)
 
 		/* If it's already big enough, keep it. */
 		if ((ssize_t)alloc_size(*ptr) >= (ssize_t)size)
+		{
+			VALGRIND_MEMPOOL_TRIM(mo_ptr(*ptr), *ptr, size);
 			return (*ptr);
+		}
 
 		/* Copy everything, including the MO buffer */
+		VALGRIND_MEMPOOL_FREE(mo_ptr(*ptr), *ptr);
+		VALGRIND_DESTROY_MEMPOOL(mo_ptr(*ptr));
 		if ((newptr = (char *)realloc(mo_ptr(*ptr), size + sizeof(MO))))
 			*ptr = newptr;
 		else {
@@ -299,6 +308,8 @@ void *	really_new_realloc (void **ptr, size_t size, const char *fn, int line)
 #ifdef ALLOC_DEBUG
 		alloc_table.entries[mo_ptr(*ptr)->entry] = *ptr;
 #endif
+		VALGRIND_CREATE_MEMPOOL(mo_ptr(*ptr), 0, 1);
+		VALGRIND_MEMPOOL_ALLOC(mo_ptr(*ptr), *ptr, size);
 	}
 	return *ptr;
 }
@@ -321,7 +332,10 @@ void *	new_realloc (void **ptr, size_t size)
 			size_t msize = alloc_size(*ptr);
 
 			if (msize >= size)
+			{
+				VALGRIND_MEMPOOL_TRIM(mo_ptr(*ptr), *ptr, size);
 				return *ptr;
+			}
 
 			ptr2 = new_malloc(size);
 			memmove(ptr2, *ptr, msize);
@@ -2739,45 +2753,6 @@ const char *	strfill (char c, int num)
 }
 
 
-#if 0
-char *	encode (const char *str, size_t len)
-{
-	char *retval;
-	char *ptr;
-
-	if ((int)len < 0)
-		len = strlen(str);
-
-	ptr = retval = new_malloc(len * 2 + 1);
-	while (len)
-	{
-		*ptr++ = ((unsigned char)*str >> 4) + 0x41;
-		*ptr++ = ((unsigned char)*str & 0x0f) + 0x41;
-		str++;
-		len--;
- 	}
-	*ptr = 0;
-	return retval;
-}
-
-char *	decode (const char *str)
-{
-	char *retval;
-	char *ptr;
-	int len = strlen(str);
-
-	ptr = retval = new_malloc(len / 2 + 1);
-	while (len >= 2)
-	{
-		*ptr++ = ((str[0] - 0x41) << 4) | (str[1] - 0x41);
-		str += 2;
-		len -= 2;
-	}
-	*ptr = 0;
-	return retval;
-}
-#endif
-
 char *	chomp (char *s)
 {
 	char *e = s + strlen(s);
@@ -3309,125 +3284,6 @@ unsigned long	random_number (unsigned long l)
 			return randa(l);
 	}
 }
-
-#if 0
-/*
- * quote_it: This quotes the given string making it sendable via irc.  A
- * pointer to the length of the data is required and the data need not be
- * null terminated (it can contain nulls).  Returned is a malloced, null
- * terminated string.
- */
-char	*enquote_it (const char *str, size_t len)
-{
-	char	*buffer = new_malloc(len + 5);
-	char	*ptr = buffer;
-	size_t	i;
-	int	size = len;
-
-	for (i = 0; i < len; i++)
-	{
-		if (ptr-buffer >= size)
-		{
-			int j = ptr-buffer;
-			size += 256;
-			RESIZE(buffer, char, size + 5);
-			ptr = buffer + j;
-		}
-
-		switch (str[i])
-		{
-			case CTCP_DELIM_CHAR:	*ptr++ = CTCP_QUOTE_CHAR;
-						*ptr++ = 'a';
-						break;
-			case '\n':		*ptr++ = CTCP_QUOTE_CHAR;
-						*ptr++ = 'n';
-						break;
-			case '\r':		*ptr++ = CTCP_QUOTE_CHAR;
-						*ptr++ = 'r';
-						break;
-			case CTCP_QUOTE_CHAR:	*ptr++ = CTCP_QUOTE_CHAR;
-						*ptr++ = CTCP_QUOTE_CHAR;
-						break;
-			case '\0':		*ptr++ = CTCP_QUOTE_CHAR;
-						*ptr++ = '0';
-						break;
-			case ':':		*ptr++ = CTCP_QUOTE_CHAR;
-						/* FALLTHROUGH */
-			default:		*ptr++ = str[i];
-						break;
-		}
-	}
-	*ptr = '\0';
-	return buffer;
-}
-
-/*
- * ctcp_unquote_it: This takes a null terminated string that had previously
- * been quoted using ctcp_quote_it and unquotes it.  Returned is a malloced
- * space pointing to the unquoted string.  NOTE: a trailing null is added for
- * convenied, but the returned data may contain nulls!.  The len is modified
- * to contain the size of the data returned. 
- */
-char	*dequote_it (const char *str, size_t *len)
-{
-	char	*buffer;
-	char	*ptr;
-	char	c;
-	size_t	i, new_size = 0;
-
-	buffer = (char *) new_malloc(sizeof(char) * *len + 1);
-	ptr = buffer;
-	i = 0;
-	while (i < *len)
-	{
-		if ((c = str[i++]) == CTCP_QUOTE_CHAR)
-		{
-			switch (c = str[i++])
-			{
-				case CTCP_QUOTE_CHAR:
-					*ptr++ = CTCP_QUOTE_CHAR;
-					break;
-				case 'a':
-					*ptr++ = CTCP_DELIM_CHAR;
-					break;
-				case 'n':
-					*ptr++ = '\n';
-					break;
-				case 'r':
-					*ptr++ = '\r';
-					break;
-				case '0':
-					*ptr++ = '\0';
-					break;
-				default:
-					*ptr++ = c;
-					break;
-			}
-		}
-		else
-			*ptr++ = c;
-		new_size++;
-	}
-	*ptr = '\0';
-	*len = new_size;
-	return (buffer);
-}
-
-/*
- * As above, but act as if the malloc never occured.  dequote_it should
- * probably be written in terms of dequote_buffer for performance purposes.
- */
-char	*dequote_buffer (char *str, size_t *len)
-{
-	char *freeme;
-	char *ret;
-
-	freeme = dequote_it(str, len);
-	ret = memmove(str, freeme, *len + 1);
-	new_free(&freeme);
-	return ret;
-}
-#endif
 
 /* 
  * Should I switch over to using getaddrinfo() directly or is using

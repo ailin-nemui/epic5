@@ -1,4 +1,4 @@
-/* $EPIC: crypto.c,v 1.15 2009/07/05 04:29:44 jnelson Exp $ */
+/* $EPIC: crypto.c,v 1.16 2009/10/29 07:37:32 jnelson Exp $ */
 /*
  * crypto.c: SED/CAST5/BLOWFISH/AES encryption and decryption routines.
  *
@@ -184,30 +184,34 @@ unsigned char *	decipher_message (const unsigned char *ciphertext, size_t len, C
 #ifdef HAVE_SSL
 	    const EVP_CIPHER *type;
 	    int	bytes_to_trim;
-	    int blocksize;
+	    int ivsize, blocksize;
 
 	    if (key->type == CAST5CRYPT)
 	    {
-		blocksize = 8;
+		ivsize = 8, blocksize = 8;
 	    }
-	    else if (key->type == BLOWFISHCRYPT || key->type == FISHCRYPT)
+	    else if (key->type == BLOWFISHCRYPT)
 	    {
-		blocksize = 8;
+		ivsize = 8, blocksize = 8;
+	    }
+	    else if (key->type == FISHCRYPT)
+	    {
+		ivsize = 0, blocksize = 8;
 	    }
 	    else if (key->type == AES256CRYPT || key->type == AESSHA256CRYPT)
 	    {
-		blocksize = 16;
+		ivsize = 16, blocksize = 16;
 	    }
 	    else
 		return NULL;
 
-	    if (len % blocksize != 0)
+	    if (blocksize > 0 && len % blocksize != 0)
 	    {
 		yell("Encrypted message [%s] isn't multiple of %d! (is %d)", 
 				ciphertext, blocksize, len);
 		break;
 	    }
-	    if ((int)len < blocksize * 2)
+	    if ((int)len < blocksize + ivsize)
 	    {
 		yell("Encrypted message [%s] doesn't contain message! "
 				"(len is %d)", ciphertext, len);
@@ -227,7 +231,7 @@ unsigned char *	decipher_message (const unsigned char *ciphertext, size_t len, C
 
 	    if (!(outbuf = decipher_evp(key->key, key->keylen,
 					ciphertext, len, 
-					type, retlen, blocksize)))
+					type, retlen, ivsize)))
 	    {
 		yell("bummer");
 		break;
@@ -236,7 +240,7 @@ unsigned char *	decipher_message (const unsigned char *ciphertext, size_t len, C
 	    bytes_to_trim = outbuf[len - 1] & (blocksize - 1);
 	    /* outbuf[len - bytes_to_trim - 1] = 0; */
 	    outbuf[len - bytes_to_trim] = 0; 
-	    memmove(outbuf, outbuf + blocksize, len - blocksize);
+	    memmove(outbuf, outbuf + ivsize, len - ivsize);
 #endif
 	    return outbuf;
 	}
@@ -270,15 +274,17 @@ unsigned char *	decipher_message (const unsigned char *ciphertext, size_t len, C
 static char *	decipher_evp (const unsigned char *key, int keylen, const unsigned char *ciphertext, int cipherlen, const EVP_CIPHER *type, int *outlen, int ivsize)
 {
         unsigned char *outbuf;
-	unsigned char	*iv;
+	unsigned char	*iv = NULL;
 	unsigned long errcode;
         EVP_CIPHER_CTX a;
         EVP_CIPHER_CTX_init(&a);
 	EVP_CIPHER_CTX_set_padding(&a, 0);
 
-	iv = new_malloc(ivsize);
+	if (iv > 0)
+		iv = new_malloc(ivsize);
 	outbuf = new_malloc(cipherlen + 1024);
-	memcpy(iv, ciphertext, ivsize);
+	if (iv > 0)
+		memcpy(iv, ciphertext, ivsize);
 
         EVP_DecryptInit_ex(&a, type, NULL, NULL, iv);
 	EVP_CIPHER_CTX_set_key_length(&a, keylen);
@@ -294,7 +300,8 @@ static char *	decipher_evp (const unsigned char *key, int keylen, const unsigned
 	    yell("ERROR: %s", r);
 	}
 
-	new_free(&iv);
+	if (iv)
+		new_free(&iv);
 	return outbuf;
 }
 #endif
@@ -380,7 +387,7 @@ unsigned char *	cipher_message (const unsigned char *orig_message, size_t len, C
 	    else if (key->type == FISHCRYPT)
 	    {
 		type = EVP_bf_ecb();
-		ivlen = 8;
+		ivlen = 0;		/* XXX Sigh */
 	    }
 	    else if (key->type == AES256CRYPT || key->type == AESSHA256CRYPT)
 	    {
@@ -430,7 +437,7 @@ static char *	cipher_evp (const unsigned char *key, int keylen, const unsigned c
         unsigned char *outbuf;
         int     outlen = 0;
 	int	extralen = 0;
-	unsigned char	*iv;
+	unsigned char	*iv = NULL;
 	unsigned long errcode;
 	u_32int_t	randomval;
 	int		iv_count;
@@ -438,15 +445,27 @@ static char *	cipher_evp (const unsigned char *key, int keylen, const unsigned c
         EVP_CIPHER_CTX_init(&a);
 	EVP_CIPHER_CTX_set_padding(&a, 0);
 
-	iv = new_malloc(ivsize);
-	for (iv_count = 0; iv_count < ivsize; iv_count += sizeof(u_32int_t))
+	if (ivsize < 0)
+		ivsize = 0;		/* Shenanigans! */
+
+	if (ivsize > 0)
 	{
+	    if (ivsize % sizeof(u_32int_t) != 0)
+		panic(1, "The IV size for a crypto type you're using is %d "
+			"which is not a multiple of %d", 
+			ivsize, sizeof(u_32int_t));
+
+	    iv = new_malloc(ivsize);
+	    for (iv_count = 0; iv_count < ivsize; iv_count += sizeof(u_32int_t))
+	    {
 		randomval = arc4random();  
 		memmove(iv + iv_count, &randomval, sizeof(u_32int_t));
+	    }
 	}
 
 	outbuf = new_malloc(plaintextlen + 100);
-	memcpy(outbuf, iv, ivsize);
+	if (iv)
+		memcpy(outbuf, iv, ivsize);
 
         EVP_EncryptInit_ex(&a, type, NULL, NULL, iv);
 	EVP_CIPHER_CTX_set_key_length(&a, keylen);
@@ -465,7 +484,8 @@ static char *	cipher_evp (const unsigned char *key, int keylen, const unsigned c
 	}
 
 	*retsize = outlen + ivsize;
-	new_free(&iv);		/* XXX Is this correct? */
+	if (iv)
+		new_free(&iv);		/* XXX Is this correct? */
 	return outbuf;
 }
 #endif
@@ -553,8 +573,9 @@ static void	copy_key (const char *orig, size_t orig_len, char **key, size_t *key
 
 /*
  * These are helper functions for $xform() to do SSL strong crypto.
+ * XXX These are cut and pasted from decipher_message. 
  */
-#define CRYPTO_HELPER_FUNCTIONS(x, y, blocksize, make_key)		\
+#define CRYPTO_HELPER_FUNCTIONS(x, y, blocksize, ivsize, make_key, trim) \
 ssize_t	x ## _encoder (const char *orig, size_t orig_len, const void *meta, size_t meta_len, char *dest, size_t dest_len) \
 { 									\
 	size_t	len; 							\
@@ -571,7 +592,7 @@ ssize_t	x ## _encoder (const char *orig, size_t orig_len, const void *meta, size
 									\
 	make_key (meta, meta_len, &realkey, &realkeylen);		\
 	retval = cipher_evp(realkey, realkeylen, orig, orig_len,	\
-				y (), &retsize, blocksize); 		\
+				y (), &retsize, ivsize); 		\
 	if (retval && retsize > 0) 					\
 	{ 								\
 		size_t	numb; 						\
@@ -594,7 +615,7 @@ ssize_t	x ## _encoder (const char *orig, size_t orig_len, const void *meta, size
 ssize_t	x ## _decoder (const char *ciphertext, size_t len, const void *meta, size_t meta_len, char *dest, size_t dest_len) \
 { 									\
 	unsigned char *	outbuf = NULL; 					\
-	int	bytes_to_trim; 						\
+	int	bytes_to_trim = 0;					\
 	int 	retlen = 0; 						\
 	char *	realkey;						\
 	size_t	realkeylen;						\
@@ -607,15 +628,18 @@ ssize_t	x ## _decoder (const char *ciphertext, size_t len, const void *meta, siz
 									\
 	make_key (meta, meta_len, &realkey, &realkeylen);		\
 	if (!(outbuf = decipher_evp(realkey, realkeylen, ciphertext, len, \
-				y (), &retlen, blocksize))) 		\
+				y (), &retlen, ivsize))) 		\
 	{ 								\
 		yell("bummer"); 					\
 		return -1; 						\
 	} 								\
 									\
-	bytes_to_trim = outbuf[len - 1] & (blocksize - 1); 		\
-	outbuf[len - bytes_to_trim] = 0;  				\
-	memmove(outbuf, outbuf + blocksize, len - bytes_to_trim); 	\
+	if ( trim )							\
+	{								\
+		bytes_to_trim = outbuf[len - 1] & (blocksize - 1); 	\
+		outbuf[len - bytes_to_trim] = 0;  			\
+		memmove(outbuf, outbuf + ivsize, len - bytes_to_trim); 	\
+	}								\
 									\
 	memcpy(dest, outbuf, retlen); 					\
 	dest[retlen] = 0; 						\
@@ -623,11 +647,11 @@ ssize_t	x ## _decoder (const char *ciphertext, size_t len, const void *meta, siz
 	return retlen;							\
 }
 
-CRYPTO_HELPER_FUNCTIONS(blowfish, EVP_bf_cbc, 8, copy_key)
-CRYPTO_HELPER_FUNCTIONS(fish, EVP_bf_ecb, 8, copy_key)
-CRYPTO_HELPER_FUNCTIONS(cast5, EVP_cast5_cbc, 8, copy_key)
-CRYPTO_HELPER_FUNCTIONS(aes, EVP_aes_256_cbc, 16, ext256_key)
-CRYPTO_HELPER_FUNCTIONS(aessha, EVP_aes_256_cbc, 16, sha256_key)
+CRYPTO_HELPER_FUNCTIONS(blowfish, EVP_bf_cbc, 8, 8, copy_key, 1)
+CRYPTO_HELPER_FUNCTIONS(fish, EVP_bf_ecb, 8, 0, copy_key, 0)
+CRYPTO_HELPER_FUNCTIONS(cast5, EVP_cast5_cbc, 8, 8, copy_key, 1)
+CRYPTO_HELPER_FUNCTIONS(aes, EVP_aes_256_cbc, 16, 16, ext256_key, 1)
+CRYPTO_HELPER_FUNCTIONS(aessha, EVP_aes_256_cbc, 16, 16, sha256_key, 1)
 #endif
 
 

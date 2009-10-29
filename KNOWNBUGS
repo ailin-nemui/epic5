@@ -17,6 +17,7 @@ KNOWN ERRATA (eg, bugs, or unresolved requests):
 	*!*user@*.com.au but instead *!*user@*.domain.com.au
 * There should be a watch to check for the validity of a $connect() 
   by working directly off the fd instead of the port (user) and host (desc)
+* Add /exec -closeout that closes stdout/stderr from process, but not stdin.
 
 ISSUES OF INTEREST
 ------------------
@@ -84,3 +85,12 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Ensure all the users of transform_string_dyn are prepared to handle NULLs
 * Ensure all the xform encoder/decoders can handle zero dest buffer sizes
 * Add code to configure to fail if OpenSSL is not found.  No turning back!
+* Split the notion of "iv size" and "blocksize" in crypto support
+* This is needed because FiSH does not use an IV, being an ECB cipher
+* It's also needed because the notion that the IV *must* be blocksize is lame.
+* Add notion of "trimmable bytes" to end of crypto message
+* Again, this is for FiSH, because it doesn't trim bytes on last packet.
+* Support for assissting valgrind in helping us find memory leaks (caf)
+* Fix memory leaks found by valgrind (caf)
+* GC function_[en|de]code() and function_sha256 (superceded by $xform())
+* GC unused [en|de]code(), enquote_it, dequote_it, and dequote_buffer().

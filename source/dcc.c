@@ -1,4 +1,4 @@
-/* $EPIC: dcc.c,v 1.157 2009/09/14 04:49:57 jnelson Exp $ */
+/* $EPIC: dcc.c,v 1.158 2009/10/29 07:37:32 jnelson Exp $ */
 /*
  * dcc.c: Things dealing client to client connections. 
  *
@@ -392,6 +392,7 @@ static 	void		dcc_erase (DCC_list *erased)
 	new_free(&erased->local_filename);
 	new_free(&erased->user);
 	new_free(&erased->othername);
+	new_free(&erased->userhost);
 	new_free((char **)&erased);
 
 	if (x_debug & DEBUG_DCC_XMIT)
