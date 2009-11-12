@@ -1,4 +1,4 @@
-/* $EPIC: window.c,v 1.208 2009/06/29 19:30:33 jnelson Exp $ */
+/* $EPIC: window.c,v 1.209 2009/11/12 04:21:53 jnelson Exp $ */
 /*
  * window.c: Handles the organzation of the logical viewports (``windows'')
  * for irc.  This includes keeping track of what windows are open, where they
@@ -267,6 +267,7 @@ Window	*new_window (Screen *screen)
 	new_w->scrollback_indicator->count = -1;
 	new_w->scrollback_indicator->prev = NULL;
 	new_w->scrollback_indicator->next = NULL;
+	new_w->scrollback_indicator->when = time(NULL);
 
 	/* Window geometry stuff */
 	new_w->my_columns = 0;			/* Filled in later? */
@@ -1527,8 +1528,8 @@ void 	recalculate_windows (Screen *screen)
 		screen->window_list->top = 0;
 		screen->window_list->toplines_showing = 0;
 		screen->window_list->toplines_wanted = 0;
-		screen->window_list->display_lines = screen->li - 2;
-		screen->window_list->bottom = screen->li - 2;
+		screen->window_list->display_lines = screen->li - 1 - screen->window_list->status.number;
+		screen->window_list->bottom = screen->li - 1 - screen->window_list->status.number;
 		screen->window_list->my_columns = screen->co;
 		old_li = screen->li;
 		return;
@@ -4838,6 +4839,55 @@ static Window *window_search_forward (Window *window, char **args)
 	return window;
 }
 
+static	int	last_scroll_seconds_interval = 0;
+
+static Window *window_scroll_seconds (Window *window, char **args)
+{
+	int	val;
+	time_t	now, when;
+
+	if (args && *args && **args)
+		val = get_number("SCROLL_SECONDS", args);
+	else
+		val = last_scroll_seconds_interval;
+
+	last_scroll_seconds_interval = val;
+
+	if (val < 0)
+	{
+		/* Scroll back "-val" seconds */
+	}
+	else if (val == 0)
+		return window;
+	else
+	{
+		/* Scroll forward "val" seconds */
+	}
+
+	return window;
+}
+
+static Window *window_scrollback_toseconds (Window *window, char **args)
+{
+	int	val;
+	time_t	now, when;
+
+	if (args && *args && **args)
+		val = get_number("SCROLL_SECONDS", args);
+	else
+		return window;
+
+	now = time(NULL);
+	if (val <= 0)
+		return window;
+
+	when = now - val;
+	/* Scroll to the first entry newer than 'when' */
+
+	return window;
+}
+
+
 static Window *window_skip (Window *window, char **args)
 {
 	if (get_boolean("SKIP", args, &window->skip))
@@ -5418,6 +5468,7 @@ static Display *new_display_line (Display *prev, Window *w)
 	stuff->unique_refnum = ++current_display_counter;
 	stuff->prev = prev;
 	stuff->next = NULL;
+	stuff->when = time(NULL);
 	return stuff;
 }
 
@@ -5723,10 +5774,21 @@ static int	flush_scrollback_after (Window *window)
 
 /********************** Scrollback functionality ***************************/
 /*
- * Scroll backwards from the last scrollback point, the last hold point,
- * or the standard place.
+ * window_scrollback_backwards: Generalized scrollback (up/older)
+ * Resets the scrollback view to some place older than the top of the
+ * current view (the last scrollback point, the last hold point, or the
+ * standard scrolling view).
+ *
+ * window - The window that we are scrolling back on
+ * skip_lines - Automatically scroll up this many lines, without testing them
+ * abort_if_not_found - If we reach the top of the scrollback without finding
+ *			the line we're looking for, treat as an error and do
+ *			not change anything
+ * test - A callback function that will tell us if this is the line we are
+ *	  interested in or not.  Returns 0 for "keep going" and -1 for "stop"
+ * meta - A private value to pass to the tester.
  */
-static void 	window_scrollback_backwards_lines (Window *window, int my_lines)
+static void	window_scrollback_backwards (Window *window, int skip_lines, int abort_if_not_found, int (*test)(Window *, Display *, void *), void *meta)
 {
 	Display *new_top;
 	int	new_lines;
@@ -5737,24 +5799,33 @@ static void 	window_scrollback_backwards_lines (Window *window, int my_lines)
 		return;
 	}
 
-	if (window->scrollback_top_of_display == NULL)
-	{
-	    if (window->holding_distance_from_display_ip > window->scrolling_distance_from_display_ip)
-		window->scrollback_top_of_display = window->holding_top_of_display;
-	    else
-		window->scrollback_top_of_display = window->scrolling_top_of_display;
-	}
+	if (window->scrollback_top_of_display)
+		new_top = window->scrollback_top_of_display;
+	else if (window->holding_distance_from_display_ip > 
+				window->scrolling_distance_from_display_ip)
+		new_top = window->holding_top_of_display;
+	else
+		new_top = window->scrolling_top_of_display;
 
-/*
- *	if (!window->scrollback_hint)
- *		insert_scrollback_hint(window);
- */
-
-	new_top = window->scrollback_top_of_display;
-	for (new_lines = 0; new_lines < my_lines; new_lines++)
+	for (;;)
 	{
+		/* Always stop when we reach the top */
 		if (new_top == window->top_of_scrollback)
+		{
+			if (abort_if_not_found)
+			{
+				term_beep();
+				return;
+			}
 			break;
+		}
+
+		if (skip_lines > 0)
+			skip_lines--;
+		/* This function returns -1 when it wants us to stop. */
+		else if ((*test)(window, new_top, meta))
+			break;
+
 		new_top = new_top->prev;
 	}
 
@@ -5765,9 +5836,23 @@ static void 	window_scrollback_backwards_lines (Window *window, int my_lines)
 }
 
 /*
- * Scroll the scrollback (or hold mode) forward.
+ * window_scrollback_forwards: Generalized scrollforward (down/newer)
+ * Resets the scrollback view to some place newer than the top of the
+ * current view (the last scrollback point, the last hold point, or the
+ * standard scrolling view).  Note that no matter what happens, if the 
+ * scrollback point ends up being "newer" (further down) than the normal
+ * scrolling view, it will be cancelled by recalculate_window_cursor().
+ *
+ * window - The window that we are scrolling forward on
+ * skip_lines - Automatically scroll down this many lines, w/o testing them
+ * abort_if_not_found - If we reach the bottom of scrollback without finding
+ *			the line we're looking for, treat as an error and do
+ *			not change anything
+ * test - A callback function that will tell us if this is the line we are
+ *	  interested in or not.  Returns 0 for "keep going" and -1 for "stop"
+ * meta - A private value to pass to the tester.
  */
-static void 	window_scrollback_forwards_lines (Window *window, int my_lines)
+static void	window_scrollback_forwards (Window *window, int skip_lines, int abort_if_not_found, int (*test)(Window *, Display *, void *), void *meta)
 {
 	Display *new_top;
 	int	unholding;
@@ -5778,7 +5863,8 @@ static void 	window_scrollback_forwards_lines (Window *window, int my_lines)
 		new_top = window->scrollback_top_of_display;
 		unholding = 0;
 	}
-	else if (window->holding_top_of_display)
+	else if (window->holding_distance_from_display_ip >
+			window->scrolling_distance_from_display_ip)
 	{
 		new_top = window->holding_top_of_display;
 		unholding = 1;
@@ -5789,13 +5875,29 @@ static void 	window_scrollback_forwards_lines (Window *window, int my_lines)
 		return;
 	}
 
-	for (new_lines = 0; new_lines < my_lines; new_lines++)
+	for (;;)
 	{
-	    if (new_top == window->display_ip)
-		break;
-	    new_top = new_top->next;
+		/* Always stop when we reach the bottom */
+		if (new_top == window->display_ip)
+		{
+			if (abort_if_not_found)
+			{
+				term_beep();
+				return;
+			}
+			break;
+		}
+
+		if (skip_lines > 0)
+			skip_lines--;
+		/* This function returns -1 when it wants us to stop. */
+		else if ((*test)(window, new_top, meta))
+			break;
+
+		new_top = new_top->next;
 	}
 
+	/* Set the top of scrollback to wherever we landed */
 	if (!unholding)
 		window->scrollback_top_of_display = new_top;
 	else
@@ -5804,66 +5906,104 @@ static void 	window_scrollback_forwards_lines (Window *window, int my_lines)
 	recalculate_window_cursor_and_display_ip(window);
 	window_body_needs_redraw(window);
 	window_statusbar_needs_update(window);
+	return;
+}
+
+/* * * */
+/*
+ * A scrollback tester that counts off the number of lines to move.
+ * Returns -1 when the count has been reached.
+ */
+static	int	window_scroll_lines_tester (Window *window, Display *line, void *meta)
+{
+	if (*(int *)meta > 0)
+	{
+		(*(int *)meta)--;
+		return 0;		/* keep going */
+	}
+	else
+		return -1;		/* We're done. stop! */
+}
+
+/* Scroll up "my_lines" on "window".  Will stop if it reaches top */
+static void 	window_scrollback_backwards_lines (Window *window, int my_lines)
+{
+	/* Do not skip line, Move even if not found, don't leave blank space */
+	window_scrollback_backwards(window, 0, 0,
+			window_scroll_lines_tester, 
+			(void *)&my_lines);
+}
+
+/* Scroll down "my_lines" on "window".  Will stop if it reaches bottom */
+static void 	window_scrollback_forwards_lines (Window *window, int my_lines)
+{
+	/* Do not skip line, Move even if not found, don't leave blank space */
+	window_scrollback_forwards(window, 0, 0,
+			window_scroll_lines_tester, 
+			(void *)&my_lines);
+}
+
+/* * * */
+/*
+ * A scrollback tester that looks for a line that matches a regex.
+ * Returns -1 when the line is found, and 0 if this line does not match.
+ */
+static	int	window_scroll_regex_tester (Window *window, Display *line, void *meta)
+{
+	/* If it matches, stop here */
+	if (regexec((regex_t *)meta, line->line, 0, NULL, 0) == 0)
+		return -1;	/* Stop right here. */
+	else
+		return 0;	/* Just keep going. */
 }
 
 static void 	window_scrollback_to_string (Window *window, regex_t *preg)
 {
-	Display *new_top;
-
-	if (window->scrollback_top_of_display)
-		new_top = window->scrollback_top_of_display;
-	else if (window->holding_distance_from_display_ip > window->scrolling_distance_from_display_ip)
-		new_top = window->holding_top_of_display;
-	else
-		new_top = window->scrolling_top_of_display;
-
-	while (new_top != window->top_of_scrollback)
-	{
-		/* Always move up a line before searching */
-		new_top = new_top->prev;
-
-		if (regexec(preg, new_top->line, 0, NULL, 0) == 0)
-		{
-			window->scrollback_top_of_display = new_top;
-			recalculate_window_cursor_and_display_ip(window);
-			window_body_needs_redraw(window);
-			window_statusbar_needs_update(window);
-			return;
-		}
-	}
-
-	term_beep();
+	/* Skip one line, Don't move if not found, don't leave blank space */
+	window_scrollback_backwards(window, 1, 1,
+			window_scroll_regex_tester, 
+			(void *)preg);
 }
 
 static void 	window_scrollforward_to_string (Window *window, regex_t *preg)
 {
-	Display *new_top;
-
-	if (window->scrollback_top_of_display)
-		new_top = window->scrollback_top_of_display;
-	else if (window->holding_distance_from_display_ip > window->scrolling_distance_from_display_ip)
-		new_top = window->holding_top_of_display;
-	else
-		new_top = window->scrolling_top_of_display;
-
-	while (new_top->next != window->display_ip)
-	{
-		/* Always move up a line before searching */
-		new_top = new_top->next;
-
-		if (regexec(preg, new_top->line, 0, NULL, 0) == 0)
-		{
-			window->scrollback_top_of_display = new_top;
-			recalculate_window_cursor_and_display_ip(window);
-			window_body_needs_redraw(window);
-			window_statusbar_needs_update(window);
-			return;
-		}
-	}
-
-	term_beep();
+	/* Skip one line, Don't move if not found, blank space is ok */
+	window_scrollback_forwards(window, 1, 1,
+			window_scroll_regex_tester, 
+			(void *)preg);
 }
 
+/* * * */
+/*
+ * A scrollback tester that looks for the final line that is newer than the
+ * given time.
+ */
+static	int	window_scroll_time_tester (Window *window, Display *line, void *meta)
+{
+	/* If this is the oldest line, then just stop here */
+	if (line->prev == NULL)
+		return -1;		/* Stop right here */
+
+	/* 
+	 * If this line is newer than 'meta' but the previous line is
+	 * older than 'meta' then we stop here.
+	 */
+	if (line->when >= *(time_t *)meta && 
+	    line->prev->when < *(time_t *)meta)
+		return -1;		/* Stop right here */
+
+	return 0;	/* Keep going */
+}
+
+/* * * */
+/*
+ * Functions that implement keybindings (and corresponding /WINDOW ops)
+ */
+
+/*
+ * Keybinding: SCROLL_START
+ * Command: /WINDOW SCROLL_START
+ */
 static void	window_scrollback_start (Window *window)
 {
 	/* XXX Ok.  So maybe 999999 *is* a magic number. */
@@ -5871,17 +6011,20 @@ static void	window_scrollback_start (Window *window)
 }
 
 /*
- * Cancel out scrollback and holding stuff so you're left pointing at the
- * "standard" place.  Doesn't turn hold mode off, obviously.
+ * Keybinding: SCROLL_END
+ * Command: /WINDOW SCROLL_END
+ * Please note that this doesn't turn hold_mode off, obviously! 
  */
 static void	window_scrollback_end (Window *window)
 {
 	window_scrollback_forwards_lines(window, 999999);
 }
 
-
-
-/* * * * * * * * */
+/*
+ * Keybinding: SCROLL_FORWARD
+ * Command: /WINDOW SCROLL_FORWARD
+ * Scrolls down the "default" amount (usually half a screenful) 
+ */
 static void	window_scrollback_forward (Window *window)
 {
 	int 	ratio = get_int_var(SCROLLBACK_RATIO_VAR);
@@ -5897,6 +6040,11 @@ static void	window_scrollback_forward (Window *window)
 	window_scrollback_forwards_lines(window, my_lines);
 }
 
+/*
+ * Keybinding: SCROLL_BACKWARD
+ * Command: /WINDOW SCROLL_BACKWARD
+ * Scrolls up the "default" amount (usually half a screenful) 
+ */
 static void	window_scrollback_backward (Window *window)
 {
 	int 	ratio = get_int_var(SCROLLBACK_RATIO_VAR);
@@ -5912,6 +6060,7 @@ static void	window_scrollback_backward (Window *window)
 	window_scrollback_backwards_lines(window, my_lines);
 }
 
+/* These are the actual keybinding functions, they're just shims */
 BUILT_IN_KEYBINDING(scrollback_forwards)
 {
 	window_scrollback_forward(current_window);
@@ -5933,8 +6082,10 @@ BUILT_IN_KEYBINDING(scrollback_start)
 }
 
 
-
-/* HOLD MODE STUFF */
+/******************* Hold Mode functionality *******************************/
+/*
+ * UNSTOP_ALL_WINDOWS does a /WINDOW HOLD_MODE OFF on all windows.
+ */
 BUILT_IN_KEYBINDING(unstop_all_windows)
 {
 	Window	*tmp = NULL;

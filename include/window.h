@@ -36,6 +36,7 @@ typedef	struct	DisplayStru
 	struct	DisplayStru	*prev;
 	struct	DisplayStru	*next;
 	ssize_t			unique_refnum;
+	time_t			when;
 }	Display;
 
 typedef struct	WNickListStru

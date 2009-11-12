@@ -1,4 +1,4 @@
-/* $EPIC: output.c,v 1.21 2008/11/28 16:28:03 jnelson Exp $ */
+/* $EPIC: output.c,v 1.22 2009/11/12 04:21:53 jnelson Exp $ */
 /*
  * output.c: handles a variety of tasks dealing with the output from the irc
  * program 
@@ -164,12 +164,16 @@ BUILT_IN_COMMAND(extern_write)
 	}
 }
 
-/* init_windows:  */
+/*
+ * init_screen() sets up a full screen display for normal display mode.
+ * It will fail if your TERM setting doesn't have all of the necessary
+ * capabilities to run in full screen mode.  The client is expected to 
+ * fail-over to dumb mode in this case.
+ * This may only be called once, at initial startup (by main()).
+ */
 int	init_screen (void)
 {
-	/*
-	 * System dependant stuff
-	 */
+	/* Investigate TERM and put the console in full-screen mode */
 	if (term_init())
 		return -1;
 

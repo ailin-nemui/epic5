@@ -1,4 +1,4 @@
-/* $EPIC: irc.c,v 1.1275 2009/10/29 07:37:32 jnelson Exp $ */
+/* $EPIC: irc.c,v 1.1276 2009/11/12 04:21:53 jnelson Exp $ */
 /*
  * ircII: a new irc client.  I like it.  I hope you will too!
  *
@@ -52,7 +52,7 @@ const char internal_version[] = "20081225";
 /*
  * In theory, this number is incremented for every commit.
  */
-const unsigned long	commit_id = 1605;
+const unsigned long	commit_id = 1606;
 
 /*
  * As a way to poke fun at the current rage of naming releases after
@@ -1243,6 +1243,10 @@ int 	main (int argc, char *argv[])
 
 	message_from(NULL, LEVEL_OTHER);
 
+	/* 
+	 * We use dumb mode for -d, -b, when stdout is redirected to a file,
+	 * or as a failover if init_screen() fails. 
+	 */
 	if ((dumb_mode == 0) && (init_screen() == 0))
 	{
 		my_signal(SIGCONT, term_cont);

@@ -94,3 +94,11 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Fix memory leaks found by valgrind (caf)
 * GC function_[en|de]code() and function_sha256 (superceded by $xform())
 * GC unused [en|de]code(), enquote_it, dequote_it, and dequote_buffer().
+* Fix display calcs when adding 1st window to 1st screen
+* This allows you to change 'status.number' for default # of status lines
+* Start tracking timestamps for scrollback items
+* Full generalization of scrollback/scrollforward functions
+* Implement scrollback/forward based on lines
+* Implement scrollback/forward based on regex
+* Begin thinking about implementing scrollback/forward based on time (not done)
+
