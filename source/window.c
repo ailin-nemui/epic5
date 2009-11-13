@@ -1,4 +1,4 @@
-/* $EPIC: window.c,v 1.209 2009/11/12 04:21:53 jnelson Exp $ */
+/* $EPIC: window.c,v 1.210 2009/11/13 07:51:47 jnelson Exp $ */
 /*
  * window.c: Handles the organzation of the logical viewports (``windows'')
  * for irc.  This includes keeping track of what windows are open, where they
@@ -271,7 +271,7 @@ Window	*new_window (Screen *screen)
 
 	/* Window geometry stuff */
 	new_w->my_columns = 0;			/* Filled in later? */
-	new_w->display_lines = 1;		/* Filled in later */
+	new_w->display_lines = 24;		/* Filled in later */
 	new_w->logical_size = 100;		/* XXX Implement this */
 	new_w->fixed_size = 0;
 	new_w->old_display_lines = 1;	/* Filled in later */
@@ -3556,12 +3556,11 @@ static Window *window_hide_others (Window *window, char **args)
 {
 	Window *tmp, *next;
 
-	if (window->screen)
-		tmp = window->screen->window_list;
-	else
-		tmp = invisible_list;
+	/* There are no "others" to hide if the window isn't visible. */
+	if (!window->screen)
+		return window;	
 
-	while (tmp)
+	for (tmp = window->screen->window_list; tmp; tmp = next)
 	{
 		next = tmp->next;
 		if (tmp != window)
@@ -5537,9 +5536,8 @@ static int	add_to_display (Window *window, const unsigned char *str, intmax_t re
 	 */
 	if (window->holding_top_of_display)
 	{
-	    size_t lines_held;
-	    lines_held = window->holding_distance_from_display_ip - window->display_lines;
-	    if (lines_held > 0)
+	    if (window->holding_distance_from_display_ip > 
+					window->display_lines)
 		window_statusbar_needs_update(window);
 	}
 
@@ -5549,9 +5547,8 @@ static int	add_to_display (Window *window, const unsigned char *str, intmax_t re
 	 */
 	if (window->scrollback_top_of_display)
 	{
-	    size_t lines_held;
-	    lines_held = window->scrollback_distance_from_display_ip - window->display_lines;
-	    if (lines_held > 0)
+	    if (window->scrollback_distance_from_display_ip > 
+					window->display_lines)
 		window_statusbar_needs_update(window);
 	}
 

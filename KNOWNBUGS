@@ -9,9 +9,6 @@ KNOWN ERRATA (eg, bugs, or unresolved requests):
     13           n!*u@h.d                       n!*u@d.*
 * /on 322 (LIST reply) requires special handling for message_from(NULL, ...);
 * Kreca thinks I should have two refnums, one public, one private for windows.
-* <CrazyEddy> Hey hop, another bug report:  This eventually locks up in the loop
-+at line 5510 of window.c:  /timer -rep -1 1 /window new double on hold_slider
-+0 hide_others 
 * There needs to be an /on switch_query for wuf/sjhoran
 * wuf says that fred!user@machine.domain.com.au should not be
 	*!*user@*.com.au but instead *!*user@*.domain.com.au
@@ -101,4 +98,7 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Implement scrollback/forward based on lines
 * Implement scrollback/forward based on regex
 * Begin thinking about implementing scrollback/forward based on time (not done)
-
+* Windows that are hidden from birth have a fake height of 24 lines
+* This fixes a bug where doing /window double on hold_slider 0 in a 
+  never-visible window caused it to get stuck in an infinite loop.
+* Add 
