@@ -1,0 +1,19 @@
+if (word(2 $loadinfo()) != [pf]) { load -pf $word(1 $loadinfo()); return; };
+
+#
+# Ok.  Here's the plan.
+#
+# Load the current locale (given by locale(1)) into $locale.<whatever>
+#
+
+alias load_locale {
+	push set notify_on_termination;
+	set notify_on_termination off;
+	^exec -name locale_dump -line {
+		eval @ locale.$*
+	} locale -k $$(locale -k list | perl -ane 'print($F[0], "\n") unless (1 .. /--/)');
+	wait %locale_dump;
+	pop set notify_on_termination
+};
+
+#hop'y2k9

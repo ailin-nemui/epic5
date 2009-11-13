@@ -1,0 +1,68 @@
+Here's the plan...
+
+We want to support a 'scrollback indicator' that will tell you what has 
+displayed since you went into scrollback mode.  When you scroll down, you
+will eventually "see" the indicator again, and then it will disappear.
+
+Step Zero: Initialization
+==========================
+Each window has its own scrollback indicator which is just a (Display)
+object which is not linked into the scrollback.
+
+Step One: Scrollback
+====================
+Whenever you initiate a scrollback, if the indicator is:
+   1) Not Visible
+or 2) Above
+the top of the visible part of the window, the indicator will be 
+   1) Removed from its place
+   2) Insert to the line just below the bottom line that is visible.
+
+Step Two: Scrolldown
+=====================
+Whenever you scroll forward, the indicator will be seen again.  It will
+remain as an ordinary part of the scroll buffer until you do a new 
+scrollback.
+
+Step Three: Purges
+==================
+Whenever the scroll indicator reaches the top of the scroll buffer (it is 
+marked for deletion) it is removed from the list but not deleted.  It is 
+counted as part of the scrollback for counting purposes.  The indicator's
+'count' value must always be set to -1 when it is removed from scrollback.
+
+Issue: Value
+============
+Each time the scroll indicator is placed somewhere, its value shall be 
+reset to the value of /set scroll_indicator
+
+Issue: Unlinking
+================
+The scroll indicator can be unlinked if it needs to be moved.  This requires
+a full renumbering of the scroll buffer via
+	recalculate_window_cursor_and_display_ip().
+
+Issue: Placement
+================
+The scroll indicator shall always be placed using this method BEFORE the 
+scrollback view is changed.
+   1) Determine visible top of display
+   2) Calculate Display item at bottom of display
+   3) Link the indicator after the Display Item 
+      a) But before display_ip if the indicator is at the very bottom
+   4) Do a recalculate_window_cursor_and_display_ip()
+
+Issue: Above-or-Not-Visible
+===========================
+Generally the indicator's 'count' is set whenever it is in the display
+and is cleared (set to -1) whenever it is taken out of the display.
+You could use this to calculate whether it is <= the bottom display item
+in the current view.
+
+Issue: Skip-back
+================
+Josh wants a way to automagiclaly skip back to the indicator rather than
+having to go look for it.  That should require just setting the top of the
+scrollback to the indicator, then do a recalculate, which will auto-detect
+whether the scrollback is still active or not.
+

@@ -101,4 +101,5 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Windows that are hidden from birth have a fake height of 24 lines
 * This fixes a bug where doing /window double on hold_slider 0 in a 
   never-visible window caused it to get stuck in an infinite loop.
-* Add 
+* Add new scripts, "help.irc", "history.rb", "locale", and "tabkey.sjh"
+* I need to document these in UPDATE!

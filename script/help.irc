@@ -1,0 +1,124 @@
+# Get help for the epic client from the wiki.
+# 2009 Jul 17 skullY@EFnet
+
+package help
+
+### Variables
+@help.server = "help.epicsol.org"
+@help.baseuri = "/help/_export/raw"
+@help.headers.1 = "Host: $help.server"
+@help.headers.2 = "Accept: text/*"
+@help.headers.3 = "User-Agent: ircII $J [$V] [$info(i)] [$info(r)]"
+@help.headers.4 = "Connection: Close"
+@help.prompt="'q' to quit, 'n' to stop prompting, or any other key to continue"
+
+### End user aliases
+alias help (page default "new_user") { help.get $page }
+
+### Useful aliases
+# help.sendline: Send a line terminated with CRLF to the specified connection.
+alias help.sendline (refnum, line) {
+	msg =$refnum ${line}$chr(13)
+	#xecho -b help: help.sendline: $refnum $line
+}
+
+# http.get: Fetch a help page
+alias help.get (page default "new_user") {
+	xecho -b Fetching help page ${page}, one moment please...
+	@help.conn = connect($help.server 80)
+	if (help.conn == "") {
+		xecho -b Help: Could not connect to $help.server
+		return
+	}
+	@help.state[$help.conn][headers] = 1;
+	@help.state[$help.conn][line] = 0;
+	@help.state[$help.conn][paginateoutput] = 1;
+	@help.state[$help.conn][stopoutput] = 0;
+	@help.state[$help.conn][page] = "$help.baseuri/$page";
+
+	^on ^dcc_raw "$help.conn $help.server E 80" {
+		help.sendline $0 GET $help.state[$0][page] HTTP/1.1
+		foreach help.headers xx {
+			help.sendline $0 $help.headers[$xx]
+		}
+		# FIXME: should be able to do this through help.sendline
+		msg =$0 $chr(13)
+	}
+
+	^on ^dcc_raw "$help.conn $help.server D *" {
+		@:line = "$3-"
+		if (help.state[$0][headers]) {
+			if (line == "") {
+				@help.state[$0][headers] = 0
+			}
+			return
+		}
+		if (line == "The end!") {
+			return
+		}
+
+		# Stuff to strip
+		@:line = strip(= $line)
+		@:line = sar(g/\\\\//$line)
+		# Underline
+		@:line = sar(g/__//$line)
+		# Various types of emphasis
+		@:line = sar(g,//,,$line)
+		@:line = sar(g/%%//$line)
+		# Links
+		@:line = sar(g/[[//$line)
+		@:line = sar(g/]]//$line)
+		# Tables
+		# FIXME: Doesn't seem to work?
+		if (left(1 $line) == "^") {
+			@:line = sar(g/|/    /$line)
+		} elif (left(1 $line) == "|") {
+			@:line = sar(g/^/    /$line)
+		}
+
+		# Store the line in the array
+		@setitem(help_$0 $help.state[$help.conn][line] $line)
+		@help.state[$help.conn][line]++
+	}
+
+	^on ^dcc_raw "$help.conn $help.server C" {
+		@height = windowctl(get 0 display_size)
+		@numlines = help.state[$0][line] - 4
+
+		# Show the help page
+		for i from 0 to $numlines {
+			if ((i > 0) && (i % height == 0)) {
+				# FIXME: need a safe way to pause the loop
+				#help.prompt $0
+				if (help.state[$0][stopoutput]) {
+					break
+				}
+			}
+			xecho -v --  [$getitem(help_$0 $i)]
+		}
+
+		# Cleanup
+		^on dcc_raw -"$0 $1 E 80"
+		^on dcc_raw -"$0 $1 D *"
+		^on dcc_raw -"$0 $1 C"
+		foreach help.state[$0] xx {
+			^assign -help.state[$0][$xx]
+		}
+		@delarray(help_$0)
+	}
+}
+
+alias help.prompt (conn) {
+	if (help.state[$conn][paginateoutput]) {
+		input_char -noecho "$help.prompt" {
+			switch ($0) {
+				(q) {
+					@help.state[$conn][stopoutput] = 1;
+				}
+				(n) {
+					@help.state[$conn][paginateoutput] = 0;
+				}
+			}
+		}
+	}
+}

@@ -1,0 +1,95 @@
+if (word(2 $loadinfo()) != [pf]) { load -pf $word(1 $loadinfo()); return; };
+
+# hop's tabkey script + my mods.
+
+package tabkey.sjh;
+
+# maximum number of nicks you want to keep track of...
+addset tabkey_max_nicks int;
+set tabkey_max_nicks 15;
+
+bind ^I parse_command ^tc.get_nick;
+bind ^R parse_command ^tc.get_nick_backward;
+bind ^X^X parse_command {
+	if (word($tc.position $tc.msglist)) {
+		xecho -b Nickname $word($tc.position $tc.msglist) removed;
+	};
+	@ tc.msglist = notw($tc.position $tc.msglist);
+	@ tc.num_nicks = #tc.msglist;
+	@ tc.position--;
+	tc.get_nick;
+};
+
+# add a word to a list -- makes sure the list doesnt get longer then
+# the number allowed in max_nicks.
+alias tc.add_to_list {
+	if (rmatch($0 =* *:*)) {
+		@:newnick = [$0];
+	} else {
+		@:newnick = [$servernum():$0];
+	};
+	@tc.msglist = [$newnick $remw($newnick $tc.msglist)];
+	@tc.msglist = leftw($getset(tabkey_max_nicks) $tc.msglist);
+	@tc.num_nicks = #tc.msglist;
+	@tc.position = 0;
+};
+
+alias tc.get_nick {
+	parsekey erase_line;
+	((tc.position >= tc.num_nicks) && (tc.position = 0));
+	xtype -l ${K}tkm $word($tc.position $tc.msglist) ;
+	((++tc.position >= tc.num_nicks) && (tc.position -= tc.num_nicks));
+};
+
+alias tc.get_nick_backward {
+	parsekey erase_line;
+	((--tc.position < 1) && (tc.position += tc.num_nicks));
+	xtype -l ${K}tkm $word(${tc.position - 1} $tc.msglist) ;
+};
+
+on #-msg -12782 "*" { tc.add_to_list $0; };
+on #-dcc_chat -12782 "*" { tc.add_to_list =$0; };
+on #-action -12782 "*" { if (!ischannel($1)) { tc.add_to_list $0; }; };
+on #-send_msg -12782 "*" { fe ($split(, $0)) x { tc.add_to_list $x; }; };
+on #-send_dcc_chat -12782 "*" { tc.add_to_list =$0; };
+on #-send_action -12782 "*" { if (!ischannel($0)) { tc.add_to_list $0; }; };
+
+# Remove a nick on a no such nick/chan error
+#on #-401 -12782 "*" { @ tc.msglist = remw($1 $tc.msglist; );
+
+# Update nicklist when someone changes their nick.
+on #-channel_nick -12782 "*" {
+	fe ( $tc.msglist ) nick {
+		if (nick == [$1] || nick == [$servernum():$1]) {
+			push :newlist $servernum():$2;
+		} else {
+			push :newlist $nick;
+		};
+	};
+
+	# Update input line if appropriate.
+	if (findw($word(1 $L) $1 $servernum():$1) > -1) {
+		@:oldcurpos = curpos();
+		parsekey erase_line;
+		xtype -l $word(0 $U) $servernum():$2 $afterw($word(1 $U) $U);
+		@:newcurpos = curpos();
+		# adjust old cursor position to reflect longer/shorter input line
+		@oldcurpos += (@L - @U);
+		parsekey beginning_of_line;
+		repeat $oldcurpos parsekey forward_character;
+	};
+};
+
+# Alias so you can go: /tkm <nick> /me farts loudly
+# equiv to going /describe <nick> farts loudly
+
+alias tkm {
+	@:srv = (match(*:* $0)) ? before(: $0) : servernum();
+
+	if ([$1]==[/me]) {
+		xeval -s $srv {describe $after(-1 : :$0) $2-};
+	} else {
+		xeval -s $srv {msg $after(-1 : :$0) $1-};
+	};
+};
+
