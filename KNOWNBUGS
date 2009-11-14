@@ -7,18 +7,15 @@ KNOWN ERRATA (eg, bugs, or unresolved requests):
     11           *!*u@h.d                       *!*u@d.*
     12           n!*@h.d                        n!*@d.*
     13           n!*u@h.d                       n!*u@d.*
-* /on 322 (LIST reply) requires special handling for message_from(NULL, ...);
 * Kreca thinks I should have two refnums, one public, one private for windows.
 * There needs to be an /on switch_query for wuf/sjhoran
 * wuf says that fred!user@machine.domain.com.au should not be
 	*!*user@*.com.au but instead *!*user@*.domain.com.au
-* There should be a watch to check for the validity of a $connect() 
-  by working directly off the fd instead of the port (user) and host (desc)
-* Add /exec -closeout that closes stdout/stderr from process, but not stdin.
 
 ISSUES OF INTEREST
 ------------------
 * The four projects of the UTF8 effort are the primary focus for now.
+* Fusion wants /xecho -sec 10 this goes away in 10 seconds
 [I moved the old list to the file "WISHLIST" to keep this file short]
 
 [See http://www.epicsol.org/PROJECTS for things to come in the future]
@@ -103,3 +100,8 @@ THE CHANGELOG SINCE THE LAST RELEASE:
   never-visible window caused it to get stuck in an infinite loop.
 * Add new scripts, "help.irc", "history.rb", "locale", and "tabkey.sjh"
 * I need to document these in UPDATE!
+* Add /exec -closeout, to send EOF to the exec'd process
+* Add $dccctl(FD_TO_REFNUM <fd>) to convert $connect() to a refnum for dccctl.
+* Remember $dccctl(GET refnum WRITABLE) detects a connected socket, by rule
+* Change /on 322 handler so output always goes to OTHER, not to the window.
+* Add an /on switch_query, but it's incomplete, so don't use it yet.

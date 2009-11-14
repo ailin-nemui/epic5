@@ -1,4 +1,4 @@
-/* $EPIC: dcc.c,v 1.158 2009/10/29 07:37:32 jnelson Exp $ */
+/* $EPIC: dcc.c,v 1.159 2009/11/14 05:39:10 jnelson Exp $ */
 /*
  * dcc.c: Things dealing client to client connections. 
  *
@@ -3065,6 +3065,14 @@ void	do_dcc (int fd)
 
 
 /*********************************** DCC CHAT *******************************/
+/*
+ * This is a "unix_accept" callback, which is invoked when a remote user
+ * accepts our dcc chat offer.  unix_accept sends us the file descriptor
+ * (from accept(2)) and the getpeeraddr() from that socket.
+ *
+ * At this point, we can close our listen(2) socket (in Client->socket) and
+ * use the new accept(2) socket instead, and start the connection.
+ */
 static	void	process_dcc_chat_connection (DCC_list *Client)
 {
 	char	p_addr[256];
@@ -3235,6 +3243,11 @@ static	void	process_dcc_chat_data (DCC_list *Client)
 	new_free(&target);
 }
 
+/*
+ * This is a unix_connect() callback which is invoked when a connect(2)ing
+ * socket is ready to write (which means the connection is complete or failed)
+ * This is used when we connect to someone else's offer
+ */
 static void	process_dcc_chat_connected (DCC_list *dcc)
 {
 	lock_dcc(dcc);
@@ -3269,8 +3282,9 @@ static	void	process_dcc_chat (DCC_list *Client)
 
 /****************************** DCC RAW *************************************/
 /*
- * This handles when someone establishes a connection on a $listen()ing
- * socket.  This hooks via /on DCC_RAW.
+ * This is a unix_accept() callback invoked whenever we accept(2) an incoming
+ * connection to our listen(2)ing socket.  This creates a new DCC RAW, and
+ * the original DCC RAW listen is unchanged.
  */
 static	void		process_incoming_listen (DCC_list *Client)
 {
@@ -3336,7 +3350,7 @@ static	void		process_incoming_listen (DCC_list *Client)
 
 /*
  * This handles when someone sends you a line of info over a DCC RAW
- * connection (that was established with a $listen().
+ * connection (that was established with a $listen() or $connect()).
  */
 static	void		process_dcc_raw_data (DCC_list *Client)
 {
@@ -3402,6 +3416,10 @@ static	void		process_dcc_raw_data (DCC_list *Client)
 	return;
 }
 
+/*
+ * This is a unix_connect() callback called when your $connect() is writable
+ * either connect()ed or it failed. 
+ */
 static void	process_dcc_raw_connected (DCC_list *dcc)
 {
 	lock_dcc(dcc);
@@ -4430,6 +4448,14 @@ char *	dccctl (char *input)
 		else
 			malloc_strcpy(&default_dcc_port, input);
 		RETURN_INT(1);
+	} else if (!my_strnicmp(listc, "FD_TO_REFNUM", len)) {
+		int	fd;
+		GET_INT_ARG(fd, input);
+		for (client = ClientList; client; client = client->next) {
+			if (client->socket == fd)
+				RETURN_INT(client->refnum);
+		}
+		RETURN_INT(-1);
 	} else
 		RETURN_EMPTY;
 

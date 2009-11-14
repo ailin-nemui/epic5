@@ -1,4 +1,4 @@
-/* $EPIC: exec.c,v 1.44 2008/04/05 00:20:38 jnelson Exp $ */
+/* $EPIC: exec.c,v 1.45 2009/11/14 05:39:10 jnelson Exp $ */
 /*
  * exec.c: handles exec'd process for IRCII 
  *
@@ -113,7 +113,8 @@ static	int	process_list_size = 0;
 static 	void 	handle_filedesc 	(Process *, int *, int, int);
 static 	void 	cleanup_dead_processes 	(void);
 static 	void 	ignore_process 		(int);
-static 	void 	close_in		(int);
+static 	void 	exec_close_in		(int);
+static 	void 	exec_close_out		(int);
 static 	void 	kill_process 		(int, int);
 static 	void 	kill_all_processes 	(int signo);
 static 	int 	valid_process_index 	(int proccess);
@@ -318,7 +319,20 @@ BUILT_IN_COMMAND(execcmd)
 			if ((i = get_process_index(&args)) == -1)
 				return;
 
-			close_in(i);
+			exec_close_in(i);
+			return;
+		}
+
+		/*
+		 * /EXEC -CLOSEIN close the processes STDIN,
+		 * in the hope that it will take the hint.
+		 */
+		else if (my_strnicmp(flag, "CLOSEOUT", len) == 0)
+		{
+			if ((i = get_process_index(&args)) == -1)
+				return;
+
+			exec_close_out(i);
 			return;
 		}
 
@@ -1201,6 +1215,17 @@ static void 	cleanup_dead_processes (void)
  */
 static void 	ignore_process (int idx)
 {
+	exec_close_in(idx);
+	exec_close_out(idx);
+}
+
+/*
+ * close_in:  When we are finished with the process but still want the
+ * rest of its output, we close its input, and hopefully it will get the
+ * message and close up shop.
+ */
+static void 	exec_close_in (int idx)
+{
 	Process *proc;
 
 	if (valid_process_index(idx) == 0)
@@ -1209,20 +1234,14 @@ static void 	ignore_process (int idx)
 	proc = process_list[idx];
 	if (proc->p_stdin != -1)
 		proc->p_stdin = new_close(proc->p_stdin);
-	if (proc->p_stdout != -1)
-		proc->p_stdout = new_close(proc->p_stdout);
-	if (proc->p_stderr != -1)
-		proc->p_stderr = new_close(proc->p_stderr);
-
-	proc->dumb = 1;
 }
 
 /*
- * close_in:  When we are finished with the process but still want the
- * rest of its output, we close its input, and hopefully it will get the
- * message and close up shop.
+ * close_out:  When we are done sending to a process sometimes we have to 
+ * close our stdout before they will do their thing and send us data back
+ * to stdin.  
  */
-static void 	close_in (int idx)
+static void 	exec_close_out (int idx)
 {
 	Process *proc;
 
@@ -1230,10 +1249,13 @@ static void 	close_in (int idx)
 		return;
 
 	proc = process_list[idx];
-	proc->p_stdin = new_close(proc->p_stdin);
+	if (proc->p_stdout != -1)
+		proc->p_stdout = new_close(proc->p_stdout);
+	if (proc->p_stderr != -1)
+		proc->p_stderr = new_close(proc->p_stderr);
+
+	proc->dumb = 1;
 }
-
-
 
 
 /*

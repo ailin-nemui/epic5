@@ -1,4 +1,4 @@
-/* $EPIC: hook.c,v 1.85 2009/06/07 16:28:50 howl Exp $ */
+/* $EPIC: hook.c,v 1.86 2009/11/14 05:39:10 jnelson Exp $ */
 /*
  * hook.c: Does those naughty hook functions. 
  *
@@ -225,6 +225,7 @@ Hookables hook_function_templates[] =
 	{ "SSL_SERVER_CERT",	NULL,	3,	0,	0,	NULL, 0 },
 	{ "STATUS_UPDATE",	NULL,	3,	0,	0,	NULL, 0 },
 	{ "SWITCH_CHANNELS",	NULL,	3,	0,	0,	NULL, 0 },
+	{ "SWITCH_QUERY",	NULL,	3,	0,	0,	NULL, 0 },
 	{ "SWITCH_WINDOWS",	NULL,	4,	0,	0,	NULL, 0 },
 	{ "TIMER",		NULL,	1,	0,	0,	NULL, 0 },
 	{ "TOPIC",		NULL,	2,	0,	0,	NULL, 0 },

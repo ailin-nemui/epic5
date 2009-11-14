@@ -1,4 +1,4 @@
-/* $EPIC: window.c,v 1.210 2009/11/13 07:51:47 jnelson Exp $ */
+/* $EPIC: window.c,v 1.211 2009/11/14 05:39:10 jnelson Exp $ */
 /*
  * window.c: Handles the organzation of the logical viewports (``windows'')
  * for irc.  This includes keeping track of what windows are open, where they
@@ -2080,10 +2080,12 @@ BUILT_IN_KEYBINDING(switch_query)
         WNickList *winner = NULL,
 		  *nick;
 	Window  *win;
+	const char *	old_query;
 
 	win = get_window_by_refnum(0);
 	lowcount = win->query_counter;
 
+	old_query = get_equery_by_refnum(0);
 	for (nick = win->nicks; nick; nick = nick->next)
 	{
 		if (nick->counter > highcount)
@@ -2096,8 +2098,8 @@ BUILT_IN_KEYBINDING(switch_query)
 	}
 
         /*
-         * If there are no channels on this window, punt.
-         * If there is only one channel on this window, punt.
+         * If there are no queries on this window, punt.
+         * If there is only one query on this window, punt.
          */
         if (winner == NULL || highcount == -1 || highcount == lowcount)
                 return;
@@ -2106,6 +2108,10 @@ BUILT_IN_KEYBINDING(switch_query)
 	winner->counter = current_query_counter++;
 	win->query_counter = winner->counter;
 	window_statusbar_needs_update(win);
+
+	/* Tell the user */
+	do_hook(SWITCH_QUERY_LIST, "%d %s %s",
+		win->refnum, old_query, winner->nick);
 }
 
 static void	recheck_queries (Window *win)
