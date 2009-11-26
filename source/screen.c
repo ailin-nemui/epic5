@@ -1,4 +1,4 @@
-/* $EPIC: screen.c,v 1.143 2009/06/29 19:30:33 jnelson Exp $ */
+/* $EPIC: screen.c,v 1.144 2009/11/26 18:18:06 jnelson Exp $ */
 /*
  * screen.c
  *
@@ -633,9 +633,9 @@ static ssize_t	read_color_seq (const unsigned char *start, void *d, int blinkbol
 /*
  * read_esc_seq -- Parse out and count the length of an escape (ansi) sequence
  * Arguments:
- *	start     - A string beginning with ^C that represents a color sequence
+ *	start     - A string beginning with ^[ that represents an ansi sequence
  *	ptr_a     - An (Attribute *) [or NULL] that shall be modified by the
- *		    color sequence.
+ *		    ansi sequence.
  *	nd_spaces - [OUTPUT] The number of ND_SPACES the sequence generates.
  * Return Value:
  *	The length of the escape (ansi) sequence, such that (start + retval) is

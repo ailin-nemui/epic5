@@ -1,4 +1,4 @@
-/* $EPIC: ircaux.c,v 1.211 2009/10/29 07:37:32 jnelson Exp $ */
+/* $EPIC: ircaux.c,v 1.212 2009/11/26 18:18:06 jnelson Exp $ */
 /*
  * ircaux.c: some extra routines... not specific to irc... that I needed 
  *
@@ -3937,7 +3937,6 @@ char *	malloc_strcat_word_c (char **ptr, const char *word_delim, const char *wor
  *	and is (*ptr) is not a valid heap pointer.
  *
  * Notes:
- *  This function has an arbitrarily limit of 20k on the return value.
  *  If the arguments passed do not match up with 'format', chaos may result.
  *  If ptr is not NULL then the original value of (*ptr) is invalidated and
  *	may not be used after this function returns.
@@ -3946,24 +3945,48 @@ char *	malloc_strcat_word_c (char **ptr, const char *word_delim, const char *wor
  */
 char *	malloc_sprintf (char **ptr, const char *format, ...)
 {
-	char booya[BIG_BUFFER_SIZE * 10 + 1];
-	*booya = 0;
+	char *retval;
+	va_list	args;
+
+	va_start(args, format);
+	retval = malloc_vsprintf(ptr, format, args);
+	va_end(args);
+	return retval;
+}
+
+char *	malloc_vsprintf (char **ptr, const char *format, va_list args)
+{
+	char *	buffer = NULL;
+	size_t	buffer_size;
+	size_t	actual_size;
 
 	if (format)
 	{
-		va_list args;
-		va_start(args, format);
-		vsnprintf(booya, sizeof booya, format, args);
-		va_end(args);
+		/* Our initial hint assumes the result is twice the 
+		 * length of format */
+		buffer_size = strlen(format) * 2;
+		buffer = new_malloc(buffer_size + 1);
+
+		do {
+		    actual_size = vsnprintf(buffer, buffer_size, format, args);
+
+		    if (actual_size < 0)	/* DIE DIE DIE */
+			buffer_size += 16;
+		    else if (actual_size < buffer_size)
+			break;
+		    else
+			buffer_size = actual_size + 1;
+		    RESIZE(buffer, char, buffer_size);
+		} while (1);
+
 	}
 
 	if (ptr)
 	{
-		malloc_strcpy(ptr, booya);
-		return *ptr;
+		new_free(ptr);
+		*ptr = buffer;
 	}
-	else
-		return malloc_strdup(booya);
+	return buffer;
 }
 
 /*
@@ -4582,6 +4605,7 @@ int	vmy_strnicmp (size_t len, char *str, ...)
 	va_list ap;
 	int ret = 1;
 	char *cmp;
+
 	va_start(ap, str);
 	while ((cmp = va_arg(ap, char *)) != NULL)
 	{

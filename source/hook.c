@@ -1,4 +1,4 @@
-/* $EPIC: hook.c,v 1.86 2009/11/14 05:39:10 jnelson Exp $ */
+/* $EPIC: hook.c,v 1.87 2009/11/26 18:18:05 jnelson Exp $ */
 /*
  * hook.c: Does those naughty hook functions. 
  *
@@ -689,6 +689,7 @@ static int show_all_numerics (int numeric)
 #define SUPPRESS_DEFAULT	 0
 #define DONT_SUPPRESS_DEFAULT	 1
 #define RESULT_PENDING		 2
+static int 	do_hook_internal (int which, char **result, const char *format, va_list args);
 
 /*
  * do_hook: This is what gets called whenever a MSG, INVITES, WALL, (you get
@@ -700,12 +701,36 @@ static int show_all_numerics (int numeric)
  * the value of the noisy field of the found entry, or -1 if not found. 
  */
 /* huh-huh.. this sucks.. im going to re-write it so that it works */
-int 	do_hook (int which, const char *format, ...)
+int	do_hook (int which, const char *format, ...)
+{
+	char *	result = NULL;
+	int	retval;
+	va_list	args;
+
+	va_start(args, format);
+	retval = do_hook_internal(which, &result, format, args);
+	new_free(&result);
+	va_end(args);
+	return retval;
+}
+
+int	do_hook_with_result (int which, char **result, const char *format, ...)
+{
+	int	retval;
+	va_list	args;
+
+	va_start(args, format);
+	retval = do_hook_internal(which, result, format, args);
+	va_end(args);
+	return retval;
+}
+
+static int 	do_hook_internal (int which, char **result, const char *format, va_list args)
 {
 	Hook		*tmp;
 	const char	*name 		= (char *) 0;
 	int		retval;
-	char 		buffer[BIG_BUFFER_SIZE * 10 +1];
+	char *		buffer		= NULL;
 	unsigned	display		= window_display;
 	char *		stuff_copy;
 	int		noise, old;
@@ -714,11 +739,22 @@ int 	do_hook (int which, const char *format, ...)
 	struct Current_hook *hook;
 	Hookables *	h;
 
-	*buffer = 0;
+	*result = NULL;
 
 	if (!hook_functions_initialized)
 		initialize_hook_functions();
 	h = &hook_functions[which];
+
+	/*
+	 * Press the buffer using the specified format string and args
+	 * We have to do this first because even if there is no /on, the
+	 * caller might still want to know what the result of $* is.
+	 */
+	if (!format)
+		panic(1, "do_hook: format is NULL (hook type %d)", which);
+
+	malloc_vsprintf(&buffer, format, args);
+
 
 	/*
 	 * Decide whether to post this event.  Events are suppressed if:
@@ -731,6 +767,7 @@ int 	do_hook (int which, const char *format, ...)
 	    (h->mark && h->flags & HF_NORECURSE))
 	{
 		retval = NO_ACTION_TAKEN;
+		*result = buffer;
 		return retval;
 	}
 
@@ -741,24 +778,9 @@ int 	do_hook (int which, const char *format, ...)
 	if (!h->list && h->implied)
 	{
 		retval = NO_ACTION_TAKEN;
+		*result = buffer;
 		goto implied_hook;
 	}
-
-	/*
-	 * Press the buffer using the specified format string and args
-	 * We do this here so that we dont waste time doing the vsnprintf
-	 * if we're not going to do any matching.  So for types where the
-	 * user has no hooks, its a cheapie call.
-	 */
-	if (format)
-	{
-		va_list args;
-		va_start(args, format);
-		vsnprintf(buffer, BIG_BUFFER_SIZE * 10, format, args);
-		va_end(args);
-	}
-	else
-		panic(1, "do_hook: format is NULL");
 
 	/*
 	 * Set current_hook
@@ -874,26 +896,23 @@ int 	do_hook (int which, const char *format, ...)
 			window_display = 1;
 		old = system_exception;
 
-		if (tmp_arglist)
-			buffer_copy = LOCAL_COPY(hook->buffer);
-		else
-			buffer_copy = hook->buffer;
+		buffer_copy = LOCAL_COPY(hook->buffer);
 
 		if (hook->retval == RESULT_PENDING)
 		{
-			char *result;
+			char *xresult;
 
-			result = call_user_function(name, stuff_copy,
+			xresult = call_user_function(name, stuff_copy,
 							buffer_copy,
 							tmp_arglist);
 
-			if (result && atol(result))
+			if (xresult && atol(xresult))
 				hook->retval = SUPPRESS_DEFAULT;
 			else
 				hook->retval = DONT_SUPPRESS_DEFAULT;
 			if (tmp_arglist)
 				destroy_arglist(&tmp_arglist);
-			new_free(&result);
+			new_free(&xresult);
 		}
 		else
 		{
@@ -935,8 +954,8 @@ int 	do_hook (int which, const char *format, ...)
 	 * Reset current_hook to its previous value.
 	 */
 	retval = hook->retval;
-	if (hook->buffer_changed)
-		new_free(&hook->buffer);
+	*result = hook->buffer;
+	hook->buffer = NULL;
 	if (hook->user_supplied_info)
 		new_free(&hook->user_supplied_info);
 	current_hook = hook->under;
@@ -952,21 +971,17 @@ int 	do_hook (int which, const char *format, ...)
 #ifdef IMPLIED_ON_HOOKS
     do
     {
-	char *func_call = NULL;
-	char *func_retval;
+	char *	func_call = NULL;
+	char *	func_retval;
+	char	my_buffer[BIG_BUFFER_SIZE * 10 + 1];
 
 	if (!h->implied)
 		break;
 
-	if (*buffer == 0)
+	if (*my_buffer == 0)
 	{
 	    if (format)
-	    {
-		va_list args;
-		va_start(args, format);
-		vsnprintf(buffer, BIG_BUFFER_SIZE * 10, format, args);
-		va_end(args);
-	    }
+		vsnprintf(my_buffer, BIG_BUFFER_SIZE * 10, format, args);
 	    else
 		panic(1, "do_hook: format is NULL");
 	}
@@ -976,13 +991,13 @@ int 	do_hook (int which, const char *format, ...)
 
 	if (h->implied_protect)
 	{
-	    malloc_sprintf(&func_call, "\"%s\" %s", h->implied, buffer);
+	    malloc_sprintf(&func_call, "\"%s\" %s", h->implied, my_buffer);
 	    func_retval = function_cparse(func_call);
 	}
 	else
 	{
 	    malloc_sprintf(&func_call, "cparse(\"%s\" $*)", h->implied);
-	    func_retval = call_function(func_call, buffer);
+	    func_retval = call_function(func_call, my_buffer);
 	}
 
 /*
@@ -1000,6 +1015,8 @@ int 	do_hook (int which, const char *format, ...)
     while (0);
 #endif
 
+	if (!result || !*result)
+		panic(1, "do_hook: Didn't set result anywhere.");
 	return retval;
 }
 
@@ -2696,10 +2713,7 @@ char *hookctl (char *input)
 			curhook = curhook->under;
 		if (!curhook)
 			RETURN_INT(0);
-		if (curhook->buffer_changed)
-			malloc_strcpy(&curhook->buffer, input);
-		else
-			curhook->buffer = malloc_strdup(input);
+		malloc_strcpy(&curhook->buffer, input);
 		curhook->buffer_changed = 1;
 		RETURN_INT(1);
 		break;
