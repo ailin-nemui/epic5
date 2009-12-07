@@ -1,4 +1,4 @@
-/* $EPIC: hook.c,v 1.87 2009/11/26 18:18:05 jnelson Exp $ */
+/* $EPIC: hook.c,v 1.88 2009/12/07 01:48:31 jnelson Exp $ */
 /*
  * hook.c: Does those naughty hook functions. 
  *
@@ -738,7 +738,9 @@ static int 	do_hook_internal (int which, char **result, const char *format, va_l
 	int		serial_number;
 	struct Current_hook *hook;
 	Hookables *	h;
+	va_list		orig_args;
 
+	va_copy(orig_args, args);
 	*result = NULL;
 
 	if (!hook_functions_initialized)
@@ -753,6 +755,7 @@ static int 	do_hook_internal (int which, char **result, const char *format, va_l
 	if (!format)
 		panic(1, "do_hook: format is NULL (hook type %d)", which);
 
+	va_copy(args, orig_args);
 	malloc_vsprintf(&buffer, format, args);
 
 
@@ -978,13 +981,16 @@ static int 	do_hook_internal (int which, char **result, const char *format, va_l
 	if (!h->implied)
 		break;
 
-	if (*my_buffer == 0)
+	if (format)
 	{
-	    if (format)
+		strlcpy(my_buffer, *result, sizeof(my_buffer));
+/*
+		va_copy(args, orig_args);
 		vsnprintf(my_buffer, BIG_BUFFER_SIZE * 10, format, args);
-	    else
-		panic(1, "do_hook: format is NULL");
+*/
 	}
+	else
+		panic(1, "do_hook: format is NULL");
 
 	if (which >= 0)
 		h->mark++;

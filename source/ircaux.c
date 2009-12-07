@@ -1,4 +1,4 @@
-/* $EPIC: ircaux.c,v 1.212 2009/11/26 18:18:06 jnelson Exp $ */
+/* $EPIC: ircaux.c,v 1.213 2009/12/07 01:48:31 jnelson Exp $ */
 /*
  * ircaux.c: some extra routines... not specific to irc... that I needed 
  *
@@ -3959,6 +3959,7 @@ char *	malloc_vsprintf (char **ptr, const char *format, va_list args)
 	char *	buffer = NULL;
 	size_t	buffer_size;
 	size_t	actual_size;
+	va_list	orig_args;
 
 	if (format)
 	{
@@ -3966,8 +3967,10 @@ char *	malloc_vsprintf (char **ptr, const char *format, va_list args)
 		 * length of format */
 		buffer_size = strlen(format) * 2;
 		buffer = new_malloc(buffer_size + 1);
+		va_copy(orig_args, args);
 
 		do {
+		    va_copy(args, orig_args);
 		    actual_size = vsnprintf(buffer, buffer_size, format, args);
 
 		    if (actual_size < 0)	/* DIE DIE DIE */
