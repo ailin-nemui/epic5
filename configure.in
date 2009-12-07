@@ -4,9 +4,9 @@ dnl except those bits attributed otherwise.
 dnl thanks to the screen 3.3 configure.in for giving me examples to
 dnl work from and steal ;)
 dnl
-dnl @(#)$Id: configure.in,v 1.85 2009/12/07 01:12:47 jnelson Exp $
+dnl @(#)$Id: configure.in,v 1.86 2009/12/07 01:22:06 jnelson Exp $
 
-AC_REVISION($Revision: 1.85 $)dnl
+AC_REVISION($Revision: 1.86 $)dnl
 AC_INIT(source/irc.c)
 AC_CONFIG_HEADER(include/defs.h)
 
@@ -1338,7 +1338,8 @@ if test "x$warn_again" != "x0" ; then
    echo ''
    echo 'I was unable to find tgetent() which means the build will fail.'
    echo 'If you are using linux, you _MUST_ install the ncurses-dev'
-   echo 'or ncurses-devel package and run configure again.'
+   echo 'or ncurses-devel package and then "make distclean" and '
+   echo 'then run configure again.'
    echo ''
    echo '@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@'
    echo '@@@              IMPORTANT WARNING!                 @@@'

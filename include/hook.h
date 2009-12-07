@@ -120,7 +120,8 @@ enum HOOK_TYPES {
 	BUILT_IN_COMMAND(shookcmd);
 
 	int	do_hook 		(int, const char *, ...) __A(2);
-	char 	* hookctl			(char *);
+	int	do_hook_with_result	(int, char **, const char *, ...) __A(3);
+	char *	hookctl			(char *);
 	void	flush_on_hooks 		(void);
 	void	unload_on_hooks		(char *);
 	void	save_hooks 		(FILE *, int);

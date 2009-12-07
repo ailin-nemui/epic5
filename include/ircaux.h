@@ -7,7 +7,7 @@
  *
  * See the COPYRIGHT file, or do a HELP IRCII COPYRIGHT 
  *
- * @(#)$Id: ircaux.h,v 1.105 2009/12/07 01:12:50 jnelson Exp $
+ * @(#)$Id: ircaux.h,v 1.106 2009/12/07 01:22:06 jnelson Exp $
  */
 
 #ifndef _IRCAUX_H_
@@ -56,6 +56,8 @@ int	path_search 		(const char *, const char *, Filename);
 char *	double_quote 		(const char *, const char *, char *);
 char *	malloc_strcat_c		(char **, const char *, size_t *);
 void	wait_new_free 		(char **);
+char *	malloc_sprintf 		(char **, const char *, ...) __A(2);
+char *	malloc_vsprintf 	(char **, const char *, va_list);
 int	is_number 		(const char *);
 int	is_real_number 		(const char *);
 char *	my_ctime 		(time_t);

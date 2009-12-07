@@ -2,13 +2,10 @@ EPIC5 Projects, Bugs, and other Errata:
 
 KNOWN ERRATA (eg, bugs, or unresolved requests):
 ------------------------------------------------
-* What about scrolling back to some point in time?
-* Implement $mask() types 11, 12, and 13
-    11           *!*u@h.d                       *!*u@d.*
-    12           n!*@h.d                        n!*@d.*
-    13           n!*u@h.d                       n!*u@d.*
-* Kreca thinks I should have two refnums, one public, one private for windows.
 * There needs to be an /on switch_query for wuf/sjhoran
+* Need to have a script that implements per-channel FiSH support
+* Need to have a script that implements per-channel iconv() support.
+* The configure check for libarchive is weak.
 * wuf says that fred!user@machine.domain.com.au should not be
 	*!*user@*.com.au but instead *!*user@*.domain.com.au
 * Howl would like to retain the /window server <X>  value
@@ -17,6 +14,7 @@ ISSUES OF INTEREST
 ------------------
 * The four projects of the UTF8 effort are the primary focus for now.
 * Fusion wants /xecho -sec 10 this goes away in 10 seconds
+* What about scrolling back to some point in time?
 [I moved the old list to the file "WISHLIST" to keep this file short]
 
 [See http://www.epicsol.org/PROJECTS for things to come in the future]
@@ -106,6 +104,8 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Remember $dccctl(GET refnum WRITABLE) detects a connected socket, by rule
 * Change /on 322 handler so output always goes to OTHER, not to the window.
 * Add an /on switch_query, but it's incomplete, so don't use it yet.
+* Rewrite malloc_sprintf() so it can be used by do_hook_internal().
+* Revamp do_hook() so it returns the final value of $*
+* This will allow future use of do_hook() to rewrite text.
 * Don't test for /usr/local/lib/libiconv.a because os x doesn't have it
 * Prototype malloc_vsnprintf().
-
