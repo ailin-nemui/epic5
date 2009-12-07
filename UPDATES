@@ -1,7 +1,7 @@
 EPIC5-1.0.1
 
 *** News 10/29/2009 -- Valgrind assistance
-	If you want to rune pic under Valgrind, you may want to pass the
+	If you want to run epic under Valgrind, you may want to pass the
 	--with-valgrind  flag to configure, which will compile in some 
 	additional assistance to help valgrind find memory leaks.  This
 	support was graciously provided by caf, as were patches for the
