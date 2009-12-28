@@ -1,4 +1,4 @@
-/* $EPIC: server.c,v 1.238 2009/04/10 18:46:14 jnelson Exp $ */
+/* $EPIC: server.c,v 1.239 2009/12/28 20:05:54 jnelson Exp $ */
 /*
  * server.c:  Things dealing with that wacky program we call ircd.
  *
@@ -3689,5 +3689,29 @@ int	which_server_altname (int refnum, const char *name)
 			return i;
 
 	return -1;
+}
+
+/*
+ * This calculates how long a privmsg/notice can be on 'server' that we send
+ * to 'target'.
+ *
+ * Each privmsg/notice looks like this:
+ *      1        2             345678901        23         4 5
+ *	:<mynick>!<myuser@host> PRIVMSG <target> :<message>\r\n
+ * so each line has 15 bytes of overhead
+ *   + length of my nick
+ *   + length of my user@host
+ *   + length of channel/target (including #)
+ * The maximum length of a message is 512 - all of the above
+ */
+size_t	get_server_message_limit (int server, const char *target)
+{
+	size_t	overhead;
+
+	overhead = 15;
+	overhead += strlen(get_server_nickname(server));
+	overhead += strlen(get_server_userhost(server));
+	overhead += strlen(target);
+	return 512 - overhead;
 }
 

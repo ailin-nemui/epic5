@@ -512,15 +512,15 @@ addset command_mode bool;
 set command_mode off;
 
 ^on ^input "*" {
-	//sendline ${getset(command_mode) == 'on' ? '/' : ''}$*;
+	xeval -n {//sendline ${getset(command_mode) == 'on' ? '/' : ''}$*};
 };
 
 ^on ^input "'*" {
-	//send ${getset(command_mode) == 'on' ? rest(1 $*) : (*)};
+	xeval -n {//send ${getset(command_mode) == 'on' ? rest(1 $*) : (*)}};
 };
 
 ^on ^input "/*" {
-	//sendline $*;
+	xeval -n {//sendline $*};
 };
 
 # DCC_TIMEOUT

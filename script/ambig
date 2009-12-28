@@ -17,7 +17,7 @@ on ?unknown_command "*" (cmd, args) {
     return 1;
   };
   if (num == 1) {
-    $matches $args;
+    xeval -n {$matches $args};
     return 1;
   };
   return 0;

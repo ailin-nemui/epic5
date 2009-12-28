@@ -1,4 +1,4 @@
-/* $EPIC: who.c,v 1.63 2008/05/09 17:06:10 jnelson Exp $ */
+/* $EPIC: who.c,v 1.64 2009/12/28 20:05:54 jnelson Exp $ */
 /*
  * who.c -- The WHO queue.  The ISON queue.  The USERHOST queue.
  *
@@ -845,6 +845,7 @@ do
 			copy = LOCAL_COPY(name);
 			new_next_arg(name, &name);
 			ok = ok && wild_match(new_w->who_real, name);
+			name = copy;
 		}
 		if (new_w->who_mask & WHO_SERVER)
 			ok = ok && wild_match(new_w->who_server, server);

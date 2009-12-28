@@ -1,4 +1,4 @@
-/* $EPIC: log.c,v 1.25 2006/06/06 05:08:48 jnelson Exp $ */
+/* $EPIC: log.c,v 1.26 2009/12/28 20:05:54 jnelson Exp $ */
 /*
  * log.c: handles the irc session logging functions 
  *
@@ -47,48 +47,76 @@
 	int	logfile_line_mangler;
 	int	current_log_refnum = -1;
 
-static FILE *open_log (const char *logfile, FILE **fp)
+static FILE *	open_log (const char *logfile, FILE **fp)
 {
-	time_t	t;
-	char	my_buffer[256];
-	struct	tm	*ugh;
-	Filename fullname;
+	char *		tempname;
+	size_t		templen;
+	Filename 	fullname;
 
-	time(&t);
-	ugh = localtime(&t);		/* Not gmtime, m'kay? */
-	/* Ugh.  Solaris. */
-	strftime(my_buffer, 255, "%a %b %d %H:%M:%S %Y", ugh);
+	/* If the user hasn't specified a logfile, do nothing */
+	if (!logfile)
+		return NULL;
 
+	/* If the user is already logging here, tell them. */
 	if (*fp) 
 	{
 		say("Logging is already on");
 		return *fp;
 	}
 
-	if (!logfile)
+	/* If necessary, remove "s on the outside of the filename */
+	/* I do this way too much on accident; it's annoying not to have it */
+	tempname = LOCAL_COPY(logfile);
+	templen = strlen(tempname);
+	if (templen > 2 && tempname[0] == '"' 
+			&& tempname[templen - 1] == '"')
+	{
+		tempname[templen - 1] = 0;
+		tempname++;
+	}
+
+	/* If the result is an empty filename then just punt */
+	if (!tempname || !*tempname)
+	{
+		yell("Cannot log to the filename [%s] because the result "
+			"was an empty filename", logfile);
 		return NULL;
-			
-	if (normalize_filename(logfile, fullname))
+	}
+
+	if (normalize_filename(tempname, fullname))
+	{
+		yell("Warning: I could not normalize the filename [%s] "
+			"(the result was [%s] -- watch out", 
+			logfile, fullname);
 		(void)0;		/* Do nothing... */
+	}
 
 	if ((*fp = fopen(fullname, "a")) != NULL)
 	{
+		time_t		t;
+		struct	tm *	ltime;
+		char		timestr[256];
+
+		/* Convert the time to a string to insert in the file */
+		time(&t);
+		ltime = localtime(&t);		/* Not gmtime, m'kay? */
+		strftime(timestr, 255, "%a %b %d %H:%M:%S %Y", ltime);
+
 		chmod(fullname, S_IREAD | S_IWRITE);
 		say("Starting logfile %s", fullname);
-
-		fprintf(*fp, "IRC log started %s\n", my_buffer);
+		fprintf(*fp, "IRC log started %s\n", timestr);
 		fflush(*fp);
 	}
 	else
 	{
-		say("Couldn't open logfile %s: %s", fullname, strerror(errno));
+		yell("Couldn't open logfile %s: %s", fullname, strerror(errno));
 		*fp = NULL;
 	}
 
 	return (*fp);
 }
 
-static FILE *close_log (FILE **fp)
+static FILE *	close_log (FILE **fp)
 {
 	time_t	t;
 	char	my_buffer[256];
@@ -111,7 +139,16 @@ struct	tm	*ugh;
 	return (*fp);
 }
 
-FILE *do_log (int flag, const char *logfile, FILE **fp)
+/*
+ * do_log: open or close a logfile
+ *	flag 	- 1 if the logfile should be opened
+ *		  0 if the logfile should be closed
+ *	logfile - The name of the logfile (only needed if flag == 1)
+ *	fp	- A pointer to a (FILE *) which gets the result of fopen().
+ *		  Will be set to NULL if the file is not open (due to 
+ *		  error or flag == 0)
+ */
+FILE *	do_log (int flag, const char *logfile, FILE **fp)
 {
 	if (flag)
 		return open_log(logfile, fp);

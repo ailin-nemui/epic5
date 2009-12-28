@@ -1,4 +1,4 @@
-/* $EPIC: ircaux.c,v 1.213 2009/12/07 01:48:31 jnelson Exp $ */
+/* $EPIC: ircaux.c,v 1.214 2009/12/28 20:05:54 jnelson Exp $ */
 /*
  * ircaux.c: some extra routines... not specific to irc... that I needed 
  *
@@ -925,6 +925,8 @@ int	normalize_filename (const char *str, Filename result)
 		str = workpath;
 	}
 
+/* I don't understand the point of this code. */
+#if 0
         /* yes, these are redundant, but what if people */
         /* have directories with .zip in them? */
         if (((stristr(str, ".zip"))!=-1) || ((stristr(str, ".tar"))!=-1)) {
@@ -933,6 +935,7 @@ int	normalize_filename (const char *str, Filename result)
                 return 0;
             }
         }
+#endif
 
 	if (realpath(str, result) == NULL)
 		return -1;
@@ -3958,7 +3961,7 @@ char *	malloc_vsprintf (char **ptr, const char *format, va_list args)
 {
 	char *	buffer = NULL;
 	size_t	buffer_size;
-	size_t	actual_size;
+	int	vsn_retval;
 	va_list	orig_args;
 
 	if (format)
@@ -3971,14 +3974,14 @@ char *	malloc_vsprintf (char **ptr, const char *format, va_list args)
 
 		do {
 		    va_copy(args, orig_args);
-		    actual_size = vsnprintf(buffer, buffer_size, format, args);
+		    vsn_retval = vsnprintf(buffer, buffer_size, format, args);
 
-		    if (actual_size < 0)	/* DIE DIE DIE */
+		    if (vsn_retval < 0)		/* DIE DIE DIE */
 			buffer_size += 16;
-		    else if (actual_size < buffer_size)
+		    else if ((size_t)vsn_retval < buffer_size)
 			break;
 		    else
-			buffer_size = actual_size + 1;
+			buffer_size = vsn_retval + 1;
 		    RESIZE(buffer, char, buffer_size);
 		} while (1);
 

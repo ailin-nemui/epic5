@@ -1,4 +1,4 @@
-/* $EPIC: commands.c,v 1.191 2009/10/29 07:37:32 jnelson Exp $ */
+/* $EPIC: commands.c,v 1.192 2009/12/28 20:05:54 jnelson Exp $ */
 /*
  * commands.c -- Stuff needed to execute commands in ircII.
  *		 Includes the bulk of the built in commands for ircII.
@@ -1154,6 +1154,7 @@ BUILT_IN_COMMAND(xevalcmd)
 	int	old_from_server = from_server;
 	int	old_refnum = current_window->refnum;
 	int	l = -1;
+	int	old_window_display = window_display;
 
 	while (args && (*args == '-' || *args == '/'))
 	{
@@ -1184,6 +1185,9 @@ BUILT_IN_COMMAND(xevalcmd)
 				current_window = win;
 			}
 		}
+		/* This does the reverse of ^ */
+		else if (!my_strnicmp(flag + 1, "N", 1)) /* NOISY */
+			window_display = 1;
 	}
 
 	runcmds(args, subargs);
@@ -1193,6 +1197,7 @@ BUILT_IN_COMMAND(xevalcmd)
 
 	make_window_current_by_refnum(old_refnum);
 	from_server = old_from_server;
+	window_display = old_window_display;
 }
 
 BUILT_IN_COMMAND(evalcmd)
