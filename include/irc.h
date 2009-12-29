@@ -138,6 +138,7 @@ extern struct timeval 	start_time;
 extern struct timeval	idle_time;
 extern struct timeval	now;
 extern struct timeval	input_timeout;
+extern	unsigned	window_display;		/* This is in window.h */
 
 /* irc.c's extern functions */
 	void	io 			(const char *);

@@ -11,8 +11,7 @@ KNOWN ERRATA (eg, bugs, or unresolved requests):
 * Howl would like to retain the /window server <X>  value
 * va_list is iffy on amd64 and you must use va_copy() diligently.
 * You should be able to /msg a window
-* There should be a level for "channel stuff"
-* $convert() outputs spurious errors.
+* There should be a fake level for "channel stuff"
 * Curse would like an outbound protocol queue to avoid flooding the server
 * What if strtoimax() is a macro?
 
@@ -126,4 +125,6 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Change a variable name to avoid conflicts with a global symbol
 * Create a stub function to calculate how long the input line could be.
 * Fix a bug with /who -real (i forgot who reported this, sorry!)
-
+* Fix the redonkulous spurious errors when using $convert().
+* Add a configure check for strtoimax() being a macro (ugh)
+* Apparently strings in configure are supposed to be [quote]d.

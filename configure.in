@@ -4,11 +4,11 @@ dnl except those bits attributed otherwise.
 dnl thanks to the screen 3.3 configure.in for giving me examples to
 dnl work from and steal ;)
 dnl
-dnl @(#)$Id: configure.in,v 1.86 2009/12/07 01:22:06 jnelson Exp $
+dnl @(#)$Id: configure.in,v 1.87 2009/12/29 04:20:14 jnelson Exp $
 
-AC_REVISION($Revision: 1.86 $)dnl
-AC_INIT(source/irc.c)
-AC_CONFIG_HEADER(include/defs.h)
+AC_REVISION([$Revision: 1.87 $])dnl
+AC_INIT([source/irc.c])
+AC_CONFIG_HEADER([include/defs.h])
 
 unset GREP_OPTIONS
 
@@ -20,7 +20,7 @@ dnl
 VERSION=`sed -n -e 's/";$//' -e '/const char irc_version.. = .EPIC.-/s///p' -e '/const char irc_version/q' < $srcdir/source/irc.c` 
 echo this is EPIC5 version $VERSION
 echo
-AC_SUBST(VERSION)
+AC_SUBST([VERSION])
 
 dnl ----------------------------------------------------------
 dnl
@@ -33,8 +33,8 @@ AC_ISC_POSIX
 AC_AIX
 
 dnl ----------------------------------------------------------
-AC_MSG_CHECKING(for an extra library directory)
-AC_ARG_WITH(localdir,
+AC_MSG_CHECKING([for an extra library directory])
+AC_ARG_WITH([localdir],
 [  --with-localdir=/usr/local An extra directory to look for stuff.],[
    if test "x$withval" = "x" ; then
       with_extra_libdir="no"
@@ -48,7 +48,7 @@ AC_ARG_WITH(localdir,
 ],[
    with_extra_libdir="no"
 ])
-AC_MSG_RESULT($with_extra_libdir)
+AC_MSG_RESULT([$with_extra_libdir])
 
 dnl ----------------------------------------------------------
 dnl ----------------------------------------------------------
@@ -61,11 +61,11 @@ dnl ----------------------------------------------------------
 dnl
 dnl Checking for solaris cc
 dnl
-AC_MSG_CHECKING(for solaris cc)
+AC_MSG_CHECKING([for solaris cc])
 ( $CC -V 2>&1 | grep 'Sun C' > /dev/null ) && \
 	sun_compiler="yes" \
 	CFLAGS="$CFLAGS -erroff=E_ARG_INCOMPATIBLE_WITH_ARG,E_ASSIGNMENT_TYPE_MISMATCH"
-AC_MSG_RESULT(ok)
+AC_MSG_RESULT([ok])
 
 dnl
 dnl checking for svr4's /usr/ccs/lib
@@ -88,7 +88,7 @@ dnl
 dnl if test -d /usr/include/ep; then
 dnl	CFLAGS="-I/usr/include/ep $CFLAGS"
 dnl fi
-AC_CHECK_LIB(cext, setenv, LIBS="$LIBS -lcext",)
+AC_CHECK_LIB([cext], [setenv], [LIBS="$LIBS -lcext"],)
 
 
 dnl ----------------------------------------------------------
@@ -229,11 +229,11 @@ else
 		LIBS="$saved_LIBS -L$ssldir/lib -lssl -lcrypto"
 	        CFLAGS="$saved_CFLAGS -I$ssldir/include"
 		AC_TRY_LINK([#include <openssl/ssl.h>],
-			    [SSL_accept(0);], have_ssl="yes")
+			    [SSL_accept(0);], [have_ssl="yes"])
 	    fi
 
 	    if test "x$have_ssl" != "xyes"; then
-		AC_MSG_RESULT(no)	
+		AC_MSG_RESULT([no])	
 		AC_MSG_ERROR([I could not find the OpenSSL installed at $with_ssl you asked me to use with --with-ssl=$with_ssl.  Please ensure that directory contains the files 'include/openssl/ssl.h' and 'lib/libssl.a'.  If you are unsure, remove --with-ssl and just let me auto-detect it.])
 	    fi
 	fi
@@ -242,7 +242,7 @@ else
 	LIBS="$saved_LIBS -lssl -lcrypto"
 	CFLAGS="$saved_CFLAGS"
 	AC_TRY_LINK([#include <openssl/ssl.h>],
-		[SSL_accept(0);], have_ssl="yes")
+		[SSL_accept(0);], [have_ssl="yes"])
 
 	# Otherwise, go hunting for it.
 	if test "x$have_ssl" = "x" ; then
@@ -260,7 +260,7 @@ else
 		    CFLAGS="$saved_CFLAGS -I$ssldir/include"
 		    LIBS="$saved_LIBS -L$ssldir/lib -lssl -lcrypto"
 		    AC_TRY_LINK([#include <openssl/ssl.h>],
-				[SSL_accept(0);], have_ssl="yes")
+				[SSL_accept(0);], [have_ssl="yes"])
 		fi
 	    done
 	fi
@@ -269,15 +269,15 @@ else
 	if test ! -n "$have_ssl"; then
 		LIBS="$saved_LIBS"
 		CFLAGS="$saved_CFLAGS"
-		AC_MSG_RESULT(no)
+		AC_MSG_RESULT([no])
 		if test "x$with_ssl" != "x"; then
 			AC_MSG_ERROR([You requested SSL support, but OpenSSL was not found. Please supply a pathname to OpenSSL])
 		fi
 		AC_MSG_ERROR([I was unable to find OpenSSL.  If it is not installed, please install it.  If it is installed, please help me find it using --with-ssl=/usr/local or similar.])
 	else
 	    if test "x$threading" = "x1" ; then
-		AC_MSG_RESULT(yes)
-		AC_MSG_CHECKING(whether your SSL is threading compatable)
+		AC_MSG_RESULT([yes])
+		AC_MSG_CHECKING([whether your SSL is threading compatable])
 		AC_TRY_RUN([
 #define OPENSSL_THREAD_DEFINES
 #include <openssl/opensslconf.h>
@@ -290,12 +290,12 @@ main ()
 #endif
 }
 ],
-		AC_MSG_RESULT(yes)
-		AC_DEFINE(HAVE_SSL),
-		AC_MSG_RESULT(no. Your system can not do SSL with pthreads), :)
+		AC_MSG_RESULT([yes])
+		AC_DEFINE([HAVE_SSL]),
+		AC_MSG_RESULT([no. Your system can not do SSL with pthreads]),:)
 	    else
-		AC_DEFINE(HAVE_SSL)
-		AC_MSG_RESULT(yes)
+		AC_DEFINE([HAVE_SSL])
+		AC_MSG_RESULT([yes])
 	    fi
 	fi
 fi
@@ -616,7 +616,18 @@ AC_EGREP_HEADER(intmax_t, inttypes.h, have_intmax_t=yes)
 
 if test "x$have_intmax_t" != "x"; then
    AC_MSG_RESULT(yes)
-   AC_CHECK_FUNC(strtoimax, have_strtoimax=yes,)
+   AC_CHECK_FUNC(strtoimax, have_strtoimax=yes, [
+       AC_MSG_CHECKING(for strtoimax as macro in inttypes.h or stdint.h)
+       AC_EGREP_HEADER(strtoimax, stdint.h, have_strtoimax=yes, 
+          [AC_EGREP_HEADER(strtoimax, inttypes.h, have_strtoimax=yes)
+          if test "x$have_strtoimax" != "x" ; then
+             AC_MSG_RESULT(yes)
+          else
+             AC_MSG_RESULT(no)
+          fi]
+	)
+      ]
+    )
 else
    AC_MSG_RESULT(no)
 fi
@@ -630,36 +641,37 @@ if test "x$have_intmax_t" != "x" ; then
 fi
 
 dnl Can we use (long long) for (intmax_t) ?
-AC_CHECK_SIZEOF(long long, 0)
+AC_CHECK_SIZEOF([long long], 0)
 if test "$ac_cv_sizeof_long_long" != 0; then
-   AC_DEFINE(HAVE_INTMAX_LONG_LONG)
-   AC_CHECK_FUNC(strtoll, AC_DEFINE(HAVE_STRTOLL), AC_DEFINE(NEED_STRTOLL))
+   AC_DEFINE([HAVE_INTMAX_LONG_LONG])
+   AC_CHECK_FUNC([strtoll], AC_DEFINE([HAVE_STRTOLL]), 
+			    AC_DEFINE([NEED_STRTOLL]))
 fi
 
 dnl Can we use (quad_t) for (intmax_t) ?
-AC_CHECK_SIZEOF(quad_t, 0)
+AC_CHECK_SIZEOF([quad_t], 0)
 if test "$ac_cv_sizeof_quad_t" != 0; then
-   AC_CHECK_FUNC(strtoq, AC_DEFINE(HAVE_STRTOQ)
-			 AC_DEFINE(HAVE_INTMAX_QUADT),)
+   AC_CHECK_FUNC([strtoq], AC_DEFINE([HAVE_STRTOQ])
+			   AC_DEFINE([HAVE_INTMAX_QUADT]),)
 fi
 
 dnl Can we use (long) for (intmax_t)?  (Yes. always, if we must)
-AC_DEFINE(HAVE_INTMAX_LONG)
+AC_DEFINE([HAVE_INTMAX_LONG])
 
 dnl ----------------------------------------------------------
 dnl
 dnl need this for dcc stuff
 dnl
 
-AC_CHECK_SIZEOF(unsigned int, 4)
+AC_CHECK_SIZEOF([unsigned int], 4)
 if test "$ac_cv_sizeof_unsigned_int" = 4; then
-	AC_DEFINE(UNSIGNED_INT32)
+	AC_DEFINE([UNSIGNED_INT32])
 else
-	AC_CHECK_SIZEOF(unsigned long, 4)
+	AC_CHECK_SIZEOF([unsigned long], 4)
 	if test "$ac_cv_sizeof_unsigned_long" = 4; then
-		AC_DEFINE(UNSIGNED_LONG32)
+		AC_DEFINE([UNSIGNED_LONG32])
 	else
-		AC_DEFINE(UNKNOWN_32INT)
+		AC_DEFINE([UNKNOWN_32INT])
 	fi
 fi
 
@@ -685,7 +697,7 @@ dnl so check for that here.
 dnl
 dnl -----------------------------------------------------------
 
-AC_MSG_CHECKING(to see if your struct sockaddr includes a length field)
+AC_MSG_CHECKING([to see if your struct sockaddr includes a length field])
 AC_TRY_RUN([
 #include <sys/types.h>
 #include <sys/socket.h>
@@ -696,39 +708,39 @@ main()
 	exit(0);
 }
 ],
-  AC_DEFINE(HAVE_SA_LEN)
-  AC_MSG_RESULT(yes),
-  AC_MSG_RESULT(no), :)
+  AC_DEFINE([HAVE_SA_LEN])
+  AC_MSG_RESULT([yes]),
+  AC_MSG_RESULT([no]), :)
 
 dnl ----------------------------------------------------------
 dnl
 dnl checks for ipv6-related things
 dnl
 
-AC_MSG_CHECKING(whether to support ipv6)
+AC_MSG_CHECKING([whether to support ipv6])
 AC_ARG_WITH(ipv6,
 [  --with-ipv6             Include IPv6 support],[
 	if test "x$withval" = "xno" ; then
-		AC_MSG_RESULT(no)
-		AC_DEFINE(DO_NOT_USE_IPV6)
+		AC_MSG_RESULT([no])
+		AC_DEFINE([DO_NOT_USE_IPV6])
 	else
-		AC_MSG_RESULT(yes)
+		AC_MSG_RESULT([yes])
 	fi
-],[AC_MSG_RESULT(yes)])
+],[AC_MSG_RESULT([yes])])
 
-AC_MSG_CHECKING(for struct sockaddr_storage)
+AC_MSG_CHECKING([for struct sockaddr_storage])
 AC_EGREP_HEADER([struct( |	)*sockaddr_storage], sys/socket.h, 
   AC_MSG_RESULT(yes) 
   AC_DEFINE(HAVE_STRUCT_SOCKADDR_STORAGE),
   AC_MSG_RESULT(no))
 
-AC_MSG_CHECKING(for struct sockaddr_in6)
+AC_MSG_CHECKING([for struct sockaddr_in6])
 AC_EGREP_HEADER([struct( |	)*sockaddr_in6], netinet/in.h,
   AC_MSG_RESULT(yes)
   AC_DEFINE(HAVE_STRUCT_SOCKADDR_IN6),
   AC_MSG_RESULT(no))
 
-AC_MSG_CHECKING(for struct addrinfo)
+AC_MSG_CHECKING([for struct addrinfo])
 AC_EGREP_HEADER([struct( |	)*addrinfo], netdb.h,
   AC_MSG_RESULT(yes)
   AC_DEFINE(HAVE_STRUCT_ADDRINFO),
@@ -741,7 +753,7 @@ dnl support the AF_UNIX protocol family.  For these partially incomplete
 dnl implementations, we must add our own support in a wrapper.
 dnl
 
-AC_MSG_CHECKING(to see if your getaddrinfo supports AF_UNIX)
+AC_MSG_CHECKING([to see if your getaddrinfo supports AF_UNIX])
 AC_TRY_RUN([
 #include <sys/types.h>
 #include <sys/socket.h>
@@ -768,9 +780,9 @@ main()
 		exit(0);
 }
 ],
-  AC_MSG_RESULT(yes),
+  AC_MSG_RESULT([yes]),
   AC_DEFINE(GETADDRINFO_DOES_NOT_DO_AF_UNIX)
-  AC_MSG_RESULT(no. ugh), :)
+  AC_MSG_RESULT([no. ugh]), :)
 
 dnl ----------------------------------------------------------
 dnl

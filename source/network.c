@@ -1,4 +1,4 @@
-/* $EPIC: network.c,v 1.84 2009/10/29 07:37:32 jnelson Exp $ */
+/* $EPIC: network.c,v 1.85 2009/12/29 04:20:14 jnelson Exp $ */
 /*
  * network.c -- handles stuff dealing with connecting and name resolving
  *
@@ -526,10 +526,15 @@ int	inet_ptohn (int family, const char *ip, char *retval, int size)
  */
 int	one_to_another (int family, const char *what, char *retval, int size)
 {
+	/* XXX I wish this wasn't necessary */
+	int	old_window_display = window_display;
+	window_display = 0;
+
 	if (inet_ptohn(family, what, retval, size))
 	{
 		if (inet_hntop(family, what, retval, size))
 		{
+			window_display = old_window_display;
 			syserr(-1, "one_to_another: both inet_ptohn and "
 					"inet_hntop failed (%d,%s)", 
 					family, what);
@@ -537,6 +542,7 @@ int	one_to_another (int family, const char *what, char *retval, int size)
 		}
 	}
 
+	window_display = old_window_display;
 	return 0;
 }
 
