@@ -1,4 +1,4 @@
-/* $EPIC: commands.c,v 1.192 2009/12/28 20:05:54 jnelson Exp $ */
+/* $EPIC: commands.c,v 1.193 2010/01/01 01:45:46 jnelson Exp $ */
 /*
  * commands.c -- Stuff needed to execute commands in ircII.
  *		 Includes the bulk of the built in commands for ircII.
@@ -3102,7 +3102,15 @@ struct target_type target[4] =
 	    else if (*current_nick == '@' && toupper(current_nick[1]) == 'L' 
 			&& is_number(current_nick + 1))
 		target_file_write(current_nick + 1, text);
-
+	    else if (*current_nick == '@' && toupper(current_nick[1]) == 'E')
+	    {
+		/* XXX this is probably cheating. */
+		char *ptr = NULL;
+		malloc_sprintf(&ptr, "-W %s %s",
+				current_nick + 2, text);
+		xechocmd("XECHO", ptr, NULL);
+		new_free(&ptr);
+	    }
 	    else if (*current_nick == '"')
 		send_to_server("%s", text);
 

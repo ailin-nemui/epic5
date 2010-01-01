@@ -4,9 +4,9 @@ dnl except those bits attributed otherwise.
 dnl thanks to the screen 3.3 configure.in for giving me examples to
 dnl work from and steal ;)
 dnl
-dnl @(#)$Id: configure.in,v 1.87 2009/12/29 04:20:14 jnelson Exp $
+dnl @(#)$Id: configure.in,v 1.88 2010/01/01 01:45:46 jnelson Exp $
 
-AC_REVISION([$Revision: 1.87 $])dnl
+AC_REVISION([$Revision: 1.88 $])dnl
 AC_INIT([source/irc.c])
 AC_CONFIG_HEADER([include/defs.h])
 
@@ -433,10 +433,12 @@ dnl Check to see if we can find intptr_t.
 dnl
 have_intptr_t=""
 AC_MSG_CHECKING(for intptr_t in inttypes.h or stdint.h)
-AC_EGREP_HEADER(intptr_t, inttypes.h, AC_DEFINE(HAVE_INTPTR_T)
-					have_intptr_t=yes)
-AC_EGREP_HEADER(intptr_t, stdint.h, AC_DEFINE(HAVE_INTPTR_T)
-					have_intptr_t=yes)
+AC_TRY_LINK([#include <inttypes.h>],
+	    [intptr_t x; x = 0;], AC_DEFINE(HAVE_INTPTR_T) 
+				    have_intptr_t="yes")
+AC_TRY_LINK([#include <stdint.h>],
+	    [intptr_t x; x = 0;], AC_DEFINE(HAVE_INTPTR_T) 
+				    have_intptr_t="yes")
 if test "x$have_intptr_t" = "x"; then
 	AC_MSG_RESULT(no)
 else
@@ -466,7 +468,6 @@ AC_EGREP_HEADER(fd_set, sys/types.h,
     AC_MSG_RESULT(yes)
     AC_DEFINE(NEED_SYS_SELECT_H),
     AC_MSG_RESULT(no. ugh.))) 
-
 
 dnl ----------------------------------------------------------
 dnl
@@ -605,39 +606,47 @@ dnl
 dnl ......
 
 dnl ----------------------------------------------------------
-dnl
 dnl Check for 'intmax_t'
 dnl
 have_intmax_t=""
 have_strtoimax_t=""
 AC_MSG_CHECKING(for intmax_t in inttypes.h or stdint.h)
-AC_EGREP_HEADER(intmax_t, stdint.h, have_intmax_t=yes)
-AC_EGREP_HEADER(intmax_t, inttypes.h, have_intmax_t=yes)
-
-if test "x$have_intmax_t" != "x"; then
-   AC_MSG_RESULT(yes)
-   AC_CHECK_FUNC(strtoimax, have_strtoimax=yes, [
-       AC_MSG_CHECKING(for strtoimax as macro in inttypes.h or stdint.h)
-       AC_EGREP_HEADER(strtoimax, stdint.h, have_strtoimax=yes, 
-          [AC_EGREP_HEADER(strtoimax, inttypes.h, have_strtoimax=yes)
-          if test "x$have_strtoimax" != "x" ; then
-             AC_MSG_RESULT(yes)
-          else
-             AC_MSG_RESULT(no)
-          fi]
-	)
-      ]
-    )
+AC_TRY_LINK([#include <inttypes.h>],
+	    [intmax_t x; x = 0;], have_intmax_t="yes")
+AC_TRY_LINK([#include <stdint.h>],
+	    [intmax_t x; x = 0;], have_intmax_t="yes")
+if test "x$have_intmax_t" = "x"; then
+	AC_MSG_RESULT(no)
 else
-   AC_MSG_RESULT(no)
+	AC_MSG_RESULT(yes)
 fi
 
+AC_MSG_CHECKING(for strtoimax in inttypes.h or stdint.h)
+AC_TRY_LINK([#include <inttypes.h>],
+	    [char *ptr="1";strtoimax(ptr, &ptr, 10)], 
+				    have_strtoimax="yes")
+AC_TRY_LINK([#include <stdint.h>],
+	    [char *ptr="1";strtoimax(ptr, &ptr, 10)], 
+				    have_strtoimax="yes")
+if test "x$have_strtoimax" = "x"; then
+	AC_MSG_RESULT(no)
+else
+	AC_MSG_RESULT(yes)
+fi
+
+
+AC_MSG_CHECKING(can I use intmax_t for intmax_t)
 dnl Can we use (intmax_t) for (intmax_t)?
 if test "x$have_intmax_t" != "x" ; then
   if test "x$have_strtoimax" != "x" ; then
     AC_DEFINE(HAVE_STRTOIMAX)
     AC_DEFINE(HAVE_INTMAX_NATIVE)
+    AC_MSG_RESULT(yes)
+  else
+    AC_MSG_RESULT(no)
   fi
+else
+  AC_MSG_RESULT(no)
 fi
 
 dnl Can we use (long long) for (intmax_t) ?

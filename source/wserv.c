@@ -1,4 +1,4 @@
-/* $EPIC: wserv.c,v 1.15 2008/03/29 19:00:16 jnelson Exp $ */
+/* $EPIC: wserv.c,v 1.16 2010/01/01 01:45:46 jnelson Exp $ */
 /*
  * wserv.c -- A little program to act as a pipe between the ircII process
  * 	      and an xterm window or GNU screen.
@@ -64,7 +64,7 @@ static	void 	ignore (int);
 static	void	sigwinch_func (int);
 static	int 	term_init (void);
 static	void 	term_resize (void);
-static	void	yell (const char *format, ...);
+	void	yell (const char *format, ...);
 static	int	connectory (const char *, const char *);
 
 
@@ -288,7 +288,7 @@ static void 	term_resize (void)
 	}
 }
 
-static void	yell (const char *format, ...)
+void	yell (const char *format, ...)
 {
         if (format)
         {

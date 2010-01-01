@@ -10,10 +10,8 @@ KNOWN ERRATA (eg, bugs, or unresolved requests):
 	*!*user@*.com.au but instead *!*user@*.domain.com.au
 * Howl would like to retain the /window server <X>  value
 * va_list is iffy on amd64 and you must use va_copy() diligently.
-* You should be able to /msg a window
 * There should be a fake level for "channel stuff"
 * Curse would like an outbound protocol queue to avoid flooding the server
-* What if strtoimax() is a macro?
 
 ISSUES OF INTEREST
 ------------------
@@ -128,3 +126,7 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Fix the redonkulous spurious errors when using $convert().
 * Add a configure check for strtoimax() being a macro (ugh)
 * Apparently strings in configure are supposed to be [quote]d.
+* Check for strtoimax() separately in inttypes.h and stdint.h
+* This hopefully fixes the build on hpux
+* Add @E<win> as a /msg target so you can /msg a window.
+* Fix lame compile error in wserv() if we need yell().
