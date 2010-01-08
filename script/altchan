@@ -3,7 +3,8 @@ if (word(2 $loadinfo()) != 'pf') {
 	return;
 };
 
-#	Copyright (c) 2007 BlackJac@EFNet
+#	Copyright 2007 EPIC Software Labs
+#	Written by BlackJac@EFNet
 #
 #	Version: 2.0.2007.03.16.1
 #

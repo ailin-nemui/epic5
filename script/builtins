@@ -3,7 +3,8 @@ if (word(2 $loadinfo()) != 'pf') {
 	return;
 };
 
-#	Copyright (c) 2007 BlackJac@EFNet
+#	Copyright (c) 2007 EPIC Software Labs
+#	Written by BlackJac@EFNet
 #
 #	Version: 1.9.2007.09.28.2
 #
@@ -512,11 +513,11 @@ addset command_mode bool;
 set command_mode off;
 
 ^on ^input "*" {
-	xeval -n {//sendline ${getset(command_mode) == 'on' ? '/' : ''}$*};
+	xeval -n {//sendline ${getset(command_mode) == 'ON' ? '/' : ''}$*};
 };
 
 ^on ^input "'*" {
-	xeval -n {//send ${getset(command_mode) == 'on' ? rest(1 $*) : (*)}};
+	xeval -n {//send ${getset(command_mode) == 'ON' ? rest(1 $*) : (*)}};
 };
 
 ^on ^input "/*" {

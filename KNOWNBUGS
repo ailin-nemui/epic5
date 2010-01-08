@@ -9,6 +9,11 @@ KNOWN ERRATA (eg, bugs, or unresolved requests):
 * wuf says that fred!user@machine.domain.com.au should not be
 	*!*user@*.com.au but instead *!*user@*.domain.com.au
 * Howl would like to retain the /window server <X>  value
+* va_list is iffy on amd64 and you must use va_copy() diligently.
+* What about a facility to do "command completion", like /window <tab>
+  brings up all /window operations?
+* A way to auto-log channels by channel, irc.<channel>.log
+* What about a facility to do auto-off-hold-mode ?
 * There should be a fake level for "channel stuff"
 * Curse would like an outbound protocol queue to avoid flooding the server
 
@@ -131,3 +136,4 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Fix lame compile error in wserv() if we need yell().
 * Improve the test for libarchive in configure
 * Fix /bind -default because it whacked the bindings themselves. doh!
+* Normalize the copyright notice on scripts BlackJac wrote, per his request
