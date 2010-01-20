@@ -1,6 +1,5 @@
 if (word(2 $loadinfo()) != [pf]) { load -pf $word(1 $loadinfo()); return; };
 
-echo hey!;
 on ?unknown_command "*" (cmd, args) {
   @ :bonly = 0;
   if (left(2 $cmd) == [//]) {

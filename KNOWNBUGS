@@ -16,6 +16,13 @@ KNOWN ERRATA (eg, bugs, or unresolved requests):
 * What about a facility to do auto-off-hold-mode ?
 * There should be a fake level for "channel stuff"
 * Curse would like an outbound protocol queue to avoid flooding the server
+* Larne wants syntactic word extraction like $foo{3} or $foo{1,4}
+* Perl build errors still are not discovered properly by configure
+  ld: symbol(s) not found for architecture ppc
+  collect2: ld returned 1 exit status
+  lipo: can't open input file: /var/folders/sR/sRghWCavFoKpLOHlqsuFNU+++TI/-Tmp-//ccHkWjIQ.out (No such file or directory)
+  make[1]: *** [epic5] Error 1
+  make: *** [epic5] Error 2
 
 ISSUES OF INTEREST
 ------------------
@@ -137,3 +144,4 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Improve the test for libarchive in configure
 * Fix /bind -default because it whacked the bindings themselves. doh!
 * Normalize the copyright notice on scripts BlackJac wrote, per his request
+* Fix 439 handling for inspircd (rb twincest)
