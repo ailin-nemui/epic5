@@ -4,9 +4,9 @@ dnl except those bits attributed otherwise.
 dnl thanks to the screen 3.3 configure.in for giving me examples to
 dnl work from and steal ;)
 dnl
-dnl @(#)$Id: configure.in,v 1.89 2010/01/08 05:15:03 jnelson Exp $
+dnl @(#)$Id: configure.in,v 1.90 2010/02/15 03:59:10 jnelson Exp $
 
-AC_REVISION([$Revision: 1.89 $])dnl
+AC_REVISION([$Revision: 1.90 $])dnl
 AC_INIT([source/irc.c])
 AC_CONFIG_HEADER([include/defs.h])
 
@@ -1023,11 +1023,11 @@ else
 		old_LDFLAGS="$LDFLAGS"
 		CFLAGS="$CFLAGS $PERLCFLAGS"
 		LDFLAGS="$LDFLAGS $PERLLDFLAGS"
-		AC_TRY_LINK([
+		AC_TRY_RUN([
 #include <EXTERN.h>
 #include <perl.h>
 #include <XSUB.h>
-int dummy_retval = 0;
+int dummy_retval = -1;
 
 /* I "borrowed" this from the perlembed(1) man page */
 PerlInterpreter *my_perl;
@@ -1046,10 +1046,14 @@ int startup_perl(int argc, char **argv, char **env)
 	perl_destruct(my_perl);
 	perl_free(my_perl);
 	PERL_SYS_TERM();
+	dummy_retval = 0;
+	return 0;
 }
-], [
-		startup_perl(0, NULL, NULL);
-		exit(dummy_retval);
+int main (void)
+{
+	startup_perl(0, NULL, NULL);
+	exit(dummy_retval);
+}
 ], have_embedded_perl="yes")
 
 		CFLAGS="$old_CFLAGS"

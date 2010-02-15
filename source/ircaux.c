@@ -1,4 +1,4 @@
-/* $EPIC: ircaux.c,v 1.214 2009/12/28 20:05:54 jnelson Exp $ */
+/* $EPIC: ircaux.c,v 1.215 2010/02/15 03:59:10 jnelson Exp $ */
 /*
  * ircaux.c: some extra routines... not specific to irc... that I needed 
  *
@@ -614,17 +614,29 @@ unsigned char *stricmp_tables[2] = {
 	rfc1459_stricmp_table
 };
 
+/* XXX These functions should mean "must be equal, at least to 'n' chars */
 /* my_table_strnicmp: case insensitive version of strncmp */
-int	my_table_strnicmp (const unsigned char *str1, const unsigned char *str2, size_t n, int table)
+int	my_table_strnicmp (const unsigned char *short_string, const unsigned char *full_string, size_t min_match, int table)
 {
-	while (n && *str1 && *str2 && 
-		(stricmp_tables[table][(unsigned short)*str1] == 
-		 stricmp_tables[table][(unsigned short)*str2]))
-		str1++, str2++, n--;
+	int	actual_match = 0;
 
-	return (n ? 
-		(stricmp_tables[table][(unsigned short)*str1] -
-		stricmp_tables[table][(unsigned short)*str2]) : 0);
+	while (*short_string && *full_string &&
+		(stricmp_tables[table][(unsigned short)*short_string] == 
+		 stricmp_tables[table][(unsigned short)*full_string]))
+	    short_string++, full_string++, actual_match++;
+
+	/* 
+	 * Success IFF the the two strings match for the LONGER of
+	 * 		(strlen(short_string), min_match)
+	 * That is to say, the short string MUST be exhausted
+	 * and its length must be >= min_match.
+	 */
+	if (*short_string == 0 && actual_match >= min_match)
+		return 0;
+
+	/* Otherwise, return the ordinary strcmp() retval. */
+	return (stricmp_tables[table][(unsigned short)*short_string] -
+		stricmp_tables[table][(unsigned short)*full_string]);
 }
 
 /* XXX Never turn these functions into macros, we create fn ptrs to them! */
@@ -635,7 +647,7 @@ int	my_strnicmp (const unsigned char *str1, const unsigned char *str2, size_t n)
 
 int	my_stricmp (const unsigned char *str1, const unsigned char *str2)
 {
-	return my_table_strnicmp(str1, str2, UINT_MAX, 0);
+	return my_table_strnicmp(str1, str2, strlen(str2), 0);
 }
 
 int	ascii_strnicmp (const unsigned char *str1, const unsigned char *str2, size_t n)
@@ -5660,24 +5672,24 @@ struct Transformer
 };
 
 struct Transformer default_transformers[] = {
-{	0,	"URL",		0, 3, 2,  url_encoder,	  url_decoder	 },
-{	0,	"ENC",		0, 2, 2,  enc_encoder,	  enc_decoder	 },
-{	0,	"B64",		0, 2, 6,  b64_encoder,	  b64_decoder	 },
-{	0,	"FISH64",	0, 2, 12, fish64_encoder, fish64_decoder },
-{	0,	"SED",		1, 2, 2,  sed_encoder,	  sed_decoder	 },
-{	0,	"CTCP",		0, 2, 2,  ctcp_encoder,	  ctcp_decoder	 },
-{	0,	"NONE",		0, 1, 2,  null_encoder,	  null_encoder	 },
-{	0,	"DEF",		0, 1, 12, crypt_encoder,  crypt_decoder	 },
-{	0,	"SHA256",	0, 0, 10, sha256_encoder, sha256_encoder },
+{	0,	"URL",		0, 3, 8,  url_encoder,	  url_decoder	 },
+{	0,	"ENC",		0, 2, 8,  enc_encoder,	  enc_decoder	 },
+{	0,	"B64",		0, 2, 8,  b64_encoder,	  b64_decoder	 },
+{	0,	"FISH64",	0, 2, 16, fish64_encoder, fish64_decoder },
+{	0,	"SED",		1, 2, 8,  sed_encoder,	  sed_decoder	 },
+{	0,	"CTCP",		0, 2, 8,  ctcp_encoder,	  ctcp_decoder	 },
+{	0,	"NONE",		0, 1, 8,  null_encoder,	  null_encoder	 },
+{	0,	"DEF",		0, 1, 16, crypt_encoder,  crypt_decoder	 },
+{	0,	"SHA256",	0, 0, 16, sha256_encoder, sha256_encoder },
 #ifdef HAVE_SSL
 {	0,	"BF",		1, 1, 8,  blowfish_encoder, blowfish_decoder },
 {	0,	"CAST",		1, 1, 8,  cast5_encoder,    cast5_decoder    },
 {	0,	"AES",		1, 1, 8,  aes_encoder,	    aes_decoder	     },
 {	0,	"AESSHA",	1, 1, 8,  aessha_encoder,   aessha_decoder   },
-{	0,	"FISH",		1, 1, 12, fish_encoder,     fish_decoder     },
+{	0,	"FISH",		1, 1, 16, fish_encoder,     fish_decoder     },
 #endif
 #ifdef HAVE_ICONV
-{	0,	"ICONV",	1, 4, 12, iconv_recoder,  iconv_recoder },
+{	0,	"ICONV",	1, 4, 16, iconv_recoder,  iconv_recoder },
 #endif
 {	0,	"ALL",		0, 0, 256, all_encoder,	  all_encoder	},
 {	-1,	NULL,		0, 0, 0,   NULL,	  NULL		}

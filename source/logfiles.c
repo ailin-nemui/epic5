@@ -1,4 +1,4 @@
-/* $EPIC: logfiles.c,v 1.36 2007/09/21 03:36:28 jnelson Exp $ */
+/* $EPIC: logfiles.c,v 1.37 2010/02/15 03:59:10 jnelson Exp $ */
 /*
  * logfiles.c - General purpose log files
  *
@@ -279,7 +279,13 @@ static Logfile *	logfile_add (Logfile *log, char **args)
 		}
 		else if (log->type == LOG_SERVERS || log->type == LOG_WINDOWS)
 		{
-		    int refnum = my_atol(arg);
+		    int refnum;
+
+		    if (log->type == LOG_SERVERS && !my_strnicmp("ALL", arg, 1))
+			refnum = NOSERV;
+		    else
+			refnum = my_atol(arg);
+
 		    for (i = 0; i < MAX_TARGETS; i++)
 		    {
 			if (log->refnums[i] == refnum)
@@ -322,7 +328,10 @@ static Logfile *	logfile_describe (Logfile *log, char **args)
 	say("\t Logical name: %s", log->name);
 	say("\t     Filename: %s", log->filename ? log->filename : "<NONE>");
 	say("\t         Type: %s", logtype[log->type]);
-	say("\t       Server: %d", log->servref);
+	if (log->servref == NOSERV)
+		say("\t       Server: ALL");
+	else
+		say("\t       Server: %d", log->servref);
 	say("\tTarget/Refnum: %s", targets ? targets : "<NONE>");
 	say("\t        Level: %s", mask_to_str(&log->mask));
 	say("\t Rewrite Rule: %s", log->rewrite ? log->rewrite : "<NONE>");
@@ -398,11 +407,11 @@ static Logfile *	logfile_list (Logfile *log, char **args)
 	for (l = logfiles; l; l = l->next)
 	{
 		targets = logfile_get_targets(l);
-		say("Log %2d [%s] logging %s is %s, file %s server %d targets %s",
+		say("Log %2d [%s] logging %s is %s, file %s server %s targets %s",
 			l->refnum, l->name, logtype[l->type],
 			onoff[l->active],
 			l->filename ? l->filename : "<NONE>", 
-			l->servref,
+			l->servref == NOSERV ?  "ALL" : ltoa(l->servref),
 			targets ? targets : "<NONE>");
 		new_free(&targets);
 	}
@@ -594,8 +603,10 @@ static Logfile *	logfile_server (Logfile *log, char **args)
 		return NULL;
 	}
 
-	if (!is_number(arg))
-		say("SERVER: The log's server needs to be a number");
+	if (!my_strnicmp(arg, "ALL", 1))
+		log->servref = NOSERV;
+	else if (!is_number(arg))
+		say("/LOG SERVER: The log's server needs to be a number or ALL");
 	else
 		log->servref = str_to_servref(arg);
 
@@ -715,7 +726,9 @@ void	add_to_logs (long winref, int servref, const char *target, int level, const
 	    if (log->type == LOG_SERVERS)
 	    {
 		for (i = 0; i < MAX_TARGETS; i++) {
-		    if (log->refnums[i] == servref) {
+		    if (log->refnums[i] == NOSERV ||
+			log->refnums[i] == servref) 
+		    {
 			if (!mask_isset(&log->mask, level))
 				continue;
 			time(&log->activity);
