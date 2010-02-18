@@ -171,4 +171,4 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Change string insensitive comparisons so "SERVER" doesn't match "SASAFRASS"
 * Bump up the "overhead" bytes for xform()s to multiples of 8 per zlonix
 * Support /log server ALL and /log type server add ALL to log all servers
-
+* Fix brain-o that I missed -- strnicmp() consumers must use FULL STRINGS!

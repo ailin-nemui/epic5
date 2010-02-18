@@ -1,4 +1,4 @@
-/* $EPIC: server.c,v 1.239 2009/12/28 20:05:54 jnelson Exp $ */
+/* $EPIC: server.c,v 1.240 2010/02/18 07:35:59 jnelson Exp $ */
 /*
  * server.c:  Things dealing with that wacky program we call ircd.
  *
@@ -196,21 +196,21 @@ static	int	str_to_serverinfo (char *str, ServerInfo *s)
 			p = first_equals;
 			*p++ = 0;
 
-			if (!my_strnicmp(descstr, "H", 1))
+			if (!my_strnicmp(descstr, "HOST", 1))
 				fieldnum = HOST;
-			else if (!my_strnicmp(descstr, "PO", 2))
+			else if (!my_strnicmp(descstr, "PORT", 2))
 				fieldnum = PORT;
-			else if (!my_strnicmp(descstr, "PA", 2))
+			else if (!my_strnicmp(descstr, "PASS", 2))
 				fieldnum = PASS;
-			else if (!my_strnicmp(descstr, "N", 1))
+			else if (!my_strnicmp(descstr, "NICK", 1))
 				fieldnum = NICK;
-			else if (!my_strnicmp(descstr, "G", 1))
+			else if (!my_strnicmp(descstr, "GROUP", 1))
 				fieldnum = GROUP;
-			else if (!my_strnicmp(descstr, "T", 1))
+			else if (!my_strnicmp(descstr, "TYPE", 1))
 				fieldnum = TYPE;
-			else if (!my_strnicmp(descstr, "PR", 2))
+			else if (!my_strnicmp(descstr, "PROTO", 2))
 				fieldnum = PROTO;
-			else if (!my_strnicmp(descstr, "V", 1))
+			else if (!my_strnicmp(descstr, "VHOST", 1))
 				fieldnum = VHOST;
 			else
 			{
