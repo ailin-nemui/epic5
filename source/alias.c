@@ -1,4 +1,4 @@
-/* $EPIC: alias.c,v 1.87 2008/12/21 06:32:57 jnelson Exp $ */
+/* $EPIC: alias.c,v 1.88 2010/02/18 07:45:44 jnelson Exp $ */
 /*
  * alias.c -- Handles the whole kit and caboodle for aliases.
  *
@@ -2637,13 +2637,13 @@ static	int maxret = 0;
 	int reverse = 0;
 
 	GET_FUNC_ARG(listc, input);
-	if (!my_strnicmp(listc, "AS", 2))
+	if (!my_strnicmp(listc, "ASSIGN", 2))
 		list = VAR_ALIAS;
-	else if (!my_strnicmp(listc, "AL", 2))
+	else if (!my_strnicmp(listc, "ALIAS", 2))
 		list = COMMAND_ALIAS;
-	else if (!my_strnicmp(listc, "LO", 2))
+	else if (!my_strnicmp(listc, "LOCAL", 2))
 		list = VAR_ALIAS_LOCAL;
-	else if (!my_strnicmp(listc, "MAXR", 4))
+	else if (!my_strnicmp(listc, "MAXRET", 4))
 	{
 		int old_maxret = maxret;
 		if (input && *input)
@@ -2656,23 +2656,23 @@ static	int maxret = 0;
 	GET_FUNC_ARG(listc, input);
 	if ((start = my_atol(listc)))
 		GET_FUNC_ARG(listc, input);
-	if (!my_strnicmp(listc, "GETP", 4))
+	if (!my_strnicmp(listc, "GETPACKAGE", 4))
 		op = GETPACKAGE;
-	else if (!my_strnicmp(listc, "G", 1))
+	else if (!my_strnicmp(listc, "GET", 1))
 		op = GET;
-	else if (!my_strnicmp(listc, "SETP", 4))
+	else if (!my_strnicmp(listc, "SETPACKAGE", 4))
 		op = SETPACKAGE;
-	else if (!my_strnicmp(listc, "S", 1))
+	else if (!my_strnicmp(listc, "SET", 1))
 		op = SET;
-	else if (!my_strnicmp(listc, "M", 1))
+	else if (!my_strnicmp(listc, "MATCH", 1))
 		op = NMATCH;
-	else if (!my_strnicmp(listc, "RM", 2))
+	else if (!my_strnicmp(listc, "RMATCH", 2))
 		op = NMATCH, reverse = 1;
-	else if (!my_strnicmp(listc, "P", 1))
+	else if (!my_strnicmp(listc, "PMATCH", 1))
 		op = PMATCH;
-	else if (!my_strnicmp(listc, "RP", 2))
+	else if (!my_strnicmp(listc, "RPMATCH", 2))
 		op = PMATCH, reverse = 1;
-	else if (!my_strnicmp(listc, "E", 1))
+	else if (!my_strnicmp(listc, "EXISTS", 1))
 		op = EXISTS;
 	else
 		RETURN_EMPTY;

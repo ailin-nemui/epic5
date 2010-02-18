@@ -1,4 +1,4 @@
-/* $EPIC: window.c,v 1.211 2009/11/14 05:39:10 jnelson Exp $ */
+/* $EPIC: window.c,v 1.212 2010/02/18 07:45:44 jnelson Exp $ */
 /*
  * window.c: Handles the organzation of the logical viewports (``windows'')
  * for irc.  This includes keeping track of what windows are open, where they
@@ -3183,7 +3183,7 @@ static Window *window_channel (Window *window, char **args)
 		return window;
 	}
 
-	if (!my_strnicmp(chans, "-i", 2))
+	if (!my_strnicmp(chans, "-invite", 2))
 	{
 		if (!(c = get_server_invite_channel(window->server)))
 		{
@@ -4473,7 +4473,7 @@ Window *window_rejoin (Window *window, char **args)
 	while (*channels && (chan = next_in_comma_list(channels, &channels)))
 	{
 		/* Handle /join -i, which joins last invited channel */
-		if (!my_strnicmp(chan, "-i", 2))
+		if (!my_strnicmp(chan, "-invite", 2))
                 {
                         if (!(chan = get_server_invite_channel(window->server)))
 			{

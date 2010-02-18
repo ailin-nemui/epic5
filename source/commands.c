@@ -1,4 +1,4 @@
-/* $EPIC: commands.c,v 1.193 2010/01/01 01:45:46 jnelson Exp $ */
+/* $EPIC: commands.c,v 1.194 2010/02/18 07:45:44 jnelson Exp $ */
 /*
  * commands.c -- Stuff needed to execute commands in ircII.
  *		 Includes the bulk of the built in commands for ircII.
@@ -380,12 +380,12 @@ BUILT_IN_COMMAND(away)
 			if (*arg)
 				*arg++ = 0;
 
-			if (0 == my_strnicmp(args+1, "A", 1))	/* all */
+			if (0 == my_strnicmp(args+1, "ALL", 1))	/* all */
 			{
 				flag = AWAY_ALL;
 				args = arg;
 			}
-			else if (0 == my_strnicmp(args+1, "O", 1)) /* one */
+			else if (0 == my_strnicmp(args+1, "ONE", 1)) /* one */
 			{
 				flag = AWAY_ONE;
 				args = arg;
@@ -453,17 +453,17 @@ BUILT_IN_COMMAND(e_clear)
 	while ((arg = next_arg(args, &args)) != NULL)
 	{
 		/* -ALL and ALL here becuase the help files used to be wrong */
-		if (!my_strnicmp(arg, "A", 1) || !my_strnicmp(arg+1, "A", 1))
+		if (!my_strnicmp(arg, "ALL", 1) || !my_strnicmp(arg+1, "ALL", 1))
 			visible = 0, hidden = 0, all = 1;
 
 		/* UNHOLD */
-		else if (!my_strnicmp(arg+1, "U", 1))
+		else if (!my_strnicmp(arg+1, "UNHOLD", 1))
 			unhold = 1;		/* Obsolete */
 
-		else if (!my_strnicmp(arg+1, "V", 1))
+		else if (!my_strnicmp(arg+1, "VISIBLE", 1))
 			visible = 1, hidden = 0, all = 1;
 
-		else if (!my_strnicmp(arg+1, "H", 1))
+		else if (!my_strnicmp(arg+1, "HIDDEN", 1))
 			visible = 0, hidden = 1, all = 1;
 
 		else
@@ -1162,7 +1162,7 @@ BUILT_IN_COMMAND(xevalcmd)
 		if (!my_stricmp(flag, "--")) 	/* End of options */
 			break;
 
-		if (!my_strnicmp(flag + 1, "S", 1)) /* SERVER */
+		if (!my_strnicmp(flag + 1, "SERVER", 1)) /* SERVER */
 		{
 			char *s;
 			int val;
@@ -1175,7 +1175,7 @@ BUILT_IN_COMMAND(xevalcmd)
 			if (is_server_registered(val))
 				from_server = val;
 		}
-		else if (!my_strnicmp(flag + 1, "W", 1)) /* WINDOW */
+		else if (!my_strnicmp(flag + 1, "WINDOW", 1)) /* WINDOW */
 		{
 			Window *win = get_window_by_desc(next_arg(args, &args));
 			if (win)
@@ -1186,7 +1186,7 @@ BUILT_IN_COMMAND(xevalcmd)
 			}
 		}
 		/* This does the reverse of ^ */
-		else if (!my_strnicmp(flag + 1, "N", 1)) /* NOISY */
+		else if (!my_strnicmp(flag + 1, "NOISY", 1)) /* NOISY */
 			window_display = 1;
 	}
 
@@ -1227,35 +1227,35 @@ BUILT_IN_COMMAND(funny_stuff)
 	{
 		if (*arg == '/' || *arg == '-')
 		{
-			if (my_strnicmp(arg+1, "I", 1) == 0) 	/* IRCU */
+			if (my_strnicmp(arg+1, "IRCU", 1) == 0) 	/* IRCU */
 				ircu = 1;
-			else if (my_strnicmp(arg+1, "MA", 2) == 0)	/* MAX */
+			else if (my_strnicmp(arg+1, "MAX", 2) == 0)	/* MAX */
 			{
 				if ((arg = next_arg(args, &args)) != NULL)
 					max = my_atol(arg);
 			}
-			else if (my_strnicmp(arg+1, "MI", 2) == 0) /* MIN */
+			else if (my_strnicmp(arg+1, "MIN", 2) == 0) /* MIN */
 			{
 				if ((arg = next_arg(args, &args)) != NULL)
 					min = my_atol(arg);
 			}
-			else if (my_strnicmp(arg+1, "A", 1) == 0) /* ALL */
+			else if (my_strnicmp(arg+1, "ALL", 1) == 0) /* ALL */
 				flags &= ~(FUNNY_PUBLIC | FUNNY_PRIVATE);
-			else if (my_strnicmp(arg+1, "PU", 2) == 0) /* PUBLIC */
+			else if (my_strnicmp(arg+1, "PUBLIC", 2) == 0) /* PUBLIC */
 			{
 				flags |= FUNNY_PUBLIC;
 				flags &= ~FUNNY_PRIVATE;
 			}
-			else if (my_strnicmp(arg+1, "PR", 2) == 0) /* PRIVATE */
+			else if (my_strnicmp(arg+1, "PRIVATE", 2) == 0) /* PRIVATE */
 			{
 				flags |= FUNNY_PRIVATE;
 				flags &= ~FUNNY_PUBLIC;
 			}
-			else if (my_strnicmp(arg+1, "T", 1) == 0)	/* TOPIC */
+			else if (my_strnicmp(arg+1, "TOPIC", 1) == 0)	/* TOPIC */
 				flags |= FUNNY_TOPIC;
-			else if (my_strnicmp(arg+1, "U", 1) == 0)	/* USERS */
+			else if (my_strnicmp(arg+1, "USERS", 1) == 0)	/* USERS */
 				flags |= FUNNY_USERS;
-			else if (my_strnicmp(arg+1, "N", 1) == 0)	/* NAME */
+			else if (my_strnicmp(arg+1, "NAME", 1) == 0)	/* NAME */
 				flags |= FUNNY_NAME;
 			else
 				stuff = arg;
@@ -2252,7 +2252,7 @@ BUILT_IN_COMMAND(quotecmd)
 	    {
 		char *flag = next_arg(args, &args);
 
-		if (!my_strnicmp(flag + 1, "S", 1)) /* SERVER */
+		if (!my_strnicmp(flag + 1, "SERVER", 1)) /* SERVER */
 		{
 			char *s;
 			int sval;
@@ -2269,9 +2269,9 @@ BUILT_IN_COMMAND(quotecmd)
 			}
 			refnum = sval;
 		}
-		else if (!my_strnicmp(flag + 1, "U", 1)) /* URL quoting */
+		else if (!my_strnicmp(flag + 1, "URL", 1)) /* URL quoting */
 			urlencoded++;
-		else if (!my_strnicmp(flag + 1, "A", 1)) /* ALL */
+		else if (!my_strnicmp(flag + 1, "ALL", 1)) /* ALL */
 		{
 			int	i;
 
@@ -2752,7 +2752,7 @@ BUILT_IN_COMMAND(waitcmd)
 {
 	char	*ctl_arg = next_arg(args, &args);
 
-	if (ctl_arg && !my_strnicmp(ctl_arg, "-c", 2))
+	if (ctl_arg && !my_strnicmp(ctl_arg, "-cmd", 2))
 		server_passive_wait(from_server, args);
 
 	else if (ctl_arg && !my_strnicmp(ctl_arg, "for", 3))
@@ -2893,7 +2893,7 @@ BUILT_IN_COMMAND(xtypecmd)
 		args++;
 		if ((arg = next_arg(args, &args)) != NULL)
 		{
-			if (!my_strnicmp(arg, "L", 1))
+			if (!my_strnicmp(arg, "LITERAL", 1))
 			{
 				for (; *args; args++)
 				{

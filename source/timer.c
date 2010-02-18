@@ -1,4 +1,4 @@
-/* $EPIC: timer.c,v 1.52 2007/04/12 03:24:14 jnelson Exp $ */
+/* $EPIC: timer.c,v 1.53 2010/02/18 07:45:44 jnelson Exp $ */
 /*
  * timer.c -- handles timers in ircII
  *
@@ -136,7 +136,7 @@ BUILT_IN_COMMAND(timercmd)
 		remove_timers_by_domref(WINDOW_TIMER, domref);
 		return;
 	    }
-	    else if (!my_strnicmp(flag+1, "REF", 3))	/* REFNUM */
+	    else if (!my_strnicmp(flag+1, "REFNUM", 3))	/* REFNUM */
 	    {
 		want = next_arg(args, &args);
 		if (!want || !*want)
@@ -147,7 +147,7 @@ BUILT_IN_COMMAND(timercmd)
 
 		continue;
 	    }
-	    else if (!my_strnicmp(flag+1, "REP", 3))	/* REPEAT */
+	    else if (!my_strnicmp(flag+1, "REPEAT", 3))	/* REPEAT */
 	    {
 		char *na = next_arg(args, &args);
 		if (!na || !*na)
@@ -162,7 +162,7 @@ BUILT_IN_COMMAND(timercmd)
 
 		continue;
 	    }
-	    else if (!my_strnicmp(flag + 1, "U", 1))	/* UPDATE */
+	    else if (!my_strnicmp(flag + 1, "UPDATE", 1))	/* UPDATE */
 		update = 1;
 
 	    else if (!my_strnicmp(flag + 1, "L", 1))	/* LIST */
@@ -170,7 +170,7 @@ BUILT_IN_COMMAND(timercmd)
 		list_timers(command);
 		return;
 	    }
-	    else if (!my_strnicmp(flag + 1, "W", 1))	/* WINDOW */
+	    else if (!my_strnicmp(flag + 1, "WINDOW", 1))	/* WINDOW */
 	    {
 		char 	*na;
 		Window *win = NULL;
@@ -192,7 +192,7 @@ BUILT_IN_COMMAND(timercmd)
 		else
 			domref = win->refnum;
 	    }
-	    else if (!my_strnicmp(flag + 1, "S", 1))	/* SERVER */
+	    else if (!my_strnicmp(flag + 1, "SERVER", 1))	/* SERVER */
 	    {
 		char 	*na;
 
@@ -214,12 +214,12 @@ BUILT_IN_COMMAND(timercmd)
 		    }
 		}
 	    }
-	    else if (!my_strnicmp(flag + 1, "G", 1))	/* GENERAL */
+	    else if (!my_strnicmp(flag + 1, "GENERAL", 1))	/* GENERAL */
 	    {
 		domain = GENERAL_TIMER;
 		domref = -1;
 	    }
-	    else if (!my_strnicmp(flag + 1, "C", 1))	/* CANCELABLE */
+	    else if (!my_strnicmp(flag + 1, "CANCELABLE", 1))	/* CANCELABLE */
 	    {
 		cancelable = 1;
 	    }
