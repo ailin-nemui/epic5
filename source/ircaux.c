@@ -1,4 +1,4 @@
-/* $EPIC: ircaux.c,v 1.215 2010/02/15 03:59:10 jnelson Exp $ */
+/* $EPIC: ircaux.c,v 1.216 2010/02/19 03:21:48 jnelson Exp $ */
 /*
  * ircaux.c: some extra routines... not specific to irc... that I needed 
  *
@@ -616,6 +616,7 @@ unsigned char *stricmp_tables[2] = {
 
 /* XXX These functions should mean "must be equal, at least to 'n' chars */
 /* my_table_strnicmp: case insensitive version of strncmp */
+#if 0
 int	my_table_strnicmp (const unsigned char *short_string, const unsigned char *full_string, size_t min_match, int table)
 {
 	int	actual_match = 0;
@@ -638,6 +639,21 @@ int	my_table_strnicmp (const unsigned char *short_string, const unsigned char *f
 	return (stricmp_tables[table][(unsigned short)*short_string] -
 		stricmp_tables[table][(unsigned short)*full_string]);
 }
+#endif
+
+/* my_strnicmp: case insensitive version of strncmp */
+int     my_table_strnicmp (const unsigned char *str1, const unsigned char *str2, size_t n, int table)
+{
+        while (n && *str1 && *str2 && 
+		(stricmp_tables[table][(unsigned short)*str1] == 
+		 stricmp_tables[table][(unsigned short)*str2]))
+                str1++, str2++, n--;
+                        
+        return (n ?
+                (stricmp_tables[table][(unsigned short)*str1] -
+                 stricmp_tables[table][(unsigned short)*str2]) : 0);
+} 
+
 
 /* XXX Never turn these functions into macros, we create fn ptrs to them! */
 int	my_strnicmp (const unsigned char *str1, const unsigned char *str2, size_t n)

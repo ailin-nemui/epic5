@@ -173,3 +173,7 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Support /log server ALL and /log type server add ALL to log all servers
 * Fix brain-o that I missed -- strnicmp() consumers must use FULL STRINGS!
 * Fix more.  You'd think I was not paying attention or something.
+* Don't permit /xecho /flag because that's just useless
+* Fix two dcc locking bogons that i discovered by accident.
+* Revert the string insensitive comparison changes for now.
+

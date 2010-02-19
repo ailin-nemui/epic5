@@ -1,4 +1,4 @@
-/* $EPIC: server.c,v 1.240 2010/02/18 07:35:59 jnelson Exp $ */
+/* $EPIC: server.c,v 1.241 2010/02/19 03:21:48 jnelson Exp $ */
 /*
  * server.c:  Things dealing with that wacky program we call ircd.
  *
@@ -531,6 +531,21 @@ static	int	serverinfo_to_newserv (ServerInfo *si)
 
 /***************************************************************************/
 int	str_to_servref (const char *desc)
+{
+	char *	ptr;
+	ServerInfo si;
+	int	retval;
+
+	ptr = LOCAL_COPY(desc);
+	clear_serverinfo(&si);
+	if (str_to_serverinfo(ptr, &si))
+		return NOSERV;
+
+	retval = serverinfo_to_servref(&si);
+	return retval;
+}
+
+int	str_to_servref_with_update (const char *desc)
 {
 	char *	ptr;
 	ServerInfo si;

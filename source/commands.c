@@ -1,4 +1,4 @@
-/* $EPIC: commands.c,v 1.194 2010/02/18 07:45:44 jnelson Exp $ */
+/* $EPIC: commands.c,v 1.195 2010/02/19 03:21:47 jnelson Exp $ */
 /*
  * commands.c -- Stuff needed to execute commands in ircII.
  *		 Includes the bulk of the built in commands for ircII.
@@ -867,7 +867,7 @@ BUILT_IN_COMMAND(xechocmd)
 	int	to_level = who_level;
 	const char *	to_from = who_from;
 
-	while (more && args && (*args == '-' || *args == '/'))
+	while (more && args && *args == '-')
 	{
 	    switch (toupper(args[1]))
 	    {
