@@ -1,4 +1,4 @@
-/* $EPIC: ircaux.c,v 1.217 2010/03/13 14:40:37 jnelson Exp $ */
+/* $EPIC: ircaux.c,v 1.218 2010/03/13 15:22:49 jnelson Exp $ */
 /*
  * ircaux.c: some extra routines... not specific to irc... that I needed 
  *
@@ -663,7 +663,7 @@ int	my_strnicmp (const unsigned char *str1, const unsigned char *str2, size_t n)
 
 int	my_stricmp (const unsigned char *str1, const unsigned char *str2)
 {
-	return my_table_strnicmp(str1, str2, strlen(str2), 0);
+	return my_table_strnicmp(str1, str2, UINT_MAX, 0);
 }
 
 int	ascii_strnicmp (const unsigned char *str1, const unsigned char *str2, size_t n)

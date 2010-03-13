@@ -177,3 +177,5 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Fix two dcc locking bogons that i discovered by accident.
 * Revert the string insensitive comparison changes for now.
 * Use PRIdMAX and PRIuMAX for printing (intmax_t), for hpux, or larne
+* Fix my brokenness of my_stricmp().  Time to go hide under a rock.
+
