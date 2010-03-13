@@ -295,8 +295,8 @@ typedef int intptr_t;
  */
 #ifdef HAVE_INTMAX_NATIVE
 # ifdef PRIdMAX
-#  define INTMAX_FORMAT PRIdMAX
-#  define UINTMAX_FORMAT PRIuMAX
+#  define INTMAX_FORMAT "%" PRIdMAX
+#  define UINTMAX_FORMAT "%" PRIuMAX
 # else
 #  define INTMAX_FORMAT "%jd"
 #  define UINTMAX_FORMAT "%ju"
