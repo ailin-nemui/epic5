@@ -1,11 +1,11 @@
-/* $EPIC: server.c,v 1.241 2010/02/19 03:21:48 jnelson Exp $ */
+/* $EPIC: server.c,v 1.242 2010/03/13 14:40:37 jnelson Exp $ */
 /*
  * server.c:  Things dealing with that wacky program we call ircd.
  *
  * Copyright (c) 1990 Michael Sandroff.
  * Copyright (c) 1991, 1992 Troy Rollo.
  * Copyright (c) 1992-1996 Matthew Green.
- * Copyright © 1993, 2007 EPIC Software Labs.
+ * Copyright © 1993, 2010 EPIC Software Labs.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without

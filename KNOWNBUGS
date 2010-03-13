@@ -176,4 +176,4 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Don't permit /xecho /flag because that's just useless
 * Fix two dcc locking bogons that i discovered by accident.
 * Revert the string insensitive comparison changes for now.
-
+* Use PRIdMAX and PRIuMAX for printing (intmax_t), for hpux, or larne

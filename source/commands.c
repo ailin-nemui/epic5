@@ -1,4 +1,4 @@
-/* $EPIC: commands.c,v 1.195 2010/02/19 03:21:47 jnelson Exp $ */
+/* $EPIC: commands.c,v 1.196 2010/03/13 14:40:37 jnelson Exp $ */
 /*
  * commands.c -- Stuff needed to execute commands in ircII.
  *		 Includes the bulk of the built in commands for ircII.
@@ -6,7 +6,7 @@
  * Copyright (c) 1990 Michael Sandroff.
  * Copyright (c) 1991, 1992 Troy Rollo.
  * Copyright (c) 1992-1996 Matthew Green.
- * Copyright © 1995, 2007 EPIC Software Labs
+ * Copyright © 1995, 2010 EPIC Software Labs
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -1346,7 +1346,7 @@ BUILT_IN_COMMAND(info)
 		say("Versions 2.2pre8 through 2.8.2 by Matthew Green");
 		say("\tCopyright 1992-1995 Matthew Green");
 		say("All EPIC versions by EPIC Software Labs");
-		say("\tCopyright 1993-2007 EPIC Software Labs");
+		say("\tCopyright 1993-2010 EPIC Software Labs");
 		say(" ");
 		say("	    Contact the EPIC project (%s)", EMAIL_CONTACT);
 		say("	    for problems with this or any other EPIC client");
@@ -1447,7 +1447,7 @@ BUILT_IN_COMMAND(license)
 	yell("Copyright (c) 1991, 1992 Troy Rollo.");
  	yell("Copyright (c) 1992-1996 Matthew Green.");
 	yell("Copyright © 1994 Jake Khuon.");
-	yell("Coypright © 1993, 2007 EPIC Software Labs.");
+	yell("Coypright © 1993, 2010 EPIC Software Labs.");
 	yell("All rights reserved");
 	yell(" ");
 	yell("Redistribution and use in source and binary forms, with or");

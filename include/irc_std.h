@@ -294,8 +294,13 @@ typedef int intptr_t;
  * We will use whichever one is first on the list.
  */
 #ifdef HAVE_INTMAX_NATIVE
-# define INTMAX_FORMAT "%jd"
-# define UINTMAX_FORMAT "%ju"
+# ifdef PRIdMAX
+#  define INTMAX_FORMAT PRIdMAX
+#  define UINTMAX_FORMAT PRIuMAX
+# else
+#  define INTMAX_FORMAT "%jd"
+#  define UINTMAX_FORMAT "%ju"
+# endif
 #else
 # ifdef HAVE_INTMAX_LONG_LONG
 #  define intmax_t long long

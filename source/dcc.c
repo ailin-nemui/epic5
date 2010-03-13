@@ -1,10 +1,10 @@
-/* $EPIC: dcc.c,v 1.160 2010/02/19 03:21:48 jnelson Exp $ */
+/* $EPIC: dcc.c,v 1.161 2010/03/13 14:40:37 jnelson Exp $ */
 /*
  * dcc.c: Things dealing client to client connections. 
  *
  * Copyright (c) 1991, 1992 Troy Rollo.
  * Copyright (c) 1992-1996 Matthew Green.
- * Copyright © 1995, 2007 EPIC Software Labs
+ * Copyright © 1995, 2010 EPIC Software Labs
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without

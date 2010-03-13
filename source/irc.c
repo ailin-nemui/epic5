@@ -1,4 +1,4 @@
-/* $EPIC: irc.c,v 1.1293 2010/02/19 03:21:48 jnelson Exp $ */
+/* $EPIC: irc.c,v 1.1294 2010/03/13 14:40:37 jnelson Exp $ */
 /*
  * ircII: a new irc client.  I like it.  I hope you will too!
  *
@@ -6,7 +6,7 @@
  * Copyright (c) 1991, 1992 Troy Rollo.
  * Copyright (c) 1992-1996 Matthew Green.
  * Copyright © 1994 Jake Khuon.
- * Copyright © 1993, 2008 EPIC Software Labs.
+ * Copyright © 1993, 2010 EPIC Software Labs.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -52,7 +52,7 @@ const char internal_version[] = "20081225";
 /*
  * In theory, this number is incremented for every commit.
  */
-const unsigned long	commit_id = 1623;
+const unsigned long	commit_id = 1624;
 
 /*
  * As a way to poke fun at the current rage of naming releases after

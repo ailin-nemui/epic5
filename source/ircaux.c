@@ -1,4 +1,4 @@
-/* $EPIC: ircaux.c,v 1.216 2010/02/19 03:21:48 jnelson Exp $ */
+/* $EPIC: ircaux.c,v 1.217 2010/03/13 14:40:37 jnelson Exp $ */
 /*
  * ircaux.c: some extra routines... not specific to irc... that I needed 
  *
@@ -6,7 +6,7 @@
  * Copyright (c) 1991, 1992 Troy Rollo.
  * Copyright (c) 1992-1996 Matthew Green.
  * Copyright © 1994 Jake Khuon.
- * Copyright © 1993, 2003 EPIC Software Labs.
+ * Copyright © 1993, 2010 EPIC Software Labs.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
