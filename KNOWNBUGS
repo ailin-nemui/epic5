@@ -16,11 +16,11 @@ KNOWN ERRATA (eg, bugs, or unresolved requests):
 * There should be a fake level for "channel stuff"
 * Curse would like an outbound protocol queue to avoid flooding the server
 * <zlonix> i did my own research yesterday, if you mind. 
-<zlonix> it's line 5794 of ircaux.c, seem it adds expansion_overhead for 2
-+bytes, while doing -CTCP xform 
-<zlonix> and sometimes, i see "isn't multiple of 16! (is 66)", and i force to
-+delete those two bytes in blocksize check, all decipher works fine. 
-<zlonix> if i* 
+  <zlonix> it's line 5794 of ircaux.c, seem it adds expansion_overhead for 2
+  +bytes, while doing -CTCP xform 
+  <zlonix> and sometimes, i see "isn't multiple of 16! (is 66)", and i force to
+  +delete those two bytes in blocksize check, all decipher works fine. 
+  <zlonix> if i* 
 * Larne wants syntactic word extraction like $foo{3} or $foo{1,4}
 * Using a serverdesc for an existing server should refresh other values 
   (like the nickname or password)
@@ -178,4 +178,4 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Revert the string insensitive comparison changes for now.
 * Use PRIdMAX and PRIuMAX for printing (intmax_t), for hpux, or larne
 * Fix my brokenness of my_stricmp().  Time to go hide under a rock.
-
+* Fix the bug where the right indicator appeared when it should not.
