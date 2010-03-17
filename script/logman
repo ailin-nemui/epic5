@@ -1,0 +1,84 @@
+if (word(2 $loadinfo()) != [pf]) { load -pf $word(1 $loadinfo()); return; };
+#
+# Here's the plan: 
+# This is version 2!
+#
+# We want a script that will auto-log each channel to a separate logfile,
+# and then log everything else to a global logfile.  
+#
+# For right now I've had to assume you only use one server.
+#
+#
+load addset;
+
+addset log_directory str;
+addset server_log_name str;
+addset channel_log_name str;
+
+set log_directory ~/.logs;
+set server_log_name irc.$${server}.log;
+set channel_log_name irc.$${server}.$${channel}.log;
+
+# Shims
+on #^server_status -115 "% % CONNECTING" { logman.open_server_log $0; };
+on #^server_status -115 "% % CLOSED" { logman.close_server_log $0; };
+on #^channel_sync -115 "% % %" { logman.open_channel_log $0 $2; };
+on #^channel_lost -115 "% %" { logman.close_channel_log $1 $0; };
+
+# Create the server log if it doesn't exist
+alias logman.check_server_log_existance (server) {
+	xecho -b Checking for existance of log server.${server};
+	if (logctl(REFNUM server.${server}) == []) {
+	    xecho -b Does not exist -- creating it;
+            @ :filename = **server_log_name;
+	    xecho -b Filename is $filename;
+	    log new 
+		name server.${server}
+		filename $log_directory/$filename
+		type server
+		server $server
+		add $server
+		level ALL,-PUBLIC,-ACTION,-JOIN,-NICK,-TOPIC,-PART,-QUIT,-KICK,-MODE;
+	};
+};
+
+# Create a channel's log if it doesn't exist
+alias logman.check_channel_log_existance (server, channel) {
+	xecho -b Checking for existance of log $channel on $server;
+	if (logctl(REFNUM channel.${server}.${channel}) == []) {
+	    xecho -b Does not exist -- creating it;
+	    @ :filename = **channel_log_name;
+	    xecho -b Filename is $filename;
+	    log new 
+		name channel.${server}.${channel}
+		filename $log_directory/$filename
+		type target
+		server $server
+		add $channel
+		level ALL;
+	};
+};
+
+# Open the server log if it isn't open
+alias logman.open_server_log (servref, void) {
+	@logman.check_server_log_existance($servref);
+	log refnum server on;
+};
+
+# Close the server log if it's open
+alias logman.close_server_log (servref, void) {
+	log refnum server off;
+};
+
+# Open a channel log if it isn't open
+alias logman.open_channel_log (channel, servref, void) {
+	@logman.check_channel_log_existance($servref $channel);
+	log refnum $channel on;
+};
+
+# Close a channel log if it isn't open
+alias logman.close_channel_log (channel, servref, void) {
+	log refnum $channel off;
+};
+
+#hop'2k9

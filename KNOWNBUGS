@@ -179,3 +179,4 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Use PRIdMAX and PRIuMAX for printing (intmax_t), for hpux, or larne
 * Fix my brokenness of my_stricmp().  Time to go hide under a rock.
 * Fix the bug where the right indicator appeared when it should not.
+* Add the 'logman' script which does per-server, and per-channel logging
