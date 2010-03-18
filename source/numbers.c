@@ -1,4 +1,4 @@
-/* $EPIC: numbers.c,v 1.99 2010/01/20 03:53:37 jnelson Exp $ */
+/* $EPIC: numbers.c,v 1.100 2010/03/18 01:31:09 jnelson Exp $ */
 /*
  * numbers.c: handles all those strange numeric response dished out by that
  * wacky, nutty program we call ircd 
@@ -1283,8 +1283,11 @@ DISPLAY:
 		PasteArgs(ArgList, 2);
 		if (!(version = ArgList[0]))
 			{ rfc1459_odd(from, comm, ArgList); goto END; }
-		if (!(itsname = ArgList[1]))
-			{ rfc1459_odd(from, comm, ArgList); goto END; }
+		if (!(itsname = ArgList[1])) {
+			/* As a favor to larne, for inspired */
+			put_it("%s Server %s", banner(), version);
+			break;
+		}
 		if (!(stuff = ArgList[2]))
 			{ rfc1459_odd(from, comm, ArgList); goto END; }
 

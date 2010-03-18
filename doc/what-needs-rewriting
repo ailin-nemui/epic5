@@ -1,0 +1,71 @@
+What needs rewriting?
+
+What part (if any) of these protocol commands needs rewriting?
+[] means localization
+<> means encryption
+
+	:server ERROR :[message]
+	:nick!user@hsot INVITE yournick channel
+	:nick!user@host JOIN channel
+	:nick!user@host KICK channel victim :[<reason>]
+	:nick!user@host KILL victim :[<reason>]
+	:nick!user@host MODE channel mode args...
+	:nick!user@host NICK newnick
+	:server NOTICE target :*** Notice -- Received KILL message for [message
+	:server NOTICE target :*** Notice -- [message]
+	:server NOTICE target :[<message>]
+	:nick!user@host NOTICE target :[<message>]
+	:nick!user@host PART channel :[<reason>]
+	:server PING :message
+	:server PONG server :message
+	:nick!user@host PRIVMSG target :[<message>]
+	:nick!user@host QUIT :[<message>]
+	:server RPONG nick server msec orig_time
+	:nick!user@host SILENCE target
+	:nick!user@host TOPIC channel :[<new topic>]
+	:server WALLOPS :OPERWALL - [message]
+	:nick!user@host WALLOPS :[<message>]
+
+So what does our message rewrite look like?
+	ON MSG_REWRITE
+
+	$0  - The sender
+	$1  - The receiver
+	$2  - The type of message
+	$3  - Reserved for future use
+	$4- - The message
+
+Numeric handlers:
+	:server 001 mynick *:welcome to irc message
+	:server 004 mynick server version :message
+	:server 005 mynick value value value ...
+	:server 010 mynick other.server other.port :use this other server
+	:server 014 mynick cookie
+	:server 042 mynick uniqueid :this is your unique id
+	:server 301 mynick nick :is away message
+	:server 302 mynick *userhost-handler
+	:server 307 mynick *userhost-handler
+	:server 340 mynick *userhost-handler
+	:server 303 mynick *ison-handler
+	:server 315 mynick *who-end-handler
+	:server 321 mynick "Channel" "Users" "Topic"
+	:server 322 mynick channel user_cnt :topic
+	:server 324 mynick channel channel-mode
+	:server 352 mynick *who-handler
+	:server 353 mynick chan-type chan-name :nicks
+	:server 354 mynick *xwho-handler
+	:server 346 mynick invite-list
+	:server 348 mynick except-list
+	:server 367 mynick ban-list
+	:server 347 mynick end-of-invite-list
+	:server 349 mynick end-of-except-list
+	:server 368 mynick end-of-ban-list
+	:server 381 mynick :you're oper
+	:server 401 mynick nick :No such nick/channel
+	:server 402 mynick other.server :No such server
+	:server 403 mynick channel :No such channel
+	:server 421 mynick command :Unknown command
+	:server 437 mynick ...ick...
+
+
+	

@@ -5,22 +5,12 @@ KNOWN ERRATA (eg, bugs, or unresolved requests):
 * There needs to be an /on switch_query for wuf/sjhoran
 * Need to have a script that implements per-channel FiSH support
 * Need to have a script that implements per-channel iconv() support.
-* The configure check for libarchive is weak.
 * wuf says that fred!user@machine.domain.com.au should not be
 	*!*user@*.com.au but instead *!*user@*.domain.com.au
 * Howl would like to retain the /window server <X>  value
-* What about a facility to do "command completion", like /window <tab>
-  brings up all /window operations?
-* A way to auto-log channels by channel, irc.<channel>.log
 * What about a facility to do auto-off-hold-mode ?
 * There should be a fake level for "channel stuff"
 * Curse would like an outbound protocol queue to avoid flooding the server
-* <zlonix> i did my own research yesterday, if you mind. 
-  <zlonix> it's line 5794 of ircaux.c, seem it adds expansion_overhead for 2
-  +bytes, while doing -CTCP xform 
-  <zlonix> and sometimes, i see "isn't multiple of 16! (is 66)", and i force to
-  +delete those two bytes in blocksize check, all decipher works fine. 
-  <zlonix> if i* 
 * Larne wants syntactic word extraction like $foo{3} or $foo{1,4}
 * Using a serverdesc for an existing server should refresh other values 
   (like the nickname or password)
@@ -180,3 +170,5 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Fix my brokenness of my_stricmp().  Time to go hide under a rock.
 * Fix the bug where the right indicator appeared when it should not.
 * Add the 'logman' script which does per-server, and per-channel logging
+* Handle inspired's BBC 351 numeric, for larne.
+* Fix bug with /encrypt complaining "X is not a multiple of Y!" (rb zlonix)

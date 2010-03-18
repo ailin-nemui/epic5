@@ -1,4 +1,4 @@
-/* $EPIC: ircaux.c,v 1.218 2010/03/13 15:22:49 jnelson Exp $ */
+/* $EPIC: ircaux.c,v 1.219 2010/03/18 01:31:09 jnelson Exp $ */
 /*
  * ircaux.c: some extra routines... not specific to irc... that I needed 
  *
@@ -5761,10 +5761,16 @@ size_t	transform_string (int type, int encoding, const char *meta, const char *o
 	{
 	    if (transformers[x].refnum == type)
 	    {
-		if (encoding)
+		if (encoding == XFORM_ENCODE)
 			return transformers[x].encoder(orig_str, orig_str_len, meta, meta_len, dest_str, dest_str_len);
-		else
+		else if (encoding == XFORM_DECODE)
 			return transformers[x].decoder(orig_str, orig_str_len, meta, meta_len, dest_str, dest_str_len);
+		else
+		{
+			syserr(FROMSERV, "transform_string: type [%d], encoding [%d], is not %d or %d",
+				type, encoding, XFORM_ENCODE, XFORM_DECODE);
+			return 0;
+		}
 	    }
 	}
 	return 0;
