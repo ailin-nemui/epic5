@@ -1,4 +1,4 @@
-/* $EPIC: window.c,v 1.212 2010/02/18 07:45:44 jnelson Exp $ */
+/* $EPIC: window.c,v 1.213 2010/03/19 01:41:36 jnelson Exp $ */
 /*
  * window.c: Handles the organzation of the logical viewports (``windows'')
  * for irc.  This includes keeping track of what windows are open, where they
@@ -207,6 +207,8 @@ Window	*new_window (Screen *screen)
 		new_w->server = current_window->server;
 	else
 		new_w->server = NOSERV;
+	new_w->original_server_string = NULL;
+
 	if (!current_window)		/* First window ever */
 		mask_setall(&new_w->window_mask);
 	else
@@ -4910,7 +4912,7 @@ Window *window_server (Window *window, char **args)
 		int i;
 		int status;
 
-		if ((i = str_to_servref(arg)) == NOSERV)
+		if ((i = str_to_servref_with_update(arg)) == NOSERV)
 			i = str_to_newserv(arg);
 		from_server = i;
 
@@ -4937,6 +4939,8 @@ Window *window_server (Window *window, char **args)
 		}
 		else if (status >= SERVER_CLOSING)
 			set_server_status(i, SERVER_RECONNECT);
+
+		malloc_strcpy(&window->original_server_string, arg);
 	}
 	else
 		display_server_list();
@@ -6606,6 +6610,8 @@ char 	*windowctl 	(char *input)
 			RETURN_MSTR(ret2);
 		}
 		RETURN_EMPTY;
+	    } else if (!my_strnicmp(listc, "SERVER_STRING", len)) {
+		RETURN_STR(w->original_server_string);
 	    } else
 		RETURN_EMPTY;
 	} else if (!my_strnicmp(listc, "SET", len)) {

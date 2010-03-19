@@ -87,6 +87,7 @@ typedef	struct	WindowStru
 	short	scrolladj;		/* Push back top-of-win on grow? */
 	short	killable;		/* Can it be killed? */
 	short	scroll_lines;		/* How many lines scroll at a time? */
+	char *	original_server_string;
 
 	/* Input and Status stuff */
 	char *	prompt;			/* Current EXEC prompt for window */

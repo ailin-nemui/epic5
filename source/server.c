@@ -1,4 +1,4 @@
-/* $EPIC: server.c,v 1.242 2010/03/13 14:40:37 jnelson Exp $ */
+/* $EPIC: server.c,v 1.243 2010/03/19 01:41:36 jnelson Exp $ */
 /*
  * server.c:  Things dealing with that wacky program we call ircd.
  *
@@ -75,6 +75,7 @@ static int	clear_serverinfo (ServerInfo *s);
 static	int	str_to_serverinfo (char *str, ServerInfo *s);
 static	void	free_serverinfo (ServerInfo *s);
 static	int	serverinfo_to_servref (ServerInfo *s);
+static	int	serverinfo_to_servref_with_update (ServerInfo *s);
 static	int	serverinfo_to_newserv (ServerInfo *s);
 static 	void 	remove_from_server_list (int i);
 static	char *	shortname (const char *oname);
@@ -346,6 +347,29 @@ static	void	free_serverinfo (ServerInfo *si)
 	clear_serverinfo(si);
 }
 
+static	void	update_serverinfo (ServerInfo *old_si, ServerInfo *new_si)
+{
+	if (new_si->host)
+		old_si->host = new_si->host;
+	if (new_si->port)
+		old_si->port = new_si->port;
+	if (new_si->password)
+		old_si->password = new_si->password;
+	if (new_si->nick)
+		old_si->nick = new_si->nick;
+	if (new_si->group)
+		old_si->group = new_si->group;
+	if (new_si->server_type)
+		old_si->server_type = new_si->server_type;
+	if (new_si->proto_type)
+		old_si->proto_type = new_si->proto_type;
+	if (new_si->vhost)
+		old_si->vhost = new_si->vhost;
+
+	preserve_serverinfo(old_si);
+	return;
+}
+
 /*
  * serverinfo_to_servref - Convert a temporary serverinfo into a server refnum
  *
@@ -408,19 +432,32 @@ static	int	serverinfo_to_servref (ServerInfo *si)
 	return NOSERV;
 }
 
-#if 1
+static	int	serverinfo_to_servref_with_update (ServerInfo *si)
+{
+	int	servref;
+	Server	*s;
+
+	if ((servref = serverinfo_to_servref(si)) == NOSERV)
+		return NOSERV;
+
+	if (!(s = get_server(servref)))
+		return NOSERV;
+
+	update_serverinfo(s->info, si);
+	return servref;
+}
+
 static	int	update_server_from_str (int refnum, char *str)
 {
 	Server  *s;
 
 	if (!(s = get_server(refnum)))
-		return 0;
+		return NOSERV;
 
 	str_to_serverinfo(str, s->info);
 	preserve_serverinfo(s->info);
-	return 0;
+	return refnum;
 }
-#endif
 
 /*
  * serverinfo_to_newserv - Add a server to the server list
@@ -547,16 +584,19 @@ int	str_to_servref (const char *desc)
 
 int	str_to_servref_with_update (const char *desc)
 {
-	char *	ptr;
+	char *	ptr, *ptr2;
 	ServerInfo si;
 	int	retval;
 
 	ptr = LOCAL_COPY(desc);
+	ptr2 = LOCAL_COPY(desc);
 	clear_serverinfo(&si);
 	if (str_to_serverinfo(ptr, &si))
 		return NOSERV;
 
-	retval = serverinfo_to_servref(&si);
+	if ((retval = serverinfo_to_servref(&si)) != NOSERV)
+		update_server_from_str(retval, ptr2);
+
 	return retval;
 }
 
@@ -648,7 +688,7 @@ static 	void 	remove_from_server_list (int i)
  */
 void	add_servers (char *servers, const char *group)
 {
-	char	*host;
+	char	*host, *hostcopy;
 	ServerInfo si;
 
 	if (!servers)
@@ -656,11 +696,13 @@ void	add_servers (char *servers, const char *group)
 
 	while ((host = next_arg(servers, &servers)))
 	{
+		hostcopy = LOCAL_COPY(host);
 		clear_serverinfo(&si);
 		str_to_serverinfo(host, &si);
 		if (group && si.group == NULL)
 			si.group = group;
-		if (serverinfo_to_servref(&si) == NOSERV)
+
+		if (serverinfo_to_servref_with_update(&si) == NOSERV)
 			serverinfo_to_newserv(&si);
 	}
 }
@@ -954,21 +996,16 @@ BUILT_IN_COMMAND(servercmd)
 			return;
 		}
 
-		if ((from_server = str_to_servref(server)) != NOSERV)
+		if ((from_server = str_to_servref_with_update(server)) != NOSERV)
 		{
-#if 1
-			update_server_from_str(from_server, server);
 			say("Server [%d] updated with [%s]",
 					from_server, server);
-#else
-			say("Server [%s] already exists as refnum [%d]",
-				server, from_server);
-#endif
-			return;
 		}
-
-		from_server = str_to_newserv(server);
-		say("Server [%s] added as server %d", server, from_server);
+		else
+		{
+			from_server = str_to_newserv(server);
+			say("Server [%s] added as server %d", server, from_server);
+		}
 		return;
 	}
 
@@ -1048,7 +1085,7 @@ BUILT_IN_COMMAND(servercmd)
 		news = next_server_in_group(olds, -1);
 	else
 	{
-		if ((news = str_to_servref(server)) == NOSERV)
+		if ((news = str_to_servref_with_update(server)) == NOSERV)
 		{
 		    if ((news = str_to_newserv(server)) == NOSERV)
 		    {
@@ -3345,6 +3382,14 @@ char 	*serverctl 	(char *input)
 
 		GET_FUNC_ARG(server, input);
 		refnum = str_to_servref(server);
+		if (refnum != NOSERV)
+			RETURN_INT(refnum);
+		RETURN_EMPTY;
+	} else if (!my_strnicmp(listc, "UPDATE", len)) {
+		int   servref;
+
+		GET_INT_ARG(servref, input);
+		refnum = update_server_from_str(servref, input);
 		if (refnum != NOSERV)
 			RETURN_INT(refnum);
 		RETURN_EMPTY;

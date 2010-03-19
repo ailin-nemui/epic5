@@ -2,44 +2,22 @@ EPIC5 Projects, Bugs, and other Errata:
 
 KNOWN ERRATA (eg, bugs, or unresolved requests):
 ------------------------------------------------
-* There needs to be an /on switch_query for wuf/sjhoran
+<none>
+
+MEDIUM-TERM PROJECTS
+--------------------
 * Need to have a script that implements per-channel FiSH support
 * Need to have a script that implements per-channel iconv() support.
+* There needs to be an /on switch_query for wuf/sjhoran
+* What about scrolling back to some point in time?
+* What about a facility to do auto-off-hold-mode ?
 * wuf says that fred!user@machine.domain.com.au should not be
 	*!*user@*.com.au but instead *!*user@*.domain.com.au
-* Howl would like to retain the /window server <X>  value
-* What about a facility to do auto-off-hold-mode ?
 * There should be a fake level for "channel stuff"
-* Curse would like an outbound protocol queue to avoid flooding the server
-* Larne wants syntactic word extraction like $foo{3} or $foo{1,4}
-* Using a serverdesc for an existing server should refresh other values 
-  (like the nickname or password)
-* serverinfo_to_servref() should be able to "update"
-  - str_to_servref() calls it
-	- /XEVAL -S uses it
-	- /XQUOTE -S uses it
-	- /MSG -nick/SERV uses it
-	- $winchan() uses it
-	- /LOG SERVER uses it
-	- 010 handler uses it
-	- /SERVER -DELETE uses it
-	- /SERVER -ADD uses it 		<-----
-	- /SERVER +sdesc uses it 	<-----
-	- /SERVER uses it 		<----
-	- /SERVER -UPDATE should use it <-----
-	- password_sendline() uses it.
-	- /DISCONNECT uses it
-	- $serverctl(REFNUM) uses it
-	- $serverctl(UPDATE ...)  should exist.
-	- /TIMER -S uses it
-	- /WINDOW SERVER uses it 	<-----
-  - add_servers() calls it
-
-ISSUES OF INTEREST
-------------------
 * The four projects of the UTF8 effort are the primary focus for now.
 * Fusion wants /xecho -sec 10 this goes away in 10 seconds
-* What about scrolling back to some point in time?
+* Curse would like an outbound protocol queue to avoid flooding the server
+* Larne wants syntactic word extraction like $foo{3} or $foo{1,4}
 [I moved the old list to the file "WISHLIST" to keep this file short]
 
 [See http://www.epicsol.org/PROJECTS for things to come in the future]
@@ -174,3 +152,12 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Fix bug with /encrypt complaining "X is not a multiple of Y!" (rb zlonix)
 * Add a bunch more scripts I've been sitting on that were contributed.
 * Add 'cycle', 'set_color', 'ban', and 'speak.irc' scripts. i need to doc them
+* Create some internal funcs to allow updating a server desc on the fly
+* Allow add_servers() to update server descriptions
+* Allow /server -add to update server descriptions
+* Allow /server -update to update server descriptions
+* Allow plain old /server to update server descriptions
+* Allow $serverctl(READ_FILE filename) to update server descriptions
+* Add $serverctl(UPDATE refnum stuff) to update server descriptions
+* Allow /window server to update server descriptions
+* Add $windowctl(GET x SERVER_STRING) returns last good /window server value
