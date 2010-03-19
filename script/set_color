@@ -1,0 +1,15 @@
+#
+# Here's the plan -- a /set color for kanan.
+#
+load addset
+
+addset color bool {
+	if (*0 == 'on') {
+		^set mangle_display $MANGLE_DISPLAY,-COLOR
+	} else {
+		^set mangle_display $MANGLE_DISPLAY COLOR
+	}
+}
+set color on
+
+#hop 2k10

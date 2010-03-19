@@ -1,0 +1,15 @@
+IF (WORD(2 $LOADINFO()) != [pf]) { LOAD -pf $WORD(1 $LOADINFO()); RETURN; };
+
+ALIAS CYCLE (CHAN DEFAULT $C, REASON) {
+	IF (MATCH(*i* $WORD(0 $CHANMODE($CHAN)))) {
+		XECHO -b $chan is invite-only, cannot cycle;
+		RETURN;
+	};
+
+	@ :KEY = KEY($CHAN);
+
+	WAIT FOR PART $CHAN $REASON;
+	JOIN $CHAN $KEY;
+};
+
+#larne 2k10

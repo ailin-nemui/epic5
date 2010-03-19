@@ -1,0 +1,212 @@
+IF (WORD(2 $LOADINFO()) != [pf]) { LOAD -pf $WORD(1 $LOADINFO()); RETURN; };
+
+LOAD addset;
+LOAD massmode;
+
+# KICKBAN [channel] <nick> [reason]
+#
+# Ban <nick> from [channel] (default $C), then kick them.
+ALIAS KICKBAN (ARGS) {
+	@ :CHAN = ISCHANNEL($WORD(0 ARGS)) ? SHIFT(ARGS) : C,
+	  :NICK = SHIFT(ARGS),
+	  :REASON = ARGS;
+
+	if (!NICK) {
+		XECHO -b Usage: ${K}KICKBAN [channel] <nick> [reason];
+		RETURN;
+	};
+
+	BAN $CHAN $NICK;
+	KICK $CHAN $NICK $REASON;
+};
+  
+ALIAS KB { KICKBAN $*; };
+ALIAS BK { KICKBAN $*; };
+
+# KICK [channel] <nick> [reason]
+#
+# Kicks <nick> from [channel], or $C if unspecified.  If no reason is given,
+# uses <no reason>.
+
+ALIAS KICK (ARGS) {
+	@ :CHAN = ISCHANNEL($WORD(0 $ARGS)) ? SHIFT(ARGS) : C,
+	  :NICK = SHIFT(ARGS),
+	  :REASON = ARGS ? [$ARGS] : [no reason];
+
+	if (!NICK) {
+		XECHO -b Usage: ${K}KICK [channel] <nick> [reason];
+		RETURN;
+	};
+
+	//KICK $CHAN $NICK $REASON;
+};
+ALIAS K { KICK $*; };
+
+# ZAP [channel] [time] <nick> [reason]
+#
+# Kickbans <nick> from [channel] (default $C), waits [time] seconds (default 5)
+# then unbans them.
+ALIAS ZAP (ARGS) {
+	@ :CHAN = ISCHANNEL($WORD(0 $ARGS)) ? SHIFT(ARGS) : C,
+	  :TIME = ISNUMBER(b10 $WORD(0 $ARGS)) ? SHIFT(ARGS) : [5],
+	  :NICK = SHIFT(ARGS),
+	  :REASON = ARGS ? ARGS : [come back in $TIME seconds];
+
+        IF (!NICK) {
+                XECHO -b Usage: ${K}ZAP [channel] [time] <nick> [reason];
+                RETURN;
+        };
+
+	IF (!ONCHANNEL($NICK $CHAN)) {
+		XECHO -b ${K}ZAP: $NICK is not on $CHAN;
+		RETURN;
+	};
+
+	WAIT FOR {
+		USERHOST $NICK -cmd {
+			BLESS;
+
+			IF ([$3] == [<UNKNOWN>]) {
+				XECHO -b ${K}ZAP: No such nick $NICK in $CHAN;
+				RETURN;
+			};
+
+			MODE $CHAN +b *!$3@$4;
+			//KICK $CHAN $0 $REASON;
+			TIMER $TIME MODE $CHAN -b *!$3@$4;
+		};
+	};
+};
+
+# CLEARBANS [channel]
+#
+# Remove all bans in [channel], or $C if not specified.
+ALIAS CLEARBANS (CHAN DEFAULT $C) {
+	UNBAN $CHAN *!*@*;
+};
+
+# BAN [channel] <nick|host> [<nick|host> ...]
+#
+# Sets a ban on the specified nick or host.  If a nick is specified, BAN
+# looks at SET BAN_TYPE to determine the ban type.  If not set, the default
+# mask type is 2, i.e. *!*@host.
+
+ADDSET BAN_TYPE INT;
+SET BAN_TYPE 2;
+
+ALIAS BAN (ARGS) {
+	@ :CHAN = ISCHANNEL($WORD(0 $ARGS)) ? SHIFT(ARGS) : C,
+	  :WHOM = ARGS;
+
+	@ :HOSTS = [];
+	@ :NICKS = [];
+	FOR W IN ($WHOM) {
+		SWITCH ($W) {
+			(*!*@*) { UNSHIFT HOSTS $W; };
+			(*@*) { UNSHIFT HOSTS *!$W; };
+			(*) { UNSHIFT NICKS $W; };
+		};
+	};
+
+	IF (NICKS) {
+		WAIT FOR {
+			USERHOST $NICKS -cmd {
+				BLESS;
+				IF ([$3] == [<UNKNOWN>]) {
+					XECHO -b ${K}BAN: Couldn't find nick: $W;
+					RETURN;
+				};
+				UNSHIFT HOSTS $MASK($GETSET(BAN_TYPE) $0!$3@$4);
+			};
+		};
+	};
+
+	MASSMODE $CHAN +b $HOSTS;
+};
+
+
+# UNBAN [channel] <nick|mask> [<nick|mask> ...]
+#
+# Removes bans on [channel], or $C if unspecified.  If a <nick> is given,
+# removes all bans that match that nick.  If a <mask> is given, remove
+# that single ban.
+
+ALIAS UNBAN (ARGS) {
+	@ :CHAN = ISCHANNEL($WORD(0 $ARGS)) ? SHIFT(ARGS) : C,
+	  :WHOM = ARGS;
+
+	@ :HOSTS = [];
+	@ :NICKS = [];
+	FOR W IN ($WHOM) {
+		SWITCH ($W) {
+			(*!*@*) { UNSHIFT HOSTS $W; };
+			(*@*) { UNSHIFT HOSTS *!$W; };
+			(*) { UNSHIFT NICKS $W; };
+		};
+	};
+
+	IF (NICKS) {
+		@ :MASKS = [];
+		WAIT FOR {
+			USERHOST $NICKS -cmd {
+				BLESS;
+				IF ([$3] == [<UNKNOWN>]) {
+					XECHO -b ${K}UNBAN: Couldn't find nick: $W;
+					RETURN;
+				};
+				UNSHIFT MASKS $0!$3@$4;
+			};
+		};
+
+		^STACK PUSH ON 367;
+		^STACK PUSH ON 368;
+
+		^ON ^367 * {
+			BLESS;
+			IF (MATCH($2 $MASKS)) {
+				UNSHIFT HOSTS $2;
+			};
+		};
+		
+		^ON ^368 ^*;
+
+		WAIT FOR {
+			MODE $CHAN +b;
+		};
+
+		^STACK POP ON 367;
+		^STACK POP ON 368;
+	};
+
+	MASSMODE $CHAN -b $HOSTS;
+};
+
+# CLEARBANS [channel]
+#
+# Remove all bans on [channel], or $C if unspecified.
+
+ALIAS CLEARBANS (ARGS) {
+	@ :CHAN = ISCHANNEL($WORD(0 $ARGS)) ? SHIFT(ARGS) : C;
+
+	@ :HOSTS = [];
+
+	^STACK PUSH ON 367;
+	^STACK PUSH ON 368;
+
+	^ON ^367 * {
+		BLESS;
+		UNSHIFT HOSTS $2;
+	};
+	
+	^ON ^368 ^*;
+
+	WAIT FOR {
+		MODE $CHAN +b;
+	};
+
+	^STACK POP ON 367;
+	^STACK POP ON 368;
+	
+	MASSMODE $CHAN -b $HOSTS;
+};
+#larne 2k10

@@ -172,3 +172,5 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Add the 'logman' script which does per-server, and per-channel logging
 * Handle inspired's BBC 351 numeric, for larne.
 * Fix bug with /encrypt complaining "X is not a multiple of Y!" (rb zlonix)
+* Add a bunch more scripts I've been sitting on that were contributed.
+* Add 'cycle', 'set_color', 'ban', and 'speak.irc' scripts. i need to doc them
