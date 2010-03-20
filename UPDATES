@@ -1,4 +1,83 @@
-EPIC5-1.0.1
+EPIC5-1.1.1
+
+*** News 3/19/2010 -- EPIC5-1.1.1 was released here
+
+*** News 3/19/2010 -- The last value of /WINDOW SERVER is saved per window
+	The last argument passed to /WINDOW SERVER is saved on a per-window
+	basis, via $windowctl(GET x SERVER_STRING).  I added this because
+	howl asked for it, although I don't know what he intended it for.
+
+*** News 3/19/2010 -- Modifying server descriptions on the fly
+	You may now modify server descriptions on the fly in the
+	following situations:
+		/SERVER -ADD <desc>
+		/SERVER -UPDATE <desc>
+		/SERVER <desc>
+		$serverctl(READ_FILE filename)
+		$serverctl(UPDATE refnum stuff)
+		/WINDOW SERVER <desc>
+	For example, let's say you created a server irc.foo.com, but
+	you forgot that it used SSL.  Before it was a pain to "fix" that,
+	but now you can fix it like this:
+
+		/SERVER -ADD irc.foo.com:8855
+	(oops, it uses ssl, i forgot!)
+		/SERVER irc.foo.com:type=irc-ssl
+	(aha! okie. now it will connect using ssl)
+	
+*** News 3/19/2010 -- You can log everything with /LOG SERVER ALL
+	If you create a log like:
+		/LOG NEW FILE myirc.log SERVER ALL ON
+	that will log everything.
+	Previously, you had to add each server individually by 
+	refnum, but now you can just use the magic string "ALL"
+	to refer to all servers.
+
+*** News 3/19/2010 -- Rewrite /log support
+	The /LOG command should work a lot better now.
+
+*** News 3/19/2010 -- New target to msg a window, @E<winref>
+	You can /echo to a window by /msg'ing its winref, as in:
+		/msg @E3 This message will display in window 3.
+
+*** News 3/19/2010 -- "global" now loads ambig and newnick scripts
+
+*** News 3/19/2010 -- New /XEVAL -N flag, which reverses the ^ flag
+	Normally if you run an alias or an on with ^, it will treat every 
+	command as though it were prefixed with ^.  This suppresses the 
+	output of many commands, which you may not want to do.  You can 
+	negate the effect of ^ with /XEVAL -N.  For example:
+		/on ^hook "chdir %" {
+			xeval -n {cd $1-}
+		}
+	Normally the /CD command will output an error if it could not
+	change the directory, but since ^ suppresses that error, in this
+	example, you'd never know that the cd failed.  So you can wrap 
+	commands whose error messages you want to see in /XEVAL -N.
+	Don't forget!  Always wrap your commands in {} to avoid unintended
+	back doors.
+
+*** News 3/19/2010 -- Remember, $dccctl(GET refnum WRITABLE)
+	If you combine $dccctl(FD_TO_REFNUM fd) with
+	$dccctl(GET refnum WRITABLE) you can detect when a nonblocking
+	connect has succeeded!
+
+*** News 3/19/2010 -- New $dccctl(FD_TO_REFNUM <fd>)
+	The $connect() function returns a file descriptor, which you can
+	pass to $dccctl(FD_TO_REFNUM fd) to get the $dccctl() refnum,
+	which you can use to do other stuff.
+
+*** News 3/19/2010 -- New flag to /EXEC, -CLOSEOUT
+	If you do /EXEC -CLOSEOUT it will close the stdin to the process,
+	(ie, sends an EOF) which some processes need to decide that 
+	they're supposed to do something.
+
+*** News 3/19/2010 --  New scripts I should have documented
+	These scripts have been added, but I never got around to documenting
+	them.  That's a bummer.
+		help.irc	history.rb	locale
+		tabkey.sjh	logman		cycle
+		set_color	ban		speak.irc
 
 *** News 10/29/2009 -- Valgrind assistance
 	If you want to run epic under Valgrind, you may want to pass the
