@@ -1,3 +1,12 @@
+EPIC5-1.1.2
+
+*** News 03/25/2010 -- Can now modify servers by refnum (Fix to server descriptions)
+	The /server command was broken in the epic5-1.1.1 release, and got some extra
+	work for the next release.  As part of this work, you can now add change fields
+	to a server refnum, like so:
+		/server 1:type=irc-ssl
+	Previously refering to a server refnum didn't support change fields.
+
 EPIC5-1.1.1
 
 *** News 3/19/2010 -- EPIC5-1.1.1 was released here

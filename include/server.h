@@ -34,6 +34,7 @@ typedef struct WaitCmdstru
 
 typedef struct ServerInfo 
 {
+	int	clean;
         char *  freestr;
 	char *	fulldesc;
         int     refnum;

@@ -2,7 +2,9 @@ EPIC5 Projects, Bugs, and other Errata:
 
 KNOWN ERRATA (eg, bugs, or unresolved requests):
 ------------------------------------------------
-<none>
+* Server passwords that contain colons screw up server descs.
+* On osx, perl gives you flags that cannot compile
+* The password should always be stored internally in url format.
 
 MEDIUM-TERM PROJECTS
 --------------------
@@ -161,3 +163,7 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Add $serverctl(UPDATE refnum stuff) to update server descriptions
 * Allow /window server to update server descriptions
 * Add $windowctl(GET x SERVER_STRING) returns last good /window server value
+* Release epic5-1.1.1 (commit 1631) (Prolixity)
+* Rework the serverinfo code so /server <group> doesn't clobber <host> with <group> (rb howl)
+* Add support for /server refnum:<other flags> which I noticed
+* For example, this means, /server 0:type=irc-ssl now works! yay!

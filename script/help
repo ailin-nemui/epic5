@@ -234,7 +234,7 @@ alias help.help {
 		};
 		if (dp == [] && file != [] && fexist($file) == 1 && !help.isdir($file)) {
 			if (fp == []) {
-				@ fp = open("$file" "R");
+				@ fp = open("$file" R);
 				if (match(*.gz $name)) {
 					@ tmp = [$G Help on $before(-1 . $name)];
 				} else {

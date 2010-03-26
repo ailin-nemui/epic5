@@ -1,4 +1,4 @@
-/* $EPIC: server.c,v 1.243 2010/03/19 01:41:36 jnelson Exp $ */
+/* $EPIC: server.c,v 1.244 2010/03/26 00:13:45 jnelson Exp $ */
 /*
  * server.c:  Things dealing with that wacky program we call ircd.
  *
@@ -75,7 +75,6 @@ static int	clear_serverinfo (ServerInfo *s);
 static	int	str_to_serverinfo (char *str, ServerInfo *s);
 static	void	free_serverinfo (ServerInfo *s);
 static	int	serverinfo_to_servref (ServerInfo *s);
-static	int	serverinfo_to_servref_with_update (ServerInfo *s);
 static	int	serverinfo_to_newserv (ServerInfo *s);
 static 	void 	remove_from_server_list (int i);
 static	char *	shortname (const char *oname);
@@ -94,6 +93,7 @@ static int	clear_serverinfo (ServerInfo *s)
 	s->vhost = NULL;
 	s->freestr = NULL;		/* XXX ? */
 	s->fulldesc = NULL;		/* XXX ? */
+	s->clean = 1;
 	return 0;
 }
 
@@ -163,6 +163,13 @@ static	int	str_to_serverinfo (char *str, ServerInfo *s)
 	char *	after;
 	enum serverinfo_fields	fieldnum;
 
+	if (!s->clean)
+		panic(1, "str_to_serverinfo: serverinfo is not clean!");
+
+	/*
+	 * As a shortcut, we allow the string to be a number,
+	 * which refers to an existing server.
+	 */
 	descstr = str;
 	if (str && is_number(str))
 	{
@@ -176,11 +183,15 @@ static	int	str_to_serverinfo (char *str, ServerInfo *s)
 		}
 	}
 
+	/*
+	 * Otherwise, we convert it by breaking down each component in turn.
+	 */
 	for (fieldnum = HOST; fieldnum <= LASTFIELD; fieldnum++)
 	{
-		char *first_colon;
-		char *first_equals;
+		char *	first_colon;
+		char *	first_equals;
 		int	ignore_field = 0;
+		int	url = 0;
 
 		first_equals = strchr(descstr, '=');
 		first_colon = strchr(descstr, ':');
@@ -201,6 +212,8 @@ static	int	str_to_serverinfo (char *str, ServerInfo *s)
 				fieldnum = HOST;
 			else if (!my_strnicmp(descstr, "PORT", 2))
 				fieldnum = PORT;
+			else if (!my_strnicmp(descstr, "URLPASS", 2))
+				fieldnum = PASS, url = 1;
 			else if (!my_strnicmp(descstr, "PASS", 2))
 				fieldnum = PASS;
 			else if (!my_strnicmp(descstr, "NICK", 1))
@@ -231,6 +244,17 @@ static	int	str_to_serverinfo (char *str, ServerInfo *s)
 		/* Set the appropriate field */
 		if (fieldnum == HOST)
 		{
+		  /* 
+		   * A "clean" serverinfo has just been through 
+		   * clear_serverinfo().  If it is not "clean" then that means
+		   * it belongs to a server.  We don't want to modify the 
+		   * host field of a server's serverinfo!
+		   * -- This allows us to do things like:
+		   * 		/server 0:group=efnet 
+		   *    or      /server efnet:type=irc-ssl
+		   */
+		  if (s->clean)
+		  {
 		    if (*descstr == '[')
 		    {
 			s->host = descstr + 1;
@@ -244,11 +268,29 @@ static	int	str_to_serverinfo (char *str, ServerInfo *s)
 		    }
 		    else
 			s->host = descstr;
+		  }
 		}
 		else if (fieldnum == PORT)
 			s->port = atol(descstr);
 		else if (fieldnum == PASS)
+		{
+		    if (url)
+		    {
+			char *dest;
+			size_t	desclen, destlen;
+
+			desclen = strlen(descstr);
+			destlen = desclen + 2;
+			dest = new_malloc(destlen);
+			transform_string(URL_xform, XFORM_DECODE, NULL,
+						descstr, desclen,
+						dest, destlen);
+			s->freestr = dest;	/* XXX This is a hack, and I know it. */
+			s->password = dest;
+		    }
+		    else
 			s->password = descstr;
+		}
 		else if (fieldnum == NICK)
 			s->nick = descstr;
 		else if (fieldnum == GROUP)
@@ -349,8 +391,12 @@ static	void	free_serverinfo (ServerInfo *si)
 
 static	void	update_serverinfo (ServerInfo *old_si, ServerInfo *new_si)
 {
+	/* You should never update 'host' because it contains the
+	 * lookup key, and cannot ever be mutable. ever. */
+#if 0
 	if (new_si->host)
 		old_si->host = new_si->host;
+#endif
 	if (new_si->port)
 		old_si->port = new_si->port;
 	if (new_si->password)
@@ -369,6 +415,7 @@ static	void	update_serverinfo (ServerInfo *old_si, ServerInfo *new_si)
 	preserve_serverinfo(old_si);
 	return;
 }
+
 
 /*
  * serverinfo_to_servref - Convert a temporary serverinfo into a server refnum
@@ -409,6 +456,9 @@ static	int	serverinfo_to_servref (ServerInfo *si)
 		if (si->port != 0 && si->port != s->info->port)
 			continue;
 
+		if (si->host && is_number(si->host) && atol(si->host) == i)
+			return i;
+
 		if (s->info->host && wild_match(si->host, s->info->host))
 			return i;
 
@@ -432,30 +482,26 @@ static	int	serverinfo_to_servref (ServerInfo *si)
 	return NOSERV;
 }
 
-static	int	serverinfo_to_servref_with_update (ServerInfo *si)
+static	void	update_refnum_serverinfo (int refnum, ServerInfo *new_si)
 {
-	int	servref;
-	Server	*s;
+	Server *s;
 
-	if ((servref = serverinfo_to_servref(si)) == NOSERV)
-		return NOSERV;
+	if (!(s = get_server(refnum)))
+		return;
 
-	if (!(s = get_server(servref)))
-		return NOSERV;
-
-	update_serverinfo(s->info, si);
-	return servref;
+	update_serverinfo(s->info, new_si);
 }
 
-static	int	update_server_from_str (int refnum, char *str)
+static	int	update_server_from_raw_desc (int refnum, char *str)
 {
 	Server  *s;
+	ServerInfo si;
 
 	if (!(s = get_server(refnum)))
 		return NOSERV;
 
-	str_to_serverinfo(str, s->info);
-	preserve_serverinfo(s->info);
+	str_to_serverinfo(str, &si);
+	update_refnum_serverinfo(refnum, &si);
 	return refnum;
 }
 
@@ -595,7 +641,7 @@ int	str_to_servref_with_update (const char *desc)
 		return NOSERV;
 
 	if ((retval = serverinfo_to_servref(&si)) != NOSERV)
-		update_server_from_str(retval, ptr2);
+		update_refnum_serverinfo(retval, &si);
 
 	return retval;
 }
@@ -690,6 +736,7 @@ void	add_servers (char *servers, const char *group)
 {
 	char	*host, *hostcopy;
 	ServerInfo si;
+	int	refnum;
 
 	if (!servers)
 		return;
@@ -702,8 +749,11 @@ void	add_servers (char *servers, const char *group)
 		if (group && si.group == NULL)
 			si.group = group;
 
-		if (serverinfo_to_servref_with_update(&si) == NOSERV)
+		refnum = serverinfo_to_servref(&si);
+		if (refnum == NOSERV)
 			serverinfo_to_newserv(&si);
+		else
+			update_refnum_serverinfo(refnum, &si);
 	}
 }
 
@@ -1041,7 +1091,7 @@ BUILT_IN_COMMAND(servercmd)
 			return;
 		}
 
-		update_server_from_str(servref, server);
+		update_server_from_raw_desc(servref, server);
 		say("Server %d description updated", servref);
 		return;
 	}
@@ -3389,7 +3439,7 @@ char 	*serverctl 	(char *input)
 		int   servref;
 
 		GET_INT_ARG(servref, input);
-		refnum = update_server_from_str(servref, input);
+		refnum = update_server_from_raw_desc(servref, input);
 		if (refnum != NOSERV)
 			RETURN_INT(refnum);
 		RETURN_EMPTY;
