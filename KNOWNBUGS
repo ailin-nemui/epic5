@@ -2,9 +2,7 @@ EPIC5 Projects, Bugs, and other Errata:
 
 KNOWN ERRATA (eg, bugs, or unresolved requests):
 ------------------------------------------------
-* Server passwords that contain colons screw up server descs.
-* On osx, perl gives you flags that cannot compile
-* The password should always be stored internally in url format.
+<none>
 
 MEDIUM-TERM PROJECTS
 --------------------
@@ -164,6 +162,15 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Allow /window server to update server descriptions
 * Add $windowctl(GET x SERVER_STRING) returns last good /window server value
 * Release epic5-1.1.1 (commit 1631) (Prolixity)
-* Rework the serverinfo code so /server <group> doesn't clobber <host> with <group> (rb howl)
+* Fixes so /server <group> doesn't clobber <host> with <group> (rb howl)
 * Add support for /server refnum:<other flags> which I noticed
 * For example, this means, /server 0:type=irc-ssl now works! yay!
+* Add special check for OS X (Zach)
+* Fix configure check for perl so it doesn't segfault.
+* Fix configure check for iconv, so it doesn't bork the freebsd port
+* Iconv support really is mandatory now! I mean it!
+* Fix transform_string_dyn().  How did nobody catch this??
+* Add a function findchar_quoted() like strchr(), but honors \.s
+* Use this in server descriptions to find the unquoted : after a PASS.
+* This means you can \ a : in a password. yay!
+* Nuke the "URLPASS" support.  Let us never speak of this again.

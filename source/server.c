@@ -1,4 +1,4 @@
-/* $EPIC: server.c,v 1.244 2010/03/26 00:13:45 jnelson Exp $ */
+/* $EPIC: server.c,v 1.245 2010/04/01 23:09:07 jnelson Exp $ */
 /*
  * server.c:  Things dealing with that wacky program we call ircd.
  *
@@ -191,10 +191,12 @@ static	int	str_to_serverinfo (char *str, ServerInfo *s)
 		char *	first_colon;
 		char *	first_equals;
 		int	ignore_field = 0;
-		int	url = 0;
 
 		first_equals = strchr(descstr, '=');
-		first_colon = strchr(descstr, ':');
+		if ((span = findchar_quoted(descstr, ':')) >= 0)
+			first_colon = descstr + span;
+		else
+			first_colon = NULL;
 
 		/*
 		 * This field has a field-descryption-type.  Reset the field
@@ -212,8 +214,6 @@ static	int	str_to_serverinfo (char *str, ServerInfo *s)
 				fieldnum = HOST;
 			else if (!my_strnicmp(descstr, "PORT", 2))
 				fieldnum = PORT;
-			else if (!my_strnicmp(descstr, "URLPASS", 2))
-				fieldnum = PASS, url = 1;
 			else if (!my_strnicmp(descstr, "PASS", 2))
 				fieldnum = PASS;
 			else if (!my_strnicmp(descstr, "NICK", 1))
@@ -273,24 +273,7 @@ static	int	str_to_serverinfo (char *str, ServerInfo *s)
 		else if (fieldnum == PORT)
 			s->port = atol(descstr);
 		else if (fieldnum == PASS)
-		{
-		    if (url)
-		    {
-			char *dest;
-			size_t	desclen, destlen;
-
-			desclen = strlen(descstr);
-			destlen = desclen + 2;
-			dest = new_malloc(destlen);
-			transform_string(URL_xform, XFORM_DECODE, NULL,
-						descstr, desclen,
-						dest, destlen);
-			s->freestr = dest;	/* XXX This is a hack, and I know it. */
-			s->password = dest;
-		    }
-		    else
 			s->password = descstr;
-		}
 		else if (fieldnum == NICK)
 			s->nick = descstr;
 		else if (fieldnum == GROUP)
@@ -326,10 +309,13 @@ static	int	str_to_serverinfo (char *str, ServerInfo *s)
 			break;
 
 		/* And advance to the next field */
-		if (!(descstr = strchr(descstr, ':')))
-			break;
-		else
+		if ((span = findchar_quoted(descstr, ':')) >= 0)
+		{
+			descstr = descstr + span;
 			*descstr++ = 0;
+		}
+		else
+			break;
 	}
 
 	return 0;
@@ -2229,7 +2215,12 @@ void	register_server (int refnum, const char *nick)
 	from_server = ofs;
 
 	if (!empty(s->info->password))
-		send_to_aserver(refnum, "PASS %s", s->info->password);
+	{
+		char *dequoted = NULL;
+		malloc_strcat_ues(&dequoted, s->info->password, "\\:");
+		send_to_aserver(refnum, "PASS %s", dequoted);
+		new_free(&dequoted);
+	}
 
 	malloc_strcpy (&s->realname, 
 		(s->default_realname == NULL) ?

@@ -1,9 +1,21 @@
 EPIC5-1.1.2
 
-*** News 03/25/2010 -- Can now modify servers by refnum (Fix to server descriptions)
-	The /server command was broken in the epic5-1.1.1 release, and got some extra
-	work for the next release.  As part of this work, you can now add change fields
-	to a server refnum, like so:
+*** News 04/01/2010 -- Can now backslash colons in server passwords
+	Previously it was impossible to include colons in server passwords
+	because colons are delimiters in server descriptions.  Now you can 
+	backslash the colon and it will do the right thing.  Don't forget to
+	backslash your backslashes!
+
+		Real password		What you should use:
+		-------------------	---------------------
+		onetwothree		onetwothree
+		one:twothree		one\:twothree
+		one\two:three		one\\two\:three
+
+*** News 03/25/2010 -- Can now modify servers by refnum (Fix to server descs)
+	The /server command was broken in the epic5-1.1.1 release, and got 
+	some extra work for the next release.  As part of this work, you can 
+	now add change fields to a server refnum, like so:
 		/server 1:type=irc-ssl
 	Previously refering to a server refnum didn't support change fields.
 

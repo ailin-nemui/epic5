@@ -4,9 +4,9 @@ dnl except those bits attributed otherwise.
 dnl thanks to the screen 3.3 configure.in for giving me examples to
 dnl work from and steal ;)
 dnl
-dnl @(#)$Id: configure.in,v 1.90 2010/02/15 03:59:10 jnelson Exp $
+dnl @(#)$Id: configure.in,v 1.91 2010/04/01 23:09:07 jnelson Exp $
 
-AC_REVISION([$Revision: 1.90 $])dnl
+AC_REVISION([$Revision: 1.91 $])dnl
 AC_INIT([source/irc.c])
 AC_CONFIG_HEADER([include/defs.h])
 
@@ -89,6 +89,34 @@ dnl if test -d /usr/include/ep; then
 dnl	CFLAGS="-I/usr/include/ep $CFLAGS"
 dnl fi
 AC_CHECK_LIB([cext], [setenv], [LIBS="$LIBS -lcext"],)
+
+dnl
+dnl Checking for Macintosh OS X (Written by Zach)
+dnl
+AC_MSG_CHECKING([for Macintosh OS X])
+( $CC --version 2>&1 | grep 'apple-darwin' > /dev/null ) && \
+       apple_compiler="yes" \
+       CFLAGS="$CFLAGS -arch ppc -arch i386 -arch x86_64"
+dnl
+dnl The above option was only tested on Mac OS X 10.6 (Snow Leopard.)  It's
+dnl possible that the CFLAGS will need to be tweaked for earlier  versions.
+dnl The block below should handle that, but I don't have a 10.4 or a  10.5
+dnl machine to test against.
+dnl
+dnl dnl 10.6 (Snow Leopard)
+dnl ( $CC --version 2>&1 | grep 'apple-darwin10' > /dev/null ) && \
+dnl    apple_compiler="yes" \
+dnl    CFLAGS="$CFLAGS -arch ppc -arch i386 -arch x86_64"
+dnl dnl 10.5 (Leopard)
+dnl ( $CC --version 2>&1 | grep 'apple-darwin9' > /dev/null ) && \
+dnl    apple_compiler="yes" \
+dnl    CFLAGS="$CFLAGS -arch ppc -arch i386 -arch x86_64"
+dnl dnl 10.4 (Tiger)
+dnl ( $CC --version 2>&1 | grep 'apple-darwin8' > /dev/null ) && \
+dnl    apple_compiler="yes" \
+dnl    CFLAGS="$CFLAGS -arch ppc -arch i386 -arch x86_64"
+AC_MSG_RESULT([ok])
+
 
 
 dnl ----------------------------------------------------------
@@ -869,22 +897,25 @@ dnl
 AC_ARG_WITH(iconv,
 [  --with-iconv[=PATH]       Include iconv support (DIR is eg /usr/local).],[
 	if test -z "$withval"; then
-		with_iconv="yes"
+		with_iconv="/usr"
 	fi
 ])
 
 AC_MSG_CHECKING(whether to include iconv support)
 if test "x$with_iconv" = "xno"; then
-	AC_MSG_RESULT(no)
-else
+	AC_MSG_RESULT([Iconv support is required; I'm afraid I must insist.])
+	AC_MSG_CHECKING([whether to include iconv support])
+	with_iconv=yes
+fi
+
 	saved_LIBS="$LIBS"
 	saved_CFLAGS="$CFLAGS"
 
-	# First try to see if it's in libc
+	dnl First try to see if it's in libc
 	AC_TRY_LINK([#include <iconv.h>],
 		[iconv_open(0, 0);], have_iconv="yes")
 
-	# If it's not in libc, look in -liconv
+	dnl If it's not in libc, look in -liconv
 	if test "x$have_iconv" = "x"; then
 	   LIBS="$saved_LIBS -liconv"
 	   CFLAGS="$saved_CFLAGS"
@@ -892,7 +923,12 @@ else
 		[iconv_open(0, 0);], have_iconv="yes")
 	fi
 
-	# Otherwise, go hunting for it.
+	dnl whatever.
+	if test "x$with_iconv" = "xyes" ; then
+		unset with_iconv
+	fi
+
+	dnl Otherwise, go hunting for it.
 	if test "x$have_iconv" = "x"; then
 	    for iconvdir in "$with_iconv" "$prefix" /usr/local /opt /usr/opt; do
 		if test "x$have_iconv" != "x"; then
@@ -918,24 +954,23 @@ dnl			test -f "$iconvdir/lib/libiconv.a"; then
 	    done
 	fi
 
-	# If we found it somewhere, great!  Otherwise, revert.
-	if test "x$have_iconv" = "x"; then
-		LIBS="$saved_LIBS"
-		CFLAGS="$saved_CFLAGS"
-		AC_MSG_RESULT(looked but did not find it)
-		if test "x$with_iconv" != "x" ; then
-			AC_MSG_ERROR(You specified --with-iconv but that directory did not contain files include/iconv.h and lib/iconv.a.  Either specify a different directory or let me auto-detect it for you)
-		else
-			AC_MSG_ERROR(Iconv support is required.  I could not find your system's iconv support.  If you have iconv installed, please re-run configure with the --with-iconv=/path/to/dir option where include/iconv.h and lib/iconv.a exist.)
-		fi
+# If we found it somewhere, great!  Otherwise, revert.
+if test "x$have_iconv" = "x"; then
+	LIBS="$saved_LIBS"
+	CFLAGS="$saved_CFLAGS"
+	AC_MSG_RESULT(looked but did not find it)
+	if test "x$with_iconv" != "x" ; then
+		AC_MSG_ERROR([You specified --with-iconv=$with_iconv but that directory did not contain files include/iconv.h and lib/iconv.a.  Either specify a different directory or let me auto-detect it for you])
 	else
-		AC_MSG_RESULT(yes)
-		AC_DEFINE(HAVE_ICONV)
+		AC_MSG_ERROR([Iconv support is required.  I could not find your system's iconv support.  If you have iconv installed, please re-run configure with the --with-iconv=/path/to/dir option where include/iconv.h and lib/iconv.a exist.])
 	fi
-
-	dnl #sigh#
-	dnl AC_CHECK_FUNC(iconv_open, AC_DEFINE(HAVE_ICONV),)
+else
+	AC_MSG_RESULT(yes)
+	AC_DEFINE(HAVE_ICONV)
 fi
+
+dnl #sigh#
+dnl AC_CHECK_FUNC(iconv_open, AC_DEFINE(HAVE_ICONV),)
 
 
 dnl ----------------------------------------------------------
@@ -1033,11 +1068,12 @@ int dummy_retval = -1;
 PerlInterpreter *my_perl;
 int startup_perl(int argc, char **argv, char **env)
 {
-	PERL_SYS_INIT3(&argc,&argv,&env);
+	char *embedding[] = {"", "-e", "0" };
+
 	my_perl = perl_alloc();
 	perl_construct(my_perl);
 	PL_exit_flags |= PERL_EXIT_DESTRUCT_END;
-	perl_parse(my_perl, NULL, argc, argv, (char **)NULL);
+	perl_parse(my_perl, NULL, 3, embedding, NULL);
 	if (SvTRUE(ERRSV))
 	   (void)SvPV_nolen(ERRSV);
 	perl_run(my_perl);
@@ -1049,12 +1085,14 @@ int startup_perl(int argc, char **argv, char **env)
 	dummy_retval = 0;
 	return 0;
 }
-int main (void)
+int main (int argc, char **argv, char **environ)
 {
-	startup_perl(0, NULL, NULL);
+	startup_perl(argc, argv, environ);
 	exit(dummy_retval);
 }
-], have_embedded_perl="yes")
+], 
+have_embedded_perl="yes",
+have_embedded_perl="no",:)
 
 		CFLAGS="$old_CFLAGS"
 		LDFLAGS="$old_LDFLAGS"

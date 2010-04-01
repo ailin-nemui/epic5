@@ -1,4 +1,4 @@
-/* $EPIC: ircaux.c,v 1.219 2010/03/18 01:31:09 jnelson Exp $ */
+/* $EPIC: ircaux.c,v 1.220 2010/04/01 23:09:07 jnelson Exp $ */
 /*
  * ircaux.c: some extra routines... not specific to irc... that I needed 
  *
@@ -5818,8 +5818,8 @@ char *	transform_string_dyn (const char *type, const char *orig_str, size_t orig
 	if (orig_str_len <= 0)
 		orig_str_len = strlen(orig_str);
 
-	if (!(transform = lookup_transform(type, &numargs, 
-					&expansion_size, &expansion_overhead)))
+	if ((transform = lookup_transform(type, &numargs, 
+				&expansion_size, &expansion_overhead)) == -1)
 	{
 		yell("Invalid transform: [%s] to transform_string_dyn", type);
 		return NULL;
@@ -6022,5 +6022,24 @@ int	num_code_points(const char *i)
 	if (s + d + v != l)
 		return 0;
 	return v + s;
+}
+
+ssize_t	findchar_quoted (const char *source, int delim)
+{
+	ssize_t	retval = 0;
+	const char *p;
+
+	for (p = source; *p; p++)
+	{
+		if (*p == '\\' && p[1])
+			p++;
+		else if (*p == delim)
+			break;
+	}
+
+	if (*p)
+		return p - source;
+	else
+		return -1;
 }
 
