@@ -174,3 +174,4 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Use this in server descriptions to find the unquoted : after a PASS.
 * This means you can \ a : in a password. yay!
 * Nuke the "URLPASS" support.  Let us never speak of this again.
+* Two changes to timer.c from caf.

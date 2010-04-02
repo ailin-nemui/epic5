@@ -1,4 +1,4 @@
-/* $EPIC: who.c,v 1.64 2009/12/28 20:05:54 jnelson Exp $ */
+/* $EPIC: who.c,v 1.65 2010/04/02 23:14:45 jnelson Exp $ */
 /*
  * who.c -- The WHO queue.  The ISON queue.  The USERHOST queue.
  *
@@ -146,7 +146,7 @@ static char *who_item_full_desc (WhoEntry *item)
 		"who_target [%s], who_name [%s], who_host [%s], "
 		"who_server [%s], who_nick [%s], who_real [%s], "
 		"who_stuff [%s], who_end [%s], next [%p], line [%p], "
-		"end [%p], requested [%ld], dirty [%ld]",
+		"end [%p], requested ["INTMAX_FORMAT"], dirty ["INTMAX_FORMAT"]",
 			item->refnum,
 			item->dirty, item->piggyback, item->undernet_extended, 
 				S(item->undernet_extended_args),
@@ -158,8 +158,9 @@ static char *who_item_full_desc (WhoEntry *item)
 				S(item->who_real),
 			S(item->who_stuff), S(item->who_end), 
 				item->next, item->line,
-			item->end, item->request_time.tv_sec,
-				item->dirty_time.tv_sec);
+			item->end, 
+			(intmax_t) item->request_time.tv_sec,
+			(intmax_t) item->dirty_time.tv_sec);
 	else
 	    snprintf(retval, sizeof retval, "<none>");
 

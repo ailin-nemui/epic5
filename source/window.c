@@ -1,4 +1,4 @@
-/* $EPIC: window.c,v 1.213 2010/03/19 01:41:36 jnelson Exp $ */
+/* $EPIC: window.c,v 1.214 2010/04/02 23:14:45 jnelson Exp $ */
 /*
  * window.c: Handles the organzation of the logical viewports (``windows'')
  * for irc.  This includes keeping track of what windows are open, where they
@@ -4851,7 +4851,7 @@ static	int	last_scroll_seconds_interval = 0;
 static Window *window_scroll_seconds (Window *window, char **args)
 {
 	int	val;
-	time_t	now, when;
+	time_t	right_now, when;
 
 	if (args && *args && **args)
 		val = get_number("SCROLL_SECONDS", args);
@@ -4877,18 +4877,18 @@ static Window *window_scroll_seconds (Window *window, char **args)
 static Window *window_scrollback_toseconds (Window *window, char **args)
 {
 	int	val;
-	time_t	now, when;
+	time_t	right_now, when;
 
 	if (args && *args && **args)
 		val = get_number("SCROLL_SECONDS", args);
 	else
 		return window;
 
-	now = time(NULL);
+	right_now = time(NULL);
 	if (val <= 0)
 		return window;
 
-	when = now - val;
+	when = right_now - val;
 	/* Scroll to the first entry newer than 'when' */
 
 	return window;
@@ -6546,7 +6546,7 @@ char 	*windowctl 	(char *input)
 	    } else if (!my_strnicmp(listc, "WAITING_CHANNEL", len)) {
 		RETURN_STR(get_waiting_channels_by_window(w));
 	    } else if (!my_strnicmp(listc, "BIND_CHANNEL", len)) {
-		RETURN_STR(empty_string);
+		RETURN_EMPTY;
 	    } else if (!my_strnicmp(listc, "QUERY_NICK", len)) {
 		const char *cc = get_equery_by_refnum(w->refnum);
 		RETURN_STR(cc);

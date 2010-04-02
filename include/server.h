@@ -205,6 +205,7 @@ extern	const char *server_states[13];
 	BUILT_IN_COMMAND(reconnectcmd);
 
 	int	str_to_servref		(Char *);
+	int	str_to_servref_with_update	(const char *desc);
 	int	str_to_newserv		(Char *);
 	void	destroy_server_list	(void);
 	void	add_servers		(char *, Char *);
@@ -391,6 +392,7 @@ const char *	get_server_funny_match         	(int);
 
 const char *	get_server_altname		(int refnum, int which);
 	int     which_server_altname		(int refnum, const char *);
+
 
 #endif /* _SERVER_H_ */
 

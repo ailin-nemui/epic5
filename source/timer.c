@@ -1,4 +1,4 @@
-/* $EPIC: timer.c,v 1.54 2010/03/26 00:13:45 jnelson Exp $ */
+/* $EPIC: timer.c,v 1.55 2010/04/02 23:14:45 jnelson Exp $ */
 /*
  * timer.c -- handles timers in ircII
  *
@@ -679,8 +679,7 @@ char *add_timer (int update, const char *refnum_want, double interval, long even
 		}
 		else
 		{
-			if (ntimer->callback)
-				ntimer->callback = NULL;
+			ntimer->callback = NULL;
 			malloc_strcpy(&ntimer->command, (const char *)commands);
 			malloc_strcpy(&ntimer->subargs, subargs);
 		}
@@ -706,8 +705,10 @@ char *add_timer (int update, const char *refnum_want, double interval, long even
 		if (callback)
 			ntimer->callback_data = commands;
 		else
+		{
 			malloc_strcpy(&ntimer->command, (const char *)commands);
-		malloc_strcpy(&ntimer->subargs, subargs);
+			malloc_strcpy(&ntimer->subargs, subargs);
+		}
 		ntimer->domain = domain;
 		ntimer->domref = domref;
 		ntimer->cancelable = cancelable;

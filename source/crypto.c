@@ -1,4 +1,4 @@
-/* $EPIC: crypto.c,v 1.16 2009/10/29 07:37:32 jnelson Exp $ */
+/* $EPIC: crypto.c,v 1.17 2010/04/02 23:14:45 jnelson Exp $ */
 /*
  * crypto.c: SED/CAST5/BLOWFISH/AES encryption and decryption routines.
  *
@@ -280,10 +280,10 @@ static char *	decipher_evp (const unsigned char *key, int keylen, const unsigned
         EVP_CIPHER_CTX_init(&a);
 	EVP_CIPHER_CTX_set_padding(&a, 0);
 
-	if (iv > 0)
+	if (ivsize > 0)
 		iv = new_malloc(ivsize);
 	outbuf = new_malloc(cipherlen + 1024);
-	if (iv > 0)
+	if (ivsize > 0)
 		memcpy(iv, ciphertext, ivsize);
 
         EVP_DecryptInit_ex(&a, type, NULL, NULL, iv);
@@ -300,7 +300,7 @@ static char *	decipher_evp (const unsigned char *key, int keylen, const unsigned
 	    yell("ERROR: %s", r);
 	}
 
-	if (iv)
+	if (ivsize > 0)
 		new_free(&iv);
 	return outbuf;
 }

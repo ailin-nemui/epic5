@@ -1,4 +1,4 @@
-/* $EPIC: functions.c,v 1.287 2010/03/13 14:40:37 jnelson Exp $ */
+/* $EPIC: functions.c,v 1.288 2010/04/02 23:14:45 jnelson Exp $ */
 /*
  * functions.c -- Built-in functions for ircII
  *
@@ -7052,7 +7052,7 @@ char *function_iconvctl (char *input)
 		*fromcode, *fromcode_opt = NULL, 
 		*tocode, *tocode_opt = NULL, 
 		*option = NULL;
-	unsigned int id;
+	int id;
 	int intarg;
 
 	iconv_t forward, reverse;
