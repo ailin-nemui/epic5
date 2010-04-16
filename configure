@@ -1,6 +1,6 @@
 #! /bin/sh
 
-# From configure.in Revision: 1.90 # Guess values for system-dependent variables and create Makefiles.
+# From configure.in Revision: 1.91 # Guess values for system-dependent variables and create Makefiles.
 # Generated automatically using autoconf version 2.13 
 # Copyright (C) 1992, 93, 94, 95, 96 Free Software Foundation, Inc.
 #
@@ -6522,6 +6522,31 @@ exit(0);
 ; return 0; }
 EOF
 if { (eval echo configure:6525: \"$ac_compile\") 1>&5; (eval $ac_compile) 2>&5; }; then
+  rm -rf conftest*
+  echo "$ac_t""yes" 1>&6
+else
+  echo "configure: failed program was:" >&5
+  cat conftest.$ac_ext >&5
+  rm -rf conftest*
+  echo "$ac_t""no" 1>&6
+	CFLAGS="$old_cflags"
+
+fi
+rm -f conftest*
+
+echo $ac_n "checking whether your compiler supports -fno-strict-aliasing""... $ac_c" 1>&6
+echo "configure:6539: checking whether your compiler supports -fno-strict-aliasing" >&5
+old_cflags="$CFLAGS"
+CFLAGS="$CFLAGS -fno-strict-aliasing"
+cat > conftest.$ac_ext <<EOF
+#line 6543 "configure"
+#include "confdefs.h"
+
+int main() {
+exit(0);
+; return 0; }
+EOF
+if { (eval echo configure:6550: \"$ac_compile\") 1>&5; (eval $ac_compile) 2>&5; }; then
   rm -rf conftest*
   echo "$ac_t""yes" 1>&6
 else

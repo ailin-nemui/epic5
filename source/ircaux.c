@@ -1,4 +1,4 @@
-/* $EPIC: ircaux.c,v 1.220 2010/04/01 23:09:07 jnelson Exp $ */
+/* $EPIC: ircaux.c,v 1.221 2010/04/16 01:37:33 jnelson Exp $ */
 /*
  * ircaux.c: some extra routines... not specific to irc... that I needed 
  *
@@ -2299,6 +2299,8 @@ ssize_t	MatchingBracket (const char *start, char left, char right)
  * while: 
  *
  * "hoohar"     returns -1  and str as "hoohar" 
+ *
+ * XXX Why doesn't this use (intmax_t)?
  */
 int	parse_number (char **str)
 {
@@ -2540,6 +2542,7 @@ char *	remove_brackets (const char *name, const char *args)
 	return upper(rptr);
 }
 
+/* This should use (intmax_t) */
 long	my_atol (const char *str)
 {
 	if (str)

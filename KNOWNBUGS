@@ -2,7 +2,23 @@ EPIC5 Projects, Bugs, and other Errata:
 
 KNOWN ERRATA (eg, bugs, or unresolved requests):
 ------------------------------------------------
-<none>
+* /parsekey used to set to end of line, now it sets to beginning.
+* Add an /on unknown_set
+* FiSH uses a64l() and l64a(), which is probably better than what i wrote.
+* (in epic4 -- also verify for epic5)
+<jm> hop: is it just me or do the terms "case sensitive" and "case
++insensitive" need to be swapped on the sar() page?
+<jm> the function seems to behave the opposite of how the help page describes
+<jm> (with regard to case sensitivity)
+-> (#epic) the 'i' flag is futile since there's no way to make it case
++sensitive.
+<jm> it seems like the i flag is necessary to make it case insensitive
+<jm> /eval echo $sar(/test/tset/Test 123) returns Test
+<jm> Test 123 even
+<jm> /eval echo $sar(i/test/tset/Test 123) returns tset 123
+*** Leaving #epic: (alert) 17:40:07
+<whitefang> for me, it returns Test 123 
+
 
 MEDIUM-TERM PROJECTS
 --------------------
@@ -175,3 +191,6 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * This means you can \ a : in a password. yay!
 * Nuke the "URLPASS" support.  Let us never speak of this again.
 * Two changes to timer.c from caf.
+* Fix bugs found by --with-warns.
+* Add a check in configure for -fno-strict-aliasing; could be used with -O2?
+* Fix /parsekey reset_line so it sets the cursor to the end (for howl)

@@ -1,4 +1,4 @@
-/* $EPIC: functions.c,v 1.288 2010/04/02 23:14:45 jnelson Exp $ */
+/* $EPIC: functions.c,v 1.289 2010/04/16 01:37:33 jnelson Exp $ */
 /*
  * functions.c -- Built-in functions for ircII
  *
@@ -1138,6 +1138,7 @@ BUILT_IN_FUNCTION(function_tdiff, input)
 	tmp = alloca(size);
 	*tmp = 0;
 
+	/* XXX Why doesn't this use GET_INT_ARG? */
 	ltime = (time_t)strtol(input, &after, 10);
 	if (after == input)
 		RETURN_EMPTY;
@@ -5331,6 +5332,7 @@ BUILT_IN_FUNCTION(function_isnumber, input)
 	 */
 	RETURN_IF_EMPTY(number);
 
+	/* XXX Why doesn't this use strtoimax? */
 	strtol(number, &endptr, base);
 	if (endptr > number)
 		segments++;
@@ -5339,6 +5341,7 @@ BUILT_IN_FUNCTION(function_isnumber, input)
 		if (base == 0)
 			base = 10;		/* XXX So i'm chicken. */
 		number = endptr + 1;
+		/* XXX Why doesn't this use strtoimax? */
 		strtol(number, &endptr, base);
 		if (endptr > number)
 			segments++;
