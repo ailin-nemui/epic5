@@ -1,5 +1,25 @@
 EPIC5-1.1.2
 
+*** News 04/15/2010 -- New flags to $sar(), $msar(), case sensitivity
+	In EPIC4, $sar() and $msar() were case sensitive.
+	You could turn this off by using the 'i' flag.
+	In EPIC5, $sar() and $msar() are case *INSENSITIVE*
+	There has been no way to turn this off!
+	You can now turn this off with the 'c' flag.
+
+	Example:
+		$sar(g/One/Two/one One one One)   -> "Two Two Two Two"
+		$sar(cg/One/Two/one One one One/) -> "one Two one Two"
+
+*** News 04/15/2010 -- New /on, /on unknown_set
+	As a favor to howl, I've added /on unknown_set, which will be hooked
+	whenever /set is called on a set that doesn't exist.
+		$0  - The set that doesn't exist
+		$1- - The value the user wanted to set.
+	If you catch this, then the /on set that triggers for "unknown-set"
+	will not be thrown.  If you don't know what I'm talking about, then
+	you won't miss it.
+
 *** News 04/01/2010 -- Can now backslash colons in server passwords
 	Previously it was impossible to include colons in server passwords
 	because colons are delimiters in server descriptions.  Now you can 

@@ -169,6 +169,7 @@ alias history.show (index, void) {
 	if (@index) {
 		@ history.index = index;
 		parsekey reset_line $restw(1 $getitem(array.history $history.index));
+#		parsekey end_of_line;
 	};
 };
 

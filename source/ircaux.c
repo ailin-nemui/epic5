@@ -1,4 +1,4 @@
-/* $EPIC: ircaux.c,v 1.221 2010/04/16 01:37:33 jnelson Exp $ */
+/* $EPIC: ircaux.c,v 1.222 2010/04/29 01:41:23 jnelson Exp $ */
 /*
  * ircaux.c: some extra routines... not specific to irc... that I needed 
  *
@@ -4665,9 +4665,16 @@ char *	substitute_string (const char *string, const char *oldstr, const char *ne
 	size_t	newlen;
 	size_t	stringlen;
 	const char *	p;
+	int	max_matches;
 
 	if (!(oldlen = strlen(oldstr)))
 		return malloc_strdup(string);
+
+	/* XXX ok. so it's lame. */
+	if (global)
+		max_matches = 99999;
+	else
+		max_matches = 1;
 
 	newlen = strlen(newstr);
 	stringlen = strlen(string);
@@ -4682,28 +4689,57 @@ char *	substitute_string (const char *string, const char *oldstr, const char *ne
 	clue = 0;
 	i = 0;
 
+	/* For each character in the input string... */
 	for (p = string; *p; p++)
 	{
-	    if (*p == *oldstr)
+	    /* If we are still willing to make substitutions... */
+	    if (max_matches > 0)
 	    {
-		if ( global >= 0 &&
-		     ((!case_sensitive && !my_strnicmp(p, oldstr, oldlen)) ||
-		      (case_sensitive && !strncmp(p, oldstr, oldlen)) ) )
-		{
-		    const char *s;
+		int	found = 0;
 
-		    for (s = newstr; *s; s++)
-			retval[i++] = *s;
-		    if (global == 0)
-			global = -1;
-		    p += oldlen - 1;
-		    continue;
+		/* For case sensitive searches, we use strncmp */
+		if (case_sensitive == 1)
+		{
+			if (!strncmp(p, oldstr, oldlen))
+				found = 1;
+		}
+		/* For case insensitive searches, we use my_strnicmp */
+		else
+		{
+			if (!my_strnicmp(p, oldstr, oldlen))
+				found = 1;
+		}
+
+		/* If we found it... */
+		if (found)
+		{
+			/* We copy in the replacement string */
+			const char *s;
+
+			for (s = newstr; *s; s++)
+				retval[i++] = *s;
+			if (global == 0)
+				global = -1;
+			p += oldlen - 1;
+
+			/* We decrease the number of permitted substitutions */
+			max_matches--;
+
+			/* And then skip to the next character in src */
+			continue;
 		}
 	    }
+
+	    /* 
+	     * If this char doesn't begin the string to be removed,
+	     * then we just copy this char and continue on.
+	     */
 	    retval[i++] = *p;
 	}
 
 	retval[i] = 0;
+
+	/* Bail if we accidentally caused a buffer overflow. */
 	if (i > (int)retvalsize)
 	    panic(1, "substitute [%s] with [%s] in [%s] overflows [%ld] chars", 
 			oldstr, newstr, string, (long)retvalsize);
@@ -4939,6 +4975,8 @@ static char fish64_chars[] =
  *
  * If the input string is short (doesn't contain 4 bytes) then we will just
  * fill in the missing bytes with zeros (which happens during our multiply)
+ *
+ * This function is (semantically) the same as l64a()
  */
 static int	four_bytes_to_fish64 (const char *input, size_t inputlen, unsigned char *output, size_t outputlen)
 {
@@ -5065,6 +5103,8 @@ static	int	fishbyte (int	character)
  *
  * If the input string is short (doesn't contain 6 radix chars) then we will 
  * just pretend they contained zero bits.
+ *
+ * This function is (semantically) the same as a64l() 
  */
 static int	fish64_to_four_bytes (const char *input, size_t inputlen, char *output, size_t outputlen)
 {

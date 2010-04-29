@@ -1,4 +1,4 @@
-/* $EPIC: functions.c,v 1.289 2010/04/16 01:37:33 jnelson Exp $ */
+/* $EPIC: functions.c,v 1.290 2010/04/29 01:41:23 jnelson Exp $ */
 /*
  * functions.c -- Built-in functions for ircII
  *
@@ -896,7 +896,9 @@ static	char	*alias_banner		(void) { return malloc_strdup(banner()); }
 static	char	*alias_currdir  	(void)
 {
 	char 	*tmp = (char *)new_malloc(MAXPATHLEN+1);
-	return getcwd(tmp, MAXPATHLEN);
+	if (!getcwd(tmp, MAXPATHLEN))
+		*tmp = 0;
+	return tmp;
 }
 
 static	char	*alias_channel 		(void) 
@@ -2723,6 +2725,8 @@ BUILT_IN_FUNCTION(function_sar, input)
 			global = 1;
 		else if (*input == 'i')
 			case_sensitive = 0;
+		else if (*input == 'c')
+			case_sensitive = 1;
 		else if (!*input)
 			RETURN_EMPTY;
 		else
@@ -4601,6 +4605,8 @@ BUILT_IN_FUNCTION(function_msar, input)
 			global = 1;
 		else if (*input == 'i')
 			case_sensitive = 0;
+		else if (*input == 'c')
+			case_sensitive = 1;
 		else if (!*input)
 			RETURN_EMPTY;
 		else

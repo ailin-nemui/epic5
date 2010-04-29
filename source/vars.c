@@ -1,4 +1,4 @@
-/* $EPIC: vars.c,v 1.107 2008/11/26 03:26:34 jnelson Exp $ */
+/* $EPIC: vars.c,v 1.108 2010/04/29 01:41:23 jnelson Exp $ */
 /*
  * vars.c: All the dealing of the irc variables are handled here. 
  *
@@ -750,7 +750,9 @@ BUILT_IN_COMMAND(setcmd)
 
 		if (b->numitems == 0)
 		{
-		    if (do_hook(SET_LIST, "set-error No such variable \"%s\"", 
+		    if (!do_hook(UNKNOWN_SET_LIST, "%s %s", 
+					var, args ? args : "<unset>"))
+		      if (do_hook(SET_LIST, "set-error No such variable \"%s\"",
 					var))
 			say("No such variable \"%s\"", var);
 		    free_bucket(&b);

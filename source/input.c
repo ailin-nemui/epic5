@@ -1,4 +1,4 @@
-/* $EPIC: input.c,v 1.63 2010/04/16 01:37:33 jnelson Exp $ */
+/* $EPIC: input.c,v 1.64 2010/04/29 01:41:23 jnelson Exp $ */
 /*
  * input.c: does the actual input line stuff... keeps the appropriate stuff
  * on the input line, handles insert/delete of characters/words... the whole
@@ -864,24 +864,17 @@ void	input_move_cursor (int dir, int refresh)
  */
 void	set_input (const char *str)
 {
-	size_t len = strlen(INPUT_BUFFER);
+	size_t len;
 
 	strlcpy(INPUT_BUFFER, str, INPUT_BUFFER_SIZE);
-
-#if 1
 	START = 0;
 	LOGICAL_CURSOR = 0;
-	while (LOGICAL_CURSOR < (int)len)
-                input_move_cursor(1, 0);
-#else
-	if ( (int)len < (last_input_screen->co - INPUT_PROMPT_LEN - WIDTH + 2) )
-		START=0;
-	else
-		START=len - WIDTH;
 
-	LOGICAL_CURSOR=len;
-#endif
+	len = strlen(INPUT_BUFFER);
+	while (LOGICAL_CURSOR < (int)len)
+		input_move_cursor(1, 0);
 	update_input(last_input_screen, UPDATE_ALL);
+
 }
 
 /*
@@ -1241,10 +1234,12 @@ BUILT_IN_KEYBINDING(input_clear_line)
  */
 BUILT_IN_KEYBINDING(input_reset_line)
 {
+	/* XXX This code is used in many places */
 	*INPUT_BUFFER = 0;
 	START = 0;
         LOGICAL_CURSOR=0;
         memset(INPUT_BUFFER, 0, sizeof(INPUT_BUFFER));
+        update_input(last_input_screen, UPDATE_FROM_CURSOR);
 
         if (!string)
 		set_input(empty_string);

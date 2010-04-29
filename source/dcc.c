@@ -1,4 +1,4 @@
-/* $EPIC: dcc.c,v 1.161 2010/03/13 14:40:37 jnelson Exp $ */
+/* $EPIC: dcc.c,v 1.162 2010/04/29 01:41:23 jnelson Exp $ */
 /*
  * dcc.c: Things dealing client to client connections. 
  *
@@ -1183,10 +1183,14 @@ static	int	dcc_connect (DCC_list *dcc)
 	new_open(dcc->socket, do_dcc, NEWIO_CONNECT, 0, dcc->server);
 
 	if ((seconds = get_int_var(DCC_CONNECT_TIMEOUT_VAR)) > 0)
+	{
+		say("A non-blocking connect() for your DCC has been initiated."
+		    "  It could take a while to complete."
+		    "  I'll check on it in %d seconds", seconds);
 		add_timer(0, empty_string, seconds, 1,
 			  do_expire_dcc_connects, NULL, NULL,
 			  GENERAL_TIMER, -1, 0);
-
+	}
 	from_server = old_server;
 	get_time(&dcc->lasttime);
 	break;
