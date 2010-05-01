@@ -1,4 +1,4 @@
-/* $EPIC: crypt.c,v 1.41 2010/03/18 01:31:09 jnelson Exp $ */
+/* $EPIC: crypt.c,v 1.42 2010/05/01 03:52:04 jnelson Exp $ */
 /*
  * crypt.c: The /ENCRYPT command and all its attendant baggage.
  *
@@ -285,6 +285,7 @@ Crypt *	is_crypted (Char *nick, int serv, int ctcp_type)
 	CHECK_CRYPTO_LIST(get_server_itsname(serv))
 	CHECK_CRYPTO_LIST(get_server_group(serv))
 	CHECK_CRYPTO_LIST(get_server_group(serv))
+	/* Why is get_server_group listed twice? */
 
 	/* Look for the nickname -- special case */
 	for (tmp = crypt_list; tmp; tmp = tmp->next)

@@ -1,4 +1,4 @@
-/* $EPIC: ircaux.c,v 1.222 2010/04/29 01:41:23 jnelson Exp $ */
+/* $EPIC: ircaux.c,v 1.223 2010/05/01 03:52:04 jnelson Exp $ */
 /*
  * ircaux.c: some extra routines... not specific to irc... that I needed 
  *
@@ -5757,7 +5757,7 @@ struct Transformer default_transformers[] = {
 int	max_transform;
 int	max_number_of_transforms = 256;
 struct Transformer transformers[256];		/* XXX */
-int	URL_xform, ENC_xform, B64_xform, FISH64_xform;
+int	NONE_xform, URL_xform, ENC_xform, B64_xform, FISH64_xform;
 int	CTCP_xform, SHA256_xform;
 
 /*
@@ -5988,6 +5988,7 @@ void	init_transforms (void)
 				   default_transformers[i].decoder);
 	}
 
+	NONE_xform = lookup_transform("NONE", &numargs, &d1, &d2);
 	URL_xform = lookup_transform("URL", &numargs, &d1, &d2);
 	ENC_xform = lookup_transform("ENC", &numargs, &d1, &d2);
 	B64_xform = lookup_transform("B64", &numargs, &d1, &d2);

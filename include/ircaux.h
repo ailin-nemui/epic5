@@ -7,7 +7,7 @@
  *
  * See the COPYRIGHT file, or do a HELP IRCII COPYRIGHT 
  *
- * @(#)$Id: ircaux.h,v 1.107 2010/04/01 23:09:07 jnelson Exp $
+ * @(#)$Id: ircaux.h,v 1.108 2010/05/01 03:52:04 jnelson Exp $
  */
 
 #ifndef _IRCAUX_H_
@@ -273,6 +273,7 @@ int	lookup_transform (const char *, int *, int *, int *);
 char *	valid_transforms (void);
 char *	transform_string_dyn (const char *, const char *, size_t, size_t *);
 
+extern	int	NONE_xform;
 extern	int	URL_xform;
 extern	int	ENC_xform;
 extern	int	B64_xform;
