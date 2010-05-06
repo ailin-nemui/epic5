@@ -1,3 +1,11 @@
+*** News 06/05/2010 -- New script: rejoin
+	Stores channel/key on disconnect/part/kick. I hope it's useful!
+
+	Allows you to rejoin all channels lost in a disconnect, by doing:
+	/rejoin -all OR /rejoin -server
+
+	See script for details. 
+
 EPIC5-1.1.2
 
 *** News 04/15/2010 -- New flags to $sar(), $msar(), case sensitivity

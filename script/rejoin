@@ -1,0 +1,129 @@
+if (word(2 $loadinfo()) != [pf]) { load -pf $word(1 $loadinfo()); return; };
+
+# REJOIN: saves channels and keys FOR YOU!
+#
+# Saves channels and keys on:
+#	 KICK
+#  PART
+#  DISCONNECT
+#
+# Does NOT save channels/keys on quit.
+#
+# /REJOIN with no arguments: rejoins for current window
+#  -SERVER    or 
+#  -AS              for all windows on current server
+#  -A[LL]           for all windows
+#  -F[LUSH]         flush all windows
+#  -R[EMOVE] [<w>]  remove for current window or <w>.
+#  -L[IST]          list recordings
+#
+# REJOIN is NOT server sensitive.
+#
+# SECURITY HAZZARD: will rejoin with saved key across
+#   servers.
+#
+# I hope you like it! -howl
+#
+
+package REJOIN;
+alias rejoin {rejoin.rejoin $*;};
+alias rejoin.rejoin
+{
+	@ :pm = aliasctl(assign pmatch .rejoin.*);
+	switch ($0)
+	{
+		(-f*)
+		{
+			fe :pm re { ^assign -$re; push :fl $after(2 . $re);};
+			xecho -b Flushed rejoin for windows: $fl;
+			return;
+		}
+		(-r*)
+		{
+			if ([$1] == '')
+			{
+				rejoin.rejoin -remove $winnum();
+				return;
+			};
+			fe ($aliasctl(assign pmatch .rejoin.$1)) pm
+			{
+				^assign -$pm;
+				xecho -b Removed rejoin for window: $after(2 . $pm);
+			};
+			return;
+		}
+		(-l*)
+		{
+			fe :pm re { xecho -b Window $after(2 . $re), rejoin:
+				$.rejoin[$after(2 . $re)];};
+			return;
+		}
+		(-as*) (-s*)
+		{
+			@ :sn = serverctl(from_server);
+			fe :pm re 
+			{
+				if (windowctl(get $after(2 . $re) server) == sn) 
+					{push :list $after(2 . $re);};
+			};
+		}
+		(-a*) { fe :pm re { push :list $after(2 . $re); }; }
+		(-*) {xecho -b Unknown argument: $*; return;}
+		() { @ :list = winnum();}
+		(*){ fe ($*) wi {push :list $windowctl(refnum $wi);};}
+	};
+	@ :list = remw(-1 $uniq($list));
+	if (!@list)
+	{
+		xecho -b No rejoins specified
+		return;
+	};
+	fe list win
+	{
+		if (!@.rejoin[$win]) {xecho -b No rejoins for $win; continue;};
+		fe ($.rejoin[$win]) ch ke
+		{
+			xeval -window $win
+			{
+				if (chanwin($ch $windowctl(get $win server)) == -1)
+				{window $win channel "$ch $ke";};
+			};
+		};
+	};
+};
+
+fe (server_status part kick) li {
+	fe ($hookctl(list hooks $li)) no {
+		if (hookctl(get hook $no package) == 'REJOIN')
+		{ @ hookctl(remove $no); }; 
+	}; };
+
+^on #-server_status - "% % closing"
+{
+	xeval -s $0
+	{
+		fe ($mychannels($0)) ch
+		{
+			push :wl ${:wi=chanwin($ch)};
+			push :w[$wi] $ch $key($ch);
+		};
+		fe wl win {@ .rejoin[$win] = :w[$win];};
+	};
+};
+on #-part - "*"
+{
+	if ([$0] == serverctl(get $serverctl(from_server) nickname))
+	{
+		@ .rejoin[$chanwin($1)] = [$1 $key($1)];
+	};
+};
+on #-kick - "*"
+{
+	if ([$0] == serverctl(get $serverctl(from_server) nickname))
+	{
+		@ .rejoin[$chanwin($2)] = [$2 $key($2)];
+	};
+};
+
+# howl 2010
+# vim: tabstop=2 syntax=
