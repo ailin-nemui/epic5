@@ -1,4 +1,4 @@
-/* $EPIC: commands.c,v 1.197 2010/04/29 01:41:23 jnelson Exp $ */
+/* $EPIC: commands.c,v 1.198 2010/05/30 01:12:01 jnelson Exp $ */
 /*
  * commands.c -- Stuff needed to execute commands in ircII.
  *		 Includes the bulk of the built in commands for ircII.
@@ -882,6 +882,8 @@ BUILT_IN_COMMAND(xechocmd)
 
 		case 'L':
 		{
+		    Window *w;
+
 		    flag_arg = next_arg(args, &args);
 
 		    /* LINE (output to scratch window) */
@@ -897,8 +899,11 @@ BUILT_IN_COMMAND(xechocmd)
 			    return;
 			}
 
-			display_lines = get_window_by_refnum(to_window_refnum)
-							->display_lines;
+			/* This is checked below, anyways */
+			if (!(w = get_window_by_refnum(to_window_refnum)))
+				break;
+
+			display_lines = w->display_lines;
 			to_line = my_atol(next_arg(args, &args));
 			if (to_line < 0 || to_line >= display_lines)
 			{
@@ -907,8 +912,7 @@ BUILT_IN_COMMAND(xechocmd)
 					display_lines - 1);
 				return;
 			}
-			get_window_by_refnum(to_window_refnum)->change_line = 
-							to_line;
+			w->change_line = to_line;
 		     }
 
 		     /* LEVEL (use specified lastlog level) */

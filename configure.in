@@ -4,9 +4,9 @@ dnl except those bits attributed otherwise.
 dnl thanks to the screen 3.3 configure.in for giving me examples to
 dnl work from and steal ;)
 dnl
-dnl @(#)$Id: configure.in,v 1.92 2010/04/16 01:37:32 jnelson Exp $
+dnl @(#)$Id: configure.in,v 1.93 2010/05/30 01:11:59 jnelson Exp $
 
-AC_REVISION([$Revision: 1.92 $])dnl
+AC_REVISION([$Revision: 1.93 $])dnl
 AC_INIT([source/irc.c])
 AC_CONFIG_HEADER([include/defs.h])
 
@@ -96,25 +96,8 @@ dnl
 AC_MSG_CHECKING([for Macintosh OS X])
 ( $CC --version 2>&1 | grep 'apple-darwin' > /dev/null ) && \
        apple_compiler="yes" \
-       CFLAGS="$CFLAGS -arch ppc -arch i386 -arch x86_64"
-dnl
-dnl The above option was only tested on Mac OS X 10.6 (Snow Leopard.)  It's
-dnl possible that the CFLAGS will need to be tweaked for earlier  versions.
-dnl The block below should handle that, but I don't have a 10.4 or a  10.5
-dnl machine to test against.
-dnl
-dnl dnl 10.6 (Snow Leopard)
-dnl ( $CC --version 2>&1 | grep 'apple-darwin10' > /dev/null ) && \
-dnl    apple_compiler="yes" \
-dnl    CFLAGS="$CFLAGS -arch ppc -arch i386 -arch x86_64"
-dnl dnl 10.5 (Leopard)
-dnl ( $CC --version 2>&1 | grep 'apple-darwin9' > /dev/null ) && \
-dnl    apple_compiler="yes" \
-dnl    CFLAGS="$CFLAGS -arch ppc -arch i386 -arch x86_64"
-dnl dnl 10.4 (Tiger)
-dnl ( $CC --version 2>&1 | grep 'apple-darwin8' > /dev/null ) && \
-dnl    apple_compiler="yes" \
-dnl    CFLAGS="$CFLAGS -arch ppc -arch i386 -arch x86_64"
+       perl_arch_flags="$(perl -MExtUtils::Embed -e 'ccopts;print "\n"; ldopts' | grep -o -- '-arch [-_0-9a-zA-Z]*' | sort -u)" \
+       CFLAGS="$CFLAGS $perl_arch_flags"
 AC_MSG_RESULT([ok])
 
 

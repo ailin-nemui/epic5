@@ -186,3 +186,5 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Revamp substitute_string() so $sar() and $msar() work as intended.
 * Add a NONE_xform const to do null transformations.
 * Release epic5-1.1.2 (commit 1638) (Trencherman)
+* Fix build so it builds on mac os x, with or without macports perl.
+* Fix brain-dead typo with /on unknown_set support

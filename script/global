@@ -16,4 +16,4 @@ load help;
 load 2.8script;
 load ambig;
 load newnick;
-load local;
+if (which(local) != '') {load local};

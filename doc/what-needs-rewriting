@@ -44,13 +44,13 @@ Numeric handlers:
 	:server 042 mynick uniqueid :this is your unique id
 	:server 301 mynick nick :is away message
 	:server 302 mynick *userhost-handler
-	:server 307 mynick *userhost-handler
-	:server 340 mynick *userhost-handler
 	:server 303 mynick *ison-handler
+	:server 307 mynick *userhost-handler
 	:server 315 mynick *who-end-handler
 	:server 321 mynick "Channel" "Users" "Topic"
 	:server 322 mynick channel user_cnt :topic
 	:server 324 mynick channel channel-mode
+	:server 340 mynick *userhost-handler
 	:server 352 mynick *who-handler
 	:server 353 mynick chan-type chan-name :nicks
 	:server 354 mynick *xwho-handler
