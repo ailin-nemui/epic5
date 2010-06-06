@@ -2,7 +2,9 @@ EPIC5 Projects, Bugs, and other Errata:
 
 KNOWN ERRATA (eg, bugs, or unresolved requests):
 ------------------------------------------------
-<none>
+* Howl would like "advanced scrollback" searches, like hit counts
+* I think maybe i should expose a better scrollback interface?
+* Howl would like to be able to replace any line of scrollback via windowctl
 
 MEDIUM-TERM PROJECTS
 --------------------
