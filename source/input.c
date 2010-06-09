@@ -1,4 +1,4 @@
-/* $EPIC: input.c,v 1.64 2010/04/29 01:41:23 jnelson Exp $ */
+/* $EPIC: input.c,v 1.65 2010/06/09 05:10:36 jnelson Exp $ */
 /*
  * input.c: does the actual input line stuff... keeps the appropriate stuff
  * on the input line, handles insert/delete of characters/words... the whole
@@ -437,6 +437,7 @@ BUILT_IN_KEYBINDING(send_line)
 
 #define THIS_CHAR 		INPUT_BUFFER[LOGICAL_CURSOR]
 #define PREV_CHAR 		INPUT_BUFFER[LOGICAL_CURSOR-1]
+#define PREV_PREV_CHAR		INPUT_BUFFER[LOGICAL_CURSOR-2]
 #define NEXT_CHAR 		INPUT_BUFFER[LOGICAL_CURSOR+1]
 
 #define ADD_TO_INPUT(x) 	strlcat(INPUT_BUFFER, (x), sizeof INPUT_BUFFER);
@@ -1256,27 +1257,52 @@ BUILT_IN_KEYBINDING(input_transpose_characters)
 {
 	unsigned char	this_char, prev_char;
 
-	/* If we're at the end of input, move back to the last char */
-	if (!THIS_CHAR && LOGICAL_CURSOR > 1)
-		input_move_cursor(-1, 1);
-
-	if (!PREV_CHAR)
-                return;
-
-	/* Swap the character under cursor with character before */
-	this_char = THIS_CHAR;
-	prev_char = PREV_CHAR;
-	THIS_CHAR = prev_char;
-	PREV_CHAR = this_char;
-
 	/*
-	 * I guess we move back one and then forward, otherwise
-	 * this doesn't look instantaneous
-         */
-	input_move_cursor(-1, 1);
-	update_input(last_input_screen, UPDATE_FROM_CURSOR);
-	input_move_cursor(1, 1);
-        update_input(last_input_screen, UPDATE_JUST_CURSOR);
+	 * This is tricky because the cursor never moves and there are three cases:
+	 *
+	 * 1. Cursor is at char 0: swap 0 and 1 
+	 *	A_ B C		->	B_ A C
+	 * 2. Cursor is over a char: swap char under cursor and char before cursor
+	 *	A B_ C		->	B A_ C
+	 * 3. Cursor is at end (not on char): swap char before cursor and char before that
+	 *	A B C _		->	A C B _
+	 */
+
+	/* Case 1 -- swap char 0 and 1 */
+	if (LOGICAL_CURSOR == 0 && THIS_CHAR && NEXT_CHAR)
+	{
+		int	tc, nc;
+
+		tc = THIS_CHAR;
+		nc = NEXT_CHAR;
+		THIS_CHAR = nc;
+		NEXT_CHAR = tc;
+	}
+
+	/* Case 2 -- cursor over char, but not the first char */
+	else if (LOGICAL_CURSOR > 0 && THIS_CHAR && PREV_CHAR)
+	{
+		int	tc, pc;
+
+		tc = THIS_CHAR;
+		pc = PREV_CHAR;
+		THIS_CHAR = pc;
+		PREV_CHAR = tc;
+	}
+
+	/* Case 3 -- cursor at end */
+	else if (LOGICAL_CURSOR > 1 && !THIS_CHAR && PREV_CHAR && PREV_PREV_CHAR)
+	{
+		int	pc, ppc;
+
+		pc = PREV_CHAR;
+		ppc = PREV_PREV_CHAR;
+		PREV_CHAR = ppc;
+		PREV_PREV_CHAR = pc;
+	}
+
+	/* In all other cases, this is a no-op. */
+	update_input(last_input_screen, UPDATE_ALL);
 }
 
 

@@ -2,6 +2,9 @@ EPIC5 Projects, Bugs, and other Errata:
 
 KNOWN ERRATA (eg, bugs, or unresolved requests):
 ------------------------------------------------
+* input line word funcs should honor /set word_break
+* Should be able to change LINE value in windows (for howl)
+* Howl wants to be able to have per-window /input and /input_char
 * Howl would like "advanced scrollback" searches, like hit counts
 * I think maybe i should expose a better scrollback interface?
 * Howl would like to be able to replace any line of scrollback via windowctl
@@ -190,3 +193,4 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Release epic5-1.1.2 (commit 1638) (Trencherman)
 * Fix build so it builds on mac os x, with or without macports perl.
 * Fix brain-dead typo with /on unknown_set support
+* Rewrite /bind transpose_characters in response to it being borked.
