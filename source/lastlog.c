@@ -1,4 +1,4 @@
-/* $EPIC: lastlog.c,v 1.81 2009/09/11 21:02:02 jnelson Exp $ */
+/* $EPIC: lastlog.c,v 1.82 2010/06/27 03:14:17 jnelson Exp $ */
 /*
  * lastlog.c: handles the lastlog features of irc. 
  *
@@ -1095,19 +1095,58 @@ BUILT_IN_FUNCTION(function_lastlog, word)
  *		For messages sent to a channel, the channel.
  *		For everything else, the empty string.
  *	$lastlogctl(GET <refnum> TEXT)
+ *	  The logical line of output (not broken into lines)
  *	$lastlogctl(GET <refnum> TIMESTAMP)
+ *	  The time when the logical line of output was first displayed
  *	$lastlogctl(GET <refnum> VISIBLE)
+ *	  Whether or not this logical line is visible
  *	$lastlogctl(GET <refnum> WINDOW)
+ *	  WHich window this item belongs to
+ *	$lastlogctl(GET <refnum> FILTER_LEVEL)
+ *	  If not visible, which filter level it is hidden by
+ *	  View filter -1 means it's hidden from /lastlog but shows on screen
+ *	  View filter 0 means it's been "deleted" from the screen and lastlog
+ *		(Normally you'd never unapply filter level 0)
+ *	  View filter 1 or above means it's temporarily hidden on the /lastlog 
+ *		and the screen.
  *
  *	$lastlogctl(SET <refnum> LEVEL <level>)
+ *	  You can change the level (this should cascade to display_level)
  *	$lastlogctl(SET <refnum> TARGET <target>)
+ *	  You can change the target (this should cascade to display_level)
  *	$lastlogctl(SET <refnum> TEXT <text>)
+ *	  You can change the text itself (maybe to add a timestamp)
  *	$lastlogctl(SET <refnum> TIMESTAMP <timestamp>)
- *	$lastlogctl(SET <refnum> VISIBLE [0|1])
+ *	  You can change the timestamp (but i don't recommend it)
  *	$lastlogctl(SET <refnum> WINDOW)
+ *	  You can change what window this output belongs to.
+ *	$lastlogctl(SET <refnum> FILTER_LEVEL <number>)
+ *	  Hide the item from the window and /lastlog
+ *	  If <number> is -1, it's not hidden from the window
+ *	  If <number> is 0, it's p
+ *
+ *	$lastlogctl(ADDFILTER <window>)
+ *	  Returns a new filter level at which you can apply filters
+ *	  All filters applied at one level will "undo" together.
+ *	  Normally this means you normally only apply one filter per level
+ *	$lastlogctl(APPLYFILTER <window> <level> HIDELEVEL ...)
+ *	$lastlogctl(APPLYFILTER <window> <level> ONLYLEVEL ...)
+ *	$lastlogctl(APPLYFILTER <window> <level> HIDETARGET ...)
+ *	$lastlogctl(APPLYFILTER <window> <level> ONLYTARGET ...)
+ *	$lastlogctl(APPLYFILTER <window> <level> HIDETEXT ...)
+ *	$lastlogctl(APPLYFILTER <window> <level> ONLYTEXT ...)
+ *	$lastlogctl(APPLYFILTER <window> <level> HIDETIME starttime endtime)
+ *	$lastlogctl(APPLYFILTER <window> <level> ONLYTIME starttime endtime)
+ *
+ *	$lastlogctl(FILTERLEVEL)
+ *		Returns the current viewfilter display level.
+ *		Every time you add a view filter, this goes up
+ *		Every time you remove a view filter this goes down.
+ *		The default value is 1 , because "filter 0" is the level filter
  */
 BUILT_IN_FUNCTION(function_lastlogctl, input)
 {
+
 	RETURN_STR(empty_string);
 }
 #endif

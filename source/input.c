@@ -1,4 +1,4 @@
-/* $EPIC: input.c,v 1.65 2010/06/09 05:10:36 jnelson Exp $ */
+/* $EPIC: input.c,v 1.66 2010/06/27 03:14:17 jnelson Exp $ */
 /*
  * input.c: does the actual input line stuff... keeps the appropriate stuff
  * on the input line, handles insert/delete of characters/words... the whole
@@ -927,7 +927,8 @@ void	set_input_prompt (void *stuff)
 }
 
 
-#define WHITESPACE(x) (isspace(x) || ispunct(x))
+/* Please define 'spaces' as get_string_var(WORD_BREAK_VAR). */
+#define WHITESPACE(x)  (strchr(spaces, (x)) != NULL)
 
 /* 
  * Why did i put these in this file?  I dunno.  But i do know that the ones 
@@ -940,8 +941,14 @@ void	set_input_prompt (void *stuff)
  * input_forward_word: move the input cursor forward one word in the input
  * line 
  */
+
 BUILT_IN_KEYBINDING(input_forward_word)
 {
+	const char *spaces;
+
+        if (!(spaces = get_string_var(WORD_BREAK_VAR)))
+                spaces = " \t";
+
 	cursor_to_input();
 
 	/* Move to the end of the current word to the whitespace */
@@ -958,23 +965,28 @@ BUILT_IN_KEYBINDING(input_forward_word)
 /* input_backward_word: move the cursor left on word in the input line */
 BUILT_IN_KEYBINDING(input_backward_word)
 {
+	const char *spaces;
+
+        if (!(spaces = get_string_var(WORD_BREAK_VAR)))
+                spaces = " \t";
+
 	cursor_to_input();
 
 	/* If already at the start of a word, move back a position */
-        if (!WHITESPACE(THIS_CHAR) && WHITESPACE(PREV_CHAR) && (LOGICAL_CURSOR > 0))
+	if (LOGICAL_CURSOR > 0 && !WHITESPACE(THIS_CHAR) && WHITESPACE(PREV_CHAR))
 		input_move_cursor(-1, 1);
 
 	/* Move to the start of the current whitespace */
-	while (/*(THIS_CHAR) &&*/ WHITESPACE(THIS_CHAR) && (LOGICAL_CURSOR > 0))
+	while (LOGICAL_CURSOR > 0 && WHITESPACE(THIS_CHAR))
 		input_move_cursor(-1, 1);
 
 	/* Move to the start of the current word */
-	while (/*(THIS_CHAR) &&*/ !WHITESPACE(THIS_CHAR) && (LOGICAL_CURSOR > 0))
+	while (LOGICAL_CURSOR > 0 && !WHITESPACE(THIS_CHAR))
 		input_move_cursor(-1, 1);
 
 	/* If we overshot our goal, then move forward */
 	/* But NOT if at start of input line! (July 6th, 1999) */
-	if ((THIS_CHAR) && WHITESPACE(THIS_CHAR))
+	if (LOGICAL_CURSOR > 0 && (THIS_CHAR) && WHITESPACE(THIS_CHAR))
 		input_move_cursor(1, 1);
 
 	update_input(last_input_screen, UPDATE_JUST_CURSOR);

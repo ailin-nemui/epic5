@@ -2,15 +2,18 @@ EPIC5 Projects, Bugs, and other Errata:
 
 KNOWN ERRATA (eg, bugs, or unresolved requests):
 ------------------------------------------------
-* input line word funcs should honor /set word_break
+* Need a way to get the ON type in an implied hook (swain)
 * Should be able to change LINE value in windows (for howl)
 * Howl wants to be able to have per-window /input and /input_char
 * Howl would like "advanced scrollback" searches, like hit counts
 * I think maybe i should expose a better scrollback interface?
 * Howl would like to be able to replace any line of scrollback via windowctl
+* Kitambi would like to be able to rewrite lines after they've been displayed.
+* A function to reveal if the channel is syncing or not (rb tjh)
 
 MEDIUM-TERM PROJECTS
 --------------------
+* What about the ability to create a status bar from an arbitrary format?
 * Need to have a script that implements per-channel FiSH support
 * Need to have a script that implements per-channel iconv() support.
 * There needs to be an /on switch_query for wuf/sjhoran
@@ -198,3 +201,4 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Fix crash when you output to a window while it's being killed (caf)
 * Fix memory leak with initialization of hook stuff (caf)
 * Fix memory leak with realnames when a server is destroyed (caf)
+* Change /bind previous_word and next_word to honor /set word_break
