@@ -4,9 +4,9 @@ dnl except those bits attributed otherwise.
 dnl thanks to the screen 3.3 configure.in for giving me examples to
 dnl work from and steal ;)
 dnl
-dnl @(#)$Id: configure.in,v 1.94 2010/06/09 05:10:36 jnelson Exp $
+dnl @(#)$Id: configure.in,v 1.95 2010/06/27 02:40:21 jnelson Exp $
 
-AC_REVISION([$Revision: 1.94 $])dnl
+AC_REVISION([$Revision: 1.95 $])dnl
 AC_INIT([source/irc.c])
 AC_CONFIG_HEADER([include/defs.h])
 
@@ -993,12 +993,11 @@ dnl ----------------------------------------------------------
 dnl
 dnl Valgrind assistance support?
 dnl
-with_valgrind=no
 AC_MSG_CHECKING(whether to include Valgrind Memcheck support)
 AC_ARG_WITH(valgrind,
-[  --with-valgrind[=yes]   Include support for Valgrind Memcheck ],
+[  --with-valgrind         Include support for Valgrind Memcheck ],
 [],
-[with_valgrind=yes])
+[with_valgrind=no])
 if test "x$with_valgrind" != "xno"; then
 	AC_MSG_RESULT(yes)
 	AC_CHECK_HEADERS([valgrind/memcheck.h])

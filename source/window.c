@@ -1,4 +1,4 @@
-/* $EPIC: window.c,v 1.214 2010/04/02 23:14:45 jnelson Exp $ */
+/* $EPIC: window.c,v 1.215 2010/06/27 02:40:24 jnelson Exp $ */
 /*
  * window.c: Handles the organzation of the logical viewports (``windows'')
  * for irc.  This includes keeping track of what windows are open, where they
@@ -584,6 +584,11 @@ delete_window_contents:
 
 	destroy_window_waiting_channels(window->refnum);
 
+	/* Adjust any active output contexts pointing at this window to point
+	 * somewhere sensible instead. */
+	if (current_window)
+		adjust_context_windows(window->refnum, current_window->refnum);
+
 	/*
 	 * Nuke the window, check server connections, and re-adjust window
 	 * levels for whoever is left.  Don't check the levels if we are
@@ -594,7 +599,9 @@ delete_window_contents:
 #else
 	new_free((char **)&window);
 #endif
-	do_hook(WINDOW_KILL_LIST, "%d %s", oldref, buffer);
+
+	if (!dead)
+		do_hook(WINDOW_KILL_LIST, "%d %s", oldref, buffer);
 }
 
 /*
@@ -2570,6 +2577,25 @@ int	real_message_setall (int refnum, const char *who, int level, const char *fil
 	who_level = level;
 	to_window = get_window_by_refnum(refnum);
 	return context_counter++;
+}
+
+/*
+ * adjust_context_windows: This function goes through the context
+ * stack and rewrites any instances of 'old_win' to 'new_win'.
+ * This is needed when a window is killed, so that further output
+ * in any contexts using that window has somewhere to go.
+ */
+void adjust_context_windows(int old_win, int new_win)
+{
+    int context;
+
+    for (context = 0; context < context_counter; context++)
+	{
+		if (contexts[context].to_window = old_win)
+			contexts[context].to_window = new_win;
+	}
+
+	to_window = get_window_by_refnum(contexts[context_counter - 1].to_window);
 }
 
 /*

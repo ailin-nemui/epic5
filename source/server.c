@@ -1,4 +1,4 @@
-/* $EPIC: server.c,v 1.246 2010/04/02 23:14:45 jnelson Exp $ */
+/* $EPIC: server.c,v 1.247 2010/06/27 02:40:24 jnelson Exp $ */
 /*
  * server.c:  Things dealing with that wacky program we call ircd.
  *
@@ -1936,6 +1936,7 @@ void	close_server (int refnum, const char *message)
 	s->operator = 0;
 	new_free(&s->nickname);
 	new_free(&s->s_nickname);
+	new_free(&s->realname);
 
 	if (s->des == -1)
 		return;		/* Nothing to do here */

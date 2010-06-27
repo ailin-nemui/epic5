@@ -1,6 +1,6 @@
 #! /bin/sh
 
-# From configure.in Revision: 1.92 # Guess values for system-dependent variables and create Makefiles.
+# From configure.in Revision: 1.94 # Guess values for system-dependent variables and create Makefiles.
 # Generated automatically using autoconf version 2.13 
 # Copyright (C) 1992, 93, 94, 95, 96 Free Software Foundation, Inc.
 #
@@ -32,7 +32,7 @@ ac_help="$ac_help
 ac_help="$ac_help
   --with-wserv       Include Wserv support for multiple screens"
 ac_help="$ac_help
-  --with-valgrind[=yes]   Include support for Valgrind Memcheck "
+  --with-valgrind         Include support for Valgrind Memcheck "
 ac_help="$ac_help
   --with-perl[=PATH_TO_PERL_EXE]       Compile with perl support."
 ac_help="$ac_help
@@ -5962,15 +5962,14 @@ if test "x$include_wserv" = "xyes" ; then
 	WSERV_INSTALL="installwserv4"
 fi
 
-with_valgrind=no
 echo $ac_n "checking whether to include Valgrind Memcheck support""... $ac_c" 1>&6
-echo "configure:5968: checking whether to include Valgrind Memcheck support" >&5
+echo "configure:5967: checking whether to include Valgrind Memcheck support" >&5
 # Check whether --with-valgrind or --without-valgrind was given.
 if test "${with_valgrind+set}" = set; then
   withval="$with_valgrind"
   :
 else
-  with_valgrind=yes
+  with_valgrind=no
 fi
 
 if test "x$with_valgrind" != "xno"; then
@@ -5979,17 +5978,17 @@ if test "x$with_valgrind" != "xno"; then
 do
 ac_safe=`echo "$ac_hdr" | sed 'y%./+-%__p_%'`
 echo $ac_n "checking for $ac_hdr""... $ac_c" 1>&6
-echo "configure:5983: checking for $ac_hdr" >&5
+echo "configure:5982: checking for $ac_hdr" >&5
 if eval "test \"`echo '$''{'ac_cv_header_$ac_safe'+set}'`\" = set"; then
   echo $ac_n "(cached) $ac_c" 1>&6
 else
   cat > conftest.$ac_ext <<EOF
-#line 5988 "configure"
+#line 5987 "configure"
 #include "confdefs.h"
 #include <$ac_hdr>
 EOF
 ac_try="$ac_cpp conftest.$ac_ext >/dev/null 2>conftest.out"
-{ (eval echo configure:5993: \"$ac_try\") 1>&5; (eval $ac_try) 2>&5; }
+{ (eval echo configure:5992: \"$ac_try\") 1>&5; (eval $ac_try) 2>&5; }
 ac_err=`grep -v '^ *+' conftest.out | grep -v "^conftest.${ac_ext}\$"`
 if test -z "$ac_err"; then
   rm -rf conftest*
@@ -6038,13 +6037,13 @@ fi
 
 if test "x$perlexe" = "xno"; then
 	echo $ac_n "checking whether to support Perl""... $ac_c" 1>&6
-echo "configure:6042: checking whether to support Perl" >&5
+echo "configure:6041: checking whether to support Perl" >&5
 	echo "$ac_t""no" 1>&6
 else
 	# Extract the first word of "$perlexe", so it can be a program name with args.
 set dummy $perlexe; ac_word=$2
 echo $ac_n "checking for $ac_word""... $ac_c" 1>&6
-echo "configure:6048: checking for $ac_word" >&5
+echo "configure:6047: checking for $ac_word" >&5
 if eval "test \"`echo '$''{'ac_cv_prog_PERLPROG'+set}'`\" = set"; then
   echo $ac_n "(cached) $ac_c" 1>&6
 else
@@ -6072,7 +6071,7 @@ else
 fi
 
 	echo $ac_n "checking whether to support Perl""... $ac_c" 1>&6
-echo "configure:6076: checking whether to support Perl" >&5
+echo "configure:6075: checking whether to support Perl" >&5
 	if test $PERLPROG != "yes" ; then 
 		echo "$ac_t""no" 1>&6
 	else
@@ -6081,7 +6080,7 @@ echo "configure:6076: checking whether to support Perl" >&5
 		PERLLDFLAGS=`$perlexe -MExtUtils::Embed -e ldopts`
 
 		echo $ac_n "checking whether embedded perl works the way I expect""... $ac_c" 1>&6
-echo "configure:6085: checking whether embedded perl works the way I expect" >&5
+echo "configure:6084: checking whether embedded perl works the way I expect" >&5
 		have_embedded_perl="no"
 		old_CFLAGS="$CFLAGS"
 		old_LDFLAGS="$LDFLAGS"
@@ -6091,7 +6090,7 @@ echo "configure:6085: checking whether embedded perl works the way I expect" >&5
   :
 else
   cat > conftest.$ac_ext <<EOF
-#line 6095 "configure"
+#line 6094 "configure"
 #include "confdefs.h"
 
 #include <EXTERN.h>
@@ -6127,7 +6126,7 @@ int main (int argc, char **argv, char **environ)
 }
 
 EOF
-if { (eval echo configure:6131: \"$ac_link\") 1>&5; (eval $ac_link) 2>&5; } && test -s conftest${ac_exeext} && (./conftest; exit) 2>/dev/null
+if { (eval echo configure:6130: \"$ac_link\") 1>&5; (eval $ac_link) 2>&5; } && test -s conftest${ac_exeext} && (./conftest; exit) 2>/dev/null
 then
   have_embedded_perl="yes"
 else
@@ -6189,7 +6188,7 @@ if test "x$tclconfig" = "xyes" ; then
 fi
 
 echo $ac_n "checking whether to support TCL""... $ac_c" 1>&6
-echo "configure:6193: checking whether to support TCL" >&5
+echo "configure:6192: checking whether to support TCL" >&5
 if test "x$tclconfig" = "xno"; then
 	echo "$ac_t""no" 1>&6
 else
@@ -6204,14 +6203,14 @@ else
 		TCLDOTOH="tcl.o"
 
 		echo $ac_n "checking whether embedded tcl works the way I expect""... $ac_c" 1>&6
-echo "configure:6208: checking whether embedded tcl works the way I expect" >&5
+echo "configure:6207: checking whether embedded tcl works the way I expect" >&5
 		have_embedded_tcl="no"
 		old_CFLAGS="$CFLAGS"
 		old_LDFLAGS="$LDFLAGS"
 		CFLAGS="$CFLAGS $TCLCFLAGS"
 		LDFLAGS="$LDFLAGS $TCLLDFLAGS"
 		cat > conftest.$ac_ext <<EOF
-#line 6215 "configure"
+#line 6214 "configure"
 #include "confdefs.h"
 
 #include <tcl.h>
@@ -6231,7 +6230,7 @@ int main() {
 
 ; return 0; }
 EOF
-if { (eval echo configure:6235: \"$ac_link\") 1>&5; (eval $ac_link) 2>&5; } && test -s conftest${ac_exeext}; then
+if { (eval echo configure:6234: \"$ac_link\") 1>&5; (eval $ac_link) 2>&5; } && test -s conftest${ac_exeext}; then
   rm -rf conftest*
   have_embedded_tcl="yes"
 else
@@ -6280,13 +6279,13 @@ fi
 
 if test "x$rubyexe" = "xno"; then
 	echo $ac_n "checking whether to support Ruby""... $ac_c" 1>&6
-echo "configure:6284: checking whether to support Ruby" >&5
+echo "configure:6283: checking whether to support Ruby" >&5
 	echo "$ac_t""no" 1>&6
 else
 	# Extract the first word of "$rubyexe", so it can be a program name with args.
 set dummy $rubyexe; ac_word=$2
 echo $ac_n "checking for $ac_word""... $ac_c" 1>&6
-echo "configure:6290: checking for $ac_word" >&5
+echo "configure:6289: checking for $ac_word" >&5
 if eval "test \"`echo '$''{'ac_cv_prog_RUBYPROG'+set}'`\" = set"; then
   echo $ac_n "(cached) $ac_c" 1>&6
 else
@@ -6314,7 +6313,7 @@ else
 fi
 
 	echo $ac_n "checking whether to support Ruby""... $ac_c" 1>&6
-echo "configure:6318: checking whether to support Ruby" >&5
+echo "configure:6317: checking whether to support Ruby" >&5
 	if test $RUBYPROG != "yes" ; then 
 	    echo "$ac_t""no" 1>&6
 	else
@@ -6328,14 +6327,14 @@ echo "configure:6318: checking whether to support Ruby" >&5
 	    RUBYDOTOH="ruby.o"
 
 	    echo $ac_n "checking whether embedded ruby works the way I expect""... $ac_c" 1>&6
-echo "configure:6332: checking whether embedded ruby works the way I expect" >&5
+echo "configure:6331: checking whether embedded ruby works the way I expect" >&5
 	    have_embedded_ruby="no"
 	    old_CFLAGS="$CFLAGS"
 	    old_LDFLAGS="$LDFLAGS"
 	    CFLAGS="$CFLAGS $RUBYCFLAGS"
 	    LDFLAGS="$LDFLAGS $RUBYLDFLAGS"
 	    cat > conftest.$ac_ext <<EOF
-#line 6339 "configure"
+#line 6338 "configure"
 #include "confdefs.h"
 
 #include <ruby.h>
@@ -6360,7 +6359,7 @@ int main() {
 
 ; return 0; }
 EOF
-if { (eval echo configure:6364: \"$ac_link\") 1>&5; (eval $ac_link) 2>&5; } && test -s conftest${ac_exeext}; then
+if { (eval echo configure:6363: \"$ac_link\") 1>&5; (eval $ac_link) 2>&5; } && test -s conftest${ac_exeext}; then
   rm -rf conftest*
   have_embedded_ruby="yes"
 else
@@ -6372,14 +6371,14 @@ rm -f conftest*
 	    if ! test $have_embedded_ruby = "yes" ; then
 		echo "$ac_t""no" 1>&6
 		echo $ac_n "checking whether ruby requires -pthread to link""... $ac_c" 1>&6
-echo "configure:6376: checking whether ruby requires -pthread to link" >&5
+echo "configure:6375: checking whether ruby requires -pthread to link" >&5
 		RUBYCFLAGS="$RUBYCFLAGS -pthread"
 		RUBYLDFLAGS="$RUBYLDFLAGS -pthread"
 		CFLAGS="$CFLAGS $RUBYCFLAGS"
 		LDFLAGS="$LDFLAGS $RUBYLDFLAGS"
 
 	        cat > conftest.$ac_ext <<EOF
-#line 6383 "configure"
+#line 6382 "configure"
 #include "confdefs.h"
 
 #include <ruby.h>
@@ -6404,7 +6403,7 @@ int main() {
 
 ; return 0; }
 EOF
-if { (eval echo configure:6408: \"$ac_link\") 1>&5; (eval $ac_link) 2>&5; } && test -s conftest${ac_exeext}; then
+if { (eval echo configure:6407: \"$ac_link\") 1>&5; (eval $ac_link) 2>&5; } && test -s conftest${ac_exeext}; then
   rm -rf conftest*
   have_embedded_ruby="yes"
 else
@@ -6462,7 +6461,7 @@ if test "$program_prefix" = "NONE" ; then
 fi
 
 echo $ac_n "checking whether to support bounds checking gcc""... $ac_c" 1>&6
-echo "configure:6466: checking whether to support bounds checking gcc" >&5
+echo "configure:6465: checking whether to support bounds checking gcc" >&5
 # Check whether --with-bc or --without-bc was given.
 if test "${with_bc+set}" = set; then
   withval="$with_bc"
@@ -6487,7 +6486,7 @@ fi
 
 
 echo $ac_n "checking whether to turn on FreeBSD WARNS-like compiler warnings""... $ac_c" 1>&6
-echo "configure:6491: checking whether to turn on FreeBSD WARNS-like compiler warnings" >&5
+echo "configure:6490: checking whether to turn on FreeBSD WARNS-like compiler warnings" >&5
 # Check whether --with-warns or --without-warns was given.
 if test "${with_warns+set}" = set; then
   withval="$with_warns"
@@ -6511,18 +6510,18 @@ fi
 
 
 echo $ac_n "checking whether your compiler supports -Wno-pointer-sign""... $ac_c" 1>&6
-echo "configure:6515: checking whether your compiler supports -Wno-pointer-sign" >&5
+echo "configure:6514: checking whether your compiler supports -Wno-pointer-sign" >&5
 old_cflags="$CFLAGS"
 CFLAGS="$CFLAGS -Wno-pointer-sign"
 cat > conftest.$ac_ext <<EOF
-#line 6519 "configure"
+#line 6518 "configure"
 #include "confdefs.h"
 
 int main() {
 exit(0);
 ; return 0; }
 EOF
-if { (eval echo configure:6526: \"$ac_compile\") 1>&5; (eval $ac_compile) 2>&5; }; then
+if { (eval echo configure:6525: \"$ac_compile\") 1>&5; (eval $ac_compile) 2>&5; }; then
   rm -rf conftest*
   echo "$ac_t""yes" 1>&6
 else
@@ -6536,18 +6535,18 @@ fi
 rm -f conftest*
 
 echo $ac_n "checking whether your compiler supports -fno-strict-aliasing""... $ac_c" 1>&6
-echo "configure:6540: checking whether your compiler supports -fno-strict-aliasing" >&5
+echo "configure:6539: checking whether your compiler supports -fno-strict-aliasing" >&5
 old_cflags="$CFLAGS"
 CFLAGS="$CFLAGS -fno-strict-aliasing"
 cat > conftest.$ac_ext <<EOF
-#line 6544 "configure"
+#line 6543 "configure"
 #include "confdefs.h"
 
 int main() {
 exit(0);
 ; return 0; }
 EOF
-if { (eval echo configure:6551: \"$ac_compile\") 1>&5; (eval $ac_compile) 2>&5; }; then
+if { (eval echo configure:6550: \"$ac_compile\") 1>&5; (eval $ac_compile) 2>&5; }; then
   rm -rf conftest*
   echo "$ac_t""yes" 1>&6
 else
