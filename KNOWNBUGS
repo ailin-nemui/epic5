@@ -2,6 +2,7 @@ EPIC5 Projects, Bugs, and other Errata:
 
 KNOWN ERRATA (eg, bugs, or unresolved requests):
 ------------------------------------------------
+* "A non-blocking connect" message is a say() not a yell().
 * Need a way to get the ON type in an implied hook (swain)
 * Should be able to change LINE value in windows (for howl)
 * Howl wants to be able to have per-window /input and /input_char
@@ -10,6 +11,11 @@ KNOWN ERRATA (eg, bugs, or unresolved requests):
 * Howl would like to be able to replace any line of scrollback via windowctl
 * Kitambi would like to be able to rewrite lines after they've been displayed.
 * A function to reveal if the channel is syncing or not (rb tjh)
+* If $dbmctl(OPEN) fails, the error is not retained for $dbmctl(ERROR)
+* /on set should only be thrown once if the user types the full cannonical name
+* Should any commands be #ifdef'd out at compile time, as opposed to just
+  being replaced with error-generating shims?
+* A way to indicate dcc raw should be fully line buffered
 
 MEDIUM-TERM PROJECTS
 --------------------
