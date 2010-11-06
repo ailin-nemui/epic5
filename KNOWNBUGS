@@ -11,6 +11,7 @@ KNOWN ERRATA (eg, bugs, or unresolved requests):
 * Howl would like to be able to replace any line of scrollback via windowctl
 * Kitambi would like to be able to rewrite lines after they've been displayed.
 * A function to reveal if the channel is syncing or not (rb tjh)
+* Caf says if you use /lastlog -context you can get lots of "null"s
 * If $dbmctl(OPEN) fails, the error is not retained for $dbmctl(ERROR)
 * /on set should only be thrown once if the user types the full cannonical name
 * Should any commands be #ifdef'd out at compile time, as opposed to just

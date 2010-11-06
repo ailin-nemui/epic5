@@ -64,12 +64,12 @@ alias logman.check_channel_log_existance (server, channel) {
 # Open the server log if it isn't open
 alias logman.open_server_log (servref, void) {
 	@logman.check_server_log_existance($servref);
-	log refnum server.${server} on;
+	log refnum server.${servref} on;
 };
 
 # Close the server log if it's open
 alias logman.close_server_log (servref, void) {
-	log refnum server.${server} off;
+	log refnum server.${servref} off;
 };
 
 # Open a channel log if it isn't open
