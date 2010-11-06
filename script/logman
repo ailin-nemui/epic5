@@ -38,6 +38,7 @@ alias logman.check_server_log_existance (server) {
 		type server
 		server $server
 		add $server
+		mangle all
 		level ALL,-PUBLIC,-ACTION,-JOIN,-NICK,-TOPIC,-PART,-QUIT,-KICK,-MODE;
 	};
 };
@@ -55,6 +56,7 @@ alias logman.check_channel_log_existance (server, channel) {
 		type target
 		server $server
 		add $channel
+		mangle all
 		level ALL;
 	};
 };
@@ -62,23 +64,23 @@ alias logman.check_channel_log_existance (server, channel) {
 # Open the server log if it isn't open
 alias logman.open_server_log (servref, void) {
 	@logman.check_server_log_existance($servref);
-	log refnum server on;
+	log refnum server.${server} on;
 };
 
 # Close the server log if it's open
 alias logman.close_server_log (servref, void) {
-	log refnum server off;
+	log refnum server.${server} off;
 };
 
 # Open a channel log if it isn't open
 alias logman.open_channel_log (channel, servref, void) {
 	@logman.check_channel_log_existance($servref $channel);
-	log refnum $channel on;
+	log refnum channel.${servref}.${channel} on;
 };
 
 # Close a channel log if it isn't open
 alias logman.close_channel_log (channel, servref, void) {
-	log refnum $channel off;
+	log refnum channel.${servref}.${channel} off;
 };
 
 #hop'2k9
