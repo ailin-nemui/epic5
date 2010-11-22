@@ -52,7 +52,7 @@ int	unsetenv (const char *);
 #endif
 
 #ifdef HAVE_BROKEN_REALPATH
-char *	my_realpath (const char *, char x[MAXPATHLEN]);
+char *	my_realpath (const char *, char x[PATH_MAX]);
 #endif
 
 /*

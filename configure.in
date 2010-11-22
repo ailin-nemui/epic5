@@ -4,9 +4,9 @@ dnl except those bits attributed otherwise.
 dnl thanks to the screen 3.3 configure.in for giving me examples to
 dnl work from and steal ;)
 dnl
-dnl @(#)$Id: configure.in,v 1.95 2010/06/27 02:40:21 jnelson Exp $
+dnl @(#)$Id: configure.in,v 1.96 2010/11/22 04:18:02 jnelson Exp $
 
-AC_REVISION([$Revision: 1.95 $])dnl
+AC_REVISION([$Revision: 1.96 $])dnl
 AC_INIT([source/irc.c])
 AC_CONFIG_HEADER([include/defs.h])
 
@@ -545,7 +545,7 @@ AC_TRY_RUN([
 #include <stdlib.h>
 main ()
 {
-	char resolved_path[MAXPATHLEN];
+	char resolved_path[PATH_MAX];
 
 	if (realpath("/etc/filethatdoesnotexist", resolved_path) == 0)
 		exit(1);

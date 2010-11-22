@@ -1,4 +1,4 @@
-/* $EPIC: functions.c,v 1.290 2010/04/29 01:41:23 jnelson Exp $ */
+/* $EPIC: functions.c,v 1.291 2010/11/22 04:18:07 jnelson Exp $ */
 /*
  * functions.c -- Built-in functions for ircII
  *
@@ -895,8 +895,8 @@ static	char	*alias_banner		(void) { return malloc_strdup(banner()); }
 
 static	char	*alias_currdir  	(void)
 {
-	char 	*tmp = (char *)new_malloc(MAXPATHLEN+1);
-	if (!getcwd(tmp, MAXPATHLEN))
+	char 	*tmp = (char *)new_malloc(PATH_MAX+1);
+	if (!getcwd(tmp, PATH_MAX))
 		*tmp = 0;
 	return tmp;
 }
@@ -5917,7 +5917,7 @@ BUILT_IN_FUNCTION(function_indextoword, input)
 
 BUILT_IN_FUNCTION(function_realpath, input)
 {
-	char	resolvedname[MAXPATHLEN];
+	char	resolvedname[PATH_MAX];
 
 	if (!normalize_filename(input, resolvedname))
 		RETURN_STR(resolvedname);

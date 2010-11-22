@@ -1,4 +1,4 @@
-/* $EPIC: compat.c,v 1.36 2009/06/18 04:42:58 jnelson Exp $ */
+/* $EPIC: compat.c,v 1.37 2010/11/22 04:18:07 jnelson Exp $ */
 /*
  * Everything that im not directly responsible for I put in here.  Almost
  * all of this stuff is either borrowed from somewhere else (for you poor
@@ -1306,7 +1306,7 @@ int	unsetenv (const char *name)
 # if defined(realpath)
 #  undef realpath
 # endif
-char *	my_realpath (const char *pathname, char resolved_path[MAXPATHLEN])
+char *	my_realpath (const char *pathname, char resolved_path[PATH_MAX])
 {
 	char *mypath;
 	char *rest;
@@ -1333,8 +1333,8 @@ char *	my_realpath (const char *pathname, char resolved_path[MAXPATHLEN])
 		return NULL;
 
 	/* And put the basename back on the result. */
-	strlcat(resolved_path, "/", MAXPATHLEN);
-	strlcat(resolved_path, rest, MAXPATHLEN);
+	strlcat(resolved_path, "/", PATH_MAX);
+	strlcat(resolved_path, rest, PATH_MAX);
 	return resolved_path;
 }
 #endif

@@ -1,4 +1,4 @@
-/* $EPIC: ircaux.c,v 1.223 2010/05/01 03:52:04 jnelson Exp $ */
+/* $EPIC: ircaux.c,v 1.224 2010/11/22 04:18:07 jnelson Exp $ */
 /*
  * ircaux.c: some extra routines... not specific to irc... that I needed 
  *
@@ -936,7 +936,7 @@ int	normalize_filename (const char *str, Filename result)
 		/* Expand ~ to our homedir, ~user to user's homedir */
 		if (*pathname) {
 			if ((entry = getpwnam(pathname)) == NULL) {
-			    snprintf(result, MAXPATHLEN + 1, "~%s", pathname);
+			    snprintf(result, PATH_MAX + 1, "~%s", pathname);
 			    return -1;
 			}
 			strlcpy(workpath, entry->pw_dir, sizeof(workpath));
@@ -959,7 +959,7 @@ int	normalize_filename (const char *str, Filename result)
         /* have directories with .zip in them? */
         if (((stristr(str, ".zip"))!=-1) || ((stristr(str, ".tar"))!=-1)) {
             if (file_exists(str)) {
-                snprintf(result, MAXPATHLEN + 1, "%s", str);
+                snprintf(result, PATH_MAX + 1, "%s", str);
                 return 0;
             }
         }
@@ -991,7 +991,7 @@ int	expand_twiddle (const char *str, Filename result)
 	{
 		/* Only do the copy if the destination is not the source */
 		if (str != result)
-			strlcpy(result, str, MAXPATHLEN + 1);
+			strlcpy(result, str, PATH_MAX + 1);
 		return 0;
 	}
 
@@ -1002,7 +1002,7 @@ int	expand_twiddle (const char *str, Filename result)
 		strlcpy(buffer, my_path, sizeof(buffer));
 		strlcat(buffer, str, sizeof(buffer));
 
-		strlcpy(result, buffer, MAXPATHLEN + 1);
+		strlcpy(result, buffer, PATH_MAX + 1);
 		return 0;
 	}
 
@@ -1018,7 +1018,7 @@ int	expand_twiddle (const char *str, Filename result)
 			strlcat(buffer, rest, sizeof(buffer));
 		}
 
-		strlcpy(result, buffer, MAXPATHLEN + 1);
+		strlcpy(result, buffer, PATH_MAX + 1);
 		return 0;
 	}
 
@@ -1235,7 +1235,7 @@ int	path_search (const char *name, const char *xpath, Filename result)
 	    {
 		if (file_exists(candidate))
 		{
-			strlcpy(result, candidate, MAXPATHLEN + 1);
+			strlcpy(result, candidate, PATH_MAX + 1);
 			return 0;
 		}
 	    }
@@ -1266,7 +1266,7 @@ int	path_search (const char *name, const char *xpath, Filename result)
 			continue;
 
 		if (file_exists(candidate)) {
-			strlcpy(result, candidate, MAXPATHLEN + 1);
+			strlcpy(result, candidate, PATH_MAX + 1);
 			return 0;
 		}
 	}

@@ -17,6 +17,7 @@ KNOWN ERRATA (eg, bugs, or unresolved requests):
 * Should any commands be #ifdef'd out at compile time, as opposed to just
   being replaced with error-generating shims?
 * A way to indicate dcc raw should be fully line buffered
+* You should be able to inhibit logging of the /lastlog command
 
 MEDIUM-TERM PROJECTS
 --------------------

@@ -223,11 +223,15 @@ extern	char	*sys_errlist[];
  * Can you believe some systems done #define this?
  * I was told that hurd doesn't, so this helps us on hurd.
  */
-#ifndef MAXPATHLEN
-# ifndef PATHSIZE
-#  define MAXPATHLEN 1024
+#ifndef PATH_MAX
+# ifndef MAXPATHLEN
+#  ifndef PATHSIZE
+#   define PATH_MAX 1024
+#  else
+#   define PATH_MAX PATHSIZE
+#  endif
 # else
-#  define MAXPATHLEN  PATHSIZE
+#   define PATH_MAX MAXPATHLEN
 # endif
 #endif
 
@@ -248,7 +252,7 @@ extern	volatile int    signals_caught[NSIG];
 
 #define BUILT_IN_KEYBINDING(x) void x (unsigned int key, unsigned char *string)
 
-typedef char Filename[MAXPATHLEN + 1];
+typedef char Filename[PATH_MAX + 1];
 
 /*
  * It's really really important that you never use LOCAL_COPY in the actual
