@@ -1,4 +1,4 @@
-/* $EPIC: lastlog.c,v 1.82 2010/06/27 03:14:17 jnelson Exp $ */
+/* $EPIC: lastlog.c,v 1.83 2010/11/24 19:51:29 jnelson Exp $ */
 /*
  * lastlog.c: handles the lastlog features of irc. 
  *
@@ -714,10 +714,9 @@ BUILT_IN_COMMAND(lastlog)
 			file_put_it(outfp, "%s", separator);
 			show_separator = 0;
 		    }
-		}
 
-		if (counter)
-		{
+		    if (counter)
+		    {
 			if (rewrite)
 			{
 				unsigned char *n, vitals[10240];
@@ -742,6 +741,7 @@ BUILT_IN_COMMAND(lastlog)
 			counter--;
 			if (counter == 0 && before != -1 && separator)
 				show_separator = 1;
+		    }
 		}
 
 		new_free(&result);
@@ -805,9 +805,9 @@ BUILT_IN_COMMAND(lastlog)
 			file_put_it(outfp, "%s", separator);
 			show_separator = 0;
 		    }
-		}
-		if (counter)
-		{
+
+		    if (counter)
+		    {
 			if (rewrite)
 			{
 				unsigned char *n, vitals[10240];
@@ -832,6 +832,7 @@ BUILT_IN_COMMAND(lastlog)
 			counter--;
 			if (counter == 0 && before != -1 && separator)
 				show_separator = 1;
+		    }
 		}
 		new_free(&result);
 		if (l == end)

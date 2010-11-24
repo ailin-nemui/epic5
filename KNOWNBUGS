@@ -210,3 +210,4 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Fix memory leak with initialization of hook stuff (caf)
 * Fix memory leak with realnames when a server is destroyed (caf)
 * Change /bind previous_word and next_word to honor /set word_break
+* Apparently the lastlog output stuff wasn't guarded properly by show_lastlog
