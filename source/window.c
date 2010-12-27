@@ -1,4 +1,4 @@
-/* $EPIC: window.c,v 1.215 2010/06/27 02:40:24 jnelson Exp $ */
+/* $EPIC: window.c,v 1.216 2010/12/27 19:17:18 jnelson Exp $ */
 /*
  * window.c: Handles the organzation of the logical viewports (``windows'')
  * for irc.  This includes keeping track of what windows are open, where they
@@ -586,8 +586,7 @@ delete_window_contents:
 
 	/* Adjust any active output contexts pointing at this window to point
 	 * somewhere sensible instead. */
-	if (current_window)
-		adjust_context_windows(window->refnum, current_window->refnum);
+	adjust_context_windows(window->refnum);
 
 	/*
 	 * Nuke the window, check server connections, and re-adjust window
@@ -2585,17 +2584,17 @@ int	real_message_setall (int refnum, const char *who, int level, const char *fil
  * This is needed when a window is killed, so that further output
  * in any contexts using that window has somewhere to go.
  */
-void adjust_context_windows(int old_win, int new_win)
+void	adjust_context_windows (int refnum)
 {
-    int context;
+	int context;
 
-    for (context = 0; context < context_counter; context++)
+	for (context = 0; context < context_counter; context++)
 	{
-		if (contexts[context].to_window = old_win)
-			contexts[context].to_window = new_win;
+		if (contexts[context].to_window = refnum)
+			contexts[context].to_window = -1;
 	}
 
-	to_window = get_window_by_refnum(contexts[context_counter - 1].to_window);
+/*	to_window = get_window_by_refnum(contexts[context_counter - 1].to_window); */
 }
 
 /*
