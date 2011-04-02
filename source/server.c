@@ -1,4 +1,4 @@
-/* $EPIC: server.c,v 1.248 2010/11/22 04:18:08 jnelson Exp $ */
+/* $EPIC: server.c,v 1.249 2011/04/02 07:44:04 crazyed Exp $ */
 /*
  * server.c:  Things dealing with that wacky program we call ircd.
  *
@@ -1601,9 +1601,9 @@ void	send_to_aserver_raw (int refnum, size_t len, const char *buffer)
 	if ((des = s->des) != -1 && buffer)
 	{
 	    if (get_server_ssl_enabled(refnum) == TRUE)
-		err = write_ssl(des, buffer, strlen(buffer));
+		err = write_ssl(des, buffer, len);
 	    else
-		err = write(des, buffer, strlen(buffer));
+		err = write(des, buffer, len);
 
 	    if (err == -1 && (!get_int_var(NO_FAIL_DISCONNECT_VAR)))
 	    {
@@ -3661,7 +3661,7 @@ char 	*serverctl 	(char *input)
 		char *retval = NULL;
 
 		for (i = 0; i < number_of_servers; i++)
-			if (wild_match(input, get_server_name(i)))
+			if (get_server(i) && wild_match(input, get_server_name(i)))
 				malloc_strcat_wordlist_c(&retval, space, ltoa(i), &clue);
 		RETURN_MSTR(retval);
 	} else if (!my_strnicmp(listc, "IMATCH", len)) {
@@ -3670,7 +3670,7 @@ char 	*serverctl 	(char *input)
 		char *retval = NULL;
 
 		for (i = 0; i < number_of_servers; i++)
-			if (wild_match(input, get_server_itsname(i)))
+			if (get_server(i) && wild_match(input, get_server_itsname(i)))
 				malloc_strcat_wordlist_c(&retval, space, ltoa(i), &clue);
 		RETURN_MSTR(retval);
 	} else if (!my_strnicmp(listc, "GMATCH", len)) {
@@ -3679,7 +3679,7 @@ char 	*serverctl 	(char *input)
 		char *retval = NULL;
 
 		for (i = 0; i < number_of_servers; i++)
-			if (wild_match(input, get_server_group(i)))
+			if (get_server(i) && wild_match(input, get_server_group(i)))
 				malloc_strcat_wordlist_c(&retval, space, ltoa(i), &clue);
 		RETURN_MSTR(retval);
 	} else if (!my_strnicmp(listc, "MAX", len)) {

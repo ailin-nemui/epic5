@@ -212,3 +212,5 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Change /bind previous_word and next_word to honor /set word_break
 * Apparently the lastlog output stuff wasn't guarded properly by show_lastlog
 * Refine fix for crash when you output to a window while it's being killed
+* Fix for a bug that stopped "/xquote -u" inserting null chars.
+* Fixed $serverctl([gio]match ...) to not return deleted servers.
