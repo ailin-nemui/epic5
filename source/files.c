@@ -1,4 +1,4 @@
-/* $EPIC: files.c,v 1.42 2009/09/14 04:49:57 jnelson Exp $ */
+/* $EPIC: files.c,v 1.43 2012/03/25 02:08:06 jnelson Exp $ */
 /*
  * files.c -- allows you to read/write files. Wow.
  *
@@ -483,6 +483,7 @@ int	file_valid (int fd)
 #include "sdbm.h"
 
 static int	db_refnum = 0;
+static int	last_failed_open_errno = 0;
 
 struct DBM___ {
 	SDBM *	db;
@@ -561,6 +562,7 @@ static int	open_dbm (const char *filename, int rdonly, int type)
 	if (!(db = sdbm_open(filename, perm, 0660)))
 	{
 		yell("open_dbm(%s) failed: %s", filename, strerror(errno));
+		last_failed_open_errno = errno;
 		return -1;
 	}
 
@@ -698,6 +700,10 @@ static char *	all_keys_for_dbm (int refnum)
 static int	error_from_dbm (int refnum)
 {
 	Dbm *	db;
+
+	/* dbm_open() returns -1 on failure, and we save errno */
+	if (refnum == -1)
+		return last_failed_open_errno;
 
 	if (!(db = lookup_dbm(refnum)))
 		return -1;

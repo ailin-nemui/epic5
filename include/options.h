@@ -73,6 +73,10 @@ const char compile_time_options[] = {
 					'r',
 #endif
 
+#ifdef HAVE_SSL
+					's',
+#endif
+
 #ifdef I_DONT_TRUST_MY_USERS
  					't',
 #endif /* I_DONT_TRUST_MY_USERS */

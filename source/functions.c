@@ -1,4 +1,4 @@
-/* $EPIC: functions.c,v 1.291 2010/11/22 04:18:07 jnelson Exp $ */
+/* $EPIC: functions.c,v 1.292 2012/03/25 02:08:06 jnelson Exp $ */
 /*
  * functions.c -- Built-in functions for ircII
  *
@@ -211,6 +211,7 @@ static	char
 	*function_channel	(char *),
 	*function_channellimit	(char *),
 	*function_channelmode	(char *),
+	*function_channelsyncing (char *),
 	*function_check_code	(char *),
 	*function_chmod		(char *),
 	*function_chngw 	(char *),
@@ -474,6 +475,7 @@ static BuiltInFunctions	built_in_functions[] =
 	{ "CHANNEL",		function_channel	},
 	{ "CHANUSERS",		function_onchannel 	},
 	{ "CHANWIN",		function_winchan	},
+	{ "CHANSYNCING",	function_channelsyncing },
 	{ "CHECK_CODE",		function_check_code	},
 	{ "CHMOD",		function_chmod		},
 	{ "CHNGW",              function_chngw 		},
@@ -7195,3 +7197,20 @@ char *function_iconvctl (char *input)
 
 	RETURN_EMPTY;
 }
+
+BUILT_IN_FUNCTION(function_channelsyncing, word)
+{
+	char *	channel;
+	char *	serverstr;
+	int	servref;
+	int	retval;
+
+	GET_FUNC_ARG(channel, word);
+	GET_FUNC_ARG(serverstr, word);
+	servref = str_to_servref(serverstr);
+
+	retval = channel_is_syncing(channel, servref);
+	RETURN_INT(retval);
+}
+
+

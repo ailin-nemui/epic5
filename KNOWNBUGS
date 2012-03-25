@@ -2,6 +2,15 @@ EPIC5 Projects, Bugs, and other Errata:
 
 KNOWN ERRATA (eg, bugs, or unresolved requests):
 ------------------------------------------------
+* Need to test the /hostname stuff -- it can fail in client_bind(4),
+  maybe because it doesn't set the requested hostname before calling.
+
+<larne> hop: on the subject of config, i do have a minor nit: stuff like
++--with-ipv6 should really be --enable-ipv6 <14:24:01>
+<larne> autoconf convention is that --with-foo is for external software, while
++--enable-foo is for built-in features that can be turned on/off <14:24:18>
+
+* Can't change server 0 in the .epicrc (Crashes)
 * "A non-blocking connect" message is a say() not a yell().
 * Need a way to get the ON type in an implied hook (swain)
 * Should be able to change LINE value in windows (for howl)
@@ -10,14 +19,14 @@ KNOWN ERRATA (eg, bugs, or unresolved requests):
 * I think maybe i should expose a better scrollback interface?
 * Howl would like to be able to replace any line of scrollback via windowctl
 * Kitambi would like to be able to rewrite lines after they've been displayed.
-* A function to reveal if the channel is syncing or not (rb tjh)
 * Caf says if you use /lastlog -context you can get lots of "null"s
-* If $dbmctl(OPEN) fails, the error is not retained for $dbmctl(ERROR)
 * /on set should only be thrown once if the user types the full cannonical name
 * Should any commands be #ifdef'd out at compile time, as opposed to just
   being replaced with error-generating shims?
 * A way to indicate dcc raw should be fully line buffered
 * You should be able to inhibit logging of the /lastlog command
+* Lastlog should have a "negative" option, to show everything not matched.
+* $dbmctl() files need to be cleaned up after on exit.
 
 MEDIUM-TERM PROJECTS
 --------------------
@@ -212,6 +221,14 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Change /bind previous_word and next_word to honor /set word_break
 * Apparently the lastlog output stuff wasn't guarded properly by show_lastlog
 * Refine fix for crash when you output to a window while it's being killed
+* Use the length passed to write_server_ssl(), that's what it's there for (ce)
+* Avoid null derefs with OMATCH/IMATCH/PMATCH in serverctl (ce)
+* Fix /allocdump so it doesn't crash without a filename (ce)
 * Fix for a bug that stopped "/xquote -u" inserting null chars.
 * Fixed $serverctl([gio]match ...) to not return deleted servers.
 * Improve performance in the main select loop.  In practice, MAY require minor script alterations.
+* Save the errno from a failed $dbmctl(OPEN) for $dbmctl(ERROR -1)
+* Add $channelsyncing(#chan server) for tjh.
+* Make $info(o) show "S" if OpenSSL was compiled in -- useful for crypto
+* When starting /dcc nonblocking connect, don't worry the user with noise
+* Display the original /window arglist on any syntax error.

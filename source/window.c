@@ -1,4 +1,4 @@
-/* $EPIC: window.c,v 1.216 2010/12/27 19:17:18 jnelson Exp $ */
+/* $EPIC: window.c,v 1.217 2012/03/25 02:08:06 jnelson Exp $ */
 /*
  * window.c: Handles the organzation of the logical viewports (``windows'')
  * for irc.  This includes keeping track of what windows are open, where they
@@ -5302,12 +5302,15 @@ BUILT_IN_COMMAND(windowcmd)
 	unsigned	old_current_window;
 	int	winref;
 	int	l;
+	char *	original_args = NULL;
 
 	old_from_server = from_server;
 	old_current_window = current_window->refnum;
 	old_status_update = permit_status_update(0);
 	/* l = message_from(NULL, LEVEL_NONE); */	/* XXX This is bogus */
 	window = current_window;
+
+	original_args = LOCAL_COPY(args);
 
 	while ((arg = next_arg(args, &args)))
 	{
@@ -5348,7 +5351,7 @@ BUILT_IN_COMMAND(windowcmd)
 				window = s_window;
 			else
 			{
-				yell("WINDOW: Invalid window or option: [%s]", arg);
+				yell("WINDOW: Invalid window or option: [%s] (from [%s]", arg, original_args);
 				/* XXX Maybe this should fail? */
 				args = NULL;
 			}
