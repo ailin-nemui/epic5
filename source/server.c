@@ -1,4 +1,4 @@
-/* $EPIC: server.c,v 1.249 2011/04/02 07:44:04 crazyed Exp $ */
+/* $EPIC: server.c,v 1.250 2012/03/25 02:27:46 jnelson Exp $ */
 /*
  * server.c:  Things dealing with that wacky program we call ircd.
  *
@@ -2148,7 +2148,7 @@ void	reinstate_user_modes (void)
 {
 	const char *modes = get_umode(from_server);
 
-	if (!modes && !*modes)
+	if (!modes || !*modes)
 		modes = send_umode;
 
 	if (modes && *modes)

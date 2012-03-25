@@ -131,8 +131,4 @@ enum HOOK_TYPES {
 
 	extern int deny_all_hooks;
 
-#define ADD_STR_TO_LIST(str, sep, item, len) if (len == 0) \
-	{str = malloc_strdup(item); len = strlen(str);} \
-	else malloc_strcat_wordlist_c(&str, sep, item, &len);
-	
 #endif /* __hook_h_ */

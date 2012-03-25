@@ -1,4 +1,4 @@
-/* $EPIC: hook.c,v 1.90 2010/06/27 02:40:23 jnelson Exp $ */
+/* $EPIC: hook.c,v 1.91 2012/03/25 02:27:46 jnelson Exp $ */
 /*
  * hook.c: Does those naughty hook functions. 
  *
@@ -2041,9 +2041,8 @@ char *hookctl (char *input)
 	case HOOKCTL_EMPTY_SLOTS:
 		for (tmp_int = 0; tmp_int < hooklist_size; tmp_int++)
 			if (hooklist[tmp_int] == NULL)
-			{
-				ADD_STR_TO_LIST(ret, space, ltoa(tmp_int), retlen);
-			}
+				malloc_strcat_wordlist_c(&ret, space, ltoa(tmp_int), &retlen);
+
 		RETURN_MSTR(ret);
 		break;
 	
@@ -2082,10 +2081,8 @@ char *hookctl (char *input)
 				if (go == HOOKCTL_COUNT)
 					tmp_int2++;
 				else
-				{
-					ADD_STR_TO_LIST(ret, space, hook_functions[tmp_int].name,
-						retlen);
-				}
+					malloc_strcat_wordlist_c(&ret, space, hook_functions[tmp_int].name,
+						&retlen);
 				continue;
 			}
 			for (tmp_hook = hook_functions[tmp_int].list;
@@ -2095,10 +2092,8 @@ char *hookctl (char *input)
 				if (go == HOOKCTL_COUNT)
 					tmp_int2++;
 				else
-				{
-					ADD_STR_TO_LIST(ret, space, ltoa(tmp_hook->userial),
-						retlen);
-				}
+					malloc_strcat_wordlist_c(&ret, space, ltoa(tmp_hook->userial),
+						&retlen);
 			}
 		}
 		if (go == HOOKCTL_COUNT)
@@ -2137,7 +2132,7 @@ char *hookctl (char *input)
 				if ((is_serial && hooklist[tmp_int]->sernum == serial) ||
 					(!is_serial && hooklist[tmp_int]->filename && !my_stricmp(hooklist[tmp_int]->filename, str)))
 				{
-					ADD_STR_TO_LIST(ret, space, ltoa(tmp_int), retlen);	
+					malloc_strcat_wordlist_c(&ret, space, ltoa(tmp_int), &retlen);	
 				}
 			}
 		}
@@ -2153,7 +2148,7 @@ char *hookctl (char *input)
 					(!is_serial && hook->filename && !my_stricmp(hook->filename, str))
 				)
 				{
-					ADD_STR_TO_LIST(ret, space, ltoa(hook->userial), retlen);
+					malloc_strcat_wordlist_c(&ret, space, ltoa(hook->userial), &retlen);
 				}
 		}
 		RETURN_MSTR(ret);
@@ -2170,9 +2165,7 @@ char *hookctl (char *input)
 		for (tmp_int = 0; tmp_int < noise_level_num; tmp_int++)
 		{
 			if (!nam || wild_match(nam, noise_info[tmp_int]->name))
-			{
-				ADD_STR_TO_LIST(ret, space, noise_info[tmp_int]->name, retlen);
-			}
+				malloc_strcat_wordlist_c(&ret, space, noise_info[tmp_int]->name, &retlen);
 		}
 		RETURN_MSTR(ret);
 		break;
@@ -2184,7 +2177,7 @@ char *hookctl (char *input)
 		for (
 			curhook = current_hook; 
 			curhook != NULL; curhook = curhook->under)
-			ADD_STR_TO_LIST(ret, space, ltoa(curhook->userial), retlen);
+			malloc_strcat_wordlist_c(&ret, space, ltoa(curhook->userial), &retlen);
 		RETURN_MSTR(ret);
 		break;
 
@@ -2785,7 +2778,7 @@ char *hookctl (char *input)
 				if (!besthook || besthook->not)
 					break;
 				
-				ADD_STR_TO_LIST(ret, space, ltoa(besthook->userial), retlen);
+				malloc_strcat_wordlist_c(&ret, space, ltoa(besthook->userial), &retlen);
 				break;
 			}
 			if (!hook)

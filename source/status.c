@@ -1,4 +1,4 @@
-/* $EPIC: status.c,v 1.74 2009/04/22 22:50:39 jnelson Exp $ */
+/* $EPIC: status.c,v 1.75 2012/03/25 02:27:46 jnelson Exp $ */
 /*
  * status.c: handles the status line updating, etc for IRCII 
  *
@@ -74,6 +74,7 @@ STATUS_FUNCTION(status_chanop);
 STATUS_FUNCTION(status_ssl);
 STATUS_FUNCTION(status_channel);
 STATUS_FUNCTION(status_server);
+STATUS_FUNCTION(status_network);
 STATUS_FUNCTION(status_mode);
 STATUS_FUNCTION(status_umode);
 STATUS_FUNCTION(status_insert_mode);
@@ -148,6 +149,7 @@ struct status_formats status_expandos[] = {
 { 0, 'D', status_dcc, 	        NULL, 			NULL },
 { 0, 'E', status_activity,	NULL,			NULL },
 { 0, 'F', status_notify_windows,&notify_format,		&STATUS_NOTIFY_VAR },
+{ 0, 'G', status_network,		NULL,			NULL },
 { 0, 'H', status_hold,		NULL,			NULL },
 { 0, 'I', status_insert_mode,   NULL,			NULL },
 { 0, 'K', status_scrollback,	NULL,			NULL },
@@ -960,6 +962,19 @@ const	char	*n = NULL;
 
 	PRESS(server_format, n)
 	RETURN
+}
+
+/*
+ * Displays the 005 "NETWORK" value for the current server for the window.
+ */
+STATUS_FUNCTION(status_network)
+{
+	const char *text = NULL;
+
+	if (window->server != NOSERV)
+		text = get_server_005(window->server, "NETWORK");
+
+	return text ? text : "Unknown";
 }
 
 /*

@@ -256,7 +256,7 @@ const	char	*get_echannel_by_refnum		(unsigned);
 	int	real_message_from		(const char *, int, const char *, int);
 #define message_setall(x, y, z) real_message_setall(x, y, z, __FILE__, __LINE__)
 	int     real_message_setall		(int, const char *, int, const char *, int);
-	void	adjust_context_windows		(int refnum);
+	void	adjust_context_windows		(int, int);
 	void	pop_message_from		(int);
 
 	void	clear_all_windows		(int, int, int);

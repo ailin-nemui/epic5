@@ -232,3 +232,9 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Make $info(o) show "S" if OpenSSL was compiled in -- useful for crypto
 * When starting /dcc nonblocking connect, don't worry the user with noise
 * Display the original /window arglist on any syntax error.
+* Remove ADD_STR_TO_LIST macro (caf)
+* Add "from" window to adjust_context_windows, windows are killed (caf)
+* Fix from_server getting lost in vsyserr (caf)
+* Fix null deref in umode handler (caf)
+* Add %G status expando, to return 005 NETWORK (caf)
+
