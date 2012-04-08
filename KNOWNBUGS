@@ -237,4 +237,5 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Fix from_server getting lost in vsyserr (caf)
 * Fix null deref in umode handler (caf)
 * Add %G status expando, to return 005 NETWORK (caf)
-
+* Friendlier ZNC support changes follow here...
+* Allow multiple servers on same (host,port) with different passwords

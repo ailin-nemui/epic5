@@ -1,4 +1,4 @@
-/* $EPIC: server.c,v 1.250 2012/03/25 02:27:46 jnelson Exp $ */
+/* $EPIC: server.c,v 1.251 2012/04/08 06:29:53 jnelson Exp $ */
 /*
  * server.c:  Things dealing with that wacky program we call ircd.
  *
@@ -430,20 +430,75 @@ static	int	serverinfo_to_servref (ServerInfo *si)
 	{
 	    for (i = 0; i < number_of_servers; i++)
 	    {
+		/* If this server was deleted, ignore it. */
 		if (!(s = get_server(i)))
 			continue;
 
-		if (!s->info->host)
+		/* If the server doesn't have a hostname, it's bogus. */
+		if (!s->info || !s->info->host)
 			continue;
 
+		/*
+		 * The "hostname" you request can actually be a refnum,
+		 * and if it is this server's refnum, then we're done.
+		 */
+		if (si->host && is_number(si->host) && atol(si->host) == i)
+			return i;
+
+		/*
+		 * If "hostname" is not a refnum, then we see if the
+		 * vitals match this server (or not)
+		 */
+
+		/* 
+		 * For vitals matching, we will prefer open servers in
+		 * the first pass -- but accept closed servers if no
+		 * open servers qualify.
+		 */
 		if (opened == 1 && s->des < 0)
 			continue;
 
+		/*
+		 * IMPORTANT -- every server refnum is uniquely defined as
+		 * a (hostname, port, password) tuple.  The only place
+		 * this referential integrity is enforced is here.
+		 * So if you're changing this code, don't screw that up!
+		 * Unless you're here to screw it up, of course.
+		 */
+
+		/* If you requested a specific port, IT MUST MATCH.  */
+		/* If you don't specify a port, then any port is fine */
 		if (si->port != 0 && si->port != s->info->port)
 			continue;
 
-		if (si->host && is_number(si->host) && atol(si->host) == i)
-			return i;
+		/* If you specified a password, IT MUST MATCH */
+		/* If you don't specify a password, then any pass is fine */
+		if (si->password && !s->info->password)
+			continue;
+		if (si->password && !wild_match(si->password, s->info->password))
+			continue;
+
+		/*
+		 * At this point, we're looking to match your provided
+		 * host against something reasonable.
+		 *  1. The "ourname"  (the internet hostname)
+		 *  2. The "itsname"  (the server's logical hostname on
+		 *		       irc, which may or may not have anything
+		 *		       to do with its internet hostname)
+		 *  3. The Server Group
+		 *  4. Any "altname"
+		 *
+		 * IMPORTANT! All of the above do WILDCARD MATCHING, so 
+		 * that means hostname like "*.undernet.org" will match
+		 * on an undernet server, even if you don't know the 
+		 * exact name!
+		 *
+		 * IMPORTANT -- Please remember -- the lowest numbered 
+		 * refnum that matches ANY of the four will be our winner!
+		 * That means if server refnum 0 has an altname of 
+		 * "booya" and server refnum 1 has a group of "booya",
+		 * then server 0 wins!
+		 */
 
 		if (s->info->host && wild_match(si->host, s->info->host))
 			return i;
