@@ -1,4 +1,4 @@
-/* $EPIC: window.c,v 1.218 2012/03/25 02:27:46 jnelson Exp $ */
+/* $EPIC: window.c,v 1.219 2012/05/07 03:27:03 jnelson Exp $ */
 /*
  * window.c: Handles the organzation of the logical viewports (``windows'')
  * for irc.  This includes keeping track of what windows are open, where they
@@ -2612,17 +2612,24 @@ void	adjust_context_windows (int refnum)
  * This is needed when a window is killed, so that further output
  * in any contexts using that window has somewhere to go.
  */
-void adjust_context_windows(int old_win, int new_win)
+void	adjust_context_windows (int old_win, int new_win)
 {
-    int context;
+	int context;
 
-    for (context = 0; context < context_counter; context++)
+	for (context = 0; context < context_counter; context++)
 	{
 		if (contexts[context].to_window = old_win)
-			contexts[context].to_window = new_win;
+		{
+			/* XXX You can't do this -- "new_win" might not be
+			 * on the same server as "old_win" */
+			/* contexts[context].to_window = new_win; */
+			contexts[context].to_window = -1;
+		}
 	}
 
-	to_window = get_window_by_refnum(contexts[context_counter - 1].to_window);
+	if (to_window && to_window->refnum == old_win)
+		to_window = NULL;
+/*	to_window = get_window_by_refnum(contexts[context_counter - 1].to_window); */
 }
 
 /*

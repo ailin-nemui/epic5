@@ -72,7 +72,7 @@ on ^public_msg * (nick, channel, msg) {
 		case (2) { @nick = $highlight.it($nick); }
 		case (3) { @channel = $highlight.it($channel); }
 	};
-	xecho -b ($nick/$chan) $msg;
+	xecho -b \($nick/$chan\) $msg;
 };
 
 on ^public * (nick, channel, msg) {
@@ -123,7 +123,7 @@ on ^signoff * (nick, msg) {
 		case (1) { @nick = $highlight.it($nick); }
 		case (2) { @nick = $highlight.it($nick); }
 	};
-	xecho -b Signoff: $nick ($msg);
+	xecho -b Signoff: $nick \($msg\);
 };
 
 on ^join * (nick, channel, uh, extra) {

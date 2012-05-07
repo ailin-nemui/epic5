@@ -239,3 +239,4 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Add %G status expando, to return 005 NETWORK (caf)
 * Friendlier ZNC support changes follow here...
 * Allow multiple servers on same (host,port) with different passwords
+* For now, neutralize adjust_window_refnums() until a proper fix (rb tjh)
