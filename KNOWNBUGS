@@ -245,4 +245,6 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Add $xform("+LEN" ...) which turns anything into a length (for ciphertext)
 * Fix $xform("-FiSH" ...) for compatability with other implementations.
 * Don't accept EAGAIN as a valid error code for connect (caf)
-
+* Fix infinite loop bug with /userhost (caf)
+* Fix memory leak with /who in certain error conditions (caf)
+* Rewrite isonbase() so it handles longer nicks correctly (caf)

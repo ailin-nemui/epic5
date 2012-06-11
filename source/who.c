@@ -1,4 +1,4 @@
-/* $EPIC: who.c,v 1.65 2010/04/02 23:14:45 jnelson Exp $ */
+/* $EPIC: who.c,v 1.66 2012/06/11 03:56:26 jnelson Exp $ */
 /*
  * who.c -- The WHO queue.  The ISON queue.  The USERHOST queue.
  *
@@ -700,8 +700,6 @@ void 	whobase (int refnum, char *args, void (*line) (int, const char *, const ch
 	}
 }
 
-static int who_whine = 0;
-
 void	whoreply (int refnum, const char *from, const char *comm, const char **ArgList)
 {
 static	char	format[40];
@@ -912,7 +910,7 @@ void	who_end (int refnum, const char *from, const char *comm, const char **ArgLi
 {
 	WhoEntry 	*new_w = who_queue_top(refnum);
 	char 		buffer[1025];
-	char		*target = malloc_strdup(ArgList[0]);
+	char		*target;
 	int		l;
 
 	if (!ArgList[0])
@@ -924,10 +922,9 @@ void	who_end (int refnum, const char *from, const char *comm, const char **ArgLi
 		return;
 	}
 
-	PasteArgs(ArgList, 0);
+	target = malloc_strdup(ArgList[0]);
 
-	if (who_whine)
-		who_whine = 0;
+	PasteArgs(ArgList, 0);
 
 	l = message_from(new_w->who_target, LEVEL_OTHER);
 	do
@@ -954,7 +951,7 @@ void	who_end (int refnum, const char *from, const char *comm, const char **ArgLi
 			*new_w->who_target = 0;
 		    }
 		}
-		else if (target && strcmp(target, new_w->who_target))
+		else if (strcmp(target, new_w->who_target))
 		{
 			WHO_DEBUG("WHOEND: Server [%d], end of who for refnum [%d]/[%s], (target was wrong: [%s])!", refnum, new_w->refnum, new_w->who_target, target);
 			*new_w->who_target = 0;
@@ -1000,8 +997,6 @@ int	fake_who_end (int refnum, const char *from, const char *comm, const char *wh
 	WhoEntry 	*new_w = who_queue_top(refnum);
 	int		l;
 
-	if (who_whine)
-		who_whine = 0;
 	if (!new_w)
 		return 0;	
 
@@ -1235,7 +1230,7 @@ BUILT_IN_COMMAND(isoncmd)
 void	isonbase (int refnum, char *args, void (*line) (int, char *, char *))
 {
 	IsonEntry 	*new_i;
-	char 		*next = args, *restore = NULL;
+	char 		*next, *end, *p;
 	char		*on_cmd = NULL, *offcmd = NULL, *endcmd = NULL;
 	int		sendnext = 0;
 
@@ -1309,33 +1304,106 @@ void	isonbase (int refnum, char *args, void (*line) (int, char *, char *))
 	}
 
 	ison_queue_send(refnum);
-	if (!args || !*args)
+	if (!args)
 		return;
 
-	next = args;
-	while ((args = next))
+
+	/* So now we need to go through 'args', collecting the nicks into groups
+	 * of at most ison_len and sending those off.  Two things conspire
+	 * to make this harder than it sounds, however: an individual nick might
+	 * be longer than ison_len on its own, in which case we have to ignore it;
+	 * and if an endcmd was supplied then we must only add it to the _last_
+	 * queued ison command.  We don't know if a given queued ison command
+	 * is going to be the last one until we look ahead and hit the end of
+	 * the arguments. 
+	 */
+	new_i = NULL;
+	end = NULL;
+	p = args;
+	
+	while (*p)
 	{
-		new_i = get_new_ison_entry(refnum, sendnext);
-		new_i->line = line;
-		if ((int)strlen(args) > get_server(refnum)->ison_len)
+		/* Loop pre-conditions:
+		 *
+		 * p is pointing at start of next argument to examine, or at the
+		 * terminating null.
+		 *
+		 * end is pointing at the end of the current list of nicks to send,
+		 * or NULL if that list is empty. 
+		 *
+		 * if end != NULL, next is pointing at start of the current list of
+		 * nicks to send. 
+		 *
+		 * if new_i != NULL && end != NULL, new_i is pointing at the ison 
+		 * entry for the current list of nicks to send (new_i->ison_asked is
+		 * is NOT set yet).
+		 *
+		 * if new_i != NULL && end == NULL then new_i is pointing at the ison
+		 * entry for the previous list of nicks to send (new_i->ison_asked is
+		 * set). 
+		 */
+		if (!end)
+			next = p;
+		while (*p && !isspace((unsigned char)*p))
+		    p++;
+		if (p - next < get_server(refnum)->ison_len)
 		{
-			next = args + get_server(refnum)->ison_len;
-			while (!isspace(*next))
-				next--;
-			restore = next;
-			*next++ = 0;
+			/* can add this nick to the current list. */
+			if (!end)
+			{
+				/* This is the first nick of a new ison list, so now we know that
+				 * the previous list, if there was one, wasn't the last, so we can
+				 * send it off without an endcmd. */
+				if (new_i)
+					ison_queue_send(refnum);
+	
+				new_i = get_new_ison_entry(refnum, sendnext);
+				new_i->line = line;
+				malloc_strcpy(&new_i->oncmd, on_cmd);
+				malloc_strcpy(&new_i->offcmd, offcmd);
+			}
+				
+			end = p;
 		}
 		else
-			next = NULL;
+		{
+			/* This nick is too long to add to the current list. */
+			if (end)
+			{
+				/* ..but there are some preceding words that we can send */
+				char restore = *end;
+	
+				*end = 0;
+				malloc_strcpy(&new_i->ison_asked, next);
+				*end = restore;
+				/* Note that we do NOT send the ison queue yet, because we
+				 * don't yet know if we should set endcmd or not. */
+	
+				p = end;	
+				end = NULL;
+			}
+		}
+		
+		/* Advance to next nick */
+		while (isspace((unsigned char)*p))
+			p++;
+	}
+		
+	if (new_i)
+	{
+		/* Send the last list - this one has endcmd set */
+		if (end)
+		{
+			/* ison_asked hasn't been set yet */
+			char restore = *end;
 
-		malloc_strcpy(&new_i->ison_asked, args);
-		malloc_strcpy(&new_i->oncmd, on_cmd);
-		malloc_strcpy(&new_i->offcmd, offcmd);
-		if (!next)
-			malloc_strcpy(&new_i->endcmd, endcmd);
+			*end = 0;
+			malloc_strcpy(&new_i->ison_asked, next);
+			*end = restore;
+		}
+
+		malloc_strcpy(&new_i->endcmd, endcmd);
 		ison_queue_send(refnum);
-		if (restore)
-			*restore = ' ';
 	}
 }
 
@@ -1764,6 +1832,7 @@ void	userhost_returned (int refnum, const char *from, const char *comm, const ch
 				yell("Can't parse useless USERHOST reply [%s]", 
 						ArgList[0]);
 				userhost_queue_pop(refnum);
+				return;
 			}
 
 			if (user[-1] == '*')
