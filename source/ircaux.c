@@ -1,4 +1,4 @@
-/* $EPIC: ircaux.c,v 1.224 2010/11/22 04:18:07 jnelson Exp $ */
+/* $EPIC: ircaux.c,v 1.225 2012/06/11 02:39:30 jnelson Exp $ */
 /*
  * ircaux.c: some extra routines... not specific to irc... that I needed 
  *
@@ -4797,6 +4797,10 @@ char *	fix_string_width (const char *orig_str, int justify, char fillchar, size_
 }
 
 /****************************************************************************/
+static ssize_t	len_encoder (const char *orig, size_t orig_len, const void *meta, size_t meta_len, char *dest, size_t dest_len)
+{
+	snprintf(dest, dest_len, "%ld", (long)orig_len);
+}
 
 /* Based in whole or in part on code contributed by SrFrOg in 1999 */
 static ssize_t	url_encoder (const char *orig, size_t orig_len, const void *meta, size_t meta_len, char *dest, size_t dest_len)
@@ -5733,6 +5737,7 @@ struct Transformer
 struct Transformer default_transformers[] = {
 {	0,	"URL",		0, 3, 8,  url_encoder,	  url_decoder	 },
 {	0,	"ENC",		0, 2, 8,  enc_encoder,	  enc_decoder	 },
+{	0,	"LEN",		0, 1, 0,  len_encoder,	  len_encoder	 },
 {	0,	"B64",		0, 2, 8,  b64_encoder,	  b64_decoder	 },
 {	0,	"FISH64",	0, 2, 16, fish64_encoder, fish64_decoder },
 {	0,	"SED",		1, 2, 8,  sed_encoder,	  sed_decoder	 },

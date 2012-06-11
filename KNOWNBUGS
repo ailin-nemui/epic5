@@ -242,3 +242,7 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * For now, neutralize adjust_window_refnums() until a proper fix (rb tjh)
 * Caf noticed I fixed the wrong bug. oops!
 * EPIC5-1.1.3 released here (Feculance) (Commit ID: 1656)
+* Add $xform("+LEN" ...) which turns anything into a length (for ciphertext)
+* Fix $xform("-FiSH" ...) for compatability with other implementations.
+* Don't accept EAGAIN as a valid error code for connect (caf)
+

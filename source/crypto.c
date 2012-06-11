@@ -1,4 +1,4 @@
-/* $EPIC: crypto.c,v 1.17 2010/04/02 23:14:45 jnelson Exp $ */
+/* $EPIC: crypto.c,v 1.18 2012/06/11 02:39:30 jnelson Exp $ */
 /*
  * crypto.c: SED/CAST5/BLOWFISH/AES encryption and decryption routines.
  *
@@ -276,6 +276,7 @@ static char *	decipher_evp (const unsigned char *key, int keylen, const unsigned
         unsigned char *outbuf;
 	unsigned char	*iv = NULL;
 	unsigned long errcode;
+	int	outlen2;
         EVP_CIPHER_CTX a;
         EVP_CIPHER_CTX_init(&a);
 	EVP_CIPHER_CTX_set_padding(&a, 0);
@@ -288,8 +289,15 @@ static char *	decipher_evp (const unsigned char *key, int keylen, const unsigned
 
         EVP_DecryptInit_ex(&a, type, NULL, NULL, iv);
 	EVP_CIPHER_CTX_set_key_length(&a, keylen);
+	EVP_CIPHER_CTX_set_padding(&a, 0);
         EVP_DecryptInit_ex(&a, NULL, NULL, key, NULL);
-        EVP_DecryptUpdate(&a, outbuf, outlen, ciphertext, cipherlen);
+
+        if (EVP_DecryptUpdate(&a, outbuf, outlen, ciphertext, cipherlen) != 1)
+		yell("EVP_DecryptUpdate died.");
+	if (EVP_DecryptFinal_ex(&a, outbuf + (*outlen), &outlen2) != 1)
+		yell("EVP_DecryptFinal_Ex died.");
+	*outlen += outlen2;
+
         EVP_CIPHER_CTX_cleanup(&a);
 
 	ERR_load_crypto_strings();
@@ -567,7 +575,19 @@ static void	sha256_key (const char *orig, size_t orig_len, char **key, size_t *k
 
 static void	copy_key (const char *orig, size_t orig_len, char **key, size_t *keylen)
 {
+#if 0
+	size_t	key_len;
+	orig_len = strlen(orig);		/* XXX for now */
+
+	if ((key_len = orig_len) < 9)
+		key_len = 9;
+
+	*key = new_malloc(key_len);
+	memset(*key, 0, key_len);
+	strlcpy(*key, orig, key_len);
+#else
 	*key = malloc_strdup(orig);
+#endif
 	*keylen = orig_len;
 }
 

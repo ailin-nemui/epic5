@@ -1,4 +1,4 @@
-/* $EPIC: network.c,v 1.85 2009/12/29 04:20:14 jnelson Exp $ */
+/* $EPIC: network.c,v 1.86 2012/06/11 02:39:30 jnelson Exp $ */
 /*
  * network.c -- handles stuff dealing with connecting and name resolving
  *
@@ -651,7 +651,7 @@ static int Connect (int fd, SA *addr)
 	set_non_blocking(fd);
 	if ((retval = connect(fd, addr, socklen(addr))))
 	{
-	    if (errno != EINPROGRESS && errno != EAGAIN)
+	    if (errno != EINPROGRESS)
 		syserr(-1, "Connect: connect(%d) failed: %s", fd, strerror(errno));
 	    else
 		retval = 0;
