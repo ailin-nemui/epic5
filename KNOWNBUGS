@@ -11,8 +11,6 @@ KNOWN ERRATA (eg, bugs, or unresolved requests):
 +--enable-foo is for built-in features that can be turned on/off <14:24:18>
 
 * Can't change server 0 in the .epicrc (Crashes)
-* "A non-blocking connect" message is a say() not a yell().
-* Need a way to get the ON type in an implied hook (swain)
 * Should be able to change LINE value in windows (for howl)
 * Howl wants to be able to have per-window /input and /input_char
 * Howl would like "advanced scrollback" searches, like hit counts
@@ -23,9 +21,6 @@ KNOWN ERRATA (eg, bugs, or unresolved requests):
 * /on set should only be thrown once if the user types the full cannonical name
 * Should any commands be #ifdef'd out at compile time, as opposed to just
   being replaced with error-generating shims?
-* A way to indicate dcc raw should be fully line buffered
-* You should be able to inhibit logging of the /lastlog command
-* Lastlog should have a "negative" option, to show everything not matched.
 * $dbmctl() files need to be cleaned up after on exit.
 
 MEDIUM-TERM PROJECTS
@@ -248,3 +243,8 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Fix infinite loop bug with /userhost (caf)
 * Fix memory leak with /who in certain error conditions (caf)
 * Rewrite isonbase() so it handles longer nicks correctly (caf)
+* Implement /lastlog -ignore, which shows everything EXCEPT the pattern.
+* Add /xeval -nolog which suppresses logging for that command.
+* Implement $dccctl([SG]ET refnum PACKET_SIZE num) for packet-buffering
+* Implement $dccctl([SG]ET refnum FULL_LINE_BUFFER [01]) for forced line buff
+* Implement $hookctl(CURRENT_IMPLIED_HOOK) for implied on hooks to know context

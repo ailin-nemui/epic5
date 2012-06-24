@@ -1,5 +1,44 @@
 EPIC5-1.1.3
 
+*** News 6/24/2012 -- New $hookctl(CURRENT_IMPLIED_HOOK)
+	When an implied /on hook is being expanded,
+	$hookctl(CURRENT_IMPLIED_HOOK) is set to the name of that hook.
+
+	I recommend wrapping this in an alias:
+		alias ih {return $hookctl(CURRENT_IMPLIED_HOOK)
+	Then you can use $ih() to get the hook.
+
+	The use case is if you are using the same function for different
+	implied hooks -- there was no way to tell the function which one
+	it was working on.
+
+*** News 6/24/2012 -- New $dccctl(SET refnum FULL_LINE_BUFFER [0|1])
+	You can now set a dcc raw to "fully line buffered" mode.
+	When this is turned on, /on dcc_raw will not trigger until
+	a complete line is available.  You can turn this off by setting
+	it to 0. 
+
+	The corresponding $dccctl(GET refnum FULL_LINE_BUFFER) also works.
+
+*** News 6/24/2012 -- New $dccctl(SET refnum PACKET_SIZE <bytes>)
+	You can now set a dcc raw to "fully packet buffered" mode.
+	When this is turned on, /on dcc_raw will not trigger until
+	<bytes> bytes are available.  You can turn this off by setting
+	it to 0. 
+
+	The corresponding $dccctl(GET refnum PACKET_SIZE) also works.
+
+*** News 06/24/2012 -- New option, /XEVAL -NOLOG 
+	The -NOLOG option to /XEVAL suppresses logging for the command.
+	The person who requested wanted to do something like this:
+		alias ll { xeval -nolog {lastlog $*} }
+	to be able to avoid logging /lastlog output.
+
+*** News 06/24/2012 -- New option, /LASTLOG -IGNORE <pattern>
+	The /LASTLOG -IGNORE <pattern> option allows you to display all of
+	your lastlog EXCEPT whatever matches <pattern>.  In this way, it 
+	acts as a reverse to the normal way.
+
 *** News 03/24/2012 -- New status bar expando, %G (Network)
 	The %G status bar expando shows the 005 NETWORK value for your server
 

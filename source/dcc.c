@@ -1,4 +1,4 @@
-/* $EPIC: dcc.c,v 1.163 2012/03/25 02:08:06 jnelson Exp $ */
+/* $EPIC: dcc.c,v 1.164 2012/06/24 23:07:54 jnelson Exp $ */
 /*
  * dcc.c: Things dealing client to client connections. 
  *
@@ -95,6 +95,8 @@ typedef	struct	DCC_struct
 	int		socket;
 	int		file;
 	int		held;
+	int		packet_size;
+	int		full_line_buffer;
 	long		refnum;
 	intmax_t	filesize;
 	char *		local_filename;
@@ -536,6 +538,8 @@ static	DCC_list *dcc_create (
 	new_client->refnum		= dcc_refnum++;
 	new_client->server		= from_server;
 	new_client->updates_status	= 1;
+	new_client->packet_size		= 0;
+	new_client->full_line_buffer	= 0;
 	get_time(&new_client->lasttime);
 
 	if (x_debug & DEBUG_DCC_XMIT)
@@ -3372,6 +3376,10 @@ static	void		process_dcc_raw_data (DCC_list *Client)
         bufptr = tmp;
 	if (Client->flags & DCC_QUOTED)
 		bytesread = dgets(Client->socket, bufptr, IO_BUFFER_SIZE, -1);
+	else if (Client->packet_size > 0)
+		bytesread = dgets(Client->socket, bufptr, Client->packet_size, 2);
+	else if (Client->full_line_buffer)
+		bytesread = dgets(Client->socket, bufptr, IO_BUFFER_SIZE, 1);
 	else
 		bytesread = dgets(Client->socket, bufptr, IO_BUFFER_SIZE, 0);
 
@@ -4269,6 +4277,10 @@ char *	dccctl (char *input)
 			RETURN_FLOAT(client->heldtime);
 		} else if (!my_strnicmp(listc, "QUOTED", len)) {
 			RETURN_INT(client->flags & DCC_QUOTED && 1);
+		} else if (!my_strnicmp(listc, "PACKET_SIZE", len)) {
+			RETURN_INT(client->packet_size);
+		} else if (!my_strnicmp(listc, "FULL_LINE_BUFFER", len)) {
+			RETURN_INT(client->full_line_buffer);
 		} else if (!my_strnicmp(listc, "FLAGS", len)) {
 			/* This is pretty much a crock. */
 			RETURN_INT(client->flags);
@@ -4368,6 +4380,20 @@ char *	dccctl (char *input)
 				client->flags |= DCC_QUOTED;
 			else
 				client->flags &= ~DCC_QUOTED;
+		} else if (!my_strnicmp(listc, "FULL_LINE_BUFFER", len)) {
+			long	buffered;
+
+			GET_INT_ARG(buffered, input);
+			if (buffered)
+				client->full_line_buffer = 1;
+			else
+				client->full_line_buffer = 0;
+		} else if (!my_strnicmp(listc, "PACKET_SIZE", len)) {
+			long	packet_size;
+
+			/* Validation? */
+			GET_INT_ARG(packet_size, input);
+			client->packet_size = packet_size;
 		} else if (!my_strnicmp(listc, "OFFERADDR", len)) {
 			char *host, *port;
 			SS a;

@@ -1,4 +1,4 @@
-/* $EPIC: commands.c,v 1.198 2010/05/30 01:12:01 jnelson Exp $ */
+/* $EPIC: commands.c,v 1.199 2012/06/24 23:07:54 jnelson Exp $ */
 /*
  * commands.c -- Stuff needed to execute commands in ircII.
  *		 Includes the bulk of the built in commands for ircII.
@@ -866,6 +866,7 @@ BUILT_IN_COMMAND(xechocmd)
 	int	old_window_notify = do_window_notifies;
 	int	old_mangler = display_line_mangler;
 	int	to_window_refnum = to_window ? (int)to_window->refnum : -1;
+	int	old_inhibit_logging = inhibit_logging;
 	int	to_level = who_level;
 	const char *	to_from = who_from;
 
@@ -1145,7 +1146,7 @@ BUILT_IN_COMMAND(xechocmd)
 
 	do_window_notifies = old_window_notify;
 	if (nolog)
-		inhibit_logging = 0;
+		inhibit_logging = old_inhibit_logging;
 	window_display = display;
 }
 
@@ -1161,6 +1162,8 @@ BUILT_IN_COMMAND(xevalcmd)
 	int	old_refnum = current_window->refnum;
 	int	l = -1;
 	int	old_window_display = window_display;
+	int	old_inhibit_logging = inhibit_logging;
+	int	nolog = 0;
 
 	while (args && (*args == '-' || *args == '/'))
 	{
@@ -1194,7 +1197,13 @@ BUILT_IN_COMMAND(xevalcmd)
 		/* This does the reverse of ^ */
 		else if (!my_strnicmp(flag + 1, "NOISY", 1)) /* NOISY */
 			window_display = 1;
+
+		else if (!my_strnicmp(flag + 1, "NOLOG", 2)) /* NOLOG */
+			nolog = 1;
 	}
+
+	if (nolog)
+		inhibit_logging = 1;
 
 	runcmds(args, subargs);
 
@@ -1204,6 +1213,8 @@ BUILT_IN_COMMAND(xevalcmd)
 	make_window_current_by_refnum(old_refnum);
 	from_server = old_from_server;
 	window_display = old_window_display;
+	if (nolog)
+		inhibit_logging = old_inhibit_logging;
 }
 
 BUILT_IN_COMMAND(evalcmd)

@@ -1,4 +1,4 @@
-/* $EPIC: lastlog.c,v 1.83 2010/11/24 19:51:29 jnelson Exp $ */
+/* $EPIC: lastlog.c,v 1.84 2012/06/24 23:07:54 jnelson Exp $ */
 /*
  * lastlog.c: handles the lastlog features of irc. 
  *
@@ -62,7 +62,7 @@ typedef struct	lastlog_stru
 
 static	intmax_t global_lastlog_refnum = 0;
 
-static int	show_lastlog (Lastlog **l, int *skip, int *number, Mask *level_mask, char *match, regex_t *rex, int *max, const char *target, int mangler, unsigned winref, char **);
+static int	show_lastlog (Lastlog **l, int *skip, int *number, Mask *level_mask, char *match, regex_t *rex, char *nomatch, int *max, const char *target, int mangler, unsigned winref, char **);
 static int	oldest_lastlog_for_window (Lastlog **item, unsigned winref);
 static int	newer_lastlog_entry (Lastlog **item, unsigned winref);
 static int	older_lastlog_entry (Lastlog **item, unsigned winref);
@@ -293,8 +293,9 @@ void	set_lastlog_size (void *stuff)
  *	-			Do not show header and footer
  *	-reverse		Show matches newest-to-oldest (reverse order)
  *			        instead of oldest-to-newest (normal order)
- * 	-literal <pattern>	<string> is search target, not option.
+ * 	-literal <pattern>	line must wildcard match <pattern>
  *	-regex <regex>		line must match <regex>.
+ *	-ignore <pattern>	line must NOT wldcard match <pattern>
  *	-max <number>		Only show first <number> matches
  *	-skip <number>		Skip this many leading lastlog entries
  *	-number <number>	Only search this many lastlog entries
@@ -352,6 +353,7 @@ BUILT_IN_COMMAND(lastlog)
 	int		number = INT_MAX;
 	int		max = -1;
 	char *		match = NULL;
+	char *		nomatch = NULL;
 	char *		target = NULL;
 	char *		regex = NULL;
 	Lastlog *	start;
@@ -402,6 +404,14 @@ BUILT_IN_COMMAND(lastlog)
 		if (!(regex = new_next_arg(args, &args)))
 		{
 			yell("LASTLOG -REGEX requires an argument.");
+			goto bail;
+		}
+	    }
+	    else if (!my_strnicmp(arg, "-IGNORE", len))
+	    {
+		if (!(nomatch = new_next_arg(args, &args)))
+		{
+			yell("LASTLOG -IGNORE requires an argument.");
 			goto bail;
 		}
 	    }
@@ -595,6 +605,16 @@ BUILT_IN_COMMAND(lastlog)
 		snprintf(blah, size, "*%s*", match);
 		match = blah;
 	}
+	if (nomatch)
+	{
+		size_t	size;
+		char *	blah;
+
+		size = strlen(nomatch) + 3;
+		blah = alloca(size);
+		snprintf(blah, size, "*%s*", nomatch);
+		nomatch = blah;
+	}
 	if (regex)
 	{
 		int	options = REG_EXTENDED | REG_ICASE | REG_NOSUB;
@@ -615,6 +635,7 @@ BUILT_IN_COMMAND(lastlog)
 		yell("Lastlog summary status:");
 		yell("Pattern: [%s]", match ? match : "<none>");
 		yell("Regex: [%s]", regex ? regex : "<none>");
+		yell("Ignore: [%s]", nomatch ? nomatch : "<none>");
 		yell("Target: [%s]", target ? target : "<none>");
 		yell("Header: %d", header);
 		yell("Reverse: %d", reverse);
@@ -681,8 +702,8 @@ BUILT_IN_COMMAND(lastlog)
 		char *result = NULL;
 
 		if (show_lastlog(&l, &skip, &number, &level_mask, 
-				match, rex, &max, target, mangler, winref,
-				&result))
+				match, rex, nomatch, &max, target, 
+				mangler, winref, &result))
 		{
 		    if (counter == 0 && before > 0)
 		    {
@@ -772,8 +793,8 @@ BUILT_IN_COMMAND(lastlog)
 		char *result = NULL;
 
 		if (show_lastlog(&l, &skip, &number, &level_mask, 
-				match, rex, &max, target, mangler, winref,
-				&result))
+				match, rex, nomatch, &max, target, 
+				mangler, winref, &result))
 		{
 		    if (counter == 0 && before > 0)
 		    {
@@ -855,7 +876,7 @@ bail:
  * This returns 1 if the current item pointed to by 'l' is something that
  * should be displayed based on the criteron provided.
  */
-static int	show_lastlog (Lastlog **l, int *skip, int *number, Mask *level_mask, char *match, regex_t *rex, int *max, const char *target, int mangler, unsigned winref, char **result)
+static int	show_lastlog (Lastlog **l, int *skip, int *number, Mask *level_mask, char *match, regex_t *rex, char *nomatch, int *max, const char *target, int mangler, unsigned winref, char **result)
 {
 	const char *str = NULL;
 	*result = NULL;
@@ -909,6 +930,13 @@ static int	show_lastlog (Lastlog **l, int *skip, int *number, Mask *level_mask, 
 			yell("Line [%s] not matched [%s]", str, match);
 		return 0;			/* Pattern match failed */
 	}
+	if (nomatch && wild_match(nomatch, str))
+	{
+		if (x_debug & DEBUG_LASTLOG)
+			yell("Line [%s] is matched [%s]", str, nomatch);
+		return 0;			/* Pattern match failed */
+	}
+
 	if (rex && regexec(rex, str, 0, NULL, 0))
 	{
 		if (x_debug & DEBUG_LASTLOG)

@@ -1,4 +1,4 @@
-/* $EPIC: hook.c,v 1.91 2012/03/25 02:27:46 jnelson Exp $ */
+/* $EPIC: hook.c,v 1.92 2012/06/24 23:07:54 jnelson Exp $ */
 /*
  * hook.c: Does those naughty hook functions. 
  *
@@ -62,10 +62,9 @@ struct NoiseInfo {
 	int	suppress;	/*  0 = don't suppress default action
 				 *  1 = suppress default action
 				 * -1 = Let on hook decide */
-
-	int value;
-	char identifier;
-	int custom;
+	int	value;
+	char	identifier;
+	int	custom;
 };
 
 struct NoiseInfo noise_info_templates[] = {
@@ -257,9 +256,10 @@ static struct Current_hook *current_hook = NULL;
  */
 int deny_all_hooks = 0;
 
-static struct NoiseInfo **noise_info = NULL;
-static int noise_level_num = 0;
-static int default_noise;
+static	struct NoiseInfo **	noise_info = NULL;
+static	int 			noise_level_num = 0;
+static	int 			default_noise;
+static	const char *		current_implied_on_hook = NULL;
 
 extern char *	    function_cparse	(char *);
 static void 	    add_to_list 	(Hook **list, Hook *item);
@@ -972,24 +972,20 @@ static int 	do_hook_internal (int which, char **result, const char *format, va_l
 	char *	func_call = NULL;
 	char *	func_retval;
 	char	my_buffer[BIG_BUFFER_SIZE * 10 + 1];
+	const char *old_current_implied_on_hook = current_implied_on_hook;
 
 	if (!h->implied)
 		break;
 
-	if (format)
-	{
-		strlcpy(my_buffer, *result, sizeof(my_buffer));
-/*
-		va_copy(args, orig_args);
-		vsnprintf(my_buffer, BIG_BUFFER_SIZE * 10, format, args);
-*/
-	}
-	else
+	if (!format)
 		panic(1, "do_hook: format is NULL");
+
+	strlcpy(my_buffer, *result, sizeof(my_buffer));
 
 	if (which >= 0)
 		h->mark++;
 
+	current_implied_on_hook = h->name;
 	if (h->implied_protect)
 	{
 	    malloc_sprintf(&func_call, "\"%s\" %s", h->implied, my_buffer);
@@ -1000,10 +996,8 @@ static int 	do_hook_internal (int which, char **result, const char *format, va_l
 	    malloc_sprintf(&func_call, "cparse(\"%s\" $*)", h->implied);
 	    func_retval = call_function(func_call, my_buffer);
 	}
+	current_implied_on_hook = old_current_implied_on_hook;
 
-/*
-	func_retval = call_function(func_call, buffer);
-*/
 	put_echo(func_retval);
 
 	new_free(&func_call);
@@ -1643,6 +1637,7 @@ enum
 	HOOKCTL_ADD = 1,
 	HOOKCTL_ARGS,
 	HOOKCTL_COUNT,
+	HOOKCTL_CURRENT_IMPLIED_HOOK,
 	HOOKCTL_DEFAULT_NOISE_LEVEL,
 	HOOKCTL_DENY_ALL_HOOKS,
 	HOOKCTL_EMPTY_SLOTS,
@@ -1912,6 +1907,7 @@ char *hookctl (char *input)
 		"ADD",
 		"ARGS",
 		"COUNT",
+		"CURRENT_IMPLIED_HOOK",
 		"DEFAULT_NOISE_LEVEL", 
 		"DENY_ALL_HOOKS",
 		"EMPTY_SLOTS",
@@ -2000,6 +1996,10 @@ char *hookctl (char *input)
 		RETURN_INT(NUMBER_OF_LISTS);
 		break;
 		
+	case HOOKCTL_CURRENT_IMPLIED_HOOK:
+		RETURN_STR(current_implied_on_hook);
+		break;
+
 	/* go-switch */
 	case HOOKCTL_RETVAL:
 		if (!current_hook)
