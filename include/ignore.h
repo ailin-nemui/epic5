@@ -19,9 +19,10 @@
 	int	do_expire_ignores	(void *);
 	int	check_ignore 		(const char *, const char *, int);
 	int	check_ignore_channel 	(const char *, const char *, const char *, int);
-	char *	get_ignores_by_pattern	    (char *, int);
+	char *	get_ignores_by_pattern	    	(char *, int);
 	const char *	get_ignore_types_by_pattern  (char *);
-	char *	get_ignore_patterns_by_type (char *);
-	char *	ignorectl		(char *);
+	char *	get_ignore_patterns_by_type	(char *);
+	char *	ignorectl			(char *);
+	int     do_expire_lastlog_entries	(void *);
 
 #endif /* _IGNORE_H_ */

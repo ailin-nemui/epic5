@@ -1,4 +1,4 @@
-/* $EPIC: logfiles.c,v 1.37 2010/02/15 03:59:10 jnelson Exp $ */
+/* $EPIC: logfiles.c,v 1.38 2012/06/26 12:28:06 jnelson Exp $ */
 /*
  * logfiles.c - General purpose log files
  *
@@ -932,6 +932,24 @@ void    logfiles_swap_winrefs (int oldref, int newref)
 			if (log->refnums[i] == newref)
 				log->refnums[i] = oldref;
 			else if (log->refnums[i] == oldref)
+				log->refnums[i] = newref;
+		}
+        }
+}
+
+void    logfiles_merge_winrefs (int oldref, int newref)
+{
+	Logfile *log;
+	int	i;
+
+	for (log = logfiles; log; log = log->next)
+        {
+		if (log->type != LOG_WINDOWS)
+			continue;
+
+		for (i = 0; i < MAX_TARGETS; i++)
+		{
+			if (log->refnums[i] == oldref)
 				log->refnums[i] = newref;
 		}
         }

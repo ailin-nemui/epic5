@@ -1,4 +1,4 @@
-/* $EPIC: commands.c,v 1.199 2012/06/24 23:07:54 jnelson Exp $ */
+/* $EPIC: commands.c,v 1.200 2012/06/26 12:28:06 jnelson Exp $ */
 /*
  * commands.c -- Stuff needed to execute commands in ircII.
  *		 Includes the bulk of the built in commands for ircII.
@@ -867,6 +867,7 @@ BUILT_IN_COMMAND(xechocmd)
 	int	old_mangler = display_line_mangler;
 	int	to_window_refnum = to_window ? (int)to_window->refnum : -1;
 	int	old_inhibit_logging = inhibit_logging;
+	int	old_output_expires_after = output_expires_after;
 	int	to_level = who_level;
 	const char *	to_from = who_from;
 
@@ -998,6 +999,21 @@ BUILT_IN_COMMAND(xechocmd)
 			break;
 		}
 
+		case 'E':
+		{
+			double	timeout;
+
+			next_arg(args, &args);
+			if (!(flag_arg = next_arg(args, &args)))
+				break;
+
+			/* Outputting here is bad.  So just ignore it */
+			if (is_number(flag_arg))
+				timeout = atof(flag_arg);
+
+			output_expires_after = timeout;
+			break;
+		}
 		case 'A':	/* ALL (output to all windows) */
 		case '*':
 		{
@@ -1145,8 +1161,11 @@ BUILT_IN_COMMAND(xechocmd)
 		display_line_mangler = old_mangler;
 
 	do_window_notifies = old_window_notify;
+	output_expires_after = old_output_expires_after;
+
 	if (nolog)
 		inhibit_logging = old_inhibit_logging;
+
 	window_display = display;
 }
 

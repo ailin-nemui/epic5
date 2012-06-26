@@ -57,5 +57,6 @@
 	void	channel_server_delete	(int);
 	void	channel_check_windows	(void);
 	void    channels_swap_winrefs (int oldref, int newref);
+	void    channels_merge_winrefs (int oldref, int newref);
 
 #endif /* _NAMES_H_ */

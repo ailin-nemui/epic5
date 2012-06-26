@@ -508,6 +508,7 @@ set beep_on_msg none;
 
 # COMMAND_MODE
 
+if (0) {
 addset command_mode bool;
 
 set command_mode off;
@@ -523,6 +524,7 @@ set command_mode off;
 ^on ^input "/*" {
 	xeval -n {//sendline $*};
 };
+}
 
 # DCC_TIMEOUT
 

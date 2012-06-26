@@ -20,6 +20,7 @@ struct WindowStru;
 extern	Mask	current_window_mask;
 extern	Mask *	new_server_lastlog_mask;
 extern	Mask *	old_server_lastlog_mask;
+extern	double	output_expires_after;
 
 	BUILT_IN_COMMAND(lastlog);
 
@@ -36,6 +37,7 @@ extern	Mask *	old_server_lastlog_mask;
 	void	set_new_server_lastlog_mask	(void *);
 	void	set_old_server_lastlog_mask	(void *);
 	void	reconstitute_scrollback		(struct WindowStru *);
+	int	do_expire_lastlog_entries	(void *);
 
 	void	move_all_lastlog		(unsigned, unsigned);
 	void	move_lastlog_item_by_string	(unsigned, unsigned, Char *);
@@ -44,5 +46,6 @@ extern	Mask *	old_server_lastlog_mask;
 	void	move_lastlog_item_by_regex	(unsigned, unsigned, Char *);
 
 	void    lastlog_swap_winrefs		(unsigned, unsigned);
+	void    lastlog_merge_winrefs		(unsigned, unsigned);
 
 #endif /* __lastlog_h_ */

@@ -4,12 +4,6 @@ KNOWN ERRATA (eg, bugs, or unresolved requests):
 ------------------------------------------------
 * Need to test the /hostname stuff -- it can fail in client_bind(4),
   maybe because it doesn't set the requested hostname before calling.
-
-<larne> hop: on the subject of config, i do have a minor nit: stuff like
-+--with-ipv6 should really be --enable-ipv6 <14:24:01>
-<larne> autoconf convention is that --with-foo is for external software, while
-+--enable-foo is for built-in features that can be turned on/off <14:24:18>
-
 * Can't change server 0 in the .epicrc (Crashes)
 * Should be able to change LINE value in windows (for howl)
 * Howl wants to be able to have per-window /input and /input_char
@@ -248,3 +242,9 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Implement $dccctl([SG]ET refnum PACKET_SIZE num) for packet-buffering
 * Implement $dccctl([SG]ET refnum FULL_LINE_BUFFER [01]) for forced line buff
 * Implement $hookctl(CURRENT_IMPLIED_HOOK) for implied on hooks to know context
+* Add "expire timeout" to lastlog entries
+* Create do_expire_lastlog_entries() which wipes expired window output
+* Add functions to "merge" logfiles/channels/output/timers to a new window
+* Remove the scripted COMMAND_MODE feature, which interferes with /window merge
+* Add /xecho -E which causes window output to get away after some seconds
+* Add /window merge which collapses two windows into one and kills the other

@@ -1,4 +1,4 @@
-/* $EPIC: window.c,v 1.220 2012/05/07 04:14:09 jnelson Exp $ */
+/* $EPIC: window.c,v 1.221 2012/06/26 12:28:06 jnelson Exp $ */
 /*
  * window.c: Handles the organzation of the logical viewports (``windows'')
  * for irc.  This includes keeping track of what windows are open, where they
@@ -4071,6 +4071,47 @@ static Window *window_logfile (Window *window, char **args)
 	return window;
 }
 
+/*
+ * /WINDOW MERGE <newwin>
+ * This moves everything (channels, queries, and lastlog) from the current
+ * window into another window <newwin>.  For now, <newwin> must be on the
+ * same server.  Finally, it does a window kill on this window.
+ */
+static	Window *window_merge (Window *window, char **args)
+{
+	Window *tmp;
+
+	if ((tmp = get_window("MERGE", args)))
+	{
+		int	oldref, newref;
+
+		oldref = window->refnum;
+		newref = tmp->refnum;
+
+		lastlog_merge_winrefs(oldref, newref);
+		channels_merge_winrefs(oldref, newref);
+		logfiles_merge_winrefs(oldref, newref);
+		timers_merge_winrefs(oldref, newref);
+
+		while (window->nicks)
+		{
+			WNickList *h;
+
+			h = window->nicks;
+			window->nicks = h->next;
+
+			add_to_list((List **)&(tmp->nicks), (List *)h);
+		}
+
+		window_kill(window, args);
+		make_window_current(tmp);
+		return tmp;
+	}
+
+	return NULL;
+}
+
+
 static Window *window_move (Window *window, char **args)
 {
 	move_window(window, get_number("MOVE", args));
@@ -5273,6 +5314,7 @@ static const window_ops options [] = {
 	{ "LIST",		window_list 		},
 	{ "LOG",		window_log 		},
 	{ "LOGFILE",		window_logfile 		},
+	{ "MERGE",		window_merge		},
 	{ "MOVE",		window_move 		},
 	{ "MOVE_TO",		window_move_to		},
 	{ "NAME",		window_name 		},

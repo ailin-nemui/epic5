@@ -1,4 +1,4 @@
-/* $EPIC: lastlog.c,v 1.84 2012/06/24 23:07:54 jnelson Exp $ */
+/* $EPIC: lastlog.c,v 1.85 2012/06/26 12:28:06 jnelson Exp $ */
 /*
  * lastlog.c: handles the lastlog features of irc. 
  *
@@ -45,6 +45,7 @@
 #include "functions.h"
 #include "reg.h"
 #include "alias.h"
+#include "timer.h"
 
 typedef struct	lastlog_stru
 {
@@ -53,7 +54,8 @@ typedef struct	lastlog_stru
 	char	*msg;
 	struct	lastlog_stru	*older;
 	struct	lastlog_stru	*newer;
-	time_t	when;
+	time_t	created;
+	time_t	expires;
 	int	visible;
 	intmax_t refnum;
 	unsigned winref;
@@ -61,6 +63,7 @@ typedef struct	lastlog_stru
 }	Lastlog;
 
 static	intmax_t global_lastlog_refnum = 0;
+	double	output_expires_after = 0.0;
 
 static int	show_lastlog (Lastlog **l, int *skip, int *number, Mask *level_mask, char *match, regex_t *rex, char *nomatch, int *max, const char *target, int mangler, unsigned winref, char **);
 static int	oldest_lastlog_for_window (Lastlog **item, unsigned winref);
@@ -70,6 +73,7 @@ static int	newest_lastlog_for_window (Lastlog **item, unsigned winref);
 static void	remove_lastlog_item (Lastlog *item);
 static void	switch_lastlog_window (Lastlog *item, unsigned newref);
 static void	move_lastlog_item (Lastlog *item, unsigned newref);
+static void	expire_lastlog_entries (void);
 
 Lastlog *	lastlog_oldest = NULL;
 Lastlog *	lastlog_newest = NULL;
@@ -221,7 +225,17 @@ intmax_t	add_to_lastlog (Window *window, const char *line)
 		new_l->target = malloc_strdup(who_from);
 	else
 		new_l->target = NULL;
-	time(&new_l->when);
+
+	time(&new_l->created);
+	if (output_expires_after != 0.0)
+	{
+		new_l->expires = time(NULL) + output_expires_after;
+		add_timer(0, empty_string, output_expires_after, 1, 
+			  do_expire_lastlog_entries, NULL, NULL, 
+			  GENERAL_TIMER, -1, 0);
+	}
+	else
+		new_l->expires = 0;
 
 	/* * * */
 	if (lastlog_newest && lastlog_newest->dead)
@@ -256,11 +270,7 @@ void 	trim_lastlog (Window *window)
 	{
 		item = NULL;
 		if (oldest_lastlog_for_window(&item, window->refnum))
-		{
-			if (item->visible)
-				window->lastlog_size--;
 			remove_lastlog_item(item);
-		}
 	}
 }
 
@@ -745,7 +755,7 @@ BUILT_IN_COMMAND(lastlog)
 				snprintf(vitals, sizeof(vitals),
 					"%ld %ld %ld %ld . . . %s %s",
 						(long)l->refnum,
-						(long)l->when,
+						(long)l->created,
 						(long)l->winref,
 						(long)l->level,
 						l->target?l->target:".",
@@ -836,7 +846,7 @@ BUILT_IN_COMMAND(lastlog)
 				snprintf(vitals, sizeof(vitals),
 					"%ld %ld %ld %ld . . . %s %s",
 						(long)l->refnum,
-						(long)l->when,
+						(long)l->created,
 						(long)l->winref,
 						(long)l->level,
 						l->target?l->target:".",
@@ -1053,7 +1063,7 @@ BUILT_IN_FUNCTION(function_line, word)
 					level_to_str(start_pos->level), &clue);
 	if (do_timestamp)
 		malloc_strcat_wordlist_c(&retval, space, 
-					NUMSTR(start_pos->when), &clue);
+					NUMSTR(start_pos->created), &clue);
 
 	RETURN_MSTR(retval);
 }
@@ -1260,6 +1270,17 @@ static void	remove_lastlog_item (Lastlog *item)
 		item->older = NULL;
 	}
 
+	/* 
+	 * We used to do this in trim_lastlog, but it makes more sense
+	 * to do it here, doesn't it?
+	 */
+	if (item->visible)
+	{
+		Window *w;
+		if ((w = get_window_by_refnum(item->winref)))
+			w->lastlog_size--;
+	}
+
 	if (item->older)
 		item->older->newer = item->newer;
 	if (item->newer)
@@ -1380,9 +1401,68 @@ void	lastlog_swap_winrefs (unsigned oldref, unsigned newref)
 	for (l = lastlog_oldest; l; l = l->newer)
 	{
 		if (l->winref == oldref)
+		{
+			Window *w;
+
 			l->winref = newref;
+			if ((w = get_window_by_refnum(oldref)))
+				w->lastlog_size--;
+			
+		}
 		else if (l->winref == newref)
+		{
+			Window *w;
+
 			l->winref = oldref;
+			if ((w = get_window_by_refnum(newref)))
+				w->lastlog_size--;
+		}
+	}
+	window_scrollback_needs_rebuild(oldref);
+	window_scrollback_needs_rebuild(newref);
+}
+
+void	lastlog_merge_winrefs (unsigned oldref, unsigned newref)
+{
+	Lastlog *l;
+
+	for (l = lastlog_oldest; l; l = l->newer)
+	{
+		if (l->winref == oldref)
+		{
+			Window *w;
+
+			l->winref = newref;
+			if ((w = get_window_by_refnum(oldref)))
+				w->lastlog_size--;
+		}
+	}
+	window_scrollback_needs_rebuild(oldref);
+	window_scrollback_needs_rebuild(newref);
+}
+
+/************************************************************************/
+int	do_expire_lastlog_entries (void *ignored)
+{
+	expire_lastlog_entries();
+	return 0;
+}
+
+static void	expire_lastlog_entries (void)
+{
+	Lastlog *l;
+	time_t	now;
+
+	time(&now);
+	for (l = lastlog_oldest; l; l = l->newer)
+	{
+		if (l->expires > 0 && l->expires <= now) 
+		{
+			window_scrollback_needs_rebuild(l->winref);
+			remove_lastlog_item(l);
+			l = lastlog_oldest;	/* Start over */
+		}
 	}
 }
+
 

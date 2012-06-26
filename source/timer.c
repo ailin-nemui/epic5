@@ -1,4 +1,4 @@
-/* $EPIC: timer.c,v 1.55 2010/04/02 23:14:45 jnelson Exp $ */
+/* $EPIC: timer.c,v 1.56 2012/06/26 12:28:06 jnelson Exp $ */
 /*
  * timer.c -- handles timers in ircII
  *
@@ -997,4 +997,19 @@ void    timers_swap_winrefs (int oldref, int newref)
 			ref->domref = newref;
         }
 }
+
+void    timers_merge_winrefs (int oldref, int newref)
+{
+	Timer *ref;
+
+	for (ref = PendingTimers; ref; ref = ref->next)
+        {
+                if (ref->domain != WINDOW_TIMER)
+                        continue;
+
+		if (ref->domref == oldref)
+			ref->domref = newref;
+        }
+}
+
 
