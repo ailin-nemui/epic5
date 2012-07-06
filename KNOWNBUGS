@@ -4,19 +4,8 @@ KNOWN ERRATA (eg, bugs, or unresolved requests):
 ------------------------------------------------
 * Need to test the /hostname stuff -- it can fail in client_bind(4),
   maybe because it doesn't set the requested hostname before calling.
-* Can't change server 0 in the .epicrc (Crashes)
-* Should be able to change LINE value in windows (for howl)
-* Howl wants to be able to have per-window /input and /input_char
-* Howl would like "advanced scrollback" searches, like hit counts
-* I think maybe i should expose a better scrollback interface?
-* Howl would like to be able to replace any line of scrollback via windowctl
-* Kitambi would like to be able to rewrite lines after they've been displayed.
-* Caf says if you use /lastlog -context you can get lots of "null"s
-* /on set should only be thrown once if the user types the full cannonical name
-* Should any commands be #ifdef'd out at compile time, as opposed to just
-  being replaced with error-generating shims?
-* $dbmctl() files need to be cleaned up after on exit.
 * A way to turn off all color, even retroactively
+* Fix /lastlog -context for /lastlog -reverse
 
 MEDIUM-TERM PROJECTS
 --------------------
@@ -32,7 +21,15 @@ MEDIUM-TERM PROJECTS
 * The four projects of the UTF8 effort are the primary focus for now.
 * Curse would like an outbound protocol queue to avoid flooding the server
 * Larne wants syntactic word extraction like $foo{3} or $foo{1,4}
-* See if I can convert FiSH() to a64l() and l64a().
+* Howl wants to be able to have per-window /input and /input_char
+* Howl would like "advanced scrollback" searches, like hit counts
+* I think maybe i should expose a better scrollback interface?
+* Should be able to change LINE value in windows (for howl)
+* Howl would like to be able to replace any line of scrollback via windowctl
+* Kitambi would like to be able to rewrite lines after they've been displayed.
+* Should any commands be #ifdef'd out at compile time, as opposed to just
+  being replaced with error-generating shims?
+
 [I moved the old list to the file "WISHLIST" to keep this file short]
 
 [See http://www.epicsol.org/PROJECTS for things to come in the future]
@@ -251,3 +248,7 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * window->lastlog_size must be maintained for both giver and taker!
 * Try to fix some infinite loops when cleaning up window lastlogs.
 * Add fn name to many panics.
+* Make /on set only throw once if the user types the canonical /set name.
+* Automatically close all $dbmctl() open files on exit.
+* Fix /lastlog -context (but only for the normal case. -reverse comes next)
+* Update_server_from_raw_desc() was missing a clear_serverinfo().

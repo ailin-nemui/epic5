@@ -1,4 +1,4 @@
-/* $EPIC: server.c,v 1.251 2012/04/08 06:29:53 jnelson Exp $ */
+/* $EPIC: server.c,v 1.252 2012/07/06 04:52:26 jnelson Exp $ */
 /*
  * server.c:  Things dealing with that wacky program we call ircd.
  *
@@ -541,6 +541,7 @@ static	int	update_server_from_raw_desc (int refnum, char *str)
 	if (!(s = get_server(refnum)))
 		return NOSERV;
 
+	clear_serverinfo(&si);
 	str_to_serverinfo(str, &si);
 	update_refnum_serverinfo(refnum, &si);
 	return refnum;

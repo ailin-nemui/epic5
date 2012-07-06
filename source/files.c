@@ -1,4 +1,4 @@
-/* $EPIC: files.c,v 1.43 2012/03/25 02:08:06 jnelson Exp $ */
+/* $EPIC: files.c,v 1.44 2012/07/06 04:52:26 jnelson Exp $ */
 /*
  * files.c -- allows you to read/write files. Wow.
  *
@@ -812,5 +812,13 @@ char *	dbmctl (char *input)
 	}
 
 	RETURN_EMPTY;
+}
+
+void	close_all_dbms (void)
+{
+	Dbm *	x;
+
+	while ((x = DtopEntry))
+		close_dbm(x->refnum);
 }
 

@@ -27,4 +27,6 @@
 	int	file_skip		(int, int);
 
 	char *	dbmctl			(char *);
+	void    close_all_dbms 		(void);
+
 #endif

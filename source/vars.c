@@ -1,4 +1,4 @@
-/* $EPIC: vars.c,v 1.109 2010/05/30 01:12:01 jnelson Exp $ */
+/* $EPIC: vars.c,v 1.110 2012/07/06 04:52:26 jnelson Exp $ */
 /*
  * vars.c: All the dealing of the irc variables are handled here. 
  *
@@ -682,97 +682,10 @@ BUILT_IN_COMMAND(setcmd)
 	if (args && *args)
 		*args++ = 0;
 
-	if (var && *var)
-	{
-		if (*var == '-')
-		{
-			var++;
-			args = (char *) 0;
-		}
-
-		/* Exact match? */
-		upper(var);
-		b = new_bucket();
-		bucket_builtin_variables(b, var);
-
-		if (b->numitems == 1 ||
-		      (b->numitems > 1 && !my_stricmp(var, b->list[0].name)))
-		{
-			thevar = (IrcVariable *)b->list[0].stuff;
-			name = b->list[0].name;
-		}
-		else
-		{
-			thevar = NULL;
-			name = NULL;
-		}
-
-		if (!thevar || !(thevar->flags & VIF_PENDING))
-		{
-			if (thevar)
-				thevar->flags |= VIF_PENDING;
-
-			if (!do_hook(SET_LIST, "%s %s", 
-					var, args ? args : "<unset>"))
-			{
-				free_bucket(&b);
-				if (thevar)
-					thevar->flags &= ~VIF_PENDING;
-				return;		/* Grabed -- stop. */
-			}
-
-			if (name)
-			{
-			    if (!do_hook(SET_LIST, "%s %s",
-					name, args ? args : "<unset>"))
-			    {
-				free_bucket(&b);
-				if (thevar)
-					thevar->flags &= ~VIF_PENDING;
-				return;		/* Grabed -- stop. */
-			    }
-			}
-
-			if (thevar)
-				thevar->flags &= ~VIF_PENDING;
-		}
-
-		/* User didn't offer at it -- do the default thing. */
-		if (thevar)
-		{
-			if (args && !*args)
-				show_var_value(name, thevar, 0);
-			else
-				set_variable(name, thevar, args, 1);
-			free_bucket(&b);
-			return;
-		}
-
-		if (b->numitems == 0)
-		{
-		    if (do_hook(UNKNOWN_SET_LIST, "%s %s", 
-					var, args ? args : "<unset>"))
-		      if (do_hook(SET_LIST, "set-error No such variable \"%s\"",
-					var))
-			say("No such variable \"%s\"", var);
-		    free_bucket(&b);
-		    return;
-		}
-
-		else if (b->numitems > 1)
-		{
-		    if (do_hook(SET_LIST, "set-error %s is ambiguous", var))
-		    {
-			say("%s is ambiguous", var);
-			for (i = 0; i < b->numitems; i++)
-			    show_var_value(b->list[i].name, 
-					(IrcVariable *)b->list[i].stuff, 0);
-		    }
-		}
-
-		free_bucket(&b);
-	}
-	else
+	/*
+	 * Show all of the /SET values if no argument was given.
+	 */
+	if (!var || !*var)
         {
 		b = new_bucket();
 		bucket_builtin_variables(b, empty_string);
@@ -782,7 +695,135 @@ BUILT_IN_COMMAND(setcmd)
 				(IrcVariable *)b->list[i].stuff, 0);
 
 		free_bucket(&b);
+		return;
         }
+
+	/*
+	 * We're committed to changing a /SET value here.
+	 */
+
+	/*
+	 * If the name is prefixed with a hyphen, it unsets the value.
+	 */
+	if (*var == '-')
+	{
+		var++;
+		args = NULL;
+	}
+
+	/*
+	 * How many /SET VARiables are matched by what the user typed? 
+	 */
+	upper(var);
+	b = new_bucket();
+	bucket_builtin_variables(b, var);
+
+	/*
+	 * Decide if this is an "exact" match or an "uknonwn" match.
+	 */
+
+	/* Either exactly correct, or only one possible match */
+	if (b->numitems == 1 ||
+	      (b->numitems > 1 && !my_stricmp(var, b->list[0].name)))
+	{
+		thevar = (IrcVariable *)b->list[0].stuff;
+		name = b->list[0].name;
+	}
+	/* Either zero or two-or-more matches */
+	else
+	{
+		thevar = NULL;
+		name = NULL;
+	}
+
+	/*
+	 * STEP 1 -- We would Allow the user to overrule the /SET via /ON SET.
+	 * You can /SET a new value in the /ON SET!
+	 */
+	if (!thevar || !(thevar->flags & VIF_PENDING))
+	{
+		if (thevar)
+			thevar->flags |= VIF_PENDING;
+
+		/*
+		 * Offer exactly what the user asked for
+		 */
+		if (!do_hook(SET_LIST, "%s %s", 
+				var, args ? args : "<unset>"))
+		{
+			free_bucket(&b);
+			if (thevar)
+				thevar->flags &= ~VIF_PENDING;
+			return;		/* Grabbed -- stop. */
+		}
+
+		/*
+		 * Offer the fully complete name, but only
+		 * if that's not what the user asked for!
+		 */
+		if (name && my_stricmp(name, var))
+		{
+		    if (!do_hook(SET_LIST, "%s %s",
+				name, args ? args : "<unset>"))
+		    {
+			free_bucket(&b);
+			if (thevar)
+				thevar->flags &= ~VIF_PENDING;
+			return;		/* Grabbed -- stop. */
+		    }
+		}
+
+		if (thevar)
+			thevar->flags &= ~VIF_PENDING;
+	}
+
+	/*
+	 * STEP 2 -- The user /SET a valid variable, but the user didn't grab it
+	 * via an /ON SET above.
+	 */
+	if (thevar)
+	{
+		/* Either set it, or display it, depending on the args */
+		if (args && !*args)
+			show_var_value(name, thevar, 0);
+		else
+			set_variable(name, thevar, args, 1);
+
+		free_bucket(&b);
+		return;
+	}
+
+	/*
+	 * If there was no match at all (as opposed to two-or-more), then 
+	 * also throw /on unknown_set.
+	 */
+	if (b->numitems == 0)
+	{
+	    if (do_hook(UNKNOWN_SET_LIST, "%s %s", 
+				var, args ? args : "<unset>"))
+	      if (do_hook(SET_LIST, "set-error No such variable \"%s\"",
+				var))
+		say("No such variable \"%s\"", var);
+	    free_bucket(&b);
+	    return;
+	}
+
+	/*
+	 * If there was two-or-more matches (ambiguous), then also throw
+	 * /on set to tell the user it was ambiguous.
+	 */
+	else if (b->numitems > 1)
+	{
+	    if (do_hook(SET_LIST, "set-error %s is ambiguous", var))
+	    {
+		say("%s is ambiguous", var);
+		for (i = 0; i < b->numitems; i++)
+		    show_var_value(b->list[i].name, 
+				(IrcVariable *)b->list[i].stuff, 0);
+	    }
+	}
+
+	free_bucket(&b);
 }
 
 /*

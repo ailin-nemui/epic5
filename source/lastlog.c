@@ -1,4 +1,4 @@
-/* $EPIC: lastlog.c,v 1.86 2012/07/06 01:22:41 jnelson Exp $ */
+/* $EPIC: lastlog.c,v 1.87 2012/07/06 04:52:26 jnelson Exp $ */
 /*
  * lastlog.c: handles the lastlog features of irc. 
  *
@@ -65,7 +65,7 @@ typedef struct	lastlog_stru
 static	intmax_t global_lastlog_refnum = 0;
 	double	output_expires_after = 0.0;
 
-static int	show_lastlog (Lastlog **l, int *skip, int *number, Mask *level_mask, char *match, regex_t *rex, char *nomatch, int *max, const char *target, int mangler, unsigned winref, char **);
+static int	show_lastlog (Lastlog **l, int *skip, int *number, Mask *level_mask, char *match, regex_t *rex, char *nomatch, int *max, const char *target, int mangler, unsigned winref, int exempt, char **);
 static int	oldest_lastlog_for_window (Lastlog **item, unsigned winref);
 static int	newer_lastlog_entry (Lastlog **item, unsigned winref);
 static int	older_lastlog_entry (Lastlog **item, unsigned winref);
@@ -394,8 +394,9 @@ BUILT_IN_COMMAND(lastlog)
 	Mask		save_mask;
 	int		before = -1;
 	int		after = 0;
-	int		counter = 0;
+	int		exempt_counter = 0;
 	int		show_separator = 0;
+	int		but_not_first_time = 1;
 	const char *	separator = "----";
 	char *		outfile = NULL;
 	FILE *		outfp = NULL;
@@ -669,6 +670,8 @@ BUILT_IN_COMMAND(lastlog)
 		yell("Number: %d", number);
 		yell("Max: %d", max);
 		yell("Mask: %s", mask_to_str(&level_mask));
+		yell("Before/After: %d/%d", before, after);
+		yell("Separator: %s", separator);
 	}
 
 	if (outfile)
@@ -689,26 +692,30 @@ BUILT_IN_COMMAND(lastlog)
 	 * take this one step at a time.  We can either go forwards or
 	 * in reverse.  Let's consider this generically:
 	 *
-	 * ALWAYS BEFORE WE "GO TO THE NEXT ITEM" if "counter" 
+	 * ALWAYS BEFORE WE "GO TO THE NEXT ITEM" if "exempt_counter" 
 	 * is greater than one we print the current item.
 	 *
-	 *	If 'counter' is greater than 0, decrease it by one.
+	 *	If 'exempt_counter' is greater than 0, decrease it by one.
 	 *	If we haven't skipped 'skip' items, go to the next item.
 	 *	If we have seen 'number' items already, then stop.
 	 *	If this item isn't of a level in 'level_mask' go to next item.
 	 *	If this item isn't matched by 'match' go to next item.
 	 *	If this item isn't regexed by 'reg' go to next item.
 	 *	-- At this point, the item "matches" and should be displayed.
-	 *	If "counter" is 0, then this is a new match on its own.
-	 *	   Go back "context" items, and set "counter" to "distance".
-	 *	Otherwise, if "counter" is not 0, then we are in the middle
-	 *	   of a previous match.  Do not go back, but set "counter"
+	 *	If "eixempt_counter" is 0, then this is a new match on its own.
+	 *	   Go back "context" items, and set "exempt_counter" to "distance".
+	 *	Otherwise, if "exempt_counter" is not 0, then we are in the middle
+	 *	   of a previous match.  Do not go back, but set "exempt_counter"
 	 *	   to "distance" (to make sure we keep outputting).
 	 */
 	if (reverse == 0)
 	{
 	    int i = 0;
 
+	    /*
+	     * Starting at the NEWEST entry, count back <number> entries.
+	     * This establishes the START POINT for our searches
+	     */
 	    for (start = end = lastlog_newest; start != lastlog_oldest; )
 	    {
 		if (start->visible && start->winref == winref)
@@ -722,48 +729,148 @@ BUILT_IN_COMMAND(lastlog)
 		start = start->older;
 	    }
 
+	    /*
+	     * Fine.  Now walk all of the lastlog entries between "start" and "end".
+	     */
 	    lastshown = NULL;
 	    for (l = start; l; (void)(l && (l = l->newer)))
 	    {
-		char *result = NULL;
+		char *result;
+		int	exempt, matching;
 
-		if (show_lastlog(&l, &skip, &number, &level_mask, 
-				match, rex, nomatch, &max, target, 
-				mangler, winref, &result))
+restart:
+		result = NULL;
+		exempt = 0;
+		matching = 0;
+
+		/* Under any "context" situation, we unconditionally show it */
+		if (exempt_counter > 0)
 		{
-		    if (counter == 0 && before > 0)
-		    {
-			counter = 1;
+			if (x_debug & DEBUG_LASTLOG)
+				yell("This line is exempt (%d left): %s", exempt_counter, l->msg);
+			exempt = 1;
+			exempt_counter--;
+		}
+
+		/* In any case we always check if it matches (for counting purposes) */
+		matching = show_lastlog(&l, &skip, &number, &level_mask, 
+					match, rex, nomatch, &max, target, 
+					mangler, winref, exempt, &result);
+
+		/* 
+		 * Now if the present entry "matches" and we are already in a context
+		 * then we just reset the context
+		 */
+		if (matching && exempt)
+		{
+			if (x_debug & DEBUG_LASTLOG)
+				yell("I matched already in context. resetting counter: %s", l->msg);
+
+			exempt_counter = after;
+		}
+
+		/*
+		 * If the present entry "matches" and we are not already in a context,
+		 * we must see if the previous <before> lines overlapped with the
+		 * previous context (marked by ``lastshown'')
+		 */
+		else if (matching && !exempt && before > 0)
+		{
+			exempt_counter = 1;
+			show_separator = 1;
+
+			/*
+			 * So from the "match point", we walk back <before> entries.
+			 */
 			for (i = 0; i < before; i++)
 			{
+			     if (x_debug & DEBUG_LASTLOG)
+				yell("Moving back (%d of %d), now at %s", i, before, l->msg);
+
+			    /*
+			     * HOWEVER -- if we bump into something that we've already
+			     * shown (because of a previous context), we just keep 
+			     * showing from there.
+			     */
 			    if (l && l == lastshown)
-			    {
+				break;
+
+			    /*
+			     * Otherwise, we keep moving back.
+			     * Note that "counter" counts the number of lines we want
+			     * to unconditionally show!
+			     */
+			    if (l && l->older)
+				l = l->older;
+			}
+
+			if (l && l == lastshown)
+			{
+			        if (x_debug & DEBUG_LASTLOG)
+					yell("I found the previous context at %d / %s", i, l->msg);
+
 				if (l->newer)
 				    l = l->newer;
+
+				/* Don't show the separator if the contexts overlap */
 				show_separator = 0;
-				break;
-			    }
-
-			    if (l && l->older)
-			    {
-				l = l->older;
-				counter++;
-			    }
+				i--;
 			}
-		    }
-		    else if (after != -1)
-			counter = after + 1;
-		    else
-			counter = 1;
 
-		    if (show_separator)
-		    {
-			file_put_it(outfp, "%s", separator);
+			exempt_counter += i;
+			if (after != -1)
+				exempt_counter += after;
+
+			if (x_debug & DEBUG_LASTLOG)
+				yell("I matched not in context, went back %d spots, total %d exemptions: %s",
+					i, exempt_counter, l->msg);
+			goto restart;
+		}
+
+		/*
+		 * If there is "after context", then exempt that many rows.
+		 */
+		else if (matching && !exempt && after != -1)
+		{
+			exempt_counter += after;
+			if (x_debug & DEBUG_LASTLOG)
+				yell("I matched not in context, no back context, total %d exemptions: %s",
+					exempt_counter, l->msg);
+		}
+
+		/*
+		 * If there is no context at all, then exempt no rows.
+		 */
+		else if (matching)
+		{
+			exempt_counter = 0;
+			if (x_debug & DEBUG_LASTLOG)
+				yell("I matched -- no contexts! %s", l->msg);
+		}
+
+
+		/*
+		 * Now if we're showing context, we have to show the separator
+		 * between each context -- but only if this context does not 
+		 * overlap with the previous one (see above)
+		 */
+		if (show_separator)
+		{
+			if (but_not_first_time)
+				but_not_first_time = 0;
+			else
+				file_put_it(outfp, "%s", separator);
+
 			show_separator = 0;
-		    }
+		}
 
-		    if (counter)
-		    {
+		/*
+		 * Now show <counter> lines -- which will include the line
+		 * that matched, and surrounding context.
+		 */
+		if (matching || exempt)
+    		{
+			/* Honor /LOG REWRITE. */
 			if (rewrite)
 			{
 				unsigned char *n, vitals[10240];
@@ -784,11 +891,18 @@ BUILT_IN_COMMAND(lastlog)
 			else
 				file_put_it(outfp, "%s", result);
 
+			/* Keep track of what we have shown. */
 			lastshown = l;
-			counter--;
-			if (counter == 0 && before != -1 && separator)
+
+			/* 
+			 * Once we show all the required rows,
+			 * we have to show the separator next time!
+			 * XXX I'm not sure this is necessary.
+			 */
+/*
+			if (exempt_counter == 1 && before != -1 && separator)
 				show_separator = 1;
-		    }
+*/
 		}
 
 		new_free(&result);
@@ -820,11 +934,11 @@ BUILT_IN_COMMAND(lastlog)
 
 		if (show_lastlog(&l, &skip, &number, &level_mask, 
 				match, rex, nomatch, &max, target, 
-				mangler, winref, &result))
+				mangler, winref, 1, &result))
 		{
-		    if (counter == 0 && before > 0)
+		    if (exempt_counter == 0 && before > 0)
 		    {
-			counter = 1;
+			exempt_counter = 1;
 			for (i = 0; i < before; i++)
 			{
 			    if (l && l == lastshown)
@@ -838,14 +952,14 @@ BUILT_IN_COMMAND(lastlog)
 			    if (l && l->newer)
 			    {
 				l = l->newer;
-				counter++;
+				exempt_counter++;
 			    }
 			}
 		    }
 		    else if (after != -1)
-			counter = after + 1;
+			exempt_counter = after + 1;
 		    else
-			counter = 1;
+			exempt_counter = 1;
 
 		    if (show_separator)
 		    {
@@ -853,7 +967,7 @@ BUILT_IN_COMMAND(lastlog)
 			show_separator = 0;
 		    }
 
-		    if (counter)
+		    if (exempt_counter)
 		    {
 			if (rewrite)
 			{
@@ -876,8 +990,8 @@ BUILT_IN_COMMAND(lastlog)
 				file_put_it(outfp, "%s", result);
 
 			lastshown = l;
-			counter--;
-			if (counter == 0 && before != -1 && separator)
+			exempt_counter--;
+			if (exempt_counter == 0 && before != -1 && separator)
 				show_separator = 1;
 		    }
 		}
@@ -902,9 +1016,11 @@ bail:
  * This returns 1 if the current item pointed to by 'l' is something that
  * should be displayed based on the criteron provided.
  */
-static int	show_lastlog (Lastlog **l, int *skip, int *number, Mask *level_mask, char *match, regex_t *rex, char *nomatch, int *max, const char *target, int mangler, unsigned winref, char **result)
+static int	show_lastlog (Lastlog **l, int *skip, int *number, Mask *level_mask, char *match, regex_t *rex, char *nomatch, int *max, const char *target, int mangler, unsigned winref, int exempt, char **result)
 {
 	const char *str = NULL;
+	int	retval = 1;
+
 	*result = NULL;
 
 	if ((*l)->winref != winref)
@@ -913,7 +1029,6 @@ static int	show_lastlog (Lastlog **l, int *skip, int *number, Mask *level_mask, 
 			yell("Lastlog item belongs to another window");
 		return 0;
 	}
-
 
 	if ((*l)->visible == 0)
 	{
@@ -927,7 +1042,11 @@ static int	show_lastlog (Lastlog **l, int *skip, int *number, Mask *level_mask, 
 		if (x_debug & DEBUG_LASTLOG)
 			yell("Skip > 0 -- [%d]", *skip);
 		(*skip)--;	/* Have not skipped enough leading records */
-		return 0;
+
+		if (exempt)
+			retval = 0;
+		else
+			return 0;
 	}
 
 	if (!mask_isnone(level_mask) && !mask_isset(level_mask, (*l)->level))
@@ -935,7 +1054,11 @@ static int	show_lastlog (Lastlog **l, int *skip, int *number, Mask *level_mask, 
 		if (x_debug & DEBUG_LASTLOG)
 			yell("Level_mask != level ([%s] [%s])",
 				mask_to_str(level_mask), level_to_str((*l)->level));
-		return 0;			/* Not of proper level */
+
+		if (exempt)
+			retval = 0;
+		else
+			return 0;			/* Not of proper level */
 	}
 
 	if (mangler)
@@ -950,44 +1073,65 @@ static int	show_lastlog (Lastlog **l, int *skip, int *number, Mask *level_mask, 
 	else
 		str = (*l)->msg;
 
+
 	if (match && !wild_match(match, str))
 	{
 		if (x_debug & DEBUG_LASTLOG)
 			yell("Line [%s] not matched [%s]", str, match);
-		return 0;			/* Pattern match failed */
+
+		if (exempt)
+			retval = 0;
+		else
+			return 0;			/* Pattern match failed */
 	}
 	if (nomatch && wild_match(nomatch, str))
 	{
 		if (x_debug & DEBUG_LASTLOG)
 			yell("Line [%s] is matched [%s]", str, nomatch);
-		return 0;			/* Pattern match failed */
+
+		if (exempt)
+			retval = 0;
+		else
+			return 0;			/* Pattern match failed */
 	}
 
 	if (rex && regexec(rex, str, 0, NULL, 0))
 	{
 		if (x_debug & DEBUG_LASTLOG)
 			yell("Line [%s] not regexed", str);
-		return 0;			/* Regex match failed */
+
+		if (exempt)
+			retval = 0;
+		else
+			return 0;			/* Regex match failed */
 	}
 	if (target && (!(*l)->target || !wild_match(target, (*l)->target)))
 	{
 		if (x_debug & DEBUG_LASTLOG)
 			yell("Target [%s] not matched [%s]", 
 					(*l)->target, target);
-		return 0;			/* Target match failed */
+
+		if (exempt)
+			retval = 0;
+		else
+			return 0;			/* Target match failed */
 	}
 	if (*max == 0)
 	{
 		if (x_debug & DEBUG_LASTLOG)
 			yell("max == 0");
 		*l = NULL;	/* Have shown maximum number of matches */
-		return 0;
+
+		if (exempt)
+			retval = 0;
+		else
+			return 0;
 	}
 	if (*max > 0)
 		(*max)--;	/* Have not yet shown max number of matches */
 
 	(*result) = malloc_strdup(str);
-	return 1;		/* Show it! */
+	return retval;		/* Show it! (or not, if exempt) */
 }
 
 /*
