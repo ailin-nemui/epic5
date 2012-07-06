@@ -2,10 +2,7 @@ EPIC5 Projects, Bugs, and other Errata:
 
 KNOWN ERRATA (eg, bugs, or unresolved requests):
 ------------------------------------------------
-* Need to test the /hostname stuff -- it can fail in client_bind(4),
-  maybe because it doesn't set the requested hostname before calling.
-* A way to turn off all color, even retroactively
-* Fix /lastlog -context for /lastlog -reverse
+<none!  (can you believe it?)>
 
 MEDIUM-TERM PROJECTS
 --------------------
@@ -252,3 +249,7 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Automatically close all $dbmctl() open files on exit.
 * Fix /lastlog -context (but only for the normal case. -reverse comes next)
 * Update_server_from_raw_desc() was missing a clear_serverinfo().
+* Improve error handling for /hostname errors.
+* Add /xdebug no_color which turns off color support at the lowest level.
+* Fix /lastlog -reverse -context, all done now!
+

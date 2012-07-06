@@ -21,7 +21,7 @@ extern	char *	function_xdebug (char *);
 #define DEBUG_8			1 << 8
 #define DEBUG_SERVER_CONNECT	1 << 9
 #define DEBUG_CRASH		1 << 10
-#define DEBUG_11		1 << 11
+#define DEBUG_NO_COLOR		1 << 11
 #define DEBUG_NOTIFY		1 << 12
 #define DEBUG_REGEX		1 << 13
 #define DEBUG_REGEX_DEBUG	1 << 14
@@ -40,6 +40,6 @@ extern	char *	function_xdebug (char *);
 #define DEBUG_MESSAGE_FROM	1 << 27
 #define DEBUG_WHO_QUEUE		1 << 28
 #define DEBUG_UNICODE		1 << 29
-#define DEBUG_DWORD 1 << 30
+#define DEBUG_DWORD 		1 << 30
 
 #endif

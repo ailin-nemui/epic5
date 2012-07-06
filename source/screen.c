@@ -1,4 +1,4 @@
-/* $EPIC: screen.c,v 1.144 2009/11/26 18:18:06 jnelson Exp $ */
+/* $EPIC: screen.c,v 1.145 2012/07/06 22:38:21 jnelson Exp $ */
 /*
  * screen.c
  *
@@ -349,10 +349,14 @@ static void	term_attribute (Attribute *a)
 	if (a->underline)	term_underline_on();
 	if (a->altchar)		term_altcharset_on();
 
-	if (a->color_fg) {	if (a->fg_color > 7) abort(); 
-				else term_set_foreground(a->fg_color); }
-	if (a->color_bg) {	if (a->bg_color > 7) abort();
-				else term_set_background(a->bg_color); }
+	/* XXXX This is where you'd put in a shim to globally defeat colors */
+	if (!(x_debug & DEBUG_NO_COLOR))
+	{
+		if (a->color_fg) {	if (a->fg_color > 7) abort(); 
+					else term_set_foreground(a->fg_color); }
+		if (a->color_bg) {	if (a->bg_color > 7) abort();
+					else term_set_background(a->bg_color); }
+	}
 }
 
 /* * * * * * * * * * * * * COLOR SUPPORT * * * * * * * * * * * * * * * * */

@@ -1,4 +1,4 @@
-/* $EPIC: lastlog.c,v 1.87 2012/07/06 04:52:26 jnelson Exp $ */
+/* $EPIC: lastlog.c,v 1.88 2012/07/06 22:38:21 jnelson Exp $ */
 /*
  * lastlog.c: handles the lastlog features of irc. 
  *
@@ -893,16 +893,6 @@ restart:
 
 			/* Keep track of what we have shown. */
 			lastshown = l;
-
-			/* 
-			 * Once we show all the required rows,
-			 * we have to show the separator next time!
-			 * XXX I'm not sure this is necessary.
-			 */
-/*
-			if (exempt_counter == 1 && before != -1 && separator)
-				show_separator = 1;
-*/
 		}
 
 		new_free(&result);
@@ -910,6 +900,12 @@ restart:
 			break;
 	    }
 	}
+
+	/* 
+	 * The user specified -reverse
+	 * XXX This should be folded into the above, but there are so many
+	 * minor changes as to make that impractical. such a bummer!
+	 */
 	else
 	{
 	    int i = 0;
@@ -927,48 +923,148 @@ restart:
 		end = end->older;
 	    }
 
+	    /*
+	     * Fine.  Now walk all of the lastlog entries between "start" and "end".
+	     */
 	    lastshown = NULL;
-	    for (l = start; l; (void)(l && (l = l->older)))
+	    for (l = start; l; (void)(l && (l = l->older)))	/* <<<< */
 	    {
-		char *result = NULL;
+		char *result;
+		int	exempt, matching;
 
-		if (show_lastlog(&l, &skip, &number, &level_mask, 
-				match, rex, nomatch, &max, target, 
-				mangler, winref, 1, &result))
+restart2:
+		result = NULL;
+		exempt = 0;
+		matching = 0;
+
+		/* Under any "context" situation, we unconditionally show it */
+		if (exempt_counter > 0)
 		{
-		    if (exempt_counter == 0 && before > 0)
-		    {
+			if (x_debug & DEBUG_LASTLOG)
+				yell("This line is exempt (%d left): %s", exempt_counter, l->msg);
+			exempt = 1;
+			exempt_counter--;
+		}
+
+		/* In any case we always check if it matches (for counting purposes) */
+		matching = show_lastlog(&l, &skip, &number, &level_mask, 
+					match, rex, nomatch, &max, target, 
+					mangler, winref, exempt, &result);
+
+		/* 
+		 * Now if the present entry "matches" and we are already in a context
+		 * then we just reset the context
+		 */
+		if (matching && exempt)
+		{
+			if (x_debug & DEBUG_LASTLOG)
+				yell("I matched already in context. resetting counter: %s", l->msg);
+
+			exempt_counter = after;
+		}
+
+		/*
+		 * If the present entry "matches" and we are not already in a context,
+		 * we must see if the previous <before> lines overlapped with the
+		 * previous context (marked by ``lastshown'')
+		 */
+		else if (matching && !exempt && before > 0)
+		{
 			exempt_counter = 1;
+			show_separator = 1;
+
+			/*
+			 * So from the "match point", we walk back <before> entries.
+			 */
 			for (i = 0; i < before; i++)
 			{
+			     if (x_debug & DEBUG_LASTLOG)
+				yell("Moving back (%d of %d), now at %s", i, before, l->msg);
+
+			    /*
+			     * HOWEVER -- if we bump into something that we've already
+			     * shown (because of a previous context), we just keep 
+			     * showing from there.
+			     */
 			    if (l && l == lastshown)
-			    {
+				break;
+
+			    /*
+			     * Otherwise, we keep moving back.
+			     * Note that "counter" counts the number of lines we want
+			     * to unconditionally show!
+			     */
+			    if (l && l->newer)		/* <<<<<< */
+				l = l->newer;		/* <<<<<< */
+			}
+
+			if (l && l == lastshown)
+			{
+			        if (x_debug & DEBUG_LASTLOG)
+					yell("I found the previous context at %d / %s", i, l->msg);
+
 				if (l->older)
 				    l = l->older;
+
+				/* Don't show the separator if the contexts overlap */
 				show_separator = 0;
-				break;
-			    }
-
-			    if (l && l->newer)
-			    {
-				l = l->newer;
-				exempt_counter++;
-			    }
+				i--;
 			}
-		    }
-		    else if (after != -1)
-			exempt_counter = after + 1;
-		    else
-			exempt_counter = 1;
 
-		    if (show_separator)
-		    {
-			file_put_it(outfp, "%s", separator);
+			exempt_counter += i;
+			if (after != -1)
+				exempt_counter += after;
+
+			if (x_debug & DEBUG_LASTLOG)
+				yell("I matched not in context, went back %d spots, total %d exemptions: %s",
+					i, exempt_counter, l->msg);
+			goto restart2;
+		}
+
+		/*
+		 * If there is "after context", then exempt that many rows.
+		 */
+		else if (matching && !exempt && after != -1)
+		{
+			exempt_counter += after;
+			if (x_debug & DEBUG_LASTLOG)
+				yell("I matched not in context, no back context, total %d exemptions: %s",
+					exempt_counter, l->msg);
+		}
+
+		/*
+		 * If there is no context at all, then exempt no rows.
+		 */
+		else if (matching)
+		{
+			exempt_counter = 0;
+			if (x_debug & DEBUG_LASTLOG)
+				yell("I matched -- no contexts! %s", l->msg);
+		}
+
+
+		/*
+		 * Now if we're showing context, we have to show the separator
+		 * between each context -- but only if this context does not 
+		 * overlap with the previous one (see above)
+		 */
+		if (show_separator)
+		{
+			if (but_not_first_time)
+				but_not_first_time = 0;
+			else
+				file_put_it(outfp, "%s", separator);
+
 			show_separator = 0;
-		    }
+		}
 
-		    if (exempt_counter)
-		    {
+		/*
+		 * Now show <counter> lines -- which will include the line
+		 * that matched, and surrounding context.
+		 */
+		if (matching || exempt)
+    		{
+			/* Honor /LOG REWRITE. */
 			if (rewrite)
 			{
 				unsigned char *n, vitals[10240];
@@ -989,12 +1085,10 @@ restart:
 			else
 				file_put_it(outfp, "%s", result);
 
+			/* Keep track of what we have shown. */
 			lastshown = l;
-			exempt_counter--;
-			if (exempt_counter == 0 && before != -1 && separator)
-				show_separator = 1;
-		    }
 		}
+
 		new_free(&result);
 		if (l == end)
 			break;
