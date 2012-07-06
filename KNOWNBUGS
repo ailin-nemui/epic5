@@ -16,6 +16,7 @@ KNOWN ERRATA (eg, bugs, or unresolved requests):
 * Should any commands be #ifdef'd out at compile time, as opposed to just
   being replaced with error-generating shims?
 * $dbmctl() files need to be cleaned up after on exit.
+* A way to turn off all color, even retroactively
 
 MEDIUM-TERM PROJECTS
 --------------------
@@ -29,7 +30,6 @@ MEDIUM-TERM PROJECTS
 	*!*user@*.com.au but instead *!*user@*.domain.com.au
 * There should be a fake level for "channel stuff"
 * The four projects of the UTF8 effort are the primary focus for now.
-* Fusion wants /xecho -sec 10 this goes away in 10 seconds
 * Curse would like an outbound protocol queue to avoid flooding the server
 * Larne wants syntactic word extraction like $foo{3} or $foo{1,4}
 * See if I can convert FiSH() to a64l() and l64a().
@@ -248,3 +248,6 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Remove the scripted COMMAND_MODE feature, which interferes with /window merge
 * Add /xecho -E which causes window output to get away after some seconds
 * Add /window merge which collapses two windows into one and kills the other
+* window->lastlog_size must be maintained for both giver and taker!
+* Try to fix some infinite loops when cleaning up window lastlogs.
+* Add fn name to many panics.

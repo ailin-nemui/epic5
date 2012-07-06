@@ -1,4 +1,4 @@
-/* $EPIC: window.c,v 1.221 2012/06/26 12:28:06 jnelson Exp $ */
+/* $EPIC: window.c,v 1.222 2012/07/06 01:22:41 jnelson Exp $ */
 /*
  * window.c: Handles the organzation of the logical viewports (``windows'')
  * for irc.  This includes keeping track of what windows are open, where they
@@ -422,8 +422,7 @@ void 	delete_window (Window *window)
 			 (window->screen->current_window && 
 			    window->screen->current_window != window))
 		{
-			panic(1, "My screen says there is only one "
-				"window on it, and I don't agree.");
+			panic(1, "delete_window: My screen says there is only one window on it, and I don't agree.");
 		}
 		else
 		{
@@ -495,7 +494,7 @@ void 	delete_window (Window *window)
 		if (window == last_input_screen->current_window)
 		{
 		    if (window->screen != last_input_screen)
-			panic(1, "I am not on that screen");
+			panic(1, "delete_window: I am not on that screen");
 		    else
 			make_window_current(last_input_screen->window_list);
 		}
@@ -503,7 +502,7 @@ void 	delete_window (Window *window)
 			make_window_current(NULL);
 	}
 	if (window == current_window)
-		panic(1, "window == current_window -- this is wrong.");
+		panic(1, "delete_window: window == current_window -- I was unable to find another window, but I already checked that, so this is a bug.");
 
 	/*
 	 * OK!  Now we have completely unlinked this window from whatever
@@ -561,8 +560,7 @@ delete_window_contents:
 		}
 		window->display_ip = NULL;
 		if (window->display_buffer_size != 0)
-			panic(1, "display_buffer_size is %d, should be 0", 
-				window->display_buffer_size);
+			panic(1, "delete_window: display_buffer_size is %d, should be 0", window->display_buffer_size);
 	}
 
 	/* The lastlog... */
@@ -708,7 +706,7 @@ static void 	remove_from_invisible_list (Window *window)
 	for (w = invisible_list; w && w != window; w = w->next)
 		;
 	if (!w)
-		panic(1, "This window is _not_ invisible");
+		panic(1, "remove_from_invisible_list: This window is _not_ invisible");
 
 	/*
 	 * Unlink it from the list
@@ -754,7 +752,7 @@ Window *add_to_window_list (Screen *screen, Window *new_w)
 		*tmp;
 
 	if (screen == NULL)
-		panic(1, "Cannot add window [%d] to NULL screen.", new_w->refnum);
+		panic(1, "add_to_window_list: Cannot add window [%d] to NULL screen.", new_w->refnum);
 
 	screen->visible_windows++;
 	new_w->screen = screen;
@@ -836,7 +834,7 @@ static void 	remove_window_from_screen (Window *window, int hide)
 	Screen *s;
 
 	if (!((s = window->screen)))
-		panic(1, "This window is not on a screen");
+		panic(1, "remove_window_from_screen: This window is not on a screen");
 
 	/*
 	 * We  used to go to greath lengths to figure out how to fill
@@ -3313,6 +3311,22 @@ static Window *window_channel (Window *window, char **args)
 	return window;
 }
 
+static Window *window_check (Window *window, char **args)
+{
+	Window *tmp;
+	int	lastlog_count;
+
+	tmp = NULL;
+	while (traverse_all_windows(&tmp))
+	{
+		lastlog_count = recount_window_lastlog(tmp->refnum);
+		if (lastlog_count != tmp->lastlog_size)
+			yell("window [%d]'s lastlog is wrong: should be [%d], is [%d]",
+				tmp->refnum, lastlog_count, tmp->lastlog_size);
+	}
+}
+
+
 /* WINDOW CLEAR -- should be obvious, right? */
 static Window *window_clear (Window *window, char **args)
 {
@@ -4651,8 +4665,7 @@ Window *window_rejoin (Window *window, char **args)
 
 			/* If there is still no owner, we messed up. */
 			if (!owner)
-				panic(1, "There are no windows for this server, "
-				      "and there should be.");
+				panic(1, "window_rejoin: There are no windows for this server, and there should be.");
 
 			add_waiting_channel(owner, chan);
 			malloc_strcat_wordlist(&newchan, ",", chan);
@@ -5284,6 +5297,7 @@ static const window_ops options [] = {
 	{ "BALANCE",		window_balance 		},
 	{ "BEEP_ALWAYS",	window_beep_always 	},
 	{ "CHANNEL",		window_channel 		},
+	{ "CHECK",		window_check		},
 	{ "CLEAR",		window_clear		},
 	{ "CREATE",		window_create 		},
 	{ "DELETE",		window_delete 		},
@@ -5529,7 +5543,8 @@ static Display *recycle = NULL;
 static void 	delete_display_line (Display *stuff)
 {
 	if (recycle == stuff)
-		panic(1, "recycle == stuff is bogus");
+		panic(1, "delete_display_line: Deleting the same line twice is invalid.");
+
 	if (recycle)
 	{
 		new_free((char **)&recycle->line);
@@ -5682,9 +5697,7 @@ static int	add_to_display (Window *window, const unsigned char *str, intmax_t re
 		for (i = 0; i < scroll; i++)
 		{
 			if (window->scrolling_top_of_display == NULL)
-				panic(1, "Window %d tried to scroll %d lines"
-				      "but it is only %d lines tall",
-						scroll, i);
+				panic(1, "add_to_display, Window %d tried to scroll %d lines but it is only %d lines tall", scroll, i);
 
 			window->scrolling_top_of_display = 
 				window->scrolling_top_of_display->next;
@@ -6320,11 +6333,11 @@ static void 	set_screens_current_window (Screen *screen, Window *window)
 		window = screen->window_list;
 
 	if (window->deceased)
-		panic(1, "This window is dead.");
+		panic(1, "sccw: This window is dead.");
 	if (window->screen != screen)
-		panic(1, "The window is not on that screen.");
+		panic(1, "sccw: The window is not on that screen.");
 	if (!screen)
-		panic(1, "Cannot set the invisible screen's current window.");
+		panic(1, "sccw: Cannot set the invisible screen's current window.");
 
 	if (screen->current_window != window)
 	{

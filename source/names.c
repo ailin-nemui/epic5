@@ -1,12 +1,11 @@
-/* $EPIC: names.c,v 1.81 2012/06/26 12:28:06 jnelson Exp $ */
+/* $EPIC: names.c,v 1.82 2012/07/06 01:22:41 jnelson Exp $ */
 /*
- * names.c: This here is used to maintain a list of all the people currently
- * on your channel.  Seems to work 
+ * names.c: Channels and Nicks and Servers, oh my!
  *
  * Copyright (c) 1990 Michael Sandroff.
  * Copyright (c) 1991, 1992 Troy Rollo.
  * Copyright (c) 1992-1996 Matthew Green.
- * Copyright © 1993, 2003 EPIC Software Labs.
+ * Copyright © 1993, 2012 EPIC Software Labs.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -79,9 +78,10 @@ struct	channel_stru *	prev;		/* pointer to previous channel */
 	int		server;		/* The server the channel is "on" */
 	int		winref;		/* The window the channel is "on" */
 	int		curr_count;	/* Current channel precedence */
+
+	/* Channel stuff */
 	int		waiting;	/* Syncing, waiting for names/who */
 	NickList	nicks;		/* alist of nicks on channel */
-
 	char 		base_modes[54];	/* Just the modes w/o args */
 	int		limit;		/* max users for the channel */
 	char *		key;		/* key for this channel */
@@ -97,9 +97,6 @@ struct	channel_stru *	prev;		/* pointer to previous channel */
 /* channel_list: list of all the channels you are currently on */
 static	Channel *	channel_list = NULL;
 
-#if 0
-static	int	match_chan_with_id (const char *chan, const char *match);
-#endif
 static	void	channel_hold_election (int winref);
 
 
@@ -1596,41 +1593,6 @@ void	cant_join_channel (const char *channel, int server)
 	claim_waiting_channel(channel, server);
 	update_all_windows();
 }
-
-#if 0
-/*
- * match_chan_with_id: check if the channel matches.  It checks also takes
- * the ID into account for !channels
- * match can be NULL, chan should never be NULL.
- * it returns 0 when they amtch, something else when not.
- */
-static int	match_chan_with_id (const char *chan, const char *match)
-{
-	int	i = 1;
-
-	if (!match)
-		return 1;
-
-	if (*chan == '!' && *match == '!')
-	{
-		/*
-		 * Check that it's a channel being created.  If so, skip
-		 * that char.
-		 */
-		if (match[1] == '!')
-			i++;
-
-		/*
-		 * !IDchan should also match !chan, which is how we usually
-		 * see it. (the ID is 5 chars long)
-		 */
-		return (my_stricmp(chan + 1, match + i) &&
-			my_stricmp(chan + 6, match + i));
-	}
-
-	return my_stricmp(chan, match);
-}
-#endif
 
 /*
  *

@@ -1,4 +1,4 @@
-/* $EPIC: lastlog.c,v 1.85 2012/06/26 12:28:06 jnelson Exp $ */
+/* $EPIC: lastlog.c,v 1.86 2012/07/06 01:22:41 jnelson Exp $ */
 /*
  * lastlog.c: handles the lastlog features of irc. 
  *
@@ -71,7 +71,6 @@ static int	newer_lastlog_entry (Lastlog **item, unsigned winref);
 static int	older_lastlog_entry (Lastlog **item, unsigned winref);
 static int	newest_lastlog_for_window (Lastlog **item, unsigned winref);
 static void	remove_lastlog_item (Lastlog *item);
-static void	switch_lastlog_window (Lastlog *item, unsigned newref);
 static void	move_lastlog_item (Lastlog *item, unsigned newref);
 static void	expire_lastlog_entries (void);
 
@@ -265,9 +264,26 @@ intmax_t	add_to_lastlog (Window *window, const char *line)
 void 	trim_lastlog (Window *window)
 {
 	Lastlog *item = NULL;
+	int	count = 0;
+
+	window->lastlog_size = recount_window_lastlog(window->refnum);
 
 	while (window->lastlog_size > window->lastlog_max)
 	{
+		/* These are awful, hideous hacks to avoid deadlocks until I refactor all this code. */
+		if (count++ > 100000)
+		{
+			/* I can't even yell here!  Just punt. */
+			window->lastlog_size = recount_window_lastlog(window->refnum);
+			continue;
+		}
+
+		if (count++ > 200000)
+		{
+			window->lastlog_size = window->lastlog_max;
+			continue;
+		}
+
 		item = NULL;
 		if (oldest_lastlog_for_window(&item, window->refnum))
 			remove_lastlog_item(item);
@@ -1194,8 +1210,11 @@ BUILT_IN_FUNCTION(function_lastlogctl, input)
 
 static int	oldest_lastlog_for_window (Lastlog **item, unsigned winref)
 {
+	int	retval;
+
 	*item = NULL;
-	return newer_lastlog_entry(item, winref);
+	retval = newer_lastlog_entry(item, winref);
+	return retval;
 }
 
 static int	newer_lastlog_entry (Lastlog **item, unsigned winref)
@@ -1234,6 +1253,18 @@ static int	newest_lastlog_for_window (Lastlog **item, unsigned winref)
 {
 	*item = NULL;
 	return older_lastlog_entry(item, winref);
+}
+
+int	recount_window_lastlog (unsigned winref)
+{
+	Lastlog *i;
+	int	count;
+
+	for (i = lastlog_oldest; i; i = i->newer)
+		if (i->winref == winref && i->visible)
+			count++;
+
+	return count;
 }
 
 /*
@@ -1293,21 +1324,18 @@ static void	remove_lastlog_item (Lastlog *item)
 	new_free((char **)&item);
 }
 
-static void	switch_lastlog_window (Lastlog *item, unsigned newref)
-{
-	/* Mark the old window's scrollback for reconstitution */
-	window_scrollback_needs_rebuild(item->winref);
-	item->winref = newref;
-	/* Mark the new window's scrollback for reconstitution */
-	window_scrollback_needs_rebuild(item->winref);
-}
-
 /***************************************************************************/
 static void	move_lastlog_item (Lastlog *item, unsigned newref)
 {
 	unsigned	oldref = item->winref;
+	Window *o, *n;
 
 	item->winref = newref;
+	if ((o = get_window_by_refnum(oldref)))
+		o->lastlog_size--;
+	if ((n = get_window_by_refnum(newref)))
+		n->lastlog_size++;
+
 	window_scrollback_needs_rebuild(oldref);
 	window_scrollback_needs_rebuild(newref);
 }
@@ -1407,7 +1435,8 @@ void	lastlog_swap_winrefs (unsigned oldref, unsigned newref)
 			l->winref = newref;
 			if ((w = get_window_by_refnum(oldref)))
 				w->lastlog_size--;
-			
+			if ((w = get_window_by_refnum(newref)))
+				w->lastlog_size++;
 		}
 		else if (l->winref == newref)
 		{
@@ -1416,6 +1445,8 @@ void	lastlog_swap_winrefs (unsigned oldref, unsigned newref)
 			l->winref = oldref;
 			if ((w = get_window_by_refnum(newref)))
 				w->lastlog_size--;
+			if ((w = get_window_by_refnum(oldref)))
+				w->lastlog_size++;
 		}
 	}
 	window_scrollback_needs_rebuild(oldref);
@@ -1435,6 +1466,8 @@ void	lastlog_merge_winrefs (unsigned oldref, unsigned newref)
 			l->winref = newref;
 			if ((w = get_window_by_refnum(oldref)))
 				w->lastlog_size--;
+			if ((w = get_window_by_refnum(newref)))
+				w->lastlog_size++;
 		}
 	}
 	window_scrollback_needs_rebuild(oldref);
