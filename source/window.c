@@ -1,4 +1,4 @@
-/* $EPIC: window.c,v 1.222 2012/07/06 01:22:41 jnelson Exp $ */
+/* $EPIC: window.c,v 1.223 2012/07/13 03:05:02 jnelson Exp $ */
 /*
  * window.c: Handles the organzation of the logical viewports (``windows'')
  * for irc.  This includes keeping track of what windows are open, where they
@@ -2691,6 +2691,33 @@ void	pop_message_from (int context)
 	who_from = contexts[context_counter - 1].who_from;
 	who_level = contexts[context_counter - 1].who_level;
 	to_window = get_window_by_refnum(contexts[context_counter - 1].to_window);
+}
+
+/* 
+ * This is called from io() when the main loop has fully unwound.
+ * in theory, there shouldn't be ANY contexts left on the stack.
+ * if there are, maybe we should panic here?  Or maybe just delete them.
+ */
+void	check_message_from_queue (void)
+{
+	int	i;
+
+	/* Well, there's always one context left... */
+	if (context_counter != 1)
+	{
+	    /* Alert to the problem...
+	    for (i = 1; i < context_counter; i++)
+	    {
+		yell("Warning: Output context from %s:%d was not released",
+			contexts[i].who_file,
+			contexts[i].who_line);
+
+	    }
+
+	    /* And then clean up the mess. */
+	    while (context_counter > 1)
+		pop_message_from(context_counter - 1);
+	}
 }
 
 /* * * * * * * * * * * CLEARING WINDOWS * * * * * * * * * * */

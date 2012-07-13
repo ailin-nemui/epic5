@@ -1,4 +1,4 @@
-/* $EPIC: functions.c,v 1.292 2012/03/25 02:08:06 jnelson Exp $ */
+/* $EPIC: functions.c,v 1.293 2012/07/13 03:05:02 jnelson Exp $ */
 /*
  * functions.c -- Built-in functions for ircII
  *
@@ -3608,8 +3608,18 @@ BUILT_IN_FUNCTION(function_repeat, words)
 	if (num < 1)
 		RETURN_EMPTY;
 
-
 	size = strlen(words) * num + 1;
+
+	/* 
+	 * Don't allow the return value to be > 1MB to avoid
+	 * "out of memory failure" panic
+	 */
+	if (size > 1000000)
+	{
+		num = 1000000 / strlen(words);
+		size = strlen(words) * num + 1;
+	}
+
 	retval = (char *)new_malloc(size);
 	*retval = 0;
 	clue = 0;
@@ -5221,6 +5231,10 @@ BUILT_IN_FUNCTION(function_pad, input)
 
 	if (awidth < len)
 		RETURN_STR(input);
+
+	/* Don't allow this to be > 1MB to avoid malloc failure panic */
+	if (awidth > 1000000)
+		awidth = 1000000;
 
 	retval = new_malloc(awidth + 2);
 	return strformat(retval, input, width, (int)*pads);

@@ -252,4 +252,8 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Improve error handling for /hostname errors.
 * Add /xdebug no_color which turns off color support at the lowest level.
 * Fix /lastlog -reverse -context, all done now!
+* Don't allow $repeat() or $pad() to request strings > 1MB.
+* Have the malloc-failed panic tell you how many bytes were requested.
+* Add a feature to check for unreleased message_from contexts in main().
+* Fix two missing message_from leaks in server handler.
 

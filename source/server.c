@@ -1,4 +1,4 @@
-/* $EPIC: server.c,v 1.252 2012/07/06 04:52:26 jnelson Exp $ */
+/* $EPIC: server.c,v 1.253 2012/07/13 03:05:02 jnelson Exp $ */
 /*
  * server.c:  Things dealing with that wacky program we call ircd.
  *
@@ -1279,6 +1279,7 @@ void	do_server (int fd)
 			    else
 				yell("Got %d, expected %d bytes.  HELP!", 
 					len, sizeof(s->addr_len));
+			    pop_message_from(l);
 			    continue;		/* Not ready yet */
 			}
 
@@ -1334,6 +1335,7 @@ void	do_server (int fd)
 				    len, s->addr_len - s->addr_offset);
 			        s->addr_offset += len;
 			    }
+			    pop_message_from(l);
 			    continue;
 			}
 			else
