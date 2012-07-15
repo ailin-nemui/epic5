@@ -256,4 +256,5 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Have the malloc-failed panic tell you how many bytes were requested.
 * Add a feature to check for unreleased message_from contexts in main().
 * Fix two missing message_from leaks in server handler.
-
+* Fix the lastlog trimming, an infinite loop (caf)
+* Increase detail when debugging output contexts (caf)

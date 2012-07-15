@@ -1,4 +1,4 @@
-/* $EPIC: window.c,v 1.223 2012/07/13 03:05:02 jnelson Exp $ */
+/* $EPIC: window.c,v 1.224 2012/07/15 20:46:52 jnelson Exp $ */
 /*
  * window.c: Handles the organzation of the logical viewports (``windows'')
  * for irc.  This includes keeping track of what windows are open, where they
@@ -2565,7 +2565,7 @@ int	real_message_setall (int refnum, const char *who, int level, const char *fil
 	}
 
 	if (x_debug & DEBUG_MESSAGE_FROM)
-		yell("Setting context %d [%d] {%s:%d}", context_counter, refnum, file, line);
+		yell("Setting context %d [%d:%s:%s] {%s:%d}", context_counter, refnum, who ? who : "<null>", level_to_str(level), file, line);
 
 #ifdef NO_CHEATING
 	malloc_strcpy(&contexts[context_counter].who_from, who);
@@ -2651,7 +2651,7 @@ int	real_message_from (const char *who, int level, const char *file, int line)
 	}
 
 	if (x_debug & DEBUG_MESSAGE_FROM)
-		yell("Setting context %d [%s:%d] {%s:%d}", context_counter, who?who:"NULL", level, file, line);
+		yell("Setting context %d [-:%s:%s] {%s:%d}", context_counter, who ? who : "<null>", level_to_str(level), file, line);
 
 #ifdef NO_CHEATING
 	malloc_strcpy(&contexts[context_counter].who_from, who);
@@ -2705,7 +2705,7 @@ void	check_message_from_queue (void)
 	/* Well, there's always one context left... */
 	if (context_counter != 1)
 	{
-	    /* Alert to the problem...
+	    /* Alert to the problem... */
 	    for (i = 1; i < context_counter; i++)
 	    {
 		yell("Warning: Output context from %s:%d was not released",
