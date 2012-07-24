@@ -258,3 +258,4 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Fix two missing message_from leaks in server handler.
 * Fix the lastlog trimming, an infinite loop (caf)
 * Increase detail when debugging output contexts (caf)
+* Reformat some code, fix more display context leaks (caf)

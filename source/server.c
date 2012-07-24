@@ -1,4 +1,4 @@
-/* $EPIC: server.c,v 1.253 2012/07/13 03:05:02 jnelson Exp $ */
+/* $EPIC: server.c,v 1.254 2012/07/24 04:20:06 jnelson Exp $ */
 /*
  * server.c:  Things dealing with that wacky program we call ircd.
  *
@@ -1254,107 +1254,107 @@ void	do_server (int fd)
 		 */
 		if (s->status == SERVER_DNS)
 		{
-		    int cnt = 0;
-		    ssize_t len;
+			int cnt = 0;
+			ssize_t len;
 
-		    /*
-		     * This is our handler for the first bit of data from the
-		     * dns helper, which is a length value.  This length value
-		     * tells us how much data we should expect to receive from
-		     * the dns helper.  We use this value to malloc() off some
-		     * space and then read into that buffer.
-		     */
-		    if (s->addrs == NULL)
-		    {
-		        len = dgets(s->des, (char *)&s->addr_len, 
+			/*
+			 * This is our handler for the first bit of data from the
+			 * dns helper, which is a length value.  This length value
+			 * tells us how much data we should expect to receive from
+			 * the dns helper.  We use this value to malloc() off some
+			 * space and then read into that buffer.
+			 */
+			if (s->addrs == NULL)
+			{
+				len = dgets(s->des, (char *)&s->addr_len, 
 					sizeof(s->addr_len), -2);
-			if (len < (ssize_t)sizeof(s->addr_len))
-			{
-			    if (len < 0)
-				yell("DNS lookup failed, possibly because of a "
-					"bug in async_getaddrinfo!");
-			    else if (len == 0)
-				yell("Got part of the dns response, waiting "
-				     "for the rest, stand by...");
-			    else
-				yell("Got %d, expected %d bytes.  HELP!", 
-					len, sizeof(s->addr_len));
-			    pop_message_from(l);
-			    continue;		/* Not ready yet */
-			}
+				if (len < (ssize_t)sizeof(s->addr_len))
+				{
+					if (len < 0)
+						yell("DNS lookup failed, possibly because of a "
+							"bug in async_getaddrinfo!");
+					else if (len == 0)
+						yell("Got part of the dns response, waiting "
+							"for the rest, stand by...");
+					else
+						yell("Got %d, expected %d bytes.  HELP!", 
+							len, sizeof(s->addr_len));
+					pop_message_from(l);
+					continue;		/* Not ready yet */
+				}
 
-			if (s->addr_len < 0)
-			{
-			    if (EAI_AGAIN > 0)
-				s->addr_len = abs(s->addr_len);
-			    yell("Getaddrinfo(%s) for server %d failed: %s",
-				     s->info->host, len, gai_strerror(s->addr_len));
-			    s->des = new_close(s->des);
-			    set_server_status(i, SERVER_ERROR);
-			    set_server_status(i, SERVER_CLOSED);
-			}
-			else if (s->addr_len == 0) 
-			{
-			    yell("Getaddrinfo(%s) for server (%d) did not "
+				if (s->addr_len < 0)
+				{
+					if (EAI_AGAIN > 0)
+						s->addr_len = abs(s->addr_len);
+					yell("Getaddrinfo(%s) for server %d failed: %s",
+						s->info->host, len, gai_strerror(s->addr_len));
+					s->des = new_close(s->des);
+					set_server_status(i, SERVER_ERROR);
+					set_server_status(i, SERVER_CLOSED);
+				}
+				else if (s->addr_len == 0) 
+				{
+					yell("Getaddrinfo(%s) for server (%d) did not "
 						"resolve.", s->info->host, i);
-			    s->des = new_close(s->des);
-			    set_server_status(i, SERVER_ERROR);
-			    set_server_status(i, SERVER_CLOSED);
+					s->des = new_close(s->des);
+					set_server_status(i, SERVER_ERROR);
+					set_server_status(i, SERVER_CLOSED);
+				}
+				else
+				{
+					s->addrs = (AI *)new_malloc(s->addr_len + 1);
+					s->addr_offset = 0;
+				}
 			}
+
+			/*
+			 * If we've already received the "reponse length" value
+			 * [handled above] then s->addrs is not NULL, and we need
+			 * to write the nonblocking dns responses into the buffer.
+			 * once we have all of the reponse, we can "unmarshall"
+			 * the response (converting a (char *) buffer into a linked
+			 * list of (struct addrinfo *)'s, which we can then use 
+			 * to connect to the server [via connect_to_server()].
+			 */
 			else
 			{
-		            s->addrs = (AI *)new_malloc(s->addr_len + 1);
-			    s->addr_offset = 0;
-			}
-		    }
-
-		    /*
-		     * If we've already received the "reponse length" value
-		     * [handled above] then s->addrs is not NULL, and we need
-		     * to write the nonblocking dns responses into the buffer.
-		     * once we have all of the reponse, we can "unmarshall"
-		     * the response (converting a (char *) buffer into a linked
-		     * list of (struct addrinfo *)'s, which we can then use 
-		     * to connect to the server [via connect_to_server()].
-		     */
-		    else
-		    {
-		        len = dgets(s->des, (char *)s->addrs + s->addr_offset, 
+				len = dgets(s->des, (char *)s->addrs + s->addr_offset, 
 					s->addr_len - s->addr_offset, -2);
-			if (len < s->addr_len - s->addr_offset)
-			{
-			    if (len < 0)
-				yell("DNS lookup failed, possibly because of a "
-					"bug in async_getaddrinfo!");
-			    else if (len == 0)
-				yell("Got part of the dns response, waiting "
-				     "for the rest, stand by...");
-			    else
-			    {
-			        yell("Got %d, expected %d bytes", 
-				    len, s->addr_len - s->addr_offset);
-			        s->addr_offset += len;
-			    }
-			    pop_message_from(l);
-			    continue;
-			}
-			else
-			{
-		            unmarshall_getaddrinfo(s->addrs);
-		            s->des = new_close(s->des);
+				if (len < s->addr_len - s->addr_offset)
+				{
+					if (len < 0)
+						yell("DNS lookup failed, possibly because of a "
+							"bug in async_getaddrinfo!");
+					else if (len == 0)
+						yell("Got part of the dns response, waiting "
+							"for the rest, stand by...");
+					else
+					{
+						yell("Got %d, expected %d bytes", 
+							len, s->addr_len - s->addr_offset);
+						s->addr_offset += len;
+					}
+					pop_message_from(l);
+					continue;
+				}
+				else
+				{
+					unmarshall_getaddrinfo(s->addrs);
+					s->des = new_close(s->des);
 
-		            s->next_addr = s->addrs;
-		            for (cnt = 0; s->next_addr; s->next_addr = 
+					s->next_addr = s->addrs;
+					for (cnt = 0; s->next_addr; s->next_addr = 
 						s->next_addr->ai_next)
-			        cnt++;
-		            say("DNS lookup for server %d [%s] returned (%d) "
-					"addresses", i, s->info->host, cnt);
+						cnt++;
+					say("DNS lookup for server %d [%s] returned (%d) "
+						"addresses", i, s->info->host, cnt);
 
-		            s->next_addr = s->addrs;
-		            s->addr_counter = 0;
-		            connect_to_server(i);
+					s->next_addr = s->addrs;
+					s->addr_counter = 0;
+					connect_to_server(i);
+				}
 			}
-		    }
 		}
 
 		/*
@@ -1362,122 +1362,123 @@ void	do_server (int fd)
 		 */
 		else if (s->status == SERVER_CONNECTING)
 		{
-		    ssize_t c;
-		    int  retval;
-		    SS	 name;
+			ssize_t c;
+			int  retval;
+			SS	 name;
 
-		    if (x_debug & DEBUG_SERVER_CONNECT)
-			yell("do_server: server [%d] is now ready to write", i);
+			if (x_debug & DEBUG_SERVER_CONNECT)
+				yell("do_server: server [%d] is now ready to write", i);
 
 #define DGETS(x, y) dgets( x , (char *) & y , sizeof y , -1);
 
-		    /* * */
-		    /* This is the errno value from getsockopt() */
-		    c = DGETS(des, retval)
-		    if (c < (ssize_t)sizeof(retval) || retval)
-			goto something_broke;
+			/* * */
+			/* This is the errno value from getsockopt() */
+			c = DGETS(des, retval)
+			if (c < (ssize_t)sizeof(retval) || retval)
+				goto something_broke;
 
-		    /* This is the socket error returned by getsockopt() */
-		    c = DGETS(des, retval)
-		    if (c < (ssize_t)sizeof(retval) || retval)
-			goto something_broke;
+			/* This is the socket error returned by getsockopt() */
+			c = DGETS(des, retval)
+			if (c < (ssize_t)sizeof(retval) || retval)
+				goto something_broke;
 
-		    /* * */
-		    /* This is the errno value from getsockname() */
-		    c = DGETS(des, retval)
-		    if (c < (ssize_t)sizeof(retval) || retval)
-			goto something_broke;
+			/* * */
+			/* This is the errno value from getsockname() */
+			c = DGETS(des, retval)
+			if (c < (ssize_t)sizeof(retval) || retval)
+				goto something_broke;
 
-		    /* This is the address returned by getsockname() */
-		    c = DGETS(des, name)
-		    if (c < (ssize_t)sizeof(name))
-			goto something_broke;
+			/* This is the address returned by getsockname() */
+			c = DGETS(des, name)
+			if (c < (ssize_t)sizeof(name))
+				goto something_broke;
 
-		    /* * */
-		    /* This is the errno value from getpeername() */
-		    c = DGETS(des, retval)
-		    if (c < (ssize_t)sizeof(retval) || retval)
-			goto something_broke;
+			/* * */
+			/* This is the errno value from getpeername() */
+			c = DGETS(des, retval)
+			if (c < (ssize_t)sizeof(retval) || retval)
+				goto something_broke;
 
-		    /* This is the address returned by getpeername() */
-		    c = DGETS(des, name)
-		    if (c < (ssize_t)sizeof(name))
-			goto something_broke;
+			/* This is the address returned by getpeername() */
+			c = DGETS(des, name)
+			if (c < (ssize_t)sizeof(name))
+				goto something_broke;
 
-		    /* XXX - I don't care if this is abusive.  */
-		    if (0)
-		    {
-something_broke:
-			if (retval)
+			/* XXX - I don't care if this is abusive.  */
+			if (0)
 			{
-			    syserr(i, "Could not connect to server [%d] "
-					"address [%d] because of error: %s", 
-					i, s->addr_counter, strerror(retval));
+something_broke:
+				if (retval)
+				{
+					syserr(i, "Could not connect to server [%d] "
+						"address [%d] because of error: %s", 
+						i, s->addr_counter, strerror(retval));
+				}
+				else
+					syserr(i, "Could not connect to server [%d] "
+						"address [%d]: (Internal error)", 
+						i, s->addr_counter);
+
+				set_server_status(i, SERVER_ERROR);
+				close_server(i, NULL);
+				connect_to_server(i);
+				pop_message_from(l);
+				continue;
 			}
-			else
-			    syserr(i, "Could not connect to server [%d] "
-					"address [%d]: (Internal error)", 
-					i, s->addr_counter);
 
-			set_server_status(i, SERVER_ERROR);
-			close_server(i, NULL);
-			connect_to_server(i);
-			pop_message_from(l);
-			continue;
-		    }
-
-		    /* Update this! */
-		    *(SA *)&s->remote_sockname = *(SA *)&name;
+			/* Update this! */
+			*(SA *)&s->remote_sockname = *(SA *)&name;
 
 #ifdef HAVE_SSL
-		    /*
-		     * For SSL server connections, we have to take a little
-		     * detour.  First we start up the ssl connection, which
-		     * always returns before it completes.  Then we tell newio
-		     * to call the ssl connector when the fd is ready, and
-		     * change our status to tell us what we're doing.
-		     */
-		    if (!my_stricmp(get_server_type(i), "IRC-SSL"))
-		    {
-			/* XXX 'des' might not be both the vfd and channel! */
-			/* (ie, on systems where vfd != channel) */
-			int	ssl_err = startup_ssl(des, des);
-
-			/* SSL connection failed */
-			if (ssl_err == -1)
-			{
-			    /* XXX I don't care if this is abusive. */
-			    syserr(i, "Could not start SSL connection to server "
-				"[%d] address [%d]", 
-				i, s->addr_counter);
-			    goto something_broke;
-			}
-
-			/* 
-			 * For us, this is asynchronous.  For nonblocking
-			 * SSL connections, we have to wait until later.
-			 * For blocking connections, we choose to wait until
-			 * later, since the return code is posted to us via
-			 * dgets().
+			/*
+			 * For SSL server connections, we have to take a little
+			 * detour.  First we start up the ssl connection, which
+			 * always returns before it completes.  Then we tell newio
+			 * to call the ssl connector when the fd is ready, and
+			 * change our status to tell us what we're doing.
 			 */
-			s->status = SERVER_SSL_CONNECTING;
-			new_open(des, do_server, NEWIO_SSL_CONNECT, 0, i);
-			break;
-		    }
+			if (!my_stricmp(get_server_type(i), "IRC-SSL"))
+			{
+				/* XXX 'des' might not be both the vfd and channel! */
+				/* (ie, on systems where vfd != channel) */
+				int	ssl_err = startup_ssl(des, des);
+
+				/* SSL connection failed */
+				if (ssl_err == -1)
+				{
+					/* XXX I don't care if this is abusive. */
+					syserr(i, "Could not start SSL connection to server "
+						"[%d] address [%d]", 
+						i, s->addr_counter);
+					goto something_broke;
+				}
+
+				/* 
+				 * For us, this is asynchronous.  For nonblocking
+				 * SSL connections, we have to wait until later.
+				 * For blocking connections, we choose to wait until
+				 * later, since the return code is posted to us via
+				 * dgets().
+				 */
+				s->status = SERVER_SSL_CONNECTING;
+				new_open(des, do_server, NEWIO_SSL_CONNECT, 0, i);
+				pop_message_from(l);
+				break;
+			}
 
 return_from_ssl_detour:
 #endif
-		    if (is_ssl_enabled(des))
-		    {
-			set_server_ssl_enabled(i, TRUE);
-			new_open(des, do_server, NEWIO_SSL_READ, 0, i);
-		    }
-		    else
-		    {
-			set_server_ssl_enabled(i, FALSE);
-		        new_open(des, do_server, NEWIO_RECV, 0, i);
-		    }
-		    register_server(i, s->d_nickname);
+			if (is_ssl_enabled(des))
+			{
+				set_server_ssl_enabled(i, TRUE);
+				new_open(des, do_server, NEWIO_SSL_READ, 0, i);
+			}
+			else
+			{
+				set_server_ssl_enabled(i, FALSE);
+				new_open(des, do_server, NEWIO_RECV, 0, i);
+			}
+			register_server(i, s->d_nickname);
 		}
 
 #ifdef HAVE_SSL
@@ -1490,83 +1491,82 @@ return_from_ssl_detour:
 		 */
 		else if (s->status == SERVER_SSL_CONNECTING)
 		{
-		    ssize_t c;
-		    int  retval;
+			ssize_t c;
+			int  retval;
 
-		    if (x_debug & DEBUG_SERVER_CONNECT)
-			yell("do_server: server [%d] finished ssl setup", i);
+			if (x_debug & DEBUG_SERVER_CONNECT)
+				yell("do_server: server [%d] finished ssl setup", i);
 
-		    c = DGETS(des, retval)
-		    if (c < (ssize_t)sizeof(retval) || retval)
-		    {
-			syserr(i, "SSL_connect returned [%d]", retval);
-			goto something_broke;
-		    }
+			c = DGETS(des, retval)
+			if (c < (ssize_t)sizeof(retval) || retval)
+			{
+				syserr(i, "SSL_connect returned [%d]", retval);
+				goto something_broke;
+			}
 
-		    /* 
-		     * This throws the /ON SSL_SERVER_CERT_LIST and makes
-		     * the socket blocking again.
-		     */
-		    if (ssl_connected(des) < 0)
-		    {
-			syserr(i, "ssl_connected() failed", retval);
-			goto something_broke;
-		    }
+			/* 
+			 * This throws the /ON SSL_SERVER_CERT_LIST and makes
+			 * the socket blocking again.
+			 */
+			if (ssl_connected(des) < 0)
+			{
+				syserr(i, "ssl_connected() failed", retval);
+				goto something_broke;
+			}
 
-		    goto return_from_ssl_detour;	/* All is well! */
+			goto return_from_ssl_detour;	/* All is well! */
 		}
 #endif
 
-	        /* Everything else is a normal read. */
+		/* Everything else is a normal read. */
 		else
 		{
-		    last_server = i;
-		    junk = dgets(des, bufptr, get_server_line_length(i), 1);
+			last_server = i;
+			junk = dgets(des, bufptr, get_server_line_length(i), 1);
 
-		    switch (junk)
-		    {
-		        case 0:		/* Sit on incomplete lines */
-		   	    break;
-
-			case -1:	/* EOF or other error */
+			switch (junk)
 			{
-			    server_is_unregistered(i);
-			    close_server(i, NULL);
-			    say("Connection closed from %s", s->info->host);
-			    i++;		/* NEVER DELETE THIS! */
-			    break;
-		        }
+				case 0:		/* Sit on incomplete lines */
+					break;
 
-		        default:	/* New inbound data */
-		        {
-			    char *end;
-			    int	l2;
+				case -1:	/* EOF or other error */
+				{
+					server_is_unregistered(i);
+					close_server(i, NULL);
+					say("Connection closed from %s", s->info->host);
+					i++;		/* NEVER DELETE THIS! */
+					break;
+				}
 
-			    end = strlen(buffer) + buffer;
-			    if (*--end == '\n')
-				*end-- = '\0';
-			    if (*end == '\r')
-				*end-- = '\0';
+				default:	/* New inbound data */
+				{
+					char *end;
+					int	l2;
 
-			    /* XXX We set message_from above. */
-			    /* l2 = message_from(NULL, LEVEL_OTHER); */
-			    if (x_debug & DEBUG_INBOUND)
-				yell("[%d] <- [%s]", 
-					s->des, buffer);
+					end = strlen(buffer) + buffer;
+					if (*--end == '\n')
+						*end-- = '\0';
+					if (*end == '\r')
+						*end-- = '\0';
 
-			    if (translation)
-				translate_from_server(buffer);
-			    parsing_server_index = i;
-			    parse_server(buffer, sizeof buffer);
-			    parsing_server_index = NOSERV;
-			    /* pop_message_from(l2); */
-			    break;
-		        }
-		    }
-	        }
+					/* XXX We set message_from above. */
+					/* l2 = message_from(NULL, LEVEL_OTHER); */
+					if (x_debug & DEBUG_INBOUND)
+						yell("[%d] <- [%s]", s->des, buffer);
+
+					if (translation)
+						translate_from_server(buffer);
+					parsing_server_index = i;
+					parse_server(buffer, sizeof buffer);
+					parsing_server_index = NOSERV;
+					/* pop_message_from(l2); */
+					break;
+				}
+			}
+		}
 
 		pop_message_from(l);
-	        from_server = primary_server;
+		from_server = primary_server;
 	}
 }
 
