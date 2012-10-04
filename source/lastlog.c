@@ -1,4 +1,4 @@
-/* $EPIC: lastlog.c,v 1.89 2012/07/15 20:46:52 jnelson Exp $ */
+/* $EPIC: lastlog.c,v 1.90 2012/10/04 01:18:19 jnelson Exp $ */
 /*
  * lastlog.c: handles the lastlog features of irc. 
  *
@@ -265,18 +265,21 @@ void 	trim_lastlog (Window *window)
 {
 	Lastlog *item = NULL;
 	int	count = 0;
+	int	lastlog_items_removed = 0;
+	int	safeguard;
 
 	window->lastlog_size = recount_window_lastlog(window->refnum);
+	safeguard = window->lastlog_size;
 
 	while (window->lastlog_size > window->lastlog_max)
 	{
 		/* These are awful, hideous hacks to avoid deadlocks until I refactor all this code. */
-		if (count++ > 200000)
+		if (count++ > safeguard * 2)
 		{
 			window->lastlog_size = window->lastlog_max;
 			continue;
 		}
-		else if (count > 100000)
+		else if (count > safeguard)
 		{
 			/* I can't even yell here!  Just punt. */
 			window->lastlog_size = recount_window_lastlog(window->refnum);
@@ -284,8 +287,13 @@ void 	trim_lastlog (Window *window)
 		}
 
 		item = NULL;
-		if (oldest_lastlog_for_window(&item, window->refnum))
-			remove_lastlog_item(item);
+		if (!oldest_lastlog_for_window(&item, window->refnum))
+		{
+			window->lastlog_size = 0;
+			break;
+		}
+		remove_lastlog_item(item);
+		lastlog_items_removed++;
 	}
 }
 
