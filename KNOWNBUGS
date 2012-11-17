@@ -260,3 +260,7 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Increase detail when debugging output contexts (caf)
 * Reformat some code, fix more display context leaks (caf)
 * Fix lock-ups when killing windows by refining the safeguard
+* Create slurp_elf_file/string_feof|fgets|fgetc, to front-end ELF files
+* Change /load to use the string front-end functions
+* This allows /load to work on pure strings, and decouples from files
+

@@ -12,6 +12,8 @@
 #ifndef _ELF_H_
 #define _ELF_H_
 
+#include "irc.h"
+
 #ifdef HAVE_LIBARCHIVE
 #include <archive.h>
 #include <archive_entry.h>
@@ -27,11 +29,16 @@ struct epic_loadfile {
 };
 
 struct epic_loadfile * epic_fopen(char *filename, const char *mode, int do_error);
-int epic_fgetc(struct epic_loadfile *elf);
-char *epic_fgets(char *s, int n, struct epic_loadfile *elf);
-int epic_feof(struct epic_loadfile *elf);
-int epic_fclose(struct epic_loadfile *elf);
-off_t epic_stat(const char *filename, struct stat *buf);
+int 	epic_fgetc(struct epic_loadfile *elf);
+char *	epic_fgets(char *s, int n, struct epic_loadfile *elf);
+int 	epic_feof(struct epic_loadfile *elf);
+int 	epic_fclose(struct epic_loadfile *elf);
+off_t 	epic_stat(const char *filename, struct stat *buf);
+int     slurp_elf_file (struct epic_loadfile *elf, char **file_contents, off_t *file_contents_size);
+
+int     string_feof(const char *file_contents, off_t file_contents_size);
+int     string_fgetc(const char **file_contents, off_t *file_contents_size);
+char *	string_fgets(char *buffer, size_t buffer_size, const char **file_contents, off_t *file_contents_size);
 
 
 #endif /* _ELF_H_ */

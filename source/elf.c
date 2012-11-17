@@ -342,3 +342,88 @@ static int	find_in_archive(struct archive *a, struct archive_entry **entry, cons
 }
 #endif
 
+/*
+ * This converts any "elf" into a bytestream.
+ * It isn't necessary that the file is a string, or in any particular
+ * encoding -- we just dump it into "file_contents" and tell you how many
+ * bytes we read.  It's up to you to decide if it needs recoding or 
+ * decrypting or whatever.
+ */
+int	slurp_elf_file (struct epic_loadfile *elf, char **file_contents, off_t *file_contents_size)
+{
+	size_t	current_byte;
+	size_t	size;
+	int	next_byte = 0;
+
+	if (!elf)
+		return -1;
+	if (!file_contents)
+		return -1;
+
+	size = 8192;
+	RESIZE(*file_contents, char, size);
+
+	current_byte = 0;
+	while (!epic_feof(elf))
+	{
+		if (current_byte >= size)
+		{
+			size += 8192;
+			RESIZE(*file_contents, char, size);
+		}
+		(*file_contents)[next_byte] = epic_fgetc(elf);
+		next_byte++;
+	}
+
+	*file_contents_size = next_byte;
+}
+
+int	string_feof(const char *file_contents, off_t file_contents_size)
+{
+	if (file_contents_size > 0)
+		return 0;
+	return 1;
+}
+
+int	string_fgetc(const char **file_contents, off_t *file_contents_size)
+{
+	int	retval;
+
+	if (*file_contents_size <= 0)
+		return EOF;
+
+	retval = (*file_contents)[0];
+	(*file_contents)++;
+	(*file_contents_size)--;
+	return retval;
+}
+
+char *	string_fgets(char *buffer, size_t buffer_size, const char **file_contents, off_t *file_contents_size)
+{
+	int	offset = 0;
+	int	next_byte = 0;
+	int	read_any_byte = 0;
+
+	for (;;)
+	{
+		next_byte = string_fgetc(file_contents, file_contents_size);
+		if (next_byte == EOF)
+		{
+			if (!read_any_byte)
+				return NULL;
+			else
+				return buffer;		/* All done! */
+		}
+
+		read_any_byte = 1;
+		if (offset <= buffer_size)
+			buffer[offset++] = next_byte;
+		if (next_byte == '\n')
+		{
+			if (offset <= buffer_size)
+				buffer[offset++] = 0;
+			return buffer;
+		}
+	}
+}
+

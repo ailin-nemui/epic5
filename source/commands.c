@@ -1,4 +1,4 @@
-/* $EPIC: commands.c,v 1.200 2012/06/26 12:28:06 jnelson Exp $ */
+/* $EPIC: commands.c,v 1.201 2012/11/17 15:58:32 jnelson Exp $ */
 /*
  * commands.c -- Stuff needed to execute commands in ircII.
  *		 Includes the bulk of the built in commands for ircII.
@@ -1611,9 +1611,9 @@ BUILT_IN_COMMAND(subpackagecmd)
 	malloc_strcat(&load_level[load_depth].package, args);
 }
 
-static void	loader_which (struct epic_loadfile *elf, const char *filename, const char *args, struct load_info *);
-static void	loader_std (struct epic_loadfile *elf, const char *filename, const char *args, struct load_info *);
-static void	loader_pf  (struct epic_loadfile *elf, const char *filename, const char *args, struct load_info *);
+static void	loader_which (const char *file_contents, off_t file_contents_size, const char *filename, const char *args, struct load_info *);
+static void	loader_std (const char *file_contents, off_t file_contents_size, const char *filename, const char *args, struct load_info *);
+static void	loader_pf  (const char *file_contents, off_t file_contents_size, const char *filename, const char *args, struct load_info *);
 
 /*
  * load: the /LOAD command.  Reads the named file, parsing each line as
@@ -1630,7 +1630,9 @@ BUILT_IN_COMMAND(load)
         struct epic_loadfile * elf;
 	int	display;
 	int	do_one_more = 0;
-	void	(*loader) (struct epic_loadfile *, const char *, const char *, struct load_info *);
+	void	(*loader) (const char *, off_t, const char *, const char *, struct load_info *);
+	char *	file_contents = NULL;
+	off_t	file_contents_size = 0;
 
         int             idx;
         int             err;
@@ -1724,8 +1726,10 @@ BUILT_IN_COMMAND(load)
 	        malloc_strcpy(&load_level[load_depth].package,
 				load_level[load_depth-1].package);
 
+	    slurp_elf_file(elf, &file_contents, &file_contents_size);
+
 	    will_catch_return_exceptions++;
-	    loader(elf, expanded, sargs, &load_level[load_depth]);
+	    loader(file_contents, file_contents_size, expanded, sargs, &load_level[load_depth]);
 	    will_catch_return_exceptions--;
 	    return_exception = 0;
 
@@ -1747,14 +1751,14 @@ BUILT_IN_COMMAND(load)
 }
 
 /* The "WHICH" loader */
-static void	loader_which (struct epic_loadfile *elf, const char *filename, const char *subargs, struct load_info *loadinfo)
+static void	loader_which (const char *file_contents, off_t file_contents_size, const char *filename, const char *subargs, struct load_info *loadinfo)
 {
 	loadinfo->loader = "which";
 	yell("%s", filename);
 }
 
 /* The "Standard" (legacy) loader */
-static void	loader_std (struct epic_loadfile *elf, const char *filename, const char *subargs, struct load_info *loadinfo)
+static void	loader_std (const char *file_contents, off_t file_contents_size, const char *filename, const char *subargs, struct load_info *loadinfo)
 {
 	int	in_comment, comment_line, no_semicolon;
 	int	paste_level, paste_line;
@@ -1777,7 +1781,7 @@ static void	loader_std (struct epic_loadfile *elf, const char *filename, const c
 	    int     len;
 	    char    *ptr;
 
-            if (!epic_fgets(buffer, MAX_LINE_SIZE, elf))
+            if (!string_fgets(buffer, MAX_LINE_SIZE, &file_contents, &file_contents_size))
                     break;
 
             if (loadinfo->line == 1 && loadinfo->sb.st_mode & 0111 &&
@@ -1821,7 +1825,7 @@ static void	loader_std (struct epic_loadfile *elf, const char *filename, const c
 			(len >= 2 && start[len-2] == '\\') &&
 			(len < 3 || start[len-3] != '\\') && 
 		        (len < MAX_LINE_SIZE) && 
-                        (epic_fgets(&(start[len-2]), MAX_LINE_SIZE - len, elf)))
+                        (string_fgets(&(start[len-2]), MAX_LINE_SIZE - len, &file_contents, &file_contents_size)))
 	    {
 		len = strlen(start);
 		loadinfo->line++;
@@ -2083,7 +2087,7 @@ static void	loader_std (struct epic_loadfile *elf, const char *filename, const c
  * and is "signficantly" faster than the standard loader.  This can be a 
  * big win for large scripts.
  */
-static void	loader_pf (struct epic_loadfile *elf, const char *filename, const char *subargs, struct load_info *loadinfo)
+static void	loader_pf (const char *file_contents, off_t file_contents_size, const char *filename, const char *subargs, struct load_info *loadinfo)
 {
 	char *	buffer;
 	int	bufsize, pos;
@@ -2098,7 +2102,7 @@ static void	loader_pf (struct epic_loadfile *elf, const char *filename, const ch
 	comment = 0;
 	shebang = 0;
 
-	this_char = epic_fgetc(elf);
+	this_char = string_fgetc(&file_contents, &file_contents_size);
 
 	/* 
 	 * If the file is +x, and starts with #!, it's ok.
@@ -2107,9 +2111,9 @@ static void	loader_pf (struct epic_loadfile *elf, const char *filename, const ch
 	if (loadinfo->sb.st_mode & 0111)
 	{
 	    /* Special code to support #! scripts. */
-	    if (this_char == '#' && !epic_feof(elf))
+	    if (this_char == '#' && !string_feof(file_contents, file_contents_size))
 	    {
-		this_char = epic_fgetc(elf);
+		this_char = string_fgetc(&file_contents, &file_contents_size);
 		if (this_char == '!')
 		   shebang = 1;
 	    }
@@ -2125,7 +2129,7 @@ static void	loader_pf (struct epic_loadfile *elf, const char *filename, const ch
 	    comment = 1;
 	}
 
-	while (!epic_feof(elf))
+	while (!string_feof(file_contents, file_contents_size))
 	{
 	    do
 	    {
@@ -2167,7 +2171,7 @@ static void	loader_pf (struct epic_loadfile *elf, const char *filename, const ch
 		new_realloc((void **)&buffer, bufsize);
 	    }
 
-	    this_char = epic_fgetc(elf);
+	    this_char = string_fgetc(&file_contents, &file_contents_size);
 	}
 
 	buffer[pos] = 0;
