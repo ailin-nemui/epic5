@@ -1,4 +1,4 @@
-/* $EPIC: commands.c,v 1.201 2012/11/17 15:58:32 jnelson Exp $ */
+/* $EPIC: commands.c,v 1.202 2012/11/17 17:29:54 jnelson Exp $ */
 /*
  * commands.c -- Stuff needed to execute commands in ircII.
  *		 Includes the bulk of the built in commands for ircII.
@@ -1633,6 +1633,7 @@ BUILT_IN_COMMAND(load)
 	void	(*loader) (const char *, off_t, const char *, const char *, struct load_info *);
 	char *	file_contents = NULL;
 	off_t	file_contents_size = 0;
+	char *	declared_encoding = NULL;
 
         int             idx;
         int             err;
@@ -1701,6 +1702,11 @@ BUILT_IN_COMMAND(load)
 		do_one_more = 1;
 		continue;		/* Pick up the filename */
 	    }
+	    else if (my_strnicmp(filename, "-encoding", strlen(filename)) == 0)
+	    {
+		declared_encoding = next_arg(args, &args);
+		continue;
+	    }
 	    else
 		sargs = NULL;
 
@@ -1727,6 +1733,12 @@ BUILT_IN_COMMAND(load)
 				load_level[load_depth-1].package);
 
 	    slurp_elf_file(elf, &file_contents, &file_contents_size);
+
+	    if (declared_encoding)
+	    {
+		/* This needs to include the "target" encoding which would be a /set */
+		recode_with_iconv(declared_encoding, NULL, &file_contents, &file_contents_size);
+	    }
 
 	    will_catch_return_exceptions++;
 	    loader(file_contents, file_contents_size, expanded, sargs, &load_level[load_depth]);

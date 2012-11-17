@@ -1,4 +1,4 @@
-/* $EPIC: ircaux.c,v 1.227 2012/07/13 03:05:02 jnelson Exp $ */
+/* $EPIC: ircaux.c,v 1.228 2012/11/17 17:29:54 jnelson Exp $ */
 /*
  * ircaux.c: some extra routines... not specific to irc... that I needed 
  *
@@ -6099,5 +6099,87 @@ ssize_t	findchar_quoted (const char *source, int delim)
 		return p - source;
 	else
 		return -1;
+}
+
+/*
+ * recode_with_iconv -- copy and iconv convert a string
+ * 	This function copies (*data) to a new buffer.
+ * 	You must declare the encoding of (*data) (in `from')
+ * 	You must declare how big (*data) is (in `*numbytes')
+ * 	You must declare what you wish the encoding of (*data) was (in `to')
+ * (Don't laugh -- I've never done this before)
+ * Inspired liberally by howl's iconv support above.
+ */
+int	recode_with_iconv (char *from, char *to, char **data, size_t *numbytes)
+{
+	iconv_t	iref;
+	char *	dest_ptr = NULL;
+	size_t	dest_left = 0;
+	size_t	dest_size = 0;
+	int	n;
+	char *	work_data;
+	char *	retstr = NULL;
+
+	/*
+	 * Some sanity checks!
+	 */
+	if (!from)
+		return 0;	/* Don't change anything */
+	if (!numbytes || !*numbytes)
+		return 0;
+	if (!data || !*data)
+		return 0;
+
+	if (!to)
+		to = "UTF-8";	/* For now, convert to UTF8 is the default */
+
+ 	/*
+	 * So iconv(3) says I need to create an iconv_t with iconv_open
+	 */
+	if ((iref = iconv_open(to, from)) == (iconv_t)-1)
+	{
+		yell("Iconv_open %s/%s failed; %s",
+			to, from, strerror(errno));
+		return 0;	/* Don't change anything */
+	}
+
+	dest_size = *numbytes;
+	dest_left = *numbytes;
+	RESIZE(retstr, char, dest_size);
+
+	work_data = *data;
+	dest_ptr = retstr;
+
+        while ((n = iconv(iref, (const char **)&work_data, numbytes, 
+				&dest_ptr, &dest_left)) != 0)
+        {
+                /* I *THINK* this is a hack. */ 
+                if (errno == EINVAL || errno == EILSEQ)
+                {
+                        (*work_data)++;
+                        (*numbytes)--;
+                        continue;
+                }
+
+		if (dest_left < 8)
+		{
+			size_t	offset;
+			offset = dest_ptr - retstr;
+
+			dest_size += 64;
+			dest_left += 64;
+			RESIZE(retstr, char, dest_size);
+			dest_ptr = retstr + offset;
+			continue;
+		}
+
+                break;
+        }
+	iconv_close (iref);
+
+	new_free(data);
+	*data = retstr;
+	*numbytes = (dest_size - dest_left);
+	return (*numbytes);
 }
 

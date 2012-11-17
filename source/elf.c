@@ -375,6 +375,10 @@ int	slurp_elf_file (struct epic_loadfile *elf, char **file_contents, off_t *file
 		next_byte++;
 	}
 
+	/* Just for laughs, zero terminate it so it's a C string */
+	(*file_contents)[next_byte] = 0;
+
+	--next_byte;		/* Because we went off the end */
 	*file_contents_size = next_byte;
 }
 

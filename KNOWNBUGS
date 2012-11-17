@@ -263,4 +263,7 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Create slurp_elf_file/string_feof|fgets|fgetc, to front-end ELF files
 * Change /load to use the string front-end functions
 * This allows /load to work on pure strings, and decouples from files
+* Create recode_with_iconv() to convert a string using iconv() (for /load)
+* Add /load -encoding which lets you specify the encoding of the file
+* This means you can load iso-8859-1 encoded files on a utf8 terminal!
 

@@ -1,5 +1,15 @@
 EPIC5-1.1.4
 
+*** News 11/17/2012 -- New flag, /load -encoding
+	You may now specify what a file's encoding is, and it will be
+	converted automatically to utf8 (there will be a /set for this
+	soon enough).  You can use this in your magic bootstrap:
+
+	if (word(2 $loadinfo()) != [pf]) { load -pf -encoding iso-8859-1 $word(1 $loadinfo()); return; };
+
+	This allows utf8 terminal users to load ascii art in 8859, and 
+	it will Just Work!
+
 *** News 8/5/2012 -- Anti-foot-shooting for $pad() and $repeat()
 	Some had mentioned that you shouldn't be permitted to shoot yourself
 	in the foot by asking for absurdly large output strings in $pad()
