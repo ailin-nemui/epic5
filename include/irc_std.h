@@ -50,6 +50,7 @@
 #endif
 #include <errno.h>
 #include <sys/stat.h>
+#include <locale.h>
 
 /*
  * Everybody needs these INET headers...

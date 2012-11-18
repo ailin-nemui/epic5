@@ -1,4 +1,4 @@
-/* $EPIC: ircaux.c,v 1.228 2012/11/17 17:29:54 jnelson Exp $ */
+/* $EPIC: ircaux.c,v 1.229 2012/11/18 01:37:51 jnelson Exp $ */
 /*
  * ircaux.c: some extra routines... not specific to irc... that I needed 
  *
@@ -4809,6 +4809,7 @@ char *	fix_string_width (const char *orig_str, int justify, char fillchar, size_
 static ssize_t	len_encoder (const char *orig, size_t orig_len, const void *meta, size_t meta_len, char *dest, size_t dest_len)
 {
 	snprintf(dest, dest_len, "%ld", (long)orig_len);
+	return strlen(dest);
 }
 
 /* Based in whole or in part on code contributed by SrFrOg in 1999 */
@@ -6110,7 +6111,7 @@ ssize_t	findchar_quoted (const char *source, int delim)
  * (Don't laugh -- I've never done this before)
  * Inspired liberally by howl's iconv support above.
  */
-int	recode_with_iconv (char *from, char *to, char **data, size_t *numbytes)
+int	recode_with_iconv (const char *from, const char *to, char **data, size_t *numbytes)
 {
 	iconv_t	iref;
 	char *	dest_ptr = NULL;

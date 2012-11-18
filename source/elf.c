@@ -380,6 +380,7 @@ int	slurp_elf_file (struct epic_loadfile *elf, char **file_contents, off_t *file
 
 	--next_byte;		/* Because we went off the end */
 	*file_contents_size = next_byte;
+	return next_byte;
 }
 
 int	string_feof(const char *file_contents, off_t file_contents_size)
@@ -404,7 +405,7 @@ int	string_fgetc(const char **file_contents, off_t *file_contents_size)
 
 char *	string_fgets(char *buffer, size_t buffer_size, const char **file_contents, off_t *file_contents_size)
 {
-	int	offset = 0;
+	size_t	offset = 0;
 	int	next_byte = 0;
 	int	read_any_byte = 0;
 

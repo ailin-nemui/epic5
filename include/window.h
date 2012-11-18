@@ -255,8 +255,8 @@ const	char	*get_echannel_by_refnum		(unsigned);
 #define message_from(x, y) real_message_from(x, y, __FILE__, __LINE__)
 	int	real_message_from		(const char *, int, const char *, int);
 #define message_setall(x, y, z) real_message_setall(x, y, z, __FILE__, __LINE__)
-	int     real_message_setall		(int, const char *, int, const char *, int);
-	void	adjust_context_windows		(int, int);
+	int     real_message_setall		(unsigned, const char *, int, const char *, int);
+	/* void	adjust_context_windows		(int, int); */
 	void	pop_message_from		(int);
 
 	void	clear_all_windows		(int, int, int);
@@ -302,5 +302,7 @@ const	char	*get_echannel_by_refnum		(unsigned);
 	void    window_scrollback_needs_rebuild (int winref);
 	int	window_is_scrolled_back		(Window *);
 	void 	window_change_server		(Window *, int);
+
+	void   check_message_from_queue 	(void);
 
 #endif /* __window_h__ */

@@ -1,4 +1,4 @@
-/* $EPIC: commands.c,v 1.202 2012/11/17 17:29:54 jnelson Exp $ */
+/* $EPIC: commands.c,v 1.203 2012/11/18 01:37:51 jnelson Exp $ */
 /*
  * commands.c -- Stuff needed to execute commands in ircII.
  *		 Includes the bulk of the built in commands for ircII.
@@ -1001,7 +1001,7 @@ BUILT_IN_COMMAND(xechocmd)
 
 		case 'E':
 		{
-			double	timeout;
+			double	timeout = 0;
 
 			next_arg(args, &args);
 			if (!(flag_arg = next_arg(args, &args)))

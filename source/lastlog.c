@@ -1,4 +1,4 @@
-/* $EPIC: lastlog.c,v 1.90 2012/10/04 01:18:19 jnelson Exp $ */
+/* $EPIC: lastlog.c,v 1.91 2012/11/18 01:37:51 jnelson Exp $ */
 /*
  * lastlog.c: handles the lastlog features of irc. 
  *
@@ -1729,12 +1729,12 @@ int	do_expire_lastlog_entries (void *ignored)
 static void	expire_lastlog_entries (void)
 {
 	Lastlog *l;
-	time_t	now;
+	time_t	nowtime;
 
-	time(&now);
+	time(&nowtime);
 	for (l = lastlog_oldest; l; l = l->newer)
 	{
-		if (l->expires > 0 && l->expires <= now) 
+		if (l->expires > 0 && l->expires <= nowtime) 
 		{
 			window_scrollback_needs_rebuild(l->winref);
 			remove_lastlog_item(l);

@@ -266,4 +266,7 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Create recode_with_iconv() to convert a string using iconv() (for /load)
 * Add /load -encoding which lets you specify the encoding of the file
 * This means you can load iso-8859-1 encoded files on a utf8 terminal!
+* Fix various warnings from gcc -Wall
+* Add a new /set DEFAULT_SCRIPT_ENCODING -- will be used soon!
+* Call setlocale(LC_ALL, "") at start of main() to get locale info
 

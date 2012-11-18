@@ -1,4 +1,4 @@
-/* $EPIC: window.c,v 1.224 2012/07/15 20:46:52 jnelson Exp $ */
+/* $EPIC: window.c,v 1.225 2012/11/18 01:37:51 jnelson Exp $ */
 /*
  * window.c: Handles the organzation of the logical viewports (``windows'')
  * for irc.  This includes keeping track of what windows are open, where they
@@ -162,6 +162,7 @@ static	void	rebuild_scrollback (Window *w);
 static	void	window_check_columns (Window *w);
 static void	restore_window_positions (Window *w, intmax_t scrolling, intmax_t holding, intmax_t scrollback);
 static void	save_window_positions (Window *w, intmax_t *scrolling, intmax_t *holding, intmax_t *scrollback);
+static void	adjust_context_windows (unsigned old_win, unsigned new_win);
 
 
 /* * * * * * * * * * * CONSTRUCTOR AND DESTRUCTOR * * * * * * * * * * * */
@@ -2544,13 +2545,13 @@ struct output_context {
 	int		who_level;
 	const char *	who_file;
 	int		who_line;
-	int		to_window;
+	unsigned	to_window;
 };
 struct output_context *	contexts = NULL;
 int			context_max = -1;
 int 			context_counter = -1;
 
-int	real_message_setall (int refnum, const char *who, int level, const char *file, int line)
+int	real_message_setall (unsigned refnum, const char *who, int level, const char *file, int line)
 {
 	if (context_max < 0)
 	{
@@ -2610,7 +2611,7 @@ void	adjust_context_windows (int refnum)
  * This is needed when a window is killed, so that further output
  * in any contexts using that window has somewhere to go.
  */
-void	adjust_context_windows (int old_win, int new_win)
+static void	adjust_context_windows (unsigned old_win, unsigned new_win)
 {
 	int context;
 
@@ -3351,6 +3352,7 @@ static Window *window_check (Window *window, char **args)
 			yell("window [%d]'s lastlog is wrong: should be [%d], is [%d]",
 				tmp->refnum, lastlog_count, tmp->lastlog_size);
 	}
+	return window;
 }
 
 
@@ -5435,7 +5437,7 @@ BUILT_IN_COMMAND(windowcmd)
 		if (*arg == '-' || *arg == '/')		/* Ignore - or / */
 			arg++, len--;
 
-		l = message_setall(window ? (int)window->refnum : -1, 
+		l = message_setall(window ? window->refnum : (unsigned)-1, 
 					who_from, who_level);
 
 		for (i = 0; options[i].func ; i++)

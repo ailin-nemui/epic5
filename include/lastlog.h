@@ -48,4 +48,6 @@ extern	double	output_expires_after;
 	void    lastlog_swap_winrefs		(unsigned, unsigned);
 	void    lastlog_merge_winrefs		(unsigned, unsigned);
 
+	int	recount_window_lastlog		(unsigned winref);
+
 #endif /* __lastlog_h_ */

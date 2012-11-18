@@ -1,4 +1,4 @@
-/* $EPIC: timer.c,v 1.56 2012/06/26 12:28:06 jnelson Exp $ */
+/* $EPIC: timer.c,v 1.57 2012/11/18 01:37:51 jnelson Exp $ */
 /*
  * timer.c -- handles timers in ircII
  *
@@ -982,7 +982,7 @@ char *	timerctl (char *input)
  * The /WINDOW NUMBER command actually swaps the refnums of two windows:
  * It's possible that 'newref' isn't in use, so that's ok.
  */
-void    timers_swap_winrefs (int oldref, int newref)
+void    timers_swap_winrefs (unsigned oldref, unsigned newref)
 {
 	Timer *ref;
 
@@ -991,14 +991,16 @@ void    timers_swap_winrefs (int oldref, int newref)
                 if (ref->domain != WINDOW_TIMER)
                         continue;
 
-		if (ref->domref == newref)
+		/* Window refnums are "unsigned",
+		 *  but timer domain refnums aren't */
+		if (ref->domref == (int)newref)
 			ref->domref = oldref;
-		else if (ref->domref == oldref)
+		else if (ref->domref == (int)oldref)
 			ref->domref = newref;
         }
 }
 
-void    timers_merge_winrefs (int oldref, int newref)
+void    timers_merge_winrefs (unsigned oldref, unsigned newref)
 {
 	Timer *ref;
 
@@ -1007,7 +1009,7 @@ void    timers_merge_winrefs (int oldref, int newref)
                 if (ref->domain != WINDOW_TIMER)
                         continue;
 
-		if (ref->domref == oldref)
+		if (ref->domref == (int)oldref)
 			ref->domref = newref;
         }
 }
