@@ -189,7 +189,7 @@ installhelp: installdirs
 	fi
 
 installman: installdirs
-	$(INSTALL_DATA) @srcdir@/doc/epic.1 $(IP)$(mandir)/man1/$(epic5).1
+	$(INSTALL_DATA) @srcdir@/doc/epic5.1 $(IP)$(mandir)/man1/$(epic5).1
 
 installdirs:
 	umask 022; \

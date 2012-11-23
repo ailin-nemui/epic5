@@ -271,4 +271,15 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Add a new /set DEFAULT_SCRIPT_ENCODING -- will be used soon!
 * Call setlocale(LC_ALL, "") at start of main() to get locale info
 * Fix slurp_file() (caf)
+* Fix make installman, man page filename had changed
+* Begin a major project to fix issues suggested by clang (Ancient)
+* Fix xecho as suggested by clang
+* Check retval of set[ug]id() just because it's good style
+* Make sure "MAXPATHLEN" (bsd) is always spelled "PATH_MAX" (posix)
+* Fix while as suggested by clang
+* Re-comment translate_user_input() based on suggestion by ce
+* Move add_wait_prompt() to a new home
+* Fix whoreply() as suggested by clang
+* Fix set_screens_current_window() as suggested by clang
+* Fix search_for() as suggested by clang
 

@@ -1,4 +1,4 @@
-/* $EPIC: who.c,v 1.67 2012/11/18 01:37:51 jnelson Exp $ */
+/* $EPIC: who.c,v 1.68 2012/11/23 16:04:49 jnelson Exp $ */
 /*
  * who.c -- The WHO queue.  The ISON queue.  The USERHOST queue.
  *
@@ -965,16 +965,20 @@ void	who_end (int refnum, const char *from, const char *comm, const char **ArgLi
 	while (new_w->piggyback && (new_w = new_w->next));
 	pop_message_from(l);
 
-	if (!*new_w->who_target)
+	if (new_w)
 	{
+	   if (!*new_w->who_target)
+	   {
 		WHO_DEBUG("Popping off for server [%d]", refnum);
 		who_queue_pop(refnum);
-	}
-	else
-	{
+	   }
+	   else
+	   {
 		WHO_DEBUG("NOT POPPING OFF FOR SERVER [%d] BECAUSE THE TOP OF THE WHO QUEUE HAS [%s] LEFT IN THE TARGET LIST", refnum, new_w->who_target);
 		yell("WHOEND: Caution -- not popping off who queue -- [%s] is left on target list", new_w->who_target);
+	   }
 	}
+	/* XXX - There should probably be an else here, to cover when new_w had a piggyback, but there was nothing to piggyback on */
 
 	new_free(&target);
 }

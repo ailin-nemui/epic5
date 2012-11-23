@@ -1,4 +1,4 @@
-/* $EPIC: screen.c,v 1.145 2012/07/06 22:38:21 jnelson Exp $ */
+/* $EPIC: screen.c,v 1.146 2012/11/23 16:04:49 jnelson Exp $ */
 /*
  * screen.c
  *
@@ -2846,8 +2846,10 @@ Window	*create_additional_screen (void)
 			char geom[32];
 			int i;
 
-			setuid(getuid());
-			setgid(getgid());
+			if (setuid(getuid()))
+				_exit(0);
+			if (setgid(getgid()))
+				_exit(0);
 			setsid();
 
 			/*
@@ -3187,11 +3189,13 @@ static void 	do_screens (int fd)
 } 
 
 /*
- * This function accumulates bytes of user input encoded in 
- * /SET INPUT_TRANSLATION and converts them to (UCS32) code points and
- * calls edit_codepoint() once per code point.
+ * Each byte received by user input goes through this function.
+ * This function needs to decide what to do -- do we accumulate
+ * a UTF8 string, convert it to UCS32, and send it to edit_char()?
+ * or do we translate it based on /set translation and send that
+ * to edit_char()?
  */
-static	void translate_user_input (char byte)
+static	void	translate_user_input (char byte)
 {
 static	char		workbuf[32];
 static	size_t		workbuf_idx = 0;
@@ -3201,43 +3205,11 @@ static	size_t		workbuf_idx = 0;
 	edit_codepoint(codepoint);
 }
 
-
-/* * * * * * * * * INPUT PROMPTS * * * * * * * * * * */
-/* 
- * add_wait_prompt:  Given a prompt string, a function to call when
- * the prompt is entered.. some other data to pass to the function,
- * and the type of prompt..  either for a line, or a key, we add 
- * this to the prompt_list for the current screen..  and set the
- * input prompt accordingly.
- *
- * XXXX - maybe this belongs in input.c? =)
+/*
+ * This should be called once for each codepoint we receive.
+ * This means a utf8 string converted into UCS32.  We don't support
+ * that quite yet, so this is just a placeholder.
  */
-void 	add_wait_prompt (const char *prompt, void (*func)(char *, char *), const char *data, int type, int echo)
-{
-	WaitPrompt **AddLoc,
-		   *New;
-	Screen *	s;
-
-	if (current_window->screen)
-		s = current_window->screen;
-	else
-		s = main_screen;
-
-	New = (WaitPrompt *) new_malloc(sizeof(WaitPrompt));
-	New->prompt = malloc_strdup(prompt);
-	New->data = malloc_strdup(data);
-	New->type = type;
-	New->echo = echo;
-	New->func = func;
-	New->next = NULL;
-
-	for (AddLoc = &s->promptlist; *AddLoc; AddLoc = &(*AddLoc)->next)
-		/* nothing */;
-	*AddLoc = New;
-	if (AddLoc == &s->promptlist)
-		change_input_prompt(1);
-}
-
 void	edit_codepoint (u_32int_t key)
 {
 	unsigned char	uckey;
@@ -3326,4 +3298,41 @@ void    edit_char (unsigned char key)
                 get_time(&last_input_screen->last_press);
         }
 }
+
+/* * * * * * * * * INPUT PROMPTS * * * * * * * * * * */
+/* 
+ * add_wait_prompt:  Given a prompt string, a function to call when
+ * the prompt is entered.. some other data to pass to the function,
+ * and the type of prompt..  either for a line, or a key, we add 
+ * this to the prompt_list for the current screen..  and set the
+ * input prompt accordingly.
+ *
+ * XXXX - maybe this belongs in input.c? =)
+ */
+void 	add_wait_prompt (const char *prompt, void (*func)(char *, char *), const char *data, int type, int echo)
+{
+	WaitPrompt **AddLoc,
+		   *New;
+	Screen *	s;
+
+	if (current_window->screen)
+		s = current_window->screen;
+	else
+		s = main_screen;
+
+	New = (WaitPrompt *) new_malloc(sizeof(WaitPrompt));
+	New->prompt = malloc_strdup(prompt);
+	New->data = malloc_strdup(data);
+	New->type = type;
+	New->echo = echo;
+	New->func = func;
+	New->next = NULL;
+
+	for (AddLoc = &s->promptlist; *AddLoc; AddLoc = &(*AddLoc)->next)
+		/* nothing */;
+	*AddLoc = New;
+	if (AddLoc == &s->promptlist)
+		change_input_prompt(1);
+}
+
 

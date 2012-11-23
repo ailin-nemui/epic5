@@ -1,4 +1,4 @@
-/* $EPIC: glob.c,v 1.14 2010/11/22 04:18:07 jnelson Exp $ */
+/* $EPIC: glob.c,v 1.15 2012/11/23 16:04:49 jnelson Exp $ */
 #include "config.h"
 #ifdef NEED_GLOB
 
@@ -154,7 +154,7 @@ int bsd_glob		(	const char *pattern,
 {
 	const unsigned char *patnext;
 	int c;
-	Char *bufnext, *bufend, patbuf[MAXPATHLEN+1];
+	Char *bufnext, *bufend, patbuf[PATH_MAX+1];
 
 	patnext = (const unsigned char *) pattern;
 	if (!(flags & GLOB_APPEND)) 
@@ -169,7 +169,7 @@ int bsd_glob		(	const char *pattern,
 	pglob->gl_matchc = 0;
 
 	bufnext = patbuf;
-	bufend = bufnext + MAXPATHLEN;
+	bufend = bufnext + PATH_MAX;
 	if (flags & GLOB_QUOTE) 
 	{
 		/* Protect the quoted characters. */
@@ -240,7 +240,7 @@ static int globexp2	(	const Char *ptr,
 	int     i;
 	Char   *lm, *ls;
 	const Char *pe, *pm, *pl;
-	Char    patbuf[MAXPATHLEN + 1];
+	Char    patbuf[PATH_MAX + 1];
 
 	/* copy part up to the brace */
 	for (lm = patbuf, pm = pattern; pm != ptr; *lm++ = *pm++)
@@ -415,7 +415,7 @@ static int glob0		(	const Char *pattern,
 	int		err;
 	int		oldpathc;
 	Char *		bufnext;
-	Char		patbuf[MAXPATHLEN+1];
+	Char		patbuf[PATH_MAX+1];
 
 	qpatnext = globtilde(pattern, patbuf, pglob);
 	oldpathc = pglob->gl_pathc;
@@ -510,7 +510,7 @@ static int compare		(	const void *p,
 static int glob1		(	Char *pattern,
 					glob_t *pglob		)
 {
-	Char pathbuf[MAXPATHLEN+1];
+	Char pathbuf[PATH_MAX+1];
 
 	/* A null pathname is invalid -- POSIX 1003.1 sect. 2.4. */
 	if (*pattern == EOS)
@@ -591,7 +591,7 @@ static int glob3		(	Char *pathbuf,
 	register struct dirent *dp;
 	DIR *dirp;
 	int err;
-	char buf[MAXPATHLEN];
+	char buf[PATH_MAX];
 
 	/*
 	 * The readdirfunc declaration can't be prototyped, because it is
@@ -802,7 +802,7 @@ void bsd_globfree 		(	glob_t *pglob			)
 static DIR *g_opendir		(	register Char *str,
 					glob_t *pglob			)
 {
-	char buf[MAXPATHLEN];
+	char buf[PATH_MAX];
 
 	if (!*str)
 		strlcpy(buf, ".", sizeof buf);
@@ -819,7 +819,7 @@ static int g_lstat		(	register Char *fn,
 					Stat *sb,
 					glob_t *pglob			)
 {
-	char buf[MAXPATHLEN];
+	char buf[PATH_MAX];
 
 	g_Ctoc(fn, buf);
 	if (pglob->gl_flags & GLOB_ALTDIRFUNC)
@@ -831,7 +831,7 @@ static int g_stat		(	register Char *fn,
 					Stat *sb,
 					glob_t *pglob			)
 {
-	char buf[MAXPATHLEN];
+	char buf[PATH_MAX];
 
 	g_Ctoc(fn, buf);
 	if (pglob->gl_flags & GLOB_ALTDIRFUNC)

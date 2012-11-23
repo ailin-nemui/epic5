@@ -1,4 +1,4 @@
-/* $EPIC: words.c,v 1.23 2007/04/12 03:24:14 jnelson Exp $ */
+/* $EPIC: words.c,v 1.24 2012/11/23 16:04:49 jnelson Exp $ */
 /*
  * words.c -- right now it just holds the stuff i wrote to replace
  * that beastie arg_number().  Eventually, i may move all of the
@@ -66,7 +66,10 @@
  */
 char *	search_for (char *start, char **mark, char *chars, int how)
 {
-        if (!mark || !*mark)
+	if (!mark)
+		return NULL;		/* Take THAT! */
+
+        if (!*mark)
                 *mark = start;
 
         if (how > 0)   /* forward search */

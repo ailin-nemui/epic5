@@ -1,4 +1,4 @@
-/* $EPIC: window.c,v 1.225 2012/11/18 01:37:51 jnelson Exp $ */
+/* $EPIC: window.c,v 1.226 2012/11/23 16:04:49 jnelson Exp $ */
 /*
  * window.c: Handles the organzation of the logical viewports (``windows'')
  * for irc.  This includes keeping track of what windows are open, where they
@@ -6360,6 +6360,8 @@ static void 	set_screens_current_window (Screen *screen, Window *window)
 	}
 	if (!window)
 		window = screen->window_list;
+	if (!window)
+		panic(1, "sccw: The screen has no windows.");
 
 	if (window->deceased)
 		panic(1, "sccw: This window is dead.");

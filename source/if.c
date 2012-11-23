@@ -1,4 +1,4 @@
-/* $EPIC: if.c,v 1.41 2008/11/30 19:09:23 jnelson Exp $ */
+/* $EPIC: if.c,v 1.42 2012/11/23 16:04:49 jnelson Exp $ */
 /*
  * if.c: the IF, WHILE, FOREACH, DO, FE, FEC, and FOR commands for IRCII 
  *
@@ -303,6 +303,9 @@ BUILT_IN_COMMAND(whilecmd)
 		*body = NULL,
 		*newexp = NULL;
 	int 	whileval = !strcmp(command, "WHILE");
+
+	if (!args)
+		return;
 
 	if (!subargs)
 		subargs = empty_string;

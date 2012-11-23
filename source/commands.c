@@ -1,4 +1,4 @@
-/* $EPIC: commands.c,v 1.203 2012/11/18 01:37:51 jnelson Exp $ */
+/* $EPIC: commands.c,v 1.204 2012/11/23 16:04:49 jnelson Exp $ */
 /*
  * commands.c -- Stuff needed to execute commands in ircII.
  *		 Includes the bulk of the built in commands for ircII.
@@ -798,6 +798,9 @@ BUILT_IN_COMMAND(e_topic)
 	const char *channel = get_echannel_by_refnum(0);
 	const char *arg;
 
+	if (!args)
+		return;
+
 	if (args && *args == '-')
 		clear_topic = 1, args++;
 
@@ -1009,9 +1012,11 @@ BUILT_IN_COMMAND(xechocmd)
 
 			/* Outputting here is bad.  So just ignore it */
 			if (is_number(flag_arg))
+			{
 				timeout = atof(flag_arg);
+				output_expires_after = timeout;
+			}
 
-			output_expires_after = timeout;
 			break;
 		}
 		case 'A':	/* ALL (output to all windows) */
