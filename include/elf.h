@@ -34,7 +34,7 @@ char *	epic_fgets(char *s, int n, struct epic_loadfile *elf);
 int 	epic_feof(struct epic_loadfile *elf);
 int 	epic_fclose(struct epic_loadfile *elf);
 off_t 	epic_stat(const char *filename, struct stat *buf);
-int     slurp_elf_file (struct epic_loadfile *elf, char **file_contents, off_t *file_contents_size);
+size_t  slurp_elf_file (struct epic_loadfile *elf, char **file_contents, off_t *file_contents_size);
 
 int     string_feof(const char *file_contents, off_t file_contents_size);
 int     string_fgetc(const char **file_contents, off_t *file_contents_size);

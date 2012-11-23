@@ -2,6 +2,7 @@ EPIC5 Projects, Bugs, and other Errata:
 
 KNOWN ERRATA (eg, bugs, or unresolved requests):
 ------------------------------------------------
+* A func which shows window channels in descending order of "current-ness"
 * Refactor how refcounting works when you're killing a window's lastlog.
 
 MEDIUM-TERM PROJECTS
@@ -269,4 +270,5 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Fix various warnings from gcc -Wall
 * Add a new /set DEFAULT_SCRIPT_ENCODING -- will be used soon!
 * Call setlocale(LC_ALL, "") at start of main() to get locale info
+* Fix slurp_file() (caf)
 

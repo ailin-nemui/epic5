@@ -349,11 +349,10 @@ static int	find_in_archive(struct archive *a, struct archive_entry **entry, cons
  * bytes we read.  It's up to you to decide if it needs recoding or 
  * decrypting or whatever.
  */
-int	slurp_elf_file (struct epic_loadfile *elf, char **file_contents, off_t *file_contents_size)
+size_t	slurp_elf_file (struct epic_loadfile *elf, char **file_contents, off_t *file_contents_size)
 {
-	size_t	current_byte;
 	size_t	size;
-	int	next_byte = 0;
+	size_t	next_byte = 0;
 
 	if (!elf)
 		return -1;
@@ -363,10 +362,9 @@ int	slurp_elf_file (struct epic_loadfile *elf, char **file_contents, off_t *file
 	size = 8192;
 	RESIZE(*file_contents, char, size);
 
-	current_byte = 0;
 	while (!epic_feof(elf))
 	{
-		if (current_byte >= size)
+		if (next_byte >= size)
 		{
 			size += 8192;
 			RESIZE(*file_contents, char, size);
@@ -376,9 +374,10 @@ int	slurp_elf_file (struct epic_loadfile *elf, char **file_contents, off_t *file
 	}
 
 	/* Just for laughs, zero terminate it so it's a C string */
+	size = next_byte + 1;
+	RESIZE(*file_contents, char, size);
 	(*file_contents)[next_byte] = 0;
 
-	--next_byte;		/* Because we went off the end */
 	*file_contents_size = next_byte;
 	return next_byte;
 }
