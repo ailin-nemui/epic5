@@ -280,6 +280,16 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Re-comment translate_user_input() based on suggestion by ce
 * Move add_wait_prompt() to a new home
 * Fix whoreply() as suggested by clang
-* Fix set_screens_current_window() as suggested by clang
-* Fix search_for() as suggested by clang
+* All of the below were suggested by clang.
+* Fix set_screens_current_window() and search_for().
+* Fix a "use-after-free" when realloc() fails
+* Fix or paper over string-overruns for a malformed globs
+* Fix a memory leak when opening a compressed file fails
+* Fix a corruption of from_server in vsyserr()
+* Check the param to denormalize_string() 
+* Slurp_file shouldn't call stat() or check its retval
+* Denormalize_string() should check its param
+* And so should p_killmsg(), and dishonor kill msg if its malformed.
+* Fix /while, /topic, and $repeat() in case of malformed arguments
+* All of the above were suggested by clang
 

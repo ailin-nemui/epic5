@@ -1,4 +1,4 @@
-/* $EPIC: commands.c,v 1.204 2012/11/23 16:04:49 jnelson Exp $ */
+/* $EPIC: commands.c,v 1.205 2012/11/24 01:42:51 jnelson Exp $ */
 /*
  * commands.c -- Stuff needed to execute commands in ircII.
  *		 Includes the bulk of the built in commands for ircII.
@@ -801,7 +801,7 @@ BUILT_IN_COMMAND(e_topic)
 	if (!args)
 		return;
 
-	if (args && *args == '-')
+	if (*args == '-')
 		clear_topic = 1, args++;
 
 	args_copy = LOCAL_COPY(args);

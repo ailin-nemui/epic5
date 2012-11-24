@@ -1,4 +1,4 @@
-/* $EPIC: parse.c,v 1.94 2009/01/24 15:58:58 jnelson Exp $ */
+/* $EPIC: parse.c,v 1.95 2012/11/24 01:42:51 jnelson Exp $ */
 /*
  * parse.c: handles messages from the server.   Believe it or not.  I
  * certainly wouldn't if I were you. 
@@ -1168,7 +1168,8 @@ static int 	p_killmsg (const char *from, const char *to, const char *cline)
 
 	l = message_from(to, LEVEL_OPNOTE);
 	line = LOCAL_COPY(cline);
-	poor_sap = next_arg(line, &line);
+	if (!(poor_sap = next_arg(line, &line)))
+		return 0;		/* MALFORMED - IGNORED */
 
 	/* Dalnet kill BBC and doesnt append the period */
 	if (!end_strcmp(poor_sap, ".", 1))

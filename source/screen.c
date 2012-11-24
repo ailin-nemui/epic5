@@ -1,4 +1,4 @@
-/* $EPIC: screen.c,v 1.146 2012/11/23 16:04:49 jnelson Exp $ */
+/* $EPIC: screen.c,v 1.147 2012/11/24 01:42:51 jnelson Exp $ */
 /*
  * screen.c
  *
@@ -1391,6 +1391,9 @@ unsigned char *	denormalize_string (const unsigned char *str)
 	 * The output string has a few extra chars on the end just 
 	 * in case you need to tack something else onto it.
 	 */
+	if (!str)
+		str = "<denormalize_string was called with NULL>";
+
 	maxpos = strlen(str);
 	output = (unsigned char *)new_malloc(maxpos + 192);
 	pos = 0;

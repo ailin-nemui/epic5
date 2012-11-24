@@ -1,4 +1,4 @@
-/* $EPIC: glob.c,v 1.15 2012/11/23 16:04:49 jnelson Exp $ */
+/* $EPIC: glob.c,v 1.16 2012/11/24 01:42:51 jnelson Exp $ */
 #include "config.h"
 #ifdef NEED_GLOB
 
@@ -242,6 +242,10 @@ static int globexp2	(	const Char *ptr,
 	const Char *pe, *pm, *pl;
 	Char    patbuf[PATH_MAX + 1];
 
+	/* There are bugs in here that I can't get to the bottom of */
+	/* This just papers over a string overrun */
+	memset(patbuf, 0, PATH_MAX + 1);
+
 	/* copy part up to the brace */
 	for (lm = patbuf, pm = pattern; pm != ptr; *lm++ = *pm++)
 		continue;
@@ -453,7 +457,7 @@ static int glob0		(	const Char *pattern,
 					qpatnext += 2;
 				}
 			} 
-			while ((c = *qpatnext++) != RBRACKET);
+			while ((c = *qpatnext++), (c && c != RBRACKET));
 
 			pglob->gl_flags |= GLOB_MAGCHAR;
 			*bufnext++ = M_END;

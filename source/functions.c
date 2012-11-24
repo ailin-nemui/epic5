@@ -1,4 +1,4 @@
-/* $EPIC: functions.c,v 1.293 2012/07/13 03:05:02 jnelson Exp $ */
+/* $EPIC: functions.c,v 1.294 2012/11/24 01:42:51 jnelson Exp $ */
 /*
  * functions.c -- Built-in functions for ircII
  *
@@ -3606,6 +3606,9 @@ BUILT_IN_FUNCTION(function_repeat, words)
 		words++;
 
 	if (num < 1)
+		RETURN_EMPTY;
+
+	if (!words)
 		RETURN_EMPTY;
 
 	size = strlen(words) * num + 1;

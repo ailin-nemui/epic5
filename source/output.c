@@ -1,4 +1,4 @@
-/* $EPIC: output.c,v 1.24 2012/11/18 01:37:51 jnelson Exp $ */
+/* $EPIC: output.c,v 1.25 2012/11/24 01:42:51 jnelson Exp $ */
 /*
  * output.c: handles a variety of tasks dealing with the output from the irc
  * program 
@@ -344,6 +344,7 @@ static void     vsyserr (int server, const char *format, va_list args)
 {
 	char *  str;
 	int     l, old_from_server = from_server;
+	int	i_set_from_server = 0;
 
         if (!window_display || !format)
 		return;
@@ -373,6 +374,7 @@ static void     vsyserr (int server, const char *format, va_list args)
 	{
 		old_from_server = from_server;
 		from_server = server;
+		i_set_from_server = 1;
 	}
 
 	l = message_from(NULL, LEVEL_SYSERR);
@@ -380,7 +382,7 @@ static void     vsyserr (int server, const char *format, va_list args)
 		put_echo(putbuf);
 	pop_message_from(l);
 
-	if (is_server_valid(server))
+	if (i_set_from_server)
 		from_server = old_from_server;
 }
 

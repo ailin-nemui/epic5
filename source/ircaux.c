@@ -1,4 +1,4 @@
-/* $EPIC: ircaux.c,v 1.229 2012/11/18 01:37:51 jnelson Exp $ */
+/* $EPIC: ircaux.c,v 1.230 2012/11/24 01:42:51 jnelson Exp $ */
 /*
  * ircaux.c: some extra routines... not specific to irc... that I needed 
  *
@@ -299,7 +299,6 @@ void *	really_new_realloc (void **ptr, size_t size, const char *fn, int line)
 		if ((newptr = (char *)realloc(mo_ptr(*ptr), size + sizeof(MO))))
 			*ptr = newptr;
 		else {
-			new_free(ptr);
 			panic(1, "realloc() failed from [%s/%d], giving up!", fn, line);
 		}
 
@@ -1574,8 +1573,7 @@ static struct epic_loadfile *	open_compression (char *executable, char *filename
 	struct epic_loadfile *	elf;
 	int 	pipes[2] = {-1, -1};
 
-        elf = (struct epic_loadfile *) new_malloc(sizeof(struct epic_loadfile));
-
+	elf = (struct epic_loadfile *) new_malloc(sizeof(struct epic_loadfile));
         if (pipe(pipes) == -1)
 	{
 		yell("Cannot start decompression: %s\n", strerror(errno));
@@ -1584,6 +1582,7 @@ static struct epic_loadfile *	open_compression (char *executable, char *filename
 			close(pipes[0]);
 			close(pipes[1]);
 		}
+		new_free(&elf);
 		return NULL;
 	}
 
@@ -1593,6 +1592,7 @@ static struct epic_loadfile *	open_compression (char *executable, char *filename
 		{
 			yell("Cannot start decompression: %s\n", 
 					strerror(errno));
+			new_free(&elf);
 			return NULL;
 		}
 		case 0:
@@ -1619,6 +1619,8 @@ static struct epic_loadfile *	open_compression (char *executable, char *filename
 			{
 				yell("Cannot start decompression: %s\n", 
 						strerror(errno));
+				new_free(&elf);
+				close(pipes[0]);
 				return NULL;
 			}
 			break;
@@ -1666,6 +1668,10 @@ static 	Filename 	path_to_bunzip2;
 
 		setup = 1;
 	}
+
+	/* I should probably emit an error here */
+	if (!filename || !*filename)
+		return NULL;
 
 	/* 
 	 * It is allowed to pass to this function either a true filename
@@ -1843,15 +1849,19 @@ int	slurp_file (char **buffer, char *filename)
         size_t	count;
 
 	elf = uzfopen(&filename, get_string_var(LOAD_PATH_VAR), 1, &s);
+	if (!filename)
+	{
+		yell("slurp_file: uzfopen failed -- help!");
+		return -1;
+	}
 
-/*
+#if 0
 	if (stat(filename, &s) < 0)
 	{
 		fclose(file);
 		new_free(&filename);
 		return -1;
 	} 
-*/
 
 	if (s.st_mode & 0111)
 	{
@@ -1863,6 +1873,7 @@ int	slurp_file (char **buffer, char *filename)
 		new_free(&filename);
 		return -1; /* Whatever */
 	}
+#endif
 
 	/*
  	 * There should probably be some sort of errortrapping function here, 
