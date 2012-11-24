@@ -292,4 +292,4 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * And so should p_killmsg(), and dishonor kill msg if its malformed.
 * Fix /while, /topic, and $repeat() in case of malformed arguments
 * All of the above were suggested by clang
-
+* More fixes suggested by clang that I'm too annoyed to list out.

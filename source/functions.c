@@ -1,4 +1,4 @@
-/* $EPIC: functions.c,v 1.294 2012/11/24 01:42:51 jnelson Exp $ */
+/* $EPIC: functions.c,v 1.295 2012/11/24 18:53:36 jnelson Exp $ */
 /*
  * functions.c -- Built-in functions for ircII
  *
@@ -1433,7 +1433,7 @@ BUILT_IN_FUNCTION(function_word, word)
 		RETURN_EMPTY;
 
 	while (cvalue-- > 0 && word && *word)
-		w_word = next_func_arg(word, &word);
+		next_func_arg(word, &word);
 
 	GET_FUNC_ARG(w_word, word);
 	RETURN_STR(w_word);
@@ -1458,7 +1458,7 @@ BUILT_IN_FUNCTION(function_qword, word)
 		RETURN_EMPTY;
 
 	while (cvalue-- > 0 && word && *word)
-		w_word = next_func_arg(word, &word);
+		next_func_arg(word, &word);
 
 	GET_FUNC_ARG(w_word, word);
 	malloc_strcat_word(&retval, space, w_word, DWORD_DWORDS);

@@ -1,4 +1,4 @@
-/* $EPIC: commands.c,v 1.205 2012/11/24 01:42:51 jnelson Exp $ */
+/* $EPIC: commands.c,v 1.206 2012/11/24 18:53:36 jnelson Exp $ */
 /*
  * commands.c -- Stuff needed to execute commands in ircII.
  *		 Includes the bulk of the built in commands for ircII.
@@ -950,9 +950,6 @@ BUILT_IN_COMMAND(xechocmd)
 
 		case 'V':	/* VISUAL (output to a visible window) */
 		{
-			/* There is always at least one visible window! */
-			Window *win = NULL;
-
 			/* Chew up the argument. */
 			flag_arg = next_arg(args, &args);
 
@@ -964,6 +961,8 @@ BUILT_IN_COMMAND(xechocmd)
 							current_window->refnum;
 			else
 			{
+			    /* There is always at least one visible window! */
+			    Window *win = NULL;
 			    while ((traverse_all_windows(&win)))
 			    {
 				if (win->screen)

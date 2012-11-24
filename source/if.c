@@ -1,4 +1,4 @@
-/* $EPIC: if.c,v 1.43 2012/11/24 01:42:51 jnelson Exp $ */
+/* $EPIC: if.c,v 1.44 2012/11/24 18:53:36 jnelson Exp $ */
 /*
  * if.c: the IF, WHILE, FOREACH, DO, FE, FEC, and FOR commands for IRCII 
  *
@@ -371,7 +371,6 @@ BUILT_IN_COMMAND(foreach)
 	int	total;
 	int	i;
 	int	slen;
-	int	old_display;
 	int	list = VAR_ALIAS;
 
 	if (!subargs)
@@ -414,7 +413,6 @@ BUILT_IN_COMMAND(foreach)
 	}
 
 	slen = strlen(struc);
-	old_display = window_display;
 
 	will_catch_break_exceptions++;
 	will_catch_continue_exceptions++;

@@ -1,4 +1,4 @@
-/* $EPIC: expr.c,v 1.40 2007/04/12 03:24:14 jnelson Exp $ */
+/* $EPIC: expr.c,v 1.41 2012/11/24 18:53:36 jnelson Exp $ */
 /*
  * expr.c -- The expression mode parser and the textual mode parser
  * #included by alias.c -- DO NOT DELETE
@@ -140,8 +140,7 @@ static	char	*next_unit (char *str, const char *args, int stage)
 		*lastc,			/* used to denote end of token-set */
 		*tmp = NULL,		/* place to malloc_sprintf() into */
 		op;			/* the op were working on */
-	int	got_sloshed = 0,	/* If the last char was a slash */
-		display;
+	int	got_sloshed = 0;	/* If the last char was a slash */
 
 	char	*result1 = (char *) 0,	/* raw lefthand-side of operator */
 		*result2 = (char *) 0,	/* raw righthand-side of operator */
@@ -416,8 +415,6 @@ static	char	*next_unit (char *str, const char *args, int stage)
 		case '{':
 		{
 			ssize_t span;
-
-			display = window_display;
 
 			if ((span = MatchingBracket(ptr + 1, '{', '}')) >= 0)
 				ptr2 = ptr + 1 + span;

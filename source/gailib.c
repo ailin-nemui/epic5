@@ -527,7 +527,6 @@ int getnameinfo__compat (const struct sockaddr *sa, size_t salen, char *host, si
 	const char *addr;
 	char *p;
 	unsigned long v4a;
-	int h_error;
 	char numserv[512];
 	char numaddr[512];
 
@@ -593,7 +592,6 @@ int getnameinfo__compat (const struct sockaddr *sa, size_t salen, char *host, si
 		strlcpy(host, numaddr, hostlen);
 	} else {
 		hp = gethostbyaddr(addr, afd->a_addrlen, afd->a_af);
-		h_error = h_errno;
 
 		if (hp) {
 			if (flags & NI_NOFQDN) {

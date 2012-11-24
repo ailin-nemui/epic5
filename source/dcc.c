@@ -1,4 +1,4 @@
-/* $EPIC: dcc.c,v 1.164 2012/06/24 23:07:54 jnelson Exp $ */
+/* $EPIC: dcc.c,v 1.165 2012/11/24 18:53:36 jnelson Exp $ */
 /*
  * dcc.c: Things dealing client to client connections. 
  *
@@ -1913,7 +1913,6 @@ DCC_SUBCOMMAND(dcc_get_subcmd)
 	const char *	x = NULL;
 	int		resume;
 	Bucket *	b;
-	int		force_savedir = 0;
 
 	if (argc < 2)
 	{
@@ -1940,7 +1939,6 @@ DCC_SUBCOMMAND(dcc_get_subcmd)
 	    x = pathname;
 	    argv[argc-1] = NULL;
 	    argc--;
-	    force_savedir = 1;
 	}
 
 	/* Handle a straight rename */
@@ -1948,7 +1946,12 @@ DCC_SUBCOMMAND(dcc_get_subcmd)
 			 dcc_get_bucket(NULL, user, argv[3]) == 0)
 	{
 	    /* Pretend the user did /dcc rename get <user> argv[2] argv[3] */
-	    b = new_bucket();
+	    if (!(b = new_bucket()))
+	    {
+		yell("DCC GET: new_bucket() failed. [1] help!");
+		return;
+	    }
+
 	    dcc_get_bucket(b, user, argv[2]);
 	    dcc = b->list[0].stuff;
 	    malloc_strcpy(&dcc->description, argv[3]);
@@ -1979,11 +1982,18 @@ DCC_SUBCOMMAND(dcc_get_subcmd)
 	{
 	    filename = argv[j];
 jumpstart_get:
-	    b = new_bucket();
+	    if (!(b = new_bucket()))
+	    {
+		yell("DCC GET: new_bucket() failed.  [2] Help!");
+		return;
+	    }
 	    count = dcc_get_bucket(b, user, filename);
 	    for (i = 0; i < count; i++)
 	    {
-		dcc = b->list[i].stuff;
+		/* Skip any null pointers. sigh. */
+		if (!(dcc = b->list[i].stuff))
+			continue;
+
 		lock_dcc(dcc);
 
 		/* 
@@ -4052,7 +4062,6 @@ static	char *	dcc_urlencode (const char *s)
 	size_t	srclen;
 	char *	dest;
 	size_t	destsize;
-	size_t	destlen;
 
 	src = LOCAL_COPY(s);
 	for (p1 = s, p2 = src; *p1; p1++)
@@ -4066,9 +4075,8 @@ static	char *	dcc_urlencode (const char *s)
 	srclen = strlen(src);
 	destsize = srclen * 3 + 2;
 	dest = new_malloc(destsize);
-        destlen = transform_string(URL_xform, XFORM_ENCODE, NULL, 
-					src, srclen,
-					dest, destsize);
+        transform_string(URL_xform, XFORM_ENCODE, NULL, 
+			src, srclen, dest, destsize);
 	return dest;
 }
 
