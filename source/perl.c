@@ -1,4 +1,4 @@
-/* $EPIC: perl.c,v 1.23 2010/04/02 23:14:45 jnelson Exp $ */
+/* $EPIC: perl.c,v 1.24 2012/11/25 05:56:28 jnelson Exp $ */
 /*
  * perl.c -- The perl interfacing routines.
  *
@@ -205,7 +205,7 @@ char *	perlcall (char* sub, char* in, char* out, long item, char* input)
 		snprintf(retval,31,"%u",count);
 	} else {
 		SV *sv;
-		count = perl_call_pv(sub, G_EVAL|G_SCALAR);
+		perl_call_pv(sub, G_EVAL|G_SCALAR);
 		SPAGAIN ; sv=POPs ;
 		SV2STR(sv,retval);
 	}

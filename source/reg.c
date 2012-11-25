@@ -1,4 +1,4 @@
-/* $EPIC: reg.c,v 1.18 2005/03/19 03:55:56 jnelson Exp $ */
+/* $EPIC: reg.c,v 1.19 2012/11/25 05:56:28 jnelson Exp $ */
 /*
  * reg.c - "glob"-like wildcard pattern matching (not regexes)
  *
@@ -705,10 +705,9 @@ char *	pattern2regex (const char *pattern, int *weight)
 			if (pat[1] != '[')
 				goto end;
 		{
-			char *patc, *ptr, *ptr2, *arg, *placeholder;
+			char *ptr, *ptr2, *arg, *placeholder;
 			int nest = 1;
 
-			patc = LOCAL_COPY(pat);
 			placeholder = ptr = ptr2 = strstr(pattern, "\\[");
 			do
 			{

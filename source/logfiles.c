@@ -1,4 +1,4 @@
-/* $EPIC: logfiles.c,v 1.38 2012/06/26 12:28:06 jnelson Exp $ */
+/* $EPIC: logfiles.c,v 1.39 2012/11/25 05:56:28 jnelson Exp $ */
 /*
  * logfiles.c - General purpose log files
  *
@@ -123,7 +123,8 @@ static void	delete_logfile (Logfile *log)
 		for (prev = logfiles; prev; prev = prev->next)
 			if (prev->next == log)
 				break;
-		prev->next = log->next;
+		if (prev)
+			prev->next = log->next;
 	}
 
 	new_free(&log->name);

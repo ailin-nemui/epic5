@@ -1,4 +1,4 @@
-/* $EPIC: if.c,v 1.44 2012/11/24 18:53:36 jnelson Exp $ */
+/* $EPIC: if.c,v 1.45 2012/11/25 05:56:28 jnelson Exp $ */
 /*
  * if.c: the IF, WHILE, FOREACH, DO, FE, FEC, and FOR commands for IRCII 
  *
@@ -378,6 +378,12 @@ BUILT_IN_COMMAND(foreach)
 
 	while (args && my_isspace(*args))
 		args++;
+
+	if (!args || !*args)
+	{
+		my_error("Usage: FOREACH structure varname {block}");
+		return;
+	}
 
 	if (*args == '-')
 		args++, list = COMMAND_ALIAS;

@@ -1,4 +1,4 @@
-/* $EPIC: notify.c,v 1.35 2008/03/10 06:29:39 crazyed Exp $ */
+/* $EPIC: notify.c,v 1.36 2012/11/25 05:56:28 jnelson Exp $ */
 /*
  * notify.c: a few handy routines to notify you when people enter and leave irc 
  *
@@ -134,14 +134,11 @@ static	void	rebuild_all_ison (void)
 static void	rebuild_notify_ison (int refnum)
 {
 	Server *s;
-	char *stuff;
 	int i;
 	size_t clue = 0;
 
 	if (!(s = get_server(refnum)))
 		return;		/* No server, no go */
-
-	stuff = NOTIFY_LIST(s)->ison;
 
 	if (NOTIFY_LIST(s)->ison)
 		NOTIFY_LIST(s)->ison[0] = 0;
@@ -268,7 +265,7 @@ BUILT_IN_COMMAND(notify)
 
 		    if (added)
 		    {
-			malloc_strcat_wordlist_c(&list, space, new_n->nick, &clue);
+			malloc_strcat_wordlist_c(&list, space, nick, &clue);
 			do_ison = 1;
 		    }
 

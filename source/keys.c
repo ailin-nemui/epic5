@@ -1,4 +1,4 @@
-/* $EPIC: keys.c,v 1.59 2010/01/08 05:15:03 jnelson Exp $ */
+/* $EPIC: keys.c,v 1.60 2012/11/25 05:56:28 jnelson Exp $ */
 /*
  * keys.c:  Keeps track of what happens whe you press a key.
  *
@@ -342,7 +342,7 @@ void key_exec_bt (struct Key *key) {
 	 * have any luck, simply discard the key and continue plugging
 	 * forward. */
 	if (nstr == (kstr + kslen)) {
-	    if (kp->bound != NULL || kslen == 1) {
+	    if (kp && (kp->bound != NULL || kslen == 1)) {
 		if (kp->bound != NULL)
 		    key_exec(kp);
 		len -= (nstr - kstr);

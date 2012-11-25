@@ -1,4 +1,4 @@
-/* $EPIC: ircaux.c,v 1.230 2012/11/24 01:42:51 jnelson Exp $ */
+/* $EPIC: ircaux.c,v 1.231 2012/11/25 05:56:28 jnelson Exp $ */
 /*
  * ircaux.c: some extra routines... not specific to irc... that I needed 
  *
@@ -1415,8 +1415,10 @@ char *	exec_pipe (const char *executable, char *input, size_t *len, char * const
 		close(pipe0[1]);
 		close(pipe1[0]);
 		close(2);	/* we dont want to see errors yet */
-		setuid(getuid());
-		setgid(getgid());
+		if (setuid(getuid()))
+			exit(0);
+		if (setgid(getgid()))
+			exit(0);
 		execvp(executable, args);
 		_exit(0);
 	default :
@@ -1520,8 +1522,10 @@ static	FILE *	file_pointers[3];
 			close(pipe0[1]);
 			close(pipe1[0]);
 			close(pipe2[0]);
-			setuid(getuid());
-			setgid(getgid());
+			if (setuid(getuid()))
+				exit(0);
+			if (setgid(getgid()))
+				exit(0);
 			execvp(executable, args);
 			_exit(0);
 		}
@@ -1600,8 +1604,10 @@ static struct epic_loadfile *	open_compression (char *executable, char *filename
 			dup2(pipes[1], 1);
 			close(pipes[0]);
 			close(2);	/* we dont want to see errors */
-			setuid(getuid());
-			setgid(getgid());
+			if (setuid(getuid()))
+				exit(0);
+			if (setgid(getgid()))
+				exit(0);
 
 			/* 
 			 * 'compress', 'uncompress, 'gzip', 'gunzip',
@@ -2766,7 +2772,10 @@ size_t 	ccspan (const char *string, int s)
 
 int 	last_char (const char *string)
 {
-	while (string && string[0] && string[1])
+	if (!string)
+		return 0;
+
+	while (string[0] && string[1])
 		string++;
 
 	return (int)*string;
@@ -4439,6 +4448,9 @@ void	update_mode_str (char *modes, size_t len, const char *changes)
 {
 	int		onoff = 1;
 
+	if (!modes)
+		return;
+
 	for (; *changes; changes++)
 	{
 		if (*changes == '-')
@@ -4635,6 +4647,12 @@ void	free_bucket (Bucket **b)
 void	add_to_bucket (Bucket *b, const char *name, void *stuff)
 {
 	int i, newsize;
+
+	if (!b)
+	{
+		privileged_yell("add_to_bucket: A null bucket was passed in");
+		return;
+	}
 
 	if (b->numitems + 1 == b->max)
 	{

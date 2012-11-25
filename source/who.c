@@ -1,4 +1,4 @@
-/* $EPIC: who.c,v 1.68 2012/11/23 16:04:49 jnelson Exp $ */
+/* $EPIC: who.c,v 1.69 2012/11/25 05:56:28 jnelson Exp $ */
 /*
  * who.c -- The WHO queue.  The ISON queue.  The USERHOST queue.
  *
@@ -1361,7 +1361,11 @@ void	isonbase (int refnum, char *args, void (*line) (int, char *, char *))
 				if (new_i)
 					ison_queue_send(refnum);
 	
-				new_i = get_new_ison_entry(refnum, sendnext);
+				if (!(new_i = get_new_ison_entry(refnum, sendnext)))
+				{
+					privileged_yell("isonbase: Could not create a new ison entry for %d [%d]", refnum, sendnext);
+					continue;
+				}
 				new_i->line = line;
 				malloc_strcpy(&new_i->oncmd, on_cmd);
 				malloc_strcpy(&new_i->offcmd, offcmd);

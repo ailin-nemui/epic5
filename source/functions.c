@@ -1,4 +1,4 @@
-/* $EPIC: functions.c,v 1.295 2012/11/24 18:53:36 jnelson Exp $ */
+/* $EPIC: functions.c,v 1.296 2012/11/25 05:56:28 jnelson Exp $ */
 /*
  * functions.c -- Built-in functions for ircII
  *
@@ -5359,12 +5359,19 @@ BUILT_IN_FUNCTION(function_isnumber, input)
 
 	/* XXX Why doesn't this use strtoimax? */
 	strtol(number, &endptr, base);
+	/* 
+	 * You don't have to remind me that endptr can't be null
+	 * here.  This is just to make clang be quiet 
+	 */
+	if (!endptr)
+		RETURN_INT(0);
+
 	if (endptr > number)
 		segments++;
 	if (*endptr == '.')
 	{
 		if (base == 0)
-			base = 10;		/* XXX So i'm chicken. */
+			base = 10;	/* XXX So i'm chicken. */
 		number = endptr + 1;
 		/* XXX Why doesn't this use strtoimax? */
 		strtol(number, &endptr, base);
@@ -7000,7 +7007,7 @@ BUILT_IN_FUNCTION(function_check_code, input)
 	while (input && *input && isspace(*input))
 		input++;
 
-	if (*input != '{' && *input != '(')
+	if (input == NULL || (*input != '{' && *input != '('))
 		RETURN_INT(-1);		/* Not a block statement or expr */
 
 	type = *input;
@@ -7010,7 +7017,7 @@ BUILT_IN_FUNCTION(function_check_code, input)
 	while (input && *input && isspace(*input))
 		input++;
 
-	if (*input)
+	if (input == NULL || *input)
 		RETURN_INT(-3);		/* Stuff after trailing } */
 
 	RETURN_INT(0);			/* Looks ok to me */

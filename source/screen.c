@@ -1,4 +1,4 @@
-/* $EPIC: screen.c,v 1.147 2012/11/24 01:42:51 jnelson Exp $ */
+/* $EPIC: screen.c,v 1.148 2012/11/25 05:56:28 jnelson Exp $ */
 /*
  * screen.c
  *
@@ -2543,19 +2543,6 @@ void 	cursor_in_display (Window *w)
 	if (w->screen)
 		w->screen->cursor_window = w;
 }
-
-/*
- * is_cursor_in_display: returns true if the cursor is in one of the windows
- * (cursor_window is not null), false otherwise 
- */
-int 	is_cursor_in_display (Screen *screen)
-{
-	if (!screen && current_window->screen)
-		screen = current_window->screen;
-
-	return (screen->cursor_window ? 1 : 0);
-}
-
 
 /* * * * * * * SCREEN UDPATING AND RESIZING * * * * * * * * */
 /*
