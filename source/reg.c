@@ -1,4 +1,4 @@
-/* $EPIC: reg.c,v 1.19 2012/11/25 05:56:28 jnelson Exp $ */
+/* $EPIC: reg.c,v 1.20 2012/11/26 05:09:35 jnelson Exp $ */
 /*
  * reg.c - "glob"-like wildcard pattern matching (not regexes)
  *
@@ -732,7 +732,7 @@ char *	pattern2regex (const char *pattern, int *weight)
 				goto end;
 
 			*ptr = 0;
-			ptr += 2;
+			/* ptr += 2; */
 			*placeholder = 0;
 			placeholder += 2;
 

@@ -1,4 +1,4 @@
-/* $EPIC: ircaux.c,v 1.231 2012/11/25 05:56:28 jnelson Exp $ */
+/* $EPIC: ircaux.c,v 1.232 2012/11/26 05:09:35 jnelson Exp $ */
 /*
  * ircaux.c: some extra routines... not specific to irc... that I needed 
  *
@@ -4654,15 +4654,39 @@ void	add_to_bucket (Bucket *b, const char *name, void *stuff)
 		return;
 	}
 
-	if (b->numitems + 1 == b->max)
+	/*
+	 * Determine whether b->list[b->numitems] is an overrun,
+	 * and if it is, extend b->list so it's big enough.
+	 *
+	 * So at this point, b->numitems points at the "next" place
+	 * ie, b->max = 10, so b->list[0..9]
+	 * So we have to resize if b->numitems == b->max
+	 */
+	if (b->numitems == b->max)
 	{
+		/*
+		 * so if b->max is 10, then newsize is 20.
+		 *, ie, 0..9 -> 0..19
+		 */
 		newsize = b->max * 2;
 		RESIZE(b->list, BucketItem, newsize);
+		if (!b->list)
+			panic(1, "add_to_bucket: RESIZE(b->list) failed.");
+
+		/* 
+		 * Then we go from b->max (10) to newsize - 1 (19)
+		 * and then initialize each one.
+		 */
 		for (i = b->max; i < newsize; i++)
 		{
 			b->list[i].name = NULL;
 			b->list[i].stuff = NULL;
 		}
+
+		/*
+		 * Then we reset 'max' (oldval: 10) to newsize (20)
+		 * and we allow use of b->list[0..19]
+		 */
 		b->max = newsize;
 	}
 

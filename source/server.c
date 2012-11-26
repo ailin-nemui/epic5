@@ -1,4 +1,4 @@
-/* $EPIC: server.c,v 1.255 2012/11/25 05:56:28 jnelson Exp $ */
+/* $EPIC: server.c,v 1.256 2012/11/26 05:09:35 jnelson Exp $ */
 /*
  * server.c:  Things dealing with that wacky program we call ircd.
  *
@@ -244,6 +244,8 @@ static	int	str_to_serverinfo (char *str, ServerInfo *s)
 			descstr = p;
 		}
 
+	    if (!ignore_field)
+	    {
 		/* Set the appropriate field */
 		if (fieldnum == HOST)
 		{
@@ -310,6 +312,7 @@ static	int	str_to_serverinfo (char *str, ServerInfo *s)
 		 */
 		else if (fieldnum == LASTFIELD)
 			break;
+	    }
 
 		/* And advance to the next field */
 		if ((span = findchar_quoted(descstr, ':')) >= 0)
@@ -675,12 +678,11 @@ int	str_to_servref (const char *desc)
 
 int	str_to_servref_with_update (const char *desc)
 {
-	char *	ptr, *ptr2;
+	char *	ptr;
 	ServerInfo si;
 	int	retval;
 
 	ptr = LOCAL_COPY(desc);
-	ptr2 = LOCAL_COPY(desc);
 	clear_serverinfo(&si);
 	if (str_to_serverinfo(ptr, &si))
 		return NOSERV;
@@ -779,7 +781,7 @@ static 	void 	remove_from_server_list (int i)
  */
 void	add_servers (char *servers, const char *group)
 {
-	char	*host, *hostcopy;
+	char	*host;
 	ServerInfo si;
 	int	refnum;
 
@@ -788,7 +790,6 @@ void	add_servers (char *servers, const char *group)
 
 	while ((host = next_arg(servers, &servers)))
 	{
-		hostcopy = LOCAL_COPY(host);
 		clear_serverinfo(&si);
 		str_to_serverinfo(host, &si);
 		if (group && si.group == NULL)
@@ -1035,9 +1036,6 @@ BUILT_IN_COMMAND(servercmd)
 	int	olds, news;
 	char *	shadow;
 	size_t	slen;
-
-	olds = from_server;
-	news = NOSERV;
 
 	/*
 	 * This is a new trick I'm testing out to see if it works
@@ -2940,11 +2938,11 @@ void	set_server_status (int refnum, int new_status)
 	old_status = s->status;
 	if (old_status < 0 || old_status > SERVER_DELETED)
 		oldstr = "UNKNOWN";
+	else
+		oldstr = server_states[old_status];
 
 	s->status = new_status;
-
 	newstr = server_states[new_status];
-	oldstr = server_states[old_status];
 	do_hook(SERVER_STATUS_LIST, "%d %s %s", refnum, oldstr, newstr);
 }
 
@@ -3118,7 +3116,7 @@ void	set_server_protocol_state (int refnum, int state)
 
 	val = state & 0xFF;
 	set_server_doing_ctcp(refnum, val);
-	state = state >> 8;
+	/* state = state >> 8; */
 }
 
 void	set_server_ssl_enabled (int refnum, int flag)
@@ -3301,7 +3299,7 @@ static char *	get_server_altnames (int refnum)
 
 /* 005 STUFF */
 
-void make_005 (int refnum)
+void	make_005 (int refnum)
 {
 	Server *s;
 
@@ -3315,7 +3313,7 @@ void make_005 (int refnum)
 	s->a005.hash = HASH_SENSITIVE; /* One way to deal with rfc2812 */
 }
 
-static void destroy_a_005 (A005_item *item)
+static void	destroy_a_005 (A005_item *item)
 {
 	if (item) {
 		new_free(&((*item).name));
@@ -3324,7 +3322,7 @@ static void destroy_a_005 (A005_item *item)
 	}
 }
 
-void destroy_005 (int refnum)
+void	destroy_005 (int refnum)
 {
 	Server *s;
 	A005_item *new_i;
@@ -3339,9 +3337,36 @@ void destroy_005 (int refnum)
 	new_free(&s->a005.list);
 }
 
+/* XXX - Clang says that there is a null deref here, but I can't find it. */
+/* So I de-macrofied this so clang could be more specific */
+#if 0
 static GET_ARRAY_NAMES_FUNCTION(get_server_005s, (__FROMSERV->a005))
+#else
+static char *	get_server_005s (int refnum, const char *str)
+{
+	int	i;
+	char *	ret = NULL;
+	size_t	rclue = 0;
+	Server *s;
 
-const char* get_server_005 (int refnum, const char *setting)
+	if (!(s = get_server(refnum)))
+		return malloc_strdup(empty_string);
+
+	for (i = 0; i < s->a005.max; i++)
+	{
+		if (s->a005.list[i]->name == NULL)
+			continue;	/* Ignore nulls */
+
+		if (!str || !*str || wild_match(str, s->a005.list[i]->name))
+			malloc_strcat_wordlist_c(&ret, space, 
+					s->a005.list[i]->name, &rclue);
+	}
+	return ret ? ret : malloc_strdup(empty_string);
+}
+#endif
+
+
+const char *	get_server_005 (int refnum, const char *setting)
 {
 	Server *s;
 	A005_item *item;
@@ -3357,7 +3382,7 @@ const char* get_server_005 (int refnum, const char *setting)
 }
 
 /* value should be null pointer or empty to clear. */
-void set_server_005 (int refnum, char *setting, const char *value)
+void	set_server_005 (int refnum, char *setting, const char *value)
 {
 	Server *s;
 	A005_item *new_005;
@@ -3471,6 +3496,8 @@ char 	*serverctl 	(char *input)
 	int	refnum, num, len;
 	char	*listc, *listc1;
 	const char *ret;
+	char *	retval = NULL;
+	size_t	clue = 0;
 
 	GET_FUNC_ARG(listc, input);
 	len = strlen(listc);
@@ -3497,7 +3524,8 @@ char 	*serverctl 	(char *input)
 			RETURN_INT(refnum);
 		RETURN_EMPTY;
 	} else if (!my_strnicmp(listc, "ALLGROUPS", len)) {
-		RETURN_MSTR(get_all_server_groups());
+		retval = get_all_server_groups();
+		RETURN_MSTR(retval);
 	} else if (!my_strnicmp(listc, "GET", len)) {
 		GET_INT_ARG(refnum, input);
 		if (!get_server(refnum))
@@ -3571,25 +3599,16 @@ char 	*serverctl 	(char *input)
 			ret = get_server_005(refnum, listc1);
 			RETURN_STR(ret);
 		} else if (!my_strnicmp(listc, "005s", len)) {
-			int ofs = from_server;
-			char *	retval;
-
-			/* XXX Do this another way */
-			if (refnum == -1 && from_server >= 0)
-				refnum = from_server;
-			if (refnum < 0 || refnum >= number_of_servers)
-				RETURN_EMPTY;
-
-			from_server = refnum;
-			retval = get_server_005s(input);
-			from_server = ofs;
+			retval = get_server_005s(refnum, input);
 			RETURN_MSTR(retval);
 		} else if (!my_strnicmp(listc, "STATUS", len)) {
 			RETURN_STR(server_states[get_server_status(refnum)]);
 		} else if (!my_strnicmp(listc, "ALTNAME", len)) {
-			RETURN_MSTR(get_server_altnames(refnum));
+			retval = get_server_altnames(refnum);
+			RETURN_MSTR(retval);
 		} else if (!my_strnicmp(listc, "ALTNAMES", len)) {
-			RETURN_MSTR(get_server_altnames(refnum));
+			retval = get_server_altnames(refnum);
+			RETURN_MSTR(retval);
 		} else if (!my_strnicmp(listc, "ADDRFAMILY", len)) {
 			SS a;
 			SA *x;
@@ -3718,8 +3737,6 @@ char 	*serverctl 	(char *input)
 		}
 	} else if (!my_strnicmp(listc, "OMATCH", len)) {
 		int	i;
-		size_t	clue = 0;
-		char *retval = NULL;
 
 		for (i = 0; i < number_of_servers; i++)
 			if (get_server(i) && wild_match(input, get_server_name(i)))
@@ -3727,8 +3744,6 @@ char 	*serverctl 	(char *input)
 		RETURN_MSTR(retval);
 	} else if (!my_strnicmp(listc, "IMATCH", len)) {
 		int	i;
-		size_t	clue = 0;
-		char *retval = NULL;
 
 		for (i = 0; i < number_of_servers; i++)
 			if (get_server(i) && wild_match(input, get_server_itsname(i)))
@@ -3736,8 +3751,6 @@ char 	*serverctl 	(char *input)
 		RETURN_MSTR(retval);
 	} else if (!my_strnicmp(listc, "GMATCH", len)) {
 		int	i;
-		size_t	clue = 0;
-		char *retval = NULL;
 
 		for (i = 0; i < number_of_servers; i++)
 			if (get_server(i) && wild_match(input, get_server_group(i)))

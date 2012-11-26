@@ -1,4 +1,4 @@
-/* $EPIC: who.c,v 1.69 2012/11/25 05:56:28 jnelson Exp $ */
+/* $EPIC: who.c,v 1.70 2012/11/26 05:09:35 jnelson Exp $ */
 /*
  * who.c -- The WHO queue.  The ISON queue.  The USERHOST queue.
  *
@@ -1023,7 +1023,7 @@ int	fake_who_end (int refnum, const char *from, const char *comm, const char *wh
 		if (strncmp(new_w->who_target, target, strlen(target)))
 			return 0;
 
-		who_target = target;
+		/*who_target = target; */
 	}
 
 	l = message_from(new_w->who_target, LEVEL_OTHER);

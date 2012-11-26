@@ -1,4 +1,4 @@
-/* $EPIC: functions.c,v 1.296 2012/11/25 05:56:28 jnelson Exp $ */
+/* $EPIC: functions.c,v 1.297 2012/11/26 05:09:35 jnelson Exp $ */
 /*
  * functions.c -- Built-in functions for ircII
  *
@@ -4061,7 +4061,7 @@ BUILT_IN_FUNCTION(function_winchan, input)
 	 */
 	if (arg1 && is_channel(arg1))
 	{
-		int 	servnum = from_server;
+		int 	servnum;
 		char 	*chan;
 		int	win = -1;
 

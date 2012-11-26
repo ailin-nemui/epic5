@@ -1,4 +1,4 @@
-/* $EPIC: keys.c,v 1.60 2012/11/25 05:56:28 jnelson Exp $ */
+/* $EPIC: keys.c,v 1.61 2012/11/26 05:09:35 jnelson Exp $ */
 /*
  * keys.c:  Keeps track of what happens whe you press a key.
  *
@@ -955,7 +955,7 @@ struct BindStack {
 static struct BindStack *bind_stack = NULL;
 void do_stack_bind (int type, char *arg) {
     struct Key *key = NULL;
-    struct Key *map = head_keymap;
+    struct Key *map;
     struct BindStack *bsp = NULL;
     struct BindStack *bsptmp = NULL;
     unsigned char *cs, *s;
