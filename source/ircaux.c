@@ -1,4 +1,4 @@
-/* $EPIC: ircaux.c,v 1.232 2012/11/26 05:09:35 jnelson Exp $ */
+/* $EPIC: ircaux.c,v 1.233 2012/11/27 22:50:57 jnelson Exp $ */
 /*
  * ircaux.c: some extra routines... not specific to irc... that I needed 
  *
@@ -4471,9 +4471,9 @@ void	update_mode_str (char *modes, size_t len, const char *changes)
  */
 ssize_t	searchbuf (const unsigned char *str, size_t start, size_t end, int find)
 {
-	size_t	retval, counter;
+	size_t	counter;
 
-	for (retval = counter = 0;;)
+	for (counter = 0;;)
 	{
 		if (start + counter >= end)
 			return -1;
@@ -4720,7 +4720,6 @@ int	vmy_strnicmp (size_t len, char *str, ...)
 char *	substitute_string (const char *string, const char *oldstr, const char *newstr, int case_sensitive, int global)
 {
 	char *	retval;
-	int	clue;
 	int	i;
 	size_t	retvalsize;
 	size_t	oldlen;
@@ -4748,7 +4747,6 @@ char *	substitute_string (const char *string, const char *oldstr, const char *ne
 	 * holds enough space for the result!
 	 */
 	retval = new_malloc(retvalsize);
-	clue = 0;
 	i = 0;
 
 	/* For each character in the input string... */

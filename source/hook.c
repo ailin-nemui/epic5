@@ -1,4 +1,4 @@
-/* $EPIC: hook.c,v 1.92 2012/06/24 23:07:54 jnelson Exp $ */
+/* $EPIC: hook.c,v 1.93 2012/11/27 22:50:57 jnelson Exp $ */
 /*
  * hook.c: Does those naughty hook functions. 
  *
@@ -1094,7 +1094,7 @@ BUILT_IN_COMMAND(oncmd)
 	char	*func,
 		*nick,
 		*serial		= NULL;
-	int	noisy		= default_noise;
+	int	noisy;
 	int	not		= 0,
 		sernum		= 0,
 		rem		= 0,

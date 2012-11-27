@@ -1,4 +1,4 @@
-/* $EPIC: wserv.c,v 1.16 2010/01/01 01:45:46 jnelson Exp $ */
+/* $EPIC: wserv.c,v 1.17 2012/11/27 22:50:57 jnelson Exp $ */
 /*
  * wserv.c -- A little program to act as a pipe between the ircII process
  * 	      and an xterm window or GNU screen.
@@ -75,7 +75,6 @@ int	main (int argc, char **argv)
 	char * 	port;
 	char *	host;
 	char *	tmp;
-	int	t;
 	char	stuff[100];
 
 	my_signal(SIGHUP, SIG_IGN);
@@ -105,7 +104,7 @@ int	main (int argc, char **argv)
 	 * sprintf is demonstrably safe.
 	 */
 	sprintf(stuff, "version=%d\n", CURRENT_WSERV_VERSION);
-	t = write(cmd, stuff, strlen(stuff));
+	write(cmd, stuff, strlen(stuff));
 
 	/*
 	 * Next thing we take care of is to tell the parent client
@@ -121,7 +120,7 @@ int	main (int argc, char **argv)
 	 */
 	tmp = ttyname(0);
 	sprintf(stuff, "tty=%s\n", tmp);
-	t = write(cmd, stuff, strlen(stuff));
+	write(cmd, stuff, strlen(stuff));
 
 	term_init();		/* Set up the xterm */
 	term_resize();		/* Figure out how big xterm is and tell epic */

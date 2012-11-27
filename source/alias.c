@@ -1,4 +1,4 @@
-/* $EPIC: alias.c,v 1.88 2010/02/18 07:45:44 jnelson Exp $ */
+/* $EPIC: alias.c,v 1.89 2012/11/27 22:50:57 jnelson Exp $ */
 /*
  * alias.c -- Handles the whole kit and caboodle for aliases.
  *
@@ -1464,7 +1464,7 @@ static Symbol *	lookup_symbol (const char *name)
 static Symbol *	find_local_alias (const char *orig_name, SymbolSet **list)
 {
 	Symbol 	*alias = NULL;
-	int 	c = wind_index;
+	int 	c;
 	const char 	*ptr;
 	int 	implicit = -1;
 	int	function_return = 0;

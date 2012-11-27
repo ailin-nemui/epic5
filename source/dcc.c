@@ -1,4 +1,4 @@
-/* $EPIC: dcc.c,v 1.165 2012/11/24 18:53:36 jnelson Exp $ */
+/* $EPIC: dcc.c,v 1.166 2012/11/27 22:50:57 jnelson Exp $ */
 /*
  * dcc.c: Things dealing client to client connections. 
  *
@@ -3904,7 +3904,7 @@ static	void		process_incoming_file (DCC_list *dcc)
  */
 static	void 	output_reject_ctcp (int refnum, char *original, char *received)
 {
-	char	*nickname_requested;
+	/*char	*nickname_requested;*/
 	char	*nickname_recieved;
 	char	*type;
 	char	*description;
@@ -3913,7 +3913,7 @@ static	void 	output_reject_ctcp (int refnum, char *original, char *received)
 	/*
 	 * XXX This is, of course, a monsterous hack.
 	 */
-	nickname_requested 	= next_arg(original, &original);
+	/*nickname_requested 	= */next_arg(original, &original);
 	type 			= next_arg(original, &original);
 	description 		= next_arg(original, &original);
 	nickname_recieved 	= next_arg(received, &received);
