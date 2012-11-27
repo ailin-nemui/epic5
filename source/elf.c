@@ -348,6 +348,22 @@ static int	find_in_archive(struct archive *a, struct archive_entry **entry, cons
  * encoding -- we just dump it into "file_contents" and tell you how many
  * bytes we read.  It's up to you to decide if it needs recoding or 
  * decrypting or whatever.
+ *
+ * Arguments:
+ *	elf		- A pointer previously returned by epic_fopen()
+ *	file_contents 	- A pointer to a (char *)variable assigned to NULL
+ *			  THE INPUT VALUE (*file_contents) WILL BE DISCARDED
+ *			  THE RETURN VALUE (*file_contents) MUST BE FREE'D.
+ *	file_contents_size - A pointer to an off_t variable.
+ *			  The input value will be discarded.
+ *			  The return value is the number of bytes in the file.
+ *			  Do not reference (*file_contents) beyond the number
+ *			  of bytes returned by this function.
+ * Return value:
+ *	-1	- An error occurred.  Do not free (*file_contents).
+ *	>= 0	- This many bytes were read from the file and put into 
+ *		  malloced space which (*file_contents) now points to.  
+ *		  If this function returns >= 0, YOU MUST FREE (*file_contents)!
  */
 size_t	slurp_elf_file (struct epic_loadfile *elf, char **file_contents, off_t *file_contents_size)
 {

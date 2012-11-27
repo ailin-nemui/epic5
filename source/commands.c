@@ -1,4 +1,4 @@
-/* $EPIC: commands.c,v 1.207 2012/11/27 22:50:57 jnelson Exp $ */
+/* $EPIC: commands.c,v 1.208 2012/11/27 22:52:23 jnelson Exp $ */
 /*
  * commands.c -- Stuff needed to execute commands in ircII.
  *		 Includes the bulk of the built in commands for ircII.
@@ -1727,32 +1727,43 @@ BUILT_IN_COMMAND(load)
 	     */
 	    expanded = malloc_strdup(filename);
 
-            if (!(elf = uzfopen(&expanded, use_path, 1, &load_level[load_depth].sb)))
+	    /* Read the file into a string */
+            if (!(elf = uzfopen(&expanded, use_path, 1, 
+				&load_level[load_depth].sb)))
                 continue;
 
+	    if (slurp_elf_file(elf, &file_contents, &file_contents_size) > 0)
+	    {
+		if (declared_encoding)
+		{
+		    /* The 2nd arg should become /SET DEFAULT_SCRIPT_ENCODING */
+		    recode_with_iconv(declared_encoding, NULL, 
+				&file_contents, &file_contents_size);
+	        }
+	    }
+	    epic_fclose(elf);
+	    new_free(&elf);
+
+	    /* If no file resulted, then we're done. */
+	    if (!file_contents || !*file_contents)
+		continue;
+
+	    /* Now process the file */
             load_level[load_depth].filename = expanded;
 	    load_level[load_depth].line = 1;
 	    if (load_depth > 0 && load_level[load_depth - 1].package)
 	        malloc_strcpy(&load_level[load_depth].package,
 				load_level[load_depth-1].package);
 
-	    slurp_elf_file(elf, &file_contents, &file_contents_size);
-
-	    if (declared_encoding)
-	    {
-		/* This needs to include the "target" encoding which would be a /set */
-		recode_with_iconv(declared_encoding, NULL, &file_contents, &file_contents_size);
-	    }
-
 	    will_catch_return_exceptions++;
-	    loader(file_contents, file_contents_size, expanded, sargs, &load_level[load_depth]);
+	    loader(file_contents, file_contents_size, expanded, 
+			sargs, &load_level[load_depth]);
 	    will_catch_return_exceptions--;
 	    return_exception = 0;
 
 	    new_free(&load_level[load_depth].filename);
 	    new_free(&load_level[load_depth].package);
-            epic_fclose(elf);
-            new_free(&elf);
+	    new_free(&file_contents);
 	}
 
 	/*

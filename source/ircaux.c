@@ -1,4 +1,4 @@
-/* $EPIC: ircaux.c,v 1.233 2012/11/27 22:50:57 jnelson Exp $ */
+/* $EPIC: ircaux.c,v 1.234 2012/11/27 22:52:23 jnelson Exp $ */
 /*
  * ircaux.c: some extra routines... not specific to irc... that I needed 
  *
@@ -6155,11 +6155,23 @@ ssize_t	findchar_quoted (const char *source, int delim)
 
 /*
  * recode_with_iconv -- copy and iconv convert a string
- * 	This function copies (*data) to a new buffer.
- * 	You must declare the encoding of (*data) (in `from')
- * 	You must declare how big (*data) is (in `*numbytes')
- * 	You must declare what you wish the encoding of (*data) was (in `to')
- * (Don't laugh -- I've never done this before)
+ * Arguments:
+ *	from 	- The encoding of (*data)
+ *		  IF NULL: error (returns 0)
+ *	to	- The encoding you wish (*data) would be
+ *		  IF NULL: "UTF-8" will be used.
+ *	data	- A pointer to *MALLOCED SPACE*
+ *		  The input value of (*data) _may be free'd_.
+ *		  The return value of (*data) _must be free'd_.
+ *		  IF NULL: error (returns 0)
+ *	numbytes - A pointer to an integer of how big (*data) is. 
+ *		   Only (*numbytes) of (*data) will be converted!
+ *		   The value of (*numbytes) will change if (*data) is changed.
+ *		   IF NULL: error (returns 0)
+ * Return Value:
+ *	0	- No changes were made (because of error)
+ *	>0	- The number of bytes in the output string
+ *
  * Inspired liberally by howl's iconv support above.
  */
 int	recode_with_iconv (const char *from, const char *to, char **data, size_t *numbytes)
