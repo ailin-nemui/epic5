@@ -1,4 +1,4 @@
-/* $EPIC: irc.c,v 1.1346 2012/11/26 05:09:35 jnelson Exp $ */
+/* $EPIC: irc.c,v 1.1347 2012/11/27 04:32:16 jnelson Exp $ */
 /*
  * ircII: a new irc client.  I like it.  I hope you will too!
  *
@@ -52,7 +52,7 @@ const char internal_version[] = "20120804";
 /*
  * In theory, this number is incremented for every commit.
  */
-const unsigned long	commit_id = 1677;
+const unsigned long	commit_id = 1678;
 
 /*
  * As a way to poke fun at the current rage of naming releases after
@@ -982,8 +982,10 @@ static	int		level = 0,
 	/* Move the cursor back to the input line */
 	cursor_to_input();
 
-	/* Reclaim any alloca()ed space */
+#ifdef __GNUC__
+	/* GCC wants us to do this to reclaim any alloca()ed space */
 	alloca(0);
+#endif
 
 	/* Release this io() accounting level */
 	caller[level] = NULL;

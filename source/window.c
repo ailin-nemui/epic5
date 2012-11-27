@@ -1,4 +1,4 @@
-/* $EPIC: window.c,v 1.226 2012/11/23 16:04:49 jnelson Exp $ */
+/* $EPIC: window.c,v 1.227 2012/11/27 04:32:16 jnelson Exp $ */
 /*
  * window.c: Handles the organzation of the logical viewports (``windows'')
  * for irc.  This includes keeping track of what windows are open, where they
@@ -1042,130 +1042,182 @@ static void 	swap_window (Window *v_window, Window *window)
 }
 
 /*
- * move_window: This moves a window offset positions in the window list. This
- * means, of course, that the window will move on the screen as well 
- */
-static void 	move_window (Window *window, int offset)
-{
-	Window	*tmp,
-		*last;
-	int	win_pos,
-		pos;
-
-	if (offset == 0)
-		return;
-	last = (Window *) 0;
-	if (!window->screen)
-		return;		/* Whatever */
-
-	for (win_pos = 0, tmp = window->screen->window_list; tmp;
-	    tmp = tmp->next, win_pos++)
-	{
-		if (window == tmp)
-			break;
-		last = tmp;
-	}
-
-	if (!tmp)
-		return;
-
-	if (!last)
-		window->screen->window_list = tmp->next;
-	else
-		last->next = tmp->next;
-
-	if (tmp->next)
-		tmp->next->prev = last;
-	else
-		window->screen->window_list_end = last;
-
-	win_pos = (offset + win_pos) % window->screen->visible_windows;
-	if (win_pos < 0)
-		win_pos = window->screen->visible_windows + win_pos;
-
-	last = NULL;
-	for (pos = 0, tmp = window->screen->window_list;
-			    pos != win_pos; tmp = tmp->next, pos++)
-		last = tmp;
-
-	if (!last)
-		window->screen->window_list = window;
-	else
-		last->next = window;
-
-	if (tmp)
-		tmp->prev = window;
-	else
-		window->screen->window_list_end = window;
-
-	window->prev = last;
-	window->next = tmp;
-	recalculate_window_positions(window->screen);
-}
-
-/*
  * move_window_to: This moves a given window to the Nth absolute position 
  * on the screen.  All the other windows move accordingly.
+ *
+ * XXX I really do apologize for this being a mess.  Clang insists that
+ * there is a null deref if i do it the simple/clever way, and so in order
+ * to prove that everything is on the up-and-up, i did it this way instead.
+ * I left lots of comments to convince myself it was correct.  Once this 
+ * code has proven itself, I can probably clean it up by removing the most
+ * obvious ones.
  */
 static void 	move_window_to (Window *window, int offset)
 {
-	Window *w;
 	Screen *s;
-	int	i;
 
+	if (!window)
+		return;
+
+	/* /window move_to -1 is bogus -- but maybe it shouldn't be.  */
 	if (offset <= 0)
 		return;
 
+	/* You can't /window move_to on an invisible window */
 	if (!(s = window->screen))
 		return;		/* Whatever */
 
+	/* This is impossible -- just a sanity check for clang's benefit */
+	if (!s->window_list || !s->window_list_end)
+		panic(1, "window_move_to: Screen for window %d has no windows?", window->refnum);
+
+	/* You can't /window move_to if there are no split windows */
 	if (s->visible_windows == 1)
-		return;		/* Whatever */
+		return;
 
-	if (offset > s->visible_windows)
-		offset = s->visible_windows;
+	/* This is impossible -- just a sanity check for clang's benefit */
+	if (window->prev == NULL && window->next == NULL)
+		panic(1, "window_move_to: window %d is has no prev or next; but its screen says it has %d windows", window->refnum, s->visible_windows);
 
-	/* Unlink the window from the screen */
-	if (window->prev)
+	/* Move the window to the top of the screen */
+	if (offset == 1)
+	{
+		/* If it's already at the top, we're done. */
+		if (s->window_list == window)
+			return;
+
+		if (window->prev == NULL)
+			panic(1, "window_move_to(top): Window %d prev is NULL, "
+				"but s->window_list is %d", 
+				window->refnum, s->window_list->refnum);
+
 		window->prev->next = window->next;
-	else
-		s->window_list = window->next;
-
-	if (window->next)
-		window->next->prev = window->prev;
-	else
-		s->window_list_end = window->prev;
-
-	/* Now figure out where it goes */
-	for (w = s->window_list, i = 1; i < offset; i++)
-		w = w->next;
-
-	/* Now relink it where it belongs */
-	if (w)
-	{
-		if (w->prev)
-		{
-			w->prev->next = window;
-			window->prev = w->prev;
-		}
+		if (window->next)
+			window->next->prev = window->prev;
 		else
-		{
-			s->window_list = window;
-			window->prev = NULL;
-		}
-	}
-	else
-	{
-		s->window_list_end->next = window;
-		window->prev = s->window_list_end;
-		s->window_list_end = window;
+			s->window_list_end = window->prev;
+
+		window->prev = NULL;
+		window->next = s->window_list;
+		window->next->prev = window;
+		s->window_list = window;
 	}
 
-	window->next = w;
+	/* Move the window to the bottom of the screen */
+	else if (offset >= s->visible_windows)
+	{
+		/* If it's already at the bottom, we're done. */
+		if (s->window_list_end == window)
+			return;
+
+		if (!window->next)
+		   panic(1, "window_move_to(bottom): Window %d next is NULL, "
+				"but s->window_list_end is %d", 
+				window->refnum, s->window_list_end->refnum);
+
+		if (window->prev)
+			window->prev->next = window->next;
+		else
+			s->window_list = window->next;
+		window->next->prev = window->prev;
+
+		window->prev = s->window_list_end;
+		window->prev->next = window;
+		window->next = NULL;
+		s->window_list_end = window;
+	
+	}
+
+	/* Otherwise it's moving somewhere in the middle */
+	else
+	{
+		Window *w;
+		int	i;
+
+		/* In order to make the window the Nth window,
+		 * We need to have a pointer to the N-1th window.
+		 * We know that it won't be the top or bottom.
+		 */
+		for (i = 0, w = s->window_list; w; w = w->next)
+		{
+			if (w != window)
+				i++;		/* This is the I'th window */
+			if (i + 1 == offset)
+				break;		/* This is the "prev" window! */
+		}
+
+		/* 
+		 * 'w' is our "prev" window.
+		 * So if window is already in the correct place, we're done 
+		 */
+		if (w->next == window)
+			return;
+
+		/* Unlink our target window first */
+		if (window->prev)
+			window->prev->next = window->next;
+		else
+			s->window_list = window->next;
+
+		if (window->next)
+			window->next->prev = window->prev;
+		else
+			s->window_list_end = window->prev;
+
+		window->prev = w;
+		window->next = w->next;
+
+		/* One last sanity check */
+		if (window->prev == NULL || window->next == NULL)
+			panic(1, "window_move_to(%d): Window %d's prev and "
+				"next are both null, but that's impossible", 
+				offset, window->refnum);
+
+		window->next->prev = window;
+		window->prev->next = window;
+	}
 
 	set_screens_current_window(s, window);
 	make_window_current(window);
 	recalculate_window_positions(s);
+}
+
+/*
+ * move_window: This moves a window offset positions in the window list. This
+ * means, of course, that the window will move on the screen as well 
+ *
+ * Isn't it easier if I just redefine this in terms of move_to?
+ */
+static void 	move_window (Window *window, int offset)
+{
+	Screen *s;
+	Window *w;
+	int	location;
+
+	if (!(s = window->screen))
+		return;
+	if (s->visible_windows == 0)
+		return;		/* Sigh */
+
+	offset = offset % s->visible_windows;
+	if (offset == 0)
+		return;
+
+	for (location = 1, w = s->window_list; w; location++, w = w->next)
+		if (w == window)
+			break;
+	if (!w)
+		panic(1, "move_window: I couldn't find window %d on its "
+			"own screen!", window->refnum);
+
+	/* OK, so 'window' is the 'location'th window. */
+	location += offset;
+	if (location < 1)
+		location += s->visible_windows;
+	if (location > s->visible_windows)
+		location -= s->visible_windows;
+	
+	move_window_to(w, location);
 }
 
 /*
@@ -4163,7 +4215,7 @@ static Window *window_move (Window *window, char **args)
 
 static Window *window_move_to (Window *window, char **args)
 {
-	move_window_to(window, get_number("MOVE", args));
+	move_window_to(window, get_number("MOVE_TO", args));
 	return window;
 }
 
