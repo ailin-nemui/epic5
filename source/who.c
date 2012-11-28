@@ -1,4 +1,4 @@
-/* $EPIC: who.c,v 1.70 2012/11/26 05:09:35 jnelson Exp $ */
+/* $EPIC: who.c,v 1.71 2012/11/28 02:13:30 jnelson Exp $ */
 /*
  * who.c -- The WHO queue.  The ISON queue.  The USERHOST queue.
  *
@@ -1249,14 +1249,14 @@ void	isonbase (int refnum, char *args, void (*line) (int, char *, char *))
 
 		if (!my_stricmp(arg, "-d"))
 		{
-			ison_queue_list(from_server);
+			ison_queue_list(refnum);
 		}
 		if (!my_stricmp(arg, "-f"))
 		{
-			while (ison_queue_top(from_server))
-				ison_queue_pop(from_server);
-			while (ison_wait_top(from_server))
-				ison_wait_pop(from_server);
+			while (ison_queue_top(refnum))
+				ison_queue_pop(refnum);
+			while (ison_wait_top(refnum))
+				ison_wait_pop(refnum);
 		}
 		if (!my_stricmp(arg, "-s"))
 		{
@@ -1266,21 +1266,29 @@ void	isonbase (int refnum, char *args, void (*line) (int, char *, char *))
 		{
 			sendnext++;
 		}
-		if (!my_stricmp(arg, "-e") && get_server(refnum)->ison_wait)
+		if (!my_stricmp(arg, "-e"))
 		{
-			return;
+			if (get_server(refnum))
+				if (get_server(refnum)->ison_wait)
+					return;
 		}
 		if (!my_stricmp(arg, "-len"))
 		{
 			if ((stuff = next_arg(args, &args)))
+			{
+			     if (get_server(refnum))
 				get_server(refnum)->ison_len = MAX(100, atol(stuff));
+			}
 			else
 				say("Need numeric argument for -LEN argument.");
 		}
 		if (!my_stricmp(arg, "-max"))
 		{
 			if ((stuff = next_arg(args, &args)))
+			{
+			    if (get_server(refnum))
 				get_server(refnum)->ison_max = atol(stuff);
+			}
 			else
 				say("Need numeric argument for -MAX argument.");
 		}

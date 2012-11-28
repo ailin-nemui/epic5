@@ -1,4 +1,4 @@
-/* $EPIC: notify.c,v 1.36 2012/11/25 05:56:28 jnelson Exp $ */
+/* $EPIC: notify.c,v 1.37 2012/11/28 02:13:30 jnelson Exp $ */
 /*
  * notify.c: a few handy routines to notify you when people enter and leave irc 
  *
@@ -362,7 +362,7 @@ void 	do_notify (void)
 
 		from_server = servnum;
 		if (NOTIFY_LIST(s)->ison && *NOTIFY_LIST(s)->ison
-				&& !get_server(servnum)->ison_wait)
+				&& !s->ison_wait)
 		{
 			isonbase(servnum, NOTIFY_LIST(s)->ison, ison_notify);
 			if (x_debug & DEBUG_NOTIFY)
@@ -544,7 +544,7 @@ void 	make_notify_list (int refnum)
 		malloc_strcat_wordlist_c(&list, space, tmp->nick, &clue);
 	}
 
-	if (list && !get_server(refnum)->ison_wait)
+	if (list && !s->ison_wait)
 	{
 		isonbase(refnum, list, ison_notify);
 		new_free(&list);

@@ -299,7 +299,7 @@ const	char	*get_echannel_by_refnum		(unsigned);
 	const char *   get_bound_channel_by_refnum (unsigned refnum);
 
 	char *	windowctl			(char *);
-	void    window_scrollback_needs_rebuild (int winref);
+	void    window_scrollback_needs_rebuild (Window *);
 	int	window_is_scrolled_back		(Window *);
 	void 	window_change_server		(Window *, int);
 

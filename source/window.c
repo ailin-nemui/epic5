@@ -1,4 +1,4 @@
-/* $EPIC: window.c,v 1.227 2012/11/27 04:32:16 jnelson Exp $ */
+/* $EPIC: window.c,v 1.228 2012/11/28 02:13:30 jnelson Exp $ */
 /*
  * window.c: Handles the organzation of the logical viewports (``windows'')
  * for irc.  This includes keeping track of what windows are open, where they
@@ -566,7 +566,7 @@ delete_window_contents:
 
 	/* The lastlog... */
 	window->lastlog_max = 0;
-	trim_lastlog(window);
+	truncate_lastlog(window);
 
 	/* The nick list... */
 	{
@@ -1146,6 +1146,10 @@ static void 	move_window_to (Window *window, int offset)
 				break;		/* This is the "prev" window! */
 		}
 
+		/* XXX This is an error and I should do something here */
+		if (!w)
+			return;
+
 		/* 
 		 * 'w' is our "prev" window.
 		 * So if window is already in the correct place, we're done 
@@ -1377,12 +1381,9 @@ void	resize_window_display (Window *window)
  * to be used to declare that something needs to be updated on the screen.
  */
 
-void	window_scrollback_needs_rebuild (int winref)
+void	window_scrollback_needs_rebuild (Window *w)
 {
-	Window *the_window;
-
-	if ((the_window = get_window_by_refnum(winref)))
-		the_window->rebuild_scrollback = 1;
+	w->rebuild_scrollback = 1;
 }
 
 /*
@@ -3399,7 +3400,7 @@ static Window *window_check (Window *window, char **args)
 	tmp = NULL;
 	while (traverse_all_windows(&tmp))
 	{
-		lastlog_count = recount_window_lastlog(tmp->refnum);
+		lastlog_count = recount_window_lastlog(tmp);
 		if (lastlog_count != tmp->lastlog_size)
 			yell("window [%d]'s lastlog is wrong: should be [%d], is [%d]",
 				tmp->refnum, lastlog_count, tmp->lastlog_size);
@@ -4183,7 +4184,7 @@ static	Window *window_merge (Window *window, char **args)
 		oldref = window->refnum;
 		newref = tmp->refnum;
 
-		lastlog_merge_winrefs(oldref, newref);
+		move_all_lastlog(window, tmp);
 		channels_merge_winrefs(oldref, newref);
 		logfiles_merge_winrefs(oldref, newref);
 		timers_merge_winrefs(oldref, newref);
@@ -4400,7 +4401,6 @@ static Window *window_number (Window *window, char **args)
 			/* XXX refnum is changed here XXX */
 			window->refnum = newref;
 
-			lastlog_swap_winrefs(oldref, newref);
 			channels_swap_winrefs(oldref, newref);
 			logfiles_swap_winrefs(oldref, newref);
 			timers_swap_winrefs(oldref, newref);
