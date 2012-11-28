@@ -259,6 +259,7 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Fix the lastlog trimming, an infinite loop (caf)
 * Increase detail when debugging output contexts (caf)
 * Reformat some code, fix more display context leaks (caf)
+* EPIC5-1.1.4 released here (Adumbration) (Commit ID: 1667)
 * Fix lock-ups when killing windows by refining the safeguard
 * Create slurp_elf_file/string_feof|fgets|fgetc, to front-end ELF files
 * Change /load to use the string front-end functions
@@ -297,4 +298,4 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Rewrite /window move and /window move_to to make clang happy
 * One final batch of updates by clang....
 * Rewrite lastlog moving funcs to use windows ptrs instead of refnums (caf)
-
+* EPIC5-1.1.5 released here (Gallimaufry) (Commit ID: 1683)
