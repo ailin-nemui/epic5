@@ -1,4 +1,4 @@
-/* $EPIC: screen.c,v 1.148 2012/11/25 05:56:28 jnelson Exp $ */
+/* $EPIC: screen.c,v 1.149 2012/11/28 03:12:07 jnelson Exp $ */
 /*
  * screen.c
  *
@@ -218,7 +218,7 @@ static size_t	display_attributes (unsigned char *output, Attribute *old_a, Attri
 	output[4] = val4;
 	output[5] = 0;
 
-	old_a = a;
+	old_a = a;	/* XXX - This should be *old_a = *a, right? */
 	return 5;
 }
  
@@ -750,7 +750,6 @@ start_over:
 	    /*
 	     * Set up the arguments list
 	     */
-	    nargs = 0;
 	    args[0] = args[1] = args[2] = args[3] = 0;
 	    args[4] = args[5] = args[6] = args[7] = 0;
 	    args[8] = args[9] = 0;
@@ -2732,8 +2731,6 @@ Window	*create_additional_screen (void)
 #else
         Window  	*win;
         Screen  	*oldscreen, *new_s;
-        char    	*displayvar,
-                	*termvar;
         int     	screen_type = ST_NOTHING;
 	ISA		local_sockaddr;
         ISA		new_socket;
@@ -2782,11 +2779,7 @@ Window	*create_additional_screen (void)
 	if (screen_type == ST_SCREEN)
 		say("Opening new screen...");
 	else if (screen_type == ST_XTERM)
-	{
-		displayvar = getenv("DISPLAY");
-		termvar = getenv("TERM");
 		say("Opening new window...");
-	}
 	else
 		panic(1, "Opening new wound");
 

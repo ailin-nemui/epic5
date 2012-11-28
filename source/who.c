@@ -1,4 +1,4 @@
-/* $EPIC: who.c,v 1.71 2012/11/28 02:13:30 jnelson Exp $ */
+/* $EPIC: who.c,v 1.72 2012/11/28 03:12:07 jnelson Exp $ */
 /*
  * who.c -- The WHO queue.  The ISON queue.  The USERHOST queue.
  *
@@ -1358,8 +1358,12 @@ void	isonbase (int refnum, char *args, void (*line) (int, char *, char *))
 			next = p;
 		while (*p && !isspace((unsigned char)*p))
 		    p++;
-		if (p - next < get_server(refnum)->ison_len)
+
+		/* You know, just in case something happened... */
+		if (get_server(refnum))
 		{
+		    if (p - next < get_server(refnum)->ison_len)
+		    {
 			/* can add this nick to the current list. */
 			if (!end)
 			{
@@ -1380,9 +1384,9 @@ void	isonbase (int refnum, char *args, void (*line) (int, char *, char *))
 			}
 				
 			end = p;
-		}
-		else
-		{
+		    }
+		    else
+		    {
 			/* This nick is too long to add to the current list. */
 			if (end)
 			{
@@ -1398,6 +1402,7 @@ void	isonbase (int refnum, char *args, void (*line) (int, char *, char *))
 				p = end;	
 				end = NULL;
 			}
+		    }
 		}
 		
 		/* Advance to next nick */

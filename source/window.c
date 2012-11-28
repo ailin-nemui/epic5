@@ -1,4 +1,4 @@
-/* $EPIC: window.c,v 1.228 2012/11/28 02:13:30 jnelson Exp $ */
+/* $EPIC: window.c,v 1.229 2012/11/28 03:12:07 jnelson Exp $ */
 /*
  * window.c: Handles the organzation of the logical viewports (``windows'')
  * for irc.  This includes keeping track of what windows are open, where they
@@ -1238,8 +1238,7 @@ static void 	move_window (Window *window, int offset)
 static 	void 	resize_window (int how, Window *window, int offset)
 {
 	Window	*other;
-	int	after,
-		window_size,
+	int	window_size,
 		other_size;
 
 	if (!window)
@@ -1257,7 +1256,6 @@ static 	void 	resize_window (int how, Window *window, int offset)
 		how = RESIZE_REL;
 	}
 
-	after = 1;
 	other = window;
 
 	do
@@ -1265,10 +1263,7 @@ static 	void 	resize_window (int how, Window *window, int offset)
 		if (other->next)
 			other = other->next;
 		else
-		{
 			other = window->screen->window_list;
-			after = 0;
-		}
 
 		if (other == window)
 		{
@@ -1598,7 +1593,6 @@ void 	recalculate_windows (Screen *screen)
 		screen->window_list->display_lines = screen->li - 1 - screen->window_list->status.number;
 		screen->window_list->bottom = screen->li - 1 - screen->window_list->status.number;
 		screen->window_list->my_columns = screen->co;
-		old_li = screen->li;
 		return;
 	}
 
@@ -2419,7 +2413,7 @@ void	change_window_server (int old_server, int new_server)
 void 	window_check_servers (void)
 {
 	Window	*tmp;
-	int	cnt, max, i;
+	int	max, i;
 	int	prime = NOSERV;
 	int	status;
 	int	l;
@@ -2429,7 +2423,6 @@ void 	window_check_servers (void)
 	for (i = 0; i < max; i++)
 	{
 	    status = get_server_status(i);
-	    cnt = 0;
 
 	    if (!(tmp = get_window_by_servref(i)))
 	    {
@@ -3726,7 +3719,6 @@ static Window *window_hide_others (Window *window, char **args)
 		next = tmp->next;
 		if (tmp != window)
 			hide_window(tmp);
-		tmp = next;
 	}
 
 	return window;
