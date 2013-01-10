@@ -299,3 +299,5 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * One final batch of updates by clang....
 * Rewrite lastlog moving funcs to use windows ptrs instead of refnums (caf)
 * EPIC5-1.1.5 released here (Gallimaufry) (Commit ID: 1683)
+* Add /QUEUE -RUNONE
+

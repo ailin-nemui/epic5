@@ -1,5 +1,17 @@
 EPIC5-1.1.5
 
+*** News 01/09/2012 -- New /QUEUE flag, -RUNONE
+	I can't believe I didn't think of this before!
+	The /QUEUE -RUNONE flag will run the first command in a queue,
+	leaving the rest of the queue alone.  This will work great with
+	timer to create a FIFO queue that you can stagger commands through.
+	For example, a command that slows down output to the server
+
+		/TIMER -REPEAT -1 2 {QUEUE -RUNONE serverqueue}
+		fe (#one #two #three #four) x {
+			QUEUE serverqueue {join $x}
+		}
+
 *** News 11/28/2012 -- Lots of code quality improvements
 	Ancient graciously set up epic to run under clang and its static
 	analyzer, and we found lots of suggestions of things to fix.  

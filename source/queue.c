@@ -1,4 +1,4 @@
-/* $EPIC: queue.c,v 1.15 2008/04/04 04:51:05 jnelson Exp $ */
+/* $EPIC: queue.c,v 1.16 2013/01/10 04:24:54 jnelson Exp $ */
 /*
  *  queue.c - The queue command
  *
@@ -69,6 +69,7 @@ static void	list_all_queues (Queue **);
 static void	run_queue (Queue **, const char *);
 static int	add_to_queue (Queue **, const char *, const char *, const char *);
 static void	delete_from_queue (Queue **, const char *, int);
+static void	run_one_queue (Queue **list, const char *name);
 
 BUILT_IN_COMMAND(queuecmd)
 {
@@ -82,6 +83,7 @@ BUILT_IN_COMMAND(queuecmd)
 		flush 		= 0,
 		delete		= 0,
 		expand_now	= 0,
+		runone		= 0,
 		number          = -1;
 
 	if (!*args) {
@@ -104,6 +106,8 @@ BUILT_IN_COMMAND(queuecmd)
 		    list = 1;
 		else if (!my_strnicmp(arg + 1, "DO", 2))
 		    run = 1;
+		else if (!my_strnicmp(arg + 1, "RUNONE", 4))
+		    runone = 1;
 		else if (!my_strnicmp(arg + 1, "DELETE", 2))
 		    delete = 1;
 		else if (!my_strnicmp(arg + 1, "FLUSH", 1))
@@ -113,6 +117,7 @@ BUILT_IN_COMMAND(queuecmd)
 		else if (!my_strnicmp(arg + 1, "HELP", 1)) {
 			say("Usage: /QUEUE -SHOW");
 			say("       /QUEUE -DO [-NO_FLUSH] <name>");
+			say("       /QUEUE -RUNONE <name>");
 			say("       /QUEUE [-LIST] <name>");
 			say("       /QUEUE [-FLUSH] <name>");
 			say("       /QUEUE [-DELETE] <name> <number>");
@@ -183,6 +188,8 @@ BUILT_IN_COMMAND(queuecmd)
 	if (run && no_flush == 0)
 		flush = 1;
 
+	if (runone)
+		run_one_queue(&queue_list, name);
 	if (run)
 		run_queue(&queue_list, name);
 	if (delete)
@@ -331,6 +338,25 @@ static void	delete_queue (Queue **list, const char *name)
 
 	new_free((char **)&q);
 	return;
+}
+
+static void	run_one_queue (Queue **list, const char *name)
+{
+	Queue *q;
+	CmdList	*c;
+
+	if (!(q = lookup_queue(list, name)))
+		return;
+
+	if (!(c = q->first))
+		return;
+
+	if (c->what)
+		call_lambda_command("QUEUE", c->what, c->subargs);
+	q->first = c->next;
+	new_free(&c->subargs);
+	new_free(&c->what);
+	new_free((char **)&c);
 }
 
 static void	run_queue (Queue **list, const char *name)
