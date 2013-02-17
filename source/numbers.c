@@ -1,4 +1,4 @@
-/* $EPIC: numbers.c,v 1.100 2010/03/18 01:31:09 jnelson Exp $ */
+/* $EPIC: numbers.c,v 1.101 2013/02/17 13:02:46 jnelson Exp $ */
 /*
  * numbers.c: handles all those strange numeric response dished out by that
  * wacky, nutty program we call ircd 
@@ -380,7 +380,6 @@ void 	numbered_command (const char *from, const char *comm, char const **ArgList
 		goto END;
         }
 
-	case 307:		/* #define RPL_USERIP           307 */
 	case 340:		/* #define RPL_USERIP?          340 */
 		if (!get_server_005(from_server, "USERIP"))
 			break;

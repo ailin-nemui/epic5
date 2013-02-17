@@ -3,6 +3,7 @@ EPIC5 Projects, Bugs, and other Errata:
 KNOWN ERRATA (eg, bugs, or unresolved requests):
 ------------------------------------------------
 * A func which shows window channels in descending order of "current-ness"
+* FIXED-SKIPPED windows should never receive abandoned channels.
 
 MEDIUM-TERM PROJECTS
 --------------------
@@ -300,4 +301,4 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Rewrite lastlog moving funcs to use windows ptrs instead of refnums (caf)
 * EPIC5-1.1.5 released here (Gallimaufry) (Commit ID: 1683)
 * Add /QUEUE -RUNONE
-
+* Caf and jm confirmed that ircu doesn't use 307 for USERIP any more.
