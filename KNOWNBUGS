@@ -4,6 +4,7 @@ KNOWN ERRATA (eg, bugs, or unresolved requests):
 ------------------------------------------------
 * A func which shows window channels in descending order of "current-ness"
 * FIXED-SKIPPED windows should never receive abandoned channels.
+* whitefang says that mangling logfiles doens't work for color...
 
 MEDIUM-TERM PROJECTS
 --------------------
@@ -302,3 +303,4 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * EPIC5-1.1.5 released here (Gallimaufry) (Commit ID: 1683)
 * Add /QUEUE -RUNONE
 * Caf and jm confirmed that ircu doesn't use 307 for USERIP any more.
+* ignorectl(DELETE) is not silent and it should be.
