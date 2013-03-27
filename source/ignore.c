@@ -1,4 +1,4 @@
-/* $EPIC: ignore.c,v 1.36 2012/11/27 22:50:57 jnelson Exp $ */
+/* $EPIC: ignore.c,v 1.37 2013/03/27 23:12:06 jnelson Exp $ */
 /*
  * ignore.c: handles the ingore command for irc 
  *
@@ -1061,7 +1061,13 @@ char *	ignorectl (char *input)
 		window_display = owd;
 		RETURN_INT(i->refnum);
 	} else if (!my_strnicmp(listc, "DELETE", len)) {
-		RETURN_INT(remove_ignore(input));
+		int	retval;
+
+		owd = window_display;
+		window_display = 0;
+		retval = remove_ignore(input);
+		window_display = owd;
+		RETURN_INT(retval);
 	} else if (!my_strnicmp(listc, "PATTERN", len)) {
 		RETURN_MSTR(get_ignores_by_pattern(input, 0));
 	} else if (!my_strnicmp(listc, "RPATTERN", len)) {
