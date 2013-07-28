@@ -1,6 +1,12 @@
 EPIC5-1.1.5
 
-*** News 01/09/2012 -- New /QUEUE flag, -RUNONE
+*** News 07/28/2013 -- FIXED-SKIPPED windows don't get channels on /window kill
+	FIXED-SKIPPED windows (ie, /window fixed on skip on) are used to create
+	status windows (see below).  They will no longer be given channels 
+	from another window that is killed unless it is the last window 
+	connected to the server.
+
+*** News 01/09/2013 -- New /QUEUE flag, -RUNONE
 	I can't believe I didn't think of this before!
 	The /QUEUE -RUNONE flag will run the first command in a queue,
 	leaving the rest of the queue alone.  This will work great with

@@ -1,4 +1,4 @@
-/* $EPIC: names.c,v 1.82 2012/07/06 01:22:41 jnelson Exp $ */
+/* $EPIC: names.c,v 1.83 2013/07/28 23:52:58 jnelson Exp $ */
 /*
  * names.c: Channels and Nicks and Servers, oh my!
  *
@@ -1525,7 +1525,7 @@ static void	channel_hold_election (int winref)
 void	reassign_window_channels (int window)
 {
 	Channel *tmp = NULL;
-	Window *w = NULL;
+	Window *w = NULL, *last_choice = NULL;
 	int	caution = 0;
 	int	winserv;
 
@@ -1558,15 +1558,35 @@ void	reassign_window_channels (int window)
 		 * If no new windows are found, 'winref' remains -1 and
 		 * I'm not exactly quite sure what will happen there...
 		 */
+		last_choice = NULL;
 		tmp->winref = -1;
 		while (traverse_all_windows(&w))
 		{
 			if (w->server == tmp->server && 
 			    (int)w->refnum != window)
 			{
+				/* Skip fixed/skipped windows at first. */
+				if (w->skip && w->fixed_size)
+				{
+					if (last_choice == NULL)
+						last_choice = w;
+					continue;
+				}
+
+				last_choice = NULL;
 				tmp->winref = w->refnum;
 				break;
 			}
+		}
+
+		/* 
+		 * Use our last choice (a fixed/skipped window) if we
+		 * were unable to find any other suitable windows.
+		 */
+		if (last_choice)
+		{
+			yell("Moving [%s:%d] to a skipped/fixed window [%d] -- not my first choice.", tmp->channel, tmp->server, last_choice->refnum);
+			tmp->winref = last_choice->refnum;
 		}
 	}
 }
