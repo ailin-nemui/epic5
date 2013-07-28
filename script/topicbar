@@ -113,7 +113,7 @@ alias topicbar.winupdate (list default $winrefs())
 			continue;
 		};
 		window $win toplines $ol;
-		window $win topline $ol "$for $st";
+		window $win topline $ol "$^"for $^"st";
 	};
 };
 alias topicbar.dataupdate

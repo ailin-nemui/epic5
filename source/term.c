@@ -1,4 +1,4 @@
-/* $EPIC: term.c,v 1.26 2008/11/26 03:26:34 jnelson Exp $ */
+/* $EPIC: term.c,v 1.27 2013/07/28 23:16:14 jnelson Exp $ */
 /*
  * term.c -- termios and (termcap || terminfo) handlers
  *
@@ -58,10 +58,12 @@
  */
 
 
-#ifdef _ALL_SOURCE
-#include <termios.h>
+#ifdef HAVE_TERMIOS_H
+# include <termios.h>
 #else
-#include <sys/termios.h>
+# ifdef HAVE_SYS_TERMIOS_H
+#  include <sys/termios.h>
+# endif
 #endif
 #include <sys/ioctl.h>
 

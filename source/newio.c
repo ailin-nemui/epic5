@@ -1,4 +1,4 @@
-/* $EPIC: newio.c,v 1.70 2012/06/24 23:07:54 jnelson Exp $ */
+/* $EPIC: newio.c,v 1.71 2013/07/28 23:16:14 jnelson Exp $ */
 /*
  * newio.c:  Passive, callback-driven IO handling for sockets-n-stuff.
  *
@@ -149,7 +149,7 @@ static int	get_channel_by_vfd (int vfd)
 int	get_server_by_vfd (int vfd)
 {
 	if (!io_rec[vfd])
-		panic(1, "get_server_by_vfd(%d): vfd is not set up!");
+		panic(1, "get_server_by_vfd(%d): vfd is not set up!", vfd);
 	return io_rec[vfd]->server;
 }
 /* #define SRV(vfd) get_server_by_vfd(vfd) */ /* Defined in newio.h */
@@ -774,8 +774,8 @@ static int	unix_accept (int channel, int quiet)
 	if ((newfd = my_accept(channel, (SA *)&addr, &len)) < 0)
 	{
 	    if (!quiet)
-		syserr(CSRV(channel), "unix_accept: my_accept(%d) failed", 
-					": %s", channel, strerror(errno));
+		syserr(CSRV(channel), 
+			"unix_accept: my_accept(%d) failed: %s", channel, strerror(errno));
 	}
 
 	dgets_buffer(channel, &newfd, sizeof(newfd));

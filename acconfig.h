@@ -1,5 +1,5 @@
 /*
- * @(#)$Id: acconfig.h,v 1.44 2009/04/10 18:46:11 jnelson Exp $
+ * @(#)$Id: acconfig.h,v 1.45 2013/07/28 23:16:11 jnelson Exp $
  */
 
 /*
@@ -427,4 +427,10 @@
 
 /* Define this if you need strtoll() */
 #undef NEED_STRTOLL
+
+/* Define this if you have <termios.h> */
+#undef HAVE_TERMIOS_H
+
+/* Define this if you have <sys/termios.h> */
+#undef HAVE_SYS_TERMIOS_H
 

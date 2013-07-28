@@ -1,4 +1,4 @@
-/* $EPIC: server.c,v 1.256 2012/11/26 05:09:35 jnelson Exp $ */
+/* $EPIC: server.c,v 1.257 2013/07/28 23:16:14 jnelson Exp $ */
 /*
  * server.c:  Things dealing with that wacky program we call ircd.
  *
@@ -1511,7 +1511,7 @@ return_from_ssl_detour:
 			 */
 			if (ssl_connected(des) < 0)
 			{
-				syserr(i, "ssl_connected() failed", retval);
+				syserr(i, "ssl_connected() failed");
 				goto something_broke;
 			}
 

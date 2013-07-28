@@ -1,4 +1,4 @@
-/* $EPIC: parse.c,v 1.95 2012/11/24 01:42:51 jnelson Exp $ */
+/* $EPIC: parse.c,v 1.96 2013/07/28 23:16:14 jnelson Exp $ */
 /*
  * parse.c: handles messages from the server.   Believe it or not.  I
  * certainly wouldn't if I were you. 
@@ -1411,8 +1411,8 @@ protocol_command rfc1459[] = {
 { 	"CONNECT",	NULL,		0		},
 {	"ERROR",	p_error,	0		},
 {	"ERROR:",	p_error,	0		},
-{	"INVITE",	p_invite,	0		},
 {	"INFO",		NULL,		0		},
+{	"INVITE",	p_invite,	0		},
 {	"ISON",		NULL,		PROTO_QUOTEBAD	},
 {	"JOIN",		p_channel,	0		},
 {	"KICK",		p_kick,		0		},
@@ -1439,8 +1439,8 @@ protocol_command rfc1459[] = {
 {	"STATS",	NULL,		0		},
 {	"SUMMON",	NULL,		0		},
 {	"TIME",		NULL,		0		},
-{	"TRACE",	NULL,		0		},
 {	"TOPIC",	p_topic,	0		},
+{	"TRACE",	NULL,		0		},
 {	"USER",		NULL,		0		},
 {	"USERHOST",	NULL,		PROTO_QUOTEBAD	},
 {	"USERS",	NULL,		0		},

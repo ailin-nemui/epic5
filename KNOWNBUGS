@@ -305,3 +305,6 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Caf and jm confirmed that ircu doesn't use 307 for USERIP any more.
 * ignorectl(DELETE) is not silent and it should be.
 * To satisfy fedora packaging rules, accept DESTDIR for 'make install'
+* Many printf() format fixes (caf)
+* Many changes clang suggested
+* Fix "topicbar" script to double quote "s for now.

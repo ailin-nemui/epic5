@@ -1,4 +1,4 @@
-/* $EPIC: who.c,v 1.72 2012/11/28 03:12:07 jnelson Exp $ */
+/* $EPIC: who.c,v 1.73 2013/07/28 23:16:14 jnelson Exp $ */
 /*
  * who.c -- The WHO queue.  The ISON queue.  The USERHOST queue.
  *
@@ -1575,6 +1575,7 @@ static void userhost_entry_pop (UserhostEntry **entry)
 {
 	UserhostEntry *save = (*entry)->next;
 
+	/* XXX But what if *entry is null? */
 	new_free(&(*entry)->userhost_asked);
 	new_free(&(*entry)->text);
 	new_free((char **)entry);

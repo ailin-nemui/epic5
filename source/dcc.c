@@ -1,4 +1,4 @@
-/* $EPIC: dcc.c,v 1.166 2012/11/27 22:50:57 jnelson Exp $ */
+/* $EPIC: dcc.c,v 1.167 2013/07/28 23:16:14 jnelson Exp $ */
 /*
  * dcc.c: Things dealing client to client connections. 
  *
@@ -1254,7 +1254,7 @@ static	int	dcc_listen (DCC_list *dcc)
 	    fill_in_default_port(dcc);
 
 	    encoded_description = dcc_urlencode(dcc->description);
-            do_hook(DCC_LOST_LIST,"%s %s %s %d %d PORT IN USE",
+            do_hook(DCC_LOST_LIST,"%s %s %s %ld %d PORT IN USE",
 			dcc->user, dcc_types[dcc->flags & DCC_TYPES],
 			encoded_description, dcc->refnum, original_port);
 	    new_free(&encoded_description);

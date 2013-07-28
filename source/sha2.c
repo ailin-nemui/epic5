@@ -29,7 +29,7 @@
  * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
  *
- * $Id: sha2.c,v 1.6 2008/03/15 20:52:57 jnelson Exp $
+ * $Id: sha2.c,v 1.7 2013/07/28 23:16:14 jnelson Exp $
  */
 #include "irc.h"
 #include "ircaux.h"
@@ -458,7 +458,7 @@ static void 	SHA256_Final (sha2_byte *digest, SHA256_CTX *context)
 	}
 
 	/* Clean up state data: */
-	MEMSET_BZERO(context, sizeof(context));
+	MEMSET_BZERO(context, sizeof(*context));
 	usedspace = 0;
 }
 
@@ -481,7 +481,7 @@ static char *	SHA256_End (SHA256_CTX *context, char *buffer)
 		}
 		*buffer = (char)0;
 	} else {
-		MEMSET_BZERO(context, sizeof(context));
+		MEMSET_BZERO(context, sizeof(*context));
 	}
 	MEMSET_BZERO(digest, SHA256_DIGEST_LENGTH);
 	return buffer;

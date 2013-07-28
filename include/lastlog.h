@@ -39,6 +39,7 @@ extern	double	output_expires_after;
 	void	set_old_server_lastlog_mask	(void *);
 	void	reconstitute_scrollback		(struct WindowStru *);
 	int	do_expire_lastlog_entries	(void *);
+	void	truncate_lastlog		(struct WindowStru *);
 
 	void	move_all_lastlog		(struct WindowStru *, struct WindowStru *);
 	void	move_lastlog_item_by_string	(struct WindowStru *, struct WindowStru *, Char *);

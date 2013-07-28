@@ -1,6 +1,6 @@
 #! /bin/sh
 
-# From configure.in Revision: 1.94 # Guess values for system-dependent variables and create Makefiles.
+# From configure.in Revision: 1.96 # Guess values for system-dependent variables and create Makefiles.
 # Generated automatically using autoconf version 2.13 
 # Copyright (C) 1992, 93, 94, 95, 96 Free Software Foundation, Inc.
 #
@@ -2180,7 +2180,7 @@ fi
 
 
 
-for ac_hdr in fcntl.h ieeefp.h inttypes.h math.h ndbm.h netdb.h regex.h stddef.h stdint.h sys/fcntl.h sys/file.h sys/filio.h sys/select.h sys/sysctl.h sys/syslimits.h sys/time.h sys/un.h sys/param.h
+for ac_hdr in fcntl.h ieeefp.h inttypes.h math.h ndbm.h netdb.h regex.h stddef.h stdint.h sys/fcntl.h sys/file.h sys/filio.h sys/select.h sys/sysctl.h sys/syslimits.h sys/time.h sys/un.h sys/param.h termios.h sys/termios.h
 do
 ac_safe=`echo "$ac_hdr" | sed 'y%./+-%__p_%'`
 echo $ac_n "checking for $ac_hdr""... $ac_c" 1>&6
@@ -5024,7 +5024,7 @@ else
 #include <stdlib.h>
 main ()
 {
-	char resolved_path[MAXPATHLEN];
+	char resolved_path[PATH_MAX];
 
 	if (realpath("/etc/filethatdoesnotexist", resolved_path) == 0)
 		exit(1);

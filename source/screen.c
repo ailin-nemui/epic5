@@ -1,4 +1,4 @@
-/* $EPIC: screen.c,v 1.149 2012/11/28 03:12:07 jnelson Exp $ */
+/* $EPIC: screen.c,v 1.150 2013/07/28 23:16:14 jnelson Exp $ */
 /*
  * screen.c
  *
@@ -1203,6 +1203,7 @@ abnormal_char:
 				output[pos++] = ND_SPACE;
 				pc++;
 			    }
+			    str += esclen;
 			    break;		/* attributes can't change */
 			}
 
