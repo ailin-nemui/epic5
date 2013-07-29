@@ -1,5 +1,22 @@
 EPIC5-1.1.5
 
+*** News 07/28/2013 -- $windowctl(REFNUMS_BY_PRIORITY) returns by current-ness
+	The $windowctl(REFNUMS_BY_PRIORITY) operation returns all windows in
+	the descending order that they have been the "current window". 
+
+	This is based on your input screens -- if you have multiple windows 
+	connected to multiple servers, this list doesn't care about that.  
+	If you need that, iterate over the list and filter out the ones 
+	for your server:
+
+	fe ($windowctl(REFNUMS_BY_PRIORITY)) x { 
+		if (windowctl(GET $x SERVER) == serverctl(FROM_SERVER)) {
+			push results $x
+		}
+	};
+	xecho -b Windows for this server in order of current-ness: $results
+
+
 *** News 07/28/2013 -- FIXED-SKIPPED windows don't get channels on /window kill
 	FIXED-SKIPPED windows (ie, /window fixed on skip on) are used to create
 	status windows (see below).  They will no longer be given channels 

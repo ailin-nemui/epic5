@@ -1,4 +1,4 @@
-/* $EPIC: window.c,v 1.230 2013/07/28 23:16:14 jnelson Exp $ */
+/* $EPIC: window.c,v 1.231 2013/07/29 00:21:45 jnelson Exp $ */
 /*
  * window.c: Handles the organzation of the logical viewports (``windows'')
  * for irc.  This includes keeping track of what windows are open, where they
@@ -691,6 +691,45 @@ int 	traverse_all_windows (Window **ptr)
 	 * If we get here, we're in business!
 	 */
 	return 1;
+}
+
+
+/*
+ * traverse_all_windows_by_priority: 
+ * This iterates over all windows, except it starts with the global current
+ * window (the one with the highest "priority" and then each time will 
+ * return the window with the next lower priority.
+ *
+ * To initialize, *ptr should be NULL.  The function will return 1 each time
+ * *ptr is set to the next valid window.  When the function returns 0, then
+ * you have iterated all windows.
+ */
+int 	traverse_all_windows_by_priority (Window **ptr)
+{
+	Window 		*w, *winner = NULL;
+	unsigned	ceiling;
+
+	/*
+	 * If this is the first time through...
+	 */
+	if (*ptr)
+		ceiling = (*ptr)->priority;
+	else
+		ceiling = (unsigned)-1;
+
+	for (w = NULL; traverse_all_windows(&w); w)
+	{
+		if ( (!winner || w->priority > winner->priority)
+				&& w->priority < ceiling)
+			winner = w;
+	}
+
+	/* If there was a winner, return 1 */
+	if ((*ptr = winner))
+		return 1;
+
+	/* No Winner?  Then we're done. */
+	return 0;
 }
 
 
@@ -6623,6 +6662,11 @@ char 	*windowctl 	(char *input)
 	} else if (!my_strnicmp(listc, "REFNUMS", len)) {
 		w = NULL;
 		while (traverse_all_windows(&w))
+		    malloc_strcat_wordlist(&ret, space, ltoa(w->refnum));
+		RETURN_MSTR(ret);
+	} else if (!my_strnicmp(listc, "REFNUMS_BY_PRIORITY", len)) {
+		w = NULL;
+		while (traverse_all_windows_by_priority(&w))
 		    malloc_strcat_wordlist(&ret, space, ltoa(w->refnum));
 		RETURN_MSTR(ret);
 	} else if (!my_strnicmp(listc, "NEW", len)) {

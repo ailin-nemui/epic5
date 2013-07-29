@@ -2,7 +2,6 @@ EPIC5 Projects, Bugs, and other Errata:
 
 KNOWN ERRATA (eg, bugs, or unresolved requests):
 ------------------------------------------------
-* A func which shows window channels in descending order of "current-ness"
 * whitefang says that mangling logfiles doens't work for color...
 
 MEDIUM-TERM PROJECTS
@@ -308,3 +307,4 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Many changes clang suggested
 * Fix "topicbar" script to double quote "s for now.
 * Fixed-skipped windows don't get channels from /window kill (unless no choice)
+* Add $windowctl(REFNUMS_BY_PRIORITY) to give you windows by current-ness
