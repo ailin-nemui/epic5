@@ -1,4 +1,4 @@
-/* $EPIC: logfiles.c,v 1.39 2012/11/25 05:56:28 jnelson Exp $ */
+/* $EPIC: logfiles.c,v 1.40 2013/07/30 22:37:01 jnelson Exp $ */
 /*
  * logfiles.c - General purpose log files
  *
@@ -75,6 +75,7 @@ struct Logfile {
 typedef struct Logfile Logfile;
 Logfile *logfiles = NULL;
 int	logref = 0;
+int	last_logref = -1;
 
 static Logfile *	new_logfile (void)
 {
@@ -93,6 +94,7 @@ static Logfile *	new_logfile (void)
 
 	log->next = NULL;
 	log->refnum = ++logref;
+	last_logref = log->refnum;
 	log->name = malloc_sprintf(NULL, "%d", log->refnum);
 	log->filename = NULL;
 	log->log = NULL;
@@ -762,11 +764,12 @@ void	add_to_logs (long winref, int servref, const char *target, int level, const
 /*****************************************************************************/
 /* Used by function_logctl */
 /*
+ * $logctl(NEW)
  * $logctl(REFNUMS [ACTIVE|INACTIVE|ALL])
  * $logctl(REFNUM log-desc)
  * $logctl(ADD log-desc [target])
  * $logctl(DELETE log-desc [target])
- * $logctl(GET <refnum> [LIST]
+ * $logctl(GET <refnum> [LIST])
  * $logctl(SET <refnum> [ITEM] [VALUE])
  * $logctl(MATCH [pattern])
  * $logctl(PMATCH [pattern])
@@ -791,7 +794,12 @@ char *logctl	(char *input)
 	Logfile	*log;
 
 	GET_FUNC_ARG(listc, input);
-        if (!my_strnicmp(listc, "REFNUMS", 7)) {
+	if (!my_strnicmp(listc, "NEW", 3)) {
+		log = new_logfile();
+		RETURN_INT(log->refnum);
+	} else if (!my_strnicmp(listc, "LAST_CREATED", 12)) {
+		RETURN_INT(last_logref);
+	} else if (!my_strnicmp(listc, "REFNUMS", 7)) {
 		char *	retval = NULL;
 		int	active;
 

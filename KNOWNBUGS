@@ -2,7 +2,7 @@ EPIC5 Projects, Bugs, and other Errata:
 
 KNOWN ERRATA (eg, bugs, or unresolved requests):
 ------------------------------------------------
-* whitefang says that mangling logfiles doens't work for color...
+<none>
 
 MEDIUM-TERM PROJECTS
 --------------------
@@ -308,3 +308,6 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Fix "topicbar" script to double quote "s for now.
 * Fixed-skipped windows don't get channels from /window kill (unless no choice)
 * Add $windowctl(REFNUMS_BY_PRIORITY) to give you windows by current-ness
+* Add /lastlog -reignore (ce)
+* Add $logctl(NEW)
+* Add $logctl(LAST_CREATED)

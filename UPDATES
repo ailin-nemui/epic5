@@ -1,6 +1,14 @@
-EPIC5-1.1.5
+EPIC5-1.1.6
 
-*** News 07/31/2013 -- new /lastlog flag.
+*** News 07/31/2013 -- New action $LOGCTL(LAST_CREATED)
+	The $logctl(LAST_CREATED) returns the log refnum of the most recent
+	log that was created with /LOG NEW or $logctl(NEW).
+
+*** News 07/31/2013 -- New action $LOGCTL(NEW)
+	The $logctl(NEW) performs a /LOG NEW and returns the refnum of the
+	newly created log.
+
+*** News 07/31/2013 -- New /lastlog flag.
 	/lastlog -regignore [regular-expression] avoids printing lines that
 	would otherwise be printed without the regex.  Can be used in
 	combination with -regex and -ignore and the other flags.
@@ -39,6 +47,8 @@ EPIC5-1.1.5
 		fe (#one #two #three #four) x {
 			QUEUE serverqueue {join $x}
 		}
+
+EPIC5-1.1.5
 
 *** News 11/28/2012 -- Lots of code quality improvements
 	Ancient graciously set up epic to run under clang and its static
