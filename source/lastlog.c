@@ -1,4 +1,4 @@
-/* $EPIC: lastlog.c,v 1.93 2012/11/28 02:13:30 jnelson Exp $ */
+/* $EPIC: lastlog.c,v 1.94 2013/07/30 20:48:51 crazyed Exp $ */
 /*
  * lastlog.c: handles the lastlog features of irc. 
  *
@@ -65,7 +65,7 @@ typedef struct	lastlog_stru
 static	intmax_t global_lastlog_refnum = 0;
 	double	output_expires_after = 0.0;
 
-static int	show_lastlog (Lastlog **l, int *skip, int *number, Mask *level_mask, char *match, regex_t *rex, char *nomatch, int *max, const char *target, int mangler, Window *window, int exempt, char **);
+static int	show_lastlog (Lastlog **l, int *skip, int *number, Mask *level_mask, char *match, regex_t *rex, char *nomatch, regex_t *norex, int *max, const char *target, int mangler, Window *window, int exempt, char **);
 static Lastlog *oldest_lastlog_for_window (Window *window);
 static Lastlog *newer_lastlog_entry (Lastlog *item, Window *window);
 static Lastlog *older_lastlog_entry (Lastlog *item, Window *window);
@@ -392,12 +392,15 @@ BUILT_IN_COMMAND(lastlog)
 	char *		nomatch = NULL;
 	char *		target = NULL;
 	char *		regex = NULL;
+	char *		noregex = NULL;
 	Lastlog *	start;
 	Lastlog *	end;
 	Lastlog *	l;
 	Lastlog *	lastshown;
 	regex_t 	realreg;
 	regex_t *	rex = NULL;
+	regex_t 	realnoreg;
+	regex_t *	norex = NULL;
 	int		cnt;
 	char *		arg;
 	int		header = 1;
@@ -449,6 +452,14 @@ BUILT_IN_COMMAND(lastlog)
 		if (!(nomatch = new_next_arg(args, &args)))
 		{
 			yell("LASTLOG -IGNORE requires an argument.");
+			goto bail;
+		}
+	    }
+	    else if (!my_strnicmp(arg, "-REGIGNORE", len))
+	    {
+		if (!(noregex = new_next_arg(args, &args)))
+		{
+			yell("LASTLOG -REGIGNORE requires an argument.");
 			goto bail;
 		}
 	    }
@@ -666,6 +677,20 @@ BUILT_IN_COMMAND(lastlog)
 		}
 		rex = &realreg;
 	}
+	if (noregex)
+	{
+		int	options = REG_EXTENDED | REG_ICASE | REG_NOSUB;
+		int	errcode;
+
+		if ((errcode = regcomp(&realnoreg, noregex, options)))
+		{
+			char errmsg[1024];
+			regerror(errcode, &realreg, errmsg, 1024);
+			yell("%s", errmsg);
+			goto bail;
+		}
+		norex = &realnoreg;
+	}
 
 	if (x_debug & DEBUG_LASTLOG)
 	{
@@ -763,7 +788,7 @@ restart:
 
 		/* In any case we always check if it matches (for counting purposes) */
 		matching = show_lastlog(&l, &skip, &number, &level_mask, 
-					match, rex, nomatch, &max, target, 
+					match, rex, nomatch, norex, &max, target, 
 					mangler, window, exempt, &result);
 
 		/* 
@@ -956,7 +981,7 @@ restart2:
 
 		/* In any case we always check if it matches (for counting purposes) */
 		matching = show_lastlog(&l, &skip, &number, &level_mask, 
-					match, rex, nomatch, &max, target, 
+					match, rex, nomatch, norex, &max, target, 
 					mangler, window, exempt, &result);
 
 		/* 
@@ -1109,6 +1134,8 @@ bail:
 		fclose(outfp);
 	if (rex)
 		regfree(rex);
+	if (norex)
+		regfree(norex);
 	current_window->lastlog_mask = save_mask;
 	pop_message_from(lc);
 	return;
@@ -1118,7 +1145,7 @@ bail:
  * This returns 1 if the current item pointed to by 'l' is something that
  * should be displayed based on the criteron provided.
  */
-static int	show_lastlog (Lastlog **l, int *skip, int *number, Mask *level_mask, char *match, regex_t *rex, char *nomatch, int *max, const char *target, int mangler, Window *window, int exempt, char **result)
+static int	show_lastlog (Lastlog **l, int *skip, int *number, Mask *level_mask, char *match, regex_t *rex, char *nomatch, regex_t *norex, int *max, const char *target, int mangler, Window *window, int exempt, char **result)
 {
 	const char *str = NULL;
 	int	retval = 1;
@@ -1201,6 +1228,16 @@ static int	show_lastlog (Lastlog **l, int *skip, int *number, Mask *level_mask, 
 	{
 		if (x_debug & DEBUG_LASTLOG)
 			yell("Line [%s] not regexed", str);
+
+		if (exempt)
+			retval = 0;
+		else
+			return 0;			/* Regex match failed */
+	}
+	if (norex && !regexec(norex, str, 0, NULL, 0))
+	{
+		if (x_debug & DEBUG_LASTLOG)
+			yell("Line [%s] is regexed", str);
 
 		if (exempt)
 			retval = 0;

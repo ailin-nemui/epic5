@@ -1,5 +1,10 @@
 EPIC5-1.1.5
 
+*** News 07/31/2013 -- new /lastlog flag.
+	/lastlog -regignore [regular-expression] avoids printing lines that
+	would otherwise be printed without the regex.  Can be used in
+	combination with -regex and -ignore and the other flags.
+
 *** News 07/28/2013 -- $windowctl(REFNUMS_BY_PRIORITY) returns by current-ness
 	The $windowctl(REFNUMS_BY_PRIORITY) operation returns all windows in
 	the descending order that they have been the "current window". 
