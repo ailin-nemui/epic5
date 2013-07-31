@@ -1,4 +1,4 @@
-/* $EPIC: commands.c,v 1.209 2013/07/28 23:16:13 jnelson Exp $ */
+/* $EPIC: commands.c,v 1.210 2013/07/31 04:17:53 jnelson Exp $ */
 /*
  * commands.c -- Stuff needed to execute commands in ircII.
  *		 Includes the bulk of the built in commands for ircII.
@@ -1412,6 +1412,7 @@ BUILT_IN_COMMAND(info)
 		say("the EPIC client and what it stands for");
 		say(" ");
 		say("        In memory of Jeffrey Zabek, 1973 - 2000        ");
+		say("        In memory of Matthew Lumberto, 2013            ");
 		say(" ");
 		say("ircii contributors");
 		say(" ");
