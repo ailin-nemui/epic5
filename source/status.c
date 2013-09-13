@@ -1,4 +1,4 @@
-/* $EPIC: status.c,v 1.76 2012/11/24 18:53:36 jnelson Exp $ */
+/* $EPIC: status.c,v 1.77 2013/09/13 03:28:48 jnelson Exp $ */
 /*
  * status.c: handles the status line updating, etc for IRCII 
  *
@@ -53,6 +53,7 @@
 #include "ircaux.h"
 #include "alias.h"
 #include "clock.h"
+#include "functions.h"
 
 #ifdef Char
 #undef Char
@@ -376,24 +377,27 @@ static void	build_status_format (Status *s, int k)
 }
 
 /*
- * This function either rebuilds the status_func[] tables for each of the
- * three possible status_format's (single, lower double, upper double) for
- * a particular window (w != NULL) or for the global default status bars
- * (w == NULL)
+ * STEP ONE	- Compile the Status
  *
- * This function should only by the functions that actually change the 
- * status formats (build_status, new_window, and window_status_format*)
+ * compile_status:  Compile a status object so it can be passed later
+ *			to make_status().  You should always use the same
+ *			window for a status to any function.
+ *
+ * Arguments:
+ *	w	- A window whose status is being complied.
+ *		  This should be NULL when 's' is &main_status.
+ *	s	- A window's Status object that needs to be compiled.
+ *		  The Status object can have a 'raw' value which will be
+ *		  compiled -- otherwise, this Status will use the global
+ *		  default status format (main_status)
+ *
+ * Return value:
+ *	None
  */
-void	rebuild_a_status (Window *w)
+void	compile_status (Window *w, Status *s)
 {
 	int 	i,
 		k;
-	Status	*s;
-
-	if (w)
-		s = &w->status;
-	else
-		s = &main_status;
 
 	for (k = 0; k < 3; k++)
 	{
@@ -442,70 +446,24 @@ void	rebuild_a_status (Window *w)
 }
 
 /*
- * This function causes every status bar, both global and per-window to be
- * rebuilt, and marks every window as needing its status bar redrawn.
- * This function can be quite expensive.
+ * STEP TWO 	- Convert a complied Status into a string
  *
- * This function should be called whenever you change the global status format
- * (/SET STATUS_FORMAT*) or one of the sub-components (/SET STATUS_*)
- * 
- * This function is a /SET callback, so it must always take a (char *) as an
- * argument even though we don't care about it.
+ * make_status: Convert a pre-compiled Status bar into a text string which is
+ *		suitable for outputting.  
+ *
+ * Arguments:
+ *	window - The window whose status is being generated
+ *	status - A precompiled Status bar (ie, it's been run through 
+ *		 compile_status()) template
+ *
+ * Return value:
+ *	-1 	Something bad happened:
+ *		* Status updates are forbidden (status_updates_permitted == 0)
+ *		* Window or Status were NULL (what do you want me to do?)
+ * 	0	The status bar was updated, but nothing changed
+ *	>= 1	The status bar was updated -- you should call redraw_status()
  */
-void	build_status	(void *stuff)
-{
-	Window 	*w = NULL;
-
-	if (!main_status_init)
-		init_status();
-
-	rebuild_a_status(w);
-	while (traverse_all_windows(&w))
-		rebuild_a_status(w);
-
-	update_all_status();
-}
-
-
-static void	init_status	(void)
-{
-	int	i, k;
-
-	main_status.number = 1;
-	main_status.special = 0;
-	for (i = 0; i < 3; i++)
-	{
-		main_status.line[i].raw = NULL;
-		main_status.line[i].format = NULL;
-		main_status.line[i].count = 0;
-		main_status.line[i].result = NULL;
-		for (k = 0; k < MAX_FUNCTIONS; k++)
-		{
-			main_status.line[i].func[k] = NULL;
-			main_status.line[i].map[k] = 0;
-			main_status.line[i].key[k] = 0;
-		}
-	}
-	main_status_init = 1;
-}
-
-/*
- * permit_status_update: sets the status_update_flag to whatever flag is.
- */
-int     permit_status_update (int flag)
-{
-        int old_flag = status_updates_permitted;
-        status_updates_permitted = flag;
-        return old_flag;
-}
-
-
-/*
- * This just sucked beyond words.  I was always planning on rewriting this,
- * but the crecendo of complaints with regards to this just got to be too 
- * irritating, so i fixed it early.
- */
-int	make_status (Window *window, int must_redraw)
+int	make_status (Window *window, Status *status)
 {
 	int		status_line;
 	unsigned char	buffer	    [BIG_BUFFER_SIZE + 1];
@@ -514,12 +472,21 @@ int	make_status (Window *window, int must_redraw)
 	const char	*func_value [MAX_FUNCTIONS];
 	unsigned char	*ptr;
 	size_t		save_size;
+	Screen	*	screen;
+	int		anything_changed = 0;
 
-	/* We do NOT redraw status bars for hidden windows */
-	if (!window->screen || !status_updates_permitted)
+	/* Should this be a panic? */
+	if (window == NULL || status == NULL)
 		return -1;
 
-	for (status_line = 0; status_line < window->status.number; status_line++)
+	if (!status_updates_permitted)
+		return -1;
+
+	/* For hidden windows, we just pretend they're on the main screen */
+	if (!(screen = window->screen))
+		screen = main_screen;
+
+	for (status_line = 0; status_line < status->number; status_line++)
 	{
 	unsigned char	lhs_fillchar[6],
 			rhs_fillchar[6],
@@ -528,7 +495,7 @@ int	make_status (Window *window, int must_redraw)
 			*rhp = rhs_buffer,
 			*cp,
 			*start_rhs = 0,
-			*str;
+			*str = NULL;
 		int	pr_lhs = 0,
 			pr_rhs = 0,
 			line = 0,	/* XXX gcc4 lameness */
@@ -540,22 +507,22 @@ int	make_status (Window *window, int must_redraw)
 		/*
 		 * Figure out which of the three status bars we're creating.
 		 */
-		if (window->status.number == 1 && status_line == 0)
+		if (status->number == 1 && status_line == 0)
 			line = 0;
-		else if (window->status.number == 2 && status_line == 0)
+		else if (status->number == 2 && status_line == 0)
 			line = 1;
-		else if (window->status.number == 2 && status_line == 1)
+		else if (status->number == 2 && status_line == 1)
 			line = 2;
 		else
-			panic(1, "window->status.number is [%d] and status_line "
+			panic(1, "make_status: for window [%d], status->number is [%d] and status_line "
 				"is [%d] and that makes no sense!", 
-				window->status.number, status_line);
+				window->refnum, status->number, status_line);
 
 		/*
 		 * Sanity check:  If the status format doesnt exist, dont do
 		 * anything for it.
 		 */
-		if (!window->status.line[line].format)
+		if (!status->line[line].format)
 			continue;
 
 		/*
@@ -566,33 +533,20 @@ int	make_status (Window *window, int must_redraw)
 		 */
 		for (i = 0; i < MAX_FUNCTIONS; i++)
 		{
-			if (window->screen == NULL)
-				return -1;
-
-			if (window->status.line[line].func[i] == NULL)
-				panic(1, "status callback null.  Window [%d], line [%d], function [%d]", window->refnum, line, i);
-			func_value[i] = window->status.line[line].func[i]
-				(window, window->status.line[line].map[i],
-				 window->status.line[line].key[i]);
+			if (status->line[line].func[i] == NULL)
+				return -1;	/* Not set up yet */
+/* 				panic(1, "status callback null.  Window [%d], line [%d], function [%d]", window->refnum, line, i); */
+			func_value[i] = status->line[line].func[i]
+				(window, status->line[line].map[i],
+				 status->line[line].key[i]);
 		}
-
-#if 0
-		/*
-		 * If the REVERSE_STATUS_LINE var is on, then put a reverse
-		 * character in the first position (itll get translated to
-		 * the tcap code in the output code.
-		 */
-		if (get_int_var(REVERSE_STATUS_LINE_VAR))
-			*buffer = REV_TOG , str = buffer + 1;
-		else
-#endif
-			str = buffer;
 
 		/*
 		 * Now press the status line into "buffer".  The magic about
 		 * setting status_format is handled elsewhere.
 		 */
-		snprintf(str, BIG_BUFFER_SIZE - 1, window->status.line[line].format,
+		str = buffer;
+		snprintf(str, BIG_BUFFER_SIZE - 1, status->line[line].format,
 		    func_value[0], func_value[1], func_value[2], 
 		    func_value[3], func_value[4], func_value[5],
 		    func_value[6], func_value[7], func_value[8], func_value[9],
@@ -705,7 +659,7 @@ int	make_status (Window *window, int must_redraw)
 			/*
 			 * Dont allow more than CO printable characters
 			 */
-			if (pr_lhs + pr_rhs >= window->screen->co)
+			if (pr_lhs + pr_rhs >= screen->co)
 			{
 				*cp = 0;
 				break;
@@ -729,7 +683,7 @@ int	make_status (Window *window, int must_redraw)
 		{
 			int numf = 0;
 
-			numf = window->screen->co - pr_lhs - pr_rhs -1;
+			numf = screen->co - pr_lhs - pr_rhs -1;
 			while (numf-- >= 0)
 				strlcat(lhs_buffer, lhs_fillchar, 
 						sizeof lhs_buffer);
@@ -740,7 +694,7 @@ int	make_status (Window *window, int must_redraw)
 		 */
 		else 
 		{
-			int chars = window->screen->co - pr_lhs - 1;
+			int chars = screen->co - pr_lhs - 1;
 
 			while (chars-- >= 0)
 				strlcat(lhs_buffer, lhs_fillchar, 
@@ -753,48 +707,186 @@ int	make_status (Window *window, int must_redraw)
 		strlcat(buffer, all_off(), sizeof buffer);
 		new_free(&str);
 
+		if (!status->line[status_line].result ||
+			strcmp(buffer, status->line[status_line].result))
+		{
+		    /*
+		     * Roll the new back onto the old
+		     */
+		    malloc_strcpy(&status->line[status_line].result, buffer);
+		    anything_changed++;
+		}
+	}
+
+	return anything_changed;
+}
+
+/*
+ * STEP THREE 	- Output a status
+ *
+ * redraw_status: Output a generated status bar after you've decided the
+ *		  screen needs to be updated (because make_status returned 1
+ *		  or because the user redrew the screen, whatever)
+ *
+ * Arguments:
+ *	window - The window whose status is being generated
+ *	status - A generated Status bar (ie, it's been run through 
+ *		 make_status()) template
+ *
+ * Return value:
+ *	-1 	Something bad happened:
+ *		* Status updates are forbidden (status_updates_permitted == 0)
+ *		* Window or Status were NULL (what do you want me to do?)
+ *	0	The status bars were updated
+ */
+int	redraw_status (Window *window, Status *status)
+{
+	int	status_line, line;
+	char *	status_str;
+
+	/* Should this be a panic? */
+	if (window == NULL || status == NULL)
+		return -1;
+
+	if (!status_updates_permitted)
+		return -1;
+
+	for (status_line = 0; status_line < status->number; status_line++)
+	{
+		/*
+		 * Figure out which of the three status bars we're creating.
+		 */
+		if (status->number == 1 && status_line == 0)
+			line = 0;
+		else if (status->number == 2 && status_line == 0)
+			line = 1;
+		else if (status->number == 2 && status_line == 1)
+			line = 2;
+		else
+			return -1;
+
+		if (!(status_str = status->line[status_line].result))
+			continue;
+
 		/*
 		 * Ends up that BitchX always throws this hook and
 		 * people seem to like having this thrown in standard
 		 * mode, so i'll go along with that.
 		 */
 		do_hook(STATUS_UPDATE_LIST, "%d %d %s", 
-			window->refnum, 
-			status_line, 
-			buffer);
+			window->refnum, status_line, status_str);
 
-		if (dumb_mode || !foreground)
+		if (dumb_mode || !foreground || !window->screen)
 			continue;
 
 		/*
-		 * Update the status line on the screen.
-		 * First check to see if it has changed
-		 * Remember this is only done in full screen mode.
+		 * Output the status line to the screen
 		 */
-		if (must_redraw || !window->status.line[status_line].result ||
-			strcmp(buffer, window->status.line[status_line].result))
-		{
-			/*
-			 * Roll the new back onto the old
-			 */
-			malloc_strcpy(&window->status.line[status_line].result,
-					buffer);
-
-			/*
-			 * Output the status line to the screen
-			 */
-			output_screen = window->screen;
-			term_move_cursor(0, window->bottom + status_line);
-			output_with_count(buffer, 1, 1);
-			cursor_in_display(window);
-		}
+		output_screen = window->screen;
+		term_move_cursor(0, window->bottom + status_line);
+		output_with_count(status_str, 1, 1);
+		cursor_in_display(window);
 	}
-
-	cursor_to_input();
 	return 0;
 }
 
+static	void	initialize_status (Status *s)
+{
+	int	i, k;
 
+	s->number = 1;
+	s->special = NULL;
+	for (i = 0; i < 3; i++)
+	{
+		s->line[i].raw = NULL;
+		s->line[i].format = NULL;
+		s->line[i].count = 0;
+		s->line[i].result = NULL;
+		for (k = 0; k < MAX_FUNCTIONS; k++)
+		{
+			s->line[i].func[k] = NULL;
+			s->line[i].map[k] = 0;
+			s->line[i].key[k] = 0;
+		}
+	}
+}
+
+Status *	new_status (void)
+{
+	Status *s;
+	s = new_malloc(sizeof(Status));
+	initialize_status(s);
+	return s;
+}
+
+static void	init_status	(void)
+{
+	initialize_status(&main_status);
+	main_status_init = 1;
+}
+
+void	destroy_status (Status **s)
+{
+	int	i, k;
+
+	(*s)->number = -1;
+	new_free(&((*s)->special));
+	for (i = 0; i < 3; i++)
+	{
+		new_free(&((*s)->line[i].raw));
+		new_free(&((*s)->line[i].format));
+		(*s)->line[i].count = 0;
+		new_free(&((*s)->line[i].result));
+		for (k = 0; k < MAX_FUNCTIONS; k++)
+		{
+			(*s)->line[i].func[k] = NULL;
+			(*s)->line[i].map[k] = 0;
+			(*s)->line[i].key[k] = 0;
+		}
+	}
+	new_free(s);
+}
+
+
+/*
+ * This function is called whenever you change a global status format or 
+ * one of the "subexpandos" for the status format (ie, /set status_away) 
+ * so that means every status in the system needs to be recompiled.
+ *
+ * This function can be quite expensive.
+ *
+ * This function is a /SET callback, so it must always take a (void *) as an
+ * argument even though we don't care about it.
+ */
+void	build_status	(void *stuff)
+{
+	Window 	*w = NULL;
+
+	if (!main_status_init)
+		init_status();
+
+	/* Recompile every status */
+	compile_status(NULL, &main_status);
+	while (traverse_all_windows(&w))
+		compile_status(w, &w->status);
+
+	/* This forces make_status() and redraw_status() */
+	update_all_status();
+}
+
+
+/*
+ * permit_status_update: sets the status_update_flag to whatever flag is.
+ */
+int     permit_status_update (int flag)
+{
+        int old_flag = status_updates_permitted;
+        status_updates_permitted = flag;
+        return old_flag;
+}
+
+
+/******************** STATUS FORMAT EXPANDOS ***************************/
 /* Some useful macros */
 /*
  * This is used to get the current window on a window's screen
@@ -1647,5 +1739,29 @@ STATUS_FUNCTION(status_activity)
 	strlcpy(retval, result, sizeof(retval));
 	new_free(&result);
 	return retval;
+}
+
+BUILT_IN_FUNCTION(function_status_oneoff, input)
+{
+	Status *s;
+	char *	windesc;
+	Window	*w;
+	char	*retval;
+
+	GET_FUNC_ARG(windesc, input);
+
+	if (!(w = get_window_by_desc(windesc)))
+		RETURN_EMPTY;
+
+	s = new_status();
+	malloc_strcpy(&s->line[0].raw, input);
+
+	compile_status(w, s);
+	make_status(w, s);
+
+	retval = denormalize_string(s->line[0].result);
+	destroy_status(&s);
+
+	RETURN_MSTR(retval);
 }
 

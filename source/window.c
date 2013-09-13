@@ -1,4 +1,4 @@
-/* $EPIC: window.c,v 1.231 2013/07/29 00:21:45 jnelson Exp $ */
+/* $EPIC: window.c,v 1.232 2013/09/13 03:28:48 jnelson Exp $ */
 /*
  * window.c: Handles the organzation of the logical viewports (``windows'')
  * for irc.  This includes keeping track of what windows are open, where they
@@ -248,7 +248,10 @@ Window	*new_window (Screen *screen)
 	}
 	new_w->status.number = 1;
 	new_w->status.special = NULL;
-	rebuild_a_status(new_w);
+	compile_status(new_w, &new_w->status);
+	make_status(new_w, &new_w->status);
+	window_statusbar_needs_update(new_w);
+	window_statusbar_needs_redraw(new_w);
 
 	/* Scrollback stuff */
 	new_w->top_of_scrollback = NULL;	/* Filled in later */
@@ -1523,14 +1526,19 @@ static	int	restart;
 
 		if (tmp->update & REDRAW_STATUS)
 		{
-			if (!make_status(tmp, 1))
-			    tmp->update &= ~REDRAW_STATUS;
-			do_input_too = 1;
+			if (make_status(tmp, &tmp->status) > 0)
+			{
+			  /* If redrawing failed this time, try next time */
+			  if (redraw_status(tmp, &tmp->status) < 0)
+				tmp->update |= UPDATE_STATUS;
+			  tmp->update &= ~REDRAW_STATUS;
+			}
 		}
 		else if (tmp->update & UPDATE_STATUS)
 		{
-			if (!make_status(tmp, 0))
-			    tmp->update &= ~UPDATE_STATUS;
+			if (make_status(tmp, &tmp->status) > 0)
+				if (redraw_status(tmp, &tmp->status) == 0)
+					tmp->update &= ~UPDATE_STATUS;
 			do_input_too = 1;
 		}
 	}
@@ -5259,8 +5267,8 @@ static Window *window_status_format (Window *window, char **args)
 
 	arg = new_next_arg(*args, args);
 	malloc_strcpy(&window->status.line[0].raw, arg);
+	compile_status(window, &window->status);
 	window_statusbar_needs_redraw(window);
-	rebuild_a_status(window);
 
 	return window;
 }
@@ -5271,8 +5279,8 @@ static Window *window_status_format1 (Window *window, char **args)
 
 	arg = new_next_arg(*args, args);
 	malloc_strcpy(&window->status.line[1].raw, arg);
+	compile_status(window, &window->status);
 	window_statusbar_needs_redraw(window);
-	rebuild_a_status(window);
 
 	return window;
 }
@@ -5283,8 +5291,8 @@ static Window *window_status_format2 (Window *window, char **args)
 
 	arg = new_next_arg(*args, args);
 	malloc_strcpy(&window->status.line[2].raw, arg);
+	compile_status(window, &window->status);
 	window_statusbar_needs_redraw(window);
-	rebuild_a_status(window);
 
 	return window;
 }
@@ -5506,7 +5514,7 @@ BUILT_IN_COMMAND(windowcmd)
 
 	old_from_server = from_server;
 	old_current_window = current_window->refnum;
-	old_status_update = permit_status_update(0);
+ 	old_status_update = permit_status_update(0); 
 	/* l = message_from(NULL, LEVEL_NONE); */	/* XXX This is bogus */
 	window = current_window;
 
@@ -5573,7 +5581,7 @@ BUILT_IN_COMMAND(windowcmd)
 	else
 		from_server = old_from_server;
 
-	permit_status_update(old_status_update);
+	permit_status_update(old_status_update); 
 	/* pop_message_from(l); */
 	window_check_channels();
 	update_all_windows();

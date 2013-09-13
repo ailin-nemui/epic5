@@ -311,3 +311,6 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Add /lastlog -reignore (ce)
 * Add $logctl(NEW)
 * Add $logctl(LAST_CREATED)
+* Begin a big project to decouple status bar generation from window refresh.
+* Create $status_oneoff() which lets you press a status bar on the fly.
+

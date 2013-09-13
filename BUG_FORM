@@ -1,72 +1,158 @@
 
-If you should see what you think to be a bug, please visit 
-		http://epicsol.org/bugs/
-
-Please remember when reporting a bug that information counts.  Since
-we have not yet mastered the skill of mind-reading, you should not
-assume that we know anything about your situation.  We have seen some 
-things that look absolutely strange to us, but are perfectly normal 
-to the user. It is best for you to take the stance that we dont know 
-that much about your operating system, so you should try to start at 
-the beginning and clue us in.  Thanks a bunch. |8^)
-
-Please include as much as possible of the following information in your
-bug report.  Bug reports with insufficient information are frustrating
-for everybody involved.  This list was compiled to help you help us the
-most effectively:
-
-Describe your computer:
-	Hardware type?
-	Operating System? (try uname -a)
-	Your compiler (if gcc, include version)
-	What scripts/script packs you run (lice, darkstar, obv, etc)
-	Anything else you think might be helpful.
-
-When did the problem occur?
-	* Configure time (dies while running configure)
-    If it is configure time, please include a cut and paste of everything
-    that appears on your screen from the line when you type "./configure"
-    until you see your prompt again.  Please do not leave out any
-    lines, for any line may contain very important information!
-
-	* Compiler time (dies when you type 'make')
-    If it is at compile time, please include a cut and paste of
-    everything that appears on your screen from the line when you 
-    type 'make' until you see your prompt again.  Please do not leave
-    out any lines, for any line may contain very important information!
-
-	* Run time (You got a "CRITICAL PROTECTION ERROR")
-	* Run time (You got a "PANIC" message)
-	* Run time (non-fatal logic bug)
-    If it is at run time, please try to describe as best you can what
-    you were doing when the client malfunctioned.  Had you just run 
-    a command?  Can you duplicate the error?  What seems to cause the
-    error in your best judgement?  Have you found anything else
-    that independantly causes this same problem?  Bugs that can be 
-    reproduced are the easiest bugs to fix.
-
-Can you get a stack trace?
-    If EPIC crashed, and you can recreate the crash, run EPIC under a debugger
-    (such as gdb) and get a stack trace and include that in your bug report.
-    Under normal circumstances, EPIC will not create a corefile, so you must 
-    run EPIC under a debugger in order to get a stack trace.
-
-    When a "PANIC" or "CRITICAL PROTECTION ERROR" occurs, sometimes EPIC will
-    be able to tell you what ircII commands were executing at the time of the
-    crash.  If you see any message that says "INCLUDE THE ABOVE IMPORTANT
-    INFORMATION" or "stack trace", please include that in your bug report.
-
-Is there anything else you think would be helpful?
+		How users can help developers fix bugs
 
 
------------------------------------------------------------------------------
-About the software:  EPIC is a fork of ircII-2.8.2.  ircII was originally 
-written by Michael Sandroff, and then later developed by Troy Rollo and 
-Matthew Green.  This distribution came from EPIC Software Labs (epicsol.org)
-who maintains it in stewardship of The EPIC Project.
 
-"EPIC" is an unregistered trademark of The EPIC Project
-"ESL" and "EPICSOL" are unregistered trademarks of EPIC Software Labs
-This product is (ircII) EPIC5-0.1
+A software bug (crash/unwanted behavior) is always a bummer, and developers
+usually want their software to be useful by their users.
 
-<EOF>
+To help software developers fix your bug, it helps to understand how 
+they think about bug fixing:
+
+
+
+Question 1. Do I understand the behavior the user doesn't like?
+
+A computer program is a precise machine that when you give it <X> inputs,
+it performs <Y> actions, and developers think about the software in that
+same way.  To help the developer understand what is wrong, provide this
+information:
+
+	a. I performed <this specific set of actions>
+	b. The software did <something I did not like>
+	c. However, I expected it to do <something else>
+
+A bug can't be fixed without these three critical pieces of information.
+If you don't provide them at the start, then the programmer has to track 
+you down and discuss the matter with you.  For many developers this makes
+the problem "hard" and they may lose interest.  You want your bug report
+to scream out "this is easy!" to the developer.
+
+   Rule #1 -- If the programmer does not believe that you clearly understand
+	      whether something is a bug or not, he will assume it isn't, and
+	      go work on something else.
+
+
+Question 2. Can I reproduce this problem myself?
+
+Bugs fall into two categories  1) Reproducable and 2) Non-Reproducable.
+The first thing the programmer will try to do is perform the steps in 1(a)
+above.  This is the first moment of truth.  If the programmer is unable to 
+reproduce the problem using the steps you provided, he will make a snap 
+decision on whether the problem is important enough to spend a lot of time on.
+
+If he decides at this moment the problem you describe isn't as important as
+other things he has to do, then game over -- he won't fix your bug.  
+
+    Rule #2 -- A bug that cannot be reproduced at will through a clearly
+	       designed set of steps cannot be properly fixed.  If you 
+	       make the programmer do the hard work of figuring out what
+	       set of steps reproduce your bug, he may go work on something
+	       more fun.
+
+    Rule #2b -- Good developers will not "fix" a bug that cannot be 
+		reproduced, because that invariably breaks something else,
+		and they don't want to make your life even worse.
+		Poor developers will fix a bug without understanding why
+		it is broken, just to make you go away.
+
+Question 3. Can the software be changed in the way the user wants?
+
+Once the developer understands what you didn't like, and he can reproduce
+it himself in his environment, he needs to know what the "fixed" behavior
+should look like.
+
+But programmers are human beings too -- and they have their limitations.
+Sometimes it's easy for you and the programmer to agree on what the program
+*should* do in this situation, but the programmer may not actually have the
+skill to make the program do that.
+
+The programmer combines what you wish would happen, with what he knows he 
+can make happen, and compromises with you on how to fix the bug
+
+     Rule #3 -- If the behavior you want is too hard, or will take too much
+		time, the developer may log the bug as "to do later" and go
+		work on something else.
+
+======================================================================
+				Example:
+=======================================================================
+
+You have an input file with three lines in it:
+
+	Canary
+	apple
+	Bob
+
+You run this file through the sort program.
+
+	$ sort < myfile
+
+It outputs this:
+
+	Bob
+	Canary
+	apple
+
+Wait -- what?  This isn't right you think -- Apple clearly comes before
+Bob and Canary.  You might think "this program is broken and the developer
+should be fired".
+
+But a well written bug notice will get attention!
+
+	Dear developer:
+
+	I have a file containing three lines
+		Canary
+		apple
+		Bob
+
+	I ran this through "sort < myfile"
+	It gave me this output
+		Bob
+		Canary
+		apple
+
+	But I was expecting to see
+		apple
+		Bob
+		Canary
+
+	Can you tell me if this is a software issue?
+
+	Thanks!
+	User
+
+The developer can look at this and say to himself, "hrm. this doesn't seem
+right, does it", and he will create your text file and run it through sort
+on his machine, and he will get the same results you do.
+
+He would investigate the sort program and determine that by default, the
+sort program is case sensitive by default -- and that all capital letters
+come before lower case letters.
+
+But there is a flag you can use to change this behavior, -f.
+So if you do 
+	$ sort -f < myfile
+It will output
+	apple
+	Bob
+	Canary
+
+
+So the developer will send you an email back:
+
+	Dear user,
+
+	By default, the sort command is case sensitive, and lower case
+	letters come after uppser case letters, so 'Z' sorts before 'a'.
+	That is why 'apple' comes after 'Canary'.
+
+	There is a flag, -f, that makes sort case insensitive.
+	Can you please use  'sort -f < myfile' and confirm this works for you?
+
+	Thanks,
+	Developer
+
+
+

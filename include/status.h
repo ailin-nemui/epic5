@@ -33,9 +33,11 @@ typedef struct  status_stuff {
 extern	Status	main_status;
 
 	char *	convert_sub_format (const char *, char);
-	int	make_status 	(struct WindowStru *, int);	/* Don't call */
+	void	compile_status (struct WindowStru *, struct status_stuff *);
+	int	make_status 	(struct WindowStru *, struct status_stuff *);
+	int	redraw_status	(struct WindowStru *, struct status_stuff *);
 	void	build_status 	(void *);
 	int	permit_status_update	(int);
-	void	rebuild_a_status (struct WindowStru *);		/* Don't call */
+	char *	function_status_oneoff	(char *);
 
 #endif /* _STATUS_H_ */

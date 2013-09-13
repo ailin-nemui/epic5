@@ -1,3 +1,16 @@
+EPIC5-1.1.7
+
+*** News 09/12/2013 -- New built in function $status_oneoff()
+	This is a completely experimental function right now, which is
+	helping me decouple the status bar generation from the windows.
+
+	This function allows you to create your own status bar string,
+	if you provide it a window and a status_format.
+		$status_oneoff(winref ...status goes here...)
+	As a simple example,
+		$status_oneoff(1 %S)
+	would return what %S would be on window 1.
+
 EPIC5-1.1.6
 
 *** News 07/31/2013 -- New action $LOGCTL(LAST_CREATED)
