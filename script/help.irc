@@ -4,12 +4,13 @@
 package help
 
 ### Variables
-@help.server = "help.epicsol.org"
-@help.baseuri = "/help/_export/raw"
+@help.server = "epicsol.org"
+@help.baseuri = "/doku.php/"
 @help.headers.1 = "Host: $help.server"
 @help.headers.2 = "Accept: text/*"
 @help.headers.3 = "User-Agent: ircII $J [$V] [$info(i)] [$info(r)]"
 @help.headers.4 = "Connection: Close"
+@help.headers.5 = "X-DOKUWIKI-DO: export_raw"
 @help.prompt="'q' to quit, 'n' to stop prompting, or any other key to continue"
 
 ### End user aliases

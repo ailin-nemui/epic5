@@ -313,4 +313,5 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Add $logctl(LAST_CREATED)
 * Begin a big project to decouple status bar generation from window refresh.
 * Create $status_oneoff() which lets you press a status bar on the fly.
-
+* Fix configure and the build so it works with ruby 1.8/1.9/2.0
+* Update the help script to work with the new website (credit <fill in here>)

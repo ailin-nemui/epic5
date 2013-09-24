@@ -4,9 +4,9 @@ dnl except those bits attributed otherwise.
 dnl thanks to the screen 3.3 configure.in for giving me examples to
 dnl work from and steal ;)
 dnl
-dnl @(#)$Id: configure.in,v 1.97 2013/07/28 23:16:12 jnelson Exp $
+dnl @(#)$Id: configure.in,v 1.98 2013/09/24 21:07:24 jnelson Exp $
 
-AC_REVISION([$Revision: 1.97 $])dnl
+AC_REVISION([$Revision: 1.98 $])dnl
 AC_INIT([source/irc.c])
 AC_CONFIG_HEADER([include/defs.h])
 
@@ -1174,11 +1174,13 @@ AC_ARG_WITH(ruby,
 	rubyexe=$withval
 ],
 	rubyexe=yes
+	for i in ruby ruby20 ruby19 ruby18 ; do
+		$i -h 2>&1 >/dev/null && rubyexe=$i && break
+	done
+	if test "x$rubyexe" = "xyes"; then
+		rubyexe=no
+	fi
 )
-
-if test "x$rubyexe" = "xyes"; then
-	rubyexe=ruby
-fi
 
 if test "x$rubyexe" = "xno"; then
 	AC_MSG_CHECKING(whether to support Ruby)
@@ -1191,10 +1193,21 @@ else
 	else
 	    AC_MSG_RESULT(yes)
 
-	    incdir=`$rubyexe -rrbconfig -e 'puts Config::CONFIG[["archdir"]]'`
-	    rubylibs=`$rubyexe -rrbconfig -e 'puts Config::CONFIG[["LIBRUBYARG"]]'`
-	    extralibs=`$rubyexe -rrbconfig -e 'puts Config::CONFIG[["LIBS"]]'`
-	    RUBYCFLAGS="-I$incdir"
+	    dnl ---- 
+	    dnl Look first for Ruby 1.9
+	    incdir=`$rubyexe -rrbconfig -e 'puts RbConfig::CONFIG[["rubyhdrdir"]]'`
+	    dnl -- Ruby 1.8
+	    if test "x$incdir" = "xnil" ; then
+	       incdir=`$rubyexe -rrbconfig -e 'puts RbConfig::CONFIG[["archdir"]]'`
+	       RUBYCFLAGS="-I$incdir"
+	    dnl -- Ruby 1.9 and 2.0
+	    else
+	       arch=`$rubyexe -rrbconfig -e 'puts RbConfig::CONFIG[["arch"]]'`
+	       RUBYCFLAGS="-I$incdir -I$incdir/$arch/"
+	    fi
+
+	    rubylibs=`$rubyexe -rrbconfig -e 'puts RbConfig::CONFIG[["LIBRUBYARG"]]'`
+	    extralibs=`$rubyexe -rrbconfig -e 'puts RbConfig::CONFIG[["LIBS"]]'`
 	    RUBYLDFLAGS="$rubylibs $extralibs"
 	    RUBYDOTOH="ruby.o"
 
@@ -1211,7 +1224,7 @@ else
 	VALUE x;
 	char *my_string;
 	x = rb_obj_as_string(string);
-	my_string = STR2CSTR(x);
+	my_string = StringValuePtr(x);
 	return Qnil;
     }
 ], [

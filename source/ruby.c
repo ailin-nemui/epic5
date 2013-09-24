@@ -1,4 +1,4 @@
-/* $EPIC: ruby.c,v 1.14 2009/07/05 04:29:44 jnelson Exp $ */
+/* $EPIC: ruby.c,v 1.15 2013/09/24 21:07:26 jnelson Exp $ */
 /*
  * ruby.c -- Calling RUBY from epic.
  *
@@ -50,7 +50,7 @@ int	is_ruby_running = 0;
 	char *my_string;		\
 					\
 	x = rb_obj_as_string(string);	\
-	my_string = STR2CSTR(x);
+	my_string = StringValuePtr(x);
 
 static VALUE epic_echo (VALUE module, VALUE string)
 {
@@ -171,7 +171,7 @@ static	VALUE	eval_failed (VALUE args, VALUE error_info)
 	char *ick;
 
 	err_info_str = rb_obj_as_string(error_info);
-	ick = STR2CSTR(err_info_str);
+	ick = StringValuePtr(err_info_str);
 	yell("RUBY-ERROR: %s", ick);	
 	return Qnil;
 }
@@ -193,7 +193,7 @@ char *	rubyeval (char *input)
 		{
 			VALUE x;
 			x = rb_obj_as_string(rubyval);
-			retval = STR2CSTR(x);
+			retval = StringValuePtr(x);
 		}
 	}
 

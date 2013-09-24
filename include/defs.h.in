@@ -429,6 +429,9 @@
 /* Define if you have the <sys/syslimits.h> header file.  */
 #undef HAVE_SYS_SYSLIMITS_H
 
+/* Define if you have the <sys/termios.h> header file.  */
+#undef HAVE_SYS_TERMIOS_H
+
 /* Define if you have the <sys/time.h> header file.  */
 #undef HAVE_SYS_TIME_H
 
@@ -440,6 +443,9 @@
 
 /* Define if you have the <termcap.h> header file.  */
 #undef HAVE_TERMCAP_H
+
+/* Define if you have the <termios.h> header file.  */
+#undef HAVE_TERMIOS_H
 
 /* Define if you have the <valgrind/memcheck.h> header file.  */
 #undef HAVE_VALGRIND_MEMCHECK_H
