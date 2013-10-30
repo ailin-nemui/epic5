@@ -1,4 +1,4 @@
-/* $EPIC: commands.c,v 1.210 2013/07/31 04:17:53 jnelson Exp $ */
+/* $EPIC: commands.c,v 1.211 2013/10/30 02:56:52 jnelson Exp $ */
 /*
  * commands.c -- Stuff needed to execute commands in ircII.
  *		 Includes the bulk of the built in commands for ircII.
@@ -6,7 +6,7 @@
  * Copyright (c) 1990 Michael Sandroff.
  * Copyright (c) 1991, 1992 Troy Rollo.
  * Copyright (c) 1992-1996 Matthew Green.
- * Copyright © 1995, 2010 EPIC Software Labs
+ * Copyright 1995, 2010 EPIC Software Labs
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -440,6 +440,11 @@ BUILT_IN_COMMAND(cd)
 		say("Current directory: %s", dir);
 	else
 		say("The current directory is invalid.");
+}
+
+BUILT_IN_COMMAND(e_call)
+{
+	dump_call_stack();
 }
 
 /* clear: the CLEAR command.  Figure it out */
@@ -1433,6 +1438,26 @@ BUILT_IN_COMMAND(info)
 }
 
 /*
+ * eval_inputlist:  Cute little wrapper that calls runcmds() when we
+ * get an input prompt ..
+ */
+static void	eval_inputlist (char *args, char *line)
+{
+        char *tmp;
+	if (args[0]=='(') {
+                if (!(tmp = next_expr(&args, '('))) {
+			yell("INPUT: syntax error with arglist");
+			return;
+		}
+                runcmds_with_arglist(args, tmp, line);
+	} else {
+                /* traditional behavior */
+		runcmds(args, line);
+	}
+}
+
+
+/*
  * inputcmd:  the INPUT command.   Takes a couple of arguements...
  * the first surrounded in double quotes, and the rest makes up
  * a normal ircII command.  The command is evalutated, with $*
@@ -1451,6 +1476,8 @@ BUILT_IN_COMMAND(inputcmd)
 		argument = next_arg(args, &args);
 		if (!my_stricmp(argument, "-noecho"))
 			echo = 0;
+		if (!my_stricmp(argument, "--"))
+			break;
 	}
 
 	if (!(prompt = new_next_arg(args, &args)))
@@ -1487,8 +1514,8 @@ BUILT_IN_COMMAND(license)
 	yell("Copyright (c) 1990 Michael Sandroff.");
 	yell("Copyright (c) 1991, 1992 Troy Rollo.");
  	yell("Copyright (c) 1992-1996 Matthew Green.");
-	yell("Copyright © 1994 Jake Khuon.");
-	yell("Coypright © 1993, 2013 EPIC Software Labs.");
+	yell("Copyright 1994 Jake Khuon.");
+	yell("Coypright 1993, 2013 EPIC Software Labs.");
 	yell("All rights reserved");
 	yell(" ");
 	yell("Redistribution and use in source and binary forms, with or");
@@ -1631,7 +1658,6 @@ BUILT_IN_COMMAND(load)
 	char *	sargs;
 	char *	use_path;
 	char *	expanded;
-	FILE *	fp;
         struct epic_loadfile * elf;
 	int	display;
 	int	do_one_more = 0;
@@ -1639,12 +1665,6 @@ BUILT_IN_COMMAND(load)
 	char *	file_contents = NULL;
 	off_t	file_contents_size = 0;
 	char *	declared_encoding = NULL;
-
-        int             idx;
-        int             err;
-        char            errstr[1024];
-        char            buf[8192];
-
 
 	if (++load_depth == MAX_LOAD_DEPTH)
 	{
@@ -2946,7 +2966,7 @@ BUILT_IN_COMMAND(typecmd)
                                 break;
                 }
 
-                edit_char(key);
+		edit_char(key);
         }
 }
 
@@ -3414,30 +3434,6 @@ void 	new_send_text (int server, const char *orig_target_list, const char *text,
 	}
 }
 #endif
-
-/*
- * eval_inputlist:  Cute little wrapper that calls runcmds() when we
- * get an input prompt ..
- */
-static void	eval_inputlist (char *args, char *line)
-{
-        char *tmp;
-	if (args[0]=='(') {
-                if (!(tmp = next_expr(&args, '('))) {
-			yell("INPUT: syntax error with arglist");
-			return;
-		}
-                runcmds_with_arglist(args, tmp, line);
-	} else {
-                /* traditional behavior */
-		runcmds(args, line);
-	}
-}
-
-BUILT_IN_COMMAND(e_call)
-{
-	dump_call_stack();
-}
 
 /***************************************************************************/
 static char *	parse_line_alias_special (const char *name, const char *what, char *args, void *arglist, int function);

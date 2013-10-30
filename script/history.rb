@@ -97,10 +97,12 @@ return;
 BEGIN {
 
 class HistoryItem
-	attr_reader :timestamp, :stuff
-	attr_writer :timestamp, :stuff
+	@@index = 0
+	attr_reader :index, :timestamp, :stuff
+	attr_writer :index, :timestamp, :stuff
 
 	def initialize (stuff)
+		@index = @@index++
 		@timestamp = Time.new
 		@stuff = stuff
 	end
@@ -109,8 +111,8 @@ end
 class History
   def History.cmd(args)
 	EPIC.say("Command History:")
-	History.items.each_with_index { |x, index|
-		str = "#{index}"
+	History.items.each { |x|
+		str = "#{x.index}"
 		if (EPIC.expr("history_timestamp") == 'on')
 			str += " [#{x.timestamp}] "
 		else
@@ -127,7 +129,7 @@ class History
 	end
 
 	if (EPIC.expr("history_remove_dupes") == 'on')
-		History.items.reject! {|x| x == str}
+		History.items.reject! {|x| x.stuff == str}
 		while (History.items.size >= EPIC.expr("history"))
 			History.items.shift
 		end
@@ -253,6 +255,15 @@ class History
 	EPIC.cmd("//sendline #{str}")
   end
 
+  #
+  # This function is called when the user does /!<something>
+  #  1. If <something> is a number, it should behave as though the
+  #     user had moved to the <something>th most recent history item
+  #  2. Otherwise, it should behave as though the user had hit BACKWARD_HISTORY
+  #     until an entry containing <something> is found.
+  #  3. If <something> does not match, it should error and do nothing
+  #     (ie, leave the input line unchanged
+  #
   def History.banghandler(str)
 >>> TODO >>>
 	@ :find = after(! $0);

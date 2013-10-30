@@ -1,4 +1,4 @@
-/* $EPIC: crypto.c,v 1.18 2012/06/11 02:39:30 jnelson Exp $ */
+/* $EPIC: crypto.c,v 1.19 2013/10/30 02:56:52 jnelson Exp $ */
 /*
  * crypto.c: SED/CAST5/BLOWFISH/AES encryption and decryption routines.
  *
@@ -598,7 +598,6 @@ static void	copy_key (const char *orig, size_t orig_len, char **key, size_t *key
 #define CRYPTO_HELPER_FUNCTIONS(x, y, blocksize, ivsize, make_key, trim) \
 ssize_t	x ## _encoder (const char *orig, size_t orig_len, const void *meta, size_t meta_len, char *dest, size_t dest_len) \
 { 									\
-	size_t	len; 							\
 	int	retsize = 0; 						\
 	char *	retval; 						\
 	char *	realkey;						\

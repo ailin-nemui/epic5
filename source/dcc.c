@@ -1,4 +1,4 @@
-/* $EPIC: dcc.c,v 1.167 2013/07/28 23:16:14 jnelson Exp $ */
+/* $EPIC: dcc.c,v 1.168 2013/10/30 02:56:52 jnelson Exp $ */
 /*
  * dcc.c: Things dealing client to client connections. 
  *
@@ -4083,11 +4083,9 @@ static	char *	dcc_urlencode (const char *s)
 static	char *	dcc_urldecode (const char *s)
 {
 	char *	p1;
-	char *	src;
 	size_t	srclen;
 	char *	dest;
 	size_t	destsize;
-	size_t	destlen;
 
 	srclen = strlen(s);
 	destsize = srclen + 2;

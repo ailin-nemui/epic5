@@ -1,4 +1,4 @@
-/* $EPIC: functions.c,v 1.298 2013/09/13 03:28:47 jnelson Exp $ */
+/* $EPIC: functions.c,v 1.299 2013/10/30 02:56:52 jnelson Exp $ */
 /*
  * functions.c -- Built-in functions for ircII
  *
@@ -251,7 +251,6 @@ static	char
 	*function_fix_arglist	(char *),
         *function_fix_width     (char *),
 	*function_floor		(char *),
-	*function_from 		(char *),
 	*function_fromw 	(char *),
 	*function_fsize	 	(char *),
 	*function_ftime		(char *),
@@ -2555,7 +2554,6 @@ char *function_shift (char *word)
 {
 	char    *value = (char *) 0;
 	char    *var    = (char *) 0;
-	char    *next   = (char *) 0;
 	char	*booya 	= (char *) 0;
 	char *	free_it = NULL;
 
@@ -2648,7 +2646,6 @@ char *function_pop (char *word)
 {
 	char *value	= (char *) 0;
 	char *var	= (char *) 0;
-	char *last	= (char *) 0;
 	char *pointer	= (char *) 0;
 	char *blech     = (char *) 0;
 	size_t	cluep;
@@ -4463,7 +4460,6 @@ BUILT_IN_FUNCTION(function_regerror, input)
 	char *	unsaved;
 	char	error_buf[1024];
 	regex_t	preg;
-	regmatch_t *pmatch = NULL;
 
 	GET_FUNC_ARG(unsaved, input);
 	if (strlen(unsaved) != sizeof(regex_t) * 2)
@@ -4487,7 +4483,6 @@ BUILT_IN_FUNCTION(function_regfree, input)
 {
 	char *unsaved;
 	regex_t	preg;
-	regmatch_t *pmatch = NULL;
 
 	GET_FUNC_ARG(unsaved, input);
 	if (strlen(unsaved) != sizeof(regex_t) * 2)
@@ -6646,7 +6641,9 @@ BUILT_IN_FUNCTION(function_tobase, input)
 	intmax_t	n, num;
 	char *	string;
 	char 	table[] = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+#if 0
 	char *	number, *after;
+#endif
 
 	len = pos = 0;
 	
@@ -7084,10 +7081,7 @@ BUILT_IN_FUNCTION(function_channellimit, word)
 char *function_iconvctl (char *input)
 {
 	size_t len, pos;
-	char *listc, *stuff = NULL,
-		*fromcode, *fromcode_opt = NULL, 
-		*tocode, *tocode_opt = NULL, 
-		*option = NULL;
+	char *listc;
 	int id;
 	int intarg;
 

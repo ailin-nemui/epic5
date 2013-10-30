@@ -1,4 +1,4 @@
-/* $EPIC: network.c,v 1.86 2012/06/11 02:39:30 jnelson Exp $ */
+/* $EPIC: network.c,v 1.87 2013/10/30 02:56:53 jnelson Exp $ */
 /*
  * network.c -- handles stuff dealing with connecting and name resolving
  *
@@ -491,6 +491,7 @@ int	inet_ptohn (int family, const char *ip, char *retval, int size)
 {
 	SS	buffer;
 
+	memset((char *)&buffer, 0, sizeof(buffer));
 	((SA *)&buffer)->sa_family = family;
 	if (inet_strton(ip, NULL, (SA *)&buffer, AI_NUMERICHOST))
 	{

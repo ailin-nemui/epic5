@@ -51,7 +51,7 @@ typedef	struct	WindowStru
 {
 	unsigned refnum;		/* Unique refnum for window */
 	char *	name;			/* Logical name for window */
-	int	priority;		/* "Current window Priority" */
+	unsigned priority;		/* "Current window Priority" */
 
 	/* Output rule stuff */
 	int	server;			/* Server that win is connected to */

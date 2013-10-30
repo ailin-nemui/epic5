@@ -311,7 +311,15 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Add /lastlog -reignore (ce)
 * Add $logctl(NEW)
 * Add $logctl(LAST_CREATED)
+* EPIC5-1.1.6 released here (Kakorrhaphiophobia) (Commit ID: 1693)
 * Begin a big project to decouple status bar generation from window refresh.
 * Create $status_oneoff() which lets you press a status bar on the fly.
 * Fix configure and the build so it works with ruby 1.8/1.9/2.0
 * Update the help script to work with the new website (credit <fill in here>)
+* Make many changes based on suggestions by clang and scan-build
+* Make the configure checks for ruby support more ruby executable names
+* A few minor changes to the history.rb script for no reason
+* Add /input -- to end arg processing so your prompt can start with hyphen
+* Fix a typo bug that kept the correct status bar from being regen.
+* Fix another issue with /window server that caused status not to be updated
+

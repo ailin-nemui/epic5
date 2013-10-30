@@ -1,4 +1,4 @@
-/* $EPIC: window.c,v 1.232 2013/09/13 03:28:48 jnelson Exp $ */
+/* $EPIC: window.c,v 1.233 2013/10/30 02:56:53 jnelson Exp $ */
 /*
  * window.c: Handles the organzation of the logical viewports (``windows'')
  * for irc.  This includes keeping track of what windows are open, where they
@@ -720,7 +720,7 @@ int 	traverse_all_windows_by_priority (Window **ptr)
 	else
 		ceiling = (unsigned)-1;
 
-	for (w = NULL; traverse_all_windows(&w); w)
+	for (w = NULL; traverse_all_windows(&w); )
 	{
 		if ( (!winner || w->priority > winner->priority)
 				&& w->priority < ceiling)
@@ -7047,11 +7047,12 @@ static int	count_fixed_windows (Screen *s)
 
 void	window_change_server (Window * win, int server) 
 {
-    int oldserver;
+	int oldserver;
 
-    oldserver = win->server;
-    win->server = server;
-    do_hook(WINDOW_SERVER_LIST, "%u %d %d", win->refnum, oldserver, server);
+	oldserver = win->server; 
+	win->server = server;
+	do_hook(WINDOW_SERVER_LIST, "%u %d %d", win->refnum, oldserver, server);
+	update_all_status();
 }
 
 

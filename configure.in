@@ -4,9 +4,9 @@ dnl except those bits attributed otherwise.
 dnl thanks to the screen 3.3 configure.in for giving me examples to
 dnl work from and steal ;)
 dnl
-dnl @(#)$Id: configure.in,v 1.98 2013/09/24 21:07:24 jnelson Exp $
+dnl @(#)$Id: configure.in,v 1.99 2013/10/30 02:56:50 jnelson Exp $
 
-AC_REVISION([$Revision: 1.98 $])dnl
+AC_REVISION([$Revision: 1.99 $])dnl
 AC_INIT([source/irc.c])
 AC_CONFIG_HEADER([include/defs.h])
 
@@ -1174,7 +1174,7 @@ AC_ARG_WITH(ruby,
 	rubyexe=$withval
 ],
 	rubyexe=yes
-	for i in ruby ruby20 ruby19 ruby18 ; do
+	for i in ruby ruby20 ruby19 ruby18 ruby2.0 ruby1.9.1 ruby1.9 ruby1.8; do
 		$i -h 2>&1 >/dev/null && rubyexe=$i && break
 	done
 	if test "x$rubyexe" = "xyes"; then

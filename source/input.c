@@ -1,4 +1,4 @@
-/* $EPIC: input.c,v 1.67 2012/11/24 18:53:36 jnelson Exp $ */
+/* $EPIC: input.c,v 1.68 2013/10/30 02:56:52 jnelson Exp $ */
 /*
  * input.c: does the actual input line stuff... keeps the appropriate stuff
  * on the input line, handles insert/delete of characters/words... the whole
@@ -517,7 +517,6 @@ void 	cursor_to_input (void)
  */
 void	update_input (void *which_screen, int update)
 {
-	int	old_zone;
 	char	*ptr, *ptr_free;
 	int	max;
 	const char	*prompt;
@@ -759,7 +758,6 @@ void	update_input (void *which_screen, int update)
 			else
                                 term_move_cursor(PHYSICAL_CURSOR, INPUT_LINE);
 			cursor_not_in_display(last_input_screen);
-			update = 0;
 		}
 
 		/*
@@ -1267,8 +1265,6 @@ BUILT_IN_KEYBINDING(input_reset_line)
  */
 BUILT_IN_KEYBINDING(input_transpose_characters)
 {
-	unsigned char	this_char, prev_char;
-
 	/*
 	 * This is tricky because the cursor never moves and there are three cases:
 	 *

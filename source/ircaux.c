@@ -1,4 +1,4 @@
-/* $EPIC: ircaux.c,v 1.234 2012/11/27 22:52:23 jnelson Exp $ */
+/* $EPIC: ircaux.c,v 1.235 2013/10/30 02:56:53 jnelson Exp $ */
 /*
  * ircaux.c: some extra routines... not specific to irc... that I needed 
  *
@@ -2417,12 +2417,12 @@ int 	splitw (char *str, char ***to, int extended)
 char *	unsplitw (char ***container, int howmany, int extended)
 {
 	char *retval = NULL;
-	char **str = *container;
+	char **str;
 	size_t clue = 0;
 
-	if (!str || !*str)
+	if (!container || !*container || !**container)
 		return NULL;
-
+	str = *container;
 	while (howmany)
 	{
 		if (*str && **str)
@@ -5175,9 +5175,6 @@ static int	fish64_to_four_bytes (const char *input, size_t inputlen, char *outpu
 {
 	int	decoded[6] = {0};
 
-	int	i = 0;
-	int	p;
-
 	if (outputlen < 4)
 		return -1;	/* Sorry Dave, I can't let you do that */
 
@@ -5319,7 +5316,6 @@ static int      posfunc (const char *base, char c)
 static ssize_t	b64_general_encoder (const char *orig, size_t orig_len, const void *meta, size_t meta_len, char *dest, size_t dest_len, const char *base)
 {
 	size_t	orig_i, dest_i;
-	ssize_t	count = 0;
 
         if (!orig || !dest || dest_len <= 0)
                 return -1;
@@ -5372,6 +5368,7 @@ static unsigned int     token_decode (const char *base, const char *token)
     int i;
     unsigned int val = 0;
     int marker = 0;
+
     if (strlen(token) < 4)
         return DECODE_ERROR;
     for (i = 0; i < 4; i++) {
@@ -5474,7 +5471,6 @@ static ssize_t	sed_decoder (const char *orig, size_t orig_len, const void *meta,
 static ssize_t	ctcp_encoder (const char *orig, size_t orig_len, const void *meta, size_t meta_len, char *dest, size_t dest_len)
 {
 	size_t	orig_i, dest_i;
-	ssize_t	count = 0;
 
         if (!orig || !dest || dest_len <= 0)
                 return -1;
@@ -5521,7 +5517,6 @@ static ssize_t	ctcp_encoder (const char *orig, size_t orig_len, const void *meta
 static ssize_t	ctcp_decoder (const char *orig, size_t orig_len, const void *meta, size_t meta_len, char *dest, size_t dest_len)
 {
 	size_t	orig_i, dest_i;
-	ssize_t	count = 0;
 
         if (!orig || !dest || dest_len <= 0)
                 return -1;
@@ -5707,9 +5702,7 @@ static ssize_t	iconv_recoder (const char *orig, size_t orig_len, const void *met
 		n, 
 		close_it = 1;
 	int	id;
-	char 	*fromcode, 
-		*tocode, 
-		*dest_ptr;
+	char 	*dest_ptr;
 const	char 	*orig_ptr;
 
         if (!orig || !dest || dest_len <= 0)
@@ -5997,7 +5990,7 @@ char *	valid_transforms (void)
 
 static int	register_transform (const char *name, int takes_meta, int expansion_size, int expansion_overhead, ssize_t (*encoder)(const char *, size_t, const void *, size_t, char *, size_t), ssize_t (*decoder)(const char *, size_t, const void *, size_t, char *, size_t))
 {
-	int	i, max = 0;
+	int	i;
 
 	for (i = 0; i < max_number_of_transforms; i++)
 	{
@@ -6136,7 +6129,6 @@ int	num_code_points(const char *i)
 
 ssize_t	findchar_quoted (const char *source, int delim)
 {
-	ssize_t	retval = 0;
 	const char *p;
 
 	for (p = source; *p; p++)

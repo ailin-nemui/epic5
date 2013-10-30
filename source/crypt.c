@@ -1,4 +1,4 @@
-/* $EPIC: crypt.c,v 1.43 2013/07/28 23:16:13 jnelson Exp $ */
+/* $EPIC: crypt.c,v 1.44 2013/10/30 02:56:52 jnelson Exp $ */
 /*
  * crypt.c: The /ENCRYPT command and all its attendant baggage.
  *
@@ -485,7 +485,6 @@ char *	crypt_msg (const unsigned char *str, Crypt *key)
 char *	decrypt_msg (const unsigned char *str, Crypt *key)
 {
 	char *	plaintext;
-	int	srclen;
 	char *	dest;
 	size_t	destsize;
 	int	destlen;

@@ -1,4 +1,4 @@
-/* $EPIC: ruby.c,v 1.15 2013/09/24 21:07:26 jnelson Exp $ */
+/* $EPIC: ruby.c,v 1.16 2013/10/30 02:56:53 jnelson Exp $ */
 /*
  * ruby.c -- Calling RUBY from epic.
  *
@@ -155,7 +155,6 @@ void ruby_startstop (int value)
  */
 static VALUE	internal_rubyeval (VALUE *a)
 {
-	int	foo;
 	VALUE	rubyval;
 
 	rubyval = rb_eval_string((char *)a);

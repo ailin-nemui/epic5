@@ -1,4 +1,4 @@
-/* $EPIC: status.c,v 1.77 2013/09/13 03:28:48 jnelson Exp $ */
+/* $EPIC: status.c,v 1.78 2013/10/30 02:56:53 jnelson Exp $ */
 /*
  * status.c: handles the status line updating, etc for IRCII 
  *
@@ -765,7 +765,7 @@ int	redraw_status (Window *window, Status *status)
 		else
 			return -1;
 
-		if (!(status_str = status->line[status_line].result))
+		if (!(status_str = status->line[line].result))
 			continue;
 
 		/*

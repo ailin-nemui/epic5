@@ -1,4 +1,4 @@
-/* $EPIC: screen.c,v 1.150 2013/07/28 23:16:14 jnelson Exp $ */
+/* $EPIC: screen.c,v 1.151 2013/10/30 02:56:53 jnelson Exp $ */
 /*
  * screen.c
  *
@@ -169,12 +169,13 @@ typedef struct attributes Attribute;
 const unsigned char *all_off (void)
 {
 #ifdef NO_CHEATING
-	Attribute 	a;
+	Attribute 	old_a, a;
 	static	unsigned char	retval[6];
 
 	a->reverse = a->bold = a->blink = a->underline = a->altchar = 0;
 	a->color_fg = a->fg_color = a->color_bg = a->bg_color = 0;
-	display_attributes(retval, NULL, &a);
+	*old_a = *a;
+	display_attributes(retval, &old_a, &a);
 	return retval;
 #else
 	static	char	retval[6];
@@ -218,7 +219,7 @@ static size_t	display_attributes (unsigned char *output, Attribute *old_a, Attri
 	output[4] = val4;
 	output[5] = 0;
 
-	old_a = a;	/* XXX - This should be *old_a = *a, right? */
+	*old_a = *a;
 	return 5;
 }
  
@@ -3035,6 +3036,20 @@ void 	kill_screen (Screen *screen)
 
 
 /* * * * * * * * * * * * * USER INPUT HANDLER * * * * * * * * * * * */
+/*
+ * do_screens - A NewIO callback to handle input from "a screen" 
+ *		(ie, stdin, or a wserv)
+ *	fd - the file descriptor that is Ready
+ *
+ * Process:
+ *  1. Identify the screen that 'fd' belongs to.
+ *  2. If this is the control fd for a screen, process the control message
+ *  3. If this is the data fd for a screen,
+ *	a. Establish the context for input (screen/window/server)
+ *	b. Read all the bytes
+ *	c. Publish the bytes one at a time through edit_char() which will 
+ *	   assemble them into codepoints (using iconv) and inject them.
+ */
 static void 	do_screens (int fd)
 {
 	Screen *screen;
@@ -3285,15 +3300,48 @@ void    edit_char (unsigned char key)
 
 /* * * * * * * * * INPUT PROMPTS * * * * * * * * * * */
 /* 
- * add_wait_prompt:  Given a prompt string, a function to call when
- * the prompt is entered.. some other data to pass to the function,
- * and the type of prompt..  either for a line, or a key, we add 
- * this to the prompt_list for the current screen..  and set the
- * input prompt accordingly.
+ * add_wait_prompt: Start a modal input prompt, which interrupts the user
+ *  and requires them to answer a prompt before continuing.
  *
- * XXXX - maybe this belongs in input.c? =)
+ * This function is asynchronous (it returns immediately, and your function
+ * will be called some time later), so make sure to structure your code
+ * appropriately.
+ *
+ * Users don't like being interrupted by modal inputs, so you shouldn't use
+ * this function unless it's for something so critical that the user 
+ * shouldn't continue without answering.
+ *
+ * As of the time of this writing (10/13) your callback function does not
+ * need to be utf8 aware, but that is going to change very soon.
+ *
+ * Arguments:
+ *	prompt	The prompt to display to the user.  This will interrupt
+ *		the normal input processing, so it is a "modal input"
+ *	func	A function to call back when the user has answered the 
+ *		prompt.  It will be passed back two arguments:
+ *		1. A pointer to "data" (see next)
+ *		2. A C string (possibly encoded in UTF8 in the future)
+ *	   	containing the user's response.
+ *  	data	A payload of data to be passed to your callback.
+ *		**NOTE -- It is important that this be new_malloc()ed memory.
+ *		YOU are responsible for new_free()ing it in the callback.
+ *		This may be NULL.
+ *  	type	One of:
+ *		WAIT_PROMPT_LINE - An entire line of input (up through SENDLINE)
+ *		WAIT_PROMPT_KEY - The next keypress (possibly UTF8 code point)
+ *		WAIT_PROMPT_DUMMY - Internal use only (for /PAUSE)
+ *	echo	Whether to display the characters as they are typed (1) or to
+ *	   	not display the characters (0).  Useful for passwords.
+ *	   	NOTE - Even if echo == 0, the cursor may move each keypress,
+ *	   	so this isn't a serious security protection.
+ *
+ * XXX - Prompts are basically global -- they don't know about windows, and
+ *       therefore they don't know about servers.  That is probably wrong.  
+ *       You don't want your callback firing off in the wrong context, do you?
+ *	 Suggestion: "data" should be a struct that contains window and server 
+ * 	 context information.
  */
-void 	add_wait_prompt (const char *prompt, void (*func)(char *, char *), const char *data, int type, int echo)
+void 	add_wait_prompt (const char *prompt, void (*func)(char *data, char *utf8str), const char *data, int type, int echo)
 {
 	WaitPrompt **AddLoc,
 		   *New;
