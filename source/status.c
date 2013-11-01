@@ -1,4 +1,4 @@
-/* $EPIC: status.c,v 1.78 2013/10/30 02:56:53 jnelson Exp $ */
+/* $EPIC: status.c,v 1.79 2013/11/01 04:37:41 jnelson Exp $ */
 /*
  * status.c: handles the status line updating, etc for IRCII 
  *
@@ -307,6 +307,8 @@ static void	build_status_format (Status *s, int k)
 	Char	*raw = s->line[k].raw;
 	char	*format = buffer;
 
+	debuglog("build_status_format for status line %d", k);
+
 	cp = s->line[k].count = 0;
 	while (raw && *raw && (format - buffer < BIG_BUFFER_SIZE - 4))
 	{
@@ -399,6 +401,11 @@ void	compile_status (Window *w, Status *s)
 	int 	i,
 		k;
 
+	if (w)
+		debuglog("compile_status for window %d", w->refnum);
+	else
+		debuglog("compile_status for global");
+
 	for (k = 0; k < 3; k++)
 	{
 		new_free((char **)&s->line[k].format);
@@ -477,14 +484,25 @@ int	make_status (Window *window, Status *status)
 
 	/* Should this be a panic? */
 	if (window == NULL || status == NULL)
+	{
+		debuglog("make_status -- window is null or status is null");
 		return -1;
+	}
 
 	if (!status_updates_permitted)
+	{
+		debuglog("make_status(%d) -- no status updates right now",
+				window->refnum);
 		return -1;
+	}
 
 	/* For hidden windows, we just pretend they're on the main screen */
 	if (!(screen = window->screen))
+	{
+		debuglog("make_status(%d) -- updating hidden window", 
+				window->refnum);
 		screen = main_screen;
+	}
 
 	for (status_line = 0; status_line < status->number; status_line++)
 	{
@@ -518,12 +536,19 @@ int	make_status (Window *window, Status *status)
 				"is [%d] and that makes no sense!", 
 				window->refnum, status->number, status_line);
 
+		debuglog("make_status(%d): status line %d, number %d, line %d",
+			window->refnum, status_line, status->number, line);
+
 		/*
 		 * Sanity check:  If the status format doesnt exist, dont do
 		 * anything for it.
 		 */
 		if (!status->line[line].format)
+		{
+			debuglog("make_status(%d/%d): no status format",
+				window->refnum, line);
 			continue;
+		}
 
 		/*
 		 * Run each of the status-generating functions from the the
@@ -534,8 +559,12 @@ int	make_status (Window *window, Status *status)
 		for (i = 0; i < MAX_FUNCTIONS; i++)
 		{
 			if (status->line[line].func[i] == NULL)
+			{
+				debuglog("make_status(%d/%d/%d): Not set up",
+					window->refnum, line, i);
 				return -1;	/* Not set up yet */
 /* 				panic(1, "status callback null.  Window [%d], line [%d], function [%d]", window->refnum, line, i); */
+			}
 			func_value[i] = status->line[line].func[i]
 				(window, status->line[line].map[i],
 				 status->line[line].key[i]);
@@ -573,6 +602,8 @@ int	make_status (Window *window, Status *status)
 			Window *old = current_window;
 			int	owd = window_display;
 
+			debuglog("make_status(%d/%d): expanding expandos",
+					window->refnum, line);
 			current_window = window;
 			from_server = current_window->server;
 			window_display = 0;
@@ -707,17 +738,20 @@ int	make_status (Window *window, Status *status)
 		strlcat(buffer, all_off(), sizeof buffer);
 		new_free(&str);
 
-		if (!status->line[status_line].result ||
-			strcmp(buffer, status->line[status_line].result))
+		if (!status->line[line].result ||
+			strcmp(buffer, status->line[line].result))
 		{
 		    /*
 		     * Roll the new back onto the old
 		     */
-		    malloc_strcpy(&status->line[status_line].result, buffer);
+		    debuglog("Make_status(%d/%d/%d): changed",
+				window->refnum, status_line, line);
+		    malloc_strcpy(&status->line[line].result, buffer);
 		    anything_changed++;
 		}
 	}
 
+	debuglog("make_status: made %d changes", anything_changed);
 	return anything_changed;
 }
 
@@ -746,10 +780,18 @@ int	redraw_status (Window *window, Status *status)
 
 	/* Should this be a panic? */
 	if (window == NULL || status == NULL)
+	{
+		debuglog("redraw_status: window or status is null!");
 		return -1;
+	}
 
 	if (!status_updates_permitted)
+	{
+		debuglog("redraw_status: no status updates right now, try later");
 		return -1;
+	}
+
+	debuglog("redraw_status(%d): redrawing", window->refnum);
 
 	for (status_line = 0; status_line < status->number; status_line++)
 	{
@@ -766,7 +808,11 @@ int	redraw_status (Window *window, Status *status)
 			return -1;
 
 		if (!(status_str = status->line[line].result))
+		{
+			debuglog("redraw_status(%d/%d/%d): no status bar",
+				window->refnum, status_line, line);
 			continue;
+		}
 
 		/*
 		 * Ends up that BitchX always throws this hook and
@@ -777,7 +823,11 @@ int	redraw_status (Window *window, Status *status)
 			window->refnum, status_line, status_str);
 
 		if (dumb_mode || !foreground || !window->screen)
+		{
+			debuglog("redraw_status(%d/%d/%d): dumb/bg/hidden",
+				window->refnum, status_line, line);
 			continue;
+		}
 
 		/*
 		 * Output the status line to the screen
@@ -786,6 +836,8 @@ int	redraw_status (Window *window, Status *status)
 		term_move_cursor(0, window->bottom + status_line);
 		output_with_count(status_str, 1, 1);
 		cursor_in_display(window);
+		debuglog("redraw_status(%d/%d/%d): status redrawn",
+			window->refnum, status_line, line);
 	}
 	return 0;
 }

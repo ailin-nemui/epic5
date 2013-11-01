@@ -1,4 +1,4 @@
-/* $EPIC: window.c,v 1.233 2013/10/30 02:56:53 jnelson Exp $ */
+/* $EPIC: window.c,v 1.234 2013/11/01 04:37:41 jnelson Exp $ */
 /*
  * window.c: Handles the organzation of the logical viewports (``windows'')
  * for irc.  This includes keeping track of what windows are open, where they
@@ -1420,6 +1420,7 @@ void	resize_window_display (Window *window)
 
 void	window_scrollback_needs_rebuild (Window *w)
 {
+	debuglog("window_scrollback_needs_rebuild(%d)", w->refnum);
 	w->rebuild_scrollback = 1;
 }
 
@@ -1428,6 +1429,7 @@ void	window_scrollback_needs_rebuild (Window *w)
  */
 void	window_statusbar_needs_update (Window *w)
 {
+	debuglog("window_statusbar_needs_update(%d)", w->refnum);
 	w->update |= UPDATE_STATUS;
 }
 
@@ -1436,6 +1438,7 @@ void	window_statusbar_needs_update (Window *w)
  */
 void	window_statusbar_needs_redraw (Window *w)
 {
+	debuglog("window_statusbar_needs_redraw(%d)", w->refnum);
 	w->update |= REDRAW_STATUS;
 }
 
@@ -1444,6 +1447,7 @@ void	window_statusbar_needs_redraw (Window *w)
  */
 void	window_body_needs_redraw (Window *w)
 {
+	debuglog("window_body_needs_redraw(%d)", w->refnum);
 	w->cursor = -1;
 }
 
@@ -1487,10 +1491,11 @@ void 	update_all_windows (void)
 	Window	*tmp = NULL;
 static	int	recursion = 0;
 static	int	do_input_too = 0;
-static	int	restart;
+static	int	restart = 0;
 
 	if (recursion)
 	{
+		debuglog("update_all_windows: recursion");
 		restart = 1;
 		return;
 	}
@@ -1500,45 +1505,88 @@ static	int	restart;
 	{
 		if (restart)
 		{
+			debuglog("update_all_windows: restarting");
 			restart = 0;
 			tmp = NULL;
 			continue;
 		}
 
 		if (tmp->rebuild_scrollback)
+		{
+			debuglog("update_all_windows(%d), rebuild scrollback",
+					tmp->refnum);
 			rebuild_scrollback(tmp);
+		}
 
 		/* 
 		 * This should always be done, even for hidden windows
 		 * ... i think.
 		 */
 		if (tmp->display_lines != tmp->old_display_lines)
+		{
+			debuglog("update_all_windows(%d), resize window display",
+					tmp->refnum);
 			resize_window_display(tmp);
+		}
 
 		/* Never try to update/redraw an invisible window */
 		if (!tmp->screen)
+		{
+			debuglog("update_all_windows(%d), hidden",
+					tmp->refnum);
 			continue;
+		}
 
 		if (tmp->cursor == -1 ||
 		   (tmp->cursor < tmp->scrolling_distance_from_display_ip  &&
 			 tmp->cursor < tmp->display_lines))
+		{
+			debuglog("update_all_windows(%d), repaint",
+					tmp->refnum);
 			repaint_window_body(tmp);
+		}
 
 		if (tmp->update & REDRAW_STATUS)
 		{
-			if (make_status(tmp, &tmp->status) > 0)
+			debuglog("update_all_windows(%d), redraw status",
+				tmp->refnum);
+
+			/* 
+			 * The difference between REDRAW_STATUS and
+			 * UPDATE_STATUS is that REDRAW_STATUS does not
+			 * care what make_status() returns, it is going to
+			 * force the status bar to be redrawn!
+			 */
+			make_status(tmp, &tmp->status);
+
+			/* If redrawing failed this time, try next time */
+			if (redraw_status(tmp, &tmp->status) < 0)
 			{
-			  /* If redrawing failed this time, try next time */
-			  if (redraw_status(tmp, &tmp->status) < 0)
+				debuglog("update_all_windows(%d) (redraw_status), OK, status redrawn -- now needs update",
+					tmp->refnum);
 				tmp->update |= UPDATE_STATUS;
-			  tmp->update &= ~REDRAW_STATUS;
 			}
+			tmp->update &= ~REDRAW_STATUS;
 		}
 		else if (tmp->update & UPDATE_STATUS)
 		{
+		    debuglog("update_all_windows(%d), update_status",
+				tmp->refnum);
+
 			if (make_status(tmp, &tmp->status) > 0)
-				if (redraw_status(tmp, &tmp->status) == 0)
-					tmp->update &= ~UPDATE_STATUS;
+			{
+			   debuglog("update_all_windows(%d) (update_status), make_status returned > 0",
+					tmp->refnum);
+
+			   if (redraw_status(tmp, &tmp->status) == 0)
+			   {
+				debuglog("update_all_windows(%d) (update_status), ok, status redrawn.", tmp->refnum);
+				tmp->update &= ~UPDATE_STATUS;
+			   }
+			   else
+				debuglog("update_all_windows(%d) (update_status), redraw_status returned nonzero, still needs update.");
+
+			}
 			do_input_too = 1;
 		}
 	}

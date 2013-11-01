@@ -1,4 +1,4 @@
-/* $EPIC: commands.c,v 1.211 2013/10/30 02:56:52 jnelson Exp $ */
+/* $EPIC: commands.c,v 1.212 2013/11/01 04:37:41 jnelson Exp $ */
 /*
  * commands.c -- Stuff needed to execute commands in ircII.
  *		 Includes the bulk of the built in commands for ircII.
@@ -105,6 +105,7 @@ static	void	breakcmd	(const char *, char *, const char *);
 static	void	commentcmd 	(const char *, char *, const char *);
 static	void	continuecmd	(const char *, char *, const char *);
 static	void	ctcp 		(const char *, char *, const char *);
+	void	debuglogcmd	(const char *, char *, const char *);
 static	void	deop 		(const char *, char *, const char *);
 static	void	send_to_channel_first	(const char *, char *, const char *);
 static	void	send_to_query_first	(const char *, char *, const char *);
@@ -212,6 +213,7 @@ static	IrcCommand irc_command[] =
 	{ "CONTINUE",	continuecmd	},
 	{ "CTCP",	ctcp		},
 	{ "DCC",	dcc_cmd		}, /* dcc.c */
+	{ "DEBUGLOG",	debuglogcmd	}, /* debuglog.c */
 	{ "DEFER",	defercmd	},
 	{ "DEOP",	deop		},
 	{ "DESCRIBE",	describe	},
@@ -532,6 +534,8 @@ BUILT_IN_COMMAND(ctcp)
 	else
 		say("Usage: /CTCP <[=]nick|channel|*> [<request>]");
 }
+
+#include "debuglog.c"
 
 struct defer {
 	char *	cmds;

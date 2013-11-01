@@ -146,7 +146,7 @@ commands.o: commands.c ../include/irc.h ../include/defs.h \
   ../include/termx.h ../include/screen.h ../include/timer.h \
   ../include/vars.h ../include/window.h ../include/who.h \
   ../include/newio.h ../include/words.h ../include/reg.h \
-  ../include/extlang.h ../include/elf.h
+  ../include/extlang.h ../include/elf.h debuglog.c
 compat.o: compat.c ../include/defs.h ../include/irc_std.h \
   ../include/defs.h ../include/ircaux.h ../include/compat.h \
   ../include/network.h ../include/words.h

@@ -1,4 +1,4 @@
-/* $EPIC: screen.c,v 1.151 2013/10/30 02:56:53 jnelson Exp $ */
+/* $EPIC: screen.c,v 1.152 2013/11/01 04:37:41 jnelson Exp $ */
 /*
  * screen.c
  *
@@ -1300,7 +1300,7 @@ abnormal_char:
 				    a.underline = a.altchar = 0;
 				    a.color_fg = a.color_bg = 0;
 				    a.bg_color = a.fg_color = 0;
-				    pos += attrout(output + pos, NULL, &a);
+				    pos += attrout(output + pos, &olda, &a);
 				    olda = a;
 				}
 				break;

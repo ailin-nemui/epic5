@@ -322,4 +322,5 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Add /input -- to end arg processing so your prompt can start with hyphen
 * Fix a typo bug that kept the correct status bar from being regen.
 * Fix another issue with /window server that caused status not to be updated
-
+* Add a VERY TEMPORARY /debuglog command for my use.  Will go away soon!
+* Fix status bar update problems (sigh)

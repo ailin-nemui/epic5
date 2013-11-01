@@ -147,4 +147,7 @@ extern	unsigned	window_display;		/* This is in window.h */
 
         void    load_ircrc              (void);
 
+/* This lives in debuglog.h but I need it everywhere */
+	int     debuglog (const char *format, ...) __N;
+
 #endif /* __irc_h */
