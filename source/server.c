@@ -1,4 +1,4 @@
-/* $EPIC: server.c,v 1.258 2013/10/30 02:56:53 jnelson Exp $ */
+/* $EPIC: server.c,v 1.259 2013/11/06 03:49:33 jnelson Exp $ */
 /*
  * server.c:  Things dealing with that wacky program we call ircd.
  *
@@ -3422,6 +3422,8 @@ void	set_server_005 (int refnum, char *setting, const char *value)
 	    else
 		set_server_stricmp_table(refnum, 1);
 	}
+
+	update_all_status();
 }
 
 static char *	get_all_server_groups (void)

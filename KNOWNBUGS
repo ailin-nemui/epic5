@@ -325,3 +325,4 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Fix another issue with /window server that caused status not to be updated
 * Add a VERY TEMPORARY /debuglog command for my use.  Will go away soon!
 * Fix status bar update problems (sigh)
+* Update status bar from set_server_005s, so %G updates right away.
