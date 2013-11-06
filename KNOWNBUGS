@@ -2,7 +2,8 @@ EPIC5 Projects, Bugs, and other Errata:
 
 KNOWN ERRATA (eg, bugs, or unresolved requests):
 ------------------------------------------------
-<none>
+* /set mail 1 + maildir doesn't work, because it thinks that there
+  is always mail "(Mail: )"
 
 MEDIUM-TERM PROJECTS
 --------------------
