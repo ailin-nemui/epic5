@@ -1,0 +1,347 @@
+if (word(2 $loadinfo()) != [pf]) {
+	load -pf $word(1 $loadinfo());
+	return;
+};
+
+## Older revisions contain small bug in xform() mechanism, which
+## prevent it from proper trimming message after decryption. It
+## results in adding of 16 arbitrary chars to your lines, if line
+## length is a factor of 16.
+## if (info(i) < XXXX || J !~ [EPIC5*]) {
+## 	xecho -b ERROR: xmsglog: load: EPIC5 (rev. 1700) or newer is required;
+## 	return;
+## };
+
+if (match(*s* $info(o)) == 0) {
+	xecho -b ERROR: xmsglog: load: client compiled without SSL support: abort loading;
+	return;
+};
+
+package xmsglog;
+
+## Xmsglog script for EPIC5.
+## Written by zlonix@efnet, public domain.
+##
+## Version: 1.0 (November, 2013)
+##  - Initial roll-out
+
+## This script logs specified types of messages (msg/notice/dcc chats)
+## to archive in a form of encrypted lines and provides mechanism to
+## search inside this archive.
+## Each line is encrypted with AESSHA algorithm and armored with Base64
+## encoding. EPIC5 must be compiled with OpenSSL support.
+##
+##  !!! WARNING  !!! WARNING !!! WARNING !!! WARNING !!! WARNING !!!
+##    This script won't protect you from evil admins, who have
+##    root account, since they have access to memory of every
+##    process on the system and hence - to your archive password,
+##    which must be stored in clear text in EPIC memory.
+##    Bear this in mind and don't set your password to the same
+##    thing with which you enter your ibank account.
+##
+##    Quoting Eric Shmidt - "If you have something that you don't
+##    want anyone to know, maybe you shouldn't be doing it in the
+##    first place." I may add "at least not on the Internet".
+##
+##    Do not trick yourself with fake feeling of privacy. It's
+##    like a unicorn - no such thing.
+##  !!! WARNING  !!! WARNING !!! WARNING !!! WARNING !!! WARNING !!!
+##
+## Logging is controlled by /set xmsglog. When you set it to ON, script
+## will ask you for the password. If you already have message archive script
+## will test your password on it. In case of the wrong password, set will
+## back to OFF. This is preventive measure from encrypting one archive
+## with different keys.
+##
+## /xmsglog alias allows you to search through your log. You may
+## specify different criteria, like nicknames, networks on which messages
+## were received/sent, etc.
+##
+## Few examples:
+##   /xmsglog -w testnick (http|ftp|https) - search for URLs in your
+##   conversation with testnick (both: in your msgs and his);
+##
+##   /xmsglog -t testnick (http|ftp|https) - search for URLs which
+##   you sent to testnick;
+##
+##   /xmsglog -f chanserv -n freenode - search everything ChanServ sent
+##   to you on freenode network;
+##
+##   /xmsglog (borscht|recipe) -w (nick1|nick2) - search whole archive 
+##   for 'borscht' or 'recipe' within conversations with nick1 or nick2,  
+##   case insensitive;
+##
+##   /xmsglog -w testnick -p 10 - prints no more than last 10 lines from 
+##   conversation with testnick;
+##
+## Run /xmsglog without flags to see the complete help.
+##
+## Output is formated with xmsglog.output function, default look was
+## taken from BlackJac's Intrepid script, without colors. It's easy to
+## re-define this alias after /load'ing, to make it the way you want.
+## Comments near the alias explain it in more depth.
+##
+## Limitation and bugs:
+##  - there is no way for deletion from the archive, you can pass -l flag
+##    to the /xmsglog to see line numbers of the messages and delete it
+##    manually;
+##  - archive password cannot be changed you must create new archive;
+
+addset xmsglog_file str;
+addset xmsglog_log_msg bool;
+addset xmsglog_log_notice bool;
+addset xmsglog_log_dccchat bool;
+addset xmsglog_ignore str;
+
+## controls where message archive is located
+## file is created with your current umask
+set xmsglog_file ~/.msglog;
+
+## which message types should be logged
+set xmsglog_log_msg on;
+set xmsglog_log_notice off;
+set xmsglog_log_dccchat off;
+
+## nicknames to ignore
+## may be useful to ignore services or bots
+## case insensitive
+set -xmsglog_ignore;
+
+alias xmsglog (args) {
+	if (!@args) {
+		xmsglog.help;
+		return;
+	};
+
+	@ :mode = :subj = :dir = :host = :net = :server = :body = [.*];
+	@ :print_line = :print_date = :print_raw = :print_last = 0;
+
+	while (option = getopt(optopt optarg "m:f:t:w:h:n:s:ldrp:" $args)) {
+		switch ($option) {
+			(m) { @ :mode = optarg; };
+			(f) { @ :subj = optarg; @ :dir = [FROM]; };
+			(t) { @ :subj = optarg; @ :dir = [TO]; };
+			(w) { @ :subj = optarg; @ :dir = [(FROM|TO)]; };
+			(h) { @ :host = optarg; };
+			(n) { @ :net = optarg; };
+			(s) { @ :server = optarg; };
+
+			(l) { @ :print_line = 1; };
+			(d) { @ :print_date = 1; };
+			(r) { @ :print_raw = 1; };
+
+			(p) { @ :print_last = optarg; if (!isnumber($optarg) || optarg <= 0) @ :error = 1; };
+
+			## XXX: it seems that we can't return from while getopt() loop to abort,
+			## XXX: otherwise strange things will happen, so I decided to use very simple
+			## XXX: error handling mechanism, alas!
+			(!) { @ :error = 1; };
+			(-) { @ :error = 1; };
+		};
+	};
+	if (@error) {
+		xmsglog.help;
+		return;
+	};
+	if (@optarg) {
+		## getopt() returns unused arguments with extra space at the end
+		## we will use it inside regular expression and it will break it
+		@ :body = splitw(" " $optarg);
+	};
+	if (fexist($xmsglog_file) == 1) {
+		@ :fd = open($xmsglog_file R);
+		if (isfilevalid($fd) == 1) {
+			@ :pattern = [.* $mode $dir $subj $host $net $server .* .* .* .* $body];
+			@ :rex = regcomp($pattern);
+			if (regerror($rex)) {
+				xecho -b ERROR: alias: xmsglog: error compiling regex: $regerror($rex);
+				return;
+			};
+
+			@ :line_number = 0;
+			@ :idx = 0;
+			while (eof($fd) == 0) {
+				@ :line_number++;
+				@ :data = read($fd);
+				@ :text = xform("-B64 -AESSHA" $xmsglog_password $data);
+				if (regexec($rex $text) == 0) {
+					if (print_last > 0) {
+						## we need to remember line itself and its line number
+						## do it in separate arrays
+						@ setitem(xmsglog.temp $idx $text);
+						@ setitem(xmsglog.ln $idx $line_number);
+						@ :idx++;
+					} else {
+						@ xmsglog.output("$print_line $line_number $print_date $print_raw" $text);
+					};
+				};
+			};
+			@ regfree($rex);
+			@ close($fd);
+
+			## if -p was passed and we have something to display
+			## figure out where to start and pass those lines to output
+			if (( :aidx = numitems(xmsglog.temp)) >= 1) {
+				@ :ridx = (print_last >= aidx) ? 0 : (aidx - print_last);
+				for i from $ridx to ${numitems(xmsglog.temp) - 1} {
+					@ xmsglog.output("$print_line $getitem(xmsglog.ln $i) $print_date $print_raw" $getitem(xmsglog.temp $i));
+				};
+				@ delarray(xmsglog.temp);
+				@ delarray(xmsglog.ln);
+			};
+		} else {
+			xecho -b ERROR: alais: xmsglog: $xmsglog_file: fd cannot be used;
+		};
+	} else {
+		xecho -b ERROR: alias: xmsglog: $xmsglog_file: file doesn't exist;
+	};
+};
+alias xmsglog.help (void) {
+	echo;
+	echo xmsglog - search encrypted message log;
+	echo;
+	echo /xmsglog [-m <type>] [-f <nick>] [-t <nick>] [-w <nick>] [-h <hostname>];
+	echo          [-n <net>] [-s <server>] [-l] [-d] [-r] [-p <count>] [body];
+	echo   -m: type of the message to be searched, possible arguments: privmsg, notice,;
+	echo       dccchat;
+	echo   -f: search messages which came from specified <nick>;
+	echo   -t: search messages which were sent by you to specified <nick>;
+	echo   -w: search conversation with specified <nick> (your and his messages);
+	echo   -h: search for messages which have given hostname in their records;
+	echo   -n: search for messages which were sent/received on given <network>;
+	echo   -s: search for messages which were sent/received while you were on <server>;
+	echo;
+	echo   -l: print corresponding line numbers for the messages in encrypted file;
+	echo       (may be helpful for manual deletion from the archive);
+	echo   -d: print date the messages was sent/received;
+	echo   -r: print raw line from the archive, without formaing;
+	echo   -p: print no more than last <count> matching lines of your query;
+	echo;
+	echo   Everything what won't be processed as flags will be interpreted as the pattern;
+	echo   to search inside the body of the message.;
+	echo;
+	echo   If you specify several flags, AND logic apply.;
+	echo;
+	echo   You may use regular expression for option arguments and body search patterns.;
+	echo;
+	echo   Standard getopt() rules apply\; in case of overlapping options last option;
+	echo   wins\; place -- (two dashes)\; to stop processing of the options.;
+	echo;
+	echo   -f -t -w flags are mutually exclusive.;
+	echo;
+};
+
+## Default look, taken from BlackJac's Intrepid, color-stripped.
+##
+## We pass additional arguments from /xmsglog like a 'qword', this
+## allows us to specify additional flags without breaking backward
+## compatibility with functions people may have been written.
+## Inside the function we break this qword to the flags.
+##
+## This has been done 'just in case' and for better design overall.
+##
+## Right now following flags are passed:
+##  word 1 - whether or not print line numbers
+##  word 2 - line number of the archive
+##  word 3 - whether or not print timestamps
+##  word 4 - print lines without formating
+##
+## Numeric $'s:
+##  $0 - timestamp of the event, taken with $time()
+##  $1 - type of the message (PRIVMSG, NOTICE, DCCCHAT)
+##  $2 - direction, TO (you sent it), FROM (you received it)
+##  $3 - remote nickname
+##  $4 - hostname, in case of TO - our's, for FROM - remote's; (NONE for dcc)
+##  $5 - network name (from 005) (NONE for dcc)
+##  $6 - servername (NONE for dcc)
+##  $7 - our own current nickname ($servernick()) (NONE for dcc)
+##  $8 - $10 - they're dots for now, maybe will be used later
+##  $11- - the body of the message
+
+alias xmsglog.output (flags qwords 1, ...) {
+	@ :print_line = word(0 $unsplit(" " $flags));
+	@ :line_number = word(1 $unsplit(" " $flags));
+	@ :print_date = word(2 $unsplit(" " $flags));
+	@ :print_raw = word(3 $unsplit(" " $flags));
+	
+	if (print_raw == 1) {
+		echo ${print_line ? [$line_number ] : []}${print_date ? [[$strftime($0 %H:%M %d-%b %Y)] ] :[]}$*;
+		return;
+	};
+
+	switch ($1) {
+	(PRIVMSG) { echo ${print_line ? [$line_number ] : []}${print_date ? [[$strftime($0 %H:%M %d-%b %Y)] ] :[]}[${*2 == [FROM] ? [$3\($4\)] : [msg\($3\)]}] $11-; };
+	(NOTICE)  { echo ${print_line ? [$line_number ] : []}${print_date ? [[$strftime($0 %H:%M %d-%b %Y)] ] :[]}${*2 == [FROM] ? [\-$3\($4\)\-] : [\[notice\($3\)\]]} $11-; };
+	(DCCCHAT)  { echo ${print_line ? [$line_number ] : []}${print_date ? [[$strftime($0 %H:%M %d-%b %Y)] ] :[]}[${*2 == [FROM] ? [$3\(dcc\)] : [chat\($3\)]}] $11-; };
+	(*)       { echo ${print_line ? [$line_number ] : []}${print_date ? [[$strftime($0 %H:%M %d-%b %Y)] ] :[]}[UNKNOWN: $*]; };
+	};
+};
+addset xmsglog bool {
+	if (*0 == [on]) {
+		alias xmsglog.write (file, text) {
+			@ :fd = open($file W);
+			if (isfilevalid($fd) == 1) {
+				@ :data = xform("+AESSHA +B64" $xmsglog_password $text);
+				@ write($fd $data);
+				@ close($fd);
+			} else {
+				xecho -b ERROR: alias: xmsglog.write: $file: fd cannot be used;
+			};
+		};
+		# mode type nick . userhost net servername curnick . . . LINE
+		on #-general_privmsg 300 '% $$servernick() *' {
+			if (xmsglog_log_msg == [on] && findw($tolower($0) $tolower($xmsglog_ignore)) == -1) {
+				xmsglog.write $xmsglog_file $time() PRIVMSG FROM $0 $userhost() $serverctl(GET $servernum() 005 NETWORK) $servername() $servernick() . . . $2-;
+			};
+		};
+		on #-send_msg 300 '*' {
+			if (xmsglog_log_msg == [on] && findw($tolower($0) $tolower($xmsglog_ignore)) == -1) {
+				xmsglog.write $xmsglog_file $time() PRIVMSG TO $0 $userhost($servernick()) $serverctl(GET $servernum() 005 NETWORK) $servername() $servernick() . . . $1-;
+			};
+		};
+		on #-general_notice 300 '% $$servernick() *' {
+			if (xmsglog_log_notice == [on] && findw($tolower($0) $tolower($xmsglog_ignore)) == -1) {
+				xmsglog.write $xmsglog_file $time() NOTICE FROM $0 $userhost() $serverctl(GET $servernum() 005 NETWORK) $servername() $servernick() . . . $2-;
+			};
+		};
+		on #-send_notice 300 '*' {
+			if (xmsglog_log_notice == [on] && findw($tolower($0) $tolower($xmsglog_ignore)) == -1) {
+				xmsglog.write $xmsglog_file $time() NOTICE TO $0 $userhost($servernick()) $serverctl(GET $servernum() 005 NETWORK) $servername() $servernick() . . . $1-;
+			};
+		};
+		on #-dcc_chat 300 '*' {
+			if (xmsglog_log_dccchat == [on] && findw($tolower($0) $tolower($xmsglog_ignore)) == -1) {
+				xmsglog.write $xmsglog_file $time() DCCCHAT FROM $0 NONE NONE NONE NONE . . . $1-;
+			};
+		};
+		on #-send_dcc_chat 300 '*' {
+			if (xmsglog_log_dccchat == [on] && findw($tolower($0) $tolower($xmsglog_ignore)) == -1) {
+				xmsglog.write $xmsglog_file $time() DCCCHAT TO $0 NONE NONE NONE NONE . . . $1-;
+			};
+		};
+		input -noecho "Xmsglog password: " {
+			if (fsize($xmsglog_file) > 0) {
+				^assign xmsglog_password $0;
+				@ :fd = open($xmsglog_file R);
+				@ :data = read($fd);
+				@ :text = xform("-B64 -AESSHA" $xmsglog_password $data);
+				if (isnumber($word(0 $text)) != 1) {
+					xecho -b ERROR: input: $xmsglog_file: wrong password or archive is corrupted;
+					^assign -xmsglog_password;
+					set xmsglog off;
+				};
+			} else {
+				^assign xmsglog_password $0;
+			};
+		};
+	} else {
+		alias -xmsglog.write;
+		assign -xmsglog_password;
+		on #-general_privmsg 300 -'% $$servernick() *';
+		on #-send_msg 300 -'*'
+		on #-general_notice 300 -'% $$servernick() *';
+		on #-send_notice 300 -'*';
+		on #-dcc_chat 300 -'*';
+		on #-send_dcc_chat 300 -'*';
+	};
+};

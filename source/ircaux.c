@@ -1,4 +1,4 @@
-/* $EPIC: ircaux.c,v 1.235 2013/10/30 02:56:53 jnelson Exp $ */
+/* $EPIC: ircaux.c,v 1.236 2014/01/10 13:30:41 jnelson Exp $ */
 /*
  * ircaux.c: some extra routines... not specific to irc... that I needed 
  *
@@ -1977,9 +1977,25 @@ off_t 	file_size (const char *filename)
 		return -1;
 }
 
+/*
+ * file_exists		Returns 1 if "filename" exists
+ *	In order to support ~-expansion, we call normalize_filename.
+ *
+ *  Input parameter:
+ *	filename	A filename, either a fully qualified pathname,
+ *			or a relative pathname.
+ *  Returns:
+ *	1 if 'filename' is something that can be elf_open()ed.
+ *	0 if 'filename' is not openable.
+ */
 int	file_exists (const char *filename)
 {
-	if (file_size(filename) == -1)
+	Filename	expanded;
+
+        if (normalize_filename(filename, expanded))
+		return 0;
+
+	if (file_size(expanded) == -1)
 		return 0;
 	else
 		return 1;
@@ -1996,6 +2012,15 @@ int	isdir (const char *filename)
 	}
 	return 0;
 }
+
+int	isdir2 (const char *directory, const char *filename)
+{
+	Filename	f;
+
+	snprintf(f, sizeof f, "%s/%s", directory, filename);
+	return isdir(f);
+}
+
 
 struct metric_time	timeval_to_metric (const Timeval *tv)
 {

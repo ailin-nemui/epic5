@@ -418,7 +418,7 @@ int	string_fgetc(const char **file_contents, off_t *file_contents_size)
 	return retval;
 }
 
-char *	string_fgets(char *buffer, size_t buffer_size, const char **file_contents, off_t *file_contents_size)
+off_t	string_fgets(char *buffer, size_t buffer_size, const char **file_contents, off_t *file_contents_size)
 {
 	size_t	offset = 0;
 	int	next_byte = 0;
@@ -430,9 +430,9 @@ char *	string_fgets(char *buffer, size_t buffer_size, const char **file_contents
 		if (next_byte == EOF)
 		{
 			if (!read_any_byte)
-				return NULL;
+				return 0;
 			else
-				return buffer;		/* All done! */
+				return offset;
 		}
 
 		read_any_byte = 1;
@@ -442,7 +442,7 @@ char *	string_fgets(char *buffer, size_t buffer_size, const char **file_contents
 		{
 			if (offset <= buffer_size)
 				buffer[offset++] = 0;
-			return buffer;
+			return offset;
 		}
 	}
 }

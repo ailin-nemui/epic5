@@ -1,12 +1,13 @@
-# version:1.1.3
-#
 # tabkey.ce - Tab key completion script for EPIC5
-# Copyright (c) 2002-2005 EPIC Software Labs
+# Copyright (c) 2002-2013 EPIC Software Labs
 # See the 'COPYRIGHT' file for more information.
+#
+# Version: 1.3
 #
 # This script is based on the tabkey.ce script written by CrazyEddy and
 # distributed with the EPIC4 IRC client. The original design and all
 # of the really important code are his so he deserves most of the credit.
+# If not for his genius none of this would be possible. :-)
 #
 # This version is being extended and maintained by Brian Weiss.
 # Please send all bug reports, questions, and comments to brian@epicsol.org.
@@ -73,14 +74,29 @@
 #
 
 # Make sure this file gets loaded with the PF loader
-if (word(2 $loadinfo()) != [pf])
-{
+if (word(2 $loadinfo()) != [pf]) {
 	load -pf $word(1 $loadinfo());
 	return;
 };
 
-assign TABKEY_MAX_MSG_HISTORY 6;
-assign TABKEY_NICKCOMP_SUFFIX ,;
+#
+# /SET vars
+#
+@ symbolctl(create TABKEY_COMPLETE_TOLOWER);
+@ symbolctl(set TABKEY_COMPLETE_TOLOWER 1 builtin_variable type int);
+^set TABKEY_COMPLETE_TOLOWER OFF;
+
+@ symbolctl(create TABKEY_MAX_MSG_HISTORY);
+@ symbolctl(set TABKEY_MAX_MSG_HISTORY 1 builtin_variable type int);
+^set TABKEY_MAX_MSG_HISTORY 6;
+
+@ symbolctl(create TABKEY_MSGHIST_SENT_ONLY);
+@ symbolctl(set TABKEY_MSGHIST_SENT_ONLY 1 builtin_variable type bool);
+^set TABKEY_MSGHIST_SENT_ONLY OFF;
+
+@ symbolctl(create TABKEY_NICKCOMP_SUFFIX);
+@ symbolctl(set TABKEY_NICKCOMP_SUFFIX 1 builtin_variable type str);
+^set TABKEY_NICKCOMP_SUFFIX ,;
 
 #
 # The following functions are to be used with the /BIND command
@@ -164,14 +180,17 @@ alias tabkey.main (cycle, void)
 
 	if (!index($cmdchars $L)) {
 		wait for @ :matches = tabkey.cmd($word);
+	} elsif (L == []) {
+		wait for @ :matches = tabkey.cmd.msg($*);
 	} else {
 		wait for @ :matches = tabkey.default($word);
 	};
+
 	@ :prefix = prefix($matches);
 
 	if (#matches == 1 && matches != [ ])
 	{
-		#@ :prefix = 0 > index("$chr($jot(32 1))" $prefix) ? prefix : ["$prefix"];
+		@ :prefix = 0 > index("$chr($jot(32 1))" $prefix) ? prefix : ["$prefix"];
 		@ :line = mid(0 $wordind $L);
 		parsekey erase_to_beg_of_line;
 		xtype -l $line$prefix${[ ]};
@@ -188,7 +207,7 @@ alias tabkey.main (cycle, void)
 		}
 		else if (strlen($word) <= strlen($prefix))
 		{
-			@ :prefix = 0 > index("$chr($jot(32 1))" $prefix) ? prefix : ["$prefix];
+			@ :prefix = 0 > index("$chr($jot(32 1))" $prefix) ? prefix : ["$prefix"];
 			@ :line = mid(0 $wordind $L);
 			parsekey erase_to_beg_of_line;
 			xtype -l $line$prefix;
@@ -220,8 +239,8 @@ alias tabkey.cmd (...)
 
 	if (!curword)
 	{
-		@ :ret = tabkey.method.commands($args);
-		if (!cmdind) repeat $#ret {push ret $K$shift(ret)};
+		@ :ret = tabkey.method.command($args);
+		repeat $#ret {push ret $K$shift(ret)};
 		return $ret;
 	};
 
@@ -249,14 +268,12 @@ alias tabkey.cmd (...)
 alias tabkey.default (...)
 {
 	bless;
-	if (L == []) {
-		@ function_return = tabkey.cmd.msg($*);
-	} else if (curword == 0) {
+	if (curword == 0) {
 		@ :matches = tabkey.method.nick($*);
 		if (#matches == 1) {
 			@ function_return = matches ## TABKEY_NICKCOMP_SUFFIX;
 		} else {
-			@ function_return = matches ? matches : tabkey.method.nickchan($*);
+			@ function_return = matches ? matches : tabkey.method.nickchannotify($*);
 		};
 	} else {
 		@ function_return = tabkey.method.nickchannotify($*);
@@ -290,6 +307,18 @@ alias tabkey.nofallback (...)
 	@ function_return = [$*] == [] ? [ ] : [$*];
 };
 
+#
+# This was contributed by zlonix
+#
+alias tabkey.normalize (input)
+{
+	if (TABKEY_COMPLETE_TOLOWER == 1) {
+		return $tolower($input);
+	} else {
+		return $input;
+	};
+};
+
 # Used for things like /eval and /repeat where what you are completing
 # is another command.  depth is the arg number where the command begins.
 # This is not well cpu optimised.  See examples below.
@@ -312,12 +341,12 @@ alias tabkey.recurse (depth, ...)
 
 alias tabkey.cmd.alias (...)
 {
-	@ function_return = tabkey.nofallback($tabkey.method.variable(alias));
+	@ function_return = tabkey.nofallback($tabkey.method.variable(alias)));
 };
 
 alias tabkey.cmd.assign (...)
 {
-	@ function_return = tabkey.nofallback($tabkey.method.variable(assign));
+	@ function_return = tabkey.nofallback($tabkey.method.variable(assign)));
 };
 
 alias tabkey.cmd.channel (...)
@@ -329,7 +358,7 @@ alias tabkey.cmd.dcc (args)
 {
 	bless;
 	if (curword == 1) {
-		@ function_return = tabkey.nofallback($pattern($args* CHAT CLOSE CLOSEALL GET LIST RAW RENAME RESUME SEND));
+		@ function_return = tabkey.normalize($tabkey.nofallback($pattern($args* CHAT CLOSE CLOSEALL GET LIST RAW RENAME RESUME SEND)));
 	};
 };
 
@@ -461,6 +490,7 @@ alias tabkey.cmd.msg (...)
 		if (!cmd) {
 			@ :cmd = [$K\MSG];
 		};
+		@ :cmd = tabkey.normalize($cmd);
 		@ :nicks = TABKEY.MSGHIST[$encode($winserv())];
 		@ :index = TABKEY.MSGHIST_INDEX[$encode($winserv())];
 		@ :trailing = restw(2 $L);
@@ -530,6 +560,11 @@ alias tabkey.cmd.unshift (...)
 	@ function_return = tabkey.nofallback($tabkey.method.variable(assign));
 };
 
+alias tabkey.cmd.whois (...)
+{
+	@ function_return = tabkey.nofallback($tabkey.method.nick($*));
+};
+
 alias tabkey.cmd.window (...)
 {
 	bless;
@@ -595,7 +630,7 @@ alias tabkey.cmd.window (...)
 		@ :retval = pattern($word* $list);
 	};
 
-	@ function_return = tabkey.nofallback($retval);
+	@ function_return = tabkey.normalize($tabkey.nofallback($retval));
 };
 
 
@@ -610,23 +645,16 @@ alias tabkey.method.array (array, args)
 	@ function_return = args ? pattern($args* $list) : list;
 };
 
-alias tabkey.method.commands (...)
+alias tabkey.method.command (...)
 {
-	@ function_return = sort($uniq($getcommands($**) $aliasctl(alias match $*) $aliasctl(alias match $**)));
+	@ function_return = tabkey.normalize($sort($uniq($getcommands($**) $aliasctl(alias match $*) $aliasctl(alias match $**))));
 };
 
 alias tabkey.method.chan (...)
 {
-#	@ function_return = (:foo = pattern($sar(g/\\/\\\\/$*)* $mychannels())) ? foo :
-#	                    (:foo = pattern(#$sar(g/\\/\\\\/$*)* $mychannels())) ? foo :
-#	                    pattern(&$sar(g/\\/\\\\/$*)* $mychannels());
-	@ :chantypes = serverctl(get $servernum() 005 CHANTYPES);
-	@ :chantypes = chantypes ? chantypes : [#&];
-	@ :chantypes#= [ ];
-	@ :mc = mychannels();
-	fec ($chantypes) ct {
-		@ function_return = function_return ? function_return : pattern($ct$sar(g/\\/\\\\/$*)* $mc);
-	};
+	@ function_return = (:foo = pattern($sar(g/\\/\\\\/$*)* $mychannels())) ? foo :
+	                    (:foo = pattern(#$sar(g/\\/\\\\/$*)* $mychannels())) ? foo :
+	                    pattern(&$sar(g/\\/\\\\/$*)* $mychannels());
 };
 
 stack push alias alias.foo;
@@ -657,8 +685,6 @@ alias tabkey.method.mask (...)
 
 alias tabkey.method.nick (...)
 {
-	@ :oxd = xdebug();
-	xdebug -dword;
 	@ :args = sar(g/\\/\\\\/$*);
 	if (match($args* $chanusers())) {
 		@ function_return = pattern($args* $chanusers());
@@ -667,17 +693,18 @@ alias tabkey.method.nick (...)
 		repeat $#chanusers @ push(chanusers $chanusers($shift(chanusers)));
 		@ function_return = pattern($args* $sort($uniq($chanusers)));
 	};
-	xdebug $oxd;
 };
 
 alias tabkey.method.nickchan (...)
 {
-	@ function_return = remws(/ $tabkey.method.chan($*) $tabkey.method.nick($*));
+	@ :chans = pattern($sar(g/\\/\\\\/$*)* $mychannels());
+	@ function_return = remws(/ $chans $tabkey.method.nick($*));
 };
 
 alias tabkey.method.nickchannotify (...)
 {
-	@ function_return = remws(/ $tabkey.method.chan($*) $sort($uniq($tabkey.method.nick($*) $tabkey.method.notify($*))));
+	@ :chans = pattern($sar(g/\\/\\\\/$*)* $mychannels());
+	@ function_return = remws(/ $chans $sort($uniq($tabkey.method.nick($*) $tabkey.method.notify($*))));
 };
 
 alias tabkey.method.notify (...)
@@ -720,39 +747,46 @@ alias tabkey.method.variable (type, void)
 		eval xtype -l \$$word(${curword - 1} $L);
 	};
 
-	@ function_return = retval;
+	@ function_return = tabkey.normalize($retval);
 };
 
 
 #
 # Add the nicks of users that you're chatting with to the msg history.
 #
-for hook in (msg send_msg)
-{
-	on #^$hook 420 "*" {
+on #^msg 420 "*" {
+	if (!TABKEY_MSGHIST_SENT_ONLY) {
 		tabkey.msg_handler $servernum() $0;
 	};
 };
 
-for hook in (dcc_chat send_dcc_chat)
-{
-	on #^$hook 420 "*"
-	{
+on #^send_msg 420 "*" {
+	tabkey.msg_handler $servernum() $0;
+};
+
+on #^dcc_chat 420 "*" {
+	if (!TABKEY_MSGHIST_SENT_ONLY) {
 		for serv in (-1 $myservers(0)) {
 			tabkey.msg_handler $serv =$0;
 		};
 	};
 };
 
-on #^dcc_request 420 "% CHAT *"
-{
+on #^send_dcc_chat 420 "*" {
 	for serv in (-1 $myservers(0)) {
 		tabkey.msg_handler $serv =$0;
 	};
 };
 
-on #^send_ctcp 420 "PRIVMSG % DCC CHAT *"
-{
+on #^dcc_request 420 "% CHAT *" {
+	if (!TABKEY_MSGHIST_SENT_ONLY) {
+		for serv in (-1 $myservers(0)) {
+			tabkey.msg_handler $serv =$0;
+		};
+	};
+};
+
+on #^send_ctcp 420 "PRIVMSG % DCC CHAT *" {
 	for serv in (-1 $myservers(0)) {
 		tabkey.msg_handler $serv =$1;
 	};

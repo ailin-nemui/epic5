@@ -2,8 +2,7 @@ EPIC5 Projects, Bugs, and other Errata:
 
 KNOWN ERRATA (eg, bugs, or unresolved requests):
 ------------------------------------------------
-* /set mail 1 + maildir doesn't work, because it thinks that there
-  is always mail "(Mail: )"
+<Fix _all_ these bugs?>
 
 MEDIUM-TERM PROJECTS
 --------------------
@@ -325,4 +324,12 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Fix another issue with /window server that caused status not to be updated
 * Add a VERY TEMPORARY /debuglog command for my use.  Will go away soon!
 * Fix status bar update problems (sigh)
-* Update status bar from set_server_005s, so %G updates right away.
+* Update status bar from set_server_005s, so %G updates right away. (caf)
+* Larnifications for incoming nicknames (caf)
+* Add %{4}S status bar expando, always returns full "itsname"
+* When checking Maildir for /set mail 1, ignore subdirectories (rb zlonix)
+* Change string_fgets() to return the number of bytes read
+* Always check servers at startup, even if user did -S. 
+*   (They might have done /server in their startup)
+* Change file_size() to use normalize_filename().
+* This allows MAILDIR to support ~-expansion (ie, ~/Maildir)

@@ -1,4 +1,4 @@
-/* $EPIC: status.c,v 1.79 2013/11/01 04:37:41 jnelson Exp $ */
+/* $EPIC: status.c,v 1.80 2014/01/10 13:30:41 jnelson Exp $ */
 /*
  * status.c: handles the status line updating, etc for IRCII 
  *
@@ -232,7 +232,8 @@ struct status_formats status_expandos[] = {
 { 3, '9', status_user,	 	NULL, 			NULL },
 { 3, 'S', status_server,        &server_format,     	&STATUS_SERVER_VAR },
 { 3, 'W', status_window,	NULL, 			NULL },
-{ 3, '+', status_mode,		&mode_format,       	&STATUS_MODE_VAR }
+{ 3, '+', status_mode,		&mode_format,       	&STATUS_MODE_VAR },
+{ 4, 'S', status_server,        &server_format,     	&STATUS_SERVER_VAR }
 };
 #define NUMBER_OF_EXPANDOS (sizeof(status_expandos) / sizeof(struct status_formats))
 
@@ -1092,10 +1093,13 @@ const	char	*n = NULL;
 	/* Map 1 uses the shortname, shown at all times */
 	/* Map 2 uses the full name, shown at all times */
 	/* Map 3 uses the groupname, shown at all times */
+	/* Map 4 uses the full itsname, shown at all times */
 	if (map == 0 || map == 1) 
 		n = get_server_altname(window->server, 0);
 	else if (map == 3)
 		n = get_server_group(window->server);
+	else if (map == 4)
+		n = get_server_itsname(window->server);
 
 	if (!n)
 		n = get_server_name(window->server);
@@ -1421,6 +1425,7 @@ STATUS_FUNCTION(status_mail)
 {
 	STATUS_VARS
 	const char *	number;
+	const char *	mangled_format;
 
 	/*
 	 * The order is important here.  We check to see whether or not

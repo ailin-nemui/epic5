@@ -1,5 +1,19 @@
 EPIC5-1.1.7
 
+*** News 01/02/2014 -- New status expando, %{4}S, full "itsname"
+	Just to run this down, here are the %S expandos
+		%S	Altname 0 (default: Shortened "ourname")
+			(Only shown when you're connected to multiple servers)
+		%{1}S	Altname 0 (default: Shortened "ourname")
+		%{2}S	Full "ourname"
+		%{3}S	Server Group
+		%{4}S	Full Server "itsname"
+
+*** News 01/02/2014 -- Add /input -- so you can stop arg processing
+	If you wanted to be able to prompt starting with a hyphen, well,
+	you couldn't do that before.  But now -- is honored and everything
+	else is taken as the input prompt.
+
 *** News 09/12/2013 -- New built in function $status_oneoff()
 	This is a completely experimental function right now, which is
 	helping me decouple the status bar generation from the windows.

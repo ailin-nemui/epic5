@@ -1,4 +1,4 @@
-/* $EPIC: mail.c,v 1.27 2008/04/05 00:20:38 jnelson Exp $ */
+/* $EPIC: mail.c,v 1.28 2014/01/10 13:30:41 jnelson Exp $ */
 /*
  * mail.c -- a gross simplification of mail checking.
  * Only unix maildrops (``mbox'') are supported.
@@ -375,13 +375,18 @@ static int	maildir_count (void)
 {
 	int	count = 0;
 	DIR *	dir;
+	struct dirent *	d;
 
 	if ((dir = opendir(maildir_path)))
 	{
-		while (readdir(dir) != NULL)
+	    while ((d = readdir(dir)) != NULL)
+	    {
+		/* Count the non-directories */
+		/* Zlonix pointed out that there can be subdirs here */
+		if (!isdir2(maildir_path, d->d_name))
 			count++;
 		closedir(dir);
-		count -= 2;	/* Don't count . or .. */
+	    }
 	}
 
 	return count;
