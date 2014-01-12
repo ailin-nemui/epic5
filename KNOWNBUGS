@@ -333,3 +333,4 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 *   (They might have done /server in their startup)
 * Change file_size() to use normalize_filename().
 * This allows MAILDIR to support ~-expansion (ie, ~/Maildir)
+* The sender can be omitted (such as with "NOTICE AUTH"), so don't check those

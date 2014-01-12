@@ -1,4 +1,4 @@
-/* $EPIC: parse.c,v 1.97 2014/01/10 13:30:41 jnelson Exp $ */
+/* $EPIC: parse.c,v 1.98 2014/01/12 01:05:11 jnelson Exp $ */
 /*
  * parse.c: handles messages from the server.   Believe it or not.  I
  * certainly wouldn't if I were you. 
@@ -1507,7 +1507,7 @@ void 	parse_server (const char *orig_line, size_t orig_line_size)
 		return;		/* Serious protocol violation -- ByeBye */
 	}
 
-	if (!islegal(*from))
+	if (*from && !islegal(*from))
 	{ 
 		rfc1459_odd(from, comm, ArgList);
 		return;		
