@@ -334,3 +334,7 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Change file_size() to use normalize_filename().
 * This allows MAILDIR to support ~-expansion (ie, ~/Maildir)
 * The sender can be omitted (such as with "NOTICE AUTH"), so don't check those
+* New xmsglog script from zlonix
+* Fix trimming support for $xform().  Plus, FISH should do trimming. (rb zlonix)
+* Fix maildir support for /set mail 1 (help by zlonix)
+

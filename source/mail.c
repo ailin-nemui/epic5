@@ -1,4 +1,4 @@
-/* $EPIC: mail.c,v 1.28 2014/01/10 13:30:41 jnelson Exp $ */
+/* $EPIC: mail.c,v 1.29 2014/01/14 03:56:01 jnelson Exp $ */
 /*
  * mail.c -- a gross simplification of mail checking.
  * Only unix maildrops (``mbox'') are supported.
@@ -385,8 +385,8 @@ static int	maildir_count (void)
 		/* Zlonix pointed out that there can be subdirs here */
 		if (!isdir2(maildir_path, d->d_name))
 			count++;
-		closedir(dir);
 	    }
+	    closedir(dir);
 	}
 
 	return count;
@@ -454,7 +454,7 @@ static void	update_mail_level1_maildir (void)
 		}
 
 		/* Maildir changed. */
-		if (count_new > mail_last_count)
+		else if (count_new > mail_last_count)
 		{
 			/* Tell the user that they have new mail. */
 			if (!mail_latch)

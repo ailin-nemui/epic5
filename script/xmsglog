@@ -213,19 +213,19 @@ alias xmsglog.help (void) {
 	echo;
 	echo   -l: print corresponding line numbers for the messages in encrypted file;
 	echo       (may be helpful for manual deletion from the archive);
-	echo   -d: print date the messages was sent/received;
+	echo   -d: print date the messages were sent/received;
 	echo   -r: print raw line from the archive, without formaing;
 	echo   -p: print no more than last <count> matching lines of your query;
 	echo;
-	echo   Everything what won't be processed as flags will be interpreted as the pattern;
+	echo   Everything what won't be processed as flags will be interpreted as a pattern;
 	echo   to search inside the body of the message.;
 	echo;
 	echo   If you specify several flags, AND logic apply.;
 	echo;
 	echo   You may use regular expression for option arguments and body search patterns.;
 	echo;
-	echo   Standard getopt() rules apply\; in case of overlapping options last option;
-	echo   wins\; place -- (two dashes)\; to stop processing of the options.;
+	echo   Standard getopt() rules apply: in case of overlapping options last option;
+	echo   wins\; place -- (two dashes) to stop processing of the options.;
 	echo;
 	echo   -f -t -w flags are mutually exclusive.;
 	echo;
@@ -338,7 +338,7 @@ addset xmsglog bool {
 		alias -xmsglog.write;
 		assign -xmsglog_password;
 		on #-general_privmsg 300 -'% $$servernick() *';
-		on #-send_msg 300 -'*'
+		on #-send_msg 300 -'*';
 		on #-general_notice 300 -'% $$servernick() *';
 		on #-send_notice 300 -'*';
 		on #-dcc_chat 300 -'*';

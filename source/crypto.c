@@ -1,4 +1,4 @@
-/* $EPIC: crypto.c,v 1.19 2013/10/30 02:56:52 jnelson Exp $ */
+/* $EPIC: crypto.c,v 1.20 2014/01/14 03:56:01 jnelson Exp $ */
 /*
  * crypto.c: SED/CAST5/BLOWFISH/AES encryption and decryption routines.
  *
@@ -172,6 +172,7 @@ static char *	cipher_evp (const unsigned char *key, int keylen, const unsigned c
 #endif
 static char *	encrypt_by_prog (const unsigned char *str, size_t *len, Crypt *key);
 
+/* This function is used by CTCP handling, but not by xform! */
 unsigned char *	decipher_message (const unsigned char *ciphertext, size_t len, Crypt *key, int *retlen)
 {
     do
@@ -655,7 +656,13 @@ ssize_t	x ## _decoder (const char *ciphertext, size_t len, const void *meta, siz
 									\
 	if ( trim )							\
 	{								\
-		bytes_to_trim = outbuf[len - 1] & (blocksize - 1); 	\
+		bytes_to_trim = outbuf[len - 1]; 			\
+		if (bytes_to_trim > blocksize)				\
+		{							\
+			yell("Wants to trim %d byts with block size of %d",\
+				bytes_to_trim, blocksize);		\
+			bytes_to_trim = blocksize - 1;			\
+		}							\
 		outbuf[len - bytes_to_trim] = 0;  			\
 		memmove(outbuf, outbuf + ivsize, len - bytes_to_trim); 	\
 	}								\
@@ -667,7 +674,7 @@ ssize_t	x ## _decoder (const char *ciphertext, size_t len, const void *meta, siz
 }
 
 CRYPTO_HELPER_FUNCTIONS(blowfish, EVP_bf_cbc, 8, 8, copy_key, 1)
-CRYPTO_HELPER_FUNCTIONS(fish, EVP_bf_ecb, 8, 0, copy_key, 0)
+CRYPTO_HELPER_FUNCTIONS(fish, EVP_bf_ecb, 8, 0, copy_key, 1)
 CRYPTO_HELPER_FUNCTIONS(cast5, EVP_cast5_cbc, 8, 8, copy_key, 1)
 CRYPTO_HELPER_FUNCTIONS(aes, EVP_aes_256_cbc, 16, 16, ext256_key, 1)
 CRYPTO_HELPER_FUNCTIONS(aessha, EVP_aes_256_cbc, 16, 16, sha256_key, 1)
