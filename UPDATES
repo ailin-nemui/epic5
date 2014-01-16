@@ -1,5 +1,10 @@
 EPIC5-1.1.7
 
+*** News 01/16/2014 -- New scripts (should document these!) from Zlonix
+	   xmsglog	Encrypted logfiles
+	   sasl_auth	SASL support (for some networks)
+	   idlealert	Monitor friends' idle times (with lots of WHOISs)
+
 *** News 01/02/2014 -- New status expando, %{4}S, full "itsname"
 	Just to run this down, here are the %S expandos
 		%S	Altname 0 (default: Shortened "ourname")

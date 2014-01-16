@@ -340,3 +340,5 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Update tabkey.ce from fudd
 * Update xmsglog from zlonix
 * Two new scripts, sasl_auth and idlealert from zlonix.
+* EPIC5-1.1.7 released here (Kainotophobia) (Commit ID: 1705)
+
