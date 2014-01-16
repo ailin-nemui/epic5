@@ -82,7 +82,7 @@ addset idlealert bool {
 		idlealert.clean;
 	};
 };
-set idlealert on;
+set idlealert off;
 
 addset idlealert_interval int {
 	idlealert.clean;
@@ -91,7 +91,6 @@ addset idlealert_interval int {
 set idlealert_interval 60;
 
 addset idlealert_list str;
-set idlealert_list hop/efnet pjd/efnet lala/freenode zlonix_ fudd;
 
 addset idlealert_threshold int {
 	idlealert.clean;
