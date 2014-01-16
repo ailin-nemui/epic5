@@ -7,10 +7,11 @@ if (word(2 $loadinfo()) != [pf]) {
 ## prevent it from proper trimming message after decryption. It
 ## results in adding of 16 arbitrary chars to your lines, if line
 ## length is a factor of 16.
-## if (info(i) < XXXX || J !~ [EPIC5*]) {
-## 	xecho -b ERROR: xmsglog: load: EPIC5 (rev. 1700) or newer is required;
-## 	return;
-## };
+
+if (info(i) < 1702 || J !~ [EPIC5*]) {
+	xecho -b ERROR: xmsglog: load: EPIC5 (rev. 1702) or newer is required;
+	return;
+};
 
 if (match(*s* $info(o)) == 0) {
 	xecho -b ERROR: xmsglog: load: client compiled without SSL support: abort loading;
@@ -31,6 +32,12 @@ package xmsglog;
 ## Each line is encrypted with AESSHA algorithm and armored with Base64
 ## encoding. EPIC5 must be compiled with OpenSSL support.
 ##
+## This functionality may be useful if you don't have any special
+## "message window" or just don't want to miss private messages in case
+## of disconnect, high IRC traffic, power loss or client crash. Also,
+## if you want to archive your messages for future references or
+## implement automatic log loading whenever you open queries.
+##
 ##  !!! WARNING  !!! WARNING !!! WARNING !!! WARNING !!! WARNING !!!
 ##    This script won't protect you from evil admins, who have
 ##    root account, since they have access to memory of every
@@ -45,6 +52,13 @@ package xmsglog;
 ##
 ##    Do not trick yourself with fake feeling of privacy. It's
 ##    like a unicorn - no such thing.
+##
+##    Also, please note that running two clients (e.g. for
+##    different networks) with the same message log archive
+##    setting simultaneously may corrupt the archive. It can
+##    happen due to absense of mandatory file locking in script.
+##    Consider using different archive files for different
+##    clients.
 ##  !!! WARNING  !!! WARNING !!! WARNING !!! WARNING !!! WARNING !!!
 ##
 ## Logging is controlled by /set xmsglog. When you set it to ON, script

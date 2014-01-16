@@ -1,0 +1,220 @@
+if (word(2 $loadinfo()) != [pf]) {
+	load -pf $word(1 $loadinfo());
+	return;
+};
+
+if (!symbolctl(get perl 1 builtin_function)) {
+	xecho -b ERROR: sasl_auth: load: client compiled without Perl support: abort loading;
+	return;
+};
+
+package sasl_auth;
+
+## SASL authentication script for EPIC5.
+## Written by zlonix@efnet, public domain.
+##
+## Version: 1.0
+##  - Initial roll-out (January, 2014)
+
+## This script implements SASL authentication, primarily used on
+## Freenode network. Currently only PLAIN method is supported.  The
+## script depends on Perl being compiled in and builtins script being
+## loaded (provides $servername() function). Perl support is need for
+## handling NUL characters during creation of authentication string.
+##
+## !!! WARNING  !!! WARNING !!! WARNING !!! WARNING !!! WARNING !!!
+##    Never forget that your password may be intercepted, which
+##    is also very easy with the only currently implemented
+##    method. Because of that consider using SSL connection, and
+##    do not use same password for IRC and anything important,
+##    it can be easily read by root user on your server.
+##
+##    DUE TO UNKNOWN REASONS THIS SCRIPT DOESN'T WORK WITH
+##    'FLOODPROT' SCRIPT FROM DEFAULT EPIC DISTRIBUTION.
+## !!! WARNING  !!! WARNING !!! WARNING !!! WARNING !!! WARNING !!!
+##
+## All rules are controlled with 'sasl_auth' alias, which take three or
+## four arguments: server (you may use asterisks like a pattern, best
+## match wins if there is a tie), method of the authentication
+## (currently unchecked on input and always resolved to 'PLAIN'), user
+## name and optional password.  If you do not provide the password it
+## will be prompted upon connection. Prompted password is not saved in
+## any variable.
+##
+## Be aware that there is some difference between 'server' definition
+## across hooks and EPIC itself (server to which you issue /server
+## command may be different to which you're actually connecting).  You
+## may define your server as 'irc.freenode.net' but by DNS round-robin
+## mechanism be connected to 'hobana.freenode.net', for example, and
+## hooks won't be thrown.  If in any doubt - use wildcards, or define
+## your preferred servers in ircII.servers file under your $IRCLIB to
+## escape from DNS round-robin, if desired.
+##
+## Examples:
+##   sasl_auth *.freenode.net plain MyNick MyPassowrd
+##   sasl_auth *.other.net garbage TestNick
+##
+## Put those into your ~/.ircrc (or such) file after loading
+## sasl_auth.
+##
+## If you specify server under /sasl_auth command, but upon connect it
+## won't ACK our request (essentialy meaning it doesn't support
+## capabilities) or NAK it script will disconnect your from this server.
+##
+## Limitation and bugs:
+##  - only one and insecure method;
+##  - in case of a long base64 string for authentication it may
+##    not fit to the maximum message length and authentication
+##    will be failed, it can happen if you have very long
+##    password;
+
+alias sasl_auth (server, method, user, password, void) {
+	if (@server && @method && @user) {
+		if (findw($server $sasl_auth.servers) == -1) {
+			@ push(sasl_auth.servers $server);
+			@ push(sasl_auth.methods $method);
+			@ push(sasl_auth.users $user);
+			if (@password) {
+				@ push(sasl_auth.passwords $password);
+				@ push(sasl_auth.interactive 0);
+			} else {
+				@ push(sasl_auth.passwords INTERACTIVE);
+				@ push(sasl_auth.interactive 1);
+			};
+		};
+	};
+
+};
+
+alias sasl_auth.plain (nick, password, void) {
+	@ perl(use MIME::Base64);
+	@ :b64 = perl(encode_base64(join("\0", EPIC::expr("nick"), EPIC::expr("nick") , EPIC::expr("password"))));
+	return $b64;
+};
+
+alias sasl_auth.setstate (server, state, void) {
+	if (state != [null]) {
+		assign sasl_auth.status.$server $state;
+	} else {
+		assign -sasl_auth.status.$server;
+	};
+};
+
+on #-server_established 100 '\\\\[$$sasl_auth.servers\\\\] %' {
+	@ :state = sasl_auth.status.$0;
+	
+	if (state == []) {
+		sasl_auth.setstate $0 req_sent;
+
+		quote CAP REQ :sasl;
+	} else {
+		xecho -b sasl_auth: server_established: server $0 is in a wrong state [$state] (should be <empty>);
+	};
+};
+
+on ^odd_server_stuff '\\\\[$$sasl_auth.servers\\\\] CAP % ACK :*sasl*' {
+	@ :server = servername();
+	@ :state = sasl_auth.status.$server;
+
+	if (state == [req_sent]) {
+		sasl_auth.setstate $server meth_sent;
+		@ :idx = rmatch($server $sasl_auth.servers)-1;
+
+		quote AUTHENTICATE $toupper($word($idx $sasl_auth.methods));
+	} else {
+		xecho -b sasl_auth: odd_server_stuff: CAP ACK: server $server \(real: $0\) is in a wrong state [$state] (should be "req_sent");
+	};
+
+};
+
+alias sasl_auth.sendauth (auth, void) {
+	quote AUTHENTICATE $auth;
+};
+
+on ^odd_server_stuff '\* AUTHENTICATE \+' {
+	@ :server = servername();
+	@ :state = sasl_auth.status.$servername();
+
+	if (state == [meth_sent]) {
+		sasl_auth.setstate $server auth_sent;
+		@ :idx = rmatch($server $sasl_auth.servers)-1;
+		@ :method = word($idx $sasl_auth.methods);
+		@ :nick = word($idx $sasl_auth.users);
+		@ :pass = word($idx $sasl_auth.passwords);
+		@ :interactive = word($idx $sasl_auth.interactive);
+		
+		if (interactive == 1) {
+			input -noecho "SASL password: " {
+				## local variables of the hook are not accessible here
+				@ :pass = *0;
+				@ :idx = rmatch($servername() $sasl_auth.servers)-1;
+				@ :nick = word($idx $sasl_auth.users);
+				@ :auth = sasl_auth.plain($nick $pass);
+				sasl_auth.sendauth $auth;
+			};
+		} else {
+			@ :auth = sasl_auth.plain($nick $pass);
+			sasl_auth.sendauth $auth;
+		};
+	} else {
+		xecho -b sasl_auth: odd_server_stuff: AUTHENTICATE: server $server \(real: $0\) is in a wrong state [$state] (should be "meth_sent");
+	};
+};
+
+on -901 '\\\\[$$sasl_auth.servers\\\\] *' {
+	@ :server = servername();
+	@ :state = sasl_auth.status.$servername();
+
+	if (state == [auth_sent]) {
+		sasl_auth.setstate $server null;
+		disconnect;
+	} else {
+		xecho -b sasl_auth: 901: server $server \(real: $0\) is in a wrong state [$state] (should be "auth_sent");
+	};
+};
+
+on -903 '\\\\[$$sasl_auth.servers\\\\] *' {
+	@ :server = servername();
+	@ :state = sasl_auth.status.$servername();
+
+	if (state == [auth_sent]) {
+		sasl_auth.setstate $server null;
+		quote CAP END;
+	} else {
+		xecho -b sasl_auth: 903: server $server \(real: $0\) is in a wrong state [$state] (should be "auth_sent");
+	};
+};
+
+on #-001 100 '\\\\[$$sasl_auth.servers\\\\] *' {
+	@ :server = servername();
+	@ :state = sasl_auth.status.$server;
+	
+	if (state != []) {
+		xecho -b sasl_auth: 001: server $server \(real: $0\) in a state [$state] and do not support capabilities (001 received without ACK/NAK);
+		xecho -b sasl_auth: odd_server_stuff: CAP NAK: disconnecting from $server \(real: $0\);
+		disconnect;
+	};
+
+	sasl_auth.setstate $server null;
+};
+
+on ^odd_server_stuff '\\\\[$$sasl_auth.servers\\\\] CAP * NAK :sasl' {
+	@ :server = servername();
+	@ :state = sasl_auth.status.$server;
+	
+	xecho -b sasl_auth: odd_server_stuff: CAP NAK: server $server \(real: $0\) in a state [$state] and do not support proposed SASL capability (:sasl), NAK received;
+	xecho -b sasl_auth: odd_server_stuff: CAP NAK: disconnecting from $server \(real: $0\);
+
+	sasl_auth.setstate $server null;
+	disconnect;
+};
+
+on #-server_lost 100 '% \\\\[$$sasl_auth.servers\\\\] *' {
+	@ :server = servername();
+	@ :state = sasl_auth.status.$server;
+	
+	if (state != []) {
+		xecho -b sasl_auth: server_lost: server $server \(real: $1\) in a wrong state [$state] (should be <empty>);
+	};
+	sasl_auth.setstate $server null;
+};

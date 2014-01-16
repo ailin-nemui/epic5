@@ -1,0 +1,224 @@
+if (word(2 $loadinfo()) != [pf]) {
+	load -pf $word(1 $loadinfo());
+	return;
+};
+
+## Idlealert script for EPIC5.
+## Written by zlonix@efnet, public domain.
+##
+## Version: 1.0
+##  - Initial roll-out (January, 2014)
+
+## This script allows you to monitor activity of your friends, see when
+## they become idle or active. It's done by issuing continious /whois
+## requests and comparing current, previous and the threshold, which is
+## set by you. We depend on builtins script for $server* function
+## family.
+##
+## Script will notify you in two cases:
+##  1) when remote user's idle time become above threshold;
+##  2) when it become less than threshold, but only if previously we've
+##     seen situation '1)'. So you won't be flooded with notifications
+##     when person is active and reseting its idle status frequently.
+##
+## You have following controls to better tune the script:
+##
+##  /set idlealert [on|off] - turns on timers for issuing whois
+##  requests;
+##
+##  /set idlealert_interval [int] - frequency of the whois requests;
+##
+##  /set idlealert_list [str] - nicks to monitor, may be given in two
+##  different formats: <nick> and <nick>/<network>, first format will
+##  monitor <nick> on every network you're connected to, second format
+##  will consider 005 NETWORK feature; space separated;
+##
+##  /set idlealert_threshold [int] - threshold for notifying a user,
+##  when idle time of your fellow become above this value - you will be
+##  notified, after this, if idle time will be reset you will be
+##  notified that user has gone active.
+##
+## Bear in mind that this script issuing only /whois requests, and don't
+## do any smart things like nick change monitoring, or looking after
+## hostname change. Only thing in which it trying to be intellectual -
+## considering signon time: if user's time spent on IRC and his idle
+## time are equal, but less than your current threshold, you won't be
+## notified, since user probably got disconnected by accident.
+##
+## Be very careful with your settings, since it's very easy to flood
+## your server and run upon server-side ignore. Also, don't forget
+## that some IRC operators set special user flag to see who is issuing
+## /whois on them - they may be annoyed by continuous requests from
+## your side.
+##
+## Whois lookup are done in following way: each network has a timer
+## associated with it, and every $idlealert_interval one request will be
+## issued. This actually means, that the more nicks you have in your
+## list which qualify for /whois on a given network - the more time will
+## pass between whois'es on the same nick from the list.
+##
+
+alias idlealert.clean (void) {
+	fe ($myservers()) serv {
+		@ :network = serverctl(GET $servernum($serv) 005 NETWORK);
+		^timer -delete idlealert.timer.$network;
+		^assign -idlealert[idle][$network];
+		^assign -idlealert[idle][$network];
+		^assign -idlealert[index][$network];
+	};
+};
+
+alias idlealert.setup (void) {
+	fe ($myservers()) serv {
+		idlealert.timer.init $serverctl(GET $servernum($serv) 005 NETWORK);
+	};
+};
+
+addset idlealert bool {
+	if (*0 == [ON]) {
+		idlealert.clean;
+		idlealert.setup;
+	} else {
+		idlealert.clean;
+	};
+};
+set idlealert on;
+
+addset idlealert_interval int {
+	idlealert.clean;
+	idlealert.setup;
+};
+set idlealert_interval 60;
+
+addset idlealert_list str;
+set idlealert_list hop/efnet pjd/efnet lala/freenode zlonix_ fudd;
+
+addset idlealert_threshold int {
+	idlealert.clean;
+	idlealert.setup;
+};
+set idlealert_threshold 600;
+
+
+
+on #-005 500 "*" {
+	idlealert.timer.init $serverctl(GET $servernum($0) 005 NETWORK);
+};
+
+on #-server_lost 500 "*" {
+	timer -delete idlealert.timer.$serverctl(GET $0 005 NETWORK);
+	idlealert.timer.init $serverctl(GET $0 005 NETWORK);
+};
+
+alias idlealert.timer.init (network, void) {
+	if (!@network) {
+		return;
+	};
+	
+	if (!timerctl(REFNUM idlealert.timer.$network)) {
+		fe ($myservers()) serv {
+			if (serverctl(GET $servernum($serv) 005 NETWORK) == network) {
+				timer -refnum idlealert.timer.$network -repeat -1 -server $serv $idlealert_interval idlealert.timer.loop $network;
+				break;
+			};
+		};
+	};
+};
+
+alias idlealert.timer.loop (network, void) {
+	if (!@network) {
+		return;
+	};
+
+	fe ($idlealert_list) nick {
+		if (match(*/* $nick) > 0) {
+			@ :net = after(/ $nick);
+			
+			if (@net && net == network) {
+				@ :nick = before(/ $nick);
+				push :to_whois $nick;
+			};
+		} else {
+			push :to_whois $nick;
+		};
+	};
+
+	if (!@to_whois) {
+		return;
+	};
+
+	if (!@::idlealert[index][$network] || ::idlealert[index][$network] >= numwords($to_whois)-1) {
+		@ ::idlealert[index][$network] = 0;
+	} else {
+		@ ::idlealert[index][$network]++;
+	};
+
+
+	idlealert.whois $word($idlealert[index][$network] $to_whois);
+};
+
+alias idlealert.whois (nick) {
+	if (!@nick) {
+		return;
+	};
+
+	idlealert.addhooks $nick;
+	whois $nick $nick;
+};
+
+alias idlealert.addhooks (nick) {
+	if (!@nick) {
+		return;
+	};
+
+	^on ^311 '% $nick *' {
+		@ ::idlealert[$servername()][$1] = [$2@$3];
+	};
+	^on ^319 '% $nick *';
+	^on ^312 '% $nick *';
+	^on ^301 '$nick *';
+	^on ^671 '% $nick *';
+	^on ^338 '% $nick *';
+	^on ^317 '% $nick *' {
+
+		@ :net = serverctl(GET $servernum() 005 NETWORK);
+
+		if (*2 >= idlealert_threshold && findw($1 $idlealert[idle][$net]) == -1) {
+			xecho -b Idlealert: $1 \($idlealert[$servername()][$1]\) on server $0 become idle;
+			@ push(idlealert[idle][$net] $1);
+			@ idlealert[notified][$net] = remw($1 $idlealert[notified][$net]);
+			return;
+		};
+
+		@ :on_irc = time() - *3;
+		if (*2 < idlealert_threshold && findw($1 $idlealert[idle][$net]) != -1 && findw($1 $idlealert[notified][$net]) == -1 && *2 != on_irc) {
+			xecho -b Idlealert: $1 \($idlealert[$servername()][$1]\) on server $0 not idle anymore;
+			@ idlealert[idle][$net] = remw($1 $idlealert[idle][$net]);
+			@ push(idlealert[notified][$net] $1);
+			return;
+		};
+		
+	};
+	^on ^330 '% $nick *';
+	^on ^402 '% $nick *' idlealert.delhooks $nick;
+
+	^on ^318 '% $nick *' idlealert.delhooks $nick;
+};
+
+alias idlealert.delhooks (nick) {
+	if (!@nick) {
+		return;
+	};
+
+	on ^311 -'% $nick *';
+	on ^319 -'% $nick *';
+	on ^312 -'% $nick *';
+	on ^301 -'$nick *';
+	on ^671 -'% $nick *';
+	on ^338 -'% $nick *';
+	on ^317 -'% $nick *';
+	on ^330 -'% $nick *';
+	on ^402 -'% $nick *';
+	
+	on ^318 -'% $nick *';
+};

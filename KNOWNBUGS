@@ -337,4 +337,6 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * New xmsglog script from zlonix
 * Fix trimming support for $xform().  Plus, FISH should do trimming. (rb zlonix)
 * Fix maildir support for /set mail 1 (help by zlonix)
-
+* Update tabkey.ce from fudd
+* Update xmsglog from zlonix
+* Two new scripts, sasl_auth and idlealert from zlonix.
