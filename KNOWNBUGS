@@ -369,4 +369,7 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Internal function strext2() allows me to cut substrings out, for input buf.
 * Fix input_delete_character(), it forgot to call retokenize_input()
 * Fix term_inputline_putchar() so it doesn't mangle 0x9b (valid utf8 char)
+* Fix $curpos(), sort of.  Does this return byte offset or column offset?
+* 	It used to be the same, but now it's not!
+* InputLine.buffer_pos isn't used any more.  Whack that.
 

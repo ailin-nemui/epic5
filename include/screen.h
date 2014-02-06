@@ -25,7 +25,7 @@ typedef struct PromptStru
 	int	echo;
 	void	(*func) (char *, const char *);
 	unsigned char saved_input_buffer[INPUT_BUFFER_SIZE + 1];
-	int	saved_buffer_pos;
+	/*int	saved_buffer_pos; */
 
 	struct	PromptStru	*next;
 }	WaitPrompt;
@@ -44,7 +44,6 @@ typedef struct InputLine
 	/* Upon which logical char does the cursor sit? */
 	int	logical_cursor;
 
-	int	buffer_pos;		/* Where on input line cursor is */
 	int	first_display_char;
 
 	char *	input_prompt_raw;
@@ -92,7 +91,6 @@ struct	ScreenStru *next;		/* Previous screen in list */
 	/* Input line and prompt stuff */
 	unsigned char input_buffer[INPUT_BUFFER_SIZE+1];
 					/* Current user input for us */
-	int	buffer_pos;		/* Where on input line cursor is */
 	int	input_cursor;		/* Where the cursor is on input line */
 	int	input_visible;
 	int	input_zone_len;
@@ -107,7 +105,6 @@ struct	ScreenStru *next;		/* Previous screen in list */
         int     ind_right_len;
 
         unsigned char	saved_input_buffer[INPUT_BUFFER_SIZE+1];
-	int	saved_buffer_pos;
 #endif
 
 	WaitPrompt	*promptlist;

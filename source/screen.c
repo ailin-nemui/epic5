@@ -1,4 +1,4 @@
-/* $EPIC: screen.c,v 1.153 2014/02/06 17:14:24 jnelson Exp $ */
+/* $EPIC: screen.c,v 1.154 2014/02/06 20:31:23 jnelson Exp $ */
 /*
  * screen.c
  *
@@ -2705,7 +2705,6 @@ void	create_new_screen (void)
 
 	new_s->il = new_malloc(sizeof(InputLine));
 	new_s->il->input_buffer[0] = '\0';
-	new_s->il->buffer_pos = 0;
 	new_s->il->first_display_char = 0;
 	new_s->il->input_prompt_raw = NULL;
 	new_s->il->input_prompt = malloc_strdup(empty_string);
@@ -3391,7 +3390,7 @@ static void	restore_input_line (WaitPrompt *oldprompt)
 			oldprompt->saved_input_buffer, 
 			sizeof(last_input_screen->il->input_buffer));
 	/* Logical cursor */
-	last_input_screen->il->buffer_pos = oldprompt->saved_buffer_pos;	
+	/*last_input_screen->il->buffer_pos = oldprompt->saved_buffer_pos;	*/
 	update_input(last_input_screen, UPDATE_ALL);
 }
 
@@ -3402,6 +3401,6 @@ static void	save_input_line (WaitPrompt *wp)
 
 	strlcpy(wp->saved_input_buffer, last_input_screen->il->input_buffer,
 			sizeof(wp->saved_input_buffer));
-	wp->saved_buffer_pos = last_input_screen->il->buffer_pos;
+	/*wp->saved_buffer_pos = last_input_screen->il->buffer_pos; */
 }
 

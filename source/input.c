@@ -1,4 +1,4 @@
-/* $EPIC: input.c,v 1.70 2014/02/06 18:27:38 jnelson Exp $ */
+/* $EPIC: input.c,v 1.71 2014/02/06 20:31:23 jnelson Exp $ */
 /*
  * input.c: does the actual input line stuff... keeps the appropriate stuff
  * on the input line, handles insert/delete of characters/words... the whole
@@ -280,6 +280,15 @@ BUILT_IN_KEYBINDING(debug_input_line)
 	yell("PHYSICAL CURSOR AT %d %d", PHYSICAL_CURSOR, INPUT_LINE);
 }
 
+int	cursor_position (void *vp)
+{
+	Screen *s = (Screen *)vp;
+	if (!s)
+		return -1;
+	return s->il->logical_chars[s->il->logical_cursor];
+}
+
+#define LOGICAL_LOCATION	LOGICAL_CHARS[LOGICAL_CURSOR]
 
 /* XXXX Only used here anyhow XXXX */
 /*

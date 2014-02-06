@@ -1,4 +1,4 @@
-/* $EPIC: functions.c,v 1.300 2014/02/06 17:14:24 jnelson Exp $ */
+/* $EPIC: functions.c,v 1.301 2014/02/06 20:31:23 jnelson Exp $ */
 /*
  * functions.c -- Built-in functions for ircII
  *
@@ -1544,7 +1544,7 @@ BUILT_IN_FUNCTION(function_tolower, input)
 
 BUILT_IN_FUNCTION(function_curpos, input)
 {
-	RETURN_INT(current_window->screen->il->buffer_pos);
+	RETURN_INT(cursor_position(current_window->screen));
 }
 
 BUILT_IN_FUNCTION(function_channels, input)
