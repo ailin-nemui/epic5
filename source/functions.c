@@ -1,4 +1,4 @@
-/* $EPIC: functions.c,v 1.299 2013/10/30 02:56:52 jnelson Exp $ */
+/* $EPIC: functions.c,v 1.300 2014/02/06 17:14:24 jnelson Exp $ */
 /*
  * functions.c -- Built-in functions for ircII
  *
@@ -1544,7 +1544,7 @@ BUILT_IN_FUNCTION(function_tolower, input)
 
 BUILT_IN_FUNCTION(function_curpos, input)
 {
-	RETURN_INT(current_window->screen->buffer_pos);
+	RETURN_INT(current_window->screen->il->buffer_pos);
 }
 
 BUILT_IN_FUNCTION(function_channels, input)
@@ -6313,7 +6313,7 @@ BUILT_IN_FUNCTION(function_encryptparm, input)
 	Crypt	*key;
 
 	GET_FUNC_ARG(entry, input);
-	if ((key = is_crypted(entry, from_server, CTCP_SED))) 
+	if ((key = is_crypted(entry, from_server, ANYCRYPT))) 
 	{
 		malloc_strcat_word_c(&ret, space, key->nick, DWORD_DWORDS, &clue);
 		malloc_strcat_word_c(&ret, space, key->key, DWORD_DWORDS, &clue);

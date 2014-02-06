@@ -7,7 +7,7 @@
  *
  * See the COPYRIGHT file, or do a HELP IRCII COPYRIGHT 
  *
- * @(#)$Id: ircaux.h,v 1.111 2014/01/10 13:30:40 jnelson Exp $
+ * @(#)$Id: ircaux.h,v 1.112 2014/02/06 17:14:24 jnelson Exp $
  */
 
 #ifndef _IRCAUX_H_
@@ -297,5 +297,15 @@ extern int my_iconv_open (iconv_t *, iconv_t *, const char *);
 #endif
 
 extern	int	recode_with_iconv (const char *from, const char *to, char **data, size_t *numbytes);
+
+/***********************/
+extern	int	codepoint_numcolumns 	(int);
+extern	int	next_code_point 	(const unsigned char **);
+extern	int	display_column_count 	(const unsigned char *);
+extern	int	input_column_count 	(const unsigned char *);
+extern	int	ucs_to_utf8 		(u_32int_t, unsigned char *, size_t);
+extern	int	grab_codepoint 		(const unsigned char *x);
+
+extern	int	strext2		(unsigned char **, unsigned char *, int , int);
 
 #endif /* _IRCAUX_H_ */

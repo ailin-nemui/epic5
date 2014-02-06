@@ -15,10 +15,8 @@
 	char *	get_input 			(void);
 	char *	get_input_prompt 		(void);
 	void	init_input 			(void);
-	void	input_move_cursor 		(int, int);
 	char	input_pause 			(char *);
-	void	set_input 			(const char *);
-	void	set_input_prompt 		(void *);
+	void	set_input_prompt		(void *);
 	void	update_input 			(void *, int);
 
 /* keybinding functions */
@@ -58,6 +56,7 @@
 	BUILT_IN_KEYBINDING(send_line);
 	BUILT_IN_KEYBINDING(toggle_insert_mode);
 	BUILT_IN_KEYBINDING(type_text);
+	BUILT_IN_KEYBINDING(debug_input_line);
 
 /* used by update_input */
 #define NO_UPDATE 0

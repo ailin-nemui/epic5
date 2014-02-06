@@ -1,4 +1,4 @@
-/* $EPIC: commands.c,v 1.212 2013/11/01 04:37:41 jnelson Exp $ */
+/* $EPIC: commands.c,v 1.213 2014/02/06 17:14:24 jnelson Exp $ */
 /*
  * commands.c -- Stuff needed to execute commands in ircII.
  *		 Includes the bulk of the built in commands for ircII.
@@ -165,7 +165,7 @@ static	void	xtypecmd 	(const char *, char *, const char *);
 static	void	allocdumpcmd	(const char *, char *, const char *);
 
 /* other */
-static	void	eval_inputlist 	(char *, char *);
+static	void	eval_inputlist 	(char *, const char *);
 static void	parse_block (const char *, const char *, int interactive);
 
 /* I hate typedefs, but they sure can be useful.. */
@@ -712,7 +712,7 @@ BUILT_IN_COMMAND(e_nick)
  * and the key is accepted.  Thats probably not right, ill work on that.
  */
 static	int	e_pause_cb_throw = 0;
-static	void	e_pause_cb (char *u1, char *u2) { e_pause_cb_throw--; }
+static	void	e_pause_cb (char *u1, const char *u2) { e_pause_cb_throw--; }
 BUILT_IN_COMMAND(e_pause)
 {
 	char *	sec;
@@ -1445,7 +1445,7 @@ BUILT_IN_COMMAND(info)
  * eval_inputlist:  Cute little wrapper that calls runcmds() when we
  * get an input prompt ..
  */
-static void	eval_inputlist (char *args, char *line)
+static void	eval_inputlist (char *args, const char *line)
 {
         char *tmp;
 	if (args[0]=='(') {
@@ -2259,7 +2259,7 @@ BUILT_IN_COMMAND(mecmd)
 		say("Usage: /ME <action description>");
 }
 
-static 	void	oper_password_received (char *data, char *line)
+static 	void	oper_password_received (char *data, const char *line)
 {
 	send_to_server("OPER %s %s", data, line);
 }
@@ -2970,7 +2970,7 @@ BUILT_IN_COMMAND(typecmd)
                                 break;
                 }
 
-		edit_char(key);
+		translate_user_input(key);
         }
 }
 
@@ -3440,7 +3440,7 @@ void 	new_send_text (int server, const char *orig_target_list, const char *text,
 #endif
 
 /***************************************************************************/
-static char *	parse_line_alias_special (const char *name, const char *what, char *args, void *arglist, int function);
+static char *	parse_line_alias_special (const char *name, const char *what, const char *args, void *arglist, int function);
 
 /* 
  * Execute a block of ircII code (``what'') as a lambda function.
@@ -3527,14 +3527,18 @@ void	call_user_command (const char *alias_name, const char *alias_stuff, char *a
  *		just want to run a block of code inside an existing scope
  *		then use the runcmds() function.
  */
-static char *	parse_line_alias_special (const char *name, const char *what, char *subargs, void *arglist, int function)
+static char *	parse_line_alias_special (const char *name, const char *what, const char *orig_subargs, void *arglist, int function)
 {
 	int	old_last_function_call_level = last_function_call_level;
 	char *	result = NULL;
 	int	localvars = name ? 1 : 0;	/* 'name' could be free()d */
+	char *	subargs;
 
-	if (!subargs)
+	if (!orig_subargs)
 		subargs = LOCAL_COPY(empty_string);
+	else
+		subargs = LOCAL_COPY(orig_subargs);
+
 	if (localvars && !make_local_stack(name))
 	{
 		yell("Could not run (%s) [%s]; too much recursion", 
@@ -3575,7 +3579,7 @@ void	runcmds (const char *what, const char *subargs)
 	parse_block(what, subargs, 0);
 }
 
-void    runcmds_with_arglist (const char *what, char *args, char *subargs)
+void    runcmds_with_arglist (const char *what, char *args, const char *subargs)
 {
 	ArgList *arglist = NULL;
 	if (!subargs)

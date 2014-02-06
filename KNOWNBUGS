@@ -341,4 +341,29 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Update xmsglog from zlonix
 * Two new scripts, sasl_auth and idlealert from zlonix.
 * EPIC5-1.1.7 released here (Kainotophobia) (Commit ID: 1705)
+* Updated massmode from zlonix.
+* All the stuff below are round 1 utf8 support for input line
+* New file, wcwidth.c, utf8<->unicode conversion, unicode column counting.
+* Revamp /INPUT system to be utf8 aware.  callback 2nd arg is now const.
+* Specifically, save the state of the input line across /INPUTs.
+* -- This is stub code. needs to be completely fleshed out.
+* Reformat keys.c so I can work with it easier
+* Only bytes < 127 can now participate in binds.  >= 128 are SELF_INSERT.
+* I think the keybinding system can grow 'namespaces' which might be cool.
+* The TRANSPOSE_CHARACTERS keybinding has passed away quietly.
+* New keybinding DEBUG_INPUT_LINE to help me
+* Revamp the edit_codepoint() system to work with unicode code points
+* Screen input now collects bytes until it gets valid utf8 code points.
+* Collect all of the input line data structures into Struct InputLine
+* Give each screen it's own inputline with an eye towards stacking them.
+* The ability to 'fake' input in dumb mode has passed away quietly.
+* Completely revamp input.c to work with inputline data structure
+* Change input line so users operate on "logical characters"
+* Inputline data structure maps "logical characters" to bytes in input buffer.
+* It's almost too overwhelming to describe specific details.
+* Basically the input system accepts unicode code points, and stores in utf8.
+* Things like cursor movement, column counting, side scrolling all Just Work.
+* Even things like cut buffering work.
+* HOWEVER -- it seems this stuff doesn't work in GNU screen. can't fix this. :/
+* Internal function strext2() allows me to cut substrings out, for input buf.
 

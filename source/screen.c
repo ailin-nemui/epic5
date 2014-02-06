@@ -1,4 +1,4 @@
-/* $EPIC: screen.c,v 1.152 2013/11/01 04:37:41 jnelson Exp $ */
+/* $EPIC: screen.c,v 1.153 2014/02/06 17:14:24 jnelson Exp $ */
 /*
  * screen.c
  *
@@ -126,9 +126,12 @@ static int 	rite 		(Window *, const unsigned char *);
 static void 	scroll_window   (Window *);
 static void 	add_to_window	(Window *, const unsigned char *);
 static	int	ok_to_output	(Window *);
+static	void	edit_codepoint (u_32int_t key);
 static ssize_t read_esc_seq     (const unsigned char *, void *, int *);
 static ssize_t read_color_seq   (const unsigned char *, void *d, int);
-static	void translate_user_input (char byte);
+static void	restore_input_line (WaitPrompt *oldprompt);
+static void	save_input_line (WaitPrompt *wp);
+
 
 /*
  * "Attributes" were an invention for epic5, and the general idea was
@@ -2700,18 +2703,19 @@ void	create_new_screen (void)
 	new_s->old_li = 0; 
 	new_s->old_co = 0;
 
-	new_s->buffer_pos = 0;
-	new_s->input_buffer[0] = '\0';
-	new_s->input_cursor = 0;
-	new_s->input_visible = 0;
-	new_s->input_start_zone = 0;
-	new_s->input_prompt = malloc_strdup(empty_string);
-        new_s->input_prompt_len = 0;
-        new_s->ind_left = malloc_strdup(empty_string);
-        new_s->ind_left_len = 0;
-        new_s->ind_right = malloc_strdup(empty_string);
-        new_s->ind_right_len = 0;
-	new_s->input_line = 23;
+	new_s->il = new_malloc(sizeof(InputLine));
+	new_s->il->input_buffer[0] = '\0';
+	new_s->il->buffer_pos = 0;
+	new_s->il->first_display_char = 0;
+	new_s->il->input_prompt_raw = NULL;
+	new_s->il->input_prompt = malloc_strdup(empty_string);
+        new_s->il->input_prompt_len = 0;
+	new_s->il->input_line = 23;
+
+        new_s->il->ind_left = malloc_strdup(empty_string);
+        new_s->il->ind_left_len = 0;
+        new_s->il->ind_right = malloc_strdup(empty_string);
+        new_s->il->ind_right_len = 0;
 
 	last_input_screen = new_s;
 
@@ -3023,7 +3027,9 @@ void 	kill_screen (Screen *screen)
 	screen->fpout = NULL;
 	screen->fdin = -1;
 	screen->fdout = -1;
-	new_free(&screen->input_prompt);
+
+	/* XXX Should do a proper wiping of the input line */
+	new_free(&screen->il->input_prompt);
 
 	/* Dont fool around. */
 	if (last_input_screen == screen)
@@ -3192,111 +3198,114 @@ static void 	do_screens (int fd)
  * This function needs to decide what to do -- do we accumulate
  * a UTF8 string, convert it to UCS32, and send it to edit_char()?
  * or do we translate it based on /set translation and send that
- * to edit_char()?
+ * to edit_char()?  Perhaps we have to apply /set'ings, etc.
  */
-static	void	translate_user_input (char byte)
+void	translate_user_input (unsigned char byte)
 {
-static	char		workbuf[32];
+static	unsigned char	workbuf[32];
 static	size_t		workbuf_idx = 0;
-	u_32int_t	codepoint;
+	int		codepoint;
+const 	unsigned char *	s;
 
-	codepoint = (u_32int_t)byte;
-	edit_codepoint(codepoint);
+	workbuf[workbuf_idx++] = byte;
+	workbuf[workbuf_idx] = 0;
+
+	s = workbuf;
+	codepoint = next_code_point(&s);
+	if (codepoint > -1)
+	{
+		edit_codepoint(codepoint);
+		workbuf_idx = 0;
+		workbuf[0] = 0;
+	}
+
+
+#if 0
+        /* If the high bit is set, mangle it as neccesary. */
+        if (key & 0x80 && current_term->TI_meta_mode)
+        {
+                translate_user_input('\033');
+                key &= ~0x80;
+        }
+#endif
 }
 
 /*
  * This should be called once for each codepoint we receive.
  * This means a utf8 string converted into UCS32.  We don't support
  * that quite yet, so this is just a placeholder.
- */
-void	edit_codepoint (u_32int_t key)
-{
-	unsigned char	uckey;
-
-	uckey = (unsigned char)key;
-	edit_char(uckey);
-}
-
-/*
+ *
  * edit_char: handles each character for an input stream.  Not too difficult
  * to work out.
  */
-void    edit_char (unsigned char key)
+static	void	edit_codepoint (u_32int_t key)
 {
-        unsigned char   extended_key;
-        WaitPrompt *    oldprompt;
-        unsigned char   dummy[2];
-        int             xxx_return = 0;         /* XXXX Need i say more? */
-
         if (dumb_mode)
-        {
-#ifdef TIOCSTI  
-                ioctl(0, TIOCSTI, &key);
-#else   
-                say("Sorry, your system doesnt support 'faking' user input...");
-#endif  
                 return;
-        }
-
-        /* were we waiting for a keypress? */
-        if (last_input_screen->promptlist && 
-                last_input_screen->promptlist->type == WAIT_PROMPT_KEY)
-        {
-                dummy[0] = key, dummy[1] = 0;
-                oldprompt = last_input_screen->promptlist;
-                last_input_screen->promptlist = oldprompt->next;
-                (*oldprompt->func)(oldprompt->data, dummy);
-                new_free(&oldprompt->data);
-                new_free(&oldprompt->prompt);
-                new_free((char **)&oldprompt);
- 
-                set_input(empty_string);
-                change_input_prompt(-1);
-                xxx_return = 1;
-        }
 
         /*
          * This is only used by /pause to see when a keypress event occurs,
          * but not to impact how that keypress is handled at all.
          */
         if (last_input_screen->promptlist &&
-                last_input_screen->promptlist->type == WAIT_PROMPT_DUMMY)
+            last_input_screen->promptlist->type == WAIT_PROMPT_DUMMY)
+		fire_wait_prompt(key);
+
+        /* were we waiting for a keypress? */
+        if (last_input_screen->promptlist && 
+                last_input_screen->promptlist->type == WAIT_PROMPT_KEY)
         {
-                oldprompt = last_input_screen->promptlist;
-                last_input_screen->promptlist = oldprompt->next;
-                (*oldprompt->func)(oldprompt->data, NULL);
-                new_free(&oldprompt->data);
-                new_free(&oldprompt->prompt);
-                new_free((char **)&oldprompt);
+		fire_wait_prompt(key);
+		return;
         }
 
-        if (xxx_return)
-                return;
-
-        /* If the high bit is set, mangle it as neccesary. */
-        if (key & 0x80 && current_term->TI_meta_mode)
-        {
-                edit_char('\033');
-                key &= ~0x80;
-        }
-
-        extended_key = key;
-
-        /* If we just hit the quote character, add this character literally */
-        if (last_input_screen->quote_hit)
-        {
-                last_input_screen->quote_hit = 0;
-                input_add_character(extended_key, NULL);
-        }
-
-        /* Otherwise, let the keybinding system take care of the work. */
-        else {
-                last_input_screen->last_key = handle_keypress(
-                        last_input_screen->last_key,
-                        last_input_screen->last_press, key);
-                get_time(&last_input_screen->last_press);
-        }
+	/*
+	 * New: handle_keypress now takes "quote" argument, where it will
+	 * treat this key as though it were bound to self_insert, rather
+	 * than whatever it is.  This will allow me to (eventually) implement
+	 * a self_insert toggle mode.   In any case, we always clear the
+	 * quote_hit flag when we're done. (Is it cheaper to unconditionally
+	 * set it to 0, or to do a test-and-set?  Does it matter?)
+	 */
+	last_input_screen->last_key = handle_keypress(
+		last_input_screen->last_key,
+		last_input_screen->last_press, key,
+		last_input_screen->quote_hit);
+	get_time(&last_input_screen->last_press);
+	last_input_screen->quote_hit = 0;
 }
+
+
+void	fire_wait_prompt (u_32int_t key)
+{
+	WaitPrompt *	oldprompt;
+        unsigned char   utf8str[8];
+
+	oldprompt = last_input_screen->promptlist;
+	ucs_to_utf8(key, utf8str, sizeof(utf8str));
+	(*oldprompt->func)(oldprompt->data, utf8str);
+	restore_input_line(oldprompt);
+
+	last_input_screen->promptlist = oldprompt->next;
+	new_free(&oldprompt->data);
+	new_free(&oldprompt->prompt);
+	new_free((char **)&oldprompt);
+}
+
+void	fire_normal_prompt (const char *utf8str)
+{
+	WaitPrompt *	oldprompt;
+
+	oldprompt = last_input_screen->promptlist;
+	(*oldprompt->func)(oldprompt->data, utf8str);
+	restore_input_line(oldprompt);
+
+	last_input_screen->promptlist = oldprompt->next;
+	new_free(&oldprompt->data);
+	new_free(&oldprompt->prompt);
+	new_free((char **)&oldprompt);
+}
+
 
 /* * * * * * * * * INPUT PROMPTS * * * * * * * * * * */
 /* 
@@ -3341,7 +3350,7 @@ void    edit_char (unsigned char key)
  *	 Suggestion: "data" should be a struct that contains window and server 
  * 	 context information.
  */
-void 	add_wait_prompt (const char *prompt, void (*func)(char *data, char *utf8str), const char *data, int type, int echo)
+void 	add_wait_prompt (const char *prompt, void (*func)(char *data, const char *utf8str), const char *data, int type, int echo)
 {
 	WaitPrompt **AddLoc,
 		   *New;
@@ -3363,8 +3372,36 @@ void 	add_wait_prompt (const char *prompt, void (*func)(char *data, char *utf8st
 	for (AddLoc = &s->promptlist; *AddLoc; AddLoc = &(*AddLoc)->next)
 		/* nothing */;
 	*AddLoc = New;
-	if (AddLoc == &s->promptlist)
-		change_input_prompt(1);
+	save_input_line(New);
+
+	/* XXX Calling keybinding directly is a hack */
+	input_reset_line(0, NULL);
 }
 
+static void	restore_input_line (WaitPrompt *oldprompt)
+{
+	int	prompt_type;
+
+	prompt_type = oldprompt->type;
+
+	/* 
+	 * If there are no further prompts, reset the global state.
+	 */
+	strlcpy(last_input_screen->il->input_buffer, 
+			oldprompt->saved_input_buffer, 
+			sizeof(last_input_screen->il->input_buffer));
+	/* Logical cursor */
+	last_input_screen->il->buffer_pos = oldprompt->saved_buffer_pos;	
+	update_input(last_input_screen, UPDATE_ALL);
+}
+
+static void	save_input_line (WaitPrompt *wp)
+{
+	if (!wp)
+		return;
+
+	strlcpy(wp->saved_input_buffer, last_input_screen->il->input_buffer,
+			sizeof(wp->saved_input_buffer));
+	wp->saved_buffer_pos = last_input_screen->il->buffer_pos;
+}
 

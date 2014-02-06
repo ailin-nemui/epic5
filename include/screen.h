@@ -19,13 +19,47 @@
 
 typedef struct PromptStru
 {
-	char	*prompt;
-	char	*data;
+	char *	prompt;
+	char *	data;
 	int	type;
 	int	echo;
-	void	(*func) (char *, char *);
+	void	(*func) (char *, const char *);
+	unsigned char saved_input_buffer[INPUT_BUFFER_SIZE + 1];
+	int	saved_buffer_pos;
+
 	struct	PromptStru	*next;
 }	WaitPrompt;
+
+typedef struct InputLine
+{
+	/* The current UTF8 input line (plain old c string */
+	unsigned char input_buffer[INPUT_BUFFER_SIZE+1];
+
+	/* The offset into input_buffer where each logical char starts */
+	int	logical_chars[INPUT_BUFFER_SIZE + 1];
+
+	/* The logical column in which each logical char lives */
+	int	logical_columns[INPUT_BUFFER_SIZE + 1];
+
+	/* Upon which logical char does the cursor sit? */
+	int	logical_cursor;
+
+	int	buffer_pos;		/* Where on input line cursor is */
+	int	first_display_char;
+
+	char *	input_prompt_raw;
+	unsigned char	*input_prompt;
+	int	input_prompt_len;
+	int	input_line;
+
+        unsigned char   *ind_left;
+        int     ind_left_len;
+        unsigned char   *ind_right;
+        int     ind_right_len;
+
+	int	refresh;
+}	InputLine;
+
 
 typedef	struct	ScreenStru
 {
@@ -52,6 +86,9 @@ struct	ScreenStru *next;		/* Previous screen in list */
 	int	control;		/* The control FD (to wserv) */
 	int	wserv_version;		/* The version of wserv talking to */
 
+	InputLine *	il;
+
+#if 0
 	/* Input line and prompt stuff */
 	unsigned char input_buffer[INPUT_BUFFER_SIZE+1];
 					/* Current user input for us */
@@ -71,6 +108,7 @@ struct	ScreenStru *next;		/* Previous screen in list */
 
         unsigned char	saved_input_buffer[INPUT_BUFFER_SIZE+1];
 	int	saved_buffer_pos;
+#endif
 
 	WaitPrompt	*promptlist;
 
@@ -90,12 +128,13 @@ struct	ScreenStru *next;		/* Previous screen in list */
 	int	alive;
 }	Screen;
 
-	void	add_wait_prompt 	(const char *, void (*)(char *, char *), const char *, int, int);
+	void	add_wait_prompt 	(const char *, void (*)(char *, const char *), const char *, int, int);
+	void	fire_wait_prompt	(u_32int_t);
+	void	fire_normal_prompt	(const char *);
 	void	add_to_screen		(const unsigned char *);
 	void	cursor_not_in_display	(struct ScreenStru *);
 	void	cursor_in_display	(Window *);
-	void	edit_codepoint		(u_32int_t key);
-	void	edit_char		(unsigned char);
+	void	translate_user_input	(unsigned char byte);
 	int	is_cursor_in_display	(struct ScreenStru *);
 	void	repaint_window_body	(Window *);
 	void	create_new_screen	(void);

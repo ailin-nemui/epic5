@@ -1,4 +1,4 @@
-/* $EPIC: server.c,v 1.259 2013/11/06 03:49:33 jnelson Exp $ */
+/* $EPIC: server.c,v 1.260 2014/02/06 17:14:24 jnelson Exp $ */
 /*
  * server.c:  Things dealing with that wacky program we call ircd.
  *
@@ -2338,7 +2338,7 @@ static void	set_server_password (int refnum, const char *password)
  * hitting of the return key, etc 
  * -- Callback function
  */
-void 	password_sendline (char *data, char *line)
+void 	password_sendline (char *data, const char *line)
 {
 	int	new_server;
 

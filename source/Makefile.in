@@ -291,7 +291,7 @@ irc.o: irc.c ../include/irc.h ../include/defs.h ../include/config.h \
   ../include/notify.h ../include/alist.h ../include/irc.h \
   ../include/mail.h ../include/timer.h ../include/newio.h \
   ../include/parse.h ../include/levels.h ../include/extlang.h
-ircaux.o: ircaux.c ../include/irc.h ../include/defs.h ../include/config.h \
+ircaux.o: ircaux.c wcwidth.c ../include/irc.h ../include/defs.h ../include/config.h \
   ../include/irc_std.h ../include/debug.h ../include/screen.h \
   ../include/window.h ../include/lastlog.h ../include/levels.h \
   ../include/status.h ../include/tio.h ../include/ircaux.h \

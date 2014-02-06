@@ -1,4 +1,4 @@
-/* $EPIC: irc.c,v 1.1374 2014/01/16 19:31:24 jnelson Exp $ */
+/* $EPIC: irc.c,v 1.1375 2014/02/06 17:14:24 jnelson Exp $ */
 /*
  * ircII: a new irc client.  I like it.  I hope you will too!
  *
@@ -52,7 +52,7 @@ const char internal_version[] = "20140116";
 /*
  * In theory, this number is incremented for every commit.
  */
-const unsigned long	commit_id = 1705;
+const unsigned long	commit_id = 1706;
 
 /*
  * As a way to poke fun at the current rage of naming releases after
@@ -395,7 +395,7 @@ The program will now terminate.						\n", irc_version, commit_id, internal_versi
  * the right response to our question.  If the response was affirmative, the
  * user gets booted from irc.  Otherwise, life goes on. 
  */
-static void quit_response (char *dummy, char *ptr)
+static void	quit_response (char *dummy, const char *ptr)
 {
 	int	len;
 
@@ -934,7 +934,7 @@ static	int		level = 0,
 			get_time(&now);
 			if (cntl_c_hit)		/* SIGINT is useful */
 			{
-				edit_char('\003');
+				translate_user_input('\003');
 				cntl_c_hit = 0;
 			}
 			else if (errno != EINTR) /* Deal with EINTR */
@@ -1285,7 +1285,7 @@ int 	main (int argc, char *argv[])
 
 	load_ircrc();
 
-	set_input(empty_string);
+	init_input();
 
 	if (dont_connect)
 		display_server_list();		/* Let user choose server */

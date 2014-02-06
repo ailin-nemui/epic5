@@ -1,4 +1,4 @@
-/* $EPIC: ircaux.c,v 1.236 2014/01/10 13:30:41 jnelson Exp $ */
+/* $EPIC: ircaux.c,v 1.237 2014/02/06 17:14:24 jnelson Exp $ */
 /*
  * ircaux.c: some extra routines... not specific to irc... that I needed 
  *
@@ -6262,5 +6262,105 @@ int	recode_with_iconv (const char *from, const char *to, char **data, size_t *nu
 	*data = retstr;
 	*numbytes = (dest_size - dest_left);
 	return (*numbytes);
+}
+
+/* 
+ * XXX Just a placeholder -- convert a unicode code point into a utf8 string.
+ */
+int	ucs_to_utf8 (u_32int_t key, unsigned char *utf8str, size_t utf8strsiz)
+{
+	if (key <= 0x007F)
+	{
+		utf8str[0] = key;
+		utf8str[1] = 0;
+		return 1;
+	}
+
+	else if (key <= 0x07FF)
+	{
+		utf8str[0] = key / 64 + 192;
+		utf8str[1] = key % 64 + 128;
+		utf8str[2] = 0;
+		return 2;
+	}
+
+	else if (key <= 0xD7FF || (key >= 0xE000 && key <= 0xFFFF))
+	{
+		utf8str[0] = key / 4096 + 224;
+		utf8str[1] = (key % 4096) / 64 + 128;
+		utf8str[2] = key % 64 + 128;
+		utf8str[3] = 0;
+		return 3;
+	}
+
+	else
+	{
+		utf8str[0] = key / 262144 + 240;
+		utf8str[1] = (key % 262144) / 4096 + 128;
+		utf8str[2] = (key % 4096) / 64 + 128;
+		utf8str[3] = key % 64 + 128;
+		utf8str[4] = 0;
+		return 4;
+	}
+}
+
+#include "wcwidth.c"
+
+/*
+ * strext2 - Remove (and return) the middle part of a buffer
+ *
+ * Arguments:
+ *	cut	- A pointer to new_malloc()ed memory, or a pointer to NULL.
+ *		  THIS POINTER WILL BE NEW_FREE()D!
+ *		  THE POINTED-TO VALUE WILL BE REPLACED!
+ *	buffer	- A C string to be sliced and diced
+ *		  XXX I'd prefer if this didn't have to be a C str.
+ *	part2	- The first byte in buffer to be removed
+ *	part3	- The first byte in buffer NOT to be removed
+ *
+ * This function will remove the (part2)th through (part3-1)th bytes in 
+ * (buffer).  This substring will be malloc_strcpy()d into (*cut).
+ * (Buffer) will be changed so that the byte after (part2-1) will be (part3).
+ * 
+ * Example:
+ *   Input:
+ *	Buffer:		zero one two three four
+ *	part2: (5)           ^
+ *	part3: (13)                  ^
+ *
+ *   Output:
+ *	Buffer:		zero three four
+ *	(*cut):		one two 
+ */
+int	strext2 (unsigned char **cut, unsigned char *buffer, int part2, int part3)
+{
+	unsigned char *part2str, *part3str, *p, *s;
+	size_t	buflen;
+	size_t	cutlen;
+	size_t	newlen;
+
+	buflen = strlen(buffer);	/* XXX Should be passed in as param */
+	if (part2 > buflen)
+		return 0;		/* Nothing to extract */
+	if (part3 > buflen)
+		part3 = buflen;		/* Stop at end of string */
+
+	/* Copy the cut part */
+	newlen = part3 - part2 + 1;
+	RESIZE(*cut, char, newlen);
+	p = *cut;
+	s = buffer + part2;
+	while (s < buffer + part3)
+		*p++ = *s++;
+	*p++ = 0;
+
+	/* Eliminate the cut part */
+	p = buffer + part2;
+	s = buffer + part3;
+	while (*s)
+		*p++ = *s++;
+	*p++ = 0;
+
+	return 0;
 }
 

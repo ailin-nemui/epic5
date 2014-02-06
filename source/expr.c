@@ -1,4 +1,4 @@
-/* $EPIC: expr.c,v 1.41 2012/11/24 18:53:36 jnelson Exp $ */
+/* $EPIC: expr.c,v 1.42 2014/02/06 17:14:24 jnelson Exp $ */
 /*
  * expr.c -- The expression mode parser and the textual mode parser
  * #included by alias.c -- DO NOT DELETE
@@ -40,7 +40,7 @@
 /* Function decls */
 static	void	TruncateAndQuote (char **, const char *, ssize_t, const char *);
 static	char	*alias_special_char(char **, char *, const char *, char *);
-static	void	do_alias_string (char *, char *);
+static	void	do_alias_string (char *, const char *);
 
 char *alias_string = NULL;
 
@@ -1911,7 +1911,7 @@ static	void	TruncateAndQuote (char **buff, const char *add, ssize_t length, cons
 	return;
 }
 
-static void	do_alias_string (char *unused, char *input)
+static void	do_alias_string (char *unused, const char *input)
 {
 	malloc_strcpy(&alias_string, input);
 }

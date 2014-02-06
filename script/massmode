@@ -1,5 +1,7 @@
 IF (WORD(2 $LOADINFO()) != [pf]) { LOAD -pf $WORD(1 $LOADINFO()); RETURN; };
 
+package massmode;
+
 # MASSMODE [channel] <+-><mode> <nick> [<nick> ...]
 #
 # Sets or clear <mode> on the given nicks in [channel], or $C if [channel]
@@ -45,7 +47,11 @@ ALIAS MASSMODE {
 ALIAS CHANVOICES { RETURN $STRIP(.!&*@+? $PATTERN(%+% $CHANNEL($0))) };
 ALIAS NOCHANVOICES { RETURN $STRIP(.!&*@+? $FILTER(*+* $CHANNEL($0))) };
 
-ALIAS OP { MASSMODE +O $* };
-ALIAS VOICE { MASSMODE +V $* };
+ALIAS OP { MASSMODE +o $* };
+ALIAS VOICE { MASSMODE +v $* };
+#ALIAS DEOP { MASSMODE -o $* };
+ALIAS DEVOICE { MASSMODE -v $* };
 ALIAS MOP (CHAN DEFAULT $C) { MASSMODE $CHAN +o $NOCHOPS($CHAN) };
+ALIAS MDEOP (CHAN DEFAULT $C) { MASSMODE $CHAN -o $NOCHOPS($CHAN) };
 ALIAS MVOICE (CHAN DEFAULT $C) { MASSMODE $CHAN +v $NOCHANVOICES($CHAN) };
+ALIAS MDEVOICE (CHAN DEFAULT $C) { MASSMODE $CHAN -v $NOCHANVOICES($CHAN) };
