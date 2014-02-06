@@ -2,7 +2,8 @@ EPIC5 Projects, Bugs, and other Errata:
 
 KNOWN ERRATA (eg, bugs, or unresolved requests):
 ------------------------------------------------
-<Fix _all_ these bugs?>
+* Fully regression test all keybindings -- word ones are borked.
+* Zlonix can type, but not see russian chars, figure out why.
 
 MEDIUM-TERM PROJECTS
 --------------------
@@ -366,4 +367,6 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Even things like cut buffering work.
 * HOWEVER -- it seems this stuff doesn't work in GNU screen. can't fix this. :/
 * Internal function strext2() allows me to cut substrings out, for input buf.
+* Fix input_delete_character(), it forgot to call retokenize_input()
+* Fix term_inputline_putchar() so it doesn't mangle 0x9b (valid utf8 char)
 

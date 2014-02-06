@@ -1,4 +1,4 @@
-/* $EPIC: input.c,v 1.69 2014/02/06 17:14:24 jnelson Exp $ */
+/* $EPIC: input.c,v 1.70 2014/02/06 18:27:38 jnelson Exp $ */
 /*
  * input.c: does the actual input line stuff... keeps the appropriate stuff
  * on the input line, handles insert/delete of characters/words... the whole
@@ -1116,6 +1116,7 @@ BUILT_IN_KEYBINDING(input_delete_character)
 
 	/* Whack the character under cursor and redraw input line */
 	ov_strcpy(CURSOR_SPOT, NEXT_SPOT);
+	retokenize_input(LOGICAL_CURSOR);
 	update_input(last_input_screen, UPDATE_FROM_CURSOR);
 }
 

@@ -1,4 +1,4 @@
-/* $EPIC: term.c,v 1.27 2013/07/28 23:16:14 jnelson Exp $ */
+/* $EPIC: term.c,v 1.28 2014/02/06 18:27:38 jnelson Exp $ */
 /*
  * term.c -- termios and (termcap || terminfo) handlers
  *
@@ -716,7 +716,7 @@ void	term_inputline_putchar (unsigned char c)
 	 * we catch the very nasty 0x9b which is the escape character with
 	 * the high bit set.  
 	 */
-	if (c < 0x20 || c == 0x9b)
+	if (c < 0x20/* || c == 0x9b*/)
 	{
 		term_standout_on();
 		putchar_x((c | 0x40) & 0x7f);

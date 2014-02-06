@@ -254,9 +254,10 @@ int     next_code_point (const unsigned char **i)
         }
 
         /* The 3 high bits are set only?  -- 3 bytes */
-        if ((a & 0xF0) == 0xE0)
+        else if ((a & 0xF0) == 0xE0)
         {
                 if ((b & 0xC0) == 0x80)
+		{
                   if ((c & 0xC0) == 0x80)
                   {
                     result = ((a & 0x0F) << 12) + 
@@ -264,13 +265,20 @@ int     next_code_point (const unsigned char **i)
 				(c & 0x3f);
                     (*i) += 3;
                   }
+		  else
+			/*yell("3 bytes - byte 3 was bad %X", (int)c)*/;
+		}
+		else
+			/*yell("3 bytes - byte 2 was bad %X", (int)b)*/;
         }
 
         /* The 4 high bits are set only?  -- 4 bytes*/
-        if ((a & 0xF8) == 0xF0)
+        else if ((a & 0xF8) == 0xF0)
         {
                 if ((b & 0xC0) == 0x80)
+		{
                   if ((c & 0xC0) == 0x80)
+		  {
                     if ((d & 0xC0) == 0x80)
                     {
                       result = ((a & 0x07) << 18) + 
@@ -279,7 +287,14 @@ int     next_code_point (const unsigned char **i)
 				(d & 0x3F);
                       (*i) += 4;
                     }
+		  }
+		}
         }
+
+	else if ((a & 0x80) == 0x80)
+	{
+		/*yell("? bytes: byte 1 was bad: %X", (int)a);*/
+	}
 
 	/* If result is -1, something is wrong */
 	if (result == -1)
