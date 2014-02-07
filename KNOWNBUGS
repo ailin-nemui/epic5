@@ -384,4 +384,4 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Fix read_color_seq().
 * ... again.
 * Fix screen prompts so they can recurse, and restore previous state!
-
+* Fix line wrapping bug that zlonix found.

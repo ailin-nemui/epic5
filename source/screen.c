@@ -1,4 +1,4 @@
-/* $EPIC: screen.c,v 1.159 2014/02/07 21:43:28 jnelson Exp $ */
+/* $EPIC: screen.c,v 1.160 2014/02/07 23:02:55 jnelson Exp $ */
 /*
  * screen.c
  *
@@ -1555,7 +1555,8 @@ const	unsigned char	*cont_ptr;
 
 		    default:
 		    {
-			if (!strchr(words, *ptr))
+			if (codepoint > 127 || 
+				!strchr(words, (codepoint & 0x7F)))
 			{
 				if (indent == -1)
 					indent = col;
@@ -1580,15 +1581,28 @@ const	unsigned char	*cont_ptr;
 		    case ' ':
 		    case ND_SPACE:
 		    {
+			char p, n;
+
+			/* We know it is 7 bits here! */
+			p = (codepoint & 0x7F);
+			n = *ptr;
+
 			if (indent == 0)
 			{
 				indent = -1;
 				firstwb = pos;
 			}
+
+			/* By default, the line break is AT the space. */
 			word_break = pos;
 			saved_a = a;
-			if (*ptr != ' ' && ptr[1] &&
-			    (col + 1 < max_cols))
+
+			/* 
+			 * Unless the breaking character is not a space
+			 * (like a comma or something) and then it becomes
+			 * the next character, if there is room for it.
+			 */
+			if (p != ' ' && n && (col + 1 < max_cols))
 				word_break++;
 
 			/* XXX Sigh -- exactly the same as above. */
@@ -1602,7 +1616,7 @@ const	unsigned char	*cont_ptr;
 				buffer[pos++] = *x;
 			break;
 		    }
-		} /* End of switch (*ptr) */
+		} /* End of switch (codepoint) */
 
 		/*
 		 * Must check for cols >= maxcols+1 becuase we can have a 
@@ -2058,7 +2072,9 @@ int 	output_with_count (const unsigned char *str1, int clreol, int output)
 
 	for (str = str1; str && *str; )
 	{
-	    codepoint = next_code_point(&str);
+	    /* On any error, just stop. */
+	    if ((codepoint = next_code_point(&str)) == -1)
+		break;
 
 	    switch (codepoint)
 	    {
