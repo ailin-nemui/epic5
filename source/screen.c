@@ -1,4 +1,4 @@
-/* $EPIC: screen.c,v 1.155 2014/02/07 01:38:29 jnelson Exp $ */
+/* $EPIC: screen.c,v 1.156 2014/02/07 14:29:33 jnelson Exp $ */
 /*
  * screen.c
  *
@@ -315,15 +315,20 @@ static int	read_attributes (const unsigned char *input, Attribute *a)
 {
 	if (!input)
 		return -1;
-	if (*input != '\006')
-		return -1;
-	if (!input[0] || !input[1] || !input[2] || !input[3] || !input[4])
+
+	/* 
+	 * This used to check for *input != '\006' but it was inconvenient
+	 * to enforce that, so now it's just an optional check.
+	 */
+	if (*input == '\006')
+		input++;
+
+	if (!input[0] || !input[1] || !input[2] || !input[3])
 		return -1;
 
 	a->reverse = a->bold = a->blink = a->underline = a->altchar = 0;
 	a->color_fg = a->fg_color = a->color_bg = a->bg_color = 0;
 
-	input++;
 	if (*input & 0x01)	a->reverse = 1;
 	if (*input & 0x02)	a->bold = 1;
 	if (*input & 0x04)	a->blink = 1;
@@ -487,10 +492,12 @@ static ssize_t	read_color_seq (const unsigned char *start, void *d, int blinkbol
 	a = (d) ? (Attribute *)d : &ad;
 
 	/*
-	 * If we're passed a non ^C code, dont do anything.
+	 * Originally this was a check for *ptr == '\003' but it was
+	 * inconvenient to pass in the ^C here for prepare_display, so
+	 * i'm making this check optional.
 	 */
-	if (*ptr != '\003')
-		return 0;
+	if (*ptr == '\003')
+		ptr++;
 
 	/*
 	 * This is a one-or-two-time-through loop.  We find the maximum
@@ -933,7 +940,7 @@ start_over:
  * State 8 is a "tab"
  * State 9 is a "non-destructive space"
  */
-static	unsigned char	ansi_state[256] = {
+static	unsigned char	ansi_state[128] = {
 /*	^@	^A	^B	^C	^D	^E	^F	^G(\a) */
 	6,	6,	4,	3,	6,	4,	4,	7,  /* 000 */
 /*	^H	^I	^J(\n)	^K	^L(\f)	^M(\r)	^N	^O */
@@ -954,22 +961,6 @@ static	unsigned char	ansi_state[256] = {
 	0,	0,	0,	0,	0,	0,	0,	0,  /* 150 */
 	0,	0,	0,	0,	0,	0,	0,	0,  /* 160 */
 	0,	0,	0,	0,	0,	0,	0,	0,  /* 170 */
-	1,	1,	1,	1,	1,	1,	1,	1,  /* 200 */
-	1,	1,	1,	1,	1,	1,	1,	1,  /* 210 */
-	1,	1,	1,	1,	1,	1,	1,	1,  /* 220 */
-	1,	1,	1,	1,	1,	1,	1,	1,  /* 230 */
-	0,	0,	0,	0,	0,	0,	0,	0,  /* 240 */
-	0,	0,	0,	0,	0,	0,	0,	0,  /* 250 */
-	0,	0,	0,	0,	0,	0,	0,	0,  /* 260 */
-	0,	0,	0,	0,	0,	0,	0,	0,  /* 270 */
-	0,	0,	0,	0,	0,	0,	0,	0,  /* 300 */
-	0,	0,	0,	0,	0,	0,	0,	0,  /* 310 */
-	0,	0,	0,	0,	0,	0,	0,	0,  /* 320 */
-	0,	0,	0,	0,	0,	0,	0,	0,  /* 330 */
-	0,	0,	0,	0,	0,	0,	0,	0,  /* 340 */
-	0,	0,	0,	0,	0,	0,	0,	0,  /* 350 */
-	0,	0,	0,	0,	0,	0,	0,	0,  /* 360 */
-	0,	0,	0,	0,	0,	0,	0,	0,  /* 370 */
 };
 
 /*
@@ -1029,10 +1020,6 @@ STRIP_OTHER		X    -    -    -    -    -    -    -    X    X
  *	in "mangler", with attribute changes represented in the "logical"
  *	format.
  */
-#define this_char() (*str)
-#define next_char() (*str++)
-#define put_back() (str--)
-#define nlchar '\n'
 unsigned char *	new_normalize_string (const unsigned char *str, int logical, int mangle)
 {
 	unsigned char *	output;
@@ -1047,6 +1034,8 @@ unsigned char *	new_normalize_string (const unsigned char *str, int logical, int
 			strip_underline, strip_altchar, strip_color, 
 			strip_all_off, strip_nd_space, strip_c1, boldback;
 	int		strip_unprintable, strip_other;
+	int		codepoint, state, cols;
+	char 		utf8str[16], *x;
 	size_t		(*attrout) (unsigned char *, Attribute *, Attribute *) = NULL;
 
 	mangle_escapes 	= ((mangle & MANGLE_ESCAPES) != 0);
@@ -1090,15 +1079,21 @@ unsigned char *	new_normalize_string (const unsigned char *str, int logical, int
 	output = (unsigned char *)new_malloc(maxpos + 192);
 	pos = 0;
 
-	while ((chr = next_char()))
+	while ((codepoint = next_code_point(&str)) > 0)
 	{
-	    if (pos > maxpos)
+	    if (pos > maxpos - 8)
 	    {
 		maxpos += 192; /* Extend 192 chars at a time */
 		RESIZE(output, unsigned char, maxpos + 192);
 	    }
 
-	    switch (ansi_state[chr])
+	    /* Unicode code points are always permitted */
+	    if (codepoint > 127)
+		state = 0;
+	    else
+		state = ansi_state[codepoint];
+
+	    switch (state)
 	    {
 		/*
 		 * State 0 are characters that are permitted under all
@@ -1110,31 +1105,22 @@ unsigned char *	new_normalize_string (const unsigned char *str, int logical, int
 				break;
 
 normal_char:
-			output[pos++] = chr;
-			pc++;
+			cols = codepoint_numcolumns(codepoint);
+			if (cols == -1)
+				cols = 0;
+			pc += cols;
+
+			ucs_to_utf8(codepoint, utf8str, sizeof(utf8str));
+			for (x = utf8str; *x; x++)
+				output[pos++] = *x;
+
 			break;
 		}
 
-		/*
-		 * State 1 is a control char with high bit set (C1 char)
+		/* 
+		 * The old State 1 was for C1 (high bit control chars)
+		 * These are now considered normal utf8 characters.
 		 */
-		case 1:
-		{
-			if (strip_unprintable)
-				break;
-			if (strip_c1)
-			{
-				chr = (chr | 0x60) & 0x7F;
-abnormal_char:
-				a.reverse = !a.reverse;
-				pos += attrout(output + pos, &olda, &a);
-				output[pos++] = chr;
-				a.reverse = !a.reverse;
-				pos += attrout(output + pos, &olda, &a);
-				break;
-			}
-			goto normal_char;
-		}
 
 		/*
 		 * State 5 are characters that are never permitted under
@@ -1160,18 +1146,20 @@ abnormal_char:
 			 * Either I special case it here, or in 
 			 * output_to_count.  I prefer here.
 			 */
-			if (logical == 3 && chr == '\f')
+			if (logical == 3 && codepoint == '\f')
 				goto normal_char;
 
 			if (strip_unprintable)
 				break;
+
+			/* XXX Sigh -- I bet anything this is wrong */
 			if (termfeatures & TERM_CAN_GCHAR)
 				goto normal_char;
 
 			if (normalize)
 			{
-				output[pos++] = (chr | 0x40) & 0x7F;
-				goto abnormal_char;
+				output[pos++] = (codepoint | 0x40) & 0x7F;
+				goto normal_char;
 			}
 			goto normal_char;
 		}
@@ -1186,8 +1174,8 @@ abnormal_char:
 
 		    if (mangle_escapes == 1)
 		    {
-			chr = '[';
-			goto abnormal_char;
+			codepoint = '[';
+			goto normal_char;
 		    }
 
 		    if (normalize == 1)
@@ -1244,7 +1232,6 @@ abnormal_char:
 		   {
 			ssize_t	len;
 
-			put_back();
 			len = read_color_seq(str, (void *)&a, boldback);
 			str += len;
 
@@ -1273,8 +1260,7 @@ abnormal_char:
 		    if (strip_unprintable)
 			break;
 
-		    put_back();
-		    switch (this_char())
+		    switch (codepoint)
 		    {
 			case REV_TOG:
 				if (!strip_reverse)
@@ -1310,7 +1296,6 @@ abnormal_char:
 			default:
 				break;
 		    }
-		    (void)next_char();
 
 		    /* After ALL_OFF, this is a harmless no-op */
 		    pos += attrout(output + pos, &olda, &a);
@@ -1479,6 +1464,10 @@ const	unsigned char	*cont_ptr;
 	Attribute	a, olda;
 	Attribute	saved_a;
 	unsigned char	*cont_free = NULL;
+	int		codepoint;
+	char		utf8str[16];
+	char *		x;
+	int		cols;
 
 	if (recursion)
 		panic(1, "prepare_display() called recursively");
@@ -1512,85 +1501,106 @@ const	unsigned char	*cont_ptr;
 	/*
 	 * Start walking through the entire string.
 	 */
-	for (ptr = str; *ptr && (pos < BIG_BUFFER_SIZE - 8); ptr++)
+	for (ptr = str; *ptr && (pos < BIG_BUFFER_SIZE - 8); )
 	{
-		switch (*ptr)
+		codepoint = next_code_point(&ptr);
+
+		switch (codepoint)
 		{
-			case '\007':      /* bell */
-				buffer[pos++] = *ptr;
-				break;
+		   case '\007':      /* bell */
+			buffer[pos++] = 7;
+			break;
 
-			case '\n':      /* Forced newline */
+		    case '\n':      /* Forced newline */
+		    {
+			my_newline = 1;
+			if (indent == 0)
+				indent = -1;
+			word_break = pos;
+			break; /* case '\n' */
+		    }
+
+		    /* Attribute changes -- copy them unmodified. */
+		    case '\006':
+		    {
+			if (read_attributes(ptr, &a) == 0)
 			{
-				my_newline = 1;
-				if (indent == 0)
-					indent = -1;
-				word_break = pos;
-				break; /* case '\n' */
+				buffer[pos++] = 6;
+				buffer[pos++] = *ptr++;
+				buffer[pos++] = *ptr++;
+				buffer[pos++] = *ptr++;
+				buffer[pos++] = *ptr++;
 			}
+			else
+				abort();
 
-                        /* Attribute changes -- copy them unmodified. */
-                        case '\006':
-                        {
-                                if (read_attributes(ptr, &a) == 0)
-                                {
-                                        buffer[pos++] = *ptr++;
-                                        buffer[pos++] = *ptr++;
-                                        buffer[pos++] = *ptr++;
-                                        buffer[pos++] = *ptr++;
-                                        buffer[pos++] = *ptr;
-                                }
-                                else
-                                        abort();
-
-				/*
-				 * XXX This isn't a hack, but it _is_ ugly!
-				 * Because I'm too lazy to find a better place
-				 * to put this (down among the line wrapping
-				 * logic would be a good place), I take the
-				 * cheap way out by "saving" any attribute
-				 * changes that occur prior to the first space
-				 * in a line.  If there are no spaces for the
-				 * rest of the line, then this *is* the saved
-				 * attributes we will need to start the next
-				 * line.  This fixes an abort().
-				 */
-				if (word_break == 0)
-					saved_a = a;
-
-                                continue;          /* Skip the column check */
-                        }
-
-			default:
-			{
-				if (!strchr(words, *ptr))
-				{
-					if (indent == -1)
-						indent = col;
-					buffer[pos++] = *ptr;
-					col++;
-					break;
-				}
-				/* FALLTHROUGH */
-			}
-
-			case ' ':
-			case ND_SPACE:
-			{
-				if (indent == 0)
-				{
-					indent = -1;
-					firstwb = pos;
-				}
-				word_break = pos;
+			/*
+			 * XXX This isn't a hack, but it _is_ ugly!
+			 * Because I'm too lazy to find a better place
+			 * to put this (down among the line wrapping
+			 * logic would be a good place), I take the
+			 * cheap way out by "saving" any attribute
+			 * changes that occur prior to the first space
+			 * in a line.  If there are no spaces for the
+			 * rest of the line, then this *is* the saved
+			 * attributes we will need to start the next
+			 * line.  This fixes an abort().
+			 */
+			if (word_break == 0)
 				saved_a = a;
-				if (*ptr != ' ' && ptr[1] &&
-				    (col + 1 < max_cols))
-					word_break++;
-				buffer[pos++] = *ptr;
-				col++;
+
+			continue;          /* Skip the column check */
+		    }
+
+		    default:
+		    {
+			if (!strchr(words, *ptr))
+			{
+				if (indent == -1)
+					indent = col;
+
+				cols = codepoint_numcolumns(codepoint);
+				if (cols == -1)
+					cols = 0;
+				col += cols;
+
+				ucs_to_utf8(codepoint, utf8str, sizeof(utf8str));
+				for (x = utf8str; *x; x++)
+					buffer[pos++] = *x;
 				break;
 			}
+			/* 
+			 * The above is only for non-whitespace.
+			 * whitespace is...
+			 */
+			/* FALLTHROUGH */
+		    }
+
+		    case ' ':
+		    case ND_SPACE:
+		    {
+			if (indent == 0)
+			{
+				indent = -1;
+				firstwb = pos;
+			}
+			word_break = pos;
+			saved_a = a;
+			if (*ptr != ' ' && ptr[1] &&
+			    (col + 1 < max_cols))
+				word_break++;
+
+			/* XXX Sigh -- exactly the same as above. */
+			cols = codepoint_numcolumns(codepoint);
+			if (cols == -1)
+				cols = 0;
+			col += cols;
+
+			ucs_to_utf8(codepoint, utf8str, sizeof(utf8str));
+			for (x = utf8str; *x; x++)
+				buffer[pos++] = *x;
+			break;
+		    }
 		} /* End of switch (*ptr) */
 
 		/*
@@ -1857,6 +1867,10 @@ const	unsigned char	*cont_ptr;
  * adjust this function, for if you do not, then HIGGLEDY PIGGLEDY WILL ENSUE.
  *
  * XXX - This is a bletcherous inelegant hack and i hate it.
+ *
+ * This function is used for:
+ *	1. Toplines
+ *	2. Continuation line markers
  */
 unsigned char *prepare_display2 (const unsigned char *orig_str, int max_cols, int allow_truncate, char fillchar, int denormalize)
 {
@@ -1871,6 +1885,10 @@ const 	unsigned char	*ptr;
 	unsigned char 	buffer[BIG_BUFFER_SIZE + 1];
 	Attribute	a;
 	unsigned char *	real_retval;
+	int		codepoint;
+	char 		utf8str[16];
+	char *		x;
+	int		cols;
 
         /* Reset all attributes to zero */
         a.bold = a.underline = a.reverse = a.blink = a.altchar = 0;
@@ -1882,50 +1900,61 @@ const 	unsigned char	*ptr;
 	/*
 	 * Start walking through the entire string.
 	 */
-	for (ptr = str; *ptr && (pos < BIG_BUFFER_SIZE - 8); ptr++)
+	for (ptr = str; *ptr && (pos < BIG_BUFFER_SIZE - 8); )
 	{
-		switch (*ptr)
+	    codepoint = next_code_point(&ptr);
+
+	    switch (codepoint)
+	    {
+		case 7:		/* Bell */
+			buffer[pos++] = '\007';
+			break;
+
+		case 10:	/* Forced newline */
+			my_newline = 1;
+			break;
+
+		/* Attribute changes -- copy them unmodified. */
+		case 6:
 		{
-			case '\007':      /* bell */
-				buffer[pos++] = *ptr;
-				break;
-
-			case '\n':      /* Forced newline */
-				my_newline = 1;
-				break; /* case '\n' */
-
-                        /* Attribute changes -- copy them unmodified. */
-                        case '\006':
-                        {
-                                if (read_attributes(ptr, &a) == 0)
-                                {
-                                        buffer[pos++] = *ptr++;
-                                        buffer[pos++] = *ptr++;
-                                        buffer[pos++] = *ptr++;
-                                        buffer[pos++] = *ptr++;
-                                        buffer[pos++] = *ptr;
-                                }
-                                else
-                                        abort();
-
-                                continue;          /* Skip the column check */
-                        }
-
-			default:
+			if (read_attributes(ptr, &a) == 0)
 			{
-				buffer[pos++] = *ptr;
-				col++;
-				break;
+				buffer[pos++] = '\006';
+				buffer[pos++] = *ptr++;
+				buffer[pos++] = *ptr++;
+				buffer[pos++] = *ptr++;
+				buffer[pos++] = *ptr++;
 			}
-		} /* End of switch (*ptr) */
+			else
+				abort();
 
-		/*
-		 * Must check for cols >= maxcols+1 becuase we can have a 
-		 * character on the extreme screen edge, and we would still 
-		 * want to treat this exactly as 1 line, and col has already 
-		 * been incremented.
-		 */
-		if ((allow_truncate && col > max_cols) || my_newline)
+			continue;          /* Skip the column check */
+		}
+
+		/* Any other printable character */
+		default:
+		{
+			/* How many columns does this codepoint take? */
+			cols = codepoint_numcolumns(codepoint);
+			if (cols == -1)
+				cols = 0;
+			col += cols;
+
+			ucs_to_utf8(codepoint, utf8str, sizeof(utf8str));
+			for (x = utf8str; *x; x++)
+				buffer[pos++] = *x;
+
+			break;
+		}
+	    } /* End of switch (*ptr) */
+
+	    /*
+	     * Must check for cols >= maxcols+1 becuase we can have a 
+	     * character on the extreme screen edge, and we would still 
+	     * want to treat this exactly as 1 line, and col has already 
+	     * been incremented.
+	     */
+	    if ((allow_truncate && col > max_cols) || my_newline)
 			break;
 	}
 	buffer[pos] = 0;
@@ -2017,17 +2046,23 @@ int 	output_with_count (const unsigned char *str1, int clreol, int output)
 			out = 0;
 	Attribute	a;
 	const unsigned char *	str;
+	int		codepoint;
+	char		utf8str[16];
+	char *		x;
+	int		cols;
 
         /* Reset all attributes to zero */
         a.bold = a.underline = a.reverse = a.blink = a.altchar = 0;
         a.color_fg = a.color_bg = a.fg_color = a.bg_color = 0;
 
-	for (str = str1; str && *str; str++)
+	for (str = str1; str && *str; )
 	{
-	    switch (*str)
+	    codepoint = next_code_point(&str);
+
+	    switch (codepoint)
 	    {
 		/* Attribute marker */
-		case '\006':
+		case 6:
 		{
 			if (read_attributes(str, &a))
 				break;
@@ -2038,7 +2073,7 @@ int 	output_with_count (const unsigned char *str1, int clreol, int output)
 		}
 
 		/* Terminal beep */
-		case '\007':
+		case 7:
 		{
 			beep++;
 			break;
@@ -2056,6 +2091,12 @@ int 	output_with_count (const unsigned char *str1, int clreol, int output)
 		/* Any other printable character */
 		default:
 		{
+			/* How many columns does this codepoint take? */
+			cols = codepoint_numcolumns(codepoint);
+			if (cols == -1)
+				cols = 0;
+			out += cols;
+
 			/*
 			 * Note that 'putchar_x()' is safe here because 
 			 * normalize_string() has already removed all of the 
@@ -2064,8 +2105,12 @@ int 	output_with_count (const unsigned char *str1, int clreol, int output)
 			 * probably because the user specifically asked for it.
 			 */
 			if (output)
-				putchar_x(*str);
-			out++;
+			{
+				ucs_to_utf8(codepoint, utf8str, sizeof(utf8str));
+				for (x = utf8str; *x; x++)
+					putchar_x(*x);
+			}
+
 			break;
 		}
 	    }

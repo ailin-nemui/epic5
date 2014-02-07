@@ -380,3 +380,7 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Add "number_of_logical_chars" to input line so we can boundary check eol.
 * Error if you try to /bind a high bit char -- that's illegal now.
 * Test and fix composed characters (for mac os x)
+* Teach the normalize_string, prepare_display, and output_with_count about utf8
+* Since utf8 parsing is "consumptive", some utility funcs changed too
+* Column counting/line wrapping in the display works correctly now.
+
