@@ -1,4 +1,4 @@
-/* $EPIC: screen.c,v 1.157 2014/02/07 17:30:42 jnelson Exp $ */
+/* $EPIC: screen.c,v 1.158 2014/02/07 17:44:58 jnelson Exp $ */
 /*
  * screen.c
  *
@@ -641,10 +641,7 @@ static ssize_t	read_color_seq (const unsigned char *start, void *d, int blinkbol
 			continue;
 		}
 		else
-		{
-			ptr++;
 			break;
-		}
 	}
 
 	return ptr - start;

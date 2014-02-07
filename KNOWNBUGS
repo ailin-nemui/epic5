@@ -382,3 +382,4 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Since utf8 parsing is "consumptive", some utility funcs changed too
 * Column counting/line wrapping in the display works correctly now.
 * Fix read_color_seq().
+* ... again.
