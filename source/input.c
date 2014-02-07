@@ -1,4 +1,4 @@
-/* $EPIC: input.c,v 1.72 2014/02/07 01:38:29 jnelson Exp $ */
+/* $EPIC: input.c,v 1.73 2014/02/07 02:06:47 jnelson Exp $ */
 /*
  * input.c: does the actual input line stuff... keeps the appropriate stuff
  * on the input line, handles insert/delete of characters/words... the whole
@@ -395,8 +395,8 @@ int	retokenize_input (int start)
 			current_column += cols;
 			start++;
 			LOGICAL_CHARS[start] = 9999;
-			old_s = s;
 		}
+		old_s = s;
 	}
 
 	/* Set down the null */

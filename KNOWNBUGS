@@ -2,8 +2,11 @@ EPIC5 Projects, Bugs, and other Errata:
 
 KNOWN ERRATA (eg, bugs, or unresolved requests):
 ------------------------------------------------
-* Fully regression test all keybindings -- word ones are borked.
-* Zlonix can type, but not see russian chars, figure out why.
+* Flesh out translate_user_input() so it supports user's encoding->utf8
+* Flesh out safe_puts() so it supports utf8->user's encoding
+* Flesh out prepare_display() and output_with_count() to support utf8 
+  column counting
+* Figure out what the main putchar is, and make it utf8 and iconv aware.
 
 MEDIUM-TERM PROJECTS
 --------------------
@@ -376,3 +379,4 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Fix handling of highlight chars
 * Add "number_of_logical_chars" to input line so we can boundary check eol.
 * Error if you try to /bind a high bit char -- that's illegal now.
+* Test and fix composed characters (for mac os x)
