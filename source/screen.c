@@ -1,4 +1,4 @@
-/* $EPIC: screen.c,v 1.158 2014/02/07 17:44:58 jnelson Exp $ */
+/* $EPIC: screen.c,v 1.159 2014/02/07 21:43:28 jnelson Exp $ */
 /*
  * screen.c
  *
@@ -129,8 +129,7 @@ static	int	ok_to_output	(Window *);
 static	void	edit_codepoint (u_32int_t key);
 static ssize_t read_esc_seq     (const unsigned char *, void *, int *);
 static ssize_t read_color_seq   (const unsigned char *, void *d, int);
-static void	restore_input_line (WaitPrompt *oldprompt);
-static void	save_input_line (WaitPrompt *wp);
+static void	destroy_prompt (Screen *s, WaitPrompt **oldprompt);
 
 
 /*
@@ -3331,12 +3330,10 @@ void	fire_wait_prompt (u_32int_t key)
 	oldprompt = last_input_screen->promptlist;
 	ucs_to_utf8(key, utf8str, sizeof(utf8str));
 	(*oldprompt->func)(oldprompt->data, utf8str);
-	restore_input_line(oldprompt);
 
 	last_input_screen->promptlist = oldprompt->next;
-	new_free(&oldprompt->data);
-	new_free(&oldprompt->prompt);
-	new_free((char **)&oldprompt);
+	destroy_prompt(last_input_screen, &oldprompt);
+
 }
 
 void	fire_normal_prompt (const char *utf8str)
@@ -3345,12 +3342,9 @@ void	fire_normal_prompt (const char *utf8str)
 
 	oldprompt = last_input_screen->promptlist;
 	(*oldprompt->func)(oldprompt->data, utf8str);
-	restore_input_line(oldprompt);
 
 	last_input_screen->promptlist = oldprompt->next;
-	new_free(&oldprompt->data);
-	new_free(&oldprompt->prompt);
-	new_free((char **)&oldprompt);
+	destroy_prompt(last_input_screen, &oldprompt);
 }
 
 
@@ -3401,54 +3395,57 @@ void 	add_wait_prompt (const char *prompt, void (*func)(char *data, const char *
 {
 	WaitPrompt **AddLoc,
 		   *New;
-	Screen *	s;
+	Screen *	s, *old_last_input_screen;;
+
+	old_last_input_screen = last_input_screen;
 
 	if (current_window->screen)
 		s = current_window->screen;
 	else
 		s = main_screen;
 
+	last_input_screen = s;
 	New = (WaitPrompt *) new_malloc(sizeof(WaitPrompt));
-	New->prompt = malloc_strdup(prompt);
 	New->data = malloc_strdup(data);
 	New->type = type;
 	New->echo = echo;
 	New->func = func;
-	New->next = NULL;
 
-	for (AddLoc = &s->promptlist; *AddLoc; AddLoc = &(*AddLoc)->next)
-		/* nothing */;
-	*AddLoc = New;
-	save_input_line(New);
+	New->my_input_line = (InputLine *)new_malloc(sizeof(InputLine));
+        New->my_input_line->input_buffer[0] = '\0';
+        New->my_input_line->first_display_char = 0;
+        New->my_input_line->number_of_logical_chars = 0;
+	New->my_input_line->input_prompt_raw = malloc_strdup(prompt);
+        New->my_input_line->input_prompt = malloc_strdup(empty_string);
+        New->my_input_line->input_prompt_len = 0;
+        New->my_input_line->input_line = 23;
+        New->my_input_line->ind_left = malloc_strdup(empty_string);
+        New->my_input_line->ind_left_len = 0;
+        New->my_input_line->ind_right = malloc_strdup(empty_string);
+        New->my_input_line->ind_right_len = 0;
+	New->saved_input_line = s->il;
+	s->il = New->my_input_line;
 
-	/* XXX Calling keybinding directly is a hack */
-	input_reset_line(0, NULL);
-}
+	New->next = s->promptlist;
+	s->promptlist = New;
 
-static void	restore_input_line (WaitPrompt *oldprompt)
-{
-	int	prompt_type;
-
-	prompt_type = oldprompt->type;
-
-	/* 
-	 * If there are no further prompts, reset the global state.
-	 */
-	strlcpy(last_input_screen->il->input_buffer, 
-			oldprompt->saved_input_buffer, 
-			sizeof(last_input_screen->il->input_buffer));
-	/* Logical cursor */
-	/*last_input_screen->il->buffer_pos = oldprompt->saved_buffer_pos;	*/
+	init_input();
 	update_input(last_input_screen, UPDATE_ALL);
+	last_input_screen = old_last_input_screen;
 }
 
-static void	save_input_line (WaitPrompt *wp)
+static void	destroy_prompt (Screen *s, WaitPrompt **oldprompt)
 {
-	if (!wp)
-		return;
+	s->il = (*oldprompt)->saved_input_line;
 
-	strlcpy(wp->saved_input_buffer, last_input_screen->il->input_buffer,
-			sizeof(wp->saved_input_buffer));
-	/*wp->saved_buffer_pos = last_input_screen->il->buffer_pos; */
+	new_free(&(*oldprompt)->my_input_line->ind_right);
+	new_free(&(*oldprompt)->my_input_line->ind_left);
+	new_free(&(*oldprompt)->my_input_line->input_prompt);
+	new_free(&(*oldprompt)->my_input_line->input_prompt_raw);
+	new_free((char **)&(*oldprompt)->my_input_line);
+	new_free(&(*oldprompt)->data);
+	new_free((char **)oldprompt);
+
+	update_input(last_input_screen, UPDATE_ALL);
 }
 

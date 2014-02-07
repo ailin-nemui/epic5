@@ -383,3 +383,5 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Column counting/line wrapping in the display works correctly now.
 * Fix read_color_seq().
 * ... again.
+* Fix screen prompts so they can recurse, and restore previous state!
+

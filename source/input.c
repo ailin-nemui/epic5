@@ -1,4 +1,4 @@
-/* $EPIC: input.c,v 1.73 2014/02/07 02:06:47 jnelson Exp $ */
+/* $EPIC: input.c,v 1.74 2014/02/07 21:43:28 jnelson Exp $ */
 /*
  * input.c: does the actual input line stuff... keeps the appropriate stuff
  * on the input line, handles insert/delete of characters/words... the whole
@@ -615,11 +615,6 @@ const char *	prompt;
 	 */
 	if (last_input_screen->il->input_prompt_raw)
 		prompt = last_input_screen->il->input_prompt_raw;
-	else if (last_input_screen->promptlist)
-	{
-		prompt = last_input_screen->promptlist->prompt;
-		do_echo = last_input_screen->promptlist->echo;
-	}
 	else if (is_valid_process(get_target_by_refnum(0)) != -1)
 		prompt = get_prompt_by_refnum(0);
 	else
@@ -685,7 +680,8 @@ const char *	prompt;
 	 * side-to-side scrolling effect.
 	 */
 	if ((last_input_screen->li != last_input_screen->old_li) ||
-	    (last_input_screen->co != last_input_screen->old_co))
+	    (last_input_screen->co != last_input_screen->old_co) ||
+	    (INPUT_LINE != last_input_screen->li))
 	{
 		/*
 		 * The input line is always the bottom line

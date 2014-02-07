@@ -17,19 +17,6 @@
 #define WAIT_PROMPT_KEY         0x02
 #define WAIT_PROMPT_DUMMY	0x04
 
-typedef struct PromptStru
-{
-	char *	prompt;
-	char *	data;
-	int	type;
-	int	echo;
-	void	(*func) (char *, const char *);
-	unsigned char saved_input_buffer[INPUT_BUFFER_SIZE + 1];
-	/*int	saved_buffer_pos; */
-
-	struct	PromptStru	*next;
-}	WaitPrompt;
-
 typedef struct InputLine
 {
 	/* The current UTF8 input line (plain old c string */
@@ -59,6 +46,20 @@ typedef struct InputLine
 
 	int	refresh;
 }	InputLine;
+
+
+typedef struct PromptStru
+{
+	char *		data;
+	int		type;
+	int		echo;
+	void		(*func) (char *, const char *);
+
+	InputLine *	my_input_line;
+	InputLine *	saved_input_line;
+
+	struct	PromptStru	*next;
+}	WaitPrompt;
 
 
 typedef	struct	ScreenStru
