@@ -45,6 +45,7 @@ typedef struct InputLine
 	int	logical_cursor;
 
 	int	first_display_char;
+	int	number_of_logical_chars;
 
 	char *	input_prompt_raw;
 	unsigned char	*input_prompt;

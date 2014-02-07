@@ -372,4 +372,7 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Fix $curpos(), sort of.  Does this return byte offset or column offset?
 * 	It used to be the same, but now it's not!
 * InputLine.buffer_pos isn't used any more.  Whack that.
-
+* Test every keybinding, fix the ones that are broken.
+* Fix handling of highlight chars
+* Add "number_of_logical_chars" to input line so we can boundary check eol.
+* Error if you try to /bind a high bit char -- that's illegal now.

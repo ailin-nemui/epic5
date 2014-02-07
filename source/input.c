@@ -1,4 +1,4 @@
-/* $EPIC: input.c,v 1.71 2014/02/06 20:31:23 jnelson Exp $ */
+/* $EPIC: input.c,v 1.72 2014/02/07 01:38:29 jnelson Exp $ */
 /*
  * input.c: does the actual input line stuff... keeps the appropriate stuff
  * on the input line, handles insert/delete of characters/words... the whole
@@ -147,6 +147,7 @@ static int	input_move_cursor (int dir, int refresh);
 #define LOGICAL_CHARS		current_screen->il->logical_chars
 #define LOGICAL_COLUMN		current_screen->il->logical_columns
 #define START			current_screen->il->first_display_char
+#define MAXCOLS			current_screen->il->number_of_logical_chars
 
 /*
  * The "LOGICAL CURSOR" is wherever the input point is.  Most of the
@@ -258,7 +259,7 @@ BUILT_IN_KEYBINDING(debug_input_line)
 
 	yell("INPUT LINE is: %s [%s]", INPUT_BUFFER, buffer);
 
-	for (i = 0; i < 80; i++)
+	for (i = 0; i < INPUT_BUFFER_SIZE; i++)
 	{
 		offset = LOGICAL_CHARS[i];
 		column = LOGICAL_COLUMN[i];
@@ -380,9 +381,11 @@ int	retokenize_input (int start)
 	{
 		codepoint = next_code_point(&s);
 		cols = codepoint_numcolumns(codepoint);
+		/* Invalid chars are probably highlights */
 		if (cols == -1)
-			/* Not sure what to do on error -- skip it? */;
-		else if (cols == 0)
+			cols = 1;
+
+		if (cols == 0)
 			/* skip over continuation chars */;
 		else
 		{
@@ -399,9 +402,9 @@ int	retokenize_input (int start)
 	/* Set down the null */
 	LOGICAL_CHARS[start] = s - INPUT_BUFFER;
 	LOGICAL_COLUMN[start] = current_column;
-	start++;
+	MAXCOLS = start;
 
-	while (start < INPUT_BUFFER_SIZE)
+	while (++start < INPUT_BUFFER_SIZE)
 	{
 		LOGICAL_CHARS[start] = 9999;
 		LOGICAL_COLUMN[start] = 0;
@@ -1181,12 +1184,14 @@ static void	cut_input (int start, int end)
 {
 	char *	buffer;
 	size_t	size;
-
 	int	x;
 	int	startpos;
 	int	endpos;
 
 	startpos = LOGICAL_CHARS[start];
+	/* We need to sanity check 'end' here. */
+	if (end > MAXCOLS)
+		end = MAXCOLS;
 	endpos = LOGICAL_CHARS[end + 1];
 	strext2(&CUT_BUFFER, INPUT_BUFFER, startpos, endpos);
 
@@ -1257,7 +1262,7 @@ BUILT_IN_KEYBINDING(input_delete_next_word)
 
 	anchor = LOGICAL_CURSOR;
 	input_forward_word(0, NULL);
-	cut_input(LOGICAL_CURSOR, anchor);
+	cut_input(anchor, LOGICAL_CURSOR - 1);
 }
 
 /*
@@ -1275,7 +1280,9 @@ BUILT_IN_KEYBINDING(input_add_character)
 	unsigned char utf8str[8];
 	int	utf8strlen;
 
-	numcols = codepoint_numcolumns(key);
+	if ((numcols = codepoint_numcolumns(key)) == -1)
+		numcols = 1;
+
 	utf8strlen = ucs_to_utf8(key, utf8str, sizeof(utf8str));
 
 	/* Don't permit the input buffer to get too big. */
@@ -1455,7 +1462,7 @@ BUILT_IN_KEYBINDING(input_yank_cut_buffer)
 	retokenize_input(LOGICAL_CURSOR);
 
 	/* XXX strlen(cut_buffer) is wrong */
-	for (x = strlen(CUT_BUFFER); x > 0; x++)
+	for (x = input_column_count(CUT_BUFFER); x > 0; x--)
 		input_move_cursor(RIGHT, 0);
 
 	update_input(last_input_screen, UPDATE_ALL);
@@ -1607,16 +1614,21 @@ BUILT_IN_KEYBINDING(insert_altcharset)
 /* type_text: the BIND function TYPE_TEXT */
 BUILT_IN_KEYBINDING(type_text)
 {
-	char *ptr;
+	char *	ptr;
+	int	x, totalcols;
 
 	ptr = LOCAL_COPY(CURSOR_SPOT);
 	*CURSOR_SPOT = 0;
 	ADD_TO_INPUT(string);
 	ADD_TO_INPUT(ptr);
 	retokenize_input(LOGICAL_CURSOR);
-	update_input(last_input_screen, UPDATE_FROM_CURSOR);
 
-	/* XXX TODO -- Move the cursor right over what we typed column */
+	/* Now skip over what we just typed. */
+	totalcols = input_column_count(string);
+	for (x = totalcols; x > 0; x--)
+		input_move_cursor(RIGHT, 0);
+
+	update_input(last_input_screen, UPDATE_ALL);
 }
 
 /* parse_text: the bindable function that executes its string */
