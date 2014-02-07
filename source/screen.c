@@ -1,4 +1,4 @@
-/* $EPIC: screen.c,v 1.156 2014/02/07 14:29:33 jnelson Exp $ */
+/* $EPIC: screen.c,v 1.157 2014/02/07 17:30:42 jnelson Exp $ */
 /*
  * screen.c
  *
@@ -510,7 +510,6 @@ static ssize_t	read_color_seq (const unsigned char *start, void *d, int blinkbol
 		 * If its just a lonely old ^C, then its probably a terminator.
 		 * Just skip over it and go on.
 		 */
-		ptr++;
 		if (*ptr == 0)
 		{
 			if (fg)
@@ -637,8 +636,15 @@ static ssize_t	read_color_seq (const unsigned char *start, void *d, int blinkbol
 		}
 
 		if (fg && *ptr == ',')
+		{
+			ptr++;
 			continue;
-		break;
+		}
+		else
+		{
+			ptr++;
+			break;
+		}
 	}
 
 	return ptr - start;
@@ -1032,7 +1038,7 @@ unsigned char *	new_normalize_string (const unsigned char *str, int logical, int
 	int		mangle_escapes, normalize;
 	int		strip_reverse, strip_bold, strip_blink, 
 			strip_underline, strip_altchar, strip_color, 
-			strip_all_off, strip_nd_space, strip_c1, boldback;
+			strip_all_off, strip_nd_space, boldback;
 	int		strip_unprintable, strip_other;
 	int		codepoint, state, cols;
 	char 		utf8str[16], *x;
@@ -1052,7 +1058,6 @@ unsigned char *	new_normalize_string (const unsigned char *str, int logical, int
 	strip_unprintable = ((mangle & STRIP_UNPRINTABLE) != 0);
 	strip_other	= ((mangle & STRIP_OTHER) != 0);
 
-	strip_c1	= !get_int_var(ALLOW_C1_CHARS_VAR);
 	boldback	= get_int_var(TERM_DOES_BRIGHT_BLINK_VAR);
 
 	if (logical == 0)

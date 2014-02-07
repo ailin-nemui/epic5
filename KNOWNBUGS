@@ -4,8 +4,6 @@ KNOWN ERRATA (eg, bugs, or unresolved requests):
 ------------------------------------------------
 * Flesh out translate_user_input() so it supports user's encoding->utf8
 * Flesh out safe_puts() so it supports utf8->user's encoding
-* Flesh out prepare_display() and output_with_count() to support utf8 
-  column counting
 * Figure out what the main putchar is, and make it utf8 and iconv aware.
 
 MEDIUM-TERM PROJECTS
@@ -383,4 +381,4 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Teach the normalize_string, prepare_display, and output_with_count about utf8
 * Since utf8 parsing is "consumptive", some utility funcs changed too
 * Column counting/line wrapping in the display works correctly now.
-
+* Fix read_color_seq().
