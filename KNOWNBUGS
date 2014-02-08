@@ -385,3 +385,5 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * ... again.
 * Fix screen prompts so they can recurse, and restore previous state!
 * Fix line wrapping bug that zlonix found.
+* Get column counting working for status bar (rb zlonix)
+* Re-implement /input -noecho

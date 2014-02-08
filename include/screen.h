@@ -45,6 +45,7 @@ typedef struct InputLine
         int     ind_right_len;
 
 	int	refresh;
+	int	echo;
 }	InputLine;
 
 
@@ -52,7 +53,6 @@ typedef struct PromptStru
 {
 	char *		data;
 	int		type;
-	int		echo;
 	void		(*func) (char *, const char *);
 
 	InputLine *	my_input_line;

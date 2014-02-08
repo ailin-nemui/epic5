@@ -1,4 +1,4 @@
-/* $EPIC: input.c,v 1.74 2014/02/07 21:43:28 jnelson Exp $ */
+/* $EPIC: input.c,v 1.75 2014/02/08 23:07:30 jnelson Exp $ */
 /*
  * input.c: does the actual input line stuff... keeps the appropriate stuff
  * on the input line, handles insert/delete of characters/words... the whole
@@ -471,8 +471,6 @@ const char *	prompt;
 	old_do_echo = do_echo;
 	os = last_input_screen;
 	saved_current_window = current_window;
-
-	do_echo = 1;
 	original_update = update;
 
         for (ns = screen_list; ns; ns = ns->next)
@@ -491,7 +489,7 @@ const char *	prompt;
 	last_input_screen = ns;
 	current_window = ns->current_window;
 	update = original_update;
-
+	do_echo = last_input_screen->il->echo;
 
 	/*
 	 * FIRST OFF -- Recalculate the metadata
@@ -876,6 +874,8 @@ const char *	prompt;
 			safe_puts(INPUT_BUFFER + LOGICAL_CHARS[START],
 				  last_input_screen->co - cols_used);
 
+		term_echo(old_do_echo);
+
 		/*
 		 * Clear the rest of the input line and reset the cursor
 		 * to the current input position.
@@ -918,6 +918,8 @@ const char *	prompt;
 		{
 			safe_puts(CURSOR_SPOT, max);
 		}
+
+		term_echo(old_do_echo);
 		term_clear_to_eol();
 		term_flush();
 		cursor_not_in_display(last_input_screen);

@@ -1,4 +1,4 @@
-/* $EPIC: screen.c,v 1.160 2014/02/07 23:02:55 jnelson Exp $ */
+/* $EPIC: screen.c,v 1.161 2014/02/08 23:07:30 jnelson Exp $ */
 /*
  * screen.c
  *
@@ -2778,6 +2778,7 @@ void	create_new_screen (void)
         new_s->il->ind_left_len = 0;
         new_s->il->ind_right = malloc_strdup(empty_string);
         new_s->il->ind_right_len = 0;
+	new_s->il->echo = 1;
 
 	last_input_screen = new_s;
 
@@ -3424,7 +3425,6 @@ void 	add_wait_prompt (const char *prompt, void (*func)(char *data, const char *
 	New = (WaitPrompt *) new_malloc(sizeof(WaitPrompt));
 	New->data = malloc_strdup(data);
 	New->type = type;
-	New->echo = echo;
 	New->func = func;
 
 	New->my_input_line = (InputLine *)new_malloc(sizeof(InputLine));
@@ -3439,6 +3439,7 @@ void 	add_wait_prompt (const char *prompt, void (*func)(char *data, const char *
         New->my_input_line->ind_left_len = 0;
         New->my_input_line->ind_right = malloc_strdup(empty_string);
         New->my_input_line->ind_right_len = 0;
+	New->my_input_line->echo = echo;
 	New->saved_input_line = s->il;
 	s->il = New->my_input_line;
 
