@@ -1,4 +1,4 @@
-/* $EPIC: status.c,v 1.80 2014/01/10 13:30:41 jnelson Exp $ */
+/* $EPIC: status.c,v 1.81 2014/02/08 23:06:26 jnelson Exp $ */
 /*
  * status.c: handles the status line updating, etc for IRCII 
  *
@@ -478,7 +478,6 @@ int	make_status (Window *window, Status *status)
 	unsigned char	lhs_buffer  [BIG_BUFFER_SIZE + 1];
 	unsigned char	rhs_buffer  [BIG_BUFFER_SIZE + 1];
 	const char	*func_value [MAX_FUNCTIONS];
-	unsigned char	*ptr;
 	size_t		save_size;
 	Screen	*	screen;
 	int		anything_changed = 0;
@@ -513,13 +512,16 @@ int	make_status (Window *window, Status *status)
 			*lhp = lhs_buffer,
 			*rhp = rhs_buffer,
 			*cp,
-			*start_rhs = 0,
 			*str = NULL;
+	const unsigned char *	start_rhs = 0;
 		int	pr_lhs = 0,
 			pr_rhs = 0,
 			line = 0,	/* XXX gcc4 lameness */
 			*prc = &pr_lhs, 
 			i;
+	const unsigned char *	s;
+		int	code_point;
+		int	cols;
 
 		fillchar[0] = fillchar[1] = 0;
 
@@ -631,22 +633,32 @@ int	make_status (Window *window, Status *status)
 		 * characters.  We count all the printable characters
 		 * on both sides of the %> tag.
 		 */
-		ptr = str;
+		s = str;
 		cp = lhp;
 		lhs_buffer[0] = rhs_buffer[0] = 0;
 
-		while (*ptr)
+		while ((code_point = next_code_point(&s)))
 		{
+			/* 
+			 * If we find an invalid code point, skip it.
+			 * XXX Surely this is wrong -- revisit later.
+			 */
+			if (code_point == -1)
+			{
+				s++;
+				continue;
+			}
+
 			/*
 			 * The FIRST such %> tag is used.
 			 * Using multiple %>s is bogus.
 			 */
-			if (*ptr == '\f' && start_rhs == NULL)
+			if (code_point == '\f' && start_rhs == NULL)
 			{
-				ptr++;
-				start_rhs = ptr;
+				start_rhs = s;
 				fillchar = rhs_fillchar;
 				*cp = 0;
+
 				cp = rhp;
 				prc = &pr_rhs;
 			}
@@ -654,28 +666,27 @@ int	make_status (Window *window, Status *status)
                         /*
                          * Skip over attribute changes, not useful.
                          */
-                        else if (*ptr == '\006')
+                        else if (code_point == 6)
                         {
                                 /* Copy the next 5 values */
-                                *cp++ = *ptr++;
-                                *cp++ = *ptr++;
-                                *cp++ = *ptr++;
-                                *cp++ = *ptr++;
-                                *cp++ = *ptr++;
+                                *cp++ = 6;
+                                *cp++ = *s++;
+                                *cp++ = *s++;
+                                *cp++ = *s++;
+                                *cp++ = *s++;
                         }
 
 			/*
 			 * XXXXX This is a bletcherous hack.
 			 * If i knew what was good for me id not do this.
 			 */
-			else if (*ptr == 9)	/* TAB */
+			else if (code_point == 9)	/* TAB */
 			{
 				fillchar[0] = ' ';
 				fillchar[1] = 0;
 				do
 					*cp++ = ' ';
 				while (++(*prc) % 8);
-				ptr++;
 			}
 
 			/*
@@ -683,9 +694,20 @@ int	make_status (Window *window, Status *status)
 			 */
 			else
 			{
-				*prc += 1;
-				fillchar[0] = *cp++ = *ptr++;
+				unsigned char	utf8str[16];
+				const unsigned char *x;
+	
+				fillchar[0] = (code_point & 0x7F);
 				fillchar[1] = 0;
+
+				cols = codepoint_numcolumns(code_point);
+				if (cols == -1)
+					cols = 0;
+				*prc += cols;
+
+				ucs_to_utf8(code_point, utf8str, sizeof(utf8str));
+				for (x = utf8str; *x; x++)
+					*cp++ = *x;
 			}
 
 			/*
