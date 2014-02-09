@@ -46,6 +46,7 @@ typedef struct ServerInfo
         const char *  server_type;
         const char *  proto_type;
 	const char *  vhost;
+	const char *  default_encoding;
 } ServerInfo;
 
 /* Server: a structure for the server_list */
@@ -68,6 +69,8 @@ const	AI	*next_addr;		/* The next one to try upon failure */
 
 	int	status;			/* See above */
 
+	char *	default_encoding;	/* What string encoding we should 
+					   assume for non-utf8 strings */
 	char	*userhost;		/* my userhost on this server */
 	char	*away;			/* away message for this server */
 	int	operator;		/* true if operator */
@@ -129,7 +132,6 @@ const	AI	*next_addr;		/* The next one to try upon failure */
         char *          recv_nick;
         char *          sent_nick;
         char *          sent_body;
-
 }	Server;
 extern	Server	**server_list;
 #endif	/* NEED_SERVER_LIST */

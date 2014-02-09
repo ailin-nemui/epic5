@@ -1,5 +1,15 @@
 EPIC5-1.1.7
 
+*** News 02/08/2014 -- New server flag, "encoding" 
+	Server descriptions now have an extra field "encoding" which is 
+	used when you receive a non-utf8 string from the server.
+
+	When you receive a non-utf8 string from the server, epic will 
+	assume it is in this encoding and use iconv() to convert it to utf8.
+
+	The default is "ISO-8859-1" for no particular reason.
+	This will be supplanted by a /recode command in the future!
+
 *** News 01/16/2014 -- New scripts (should document these!) from Zlonix
 	   xmsglog	Encrypted logfiles
 	   sasl_auth	SASL support (for some networks)

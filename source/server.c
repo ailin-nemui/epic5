@@ -1,4 +1,4 @@
-/* $EPIC: server.c,v 1.260 2014/02/06 17:14:24 jnelson Exp $ */
+/* $EPIC: server.c,v 1.261 2014/02/09 03:23:23 jnelson Exp $ */
 /*
  * server.c:  Things dealing with that wacky program we call ircd.
  *
@@ -91,6 +91,7 @@ static int	clear_serverinfo (ServerInfo *s)
         s->server_type = NULL;
 	s->proto_type = NULL;
 	s->vhost = NULL;
+	s->default_encoding = NULL;
 	s->freestr = NULL;		/* XXX ? */
 	s->fulldesc = NULL;		/* XXX ? */
 	s->clean = 1;
@@ -112,16 +113,17 @@ static int	clear_serverinfo (ServerInfo *s)
  * 'type'     is the server protocol type, either "IRC" or "IRC-SSL"
  * 'proto'    is the socket protocol type, either 'tcp4' or 'tcp6' or neither.
  * 'vhost'    is the virtual hostname to use for this connection.
+ * 'encoding' is the encoding non-utf8 strings should assumed to be
  *
  * --
  * A new-style server description is a colon separated list of values:
  *
  *   host=HOST	   port=PORTNUM   pass=PASSWORD 
  *   nick=NICK     group=GROUP    type=PROTOCOL_TYPE
- *   proto=SOCKETYPE  vhost=HOST
+ *   proto=SOCKETYPE  vhost=HOST  encoding=ICONV
  *
  * for example:
- *	host=irc.server.com:group=efnet:type=IRC-SSL
+ *	host=irc.server.com:group=efnet:type=IRC-SSL:encoding=ISO-8859-1
  * 
  * The command type ("host", "port") can be abbreviated as long as it's
  * not ambiguous:
@@ -134,7 +136,7 @@ static int	clear_serverinfo (ServerInfo *s)
  *	 irc.server.com:group=efnet:IRC-SSL
  */
 
-enum serverinfo_fields { HOST, PORT, PASS, NICK, GROUP, TYPE, PROTO, VHOST, LASTFIELD };
+enum serverinfo_fields { HOST, PORT, PASS, NICK, GROUP, TYPE, PROTO, VHOST, ENCODING, LASTFIELD };
 
 /*
  * str_to_serverinfo:  Create or Modify a temporary ServerInfo based on string.
@@ -229,6 +231,8 @@ static	int	str_to_serverinfo (char *str, ServerInfo *s)
 				fieldnum = PROTO;
 			else if (!my_strnicmp(descstr, "VHOST", 1))
 				fieldnum = VHOST;
+			else if (!my_strnicmp(descstr, "ENCODING", 1))
+				fieldnum = ENCODING;
 			else
 			{
 				say("Server desc field type [%s] not recognized.", 
@@ -303,6 +307,8 @@ static	int	str_to_serverinfo (char *str, ServerInfo *s)
 		    else
 			s->vhost = descstr;
 		}
+		else if (fieldnum == ENCODING)
+			s->default_encoding = descstr;
 
 		/*
 		 * We go one past "type" because we want to allow
@@ -362,6 +368,7 @@ static	int	preserve_serverinfo (ServerInfo *si)
 	malloc_strcat2_c(&resultstr, si->vhost, ":", &clue);
 	if (si->vhost && strchr(si->vhost, ':'))
 	   malloc_strcat_c(&resultstr, "]", &clue);
+	malloc_strcat2_c(&resultstr, si->default_encoding, ":", &clue);
 
 	new_free(&si->freestr);
 	new_free(&si->fulldesc);
@@ -407,6 +414,8 @@ static	void	update_serverinfo (ServerInfo *old_si, ServerInfo *new_si)
 		old_si->proto_type = new_si->proto_type;
 	if (new_si->vhost)
 		old_si->vhost = new_si->vhost;
+	if (new_si->default_encoding)
+		old_si->default_encoding = new_si->default_encoding;
 
 	preserve_serverinfo(old_si);
 	return;
@@ -649,6 +658,7 @@ static	int	serverinfo_to_newserv (ServerInfo *si)
 
 	s->stricmp_table = 1;		/* By default, use rfc1459 */
 	s->funny_match = NULL;
+	s->default_encoding = NULL;
 
 	s->ssl_enabled = FALSE;
 
@@ -903,20 +913,20 @@ void 	display_server_list (void)
 		 * XXX Ugh.  I should build this up bit by bit.
 		 */
 		if (!s->nickname)
-			say("\t%d) %s %d [%s] %s [%s] (vhost: %s)",
+			say("\t%d) %s %d [%s] %s [%s] (vhost: %s) (non-utf8 encoding: %s)",
 				i, s->info->host, s->info->port, 
 				get_server_group(i), get_server_type(i),
 				server_states[get_server_status(i)],
 				get_server_vhost(i));
 		else if (is_server_open(i))
-			say("\t%d) %s %d (%s) [%s] %s [%s] (vhost: %s)", 
+			say("\t%d) %s %d (%s) [%s] %s [%s] (vhost: %s) (non-utf8 encoding: %s)", 
 				i, s->info->host, s->info->port,
 				s->nickname, get_server_group(i),
 				get_server_type(i),
 				server_states[get_server_status(i)],
 				get_server_vhost(i));
 		else
-			say("\t%d) %s %d (was %s) [%s] %s [%s] (vhost: %s)", 
+			say("\t%d) %s %d (was %s) [%s] %s [%s] (vhost: %s) (non-utf8 encoding: %s)", 
 				i, s->info->host, 
 				s->info->port, s->nickname, get_server_group(i),
 				get_server_type(i),
@@ -1561,6 +1571,23 @@ return_from_ssl_detour:
 
 					if (translation)
 						translate_from_server(buffer);
+					if (invalid_utf8str(buffer))
+					{
+					    char *buf2;
+					    size_t buf2len;
+					    const char *e;
+
+					    buf2 = malloc_strdup(buffer);
+					    buf2len = strlen(buf2) + 1;
+
+					    if (!(e = s->default_encoding))
+						e = "ISO-8859-1";
+
+					    recode_with_iconv(e, NULL, &buf2, &buf2len);
+					    strlcpy(buffer, buf2, sizeof(buffer));
+					    new_free(&buf2);
+					}
+
 					parsing_server_index = i;
 					parse_server(buffer, sizeof buffer);
 					parsing_server_index = NOSERV;

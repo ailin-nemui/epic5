@@ -7,7 +7,7 @@
  *
  * See the COPYRIGHT file, or do a HELP IRCII COPYRIGHT 
  *
- * @(#)$Id: ircaux.h,v 1.112 2014/02/06 17:14:24 jnelson Exp $
+ * @(#)$Id: ircaux.h,v 1.113 2014/02/09 03:23:23 jnelson Exp $
  */
 
 #ifndef _IRCAUX_H_
@@ -307,5 +307,6 @@ extern	int	ucs_to_utf8 		(u_32int_t, unsigned char *, size_t);
 extern	int	grab_codepoint 		(const unsigned char *x);
 
 extern	int	strext2		(unsigned char **, unsigned char *, int , int);
+extern	int     invalid_utf8str (const unsigned char *utf8str);
 
 #endif /* _IRCAUX_H_ */

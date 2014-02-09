@@ -385,5 +385,10 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * ... again.
 * Fix screen prompts so they can recurse, and restore previous state!
 * Fix line wrapping bug that zlonix found.
-* Get column counting working for status bar (rb zlonix)
+* Get column counting working for the status bar (rb zlonix)
 * Re-implement /input -noecho
+* Create a utf8 string checker
+* Add "encoding=<stuff>" flag to /server descriptions to act as default.
+* EG, /server host=irc.foo.com:encoding=ISO-8859-1
+* Run every non-utf8 string from the server through iconv using def encoding
+

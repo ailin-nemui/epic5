@@ -1,4 +1,4 @@
-/* $EPIC: ircaux.c,v 1.237 2014/02/06 17:14:24 jnelson Exp $ */
+/* $EPIC: ircaux.c,v 1.238 2014/02/09 03:23:23 jnelson Exp $ */
 /*
  * ircaux.c: some extra routines... not specific to irc... that I needed 
  *
@@ -6264,8 +6264,18 @@ int	recode_with_iconv (const char *from, const char *to, char **data, size_t *nu
 	return (*numbytes);
 }
 
-/* 
- * XXX Just a placeholder -- convert a unicode code point into a utf8 string.
+/*
+ * ucs_to_utf8 -- Convert a single unicode code point into a utf8 string.
+ *
+ * Arguments:
+ *	key	- A single unicode code point.  Ideally something returned
+ *		  by next_code_point().
+ *	utf8str	- A buffer to write the string into.  At least 8 bytes big.
+ *	utf8strsiz - The size of utf8str (ignored for now)
+ *
+ * Returns:
+ *	The number of bytes in the resulting utf8 sequence, that is, the 
+ *	number of bytes written to utf8str, not counting trailing nul.
  */
 int	ucs_to_utf8 (u_32int_t key, unsigned char *utf8str, size_t utf8strsiz)
 {
@@ -6362,5 +6372,37 @@ int	strext2 (unsigned char **cut, unsigned char *buffer, int part2, int part3)
 	*p++ = 0;
 
 	return 0;
+}
+
+
+/*
+ * invalid_utf8str - Test whether a string is valid utf8 string (or not)
+ *
+ * Arguments:
+ *	utf8str	- A string to be tested for utf8-ness.  Must be nul terminated
+ *	utf8strsiz - The number of bytes to be tested.
+ *
+ * Return Value:
+ *	0	(Success) The utf8str is well formed -- no defects found
+ *	>0	(Failure) The number of bytes that were not part of a 
+ *			  valid utf8 string.
+ */
+int	invalid_utf8str (const unsigned char *utf8str)
+{
+	const unsigned char *s;
+	int	code_point;
+	int	errors = 0;
+
+	s = utf8str;
+	while ((code_point = next_code_point(&s)))
+	{
+		if (code_point < 0)
+		{
+			errors++;
+			s++;
+		}
+	}
+
+	return errors;
 }
 
