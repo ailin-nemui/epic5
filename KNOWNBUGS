@@ -391,4 +391,5 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Add "encoding=<stuff>" flag to /server descriptions to act as default.
 * EG, /server host=irc.foo.com:encoding=ISO-8859-1
 * Run every non-utf8 string from the server through iconv using def encoding
-
+* Extend $chr() to accept U+xxxx strings
+* Add function $unicode() converts input into U+xxxx strings

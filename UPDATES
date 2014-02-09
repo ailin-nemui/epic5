@@ -1,5 +1,11 @@
 EPIC5-1.1.7
 
+*** News 02/09/2014 -- Unicode support for $chr(), new func $unicode()
+	The $chr() function will now accept unicode descriptors
+		$chr(U+0415 U+0420 U+20)
+	The $unicode() function converts text to unicode descriptors
+		$unicode(Ð) returns "U+0423"
+
 *** News 02/08/2014 -- New server flag, "encoding" 
 	Server descriptions now have an extra field "encoding" which is 
 	used when you receive a non-utf8 string from the server.

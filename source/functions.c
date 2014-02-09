@@ -1,4 +1,4 @@
-/* $EPIC: functions.c,v 1.301 2014/02/06 20:31:23 jnelson Exp $ */
+/* $EPIC: functions.c,v 1.302 2014/02/09 15:32:29 jnelson Exp $ */
 /*
  * functions.c -- Built-in functions for ircII
  *
@@ -411,6 +411,7 @@ static	char
 	*function_umask		(char *),
 	*function_umode		(char *),
 	*function_uname		(char *),
+	*function_unicode	(char *),
 	*function_uniq		(char *),
 	*function_unlink 	(char *),
 	*function_unsplit	(char *),
@@ -732,6 +733,7 @@ static BuiltInFunctions	built_in_functions[] =
 	{ "UHC",		function_uhc		}, 
 	{ "UMASK",		function_umask		},
 	{ "UNAME",		function_uname		},
+	{ "UNICODE",		function_unicode 	},
 	{ "UNIQ",		function_uniq		},
 	{ "UNLINK",		function_unlink 	},
 	{ "UNSHIFT",		function_unshift 	},
@@ -2868,14 +2870,39 @@ BUILT_IN_FUNCTION(function_chr, word)
 	char *	blah;
 	size_t	bytes = 0;
 	size_t	cnt;
+	char 	*s, *x;
+	unsigned char 	utf8str[8];
+	int	code_point;
 
 	cnt = count_words(word, DWORD_DWORDS, "\"");
-	ack = aboo = new_malloc(cnt + 1);
+	ack = aboo = new_malloc(cnt * 2 + 7);
 
 	while ((blah = next_func_arg(word, &word)))
 	{
-		*ack++ = (char)my_atol(blah);
-		if (bytes++ >= cnt)
+		if (blah[0] == 'U' && blah[1] == '+')
+		{
+			blah += 2;
+			code_point = strtol(blah, &x, 16);
+
+			/* If it's invalid, skip it */
+			if (blah == x)
+				continue;
+
+			/* Otherwise, convert to utf8 */
+			ucs_to_utf8(code_point, utf8str, sizeof(utf8str));
+			for (x = utf8str; *x; x++)
+			{
+				*ack++ = *x;
+				bytes++;
+			}
+		}
+		else
+		{
+			*ack++ = (char)my_atol(blah);
+			bytes++;
+		}
+
+		if (bytes >= (cnt * 2))
 			break;
 	}
 
@@ -2940,6 +2967,40 @@ BUILT_IN_FUNCTION(function_ascii, word)
 
 	for (; *word; ++word)
 		malloc_strcat_wordlist_c(&aboo, space, ltoa((long)(unsigned char)*word), &rvclue);
+
+	return aboo;
+}
+
+/*
+ * This function converts an input string into a word list, where each 
+ * unicode code point of the input string is converted to a unicode code 
+ * point description ("U+xxxx") which you could pass back to $chr(),
+ * and the return value is a word list of such descriptions.
+ * Invalid code points are discarded.
+ *
+ * Example:
+ * $unicode(hi!) returns "U+0068 U+0069 U+0021"
+ */
+BUILT_IN_FUNCTION(function_unicode, word)
+{
+	char *	aboo = NULL;
+	size_t  rvclue=0;
+	const unsigned char *s, *x;
+	int	code_point;
+	char	result[8];
+
+	if (!word || !*word)
+		RETURN_EMPTY;
+
+	s = word;
+	while ((code_point = next_code_point(&s)))
+	{
+		/* Skip invalid bytes/sequences */
+		if (code_point == -1)
+			continue;
+		snprintf(result, sizeof(result), "U+%04X", code_point);
+		malloc_strcat_wordlist_c(&aboo, space, result, &rvclue);
+	}
 
 	return aboo;
 }
