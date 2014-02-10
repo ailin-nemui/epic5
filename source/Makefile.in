@@ -15,9 +15,10 @@ OBJECTS = alias.o alist.o array.o clock.o commands.o compat.o crypt.o crypto.o \
         ctcp.o dcc.o debug.o elf.o exec.o files.o flood.o functions.o gailib.o \
 	glob.o hook.o if.o ignore.o input.o irc.o ircaux.o ircsig.o keys.o \
 	lastlog.o levels.o list.o log.o logfiles.o mail.o names.o network.o \
-	newio.o notify.o numbers.o output.o parse.o @PERLDOTOH@ queue.o reg.o \
-	@RUBYDOTOH@ screen.o sdbm.o server.o sha2.o ssl.o status.o @TCLDOTOH@ \
-	term.o timer.o translat.o vars.o who.o window.o words.o @ALLOCA@
+	newio.o notify.o numbers.o output.o parse.o @PERLDOTOH@ queue.o \
+	recode.o reg.o @RUBYDOTOH@ screen.o sdbm.o server.o sha2.o ssl.o \
+	status.o @TCLDOTOH@ term.o timer.o translat.o vars.o who.o window.o \
+	words.o @ALLOCA@
 
 INCLUDES = -I@srcdir@/../include -I../include
 
@@ -432,6 +433,9 @@ queue.o: queue.c ../include/irc.h ../include/defs.h ../include/config.h \
   ../include/words.h ../include/vars.h ../include/commands.h \
   ../include/ifcmd.h ../include/ircaux.h ../include/queue.h \
   ../include/output.h
+recode.o: recode.c ../include/irc.h ../include/defs.h ../include/config.h \
+  ../include/irc_std.h ../include/debug.h ../include/ircaux.h \
+  ../include/compat.h
 reg.o: reg.c ../include/irc.h ../include/defs.h ../include/config.h \
   ../include/irc_std.h ../include/debug.h ../include/ircaux.h \
   ../include/compat.h ../include/network.h ../include/words.h \

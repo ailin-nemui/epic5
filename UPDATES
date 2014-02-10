@@ -1,5 +1,25 @@
 EPIC5-1.1.7
 
+*** News 02/10/2014 -- EPIC users now utf8 stransparant to irc.
+	As of right now, whether you are using utf8 or not, anything
+	you send from epic will be sent to irc as UTF8.  Anything UTF8
+	that anybody sends you will be displayed properly on your screen,
+	even if you are not using UTF8.
+
+*** News 02/10/2014 -- New command /ENCODING -- declare target encodings
+	The new command /ENCODING is used to declare what string encoding
+	a target is using.  At some point this will spawn into an all-
+	encompassing feature, but for now, it's just used to declare the
+	encoding of your console.
+
+		/ENCODING console ISO-8859-1
+	or	/ENCODING console UTF-8		(default)
+
+	If EPIC detects that your input is illegal for the encoding you
+	are using, it will ask you to change it.  If the stuff you type
+	is not what you think you're typing, again, you might be using
+	the wrong encoding.
+
 *** News 02/09/2014 -- Unicode support for $chr(), new func $unicode()
 	The $chr() function will now accept unicode descriptors
 		$chr(U+0415 U+0420 U+20)

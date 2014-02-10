@@ -1,4 +1,4 @@
-/* $EPIC: input.c,v 1.75 2014/02/08 23:07:30 jnelson Exp $ */
+/* $EPIC: input.c,v 1.76 2014/02/10 17:40:37 jnelson Exp $ */
 /*
  * input.c: does the actual input line stuff... keeps the appropriate stuff
  * on the input line, handles insert/delete of characters/words... the whole
@@ -317,7 +317,7 @@ static int 	safe_puts (const unsigned char *str, int numcols)
 			break;
 
 		/* Convert code_point from utf8 to users encoding */
-		ucs_to_utf8(code_point, utf8str, sizeof(utf8str));
+		ucs_to_console(code_point, utf8str, sizeof(utf8str));
 
 		for (x = utf8str; *x; x++)
 			term_inputline_putchar(*x);

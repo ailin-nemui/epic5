@@ -1,4 +1,4 @@
-/* $EPIC: commands.c,v 1.213 2014/02/06 17:14:24 jnelson Exp $ */
+/* $EPIC: commands.c,v 1.214 2014/02/10 17:40:37 jnelson Exp $ */
 /*
  * commands.c -- Stuff needed to execute commands in ircII.
  *		 Includes the bulk of the built in commands for ircII.
@@ -222,6 +222,7 @@ static	IrcCommand irc_command[] =
         { "DO",         docmd           }, /* if.c */
         { "DUMP",       dumpcmd		}, /* alias.c */
 	{ "ECHO",	echocmd		},
+	{ "ENCODING",	encoding	}, /* recode.c */
 	{ "ENCRYPT",	encrypt_cmd	}, /* crypt.c */
 	{ "EVAL",	evalcmd		},
 	{ "EXEC",	execcmd		}, /* exec.c */
@@ -1668,6 +1669,7 @@ BUILT_IN_COMMAND(load)
 	void	(*loader) (const char *, off_t, const char *, const char *, struct load_info *);
 	char *	file_contents = NULL;
 	off_t	file_contents_size = 0;
+	/* This should default to /SET DEFAULT_SCRIPT_ENCODING */
 	char *	declared_encoding = NULL;
 
 	if (++load_depth == MAX_LOAD_DEPTH)
@@ -1761,7 +1763,6 @@ BUILT_IN_COMMAND(load)
 	    {
 		if (declared_encoding)
 		{
-		    /* The 2nd arg should become /SET DEFAULT_SCRIPT_ENCODING */
 		    recode_with_iconv(declared_encoding, NULL, 
 				&file_contents, &file_contents_size);
 	        }

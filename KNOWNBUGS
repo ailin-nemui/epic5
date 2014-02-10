@@ -393,3 +393,10 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Run every non-utf8 string from the server through iconv using def encoding
 * Extend $chr() to accept U+xxxx strings
 * Add function $unicode() converts input into U+xxxx strings
+* Add recode.c, to hold stuff regarding /ENCODING and encoding xlates
+* New command, /ENCODING, declare encodings for targets. only "console" now.
+* Translate user input via /encoding console setting, defaults to utf8.
+* Translate screen output to /encoding console setting
+* Non-utf8 users now appear as utf8 users to irc!
+* UTF8 users now appear as non-utf8 users to non-utf8 epic users!
+

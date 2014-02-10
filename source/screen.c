@@ -1,4 +1,4 @@
-/* $EPIC: screen.c,v 1.161 2014/02/08 23:07:30 jnelson Exp $ */
+/* $EPIC: screen.c,v 1.162 2014/02/10 17:40:37 jnelson Exp $ */
 /*
  * screen.c
  *
@@ -2123,7 +2123,7 @@ int 	output_with_count (const unsigned char *str1, int clreol, int output)
 			 */
 			if (output)
 			{
-				ucs_to_utf8(codepoint, utf8str, sizeof(utf8str));
+				ucs_to_console(codepoint, utf8str, sizeof(utf8str));
 				for (x = utf8str; *x; x++)
 					putchar_x(*x);
 			}
@@ -3267,13 +3267,44 @@ void	translate_user_input (unsigned char byte)
 {
 static	unsigned char	workbuf[32];
 static	size_t		workbuf_idx = 0;
+const	unsigned char *	s;
+	char		dest_ptr[32];
+	size_t		dest_left;
 	int		codepoint;
-const 	unsigned char *	s;
+const 	char *		in;
+	size_t		inlen;
+	char *		out;
+	size_t		outlen;
+	iconv_t		xlat;
+	int		n;
+const 	char *		enc;
 
 	workbuf[workbuf_idx++] = byte;
 	workbuf[workbuf_idx] = 0;
 
-	s = workbuf;
+	in = workbuf;
+	inlen = workbuf_idx;
+	out = dest_ptr;
+	outlen = 32;
+
+	enc = find_recoding("console", &xlat, NULL);
+	if ((n = iconv(xlat, (const char **)&in, &inlen, &out, &outlen)) != 0)
+	{
+		if (errno == EILSEQ)
+		{
+			yell("Your /ENCODING CONSOLE is %s which is wrong.", enc);
+			yell("   Use %s/ENCODING CONSOLE ISO-8859-1.%s or whatever is correct for you", BOLD_TOG_STR, BOLD_TOG_STR);
+			workbuf_idx = 0;
+			workbuf[0] = 0;
+			return;
+		}
+		else if  (errno == EINVAL)
+		{
+			return;		/* Not enough to convert yet */
+		}
+	}
+
+	s = (const unsigned char *)dest_ptr;
 	codepoint = next_code_point(&s);
 	if (codepoint > -1)
 	{
