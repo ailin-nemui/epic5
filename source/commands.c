@@ -1,4 +1,4 @@
-/* $EPIC: commands.c,v 1.214 2014/02/10 17:40:37 jnelson Exp $ */
+/* $EPIC: commands.c,v 1.215 2014/02/11 15:18:51 jnelson Exp $ */
 /*
  * commands.c -- Stuff needed to execute commands in ircII.
  *		 Includes the bulk of the built in commands for ircII.
@@ -1670,7 +1670,7 @@ BUILT_IN_COMMAND(load)
 	char *	file_contents = NULL;
 	off_t	file_contents_size = 0;
 	/* This should default to /SET DEFAULT_SCRIPT_ENCODING */
-	char *	declared_encoding = NULL;
+	const char *	declared_encoding = NULL;
 
 	if (++load_depth == MAX_LOAD_DEPTH)
 	{
@@ -1700,6 +1700,8 @@ BUILT_IN_COMMAND(load)
 	    loader = loader_which;
 	else
 	    loader = loader_std;
+
+	declared_encoding = find_recoding("scripts", NULL, NULL);
 
 	/* 
 	 * We iterate over the whole list -- if we use the -args flag, the
@@ -1761,7 +1763,7 @@ BUILT_IN_COMMAND(load)
 
 	    if (slurp_elf_file(elf, &file_contents, &file_contents_size) > 0)
 	    {
-		if (declared_encoding)
+		if (invalid_utf8str(file_contents))
 		{
 		    recode_with_iconv(declared_encoding, NULL, 
 				&file_contents, &file_contents_size);

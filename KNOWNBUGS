@@ -399,4 +399,5 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Translate screen output to /encoding console setting
 * Non-utf8 users now appear as utf8 users to irc!
 * UTF8 users now appear as non-utf8 users to non-utf8 epic users!
+* Automatically recode undeclared non-utf8 scripts using /encoding scripts
 
