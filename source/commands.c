@@ -1,4 +1,4 @@
-/* $EPIC: commands.c,v 1.215 2014/02/11 15:18:51 jnelson Exp $ */
+/* $EPIC: commands.c,v 1.216 2014/02/11 22:50:57 jnelson Exp $ */
 /*
  * commands.c -- Stuff needed to execute commands in ircII.
  *		 Includes the bulk of the built in commands for ircII.
@@ -1765,6 +1765,8 @@ BUILT_IN_COMMAND(load)
 	    {
 		if (invalid_utf8str(file_contents))
 		{
+		    say("Recoding %s using encoding %s", 
+				expanded, declared_encoding);
 		    recode_with_iconv(declared_encoding, NULL, 
 				&file_contents, &file_contents_size);
 	        }

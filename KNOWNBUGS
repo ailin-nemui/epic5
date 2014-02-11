@@ -404,4 +404,7 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Set /ENCODING CONSOLE automatically to nl_langinfo(CODESET) from LC_ALL.
 * If the default codeset is "US-ASCII" then it's changed to ISO-885-1.
 * In translate_user_input() try to detect utf8 typers using non-utf8 encodings
-
+* Tell user if we're recoding a script at /load time.
+* Fix slurp_elf_file() it was leaving a 0xFF at end of file, confusing /load
+* Don't bind ^T to non-existing TRANSPOSE_CHARACTERS keybinding.
+* Bump MAXPARA from 15 to 20 for RusNet

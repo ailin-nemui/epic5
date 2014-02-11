@@ -389,11 +389,11 @@ size_t	slurp_elf_file (struct epic_loadfile *elf, char **file_contents, off_t *f
 		next_byte++;
 	}
 
-	/* Just for laughs, zero terminate it so it's a C string */
-	size = next_byte + 1;
-	RESIZE(*file_contents, char, size);
-	(*file_contents)[next_byte] = 0;
+	/* The previous epic_fgetc() resulted in EOF so we got to back up */
+	next_byte--;
 
+	/* Just for laughs, zero terminate it so it's a C string */
+	(*file_contents)[next_byte] = 0;
 	*file_contents_size = next_byte;
 	return next_byte;
 }

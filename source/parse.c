@@ -1,4 +1,4 @@
-/* $EPIC: parse.c,v 1.98 2014/01/12 01:05:11 jnelson Exp $ */
+/* $EPIC: parse.c,v 1.99 2014/02/11 22:50:57 jnelson Exp $ */
 /*
  * parse.c: handles messages from the server.   Believe it or not.  I
  * certainly wouldn't if I were you. 
@@ -62,7 +62,7 @@
 #define ID_CHANNEL	'!'
 
 #define space 		' '	/* Taken from rfc 1459 */
-#define	MAXPARA		15	/* Taken from rfc 1459 */
+#define	MAXPARA		20	/* RFC1459 says 15, but RusNet uses more */
 
 static	void	strip_modes (const char *, const char *, const char *);
 

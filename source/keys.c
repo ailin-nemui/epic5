@@ -1,4 +1,4 @@
-/* $EPIC: keys.c,v 1.63 2014/02/07 01:38:29 jnelson Exp $ */
+/* $EPIC: keys.c,v 1.64 2014/02/11 22:50:57 jnelson Exp $ */
 /*
  * keys.c:  Keeps track of what happens whe you press a key.
  *
@@ -1266,7 +1266,9 @@ void	init_keys (void)
 	BIND("^Q", "QUOTE_CHARACTER");
 	/* ^R */
 	BIND("^S", "TOGGLE_STOP_SCREEN");
+#if 0
 	BIND("^T", "TRANSPOSE_CHARACTERS");
+#endif
 	BIND("^U", "ERASE_LINE");
 	BIND("^V", "REVERSE");
 	BIND("^W", "NEXT_WINDOW");
