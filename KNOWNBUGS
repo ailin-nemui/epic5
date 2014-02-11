@@ -400,4 +400,5 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Non-utf8 users now appear as utf8 users to irc!
 * UTF8 users now appear as non-utf8 users to non-utf8 epic users!
 * Automatically recode undeclared non-utf8 scripts using /encoding scripts
+* Add Emojis (unicode 6) to the column counting code (rb Kitambi)
 

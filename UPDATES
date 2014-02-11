@@ -1,5 +1,20 @@
 EPIC5-1.1.7
 
+*** News 02/11/2014 -- New /ENCODING target "scripts"
+	Whenever you /load a script, epic needs to convert it into utf8.
+	The normal way a script can declare itself is via /load -encoding
+	(See the note from 11/17/2012)
+
+        if (word(2 $loadinfo()) != [pf]) { load -pf -encoding CP437 $word(1 $loadinfo()); return; };
+
+	If a script is not well-formed utf8 and it does not declare its
+	own encoding, then it will be assumed to be whatever the value
+	of /ENCODING scripts is.  The hardcoded default is "CP437".
+
+	Naturally, if you /load a script that is not utf8 and is not
+	CP437, it may not translate correctly.  But it seems most scripts
+	use CP437, and we'll get everybody to declare/utf8-ify their scripts.
+
 *** News 02/10/2014 -- EPIC users now utf8 stransparant to irc.
 	As of right now, whether you are using utf8 or not, anything
 	you send from epic will be sent to irc as UTF8.  Anything UTF8
