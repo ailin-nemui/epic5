@@ -1,0 +1,212 @@
+echo 
+echo UTF-8 encoded sample plain-text file
+echo ‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾
+echo 
+echo Markus Kuhn [ˈmaʳkʊs kuːn] <http://www.cl.cam.ac.uk/~mgk25/> — 2002-07-25
+echo 
+echo 
+echo The ASCII compatible UTF-8 encoding used in this plain-text file
+echo is defined in Unicode, ISO 10646-1, and RFC 2279.
+echo 
+echo 
+echo Using Unicode/UTF-8, you can write in emails and source code things such as
+echo 
+echo Mathematics and sciences:
+echo 
+echo   ∮ E⋅da = Q,  n → ∞, ∑ f(i) = ∏ g(i),      ⎧⎡⎛┌─────┐⎞⎤⎫
+echo                                             ⎪⎢⎜│a²+b³ ⎟⎥⎪
+echo   ∀x∈ℝ: ⌈x⌉ = −⌊−x⌋, α ∧ ¬β = ¬(¬α ∨ β),    ⎪⎢⎜│───── ⎟⎥⎪
+echo                                             ⎪⎢⎜⎷ c₈   ⎟⎥⎪
+echo   ℕ ⊆ ℕ₀ ⊂ ℤ ⊂ ℚ ⊂ ℝ ⊂ ℂ,                   ⎨⎢⎜       ⎟⎥⎬
+echo                                             ⎪⎢⎜ ∞     ⎟⎥⎪
+echo   ⊥ < a ≠ b ≡ c ≤ d ≪ ⊤ ⇒ (⟦A⟧ ⇔ ⟪B⟫),      ⎪⎢⎜ ⎲     ⎟⎥⎪
+echo                                             ⎪⎢⎜ ⎳aⁱ-bⁱ⎟⎥⎪
+echo   2H₂ + O₂ ⇌ 2H₂O, R = 4.7 kΩ, ⌀ 200 mm     ⎩⎣⎝i=1    ⎠⎦⎭
+echo 
+echo Linguistics and dictionaries:
+echo 
+echo   ði ıntəˈnæʃənəl fəˈnɛtık əsoʊsiˈeıʃn
+echo   Y [ˈʏpsilɔn], Yen [jɛn], Yoga [ˈjoːgɑ]
+echo 
+echo APL:
+echo 
+echo   ((V⍳V)=⍳⍴V)/V←,V    ⌷←⍳→⍴∆∇⊃‾⍎⍕⌈
+echo 
+echo Nicer typography in plain text files:
+echo 
+echo   ╔══════════════════════════════════════════╗
+echo   ║                                          ║
+echo   ║   • ‘single’ and “double” quotes         ║
+echo   ║                                          ║
+echo   ║   • Curly apostrophes: “We’ve been here” ║
+echo   ║                                          ║
+echo   ║   • Latin-1 apostrophe and accents: '´`  ║
+echo   ║                                          ║
+echo   ║   • ‚deutsche‘ „Anführungszeichen“       ║
+echo   ║                                          ║
+echo   ║   • †, ‡, ‰, •, 3–4, —, −5/+5, ™, …      ║
+echo   ║                                          ║
+echo   ║   • ASCII safety test: 1lI|, 0OD, 8B     ║
+echo   ║                      ╭─────────╮         ║
+echo   ║   • the euro symbol: │ 14.95 € │         ║
+echo   ║                      ╰─────────╯         ║
+echo   ╚══════════════════════════════════════════╝
+echo 
+echo Combining characters:
+echo 
+echo   STARGΛ̊TE SG-1, a = v̇ = r̈, a⃑ ⊥ b⃑
+echo 
+echo Greek (in Polytonic):
+echo 
+echo   The Greek anthem:
+echo 
+echo   Σὲ γνωρίζω ἀπὸ τὴν κόψη
+echo   τοῦ σπαθιοῦ τὴν τρομερή,
+echo   σὲ γνωρίζω ἀπὸ τὴν ὄψη
+echo   ποὺ μὲ βία μετράει τὴ γῆ.
+echo 
+echo   ᾿Απ᾿ τὰ κόκκαλα βγαλμένη
+echo   τῶν ῾Ελλήνων τὰ ἱερά
+echo   καὶ σὰν πρῶτα ἀνδρειωμένη
+echo   χαῖρε, ὦ χαῖρε, ᾿Ελευθεριά!
+echo 
+echo   From a speech of Demosthenes in the 4th century BC:
+echo 
+echo   Οὐχὶ ταὐτὰ παρίσταταί μοι γιγνώσκειν, ὦ ἄνδρες ᾿Αθηναῖοι,
+echo   ὅταν τ᾿ εἰς τὰ πράγματα ἀποβλέψω καὶ ὅταν πρὸς τοὺς
+echo   λόγους οὓς ἀκούω· τοὺς μὲν γὰρ λόγους περὶ τοῦ
+echo   τιμωρήσασθαι Φίλιππον ὁρῶ γιγνομένους, τὰ δὲ πράγματ᾿
+echo   εἰς τοῦτο προήκοντα,  ὥσθ᾿ ὅπως μὴ πεισόμεθ᾿ αὐτοὶ
+echo   πρότερον κακῶς σκέψασθαι δέον. οὐδέν οὖν ἄλλο μοι δοκοῦσιν
+echo   οἱ τὰ τοιαῦτα λέγοντες ἢ τὴν ὑπόθεσιν, περὶ ἧς βουλεύεσθαι,
+echo   οὐχὶ τὴν οὖσαν παριστάντες ὑμῖν ἁμαρτάνειν. ἐγὼ δέ, ὅτι μέν
+echo   ποτ᾿ ἐξῆν τῇ πόλει καὶ τὰ αὑτῆς ἔχειν ἀσφαλῶς καὶ Φίλιππον
+echo   τιμωρήσασθαι, καὶ μάλ᾿ ἀκριβῶς οἶδα· ἐπ᾿ ἐμοῦ γάρ, οὐ πάλαι
+echo   γέγονεν ταῦτ᾿ ἀμφότερα· νῦν μέντοι πέπεισμαι τοῦθ᾿ ἱκανὸν
+echo   προλαβεῖν ἡμῖν εἶναι τὴν πρώτην, ὅπως τοὺς συμμάχους
+echo   σώσομεν. ἐὰν γὰρ τοῦτο βεβαίως ὑπάρξῃ, τότε καὶ περὶ τοῦ
+echo   τίνα τιμωρήσεταί τις καὶ ὃν τρόπον ἐξέσται σκοπεῖν· πρὶν δὲ
+echo   τὴν ἀρχὴν ὀρθῶς ὑποθέσθαι, μάταιον ἡγοῦμαι περὶ τῆς
+echo   τελευτῆς ὁντινοῦν ποιεῖσθαι λόγον.
+echo 
+echo   Δημοσθένους, Γ´ ᾿Ολυνθιακὸς
+echo 
+echo Georgian:
+echo 
+echo   From a Unicode conference invitation:
+echo 
+echo   გთხოვთ ახლავე გაიაროთ რეგისტრაცია Unicode-ის მეათე საერთაშორისო
+echo   კონფერენციაზე დასასწრებად, რომელიც გაიმართება 10-12 მარტს,
+echo   ქ. მაინცში, გერმანიაში. კონფერენცია შეჰკრებს ერთად მსოფლიოს
+echo   ექსპერტებს ისეთ დარგებში როგორიცაა ინტერნეტი და Unicode-ი,
+echo   ინტერნაციონალიზაცია და ლოკალიზაცია, Unicode-ის გამოყენება
+echo   ოპერაციულ სისტემებსა, და გამოყენებით პროგრამებში, შრიფტებში,
+echo   ტექსტების დამუშავებასა და მრავალენოვან კომპიუტერულ სისტემებში.
+echo 
+echo Russian:
+echo 
+echo   From a Unicode conference invitation:
+echo 
+echo   Зарегистрируйтесь сейчас на Десятую Международную Конференцию по
+echo   Unicode, которая состоится 10-12 марта 1997 года в Майнце в Германии.
+echo   Конференция соберет широкий круг экспертов по  вопросам глобального
+echo   Интернета и Unicode, локализации и интернационализации, воплощению и
+echo   применению Unicode в различных операционных системах и программных
+echo   приложениях, шрифтах, верстке и многоязычных компьютерных системах.
+echo 
+echo Thai (UCS Level 2):
+echo 
+echo   Excerpt from a poetry on The Romance of The Three Kingdoms (a Chinese
+echo   classic 'San Gua'):
+echo 
+echo   [----------------------------|------------------------]
+echo     ๏ แผ่นดินฮั่นเสื่อมโทรมแสนสังเวช  พระปกเกศกองบู๊กู้ขึ้นใหม่
+echo   สิบสองกษัตริย์ก่อนหน้าแลถัดไป       สององค์ไซร้โง่เขลาเบาปัญญา
+echo     ทรงนับถือขันทีเป็นที่พึ่ง           บ้านเมืองจึงวิปริตเป็นนักหนา
+echo   โฮจิ๋นเรียกทัพทั่วหัวเมืองมา         หมายจะฆ่ามดชั่วตัวสำคัญ
+echo     เหมือนขับไสไล่เสือจากเคหา      รับหมาป่าเข้ามาเลยอาสัญ
+echo   ฝ่ายอ้องอุ้นยุแยกให้แตกกัน          ใช้สาวนั้นเป็นชนวนชื่นชวนใจ
+echo     พลันลิฉุยกุยกีกลับก่อเหตุ          ช่างอาเพศจริงหนาฟ้าร้องไห้
+echo   ต้องรบราฆ่าฟันจนบรรลัย           ฤๅหาใครค้ำชูกู้บรรลังก์ ฯ
+echo 
+echo   (The above is a two-column text. If combining characters are handled
+echo   correctly, the lines of the second column should be aligned with the
+echo   | character above.)
+echo 
+echo Ethiopian:
+echo 
+echo   Proverbs in the Amharic language:
+echo 
+echo   ሰማይ አይታረስ ንጉሥ አይከሰስ።
+echo   ብላ ካለኝ እንደአባቴ በቆመጠኝ።
+echo   ጌጥ ያለቤቱ ቁምጥና ነው።
+echo   ደሀ በሕልሙ ቅቤ ባይጠጣ ንጣት በገደለው።
+echo   የአፍ ወለምታ በቅቤ አይታሽም።
+echo   አይጥ በበላ ዳዋ ተመታ።
+echo   ሲተረጉሙ ይደረግሙ።
+echo   ቀስ በቀስ፥ ዕንቁላል በእግሩ ይሄዳል።
+echo   ድር ቢያብር አንበሳ ያስር።
+echo   ሰው እንደቤቱ እንጅ እንደ ጉረቤቱ አይተዳደርም።
+echo   እግዜር የከፈተውን ጉሮሮ ሳይዘጋው አይድርም።
+echo   የጎረቤት ሌባ፥ ቢያዩት ይስቅ ባያዩት ያጠልቅ።
+echo   ሥራ ከመፍታት ልጄን ላፋታት።
+echo   ዓባይ ማደሪያ የለው፥ ግንድ ይዞ ይዞራል።
+echo   የእስላም አገሩ መካ የአሞራ አገሩ ዋርካ።
+echo   ተንጋሎ ቢተፉ ተመልሶ ባፉ።
+echo   ወዳጅህ ማር ቢሆን ጨርስህ አትላሰው።
+echo   እግርህን በፍራሽህ ልክ ዘርጋ።
+echo 
+echo Runes:
+echo 
+echo   ᚻᛖ ᚳᚹᚫᚦ ᚦᚫᛏ ᚻᛖ ᛒᚢᛞᛖ ᚩᚾ ᚦᚫᛗ ᛚᚪᚾᛞᛖ ᚾᚩᚱᚦᚹᛖᚪᚱᛞᚢᛗ ᚹᛁᚦ ᚦᚪ ᚹᛖᛥᚫ
+echo 
+echo   (Old English, which transcribed into Latin reads 'He cwaeth that he
+echo   bude thaem lande northweardum with tha Westsae.' and means 'He said
+echo   that he lived in the northern land near the Western Sea.')
+echo 
+echo Braille:
+echo 
+echo   ⡌⠁⠧⠑ ⠼⠁⠒  ⡍⠜⠇⠑⠹⠰⠎ ⡣⠕⠌
+echo 
+echo   ⡍⠜⠇⠑⠹ ⠺⠁⠎ ⠙⠑⠁⠙⠒ ⠞⠕ ⠃⠑⠛⠔ ⠺⠊⠹⠲ ⡹⠻⠑ ⠊⠎ ⠝⠕ ⠙⠳⠃⠞
+echo   ⠱⠁⠞⠑⠧⠻ ⠁⠃⠳⠞ ⠹⠁⠞⠲ ⡹⠑ ⠗⠑⠛⠊⠌⠻ ⠕⠋ ⠙⠊⠎ ⠃⠥⠗⠊⠁⠇ ⠺⠁⠎
+echo   ⠎⠊⠛⠝⠫ ⠃⠹ ⠹⠑ ⠊⠇⠻⠛⠹⠍⠁⠝⠂ ⠹⠑ ⠊⠇⠻⠅⠂ ⠹⠑ ⠥⠝⠙⠻⠞⠁⠅⠻⠂
+echo   ⠁⠝⠙ ⠹⠑ ⠡⠊⠑⠋ ⠍⠳⠗⠝⠻⠲ ⡎⠊⠗⠕⠕⠛⠑ ⠎⠊⠛⠝⠫ ⠊⠞⠲ ⡁⠝⠙
+echo   ⡎⠊⠗⠕⠕⠛⠑⠰⠎ ⠝⠁⠍⠑ ⠺⠁⠎ ⠛⠕⠕⠙ ⠥⠏⠕⠝ ⠰⡡⠁⠝⠛⠑⠂ ⠋⠕⠗ ⠁⠝⠹⠹⠔⠛ ⠙⠑
+echo   ⠡⠕⠎⠑ ⠞⠕ ⠏⠥⠞ ⠙⠊⠎ ⠙⠁⠝⠙ ⠞⠕⠲
+echo 
+echo   ⡕⠇⠙ ⡍⠜⠇⠑⠹ ⠺⠁⠎ ⠁⠎ ⠙⠑⠁⠙ ⠁⠎ ⠁ ⠙⠕⠕⠗⠤⠝⠁⠊⠇⠲
+echo 
+echo   ⡍⠔⠙⠖ ⡊ ⠙⠕⠝⠰⠞ ⠍⠑⠁⠝ ⠞⠕ ⠎⠁⠹ ⠹⠁⠞ ⡊ ⠅⠝⠪⠂ ⠕⠋ ⠍⠹
+echo   ⠪⠝ ⠅⠝⠪⠇⠫⠛⠑⠂ ⠱⠁⠞ ⠹⠻⠑ ⠊⠎ ⠏⠜⠞⠊⠊⠥⠇⠜⠇⠹ ⠙⠑⠁⠙ ⠁⠃⠳⠞
+echo   ⠁ ⠙⠕⠕⠗⠤⠝⠁⠊⠇⠲ ⡊ ⠍⠊⠣⠞ ⠙⠁⠧⠑ ⠃⠑⠲ ⠔⠊⠇⠔⠫⠂ ⠍⠹⠎⠑⠇⠋⠂ ⠞⠕
+echo   ⠗⠑⠛⠜⠙ ⠁ ⠊⠕⠋⠋⠔⠤⠝⠁⠊⠇ ⠁⠎ ⠹⠑ ⠙⠑⠁⠙⠑⠌ ⠏⠊⠑⠊⠑ ⠕⠋ ⠊⠗⠕⠝⠍⠕⠝⠛⠻⠹
+echo   ⠔ ⠹⠑ ⠞⠗⠁⠙⠑⠲ ⡃⠥⠞ ⠹⠑ ⠺⠊⠎⠙⠕⠍ ⠕⠋ ⠳⠗ ⠁⠝⠊⠑⠌⠕⠗⠎
+echo   ⠊⠎ ⠔ ⠹⠑ ⠎⠊⠍⠊⠇⠑⠆ ⠁⠝⠙ ⠍⠹ ⠥⠝⠙⠁⠇⠇⠪⠫ ⠙⠁⠝⠙⠎
+echo   ⠩⠁⠇⠇ ⠝⠕⠞ ⠙⠊⠌⠥⠗⠃ ⠊⠞⠂ ⠕⠗ ⠹⠑ ⡊⠳⠝⠞⠗⠹⠰⠎ ⠙⠕⠝⠑ ⠋⠕⠗⠲ ⡹⠳
+echo   ⠺⠊⠇⠇ ⠹⠻⠑⠋⠕⠗⠑ ⠏⠻⠍⠊⠞ ⠍⠑ ⠞⠕ ⠗⠑⠏⠑⠁⠞⠂ ⠑⠍⠏⠙⠁⠞⠊⠊⠁⠇⠇⠹⠂ ⠹⠁⠞
+echo   ⡍⠜⠇⠑⠹ ⠺⠁⠎ ⠁⠎ ⠙⠑⠁⠙ ⠁⠎ ⠁ ⠙⠕⠕⠗⠤⠝⠁⠊⠇⠲
+echo 
+echo   (The first couple of paragraphs of "A Christmas Carol" by Dickens)
+echo 
+echo Compact font selection example text:
+echo 
+echo   ABCDEFGHIJKLMNOPQRSTUVWXYZ /0123456789
+echo   abcdefghijklmnopqrstuvwxyz £©µÀÆÖÞßéöÿ
+echo   –—‘“”„†•…‰™œŠŸž€ ΑΒΓΔΩαβγδω АБВГДабвгд
+echo   ∀∂∈ℝ∧∪≡∞ ↑↗↨↻⇣ ┐┼╔╘░►☺♀ ﬁ�⑀₂ἠḂӥẄɐː⍎אԱა
+echo 
+echo Greetings in various languages:
+echo 
+echo   Hello world, Καλημέρα κόσμε, コンニチハ
+echo 
+echo Box drawing alignment tests:                                          █
+echo                                                                       ▉
+echo   ╔══╦══╗  ┌──┬──┐  ╭──┬──╮  ╭──┬──╮  ┏━━┳━━┓  ┎┒┏┑   ╷  ╻ ┏┯┓ ┌┰┐    ▊ ╱╲╱╲╳╳╳
+echo   ║┌─╨─┐║  │╔═╧═╗│  │╒═╪═╕│  │╓─╁─╖│  ┃┌─╂─┐┃  ┗╃╄┙  ╶┼╴╺╋╸┠┼┨ ┝╋┥    ▋ ╲╱╲╱╳╳╳
+echo   ║│╲ ╱│║  │║   ║│  ││ │ ││  │║ ┃ ║│  ┃│ ╿ │┃  ┍╅╆┓   ╵  ╹ ┗┷┛ └┸┘    ▌ ╱╲╱╲╳╳╳
+echo   ╠╡ ╳ ╞╣  ├╢   ╟┤  ├┼─┼─┼┤  ├╫─╂─╫┤  ┣┿╾┼╼┿┫  ┕┛┖┚     ┌┄┄┐ ╎ ┏┅┅┓ ┋ ▍ ╲╱╲╱╳╳╳
+echo   ║│╱ ╲│║  │║   ║│  ││ │ ││  │║ ┃ ║│  ┃│ ╽ │┃  ░░▒▒▓▓██ ┊  ┆ ╎ ╏  ┇ ┋ ▎
+echo   ║└─╥─┘║  │╚═╤═╝│  │╘═╪═╛│  │╙─╀─╜│  ┃└─╂─┘┃  ░░▒▒▓▓██ ┊  ┆ ╎ ╏  ┇ ┋ ▏
+echo   ╚══╩══╝  └──┴──┘  ╰──┴──╯  ╰──┴──╯  ┗━━┻━━┛  ▗▄▖▛▀▜   └╌╌┘ ╎ ┗╍╍┛ ┋  ▁▂▃▄▅▆▇█
+echo                                                ▝▀▘▙▄▟

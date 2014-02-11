@@ -1,8 +1,8 @@
 A plan for utf8 support
 
-Project 1: Scripts (done?)
-  All scripts will be translated into utf8 at /load time.
-  All output will be translated from utf8 at display time.
+Project 1: Scripts (done)
+  All scripts will be translated into utf8 at /load time. (done)
+  All output will be translated from utf8 at display time. (done)
   Column counting is not in the scope of this project.
 
 Project 2: Targets
@@ -10,12 +10,12 @@ Project 2: Targets
   Each target shall be associated with an encoding
   Strings to and from the target shall be converted to/from utf8
 
-Project 3: Column Counting 
+Project 3: Column Counting  (done)
   The output code needs to know how to count utf8 strings properly (done)
-  The output code needs to translate from utf8 to the user's encoding.
+  The output code needs to translate from utf8 to the user's encoding. (done)
 
-Project 4: Input handling 
-  All input shall be converted to utf8 
+Project 4: Input handling (done)
+  All input shall be converted to utf8  (done)
   The input line needs to know about utf8 strings, (done)
   Specifically how to count columns.  (done)
   Better handling for utf8 vagaries, specifically OS X's composed characters.

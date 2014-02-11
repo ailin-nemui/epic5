@@ -1,4 +1,4 @@
-/* $EPIC: screen.c,v 1.162 2014/02/10 17:40:37 jnelson Exp $ */
+/* $EPIC: screen.c,v 1.163 2014/02/11 18:28:49 jnelson Exp $ */
 /*
  * screen.c
  *
@@ -3278,6 +3278,9 @@ const 	char *		in;
 	iconv_t		xlat;
 	int		n;
 const 	char *		enc;
+static	int		prev_char = -1;
+static	int		suspicious = 0;
+static	int		never_warn_again = 0;
 
 	workbuf[workbuf_idx++] = byte;
 	workbuf[workbuf_idx] = 0;
@@ -3286,6 +3289,39 @@ const 	char *		enc;
 	inlen = workbuf_idx;
 	out = dest_ptr;
 	outlen = 32;
+
+	/* Very crude, ad-hoc check for UTF8 type things */
+	if (prev_char == -1 || ((prev_char & 0x80) == 0x80))
+	{
+	    if ((prev_char & 0xE0) == 0xC0)
+	    {
+		if ((byte & 0xC0) == 0x80)
+		  suspicious++;
+		else
+		  suspicious = 0;
+	    }
+	    if ((prev_char & 0xF0) == 0xE0)
+	    {
+		if ((byte & 0xC0) == 0x80)
+		  suspicious++;
+		else
+		  suspicious = 0;
+	    }
+	    if ((prev_char & 0xF8) == 0xF0)
+	    {
+		if ((byte & 0xC0) == 0x80)
+		   suspicious++;
+		else
+		   suspicious = 0;
+	    }
+	    if (suspicious == 3 && never_warn_again == 0)
+	    {
+		yell("Your /ENCODING CONSOLE is %s but you seem to be typing UTF-8.", enc);
+		yell("   Use %s/ENCODING CONSOLE UTF-8.%s if you are", BOLD_TOG_STR, BOLD_TOG_STR);
+		never_warn_again = 1;
+	    }
+	}
+	prev_char = byte;
 
 	enc = find_recoding("console", &xlat, NULL);
 	if ((n = iconv(xlat, (const char **)&in, &inlen, &out, &outlen)) != 0)

@@ -1,4 +1,4 @@
-/* $EPIC: recode.c,v 1.1 2014/02/10 17:40:37 jnelson Exp $ */
+/* $EPIC: recode.c,v 1.2 2014/02/11 18:28:49 jnelson Exp $ */
 /*
  * recode.c - Transcoding between string encodings
  * 
@@ -33,6 +33,8 @@
 
 #include "irc.h"
 #include "ircaux.h"
+#include <langinfo.h>
+#include <locale.h>
 
 /*
  * Here's the plan...
@@ -96,6 +98,18 @@ RecodeRule **	recode_rules = NULL;
 void	init_recodings (void)
 {
 	int	x;
+	const char *	console_encoding;
+
+	/* 
+	 * By default use whatever the LC_ALL variable says.
+	 * But if there is no LC_ALL variable, then the encoding
+	 * will be "US-ASCII" at which point we will default to ISO-8859-1
+	 * since that has the widest capability, plus, we can auto-detect
+	 * if it is wrong at runtime.
+	 */
+	console_encoding = nl_langinfo(CODESET);
+	if (!my_stricmp(console_encoding, "US-ASCII"))
+		console_encoding = "ISO-8859-1";
 
 	recode_rules = (RecodeRule **)new_malloc(sizeof(RecodeRule *) * MAX_RECODING_RULES);
 	for (x = 0; x < MAX_RECODING_RULES; x++)

@@ -1,5 +1,25 @@
 EPIC5-1.1.7
 
+*** News 02/11/2014 -- Auto-detect incorrect encodings lead to warnings
+	If you have /ENCODING CONSOLE set to non-utf8, and then you type
+	stuff that looks like UTF8, the client will tell you and suggest
+	you switch.  This will end the problem with utf8 users seeing
+	multiple garbage characters on the input line.
+
+	If you have /ENCODING CONSOLE set to utf8 and you type something
+	that is not utf8, the client will tell you and suggest you switch
+	to something else.  Unfortunately it's not easy to know what you 
+	are using, so it suggests ISO-8859-1.  
+
+	If you are correctly setting LC_ALL (see below) then the above
+	should never happen for you.
+
+*** News 02/11/2014 -- Now honoring LC_ALL (locale charset settings)
+	If you set your character set via locale environment variables,
+	EPIC will now use your locale as the default character set for
+	/ENCODING console.  If you do not set your locale variables,
+	then epic will continue to default to ISO-8859-1.
+
 *** News 02/11/2014 -- New /ENCODING target "scripts"
 	Whenever you /load a script, epic needs to convert it into utf8.
 	The normal way a script can declare itself is via /load -encoding

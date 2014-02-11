@@ -401,4 +401,7 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * UTF8 users now appear as non-utf8 users to non-utf8 epic users!
 * Automatically recode undeclared non-utf8 scripts using /encoding scripts
 * Add Emojis (unicode 6) to the column counting code (rb Kitambi)
+* Set /ENCODING CONSOLE automatically to nl_langinfo(CODESET) from LC_ALL.
+* If the default codeset is "US-ASCII" then it's changed to ISO-885-1.
+* In translate_user_input() try to detect utf8 typers using non-utf8 encodings
 
