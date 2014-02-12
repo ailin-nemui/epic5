@@ -408,3 +408,5 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Fix slurp_elf_file() it was leaving a 0xFF at end of file, confusing /load
 * Don't bind ^T to non-existing TRANSPOSE_CHARACTERS keybinding.
 * Bump MAXPARA from 15 to 20 for RusNet
+* Fix the UTF8 detector for user input
+

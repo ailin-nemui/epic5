@@ -1,4 +1,4 @@
-/* $EPIC: screen.c,v 1.163 2014/02/11 18:28:49 jnelson Exp $ */
+/* $EPIC: screen.c,v 1.164 2014/02/12 13:12:03 jnelson Exp $ */
 /*
  * screen.c
  *
@@ -3290,8 +3290,10 @@ static	int		never_warn_again = 0;
 	out = dest_ptr;
 	outlen = 32;
 
+	enc = find_recoding("console", &xlat, NULL);
+
 	/* Very crude, ad-hoc check for UTF8 type things */
-	if (prev_char == -1 || ((prev_char & 0x80) == 0x80))
+	if (strcmp(enc, "UTF-8") &&  (prev_char == -1 || ((prev_char & 0x80) == 0x80)))
 	{
 	    if ((prev_char & 0xE0) == 0xC0)
 	    {
@@ -3317,13 +3319,13 @@ static	int		never_warn_again = 0;
 	    if (suspicious == 3 && never_warn_again == 0)
 	    {
 		yell("Your /ENCODING CONSOLE is %s but you seem to be typing UTF-8.", enc);
-		yell("   Use %s/ENCODING CONSOLE UTF-8.%s if you are", BOLD_TOG_STR, BOLD_TOG_STR);
+		yell("   Use %s/ENCODING CONSOLE UTF-8.%s if you really are using UTF-8", BOLD_TOG_STR, BOLD_TOG_STR);
 		never_warn_again = 1;
 	    }
 	}
 	prev_char = byte;
 
-	enc = find_recoding("console", &xlat, NULL);
+	/* Convert whatever the user is typing into UTF8 */
 	if ((n = iconv(xlat, (const char **)&in, &inlen, &out, &outlen)) != 0)
 	{
 		if (errno == EILSEQ)
@@ -3340,6 +3342,7 @@ static	int		never_warn_again = 0;
 		}
 	}
 
+	/* Now inject the converted (utf8) bytes into the input stream. */
 	s = (const unsigned char *)dest_ptr;
 	codepoint = next_code_point(&s);
 	if (codepoint > -1)
