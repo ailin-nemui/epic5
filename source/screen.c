@@ -1,4 +1,4 @@
-/* $EPIC: screen.c,v 1.164 2014/02/12 13:12:03 jnelson Exp $ */
+/* $EPIC: screen.c,v 1.165 2014/02/13 02:47:29 jnelson Exp $ */
 /*
  * screen.c
  *
@@ -1555,8 +1555,22 @@ const	unsigned char	*cont_ptr;
 
 		    default:
 		    {
-			if (codepoint > 127 || 
-				!strchr(words, (codepoint & 0x7F)))
+			const unsigned char *	xptr;
+			int	cp;
+			int	spacechar = 0;
+
+			xptr = words;
+			while ((cp = next_code_point(&xptr)))
+			{
+				if (codepoint == cp)
+				{
+					spacechar = 1;
+					word_break = pos;
+					break;
+				}
+			}
+
+			if (spacechar == 0)
 			{
 				if (indent == -1)
 					indent = col;
@@ -1581,11 +1595,12 @@ const	unsigned char	*cont_ptr;
 		    case ' ':
 		    case ND_SPACE:
 		    {
-			char p, n;
+			const unsigned char *x2;
+			int	ncp;
+			int	old_pos = pos;
 
-			/* We know it is 7 bits here! */
-			p = (codepoint & 0x7F);
-			n = *ptr;
+			x2 = ptr;
+			ncp = next_code_point(&x2);
 
 			if (indent == 0)
 			{
@@ -1593,17 +1608,7 @@ const	unsigned char	*cont_ptr;
 				firstwb = pos;
 			}
 
-			/* By default, the line break is AT the space. */
-			word_break = pos;
 			saved_a = a;
-
-			/* 
-			 * Unless the breaking character is not a space
-			 * (like a comma or something) and then it becomes
-			 * the next character, if there is room for it.
-			 */
-			if (p != ' ' && n && (col + 1 < max_cols))
-				word_break++;
 
 			/* XXX Sigh -- exactly the same as above. */
 			cols = codepoint_numcolumns(codepoint);
@@ -1614,6 +1619,23 @@ const	unsigned char	*cont_ptr;
 			ucs_to_utf8(codepoint, utf8str, sizeof(utf8str));
 			for (x = utf8str; *x; x++)
 				buffer[pos++] = *x;
+
+			/*
+			 * A space always breaks here.
+			 *
+			 * A non-space breaks at the character AFTER the
+			 * break character (ie, the breaking character stays
+			 * on the first line) unless the non-space character
+			 * would be the rightmost column, in which case it
+			 * breaks here (and slips to the 2nd line)
+			 */
+			if (codepoint == ' ')
+				word_break = old_pos;
+			else if (ncp && (col + 1 < max_cols))
+				word_break = pos;
+			else
+				word_break = old_pos;
+
 			break;
 		    }
 		} /* End of switch (codepoint) */

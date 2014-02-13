@@ -1,4 +1,4 @@
-/* $EPIC: input.c,v 1.76 2014/02/10 17:40:37 jnelson Exp $ */
+/* $EPIC: input.c,v 1.77 2014/02/13 02:47:28 jnelson Exp $ */
 /*
  * input.c: does the actual input line stuff... keeps the appropriate stuff
  * on the input line, handles insert/delete of characters/words... the whole
@@ -772,7 +772,8 @@ const char *	prompt;
 			 * than the other columns, how many cols do
 			 * we still have to account for?
 			 */
-			net_columns = totalcols - zone0_length;
+			net_columns = LOGICAL_COLUMN[LOGICAL_CURSOR] -
+					zone0_length;
 
 			/* 
 			 * Zones 1-N are the same width.  Yes, I know
