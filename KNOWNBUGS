@@ -409,4 +409,6 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Don't bind ^T to non-existing TRANSPOSE_CHARACTERS keybinding.
 * Bump MAXPARA from 15 to 20 for RusNet
 * Fix the UTF8 detector for user input
+* Fix cursor left when switching zones to the left.
+* Allow /set word_break to include high bit code points (rb fusion)
 
