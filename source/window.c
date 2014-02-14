@@ -1,4 +1,4 @@
-/* $EPIC: window.c,v 1.235 2013/11/06 00:46:24 jnelson Exp $ */
+/* $EPIC: window.c,v 1.236 2014/02/14 22:50:57 jnelson Exp $ */
 /*
  * window.c: Handles the organzation of the logical viewports (``windows'')
  * for irc.  This includes keeping track of what windows are open, where they
@@ -6707,6 +6707,8 @@ char 	*windowctl 	(char *input)
 	char	*listc;
 	char 	*ret = NULL;
 	Window	*w;
+	int	old_status_update;
+
 
 	GET_FUNC_ARG(listc, input);
 	len = strlen(listc);
@@ -6728,7 +6730,10 @@ char 	*windowctl 	(char *input)
 		    malloc_strcat_wordlist(&ret, space, ltoa(w->refnum));
 		RETURN_MSTR(ret);
 	} else if (!my_strnicmp(listc, "NEW", len)) {
-	    if ((w = new_window(current_window->screen))) {
+	    old_status_update = permit_status_update(0);
+	    w = new_window(current_window->screen);
+	    permit_status_update(old_status_update);
+	    if (w) {
 	        make_window_current(w);
 		RETURN_INT(w->refnum);
 	    }

@@ -412,3 +412,4 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * To work around RusNET, forgive truncated utf8 sequences at the end.
 * Fix /server , so it doesn't null deref.
 * Add /lastlog -this_server and /lastlog -global for zlonix.
+* Fix $windowctl(NEW) by forbidding status updates during window creation.
