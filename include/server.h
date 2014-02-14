@@ -386,6 +386,8 @@ const char *	get_server_funny_match         	(int);
         void    set_server_ison_len             (int, int);
         int     get_server_ison_len             (int);
 
+const	char *	get_server_default_encoding	(int);
+
 	char *	serverctl			(char *);
 
 	int	server_more_addrs		(int);
