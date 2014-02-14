@@ -1,4 +1,4 @@
-/* $EPIC: server.c,v 1.261 2014/02/09 03:23:23 jnelson Exp $ */
+/* $EPIC: server.c,v 1.262 2014/02/14 00:43:41 jnelson Exp $ */
 /*
  * server.c:  Things dealing with that wacky program we call ircd.
  *
@@ -917,21 +917,24 @@ void 	display_server_list (void)
 				i, s->info->host, s->info->port, 
 				get_server_group(i), get_server_type(i),
 				server_states[get_server_status(i)],
-				get_server_vhost(i));
+				get_server_vhost(i),
+				get_server_default_encoding(i));
 		else if (is_server_open(i))
 			say("\t%d) %s %d (%s) [%s] %s [%s] (vhost: %s) (non-utf8 encoding: %s)", 
 				i, s->info->host, s->info->port,
 				s->nickname, get_server_group(i),
 				get_server_type(i),
 				server_states[get_server_status(i)],
-				get_server_vhost(i));
+				get_server_vhost(i),
+				get_server_default_encoding(i));
 		else
 			say("\t%d) %s %d (was %s) [%s] %s [%s] (vhost: %s) (non-utf8 encoding: %s)", 
 				i, s->info->host, 
 				s->info->port, s->nickname, get_server_group(i),
 				get_server_type(i),
 				server_states[get_server_status(i)],
-				get_server_vhost(i));
+				get_server_vhost(i),
+				get_server_default_encoding(i));
 	}
 }
 
@@ -3117,6 +3120,20 @@ const char	*get_server_itsname (int refnum)
 	else
 		return s->info->host;
 }
+
+const char *	get_server_default_encoding (int servref )
+{
+	Server *s;
+
+	if (!(s = get_server(servref)))
+		return "<none>";
+
+	if (s->default_encoding && *s->default_encoding)
+		return s->default_encoding;
+	else
+		return "<none>";
+}
+
 
 int	get_server_protocol_state (int refnum)
 {
