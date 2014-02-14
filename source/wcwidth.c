@@ -307,6 +307,129 @@ int     next_code_point (const unsigned char **i)
         return result;
 }
 
+/*
+ * partial_code_point -- Tell me why 'i' is not a valid utf8 sequence
+ *
+ * Arguments:
+ *	i	- A pointer to a string rejected by next_code_point()
+ *
+ * Return value:
+ *	1	- The string 'i' points at a utf8 sequence that appears
+ *		  to be valid, but truncated.
+ *	0	- I don't see anything wrong with 'i'
+ *	-1	- 'i' does not point at a valid utf8 sequence at all.
+ */
+int     partial_code_point (const unsigned char *i)
+{
+        int     offset;
+        unsigned char    a, b, c, d;
+        const unsigned char *str;
+        int     result = -1;
+
+        str = i;
+        a = b = c = d = 0;
+
+        if (str[0])
+        {
+                a = str[0];
+                if (str[1])
+                {
+                        b = str[1];
+                        if (str[2])
+                        {
+                                c = str[2];
+                                if (str[3])
+                                        d = str[3];
+                        }
+                }
+        }
+
+	/* A 7 bit char is not a partial incomplete sequence */
+        if ((a & 0x80) == 0x00)
+		return 0;
+
+        /* The 2 high bits are set only?  -- 2 bytes */
+        if ((a & 0xE0) == 0xC0)
+        {
+		/* if b is a nul, then it is truncated */
+		if (b == 0)
+			return 1;
+
+		/* If it's valid, ok. */
+                else if ((b & 0xC0) == 0x80)
+			return 0;
+
+		/* This is just garbage */
+		else 
+			return -1;
+        }
+
+        /* The 3 high bits are set only?  -- 3 bytes */
+        else if ((a & 0xF0) == 0xE0)
+        {
+		/* If b is a null, it is truncated */
+		if (b == 0)
+			return 1;
+
+		/* Otherwise, if 'b' is a valid next char... */
+		else if ((b & 0xC0) == 0x80)
+		{
+			/* If c is a null, it is truncated */
+			if (c == 0)
+				return 1;
+
+			/* Or, if c is a valid final char... */
+			else if ((c & 0xC0) == 0x80)
+				return 0;
+
+			/* Otherwise, c is just garbage */
+			else
+				return -1;
+		}
+
+		/* Otherwise, 'b' is just garbage */
+		else
+			return -1;
+        }
+
+        /* The 4 high bits are set only?  -- 4 bytes*/
+        else if ((a & 0xF8) == 0xF0)
+        {
+		if (b == 0)
+			return 1;
+
+		/* Otherwise, if 'b' is a valid next char... */
+		else if ((b & 0xC0) == 0x80)
+		{
+			/* If c is a null, it is truncated */
+			if (c == 0)
+				return 1;
+
+			/* Or, if c is a valid next char... */
+			else if ((c & 0xC0) == 0x80)
+			{
+				if (d == 0)
+					return 1;
+				else if ((d & 0xC0) == 0x80)
+					return 0;
+				else
+					return -1;
+			}
+
+			/* Otherwise, c is just garbage */
+			else
+				return -1;
+		}
+
+		else
+			return -1;
+        }
+
+	else
+		return -1;
+
+}
+
 
 int	grab_codepoint (const unsigned char *x)
 {

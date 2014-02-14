@@ -1,4 +1,4 @@
-/* $EPIC: ircaux.c,v 1.238 2014/02/09 03:23:23 jnelson Exp $ */
+/* $EPIC: ircaux.c,v 1.239 2014/02/14 00:06:15 jnelson Exp $ */
 /*
  * ircaux.c: some extra routines... not specific to irc... that I needed 
  *
@@ -6380,6 +6380,10 @@ int	strext2 (unsigned char **cut, unsigned char *buffer, int part2, int part3)
  *
  * Arguments:
  *	utf8str	- A string to be tested for utf8-ness.  Must be nul terminated
+ *		  IF THIS STRING ENDS WITH AN INCOMPLETE PARTIAL UTF8 SEQUENCE
+ *		  THE INCOMPLETE PARTIAL SEQUENCE WILL BE TRIMMED.  This 
+ *		  trimming is not considered a 'defect'.  This is to handle
+ *		  strings that were truncated blindly by ircd or whatnot.
  *	utf8strsiz - The number of bytes to be tested.
  *
  * Return Value:
@@ -6387,19 +6391,30 @@ int	strext2 (unsigned char **cut, unsigned char *buffer, int part2, int part3)
  *	>0	(Failure) The number of bytes that were not part of a 
  *			  valid utf8 string.
  */
-int	invalid_utf8str (const unsigned char *utf8str)
+int	invalid_utf8str (unsigned char *utf8str)
 {
-	const unsigned char *s;
+	unsigned char *s;
 	int	code_point;
 	int	errors = 0;
 
 	s = utf8str;
-	while ((code_point = next_code_point(&s)))
+	while ((code_point = next_code_point((const unsigned char **)&s)))
 	{
 		if (code_point < 0)
 		{
-			errors++;
-			s++;
+			int	x = partial_code_point(s);
+
+			if (x == 1)
+			{
+				*s = 0;
+				break;
+			}
+
+			else
+			{
+				errors++;
+				s++;
+			}
 		}
 	}
 

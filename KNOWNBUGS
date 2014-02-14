@@ -411,4 +411,5 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Fix the UTF8 detector for user input
 * Fix cursor left when switching zones to the left.
 * Allow /set word_break to include high bit code points (rb fusion)
+* To work around RusNET, forgive truncated utf8 sequences at the end.
 
