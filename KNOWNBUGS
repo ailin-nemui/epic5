@@ -2,9 +2,7 @@ EPIC5 Projects, Bugs, and other Errata:
 
 KNOWN ERRATA (eg, bugs, or unresolved requests):
 ------------------------------------------------
-* Flesh out translate_user_input() so it supports user's encoding->utf8
-* Flesh out safe_puts() so it supports utf8->user's encoding
-* Figure out what the main putchar is, and make it utf8 and iconv aware.
+* A /window command in /on window_create can suppress drawing of new status bar.
 
 MEDIUM-TERM PROJECTS
 --------------------
@@ -413,3 +411,4 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Allow /set word_break to include high bit code points (rb fusion)
 * To work around RusNET, forgive truncated utf8 sequences at the end.
 * Fix /server , so it doesn't null deref.
+* Add /lastlog -this_server and /lastlog -global for zlonix.

@@ -1,4 +1,4 @@
-/* $EPIC: lastlog.c,v 1.94 2013/07/30 20:48:51 crazyed Exp $ */
+/* $EPIC: lastlog.c,v 1.95 2014/02/14 16:29:10 jnelson Exp $ */
 /*
  * lastlog.c: handles the lastlog features of irc. 
  *
@@ -65,7 +65,7 @@ typedef struct	lastlog_stru
 static	intmax_t global_lastlog_refnum = 0;
 	double	output_expires_after = 0.0;
 
-static int	show_lastlog (Lastlog **l, int *skip, int *number, Mask *level_mask, char *match, regex_t *rex, char *nomatch, regex_t *norex, int *max, const char *target, int mangler, Window *window, int exempt, char **);
+static int	show_lastlog (Lastlog **l, int *skip, int *number, Mask *level_mask, char *match, regex_t *rex, char *nomatch, regex_t *norex, int *max, const char *target, int mangler, Window *window, int exempt, char **, int, int);
 static Lastlog *oldest_lastlog_for_window (Window *window);
 static Lastlog *newer_lastlog_entry (Lastlog *item, Window *window);
 static Lastlog *older_lastlog_entry (Lastlog *item, Window *window);
@@ -417,6 +417,8 @@ BUILT_IN_COMMAND(lastlog)
 	int		lc;
 	char *		rewrite = NULL;
 	Window *	window = current_window;
+	int		this_server = 0;
+	int		global = 0;
 
 	lc = message_setall(0, NULL, LEVEL_OTHER);
 	cnt = current_window->lastlog_size;
@@ -593,6 +595,10 @@ BUILT_IN_COMMAND(lastlog)
 		}
 		window = w;
 	    }
+	    else if (!my_strnicmp(arg, "-THIS_SERVER", len))
+		this_server = 1;
+	    else if (!my_strnicmp(arg, "-GLOBAL", len))
+		global = 1;
 	    else if (!my_strnicmp(arg, "-", 1))
 	    {
 		int	i = str_to_level(arg+1);
@@ -707,6 +713,8 @@ BUILT_IN_COMMAND(lastlog)
 		yell("Mask: %s", mask_to_str(&level_mask));
 		yell("Before/After: %d/%d", before, after);
 		yell("Separator: %s", separator);
+		yell("All Windows This Server: %d", this_server);
+		yell("All Windows Globally: %d", global);
 	}
 
 	if (outfile)
@@ -753,7 +761,11 @@ BUILT_IN_COMMAND(lastlog)
 	     */
 	    for (start = end = lastlog_newest; start != lastlog_oldest; )
 	    {
-		if (start->visible && start->window == window)
+		if (start->visible && 
+		      (global || 
+			(this_server && 
+				start->window->server == window->server) ||
+			(start->window == window)))
 		{
 		    if (mask_isnone(&level_mask) || 
 				(mask_isset(&level_mask, start->level)))
@@ -789,7 +801,8 @@ restart:
 		/* In any case we always check if it matches (for counting purposes) */
 		matching = show_lastlog(&l, &skip, &number, &level_mask, 
 					match, rex, nomatch, norex, &max, target, 
-					mangler, window, exempt, &result);
+					mangler, window, exempt, &result, 
+					global, this_server);
 
 		/* 
 		 * Now if the present entry "matches" and we are already in a context
@@ -946,7 +959,11 @@ restart:
 
 	    for (start = end = lastlog_newest; end != lastlog_oldest; )
 	    {
-		if (end->visible && end->window == window)
+		if (end->visible && 
+		      (global || 
+			(this_server && 
+				end->window->server == window->server) ||
+			(end->window == window)))
 		{
 		    if (mask_isnone(&level_mask) || 
 				(mask_isset(&level_mask, end->level)))
@@ -982,7 +999,8 @@ restart2:
 		/* In any case we always check if it matches (for counting purposes) */
 		matching = show_lastlog(&l, &skip, &number, &level_mask, 
 					match, rex, nomatch, norex, &max, target, 
-					mangler, window, exempt, &result);
+					mangler, window, exempt, &result,
+					global, this_server);
 
 		/* 
 		 * Now if the present entry "matches" and we are already in a context
@@ -1145,14 +1163,18 @@ bail:
  * This returns 1 if the current item pointed to by 'l' is something that
  * should be displayed based on the criteron provided.
  */
-static int	show_lastlog (Lastlog **l, int *skip, int *number, Mask *level_mask, char *match, regex_t *rex, char *nomatch, regex_t *norex, int *max, const char *target, int mangler, Window *window, int exempt, char **result)
+static int	show_lastlog (Lastlog **l, int *skip, int *number, Mask *level_mask, char *match, regex_t *rex, char *nomatch, regex_t *norex, int *max, const char *target, int mangler, Window *window, int exempt, char **result, int global, int this_server)
 {
 	const char *str = NULL;
 	int	retval = 1;
 
 	*result = NULL;
 
-	if ((*l)->window != window)
+	if ( global == 1 ||
+	    (this_server == 1 && ((*l)->window->server == window->server)) ||
+	    ((*l)->window == window))
+		;	/* It's ok if this matches. */
+	else
 	{
 		if (x_debug & DEBUG_LASTLOG)
 			yell("Lastlog item belongs to another window");

@@ -1,5 +1,13 @@
 EPIC5-1.1.7
 
+*** News 02/14/2014 -- New flags, /LASTLOG -THIS_SERVER and -GLOBAL
+	The /LASTLOG -THIS_SERVER flag will show all lastlog entries
+	from any window belonging to the server server as this window.
+	IE, it is a /lastlog that catch all of this server.
+
+	The /LASTLOG -GLOBAL flag will show all lastlog entries from
+	any window whatsoever.
+
 *** News 02/11/2014 -- Auto-detect incorrect encodings lead to warnings
 	If you have /ENCODING CONSOLE set to non-utf8, and then you type
 	stuff that looks like UTF8, the client will tell you and suggest

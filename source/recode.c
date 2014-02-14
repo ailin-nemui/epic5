@@ -1,4 +1,4 @@
-/* $EPIC: recode.c,v 1.2 2014/02/11 18:28:49 jnelson Exp $ */
+/* $EPIC: recode.c,v 1.3 2014/02/14 16:29:10 jnelson Exp $ */
 /*
  * recode.c - Transcoding between string encodings
  * 
@@ -39,6 +39,8 @@
 /*
  * Here's the plan...
  *
+ * * * * * PREFACE 
+ *
  * EPIC wants to handle everything internally as a UTF-8 string, but 
  * sometimes we will receive a non-UTF8 string and have to decide how
  * to convert it into UTF8.
@@ -53,6 +55,8 @@
  * UTF-8, either the epic user, or others on irc -- so we need to be 
  * able to tell each other about what encoding we're using.
  *
+ * * * * * GLOBAL DEFAULTS
+ *
  * Declare the encoding your terminal emulator uses (if it's not utf-8)
  *	/ENCODING console ISO-8859-1
  *
@@ -60,26 +64,47 @@
  * (assuming they don't declare their encoding, WHICH THEY SHOULD)
  *	/ENCODING scripts CP437
  *
+ * Declare that unless overruled by other rules, every NON-UTF8 string
+ * from irc should be assumed to be ISO-8859-1.
+ *
+ * * * * * * HANDLING TARGETS
+ *
+ * On irc, there are only two types of targets that generate messages
+ *	1. Servers (which have a dot in their name)
+ *	2. Nicks (which do not have a dot in their name)
+ * So although we may think of channels having encodings, what we really
+ * are saying is by convention every nick in that channel has agreed to
+ * use the same encoding.  So channel encodings are implied.
+ *
+ * BECAUSE THIS HANDLING IS FOR NON-UTF8 ENCODINGS, YOU DO NOT NEED TO DO
+ * ANYTHING FOR SERVERS OR NICKS THAT USE UTF-8.
+ *
  * Declare what encoding irc.foo.com uses
  *	/ENCODING irc.foo.com ISO-8859-15
  *
- * Declare what encoding #epic uses on EFNet
- *	/ENCODING EFNet/#epic ISO-8859-1
- *
- * Declare that hop uses ISO-85519-1
+ * Declare what encoding hop uses (on all networks)
  *	/ENCODING hop ISO-8859-1
  *
- * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
- *    IMPORTANT! IMPORTANT! IMPORTANT! IMPORTANT! IMPORTANT!   *
- * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
- * It is critical to remember the purpose of this is to handle
- * NON-UTF8 strings.  So you may be tempted to say, "oh, I should
- * declare that my channel uses UTF-8", but EPIC already knows
- * how to handle that.  What you want to do is tell EPIC what to 
- * do with NON-UTF8 stuff it comes across.
+ * Declare what encoding hop uses (only on EFNet)
+ *	/ENCODING EFNet/hop ISO-8859-1
  *
- * So the encoding of a target must not be UTF-8, and EPIC will 
- * remind you of this if you try.
+ * Declare what encoding people use on #epic on EFNet
+ *	/ENCODING EFNet/#epic ISO-8859-1
+ * IMPORTANT ^^^^ UTF-8 messages are always received, but this controls
+ * what encoding is used for non-UTF8 messages you receive and what encoding
+ * should be used for messages you SEND.  So in this case, all of your
+ * text would be translated to ISO-8859-1 before sending to #epic.  If you
+ * know that most people on #epic use UTF-8 but a couple of people don't, you
+ * don't want to set the channel encoding -- just override those people!
+ *
+ * The server is optional, and the slash is optional.  You can leave the
+ * server name blank to mean "all servers".  The slash is also optional,
+ * but is necessary if you want to set the encoding for a person nicked
+ * "console", "scripts", and "irc" since those are magic.
+ *	/ENCODING /console ISO-8859-15
+ *
+ * DEFAULTS:
+ *	Everything defaults to "/ENCODING IRC" unless overruled.
  */
 
 struct RecodeRule {
